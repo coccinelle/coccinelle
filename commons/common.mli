@@ -475,7 +475,7 @@ val release_file_lock : filename -> unit
 (* Error managment *)
 (*****************************************************************************)
 exception Todo
-exception Impossible
+exception Impossible of int
 exception Here
 exception ReturnExn
 

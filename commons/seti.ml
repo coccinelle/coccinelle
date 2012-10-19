@@ -73,7 +73,7 @@ let rec (add2: int -> seti -> seti) = fun x -> function
 
       |       (Interv (i,j)::xs) when x =|= i-1 -> pack x j xs
       |       (Interv (i,j)::xs) when x < i-1 -> (Interv (i,j))::add x xs
-      |       _ -> raise Impossible
+      |       _ -> raise (Impossible 6)
       )
 and add x y = let _ = count5 () in add2 x y
 
@@ -200,7 +200,7 @@ let rec inter xs ys =
                   )
             | Sup -> aux (y::ys) (x::xs) (* can cos commutative *)
             )
-        | _ -> raise Impossible (* intervise *)
+        | _ -> raise (Impossible 7) (* intervise *)
         )
   in
   (* TODO avoid the rev rev, but aux good ? need order ?  *)
@@ -245,7 +245,7 @@ let union xs ys =
                   )
             | Sup -> aux (y::ys) (x::xs) (* can cos commutative *)
             )
-        | _ -> raise Impossible (* intervise *)
+        | _ -> raise (Impossible 8) (* intervise *)
         )
   in
 (*     union_set (tolist xs) (tolist ys) +> fromlist *)
@@ -309,7 +309,7 @@ let diff xs ys =
                       (*     [      ]  *)
                   )
             )
-        | _ -> raise Impossible (* intervise *)
+        | _ -> raise (Impossible 9) (* intervise *)
         )
   in
 (*       minus_set (tolist xs) (tolist ys) +> fromlist *)

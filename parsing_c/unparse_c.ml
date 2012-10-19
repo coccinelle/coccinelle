@@ -186,7 +186,7 @@ let mcode_contain_plus = function
 (* patch: when need full coccinelle transformation *)
   | Ast_cocci.MINUS (_,_,_,Ast_cocci.NOREPLACEMENT) -> false
   | Ast_cocci.MINUS (_,_,_,Ast_cocci.REPLACEMENT _) -> true(*REPL is not empty*)
-  | Ast_cocci.PLUS _ -> raise Impossible
+  | Ast_cocci.PLUS _ -> raise (Impossible 132)
 
 let contain_plus info =
   let mck = Ast_c.mcode_of_info info in
@@ -223,7 +223,7 @@ let remove_useless_fakeInfo_struct program =
                  (* sometimes the guy put a normal iicommaopt *)
               then InitList args, [i1;i2;end_comma_opt]
               else InitList args, [i1;i2;iicommaopt;end_comma_opt]
-          | _ -> raise Impossible
+          | _ -> raise (Impossible 133)
           )
       | x -> x
     )
@@ -264,7 +264,7 @@ let get_fakeInfo_and_tokens celem toks =
         (* can be called on type info when for instance use -type_c *)
         if !Flag_parsing_c.pretty_print_type_info
         then Common.push2 (Fake1 info) toks_out
-        else raise Impossible (* at this stage *)
+        else raise (Impossible 134) (* at this stage *)
   in
 
   let pr_space _ = () in (* use the spacing that is there already *)
@@ -321,7 +321,7 @@ let displace_fake_nodes toks =
             bef @ fake :: (loop aft)
         )
     | None -> toks
-    | _ -> raise Impossible in
+    | _ -> raise (Impossible 135) in
   loop toks
 
 (*****************************************************************************)
@@ -458,7 +458,7 @@ let expand_mcode toks =
             add_elem t Ctx;
             unparser yys Unparse_cocci.After;
         )
-    | Ast_cocci.PLUS _ -> raise Impossible
+    | Ast_cocci.PLUS _ -> raise (Impossible 136)
 
   in
 
@@ -555,13 +555,13 @@ let set_minus_comment adj = function
         ->
           pr2 (Printf.sprintf "%d: ERASING_COMMENTS: %s"
 		 (TH.line_of_tok t) str)
-      | _ -> raise Impossible
+      | _ -> raise (Impossible 137)
       );
       T2 (t, Min adj, idx, hint)
 (* patch: coccinelle *)
   | T2 (t,Min adj,idx,hint) as x -> x
   | Fake2 _ as x -> x
-  | _ -> raise Impossible
+  | _ -> raise (Impossible 138)
 
 (* don't touch ifdefs, done after *)
 let set_minus_comment_or_plus adj = function
@@ -1355,10 +1355,10 @@ let kind_of_token2 = function
       (match TH.pinfo_of_tok t with
       | ExpandedTok _ -> KExpanded
       | OriginTok _ -> KOrigin
-      | FakeTok _ -> raise Impossible (* now a Fake2 *)
-      | AbstractLineTok _ -> raise Impossible (* now a KC *)
+      | FakeTok _ -> raise (Impossible 139) (* now a Fake2 *)
+      | AbstractLineTok _ -> raise (Impossible 140) (* now a KC *)
       )
-  | Unindent_cocci2 _ | Indent_cocci2 | EatSpace2 -> raise Impossible
+  | Unindent_cocci2 _ | Indent_cocci2 | EatSpace2 -> raise (Impossible 141)
 
 let end_mark = "!"
 

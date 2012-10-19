@@ -274,7 +274,8 @@ let rec (cpp_engine:
      * the job right and already replaced the macro parameter with a TIdent.
      *)
     match tok with
-    | TIdent (s,i1) when List.mem_assoc s env -> Common.assoc s env
+    | TIdent (s,i1) when List.mem_assoc s env -> 
+	Common.assoc s env
     | x -> [x]
   )
   +> List.flatten
@@ -351,7 +352,7 @@ let rec apply_macro_defs
       | Params params ->
           (match body with
           | DefineBody bodymacro ->
-	      
+
               (* bugfix: better to put this that before the match body,
 		 * cos our macrostatement hint can have variable number of
 		 * arguments and so it's ok if it does not match exactly
@@ -381,7 +382,7 @@ let rec apply_macro_defs
                   iter_token_paren (set_as_comment Token_c.CppMacro);
                   set_as_comment Token_c.CppMacro id
 	      |	Some bind ->
-		      
+
                   let xxs' = xxs +> List.map (fun x ->
 		    (tokens_of_paren_ordered x) +> List.map (fun x ->
 		      TH.visitor_info_of_tok Ast_c.make_expanded x.tok
@@ -391,7 +392,7 @@ let rec apply_macro_defs
                       (* !!! cpp expansion job here  !!! *)
 		    cpp_engine ?evaluate_concatop
 		      (bind xxs') bodymacro;
-		  
+
                       (* important to do that after have apply the macro,
 			 otherwise will pass as argument to the macro some
 			 tokens that are all TCommentCpp

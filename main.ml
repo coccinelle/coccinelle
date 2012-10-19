@@ -692,7 +692,7 @@ let rec arg_parse_no_fail l f msg =
     | Arg.Bad emsg ->
 	arg_parse_no_fail l f msg
     | Arg.Help msg -> (* printf "%s" msg; exit 0; *)
-	raise Impossible  (* -help is specified in speclist *)
+	raise (Impossible 165)  (* -help is specified in speclist *)
 
 (* copy paste of Arg.parse. Don't want the default -help msg *)
 let arg_parse2 l f msg argv =
@@ -711,7 +711,7 @@ let arg_parse2 l f msg argv =
       else
 	arg_parse_no_fail l f msg;
   | Arg.Help msg -> (* printf "%s" msg; exit 0; *)
-      raise Impossible  (* -help is specified in speclist *)
+      raise (Impossible 166)  (* -help is specified in speclist *)
   )
 
 

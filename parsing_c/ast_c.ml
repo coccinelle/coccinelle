@@ -613,7 +613,7 @@ and define = string wrap (* #define s eol *) * (define_kind * define_val)
      | DefineFunction of definition
      | DefineInit of initialiser (* in practice only { } with possible ',' *)
 
-     (* TODO DefineMulti of define_val list *)
+     | DefineMulti of statement list 
 
      | DefineText of string wrap
      | DefineEmpty
@@ -1137,7 +1137,7 @@ let rec (unsplit_comma: ('a, il) either list -> 'a wrap2 list) =
       let empty_ii = [] in
       (e, empty_ii)::unsplit_comma xs
   | Right ii::_ ->
-      raise Impossible
+      raise (Impossible 59)
 
 
 
@@ -1193,7 +1193,7 @@ let get_s_and_ii_of_name name =
       s, [iis]
   | CppConcatenatedName xs ->
       (match xs with
-      | [] -> raise Impossible
+      | [] -> raise (Impossible 60)
       | ((s,iis),noiiop)::xs ->
           s, iis
       )

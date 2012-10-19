@@ -1388,7 +1388,7 @@ let release_file_lock filename =
 (*****************************************************************************)
 
 exception Todo
-exception Impossible
+exception Impossible of int
 exception Here
 exception ReturnExn
 
@@ -1653,7 +1653,7 @@ let arg_parse2 l msg short_usage_fun =
       short_usage_fun();
       raise (UnixExit (2))
   | Arg.Help msg -> (* printf "%s" msg; exit 0; *)
-      raise Impossible  (* -help is specified in speclist *)
+      raise (Impossible 1)  (* -help is specified in speclist *)
   )
 
 
@@ -2677,7 +2677,7 @@ let int_to_month i =
   | 11 -> "November"
   | 12 -> "December"
 *)
-  | _ -> raise Impossible
+  | _ -> raise (Impossible 2)
 
 
 let month_info = [
@@ -5370,7 +5370,7 @@ let (diff: (int -> int -> diff -> unit)-> (string list * string list) -> unit)=
       | ("|" | "/" | "\\" ) ->
           f !a !b BnotinA; f !a !b AnotinB; incr a; incr b;
       | "<" -> f !a !b AnotinB; incr a;
-      | _ -> raise Impossible
+      | _ -> raise (Impossible 3)
     )
 (*
 let _ =
@@ -5398,7 +5398,7 @@ let (diff2: (int -> int -> diff -> unit) -> (string * string) -> unit) =
       | ">" -> f !a !b BnotinA; incr b;
       | "|" -> f !a !b BnotinA; f !a !b AnotinB; incr a; incr b;
       | "<" -> f !a !b AnotinB; incr a;
-      | _ -> raise Impossible
+      | _ -> raise (Impossible 4)
     )
 
 
@@ -5707,7 +5707,7 @@ let regression_testing_vs newscore bestscore =
         optionise (fun () -> Hashtbl.find newscore res),
         optionise (fun () -> Hashtbl.find bestscore res)
       with
-      | None, None -> raise Impossible
+      | None, None -> raise (Impossible 5)
       | Some x, None ->
           Printf.printf "new test file appeared: %s\n" res;
           Hashtbl.add newbestscore res x;

@@ -101,7 +101,7 @@ and find_next_synchro_orig next already_passed =
       pr2_err ("ERROR-RECOV: found sync '}' at line "^i_to_s (TH.line_of_tok v));
 
       (match xs with
-      | [] -> raise Impossible (* there is a EOF token normally *)
+      | [] -> raise (Impossible 94) (* there is a EOF token normally *)
 
       (* still useful: now parser.mly allow empty ';' so normally no pb *)
       | Parser_c.TPtVirg iptvirg::xs ->

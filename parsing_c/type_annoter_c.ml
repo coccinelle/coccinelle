@@ -202,10 +202,10 @@ let initial_env = ref [
 
   (*
    VarOrFunc("malloc",
-            (Lib.al_type(Parse_c.type_of_string "void* (*)(int size)"),
+            (Lib.al_type(Parse_c.type_of_string "void* ( * )(int size)"),
 	    Ast_c.NotLocalVar));
    VarOrFunc("free",
-            (Lib.al_type(Parse_c.type_of_string "void (*)(void *ptr)"),
+            (Lib.al_type(Parse_c.type_of_string "void ( * )(void *ptr)"),
 	    Ast_c.NotLocalVar));
   *)
   ]
@@ -852,7 +852,7 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
                 | Pointer (t) -> Some t
                 | _ -> None
                 )
-            | _ -> raise Impossible
+            | _ -> raise (Impossible 159)
 
           in
           (match topt with
@@ -1201,7 +1201,7 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
                *)
             | iifunc1::iifunc2::ibrace1::ibrace2::ifakestart::isto ->
                 iifunc1, iifunc2
-            | _ -> raise Impossible
+            | _ -> raise (Impossible 160)
           in
           let funcs = Ast_c.str_of_name name in
 

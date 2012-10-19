@@ -752,7 +752,9 @@ and vk_define_val bigf defval =
   | DefineText (s, ii) -> vk_ii bigf ii
   | DefineEmpty -> ()
   | DefineInit ini -> vk_ini bigf ini
-
+    (* christia: added multi *)
+  | DefineMulti stmts ->
+      List.fold_left (fun () d -> vk_statement bigf d) () stmts 
   | DefineTodo ->
       pr2_once "DefineTodo";
       ()
@@ -1564,6 +1566,9 @@ and vk_define_val_s = fun bigf x ->
     | DefineText (s, ii) -> DefineText (s, iif ii)
     | DefineEmpty -> DefineEmpty
     | DefineInit ini -> DefineInit (vk_ini_s bigf ini)
+    (* christia: added multi *)
+    | DefineMulti ds ->
+	DefineMulti (List.map (vk_statement_s bigf) ds)
 
     | DefineTodo ->
         pr2_once "DefineTodo";
