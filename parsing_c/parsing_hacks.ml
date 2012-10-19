@@ -2242,7 +2242,7 @@ let lookahead2 ~pass next before =
 
   (* christia: here insert support for macros on top level *)
   | TIdent (s, ii) :: tl :: _, _ when
-    can_be_on_top_level tl ->
+    can_be_on_top_level tl && LP.current_context () = InTopLevel ->
       pr2_cpp ("'" ^ s ^ "' looks like a macro, I treat it as comment");
       TCommentCpp (Token_c.CppDirective, ii)
       

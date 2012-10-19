@@ -247,6 +247,8 @@
   arguments
 - Don't count macros or ifdefs in counting fields
 - Better counting of indent size when indent contains multiple tabs
+- Fixed an issue where an 'Impossible' exception could be raised.
+- Fixed an issue where some identifiers were incorrectly interpreted as typedef.
 
 * 0.2.5
 ** Language:
