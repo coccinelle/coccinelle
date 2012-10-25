@@ -380,7 +380,7 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
        and arithOp   =
          | Plus | Minus | Mul | Div | Mod
          | DecLeft | DecRight
-         | And | Or | Xor
+         | And | Or | Xor | Max | Min
 
        and logicalOp =
          | Inf | Sup | InfEq | SupEq

@@ -195,6 +195,8 @@ let token2c (tok,_) =
       (match op with
 	Ast.Div -> "/"
       |	Ast.Mod -> "%"
+      |	Ast.Min -> "<?"
+      |	Ast.Max -> ">?"
       |	_ -> failwith "not possible")
       ^(line_type2c clt)
   | PC.TTilde (clt) -> "~"^(line_type2c clt)

@@ -244,7 +244,7 @@ and  fixOp = Dec | Inc
 
 and  binaryOp = Arith of arithOp | Logical of logicalOp
 and  arithOp =
-    Plus | Minus | Mul | Div | Mod | DecLeft | DecRight | And | Or | Xor
+    Plus | Minus | Mul | Div | Mod | DecLeft | DecRight | And | Or | Xor | Min | Max
 and  logicalOp = Inf | Sup | InfEq | SupEq | Eq | NotEq | AndLog | OrLog
 
 and constant =
