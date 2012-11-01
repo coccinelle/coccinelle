@@ -1011,17 +1011,20 @@ let add_newlines toks tabbing_unit =
     let count = string_length s count in
     (count,count::stack,space_cell) in
   let end_box stack space_cell count s =
+    (* this assumes that start_box and end_box are matched, but this is not
+       necessarily the case, if ( is modified and ) is context code *)
     let count = string_length s count in
     match stack with
       [x] ->
 	(match check_for_newline count x space_cell with
 	  Some count -> (count,[],None)
 	| None -> (count,[],None))
+    | [] -> (count,stack,space_cell)
     | _ -> (count,List.tl stack,space_cell) in
   let rec loop ((stack,space_cell) as info) count = function
       [] -> []
     | ((Cocci2(s,line,lcol,rcol,hint)) as a):: (* hint can't be start *)
-      ((T2(commatok,Ctx,idx,_)) as b)::
+      (T2(commatok,Ctx,idx,_))::
       (T2(((Parser_c.TCommentSpace _) as sptok),Ctx,_,_)) ::
       (((T2(codetok,Ctx,_,_)) :: _) as xs)
       when
@@ -1046,7 +1049,7 @@ let add_newlines toks tabbing_unit =
 	(match check_for_newline future_count x space_cell with
 	  Some count -> a :: b :: loop (stack,Some (x,sp)) count xs
 	| None -> a :: b :: loop (stack,Some (newcount,sp)) newcount xs)
-    | ((T2(commatok,Ctx,_,_)) as a)::
+    | (T2(commatok,Ctx,_,_))::
       (T2(((Parser_c.TCommentSpace _) as sptok),Ctx,idx,_)) ::
       (((Cocci2(s,line,lcol,rcol,hint))::_) as xs)
       when (TH.str_of_tok commatok) = "," && (TH.str_of_tok sptok) = " " &&
