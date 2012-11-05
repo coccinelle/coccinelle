@@ -1796,7 +1796,12 @@ define_val:
 *)*/
 
  | stat_or_decl stat_or_decl_list 
-     { DefineMulti (List.map (fun (StmtElem e) -> e) ($1 :: $2)) }
+     { DefineMulti
+	 (List.map
+	    (function
+		StmtElem e -> e
+	      | _ -> failwith "unexpected statement for DefineMulti")
+	    ($1 :: $2)) }
 /*(*
  | statement statement { DefineTodo }
  | decl function_definition { DefineTodo }

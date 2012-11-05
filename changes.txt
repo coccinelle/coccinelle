@@ -137,6 +137,8 @@
   feature. See demos/external_ana.{c,cocci,data}.
 - Try to do better pretty printing when array elements are individually
   replaced
+- Just fail quietly on attempt to remove a multi-variable declaration,
+  allowing the semantic patch to continue.  A warning message is printed.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks

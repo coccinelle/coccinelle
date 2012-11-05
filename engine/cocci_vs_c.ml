@@ -5,12 +5,12 @@ module B = Ast_c
 
 module F = Control_flow_c
 
-module Flag = Flag_matcher
+module FlagM = Flag_matcher
 
 (*****************************************************************************)
 (* Wrappers *)
 (*****************************************************************************)
-let pr2, pr2_once = Common.mk_pr2_wrappers Flag_matcher.verbose_matcher
+let pr2, pr2_once = Common.mk_pr2_wrappers FlagM.verbose_matcher
 
 let (+++) a b = match a with Some x -> Some x | None -> b
 
@@ -1784,7 +1784,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
             (B.DeclList ([var], iiptvirgb::iifakestart::iisto))
           )))
 
-  | _, (B.DeclList (xs, ((iiptvirgb::iifakestart::iisto) as ii))) ->
+  | _, (B.DeclList (xs, (iiptvirgb::iifakestart::iisto))) ->
       let indexify l =
 	let rec loop n = function
 	    [] -> []
@@ -1794,7 +1794,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 	  [] -> []
 	| x::xs ->
 	    if n = cur then vl :: xs else x :: (repln n vl (cur+1) xs) in
-      if X.mode =*= PatternMode || A.get_safe_decl decla
+      if !Flag.sgrep_mode2(*X.mode =*= PatternMode *) || A.get_safe_decl decla
       then
         (indexify xs) +> List.fold_left (fun acc (n,var) ->
 	  (* consider all possible matches *)
@@ -1810,8 +1810,14 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
                   )))) tin))
           fail
       else
-        error ii
-	  "More than one variable in the declaration, and so it cannot be transformed.  Check that there is no transformation on the type or the ;"
+	begin
+	  let firstii = iiptvirgb in
+	  pr2_once
+	    (Printf.sprintf "%s: %d: %s"
+	       (Ast_c.file_of_info firstii) (Ast_c.line_of_info firstii)
+	       "More than one variable in the declaration, and so it cannot be transformed.  Check that there is no transformation on the type or the ;");
+	  fail
+	end
 
   | A.MacroDecl (sa,lpa,eas,rpa,enda), B.MacroDecl ((sb,ebs,true),ii) ->
       let (iisb, lpb, rpb, iiendb, iifakestart, iistob) =
@@ -2700,7 +2706,7 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
            | false, true -> fail
            | true, false -> do_stuff ()
            | true, true ->
-               if !Flag.show_misc
+               if !FlagM.show_misc
                then pr2_once "USING optional_qualifier builtin isomorphism";
                do_stuff()
            )
@@ -3328,7 +3334,7 @@ and storage_optional_allminus allminus stoa (stob, iistob) =
       | false, _ -> fail
       | true, B.NoSto -> do_minus ()
       | true, _ ->
-          if !Flag.show_misc
+          if !FlagM.show_misc
           then pr2_once "USING optional_storage builtin isomorphism";
           do_minus()
       )
@@ -3371,7 +3377,7 @@ and inline_optional_allminus allminus inla (stob, iistob) =
 	if optional_storage
 	then
 	  begin
-	    if !Flag.show_misc
+	    if !FlagM.show_misc
             then pr2_once "USING optional_storage builtin isomorphism";
             do_minus()
 	  end

@@ -73,6 +73,10 @@ let mk_pretty_printers
   let start_block () = pr_nl(); pr_indent() in
   let end_block   () = pr_unindent(); pr_nl() in
 
+  let pr_nl_slash _ = (* multiline macro *)
+    let slash = (Ast_c.fakeInfo() +> Ast_c.rewrap_str " \\") in
+    pr_elem slash; pr_nl() in
+
   let indent_if_needed st f =
     match Ast_c.unwrap_st st with
       Compound _ -> pr_space(); f()
@@ -1104,7 +1108,8 @@ and pp_init (init, iinit) =
           | DefineText (s, ii) -> List.iter pr_elem ii
           | DefineEmpty -> ()
           | DefineInit ini -> pp_init ini
-
+	  | DefineMulti ss ->
+	      ss +> Common.print_between pr_nl_slash pp_statement
           | DefineTodo -> pr2 "DefineTodo"
 	in
 	(match defkind with
