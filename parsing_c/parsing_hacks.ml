@@ -1658,6 +1658,8 @@ let fix_tokens_cpp ~macro_defs a =
 
 let can_be_on_top_level tl =
   match tl with
+  | Tint _
+  | Tstruct _
   | Ttypedef _
   | TDefine _ 
   | TIfdef _

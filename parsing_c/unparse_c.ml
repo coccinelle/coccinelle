@@ -22,7 +22,6 @@ open Ast_c
 
 module TH = Token_helpers
 
-
 (* should keep comments and directives in between adjacent deleted terms,
 but not comments and directives within deleted terms.  should use the
 labels found in the control-flow graph *)
@@ -96,17 +95,17 @@ let info_of_token1 t =
   | T1 tok -> TH.info_of_tok tok
 
 let print_token1 = function
-    T1 tok -> TH.str_of_tok tok
+  | T1 tok -> TH.str_of_tok tok
   | Fake1 info -> "fake"
 
 let str_of_token2 = function
   | T2 (t,_,_,_) -> TH.str_of_tok t
-  | Fake2 _ -> ""
-  | Cocci2 (s,_,_,_,_) -> s
-  | C2 s -> s
+  | Cocci2 (s,_,_,_,_)
+  | C2 s
   | Comma s -> s
-  | Indent_cocci2 -> ""
-  | Unindent_cocci2 _ -> ""
+  | Fake2 _
+  | Indent_cocci2
+  | Unindent_cocci2 _
   | EatSpace2 -> ""
 
 let print_token2 = function
@@ -207,7 +206,15 @@ let remove_useless_fakeInfo_struct program =
       match k ini with
       | InitList args, ii ->
           (match ii with
-          | [_i1;_i2] -> ini
+          | [_;_] -> ini
+(* NEW *)
+          | i1 :: i2 :: iicommaopt :: tl when 
+	      (not (contain_plus iicommaopt)) 
+		&& (not (contain_plus i2))
+                && (Ast_c.is_fake iicommaopt) -> 
+		  InitList args, (i1 :: i2 :: tl)
+	  | ii -> InitList args, ii)
+(* OLD
           | [i1;i2;iicommaopt] ->
               if (not (contain_plus iicommaopt)) && (not (contain_plus i2))
                  && (Ast_c.is_fake iicommaopt)
@@ -225,6 +232,7 @@ let remove_useless_fakeInfo_struct program =
               else InitList args, [i1;i2;iicommaopt;end_comma_opt]
           | _ -> raise (Impossible 133)
           )
+*)
       | x -> x
     )
   } in
@@ -311,10 +319,9 @@ let displace_fake_nodes toks =
 	      let whitespace = List.rev revwhitespace in
 	      let prev = List.rev revprev in
 	      prev @ fake :: (loop (whitespace @ aft))
-	  | (Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING),_) ->
-	      bef @ fake :: (loop aft)
 	  | (Ast_cocci.CONTEXT(_,Ast_cocci.BEFOREAFTER _),_) ->
-	      failwith "fake node should not be before-after"
+	      failwith "fake node should not be before-after"	
+	  | (Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING),_)
 	  | _ -> bef @ fake :: (loop aft) (* old: was removed when have simpler yacfe *)
         )
         | None ->
@@ -416,7 +423,7 @@ let expand_mcode toks =
 
     let indent _   = push2 Indent_cocci2 toks_out in
     let unindent x = push2 (Unindent_cocci2 x) toks_out in
-    let eat_space _   = push2 EatSpace2 toks_out in
+    let eat_space _ = push2 EatSpace2 toks_out in
 
     let args_pp =
       (env, pr_cocci, pr_c, pr_cspace,
@@ -478,7 +485,10 @@ let is_newline = function
   | T2(Parser_c.TCommentNewline _,_b,_i,_h) -> true
   | _ -> false
 
-let is_whitespace = function
+let is_whitespace x = 
+  is_space x or is_newline x
+(* OLD
+function
   | (T2 (t,_b,_i,_h)) ->
       (match t with
       | Parser_c.TCommentSpace _ -> true  (* only whitespace *)
@@ -486,6 +496,7 @@ let is_whitespace = function
       | _ -> false
       )
   | _ -> false
+*)
 
 let is_minusable_comment = function
   | (T2 (t,_b,_i,_h)) ->
@@ -500,11 +511,11 @@ let is_minusable_comment = function
       | Parser_c.TCommentCpp (Token_c.CppIfDirective _, _)
       | Parser_c.TCommentCpp (Token_c.CppDirective, _) (* result was false *)
         -> true
-
+(*
       | Parser_c.TCommentMisc _
       | Parser_c.TCommentCpp (Token_c.CppPassingCosWouldGetError, _)
         -> false
-
+*)
       | _ -> false
       )
   | _ -> false
@@ -537,7 +548,8 @@ let all_coccis = function
   | _ -> false
 
 (*previously gave up if the first character was a newline, but not clear why*)
-let is_minusable_comment_or_plus x = is_minusable_comment x or all_coccis x
+let is_minusable_comment_or_plus x = 
+  is_minusable_comment x or all_coccis x
 
 let set_minus_comment adj = function
   | T2 (t,Ctx,idx,hint) ->
@@ -569,6 +581,10 @@ let set_minus_comment_or_plus adj = function
   | EatSpace2 as x -> x
   | x -> set_minus_comment adj x
 
+let is_minus = function
+  | T2 (_, Min _, _, _) -> true
+  | _ -> false 
+
 let drop_minus xs =
   xs +> Common.exclude (function
     | T2 (t,Min adj,_,_) -> true
@@ -592,13 +608,11 @@ let remove_minus_and_between_and_expanded_and_fake xs =
   (* get rid of expanded tok *)
   let xs = drop_expanded xs in
 
-  let minus_or_comment = function
-      T2(_,Min adj,_,_) -> true
-    | x -> is_minusable_comment x in
+  let minus_or_comment x = 
+    is_minus x or is_minusable_comment x in
 
-  let minus_or_comment_nocpp = function
-      T2(_,Min adj,_,_) -> true
-    | x -> is_minusable_comment_nocpp x in
+  let minus_or_comment_nocpp x =
+    is_minus x or is_minusable_comment_nocpp x in
 
   let common_adj (index1,adj1) (index2,adj2) =
     let same_adj = (* same adjacency info *)
@@ -705,7 +719,7 @@ let remove_minus_and_between_and_expanded_and_fake xs =
 	 x::between_minus@(List.map (set_minus_comment adj) drop_newlines)@
 	 last_newline@
 	 adjust_after_brace rest
-    | x::xs -> x::adjust_after_brace xs in
+    | x::xs -> x :: (adjust_after_brace xs) in
 
   let xs = adjust_after_brace xs in
 
@@ -788,9 +802,6 @@ let remove_minus_and_between_and_expanded_and_fake xs =
     let unminus = function
 	T2 (t,Min adj,idx,hint) -> T2 (t,Ctx,idx,hint)
       | x -> x in
-    let is_minus = function
-	T2 (t,Min adj,idx,hint) -> true
-      | x -> false in
     let rec loop = function
 	[] -> []
       | t::rest when is_ifdef t ->
@@ -934,14 +945,14 @@ let rec add_space xs =
   | [x] -> [x]
   | (Cocci2(sx,lnx,_,rcolx,_) as x)::((Cocci2(sy,lny,lcoly,_,_)) as y)::xs
     when !Flag_parsing_c.spacing = Flag_parsing_c.SMPL &&
-      not (lnx = -1) && lnx = lny && not (rcolx = -1) && rcolx < lcoly ->
+      not (lnx = -1) && not (rcolx = -1) && lnx = lny && rcolx < lcoly ->
 	(* this only works within a line.  could consider whether
 	   something should be done to add newlines too, rather than
 	   printing them explicitly in unparse_cocci. *)
 	x::C2 (String.make (lcoly-rcolx) ' ')::add_space (y::xs)
   | (Cocci2(sx,lnx,_,rcolx,_) as x)::((Cocci2(sy,lny,lcoly,_,_)) as y)::xs
     when !Flag_parsing_c.spacing = Flag_parsing_c.SMPL &&
-      not (lnx = -1) && lnx < lny && not (rcolx = -1) ->
+      not (lnx = -1) && not (rcolx = -1) && lnx < lny ->
 	(* this only works within a line.  could consider whether
 	   something should be done to add newlines too, rather than
 	   printing them explicitly in unparse_cocci. *)
@@ -1066,7 +1077,7 @@ let add_newlines toks tabbing_unit =
 	  Some count -> a :: loop (stack,Some (x,sp)) count xs
 	| None -> a :: loop (stack,Some (newcount,sp)) newcount xs)
     | ((T2(tok,Ctx,idx,_)) as a)::xs ->
-	let (stack,space_cell) = info in
+(*	let (stack,space_cell) = info in *)
 	(match TH.str_of_tok tok with
           "=" as s ->
 	    let (spaces,rest) = Common.span is_space xs in
@@ -1301,16 +1312,10 @@ let rec find_paren_comma = function
   | [] -> ()
 
   (* do nothing if was like this in original file *)
-  | ({ str = "("; idx = Some p1 } as _x1)::({ str = ","; idx = Some p2} as x2)
-    ::xs when p2 =|= p1 + 1 ->
-      find_paren_comma (x2::xs)
-
-  | ({ str = ","; idx = Some p1 } as _x1)::({ str = ","; idx = Some p2} as x2)
-    ::xs when p2 =|= p1 + 1 ->
-      find_paren_comma (x2::xs)
-
-  | ({ str = ","; idx = Some p1 } as _x1)::({ str = ")"; idx = Some p2} as x2)
-    ::xs when p2 =|= p1 + 1 ->
+  | ({ str = "("; idx = Some p1 } as _x1)::({ str = ","; idx = Some p2} as x2)::xs
+  | ({ str = ","; idx = Some p1 } as _x1)::({ str = ","; idx = Some p2} as x2)::xs
+  | ({ str = ","; idx = Some p1 } as _x1)::({ str = ")"; idx = Some p2} as x2)::xs 
+   when p2 =|= p1 + 1 ->
       find_paren_comma (x2::xs)
 
   (* otherwise yes can adjust *)
@@ -1320,7 +1325,6 @@ let rec find_paren_comma = function
   | ({ str = "," } as x1)::({ str = ","} as x2)::xs ->
       x1.remove <- true;
       find_paren_comma (x2::xs)
-
   | ({ str = "," } as x1)::({ str = ")"} as x2)::xs ->
       x1.remove <- true;
       find_paren_comma (x2::xs)
