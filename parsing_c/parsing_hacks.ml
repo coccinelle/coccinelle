@@ -1714,6 +1714,20 @@ let ident = function
     TIdent _ -> true
   | _ -> false
 
+let is_type = function
+  | TypedefIdent _ 
+  | Tvoid _
+  | Tchar _
+  | Tfloat _
+  | Tdouble _
+      (* christia: not sure what these are? *)
+  | Tsize_t _
+  | Tssize_t _
+  | Tptrdiff_t _
+      
+  | Tint _ -> true
+  | _ -> false
+
 (* This function is inefficient, because it will look over a K&R header,
 or function prototype multiple times.  At least when we see a , and are in a
 parameter list, we know we will eventually see a close paren, and it
@@ -1776,6 +1790,16 @@ let lookahead2 ~pass next before =
       TypedefIdent (s, i1)
 
   (* xx yy *)
+  | (TIdent (s, i1)::type_::TIdent (s2, i2)::_  , _) when not_struct_enum before
+      && ok_typedef s && not_macro s2 && is_type type_
+        ->
+	  TCommentCpp (Token_c.CppDirective, i1)
+
+  | (TIdent (s, i1)::TIdent (s2, i2)::_  , seen::_) when not_struct_enum before
+      && ok_typedef s && not_macro s2 && is_type seen
+        ->
+	  TCommentCpp (Token_c.CppDirective, i1)
+
   | (TIdent (s, i1)::TIdent (s2, i2)::_  , _) when not_struct_enum before
       && ok_typedef s && not_macro s2
         ->
