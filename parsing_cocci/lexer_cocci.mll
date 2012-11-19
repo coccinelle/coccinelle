@@ -744,11 +744,11 @@ rule token = parse
 	   (arity,line,lline,offset+off,col+off,strbef,straft,pos),
 	 offset + off + (String.length ident),
 	 col + off + (String.length ident)) }
-  | "#" [' ' '\t']* "include" [' ' '\t']* '"' [^ '"']+ '"'
+  | "#" [' ' '\t']* "include" [' ' '\t']* '\"' [^ '\"']+ '\"'
       { TIncludeL
 	  (let str = tok lexbuf in
-	  let start = String.index str '"' in
-	  let finish = String.rindex str '"' in
+	  let start = String.index str '\"' in
+	  let finish = String.rindex str '\"' in
 	  start_line true;
 	  (process_include start finish str,get_current_line_type lexbuf)) }
   | "#" [' ' '\t']* "include" [' ' '\t']* '<' [^ '>']+ '>'
@@ -800,9 +800,61 @@ rule token = parse
   | letter (letter | digit)*
       { start_line true; id_tokens lexbuf }
 
+      (* christia: testing *)
+  | (letter | '$') (letter | digit | '$') *
+      { start_line true; id_tokens lexbuf }
+
+  | (letter | '$') (letter | digit | '$') *
+      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?
+    ("::~" (letter | '$') (letter | digit | '$') *
+      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) +
+
+      { 
+	start_line true; 
+	if not !Flag.c_plus_plus
+	then Common.pr2_once "< and > not allowed in C identifiers, try -c++ option";
+	id_tokens lexbuf 
+      }
+  | ((letter | '$') (letter | digit | '$') * )
+      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>')
+
+      { 
+	start_line true; 
+	if not !Flag.c_plus_plus
+	then Common.pr2_once "< and > not allowed in C identifiers, try -c++ option";
+	id_tokens lexbuf 
+      }
+
+  | (((letter | '$') (letter | digit | '$') * ) as first)
+      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?
+    "::" (((letter | '$') (letter | digit | '$') * ) as second)
+      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?
+    ("::" ((letter | '$') (letter | digit | '$') * )
+      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) *
+
+      { 
+	start_line true; 
+	if not !Flag.c_plus_plus
+	then Common.pr2_once "~ and :: not allowed in C identifiers, try -c++ option";
+	id_tokens lexbuf 
+      }
+
+   | "::" ((letter | '$') (letter | digit | '$') * )
+      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?
+    ("::" ((letter | '$') (letter | digit | '$') * )
+      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) *
+      { 
+	start_line true; 
+	if not !Flag.c_plus_plus
+	then Common.pr2_once "~ and :: not allowed in C identifiers, try -c++ option";
+	id_tokens lexbuf 
+      }
+       (* christia: end *)
+
+
   | "'" { start_line true;
 	  TChar(char lexbuf,get_current_line_type lexbuf) }
-  | '"' { start_line true;
+  | '\"' { start_line true;
 	  TString(string lexbuf,(get_current_line_type lexbuf)) }
   | (real as x)    { start_line true;
 		     TFloat(x,(get_current_line_type lexbuf)) }
@@ -837,7 +889,7 @@ and char = parse
           (match v with (* Machine specific ? *)
           | 'n' -> ()  | 't' -> ()   | 'v' -> ()  | 'b' -> () | 'r' -> ()
           | 'f' -> () | 'a' -> ()
-	  | '\\' -> () | '?'  -> () | '\'' -> ()  | '"' -> ()
+	  | '\\' -> () | '?'  -> () | '\'' -> ()  | '\"' -> ()
           | 'e' -> () (* linuxext: ? *)
 	  | _ ->
               Common.pr2 ("LEXER: unrecognised symbol in char:"^tok lexbuf);
@@ -863,7 +915,7 @@ and restchars = parse
           (match v with (* Machine specific ? *)
           | 'n' -> ()  | 't' -> ()   | 'v' -> ()  | 'b' -> () | 'r' -> ()
           | 'f' -> () | 'a' -> ()
-	  | '\\' -> () | '?'  -> () | '\'' -> ()  | '"' -> ()
+	  | '\\' -> () | '?'  -> () | '\'' -> ()  | '\"' -> ()
           | 'e' -> () (* linuxext: ? *)
 	  | _ ->
               Common.pr2 ("LEXER: unrecognised symbol in char:"^tok lexbuf);
@@ -876,7 +928,7 @@ and restchars = parse
       }
 
 and string  = parse
-  | '"'                                       { "" }
+  | '\"'                                       { "" }
   | (_ as x)                   { Common.string_of_char x ^ string lexbuf }
   | ("\\" (oct | oct oct | oct oct oct)) as x { x ^ string lexbuf }
   | ("\\x" (hex | hex hex)) as x              { x ^ string lexbuf }
@@ -885,7 +937,7 @@ and string  = parse
          (match v with
 	    | 'n' -> ()  | 't' -> ()   | 'v' -> ()  | 'b' -> () | 'r' -> ()
 	    | 'f' -> () | 'a' -> ()
-	    | '\\' -> () | '?'  -> () | '\'' -> ()  | '"' -> ()
+	    | '\\' -> () | '?'  -> () | '\'' -> ()  | '\"' -> ()
 	    | 'e' -> ()
 	    | '\n' -> ()
 	    | '(' -> () | '|' -> () | ')' -> ()

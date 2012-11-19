@@ -62,7 +62,7 @@ let is_known_typdef =
       | "u8" | "u16" | "u32" | "u64"
       | "s8"  | "s16" | "s32" | "s64"
       | "__u8" | "__u16" | "__u32"  | "__u64"
-          -> true
+        -> true
 
       | "acpi_handle"
       | "acpi_status"
@@ -182,7 +182,7 @@ let msg_stringification s =
       | "UTS_RELEASE"
       | "SIZE_STR"
       | "DMA_STR"
-          -> true
+        -> true
       (* s when s =~ ".*STR.*" -> true  *)
       | _ -> false
       )
@@ -239,15 +239,15 @@ let msg_attribute s =
 
 (* opti: better to built then once and for all, especially regexp_foreach *)
 
-let regexp_macro =  Str.regexp
+let regexp_macro = Str.regexp
   "^[A-Z_][A-Z_0-9]*$"
 
 (* linuxext: *)
-let regexp_annot =  Str.regexp
+let regexp_annot = Str.regexp
   "^__.*$"
 
 (* linuxext: *)
-let regexp_declare =  Str.regexp
+let regexp_declare = Str.regexp
   ".*DECLARE.*"
 
 (* linuxext: *)
@@ -315,7 +315,7 @@ let rec is_really_foreach xs =
 	 single statement in the body of the loop.  undoubtedly more
 	 cases are needed.
          todo: premier(statement) - suivant(funcall)
-      *)
+       *)
     | TCPar _::TIdent _::xs -> true, xs
     | TCPar _::Tif _::xs -> true, xs
     | TCPar _::Twhile _::xs -> true, xs
@@ -343,9 +343,8 @@ let set_ifdef_token_parenthize_info cnt x =
 
     | TIfdefBool (_, tag, _)
     | TIfdefMisc (_, tag, _)
-    | TIfdefVersion (_, tag, _)
-        ->
-        tag := Some cnt;
+    | TIfdefVersion (_, tag, _) ->
+	tag := Some cnt;
 
     | _ -> raise (Impossible 89)
 
@@ -512,23 +511,18 @@ let rec define_ident acc xs =
        * body (it would be a recursive macro, which is forbidden).
        *)
 
-      | TCommentSpace i1::t::xs ->
-
+      | TCommentSpace i1::t::xs
+	when TH.str_of_tok t ==~ Common.regexp_alpha
+	->
           let s = TH.str_of_tok t in
           let ii = TH.info_of_tok t in
-          if s ==~ Common.regexp_alpha
-          then begin
-            pr2 (spf "remapping: %s to an ident in macro name" s);
-	    let acc = (TCommentSpace i1) :: acc in
-	    let acc = (TIdentDefine (s,ii)) :: acc in
-            define_ident acc xs
-          end
-          else begin
-            pr2 "WEIRD: weird #define body";
-            define_ident acc xs
-          end
-
-      | _ ->
+	  pr2 (spf "remapping: %s to an ident in macro name" s);
+          let acc = (TCommentSpace i1) :: acc in
+	  let acc = (TIdentDefine (s,ii)) :: acc in
+          define_ident acc xs
+          
+      | TCommentSpace _::_::xs
+      | xs ->
           pr2 "WEIRD: weird #define body";
           define_ident acc xs
       )
