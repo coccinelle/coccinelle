@@ -32,11 +32,13 @@ let is_simple_ast_assign left op minus_left =
   ((Ast.unwrap_mcode op) = Ast.SimpleAssign)
 
 let warning e msg =
-  Common.pr2
-    ("the simple assignment expression on line "^
-     (string_of_int (Ast0.get_line e))^
-     " contains transformations\n"^
-     "that prevent it from matching a declaration ("^msg^")\n");
+  if not !Flag.sgrep_mode2
+  then
+    Common.pr2
+      ("the simple assignment expression on line "^
+       (string_of_int (Ast0.get_line e))^
+       " contains transformations\n"^
+       "that prevent it from matching a declaration ("^msg^")\n");
   e
 
 let rebuild e1 left right op simple =
