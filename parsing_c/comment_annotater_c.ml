@@ -53,7 +53,7 @@ let convert_relevant_tokens x =
   | Parser_c.TCommentCpp(cppcommentkind, info) ->
       Token_c.TCommentCpp cppcommentkind, (Ast_c.parse_info_of_info info)
 
-  | _ -> raise Impossible
+  | _ -> raise (Impossible 61)
 
 
 (*****************************************************************************)

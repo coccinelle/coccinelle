@@ -1,13 +1,16 @@
+dnl  run 'autoreconf' to obtain aclocal.m4, and update configure and setup/pkg.m4
+dnl  run 'automake -acf' to update setup/{install-sh,missing}
+
 dnl  standard initialization (we only use autoconf not automake)
 AC_PREREQ([2.68])
 AC_INIT([coccinelle], m4_esyscmd([cat ./version | tr -d '\n']), [cocci@diku.dk], [], [http://coccinelle.lip6.fr/])
 AC_CONFIG_MACRO_DIR([setup])
 AC_CONFIG_AUX_DIR([setup])
-
 AC_SUBST([CONFIGURE_FLAGS], ["$*"])
 AC_SUBST([COCCI_VERSION], ["$PACKAGE_VERSION"])
 AC_SUBST([COCCI_SRCDIR], ["$(pwd)"])
 AC_MSG_NOTICE([configuring coccinelle $COCCI_VERSION in $COCCI_SRCDIR])
+AM_INIT_AUTOMAKE
 
 AC_CONFIG_SRCDIR([cocci.ml])    dnl  this file must be present in our src directory
 AC_COCCI_CONFVERSION
@@ -38,16 +41,37 @@ AC_PROG_MKDIR_P
 AC_PROG_CPP
 AC_PATH_PROG([TAR],[tar])
 AC_PATH_PROG([PATCH],[patch])
-AC_PATH_PROG([PATCHELF],[patchelf])
 
-dnl  pkg config is required
-AC_COCCI_TOOL([PKG_CONFIG],[pkg-config],[$COCCI_SRCDIR/setup/fake-subst.sh pkg-config])
-AS_IF([test "x$PKG_CONFIG" = xno],
+dnl  ensures that INSTALL points to an absolute install-sh when that one is configured.
+AS_IF([test "$INSTALL" = "setup/install-sh -c" -o "$INSTALL" = "./setup-install-sh -c"],
 [dnl
-  AC_MSG_ERROR([A suitable pkg-config could not be found.])
+  AC_SUBST([INSTALL], ["$COCCI_SRCDIR/$INSTALL"])
 ])
 
-dnl  ocaml compile
+dnl  the same for MKDIR_P
+AS_IF([test "$MKDIR_P" = "setup/install-sh -c -d" -o "$INSTALL" = "./setup-install-sh -c -d"],
+[dnl
+  AC_SUBST([MKDIR_P], ["$COCCI_SRCDIR/$MKDIR_P"])
+])
+
+dnl  patchelf is an optional dependency and in principle not used for building coccinelle
+AC_PATH_PROG([PATCHELF],[patchelf])
+
+dnl  pkg config is required, but we have an alternative script for it
+AC_COCCI_TOOL([PKG_CONFIG],[pkg-config])
+AS_IF([test "x$PKG_CONFIG" = xno],
+[dnl  no specific pkg-config configured
+  AC_SUBST([PKG_CONFIG_ORIG],[pkg-config])
+],
+[dnl  a specific pkg-config configured
+  AC_SUBST([PKG_CONFIG_ORIG],[$PKG_CONFIG])
+])
+
+dnl  always use the wrapper around pkg-config
+AC_SUBST([PKG_CONFIG],["$COCCI_SRCDIR/setup/fake-subst.sh $PKG_CONFIG_ORIG"])
+
+
+dnl  ocaml compiler configuration
 AC_PROG_OCAML
 AC_CHECK_OCAMLVERSION([OCAMLATLEAST310],[3.10])
 AC_CHECK_OCAMLVERSION([OCAMLATLEAST311],[3.11])
@@ -411,7 +435,7 @@ AS_IF([test "x$enable_release" = xyes],
 
   dnl  configuration-time overrides for profiling
   AC_SUBST([MAKETARGET_ALL], [all-dev])
-  AC_SUBST([OCAMLC], ["$COCCI_SRCDIR/setup/wrapper-ocamlcp.sh \"$OCAMLCORIG\" \"$OCAMLPROF\""])
+  AC_SUBST([OCAMLC], ["$COCCI_SRCDIR/setup/wrapper-ocamlcp.sh $OCAMLCORIG $OCAMLPROF"])
   AC_SUBST([MODULES_profiling], [profiling.cmo])
   AC_MSG_NOTICE([configured coccinelle for profiling])
 ],
@@ -455,7 +479,7 @@ AS_IF([test "x$OPTIMIZED_dynlink" = xno -a "x$enable_ocaml" = xyes],
   ])
 ])
 
-# set the default enable-opt setting
+dnl  set the default enable-opt setting
 AS_IF([test -z "$enable_opt"],
 [dnl
   AS_IF([test "x$enable_release" = xyes -o "x$enable_release" = xno],
@@ -476,6 +500,22 @@ AS_IF([test "x$enable_opt" = xyes],
 ])
 
 
+dnl  ocamlbuild handling
+AC_ARG_ENABLE([ocamlbuild], AS_HELP_STRING([--enable-ocamlbuild], [enable ocamlbuild support (default: no)]))
+AS_IF([test "x$enable_ocamlbuild" = xyes],
+[dnl  ocamlbuild support requested
+  AS_IF([test -z "$OCAMLBUILD" -o "x$OCAMLBUILD" = xno],
+  [dnl
+    AC_MSG_ERROR([Ocamlbuild is required but is not installed.])
+  ])
+
+  AC_SUBST([FEATURE_OCAMLBUILD], [yes])
+],
+[dnl  default: disable ocamlbuild support
+  AC_SUBST([FEATURE_OCAMLBUILD], [ ])
+])
+
+
 dnl
 dnl  generating configuration
 dnl
@@ -488,6 +528,9 @@ AC_CONFIG_FILES([
   ocaml/prepare_ocamlcocci.ml
   scripts/spatch.sh
   docs/spatch.1
+  myocamlbuild.ml
+
+  setup/Makefile
 ])
 
 AC_OUTPUT

@@ -12,7 +12,7 @@
 
 @@
 identifier x;
-constant char *s;
+constant char [] s;
 @@
 
 

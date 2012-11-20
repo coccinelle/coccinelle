@@ -132,7 +132,10 @@ module XTRANS = struct
 
   (* same as cocciExp, but for expressions in an expression, not expressions
      in a node *)
-  let cocciExpExp = fun expf expa expb -> fun tin ->
+  let cocciExpExp = fun mc expf expa expb -> fun tin ->
+    match mc with
+      Ast_cocci.MINUS _ -> Some (expa,expb) (* do nothing *)
+    | _ ->
 
     let bigf = {
       Visitor_c.default_visitor_c_s with
@@ -175,7 +178,7 @@ module XTRANS = struct
   (* ------------------------------------------------------------------------*)
    let check_pos info mck pos =
      match mck with
-     | Ast_cocci.PLUS _ -> raise Impossible
+     | Ast_cocci.PLUS _ -> raise (Impossible 51)
      | Ast_cocci.CONTEXT (Ast_cocci.FixPos (i1,i2),_)
      | Ast_cocci.MINUS   (Ast_cocci.FixPos (i1,i2),_,_,_) ->
          pos <= i2 && pos >= i1
@@ -261,7 +264,7 @@ module XTRANS = struct
         mck
     in
     (match mck, Ast_c.pinfo_of_info ib with
-    | _,                  Ast_c.AbstractLineTok _ -> raise Impossible
+    | _,                  Ast_c.AbstractLineTok _ -> raise (Impossible 52)
     | Ast_cocci.MINUS(_), Ast_c.ExpandedTok _ ->
         failwith
 	  (Printf.sprintf
@@ -469,7 +472,7 @@ module XTRANS = struct
             ) expr
 
         )
-    | Ast_cocci.PLUS _ -> raise Impossible
+    | Ast_cocci.PLUS _ -> raise (Impossible 53)
 
 
   (* use new strategy, collect ii, sort, recollect and tag *)
@@ -546,7 +549,7 @@ module XTRANS = struct
 
    let get_pos mck =
      match mck with
-     | Ast_cocci.PLUS _ -> raise Impossible
+     | Ast_cocci.PLUS _ -> raise (Impossible 54)
      | Ast_cocci.CONTEXT (Ast_cocci.FixPos (i1,i2),_)
      | Ast_cocci.MINUS   (Ast_cocci.FixPos (i1,i2),_,_,_) ->
          Ast_cocci.FixPos (i1,i2)
@@ -572,7 +575,7 @@ module XTRANS = struct
       | Ast_cocci.DontCarePos -> true
       | Ast_cocci.FixPos (i1, i2) ->
           i1 =*= min && i2 =*= max
-      | _ -> raise Impossible
+      | _ -> raise (Impossible 55)
       )
 
     then
@@ -667,7 +670,7 @@ module TRANS  = Cocci_vs_c.COCCI_VS_C (XTRANS)
 
 let transform_re_node a b tin =
   match TRANS.rule_elem_node a b tin with
-  | None -> raise Impossible
+  | None -> raise (Impossible 56)
   | Some (_sp, b') -> b'
 
 let (transform2: string (* rule name *) -> string list (* dropped_isos *) ->

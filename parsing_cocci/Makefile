@@ -22,7 +22,8 @@ unify_ast.ml semantic_cocci.ml data.ml free_vars.ml safe_for_multi_decls.ml \
 parse_aux.ml disjdistr.ml \
 $(LEXER_SOURCES:.mll=.ml) $(PARSER_SOURCES:.mly=.ml) \
 $(CLI_LEXER_SOURCES:.mll=.ml) $(SCRIPT_LEXER_SOURCES:.mll=.ml) \
-get_constants2.ml id_utils.ml adjacency.ml parse_cocci.ml command_line.ml
+get_constants2.ml id_utils.ml adjacency.ml commas_on_lists.ml \
+parse_cocci.ml command_line.ml
 
 LIBS=../commons/commons.cma ../globals/globals.cma
 SYSLIBS = str.cma unix.cma
@@ -49,6 +50,7 @@ OBJS = $(SOURCES:.ml=.cmo)
 OPTOBJS = $(OBJS:.cmo=.cmx)
 
 
+ifneq ($(FEATURE_OCAMLBUILD),yes)
 all: $(LIB)
 local: $(EXEC)
 
@@ -65,6 +67,21 @@ $(OPTLIB): $(GENERATED) $(OPTOBJS)
 
 $(EXEC): $(OBJS) main.cmo $(LIBS)
 	$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES) -o $(EXEC) $(SYSLIBS) $(LIBS) $(OBJS) main.cmo
+else
+all:
+	cd .. && $(OCAMLBUILD) parsing_cocci/parsing_cocci.cma
+
+all.opt:
+	cd .. && $(OCAMLBUILD) parsing_cocci/parsing_cocci.cmxa
+
+$(EXEC):
+	cd .. && $(OCAMLBUILD) parsing_cocci/main.byte
+	cp ../_build/parsing_cocci/main.byte $(EXEC)
+
+clean::
+	cd .. && $(OCAMLBUILD) -clean
+	rm -f $(TARGET) $(TARGET).byte $(TARGET).native
+endif
 
 clean::
 	rm -f $(LIB)
@@ -87,8 +104,14 @@ clean::
 $(LEXER_SOURCES:.mll=.ml) :	$(LEXER_SOURCES)
 	$(OCAMLLEX) $(LEXER_SOURCES)
 
+ifneq ($(FEATURE_OCAMLBUILD),yes)
 $(PARSER_SOURCES:.mly=.ml) $(PARSER_SOURCES:.mly=.mli) : $(PARSER_SOURCES)
 	$(MENHIR) --ocamlc "${OCAMLC}" --ocamldep "${OCAMLDEP}" --table --base parser_cocci_menhir $(PARSER_SOURCES)
+else
+$(PARSER_SOURCES:.mly=.ml) $(PARSER_SOURCES:.mly=.mli) : $(PARSER_SOURCES)
+	cd .. && $(OCAMLBUILD) parsing_cocci/$@
+	cp ../_build/parsing_cocci/$@ $@
+endif
 
 $(CLI_LEXER_SOURCES:.mll=.ml): $(CLI_LEXER_SOURCES)
 	$(OCAMLLEX) $(CLI_LEXER_SOURCES)
@@ -97,8 +120,9 @@ $(SCRIPT_LEXER_SOURCES:.mll=.ml): $(SCRIPT_LEXER_SOURCES)
 	$(OCAMLLEX) $(SCRIPT_LEXER_SOURCES)
 
 distclean:: clean
-	@echo cleaning generated parsers and lexers
-	rm -f $(GENERATED)
+	if test -z "${KEEP_GENERATED}"; then \
+		@echo cleaning generated parsers and lexers; \
+		rm -f $(GENERATED); fi
 
 # clean rule for others files
 clean::
@@ -112,14 +136,17 @@ clean::
 	$(OCAMLDEP) *.mli *.ml > .depend
 
 lexer_cocci.ml: lexer_cocci.mll
-parser_cocci_menhir.ml: parser_cocci_menhir.mly lexer_cocci.mll
-parser_cocci_menhir.mli: parser_cocci_menhir.mly lexer_cocci.mll
 lexer_script.ml: lexer_script.mll
 lexer_cli.ml: lexer_cli.mll
+parser_cocci_menhir.ml: parser_cocci_menhir.mly lexer_cocci.mll
+parser_cocci_menhir.mli: parser_cocci_menhir.mly lexer_cocci.mll
+
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
+ifneq ($(FEATURE_OCAMLBUILD),yes)
 -include .depend
+endif
 endif
 endif
 

@@ -62,7 +62,7 @@ let is_known_typdef =
       | "u8" | "u16" | "u32" | "u64"
       | "s8"  | "s16" | "s32" | "s64"
       | "__u8" | "__u16" | "__u32"  | "__u64"
-          -> true
+        -> true
 
       | "acpi_handle"
       | "acpi_status"
@@ -182,7 +182,7 @@ let msg_stringification s =
       | "UTS_RELEASE"
       | "SIZE_STR"
       | "DMA_STR"
-          -> true
+        -> true
       (* s when s =~ ".*STR.*" -> true  *)
       | _ -> false
       )
@@ -239,15 +239,15 @@ let msg_attribute s =
 
 (* opti: better to built then once and for all, especially regexp_foreach *)
 
-let regexp_macro =  Str.regexp
+let regexp_macro = Str.regexp
   "^[A-Z_][A-Z_0-9]*$"
 
 (* linuxext: *)
-let regexp_annot =  Str.regexp
+let regexp_annot = Str.regexp
   "^__.*$"
 
 (* linuxext: *)
-let regexp_declare =  Str.regexp
+let regexp_declare = Str.regexp
   ".*DECLARE.*"
 
 (* linuxext: *)
@@ -266,6 +266,8 @@ let ok_typedef s = not (List.mem s false_typedef)
 
 let not_annot s =
   not (s ==~ regexp_annot)
+let not_macro s =
+  not (s ==~ regexp_macro)
 
 
 
@@ -313,7 +315,7 @@ let rec is_really_foreach xs =
 	 single statement in the body of the loop.  undoubtedly more
 	 cases are needed.
          todo: premier(statement) - suivant(funcall)
-      *)
+       *)
     | TCPar _::TIdent _::xs -> true, xs
     | TCPar _::Tif _::xs -> true, xs
     | TCPar _::Twhile _::xs -> true, xs
@@ -341,11 +343,10 @@ let set_ifdef_token_parenthize_info cnt x =
 
     | TIfdefBool (_, tag, _)
     | TIfdefMisc (_, tag, _)
-    | TIfdefVersion (_, tag, _)
-        ->
-        tag := Some cnt;
+    | TIfdefVersion (_, tag, _) ->
+	tag := Some cnt;
 
-    | _ -> raise Impossible
+    | _ -> raise (Impossible 89)
 
 
 
@@ -410,6 +411,7 @@ let mark_end_define ii =
         Common.charpos = Ast_c.pos_of_info ii + 1
       };
       cocci_tag = ref Ast_c.emptyAnnot;
+      annots_tag = Token_annot.empty;
       comments_tag = ref Ast_c.emptyComments;
     }
   in
@@ -509,23 +511,18 @@ let rec define_ident acc xs =
        * body (it would be a recursive macro, which is forbidden).
        *)
 
-      | TCommentSpace i1::t::xs ->
-
+      | TCommentSpace i1::t::xs
+	when TH.str_of_tok t ==~ Common.regexp_alpha
+	->
           let s = TH.str_of_tok t in
           let ii = TH.info_of_tok t in
-          if s ==~ Common.regexp_alpha
-          then begin
-            pr2 (spf "remapping: %s to an ident in macro name" s);
-	    let acc = (TCommentSpace i1) :: acc in
-	    let acc = (TIdentDefine (s,ii)) :: acc in
-            define_ident acc xs
-          end
-          else begin
-            pr2 "WEIRD: weird #define body";
-            define_ident acc xs
-          end
-
-      | _ ->
+	  pr2 (spf "remapping: %s to an ident in macro name" s);
+          let acc = (TCommentSpace i1) :: acc in
+	  let acc = (TIdentDefine (s,ii)) :: acc in
+          define_ident acc xs
+          
+      | TCommentSpace _::_::xs
+      | xs ->
           pr2 "WEIRD: weird #define body";
           define_ident acc xs
       )
@@ -575,6 +572,7 @@ let new_info posadd str ii =
       };
     (* must generate a new ref each time, otherwise share *)
     cocci_tag = ref Ast_c.emptyAnnot;
+    annots_tag = Token_annot.empty;
     comments_tag = ref Ast_c.emptyComments;
    }
 
@@ -672,7 +670,7 @@ let rec find_ifdef_bool xs =
       msg_ifdef_bool_passing is_ifdef_positif;
 
       (match xxs with
-      | [] -> raise Impossible
+      | [] -> raise (Impossible 90)
       | firstclause::xxs ->
           info_ifdef_stmt +>
 	  List.iter (TV.save_as_comment (fun x -> Token_c.CppIfDirective x));
@@ -706,7 +704,7 @@ let rec find_ifdef_mid xs =
   | NotIfdefLine _ -> ()
   | Ifdef (xxs, info_ifdef_stmt) ->
       (match xxs with
-      | [] -> raise Impossible
+      | [] -> raise (Impossible 91)
       | [first] -> ()
       | first::second::rest ->
           (* don't analyse big ifdef *)
@@ -852,7 +850,7 @@ let rec find_ifdef_cparen_else xs =
   | NotIfdefLine _ -> ()
   | Ifdef (xxs, info_ifdef_stmt) ->
       (match xxs with
-      | [] -> raise Impossible
+      | [] -> raise (Impossible 92)
       | [first] -> ()
       | first::second::rest ->
 
@@ -1652,6 +1650,21 @@ let fix_tokens_cpp ~macro_defs a =
 
 
 
+let can_be_on_top_level tl =
+  match tl with
+  | Tint _
+  | Tstruct _
+  | Ttypedef _
+  | TDefine _ 
+  | TIfdef _
+  | TIfdefelse _
+  | TIfdefelif _
+  | TIfdefBool _
+  | TIfdefMisc _
+  | TIfdefVersion _
+  | TEndif _ -> true
+  | _ -> false
+
 
 (*****************************************************************************)
 (* Lexing with lookahead *)
@@ -1693,6 +1706,20 @@ let pointer = function
 
 let ident = function
     TIdent _ -> true
+  | _ -> false
+
+let is_type = function
+  | TypedefIdent _ 
+  | Tvoid _
+  | Tchar _
+  | Tfloat _
+  | Tdouble _
+      (* christia: not sure what these are? *)
+  | Tsize_t _
+  | Tssize_t _
+  | Tptrdiff_t _
+      
+  | Tint _ -> true
   | _ -> false
 
 (* This function is inefficient, because it will look over a K&R header,
@@ -1757,8 +1784,18 @@ let lookahead2 ~pass next before =
       TypedefIdent (s, i1)
 
   (* xx yy *)
+  | (TIdent (s, i1)::type_::TIdent (s2, i2)::_  , _) when not_struct_enum before
+      && ok_typedef s && not_macro s2 && is_type type_
+        ->
+	  TCommentCpp (Token_c.CppDirective, i1)
+
+  | (TIdent (s, i1)::TIdent (s2, i2)::_  , seen::_) when not_struct_enum before
+      && ok_typedef s && not_macro s2 && is_type seen
+        ->
+	  TCommentCpp (Token_c.CppDirective, i1)
+
   | (TIdent (s, i1)::TIdent (s2, i2)::_  , _) when not_struct_enum before
-      && ok_typedef s
+      && ok_typedef s && not_macro s2
         ->
          (* && not_annot s2 BUT lead to false positive*)
 
@@ -1770,6 +1807,7 @@ let lookahead2 ~pass next before =
   | (TIdent (s, i1)::Tinline i2::_  , _) when not_struct_enum before
       && ok_typedef s
       ->
+
       msg_typedef s i1 3; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
@@ -1780,12 +1818,14 @@ let lookahead2 ~pass next before =
     when not_struct_enum before && (LP.current_context() =*= LP.InParameter)
       && k_and_r rest
       ->
+
 	TKRParam(s,i1)
 
   | (TIdent (s, i1)::((TComma _|TCPar _)::_) , (TComma _ |TOPar _)::_ )
     when not_struct_enum before && (LP.current_context() =*= LP.InParameter)
       && ok_typedef s
       ->
+
 	msg_typedef s i1 4; LP.add_typedef_root s;
 	TypedefIdent (s, i1)
 
@@ -1796,6 +1836,7 @@ let lookahead2 ~pass next before =
         (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
       && ok_typedef s
     ->
+
       msg_typedef s i1 5; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
@@ -1807,6 +1848,7 @@ let lookahead2 ~pass next before =
       (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
       && ok_typedef s
     ->
+
       msg_typedef s i1 6; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
@@ -1838,6 +1880,7 @@ let lookahead2 ~pass next before =
       when pointer ptr && not_struct_enum before
       && ok_typedef s
       ->
+
       (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
 
       msg_typedef s i1 9; LP.add_typedef_root s;
@@ -1847,6 +1890,7 @@ let lookahead2 ~pass next before =
   (* ( const xx)  *)
   | (TIdent (s, i1)::TCPar _::_,  (Tconst _ | Tvolatile _|Trestrict _)::TOPar _::_) when
       ok_typedef s ->
+
       msg_typedef s i1 10; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
@@ -1857,6 +1901,7 @@ let lookahead2 ~pass next before =
     when not_struct_enum before
       && ok_typedef s
     ->
+
       msg_typedef s i1 11; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
@@ -1865,6 +1910,7 @@ let lookahead2 ~pass next before =
       when (LP.current_context() =*= LP.InParameter)
       && ok_typedef s
      ->
+
       msg_typedef s i1 12; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
@@ -1878,6 +1924,7 @@ let lookahead2 ~pass next before =
      (Tregister _|Tstatic _  |Tvolatile _|Tconst _|Trestrict _)::_) when
       pointer ptr && ok_typedef s
         ->
+
       msg_typedef s i1 13; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
@@ -1901,6 +1948,7 @@ let lookahead2 ~pass next before =
     when not_struct_enum before && pointer ptr &&
       (LP.is_top_or_struct (LP.current_context ()))
       ->
+
       msg_typedef s i1 15; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
@@ -1919,6 +1967,7 @@ let lookahead2 ~pass next before =
       && (LP.is_top_or_struct (LP.current_context ()))
       && ok_typedef s && pointer ptr
       ->
+
       msg_typedef s i1 17; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
@@ -1929,6 +1978,7 @@ let lookahead2 ~pass next before =
       (LP.is_top_or_struct (LP.current_context ()))
       && ok_typedef s && pointer ptr
       ->
+
       msg_typedef s i1 18;  LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
@@ -1937,6 +1987,7 @@ let lookahead2 ~pass next before =
     when       (LP.is_top_or_struct (LP.current_context ()))
       && ok_typedef s
       ->
+
       msg_typedef s i1 19;  LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
@@ -1959,6 +2010,7 @@ let lookahead2 ~pass next before =
     when not_struct_enum before
       && ok_typedef s && pointer ptr
       ->
+
       msg_typedef s i1 21; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
@@ -1968,6 +2020,7 @@ let lookahead2 ~pass next before =
       when not_struct_enum before && (LP.current_context () =*= LP.InParameter)
       && ok_typedef s && pointer ptr
         ->
+
       msg_typedef s i1 22; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
@@ -1977,6 +2030,7 @@ let lookahead2 ~pass next before =
      (TOBrace _| TPtVirg _)::_)  when not_struct_enum before
       && ok_typedef s & pointer ptr
         ->
+
       msg_typedef s i1 23;  LP.add_typedef_root s;
       msg_maybe_dangereous_typedef s;
       TypedefIdent (s, i1)
@@ -1987,6 +2041,7 @@ let lookahead2 ~pass next before =
      (TOBrace _| TPtVirg _)::_) when
       ok_typedef s && pointer ptr
     ->
+
       msg_typedef s i1 24; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
@@ -1997,6 +2052,7 @@ let lookahead2 ~pass next before =
         (* struct user_info_t sometimes *)
       && ok_typedef s && pointer ptr
         ->
+
       msg_typedef s i1 25; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
@@ -2004,8 +2060,12 @@ let lookahead2 ~pass next before =
   | (TIdent (s, i1)::TMul _::TMul _::TIdent (s2, i2)::_ , _)
     when not_struct_enum before
         (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
-      && ok_typedef s
-      ->
+	&& ok_typedef s
+	(* christia : this code catches 'a * *b' which is wrong 
+	 *)
+	&& true
+    ->
+
       msg_typedef s i1 26; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
@@ -2015,6 +2075,7 @@ let lookahead2 ~pass next before =
       && ok_typedef s
         (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
       ->
+
       msg_typedef s i1 27; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
@@ -2024,6 +2085,7 @@ let lookahead2 ~pass next before =
         (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
       && ok_typedef s
       ->
+
       msg_typedef s i1 28; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
@@ -2045,6 +2107,7 @@ let lookahead2 ~pass next before =
       && ok_typedef s
       && not (ident x) (* possible K&R declaration *)
       ->
+
       msg_typedef s i1 29; LP.add_typedef_root s;
       (*TOPar info*)
       TypedefIdent (s, i1)
@@ -2067,6 +2130,7 @@ let lookahead2 ~pass next before =
     (TOPar info)::(TEq _ |TEqEq _)::_)
     when ok_typedef s && paren_before_comma rest
         ->
+
       msg_typedef s i1 31; LP.add_typedef_root s;
       (* TOPar info *)
       TypedefIdent (s, i1)
@@ -2076,6 +2140,7 @@ let lookahead2 ~pass next before =
   | (TIdent (s, i1)::ptr::TCPar _::TIdent (s2, i2)::_ , (TOPar info)::_)
     when ok_typedef s && pointer ptr
         ->
+
       msg_typedef s i1 32; LP.add_typedef_root s;
       (*TOPar info*)
       TypedefIdent (s,i1)
@@ -2086,6 +2151,7 @@ let lookahead2 ~pass next before =
       when (*s ==~ regexp_typedef && *) not (TH.is_stuff_taking_parenthized x)
       && ok_typedef s
         ->
+
       msg_typedef s i1 33; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
@@ -2103,6 +2169,7 @@ let lookahead2 ~pass next before =
       when not_struct_enum before
       && ok_typedef s
         ->
+
       msg_typedef s i1 34; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
@@ -2111,6 +2178,7 @@ let lookahead2 ~pass next before =
       when not_struct_enum before
       && ok_typedef s
         ->
+
       msg_typedef s i1 35; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
@@ -2123,6 +2191,7 @@ let lookahead2 ~pass next before =
         as x)
     ::_, _
       ->
+
       (*
       if not !Flag_parsing_c.ifdef_to_if
       then TCommentCpp (Ast_c.CppIfDirective, ii)
@@ -2191,9 +2260,16 @@ let lookahead2 ~pass next before =
       end
       else TIdent (s, i1)
 
- (*-------------------------------------------------------------*)
+  (* christia: here insert support for macros on top level *)
+  | TIdent (s, ii) :: tl :: _, _ when
+    can_be_on_top_level tl && LP.current_context () = InTopLevel ->
+      pr2_cpp ("'" ^ s ^ "' looks like a macro, I treat it as comment");
+      TCommentCpp (Token_c.CppDirective, ii)
+      
+    
+(*-------------------------------------------------------------*)
  | v::xs, _ -> v
- | _ -> raise Impossible
+ | _ -> raise (Impossible 93)
 
 let lookahead ~pass a b =
   Common.profile_code "C parsing.lookahead" (fun () -> lookahead2 ~pass a b)

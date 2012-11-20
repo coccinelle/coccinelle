@@ -6,11 +6,9 @@ ifneq ($(MAKECMDGOALS),distclean)
 include ../Makefile.config
 endif
 
-include Makefile.doc
-
 TARGET=cocciocaml
 
-SRC=coccilib.ml ocamlcocci_aux.ml $(OCAMLCOCCI_FILE) prepare_ocamlcocci.ml run_ocamlcocci.ml
+SRC=exposed_modules.ml coccilib.ml ocamlcocci_aux.ml $(OCAMLCOCCI_FILE) prepare_ocamlcocci.ml run_ocamlcocci.ml
 
 #LIBS=../commons/commons.cma ../parsing_c/parsing_c.cma
 #INCLUDES= -I ../commons -I ../parsing_c
@@ -42,6 +40,7 @@ OPTOBJS = $(SRC:.ml=.cmx)
 ##############################################################################
 # Top rules
 ##############################################################################
+ifneq ($(FEATURE_OCAMLBUILD),yes)
 all: $(TARGET).cma
 all.opt:
 	@$(MAKE) $(TARGET).cmxa BUILD_OPT=yes
@@ -57,7 +56,18 @@ $(TARGET).top: $(OBJS) $(LIBS)
 
 clean::
 	rm -f $(TARGET).top
+else
+all:
+	cd .. && $(OCAMLBUILD) ocaml/ocaml.cma
 
+all.opt:
+	cd .. && $(OCAMLBUILD) ocaml/ocaml.cmxa
+
+clean::
+	cd .. && $(OCAMLBUILD) -clean
+endif
+
+include Makefile.doc
 
 
 ##############################################################################
@@ -86,6 +96,7 @@ clean::
 	rm -f .depend
 
 distclean: clean
+	rm -f coccilib/coccilib.cmi
 
 .depend depend:
 	$(OCAMLDEP_CMD) *.mli *.ml    > .depend
@@ -93,7 +104,9 @@ distclean: clean
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
 ifneq ($(MAKECMDGOALS),cleandoc)
+ifneq ($(FEATURE_OCAMLBUILD),yes)
 -include .depend
+endif
 endif
 endif
 endif

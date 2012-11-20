@@ -286,10 +286,10 @@ let short_options = [
   "    For integration in a toolchain (must be set before the first unknown option)";
   "--include-headers", Arg.Set include_headers,
   "    process header files independently";
-  "-I",   Arg.String (fun x ->
-			FC.include_path:= x::!FC.include_path
-		     ),
-  "  <dir> containing the header files (optional)";
+  "-I",   Arg.String (fun x -> FC.include_path:= x::!FC.include_path),
+  "  <dir> containing the header files";
+  "--include", Arg.String (fun x -> FC.extra_includes:=x::!FC.extra_includes),
+  "  file to consider as being included";
 
   "--preprocess", Arg.Set preprocess,
   " run the C preprocessor before applying the semantic match";
@@ -692,7 +692,7 @@ let rec arg_parse_no_fail l f msg =
     | Arg.Bad emsg ->
 	arg_parse_no_fail l f msg
     | Arg.Help msg -> (* printf "%s" msg; exit 0; *)
-	raise Impossible  (* -help is specified in speclist *)
+	raise (Impossible 165)  (* -help is specified in speclist *)
 
 (* copy paste of Arg.parse. Don't want the default -help msg *)
 let arg_parse2 l f msg argv =
@@ -711,7 +711,7 @@ let arg_parse2 l f msg argv =
       else
 	arg_parse_no_fail l f msg;
   | Arg.Help msg -> (* printf "%s" msg; exit 0; *)
-      raise Impossible  (* -help is specified in speclist *)
+      raise (Impossible 166)  (* -help is specified in speclist *)
   )
 
 

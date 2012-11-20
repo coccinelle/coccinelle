@@ -442,10 +442,6 @@ and statement arity s =
 	  dots force_newline (statement arity) body;
 	  end_block(); print_string arity; mcode print_string rbrace
       | Ast0.Decl(_,decl) ->
-	  Printf.printf "statement mcodekind %s\n"
-	    (Dumper.dump (Ast0.get_mcodekind s));
-	  Printf.printf "decl mcodekind %s\n"
-	    (Dumper.dump (Ast0.get_mcodekind decl));
 	  print_string arity; declaration decl
       | Ast0.Seq(lbrace,body,rbrace) ->
 	  print_string arity; mcode print_string lbrace; start_block();
@@ -454,26 +450,26 @@ and statement arity s =
       | Ast0.ExprStatement(exp,sem) ->
 	  print_string arity; print_option expression exp;
 	  mcode print_string sem
-      | Ast0.IfThen(iff,lp,exp,rp,branch1,(info,aft)) ->
+      | Ast0.IfThen(iff,lp,exp,rp,branch1,(info,aft,adj)) ->
 	  print_string arity;
 	  mcode print_string iff; print_string " "; mcode print_string_box lp;
 	  expression exp; close_box(); mcode print_string rp; print_string " ";
 	  statement arity branch1;
-	  mcode (function _ -> ()) ((),(),info,aft,ref [],-1)
-      | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,(info,aft)) ->
+	  mcode (function _ -> ()) ((),(),info,aft,ref [],adj)
+      | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,(info,aft,adj)) ->
 	  print_string arity;
 	  mcode print_string iff; print_string " "; mcode print_string_box lp;
 	  expression exp; close_box(); mcode print_string rp; print_string " ";
 	  statement arity branch1;
 	  print_string arity; mcode print_string els; print_string " ";
 	  statement arity branch2;
-	  mcode (function _ -> ()) ((),(),info,aft,ref [],-1)
-      | Ast0.While(whl,lp,exp,rp,body,(info,aft)) ->
+	  mcode (function _ -> ()) ((),(),info,aft,ref [],adj)
+      | Ast0.While(whl,lp,exp,rp,body,(info,aft,adj)) ->
 	  print_string arity;
 	  mcode print_string whl; print_string " "; mcode print_string_box lp;
 	  expression exp; close_box(); mcode print_string rp; print_string " ";
 	  statement arity body;
-	  mcode (function _ -> ()) ((),(),info,aft,ref [],-1)
+	  mcode (function _ -> ()) ((),(),info,aft,ref [],adj)
       | Ast0.Do(d,body,whl,lp,exp,rp,sem) ->
 	  print_string arity; mcode print_string d; print_string " ";
 	  statement arity body;
@@ -481,7 +477,7 @@ and statement arity s =
 	  mcode print_string whl; print_string " "; mcode print_string_box lp;
 	  expression exp; close_box(); mcode print_string rp;
 	  mcode print_string sem
-      | Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,(info,aft)) ->
+      | Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,(info,aft,adj)) ->
 	  print_string arity;
 	  mcode print_string fr; mcode print_string_box lp;
 	  (match Ast0.unwrap first with
@@ -491,14 +487,14 @@ and statement arity s =
 	  print_option expression e2; mcode print_string sem2;
 	  print_option expression e3; close_box();
 	  mcode print_string rp; print_string " "; statement arity body;
-	  mcode (function _ -> ()) ((),(),info,aft,ref [],-1)
-      | Ast0.Iterator(nm,lp,args,rp,body,(info,aft)) ->
+	  mcode (function _ -> ()) ((),(),info,aft,ref [],adj)
+      | Ast0.Iterator(nm,lp,args,rp,body,(info,aft,adj)) ->
 	  print_string arity;
 	  ident nm; print_string " "; mcode print_string_box lp;
 	  let _ = dots (function _ -> ()) expression args in
 	  close_box(); mcode print_string rp; print_string " ";
 	  statement arity body;
-	  mcode (function _ -> ()) ((),(),info,aft,ref [],-1)
+	  mcode (function _ -> ()) ((),(),info,aft,ref [],adj)
       |	Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb) ->
 	  print_string arity;
 	  mcode print_string switch; print_string " ";

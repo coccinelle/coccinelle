@@ -50,6 +50,12 @@ $(checkpcre)
 
 
 
+pkg-config --short-errors --print-errors --cflags --libs libpcre
+
+$(checkpcre)
+
+
+
 pkg-config --cflags libpcre
 
 

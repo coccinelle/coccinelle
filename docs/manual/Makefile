@@ -38,7 +38,8 @@ options.pdf: main_options.tex spatch_options.tex   macros_options.tex
 	$(PDFLATEX_CMD) options.tex
 
 distclean:: clean
-	rm -f manual.pdf cocci_syntax.pdf options.pdf
+	@if test -z "${KEEP_GENERATED}"; then \
+		rm -f manual.pdf cocci_syntax.pdf options.pdf; fi
 
 
 # lindig trick
@@ -71,7 +72,8 @@ clean::
 	rm -f *.aux *.dvi *.haux *.htoc *.log *.out *~
 
 distclean:: clean
-	rm -f *.pdf *.html *.gif *.css
+	@if test -z "${KEEP_GENERATED}"; then \
+		rm -f *.pdf *.html *.gif *.css; fi
 
 check: $(HTML)
 	checklink $<

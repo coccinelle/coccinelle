@@ -20,6 +20,7 @@ Makefile.config
 Makefile.override
 result
 
+myocamlbuild.ml
 globals/config.ml
 python/pycocci.ml
 commons/commands.ml

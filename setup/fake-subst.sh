@@ -31,6 +31,23 @@ if test -z "${BASH_SOURCE}"; then
   BASH_SOURCE=$0
 fi
 
+
+#
+# Before we actually try to substitute a given
+# command, we first try to execute the original command 
+#
+
+# Check if the given program exists.
+if command -v "$1" > /dev/null; then
+  # exits the script if the command succeeds.
+  $@ && exit $?
+fi
+
+
+#
+# Trying a substitute
+#
+
 cmdline="$@"
 scriptdir=$(dirname "${BASH_SOURCE}")
 responsefile="${scriptdir}/replies.txt"
@@ -48,10 +65,18 @@ pythonprefix() {
   python -c "import sys; print(sys.prefix)"
 }
 
+pythonversion() {
+  python -c "import sys; print('%d.%d' % (sys.version_info[0], sys.version_info[1]))"
+}
+
 pythonexists() {
   local version=$1
   local prefix="$(pythonprefix)"
   test $? = 0
+
+  if test -z "$version"; then
+    version="$(pythonversion)"
+  fi
 
   if test ! -f "${prefix}/include/python${version}/Python.h"; then
     echo "error: ${prefix}/include/python${version}/Python.h not found (a development version of python is not installed?)" 1>&2
@@ -105,7 +130,7 @@ done < "${responsefile}"
 if test -n "${found}"; then
   MATCH=no
   if test -n "${replace}"; then
-    MATCH="$(echo "$cmdline" | sed -r "${replace}")"
+    MATCH="$(echo "$cmdline" | sed -E "${replace}")"
   fi
 
   if test -n "${response}"; then
@@ -116,6 +141,7 @@ if test -n "${found}"; then
   exit 0
 else
   # fallback case
-  echo "fake-subst.sh: no substitution for: ${cmdline}" 1>&2
-  exit 1
+  echo "fake-subst.sh: no substitution for: ${cmdline}. Running the 
+original." 1>&2
+  exec $@
 fi

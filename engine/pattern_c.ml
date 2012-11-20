@@ -162,7 +162,7 @@ module XMATCH = struct
 
   (* same as cocciExp, but for expressions in an expression, not expressions
      in a node *)
-  let cocciExpExp = fun expf expa expb -> fun tin ->
+  let cocciExpExp = fun _ expf expa expb -> fun tin ->
 
     let globals = ref [] in
     let bigf = {

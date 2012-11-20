@@ -46,7 +46,7 @@ let mk_info_item2 filename toks =
         | Ast_c.OriginTok _ ->
             Buffer.add_string buf (TH.str_of_tok tok)
         | Ast_c.AbstractLineTok _ ->
-            raise Impossible
+            raise (Impossible 79)
         | _ -> ()
       );
       Buffer.contents buf
@@ -358,7 +358,7 @@ let parse_gen parsefunc s =
         !cur_tok
     )
   in
-  let lexbuf_fake = Lexing.from_function (fun buf n -> raise Impossible) in
+  let lexbuf_fake = Lexing.from_function (fun buf n -> raise (Impossible 80)) in
   let result = parsefunc lexer_function lexbuf_fake in
   result
 
@@ -635,7 +635,7 @@ let get_one_elem ~pass tr (file, filelines) =
 
   tr.passed <- [];
 
-  let lexbuf_fake = Lexing.from_function (fun buf n -> raise Impossible) in
+  let lexbuf_fake = Lexing.from_function (fun buf n -> raise (Impossible 81)) in
 
   (try
       (* -------------------------------------------------- *)
@@ -1006,7 +1006,7 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros file =
                   pr2 ("parse error \n = " ^ error_msg_tok cur)
               | Semantic_c.Semantic (s, i) ->
                   pr2 ("semantic error " ^s^ "\n ="^ error_msg_tok cur)
-              | e -> raise Impossible
+              | e -> raise (Impossible 82)
               );
               (* bugfix: *)
               if (checkpoint_file =$= checkpoint2_file) &&

@@ -102,6 +102,7 @@
 #define  __initdata_or_module
 #define  __pminit
 #define  __pminitdata
+#define  __irq_entry
 
 #define  __cacheline_aligned
 #define  ____cacheline_aligned

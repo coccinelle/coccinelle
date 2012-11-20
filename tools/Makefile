@@ -5,35 +5,6 @@ endif
 OCAMLCFLAGS ?= -g
 OPTFLAGS ?= -g
 
-PROGS=spp gitgrep splitpatch extract_c_and_res #generate_dependencies
-
-all: $(SUBDIRS) $(PROGS)
-
-all.opt:
-	@$(MAKE) $(PROGS) BUILD_OPT=yes
-
-gitgrep: gitgrep.ml
-	$(OCAMLOPT) -o gitgrep str.cmxa gitgrep.ml
-
-gitsort: gitsort.ml
-	$(OCAMLOPT) -o gitsort str.cmxa gitsort.ml
-
-isoprof: process_isoprofile.ml
-	$(OCAMLC) -g -o isoprof str.cma process_isoprofile.ml
-
-alloc_free: alloc_free.ml
-	$(OCAMLOPT) -o alloc_free str.cmxa alloc_free.ml
-
-# more flexible version of alloc_free
-bridge: bridge.ml
-	$(OCAMLOPT) -o bridge str.cmxa dumper.mli dumper.ml bridge.ml
-
-install_bridge: bridge
-	cp -f bridge /usr/local/bin
-
-.PHONY: $(SUBDIRS)
-
-
 SYSLIBS = str.cma unix.cma bigarray.cma
 
 INCLUDE=-I ../commons -I ../extra -I  ../parsing_c
@@ -46,6 +17,37 @@ OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDE)
 OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDE)
 OCAMLYACC_CMD=$(OCAMLYACC) -v
 
+
+PROGS=spp gitgrep splitpatch extract_c_and_res \
+	gitsort alloc_free bridge \
+	process_isoprofile
+	#generate_dependencies
+
+ifneq ($(FEATURE_OCAMLBUILD),yes)
+all: $(PROGS)
+
+all.opt:
+	@$(MAKE) $(PROGS) BUILD_OPT=yes
+
+gitgrep: gitgrep.ml
+	$(OCAMLOPT) -o gitgrep str.cmxa gitgrep.ml
+
+gitsort: gitsort.ml
+	$(OCAMLOPT) -o gitsort str.cmxa gitsort.ml
+
+process_isoprofile: process_isoprofile.ml
+	$(OCAMLC) -g -o process_isoprofile str.cma process_isoprofile.ml
+
+alloc_free: alloc_free.ml
+	$(OCAMLOPT) -o alloc_free str.cmxa alloc_free.ml
+
+# more flexible version of alloc_free
+bridge: bridge.ml
+	$(OCAMLOPT) -o bridge str.cmxa dumper.mli dumper.ml bridge.ml
+
+install_bridge: bridge
+	cp -f bridge /usr/local/bin
+
 spp: spp.ml
 	$(OCAMLC_CMD) -o $@ $(SYSLIBS) $(INCLUDE) $(LIBS) $+
 
@@ -57,6 +59,28 @@ extract_c_and_res: extract_c_and_res.cmo
 
 generate_dependencies: generate_dependencies.cmo
 	$(OCAMLC_CMD) -o $@ $(SYSLIBS) $(INCLUDE) $(LIBS)  $+
+else
+.PHONY: $(PROGS) $(PROGS:%.opt) isoprof
+
+all: $(PROGS)
+all.opt: $(PROGS:%=%.opt)
+
+$(PROGS):
+	cd .. && $(OCAMLBUILD) tools/$@.byte
+	cp ../_build/tools/$@.byte $@
+
+$(PROGS:%=%.opt):
+	cd .. && $(OCAMLBUILD) tools/$(@:%.opt=%).native
+	cp ../_build/tools/$(@:%.opt=%).native $(@:%.opt=%)
+
+clean::
+	cd .. && $(OCAMLBUILD) -clean
+	rm -f $(PROGS)
+endif
+
+isoprof: process_isoprofile
+	cp process_isoprofile isoprof
+
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
@@ -67,8 +91,8 @@ generate_dependencies: generate_dependencies.cmo
 .ml.cmx:
 	$(OCAMLOPT_CMD) -c $<
 
-clean:
-	rm -f $(PROGS)
+clean::
+	rm -f $(PROGS) isoprof
 	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot
 	rm -f .depend
 
