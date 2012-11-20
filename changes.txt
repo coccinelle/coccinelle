@@ -141,6 +141,7 @@
   allowing the semantic patch to continue.  A warning message is printed.
 - Ignore unknown identifiers around known types.
 - Ignore --use-glimpse if multiple directories given
+- Added support for c++ namespace syntax in cocci files.
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
   to Eugeniy Meshcheryakov for reporting the problem.
