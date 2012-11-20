@@ -140,6 +140,7 @@
 - Just fail quietly on attempt to remove a multi-variable declaration,
   allowing the semantic patch to continue.  A warning message is printed.
 - Ignore unknown identifiers around known types.
+- Ignore --use-glimpse if multiple directories given
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
   to Eugeniy Meshcheryakov for reporting the problem.
