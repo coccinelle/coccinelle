@@ -825,9 +825,9 @@ rule token = parse
 	id_tokens lexbuf 
       }
 
-  | (((letter | '$') (letter | digit | '$') * ) as first)
+  | (((letter | '$') (letter | digit | '$') * ))
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?
-    "::" (((letter | '$') (letter | digit | '$') * ) as second)
+    "::" (((letter | '$') (letter | digit | '$') * ))
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?
     ("::" ((letter | '$') (letter | digit | '$') * )
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) *
