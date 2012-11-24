@@ -163,13 +163,15 @@ let equal_arithOp a b =
   | A.Minus    , B.Minus    -> true
   | A.Mul      , B.Mul      -> true
   | A.Div      , B.Div      -> true
+  | A.Min      , B.Min      -> true
+  | A.Max      , B.Max      -> true
   | A.Mod      , B.Mod      -> true
   | A.DecLeft  , B.DecLeft  -> true
   | A.DecRight , B.DecRight -> true
   | A.And      , B.And      -> true
   | A.Or       , B.Or       -> true
   | A.Xor      , B.Xor      -> true
-  | _, (B.Xor|B.Or|B.And|B.DecRight|B.DecLeft|B.Mod|B.Div|B.Mul|B.Minus|B.Plus)
+  | _, (B.Xor|B.Or|B.And|B.DecRight|B.DecLeft|B.Mod|B.Div|B.Mul|B.Minus|B.Plus|B.Min|B.Max)
       -> false
 
 let equal_logicalOp a b =

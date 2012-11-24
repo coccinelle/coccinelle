@@ -653,6 +653,10 @@ rule token = parse
 			add_current_line_type D.MINUS; token lexbuf) }
   | '/'            { start_line true;
 		     TDmOp (Ast.Div,get_current_line_type lexbuf) }
+  | "<?"            { start_line true;
+		     TDmOp (Ast.Min,get_current_line_type lexbuf) }
+  | ">?"            { start_line true;
+		     TDmOp (Ast.Max,get_current_line_type lexbuf) }
   | '%'            { start_line true;
 		     TDmOp (Ast.Mod,get_current_line_type lexbuf) }
   | '~'            { start_line true;  TTilde (get_current_line_type lexbuf) }
@@ -677,6 +681,8 @@ rule token = parse
   | "&="           { start_line true; mkassign Ast.And lexbuf }
   | "|="           { start_line true; mkassign Ast.Or lexbuf }
   | "^="           { start_line true; mkassign Ast.Xor lexbuf }
+  | "<?="           { start_line true; mkassign Ast.Min lexbuf }
+  | ">?="           { start_line true; mkassign Ast.Max lexbuf }
 
   | "<<="          { start_line true; mkassign Ast.DecLeft lexbuf }
   | ">>="          { start_line true; mkassign Ast.DecRight lexbuf }

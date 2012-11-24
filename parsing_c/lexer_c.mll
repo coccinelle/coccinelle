@@ -612,7 +612,8 @@ rule token = parse
 
   | '+' { TPlus(tokinfo lexbuf) }   | '*' { TMul(tokinfo lexbuf) }
   | '-' { TMinus(tokinfo lexbuf) }  | '/' { TDiv(tokinfo lexbuf) }
-  | '%' { TMod(tokinfo lexbuf) }
+  | '%' { TMod(tokinfo lexbuf) }    | ">?" { TMax(tokinfo lexbuf) }
+  | "<?" { TMin(tokinfo lexbuf) }
 
   | "++"{ TInc(tokinfo lexbuf) }    | "--"{ TDec(tokinfo lexbuf) }
 
@@ -628,6 +629,8 @@ rule token = parse
   | "^=" { TAssign (OpAssign Xor, (tokinfo lexbuf))}
   | "<<=" {TAssign (OpAssign DecLeft, (tokinfo lexbuf)) }
   | ">>=" {TAssign (OpAssign DecRight, (tokinfo lexbuf))}
+  | ">?=" { TAssign(OpAssign Max, (tokinfo lexbuf))}
+  | "<?=" { TAssign(OpAssign Min, (tokinfo lexbuf))}
 
   | "==" { TEqEq(tokinfo lexbuf) }  | "!=" { TNotEq(tokinfo lexbuf) }
   | ">=" { TSupEq(tokinfo lexbuf) } | "<=" { TInfEq(tokinfo lexbuf) }
