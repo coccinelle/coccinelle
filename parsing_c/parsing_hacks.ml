@@ -1652,7 +1652,6 @@ let fix_tokens_cpp ~macro_defs a =
 
 let can_be_on_top_level tl =
   match tl with
-  | Tint _
   | Tstruct _
   | Ttypedef _
   | TDefine _ 
@@ -1719,7 +1718,9 @@ let is_type = function
   | Tssize_t _
   | Tptrdiff_t _
       
-  | Tint _ -> true
+  | Tint _
+  | Tlong _
+  | Tshort _ -> true
   | _ -> false
 
 (* This function is inefficient, because it will look over a K&R header,
@@ -1783,17 +1784,32 @@ let lookahead2 ~pass next before =
       msg_typedef s i1 1; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
-  (* xx yy *)
+	(* christia *)
+	(* xx tt yy *)
   | (TIdent (s, i1)::type_::TIdent (s2, i2)::_  , _) when not_struct_enum before
-      && ok_typedef s && not_macro s2 && is_type type_
+      && not_macro s2 && is_type type_
         ->
 	  TCommentCpp (Token_c.CppDirective, i1)
 
+	(* tt xx yy *)
   | (TIdent (s, i1)::TIdent (s2, i2)::_  , seen::_) when not_struct_enum before
-      && ok_typedef s && not_macro s2 && is_type seen
+      && not_macro s2 && is_type seen
         ->
 	  TCommentCpp (Token_c.CppDirective, i1)
 
+	(* tt xx * *)
+  | (TIdent (s, i1)::ptr::_  , seen::_) when not_struct_enum before
+      && pointer ptr && is_type seen
+        ->
+	  TCommentCpp (Token_c.CppDirective, i1)
+
+	(* tt * xx yy *)
+  | (TIdent (s, i1)::TIdent(s2, i2)::_  , ptr::seen::_) when not_struct_enum before
+      && pointer ptr && is_type seen
+        ->
+	  TCommentCpp (Token_c.CppDirective, i1)
+
+  (* xx yy *)
   | (TIdent (s, i1)::TIdent (s2, i2)::_  , _) when not_struct_enum before
       && ok_typedef s && not_macro s2
         ->
