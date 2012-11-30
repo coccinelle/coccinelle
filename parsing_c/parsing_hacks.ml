@@ -266,8 +266,10 @@ let ok_typedef s = not (List.mem s false_typedef)
 
 let not_annot s =
   not (s ==~ regexp_annot)
+let is_macro s =
+  s ==~ regexp_macro
 let not_macro s =
-  not (s ==~ regexp_macro)
+  not (is_macro s)
 
 
 
@@ -1750,7 +1752,7 @@ let paren_before_comma l =
 
 let lookahead2 ~pass next before =
   match (next, before) with
-
+    
   (* c++ hacks *)
   (* yy xx(   and in function *)
   | TOPar i1::_,              TIdent(s,i2)::TypedefIdent _::_
@@ -1779,23 +1781,32 @@ let lookahead2 ~pass next before =
       if !Flag_parsing_c.debug_typedef
       then pr2 ("TYPEDEF: disable typedef cos special case: " ^ s);
 
-      LP.disable_typedef();
 
+      LP.disable_typedef();
       msg_typedef s i1 1; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
 	(* christia *)
-	(* xx tt yy *)
-  | (TIdent (s, i1)::type_::TIdent (s2, i2)::_  , _) when not_struct_enum before
-      && not_macro s2 && is_type type_
+	(* xx tt *)
+  | (TIdent (s, i1)::type_::_  , _) when not_struct_enum before
+      && is_type type_
         ->
+
 	  TCommentCpp (Token_c.CppDirective, i1)
 
 	(* tt xx yy *)
   | (TIdent (s, i1)::TIdent (s2, i2)::_  , seen::_) when not_struct_enum before
-      && not_macro s2 && is_type seen
+      && is_type seen
         ->
-	  TCommentCpp (Token_c.CppDirective, i1)
+	  if is_macro s2 then
+	    TIdent (s, i1)
+	  else
+	    TCommentCpp (Token_c.CppDirective, i1)
+
+  | (TIdent (s2, i2)::_  , TIdent (s, i1)::seen::_) when not_struct_enum before
+      && is_macro s2 && is_type seen
+        ->
+	  TCommentCpp (Token_c.CppDirective, i2)
 
 	(* tt xx * *)
   | (TIdent (s, i1)::ptr::_  , seen::_) when not_struct_enum before
@@ -1807,14 +1818,48 @@ let lookahead2 ~pass next before =
   | (TIdent (s, i1)::TIdent(s2, i2)::_  , ptr::seen::_) when not_struct_enum before
       && pointer ptr && is_type seen
         ->
-	  TCommentCpp (Token_c.CppDirective, i1)
+	  if is_macro s2 then
+	    TIdent (s, i1)
+	  else
+	    TCommentCpp (Token_c.CppDirective, i1)
 
+	(* tt * xx yy *)
+  | (TIdent(s2, i2)::_  , TIdent (s, i1)::ptr::seen::_) when not_struct_enum before
+      && is_macro s2 && pointer ptr && is_type seen
+        ->
+	  TCommentCpp (Token_c.CppDirective, i2)
+
+        (* exception to next rule *)
+  | (TIdent(s2, i2)::TOPar _ :: _ , TIdent(s, i1)::seen::_) when not_struct_enum before
+      && is_macro s2 && is_type seen
+        ->
+	  TIdent(s2, i2)
+	(* tt xx yy *)
+  | (TIdent(s2, i2)::_  , TIdent(s, i1)::seen::_) when not_struct_enum before
+      && is_macro s2 && is_type seen
+        ->
+	  TCommentCpp (Token_c.CppDirective, i2)
+
+  (*  xx * yy      AND  in paramdecl *)
+  | (TIdent (s, i1)::ptr::TIdent (s2, i2)::_ , _)
+    when not_struct_enum before && (LP.current_context() =*= LP.InParameter)
+      && pointer ptr && ok_typedef s
+      ->
+
+      msg_typedef s i1 14; LP.add_typedef_root s;
+      TypedefIdent (s, i1)
+
+  (* xx yy ( *)
+  | (TIdent (s, i1)::TIdent (s2, i2)::TOPar _::_  , _) when not_struct_enum before
+      && ok_typedef s && is_macro s2
+        ->
+	  TIdent (s, i1)
   (* xx yy *)
   | (TIdent (s, i1)::TIdent (s2, i2)::_  , _) when not_struct_enum before
-      && ok_typedef s && not_macro s2
+      && ok_typedef s
         ->
          (* && not_annot s2 BUT lead to false positive*)
-
+	  print_endline s;
       msg_typedef s i1 2; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
@@ -2276,12 +2321,12 @@ let lookahead2 ~pass next before =
       end
       else TIdent (s, i1)
 
-  (* christia: here insert support for macros on top level *)
+(*  (* christia: here insert support for macros on top level *)
   | TIdent (s, ii) :: tl :: _, _ when
     can_be_on_top_level tl && LP.current_context () = InTopLevel ->
       pr2_cpp ("'" ^ s ^ "' looks like a macro, I treat it as comment");
       TCommentCpp (Token_c.CppDirective, ii)
-      
+*)      
     
 (*-------------------------------------------------------------*)
  | v::xs, _ -> v

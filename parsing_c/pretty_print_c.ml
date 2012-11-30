@@ -1109,7 +1109,7 @@ and pp_init (init, iinit) =
           | DefineEmpty -> ()
           | DefineInit ini -> pp_init ini
 	  | DefineMulti ss ->
-	      ss +> Common.print_between pr_nl_slash pp_statement
+	      ss +> List.iter pp_statement
           | DefineTodo -> pr2 "DefineTodo"
 	in
 	(match defkind with
