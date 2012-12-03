@@ -1787,6 +1787,13 @@ let lookahead2 ~pass next before =
       TypedefIdent (s, i1)
 
 	(* christia *)
+	(* xx const tt *)
+  | (TIdent (s, i1)::(Tconst _|Tvolatile _|Trestrict _)::type_::_  , _) when not_struct_enum before
+      && is_type type_
+        ->
+
+	  TCommentCpp (Token_c.CppDirective, i1)
+
 	(* xx tt *)
   | (TIdent (s, i1)::type_::_  , _) when not_struct_enum before
       && is_type type_
@@ -1815,8 +1822,8 @@ let lookahead2 ~pass next before =
 	  TCommentCpp (Token_c.CppDirective, i1)
 
 	(* tt * xx yy *)
-  | (TIdent (s, i1)::TIdent(s2, i2)::_  , ptr::seen::_) when not_struct_enum before
-      && pointer ptr && is_type seen
+  | (TIdent (s, i1)::TIdent(s2, i2)::_  , ptr::_) when not_struct_enum before
+      && pointer ptr
         ->
 	  if is_macro s2 then
 	    TIdent (s, i1)
@@ -1824,8 +1831,8 @@ let lookahead2 ~pass next before =
 	    TCommentCpp (Token_c.CppDirective, i1)
 
 	(* tt * xx yy *)
-  | (TIdent(s2, i2)::_  , TIdent (s, i1)::ptr::seen::_) when not_struct_enum before
-      && is_macro s2 && pointer ptr && is_type seen
+  | (TIdent(s2, i2)::_  , TIdent (s, i1)::ptr::_) when not_struct_enum before
+      && is_macro s2 && pointer ptr
         ->
 	  TCommentCpp (Token_c.CppDirective, i2)
 

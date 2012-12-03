@@ -72,11 +72,11 @@ let mk_pretty_printers
  =
   let start_block () = pr_nl(); pr_indent() in
   let end_block   () = pr_unindent(); pr_nl() in
-
+(*
   let pr_nl_slash _ = (* multiline macro *)
     let slash = (Ast_c.fakeInfo() +> Ast_c.rewrap_str " \\") in
     pr_elem slash; pr_nl() in
-
+*)
   let indent_if_needed st f =
     match Ast_c.unwrap_st st with
       Compound _ -> pr_space(); f()

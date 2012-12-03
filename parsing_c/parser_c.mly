@@ -2105,7 +2105,3 @@ opt_ptvirg:
 *)*/
 
 
-expr_opt:
- | expr            { Some $1 }
- | /*(* empty *)*/ { None }
-
