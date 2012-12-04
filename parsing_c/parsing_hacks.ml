@@ -1794,11 +1794,15 @@ let lookahead2 ~pass next before =
 
 	  TCommentCpp (Token_c.CppDirective, i1)
 
+	(* xx struct *)
+  | (TIdent (s, i1)::Tstruct _::_  , _) when not_struct_enum before
+        ->
+	  TCommentCpp (Token_c.CppDirective, i1)
+
 	(* xx tt *)
   | (TIdent (s, i1)::type_::_  , _) when not_struct_enum before
       && is_type type_
         ->
-
 	  TCommentCpp (Token_c.CppDirective, i1)
 
 	(* tt xx yy *)
@@ -1866,7 +1870,6 @@ let lookahead2 ~pass next before =
       && ok_typedef s
         ->
          (* && not_annot s2 BUT lead to false positive*)
-	  print_endline s;
       msg_typedef s i1 2; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
