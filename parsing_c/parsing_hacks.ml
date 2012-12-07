@@ -1725,12 +1725,26 @@ let is_type = function
   | Tshort _ -> true
   | _ -> false
 
+let is_cparen = function (TCPar _) -> true | _ -> false
+let is_oparen = function (TOPar _) -> true | _ -> false
+
+let rec not_has_type_before f xs =
+  match xs with
+  | [] -> raise (Impossible 666)
+  | x :: xs ->
+      if f x then
+	true
+      else if is_type x then
+	false
+      else
+	not_has_type_before f xs
+
 (* This function is inefficient, because it will look over a K&R header,
 or function prototype multiple times.  At least when we see a , and are in a
 parameter list, we know we will eventually see a close paren, and it
 should come fairly soon. *)
 let k_and_r l =
-  let l1 = drop_until (function (TCPar _) -> true | _ -> false) l in
+  let l1 = drop_until is_cparen l in
   match l1 with
     (TCPar _) :: (TOCro _) :: _ -> false
   | (TCPar _) :: _ -> true
@@ -1885,9 +1899,11 @@ let lookahead2 ~pass next before =
 
   (* [,(] xx [,)] AND param decl *)
   | (TIdent (s, i1)::(((TComma _|TCPar _)::_) as rest) ,
-     (TComma _ |TOPar _)::_ )
+     ((TComma _ |TOPar _)::_ as bef))
     when not_struct_enum before && (LP.current_context() =*= LP.InParameter)
-      && k_and_r rest
+      && k_and_r rest 
+      && not_has_type_before is_cparen rest 
+      && not_has_type_before is_oparen bef
       ->
 
 	TKRParam(s,i1)
