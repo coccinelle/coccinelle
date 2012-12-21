@@ -12,9 +12,9 @@ object(o: 'o)
   method virtual minus: 'o -> 'o
 
   (* allow binary methods tricks, generate exception when not good type *)
-  method  tosetb: 'a Setb.t = raise Impossible
-  method  tosetpt: SetPt.t = raise Impossible
-  method  toseti: Seti.seti    = raise Impossible
+  method  tosetb: 'a Setb.t = raise (Impossible 10)
+  method  tosetpt: SetPt.t = raise (Impossible 11)
+  method  toseti: Seti.seti    = raise (Impossible 12)
   method virtual toset: 'b. 'b (* generic (not safe) tricks *)
 
   (* is_intersect, equal, subset *)

@@ -837,16 +837,17 @@ let rec statement s =
 	let sem = normal_mcode sem in
 	let promoted_sem = promote_mcode sem in
 	mkres s (Ast0.ExprStatement(None,sem)) promoted_sem promoted_sem
-    | Ast0.IfThen(iff,lp,exp,rp,branch,(_,aft)) ->
+    | Ast0.IfThen(iff,lp,exp,rp,branch,(_,aft,adj)) ->
 	let iff = normal_mcode iff in
 	let lp = normal_mcode lp in
 	let exp = expression exp in
 	let rp = normal_mcode rp in
 	let branch = statement branch in
 	let right = promote_to_statement branch aft in
-	mkres s (Ast0.IfThen(iff,lp,exp,rp,branch,(Ast0.get_info right,aft)))
+	mkres s
+	  (Ast0.IfThen(iff,lp,exp,rp,branch,(Ast0.get_info right,aft,adj)))
 	  (promote_mcode iff) right
-    | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,(_,aft)) ->
+    | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,(_,aft,adj)) ->
 	let iff = normal_mcode iff in
 	let lp = normal_mcode lp in
 	let exp = expression exp in
@@ -857,16 +858,16 @@ let rec statement s =
 	let right = promote_to_statement branch2 aft in
 	mkres s
 	  (Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,
-	    (Ast0.get_info right,aft)))
+	    (Ast0.get_info right,aft,adj)))
 	  (promote_mcode iff) right
-    | Ast0.While(wh,lp,exp,rp,body,(_,aft)) ->
+    | Ast0.While(wh,lp,exp,rp,body,(_,aft,adj)) ->
 	let wh = normal_mcode wh in
 	let lp = normal_mcode lp in
 	let exp = expression exp in
 	let rp = normal_mcode rp in
 	let body = statement body in
 	let right = promote_to_statement body aft in
-	mkres s (Ast0.While(wh,lp,exp,rp,body,(Ast0.get_info right,aft)))
+	mkres s (Ast0.While(wh,lp,exp,rp,body,(Ast0.get_info right,aft,adj)))
 	  (promote_mcode wh) right
     | Ast0.Do(d,body,wh,lp,exp,rp,sem) ->
 	let d = normal_mcode d in
@@ -877,7 +878,7 @@ let rec statement s =
 	let rp = normal_mcode rp in
 	mkres s (Ast0.Do(d,body,wh,lp,exp,rp,sem))
 	  (promote_mcode d) (promote_mcode sem)
-    | Ast0.For(fr,lp,first,exp2,sem2,exp3,rp,body,(_,aft)) ->
+    | Ast0.For(fr,lp,first,exp2,sem2,exp3,rp,body,(_,aft,adj)) ->
 	let fr = normal_mcode fr in
 	let lp = normal_mcode lp in
 	let first =
@@ -903,16 +904,17 @@ let rec statement s =
 	let body = statement body in
 	let right = promote_to_statement body aft in
 	mkres s (Ast0.For(fr,lp,first,exp2,sem2,exp3,rp,body,
-			  (Ast0.get_info right,aft)))
+			  (Ast0.get_info right,aft,adj)))
 	  (promote_mcode fr) right
-    | Ast0.Iterator(nm,lp,args,rp,body,(_,aft)) ->
+    | Ast0.Iterator(nm,lp,args,rp,body,(_,aft,adj)) ->
 	let nm = ident nm in
 	let lp = normal_mcode lp in
 	let args = dots is_exp_dots (Some(promote_mcode lp)) expression args in
 	let rp = normal_mcode rp in
 	let body = statement body in
 	let right = promote_to_statement body aft in
-	mkres s (Ast0.Iterator(nm,lp,args,rp,body,(Ast0.get_info right,aft)))
+	mkres s
+	  (Ast0.Iterator(nm,lp,args,rp,body,(Ast0.get_info right,aft,adj)))
 	  nm right
     | Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb) ->
 	let switch = normal_mcode switch in

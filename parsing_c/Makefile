@@ -8,7 +8,7 @@ endif
 TARGET=parsing_c
 
 # - type_cocci.ml ast_cocci.ml  # + unparse_hrule
-SRC= flag_parsing_c.ml parsing_stat.ml \
+SRC= token_annot.ml flag_parsing_c.ml parsing_stat.ml \
  token_c.ml ast_c.ml control_flow_c.ml \
  visitor_c.ml lib_parsing_c.ml \
  control_flow_c_build.ml \
@@ -65,6 +65,7 @@ OPTOBJS = $(SRC:.ml=.cmx)
 ##############################################################################
 # Top rules
 ##############################################################################
+ifneq ($(FEATURE_OCAMLBUILD),yes)
 all: $(TARGET).cma
 all.opt:
 	@$(MAKE) $(TARGET).cmxa BUILD_OPT=yes
@@ -90,6 +91,16 @@ parser_c.ml parser_c.mli: parser_c.mly
 	$(OCAMLYACC) -v $<
 clean::
 	rm -f parser_c.ml parser_c.mli parser_c.output
+else
+all:
+	cd .. && $(OCAMLBUILD) parsing_c/parsing_c.cma
+
+all.opt:
+	cd .. && $(OCAMLBUILD) parsing_c/parsing_c.cmxa
+
+clean::
+	cd .. && $(OCAMLBUILD) -clean
+endif
 
 
 ##############################################################################
@@ -148,7 +159,9 @@ distclean: clean
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
+ifneq ($(FEATURE_OCAMLBUILD),yes)
 -include .depend
+endif
 endif
 endif
 

@@ -67,6 +67,8 @@ let include_path = ref ([] : string list)
 
 let relax_include_path = ref false
 
+let extra_includes = ref ([] : string list)
+
 let timeout = ref (None : int option)
 
 let worth_trying_opt = ref true

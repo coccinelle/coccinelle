@@ -37,7 +37,7 @@ statement S;
 - memset((T2)x,0,E1);
 
 @@
-type T, T2;
+type T2;
 type T1;
 T1 *x;
 identifier f,fld;
@@ -55,7 +55,7 @@ statement S;
 - memset((T2)x,0,sizeof(*x));
 
 @@
-type T, T2;
+type T2;
 type T1;
 T1 *x;
 identifier f,fld;
@@ -75,7 +75,7 @@ statement S;
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 @@
-type T, T2;
+type T2;
 expression x;
 identifier f,fld;
 expression E;
@@ -96,7 +96,7 @@ statement S, S1;
   } else S1
 
 @@
-type T, T2;
+type T2;
 type T1;
 T1 *x;
 identifier f,fld;
@@ -118,7 +118,7 @@ statement S, S1;
   } else S1
 
 @@
-type T, T2;
+type T2;
 type T1;
 T1 *x;
 identifier f,fld;
@@ -142,7 +142,7 @@ statement S, S1;
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 @@
-type T, T2;
+type T2;
 type T1;
 identifier x;
 identifier f,fld;
@@ -160,7 +160,7 @@ T1 x =
 - memset((T2)x,0,E1);
 
 @@
-type T, T2;
+type T2;
 type T1;
 identifier x;
 identifier f,fld;
@@ -178,7 +178,7 @@ T1 x =
 - memset((T2)x,0,sizeof(*x));
 
 @@
-type T, T2;
+type T2;
 type T1;
 identifier x;
 identifier f,fld;
@@ -198,7 +198,7 @@ T1 x =
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 @@
-type T, T2;
+type T2;
 type T1;
 identifier x;
 identifier f,fld;
@@ -220,7 +220,7 @@ T1 x =
   } else S1
 
 @@
-type T, T2;
+type T2;
 type T1;
 identifier x;
 identifier f,fld;
@@ -242,7 +242,7 @@ T1 x =
   } else S1
 
 @@
-type T, T2;
+type T2;
 type T1;
 identifier x;
 identifier f,fld;

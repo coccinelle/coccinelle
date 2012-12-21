@@ -48,13 +48,13 @@ let right_mcode (a,b,info,mcodekind,d,e) =
     ([],_) | (_,Ast0.PLUS _) -> None
   | (l,_) -> Some(l,(a,b,{info with Ast0.strings_after = []},mcodekind,d,e))
 
-let update_before pragmas (info,x) =
+let update_before pragmas (info,x,adj) =
   ({info with Ast0.strings_before = pragmas @ info.Ast0.strings_before},
-   Ast0.PLUS Ast.ONE) (* not sure what the arg should be... one seems safe *)
+   Ast0.PLUS Ast.ONE,adj)(*not sure what the arg should be... one seems safe*)
 
 let update_after pragmas (info,x) =
   ({info with Ast0.strings_after = info.Ast0.strings_after @ pragmas},
-   Ast0.PLUS Ast.ONE) (* not sure what the arg should be... one seems safe *)
+   Ast0.PLUS Ast.ONE) (*not sure what the arg should be... one seems safe*)
 
 let rec right_decl d =
   match Ast0.unwrap d with

@@ -1482,18 +1482,18 @@ let rebuild_mcode start_line =
 	   (match Ast0.unwrap s with
 	     Ast0.Decl((info,mc),decl) ->
 	       Ast0.Decl((info,copy_mcodekind mc),decl)
-	   | Ast0.IfThen(iff,lp,tst,rp,branch,(info,mc)) ->
-	       Ast0.IfThen(iff,lp,tst,rp,branch,(info,copy_mcodekind mc))
-	   | Ast0.IfThenElse(iff,lp,tst,rp,branch1,els,branch2,(info,mc)) ->
+	   | Ast0.IfThen(iff,lp,tst,rp,branch,(info,mc,adj)) ->
+	       Ast0.IfThen(iff,lp,tst,rp,branch,(info,copy_mcodekind mc,adj))
+	   | Ast0.IfThenElse(iff,lp,tst,rp,branch1,els,branch2,(info,mc,adj))->
 	       Ast0.IfThenElse(iff,lp,tst,rp,branch1,els,branch2,
-		 (info,copy_mcodekind mc))
-	   | Ast0.While(whl,lp,exp,rp,body,(info,mc)) ->
-	       Ast0.While(whl,lp,exp,rp,body,(info,copy_mcodekind mc))
-	   | Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,(info,mc)) ->
+		 (info,copy_mcodekind mc,adj))
+	   | Ast0.While(whl,lp,exp,rp,body,(info,mc,adj)) ->
+	       Ast0.While(whl,lp,exp,rp,body,(info,copy_mcodekind mc,adj))
+	   | Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,(info,mc,adj)) ->
 	       Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,
-			(info,copy_mcodekind mc))
-	   | Ast0.Iterator(nm,lp,args,rp,body,(info,mc)) ->
-	       Ast0.Iterator(nm,lp,args,rp,body,(info,copy_mcodekind mc))
+			(info,copy_mcodekind mc,adj))
+	   | Ast0.Iterator(nm,lp,args,rp,body,(info,mc,adj)) ->
+	       Ast0.Iterator(nm,lp,args,rp,body,(info,copy_mcodekind mc,adj))
 	   | Ast0.FunDecl
 	       ((info,mc),fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
 		 Ast0.FunDecl
@@ -2089,17 +2089,17 @@ let extra_copy_stmt_plus model e =
 	| Ast0.Decl((info,bef1),_) ->
 	    merge_plus bef bef1
 	| _ ->  merge_plus bef (Ast0.get_mcodekind e))
-    | Ast0.IfThen(_,_,_,_,_,(info,aft))
-    | Ast0.IfThenElse(_,_,_,_,_,_,_,(info,aft))
-    | Ast0.While(_,_,_,_,_,(info,aft))
-    | Ast0.For(_,_,_,_,_,_,_,_,(info,aft))
-    | Ast0.Iterator(_,_,_,_,_,(info,aft)) ->
+    | Ast0.IfThen(_,_,_,_,_,(_,aft,_))
+    | Ast0.IfThenElse(_,_,_,_,_,_,_,(_,aft,_))
+    | Ast0.While(_,_,_,_,_,(_,aft,_))
+    | Ast0.For(_,_,_,_,_,_,_,_,(_,aft,_))
+    | Ast0.Iterator(_,_,_,_,_,(_,aft,_)) ->
 	(match Ast0.unwrap e with
-	  Ast0.IfThen(_,_,_,_,_,(info,aft1))
-	| Ast0.IfThenElse(_,_,_,_,_,_,_,(info,aft1))
-	| Ast0.While(_,_,_,_,_,(info,aft1))
-	| Ast0.For(_,_,_,_,_,_,_,_,(info,aft1))
-	| Ast0.Iterator(_,_,_,_,_,(info,aft1)) ->
+	  Ast0.IfThen(_,_,_,_,_,(_,aft1,_))
+	| Ast0.IfThenElse(_,_,_,_,_,_,_,(_,aft1,_))
+	| Ast0.While(_,_,_,_,_,(_,aft1,_))
+	| Ast0.For(_,_,_,_,_,_,_,_,(_,aft1,_))
+	| Ast0.Iterator(_,_,_,_,_,(_,aft1,_)) ->
 	    merge_plus aft aft1
 	| _ -> merge_plus aft (Ast0.get_mcodekind e))
     | _ -> ()));

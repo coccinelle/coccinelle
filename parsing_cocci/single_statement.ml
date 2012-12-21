@@ -256,14 +256,14 @@ and left_statement s =
   | Ast0.Seq(lbrace,body,rbrace) -> modif_before_mcode lbrace
   | Ast0.ExprStatement(Some exp,sem) -> left_expression exp
   | Ast0.ExprStatement(None,sem) -> modif_before_mcode sem
-  | Ast0.IfThen(iff,lp,exp,rp,branch1,(info,aft)) -> modif_before_mcode iff
-  | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,(info,aft)) ->
+  | Ast0.IfThen(iff,lp,exp,rp,branch1,aft) -> modif_before_mcode iff
+  | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,aft) ->
       modif_before_mcode iff
-  | Ast0.While(whl,lp,exp,rp,body,(info,aft)) -> modif_before_mcode whl
+  | Ast0.While(whl,lp,exp,rp,body,aft) -> modif_before_mcode whl
   | Ast0.Do(d,body,whl,lp,exp,rp,sem) -> modif_before_mcode d
-  | Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,(info,aft)) ->
+  | Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,aft) ->
       modif_before_mcode fr
-  | Ast0.Iterator(nm,lp,args,rp,body,(info,aft)) -> left_ident nm
+  | Ast0.Iterator(nm,lp,args,rp,body,aft) -> left_ident nm
   | Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb) ->
       modif_before_mcode switch
   | Ast0.Break(br,sem) -> modif_before_mcode br
@@ -298,14 +298,14 @@ and right_statement s =
   | Ast0.Decl(_,decl) -> right_declaration decl
   | Ast0.Seq(lbrace,body,rbrace) -> modif_after_mcode rbrace
   | Ast0.ExprStatement(exp,sem) -> modif_after_mcode sem
-  | Ast0.IfThen(iff,lp,exp,rp,branch1,(info,aft)) -> modif_after_mcodekind aft
-  | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,(info,aft)) ->
+  | Ast0.IfThen(iff,lp,exp,rp,branch1,(_,aft,_)) -> modif_after_mcodekind aft
+  | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,(_,aft,_)) ->
       modif_after_mcodekind aft
-  | Ast0.While(whl,lp,exp,rp,body,(info,aft)) -> modif_after_mcodekind aft
+  | Ast0.While(whl,lp,exp,rp,body,(_,aft,_)) -> modif_after_mcodekind aft
   | Ast0.Do(d,body,whl,lp,exp,rp,sem) -> modif_after_mcode sem
-  | Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,(info,aft)) ->
+  | Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,(_,aft,_)) ->
       modif_after_mcodekind aft
-  | Ast0.Iterator(nm,lp,args,rp,body,(info,aft)) ->
+  | Ast0.Iterator(nm,lp,args,rp,body,(_,aft,_)) ->
       modif_after_mcodekind aft
   | Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb) -> modif_after_mcode rb
   | Ast0.Break(br,sem) -> modif_after_mcode sem

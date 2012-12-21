@@ -55,9 +55,13 @@ type info = { pos_info : position_info;
 	      strings_after : (Ast_cocci.added_string * position_info) list;
 	      isSymbolIdent : bool; (* is the token a symbol identifier or not *) }
 
+type adjacency = int
+
+type fake_mcode = info * mcodekind * adjacency
+
 type 'a mcode =
     'a * arity * info * mcodekind * anything list ref (* pos, - only *) *
-      int (* adjacency_index *)
+      adjacency (* adjacency_index *)
 
 and 'a wrap =
     { node : 'a;
@@ -310,14 +314,14 @@ and base_statement =
   | ExprStatement of expression option * string mcode (*;*)
   | IfThen        of string mcode (* if *) * string mcode (* ( *) *
 	             expression * string mcode (* ) *) *
-	             statement * (info * mcodekind)
+	             statement * fake_mcode (* after info *)
   | IfThenElse    of string mcode (* if *) * string mcode (* ( *) *
 	             expression * string mcode (* ) *) *
 	             statement * string mcode (* else *) * statement *
-	             (info * mcodekind)
+	             fake_mcode (* after info *)
   | While         of string mcode (* while *) * string mcode (* ( *) *
 	             expression * string mcode (* ) *) *
-	             statement * (info * mcodekind) (* after info *)
+	             statement * fake_mcode (* after info *)
   | Do            of string mcode (* do *) * statement *
                      string mcode (* while *) * string mcode (* ( *) *
 	             expression * string mcode (* ) *) *
@@ -325,10 +329,10 @@ and base_statement =
   | For           of string mcode (* for *) * string mcode (* ( *) * forinfo *
 	             expression option * string mcode (*;*) *
                      expression option * string mcode (* ) *) * statement *
-	             (info * mcodekind) (* after info *)
+	             fake_mcode (* after info *)
   | Iterator      of ident (* name *) * string mcode (* ( *) *
 	             expression dots * string mcode (* ) *) *
-	             statement * (info * mcodekind) (* after info *)
+	             statement * fake_mcode (* after info *)
   | Switch        of string mcode (* switch *) * string mcode (* ( *) *
 	             expression * string mcode (* ) *) * string mcode (* { *) *
 	             statement (*decl*) dots *

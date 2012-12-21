@@ -1,18 +1,3 @@
-(* Yoann Padioleau
- *
- * Copyright (C) 2010, University of Copenhagen DIKU and INRIA.
- * Copyright (C) 2009 University of Urbana Champaign
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License (GPL)
- * version 2 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * file license.txt for more details.
- *)
-
 open Common
 
 open Oset
@@ -137,7 +122,7 @@ let check_no_loop_graph g =
       let file =
         match !node with
         | (file, _)::xs -> file
-        | [] -> raise Impossible
+        | [] -> raise (Impossible 74)
       in
       (* in apache/srclib/apr/include/arch/win32/apr_dbg_win32_handles.h
        * we get some __ROOT__ -> CreateMutexA -> CreateMutexA because
@@ -200,7 +185,7 @@ let slice_of_callgraph_macros (g: callgraph_macros) goodnodes =
 (* get the longuest one ? or the one that contains the dangerous macro ? *)
 let get_single_file_and_def_of_node k v =
   match !v with
-  | [] -> raise Impossible
+  | [] -> raise (Impossible 75)
   | [file, def] -> file, def
   | (file, def)::y::ys ->
       pr2 (spf "multiple def for %s but I kept only one" k);
@@ -274,12 +259,15 @@ let rec (recurse_expand_macro_topological_order:
   else
     let remaining = g#nodes#tolist in
     (match remaining with
-    | [] -> raise Impossible
+    | [] -> () (* christia: commented this out: raise (Impossible 76)
+		* This seems to be the case when there are no 
+		* problematic macros. Which is possible. 
+		*)
     | [(k,n)] ->
         assert (k = rootname);
         (* end recursion *)
         ()
-    | x::y::xs ->
+    | (k, v)::y::xs ->
         let leafs = (g#leaf_nodes ())#tolist in
         pr2 (spf "step: %d, %s" depth (leafs +> Common.join " "));
 
@@ -289,7 +277,7 @@ let rec (recurse_expand_macro_topological_order:
           (spf "/tmp/graph-%d.dot" depth)
           g;
 
-        assert(not (null leafs));
+        assert(not (null leafs)); 
 
 
         (* little specialisation to avoid useless work *)
@@ -334,8 +322,11 @@ let is_dangerous_macro def =
       else true
 
   (* ex: AP_DECLARE(x) x  *)
-  | Cpp_token_c.Params([s1]), Cpp_token_c.DefineBody [TIdent (s2,i1)] ->
-      s1 =$= s2
+  | Cpp_token_c.Params([s1]),
+	Cpp_token_c.DefineBody [TIdent (s2,i1)] ->
+	  (match s1 with
+	    Cpp_token_c.FixedArg s1 -> s1 =$= s2
+	  | Cpp_token_c.VariadicArg _ -> false)
 
   (* keyword aliases. eg: APR_inline __inline__ *)
   | Cpp_token_c.NoParam, Cpp_token_c.DefineBody [x] ->
@@ -485,3 +476,4 @@ let extract_dangerous_macros xs =
 
   let grouped = Common.group_assoc_bykey_eff final_macros in
   grouped
+

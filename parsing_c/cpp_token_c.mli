@@ -4,7 +4,8 @@
 type define_def = string * define_param * define_body
  and define_param =
    | NoParam
-   | Params of string list
+   | Params of define_arg list
+ and define_arg = FixedArg of string | VariadicArg of string
  and define_body =
    | DefineBody of Parser_c.token list
    | DefineHint of parsinghack_hint

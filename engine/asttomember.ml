@@ -116,6 +116,11 @@ let strip x =
     Ast.make_inherited_term (Ast.unwrap (k e)) inh in
   let do_absolutely_nothing r k e = k e in
   let mcode m = Ast.make_mcode(Ast.unwrap_mcode m) in
+  let decl r k d =
+    let res = do_nothing r k d in
+    if Ast.get_safe_decl d
+    then {res with Ast.safe_for_multi_decls = true}
+    else res in
   let rule_elem r k re =
     let res = do_nothing r k re in
     let no_mcode = Ast.CONTEXT(Ast.NoPos,Ast.NOTHING) in
@@ -130,7 +135,7 @@ let strip x =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing rule_elem do_nothing do_nothing
+      decl rule_elem do_nothing do_nothing
       do_nothing do_absolutely_nothing in
   recursor.V.rebuilder_rule_elem x
 

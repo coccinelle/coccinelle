@@ -658,7 +658,7 @@ let (includes_to_parse:
 	 Flag_cocci.include_options -> 'a) = fun xs choose_includes ->
   match choose_includes with
     Flag_cocci.I_UNSPECIFIED -> failwith "not possible"
-  | Flag_cocci.I_NO_INCLUDES -> []
+  | Flag_cocci.I_NO_INCLUDES -> !Flag_cocci.extra_includes
   | x ->
       let all_includes =
 	List.mem x
@@ -701,7 +701,10 @@ let (includes_to_parse:
 		  )
 	  | _ -> None))
 	+> List.concat
-	+> (fun x -> (List.rev (Common.uniq (List.rev x)))) (*uniq keeps last*)
+	+> (fun x ->
+	  (List.rev
+	     (Common.uniq
+		(!Flag_cocci.extra_includes@(List.rev x)))))(*uniq keeps last*)
 
 let rec interpret_dependencies local global = function
     Ast_cocci.Dep s      -> List.mem s local
@@ -813,7 +816,7 @@ let rec update_include_rel_pos cs =
       match c with
       | Ast_c.Local x -> Left (x, aref)
       | Ast_c.NonLocal x -> Right (x, aref)
-      | Ast_c.Weird x -> raise Impossible
+      | Ast_c.Weird x -> raise (Impossible 161)
     ) in
 
   update_rel_pos_bis locals;
@@ -2033,7 +2036,7 @@ let check_duplicate_modif2 xs =
   let groups = Common.group_assoc_bykey_eff xs in
   groups +> Common.map_filter (fun (file, xs) ->
     match xs with
-    | [] -> raise Impossible
+    | [] -> raise (Impossible 162)
     | [res] -> Some (file, res)
     | res::xs ->
         match res with

@@ -1,4 +1,31 @@
-# 0 "lexer_script.mll"
+(*
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
+# 0 "./lexer_script.ml"
+# 1 "lexer_script.mll"
  
 open Parser_cocci_menhir
 module D = Data
@@ -112,12 +139,12 @@ let rec token lexbuf =
 and __ocaml_lex_token_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 19 "lexer_script.mll"
+# 20 "lexer_script.mll"
            ( TScriptData (tok lexbuf) )
 # 118 "lexer_script.ml"
 
   | 1 ->
-# 21 "lexer_script.mll"
+# 22 "lexer_script.mll"
       ( inc_line();
 	let text = tok lexbuf in
 	let text =
@@ -130,42 +157,42 @@ and __ocaml_lex_token_rec lexbuf __ocaml_lex_state =
 # 131 "lexer_script.ml"
 
   | 2 ->
-# 30 "lexer_script.mll"
+# 31 "lexer_script.mll"
          ( TArobArob )
 # 136 "lexer_script.ml"
 
   | 3 ->
-# 31 "lexer_script.mll"
+# 32 "lexer_script.mll"
          ( TArob )
 # 141 "lexer_script.ml"
 
   | 4 ->
-# 32 "lexer_script.mll"
+# 33 "lexer_script.mll"
          ( TScriptData (tok lexbuf) )
 # 146 "lexer_script.ml"
 
   | 5 ->
-# 33 "lexer_script.mll"
+# 34 "lexer_script.mll"
                    ( token lexbuf )
 # 151 "lexer_script.ml"
 
   | 6 ->
-# 34 "lexer_script.mll"
+# 35 "lexer_script.mll"
          ( TScriptData (Printf.sprintf "\"%s\"" (string lexbuf)) )
 # 156 "lexer_script.ml"
 
   | 7 ->
-# 35 "lexer_script.mll"
+# 36 "lexer_script.mll"
          ( TScriptData (Printf.sprintf "'%s'" (cstring lexbuf)) )
 # 161 "lexer_script.ml"
 
   | 8 ->
-# 36 "lexer_script.mll"
+# 37 "lexer_script.mll"
          ( EOF )
 # 166 "lexer_script.ml"
 
   | 9 ->
-# 37 "lexer_script.mll"
+# 38 "lexer_script.mll"
       ( raise (Lexical ("unrecognised symbol, in token rule:"^tok lexbuf)) )
 # 171 "lexer_script.ml"
 
@@ -176,17 +203,17 @@ and string lexbuf =
 and __ocaml_lex_string_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 41 "lexer_script.mll"
+# 42 "lexer_script.mll"
                         ( "" )
 # 182 "lexer_script.ml"
 
   | 1 ->
 let
-# 42 "lexer_script.mll"
+# 43 "lexer_script.mll"
           x
 # 188 "lexer_script.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 42 "lexer_script.mll"
+# 43 "lexer_script.mll"
                         ( (String.make 1 x) ^ string lexbuf )
 # 192 "lexer_script.ml"
 
@@ -197,17 +224,17 @@ and cstring lexbuf =
 and __ocaml_lex_cstring_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 45 "lexer_script.mll"
+# 46 "lexer_script.mll"
                         ( "" )
 # 203 "lexer_script.ml"
 
   | 1 ->
 let
-# 46 "lexer_script.mll"
+# 47 "lexer_script.mll"
           x
 # 209 "lexer_script.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 46 "lexer_script.mll"
+# 47 "lexer_script.mll"
                         ( (String.make 1 x) ^ cstring lexbuf )
 # 213 "lexer_script.ml"
 

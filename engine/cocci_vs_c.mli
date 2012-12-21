@@ -168,6 +168,7 @@ module type PARAM =
       (Ast_cocci.expression, Control_flow_c.node) matcher
 
     val cocciExpExp :
+      Ast_cocci.mcodekind ->
       (Ast_cocci.expression, Ast_c.expression) matcher ->
       (Ast_cocci.expression, Ast_c.expression) matcher
 

@@ -299,6 +299,8 @@ let convert_mcodekind adj = function
       Ast.CONTEXT(Ast.NoPos,befaft)
   | Ast0.MIXED(_) -> failwith "not possible for mcode"
 
+let convert_fake_mcode (_,mc,adj) = convert_mcodekind adj mc
+
 let convert_allminus_mcodekind allminus = function
     Ast0.CONTEXT(befaft) ->
       let (befaft,_,_) = !befaft in
@@ -350,41 +352,6 @@ let dots fn d =
       Ast0.DOTS(x) -> Ast.DOTS(List.map fn x)
     | Ast0.CIRCLES(x) -> Ast.CIRCLES(List.map fn x)
     | Ast0.STARS(x) -> Ast.STARS(List.map fn x))
-
-(* commas in dotted lists, here due to polymorphism restrictions *)
-
-let add_comma is_comma is_dots make_comma itemlist =
-  match Ast0.unwrap itemlist with
-    Ast0.DOTS(x) ->
-      (match List.rev x with
-	[] -> itemlist
-(* Not sure if comma is needed if the list is just ...; leave it there for
-now. See list_matcher in cocci_vs_c.ml in first try_matches case. *)
-(*      |	[e] when is_dots e -> itemlist*)
-      | e::es ->
-	  if is_comma e
-	  then itemlist
-	  else
-	    let comma =
-	      match Ast0.get_mcodekind e with
-		Ast0.MINUS(_) -> (Ast0.make_minus_mcode ",")
-	      |	_ -> (Ast0.make_mcode ",") in
-	    Ast0.rewrap itemlist
-	      (Ast0.DOTS
-		 (List.rev (Ast0.rewrap e (make_comma comma) :: (e::es)))))
-  | _ -> failwith "not possible"
-
-let add_exp_comma =
-  add_comma
-    (function x -> match Ast0.unwrap x with Ast0.EComma _ -> true | _ -> false)
-    (function x -> match Ast0.unwrap x with Ast0.Edots _  -> true | _ -> false)
-    (function x -> Ast0.EComma x)
-
-and add_init_comma =
-  add_comma
-    (function x -> match Ast0.unwrap x with Ast0.IComma _ -> true | _ -> false)
-    (function x -> match Ast0.unwrap x with Ast0.Idots _  -> true | _ -> false)
-    (function x -> Ast0.IComma x)
 
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
@@ -578,7 +545,6 @@ and base_typeC allminus t =
   | Ast0.EnumName(kind,name) ->
       Ast.EnumName(mcode kind,get_option ident name)
   | Ast0.EnumDef(ty,lb,ids,rb) ->
-      let ids = add_exp_comma ids in
       Ast.EnumDef(typeC allminus ty,mcode lb,dots expression ids,mcode rb)
   | Ast0.StructUnionName(kind,name) ->
       Ast.StructUnionName(mcode kind,get_option ident name)
@@ -723,10 +689,8 @@ and initialiser i =
 	Ast.AsInit(initialiser init,initialiser asinit)
     | Ast0.InitExpr(exp) -> Ast.InitExpr(expression exp)
     | Ast0.InitList(lb,initlist,rb,true) ->
-	let initlist = add_init_comma initlist in
 	Ast.ArInitList(mcode lb,dots initialiser initlist,mcode rb)
     | Ast0.InitList(lb,initlist,rb,false) ->
-	let initlist = add_init_comma initlist in
 	let (whencode,initlist,allminus) = strip_idots initlist in
 	Ast.StrInitList
 	  (allminus,mcode lb,List.map initialiser initlist,mcode rb,
@@ -807,14 +771,15 @@ and statement s =
 		  tokenwrap rbrace s (Ast.SeqEnd(rbrace)))
       | Ast0.ExprStatement(exp,sem) ->
 	  Ast.Atomic(rewrap_rule_elem s
-		       (Ast.ExprStatement(get_option expression exp,mcode sem)))
-      | Ast0.IfThen(iff,lp,exp,rp,branch,(_,aft)) ->
+		       (Ast.ExprStatement
+			  (get_option expression exp,mcode sem)))
+      | Ast0.IfThen(iff,lp,exp,rp,branch,aft) ->
 	  Ast.IfThen
 	    (rewrap_rule_elem s
 	       (Ast.IfHeader(mcode iff,mcode lp,expression exp,mcode rp)),
 	     statement Ast.NotSequencible branch,
-	     ([],[],[],convert_mcodekind (-1) aft))
-      | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,(_,aft)) ->
+	     ([],[],[],convert_fake_mcode aft))
+      | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,aft) ->
 	  let els = mcode els in
 	  Ast.IfThenElse
 	    (rewrap_rule_elem s
@@ -822,13 +787,13 @@ and statement s =
 	     statement Ast.NotSequencible branch1,
 	     tokenwrap els s (Ast.Else(els)),
 	     statement Ast.NotSequencible branch2,
-	     ([],[],[],convert_mcodekind (-1) aft))
-      | Ast0.While(wh,lp,exp,rp,body,(_,aft)) ->
+	     ([],[],[],convert_fake_mcode aft))
+      | Ast0.While(wh,lp,exp,rp,body,aft) ->
 	  Ast.While(rewrap_rule_elem s
 		      (Ast.WhileHeader
 			 (mcode wh,mcode lp,expression exp,mcode rp)),
 		    statement Ast.NotSequencible body,
-		    ([],[],[],convert_mcodekind (-1) aft))
+		    ([],[],[],convert_fake_mcode aft))
       | Ast0.Do(d,body,wh,lp,exp,rp,sem) ->
 	  let wh = mcode wh in
 	  Ast.Do(rewrap_rule_elem s (Ast.DoHeader(mcode d)),
@@ -836,7 +801,7 @@ and statement s =
 		 tokenwrap wh s
 		   (Ast.WhileTail(wh,mcode lp,expression exp,mcode rp,
 				  mcode sem)))
-      | Ast0.For(fr,lp,first,exp2,sem2,exp3,rp,body,(_,aft)) ->
+      | Ast0.For(fr,lp,first,exp2,sem2,exp3,rp,body,aft) ->
 	  let fr = mcode fr in
 	  let lp = mcode lp in
 	  let first = forinfo first in
@@ -847,15 +812,15 @@ and statement s =
 	  let body = statement Ast.NotSequencible body in
 	  Ast.For(rewrap_rule_elem s
 		    (Ast.ForHeader(fr,lp,first,exp2,sem2,exp3,rp)),
-		  body,([],[],[],convert_mcodekind (-1) aft))
-      | Ast0.Iterator(nm,lp,args,rp,body,(_,aft)) ->
+		  body,([],[],[],convert_fake_mcode aft))
+      | Ast0.Iterator(nm,lp,args,rp,body,aft) ->
 	  Ast.Iterator(rewrap_rule_elem s
 		      (Ast.IteratorHeader
 			 (ident nm,mcode lp,
 			  dots expression args,
 			  mcode rp)),
 		    statement Ast.NotSequencible body,
-		    ([],[],[],convert_mcodekind (-1) aft))
+		    ([],[],[],convert_fake_mcode aft))
       |	Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb) ->
 	  let switch = mcode switch in
 	  let lp = mcode lp in

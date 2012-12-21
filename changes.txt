@@ -135,7 +135,13 @@
 - Added a crude mechanism for integrating the results of external analyses with
   coccinelle, using positions to connect them together. This is an experimental
   feature. See demos/external_ana.{c,cocci,data}.
-
+- Try to do better pretty printing when array elements are individually
+  replaced
+- Just fail quietly on attempt to remove a multi-variable declaration,
+  allowing the semantic patch to continue.  A warning message is printed.
+- Ignore unknown identifiers around known types.
+- Ignore --use-glimpse if multiple directories given
+- Added support for c++ namespace syntax in cocci files.
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
   to Eugeniy Meshcheryakov for reporting the problem.
@@ -222,6 +228,35 @@
 - Ocaml 4.00.0 compatibility fixes
 - Drop inlines, reduce parser code size
 - Bind const_vol in the right order in Ast0 visitor
+- use arg_expression for printing iterator arguments instead of expression,
+  to get the right spacing.  Thanks to Lars-Peter Clausen for the fix.
+- Better spacing for generated argument lists.  Thanks to Lars-Peter Clausen
+  for reporting the problem.
+- Collect all module interfaces for ocaml scripting in a single
+  coccilib.cmi file, with the list of exposed internal modules in
+  ocaml/exposed_modules.ml. This simplifies the installation of the
+  ocaml version of coccilib, and allows us to specify which modules
+  can be accessed by an ocaml script. The coccilib.cmi must either
+  reside in $COCCI_DIR/ocaml/ or $COCCI_DIR/ocaml/coccilib/.
+- Ocamlbuild-based compilation of coccinelle (experimental). In a
+  cleaned repository, use the configure option --enable-ocamlbuild to
+  enable it. The Makefiles will then use ocamlbuild.
+- Ocamlscripts can access more of coccinelle: the file
+  ocaml/exposed_modules.ml specifies which modules are accessible.
+- Use arg_expression to print macro arguments.  Thanks to Lars-Peter
+  Clausen for the fix.
+- Remove some trailing whitespace due to unindent or added if braces.
+  Thanks to Eric LeBlond for reporting one of the problems.
+- Remove undesired newline after if header when body is a metavariable.
+  Thanks to Eric LeBlond for reporting the problem.
+- Improve macro expansion to take into account variable numbers of
+  arguments
+- Don't count macros or ifdefs in counting fields
+- Better counting of indent size when indent contains multiple tabs
+- Get the right annotation on trailing , that is after a nest.  Requires
+  avoiding double processing in transformation_c.ml
+- Fixed an issue where an 'Impossible' exception could be raised.
+- Fixed an issue where some identifiers were incorrectly interpreted as typedef.
 
 * 0.2.5
 ** Language:

@@ -489,7 +489,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       let (iiheader, iielse, iifakeend) =
         match ii with
         | [i1;i2;i3;i4;i5] -> [i1;i2;i3], i4, i5
-        | _ -> raise Impossible
+        | _ -> raise (Impossible 62)
       in
       let newi = !g +> add_node (IfHeader (stmt, (e, iiheader))) lbl "if" in
       !g +> add_arc_opt (starti, newi);
@@ -648,7 +648,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
             (Case (stmt, (e, ii))),  st
         | Labeled (Ast_c.CaseRange  (e, e2, st)), ii ->
             (CaseRange (stmt, ((e, e2), ii))), st
-        | _ -> raise Impossible
+        | _ -> raise (Impossible 63)
       in
 
       let newi = !g +> add_node node  lbl "case:" in
@@ -749,7 +749,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       let (iido, iiwhiletail, iifakeend) =
         match ii with
         | [i1;i2;i3;i4;i5;i6] -> i1, [i2;i3;i4;i5], i6
-        | _ -> raise Impossible
+        | _ -> raise (Impossible 64)
       in
       let doi = !g +> add_node (DoHeader (stmt, iido))  lbl "do" in
       !g +> add_arc_opt (starti, doi);
@@ -884,7 +884,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
 	match context_info with
 	  LoopInfo (loopstarti, loopendi, braces, parent_lbl) -> parent_lbl
 	| SwitchInfo (startbrace, loopendi, braces, parent_lbl) -> parent_lbl
-	| NoInfo -> raise Impossible in
+	| NoInfo -> raise (Impossible 65) in
 
       (* flow_to_ast: *)
       let (node_info, string) =
@@ -897,7 +897,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
           | Ast_c.Break    ->
 	      (Break    (stmt, ((), ii)),
 	       Printf.sprintf "break; [%s]" parent_string)
-          | _ -> raise Impossible
+          | _ -> raise (Impossible 66)
           ) in
 
       (* idea: break or continue records the label of its parent loop or
@@ -916,7 +916,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
 		(* if no loops, then continue behaves like break - just
 		   one iteration *)
 		if !Flag_parsing_c.no_loops then loopendi else loopstarti
-            | x -> raise Impossible
+            | x -> raise (Impossible 67)
             ) in
           let difference = List.length xi.braces - List.length braces in
           assert (difference >= 0);
@@ -933,7 +933,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
           let newi = insert_all_braces toend newi in
           !g#add_arc ((newi, loopendi), Direct);
           None
-      | NoInfo -> raise Impossible
+      | NoInfo -> raise (Impossible 68)
       )
 
   | Jump ((Ast_c.Return | Ast_c.ReturnExpr _) as kind) ->
@@ -946,14 +946,14 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
         match kind with
         | Ast_c.Return -> "return"
         | Ast_c.ReturnExpr _ -> "return ..."
-        | _ -> raise Impossible
+        | _ -> raise (Impossible 69)
       in
       let newi =
         !g +> add_node
           (match kind with
           | Ast_c.Return ->       Return (stmt, ((),ii))
           | Ast_c.ReturnExpr e -> ReturnExpr (stmt, (e, ii))
-          | _ -> raise Impossible
+          | _ -> raise (Impossible 70)
           )
           lbl s
       in
@@ -965,7 +965,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       else !g#add_arc ((newi, exiti), Direct)
       ;
       None
-     | _ -> raise Impossible
+     | _ -> raise (Impossible 71)
      )
 
 
@@ -1097,7 +1097,7 @@ let (aux_definition: nodei -> definition -> unit) = fun topi funcdef ->
     | ioparen::icparen::iobrace::icbrace::iifake::isto ->
         ioparen::icparen::iifake::isto,
         [iobrace;icbrace]
-    | _ -> raise Impossible
+    | _ -> raise (Impossible 72)
     )
   in
 
@@ -1190,7 +1190,7 @@ let ast_to_control_flow e =
             let (st, (e, ii)) = specialdeclmacro_to_stmt (s, args, ii) in
             (Control_flow_c.ExprStatement (st, (Some e, ii))), "macrotoplevel"
           (*(Control_flow_c.MacroTop (s, args,ii), "macrotoplevel") *)
-        | _ -> raise Impossible
+        | _ -> raise (Impossible 73)
       in
       let ei =   !g +> add_node elem    lbl_0 str in
       let endi = !g +> add_node EndNode lbl_0 "[end]" in
@@ -1264,6 +1264,8 @@ let ast_to_control_flow e =
           let endi = !g +> add_node EndNode lbl_0 "[end]" in
           !g#add_arc ((headeri, endi),Direct);
       | Ast_c.DefineInit _ ->
+          raise (Error(Define(pinfo_of_ii ii)))
+      | Ast_c.DefineMulti sts -> (* christia: todo *)
           raise (Error(Define(pinfo_of_ii ii)))
       | Ast_c.DefineTodo ->
           raise (Error(Define(pinfo_of_ii ii)))

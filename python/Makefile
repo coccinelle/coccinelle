@@ -22,6 +22,7 @@
 # Coccinelle under other licenses.
 
 
+
 #############################################################################
 # Configuration section
 #############################################################################
@@ -80,6 +81,7 @@ OPTOBJS = $(OBJS:.cmo=.cmx)
 CTLOBJS = $(CTLSOURCES:.ml=.cmo)
 CTLOPTOBJS = $(CTLOBJS:.cmo=.cmx)
 
+ifneq ($(FEATURE_OCAMLBUILD),yes)
 all: $(LIB)
 
 all.opt:
@@ -92,7 +94,7 @@ $(LIB): $(OBJS)
 	$(OCAMLC_CMD) -a -o $(LIB) $(OBJS)
 
 clean::
-	rm -f $(LIB)
+	rm -f $(TARGET).cma $(TARGET).a $(TARGET).o $(TARGET).cmxa
 
 
 $(OPTLIB): $(OPTOBJS)
@@ -104,7 +106,14 @@ $(EXEC): $(OBJS) main.cmo $(LIBS)
 
 $(CTLEXEC): $(CTLOBJS) $(LIBS)
 	$(OCAMLC_CMD) -o $(CTLEXEC) $(SYSLIBS) $(LIBS) $(CTLOBJS)
-
+else
+all:
+	cd .. && $(OCAMLBUILD) python/python.cma
+all.opt:
+	cd .. && $(OCAMLBUILD) python/python.cmxa
+clean::
+	cd .. && $(OCAMLBUILD) -clean
+endif
 
 clean::
 	rm -f $(OPTLIB) $(LIB:.cma=.a)
@@ -112,11 +121,12 @@ clean::
 	rm -f $(TARGET).byte
 	rm -f $(CTLTARGET)
 	rm -f .depend
+	rm -f coccipython.cmxa coccipython.a
 
 distclean::
 	$(MAKE) -C coccilib $@
 	rm -f pycocci.ml
-	rm -f *.cm[iox] *.o  *.annot
+	rm -f *.cm[ioxa] *.o  *.annot
 
 ##############################################################################
 # Generic ocaml rules
@@ -146,7 +156,9 @@ clean::
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
+ifneq ($(FEATURE_OCAMLBUILD),yes)
 -include .depend
+endif
 endif
 endif
 

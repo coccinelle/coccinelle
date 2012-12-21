@@ -30,6 +30,9 @@ case "$@" in
   *prepare_ocamlcocci.ml*)
     noprofile=1
   ;;
+  *coccilib.ml*)
+    noprofile=1
+  ;;
 esac
 
 if test -n "$noprofile"; then

@@ -40,7 +40,7 @@ let sequence_tokens =
     (* sort of unpleasant to convert the token representation to a string
        but we can't make a list of mcodes otherwise because the types are all
        different *)
-    [(Common.dump (Ast0.unwrap_mcode x),Ast0.get_pos_ref x)] in
+    [(Dumper.dump (Ast0.unwrap_mcode x),Ast0.get_pos_ref x)] in
   let donothing r k e = k e in
   let bind x y = x @ y in
   let option_default = [] in

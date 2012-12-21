@@ -1,18 +1,3 @@
-(* Yoann Padioleau
- *
- * Copyright (C) 2010, University of Copenhagen DIKU and INRIA.
- * Copyright (C) 2007, 2008 Ecole des Mines de Nantes
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License (GPL)
- * version 2 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * file license.txt for more details.
- *)
-
 open Common
 
 module TH = Token_helpers
@@ -66,7 +51,8 @@ let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_parsing
 type define_def = string * define_param * define_body
  and define_param =
    | NoParam
-   | Params of string list
+   | Params of define_arg list
+ and define_arg = FixedArg of string | VariadicArg of string
  and define_body =
    | DefineBody of Parser_c.token list
    | DefineHint of parsinghack_hint
@@ -134,6 +120,7 @@ let string_of_define_def (s, params, body) =
     | NoParam ->
         spf "#define %s " s
     | Params xs ->
+	let xs = List.map (function FixedArg s -> s | VariadicArg s -> s) xs in
         spf "#define %s(%s) " s (Common.join "," xs)
   in
   let s2 =
@@ -287,7 +274,8 @@ let rec (cpp_engine:
      * the job right and already replaced the macro parameter with a TIdent.
      *)
     match tok with
-    | TIdent (s,i1) when List.mem_assoc s env -> Common.assoc s env
+    | TIdent (s,i1) when List.mem_assoc s env -> 
+	Common.assoc s env
     | x -> [x]
   )
   +> List.flatten
@@ -366,44 +354,56 @@ let rec apply_macro_defs
           | DefineBody bodymacro ->
 
               (* bugfix: better to put this that before the match body,
-               * cos our macrostatement hint can have variable number of
-               * arguments and so it's ok if it does not match exactly
-               * the number of arguments. *)
-              if List.length params != List.length xxs
-              then begin
-                pr2_once ("WEIRD: macro with wrong number of arguments: " ^ s);
-                (* old: id.new_tokens_before <- bodymacro; *)
-
-                (* update: if wrong number, then I just pass this macro *)
-                [Parenthised (xxs, info_parens)] +>
+		 * cos our macrostatement hint can have variable number of
+		 * arguments and so it's ok if it does not match exactly
+		 * the number of arguments. *)
+	      let build_binder params xxs =
+		let rec loop = function
+		    ([],[]) -> Some (function [] -> [] | _ -> failwith "bad")
+		  | ([],l) -> None
+		  | ([(VariadicArg s)],l) ->
+		      Some (function l -> List.map (function a -> (s,a)) l)
+		  | ((VariadicArg _)::_,l) -> None
+		  | ((FixedArg _)::_,[]) -> None
+		  | ((FixedArg s)::rest,x::xs) ->
+		      (match loop (rest,xs) with
+			Some k ->
+			  Some (function l -> (s,(List.hd l)) :: k (List.tl l))
+		      |	None -> None) in
+		loop (params, xxs) in
+	      (match build_binder params xxs with
+		None ->
+                  pr2_once
+		    ("WEIRD: macro with wrong number of arguments: " ^ s);
+                  (* old: id.new_tokens_before <- bodymacro; *)
+		  
+                  (* update: if wrong number, then I just pass this macro *)
+                  [Parenthised (xxs, info_parens)] +>
                   iter_token_paren (set_as_comment Token_c.CppMacro);
-                set_as_comment Token_c.CppMacro id;
+                  set_as_comment Token_c.CppMacro id
+	      |	Some bind ->
 
-                ()
-              end
-              else
+                  let xxs' = xxs +> List.map (fun x ->
+		    (tokens_of_paren_ordered x) +> List.map (fun x ->
+		      TH.visitor_info_of_tok Ast_c.make_expanded x.tok
+			)
+		      ) in
+                  id.new_tokens_before <-
+                      (* !!! cpp expansion job here  !!! *)
+		    cpp_engine ?evaluate_concatop
+		      (bind xxs') bodymacro;
 
-                let xxs' = xxs +> List.map (fun x ->
-                  (tokens_of_paren_ordered x) +> List.map (fun x ->
-                    TH.visitor_info_of_tok Ast_c.make_expanded x.tok
-                  )
-                ) in
-                id.new_tokens_before <-
-                  (* !!! cpp expansion job here  !!! *)
-                  cpp_engine ?evaluate_concatop
-                    (Common.zip params xxs') bodymacro;
-
-                (* important to do that after have apply the macro, otherwise
-                 * will pass as argument to the macro some tokens that
-                 * are all TCommentCpp
-                 *)
-                [Parenthised (xxs, info_parens)] +>
+                      (* important to do that after have apply the macro,
+			 otherwise will pass as argument to the macro some
+			 tokens that are all TCommentCpp
+                      *)
+                  [Parenthised (xxs, info_parens)] +>
                   iter_token_paren (set_as_comment Token_c.CppMacro);
-                set_as_comment Token_c.CppMacro id;
-
-            | DefineHint (HintMacroStatement as hint) ->
+                  set_as_comment Token_c.CppMacro id)
+		
+          | DefineHint (HintMacroStatement as hint) ->
                 (* important to do that after have apply the macro, otherwise
-                 * will pass as argument to the macro some tokens that
+                   * will pass as argument to the macro some tokens that
                  * are all TCommentCpp
                  *
                  * note: such macrostatement can have a variable number of
@@ -448,7 +448,7 @@ let rec apply_macro_defs
       let (_s, params, body) = Hashtbl.find defs s in
 
       (match params with
-      | Params params ->
+      | Params _ ->
           pr2 ("WEIRD: macro with params but no parens found: " ^ s);
           (* dont apply the macro, perhaps a redefinition *)
           ()
@@ -517,36 +517,40 @@ let rec (define_parse: Parser_c.token list -> (string * define_def) list) =
             xs +> Common.split_when (function TDefEOL _ -> true | _ -> false) in
 	  let params =
             tokparams +> Common.map_filter (function
-              | TComma _ -> None
-              | TIdent (s, _) -> Some s
+              |	 TComma _ -> None
+              |	 TIdent (s, _) -> Some (FixedArg s)
 
               (* TODO *)
-              | TDefParamVariadic (s, _) -> Some s
+              |	 TDefParamVariadic (s, _) -> Some (VariadicArg s)
               (* TODO *)
-              | TEllipsis _ -> Some "..."
+              |	 TEllipsis _ -> Some (VariadicArg "...")
 
-              | x ->
+              |	 x ->
               (* bugfix: param of macros can be tricky *)
-		  let s = TH.str_of_tok x in
-		  if s ==~ Common.regexp_alpha
-		  then begin
-		    pr2 (spf "remapping: %s to a macro parameter" s);
-		    Some s
-		  end
-		  else
-		    begin
-		      pr2 (spf "bad character %s in macro parameter list" s);
-		      raise Bad_param
-		    end)  in
+                  let s = TH.str_of_tok x in
+                  if s ==~ Common.regexp_alpha
+                  then begin
+                    pr2 (spf "remapping: %s to a macro parameter" s);
+                    Some (FixedArg s)
+                  end
+                  else
+                    begin
+                      pr2 (spf "bad character %s in macro parameter list" s);
+                      raise Bad_param
+                    end) in
           (* bugfix: also substitute to ident in body so cpp_engine will
-           * have an easy job.
-           *)
+             * have an easy job.
+          *)
 	  let body = body +> List.map (fun tok ->
             match tok with
             | TIdent _ -> tok
             | _ ->
 		let s = TH.str_of_tok tok in
 		let ii = TH.info_of_tok tok in
+		let params =
+		  List.map
+		    (function FixedArg s -> s | VariadicArg s -> s)
+		    params in
 		if s ==~ Common.regexp_alpha && List.mem s params
 		then begin
 		  pr2 (spf "remapping: %s to an ident in macro body" s);

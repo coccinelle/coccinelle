@@ -5,6 +5,12 @@ int main () {
   }
 }
 
+int main () {
+  xxx();
+  if(y)
+    rrr();
+}
+
 
 int d() {}
 

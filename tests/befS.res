@@ -11,6 +11,16 @@ int main () {
 }
 }
 
+int main () {
+  foo();
+  xxx();
+  foo();
+  if(y) {
+    foo();
+    rrr();
+  }
+}
+
 
 int d() {}
 

@@ -516,34 +516,33 @@ let meta_stm name =
 let exp_stm exp pv =
   Ast0.wrap(Ast0.ExprStatement (exp, clt2mcode ";" pv))
 
+let make_fake_mcode _ = (Ast0.default_info(),Ast0.context_befaft(),-1)
+
 let ifthen iff lp tst rp thn =
   Ast0.wrap(Ast0.IfThen(clt2mcode "if" iff,
-    clt2mcode "(" lp,tst,clt2mcode ")" rp,thn,
-    (Ast0.default_info(),Ast0.context_befaft())))
+    clt2mcode "(" lp,tst,clt2mcode ")" rp,thn,make_fake_mcode()))
 
 let ifthenelse iff lp tst rp thn e els =
   Ast0.wrap(Ast0.IfThenElse(clt2mcode "if" iff,
     clt2mcode "(" lp,tst,clt2mcode ")" rp,thn,
-    clt2mcode "else" e,els,
-    (Ast0.default_info(),Ast0.context_befaft())))
+    clt2mcode "else" e,els,make_fake_mcode()))
 
 let forloop fr lp e1 sc1 e2 sc2 e3 rp s =
   Ast0.wrap(Ast0.For(clt2mcode "for" fr,clt2mcode "(" lp,
 		     Ast0.wrap(Ast0.ForExp(e1,clt2mcode ";" sc1)),e2,
 		     clt2mcode ";" sc2,e3,clt2mcode ")" rp,s,
-		     (Ast0.default_info(),Ast0.context_befaft())))
+		     make_fake_mcode()))
 
 let forloop2 fr lp decl e2 sc2 e3 rp s =
   let bef = (Ast0.default_info(),Ast0.context_befaft()) in
   Ast0.wrap(Ast0.For(clt2mcode "for" fr,clt2mcode "(" lp,
 		     Ast0.wrap(Ast0.ForDecl (bef,decl)),e2,
 		     clt2mcode ";" sc2,e3,clt2mcode ")" rp,s,
-		     (Ast0.default_info(),Ast0.context_befaft())))
+		     make_fake_mcode()))
 
 let whileloop w lp e rp s =
   Ast0.wrap(Ast0.While(clt2mcode "while" w,clt2mcode "(" lp,
-		       e,clt2mcode ")" rp,s,
-		       (Ast0.default_info(),Ast0.context_befaft())))
+		       e,clt2mcode ")" rp,s,make_fake_mcode()))
 
 let doloop d s w lp e rp pv =
   Ast0.wrap(Ast0.Do(clt2mcode "do" d,s,clt2mcode "while" w,
@@ -552,7 +551,7 @@ let doloop d s w lp e rp pv =
 
 let iterator i lp e rp s =
   Ast0.wrap(Ast0.Iterator(i,clt2mcode "(" lp,e,clt2mcode ")" rp,s,
-			  (Ast0.default_info(),Ast0.context_befaft())))
+			  make_fake_mcode()))
 
 let switch s lp e rp lb d c rb =
   let d =

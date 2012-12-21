@@ -354,7 +354,14 @@ other \#ifdef.}
 
 \normal{-I $\langle$path$\rangle$}{ This option specifies a directory
   in which to find non-local include files.  This option can be used
-  several times.}
+  several times to specify multipls include paths.}
+
+\rare{--include $\langle$file$\rangle$}{ This option give the name of a
+  file to consider as being included in each processed file.  The file is
+  added to the end of the file's list of included files.  The complete path
+  name should be given; the {\bf -I} options are not taken into account to
+  find the file.  This option can be used
+  several times to include multiple files.}
 
 \rare{--relax-include-path}{This option when combined with --all-includes
   causes the search for local

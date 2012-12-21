@@ -42,6 +42,7 @@
 
 @ rule1 @
 identifier initfunc;
+declarer name module_init;
 @@
  module_init(initfunc);
  

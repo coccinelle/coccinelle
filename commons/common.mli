@@ -137,7 +137,7 @@ val pr2_xxxxxxxxxxxxxxxxx : unit -> unit
 
 (* use Dumper.dump *)
 val pr2_gen: 'a -> unit
-val dump: 'a -> string
+(* val dump: 'a -> string *)
 
 (* see flag: val disable_pr2_once : bool ref *)
 val _already_printed : (string, bool) Hashtbl.t
@@ -475,7 +475,7 @@ val release_file_lock : filename -> unit
 (* Error managment *)
 (*****************************************************************************)
 exception Todo
-exception Impossible
+exception Impossible of int
 exception Here
 exception ReturnExn
 
