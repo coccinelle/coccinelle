@@ -1523,7 +1523,6 @@ let get_metavars parse_fn table file lexbuf =
 	(function _ ->
 	  tokens_all table file true lexbuf [PC.TArobArob;PC.TMPtVirg]) in
     let tokens = prepare_mv_tokens tokens in
-    print_tokens "mv tokens" tokens;
     match tokens with
       [(PC.TArobArob,_)] -> List.rev acc
     | _ ->
