@@ -828,6 +828,8 @@ let rec detect_attr l =
   let rec loop = function
       [] -> []
     | [x] -> [x]
+    | ((PC.Tstruct _,_) as t1)::x::rest ->
+	t1::x::loop rest
     | ((PC.TIdent(nm,clt),info) as t1)::id::rest when is_id id ->
 	if String.length nm > 2 && String.sub nm 0 2 = "__"
 	then (PC.Tattr(nm,clt),info)::(loop (id::rest))
@@ -1521,6 +1523,7 @@ let get_metavars parse_fn table file lexbuf =
 	(function _ ->
 	  tokens_all table file true lexbuf [PC.TArobArob;PC.TMPtVirg]) in
     let tokens = prepare_mv_tokens tokens in
+    print_tokens "mv tokens" tokens;
     match tokens with
       [(PC.TArobArob,_)] -> List.rev acc
     | _ ->
