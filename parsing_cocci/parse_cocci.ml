@@ -830,6 +830,8 @@ let rec detect_attr l =
     | [x] -> [x]
     | ((PC.Tstruct _,_) as t1)::x::rest ->
 	t1::x::loop rest
+    | ((PC.Tunion _,_) as t1)::x::rest ->
+	t1::x::loop rest
     | ((PC.TIdent(nm,clt),info) as t1)::id::rest when is_id id ->
 	if String.length nm > 2 && String.sub nm 0 2 = "__"
 	then (PC.Tattr(nm,clt),info)::(loop (id::rest))

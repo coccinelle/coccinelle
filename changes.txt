@@ -257,6 +257,7 @@
   avoiding double processing in transformation_c.ml
 - Fixed an issue where an 'Impossible' exception could be raised.
 - Fixed an issue where some identifiers were incorrectly interpreted as typedef.
+- allow __ at the beginning of a struct or union name
 
 * 0.2.5
 ** Language:
