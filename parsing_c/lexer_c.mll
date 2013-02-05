@@ -171,9 +171,10 @@ let keyword_table = Common.hash_of_list [
  ]
 
 let cpp_keyword_table = Common.hash_of_list [
-  "new",   (fun ii -> Tnew ii);
-  "delete",(fun ii -> Tdelete ii);
-  "using", (fun ii -> TComment ii) ]
+  "namespace", (fun ii -> Tnamespace ii);
+  "new",       (fun ii -> Tnew ii);
+  "delete",    (fun ii -> Tdelete ii);
+  "using",     (fun ii -> TComment ii) ]
 
 let error_radix s =
   ("numeric " ^ s ^ " constant contains digits beyond the radix:")
@@ -237,6 +238,9 @@ let ulong = (UnSigned,CLong)
 let letter = ['A'-'Z' 'a'-'z' '_']
 let extended_letter = ['A'-'Z' 'a'-'z' '_' ':' '<' '>' '~'](*for c++, not used*)
 let digit  = ['0'-'9']
+
+let cplusplus_ident = (letter | '$') (letter | digit | '$') *
+let cplusplus_ident_ext = (letter | '~' | '$') (letter | digit | '~' | '$') *
 
 (* not used for the moment *)
 let punctuation = ['!' '\"' '#' '%' '&' '\'' '(' ')' '*' '+' ',' '-' '.' '/' ':'
@@ -690,7 +694,13 @@ rule token = parse
    * thing a few time in linux and in glibc. No need look in keyword_table
    * here.
    *)
-  | (letter | '$') (letter | digit | '$') *
+  | (cplusplus_ident "::")+ "operator new" 
+      {
+        let info = tokinfo lexbuf in
+        let s = tok lexbuf in
+        TIdent (s, info)
+      }
+  | cplusplus_ident
       {
         let info = tokinfo lexbuf in
         let s = tok lexbuf in
@@ -698,10 +708,12 @@ rule token = parse
         TIdent (s, info)
       }
 
-  | (letter | '$') (letter | digit | '$') *
-      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?
-    ("::~" (letter | '$') (letter | digit | '$') *
-      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) +
+  | cplusplus_ident
+      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* 
+      (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>') ?
+    ("::~" cplusplus_ident
+      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* 
+      (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>') ?) +
 
       {
         let info = tokinfo lexbuf in
@@ -714,9 +726,10 @@ rule token = parse
             TIdent (s, info)
 	  end
       }
-  | ((letter | '$') (letter | digit | '$') * )
-      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>')
-
+  | cplusplus_ident
+      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* 
+      (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>')
+  
       {
         let info = tokinfo lexbuf in
         let s = tok lexbuf in
@@ -730,12 +743,15 @@ rule token = parse
       }
 
 
-  | (((letter | '$') (letter | digit | '$') * ) as first)
-      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?
-    "::" (((letter | '$') (letter | digit | '$') * ) as second)
-      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?
-    ("::" ((letter | '$') (letter | digit | '$') * )
-      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) *
+  | (cplusplus_ident as first)
+      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* 
+      (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>') ?
+    "::" (cplusplus_ident as second)
+      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* 
+      (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>') ?
+    ("::" cplusplus_ident
+      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* 
+      (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>') ?) *
 
       {
         let info = tokinfo lexbuf in
@@ -754,10 +770,12 @@ rule token = parse
 	  end
       }
 
-   | "::" ((letter | '$') (letter | digit | '$') * )
-      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?
-    ("::" ((letter | '$') (letter | digit | '$') * )
-      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) *
+   | "::" cplusplus_ident
+      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* 
+      (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>') ?
+    ("::" cplusplus_ident
+      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* 
+      (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>') ?) *
 
       {
         let info = tokinfo lexbuf in

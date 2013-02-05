@@ -24,7 +24,6 @@ let ignore_unknown_opt = ref false
 (* somehow obsolete now *)
 let dir = ref false
 
-let include_headers = ref false
 let kbuild_info = ref ""
 
 let macro_file = ref ""
@@ -284,7 +283,7 @@ let short_options = [
   "  causes local include files to be used";
   "--ignore-unknown-options", Arg.Set ignore_unknown_opt,
   "    For integration in a toolchain (must be set before the first unknown option)";
-  "--include-headers", Arg.Set include_headers,
+  "--include-headers", Arg.Set Flag.include_headers,
   "    process header files independently";
   "-I",   Arg.String (fun x -> FC.include_path:= x::!FC.include_path),
   "  <dir> containing the header files";
@@ -757,7 +756,7 @@ let glimpse_filter (coccifile, isofile) dir =
   match query with
     None -> pr2 "no inferred glimpse keywords"; None
   | Some queries ->
-      let suffixes = if !include_headers then ["c";"h"] else ["c"] in
+      let suffixes = if !Flag.include_headers then ["c";"h"] else ["c"] in
       let rec loop = function
 	  [] -> None (* error, eg due to pattern too big *)
 	| query::queries ->
@@ -781,7 +780,7 @@ let idutils_filter (coccifile, isofile) dir =
   match query with
     None -> pr2 "no inferred idutils keywords"; None
   | Some query ->
-      let suffixes = if !include_headers then ["c";"h"] else ["c"] in
+      let suffixes = if !Flag.include_headers then ["c";"h"] else ["c"] in
       let files = Id_utils.interpret dir query in
       Printf.fprintf stderr "got files\n"; flush stderr;
       Some
@@ -791,24 +790,6 @@ let idutils_filter (coccifile, isofile) dir =
 (*****************************************************************************)
 (* Main action *)
 (*****************************************************************************)
-
-let get_files path =
-  let ch =
-    Common.cmd_to_list (* same as "true, "", _" case *)
-      (if !include_headers
-			  (* FIXME : Could we remove xs ?
-			     -use_glimpse requires a singleton.
-			     This is checked some lines before.
-			     then ("find "^(join " " (x::xs))^" -name \"*.[ch]\"")
-			     else ("find "^(join " " (x::xs))^" -name \"*.c\"")
-			  *)
-      then ("find "^ path ^" -name \"*.[ch]\"")
-      else ("find "^ path ^" -name \"*.c\"")) in
-  let cpp =
-    if !Flag.c_plus_plus
-    then Common.cmd_to_list ("find "^ path ^" -name \"*.cpp\"")
-    else [] in
-  cpp @ ch
 
 let rec main_action xs =
   let (cocci_files,xs) =
@@ -856,7 +837,7 @@ let rec main_action xs =
 		  
                   let files =
 		    match glimpse_filter (!cocci_file, !Config.std_iso) x with
-		      None -> get_files x
+		      None -> Test_parsing_c.get_files x
 		    | Some files -> files in
                   files +> List.map (fun x -> [x])
               | true, "", Flag.IdUtils, [] ->
@@ -865,13 +846,13 @@ let rec main_action xs =
 		  
                   let files =
 		    match idutils_filter (!cocci_file, !Config.std_iso) x with
-		      None -> get_files x
+		      None -> Test_parsing_c.get_files x
 		    | Some files -> files in
                   files +> List.map (fun x -> [x])
                   (* normal *)
 	      | false, _, _, _ -> [x::xs]
 	      | true, "", _, _ ->
-		  get_files (join " " (x::xs)) +> List.map (fun x -> [x])
+		  Test_parsing_c.get_files (join " " (x::xs)) +> List.map (fun x -> [x])
 		    
             (* kbuild *)
 	      | true, kbuild_info_file,_,_ ->

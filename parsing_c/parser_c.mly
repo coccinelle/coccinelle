@@ -20,7 +20,7 @@ module LP = Lexer_parser
 open Lexer_parser (* for the fields *)
 
 open Semantic_c (* Semantic exn *)
-
+module T = Token_c
 
 (*****************************************************************************)
 (* Wrappers *)
@@ -437,7 +437,7 @@ let mk_string_wrap (s,info) = (s, [info])
        Tstruct Tunion Tenum
        Tbreak Telse Tswitch Tcase Tcontinue Tfor Tdo Tif  Twhile Treturn
        Tgoto Tdefault
-       Tsizeof Tnew Tdelete TOParCplusplusInit
+       Tsizeof Tnew Tdelete TOParCplusplusInit Tnamespace
 
 /*(* C99 *)*/
 %token <Ast_c.info>
@@ -619,11 +619,13 @@ main:
  translation_unit EOF     { $1 }
 
 translation_unit:
- | external_declaration
-     { !LP._lexer_hint.context_stack <- [LP.InTopLevel];   [$1] }
+ | 
+     { [] }
  | translation_unit external_declaration
      { !LP._lexer_hint.context_stack <- [LP.InTopLevel]; $1 ++ [$2] }
-
+ | translation_unit Tnamespace TIdent TOBrace translation_unit TCBrace
+     { !LP._lexer_hint.context_stack <- [LP.InTopLevel]; 
+       $1 ++ [Namespace ($5, [$2; snd $3; $4; $6])] }
 
 
 /*(*************************************************************************)*/
@@ -738,7 +740,8 @@ unary_expr:
  | unary_op cast_expr              { mk_e(Unary ($2, fst $1)) [snd $1] }
  | Tsizeof unary_expr              { mk_e(SizeOfExpr ($2))    [$1] }
  | Tsizeof topar2 type_name tcpar2 { mk_e(SizeOfType ($3))    [$1;$2;$4] }
- | Tnew new_argument               { mk_e(New $2)             [$1] }
+ | Tnew new_argument               { mk_e(New (None, $2))     [$1] }
+ | Tnew TOPar argument_list_ne TCPar new_argument { mk_e(New (Some $3, $5))             [$1; $2; $4] }
  | Tdelete cast_expr               { mk_e(Delete $2)          [$1] }
 
 new_argument:
@@ -1903,7 +1906,11 @@ external_declaration:
 
 
 celem:
-   | external_declaration                         { $1 }
+ | Tnamespace TIdent TOBrace translation_unit TCBrace
+     { !LP._lexer_hint.context_stack <- [LP.InTopLevel]; 
+       Namespace ($4, [$1; snd $2; $3; $5]) }
+
+ | external_declaration                         { $1 }
 
  /*(* cppext: *)*/
  | cpp_directive

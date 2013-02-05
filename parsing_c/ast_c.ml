@@ -340,7 +340,7 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
   | ParenExpr of expression
 
   (* for C++: *)
-  | New of argument
+  | New of (argument wrap2 (* , *) list) option * argument
   | Delete of expression
 
   (* cppext: IfdefExpr TODO *)
@@ -691,6 +691,9 @@ and toplevel =
   | NotParsedCorrectly of il
 
   | FinalDef of info (* EOF *)
+
+  (* c++ *)
+  | Namespace of toplevel list * il
 
 (* ------------------------------------------------------------------------- *)
 and program = toplevel list
@@ -1264,3 +1267,4 @@ let put_annot_info info key value =
 (* to check if an annotation has such a token *)
 let get_annot_info info key =
   Token_annot.get_annot info.annots_tag key
+

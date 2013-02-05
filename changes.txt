@@ -142,6 +142,8 @@
 - Ignore unknown identifiers around known types.
 - Ignore --use-glimpse if multiple directories given
 - Added support for c++ namespace syntax in cocci files.
+- improved c++ parsing
+
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
   to Eugeniy Meshcheryakov for reporting the problem.
@@ -258,6 +260,7 @@
 - Fixed an issue where an 'Impossible' exception could be raised.
 - Fixed an issue where some identifiers were incorrectly interpreted as typedef.
 - allow __ at the beginning of a struct or union name
+- unparsing with precedence
 
 * 0.2.5
 ** Language:

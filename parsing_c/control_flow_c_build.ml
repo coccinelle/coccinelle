@@ -1169,6 +1169,9 @@ let ast_to_control_flow e =
   let topi = !g +> add_node TopNode lbl_0 "[top]" in
 
   match e with
+  | Ast_c.Namespace (defs, _) ->
+      (* todo *)
+      None
   | Ast_c.Definition ((defbis,_) as def) ->
       let _funcs = defbis.f_name in
       let _c = defbis.f_body in
@@ -1284,7 +1287,6 @@ let ast_to_control_flow e =
       );
 
       Some !g
-
 
   | _ -> None
 

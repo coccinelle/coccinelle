@@ -1476,6 +1476,19 @@ let rec consume_minus_positions toks =
 	    (function name ->
 	      Ast0.StmtTag(Ast0.wrap(Ast0.MetaStmt(name,pure)))) in
 	(loop_other (x::xs))
+    | x::(PC.TPArob _,_)::(PC.TMetaIdExp(name,constraints,pure,ty,clt),_)::xs ->
+	let x =
+	  process_minus_positions x name clt
+	    (function name ->
+	      Ast0.ExprTag
+		(Ast0.wrap
+		   (Ast0.MetaExpr(name,constraints,ty,Ast.ANY,pure)))) in
+	(loop_other (x::xs))
+
+    | x::((PC.TPArob _,_) as x')::x''::xs -> 
+	print_endline "chr: ";
+	x::loop_other (x'::x''::xs)
+
     | x::xs -> x::loop_other xs in
   loop_other(loop_pos toks)
     
