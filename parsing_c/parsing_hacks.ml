@@ -2200,11 +2200,20 @@ let lookahead2 ~pass next before =
   (*  xx ** yy *)  (* wrong ? *)
   | (TIdent (s, i1)::TMul _::TMul _::TIdent (s2, i2)::_ , _)
     when not_struct_enum before
+	&& (LP.current_context() =*= LP.InParameter)
+	&& ok_typedef s
+    ->
+
+      msg_typedef s i1 26; LP.add_typedef_root s;
+      TypedefIdent (s, i1)
+
+  (*  xx ** yy *)  (* wrong ? *)
+  | (TIdent (s, i1)::TMul _::TMul _::TIdent (s2, i2)::_ , (TOBrace _ | TPtVirg _)::_)
+    when not_struct_enum before
         (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
 	&& ok_typedef s
 	(* christia : this code catches 'a * *b' which is wrong 
 	 *)
-	&& true
     ->
 
       msg_typedef s i1 26; LP.add_typedef_root s;

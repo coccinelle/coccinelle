@@ -1158,7 +1158,7 @@ let specialdeclmacro_to_stmt (s, args, ii) =
 
 
 
-let ast_to_control_flow e =
+let rec ast_to_control_flow e =
 
   (* globals (re)initialialisation *)
   g := (new ograph_mutable);
@@ -1170,8 +1170,15 @@ let ast_to_control_flow e =
 
   match e with
   | Ast_c.Namespace (defs, _) ->
-      (* todo *)
-      None
+      (* todo: incorporate the other defs *)
+      let rec loop defs = 
+	match defs with
+	| [] -> None
+	| def :: defs ->
+	    match ast_to_control_flow def with
+	    | None -> loop defs
+	    | x -> x in
+      loop defs
   | Ast_c.Definition ((defbis,_) as def) ->
       let _funcs = defbis.f_name in
       let _c = defbis.f_body in
