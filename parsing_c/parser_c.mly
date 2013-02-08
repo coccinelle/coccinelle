@@ -426,7 +426,7 @@ let mk_string_wrap (s,info) = (s, [info])
 %token <Ast_c.info>
        TOrLog TAndLog TOr TXor TAnd  TEqEq TNotEq TInf TSup TInfEq TSupEq
        TShl TShr
-       TPlus TMinus TMul TDiv TMod
+       TPlus TMinus TMul TDiv TMod TMin TMax
 
 %token <Ast_c.info>
        Tchar Tshort Tint Tdouble Tfloat Tlong Tunsigned Tsigned Tvoid
@@ -571,7 +571,7 @@ let mk_string_wrap (s,info) = (s, [info])
 %left TInf TSup TInfEq TSupEq
 %left TShl TShr
 %left TPlus TMinus
-%left TMul TDiv TMod
+%left TMul TDiv TMod TMin TMax
 
 /*(*************************************************************************)*/
 /*(* Rules type declaration *)*/
@@ -712,6 +712,8 @@ arith_expr:
  | cast_expr                     { $1 }
  | arith_expr TMul    arith_expr { mk_e(Binary ($1, Arith Mul,      $3)) [$2] }
  | arith_expr TDiv    arith_expr { mk_e(Binary ($1, Arith Div,      $3)) [$2] }
+ | arith_expr TMin    arith_expr { mk_e(Binary ($1, Arith Min,      $3)) [$2] }
+ | arith_expr TMax    arith_expr { mk_e(Binary ($1, Arith Max,      $3)) [$2] }
  | arith_expr TMod    arith_expr { mk_e(Binary ($1, Arith Mod,      $3)) [$2] }
  | arith_expr TPlus   arith_expr { mk_e(Binary ($1, Arith Plus,     $3)) [$2] }
  | arith_expr TMinus  arith_expr { mk_e(Binary ($1, Arith Minus,    $3)) [$2] }

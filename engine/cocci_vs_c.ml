@@ -169,7 +169,9 @@ let equal_arithOp a b =
   | A.And      , B.And      -> true
   | A.Or       , B.Or       -> true
   | A.Xor      , B.Xor      -> true
-  | _, (B.Xor|B.Or|B.And|B.DecRight|B.DecLeft|B.Mod|B.Div|B.Mul|B.Minus|B.Plus)
+  | A.Min    , B.Min    -> true
+  | A.Max    , B.Max    -> true
+  | _, (B.Xor|B.Or|B.And|B.DecRight|B.DecLeft|B.Mod|B.Div|B.Mul|B.Minus|B.Plus|B.Min|B.Max)
       -> false
 
 let equal_logicalOp a b =

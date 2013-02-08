@@ -319,6 +319,8 @@ let rec expression e =
     | Ast.Arith Ast.Minus -> addit
     | Ast.Arith Ast.Mul -> mulit
     | Ast.Arith Ast.Div -> mulit
+    | Ast.Arith Ast.Min -> relat
+    | Ast.Arith Ast.Max -> relat
     | Ast.Arith Ast.Mod -> mulit
     | Ast.Arith Ast.DecLeft -> shift
     | Ast.Arith Ast.DecRight -> shift
@@ -341,6 +343,8 @@ let rec expression e =
     | Ast.Arith Ast.Minus -> mulit
     | Ast.Arith Ast.Mul -> cast
     | Ast.Arith Ast.Div -> cast
+    | Ast.Arith Ast.Min -> shift
+    | Ast.Arith Ast.Max -> shift
     | Ast.Arith Ast.Mod -> cast
     | Ast.Arith Ast.DecLeft -> addit
     | Ast.Arith Ast.DecRight -> addit
@@ -371,6 +375,8 @@ let rec expression e =
     | Ast_c.Binary (e1, Ast_c.Arith Ast_c.Minus, e2) -> addit
     | Ast_c.Binary (e1, Ast_c.Arith Ast_c.Mul, e2) -> addit
     | Ast_c.Binary (e1, Ast_c.Arith Ast_c.Div, e2) -> addit
+    | Ast_c.Binary (e1, Ast_c.Arith Ast_c.Min, e2) -> relat
+    | Ast_c.Binary (e1, Ast_c.Arith Ast_c.Max, e2) -> relat
     | Ast_c.Binary (e1, Ast_c.Arith Ast_c.Mod, e2) -> addit
     | Ast_c.Binary (e1, Ast_c.Arith Ast_c.DecLeft, e2) -> addit
     | Ast_c.Binary (e1, Ast_c.Arith Ast_c.DecRight, e2) -> addit
@@ -546,6 +552,8 @@ and  arithOp = function
   | Ast.Minus -> print_string "-"
   | Ast.Mul -> print_string "*"
   | Ast.Div -> print_string "/"
+  | Ast.Max -> print_string ">?"
+  | Ast.Min -> print_string "<?"
   | Ast.Mod -> print_string "%"
   | Ast.DecLeft -> print_string "<<"
   | Ast.DecRight -> print_string ">>"

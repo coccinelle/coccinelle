@@ -167,6 +167,8 @@ let token2c (tok,_) =
   | PC.TDmOp(op,clt) ->
       (match op with
 	Ast.Div -> "/"
+      |	Ast.Min -> "<?"
+      |	Ast.Max -> ">?"
       |	Ast.Mod -> "%"
       |	_ -> failwith "not possible")
       ^(line_type2c clt)
