@@ -283,4 +283,4 @@ let contains_int c r =
 
 let has_only_nul = for_all1 (single_int Int64.zero)
 let has_also_nul = exists (contains_int Int64.zero)
-let has_also_int c = exists (contains_int Int64.zero)
+let has_also_int c = exists (contains_int c)
