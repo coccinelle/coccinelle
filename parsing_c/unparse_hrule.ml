@@ -388,6 +388,8 @@ let pp_meta_decl pr env decl =
       no_arity ar; pr "local function "; pp_name name; pr ";\n"
   | Ast.MetaPosDecl(ar, name) ->
       no_arity ar; pr "position "; pp_name name; pr ";\n"
+  | Ast.MetaAnalysisDecl(code, name) ->
+      pr "analysis"; pr code; pr " "; pp_name name; pr ";\n"
   | Ast.MetaDeclarerDecl(ar, name) ->
       no_arity ar; pr "declarer "; pp_name name; pr ";\n"
   | Ast.MetaIteratorDecl(ar, name) ->

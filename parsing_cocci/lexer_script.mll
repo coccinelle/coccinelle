@@ -14,10 +14,12 @@ let inc_line _ = Lexer_cocci.line := !Lexer_cocci.line + 1
 let oct = ['0'-'7']
 let hex = ['0'-'9' 'a'-'f' 'A'-'F']
 
-let myrule = [^'\'''"''@''/''\n''\r''\011''\012']+
+let myrule = [^'\'''"''@''/''\n''\r''\011''\012''('')']+
 
 rule token = parse
   | myrule { TScriptData (tok lexbuf) }
+  | '(' { TScriptData (tok lexbuf) }
+  | ')' { TScriptData (tok lexbuf) }
   | ['\n' '\r' '\011' '\012']
       { inc_line();
 	let text = tok lexbuf in
