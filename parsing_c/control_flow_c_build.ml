@@ -315,7 +315,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       in
 
       let newi = !g +> add_node (SeqStart (stmt, brace, i1)) lbl s1 in
-      let endnode = mk_node     (SeqEnd (brace, i2))         lbl [] s2 in
+      let endnode     = mk_node      (SeqEnd (brace, i2))    lbl [] s2 in
       let endnode_dup = mk_fake_node (SeqEnd (brace, i2))    lbl [] s2 in
 (*
       let _endnode_dup =
@@ -525,12 +525,13 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
    (* ------------------------- *)
   | Selection  (Ast_c.Switch (e, st)) ->
       let (i1,i2,i3, iifakeend) = tuple_of_list4 ii in
+
       let ii = [i1;i2;i3] in
 
       (* The newswitchi is for the labels to know where to attach.
        * The newendswitch (endi) is for the 'break'. *)
       let newswitchi=
-        !g+> add_node (SwitchHeader(stmt,(e,ii))) lbl "switch" in
+        !g +> add_node (SwitchHeader(stmt,(e,ii))) lbl "switch" in
       let newendswitch =
         !g +> add_node (EndStatement (Some iifakeend)) lbl "[endswitch]" in
 

@@ -82,7 +82,7 @@ let tmeta_to_ident (name,pure,clt) =
 %token TIdExpression TInitialiser TDeclaration TField TMetavariable TSymbol
 %token Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
 %token TPure TContext TGenerated
-%token TTypedef TDeclarer TIterator TName TPosition TPosAny
+%token TTypedef TDeclarer TIterator TName TPosition TAnalysis TPosAny
 %token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall
 %token TScript TInitialize TFinalize TNothing TVirtual
 %token<string> TRuleName
@@ -2425,6 +2425,7 @@ iso(term):
 never_used: TPragma { () }
   | TPArob TMetaPos { () }
   | TScriptData     { () }
+  | TAnalysis     { () }
 
 script_meta_main:
     py=pure_ident TMPtVirg
