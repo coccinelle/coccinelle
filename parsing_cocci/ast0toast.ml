@@ -703,6 +703,8 @@ and parameterTypeDef p =
 	Ast.MetaParam(mcode name,unitary,false)
     | Ast0.MetaParamList(name,lenname,_) ->
 	Ast.MetaParamList(mcode name,do_lenname lenname,unitary,false)
+    | Ast0.AsParam(p,asexpr) ->
+	Ast.AsParam(parameterTypeDef p,expression asexpr)
     | Ast0.PComma(cm) -> Ast.PComma(mcode cm)
     | Ast0.Pdots(dots) -> Ast.Pdots(mcode dots)
     | Ast0.Pcircles(dots) -> Ast.Pcircles(mcode dots)

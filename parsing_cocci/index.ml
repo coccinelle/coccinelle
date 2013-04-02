@@ -160,6 +160,7 @@ let parameterTypeDef p =
   | Ast0.Pcircles(dots) -> [65]
   | Ast0.OptParam(param) -> [66]
   | Ast0.UniqueParam(param) -> [67]
+  | Ast0.AsParam _ -> failwith "not possible"
 
 let statement s =
   match Ast0.unwrap s with

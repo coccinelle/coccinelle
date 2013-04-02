@@ -690,7 +690,7 @@ and parameterTypeDef tgt param =
       let arity = param_same (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in
       make_param param tgt arity (Ast0.Pcircles(dots))
-  | Ast0.OptParam(_) | Ast0.UniqueParam(_) ->
+  | Ast0.OptParam(_) | Ast0.UniqueParam(_) | Ast0.AsParam _ ->
       failwith "unexpected code"
 
 and parameter_list tgt = dots (parameterTypeDef tgt)

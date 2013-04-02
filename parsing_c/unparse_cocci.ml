@@ -886,6 +886,8 @@ and parameterTypeDef p =
               pretty_print_c.Pretty_print_c.paramlist p
           | _ -> raise (Impossible 154))
 
+  | Ast.AsParam(p,e) -> raise CantBeInPlus
+
   | Ast.PComma(cm) -> mcode print_string cm
   | Ast.Pdots(dots) | Ast.Pcircles(dots) when generating ->
       mcode print_string dots

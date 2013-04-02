@@ -199,6 +199,9 @@ and disjparam p =
   | Ast.Param(ty,id) ->
       let ty = disjty ty in
       List.map (function ty -> Ast.rewrap p (Ast.Param(ty,id))) ty
+  | Ast.AsParam(pm,asexp) -> (* as exp doesn't contain disj *)
+      let pm = disjparam pm in
+      List.map (function pm -> Ast.rewrap p (Ast.AsParam(pm,asexp))) pm
   | Ast.MetaParam(_,_,_) | Ast.MetaParamList(_,_,_,_) | Ast.PComma(_) -> [p]
   | Ast.Pdots(dots) | Ast.Pcircles(dots) -> [p]
   | Ast.OptParam(param) ->

@@ -1454,6 +1454,20 @@ let rec consume_minus_positions toks =
 		(Ast0.wrap
 		   (Ast0.MetaExpr(name,constraints,ty,Ast.ANY,pure)))) in
 	(loop_other (x::xs))
+    | x::(PC.TPArob _,_)::(PC.TMetaExpList(name,len,pure,clt),_)::xs ->
+	let x =
+	  process_minus_positions x name clt
+	    (function name ->
+	      let len =
+		match len with
+		  Ast.AnyLen -> Ast0.AnyListLen
+		| Ast.MetaLen nm ->
+		    Ast0.MetaListLen(Parse_aux.clt2mcode nm clt)
+		| Ast.CstLen n -> Ast0.CstListLen n in
+	      Ast0.ExprTag
+		(Ast0.wrap
+		   (Ast0.MetaExprList(name,len,pure)))) in
+	(loop_other (x::xs))
     | x::(PC.TPArob _,_)::(PC.TMetaInit(name,pure,clt),_)::xs ->
 	let x =
 	  process_minus_positions x name clt

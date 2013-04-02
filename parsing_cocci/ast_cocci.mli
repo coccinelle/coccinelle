@@ -344,6 +344,8 @@ and base_parameterTypeDef =
   | MetaParam     of meta_name mcode * keep_binding * inherited
   | MetaParamList of meta_name mcode * listlen * keep_binding * inherited
 
+  | AsParam       of parameterTypeDef * expression (* expr, always metavar *)
+
   | PComma        of string mcode
 
   | Pdots         of string mcode (* ... *)

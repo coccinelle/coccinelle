@@ -556,6 +556,8 @@ and parameterTypeDef p =
   | Ast.Pcircles(dots) -> mcode print_string dots
   | Ast.OptParam(param) -> print_string "?"; parameterTypeDef param
   | Ast.UniqueParam(param) -> print_string "!"; parameterTypeDef param
+  | Ast.AsParam(p,asexp) ->
+      parameterTypeDef p; print_string "@"; expression asexp
 
 and parameter_list l = dots (function _ -> ()) parameterTypeDef l
 

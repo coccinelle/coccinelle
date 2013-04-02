@@ -366,6 +366,7 @@ let rec propagate_types env =
 	      let ty = Ast0.ast0_type_to_type ty in
 	      List.map (function i -> (i,ty)) (strip id)
 	  | Ast0.OptParam(param) -> get_binding param
+	  | Ast0.AsParam(param,e) -> get_binding param
 	  | _ -> [] in
 	let fenv = List.concat (List.map get_binding (Ast0.undots params)) in
 	(propagate_types (fenv@env)).VT0.combiner_rec_statement_dots body

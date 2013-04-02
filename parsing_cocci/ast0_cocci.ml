@@ -261,6 +261,7 @@ and base_parameterTypeDef =
   | Param         of typeC * ident option
   | MetaParam     of Ast.meta_name mcode * pure
   | MetaParamList of Ast.meta_name mcode * listlen * pure
+  | AsParam       of parameterTypeDef * expression (* expr, always metavar *)
   | PComma        of string mcode
   | Pdots         of string mcode (* ... *)
   | Pcircles      of string mcode (* ooo *)
@@ -571,6 +572,7 @@ let rec meta_pos_name = function
   | ExprTag(e) ->
       (match unwrap e with
 	MetaExpr(name,constraints,ty,form,pure) -> name
+      | MetaExprList(name,len,pure) -> name
       | _ -> failwith "bad metavariable")
   | TypeCTag(t) ->
       (match unwrap t with
