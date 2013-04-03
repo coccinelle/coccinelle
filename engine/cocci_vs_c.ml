@@ -2815,15 +2815,21 @@ and (fullTypebis: (A.typeC, Ast_c.fullType) matcher) =
 
   (* cas general *)
   | A.MetaType(ida,keep, inherited),  typb ->
-      let max_min _ =
-	Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_type typb) in
-      X.envf keep inherited (ida, B.MetaTypeVal typb, max_min) (fun () ->
-        X.distrf_type ida typb >>= (fun ida typb ->
+      let type_present =
+	let (tyq, (ty, tyii)) = typb in
+	match ty with
+	  B.NoType -> false
+	| _ -> true in
+      if type_present
+      then
+	let max_min _ =
+	  Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_type typb) in
+	X.envf keep inherited (ida, B.MetaTypeVal typb, max_min) (fun () ->
+          X.distrf_type ida typb >>= (fun ida typb ->
           return (
             A.MetaType(ida,keep, inherited) +> A.rewrap ta,
-            typb
-          ))
-      )
+            typb)))
+      else fail (* K&R, or macro, or C++? *)
   | unwrap, (qub, typb) ->
       typeC ta typb >>= (fun ta typb ->
         return (ta, (qub, typb))

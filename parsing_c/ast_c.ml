@@ -175,7 +175,7 @@ and fullType = typeQualifier * typeC
  and typeC = typeCbis wrap (* todo reput wrap3 *)
 
   and typeCbis =
-    NoType (* for c++ only *)
+    NoType (* for c++ only, and for K&R C *)
   | BaseType        of baseType
 
   | Pointer         of fullType

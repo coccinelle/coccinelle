@@ -262,6 +262,11 @@
 - Fixed an issue where some identifiers were incorrectly interpreted as typedef.
 - allow __ at the beginning of a struct or union name
 - unparsing with precedence
+- Type metavariable should not match a case where there is no type in the
+  C code.  Thanks to SF Markus Elfring for pointing out the problem.
+- Allow an expression list metavariable to be attached to a parameter list
+  metavariable, to allow using the parameter names as an argument list.
+  Thanks to Michael Stefaniuc for pointing out the need for this feature.
 
 * 0.2.5
 ** Language:
