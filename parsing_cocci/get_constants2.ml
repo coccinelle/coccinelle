@@ -57,6 +57,8 @@ wanted *)
 type combine =
     And of combine list | Or of combine list | Elem of string | False | True
 
+let false_on_top_err = "False should not be in the final result.  Perhaps your rule doesn't contain any +/-/* code, or you have a failed dependency."
+
 let rec dep2c = function
     And l -> Printf.sprintf "(%s)" (String.concat "&" (List.map dep2c l))
   | Or l -> Printf.sprintf "(%s)" (String.concat "|" (List.map dep2c l))
@@ -123,12 +125,12 @@ let interpret_glimpse strict x =
 	else "True"
     | False ->
 	if strict
-	then failwith "False should not be in the final result.  Perhaps your rule doesn't contain any +/-/* code"
+	then failwith false_on_top_err
 	else "False" in
   match x with
     True -> None
   | False when strict ->
-      failwith "False should not be in the final result.  Perhaps your rule doesn't contain any +/-/* code"
+      failwith false_on_top_err
   | _ ->
       Some (if strict then List.map loop (x::reduce_glimpse x) else [loop x])
 
@@ -144,12 +146,12 @@ let interpret_grep strict x =
 	else ["True"]
     | False ->
 	if strict
-	then failwith "False should not be in the final result.  Perhaps your rule doesn't contain any +/-/* code"
+	then failwith false_on_top_err
 	else ["False"] in
   match x with
     True -> None
   | False when strict ->
-      failwith "False should not be in the final result.  Perhaps your rule doesn't contain any +/-/* code"
+      failwith false_on_top_err
   | _ -> Some (loop x)
 
 let interpret_google strict x =
@@ -171,12 +173,12 @@ let interpret_google strict x =
     | True -> ["True"]
     | False ->
 	if strict
-	then failwith "False should not be in the final result.  Perhaps your rule doesn't contain any +/-/* code"
+	then failwith false_on_top_err
 	else ["False"] in
   match x with
     True -> None
   | False when strict ->
-      failwith "False should not be in the final result.  Perhaps your rule doesn't contain any +/-/* code"
+      failwith false_on_top_err
   | _ -> Some (dnf x)
 
 let combine2c x =

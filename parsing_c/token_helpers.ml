@@ -172,7 +172,7 @@ let is_binary_operator = function
   | TOrLog _ | TAndLog _ |  TOr _ |  TXor _ |  TAnd _
   | TEqEq _ |  TNotEq _  | TInf _ |  TSup _ |  TInfEq _ |  TSupEq _
   | TShl _ | TShr _
-  | TPlus _ |  TMinus _ |  TMul _ |  TDiv _ |  TMod _
+  | TPlus _ |  TMinus _ |  TMul _ |  TDiv _ |  TMod _ | TMin _ | TMax _
         -> true
   | _ -> false
 
@@ -316,6 +316,8 @@ let info_of_tok = function
   | TMul                 (i) -> i
   | TDiv                 (i) -> i
   | TMod                 (i) -> i
+  | TMax                 (i) -> i
+  | TMin                 (i) -> i
 
   | Tchar                (i) -> i
   | Tshort               (i) -> i
@@ -365,6 +367,7 @@ let info_of_tok = function
   | TOParCplusplusInit   (i) -> i
 
   | EOF                  (i) -> i
+  | Tnamespace           (i) -> i
 
 
 
@@ -474,6 +477,8 @@ let visitor_info_of_tok f = function
   | TMinus               (i) -> TMinus               (f i)
   | TMul                 (i) -> TMul                 (f i)
   | TDiv                 (i) -> TDiv                 (f i)
+  | TMax                 (i) -> TMax                 (f i)
+  | TMin                 (i) -> TMin                 (f i)
   | TMod                 (i) -> TMod                 (f i)
   | Tchar                (i) -> Tchar                (f i)
   | Tshort               (i) -> Tshort               (f i)
@@ -522,6 +527,7 @@ let visitor_info_of_tok f = function
   | Tdelete              (i) -> Tdelete              (f i)
   | TOParCplusplusInit   (i) -> TOParCplusplusInit   (f i)
   | EOF                  (i) -> EOF                  (f i)
+  | Tnamespace           (i) -> Tnamespace           (f i)
 
 
 (*****************************************************************************)

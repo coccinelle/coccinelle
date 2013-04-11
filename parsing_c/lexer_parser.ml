@@ -69,7 +69,8 @@ let is_typedef s  =
 let new_scope() = Common.new_scope_h _typedef
 let del_scope() = Common.del_scope_h _typedef
 
-let add_typedef  s = Common.add_in_scope_h _typedef (s, TypeDefI)
+let add_typedef  s = 
+  Common.add_in_scope_h _typedef (s, TypeDefI)
 let add_ident s    = Common.add_in_scope_h _typedef (s, IdentI)
 
 let add_typedef_root s =

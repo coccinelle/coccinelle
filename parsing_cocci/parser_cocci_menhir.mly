@@ -108,7 +108,7 @@ let tmeta_to_ident (name,pure,clt) =
 %token TIdExpression TInitialiser TDeclaration TField TMetavariable TSymbol
 %token Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
 %token TPure TContext TGenerated
-%token TTypedef TDeclarer TIterator TName TPosition TPosAny
+%token TTypedef TDeclarer TIterator TName TPosition TAnalysis TPosAny
 %token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall
 %token TScript TInitialize TFinalize TNothing TVirtual
 %token<string> TRuleName
@@ -166,7 +166,7 @@ let tmeta_to_ident (name,pure,clt) =
 %token <Data.clt> TEqEq TNotEq TTildeEq TTildeExclEq TSub
 %token <Ast_cocci.logicalOp * Data.clt> TLogOp /* TInf TSup TInfEq TSupEq */
 %token <Ast_cocci.arithOp * Data.clt>   TShLOp TShROp  /* TShl TShr */
-%token <Ast_cocci.arithOp * Data.clt>   TDmOp  /* TDiv TMod */
+%token <Ast_cocci.arithOp * Data.clt>   TDmOp  /* TDiv TMod TMin TMax */
 %token <Data.clt> TPlus TMinus
 %token <Data.clt> TMul TTilde
 
@@ -199,7 +199,7 @@ let tmeta_to_ident (name,pure,clt) =
 %left TLogOp /* TInf TSup TInfEq TSupEq */
 %left TShLOp TShROp /* TShl TShr */
 %left TPlus TMinus
-%left TMul TDmOp /* TDiv TMod */
+%left TMul TDmOp /* TDiv TMod TMin TMax */
 
 %start reinit
 %type <unit> reinit
@@ -2451,6 +2451,7 @@ iso(term):
 never_used: TPragma { () }
   | TPArob TMetaPos { () }
   | TScriptData     { () }
+  | TAnalysis     { () }
 
 script_meta_main:
     py=pure_ident TMPtVirg

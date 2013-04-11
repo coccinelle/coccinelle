@@ -220,6 +220,7 @@ type token =
   | TAny of (Data.clt)
   | TAndLog of (Data.clt)
   | TAnd of (Data.clt)
+  | TAnalysis
   | EOF
 
 

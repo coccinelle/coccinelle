@@ -323,6 +323,8 @@ and  arithOp = function
   | Ast.Minus -> print_string "-"
   | Ast.Mul -> print_string "*"
   | Ast.Div -> print_string "/"
+  | Ast.Max -> print_string ">?"
+  | Ast.Min -> print_string "<?"
   | Ast.Mod -> print_string "%"
   | Ast.DecLeft -> print_string "<<"
   | Ast.DecRight -> print_string ">>"
@@ -581,6 +583,8 @@ and parameterTypeDef p =
   | Ast.Pcircles(dots) -> mcode print_string dots
   | Ast.OptParam(param) -> print_string "?"; parameterTypeDef param
   | Ast.UniqueParam(param) -> print_string "!"; parameterTypeDef param
+  | Ast.AsParam(p,asexp) ->
+      parameterTypeDef p; print_string "@"; expression asexp
 
 and parameter_list l = dots (function _ -> ()) parameterTypeDef l
 

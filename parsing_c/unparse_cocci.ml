@@ -289,52 +289,161 @@ let rec ident i =
 	else raise CantBeInPlus
     | Ast.OptIdent(_) | Ast.UniqueIdent(_) ->
 	raise CantBeInPlus
-
 in
+
 
 (* --------------------------------------------------------------------- *)
 (* Expression *)
 
 let rec expression e =
+  let top = 0 in 
+  let assign = 1 in
+  let cond = 2 in
+  let log_or = 3 in
+  let log_and = 4 in
+  let bit_or = 5 in
+  let bit_xor = 6 in
+  let bit_and = 7 in
+  let equal = 8 in
+  let relat = 9 in
+  let shift = 10 in
+  let addit = 11 in
+  let mulit = 12 in
+  let cast = 13 in
+  let unary = 14 in
+  let postfix = 15 in
+  let primary = 16 in
+  let left_prec_of (op, _, _, _) = 
+    match op with
+    | Ast.Arith Ast.Plus -> addit
+    | Ast.Arith Ast.Minus -> addit
+    | Ast.Arith Ast.Mul -> mulit
+    | Ast.Arith Ast.Div -> mulit
+    | Ast.Arith Ast.Min -> relat
+    | Ast.Arith Ast.Max -> relat
+    | Ast.Arith Ast.Mod -> mulit
+    | Ast.Arith Ast.DecLeft -> shift
+    | Ast.Arith Ast.DecRight -> shift
+    | Ast.Arith Ast.And -> bit_and
+    | Ast.Arith Ast.Or -> bit_or
+    | Ast.Arith Ast.Xor -> bit_xor
+	  
+    | Ast.Logical Ast.Inf -> relat
+    | Ast.Logical Ast.Sup -> relat
+    | Ast.Logical Ast.InfEq -> relat
+    | Ast.Logical Ast.SupEq -> relat
+    | Ast.Logical Ast.Eq -> equal
+    | Ast.Logical Ast.NotEq -> equal
+    | Ast.Logical Ast.AndLog -> log_and
+    | Ast.Logical Ast.OrLog -> log_or
+  in
+  let right_prec_of (op, _, _, _) = 
+    match op with
+    | Ast.Arith Ast.Plus -> mulit
+    | Ast.Arith Ast.Minus -> mulit
+    | Ast.Arith Ast.Mul -> cast
+    | Ast.Arith Ast.Div -> cast
+    | Ast.Arith Ast.Min -> shift
+    | Ast.Arith Ast.Max -> shift
+    | Ast.Arith Ast.Mod -> cast
+    | Ast.Arith Ast.DecLeft -> addit
+    | Ast.Arith Ast.DecRight -> addit
+    | Ast.Arith Ast.And -> equal
+    | Ast.Arith Ast.Or -> bit_xor
+    | Ast.Arith Ast.Xor -> bit_and
+	  
+    | Ast.Logical Ast.Inf -> shift
+    | Ast.Logical Ast.Sup -> shift
+    | Ast.Logical Ast.InfEq -> shift
+    | Ast.Logical Ast.SupEq -> shift
+    | Ast.Logical Ast.Eq -> relat
+    | Ast.Logical Ast.NotEq -> relat
+    | Ast.Logical Ast.AndLog -> bit_or
+    | Ast.Logical Ast.OrLog -> log_and
+  in
+  let prec_of_c = function
+    | Ast_c.Ident (ident) -> primary
+    | Ast_c.Constant (c) -> primary
+    | Ast_c.FunCall  (e, es) -> postfix
+    | Ast_c.CondExpr (e1, e2, e3) -> cond
+    | Ast_c.Sequence (e1, e2) -> top
+    | Ast_c.Assignment (e1, op, e2) -> assign
+    | Ast_c.Postfix(e, op) -> postfix
+    | Ast_c.Infix  (e, op) -> unary
+    | Ast_c.Unary  (e, op) -> unary
+    | Ast_c.Binary (e1, Ast_c.Arith Ast_c.Plus, e2) -> addit
+    | Ast_c.Binary (e1, Ast_c.Arith Ast_c.Minus, e2) -> addit
+    | Ast_c.Binary (e1, Ast_c.Arith Ast_c.Mul, e2) -> addit
+    | Ast_c.Binary (e1, Ast_c.Arith Ast_c.Div, e2) -> addit
+    | Ast_c.Binary (e1, Ast_c.Arith Ast_c.Min, e2) -> relat
+    | Ast_c.Binary (e1, Ast_c.Arith Ast_c.Max, e2) -> relat
+    | Ast_c.Binary (e1, Ast_c.Arith Ast_c.Mod, e2) -> addit
+    | Ast_c.Binary (e1, Ast_c.Arith Ast_c.DecLeft, e2) -> addit
+    | Ast_c.Binary (e1, Ast_c.Arith Ast_c.DecRight, e2) -> addit
+    | Ast_c.Binary (e1, Ast_c.Arith Ast_c.And, e2) -> addit
+    | Ast_c.Binary (e1, Ast_c.Arith Ast_c.Or, e2) -> addit
+    | Ast_c.Binary (e1, Ast_c.Arith Ast_c.Xor, e2) -> addit
+    | Ast_c.Binary (e1, Ast_c.Logical Ast_c.AndLog, e2) -> addit
+    | Ast_c.Binary (e1, Ast_c.Logical Ast_c.OrLog, e2) -> addit
+    | Ast_c.Binary (e1, Ast_c.Logical Ast_c.Eq, e2) -> addit
+    | Ast_c.Binary (e1, Ast_c.Logical Ast_c.NotEq, e2) -> addit
+    | Ast_c.Binary (e1, Ast_c.Logical Ast_c.Sup, e2) -> addit
+    | Ast_c.Binary (e1, Ast_c.Logical Ast_c.Inf, e2) -> addit
+    | Ast_c.Binary (e1, Ast_c.Logical Ast_c.SupEq, e2) -> addit
+    | Ast_c.Binary (e1, Ast_c.Logical Ast_c.InfEq, e2) -> addit
+    | Ast_c.ArrayAccess (e1, e2) -> postfix
+    | Ast_c.RecordAccess (e, name) -> postfix
+    | Ast_c.RecordPtAccess (e, name) -> postfix
+    | Ast_c.SizeOfExpr (e) -> unary
+    | Ast_c.SizeOfType (t) -> unary
+    | Ast_c.Cast (t, e) -> cast
+    | Ast_c.StatementExpr (statxs, _) -> top
+    | Ast_c.Constructor (t, init) -> unary
+    | Ast_c.ParenExpr (e) -> primary
+    | Ast_c.New (_, t) -> unary
+    | Ast_c.Delete(t) -> unary
+  in
+
+  let rec loop e prec = 
   match Ast.unwrap e with
     Ast.Ident(id) -> ident id
   | Ast.Constant(const) -> mcode constant const
   | Ast.FunCall(fn,lp,args,rp) ->
-      expression fn; mcode (print_string_with_hint StartBox) lp;
+      loop fn postfix; mcode (print_string_with_hint StartBox) lp;
       dots (function _ -> ()) arg_expression args;
       mcode (print_string_with_hint EndBox) rp
   | Ast.Assignment(left,op,right,_) ->
-      expression left; pr_space(); mcode assignOp op;
-      pr_space(); expression right
+      loop left unary; pr_space(); mcode assignOp op;
+      pr_space(); loop right assign
   | Ast.Sequence(left,op,right) ->
-      expression left; mcode print_string op;
-      pr_space(); expression right
+      loop left top; mcode print_string op;
+      pr_space(); loop right assign
   | Ast.CondExpr(exp1,why,exp2,colon,exp3) ->
-      expression exp1; pr_space(); mcode print_string why;
-      print_option (function e -> pr_space(); expression e) exp2;
-      pr_space(); mcode print_string colon; pr_space(); expression exp3
-  | Ast.Postfix(exp,op) -> expression exp; mcode fixOp op
-  | Ast.Infix(exp,op) -> mcode fixOp op; expression exp
-  | Ast.Unary(exp,op) -> mcode unaryOp op; expression exp
+      loop exp1 log_or; pr_space(); mcode print_string why;
+      print_option (function e -> pr_space(); loop e top) exp2;
+      pr_space(); mcode print_string colon; pr_space(); loop exp3 cond
+  | Ast.Postfix(exp,op) -> loop exp postfix; mcode fixOp op
+  | Ast.Infix(exp,op) -> mcode fixOp op; loop exp unary
+  | Ast.Unary(exp,op) -> mcode unaryOp op; loop exp unary
   | Ast.Binary(left,op,right) ->
-      expression left; pr_space(); mcode binaryOp op; pr_space();
-      expression right
+      loop left (left_prec_of op); pr_space(); mcode binaryOp op; pr_space();
+      loop right (right_prec_of op)
   | Ast.Nested(left,op,right) -> failwith "nested only in minus code"
   | Ast.Paren(lp,exp,rp) ->
-      mcode print_string_box lp; expression exp; close_box();
+      mcode print_string_box lp; loop exp top; close_box();
       mcode print_string rp
   | Ast.ArrayAccess(exp1,lb,exp2,rb) ->
-      expression exp1; mcode print_string_box lb; expression exp2; close_box();
+      loop exp1 postfix; mcode print_string_box lb; loop exp2 top; close_box();
       mcode print_string rb
   | Ast.RecordAccess(exp,pt,field) ->
-      expression exp; mcode print_string pt; ident field
+      loop exp postfix; mcode print_string pt; ident field
   | Ast.RecordPtAccess(exp,ar,field) ->
-      expression exp; mcode print_string ar; ident field
+      loop exp postfix; mcode print_string ar; ident field
   | Ast.Cast(lp,ty,rp,exp) ->
       mcode print_string_box lp; fullType ty; close_box();
-      mcode print_string rp; expression exp
+      mcode print_string rp; loop exp cast
   | Ast.SizeOfExpr(sizeof,exp) ->
-      mcode print_string sizeof; expression exp
+      mcode print_string sizeof; loop exp unary
   | Ast.SizeOfType(sizeof,lp,ty,rp) ->
       mcode print_string sizeof;
       mcode print_string_box lp; fullType ty; close_box();
@@ -348,14 +457,21 @@ let rec expression e =
       failwith "metaErr not handled"
 
   | Ast.MetaExpr (name,_,_,_typedontcare,_formdontcare,_) ->
-      handle_metavar name  (function
-        | Ast_c.MetaExprVal (exp,_) ->
-            pretty_print_c.Pretty_print_c.expression exp
+      handle_metavar name (function
+        | Ast_c.MetaExprVal ((((e, _), _) as exp),_) ->
+	    if prec_of_c e < prec then
+	      begin
+		print_text "(";
+		pretty_print_c.Pretty_print_c.expression exp;
+		print_text ")"
+	      end
+	    else
+              pretty_print_c.Pretty_print_c.expression exp
         | _ -> raise (Impossible 145)
       )
 
   | Ast.MetaExprList (name,_,_,_) ->
-      handle_metavar name  (function
+      handle_metavar name (function
         | Ast_c.MetaExprListVal args ->
             pretty_print_c.Pretty_print_c.arg_list args
 	| Ast_c.MetaParamListVal _ ->
@@ -363,7 +479,7 @@ let rec expression e =
         | _ -> raise (Impossible 146)
       )
 
-  | Ast.AsExpr(expr,asexpr) -> expression expr
+  | Ast.AsExpr(expr,asexpr) -> loop expr prec
 
   | Ast.EComma(cm) -> mcode print_string cm
 
@@ -397,6 +513,8 @@ let rec expression e =
 
   | Ast.OptExp(exp) | Ast.UniqueExp(exp) ->
       raise CantBeInPlus
+  in
+  loop e top
 
 and arg_expression e =
   match Ast.unwrap e with
@@ -434,6 +552,8 @@ and  arithOp = function
   | Ast.Minus -> print_string "-"
   | Ast.Mul -> print_string "*"
   | Ast.Div -> print_string "/"
+  | Ast.Max -> print_string ">?"
+  | Ast.Min -> print_string "<?"
   | Ast.Mod -> print_string "%"
   | Ast.DecLeft -> print_string "<<"
   | Ast.DecRight -> print_string ">>"
@@ -765,6 +885,8 @@ and parameterTypeDef p =
 	    Ast_c.MetaParamListVal p ->
               pretty_print_c.Pretty_print_c.paramlist p
           | _ -> raise (Impossible 154))
+
+  | Ast.AsParam(p,e) -> raise CantBeInPlus
 
   | Ast.PComma(cm) -> mcode print_string cm
   | Ast.Pdots(dots) | Ast.Pcircles(dots) when generating ->

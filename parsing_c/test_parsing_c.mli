@@ -2,6 +2,8 @@ open Common.BasicType
 
 val test_tokens_c : filename -> unit
 
+val get_files : string -> string list
+
 (* parse and handle some regression information when called with dirmode *)
 val test_parse_c  : filename list -> unit
 val test_parse_h  : filename list -> unit

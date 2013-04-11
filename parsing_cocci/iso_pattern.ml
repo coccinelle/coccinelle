@@ -2162,6 +2162,8 @@ let get_name = function
       (nm,function nm -> Ast.MetaLocalFuncDecl(ar,nm))
   | Ast.MetaPosDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaPosDecl(ar,nm))
+  | Ast.MetaAnalysisDecl(ar,nm) ->
+      (nm,function nm -> Ast.MetaAnalysisDecl(ar,nm))
   | Ast.MetaDeclarerDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaDeclarerDecl(ar,nm))
   | Ast.MetaIteratorDecl(ar,nm) ->

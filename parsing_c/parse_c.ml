@@ -618,7 +618,6 @@ let rec lexer_function ~pass tr = fun lexbuf ->
 
 let max_pass = 4
 
-
 let get_one_elem ~pass tr (file, filelines) =
 
   if not (LP.is_enabled_typedef()) && !Flag_parsing_c.debug_typedef

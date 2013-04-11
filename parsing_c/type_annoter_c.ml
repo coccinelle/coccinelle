@@ -961,7 +961,7 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
             | _ -> k expr; Type_c.noTypeHere
           *)
 
-    | New ty ->
+    | New (_, ty) ->
 	k expr;
 	pr2_once "Type annotater:not handling New";
 	Type_c.noTypeHere (* TODO *)
@@ -1264,6 +1264,7 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
       | EmptyDef _
       | NotParsedCorrectly _
       | FinalDef _
+      | Namespace _
           ->
           k elem
     );

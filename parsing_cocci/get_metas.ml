@@ -526,33 +526,50 @@ and designator = function
        Ast0.DesignatorRange(lb,min,dots,max,rb))
 	
 and parameterTypeDef p =
-  rewrap p
-    (match Ast0.unwrap p with
-      Ast0.VoidParam(ty) ->
-	let (n,ty) = typeC ty in (n,Ast0.VoidParam(ty))
-    | Ast0.Param(ty,Some id) ->
-	let ((ty_id_n,ty),id) = named_type ty id in
-	(ty_id_n, Ast0.Param(ty,Some id))
-    | Ast0.Param(ty,None) ->
-	let (ty_n,ty) = typeC ty in
-	(ty_n, Ast0.Param(ty,None))
-    | Ast0.MetaParam(name,pure) ->
-	let (n,name) = mcode name in
-	(n,Ast0.MetaParam(name,pure))
-    | Ast0.MetaParamList(name,lenname,pure) ->
-	let (n,name) = mcode name in
-	(n,Ast0.MetaParamList(name,lenname,pure))
-    | Ast0.PComma(cm) ->
-	let (n,cm) = mcode cm in (n,Ast0.PComma(cm))
-    | Ast0.Pdots(dots) ->
-	let (n,dots) = mcode dots in (n,Ast0.Pdots(dots))
-    | Ast0.Pcircles(dots) ->
-	let (n,dots) = mcode dots in (n,Ast0.Pcircles(dots))
-    | Ast0.OptParam(param) ->
-	let (n,param) = parameterTypeDef param in (n,Ast0.OptParam(param))
-    | Ast0.UniqueParam(param) ->
-	let (n,param) = parameterTypeDef param in
-	(n,Ast0.UniqueParam(param)))
+  match Ast0.unwrap p with
+    Ast0.MetaParamList(name,lenname,pure) ->
+      let (metas,p) =
+	rewrap p
+	  (let (n,name) = mcode name in
+	  (n,Ast0.MetaParamList(name,lenname,pure))) in
+      List.fold_left
+	(function (other_metas,id) ->
+	  function
+	      ((Ast0.ExprTag(exp_meta)) as x) ->
+		(match Ast0.unwrap exp_meta with
+		  Ast0.MetaExprList _ ->
+		    (other_metas,Ast0.rewrap p (Ast0.AsParam(p,exp_meta)))
+		| _ -> (x::other_metas,id))
+	    | x -> (x::other_metas,id))
+	([],p) metas
+  | _ ->
+      rewrap p
+	(match Ast0.unwrap p with
+	  Ast0.VoidParam(ty) ->
+	    let (n,ty) = typeC ty in (n,Ast0.VoidParam(ty))
+	| Ast0.Param(ty,Some id) ->
+	    let ((ty_id_n,ty),id) = named_type ty id in
+	    (ty_id_n, Ast0.Param(ty,Some id))
+	| Ast0.Param(ty,None) ->
+	    let (ty_n,ty) = typeC ty in
+	    (ty_n, Ast0.Param(ty,None))
+	| Ast0.MetaParam(name,pure) ->
+	    let (n,name) = mcode name in
+	    (n,Ast0.MetaParam(name,pure))
+	| Ast0.MetaParamList(name,lenname,pure) ->
+	    failwith "not possible"
+	| Ast0.AsParam _ -> failwith "not possible"
+	| Ast0.PComma(cm) ->
+	    let (n,cm) = mcode cm in (n,Ast0.PComma(cm))
+	| Ast0.Pdots(dots) ->
+	    let (n,dots) = mcode dots in (n,Ast0.Pdots(dots))
+	| Ast0.Pcircles(dots) ->
+	    let (n,dots) = mcode dots in (n,Ast0.Pcircles(dots))
+	| Ast0.OptParam(param) ->
+	    let (n,param) = parameterTypeDef param in (n,Ast0.OptParam(param))
+	| Ast0.UniqueParam(param) ->
+	    let (n,param) = parameterTypeDef param in
+	    (n,Ast0.UniqueParam(param)))
     
 and statement s =
   let (metas,s) =

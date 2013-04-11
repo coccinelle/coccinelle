@@ -1076,10 +1076,9 @@ let build_info_program (cprogram,typedefs,macros) env =
         fixed_flow
       )
     in
-
     {
       ast_c = c; (* contain refs so can be modified *)
-      tokens_c =  tokens;
+      tokens_c = tokens;
       fullstring = fullstr;
 
       flow = flow;
@@ -1093,8 +1092,7 @@ let build_info_program (cprogram,typedefs,macros) env =
 
       all_typedefs = typedefs;
       all_macros = macros;
-    }
-  )
+    })
 
 
 

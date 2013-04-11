@@ -105,7 +105,7 @@ let rec propagate_types env =
 
   let ident r k i =
     match Ast0.unwrap i with
-      Ast0.Id(id) ->
+      Ast0.Id((s, _, _, _, _, _) as id) ->
 	(try Some(List.assoc (Id(Ast0.unwrap_mcode id)) env)
 	with Not_found -> None)
     | Ast0.MetaId(id,_,_,_) ->
@@ -237,7 +237,8 @@ let rec propagate_types env =
 	    (match strip_cv (Ast0.get_type exp) with
 		 None -> None
 	       | Some (T.StructUnionName(_,_)) -> None
-	       | Some (T.TypeName(_)) -> None
+	       | Some (T.TypeName(s)) ->
+			  None
 	       | Some (T.MetaType(_,_,_)) -> None
 	       | Some x -> err exp x "non-structure type in field ref")
 	| Ast0.RecordPtAccess(exp,ar,field) ->
@@ -247,14 +248,17 @@ let rec propagate_types env =
 		   (match strip_cv (Some t) with
 		      | Some (T.Unknown) -> None
 		      | Some (T.MetaType(_,_,_)) -> None
-		      | Some (T.TypeName(_)) -> None
-		      | Some (T.StructUnionName(_,_)) -> None
+		      | Some (T.TypeName(s)) -> 
+			  None
+		      | Some (T.StructUnionName(s,t)) -> 
+			  None
 		      | Some x ->
 			  err exp (T.Pointer(t))
 			    "non-structure pointer type in field ref"
 		      |	_ -> failwith "not possible")
 	       | Some (T.MetaType(_,_,_)) -> None
-	       | Some (T.TypeName(_)) -> None
+	       | Some (T.TypeName(s)) ->
+		   None
 	       | Some x -> err exp x "non-structure pointer type in field ref")
 	| Ast0.Cast(lp,ty,rp,exp) -> Some(Ast0.ast0_type_to_type ty)
 	| Ast0.SizeOfExpr(szf,exp) -> Some(int_type)
@@ -353,7 +357,8 @@ let rec propagate_types env =
 	[]
     | Ast0.TyDecl(ty,_) -> []
               (* pad: should handle typedef one day and add a binding *)
-    | Ast0.Typedef(_,_,_,_) -> []
+    | Ast0.Typedef((a,_,_,_,_,_),b,c,(d,_,_,_,_,_)) -> 
+	[]
     | Ast0.DisjDecl(_,disjs,_,_) ->
 	List.concat(List.map (process_decl env) disjs)
     | Ast0.Ddots(_,_) -> [] (* not in a statement list anyway *)
@@ -393,6 +398,7 @@ let rec propagate_types env =
 	      let ty = Ast0.ast0_type_to_type ty in
 	      List.map (function i -> (i,ty)) (strip id)
 	  | Ast0.OptParam(param) -> get_binding param
+	  | Ast0.AsParam(param,e) -> get_binding param
 	  | _ -> [] in
 	let fenv = List.concat (List.map get_binding (Ast0.undots params)) in
 	(propagate_types (fenv@env)).VT0.combiner_rec_statement_dots body

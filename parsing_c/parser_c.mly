@@ -20,7 +20,7 @@ module LP = Lexer_parser
 open Lexer_parser (* for the fields *)
 
 open Semantic_c (* Semantic exn *)
-
+module T = Token_c
 
 (*****************************************************************************)
 (* Wrappers *)
@@ -426,7 +426,7 @@ let mk_string_wrap (s,info) = (s, [info])
 %token <Ast_c.info>
        TOrLog TAndLog TOr TXor TAnd  TEqEq TNotEq TInf TSup TInfEq TSupEq
        TShl TShr
-       TPlus TMinus TMul TDiv TMod
+       TPlus TMinus TMul TDiv TMod TMin TMax
 
 %token <Ast_c.info>
        Tchar Tshort Tint Tdouble Tfloat Tlong Tunsigned Tsigned Tvoid
@@ -437,7 +437,7 @@ let mk_string_wrap (s,info) = (s, [info])
        Tstruct Tunion Tenum
        Tbreak Telse Tswitch Tcase Tcontinue Tfor Tdo Tif  Twhile Treturn
        Tgoto Tdefault
-       Tsizeof Tnew Tdelete TOParCplusplusInit
+       Tsizeof Tnew Tdelete TOParCplusplusInit Tnamespace
 
 /*(* C99 *)*/
 %token <Ast_c.info>
@@ -571,7 +571,7 @@ let mk_string_wrap (s,info) = (s, [info])
 %left TInf TSup TInfEq TSupEq
 %left TShl TShr
 %left TPlus TMinus
-%left TMul TDiv TMod
+%left TMul TDiv TMod TMin TMax
 
 /*(*************************************************************************)*/
 /*(* Rules type declaration *)*/
@@ -619,11 +619,13 @@ main:
  translation_unit EOF     { $1 }
 
 translation_unit:
- | external_declaration
-     { !LP._lexer_hint.context_stack <- [LP.InTopLevel];   [$1] }
+ | 
+     { [] }
  | translation_unit external_declaration
      { !LP._lexer_hint.context_stack <- [LP.InTopLevel]; $1 ++ [$2] }
-
+ | translation_unit Tnamespace TIdent TOBrace translation_unit TCBrace
+     { !LP._lexer_hint.context_stack <- [LP.InTopLevel]; 
+       $1 ++ [Namespace ($5, [$2; snd $3; $4; $6])] }
 
 
 /*(*************************************************************************)*/
@@ -710,6 +712,8 @@ arith_expr:
  | cast_expr                     { $1 }
  | arith_expr TMul    arith_expr { mk_e(Binary ($1, Arith Mul,      $3)) [$2] }
  | arith_expr TDiv    arith_expr { mk_e(Binary ($1, Arith Div,      $3)) [$2] }
+ | arith_expr TMin    arith_expr { mk_e(Binary ($1, Arith Min,      $3)) [$2] }
+ | arith_expr TMax    arith_expr { mk_e(Binary ($1, Arith Max,      $3)) [$2] }
  | arith_expr TMod    arith_expr { mk_e(Binary ($1, Arith Mod,      $3)) [$2] }
  | arith_expr TPlus   arith_expr { mk_e(Binary ($1, Arith Plus,     $3)) [$2] }
  | arith_expr TMinus  arith_expr { mk_e(Binary ($1, Arith Minus,    $3)) [$2] }
@@ -738,7 +742,8 @@ unary_expr:
  | unary_op cast_expr              { mk_e(Unary ($2, fst $1)) [snd $1] }
  | Tsizeof unary_expr              { mk_e(SizeOfExpr ($2))    [$1] }
  | Tsizeof topar2 type_name tcpar2 { mk_e(SizeOfType ($3))    [$1;$2;$4] }
- | Tnew new_argument               { mk_e(New $2)             [$1] }
+ | Tnew new_argument               { mk_e(New (None, $2))     [$1] }
+ | Tnew TOPar argument_list_ne TCPar new_argument { mk_e(New (Some $3, $5))             [$1; $2; $4] }
  | Tdelete cast_expr               { mk_e(Delete $2)          [$1] }
 
 new_argument:
@@ -1903,7 +1908,11 @@ external_declaration:
 
 
 celem:
-   | external_declaration                         { $1 }
+ | Tnamespace TIdent TOBrace translation_unit TCBrace
+     { !LP._lexer_hint.context_stack <- [LP.InTopLevel]; 
+       Namespace ($4, [$1; snd $2; $3; $5]) }
+
+ | external_declaration                         { $1 }
 
  /*(* cppext: *)*/
  | cpp_directive

@@ -330,6 +330,7 @@ let combiner bind option_default
       | Ast.Param(ty,None) -> fullType ty
       | Ast.MetaParam(name,_,_) -> meta_mcode name
       | Ast.MetaParamList(name,_,_,_) -> meta_mcode name
+      |	Ast.AsParam(p,asexp) -> bind (parameterTypeDef p) (expression asexp)
       | Ast.PComma(cm) -> string_mcode cm
       | Ast.Pdots(dots) -> string_mcode dots
       | Ast.Pcircles(dots) -> string_mcode dots
@@ -856,6 +857,8 @@ let rebuilder
 	    Ast.MetaParam(meta_mcode name,keep,inherited)
 	| Ast.MetaParamList(name,lenname_inh,keep,inherited) ->
 	    Ast.MetaParamList(meta_mcode name,lenname_inh,keep,inherited)
+	| Ast.AsParam(p,asexp) ->
+	    Ast.AsParam(parameterTypeDef p, expression asexp)
 	| Ast.PComma(cm) -> Ast.PComma(string_mcode cm)
 	| Ast.Pdots(dots) -> Ast.Pdots(string_mcode dots)
 	| Ast.Pcircles(dots) -> Ast.Pcircles(string_mcode dots)

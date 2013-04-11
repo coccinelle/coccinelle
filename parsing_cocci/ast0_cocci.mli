@@ -275,6 +275,7 @@ and base_parameterTypeDef =
   | Param         of typeC * ident option
   | MetaParam     of Ast_cocci.meta_name mcode * pure
   | MetaParamList of Ast_cocci.meta_name mcode * listlen * pure
+  | AsParam       of parameterTypeDef * expression (* expr, always metavar *)
   | PComma        of string mcode
   | Pdots         of string mcode (* ... *)
   | Pcircles      of string mcode (* ooo *)

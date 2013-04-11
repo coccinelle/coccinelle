@@ -425,6 +425,10 @@ and unify_parameterTypeDef p1 p2 =
   | (Ast.Pdots(_),_) | (_,Ast.Pdots(_))
   | (Ast.Pcircles(_),_) | (_,Ast.Pcircles(_)) -> return true
 
+  (* not sure what to do with the asexp.... *)
+  | (Ast.AsParam(param1,asexp1),_) -> unify_parameterTypeDef param1 p2
+  | (_,Ast.AsParam(param2,asexp2)) -> unify_parameterTypeDef p1 param2
+
   | (Ast.OptParam(_),_)
   | (Ast.UniqueParam(_),_)
   | (_,Ast.OptParam(_))

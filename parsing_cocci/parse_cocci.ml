@@ -72,6 +72,7 @@ let token2c (tok,_) =
   | PC.TField -> "field"
   | PC.TStatement -> "statement"
   | PC.TPosition -> "position"
+  | PC.TAnalysis -> "analysis"
   | PC.TPosAny -> "any"
   | PC.TFunction -> "function"
   | PC.TLocal -> "local"
@@ -194,6 +195,8 @@ let token2c (tok,_) =
   | PC.TDmOp(op,clt) ->
       (match op with
 	Ast.Div -> "/"
+      |	Ast.Min -> "<?"
+      |	Ast.Max -> ">?"
       |	Ast.Mod -> "%"
       |	_ -> failwith "not possible")
       ^(line_type2c clt)
@@ -615,7 +618,7 @@ let make_name prefix ln = Printf.sprintf "%s starting on line %d" prefix ln
 let wrap_lexbuf_info lexbuf =
   (Lexing.lexeme lexbuf, Lexing.lexeme_start lexbuf)
 
-let tokens_all_full token table file get_ats lexbuf end_markers :
+let tokens_all_full token table file get_ats lexbuf end_predicate :
     (bool * ((PC.token * (string * (int * int) * (int * int))) list)) =
   try
     let rec aux () =
@@ -628,7 +631,7 @@ let tokens_all_full token table file get_ats lexbuf end_markers :
 	if get_ats
 	then failwith "unexpected end of file in a metavariable declaration"
 	else (false,[(result,info)])
-      else if List.mem result end_markers
+      else if end_predicate result
       then (true,[(result,info)])
       else
 	let (more,rest) = aux() in
@@ -636,6 +639,9 @@ let tokens_all_full token table file get_ats lexbuf end_markers :
     in aux ()
   with
     e -> pr2 (Common.error_message file (wrap_lexbuf_info lexbuf) ); raise e
+
+let in_list list tok =
+  List.mem tok list
 
 let tokens_all table file get_ats lexbuf end_markers :
     (bool * ((PC.token * (string * (int * int) * (int * int))) list)) =
@@ -660,7 +666,7 @@ let split_token ((tok,_) as t) =
     PC.TMetavariable | PC.TIdentifier
   | PC.TConstant | PC.TExpression | PC.TIdExpression
   | PC.TDeclaration | PC.TField
-  | PC.TStatement | PC.TPosition | PC.TPosAny | PC.TInitialiser | PC.TSymbol
+  | PC.TStatement | PC.TPosition | PC.TAnalysis | PC.TPosAny | PC.TInitialiser | PC.TSymbol
   | PC.TFunction | PC.TTypedef | PC.TDeclarer | PC.TIterator | PC.TName
   | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh
   | PC.TCppConcatOp | PC.TPure
@@ -855,6 +861,10 @@ let rec detect_attr l =
   let rec loop = function
       [] -> []
     | [x] -> [x]
+    | ((PC.Tstruct _,_) as t1)::x::rest ->
+	t1::x::loop rest
+    | ((PC.Tunion _,_) as t1)::x::rest ->
+	t1::x::loop rest
     | ((PC.TIdent(nm,clt),info) as t1)::id::rest when is_id id ->
 	if String.length nm > 2 && String.sub nm 0 2 = "__"
 	then (PC.Tattr(nm,clt),info)::(loop (id::rest))
@@ -1475,6 +1485,20 @@ let rec consume_minus_positions toks =
 		(Ast0.wrap
 		   (Ast0.MetaExpr(name,constraints,ty,Ast.ANY,pure)))) in
 	(loop_other (x::xs))
+    | x::(PC.TPArob _,_)::(PC.TMetaExpList(name,len,pure,clt),_)::xs ->
+	let x =
+	  process_minus_positions x name clt
+	    (function name ->
+	      let len =
+		match len with
+		  Ast.AnyLen -> Ast0.AnyListLen
+		| Ast.MetaLen nm ->
+		    Ast0.MetaListLen(Parse_aux.clt2mcode nm clt)
+		| Ast.CstLen n -> Ast0.CstListLen n in
+	      Ast0.ExprTag
+		(Ast0.wrap
+		   (Ast0.MetaExprList(name,len,pure)))) in
+	(loop_other (x::xs))
     | x::(PC.TPArob _,_)::(PC.TMetaInit(name,pure,clt),_)::xs ->
 	let x =
 	  process_minus_positions x name clt
@@ -1499,6 +1523,18 @@ let rec consume_minus_positions toks =
 	    (function name ->
 	      Ast0.StmtTag(Ast0.wrap(Ast0.MetaStmt(name,pure)))) in
 	(loop_other (x::xs))
+    | x::(PC.TPArob _,_)::(PC.TMetaIdExp(name,constraints,pure,ty,clt),_)::xs ->
+	let x =
+	  process_minus_positions x name clt
+	    (function name ->
+	      Ast0.ExprTag
+		(Ast0.wrap
+		   (Ast0.MetaExpr(name,constraints,ty,Ast.ANY,pure)))) in
+	(loop_other (x::xs))
+
+    | x::((PC.TPArob _,_) as x')::x''::xs -> 
+	x::loop_other (x'::x''::xs)
+
     | x::xs -> x::loop_other xs in
   loop_other(loop_pos toks)
     
@@ -1541,15 +1577,65 @@ let partition_either l =
       | Common.Right e -> part_either left (e :: right) l) in
   part_either [] [] l
 
+let rec collect_script_tokens = function
+    [(PC.EOF,_)] | [(PC.TArobArob,_)] | [(PC.TArob,_)] -> ""
+  | (PC.TScriptData(s),_)::[] -> 
+      s
+  | (PC.TScriptData(s),_)::xs -> 
+      s^(collect_script_tokens xs)
+  | toks ->
+      List.iter
+	(function x ->
+	  Printf.printf "%s\n" (token2c x))
+	toks;
+      failwith "Malformed script rule"
+
 let get_metavars parse_fn table file lexbuf =
   let rec meta_loop acc (* read one decl at a time *) =
     let (_,tokens) =
       Data.call_in_meta
 	(function _ ->
-	  tokens_all table file true lexbuf [PC.TArobArob;PC.TMPtVirg]) in
+	  tokens_all table file true lexbuf (in_list [PC.TArobArob;PC.TMPtVirg;PC.TAnalysis])) in
     let tokens = prepare_mv_tokens tokens in
     match tokens with
       [(PC.TArobArob,_)] -> List.rev acc
+    | (PC.TAnalysis _, _) :: tl -> 
+	Lexer_script.file := file;
+	Lexer_script.language := "ocaml";
+        let get_tokens = tokens_script_all table file false lexbuf in
+	let rec loop n toks =
+	  let (more, newtoks) = get_tokens (in_list [PC.TScriptData ")"]) in
+	  (* we stop at the first close paren*)
+	  let n = n - 1 in
+	  (* count open parens *)
+	  let count str toks =
+	    List.fold_left (fun n (t, _) ->
+	      if t = PC.TScriptData str 
+	      then n + 1
+	      else n) 0 toks in
+	  let n = n + count "(" newtoks in
+	  (* continue parsing *)
+	  if n = 0 
+	  then toks @ newtoks
+	  else loop n (toks @ newtoks) in
+	begin
+	  match get_tokens (in_list [PC.TScriptData "("]) with
+	  | (_, ([(s, _)] as toks)) -> 
+	      let data = collect_script_tokens (loop 1 toks) in
+	      let (_,tokens) =
+		Data.call_in_meta
+		  (function _ ->
+		    tokens_all table file true lexbuf (in_list [PC.TArobArob;PC.TMPtVirg])) in
+	      begin
+		match tokens with
+		| [(PC.TIdent (id, _), _); (PC.TMPtVirg, _)] ->
+		    let metavar = Common.Left (Ast.MetaAnalysisDecl (data, (!Ast0.rule_name, id))) in
+		    meta_loop (metavar :: acc)
+		| _ -> failwith "'analysis' can only have one variable"
+	      end
+	  | (_, toks) -> failwith ("'analysis' should be followed by an '(', but was followed by:\n"^(collect_script_tokens toks))
+	end
+
     | _ ->
 	let metavars = parse_one "meta" parse_fn file tokens in
 	meta_loop (metavars@acc) in
@@ -1558,7 +1644,7 @@ let get_metavars parse_fn table file lexbuf =
 let get_script_metavars parse_fn table file lexbuf =
   let rec meta_loop acc =
     let (_, tokens) =
-      tokens_all table file true lexbuf [PC.TArobArob; PC.TMPtVirg] in
+      tokens_all table file true lexbuf (in_list [PC.TArobArob; PC.TMPtVirg]) in
     let tokens = prepare_tokens tokens in
     match tokens with
       [(PC.TArobArob, _)] -> List.rev acc
@@ -1574,7 +1660,7 @@ let get_rule_name parse_fn starts_with_name get_tokens file prefix =
   let name_res =
     if starts_with_name
     then
-      let (_,tokens) = get_tokens [PC.TArob] in
+      let (_,tokens) = get_tokens (in_list [PC.TArob]) in
       let check_name = function
 	  None -> Some (mknm())
 	| Some nm ->
@@ -1603,7 +1689,7 @@ let parse_iso file =
     let lexbuf = Lexing.from_channel channel in
     let get_tokens = tokens_all table file false lexbuf in
     let res =
-      match get_tokens [PC.TArobArob;PC.TArob] with
+      match get_tokens (in_list [PC.TArobArob;PC.TArob]) with
 	(true,start) ->
 	  let parse_start start =
 	    let rev = List.rev start in
@@ -1628,9 +1714,9 @@ let parse_iso file =
 	    (* get the rule *)
 	    let (more,tokens) =
 	      get_tokens
-		[PC.TIsoStatement;PC.TIsoExpression;PC.TIsoArgExpression;
+		(in_list [PC.TIsoStatement;PC.TIsoExpression;PC.TIsoArgExpression;
 		  PC.TIsoTestExpression; PC.TIsoToTestExpression;
-		  PC.TIsoDeclaration;PC.TIsoType;PC.TIsoTopLevel] in
+		  PC.TIsoDeclaration;PC.TIsoType;PC.TIsoTopLevel]) in
 	    let next_start = List.hd(List.rev tokens) in
 	    let dummy_info = ("",(-1,-1),(-1,-1)) in
 	    let tokens = drop_last [(PC.EOF,dummy_info)] tokens in
@@ -1644,7 +1730,7 @@ let parse_iso file =
 	    then (* The code below allows a header like Statement list,
 		    which is more than one word.  We don't have that any more,
 		    but the code is left here in case it is put back. *)
-	      match get_tokens [PC.TArobArob;PC.TArob] with
+	      match get_tokens (in_list [PC.TArobArob;PC.TArob]) with
 		(true,start) ->
 		  let (starts_with_name,start) = parse_start start in
 		  (iso_metavars,entry,rule_name) ::
@@ -1721,7 +1807,7 @@ let parse file =
   let lexbuf = Lexing.from_channel channel in
   let get_tokens = tokens_all table file false lexbuf in
   Data.in_prolog := true;
-  let initial_tokens = get_tokens [PC.TArobArob;PC.TArob] in
+  let initial_tokens = get_tokens (in_list [PC.TArobArob;PC.TArob]) in
   Data.in_prolog := false;
   let res =
     match initial_tokens with
@@ -1769,7 +1855,7 @@ let parse file =
 		 Lexer_cocci.metavariables []);
 
             (* get transformation rules *)
-            let (more, tokens) = get_tokens [PC.TArobArob; PC.TArob] in
+            let (more, tokens) = get_tokens (in_list [PC.TArobArob; PC.TArob]) in
             let (minus_tokens, _) = split_token_stream tokens in
             let (_, plus_tokens) =
 	      split_token_stream (minus_to_nothing tokens) in
@@ -1848,16 +1934,6 @@ let parse file =
               (iso, dropiso, dependencies, rule_name, exists)),
               (plus_res, metavars), ruletype), metavars, tokens) in
 
-	  let rec collect_script_tokens = function
-	      [(PC.EOF,_)] | [(PC.TArobArob,_)] | [(PC.TArob,_)] -> ""
-	    | (PC.TScriptData(s),_)::xs -> s^(collect_script_tokens xs)
-	    | toks ->
-		List.iter
-		  (function x ->
-		    Printf.printf "%s\n" (token2c x))
-		  toks;
-		failwith "Malformed script rule" in
-
           let parse_script_rule name language old_metas deps =
 	    Lexer_script.file := file;
 	    Lexer_script.language := language;
@@ -1906,7 +1982,7 @@ let parse file =
 	      metavars;
 *)
               (* script code *)
-            let (more, tokens) = get_tokens [PC.TArobArob; PC.TArob] in
+            let (more, tokens) = get_tokens (in_list [PC.TArobArob; PC.TArob]) in
             let data = collect_script_tokens tokens in
             (more,
 	     Ast0.ScriptRule(name, language, deps, metavars,
@@ -1919,7 +1995,7 @@ let parse file =
             let get_tokens = tokens_script_all table file false lexbuf in
 
               (* script code *)
-            let (more, tokens) = get_tokens [PC.TArobArob; PC.TArob] in
+            let (more, tokens) = get_tokens (in_list [PC.TArobArob; PC.TArob]) in
             let data = collect_script_tokens tokens in
             (more,k (name, language, deps, data),[],tokens) in
 

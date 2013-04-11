@@ -216,23 +216,17 @@ let within_bounds c l u =
   | (Some k, Some n) -> k <= c && c <= n
 
 let contains_bounds m n l u =
-  match (l, u) with
-    (None, None)     -> true
-  | (None, Some k)   -> begin
-      match (m, n) with
-        (_, None)    -> false
-      | (_, Some j)  -> j <= k
-    end
-  | (Some k, None)   -> begin
-      match (m, n) with
-	(None, _)    -> false
-      | (Some j, _)  -> k <= j
-    end
-  | (Some k, Some q) -> begin
-      match (m, n) with
-	(Some i, Some j) -> k <= i && j <= q
-      | _                -> false
-    end
+  begin 
+    match (l, m) with
+      (None, None)     -> true
+    | (Some k, Some i) -> k <= i
+    | _                -> false
+  end && begin
+    match (u, n) with
+      (None, None)     -> true
+    | (Some q, Some j) -> j <= q
+    | _                -> false
+  end
 
 (* given two result values, computes their intersection. An empty intersection
    is indicated with a None result value.
@@ -310,4 +304,4 @@ let contains_int c r =
 
 let has_only_nul = for_all1 (single_int Int64.zero)
 let has_also_nul = exists (contains_int Int64.zero)
-let has_also_int c = exists (contains_int Int64.zero)
+let has_also_int c = exists (contains_int c)

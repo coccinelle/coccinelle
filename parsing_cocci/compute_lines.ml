@@ -759,6 +759,7 @@ and parameterTypeDef p =
   | Ast0.UniqueParam(param) ->
       let res = parameterTypeDef param in
       mkres p (Ast0.UniqueParam(res)) res res
+  | Ast0.AsParam _ -> failwith "not possible"
 
 and parameter_list prev = dots is_param_dots prev parameterTypeDef
 

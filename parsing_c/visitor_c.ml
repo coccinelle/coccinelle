@@ -326,7 +326,10 @@ let rec vk_expr = fun bigf expr ->
 
     | ParenExpr (e) -> exprf e
 
-    | New  t   -> vk_argument bigf t
+    | New  (None, t)   -> vk_argument bigf t
+    | New  (Some ts, t)   -> 
+        vk_argument_list bigf ts;
+	vk_argument bigf t
     | Delete e -> vk_expr bigf e
 
 
@@ -686,6 +689,8 @@ and vk_toplevel = fun bigf p ->
 
     | NotParsedCorrectly ii -> iif ii
     | FinalDef info -> vk_info bigf info
+
+    | Namespace (tls, ii) -> List.iter (vk_toplevel bigf) tls
   in f (k, bigf) p
 
 and vk_program = fun bigf xs ->
@@ -1053,26 +1058,26 @@ let rec vk_expr_s = fun bigf expr ->
       | Unary    (e, op) -> Unary   (exprf e, op)
       | Binary   (e1, op, e2) -> Binary (exprf e1, op, exprf e2)
 
-      | ArrayAccess    (e1, e2) -> ArrayAccess (exprf e1, exprf e2)
-      | RecordAccess   (e, name) ->
-          RecordAccess     (exprf e, vk_name_s bigf name)
-      | RecordPtAccess (e, name) ->
-          RecordPtAccess   (exprf e, vk_name_s bigf name)
+      | ArrayAccess    (e1, e2)  -> ArrayAccess (exprf e1, exprf e2)
+      | RecordAccess   (e, name) -> RecordAccess (exprf e, vk_name_s bigf name)
+      | RecordPtAccess (e, name) -> RecordPtAccess (exprf e, vk_name_s bigf name)
 
-      | SizeOfExpr  (e) -> SizeOfExpr   (exprf e)
+      | SizeOfExpr  (e) -> SizeOfExpr (exprf e)
       | SizeOfType  (t) -> SizeOfType (vk_type_s bigf t)
-      | Cast    (t, e) ->  Cast   (vk_type_s bigf t, exprf e)
+      | Cast    (t, e)  -> Cast (vk_type_s bigf t, exprf e)
 
       | StatementExpr (statxs, is) ->
           StatementExpr (
             vk_statement_sequencable_list_s bigf statxs,
             iif is)
-      | Constructor (t, init) ->
-          Constructor (vk_type_s bigf t, vk_ini_s bigf init)
+      | Constructor (t, init) -> Constructor (vk_type_s bigf t, vk_ini_s bigf init)
 
-      | ParenExpr (e) -> ParenExpr (exprf e)
+      | ParenExpr (e)    -> ParenExpr (exprf e)
 
-      | New  t        -> New (vk_argument_s bigf t)
+      | New (None, t)    -> New (None, vk_argument_s bigf t)
+      | New (Some ts, t) -> 
+	  New (Some (ts +> List.map (fun (e,ii) ->
+	    vk_argument_s bigf e, iif ii)), vk_argument_s bigf t)
       | Delete e      -> Delete (vk_expr_s bigf e)
 
     in
@@ -1499,6 +1504,7 @@ and vk_toplevel_s = fun bigf p ->
 
     | NotParsedCorrectly ii -> NotParsedCorrectly (iif ii)
     | FinalDef info -> FinalDef (vk_info_s bigf info)
+    | Namespace (tls, ii) -> Namespace (List.map (vk_toplevel_s bigf) tls, ii)
   in f (k, bigf) p
 
 and vk_program_s = fun bigf xs ->

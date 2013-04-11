@@ -159,7 +159,6 @@ let rec remap_keyword_tokens xs =
           x::y::remap_keyword_tokens xs
 
       | Parser_c.TCppConcatOp (i1),   y ->
-
           let s = TH.str_of_tok y in
           let ii = TH.info_of_tok y in
           if s ==~ Common.regexp_alpha
@@ -360,6 +359,7 @@ let rec apply_macro_defs
 	      let build_binder params xxs =
 		let rec loop = function
 		    ([],[]) -> Some (function [] -> [] | _ -> failwith "bad")
+		  | ([],[[]]) -> Some (function [[]] -> [] | _ -> failwith "bad")
 		  | ([],l) -> None
 		  | ([(VariadicArg s)],l) ->
 		      Some (function l -> List.map (function a -> (s,a)) l)

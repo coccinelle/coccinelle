@@ -24,7 +24,7 @@ exception Parsing of string
 %token TEllipsis
 
 %token TOrLog TAndLog TOrIncl TOrExcl TAnd  TEqEq TNotEq TInf TSup TInfEq TSupEq  TShl TShr
-       TPlus TMinus TMul TDiv TMod
+       TPlus TMinus TMul TDiv TMod TMin TMax
 
 %token Tchar Tshort Tint Tdouble Tfloat Tlong Tunsigned Tsigned Tvoid
        Tauto Tregister Textern Tstatic
@@ -45,7 +45,7 @@ exception Parsing of string
 %left TInf TSup TInfEq TSupEq
 %left TShl TShr
 %left TPlus TMinus
-%left TMul TDiv TMod
+%left TMul TDiv TMod TMin TMax
 
 %start main
 %type <int list> main
@@ -76,6 +76,8 @@ cond_expr: arith_expr                             {}
 arith_expr: cast_expr {}
 	  | arith_expr TMul    arith_expr {}
 	  | arith_expr TDiv    arith_expr {}
+	  | arith_expr TMin    arith_expr {}
+	  | arith_expr TMax    arith_expr {}
 	  | arith_expr TMod    arith_expr {}
 	  | arith_expr TPlus   arith_expr {}
 	  | arith_expr TMinus  arith_expr {}

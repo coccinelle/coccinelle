@@ -118,6 +118,7 @@ and metavar =
   | MetaFuncDecl of arity * meta_name (* name *)
   | MetaLocalFuncDecl of arity * meta_name (* name *)
   | MetaPosDecl of arity * meta_name (* name *)
+  | MetaAnalysisDecl of string * meta_name (* name *)
   | MetaDeclarerDecl of arity * meta_name (* name *)
   | MetaIteratorDecl of arity * meta_name (* name *)
 
@@ -244,7 +245,7 @@ and  fixOp = Dec | Inc
 
 and  binaryOp = Arith of arithOp | Logical of logicalOp
 and  arithOp =
-    Plus | Minus | Mul | Div | Mod | DecLeft | DecRight | And | Or | Xor
+    Plus | Minus | Mul | Div | Mod | DecLeft | DecRight | And | Or | Xor | Min | Max
 and  logicalOp = Inf | Sup | InfEq | SupEq | Eq | NotEq | AndLog | OrLog
 
 and constant =
@@ -370,6 +371,8 @@ and base_parameterTypeDef =
 
   | MetaParam     of meta_name mcode * keep_binding * inherited
   | MetaParamList of meta_name mcode * listlen * keep_binding * inherited
+
+  | AsParam       of parameterTypeDef * expression (* expr, always metavar *)
 
   | PComma        of string mcode
 

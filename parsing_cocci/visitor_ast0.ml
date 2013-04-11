@@ -581,6 +581,10 @@ let visitor mode bind option_default
 	| Ast0.MetaParamList(name,lenname,pure) ->
 	    let (n,name) = meta_mcode name in
 	    (n,Ast0.MetaParamList(name,lenname,pure))
+	| Ast0.AsParam(p,asexp) ->
+	    let (p_n,p) = parameterTypeDef p in
+	    let (asexp_n,asexp) = expression asexp in
+	    (bind p_n asexp_n, Ast0.AsParam(p,asexp))
 	| Ast0.PComma(cm) ->
 	    let (n,cm) = string_mcode cm in (n,Ast0.PComma(cm))
 	| Ast0.Pdots(dots) ->
