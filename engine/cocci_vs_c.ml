@@ -2820,7 +2820,13 @@ and (fullTypebis: (A.typeC, Ast_c.fullType) matcher) =
 	match ty with
 	  B.NoType -> false
 	| _ -> true in
-      if type_present
+      let position_required_but_unavailable =
+	match A.get_pos_var ida with
+	  [] -> false
+	| _ ->
+	    let (tyq, (ty, tyii)) = typb in
+	    List.for_all Ast_c.is_fake tyii in
+      if type_present && not position_required_but_unavailable
       then
 	let max_min _ =
 	  Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_type typb) in

@@ -884,6 +884,12 @@ An initializer for a structure can be ordered or unordered.  It is
 considered to be unordered if there is at least one key-value pair
 initializer, e.g., \texttt{.x = e}.
 
+A declaration can have \textit{e.g.} the form \texttt{register x;}.  In
+this case, the variable implicitly has type int, and SmPL code
+that declares an int variable will match such a declaration.  On the other
+hand, the implicit int type has no position.  If the SmPL code tries to
+record the position of the type, the match will fail.
+
 \section{Statements}
 
 The first rule {\em statement} describes the various forms of a statement.

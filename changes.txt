@@ -267,6 +267,12 @@
 - Allow an expression list metavariable to be attached to a parameter list
   metavariable, to allow using the parameter names as an argument list.
   Thanks to Michael Stefaniuc for pointing out the need for this feature.
+- register x; in C is considered to implicitly declare an int typed
+  variable.  A type metavariable that is part of a match of this
+  declaration will get bound to int.  But if the type metavariable
+  furthermore is associated with a position metavariable, the match will
+  fail, because the implicit int has no position.  Thanks to Nic Volanschi
+  for pointing out the problem.
 
 * 0.2.5
 ** Language:
