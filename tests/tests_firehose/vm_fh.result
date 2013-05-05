@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<analysis>
+  <metadata>
+    <generator name="coccinelle" version=""/>
+  </metadata>
+  <results>
+    <issue>
+      <message>alloc=kmalloc</message>
+      <location>
+        <file given-path="tests_firehose/vm.c"/>
+        <function name="main"/>
+        <range>
+          <point column="6" line="2"/>
+          <point column="13" line="2"/>
+        </range>
+      </location>
+    </issue>
+  </results>
+</analysis>
