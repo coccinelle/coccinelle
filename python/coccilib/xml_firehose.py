@@ -5,9 +5,10 @@ try:
     File, Location, Generator, Metadata, Analysis, Issue, Notes, Failure, \
     CustomFields
 except ImportError:
-    print "Error: Firehose is not installed or not in the Python path."
-    print "Try 'pip install firehose' as root."
-    import sys; sys.exit()
+    pass
+    #print "Error: Firehose is not installed or not in the Python path."
+    #print "Try 'pip install firehose' as root."
+    #import sys; sys.exit()
 
 
 def __build_analysis(sut = None, file_ = None, stats = None,
