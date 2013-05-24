@@ -1863,10 +1863,14 @@ let pre_engine2 (coccifile, isofile) =
 	function
 	    InitialScriptRuleCocciInfo(r) ->
 	      let rlang = r.language in
-	      (if List.mem rlang languages
-	      then failwith ("double initializer found for "^rlang));
 	      if interpret_dependencies [] [] r.scr_rule_info.dependencies
-	      then begin runrule r; rlang::languages end
+	      then
+		begin
+		  (if List.mem rlang languages
+		  then failwith ("double initializer found for "^rlang));
+		  runrule r;
+		  rlang::languages
+		end
 	      else languages
 	  | _ -> languages)
       [] cocci_infos in
