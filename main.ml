@@ -844,24 +844,24 @@ let rec main_action xs =
 	  
           let infiles =
             Common.profile_code "Main.infiles computation" (fun () ->
-	      match !dir, !kbuild_info, !Flag.scanner with
+	      match !dir, !kbuild_info, !Flag.scanner, xs with
             (* glimpse *)
-              | false, _, (Flag.Glimpse|Flag.IdUtils) -> [x::xs]
-              | true, s, (Flag.Glimpse|Flag.IdUtils) when s <> "" ->
+              | false, _, (Flag.Glimpse|Flag.IdUtils), _ -> [x::xs]
+              | true, s, (Flag.Glimpse|Flag.IdUtils), _ when s <> "" ->
                   failwith
-		    "-use_glimpse or -id_utils does not work with -kbuild"
-              | true, "", Flag.Glimpse ->
-                  (if not (null xs)
-                  then failwith "-use_glimpse can accept only one dir");
+		    "--use-glimpse or --id-utils does not work with --kbuild"
+              | true, "", Flag.Glimpse, [] ->
+                  (*if not (null xs)
+                  then failwith "--use-glimpse can accept only one dir"*)
 		  
                   let files =
 		    match glimpse_filter (!cocci_file, !Config.std_iso) x with
 		      None -> get_files x
 		    | Some files -> files in
                   files +> List.map (fun x -> [x])
-              | true, "", Flag.IdUtils ->
-                  (if not (null xs)
-                  then failwith "-id_utils can accept only one dir");
+              | true, "", Flag.IdUtils, [] ->
+                  (*if not (null xs)
+                  then failwith "--id-utils can accept only one dir"*)
 		  
                   let files =
 		    match idutils_filter (!cocci_file, !Config.std_iso) x with
@@ -869,12 +869,12 @@ let rec main_action xs =
 		    | Some files -> files in
                   files +> List.map (fun x -> [x])
                   (* normal *)
-	      | false, _, _ -> [x::xs]
-	      | true, "", _ ->
+	      | false, _, _, _ -> [x::xs]
+	      | true, "", _, _ ->
 		  get_files (join " " (x::xs)) +> List.map (fun x -> [x])
 		    
             (* kbuild *)
-	      | true, kbuild_info_file,_ ->
+	      | true, kbuild_info_file,_,_ ->
 		  let dirs =
                     Common.cmd_to_list ("find "^(join " " (x::xs))^" -type d")
                   in
