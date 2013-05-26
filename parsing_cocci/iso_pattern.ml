@@ -1649,7 +1649,7 @@ let instantiate bindings mv_bindings =
       Ast0.MetaExpr(name,constraints,x,form,pure) ->
 	(rebuild_mcode None).VT0.rebuilder_rec_expression
 	  (match lookup name bindings mv_bindings with
-	    Common.Left(Ast0.ExprTag(exp)) -> exp
+	    Common.Left(Ast0.ExprTag(exp)) -> Ast0.clear_test_exp exp
 	  | Common.Left(_) -> failwith "not possible 1"
 	  | Common.Right(new_mv) ->
 	      let new_types =
@@ -1678,10 +1678,11 @@ let instantiate bindings mv_bindings =
 			  Type_cocci.Array(renamer ty)
 		      | t -> t in
 		    Some(List.map renamer types) in
-	      Ast0.rewrap e
-		(Ast0.MetaExpr
-		   (Ast0.set_mcode_data new_mv name,constraints,
-		    new_types,form,pure)))
+	      Ast0.clear_test_exp 
+		(Ast0.rewrap e
+		   (Ast0.MetaExpr
+		      (Ast0.set_mcode_data new_mv name,constraints,
+		       new_types,form,pure))))
     | Ast0.MetaErr(namea,_,pure) -> failwith "metaerr not supported"
     | Ast0.MetaExprList(namea,lenname,pure) ->
 	failwith "metaexprlist not supported"

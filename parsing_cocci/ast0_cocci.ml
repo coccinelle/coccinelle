@@ -554,6 +554,7 @@ let get_test_pos x      = x.true_if_test
 let set_test_pos x      = {x with true_if_test = true}
 let get_test_exp x      = x.true_if_test_exp
 let set_test_exp x      = {x with true_if_test_exp = true}
+let clear_test_exp x      = {x with true_if_test_exp = false}
 let get_iso x           = x.iso_info
 let set_iso x i = if !Flag.track_iso_usage then {x with iso_info = i} else x
 let set_mcode_data data (_,ar,info,mc,pos,adj) = (data,ar,info,mc,pos,adj)

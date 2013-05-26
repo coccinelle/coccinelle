@@ -511,6 +511,7 @@ val get_arg_exp : expression -> bool
 val set_test_pos : expression -> expression
 val get_test_pos : 'a wrap -> bool
 val set_test_exp : expression -> expression
+val clear_test_exp : expression -> expression
 val get_test_exp : 'a wrap -> bool
 val set_iso : 'a wrap -> (string*anything) list -> 'a wrap
 val get_iso : 'a wrap -> (string*anything) list
