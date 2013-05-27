@@ -144,6 +144,8 @@
 - Added support for c++ namespace syntax in cocci files.
 - Improved c++ parsing
 - Addition of gcc min and max operators.  Thanks to Holden Karau
+- Allow --use-idutils to take the name of the database as an optional
+  argument.  Thank to Wolfram Sang for the suggestion.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
