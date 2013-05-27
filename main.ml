@@ -767,7 +767,6 @@ let glimpse_filter (coccifile, isofile) dir =
 	    let (glimpse_res,stat) = Common.cmd_to_list_and_status command in
 	    match stat with
 	      Unix.WEXITED(0) | Unix.WEXITED(1) ->
-      Printf.fprintf stderr "got files\n"; flush stderr;
 		Some
 		  (glimpse_res +>
 		   List.filter
@@ -784,7 +783,6 @@ let idutils_filter (coccifile, isofile) dir =
   | Some query ->
       let suffixes = if !Flag.include_headers then ["c";"h"] else ["c"] in
       let files = Id_utils.interpret dir query in
-      Printf.fprintf stderr "got files\n"; flush stderr;
       Some
 	(files +>
 	 List.filter (fun file -> List.mem (Common.filesuffix file) suffixes))
