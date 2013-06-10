@@ -633,8 +633,8 @@ rule token = parse
   | "^=" { TAssign (OpAssign Xor, (tokinfo lexbuf))}
   | "<<=" {TAssign (OpAssign DecLeft, (tokinfo lexbuf)) }
   | ">>=" {TAssign (OpAssign DecRight, (tokinfo lexbuf))}
-  | ">?=" {TAssign (OpAssign Max, (tokinfo lexbuf))}
-  | "<?=" {TAssign (OpAssign Min, (tokinfo lexbuf))}
+  | ">?=" { TAssign(OpAssign Max, (tokinfo lexbuf))}
+  | "<?=" { TAssign(OpAssign Min, (tokinfo lexbuf))}
 
   | "==" { TEqEq(tokinfo lexbuf) }  | "!=" { TNotEq(tokinfo lexbuf) }
   | ">=" { TSupEq(tokinfo lexbuf) } | "<=" { TInfEq(tokinfo lexbuf) }

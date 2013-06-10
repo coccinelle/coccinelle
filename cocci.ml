@@ -933,6 +933,7 @@ let python_code =
     "import coccilib\n"^
     "import coccilib.org\n"^
     "import coccilib.report\n" ^
+    "import coccilib.xml_firehose\n" ^
     local_python_code ^
     "cocci = Cocci()\n"
 

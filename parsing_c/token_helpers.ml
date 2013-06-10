@@ -172,7 +172,7 @@ let is_binary_operator = function
   | TOrLog _ | TAndLog _ |  TOr _ |  TXor _ |  TAnd _
   | TEqEq _ |  TNotEq _  | TInf _ |  TSup _ |  TInfEq _ |  TSupEq _
   | TShl _ | TShr _
-  | TPlus _ |  TMinus _ |  TMul _ |  TDiv _ |  TMod _ | TMin _ | TMax _
+  | TPlus _ |  TMinus _ |  TMul _ |  TDiv _ |  TMod _ | TMax _ | TMin _
         -> true
   | _ -> false
 
@@ -315,6 +315,8 @@ let info_of_tok = function
   | TMinus               (i) -> i
   | TMul                 (i) -> i
   | TDiv                 (i) -> i
+  | TMin                 (i) -> i
+  | TMax                 (i) -> i
   | TMod                 (i) -> i
   | TMax                 (i) -> i
   | TMin                 (i) -> i
@@ -477,8 +479,8 @@ let visitor_info_of_tok f = function
   | TMinus               (i) -> TMinus               (f i)
   | TMul                 (i) -> TMul                 (f i)
   | TDiv                 (i) -> TDiv                 (f i)
-  | TMax                 (i) -> TMax                 (f i)
   | TMin                 (i) -> TMin                 (f i)
+  | TMax                 (i) -> TMax                 (f i)
   | TMod                 (i) -> TMod                 (f i)
   | Tchar                (i) -> Tchar                (f i)
   | Tshort               (i) -> Tshort               (f i)

@@ -24,7 +24,7 @@ exception Parsing of string
 %token TEllipsis
 
 %token TOrLog TAndLog TOrIncl TOrExcl TAnd  TEqEq TNotEq TInf TSup TInfEq TSupEq  TShl TShr
-       TPlus TMinus TMul TDiv TMod TMin TMax
+       TPlus TMinus TMul TDiv TMod TMax TMin
 
 %token Tchar Tshort Tint Tdouble Tfloat Tlong Tunsigned Tsigned Tvoid
        Tauto Tregister Textern Tstatic
@@ -45,7 +45,11 @@ exception Parsing of string
 %left TInf TSup TInfEq TSupEq
 %left TShl TShr
 %left TPlus TMinus
+<<<<<<< HEAD
 %left TMul TDiv TMod TMin TMax
+=======
+%left TMul TDiv TMod TMax TMin
+>>>>>>> f34e373405e4b42e2905216142a30f4f96a0a053
 
 %start main
 %type <int list> main

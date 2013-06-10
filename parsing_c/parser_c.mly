@@ -426,7 +426,7 @@ let mk_string_wrap (s,info) = (s, [info])
 %token <Ast_c.info>
        TOrLog TAndLog TOr TXor TAnd  TEqEq TNotEq TInf TSup TInfEq TSupEq
        TShl TShr
-       TPlus TMinus TMul TDiv TMod TMin TMax
+       TPlus TMinus TMul TDiv TMod  TMax TMin
 
 %token <Ast_c.info>
        Tchar Tshort Tint Tdouble Tfloat Tlong Tunsigned Tsigned Tvoid
