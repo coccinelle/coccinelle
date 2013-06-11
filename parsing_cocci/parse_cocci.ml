@@ -1568,7 +1568,8 @@ let get_rule_name parse_fn starts_with_name get_tokens file prefix =
       | Ast.FinalScriptRulename(_,s,deps) ->
 	  Ast.FinalScriptRulename(check_name None,s,deps)
     else
-      Ast.CocciRulename(Some(mknm()),Ast.NoDep,[],[],Ast.Undetermined,false) in
+      Ast.CocciRulename(Some(mknm()),Ast.NoDep,[],[],Ast.Undetermined,
+			Ast.AnyP) in
   Data.in_rule_name := false;
   name_res
 
@@ -1773,9 +1774,12 @@ let parse file =
 	       Printf.printf "before minus parse\n";
 	    *)
 	    let minus_res =
-	      if is_expression
-	      then parse_one "minus" PC.minus_exp_main file minus_tokens
-	      else parse_one "minus" PC.minus_main file minus_tokens in
+	      let minus_parser =
+		match is_expression with
+		  Ast.AnyP -> PC.minus_main
+		| Ast.TyP -> PC.minus_ty_main
+		| Ast.ExpP -> PC.minus_exp_main in
+	      parse_one "minus" minus_parser file minus_tokens in
 	    (*
 	       Unparse_ast0.unparse minus_res;
 	       Printf.printf "before plus parse\n";
@@ -1789,9 +1793,12 @@ let parse file =
 		  (Iso_pattern.rebuild_mcode None).VT0.rebuilder_rec_top_level
 		  (Top_level.top_level false minus_res)
 	      else
-		if is_expression
-		then parse_one "plus" PC.plus_exp_main file plus_tokens
-		else parse_one "plus" PC.plus_main file plus_tokens in
+		let plus_parser =
+		  match is_expression with
+		    Ast.AnyP -> PC.plus_main
+		  | Ast.TyP -> PC.plus_ty_main
+		  | Ast.ExpP -> PC.plus_exp_main in
+		parse_one "plus" plus_parser file plus_tokens in
 	    let plus_res = Top_level.top_level false plus_res in
 	    (* minus code has to be CODE if the + code is CODE, otherwise
 	       doesn't matter if + code is CODE or DECL or TOPCODE *)

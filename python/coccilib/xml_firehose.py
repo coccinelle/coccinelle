@@ -1,15 +1,28 @@
 # Coccinelle output module to display Firehose XML
 
-try:
-    from firehose.model import Message, Function, Point, Range, \
-    File, Location, Generator, Metadata, Analysis, Issue, Notes, Failure, \
-    CustomFields
-except ImportError:
-    pass
-    #print "Error: Firehose is not installed or not in the Python path."
-    #print "Try 'pip install firehose' as root."
-    #import sys; sys.exit()
+"""
+You need Firehose to use this module.
+You can get it at https://github.com/fedora-static-analysis/firehose
+or directly via Pypi: # pip install firehose
 
+In your semantic patches, import Firehose like this:
+coccilib.xml_firehose.import_firehose()
+"""
+
+def import_firehose():
+    """
+    inserts Firehose module into globals()
+    
+    It is required to proceed this way, as long as we can't use the
+    classical approach (from firehose.model import Foo[...]), mainly
+    because this module is imported by coccinelle whether or not it
+    will be used by the semantic patch (and we don't want to display
+    an error message to non-Firehose users.
+    """
+    try:
+        globals()['firehose'] = __import__('firehose.model')
+    except ImportError:
+        print "Error: Firehose is not installed or not in the Python path."
 
 def __build_analysis(sut = None, file_ = None, stats = None,
                      gen_name="coccinelle", gen_version=""):
@@ -23,10 +36,10 @@ def __build_analysis(sut = None, file_ = None, stats = None,
     gen_version -- the generator version
     """
 
-    generator = Generator(name=gen_name,
-                          version=gen_version)
-    metadata = Metadata(generator, sut, file_, stats)
-    analysis = Analysis(metadata, [])
+    generator = firehose.model.Generator(name=gen_name,
+                                         version=gen_version)
+    metadata = firehose.model.Metadata(generator, sut, file_, stats)
+    analysis = firehose.model.Analysis(metadata, [])
     
     return analysis
 
@@ -49,10 +62,10 @@ def __build_issue(location, message,
     
     """
     location = __coccilocation_to_firehoselocation(location[0])
-    message = Message(message)
+    message = firehose.model.Message(message)
     
-    issue = Issue(cwe, testid, location, message, notes, trace,
-                  severity=severity, customfields=customfields)
+    issue = firehose.model.Issue(cwe, testid, location, message, notes, trace,
+                                 severity=severity, customfields=customfields)
     
     return issue
 
@@ -64,13 +77,15 @@ def __coccilocation_to_firehoselocation(cocciloc):
     cocciloc -- coccilib.elems.Location instance
     
     """
-    file_ = File(cocciloc.file, "")
-    function = Function(cocciloc.current_element)
-    range_ = Range(Point(int(cocciloc.line), int(cocciloc.column)),
-                   Point(int(cocciloc.line_end), int(cocciloc.column_end))
-                   )
+    file_ = firehose.model.File(cocciloc.file, "")
+    function = firehose.model.Function(cocciloc.current_element)
+    range_ = firehose.model.Range(firehose.model.Point(int(cocciloc.line),
+                                                       int(cocciloc.column)),
+                                  firehose.model.Point(int(cocciloc.line_end),
+                                                       int(cocciloc.column_end))
+                                  )
     
-    return Location(file_, function, range_=range_)
+    return firehose.model.Location(file_, function, range_=range_)
 
 def print_issue(location, message):
     """Displays the Firehose XML output of an issue.
