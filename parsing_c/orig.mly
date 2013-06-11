@@ -45,7 +45,11 @@ exception Parsing of string
 %left TInf TSup TInfEq TSupEq
 %left TShl TShr
 %left TPlus TMinus
+<<<<<<< HEAD
+%left TMul TDiv TMod TMin TMax
+=======
 %left TMul TDiv TMod TMax TMin
+>>>>>>> f34e373405e4b42e2905216142a30f4f96a0a053
 
 %start main
 %type <int list> main

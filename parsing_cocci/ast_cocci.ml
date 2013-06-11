@@ -105,6 +105,7 @@ and metavar =
   | MetaFuncDecl of arity * meta_name (* name *)
   | MetaLocalFuncDecl of arity * meta_name (* name *)
   | MetaPosDecl of arity * meta_name (* name *)
+  | MetaAnalysisDecl of string * meta_name (* name *)
   | MetaDeclarerDecl of arity * meta_name (* name *)
   | MetaIteratorDecl of arity * meta_name (* name *)
 
@@ -365,6 +366,8 @@ and base_parameterTypeDef =
 
   | MetaParam     of meta_name mcode * keep_binding * inherited
   | MetaParamList of meta_name mcode * listlen * keep_binding * inherited
+
+  | AsParam       of parameterTypeDef * expression (* expr, always metavar *)
 
   | PComma        of string mcode
 
@@ -729,6 +732,7 @@ let get_meta_name = function
   | MetaFuncDecl(ar,nm) -> nm
   | MetaLocalFuncDecl(ar,nm) -> nm
   | MetaPosDecl(ar,nm) -> nm
+  | MetaAnalysisDecl(code,nm) -> nm
   | MetaDeclarerDecl(ar,nm) -> nm
   | MetaIteratorDecl(ar,nm) -> nm
 

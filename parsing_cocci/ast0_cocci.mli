@@ -248,6 +248,7 @@ and base_parameterTypeDef =
   | Param         of typeC * ident option
   | MetaParam     of Ast_cocci.meta_name mcode * pure
   | MetaParamList of Ast_cocci.meta_name mcode * listlen * pure
+  | AsParam       of parameterTypeDef * expression (* expr, always metavar *)
   | PComma        of string mcode
   | Pdots         of string mcode (* ... *)
   | Pcircles      of string mcode (* ooo *)
@@ -510,6 +511,7 @@ val get_arg_exp : expression -> bool
 val set_test_pos : expression -> expression
 val get_test_pos : 'a wrap -> bool
 val set_test_exp : expression -> expression
+val clear_test_exp : expression -> expression
 val get_test_exp : 'a wrap -> bool
 val set_iso : 'a wrap -> (string*anything) list -> 'a wrap
 val get_iso : 'a wrap -> (string*anything) list

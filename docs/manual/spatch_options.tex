@@ -188,12 +188,19 @@ specified.  The index may be created using the script {\tt
 http://webglimpse.net/.  In conjunction with the option {\bf --patch-cocci}
 this option prints the regular expression that will be passed to glimpse.}
 
-\normal{--use-idutils}{ Use an id-utils index created using lid to select
+\normal{--use-idutils $[\langle$file$\rangle]$}
+{ Use an id-utils index created using lid to select
   the files to which a semantic patch may be relevant.  This option
   requires that a directory is specified.  The index may be created using
   the script {\tt coccinelle/scripts/ idindex-cocci.sh}.  In conjunction
   with the option {\bf --patch-cocci} this option prints the regular
-  expression that will be passed to glimpse.}
+  expression that will be passed to glimpse.
+
+The optional file name option is the name of the file in which to find the
+index.  It has been reported that the viewer seascope can be used to
+generate an appropriate index.  If no file name is specified, the default
+is .id-utils.index.
+}
 
 \rare{--dir}{ Specify a directory containing C files to process.  A trailing
   {\tt /} is permitted on the directory name and has no impact on the

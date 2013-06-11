@@ -171,6 +171,8 @@ let equal_arithOp a b =
   | A.And      , B.And      -> true
   | A.Or       , B.Or       -> true
   | A.Xor      , B.Xor      -> true
+  | A.Min      , B.Min      -> true
+  | A.Max      , B.Max      -> true
   | _, (B.Xor|B.Or|B.And|B.DecRight|B.DecLeft|B.Mod|B.Div|B.Mul|B.Minus|B.Plus|B.Min|B.Max)
       -> false
 
@@ -846,7 +848,7 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 	    | None,_ -> None)
 	    +++
 	    (match match_metalist ea, ebs with
-	      Some (ida,leninfo,keep,inherited), ys ->
+	      Some (ida,leninfo,keep,inherited,extra), ys ->
 		let startendxs =
 		  Common.zip (Common.inits ys) (Common.tails ys) in
 		Some
@@ -883,6 +885,13 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 			(fun () ->
 			  let max_min _ =
 			    Lib_parsing_c.lin_col_by_pos (get_iis startxs) in
+			  (match extra with
+			    Some extra ->
+			      extra startxs' max_min
+				(fun _ -> return ((),()))
+			  | None -> return ((),()))
+			    >>=
+			  (fun _ _ ->
 			  X.envf keep inherited
 			    (ida, mktermval startxs', max_min)
 			    (fun () ->
@@ -892,10 +901,11 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 			    >>= (fun ida startxs ->
 			      loop (eas, endxs) >>= (fun eas endxs ->
 				return (
-				(rebuild_metalist(ida,leninfo,keep,inherited))
+				(rebuild_metalist ea
+				   (ida,leninfo,keep,inherited))
 				  +> A.rewrap ea::eas,
 				startxs ++ endxs
-				  ))
+				  )))
 				)
 			    )
 			)) fail)
@@ -1575,9 +1585,9 @@ and arguments_bis = fun eas ebs ->
   let match_metalist ea =
     match A.unwrap ea with
       A.MetaExprList(ida,leninfo,keep,inherited) ->
-	Some(ida,leninfo,keep,inherited)
+	Some(ida,leninfo,keep,inherited,None)
     | _ -> None in
-  let build_metalist (ida,leninfo,keep,inherited) =
+  let build_metalist _ (ida,leninfo,keep,inherited) =
     A.MetaExprList(ida,leninfo,keep,inherited) in
   let mktermval v = Ast_c.MetaExprListVal v in
   let special_cases ea eas ebs = None in
@@ -1627,7 +1637,6 @@ and (parameters: sequence ->
         return (eas, (Ast_c.unsplit_comma ebs_splitted))
       )
 
-
 and parameters_bis eas ebs =
   let match_dots ea =
     match A.unwrap ea with
@@ -1640,12 +1649,49 @@ and parameters_bis eas ebs =
     | _ -> None in
   let build_comma ia1 = A.PComma ia1 in
   let match_metalist ea =
+    let rec loop acc p =
+      match A.unwrap p with
+	A.AsParam(p,e) -> loop (e :: acc) p
+      | A.MetaParamList(ida,leninfo,keep,inherited) ->
+	  Some ((ida,leninfo,keep,inherited),acc)
+      | _ -> None in
+    match loop [] ea with
+      Some ((ida,leninfo,keep,inherited),ids) ->
+	(match ids with
+	  [] -> Some(ida,leninfo,keep,inherited,None)
+	| _ ->
+	    let extra vl max_min k =
+	      let vl =
+		Ast_c.MetaExprListVal
+		     (List.map
+			(function (v,i) ->
+			  match v.Ast_c.p_namei with
+			    Some name ->
+			      (Left(Ast_c.mk_e (B.Ident name) Ast_c.noii),i)
+			  | None -> failwith "no name in parameter list")
+			vl) in
+	      let rec loop = function
+		  [] -> k ()
+		| x::xs ->
+		    (match A.unwrap x with
+		      A.MetaExprList(ida,A.AnyListLen,keep,inherited) ->
+			X.envf keep inherited
+			  (ida, vl, max_min)
+			  (fun () -> loop xs)
+		    | A.MetaExprList _ ->
+			failwith "length not supported"
+		    | _ -> failwith "unexpected expression") in
+	      loop ids in
+	    Some(ida,leninfo,keep,inherited,Some extra))
+    | None -> None in
+  let rec build_metalist ea (ida,leninfo,keep,inherited) =
     match A.unwrap ea with
-      A.MetaParamList(ida,leninfo,keep,inherited) ->
-	Some(ida,leninfo,keep,inherited)
-    | _ -> None in
-  let build_metalist (ida,leninfo,keep,inherited) =
-    A.MetaParamList(ida,leninfo,keep,inherited) in
+      A.MetaParamList _ ->
+	A.MetaParamList(ida,leninfo,keep,inherited)
+    | A.AsParam(p,e) ->
+	A.AsParam(A.rewrap p (build_metalist p (ida,leninfo,keep,inherited)),
+		  e)
+    | _ -> failwith "not possible" in
   let mktermval v = Ast_c.MetaParamListVal v in
   let special_cases ea eas ebs =
     (* a case where one smpl parameter matches a list of C parameters *)
@@ -1672,7 +1718,7 @@ and parameters_bis eas ebs =
                 | _ -> fail
               else fail
           | _ -> fail)
-    |	_ -> None in
+    | _ -> None in
   list_matcher match_dots build_dots match_comma build_comma
     match_metalist build_metalist mktermval
     special_cases parameter X.distrf_params
@@ -2452,9 +2498,9 @@ and initialisers_ordered2 = fun ias ibs ->
   let match_metalist ea =
     match A.unwrap ea with
       A.MetaInitList(ida,leninfo,keep,inherited) ->
-	Some(ida,leninfo,keep,inherited)
+	Some(ida,leninfo,keep,inherited,None)
     | _ -> None in
-  let build_metalist (ida,leninfo,keep,inherited) =
+  let build_metalist _ (ida,leninfo,keep,inherited) =
     A.MetaInitList(ida,leninfo,keep,inherited) in
   let mktermval v = Ast_c.MetaInitListVal v in
   let special_cases ea eas ebs = None in
@@ -2515,9 +2561,9 @@ and (struct_fields: (A.declaration list, B.field list) matcher) =
   let match_metalist ea =
     match A.unwrap ea with
       A.MetaFieldList(ida,leninfo,keep,inherited) ->
-	Some(ida,leninfo,keep,inherited)
+	Some(ida,leninfo,keep,inherited,None)
     | _ -> None in
-  let build_metalist (ida,leninfo,keep,inherited) =
+  let build_metalist _ (ida,leninfo,keep,inherited) =
     A.MetaFieldList(ida,leninfo,keep,inherited) in
   let mktermval v =
     (* drop empty ii information, because nothing between elements *)
@@ -2640,7 +2686,8 @@ and enum_fields = fun eas ebs ->
     | _ -> None in
   let build_comma ia1 = A.EComma ia1 in
   let match_metalist ea = None in
-  let build_metalist (ida,leninfo,keep,inherited) = failwith "not possible" in
+  let build_metalist _ (ida,leninfo,keep,inherited) =
+    failwith "not possible" in
   let mktermval v = failwith "not possible" in
   let special_cases ea eas ebs = None in
   list_matcher match_dots build_dots match_comma build_comma
@@ -2771,15 +2818,27 @@ and (fullTypebis: (A.typeC, Ast_c.fullType) matcher) =
 
   (* cas general *)
   | A.MetaType(ida,keep, inherited),  typb ->
-      let max_min _ =
-	Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_type typb) in
-      X.envf keep inherited (ida, B.MetaTypeVal typb, max_min) (fun () ->
-        X.distrf_type ida typb >>= (fun ida typb ->
+      let type_present =
+	let (tyq, (ty, tyii)) = typb in
+	match ty with
+	  B.NoType -> false
+	| _ -> true in
+      let position_required_but_unavailable =
+	match A.get_pos_var ida with
+	  [] -> false
+	| _ ->
+	    let (tyq, (ty, tyii)) = typb in
+	    List.for_all Ast_c.is_fake tyii in
+      if type_present && not position_required_but_unavailable
+      then
+	let max_min _ =
+	  Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_type typb) in
+	X.envf keep inherited (ida, B.MetaTypeVal typb, max_min) (fun () ->
+          X.distrf_type ida typb >>= (fun ida typb ->
           return (
             A.MetaType(ida,keep, inherited) +> A.rewrap ta,
-            typb
-          ))
-      )
+            typb)))
+      else fail (* K&R, or macro, or C++? *)
   | unwrap, (qub, typb) ->
       typeC ta typb >>= (fun ta typb ->
         return (ta, (qub, typb))
@@ -3668,7 +3727,8 @@ and define_paramsbis = fun eas ebs ->
     | _ -> None in
   let build_comma ia1 = A.DPComma ia1 in
   let match_metalist ea = None in
-  let build_metalist (ida,leninfo,keep,inherited) = failwith "not possible" in
+  let build_metalist _ (ida,leninfo,keep,inherited) =
+    failwith "not possible" in
   let mktermval v = failwith "not possible" in
   let special_cases ea eas ebs = None in
   let no_ii x = failwith "not possible" in

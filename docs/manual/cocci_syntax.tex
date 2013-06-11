@@ -229,6 +229,15 @@ This makes it possible to get eg the starting and ending position of {\tt
   f(...)}, by writing {\tt f(...)@E@p}, for expression metavariable {\tt E}
 and position metavariable {\tt p}.
 
+Other kinds of metavariables can also be attached using \texttt{@} to any
+token.  In this case, the metavariable floats up to the enclosing
+appropriate expression.  For example, {\tt 3 +@E 4}, where {\tt E} is an
+expression metavariable binds {\tt E} to {\tt 3 + 4}.  A particular case is
+{\tt Ps@Es}, where {\tt Ps} is a parameter list and {\tt Es} is an
+expression list.  This pattern matches a parameter list, and then matches
+{\tt Es} to the list of expressions, ie a possible argument list,
+represented by the names of the parameters.
+
 \begin{grammar}
   \RULE{\rt{ids}}
   \CASE{\NT{COMMA\_LIST}\mth{(}\NT{pmid}\mth{)}}
@@ -874,6 +883,12 @@ considers that it is not.
 An initializer for a structure can be ordered or unordered.  It is
 considered to be unordered if there is at least one key-value pair
 initializer, e.g., \texttt{.x = e}.
+
+A declaration can have \textit{e.g.} the form \texttt{register x;}.  In
+this case, the variable implicitly has type int, and SmPL code
+that declares an int variable will match such a declaration.  On the other
+hand, the implicit int type has no position.  If the SmPL code tries to
+record the position of the type, the match will fail.
 
 \section{Statements}
 
