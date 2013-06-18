@@ -179,6 +179,8 @@ could define a type  token_class = Comment | Ident | Operator | ...
   | TMin of (Ast_c.info)
   | TMax of (Ast_c.info)
   | TMod of (Ast_c.info)
+  | TMin of (Ast_c.info)
+  | TMax of (Ast_c.info)
   | Tchar of (Ast_c.info)
   | Tshort of (Ast_c.info)
   | Tint of (Ast_c.info)

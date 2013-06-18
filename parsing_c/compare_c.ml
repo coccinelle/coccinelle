@@ -185,7 +185,7 @@ let compare_ast filename1 filename2  =
     then Pb "not same number of entities (func, decl, ...)"
     else
       begin
-        zip c1 c2 +> List.iter (function
+	let rec check = function
         | Declaration a, Declaration b -> if not (a =*= b) then incr error
         | Definition a, Definition b ->   if not (a =*= b) then incr error
         | EmptyDef a, EmptyDef b ->       if not (a =*= b) then incr error
@@ -208,11 +208,14 @@ let compare_ast filename1 filename2  =
 
         | IfdefTop a, IfdefTop b -> if not (a =*= b) then incr error
 
+        | Namespace (tlsa, iia), Namespace (tlsb, iib) -> 
+	    if not (iia =*= iib) then incr error;
+	    zip tlsa tlsb +> List.iter check
         | (FinalDef _|EmptyDef _|
            MacroTop (_, _, _)|IfdefTop _|
-           CppTop _|Definition _|Declaration _), _ -> incr error
-
-        );
+           CppTop _|Definition _|Declaration _|Namespace _), _ -> incr error
+       in
+        zip c1 c2 +> List.iter check;
         (match () with
         | _ when !pb_notparsed > 0 && !error =|= 0 ->
             PbOnlyInNotParsedCorrectly ""

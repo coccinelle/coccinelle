@@ -1050,10 +1050,9 @@ let build_info_program (cprogram,typedefs,macros) env =
         fixed_flow
       )
     in
-
     {
       ast_c = c; (* contain refs so can be modified *)
-      tokens_c =  tokens;
+      tokens_c = tokens;
       fullstring = fullstr;
 
       flow = flow;
@@ -1067,8 +1066,7 @@ let build_info_program (cprogram,typedefs,macros) env =
 
       all_typedefs = typedefs;
       all_macros = macros;
-    }
-  )
+    })
 
 
 
@@ -1866,10 +1864,14 @@ let pre_engine2 (coccifile, isofile) =
 	function
 	    InitialScriptRuleCocciInfo(r) ->
 	      let rlang = r.language in
-	      (if List.mem rlang languages
-	      then failwith ("double initializer found for "^rlang));
 	      if interpret_dependencies [] [] r.scr_rule_info.dependencies
-	      then begin runrule r; rlang::languages end
+	      then
+		begin
+		  (if List.mem rlang languages
+		  then failwith ("double initializer found for "^rlang));
+		  runrule r;
+		  rlang::languages
+		end
 	      else languages
 	  | _ -> languages)
       [] cocci_infos in

@@ -87,7 +87,12 @@ def __coccilocation_to_firehoselocation(cocciloc):
     
     return firehose.model.Location(file_, function, range_=range_)
 
-def print_issue(location, message):
+def print_issue(location=None,
+                message=None,
+                sut_type=None,
+                sut_name=None,
+                sut_version=None,
+                sut_buildarch=None):
     """Displays the Firehose XML output of an issue.
     This function is intended to be called from a .cocci file.
     
@@ -96,7 +101,33 @@ def print_issue(location, message):
     message --
     
     """
-    analysis = __build_analysis()
+    
+    def _extract_version_release(long_version):
+        """
+        extracts the version and the release from long_version
+        # e.g. 1.5-2-4.2 -> 1.5-2 -- 4.2
+        """
+        sep = long_version.rfind("-")
+        version = long_version[:sep]
+        release = long_version[sep+1:]
+        return version, release
+    
+    #import_firehose()
+    if sut_type == "source-rpm":
+        sut_release = "" # TODO for RPM
+        sut = firehose.model.SourceRpm(sut_name, sut_version,
+                                       sut_release, sut_buildarch)
+    elif sut_type == "debian-binary":
+        sut_version, sut_release = _extract_version_release(sut_version)
+        sut = firehose.model.DebianBinary(sut_name, sut_version,
+                                          sut_release, sut_buildarch)
+    elif sut_type == "debian-source":
+        sut_version, sut_release = _extract_version_release(sut_version)
+        sut = firehose.model.DebianSource(sut_name, sut_version, sut_release)
+    else:
+        sut = None
+    
+    analysis = __build_analysis(sut=sut)
     issue = __build_issue(location, message)
     analysis.results.append(issue)
     

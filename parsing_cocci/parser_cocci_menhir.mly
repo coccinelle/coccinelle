@@ -82,7 +82,7 @@ let tmeta_to_ident (name,pure,clt) =
 %token TIdExpression TInitialiser TDeclaration TField TMetavariable TSymbol
 %token Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
 %token TPure TContext TGenerated
-%token TTypedef TDeclarer TIterator TName TPosition TPosAny
+%token TTypedef TDeclarer TIterator TName TPosition TAnalysis TPosAny
 %token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall
 %token TScript TInitialize TFinalize TNothing TVirtual
 %token<string> TRuleName
@@ -184,11 +184,17 @@ let tmeta_to_ident (name,pure,clt) =
 %start minus_exp_main
 %type <Ast0_cocci.rule> minus_exp_main
 
+%start minus_ty_main
+%type <Ast0_cocci.rule> minus_ty_main
+
 %start plus_main
 %type <Ast0_cocci.rule> plus_main
 
 %start plus_exp_main
 %type <Ast0_cocci.rule> plus_exp_main
+
+%start plus_ty_main
+%type <Ast0_cocci.rule> plus_ty_main
 
 %start include_main
 %type <Data.incl_iso list> include_main
@@ -224,8 +230,12 @@ plus_main: plus_body EOF { $1 } | p=plus_body TArobArob { p }
 | p=plus_body TArob { p }
 minus_exp_main: minus_exp_body EOF { $1 } | m=minus_exp_body TArobArob { m }
 | m=minus_exp_body TArob { m }
+minus_ty_main: minus_exp_body EOF { $1 } | m=minus_ty_body TArobArob { m }
+| m=minus_ty_body TArob { m }
 plus_exp_main: plus_exp_body EOF { $1 } | p=plus_exp_body TArobArob { p }
 | p=plus_exp_body TArob { p }
+plus_ty_main: plus_exp_body EOF { $1 } | p=plus_ty_body TArobArob { p }
+| p=plus_ty_body TArob { p }
 meta_main: m=metadec   { m (!Ast0.rule_name) }
 iso_meta_main: m=metadec { m "" }
 
@@ -292,8 +302,9 @@ exists:
 |         { Ast.Undetermined }
 
 is_expression: // for more flexible parsing of top level expressions
-              { false }
-| TExpression { true }
+              { Ast.AnyP }
+| TExpression { Ast.ExpP }
+| TType       { Ast.TyP }
 
 include_main:
   list(incl) TArob     { $1 }
@@ -709,6 +720,9 @@ all_basic_types:
 | ty=signable_types { ty }
 | ty=non_signable_types { ty }
 
+top_ctype:
+  ctype { Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Ty($1)))) }
+
 ctype:
   cv=ioption(const_vol) ty=all_basic_types m=list(mul)
     { List.fold_left
@@ -856,6 +870,20 @@ minus_exp_body:
 plus_exp_body:
     f=loption(filespec)
     b=top_eexpr
+    /*ew=loption(error_words)*/
+    { f@[b](*@ew*) }
+
+minus_ty_body:
+    f=loption(filespec)
+    b=top_ctype
+    /*ew=loption(error_words)*/
+    { match f@[b](*@ew*) with
+      [] -> raise (Semantic_cocci.Semantic "minus slice can't be empty")
+    | code -> code }
+
+plus_ty_body:
+    f=loption(filespec)
+    b=top_ctype
     /*ew=loption(error_words)*/
     { f@[b](*@ew*) }
 
@@ -2425,6 +2453,7 @@ iso(term):
 never_used: TPragma { () }
   | TPArob TMetaPos { () }
   | TScriptData     { () }
+  | TAnalysis     { () }
 
 script_meta_main:
     py=pure_ident TMPtVirg

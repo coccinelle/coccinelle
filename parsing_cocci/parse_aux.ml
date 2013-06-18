@@ -573,7 +573,7 @@ let make_iso_rule_name_result n =
   raise (Semantic_cocci.Semantic ("repeated rule name"))
   with Not_found -> ());
   Ast.CocciRulename
-    (Some n,Ast.NoDep,[],[],Ast.Undetermined,false (*discarded*))
+    (Some n,Ast.NoDep,[],[],Ast.Undetermined,Ast.AnyP (*discarded*))
 
 let fix_dependencies d =
   let rec loop inverted = function
