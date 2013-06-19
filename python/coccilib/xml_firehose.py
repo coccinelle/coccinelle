@@ -1,5 +1,7 @@
 # Coccinelle output module to display Firehose XML
 
+import sys
+
 """
 You need Firehose to use this module.
 You can get it at https://github.com/fedora-static-analysis/firehose
@@ -24,111 +26,177 @@ def import_firehose():
     except ImportError:
         print "Error: Firehose is not installed or not in the Python path."
 
-def __build_analysis(sut = None, file_ = None, stats = None,
-                     gen_name="coccinelle", gen_version=""):
-    """Creates a new Analysis() object.
-    
-    Keyword arguments:
-    sut -- software under test
-    file_ --
-    stats --
-    gen_name -- the generator name, default 'coccinelle'
-    gen_version -- the generator version
+class Analysis(object):
     """
-
-    generator = firehose.model.Generator(name=gen_name,
-                                         version=gen_version)
-    metadata = firehose.model.Metadata(generator, sut, file_, stats)
-    analysis = firehose.model.Analysis(metadata, [])
-    
-    return analysis
-
-def __build_issue(location, message,
-                  cwe=None, testid=None, notes=None,
-                  trace=None, severity=None, customfields=None):
-    """Creates a new Issue() object.
-    
-    Arguments:
-    location -- a coccinelle position (cocci.elems.Location)
-    message --
-    
-    Keyword arguments:
-    cwe -- 
-    testid --
-    notes --
-    trace --
-    severity --
-    customfields --
-    
-    """
-    location = __coccilocation_to_firehoselocation(location[0])
-    message = firehose.model.Message(message)
-    
-    issue = firehose.model.Issue(cwe, testid, location, message, notes, trace,
-                                 severity=severity, customfields=customfields)
-    
-    return issue
-
-def __coccilocation_to_firehoselocation(cocciloc):
-    """Converts a Coccinelle Location object to a Firehose one.
-    The range attribute is used (single point not yet supported).
-    
-    Arguments:
-    cocciloc -- coccilib.elems.Location instance
-    
-    """
-    file_ = firehose.model.File(cocciloc.file, "")
-    function = firehose.model.Function(cocciloc.current_element)
-    range_ = firehose.model.Range(firehose.model.Point(int(cocciloc.line),
-                                                       int(cocciloc.column)),
-                                  firehose.model.Point(int(cocciloc.line_end),
-                                                       int(cocciloc.column_end))
-                                  )
-    
-    return firehose.model.Location(file_, function, range_=range_)
-
-def print_issue(location=None,
-                message=None,
-                sut_type=None,
-                sut_name=None,
-                sut_version=None,
-                sut_buildarch=None):
-    """Displays the Firehose XML output of an issue.
-    This function is intended to be called from a .cocci file.
-    
-    Arguments:
-    location -- a coccinelle position (cocci.elems.Location)
-    message --
-    
+    An Analysis object wraps the work to keep tracks of results,
+    and print the Firehose Analysis at the end.
     """
     
-    def _extract_version_release(long_version):
+    def __init__(self,
+                 use_env_variables=True,
+                 sut_type=None,
+                 sut_name=None,
+                 sut_version=None,
+                 sut_buildarch=None,
+                 generator_version=""):
         """
-        extracts the version and the release from long_version
-        # e.g. 1.5-2-4.2 -> 1.5-2 -- 4.2
+        Initializes an analysis and sets its useful variables
+        
+        Arguments:
+        use_env_variables: if set to True, looks for the variables in bash
+           environment, otherwise it uses the below parameters
+        sut_type: "debian-source", "debian-binary" or "source-rpm"
+        sut_name: the name of the package or software being analysed
+        sut_version: its version
+        sut_builarch: its architecture (only for "debian-binary", "source-rpm")
+        generator_version: the version of Coccinelle
         """
-        sep = long_version.rfind("-")
-        version = long_version[:sep]
-        release = long_version[sep+1:]
-        return version, release
+        if use_env_variables:
+            import os
+            
+            self.sut_type = os.environ.get("COCCI_SUT_TYPE")
+            self.sut_name = os.environ.get("COCCI_SUT_NAME")
+            self.sut_version = os.environ.get("COCCI_SUT_VERSION")
+            self.sut_buildarch = os.environ.get("COCCI_SUT_BUILDARCH")
+            self.generator_version = os.environ.get("COCCI_GENERATOR_VERSION")
+        else:
+            self.sut_type = sut_type
+            self.sut_name = sut_name
+            self.sut_version = sut_version
+            self.sut_buildarch = sut_buildarch
+            self.generator_version = generator_version
+        
+        self.results = []
+        
+    def add_result(self, location, message):
+        """
+        Adds a result in the analysis
+        
+        Arguments:
+        location: a coccinelle position (cocci.elems.Location)
+        message: the message to display with
+        """
+        self.results.append(self.__build_issue(location, message))
+        
+
+    def __build_analysis(self,
+                         sut = None, file_ = None, stats = None,
+                         gen_name="coccinelle", gen_version=""):
+        """Creates a new Analysis() object.
+        
+        Keyword arguments:
+        sut -- software under test
+        file_ --
+        stats --
+        gen_name -- the generator name, default 'coccinelle'
+        gen_version -- the generator version
+        """
+        
+        generator = firehose.model.Generator(name=gen_name,
+                                             version=gen_version)
+        metadata = firehose.model.Metadata(generator, sut, file_, stats)
+        analysis = firehose.model.Analysis(metadata, [])
+        
+        return analysis
+
+    def __build_issue(self,
+                      location, message,
+                      cwe=None, testid=None, notes=None,
+                      trace=None, severity=None, customfields=None):
+        """Creates a new Issue() object.
+        
+        Arguments:
+        location -- a coccinelle position (cocci.elems.Location)
+        message --
+        
+        Keyword arguments:
+        cwe -- 
+        testid --
+        notes --
+        trace --
+        severity --
+        customfields --
+        
+        """
+        location = self.__coccilocation_to_firehoselocation(location[0])
+        message = firehose.model.Message(message)
+        
+        issue = firehose.model.Issue(cwe, testid, location, message, notes,
+                                     trace, severity=severity,
+                                     customfields=customfields)
+        
+        return issue
+
+    def __coccilocation_to_firehoselocation(self, cocciloc):
+        """Converts a Coccinelle Location object to a Firehose one.
+        The range attribute is used (single point not yet supported).
+        
+        Arguments:
+        cocciloc -- coccilib.elems.Location instance
+        
+        """
+        file_ = firehose.model.File(cocciloc.file, "")
+        function = firehose.model.Function(cocciloc.current_element)
+        range_ = firehose.model.Range(
+            firehose.model.Point(int(cocciloc.line),
+                                 int(cocciloc.column)),
+            firehose.model.Point(int(cocciloc.line_end),
+                                 int(cocciloc.column_end))
+            )
     
-    #import_firehose()
-    if sut_type == "source-rpm":
-        sut_release = "" # TODO for RPM
-        sut = firehose.model.SourceRpm(sut_name, sut_version,
-                                       sut_release, sut_buildarch)
-    elif sut_type == "debian-binary":
-        sut_version, sut_release = _extract_version_release(sut_version)
-        sut = firehose.model.DebianBinary(sut_name, sut_version,
-                                          sut_release, sut_buildarch)
-    elif sut_type == "debian-source":
-        sut_version, sut_release = _extract_version_release(sut_version)
-        sut = firehose.model.DebianSource(sut_name, sut_version, sut_release)
-    else:
-        sut = None
+        return firehose.model.Location(file_, function, range_=range_)
+        
+    def print_analysis(self):
+        """Displays the Firehose XML output of an issue.
+        This function is intended to be called from a .cocci file.
+        
+        Arguments:
+        location -- a coccinelle position (cocci.elems.Location)
+        message --
+        
+        """
     
-    analysis = __build_analysis(sut=sut)
-    issue = __build_issue(location, message)
-    analysis.results.append(issue)
+        def _extract_version_release(long_version):
+            """
+            extracts the version and the release from long_version
+            # e.g. 1.5-2-4.2 -> 1.5-2 -- 4.2
+            """
+            sep = long_version.rfind("-")
+            if sep == -1:
+                version = long_version
+                release = ""
+            else:
+                version = long_version[:sep]
+                release = long_version[sep+1:]
+            return version, release
     
-    print(str(analysis.to_xml_bytes()))
+        #import_firehose()
+        if self.sut_type == "source-rpm":
+            self.sut_release = "" # TODO for RPM
+            sut = firehose.model.SourceRpm(self.sut_name, self.sut_version,
+                                           self.sut_release, self.sut_buildarch)
+        elif self.sut_type == "debian-binary":
+            self.sut_version, self.sut_release = _extract_version_release(
+                self.sut_version)
+            
+            sut = firehose.model.DebianBinary(
+                self.sut_name, self.sut_version,
+                self.sut_release, self.sut_buildarch)
+            
+        elif self.sut_type == "debian-source":
+            self.sut_version, self.sut_release = _extract_version_release(
+                self.sut_version)
+            sut = firehose.model.DebianSource(
+                self.sut_name, self.sut_version, self.sut_release)
+            
+        else:
+            sut = None
+            sys.stdout.write("Warning: sut_type incorrect, should be "
+                             "debian-source, debian-binary or source-rpm\n")
+            
+        analysis = self.__build_analysis(sut=sut,
+                                         gen_version=self.generator_version)
+        analysis.results = self.results
+    
+        sys.stdout.write(str(analysis.to_xml_bytes()))
+        sys.stdout.write("\n")
