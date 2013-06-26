@@ -38,7 +38,8 @@ class Analysis(object):
                  sut_name=None,
                  sut_version=None,
                  sut_buildarch=None,
-                 generator_version=""):
+                 generator_version="",
+                 root_path=""):
         """
         Initializes an analysis and sets its useful variables
         
@@ -50,21 +51,28 @@ class Analysis(object):
         sut_version: its version
         sut_builarch: its architecture (only for "debian-binary", "source-rpm")
         generator_version: the version of Coccinelle
+        root_path: the prefix to remove from the files paths
+                   e.g. file = /path/to/project/path/to/file
+                        root_path = /path/to/project/
+                        file becomes path/to/file
         """
         if use_env_variables:
             import os
             
-            self.sut_type = os.environ.get("COCCI_SUT_TYPE")
-            self.sut_name = os.environ.get("COCCI_SUT_NAME")
-            self.sut_version = os.environ.get("COCCI_SUT_VERSION")
-            self.sut_buildarch = os.environ.get("COCCI_SUT_BUILDARCH")
-            self.generator_version = os.environ.get("COCCI_GENERATOR_VERSION")
+            self.sut_type = os.environ.get("COCCI_SUT_TYPE") or ""
+            self.sut_name = os.environ.get("COCCI_SUT_NAME") or ""
+            self.sut_version = os.environ.get("COCCI_SUT_VERSION") or ""
+            self.sut_buildarch = os.environ.get("COCCI_SUT_BUILDARCH") or ""
+            self.generator_version = os.environ.get(
+                "COCCI_GENERATOR_VERSION") or ""
+            self.root_path = os.environ.get("COCCI_ROOT_PATH") or ""
         else:
             self.sut_type = sut_type
             self.sut_name = sut_name
             self.sut_version = sut_version
             self.sut_buildarch = sut_buildarch
             self.generator_version = generator_version
+            self.root_path = root_path
         
         self.results = []
         
@@ -135,7 +143,12 @@ class Analysis(object):
         cocciloc -- coccilib.elems.Location instance
         
         """
-        file_ = firehose.model.File(cocciloc.file, "")
+        # removes root_path from the file name
+        filename = cocciloc.file
+        if filename.startswith(self.root_path):
+            filename = filename[len(self.root_path):]
+        
+        file_ = firehose.model.File(filename, "")
         function = firehose.model.Function(cocciloc.current_element)
         range_ = firehose.model.Range(
             firehose.model.Point(int(cocciloc.line),
