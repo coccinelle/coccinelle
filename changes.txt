@@ -275,6 +275,9 @@
   furthermore is associated with a position metavariable, the match will
   fail, because the implicit int has no position.  Thanks to Nic Volanschi
   for pointing out the problem.
+- Propagate parameter list variables from rules for function definitions
+  to the generated rules for function prototypes.  Thanks to Nic Volanschi
+  for pointing out the problem.
 
 * 0.2.5
 ** Language:
