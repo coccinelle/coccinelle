@@ -1257,14 +1257,18 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
 	ctl_and CTL.NONSTRICT
 	  (make_raw_match None false ast) (* statement *)
 	  (matcher d)                     (* transformation *)
-    | (Ast.CONTEXT(pos,(Ast.NOTHING|Ast.BEFORE(_,_))),(After a | Guard a)) ->
-	(* This case and the MINUS one couldprobably be merged, if
+    | (Ast.CONTEXT(pos,(Ast.NOTHING|Ast.BEFORE(_,_))),
+       ((After a | Guard a) as after)) ->
+	(* This case and the MINUS one could probably be merged, if
 	   HackForStmt were to notice when its arguments are trivial *)
+	 (* not really sure what this is doing, esp is_compound... *)
 	let first_metamatch = matcher d in
 	(* try to follow after link *)
 	let to_end = ctl_or (aftpred None) (loopfallpred None) in
 	let is_compound =
-	  ctl_ex(make_seq guard [to_end; CTL.True; a]) in
+	  ctl_ex
+	    (make_seq guard
+	       [to_end; make_seq_after guard CTL.True after]) in
 	let not_compound =
 	  make_seq_after guard (ctl_not (ctl_ex to_end)) after in
 	ctl_and CTL.NONSTRICT (make_raw_match label false ast)

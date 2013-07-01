@@ -421,7 +421,9 @@ and parameterTypeDef p =
       | Ast0.Pdots(dots) -> mcode print_string dots
       | Ast0.Pcircles(dots) -> mcode print_string dots
       | Ast0.OptParam(param) -> print_string "?"; parameterTypeDef param
-      | Ast0.UniqueParam(param) -> print_string "!"; parameterTypeDef param)
+      | Ast0.UniqueParam(param) -> print_string "!"; parameterTypeDef param
+      |	Ast0.AsParam(p,asexp) -> parameterTypeDef p; print_string "@";
+	  expression asexp)
 
 and parameter_list l = dots (function _ -> ()) parameterTypeDef l
 

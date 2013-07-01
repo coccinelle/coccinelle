@@ -315,7 +315,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       in
 
       let newi = !g +> add_node (SeqStart (stmt, brace, i1)) lbl s1 in
-      let endnode = mk_node     (SeqEnd (brace, i2))         lbl [] s2 in
+      let endnode     = mk_node      (SeqEnd (brace, i2))    lbl [] s2 in
       let endnode_dup = mk_fake_node (SeqEnd (brace, i2))    lbl [] s2 in
 (*
       let _endnode_dup =
@@ -525,12 +525,13 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
    (* ------------------------- *)
   | Selection  (Ast_c.Switch (e, st)) ->
       let (i1,i2,i3, iifakeend) = tuple_of_list4 ii in
+
       let ii = [i1;i2;i3] in
 
       (* The newswitchi is for the labels to know where to attach.
        * The newendswitch (endi) is for the 'break'. *)
       let newswitchi=
-        !g+> add_node (SwitchHeader(stmt,(e,ii))) lbl "switch" in
+        !g +> add_node (SwitchHeader(stmt,(e,ii))) lbl "switch" in
       let newendswitch =
         !g +> add_node (EndStatement (Some iifakeend)) lbl "[endswitch]" in
 
@@ -1158,7 +1159,7 @@ let specialdeclmacro_to_stmt (s, args, ii) =
 
 
 
-let ast_to_control_flow e =
+let rec ast_to_control_flow e =
 
   (* globals (re)initialialisation *)
   g := (new ograph_mutable);
@@ -1169,6 +1170,16 @@ let ast_to_control_flow e =
   let topi = !g +> add_node TopNode lbl_0 "[top]" in
 
   match e with
+  | Ast_c.Namespace (defs, _) ->
+      (* todo: incorporate the other defs *)
+      let rec loop defs = 
+	match defs with
+	| [] -> None
+	| def :: defs ->
+	    match ast_to_control_flow def with
+	    | None -> loop defs
+	    | x -> x in
+      loop defs
   | Ast_c.Definition ((defbis,_) as def) ->
       let _funcs = defbis.f_name in
       let _c = defbis.f_body in
@@ -1284,7 +1295,6 @@ let ast_to_control_flow e =
       );
 
       Some !g
-
 
   | _ -> None
 

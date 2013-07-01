@@ -24,6 +24,94 @@ let test_tokens_c file =
   ()
 
 
+(* ---------------------------------------------------------------------- *)
+
+(* Was in main, but using it in test_parsing_c *)
+let get_files path =
+  let ch =
+    cmd_to_list (* same as "true, "", _" case *)
+      (if !Flag.include_headers
+			  (* FIXME : Could we remove xs ?
+			     -use_glimpse requires a singleton.
+			     This is checked some lines before.
+			     then ("find "^(join " " (x::xs))^" -name \"*.[ch]\"")
+			     else ("find "^(join " " (x::xs))^" -name \"*.c\"")
+			  *)
+      then ("find "^ path ^" -name \"*.[ch]\"")
+      else ("find "^ path ^" -name \"*.c\"")) in
+  let cpp =
+    if !Flag.c_plus_plus
+    then cmd_to_list ("find "^ path ^" -name \"*.cpp\"")
+    else [] in
+  cpp @ ch
+
+let new_test_parse_gen xs =
+
+  Flag_parsing_c.debug_typedef := true;
+  Flag_parsing_c.debug_cpp := true;
+  Flag_parsing_c.debug_etdt := false;
+  Flag_parsing_c.filter_msg := true;
+
+  (*let dirname_opt =
+    match xs with
+    | [x] when is_directory x -> Some x
+    | _ -> None
+  in*)
+
+  (* old:
+     let xs = if !Flag.dir then
+     process_output_to_list ("find " ^ x ^" -name \"*.c\"") else x::xs in
+  *)
+  let fullxs = xs +> List.map get_files +> List.concat in
+
+  let stat_list = ref [] in
+  let newscore  = Common.empty_score () in
+
+  Common.check_stack_nbfiles (List.length fullxs);
+
+  fullxs +> List.iter (fun file ->
+    
+    pr2 "";
+    pr2 ("PARSING: " ^ file);
+
+    let (xs, stat) = Parse_c.parse_c_and_cpp file in
+    xs +> List.iter (fun (ast, (s, toks)) ->
+      Parse_c.print_commentized toks
+    );
+
+    Common.push2 stat stat_list;
+    let s =
+      sprintf "bad = %d, timeout = %B"
+        stat.Parsing_stat.bad stat.Parsing_stat.have_timeout
+    in
+    if stat.Parsing_stat.bad =|= 0 && not stat.Parsing_stat.have_timeout
+    then Hashtbl.add newscore file (Common.Ok)
+    else Hashtbl.add newscore file (Common.Pb s)
+  );
+
+(* uses an explicit path; to fix
+  dirname_opt +> Common.do_option (fun dirname ->
+    pr2_xxxxxxxxxxxxxxxxx();
+    pr2 "regression testing  information";
+    pr2_xxxxxxxxxxxxxxxxx();
+    let str = Str.global_replace (Str.regexp "/") "__" dirname in
+    let def = if !Flag_parsing_c.filter_define_error then "_def_" else "" in
+    let ext = if ext =$= "c" then "" else ext in
+    let filename = "score_parsing__" ^str ^ def ^ ext ^ ".marshalled" in
+    if Sys.file_exists filename
+    then
+      Common.regression_testing newscore
+	(Filename.concat score_path
+	   ("score_parsing__" ^str ^ def ^ ext ^ ".marshalled"))
+  );
+*)
+
+  if not (null !stat_list)
+  then begin
+    Parsing_stat.print_recurring_problematic_tokens !stat_list;
+    Parsing_stat.print_parsing_stat_list !stat_list;
+  end;
+  ()
 
 (* ---------------------------------------------------------------------- *)
 let test_parse_gen xs ext =
@@ -493,6 +581,8 @@ let actions () = [
   Common.mk_action_n_arg test_parse_ch;
   "--parse-i", "   <file or dir>",
   Common.mk_action_n_arg test_parse_i;
+  "--parse-c++", "   <file or dir>",
+  Common.mk_action_n_arg new_test_parse_gen;
 
   "--parse", "   <file or dir>",
   Common.mk_action_n_arg test_parse;

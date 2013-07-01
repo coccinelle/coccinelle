@@ -15,7 +15,7 @@ def import_firehose():
     
     It is required to proceed this way, as long as we can't use the
     classical approach (from firehose.model import Foo[...]), mainly
-    because this module is imported by coccinelle wether or not it
+    because this module is imported by coccinelle whether or not it
     will be used by the semantic patch (and we don't want to display
     an error message to non-Firehose users.
     """

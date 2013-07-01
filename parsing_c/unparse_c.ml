@@ -220,6 +220,7 @@ let remove_useless_fakeInfo_struct program =
 (*****************************************************************************)
 
 let get_fakeInfo_and_tokens celem toks =
+
   let toks_in  = ref toks in
   let toks_out = ref [] in
 
@@ -229,6 +230,7 @@ let get_fakeInfo_and_tokens celem toks =
     | Ast_c.FakeTok _ ->
       push2 (Fake1 info) toks_out
     | Ast_c.OriginTok _ | Ast_c.ExpandedTok _ ->
+
       (* get the associated comments/space/cppcomment tokens *)
       let (before, x, after) =
         !toks_in +> split_when (fun tok ->
@@ -242,6 +244,7 @@ let get_fakeInfo_and_tokens celem toks =
         (* case such as  int asm d3("x"); not yet in ast *)
         );
       before +> List.iter (fun x -> push2 (T1 x) toks_out);
+
       push2 (T1 x) toks_out;
       toks_in := after;
     | Ast_c.AbstractLineTok _ ->
@@ -281,12 +284,15 @@ let displace_fake_nodes toks =
       (match !(info.Ast_c.cocci_tag) with
       | Some x ->
         (match x with
+        | (Ast_cocci.MINUS(_,_,_,Ast_cocci.REPLACEMENT _),_)
+          (* for , replacement is more likely to be like after, but not clear...
+	     but treating it as after breaks a lot of tests. *)
+
         | (Ast_cocci.CONTEXT(_,Ast_cocci.BEFORE _),_) ->
           (* move the fake node forwards *)
           let (whitespace,rest) = span is_whitespace aft in
           bef @ whitespace @ fake :: (loop rest)
-        | (Ast_cocci.MINUS(_,_,_,Ast_cocci.REPLACEMENT _),_)
-          (* for , replacement is more likely to be like after, but not clear... *)
+
         | (Ast_cocci.CONTEXT(_,Ast_cocci.AFTER _),_) ->
           (* move the fake node backwards *)
           let revbef = List.rev bef in
@@ -1319,6 +1325,41 @@ let fix_tokens toks =
   let toks = rebuild_tokens_extented toks in
   toks +> List.map (fun x -> x.tok2)
 
+(* if we have to remove a '}' that is alone on a line, remove the line too *)
+let drop_line toks =
+  let rec space_until_newline toks =
+    match toks with
+    | (T2(_, Min _, _, _) as hd) :: tl ->
+	let (drop, tl) = space_until_newline tl in
+	(drop, hd :: tl)
+    | hd :: tl when is_space hd ->
+	space_until_newline tl
+    | Fake2 _ :: tl ->
+	space_until_newline tl
+    | hd :: tl when is_newline hd ->
+	(true, toks)
+    | _ ->
+	(false, toks) in
+  let rec loop toks =
+    match toks with
+    | (T2(_, Min _, _, _) as x) :: tl 
+      when str_of_token2 x =$= "}" -> 
+	let (drop, tl) = space_until_newline tl in
+	(drop, x :: tl)
+    | hd :: tl when is_whitespace hd ->
+	let (drop, tl) = loop tl in
+	if drop then
+	  (true, tl)
+	else
+	  (false, toks)
+    | _ -> (false, toks) in
+  let rec find toks =
+    let (_, toks) = loop toks in
+    match toks with
+    | [] -> []
+    | hd :: tl ->
+	hd :: find tl in
+  find toks
 
 (*****************************************************************************)
 (* Final unparsing (and debugging support) *)
@@ -1479,6 +1520,9 @@ let pp_program2 xs outfile  =
               let toks = drop_space_at_endline toks in
               let toks = paren_to_space toks in
               let toks = drop_end_comma toks in
+
+              let toks = drop_line toks in
+
               let toks = remove_minus_and_between_and_expanded_and_fake toks in
               (* assert Origin + Cocci + C and no minus *)
               let toks = add_space toks in
