@@ -1125,7 +1125,6 @@ let main () =
     (* must be done after Arg.parse, because Common.profile is set by it *)
     Common.profile_code "Main total" (fun () ->
 
-
     let all_actions = Test_parsing_c.actions() in
 
     (match (!args) with
