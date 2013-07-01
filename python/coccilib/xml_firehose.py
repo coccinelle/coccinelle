@@ -147,6 +147,9 @@ class Analysis(object):
         filename = cocciloc.file
         if filename.startswith(self.root_path):
             filename = filename[len(self.root_path):]
+        # removes the slash at begin of the filename if there's one:
+        if filename.startswith("/"):
+            filename = filename[1:]
         
         file_ = firehose.model.File(filename, "")
         function = firehose.model.Function(cocciloc.current_element)
