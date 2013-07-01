@@ -183,7 +183,6 @@ class Analysis(object):
                 release = long_version[sep+1:]
             return version, release
     
-        #import_firehose()
         if self.sut_type == "source-rpm":
             self.sut_release = "" # TODO for RPM
             sut = firehose.model.SourceRpm(self.sut_name, self.sut_version,
