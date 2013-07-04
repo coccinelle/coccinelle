@@ -682,13 +682,8 @@ rule token = parse
   | "&="           { start_line true; mkassign Ast.And lexbuf }
   | "|="           { start_line true; mkassign Ast.Or lexbuf }
   | "^="           { start_line true; mkassign Ast.Xor lexbuf }
-<<<<<<< HEAD
-  | ">?="           { start_line true; mkassign Ast.Max lexbuf }
-  | "<?="           { start_line true; mkassign Ast.Min lexbuf }
-=======
   | "<?="           { start_line true; mkassign Ast.Min lexbuf }
   | ">?="           { start_line true; mkassign Ast.Max lexbuf }
->>>>>>> f34e373405e4b42e2905216142a30f4f96a0a053
 
   | "<<="          { start_line true; mkassign Ast.DecLeft lexbuf }
   | ">>="          { start_line true; mkassign Ast.DecRight lexbuf }
