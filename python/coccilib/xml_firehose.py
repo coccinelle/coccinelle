@@ -199,6 +199,7 @@ class Analysis(object):
         # if the analysis has 0 result and blank_if_no_results is True,
         # we don't print anything
         if not(self.results) and self.blank_if_no_results:
+            sys.stdout.write("\n")
             return
             
         if self.sut_type == "source-rpm":
