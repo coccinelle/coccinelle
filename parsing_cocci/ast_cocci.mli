@@ -543,13 +543,13 @@ and base_top_level =
 
 and top_level = base_top_level wrap
 
+and parser_kind = ExpP | TyP | AnyP
+
 and rulename =
     CocciRulename of string option * dependency * string list * string list *
-	exists * bool
-      (* true if the whole thing is an expression *)
+	exists * parser_kind
   | GeneratedRulename of string option * dependency *
-	string list * string list * exists * bool
-      (* true if the whole thing is an expression *)
+	string list * string list * exists * parser_kind
   | ScriptRulename of string option (* name *) * string (* language *) *
 	dependency
   | InitialScriptRulename of string option (* name *) * string (* language *) *

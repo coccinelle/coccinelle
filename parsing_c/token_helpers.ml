@@ -318,9 +318,6 @@ let info_of_tok = function
   | TMin                 (i) -> i
   | TMax                 (i) -> i
   | TMod                 (i) -> i
-  | TMax                 (i) -> i
-  | TMin                 (i) -> i
-
   | Tchar                (i) -> i
   | Tshort               (i) -> i
   | Tint                 (i) -> i

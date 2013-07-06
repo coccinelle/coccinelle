@@ -322,13 +322,14 @@ let short_options = [
       if !Regexp.pcre_support then "with PCRE support"
       else "with Str regexp support "
     in
-    pr2 (spf "spatch version %s %s Python support and %s" Config.version withpython whichregexp);
+    Printf.printf "spatch version %s %s Python support and %s"
+      Config.version withpython whichregexp;
     exit 0;
   ),
     "  guess what";
 
   "--date",   Arg.Unit (fun () ->
-    pr2 "version: $Date$";
+    Printf.printf "version: $Date$";
     raise (Common.UnixExit 0)
     ),
   "   guess what";
@@ -1114,7 +1115,6 @@ let main () =
 
     (* must be done after Arg.parse, because Common.profile is set by it *)
     Common.profile_code "Main total" (fun () ->
-
 
     let all_actions = Test_parsing_c.actions() in
 
