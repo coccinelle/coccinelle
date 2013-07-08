@@ -171,8 +171,6 @@ let equal_arithOp a b =
   | A.And      , B.And      -> true
   | A.Or       , B.Or       -> true
   | A.Xor      , B.Xor      -> true
-  | A.Min      , B.Min      -> true
-  | A.Max      , B.Max      -> true
   | _, (B.Xor|B.Or|B.And|B.DecRight|B.DecLeft|B.Mod|B.Div|B.Mul|B.Minus|B.Plus|B.Min|B.Max)
       -> false
 
@@ -939,7 +937,8 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 (*---------------------------------------------------------------------------*)
 let rec (expression: (A.expression, Ast_c.expression) matcher) =
  fun ea eb ->
-   if A.get_test_exp ea && not (Ast_c.is_test eb) then fail
+   if A.get_test_exp ea && not (Ast_c.is_test eb) then
+     (Printf.printf "failing here %b %b\n" (A.get_test_exp ea) (not (Ast_c.is_test eb)); fail)
    else
   X.all_bound (A.get_inherited ea) >&&>
   let wa x = A.rewrap ea x  in
@@ -4087,6 +4086,8 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
   | A.IfHeader (ia1,ia2, ea, ia3), F.IfHeader (st, (eb,ii)) ->
       let (ib1, ib2, ib3) = tuple_of_list3 ii in
       expression ea eb >>= (fun ea eb ->
+      Pretty_print_cocci.expression ea;
+      Format.print_newline();
       tokenf ia1 ib1 >>= (fun ia1 ib1 ->
       tokenf ia2 ib2 >>= (fun ia2 ib2 ->
       tokenf ia3 ib3 >>= (fun ia3 ib3 ->
