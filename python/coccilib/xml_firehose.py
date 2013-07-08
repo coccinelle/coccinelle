@@ -91,7 +91,7 @@ class Analysis(object):
         
         self.results = []
         
-    def add_result(self, location, message):
+    def add_result(self, location, message, testid=None):
         """
         Adds a result in the analysis
         
@@ -99,7 +99,7 @@ class Analysis(object):
         location: a coccinelle position (cocci.elems.Location)
         message: the message to display with
         """
-        self.results.append(self.__build_issue(location, message))
+        self.results.append(self.__build_issue(location, message, testid=testid))
         
 
     def __build_analysis(self,
