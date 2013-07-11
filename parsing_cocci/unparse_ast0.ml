@@ -269,6 +269,13 @@ and typeC t =
       | Ast0.Array(ty,lb,size,rb) ->
 	  typeC ty; mcode print_string lb; print_option expression size;
 	  mcode print_string rb
+      | Ast0.Decimal(dec,lp,length,comma,precision_opt,rp) ->
+	  mcode print_string dec;
+	  mcode print_string lp;
+	  expression length;
+	  print_option (mcode print_string) comma;
+	  print_option expression precision_opt;
+	  mcode print_string rp
       | Ast0.EnumName(kind,name) ->
 	  mcode print_string kind;
 	  print_option (function x -> ident x; print_string " ") name

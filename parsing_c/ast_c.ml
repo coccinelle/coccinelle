@@ -180,6 +180,7 @@ and fullType = typeQualifier * typeC
 
   | Pointer         of fullType
   | Array           of constExpression option * fullType
+  | Decimal         of constExpression * constExpression option
   | FunctionType    of functionType
 
   | Enum            of string option * enumType
@@ -228,7 +229,7 @@ and fullType = typeQualifier * typeC
             and base = CChar2 | CShort | CInt | CLong | CLongLong (* gccext: *)
             and sign = Signed | UnSigned
 
-          and floatType = CFloat | CDouble | CLongDouble
+          and floatType = CFloat | CDouble | CLongDouble | CDecimal
 
 
      (* -------------------------------------- *)

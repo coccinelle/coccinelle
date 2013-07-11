@@ -577,7 +577,9 @@ let other_options = [
     "-D", Arg.String Flag.set_defined_virtual_rules,
     "  indicate that a virtual rule should be considered to be matched";
     "--c++", Arg.Set Flag.c_plus_plus,
-    "  make a small attempt to parse C++ files"
+    "  make a small attempt to parse C++ files";
+    "--ibm", Arg.Set Flag.ibm,
+    "  make a small attempt to parse IBM C files";
   ];
 
   "misc options",

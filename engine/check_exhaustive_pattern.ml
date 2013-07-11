@@ -130,6 +130,7 @@ let dumb_astcocci_type = function
  | A.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) -> ()
  | A.FunctionType _ -> ()
  | A.Array (typa, _, eaopt, _) -> ()
+ | A.Decimal(_, _, _, _, _, _) -> ()
  | A.EnumName(en, ena) -> ()
  | A.EnumDef(ty, lb, ids, rb) -> ()
  | A.StructUnionName(sa, sua) -> ()

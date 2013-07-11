@@ -154,7 +154,7 @@ let (fixDeclSpecForDecl: decl -> (fullType * (storage wrap)))  = function
  | (Some _,_, Some _) ->
      (*mine*)
      raise (Semantic ("signed, unsigned valid only for char and int", fake_pi))
- | (_,Some _,(Some(BaseType(FloatType (CFloat|CLongDouble))))) ->
+ | (_,Some _,(Some(BaseType(FloatType (CFloat|CLongDouble|CDecimal))))) ->
      raise (Semantic ("long or short specified with floatint type", fake_pi))
  | (_,Some Short,(Some(BaseType(FloatType CDouble)))) ->
      raise (Semantic ("the only valid combination is long double", fake_pi))
@@ -434,7 +434,7 @@ let mk_string_wrap (s,info) = (s, [info])
        Tauto Tregister Textern Tstatic
        Ttypedef
        Tconst Tvolatile
-       Tstruct Tunion Tenum
+       Tstruct Tunion Tenum Tdecimal
        Tbreak Telse Tswitch Tcase Tcontinue Tfor Tdo Tif  Twhile Treturn
        Tgoto Tdefault
        Tsizeof Tnew Tdelete TOParCplusplusInit Tnamespace
@@ -1062,6 +1062,10 @@ type_spec2:
  | Tunsigned            { Left3 UnSigned, [$1]}
  | struct_or_union_spec { Right3 (fst $1), snd $1 }
  | enum_spec            { Right3 (fst $1), snd $1 }
+ | Tdecimal TOPar const_expr TComma const_expr TCPar
+     { Right3 (Decimal($3,Some $5)), [$1;$2;$4;$6] }
+ | Tdecimal TOPar const_expr TCPar
+     { Right3 (Decimal($3,None)), [$1;$2;$4] }
 
  /*
  (* parse_typedef_fix1: cant put: TIdent {} cos it make the grammar

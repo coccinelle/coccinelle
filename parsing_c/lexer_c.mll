@@ -176,6 +176,10 @@ let cpp_keyword_table = Common.hash_of_list [
   "delete",    (fun ii -> Tdelete ii);
   "using",     (fun ii -> TComment ii) ]
 
+let ibm_keyword_table = Common.hash_of_list [
+  "decimal",   (fun ii -> Tdecimal ii);
+] 
+
 let error_radix s =
   ("numeric " ^ s ^ " constant contains digits beyond the radix:")
 
@@ -669,15 +673,25 @@ rule token = parse
         let s = tok lexbuf in
         Common.profile_code "C parsing.lex_ident" (fun () ->
 	  let tok =
-	    if !Flag.c_plus_plus 
+	    if !Flag.c_plus_plus
 	    then Common.optionise (fun () -> Hashtbl.find cpp_keyword_table s)
 	    else None in
 	  match tok with
 	    Some f -> f info
 	  | None ->
-              match Common.optionise (fun () -> Hashtbl.find keyword_table s)
-              with
-              | Some f -> f info
+	      let tok =
+		if !Flag.ibm
+		then
+		  Common.optionise (fun () -> Hashtbl.find ibm_keyword_table s)
+		else None in
+	      match tok with
+		Some f -> f info
+	      | None ->
+		  let tok =
+		    Common.optionise
+		      (fun () -> Hashtbl.find keyword_table s) in
+		  match tok with
+		  | Some f -> f info
 
            (* parse_typedef_fix.
             *    if Lexer_parser.is_typedef s
@@ -690,7 +704,7 @@ rule token = parse
             * now done in parse_c.ml.
             *)
 
-              | None -> TIdent (s, info)
+		  | None -> TIdent (s, info)
         )
       }
   (* gccext: apparently gcc allows dollar in variable names. found such
@@ -846,9 +860,13 @@ rule token = parse
       { TInt ((x, (Signed,CLongLong)), tokinfo lexbuf) }
   | (( decimal | hexa | octal) ['u' 'U'] ['l' 'L'] ['l' 'L']) as x
       { TInt ((x, (UnSigned,CLongLong)), tokinfo lexbuf) }
+  | ((decimal as s) ['d' 'D']) as x
+      { TFloat ((x, CDouble),     tokinfo lexbuf) }
 
   | (real ['f' 'F']) as x { TFloat ((x, CFloat),      tokinfo lexbuf) }
   | (real ['l' 'L']) as x { TFloat ((x, CLongDouble), tokinfo lexbuf) }
+  (* How to make the following only available if !Flag.ibm *)
+  | (real ['d' 'D']) as x { TFloat ((x, CDecimal),    tokinfo lexbuf) }
   | (real as x)           { TFloat ((x, CDouble),     tokinfo lexbuf) }
 
   | ['0'] ['0'-'9']+

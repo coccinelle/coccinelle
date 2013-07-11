@@ -162,7 +162,7 @@ let is_start_of_something = function
   | Tauto _ | Tregister _ | Textern _ | Tstatic _
   | Tconst _ | Tvolatile _
   | Ttypedef _
-  | Tstruct _ | Tunion _ | Tenum _
+  | Tstruct _ | Tunion _ | Tenum _ | Tdecimal _
     -> true
   | _ -> false
 
@@ -341,6 +341,7 @@ let info_of_tok = function
 
   | Tstruct              (i) -> i
   | Tenum                (i) -> i
+  | Tdecimal             (i) -> i
   | Ttypedef             (i) -> i
   | Tunion               (i) -> i
   | Tbreak               (i) -> i
@@ -502,6 +503,7 @@ let visitor_info_of_tok f = function
 
   | Tstruct              (i) -> Tstruct              (f i)
   | Tenum                (i) -> Tenum                (f i)
+  | Tdecimal             (i) -> Tdecimal             (f i)
   | Ttypedef             (i) -> Ttypedef             (f i)
   | Tunion               (i) -> Tunion               (f i)
   | Tbreak               (i) -> Tbreak               (f i)

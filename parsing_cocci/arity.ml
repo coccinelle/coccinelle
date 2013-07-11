@@ -404,6 +404,18 @@ and top_typeC tgt opt_allowed typ =
       let size = get_option (expression arity) size in
       let rb = mcode rb in
       make_typeC typ tgt arity (Ast0.Array(ty,lb,size,rb))
+  | Ast0.Decimal(dec,lp,length,comma,precision_opt,rp) ->
+      let arity =
+	all_same opt_allowed tgt (mcode2line dec)
+	  [mcode2arity dec;mcode2arity lp;mcode2arity rp] in
+      let dec = mcode dec in
+      let lp = mcode lp in
+      let length = expression arity length in
+      let comma = get_option mcode comma in
+      let precision_opt = get_option (expression arity) precision_opt in
+      let rp = mcode rp in
+      make_typeC typ tgt arity
+	(Ast0.Decimal(dec,lp,length,comma,precision_opt,rp))
   | Ast0.EnumName(kind,name) ->
       let arity =
 	all_same opt_allowed tgt (mcode2line kind) [mcode2arity kind] in

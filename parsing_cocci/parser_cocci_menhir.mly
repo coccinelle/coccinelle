@@ -97,7 +97,7 @@ let tmeta_to_ident (name,pure,clt) =
 %token<string * Data.clt> Tattr
 
 %token <Data.clt> TIf TElse TWhile TFor TDo TSwitch TCase TDefault TReturn
-%token <Data.clt> TBreak TContinue TGoto TSizeof TFunDecl
+%token <Data.clt> TBreak TContinue TGoto TSizeof TFunDecl Tdecimal
 %token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId TSymId
 %token <Ast_cocci.added_string * Data.clt> TPragma
 
@@ -711,6 +711,15 @@ non_signable_types:
     Ast0.wrap(Ast0.StructUnionDef(ty,P.clt2mcode "{" l,d,P.clt2mcode "}" r)) }
 | p=TTypeId
     { Ast0.wrap(Ast0.TypeName(P.id2mcode p)) }
+| Tdecimal TOPar enum_val TComma enum_val TCPar
+    { Ast0.wrap(Ast0.Decimal(P.clt2mcode "decimal" $1,
+			     P.clt2mcode "(" $2,$3,
+			     Some (P.clt2mcode "," $4), Some $5,
+			     P.clt2mcode ")" $6)) }
+| Tdecimal TOPar enum_val TCPar
+    { Ast0.wrap(Ast0.Decimal(P.clt2mcode "decimal" $1,
+			     P.clt2mcode "(" $2,$3,None,None,
+			     P.clt2mcode ")" $4)) }
 
 all_basic_types:
   r=Tsigned ty=signable_types

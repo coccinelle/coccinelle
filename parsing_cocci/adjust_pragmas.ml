@@ -177,6 +177,9 @@ let rec left_ty t =
 	(function lp1 -> Ast0.FunctionType(None,lp1,params,rp1))
   | Ast0.Array(ty,lb,size,rb) ->
       call_right left_ty ty t (function ty -> Ast0.Array(ty,lb,size,rb))
+  | Ast0.Decimal(dec,lp,length,comma,precision_opt,rp) ->
+      call_right left_mcode dec t
+	(function dec -> Ast0.Decimal(dec,lp,length,comma,precision_opt,rp))
   | Ast0.EnumName(kind,name) ->
       call_right left_mcode kind t (function kind -> Ast0.EnumName(kind,name))
   | Ast0.EnumDef(ty,lb,ids,rb) ->

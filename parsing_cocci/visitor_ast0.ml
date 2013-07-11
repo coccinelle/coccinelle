@@ -317,6 +317,16 @@ let visitor mode bind option_default
 	| Ast0.FunctionType(ty,lp1,params,rp1) ->
 	    function_type (ty,lp1,params,rp1) []
 	| Ast0.Array(ty,lb,size,rb) -> array_type (ty,lb,size,rb) []
+	| Ast0.Decimal(dec,lp,length,comma,precision_opt,rp) ->
+	    let (dec_n,dec) = string_mcode dec in
+	    let (lp_n,lp) = string_mcode lp in
+	    let (length_n,length) = expression length in
+	    let (comma_n,comma) = get_option string_mcode comma in
+	    let (precision_n,precision) =
+	      get_option expression precision_opt in
+	    let (rp_n,rp) = string_mcode rp in
+	    (multibind [dec_n; lp_n; length_n; comma_n; precision_n; rp_n],
+	     Ast0.Decimal(dec,lp,length,comma,precision_opt,rp))
 	| Ast0.EnumName(kind,name) ->
 	    let (kind_n,kind) = string_mcode kind in
 	    let (name_n,name) = get_option ident name in

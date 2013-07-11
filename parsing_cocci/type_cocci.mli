@@ -11,6 +11,7 @@ type typeC =
   | Pointer         of typeC
   | FunctionPointer of typeC (* only return type *)
   | Array           of typeC (* drop size info *)
+  | Decimal                  (* drop all information *)
   | EnumName        of name
   | StructUnionName of structUnion * name
   | TypeName        of string

@@ -484,7 +484,8 @@ and typeC allminus t =
 	| types -> Ast.DisjType(List.map (rewrap t no_isos) types))
     | Ast0.BaseType(_) | Ast0.Signed(_,_) | Ast0.Pointer(_,_)
     | Ast0.FunctionPointer(_,_,_,_,_,_,_) | Ast0.FunctionType(_,_,_,_)
-    | Ast0.Array(_,_,_,_) | Ast0.EnumName(_,_) | Ast0.StructUnionName(_,_)
+    | Ast0.Array(_,_,_,_) | Ast0.Decimal(_,_,_,_,_,_)
+    | Ast0.EnumName(_,_) | Ast0.StructUnionName(_,_)
     | Ast0.StructUnionDef(_,_,_,_) | Ast0.EnumDef(_,_,_,_)
     | Ast0.TypeName(_) | Ast0.MetaType(_,_) ->
 	Ast.Type(allminus,None,rewrap t no_isos (base_typeC allminus t))
@@ -515,6 +516,10 @@ and base_typeC allminus t =
   | Ast0.Array(ty,lb,size,rb) ->
       Ast.Array(typeC allminus ty,mcode lb,get_option expression size,
 		mcode rb)
+  | Ast0.Decimal(dec,lp,length,comma,precision_opt,rp) ->
+      Ast.Decimal(mcode dec,mcode lp,expression length,
+		  get_option mcode comma,get_option expression precision_opt,
+		  mcode rp)
   | Ast0.EnumName(kind,name) ->
       Ast.EnumName(mcode kind,get_option ident name)
   | Ast0.EnumDef(ty,lb,ids,rb) ->

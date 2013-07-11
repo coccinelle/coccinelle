@@ -264,6 +264,11 @@ and unify_typeC t1 t2 =
   | (Ast.Array(ty1,lb1,e1,rb1),Ast.Array(ty2,lb2,e2,rb2)) ->
       conjunct_bindings
 	(unify_fullType ty1 ty2) (unify_option unify_expression e1 e2)
+  | (Ast.Decimal(dec1,lp1,len1,comma1,prec_opt1,rp1),
+     Ast.Decimal(dec2,lp2,len2,comma2,prec_opt2,rp2)) ->
+       conjunct_bindings
+	(unify_expression len1 len2)
+	 (unify_option unify_expression prec_opt1 prec_opt2)
   | (Ast.EnumName(s1,Some ts1),Ast.EnumName(s2,Some ts2)) ->
       if unify_mcode s1 s2 then unify_ident ts1 ts2 else return false
   | (Ast.EnumName(s1,None),Ast.EnumName(s2,None)) ->
@@ -339,7 +344,8 @@ and unify_declaration d1 d2 =
 and unify_initialiser i1 i2 =
   match (Ast.unwrap i1,Ast.unwrap i2) with
     (Ast.MetaInit(_,_,_),_) | (_,Ast.MetaInit(_,_,_)) -> return true
-  | (Ast.MetaInitList(_,_,_,_),_) | (_,Ast.MetaInitList(_,_,_,_)) -> return true
+  | (Ast.MetaInitList(_,_,_,_),_) | (_,Ast.MetaInitList(_,_,_,_)) ->
+      return true
   | (Ast.InitExpr(expa),Ast.InitExpr(expb)) ->
       unify_expression expa expb
   | (Ast.ArInitList(_,initlista,_),
