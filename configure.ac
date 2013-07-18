@@ -39,8 +39,10 @@ AC_MSG_NOTICE([verifying basic tools])
 AC_PROG_INSTALL
 AC_PROG_MKDIR_P
 AC_PROG_CPP
+AC_PATH_PROG([BASH],[bash])
 AC_PATH_PROG([TAR],[tar])
 AC_PATH_PROG([PATCH],[patch])
+AC_PATH_PROG([ECHO],[echo])
 
 dnl  ensures that INSTALL points to an absolute install-sh when that one is configured.
 AS_IF([test "$INSTALL" = "setup/install-sh -c" -o "$INSTALL" = "./setup-install-sh -c"],
@@ -54,6 +56,12 @@ AS_IF([test "$MKDIR_P" = "setup/install-sh -c -d" -o "$INSTALL" = "./setup-insta
   AC_SUBST([MKDIR_P], ["$COCCI_SRCDIR/$MKDIR_P"])
 ])
 
+dnl Try to ensure that ECHO will support -e option to handle \t and \n
+AS_IF([test "`$ECHO --version`" =  "--version"],
+[dnl
+  AC_SUBST([ECHO],["$COCCI_SRCDIR/setup/echo.sh"])
+])
+ 
 dnl  patchelf is an optional dependency and in principle not used for building coccinelle
 AC_PATH_PROG([PATCHELF],[patchelf])
 
