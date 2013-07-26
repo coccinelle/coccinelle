@@ -450,6 +450,9 @@ and vk_type = fun bigf t ->
     | Array (eopt, t) ->
         do_option (vk_expr bigf) eopt;
         typef t
+    | Decimal(length,precision_opt) ->
+        vk_expr bigf length;
+        do_option (vk_expr bigf) precision_opt
     | FunctionType (returnt, paramst) ->
         typef returnt;
         (match paramst with
@@ -1266,6 +1269,8 @@ and vk_type_s = fun bigf t ->
       | BaseType x -> BaseType x
       | Pointer t  -> Pointer (typef t)
       | Array (eopt, t) -> Array (fmap (vk_expr_s bigf) eopt, typef t)
+      | Decimal (len,prec_opt) ->
+	  Decimal (vk_expr_s bigf len, fmap (vk_expr_s bigf) prec_opt)
       | FunctionType (returnt, paramst) ->
           FunctionType
             (typef returnt,

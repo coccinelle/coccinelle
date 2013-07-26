@@ -192,6 +192,11 @@ let combiner bind option_default
       |	Ast.FunctionType (_,ty,lp1,params,rp1) ->
 	  function_type (ty,lp1,params,rp1) []
       | Ast.Array(ty,lb,size,rb) -> array_type (ty,lb,size,rb) []
+      | Ast.Decimal(dec,lp,length,comma,precision_opt,rp) ->
+	  multibind
+	    [string_mcode dec; string_mcode lp;
+	      expression length; get_option string_mcode comma;
+	      get_option expression precision_opt; string_mcode rp]
       | Ast.EnumName(kind,name) ->
 	  bind (string_mcode kind) (get_option ident name)
       | Ast.EnumDef(ty,lb,ids,rb) ->
@@ -727,6 +732,10 @@ let rebuilder
 	| Ast.Array(ty,lb,size,rb) ->
 	    Ast.Array(fullType ty, string_mcode lb,
 		      get_option expression size, string_mcode rb)
+      | Ast.Decimal(dec,lp,length,comma,precision_opt,rp) ->
+	  Ast.Decimal(string_mcode dec, string_mcode lp,
+		      expression length, get_option string_mcode comma,
+		      get_option expression precision_opt, string_mcode rp)
 	| Ast.EnumName(kind,name) ->
 	    Ast.EnumName(string_mcode kind, get_option ident name)
 	| Ast.EnumDef(ty,lb,ids,rb) ->

@@ -251,6 +251,10 @@ and base_typeC =
                    string mcode (* ) *)
   | Array           of fullType * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
+  | Decimal         of string mcode (* decimal *) * string mcode (* ( *) *
+	               expression *
+	               string mcode option (* , *) * expression option *
+	               string mcode (* ) *) (* IBM C only *)
   | EnumName        of string mcode (*enum*) * ident option (* name *)
   | EnumDef  of fullType (* either EnumName or metavar *) *
 	string mcode (* { *) * expression dots * string mcode (* } *)

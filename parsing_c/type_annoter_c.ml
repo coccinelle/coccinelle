@@ -354,6 +354,7 @@ let rec type_unfold_one_step ty env =
   | BaseType x    -> ty
   | Pointer t     -> ty
   | Array (e, t)  -> ty
+  | Decimal (len,prec_opt) -> ty
 
   | StructUnion (sopt, su, fields) -> ty
 
@@ -429,6 +430,8 @@ let rec typedef_fix ty env =
 	(Enum  (s, enumt)) (* todo? *) +> Ast_c.rewrap_typeC ty
     | EnumName s ->
 	(EnumName s) (* todo? *) +> Ast_c.rewrap_typeC ty
+    | Decimal(l,p) ->
+	(Decimal(l,p)) (* todo? *) +> Ast_c.rewrap_typeC ty
 	  
   (* we prefer StructUnionName to StructUnion when it comes to typed metavar *)
     | StructUnionName (su, s) ->

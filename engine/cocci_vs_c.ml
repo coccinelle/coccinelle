@@ -3145,6 +3145,35 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
           )))))
 
 
+    | A.Decimal(dec,lp,length,Some comma,Some precision,rp),
+	(B.Decimal (len, Some prec), ii) ->
+        let (ib1, ib2, ib3, ib4) = tuple_of_list4 ii in
+        expression length len >>= (fun length len ->
+        expression precision prec >>= (fun precision prec ->
+        tokenf dec ib1   >>= (fun dec ib1 ->
+        tokenf lp ib2    >>= (fun lp ib2 ->
+        tokenf comma ib3 >>= (fun comma ib3 ->
+        tokenf rp ib4    >>= (fun rp ib4 ->
+          return (
+            (A.Decimal(dec,lp,length,Some comma,Some precision,rp)) +>
+	      A.rewrap ta,
+            (B.Decimal (len, Some prec), [ib1;ib2;ib3;ib4])
+          )))))))
+
+
+    | A.Decimal(dec,lp,length,None,None,rp),
+	(B.Decimal (len, None), ii) ->
+        let (ib1, ib2, ib3) = tuple_of_list3 ii in
+        expression length len >>= (fun length len ->
+        tokenf dec ib1 >>= (fun dec ib1 ->
+        tokenf lp ib2  >>= (fun lp ib2 ->
+        tokenf rp ib3  >>= (fun rp ib3 ->
+          return (
+            (A.Decimal(dec,lp,length,None,None,rp)) +> A.rewrap ta,
+            (B.Decimal (len,None), [ib1;ib2;ib3])
+          )))))
+
+
      (* todo: could also match a Struct that has provided a name *)
      (* This is for the case where the SmPL code contains "struct x", without
 	a definition.  In this case, the name field is always present.
@@ -3342,8 +3371,8 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
     | _,
      ((B.TypeName _ | B.StructUnionName (_, _) | B.EnumName _ |
       B.StructUnion (_, _, _) |
-      B.FunctionType _ | B.Array (_, _) | B.Pointer _ |
-      B.BaseType _),
+      B.FunctionType _ | B.Array (_, _) | B.Decimal(_, _) |
+      B.Pointer _ | B.BaseType _),
      _)
      -> fail
 
@@ -3566,6 +3595,9 @@ and compatible_type a (b,local) =
     | Type_cocci.Array   a, (qub, (B.Array (eopt, b),ii)) ->
       (* no size info for cocci *)
 	loop (a,b)
+    | Type_cocci.Decimal, (qub, (B.Decimal(l,p),ii)) ->
+      (* no size info for cocci *)
+	ok
     | Type_cocci.StructUnionName (sua, name),
 	(qub, (B.StructUnionName (sub, sb),ii)) ->
 	  if equal_structUnion_type_cocci sua sub
@@ -3624,7 +3656,7 @@ and compatible_type a (b,local) =
       ((
        B.StructUnionName (_, _)|
        B.FunctionType _|
-       B.Array (_, _)|B.Pointer _|B.TypeName _|
+       B.Array (_, _)|B.Decimal (_, _)|B.Pointer _|B.TypeName _|
        B.BaseType _
       ),
       _))) -> fail

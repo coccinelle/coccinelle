@@ -474,6 +474,15 @@ and typeC t =
       let rb = normal_mcode rb in
       mkres t (Ast0.Array(ty,lb,get_option expression size,rb))
 	ty (promote_mcode rb)
+  | Ast0.Decimal(dec,lp,length,comma,precision_opt,rp) ->
+      let dec = normal_mcode dec in
+      let lp = normal_mcode lp in
+      let length = expression length in
+      let comma = get_option normal_mcode comma in
+      let precision_opt = get_option expression precision_opt in
+      let rp = normal_mcode rp in
+      mkres t (Ast0.Decimal(dec,lp,length,comma,precision_opt,rp))
+	(promote_mcode dec) (promote_mcode rp)
   | Ast0.EnumName(kind,Some name) ->
       let kind = normal_mcode kind in
       let name = ident name in

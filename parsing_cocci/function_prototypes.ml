@@ -247,12 +247,13 @@ let rec rename_param old_name all param index =
 	  (Ast0.MetaParamList(Ast0.rewrap_mcode d nm,
 			      Ast0.MetaListLen (Ast0.rewrap_mcode d nml),
 			      Ast0.Pure)) in
-      (* only add the new metavariable declarations for the function
-	 definition case.  For the prototype case they should be inherited *)
+      (* only add both new metavariable declarations for the function
+	 definition case.  For the prototype case the length
+	 should be inherited *)
       ((if not all
       then [Ast.MetaParamListDecl(Ast.NONE,nm,Ast.MetaLen nml);
 	     Ast.MetaListlenDecl(nml)]
-      else []),
+      else [Ast.MetaParamListDecl(Ast.NONE,nm,Ast.MetaLen nml)]),
        new_id)
   | Ast0.OptParam(p) ->
       let (metavars,p) = rename_param old_name all p index in

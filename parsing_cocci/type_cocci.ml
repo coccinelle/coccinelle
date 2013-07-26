@@ -12,6 +12,7 @@ type typeC =
   | Pointer         of typeC
   | FunctionPointer of typeC (* only return type *)
   | Array           of typeC (* drop size info *)
+  | Decimal                  (* drop all information *)
   | EnumName        of name
   | StructUnionName of structUnion * name
   | TypeName        of string
@@ -48,6 +49,7 @@ let rec type2c = function
   | Pointer(ty) -> (type2c ty) ^ "*"
   | FunctionPointer(ty) -> (type2c ty) ^ "(*)(...)"
   | Array(ty) -> (type2c ty) ^ "[] "
+  | Decimal -> "decimnal "
   | EnumName(name) -> "enum " ^ (print_name name)
   | StructUnionName(kind,name) -> (structUnion kind) ^ (print_name name)
   | TypeName(name) -> name ^ " "

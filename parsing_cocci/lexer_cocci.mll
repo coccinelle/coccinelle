@@ -268,6 +268,7 @@ let id_tokens lexbuf =
   | "enum" ->       Data.saw_struct := true; Tenum     linetype
   | "unsigned" ->   Tunsigned linetype
   | "signed" ->     Tsigned   linetype
+  | "decimal" when !Flag.ibm -> Tdecimal linetype
 
   | "auto"  ->      Tauto     linetype
   | "register" ->   Tregister linetype

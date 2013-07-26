@@ -787,6 +787,14 @@ let match_maker checks_needed context_required whencode_allowed =
 	      conjunct_many_bindings
 		[check_mcode lb1 lb; check_mcode rb1 rb;
 		  match_typeC tya tyb; match_option match_expr sizea sizeb]
+	  | (Ast0.Decimal(dec1,lp1,len1,comma1,prec_opt1,rp1),
+	     Ast0.Decimal(dec2,lp2,len2,comma2,prec_opt2,rp2)) ->
+	       conjunct_many_bindings
+		 [check_mcode dec1 dec2; check_mcode lp1 lp2;
+		   match_expr len1 len2;
+		   match_option check_mcode comma1 comma2;
+		   match_option match_expr prec_opt1 prec_opt2;
+		   check_mcode rp1 rp2]
 	  | (Ast0.EnumName(kinda,Some namea),
 	     Ast0.EnumName(kindb,Some nameb)) ->
 	       conjunct_bindings (check_mcode kinda kindb)

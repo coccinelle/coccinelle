@@ -539,6 +539,10 @@ let rec equal_typeC t1 t2 =
       equal_mcode star1 star2
   | (Ast0.Array(_,lb1,_,rb1),Ast0.Array(_,lb2,_,rb2)) ->
       equal_mcode lb1 lb2 && equal_mcode rb1 rb2
+  | (Ast0.Decimal(dec1,lp1,_,comma1,_,rp1),
+     Ast0.Decimal(dec2,lp2,_,comma2,_,rp2)) ->
+       equal_mcode dec1 dec2 && equal_mcode lp1 lp2 &&
+       equal_option comma1 comma2 && equal_mcode rp1 rp2
   | (Ast0.EnumName(kind1,_),Ast0.EnumName(kind2,_)) ->
       equal_mcode kind1 kind2
   | (Ast0.EnumDef(_,lb1,_,rb1),Ast0.EnumDef(_,lb2,_,rb2)) ->

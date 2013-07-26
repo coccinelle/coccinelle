@@ -162,6 +162,8 @@ and left_typeC t =
   | Ast0.FunctionType(Some ty,lp1,params,rp1) -> left_typeC ty
   | Ast0.FunctionType(None,lp1,params,rp1) -> modif_before_mcode lp1
   | Ast0.Array(ty,lb,size,rb) -> left_typeC ty
+  | Ast0.Decimal(dec,lp,length,comma,precision_opt,rp) ->
+      modif_before_mcode dec
   | Ast0.EnumName(kind,name) -> modif_before_mcode kind
   | Ast0.EnumDef(ty,lb,ids,rb) -> left_typeC ty
   | Ast0.StructUnionName(kind,name) -> modif_before_mcode kind
@@ -172,7 +174,6 @@ and left_typeC t =
   | Ast0.OptType(ty) -> left_typeC ty
   | Ast0.UniqueType(ty) -> left_typeC ty
   | Ast0.AsType _ -> failwith "not possible"
-
 
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)

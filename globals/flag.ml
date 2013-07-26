@@ -38,6 +38,7 @@ let set_defined_virtual_rules s =
   | _ -> defined_virtual_rules := s :: !defined_virtual_rules
 
 let c_plus_plus = ref false
+let ibm = ref false
 
 (* was in main *)
 let include_headers = ref false

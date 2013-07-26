@@ -78,6 +78,10 @@ and disjtypeC bty =
       disjmult2 (disjty ty) (disjoption disjexp size)
 	(function ty -> function size ->
 	  Ast.rewrap bty (Ast.Array(ty,lb,size,rb)))
+  | Ast.Decimal(dec,lp,length,comma,precision_opt,rp) ->
+      disjmult2 (disjexp length) (disjoption disjexp precision_opt)
+	(function length -> function precision_opt ->
+	  Ast.rewrap bty (Ast.Decimal(dec,lp,length,comma,precision_opt,rp)))
   | Ast.EnumName(_,_) | Ast.StructUnionName(_,_) -> [bty]
   | Ast.EnumDef(ty,lb,ids,rb) ->
       disjmult2 (disjty ty) (disjdots disjexp ids)
