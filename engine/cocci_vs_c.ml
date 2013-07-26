@@ -755,7 +755,9 @@ let satisfies_econstraint c exp : bool =
 	  warning "Unable to apply a constraint on a multistring constant!"
       | Ast_c.Char  (char , _) -> satisfies_regexpconstraint c char
       | Ast_c.Int   (int  , _) -> satisfies_regexpconstraint c int
-      | Ast_c.Float (float, _) -> satisfies_regexpconstraint c float)
+      | Ast_c.Float (float, _) -> satisfies_regexpconstraint c float
+      | Ast_c.Decimal (d, n, p) ->
+	  warning "Unable to apply a constraint on a decimal constant!")
   | _ -> warning "Unable to apply a constraint on an expression!"
 
 
