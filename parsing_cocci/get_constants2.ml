@@ -279,7 +279,7 @@ let do_get_constants constants keywords env neg_pos =
   let rec type_collect res = function
       TC.ConstVol(_,ty) | TC.Pointer(ty) | TC.FunctionPointer(ty)
     | TC.Array(ty) -> type_collect res ty
-    | TC.Decimal -> keywords "decimal"
+    | TC.Decimal _ -> keywords "decimal"
     | TC.MetaType(tyname,_,_) ->
 	inherited tyname
     | TC.TypeName(s) -> constants s

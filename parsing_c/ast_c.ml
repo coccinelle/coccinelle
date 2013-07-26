@@ -370,6 +370,7 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
     | Char   of (string * isWchar) (* normally it is equivalent to Int *)
     | Int    of (string * intType)
     | Float  of (string * floatType)
+    | DecimalConst of (string * string * string)
 
     and isWchar = IsWchar | IsChar
 

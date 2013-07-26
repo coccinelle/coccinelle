@@ -3595,9 +3595,29 @@ and compatible_type a (b,local) =
     | Type_cocci.Array   a, (qub, (B.Array (eopt, b),ii)) ->
       (* no size info for cocci *)
 	loop (a,b)
-    | Type_cocci.Decimal, (qub, (B.Decimal(l,p),ii)) ->
+    | Type_cocci.Decimal(e1,e2), (qub, (B.Decimal(l,p),ii)) ->
+	(match X.mode with
+	  TransformMode -> ok (* nothing to do here *)
+	| PatternMode ->
+	    let tc2e = function
+		Type_cocci.Name n ->
+		  A.make_term(A.Ident(A.make_term(A.Id(A.make_mcode n))))
+	      | Type_cocci.Num n ->
+		  A.make_term(A.Constant(A.make_mcode(A.Int n)))
+	      | Type_cocci.MV(mv,keep,inh) ->
+		  A.make_term
+		    (A.MetaExpr
+		       (A.make_mcode mv,A.NoConstraint,keep,None,A.CONST,inh))
+	      | _ -> failwith "unexpected name in decimal" in
       (* no size info for cocci *)
-	ok
+	    expression (tc2e e1) l >>=
+	    (fun _ _ -> (* no transformation to record *)
+	      match p with
+		None -> failwith "not allowed in a type"
+	      | Some p ->
+		  expression (tc2e e2) p >>=
+		  (fun _ _ -> (* no transformation to record *)
+		    ok)))
     | Type_cocci.StructUnionName (sua, name),
 	(qub, (B.StructUnionName (sub, sb),ii)) ->
 	  if equal_structUnion_type_cocci sua sub
@@ -3660,7 +3680,25 @@ and compatible_type a (b,local) =
        B.BaseType _
       ),
       _))) -> fail
-
+(*
+and decimal_type_exp nm sb ii =
+    match nm with
+      Type_cocci.NoName -> failwith "unexpected NoName in decimal type"
+    | Type_cocci.Name sa ->
+	(match B.unwrap sb with
+	  B.Ident name ->
+	    let ida = A.make_term(A.Id(A.make_mcode n)) in
+	    ident_cpp DontKnow ida nameidb >>= (fun ida nameidb -> ok)
+	| _ -> fail)
+    | Type_cocci.Num sa -> 
+    | Type_cocci.MV(ida,keep,inherited) ->
+	(* degenerate version of MetaId, no transformation possible *)
+        let (ib1, ib2) = tuple_of_list2 ii in
+	let max_min _ = Lib_parsing_c.lin_col_by_pos [ib2] in
+	let mida = A.make_mcode ida in
+	X.envf keep inherited (mida, B.MetaIdVal (sb,[]), max_min)
+	  (fun () -> ok)
+*)
 and structure_type_name nm sb ii =
     match nm with
       Type_cocci.NoName -> ok
@@ -3668,6 +3706,7 @@ and structure_type_name nm sb ii =
 	if sa =$= sb
 	then ok
 	else fail
+    | Type_cocci.Num sa -> failwith "unexpected Num in structure type"
     | Type_cocci.MV(ida,keep,inherited) ->
 	(* degenerate version of MetaId, no transformation possible *)
         let (ib1, ib2) = tuple_of_list2 ii in

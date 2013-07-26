@@ -12,7 +12,7 @@ type typeC =
   | Pointer         of typeC
   | FunctionPointer of typeC (* only return type *)
   | Array           of typeC (* drop size info *)
-  | Decimal                  (* drop all information *)
+  | Decimal         of name * name
   | EnumName        of name
   | StructUnionName of structUnion * name
   | TypeName        of string
@@ -22,6 +22,7 @@ type typeC =
 and name =
     NoName
   | Name of string
+  | Num of string
   | MV of meta_name * keep_binding * inherited
 
 and tagged_string = string
@@ -49,7 +50,8 @@ let rec type2c = function
   | Pointer(ty) -> (type2c ty) ^ "*"
   | FunctionPointer(ty) -> (type2c ty) ^ "(*)(...)"
   | Array(ty) -> (type2c ty) ^ "[] "
-  | Decimal -> "decimnal "
+  | Decimal(e1,e2) ->
+      Printf.sprintf "decimal(%s,%s) " (print_name e1) (print_name e2)
   | EnumName(name) -> "enum " ^ (print_name name)
   | StructUnionName(kind,name) -> (structUnion kind) ^ (print_name name)
   | TypeName(name) -> name ^ " "
@@ -70,6 +72,7 @@ and print_name = function
     NoName -> ""
   | MV ((_,name),_,_) -> name ^ " "
   | Name name -> name ^ " "
+  | Num n -> n ^ " "
 
 and baseType = function
     VoidType -> "void "

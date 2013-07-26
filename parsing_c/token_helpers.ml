@@ -219,6 +219,7 @@ let info_of_tok = function
   | TString ((string, isWchar), i) -> i
   | TChar  ((string, isWchar), i) -> i
   | TFloat ((string, floatType), i) -> i
+  | TDecimal ((string, n, p), i) -> i
 
   | TAssign  (assignOp, i) -> i
 
@@ -377,6 +378,7 @@ let visitor_info_of_tok f = function
   | TString ((s, isWchar), i)  -> TString ((s, isWchar), f i)
   | TChar  ((s, isWchar), i)   -> TChar  ((s, isWchar), f i)
   | TFloat ((s, floatType), i) -> TFloat ((s, floatType), f i)
+  | TDecimal ((s, n, p), i)    -> TDecimal ((s, n, p), f i)
   | TAssign  (assignOp, i)     -> TAssign  (assignOp, f i)
 
   | TIdent  (s, i)         -> TIdent  (s, f i)

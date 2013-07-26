@@ -628,7 +628,25 @@ let rec ast0_type_to_type ty =
       TC.FunctionPointer(ast0_type_to_type ty)
   | FunctionType _ -> TC.Unknown (*failwith "not supported"*)
   | Array(ety,_,_,_) -> TC.Array(ast0_type_to_type ety)
-  | Decimal(_, _, _, _, _, _) -> TC.Decimal
+  | Decimal(_, _, e1, _, e2, _) ->
+      let e2tc e =
+	match unwrap e with
+	  Constant(c) ->
+	    (match unwrap_mcode c with
+	      Ast.Int n -> TC.Num n
+	    | _ -> failwith "not possible")
+	| Ident(id) ->
+	    (match unwrap id with
+	      Id n -> TC.Name (unwrap_mcode n)
+	    | _ -> failwith "not possible")
+	| MetaExpr(name,NoConstraint,None,Ast.CONST,_) ->
+	    TC.MV(unwrap_mcode name,TC.Unitary,false)
+	| _ -> failwith "unexpected argument to decimal" in
+      let e2 =
+	match e2 with
+	  None -> TC.Num "0"
+	| Some e2 -> e2tc e2 in
+      TC.Decimal(e2tc e1,e2)
   | EnumName(su,Some tag) ->
       (match unwrap tag with
 	Id(tag) ->

@@ -398,6 +398,7 @@ let mk_string_wrap (s,info) = (s, [info])
 %token <(string * Ast_c.floatType) * Ast_c.info> TFloat
 %token <(string * Ast_c.isWchar) * Ast_c.info>   TChar
 %token <(string * Ast_c.isWchar) * Ast_c.info>   TString
+%token <(string * string (*n*) * string (*p*)) * Ast_c.info> TDecimal
 
 %token <string * Ast_c.info> TIdent
 %token <string * Ast_c.info> TKRParam
@@ -816,6 +817,8 @@ primary_expr:
  | TFloat  { mk_e(Constant (Float  (fst $1))) [snd $1] }
  | TString { mk_e(Constant (String (fst $1))) [snd $1] }
  | TChar   { mk_e(Constant (Char   (fst $1))) [snd $1] }
+ | TDecimal { let (a,b,c) = fst $1 in
+              mk_e(Constant (DecimalConst (a,b,c))) [snd $1] }
  | TOPar expr TCPar { mk_e(ParenExpr ($2)) [$1;$3] }  /*(* forunparser: *)*/
 
  /*(* gccext: cppext: TODO better ast ? *)*/

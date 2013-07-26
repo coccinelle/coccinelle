@@ -262,7 +262,8 @@ let info_to_fixpos ii =
       Ast_cocci.Virt (pi.Common.charpos,offset)
   | Ast_c.FakeTok (_,(pi,offset)) ->
       Ast_cocci.Virt (pi.Common.charpos,offset)
-  | Ast_c.AbstractLineTok pi -> failwith "unexpected abstract"
+  | Ast_c.AbstractLineTok pi ->
+      failwith ("unexpected abstract: "^(Dumper.dump pi))
 
 let max_min_by_pos xs =
   let (i1, i2) = max_min_ii_by_pos xs in

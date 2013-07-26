@@ -662,6 +662,19 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
         let fake = Ast_c.rewrap_str "float" fake in
         let iinull = [fake] in
         make_info_def (Ast_c.mk_ty (BaseType (FloatType kind)) iinull)
+    | Constant (DecimalConst(s,n,p)) ->
+        let fake = Ast_c.fakeInfo (Common.fake_parse_info) in
+        let fake1 = Ast_c.rewrap_str "decimal" fake in
+        let fake2 = Ast_c.rewrap_str "(" fake in
+        let fake3 = Ast_c.rewrap_str "," fake in
+        let fake4 = Ast_c.rewrap_str ")" fake in
+        let iinull = [fake1;fake2;fake3;fake4] in
+        let faken = Ast_c.rewrap_str n fake in
+        let fakep = Ast_c.rewrap_str p fake in
+	let sign = Ast_c.Si(Ast_c.Signed,CInt) in
+	let n = mk_e(Ast_c.Constant(Ast_c.Int (n, sign))) [faken] in
+	let p = mk_e(Ast_c.Constant(Ast_c.Int (p, sign))) [fakep] in
+	make_info_def (Ast_c.mk_ty (Decimal(n,Some p)) iinull)
 
 
     (* -------------------------------------------------- *)
@@ -1113,6 +1126,18 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
             in
             var +> Common.do_option (fun (name, iniopt) ->
               let s = Ast_c.str_of_name name in
+
+	      let t =
+		match Ast_c.unwrap_typeC t with
+		| Ast_c.Decimal (len,None) ->
+		    let newp =
+		      Ast_c.rewrap_expr len
+			 (Ast_c.Constant
+			    (Ast_c.Int
+			       ("0",Ast_c.Si(Ast_c.Signed,Ast_c.CInt)))) in
+		    Ast_c.rewrap_typeC t (Ast_c.Decimal (len,Some newp))
+		| _ -> t in
+		
 
               match sto with
               | StoTypedef, _inline ->

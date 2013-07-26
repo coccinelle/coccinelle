@@ -57,6 +57,7 @@
 - Support const/volatile after *.  Thanks to Lars-Peter Clausen for
   pointing out the problem.
 - Support variable declarations in the first element of a for loop header.
+- Support decimal type with the --ibm option
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line

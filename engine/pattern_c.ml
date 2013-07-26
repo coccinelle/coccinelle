@@ -241,14 +241,25 @@ module XMATCH = struct
   let tag_mck_pos_mcode (x,info,mck,pos) posmck stuff = fun tin ->
     [((x, info, tag_mck_pos mck posmck, pos),stuff), tin.binding]
 
+  let is_abstract ii =
+    match Ast_c.pinfo_of_info ii with
+      Ast_c.AbstractLineTok pi -> true
+    | _ -> false
 
   let distrf (ii_of_x_f) =
     fun mcode x -> fun tin ->
-    let (max, min) = Lib_parsing_c.max_min_by_pos (ii_of_x_f x)
-    in
-    let posmck = Ast_cocci.FixPos (min, max) (* subtil: and not max, min !!*)
-    in
-    tag_mck_pos_mcode mcode posmck x tin
+      let iis = ii_of_x_f x in
+      let all_abstract =
+	(* this occurs when matching a metavar type against a type *)
+	List.for_all is_abstract iis in
+      if all_abstract
+      then tag_mck_pos_mcode mcode Ast_cocci.NoPos x tin (* do nothing *)
+      else
+	let (max, min) = Lib_parsing_c.max_min_by_pos iis in
+	let posmck =
+	  Ast_cocci.FixPos (min, max) (* subtil: and not max, min !!*)
+	in
+	tag_mck_pos_mcode mcode posmck x tin
 
   let distrf_e      = distrf (Lib_parsing_c.ii_of_expr)
   let distrf_args   = distrf (Lib_parsing_c.ii_of_args)
@@ -520,11 +531,18 @@ module XMATCH = struct
   (* Tokens *)
   (* ------------------------------------------------------------------------*)
   let tokenf ia ib = fun tin ->
-    let pos = Ast_c.info_to_fixpos ib in
-    let posmck = Ast_cocci.FixPos (pos, pos) in
-    let finish tin = tag_mck_pos_mcode ia posmck ib tin in
-    pos_variables tin ia (function _ -> [Lib_parsing_c.lin_col_by_pos [ib]])
-      finish
+    if is_abstract ib
+    then
+      (* for meta var type against type case *)
+      let posmck = Ast_cocci.NoPos in
+      tag_mck_pos_mcode ia posmck ib tin
+    else
+      let pos = Ast_c.info_to_fixpos ib in
+      let posmck = Ast_cocci.FixPos (pos, pos) in
+      let finish tin = tag_mck_pos_mcode ia posmck ib tin in
+      pos_variables tin ia
+	(function _ -> [Lib_parsing_c.lin_col_by_pos [ib]])
+	finish
       
   let tokenf_mck mck ib = fun tin ->
     let pos = Ast_c.info_to_fixpos ib in

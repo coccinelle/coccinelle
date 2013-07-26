@@ -274,6 +274,7 @@ let pfract = dec+
 let sign = ['-' '+']
 let exp  = ['e''E'] sign? dec+
 let real = pent exp | ((pent? '.' pfract | pent '.' pfract? ) exp?)
+let ddecimal = ((pent? '.' pfract | pent '.' pfract? ))
 
 let id = letter (letter | digit) *
 
@@ -860,14 +861,22 @@ rule token = parse
       { TInt ((x, (Signed,CLongLong)), tokinfo lexbuf) }
   | (( decimal | hexa | octal) ['u' 'U'] ['l' 'L'] ['l' 'L']) as x
       { TInt ((x, (UnSigned,CLongLong)), tokinfo lexbuf) }
-  | ((decimal as s) ['d' 'D']) as x
-      { TFloat ((x, CDouble),     tokinfo lexbuf) }
+  | (decimal ['d' 'D']) as x
+      { let len = string_of_int(String.length x - 1) in
+        TDecimal ((x,len,"0"), tokinfo lexbuf) }
 
   | (real ['f' 'F']) as x { TFloat ((x, CFloat),      tokinfo lexbuf) }
   | (real ['l' 'L']) as x { TFloat ((x, CLongDouble), tokinfo lexbuf) }
-  (* How to make the following only available if !Flag.ibm *)
-  | (real ['d' 'D']) as x { TFloat ((x, CDecimal),    tokinfo lexbuf) }
   | (real as x)           { TFloat ((x, CDouble),     tokinfo lexbuf) }
+  (* How to make the following only available if !Flag.ibm *)
+  | (ddecimal ['d' 'D']) as x
+      { match Str.split_delim (Str.regexp_string ".") x with
+	[before;after] ->
+	  let lena = String.length after - 1 in
+	  let n = string_of_int (String.length before + lena) in
+	  let p = string_of_int lena in
+	  TDecimal ((x,n,p), tokinfo lexbuf)
+      |	_ -> failwith "bad decimal" }
 
   | ['0'] ['0'-'9']+
       { pr2 ("LEXER: " ^ error_radix "octal" ^ tok lexbuf);
