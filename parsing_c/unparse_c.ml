@@ -1071,7 +1071,7 @@ let add_newlines toks tabbing_unit =
             let (newcount,newstack,newspacecell) =
               start_box stack space_cell newcount "{" in
             front @ loop (newstack,newspacecell) newcount ixs
-          | s -> a :: loop info (string_length s count) xs
+          | _ -> a :: loop info (string_length s count) xs
           )
         | _ -> a :: loop info (string_length s count) xs
         )
@@ -1114,8 +1114,7 @@ let add_newlines toks tabbing_unit =
           | [x] ->
             (match check_for_newline count x space_cell with
             | Some count -> loop (stack,Some (x,sp)) count xs
-            | None -> loop (stack,Some (count,sp)) count xs
-	    )
+            | None -> loop (stack,Some (count,sp)) count xs)
           | _ -> loop info count xs
           ) in
       a :: rest

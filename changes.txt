@@ -279,6 +279,8 @@
 - Propagate parameter list variables from rules for function definitions
   to the generated rules for function prototypes.  Thanks to Nic Volanschi
   for pointing out the problem.
+- Avoid introducing extra space when pretty printing.  Thanks to Daniel
+  Wagner for pointing out the problem.
 
 * 0.2.5
 ** Language:
