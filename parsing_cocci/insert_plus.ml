@@ -461,7 +461,7 @@ let collect_plus_nodes root =
 	      Ast0.offset = first.Ast0.offset} in
 	  let new_info = {adjust_info with Ast0.pos_info = new_pos_info} in
 	  let string = List.map (function (s,_) -> s) strings_before in
-	  [(new_info,Ast.ONE(*?*),Ast.Pragma (string))] in
+	  [(new_info,Ast.ONE(*?*),Ast.Directive (string))] in
     let bef = extract info.Ast0.strings_before in
     let aft = extract info.Ast0.strings_after in
     (bef,aft) in
@@ -697,7 +697,7 @@ let favored = function Favored -> true | Unfavored | Toplevel | Decl -> false
 
 let top_code =
   List.for_all
-    (List.for_all (function Ast.Code _ | Ast.Pragma _ -> true | _ -> false))
+    (List.for_all (function Ast.Code _ | Ast.Directive _ -> true | _ -> false))
 
 let storage_code =
   List.for_all
@@ -716,7 +716,7 @@ let predecl_code =
     | Ast.Rule_elemTag _
     | Ast.StmtDotsTag _
     | Ast.Code _
-    | Ast.Pragma _ -> true
+    | Ast.Directive _ -> true
       (* the following should definitely be false *)
     | Ast.FullTypeTag _ | Ast.BaseTypeTag _ | Ast.StructUnionTag _
     | Ast.SignTag _

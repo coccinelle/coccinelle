@@ -99,7 +99,7 @@ let tmeta_to_ident (name,pure,clt) =
 %token <Data.clt> TIf TElse TWhile TFor TDo TSwitch TCase TDefault TReturn
 %token <Data.clt> TBreak TContinue TGoto TSizeof TFunDecl Tdecimal
 %token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId TSymId
-%token <Ast_cocci.added_string * Data.clt> TPragma
+%token <Ast_cocci.added_string * Data.clt> TDirective
 
 %token <Parse_aux.midinfo>       TMetaId
 %token <Parse_aux.idinfo>        TMetaFunc TMetaLocalFunc
@@ -2459,7 +2459,7 @@ iso(term):
 *
 *****************************************************************************/
 
-never_used: TPragma { () }
+never_used: TDirective { () }
   | TPArob TMetaPos { () }
   | TScriptData     { () }
   | TAnalysis     { () }

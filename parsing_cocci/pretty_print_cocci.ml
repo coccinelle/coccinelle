@@ -855,7 +855,7 @@ let _ =
     | Ast.ConstVolTag(x) -> const_vol x
     | Ast.Token(x,Some info) -> print_string_befaft print_string x info
     | Ast.Token(x,None) -> print_string x
-    | Ast.Pragma(xs) ->
+    | Ast.Directive(xs) ->
 	let print = function
 	    Ast.Noindent s | Ast.Indent s | Ast.Space s -> print_string s in
 	print_between force_newline print xs

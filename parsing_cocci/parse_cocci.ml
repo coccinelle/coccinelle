@@ -102,9 +102,9 @@ let token2c (tok,_) =
   | PC.Tvolatile(clt) -> "volatile"^(line_type2c clt)
   | PC.Tdecimal(clt) -> "decimal"^(line_type2c clt)
 
-  | PC.TPragma(Ast.Noindent s,_) -> s
-  | PC.TPragma(Ast.Indent s,_)   -> s
-  | PC.TPragma(Ast.Space s,_)   -> s
+  | PC.TDirective(Ast.Noindent s,_) -> s
+  | PC.TDirective(Ast.Indent s,_)   -> s
+  | PC.TDirective(Ast.Space s,_)   -> s
   | PC.TIncludeL(s,clt) -> (pr "#include \"%s\"" s)^(line_type2c clt)
   | PC.TIncludeNL(s,clt) -> (pr "#include <%s>" s)^(line_type2c clt)
   | PC.TUndef(clt,_) -> "#undef"^(line_type2c clt)
@@ -660,7 +660,7 @@ let split_token ((tok,_) as t) =
   | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt)
   | PC.Tconst(clt) | PC.Tvolatile(clt) -> split t clt
 
-  | PC.TPragma(s,_) -> ([],[t]) (* only allowed in + *)
+  | PC.TDirective(s,_) -> ([],[t]) (* only allowed in + *)
   | PC.TPlusFile(s,clt) | PC.TMinusFile(s,clt)
   | PC.TIncludeL(s,clt) | PC.TIncludeNL(s,clt) ->
       split t clt
@@ -1156,7 +1156,7 @@ let find_top_init tokens =
 are not allowed. *)
 
 let rec collect_all_pragmas collected = function
-    (PC.TPragma(s,(_,line,logical_line,offset,col,_,_,pos)),_)::rest ->
+    (PC.TDirective(s,(_,line,logical_line,offset,col,_,_,pos)),_)::rest ->
       let i =
 	{ Ast0.line_start = line; Ast0.line_end = line;
 	  Ast0.logical_start = logical_line; Ast0.logical_end = logical_line;
@@ -1188,7 +1188,7 @@ having sequential logical lines.  Not sure that this is good enough,
 as it might result in later gaps in the logical lines... *)
 let rec process_pragmas bef skips = function
     [] -> add_bef bef @ List.rev skips
-  | ((PC.TPragma(s,i),_)::_) as l ->
+  | ((PC.TDirective(s,i),_)::_) as l ->
       let (pragmas,rest) = collect_all_pragmas [] l in
       let (pass,rest0) = collect_pass rest in
       let (_,_,prag_lline,_,_,_,_,_) = i in

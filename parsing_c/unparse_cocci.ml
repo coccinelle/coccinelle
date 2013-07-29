@@ -1243,7 +1243,7 @@ let rec pp_any = function
   | Ast.CaseLineTag(x) -> case_line "" x; false
 
   | Ast.ConstVolTag(x) -> const_vol x unknown unknown; false
-  | Ast.Pragma(xs) ->
+  | Ast.Directive(xs) ->
       (match xs with (Ast.Space s)::_ -> pr_space() | _ -> ());
       let rec loop = function
 	  [] -> ()
@@ -1312,12 +1312,12 @@ in
 	then
 	  let hd = List.hd xxs in
 	  match hd with
-	    (Ast.Pragma l::_)
+	    (Ast.Directive l::_)
 	      when List.for_all (function Ast.Space x -> true | _ -> false) l ->
 		()
           | (Ast.StatementTag s::_) when isfn s ->
 	      force_newline(); force_newline()
-	  | (Ast.Pragma _::_)
+	  | (Ast.Directive _::_)
           | (Ast.Rule_elemTag _::_) | (Ast.StatementTag _::_)
 	  | (Ast.InitTag _::_)
 	  | (Ast.DeclarationTag _::_) | (Ast.Token ("}",_)::_) -> prnl hd
@@ -1329,7 +1329,7 @@ in
 	    (Ast.StatementTag s::_) ->
 	      (if isfn s then force_newline());
 	      force_newline()
-	  | (Ast.Pragma _::_)
+	  | (Ast.Directive _::_)
           | (Ast.Rule_elemTag _::_) | (Ast.InitTag _::_)
 	  | (Ast.DeclarationTag _::_) | (Ast.Token ("{",_)::_) ->
 	      force_newline()
