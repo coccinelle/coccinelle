@@ -53,6 +53,10 @@ type node = node1 * string (* For debugging. Used by print_graph *)
 
   | Include of includ
 
+  | PragmaHeader of string wrap
+  | PrgTuple of argument wrap2 (* , *) list wrap
+  | PrgIdList of name list (* no commas *)
+
   | MacroTop of string * argument wrap2 list * il
 
   (* ------------------------ *)

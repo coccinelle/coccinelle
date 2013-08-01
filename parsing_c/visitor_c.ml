@@ -727,7 +727,10 @@ and vk_cpp_directive bigf directive =
         iif ii;
         vk_define_kind bigf defkind;
         vk_define_val bigf defval
-    | PragmaAndCo (ii) ->
+    | Pragma ((s,ii), pragmainfo) ->
+        iif ii;
+        vk_pragmainfo bigf pragmainfo
+    | OtherDirective (ii) ->
         iif ii
   in f (k, bigf) directive
 
@@ -768,7 +771,13 @@ and vk_define_val bigf defval =
       ()
   in f (k, bigf) defval
 
-
+and vk_pragmainfo bigf pragmainfo =
+  match pragmainfo with
+    PragmaTuple(args,ii) ->
+      vk_ii bigf ii;
+      vk_argument_list bigf args
+  | PragmaIdList ids ->
+      ids +> List.iter (fun id -> vk_name bigf id)
 
 
 (* ------------------------------------------------------------------------ *)
@@ -844,6 +853,13 @@ and vk_node = fun bigf node ->
     | F.DefineTodo ->
         pr2_once "DefineTodo";
         ()
+
+    | F.PragmaHeader (s,ii) ->
+        iif ii
+    | F.PrgTuple(args,ii) ->
+	iif ii;
+	vk_argument_list bigf args
+    | F.PrgIdList ids -> ids +> List.iter (fun id -> vk_name bigf id)
 
     | F.Include {i_include = (s, ii);} -> iif ii;
 
@@ -1537,7 +1553,9 @@ and vk_cpp_directive_s = fun bigf top ->
     | Define ((s,ii), (defkind, defval)) ->
         Define ((s, iif ii),
                (vk_define_kind_s bigf defkind, vk_define_val_s bigf defval))
-    | PragmaAndCo (ii) -> PragmaAndCo (iif ii)
+    | Pragma((s,ii), pragmainfo) ->
+	Pragma((s,iif ii), vk_pragmainfo_s bigf pragmainfo)
+    | OtherDirective (ii) -> OtherDirective (iif ii)
 
   in f (k, bigf) top
 
@@ -1586,6 +1604,15 @@ and vk_define_val_s = fun bigf x ->
         DefineTodo
   in
   f (k, bigf) x
+
+and vk_pragmainfo_s bigf pragmainfo =
+  match pragmainfo with
+    PragmaTuple(args,ii) ->
+      PragmaTuple(
+      args +> List.map (fun (e,ii) -> vk_argument_s bigf e, vk_ii_s bigf ii),
+      vk_ii_s bigf ii)
+  | PragmaIdList ids ->
+      PragmaIdList(ids +> List.map (fun id -> vk_name_s bigf id))
 
 
 and vk_info_s = fun bigf info ->
@@ -1660,6 +1687,15 @@ and vk_node_s = fun bigf node ->
     | F.DefineDoWhileZeroHeader ((),ii) ->
         F.DefineDoWhileZeroHeader ((),iif ii)
     | F.DefineTodo -> F.DefineTodo
+
+    | F.PragmaHeader (s,ii) ->
+        F.PragmaHeader (s, iif ii)
+    | F.PrgTuple (args,ii) ->
+        F.PrgTuple(args +>
+		   List.map (fun (e,ii) -> vk_argument_s bigf e, iif ii),
+		   vk_ii_s bigf ii)
+    | F.PrgIdList ids ->
+	F.PrgIdList(ids +> List.map (fun id -> vk_name_s bigf id))
 
     | F.Include {i_include = (s, ii);
                  i_rel_pos = h_rel_pos;

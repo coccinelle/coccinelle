@@ -596,7 +596,8 @@ and definition = definitionbis wrap (* ( ) { } fakestart sto *)
 and cpp_directive =
   | Define of define
   | Include of includ
-  | PragmaAndCo of il
+  | Pragma of string wrap * pragmainfo
+  | OtherDirective of il
 (*| Ifdef ? no, ifdefs are handled differently, cf ifdef_directive below *)
 
 and define = string wrap (* #define s eol *) * (define_kind * define_val)
@@ -622,8 +623,6 @@ and define = string wrap (* #define s eol *) * (define_kind * define_val)
 
      | DefineTodo
 
-
-
 and includ =
   { i_include: inc_file wrap; (* #include s *)
     (* cocci: computed in ? *)
@@ -633,11 +632,11 @@ and includ =
     (* cf cpp_ast_c.ml. set to None at parsing time. *)
     i_content: (Common.filename (* full path *) * program) option;
   }
- and inc_file =
+and inc_file =
   | Local    of inc_elem list
   | NonLocal of inc_elem list
   | Weird of string (* ex: #include SYSTEM_H *)
-  and inc_elem = string
+and inc_elem = string
 
  (* cocci: to tag the first of #include <xx/> and last of #include <yy/>
   *
@@ -648,12 +647,14 @@ and includ =
   *
   * This is set after parsing, in cocci.ml, in update_rel_pos.
   *)
- and include_rel_pos = {
+and include_rel_pos = {
    first_of : string list list;
    last_of :  string list list;
  }
 
-
+and pragmainfo =
+    PragmaTuple of argument wrap2 (* , *) list wrap
+  | PragmaIdList of name list (* no commas *)
 
 (* todo? to specialize if someone need more info *)
 and ifdef_directive = (* or and 'a ifdefed = 'a list wrap *)

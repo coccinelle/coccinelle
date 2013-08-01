@@ -358,7 +358,6 @@ rule token = parse
    * http://gcc.gnu.org/onlinedocs/gcc/Pragmas.html
    *)
 
-  | "#" spopt "pragma"  sp  [^'\n' '\r']* ('\n' | "\r\n")
   | "#" spopt "ident"   sp  [^'\n' '\r']* ('\n' | "\r\n")
   | "#" spopt "line"    sp  [^'\n' '\r']* ('\n' | "\r\n")
   | "#" spopt "error"   sp  [^'\n' '\r']* ('\n' | "\r\n")
@@ -375,9 +374,9 @@ rule token = parse
 
 
 
-  (* ---------------------- *)
-  (* #define, #undef *)
-  (* ---------------------- *)
+  (* ------------------------ *)
+  (* #define, #undef, #pragma *)
+  (* ------------------------ *)
 
   (* the rest of the lexing/parsing of define is done in fix_tokens_define
    * where we parse until a TCppEscapedNewline and generate a TDefEol
@@ -388,6 +387,11 @@ rule token = parse
    * but I currently don't handle it cos I think it's bad code.
    *)
   | "#" [' ' '\t']* "undef" { TUndef (tokinfo lexbuf) }
+
+  (* note: in some cases can have stuff after the ident as in #undef XXX 50,
+   * but I currently don't handle it cos I think it's bad code.
+   *)
+  | "#" [' ' '\t']* "pragma" { TPragma (tokinfo lexbuf) }
 
   (* ---------------------- *)
   (* #include *)

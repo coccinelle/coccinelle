@@ -1004,8 +1004,9 @@ and rule_elem arity re =
   | Ast.DefineHeader(def,id,params) ->
       mcode print_string def; pr_space(); ident id;
       print_define_parameters params
-  | Ast.Pragma(prg,exp) ->
-      mcode print_string prg; print_string " "; expression exp
+  | Ast.Pragma(prg,id,body) ->
+      mcode print_string prg; pr_space(); ident id; pr_space();
+      pragmainfo body
   | Ast.Default(def,colon) ->
       mcode print_string def; mcode print_string colon; pr_space()
   | Ast.Case(case,exp,colon) ->
@@ -1032,6 +1033,15 @@ and rule_elem arity re =
   | Ast.MetaStmtList(name,_,_) ->
       failwith
 	"MetaStmtList not supported (not even in ast_c metavars binding)"
+
+and pragmainfo pi =
+  match Ast.unwrap pi with
+      Ast.PragmaTuple(lp,args,rp) ->
+	mcode print_string lp;
+	dots (function _ -> ()) arg_expression args;
+	mcode print_string rp
+    | Ast.PragmaIdList(ids) -> dots (function _ -> ()) ident ids
+    | Ast.PragmaDots (dots) -> mcode print_string dots
 
 and forinfo = function
     Ast.ForExp(e1,sem1) ->
