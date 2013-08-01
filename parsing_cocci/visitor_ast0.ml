@@ -48,6 +48,17 @@ let visitor mode bind option_default
 	| Ast0.STARS(l) ->
 	    let (n,l) = map_split_bind expression l in (n,Ast0.STARS(l))) in
     dotsexprfn all_functions k d
+  and identifier_dots d = (* not parameterizable for now... *)
+    let k d =
+      rewrap d
+	(match Ast0.unwrap d with
+	  Ast0.DOTS(l) ->
+	    let (n,l) = map_split_bind ident l in (n,Ast0.DOTS(l))
+	| Ast0.CIRCLES(l) ->
+	    let (n,l) = map_split_bind ident l in (n,Ast0.CIRCLES(l))
+	| Ast0.STARS(l) ->
+	    let (n,l) = map_split_bind ident l in (n,Ast0.STARS(l))) in
+    k d
   and initialiser_list i =
     let k i =
       rewrap i
@@ -776,6 +787,11 @@ let visitor mode bind option_default
 	    let (body_n,body) = statement_dots body in
 	    (multibind [def_n;id_n;params_n;body_n],
 	     Ast0.Define(def,id,params,body))
+	| Ast0.Pragma(prg,id,body) ->
+	    let (prg_n,prg) = string_mcode prg in
+	    let (id_n,id) = ident id in
+	    let (body_n,body) = pragmainfo body in
+	    (multibind [prg_n;id_n;body_n],Ast0.Pragma(prg,id,body))
 	| Ast0.OptStm(re) ->
 	    let (re_n,re) = statement re in (re_n,Ast0.OptStm(re))
 	| Ast0.UniqueStm(re) ->
@@ -799,6 +815,24 @@ let visitor mode bind option_default
 	    let (decl_n,decl) = declaration decl in
 	    (decl_n,Ast0.ForDecl (bef,decl))) in
     forinfofn all_functions k fi
+
+  (* not parameterizable for now... *)
+  and pragmainfo pi =
+    let k pi =
+      rewrap pi
+	(match Ast0.unwrap pi with
+	  Ast0.PragmaTuple(lp,args,rp) ->
+	    let (lp_n,lp) = string_mcode lp in
+	    let (args_n,args) = expression_dots args in
+	    let (rp_n,rp) = string_mcode rp in
+	    (multibind [lp_n;args_n;rp_n], Ast0.PragmaTuple(lp,args,rp))
+	| Ast0.PragmaIdList(ids) ->
+	    let (ids_n,ids) = identifier_dots ids in
+	    (ids_n, Ast0.PragmaIdList(ids))
+	| Ast0.PragmaDots (dots) ->
+	    let (dots_n,dots) = string_mcode dots in
+	    (dots_n,Ast0.PragmaDots dots)) in
+    k pi
 
   (* not parameterizable for now... *)
   and define_parameters p =
@@ -1347,3 +1381,4 @@ let combiner_rebuilder bind option_default functions =
     functions.VT0.combiner_rebuilder_forinfofn
     functions.VT0.combiner_rebuilder_casefn
     functions.VT0.combiner_rebuilder_topfn
+

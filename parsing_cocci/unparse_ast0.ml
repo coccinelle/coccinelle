@@ -572,10 +572,22 @@ and statement arity s =
 	  print_define_parameters params;
 	  print_string " ";
 	  dots force_newline (statement arity) body
+      | Ast0.Pragma(prg,id,body) ->
+	  mcode print_string prg; print_string " "; ident id;
+	  print_string " "; pragmainfo body
       | Ast0.OptStm(re) -> statement "?" re
       | Ast0.UniqueStm(re) -> statement "!" re
       | Ast0.AsStmt(stm,asstm) -> statement arity stm; print_string "@";
 	  statement arity asstm)
+
+and pragmainfo pi =
+  match Ast0.unwrap pi with
+      Ast0.PragmaTuple(lp,args,rp) ->
+	mcode print_string_box lp;
+	dots (function _ -> ()) expression args;
+	close_box(); mcode print_string rp
+    | Ast0.PragmaIdList(ids) -> dots (function _ -> ()) ident ids
+    | Ast0.PragmaDots(dots) -> mcode print_string dots
 
 and print_define_parameters params =
   match Ast0.unwrap params with

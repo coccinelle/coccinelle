@@ -78,7 +78,8 @@ let rec ident context old_metas table minus i =
 	else false in
       (match context with
 	ID ->
-	  if not (is_ifdef name) && minus && not err(* warn only once per id *) && not info.Ast0.isSymbolIdent
+	  if not (is_ifdef name) && minus &&
+	    not err(* warn only once per id *) && not info.Ast0.isSymbolIdent
 	  then
 	    warning
 	      (Printf.sprintf "line %d: should %s be a metavariable?" rl name)
@@ -414,9 +415,19 @@ and statement old_metas table minus s =
       ident GLOBAL old_metas table minus id;
       define_parameters old_metas table minus params;
       dots (statement old_metas table minus) body
+  | Ast0.Pragma(prg,id,body) ->
+      ident GLOBAL old_metas table minus id;
+      pragmainfo old_metas table minus body
   | Ast0.Label(i,_) -> ident ID old_metas table minus i
   | Ast0.Goto(_,i,_) -> ident ID old_metas table minus i
   | _ -> () (* no metavariable subterms *)
+
+and pragmainfo old_metas table minus pi =
+  match Ast0.unwrap pi with
+      Ast0.PragmaTuple(lp,args,rp) ->
+	dots (expression ID old_metas table minus) args
+    | Ast0.PragmaIdList(ids) -> dots (ident GLOBAL old_metas table minus) ids
+    | Ast0.PragmaDots (dots) -> ()
 
 and define_param old_metas table minus p =
   match Ast0.unwrap p with

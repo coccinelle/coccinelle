@@ -1004,6 +1004,8 @@ and rule_elem arity re =
   | Ast.DefineHeader(def,id,params) ->
       mcode print_string def; pr_space(); ident id;
       print_define_parameters params
+  | Ast.Pragma(prg,exp) ->
+      mcode print_string prg; print_string " "; expression exp
   | Ast.Default(def,colon) ->
       mcode print_string def; mcode print_string colon; pr_space()
   | Ast.Case(case,exp,colon) ->

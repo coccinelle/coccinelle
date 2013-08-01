@@ -486,6 +486,8 @@ and unify_rule_elem re1 re2 =
   | (Ast.DefineHeader(_,n1,p1),Ast.DefineHeader(_,n2,p2)) ->
       conjunct_bindings (unify_ident n1 n2)
 	(unify_define_parameters p1 p2)
+  | (Ast.Pragma(_,i1,n1),Ast.Pragma(_,i2,n2)) ->
+      conjunct_bindings (unify_ident i1 i2) (unify_pragmainfo n1 n2)
   | (Ast.Break(r1,s1),Ast.Break(r2,s2)) -> return true
   | (Ast.Continue(r1,s1),Ast.Continue(r2,s2)) -> return true
   | (Ast.Label(l1,dd1),Ast.Label(l2,dd2)) -> unify_ident l1 l2
@@ -521,6 +523,15 @@ and unify_rule_elem re1 re2 =
   | (Ast.Ty(t1),_) -> subtype (unify_fullType t1) re2
   | (_,Ast.Ty(t2)) -> subtype (unify_fullType t2) re1
   | _ -> return false
+
+and unify_pragmainfo pi1 pi2 =
+  match (Ast.unwrap pi1,Ast.unwrap pi2) with
+      (Ast.PragmaTuple(lp1,args1,rp1),Ast.PragmaTuple(lp2,args2,rp2)) ->
+	unify_dots unify_expression edots args1 args2
+    | (Ast.PragmaIdList(ids1),Ast.PragmaIdList(ids2)) ->
+	unify_dots unify_ident (function _ -> false) ids1 ids2
+    | (Ast.PragmaDots(_),_) | (_,Ast.PragmaDots(_)) -> return true
+    | _ -> return false
 
 and unify_fninfo patterninfo cinfo =
   let patterninfo = List.sort compare patterninfo in

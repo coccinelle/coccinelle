@@ -70,7 +70,10 @@ let combiner bind option_default
   and storage_mcode x = storage_mcodefn all_functions x
   and inc_file_mcode x = inc_file_mcodefn all_functions x
 
+  and iddotsfn all_functions k arg = k arg
+
   and expression_dots d = dotsfn expdotsfn expression all_functions d
+  and identifier_dots d = dotsfn iddotsfn ident all_functions d
   and parameter_dots d = dotsfn paramdotsfn parameterTypeDef all_functions d
   and statement_dots d = dotsfn stmtdotsfn statement all_functions d
   and declaration_dots d = dotsfn decldotsfn declaration all_functions d
@@ -371,6 +374,8 @@ let combiner bind option_default
 	  multibind [string_mcode def; ident id]
       |	Ast.DefineHeader(def,id,params) ->
 	  multibind [string_mcode def; ident id; define_parameters params]
+      |	Ast.Pragma(prg,id,body) ->
+	  multibind [string_mcode prg; ident id; pragmainfo body]
       |	Ast.Default(def,colon) -> bind (string_mcode def) (string_mcode colon)
       |	Ast.Case(case,exp,colon) ->
 	  multibind [string_mcode case; expression exp; string_mcode colon]
@@ -384,6 +389,16 @@ let combiner bind option_default
 	  bind (get_option expression e1) (string_mcode sem1)
       | Ast.ForDecl (_,_,decl) -> declaration decl in
     k fi
+
+  (* not parameterisable, for now *)
+  and pragmainfo pi =
+    let k pi =
+      match Ast.unwrap pi with
+	Ast.PragmaTuple(lp,args,rp) ->
+	  multibind [string_mcode lp;expression_dots args;string_mcode rp]
+      | Ast.PragmaIdList(ids) -> identifier_dots ids
+      | Ast.PragmaDots (dots) -> string_mcode dots in
+    k pi
 
   (* not parameterizable for now... *)
   and define_parameters p =
@@ -607,7 +622,10 @@ let rebuilder
 	| Ast.STARS(l) -> Ast.STARS(List.map default l)) in
     param all_functions k arg in
 
+  let iddotsfn all_functions k arg = k arg in
+
   let rec expression_dots d = dotsfn expdotsfn expression all_functions d
+  and identifier_dots d = dotsfn iddotsfn ident all_functions d
   and parameter_dots d = dotsfn paramdotsfn parameterTypeDef all_functions d
   and statement_dots d = dotsfn stmtdotsfn statement all_functions d
   and declaration_dots d = dotsfn decldotsfn declaration all_functions d
@@ -912,6 +930,8 @@ let rebuilder
 	| Ast.DefineHeader(def,id,params) ->
 	    Ast.DefineHeader(string_mcode def,ident id,
 			     define_parameters params)
+	| Ast.Pragma(prg,id,body) ->
+	    Ast.Pragma(string_mcode prg,ident id,pragmainfo body)
 	| Ast.Default(def,colon) ->
 	    Ast.Default(string_mcode def,string_mcode colon)
 	| Ast.Case(case,exp,colon) ->
@@ -927,6 +947,18 @@ let rebuilder
     | Ast.ForDecl (bef,allminus,decl) ->
 	Ast.ForDecl(bef,allminus,declaration decl) in
     k fi
+
+  (* not parameterizable for now... *)
+  and pragmainfo pi =
+    let k pi =
+      Ast.rewrap pi
+	(match Ast.unwrap pi with
+	  Ast.PragmaTuple(lp,args,rp) ->
+	    Ast.PragmaTuple(string_mcode lp,expression_dots args,
+			    string_mcode rp)
+	| Ast.PragmaIdList(ids) -> Ast.PragmaIdList(identifier_dots ids)
+	| Ast.PragmaDots (dots) -> Ast.PragmaDots(string_mcode dots)) in
+    k pi
 
   (* not parameterizable for now... *)
   and define_parameters p =

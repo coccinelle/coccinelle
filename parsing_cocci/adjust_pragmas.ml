@@ -140,6 +140,9 @@ let rec right_statement s =
   | Ast0.Define(def,id,params,body) ->
       call_right right_statement_dots body s
 	(function body -> Ast0.Define(def,id,params,body))
+  | Ast0.Pragma(prg,id,body) ->
+      (* seems safe; let the code go with the enclosing statement, if any *)
+      None
   | Ast0.OptStm(re) ->
       call_right right_statement re s (function re -> Ast0.OptStm(re))
   | Ast0.UniqueStm(re) ->

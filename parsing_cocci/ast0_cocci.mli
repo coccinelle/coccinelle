@@ -349,8 +349,16 @@ and base_statement =
   | Undef of string mcode (* #define *) * ident (* name *)
   | Define of string mcode (* #define *) * ident (* name *) *
 	define_parameters (*params*) * statement dots
+  | Pragma of string mcode (* #pragma *) * ident * pragmainfo
   | OptStm   of statement
   | UniqueStm of statement
+
+and base_pragmainfo =
+    PragmaTuple of string mcode(* ( *) * expression dots * string mcode(* ) *)
+  | PragmaIdList of ident dots
+  | PragmaDots of string mcode
+
+and pragmainfo = base_pragmainfo wrap
 
 and base_forinfo =
     ForExp of expression option * string mcode (*;*)

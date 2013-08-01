@@ -744,6 +744,11 @@ and statement s =
 	  let (body_n,body) = dots statement body in
 	  (multibind [def_n;id_n;params_n;body_n],
 	   Ast0.Define(def,id,params,body))
+      | Ast0.Pragma(prg,id,body) ->
+	  let (prg_n,prg) = mcode prg in
+	  let (id_n,id) = ident id in
+	  let (body_n,body) = pragmainfo body in
+	  (multibind [prg_n;id_n;body_n],Ast0.Pragma(prg,id,body))
       | Ast0.OptStm(re) ->
 	  let (re_n,re) = statement re in (re_n,Ast0.OptStm(re))
       | Ast0.UniqueStm(re) ->
@@ -755,6 +760,21 @@ and statement s =
 	    (other_metas,Ast0.rewrap stmt (Ast0.AsStmt(stmt,stmt_meta)))
 	| x -> (x::other_metas,stmt))
     ([],s) metas
+
+and pragmainfo pi =
+  rewrap pi
+    (match Ast0.unwrap pi with
+      Ast0.PragmaTuple(lp,args,rp) ->
+	let (lp_n,lp) = mcode lp in
+	let (args_n,args) = dots expression args in
+	let (rp_n,rp) = mcode rp in
+	(multibind [lp_n;args_n;rp_n], Ast0.PragmaTuple(lp,args,rp))
+    | Ast0.PragmaIdList(ids) ->
+	let (ids_n,ids) = dots ident ids in
+	(ids_n, Ast0.PragmaIdList(ids))
+    | Ast0.PragmaDots (dots) ->
+	let (dots_n,dots) = mcode dots in
+	(dots_n,Ast0.PragmaDots dots))
     
   (* not parameterizable for now... *)
 and define_parameters p =

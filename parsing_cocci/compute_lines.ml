@@ -276,8 +276,8 @@ let rec expression e =
   | Ast0.FunCall(fn,lp,args,rp) ->
       let fn = expression fn in
       let lp = normal_mcode lp in
-      let rp = normal_mcode rp in
       let args = dots is_exp_dots (Some(promote_mcode lp)) expression args in
+      let rp = normal_mcode rp in
       mkres e (Ast0.FunCall(fn,lp,args,rp)) fn (promote_mcode rp)
   | Ast0.Assignment(left,op,right,simple) ->
       let left = expression left in
@@ -1081,6 +1081,11 @@ let rec statement s =
 	    let (params,prev) = define_parameters params right in
 	    let body = dots is_stm_dots (Some prev) statement body in
 	    mkres s (Ast0.Define(def,id,params,body)) (promote_mcode def) body)
+    | Ast0.Pragma(prg,id,body) ->
+	let prg = normal_mcode prg in
+	let id = ident id in
+	let body = pragmainfo body in
+	mkres s (Ast0.Pragma(prg,id,body)) (promote_mcode prg) body
     | Ast0.OptStm(stm) ->
 	let stm = statement stm in mkres s (Ast0.OptStm(stm)) stm stm
     | Ast0.UniqueStm(stm) ->
@@ -1093,6 +1098,22 @@ let rec statement s =
 	Ast0.AddingBetweenDots(statement s)
     | Ast0.DroppingBetweenDots s ->
 	Ast0.DroppingBetweenDots(statement s))
+
+and pragmainfo pi =
+  match Ast0.unwrap pi with
+    Ast0.PragmaTuple(lp,args,rp) ->
+      let lp = normal_mcode lp in
+      let args = dots is_exp_dots (Some(promote_mcode lp)) expression args in
+      let rp = normal_mcode rp in
+      mkres pi
+	(Ast0.PragmaTuple(lp,args,rp)) (promote_mcode lp) (promote_mcode rp)
+    | Ast0.PragmaIdList(ids) -> (* ids can't be empty, so None is ok *)
+	let ids = dots (function _ -> false) None ident ids in
+	mkres pi (Ast0.PragmaIdList(ids)) ids ids
+    | Ast0.PragmaDots(dots) ->
+      let dots = bad_mcode dots in
+      let ln = promote_mcode dots in
+      mkres pi (Ast0.PragmaDots(dots)) ln ln
 
 and case_line c =
   match Ast0.unwrap c with

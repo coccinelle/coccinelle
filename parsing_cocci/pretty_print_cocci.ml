@@ -652,6 +652,9 @@ let rec rule_elem arity re =
   | Ast.DefineHeader(def,id,params) ->
       mcode print_string def; print_string " "; ident id;
       print_define_parameters params
+  | Ast.Pragma(prg,id,body) ->
+      mcode print_string prg; print_string " "; ident id; print_string " ";
+      pragmainfo body
   | Ast.Default(def,colon) ->
       mcode print_string def; mcode print_string colon; print_string " "
   | Ast.Case(case,exp,colon) ->
@@ -672,6 +675,15 @@ and forinfo = function
   | Ast.ForDecl (bef,allminus,decl) ->
       mcode (function _ -> ()) ((),Ast.no_info,bef,[]);
       declaration decl
+
+and pragmainfo pi =
+  match Ast.unwrap pi with
+      Ast.PragmaTuple(lp,args,rp) ->
+	mcode print_string_box lp;
+	dots (function _ -> ()) expression args;
+	close_box(); mcode print_string rp
+    | Ast.PragmaIdList(ids) -> dots (function _ -> ()) ident ids
+    | Ast.PragmaDots (dots) -> mcode print_string dots
 
 and print_define_parameters params =
   match Ast.unwrap params with

@@ -474,9 +474,17 @@ and base_rule_elem =
   | Undef         of string mcode (* #define *) * ident (* name *)
   | DefineHeader  of string mcode (* #define *) * ident (* name *) *
 	             define_parameters (*params*)
+  | Pragma        of string mcode (* #pragma *) * ident * pragmainfo
   | Case          of string mcode (* case *) * expression * string mcode (*:*)
   | Default       of string mcode (* default *) * string mcode (*:*)
   | DisjRuleElem  of rule_elem list
+
+and base_pragmainfo =
+    PragmaTuple of string mcode(* ( *) * expression dots * string mcode(* ) *)
+  | PragmaIdList of ident dots
+  | PragmaDots of string mcode
+
+and pragmainfo = base_pragmainfo wrap
 
 and forinfo =
     ForExp of expression option * string mcode (*;*)

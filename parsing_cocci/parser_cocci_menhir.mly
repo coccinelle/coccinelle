@@ -125,6 +125,7 @@ let tmeta_to_ident (name,pure,clt) =
 %token <string>  TPathIsoFile
 %token <string * Data.clt> TIncludeL TIncludeNL
 %token <Data.clt * token> TDefine TUndef
+%token <Data.clt> TPragma
 %token <Data.clt * token * int * int> TDefineParam
 %token <string * Data.clt> TMinusFile TPlusFile
 
@@ -960,6 +961,15 @@ includes:
 	    | _ -> b)
 	| _ -> b in
       $1 (Ast0.wrap(Ast0.DOTS(body))) }
+| TPragma ident pragmabody TLineEnd
+    { Ast0.wrap(Ast0.Pragma(P.clt2mcode "#pragma" $1, $2, $3)) }
+
+pragmabody:
+    TOPar eexpr_list_option TCPar
+    { Ast0.wrap(Ast0.PragmaTuple(P.clt2mcode "(" $1,$2,P.clt2mcode ")" $3)) }
+| l=nonempty_list(ident)
+    { Ast0.wrap(Ast0.PragmaIdList(Ast0.wrap (Ast0.DOTS l))) }
+| TEllipsis { Ast0.wrap(Ast0.PragmaDots(P.clt2mcode "..." $1)) }
 
 defineop:
   TDefine

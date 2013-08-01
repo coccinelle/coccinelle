@@ -909,8 +909,22 @@ and statement s =
 	       (Ast.DefineHeader
 		  (mcode def,ident id, define_parameters params)),
 	     statement_dots Ast.NotSequencible (*not sure*) body)
+      |	Ast0.Pragma(prg,id,body) ->
+	  Ast.Atomic(rewrap_rule_elem s
+		       (Ast.Pragma(mcode prg,ident id,pragmainfo body)))
       | Ast0.OptStm(stm) -> Ast.OptStm(statement seqible stm)
       | Ast0.UniqueStm(stm) -> Ast.UniqueStm(statement seqible stm))
+
+  and pragmainfo pi =
+    rewrap pi no_isos
+      (match Ast0.unwrap pi with
+	Ast0.PragmaTuple(lp,args,rp) ->
+	  let lp = mcode lp in
+	  let args = dots expression args in
+	  let rp = mcode rp in
+	  Ast.PragmaTuple(lp,args,rp)
+      | Ast0.PragmaIdList(ids) -> Ast.PragmaIdList(dots ident ids)
+      | Ast0.PragmaDots (dots) -> Ast.PragmaDots (mcode dots))
 
   and define_parameters p =
     rewrap p no_isos

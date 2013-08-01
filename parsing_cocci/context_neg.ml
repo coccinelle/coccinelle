@@ -718,6 +718,8 @@ let rec equal_statement s1 s2 =
       equal_mcode def1 def2
   | (Ast0.Define(def1,_,_,_),Ast0.Define(def2,_,_,_)) ->
       equal_mcode def1 def2
+  | (Ast0.Pragma(prg1,_,_),Ast0.Pragma(prg2,_,_)) ->
+      equal_mcode prg1 prg2
   | (Ast0.OptStm(_),Ast0.OptStm(_)) -> true
   | (Ast0.UniqueStm(_),Ast0.UniqueStm(_)) -> true
   | _ -> false
@@ -971,6 +973,7 @@ let rec is_toplevel s =
       |	_ -> false)
   | Ast0.Include(_,_) -> true
   | Ast0.Undef(_,_) -> true
+  | Ast0.Pragma(_,_,_) -> true
   | Ast0.Define(_,_,_,_) -> true
   | _ -> false
 

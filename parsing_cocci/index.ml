@@ -1,5 +1,5 @@
 (* create an index for each constructor *)
-(* current max is 160 *)
+(* current max is 164 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -196,6 +196,7 @@ let statement s =
   | Ast0.Include(inc,name) -> [118]
   | Ast0.Undef(def,id) -> [151]
   | Ast0.Define(def,id,params,body) -> [119]
+  | Ast0.Pragma(prg,id,body) -> [161]
   | Ast0.OptStm(re) -> [87]
   | Ast0.UniqueStm(re) -> [88]
   | Ast0.AsStmt _ -> failwith "not possible"
@@ -204,6 +205,12 @@ let forinfo fi =
   match Ast0.unwrap fi with
     Ast0.ForExp(exp,sem) -> [158]
   | Ast0.ForDecl (bef,decl) -> [159]
+
+and pragmainfo pi =
+  match Ast0.unwrap pi with
+    Ast0.PragmaTuple(lp,args,rp) -> [162]
+  | Ast0.PragmaIdList(ids) -> [163]
+  | Ast0.PragmaDots (dots) -> [164]
 
 let case_line c =
   match Ast0.unwrap c with
