@@ -230,7 +230,6 @@ let get_fakeInfo_and_tokens celem toks =
     | Ast_c.FakeTok _ ->
       push2 (Fake1 info) toks_out
     | Ast_c.OriginTok _ | Ast_c.ExpandedTok _ ->
-
       (* get the associated comments/space/cppcomment tokens *)
       let (before, x, after) =
         !toks_in +> split_when (fun tok ->

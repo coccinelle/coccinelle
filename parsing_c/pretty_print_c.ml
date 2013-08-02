@@ -1139,7 +1139,8 @@ and pp_init (init, iinit) =
 	let (ipragma,iident,ieol) = Common.tuple_of_list3 ii in
 	pr_elem ipragma;
 	pr_elem iident;
-	pp_pragmainfo pragmainfo
+	pp_pragmainfo pragmainfo;
+	pr_elem ieol
 
     | OtherDirective (ii) ->
 	List.iter pr_elem ii

@@ -4409,7 +4409,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
       let wp x = A.rewrap pragmainfoa x  in
       (match A.unwrap pragmainfoa, pragmainfob with
 	A.PragmaTuple(lp,eas,rp), B.PragmaTuple(ebs,iib) ->	  
-	  let (ib1, ib2) = tuple_of_list2 ii in
+	  let (ib1, ib2) = tuple_of_list2 iib in
 	  tokenf lp ib1 >>= (fun lp ib1 ->
 	  tokenf rp ib2 >>= (fun rp ib2 ->
 	  arguments (seqstyle eas) (A.undots eas) ebs >>= (fun easundots ebs ->
