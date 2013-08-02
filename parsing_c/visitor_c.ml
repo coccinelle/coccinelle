@@ -777,8 +777,7 @@ and vk_pragmainfo bigf pragmainfo =
       vk_ii bigf ii;
       vk_argument_list bigf args
   | PragmaIdList ids ->
-      ids +> List.iter (fun id -> vk_name bigf id)
-
+      ids +> List.iter (function (id, _) -> vk_name bigf id)
 
 (* ------------------------------------------------------------------------ *)
 (* Now keep fullstatement inside the control flow node,
@@ -854,12 +853,9 @@ and vk_node = fun bigf node ->
         pr2_once "DefineTodo";
         ()
 
-    | F.PragmaHeader (s,ii) ->
-        iif ii
-    | F.PrgTuple(args,ii) ->
-	iif ii;
-	vk_argument_list bigf args
-    | F.PrgIdList ids -> ids +> List.iter (fun id -> vk_name bigf id)
+    | F.PragmaHeader((s,ii), pragmainfo) ->
+        iif ii;
+        vk_pragmainfo bigf pragmainfo
 
     | F.Include {i_include = (s, ii);} -> iif ii;
 
@@ -983,6 +979,7 @@ let vk_define_params_splitted = vk_splitted (fun bigf (_,ii) -> vk_ii bigf ii)
 let vk_params_splitted = vk_splitted vk_param
 let vk_enum_fields_splitted = vk_splitted vk_oneEnum
 let vk_inis_splitted = vk_splitted vk_ini
+let vk_ident_list_splitted = vk_splitted vk_name
 
 (* ------------------------------------------------------------------------ *)
 let vk_cst = fun bigf (cst, ii) ->
@@ -1612,7 +1609,12 @@ and vk_pragmainfo_s bigf pragmainfo =
       args +> List.map (fun (e,ii) -> vk_argument_s bigf e, vk_ii_s bigf ii),
       vk_ii_s bigf ii)
   | PragmaIdList ids ->
-      PragmaIdList(ids +> List.map (fun id -> vk_name_s bigf id))
+      PragmaIdList
+	(ids +>
+	 List.map
+	   (function
+	       id, [] -> vk_name_s bigf id, []
+	     | _ -> failwith "bad ident_list"))
 
 
 and vk_info_s = fun bigf info ->
@@ -1688,14 +1690,8 @@ and vk_node_s = fun bigf node ->
         F.DefineDoWhileZeroHeader ((),iif ii)
     | F.DefineTodo -> F.DefineTodo
 
-    | F.PragmaHeader (s,ii) ->
-        F.PragmaHeader (s, iif ii)
-    | F.PrgTuple (args,ii) ->
-        F.PrgTuple(args +>
-		   List.map (fun (e,ii) -> vk_argument_s bigf e, iif ii),
-		   vk_ii_s bigf ii)
-    | F.PrgIdList ids ->
-	F.PrgIdList(ids +> List.map (fun id -> vk_name_s bigf id))
+    | F.PragmaHeader ((s,ii),pragmainfo) ->
+        F.PragmaHeader((s,iif ii), vk_pragmainfo_s bigf pragmainfo)
 
     | F.Include {i_include = (s, ii);
                  i_rel_pos = h_rel_pos;
@@ -1794,3 +1790,4 @@ let vk_define_params_splitted_s =
   vk_splitted_s (fun bigf (s,ii) -> (s,vk_ii_s bigf ii))
 let vk_enum_fields_splitted_s = vk_splitted_s vk_oneEnum_s
 let vk_inis_splitted_s = vk_splitted_s vk_ini_s
+let vk_ident_list_splitted_s = vk_splitted_s vk_name_s

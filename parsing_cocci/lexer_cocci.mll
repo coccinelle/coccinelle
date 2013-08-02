@@ -752,6 +752,8 @@ rule token = parse
 	   (arity,line,lline,offset+off,col+off,strbef,straft,pos),
 	 offset + off + (String.length ident),
 	 col + off + (String.length ident)) }
+  | ("#" [' ' '\t']*  "pragma")
+      { start_line true; TPragma(get_current_line_type lexbuf) }
   | "#" [' ' '\t']* "include" [' ' '\t']* '\"' [^ '\"']+ '\"'
       { TIncludeL
 	  (let str = tok lexbuf in
@@ -773,7 +775,6 @@ rule token = parse
   | "#" [' ' '\t']* "elif" [^'\n']*
   | "#" [' ' '\t']* "endif" [^'\n']*
   | "#" [' ' '\t']* "error" [^'\n']*
-  | "#" [' ' '\t']* "pragma" [^'\n']*
   | "#" [' ' '\t']* "line" [^'\n']*
       { start_line true; check_plus_linetype (tok lexbuf);
 	TDirective (Ast.Noindent(tok lexbuf), get_current_line_type lexbuf) }

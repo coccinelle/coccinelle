@@ -1139,25 +1139,23 @@ and pp_init (init, iinit) =
 	let (ipragma,iident,ieol) = Common.tuple_of_list3 ii in
 	pr_elem ipragma;
 	pr_elem iident;
-
-	(match pragmainfo with
-	  PragmaTuple(args,ii) ->
-	    let (ilp,irp) = Common.tuple_of_list2 ii in
-	    pr_elem ilp;
-	    pp_arg_list args;
-            pr_elem irp
-	| PragmaIdList(ids) ->
-	    let rec loop = function
-		[] -> ()
-	      |	[id] -> pp_name id
-	      |	id::rest -> pp_name id; pr_space() in
-	    loop ids)
+	pp_pragmainfo pragmainfo
 
     | OtherDirective (ii) ->
-	List.iter pr_elem ii in
+	List.iter pr_elem ii
 
-
-
+  and pp_pragmainfo = function
+      PragmaTuple(args,ii) ->
+	let (ilp,irp) = Common.tuple_of_list2 ii in
+	pr_elem ilp;
+	pp_arg_list args;
+        pr_elem irp
+    | PragmaIdList(ids) ->
+	let rec loop = function
+	    [] -> ()
+	  | [id,_] -> pp_name id
+	  | (id,_)::rest -> pp_name id; pr_space() in
+	loop ids in
 
   let rec pp_toplevel = function
     | Declaration decl -> pp_decl decl
@@ -1290,21 +1288,11 @@ and pp_init (init, iinit) =
         (* iif ii *)
 	pr2 "XXX"
 
-    | F.PragmaHeader(s,ii) ->
+    | F.PragmaHeader((s,ii), pragmainfo) ->
 	let (ipragma,iident,ieol) = Common.tuple_of_list3 ii in
 	pr_elem ipragma;
-	pr_elem iident
-    | F.PrgTuple(args,ii) ->
-	let (ilp,irp) = Common.tuple_of_list2 ii in
-	pr_elem ilp;
-	pp_arg_list args;
-        pr_elem irp
-    | F.PrgIdList(ids) ->
-	let rec loop = function
-	    [] -> ()
-	  | [id] -> pp_name id
-	  | id::rest -> pp_name id; pr_space() in
-	loop ids
+	pr_elem iident;
+	pp_pragmainfo pragmainfo
 
     | F.Include {i_include = (s, ii);} ->
         (* iif ii; *)

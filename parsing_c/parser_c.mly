@@ -2043,8 +2043,8 @@ expression_list:
 
 
 name_list_ne:
- | identifier              { [RegularName (mk_string_wrap $1)] }
- | name_list_ne identifier { $1 ++ [RegularName (mk_string_wrap $2)] }
+ | identifier              { [RegularName (mk_string_wrap $1), []] }
+ | name_list_ne identifier { $1 ++ [RegularName (mk_string_wrap $2), []] }
 
 
 struct_decl_list:

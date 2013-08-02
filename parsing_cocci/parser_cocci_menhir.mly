@@ -961,7 +961,7 @@ includes:
 	    | _ -> b)
 	| _ -> b in
       $1 (Ast0.wrap(Ast0.DOTS(body))) }
-| TPragma ident pragmabody TLineEnd
+| TPragma ident_or_kwd pragmabody TLineEnd
     { Ast0.wrap(Ast0.Pragma(P.clt2mcode "#pragma" $1, $2, $3)) }
 
 pragmabody:
@@ -2073,6 +2073,14 @@ ident: pure_ident
      | TMetaId
          { let (nm,constraints,seed,pure,clt) = $1 in
          Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,seed,pure)) }
+
+ident_or_kwd: pure_ident
+         { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
+     | wrapped_sym_ident { $1 }
+     | TMetaId
+         { let (nm,constraints,seed,pure,clt) = $1 in
+         Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,seed,pure)) }
+     | Tinline { Ast0.wrap(Ast0.Id(P.clt2mcode "inline" $1)) }
 
 mident: pure_ident
          { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }

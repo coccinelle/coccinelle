@@ -410,6 +410,8 @@ let do_get_constants constants keywords env neg_pos =
 	      (match strings with
 		[] -> True
 	      | x::xs -> List.fold_left bind x xs))
+    | Ast.Pragma(prg,id,body) ->
+	bind (keywords "pragma") (k re)
     | Ast.DisjRuleElem(res) ->
 	disj_union_all (List.map r.V.combiner_rule_elem res)
     | _ -> k re in

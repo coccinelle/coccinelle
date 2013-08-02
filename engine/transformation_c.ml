@@ -562,12 +562,20 @@ module XTRANS = struct
       Visitor_c.vk_cst_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop))
         x
 
-
   let distribute_mck_define_params (maxpos, minpos) = fun (lop,mop,rop,bop) ->
    fun x ->
     Visitor_c.vk_define_params_splitted_s
       (mk_bigf (maxpos, minpos) (lop,mop,rop,bop))
       x
+
+  let distribute_mck_pragmainfo (maxpos, minpos) = fun (lop,mop,rop,bop) ->
+   fun x ->
+    Visitor_c.vk_pragmainfo_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
+
+  let distribute_mck_ident_list (maxpos, minpos) = fun (lop,mop,rop,bop) ->
+   fun x ->
+    Visitor_c.vk_ident_list_splitted_s
+       (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
 
    let get_pos mck =
      match mck with
@@ -626,6 +634,10 @@ module XTRANS = struct
     distrf (Lib_parsing_c.ii_of_cst, distribute_mck_cst)
   let distrf_define_params =
     distrf (Lib_parsing_c.ii_of_define_params,distribute_mck_define_params)
+  let distrf_pragmainfo =
+    distrf (Lib_parsing_c.ii_of_pragmainfo,distribute_mck_pragmainfo)
+  let distrf_ident_list =
+    distrf (Lib_parsing_c.ii_of_ident_list,distribute_mck_ident_list)
 
 
   (* ------------------------------------------------------------------------*)

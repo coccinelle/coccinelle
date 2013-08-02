@@ -654,7 +654,7 @@ and include_rel_pos = {
 
 and pragmainfo =
     PragmaTuple of argument wrap2 (* , *) list wrap
-  | PragmaIdList of name list (* no commas *)
+  | PragmaIdList of name wrap2 list (* no commas, wrap2 is always empty *)
 
 (* todo? to specialize if someone need more info *)
 and ifdef_directive = (* or and 'a ifdefed = 'a list wrap *)

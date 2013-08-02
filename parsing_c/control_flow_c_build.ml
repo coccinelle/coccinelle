@@ -1297,22 +1297,13 @@ let rec ast_to_control_flow e =
       Some !g
 
   | Ast_c.CppTop (Ast_c.Pragma ((id,ii), pragmainfo))  ->
-      let s = "#pragma " ^ id in
-      let headeri = !g+>add_node (PragmaHeader (id, ii)) lbl_0 s in
-      !g#add_arc ((topi, headeri),Direct);
+      let elem = PragmaHeader ((id,ii), pragmainfo) in
+      let str = "#pragma " ^ id in
+      let ei =   !g +> add_node elem    lbl_0 str in
+      let endi = !g +> add_node EndNode lbl_0 "[end]" in
 
-      (match pragmainfo with
-	PragmaTuple(e,ii) ->
-          let ei   = !g +> add_node (PrgTuple(e,ii)) lbl_0 "PragmaTuple" in
-          let endi = !g +> add_node EndNode      lbl_0 "[end]" in
-          !g#add_arc ((headeri, ei) ,Direct);
-          !g#add_arc ((ei, endi) ,Direct);
-
-      |	PragmaIdList e ->
-          let ei   = !g +> add_node (PrgIdList e) lbl_0 "PragmaIdList" in
-          let endi = !g +> add_node EndNode       lbl_0 "[end]" in
-          !g#add_arc ((headeri, ei) ,Direct);
-          !g#add_arc ((ei, endi) ,Direct));
+      !g#add_arc ((topi, ei),Direct);
+      !g#add_arc ((ei, endi),Direct);
       Some !g
 
   | _ -> None

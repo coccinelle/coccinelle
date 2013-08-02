@@ -218,9 +218,7 @@ type node = node1 * string
 
   | Include of includ
 
-  | PragmaHeader of string wrap
-  | PrgTuple of argument wrap2 (* , *) list wrap
-  | PrgIdList of name list (* no commas *)
+  | PragmaHeader of string wrap * pragmainfo
 
   (* obsolete? *)
   | MacroTop of string * argument wrap2 list * il
@@ -346,9 +344,7 @@ let extract_fullstatement node =
 
   | Include _
   | DefineHeader _ | DefineType _ | DefineExpr  _ | DefineDoWhileZeroHeader _
-  | DefineTodo
-  | PragmaHeader _ | PrgTuple _ | PrgIdList _
-  | MacroTop _
+  | DefineTodo | PragmaHeader _ | MacroTop _
       -> None
 
   | IfdefHeader _ | IfdefElse _ | IfdefEndif _
