@@ -2077,6 +2077,7 @@ ident: pure_ident
 ident_or_kwd: pure_ident
          { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
      | wrapped_sym_ident { $1 }
+     | TMeta { tmeta_to_ident $1 }
      | TMetaId
          { let (nm,constraints,seed,pure,clt) = $1 in
          Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,seed,pure)) }
