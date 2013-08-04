@@ -540,7 +540,7 @@ rule token = parse
       (D.PLUS,_,_) | (D.PLUSPLUS,_,_) ->
 	start_line true;
 	TDirective (Ast.Space (tok lexbuf), get_current_line_type lexbuf)
-    | _ -> failwith "attributes only allowedin + code" }
+    | _ -> failwith "attributes only allowed in + code" }
 
   | "@@" { start_line true; TArobArob }
   | "@"  { pass_zero();
