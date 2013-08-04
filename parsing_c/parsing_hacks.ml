@@ -533,11 +533,12 @@ let rec define_ident acc xs =
       )
   | TPragma ii::xs ->
       let acc = TPragma ii :: acc in
-      (match xs with
-      | TCommentSpace i1::TIdent (s,i2)::xs ->
-	  let acc = (TCommentSpace i1) :: acc in
-	  let acc = (TIdentDefine (s,i2)) :: acc in
-          define_ident acc xs
+      let rec loop acc = function
+	  ((TDefEOL i1) as x) :: xs -> define_ident (x::acc) xs
+	| TCommentSpace i1::TIdent (s,i2)::xs ->
+	    let acc = (TCommentSpace i1) :: acc in
+	    let acc = (TIdentDefine (s,i2)) :: acc in
+            loop acc xs
 
       (* bugfix: ident of macro (as well as params, cf below) can be tricky
        * note, do we need to subst in the body of the define ? no cos
@@ -546,20 +547,20 @@ let rec define_ident acc xs =
        * body (it would be a recursive macro, which is forbidden).
        *)
 
-      | TCommentSpace i1::t::xs
-	when TH.str_of_tok t ==~ Common.regexp_alpha
-	->
-          let s = TH.str_of_tok t in
-          let ii = TH.info_of_tok t in
-	  pr2 (spf "remapping: %s to an ident in pragma" s);
-          let acc = (TCommentSpace i1) :: acc in
-	  let acc = (TIdentDefine (s,ii)) :: acc in
-          define_ident acc xs
+	| TCommentSpace i1::t::xs
+	  when TH.str_of_tok t ==~ Common.regexp_alpha
+	  ->
+            let s = TH.str_of_tok t in
+            let ii = TH.info_of_tok t in
+	    pr2 (spf "remapping: %s to an ident in pragma" s);
+            let acc = (TCommentSpace i1) :: acc in
+	    let acc = (TIdentDefine (s,ii)) :: acc in
+            define_ident acc xs
           
-      | xs ->
-          pr2 "WEIRD: weird #pragma";
-          define_ident acc xs
-      )
+	| xs ->
+            pr2 "WEIRD: weird #pragma";
+            define_ident acc xs in
+      loop acc xs
   | x::xs ->
       let acc = x :: acc in
       define_ident acc xs
