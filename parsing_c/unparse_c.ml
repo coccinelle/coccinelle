@@ -140,17 +140,17 @@ let print_token2 = function
   | Unindent_cocci2 _ -> "Unindent"
   | EatSpace2 -> "EatSpace"
 
-(*
-let simple_print_all_tokens pr l =
-  List.iter (function x -> Printf.printf "|%s| " (pr x)) l;
-  Printf.printf "\n"
-*)
-
 let str_of_token3 = function
   | T3 t -> TH.str_of_tok t
   | Cocci3 s | C3 s -> s
 
-
+let simple_print_all_tokens pr s l =
+  Printf.printf "%s\n" s;
+  List.iter (function x -> Printf.printf "|%s| " (pr x)) l;
+  Printf.printf "\n"
+let simple_print_all_tokens1 = simple_print_all_tokens print_token1
+let simple_print_all_tokens2 = simple_print_all_tokens print_token2
+let simple_print_all_tokens3 = simple_print_all_tokens str_of_token3
 
 let mk_token_extended x =
   let origidx =
@@ -461,6 +461,10 @@ let expand_mcode toks =
 
 let is_space = function
   | T2(Parser_c.TCommentSpace _,_b,_i,_h) -> true (* only whitespace *)
+  | _ -> false
+
+let is_added_space = function
+  | C2(" ") -> true (* only whitespace *)
   | _ -> false
 
 let is_newline = function
@@ -818,6 +822,8 @@ let adjust_before_semicolon toks =
       x :: search_semic (search_minus false xs)
     | x::xs -> x :: search_semic xs
   and search_minus seen_minus xs =
+    (* drop spaces added by cocci, eg after attribute *)
+    let (_, xs) = span is_added_space xs in
     let (spaces, rest) = span is_space xs in
     (* only delete spaces if something is actually deleted *)
     match rest with
@@ -1518,9 +1524,7 @@ let pp_program2 xs outfile  =
               let toks = drop_space_at_endline toks in
               let toks = paren_to_space toks in
               let toks = drop_end_comma toks in
-
               let toks = drop_line toks in
-
               let toks = remove_minus_and_between_and_expanded_and_fake toks in
               (* assert Origin + Cocci + C and no minus *)
               let toks = add_space toks in
