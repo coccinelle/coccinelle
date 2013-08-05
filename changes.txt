@@ -284,6 +284,7 @@
   Wagner for pointing out the problem.
 - Don't add extra space before semicolon, comma, or right paren when adding
   an __attribute__
+- Identifiers promoted to typedefs should have positions
 
 * 0.2.5
 ** Language:

@@ -2854,6 +2854,13 @@ and (fullTypebis: (A.typeC, Ast_c.fullType) matcher) =
 	  [] -> false
 	| _ ->
 	    let (tyq, (ty, tyii)) = typb in
+	    let tyii =
+	      match ty with
+		B.TypeName(name,typ) ->
+		  (* promoted typedef has ii information in the type name *)
+		  let (_s, iis) = B.get_s_and_info_of_name name in
+		  [iis]
+	      |	_ -> tyii in
 	    List.for_all Ast_c.is_fake tyii in
       if type_present && not position_required_but_unavailable
       then
