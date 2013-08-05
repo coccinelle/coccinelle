@@ -106,7 +106,7 @@ emn_install: world
 	elif [ -f /usr/local/lib/hevea/xxdate.exe ]; then \
 	hevea -exec /usr/local/lib/hevea/xxdate.exe $< ; \
 	hevea -exec /usr/local/lib/hevea/xxdate.exe $< ; \
-	elif [ -f /opt/local/share/hevea/xxdate.exea ]; then \
+	elif [ -f /opt/local/share/hevea/xxdate.exe ]; then \
 	hevea -exec /opt/local/share/hevea/xxdate.exe $< ; \
 	hevea -exec /opt/local/share/hevea/xxdate.exe $< ; \
 	else \
