@@ -106,6 +106,9 @@ emn_install: world
 	elif [ -f /usr/local/lib/hevea/xxdate.exe ]; then \
 	hevea -exec /usr/local/lib/hevea/xxdate.exe $< ; \
 	hevea -exec /usr/local/lib/hevea/xxdate.exe $< ; \
+	elif [ -f /opt/local/share/hevea/xxdate.exe ]; then \
+	hevea -exec /opt/local/share/hevea/xxdate.exe $< ; \
+	hevea -exec /opt/local/share/hevea/xxdate.exe $< ; \
 	else \
 	echo -e "\n\n *** Hevea: Unable to find xxdate.exe ***\n\n"; \
 	fi
