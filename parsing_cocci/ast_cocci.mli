@@ -226,6 +226,7 @@ and constant =
   | Char   of string
   | Int    of string
   | Float  of string
+  | DecimalConst of (string * string * string)
 
 (* --------------------------------------------------------------------- *)
 (* Types *)

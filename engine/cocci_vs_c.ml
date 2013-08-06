@@ -1107,6 +1107,9 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
           -> do1()
       | A.Float x, B.Float (y,_) when x =$= y (* todo: use floatType ? *)
           -> do1()
+      | A.DecimalConst (x,lx,px),B.DecimalConst (y,ly,py)
+	when x =$= y && lx =$= ly && px =$= py(*lx etc perhaps implied by x=y*)
+          -> do1()
 
       | A.String sa, B.String (sb,_kind) when sa =$= sb ->
           (match ii with
@@ -1120,7 +1123,8 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
           )
 
       | _, B.MultiString _ -> (* todo cocci? *) fail
-      | _, (B.String _ | B.Float _ | B.Char _ | B.Int _) -> fail
+      | _, (B.String _ | B.Float _ | B.Char _ | B.Int _ | B.DecimalConst _) ->
+	  fail
       )
 
 

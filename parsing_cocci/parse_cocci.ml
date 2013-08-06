@@ -143,6 +143,7 @@ let token2c (tok,_) =
   | PC.TChar(x,clt) -> x^(line_type2c clt)
   | PC.TFloat(x,clt) -> x^(line_type2c clt)
   | PC.TInt(x,clt) -> x^(line_type2c clt)
+  | PC.TDecimalCst(x,len,prc,clt) -> x^(line_type2c clt)
 
   | PC.TOrLog(clt) -> "||"^(line_type2c clt)
   | PC.TAndLog(clt) -> "&&"^(line_type2c clt)
@@ -306,6 +307,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.TSizeof(clt)
 
   | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
+  | PC.TDecimalCst(_,_,_,clt)
 
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
   | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt)
@@ -381,6 +383,7 @@ let get_clt (tok,_) =
   | PC.TSizeof(clt)
 
   | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
+  | PC.TDecimalCst(_,_,_,clt)
 
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
   | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt)
@@ -490,6 +493,7 @@ let update_clt (tok,x) clt =
   | PC.TChar(s,_) -> (PC.TChar(s,clt),x)
   | PC.TFloat(s,_) -> (PC.TFloat(s,clt),x)
   | PC.TInt(s,_) -> (PC.TInt(s,clt),x)
+  | PC.TDecimalCst(s,l,p,_) -> (PC.TDecimalCst(s,l,p,clt),x)
 
   | PC.TOrLog(_) -> (PC.TOrLog(clt),x)
   | PC.TAndLog(_) -> (PC.TAndLog(clt),x)
@@ -713,7 +717,8 @@ let split_token ((tok,_) as t) =
 
   | PC.TInc(clt) | PC.TDec(clt) -> split t clt
 
-  | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt) ->
+  | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
+  | PC.TDecimalCst(_,_,_,clt) ->
       split t clt
 
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
@@ -972,6 +977,7 @@ let token2line (tok,_) =
   | PC.TSymId(_,clt)
 
   | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
+  | PC.TDecimalCst(_,_,_,clt)
 
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
   | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TLogOp(_,clt)

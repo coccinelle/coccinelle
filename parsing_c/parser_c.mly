@@ -154,8 +154,8 @@ let (fixDeclSpecForDecl: decl -> (fullType * (storage wrap)))  = function
  | (Some _,_, Some _) ->
      (*mine*)
      raise (Semantic ("signed, unsigned valid only for char and int", fake_pi))
- | (_,Some _,(Some(BaseType(FloatType (CFloat|CLongDouble|CDecimal))))) ->
-     raise (Semantic ("long or short specified with floatint type", fake_pi))
+ | (_,Some _,(Some(BaseType(FloatType (CFloat|CLongDouble))))) ->
+     raise (Semantic ("long or short specified with floating type", fake_pi))
  | (_,Some Short,(Some(BaseType(FloatType CDouble)))) ->
      raise (Semantic ("the only valid combination is long double", fake_pi))
 
