@@ -866,8 +866,11 @@ rule token = parse
   | (( decimal | hexa | octal) ['u' 'U'] ['l' 'L'] ['l' 'L']) as x
       { TInt ((x, (UnSigned,CLongLong)), tokinfo lexbuf) }
   | (decimal ['d' 'D']) as x
-      { let len = string_of_int(String.length x - 1) in
-        TDecimal ((x,len,"0"), tokinfo lexbuf) }
+      { if !Flag.ibm
+      then
+	let len = string_of_int(String.length x - 1) in
+        TDecimal ((x,len,"0"), tokinfo lexbuf)
+      else failwith "unrecognized constant modifier d/D" }
 
   | (real ['f' 'F']) as x { TFloat ((x, CFloat),      tokinfo lexbuf) }
   | (real ['l' 'L']) as x { TFloat ((x, CLongDouble), tokinfo lexbuf) }
