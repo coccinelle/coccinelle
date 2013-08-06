@@ -129,7 +129,7 @@ class Analysis(object):
     def __build_issue(self,
                       location, message,
                       cwe=None, testid=None, notes=None,
-                      trace=None, severity=None, customfields=None):
+                      severity=None, customfields=None):
         """Creates a new Issue() object.
         
         Arguments:
@@ -147,6 +147,14 @@ class Analysis(object):
         """
         location = self.__coccilocation_to_firehoselocation(location[0])
         message = firehose.model.Message(message)
+        
+        if notes is not None:
+            notes = firehose.model.Notes(notes)
+        
+        if customfields is not None:
+            customfields = firehose.model.CustomFields(customfields)
+        
+        # TODO: trace -> how to pass a trace from spatch to xml_firehose
         
         issue = firehose.model.Issue(cwe, testid, location, message, notes,
                                      trace, severity=severity,
