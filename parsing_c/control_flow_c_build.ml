@@ -1296,6 +1296,16 @@ let rec ast_to_control_flow e =
 
       Some !g
 
+  | Ast_c.CppTop (Ast_c.Pragma ((id,ii), pragmainfo))  ->
+      let elem = PragmaHeader ((id,ii), pragmainfo) in
+      let str = "#pragma " ^ id in
+      let ei =   !g +> add_node elem    lbl_0 str in
+      let endi = !g +> add_node EndNode lbl_0 "[end]" in
+
+      !g#add_arc ((topi, ei),Direct);
+      !g#add_arc ((ei, endi),Direct);
+      Some !g
+
   | _ -> None
 
 

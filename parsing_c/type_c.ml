@@ -107,6 +107,7 @@ let rec is_completed_and_simplified ty =
   | BaseType x  -> true
   | Pointer t -> is_completed_and_simplified t
   | Array (e, t) -> is_completed_and_simplified t
+  | Decimal (len, prec_opt) -> true
   | StructUnion (su, sopt, fields) ->
       (* recurse fields ? Normally actually don't want,
        * prefer to have a StructUnionName when it's possible *)
@@ -369,6 +370,8 @@ let lub op t1 t2 =
 	    | _,Ast_c.FloatType(Ast_c.CDouble) -> Some t2
 	    | Ast_c.FloatType(Ast_c.CFloat),_ -> Some t1
 	    | _,Ast_c.FloatType(Ast_c.CFloat) -> Some t2
+	    | Ast_c.FloatType(Ast_c.CDecimal),_ -> Some t1
+	    | _,Ast_c.FloatType(Ast_c.CDecimal) -> Some t2
 
 	    | Ast_c.PtrDiffType,_ -> Some t1
 	    | _,Ast_c.PtrDiffType -> Some t2

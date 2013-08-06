@@ -251,7 +251,7 @@ let nDefineInit = ref 0
 let nDefineOther = ref 0
 
 let nUndef = ref 0
-let nPragmaAndCo = ref 0
+let nOtherDirective = ref 0
 
 (* let nDirectiveTop = ref 0 *)
 let nDirectiveStmt = ref 0
@@ -325,7 +325,7 @@ let assoc_stat_number =
     "nDefineOther", nDefineOther;
 
     "nUndef", nUndef;
-    "nPragmaAndCo", nPragmaAndCo;
+    "nOtherDirective", nOtherDirective;
 
     "nDirectiveStmt", nDirectiveStmt;
     "nDirectiveStruct", nDirectiveStruct;

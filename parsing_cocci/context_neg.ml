@@ -539,6 +539,10 @@ let rec equal_typeC t1 t2 =
       equal_mcode star1 star2
   | (Ast0.Array(_,lb1,_,rb1),Ast0.Array(_,lb2,_,rb2)) ->
       equal_mcode lb1 lb2 && equal_mcode rb1 rb2
+  | (Ast0.Decimal(dec1,lp1,_,comma1,_,rp1),
+     Ast0.Decimal(dec2,lp2,_,comma2,_,rp2)) ->
+       equal_mcode dec1 dec2 && equal_mcode lp1 lp2 &&
+       equal_option comma1 comma2 && equal_mcode rp1 rp2
   | (Ast0.EnumName(kind1,_),Ast0.EnumName(kind2,_)) ->
       equal_mcode kind1 kind2
   | (Ast0.EnumDef(_,lb1,_,rb1),Ast0.EnumDef(_,lb2,_,rb2)) ->
@@ -714,6 +718,8 @@ let rec equal_statement s1 s2 =
       equal_mcode def1 def2
   | (Ast0.Define(def1,_,_,_),Ast0.Define(def2,_,_,_)) ->
       equal_mcode def1 def2
+  | (Ast0.Pragma(prg1,_,_),Ast0.Pragma(prg2,_,_)) ->
+      equal_mcode prg1 prg2
   | (Ast0.OptStm(_),Ast0.OptStm(_)) -> true
   | (Ast0.UniqueStm(_),Ast0.UniqueStm(_)) -> true
   | _ -> false
@@ -967,6 +973,7 @@ let rec is_toplevel s =
       |	_ -> false)
   | Ast0.Include(_,_) -> true
   | Ast0.Undef(_,_) -> true
+  | Ast0.Pragma(_,_,_) -> true
   | Ast0.Define(_,_,_,_) -> true
   | _ -> false
 

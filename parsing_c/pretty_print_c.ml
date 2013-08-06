@@ -518,6 +518,9 @@ let mk_pretty_printers
           assert (List.length iis =|= 2);
           print_sto_qu_ty (sto, qu, iis);
 
+      | (Decimal(l,p), iis) ->
+          print_sto_qu_ty (sto, qu, iis);
+
       | (TypeName (name,typ), noii) ->
           assert (null noii);
           let (_s, iis) = get_s_and_info_of_name name in
@@ -674,6 +677,7 @@ let mk_pretty_printers
       | (StructUnion (_, sopt, fields),iis)     -> print_ident ident
       | (StructUnionName (s, structunion), iis) -> print_ident ident
       | (EnumName  s, iis)                      -> print_ident ident
+      | (Decimal _, iis)                        -> print_ident ident
       | (TypeName (_name,_typ), iis)            -> print_ident ident
       | (TypeOfExpr (e), iis)                   -> print_ident ident
       | (TypeOfType (e), iis)                   -> print_ident ident
@@ -779,6 +783,7 @@ let mk_pretty_printers
       | (StructUnion (_, sopt, fields),iis)  -> ()
       | (StructUnionName (s, structunion), iis) -> ()
       | (EnumName  s, iis) -> ()
+      | (Decimal(l,p), iis) -> ()
       | (TypeName (_name,_typ), iis) -> ()
 
       | TypeOfType _, _ -> ()
@@ -836,6 +841,7 @@ let mk_pretty_printers
     | (StructUnion (_, sopt, fields),iis)-> ()
     | (StructUnionName (s, structunion), iis) -> ()
     | (EnumName  s, iis) -> ()
+    | (Decimal(l,p), iis) -> ()
     | (TypeName (name,_typ), iis) -> ()
 
     | TypeOfType _, _ -> ()
@@ -1129,11 +1135,28 @@ and pp_init (init, iinit) =
 	define_val defval;
 	pr_elem ieol
 
-    | PragmaAndCo (ii) ->
-	List.iter pr_elem ii in
+    | Pragma ((s,ii), pragmainfo) ->
+	let (ipragma,iident,ieol) = Common.tuple_of_list3 ii in
+	pr_elem ipragma;
+	pr_elem iident;
+	pp_pragmainfo pragmainfo;
+	pr_elem ieol
 
+    | OtherDirective (ii) ->
+	List.iter pr_elem ii
 
-
+  and pp_pragmainfo = function
+      PragmaTuple(args,ii) ->
+	let (ilp,irp) = Common.tuple_of_list2 ii in
+	pr_elem ilp;
+	pp_arg_list args;
+        pr_elem irp
+    | PragmaIdList(ids) ->
+	let rec loop = function
+	    [] -> ()
+	  | [id,_] -> pp_name id
+	  | (id,_)::rest -> pp_name id; pr_space() in
+	loop ids in
 
   let rec pp_toplevel = function
     | Declaration decl -> pp_decl decl
@@ -1266,6 +1289,11 @@ and pp_init (init, iinit) =
         (* iif ii *)
 	pr2 "XXX"
 
+    | F.PragmaHeader((s,ii), pragmainfo) ->
+	let (ipragma,iident,ieol) = Common.tuple_of_list3 ii in
+	pr_elem ipragma;
+	pr_elem iident;
+	pp_pragmainfo pragmainfo
 
     | F.Include {i_include = (s, ii);} ->
         (* iif ii; *)

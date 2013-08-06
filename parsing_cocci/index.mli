@@ -12,5 +12,6 @@ val initialiser : Ast0_cocci.initialiser -> int list
 val parameterTypeDef : Ast0_cocci.parameterTypeDef -> int list
 val statement : Ast0_cocci.statement -> int list
 val forinfo : Ast0_cocci.forinfo -> int list
+val pragmainfo : Ast0_cocci.pragmainfo -> int list
 val case_line : Ast0_cocci.case_line -> int list
 val top_level : Ast0_cocci.top_level -> int list

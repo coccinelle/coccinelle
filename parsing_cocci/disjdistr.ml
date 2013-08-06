@@ -78,6 +78,10 @@ and disjtypeC bty =
       disjmult2 (disjty ty) (disjoption disjexp size)
 	(function ty -> function size ->
 	  Ast.rewrap bty (Ast.Array(ty,lb,size,rb)))
+  | Ast.Decimal(dec,lp,length,comma,precision_opt,rp) ->
+      disjmult2 (disjexp length) (disjoption disjexp precision_opt)
+	(function length -> function precision_opt ->
+	  Ast.rewrap bty (Ast.Decimal(dec,lp,length,comma,precision_opt,rp)))
   | Ast.EnumName(_,_) | Ast.StructUnionName(_,_) -> [bty]
   | Ast.EnumDef(ty,lb,ids,rb) ->
       disjmult2 (disjty ty) (disjdots disjexp ids)
@@ -376,6 +380,18 @@ let rec disj_rule_elem r k re =
   | Ast.Include(inc,s) -> re
   | Ast.Undef(def,id) -> re
   | Ast.DefineHeader(def,id,params) -> re
+  | Ast.Pragma(prg,id,body) ->
+      let pragmabody body =
+	match Ast.unwrap body with
+	  Ast.PragmaTuple(lp,args,rp) ->
+	    let args = disjdots disjexp args in
+	    List.map
+	      (function args -> Ast.rewrap body (Ast.PragmaTuple(lp,args,rp)))
+	      args
+	| Ast.PragmaIdList(ids) -> [body]
+	| Ast.PragmaDots(dots)  -> [body] in
+      generic_orify_rule_elem pragmabody re body
+	(function body -> Ast.rewrap re (Ast.Pragma(prg,id,body)))
   | Ast.Default(def,colon) -> re
   | Ast.Case(case,exp,colon) ->
       orify_rule_elem re exp

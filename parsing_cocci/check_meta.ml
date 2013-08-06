@@ -78,7 +78,8 @@ let rec ident context old_metas table minus i =
 	else false in
       (match context with
 	ID ->
-	  if not (is_ifdef name) && minus && not err(* warn only once per id *) && not info.Ast0.isSymbolIdent
+	  if not (is_ifdef name) && minus &&
+	    not err(* warn only once per id *) && not info.Ast0.isSymbolIdent
 	  then
 	    warning
 	      (Printf.sprintf "line %d: should %s be a metavariable?" rl name)
@@ -157,9 +158,9 @@ let rec expression context old_metas table minus e =
   | Ast0.MetaExpr(name,_,Some tys,_,_) ->
       List.iter
 	(function x ->
-	  match get_type_name x with
-	    Some(ty) -> check_table table minus (promote ty)
-	  | None -> ())
+	  List.iter
+	    (function ty -> check_table table minus (promote ty))
+	    (get_type_name x))
 	tys;
       check_table table minus name
   | Ast0.MetaExpr(name,_,_,_,_) | Ast0.MetaErr(name,_,_) ->
@@ -185,10 +186,15 @@ and get_type_name = function
     Type_cocci.ConstVol(_,ty) | Type_cocci.SignedT(_,Some ty)
   | Type_cocci.Pointer(ty)
   | Type_cocci.FunctionPointer(ty) | Type_cocci.Array(ty) -> get_type_name ty
-  | Type_cocci.EnumName(Type_cocci.MV(nm,_,_)) -> Some nm
-  | Type_cocci.StructUnionName(_,Type_cocci.MV(nm,_,_)) -> Some nm
-  | Type_cocci.MetaType(nm,_,_) -> Some nm
-  | _ -> None
+  | Type_cocci.EnumName(Type_cocci.MV(nm,_,_)) -> [nm]
+  | Type_cocci.StructUnionName(_,Type_cocci.MV(nm,_,_)) -> [nm]
+  | Type_cocci.MetaType(nm,_,_) -> [nm]
+  | Type_cocci.Decimal(nm1,nm2) ->
+      let get_name = function
+	  Type_cocci.MV(nm,_,_) -> [nm]
+	| _ -> [] in
+      (get_name nm1) @ (get_name nm2)
+  | _ -> []
 
 (* --------------------------------------------------------------------- *)
 (* Types *)
@@ -208,6 +214,9 @@ and typeC old_metas table minus t =
   | Ast0.Array(ty,lb,size,rb) ->
       typeC old_metas table minus ty;
       get_opt (expression ID old_metas table minus) size
+  | Ast0.Decimal(dec,lp,length,comma,precision_opt,rp) ->
+      expression ID old_metas table minus length;
+      get_opt (expression ID old_metas table minus) precision_opt
   | Ast0.MetaType(name,_) ->
       check_table table minus name
   | Ast0.AsType(ty,asty) -> failwith "not generated yet"
@@ -406,9 +415,19 @@ and statement old_metas table minus s =
       ident GLOBAL old_metas table minus id;
       define_parameters old_metas table minus params;
       dots (statement old_metas table minus) body
+  | Ast0.Pragma(prg,id,body) ->
+      ident GLOBAL old_metas table minus id;
+      pragmainfo old_metas table minus body
   | Ast0.Label(i,_) -> ident ID old_metas table minus i
   | Ast0.Goto(_,i,_) -> ident ID old_metas table minus i
   | _ -> () (* no metavariable subterms *)
+
+and pragmainfo old_metas table minus pi =
+  match Ast0.unwrap pi with
+      Ast0.PragmaTuple(lp,args,rp) ->
+	dots (expression ID old_metas table minus) args
+    | Ast0.PragmaIdList(ids) -> dots (ident GLOBAL old_metas table minus) ids
+    | Ast0.PragmaDots (dots) -> ()
 
 and define_param old_metas table minus p =
   match Ast0.unwrap p with

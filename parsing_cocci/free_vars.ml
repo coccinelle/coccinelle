@@ -86,6 +86,9 @@ let collect_refs include_constraints =
 	bind [tyname] res
     | TC.MetaType(tyname,_,_) ->
 	bind [tyname] res
+    | TC.Decimal(e1,e2) ->
+	let e2mv = function TC.MV(mv,_,_) -> [mv] | _ -> [] in
+	bind (e2mv e1) (e2mv e2)
     | TC.SignedT(_,Some ty) -> type_collect res ty
     | ty -> res in
 
@@ -228,6 +231,9 @@ let collect_saved =
 	bind [tyname] res
     | TC.MetaType(tyname,TC.Saved,_) ->
 	bind [tyname] res
+    | TC.Decimal(e1,e2) ->
+	let e2mv = function TC.MV(mv,TC.Saved,_) -> [mv] | _ -> [] in
+	bind (e2mv e1) (e2mv e2)
     | TC.SignedT(_,Some ty) -> type_collect res ty
     | ty -> res in
 
@@ -513,6 +519,13 @@ let classify_variables metavar_decls minirules used_after =
     | TC.MetaType(name,_,_) ->
 	let (unitary,inherited) = classify (name,(),(),[]) in
 	Type_cocci.MetaType(name,unitary,inherited)
+    | TC.Decimal(e1,e2) ->
+	let e2mv = function
+	    TC.MV(mv,_,_) ->
+	      let (unitary,inherited) = classify (mv,(),(),[]) in
+	      TC.MV(mv,unitary,inherited)
+	  | e -> e in
+	TC.Decimal(e2mv e1,e2mv e2)
     | TC.SignedT(sgn,Some ty) -> TC.SignedT(sgn,Some (type_infos ty))
     | ty -> ty in
 

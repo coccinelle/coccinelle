@@ -97,9 +97,9 @@ let tmeta_to_ident (name,pure,clt) =
 %token<string * Data.clt> Tattr
 
 %token <Data.clt> TIf TElse TWhile TFor TDo TSwitch TCase TDefault TReturn
-%token <Data.clt> TBreak TContinue TGoto TSizeof TFunDecl
+%token <Data.clt> TBreak TContinue TGoto TSizeof TFunDecl Tdecimal
 %token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId TSymId
-%token <Ast_cocci.added_string * Data.clt> TPragma
+%token <Ast_cocci.added_string * Data.clt> TDirective
 
 %token <Parse_aux.midinfo>       TMetaId
 %token <Parse_aux.idinfo>        TMetaFunc TMetaLocalFunc
@@ -125,6 +125,7 @@ let tmeta_to_ident (name,pure,clt) =
 %token <string>  TPathIsoFile
 %token <string * Data.clt> TIncludeL TIncludeNL
 %token <Data.clt * token> TDefine TUndef
+%token <Data.clt> TPragma
 %token <Data.clt * token * int * int> TDefineParam
 %token <string * Data.clt> TMinusFile TPlusFile
 
@@ -711,6 +712,15 @@ non_signable_types:
     Ast0.wrap(Ast0.StructUnionDef(ty,P.clt2mcode "{" l,d,P.clt2mcode "}" r)) }
 | p=TTypeId
     { Ast0.wrap(Ast0.TypeName(P.id2mcode p)) }
+| Tdecimal TOPar enum_val TComma enum_val TCPar
+    { Ast0.wrap(Ast0.Decimal(P.clt2mcode "decimal" $1,
+			     P.clt2mcode "(" $2,$3,
+			     Some (P.clt2mcode "," $4), Some $5,
+			     P.clt2mcode ")" $6)) }
+| Tdecimal TOPar enum_val TCPar
+    { Ast0.wrap(Ast0.Decimal(P.clt2mcode "decimal" $1,
+			     P.clt2mcode "(" $2,$3,None,None,
+			     P.clt2mcode ")" $4)) }
 
 all_basic_types:
   r=Tsigned ty=signable_types
@@ -951,6 +961,15 @@ includes:
 	    | _ -> b)
 	| _ -> b in
       $1 (Ast0.wrap(Ast0.DOTS(body))) }
+| TPragma ident_or_kwd pragmabody TLineEnd
+    { Ast0.wrap(Ast0.Pragma(P.clt2mcode "#pragma" $1, $2, $3)) }
+
+pragmabody:
+    TOPar eexpr_list_option TCPar
+    { Ast0.wrap(Ast0.PragmaTuple(P.clt2mcode "(" $1,$2,P.clt2mcode ")" $3)) }
+| l=nonempty_list(ident)
+    { Ast0.wrap(Ast0.PragmaIdList(Ast0.wrap (Ast0.DOTS l))) }
+| TEllipsis { Ast0.wrap(Ast0.PragmaDots(P.clt2mcode "..." $1)) }
 
 defineop:
   TDefine
@@ -2055,6 +2074,15 @@ ident: pure_ident
          { let (nm,constraints,seed,pure,clt) = $1 in
          Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,seed,pure)) }
 
+ident_or_kwd: pure_ident
+         { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
+     | wrapped_sym_ident { $1 }
+     | TMeta { tmeta_to_ident $1 }
+     | TMetaId
+         { let (nm,constraints,seed,pure,clt) = $1 in
+         Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,seed,pure)) }
+     | Tinline { Ast0.wrap(Ast0.Id(P.clt2mcode "inline" $1)) }
+
 mident: pure_ident
          { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
      | wrapped_sym_ident { $1 }
@@ -2450,7 +2478,7 @@ iso(term):
 *
 *****************************************************************************/
 
-never_used: TPragma { () }
+never_used: TDirective { () }
   | TPArob TMetaPos { () }
   | TScriptData     { () }
   | TAnalysis     { () }

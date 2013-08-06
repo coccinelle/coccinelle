@@ -238,6 +238,8 @@ let ii_of_struct_fieldkinds = extract_info_visitor Visitor_c.vk_struct_fieldkind
 let ii_of_cst = extract_info_visitor Visitor_c.vk_cst
 let ii_of_define_params =
   extract_info_visitor Visitor_c.vk_define_params_splitted
+let ii_of_pragmainfo = extract_info_visitor Visitor_c.vk_pragmainfo
+let ii_of_ident_list = extract_info_visitor Visitor_c.vk_ident_list_splitted
 let ii_of_toplevel = extract_info_visitor Visitor_c.vk_toplevel
 
 (*****************************************************************************)
@@ -262,7 +264,8 @@ let info_to_fixpos ii =
       Ast_cocci.Virt (pi.Common.charpos,offset)
   | Ast_c.FakeTok (_,(pi,offset)) ->
       Ast_cocci.Virt (pi.Common.charpos,offset)
-  | Ast_c.AbstractLineTok pi -> failwith "unexpected abstract"
+  | Ast_c.AbstractLineTok pi ->
+      failwith ("unexpected abstract: "^(Dumper.dump pi))
 
 let max_min_by_pos xs =
   let (i1, i2) = max_min_ii_by_pos xs in

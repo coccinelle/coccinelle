@@ -430,6 +430,10 @@ let rec define_line_1 acc xs =
       let line = Ast_c.line_of_info ii in
       let acc = (TUndef ii) :: acc in
       define_line_2 acc line ii xs
+  | TPragma ii::xs ->
+      let line = Ast_c.line_of_info ii in
+      let acc = (TPragma ii) :: acc in
+      define_line_2 acc line ii xs
   | TCppEscapedNewline ii::xs ->
       pr2 ("SUSPICIOUS: a \\ character appears outside of a #define at");
       pr2 (Ast_c.strloc_of_info ii);
@@ -527,6 +531,36 @@ let rec define_ident acc xs =
           pr2 "WEIRD: weird #define body";
           define_ident acc xs
       )
+  | TPragma ii::xs ->
+      let acc = TPragma ii :: acc in
+      let rec loop acc = function
+	  ((TDefEOL i1) as x) :: xs -> define_ident (x::acc) xs
+	| TCommentSpace i1::TIdent (s,i2)::xs ->
+	    let acc = (TCommentSpace i1) :: acc in
+	    let acc = (TIdentDefine (s,i2)) :: acc in
+            loop acc xs
+
+      (* bugfix: ident of macro (as well as params, cf below) can be tricky
+       * note, do we need to subst in the body of the define ? no cos
+       * here the issue is the name of the macro, as in #define inline,
+       * so obviously the name of this macro will not be used in its
+       * body (it would be a recursive macro, which is forbidden).
+       *)
+
+	| TCommentSpace i1::t::xs
+	  when TH.str_of_tok t ==~ Common.regexp_alpha
+	  ->
+            let s = TH.str_of_tok t in
+            let ii = TH.info_of_tok t in
+	    pr2 (spf "remapping: %s to an ident in pragma" s);
+            let acc = (TCommentSpace i1) :: acc in
+	    let acc = (TIdentDefine (s,ii)) :: acc in
+            define_ident acc xs
+          
+	| xs ->
+            pr2 "WEIRD: weird #pragma";
+            define_ident acc xs in
+      loop acc xs
   | x::xs ->
       let acc = x :: acc in
       define_ident acc xs

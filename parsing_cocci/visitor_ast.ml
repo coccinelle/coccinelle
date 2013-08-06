@@ -70,7 +70,10 @@ let combiner bind option_default
   and storage_mcode x = storage_mcodefn all_functions x
   and inc_file_mcode x = inc_file_mcodefn all_functions x
 
+  and iddotsfn all_functions k arg = k arg
+
   and expression_dots d = dotsfn expdotsfn expression all_functions d
+  and identifier_dots d = dotsfn iddotsfn ident all_functions d
   and parameter_dots d = dotsfn paramdotsfn parameterTypeDef all_functions d
   and statement_dots d = dotsfn stmtdotsfn statement all_functions d
   and declaration_dots d = dotsfn decldotsfn declaration all_functions d
@@ -192,6 +195,11 @@ let combiner bind option_default
       |	Ast.FunctionType (_,ty,lp1,params,rp1) ->
 	  function_type (ty,lp1,params,rp1) []
       | Ast.Array(ty,lb,size,rb) -> array_type (ty,lb,size,rb) []
+      | Ast.Decimal(dec,lp,length,comma,precision_opt,rp) ->
+	  multibind
+	    [string_mcode dec; string_mcode lp;
+	      expression length; get_option string_mcode comma;
+	      get_option expression precision_opt; string_mcode rp]
       | Ast.EnumName(kind,name) ->
 	  bind (string_mcode kind) (get_option ident name)
       | Ast.EnumDef(ty,lb,ids,rb) ->
@@ -366,6 +374,8 @@ let combiner bind option_default
 	  multibind [string_mcode def; ident id]
       |	Ast.DefineHeader(def,id,params) ->
 	  multibind [string_mcode def; ident id; define_parameters params]
+      |	Ast.Pragma(prg,id,body) ->
+	  multibind [string_mcode prg; ident id; pragmainfo body]
       |	Ast.Default(def,colon) -> bind (string_mcode def) (string_mcode colon)
       |	Ast.Case(case,exp,colon) ->
 	  multibind [string_mcode case; expression exp; string_mcode colon]
@@ -379,6 +389,16 @@ let combiner bind option_default
 	  bind (get_option expression e1) (string_mcode sem1)
       | Ast.ForDecl (_,_,decl) -> declaration decl in
     k fi
+
+  (* not parameterisable, for now *)
+  and pragmainfo pi =
+    let k pi =
+      match Ast.unwrap pi with
+	Ast.PragmaTuple(lp,args,rp) ->
+	  multibind [string_mcode lp;expression_dots args;string_mcode rp]
+      | Ast.PragmaIdList(ids) -> identifier_dots ids
+      | Ast.PragmaDots (dots) -> string_mcode dots in
+    k pi
 
   (* not parameterizable for now... *)
   and define_parameters p =
@@ -520,7 +540,7 @@ let combiner bind option_default
       | Ast.CaseLineTag(case) -> case_line case
       | Ast.ConstVolTag(cv) -> option_default
       | Ast.Token(tok,info) -> option_default
-      | Ast.Pragma(str) -> option_default
+      | Ast.Directive(str) -> option_default
       | Ast.Code(cd) -> top_level cd
       | Ast.ExprDotsTag(ed) -> expression_dots ed
       | Ast.ParamDotsTag(pd) -> parameter_dots pd
@@ -602,7 +622,10 @@ let rebuilder
 	| Ast.STARS(l) -> Ast.STARS(List.map default l)) in
     param all_functions k arg in
 
+  let iddotsfn all_functions k arg = k arg in
+
   let rec expression_dots d = dotsfn expdotsfn expression all_functions d
+  and identifier_dots d = dotsfn iddotsfn ident all_functions d
   and parameter_dots d = dotsfn paramdotsfn parameterTypeDef all_functions d
   and statement_dots d = dotsfn stmtdotsfn statement all_functions d
   and declaration_dots d = dotsfn decldotsfn declaration all_functions d
@@ -727,6 +750,10 @@ let rebuilder
 	| Ast.Array(ty,lb,size,rb) ->
 	    Ast.Array(fullType ty, string_mcode lb,
 		      get_option expression size, string_mcode rb)
+      | Ast.Decimal(dec,lp,length,comma,precision_opt,rp) ->
+	  Ast.Decimal(string_mcode dec, string_mcode lp,
+		      expression length, get_option string_mcode comma,
+		      get_option expression precision_opt, string_mcode rp)
 	| Ast.EnumName(kind,name) ->
 	    Ast.EnumName(string_mcode kind, get_option ident name)
 	| Ast.EnumDef(ty,lb,ids,rb) ->
@@ -903,6 +930,8 @@ let rebuilder
 	| Ast.DefineHeader(def,id,params) ->
 	    Ast.DefineHeader(string_mcode def,ident id,
 			     define_parameters params)
+	| Ast.Pragma(prg,id,body) ->
+	    Ast.Pragma(string_mcode prg,ident id,pragmainfo body)
 	| Ast.Default(def,colon) ->
 	    Ast.Default(string_mcode def,string_mcode colon)
 	| Ast.Case(case,exp,colon) ->
@@ -918,6 +947,18 @@ let rebuilder
     | Ast.ForDecl (bef,allminus,decl) ->
 	Ast.ForDecl(bef,allminus,declaration decl) in
     k fi
+
+  (* not parameterizable for now... *)
+  and pragmainfo pi =
+    let k pi =
+      Ast.rewrap pi
+	(match Ast.unwrap pi with
+	  Ast.PragmaTuple(lp,args,rp) ->
+	    Ast.PragmaTuple(string_mcode lp,expression_dots args,
+			    string_mcode rp)
+	| Ast.PragmaIdList(ids) -> Ast.PragmaIdList(identifier_dots ids)
+	| Ast.PragmaDots (dots) -> Ast.PragmaDots(string_mcode dots)) in
+    k pi
 
   (* not parameterizable for now... *)
   and define_parameters p =
@@ -1076,7 +1117,7 @@ let rebuilder
       | Ast.CaseLineTag(case) -> Ast.CaseLineTag(case_line case)
       | Ast.ConstVolTag(cv) as x -> x
       | Ast.Token(tok,info) as x -> x
-      | Ast.Pragma(str) as x -> x
+      | Ast.Directive(str) as x -> x
       | Ast.Code(cd) -> Ast.Code(top_level cd)
       | Ast.ExprDotsTag(ed) -> Ast.ExprDotsTag(expression_dots ed)
       | Ast.ParamDotsTag(pd) -> Ast.ParamDotsTag(parameter_dots pd)

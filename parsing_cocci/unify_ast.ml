@@ -264,6 +264,11 @@ and unify_typeC t1 t2 =
   | (Ast.Array(ty1,lb1,e1,rb1),Ast.Array(ty2,lb2,e2,rb2)) ->
       conjunct_bindings
 	(unify_fullType ty1 ty2) (unify_option unify_expression e1 e2)
+  | (Ast.Decimal(dec1,lp1,len1,comma1,prec_opt1,rp1),
+     Ast.Decimal(dec2,lp2,len2,comma2,prec_opt2,rp2)) ->
+       conjunct_bindings
+	(unify_expression len1 len2)
+	 (unify_option unify_expression prec_opt1 prec_opt2)
   | (Ast.EnumName(s1,Some ts1),Ast.EnumName(s2,Some ts2)) ->
       if unify_mcode s1 s2 then unify_ident ts1 ts2 else return false
   | (Ast.EnumName(s1,None),Ast.EnumName(s2,None)) ->
@@ -339,7 +344,8 @@ and unify_declaration d1 d2 =
 and unify_initialiser i1 i2 =
   match (Ast.unwrap i1,Ast.unwrap i2) with
     (Ast.MetaInit(_,_,_),_) | (_,Ast.MetaInit(_,_,_)) -> return true
-  | (Ast.MetaInitList(_,_,_,_),_) | (_,Ast.MetaInitList(_,_,_,_)) -> return true
+  | (Ast.MetaInitList(_,_,_,_),_) | (_,Ast.MetaInitList(_,_,_,_)) ->
+      return true
   | (Ast.InitExpr(expa),Ast.InitExpr(expb)) ->
       unify_expression expa expb
   | (Ast.ArInitList(_,initlista,_),
@@ -480,6 +486,8 @@ and unify_rule_elem re1 re2 =
   | (Ast.DefineHeader(_,n1,p1),Ast.DefineHeader(_,n2,p2)) ->
       conjunct_bindings (unify_ident n1 n2)
 	(unify_define_parameters p1 p2)
+  | (Ast.Pragma(_,i1,n1),Ast.Pragma(_,i2,n2)) ->
+      conjunct_bindings (unify_ident i1 i2) (unify_pragmainfo n1 n2)
   | (Ast.Break(r1,s1),Ast.Break(r2,s2)) -> return true
   | (Ast.Continue(r1,s1),Ast.Continue(r2,s2)) -> return true
   | (Ast.Label(l1,dd1),Ast.Label(l2,dd2)) -> unify_ident l1 l2
@@ -515,6 +523,15 @@ and unify_rule_elem re1 re2 =
   | (Ast.Ty(t1),_) -> subtype (unify_fullType t1) re2
   | (_,Ast.Ty(t2)) -> subtype (unify_fullType t2) re1
   | _ -> return false
+
+and unify_pragmainfo pi1 pi2 =
+  match (Ast.unwrap pi1,Ast.unwrap pi2) with
+      (Ast.PragmaTuple(lp1,args1,rp1),Ast.PragmaTuple(lp2,args2,rp2)) ->
+	unify_dots unify_expression edots args1 args2
+    | (Ast.PragmaIdList(ids1),Ast.PragmaIdList(ids2)) ->
+	unify_dots unify_ident (function _ -> false) ids1 ids2
+    | (Ast.PragmaDots(_),_) | (_,Ast.PragmaDots(_)) -> return true
+    | _ -> return false
 
 and unify_fninfo patterninfo cinfo =
   let patterninfo = List.sort compare patterninfo in

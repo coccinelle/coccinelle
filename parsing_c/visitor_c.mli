@@ -65,6 +65,8 @@ val vk_cst : visitor_c -> ((constant, string) Common.either wrap) -> unit
 
 val vk_define_params_splitted :
   visitor_c -> (string Ast_c.wrap, il) Common.either list -> unit
+val vk_pragmainfo : visitor_c -> pragmainfo -> unit
+val vk_ident_list_splitted : visitor_c -> (name, il) Common.either list -> unit
 
 
 
@@ -137,13 +139,18 @@ val vk_params_splitted_s :
   (parameterType, il) Common.either list
 
 
-
 val vk_param_s : visitor_c_s -> parameterType -> parameterType
 
 val vk_define_params_splitted_s :
   visitor_c_s ->
   (string Ast_c.wrap, il) Common.either list ->
   (string Ast_c.wrap, il) Common.either list
+
+val vk_pragmainfo_s : visitor_c_s -> pragmainfo -> pragmainfo
+val vk_ident_list_splitted_s :
+  visitor_c_s ->
+  (name, il) Common.either list ->
+  (name, il) Common.either list
 
 val vk_enum_fields_s : visitor_c_s -> enumType -> enumType
 val vk_enum_fields_splitted_s : visitor_c_s ->

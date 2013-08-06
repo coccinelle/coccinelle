@@ -484,7 +484,8 @@ and typeC allminus t =
 	| types -> Ast.DisjType(List.map (rewrap t no_isos) types))
     | Ast0.BaseType(_) | Ast0.Signed(_,_) | Ast0.Pointer(_,_)
     | Ast0.FunctionPointer(_,_,_,_,_,_,_) | Ast0.FunctionType(_,_,_,_)
-    | Ast0.Array(_,_,_,_) | Ast0.EnumName(_,_) | Ast0.StructUnionName(_,_)
+    | Ast0.Array(_,_,_,_) | Ast0.Decimal(_,_,_,_,_,_)
+    | Ast0.EnumName(_,_) | Ast0.StructUnionName(_,_)
     | Ast0.StructUnionDef(_,_,_,_) | Ast0.EnumDef(_,_,_,_)
     | Ast0.TypeName(_) | Ast0.MetaType(_,_) ->
 	Ast.Type(allminus,None,rewrap t no_isos (base_typeC allminus t))
@@ -515,6 +516,10 @@ and base_typeC allminus t =
   | Ast0.Array(ty,lb,size,rb) ->
       Ast.Array(typeC allminus ty,mcode lb,get_option expression size,
 		mcode rb)
+  | Ast0.Decimal(dec,lp,length,comma,precision_opt,rp) ->
+      Ast.Decimal(mcode dec,mcode lp,expression length,
+		  get_option mcode comma,get_option expression precision_opt,
+		  mcode rp)
   | Ast0.EnumName(kind,name) ->
       Ast.EnumName(mcode kind,get_option ident name)
   | Ast0.EnumDef(ty,lb,ids,rb) ->
@@ -904,8 +909,22 @@ and statement s =
 	       (Ast.DefineHeader
 		  (mcode def,ident id, define_parameters params)),
 	     statement_dots Ast.NotSequencible (*not sure*) body)
+      |	Ast0.Pragma(prg,id,body) ->
+	  Ast.Atomic(rewrap_rule_elem s
+		       (Ast.Pragma(mcode prg,ident id,pragmainfo body)))
       | Ast0.OptStm(stm) -> Ast.OptStm(statement seqible stm)
       | Ast0.UniqueStm(stm) -> Ast.UniqueStm(statement seqible stm))
+
+  and pragmainfo pi =
+    rewrap pi no_isos
+      (match Ast0.unwrap pi with
+	Ast0.PragmaTuple(lp,args,rp) ->
+	  let lp = mcode lp in
+	  let args = dots expression args in
+	  let rp = mcode rp in
+	  Ast.PragmaTuple(lp,args,rp)
+      | Ast0.PragmaIdList(ids) -> Ast.PragmaIdList(dots ident ids)
+      | Ast0.PragmaDots (dots) -> Ast.PragmaDots (mcode dots))
 
   and define_parameters p =
     rewrap p no_isos

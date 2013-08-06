@@ -1855,7 +1855,6 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
     | A.True               -> anno (triples_top states) []
     | A.Pred(p)            ->
 	output "label";
-	Printf.printf "label\n"; flush stdout;
 	anno (satLabel label required p) []
     | A.Uncheck(phi1) ->
 	let unchecked = if !pUNCHECK_OPT then true else false in

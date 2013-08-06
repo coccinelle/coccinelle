@@ -499,12 +499,15 @@ The grammar for the minus or plus slice of a transformation is as follows:
 
   \RULE{\rt{transformation}}
   \CASE{\some{\NT{include}}}
-  \CASE{\NT{OPTDOTSEQ}\mth{(}\NT{expr}, \NT{when}\mth{)}}
-  \CASE{\NT{OPTDOTSEQ}\mth{(}\some{\NT{decl\_stmt}}, \NT{when}\mth{)}}
-  \CASE{\NT{OPTDOTSEQ}\mth{(}\NT{fundecl}, \NT{when}\mth{)}}
+  \CASE{\NT{OPTDOTSEQ}\mth{(}\NT{top}, \NT{when}\mth{)}}
 
   \RULE{\rt{include}}
   \CASE{\#include \T{include\_string}}
+
+  \RULE{\rt{top}}
+  \CASE{\NT{expr}}
+  \CASE{\some{\NT{decl\_stmt}}}
+  \CASE{\NT{fundecl}}
 
 %  \RULE{\rt{fun\_decl\_stmt}}
 %  \CASE{\NT{decl\_stmt}}
@@ -901,7 +904,7 @@ allowed.
 
 \begin{grammar}
   \RULE{\rt{stmt}}
-  \CASE{\NT{include}}
+  \CASE{\NT{directive}}
   \CASE{\mth{\T{metaid}^{\ssf{Stmt}}}}
   \CASE{\NT{expr};}
   \CASE{if (\NT{dot\_expr}) \NT{single\_stmt} \opt{else \NT{single\_stmt}}}
@@ -920,6 +923,16 @@ allowed.
   \CASE{\NT{id}:}
   \CASE{goto \NT{id};}
   \CASE{\ttlb \NT{stmt\_seq} \ttrb}
+
+  \RULE{\rt{directive}}
+  \CASE{\NT{include}}
+  \CASE{\#define \NT{id} \opt{\NT{top}}}
+  \CASE{\#define \NT{id} (\NT{PARAMSEQ}\mth{(}\NT{id}, \mth{\varepsilon)})
+        \opt{\NT{top}}}
+  \CASE{\#undef \NT{id}}
+  \CASE{\#pragma \NT{id} \some{\NT{id}}}
+  \CASE{\#pragma \NT{id} (\NT{PARAMSEQ}\mth{(}\NT{expr}, \mth{\varepsilon)})}
+  \CASE{\#pragma \NT{id} ...}
 
   \RULE{\rt{single\_stmt}}
   \CASE{\NT{stmt}}
@@ -1088,7 +1101,7 @@ be matched against.  The entire line is added, but it is not parsed.
 \item \verb+elif+
 \item \verb+endif+
 \item \verb+error+
-\item \verb+pragma+
+%\item \verb+pragma+
 \item \verb+line+
 \end{itemize}
 

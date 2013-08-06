@@ -53,6 +53,8 @@ type node = node1 * string (* For debugging. Used by print_graph *)
 
   | Include of includ
 
+  | PragmaHeader of string wrap * pragmainfo
+
   | MacroTop of string * argument wrap2 list * il
 
   (* ------------------------ *)

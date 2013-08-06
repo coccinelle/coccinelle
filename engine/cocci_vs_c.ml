@@ -631,6 +631,10 @@ module type PARAM =
 
     val distrf_define_params :
       (A.meta_name A.mcode, (string Ast_c.wrap, Ast_c.il) either list) matcher
+    val distrf_pragmainfo :
+      (A.meta_name A.mcode, Ast_c.pragmainfo) matcher
+    val distrf_ident_list :
+      (A.meta_name A.mcode, (Ast_c.name, Ast_c.il) either list) matcher
 
     val distrf_enum_fields :
       (A.meta_name A.mcode, (B.oneEnumType, B.il) either list) matcher
@@ -755,7 +759,9 @@ let satisfies_econstraint c exp : bool =
 	  warning "Unable to apply a constraint on a multistring constant!"
       | Ast_c.Char  (char , _) -> satisfies_regexpconstraint c char
       | Ast_c.Int   (int  , _) -> satisfies_regexpconstraint c int
-      | Ast_c.Float (float, _) -> satisfies_regexpconstraint c float)
+      | Ast_c.Float (float, _) -> satisfies_regexpconstraint c float
+      | Ast_c.DecimalConst (d, n, p) ->
+	  warning "Unable to apply a constraint on a decimal constant!")
   | _ -> warning "Unable to apply a constraint on an expression!"
 
 
@@ -1620,6 +1626,28 @@ and argument arga argb =
         return (arga, Left argb)
       )
   | _, Right (B.ArgAction y) -> fail
+
+and (ident_list :
+  (A.ident list, Ast_c.name Ast_c.wrap2 list) matcher) =
+  fun eas ebs ->
+    ident_list_bis eas (Ast_c.split_comma ebs) >>= (fun eas ebs_splitted ->
+          return (eas, (Ast_c.unsplit_comma ebs_splitted))
+	    )
+
+and ident_list_bis = fun eas ebs ->
+  let match_dots ea = None in
+  let build_dots (mcode, optexpr) = failwith "no dots in ident list" in
+  let match_comma ea = None in
+  let build_comma ia1 = failwith "no comma in ident list" in
+  let match_metalist ea = None in
+  let build_metalist _ (ida,leninfo,keep,inherited) =
+    failwith "no metalist in ident list" in
+  let mktermval v = failwith "no metalist in ident list" in
+  let special_cases ea eas ebs = None in
+  list_matcher match_dots build_dots match_comma build_comma
+    match_metalist build_metalist mktermval
+    special_cases (ident_cpp DontKnow) X.distrf_ident_list
+    Lib_parsing_c.ii_of_ident_list (function x -> x) eas ebs
 
 
 (* ------------------------------------------------------------------------- *)
@@ -2826,6 +2854,13 @@ and (fullTypebis: (A.typeC, Ast_c.fullType) matcher) =
 	  [] -> false
 	| _ ->
 	    let (tyq, (ty, tyii)) = typb in
+	    let tyii =
+	      match ty with
+		B.TypeName(name,typ) ->
+		  (* promoted typedef has ii information in the type name *)
+		  let (_s, iis) = B.get_s_and_info_of_name name in
+		  [iis]
+	      |	_ -> tyii in
 	    List.for_all Ast_c.is_fake tyii in
       if type_present && not position_required_but_unavailable
       then
@@ -3145,6 +3180,35 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
           )))))
 
 
+    | A.Decimal(dec,lp,length,Some comma,Some precision,rp),
+	(B.Decimal (len, Some prec), ii) ->
+        let (ib1, ib2, ib3, ib4) = tuple_of_list4 ii in
+        expression length len >>= (fun length len ->
+        expression precision prec >>= (fun precision prec ->
+        tokenf dec ib1   >>= (fun dec ib1 ->
+        tokenf lp ib2    >>= (fun lp ib2 ->
+        tokenf comma ib3 >>= (fun comma ib3 ->
+        tokenf rp ib4    >>= (fun rp ib4 ->
+          return (
+            (A.Decimal(dec,lp,length,Some comma,Some precision,rp)) +>
+	      A.rewrap ta,
+            (B.Decimal (len, Some prec), [ib1;ib2;ib3;ib4])
+          )))))))
+
+
+    | A.Decimal(dec,lp,length,None,None,rp),
+	(B.Decimal (len, None), ii) ->
+        let (ib1, ib2, ib3) = tuple_of_list3 ii in
+        expression length len >>= (fun length len ->
+        tokenf dec ib1 >>= (fun dec ib1 ->
+        tokenf lp ib2  >>= (fun lp ib2 ->
+        tokenf rp ib3  >>= (fun rp ib3 ->
+          return (
+            (A.Decimal(dec,lp,length,None,None,rp)) +> A.rewrap ta,
+            (B.Decimal (len,None), [ib1;ib2;ib3])
+          )))))
+
+
      (* todo: could also match a Struct that has provided a name *)
      (* This is for the case where the SmPL code contains "struct x", without
 	a definition.  In this case, the name field is always present.
@@ -3342,8 +3406,8 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
     | _,
      ((B.TypeName _ | B.StructUnionName (_, _) | B.EnumName _ |
       B.StructUnion (_, _, _) |
-      B.FunctionType _ | B.Array (_, _) | B.Pointer _ |
-      B.BaseType _),
+      B.FunctionType _ | B.Array (_, _) | B.Decimal(_, _) |
+      B.Pointer _ | B.BaseType _),
      _)
      -> fail
 
@@ -3566,6 +3630,29 @@ and compatible_type a (b,local) =
     | Type_cocci.Array   a, (qub, (B.Array (eopt, b),ii)) ->
       (* no size info for cocci *)
 	loop (a,b)
+    | Type_cocci.Decimal(e1,e2), (qub, (B.Decimal(l,p),ii)) ->
+	(match X.mode with
+	  TransformMode -> ok (* nothing to do here *)
+	| PatternMode ->
+	    let tc2e = function
+		Type_cocci.Name n ->
+		  A.make_term(A.Ident(A.make_term(A.Id(A.make_mcode n))))
+	      | Type_cocci.Num n ->
+		  A.make_term(A.Constant(A.make_mcode(A.Int n)))
+	      | Type_cocci.MV(mv,keep,inh) ->
+		  A.make_term
+		    (A.MetaExpr
+		       (A.make_mcode mv,A.NoConstraint,keep,None,A.CONST,inh))
+	      | _ -> failwith "unexpected name in decimal" in
+      (* no size info for cocci *)
+	    expression (tc2e e1) l >>=
+	    (fun _ _ -> (* no transformation to record *)
+	      match p with
+		None -> failwith "not allowed in a type"
+	      | Some p ->
+		  expression (tc2e e2) p >>=
+		  (fun _ _ -> (* no transformation to record *)
+		    ok)))
     | Type_cocci.StructUnionName (sua, name),
 	(qub, (B.StructUnionName (sub, sb),ii)) ->
 	  if equal_structUnion_type_cocci sua sub
@@ -3624,11 +3711,29 @@ and compatible_type a (b,local) =
       ((
        B.StructUnionName (_, _)|
        B.FunctionType _|
-       B.Array (_, _)|B.Pointer _|B.TypeName _|
+       B.Array (_, _)|B.Decimal (_, _)|B.Pointer _|B.TypeName _|
        B.BaseType _
       ),
       _))) -> fail
-
+(*
+and decimal_type_exp nm sb ii =
+    match nm with
+      Type_cocci.NoName -> failwith "unexpected NoName in decimal type"
+    | Type_cocci.Name sa ->
+	(match B.unwrap sb with
+	  B.Ident name ->
+	    let ida = A.make_term(A.Id(A.make_mcode n)) in
+	    ident_cpp DontKnow ida nameidb >>= (fun ida nameidb -> ok)
+	| _ -> fail)
+    | Type_cocci.Num sa -> 
+    | Type_cocci.MV(ida,keep,inherited) ->
+	(* degenerate version of MetaId, no transformation possible *)
+        let (ib1, ib2) = tuple_of_list2 ii in
+	let max_min _ = Lib_parsing_c.lin_col_by_pos [ib2] in
+	let mida = A.make_mcode ida in
+	X.envf keep inherited (mida, B.MetaIdVal (sb,[]), max_min)
+	  (fun () -> ok)
+*)
 and structure_type_name nm sb ii =
     match nm with
       Type_cocci.NoName -> ok
@@ -3636,6 +3741,7 @@ and structure_type_name nm sb ii =
 	if sa =$= sb
 	then ok
 	else fail
+    | Type_cocci.Num sa -> failwith "unexpected Num in structure type"
     | Type_cocci.MV(ida,keep,inherited) ->
 	(* degenerate version of MetaId, no transformation possible *)
         let (ib1, ib2) = tuple_of_list2 ii in
@@ -4086,8 +4192,6 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
   | A.IfHeader (ia1,ia2, ea, ia3), F.IfHeader (st, (eb,ii)) ->
       let (ib1, ib2, ib3) = tuple_of_list3 ii in
       expression ea eb >>= (fun ea eb ->
-      Pretty_print_cocci.expression ea;
-      Format.print_newline();
       tokenf ia1 ib1 >>= (fun ia1 ib1 ->
       tokenf ia2 ib2 >>= (fun ia2 ib2 ->
       tokenf ia3 ib3 >>= (fun ia3 ib3 ->
@@ -4305,6 +4409,43 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
         ))
       ))
 
+  | A.Pragma(prga,ida,pragmainfoa), F.PragmaHeader ((idb, ii), pragmainfob) ->
+      let (prgb, iidb, ieol) = tuple_of_list3 ii in
+      ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) ->
+      tokenf prga prgb >>= (fun prga prgb ->
+      let wp x = A.rewrap pragmainfoa x  in
+      (match A.unwrap pragmainfoa, pragmainfob with
+	A.PragmaTuple(lp,eas,rp), B.PragmaTuple(ebs,iib) ->	  
+	  let (ib1, ib2) = tuple_of_list2 iib in
+	  tokenf lp ib1 >>= (fun lp ib1 ->
+	  tokenf rp ib2 >>= (fun rp ib2 ->
+	  arguments (seqstyle eas) (A.undots eas) ebs >>= (fun easundots ebs ->
+          let eas = redots eas easundots in
+	  return (
+	    A.PragmaTuple(lp,eas,rp) +> wp,
+	    B.PragmaTuple(ebs,[ib1; ib2])
+	  ))))
+      | A.PragmaIdList(idsa), B.PragmaIdList(idsb) ->
+	  ident_list (A.undots idsa) idsb >>= (fun idsaundots idsb ->
+          let idsa = redots idsa idsaundots in
+	  return(
+	    A.PragmaIdList(idsa) +> wp,
+	    B.PragmaIdList(idsb)
+	  ))
+      | A.PragmaDots(mcode), _ ->
+	  X.distrf_pragmainfo (dots2metavar mcode) pragmainfob >>=
+	  (fun mcode pragmainfob ->
+            return (
+            A.PragmaDots(metavar2dots mcode) +> wp,
+            pragmainfob
+          ))
+      |	_ -> fail
+      ) >>= (fun pragmainfoa pragmainfob ->
+        return (
+	  A.Pragma(prga,ida,pragmainfoa),
+	  F.PragmaHeader ((idb, [prgb; iidb; ieol]), pragmainfob)
+        ))
+      ))
 
   | A.Default(def,colon), F.Default (st, ((),ii)) ->
       let (ib1, ib2) = tuple_of_list2 ii in
@@ -4372,7 +4513,8 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
     (F.Label (_, _, _)|F.Break (_, _)|F.Continue (_, _)|F.Default (_, _)|
     F.Case (_, _)|F.Include _|F.Goto _|F.ExprStatement _|
     F.DefineType _|F.DefineExpr _|F.DefineTodo|
-    F.DefineHeader (_, _)|F.ReturnExpr (_, _)|F.Return (_, _)|
+    F.DefineHeader (_, _)|F.PragmaHeader (_, _)|
+    F.ReturnExpr (_, _)|F.Return (_, _)|
     F.MacroIterHeader (_, _)|
     F.SwitchHeader (_, _)|F.ForHeader (_, _)|F.DoWhileTail _|F.DoHeader (_, _)|
     F.WhileHeader (_, _)|F.Else _|F.IfHeader (_, _)|

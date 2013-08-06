@@ -618,6 +618,13 @@ and typeC ty =
   | Ast.Array(ty,lb,size,rb) ->
       fullType ty; mcode print_string lb; print_option expression size;
       mcode print_string rb
+  | Ast.Decimal(dec,lp,length,comma,precision_opt,rp) ->
+      mcode print_string dec;
+      mcode print_string lp;
+      expression length;
+      print_option (mcode print_string) comma;
+      print_option expression precision_opt;
+      mcode print_string rp
   | Ast.EnumName(kind,name) ->
       mcode print_string kind;
       print_option_prespace ident name
@@ -997,6 +1004,9 @@ and rule_elem arity re =
   | Ast.DefineHeader(def,id,params) ->
       mcode print_string def; pr_space(); ident id;
       print_define_parameters params
+  | Ast.Pragma(prg,id,body) ->
+      mcode print_string prg; pr_space(); ident id; pr_space();
+      pragmainfo body
   | Ast.Default(def,colon) ->
       mcode print_string def; mcode print_string colon; pr_space()
   | Ast.Case(case,exp,colon) ->
@@ -1023,6 +1033,15 @@ and rule_elem arity re =
   | Ast.MetaStmtList(name,_,_) ->
       failwith
 	"MetaStmtList not supported (not even in ast_c metavars binding)"
+
+and pragmainfo pi =
+  match Ast.unwrap pi with
+      Ast.PragmaTuple(lp,args,rp) ->
+	mcode print_string lp;
+	dots (function _ -> ()) arg_expression args;
+	mcode print_string rp
+    | Ast.PragmaIdList(ids) -> dots (function _ -> ()) ident ids
+    | Ast.PragmaDots (dots) -> mcode print_string dots
 
 and forinfo = function
     Ast.ForExp(e1,sem1) ->
@@ -1236,7 +1255,7 @@ let rec pp_any = function
   | Ast.CaseLineTag(x) -> case_line "" x; false
 
   | Ast.ConstVolTag(x) -> const_vol x unknown unknown; false
-  | Ast.Pragma(xs) ->
+  | Ast.Directive(xs) ->
       (match xs with (Ast.Space s)::_ -> pr_space() | _ -> ());
       let rec loop = function
 	  [] -> ()
@@ -1305,12 +1324,12 @@ in
 	then
 	  let hd = List.hd xxs in
 	  match hd with
-	    (Ast.Pragma l::_)
+	    (Ast.Directive l::_)
 	      when List.for_all (function Ast.Space x -> true | _ -> false) l ->
 		()
           | (Ast.StatementTag s::_) when isfn s ->
 	      force_newline(); force_newline()
-	  | (Ast.Pragma _::_)
+	  | (Ast.Directive _::_)
           | (Ast.Rule_elemTag _::_) | (Ast.StatementTag _::_)
 	  | (Ast.InitTag _::_)
 	  | (Ast.DeclarationTag _::_) | (Ast.Token ("}",_)::_) -> prnl hd
@@ -1322,7 +1341,7 @@ in
 	    (Ast.StatementTag s::_) ->
 	      (if isfn s then force_newline());
 	      force_newline()
-	  | (Ast.Pragma _::_)
+	  | (Ast.Directive _::_)
           | (Ast.Rule_elemTag _::_) | (Ast.InitTag _::_)
 	  | (Ast.DeclarationTag _::_) | (Ast.Token ("{",_)::_) ->
 	      force_newline()

@@ -164,6 +164,10 @@ and base_typeC =
                        string mcode (* ) *)
   | Array           of typeC * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
+  | Decimal         of string mcode (* decimal *) * string mcode (* ( *) *
+	               expression *
+	               string mcode option (* , *) * expression option *
+	               string mcode (* ) *) (* IBM C only *)
   | EnumName        of string mcode (*enum*) * ident option (* name *)
   | EnumDef  of typeC (* either StructUnionName or metavar *) *
 	string mcode (* { *) * expression dots * string mcode (* } *)
@@ -345,8 +349,16 @@ and base_statement =
   | Undef of string mcode (* #define *) * ident (* name *)
   | Define of string mcode (* #define *) * ident (* name *) *
 	define_parameters (*params*) * statement dots
+  | Pragma of string mcode (* #pragma *) * ident * pragmainfo
   | OptStm   of statement
   | UniqueStm of statement
+
+and base_pragmainfo =
+    PragmaTuple of string mcode(* ( *) * expression dots * string mcode(* ) *)
+  | PragmaIdList of ident dots
+  | PragmaDots of string mcode
+
+and pragmainfo = base_pragmainfo wrap
 
 and base_forinfo =
     ForExp of expression option * string mcode (*;*)

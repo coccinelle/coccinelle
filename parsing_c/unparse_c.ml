@@ -140,17 +140,17 @@ let print_token2 = function
   | Unindent_cocci2 _ -> "Unindent"
   | EatSpace2 -> "EatSpace"
 
-(*
-let simple_print_all_tokens pr l =
-  List.iter (function x -> Printf.printf "|%s| " (pr x)) l;
-  Printf.printf "\n"
-*)
-
 let str_of_token3 = function
   | T3 t -> TH.str_of_tok t
   | Cocci3 s | C3 s -> s
 
-
+let simple_print_all_tokens pr s l =
+  Printf.printf "%s\n" s;
+  List.iter (function x -> Printf.printf "|%s| " (pr x)) l;
+  Printf.printf "\n"
+let simple_print_all_tokens1 = simple_print_all_tokens print_token1
+let simple_print_all_tokens2 = simple_print_all_tokens print_token2
+let simple_print_all_tokens3 = simple_print_all_tokens str_of_token3
 
 let mk_token_extended x =
   let origidx =
@@ -230,7 +230,6 @@ let get_fakeInfo_and_tokens celem toks =
     | Ast_c.FakeTok _ ->
       push2 (Fake1 info) toks_out
     | Ast_c.OriginTok _ | Ast_c.ExpandedTok _ ->
-
       (* get the associated comments/space/cppcomment tokens *)
       let (before, x, after) =
         !toks_in +> split_when (fun tok ->
@@ -462,6 +461,10 @@ let expand_mcode toks =
 
 let is_space = function
   | T2(Parser_c.TCommentSpace _,_b,_i,_h) -> true (* only whitespace *)
+  | _ -> false
+
+let is_added_space = function
+  | C2(" ") -> true (* only whitespace *)
   | _ -> false
 
 let is_newline = function
@@ -819,6 +822,8 @@ let adjust_before_semicolon toks =
       x :: search_semic (search_minus false xs)
     | x::xs -> x :: search_semic xs
   and search_minus seen_minus xs =
+    (* drop spaces added by cocci, eg after attribute *)
+    let (_, xs) = span is_added_space xs in
     let (spaces, rest) = span is_space xs in
     (* only delete spaces if something is actually deleted *)
     match rest with
@@ -1071,7 +1076,7 @@ let add_newlines toks tabbing_unit =
             let (newcount,newstack,newspacecell) =
               start_box stack space_cell newcount "{" in
             front @ loop (newstack,newspacecell) newcount ixs
-          | s -> a :: loop info (string_length s count) xs
+          | _ -> a :: loop info (string_length s count) xs
           )
         | _ -> a :: loop info (string_length s count) xs
         )
@@ -1114,8 +1119,7 @@ let add_newlines toks tabbing_unit =
           | [x] ->
             (match check_for_newline count x space_cell with
             | Some count -> loop (stack,Some (x,sp)) count xs
-            | None -> loop (stack,Some (count,sp)) count xs
-	    )
+            | None -> loop (stack,Some (count,sp)) count xs)
           | _ -> loop info count xs
           ) in
       a :: rest
@@ -1520,9 +1524,7 @@ let pp_program2 xs outfile  =
               let toks = drop_space_at_endline toks in
               let toks = paren_to_space toks in
               let toks = drop_end_comma toks in
-
               let toks = drop_line toks in
-
               let toks = remove_minus_and_between_and_expanded_and_fake toks in
               (* assert Origin + Cocci + C and no minus *)
               let toks = add_space toks in

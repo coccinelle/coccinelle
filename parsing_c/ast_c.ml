@@ -180,6 +180,7 @@ and fullType = typeQualifier * typeC
 
   | Pointer         of fullType
   | Array           of constExpression option * fullType
+  | Decimal         of constExpression * constExpression option
   | FunctionType    of functionType
 
   | Enum            of string option * enumType
@@ -228,7 +229,7 @@ and fullType = typeQualifier * typeC
             and base = CChar2 | CShort | CInt | CLong | CLongLong (* gccext: *)
             and sign = Signed | UnSigned
 
-          and floatType = CFloat | CDouble | CLongDouble
+          and floatType = CFloat | CDouble | CLongDouble | CDecimal
 
 
      (* -------------------------------------- *)
@@ -369,6 +370,7 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
     | Char   of (string * isWchar) (* normally it is equivalent to Int *)
     | Int    of (string * intType)
     | Float  of (string * floatType)
+    | DecimalConst of (string * string * string)
 
     and isWchar = IsWchar | IsChar
 
@@ -594,7 +596,8 @@ and definition = definitionbis wrap (* ( ) { } fakestart sto *)
 and cpp_directive =
   | Define of define
   | Include of includ
-  | PragmaAndCo of il
+  | Pragma of string wrap * pragmainfo
+  | OtherDirective of il
 (*| Ifdef ? no, ifdefs are handled differently, cf ifdef_directive below *)
 
 and define = string wrap (* #define s eol *) * (define_kind * define_val)
@@ -620,8 +623,6 @@ and define = string wrap (* #define s eol *) * (define_kind * define_val)
 
      | DefineTodo
 
-
-
 and includ =
   { i_include: inc_file wrap; (* #include s *)
     (* cocci: computed in ? *)
@@ -631,11 +632,11 @@ and includ =
     (* cf cpp_ast_c.ml. set to None at parsing time. *)
     i_content: (Common.filename (* full path *) * program) option;
   }
- and inc_file =
+and inc_file =
   | Local    of inc_elem list
   | NonLocal of inc_elem list
   | Weird of string (* ex: #include SYSTEM_H *)
-  and inc_elem = string
+and inc_elem = string
 
  (* cocci: to tag the first of #include <xx/> and last of #include <yy/>
   *
@@ -646,12 +647,14 @@ and includ =
   *
   * This is set after parsing, in cocci.ml, in update_rel_pos.
   *)
- and include_rel_pos = {
+and include_rel_pos = {
    first_of : string list list;
    last_of :  string list list;
  }
 
-
+and pragmainfo =
+    PragmaTuple of argument wrap2 (* , *) list wrap
+  | PragmaIdList of name wrap2 list (* no commas, wrap2 is always empty *)
 
 (* todo? to specialize if someone need more info *)
 and ifdef_directive = (* or and 'a ifdefed = 'a list wrap *)

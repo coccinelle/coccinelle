@@ -270,6 +270,10 @@ and base_typeC =
 
   | Array           of fullType * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
+  | Decimal         of string mcode (* decimal *) * string mcode (* ( *) *
+	               expression *
+	               string mcode option (* , *) * expression option *
+	               string mcode (* ) *) (* IBM C only *)
   | EnumName        of string mcode (*enum*) * ident option (* name *)
   | EnumDef  of fullType (* either EnumName or metavar *) *
 	string mcode (* { *) * expression dots * string mcode (* } *)
@@ -470,9 +474,17 @@ and base_rule_elem =
   | Undef         of string mcode (* #define *) * ident (* name *)
   | DefineHeader  of string mcode (* #define *) * ident (* name *) *
 	             define_parameters (*params*)
+  | Pragma        of string mcode (* #pragma *) * ident * pragmainfo
   | Case          of string mcode (* case *) * expression * string mcode (*:*)
   | Default       of string mcode (* default *) * string mcode (*:*)
   | DisjRuleElem  of rule_elem list
+
+and base_pragmainfo =
+    PragmaTuple of string mcode(* ( *) * expression dots * string mcode(* ) *)
+  | PragmaIdList of ident dots
+  | PragmaDots of string mcode
+
+and pragmainfo = base_pragmainfo wrap
 
 and forinfo =
     ForExp of expression option * string mcode (*;*)
@@ -638,7 +650,7 @@ and anything =
   | CaseLineTag         of case_line
   | ConstVolTag         of const_vol
   | Token               of string * info option
-  | Pragma              of added_string list
+  | Directive              of added_string list
   | Code                of top_level
   | ExprDotsTag         of expression dots
   | ParamDotsTag        of parameterTypeDef dots
@@ -762,7 +774,7 @@ and tag2c = function
   | CaseLineTag _  -> "CaseLineTag"
   | ConstVolTag _  -> "ConstVolTag"
   | Token _ -> "Token"
-  | Pragma _ -> "Pragma"
+  | Directive _ -> "Directive"
   | Code _ -> "Code"
   | ExprDotsTag _ -> "ExprDotsTag"
   | ParamDotsTag _ -> "ParamDotsTag"

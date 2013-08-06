@@ -268,6 +268,7 @@ let id_tokens lexbuf =
   | "enum" ->       Data.saw_struct := true; Tenum     linetype
   | "unsigned" ->   Tunsigned linetype
   | "signed" ->     Tsigned   linetype
+  | "decimal" when !Flag.ibm -> Tdecimal linetype
 
   | "auto"  ->      Tauto     linetype
   | "register" ->   Tregister linetype
@@ -516,7 +517,7 @@ rule token = parse
 	    (D.PLUS,_,_) | (D.PLUSPLUS,_,_) ->
 	      let info = get_current_line_type lexbuf in
 	      reset_line lexbuf;
-	      TPragma (Ast.Noindent "", info)
+	      TDirective (Ast.Noindent "", info)
 	  | _ -> reset_line lexbuf; token lexbuf
 	end
       else (reset_line lexbuf; token lexbuf) }
@@ -531,15 +532,15 @@ rule token = parse
 	  then (tok lexbuf)
 	  else after in
 	start_line true;
-	TPragma (Ast.Indent str, get_current_line_type lexbuf)
+	TDirective (Ast.Indent str, get_current_line_type lexbuf)
     | _ -> start_line false; token lexbuf }
 
   | "__attribute__" [' ' '\t']* "((" _* "))"
    { match !current_line_type with
       (D.PLUS,_,_) | (D.PLUSPLUS,_,_) ->
 	start_line true;
-	TPragma (Ast.Space (tok lexbuf), get_current_line_type lexbuf)
-    | _ -> failwith "attributes only allowedin + code" }
+	TDirective (Ast.Space (tok lexbuf), get_current_line_type lexbuf)
+    | _ -> failwith "attributes only allowed in + code" }
 
   | "@@" { start_line true; TArobArob }
   | "@"  { pass_zero();
@@ -751,6 +752,8 @@ rule token = parse
 	   (arity,line,lline,offset+off,col+off,strbef,straft,pos),
 	 offset + off + (String.length ident),
 	 col + off + (String.length ident)) }
+  | ("#" [' ' '\t']*  "pragma")
+      { start_line true; TPragma(get_current_line_type lexbuf) }
   | "#" [' ' '\t']* "include" [' ' '\t']* '\"' [^ '\"']+ '\"'
       { TIncludeL
 	  (let str = tok lexbuf in
@@ -772,19 +775,18 @@ rule token = parse
   | "#" [' ' '\t']* "elif" [^'\n']*
   | "#" [' ' '\t']* "endif" [^'\n']*
   | "#" [' ' '\t']* "error" [^'\n']*
-  | "#" [' ' '\t']* "pragma" [^'\n']*
   | "#" [' ' '\t']* "line" [^'\n']*
       { start_line true; check_plus_linetype (tok lexbuf);
-	TPragma (Ast.Noindent(tok lexbuf), get_current_line_type lexbuf) }
+	TDirective (Ast.Noindent(tok lexbuf), get_current_line_type lexbuf) }
   | "/*"
       {
        match !current_line_type with
         (D.PLUS,_,_) | (D.PLUSPLUS,_,_) ->
         start_line true;
-	(* second argument to TPragma is not quite right, because
+	(* second argument to TDirective is not quite right, because
 	   it represents only the first token of the comment, but that
 	   should be good enough *)
-	TPragma (Ast.Indent("/*"^(comment check_comment lexbuf)),
+	TDirective (Ast.Indent("/*"^(comment check_comment lexbuf)),
 		 get_current_line_type lexbuf)
       |	_ -> let _ = comment (fun _ -> ()) lexbuf in token lexbuf }
   | "---" [^'\n']*
