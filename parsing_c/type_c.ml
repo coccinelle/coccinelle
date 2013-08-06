@@ -370,8 +370,6 @@ let lub op t1 t2 =
 	    | _,Ast_c.FloatType(Ast_c.CDouble) -> Some t2
 	    | Ast_c.FloatType(Ast_c.CFloat),_ -> Some t1
 	    | _,Ast_c.FloatType(Ast_c.CFloat) -> Some t2
-	    | Ast_c.FloatType(Ast_c.CDecimal),_ -> Some t1
-	    | _,Ast_c.FloatType(Ast_c.CDecimal) -> Some t2
 
 	    | Ast_c.PtrDiffType,_ -> Some t1
 	    | _,Ast_c.PtrDiffType -> Some t2

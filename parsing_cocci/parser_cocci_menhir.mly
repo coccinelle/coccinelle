@@ -132,6 +132,7 @@ let tmeta_to_ident (name,pure,clt) =
 %token <Data.clt> TInc TDec
 
 %token <string * Data.clt> TString TChar TFloat TInt
+%token <string * string (*n*) * string (*p*) * Data.clt> TDecimalCst
 
 %token <Data.clt> TOrLog
 %token <Data.clt> TAndLog
@@ -1753,6 +1754,9 @@ primary_expr(recurser,primary_extra):
  | TChar
      { let (x,clt) = $1 in
      Ast0.wrap(Ast0.Constant (P.clt2mcode (Ast.Char x) clt)) }
+ | TDecimalCst
+     { let (x,l,p,clt) = $1 in
+     Ast0.wrap(Ast0.Constant (P.clt2mcode (Ast.DecimalConst(x,l,p)) clt)) }
  | TMetaConst
      { let (nm,constraints,pure,ty,clt) = $1 in
      Ast0.wrap

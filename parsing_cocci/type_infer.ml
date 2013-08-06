@@ -123,10 +123,12 @@ let rec propagate_types env =
 		 Ast.String(_) -> Some (T.Pointer(char_type))
 	       | Ast.Char(_) -> Some (char_type)
 	       | Ast.Int(_) -> Some (int_type)
-	       | Ast.Float(_) ->  Some (float_type))
-              (* pad: note that in C can do either ptr(...) or ( *ptr)(...)
-               * so I am not sure this code is enough.
-               *)
+	       | Ast.Float(_) ->  Some (float_type)
+	       | Ast.DecimalConst(_,l,p) ->
+		   Some (T.Decimal(T.Num l, T.Num p)))
+        (* pad: note that in C can do either ptr(...) or ( *ptr)(...)
+         * so I am not sure this code is enough.
+         *)
 	| Ast0.FunCall(fn,lp,args,rp) ->
 	    (match Ast0.get_type fn with
 		 Some (T.FunctionPointer(ty)) -> Some ty

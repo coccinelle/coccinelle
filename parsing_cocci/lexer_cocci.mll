@@ -877,6 +877,16 @@ rule token = parse
       )?
     ) as x) { start_line true; TInt(x,(get_current_line_type lexbuf)) }
 
+  | (decimal ['d' 'D']) as x
+      { if !Flag.ibm
+      then
+	begin
+	  start_line true;
+	  let len = string_of_int(String.length x - 1) in
+          TDecimalCst(x,len,"0",(get_current_line_type lexbuf))
+	end
+      else failwith "unrecognized constant modifier d/D" }
+
   | "<=>"          { TIso }
   | "=>"           { TRightIso }
 
