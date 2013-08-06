@@ -92,7 +92,7 @@ class Analysis(object):
         self.results = []
         
     def add_result(self, location, message, cwe=None, testid=None, notes=None,
-                   trace=None, severity=None, customfields=None):
+                   severity=None, customfields=None):
         """
         Adds a result in the analysis
         
@@ -102,7 +102,7 @@ class Analysis(object):
         """
         self.results.append(self.__build_issue(location, message, cwe=cwe,
                                                testid=testid, notes=notes,
-                                               trace=trace, severity=severity,
+                                               severity=severity,
                                                customfields=customfields))
         
 
@@ -155,6 +155,7 @@ class Analysis(object):
             customfields = firehose.model.CustomFields(customfields)
         
         # TODO: trace -> how to pass a trace from spatch to xml_firehose
+        trace = None
         
         issue = firehose.model.Issue(cwe, testid, location, message, notes,
                                      trace, severity=severity,
