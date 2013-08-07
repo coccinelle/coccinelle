@@ -1511,7 +1511,7 @@ this once an expression_specific token has been seen
 The arg versions don't allow sequences, to avoid conflicting with commas in
 argument lists.
  */
-expr:  basic_expr(expr,invalid) { $1 }
+expr:  pre_basic_expr(expr,invalid) { $1 }
 /* allows ... and nests */
 eexpr: pre_basic_expr(eexpr,dot_expressions) { $1 }
 eargexpr: basic_expr(eexpr,dot_expressions) { $1 } /* no sequences */
