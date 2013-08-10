@@ -235,7 +235,7 @@ class Analysis(object):
             
         else:
             sut = None
-            sys.stdout.write("Warning: sut_type incorrect, should be "
+            sys.stderr.write("Warning: sut_type incorrect, should be "
                              "debian-source, debian-binary or source-rpm\n")
             
         analysis = self.__build_analysis(sut=sut,
