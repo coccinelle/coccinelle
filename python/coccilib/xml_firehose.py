@@ -92,7 +92,7 @@ class Analysis(object):
         self.results = []
         
     def add_result(self, location, message, cwe=None, testid=None, notes=None,
-                   trace=None, severity=None, customfields=None):
+                   severity=None, customfields=None):
         """
         Adds a result in the analysis
         
@@ -102,7 +102,7 @@ class Analysis(object):
         """
         self.results.append(self.__build_issue(location, message, cwe=cwe,
                                                testid=testid, notes=notes,
-                                               trace=trace, severity=severity,
+                                               severity=severity,
                                                customfields=customfields))
         
 
@@ -129,7 +129,7 @@ class Analysis(object):
     def __build_issue(self,
                       location, message,
                       cwe=None, testid=None, notes=None,
-                      trace=None, severity=None, customfields=None):
+                      severity=None, customfields=None):
         """Creates a new Issue() object.
         
         Arguments:
@@ -147,6 +147,15 @@ class Analysis(object):
         """
         location = self.__coccilocation_to_firehoselocation(location[0])
         message = firehose.model.Message(message)
+        
+        if notes is not None:
+            notes = firehose.model.Notes(notes)
+        
+        if customfields is not None:
+            customfields = firehose.model.CustomFields(customfields)
+        
+        # TODO: trace -> how to pass a trace from spatch to xml_firehose
+        trace = None
         
         issue = firehose.model.Issue(cwe, testid, location, message, notes,
                                      trace, severity=severity,
@@ -226,7 +235,7 @@ class Analysis(object):
             
         else:
             sut = None
-            sys.stdout.write("Warning: sut_type incorrect, should be "
+            sys.stderr.write("Warning: sut_type incorrect, should be "
                              "debian-source, debian-binary or source-rpm\n")
             
         analysis = self.__build_analysis(sut=sut,
