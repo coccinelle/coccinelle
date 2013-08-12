@@ -10,7 +10,7 @@ open Osetb
 
 
 (* Difference with ograph_extended ? why not share code ? could, but
- * in ograph_extended we dont force the user to have a key and we
+ * in ograph_extended we don't force the user to have a key and we
  * generate those keys as he add nodes. Here we assume the user already
  * have an idea of what kind of key he wants to use (a string, a
  * filename, a, int, whatever)

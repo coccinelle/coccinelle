@@ -571,7 +571,7 @@ let mk_pretty_printers
 
 	    (match x with
 	      (Simple (nameopt, typ)), iivirg ->
-              (* first var cant have a preceding ',' *)
+              (* first var cannot have a preceding ',' *)
 		assert (List.length iivirg =|= 0);
 		let identinfo =
                   match nameopt with
@@ -581,7 +581,7 @@ let mk_pretty_printers
 		pp_type_with_ident identinfo None typ Ast_c.noattr;
 		
 	    | (BitField (nameopt, typ, iidot, expr)), iivirg ->
-                      (* first var cant have a preceding ',' *)
+                      (* first var cannot have a preceding ',' *)
 		assert (List.length iivirg =|= 0);
 		(match nameopt with
 		| None ->
@@ -656,7 +656,7 @@ let mk_pretty_printers
     | CppDirectiveStruct cpp -> pp_directive cpp
     | IfdefStruct ifdef -> pp_ifdef ifdef
 
-(* used because of DeclList, in    int i,*j[23];  we dont print anymore the
+(* used because of DeclList, in    int i,*j[23];  we don't print anymore the
    int before *j *)
   and (pp_type_with_ident_rest: (string * info) option ->
     fullType -> attribute list -> unit) =

@@ -590,7 +590,7 @@ let rule_fn tls in_plus env neg_pos =
 	let was_bot = minuses = True in
 	let new_minuses = filter_combine minuses in_plus in
 	let new_plusses = Common.union_set plusses in_plus in
-	(* perhaps it should be build_and here?  we don't realy have multiple
+	(* perhaps it should be build_and here?  we don't really have multiple
 	   minirules anymore anyway. *)
 	match new_minuses with
 	  True ->

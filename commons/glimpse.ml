@@ -9,7 +9,7 @@ type glimpse_search =
   (* -i insensitive search *)
   | GlimpseCaseInsensitive
   (* -w match on complete words. But not always good idea, for instance
-   * if file contain chazarain_j then dont work with -w
+   * if file contain chazarain_j then don't work with -w
    *)
   | GlimpseWholeWord
 
@@ -47,12 +47,12 @@ let s_of_glimpse_options xs =
  * note:
  *  - -o or -b for glimpseindex => bigger index, faster search
  *  - no need to use -b with our way to use glimpse
- *    cos we use -l so dont need to know what is the place of the word
+ *    cos we use -l so don't need to know what is the place of the word
  *    in the file
  *  - -f is for incremental indexing. Handle when files are deleted ?
  *    I think that not that bad cos yes certainly in the index there will
  *    have some  no-more-valid pointers, but as glimpse actually then do
- *    a real search on the file, he will see that dont exist anymore and
+ *    a real search on the file, he will see that don't exist anymore and
  *    so using -f is slower but very very little slower
  *  - for -z the order is important in .glimpse_filters => put
  *    the case of compressed file first
@@ -63,7 +63,7 @@ let s_of_glimpse_options xs =
  *
  *
  * Note que glimpseindex index pas forcement tous les fichiers texte.
- * Si le fichier texte est trop petit, contient par exemple un seul mot,
+ * Si le type texte est trop petit, contient par example un seul mot,
  * alors il l'indexe pas. Si veut indexer quand meme, il faudrait ajouter
  * l'option -E
  *
@@ -120,7 +120,7 @@ let glimpseindex_files files indexdir =
  *  - -N also just show the filename on output
  *  - -l show just the filename too, but the files are still searched so
  *    at least no false positives.
- *  - if use -z for glimpseindex, dont forget the -z too for glimpse
+ *  - if use -z for glimpseindex, don't forget the -z too for glimpse
  *  - -W for boolean and queries to not be done on line level but file level
  *
  *  query langage: good;bad  for conjunction.   good,bad for disjunction.

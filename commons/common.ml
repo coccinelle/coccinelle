@@ -659,7 +659,7 @@ let profile_start category = failwith "todo"
 let profile_end category = failwith "todo"
 
 
-(* subtil: don't forget to give all argumens to f, otherwise partial app
+(* subtil: don't forget to give all arguments to f, otherwise partial app
  * and will profile nothing.
  *
  * todo: try also detect when complexity augment each time, so can
@@ -907,7 +907,7 @@ let b = oneof [always true; always false] ()
 let b = frequency [3, always true; 2, always false] ()
 *)
 
-(* cant do this:
+(* cannot do this:
  *    let rec (lg: ('a gen) -> ('a list) gen) = fun gen -> oneofl [[]; lg gen ()]
  * nor
  *    let rec (lg: ('a gen) -> ('a list) gen) = fun gen -> oneof [always []; lg gen]
@@ -1085,7 +1085,7 @@ let print_list pr xs =
     print_string "]";
   end
 
-(* specialised
+(* specialized
 let (string_of_list: char list -> string) =
   List.fold_left (fun acc x -> acc^(Char.escaped x)) ""
 *)
@@ -1180,7 +1180,7 @@ let t = macro_expand "type 'a bintree = Leaf of 'a | Branch of ('a bintree * 'a 
 (* Composition/Control *)
 (*****************************************************************************)
 
-(* I like the obj.func object notation. In OCaml cant use '.' so I use +>
+(* I like the obj.func object notation. In OCaml cannot use '.' so I use +>
  *
  * update: it seems that F# agrees with me :) but they use |>
  *)
@@ -1384,7 +1384,7 @@ let release_file_lock filename =
 
 
 (*****************************************************************************)
-(* Error managment *)
+(* Error management *)
 (*****************************************************************************)
 
 exception Todo
@@ -1413,7 +1413,7 @@ let myassert cond = if cond then () else failwith "assert error"
  *
  * The need for printf make me force to name stuff :(
  * How avoid ? use 'it' special keyword ?
- * In fact dont have to name it, use +> (fun v -> ...)  so when want
+ * In fact don't have to name it, use +> (fun v -> ...)  so when want
  * erase debug just have to erase one line.
  *)
 let warning s v = (pr2 ("Warning: " ^ s ^ "; value = " ^ (Dumper.dump v)); v)
@@ -1428,7 +1428,7 @@ let exn_to_s exn =
 let string_of_exn exn = exn_to_s exn
 
 
-(* want or of merd, but cant cos cant put die ... in b (strict call) *)
+(* want or of merd, but cannot cos cannot put die ... in b (strict call) *)
 let (|||) a b = try a with _ -> b
 
 (* emacs/lisp inspiration, (vouillon does that too in unison I think) *)
@@ -1479,7 +1479,7 @@ let _init_gc_stack =
 
 
 
-(* if process a big set of files then dont want get overflow in the middle
+(* if process a big set of files then don't want get overflow in the middle
  * so for this we are ready to spend some extra time at the beginning that
  * could save far more later.
  *)
@@ -1524,7 +1524,7 @@ let check_stack_nbfiles nbfiles =
  * why not use strings and do stuff like the following
  * 'if (get_config "verbose_parsing") then ...'
  * Because I want to make the interface for flags easier for the code
- * that use it. The programmer should not be bothered wether this
+ * that use it. The programmer should not be bothered whether this
  * flag is set via args cmd line or a config file, so I want to make it
  * as simple as possible, just use a global plain caml ref variable.
  *
@@ -1542,7 +1542,7 @@ let check_stack_nbfiles nbfiles =
  * and so have to wait for parse_options, which in turn need the options
  * spec, so circle.
  *
- * Also I dont want to mix code with data structures, so it's better that the
+ * Also I don't want to mix code with data structures, so it's better that the
  * options variable contain just a few stuff and have no side effects except
  * setting global variables.
  *
@@ -1557,7 +1557,7 @@ let check_stack_nbfiles nbfiles =
  * todo? isn't unison or scott-mcpeak-lib-in-cil handles that kind of
  * stuff better ? That is the need to localize command line argument
  * while still being able to gathering them. Same for logging.
- * Similiar to the type prof = PALL | PNONE | PSOME of string list.
+ * Similar to the type prof = PALL | PNONE | PSOME of string list.
  * Same spirit of fine grain config in log4j ?
  *
  * todo? how mercurial/cvs/git manage command line options ? because they
@@ -1768,7 +1768,7 @@ let (=$=) : string -> string -> bool = (=)
 let (=:=) : bool   -> bool   -> bool = (=)
 
 (* the evil generic (=). I define another symbol to more easily detect
- * it, cos the '=' sign is syntaxically overloaded in caml. It is also
+ * it, cos the '=' sign is syntactically overloaded in caml. It is also
  * used to define function.
  *)
 let (=*=) = (=)
@@ -2346,7 +2346,7 @@ let lowercase = String.lowercase
 
 let quote s = "\"" ^ s ^ "\""
 
-(* easier to have this to be passed as hof, because ocaml dont have
+(* easier to have this to be passed as hof, because ocaml don't have
  * haskell "section" operators
  *)
 let null_string s =
@@ -2402,7 +2402,7 @@ let size_ko i =
  *
  * Dynamic programming technique
  * base:
- * D(i,0) = i  for all i (cos to go from S1[1..i] to 0 characteres of S2 you have to delete all characters from S1[1..i]
+ * D(i,0) = i  for all i (cos to go from S1[1..i] to 0 characters of S2 you have to delete all characters from S1[1..i]
  * D(0,j) = j  for all j (cos j characters must be inserted)
  * recurrence:
  * D(i,j) = min([D(i-1, j)+1, D(i, j - 1 + 1), D(i-1, j-1) + t(i,j)])
@@ -3080,7 +3080,7 @@ let (lines_with_nl: string -> string list) = fun s ->
   (time_func (fun () -> Str.split_delim (Str.regexp "\n") s)) +> lines_aux
 
 (* in fact better make it return always complete lines, simplify *)
-(*  Str.split, but lines "\n1\n2\n" dont return the \n and forget the first \n => split_delim better than split *)
+(*  Str.split, but lines "\n1\n2\n" don't return the \n and forget the first \n => split_delim better than split *)
 (* +> List.map (fun s -> s ^ "\n") but add an \n even at the end => lines_aux *)
 (* old: slow
   let chars = list_of_string s in
@@ -3121,7 +3121,7 @@ let cat_orig file =
   let chan = open_in file in
   let rec cat_orig_aux ()  =
     try
-      (* cant do input_line chan::aux() cos ocaml eval from right to left ! *)
+      (* cannot do input_line chan::aux() cos ocaml eval from right to left ! *)
       let l = input_line chan in
       l :: cat_orig_aux ()
     with End_of_file -> [] in
@@ -3131,7 +3131,7 @@ let cat_orig file =
 let cat file =
   let chan = open_in file in
   let rec cat_aux acc ()  =
-      (* cant do input_line chan::aux() cos ocaml eval from right to left ! *)
+      (* cannot do input_line chan::aux() cos ocaml eval from right to left ! *)
     let (b, l) = try (true, input_line chan) with End_of_file -> (false, "") in
     if b
     then cat_aux (l::acc) ()
@@ -3149,7 +3149,7 @@ let interpolate str =
     cat "/tmp/caml"
   end
 
-(* could do a print_string but printf dont like print_string *)
+(* could do a print_string but printf don't like print_string *)
 let echo s = printf "%s" s; flush stdout; s
 
 let usleep s = for i = 1 to s do () done
@@ -3308,7 +3308,7 @@ let (readdir_to_dir_size_list: string -> (string * int) list) = fun path ->
 
 (* could be in control section too *)
 
-(* Why a use_cache argument ? because sometimes want disable it but dont
+(* Why a use_cache argument ? because sometimes want disable it but don't
  * want put the cache_computation funcall in comment, so just easier to
  * pass this extra option.
  *)
@@ -3397,7 +3397,7 @@ let cache_computation_robust_in_dir a b c d e f =
 
 
 
-(* dont forget that cmd_to_list call bash and so pattern may contain
+(* don't forget that cmd_to_list call bash and so pattern may contain
  * '*' symbols that will be expanded, so can do  glob "*.c"
  *)
 let glob pattern =
@@ -4335,7 +4335,7 @@ let rec realCombinaison = function
       res2 ++ res ++ [[a]]
 
 (* genere toutes les combinaisons possible de paire      *)
-(* par exemple combinaison [1;2;4] -> [1, 2; 1, 4; 2, 4] *)
+(* par example combinaison [1;2;4] -> [1, 2; 1, 4; 2, 4] *)
 let rec combinaison = function
   | [] -> []
   | [a] -> []
@@ -5204,7 +5204,7 @@ let rec (equal: 'a graph -> 'a graph -> bool) = fun g1 g2 ->
        List.mem (List.assoc i1 conv, List.assoc i2 conv) arcs2)
      arcs1
       && (List.length arcs1 = List.length arcs2)
-    (* could think that only forall is needed, but need check same lenth too*)
+    (* could think that only forall is needed, but need check same length too*)
   with _ -> false
 
 let (display: 'a graph -> ('a -> unit) -> unit) = fun g display_func ->
@@ -5227,7 +5227,7 @@ let (display_dot: 'a graph -> ('a -> string) -> unit)= fun (nodes,arcs) func ->
   close_out file;
   let status = Unix.system "viewdot test.dot" in
   ()
-(* todo: faire = graphe (int can change !!! => cant make simply =)
+(* todo: faire = graphe (int can change !!! => cannot make simply =)
    reassign number first !!
  *)
 
@@ -6094,7 +6094,7 @@ let main_boilerplate f =
       Sys.set_signal Sys.sigint (Sys.Signal_handle   (fun _ ->
         pr2 "C-c intercepted, will do some cleaning before exiting";
         (* But if do some try ... with e -> and if do not reraise the exn,
-         * the bubble never goes at top and so I cant really C-c.
+         * the bubble never goes at top and so I cannot really C-c.
          *
          * A solution would be to not raise, but do the erase_temp_file in the
          * syshandler, here, and then exit.

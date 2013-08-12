@@ -15,7 +15,7 @@ open Common
  * Some features/notes:
  * - views a la wadler to make it cool (I hate get/set).
  * - take list in parameters to be able to construct value as is easily
- * - take the comparaison function in parameters (=> functorial set made cool)
+ * - take the comparison function in parameters (=> functorial set made cool)
  *   make l [], h [], ... as in perl, and pass the func from pervasive
  *   in oo form (list, ...)
  * - pure/impure: could put 2 interface, with one that show that inpure
@@ -26,7 +26,7 @@ open Common
  *
  * - pb binary methods: use tosetb tricks, or via (not safe) Obj.magic.
  * - array/list are both a sequence _and_ a dictionnary, so are both
- *   a collection(a) and a collection(i,a) at the same time. But cant do that.
+ *   a collection(a) and a collection(i,a) at the same time. But cannot do that.
  *   So for array, I see it mainly as an assoc => favor assoc, and
  *   for list, I see it mainly as a collection => favor collection
  *
@@ -42,7 +42,7 @@ open Common
  * ?? I define those classes cos their name are cool, say what is intended to
  * do with
  *
- * todo: cf book on algo, a la rivest/sedgewick
+ * todo: cf book on algorithm, a la rivest/sedgewick
  * todo: recreate collection hierarchy, inspire smalltalk ? haskell ? merd ?
  * todo: put a clean sequence (inherit collection) and make array a special
  * class

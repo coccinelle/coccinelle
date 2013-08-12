@@ -62,7 +62,7 @@ module XMATCH = struct
     binding: Lib_engine.metavars_binding;
     binding0: Lib_engine.metavars_binding; (* inherited bindings *)
   }
-  (* 'x is a ('a * 'b) but in fact dont care about 'b, we just tag the SP *)
+  (* 'x is a ('a * 'b) but in fact don't care about 'b, we just tag the SP *)
   (* opti? use set instead of list *)
   type 'x tout = ('x * Lib_engine.metavars_binding) list
 
@@ -322,7 +322,7 @@ module XMATCH = struct
   (* pre: if have declared a new metavar that hide another one, then
    * must be passed with a binding that deleted this metavar
    *
-   * Here we dont use the keep argument of julia. cf f(X,X), J'ai
+   * Here we don't use the keep argument of julia. cf f(X,X), J'ai
    * besoin de garder le X en interne, meme si julia s'en fout elle du
    * X et qu'elle a mis X a DontSaved.
    *)

@@ -213,7 +213,7 @@ let is_ident_like = function
 (*****************************************************************************)
 
 (* Because ocamlyacc force us to do it that way. The ocamlyacc token
- * cant be a pair of a sum type, it must be directly a sum type.
+ * cannot be a pair of a sum type, it must be directly a sum type.
  *)
 let info_of_tok = function
   | TString ((string, isWchar), i) -> i

@@ -590,7 +590,7 @@ static int nsp_dataphase_bypass(Scsi_Cmnd *SCpnt, nsp_hw_data *data)
 
 	/*
 	 * XXX: NSP_QUIRK
-	 * data phase skip only occures in case of SCSI_LOW_READ
+	 * data phase skip only occurs in case of SCSI_LOW_READ
 	 */
 	DEBUG(0, " use bypass quirk\n");
 	SCpnt->SCp.phase = PH_DATA;
@@ -674,7 +674,7 @@ static void nsp_pio_read(Scsi_Cmnd *SCpnt, nsp_hw_data *data)
 
 		res = nsp_fifo_count(SCpnt) - ocount;
 		//DEBUG(0, " ptr=0x%p this=0x%x ocount=0x%x res=0x%x\n", SCpnt->SCp.ptr, SCpnt->SCp.this_residual, ocount, res);
-		if (res == 0) { /* if some data avilable ? */
+		if (res == 0) { /* if some data available ? */
 			if (stat == BUSPHASE_DATA_IN) { /* phase changed? */
 				//DEBUG(0, " wait for data this=%d\n", SCpnt->SCp.this_residual);
 				continue;
@@ -717,7 +717,7 @@ static void nsp_pio_read(Scsi_Cmnd *SCpnt, nsp_hw_data *data)
 		ocount			 += res;
 		//DEBUG(0, " ptr=0x%p this_residual=0x%x ocount=0x%x\n", SCpnt->SCp.ptr, SCpnt->SCp.this_residual, ocount);
 
-		/* go to next scatter list if availavle */
+		/* go to next scatter list if available */
 		if (SCpnt->SCp.this_residual	== 0 &&
 		    SCpnt->SCp.buffers_residual != 0 ) {
 			//DEBUG(0, " scatterlist next timeout=%d\n", time_out);
@@ -809,7 +809,7 @@ static void nsp_pio_write(Scsi_Cmnd *SCpnt, nsp_hw_data *data)
 		SCpnt->SCp.this_residual -= res;
 		ocount			 += res;
 
-		/* go to next scatter list if availavle */
+		/* go to next scatter list if available */
 		if (SCpnt->SCp.this_residual	== 0 &&
 		    SCpnt->SCp.buffers_residual != 0 ) {
 			//DEBUG(0, " scatterlist next\n");
@@ -844,7 +844,7 @@ static int nsp_nexus(Scsi_Cmnd *SCpnt, nsp_hw_data *data)
 
 	//DEBUG(0, "%s: in SCpnt=0x%p\n", __FUNCTION__, SCpnt);
 
-	/* setup synch transfer registers */
+	/* setup sync transfer registers */
 	nsp_index_write(base, SYNCREG,	sync->SyncRegister);
 	nsp_index_write(base, ACKWIDTH, sync->AckWidth);
 
@@ -1020,7 +1020,7 @@ static void nspintr(int irq, void *dev_id, struct pt_regs *regs)
 			tmpSC->scsi_done(tmpSC);
 			return;
 		}
-		/* fall thru */
+		/* fall through */
 	default:
 		if ((i_src & (IRQSTATUS_SCSI | IRQSTATUS_FIFO)) == 0) {
 			return;

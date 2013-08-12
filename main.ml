@@ -1176,7 +1176,7 @@ let main () =
 	Testing.test_parse_cocci !cocci_file
 
      (* I think this is used by some scripts in some Makefile for our
-      * big-tests. So dont remove.
+      * big-tests. So don't remove.
       *)
     | [file1;file2] when !action =$= "--compare-c" ->
        Test_parsing_c.test_compare_c file1 file2 (* result = unix code *)

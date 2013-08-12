@@ -67,7 +67,7 @@ val save_tmp_files : bool ref
 type filename = string
 type dirname = string
 
-(* Trick in case you dont want to do an 'open Common' while still wanting
+(* Trick in case you don't want to do an 'open Common' while still wanting
  * more pervasive types than the one in Pervasives. Just do the selective
  * open Common.BasicType.
  *)
@@ -435,7 +435,7 @@ val cache_computation :
  *)
 val cache_computation_robust :
   filename ->
-  string (* extension for marshalled object *) ->
+  string (* extension for marshaled object *) ->
   (filename list * 'x) ->
   string (* extension for marshalled dependencies *) ->
   (unit -> 'a) ->
@@ -445,7 +445,7 @@ val cache_computation_robust_in_dir :
   string option (* destination directory *) -> filename ->
   string (* extension for marshalled object *) ->
   (filename list * 'x) ->
-  string (* extension for marshalled dependencies *) ->
+  string (* extension for marshaled dependencies *) ->
   (unit -> 'a) ->
   'a
 
@@ -602,7 +602,7 @@ val (=*=): 'a -> 'a -> bool
  * val (=): unit -> unit -> bool
  *
  * But it will not forbid you to use caml functions like List.find, List.mem
- * which internaly use this convenient but evolution-unfriendly (=)
+ * which internally use this convenient but evolution-unfriendly (=)
 *)
 
 
@@ -1679,7 +1679,7 @@ val tree_iter : ('a -> unit) -> 'a tree -> unit
 
 
 (*****************************************************************************)
-(* N-ary tree with updatable childrens *)
+(* N-ary tree with updatable children *)
 (*****************************************************************************)
 
 (* no empty tree, must have one root at least *)
@@ -1938,7 +1938,7 @@ val error_message_short : filename -> (string * int) -> string
 val error_messagebis : filename -> (string * int) -> int -> string
 
 (*****************************************************************************)
-(* Scope managment (cocci) *)
+(* Scope management (cocci) *)
 (*****************************************************************************)
 
 (* for example of use, see the code used in coccinelle *)

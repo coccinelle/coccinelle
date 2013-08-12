@@ -207,7 +207,7 @@ let test_parse_i xs =
 
 (* ---------------------------------------------------------------------- *)
 (* file can be   "foo.c"  or "foo.c:main" *)
-(* local function that is parameterized by whether to launch gv *)
+(* local function that is parametrized by whether to launch gv *)
 let local_test_cfg launchgv file =
   let (file, specific_func) =
     if file =~ "\\(.*\\.c\\):\\(.*\\)"

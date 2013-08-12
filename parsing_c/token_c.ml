@@ -31,7 +31,7 @@ open Common
  *
  * Also, ocamlyacc imposes some stupid constraints on the way we can define
  * the token type. ocamlyacc forces us to do a token type that
- * cant be a pair of a sum type, it must be directly a sum type.
+ * cannot be a pair of a sum type, it must be directly a sum type.
  * We don't have this constraint here.
  *
  * Also, some yacc tokens are not used in the grammar because they are filtered

@@ -29,7 +29,7 @@ object(o: 'o)
     o#length =|= 1
   method cardinal: int = (* just to keep naming conventions *)
     o#length
-      (* dont work:
+      (* don't work:
          method big_union: 'b. ('a -> 'b oset) -> 'b oset = fun f -> todo()
       *)
 
@@ -42,7 +42,7 @@ let ($--$) xs ys = xs#minus ys
 let ($<<=$) xs ys = xs#is_subset_of ys
 let ($==$) xs ys = xs#is_equal ys
 
-(* todo: pas beau le seed.  I dont put the type otherwise have to
+(* todo: pas beau le seed.  I don't put the type otherwise have to
  * put explicit :>
  *)
 let (mapo: ('a -> 'b) -> 'b oset -> 'a oset -> 'b oset) = fun f seed xs ->

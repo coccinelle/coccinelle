@@ -141,7 +141,7 @@ let add_link root pred_opt explicit =
    suffix links
    ------------ *)
 
-(* get the node refered by the suffix link at [n] *)
+(* get the node referred by the suffix link at [n] *)
 (*
 let suffix_link (root : node) (n : node) : node =
   match n.link with

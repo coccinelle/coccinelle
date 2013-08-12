@@ -1029,7 +1029,7 @@ let add_newlines toks tabbing_unit =
       let sp = ref " " in
       let cocci_count = string_length s count in
       let space_cell = Some (cocci_count+1,sp) in (* count before space *)
-      let newcount = cocci_count + 2 in (* count incuding space *)
+      let newcount = cocci_count + 2 in (* count including space *)
       let future_count =
         string_length (TH.str_of_tok codetok) newcount in
       let b = T2(commatok,Ctx,idx,
@@ -1047,7 +1047,7 @@ let add_newlines toks tabbing_unit =
       let x = List.hd stack in
       let sp = ref " " in
       let space_cell = Some (count+1,sp) in (* count before space *)
-      let newcount = count + 2 in (* count incuding space *)
+      let newcount = count + 2 in (* count including space *)
       let future_count = string_length s newcount in
       let a = T2(commatok,Ctx,idx,
         Some (Unparse_cocci.SpaceOrNewline sp)) in
@@ -1288,7 +1288,7 @@ loop (tu,current_tab) in
       x::aux true xs
     | ((Cocci2("{",_,_,_,_)) as a)::xs -> a::aux true xs
     | ((Cocci2("\n",_,_,_,_)) as x)::xs ->
-      (* dont inline in expr because of weird eval order of ocaml *)
+      (* don't inline in expr because of weird eval order of ocaml *)
       let s = String.concat "" !_current_tabbing in
       (* can't be C2, for later phases *)
       x::Cocci2 (s,-1,-1,-1,None)::aux started xs

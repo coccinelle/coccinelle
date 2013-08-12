@@ -222,7 +222,7 @@ J. Preserve the network location, if any, given in the Document for
    publisher of the version it refers to gives permission.
 K. For any section Entitled "Acknowledgements" or "Dedications",
    Preserve the Title of the section, and preserve in the section all
-   the substance and tone of each of the contributor acknowledgements
+   the substance and tone of each of the contributor acknowledgments
    and/or dedications given therein.
 L. Preserve all the Invariant Sections of the Document,
    unaltered in their text and in their titles.  Section numbers

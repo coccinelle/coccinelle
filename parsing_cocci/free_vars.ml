@@ -47,7 +47,7 @@ let collect_refs include_constraints =
   (* the following considers that anything that occurs non-unitarily in one
      branch occurs nonunitarily in all branches.  This is not optimal, but
      doing better seems to require a breadth-first traversal, which is
-     perhaps better to avoid.  Also, unitarily is represented as occuring once,
+     perhaps better to avoid.  Also, unitarily is represented as occurring once,
      while nonunitarily is represented as twice - more is irrelevant *)
   (* cases for disjs and metavars *)
   let bind_disj refs_branches =

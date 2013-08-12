@@ -1070,7 +1070,7 @@ let build_info_program (cprogram,typedefs,macros) env =
 
 
 
-(* Optimisation. Try not unparse/reparse the whole file when have modifs  *)
+(* Optimization. Try not unparse/reparse the whole file when have modifs  *)
 let rebuild_info_program cs file isexp =
   cs +> List.map (fun c ->
     if !(c.was_modified)
@@ -1228,13 +1228,13 @@ let end_env env =
  * match, will return a Left, with an empty transformation_info,
  * and so current_binding will grow. On the contrary if the first
  * region must bind some metavariables used after, and that we
- * dont find any such region, then mysat() will returns lots of
+ * don't find any such region, then mysat() will returns lots of
  * Right, and current_binding will not grow, and so we will have
  * an empty list of binding, and we will catch such a case.
  *
  * opti: julia says that because the binding is
  * determined by the used_after_list, the items in the list
- * are kind of sorted, so could optimise the insert_set operations.
+ * are kind of sorted, so could optimize the insert_set operations.
  *)
 
 
@@ -1656,8 +1656,8 @@ and process_a_ctl_a_env_a_toplevel2 r e c f =
 	       try
                (* les "more than one var in a decl" et "already tagged token"
                 * font crasher coccinelle. Si on a 5 fichiers, donc on a 5
-                * failed. Le try limite le scope des crashes pendant la
-                * trasformation au fichier concerne. *)
+                * failed. Le try limit le scope des crashes pendant la
+                * transformation au type concerne. *)
 
                (* modify ast via side effect *)
 		 ignore
@@ -1747,7 +1747,7 @@ let rec bigloop2 rs (ccs: file_info list) =
      * still call rebuild_info_c_and_headers to pretty print the
      * action (MINUS), so that later the diff will show what was
      * matched by sgrep. But we don't want the parsing error message
-     * hence the following flag setting. So this code propably
+     * hence the following flag setting. So this code probably
      * will generate a NotParsedCorrectly for the matched parts
      * and the very final pretty print and diff will work
      *)
@@ -1901,7 +1901,7 @@ let full_engine2 (cocci_infos,toks) cfiles =
 
   show_or_not_cfiles  cfiles;
 
-  (* optimisation allowing to launch coccinelle on all the drivers *)
+  (* optimization allowing to launch coccinelle on all the drivers *)
   if !Flag_cocci.worth_trying_opt && not (worth_trying cfiles toks)
   then
     begin

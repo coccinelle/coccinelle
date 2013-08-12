@@ -158,7 +158,7 @@ let print_type keep info = function
       print_string " */"*)
 
 (* --------------------------------------------------------------------- *)
-(* Contraint on Identifier and Function *)
+(* Constraint on Identifier and Function *)
 (* FIXME: Not called at the moment *)
 
 let rec idconstraint = function

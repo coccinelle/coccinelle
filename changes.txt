@@ -121,7 +121,7 @@
   compiler and the C compiler and preprocessor).
 - Add line number directives to the .ml file generated from a .cocci file
 - Added 'make check' as an alternative to 'make test'. It can run after
-  building spatch, checks whether some featues work (python and ocaml scripts,
+  building spatch, checks whether some features work (python and ocaml scripts,
   regexes) if these features are enabled, and then launches the test suite
   with a 75% success rate requirement. It also does not ask for user input
   and can be used in autonomous builds.
@@ -348,7 +348,7 @@
 - matching of array initializations and of enum declarations
 
 ** Features:
-- compatability with Python 2.7.  Thanks to Richard W.M. Jones for pointing
+- compatibility with Python 2.7.  Thanks to Richard W.M. Jones for pointing
   out the problem
 - python and ocaml string representations of parameter lists and expression
   lists
@@ -735,7 +735,7 @@
   Thanks to Erik Hovland for an example that shows the problem.
 
 ** Internals:
-- supress warning in compiling ocamlsexp (warning caused by a new behavior
+- suppress warning in compiling ocamlsexp (warning caused by a new behavior
   of cpp used internally in processing files in ocamlsexp/)
 
 * 0.1.7
@@ -759,7 +759,7 @@
 - allow . as the name of the directory
 - for type inference for an assignment, take the type of the right-hand
   side expression, not the type of the assigned variable
-- allow for with a declartion in the first header element, as in C++
+- allow for with a declaration in the first header element, as in C++
   (partial support)
 - allow for matching against variable declarations that include only
   storage, eg static, but no type at all.

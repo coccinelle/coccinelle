@@ -533,7 +533,7 @@ let dup_positions rules =
 	  (List.map r.VT0.combiner_rec_expression explist)
     | _ -> k e in
 
-  let typeC r k e = (* not sure relevent because "only after iso" *)
+  let typeC r k e = (* not sure relevant because "only after iso" *)
     match Ast0.unwrap e with
       Ast0.DisjType(_,types,_,_) ->
 	List.fold_left Common.union_set option_default

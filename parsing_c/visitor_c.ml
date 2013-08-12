@@ -22,7 +22,7 @@ module F = Control_flow_c
 (* Prelude *)
 (*****************************************************************************)
 
-(* todo? dont go in Include. Have a visitor flag ? disable_go_include ?
+(* todo? don't go in Include. Have a visitor flag ? disable_go_include ?
  * disable_go_type_annotation ?
  *)
 
@@ -124,7 +124,7 @@ let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_visit
  *      end in analysis#expr
  *
  * The problem is that you don't have control about what is generated
- * and in our case we sometimes dont want to visit too much. For instance
+ * and in our case we sometimes don't want to visit too much. For instance
  * our visitor don't recurse on the type annotation of expressions
  * Ok, this could be worked around, but the pb remains, you
  * don't have control and at some point you may want. In the same
@@ -286,7 +286,7 @@ let rec vk_expr = fun bigf expr ->
   let iif ii = vk_ii bigf ii in
 
   let rec exprf e = bigf.kexpr (k,bigf) e
-  (* !!! dont go in _typ !!! *)
+  (* !!! don't go in _typ !!! *)
   and k ((e,_typ), ii) =
     iif ii;
     match e with
@@ -470,7 +470,7 @@ and vk_type = fun bigf t ->
     | StructUnionName (s, structunion) -> ()
     | EnumName  s -> ()
 
-    (* dont go in _typ *)
+    (* don't go in _typ *)
     | TypeName (name,_typ) ->
         vk_name bigf name
 
@@ -526,7 +526,7 @@ and vk_onedecl = fun bigf onedecl ->
       v_attr = attrs})  ->
 
     vk_type bigf t;
-    (* dont go in tbis *)
+    (* don't go in tbis *)
     attrs +> List.iter (vk_attribute bigf);
     var +> Common.do_option (fun (name, iniopt) ->
       vk_name bigf name;

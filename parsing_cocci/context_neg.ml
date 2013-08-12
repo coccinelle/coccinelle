@@ -860,7 +860,7 @@ let contextify_whencode =
 (* --------------------------------------------------------------------- *)
 
 (* the first int list is the tokens in the node, the second is the tokens
-in the descendents *)
+in the descendants *)
 let minus_table =
   (Hashtbl.create(50) : (int list, Ast0.anything * int list list) Hashtbl.t)
 let plus_table =

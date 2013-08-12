@@ -76,7 +76,7 @@ let is_known_typdef =
       )
     )
 
-(* note: cant use partial application with let msg_typedef =
+(* note: cannot use partial application with let msg_typedef =
  * because it would compute msg_typedef at compile time when
  * the flag debug_typedef is always false
  *)
@@ -2390,7 +2390,7 @@ let lookahead2 ~pass next before =
 
         if (LP.current_context () =*= LP.InInitializer)
         then begin
-          pr2_cpp "In Initializer passing"; (* cheat: dont count in stat *)
+          pr2_cpp "In Initializer passing"; (* cheat: don't count in stat *)
           incr Stat.nIfdefInitializer;
         end else begin
           pr2_cpp("IFDEF: or related inside function. I treat it as comment");

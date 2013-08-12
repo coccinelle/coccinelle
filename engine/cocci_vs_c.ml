@@ -810,7 +810,7 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 		     "I have no token that I could accroche myself on"*)
                     else return (dots2metavar mcode, [])
 		  else
-                (* subtil: we dont want the '...' to match until the
+                (* subtil: we don't want the '...' to match until the
                    * comma. cf -test pb_params_iso. We would get at
                    * "already tagged" error.
                    * this is because both f (... x, ...) and f (..., x, ...)
@@ -844,7 +844,7 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 				       )
 			)))
 	    | Some ia1, ebs ->
-          (* allow ',' to maching nothing. optional comma trick *)
+          (* allow ',' to matching nothing. optional comma trick *)
 		Some
 		  (if mcode_contain_plus (mcodekind ia1)
 		  then fail
@@ -2885,7 +2885,7 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
       (* In ii there is a list, sometimes of length 1 or 2 or 3.
        * And even if in baseb we have a Signed Int, that does not mean
        * that ii is of length 2, cos Signed is the default, so if in signa
-       * we have Signed explicitly ? we cant "accrocher" this mcode to
+       * we have Signed explicitly ? we cannot "accrocher" this mcode to
        * something :( So for the moment when there is signed in cocci,
        * we force that there is a signed in c too (done in pattern.ml).
        *)
@@ -3007,7 +3007,7 @@ and simulate_signed_meta ta basea signaopt tb baseb ii rebuilda =
       (* In ii there is a list, sometimes of length 1 or 2 or 3.
        * And even if in baseb we have a Signed Int, that does not mean
        * that ii is of length 2, cos Signed is the default, so if in signa
-       * we have Signed explicitely ? we cant "accrocher" this mcode to
+       * we have Signed explicitly ? we cannot "accrocher" this mcode to
        * something :( So for the moment when there is signed in cocci,
        * we force that there is a signed in c too (done in pattern.ml).
        *)
@@ -3877,7 +3877,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 
   | _, F.Enter | _, F.Exit | _, F.ErrorExit -> fail2()
 
-  (* the metaRuleElem contains just '-' information. We dont need to add
+  (* the metaRuleElem contains just '-' information. We don't need to add
    * stuff in the environment. If we need stuff in environment, because
    * there is a + S somewhere, then this will be done via MetaStmt, not
    * via MetaRuleElem.
@@ -3933,7 +3933,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
       )
 
 
-  (* rene cant have found that a state containing a fake/exit/... should be
+  (* rene cannot have found that a state containing a fake/exit/... should be
    * transformed
    * TODO: and F.Fake ?
    *)

@@ -370,7 +370,7 @@ module XTRANS = struct
           *)
              begin
             (* coccionly:
-               pad: if dont want cocci write:
+               pad: if don't want cocci write:
                 failwith
 	        (match Ast_c.pinfo_of_info ib with
 		  Ast_c.FakeTok _ -> "already tagged fake token"

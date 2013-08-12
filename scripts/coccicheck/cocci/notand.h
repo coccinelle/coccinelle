@@ -5,7 +5,7 @@
 /* This file contains:
  *   - macros found in <.h>
  *   - macros found in ".h" 
- *     but where we cant detect that it will be a "bad macro"
+ *     but where we cannot detect that it will be a "bad macro"
  *   - hints, cf below.
  * 
  * A "bad macro" is a macro using free variables or when expanded
@@ -23,7 +23,7 @@
  *     In the future should be autodetected
  *     (not so easy to do same for macros in .h cos require to access .h file)
  *   - macros found in .c; macros correctly parsed
- *     but where we cant detect that it will be a "bad macro"
+ *     but where we cannot detect that it will be a "bad macro"
  *
  * Some of those macros could be deleted and the C code rewritten because
  * they are "bad" macros.

@@ -834,7 +834,7 @@ let rec find_function_names l =
   loop l
 
 (* ----------------------------------------------------------------------- *)
-(* an attribute is an identifier that preceeds another identifier and
+(* an attribute is an identifier that precedes another identifier and
    begins with __ *)
 
 let rec detect_attr l =

@@ -49,7 +49,7 @@ let testone prefix x compare_with_expected_flag =
  * it is possible that a test file work in -test but may not
  * work while used inside a -testall. If we have some bugs in our
  * parser that modify some global state and that those states
- * are not reseted between each test file, then having run previous
+ * are not reset between each test file, then having run previous
  * test files may have an influence on another test file which mean
  * than a test may work in isolation (via -test) but not otherwise
  * (via -testall). Fortunately such bugs are rare.
@@ -262,7 +262,7 @@ let test_okfailed cocci_file cfiles =
   cfiles +> List.iter delete_previous_result_files;
 
   (* final_files contain the name of an output file (a .ok or .failed
-   * or .spatch_ok), and also some additionnal strings to be printed in
+   * or .spatch_ok), and also some additional strings to be printed in
    * this output file in addition to the general error message of
    * full_engine. *)
   let final_files = ref [] in

@@ -71,7 +71,7 @@ module Lib = Lib_parsing_c
  * annotate_type.
  *
  * todo: how deal with typedef isomorphisms ? How store them in Ast_c ?
- * store all posible variations in ast_c ? a list of type instead of just
+ * store all possible variations in ast_c ? a list of type instead of just
  * the type ?
  *
  * todo: how to handle multiple possible definitions for entities like
@@ -133,7 +133,7 @@ let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_type
  * so don't need make difference between namespaces here.
  *
  * But, why not make simply a (string, kindstring) assoc ?
- * Because we dont want that a variable shadow a struct definition, because
+ * Because we don't want that a variable shadow a struct definition, because
  * they are still in 2 different namespace. But could for typedef,
  * because VarOrFunc and Typedef are in the same namespace.
  * But could do a record as in c_info.ml
@@ -1021,7 +1021,7 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
  * Because There would be some copy paste with annotate_program, it is
  * better to factorize code hence the just_add_in_env parameter below.
  *
- * todo? alternative optimisation for the include problem:
+ * todo? alternative optimization for the include problem:
  *  - processing all headers files one time and construct big env
  *  - use hashtbl for env (but apparently not biggest problem)
  *)

@@ -12,7 +12,7 @@ there are simple such as for ANSITerminal in ocamlextra/, and for
 dumper.ml I have even be further by inlining its code in common.ml so
 one can just do a open Common and have everything. Then if the user
 wants to, he can also leverage the other commons_xxx libraries by
-explicitely building them after he has installed the necessary
+explicitly building them after he has installed the necessary
 external files.
 
 For many configurable things we can use some flags in ml files, 

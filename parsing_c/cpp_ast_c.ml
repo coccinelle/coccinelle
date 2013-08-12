@@ -347,7 +347,7 @@ let should_ifdefize (tag,ii) ifdefs_directives xxs =
     pr2 "CPPASTC: some of its directives were passed";
     false
   end else
-    (* todo? put more condition ? dont ifdefize declaration ? *)
+    (* todo? put more condition ? don't ifdefize declaration ? *)
     true
 
 

@@ -348,7 +348,7 @@ let lub op t1 t2 =
      * arithmetic are written with the pointer in the first position.
      *
      * Also when an expression contain a typedef, as in
-     * 'dma_addr + 1' where dma_addr was declared as a varialbe
+     * 'dma_addr + 1' where dma_addr was declared as a variable
      * of type dma_addr_t, then again I want to have in the lub
      * the typedef and it is often again in the first position.
      *

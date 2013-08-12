@@ -42,7 +42,7 @@ open Common.BasicType
 (* Basic *)
 (*****************************************************************************)
 
-(* note: less need for cloneable, copyable as in Java. Only needed
+(* note: less need for clonable, copyable as in Java. Only needed
  * when use ref, but refs should be avoided anyway so better not to
  * encourage it.
  *
@@ -189,6 +189,6 @@ end
  * module type Sexpable = Sexpable.S
  * module type Binable = Binable.S
  *
- * And I dont like having too much files, especially as all those xxable
+ * And I don't like having too much files, especially as all those xxable
  * end with able, not start, so don't see them together in the directory.
  *)
