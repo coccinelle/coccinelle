@@ -664,7 +664,7 @@ depend: Makefile.config test.ml version
 ##############################################################################
 
 distclean::
-	@$(ECHO) "Cleaning configured files"
+	@echo "Cleaning configured files"
 	if test -z "${KEEP_CONFIG}"; then rm -f Makefile.config; fi
 	rm -rf autom4te.cache
 	rm -f config.status
@@ -675,7 +675,7 @@ distclean::
 	rm -f globals/regexp.ml python/pycocci.ml ocaml/prepare_ocamlcocci.ml
 	rm -f scripts/spatch.sh
 	rm -f aclocal.m4
-	@$(ECHO) "Run 'configure' again prior to building coccinelle"
+	@echo "Run 'configure' again prior to building coccinelle"
 
 
 # don't include depend for those actions that either don't need
