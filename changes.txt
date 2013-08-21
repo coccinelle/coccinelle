@@ -286,6 +286,7 @@
   an __attribute__
 - Identifiers promoted to typedefs should have positions
 - Allow disjunctions in removed nests
+- Only print a warning about multidecls if the pattern actually matches.
 
 * 0.2.5
 ** Language:

@@ -2496,7 +2496,6 @@ and drop_minuses stmt_dots =
       donothing donothing donothing donothing donothing in
   v.V.rebuilder_statement_dots stmt_dots
 
-
 (* --------------------------------------------------------------------- *)
 (* cleanup: convert AX to EX for pdots.
 Concretely: AX(A[...] & E[...]) becomes AX(A[...]) & EX(E[...])

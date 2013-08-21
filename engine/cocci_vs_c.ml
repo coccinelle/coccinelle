@@ -1890,12 +1890,39 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
           fail
       else
 	begin
+	  (* rather clunky... we only want to print the warning message if
+	     there is a match *)
 	  let firstii = iiptvirgb in
-	  pr2_once
-	    (Printf.sprintf "%s: %d: %s"
-	       (Ast_c.file_of_info firstii) (Ast_c.line_of_info firstii)
-	       "More than one variable in the declaration, and so it cannot be transformed.  Check that there is no transformation on the type or the ;");
-	  fail
+	  let contextified_decla =
+	    let mcode (x,info,mc,pos) =
+	      let newmc =
+		match mc with
+		  A.MINUS(pos,_,_,_)
+		| A.CONTEXT(pos,_) -> A.CONTEXT(pos,A.NOTHING)
+		| _ -> failwith "only minus/context expected in pattern" in
+	      (x,info,newmc,pos) in
+	    let donothing r k e = k e in
+	    let v =
+	      Visitor_ast.rebuilder
+		mcode mcode mcode mcode mcode mcode mcode mcode mcode
+		mcode mcode mcode
+		donothing donothing donothing donothing donothing
+		donothing donothing donothing donothing donothing
+		donothing donothing
+		donothing donothing donothing donothing donothing in
+	    v.Visitor_ast.rebuilder_declaration decla in
+
+	  (indexify xs) +> List.fold_left (fun acc (n,var) ->
+	  (* consider all possible matches *)
+            acc >||> (function tin -> (
+              onedecl allminus contextified_decla (var, iiptvirgb, iisto) >>=
+              (fun _ _ ->
+		pr2_once
+		  (Printf.sprintf "%s: %d: %s"
+		     (Ast_c.file_of_info firstii) (Ast_c.line_of_info firstii)
+		     "More than one variable in the declaration, and so it cannot be transformed.  Check that there is no transformation on the type or the ;");
+		fail)) tin))
+	      fail
 	end
 
   | A.MacroDecl (sa,lpa,eas,rpa,enda), B.MacroDecl ((sb,ebs,true),ii) ->
