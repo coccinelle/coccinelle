@@ -1074,12 +1074,18 @@ let check_nests tokens =
     let (line_type,a,b,c,d,e,f,g) = get_clt t in
     List.mem line_type [D.MINUS;D.OPTMINUS;D.UNIQUEMINUS] in
   let check_minus t =
-    let clt = try Some(get_clt t) with Failure _ -> None in
+    match fst t with
+      PC.TOPar0(clt) | PC.TMid0(clt) | PC.TCPar0(clt) -> t
+    | _ ->
+	let clt = try Some(get_clt t) with Failure _ -> None in
 	match clt with
-	  Some (line_type,a,b,c,d,e,f,g) ->
+	  Some (line_type,l,ll,c,d,e,f,g) ->
 	    (match line_type with
 	      D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> t
-	    | _ -> failwith "minus token expected")
+	    | _ ->
+		failwith
+		  (Printf.sprintf "minus expected, on %s, line %d"
+		     (token2c t) l))
 	| None -> t in
   let rec outside = function
       [] -> []

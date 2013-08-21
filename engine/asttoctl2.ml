@@ -1955,13 +1955,15 @@ and statement stmt top after quantified minus_quantified
       (* no minus version because when code doesn't contain any minus code *)
       let new_quantified = Common.union_set bfvs quantified in
 
-      let dot_code =
+      let (dot_code,stmt_dots) =
 	match Ast.get_mcodekind starter with (*ender must have the same mcode*)
 	  Ast.MINUS(_,_,_,_) as d ->
             (* no need for the fresh metavar, but ... is a bit weird as a
 	       variable name *)
-	    Some(make_match (make_meta_rule_elem d ([],[],[])))
-	| _ -> None in
+	    (* drops minuses on pattern, because d will have the minus effect*)
+	    (Some(make_match (make_meta_rule_elem d ([],[],[]))),
+	     drop_minuses stmt_dots)
+	| _ -> (None,stmt_dots) in
 
       quantify guard bfvs
 	(let dots_pattern =
@@ -2476,6 +2478,23 @@ and protect_top_level stmt_dots formula =
 	ctl_and CTL.NONSTRICT
 	  (ctl_not(CTL.EX(CTL.BACKWARD,unsbrpred None)))
 	  formula
+
+and drop_minuses stmt_dots =
+  let mcode (x,info,mc,pos) =
+    let newmc =
+      match mc with
+	Ast.MINUS(pos,inst,adj,Ast.NOREPLACEMENT) ->
+	  Ast.CONTEXT(pos,Ast.NOTHING) (* drops adjacency, maybe not useful *)
+      | _ -> failwith "only pure minus expected in removed nest" in
+    (x,info,newmc,pos) in
+  let donothing r k e = k e in
+  let v =
+    V.rebuilder
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing in
+  v.V.rebuilder_statement_dots stmt_dots
 
 
 (* --------------------------------------------------------------------- *)

@@ -285,6 +285,7 @@
 - Don't add extra space before semicolon, comma, or right paren when adding
   an __attribute__
 - Identifiers promoted to typedefs should have positions
+- Allow disjunctions in removed nests
 
 * 0.2.5
 ** Language:
