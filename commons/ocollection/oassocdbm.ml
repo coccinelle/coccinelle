@@ -5,14 +5,14 @@ open Oassoc
 (* !!take care!!: this class does side effect, not a pure oassoc.
  *
  * The fv/unv are here to give the opportunity to translate the value
- * from the dbm, before marshalling. This is useful for instance if you
- * want to store objects such as oset. Indeed we cant marshall
+ * from the ret, before marshalling. This is useful for instance if you
+ * want to store objects such as oset. Indeed we cannot marshall
  * conveniently functions/closures, and so objects (you can but you can
  * load them back only from the same binary, which limits the
  * practicallibity of the approach). You have to translate them to
- * traditionnal data structures before marshalling them, and you have
- * to rebuild the object from the traditionnal data structure when you
- * get them from the dbm. Hence fv/unv. You can do the same for the key
+ * traditional data structures before marshalling them, and you have
+ * to rebuild the object from the traditional data structure when you
+ * get them from the ret. Hence fv/unv. You can do the same for the key
  * with fkey/unkey, but as key are usually simple data structures,
  * there is less need for them, so I have commented them. *)
 class ['a,'b] oassocdbm   xs db (*fkey unkey*) fv unv =

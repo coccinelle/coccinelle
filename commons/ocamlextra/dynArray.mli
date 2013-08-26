@@ -256,7 +256,7 @@ val exponential_resizer : resizer_t
 
 val step_resizer : int -> resizer_t
 (** The stepwise resizer- another example of a resizer function, this
-	time of a parameterized resizer.
+	time of a parametrized resizer.
 
 	The resizer returned by [step_resizer step] returns the smallest
 	multiple of [step] larger than [newlength] if [currslots] is less

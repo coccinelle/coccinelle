@@ -84,7 +84,7 @@ let show_isos rule_elem =
 let (-->) x v = Ast_ctl.Subst (x,v);;
 
 (* Take list of predicate and for each predicate returns where in the
- * control flow it matches, and the set of subsitutions for this match.
+ * control flow it matches, and the set of substitutions for this match.
  *)
 let (labels_for_ctl: string list (* dropped isos *) ->
  (nodei * F.node) list -> Lib_engine.metavars_binding ->

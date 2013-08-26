@@ -141,32 +141,29 @@ all: Makefile.config
 
 # make "all" comes in three flavours
 world: Makefile.config version.ml
-	@echo "building both versions of spatch"
+	@$(ECHO) "Building both versions of spatch"
 	$(MAKE) .depend
 	$(MAKE) byte
 	$(MAKE) opt-compil
 	$(MAKE) preinstall
 	$(MAKE) docs
-	@echo ""
-	@echo -e "\tcoccinelle can now be installed via 'make install'"
+	@$(ECHO) -e "\n\tcoccinelle can now be installed via 'make install'"
 
 # note: the 'all-dev' target excludes the documentation
 all-dev: Makefile.config version.ml
 	@$(MAKE) .depend
-	@echo "building the unoptimized version of spatch"
+	@$(ECHO) "Building the unoptimized version of spatch"
 	$(MAKE) byte
 	@$(MAKE) preinstall
-	@echo ""
-	@echo -e "\tcoccinelle can now be installed via 'make install'"
+	@$(ECHO) -e "\n\tcoccinelle can now be installed via 'make install'"
 
 all-release: Makefile.config version.ml
-	@echo building $(TARGET_SPATCH)
+	@$(ECHO) "Building $(TARGET_SPATCH)"
 	$(MAKE) .depend
 	$(MAKE) $(TARGET_SPATCH)
 	$(MAKE) preinstall
 	$(MAKE) docs
-	@echo ""
-	@echo -e "\tcoccinelle can now be installed via 'make install'"
+	@$(ECHO) -e "\n\tcoccinelle can now be installed via 'make install'"
 
 all.opt: Makefile.config
 	@$(MAKE) .depend
@@ -177,15 +174,15 @@ byte: Makefile.config version.ml
 	@$(MAKE) .depend
 	@$(MAKE) subdirs.all
 	@$(MAKE) $(EXEC)
-	@echo the compilation of $(EXEC) finished
-	@echo $(EXEC) can be installed or used
+	@$(ECHO) "The compilation of $(EXEC) finished."
+	@$(ECHO) "$(EXEC) can be installed or used."
 
 opt-compil: Makefile.config version.ml
 	$(MAKE) .depend
 	$(MAKE) subdirs.opt BUILD_OPT=yes
 	$(MAKE) $(EXEC).opt BUILD_OPT=yes
-	@echo the compilation of $(EXEC).opt finished
-	@echo $(EXEC).opt can be installed or used
+	@$(ECHO) "The compilation of $(EXEC).opt finished."
+	@$(ECHO) "$(EXEC).opt can be installed or used."
 
 top: $(EXEC).top
 
@@ -200,14 +197,13 @@ all: Makefile.config
 	$(MAKE) $(TARGET_ALL)
 
 world: Makefile.config myocamlbuild.ml version.ml prepare-bundles
-	@echo "building both versions of spatch"
+	@$(ECHO) "Building both versions of spatch"
 	$(MAKE) byte
 	$(MAKE) opt-compil
 	@$(MAKE) coccilib-cmi
 	$(MAKE) preinstall
 	$(MAKE) docs
-	@echo ""
-	@echo -e "\tcoccinelle can now be installed via 'make install'"
+	@$(ECHO) -e "\n\tcoccinelle can now be installed via 'make install'"
 
 # note: the 'all-dev' target excludes the documentation and is less noisy
 all-dev: Makefile.config myocamlbuild.ml version.ml prepare-bundles
@@ -216,13 +212,12 @@ all-dev: Makefile.config myocamlbuild.ml version.ml prepare-bundles
 	@$(MAKE) preinstall
 
 all-release: Makefile.config myocamlbuild.ml version.ml prepare-bundles
-	@echo building $(TARGET_SPATCH)
+	@$(ECHO) "Building $(TARGET_SPATCH)"
 	$(MAKE) $(TARGET_SPATCH)
 	@$(MAKE) coccilib-cmi
 	$(MAKE) preinstall
 	$(MAKE) docs
-	@echo ""
-	@echo -e "\tcoccinelle can now be installed via 'make install'"
+	@$(ECHO) -e "\n\tcoccinelle can now be installed via 'make install'"
 
 all.opt: Makefile.config myocamlbuild.ml version.ml prepare-bundles
 	$(MAKE) opt-only
@@ -281,7 +276,7 @@ $(MAKESUBDIRS:%=%.opt):
 prepare-bundles: $(MAKELIBS:%=%/.prepare)
 
 $(MAKELIBS:%=%/.prepare):
-	echo $@
+	$(ECHO) $@
 	@$(MAKE) -C $(@:%.prepare=%) .prepare
 
 #dependencies:
@@ -339,7 +334,7 @@ configure:
 # the dependencies on Makefile.config should give a hint to the programmer that
 # configure should be run again
 Makefile.config: Makefile.config.in configure.ac
-	@echo "Makefile.config needs to be (re)build. Run  ./configure $(CONFIGURE_FLAGS) to generate it."
+	@$(ECHO) "Makefile.config needs to be (re)build. Run  ./configure $(CONFIGURE_FLAGS) to generate it."
 	@false
 
 # as above, also for the ocamlbuild plugin
@@ -391,7 +386,7 @@ endif
 ##############################################################################
 
 version.ml:
-	@echo "version.ml is missing. Run ./configure to generate it."
+	@$(ECHO) "version.ml is missing. Run ./configure to generate it."
 	@false
 
 ##############################################################################
@@ -404,18 +399,18 @@ docs:
 else
 docs: prepare-bundles
 endif
-	@$(MAKE) -C docs || (echo "warning: ignored the failed construction of the manual" 1>&2)
+	@$(MAKE) -C docs || ($(ECHO) "Warning: ignored the failed construction of the manual" 1>&2)
 ifneq ($(FEATURE_OCAMLBUILD),yes)
 	@if test "x$(FEATURE_OCAML)" = x1; then \
 		if test -f ./parsing_c/ast_c.cmo -o -f ./parsing_c/ast_c.cmx; then \
 			$(MAKE) -C ocaml doc; \
-		else echo "note: to obtain coccilib documenation, it is required to build 'spatch' first so that ./parsing_c/ast_c.cm* gets build."; \
+		else $(ECHO) "Note: to obtain coccilib documenation, it is required to build 'spatch' first so that ./parsing_c/ast_c.cm* gets build."; \
 		fi fi
 else
 	@if test "x$(FEATURE_OCAML)" = x1; then \
 		$(MAKE) -C ocaml doc; fi
 endif
-	@echo "finished building manuals"
+	@$(ECHO) "Finished building manuals"
 
 clean:: Makefile.config
 	$(MAKE) -C docs clean
@@ -469,20 +464,20 @@ install-common: ocaml/coccilib/coccilib.cmi
 #	$(INSTALL_DATA) globals/iteration.cmi $(DESTDIR)$(SHAREDIR)/globals/
 
 install-man:
-	@echo "Installing manuals in: ${DESTDIR}${MANDIR}"
+	@$(ECHO) "Installing manuals in: ${DESTDIR}${MANDIR}"
 	$(MKDIR_P) $(DESTDIR)$(MANDIR)/man1
 	$(MKDIR_P) $(DESTDIR)$(MANDIR)/man3
 	$(INSTALL_DATA) docs/spatch.1 $(DESTDIR)$(MANDIR)/man1/
 	$(INSTALL_DATA) docs/Coccilib.3cocci $(DESTDIR)$(MANDIR)/man3/
 
 install-bash:
-	@echo "Installing bash completion in: ${DESTDIR}${BASH_COMPLETION_DIR}"
+	@$(ECHO) "Installing bash completion in: ${DESTDIR}${BASH_COMPLETION_DIR}"
 	$(MKDIR_P) $(DESTDIR)$(BASH_COMPLETION_DIR)
 	$(INSTALL_DATA) scripts/spatch.bash_completion \
 		$(DESTDIR)$(BASH_COMPLETION_DIR)/spatch
 
 install-tools:
-	@echo "Installing tools in: ${DESTDIR}${BINDIR}"
+	@$(ECHO) "Installing tools in: ${DESTDIR}${BINDIR}"
 	$(MKDIR_P) $(DESTDIR)$(BINDIR)
 	$(INSTALL_PROGRAM) tools/splitpatch \
 		$(DESTDIR)$(BINDIR)/splitpatch
@@ -490,7 +485,7 @@ install-tools:
 		$(DESTDIR)$(BINDIR)/cocci-send-email.perl
 
 install-python:
-	@echo "Installing python support in: ${DESTDIR}${SHAREDIR}/python"
+	@$(ECHO) "Installing python support in: ${DESTDIR}${SHAREDIR}/python"
 	$(MKDIR_P) $(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
 	$(INSTALL_DATA) python/coccilib/*.py \
 		$(DESTDIR)$(SHAREDIR)/python/coccilib
@@ -518,12 +513,10 @@ install: install-man install-common install-stubs $(PYTHON_INSTALL_TARGET)
 	@if test -x spatch.opt ; then \
 		$(MAKE) install-opt;fi
 	@if test ! -x spatch -a ! -x spatch.opt ; then \
-		echo -e "\n\n\t==> Run 'make', 'make opt', or both first. <==\n\n";fi
-	@echo ""
-	@echo -e "\tYou can also install spatch by copying the program spatch"
-	@echo -e "\t(available in this directory) anywhere you want and"
-	@echo -e "\tgive it the right options to find its configuration files."
-	@echo ""
+		$(ECHO) -e "\n\n\t==> Run 'make', 'make opt', or both first. <==\n\n";fi
+	@$(ECHO) -e "\n\tYou can also install spatch by copying the program spatch"
+	@$(ECHO) -e "\t(available in this directory) anywhere you want and"
+	@$(ECHO) -e "\tgive it the right options to find its configuration files.\n"
 
 #
 # Installation of spatch and spatch.opt and their wrappers
@@ -579,9 +572,9 @@ uninstall-tools:
 	rm -f $(DESTDIR)$(BINDIR)/cocci-send-email.perl
 
 version:
-	@echo "spatch     $(VERSION)"
-	@echo "spatch     $(PKGVERSION) ($(DISTRIB_ID))"
-	@echo "coccicheck $(CCVERSION)"
+	@$(ECHO) "spatch     $(VERSION)"
+	@$(ECHO) "spatch     $(PKGVERSION) ($(DISTRIB_ID))"
+	@$(ECHO) "coccicheck $(CCVERSION)"
 
 
 ##############################################################################
@@ -606,17 +599,17 @@ testparsing:
 # * some feature tests (depending on what is enabled)
 # * the test suite
 check: scripts/spatch
-	@echo "testing if spatch works on hello world..."
+	@$(ECHO) "Testing if spatch works on hello world..."
 	@COCCINELLE_HOME="$$(pwd)" ./scripts/spatch --sp-file demos/hello/hello-smpl.cocci demos/hello/helloworld.c --very-quiet | grep -q '+  printf("world, hello!");'
-	@echo "testing if spatch works with regexes..."
+	@$(ECHO) "Testing if spatch works with regexes..."
 	@COCCINELLE_HOME="$$(pwd)" ./scripts/spatch --sp-file demos/hello/hello-regexp.cocci demos/hello/helloworld.c --very-quiet | grep -q '+  printf("world, hello!");'
 	@if test "x${FEATURE_OCAML}" = x1 -a -z "${NO_OCAMLFIND}"; then \
-		echo "testing if spatch works with ocaml scripts..."; \
+		$(ECHO) "Testing if spatch works with ocaml scripts..."; \
 		COCCINELLE_HOME="$$(pwd)" ./scripts/spatch --sp-file demos/hello/hello-ocaml.cocci demos/hello/helloworld.c --very-quiet | grep -q 'Hello at: 2'; fi
 	@if test "x${FEATURE_PYTHON}" = x1; then \
-		echo "testing if spatch works with python scripts..."; \
+		$(ECHO) "Testing if spatch works with python scripts..."; \
 		COCCINELLE_HOME="$$(pwd)" ./scripts/spatch --sp-file demos/hello/hello-python.cocci demos/hello/helloworld.c --very-quiet | grep -q 'Hello at: 2'; fi
-	@echo running the test suite
+	@$(ECHO) running the test suite
 	COCCINELLE_HOME="$$(pwd)" ./scripts/spatch --testall --no-update-score-file
 
 # -inline 0  to see all the functions in the profile.
@@ -644,7 +637,7 @@ dependencygraph:
 # each member of the project can have its own test.ml. this file is
 # not under CVS.
 test.ml:
-	echo "let foo_ctl () = failwith \"there is no foo_ctl formula\"" \
+	$(ECHO) "let foo_ctl () = failwith \"there is no foo_ctl formula\"" \
 	  > test.ml
 
 ##############################################################################
@@ -685,7 +678,7 @@ distclean::
 	@$(MAKE) depend
 
 depend: Makefile.config test.ml version
-	@echo constructing '.depend'
+	@$(ECHO) "Constructing '.depend'"
 	@rm -f .depend
 	@set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i depend; done
 	$(OCAMLDEP_CMD) *.mli *.ml > .depend
@@ -695,7 +688,7 @@ depend: Makefile.config test.ml version
 ##############################################################################
 
 distclean::
-	@echo "cleaning configured files"
+	@echo "Cleaning configured files"
 	if test -z "${KEEP_CONFIG}"; then rm -f Makefile.config; fi
 	rm -rf autom4te.cache
 	rm -f config.status
@@ -706,7 +699,7 @@ distclean::
 	rm -f globals/regexp.ml python/pycocci.ml ocaml/prepare_ocamlcocci.ml
 	rm -f scripts/spatch.sh
 	rm -f aclocal.m4
-	@echo "run 'configure' again prior to building coccinelle"
+	@echo "Run 'configure' again prior to building coccinelle"
 
 
 # don't include depend for those actions that either don't need

@@ -306,6 +306,7 @@ let do_get_constants constants keywords env neg_pos =
   let rec type_collect res = function
       TC.ConstVol(_,ty) | TC.Pointer(ty) | TC.FunctionPointer(ty)
     | TC.Array(ty) -> type_collect res ty
+    | TC.Decimal _ -> keywords "decimal"
     | TC.MetaType(tyname,_,_) ->
 	inherited tyname
     | TC.TypeName(s) -> constants s
@@ -325,7 +326,8 @@ let do_get_constants constants keywords env neg_pos =
 	  | Ast.Char s -> option_default (* probably not chars either *)
 	  (* the following were eg keywords "1", but not good for glimpse *)
 	  | Ast.Int s -> option_default (* glimpse doesn't index integers *)
-	  | Ast.Float s -> option_default (* probably not floats either *))
+	  | Ast.Float s -> option_default (* probably not floats either *)
+	  | Ast.DecimalConst _ -> option_default (* or decimals *))
     | Ast.MetaExpr(name,_,_,Some type_list,_,_) ->
 	let types = List.fold_left type_collect option_default type_list in
 	bind (k e) (bind (minherited name) types)
@@ -436,6 +438,8 @@ let do_get_constants constants keywords env neg_pos =
 	      (match strings with
 		[] -> True
 	      | x::xs -> List.fold_left bind x xs))
+    | Ast.Pragma(prg,id,body) ->
+	bind (keywords "pragma") (k re)
     | Ast.DisjRuleElem(res) ->
 	disj_union_all (List.map r.V.combiner_rule_elem res)
     | _ -> k re in
@@ -613,7 +617,7 @@ let rule_fn tls in_plus env neg_pos =
 	let was_bot = minuses = True in
 	let new_minuses = filter_combine minuses in_plus in
 	let new_plusses = Common.union_set plusses in_plus in
-	(* perhaps it should be build_and here?  we don't realy have multiple
+	(* perhaps it should be build_and here?  we don't really have multiple
 	   minirules anymore anyway. *)
 	match new_minuses with
 	  True ->

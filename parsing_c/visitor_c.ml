@@ -22,7 +22,7 @@ module F = Control_flow_c
 (* Prelude *)
 (*****************************************************************************)
 
-(* todo? dont go in Include. Have a visitor flag ? disable_go_include ?
+(* todo? don't go in Include. Have a visitor flag ? disable_go_include ?
  * disable_go_type_annotation ?
  *)
 
@@ -124,7 +124,7 @@ let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_visit
  *      end in analysis#expr
  *
  * The problem is that you don't have control about what is generated
- * and in our case we sometimes dont want to visit too much. For instance
+ * and in our case we sometimes don't want to visit too much. For instance
  * our visitor don't recurse on the type annotation of expressions
  * Ok, this could be worked around, but the pb remains, you
  * don't have control and at some point you may want. In the same
@@ -286,7 +286,7 @@ let rec vk_expr = fun bigf expr ->
   let iif ii = vk_ii bigf ii in
 
   let rec exprf e = bigf.kexpr (k,bigf) e
-  (* !!! dont go in _typ !!! *)
+  (* !!! don't go in _typ !!! *)
   and k ((e,_typ), ii) =
     iif ii;
     match e with
@@ -450,6 +450,9 @@ and vk_type = fun bigf t ->
     | Array (eopt, t) ->
         do_option (vk_expr bigf) eopt;
         typef t
+    | Decimal(length,precision_opt) ->
+        vk_expr bigf length;
+        do_option (vk_expr bigf) precision_opt
     | FunctionType (returnt, paramst) ->
         typef returnt;
         (match paramst with
@@ -467,7 +470,7 @@ and vk_type = fun bigf t ->
     | StructUnionName (s, structunion) -> ()
     | EnumName  s -> ()
 
-    (* dont go in _typ *)
+    (* don't go in _typ *)
     | TypeName (name,_typ) ->
         vk_name bigf name
 
@@ -523,7 +526,7 @@ and vk_onedecl = fun bigf onedecl ->
       v_attr = attrs})  ->
 
     vk_type bigf t;
-    (* dont go in tbis *)
+    (* don't go in tbis *)
     attrs +> List.iter (vk_attribute bigf);
     var +> Common.do_option (fun (name, iniopt) ->
       vk_name bigf name;
@@ -724,7 +727,10 @@ and vk_cpp_directive bigf directive =
         iif ii;
         vk_define_kind bigf defkind;
         vk_define_val bigf defval
-    | PragmaAndCo (ii) ->
+    | Pragma ((s,ii), pragmainfo) ->
+        iif ii;
+        vk_pragmainfo bigf pragmainfo
+    | OtherDirective (ii) ->
         iif ii
   in f (k, bigf) directive
 
@@ -765,8 +771,13 @@ and vk_define_val bigf defval =
       ()
   in f (k, bigf) defval
 
-
-
+and vk_pragmainfo bigf pragmainfo =
+  match pragmainfo with
+    PragmaTuple(args,ii) ->
+      vk_ii bigf ii;
+      vk_argument_list bigf args
+  | PragmaIdList ids ->
+      ids +> List.iter (function (id, _) -> vk_name bigf id)
 
 (* ------------------------------------------------------------------------ *)
 (* Now keep fullstatement inside the control flow node,
@@ -841,6 +852,10 @@ and vk_node = fun bigf node ->
     | F.DefineTodo ->
         pr2_once "DefineTodo";
         ()
+
+    | F.PragmaHeader((s,ii), pragmainfo) ->
+        iif ii;
+        vk_pragmainfo bigf pragmainfo
 
     | F.Include {i_include = (s, ii);} -> iif ii;
 
@@ -964,6 +979,7 @@ let vk_define_params_splitted = vk_splitted (fun bigf (_,ii) -> vk_ii bigf ii)
 let vk_params_splitted = vk_splitted vk_param
 let vk_enum_fields_splitted = vk_splitted vk_oneEnum
 let vk_inis_splitted = vk_splitted vk_ini
+let vk_ident_list_splitted = vk_splitted vk_name
 
 (* ------------------------------------------------------------------------ *)
 let vk_cst = fun bigf (cst, ii) ->
@@ -1266,6 +1282,8 @@ and vk_type_s = fun bigf t ->
       | BaseType x -> BaseType x
       | Pointer t  -> Pointer (typef t)
       | Array (eopt, t) -> Array (fmap (vk_expr_s bigf) eopt, typef t)
+      | Decimal (len,prec_opt) ->
+	  Decimal (vk_expr_s bigf len, fmap (vk_expr_s bigf) prec_opt)
       | FunctionType (returnt, paramst) ->
           FunctionType
             (typef returnt,
@@ -1532,7 +1550,9 @@ and vk_cpp_directive_s = fun bigf top ->
     | Define ((s,ii), (defkind, defval)) ->
         Define ((s, iif ii),
                (vk_define_kind_s bigf defkind, vk_define_val_s bigf defval))
-    | PragmaAndCo (ii) -> PragmaAndCo (iif ii)
+    | Pragma((s,ii), pragmainfo) ->
+	Pragma((s,iif ii), vk_pragmainfo_s bigf pragmainfo)
+    | OtherDirective (ii) -> OtherDirective (iif ii)
 
   in f (k, bigf) top
 
@@ -1581,6 +1601,20 @@ and vk_define_val_s = fun bigf x ->
         DefineTodo
   in
   f (k, bigf) x
+
+and vk_pragmainfo_s bigf pragmainfo =
+  match pragmainfo with
+    PragmaTuple(args,ii) ->
+      PragmaTuple(
+      args +> List.map (fun (e,ii) -> vk_argument_s bigf e, vk_ii_s bigf ii),
+      vk_ii_s bigf ii)
+  | PragmaIdList ids ->
+      PragmaIdList
+	(ids +>
+	 List.map
+	   (function
+	       id, [] -> vk_name_s bigf id, []
+	     | _ -> failwith "bad ident_list"))
 
 
 and vk_info_s = fun bigf info ->
@@ -1655,6 +1689,9 @@ and vk_node_s = fun bigf node ->
     | F.DefineDoWhileZeroHeader ((),ii) ->
         F.DefineDoWhileZeroHeader ((),iif ii)
     | F.DefineTodo -> F.DefineTodo
+
+    | F.PragmaHeader ((s,ii),pragmainfo) ->
+        F.PragmaHeader((s,iif ii), vk_pragmainfo_s bigf pragmainfo)
 
     | F.Include {i_include = (s, ii);
                  i_rel_pos = h_rel_pos;
@@ -1753,3 +1790,4 @@ let vk_define_params_splitted_s =
   vk_splitted_s (fun bigf (s,ii) -> (s,vk_ii_s bigf ii))
 let vk_enum_fields_splitted_s = vk_splitted_s vk_oneEnum_s
 let vk_inis_splitted_s = vk_splitted_s vk_ini_s
+let vk_ident_list_splitted_s = vk_splitted_s vk_name_s

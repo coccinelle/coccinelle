@@ -431,6 +431,18 @@ and top_typeC tgt opt_allowed typ =
       let size = get_option (expression arity) size in
       let rb = mcode rb in
       make_typeC typ tgt arity (Ast0.Array(ty,lb,size,rb))
+  | Ast0.Decimal(dec,lp,length,comma,precision_opt,rp) ->
+      let arity =
+	all_same opt_allowed tgt (mcode2line dec)
+	  [mcode2arity dec;mcode2arity lp;mcode2arity rp] in
+      let dec = mcode dec in
+      let lp = mcode lp in
+      let length = expression arity length in
+      let comma = get_option mcode comma in
+      let precision_opt = get_option (expression arity) precision_opt in
+      let rp = mcode rp in
+      make_typeC typ tgt arity
+	(Ast0.Decimal(dec,lp,length,comma,precision_opt,rp))
   | Ast0.EnumName(kind,name) ->
       let arity =
 	all_same opt_allowed tgt (mcode2line kind) [mcode2arity kind] in
@@ -1032,8 +1044,36 @@ and statement tgt stm =
       let params = define_parameters arity params in
       let body = dots (statement arity) body in
       make_rule_elem stm tgt arity (Ast0.Define(def,id,params,body))
+  | Ast0.Pragma(prg,id,body) ->
+      let arity = all_same true tgt (mcode2line prg) [mcode2arity prg] in
+      let prg = mcode prg in
+      let id = ident false arity id in
+      let body = pragmainfo arity body in
+      make_rule_elem stm tgt arity (Ast0.Pragma(prg,id,body))
   | Ast0.OptStm(_) | Ast0.UniqueStm(_) | Ast0.AsStmt _ ->
       failwith "unexpected code"
+
+and make_pragma =
+  make_opt_unique
+    (function x -> failwith "opt not allowed for pragma")
+    (function x -> failwith "unique not allowed for pragma")
+
+and pragmainfo tgt pi =
+  match Ast0.unwrap pi with
+    Ast0.PragmaTuple(lp,args,rp) ->
+      let arity =
+	all_same false tgt (mcode2line lp) [mcode2arity lp;mcode2arity rp] in
+      let lp = mcode lp in
+      let args = dots (expression arity) args in
+      let rp = mcode rp in
+      make_pragma pi tgt arity (Ast0.PragmaTuple(lp,args,rp))
+  | Ast0.PragmaIdList(ids) ->
+      let ids = dots (ident false tgt) ids in
+      make_pragma pi tgt tgt (Ast0.PragmaIdList(ids))
+  | Ast0.PragmaDots (dots) ->
+      let arity = all_same false tgt (mcode2line dots) [mcode2arity dots] in
+      let dots = mcode dots in
+      make_pragma pi tgt arity (Ast0.PragmaDots (dots))
 
 and define_parameters tgt params =
   match Ast0.unwrap params with

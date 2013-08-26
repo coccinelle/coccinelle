@@ -146,6 +146,12 @@ module type PARAM =
       (string Ast_c.wrap, Ast_c.il) Common.either list)
       matcher
 
+    val distrf_pragmainfo :
+      (Ast_cocci.meta_name Ast_cocci.mcode, Ast_c.pragmainfo) matcher
+    val distrf_ident_list :
+      (Ast_cocci.meta_name Ast_cocci.mcode,
+       (Ast_c.name, Ast_c.il) Common.either list) matcher
+
     val distrf_enum_fields :
       (Ast_cocci.meta_name Ast_cocci.mcode,
        (Ast_c.oneEnumType, Ast_c.il) Common.either list) matcher

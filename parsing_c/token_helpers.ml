@@ -76,7 +76,7 @@ let is_not_comment x =
 
 let is_cpp_instruction = function
   | TInclude _
-  | TDefine _
+  | TDefine _  | TPragma _
   | TIfdef _   | TIfdefelse _ | TIfdefelif _ | TEndif _
   | TIfdefBool _ | TIfdefMisc _ | TIfdefVersion _
   | TUndef _
@@ -162,7 +162,7 @@ let is_start_of_something = function
   | Tauto _ | Tregister _ | Textern _ | Tstatic _
   | Tconst _ | Tvolatile _
   | Ttypedef _
-  | Tstruct _ | Tunion _ | Tenum _
+  | Tstruct _ | Tunion _ | Tenum _ | Tdecimal _
     -> true
   | _ -> false
 
@@ -172,7 +172,7 @@ let is_binary_operator = function
   | TOrLog _ | TAndLog _ |  TOr _ |  TXor _ |  TAnd _
   | TEqEq _ |  TNotEq _  | TInf _ |  TSup _ |  TInfEq _ |  TSupEq _
   | TShl _ | TShr _
-  | TPlus _ |  TMinus _ |  TMul _ |  TDiv _ |  TMod _ | TMin _ | TMax _
+  | TPlus _ |  TMinus _ |  TMul _ |  TDiv _ |  TMod _ | TMax _ | TMin _
         -> true
   | _ -> false
 
@@ -213,12 +213,13 @@ let is_ident_like = function
 (*****************************************************************************)
 
 (* Because ocamlyacc force us to do it that way. The ocamlyacc token
- * cant be a pair of a sum type, it must be directly a sum type.
+ * cannot be a pair of a sum type, it must be directly a sum type.
  *)
 let info_of_tok = function
   | TString ((string, isWchar), i) -> i
   | TChar  ((string, isWchar), i) -> i
   | TFloat ((string, floatType), i) -> i
+  | TDecimal ((string, n, p), i) -> i
 
   | TAssign  (assignOp, i) -> i
 
@@ -233,6 +234,7 @@ let info_of_tok = function
   | TInclude (includes, filename, inifdef, i1) ->     i1
 
   | TUndef (ii) -> ii
+  | TPragma (ii) -> ii
   | TCppDirectiveOther (ii) -> ii
 
   | TIncludeStart (i1, inifdef) ->     i1
@@ -315,10 +317,9 @@ let info_of_tok = function
   | TMinus               (i) -> i
   | TMul                 (i) -> i
   | TDiv                 (i) -> i
-  | TMod                 (i) -> i
-  | TMax                 (i) -> i
   | TMin                 (i) -> i
-
+  | TMax                 (i) -> i
+  | TMod                 (i) -> i
   | Tchar                (i) -> i
   | Tshort               (i) -> i
   | Tint                 (i) -> i
@@ -342,6 +343,7 @@ let info_of_tok = function
 
   | Tstruct              (i) -> i
   | Tenum                (i) -> i
+  | Tdecimal             (i) -> i
   | Ttypedef             (i) -> i
   | Tunion               (i) -> i
   | Tbreak               (i) -> i
@@ -377,6 +379,7 @@ let visitor_info_of_tok f = function
   | TString ((s, isWchar), i)  -> TString ((s, isWchar), f i)
   | TChar  ((s, isWchar), i)   -> TChar  ((s, isWchar), f i)
   | TFloat ((s, floatType), i) -> TFloat ((s, floatType), f i)
+  | TDecimal ((s, n, p), i)    -> TDecimal ((s, n, p), f i)
   | TAssign  (assignOp, i)     -> TAssign  (assignOp, f i)
 
   | TIdent  (s, i)         -> TIdent  (s, f i)
@@ -388,6 +391,7 @@ let visitor_info_of_tok f = function
   | TDefine (i1) -> TDefine(f i1)
 
   | TUndef (i1) -> TUndef(f i1)
+  | TPragma (i1) -> TPragma(f i1)
   | TCppDirectiveOther (i1) -> TCppDirectiveOther(f i1)
 
   | TInclude (includes, filename, inifdef, i1) ->
@@ -477,8 +481,8 @@ let visitor_info_of_tok f = function
   | TMinus               (i) -> TMinus               (f i)
   | TMul                 (i) -> TMul                 (f i)
   | TDiv                 (i) -> TDiv                 (f i)
-  | TMax                 (i) -> TMax                 (f i)
   | TMin                 (i) -> TMin                 (f i)
+  | TMax                 (i) -> TMax                 (f i)
   | TMod                 (i) -> TMod                 (f i)
   | Tchar                (i) -> Tchar                (f i)
   | Tshort               (i) -> Tshort               (f i)
@@ -503,6 +507,7 @@ let visitor_info_of_tok f = function
 
   | Tstruct              (i) -> Tstruct              (f i)
   | Tenum                (i) -> Tenum                (f i)
+  | Tdecimal             (i) -> Tdecimal             (f i)
   | Ttypedef             (i) -> Ttypedef             (f i)
   | Tunion               (i) -> Tunion               (f i)
   | Tbreak               (i) -> Tbreak               (f i)

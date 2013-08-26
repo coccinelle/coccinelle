@@ -200,6 +200,10 @@ and base_typeC =
                        string mcode (* ) *)
   | Array           of typeC * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
+  | Decimal         of string mcode (* decimal *) * string mcode (* ( *) *
+	               expression *
+	               string mcode option (* , *) * expression option *
+	               string mcode (* ) *) (* IBM C only *)
   | EnumName        of string mcode (*enum*) * ident option (* name *)
   | EnumDef  of typeC (* either StructUnionName or metavar *) *
 	string mcode (* { *) * expression dots * string mcode (* } *)
@@ -385,8 +389,16 @@ and base_statement =
   | Undef of string mcode (* #define *) * ident (* name *)
   | Define of string mcode (* #define *) * ident (* name *) *
 	define_parameters (*params*) * statement dots
+  | Pragma of string mcode (* #pragma *) * ident * pragmainfo
   | OptStm   of statement
   | UniqueStm of statement
+
+and base_pragmainfo =
+    PragmaTuple of string mcode(* ( *) * expression dots * string mcode(* ) *)
+  | PragmaIdList of ident dots
+  | PragmaDots of string mcode
+
+and pragmainfo = base_pragmainfo wrap
 
 and base_forinfo =
     ForExp of expression option * string mcode (*;*)
@@ -581,6 +593,7 @@ let get_test_pos x      = x.true_if_test
 let set_test_pos x      = {x with true_if_test = true}
 let get_test_exp x      = x.true_if_test_exp
 let set_test_exp x      = {x with true_if_test_exp = true}
+let clear_test_exp x      = {x with true_if_test_exp = false}
 let get_iso x           = x.iso_info
 let set_iso x i = if !Flag.track_iso_usage then {x with iso_info = i} else x
 let set_mcode_data data (_,ar,info,mc,pos,adj) = (data,ar,info,mc,pos,adj)
@@ -650,6 +663,25 @@ let rec ast0_type_to_type ty =
       TC.FunctionPointer(ast0_type_to_type ty)
   | FunctionType _ -> TC.Unknown (*failwith "not supported"*)
   | Array(ety,_,_,_) -> TC.Array(ast0_type_to_type ety)
+  | Decimal(_, _, e1, _, e2, _) ->
+      let e2tc e =
+	match unwrap e with
+	  Constant(c) ->
+	    (match unwrap_mcode c with
+	      Ast.Int n -> TC.Num n
+	    | _ -> failwith "not possible")
+	| Ident(id) ->
+	    (match unwrap id with
+	      Id n -> TC.Name (unwrap_mcode n)
+	    | _ -> failwith "not possible")
+	| MetaExpr(name,NoConstraint,None,Ast.CONST,_) ->
+	    TC.MV(unwrap_mcode name,TC.Unitary,false)
+	| _ -> failwith "unexpected argument to decimal" in
+      let e2 =
+	match e2 with
+	  None -> TC.Num "0"
+	| Some e2 -> e2tc e2 in
+      TC.Decimal(e2tc e1,e2)
   | EnumName(su,Some tag) ->
       (match unwrap tag with
 	Id(tag) ->

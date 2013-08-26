@@ -88,7 +88,7 @@ module Int64Set = Set.Make (Int64)
 (* bound: either concrete or unbounded *)
 type bound = int64 option
 
-(* The type of analysis results, which for the moment focusses on integers.
+(* The type of analysis results, which for the moment focuses on integers.
  * The lower bound should be smaller or equal to the upper bound (not enforced)
  *)
 type result =
@@ -291,7 +291,7 @@ let exists p = satisfy (List.exists p)
 
 let single_int c r =
   match r with
-  | IntSet s when Int64Set.is_empty s -> true  (* unreachable memory, thus any propery holds *)
+  | IntSet s when Int64Set.is_empty s -> true  (* unreachable memory, thus any property holds *)
   | IntSet s                   -> Int64Set.equal (Int64Set.singleton c) s
   | IntBounds (Some l, Some u) -> l == c && u == c
   | _                          -> false

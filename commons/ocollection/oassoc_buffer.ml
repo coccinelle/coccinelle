@@ -15,7 +15,7 @@ open Osetb
  *
  * In the same way sometimes an exn can occur at weird time. When
  * we add an element, sometimes this may raise an exn such as Out_of_memory,
- * but as we dont add directly but only at flush time, the exn
+ * but as we don't add directly but only at flush time, the exn
  * may happen far later the user added something in this oassoc.
  * Also in the case of Out_of_memory, even if the entry is not
  * added in the wrapped, it will still be present in the cache
@@ -104,7 +104,7 @@ object(o)
   method assoc k =
     try !cache#assoc k
     with Not_found ->
-      (* may launch Not_found, but this time, dont catch it *)
+      (* may launch Not_found, but this time, don't catch it *)
       let v = !wrapped#assoc k in
       begin
         cache := !cache#add (k,v);

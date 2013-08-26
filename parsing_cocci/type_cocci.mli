@@ -38,6 +38,7 @@ type typeC =
   | Pointer         of typeC
   | FunctionPointer of typeC (* only return type *)
   | Array           of typeC (* drop size info *)
+  | Decimal         of name * name
   | EnumName        of name
   | StructUnionName of structUnion * name
   | TypeName        of string
@@ -47,6 +48,7 @@ type typeC =
 and name =
     NoName
   | Name of string
+  | Num of string
   | MV of meta_name * keep_binding * inherited
 
 and tagged_string = string

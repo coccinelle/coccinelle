@@ -167,6 +167,9 @@ let rec right_statement s =
   | Ast0.Define(def,id,params,body) ->
       call_right right_statement_dots body s
 	(function body -> Ast0.Define(def,id,params,body))
+  | Ast0.Pragma(prg,id,body) ->
+      (* seems safe; let the code go with the enclosing statement, if any *)
+      None
   | Ast0.OptStm(re) ->
       call_right right_statement re s (function re -> Ast0.OptStm(re))
   | Ast0.UniqueStm(re) ->
@@ -204,6 +207,9 @@ let rec left_ty t =
 	(function lp1 -> Ast0.FunctionType(None,lp1,params,rp1))
   | Ast0.Array(ty,lb,size,rb) ->
       call_right left_ty ty t (function ty -> Ast0.Array(ty,lb,size,rb))
+  | Ast0.Decimal(dec,lp,length,comma,precision_opt,rp) ->
+      call_right left_mcode dec t
+	(function dec -> Ast0.Decimal(dec,lp,length,comma,precision_opt,rp))
   | Ast0.EnumName(kind,name) ->
       call_right left_mcode kind t (function kind -> Ast0.EnumName(kind,name))
   | Ast0.EnumDef(ty,lb,ids,rb) ->

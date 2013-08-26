@@ -1284,14 +1284,18 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
 	ctl_and CTL.NONSTRICT
 	  (make_raw_match None false ast) (* statement *)
 	  (matcher d)                     (* transformation *)
-    | (Ast.CONTEXT(pos,(Ast.NOTHING|Ast.BEFORE(_,_))),(After a | Guard a)) ->
-	(* This case and the MINUS one couldprobably be merged, if
+    | (Ast.CONTEXT(pos,(Ast.NOTHING|Ast.BEFORE(_,_))),
+       ((After a | Guard a) as after)) ->
+	(* This case and the MINUS one could probably be merged, if
 	   HackForStmt were to notice when its arguments are trivial *)
+	 (* not really sure what this is doing, esp is_compound... *)
 	let first_metamatch = matcher d in
 	(* try to follow after link *)
 	let to_end = ctl_or (aftpred None) (loopfallpred None) in
 	let is_compound =
-	  ctl_ex(make_seq guard [to_end; CTL.True; a]) in
+	  ctl_ex
+	    (make_seq guard
+	       [to_end; make_seq_after guard CTL.True after]) in
 	let not_compound =
 	  make_seq_after guard (ctl_not (ctl_ex to_end)) after in
 	ctl_and CTL.NONSTRICT (make_raw_match label false ast)
@@ -1419,7 +1423,7 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
 let rec dots_and_nests plus nest whencodes bef aft dotcode after label
     process_bef_aft statement_list statement guard quantified wrapcode =
   let ctl_and_ns = ctl_and CTL.NONSTRICT in
-  (* proces bef_aft *)
+  (* process bef_aft *)
   let shortest l =
     List.fold_left ctl_or_fl CTL.False (List.map process_bef_aft l) in
   let bef_aft = (* to be negated *)
@@ -1696,7 +1700,7 @@ and statement stmt top after quantified minus_quantified
   match Ast.unwrap stmt with
     Ast.Atomic(ast) ->
       (match Ast.unwrap ast with
-	(* the following optimisation is not a good idea, because when S
+	(* the following optimization is not a good idea, because when S
 	   is alone, we would like it not to match a declaration.
 	   this makes more matching for things like when (...) S, but perhaps
 	   that matching is not so costly anyway *)
@@ -1804,7 +1808,7 @@ and statement stmt top after quantified minus_quantified
 			     (* error exit not possible; it is in the middle
 				of code, so a return is needed *)
 			     exit)
-			  (* worry about perf, but seems correct, not ax *)
+			  (* worry about performance, but seems correct, not ax *)
 			  (ctl_back_ag
 			     (ctl_not
 				(ctl_uncheck

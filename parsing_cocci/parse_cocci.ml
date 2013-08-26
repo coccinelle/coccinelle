@@ -127,15 +127,17 @@ let token2c (tok,_) =
   | PC.Textern(clt) -> "extern"^(line_type2c clt)
   | PC.Tconst(clt) -> "const"^(line_type2c clt)
   | PC.Tvolatile(clt) -> "volatile"^(line_type2c clt)
+  | PC.Tdecimal(clt) -> "decimal"^(line_type2c clt)
 
-  | PC.TPragma(Ast.Noindent s,_) -> s
-  | PC.TPragma(Ast.Indent s,_)   -> s
-  | PC.TPragma(Ast.Space s,_)   -> s
+  | PC.TDirective(Ast.Noindent s,_) -> s
+  | PC.TDirective(Ast.Indent s,_)   -> s
+  | PC.TDirective(Ast.Space s,_)   -> s
   | PC.TIncludeL(s,clt) -> (pr "#include \"%s\"" s)^(line_type2c clt)
   | PC.TIncludeNL(s,clt) -> (pr "#include <%s>" s)^(line_type2c clt)
   | PC.TUndef(clt,_) -> "#undef"^(line_type2c clt)
   | PC.TDefine(clt,_) -> "#define"^(line_type2c clt)
   | PC.TDefineParam(clt,_,_,_) -> "#define_param"^(line_type2c clt)
+  | PC.TPragma(clt) -> "#pragma"^(line_type2c clt)
   | PC.TMinusFile(s,clt) -> (pr "--- %s" s)^(line_type2c clt)
   | PC.TPlusFile(s,clt) -> (pr "+++ %s" s)^(line_type2c clt)
 
@@ -168,6 +170,7 @@ let token2c (tok,_) =
   | PC.TChar(x,clt) -> x^(line_type2c clt)
   | PC.TFloat(x,clt) -> x^(line_type2c clt)
   | PC.TInt(x,clt) -> x^(line_type2c clt)
+  | PC.TDecimalCst(x,len,prc,clt) -> x^(line_type2c clt)
 
   | PC.TOrLog(clt) -> "||"^(line_type2c clt)
   | PC.TAndLog(clt) -> "&&"^(line_type2c clt)
@@ -312,13 +315,13 @@ let plus_attachable only_plus (tok,_) =
   | PC.Tsize_t(clt) | PC.Tssize_t(clt) | PC.Tptrdiff_t(clt)
   | PC.Tstruct(clt)
   | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
-  | PC.Tstatic(clt)
+  | PC.Tdecimal(clt) | PC.Tstatic(clt)
   | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt)
   | PC.Tauto(clt) | PC.Tregister(clt)
   | PC.Textern(clt) | PC.Tconst(clt) | PC.Tvolatile(clt)
 
   | PC.TIncludeL(_,clt) | PC.TIncludeNL(_,clt) | PC.TUndef(clt,_)
-  | PC.TDefine(clt,_)
+  | PC.TDefine(clt,_) | PC.TPragma(clt)
   | PC.TDefineParam(clt,_,_,_) | PC.TMinusFile(_,clt) | PC.TPlusFile(_,clt)
 
   | PC.TInc(clt) | PC.TDec(clt)
@@ -331,6 +334,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.TSizeof(clt)
 
   | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
+  | PC.TDecimalCst(_,_,_,clt)
 
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
   | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt)
@@ -387,12 +391,12 @@ let get_clt (tok,_) =
   | PC.Tsize_t(clt) | PC.Tssize_t(clt) | PC.Tptrdiff_t(clt)
   | PC.Tstruct(clt)
   | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
-  | PC.Tstatic(clt)
+  | PC.Tdecimal(clt) | PC.Tstatic(clt)
   | PC.Tinline(clt) | PC.Tattr(_,clt) | PC.Tauto(clt) | PC.Tregister(clt)
   | PC.Textern(clt) | PC.Tconst(clt) | PC.Tvolatile(clt)
 
   | PC.TIncludeL(_,clt) | PC.TIncludeNL(_,clt) | PC.TUndef(clt,_)
-  | PC.TDefine(clt,_)
+  | PC.TDefine(clt,_) | PC.TPragma(clt)
   | PC.TDefineParam(clt,_,_,_) | PC.TMinusFile(_,clt) | PC.TPlusFile(_,clt)
 
   | PC.TInc(clt) | PC.TDec(clt)
@@ -406,6 +410,7 @@ let get_clt (tok,_) =
   | PC.TSizeof(clt)
 
   | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
+  | PC.TDecimalCst(_,_,_,clt)
 
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
   | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt)
@@ -466,6 +471,7 @@ let update_clt (tok,x) clt =
   | PC.Tstruct(_) -> (PC.Tstruct(clt),x)
   | PC.Tunion(_) -> (PC.Tunion(clt),x)
   | PC.Tenum(_) -> (PC.Tenum(clt),x)
+  | PC.Tdecimal(_) -> (PC.Tdecimal(clt),x)
   | PC.Tunsigned(_) -> (PC.Tunsigned(clt),x)
   | PC.Tsigned(_) -> (PC.Tsigned(clt),x)
   | PC.Tstatic(_) -> (PC.Tstatic(clt),x)
@@ -483,6 +489,7 @@ let update_clt (tok,x) clt =
   | PC.TUndef(_,a) -> (PC.TUndef(clt,a),x)
   | PC.TDefine(_,a) -> (PC.TDefine(clt,a),x)
   | PC.TDefineParam(_,a,b,c) -> (PC.TDefineParam(clt,a,b,c),x)
+  | PC.TPragma(_) -> (PC.TPragma(clt),x)
   | PC.TMinusFile(s,_) -> (PC.TMinusFile(s,clt),x)
   | PC.TPlusFile(s,_) -> (PC.TPlusFile(s,clt),x)
 
@@ -513,6 +520,7 @@ let update_clt (tok,x) clt =
   | PC.TChar(s,_) -> (PC.TChar(s,clt),x)
   | PC.TFloat(s,_) -> (PC.TFloat(s,clt),x)
   | PC.TInt(s,_) -> (PC.TInt(s,clt),x)
+  | PC.TDecimalCst(s,l,p,_) -> (PC.TDecimalCst(s,l,p,clt),x)
 
   | PC.TOrLog(_) -> (PC.TOrLog(clt),x)
   | PC.TAndLog(_) -> (PC.TAndLog(clt),x)
@@ -679,16 +687,18 @@ let split_token ((tok,_) as t) =
   | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt)
   | PC.Tsize_t(clt) | PC.Tssize_t(clt) | PC.Tptrdiff_t(clt)
   | PC.Tstruct(clt)
-  | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
+  | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tdecimal(clt)
+  | PC.Tunsigned(clt) | PC.Tsigned(clt)
   | PC.Tstatic(clt) | PC.Tauto(clt) | PC.Tregister(clt) | PC.Textern(clt)
   | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt)
   | PC.Tconst(clt) | PC.Tvolatile(clt) -> split t clt
 
-  | PC.TPragma(s,_) -> ([],[t]) (* only allowed in + *)
+  | PC.TDirective(s,_) -> ([],[t]) (* only allowed in + *)
   | PC.TPlusFile(s,clt) | PC.TMinusFile(s,clt)
   | PC.TIncludeL(s,clt) | PC.TIncludeNL(s,clt) ->
       split t clt
-  | PC.TUndef(clt,_) | PC.TDefine(clt,_) | PC.TDefineParam(clt,_,_,_) ->
+  | PC.TUndef(clt,_) | PC.TDefine(clt,_) | PC.TDefineParam(clt,_,_,_)
+  | PC.TPragma(clt) ->
       split t clt
 
   | PC.TIf(clt) | PC.TElse(clt)  | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt)
@@ -734,7 +744,8 @@ let split_token ((tok,_) as t) =
 
   | PC.TInc(clt) | PC.TDec(clt) -> split t clt
 
-  | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt) ->
+  | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
+  | PC.TDecimalCst(_,_,_,clt) ->
       split t clt
 
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
@@ -850,7 +861,7 @@ let rec find_function_names l =
   loop l
 
 (* ----------------------------------------------------------------------- *)
-(* an attribute is an identifier that preceeds another identifier and
+(* an attribute is an identifier that precedes another identifier and
    begins with __ *)
 
 let rec detect_attr l =
@@ -975,7 +986,8 @@ let token2line (tok,_) =
   | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt)
   | PC.Tsize_t(clt) | PC.Tssize_t(clt) | PC.Tptrdiff_t(clt)
   | PC.Tstruct(clt)
-  | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
+  | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tdecimal(clt)
+  | PC.Tunsigned(clt) | PC.Tsigned(clt)
   | PC.Tstatic(clt) | PC.Tauto(clt) | PC.Tregister(clt) | PC.Textern(clt)
   | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt) | PC.Tconst(clt)
   | PC.Tvolatile(clt)
@@ -992,6 +1004,7 @@ let token2line (tok,_) =
   | PC.TSymId(_,clt)
 
   | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
+  | PC.TDecimalCst(_,_,_,clt)
 
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
   | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TLogOp(_,clt)
@@ -1029,6 +1042,7 @@ let token2line (tok,_) =
   | PC.TPtrOp(clt)
 
   | PC.TUndef(clt,_) | PC.TDefine(clt,_) | PC.TDefineParam(clt,_,_,_)
+  | PC.TPragma(clt)
   | PC.TIncludeL(_,clt) | PC.TIncludeNL(_,clt)
 
   | PC.TEq(clt) | PC.TAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
@@ -1043,7 +1057,8 @@ let rec insert_line_end = function
       x::(find_line_end true (token2line x) clt q xs)
   | (((PC.TUndef(clt,_),q) as x)::xs)
   | (((PC.TDefine(clt,_),q) as x)::xs)
-  | (((PC.TDefineParam(clt,_,_,_),q) as x)::xs) ->
+  | (((PC.TDefineParam(clt,_,_,_),q) as x)::xs)
+  | (((PC.TPragma(clt),q) as x)::xs) ->
       x::(find_line_end false (token2line x) clt q xs)
   | x::xs -> x::(insert_line_end xs)
 
@@ -1179,7 +1194,7 @@ let find_top_init tokens =
 are not allowed. *)
 
 let rec collect_all_pragmas collected = function
-    (PC.TPragma(s,(_,line,logical_line,offset,col,_,_,pos)),_)::rest ->
+    (PC.TDirective(s,(_,line,logical_line,offset,col,_,_,pos)),_)::rest ->
       let i =
 	{ Ast0.line_start = line; Ast0.line_end = line;
 	  Ast0.logical_start = logical_line; Ast0.logical_end = logical_line;
@@ -1211,7 +1226,7 @@ having sequential logical lines.  Not sure that this is good enough,
 as it might result in later gaps in the logical lines... *)
 let rec process_pragmas bef skips = function
     [] -> add_bef bef @ List.rev skips
-  | ((PC.TPragma(s,i),_)::_) as l ->
+  | ((PC.TDirective(s,i),_)::_) as l ->
       let (pragmas,rest) = collect_all_pragmas [] l in
       let (pass,rest0) = collect_pass rest in
       let (_,_,prag_lline,_,_,_,_,_) = i in
@@ -1679,7 +1694,8 @@ let get_rule_name parse_fn starts_with_name get_tokens file prefix =
       | Ast.FinalScriptRulename(_,s,deps) ->
 	  Ast.FinalScriptRulename(check_name None,s,deps)
     else
-      Ast.CocciRulename(Some(mknm()),Ast.NoDep,[],[],Ast.Undetermined,false) in
+      Ast.CocciRulename(Some(mknm()),Ast.NoDep,[],[],Ast.Undetermined,
+			Ast.AnyP) in
   Data.in_rule_name := false;
   name_res
 
@@ -1884,9 +1900,12 @@ let parse file =
 	       Printf.printf "before minus parse\n";
 	    *)
 	    let minus_res =
-	      if is_expression
-	      then parse_one "minus" PC.minus_exp_main file minus_tokens
-	      else parse_one "minus" PC.minus_main file minus_tokens in
+	      let minus_parser =
+		match is_expression with
+		  Ast.AnyP -> PC.minus_main
+		| Ast.TyP -> PC.minus_ty_main
+		| Ast.ExpP -> PC.minus_exp_main in
+	      parse_one "minus" minus_parser file minus_tokens in
 	    (*
 	       Unparse_ast0.unparse minus_res;
 	       Printf.printf "before plus parse\n";
@@ -1900,9 +1919,12 @@ let parse file =
 		  (Iso_pattern.rebuild_mcode None).VT0.rebuilder_rec_top_level
 		  (Top_level.top_level false minus_res)
 	      else
-		if is_expression
-		then parse_one "plus" PC.plus_exp_main file plus_tokens
-		else parse_one "plus" PC.plus_main file plus_tokens in
+		let plus_parser =
+		  match is_expression with
+		    Ast.AnyP -> PC.plus_main
+		  | Ast.TyP -> PC.plus_ty_main
+		  | Ast.ExpP -> PC.plus_exp_main in
+		parse_one "plus" plus_parser file plus_tokens in
 	    let plus_res = Top_level.top_level false plus_res in
 	    (* minus code has to be CODE if the + code is CODE, otherwise
 	       doesn't matter if + code is CODE or DECL or TOPCODE *)

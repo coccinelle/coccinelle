@@ -397,7 +397,7 @@ let extract_macros a =
 (* The use of local refs (remaining_tokens, passed_tokens, ...) makes
  * possible error recovery. Indeed, they allow to skip some tokens and
  * still be able to call again the ocamlyacc parser. It is ugly code
- * because we cant modify ocamllex and ocamlyacc. As we want some
+ * because we cannot modify ocamllex and ocamlyacc. As we want some
  * extended lexing tricks, we have to use such refs.
  *
  * Those refs are now also used for my lalr(k) technique. Indeed They

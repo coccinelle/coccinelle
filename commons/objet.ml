@@ -3,7 +3,7 @@ open Common
 (* TypeClass via objects. Cf also now interfaces.ml
  *
  * todo? get more inspiration from Java to put fundamental interfaces
- * here ? such as cloneable, equaable, showable, debugable, etc
+ * here ? such as clonable, equaable, showable, debugable, etc
  *)
 
 class virtual objet =

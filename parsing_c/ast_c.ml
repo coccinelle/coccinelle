@@ -43,7 +43,7 @@ open Common
  *
  * convention: I often use 'ii' for the name of a list of info.
  *
- * Sometimes we want to add someting at the beginning or at the end
+ * Sometimes we want to add something at the beginning or at the end
  * of a construct. For 'function' and 'decl' we want to add something
  * to their left and for 'if' 'while' et 'for' and so on at their right.
  * We want some kinds of "virtual placeholders" that represent the start or
@@ -128,12 +128,12 @@ and 'a wrap3 = 'a * il (* * evotype*)
  * as concatenated strings can be used not only for identifiers and for
  * declarators, but also for fields, for labels, etc.
  *
- * Note: because now the info is embeded in the name, the info for
+ * Note: because now the info is embedded in the name, the info for
  * expression like Ident, or types like Typename, are not anymore
  * stored in the expression or type. Hence if you assume this,
  * which was true before, you are now wrong. So never write code like
  * let (unwrape,_), ii = e  and use 'ii' believing it contains
- * the local ii to e. If you want to do that, use the appropiate
+ * the local ii to e. If you want to do that, use the appropriate
  * wrapper get_local_ii_of_expr_inlining_ii_of_name.
  *)
 and name =
@@ -157,7 +157,7 @@ and name =
  * from scratch, because many stuff are just sugar.
  *
  * invariant: Array and FunctionType have also typeQualifier but they
- * dont have sense. I put this to factorise some code. If you look in
+ * don't have sense. I put this to factorise some code. If you look in
  * the grammar, you see that we can never specify const for the array
  * himself (but we can do it for pointer) or function, we always
  * have in the action rule of the grammar a { (nQ, FunctionType ...) }.
@@ -180,6 +180,7 @@ and fullType = typeQualifier * typeC
 
   | Pointer         of fullType
   | Array           of constExpression option * fullType
+  | Decimal         of constExpression * constExpression option
   | FunctionType    of functionType
 
   | Enum            of string option * enumType
@@ -369,6 +370,7 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
     | Char   of (string * isWchar) (* normally it is equivalent to Int *)
     | Int    of (string * intType)
     | Float  of (string * floatType)
+    | DecimalConst of (string * string * string)
 
     and isWchar = IsWchar | IsChar
 
@@ -395,7 +397,7 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
 (* ------------------------------------------------------------------------- *)
 (* C statement *)
 (* ------------------------------------------------------------------------- *)
-(* note: that assignement is not a statement but an expression;
+(* note: that assignment is not a statement but an expression;
  * wonderful C langage.
  *
  * note: I use 'and' for type definition cos gccext allow statement as
@@ -547,7 +549,7 @@ and declaration =
 
      (* fullType is the type used if the type should be converted to
 	an assignment.  It can be adjusted in the type annotation
-	phase when typedef information is availalble *)
+	phase when typedef information is available *)
      and initialiser = initialiserbis wrap
        and initialiserbis =
           | InitExpr of expression
@@ -594,7 +596,8 @@ and definition = definitionbis wrap (* ( ) { } fakestart sto *)
 and cpp_directive =
   | Define of define
   | Include of includ
-  | PragmaAndCo of il
+  | Pragma of string wrap * pragmainfo
+  | OtherDirective of il
 (*| Ifdef ? no, ifdefs are handled differently, cf ifdef_directive below *)
 
 and define = string wrap (* #define s eol *) * (define_kind * define_val)
@@ -620,8 +623,6 @@ and define = string wrap (* #define s eol *) * (define_kind * define_val)
 
      | DefineTodo
 
-
-
 and includ =
   { i_include: inc_file wrap; (* #include s *)
     (* cocci: computed in ? *)
@@ -631,11 +632,11 @@ and includ =
     (* cf cpp_ast_c.ml. set to None at parsing time. *)
     i_content: (Common.filename (* full path *) * program) option;
   }
- and inc_file =
+and inc_file =
   | Local    of inc_elem list
   | NonLocal of inc_elem list
   | Weird of string (* ex: #include SYSTEM_H *)
-  and inc_elem = string
+and inc_elem = string
 
  (* cocci: to tag the first of #include <xx/> and last of #include <yy/>
   *
@@ -646,12 +647,14 @@ and includ =
   *
   * This is set after parsing, in cocci.ml, in update_rel_pos.
   *)
- and include_rel_pos = {
+and include_rel_pos = {
    first_of : string list list;
    last_of :  string list list;
  }
 
-
+and pragmainfo =
+    PragmaTuple of argument wrap2 (* , *) list wrap
+  | PragmaIdList of name wrap2 list (* no commas, wrap2 is always empty *)
 
 (* todo? to specialize if someone need more info *)
 and ifdef_directive = (* or and 'a ifdefed = 'a list wrap *)
@@ -826,7 +829,7 @@ let noInIfdef () =
 (* When want add some info in ast that does not correspond to
  * an existing C element.
  * old: or when don't want 'synchronize' on it in unparse_c.ml
- * (now have other mark for tha matter).
+ * (now have other mark for the matter).
  *)
 let no_virt_pos = ({str="";charpos=0;line=0;column=0;file=""},-1)
 
@@ -1120,7 +1123,7 @@ let real_al_info_cpp x =
  * a list where the comma are on their own. f(1,2,2) was
  * [(1,[]); (2,[,]); (2,[,])] and become [1;',';2;',';2].
  *
- * Used in cocci_vs_c.ml, to have a more direct correspondance between
+ * Used in cocci_vs_c.ml, to have a more direct correspondence between
  * the ast_cocci of julia and ast_c.
  *)
 let rec (split_comma: 'a wrap2 list -> ('a, il) either list) =

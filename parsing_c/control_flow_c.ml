@@ -74,7 +74,7 @@ open Ast_c
  * choice: Julia proposed that the flow is in fact just
  * a view through the Ast, which means just Ocaml ref, so that when we
  * modify some nodes, in fact it modifies the ast. But I prefer do it
- * the functionnal way.
+ * the functional way.
  *
  * The node2 type should be as close as possible to Ast_cocci.rule_elem to
  * facilitate the job of cocci_vs_c.
@@ -176,7 +176,7 @@ type node = node1 * string
    * of an if (maybe a '}', maybe a ';')
    *
    * The problem is that this stuff should be in transformation.ml,
-   * but need information available in flow_to_ast, but we dont want
+   * but need information available in flow_to_ast, but we don't want
    * to polluate both files.
    *
    * So the choices are
@@ -217,6 +217,8 @@ type node = node1 * string
   | DefineTodo
 
   | Include of includ
+
+  | PragmaHeader of string wrap * pragmainfo
 
   (* obsolete? *)
   | MacroTop of string * argument wrap2 list * il
@@ -342,8 +344,7 @@ let extract_fullstatement node =
 
   | Include _
   | DefineHeader _ | DefineType _ | DefineExpr  _ | DefineDoWhileZeroHeader _
-  | DefineTodo
-  | MacroTop _
+  | DefineTodo | PragmaHeader _ | MacroTop _
       -> None
 
   | IfdefHeader _ | IfdefElse _ | IfdefEndif _

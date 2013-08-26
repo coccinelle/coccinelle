@@ -58,14 +58,14 @@ val set_autoreset : bool -> unit
 
 val print_string : style list -> string -> unit
   (** [print_string attr txt] prints the string [txt] with the
-    attibutes [attr].  After printing, the attributes are
-    automatically reseted to the defaults, unless autoreset is turned
+    attributes [attr].  After printing, the attributes are
+    automatically reset to the defaults, unless autoreset is turned
     off. *)
 
 val printf : style list -> ('a, unit, string, unit) format4 -> 'a
   (** [printf attr format arg1 ... argN] prints the arguments
-    [arg1],...,[argN] according to [format] with the attibutes [attr].
-    After printing, the attributes are automatically reseted to the
+    [arg1],...,[argN] according to [format] with the attributes [attr].
+    After printing, the attributes are automatically reset to the
     defaults, unless autoreset is turned off. *)
 
 

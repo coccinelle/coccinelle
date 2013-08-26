@@ -185,7 +185,7 @@ let print_type keep info = function
       print_string " */"*)
 
 (* --------------------------------------------------------------------- *)
-(* Contraint on Identifier and Function *)
+(* Constraint on Identifier and Function *)
 (* FIXME: Not called at the moment *)
 
 let rec idconstraint = function
@@ -323,8 +323,8 @@ and  arithOp = function
   | Ast.Minus -> print_string "-"
   | Ast.Mul -> print_string "*"
   | Ast.Div -> print_string "/"
-  | Ast.Max -> print_string ">?"
   | Ast.Min -> print_string "<?"
+  | Ast.Max -> print_string ">?"
   | Ast.Mod -> print_string "%"
   | Ast.DecLeft -> print_string "<<"
   | Ast.DecRight -> print_string ">>"
@@ -347,6 +347,7 @@ and constant = function
   | Ast.Char(s) -> print_string "'"; print_string s; print_string "'"
   | Ast.Int(s) -> print_string s
   | Ast.Float(s) -> print_string s
+  | Ast.DecimalConst(s,_,_) -> print_string s
 
 (* --------------------------------------------------------------------- *)
 (* Declarations *)
@@ -404,6 +405,13 @@ and typeC ty =
   | Ast.Array(ty,lb,size,rb) ->
       fullType ty; mcode print_string lb; print_option expression size;
       mcode print_string rb
+  | Ast.Decimal(dec,lp,length,comma,precision_opt,rp) ->
+      mcode print_string dec;
+      mcode print_string lp;
+      expression length;
+      print_option (mcode print_string) comma;
+      print_option expression precision_opt;
+      mcode print_string rp
   | Ast.EnumName(kind,name) ->
       mcode print_string kind;
       print_option (function x -> ident x; print_string " ") name
@@ -672,6 +680,9 @@ let rec rule_elem arity re =
   | Ast.DefineHeader(def,id,params) ->
       mcode print_string def; print_string " "; ident id;
       print_define_parameters params
+  | Ast.Pragma(prg,id,body) ->
+      mcode print_string prg; print_string " "; ident id; print_string " ";
+      pragmainfo body
   | Ast.Default(def,colon) ->
       mcode print_string def; mcode print_string colon; print_string " "
   | Ast.Case(case,exp,colon) ->
@@ -692,6 +703,15 @@ and forinfo = function
   | Ast.ForDecl (bef,allminus,decl) ->
       mcode (function _ -> ()) ((),Ast.no_info,bef,[]);
       declaration decl
+
+and pragmainfo pi =
+  match Ast.unwrap pi with
+      Ast.PragmaTuple(lp,args,rp) ->
+	mcode print_string_box lp;
+	dots (function _ -> ()) expression args;
+	close_box(); mcode print_string rp
+    | Ast.PragmaIdList(ids) -> dots (function _ -> ()) ident ids
+    | Ast.PragmaDots (dots) -> mcode print_string dots
 
 and print_define_parameters params =
   match Ast.unwrap params with
@@ -875,7 +895,7 @@ let _ =
     | Ast.ConstVolTag(x) -> const_vol x
     | Ast.Token(x,Some info) -> print_string_befaft print_string x info
     | Ast.Token(x,None) -> print_string x
-    | Ast.Pragma(xs) ->
+    | Ast.Directive(xs) ->
 	let print = function
 	    Ast.Noindent s | Ast.Indent s | Ast.Space s -> print_string s in
 	print_between force_newline print xs

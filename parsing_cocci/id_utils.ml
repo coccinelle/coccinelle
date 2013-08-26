@@ -44,8 +44,8 @@ let rec interpret dir exp =
 	(match exp with
 	  GC.Elem oo ->
 	    let cmd =
-	      Printf.sprintf
-		"lid -f %s/.id-utils.index -l %s -S newline" dir oo in
+	      Printf.sprintf "lid -f %s/%s -l %s -S newline"
+		dir !Flag_parsing_cocci.id_utils_index oo in
 	    Common.cmd_to_list cmd
 	| GC.And l ->
 	    let rec loop = function

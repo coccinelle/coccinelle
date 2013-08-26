@@ -36,7 +36,7 @@ let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_cfg
  * checktodo: after a switch, need check that all the st in the
  * compound start with a case: ?
  *
- * checktodo: how ensure that when we call aux_statement recursivly, we
+ * checktodo: how ensure that when we call aux_statement recursively, we
  * pass it xi_lbl and not just auxinfo ? how enforce that ?
  * in fact we must either pass a xi_lbl or a newxi
  *
@@ -206,7 +206,7 @@ let compute_labels_and_create_them st =
 (* ctl_braces: *)
 let insert_all_braces xs starti =
   xs  +> List.fold_left (fun acc node ->
-    (* Have to build a new node (clone), cos cant share it.
+    (* Have to build a new node (clone), cos cannot share it.
      * update: This is now done by the caller. The clones are in xs.
      *)
     let newi = !g#add_node node in
@@ -254,10 +254,10 @@ let insert_all_braces xs starti =
  * type additionnal_info defined above.
  *
  * - to complete (break, continue (and enclosing loop), switch (and
- * associated case, casedefault)) we need to pass additionnal info.
+ * associated case, casedefault)) we need to pass additional info.
  * The start/exit when enter in a loop, to know the current 'for'.
  *
- * - to handle the braces, need again pass additionnal info.
+ * - to handle the braces, need again pass additional info.
  *
  * - need pass the labels.
  *
@@ -278,7 +278,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
   in
 
   (* Normally the new auxinfo to pass recursively to the next aux_statement.
-   * But in some cases we add additionnal stuff in which case we don't use
+   * But in some cases we add additional stuff in which case we don't use
    * this 'xi_lbl' but a 'newxi' specially built.
    *)
   let xi_lbl =
@@ -593,7 +593,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
              (* apparently gcc allows some switch body such as
               *   switch (i) case 0 : printf("here\n");
               *   cf tests-bis/switch_no_body.c
-              * but I don't think it's worthwile to handle
+              * but I don't think it's worthwhile to handle
               * such pathological and rare case. Not worth
               * the complexity. Safe to assume a coumpound.
               *)
@@ -734,7 +734,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
 
 
   (* This time, may return None, for instance if goto in body of dowhile
-   * (whereas While cant return None). But if return None, certainly
+   * (whereas While cannot return None). But if return None, certainly
    * some deadcode.
    *)
   | Iteration  (Ast_c.DoWhile (st, e)) ->
@@ -1294,6 +1294,16 @@ let rec ast_to_control_flow e =
 *)
       );
 
+      Some !g
+
+  | Ast_c.CppTop (Ast_c.Pragma ((id,ii), pragmainfo))  ->
+      let elem = PragmaHeader ((id,ii), pragmainfo) in
+      let str = "#pragma " ^ id in
+      let ei =   !g +> add_node elem    lbl_0 str in
+      let endi = !g +> add_node EndNode lbl_0 "[end]" in
+
+      !g#add_arc ((topi, ei),Direct);
+      !g#add_arc ((ei, endi),Direct);
       Some !g
 
   | _ -> None

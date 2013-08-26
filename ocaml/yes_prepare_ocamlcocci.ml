@@ -291,7 +291,7 @@ let approx_coccilib_deps cmi =
       end
       else begin
         if c >= 'A' && c <= 'Z'
-        then (* perhaps the begin of a captialized identifier *)
+        then (* perhaps the begin of a capitalized identifier *)
           Buffer.add_char buf c
         else ()
       end

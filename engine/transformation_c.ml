@@ -367,6 +367,28 @@ module XTRANS = struct
 	    Some(Ast_cocci.CONTEXT(old_pos,old_modif),
 		 (clean_env tin.binding)::oldenvs)
 
+    (* non ++ but same modif for two reasons *)
+    | (Ast_cocci.MINUS(old_pos,old_inst,old_adj,old_modif),
+       Ast_cocci.MINUS(new_pos,new_inst,new_adj,new_modif))
+	when old_pos = new_pos &&
+	  old_modif = strip_minus_code new_modif &&
+	  List.mem (clean_env tin.binding) oldenvs ->
+
+          cocciinforef :=
+	    Some(Ast_cocci.MINUS(old_pos,Common.union_set old_inst new_inst,
+				 old_adj,old_modif),
+		 oldenvs)
+
+    | (Ast_cocci.CONTEXT(old_pos,old_modif),
+       Ast_cocci.CONTEXT(new_pos,new_modif))
+	when old_pos = new_pos &&
+	  old_modif = strip_context_code new_modif &&
+	  List.mem (clean_env tin.binding) oldenvs ->
+	    (* iteration only allowed on context; no way to replace something
+	       more than once; now no need for iterable; just check a flag *)
+
+          cocciinforef := Some(Ast_cocci.CONTEXT(old_pos,old_modif),oldenvs)
+
     | _ ->
           (* coccionly:
           if !Flag.sgrep_mode2
@@ -375,7 +397,7 @@ module XTRANS = struct
           *)
              begin
             (* coccionly:
-               pad: if dont want cocci write:
+               pad: if don't want cocci write:
                 failwith
 	        (match Ast_c.pinfo_of_info ib with
 		  Ast_c.FakeTok _ -> "already tagged fake token"
@@ -567,12 +589,20 @@ module XTRANS = struct
       Visitor_c.vk_cst_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop))
         x
 
-
   let distribute_mck_define_params (maxpos, minpos) = fun (lop,mop,rop,bop) ->
    fun x ->
     Visitor_c.vk_define_params_splitted_s
       (mk_bigf (maxpos, minpos) (lop,mop,rop,bop))
       x
+
+  let distribute_mck_pragmainfo (maxpos, minpos) = fun (lop,mop,rop,bop) ->
+   fun x ->
+    Visitor_c.vk_pragmainfo_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
+
+  let distribute_mck_ident_list (maxpos, minpos) = fun (lop,mop,rop,bop) ->
+   fun x ->
+    Visitor_c.vk_ident_list_splitted_s
+       (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
 
    let get_pos mck =
      match mck with
@@ -631,6 +661,10 @@ module XTRANS = struct
     distrf (Lib_parsing_c.ii_of_cst, distribute_mck_cst)
   let distrf_define_params =
     distrf (Lib_parsing_c.ii_of_define_params,distribute_mck_define_params)
+  let distrf_pragmainfo =
+    distrf (Lib_parsing_c.ii_of_pragmainfo,distribute_mck_pragmainfo)
+  let distrf_ident_list =
+    distrf (Lib_parsing_c.ii_of_ident_list,distribute_mck_ident_list)
 
 
   (* ------------------------------------------------------------------------*)

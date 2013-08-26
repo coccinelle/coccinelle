@@ -296,6 +296,13 @@ and typeC t =
       | Ast0.Array(ty,lb,size,rb) ->
 	  typeC ty; mcode print_string lb; print_option expression size;
 	  mcode print_string rb
+      | Ast0.Decimal(dec,lp,length,comma,precision_opt,rp) ->
+	  mcode print_string dec;
+	  mcode print_string lp;
+	  expression length;
+	  print_option (mcode print_string) comma;
+	  print_option expression precision_opt;
+	  mcode print_string rp
       | Ast0.EnumName(kind,name) ->
 	  mcode print_string kind;
 	  print_option (function x -> ident x; print_string " ") name
@@ -592,10 +599,22 @@ and statement arity s =
 	  print_define_parameters params;
 	  print_string " ";
 	  dots force_newline (statement arity) body
+      | Ast0.Pragma(prg,id,body) ->
+	  mcode print_string prg; print_string " "; ident id;
+	  print_string " "; pragmainfo body
       | Ast0.OptStm(re) -> statement "?" re
       | Ast0.UniqueStm(re) -> statement "!" re
       | Ast0.AsStmt(stm,asstm) -> statement arity stm; print_string "@";
 	  statement arity asstm)
+
+and pragmainfo pi =
+  match Ast0.unwrap pi with
+      Ast0.PragmaTuple(lp,args,rp) ->
+	mcode print_string_box lp;
+	dots (function _ -> ()) expression args;
+	close_box(); mcode print_string rp
+    | Ast0.PragmaIdList(ids) -> dots (function _ -> ()) ident ids
+    | Ast0.PragmaDots(dots) -> mcode print_string dots
 
 and print_define_parameters params =
   match Ast0.unwrap params with

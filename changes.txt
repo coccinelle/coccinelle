@@ -57,6 +57,8 @@
 - Support const/volatile after *.  Thanks to Lars-Peter Clausen for
   pointing out the problem.
 - Support variable declarations in the first element of a for loop header.
+- Support decimal type with the --ibm option
+- Support some matching on pragmas
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line
@@ -119,7 +121,7 @@
   compiler and the C compiler and preprocessor).
 - Add line number directives to the .ml file generated from a .cocci file
 - Added 'make check' as an alternative to 'make test'. It can run after
-  building spatch, checks whether some featues work (python and ocaml scripts,
+  building spatch, checks whether some features work (python and ocaml scripts,
   regexes) if these features are enabled, and then launches the test suite
   with a 75% success rate requirement. It also does not ask for user input
   and can be used in autonomous builds.
@@ -144,6 +146,8 @@
 - Added support for c++ namespace syntax in cocci files.
 - Improved c++ parsing
 - Addition of gcc min and max operators.  Thanks to Holden Karau
+- Allow --use-idutils to take the name of the database as an optional
+  argument.  Thank to Wolfram Sang for the suggestion.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
@@ -267,6 +271,20 @@
 - Allow an expression list metavariable to be attached to a parameter list
   metavariable, to allow using the parameter names as an argument list.
   Thanks to Michael Stefaniuc for pointing out the need for this feature.
+- register x; in C is considered to implicitly declare an int typed
+  variable.  A type metavariable that is part of a match of this
+  declaration will get bound to int.  But if the type metavariable
+  furthermore is associated with a position metavariable, the match will
+  fail, because the implicit int has no position.  Thanks to Nic Volanschi
+  for pointing out the problem.
+- Propagate parameter list variables from rules for function definitions
+  to the generated rules for function prototypes.  Thanks to Nic Volanschi
+  for pointing out the problem.
+- Avoid introducing extra space when pretty printing.  Thanks to Daniel
+  Wagner for pointing out the problem.
+- Don't add extra space before semicolon, comma, or right paren when adding
+  an __attribute__
+- Identifiers promoted to typedefs should have positions
 
 * 0.2.5
 ** Language:
@@ -330,7 +348,7 @@
 - matching of array initializations and of enum declarations
 
 ** Features:
-- compatability with Python 2.7.  Thanks to Richard W.M. Jones for pointing
+- compatibility with Python 2.7.  Thanks to Richard W.M. Jones for pointing
   out the problem
 - python and ocaml string representations of parameter lists and expression
   lists
@@ -717,7 +735,7 @@
   Thanks to Erik Hovland for an example that shows the problem.
 
 ** Internals:
-- supress warning in compiling ocamlsexp (warning caused by a new behavior
+- suppress warning in compiling ocamlsexp (warning caused by a new behavior
   of cpp used internally in processing files in ocamlsexp/)
 
 * 0.1.7
@@ -741,7 +759,7 @@
 - allow . as the name of the directory
 - for type inference for an assignment, take the type of the right-hand
   side expression, not the type of the assigned variable
-- allow for with a declartion in the first header element, as in C++
+- allow for with a declaration in the first header element, as in C++
   (partial support)
 - allow for matching against variable declarations that include only
   storage, eg static, but no type at all.

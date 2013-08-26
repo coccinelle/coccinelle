@@ -65,6 +65,7 @@ let rec is_toplevel s =
   | Ast0.Include(_,_) -> true
   | Ast0.Undef(_,_) -> true
   | Ast0.Define(_,_,_,_) -> true
+  | Ast0.Pragma(_,_,_) -> true
   | _ -> false
 
 let scan_code must_be_code l =

@@ -155,7 +155,7 @@ let (fixDeclSpecForDecl: decl -> (fullType * (storage wrap)))  = function
      (*mine*)
      raise (Semantic ("signed, unsigned valid only for char and int", fake_pi))
  | (_,Some _,(Some(BaseType(FloatType (CFloat|CLongDouble))))) ->
-     raise (Semantic ("long or short specified with floatint type", fake_pi))
+     raise (Semantic ("long or short specified with floating type", fake_pi))
  | (_,Some Short,(Some(BaseType(FloatType CDouble)))) ->
      raise (Semantic ("the only valid combination is long double", fake_pi))
 
@@ -398,6 +398,7 @@ let mk_string_wrap (s,info) = (s, [info])
 %token <(string * Ast_c.floatType) * Ast_c.info> TFloat
 %token <(string * Ast_c.isWchar) * Ast_c.info>   TChar
 %token <(string * Ast_c.isWchar) * Ast_c.info>   TString
+%token <(string * string (*n*) * string (*p*)) * Ast_c.info> TDecimal
 
 %token <string * Ast_c.info> TIdent
 %token <string * Ast_c.info> TKRParam
@@ -426,7 +427,7 @@ let mk_string_wrap (s,info) = (s, [info])
 %token <Ast_c.info>
        TOrLog TAndLog TOr TXor TAnd  TEqEq TNotEq TInf TSup TInfEq TSupEq
        TShl TShr
-       TPlus TMinus TMul TDiv TMod TMin TMax
+       TPlus TMinus TMul TDiv TMod  TMax TMin
 
 %token <Ast_c.info>
        Tchar Tshort Tint Tdouble Tfloat Tlong Tunsigned Tsigned Tvoid
@@ -434,7 +435,7 @@ let mk_string_wrap (s,info) = (s, [info])
        Tauto Tregister Textern Tstatic
        Ttypedef
        Tconst Tvolatile
-       Tstruct Tunion Tenum
+       Tstruct Tunion Tenum Tdecimal
        Tbreak Telse Tswitch Tcase Tcontinue Tfor Tdo Tif  Twhile Treturn
        Tgoto Tdefault
        Tsizeof Tnew Tdelete TOParCplusplusInit Tnamespace
@@ -506,6 +507,7 @@ let mk_string_wrap (s,info) = (s, [info])
 /*(*---------------*)*/
 
 %token <Ast_c.info> TUndef
+%token <Ast_c.info> TPragma
 
 %token <Ast_c.info> TCppDirectiveOther
 
@@ -816,6 +818,8 @@ primary_expr:
  | TFloat  { mk_e(Constant (Float  (fst $1))) [snd $1] }
  | TString { mk_e(Constant (String (fst $1))) [snd $1] }
  | TChar   { mk_e(Constant (Char   (fst $1))) [snd $1] }
+ | TDecimal { let (a,b,c) = fst $1 in
+              mk_e(Constant (DecimalConst (a,b,c))) [snd $1] }
  | TOPar expr TCPar { mk_e(ParenExpr ($2)) [$1;$3] }  /*(* forunparser: *)*/
 
  /*(* gccext: cppext: TODO better ast ? *)*/
@@ -1062,6 +1066,10 @@ type_spec2:
  | Tunsigned            { Left3 UnSigned, [$1]}
  | struct_or_union_spec { Right3 (fst $1), snd $1 }
  | enum_spec            { Right3 (fst $1), snd $1 }
+ | Tdecimal TOPar const_expr TComma const_expr TCPar
+     { Right3 (Decimal($3,Some $5)), [$1;$2;$4;$6] }
+ | Tdecimal TOPar const_expr TCPar
+     { Right3 (Decimal($3,None)), [$1;$2;$4] }
 
  /*
  (* parse_typedef_fix1: cant put: TIdent {} cos it make the grammar
@@ -1763,11 +1771,16 @@ cpp_directive:
 
  | TUndef TIdentDefine TDefEOL
      { Define((fst $2, [$1; snd $2; $3]), (Undef,DefineEmpty)) }
- | TCppDirectiveOther { PragmaAndCo ([$1]) }
 
+ | TPragma TIdentDefine pragmainfo TDefEOL
+     { Pragma((fst $2, [$1; snd $2; $4]), $3) }
 
+ | TCppDirectiveOther { OtherDirective ([$1]) }
 
-
+pragmainfo:
+   TOPar argument_list_ne TCPar { (PragmaTuple ($2, [$1;$3])) }
+ | TOPar TCPar { PragmaTuple ([], [$1;$2]) }
+ | ident_define_list_ne { PragmaIdList $1 }
 
 /*(* perhaps better to use assign_expr ? but in that case need
    * do a assign_expr_of_string in parse_c
@@ -2027,6 +2040,12 @@ expression_list:
  | assign_expr { [$1, []] }
  | expression_list TComma assign_expr { $1 ++ [$3,   [$2]] }
 *)*/
+
+
+ident_define_list_ne:
+ | TIdentDefine              { [RegularName (mk_string_wrap $1), []] }
+ | ident_define_list_ne TIdentDefine
+     { $1 ++ [RegularName (mk_string_wrap $2), []] }
 
 
 struct_decl_list:

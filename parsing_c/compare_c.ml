@@ -251,7 +251,7 @@ let compare_ast filename1 filename2  =
  *)
 
 
-(* Pass only "true" comments, dont pass TCommentMisc and TCommentCpp *)
+(* Pass only "true" comments, don't pass TCommentMisc and TCommentCpp *)
 let is_normal_space_or_comment to_expected = function
   | Parser_c.TCommentSpace _
   | Parser_c.TCommentNewline _

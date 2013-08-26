@@ -189,6 +189,8 @@ and left_typeC t =
   | Ast0.FunctionType(Some ty,lp1,params,rp1) -> left_typeC ty
   | Ast0.FunctionType(None,lp1,params,rp1) -> modif_before_mcode lp1
   | Ast0.Array(ty,lb,size,rb) -> left_typeC ty
+  | Ast0.Decimal(dec,lp,length,comma,precision_opt,rp) ->
+      modif_before_mcode dec
   | Ast0.EnumName(kind,name) -> modif_before_mcode kind
   | Ast0.EnumDef(ty,lb,ids,rb) -> left_typeC ty
   | Ast0.StructUnionName(kind,name) -> modif_before_mcode kind
@@ -199,7 +201,6 @@ and left_typeC t =
   | Ast0.OptType(ty) -> left_typeC ty
   | Ast0.UniqueType(ty) -> left_typeC ty
   | Ast0.AsType _ -> failwith "not possible"
-
 
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)
@@ -246,7 +247,7 @@ and right_declaration d =
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
-
+(* These functions seem to be never used
 and left_statement s =
   modif_before s or
   match Ast0.unwrap s with
@@ -286,6 +287,7 @@ and left_statement s =
   | Ast0.Include(inc,s) -> modif_before_mcode inc
   | Ast0.Undef(def,id) -> modif_before_mcode def
   | Ast0.Define(def,id,params,body) -> modif_before_mcode def
+  | Ast0.Pragma(prg,id,body) -> modif_before_mcode prg
   | Ast0.OptStm(re) -> left_statement re
   | Ast0.UniqueStm(re) -> left_statement re
   | Ast0.AsStmt _ -> failwith "not possible"
@@ -328,9 +330,11 @@ and right_statement s =
   | Ast0.Include(inc,s) -> modif_after_mcode s
   | Ast0.Undef(def,id) -> right_ident id
   | Ast0.Define(def,id,params,body) -> right_dots right_statement body
+  | Ast0.Pragma(prg,id,body) -> right_pragma body -- not defined, b/c not used
   | Ast0.OptStm(re) -> right_statement re
   | Ast0.UniqueStm(re) -> right_statement re
   | Ast0.AsStmt _ -> failwith "not possible"
+*)
 
 (* --------------------------------------------------------------------- *)
 
@@ -633,6 +637,7 @@ let rec statement dots_before dots_after s =
   | Ast0.Include(inc,string) -> s (* doesn't affect the need for braces *)
   | Ast0.Undef(def,id) -> s (* same as include *)
   | Ast0.Define(def,id,params,body) -> s (* same as include *)
+  | Ast0.Pragma(prg,id,body) -> s (* same as include *)
   | Ast0.OptStm(re) ->
       Ast0.rewrap s
 	(Ast0.OptStm(statement dots_before dots_after re))

@@ -71,7 +71,7 @@ module Lib = Lib_parsing_c
  * annotate_type.
  *
  * todo: how deal with typedef isomorphisms ? How store them in Ast_c ?
- * store all posible variations in ast_c ? a list of type instead of just
+ * store all possible variations in ast_c ? a list of type instead of just
  * the type ?
  *
  * todo: how to handle multiple possible definitions for entities like
@@ -133,7 +133,7 @@ let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_type
  * so don't need make difference between namespaces here.
  *
  * But, why not make simply a (string, kindstring) assoc ?
- * Because we dont want that a variable shadow a struct definition, because
+ * Because we don't want that a variable shadow a struct definition, because
  * they are still in 2 different namespace. But could for typedef,
  * because VarOrFunc and Typedef are in the same namespace.
  * But could do a record as in c_info.ml
@@ -354,6 +354,7 @@ let rec type_unfold_one_step ty env =
   | BaseType x    -> ty
   | Pointer t     -> ty
   | Array (e, t)  -> ty
+  | Decimal (len,prec_opt) -> ty
 
   | StructUnion (sopt, su, fields) -> ty
 
@@ -429,6 +430,8 @@ let rec typedef_fix ty env =
 	(Enum  (s, enumt)) (* todo? *) +> Ast_c.rewrap_typeC ty
     | EnumName s ->
 	(EnumName s) (* todo? *) +> Ast_c.rewrap_typeC ty
+    | Decimal(l,p) ->
+	(Decimal(l,p)) (* todo? *) +> Ast_c.rewrap_typeC ty
 	  
   (* we prefer StructUnionName to StructUnion when it comes to typed metavar *)
     | StructUnionName (su, s) ->
@@ -659,6 +662,19 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
         let fake = Ast_c.rewrap_str "float" fake in
         let iinull = [fake] in
         make_info_def (Ast_c.mk_ty (BaseType (FloatType kind)) iinull)
+    | Constant (DecimalConst(s,n,p)) ->
+        let fake = Ast_c.fakeInfo (Common.fake_parse_info) in
+        let fake1 = Ast_c.rewrap_str "decimal" fake in
+        let fake2 = Ast_c.rewrap_str "(" fake in
+        let fake3 = Ast_c.rewrap_str "," fake in
+        let fake4 = Ast_c.rewrap_str ")" fake in
+        let iinull = [fake1;fake2;fake3;fake4] in
+        let faken = Ast_c.rewrap_str n fake in
+        let fakep = Ast_c.rewrap_str p fake in
+	let sign = Ast_c.Si(Ast_c.Signed,CInt) in
+	let n = mk_e(Ast_c.Constant(Ast_c.Int (n, sign))) [faken] in
+	let p = mk_e(Ast_c.Constant(Ast_c.Int (p, sign))) [fakep] in
+	make_info_def (Ast_c.mk_ty (Decimal(n,Some p)) iinull)
 
 
     (* -------------------------------------------------- *)
@@ -1005,7 +1021,7 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
  * Because There would be some copy paste with annotate_program, it is
  * better to factorize code hence the just_add_in_env parameter below.
  *
- * todo? alternative optimisation for the include problem:
+ * todo? alternative optimization for the include problem:
  *  - processing all headers files one time and construct big env
  *  - use hashtbl for env (but apparently not biggest problem)
  *)
@@ -1066,7 +1082,13 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
 
           add_binding (Macro (s, (defkind, defval) )) true;
 
-      | PragmaAndCo _ -> ()
+      |	Pragma((s,ii), pragmainfo) ->
+	  (match pragmainfo with
+	    PragmaTuple(args,ii) ->
+              args +> List.iter (fun (e,ii) -> Visitor_c.vk_argument bigf e)
+	  | PragmaIdList _ -> ())
+
+      | OtherDirective _ -> ()
     );
 
     (* ------------------------------------------------------------ *)
@@ -1110,6 +1132,18 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
             in
             var +> Common.do_option (fun (name, iniopt) ->
               let s = Ast_c.str_of_name name in
+
+	      let t =
+		match Ast_c.unwrap_typeC t with
+		| Ast_c.Decimal (len,None) ->
+		    let newp =
+		      Ast_c.rewrap_expr len
+			 (Ast_c.Constant
+			    (Ast_c.Int
+			       ("0",Ast_c.Si(Ast_c.Signed,Ast_c.CInt)))) in
+		    Ast_c.rewrap_typeC t (Ast_c.Decimal (len,Some newp))
+		| _ -> t in
+		
 
               match sto with
               | StoTypedef, _inline ->

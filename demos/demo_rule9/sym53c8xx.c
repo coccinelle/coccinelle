@@ -431,7 +431,7 @@ static inline struct xpt_quehead *xpt_remque_tail(struct xpt_quehead *head)
 **	Simple Wrapper to kernel PCI bus interface.
 **
 **	This wrapper allows to get rid of old kernel PCI interface 
-**	and still allows to preserve linux-2.0 compatibilty.
+**	and still allows to preserve linux-2.0 compatibility.
 **	In fact, it is mostly an incomplete emulation of the new 
 **	PCI code for pre-2.2 kernels. When kernel-2.0 support 
 **	will be dropped, we will just have to remove most of this 
@@ -621,7 +621,7 @@ static int ncr_debug = SCSI_NCR_DEBUG_FLAGS;
 **	use several SCSI adapters, we are using one lock per controller 
 **	instead of some global one. For the moment (linux-2.1.95), driver's 
 **	entry points are called with the 'io_request_lock' lock held, so:
-**	- We are uselessly loosing a couple of micro-seconds to lock the 
+**	- We are uselessly losing a couple of micro-seconds to lock the 
 **	  controller data structure.
 **	- But the driver is not broken by design for SMP and so can be 
 **	  more resistant to bugs or bad changes in the IO sub-system code.
@@ -731,7 +731,7 @@ static void MDELAY(long ms) { while (ms--) UDELAY(1000); }
 **	is guaranteed for power of 2 cache line size.
 **	Enhanced in linux-2.3.44 to provide a memory pool per pcidev 
 **	to support dynamic dma mapping. (I would have preferred a 
-**	real bus astraction, btw).
+**	real bus abstraction, btw).
 */
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,1,0)
@@ -1609,7 +1609,7 @@ struct tcb {
 	ccb_p   nego_cp;
 
 	/*----------------------------------------------------------------
-	**	negotiation of wide and synch transfer and device quirks.
+	**	negotiation of wide and sync transfer and device quirks.
 	**	sval, wval and uval are read from SCRIPTS and so have alignment 
 	**	constraints.
 	**----------------------------------------------------------------
@@ -3385,7 +3385,7 @@ static	struct script script0 __initdata = {
 		0,
 	/*
 	**	Read IDENTIFY + SIMPLE + TAG using a single MOVE.
-	**	Agressive optimization, is'nt it?
+	**	Aggressive optimization, is'nt it?
 	**	No need to test the SIMPLE TAG message, since the 
 	**	driver only supports conformant devices for tags. ;-)
 	*/
@@ -3798,7 +3798,7 @@ static	struct scripth scripth0 __initdata = {
 		PADDRH (msg_weird_seen),
 	/*
 	**	We donnot handle extended messages from SCRIPTS.
-	**	Read the amount of data correponding to the 
+	**	Read the amount of data corresponding to the 
 	**	message length and call the C code.
 	*/
 	SCR_STORE_REL (scratcha, 1),
@@ -4718,7 +4718,7 @@ struct host_data {
 };
 
 /*
-**	Print something which allows to retrieve the controler type, unit,
+**	Print something which allows to retrieve the controller type, unit,
 **	target, lun concerned by a kernel message.
 */
 
@@ -5505,7 +5505,7 @@ ncr_attach (Scsi_Host_Template *tpnt, int unit, ncr_device *device)
 		goto attach_error;
 
 	/*
-	**	Initialyze the CCB free queue and,
+	**	Initialize the CCB free queue and,
 	**	allocate some CCB. We need at least ONE.
 	*/
 	xpt_que_init(&np->free_ccbq);
@@ -5631,9 +5631,9 @@ ncr_attach (Scsi_Host_Template *tpnt, int unit, ncr_device *device)
 	**	condition is met:
 	**
 	**	- No SCSI BIOS is present.
-	**	- SCSI BIOS did'nt enable the multiplier for some reason.
+	**	- SCSI BIOS didn't enable the multiplier for some reason.
 	**	- User has disabled the controller from the SCSI BIOS.
-	**	- User booted the O/S from another O/S that did'nt enable 
+	**	- User booted the O/S from another O/S that didn't enable 
 	**	  the multiplier for some reason.
 	**
 	**	As a result, the driver may only have to measure some 
@@ -5834,7 +5834,7 @@ ncr_attach (Scsi_Host_Template *tpnt, int unit, ncr_device *device)
 
 	/*
 	**	Install the interrupt handler.
-	**	If we synchonize the C code with SCRIPTS on interrupt, 
+	**	If we support the C code with SCRIPTS on interrupt, 
 	**	we donnot want to share the INTR line at all.
 	*/
 	if (request_irq(device->slot.irq, sym53c8xx_intr,
@@ -6131,7 +6131,7 @@ static int ncr_ic_nego(ncb_p np, ccb_p cp, Scsi_Cmnd *cmd, u_char *msgptr)
 
 		/* Previous command recorded a parity or an initiator
 		 * detected error condition. Force bus to narrow for this
-		 * target. Clear flag. Negotation on request sense.
+		 * target. Clear flag. Negotiation on request sense.
 		 * Note: kernel forces 2 bus resets :o( but clears itself out. 
 		 * Minor bug? in scsi_obsolete.c (ugly)
 		 */
@@ -7751,7 +7751,7 @@ void ncr_init (ncb_p np, int reset, char * msg, u_long code)
 		np->rv_ccntl0 |= DPR;
 
 	/*
-	**	C1010_66MHz rev 0 part requies AIPCNTL1 bit 3 to be set.
+	**	C1010_66MHz rev 0 part requires AIPCNTL1 bit 3 to be set.
 	*/
 	if (np->device_id == PCI_DEVICE_ID_LSI_53C1010_66)
 		OUTB(nc_aipcntl1, (1<<3));
@@ -8765,7 +8765,7 @@ static void ncr_log_hard_error(ncb_p np, u_short sist, u_char dstat)
 **	In normal situations, interrupt conditions occur one at 
 **	a time. But when something bad happens on the SCSI BUS, 
 **	the chip may raise several interrupt flags before 
-**	stopping and interrupting the CPU. The additionnal 
+**	stopping and interrupting the CPU. The additional 
 **	interrupt flags are stacked in some extra registers 
 **	after the SIP and/or DIP flag has been raised in the 
 **	ISTAT. After the CPU has read the interrupt condition 
@@ -9024,7 +9024,7 @@ unknown_int:
 **
 **	There are 3 small SCRIPTS sections that deal with the 
 **	start queue and the done queue that may break any 
-**	assomption from the C code if we are interrupted 
+**	assumption from the C code if we are interrupted 
 **	inside, so we reset if it happens. Btw, since these 
 **	SCRIPTS sections are executed while the SCRIPTS hasn't 
 **	started SCSI operations, it is very unlikely to happen.
@@ -9047,7 +9047,7 @@ static void ncr_recover_scsi_int (ncb_p np, u_char hsts)
 
 	/*
 	**	If we haven't been interrupted inside the SCRIPTS 
-	**	critical pathes, we can safely restart the SCRIPTS 
+	**	critical paths, we can safely restart the SCRIPTS 
 	**	and trust the DSA value if it matches a CCB.
 	*/
 	if ((!(dsp > NCB_SCRIPT_PHYS (np, getjob_begin) &&
@@ -9621,7 +9621,7 @@ static void ncr_int_ma (ncb_p np)
 	**	we force a SIR_NEGO_PROTO interrupt (it is a hack that avoids 
 	**	bloat for such a should_not_happen situation).
 	**	In all other situation, we reset the BUS.
-	**	Are these assumptions reasonnable ? (Wait and see ...)
+	**	Are these assumptions reasonable ? (Wait and see ...)
 	*/
 unexpected_phase:
 	dsp -= 8;
@@ -9694,7 +9694,7 @@ reset_all:
 **	contingent allegiance condition. For these reasons, 
 **	we remove from the start queue all commands for this 
 **	LUN that haven't been yet queued to the device and 
-**	put them back in the correponding LUN queue, then  
+**	put them back in the corresponding LUN queue, then  
 **	requeue the CCB that failed in front of the LUN queue.
 **	I just hope this not to be performed too often. :)
 **
@@ -9835,7 +9835,7 @@ next:
 
 		/*
 		**	Device returned CHECK CONDITION status.
-		**	Prepare all needed data strutures for getting 
+		**	Prepare all needed data structures for getting 
 		**	sense data.
 		*/
 
@@ -10257,7 +10257,7 @@ static void ncr_sir_task_recovery(ncb_p np, int num)
 
 		/*
 		**	If we have none, probably since the device has 
-		**	completed the command before we won abitration,
+		**	completed the command before we won arbitration,
 		**	send a M_ABORT message without IDENTIFY.
 		**	According to the specs, the device must just 
 		**	disconnect the BUS and not abort any task.
@@ -10311,7 +10311,7 @@ static void ncr_sir_task_recovery(ncb_p np, int num)
 		**	If we sent a M_RESET, then a hardware reset has 
 		**	been performed by the target.
 		**	- Reset everything to async 8 bit
-		**	- Tell ourself to negotiate next time :-)
+		**	- Tell ourselves to negotiate next time :-)
 		**	- Prepare to clear all disconnected CCBs for 
 		**	  this target from our task list (lun=task=-1)
 		*/
@@ -10327,7 +10327,7 @@ static void ncr_sir_task_recovery(ncb_p np, int num)
 
 		/*
 		**	Otherwise, check for the LUN and TASK(s) 
-		**	concerned by the cancelation.
+		**	concerned by the cancellation.
 		**	If it is not ABORT_TAG then it is CLEAR_QUEUE 
 		**	or an ABORT message :-)
 		*/
@@ -10662,7 +10662,7 @@ static int ncr_compute_residual(ncb_p np, ccb_p cp)
 
 	/*
 	**	If SCRIPTS reaches its goal point, then 
-	**	there is no additionnal residual.
+	**	there is no additional residual.
 	*/
 	if (cp->phys.header.lastp == cp->phys.header.goalp)
 		return resid;
@@ -10817,7 +10817,7 @@ static void ncr_sync_nego(ncb_p np, tcb_p tp, ccb_p cp)
 
 	/*
 	**      if target sends SDTR message,
-	**	      it CAN transfer synch.
+	**	      it CAN transfer sync.
 	*/
 
 	if (ofs)
@@ -11063,7 +11063,7 @@ static void ncr_ppr_nego(ncb_p np, tcb_p tp, ccb_p cp)
 
 	/*
 	**      if target sends sync (wide),
-	**	      it CAN transfer synch (wide).
+	**	      it CAN transfer sync (wide).
 	*/
 
 	if (ofs)
@@ -11465,7 +11465,7 @@ void ncr_int_sir (ncb_p np)
                 }
 		goto out;
 	/*
-	**	The device wants us to tranfer more data than 
+	**	The device wants us to transfer more data than 
 	**	expected or in the wrong direction.
 	**	The number of extra bytes is in scratcha.
 	**	It is a data overrun condition.
@@ -11762,7 +11762,7 @@ static ccb_p ncr_alloc_ccb(ncb_p np)
 	np->ccbh[hcode] = cp;
 
 	/*
-	**	Initialyze the start and restart actions.
+	**	Initialize the start and restart actions.
 	*/
 	cp->phys.header.go.start   = cpu_to_scr(NCB_SCRIPT_PHYS (np, idle));
 	cp->phys.header.go.restart = cpu_to_scr(NCB_SCRIPTH_PHYS(np,bad_i_t_l));
@@ -13425,7 +13425,7 @@ sym53c8xx_pci_init(Scsi_Host_Template *tpnt, pcidev_t pdev, ncr_device *device)
 #endif	/* SCSI_NCR_PCI_FIX_UP_SUPPORT */
 
  	/*
-	**    Initialise ncr_device structure with items required by ncr_attach.
+	**    Initialize ncr_device structure with items required by ncr_attach.
 	*/
 	device->pdev		= pdev;
 	device->slot.bus	= PciBusNumber(pdev);

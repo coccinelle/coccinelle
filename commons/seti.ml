@@ -6,7 +6,7 @@ open Common
 (* todo: could take an incr/decr func in param, to make it generic
  * opti: remember the min/max (optimisation to have intersect biggest x -> x)
  * opti: avoid all those rev, and avoid the intervise
- * (but yes the algo are then more complex :)
+ * (but yes the algorithm are then more complex :)
  * opti: balanced set intervalle
 *)
 
@@ -22,7 +22,7 @@ let invariant xs =
       match e with
       | Exact i ->
           if i <= min then pr2 (sprintf "i = %d, min = %d" i min);
-          (* todo: should be even stronger, shoud be i > min+1 *)
+          (* todo: should be even stronger, should be i > min+1 *)
           assert (i > min);
           i
       | Interv (i,j) ->
@@ -176,7 +176,7 @@ let rec inter xs ys =
                     (*  [  ] *)
                     (*  [  ] *)
                 | Inf -> (Interv (i1, j1))::aux xs      ((Interv (j1+1, j2))::ys)
-                    (*  [  ] [      TODO? could have [ so cant englobe right now, but would be better *)
+                    (*  [  ] [      TODO? could have [ so cannot englobe right now, but would be better *)
                     (*  [      ] *)
                 | Sup -> (Interv (i1, j2))::aux ((Interv (j2+1, j1))::xs) ys
                     (*  [    ] *)
@@ -221,7 +221,7 @@ let union xs ys =
                     (*  [  ] *)
                     (*  [  ] *)
                 | Inf -> (Interv (i1, j1))::aux xs      ((Interv (j1+1, j2))::ys)
-                    (*  [  ] [      TODO? could have [ so cant englobe right now, but would be better *)
+                    (*  [  ] [      TODO? could have [ so cannot englobe right now, but would be better *)
                     (*  [      ] *)
                 | Sup -> (Interv (i1, j2))::aux ((Interv (j2+1, j1))::xs) ys
                     (*  [    ] *)
@@ -282,7 +282,7 @@ let diff xs ys =
                   (*         [ ] *)
                 else
                   (match j1 <=> j2 with
-                  | Equal -> (Interv (i1, i2-1))::aux xs ys (* -1 cos exlude [ *)
+                  | Equal -> (Interv (i1, i2-1))::aux xs ys (* -1 cos exclude [ *)
                       (*  [    ] *)
                       (*     [ ] *)
                   | Inf ->   (Interv (i1, i2-1))::aux xs ((Interv (j1+1, j2))::ys)

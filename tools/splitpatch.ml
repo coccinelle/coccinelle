@@ -64,6 +64,17 @@ let safe_get_extension s =
     ext::_::rest -> Some (String.concat "." (List.rev rest))
   | _ -> None
 
+let intersect l1 l2 =
+  List.rev
+    (List.fold_left (fun i cur -> if List.mem cur l2 then cur :: i else i)
+       [] l1)
+
+let union l1 l2 =
+  List.rev
+    (List.fold_left
+       (fun i cur -> if not(List.mem cur l2) then cur :: i else i)
+       l2 l1)
+
 (* ------------------------------------------------------------------------ *)
 (* set configuration variables *)
 
@@ -137,12 +148,21 @@ let read_configs template =
 
 let maintainer_command file =
   Printf.sprintf
-    "cd %s; scripts/get_maintainer.pl --nokeywords --separator , --nogit-fallback --norolestats -f %s"
+    "cd %s; scripts/get_maintainer.pl --nokeywords --separator , --nogit --nogit-fallback --norolestats -f %s"
+    !git_tree file
+
+let maintainer_list_command file =
+  Printf.sprintf
+    "cd %s; scripts/get_maintainer.pl --nokeywords --nogit --nogit-fallback --norolestats --nom -f %s"
     !git_tree file
 
 let subsystem_command file =
   Printf.sprintf
     "cd %s; scripts/get_maintainer.pl --nokeywords --nogit-fallback --subsystem --norolestats -f %s | grep -v @"
+    !git_tree file
+
+let subject_command file =
+  Printf.sprintf "cd %s; git log --pretty=oneline --abbrev-commit %s"
     !git_tree file
 
 let checkpatch_command file =
@@ -330,6 +350,75 @@ let resolve_maintainers patches =
   maintainer_table
 
 (* ------------------------------------------------------------------------ *)
+(* most common subject from the git logs *)
+
+let last_char s = String.get s ((String.length s) - 1)
+
+let get_counts l =
+  let tbl = Hashtbl.create 101 in
+  let ct = ref 0 in
+  let max = ((List.length l) / 10) + 1 in (* 10 ranges *)
+  List.iter
+    (function file ->
+      ct := !ct + 1;
+      let cell =
+	try Hashtbl.find tbl file
+	with Not_found ->
+	  let cell = ref 0.0 in
+	  Hashtbl.add tbl file cell;
+	  cell in
+      (* only use 5 ranges *)
+      let weight = 1. /. (float_of_int ((!ct / (max * 2)) + 1)) in
+      cell := !cell +. weight)
+    l;
+  let weighted =
+    List.rev
+      (List.sort compare
+	 (Hashtbl.fold (fun k v rest -> (!v,k)::rest) tbl [])) in
+  let rec loop n = function
+      [] -> []
+    | (_,k)::rest -> (k,n) :: (loop (n+1) rest) in
+  loop 1 weighted
+
+let get_most_common_subject files default =
+  let all =
+    List.map (function file -> cmd_to_list (subject_command file)) files in
+  if List.exists (function x -> x = []) all
+  then default^":"
+  else
+    let entries =
+      List.map
+	(function entries ->
+	  List.map
+	    (function line ->
+	      match Str.split (Str.regexp " ") line with
+		[] -> failwith ("bad git log line: " ^ line)
+	      |	_::rest ->
+		  let rec loop = function
+		      [] -> []
+		    | x::xs ->
+			if last_char x = ':'
+			then x :: loop xs
+			else [] in
+		  loop rest)
+	    entries)
+	all in
+    let common_entries =
+      List.fold_left intersect (List.hd entries) (List.tl entries) in
+    let entries = List.map get_counts entries in
+    let common_entry_counts =
+      List.sort compare
+	(List.map
+	   (function entry ->
+	     (List.fold_left (+) 0
+		(List.map (List.assoc entry) entries),
+	      entry))
+	   common_entries) in
+    match common_entry_counts with
+      [] -> default^":"
+    | (_,x)::_ -> String.concat " " x
+
+(* ------------------------------------------------------------------------ *)
 
 let print_all o l =
   List.iter (function x -> Printf.fprintf o "%s\n" x) l
@@ -364,7 +453,8 @@ let make_message_files subject cover message date maintainer_table
 	      (List.map
 		 (function (file,diff) ->
 		   ctr := !ctr + 1;
-		   (file,(!ctr,true,maintainers,[file],[diff])))
+		   let subject = get_most_common_subject [file] file in
+		   (subject,(!ctr,true,maintainers,[file],[diff])))
 		 (List.rev diffs)) @
 	      rest
 	    else
@@ -372,7 +462,8 @@ let make_message_files subject cover message date maintainer_table
 		 (function (common,diffs) ->
 		   ctr := !ctr + 1;
 		   let (files,diffs) = List.split (List.rev !diffs) in
-		   (!common,(!ctr,false,maintainers,files,diffs)))
+		   let subject = get_most_common_subject files !common in
+		   (subject,(!ctr,false,maintainers,files,diffs)))
 		 !diffs) @
 	      rest)
       maintainer_table [] in
@@ -383,7 +474,7 @@ let make_message_files subject cover message date maintainer_table
 	let output_file = add_ext(Printf.sprintf "%s%d" front ctr) in
 	let o = open_out output_file in
 	make_mail_header o date maintainers ctr number
-	  (Printf.sprintf "%s: %s" common subject);
+	  (Printf.sprintf "%s %s" common subject);
 	print_all o message;
 	Printf.fprintf o "\n---\n";
 	let (nm,o1) = Filename.open_temp_file "patch" "patch" in
@@ -414,14 +505,7 @@ let make_cover_file n subject cover front date maintainer_table =
     None -> ()
   | Some cover ->
       let common_maintainers =
-	let intersect l1 l2 =
-	  List.rev
-	    (List.fold_left
-	       (function i -> function cur ->
-		 if List.mem cur l2 then cur :: i else i)
-	       [] l1) in
 	let start = ref true in
-	String.concat ","
 	  (Hashtbl.fold
 	     (function (services,maintainers) ->
 	       function diffs ->
@@ -431,9 +515,22 @@ let make_cover_file n subject cover front date maintainer_table =
 		   then begin start := false; cur end
 		   else intersect cur rest)
 	     maintainer_table []) in
+      let maintainers_and_lists =
+	Hashtbl.fold
+	  (function (services,maintainers) ->
+	    function diffs ->
+	      function rest ->
+		let files = List.map (function (file,_) -> !file) !diffs in
+		List.fold_left
+		  (function prev ->
+		    function file ->
+		      union (cmd_to_list (maintainer_list_command file)) prev)
+		  rest files)
+	  maintainer_table common_maintainers in
+      let maintainers_and_lists = String.concat "," maintainers_and_lists in
       let output_file = Printf.sprintf "%s.cover" front in
       let o = open_out output_file in
-      make_mail_header o date common_maintainers 0 n subject;
+      make_mail_header o date maintainers_and_lists 0 n subject;
       print_all o cover;
       Printf.fprintf o "\n";
       close_out o

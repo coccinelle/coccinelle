@@ -18,14 +18,14 @@
 
 (* A generic parser takes a list of stuff (either char for lexical
  * parser or tokens for grammar parser) and return something and the
- * remaing list of stuff. *)
+ * remaining list of stuff. *)
 type ('a, 'b) genp = 'a list -> 'b * 'a list
 val val_of_parser : 'b * 'a list -> 'b
 
 (* lexer = parser of char list *)
 (* type 'a lexer = (char, 'a) genp *)
 
-(* grammer = parser ot tokens *)
+(* grammar = parser ot tokens *)
 (* type 'a pparser = (token, 'a) genp *)
 
 
@@ -114,7 +114,7 @@ val lex : string -> token list
 
 
 (*****************************************************************************)
-(* cant use parser as it's a reseverd word *)
+(* cannot use parser as it's a reseverd word *)
 type 'a pparser = (token, 'a) genp
 
 val ident : string pparser

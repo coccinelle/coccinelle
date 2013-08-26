@@ -41,3 +41,5 @@ let disabled_isos = ref ([] : string list)
 
 (* Used to debug embedded ML scripts *)
 let keep_ml_script = ref false
+
+let id_utils_index = ref ".id-utils.index" (* default id-utils value *)

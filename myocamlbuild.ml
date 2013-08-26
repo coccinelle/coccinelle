@@ -39,7 +39,7 @@ let menhir_path     = "/usr/bin/menhir"
 
 let pycaml_path     = ""
 let pcre_path       = ""
-let menhirLib_path  = "/home/jll/coccinelle-release/bundles/menhirLib/"
+let menhirLib_path  = "/usr/lib/ocaml/menhirLib"
 let dynlink_path    = "/usr/lib/ocaml"
 
 let pcre_cflags     = ""

@@ -176,6 +176,10 @@ let cpp_keyword_table = Common.hash_of_list [
   "delete",    (fun ii -> Tdelete ii);
   "using",     (fun ii -> TComment ii) ]
 
+let ibm_keyword_table = Common.hash_of_list [
+  "decimal",   (fun ii -> Tdecimal ii);
+] 
+
 let error_radix s =
   ("numeric " ^ s ^ " constant contains digits beyond the radix:")
 
@@ -270,6 +274,7 @@ let pfract = dec+
 let sign = ['-' '+']
 let exp  = ['e''E'] sign? dec+
 let real = pent exp | ((pent? '.' pfract | pent '.' pfract? ) exp?)
+let ddecimal = ((pent? '.' pfract | pent '.' pfract? ))
 
 let id = letter (letter | digit) *
 
@@ -353,7 +358,6 @@ rule token = parse
    * http://gcc.gnu.org/onlinedocs/gcc/Pragmas.html
    *)
 
-  | "#" spopt "pragma"  sp  [^'\n' '\r']* ('\n' | "\r\n")
   | "#" spopt "ident"   sp  [^'\n' '\r']* ('\n' | "\r\n")
   | "#" spopt "line"    sp  [^'\n' '\r']* ('\n' | "\r\n")
   | "#" spopt "error"   sp  [^'\n' '\r']* ('\n' | "\r\n")
@@ -370,9 +374,9 @@ rule token = parse
 
 
 
-  (* ---------------------- *)
-  (* #define, #undef *)
-  (* ---------------------- *)
+  (* ------------------------ *)
+  (* #define, #undef, #pragma *)
+  (* ------------------------ *)
 
   (* the rest of the lexing/parsing of define is done in fix_tokens_define
    * where we parse until a TCppEscapedNewline and generate a TDefEol
@@ -383,6 +387,11 @@ rule token = parse
    * but I currently don't handle it cos I think it's bad code.
    *)
   | "#" [' ' '\t']* "undef" { TUndef (tokinfo lexbuf) }
+
+  (* note: in some cases can have stuff after the ident as in #undef XXX 50,
+   * but I currently don't handle it cos I think it's bad code.
+   *)
+  | ("#" [' ' '\t']* "pragma") { TPragma (tokinfo lexbuf) }
 
   (* ---------------------- *)
   (* #include *)
@@ -633,8 +642,8 @@ rule token = parse
   | "^=" { TAssign (OpAssign Xor, (tokinfo lexbuf))}
   | "<<=" {TAssign (OpAssign DecLeft, (tokinfo lexbuf)) }
   | ">>=" {TAssign (OpAssign DecRight, (tokinfo lexbuf))}
-  | ">?=" {TAssign (OpAssign Max, (tokinfo lexbuf))}
-  | "<?=" {TAssign (OpAssign Min, (tokinfo lexbuf))}
+  | ">?=" { TAssign(OpAssign Max, (tokinfo lexbuf))}
+  | "<?=" { TAssign(OpAssign Min, (tokinfo lexbuf))}
 
   | "==" { TEqEq(tokinfo lexbuf) }  | "!=" { TNotEq(tokinfo lexbuf) }
   | ">=" { TSupEq(tokinfo lexbuf) } | "<=" { TInfEq(tokinfo lexbuf) }
@@ -669,15 +678,25 @@ rule token = parse
         let s = tok lexbuf in
         Common.profile_code "C parsing.lex_ident" (fun () ->
 	  let tok =
-	    if !Flag.c_plus_plus 
+	    if !Flag.c_plus_plus
 	    then Common.optionise (fun () -> Hashtbl.find cpp_keyword_table s)
 	    else None in
 	  match tok with
 	    Some f -> f info
 	  | None ->
-              match Common.optionise (fun () -> Hashtbl.find keyword_table s)
-              with
-              | Some f -> f info
+	      let tok =
+		if !Flag.ibm
+		then
+		  Common.optionise (fun () -> Hashtbl.find ibm_keyword_table s)
+		else None in
+	      match tok with
+		Some f -> f info
+	      | None ->
+		  let tok =
+		    Common.optionise
+		      (fun () -> Hashtbl.find keyword_table s) in
+		  match tok with
+		  | Some f -> f info
 
            (* parse_typedef_fix.
             *    if Lexer_parser.is_typedef s
@@ -690,7 +709,7 @@ rule token = parse
             * now done in parse_c.ml.
             *)
 
-              | None -> TIdent (s, info)
+		  | None -> TIdent (s, info)
         )
       }
   (* gccext: apparently gcc allows dollar in variable names. found such
@@ -846,10 +865,25 @@ rule token = parse
       { TInt ((x, (Signed,CLongLong)), tokinfo lexbuf) }
   | (( decimal | hexa | octal) ['u' 'U'] ['l' 'L'] ['l' 'L']) as x
       { TInt ((x, (UnSigned,CLongLong)), tokinfo lexbuf) }
+  | (decimal ['d' 'D']) as x
+      { if !Flag.ibm
+      then
+	let len = string_of_int(String.length x - 1) in
+        TDecimal ((x,len,"0"), tokinfo lexbuf)
+      else failwith "unrecognized constant modifier d/D" }
 
   | (real ['f' 'F']) as x { TFloat ((x, CFloat),      tokinfo lexbuf) }
   | (real ['l' 'L']) as x { TFloat ((x, CLongDouble), tokinfo lexbuf) }
   | (real as x)           { TFloat ((x, CDouble),     tokinfo lexbuf) }
+  (* How to make the following only available if !Flag.ibm *)
+  | (ddecimal ['d' 'D']) as x
+      { match Str.split_delim (Str.regexp_string ".") x with
+	[before;after] ->
+	  let lena = String.length after - 1 in
+	  let n = string_of_int (String.length before + lena) in
+	  let p = string_of_int lena in
+	  TDecimal ((x,n,p), tokinfo lexbuf)
+      |	_ -> failwith "bad decimal" }
 
   | ['0'] ['0'-'9']+
       { pr2 ("LEXER: " ^ error_radix "octal" ^ tok lexbuf);

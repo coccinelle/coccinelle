@@ -123,9 +123,9 @@ let tmeta_to_ident (name,pure,clt) =
 %token<string * Data.clt> Tattr
 
 %token <Data.clt> TIf TElse TWhile TFor TDo TSwitch TCase TDefault TReturn
-%token <Data.clt> TBreak TContinue TGoto TSizeof TFunDecl
+%token <Data.clt> TBreak TContinue TGoto TSizeof TFunDecl Tdecimal
 %token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId TSymId
-%token <Ast_cocci.added_string * Data.clt> TPragma
+%token <Ast_cocci.added_string * Data.clt> TDirective
 
 %token <Parse_aux.midinfo>       TMetaId
 %token <Parse_aux.idinfo>        TMetaFunc TMetaLocalFunc
@@ -151,12 +151,14 @@ let tmeta_to_ident (name,pure,clt) =
 %token <string>  TPathIsoFile
 %token <string * Data.clt> TIncludeL TIncludeNL
 %token <Data.clt * token> TDefine TUndef
+%token <Data.clt> TPragma
 %token <Data.clt * token * int * int> TDefineParam
 %token <string * Data.clt> TMinusFile TPlusFile
 
 %token <Data.clt> TInc TDec
 
 %token <string * Data.clt> TString TChar TFloat TInt
+%token <string * string (*n*) * string (*p*) * Data.clt> TDecimalCst
 
 %token <Data.clt> TOrLog
 %token <Data.clt> TAndLog
@@ -210,11 +212,17 @@ let tmeta_to_ident (name,pure,clt) =
 %start minus_exp_main
 %type <Ast0_cocci.rule> minus_exp_main
 
+%start minus_ty_main
+%type <Ast0_cocci.rule> minus_ty_main
+
 %start plus_main
 %type <Ast0_cocci.rule> plus_main
 
 %start plus_exp_main
 %type <Ast0_cocci.rule> plus_exp_main
+
+%start plus_ty_main
+%type <Ast0_cocci.rule> plus_ty_main
 
 %start include_main
 %type <Data.incl_iso list> include_main
@@ -250,8 +258,12 @@ plus_main: plus_body EOF { $1 } | p=plus_body TArobArob { p }
 | p=plus_body TArob { p }
 minus_exp_main: minus_exp_body EOF { $1 } | m=minus_exp_body TArobArob { m }
 | m=minus_exp_body TArob { m }
+minus_ty_main: minus_exp_body EOF { $1 } | m=minus_ty_body TArobArob { m }
+| m=minus_ty_body TArob { m }
 plus_exp_main: plus_exp_body EOF { $1 } | p=plus_exp_body TArobArob { p }
 | p=plus_exp_body TArob { p }
+plus_ty_main: plus_exp_body EOF { $1 } | p=plus_ty_body TArobArob { p }
+| p=plus_ty_body TArob { p }
 meta_main: m=metadec   { m (!Ast0.rule_name) }
 iso_meta_main: m=metadec { m "" }
 
@@ -318,8 +330,9 @@ exists:
 |         { Ast.Undetermined }
 
 is_expression: // for more flexible parsing of top level expressions
-              { false }
-| TExpression { true }
+              { Ast.AnyP }
+| TExpression { Ast.ExpP }
+| TType       { Ast.TyP }
 
 include_main:
   list(incl) TArob     { $1 }
@@ -726,6 +739,15 @@ non_signable_types:
     Ast0.wrap(Ast0.StructUnionDef(ty,P.clt2mcode "{" l,d,P.clt2mcode "}" r)) }
 | p=TTypeId
     { Ast0.wrap(Ast0.TypeName(P.id2mcode p)) }
+| Tdecimal TOPar enum_val TComma enum_val TCPar
+    { Ast0.wrap(Ast0.Decimal(P.clt2mcode "decimal" $1,
+			     P.clt2mcode "(" $2,$3,
+			     Some (P.clt2mcode "," $4), Some $5,
+			     P.clt2mcode ")" $6)) }
+| Tdecimal TOPar enum_val TCPar
+    { Ast0.wrap(Ast0.Decimal(P.clt2mcode "decimal" $1,
+			     P.clt2mcode "(" $2,$3,None,None,
+			     P.clt2mcode ")" $4)) }
 
 all_basic_types:
   r=Tsigned ty=signable_types
@@ -734,6 +756,9 @@ all_basic_types:
     { Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Unsigned r,Some ty)) }
 | ty=signable_types { ty }
 | ty=non_signable_types { ty }
+
+top_ctype:
+  ctype { Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Ty($1)))) }
 
 ctype:
   cv=ioption(const_vol) ty=all_basic_types m=list(mul)
@@ -885,6 +910,20 @@ plus_exp_body:
     /*ew=loption(error_words)*/
     { f@[b](*@ew*) }
 
+minus_ty_body:
+    f=loption(filespec)
+    b=top_ctype
+    /*ew=loption(error_words)*/
+    { match f@[b](*@ew*) with
+      [] -> raise (Semantic_cocci.Semantic "minus slice can't be empty")
+    | code -> code }
+
+plus_ty_body:
+    f=loption(filespec)
+    b=top_ctype
+    /*ew=loption(error_words)*/
+    { f@[b](*@ew*) }
+
 filespec:
   TMinusFile TPlusFile
     { [Ast0.wrap
@@ -949,6 +988,15 @@ includes:
 	    | _ -> b)
 	| _ -> b in
       $1 (Ast0.wrap(Ast0.DOTS(body))) }
+| TPragma ident_or_kwd pragmabody TLineEnd
+    { Ast0.wrap(Ast0.Pragma(P.clt2mcode "#pragma" $1, $2, $3)) }
+
+pragmabody:
+    TOPar eexpr_list_option TCPar
+    { Ast0.wrap(Ast0.PragmaTuple(P.clt2mcode "(" $1,$2,P.clt2mcode ")" $3)) }
+| l=nonempty_list(ident)
+    { Ast0.wrap(Ast0.PragmaIdList(Ast0.wrap (Ast0.DOTS l))) }
+| TEllipsis { Ast0.wrap(Ast0.PragmaDots(P.clt2mcode "..." $1)) }
 
 defineop:
   TDefine
@@ -1489,7 +1537,7 @@ this once an expression_specific token has been seen
 The arg versions don't allow sequences, to avoid conflicting with commas in
 argument lists.
  */
-expr:  basic_expr(expr,invalid) { $1 }
+expr:  pre_basic_expr(expr,invalid) { $1 }
 /* allows ... and nests */
 eexpr: pre_basic_expr(eexpr,dot_expressions) { $1 }
 eargexpr: basic_expr(eexpr,dot_expressions) { $1 } /* no sequences */
@@ -1732,6 +1780,9 @@ primary_expr(recurser,primary_extra):
  | TChar
      { let (x,clt) = $1 in
      Ast0.wrap(Ast0.Constant (P.clt2mcode (Ast.Char x) clt)) }
+ | TDecimalCst
+     { let (x,l,p,clt) = $1 in
+     Ast0.wrap(Ast0.Constant (P.clt2mcode (Ast.DecimalConst(x,l,p)) clt)) }
  | TMetaConst
      { let (nm,constraints,pure,ty,clt) = $1 in
      Ast0.wrap
@@ -2052,6 +2103,15 @@ ident: pure_ident
      | TMetaId
          { let (nm,constraints,seed,pure,clt) = $1 in
          Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,seed,pure)) }
+
+ident_or_kwd: pure_ident
+         { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
+     | wrapped_sym_ident { $1 }
+     | TMeta { tmeta_to_ident $1 }
+     | TMetaId
+         { let (nm,constraints,seed,pure,clt) = $1 in
+         Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,seed,pure)) }
+     | Tinline { Ast0.wrap(Ast0.Id(P.clt2mcode "inline" $1)) }
 
 mident: pure_ident
          { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
@@ -2448,7 +2508,7 @@ iso(term):
 *
 *****************************************************************************/
 
-never_used: TPragma { () }
+never_used: TDirective { () }
   | TPArob TMetaPos { () }
   | TScriptData     { () }
   | TAnalysis     { () }
