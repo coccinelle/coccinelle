@@ -424,6 +424,7 @@ let add_braces orig_s =
   let s =
     (Iso_pattern.rebuild_mcode None).VT0.rebuilder_rec_statement orig_s in
   let new_mcodekind =
+    let add_times = Ast.ONE in
     match Ast0.get_mcodekind s with
       Ast0.MINUS(mc) ->
 	let (text,tinfo) = !mc in
@@ -445,16 +446,16 @@ let add_braces orig_s =
 	  match text with
 	    Ast.BEFORE(bef,_) ->
 	      Ast.BEFOREAFTER([Ast.mkToken "{"]::bef,[[Ast.mkToken "}"]],
-			      Ast.ONE)
+			      add_times)
 	  | Ast.AFTER(aft,_) ->
 	      Ast.BEFOREAFTER([[Ast.mkToken "{"]],aft@[[Ast.mkToken "}"]],
-			      Ast.ONE)
+			      add_times)
 	  | Ast.BEFOREAFTER(bef,aft,_) ->
 	      Ast.BEFOREAFTER([Ast.mkToken "{"]::bef,aft@[[Ast.mkToken "}"]],
-			      Ast.ONE)
+			      add_times)
 	  | Ast.NOTHING ->
 	      Ast.BEFOREAFTER([[Ast.mkToken "{"]],[[Ast.mkToken "}"]],
-			      Ast.ONE) in
+			      add_times) in
 	Ast0.CONTEXT(ref(new_text,tinfo1,tinfo2))
     | Ast0.MIXED(mc) ->
 	let (text,tinfo1,tinfo2) = !mc in
@@ -462,16 +463,16 @@ let add_braces orig_s =
 	  match text with
 	    Ast.BEFORE(bef,_) ->
 	      Ast.BEFOREAFTER([Ast.mkToken "{"]::bef,[[Ast.mkToken "}"]],
-			      Ast.ONE)
+			      add_times)
 	  | Ast.AFTER(aft,_) ->
 	      Ast.BEFOREAFTER([[Ast.mkToken "{"]],aft@[[Ast.mkToken "}"]],
-			      Ast.ONE)
+			      add_times)
 	  | Ast.BEFOREAFTER(bef,aft,_) ->
 	      Ast.BEFOREAFTER([Ast.mkToken "{"]::bef,aft@[[Ast.mkToken "}"]],
-			      Ast.ONE)
+			      add_times)
 	  | Ast.NOTHING ->
 	      Ast.BEFOREAFTER([[Ast.mkToken "{"]],[[Ast.mkToken "}"]],
-			      Ast.ONE) in
+			      add_times) in
 	Ast0.MIXED(ref(new_text,tinfo1,tinfo2))
     | _ -> failwith "unexpected plus code" in
   Ast0.set_mcodekind s new_mcodekind;
@@ -525,8 +526,8 @@ let rec statement dots_before dots_after s =
 	Ast0.set_dots_bef_aft s (Ast0.DroppingBetweenDots(with_braces)))
       else if adding_something s
       then
-	(let with_braces = add_braces s in
-	Ast0.set_dots_bef_aft s (Ast0.AddingBetweenDots(with_braces)))
+	let with_braces = add_braces s in
+	Ast0.set_dots_bef_aft s (Ast0.AddingBetweenDots(with_braces))
       else s
     else s in
 
