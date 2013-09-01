@@ -944,10 +944,10 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 let rec (expression: (A.expression, Ast_c.expression) matcher) =
  fun ea eb ->
    if A.get_test_exp ea && not (Ast_c.is_test eb) then
-     (Printf.printf "failing here %b %b\n" (A.get_test_exp ea) (not (Ast_c.is_test eb)); fail)
+     fail
    else
   X.all_bound (A.get_inherited ea) >&&>
-  let wa x = A.rewrap ea x  in
+  let wa x = A.rewrap ea x in
   match A.unwrap ea, eb with
 
   (* general case: a MetaExpr can match everything *)
@@ -986,7 +986,6 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	      (Some (_,Ast_c.LocalVar _),_) -> true
 	    | _ -> false)
 	| (A.ID,e) -> matches_id e in
-
       if form_ok
       then
 	(let (opttypb,_testb) = !opttypb in
