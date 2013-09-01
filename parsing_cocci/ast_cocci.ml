@@ -651,7 +651,7 @@ and anything =
   | CaseLineTag         of case_line
   | ConstVolTag         of const_vol
   | Token               of string * info option
-  | Directive              of added_string list
+  | Directive           of added_string list
   | Code                of top_level
   | ExprDotsTag         of expression dots
   | ParamDotsTag        of parameterTypeDef dots
