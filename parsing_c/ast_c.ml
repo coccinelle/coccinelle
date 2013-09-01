@@ -1073,6 +1073,7 @@ let al_comments x =
   let al_com (x,i) =
     (x,{i with Common.charpos = magic_real_number;
 	 Common.line = magic_real_number;
+	 Common.file = "";
 	 Common.column = magic_real_number}) in
   {mbefore = []; (* duplicates mafter of the previous token *)
    mafter = List.map al_com (keep_cpp x.mafter);
