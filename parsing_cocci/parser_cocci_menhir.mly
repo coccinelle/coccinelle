@@ -1053,8 +1053,7 @@ fundecl:
   f=fninfo
   TFunDecl i=fn_ident lp=TOPar d=decl_list(decl) rp=TCPar
   lb=TOBrace b=fun_start rb=TCBrace
-      { P.verify_parameter_declarations (Ast0.undots d);
-	Ast0.wrap(Ast0.FunDecl((Ast0.default_info(),Ast0.context_befaft()),
+      { Ast0.wrap(Ast0.FunDecl((Ast0.default_info(),Ast0.context_befaft()),
 			       f, i,
 			       P.clt2mcode "(" lp, d,
 			       P.clt2mcode ")" rp,

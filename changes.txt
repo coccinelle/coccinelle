@@ -148,6 +148,7 @@
 - Addition of gcc min and max operators.  Thanks to Holden Karau
 - Allow --use-idutils to take the name of the database as an optional
   argument.  Thank to Wolfram Sang for the suggestion.
+- Allow some parameters of a function not to have names.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
