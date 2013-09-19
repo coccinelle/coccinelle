@@ -617,12 +617,13 @@ let other_options = [
     Arg.String (function s ->
       Flag_parsing_c.cache_prefix := Some s;
       Flag_parsing_c.use_cache := true),
-    "   directory of cached ASTs, sets -use-cache";
+    "   directory of cached ASTs, sets --use-cache";
     (* could use Flag_parsing_c.options_pad instead *)
     "--cache-limit",
       Arg.Int (function n ->
-	Flag_parsing_c.cache_limit := Some n),
-    "   maximum number of cached ASTs, sets -use-cache";
+	Flag_parsing_c.cache_limit := Some n;
+	Flag_parsing_c.use_cache := true),
+    "   maximum number of cached ASTs, sets --use-cache";
   ];
 
 
