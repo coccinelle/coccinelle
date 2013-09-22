@@ -367,11 +367,9 @@ let get_most_common_subject files default =
 	      match Str.split (Str.regexp " +") line with
 		[] -> failwith ("bad git log line: " ^ line)
 	      |	_::rest ->
-		  Printf.printf "line %s\n" line;
 		  let rec loop = function
 		      [] -> []
 		    | x::xs ->
-			Printf.printf "x %s\n" x;
 			if last_char x = ':'
 			then x :: loop xs
 			else [] in
