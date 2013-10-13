@@ -290,6 +290,8 @@
 - Only print a warning about multidecls if the pattern actually matches.
 - fixed --cache-limit to set --use-cache.  Thanks to Tegawende Bissyande
   for finding the problem.
+- Drop matched pattern in idutils output.  Thanks to Wolfram Sang for
+  pointing out the problem.
 
 * 0.2.5
 ** Language:
