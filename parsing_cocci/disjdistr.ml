@@ -106,7 +106,8 @@ and disjident e =
 
 and disjexp e =
   match Ast.unwrap e with
-    Ast.Ident(_) | Ast.Constant(_) -> [e] (* even Ident can't contain disj *)
+    Ast.Ident(_) | Ast.Constant(_) | Ast.StringConstant(_) ->
+      [e] (* even Ident can't contain disj, nor StringConstant *)
   | Ast.FunCall(fn,lp,args,rp) ->
       disjmult2 (disjexp fn) (disjdots disjexp args)
 	(function fn -> function args ->
@@ -405,7 +406,7 @@ let disj_all =
   let donothing r k e = k e in
   V.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     disj_rule_elem donothing donothing donothing donothing
 
@@ -422,7 +423,7 @@ let collect_all_isos =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing doanything
+    donothing donothing donothing donothing doanything
 
 let collect_iso_info =
   let mcode x = x in
@@ -436,7 +437,7 @@ let collect_iso_info =
   V.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
-     donothing
+    donothing donothing donothing
     donothing donothing donothing donothing rule_elem donothing donothing
     donothing donothing
 

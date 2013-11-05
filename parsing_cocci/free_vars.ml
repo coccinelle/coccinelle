@@ -121,6 +121,23 @@ let collect_refs include_constraints =
       | Ast.DisjExpr(exps) -> bind_disj (List.map k exps)
       | _ -> option_default) in
 
+  let astfvfrag recursor k ft =
+    bind (k ft)
+      (match Ast.unwrap ft with
+	Ast.MetaFormatList(pct,name,Ast.MetaListLen (lenname,_,_),_,_) ->
+	  [metaid name;metaid lenname]
+      |	Ast.MetaFormatList(pct,name,_,_,_) -> [metaid name]
+      | _ -> option_default) in
+
+  let astfvfmt recursor k ft =
+    bind (k ft)
+      (match Ast.unwrap ft with
+	Ast.MetaFormat(name,_,_,_) ->
+	  (* constraint can only be a regexp, so no need to check
+	     include_constraints or check for Ast.IdNegIdSet *)
+	  [metaid name]
+      | _ -> option_default) in
+
   let astfvdecls recursor k d =
     bind (k d)
       (match Ast.unwrap d with
@@ -191,7 +208,8 @@ let collect_refs include_constraints =
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing
-    astfvident astfvexpr astfvfullType astfvtypeC astfvinit astfvparam
+    astfvident astfvexpr astfvfrag astfvfmt astfvfullType astfvtypeC
+    astfvinit astfvparam
     astfvdecls astfvrule_elem astfvstatement donothing donothing donothing_a
 
 let collect_all_refs = collect_refs true
@@ -258,6 +276,21 @@ let collect_saved =
 	| _ -> option_default) in
     bind tymetas vars in
 
+  let astfvfrag recursor k ft =
+    bind (k ft)
+      (match Ast.unwrap ft with
+	Ast.MetaFormatList(pct,name,Ast.MetaListLen (lenname,_,_),
+			   TC.Saved,_) ->
+	  [metaid name;metaid lenname]
+      |	Ast.MetaFormatList(pct,name,_,TC.Saved,_) -> [metaid name]
+      | _ -> option_default) in
+
+  let astfvfmt recursor k ft =
+    bind (k ft)
+      (match Ast.unwrap ft with
+	Ast.MetaFormat(name,_,TC.Saved,_) -> [metaid name]
+      | _ -> option_default) in
+
   let astfvtypeC recursor k ty =
     bind (k ty)
       (match Ast.unwrap ty with
@@ -323,7 +356,8 @@ let collect_saved =
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing
-    astfvident astfvexpr donothing astfvtypeC astfvinit astfvparam
+    astfvident astfvexpr astfvfrag astfvfmt donothing astfvtypeC
+    astfvinit astfvparam
     astfvdecls astfvrule_elem donothing donothing donothing donothing
 
 (* ---------------------------------------------------------------- *)
@@ -438,7 +472,7 @@ let collect_in_plus_term =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing
     donothing astfvrule_elem astfvstatement donothing donothing donothing
 
@@ -540,8 +574,6 @@ let classify_variables metavar_decls minirules used_after =
 	let ty = get_option (List.map type_infos) ty in
 	Ast.rewrap e (Ast.MetaExpr(name,constraints,unitary,ty,form,inherited))
     | Ast.MetaExprList(name,Ast.MetaListLen(lenname,_,_),_,_) ->
-	(* lenname should have the same properties of being unitary or
-	   inherited as name *)
 	let (unitary,inherited) = classify name in
 	let (lenunitary,leninherited) = classify lenname in
 	Ast.rewrap e
@@ -550,11 +582,33 @@ let classify_variables metavar_decls minirules used_after =
 	      Ast.MetaListLen(lenname,lenunitary,leninherited),
 	      unitary,inherited))
     | Ast.MetaExprList(name,lenname,_,_) ->
-	(* lenname should have the same properties of being unitary or
-	   inherited as name *)
 	let (unitary,inherited) = classify name in
 	Ast.rewrap e (Ast.MetaExprList(name,lenname,unitary,inherited))
     | _ -> e in
+
+  let string_fragment r k ft =
+    let ft = k ft in
+    match Ast.unwrap ft with
+      Ast.MetaFormatList(pct,name,Ast.MetaListLen (lenname,_,_),_,_) ->
+	let (unitary,inherited) = classify name in
+	let (lenunitary,leninherited) = classify lenname in
+	Ast.rewrap ft
+	  (Ast.MetaFormatList
+	     (pct,name,
+	      Ast.MetaListLen(lenname,lenunitary,leninherited),
+	      unitary,inherited))
+    | Ast.MetaFormatList(pct,name,lenname,_,_) ->
+	let (unitary,inherited) = classify name in
+	Ast.rewrap ft (Ast.MetaFormatList(pct,name,lenname,unitary,inherited))
+    | _ -> ft in
+
+  let string_format r k ft =
+    let ft = k ft in
+    match Ast.unwrap ft with
+      Ast.MetaFormat(name,constraints,_,_) ->
+	let (unitary,inherited) = classify name in
+	Ast.rewrap ft (Ast.MetaFormat(name,constraints,unitary,inherited))
+    | _ -> ft in
 
   let typeC r k e =
     let e = k e in
@@ -635,7 +689,8 @@ let classify_variables metavar_decls minirules used_after =
   let fn = V.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing
-      ident expression donothing typeC init param decl rule_elem
+      ident expression string_fragment string_format donothing typeC
+      init param decl rule_elem
       donothing donothing donothing donothing in
 
   List.map fn.V.rebuilder_top_level minirules
@@ -767,6 +822,7 @@ let astfvs metavars bound =
   V.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing astfvstatement_dots donothing donothing
+    donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     astfvrule_elem astfvstatement astfvcase_line astfvtoplevel donothing
 
@@ -830,7 +886,7 @@ let get_neg_pos_list (_,rule) used_after_list =
   let v =
     V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing in
   match rule with

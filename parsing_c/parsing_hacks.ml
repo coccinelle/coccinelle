@@ -462,7 +462,7 @@ and define_line_2 acc line lastinfo xs =
           define_line_2 acc (line+1) info xs
       | x ->
           if line' =|= line
-          then define_line_2 (x::acc) line info xs
+          then define_line_2 (x::acc) (end_line_of_tok line' x) info xs
           else
 	    (* Put end of line token before the newline.  A newline at least
 	       must be there because the line changed and because we saw a
@@ -471,6 +471,18 @@ and define_line_2 acc line lastinfo xs =
 	      ((List.hd acc)::(mark_end_define lastinfo::(List.tl acc)))
 	      (x::xs)
       )
+
+(* for a comment, the end line is not the same as line_of_tok *)
+and end_line_of_tok default = function
+    (TComment _) as t ->
+      let line_fragments =
+	Str.split_delim (Str.regexp "\n") (TH.str_of_tok t) in
+      (match List.rev line_fragments with
+	_::front_fragments ->
+	  (* no need for backslash at the end of these lines... *)
+	  TH.line_of_tok t + (List.length front_fragments)
+      |	_ -> failwith (Printf.sprintf "bad comment: %d" (TH.line_of_tok t)))
+  |  t -> default
 
 let rec define_ident acc xs =
   match xs with
@@ -572,9 +584,6 @@ let fix_tokens_define2 xs =
 
 let fix_tokens_define a =
   Common.profile_code "C parsing.fix_define" (fun () -> fix_tokens_define2 a)
-
-
-
 
 
 (* ------------------------------------------------------------------------- *)
@@ -962,6 +971,35 @@ let rec find_string_macro_paren xs =
   | PToken(tok)::xs ->
       find_string_macro_paren xs
 
+
+(* ------------------------------------------------------------------------- *)
+(* format strings *)
+(* ------------------------------------------------------------------------- *)
+
+(* can't just expand all strings, because string followed by another string
+will turn into a MultiString. *)
+let fix_tokens_strings toks =
+  let comments x = TH.is_comment x in
+  let strings_and_comments =
+    function TString _ -> true | x -> TH.is_comment x in
+  let rec skip acc fn = function
+      x :: xs when fn x -> skip (x :: acc) fn xs
+    | xs -> (List.rev acc, xs)
+  and out_strings = function
+      [] -> []
+    | ((TString(str_isW,info)) as a)::rest ->
+	let (front,rest) = skip [] comments rest in
+	(match rest with
+	  ((TString _) as b) :: rest ->
+	    let (front2,rest) = skip [] strings_and_comments rest in
+	    a :: front @ b :: front2 @ out_strings rest
+	| _ ->
+	    (Parse_string_c.parse_string str_isW info) @ front @
+	    out_strings rest)
+    | x :: rest ->
+	(*Printf.printf "something else\n";*)
+	x :: out_strings rest in
+  out_strings toks
 
 (* ------------------------------------------------------------------------- *)
 (* macro2 *)

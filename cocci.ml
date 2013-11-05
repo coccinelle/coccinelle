@@ -55,7 +55,7 @@ virtual rules and virtual_env *)
 let sp_of_file2 file iso =
   let redo _ =
     let new_code =
-      let (_,xs,_,_,_,_,_) as res = Parse_cocci.process file iso false in
+      let (_,xs,_,_,_,_,_,_) as res = Parse_cocci.process file iso false in
       (* if there is already a compiled ML code, do nothing and use that *)
       try let _ = Hashtbl.find _h_ocaml_init (file,iso) in res
       with Not_found ->
@@ -553,6 +553,7 @@ let sp_contain_typed_metavar_z toplevel_list_list =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing
       donothing expression donothing donothing donothing donothing donothing
+      donothing donothing
       donothing donothing donothing donothing donothing
   in
   toplevel_list_list +>
@@ -877,7 +878,9 @@ type toplevel_cocci_info =
   | FinalScriptRuleCocciInfo of toplevel_cocci_info_script_rule
   | CocciRuleCocciInfo of toplevel_cocci_info_cocci_rule
 
-type cocci_info = toplevel_cocci_info list * string list option (* tokens *)
+type cocci_info = toplevel_cocci_info list *
+      bool (* parsing of format strings needed *) *
+      string list option (* tokens *)
 
 type kind_file = Header | Source
 type file_info = {
@@ -1815,7 +1818,8 @@ let pre_engine2 (coccifile, isofile) =
   (* useful opti when use -dir *)
   let (metavars,astcocci,
        free_var_lists,negated_pos_lists,used_after_lists,
-       positions_lists,(toks,_,_)) = sp_of_file coccifile isofile in
+       positions_lists,(toks,_,_),parse_format) =
+    sp_of_file coccifile isofile in
 
   let ctls = ctls_of_ast astcocci used_after_lists positions_lists in
 
@@ -1892,12 +1896,12 @@ let pre_engine2 (coccifile, isofile) =
       runrule (make_init lgg "" rule_info))
     uninitialized_languages;
 
-  (cocci_infos,toks)
+  (cocci_infos,parse_format,toks)
 
 let pre_engine a =
   Common.profile_code "pre_engine" (fun () -> pre_engine2 a)
 
-let full_engine2 (cocci_infos,toks) cfiles =
+let full_engine2 (cocci_infos,parse_format,toks) cfiles =
 
   show_or_not_cfiles  cfiles;
 
@@ -1975,7 +1979,7 @@ let full_engine a b =
   Common.profile_code "full_engine"
     (fun () -> let res = full_engine2 a b in (*Gc.print_stat stderr; *)res)
 
-let post_engine2 (cocci_infos,_) =
+let post_engine2 (cocci_infos,_,_) =
   List.iter
     (function ((language,_),virt_rules) ->
       Flag.defined_virtual_rules := virt_rules;

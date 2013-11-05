@@ -15,4 +15,6 @@ val process :
 	  (string list option (*non metavars in - code, for grep*) *
 	     string list option (*non metavars in - code, for glimpse/google*) *
 	     (*non metavars in - code, for other tools*)
-	     Get_constants2.combine option)
+	     Get_constants2.combine option) *
+	     (* true if string constants need to be parsed *)
+	  bool

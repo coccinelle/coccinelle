@@ -50,6 +50,9 @@ type pretty_printers = {
   ty              : Ast_c.fullType printer;
   type_with_ident : type_with_ident;
   toplevel        : Ast_c.toplevel printer;
+  fragment        : Ast_c.string_fragment printer;
+  fragment_list   : (Ast_c.string_fragment list) printer;
+  format          : Ast_c.string_format printer;
   flow            : Control_flow_c.node printer
 }
 
@@ -91,12 +94,19 @@ let mk_pretty_printers
       opt +> List.iter (function x -> pr_elem x; pr_space());
       printer e) in
 
+  let pp_list2 printer l = (* no comma case *)
+    l +> List.iter printer in
+
   let rec pp_expression = fun ((exp, typ), ii) ->
     (match exp, ii with
     | Ident (ident),         []     -> pp_name ident
     (* only a MultiString can have multiple ii *)
     | Constant (MultiString _), is     -> is +> List.iter pr_elem
     | Constant (c),         [i]     -> pr_elem i
+    | StringConstant(s,os,w),  [i1;i2] ->
+	pr_elem i1;
+	s +> (List.iter pp_string_fragment);
+	pr_elem i2
     | FunCall  (e, es),     [i1;i2] ->
         pp_expression e; pr_elem i1;
 	pp_arg_list es;
@@ -154,9 +164,8 @@ let mk_pretty_printers
 	pr_elem i1; pr_elem i2; pp_arg_list ts; pr_elem i3; pp_argument t
     | Delete(t),     [i1] -> pr_elem i1; pp_expression t
 
-    | (Ident (_) | Constant _ | FunCall (_,_) | CondExpr (_,_,_)
-    | Sequence (_,_)
-    | Assignment (_,_,_)
+    | (Ident (_) | Constant _ | StringConstant _ | FunCall (_,_)
+    | CondExpr (_,_,_) | Sequence (_,_) | Assignment (_,_,_)
     | Postfix (_,_) | Infix (_,_) | Unary (_,_) | Binary (_,_,_)
     | ArrayAccess (_,_) | RecordAccess (_,_) | RecordPtAccess (_,_)
     | SizeOfExpr (_) | SizeOfType (_) | Cast (_,_)
@@ -210,6 +219,24 @@ let mk_pretty_printers
           iix +> List.iter pr_elem;
         );
         pr_elem icp
+
+and pp_string_fragment (e,ii) =
+  match (e,ii) with
+    ConstantFragment(str), ii ->
+      let (i) = Common.tuple_of_list1 ii in
+      pr_elem i
+  | FormatFragment(fmt), ii ->
+      let (i) = Common.tuple_of_list1 ii in
+      pr_elem i;
+      pp_string_format fmt
+
+and pp_string_fragment_list sfl = pp_list2 pp_string_fragment sfl
+
+and pp_string_format (e,ii) =
+  match (e,ii) with
+    ConstantFormat(str), ii ->
+      let (i) = Common.tuple_of_list1 ii in
+      pr_elem i
 
 (* ---------------------- *)
   and pp_statement = fun st ->
@@ -1383,6 +1410,9 @@ and pp_init (init, iinit) =
     ty         = pp_type;
     type_with_ident = pp_type_with_ident;
     toplevel   = pp_toplevel;
+    fragment   = pp_string_fragment;
+    fragment_list = pp_string_fragment_list;
+    format     = pp_string_format;
     flow       = pp_flow;
   }
 
@@ -1423,6 +1453,8 @@ let pp_statement_simple  = ppc.statement
 let pp_type_simple       = ppc.ty
 let pp_init_simple       = ppc.init
 let pp_toplevel_simple   = ppc.toplevel
+let pp_string_fragment_simple = ppc.fragment
+let pp_string_format_simple = ppc.format
 let pp_flow_simple       = ppc.flow
 
 
@@ -1469,6 +1501,12 @@ let pp_type_gen ~pr_elem ~pr_space =
 
 let pp_type_with_ident_gen pr_elem pr_space =
   (pp_elem_sp pr_elem pr_space).type_with_ident
+
+let pp_string_fragment_list_gen ~pr_elem ~pr_space =
+  (pp_elem_sp pr_elem pr_space).fragment_list
+
+let pp_string_format_gen ~pr_elem ~pr_space =
+  (pp_elem_sp pr_elem pr_space).format
 
 let pp_program_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).toplevel

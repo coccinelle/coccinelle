@@ -134,6 +134,7 @@ let get_function_name rule env =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing
       donothing expression donothing donothing donothing donothing donothing
+      donothing donothing
       donothing donothing donothing donothing donothing).V.combiner_top_level
       rule in
   match names with
@@ -241,7 +242,11 @@ let print_extra_typedefs pr env =
       | Ast_c.MetaInitListVal(ty) -> Visitor_c.vk_ini_list bigf ty
       | Ast_c.MetaDeclVal(decl) -> Visitor_c.vk_decl bigf decl
       | Ast_c.MetaFieldVal(field) -> Visitor_c.vk_struct_field bigf field
-      | Ast_c.MetaFieldListVal(fields) -> Visitor_c.vk_struct_fields bigf fields
+      | Ast_c.MetaFieldListVal(fields) ->
+	  Visitor_c.vk_struct_fields bigf fields
+      | Ast_c.MetaFmtVal(fmt) -> Visitor_c.vk_string_format bigf fmt
+      | Ast_c.MetaFragListVal(frags) ->
+	  Visitor_c.vk_string_fragments bigf frags
       | Ast_c.MetaStmtVal(stm) -> Visitor_c.vk_statement bigf stm
       | Ast_c.MetaPosVal _ | Ast_c.MetaPosValList _
       | Ast_c.MetaListlenVal _ -> ())
@@ -293,6 +298,10 @@ let rename argids env =
 	   Ast_c.MetaFieldVal(Visitor_c.vk_struct_field_s bigf stm)
        | Ast_c.MetaFieldListVal(stm) ->
 	   Ast_c.MetaFieldListVal(Visitor_c.vk_struct_fields_s bigf stm)
+       | Ast_c.MetaFmtVal(fmt) ->
+	   Ast_c.MetaFmtVal(Visitor_c.vk_string_format_s bigf fmt)
+       | Ast_c.MetaFragListVal(frags) ->
+	   Ast_c.MetaFragListVal(Visitor_c.vk_string_fragments_s bigf frags)
        | Ast_c.MetaStmtVal(stm) ->
 	   Ast_c.MetaStmtVal(Visitor_c.vk_statement_s bigf stm)
        | Ast_c.MetaPosVal _ | Ast_c.MetaPosValList _
@@ -349,7 +358,8 @@ let pp_meta_decl pr env decl =
   | Ast.MetaInitDecl(ar, name) ->
       no_arity ar; pr "initialiser "; pp_name name; pr ";\n"
   | Ast.MetaInitListDecl(ar, name, len) ->
-      no_arity ar; pr "initialiser list "; pp_name name; pp_len pr len; pr ";\n"
+      no_arity ar; pr "initialiser list "; pp_name name; pp_len pr len;
+      pr ";\n"
   | Ast.MetaListlenDecl(name) -> ()
   | Ast.MetaParamDecl(ar, name) ->
       no_arity ar; pr "parameter "; pp_name name; pr ";\n"
@@ -388,6 +398,10 @@ let pp_meta_decl pr env decl =
       no_arity ar; pr "local function "; pp_name name; pr ";\n"
   | Ast.MetaPosDecl(ar, name) ->
       no_arity ar; pr "position "; pp_name name; pr ";\n"
+  | Ast.MetaFmtDecl(ar, name) ->
+      no_arity ar; pr "format "; pp_name name; pr ";\n"
+  | Ast.MetaFragListDecl(ar, name, len) ->
+      no_arity ar; pr "format list "; pp_name name; pp_len pr len; pr ";\n"
   | Ast.MetaAnalysisDecl(code, name) ->
       pr "analysis"; pr code; pr " "; pp_name name; pr ";\n"
   | Ast.MetaDeclarerDecl(ar, name) ->

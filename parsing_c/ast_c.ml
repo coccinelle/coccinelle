@@ -307,6 +307,7 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
   | Ident          of name (* todo? more semantic info such as LocalFunc *)
 
   | Constant       of constant
+  | StringConstant of string_fragment list * string (*src string*) * isWchar
   | FunCall        of expression * argument wrap2 (* , *) list
   (* gccext: x ? /* empty */ : y <=> x ? x : y;  hence the 'option' below *)
   | CondExpr       of expression * expression option * expression
@@ -393,6 +394,17 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
          | AndLog | OrLog
 
  and constExpression = expression (* => int *)
+
+and string_fragment = string_fragment_bis wrap
+
+and string_fragment_bis =
+  ConstantFragment of string
+| FormatFragment of string_format (* format *)
+
+and string_format = string_format_bis wrap
+
+and string_format_bis =
+  ConstantFormat of string
 
 (* ------------------------------------------------------------------------- *)
 (* C statement *)
@@ -729,6 +741,8 @@ and metavars_binding = (Ast_cocci.meta_name, metavar_binding_kind) assoc
   | MetaFieldVal     of field
   | MetaFieldListVal of field list
   | MetaStmtVal      of statement
+  | MetaFmtVal       of string_format
+  | MetaFragListVal  of string_fragment list
 
   (* Could also be in Lib_engine.metavars_binding2 with the ParenVal,
    * because don't need to have the value for a position in the env of
@@ -1146,8 +1160,13 @@ let rec (unsplit_comma: ('a, il) either list -> 'a wrap2 list) =
   | Right ii::_ ->
       raise (Impossible 59)
 
+let (split_nocomma: 'a list -> ('a, il) either list) = function l ->
+  List.map (function x -> Left x) l
 
-
+let (unsplit_nocomma: ('a, il) either list -> 'a list) = function l ->
+  l +>
+  List.map
+    (function Left x -> x | Right x -> failwith "not possible")
 
 (*****************************************************************************)
 (* Helpers, could also be put in lib_parsing_c.ml instead *)

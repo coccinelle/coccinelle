@@ -137,7 +137,8 @@ let print_token2 = function
   | C2 s -> "C2:"^s
   | Comma s -> "Comma:"^s
   | Indent_cocci2 -> "Indent"
-  | Unindent_cocci2 _ -> "Unindent"
+  | Unindent_cocci2 true -> "Unindent"
+  | Unindent_cocci2 false -> "Unindent-false"
   | EatSpace2 -> "EatSpace"
 
 let str_of_token3 = function
@@ -867,7 +868,7 @@ let paren_then_brace toks =
     match rest with
     (* move the brace up to the previous line *)
     | ((Cocci2("{",_,_,_,_)) as x) :: (((Cocci2 _) :: _) as rest) ->
-      spaces @ x :: nls @ rest
+      (C2 " ") :: x :: rest
     | _ -> xs in
   search_paren toks
 
@@ -939,6 +940,8 @@ let rec add_space xs =
     if is_ident_like sx && (is_ident_like sy or List.mem sy ["="])
     then x::C2 " "::(add_space (y::xs))
     else x::(add_space (y::xs))
+  | ((T2(_,Ctx,_,_)) as x)::((T2(_,Ctx,_,_)) as y)::xs -> (* don't touch *)
+      x :: (add_space (y :: xs))
   | x::y::xs -> (* not boundary, not sure if it is possible *)
     let sx = str_of_token2 x in
     let sy = str_of_token2 y in
@@ -961,27 +964,32 @@ let rec drop_end_comma = function
     )
   | x :: xs -> x :: drop_end_comma xs
 
-(* The following only works for the outermost function call.  Stack records
+(* add_newlines only works for the outermost function call.  Stack records
 the column of all open parentheses.  Space_cell contains the most recent
 comma in the outermost function call.  The goal is to decide whether this
 should be followed by a space or a newline and indent. *)
+let string_length s count info =
+  (* drops both space_cell and seen_cocci if there is a newline *)
+  let l = list_of_string s in
+  List.fold_left
+    (function (count,info) ->
+      function
+        | '\t' -> (count + 8,info)
+        | '\n' -> (0,(None,false))
+        | c -> (count + 1,info))
+    (count,info) l
+  (*don't care about seen cocci - know no newline is possible, or don't care*)
+let simple_string_length s count = fst(string_length s count (None,false))
+
+
 let add_newlines toks tabbing_unit =
   (* the following is for strings that may contain newline or tabs *)
-  let string_length s count =
-    let l = list_of_string s in
-    List.fold_left
-      (function count ->
-        function
-        | '\t' -> count + 8
-        | '\n' -> 0
-        | c -> count + 1)
-      count l in
   let create_indent n =
     let (tu,tlen) = 
       match tabbing_unit with
-      | Some ("\t",_) -> ("\t",8)
-      | Some ("",_) -> ("\t",8) (* not sure why... *)
-      | Some (s,_) -> (s,string_length s 0) (* assuming only tabs or spaces *)
+      | Some "\t" -> ("\t",8)
+      | Some "" -> ("\t",8) (* not sure why... *)
+      | Some s -> (s,simple_string_length s 0)(*assuming only tabs or spaces*)
       |	None -> ("\t",8) in
     let rec loop seen =
       if seen + tlen <= n
@@ -993,70 +1001,52 @@ let add_newlines toks tabbing_unit =
       space_cell := "\n"^(create_indent x);
       Some (x + (count - start))
     | _ -> None in
-  let start_box stack space_cell count s =
-    let count = string_length s count in
-    (count,count::stack,space_cell) in
-  let end_box stack space_cell count s =
+  let start_box stack space_cell count seen_cocci s =
+    let seen_cocci = match stack with [] -> false | _ -> seen_cocci in
+    let inside_count = simple_string_length s count in
+    (inside_count,inside_count::stack,space_cell,seen_cocci) in
+  let end_box stack space_cell count seen_cocci s =
     (* this assumes that start_box and end_box are matched, but this is not
     necessarily the case, if ( is modified and ) is context code *)
-    let count = string_length s count in
+    let count = simple_string_length s count in
+    match stack with
+    | [x] when seen_cocci ->
+      (match check_for_newline count x space_cell with
+      | Some count -> (count,[],None,false)
+      | None -> (count,[],None,false)
+      )
+    | [] -> (count,stack,space_cell,false)
+    | _ -> (count,List.tl stack,space_cell,seen_cocci) in
+  let comma_in_box stack space_cell count s =
+    let count = simple_string_length s count in
     match stack with
     | [x] ->
       (match check_for_newline count x space_cell with
-      | Some count -> (count,[],None)
-      | None -> (count,[],None)
+      | Some count -> (count,None)
+      | None -> (count,None)
       )
-    | [] -> (count,stack,space_cell)
-    | _ -> (count,List.tl stack,space_cell) in
-  let rec loop ((stack,space_cell) as info) count = function
+    | [] -> (count,space_cell)
+    | _ -> (count,space_cell) in
+  let rec loop ((stack,space_cell,seen_cocci) as info) count = function
     | [] -> []
-    | ((Cocci2(s,line,lcol,rcol,hint)) as a):: (* hint can't be start *)
-      (T2(commatok,Ctx,idx,_))::
-      (T2(((Parser_c.TCommentSpace _) as sptok),Ctx,_,_)) ::
-      (((T2(codetok,Ctx,_,_)) :: _) as xs)
+    | ((T2(commatok,Ctx,_,_))::_) as xs
+      when seen_cocci &&
+	(TH.str_of_tok commatok) = "," && not (space_cell = None) ->
+	(* deal with any preceding space, and then redo comma token to
+	   deal with subsequent space *)
+        let (count,newspacecell) = comma_in_box stack space_cell count "," in
+        loop (stack,newspacecell,seen_cocci) count xs
+    | (T2(commatok,Ctx,_,_)) ::
+      (T2(((Parser_c.TCommentSpace _) as sptok),Ctx,idx,_)) :: xs
       when
-      (TH.str_of_tok commatok) = "," && 
-      (TH.str_of_tok sptok) = " " &&
-      ((List.length stack = 1) or (* not super elegant... *)
-      (* check if the Cocci2 token is a ), need double treatment *)
-      (List.length stack = 2) && (hint = Some Unparse_cocci.EndBox)) ->
-      (* something large added before a comma *)
-      let stack = (* do the work of end_box in the length 2 case *)
-        if List.length stack = 2
-        then List.tl stack
-        else stack in
-      let x = List.hd stack in
+	(TH.str_of_tok commatok) = "," && (TH.str_of_tok sptok) = " " &&
+	List.length stack = 1 (* not super elegant... *) ->
       let sp = ref " " in
-      let cocci_count = string_length s count in
-      let space_cell = Some (cocci_count+1,sp) in (* count before space *)
-      let newcount = cocci_count + 2 in (* count including space *)
-      let future_count =
-        string_length (TH.str_of_tok codetok) newcount in
-      let b = T2(commatok,Ctx,idx,
-        Some (Unparse_cocci.SpaceOrNewline sp)) in
-      (match check_for_newline future_count x space_cell with
-      | Some count -> a :: b :: loop (stack,Some (x,sp)) count xs
-      | None -> a :: b :: loop (stack,Some (newcount,sp)) newcount xs
-      )
-    | (T2(commatok,Ctx,_,_))::
-      (T2(((Parser_c.TCommentSpace _) as sptok),Ctx,idx,_)) ::
-      (((Cocci2(s,line,lcol,rcol,hint))::_) as xs)
-      when (TH.str_of_tok commatok) = "," && (TH.str_of_tok sptok) = " " &&
-      List.length stack = 1 (* not super elegant... *) ->
-      (* something large added after a comma *)
-      let x = List.hd stack in
-      let sp = ref " " in
-      let space_cell = Some (count+1,sp) in (* count before space *)
       let newcount = count + 2 in (* count including space *)
-      let future_count = string_length s newcount in
       let a = T2(commatok,Ctx,idx,
-        Some (Unparse_cocci.SpaceOrNewline sp)) in
-      (match check_for_newline future_count x space_cell with
-      | Some count -> a :: loop (stack,Some (x,sp)) count xs
-      | None -> a :: loop (stack,Some (newcount,sp)) newcount xs
-      )
+		 Some (Unparse_cocci.SpaceOrNewline sp)) in
+      a :: loop (stack,Some (newcount,sp),seen_cocci) newcount xs
     | ((T2(tok,Ctx,idx,_)) as a)::xs ->
-    (*	let (stack,space_cell) = info in *)
       (match TH.str_of_tok tok with
       | "=" as s ->
         let (spaces,rest) = span is_space xs in
@@ -1064,69 +1054,79 @@ let add_newlines toks tabbing_unit =
         | ((T2(tok,Ctx,_,_)) as b)::ixs ->
           (match TH.str_of_tok tok with
           | "{" ->
-            let newcount =
+            let (newcount,(space_cell,seen_cocci)) =
               List.fold_left
-                (function prev ->
+                (function (prev,info) ->
                   function
                   | (T2(tok,_b,_i,_h)) ->
-                    string_length (TH.str_of_tok tok) prev
+                      string_length (TH.str_of_tok tok) prev info
                   | _ -> failwith "not possible")
-                count spaces in
+                (count,(space_cell,seen_cocci)) spaces in
             let front = a :: spaces @ [b] in
-            let (newcount,newstack,newspacecell) =
-              start_box stack space_cell newcount "{" in
-            front @ loop (newstack,newspacecell) newcount ixs
-          | _ -> a :: loop info (string_length s count) xs
+            let (newcount,newstack,newspacecell,seen_cocci) =
+              start_box stack space_cell newcount seen_cocci "{" in
+            front @ loop (newstack,newspacecell,seen_cocci) newcount ixs
+          | _ -> a :: loop info (simple_string_length s count) xs
           )
-        | _ -> a :: loop info (string_length s count) xs
+        | _ -> a :: loop info (simple_string_length s count) xs
         )
       | "(" as s ->
-        let (newcount,newstack,newspacecell) =
-          start_box stack space_cell count s in
-        a :: loop (newstack,newspacecell) newcount xs
+        let (newcount,newstack,newspacecell, seen_cocci) =
+          start_box stack space_cell count seen_cocci s in
+        a :: loop (newstack,newspacecell,seen_cocci) newcount xs
       | ")" as s ->
-        let (newcount,newstack,newspacecell) =
-          end_box stack space_cell count s in
-        a :: loop (newstack,newspacecell) newcount xs
+        let (newcount,newstack,newspacecell,seen_cocci) =
+          end_box stack space_cell count seen_cocci s in
+        a :: loop (newstack,newspacecell,seen_cocci) newcount xs
       | "{" as s when not (stack = []) ->
         (* [] case means statement braces *)
-        let (newcount,newstack,newspacecell) =
-          start_box stack space_cell count s in
-        a :: loop (newstack,newspacecell) newcount xs
+        let (newcount,newstack,newspacecell,seen_cocci) =
+          start_box stack space_cell count seen_cocci s in
+        a :: loop (newstack,newspacecell,seen_cocci) newcount xs
       | "}" as s when not (stack = []) ->
         (* [] case means statement braces *)
-        let (newcount,newstack,newspacecell) =
-          end_box stack space_cell count s in
-        a :: loop (newstack,newspacecell) newcount xs
-      | s -> a :: loop info (string_length s count) xs
+        let (newcount,newstack,newspacecell,seen_cocci) =
+          end_box stack space_cell count seen_cocci s in
+        a :: loop (newstack,newspacecell,seen_cocci) newcount xs
+      | s ->
+	  let (count,(space_cell,seen_cocci)) =
+	    string_length s count (space_cell,seen_cocci) in
+	  a :: loop (stack,space_cell,seen_cocci) count xs
       )
     | ((Cocci2(s,line,lcol,rcol,hint)) as a)::xs ->
-      let (stack,space_cell) = info in
       let rest =
         match hint with
-        | None -> loop info (string_length s count) xs
+        | None ->
+	    loop (stack,space_cell,true) (simple_string_length s count) xs
         | Some Unparse_cocci.StartBox ->
-          let (newcount,newstack,newspacecell) =
-            start_box stack space_cell count s in
-          loop (newstack,newspacecell) newcount xs
+          let (newcount,newstack,newspacecell,seen_cocci) =
+            start_box stack space_cell count seen_cocci s in
+          loop (newstack,newspacecell,true) newcount xs
         | Some Unparse_cocci.EndBox ->
-          let (newcount,newstack,newspacecell) =
-            end_box stack space_cell count s in
-          loop (newstack,newspacecell) newcount xs
+          let (newcount,newstack,newspacecell,seen_cocci) =
+            end_box stack space_cell count true s in
+          loop (newstack,newspacecell,seen_cocci) newcount xs
         | Some (Unparse_cocci.SpaceOrNewline sp) ->
-          let count = string_length s (count + 1 (*space*)) in
+          let count = simple_string_length s (count + 1 (*space*)) in
           (match stack with
           | [x] ->
             (match check_for_newline count x space_cell with
-            | Some count -> loop (stack,Some (x,sp)) count xs
-            | None -> loop (stack,Some (count,sp)) count xs)
-          | _ -> loop info count xs
+            | Some count -> loop (stack,Some (x,sp), true) count xs
+            | None -> loop (stack,Some (count,sp),true) count xs)
+          | _ -> loop (stack,space_cell,true) count xs
           ) in
       a :: rest
     | ((T2(tok,_,_,_)) as a)::xs ->
-      a :: loop info (string_length (TH.str_of_tok tok) count) xs
-    | ((C2(s)) as a)::xs -> a :: loop info (string_length s count) xs
-    | ((Comma(s)) as a)::xs -> a :: loop info (string_length s count) xs
+	let s = TH.str_of_tok tok in
+	let (count,(space_cell,seen_cocci)) =
+	  string_length s count (space_cell,seen_cocci) in
+      a :: loop (stack,space_cell,seen_cocci) count xs
+    | ((C2(s)) as a)::xs ->
+	let (count,(space_cell,seen_cocci)) =
+	  string_length s count (space_cell,seen_cocci) in
+	a :: loop (stack,space_cell,seen_cocci) count xs
+    | ((Comma(s)) as a)::xs ->
+	a :: loop info (simple_string_length s count) xs
     | Fake2 _ :: _ | Indent_cocci2 :: _
     | Unindent_cocci2 _::_ | EatSpace2::_ ->
       failwith "unexpected fake, indent, unindent, or eatspace" in
@@ -1138,7 +1138,7 @@ let add_newlines toks tabbing_unit =
     | t -> t::prev in
   (match !Flag_parsing_c.spacing with
   | Flag_parsing_c.SMPL -> toks
-  | _ -> List.rev (List.fold_left redo_spaces [] (loop ([],None) 0 toks))
+  | _ -> List.rev (List.fold_left redo_spaces [] (loop ([],None,false) 0 toks))
   )
 
 (* When insert some new code, because of a + in a SP, we must add this
@@ -1161,8 +1161,310 @@ let new_tabbing2 space =
 let new_tabbing a =
   profile_code "C unparsing.new_tabbing" (fun () -> new_tabbing2 a)
 
+(* ------------------------------------------------------------------------ *)
 
-let rec adjust_indentation xs =
+type info = CtxNL of
+              string * int (*depth*) * int (* depthmin *) * int (* depthplus *)
+          | MinNL of string * int (* depthmin *) * int (* depthplus *)
+          | PlusNL of int (* depthplus *)
+	  | Other | Drop | Unindent
+
+let close_brace l =
+  let (added,rest) = span all_coccis l in
+  match rest with
+    [] -> false
+  | t::_ -> (str_of_token2 t) = "}"
+
+let open_brace l =
+  let (added,rest) = span all_coccis l in
+  match rest with
+    [] -> false
+  | t::_ -> (str_of_token2 t) = "{"
+
+let cocci_close_brace = function
+    [] -> false
+  | t::_ -> (str_of_token2 t) = "}"
+
+let is_cocci = function
+    [] -> false
+  | (_,_,t)::_ -> all_coccis t
+
+let newline = function
+    T2(Parser_c.TCommentNewline _,_,_,_)::_ -> true
+  | _ -> false
+
+let parse_indentation xs =
+  let rec loop n dmin dplus inparens ind endparen = function
+      [] -> []
+    | (x::xs) as l ->
+	let (front,x,xs) =
+	  let (newlines,rest) = span is_whitespace l in
+	  match List.rev newlines with
+	    nl::whitespace -> (List.rev whitespace, nl, rest)
+	  | [] -> ([],x,xs) in
+	let (res,dmin,dplus,inparens,ind,endparen) =
+	  match x with
+	    T2(t,_,_,_) when TH.str_of_tok t = "(" ->
+	      (Other,dmin,dplus,inparens+1,ind,false)
+	  | T2(t,_,_,_) when TH.str_of_tok t = ")" ->
+	      (Other,dmin,dplus,inparens-1,ind,true)
+	  | T2(t,Ctx,_,_) ->
+	      (match t with
+		Parser_c.TCommentNewline s ->
+		  let s = TH.str_of_tok t in
+		  (match Str.split_delim (Str.regexp "\n") s with
+		  | [before;after] ->
+		      let ind1 = simple_string_length after 0 in
+		      if close_brace xs
+		      then
+			(CtxNL(after,dplus,dmin-1,dplus-1),
+			 dmin,dplus,inparens,ind1,false)
+		      else
+		      if open_brace xs
+		      then (* do nothing *)
+			(CtxNL(after,dplus,dmin,dplus),
+			 dmin,dplus,inparens,ind1,false)
+		      else
+			let (dmin1,dplus1) =
+			  (* if, etc without {} *)
+			  if endparen && ind1 < ind && inparens = 0
+			  then (dmin-1,dplus-1)
+			  else if endparen && ind1 > ind && inparens = 0
+			  then (dmin+1,dplus+1)
+			  else (dmin,dplus) in
+			(* dplus is kept in the second position, because that
+			   is what to use if we continue at the same indent
+			   level. *)
+			(CtxNL(after,dplus,dmin1,dplus1),
+			 dmin1,dplus1,inparens,ind1,false)
+		  | _ -> (Other,dmin,dplus,inparens,ind,false))
+	      |	_->
+		  (match TH.str_of_tok t with
+		    "{" -> (Other,dmin+1,dplus+1,inparens,ind,false)
+		  | "}" -> (Other,dmin-1,dplus-1,inparens,ind,false)
+		  | _ -> (Other,dmin,dplus,inparens,ind,false)))
+	  | T2(t,Min _,_,_) ->
+	      (match t with
+		Parser_c.TCommentNewline s ->
+		  let s = TH.str_of_tok t in
+		  (match Str.split_delim (Str.regexp "\n") s with
+		    [before;after] ->
+		      let ind1 = simple_string_length after 0 in
+		      if close_brace xs
+		      then (MinNL(after,dmin-1,dplus-1),
+			    dmin,dplus,inparens,ind1,false)
+		      else
+		      if open_brace xs (* do nothing *)
+		      then (MinNL(after,dmin,dplus),
+			    dmin,dplus,inparens,ind1,false)
+		      else
+			let (dmin1,dplus1) =
+			  (* if, etc without {} *)
+			  if endparen && ind1 < ind && inparens = 0
+			  then (dmin-1,dplus-1)
+			  else if endparen && ind1 > ind && inparens = 0
+			  then (dmin+1,dplus+1)
+			  else (dmin,dplus) in
+			(MinNL(after,dmin1,dplus1),
+			    dmin1,dplus1,inparens,ind1,false)
+		  | _ -> (Other,dmin,dplus,inparens,ind,false))
+	      |	_->
+		  (match TH.str_of_tok t with
+		    "{" -> (Other,dmin+1,dplus,inparens,ind,false)
+		  | "}" -> (Other,dmin-1,dplus,inparens,ind,false)
+		  | _ -> (Other,dmin,dplus,inparens,ind,false)))
+	  | Cocci2("\n",_,_,_,_) ->
+	      if cocci_close_brace xs
+	      then (PlusNL(dplus-1),dmin,dplus,inparens,ind,false)
+	      else (PlusNL(dplus),dmin,dplus,inparens,ind,false)
+	  | Cocci2("{",_,_,_,_) ->
+	      (Other,dmin,dplus+1,inparens,ind,false)
+	  | Cocci2("}",_,_,_,_) ->
+	      (Other,dmin,dplus-1,inparens,ind,false)
+	  | C2("{") ->
+	      (Other,dmin,dplus+1,inparens,ind,false)
+	  | C2("}") -> (Other,dmin,dplus-1,inparens,ind,false)
+	  | Indent_cocci2 ->
+	      (Drop,dmin,dplus+1,inparens,ind,false)
+	  | Unindent_cocci2 true -> (Drop,dmin,dplus-1,inparens,ind,false)
+	  | Unindent_cocci2 false ->
+	      if dplus = 0
+	      then (* nothing to do *) (Drop,dmin,dplus,inparens,ind,false)
+	      else (Unindent,dmin,dplus,inparens,ind,false)
+	  | _ -> (Other,dmin,dplus,inparens,ind,false) in
+	let front =
+	  let rec loop n = function
+	      [] -> []
+	    | x::xs -> (n,Other,x) :: loop (n+1) xs in
+	  loop n front in
+	front @
+	((n+List.length front),res,x) ::
+	loop (n+1) dmin dplus inparens ind endparen xs in
+  loop 1 0 0 0 0 false xs
+
+exception NoInfo
+
+let get_tabbing_unit shorter longer =
+  let old_tab = list_of_string shorter in
+  let new_tab = list_of_string longer in
+  let rec get_diff n l1 l2 =
+    match (l1,l2) with
+      ([],xs) -> String.sub longer n ((String.length longer)-n)
+    | (x::xs,y::ys) -> if x = y then get_diff (n+1) xs ys else raise NoInfo
+    | _ -> failwith "not possible" in
+  try Some (get_diff 0 old_tab new_tab)
+  with NoInfo -> None
+
+let update_indent tok indent =
+  match tok with
+    Cocci2("\n",ln,lcol,rcol,nlhint) ->
+      Cocci2(("\n"^indent),ln,lcol,rcol,nlhint)
+  | C2("\n") -> C2("\n"^indent)
+  | _ -> failwith "bad newline"
+
+let update_entry map depth n indent =
+  let others = List.filter (function (d,_) -> not(depth = d)) map in
+  (depth,(n,indent)) :: others
+
+let update_map_min n spaces tabbing_unit past_minus_map depthmin dmin retab =
+  let new_tabbing_unit =
+    if retab
+    then
+      try
+	let (_,oldspaces) = List.assoc dmin past_minus_map in
+	if depthmin = dmin - 1 (* we have outdented *)
+	then get_tabbing_unit spaces oldspaces
+	else if depthmin = dmin + 1 (* we have indented *)
+	then get_tabbing_unit oldspaces spaces
+	else tabbing_unit
+      with _ -> None
+    else None in
+  let new_map = update_entry past_minus_map depthmin n spaces in
+  (new_tabbing_unit,new_map)
+
+let update_map_ctx n spaces tabbing_unit
+    past_minus_map past_context_map
+    depthmin depthplus dmin dplus retab =
+  let (tabbing_unit,minus_map) =
+    update_map_min n spaces tabbing_unit past_minus_map
+      depthmin dmin retab in
+  let new_map = update_entry past_context_map depthplus n spaces in
+  (tabbing_unit,minus_map,new_map)
+
+let times before n tabbing_unit ctr =
+  (if n < 0 then failwith (Printf.sprintf "n is %d\n" n));
+  let tabbing_unit = match tabbing_unit with None -> "\t" | Some tu -> tu in
+  let rec loop = function
+      0 -> before
+    | n -> (loop (n-1)) ^ tabbing_unit in
+  loop n
+
+let search_in_maps n depth past_minmap past_ctxmap minmap ctxmap tu t =
+  let get_answer fail map1 map2 =
+    match (map1,map2) with
+      (None,None) -> fail()
+    | (Some(_,indent),None) | (None,Some(_,indent)) -> update_indent t indent
+    | (Some(n1,indent1),Some(n2,indent2)) ->
+	let d1 = abs(n - n1) in
+	let d2 = abs(n2 - n) in
+	let indent = if d1 < d2 then indent1 else indent2 in
+	update_indent t indent in
+  let find_recent map =
+    List.fold_left
+      (function ((pdepth,(pn,pindent)) as prev) ->
+	function ((cdepth,(cn,cindent)) as cur) ->
+	  if cdepth < depth && cdepth >= pdepth then cur else prev)
+      (-1,(-1,"")) map in
+  let fail2 _ =
+    let (brecent,(bn,bindent)) = find_recent past_ctxmap in
+    let (arecent,(an,aindent)) = find_recent ctxmap in
+    match (brecent,arecent) with
+      (-1,-1) -> update_indent t (times "" depth tu 1)
+    | (_,-1) -> update_indent t (times bindent (depth - brecent) tu 2)
+    | (-1,_) -> update_indent t (times aindent (depth - arecent) tu 3)
+    | (_,_) ->
+	let d1 = depth - brecent in
+	let d2 = depth - arecent in
+	if d1 < d2
+	then update_indent t (times bindent d1 tu 4)
+	else if d2 < d1
+	then update_indent t (times aindent d2 tu 5)
+	else
+	  let n1 = abs(n - bn) in
+	  let n2 = abs(an - n) in
+	  let indent = if n1 < n2 then bindent else aindent in
+	  update_indent t (times indent d2 tu 6) in
+  let fail1 _ =
+    let map3 = try Some(List.assoc depth past_minmap) with _ -> None in
+    let map4 = try Some(List.assoc depth minmap) with _ -> None in
+    get_answer fail2 map3 map4 in
+  let map1 = try Some(List.assoc depth past_ctxmap) with _ -> None in
+  let map2 = try Some(List.assoc depth ctxmap) with _ -> None in
+  get_answer fail1 map1 map2
+
+let adjust_indentation xs =
+  let toks = parse_indentation xs in
+  let rec loop tabbing_unit past_minmap past_ctxmap dmin dplus =
+    function
+	[] -> (tabbing_unit,past_minmap,past_ctxmap,[])
+      | (n,CtxNL _,t)::(n1,Unindent,t1)::rest
+      | (n,PlusNL _,t)::(n1,Unindent,t1)::rest ->
+	  (* Drop preceding spaces and just make a newline *)
+	  let (out_tu,minmap,ctxmap,res) =
+	    loop tabbing_unit past_minmap past_ctxmap dmin dplus rest in
+	  (out_tu,minmap,ctxmap,(C2 "\n")::res)
+      |	(n,Unindent,t)::rest ->
+	  (* Add a newline *)
+	  let (out_tu,minmap,ctxmap,res) =
+	    loop tabbing_unit past_minmap past_ctxmap dmin dplus rest in
+	  (out_tu,minmap,ctxmap,(C2 "\n")::res)
+      | (n,CtxNL(spaces,depth,depthmin,depthplus),t)::rest ->
+	  let (tabbing_unit,past_minmap,past_ctxmap) =
+	    update_map_ctx n spaces tabbing_unit past_minmap past_ctxmap
+	      depthmin depthplus dmin dplus true in
+	  let (out_tu,minmap,ctxmap,res) =
+	    loop tabbing_unit past_minmap past_ctxmap dmin dplus rest in
+	  let (_,minmap,ctxmap) =
+	    update_map_ctx n spaces tabbing_unit minmap ctxmap
+	      depthmin depthplus dmin dplus false in
+	  let t =
+	    if not (depth = depthplus) && is_cocci rest
+	    then
+	      search_in_maps n depth past_minmap past_ctxmap minmap ctxmap
+		tabbing_unit (C2 "\n")
+	    else t in
+	  (out_tu,minmap,ctxmap,t::res)
+      | (n,MinNL(spaces,depthmin,depthplus),t)::rest ->
+	  let (tabbing_unit,past_minmap) =
+	    update_map_min n spaces tabbing_unit past_minmap
+	      depthmin dmin true in
+	  let (out_tu,minmap,ctxmap,res) =
+	    loop tabbing_unit past_minmap past_ctxmap dmin dplus rest in
+	  let (_,minmap) =
+	    update_map_min n spaces tabbing_unit minmap depthmin dmin false in
+	  (out_tu,minmap,ctxmap,t::res)
+      | (n,PlusNL(depth),t)::rest ->
+	  let (out_tu,minmap,ctxmap,res) =
+	    loop tabbing_unit past_minmap past_ctxmap dmin dplus rest in
+	  let newtok =
+	    search_in_maps n depth past_minmap past_ctxmap minmap ctxmap
+	      tabbing_unit t in
+	  (out_tu, minmap, ctxmap, newtok :: res)
+      | (n,Other,t)::rest ->
+	  let (out_tu,minmap,ctxmap,res) =
+	    loop tabbing_unit past_minmap past_ctxmap dmin dplus rest in
+	  (out_tu,minmap,ctxmap,t::res)
+      | (n,Drop,t)::rest ->
+	  let (out_tu,minmap,ctxmap,res) =
+	    loop tabbing_unit past_minmap past_ctxmap dmin dplus rest in
+	  (out_tu,minmap,ctxmap,res) in
+  let nulmap = [(0,(-1,""))] in
+  let (out_tu,_,_,res) = loop None nulmap nulmap 0 0 toks in
+  (res,out_tu)
+
+(* ------------------------------------------------------------------------ *)
+
+let rec old_adjust_indentation xs =
 
   let _current_tabbing = ref ([] : string list) in
   let tabbing_unit = ref None in
@@ -1275,7 +1577,8 @@ loop (tu,current_tab) in
         _current_tabbing := new_tabbing;
         x::Cocci2 (s,-1,-1,-1,None)::aux started xs
       )
-    | Unindent_cocci2(permanent)::xs -> aux started xs
+    | Unindent_cocci2(permanent)::xs ->
+	aux started xs
     (* border between existing code and cocci code *)
     | ((T2 (tok,_,_,_)) as x)::((Cocci2("\n",_,_,_,_)) as y)::xs
       when str_of_token2 x =$= "{" ->
@@ -1293,7 +1596,8 @@ loop (tu,current_tab) in
       (* can't be C2, for later phases *)
       x::Cocci2 (s,-1,-1,-1,None)::aux started xs
     | x::xs -> x::aux started xs in
-  (aux false xs,!tabbing_unit)
+  let tu = match !tabbing_unit with Some(tu,_) -> Some tu | None -> None in
+  (aux false xs,tu)
 
 
 let rec find_paren_comma = function
@@ -1507,7 +1811,7 @@ let pp_program2 xs outfile  =
         let toks = expand_mcode toks in
 
         (* assert Origin;ExpandedTok; + Cocci + C (was AbstractLineTok)
-         * and no tag information, just NOTHING. *)
+         * and no tag endparen, just NOTHING. *)
 
         let toks =
           if !Flag.sgrep_mode2
@@ -1517,11 +1821,12 @@ let pp_program2 xs outfile  =
           else 
             begin
               (* phase2: can now start to filter and adjust *)
+              let toks = paren_then_brace toks in
+              let toks = drop_space_at_endline toks in
               let (toks,tu) = adjust_indentation toks in
               let toks = adjust_eat_space toks in
               let toks = adjust_before_semicolon toks in(*before remove minus*)
               let toks = adjust_after_paren toks in(*also before remove minus*)
-              let toks = drop_space_at_endline toks in
               let toks = paren_to_space toks in
               let toks = drop_end_comma toks in
               let toks = drop_line toks in
@@ -1529,7 +1834,6 @@ let pp_program2 xs outfile  =
               (* assert Origin + Cocci + C and no minus *)
               let toks = add_space toks in
               let toks = add_newlines toks tu in
-              let toks = paren_then_brace toks in
               let toks = fix_tokens toks in
               toks
             end in

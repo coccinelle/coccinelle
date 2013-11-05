@@ -249,6 +249,12 @@ let equal_metavarval valu valu' =
   | Ast_c.MetaExprListVal a, Ast_c.MetaExprListVal b ->
       Lib_parsing_c.al_arguments a =*= Lib_parsing_c.al_arguments b
 
+  | Ast_c.MetaFmtVal a, Ast_c.MetaFmtVal b ->
+      Lib_parsing_c.al_string_format a =*= Lib_parsing_c.al_string_format b
+  | Ast_c.MetaFragListVal a, Ast_c.MetaFragListVal b ->
+      Lib_parsing_c.al_string_fragments a =*=
+      Lib_parsing_c.al_string_fragments b
+
   | Ast_c.MetaDeclVal a, Ast_c.MetaDeclVal b ->
       Lib_parsing_c.al_declaration a =*= Lib_parsing_c.al_declaration b
   | Ast_c.MetaFieldVal a, Ast_c.MetaFieldVal b ->
@@ -290,6 +296,7 @@ let equal_metavarval valu valu' =
       |B.MetaTypeVal _ |B.MetaInitVal _ |B.MetaInitListVal _
       |B.MetaParamListVal _|B.MetaParamVal _|B.MetaExprListVal _
       |B.MetaExprVal _|B.MetaLocalFuncVal _|B.MetaFuncVal _|B.MetaIdVal _
+      |B.MetaFmtVal _|B.MetaFragListVal _
     ), _
       -> raise (Impossible 16)
 
@@ -314,6 +321,13 @@ let equal_inh_metavarval valu valu'=
       Lib_parsing_c.al_inh_expr a =*= Lib_parsing_c.al_inh_expr b
   | Ast_c.MetaExprListVal a, Ast_c.MetaExprListVal b ->
       Lib_parsing_c.al_inh_arguments a =*= Lib_parsing_c.al_inh_arguments b
+
+  | Ast_c.MetaFmtVal a, Ast_c.MetaFmtVal b ->
+      Lib_parsing_c.al_inh_string_format a =*=
+      Lib_parsing_c.al_inh_string_format b
+  | Ast_c.MetaFragListVal a, Ast_c.MetaFragListVal b ->
+      Lib_parsing_c.al_inh_string_fragments a =*=
+      Lib_parsing_c.al_inh_string_fragments b
 
   | Ast_c.MetaDeclVal a, Ast_c.MetaDeclVal b ->
       Lib_parsing_c.al_inh_declaration a =*= Lib_parsing_c.al_inh_declaration b
@@ -356,6 +370,7 @@ let equal_inh_metavarval valu valu'=
       |B.MetaTypeVal _ |B.MetaInitVal _ |B.MetaInitListVal _
       |B.MetaParamListVal _|B.MetaParamVal _|B.MetaExprListVal _
       |B.MetaExprVal _|B.MetaLocalFuncVal _|B.MetaFuncVal _|B.MetaIdVal _
+      |B.MetaFmtVal _|B.MetaFragListVal _
     ), _
       -> raise (Impossible 17)
 
@@ -628,6 +643,11 @@ module type PARAM =
       (A.meta_name A.mcode, Ast_c.field) matcher
     val distrf_node :
       (A.meta_name A.mcode, Control_flow_c.node) matcher
+    val distrf_fragments :
+      (A.meta_name A.mcode, (Ast_c.string_fragment, Ast_c.il) either list)
+      matcher
+    val distrf_format :
+      (A.meta_name A.mcode, Ast_c.string_format) matcher
 
     val distrf_define_params :
       (A.meta_name A.mcode, (string Ast_c.wrap, Ast_c.il) either list) matcher
@@ -754,7 +774,7 @@ let satisfies_econstraint c exp : bool =
 	    "Unable to apply a constraint on a CppIdentBuilder identifier!")
   | Ast_c.Constant cst ->
       (match cst with
-      | Ast_c.String (str, _) -> satisfies_regexpconstraint c str
+      |	Ast_c.String (str, _) -> satisfies_regexpconstraint c str
       | Ast_c.MultiString strlist ->
 	  warning "Unable to apply a constraint on a multistring constant!"
       | Ast_c.Char  (char , _) -> satisfies_regexpconstraint c char
@@ -762,6 +782,7 @@ let satisfies_econstraint c exp : bool =
       | Ast_c.Float (float, _) -> satisfies_regexpconstraint c float
       | Ast_c.DecimalConst (d, n, p) ->
 	  warning "Unable to apply a constraint on a decimal constant!")
+  | Ast_c.StringConstant (cst,orig,w) -> satisfies_regexpconstraint c orig
   | _ -> warning "Unable to apply a constraint on an expression!"
 
 
@@ -770,7 +791,7 @@ let satisfies_econstraint c exp : bool =
 
 let list_matcher match_dots rebuild_dots match_comma rebuild_comma
     match_metalist rebuild_metalist mktermval special_cases
-    element distrf get_iis lenfilter = fun eas ebs ->
+    element distrf split_comma unsplit_comma get_iis lenfilter = fun eas ebs ->
   let rec loop = function
       [], [] -> return ([], [])
     | [], eb::ebs -> fail
@@ -873,7 +894,7 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 		    if not ok
 		    then fail
 		    else
-		      let startxs' = Ast_c.unsplit_comma startxs in
+		      let startxs' = unsplit_comma startxs in
 		      let len = List.length (lenfilter startxs') in
 
 		      (match leninfo with
@@ -901,7 +922,7 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 			    (fun () ->
 			      if null startxs
 			      then return (ida, [])
-			      else distrf ida (Ast_c.split_comma startxs'))
+			      else distrf ida (split_comma startxs'))
 			    >>= (fun ida startxs ->
 			      loop (eas, endxs) >>= (fun eas endxs ->
 				return (
@@ -1110,15 +1131,15 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	when x =$= y && lx =$= ly && px =$= py(*lx etc perhaps implied by x=y*)
           -> do1()
 
-      | A.String sa, B.String (sb,_kind) when sa =$= sb ->
+      |	 A.String sa, B.String (sb,_kind) when sa =$= sb ->
           (match ii with
-          | [ib1] ->
+          |  [ib1] ->
             tokenf ia1 ib1 >>= (fun ia1 ib1 ->
               return (
                 ((A.Constant ia1)) +> wa,
                 ((B.Constant (ib), typ),[ib1])
               ))
-          | _ -> fail (* multi string, not handled *)
+          |  _ -> fail (* multi string, not handled *)
           )
 
       | _, B.MultiString _ -> (* todo cocci? *) fail
@@ -1126,6 +1147,18 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	  fail
       )
 
+  | A.StringConstant (lq,frags1,rq),
+      ((B.StringConstant (frags2,os,w), typ), ii) ->
+      let (ib1, ib2) = tuple_of_list2 ii in
+      tokenf lq ib1 >>= (fun lq ib1 ->
+      tokenf rq ib2 >>= (fun rq ib2 ->
+      string_fragments (A.undots frags1) (B.split_nocomma frags2) >>=
+	(fun frags1undots frags2splitted ->
+        let frags1 = redots frags1 frags1undots in
+	let frags2 = Ast_c.unsplit_nocomma frags2splitted in
+	return (
+	  ((A.StringConstant (lq,frags1,rq)) +> wa,
+	   ((B.StringConstant (frags2,os,w), typ), [ib1; ib2]))))))
 
   | A.FunCall (ea, ia1, eas, ia2),  ((B.FunCall (eb, ebs), typ),ii) ->
       (* todo: do special case to allow IdMetaFunc, cos doing the
@@ -1434,13 +1467,83 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
      B.Binary (_, _, _)|B.Unary (_, _)|
      B.Infix (_, _)|B.Postfix (_, _)|
      B.Assignment (_, _, _)|B.CondExpr (_, _, _)|
-     B.FunCall (_, _)|B.Constant _|B.Ident _),
+     B.FunCall (_, _)|B.Constant _|B.StringConstant _|B.Ident _),
      _),_)
        -> fail
 
+and string_fragments eas ebs =
+  let match_dots ea =
+    match A.unwrap ea with
+      A.Strdots(mcode) -> Some (mcode, None)
+    |  _ -> None in
+  let build_dots (mcode,_) = A.Strdots(mcode) in
+  let match_comma ea = None in
+  let build_comma _ = failwith "no commas" in
+  let match_metalist ea =
+    match A.unwrap ea with
+      A.MetaFormatList(pct,ida,leninfo,keep,inherited) ->
+        Some(ida,leninfo,keep,inherited,None)
+    |  _ -> None in
+  let build_metalist ea (ida,leninfo,keep,inherited) =
+    match A.unwrap ea with
+      A.MetaFormatList(pct,_,_,_,_) ->
+	A.MetaFormatList(pct,ida,leninfo,keep,inherited)
+    | _ -> failwith "not possible" in
+  let mktermval v = Ast_c.MetaFragListVal v in
+  let special_cases ea eas ebs = None in
+  list_matcher match_dots build_dots match_comma build_comma
+    match_metalist build_metalist mktermval
+    special_cases string_fragment X.distrf_fragments
+    B.split_nocomma B.unsplit_nocomma
+    Lib_parsing_c.ii_of_fragments (function x -> x) eas ebs
 
+and string_fragment ea (eb,ii) =
+  X.all_bound (A.get_inherited ea) >&&>
+  let wa x = A.rewrap ea x in
+  match A.unwrap ea,eb with
+    A.ConstantFragment(str1), B.ConstantFragment(str2) ->
+      let ib1 = tuple_of_list1 ii in
+      tokenf str1 ib1 >>= (fun str1 ib1 ->
+	return
+	  (A.ConstantFragment(str1) +> wa,
+	   (B.ConstantFragment(str2),[ib1])))
+  | A.FormatFragment(pct1,fmt1), B.FormatFragment(fmt2) ->
+      let ib1 = tuple_of_list1 ii in
+      tokenf pct1 ib1 >>= (fun pct1 ib1 ->
+      string_format fmt1 fmt2 >>= (fun fmt1 fmt2 ->
+	return
+	  (A.FormatFragment(pct1,fmt1) +> wa,
+	   (B.FormatFragment(fmt2), [ib1]))))
+  | A.Strdots dots, eb -> failwith "not possible"
+  | A.MetaFormatList(pct1,name1,lenname1,_,_), eb -> failwith "not possible"
+  | _,_ -> fail
 
-
+and string_format ea eb =
+   let check_constraints constraints idb =
+     match constraints with
+       A.IdNoConstraint -> return ((),())
+     | A.IdRegExpConstraint re ->
+	 X.check_idconstraint satisfies_regexpconstraint re idb
+	   (fun () -> return ((),()))
+     | _ -> failwith "no nonid constraint for string format" in
+  X.all_bound (A.get_inherited ea) >&&>
+  let wa x = A.rewrap ea x in
+  match A.unwrap ea,eb with
+    A.ConstantFormat(str1), (B.ConstantFormat(str2),ii) ->
+      let ib1 = tuple_of_list1 ii in
+      tokenf str1 ib1 >>= (fun str1 ib1 ->
+	return
+	  (A.ConstantFormat(str1) +> wa,
+	   (B.ConstantFormat(str2),[ib1])))
+  | A.MetaFormat(ida,constraints,keep,inherited),(B.ConstantFormat(str2),ii) ->
+      check_constraints constraints str2 >>=
+      (fun () () ->
+	let max_min _ =
+	  Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_format eb) in
+	X.envf keep inherited (ida,Ast_c.MetaFmtVal eb,max_min) (fun () ->
+          X.distrf_format ida eb
+            ) >>= (fun ida eb ->
+              return (A.MetaFormat(ida,constraints,keep,inherited) +> wa,eb)))
 
 (* ------------------------------------------------------------------------- *)
 and (ident_cpp: info_ident -> (A.ident, B.name) matcher) =
@@ -1600,7 +1703,7 @@ and arguments_bis = fun eas ebs ->
   let special_cases ea eas ebs = None in
   list_matcher match_dots build_dots match_comma build_comma
     match_metalist build_metalist mktermval
-    special_cases argument X.distrf_args
+    special_cases argument X.distrf_args B.split_comma  B.unsplit_comma
     Lib_parsing_c.ii_of_args (function x -> x) eas ebs
 
 and argument arga argb =
@@ -1650,6 +1753,7 @@ and ident_list_bis = fun eas ebs ->
   list_matcher match_dots build_dots match_comma build_comma
     match_metalist build_metalist mktermval
     special_cases (ident_cpp DontKnow) X.distrf_ident_list
+    B.split_comma B.unsplit_comma
     Lib_parsing_c.ii_of_ident_list (function x -> x) eas ebs
 
 
@@ -1751,6 +1855,7 @@ and parameters_bis eas ebs =
   list_matcher match_dots build_dots match_comma build_comma
     match_metalist build_metalist mktermval
     special_cases parameter X.distrf_params
+    B.split_comma B.unsplit_comma
     Lib_parsing_c.ii_of_params (function x -> x) eas ebs
 
 (*
@@ -1907,7 +2012,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 		mcode mcode mcode
 		donothing donothing donothing donothing donothing
 		donothing donothing donothing donothing donothing
-		donothing donothing
+		donothing donothing donothing donothing
 		donothing donothing donothing donothing donothing in
 	    v.Visitor_ast.rebuilder_declaration decla in
 
@@ -2563,7 +2668,8 @@ and initialisers_ordered2 = fun ias ibs ->
   let no_ii x = failwith "not possible" in
   list_matcher match_dots build_dots match_comma build_comma
     match_metalist build_metalist mktermval
-    special_cases initialiser X.distrf_inis no_ii
+    special_cases initialiser X.distrf_inis
+    B.split_comma B.unsplit_comma no_ii
     (function x -> x) ias ibs
 
 and initialisers_unordered2 = fun allminus ias ibs ->
@@ -2646,7 +2752,8 @@ and (struct_fields: (A.declaration list, B.field list) matcher) =
       l in
   list_matcher match_dots build_dots match_comma build_comma
     match_metalist build_metalist mktermval
-    special_cases struct_field distrf no_ii
+    special_cases struct_field distrf
+    B.split_comma B.unsplit_comma no_ii
     filter_fields eas (make_ebs ebs) >>=
   (fun eas ebs -> return (eas,unmake_ebs ebs))
 
@@ -2749,6 +2856,7 @@ and enum_fields = fun eas ebs ->
   list_matcher match_dots build_dots match_comma build_comma
     match_metalist build_metalist mktermval
     special_cases enum_field X.distrf_enum_fields
+    B.split_comma B.unsplit_comma
     Lib_parsing_c.ii_of_enum_fields (function x -> x) eas ebs
 
 and enum_field ida idb =
@@ -3868,7 +3976,8 @@ and define_paramsbis = fun eas ebs ->
   let no_ii x = failwith "not possible" in
   list_matcher match_dots build_dots match_comma build_comma
     match_metalist build_metalist mktermval
-    special_cases define_parameter X.distrf_define_params no_ii
+    special_cases define_parameter X.distrf_define_params
+    B.split_comma B.unsplit_comma no_ii
     (function x -> x) eas ebs
 
 and define_parameter = fun parama paramb ->

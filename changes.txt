@@ -292,6 +292,8 @@
   for finding the problem.
 - Drop matched pattern in idutils output.  Thanks to Wolfram Sang for
   pointing out the problem.
+- Improve parsing of #defines that contain multiline comments.  Thanks to
+  Tegawende Bissyande for finding the problem.
 
 * 0.2.5
 ** Language:

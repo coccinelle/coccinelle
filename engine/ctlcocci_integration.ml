@@ -489,6 +489,7 @@ let strip_predicate re =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing
       ident expression donothing donothing donothing donothing
+      donothing donothing
       donothing donothing donothing donothing donothing donothing in
 
   fn.Visitor_ast.rebuilder_rule_elem re

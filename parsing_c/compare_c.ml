@@ -71,16 +71,27 @@ let normal_form_program xs =
           k (InitList xs, [i1;i2])
       | _ -> k ini
     );
+
     Visitor_c.kexpr_s = (fun (k,bigf) e ->
       match e with
       (* todo: should also do something for multistrings *)
-      | (Constant (String (s,kind)), typ), [ii]
+      |	 (Constant (String (s,kind)), typ), [ii]
           when Common.string_match_substring cvs_keyword_regexp s ->
           let newstr = cvs_compute_newstr s in
           (Constant (String (newstr,kind)), typ), [rewrap_str newstr ii]
-      | _ -> k e
-
+      |	 _ -> k e
     );
+
+    Visitor_c.kfragment_s = (fun (k,bigf) e ->
+      match e with
+      (* todo: should also do something for multistrings *)
+      | (ConstantFragment s), [ii]
+          when Common.string_match_substring cvs_keyword_regexp s ->
+          let newstr = cvs_compute_newstr s in
+	  (ConstantFragment newstr), [rewrap_str newstr ii]
+      | _ -> k e
+    );
+
     Visitor_c.ktoplevel_s = (fun (k,bigf) p ->
       match p with
       | CppTop (Define _) ->

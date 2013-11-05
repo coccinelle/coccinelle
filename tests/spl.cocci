@@ -12,5 +12,5 @@ spin_lock(l);
 //    when strict
 if (...) {
 +   spin_unlock(l);
-    return ...;
+    returnn(...);
 }

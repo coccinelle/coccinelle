@@ -91,6 +91,8 @@ and metavar =
   | MetaFuncDecl of arity * meta_name (* name *)
   | MetaLocalFuncDecl of arity * meta_name (* name *)
   | MetaPosDecl of arity * meta_name (* name *)
+  | MetaFmtDecl of arity * meta_name (* name *)
+  | MetaFragListDecl of arity * meta_name (* name *) * list_len (*len*)
   | MetaAnalysisDecl of string * meta_name (* name *)
   | MetaDeclarerDecl of arity * meta_name (* name *)
   | MetaIteratorDecl of arity * meta_name (* name *)
@@ -133,6 +135,8 @@ and ident = base_ident wrap
 and base_expression =
     Ident          of ident
   | Constant       of constant mcode
+  | StringConstant of string mcode (* quote *) * string_fragment dots *
+		      string mcode (* quote *)
   | FunCall        of expression * string mcode (* ( *) *
                       expression dots * string mcode (* ) *)
   | Assignment     of expression * assignOp mcode * expression * bool
@@ -211,6 +215,21 @@ and listlen =
     MetaListLen of meta_name mcode * keep_binding * inherited
   | CstListLen of int
   | AnyListLen
+
+and base_string_fragment =
+    ConstantFragment of string mcode
+  | FormatFragment of string mcode (*%*) * string_format (* format *)
+  | Strdots of string mcode
+  | MetaFormatList of string mcode (*%*) * meta_name mcode * listlen *
+	keep_binding * inherited
+
+and string_fragment = base_string_fragment wrap
+
+and base_string_format =
+    ConstantFormat of string mcode
+  | MetaFormat of meta_name mcode * idconstraint * keep_binding * inherited
+
+and string_format = base_string_format wrap
 
 and  unaryOp = GetRef | GetRefLabel | DeRef | UnPlus |  UnMinus | Tilde | Not
 and  assignOp = SimpleAssign | OpAssign of arithOp

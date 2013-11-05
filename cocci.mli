@@ -40,6 +40,7 @@ val sp_of_file :
       Ast_cocci.meta_name list list list *
       (string list option (*grep tokens*) *
 	 string list option (*glimpse tokens*) *
-	 Get_constants2.combine option)
+	 Get_constants2.combine option) *
+      bool (* format information needed for strings? *)
 
 val normalize_path : string -> string

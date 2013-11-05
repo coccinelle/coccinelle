@@ -334,10 +334,11 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       !g +> add_arc_opt (starti, newi);
       let finishi = Some newi in
 
-      aux_statement_list finishi (xi, newxi) statxs
+      let stmt_res = aux_statement_list finishi (xi, newxi) statxs in
 
       (* braces: *)
-      +> Common.fmap (fun finishi ->
+      (match stmt_res with
+	Some finishi ->
             (* subtil: not always return a Some.
              * Note that if finishi is None, alors forcement ca veut dire
              * qu'il y'a eu un return (ou goto), et donc forcement les
@@ -347,18 +348,34 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
              * ca veut dire que le programme boucle. Pour qu'il boucle pas
              * il faut forcement au moins un return.
              *)
-            let endi = !g#add_node endnode in
-	    if xi.compound_caller = Statement
-	    then
+          let endi = !g#add_node endnode in
+	  if xi.compound_caller = Statement
+	  then
 	      (* Problem! This edge is only created if the block does not
 		 have return on all execution paths. *)
-	      (let afteri = !g +> add_node AfterNode lbl "[after]" in
-	      !g#add_arc ((newi, afteri), Direct);
-	      !g#add_arc ((afteri, endi), Direct));
-            !g#add_arc ((finishi, endi), Direct);
-            endi
-           )
-
+	    (let afteri = !g +> add_node AfterNode lbl "[after]" in
+	    !g#add_arc ((newi, afteri), Direct);
+	    !g#add_arc ((afteri, endi), Direct));
+          !g#add_arc ((finishi, endi), Direct);
+          Some endi
+      |	None ->
+	  (* A compound needs an After link to the end of the statement.
+	     But then the question is what that should link to in the case
+	     where there are only returns from the Compound.  This
+	     makes a series of fake braces, as is done for a return itself. *)
+(*	  (if xi.compound_caller = Statement
+	  then
+	    (let afteri = !g +> add_node AfterNode lbl "[after]" in
+	    !g#add_arc ((newi, afteri), Direct);
+	    let newi = insert_all_braces newxi.braces afteri in
+	    (match xi.exiti, xi.errorexiti with
+	    | None, None -> raise (Error (NoExit (pinfo_of_ii ii)))
+	    | Some exiti, Some errorexiti ->
+		if xi.under_ifthen
+		then !g#add_arc ((newi, errorexiti), Direct)
+		else !g#add_arc ((newi, exiti), Direct)
+	    | _ -> raise (Impossible 74)))); *)
+	  None)
 
    (* ------------------------- *)
   | Labeled (Ast_c.Label (name, st)) ->

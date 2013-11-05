@@ -48,7 +48,8 @@ val sp_of_file :
       Ast_cocci.meta_name list list list *
       (string list option *
 	 string list option *
-	 Get_constants2.combine option)
+	 Get_constants2.combine option) *
+      bool (* format info needed for strings *)
 
 (* TODO: Remove
 val rule_elem_of_string : string -> filename option -> Ast_cocci.rule_elem

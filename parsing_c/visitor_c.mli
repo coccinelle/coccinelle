@@ -22,6 +22,8 @@ type visitor_c = {
   knode:
     (Control_flow_c.node -> unit) * visitor_c -> Control_flow_c.node -> unit;
   ktoplevel: (toplevel -> unit) * visitor_c -> toplevel -> unit;
+  kfragment: (string_fragment -> unit) * visitor_c -> string_fragment -> unit;
+  kformat: (string_format -> unit) * visitor_c -> string_format -> unit;
 
   kinfo      : (info        -> unit)  * visitor_c -> info        -> unit;
 }
@@ -42,6 +44,11 @@ val vk_inis_splitted :
 val vk_name      : visitor_c -> name -> unit
 val vk_def       : visitor_c -> definition  -> unit
 val vk_node      : visitor_c -> Control_flow_c.node -> unit
+val vk_string_fragment : visitor_c -> string_fragment -> unit
+val vk_string_fragments : visitor_c -> string_fragment list -> unit
+val vk_string_fragments_splitted :
+    visitor_c -> (string_fragment, il) Common.either list -> unit
+val vk_string_format : visitor_c -> string_format -> unit
 val vk_info      : visitor_c -> info -> unit
 val vk_toplevel : visitor_c -> toplevel -> unit
 val vk_program  : visitor_c -> program -> unit
@@ -93,7 +100,9 @@ type visitor_c_s = {
     Control_flow_c.node inout * visitor_c_s -> Control_flow_c.node    inout;
   ktoplevel_s  : toplevel inout * visitor_c_s -> toplevel inout;
 
-  kinfo_s      : info           inout * visitor_c_s -> info           inout;
+  kfragment_s  : string_fragment inout * visitor_c_s -> string_fragment inout;
+  kformat_s    : string_format   inout * visitor_c_s -> string_format   inout;
+  kinfo_s      : info            inout * visitor_c_s -> info            inout;
   }
 
 val default_visitor_c_s : visitor_c_s
@@ -115,6 +124,14 @@ val vk_inis_splitted_s :
 val vk_def_s : visitor_c_s -> definition -> definition
 val vk_name_s : visitor_c_s -> name -> name
 val vk_toplevel_s : visitor_c_s -> toplevel -> toplevel
+val vk_string_fragment_s : visitor_c_s -> string_fragment -> string_fragment
+val vk_string_fragments_s :
+    visitor_c_s -> string_fragment list -> string_fragment list
+val vk_string_fragments_splitted_s :
+    visitor_c_s ->
+      (string_fragment, il) Common.either list ->
+	(string_fragment, il) Common.either list
+val vk_string_format_s : visitor_c_s -> string_format -> string_format
 val vk_info_s : visitor_c_s -> info -> info
 val vk_ii_s : visitor_c_s -> info list -> info list
 val vk_node_s : visitor_c_s -> Control_flow_c.node -> Control_flow_c.node

@@ -12,6 +12,8 @@ module Ast = Ast_cocci
 type 'a combiner =
     {combiner_ident : Ast.ident -> 'a;
      combiner_expression : Ast.expression -> 'a;
+     combiner_fragment : Ast.string_fragment -> 'a;
+     combiner_format : Ast.string_format -> 'a;
      combiner_fullType : Ast.fullType -> 'a;
      combiner_typeC : Ast.typeC -> 'a;
      combiner_declaration : Ast.declaration -> 'a;
@@ -38,8 +40,8 @@ let combiner bind option_default
     cv_mcodefn sign_mcodefn struct_mcodefn storage_mcodefn
     inc_file_mcodefn
     expdotsfn paramdotsfn stmtdotsfn decldotsfn initdotsfn
-    identfn exprfn ftfn tyfn initfn paramfn declfn rulefn stmtfn casefn
-    topfn anyfn =
+    identfn exprfn fragfn fmtfn ftfn tyfn initfn paramfn declfn rulefn
+    stmtfn casefn topfn anyfn =
   let multibind l =
     let rec loop = function
 	[] -> option_default
@@ -71,6 +73,7 @@ let combiner bind option_default
   and inc_file_mcode x = inc_file_mcodefn all_functions x
 
   and iddotsfn all_functions k arg = k arg
+  and strdotsfn all_functions k arg = k arg
 
   and expression_dots d = dotsfn expdotsfn expression all_functions d
   and identifier_dots d = dotsfn iddotsfn ident all_functions d
@@ -78,6 +81,7 @@ let combiner bind option_default
   and statement_dots d = dotsfn stmtdotsfn statement all_functions d
   and declaration_dots d = dotsfn decldotsfn declaration all_functions d
   and initialiser_dots d = dotsfn initdotsfn initialiser all_functions d
+  and string_fragment_dots d = dotsfn strdotsfn string_fragment all_functions d
 
   and ident i =
     let k i =
@@ -97,6 +101,9 @@ let combiner bind option_default
       match Ast.unwrap e with
 	Ast.Ident(id) -> ident id
       | Ast.Constant(const) -> const_mcode const
+      | Ast.StringConstant(lq,str,rq) ->
+	  multibind
+	    [string_mcode lq; string_fragment_dots str; string_mcode rq]
       | Ast.FunCall(fn,lp,args,rp) ->
 	  multibind [expression fn; string_mcode lp; expression_dots args;
 		      string_mcode rp]
@@ -154,6 +161,28 @@ let combiner bind option_default
       | Ast.OptExp(exp) | Ast.UniqueExp(exp) ->
 	  expression exp in
     exprfn all_functions k e
+
+  and string_fragment e =
+    let k e =
+      match Ast.unwrap e with
+	Ast.ConstantFragment(str) -> string_mcode str
+      | Ast.FormatFragment(pct,fmt) ->
+	  let pct = string_mcode pct in
+	  let fmt = string_format fmt in
+	  bind pct fmt
+      |	Ast.Strdots dots -> string_mcode dots
+      | Ast.MetaFormatList(pct,name,lenname,_,_) ->
+	  let pct = string_mcode pct in
+	  let name = meta_mcode name in
+	  multibind [pct;name] in
+    fragfn all_functions k e
+
+  and string_format e =
+    let k e =
+      match Ast.unwrap e with
+	Ast.ConstantFormat(str) -> string_mcode str
+      | Ast.MetaFormat(name,_,_,_) -> meta_mcode name in
+    fmtfn all_functions k e
 
   and fullType ft =
     let k ft =
@@ -555,6 +584,8 @@ let combiner bind option_default
   and all_functions =
     {combiner_ident = ident;
       combiner_expression = expression;
+      combiner_fragment = string_fragment;
+      combiner_format = string_format;
       combiner_fullType = fullType;
       combiner_typeC = typeC;
       combiner_declaration = declaration;
@@ -579,6 +610,8 @@ type 'a inout = 'a -> 'a (* for specifying the type of rebuilder *)
 type rebuilder =
     {rebuilder_ident : Ast.ident inout;
       rebuilder_expression : Ast.expression inout;
+      rebuilder_fragment : Ast.string_fragment inout;
+      rebuilder_format : Ast.string_format inout;
       rebuilder_fullType : Ast.fullType inout;
       rebuilder_typeC : Ast.typeC inout;
       rebuilder_declaration : Ast.declaration inout;
@@ -607,8 +640,8 @@ let rebuilder
     binary_mcode cv_mcode sign_mcode struct_mcode storage_mcode
     inc_file_mcode
     expdotsfn paramdotsfn stmtdotsfn decldotsfn initdotsfn
-    identfn exprfn ftfn tyfn initfn paramfn declfn rulefn stmtfn casefn
-    topfn anyfn =
+    identfn exprfn fragfn fmtfn ftfn tyfn initfn paramfn declfn rulefn
+    stmtfn casefn topfn anyfn =
   let get_option f = function
       Some x -> Some (f x)
     | None -> None in
@@ -623,6 +656,7 @@ let rebuilder
     param all_functions k arg in
 
   let iddotsfn all_functions k arg = k arg in
+  let strdotsfn all_functions k arg = k arg in
 
   let rec expression_dots d = dotsfn expdotsfn expression all_functions d
   and identifier_dots d = dotsfn iddotsfn ident all_functions d
@@ -630,6 +664,7 @@ let rebuilder
   and statement_dots d = dotsfn stmtdotsfn statement all_functions d
   and declaration_dots d = dotsfn decldotsfn declaration all_functions d
   and initialiser_dots d = dotsfn initdotsfn initialiser all_functions d
+  and string_fragment_dots d = dotsfn strdotsfn string_fragment all_functions d
 
   and ident i =
     let k i =
@@ -654,6 +689,9 @@ let rebuilder
 	(match Ast.unwrap e with
 	  Ast.Ident(id) -> Ast.Ident(ident id)
 	| Ast.Constant(const) -> Ast.Constant(const_mcode const)
+	| Ast.StringConstant(lq,str,rq) ->
+	    Ast.StringConstant(string_mcode lq, string_fragment_dots str,
+			       string_mcode rq)
 	| Ast.FunCall(fn,lp,args,rp) ->
 	    Ast.FunCall(expression fn, string_mcode lp, expression_dots args,
 			string_mcode rp)
@@ -716,6 +754,28 @@ let rebuilder
 	| Ast.OptExp(exp) -> Ast.OptExp(expression exp)
 	| Ast.UniqueExp(exp) -> Ast.UniqueExp(expression exp)) in
     exprfn all_functions k e
+
+  and string_fragment e =
+    let k e =
+      Ast.rewrap e
+	(match Ast.unwrap e with
+	  Ast.ConstantFragment(str) -> Ast.ConstantFragment(string_mcode str)
+	| Ast.FormatFragment(pct,fmt) ->
+	    Ast.FormatFragment(string_mcode pct, string_format fmt)
+	| Ast.Strdots dots -> Ast.Strdots (string_mcode dots)
+	| Ast.MetaFormatList(pct,name,lenname,keep,inherited) ->
+	    Ast.MetaFormatList(string_mcode pct,meta_mcode name,lenname,
+			       keep,inherited)) in
+    fragfn all_functions k e
+
+  and string_format e =
+    let k e =
+      Ast.rewrap e
+	(match Ast.unwrap e with
+	  Ast.ConstantFormat(str) -> Ast.ConstantFormat(string_mcode str)
+	| Ast.MetaFormat(name,constraints,keep,inherited) ->
+	    Ast.MetaFormat(meta_mcode name,constraints,keep,inherited)) in
+    fmtfn all_functions k e
 
   and fullType ft =
     let k ft =
@@ -1132,6 +1192,8 @@ let rebuilder
   and all_functions =
     {rebuilder_ident = ident;
       rebuilder_expression = expression;
+      rebuilder_fragment = string_fragment;
+      rebuilder_format = string_format;
       rebuilder_fullType = fullType;
       rebuilder_typeC = typeC;
       rebuilder_declaration = declaration;

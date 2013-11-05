@@ -301,6 +301,32 @@ let do_get_constants constants keywords env neg_pos =
 	  | Ast.Int s -> option_default (* glimpse doesn't index integers *)
 	  | Ast.Float s -> option_default (* probably not floats either *)
 	  | Ast.DecimalConst _ -> option_default (* or decimals *))
+    | Ast.StringConstant(lq,str,rq) ->
+	let str = Ast.undots str in
+	(* pick up completely constant strings *)
+	let strs =
+	  List.fold_left
+	    (function strs ->
+	      function frag ->
+		match (strs, Ast.unwrap frag) with
+		  (None,_) -> None
+		| (Some strs, Ast.ConstantFragment(str)) ->
+		    Some ((Ast.unwrap_mcode str)::strs)
+		| (Some strs, Ast.FormatFragment(pct,fmt)) ->
+		    let cstfmt =
+		      match Ast.unwrap fmt with
+			Ast.ConstantFormat s -> Some (Ast.unwrap_mcode s)
+		      |	_ -> None in
+		    (match cstfmt with
+		      Some f -> Some (f :: "%" :: strs)
+		    | _ -> None)
+		| (Some strs, Ast.Strdots _)
+		| (Some strs, Ast.MetaFormatList _) -> None)
+	    (Some []) str in
+	bind (k e)
+	  (match strs with
+	    Some strs -> constants (String.concat "" (List.rev strs))
+	  | None ->  option_default)
     | Ast.MetaExpr(name,_,_,Some type_list,_,_) ->
 	let types = List.fold_left type_collect option_default type_list in
 	bind (k e) (bind (minherited name) types)
@@ -319,6 +345,19 @@ let do_get_constants constants keywords env neg_pos =
     | Ast.OptExp(exp) -> option_default
     | Ast.Edots(_,_) | Ast.Ecircles(_,_) | Ast.Estars(_,_) -> option_default
     | _ -> k e in
+
+  (* cases for metavariabes *)
+  let string_fragment r k ft =
+    match Ast.unwrap ft with
+      Ast.MetaFormatList(pct,name,Ast.MetaListLen (lenname,_,_),_,_) ->
+	bind (k ft) (bind (minherited name) (minherited lenname))
+    | Ast.MetaFormatList(pct,name,_,_,_) -> bind (k ft) (minherited name)
+    | _ -> k ft in
+
+  let string_format r k ft =
+    match Ast.unwrap ft with
+      Ast.MetaFormat(name,_,_,_) -> bind (k ft) (minherited name)
+    | _ -> k ft in
 
   let fullType r k ft =
     match Ast.unwrap ft with
@@ -432,7 +471,8 @@ let do_get_constants constants keywords env neg_pos =
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing
-    ident expression fullType typeC initialiser parameter declaration
+    ident expression string_fragment string_format fullType typeC
+    initialiser parameter declaration
     rule_elem statement donothing donothing donothing
 
 (* ------------------------------------------------------------------------ *)
@@ -464,7 +504,7 @@ let get_all_constants minus_only =
   V.combiner bind option_default
     other mcode other other other other other other other other other other
 
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
 
@@ -508,7 +548,7 @@ let get_plus_constants =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     rule_elem statement donothing donothing donothing
 
@@ -562,7 +602,7 @@ let all_context =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing initialiser donothing
     donothing rule_elem statement donothing donothing donothing
 

@@ -757,7 +757,7 @@ let adjust_stdin cfiles k =
 
 let glimpse_filter (coccifile, isofile) dir =
   let (_metavars,astcocci,_free_var_lists,_negated_positions,
-       _used_after_lists,_positions_lists,(_,query,_)) =
+       _used_after_lists,_positions_lists,(_,query,_),_print_format) =
     Cocci.sp_of_file coccifile (Some isofile) in
   match query with
     None -> pr2 "no inferred glimpse keywords"; None
@@ -780,7 +780,7 @@ let glimpse_filter (coccifile, isofile) dir =
 
 let idutils_filter (coccifile, isofile) dir =
   let (_metavars,astcocci,_free_var_lists,_negated_positions,
-       _used_after_lists,_positions_lists,(_,_,query)) =
+       _used_after_lists,_positions_lists,(_,_,query),_print_format) =
     Cocci.sp_of_file coccifile (Some isofile) in
   match query with
     None -> pr2 "no inferred idutils keywords"; None

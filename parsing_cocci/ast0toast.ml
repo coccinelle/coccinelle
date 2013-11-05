@@ -358,6 +358,8 @@ and expression e =
       Ast0.Ident(id) -> Ast.Ident(ident id)
     | Ast0.Constant(const) ->
 	Ast.Constant(mcode const)
+    | Ast0.StringConstant(lq,str,rq) ->
+	Ast.StringConstant(mcode lq, dots string_fragment str, mcode rq)
     | Ast0.FunCall(fn,lp,args,rp) ->
 	let fn = expression fn in
 	let lp = mcode lp in
@@ -440,6 +442,24 @@ and expression e =
   if Ast0.get_test_exp e then Ast.set_test_exp e1 else e1
 
 and expression_dots ed = dots expression ed
+
+and string_fragment e =
+  rewrap e no_isos
+    (match Ast0.unwrap e with
+      Ast0.ConstantFragment(str) -> Ast.ConstantFragment(mcode str)
+    | Ast0.FormatFragment(pct,fmt) ->
+	Ast.FormatFragment(mcode pct, string_format fmt)
+    | Ast0.Strdots dots -> Ast.Strdots (mcode dots)
+    | Ast0.MetaFormatList(pct,name,lenname) ->
+	Ast.MetaFormatList(mcode pct, mcode name, do_lenname lenname,
+			   unitary,false))
+
+and string_format e =
+  rewrap e no_isos
+    (match Ast0.unwrap e with
+      Ast0.ConstantFormat(str) -> Ast.ConstantFormat(mcode str)
+    | Ast0.MetaFormat(name,constraints) ->
+	Ast.MetaFormat(mcode name,constraints,unitary,false))
 
 and constraints c =
   match c with

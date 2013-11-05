@@ -45,6 +45,7 @@ let token2c (tok,_) =
   | PC.TField -> "field"
   | PC.TStatement -> "statement"
   | PC.TPosition -> "position"
+  | PC.TFormat -> "format"
   | PC.TAnalysis -> "analysis"
   | PC.TPosAny -> "any"
   | PC.TFunction -> "function"
@@ -647,7 +648,8 @@ let split_token ((tok,_) as t) =
     PC.TMetavariable | PC.TIdentifier
   | PC.TConstant | PC.TExpression | PC.TIdExpression
   | PC.TDeclaration | PC.TField
-  | PC.TStatement | PC.TPosition | PC.TAnalysis | PC.TPosAny | PC.TInitialiser | PC.TSymbol
+  | PC.TStatement | PC.TPosition | PC.TFormat | PC.TAnalysis | PC.TPosAny
+  | PC.TInitialiser | PC.TSymbol
   | PC.TFunction | PC.TTypedef | PC.TDeclarer | PC.TIterator | PC.TName
   | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh
   | PC.TCppConcatOp | PC.TPure
@@ -2095,6 +2097,7 @@ let parse file =
 
 (* parse to ast0 and then convert to ast *)
 let process file isofile verbose =
+  Parse_aux.contains_string_constant := false;
   let extra_path = Filename.dirname file in
   let (iso_files, rules, virt, _metas) = parse file in
   eval_virt virt;
@@ -2220,4 +2223,5 @@ let process file isofile verbose =
     Common.profile_code "get_glimpse_constants" (* for glimpse *)
       (fun () -> Get_constants2.get_constants code neg_pos) in
 
-  (metavars,code,fvs,neg_pos,ua,pos,search_tokens)
+  (metavars,code,fvs,neg_pos,ua,pos,search_tokens,
+   !Parse_aux.contains_string_constant)

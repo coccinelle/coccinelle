@@ -227,6 +227,7 @@ module XTRANS = struct
 	mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
 	donothing donothing donothing donothing donothing
 	ident expression donothing donothing donothing donothing
+	donothing donothing
 	donothing donothing donothing donothing donothing donothing in
 
   fn.Visitor_ast.rebuilder_anything anything
@@ -363,6 +364,21 @@ module XTRANS = struct
           cocciinforef := Some(Ast_cocci.CONTEXT(old_pos,old_modif),oldenvs)
 
     | _ ->
+
+(*
+	(match (oldmcode,mck) with
+	| (Ast_cocci.CONTEXT(old_pos,old_modif),
+	   Ast_cocci.CONTEXT(new_pos,new_modif)) ->
+	     Printf.printf "failed because of %b %b %b\n"
+	       (old_pos = new_pos)
+	       (old_modif = strip_context_code new_modif)
+	       (many_context_count old_modif);
+	     Printf.printf "failed because of %s %s\n"
+	       (Dumper.dump old_modif)
+	       (Dumper.dump (strip_context_code new_modif))
+	| _ -> Printf.printf "other failure\n");
+*)
+
           (* coccionly:
           if !Flag.sgrep_mode2
           then ib (* safe *)
@@ -542,6 +558,16 @@ module XTRANS = struct
     Visitor_c.vk_params_splitted_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop))
       x
 
+  let distribute_mck_fragments (maxpos, minpos) =
+    fun (lop,mop,rop,bop) ->fun x ->
+      Visitor_c.vk_string_fragments_splitted_s
+	(mk_bigf (maxpos, minpos) (lop,mop,rop,bop))
+	x
+
+  let distribute_mck_format (maxpos, minpos) = fun (lop,mop,rop,bop) ->fun x ->
+    Visitor_c.vk_string_format_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop))
+      x
+
   let distribute_mck_node (maxpos, minpos) = fun (lop,mop,rop,bop) ->fun x ->
     Visitor_c.vk_node_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop))
       x
@@ -626,6 +652,9 @@ module XTRANS = struct
   let distrf_decl = distrf (Lib_parsing_c.ii_of_decl,distribute_mck_decl)
   let distrf_field = distrf (Lib_parsing_c.ii_of_field,distribute_mck_field)
   let distrf_node = distrf (Lib_parsing_c.ii_of_node,distribute_mck_node)
+  let distrf_fragments =
+    distrf (Lib_parsing_c.ii_of_fragments,distribute_mck_fragments)
+  let distrf_format = distrf (Lib_parsing_c.ii_of_format,distribute_mck_format)
   let distrf_enum_fields =
     distrf (Lib_parsing_c.ii_of_enum_fields, distribute_mck_enum_fields)
   let distrf_struct_fields =

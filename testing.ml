@@ -452,7 +452,7 @@ let test_parse_cocci file =
   if not (file =~ ".*\\.cocci")
   then pr2 "warning: seems not a .cocci file";
 
-  let (_,xs,_,_,_,_,(grep_tokens,query,_)) =
+  let (_,xs,_,_,_,_,(grep_tokens,query,_),_) =
     Parse_cocci.process file (Some !Config.std_iso) false in
   xs +> List.iter Pretty_print_cocci.unparse;
   Format.print_newline();

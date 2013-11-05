@@ -93,6 +93,11 @@ let idots e =
     Ast.Idots(_,_) -> true
   | _ -> false
 
+let strdots e =
+  match Ast.unwrap e with
+    Ast.Strdots(_) -> true
+  | _ -> false
+
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
 
@@ -131,6 +136,8 @@ and unify_expression e1 e2 =
   match (Ast.unwrap e1,Ast.unwrap e2) with
     (Ast.Ident(i1),Ast.Ident(i2)) -> unify_ident i1 i2
   | (Ast.Constant(c1),Ast.Constant(c2))-> return (unify_mcode c1 c2)
+  | (Ast.StringConstant(lq1,str1,rq1),Ast.StringConstant(lq2,str2,rq2)) ->
+      unify_dots unify_string_fragment strdots str1 str2
   | (Ast.FunCall(f1,lp1,args1,rp1),Ast.FunCall(f2,lp2,args2,rp2)) ->
       conjunct_bindings
 	(unify_expression f1 f2)
@@ -206,6 +213,27 @@ and unify_expression e1 e2 =
   | (_,Ast.OptExp(_))
   | (_,Ast.UniqueExp(_)) -> failwith "unsupported expression"
   | _ -> return false
+
+(* --------------------------------------------------------------------- *)
+(* Strings *)
+
+and unify_string_fragment e1 e2 =
+  match (Ast.unwrap e1,Ast.unwrap e2) with
+    (Ast.ConstantFragment(str1),Ast.ConstantFragment(str2)) ->
+      return (unify_mcode str1 str2)
+  | (Ast.FormatFragment(pct1,fmt1),Ast.FormatFragment(pct2,fmt2)) ->
+      unify_string_format fmt1 fmt2
+  | (Ast.Strdots(dots1),Ast.Strdots(dots2)) -> return true
+  | (Ast.MetaFormatList(pct,name,len,_,_),_)
+  | (_,Ast.MetaFormatList(pct,name,len,_,_)) -> return true
+  | _ -> return false
+
+and unify_string_format e1 e2 =
+  match (Ast.unwrap e1,Ast.unwrap e2) with
+    (Ast.ConstantFormat(str1), Ast.ConstantFormat(str2)) ->
+      return (unify_mcode str1 str2)
+  | (Ast.MetaFormat(name,_,_,_),_)
+  | (_,Ast.MetaFormat(name,_,_,_)) -> return true
 
 (* --------------------------------------------------------------------- *)
 (* Types *)
@@ -563,7 +591,7 @@ and subexp f =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing
       donothing expr donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing in
+      donothing donothing donothing donothing donothing donothing donothing in
   recursor.V.combiner_rule_elem
 
 and subtype f =
@@ -575,8 +603,8 @@ and subtype f =
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing
-      donothing donothing fullType donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing in
+      donothing donothing donothing donothing fullType donothing donothing
+      donothing donothing donothing donothing donothing donothing donothing in
   recursor.V.combiner_rule_elem
 
 let rec unify_statement s1 s2 =

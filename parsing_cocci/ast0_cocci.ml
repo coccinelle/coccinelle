@@ -101,6 +101,8 @@ and ident = base_ident wrap
 and base_expression =
     Ident          of ident
   | Constant       of Ast.constant mcode
+  | StringConstant of string mcode (* quote *) * string_fragment dots *
+		      string mcode (* quote *)
   | FunCall        of expression * string mcode (* ( *) *
                       expression dots * string mcode (* ) *)
   | Assignment     of expression * Ast.assignOp mcode * expression *
@@ -156,6 +158,20 @@ and listlen =
     MetaListLen of Ast.meta_name mcode
   | CstListLen of int
   | AnyListLen
+
+and base_string_fragment =
+    ConstantFragment of string mcode
+  | FormatFragment of string mcode (*%*) * string_format (* format *)
+  | Strdots of string mcode
+  | MetaFormatList of string mcode (*%*) * Ast.meta_name mcode * listlen
+
+and string_fragment = base_string_fragment wrap
+
+and base_string_format =
+    ConstantFormat of string mcode
+  | MetaFormat of Ast.meta_name mcode * Ast.idconstraint
+
+and string_format = base_string_format wrap
 
 (* --------------------------------------------------------------------- *)
 (* Types *)

@@ -116,6 +116,10 @@ val add_iterator_meta:
 val add_pos_meta:
     (Ast_cocci.meta_name -> pconstraints -> Ast_cocci.meta_collect -> unit) ref
 
+val add_fmt_meta: (Ast_cocci.meta_name -> iconstraints -> unit) ref
+
+val add_fmtlist_meta: (Ast_cocci.meta_name -> Ast_cocci.list_len -> unit) ref
+
 val add_type_name: (string -> unit) ref
 
 val add_declarer_name: (string -> unit) ref
@@ -125,3 +129,14 @@ val add_iterator_name: (string -> unit) ref
 val init_rule: (unit -> unit) ref
 
 val install_bindings: (string -> unit) ref
+
+(* ---------------------------------------------------------------------- *)
+(* String format things *)
+
+val expression_metavariables :
+    (string * (Ast_cocci.meta_name * Ast0_cocci.constraints *
+		 Ast0_cocci.pure * Type_cocci.typeC list option)) list ref
+val format_metavariables :
+    (string * (Ast_cocci.meta_name * iconstraints)) list ref
+val format_list_metavariables :
+    (string * (Ast_cocci.meta_name * Ast_cocci.list_len)) list ref

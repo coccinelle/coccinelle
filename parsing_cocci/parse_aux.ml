@@ -2,6 +2,8 @@
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
 
+let contains_string_constant = ref false
+
 (* types for metavariable tokens *)
 type info = Ast.meta_name * Ast0.pure * Data.clt
 type midinfo =
@@ -640,3 +642,104 @@ let drop_dot_commas initlist =
 	    | _ -> x :: (loop false xs)) in
       Ast0.rewrap initlist (Ast0.DOTS(loop false l))
   | _ -> failwith "not supported"
+
+(* ----------------------------------------------------------------------- *)
+(* strings *)
+
+type metavars =
+    MFrag of (string Ast0.mcode -> Ast0.string_fragment)
+  | MFmt of Ast0.string_format
+
+let string_metavariables str clt =
+  try
+    let (name,constraints) = List.assoc str !Data.format_metavariables in
+    MFmt(Ast0.wrap(Ast0.MetaFormat(clt2mcode name clt,constraints)))
+  with Not_found ->
+    try
+      let (name,lenname) = List.assoc str !Data.format_list_metavariables in
+      let lenname =
+	match lenname with
+	  Ast.AnyLen -> Ast0.AnyListLen
+	| Ast.MetaLen nm -> Ast0.MetaListLen(clt2mcode nm clt)
+	| Ast.CstLen n -> Ast0.CstListLen n in
+      MFrag
+	(fun pct ->
+	  Ast0.wrap(Ast0.MetaFormatList(pct,clt2mcode name clt,lenname)))
+    with Not_found -> failwith "bad metavariable in string"
+
+let pct_split str =
+  let lst = Common.list_of_string str in
+  let complete l =
+    let l = List.rev l in
+    String.concat "" (List.map (function c -> Printf.sprintf "%c" c) l) in
+  let rec loop acc cur = function
+      [] -> List.rev ((complete cur)::acc)
+    | '%'::'%'::rest -> loop acc ('%'::'%'::cur) rest
+    | ['%'] -> raise Parse_printf.Not_format_string
+    | '%'::rest -> loop ((complete cur)::acc) [] rest
+    | x :: rest -> loop acc (x :: cur) rest in
+  loop [] [] lst
+
+let parse_middle middle clt =
+  let pieces = pct_split middle in
+  match pieces with
+    [] -> failwith "not possible"
+  | fst::rest ->
+      let first =
+	match fst with
+	  "" -> []
+	| "..." -> [Ast0.wrap(Ast0.Strdots(clt2mcode fst clt))]
+	| _ -> [Ast0.wrap (Ast0.ConstantFragment(clt2mcode fst clt))] in
+      let rest =
+	List.map
+	  (function r ->
+	    let pct = clt2mcode "%" clt in
+	    let mkfmt d = Ast0.wrap (Ast0.ConstantFormat(clt2mcode d clt)) in
+	    match String.get r 0 with
+	      '@' ->
+		let mkrest = function
+		    "" -> []
+		  | "..." ->
+		      [Ast0.wrap(Ast0.Strdots(clt2mcode "..." clt))]
+		  | s ->
+		      [Ast0.wrap(Ast0.ConstantFragment(clt2mcode s clt))] in
+		(match Str.split (Str.regexp "@") r with
+		  [first] ->
+		    (match string_metavariables first clt with
+		      MFmt fmtvar ->
+			[Ast0.wrap (Ast0.FormatFragment(pct,fmtvar))]
+		    | MFrag fragvar -> [fragvar pct])
+		| first::second::rest ->
+		    (match string_metavariables first clt with
+		      MFmt fmtvar ->
+			(Ast0.wrap (Ast0.FormatFragment(pct,fmtvar)))::
+			(mkrest (String.concat "@" (second :: rest)))
+		    | _ -> failwith "bad string")
+		| _ -> failwith "bad string")
+	    | _ ->
+		match Parse_printf.get_format_string r with
+		  (d,"") -> [Ast0.wrap (Ast0.FormatFragment(pct,mkfmt d))]
+		| (d,rest) ->
+		    [Ast0.wrap (Ast0.FormatFragment(pct,mkfmt d));
+		      Ast0.wrap (Ast0.ConstantFragment(clt2mcode rest clt))])
+	  rest in
+      first @ (List.concat rest)
+
+let not_format_string str clt =
+  Ast0.wrap(Ast0.Constant (clt2mcode (Ast.String str) clt))
+
+let parse_string str clt =
+  if List.length(Str.split_delim (Str.regexp "%") str) > 1
+  then
+    try
+      begin
+	let first = "\"" in
+	let last = "\"" in
+	let middle = parse_middle str clt in
+	let middle = Ast0.wrap (Ast0.DOTS middle) in
+	contains_string_constant := true;
+	Ast0.wrap
+	  (Ast0.StringConstant(clt2mcode first clt,middle,clt2mcode last clt))
+      end
+    with Parse_printf.Not_format_string -> not_format_string str clt
+  else not_format_string str clt

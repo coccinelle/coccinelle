@@ -192,6 +192,13 @@ let rec top_expression opt_allowed tgt expr =
       let arity = exp_same (mcode2line const) [mcode2arity const] in
       let const = mcode const in
       make_exp expr tgt arity (Ast0.Constant(const))
+  | Ast0.StringConstant(lq,str,rq) ->
+      (* all components on the same line, so this is probably pointless... *)
+      let arity = exp_same (mcode2line lq) [mcode2arity lq;mcode2arity rq] in
+      let lq = mcode lq in
+      let str = dots (string_fragment arity) str in
+      let rq = mcode rq in
+      make_exp expr tgt arity (Ast0.StringConstant(lq,str,rq))
   | Ast0.FunCall(fn,lp,args,rp) ->
       let arity = exp_same (mcode2line lp) [mcode2arity lp;mcode2arity rp] in
       let fn = expression arity fn in
@@ -345,6 +352,50 @@ let rec top_expression opt_allowed tgt expr =
       failwith "unexpected code"
 
 and expression tgt exp = top_expression false tgt exp
+
+and make_fragment =
+  make_opt_unique
+    (function x -> failwith "opt not allowed for string fragment")
+    (function x -> failwith "unique not allowed for string fragment")
+
+and string_fragment tgt e =
+  match Ast0.unwrap e with
+    Ast0.ConstantFragment(str) ->
+      let arity = all_same false tgt (mcode2line str) [mcode2arity str] in
+      let str = mcode str in
+      make_fragment e tgt arity (Ast0.ConstantFragment(str))
+  | Ast0.FormatFragment(pct,fmt) ->
+      let arity = all_same false tgt (mcode2line pct) [mcode2arity pct] in
+      let pct = mcode pct in
+      let fmt = string_format arity fmt in
+      make_fragment e tgt arity (Ast0.FormatFragment(pct,fmt))
+  | Ast0.Strdots(dots) ->
+      let arity = all_same false tgt (mcode2line dots) [mcode2arity dots] in
+      let dots = mcode dots in
+      make_fragment e tgt arity (Ast0.Strdots(dots))
+  | Ast0.MetaFormatList(pct,name,lenname) ->
+      let arity =
+	all_same false tgt (mcode2line pct)
+	  [mcode2arity pct; mcode2arity name] in
+      let pct = mcode pct in
+      let name = mcode name in
+      make_fragment e tgt arity (Ast0.MetaFormatList(pct,name,lenname))
+
+and make_format =
+  make_opt_unique
+    (function x -> failwith "opt not allowed for string format")
+    (function x -> failwith "unique not allowed for string format")
+
+and string_format tgt e =
+  match Ast0.unwrap e with
+    Ast0.ConstantFormat(str) ->
+      let arity = all_same false tgt (mcode2line str) [mcode2arity str] in
+      let str = mcode str in
+      make_format e tgt arity (Ast0.ConstantFormat(str))
+  | Ast0.MetaFormat(name,constraints) ->
+      let arity = all_same false tgt (mcode2line name) [mcode2arity name] in
+      let name = mcode name in
+      make_format e tgt arity (Ast0.MetaFormat(name,constraints))
 
 (* --------------------------------------------------------------------- *)
 (* Types *)

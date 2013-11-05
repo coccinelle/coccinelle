@@ -332,7 +332,7 @@ let elim_opt =
 
   V.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing stmtdotsfn donothing donothing
+    donothing donothing stmtdotsfn donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
 
@@ -441,6 +441,7 @@ let contains_modif =
     V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       do_nothing do_nothing do_nothing do_nothing do_nothing
+      do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing init do_nothing
       do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_rule_elem
@@ -461,6 +462,7 @@ let contains_pos =
     V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       do_nothing do_nothing do_nothing do_nothing do_nothing
+      do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_rule_elem
@@ -532,6 +534,7 @@ let count_nested_braces s =
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing
+      donothing donothing
       donothing donothing donothing donothing donothing donothing
       donothing donothing stmt_count donothing donothing donothing in
   let res = string_of_int (recursor.V.combiner_statement s) in
@@ -1902,10 +1905,11 @@ and statement stmt top after quantified minus_quantified
 		      (CTL.AU (* want AF even for sgrep *)
 			 (CTL.FORWARD,CTL.STRICT,
 			  CTL.Pred(Lib_engine.PrefixLabel(lv),CTL.Control),
-			  ctl_and (* brace must be eventually after goto *)
+			  ctl_or (aftpred None) (* jll new! *)
+			  (ctl_and (* brace must be eventually after goto *)
 			    (gotopred (Some (lv,ref true)))
 			    (* want AF even for sgrep *)
-			    (CTL.AF(CTL.FORWARD,CTL.STRICT,end_brace))))
+			    (CTL.AF(CTL.FORWARD,CTL.STRICT,end_brace)))))
 		      (quantify guard b2fvs
 			 (statement_list body NotTop Tail
 			    new_quantified2 new_mquantified2
@@ -2088,7 +2092,10 @@ and statement stmt top after quantified minus_quantified
 (*      let b3fvs = union_all all_b3fvs in*)
       (* ------------------- end collection of free variables *)
       let switch_header = quantify guard exponlyfvs (make_match header) in
-      let lb = quantify guard lbonlyfvs (make_match lb) in
+      let pv = count_nested_braces stmt in
+      let paren_pred = CTL.Pred(Lib_engine.Paren pv,CTL.Control) in
+      let lb = quantify guard lbonlyfvs 
+	  (ctl_and (make_match lb) paren_pred) in
 (*      let rb = quantify guard rbonlyfvs (make_match rb) in*)
       let case_headers =
 	List.map
@@ -2492,6 +2499,7 @@ and drop_minuses stmt_dots =
     V.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing
+      donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing in
   v.V.rebuilder_statement_dots stmt_dots

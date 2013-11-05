@@ -34,6 +34,7 @@ let contains_modif used_after x =
 	mcode
 	do_nothing do_nothing do_nothing do_nothing do_nothing
 	do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+	do_nothing do_nothing
 	do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
     recursor.V.combiner_rule_elem x
 
@@ -59,6 +60,7 @@ let contains_constant x =
 	  mcode
 	  do_nothing do_nothing do_nothing do_nothing do_nothing
 	  ident expr do_nothing do_nothing do_nothing do_nothing
+	  do_nothing do_nothing
 	  do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing in
       recursor.V.combiner_rule_elem x
   | _ -> true
@@ -108,6 +110,7 @@ let strip x =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+      do_nothing do_nothing
       decl rule_elem do_nothing do_nothing
       do_nothing do_absolutely_nothing in
   recursor.V.rebuilder_rule_elem x

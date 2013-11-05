@@ -224,6 +224,7 @@ let id_tokens lexbuf =
   | "iterator" when in_meta ->   check_arity_context_linetype s; TIterator
   | "name" when in_meta ->       check_arity_context_linetype s; TName
   | "position" when in_meta ->   check_arity_context_linetype s; TPosition
+  | "format" when in_meta ->     check_arity_context_linetype s; TFormat
   | "analysis" when in_meta ->   check_arity_context_linetype s; TAnalysis
   | "any" when in_meta ->        check_arity_context_linetype s; TPosAny
   | "pure" when in_meta && in_iso ->
@@ -333,6 +334,9 @@ let init _ =
   Hashtbl.clear iterator_names;
   Hashtbl.clear declarer_names;
   Hashtbl.clear symbol_names;
+  Data.expression_metavariables := [];
+  Data.format_metavariables := [];
+  Data.format_list_metavariables := [];
   let get_name (_,x) = x in
   Data.add_meta_meta :=
     (fun name pure ->
@@ -385,6 +389,9 @@ let init _ =
   Data.add_exp_meta :=
     (fun tyopt name constraints pure ->
       let fn clt = TMetaExp(name,constraints,pure,tyopt,clt) in
+      Data.expression_metavariables :=
+	(get_name name,(name,constraints,pure,tyopt)) ::
+	!Data.expression_metavariables;
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_idexp_meta :=
     (fun tyopt name constraints pure ->
@@ -409,6 +416,19 @@ let init _ =
   Data.add_field_list_meta :=
     (function name -> function lenname -> function pure ->
       let fn clt = TMetaFieldList(name,lenname,pure,clt) in
+      Hashtbl.replace metavariables (get_name name) fn);
+  Data.add_fmt_meta :=
+    (function name -> function iconstraints ->
+      let fn clt = failwith "format metavariable only allowed in a string" in
+      Data.format_metavariables :=
+	(get_name name,(name,iconstraints)) :: !Data.format_metavariables;
+      Hashtbl.replace metavariables (get_name name) fn);
+  Data.add_fmtlist_meta :=
+    (function name -> function lenname ->
+      let fn clt =
+	failwith "format list metavariable only allowed in a string" in
+      Data.format_list_metavariables :=
+	(get_name name,(name,lenname)) :: !Data.format_list_metavariables;
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_stm_meta :=
     (function name -> function pure ->

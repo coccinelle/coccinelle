@@ -264,6 +264,11 @@ let is_exp_dots e =
     Ast0.Edots(_,_) | Ast0.Ecircles(_,_) | Ast0.Estars(_,_) -> true
   | _ -> false
 
+let is_str_dots e =
+  match Ast0.unwrap e with
+    Ast0.Strdots(_) -> true
+  | _ -> false
+
 let rec expression e =
   match Ast0.unwrap e with
     Ast0.Ident(id) ->
@@ -273,6 +278,13 @@ let rec expression e =
       let const = normal_mcode const in
       let ln = promote_mcode const in
       mkres e (Ast0.Constant(const)) ln ln
+  | Ast0.StringConstant(lq,str,rq) ->
+      let lq = normal_mcode lq in
+      let str =
+	dots is_str_dots (Some(promote_mcode lq)) string_fragment str in
+      let rq = normal_mcode rq in
+      mkres e (Ast0.StringConstant(lq,str,rq))
+	(promote_mcode lq) (promote_mcode rq)
   | Ast0.FunCall(fn,lp,args,rp) ->
       let fn = expression fn in
       let lp = normal_mcode lp in
@@ -418,6 +430,43 @@ let rec expression e =
   | Ast0.AsExpr _ -> failwith "not possible"
 
 and expression_dots x = dots is_exp_dots None expression x
+
+(* all are bad mcode because can't have modifications inside a string *)
+and string_fragment e =
+  match Ast0.unwrap e with
+    Ast0.ConstantFragment(str) ->
+      let str = bad_mcode str in
+      let ln = promote_mcode str in
+      mkres e (Ast0.ConstantFragment(str)) ln ln
+  | Ast0.FormatFragment(pct,fmt) ->
+      let pct = bad_mcode pct in
+      let ln = promote_mcode pct in
+      let fmt = string_format fmt in
+      mkres e (Ast0.FormatFragment(pct,fmt)) ln fmt
+  | Ast0.Strdots dots ->
+      let dots = bad_mcode dots in
+      let ln = promote_mcode dots in
+      mkres e (Ast0.Strdots dots) ln ln
+  | Ast0.MetaFormatList(pct,name,lenname) ->
+      (* pct is particularly bad in this case, because it is ignored in
+	 the matching process.  The metavariable matches the complete format
+	 specification, including the % *)
+      let pct = bad_mcode pct in
+      let ln1 = promote_mcode pct in
+      let name = bad_mcode name in
+      let ln2 = promote_mcode name in
+      mkres e (Ast0.MetaFormatList(pct,name,lenname)) ln1 ln2
+
+and string_format e =
+  match Ast0.unwrap e with
+    Ast0.ConstantFormat(str) ->
+      let str = bad_mcode str in
+      let ln = promote_mcode str in
+      mkres e (Ast0.ConstantFormat str) ln ln
+  | Ast0.MetaFormat(name,constraints) ->
+      let name = bad_mcode name in
+      let ln = promote_mcode name in
+      mkres e (Ast0.MetaFormat(name,constraints)) ln ln
 
 (* --------------------------------------------------------------------- *)
 (* Types *)

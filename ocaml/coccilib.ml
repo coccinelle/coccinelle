@@ -48,6 +48,8 @@ type param_type =
   | Decl of Ast_c.declaration
   | Field of Ast_c.field
   | FieldList of Ast_c.field list
+  | FragList of Ast_c.string_fragment list
+  | Fmt of Ast_c.string_format
   | Stmt of Ast_c.statement
 
 
