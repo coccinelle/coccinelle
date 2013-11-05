@@ -545,8 +545,12 @@ and pp_string_format (e,ii) =
           assert (List.length iis =|= 2);
           print_sto_qu_ty (sto, qu, iis);
 
-      | (Decimal(l,p), iis) ->
-          print_sto_qu_ty (sto, qu, iis);
+      | (Decimal(l,p), [dec;lp;cm;rp]) ->
+	  (* hope that sto before qu is right... cf print_sto_qu_ty *)
+	  let stoqulp = get_sto sto ++ (snd qu) ++ [dec] in
+	  Common.print_between pr_space pr_elem stoqulp;
+	  pr_elem lp; pp_expression l; pr_elem cm;
+	  do_option pp_expression p; pr_elem rp
 
       | (TypeName (name,typ), noii) ->
           assert (null noii);

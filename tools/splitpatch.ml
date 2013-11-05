@@ -364,7 +364,7 @@ let get_most_common_subject files default =
 	(function entries ->
 	  List.map
 	    (function line ->
-	      match Str.split (Str.regexp " ") line with
+	      match Str.split (Str.regexp " +") line with
 		[] -> failwith ("bad git log line: " ^ line)
 	      |	_::rest ->
 		  let rec loop = function
