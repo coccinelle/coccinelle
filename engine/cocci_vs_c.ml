@@ -1133,7 +1133,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 
       |	 A.String sa, B.String (sb,_kind) when sa =$= sb ->
           (match ii with
-          |  [ib1] ->
+          | [ib1] ->
             tokenf ia1 ib1 >>= (fun ia1 ib1 ->
               return (
                 ((A.Constant ia1)) +> wa,
@@ -1501,7 +1501,8 @@ and string_fragment ea (eb,ii) =
   X.all_bound (A.get_inherited ea) >&&>
   let wa x = A.rewrap ea x in
   match A.unwrap ea,eb with
-    A.ConstantFragment(str1), B.ConstantFragment(str2) ->
+    A.ConstantFragment(str1), B.ConstantFragment(str2)
+      when A.unwrap_mcode str1 =$= str2 ->
       let ib1 = tuple_of_list1 ii in
       tokenf str1 ib1 >>= (fun str1 ib1 ->
 	return
