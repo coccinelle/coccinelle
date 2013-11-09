@@ -11,7 +11,7 @@ int __init probe_base_port(int base)
 		for (i = 0; i < 3; i++)
 			fool = inw(base + 2);	/* empty possibly uart_receive_buffer */
 		if ((inw(base + 6) & 0xffef) != 0x0001 ||	/* line_status */
-		    (inw(base) & 0xad00) != 0)	/* data status */
+		    (inw(base) & 0xad00) != 0)
 			continue;
 		return (base);
 	}
