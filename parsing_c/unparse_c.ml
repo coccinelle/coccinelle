@@ -464,6 +464,11 @@ let is_space = function
   | T2(Parser_c.TCommentSpace _,_b,_i,_h) -> true (* only whitespace *)
   | _ -> false
 
+let is_comment_or_space = function
+  | T2(Parser_c.TCommentSpace _,_b,_i,_h) -> true (* only whitespace *)
+  | T2(Parser_c.TComment _,_b,_i,_h) -> true (* only whitespace *)
+  | _ -> false
+
 let is_added_space = function
   | C2(" ") -> true (* only whitespace *)
   | _ -> false
@@ -863,12 +868,20 @@ let paren_then_brace toks =
       x :: search_paren (search_plus xs)
     | x::xs -> x :: search_paren xs
   and search_plus xs =
-    let (spaces, rest) = span is_space xs in
+    let (spaces, rest) = span is_comment_or_space xs in
     let (nls, rest) = span is_newline rest in
+    let after =
+      match List.rev spaces with
+	[] -> [(C2 " ")]
+      |	T2(Parser_c.TComment _,Ctx,_i,_h)::_ -> [(C2 " ")]
+      |	_ ->
+	  if List.exists (function T2(_,Ctx,_,_) -> true | _ -> false) spaces
+	  then [] (* use existing trailing spaces *)
+	  else [(C2 " ")] in
     match rest with
     (* move the brace up to the previous line *)
     | ((Cocci2("{",_,_,_,_)) as x) :: (((Cocci2 _) :: _) as rest) ->
-      (C2 " ") :: x :: rest
+      spaces @ after @ x :: rest
     | _ -> xs in
   search_paren toks
 
