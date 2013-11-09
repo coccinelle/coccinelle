@@ -704,18 +704,15 @@ let parse_middle middle clt =
 		  | s ->
 		      [Ast0.wrap(Ast0.ConstantFragment(clt2mcode s clt))] in
 		(match Str.split (Str.regexp "@") r with
-		  [first] ->
-		    (match string_metavariables first clt with
-		      MFmt fmtvar ->
-			[Ast0.wrap (Ast0.FormatFragment(pct,fmtvar))]
-		    | MFrag fragvar -> [fragvar pct])
-		| first::second::rest ->
+		  first::rest ->
 		    (match string_metavariables first clt with
 		      MFmt fmtvar ->
 			(Ast0.wrap (Ast0.FormatFragment(pct,fmtvar)))::
-			(mkrest (String.concat "@" (second :: rest)))
-		    | _ -> failwith "bad string")
-		| _ -> failwith "bad string")
+			(mkrest (String.concat "@" rest))
+		    | MFrag fragvar ->
+			(fragvar pct)::(mkrest (String.concat "@" rest))
+		    | _ -> failwith "bad string1")
+		| _ -> failwith "bad string2")
 	    | _ ->
 		match Parse_printf.get_format_string r with
 		  (d,"") -> [Ast0.wrap (Ast0.FormatFragment(pct,mkfmt d))]

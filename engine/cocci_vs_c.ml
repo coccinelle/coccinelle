@@ -895,28 +895,31 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 		    then fail
 		    else
 		      let startxs' = unsplit_comma startxs in
-		      let len = List.length (lenfilter startxs') in
+		      (match lenfilter startxs' with
+			None -> (function _ -> fail)
+		      | Some infos ->
+			  let len = List.length infos in
 
-		      (match leninfo with
-		      | A.MetaListLen (lenname,lenkeep,leninherited) ->
-			  let max_min _ = failwith "no pos" in
-			  X.envf lenkeep leninherited
-			    (lenname, Ast_c.MetaListlenVal (len), max_min)
-		      | A.CstListLen n ->
-			  if len = n
-			  then (function f -> f())
-			  else (function f -> fail)
-		      | A.AnyListLen -> function f -> f())
-			(fun () ->
-			  let max_min _ =
-			    Lib_parsing_c.lin_col_by_pos (get_iis startxs) in
-			  (match extra with
-			    Some extra ->
-			      extra startxs' max_min
-				(fun _ -> return ((),()))
-			  | None -> return ((),()))
-			    >>=
-			  (fun _ _ ->
+			  (match leninfo with
+			  | A.MetaListLen (lenname,lenkeep,leninherited) ->
+			      let max_min _ = failwith "no pos" in
+			      X.envf lenkeep leninherited
+				(lenname, Ast_c.MetaListlenVal (len), max_min)
+			  | A.CstListLen n ->
+			      if len = n
+			      then (function f -> f())
+			      else (function f -> fail)
+			  | A.AnyListLen -> function f -> f()))
+		      (fun () ->
+			let max_min _ =
+			  Lib_parsing_c.lin_col_by_pos (get_iis startxs) in
+			(match extra with
+			  Some extra ->
+			    extra startxs' max_min
+			      (fun _ -> return ((),()))
+			| None -> return ((),()))
+			  >>=
+			(fun _ _ ->
 			  X.envf keep inherited
 			    (ida, mktermval startxs', max_min)
 			    (fun () ->
@@ -1490,12 +1493,19 @@ and string_fragments eas ebs =
 	A.MetaFormatList(pct,ida,leninfo,keep,inherited)
     | _ -> failwith "not possible" in
   let mktermval v = Ast_c.MetaFragListVal v in
+  let list_filter_function l =
+    Some
+      (List.filter
+	 (function
+	     B.FormatFragment _,_ -> true
+	   | _ -> false)
+	 l) in
   let special_cases ea eas ebs = None in
   list_matcher match_dots build_dots match_comma build_comma
     match_metalist build_metalist mktermval
     special_cases string_fragment X.distrf_fragments
     B.split_nocomma B.unsplit_nocomma
-    Lib_parsing_c.ii_of_fragments (function x -> x) eas ebs
+    Lib_parsing_c.ii_of_fragments list_filter_function eas ebs
 
 and string_fragment ea (eb,ii) =
   X.all_bound (A.get_inherited ea) >&&>
@@ -1705,7 +1715,7 @@ and arguments_bis = fun eas ebs ->
   list_matcher match_dots build_dots match_comma build_comma
     match_metalist build_metalist mktermval
     special_cases argument X.distrf_args B.split_comma  B.unsplit_comma
-    Lib_parsing_c.ii_of_args (function x -> x) eas ebs
+    Lib_parsing_c.ii_of_args (function x -> Some x) eas ebs
 
 and argument arga argb =
   X.all_bound (A.get_inherited arga) >&&>
@@ -1755,7 +1765,7 @@ and ident_list_bis = fun eas ebs ->
     match_metalist build_metalist mktermval
     special_cases (ident_cpp DontKnow) X.distrf_ident_list
     B.split_comma B.unsplit_comma
-    Lib_parsing_c.ii_of_ident_list (function x -> x) eas ebs
+    Lib_parsing_c.ii_of_ident_list (function x -> Some x) eas ebs
 
 
 (* ------------------------------------------------------------------------- *)
@@ -1857,7 +1867,7 @@ and parameters_bis eas ebs =
     match_metalist build_metalist mktermval
     special_cases parameter X.distrf_params
     B.split_comma B.unsplit_comma
-    Lib_parsing_c.ii_of_params (function x -> x) eas ebs
+    Lib_parsing_c.ii_of_params (function x -> Some x) eas ebs
 
 (*
    let split_register_param = fun (hasreg, idb, ii_b_s) ->
@@ -2671,7 +2681,7 @@ and initialisers_ordered2 = fun ias ibs ->
     match_metalist build_metalist mktermval
     special_cases initialiser X.distrf_inis
     B.split_comma B.unsplit_comma no_ii
-    (function x -> x) ias ibs
+    (function x -> Some x) ias ibs
 
 and initialisers_unordered2 = fun allminus ias ibs ->
   match ias, ibs with
@@ -2742,15 +2752,16 @@ and (struct_fields: (A.declaration list, B.field list) matcher) =
     X.distrf_struct_fields mcode startxs >>=
     (fun mcode startxs -> return (mcode,make_ebs startxs)) in
   let filter_fields l =
-    List.filter
-      (function x ->
-	match Ast_c.unwrap x with
-	  Ast_c.DeclarationField fld -> true
-	| Ast_c.EmptyField info -> true
-	| Ast_c.MacroDeclField decl -> true
-	| Ast_c.CppDirectiveStruct cpp -> false
-	| Ast_c.IfdefStruct ifdef -> false)
-      l in
+    Some
+      (List.filter
+	 (function x ->
+	   match Ast_c.unwrap x with
+	     Ast_c.DeclarationField fld -> true
+	   | Ast_c.EmptyField info -> true
+	   | Ast_c.MacroDeclField decl -> true
+	   | Ast_c.CppDirectiveStruct cpp -> false
+	   | Ast_c.IfdefStruct ifdef -> false)
+	 l) in
   list_matcher match_dots build_dots match_comma build_comma
     match_metalist build_metalist mktermval
     special_cases struct_field distrf
@@ -2858,7 +2869,7 @@ and enum_fields = fun eas ebs ->
     match_metalist build_metalist mktermval
     special_cases enum_field X.distrf_enum_fields
     B.split_comma B.unsplit_comma
-    Lib_parsing_c.ii_of_enum_fields (function x -> x) eas ebs
+    Lib_parsing_c.ii_of_enum_fields (function x -> Some x) eas ebs
 
 and enum_field ida idb =
   X.all_bound (A.get_inherited ida) >&&>
@@ -3979,7 +3990,7 @@ and define_paramsbis = fun eas ebs ->
     match_metalist build_metalist mktermval
     special_cases define_parameter X.distrf_define_params
     B.split_comma B.unsplit_comma no_ii
-    (function x -> x) eas ebs
+    (function x -> Some x) eas ebs
 
 and define_parameter = fun parama paramb ->
   match A.unwrap parama, paramb with
