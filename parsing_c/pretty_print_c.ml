@@ -586,7 +586,7 @@ and pp_string_format (e,ii) =
           | _ -> raise (Impossible 106)
 	  )
 
-      | (Pointer _ | (*ParenType _ |*) Array _ | FunctionType _
+      | (Pointer _ | (*ParenType _ |*) Array _ | FunctionType _ | Decimal _
             (* | StructUnion _ | Enum _ | BaseType _ *)
             (* | StructUnionName _ | EnumName _ | TypeName _  *)
             (* | TypeOfExpr _ | TypeOfType _ *)

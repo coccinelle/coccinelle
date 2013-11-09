@@ -981,7 +981,6 @@ let string_length s count info =
   (*don't care about seen cocci - know no newline is possible, or don't care*)
 let simple_string_length s count = fst(string_length s count (None,false))
 
-
 let add_newlines toks tabbing_unit =
   (* the following is for strings that may contain newline or tabs *)
   let create_indent n =
@@ -1093,29 +1092,33 @@ let add_newlines toks tabbing_unit =
 	    string_length s count (space_cell,seen_cocci) in
 	  a :: loop (stack,space_cell,seen_cocci) count xs
       )
-    | ((Cocci2(s,line,lcol,rcol,hint)) as a)::xs ->
+    | ((Cocci2(s,line,lcol,rcol,Some (Unparse_cocci.SpaceOrNewline sp))) as a)::
+      (T2(((Parser_c.TCommentSpace _) as sptok),_,idx,_))::xs
+      when (TH.str_of_tok sptok) = " " ->
       let rest =
-        match hint with
-        | None ->
-	    loop (stack,space_cell,true) (simple_string_length s count) xs
-        | Some Unparse_cocci.StartBox ->
-          let (newcount,newstack,newspacecell,seen_cocci) =
-            start_box stack space_cell count seen_cocci s in
-          loop (newstack,newspacecell,true) newcount xs
-        | Some Unparse_cocci.EndBox ->
-          let (newcount,newstack,newspacecell,seen_cocci) =
-            end_box stack space_cell count true s in
-          loop (newstack,newspacecell,seen_cocci) newcount xs
-        | Some (Unparse_cocci.SpaceOrNewline sp) ->
-          let count = simple_string_length s (count + 1 (*space*)) in
-          (match stack with
-          | [x] ->
+        let count = simple_string_length s (count + 1 (*space*)) in
+        match stack with
+        | [x] ->
             (match check_for_newline count x space_cell with
             | Some count -> loop (stack,Some (x,sp), true) count xs
             | None -> loop (stack,Some (count,sp),true) count xs)
-          | _ -> loop (stack,space_cell,true) count xs
-          ) in
+        | _ -> loop (stack,space_cell,true) count xs in
       a :: rest
+    | ((Cocci2(s,line,lcol,rcol,Some Unparse_cocci.StartBox)) as a)::xs ->
+	let rest =
+          let (newcount,newstack,newspacecell,seen_cocci) =
+            start_box stack space_cell count seen_cocci s in
+          loop (newstack,newspacecell,true) newcount xs in
+	a :: rest
+    | ((Cocci2(s,line,lcol,rcol,Some Unparse_cocci.EndBox)) as a)::xs ->
+	let rest =
+          let (newcount,newstack,newspacecell,seen_cocci) =
+            end_box stack space_cell count true s in
+          loop (newstack,newspacecell,seen_cocci) newcount xs in
+	a :: rest
+    | (Cocci2(s,line,lcol,rcol,_))::xs ->
+	(Cocci2(s,line,lcol,rcol,None))::
+	loop (stack,space_cell,true) (simple_string_length s count) xs
     | ((T2(tok,_,_,_)) as a)::xs ->
 	let s = TH.str_of_tok tok in
 	let (count,(space_cell,seen_cocci)) =

@@ -710,8 +710,7 @@ let parse_middle middle clt =
 			(Ast0.wrap (Ast0.FormatFragment(pct,fmtvar)))::
 			(mkrest (String.concat "@" rest))
 		    | MFrag fragvar ->
-			(fragvar pct)::(mkrest (String.concat "@" rest))
-		    | _ -> failwith "bad string1")
+			(fragvar pct)::(mkrest (String.concat "@" rest)))
 		| _ -> failwith "bad string2")
 	    | _ ->
 		match Parse_printf.get_format_string r with
