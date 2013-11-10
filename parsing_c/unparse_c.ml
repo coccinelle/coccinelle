@@ -1865,6 +1865,7 @@ let pp_program2 xs outfile  =
 	      (* have to annotate droppable spaces early, so that can create
 		 the right minus and plus maps in adjust indentation.  For
 		 the same reason, cannot actually remove the minus tokens. *)
+              let toks = drop_line toks in
               let toks = remove_minus_and_between_and_expanded_and_fake1 toks in
               let (toks,tu) = adjust_indentation toks in
               let toks = adjust_eat_space toks in
@@ -1872,7 +1873,6 @@ let pp_program2 xs outfile  =
               let toks = adjust_after_paren toks in(*also before remove minus*)
               let toks = paren_to_space toks in
               let toks = drop_end_comma toks in
-              let toks = drop_line toks in
               let toks = remove_minus_and_between_and_expanded_and_fake2 toks in
               (* assert Origin + Cocci + C and no minus *)
               let toks = add_space toks in
