@@ -524,7 +524,7 @@ let rec expression e =
 
 and arg_expression e =
   match Ast.unwrap e with
-    Ast.EComma(cm) -> Printf.printf "in this case2\n";
+    Ast.EComma(cm) ->
       (* space is only used by add_newline, and only if not using SMPL
 	 spacing.  pr_cspace uses a " " in unparse_c.ml.  Not so nice... *)
       mcode (print_string_with_hint (SpaceOrNewline (ref " ")))  cm

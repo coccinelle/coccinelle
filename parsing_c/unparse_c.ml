@@ -582,7 +582,7 @@ let drop_fake xs =
     | _ -> false
   )
 
-let remove_minus_and_between_and_expanded_and_fake xs =
+let remove_minus_and_between_and_expanded_and_fake1 xs =
 
   (* get rid of expanded tok *)
   let xs = drop_expanded xs in
@@ -804,7 +804,9 @@ let remove_minus_and_between_and_expanded_and_fake xs =
       | x::xs -> x :: loop xs in
     loop toks in
 
-  let xs = cleanup_ifdefs xs in
+  cleanup_ifdefs xs
+
+let remove_minus_and_between_and_expanded_and_fake2 xs =
   let xs = drop_minus xs in
   xs
 
@@ -973,6 +975,7 @@ let rec drop_end_comma = function
     let (newlines,rest2) = span is_whitespace rest in
     (match rest2 with
     | (Cocci2 _) :: _ -> x :: drop_end_comma rest
+    | (C2 _) :: _ -> x :: drop_end_comma rest
     |	_ -> drop_end_comma rest
     )
   | x :: xs -> x :: drop_end_comma xs
@@ -1105,18 +1108,6 @@ let add_newlines toks tabbing_unit =
 	    string_length s count (space_cell,seen_cocci) in
 	  a :: loop (stack,space_cell,seen_cocci) count xs
       )
-    | ((Cocci2(s,line,lcol,rcol,Some (Unparse_cocci.SpaceOrNewline sp))) as a)::
-      (T2(((Parser_c.TCommentSpace _) as sptok),_,idx,_))::xs
-      when (TH.str_of_tok sptok) = " " ->
-      let rest =
-        let count = simple_string_length s (count + 1 (*space*)) in
-        match stack with
-        | [x] ->
-            (match check_for_newline count x space_cell with
-            | Some count -> loop (stack,Some (x,sp), true) count xs
-            | None -> loop (stack,Some (count,sp),true) count xs)
-        | _ -> loop (stack,space_cell,true) count xs in
-      a :: rest
     | ((Cocci2(s,line,lcol,rcol,Some Unparse_cocci.StartBox)) as a)::xs ->
 	let rest =
           let (newcount,newstack,newspacecell,seen_cocci) =
@@ -1129,6 +1120,38 @@ let add_newlines toks tabbing_unit =
             end_box stack space_cell count true s in
           loop (newstack,newspacecell,seen_cocci) newcount xs in
 	a :: rest
+    | ((Cocci2(s,line,lcol,rcol,Some (Unparse_cocci.SpaceOrNewline sp))) as a)::
+      (T2(((Parser_c.TCommentSpace _) as sptok),_,idx,_))::xs
+      when (TH.str_of_tok sptok) = " " ->
+	(* if there was a single space, contemplate turning it into a
+	   newline.  By the way code is added, it would seem that this
+	   space has to be Ctx. *)
+      let rest =
+        let count = simple_string_length s (count + 1 (*space*)) in
+        match stack with
+        | [x] ->
+            (match check_for_newline count x space_cell with
+            | Some count -> loop (stack,Some (x,sp), true) count xs
+            | None -> loop (stack,Some (count,sp),true) count xs)
+        | _ -> loop (stack,space_cell,true) count xs in
+      a :: rest
+    | (Cocci2(s,line,lcol,rcol,_))::((T2 _) as a)::xs ->
+      (* if the added code is followed by any existing non space character,
+	 then just do nothing. *)
+	(Cocci2(s,line,lcol,rcol,None))::
+	loop (stack,space_cell,true) (simple_string_length s count) (a::xs)
+    | ((Cocci2(s,line,lcol,rcol,Some (Unparse_cocci.SpaceOrNewline sp))) as a)::
+      xs ->
+      (* if the added code is followed by more added code, then add the space *)
+      let rest =
+        let count = simple_string_length s (count + 1 (*space*)) in
+        match stack with
+        | [x] ->
+            (match check_for_newline count x space_cell with
+            | Some count -> loop (stack,Some (x,sp), true) count xs
+            | None -> loop (stack,Some (count,sp),true) count xs)
+        | _ -> loop (stack,space_cell,true) count xs in
+      a :: rest
     | (Cocci2(s,line,lcol,rcol,_))::xs ->
 	(Cocci2(s,line,lcol,rcol,None))::
 	loop (stack,space_cell,true) (simple_string_length s count) xs
@@ -1839,6 +1862,10 @@ let pp_program2 xs outfile  =
               (* phase2: can now start to filter and adjust *)
               let toks = paren_then_brace toks in
               let toks = drop_space_at_endline toks in
+	      (* have to annotate droppable spaces early, so that can create
+		 the right minus and plus maps in adjust indentation.  For
+		 the same reason, cannot actually remove the minus tokens. *)
+              let toks = remove_minus_and_between_and_expanded_and_fake1 toks in
               let (toks,tu) = adjust_indentation toks in
               let toks = adjust_eat_space toks in
               let toks = adjust_before_semicolon toks in(*before remove minus*)
@@ -1846,7 +1873,7 @@ let pp_program2 xs outfile  =
               let toks = paren_to_space toks in
               let toks = drop_end_comma toks in
               let toks = drop_line toks in
-              let toks = remove_minus_and_between_and_expanded_and_fake toks in
+              let toks = remove_minus_and_between_and_expanded_and_fake2 toks in
               (* assert Origin + Cocci + C and no minus *)
               let toks = add_space toks in
               let toks = add_newlines toks tu in
