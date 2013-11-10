@@ -1415,9 +1415,10 @@ let annotate_type_and_localvar env prog =
 
 (*****************************************************************************)
 (* changing default typing environment, do concatenation *)
-let init_env filename =
+(* not clear that anyone uses this function... *)
+let init_env_unused filename =
   pr2 ("init_env: " ^ filename);
-  let (ast2, _stat) = Parse_c.parse_c_and_cpp filename in
+  let (ast2, _stat) = Parse_c.parse_c_and_cpp false filename in
   let ast = Parse_c.program_of_program2 ast2 in
 
   let res = annotate_type_and_localvar !initial_env ast in

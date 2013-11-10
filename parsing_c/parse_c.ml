@@ -833,7 +833,8 @@ let with_program2 f program2 =
  * tokens_stat record and parsing_stat record.
  *)
 
-let parse_print_error_heuristic2 saved_typedefs saved_macros file =
+let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
+    file =
 
   let filelines = Common.cat_array file in
   let stat = Parsing_stat.default_stat file in
@@ -848,7 +849,10 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros file =
   let toks_orig = tokens file in
   let toks = Parsing_hacks.fix_tokens_define toks_orig in
   let toks = Parsing_hacks.fix_tokens_cpp ~macro_defs:!_defs_builtins toks in
-  let toks = Parsing_hacks.fix_tokens_strings toks in
+  let toks =
+    if parse_strings
+    then Parsing_hacks.fix_tokens_strings toks
+    else toks in
 
   (* expand macros on demand trick, preparation phase *)
   let macros =
@@ -1050,25 +1054,26 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros file =
   (v, stat)
 
 
-let time_total_parsing a b =
-  Common.profile_code "TOTAL" (fun () -> parse_print_error_heuristic2 a b)
+let time_total_parsing a b c d =
+  Common.profile_code "TOTAL" (fun () -> parse_print_error_heuristic2 a b c d)
 
-let parse_print_error_heuristic a b =
-  Common.profile_code "C parsing" (fun () -> time_total_parsing a b)
+let parse_print_error_heuristic a b c d =
+  Common.profile_code "C parsing" (fun () -> time_total_parsing a b c d)
 
 
 (* alias *)
-let parse_c_and_cpp a =
-  let ((c,_,_),stat) = parse_print_error_heuristic None None a in (c,stat)
-let parse_c_and_cpp_keep_typedefs td macs a =
-  parse_print_error_heuristic td macs a
+let parse_c_and_cpp parse_strings a =
+  let ((c,_,_),stat) = parse_print_error_heuristic None None parse_strings a in
+  (c,stat)
+let parse_c_and_cpp_keep_typedefs td macs parse_strings a =
+  parse_print_error_heuristic td macs parse_strings a
 
 (*****************************************************************************)
 (* Same but faster cos memoize stuff *)
 (*****************************************************************************)
-let parse_cache file =
+let parse_cache parse_strings file =
   if not !Flag_parsing_c.use_cache
-  then parse_print_error_heuristic None None file
+  then parse_print_error_heuristic None None parse_strings file
   else
   let _ = pr2_once "TOFIX: use_cache is not sensitive to changes in the considered macros, include files, etc" in
   let need_no_changed_files =
@@ -1111,7 +1116,7 @@ let parse_cache file =
 		()
 	  | _ -> ());
       (* recompute *)
-      parse_print_error_heuristic None None file)
+      parse_print_error_heuristic None None true file)
 
 
 
@@ -1119,10 +1124,16 @@ let parse_cache file =
 (* Some special cases *)
 (*****************************************************************************)
 
+let no_format s =
+  try let _ = Str.search_forward (Str.regexp_string "%") s 0 in false
+  with Not_found -> true
+
+(* no point to parse strings in these cases. never applied to a format string *)
 let (cstatement_of_string: string -> Ast_c.statement) = fun s ->
+  assert (no_format s);
   let tmpfile = Common.new_temp_file "cocci_stmt_of_s" "c" in
   Common.write_file tmpfile ("void main() { \n" ^ s ^ "\n}");
-  let program = parse_c_and_cpp tmpfile +> fst in
+  let program = parse_c_and_cpp false tmpfile +> fst in
   program +> Common.find_some (fun (e,_) ->
     match e with
     | Ast_c.Definition ({Ast_c.f_body = [Ast_c.StmtElem st]},_) -> Some st
@@ -1130,9 +1141,10 @@ let (cstatement_of_string: string -> Ast_c.statement) = fun s ->
   )
 
 let (cexpression_of_string: string -> Ast_c.expression) = fun s ->
+  assert (no_format s);
   let tmpfile = Common.new_temp_file "cocci_expr_of_s" "c" in
   Common.write_file tmpfile ("void main() { \n" ^ s ^ ";\n}");
-  let program = parse_c_and_cpp tmpfile +> fst in
+  let program = parse_c_and_cpp false tmpfile +> fst in
   program +> Common.find_some (fun (e,_) ->
     match e with
     | Ast_c.Definition ({Ast_c.f_body = compound},_) ->

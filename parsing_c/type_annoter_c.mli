@@ -13,8 +13,8 @@ type environment = namedef list list
 
 (* can be set with init_env *)
 val initial_env : environment ref
-(* ex: config/envos/environment_unix.h *)
-val init_env : Common.filename -> unit
+(* ex: config/envos/environment_unix.h, seems to be unused *)
+val init_env_unused : Common.filename -> unit
 
 
 

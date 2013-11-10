@@ -222,7 +222,7 @@ let parse_c_and_cpp_cache
   then Hashtbl.clear _headers_hash;
 
   Common.memoized _headers_hash file (fun () ->
-    Parse_c.parse_c_and_cpp file
+    Parse_c.parse_c_and_cpp false file (* no need to parse strings *)
   )
 
 

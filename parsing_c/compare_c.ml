@@ -180,7 +180,8 @@ let compare_ast filename1 filename2  =
 
 
   let process_filename filename =
-    let (c, _stat) = Parse_c.parse_c_and_cpp filename in
+    (* no need for parsing of format strings *)
+    let (c, _stat) = Parse_c.parse_c_and_cpp false filename in
     let c = List.map fst c in
     c +> Lib_parsing_c.al_program +> normal_form_program
   in
@@ -324,8 +325,8 @@ let do_compare_token adjust_cvs to_expected filename1 filename2 =
     loop toks1 toks2 in
   *)
 
-  let (c1, _stat) = Parse_c.parse_c_and_cpp filename1 in
-  let (c2, _stat) = Parse_c.parse_c_and_cpp filename2 in
+  let (c1, _stat) = Parse_c.parse_c_and_cpp false filename1 in
+  let (c2, _stat) = Parse_c.parse_c_and_cpp false filename2 in
 
   let res =
     if List.length c1 <> List.length c2

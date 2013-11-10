@@ -996,9 +996,7 @@ let fix_tokens_strings toks =
 	| _ ->
 	    (Parse_string_c.parse_string str_isW info) @ front @
 	    out_strings rest)
-    | x :: rest ->
-	(*Printf.printf "something else\n";*)
-	x :: out_strings rest in
+    | x :: rest -> x :: out_strings rest in
   out_strings toks
 
 (* ------------------------------------------------------------------------- *)

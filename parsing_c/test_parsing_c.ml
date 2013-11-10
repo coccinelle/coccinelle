@@ -74,7 +74,8 @@ let new_test_parse_gen xs =
     pr2 "";
     pr2 ("PARSING: " ^ file);
 
-    let (xs, stat) = Parse_c.parse_c_and_cpp file in
+    (* test parsing of format strings as well *)
+    let (xs, stat) = Parse_c.parse_c_and_cpp true file in
     xs +> List.iter (fun (ast, (s, toks)) ->
       Parse_c.print_commentized toks
     );
@@ -146,7 +147,8 @@ let test_parse_gen xs ext =
     pr2 "";
     pr2 ("PARSING: " ^ file);
 
-    let (xs, stat) = Parse_c.parse_c_and_cpp file in
+    (* test parsing of format strings as well *)
+    let (xs, stat) = Parse_c.parse_c_and_cpp true file in
     xs +> List.iter (fun (ast, (s, toks)) ->
       Parse_c.print_commentized toks
     );
@@ -221,7 +223,8 @@ let local_test_cfg launchgv file =
   if not (file =~ ".*\\.c")
   then pr2 "warning: seems not a .c file";
 
-  let (program, _stat) = Parse_c.parse_c_and_cpp file in
+  (* no point to parse format strings *)
+  let (program, _stat) = Parse_c.parse_c_and_cpp false file in
 
   program +> List.iter (fun (e,_) ->
     let toprocess =
@@ -267,7 +270,8 @@ let test_cfg = local_test_cfg true
 
 
 let test_cfg_ifdef file =
-  let (ast2, _stat) = Parse_c.parse_c_and_cpp file in
+  (* no point to parse format strings *)
+  let (ast2, _stat) = Parse_c.parse_c_and_cpp false file in
   let ast = Parse_c.program_of_program2 ast2 in
 
   let ast = Cpp_ast_c.cpp_ifdef_statementize ast in
@@ -289,7 +293,8 @@ let test_parse_unparse infile =
   if not (infile =~ ".*\\.c")
   then pr2 "warning: seems not a .c file";
 
-  let (program2, _stat) = Parse_c.parse_c_and_cpp infile in
+  (* test parsing of format strings *)
+  let (program2, _stat) = Parse_c.parse_c_and_cpp true infile in
   let program2_with_ppmethod =
     program2 +> List.map (fun x -> x, Unparse_c.PPnormal)
   in
@@ -326,7 +331,8 @@ let test_type_c infile =
 
   Flag_parsing_c.pretty_print_type_info := true;
 
-  let (program2, _stat) =  Parse_c.parse_c_and_cpp infile in
+  (* no point to parse format strings *)
+  let (program2, _stat) =  Parse_c.parse_c_and_cpp false infile in
   let _program2 =
     program2
     +> Common.unzip
@@ -348,7 +354,8 @@ let test_type_c infile =
 (* ---------------------------------------------------------------------- *)
 (* ex: demos/platform_ifdef.c *)
 let test_comment_annotater infile =
-  let (program2, _stat) =  Parse_c.parse_c_and_cpp infile in
+  (* no point to parse format strings *)
+  let (program2, _stat) =  Parse_c.parse_c_and_cpp false infile in
   let asts = program2 +> List.map (fun (ast,_) -> ast) in
   let toks = program2 +> List.map (fun (ast, (s, toks)) -> toks) +>
     List.flatten in
@@ -400,7 +407,8 @@ let test_compare_c_hardcoded () =
 
 (* ---------------------------------------------------------------------- *)
 let test_attributes file =
-  let (ast2, _stat) = Parse_c.parse_c_and_cpp file in
+  (* no point to parse format strings *)
+  let (ast2, _stat) = Parse_c.parse_c_and_cpp false file in
   let ast = Parse_c.program_of_program2 ast2 in
 
   Visitor_c.vk_program { Visitor_c.default_visitor_c with
@@ -435,7 +443,8 @@ let cpp_options () = [
   (!Flag_parsing_c.cpp_i_opts,!Flag_parsing_c.cpp_d_opts)
 
 let test_cpp file =
-  let (ast2, _stat) = Parse_c.parse_c_and_cpp file in
+  (* no point to parse format strings *)
+  let (ast2, _stat) = Parse_c.parse_c_and_cpp false file in
   let dirname = Filename.dirname file in
   let ast = Parse_c.program_of_program2 ast2 in
   let ast = Cpp_ast_c.cpp_expand_include (cpp_options()) dirname ast in
@@ -527,7 +536,8 @@ let test_parse xs =
     pr2 "";
     pr2 ("PARSING: " ^ file);
 
-    let (xs, stat) = Parse_c.parse_c_and_cpp file in
+    (* test parsing of format strings *)
+    let (xs, stat) = Parse_c.parse_c_and_cpp true file in
     xs +> List.iter (fun (ast, (s, toks)) ->
       Parse_c.print_commentized toks
     );
