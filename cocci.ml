@@ -482,13 +482,17 @@ let show_or_not_binding a b  =
 (* Some  helper functions *)
 (*****************************************************************************)
 
-let worth_trying cfiles tokens =
+let worth_trying cfiles (tokens,coccigrep) =
   (* drop the following line for a list of list by rules.  since we don't
      allow multiple minirules, all the tokens within a rule should be in
      a single CFG entity *)
-  match (!Flag_cocci.windows,tokens) with
-    (true,_) | (_,None) -> true
-  | (_,Some tokens) ->
+  match (!Flag_cocci.windows,!Flag.scanner,tokens,coccigrep) with
+    (true,_,_,_) | (_,_,None,_) -> true
+  | (_,Flag.CocciGrep,_,Some regexp) ->
+      (match cfiles with
+	[cfile] -> Cocci_grep.interpret regexp cfile
+      |	_ -> failwith "coccigrep accepts only one file at a time")
+  | (_,_,Some tokens,_) ->
    (* could also modify the code in get_constants.ml *)
       let tokens = tokens +> List.map (fun s ->
 	match () with
@@ -881,7 +885,8 @@ type toplevel_cocci_info =
 
 type cocci_info = toplevel_cocci_info list *
       bool (* parsing of format strings needed *) *
-      string list option (* tokens *)
+      (string list option (* tokens *) *
+	 Str.regexp list list option (* coccigrep *))
 
 type kind_file = Header | Source
 type file_info = {
@@ -1825,7 +1830,7 @@ let pre_engine2 (coccifile, isofile) =
   (* useful opti when use -dir *)
   let (metavars,astcocci,
        free_var_lists,negated_pos_lists,used_after_lists,
-       positions_lists,(toks,_,_,_),parse_strings) =
+       positions_lists,(toks,_,coccigrep,_),parse_strings) =
     sp_of_file coccifile isofile in
 
   let ctls = ctls_of_ast astcocci used_after_lists positions_lists in
@@ -1903,7 +1908,7 @@ let pre_engine2 (coccifile, isofile) =
       runrule (make_init lgg "" rule_info))
     uninitialized_languages;
 
-  (cocci_infos,parse_strings,toks)
+  (cocci_infos,parse_strings,(toks,coccigrep))
 
 let pre_engine a =
   Common.profile_code "pre_engine" (fun () -> pre_engine2 a)
@@ -1917,8 +1922,8 @@ let full_engine2 (cocci_infos,parse_strings,toks) cfiles =
   then
     begin
       (match toks with
-	None -> ()
-      | Some toks ->
+	(None,_) -> ()
+      | (Some toks,_) ->
 	  pr2 ("No matches found for " ^ (Common.join " " toks)
 	       ^ "\nSkipping:" ^ (Common.join " " cfiles)));
       cfiles +> List.map (fun s -> s, None)

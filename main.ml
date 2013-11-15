@@ -869,14 +869,9 @@ let rec main_action xs =
 		      None -> Test_parsing_c.get_files x
 		    | Some files -> files in
                   files +> List.map (fun x -> [x])
-	      | true, "", Flag.CocciGrep, [] ->
-		  (match coccigrep_filter (!cocci_file, !Config.std_iso) x with
-		    None -> Test_parsing_c.get_files x
-		  | Some files -> files) +>
-		  List.map (fun x -> [x])
                   (* normal *)
 	      | false, _, _, _ -> [x::xs]
-	      | true, "", _, _ ->
+	      | true, "", _, _ -> (* may contain CocciGrep *)
 		  Test_parsing_c.get_files 
 		    (join " " (x::xs)) +> List.map (fun x -> [x])
 		    
