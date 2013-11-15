@@ -307,7 +307,7 @@ let short_options = [
     Flag.scanner := Flag.IdUtils),
   "    find relevant files using id-utils";
   "--use-coccigrep",
-  Arg.String (function s -> Flag.scanner := Flag.CocciGrep),
+  Arg.Unit (function _ -> Flag.scanner := Flag.CocciGrep),
   "    find relevant files using cocci grep";
   "--patch",
     Arg.String (function s -> Flag.patch := Some (Cocci.normalize_path s)),
