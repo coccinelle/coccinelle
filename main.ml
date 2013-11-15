@@ -306,6 +306,9 @@ let short_options = [
   Arg.String (function s -> Flag_parsing_cocci.id_utils_index := s;
     Flag.scanner := Flag.IdUtils),
   "    find relevant files using id-utils";
+  "--use-coccigrep",
+  Arg.String (function s -> Flag.scanner := Flag.CocciGrep),
+  "    find relevant files using cocci grep";
   "--patch",
     Arg.String (function s -> Flag.patch := Some (Cocci.normalize_path s)),
   ("    <dir> path name with respect to which a patch should be created\n"^
@@ -757,7 +760,7 @@ let adjust_stdin cfiles k =
 
 let glimpse_filter (coccifile, isofile) dir =
   let (_metavars,astcocci,_free_var_lists,_negated_positions,
-       _used_after_lists,_positions_lists,(_,query,_),_print_format) =
+       _used_after_lists,_positions_lists,(_,query,_,_),_print_format) =
     Cocci.sp_of_file coccifile (Some isofile) in
   match query with
     None -> pr2 "no inferred glimpse keywords"; None
@@ -778,9 +781,20 @@ let glimpse_filter (coccifile, isofile) dir =
 	    |	_ -> loop queries (* error, eg due to pattern too big *) in
       loop queries
 
+let coccigrep_filter (coccifile, isofile) dir =
+  let (_metavars,astcocci,_free_var_lists,_negated_positions,
+       _used_after_lists,_positions_lists,(_,_,query,_),_print_format) =
+    Cocci.sp_of_file coccifile (Some isofile) in
+  match query with
+    None -> pr2 "no inferred keywords"; None
+  | Some query ->
+      Some
+	(Test_parsing_c.get_files dir +>
+	 List.filter (Cocci_grep.interpret query))
+
 let idutils_filter (coccifile, isofile) dir =
   let (_metavars,astcocci,_free_var_lists,_negated_positions,
-       _used_after_lists,_positions_lists,(_,_,query),_print_format) =
+       _used_after_lists,_positions_lists,(_,_,_,query),_print_format) =
     Cocci.sp_of_file coccifile (Some isofile) in
   match query with
     None -> pr2 "no inferred idutils keywords"; None
@@ -831,8 +845,10 @@ let rec main_action xs =
             Common.profile_code "Main.infiles computation" (fun () ->
 	      match !dir, !kbuild_info, !Flag.scanner, xs with
             (* glimpse *)
-              | false, _, (Flag.Glimpse|Flag.IdUtils), _ -> [x::xs]
-              | true, s, (Flag.Glimpse|Flag.IdUtils), _ when s <> "" ->
+              | false, _, (Flag.Glimpse|Flag.IdUtils|Flag.CocciGrep), _ ->
+		  [x::xs]
+              | true, s, (Flag.Glimpse|Flag.IdUtils|Flag.CocciGrep), _
+		when s <> "" ->
                   failwith
 		    "--use-glimpse or --id-utils does not work with --kbuild"
               | true, "", Flag.Glimpse, [] ->
@@ -853,10 +869,16 @@ let rec main_action xs =
 		      None -> Test_parsing_c.get_files x
 		    | Some files -> files in
                   files +> List.map (fun x -> [x])
+	      | true, "", Flag.CocciGrep, [] ->
+		  (match coccigrep_filter (!cocci_file, !Config.std_iso) x with
+		    None -> Test_parsing_c.get_files x
+		  | Some files -> files) +>
+		  List.map (fun x -> [x])
                   (* normal *)
 	      | false, _, _, _ -> [x::xs]
 	      | true, "", _, _ ->
-		  Test_parsing_c.get_files (join " " (x::xs)) +> List.map (fun x -> [x])
+		  Test_parsing_c.get_files 
+		    (join " " (x::xs)) +> List.map (fun x -> [x])
 		    
             (* kbuild *)
 	      | true, kbuild_info_file,_,_ ->

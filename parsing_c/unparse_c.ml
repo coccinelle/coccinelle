@@ -1466,12 +1466,21 @@ let adjust_indentation xs =
 	  let (_,minmap,ctxmap) =
 	    update_map_ctx n spaces tabbing_unit minmap ctxmap
 	      depthmin depthplus dmin dplus false in
+	  Printf.printf "are we here: depth %d depthmin %d depth plus %d\n"
+	    depth depthmin depthplus;
 	  let t =
 	    if not (depth = depthplus) && is_cocci rest
 	    then
+	      begin
+		Printf.printf "n %d\n" n;
+		Printf.printf "past_minmap %s\n" (Dumper.dump past_minmap);
+		Printf.printf "past_ctxmap %s\n" (Dumper.dump past_ctxmap);
+		Printf.printf "minmap %s\n" (Dumper.dump minmap);
+		Printf.printf "ctxmap %s\n" (Dumper.dump ctxmap);
 	      search_in_maps n depth past_minmap past_ctxmap minmap ctxmap
 		tabbing_unit (C2 "\n")
-	    else t in
+	      end
+	    else begin Printf.printf "doing nothing\n"; t end in
 	  (out_tu,minmap,ctxmap,t::res)
       | (n,MinNL(spaces,depthmin,depthplus),t)::rest ->
 	  let (tabbing_unit,past_minmap) =

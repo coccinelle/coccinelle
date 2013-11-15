@@ -132,7 +132,7 @@ let interpret_google strict x =
   let rec dnf = function
       Elem x -> [x]
     | Or l -> List.fold_left Common.union_set [] (List.map dnf l)
-    | And l ->
+    | And l -> (* not sure it is correct... *)
 	let l = List.map dnf l in
 	List.fold_left
 	  (function prev ->
@@ -153,6 +153,33 @@ let interpret_google strict x =
   | False when strict ->
       failwith false_on_top_err
   | _ -> Some (dnf x)
+
+let interpret_cocci_grep strict x =
+  (* convert to cnf *)
+  let rec cnf = function
+      Elem x -> [[Str.regexp_string x]]
+    | And l -> List.fold_left Common.union_set [] (List.map cnf l)
+    | Or l ->
+	let l = List.map cnf l in
+	(match l with
+	  fst::rest ->
+	    List.fold_left
+	      (function prev ->
+		function cur ->
+		  List.fold_left Common.union_set []
+		    (List.map (fun x -> List.map (fun y -> x @ y) prev) cur))
+	      fst rest
+	| [] -> [[]]) (* false *)
+    | True -> []
+    | False ->
+	if strict
+	then failwith false_on_top_err
+	else [[]] in
+  match x with
+    True -> None
+  | False when strict ->
+      failwith false_on_top_err
+  | _ -> Some (cnf x)
 
 let combine2c x =
   match interpret_glimpse false x with
@@ -687,16 +714,19 @@ let run rules neg_pos_vars =
     
 let get_constants rules neg_pos_vars =
   match !Flag.scanner with
-    Flag.NoScanner -> (None,None,None)
+    Flag.NoScanner -> (None,None,None,None)
   | Flag.Grep ->
       let res = run rules neg_pos_vars in
-      (interpret_grep true res,None,None)
+      (interpret_grep true res,None,None,None)
   | Flag.Glimpse ->
       let res = run rules neg_pos_vars in
-      (interpret_grep true res,interpret_glimpse true res,None)
+      (interpret_grep true res,interpret_glimpse true res,None,None)
   | Flag.Google _ ->
       let res = run rules neg_pos_vars in
-      (interpret_grep true res,interpret_google true res,None)
+      (interpret_grep true res,interpret_google true res,None,None)
   | Flag.IdUtils ->
       let res = run rules neg_pos_vars in
-      (interpret_grep true res,None,Some res)
+      (interpret_grep true res,None,None,Some res)
+  | Flag.CocciGrep ->
+      let res = run rules neg_pos_vars in
+      (interpret_grep true res,None,interpret_cocci_grep true res,None)

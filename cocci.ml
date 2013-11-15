@@ -1825,7 +1825,7 @@ let pre_engine2 (coccifile, isofile) =
   (* useful opti when use -dir *)
   let (metavars,astcocci,
        free_var_lists,negated_pos_lists,used_after_lists,
-       positions_lists,(toks,_,_),parse_strings) =
+       positions_lists,(toks,_,_,_),parse_strings) =
     sp_of_file coccifile isofile in
 
   let ctls = ctls_of_ast astcocci used_after_lists positions_lists in
