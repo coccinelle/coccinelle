@@ -482,7 +482,7 @@ let show_or_not_binding a b  =
 (* Some  helper functions *)
 (*****************************************************************************)
 
-let worth_trying cfiles (tokens,coccigrep) =
+let worth_trying2 cfiles (tokens,coccigrep) =
   (* drop the following line for a list of list by rules.  since we don't
      allow multiple minirules, all the tokens within a rule should be in
      a single CFG entity *)
@@ -507,7 +507,8 @@ let worth_trying cfiles (tokens,coccigrep) =
 	| _ -> s
 
       ) in
-      let com = sprintf "egrep -q '(%s)' %s" (join "|" tokens) (join " " cfiles)
+      let com =
+	sprintf "egrep -q '(%s)' %s" (join "|" tokens) (join " " cfiles)
       in
       (match Sys.command com with
       | 0 (* success *) -> true
@@ -515,6 +516,9 @@ let worth_trying cfiles (tokens,coccigrep) =
 	  (if !Flag.show_misc
 	  then Printf.printf "grep failed: %s\n" com);
 	  false (* no match, so not worth trying *))
+
+let worth_trying a b  =
+  Common.profile_code "worth_trying" (fun () -> worth_trying2 a b)
 
 let check_macro_in_sp_and_adjust = function
     None -> ()
@@ -886,7 +890,7 @@ type toplevel_cocci_info =
 type cocci_info = toplevel_cocci_info list *
       bool (* parsing of format strings needed *) *
       (string list option (* tokens *) *
-	 Str.regexp list list option (* coccigrep *))
+	 Str.regexp list option (* coccigrep *))
 
 type kind_file = Header | Source
 type file_info = {

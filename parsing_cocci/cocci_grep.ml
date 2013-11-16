@@ -1,12 +1,9 @@
 (* input should be in CNF, ie an outer list, representing a conjunction, 
 with inner lists of words, representing disjunctions.  There is no negation. *)
 
-let interpret_clause clause l =
-  List.exists
-    (function re ->
-      try let _ = Str.search_forward re l 0 in true
-      with Not_found -> false)
-    clause
+let interpret_clause re l =
+  try let _ = Str.search_forward re l 0 in true
+  with Not_found -> false
 
 let interpret regexp file =
   let i = open_in file in

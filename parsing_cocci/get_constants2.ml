@@ -109,23 +109,27 @@ let interpret_glimpse strict x =
 
 (* grep only does or *)
 let interpret_grep strict x =
-  let rec loop = function
-      Elem x -> [x]
-    | And l -> List.concat (List.map loop l)
-    | Or l -> List.concat (List.map loop l)
+  let add x l = if List.mem x l then l else x :: l in
+  let rec loop collected = function
+      Elem x -> add x collected
+    | And l | Or l ->
+	let rec iloop collected = function
+	    [] -> collected
+	  | x::xs -> iloop (loop collected x) xs in
+	iloop collected l
     | True ->
 	if strict
 	then failwith "True should not be in the final result"
-	else ["True"]
+	else add "True" collected
     | False ->
 	if strict
 	then failwith false_on_top_err
-	else ["False"] in
+	else add "False" collected in
   match x with
     True -> None
   | False when strict ->
       failwith false_on_top_err
-  | _ -> Some (loop x)
+  | _ -> Some (loop [] x)
 
 let interpret_google strict x =
   (* convert to dnf *)
@@ -154,10 +158,10 @@ let interpret_google strict x =
       failwith false_on_top_err
   | _ -> Some (dnf x)
 
-let interpret_cocci_grep strict x =
+let precise_interpret_cocci_grep strict x = (* too expensive *)
   (* convert to cnf *)
   let rec cnf = function
-      Elem x -> [[Str.regexp_string x]]
+      Elem x -> [[x]]
     | And l -> List.fold_left Common.union_set [] (List.map cnf l)
     | Or l ->
 	let l = List.map cnf l in
@@ -179,7 +183,17 @@ let interpret_cocci_grep strict x =
     True -> None
   | False when strict ->
       failwith false_on_top_err
-  | _ -> Some (cnf x)
+  | _ ->
+      let res = cnf x in
+      let res =
+	List.map (fun x -> Str.regexp (String.concat "\\|" x)) res in
+      Some res
+
+(* coccigrep only does or, for efficiency *)
+let interpret_cocci_grep strict x =
+  match interpret_grep strict x with
+    None -> None
+  | Some l -> Some [Str.regexp (String.concat "\\|" l)]
 
 let combine2c x =
   match interpret_glimpse false x with

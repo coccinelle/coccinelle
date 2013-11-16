@@ -1,1 +1,1 @@
-val interpret : Str.regexp list list (*pattern*) -> string (*filename*) -> bool
+val interpret : Str.regexp list (*pattern*) -> string (*filename*) -> bool
