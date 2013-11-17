@@ -158,7 +158,7 @@ let interpret_google strict x =
       failwith false_on_top_err
   | _ -> Some (dnf x)
 
-let precise_interpret_cocci_grep strict x = (* too expensive *)
+let interpret_cocci_grep strict x = (* too expensive *)
   (* convert to cnf *)
   let rec cnf = function
       Elem x -> [[x]]
@@ -171,7 +171,8 @@ let precise_interpret_cocci_grep strict x = (* too expensive *)
 	      (function prev ->
 		function cur ->
 		  List.fold_left Common.union_set []
-		    (List.map (fun x -> List.map (fun y -> x @ y) prev) cur))
+		    (List.map (fun x -> List.map (Common.union_set x) prev)
+		       cur))
 	      fst rest
 	| [] -> [[]]) (* false *)
     | True -> []
@@ -185,12 +186,12 @@ let precise_interpret_cocci_grep strict x = (* too expensive *)
       failwith false_on_top_err
   | _ ->
       let res = cnf x in
-      let res =
-	List.map (fun x -> Str.regexp (String.concat "\\|" x)) res in
+      let res = Cocci_grep.split res in
+      let res =	List.map (fun x -> Str.regexp (String.concat "\\|" x)) res in
       Some res
 
 (* coccigrep only does or, for efficiency *)
-let interpret_cocci_grep strict x =
+let imprecise_interpret_cocci_grep strict x =
   match interpret_grep strict x with
     None -> None
   | Some l -> Some [Str.regexp (String.concat "\\|" l)]
