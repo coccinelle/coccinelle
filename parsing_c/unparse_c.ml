@@ -133,6 +133,7 @@ let print_token2 = function
           (String.concat " " (List.map string_of_int index))
       | Ctx -> "" in
     b_str^"fake"
+  | Cocci2 (s,_,lc,rc,Some _) -> Printf.sprintf "Cocci2:%d:%d%s (H)" lc rc s
   | Cocci2 (s,_,lc,rc,_) -> Printf.sprintf "Cocci2:%d:%d%s" lc rc s
   | C2 s -> "C2:"^s
   | Comma s -> "Comma:"^s
@@ -474,6 +475,11 @@ let is_added_space = function
   | _ -> false
 
 let is_newline = function
+  | T2(Parser_c.TCommentNewline _,_b,_i,_h) -> true
+  | T2(Parser_c.TComment _,_b,_i,_h) -> true (* only whitespace *)
+  | _ -> false
+
+let is_newline_or_comment = function
   | T2(Parser_c.TCommentNewline _,_b,_i,_h) -> true
   | _ -> false
 
@@ -1135,8 +1141,9 @@ let add_newlines toks tabbing_unit =
             | None -> loop (stack,Some (count,sp),true) count xs)
         | _ -> loop (stack,space_cell,true) count xs in
       a :: rest
-    | (Cocci2(s,line,lcol,rcol,_))::((T2 _) as a)::xs ->
-      (* if the added code is followed by any existing non space character,
+    | (Cocci2(s,line,lcol,rcol,_))::((T2 _) as a)::xs
+      when is_newline_or_comment a ->
+      (* if the added code is followed by any existing comment or newline,
 	 then just do nothing. *)
 	(Cocci2(s,line,lcol,rcol,None))::
 	loop (stack,space_cell,true) (simple_string_length s count) (a::xs)
@@ -1177,7 +1184,9 @@ let add_newlines toks tabbing_unit =
     | t -> t::prev in
   (match !Flag_parsing_c.spacing with
   | Flag_parsing_c.SMPL -> toks
-  | _ -> List.rev (List.fold_left redo_spaces [] (loop ([],None,false) 0 toks))
+  | _ ->
+      let preres = loop ([],None,false) 0 toks in
+      List.rev (List.fold_left redo_spaces [] preres)
   )
 
 (* When insert some new code, because of a + in a SP, we must add this
