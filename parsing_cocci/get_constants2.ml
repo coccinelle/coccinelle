@@ -131,34 +131,7 @@ let interpret_grep strict x =
       failwith false_on_top_err
   | _ -> Some (loop [] x)
 
-let interpret_google strict x =
-  (* convert to dnf *)
-  let rec dnf = function
-      Elem x -> [x]
-    | Or l -> List.fold_left Common.union_set [] (List.map dnf l)
-    | And l -> (* not sure it is correct... *)
-	let l = List.map dnf l in
-	List.fold_left
-	  (function prev ->
-	    function cur ->
-	      List.fold_left Common.union_set []
-		(List.map
-		   (function x ->
-		     List.map (function y -> Printf.sprintf "%s %s" x y) prev)
-		   cur))
-	  [] l
-    | True -> ["True"]
-    | False ->
-	if strict
-	then failwith false_on_top_err
-	else ["False"] in
-  match x with
-    True -> None
-  | False when strict ->
-      failwith false_on_top_err
-  | _ -> Some (dnf x)
-
-let interpret_cocci_grep strict x = (* too expensive *)
+let interpret_cocci_grep strict x =
   (* convert to cnf *)
   let rec cnf = function
       Elem x -> [[x]]
@@ -180,21 +153,29 @@ let interpret_cocci_grep strict x = (* too expensive *)
 	if strict
 	then failwith false_on_top_err
 	else [[]] in
+  let optimize (l : string list list) =
+    let l = List.map (function clause -> (List.length clause, clause)) l in
+    let l = List.sort compare l in
+    let l = List.rev (List.map (function (len,clause) -> clause) l) in
+    let subset l1 l2 = List.for_all (fun e1 -> List.mem e1 l2) l1 in
+    List.fold_left
+      (fun prev cur ->
+	if List.exists (subset cur) prev then prev else cur :: prev)
+      [] l in
+  let wordify x = "\\b" ^ x ^"\\b" in
   match x with
     True -> None
   | False when strict ->
       failwith false_on_top_err
   | _ ->
       let res = cnf x in
+      let res = optimize res in
       let res = Cocci_grep.split res in
-      let res =	List.map (fun x -> Str.regexp (String.concat "\\|" x)) res in
+      let res =
+	List.map
+	  (fun x -> Str.regexp (String.concat "\\|" (List.map wordify x)))
+	  res in
       Some res
-
-(* coccigrep only does or, for efficiency *)
-let imprecise_interpret_cocci_grep strict x =
-  match interpret_grep strict x with
-    None -> None
-  | Some l -> Some [Str.regexp (String.concat "\\|" l)]
 
 let combine2c x =
   match interpret_glimpse false x with
@@ -728,20 +709,17 @@ let run rules neg_pos_vars =
   info
     
 let get_constants rules neg_pos_vars =
-  match !Flag.scanner with
-    Flag.NoScanner -> (None,None,None,None)
-  | Flag.Grep ->
-      let res = run rules neg_pos_vars in
-      (interpret_grep true res,None,None,None)
-  | Flag.Glimpse ->
-      let res = run rules neg_pos_vars in
-      (interpret_grep true res,interpret_glimpse true res,None,None)
-  | Flag.Google _ ->
-      let res = run rules neg_pos_vars in
-      (interpret_grep true res,interpret_google true res,None,None)
-  | Flag.IdUtils ->
-      let res = run rules neg_pos_vars in
-      (interpret_grep true res,None,None,Some res)
-  | Flag.CocciGrep ->
-      let res = run rules neg_pos_vars in
-      (interpret_grep true res,None,interpret_cocci_grep true res,None)
+  if !Flag.worth_trying_opt
+  then 
+    let res = run rules neg_pos_vars in
+    let grep = interpret_grep true res in (* useful because in string form *)
+    let coccigrep = interpret_cocci_grep true res in
+    match !Flag.scanner with
+      Flag.NoScanner ->
+	(grep,None,coccigrep,None)
+    | Flag.Glimpse ->
+	(grep,interpret_glimpse true res,coccigrep,None)
+    | Flag.IdUtils ->
+	(grep,None,coccigrep,Some res)
+    | Flag.CocciGrep -> (grep,None,coccigrep,None)
+  else (None,None,None,None)

@@ -62,15 +62,17 @@ let extend element res available =
   if added = []
   then (res,available)
   else
-    let added = Common.union_set added res in
-    (added,
-     List.fold_left
-       (function available ->
-	 function clause ->
-	   if subset clause added
-	   then available
-	   else clause :: available)
-       [] available)
+    begin
+      let added = Common.union_set added res in
+      (added,
+       List.fold_left
+	 (function available ->
+	   function clause ->
+	     if subset clause added
+	     then available
+	     else clause :: available)
+	 [] available)
+    end
 
 let indexify l =
   let rec loop n = function
@@ -94,7 +96,9 @@ let split l =
       (function (preres,available) ->
 	function (f,ct) ->
 	  let (res,available) = extend f [] available in
-	  (res::preres,available))
+	  match res with
+	    [] -> (preres,available)
+	  | _ -> (res::preres,available))
       ([],l) pretbl in
   let tbl = indexify tbl in
   let rec loop front back leftres rightres = function
@@ -113,11 +117,12 @@ let split l =
 	| ([],[]) -> (leftres,rightres)
 	| _ -> failwith "not possible" in
   let (a,b) = loop tbl (List.rev tbl) [] [] available in
-
-  Printf.printf "*** %s\n" (String.concat " " a);
-  Printf.printf "*** %s\n" (String.concat " " b);
-
   (* discard empties *)
   let a = match a with [] -> [] | _ -> [a] in
   let b = match b with [] -> [] | _ -> [b] in
-  a@b@preres
+  let res = a@b@preres in
+(*List.iter
+    (function a ->
+      Printf.printf "*** %s\n" (String.concat " " a))
+    res; *)
+  res

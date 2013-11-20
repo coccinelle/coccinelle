@@ -8,9 +8,10 @@ let show_trying = ref false
 
 let track_iso_usage = ref false
 
-type scanner =
-    IdUtils | Glimpse | Grep | Google of string | CocciGrep | NoScanner
-let scanner = ref Grep
+let worth_trying_opt = ref true
+
+type scanner = IdUtils | Glimpse | CocciGrep | NoScanner
+let scanner = ref NoScanner
 
 let pyoutput = ref "coccilib.output.Console"
 

@@ -44,6 +44,6 @@ let extra_includes = ref ([] : string list)
 
 let timeout = ref (None : int option)
 
-let worth_trying_opt = ref true
+let selected_only = ref false (* just print files that would be treated *)
 
 let use_saved_typedefs = ref true (* hack! *)

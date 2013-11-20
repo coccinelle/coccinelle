@@ -471,16 +471,12 @@ let test_parse_cocci file =
   (match grep_tokens with
     None -> pr "No query"
   | Some x -> pr (String.concat " || " x));
-  match !Flag.scanner with
-    Flag.NoScanner | Flag.Grep -> ()
-  | Flag.Glimpse | Flag.IdUtils | Flag.Google _ | Flag.CocciGrep ->
-      Printf.printf "%s tokens\n"
-	(if !Flag.scanner = Flag.Glimpse then "glimpse" else "google");
-      (match query with
-	None -> pr "No query"
-      | Some x -> pr (String.concat "\nor on glimpse failure\n" x))
-
-
+  (* could update to accomodate WTCocciGrep *)
+  (match query with
+    None -> pr "No query"
+  | Some x ->
+      Printf.printf "glimpse tokens\n";
+      pr (String.concat "\nor on glimpse failure\n" x))
 
 (*****************************************************************************)
 (* to be called by ocaml toplevel, to test. *)

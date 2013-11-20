@@ -13,6 +13,7 @@ open Common
  *)
 type cocci_info
 val pre_engine : (filename * filename) -> cocci_info
+val worth_trying : filename list -> cocci_info -> bool
 val full_engine :
   cocci_info -> filename list -> (filename * filename option) list
 val post_engine : cocci_info -> unit
