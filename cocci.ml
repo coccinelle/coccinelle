@@ -482,17 +482,15 @@ let show_or_not_binding a b  =
 (* Some  helper functions *)
 (*****************************************************************************)
 
-let worth_trying2 cfiles (tokens,coccigrep) =
+let worth_trying2 cfiles cocci_infos =
+  let (cocci_infos,parse_strings,(tokens,_)) = cocci_infos in
   (* drop the following line for a list of list by rules.  since we don't
      allow multiple minirules, all the tokens within a rule should be in
      a single CFG entity *)
-  match (!Flag_cocci.windows,!Flag.scanner,tokens,coccigrep) with
-    (true,_,_,_) | (_,_,None,_) -> true
-  | (_,Flag.CocciGrep,_,Some regexp) ->
-      (match cfiles with
-	[cfile] -> Cocci_grep.interpret regexp cfile
-      |	_ -> failwith "coccigrep accepts only one file at a time")
-  | (_,_,Some tokens,_) ->
+  let res =
+  match (!Flag_cocci.windows,!Flag.scanner,tokens) with
+    (true,_,_) | (_,_,None) | (_,Flag.CocciGrep,_) -> true
+  | (_,_,Some tokens) ->
    (* could also modify the code in get_constants.ml *)
       let tokens = tokens +> List.map (fun s ->
 	match () with
@@ -515,7 +513,13 @@ let worth_trying2 cfiles (tokens,coccigrep) =
       | _ (* failure *) ->
 	  (if !Flag.show_misc
 	  then Printf.printf "grep failed: %s\n" com);
-	  false (* no match, so not worth trying *))
+	  false (* no match, so not worth trying *)) in
+  (match (res,tokens) with
+    (false,Some tokens) ->
+      pr2_once ("Expected tokens " ^ (Common.join " " tokens));
+      pr2 ("Skipping:" ^ (Common.join " " cfiles))
+  | _ -> ());
+  res
 
 let worth_trying a b  =
   Common.profile_code "worth_trying" (fun () -> worth_trying2 a b)
@@ -1919,17 +1923,12 @@ let pre_engine a =
 
 let full_engine2 (cocci_infos,parse_strings,toks) cfiles =
 
-  show_or_not_cfiles  cfiles;
+  show_or_not_cfiles cfiles;
 
-  (* optimization allowing to launch coccinelle on all the drivers *)
-  if !Flag_cocci.worth_trying_opt && not (worth_trying cfiles toks)
+  if !Flag_cocci.selected_only
   then
     begin
-      (match toks with
-	(None,_) -> ()
-      | (Some toks,_) ->
-	  pr2 ("No matches found for " ^ (Common.join " " toks)
-	       ^ "\nSkipping:" ^ (Common.join " " cfiles)));
+      pr2 ("selected " ^ (Common.join " " cfiles));
       cfiles +> List.map (fun s -> s, None)
     end
   else

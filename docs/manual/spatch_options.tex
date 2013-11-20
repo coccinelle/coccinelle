@@ -202,7 +202,17 @@ generate an appropriate index.  If no file name is specified, the default
 is .id-utils.index.
 }
 
-\rare{--dir}{ Specify a directory containing C files to process.  A trailing
+\normal{--use-coccigrep}{ Use a version of grep implemented in Coccinelle
+  to check that selected files are relevant to the semantic patch.  If this
+  option is not selected, then grep is used, at the cost of starting a shell
+  for each checked file.  Note that grep or coccigrep is used even if
+  glimpse or id-utils is selected, to account for imprecision in the index
+  (glimpse at least does not distinguish between underline and space,
+  leading to false positives).}
+
+\rare{--selected-only}{Just show what files will be selected for processing.}
+
+\normal{--dir}{ Specify a directory containing C files to process.  A trailing
   {\tt /} is permitted on the directory name and has no impact on the
   result.  By default, the include path will be set to the ``include''
   subdirectory of this directory.  A different include path can be

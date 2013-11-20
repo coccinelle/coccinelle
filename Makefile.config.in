@@ -34,7 +34,7 @@ EXTRA_OCAML_FLAGS=-unsafe
 else
 # -dtypes is depricated and can be replaced with -annot for newer
 # versions of ocaml.
-EXTRA_OCAML_FLAGS=-g -dtypes
+EXTRA_OCAML_FLAGS=-g # -dtypes
 endif
 
 # note that variables are exported and thus cannot be used in
