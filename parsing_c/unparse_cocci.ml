@@ -527,7 +527,7 @@ and arg_expression e =
     Ast.EComma(cm) ->
       (* space is only used by add_newline, and only if not using SMPL
 	 spacing.  pr_cspace uses a " " in unparse_c.ml.  Not so nice... *)
-      mcode (print_string_with_hint (SpaceOrNewline (ref " ")))  cm
+      mcode (print_string_with_hint (SpaceOrNewline (ref " "))) cm
   | _ -> expression e
 
 and string_fragment e =
@@ -1284,7 +1284,7 @@ let rec pp_any = function
   | Ast.ForInfoTag(x) -> forinfo x; false
   | Ast.CaseLineTag(x) -> case_line "" x; false
 
-  | Ast.ConstVolTag(x) -> const_vol x unknown unknown; false
+  | Ast.ConstVolTag(x) ->  const_vol x unknown unknown; false
   | Ast.Directive(xs) ->
       (match xs with (Ast.Space s)::_ -> pr_space() | _ -> ());
       let rec loop = function
@@ -1306,7 +1306,9 @@ let rec pp_any = function
 	  (match x with
 	    "else" -> force_newline()
 	  | _ -> ());
-	  print_string x line lcol)
+	  (match x with (* not sure if special case for comma is useful *)
+	    "," -> print_string_with_hint (SpaceOrNewline(ref " ")) x line lcol
+	  | _ -> print_string x line lcol))
 	(let nomcodekind = Ast.CONTEXT(Ast.DontCarePos,Ast.NOTHING) in
 	(x,info,nomcodekind,[]));
       if_open_brace x
