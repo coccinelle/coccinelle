@@ -162,20 +162,27 @@ let interpret_cocci_grep strict x =
       (fun prev cur ->
 	if List.exists (subset cur) prev then prev else cur :: prev)
       [] l in
+  let rec atoms acc = function
+      Elem x -> if List.mem x acc then acc else x :: acc
+    | And l | Or l -> List.fold_left atoms acc l
+    | True | False -> acc in
   let wordify x = "\\b" ^ x ^"\\b" in
   match x with
     True -> None
   | False when strict ->
       failwith false_on_top_err
   | _ ->
+      let orify l = Str.regexp (String.concat "\\|" (List.map wordify l)) in
+      let res1 = orify (atoms [] x) in (* all atoms *)
       let res = cnf x in
       let res = optimize res in
       let res = Cocci_grep.split res in
-      let res =
-	List.map
-	  (fun x -> Str.regexp (String.concat "\\|" (List.map wordify x)))
-	  res in
-      Some res
+      let res2 = List.map orify res in (* atoms in conjunction *)
+(*      List.iter
+	(function clause ->
+	  Printf.printf "%s\n" (String.concat " " clause))
+	res; *)
+      Some (res1,res2)
 
 let combine2c x =
   match interpret_glimpse false x with

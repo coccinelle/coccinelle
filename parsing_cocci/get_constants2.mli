@@ -6,5 +6,5 @@ val get_constants :
       (((Ast_cocci.meta_name list) list) list) (*negated pos vars*) ->
 	  (string list option (* grep result *) *
 	     string list option (* non-grep result, if any *) *
-	     Str.regexp list option (* cocci-grep result, if any *) *
+	     (Str.regexp * Str.regexp list) option (* cocci-grep result *) *
 	     combine option (* raw non-grep result, if any *))

@@ -759,10 +759,7 @@ let adjust_stdin cfiles k =
 	with Invalid_argument("Filename.chop_extension") -> None in
       Common.redirect_stdin_opt newin k
 
-let glimpse_filter2 (coccifile, isofile) dir =
-  let (_metavars,astcocci,_free_var_lists,_negated_positions,
-       _used_after_lists,_positions_lists,(_,query,_,_),_print_format) =
-    Cocci.sp_of_file coccifile (Some isofile) in
+let glimpse_filter2 (_,query,_,_) dir =
   match query with
     None -> pr2 "no inferred glimpse keywords"; None
   | Some queries ->
@@ -785,10 +782,7 @@ let glimpse_filter2 (coccifile, isofile) dir =
 let glimpse_filter a b  =
   Common.profile_code "glimpse_filter" (fun () -> glimpse_filter2 a b)
 
-let coccigrep_filter2 (coccifile, isofile) dir =
-  let (_metavars,astcocci,_free_var_lists,_negated_positions,
-       _used_after_lists,_positions_lists,(_,_,query,_),_print_format) =
-    Cocci.sp_of_file coccifile (Some isofile) in
+let coccigrep_filter2 (_,_,query,_) dir =
   match query with
     None -> pr2 "no inferred keywords"; None
   | Some query ->
@@ -799,10 +793,7 @@ let coccigrep_filter2 (coccifile, isofile) dir =
 let coccigrep_filter a b  =
   Common.profile_code "coccigrep_filter" (fun () -> coccigrep_filter2 a b)
 
-let idutils_filter (coccifile, isofile) dir =
-  let (_metavars,astcocci,_free_var_lists,_negated_positions,
-       _used_after_lists,_positions_lists,(_,_,_,query),_print_format) =
-    Cocci.sp_of_file coccifile (Some isofile) in
+let idutils_filter (_,_,_,query) dir =
   match query with
     None -> pr2 "no inferred idutils keywords"; None
   | Some query ->
@@ -848,6 +839,9 @@ let rec main_action xs =
 		  );
 	  Flag.dir := x;
 
+	let (cocci_infos,constants) =
+	  Cocci.pre_engine (!cocci_file, !Config.std_iso) in
+
         let infiles =
             Common.profile_code "Main.infiles computation" (fun () ->
 	      match !dir, !kbuild_info, !Flag.scanner, xs with
@@ -855,14 +849,13 @@ let rec main_action xs =
               | false, _, _, _ -> [x::xs]
               | true, s, (Flag.Glimpse|Flag.IdUtils|Flag.CocciGrep), _
 		when s <> "" ->
-                  failwith
-		    "--use-glimpse, --use-coccigrep, or --id-utils does not work with --kbuild"
+                  failwith "--use-xxx filters do not work with --kbuild"
               | true, "", Flag.Glimpse, [] ->
                   (*if not (null xs)
                   then failwith "--use-glimpse can accept only one dir"*)
 		  
                   let files =
-		    match glimpse_filter (!cocci_file, !Config.std_iso) x with
+		    match glimpse_filter constants x with
 		      None -> Test_parsing_c.get_files x
 		    | Some files -> files in
                   files +> List.map (fun x -> [x])
@@ -871,7 +864,7 @@ let rec main_action xs =
                   then failwith "--id-utils can accept only one dir"*)
 		  
                   let files =
-		    match idutils_filter (!cocci_file, !Config.std_iso) x with
+		    match idutils_filter constants x with
 		      None -> Test_parsing_c.get_files x
 		    | Some files -> files in
                   files +> List.map (fun x -> [x])
@@ -880,7 +873,7 @@ let rec main_action xs =
                   then failwith "--id-utils can accept only one dir"*)
 		  
                   let files =
-		    match coccigrep_filter (!cocci_file,!Config.std_iso) x with
+		    match coccigrep_filter constants x with
 		      None -> Test_parsing_c.get_files x
 		    | Some files -> files in
                   files +> List.map (fun x -> [x])
@@ -940,16 +933,13 @@ let rec main_action xs =
 		  end
 	    | _ -> failwith "inconsistent distribution information" in
 
-          let (cocci_infos,outfiles) =
+          let outfiles =
             Common.profile_code "Main.outfiles computation" (fun () ->
-	      let cocci_infos =
-		Cocci.pre_engine (!cocci_file, !Config.std_iso) in
-
 	      let infiles = (* worth trying optimization *)
 		if !Flag.worth_trying_opt
 		then
 		  List.filter
-		    (function cfiles -> Cocci.worth_trying cfiles cocci_infos)
+		    (function cfiles -> Cocci.worth_trying cfiles constants)
 		    infiles
 		else infiles in
 
@@ -984,7 +974,7 @@ let rec main_action xs =
 			    [] (* *)
 			  end
 			  else raise e))) in
-	      (cocci_infos,res)) in
+	      res) in
 	  let outfiles = List.concat outfiles in
 	  (match Iteration.get_pending_instance() with
 	    None ->
