@@ -934,17 +934,21 @@ let rec main_action xs =
 	    | _ -> failwith "inconsistent distribution information" in
 
           let outfiles =
-            Common.profile_code "Main.outfiles computation" (fun () ->
+            Common.profile_code "Main.outfiles computation" (fun () -> (*
 	      let infiles = (* worth trying optimization *)
 		if !Flag.worth_trying_opt
 		then
 		  List.filter
 		    (function cfiles -> Cocci.worth_trying cfiles constants)
 		    infiles
-		else infiles in
+		else infiles in *)
 
 	      let res =
-		infiles +> List.map (fun cfiles ->
+		infiles +> List.fold_left (fun prev cfiles ->
+		  if !Flag.worth_trying_opt &&
+		    Cocci.worth_trying cfiles constants
+		      then
+		    begin
 		  pr2 ("HANDLING: " ^ (join " " cfiles));
 		  (*pr2 (List.hd(Common.cmd_to_list "free -m | grep Mem"));*)
 		  flush stderr;
@@ -958,11 +962,12 @@ let rec main_action xs =
 			  else
 			    None
 			in
-			adjust_stdin cfiles (fun () ->
+			List.rev
+			(adjust_stdin cfiles (fun () ->
 			  Common.redirect_stdout_opt optfile (fun () ->
 			  (* this is the main call *)
 			    Cocci.full_engine cocci_infos cfiles
-			))
+			))) @ prev
 		      with
 		      | Common.UnixExit x -> raise (Common.UnixExit x)
 		      |	Pycocci.Pycocciexception ->
@@ -971,11 +976,13 @@ let rec main_action xs =
 			  if !dir
 			  then begin
 			    pr2 ("EXN:" ^ Printexc.to_string e);
-			    [] (* *)
+			    prev (* *)
 			  end
-			  else raise e))) in
-	      res) in
-	  let outfiles = List.concat outfiles in
+			  else raise e))
+			end
+		  else prev)
+	      [] in res) in
+	  let outfiles = List.rev outfiles in
 	  (match Iteration.get_pending_instance() with
 	    None ->
 	      (x,xs,cocci_infos,outfiles)
