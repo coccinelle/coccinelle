@@ -1310,7 +1310,8 @@ let rec pp_any = function
 	| Ast.Indent s :: rest ->
 	    print_text s; force_newline(); loop rest in
       loop xs; false
-  | Ast.Token(x,None) -> print_text x; if_open_brace x
+  | Ast.Token(x,None) ->
+      print_text x; if_open_brace x
   | Ast.Token(x,Some info) ->
       mcode
 	(fun x line lcol ->
@@ -1414,7 +1415,9 @@ in
 	      let rec loop space_after indent_needed = function
 		  [] -> indent_needed
 		| x::xs ->
-		    (if space_after && space_needed_before x
+		    (if indent_needed (* for open brace *)
+		    then force_newline()
+		    else if space_after && space_needed_before x
 		    then pr_space());
 		    let indent_needed = pp_any x in
 		    let space_after = space_needed_after x in
