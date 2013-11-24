@@ -867,12 +867,13 @@ let adjust_after_paren toks =
     | _ -> if seen_minus then rest else xs in (* drop trailing space *)
   search_paren toks
 
-(* this is for the case where braces are added around an if branch *)
+(* this is for the case where braces are added around an if branch
+because of a change inside the branch *)
 let paren_then_brace toks =
   let rec search_paren = function
     | [] -> []
     | ((T2(_,Ctx,_,_)) as x)::xs
-      when List.mem (str_of_token2 x) [")"] ->
+      when List.mem (str_of_token2 x) [")";"else"] ->
       x :: search_paren (search_plus xs)
     | x::xs -> x :: search_paren xs
   and search_plus xs =
@@ -1211,17 +1212,18 @@ let new_tabbing a =
 
 (* ------------------------------------------------------------------------ *)
 
-type info = CtxNL of
-              string * int (*depth*) * int (* depthmin *) * int (* depthplus *)
-          | MinNL of string * int (* depthmin *) * int (* depthplus *)
-          | PlusNL of int (* depthplus *)
-	  | Other | Drop | Unindent
+type info =
+    CtxNL of string * int (*depthmin*) * int (*depthplus*) * int (*inparen*)
+  | MinNL of string * int (*depthmin*) * int (*depthplus*) * int (*inparen*)
+  | PlusNL of int (* depthplus *) * int (* inparen *)
+  | Other | Drop | Unindent
 
 let close_brace l =
   let (added,rest) = span all_coccis l in
-  match rest with
-    [] -> false
-  | t::_ -> (str_of_token2 t) = "}"
+  (added,
+   match rest with
+     [] -> false
+   | t::_ -> (str_of_token2 t) = "}")
 
 let open_brace l =
   let (added,rest) = span all_coccis l in
@@ -1263,19 +1265,22 @@ let parse_indentation xs =
 		  (match Str.split_delim (Str.regexp "\n") s with
 		  | [before;after] ->
 		      let ind1 = simple_string_length after 0 in
-		      if close_brace xs
-		      then
-			(CtxNL(after,dplus,dmin-1,dplus-1),
+		      (match close_brace xs with
+			([],true) ->
+			  (CtxNL(after,dmin-1,dplus-1,inparens),
 			 dmin,dplus,inparens,ind1,false)
-		      else
+		      |	(_,true) ->
+			(CtxNL(after,dmin-1,dplus,inparens),
+			 dmin,dplus,inparens,ind1,false)
+		      |	_ ->
 		      if open_brace xs
 		      then (* do nothing *)
-			(CtxNL(after,dplus,dmin,dplus),
+			(CtxNL(after,dmin,dplus,inparens),
 			 dmin,dplus,inparens,ind1,false)
 		      else
 			let (dmin1,dplus1) =
 			  (* if, etc without {} *)
-			  if endparen && ind1 < ind && inparens = 0
+			  if ind1 < ind && inparens = 0
 			  then (dmin-1,dplus-1)
 			  else if endparen && ind1 > ind && inparens = 0
 			  then (dmin+1,dplus+1)
@@ -1283,8 +1288,8 @@ let parse_indentation xs =
 			(* dplus is kept in the second position, because that
 			   is what to use if we continue at the same indent
 			   level. *)
-			(CtxNL(after,dplus,dmin1,dplus1),
-			 dmin1,dplus1,inparens,ind1,false)
+			(CtxNL(after,dmin1,dplus1,inparens),
+			 dmin1,dplus1,inparens,ind1,false))
 		  | _ -> (Other,dmin,dplus,inparens,ind,false))
 	      |	_->
 		  (match TH.str_of_tok t with
@@ -1298,23 +1303,24 @@ let parse_indentation xs =
 		  (match Str.split_delim (Str.regexp "\n") s with
 		    [before;after] ->
 		      let ind1 = simple_string_length after 0 in
-		      if close_brace xs
-		      then (MinNL(after,dmin-1,dplus-1),
-			    dmin,dplus,inparens,ind1,false)
-		      else
-		      if open_brace xs (* do nothing *)
-		      then (MinNL(after,dmin,dplus),
-			    dmin,dplus,inparens,ind1,false)
-		      else
-			let (dmin1,dplus1) =
+		      (match close_brace xs with
+			(_,true) ->
+			  (MinNL(after,dmin-1,dplus-1,inparens),
+			   dmin,dplus,inparens,ind1,false)
+		      |	_ ->
+			  if open_brace xs (* do nothing *)
+			  then (MinNL(after,dmin,dplus,inparens),
+				dmin,dplus,inparens,ind1,false)
+			  else
+			    let (dmin1,dplus1) =
 			  (* if, etc without {} *)
-			  if endparen && ind1 < ind && inparens = 0
-			  then (dmin-1,dplus-1)
-			  else if endparen && ind1 > ind && inparens = 0
-			  then (dmin+1,dplus+1)
-			  else (dmin,dplus) in
-			(MinNL(after,dmin1,dplus1),
-			    dmin1,dplus1,inparens,ind1,false)
+			      if ind1 < ind && inparens = 0
+			      then (dmin-1,dplus-1)
+			      else if endparen && ind1 > ind && inparens = 0
+			      then (dmin+1,dplus+1)
+			      else (dmin,dplus) in
+			    (MinNL(after,dmin1,dplus1,inparens),
+			     dmin1,dplus1,inparens,ind1,false))
 		  | _ -> (Other,dmin,dplus,inparens,ind,false))
 	      |	_->
 		  (match TH.str_of_tok t with
@@ -1323,8 +1329,8 @@ let parse_indentation xs =
 		  | _ -> (Other,dmin,dplus,inparens,ind,false)))
 	  | Cocci2("\n",_,_,_,_) ->
 	      if cocci_close_brace xs
-	      then (PlusNL(dplus-1),dmin,dplus,inparens,ind,false)
-	      else (PlusNL(dplus),dmin,dplus,inparens,ind,false)
+	      then (PlusNL(dplus-1,inparens),dmin,dplus,inparens,ind,false)
+	      else (PlusNL(dplus,inparens),dmin,dplus,inparens,ind,false)
 	  | Cocci2("{",_,_,_,_) ->
 	      (Other,dmin,dplus+1,inparens,ind,false)
 	  | Cocci2("}",_,_,_,_) ->
@@ -1334,10 +1340,12 @@ let parse_indentation xs =
 	  | C2("}") -> (Other,dmin,dplus-1,inparens,ind,false)
 	  | Indent_cocci2 ->
 	      (Drop,dmin,dplus+1,inparens,ind,false)
-	  | Unindent_cocci2 true -> (Drop,dmin,dplus-1,inparens,ind,false)
+	  | Unindent_cocci2 true ->
+	      (Drop,dmin,dplus-1,inparens,ind,false)
 	  | Unindent_cocci2 false ->
 	      if dplus = 0
-	      then (* nothing to do *) (Drop,dmin,dplus,inparens,ind,false)
+	      then (* nothing to do *)
+		(Drop,dmin,dplus,inparens,ind,false)
 	      else (Unindent,dmin,dplus,inparens,ind,false)
 	  | _ -> (Other,dmin,dplus,inparens,ind,false) in
 	let front =
@@ -1370,16 +1378,22 @@ let update_indent tok indent =
   | C2("\n") -> C2("\n"^indent)
   | _ -> failwith "bad newline"
 
-let update_entry map depth n indent =
-  let others = List.filter (function (d,_) -> not(depth = d)) map in
-  (depth,(n,indent)) :: others
+let update_entry map depth inparens n indent =
+  let others =
+    List.filter
+      (function ((d,i),_) -> not((depth,inparens) = (d,i)))
+      map in
+  ((depth,inparens),(n,indent)) :: others
 
-let update_map_min n spaces tabbing_unit past_minus_map depthmin dmin retab =
+let update_map_min n spaces tabbing_unit past_minus_map depthmin dmin
+    inparens retab =
+  let past_minus_map = (* gc *)
+    List.filter (function ((_,ip),_) -> ip <= inparens) past_minus_map in
   let new_tabbing_unit =
     if retab
     then
       try
-	let (_,oldspaces) = List.assoc dmin past_minus_map in
+	let (_,oldspaces) = List.assoc (dmin,inparens) past_minus_map in
 	if depthmin = dmin - 1 (* we have outdented *)
 	then get_tabbing_unit spaces oldspaces
 	else if depthmin = dmin + 1 (* we have indented *)
@@ -1387,17 +1401,8 @@ let update_map_min n spaces tabbing_unit past_minus_map depthmin dmin retab =
 	else tabbing_unit
       with _ -> None
     else None in
-  let new_map = update_entry past_minus_map depthmin n spaces in
+  let new_map = update_entry past_minus_map depthmin inparens n spaces in
   (new_tabbing_unit,new_map)
-
-let update_map_ctx n spaces tabbing_unit
-    past_minus_map past_context_map
-    depthmin depthplus dmin dplus retab =
-  let (tabbing_unit,minus_map) =
-    update_map_min n spaces tabbing_unit past_minus_map
-      depthmin dmin retab in
-  let new_map = update_entry past_context_map depthplus n spaces in
-  (tabbing_unit,minus_map,new_map)
 
 let times before n tabbing_unit ctr =
   (if n < 0 then failwith (Printf.sprintf "n is %d\n" n));
@@ -1407,7 +1412,7 @@ let times before n tabbing_unit ctr =
     | n -> (loop (n-1)) ^ tabbing_unit in
   loop n
 
-let search_in_maps n depth past_minmap past_ctxmap minmap ctxmap tu t =
+let search_in_maps n depth inparens past_minmap minmap tu t =
   let get_answer fail map1 map2 =
     match (map1,map2) with
       (None,None) -> fail()
@@ -1419,13 +1424,14 @@ let search_in_maps n depth past_minmap past_ctxmap minmap ctxmap tu t =
 	update_indent t indent in
   let find_recent map =
     List.fold_left
-      (function ((pdepth,(pn,pindent)) as prev) ->
-	function ((cdepth,(cn,cindent)) as cur) ->
+      (function (((pdepth,_),(pn,pindent)) as prev) ->
+	function (((cdepth,_),(cn,cindent)) as cur) ->
 	  if cdepth < depth && cdepth >= pdepth then cur else prev)
-      (-1,(-1,"")) map in
+      ((-1,-1),(-1,"")) map in
   let fail2 _ =
-    let (brecent,(bn,bindent)) = find_recent past_ctxmap in
-    let (arecent,(an,aindent)) = find_recent ctxmap in
+    (* should we consider inparens here??? *)
+    let ((brecent,_),(bn,bindent)) = find_recent past_minmap in
+    let ((arecent,_),(an,aindent)) = find_recent minmap in
     match (brecent,arecent) with
       (-1,-1) -> update_indent t (times "" depth tu 1)
     | (_,-1) -> update_indent t (times bindent (depth - brecent) tu 2)
@@ -1442,72 +1448,71 @@ let search_in_maps n depth past_minmap past_ctxmap minmap ctxmap tu t =
 	  let n2 = abs(an - n) in
 	  let indent = if n1 < n2 then bindent else aindent in
 	  update_indent t (times indent d2 tu 6) in
-  let fail1 _ =
-    let map3 = try Some(List.assoc depth past_minmap) with _ -> None in
-    let map4 = try Some(List.assoc depth minmap) with _ -> None in
-    get_answer fail2 map3 map4 in
-  let map1 = try Some(List.assoc depth past_ctxmap) with _ -> None in
-  let map2 = try Some(List.assoc depth ctxmap) with _ -> None in
-  get_answer fail1 map1 map2
+  let map1 =
+    try Some(List.assoc (depth,inparens) past_minmap) with _ -> None in
+  let map2 =
+    try Some(List.assoc (depth,inparens) minmap) with _ -> None in
+  get_answer fail2 map1 map2
 
 let adjust_indentation xs =
   let toks = parse_indentation xs in
-  let rec loop tabbing_unit past_minmap past_ctxmap dmin dplus =
+  let rec loop tabbing_unit past_minmap dmin dplus =
     function
-	[] -> (tabbing_unit,past_minmap,past_ctxmap,[])
+	[] -> (tabbing_unit,past_minmap,[])
       | (n,CtxNL _,t)::(n1,Unindent,t1)::rest
       | (n,PlusNL _,t)::(n1,Unindent,t1)::rest ->
 	  (* Drop preceding spaces and just make a newline *)
-	  let (out_tu,minmap,ctxmap,res) =
-	    loop tabbing_unit past_minmap past_ctxmap dmin dplus rest in
-	  (out_tu,minmap,ctxmap,(C2 "\n")::res)
+	  let (out_tu,minmap,res) =
+	    loop tabbing_unit past_minmap dmin dplus rest in
+	  (out_tu,minmap,(C2 "\n")::res)
       |	(n,Unindent,t)::rest ->
 	  (* Add a newline *)
-	  let (out_tu,minmap,ctxmap,res) =
-	    loop tabbing_unit past_minmap past_ctxmap dmin dplus rest in
-	  (out_tu,minmap,ctxmap,(C2 "\n")::res)
-      | (n,CtxNL(spaces,depth,depthmin,depthplus),t)::rest ->
-	  let (tabbing_unit,past_minmap,past_ctxmap) =
-	    update_map_ctx n spaces tabbing_unit past_minmap past_ctxmap
-	      depthmin depthplus dmin dplus true in
-	  let (out_tu,minmap,ctxmap,res) =
-	    loop tabbing_unit past_minmap past_ctxmap dmin dplus rest in
-	  let (_,minmap,ctxmap) =
-	    update_map_ctx n spaces tabbing_unit minmap ctxmap
-	      depthmin depthplus dmin dplus false in
-	  let t =
-	    if not (depth = depthplus) && is_cocci rest
-	    then
-	      search_in_maps n depth past_minmap past_ctxmap minmap ctxmap
-		tabbing_unit (C2 "\n")
-	    else t in
-	  (out_tu,minmap,ctxmap,t::res)
-      | (n,MinNL(spaces,depthmin,depthplus),t)::rest ->
+	  let (out_tu,minmap,res) =
+	    loop tabbing_unit past_minmap dmin dplus rest in
+	  (out_tu,minmap,(C2 "\n")::res)
+      | (n,CtxNL(spaces,depthmin,depthplus,inparens),t)::rest ->
 	  let (tabbing_unit,past_minmap) =
 	    update_map_min n spaces tabbing_unit past_minmap
-	      depthmin dmin true in
-	  let (out_tu,minmap,ctxmap,res) =
-	    loop tabbing_unit past_minmap past_ctxmap dmin dplus rest in
+	      depthmin dmin inparens true in
+	  let (out_tu,minmap,res) =
+	    loop tabbing_unit past_minmap dmin dplus rest in
 	  let (_,minmap) =
-	    update_map_min n spaces tabbing_unit minmap depthmin dmin false in
-	  (out_tu,minmap,ctxmap,t::res)
-      | (n,PlusNL(depth),t)::rest ->
-	  let (out_tu,minmap,ctxmap,res) =
-	    loop tabbing_unit past_minmap past_ctxmap dmin dplus rest in
+	    update_map_min n spaces tabbing_unit minmap
+	      depthmin dmin inparens false in
+	  let t =
+	    if not (depthmin = depthplus) (*&& is_cocci rest*)
+	    then
+	      search_in_maps n depthplus inparens past_minmap minmap
+		tabbing_unit (C2 "\n")
+	    else t in
+	  (out_tu,minmap,t::res)
+      | (n,MinNL(spaces,depthmin,depthplus,inparens),t)::rest ->
+	  let (tabbing_unit,past_minmap) =
+	    update_map_min n spaces tabbing_unit past_minmap
+	      depthmin dmin inparens true in
+	  let (out_tu,minmap,res) =
+	    loop tabbing_unit past_minmap dmin dplus rest in
+	  let (_,minmap) =
+	    update_map_min n spaces tabbing_unit minmap
+	      depthmin dmin inparens false in
+	  (out_tu,minmap,t::res)
+      | (n,PlusNL(depth,inparens),t)::rest ->
+	  let (out_tu,minmap,res) =
+	    loop tabbing_unit past_minmap dmin dplus rest in
 	  let newtok =
-	    search_in_maps n depth past_minmap past_ctxmap minmap ctxmap
+	    search_in_maps n depth inparens past_minmap minmap
 	      tabbing_unit t in
-	  (out_tu, minmap, ctxmap, newtok :: res)
+	  (out_tu, minmap, newtok::res)
       | (n,Other,t)::rest ->
-	  let (out_tu,minmap,ctxmap,res) =
-	    loop tabbing_unit past_minmap past_ctxmap dmin dplus rest in
-	  (out_tu,minmap,ctxmap,t::res)
+	  let (out_tu,minmap,res) =
+	    loop tabbing_unit past_minmap dmin dplus rest in
+	  (out_tu,minmap,t::res)
       | (n,Drop,t)::rest ->
-	  let (out_tu,minmap,ctxmap,res) =
-	    loop tabbing_unit past_minmap past_ctxmap dmin dplus rest in
-	  (out_tu,minmap,ctxmap,res) in
-  let nulmap = [(0,(-1,""))] in
-  let (out_tu,_,_,res) = loop None nulmap nulmap 0 0 toks in
+	  let (out_tu,minmap,res) =
+	    loop tabbing_unit past_minmap dmin dplus rest in
+	  (out_tu,minmap,res) in
+  let nulmap = [((0,0),(-1,""))] in
+  let (out_tu,_,res) = loop None nulmap 0 0 toks in
   (res,out_tu)
 
 (* ------------------------------------------------------------------------ *)

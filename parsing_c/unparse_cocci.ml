@@ -75,6 +75,10 @@ let rec param_print_between between fn = function
   | [x] -> fn x
   | x::xs -> fn x; between x; param_print_between between fn xs in
 
+let rec param_print_before_and_after before fn = function
+  | [] -> before ()
+  | x::xs -> before (); fn x; param_print_before_and_after before fn xs in
+
 
 let outdent _ = () (* should go to leftmost col, does nothing now *) in
 
@@ -241,6 +245,13 @@ let dots between fn d =
     Ast.DOTS(l) -> param_print_between between fn l
   | Ast.CIRCLES(l) -> param_print_between between fn l
   | Ast.STARS(l) -> param_print_between between fn l
+in
+
+let dots_before_and_after before fn d =
+  match Ast.unwrap d with
+    Ast.DOTS(l) -> param_print_before_and_after before fn l
+  | Ast.CIRCLES(l) -> param_print_before_and_after before fn l
+  | Ast.STARS(l) -> param_print_before_and_after before fn l
 in
 
 let nest_dots starter ender fn f d =
@@ -668,7 +679,7 @@ and typeC ty =
   | Ast.StructUnionDef(ty,lb,decls,rb) ->
       fullType ty; ft_space ty;
       mcode print_string lb;
-      dots force_newline declaration decls;
+      dots_before_and_after force_newline declaration decls;
       mcode print_string rb
   | Ast.TypeName(name)-> mcode print_string name
   | Ast.MetaType(name,_,_) ->
@@ -826,7 +837,7 @@ and declaration d =
   | Ast.TyDecl(ty,sem) -> fullType ty; mcode print_string sem
   | Ast.Typedef(stg,ty,id,sem) ->
       mcode print_string stg;
-      fullType ty; typeC id;
+      fullType ty; pr_space(); typeC id;
       mcode print_string sem
   | Ast.DisjDecl(_) -> raise CantBeInPlus
   | Ast.Ddots(_,_) -> raise CantBeInPlus
@@ -1299,7 +1310,8 @@ let rec pp_any = function
 	| Ast.Indent s :: rest ->
 	    print_text s; force_newline(); loop rest in
       loop xs; false
-  | Ast.Token(x,None) -> print_text x; if_open_brace x
+  | Ast.Token(x,None) ->
+      print_text x; if_open_brace x
   | Ast.Token(x,Some info) ->
       mcode
 	(fun x line lcol ->
@@ -1405,7 +1417,9 @@ in
 	      let rec loop space_after indent_needed = function
 		  [] -> indent_needed
 		| x::xs ->
-		    (if space_after && space_needed_before x
+		    (if indent_needed (* for open brace *)
+		    then force_newline()
+		    else if space_after && space_needed_before x
 		    then pr_space());
 		    let indent_needed = pp_any x in
 		    let space_after = space_needed_after x in

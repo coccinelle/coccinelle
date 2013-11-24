@@ -482,15 +482,16 @@ let show_or_not_binding a b  =
 (* Some  helper functions *)
 (*****************************************************************************)
 
-let worth_trying2 cfiles cocci_infos =
-  let (cocci_infos,parse_strings,(tokens,_)) = cocci_infos in
+let worth_trying2 cfiles (tokens,_,query,_) =
   (* drop the following line for a list of list by rules.  since we don't
      allow multiple minirules, all the tokens within a rule should be in
      a single CFG entity *)
   let res =
-  match (!Flag_cocci.windows,!Flag.scanner,tokens) with
-    (true,_,_) | (_,_,None) | (_,Flag.CocciGrep,_) -> true
-  | (_,_,Some tokens) ->
+  match (!Flag_cocci.windows,!Flag.scanner,tokens,query,cfiles) with
+    (true,_,_,_,_) | (_,_,None,_,_) | (_,_,_,None,_) | (_,Flag.CocciGrep,_,_,_)
+    -> true
+  | (_,_,_,Some query,[cfile]) -> Cocci_grep.interpret query cfile
+  | (_,_,Some tokens,_,_) ->
    (* could also modify the code in get_constants.ml *)
       let tokens = tokens +> List.map (fun s ->
 	match () with
@@ -892,9 +893,13 @@ type toplevel_cocci_info =
   | CocciRuleCocciInfo of toplevel_cocci_info_cocci_rule
 
 type cocci_info = toplevel_cocci_info list *
-      bool (* parsing of format strings needed *) *
-      (string list option (* tokens *) *
-	 Str.regexp list option (* coccigrep *))
+      bool (* parsing of format strings needed *)
+
+type constant_info =
+    (string list option (*grep tokens*) *
+       string list option (*glimpse tokens*) *
+       (Str.regexp * Str.regexp list) option (*coccigrep tokens*) *
+       Get_constants2.combine option)
 
 type kind_file = Header | Source
 type file_info = {
@@ -1838,7 +1843,7 @@ let pre_engine2 (coccifile, isofile) =
   (* useful opti when use -dir *)
   let (metavars,astcocci,
        free_var_lists,negated_pos_lists,used_after_lists,
-       positions_lists,(toks,_,coccigrep,_),parse_strings) =
+       positions_lists,((toks,_,_,_) as constants),parse_strings) =
     sp_of_file coccifile isofile in
 
   let ctls = ctls_of_ast astcocci used_after_lists positions_lists in
@@ -1916,12 +1921,12 @@ let pre_engine2 (coccifile, isofile) =
       runrule (make_init lgg "" rule_info))
     uninitialized_languages;
 
-  (cocci_infos,parse_strings,(toks,coccigrep))
+  ((cocci_infos,parse_strings),constants)
 
 let pre_engine a =
   Common.profile_code "pre_engine" (fun () -> pre_engine2 a)
 
-let full_engine2 (cocci_infos,parse_strings,toks) cfiles =
+let full_engine2 (cocci_infos,parse_strings) cfiles =
 
   show_or_not_cfiles cfiles;
 
@@ -1994,7 +1999,7 @@ let full_engine a b =
   Common.profile_code "full_engine"
     (fun () -> let res = full_engine2 a b in (*Gc.print_stat stderr; *)res)
 
-let post_engine2 (cocci_infos,_,_) =
+let post_engine2 (cocci_infos,_) =
   List.iter
     (function ((language,_),virt_rules) ->
       Flag.defined_virtual_rules := virt_rules;
