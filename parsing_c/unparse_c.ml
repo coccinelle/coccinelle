@@ -861,12 +861,13 @@ let adjust_after_paren toks =
     | _ -> if seen_minus then rest else xs in (* drop trailing space *)
   search_paren toks
 
-(* this is for the case where braces are added around an if branch *)
+(* this is for the case where braces are added around an if branch
+because of a change inside the branch *)
 let paren_then_brace toks =
   let rec search_paren = function
     | [] -> []
     | ((T2(_,Ctx,_,_)) as x)::xs
-      when List.mem (str_of_token2 x) [")"] ->
+      when List.mem (str_of_token2 x) [")";"else"] ->
       x :: search_paren (search_plus xs)
     | x::xs -> x :: search_paren xs
   and search_plus xs =
