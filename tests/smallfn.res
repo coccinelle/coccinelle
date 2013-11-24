@@ -5,23 +5,23 @@ int main () {
     foo();
   }
   foo();
-}
+ }
   else {
   {
     two();
     foo();
   }
   foo();
-}
-foo();
+ }
+ foo();
  while (y) { 
  {
     one();
     foo();
   }
   foo();
-}
-foo();
+ }
+ foo();
  {
  do {
     one();
@@ -29,7 +29,7 @@ foo();
  }
  foo(); while(y);
  foo();
-}
+ }
  switch (y) {
  case 12:
  foo();one();
@@ -39,7 +39,7 @@ foo();
  foo();
   }
   foo();
-{
+ {
     one();
     foo();
   }
@@ -53,13 +53,13 @@ int main () {
     foo();
   }
   foo();
-}
+ }
   else {
   {
     two();
     foo();
       }
       foo();
-}
-foo();
+ }
+ foo();
 }
