@@ -1266,7 +1266,7 @@ let parse_indentation xs =
 		      else
 			let (dmin1,dplus1) =
 			  (* if, etc without {} *)
-			  if endparen && ind1 < ind && inparens = 0
+			  if ind1 < ind && inparens = 0
 			  then (dmin-1,dplus-1)
 			  else if endparen && ind1 > ind && inparens = 0
 			  then (dmin+1,dplus+1)
@@ -1299,7 +1299,7 @@ let parse_indentation xs =
 		      else
 			let (dmin1,dplus1) =
 			  (* if, etc without {} *)
-			  if endparen && ind1 < ind && inparens = 0
+			  if ind1 < ind && inparens = 0
 			  then (dmin-1,dplus-1)
 			  else if endparen && ind1 > ind && inparens = 0
 			  then (dmin+1,dplus+1)
@@ -1325,10 +1325,12 @@ let parse_indentation xs =
 	  | C2("}") -> (Other,dmin,dplus-1,inparens,ind,false)
 	  | Indent_cocci2 ->
 	      (Drop,dmin,dplus+1,inparens,ind,false)
-	  | Unindent_cocci2 true -> (Drop,dmin,dplus-1,inparens,ind,false)
+	  | Unindent_cocci2 true ->
+	      (Drop,dmin,dplus-1,inparens,ind,false)
 	  | Unindent_cocci2 false ->
 	      if dplus = 0
-	      then (* nothing to do *) (Drop,dmin,dplus,inparens,ind,false)
+	      then (* nothing to do *)
+		(Drop,dmin,dplus,inparens,ind,false)
 	      else (Unindent,dmin,dplus,inparens,ind,false)
 	  | _ -> (Other,dmin,dplus,inparens,ind,false) in
 	let front =
