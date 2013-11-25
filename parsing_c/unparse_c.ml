@@ -1046,11 +1046,13 @@ let add_newlines toks tabbing_unit =
   let rec loop ((stack,space_cell,seen_cocci) as info) count = function
     | [] -> []
     | ((T2(commatok,Ctx,_,_))::_) as xs
-      when seen_cocci &&
+      when seen_cocci && length stack = 1 &&
 	(TH.str_of_tok commatok) = "," && not (space_cell = None) ->
 	(* deal with any preceding space, and then redo comma token to
 	   deal with subsequent space *)
         let (count,newspacecell) = comma_in_box stack space_cell count "," in
+	(* newspacecell should be None, so this case won't get picked up
+	   again *)
         loop (stack,newspacecell,seen_cocci) count xs
     | (T2(commatok,Ctx,_,_)) ::
       (T2(((Parser_c.TCommentSpace _) as sptok),Ctx,idx,_)) :: xs
