@@ -934,18 +934,10 @@ let rec main_action xs =
 	    | _ -> failwith "inconsistent distribution information" in
 
           let outfiles =
-            Common.profile_code "Main.outfiles computation" (fun () -> (*
-	      let infiles = (* worth trying optimization *)
-		if !Flag.worth_trying_opt
-		then
-		  List.filter
-		    (function cfiles -> Cocci.worth_trying cfiles constants)
-		    infiles
-		else infiles in *)
-
+            Common.profile_code "Main.outfiles computation" (fun () ->
 	      let res =
 		infiles +> List.fold_left (fun prev cfiles ->
-		  if !Flag.worth_trying_opt &&
+		  if (not !Flag.worth_trying_opt) or
 		    Cocci.worth_trying cfiles constants
 		      then
 		    begin
