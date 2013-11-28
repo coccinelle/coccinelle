@@ -149,6 +149,10 @@
 - Allow --use-idutils to take the name of the database as an optional
   argument.  Thank to Wolfram Sang for the suggestion.
 - Allow some parameters of a function not to have names.
+- Improve indentation and newline introduction in pretty printer.  Thanks
+  to Nic Volanschi for the bug report.
+- Eliminate the reliance on grep in most cases for worth trying, to improve
+  performance.  Thanks to Johannes Berg for the suggestion.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
@@ -294,6 +298,8 @@
   pointing out the problem.
 - Improve parsing of #defines that contain multiline comments.  Thanks to
   Tegawende Bissyande for finding the problem.
+- Collect all types in get_constants when types mentioned on
+  metavariables. Thanks to Michael Stefaniuc for the report.
 
 * 0.2.5
 ** Language:
