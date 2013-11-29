@@ -309,12 +309,12 @@ let do_get_constants constants keywords env neg_pos =
   let rec type_collect res = function
       TC.ConstVol(_,ty) | TC.Pointer(ty) | TC.FunctionPointer(ty)
     | TC.Array(ty) -> type_collect res ty
-    | TC.Decimal _ -> keywords "decimal"
+    | TC.Decimal _ -> build_or res (keywords "decimal")
     | TC.MetaType(tyname,_,_) ->
-	inherited tyname
-    | TC.TypeName(s) -> constants s
-    | TC.EnumName(TC.Name s) -> constants s
-    | TC.StructUnionName(_,TC.Name s) -> constants s
+	build_or res (inherited tyname)
+    | TC.TypeName(s) -> build_or res (constants s)
+    | TC.EnumName(TC.Name s) -> build_or res (constants s)
+    | TC.StructUnionName(_,TC.Name s) -> build_or res (constants s)
     | ty -> res in
 
   (* no point to do anything special for records because glimpse is

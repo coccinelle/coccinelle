@@ -334,9 +334,6 @@ let init _ =
   Hashtbl.clear iterator_names;
   Hashtbl.clear declarer_names;
   Hashtbl.clear symbol_names;
-  Data.expression_metavariables := [];
-  Data.format_metavariables := [];
-  Data.format_list_metavariables := [];
   let get_name (_,x) = x in
   Data.add_meta_meta :=
     (fun name pure ->
@@ -389,9 +386,6 @@ let init _ =
   Data.add_exp_meta :=
     (fun tyopt name constraints pure ->
       let fn clt = TMetaExp(name,constraints,pure,tyopt,clt) in
-      Data.expression_metavariables :=
-	(get_name name,(name,constraints,pure,tyopt)) ::
-	!Data.expression_metavariables;
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_idexp_meta :=
     (fun tyopt name constraints pure ->
@@ -484,6 +478,11 @@ let init _ =
     (function parent ->
       List.iter (function (name,fn) -> Hashtbl.add metavariables name fn)
 	(Hashtbl.find all_metavariables parent))
+
+(* initialization for each cocci rule *)
+let reinit _ =
+  Data.format_metavariables := [];
+  Data.format_list_metavariables := []
 
 (* the following is needed to properly tokenize include files.  Because an
 include file is included after seeing a @, so current_line_started is true.
