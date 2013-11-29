@@ -8,6 +8,13 @@ let call_pretty f a =
   f ~pr_elem ~pr_space:pr_sp a;
   String.concat " " (List.rev !str)
 
+let call_pretty0 f a =
+  let str = ref ([] : string list) in
+  let pr_elem info = str := (Ast_c.str_of_info info) :: !str in
+  let pr_sp _ = () in
+  f ~pr_elem ~pr_space:pr_sp a;
+  String.concat "" (List.rev !str)
+
 let exprrep = call_pretty Pretty_print_c.pp_expression_gen
 
 let commalistrep list_printer elem_printer comma_printer x =
@@ -56,9 +63,9 @@ let stringrep = function
 | Ast_c.MetaParamListVal params ->
     call_pretty Pretty_print_c.pp_param_list_gen params
 | Ast_c.MetaFragListVal frags ->
-    call_pretty Pretty_print_c.pp_string_fragment_list_gen frags
+    call_pretty0 Pretty_print_c.pp_string_fragment_list_gen frags
 | Ast_c.MetaFmtVal fmt ->
-    call_pretty Pretty_print_c.pp_string_format_gen fmt
+    call_pretty0 Pretty_print_c.pp_string_format_gen fmt
 | Ast_c.MetaListlenVal n -> string_of_int n
 | Ast_c.MetaPosVal (pos1, pos2) ->
     let print_pos = function
