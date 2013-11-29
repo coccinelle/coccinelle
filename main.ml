@@ -325,7 +325,7 @@ let short_options = [
       if !Regexp.pcre_support then "with PCRE support"
       else "with Str regexp support "
     in
-    Printf.printf "spatch version %s %s Python support and %s"
+    Printf.printf "spatch version %s %s Python support and %s\n"
       Config.version withpython whichregexp;
     exit 0;
   ),
