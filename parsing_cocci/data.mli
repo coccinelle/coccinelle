@@ -133,9 +133,6 @@ val install_bindings: (string -> unit) ref
 (* ---------------------------------------------------------------------- *)
 (* String format things *)
 
-val expression_metavariables :
-    (string * (Ast_cocci.meta_name * Ast0_cocci.constraints *
-		 Ast0_cocci.pure * Type_cocci.typeC list option)) list ref
 val format_metavariables :
     (string * (Ast_cocci.meta_name * iconstraints)) list ref
 val format_list_metavariables :

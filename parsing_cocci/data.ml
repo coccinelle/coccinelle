@@ -182,9 +182,6 @@ let install_bindings: (string -> unit) ref =
 (* ---------------------------------------------------------------------- *)
 (* String format things *)
 
-let expression_metavariables  =
-  ref ([] : (string * (Ast.meta_name * Ast0.constraints *
-			 Ast0.pure * Type_cocci.typeC list option)) list)
 let format_metavariables      =
   ref ([] : (string * (Ast.meta_name * iconstraints)) list)
 let format_list_metavariables =

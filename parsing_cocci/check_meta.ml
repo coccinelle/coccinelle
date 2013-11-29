@@ -354,6 +354,9 @@ and string_fragment old_metas table minus e =
   | Ast0.FormatFragment(pct,fmt) ->
       string_format old_metas table minus fmt
   | Ast0.Strdots dots -> ()
+  | Ast0.MetaFormatList(pct,name,Ast0.MetaListLen lenname) ->
+      check_table table minus name;
+      check_table table minus lenname
   | Ast0.MetaFormatList(pct,name,lenname) ->
       check_table table minus name
 

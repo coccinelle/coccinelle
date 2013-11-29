@@ -1587,11 +1587,13 @@ let rec collect_script_tokens = function
       failwith "Malformed script rule"
 
 let get_metavars parse_fn table file lexbuf =
+  Lexer_cocci.reinit(); (* string metavariable initializations *)
   let rec meta_loop acc (* read one decl at a time *) =
     let (_,tokens) =
       Data.call_in_meta
 	(function _ ->
-	  tokens_all table file true lexbuf (in_list [PC.TArobArob;PC.TMPtVirg;PC.TAnalysis])) in
+	  tokens_all table file true lexbuf
+	    (in_list [PC.TArobArob;PC.TMPtVirg;PC.TAnalysis])) in
     let tokens = prepare_mv_tokens tokens in
     match tokens with
       [(PC.TArobArob,_)] -> List.rev acc
