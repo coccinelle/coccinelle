@@ -139,6 +139,8 @@ let rec expression context old_metas table minus e =
   match Ast0.unwrap e with
     Ast0.Ident(id) ->
       ident context old_metas table minus id
+  | Ast0.StringConstant(lq,str,rq) ->
+      dots (string_fragment old_metas table minus) str
   | Ast0.FunCall(fn,lp,args,rp) ->
       expression FN old_metas table minus fn;
       dots (expression ID old_metas table minus) args
@@ -369,6 +371,27 @@ and parameterTypeDef old_metas table minus param =
 
 and parameter_list old_metas table minus =
   dots (parameterTypeDef old_metas table minus)
+
+(* --------------------------------------------------------------------- *)
+(* String fragment *)
+
+and string_fragment old_metas table minus e =
+  match Ast0.unwrap e with
+    Ast0.ConstantFragment(str) -> ()
+  | Ast0.FormatFragment(pct,fmt) ->
+      string_format old_metas table minus fmt
+  | Ast0.Strdots dots -> ()
+  | Ast0.MetaFormatList(pct,name,Ast0.MetaListLen lenname) ->
+      check_table table minus name;
+      check_table table minus lenname
+  | Ast0.MetaFormatList(pct,name,lenname) ->
+      check_table table minus name
+
+and string_format old_metas table minus e =
+  match Ast0.unwrap e with
+    Ast0.ConstantFormat(str) -> ()
+  | Ast0.MetaFormat(name,_) ->
+      check_table table minus name
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)

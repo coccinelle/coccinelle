@@ -359,7 +359,7 @@ let elim_opt =
 
   V.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing stmtdotsfn donothing donothing
+    donothing donothing stmtdotsfn donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
 
@@ -468,6 +468,7 @@ let contains_modif =
     V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       do_nothing do_nothing do_nothing do_nothing do_nothing
+      do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing init do_nothing
       do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_rule_elem
@@ -488,6 +489,7 @@ let contains_pos =
     V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       do_nothing do_nothing do_nothing do_nothing do_nothing
+      do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_rule_elem
@@ -559,6 +561,7 @@ let count_nested_braces s =
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing
+      donothing donothing
       donothing donothing donothing donothing donothing donothing
       donothing donothing stmt_count donothing donothing donothing in
   let res = string_of_int (recursor.V.combiner_statement s) in
@@ -1929,10 +1932,11 @@ and statement stmt top after quantified minus_quantified
 		      (CTL.AU (* want AF even for sgrep *)
 			 (CTL.FORWARD,CTL.STRICT,
 			  CTL.Pred(Lib_engine.PrefixLabel(lv),CTL.Control),
-			  ctl_and (* brace must be eventually after goto *)
+			  ctl_or (aftpred None) (* jll new! *)
+			  (ctl_and (* brace must be eventually after goto *)
 			    (gotopred (Some (lv,ref true)))
 			    (* want AF even for sgrep *)
-			    (CTL.AF(CTL.FORWARD,CTL.STRICT,end_brace))))
+			    (CTL.AF(CTL.FORWARD,CTL.STRICT,end_brace)))))
 		      (quantify guard b2fvs
 			 (statement_list body NotTop Tail
 			    new_quantified2 new_mquantified2
@@ -1982,13 +1986,15 @@ and statement stmt top after quantified minus_quantified
       (* no minus version because when code doesn't contain any minus code *)
       let new_quantified = Common.union_set bfvs quantified in
 
-      let dot_code =
+      let (dot_code,stmt_dots) =
 	match Ast.get_mcodekind starter with (*ender must have the same mcode*)
 	  Ast.MINUS(_,_,_,_) as d ->
             (* no need for the fresh metavar, but ... is a bit weird as a
 	       variable name *)
-	    Some(make_match (make_meta_rule_elem d ([],[],[])))
-	| _ -> None in
+	    (* drops minuses on pattern, because d will have the minus effect*)
+	    (Some(make_match (make_meta_rule_elem d ([],[],[]))),
+	     drop_minuses stmt_dots)
+	| _ -> (None,stmt_dots) in
 
       quantify guard bfvs
 	(let dots_pattern =
@@ -2113,7 +2119,10 @@ and statement stmt top after quantified minus_quantified
 (*      let b3fvs = union_all all_b3fvs in*)
       (* ------------------- end collection of free variables *)
       let switch_header = quantify guard exponlyfvs (make_match header) in
-      let lb = quantify guard lbonlyfvs (make_match lb) in
+      let pv = count_nested_braces stmt in
+      let paren_pred = CTL.Pred(Lib_engine.Paren pv,CTL.Control) in
+      let lb = quantify guard lbonlyfvs 
+	  (ctl_and (make_match lb) paren_pred) in
 (*      let rb = quantify guard rbonlyfvs (make_match rb) in*)
       let case_headers =
 	List.map
@@ -2504,6 +2513,23 @@ and protect_top_level stmt_dots formula =
 	  (ctl_not(CTL.EX(CTL.BACKWARD,unsbrpred None)))
 	  formula
 
+and drop_minuses stmt_dots =
+  let mcode (x,info,mc,pos) =
+    let newmc =
+      match mc with
+	Ast.MINUS(pos,inst,adj,Ast.NOREPLACEMENT) ->
+	  Ast.CONTEXT(pos,Ast.NOTHING) (* drops adjacency, maybe not useful *)
+      | _ -> failwith "only pure minus expected in removed nest" in
+    (x,info,newmc,pos) in
+  let donothing r k e = k e in
+  let v =
+    V.rebuilder
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      donothing donothing donothing donothing donothing
+      donothing donothing
+      donothing donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing in
+  v.V.rebuilder_statement_dots stmt_dots
 
 (* --------------------------------------------------------------------- *)
 (* cleanup: convert AX to EX for pdots.

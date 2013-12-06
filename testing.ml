@@ -46,7 +46,7 @@ let testone prefix x compare_with_expected_flag =
 
   let expected_res   = prefix ^ x ^ ".res" in
   begin
-    let cocci_infos = Cocci.pre_engine (cocci_file, !Config.std_iso) in
+    let (cocci_infos,_) = Cocci.pre_engine (cocci_file, !Config.std_iso) in
     let res = Cocci.full_engine cocci_infos [cfile] in
     Cocci.post_engine cocci_infos;
     let generated =
@@ -54,7 +54,8 @@ let testone prefix x compare_with_expected_flag =
       | Some (Some outfile) ->
           if List.length res > 1
           then pr2 ("note that not just " ^ cfile ^ " was involved");
-          let tmpfile = sprintf "%s/%s" Filename.temp_dir_name (Common.basename cfile) in
+          let tmpfile =
+	    sprintf "%s/%s" Filename.temp_dir_name (Common.basename cfile) in
           pr2 (sprintf "One file modified. Result is here: %s" tmpfile);
           Common.command2 ("mv "^outfile^" "^tmpfile);
           tmpfile
@@ -109,7 +110,8 @@ let testall expected_score_file update_score_file =
 
 	  pr2 res;
 
-	  let cocci_infos = Cocci.pre_engine (cocci_file, !Config.std_iso) in
+	  let (cocci_infos,_) =
+	    Cocci.pre_engine (cocci_file, !Config.std_iso) in
           let xs = Cocci.full_engine cocci_infos [cfile] in
 	  Cocci.post_engine cocci_infos;
 
@@ -311,7 +313,7 @@ let test_okfailed cocci_file cfiles =
     try (
       Common.timeout_function_opt !Flag_cocci.timeout (fun () ->
 
-	let cocci_infos = Cocci.pre_engine (cocci_file, !Config.std_iso) in
+	let (cocci_infos,_) = Cocci.pre_engine (cocci_file, !Config.std_iso) in
         let outfiles = Cocci.full_engine cocci_infos cfiles in
 	Cocci.post_engine cocci_infos;
 
@@ -479,7 +481,7 @@ let test_parse_cocci file =
   if not (file =~ ".*\\.cocci")
   then pr2 "warning: seems not a .cocci file";
 
-  let (_,xs,_,_,_,_,(grep_tokens,query,_)) =
+  let (_,xs,_,_,_,_,(grep_tokens,query,_,_),_) =
     Parse_cocci.process file (Some !Config.std_iso) false in
   xs +> List.iter Pretty_print_cocci.unparse;
   Format.print_newline();
@@ -498,16 +500,12 @@ let test_parse_cocci file =
   (match grep_tokens with
     None -> pr "No query"
   | Some x -> pr (String.concat " || " x));
-  match !Flag.scanner with
-    Flag.NoScanner | Flag.Grep -> ()
-  | Flag.Glimpse | Flag.IdUtils | Flag.Google _ ->
-      Printf.printf "%s tokens\n"
-	(if !Flag.scanner = Flag.Glimpse then "glimpse" else "google");
-      (match query with
-	None -> pr "No query"
-      | Some x -> pr (String.concat "\nor on glimpse failure\n" x))
-
-
+  (* could update to accomodate WTCocciGrep *)
+  (match query with
+    None -> pr "No query"
+  | Some x ->
+      Printf.printf "glimpse tokens\n";
+      pr (String.concat "\nor on glimpse failure\n" x))
 
 (*****************************************************************************)
 (* to be called by ocaml toplevel, to test. *)

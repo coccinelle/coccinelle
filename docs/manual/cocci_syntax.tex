@@ -189,6 +189,9 @@ the same, but for structure fields.
   \CASE{constant \OPT{\ttlb \NT{ctypes}\ttrb~\any{*}} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
   \CASE{position \opt{any} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq\_mid}\mth{)} ;}
   \CASE{symbol \NT{ids};}
+  \CASE{format \NT{ids};}
+  \CASE{format list [ \NT{id} ] \NT{ids} ;}
+  \CASE{format list [ \NT{const} ] \NT{ids} ;}
 \end{grammar}
 
 A metavariable declaration local idexpression v means that v is restricted
@@ -228,6 +231,22 @@ applies to the metavariable that it follows, and not to the attached token.
 This makes it possible to get eg the starting and ending position of {\tt
   f(...)}, by writing {\tt f(...)@E@p}, for expression metavariable {\tt E}
 and position metavariable {\tt p}.
+
+When used, a format or format list metavariable must be enclosed by a pair
+of \texttt{@}s.  A format metavariable matches the format descriptor part,
+i.e., \texttt{2x} in \texttt{\%2x}.  A format list metavariable matches a
+sequence of format descriptors as well as the text between them.  Any text
+around them is matched as well, if it is not matched by the surrounding
+text in the semantic patch.  Such text is not partially matched.  If the
+length of the format list is specified, that indicates the number of
+matched format descriptors.  It is also possible to use \texttt{\ldots} in
+a format string, to match a sequence of text fragments and format
+descriptors.  This only takes effect if the format string contains format
+descriptors.  Note that this makes it impossible to require \texttt{\ldots}
+to match exactly in a string, if the semantic patch string contains format
+descriptors.  If that is needed, some processing with a scripting language
+would be required.  And example for the use of string format metavariables
+is found in demos/format.cocci.
 
 Other kinds of metavariables can also be attached using \texttt{@} to any
 token.  In this case, the metavariable floats up to the enclosing

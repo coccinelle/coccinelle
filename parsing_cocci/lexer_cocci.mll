@@ -251,6 +251,7 @@ let id_tokens lexbuf =
   | "iterator" when in_meta ->   check_arity_context_linetype s; TIterator
   | "name" when in_meta ->       check_arity_context_linetype s; TName
   | "position" when in_meta ->   check_arity_context_linetype s; TPosition
+  | "format" when in_meta ->     check_arity_context_linetype s; TFormat
   | "analysis" when in_meta ->   check_arity_context_linetype s; TAnalysis
   | "any" when in_meta ->        check_arity_context_linetype s; TPosAny
   | "pure" when in_meta && in_iso ->
@@ -437,6 +438,19 @@ let init _ =
     (function name -> function lenname -> function pure ->
       let fn clt = TMetaFieldList(name,lenname,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
+  Data.add_fmt_meta :=
+    (function name -> function iconstraints ->
+      let fn clt = failwith "format metavariable only allowed in a string" in
+      Data.format_metavariables :=
+	(get_name name,(name,iconstraints)) :: !Data.format_metavariables;
+      Hashtbl.replace metavariables (get_name name) fn);
+  Data.add_fmtlist_meta :=
+    (function name -> function lenname ->
+      let fn clt =
+	failwith "format list metavariable only allowed in a string" in
+      Data.format_list_metavariables :=
+	(get_name name,(name,lenname)) :: !Data.format_list_metavariables;
+      Hashtbl.replace metavariables (get_name name) fn);
   Data.add_stm_meta :=
     (function name -> function pure ->
       let fn clt = TMetaStm(name,pure,clt) in
@@ -491,6 +505,11 @@ let init _ =
     (function parent ->
       List.iter (function (name,fn) -> Hashtbl.add metavariables name fn)
 	(Hashtbl.find all_metavariables parent))
+
+(* initialization for each cocci rule *)
+let reinit _ =
+  Data.format_metavariables := [];
+  Data.format_list_metavariables := []
 
 (* the following is needed to properly tokenize include files.  Because an
 include file is included after seeing a @, so current_line_started is true.

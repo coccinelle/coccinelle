@@ -28,6 +28,8 @@
 type 'a combiner =
     {combiner_ident : Ast_cocci.ident -> 'a;
      combiner_expression : Ast_cocci.expression -> 'a;
+     combiner_fragment : Ast_cocci.string_fragment -> 'a;
+     combiner_format : Ast_cocci.string_format -> 'a;
      combiner_fullType : Ast_cocci.fullType -> 'a;
      combiner_typeC : Ast_cocci.typeC -> 'a;
      combiner_declaration : Ast_cocci.declaration -> 'a;
@@ -72,6 +74,8 @@ val combiner :
       ((Ast_cocci.initialiser Ast_cocci.dots,'a) ccode) ->
       ((Ast_cocci.ident,'a) ccode) ->
       ((Ast_cocci.expression,'a) ccode) ->
+      ((Ast_cocci.string_fragment,'a) ccode) ->
+      ((Ast_cocci.string_format,'a) ccode) ->
       ((Ast_cocci.fullType,'a) ccode) ->
       ((Ast_cocci.typeC,'a) ccode) ->
       ((Ast_cocci.initialiser,'a) ccode) ->
@@ -89,6 +93,8 @@ type 'a inout = 'a -> 'a (* for specifying the type of rebuilder *)
 type rebuilder =
     {rebuilder_ident : Ast_cocci.ident inout;
       rebuilder_expression : Ast_cocci.expression inout;
+      rebuilder_fragment : Ast_cocci.string_fragment inout;
+      rebuilder_format : Ast_cocci.string_format inout;
       rebuilder_fullType : Ast_cocci.fullType inout;
       rebuilder_typeC : Ast_cocci.typeC inout;
       rebuilder_declaration : Ast_cocci.declaration inout;
@@ -131,6 +137,8 @@ val rebuilder :
     (Ast_cocci.initialiser Ast_cocci.dots rcode) ->
     (Ast_cocci.ident rcode) ->
     (Ast_cocci.expression rcode) ->
+    (Ast_cocci.string_fragment rcode) ->
+    (Ast_cocci.string_format rcode) ->
     (Ast_cocci.fullType rcode) ->
     (Ast_cocci.typeC rcode) ->
     (Ast_cocci.initialiser rcode) ->

@@ -146,6 +146,7 @@ type token =
   | TFunction
   | TFunDecl of (Data.clt)
   | TFresh
+  | TFormat
   | TForall
   | TFor of (Data.clt)
   | TFloat of (string * Data.clt)

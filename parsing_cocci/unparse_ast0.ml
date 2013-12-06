@@ -179,6 +179,10 @@ let rec expression e =
       match Ast0.unwrap e with
 	Ast0.Ident(id) -> ident id
       | Ast0.Constant(const) -> mcode U.constant const
+      | Ast0.StringConstant(lq,str,rq) ->
+	  mcode print_string lq;
+	  let _ = dots (function _ -> ()) string_fragment str in
+	  mcode print_string rq
       | Ast0.FunCall(fn,lp,args,rp) ->
 	  expression fn; mcode print_string_box lp;
 	  let _ = dots (function _ -> ()) expression args in
@@ -264,6 +268,22 @@ let rec expression e =
 	  expression asexp)
 
 and expression_dots x = dots (function _ -> ()) expression x
+
+and string_fragment e =
+  match Ast0.unwrap e with
+    Ast0.ConstantFragment(str) -> mcode print_string str
+  | Ast0.FormatFragment(pct,fmt) ->
+      mcode print_string pct;
+      string_format fmt
+  | Ast0.Strdots dots -> mcode print_string dots
+  | Ast0.MetaFormatList(pct,name,lenname) ->
+      mcode print_string pct;
+      mcode print_meta name
+
+and string_format e =
+  match Ast0.unwrap e with
+    Ast0.ConstantFormat(str) -> mcode print_string str
+  | Ast0.MetaFormat(name,_) -> mcode print_meta name
 
 (* --------------------------------------------------------------------- *)
 (* Types *)

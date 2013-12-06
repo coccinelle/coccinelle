@@ -47,15 +47,16 @@ module Ast_to_flow = Control_flow_c_build
 (* --------------------------------------------------------------------- *)
 (* C related *)
 (* --------------------------------------------------------------------- *)
-let cprogram_of_file saved_typedefs saved_macros file =
+let cprogram_of_file saved_typedefs saved_macros parse_strings file =
   let (program2, _stat) =
     Parse_c.parse_c_and_cpp_keep_typedefs
       (if !Flag_cocci.use_saved_typedefs then (Some saved_typedefs) else None)
-      (Some saved_macros) file in
+      (Some saved_macros) parse_strings file in
   program2
 
-let cprogram_of_file_cached file =
-  let ((program2,typedefs,macros), _stat) = Parse_c.parse_cache file in
+let cprogram_of_file_cached parse_strings file =
+  let ((program2,typedefs,macros), _stat) =
+    Parse_c.parse_cache parse_strings file in
   if !Flag_cocci.ifdef_to_if
   then
     let p2 =
@@ -82,7 +83,7 @@ virtual rules and virtual_env *)
 let sp_of_file2 file iso =
   let redo _ =
     let new_code =
-      let (_,xs,_,_,_,_,_) as res = Parse_cocci.process file iso false in
+      let (_,xs,_,_,_,_,_,_) as res = Parse_cocci.process file iso false in
       (* if there is already a compiled ML code, do nothing and use that *)
       try let _ = Hashtbl.find _h_ocaml_init (file,iso) in res
       with Not_found ->
@@ -508,13 +509,16 @@ let show_or_not_binding a b  =
 (* Some  helper functions *)
 (*****************************************************************************)
 
-let worth_trying cfiles tokens =
+let worth_trying2 cfiles (tokens,_,query,_) =
   (* drop the following line for a list of list by rules.  since we don't
      allow multiple minirules, all the tokens within a rule should be in
      a single CFG entity *)
-  match (!Flag_cocci.windows,tokens) with
-    (true,_) | (_,None) -> true
-  | (_,Some tokens) ->
+  let res =
+  match (!Flag_cocci.windows,!Flag.scanner,tokens,query,cfiles) with
+    (true,_,_,_,_) | (_,_,None,_,_) | (_,_,_,None,_) | (_,Flag.CocciGrep,_,_,_)
+    -> true
+  | (_,_,_,Some query,[cfile]) -> Cocci_grep.interpret query cfile
+  | (_,_,Some tokens,_,_) ->
    (* could also modify the code in get_constants.ml *)
       let tokens = tokens +> List.map (fun s ->
 	match () with
@@ -529,14 +533,24 @@ let worth_trying cfiles tokens =
 	| _ -> s
 
       ) in
-      let com = sprintf "egrep -q '(%s)' %s" (join "|" tokens) (join " " cfiles)
+      let com =
+	sprintf "egrep -q '(%s)' %s" (join "|" tokens) (join " " cfiles)
       in
       (match Sys.command com with
       | 0 (* success *) -> true
       | _ (* failure *) ->
 	  (if !Flag.show_misc
 	  then Printf.printf "grep failed: %s\n" com);
-	  false (* no match, so not worth trying *))
+	  false (* no match, so not worth trying *)) in
+  (match (res,tokens) with
+    (false,Some tokens) ->
+      pr2_once ("Expected tokens " ^ (Common.join " " tokens));
+      pr2 ("Skipping:" ^ (Common.join " " cfiles))
+  | _ -> ());
+  res
+
+let worth_trying a b  =
+  Common.profile_code "worth_trying" (fun () -> worth_trying2 a b)
 
 let check_macro_in_sp_and_adjust = function
     None -> ()
@@ -580,6 +594,7 @@ let sp_contain_typed_metavar_z toplevel_list_list =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing
       donothing expression donothing donothing donothing donothing donothing
+      donothing donothing
       donothing donothing donothing donothing donothing
   in
   toplevel_list_list +>
@@ -904,7 +919,14 @@ type toplevel_cocci_info =
   | FinalScriptRuleCocciInfo of toplevel_cocci_info_script_rule
   | CocciRuleCocciInfo of toplevel_cocci_info_cocci_rule
 
-type cocci_info = toplevel_cocci_info list * string list option (* tokens *)
+type cocci_info = toplevel_cocci_info list *
+      bool (* parsing of format strings needed *)
+
+type constant_info =
+    (string list option (*grep tokens*) *
+       string list option (*glimpse tokens*) *
+       (Str.regexp * Str.regexp list) option (*coccigrep tokens*) *
+       Get_constants2.combine option)
 
 type kind_file = Header | Source
 type file_info = {
@@ -1098,7 +1120,7 @@ let build_info_program (cprogram,typedefs,macros) env =
 
 
 (* Optimization. Try not unparse/reparse the whole file when have modifs  *)
-let rebuild_info_program cs file isexp =
+let rebuild_info_program cs file isexp parse_strings =
   cs +> List.map (fun c ->
     if !(c.was_modified)
     then
@@ -1108,7 +1130,8 @@ let rebuild_info_program cs file isexp =
         file;
 
       (* Common.command2 ("cat " ^ file); *)
-      let cprogram = cprogram_of_file c.all_typedefs c.all_macros file in
+      let cprogram =
+	cprogram_of_file c.all_typedefs c.all_macros parse_strings file in
       let xs = build_info_program cprogram c.env_typing_before in
 
       (* TODO: assert env has not changed,
@@ -1121,7 +1144,7 @@ let rebuild_info_program cs file isexp =
   ) +> List.concat
 
 
-let rebuild_info_c_and_headers ccs isexp =
+let rebuild_info_c_and_headers ccs isexp parse_strings =
   ccs +> List.iter (fun c_or_h ->
     if c_or_h.asts +> List.exists (fun c -> !(c.was_modified))
     then c_or_h.was_modified_once := true;
@@ -1129,10 +1152,11 @@ let rebuild_info_c_and_headers ccs isexp =
   ccs +> List.map (fun c_or_h ->
     { c_or_h with
       asts =
-      rebuild_info_program c_or_h.asts c_or_h.full_fname isexp }
+      rebuild_info_program c_or_h.asts c_or_h.full_fname isexp parse_strings }
   )
 
-let rec prepare_h seen env hpath choose_includes : file_info list =
+let rec prepare_h seen env (hpath : string) choose_includes parse_strings
+    : file_info list =
   if not (Common.lfile_exists hpath)
   then
     begin
@@ -1141,7 +1165,7 @@ let rec prepare_h seen env hpath choose_includes : file_info list =
     end
   else
     begin
-      let h_cs = cprogram_of_file_cached hpath in
+      let h_cs = cprogram_of_file_cached parse_strings hpath in
       let local_includes =
 	if choose_includes =*= Flag_cocci.I_REALLY_ALL_INCLUDES
 	then
@@ -1152,7 +1176,8 @@ let rec prepare_h seen env hpath choose_includes : file_info list =
       seen := local_includes @ !seen;
       let others =
 	List.concat
-	  (List.map (function x -> prepare_h seen env x choose_includes)
+	  (List.map
+	     (function x -> prepare_h seen env x choose_includes parse_strings)
 	     local_includes) in
       let info_h_cs = build_info_program h_cs !env in
       env :=
@@ -1170,8 +1195,8 @@ let rec prepare_h seen env hpath choose_includes : file_info list =
       }]
     end
 
-let prepare_c files choose_includes : file_info list =
-  let cprograms = List.map cprogram_of_file_cached files in
+let prepare_c files choose_includes parse_strings : file_info list =
+  let cprograms = List.map (cprogram_of_file_cached parse_strings) files in
   let includes = includes_to_parse (zip files cprograms) choose_includes in
   let seen = ref includes in
 
@@ -1180,7 +1205,9 @@ let prepare_c files choose_includes : file_info list =
 
   let includes =
     includes +>
-    List.map (function hpath -> prepare_h seen env hpath choose_includes) +>
+    List.map
+      (function hpath ->
+	prepare_h seen env hpath choose_includes parse_strings) +>
     List.concat in
 
   let cfiles =
@@ -1401,7 +1428,7 @@ let apply_script_rule r cache newes e rules_that_have_matched
 	  (cache, update_env newes e rules_that_have_matched))
     end)
 
-let rec apply_cocci_rule r rules_that_have_ever_matched es
+let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
     (ccs:file_info list ref) =
   Common.profile_code r.rule_info.rulename (fun () ->
     show_or_not_rule_name r.ast_rule r.rule_info.ruleid;
@@ -1429,6 +1456,7 @@ let rec apply_cocci_rule r rules_that_have_ever_matched es
 		(cache,
 		 update_env newes
 		   (e +>
+
 		    List.filter
 		      (fun (s,v) -> List.mem s r.rule_info.used_after))
 		   rules_that_have_matched)
@@ -1532,7 +1560,7 @@ let rec apply_cocci_rule r rules_that_have_ever_matched es
 
     (* apply the tagged modifs and reparse *)
     if not !Flag.sgrep_mode2
-    then ccs := rebuild_info_c_and_headers !ccs r.isexp)
+    then ccs := rebuild_info_c_and_headers !ccs r.isexp parse_strings)
 
 and reassociate_positions free_vars negated_pos_vars envs =
   (* issues: isolate the bindings that are relevant to a given rule.
@@ -1703,7 +1731,7 @@ and process_a_ctl_a_env_a_toplevel  a b c f=
     (fun () -> process_a_ctl_a_env_a_toplevel2 a b c f)
 
 
-let rec bigloop2 rs (ccs: file_info list) =
+let rec bigloop2 rs (ccs: file_info list) parse_strings =
   let init_es = [(Ast_c.emptyMetavarsBinding,[])] in
   let es = ref init_es in
   let ccs = ref ccs in
@@ -1764,7 +1792,7 @@ let rec bigloop2 rs (ccs: file_info list) =
         es := (*newes*)
 	  (if Hashtbl.length newes = 0 then init_es else end_env newes)
     | CocciRuleCocciInfo r ->
-	apply_cocci_rule r rules_that_have_ever_matched
+	apply_cocci_rule r rules_that_have_ever_matched parse_strings
 	  es ccs)
   with Exited -> ());
 
@@ -1779,12 +1807,12 @@ let rec bigloop2 rs (ccs: file_info list) =
      * and the very final pretty print and diff will work
      *)
     Flag_parsing_c.verbose_parsing := false;
-    ccs := rebuild_info_c_and_headers !ccs false
+    ccs := rebuild_info_c_and_headers !ccs false parse_strings
   end;
   !ccs (* return final C asts *)
 
-let bigloop a b =
-  Common.profile_code "bigloop" (fun () -> bigloop2 a b)
+let bigloop a b c =
+  Common.profile_code "bigloop" (fun () -> bigloop2 a b c)
 
 type init_final = Initial | Final
 
@@ -1842,7 +1870,8 @@ let pre_engine2 (coccifile, isofile) =
   (* useful opti when use -dir *)
   let (metavars,astcocci,
        free_var_lists,negated_pos_lists,used_after_lists,
-       positions_lists,(toks,_,_)) = sp_of_file coccifile isofile in
+       positions_lists,((toks,_,_,_) as constants),parse_strings) =
+    sp_of_file coccifile isofile in
 
   let ctls = ctls_of_ast astcocci used_after_lists positions_lists in
 
@@ -1919,24 +1948,19 @@ let pre_engine2 (coccifile, isofile) =
       runrule (make_init lgg "" rule_info))
     uninitialized_languages;
 
-  (cocci_infos,toks)
+  ((cocci_infos,parse_strings),constants)
 
 let pre_engine a =
   Common.profile_code "pre_engine" (fun () -> pre_engine2 a)
 
-let full_engine2 (cocci_infos,toks) cfiles =
+let full_engine2 (cocci_infos,parse_strings) cfiles =
 
-  show_or_not_cfiles  cfiles;
+  show_or_not_cfiles cfiles;
 
-  (* optimization allowing to launch coccinelle on all the drivers *)
-  if !Flag_cocci.worth_trying_opt && not (worth_trying cfiles toks)
+  if !Flag_cocci.selected_only
   then
     begin
-      (match toks with
-	None -> ()
-      | Some toks ->
-	  pr2 ("No matches found for " ^ (Common.join " " toks)
-	       ^ "\nSkipping:" ^ (Common.join " " cfiles)));
+      pr2 ("selected " ^ (Common.join " " cfiles));
       cfiles +> List.map (fun s -> s, None)
     end
   else
@@ -1967,10 +1991,10 @@ let full_engine2 (cocci_infos,toks) cfiles =
 	    then Flag_cocci.I_NORMAL_INCLUDES
 	    else Flag_cocci.I_NO_INCLUDES
 	| x -> x in
-      let c_infos  = prepare_c cfiles choose_includes in
+      let c_infos  = prepare_c cfiles choose_includes parse_strings in
 
       (* ! the big loop ! *)
-      let c_infos' = bigloop cocci_infos c_infos in
+      let c_infos' = bigloop cocci_infos c_infos parse_strings in
 
       if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx ();
       if !Flag.show_misc then pr "Finished";

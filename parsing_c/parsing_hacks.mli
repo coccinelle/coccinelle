@@ -48,6 +48,9 @@ val filter_cpp_stuff :
 val insert_virtual_positions:
   Parser_c.token list -> Parser_c.token list
 
+(* expand format strings *)
+val fix_tokens_strings : Parser_c.token list -> Parser_c.token list
+
 (* will among other things interally call cpp_token_c to macro
  * expand some macros *)
 val fix_tokens_cpp :

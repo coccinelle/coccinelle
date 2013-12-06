@@ -184,6 +184,13 @@ let add_pos_meta:
     (Ast.meta_name -> pconstraints -> Ast.meta_collect -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_meta")
 
+let add_fmt_meta: (Ast.meta_name -> iconstraints -> unit) ref =
+  ref (fun _ -> failwith "uninitialized add_meta")
+
+let add_fmtlist_meta:
+    (Ast.meta_name -> Ast.list_len -> unit) ref =
+  ref (fun _ -> failwith "uninitialized add_meta")
+
 let add_type_name: (string -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_type")
 
@@ -198,3 +205,11 @@ let init_rule: (unit -> unit) ref =
 
 let install_bindings: (string -> unit) ref =
   ref (fun _ -> failwith "uninitialized install_bindings")
+
+(* ---------------------------------------------------------------------- *)
+(* String format things *)
+
+let format_metavariables      =
+  ref ([] : (string * (Ast.meta_name * iconstraints)) list)
+let format_list_metavariables =
+  ref ([] : (string * (Ast.meta_name * Ast.list_len)) list)

@@ -59,6 +59,7 @@ let contains_modif =
     V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       do_nothing do_nothing do_nothing do_nothing do_nothing
+      do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing init do_nothing
       do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_fullType
@@ -84,7 +85,7 @@ let donothing r k e = k e
 let process =
   let fn = V.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing
       donothing donothing decl donothing
       donothing donothing donothing donothing in

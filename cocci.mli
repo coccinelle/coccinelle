@@ -39,7 +39,13 @@ open Common
  * using -dir to not redo twice the same work. So take care!
  *)
 type cocci_info
-val pre_engine : (filename * filename) -> cocci_info
+type constant_info =
+    string list option (*grep tokens*) *
+      string list option (*glimpse tokens*) *
+      (Str.regexp * Str.regexp list) option (*coccigrep tokens*) *
+      Get_constants2.combine option
+val pre_engine : (filename * filename) -> cocci_info * constant_info
+val worth_trying : filename list -> constant_info -> bool
 val full_engine :
   cocci_info -> filename list -> (filename * filename option) list
 val post_engine : cocci_info -> unit
@@ -67,6 +73,8 @@ val sp_of_file :
       Ast_cocci.meta_name list list list *
       (string list option (*grep tokens*) *
 	 string list option (*glimpse tokens*) *
-	 Get_constants2.combine option)
+	 (Str.regexp * Str.regexp list) option (*coccigrep tokens*) *
+	 Get_constants2.combine option) *
+      bool (* format information needed for strings? *)
 
 val normalize_path : string -> string

@@ -354,6 +354,8 @@ let match_maker checks_needed context_required whencode_allowed =
   let is_slist_matcher pl =
     match Ast0.unwrap pl with Ast0.MetaStmtList(_,_) -> true | _ -> false in
 
+  let is_strlist_matcher sl = false in
+
   let no_list _ = false in
 
   let build_dots pattern data =
@@ -529,7 +531,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (Ast.CONST,e) ->
 	      let rec matches e =
 		match Ast0.unwrap e with
-		  Ast0.Constant(c) -> true
+		  Ast0.Constant _ | Ast0.StringConstant _ -> true
 		| Ast0.Ident(c) ->
 		    (match Ast0.unwrap c with
 		      Ast0.Id(nm) ->
@@ -646,6 +648,12 @@ let match_maker checks_needed context_required whencode_allowed =
 	      if mcode_equal consta constb
 	      then check_mcode consta constb
 	      else return false
+	  | (Ast0.StringConstant(la,stra,ra),
+	     Ast0.StringConstant(lb,strb,rb)) ->
+	       conjunct_many_bindings
+		 [check_mcode la lb; check_mcode rb rb;
+		   match_dots match_frag is_strlist_matcher do_nolist_match
+		     stra strb]
 	  | (Ast0.FunCall(fna,lp1,argsa,rp1),Ast0.FunCall(fnb,lp,argsb,rp)) ->
 	      conjunct_many_bindings
 		[check_mcode lp1 lp; check_mcode rp1 rp; match_expr fna fnb;
@@ -758,6 +766,29 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (_,Ast0.UniqueExp(expb)) -> match_expr pattern expb
 	  | _ -> return false
 	else return_false (ContextRequired (Ast0.ExprTag expr))
+
+  and match_frag e1 e2 = (* not an entry point, must be identical *)
+    match (Ast0.unwrap e1,Ast0.unwrap e2) with
+      (Ast0.ConstantFragment(str1),Ast0.ConstantFragment(str2)) ->
+	if mcode_equal str1 str2
+	then check_mcode str1 str2
+	else return false
+    | (Ast0.FormatFragment(pct1,fmt1),
+       Ast0.FormatFragment(pct2,fmt2)) ->
+	 conjunct_many_bindings [check_mcode pct1 pct2; match_format fmt1 fmt2]
+    | (Ast0.Strdots(d1),Ast0.Strdots(d2)) -> check_mcode d1 d2
+    | (Ast0.MetaFormatList(pct,name,lenname),_) ->
+	failwith "not allowed in iso"
+    | _ -> return false
+
+  and match_format e1 e2 = (* not an entry point, must be identical *)
+    match (Ast0.unwrap e1,Ast0.unwrap e2) with
+      (Ast0.ConstantFormat(str1),Ast0.ConstantFormat(str2)) ->
+	if mcode_equal str1 str2
+	then check_mcode str1 str2
+	else return false
+    | (Ast0.MetaFormat(name,constraints),_) -> failwith "not allowed in iso"
+    | _ -> return false
 
 (* the special case for function types prevents the eg T X; -> T X = E; iso
    from applying, which doesn't seem very relevant, but it also avoids a
@@ -2171,6 +2202,10 @@ let get_name = function
       (nm,function nm -> Ast.MetaLocalFuncDecl(ar,nm))
   | Ast.MetaPosDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaPosDecl(ar,nm))
+  | Ast.MetaFragListDecl(ar,nm,nm1) ->
+      (nm,function nm -> Ast.MetaFragListDecl(ar,nm,nm1))
+  | Ast.MetaFmtDecl(ar,nm) ->
+      (nm,function nm -> Ast.MetaFmtDecl(ar,nm))
   | Ast.MetaAnalysisDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaAnalysisDecl(ar,nm))
   | Ast.MetaDeclarerDecl(ar,nm) ->

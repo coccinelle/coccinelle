@@ -398,6 +398,9 @@ let mk_string_wrap (s,info) = (s, [info])
 %token <(string * Ast_c.floatType) * Ast_c.info> TFloat
 %token <(string * Ast_c.isWchar) * Ast_c.info>   TChar
 %token <(string * Ast_c.isWchar) * Ast_c.info>   TString
+%token <(string * Ast_c.isWchar) * Ast_c.info>   TQuote
+%token <Ast_c.info> TPct
+%token <string * Ast_c.info> TFormat TSubString
 %token <(string * string (*n*) * string (*p*)) * Ast_c.info> TDecimal
 
 %token <string * Ast_c.info> TIdent
@@ -817,6 +820,10 @@ primary_expr:
       mk_e(Constant (Int (str,Si(sign,base)))) [snd $1] }
  | TFloat  { mk_e(Constant (Float  (fst $1))) [snd $1] }
  | TString { mk_e(Constant (String (fst $1))) [snd $1] }
+ | TQuote string_fragments TQuote
+     { let ((fullstring,isW),lqinfo) = $1 in
+       let (_,rqinfo) = $3 in
+       mk_e (Ast_c.StringConstant($2, fullstring, isW)) [lqinfo;rqinfo] }
  | TChar   { mk_e(Constant (Char   (fst $1))) [snd $1] }
  | TDecimal { let (a,b,c) = fst $1 in
               mk_e(Constant (DecimalConst (a,b,c))) [snd $1] }
@@ -830,7 +837,16 @@ primary_expr:
  /*(* gccext: allow statement as expressions via ({ statement }) *)*/
  | TOPar compound TCPar  { mk_e(StatementExpr ($2)) [$1;$3] }
 
+string_fragments:
+ | /* empty */ { [] }
+ | string_fragment string_fragments { $1 :: $2 }
 
+string_fragment:
+ | TPct string_format { Ast_c.FormatFragment($2), [$1] }
+ | TSubString { Ast_c.ConstantFragment(fst $1), [snd $1] }
+
+string_format:
+ | TFormat { Ast_c.ConstantFormat(fst $1), [snd $1] }
 
 /*(*----------------------------*)*/
 /*(* cppext: *)*/

@@ -43,10 +43,10 @@ get_metas.ml ast0toast.ml check_meta.ml top_level.ml type_infer.ml \
 test_exps.ml unitary_ast0.ml arity.ml index.ml context_neg.ml \
 adjust_pragmas.ml insert_plus.ml function_prototypes.ml \
 unify_ast.ml semantic_cocci.ml data.ml free_vars.ml safe_for_multi_decls.ml \
-parse_aux.ml disjdistr.ml \
+parse_printf.ml parse_aux.ml disjdistr.ml \
 $(LEXER_SOURCES:.mll=.ml) $(PARSER_SOURCES:.mly=.ml) \
 $(CLI_LEXER_SOURCES:.mll=.ml) $(SCRIPT_LEXER_SOURCES:.mll=.ml) \
-get_constants2.ml id_utils.ml adjacency.ml commas_on_lists.ml \
+cocci_grep.ml get_constants2.ml id_utils.ml adjacency.ml commas_on_lists.ml \
 parse_cocci.ml command_line.ml
 
 LIBS=../commons/commons.cma ../globals/globals.cma

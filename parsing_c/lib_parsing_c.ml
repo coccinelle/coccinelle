@@ -79,6 +79,9 @@ let al_params    x = Visitor_c.vk_params_s    (strip_info_visitor()) x
 let al_arguments x = Visitor_c.vk_arguments_s (strip_info_visitor()) x
 let al_fields    x = Visitor_c.vk_struct_fields_s (strip_info_visitor()) x
 let al_name      x = Visitor_c.vk_name_s      (strip_info_visitor()) x
+let al_string_format x = Visitor_c.vk_string_format_s (strip_info_visitor()) x
+let al_string_fragments x =
+  Visitor_c.vk_string_fragments_s (strip_info_visitor()) x
 
 let al_node      x = Visitor_c.vk_node_s      (strip_info_visitor()) x
 
@@ -89,13 +92,15 @@ let al_ii    x = Visitor_c.vk_ii_s (strip_info_visitor()) x
 
 
 let strip_inh_info_visitor _ =  (* for inherited metavariables *)
-  let drop_test_lv ty =
+  let drop_test_lv ty bigf =
     let (ty,_) = !ty in
     let ty =
       match ty with
 	None -> None
-      |	Some (ty,_) -> Some (ty,Ast_c.NotLocalVar) in
-    ref (ty,Ast_c.NotTest) in
+      |	Some (ty,_) ->
+	  let ty = Visitor_c.vk_type_s bigf ty in
+	  Some (ty,Ast_c.NotLocalVar) in
+    ref ((ty,Ast_c.NotTest) : Ast_c.exp_info) in
 
   { Visitor_c.default_visitor_c_s with
     Visitor_c.kinfo_s =
@@ -104,9 +109,9 @@ let strip_inh_info_visitor _ =  (* for inherited metavariables *)
     (function (k,_) ->
     function i -> ctr := !ctr + 1; Ast_c.al_info_cpp !ctr i));
 
-    Visitor_c.kexpr_s = (fun (k,_) e ->
+    Visitor_c.kexpr_s = (fun (k,bigf) e ->
       let (e', ty), ii' = k e in
-      (e', drop_test_lv ty), ii' (* keep type - jll *)
+      (e', drop_test_lv ty bigf), ii' (* keep type, but process it - jll *)
     );
 
 (*
@@ -132,6 +137,10 @@ let al_inh_type      x = Visitor_c.vk_type_s      (strip_inh_info_visitor()) x
 let al_inh_init      x = Visitor_c.vk_ini_s       (strip_inh_info_visitor()) x
 let al_inh_inits     x = Visitor_c.vk_inis_s      (strip_inh_info_visitor()) x
 let al_inh_arguments x = Visitor_c.vk_arguments_s (strip_inh_info_visitor()) x
+let al_inh_string_format x =
+  Visitor_c.vk_string_format_s (strip_inh_info_visitor()) x
+let al_inh_string_fragments x =
+  Visitor_c.vk_string_fragments_s (strip_inh_info_visitor()) x
 
 
 
@@ -161,6 +170,10 @@ let semi_al_inits     = Visitor_c.vk_inis_s      semi_strip_info_visitor
 let semi_al_param     = Visitor_c.vk_param_s     semi_strip_info_visitor
 let semi_al_params    = Visitor_c.vk_params_s    semi_strip_info_visitor
 let semi_al_arguments = Visitor_c.vk_arguments_s semi_strip_info_visitor
+let semi_al_string_format =
+  Visitor_c.vk_string_format_s semi_strip_info_visitor
+let semi_al_string_fragments =
+  Visitor_c.vk_string_fragments_s semi_strip_info_visitor
 
 let semi_al_program =
   List.map (Visitor_c.vk_toplevel_s semi_strip_info_visitor)
@@ -234,8 +247,12 @@ let ii_of_params = extract_info_visitor Visitor_c.vk_params_splitted
 let ii_of_enum_fields = extract_info_visitor Visitor_c.vk_enum_fields_splitted
 let ii_of_struct_fields = extract_info_visitor Visitor_c.vk_struct_fields
 (*let ii_of_struct_field = extract_info_visitor Visitor_c.vk_struct_field*)
-let ii_of_struct_fieldkinds = extract_info_visitor Visitor_c.vk_struct_fieldkinds
+let ii_of_struct_fieldkinds =
+  extract_info_visitor Visitor_c.vk_struct_fieldkinds
 let ii_of_cst = extract_info_visitor Visitor_c.vk_cst
+let ii_of_fragments =
+  extract_info_visitor Visitor_c.vk_string_fragments_splitted
+let ii_of_format = extract_info_visitor Visitor_c.vk_string_format
 let ii_of_define_params =
   extract_info_visitor Visitor_c.vk_define_params_splitted
 let ii_of_pragmainfo = extract_info_visitor Visitor_c.vk_pragmainfo

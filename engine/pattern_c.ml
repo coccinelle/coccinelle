@@ -298,6 +298,8 @@ module XMATCH = struct
   let distrf_decl   = distrf (Lib_parsing_c.ii_of_decl)
   let distrf_field  = distrf (Lib_parsing_c.ii_of_field)
   let distrf_node   = distrf (Lib_parsing_c.ii_of_node)
+  let distrf_fragments = distrf (Lib_parsing_c.ii_of_fragments)
+  let distrf_format = distrf (Lib_parsing_c.ii_of_format)
   let distrf_enum_fields = distrf (Lib_parsing_c.ii_of_enum_fields)
   let distrf_struct_fields = distrf (Lib_parsing_c.ii_of_struct_fields)
   let distrf_cst    = distrf (Lib_parsing_c.ii_of_cst)
@@ -486,6 +488,19 @@ module XMATCH = struct
 		   (if strip
 		   then Lib_parsing_c.al_params a
 		   else Lib_parsing_c.semi_al_params a))
+		
+          | Ast_c.MetaFragListVal a ->
+	      success
+		(Ast_c.MetaFragListVal
+		   (if strip
+		   then Lib_parsing_c.al_string_fragments a
+		   else Lib_parsing_c.semi_al_string_fragments a))
+          | Ast_c.MetaFmtVal a ->
+	      success
+		(Ast_c.MetaFmtVal
+		   (if strip
+		   then Lib_parsing_c.al_string_format a
+		   else Lib_parsing_c.semi_al_string_format a))
 		
           | Ast_c.MetaPosVal (pos1,pos2) ->
 	      success(Ast_c.MetaPosVal (pos1,pos2))

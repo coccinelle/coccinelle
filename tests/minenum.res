@@ -1,1 +1,1 @@
-enum h { x, qq,  q, b };
+enum h { x, qq, q, b };

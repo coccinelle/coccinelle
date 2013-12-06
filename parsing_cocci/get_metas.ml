@@ -125,6 +125,11 @@ and expression e =
 	  let (n,id) = ident id in (n,Ast0.Ident(id))
       | Ast0.Constant(const) ->
 	  let (n,const) = mcode const in (n,Ast0.Constant(const))
+      | Ast0.StringConstant(lq,str,rq) ->
+	  let (lq_n,lq) = mcode lq in
+	  let (str_n,str) = dots string_fragment str in
+	  let (rq_n,rq) = mcode rq in
+	  (multibind [lq_n;str_n;rq_n],Ast0.StringConstant(lq,str,rq))
       | Ast0.FunCall(fn,lp,args,rp) ->
 	  let (fn_n,fn) = expression fn in
 	  let (lp_n,lp) = mcode lp in
@@ -272,6 +277,34 @@ and expression e =
 		 (Ast0.AsExpr(exp,Ast0.rewrap exp (Ast0.Ident(id_meta)))))
 	  | x -> (x::other_metas,exp))
       ([],e) metas
+
+and string_fragment e =
+  rewrap e
+    (match Ast0.unwrap e with
+      Ast0.ConstantFragment(str) ->
+	let (str_n,str) = mcode str in
+	(str_n,Ast0.ConstantFragment(str))
+    | Ast0.FormatFragment(pct,fmt) ->
+	let (pct_n,pct) = mcode pct in
+	let (fmt_n,fmt) = string_format fmt in
+	(multibind [pct_n;fmt_n],Ast0.FormatFragment(pct,fmt))
+    | Ast0.Strdots(dots) ->
+	let (dots_n,dots) = mcode dots in
+	(dots_n,Ast0.Strdots(dots))
+    | Ast0.MetaFormatList(pct,name,lenname) ->
+	let (pct_n,pct) = mcode pct in
+	let (name_n,name) = mcode name in
+	(bind pct_n name_n,Ast0.MetaFormatList(pct,name,lenname)))
+
+and string_format e =
+  rewrap e
+    (match Ast0.unwrap e with
+      Ast0.ConstantFormat(str) ->
+	let (str_n,str) = mcode str in
+	(str_n,Ast0.ConstantFormat str)
+    | Ast0.MetaFormat(name,constraints) ->
+	let (name_n,name) = mcode name in
+	(name_n,Ast0.MetaFormat(name,constraints)))
 
 and typeC t =
   let (metas,t) =

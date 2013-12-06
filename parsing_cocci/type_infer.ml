@@ -147,7 +147,7 @@ let rec propagate_types env =
 	  Ast0.Ident(id) -> Ast0.set_type e res; res
 	| Ast0.Constant(const) ->
 	    (match Ast0.unwrap_mcode const with
-		 Ast.String(_) -> Some (T.Pointer(char_type))
+	         Ast.String(_) -> Some (T.Pointer(char_type))
 	       | Ast.Char(_) -> Some (char_type)
 	       | Ast.Int(_) -> Some (int_type)
 	       | Ast.Float(_) ->  Some (float_type)
@@ -156,6 +156,7 @@ let rec propagate_types env =
         (* pad: note that in C can do either ptr(...) or ( *ptr)(...)
          * so I am not sure this code is enough.
          *)
+	| Ast0.StringConstant _ -> Some (T.Array(char_type))
 	| Ast0.FunCall(fn,lp,args,rp) ->
 	    (match Ast0.get_type fn with
 		 Some (T.FunctionPointer(ty)) -> Some ty

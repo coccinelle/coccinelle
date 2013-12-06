@@ -227,6 +227,10 @@ let rec expression e =
   match Ast.unwrap e with
     Ast.Ident(id) -> ident id
   | Ast.Constant(const) -> mcode constant const
+  | Ast.StringConstant(lq,str,rq) ->
+      mcode print_string lq;
+      dots (function _ -> ()) string_fragment str;
+      mcode print_string rq
   | Ast.FunCall(fn,lp,args,rp) ->
       expression fn; mcode print_string_box lp;
       dots (function _ -> ()) expression args;
@@ -296,6 +300,22 @@ let rec expression e =
   | Ast.Estars(dots,None) -> mcode print_string dots
   | Ast.OptExp(exp) -> print_string "?"; expression exp
   | Ast.UniqueExp(exp) -> print_string "!"; expression exp
+
+and string_fragment e =
+  match Ast.unwrap e with
+    Ast.ConstantFragment(str) -> mcode print_string str
+  | Ast.FormatFragment(pct,fmt) ->
+      mcode print_string pct;
+      string_format fmt
+  | Ast.Strdots dots -> mcode print_string dots
+  | Ast.MetaFormatList(pct,name,lenname,_,_) ->
+      mcode print_string pct;
+      mcode print_meta name
+
+and string_format e =
+  match Ast.unwrap e with
+    Ast.ConstantFormat(str) -> mcode print_string str
+  | Ast.MetaFormat(name,_,_,_) -> mcode print_meta name
 
 and  unaryOp = function
     Ast.GetRef -> print_string "&"

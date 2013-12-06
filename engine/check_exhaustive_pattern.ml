@@ -117,6 +117,7 @@ let dumb_astcocci_expr = function
  | A.Constant (A.Int sa,_,_,_) -> ()
  | A.Constant (A.Float sa,_,_,_) -> ()
  | A.Constant (A.DecimalConst _,_,_,_) -> ()
+ | A.StringConstant (lq,frags,rq) -> ()
  | A.FunCall (ea1, _, eas, _) -> ()
  | A.Assignment (ea1, opa, ea2, _) -> ()
  | A.Sequence (ea1, opa, ea2) -> ()

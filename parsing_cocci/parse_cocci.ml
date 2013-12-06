@@ -72,6 +72,7 @@ let token2c (tok,_) =
   | PC.TField -> "field"
   | PC.TStatement -> "statement"
   | PC.TPosition -> "position"
+  | PC.TFormat -> "format"
   | PC.TAnalysis -> "analysis"
   | PC.TPosAny -> "any"
   | PC.TFunction -> "function"
@@ -674,7 +675,8 @@ let split_token ((tok,_) as t) =
     PC.TMetavariable | PC.TIdentifier
   | PC.TConstant | PC.TExpression | PC.TIdExpression
   | PC.TDeclaration | PC.TField
-  | PC.TStatement | PC.TPosition | PC.TAnalysis | PC.TPosAny | PC.TInitialiser | PC.TSymbol
+  | PC.TStatement | PC.TPosition | PC.TFormat | PC.TAnalysis | PC.TPosAny
+  | PC.TInitialiser | PC.TSymbol
   | PC.TFunction | PC.TTypedef | PC.TDeclarer | PC.TIterator | PC.TName
   | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh
   | PC.TCppConcatOp | PC.TPure
@@ -1101,12 +1103,18 @@ let check_nests tokens =
     let (line_type,a,b,c,d,e,f,g) = get_clt t in
     List.mem line_type [D.MINUS;D.OPTMINUS;D.UNIQUEMINUS] in
   let check_minus t =
-    let clt = try Some(get_clt t) with Failure _ -> None in
+    match fst t with
+      PC.TOPar0(clt) | PC.TMid0(clt) | PC.TCPar0(clt) -> t
+    | _ ->
+	let clt = try Some(get_clt t) with Failure _ -> None in
 	match clt with
-	  Some (line_type,a,b,c,d,e,f,g) ->
+	  Some (line_type,l,ll,c,d,e,f,g) ->
 	    (match line_type with
 	      D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> t
-	    | _ -> failwith "minus token expected")
+	    | _ ->
+		failwith
+		  (Printf.sprintf "minus expected, on %s, line %d"
+		     (token2c t) l))
 	| None -> t in
   let rec outside = function
       [] -> []
@@ -1606,11 +1614,13 @@ let rec collect_script_tokens = function
       failwith "Malformed script rule"
 
 let get_metavars parse_fn table file lexbuf =
+  Lexer_cocci.reinit(); (* string metavariable initializations *)
   let rec meta_loop acc (* read one decl at a time *) =
     let (_,tokens) =
       Data.call_in_meta
 	(function _ ->
-	  tokens_all table file true lexbuf (in_list [PC.TArobArob;PC.TMPtVirg;PC.TAnalysis])) in
+	  tokens_all table file true lexbuf
+	    (in_list [PC.TArobArob;PC.TMPtVirg;PC.TAnalysis])) in
     let tokens = prepare_mv_tokens tokens in
     match tokens with
       [(PC.TArobArob,_)] -> List.rev acc
@@ -2116,6 +2126,7 @@ let parse file =
 
 (* parse to ast0 and then convert to ast *)
 let process file isofile verbose =
+  Parse_aux.contains_string_constant := false;
   let extra_path = Filename.dirname file in
   let (iso_files, rules, virt, _metas) = parse file in
   eval_virt virt;
@@ -2241,4 +2252,5 @@ let process file isofile verbose =
     Common.profile_code "get_glimpse_constants" (* for glimpse *)
       (fun () -> Get_constants2.get_constants code neg_pos) in
 
-  (metavars,code,fvs,neg_pos,ua,pos,search_tokens)
+  (metavars,code,fvs,neg_pos,ua,pos,search_tokens,
+   !Parse_aux.contains_string_constant)

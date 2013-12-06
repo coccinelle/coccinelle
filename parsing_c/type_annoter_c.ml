@@ -641,6 +641,7 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
 
     (* -------------------------------------------------- *)
     (* todo: should analyse the 's' for int to know if unsigned or not *)
+    | StringConstant (s,os,kind) -> make_info_def (type_of_s "char []")
     | Constant (String (s,kind)) -> make_info_def (type_of_s "char []")
     | Constant MultiString _  -> make_info_def (type_of_s "char []")
     | Constant (Char   (s,kind)) -> make_info_def (type_of_s "char")
@@ -1414,9 +1415,10 @@ let annotate_type_and_localvar env prog =
 
 (*****************************************************************************)
 (* changing default typing environment, do concatenation *)
-let init_env filename =
+(* not clear that anyone uses this function... *)
+let init_env_unused filename =
   pr2 ("init_env: " ^ filename);
-  let (ast2, _stat) = Parse_c.parse_c_and_cpp filename in
+  let (ast2, _stat) = Parse_c.parse_c_and_cpp false filename in
   let ast = Parse_c.program_of_program2 ast2 in
 
   let res = annotate_type_and_localvar !initial_env ast in

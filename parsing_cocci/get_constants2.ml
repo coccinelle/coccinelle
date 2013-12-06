@@ -136,50 +136,80 @@ let interpret_glimpse strict x =
 
 (* grep only does or *)
 let interpret_grep strict x =
-  let rec loop = function
-      Elem x -> [x]
-    | And l -> List.concat (List.map loop l)
-    | Or l -> List.concat (List.map loop l)
+  let add x l = if List.mem x l then l else x :: l in
+  let rec loop collected = function
+      Elem x -> add x collected
+    | And l | Or l ->
+	let rec iloop collected = function
+	    [] -> collected
+	  | x::xs -> iloop (loop collected x) xs in
+	iloop collected l
     | True ->
 	if strict
 	then failwith "True should not be in the final result"
-	else ["True"]
+	else add "True" collected
     | False ->
 	if strict
 	then failwith false_on_top_err
-	else ["False"] in
+	else add "False" collected in
   match x with
     True -> None
   | False when strict ->
       failwith false_on_top_err
-  | _ -> Some (loop x)
+  | _ -> Some (loop [] x)
 
-let interpret_google strict x =
-  (* convert to dnf *)
-  let rec dnf = function
-      Elem x -> [x]
-    | Or l -> List.fold_left Common.union_set [] (List.map dnf l)
-    | And l ->
-	let l = List.map dnf l in
-	List.fold_left
-	  (function prev ->
-	    function cur ->
-	      List.fold_left Common.union_set []
-		(List.map
-		   (function x ->
-		     List.map (function y -> Printf.sprintf "%s %s" x y) prev)
-		   cur))
-	  [] l
-    | True -> ["True"]
+let interpret_cocci_grep strict x =
+  (* convert to cnf *)
+  let rec cnf = function
+      Elem x -> [[x]]
+    | And l -> List.fold_left Common.union_set [] (List.map cnf l)
+    | Or l ->
+	let l = List.map cnf l in
+	(match l with
+	  fst::rest ->
+	    List.fold_left
+	      (function prev ->
+		function cur ->
+		  List.fold_left Common.union_set []
+		    (List.map (fun x -> List.map (Common.union_set x) prev)
+		       cur))
+	      fst rest
+	| [] -> [[]]) (* false *)
+    | True -> []
     | False ->
 	if strict
 	then failwith false_on_top_err
-	else ["False"] in
+	else [[]] in
+  let optimize (l : string list list) =
+    let l = List.map (function clause -> (List.length clause, clause)) l in
+    let l = List.sort compare l in
+    let l = List.rev (List.map (function (len,clause) -> clause) l) in
+    let subset l1 l2 = List.for_all (fun e1 -> List.mem e1 l2) l1 in
+    List.fold_left
+      (fun prev cur ->
+	if List.exists (subset cur) prev then prev else cur :: prev)
+      [] l in
+  let rec atoms acc = function
+      Elem x -> if List.mem x acc then acc else x :: acc
+    | And l | Or l -> List.fold_left atoms acc l
+    | True | False -> acc in
+  let wordify x = "\\b" ^ x ^"\\b" in
   match x with
     True -> None
   | False when strict ->
       failwith false_on_top_err
-  | _ -> Some (dnf x)
+  | _ ->
+      let orify l = Str.regexp (String.concat "\\|" (List.map wordify l)) in
+      let res1 = orify (atoms [] x) in (* all atoms *)
+      let res = cnf x in
+      let res = optimize res in
+      let res = Cocci_grep.split res in
+      let res2 = List.map orify res in (* atoms in conjunction *)
+(*      List.iter
+	(function clause ->
+	  Printf.printf "%s\n" (String.concat " " clause))
+	res; *)
+      Some (res1,res2)
 
 let combine2c x =
   match interpret_glimpse false x with
@@ -306,12 +336,12 @@ let do_get_constants constants keywords env neg_pos =
   let rec type_collect res = function
       TC.ConstVol(_,ty) | TC.Pointer(ty) | TC.FunctionPointer(ty)
     | TC.Array(ty) -> type_collect res ty
-    | TC.Decimal _ -> keywords "decimal"
+    | TC.Decimal _ -> build_or res (keywords "decimal")
     | TC.MetaType(tyname,_,_) ->
-	inherited tyname
-    | TC.TypeName(s) -> constants s
-    | TC.EnumName(TC.Name s) -> constants s
-    | TC.StructUnionName(_,TC.Name s) -> constants s
+	build_or res (inherited tyname)
+    | TC.TypeName(s) -> build_or res (constants s)
+    | TC.EnumName(TC.Name s) -> build_or res (constants s)
+    | TC.StructUnionName(_,TC.Name s) -> build_or res (constants s)
     | ty -> res in
 
   (* no point to do anything special for records because glimpse is
@@ -328,6 +358,32 @@ let do_get_constants constants keywords env neg_pos =
 	  | Ast.Int s -> option_default (* glimpse doesn't index integers *)
 	  | Ast.Float s -> option_default (* probably not floats either *)
 	  | Ast.DecimalConst _ -> option_default (* or decimals *))
+    | Ast.StringConstant(lq,str,rq) ->
+	let str = Ast.undots str in
+	(* pick up completely constant strings *)
+	let strs =
+	  List.fold_left
+	    (function strs ->
+	      function frag ->
+		match (strs, Ast.unwrap frag) with
+		  (None,_) -> None
+		| (Some strs, Ast.ConstantFragment(str)) ->
+		    Some ((Ast.unwrap_mcode str)::strs)
+		| (Some strs, Ast.FormatFragment(pct,fmt)) ->
+		    let cstfmt =
+		      match Ast.unwrap fmt with
+			Ast.ConstantFormat s -> Some (Ast.unwrap_mcode s)
+		      |	_ -> None in
+		    (match cstfmt with
+		      Some f -> Some (f :: "%" :: strs)
+		    | _ -> None)
+		| (Some strs, Ast.Strdots _)
+		| (Some strs, Ast.MetaFormatList _) -> None)
+	    (Some []) str in
+	bind (k e)
+	  (match strs with
+	    Some strs -> constants (String.concat "" (List.rev strs))
+	  | None ->  option_default)
     | Ast.MetaExpr(name,_,_,Some type_list,_,_) ->
 	let types = List.fold_left type_collect option_default type_list in
 	bind (k e) (bind (minherited name) types)
@@ -346,6 +402,19 @@ let do_get_constants constants keywords env neg_pos =
     | Ast.OptExp(exp) -> option_default
     | Ast.Edots(_,_) | Ast.Ecircles(_,_) | Ast.Estars(_,_) -> option_default
     | _ -> k e in
+
+  (* cases for metavariabes *)
+  let string_fragment r k ft =
+    match Ast.unwrap ft with
+      Ast.MetaFormatList(pct,name,Ast.MetaListLen (lenname,_,_),_,_) ->
+	bind (k ft) (bind (minherited name) (minherited lenname))
+    | Ast.MetaFormatList(pct,name,_,_,_) -> bind (k ft) (minherited name)
+    | _ -> k ft in
+
+  let string_format r k ft =
+    match Ast.unwrap ft with
+      Ast.MetaFormat(name,_,_,_) -> bind (k ft) (minherited name)
+    | _ -> k ft in
 
   let fullType r k ft =
     match Ast.unwrap ft with
@@ -459,7 +528,8 @@ let do_get_constants constants keywords env neg_pos =
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing
-    ident expression fullType typeC initialiser parameter declaration
+    ident expression string_fragment string_format fullType typeC
+    initialiser parameter declaration
     rule_elem statement donothing donothing donothing
 
 (* ------------------------------------------------------------------------ *)
@@ -491,7 +561,7 @@ let get_all_constants minus_only =
   V.combiner bind option_default
     other mcode other other other other other other other other other other
 
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
 
@@ -535,7 +605,7 @@ let get_plus_constants =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     rule_elem statement donothing donothing donothing
 
@@ -589,7 +659,7 @@ let all_context =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing initialiser donothing
     donothing rule_elem statement donothing donothing donothing
 
@@ -673,17 +743,17 @@ let run rules neg_pos_vars =
   info
     
 let get_constants rules neg_pos_vars =
-  match !Flag.scanner with
-    Flag.NoScanner -> (None,None,None)
-  | Flag.Grep ->
-      let res = run rules neg_pos_vars in
-      (interpret_grep true res,None,None)
-  | Flag.Glimpse ->
-      let res = run rules neg_pos_vars in
-      (interpret_grep true res,interpret_glimpse true res,None)
-  | Flag.Google _ ->
-      let res = run rules neg_pos_vars in
-      (interpret_grep true res,interpret_google true res,None)
-  | Flag.IdUtils ->
-      let res = run rules neg_pos_vars in
-      (interpret_grep true res,None,Some res)
+  if !Flag.worth_trying_opt
+  then 
+    let res = run rules neg_pos_vars in
+    let grep = interpret_grep true res in (* useful because in string form *)
+    let coccigrep = interpret_cocci_grep true res in
+    match !Flag.scanner with
+      Flag.NoScanner ->
+	(grep,None,coccigrep,None)
+    | Flag.Glimpse ->
+	(grep,interpret_glimpse true res,coccigrep,None)
+    | Flag.IdUtils ->
+	(grep,None,coccigrep,Some res)
+    | Flag.CocciGrep -> (grep,None,coccigrep,None)
+  else (None,None,None,None)

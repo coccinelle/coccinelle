@@ -14,7 +14,7 @@ SRC= token_annot.ml flag_parsing_c.ml parsing_stat.ml \
  control_flow_c_build.ml \
  pretty_print_c.ml \
  semantic_c.ml lexer_parser.ml parser_c.ml lexer_c.ml \
- token_helpers.ml token_views_c.ml \
+ parse_string_c.ml token_helpers.ml token_views_c.ml \
  cpp_token_c.ml  \
  parsing_hacks.ml \
  cpp_analysis_c.ml \

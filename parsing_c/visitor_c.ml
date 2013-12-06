@@ -255,6 +255,8 @@ type visitor_c =
    knode: (F.node -> unit) * visitor_c -> F.node -> unit;
    (* AST *)
    ktoplevel: (toplevel -> unit) * visitor_c -> toplevel -> unit;
+   kfragment: (string_fragment -> unit) * visitor_c -> string_fragment -> unit;
+   kformat: (string_format -> unit) * visitor_c -> string_format -> unit;
 
    kinfo: (info -> unit) * visitor_c -> info -> unit;
  }
@@ -269,6 +271,8 @@ let default_visitor_c =
     kdef          = (fun (k,_) d  -> k d);
     kini          = (fun (k,_) ie  -> k ie);
     kname         = (fun (k,_) x -> k x);
+    kfragment     = (fun (k,_) f  -> k f);
+    kformat       = (fun (k,_) f  -> k f);
     kinfo         = (fun (k,_) ii  -> k ii);
     knode         = (fun (k,_) n  -> k n);
     ktoplevel     = (fun (k,_) p  -> k p);
@@ -292,6 +296,7 @@ let rec vk_expr = fun bigf expr ->
     match e with
     | Ident (name) -> vk_name bigf name
     | Constant (c) -> ()
+    | StringConstant(s,os,w) -> vk_string_fragments bigf s
     | FunCall  (e, es)         ->
         exprf e;
         vk_argument_list bigf es;
@@ -779,6 +784,29 @@ and vk_pragmainfo bigf pragmainfo =
   | PragmaIdList ids ->
       ids +> List.iter (function (id, _) -> vk_name bigf id)
 
+and vk_string_fragment = fun bigf x ->
+  let rec fragf x = bigf.kfragment (k, bigf) x
+  and k st =
+    let (unwrap_x, ii) = x in
+    vk_ii bigf ii;
+    match unwrap_x with
+      ConstantFragment s -> ()
+    | FormatFragment(fmt) -> vk_string_format bigf fmt in
+  fragf x
+
+and vk_string_fragments = fun bigf ts ->
+  ts +> List.iter (vk_string_fragment bigf)
+
+and vk_string_format = fun bigf x ->
+  let rec fmtf x = bigf.kformat (k, bigf) x
+  and k st =
+    let (unwrap_x, ii) = x in
+    vk_ii bigf ii;
+    match unwrap_x with (* probably not very useful... *)
+      ConstantFormat s -> ()
+  in
+  fmtf x
+
 (* ------------------------------------------------------------------------ *)
 (* Now keep fullstatement inside the control flow node,
  * so that can then get in a MetaStmtVar the fullstatement to later
@@ -980,6 +1008,7 @@ let vk_params_splitted = vk_splitted vk_param
 let vk_enum_fields_splitted = vk_splitted vk_oneEnum
 let vk_inis_splitted = vk_splitted vk_ini
 let vk_ident_list_splitted = vk_splitted vk_name
+let vk_string_fragments_splitted = vk_splitted vk_string_fragment
 
 (* ------------------------------------------------------------------------ *)
 let vk_cst = fun bigf (cst, ii) ->
@@ -1026,6 +1055,8 @@ type visitor_c_s = {
 
 
   ktoplevel_s: (toplevel inout * visitor_c_s) -> toplevel inout;
+  kfragment_s: (string_fragment inout * visitor_c_s) -> string_fragment inout;
+  kformat_s: (string_format inout * visitor_c_s) -> string_format inout;
   kinfo_s: (info inout * visitor_c_s) -> info inout;
  }
 
@@ -1039,6 +1070,8 @@ let default_visitor_c_s =
     kini_s       = (fun (k,_) d  -> k d);
     ktoplevel_s  = (fun (k,_) p  -> k p);
     knode_s      = (fun (k,_) n  -> k n);
+    kfragment_s  = (fun (k,_) f  -> k f);
+    kformat_s    = (fun (k,_) f  -> k f);
     kinfo_s      = (fun (k,_) i  -> k i);
     kdefineval_s = (fun (k,_) x  -> k x);
     kstatementseq_s = (fun (k,_) x  -> k x);
@@ -1059,6 +1092,8 @@ let rec vk_expr_s = fun bigf expr ->
       match unwrap_e with
       | Ident (name) -> Ident (vk_name_s bigf name)
       | Constant (c) -> Constant (c)
+      |	StringConstant(s,os,w) ->
+	  StringConstant(s +> (List.map (vk_string_fragment_s bigf)),os,w)
       | FunCall  (e, es)         ->
           FunCall (exprf e,
                   es +> List.map (fun (e,ii) ->
@@ -1617,6 +1652,34 @@ and vk_pragmainfo_s bigf pragmainfo =
 	     | _ -> failwith "bad ident_list"))
 
 
+and vk_string_fragment_s = fun bigf x ->
+  let rec fragf x = bigf.kfragment_s (k, bigf) x
+  and k st =
+    let (unwrap_x, ii) = x in
+    let x' =
+      match unwrap_x with
+	ConstantFragment s -> ConstantFragment s
+      | FormatFragment(fmt) ->
+	  FormatFragment(vk_string_format_s bigf fmt) in
+    x', vk_ii_s bigf ii
+  in
+  fragf x
+
+and vk_string_fragments_s = fun bigf frags ->
+  frags +> List.map (vk_string_fragment_s bigf)
+
+and vk_string_format_s = fun bigf x ->
+  let rec fmtf x = bigf.kformat_s (k, bigf) x
+  and k st =
+    let (unwrap_x, ii) = x in
+    let x' =
+      match unwrap_x with
+	ConstantFormat s -> ConstantFormat s
+    in
+    x', vk_ii_s bigf ii
+  in
+  fmtf x
+
 and vk_info_s = fun bigf info ->
   let rec infof ii = bigf.kinfo_s (k, bigf) ii
   and k i = i
@@ -1791,3 +1854,4 @@ let vk_define_params_splitted_s =
 let vk_enum_fields_splitted_s = vk_splitted_s vk_oneEnum_s
 let vk_inis_splitted_s = vk_splitted_s vk_ini_s
 let vk_ident_list_splitted_s = vk_splitted_s vk_name_s
+let vk_string_fragments_splitted_s = vk_splitted_s vk_string_fragment_s

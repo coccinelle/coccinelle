@@ -107,7 +107,7 @@ let tmeta_to_ident (name,pure,clt) =
 %token TIdentifier TExpression TStatement TFunction TLocal TType TParameter
 %token TIdExpression TInitialiser TDeclaration TField TMetavariable TSymbol
 %token Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
-%token TPure TContext TGenerated
+%token TPure TContext TGenerated TFormat
 %token TTypedef TDeclarer TIterator TName TPosition TAnalysis TPosAny
 %token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall
 %token TScript TInitialize TFinalize TNothing TVirtual
@@ -433,6 +433,30 @@ metadec:
         let add_sym = fun (nm,_) -> !Data.add_symbol_meta nm in
           List.iter add_sym ids; [])
     }
+| ar=arity TFormat
+    ids=comma_list(pure_ident_or_meta_ident_with_idconstraint(re_only))
+    TMPtVirg
+    { P.create_metadec_with_constraints ar Ast0.Impure
+	(fun arity name pure check_meta constraints ->
+	  let tok = check_meta(Ast.MetaFmtDecl(arity,name)) in
+	  !Data.add_fmt_meta name constraints; tok)
+    ids }
+| ar=arity TFormat Tlist
+    ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
+    { P.create_metadec ar Ast0.Impure
+	(fun arity name pure check_meta ->
+	  let len = Ast.AnyLen in
+	  let tok = check_meta(Ast.MetaFragListDecl(arity,name,len)) in
+	  !Data.add_fmtlist_meta name len; tok)
+	ids }
+| ar=arity
+    TFormat Tlist TOCro len=list_len TCCro
+    ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
+    { P.create_len_metadec ar Ast0.Impure
+	(fun lenname arity name pure check_meta ->
+	  let tok = check_meta(Ast.MetaFragListDecl(arity,name,lenname)) in
+	  !Data.add_fmtlist_meta name lenname; tok)
+	len ids }
 
 list_len:
   pure_ident_or_meta_ident { Common.Left $1 }
@@ -1079,8 +1103,7 @@ fundecl:
   f=fninfo
   TFunDecl i=fn_ident lp=TOPar d=decl_list(decl) rp=TCPar
   lb=TOBrace b=fun_start rb=TCBrace
-      { P.verify_parameter_declarations (Ast0.undots d);
-	Ast0.wrap(Ast0.FunDecl((Ast0.default_info(),Ast0.context_befaft()),
+      { Ast0.wrap(Ast0.FunDecl((Ast0.default_info(),Ast0.context_befaft()),
 			       f, i,
 			       P.clt2mcode "(" lp, d,
 			       P.clt2mcode ")" rp,
@@ -1775,8 +1798,7 @@ primary_expr(recurser,primary_extra):
      { let (x,clt) = $1 in
      Ast0.wrap(Ast0.Constant (P.clt2mcode (Ast.Float x) clt)) }
  | TString
-     { let (x,clt) = $1 in
-     Ast0.wrap(Ast0.Constant (P.clt2mcode (Ast.String x) clt)) }
+     { let (x,clt) = $1 in P.parse_string x clt }
  | TChar
      { let (x,clt) = $1 in
      Ast0.wrap(Ast0.Constant (P.clt2mcode (Ast.Char x) clt)) }
@@ -1933,6 +1955,9 @@ pure_ident_or_meta_ident_with_idconstraint(constraint_type):
 re_or_not_eqid:
    re=regexp_eqid {Ast.IdRegExpConstraint re}
  | ne=not_eqid    {ne}
+
+re_only:
+   re=regexp_eqid {Ast.IdRegExpConstraint re}
 
 regexp_eqid:
      TTildeEq re=TString

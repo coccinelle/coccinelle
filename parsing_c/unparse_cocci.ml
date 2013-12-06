@@ -57,8 +57,8 @@ let print_text s = pr s unknown unknown unknown None in
 let close_box _ = () in
 let force_newline _ = print_text "\n" in
 
-let start_block () = force_newline(); indent() in
-let end_block () = unindent true; force_newline () in
+let start_block () = (*indent();*) force_newline() in
+let end_block () = (*unindent true;*) force_newline () in
 let print_string_box s = print_string s in
 
 let print_option = Common.do_option in
@@ -75,12 +75,16 @@ let rec param_print_between between fn = function
   | [x] -> fn x
   | x::xs -> fn x; between x; param_print_between between fn xs in
 
+let rec param_print_before_and_after before fn = function
+  | [] -> before ()
+  | x::xs -> before (); fn x; param_print_before_and_after before fn xs in
+
 
 let outdent _ = () (* should go to leftmost col, does nothing now *) in
 
 let pretty_print_c =
   Pretty_print_c.mk_pretty_printers pr_celem pr_cspace
-    force_newline indent outdent (function _ -> unindent true) in
+    force_newline (fun _ -> ()) outdent (function _ -> ()) in
 
 (* --------------------------------------------------------------------- *)
 (* Only for make_hrule, print plus code, unbound metavariables *)
@@ -243,6 +247,13 @@ let dots between fn d =
   | Ast.STARS(l) -> param_print_between between fn l
 in
 
+let dots_before_and_after before fn d =
+  match Ast.unwrap d with
+    Ast.DOTS(l) -> param_print_before_and_after before fn l
+  | Ast.CIRCLES(l) -> param_print_before_and_after before fn l
+  | Ast.STARS(l) -> param_print_before_and_after before fn l
+in
+
 let nest_dots starter ender fn f d =
   mcode print_string starter;
   f(); start_block();
@@ -364,6 +375,7 @@ let rec expression e =
   let prec_of_c = function
     | Ast_c.Ident (ident) -> primary
     | Ast_c.Constant (c) -> primary
+    | Ast_c.StringConstant (c,os,w) -> primary
     | Ast_c.FunCall  (e, es) -> postfix
     | Ast_c.CondExpr (e1, e2, e3) -> cond
     | Ast_c.Sequence (e1, e2) -> top
@@ -408,6 +420,10 @@ let rec expression e =
   match Ast.unwrap e with
     Ast.Ident(id) -> ident id
   | Ast.Constant(const) -> mcode constant const
+  | Ast.StringConstant(lq,str,rq) ->
+      mcode print_string lq;
+      dots (function _ -> ()) string_fragment str;
+      mcode print_string rq
   | Ast.FunCall(fn,lp,args,rp) ->
       loop fn postfix; mcode (print_string_with_hint StartBox) lp;
       dots (function _ -> ()) arg_expression args;
@@ -481,7 +497,8 @@ let rec expression e =
 
   | Ast.AsExpr(expr,asexpr) -> loop expr prec
 
-  | Ast.EComma(cm) -> mcode print_string cm
+  | Ast.EComma(cm) ->
+      mcode (print_string_with_hint (SpaceOrNewline (ref " ")))  cm
 
   | Ast.DisjExpr(exp_list) ->
       if generating
@@ -521,8 +538,31 @@ and arg_expression e =
     Ast.EComma(cm) ->
       (* space is only used by add_newline, and only if not using SMPL
 	 spacing.  pr_cspace uses a " " in unparse_c.ml.  Not so nice... *)
-      mcode (print_string_with_hint (SpaceOrNewline (ref " ")))  cm
+      mcode (print_string_with_hint (SpaceOrNewline (ref " "))) cm
   | _ -> expression e
+
+and string_fragment e =
+  match Ast.unwrap e with
+    Ast.ConstantFragment(str) -> mcode print_string str
+  | Ast.FormatFragment(pct,fmt) ->
+      mcode print_string pct;
+      string_format fmt
+  | Ast.Strdots dots -> mcode print_string dots
+  | Ast.MetaFormatList(pct,name,lenname,_,_) ->
+      (*mcode print_string pct;*)
+      handle_metavar name (function
+	  Ast_c.MetaFragListVal(frags) ->
+	    frags +> (List.iter pretty_print_c.Pretty_print_c.fragment)
+	| _ -> raise (Impossible 158))
+
+and string_format e =
+  match Ast.unwrap e with
+    Ast.ConstantFormat(str) -> mcode print_string str
+  | Ast.MetaFormat(name,_,_,_) ->
+      handle_metavar name (function
+	  Ast_c.MetaFmtVal fmt ->
+	    pretty_print_c.Pretty_print_c.format fmt
+	| _ -> raise (Impossible 157))
 
 and  unaryOp = function
     Ast.GetRef -> print_string "&"
@@ -639,7 +679,7 @@ and typeC ty =
   | Ast.StructUnionDef(ty,lb,decls,rb) ->
       fullType ty; ft_space ty;
       mcode print_string lb;
-      dots force_newline declaration decls;
+      dots_before_and_after force_newline declaration decls;
       mcode print_string rb
   | Ast.TypeName(name)-> mcode print_string name
   | Ast.MetaType(name,_,_) ->
@@ -797,7 +837,7 @@ and declaration d =
   | Ast.TyDecl(ty,sem) -> fullType ty; mcode print_string sem
   | Ast.Typedef(stg,ty,id,sem) ->
       mcode print_string stg;
-      fullType ty; typeC id;
+      fullType ty; pr_space(); typeC id;
       mcode print_string sem
   | Ast.DisjDecl(_) -> raise CantBeInPlus
   | Ast.Ddots(_,_) -> raise CantBeInPlus
@@ -1096,7 +1136,7 @@ let indent_if_needed s f =
   else
     begin
       (*no newline at the end - someone else will do that*)
-      start_block(); f(); unindent true
+      indent(); start_block(); f(); unindent true
     end in
 
 let rec statement arity s =
@@ -1255,7 +1295,7 @@ let rec pp_any = function
   | Ast.ForInfoTag(x) -> forinfo x; false
   | Ast.CaseLineTag(x) -> case_line "" x; false
 
-  | Ast.ConstVolTag(x) -> const_vol x unknown unknown; false
+  | Ast.ConstVolTag(x) ->  const_vol x unknown unknown; false
   | Ast.Directive(xs) ->
       (match xs with (Ast.Space s)::_ -> pr_space() | _ -> ());
       let rec loop = function
@@ -1270,14 +1310,17 @@ let rec pp_any = function
 	| Ast.Indent s :: rest ->
 	    print_text s; force_newline(); loop rest in
       loop xs; false
-  | Ast.Token(x,None) -> print_text x; if_open_brace x
+  | Ast.Token(x,None) ->
+      print_text x; if_open_brace x
   | Ast.Token(x,Some info) ->
       mcode
 	(fun x line lcol ->
 	  (match x with
 	    "else" -> force_newline()
 	  | _ -> ());
-	  print_string x line lcol)
+	  (match x with (* not sure if special case for comma is useful *)
+	    "," -> print_string_with_hint (SpaceOrNewline(ref " ")) x line lcol
+	  | _ -> print_string x line lcol))
 	(let nomcodekind = Ast.CONTEXT(Ast.DontCarePos,Ast.NOTHING) in
 	(x,info,nomcodekind,[]));
       if_open_brace x
@@ -1286,12 +1329,7 @@ let rec pp_any = function
 
   (* this is not '...', but a list of expr/statement/params, and
      normally there should be no '...' inside them *)
-  | Ast.ExprDotsTag(x) ->
-      let check_comma cm =
-	match Ast.unwrap cm with
-	  Ast.EComma(cm) -> pr_space()
-	| _ -> () in
-      dots check_comma expression x; false
+  | Ast.ExprDotsTag(x) -> dots (fun _ -> ()) expression x; false
   | Ast.ParamDotsTag(x) -> parameter_list x; false
   | Ast.StmtDotsTag(x) -> dots force_newline (statement "") x; false
   | Ast.DeclDotsTag(x) -> dots force_newline declaration x; false
@@ -1313,13 +1351,7 @@ in
       (* for many tags, we must not do a newline before the first '+' *)
       let isfn s =
 	match Ast.unwrap s with Ast.FunDecl _ -> true | _ -> false in
-      let unindent_before = function
-        (* need to get unindent before newline for } *)
-	  (Ast.Token ("}",_)::_) -> true
-	| _ -> false in
-      let prnl x =
-	(if unindent_before x then unindent true);
-	force_newline() in
+      let prnl x = force_newline() in
       let newline_before _ =
 	if before =*= After
 	then
@@ -1353,13 +1385,7 @@ in
       let rec loop leading_newline indent_needed = function
 	  [] -> ()
 	| x::xs ->
-	    (if leading_newline
-	    then
-	      match (indent_needed,unindent_before x) with
-		(true,true) -> force_newline()
-	      | (true,false) -> force_newline(); indent()
-	      | (false,true) -> unindent true; force_newline()
-	      | (false,false) -> force_newline());
+	    (if leading_newline then force_newline());
 	    let space_needed_before = function
 		Ast.ParamTag(x) ->
 		  (match Ast.unwrap x with
@@ -1382,18 +1408,18 @@ in
 	      |	Ast.Token(t,_) when List.mem t ["if";"for";"while";"do"] ->
 		  (* space always needed *)
 		  pr_space(); false
-	      |	Ast.ExpressionTag(e) ->
-		  (match Ast.unwrap e with
-		    Ast.EComma _ ->
-		      (* space always needed *)
-		      pr_space(); false 
+	      |	Ast.ExpressionTag(x) ->
+		  (match Ast.unwrap x with
+		    Ast.EComma _ -> false
 		  | _ -> true)
 	      |	t -> true in
 	    let indent_needed =
 	      let rec loop space_after indent_needed = function
 		  [] -> indent_needed
 		| x::xs ->
-		    (if space_after && space_needed_before x
+		    (if indent_needed (* for open brace *)
+		    then force_newline()
+		    else if space_after && space_needed_before x
 		    then pr_space());
 		    let indent_needed = pp_any x in
 		    let space_after = space_needed_after x in

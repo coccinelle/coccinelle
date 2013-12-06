@@ -440,12 +440,21 @@ let classify is_minus all_marked table code =
       |	Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_)
       | Ast0.Decl((info,bef),_) ->
 	  bind (nc_mcode ((),(),info,bef,(),-1)) (k s)
-      | Ast0.IfThen(_,_,_,_,_,(info,aft,adj))
-      | Ast0.IfThenElse(_,_,_,_,_,_,_,(info,aft,adj))
-      | Ast0.Iterator(_,_,_,_,_,(info,aft,adj))
-      | Ast0.While(_,_,_,_,_,(info,aft,adj))
-      | Ast0.For(_,_,_,_,_,_,_,_,(info,aft,adj)) ->
-	  bind (k s) (nc_mcode ((),(),info,aft,(),adj))
+      (* For these, the info of the aft mcode is derived from the else
+	 branch.  These might not correspond for a context if, eg if
+	 only the else branch is replaced.  Thus we take instead the
+	 info of the starting keyword.  In a context case, these will be
+	 the same on the - and + sides.  All that is used as an offset,
+	 and it is only used as a key, so this is safe to do. For an
+         iterator, we take the left parenthesis, which should have the
+	 same property. *)
+      | Ast0.IfThen(start,_,_,_,_,(info,aft,adj))
+      | Ast0.IfThenElse(start,_,_,_,_,_,_,(info,aft,adj))
+      | Ast0.Iterator(_,start,_,_,_,(info,aft,adj))
+      | Ast0.While(start,_,_,_,_,(info,aft,adj))
+      | Ast0.For(start,_,_,_,_,_,_,_,(info,aft,adj)) ->
+	  let mcode_info (_,_,info,_,_,_) = info in
+	  bind (k s) (nc_mcode ((),(),mcode_info start,aft,(),adj))
       |	_ -> k s
 
 ) in
@@ -506,6 +515,8 @@ let rec equal_expression e1 e2 =
   match (Ast0.unwrap e1,Ast0.unwrap e2) with
     (Ast0.Ident(_),Ast0.Ident(_)) -> true
   | (Ast0.Constant(const1),Ast0.Constant(const2)) -> equal_mcode const1 const2
+  | (Ast0.StringConstant(lq1,const1,rq1),Ast0.StringConstant(lq2,const2,rq2))->
+      equal_mcode lq1 lq2 && equal_mcode rq1 rq2
   | (Ast0.FunCall(_,lp1,_,rp1),Ast0.FunCall(_,lp2,_,rp2)) ->
       equal_mcode lp1 lp2 && equal_mcode rp1 rp2
   | (Ast0.Assignment(_,op1,_,_),Ast0.Assignment(_,op2,_,_)) ->

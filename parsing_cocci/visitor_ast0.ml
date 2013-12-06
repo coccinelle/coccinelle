@@ -64,90 +64,28 @@ let visitor mode bind option_default
        [starter_n;List.hd lst_n;
 	 multibind (List.map2 bind mids_n (List.tl lst_n));ender_n],
      rebuilder starter lst mids ender) in
-  let rec expression_dots d =
+  let dotsfn param default all_functions arg =
     let k d =
       rewrap d
 	(match Ast0.unwrap d with
 	  Ast0.DOTS(l) ->
-	    let (n,l) = map_split_bind expression l in (n,Ast0.DOTS(l))
+	    let (n,l) = map_split_bind default l in (n,Ast0.DOTS(l))
 	| Ast0.CIRCLES(l) ->
-	    let (n,l) = map_split_bind expression l in (n,Ast0.CIRCLES(l))
+	    let (n,l) = map_split_bind default l in (n,Ast0.CIRCLES(l))
 	| Ast0.STARS(l) ->
-	    let (n,l) = map_split_bind expression l in (n,Ast0.STARS(l))) in
-    dotsexprfn all_functions k d
-  and identifier_dots d = (* not parameterizable for now... *)
-    let k d =
-      rewrap d
-	(match Ast0.unwrap d with
-	  Ast0.DOTS(l) ->
-	    let (n,l) = map_split_bind ident l in (n,Ast0.DOTS(l))
-	| Ast0.CIRCLES(l) ->
-	    let (n,l) = map_split_bind ident l in (n,Ast0.CIRCLES(l))
-	| Ast0.STARS(l) ->
-	    let (n,l) = map_split_bind ident l in (n,Ast0.STARS(l))) in
-    k d
-  and initialiser_list i =
-    let k i =
-      rewrap i
-	(match Ast0.unwrap i with
-	  Ast0.DOTS(l) ->
-	    let (n,l) = map_split_bind initialiser l in (n,Ast0.DOTS(l))
-	| Ast0.CIRCLES(l) ->
-	    let (n,l) = map_split_bind initialiser l in (n,Ast0.CIRCLES(l))
-	| Ast0.STARS(l) ->
-	    let (n,l) = map_split_bind initialiser l in (n,Ast0.STARS(l))) in
-    dotsinitfn all_functions k i
+	    let (n,l) = map_split_bind default l in (n,Ast0.STARS(l))) in
+    param all_functions k arg in
+  let iddotsfn all_functions k arg = k arg in
+  let strdotsfn all_functions k arg = k arg in
 
-  and parameter_list d =
-    let k d =
-      rewrap d
-	(match Ast0.unwrap d with
-	  Ast0.DOTS(l) ->
-	    let (n,l) = map_split_bind parameterTypeDef l in
-	    (n,Ast0.DOTS(l))
-	| Ast0.CIRCLES(l) ->
-	    let (n,l) = map_split_bind parameterTypeDef l in
-	    (n,Ast0.CIRCLES(l))
-	| Ast0.STARS(l) ->
-	    let (n,l) = map_split_bind parameterTypeDef l in
-	    (n,Ast0.STARS(l))) in
-    dotsparamfn all_functions k d
-
-  and statement_dots d =
-    let k d =
-      rewrap d
-	(match Ast0.unwrap d with
-	  Ast0.DOTS(l) ->
-	    let (n,l) = map_split_bind statement l in (n,Ast0.DOTS(l))
-	| Ast0.CIRCLES(l) ->
-	    let (n,l) = map_split_bind statement l in (n,Ast0.CIRCLES(l))
-	| Ast0.STARS(l) ->
-	    let (n,l) = map_split_bind statement l in (n,Ast0.STARS(l))) in
-    dotsstmtfn all_functions k d
-
-  and declaration_dots d =
-    let k d =
-      rewrap d
-	(match Ast0.unwrap d with
-	  Ast0.DOTS(l) ->
-	    let (n,l) = map_split_bind declaration l in (n, Ast0.DOTS(l))
-	| Ast0.CIRCLES(l) ->
-	    let (n,l) = map_split_bind declaration l in (n, Ast0.CIRCLES(l))
-	| Ast0.STARS(l) ->
-	    let (n,l) = map_split_bind declaration l in (n, Ast0.STARS(l))) in
-    dotsdeclfn all_functions k d
-
-  and case_line_dots d =
-    let k d =
-      rewrap d
-	(match Ast0.unwrap d with
-	  Ast0.DOTS(l) ->
-	    let (n,l) = map_split_bind case_line l in (n, Ast0.DOTS(l))
-	| Ast0.CIRCLES(l) ->
-	    let (n,l) = map_split_bind case_line l in (n, Ast0.CIRCLES(l))
-	| Ast0.STARS(l) ->
-	    let (n,l) = map_split_bind case_line l in (n, Ast0.STARS(l))) in
-    dotscasefn all_functions k d
+  let rec expression_dots d = dotsfn dotsexprfn expression all_functions d
+  and identifier_dots d = dotsfn iddotsfn ident all_functions d
+  and initialiser_dots d = dotsfn dotsinitfn initialiser all_functions d
+  and parameter_dots d = dotsfn dotsparamfn parameterTypeDef all_functions d
+  and statement_dots d = dotsfn dotsstmtfn statement all_functions d
+  and declaration_dots d = dotsfn dotsdeclfn declaration all_functions d
+  and case_line_dots d = dotsfn dotscasefn case_line all_functions d
+  and string_fragment_dots d = dotsfn strdotsfn string_fragment all_functions d
 
   and ident i =
     let k i =
@@ -186,6 +124,11 @@ let visitor mode bind option_default
 	    let (n,id) = ident id in (n,Ast0.Ident(id))
 	| Ast0.Constant(const) ->
 	    let (n,const) = const_mcode const in (n,Ast0.Constant(const))
+	| Ast0.StringConstant(lq,str,rq) ->
+	    let (lq_n,lq) = string_mcode lq in
+	    let (str_n,str) = string_fragment_dots str in
+	    let (rq_n,rq) = string_mcode rq in
+	    (multibind [lq_n;str_n;rq_n],Ast0.StringConstant(lq,str,rq))
 	| Ast0.FunCall(fn,lp,args,rp) ->
 	    let (fn_n,fn) = expression fn in
 	    let (lp_n,lp) = string_mcode lp in
@@ -326,6 +269,39 @@ let visitor mode bind option_default
 	    let (asexp_n,asexp) = expression asexp in
 	    (bind exp_n asexp_n, Ast0.AsExpr(exp,asexp))) in
     exprfn all_functions k e
+
+  and string_fragment e =
+    let k e =
+      rewrap e
+	(match Ast0.unwrap e with
+	  Ast0.ConstantFragment(str) ->
+	    let (str_n,str) = string_mcode str in
+	    (str_n,Ast0.ConstantFragment(str))
+	| Ast0.FormatFragment(pct,fmt) ->
+	    let (pct_n,pct) = string_mcode pct in
+	    let (fmt_n,fmt) = string_format fmt in
+	    (multibind [pct_n;fmt_n], Ast0.FormatFragment(pct,fmt))
+	| Ast0.Strdots dots ->
+	    let (dots_n,dots) = string_mcode dots in
+	    (dots_n,Ast0.Strdots dots)
+	| Ast0.MetaFormatList(pct,name,lenname) ->
+	    let (pct_n,pct) = string_mcode pct in
+	    let (name_n,name) = meta_mcode name in
+	    (bind pct_n name_n,Ast0.MetaFormatList(pct,name,lenname))) in
+    k e
+
+  and string_format e =
+    let k e =
+      rewrap e
+	(match Ast0.unwrap e with
+	  Ast0.ConstantFormat(str) ->
+	    let (str_n,str) = string_mcode str in
+	    (str_n,Ast0.ConstantFormat str)
+	| Ast0.MetaFormat(name,constraints) ->
+	    let (name_n,name) = meta_mcode name in
+	    (name_n,Ast0.MetaFormat(name,constraints))) in
+    k e
+
   and typeC t =
     let k t =
       rewrap t
@@ -412,7 +388,7 @@ let visitor mode bind option_default
     let (star_n,star) = string_mcode star in
     let (rp1_n,rp1) = string_mcode rp1 in
     let (lp2_n,lp2) = string_mcode lp2 in
-    let (params_n,params) = parameter_list params in
+    let (params_n,params) = parameter_dots params in
     let (rp2_n,rp2) = string_mcode rp2 in
     (* have to put the treatment of the identifier into the right position *)
     (multibind ([ty_n;lp1_n;star_n] @ extra @ [rp1_n;lp2_n;params_n;rp2_n]),
@@ -420,7 +396,7 @@ let visitor mode bind option_default
   and function_type (ty,lp1,params,rp1) extra =
     let (ty_n,ty) = get_option typeC ty in
     let (lp1_n,lp1) = string_mcode lp1 in
-    let (params_n,params) = parameter_list params in
+    let (params_n,params) = parameter_dots params in
     let (rp1_n,rp1) = string_mcode rp1 in
     (* have to put the treatment of the identifier into the right position *)
     (multibind (ty_n :: extra @ [lp1_n;params_n;rp1_n]),
@@ -535,7 +511,7 @@ let visitor mode bind option_default
 	    (exp_n,Ast0.InitExpr(exp))
 	| Ast0.InitList(lb,initlist,rb,ordered) ->
 	    let (lb_n,lb) = string_mcode lb in
-	    let (initlist_n,initlist) = initialiser_list initlist in
+	    let (initlist_n,initlist) = initialiser_dots initlist in
 	    let (rb_n,rb) = string_mcode rb in
 	    (multibind [lb_n;initlist_n;rb_n],
 	     Ast0.InitList(lb,initlist,rb,ordered))
@@ -641,7 +617,7 @@ let visitor mode bind option_default
 	    let (fi_n,fi) = map_split_bind fninfo fi in
 	    let (name_n,name) = ident name in
 	    let (lp_n,lp) = string_mcode lp in
-	    let (params_n,params) = parameter_list params in
+	    let (params_n,params) = parameter_dots params in
 	    let (rp_n,rp) = string_mcode rp in
 	    let (lbrace_n,lbrace) = string_mcode lbrace in
 	    let (body_n,body) = statement_dots body in
@@ -974,10 +950,10 @@ let visitor mode bind option_default
 	  let (exprs_n,exprs) = expression_dots exprs in
 	  (exprs_n,Ast0.DotsExprTag(exprs))
       | Ast0.DotsInitTag(inits) ->
-	  let (inits_n,inits) = initialiser_list inits in
+	  let (inits_n,inits) = initialiser_dots inits in
 	  (inits_n,Ast0.DotsInitTag(inits))
       | Ast0.DotsParamTag(params) ->
-	  let (params_n,params) = parameter_list params in
+	  let (params_n,params) = parameter_dots params in
 	  (params_n,Ast0.DotsParamTag(params))
       | Ast0.DotsStmtTag(stmts) ->
 	  let (stmts_n,stmts) = statement_dots stmts in
@@ -1044,9 +1020,9 @@ let visitor mode bind option_default
       VT0.typeC = typeC;
       VT0.declaration = declaration;
       VT0.initialiser = initialiser;
-      VT0.initialiser_list = initialiser_list;
+      VT0.initialiser_list = initialiser_dots;
       VT0.parameter = parameterTypeDef;
-      VT0.parameter_list = parameter_list;
+      VT0.parameter_list = parameter_dots;
       VT0.statement = statement;
       VT0.forinfo = forinfo;
       VT0.case_line = case_line;

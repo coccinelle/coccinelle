@@ -221,6 +221,11 @@ let info_of_tok = function
   | TFloat ((string, floatType), i) -> i
   | TDecimal ((string, n, p), i) -> i
 
+  | TQuote (_,i) -> i
+  | TPct i -> i
+  | TFormat(str,i) -> i
+  | TSubString(str,i) -> i
+
   | TAssign  (assignOp, i) -> i
 
   | TIdent  (s, i) -> i
@@ -381,6 +386,11 @@ let visitor_info_of_tok f = function
   | TFloat ((s, floatType), i) -> TFloat ((s, floatType), f i)
   | TDecimal ((s, n, p), i)    -> TDecimal ((s, n, p), f i)
   | TAssign  (assignOp, i)     -> TAssign  (assignOp, f i)
+
+  | TQuote ((str,isW),i) -> TQuote ((str,isW),f i)
+  | TPct i -> TPct (f i)
+  | TFormat(str,i) -> TFormat(str,f i)
+  | TSubString(str,i) -> TSubString(str,f i)
 
   | TIdent  (s, i)         -> TIdent  (s, f i)
   | TKRParam(s, i)         -> TKRParam(s, f i)
@@ -549,6 +559,14 @@ let pos_of_tok x =  Ast_c.opos_of_info (info_of_tok x)
 let str_of_tok x =  Ast_c.str_of_info (info_of_tok x)
 let file_of_tok x = Ast_c.file_of_info (info_of_tok x)
 let pinfo_of_tok x = Ast_c.pinfo_of_info (info_of_tok x)
+
+(* for a comment, the end line is not the same as line_of_tok *)
+let end_line_of_tok = function
+    (TComment _) as t ->
+      let newlines =
+	List.length (Str.split_delim (Str.regexp "\n") (str_of_tok t)) - 1 in
+      line_of_tok t + newlines
+  | t -> line_of_tok t
 
 let is_origin x =
   match pinfo_of_tok x with Ast_c.OriginTok _ -> true | _ -> false

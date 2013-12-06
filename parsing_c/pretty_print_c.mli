@@ -21,6 +21,9 @@ type pretty_printers = {
   ty              : Ast_c.fullType printer;
   type_with_ident : type_with_ident;
   toplevel        : Ast_c.toplevel printer;
+  fragment        : Ast_c.string_fragment printer;
+  fragment_list   : (Ast_c.string_fragment list) printer;
+  format          : Ast_c.string_format printer;
   flow            : Control_flow_c.node printer
 }
 
@@ -58,6 +61,12 @@ val pp_init_gen:  pr_elem:Ast_c.info printer -> pr_space:unit printer ->
   Ast_c.initialiser printer
 val pp_init_list_gen:  pr_elem:Ast_c.info printer -> pr_space:unit printer ->
   (Ast_c.initialiser Ast_c.wrap2 list) printer
+val pp_string_fragment_list_gen:
+    pr_elem:Ast_c.info printer -> pr_space:unit printer ->
+      Ast_c.string_fragment list printer
+val pp_string_format_gen:
+    pr_elem:Ast_c.info printer -> pr_space:unit printer ->
+      Ast_c.string_format printer
 val pp_program_gen : pr_elem:Ast_c.info printer -> pr_space:unit printer ->
   Ast_c.toplevel printer
 
@@ -70,6 +79,8 @@ val pp_decl_simple:       Ast_c.declaration printer
 val pp_field_simple:      Ast_c.field printer
 val pp_statement_simple:  Ast_c.statement printer
 val pp_toplevel_simple:   Ast_c.toplevel printer
+val pp_string_fragment_simple:   Ast_c.string_fragment printer
+val pp_string_format_simple:     Ast_c.string_format printer
 
 val debug_info_of_node:
   Ograph_extended.nodei -> Control_flow_c.cflow -> string

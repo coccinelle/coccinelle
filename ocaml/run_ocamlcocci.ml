@@ -39,6 +39,8 @@ let ast_binding vl = function
       | Ast_c.MetaFieldVal field -> Coccilib.Field field
       | Ast_c.MetaFieldListVal field -> Coccilib.FieldList field
       | Ast_c.MetaStmtVal stm -> Coccilib.Stmt stm
+      | Ast_c.MetaFragListVal frags -> Coccilib.FragList frags
+      | Ast_c.MetaFmtVal fmt -> Coccilib.Fmt fmt
 
       | Ast_c.MetaPosVal _ | Ast_c.MetaPosValList _ | Ast_c.MetaListlenVal _ ->
 	  failwith "not associated with a declared metavariable"]

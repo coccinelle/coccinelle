@@ -1,5 +1,6 @@
-(* Yoann Padioleau
+(* Yoann Padioleau, extensions by Julia Lawall
  *
+ * Copyright (C) 2011, 2012, 2013, INRIA.
  * Copyright (C) 2010, University of Copenhagen DIKU and INRIA.
  * Copyright (C) 2006, 2007 Ecole des Mines de Nantes
  *

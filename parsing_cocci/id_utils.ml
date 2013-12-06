@@ -46,7 +46,15 @@ let rec interpret dir exp =
 	    let cmd =
 	      Printf.sprintf "lid -f %s/%s -l %s -S newline"
 		dir !Flag_parsing_cocci.id_utils_index oo in
-	    Common.cmd_to_list cmd
+	    (* lid puts the matched word at the beginning of the first line of
+	       the output... *)
+	    (match Common.cmd_to_list cmd with
+	      [] -> []
+	    | x::xs ->
+		(match Str.split (Str.regexp "[ \t]+") x with
+		  [oop;file] when oo = oop ->
+		    file :: xs
+		| _ -> failwith (Printf.sprintf "unexpected output of %s" cmd)))
 	| GC.And l ->
 	    let rec loop = function
 		[] -> failwith "bad and"
