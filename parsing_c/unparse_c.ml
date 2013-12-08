@@ -874,6 +874,10 @@ let adjust_after_paren toks =
     | _ -> if seen_minus then rest else xs in (* drop trailing space *)
   search_paren toks
 
+(* Danger is related to tokens that are shared between multiple AST
+representations, in particular for multidecls.  This attempts to clean up
+after any transformations that have been made.  It may not work in all
+cases... *)
 let check_danger toks =
   let get_danger = function
       T2(tok,_,_,_) ->
@@ -899,6 +903,34 @@ let check_danger toks =
 	| Some _ -> T2(tok,Ctx,b,c)
 	| None -> failwith "not possible")
     | x -> x in
+  let nodanger x =
+    match get_danger x with
+      Some Ast_c.NoDanger | None -> true
+    | _ -> false in
+  let rec reminus = function
+      (* get rid of stray commas *)
+      [] -> []
+    | (x::xs) as l ->
+	if nodanger x
+	then x :: reminus xs
+	else
+	  let (nodanger,rest) = span nodanger xs in
+	  (match rest with
+	    [] -> l
+	  | ((T2(tok,Ctx,a,b)) as y) :: rest ->
+	      if TH.str_of_tok tok = ","
+	      then
+		let rec find_minus = function
+		    [] -> None
+		  | (T2(_,Min m,_,_)) :: _ | (Fake2(_,Min m)) :: _ -> Some m
+		  | x::xs -> find_minus xs in
+		(match find_minus (List.rev nodanger) with
+		  Some m ->
+		    x :: nodanger @ (reminus ((T2(tok,Min m,a,b)) :: rest))
+		| None -> (* perhaps impossible *)
+		    x :: nodanger @ reminus (y::rest))
+	      else x :: nodanger @ reminus (y::rest)
+	  | _ -> x :: reminus xs) in
   let rec search_danger = function
       [] -> []
     | x::xs ->
@@ -912,7 +944,7 @@ let check_danger toks =
 		    if List.for_all removed_or_comma (de::danger)
 		    then danger @ de :: (search_danger rest)
 		    else
-		      (List.map unminus danger) @
+		      (reminus (List.map unminus danger)) @
 		      (unminus de) :: (search_danger rest)
 		| _ -> failwith "missing danger end")
 	    | _ -> failwith "missing danger end")

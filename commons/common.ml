@@ -423,7 +423,7 @@ let xxx_once f s =
     if not (Hashtbl.mem _already_printed s)
     then begin
       Hashtbl.add _already_printed s true;
-      f ("(ONCE) " ^ s);
+      f ("(ONCE) " ^ s)
     end
 
 let pr2_once s = xxx_once pr2 s

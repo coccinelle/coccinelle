@@ -2002,7 +2002,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 			     iiptvirgb::iifakestart::iisto))
                   )))) tin))
           fail in
-      if !Flag.sgrep_mode2(*X.mode =*= PatternMode *) || A.get_safe_decl decla || true
+      if !Flag.sgrep_mode2(*X.mode =*= PatternMode *) || A.get_safe_decl decla
       then doit()
       else
 	begin
@@ -2033,6 +2033,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
             (function tin -> (
               onedecl allminus contextified_decla (var, iiptvirgb, iisto) >>=
               (fun _ _ ->
+		Printf.printf "and are we here? %s\n";
 		pr2_once
 		  (Printf.sprintf "%s: %d: %s"
 		     (Ast_c.file_of_info firstii) (Ast_c.line_of_info firstii)
