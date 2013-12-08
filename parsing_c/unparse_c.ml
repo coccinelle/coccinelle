@@ -915,22 +915,25 @@ let check_danger toks =
 	then x :: reminus xs
 	else
 	  let (nodanger,rest) = span nodanger xs in
-	  (match rest with
-	    [] -> l
-	  | ((T2(tok,Ctx,a,b)) as y) :: rest ->
-	      if TH.str_of_tok tok = ","
-	      then
-		let rec find_minus = function
-		    [] -> None
-		  | (T2(_,Min m,_,_)) :: _ | (Fake2(_,Min m)) :: _ -> Some m
-		  | x::xs -> find_minus xs in
-		(match find_minus (List.rev nodanger) with
-		  Some m ->
-		    x :: nodanger @ (reminus ((T2(tok,Min m,a,b)) :: rest))
-		| None -> (* perhaps impossible *)
-		    x :: nodanger @ reminus (y::rest))
-	      else x :: nodanger @ reminus (y::rest)
-	  | _ -> x :: reminus xs) in
+	  if List.for_all removed_or_comma nodanger
+	  then
+	    (match rest with
+	      [] -> l
+	    | ((T2(tok,Ctx,a,b)) :: rest) as rl ->
+		if TH.str_of_tok tok = ","
+		then
+		  let rec find_minus = function
+		      [] -> None
+		    | (T2(_,Min m,_,_)) :: _ | (Fake2(_,Min m)) :: _ -> Some m
+		    | x::xs -> find_minus xs in
+		  (match find_minus (List.rev nodanger) with
+		    Some m ->
+		      x :: nodanger @ (reminus ((T2(tok,Min m,a,b)) :: rest))
+		  | None -> (* perhaps impossible *)
+		      x :: nodanger @ reminus rl)
+		else x :: nodanger @ reminus rl
+	    | _ -> x :: nodanger @ reminus rest)
+	  else x :: nodanger @ reminus rest in
   let rec search_danger = function
       [] -> []
     | x::xs ->
