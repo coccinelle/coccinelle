@@ -20,7 +20,7 @@ SRC= token_annot.ml flag_parsing_c.ml parsing_stat.ml \
  cpp_analysis_c.ml \
  unparse_cocci.ml unparse_c.ml unparse_hrule.ml  \
  parsing_recovery_c.ml parsing_consistency_c.ml \
- parse_c.ml type_c.ml \
+ danger.ml parse_c.ml type_c.ml \
  cpp_ast_c.ml \
  type_annoter_c.ml comment_annotater_c.ml \
  compare_c.ml \

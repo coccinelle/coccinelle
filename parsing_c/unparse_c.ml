@@ -57,7 +57,7 @@ type token2 =
   | T2 of Parser_c.token * min 
         * int option (* orig index, abstracting away comments and space *)
         * Unparse_cocci.nlhint option
-  | Fake2 of min
+  | Fake2 of Ast_c.info * min
   | Cocci2 of string * int (* line *) * int (* lcol *) * int (* rcol *)
             * Unparse_cocci.nlhint option
   | C2 of string
@@ -123,8 +123,15 @@ let print_token2 = function
           (match adj with Ast_cocci.ADJ n -> n | _ -> -1)
           (String.concat " " (List.map string_of_int index))
       | Ctx -> "" in
-    "T2:"^b_str^t_str^TH.str_of_tok t
-  | Fake2 b ->
+    let d_str =
+      let info = TH.info_of_tok t in
+      match !(info.Ast_c.danger) with
+	Ast_c.DangerStart -> ":DS:"
+      |	Ast_c.DangerEnd -> ":DE:"
+      |	Ast_c.Danger -> ":D:"
+      |	Ast_c.NoDanger -> ":ND:" in
+    "T2:"^b_str^t_str^d_str^TH.str_of_tok t
+  | Fake2 (_,b) ->
     let b_str =
       match b with
       | Min (index,adj) ->
@@ -170,8 +177,8 @@ let rebuild_tokens_extented toks_ext =
   let _tokens = ref [] in
   toks_ext +> List.iter (fun tok ->
     tok.new_tokens_before +> List.iter (fun x -> push2 x _tokens);
-    if not tok.remove then push2 tok.tok2 _tokens;
-    );
+    if not tok.remove
+    then push2 tok.tok2 _tokens);
   let tokens = List.rev !_tokens in
   (tokens +> List.map mk_token_extended)
 
@@ -339,7 +346,7 @@ let expand_mcode toks =
       let isminus = match minus with Min _ -> true | Ctx -> false in
       (* don't add fake string if the thing should be removed *)
       if str =$= "" or isminus
-      then push2 (Fake2 minus) toks_out
+      then push2 (Fake2 (info,minus)) toks_out
       (* fx the fake "," at the end of a structure or enum.
       no idea what other fake info there can be... *)
       else push2 (Comma str) toks_out
@@ -619,7 +626,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
   let rec adjust_around_minus = function
     | [] -> []
     | (T2(Parser_c.TCommentNewline c,_b,_i,_h) as x)::
-      ((Fake2(Min adj1) | T2(_,Min adj1,_,_)) as t1)::xs ->
+      ((Fake2(_,Min adj1) | T2(_,Min adj1,_,_)) as t1)::xs ->
       let (minus_list,rest) = span not_context (t1::xs) in
       let contains_plus = List.exists is_plus minus_list in
       let x =
@@ -630,7 +637,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
         | _ -> x in
       x :: adjust_within_minus contains_plus minus_list 
          @ adjust_around_minus rest
-    | ((Fake2(Min adj1) | T2(_,Min adj1,_,_)) as t1)::xs ->
+    | ((Fake2(_,Min adj1) | T2(_,Min adj1,_,_)) as t1)::xs ->
       let (minus_list,rest) = span not_context (t1::xs) in
       let contains_plus = List.exists is_plus minus_list in
         adjust_within_minus contains_plus minus_list 
@@ -638,12 +645,12 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
     | x::xs ->
       x :: adjust_around_minus xs
   and adjust_within_minus cp (* contains plus *) = function
-    | ((Fake2(Min adj1) | T2(_,Min adj1,_,_)) as t1)::xs ->
+    | ((Fake2(_,Min adj1) | T2(_,Min adj1,_,_)) as t1)::xs ->
       let not_minus = function T2(_,Min _,_,_) -> false | _ -> true in
       let (not_minus_list,rest) = span not_minus xs in
       t1 ::
       (match rest with
-      | ((Fake2(Min adj2) | T2(_,Min adj2,_,_)) as t2)::xs ->
+      | ((Fake2(_,Min adj2) | T2(_,Min adj2,_,_)) as t2)::xs ->
         if common_adj adj1 adj2 
         || not cp && List.for_all is_whitespace not_minus_list
         then
@@ -866,6 +873,51 @@ let adjust_after_paren toks =
       a :: search_minus true rerest
     | _ -> if seen_minus then rest else xs in (* drop trailing space *)
   search_paren toks
+
+let check_danger toks =
+  let get_danger = function
+      T2(tok,_,_,_) ->
+	let info = TH.info_of_tok tok in
+	Some !(info.Ast_c.danger)
+    | Fake2(info,_) ->
+	Some !(info.Ast_c.danger)
+    | _ -> None in
+  let isnt_danger_end tok =
+    match get_danger tok with
+      Some Ast_c.DangerEnd -> false
+    | _ -> true in
+  let removed_or_comma = function
+      T2(_,Min _,_,_) -> true
+    | (T2(tok,Ctx,_,_)) as x ->
+	TH.str_of_tok tok = "," or is_whitespace x
+    | Fake2(info,Min _) -> true
+    | x -> false in
+  let unminus = function
+      (T2(tok,Min _,b,c)) as x ->
+	(match get_danger x with
+	  Some Ast_c.NoDanger -> x
+	| Some _ -> T2(tok,Ctx,b,c)
+	| None -> failwith "not possible")
+    | x -> x in
+  let rec search_danger = function
+      [] -> []
+    | x::xs ->
+	match get_danger x with
+	  Some Ast_c.DangerStart ->
+	    let (danger,rest) = span isnt_danger_end (x::xs) in
+	    (match rest with
+	      de::rest ->
+		(match get_danger de with
+		  Some Ast_c.DangerEnd ->
+		    if List.for_all removed_or_comma (de::danger)
+		    then danger @ de :: (search_danger rest)
+		    else
+		      (List.map unminus danger) @
+		      (unminus de) :: (search_danger rest)
+		| _ -> failwith "missing danger end")
+	    | _ -> failwith "missing danger end")
+	| _ -> x :: search_danger xs in
+  search_danger toks
 
 (* this is for the case where braces are added around an if branch
 because of a change inside the branch *)
@@ -1675,6 +1727,25 @@ let rec find_paren_comma = function
   | x::xs ->
     find_paren_comma xs
 
+(* remainder from removal of multidecls *)
+let rec find_decl = function
+  | [] -> ()
+
+  (* do nothing if was like this in original file *)
+  | { str = "{"; idx = Some p1 } :: ({ str = ","; idx = Some p2} :: _ as xs)
+  | { str = ","; idx = Some p1 } :: ({ str = ";"; idx = Some p2} :: _ as xs) 
+    when p2 =|= p1 + 1 ->
+    find_decl xs
+
+  (* for declarations *)
+  | { str = "{" } :: (({ str = ","} as rem) :: _ as xs)
+  | ({ str = "," } as rem) :: ({ str = ";"} :: _ as xs) ->
+    rem.remove <- true;
+    find_decl xs
+
+  | x::xs ->
+    find_decl xs
+
 
 let fix_tokens toks =
   let toks = toks +> List.map mk_token_extended in
@@ -1684,8 +1755,10 @@ let fix_tokens toks =
     | _ -> false
   ) in
   find_paren_comma cleaner;
-
   let toks = rebuild_tokens_extented toks in
+  find_decl toks;
+  let toks = rebuild_tokens_extented toks in
+
   toks +> List.map (fun x -> x.tok2)
 
 (* if we have to remove a '}' that is alone on a line, remove the line too *)
@@ -1876,6 +1949,7 @@ let pp_program2 xs outfile  =
           else 
             begin
               (* phase2: can now start to filter and adjust *)
+	      let toks = check_danger toks in
               let toks = paren_then_brace toks in
               let toks = drop_space_at_endline toks in
 	      (* have to annotate droppable spaces early, so that can create

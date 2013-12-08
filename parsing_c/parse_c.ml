@@ -816,9 +816,12 @@ let with_program2 f program2 =
   )
   +> Common.uncurry Common.zip
 
-
-
-
+let with_program2_unit f program2 =
+  program2
+  +> Common.unzip
+  +> (fun (program, infos) ->
+    f program, infos
+  )
 
 
 (* note: as now we go in 2 passes, there is first all the error message of
@@ -1047,6 +1050,7 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
   in
   let v = loop tr in
   let v = with_program2 Parsing_consistency_c.consistency_checking v in
+  with_program2_unit Danger.add_danger v;
   let v =
     let new_td = ref (Common.clone_scoped_h_env !LP._typedef) in
     Common.clean_scope_h new_td;

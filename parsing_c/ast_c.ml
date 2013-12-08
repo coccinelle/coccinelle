@@ -90,6 +90,10 @@ type parse_info =
   | AbstractLineTok of Common.parse_info (* local to the abstracted thing *)
  (* with sexp *)
 
+(* for tokens that are shared in the C ast, and thus require care
+when transforming *)
+type danger = DangerStart | DangerEnd | Danger | NoDanger
+
 type info = {
   pinfo : parse_info;
 
@@ -101,7 +105,9 @@ type info = {
   comments_tag: comments_around ref;
 
   (* annotations on the token (mutable) *)
-  mutable annots_tag: Token_annot.annots
+  mutable annots_tag: Token_annot.annots;
+
+  danger: danger ref;
 
   (* todo? token_info : sometimes useful to know what token it was *)
   }
@@ -852,6 +858,7 @@ let fakeInfo pi  =
     cocci_tag = ref emptyAnnot;
     annots_tag = Token_annot.empty;
     comments_tag = ref emptyComments;
+    danger = ref NoDanger;
   }
 
 let noii = []
@@ -1058,12 +1065,14 @@ let al_info tokenindex x =
     cocci_tag = ref emptyAnnot;
     annots_tag = Token_annot.empty;
     comments_tag = ref emptyComments;
+    danger = ref NoDanger;
   }
 
 let semi_al_info x =
   { x with
     cocci_tag = ref emptyAnnot;
     comments_tag = ref emptyComments;
+    danger = ref NoDanger;
   }
 
 let magic_real_number = -10
@@ -1079,6 +1088,7 @@ let real_al_info x =
     cocci_tag = ref emptyAnnot;
     annots_tag = Token_annot.empty;
     comments_tag = ref emptyComments;
+    danger = ref NoDanger;
   }
 
 let al_comments x =
@@ -1106,6 +1116,7 @@ let al_info_cpp tokenindex x =
     cocci_tag = ref emptyAnnot;
     annots_tag = Token_annot.empty;
     comments_tag = ref (al_comments !(x.comments_tag));
+    danger = ref NoDanger;
   }
 
 let semi_al_info_cpp x =
@@ -1113,6 +1124,7 @@ let semi_al_info_cpp x =
     cocci_tag = ref emptyAnnot;
     annots_tag = Token_annot.empty;
     comments_tag = ref (al_comments !(x.comments_tag));
+    danger = ref NoDanger;
   }
 
 let real_al_info_cpp x =
@@ -1126,6 +1138,7 @@ let real_al_info_cpp x =
     cocci_tag = ref emptyAnnot;
     annots_tag = Token_annot.empty;
     comments_tag =  ref (al_comments !(x.comments_tag));
+    danger = ref NoDanger;
   }
 
 

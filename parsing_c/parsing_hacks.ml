@@ -414,6 +414,7 @@ let mark_end_define ii =
       cocci_tag = ref Ast_c.emptyAnnot;
       annots_tag = Token_annot.empty;
       comments_tag = ref Ast_c.emptyComments;
+      danger = ref Ast_c.NoDanger;
     }
   in
   TDefEOL (ii')
@@ -618,6 +619,7 @@ let new_info posadd str ii =
     cocci_tag = ref Ast_c.emptyAnnot;
     annots_tag = Token_annot.empty;
     comments_tag = ref Ast_c.emptyComments;
+    danger = ref Ast_c.NoDanger;
    }
 
 
