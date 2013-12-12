@@ -896,6 +896,14 @@ let check_danger toks =
 	TH.str_of_tok tok = "," or is_whitespace x
     | Fake2(info,Min _) -> true
     | x -> false in
+  let undanger_untouched tok =
+    (* for cases where only the type changes, not the variables *)
+    match get_danger tok with
+      Some (Ast_c.NoDanger) ->
+	(match tok with
+	  T2(_,Ctx,_,_) -> true
+	| _ -> false)
+    | _ -> true in
   let unminus = function
       (T2(tok,Min _,b,c)) as x ->
 	(match get_danger x with
@@ -945,6 +953,9 @@ let check_danger toks =
 		(match get_danger de with
 		  Some Ast_c.DangerEnd ->
 		    if List.for_all removed_or_comma (de::danger)
+		    then danger @ de :: (search_danger rest)
+		    else
+		    if List.for_all undanger_untouched (de::danger)
 		    then danger @ de :: (search_danger rest)
 		    else
 		      (reminus (List.map unminus danger)) @
