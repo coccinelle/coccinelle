@@ -154,6 +154,8 @@
 - Eliminate the reliance on grep in most cases for worth trying, to improve
   performance.  Thanks to Johannes Berg for the suggestion.
 - Allow multidecls when removing variable names or when modifying type.
+- Take fresh declarations into account when computing get_constants to
+  create dependencies
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
