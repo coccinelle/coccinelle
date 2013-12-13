@@ -303,6 +303,7 @@
   Tegawende Bissyande for finding the problem.
 - Collect all types in get_constants when types mentioned on
   metavariables. Thanks to Michael Stefaniuc for the report.
+- Try to fix pretty printing of directives.
 
 * 0.2.5
 ** Language:
