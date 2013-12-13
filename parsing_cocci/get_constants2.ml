@@ -178,10 +178,10 @@ let interpret_cocci_grep strict x =
       let res = optimize res in
       let res = Cocci_grep.split res in
       let res2 = List.map orify res in (* atoms in conjunction *)
-(*      List.iter
+      (*List.iter
 	(function clause ->
 	  Printf.printf "%s\n" (String.concat " " clause))
-	res; *)
+	res;*)
       Some (res1,res2)
 
 let combine2c x =
@@ -292,6 +292,30 @@ let do_get_constants constants keywords env neg_pos =
 
   (* if one branch gives no information, then we have to take anything *)
   let disj_union_all = List.fold_left build_or False in
+
+  (*get inheritance information from fresh variable construction information*)
+  (* can't do anything with DisjRuleElem, don't know which will be used *)
+  (* expect that the same info will be in branches, which after disjdistr
+     should be atomic *)
+  let fresh_info re =
+    match Ast.unwrap re with
+      Ast.DisjRuleElem(res) -> option_default
+    | _ ->
+	let fresh = Ast.get_fresh re in
+	List.fold_left
+	  (function prev ->
+	    function
+		(_,Ast.NoVal) -> prev
+	      | (_,Ast.StringSeed _) -> prev
+	      | (_,Ast.ListSeed l) ->
+		  List.fold_left
+		    (function prev ->
+		      function
+			  Ast.SeedString _ -> prev
+			| Ast.SeedId name ->
+			    bind (inherited name) prev)
+		    prev l)
+	  option_default fresh in
 
   let ident r k i =
     match Ast.unwrap i with
@@ -445,7 +469,8 @@ let do_get_constants constants keywords env neg_pos =
     | _ -> k p in
 
   let rule_elem r k re =
-    match Ast.unwrap re with
+    bind (fresh_info re)
+    (match Ast.unwrap re with
       Ast.MetaRuleElem(name,_,_) | Ast.MetaStmt(name,_,_,_)
     | Ast.MetaStmtList(name,_,_) -> bind (minherited name) (k re)
     | Ast.WhileHeader(whl,lp,exp,rp) ->
@@ -484,7 +509,7 @@ let do_get_constants constants keywords env neg_pos =
 	bind (keywords "pragma") (k re)
     | Ast.DisjRuleElem(res) ->
 	disj_union_all (List.map r.V.combiner_rule_elem res)
-    | _ -> k re in
+    | _ -> k re) in
 
   let statement r k s =
     match Ast.unwrap s with
@@ -730,3 +755,4 @@ let get_constants rules neg_pos_vars =
 	(grep,None,coccigrep,Some res)
     | Flag.CocciGrep -> (grep,None,coccigrep,None)
   else (None,None,None,None)
+

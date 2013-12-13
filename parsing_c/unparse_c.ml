@@ -1380,7 +1380,9 @@ let parse_indentation xs =
 		      else
 			let (dmin1,dplus1) =
 			  (* if, etc without {} *)
-			  if ind1 < ind && inparens = 0
+			  (* 0 is for the case of ifdef, that we want to
+			     ignore *)
+			  if ind1 > 0 && ind1 < ind && inparens = 0
 			  then (dmin-1,dplus-1)
 			  else if endparen && ind1 > ind && inparens = 0
 			  then (dmin+1,dplus+1)
@@ -1393,8 +1395,10 @@ let parse_indentation xs =
 		  | _ -> (Other,dmin,dplus,inparens,ind,false))
 	      |	_->
 		  (match TH.str_of_tok t with
-		    "{" -> (Other,dmin+1,dplus+1,inparens,ind,false)
-		  | "}" -> (Other,dmin-1,dplus-1,inparens,ind,false)
+		    "{" ->
+		      (Other,dmin+1,dplus+1,inparens,ind,false)
+		  | "}" ->
+		      (Other,dmin-1,dplus-1,inparens,ind,false)
 		  | _ -> (Other,dmin,dplus,inparens,ind,false)))
 	  | T2(t,Min _,_,_) ->
 	      (match t with
@@ -1437,7 +1441,8 @@ let parse_indentation xs =
 	      (Other,dmin,dplus-1,inparens,ind,false)
 	  | C2("{") ->
 	      (Other,dmin,dplus+1,inparens,ind,false)
-	  | C2("}") -> (Other,dmin,dplus-1,inparens,ind,false)
+	  | C2("}") ->
+	      (Other,dmin,dplus-1,inparens,ind,false)
 	  | Indent_cocci2 ->
 	      (Drop,dmin,dplus+1,inparens,ind,false)
 	  | Unindent_cocci2 true ->
@@ -1559,17 +1564,40 @@ let adjust_indentation xs =
   let rec loop tabbing_unit past_minmap dmin dplus =
     function
 	[] -> (tabbing_unit,past_minmap,[])
-      | (n,CtxNL _,t)::(n1,Unindent,t1)::rest
-      | (n,PlusNL _,t)::(n1,Unindent,t1)::rest ->
-	  (* Drop preceding spaces and just make a newline *)
+      | (n,PlusNL _,t)::(n1,Unindent,t1)::(_,_,x)::((n2,PlusNL _,t2) as nl1)
+	::rest ->
+	  (* unindent false added in the middle of new things *)
+	  let rest = nl1::rest in
 	  let (out_tu,minmap,res) =
 	    loop tabbing_unit past_minmap dmin dplus rest in
-	  (out_tu,minmap,(C2 "\n")::res)
-      |	(n,Unindent,t)::rest ->
-	  (* Add a newline *)
+	  (out_tu,minmap,t::x::res)
+      | ((n,CtxNL _,t) as nl1)::(n1,Unindent,t1)::(_,_,x)::
+	(n2,PlusNL _,t2)::rest ->
+	  (* unindent false added before something, existing nl *)
+	  let rest = nl1::rest in
 	  let (out_tu,minmap,res) =
 	    loop tabbing_unit past_minmap dmin dplus rest in
-	  (out_tu,minmap,(C2 "\n")::res)
+	  (out_tu,minmap,t2::x::res)
+      | (n1,Unindent,t1)::(_,_,x)::(n2,PlusNL _,t2)::rest ->
+	  (* unindent false added before something, no existing nl *)
+	  let (out_tu,minmap,res) =
+	    loop tabbing_unit past_minmap dmin dplus rest in
+	  (out_tu,minmap,(C2 "\n")::x::t2::res)
+      | (n,PlusNL _,t)::(n1,Unindent,t1)::(_,_,x)::
+	((n2,CtxNL _,t2) as nl1)::rest ->
+	  (* unindent false added after something, existing nl *)
+	  let rest = nl1::rest in
+	  let (out_tu,minmap,res) =
+	    loop tabbing_unit past_minmap dmin dplus rest in
+	  (out_tu,minmap,t::x::res)
+      | (n,PlusNL _,t)::(n1,Unindent,t1)::(_,_,x)::rest ->
+	  (* unindent false added after something, no existing nl *)
+	  let (out_tu,minmap,res) =
+	    loop tabbing_unit past_minmap dmin dplus rest in
+	  (out_tu,minmap,t::x::(C2 "\n")::res)
+      |	(n,Unindent,t)::_ ->
+	  (* unparse_cocci adds newline before or after *)
+	  failwith "not possible"
       | (n,CtxNL(spaces,depthmin,depthplus,inparens),t)::rest ->
 	  let (tabbing_unit,past_minmap) =
 	    update_map_min n spaces tabbing_unit past_minmap
