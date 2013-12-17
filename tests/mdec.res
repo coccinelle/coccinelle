@@ -1,4 +1,8 @@
-int main () { 
+int main () {
+  char d;
+  char c;
+  char b;
+  char a; 
   int *d;
   int *c;
   int *b;
