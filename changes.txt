@@ -304,6 +304,7 @@
 - Collect all types in get_constants when types mentioned on
   metavariables. Thanks to Michael Stefaniuc for the report.
 - Try to fix pretty printing of directives.
+- Allow renaming types in multidecls, including renames in initializers.
 
 * 0.2.5
 ** Language:

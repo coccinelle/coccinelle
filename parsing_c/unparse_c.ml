@@ -890,20 +890,26 @@ let check_danger toks =
     match get_danger tok with
       Some Ast_c.DangerEnd -> false
     | _ -> true in
+  let is_comma tok = (str_of_token2 tok) = "," in
   let removed_or_comma = function
       T2(_,Min _,_,_) -> true
     | (T2(tok,Ctx,_,_)) as x ->
 	TH.str_of_tok tok = "," or is_whitespace x
     | Fake2(info,Min _) -> true
     | x -> false in
-  let undanger_untouched tok =
-    (* for cases where only the type changes, not the variables *)
-    match get_danger tok with
-      Some (Ast_c.NoDanger) ->
-	(match tok with
-	  T2(_,Ctx,_,_) -> true
-	| _ -> false)
-    | _ -> true in
+  let rec undanger_untouched toks =
+    (* check that each entry before or after a comma contains at least
+       one context token. combined with safe for multi constraints, that
+       means that the rule can only have changed the type *)
+    let ctx =
+      function (T2(_,Ctx,_,_) as t) -> not (is_whitespace t) | _ -> false in
+    let safe = function [] -> true | toks -> List.exists ctx toks in
+    let res =
+      try Some (Common.split_when is_comma toks)
+      with Not_found -> None in
+    match res with
+      Some (bef,_,aft) -> safe bef && undanger_untouched aft
+    | None -> safe toks in
   let unminus = function
       (T2(tok,Min _,b,c)) as x ->
 	(match get_danger x with
@@ -955,7 +961,7 @@ let check_danger toks =
 		    if List.for_all removed_or_comma (de::danger)
 		    then danger @ de :: (search_danger rest)
 		    else
-		    if List.for_all undanger_untouched (de::danger)
+		    if undanger_untouched (danger@[de])
 		    then danger @ de :: (search_danger rest)
 		    else
 		      (reminus (List.map unminus danger)) @
