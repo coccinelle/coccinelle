@@ -20,13 +20,14 @@ type entries =
 | PP_ENUMTYPE
 | PP_ONEENUMTYPE
 | PP_NAME
-| PP_FUNCTIONTYPE
+| PP_PARAMLIST
 | PP_PARAMETERTYPE
 | PP_ATTRIBUTE
 | PP_EXPRESSION
 | PP_STATEMENT
 | PP_LABEL
 | PP_JUMP
+| PP_EXPRESSION_STATEMENT
 | PP_SELECTION
 | PP_ITERATION
 | PP_STATEMENT_SEQUENCABLE
@@ -36,6 +37,7 @@ type entries =
 | PP_INITIALISER
 | PP_DESIGNATOR
 | PP_DEFINITION
+| PP_DECL_LIST
 | PP_CPP_DIRECTIVE
 | PP_DEFINE_KIND
 | PP_DEFINE_VAL
@@ -123,7 +125,7 @@ let get_start_len fn thing =
 let rec pp_arg_list indent es ii =
   let (start,len) = get_start_len (fun x -> x) ii in
   nested_start_list indent start len;
-  List.iter (pp_argument (indent + 1)) es;
+  List.iter (fun x -> pp_argument (indent + 1) (Ast_c.unwrap x)) es;
   nested_end indent
 
 and pp_argument indent argument =
@@ -267,8 +269,9 @@ and pp_typeC indent ty start len =
       nested_end indent
   | Ast_c.FunctionType(funtype) ->
       let strname = "FunctionType" in
+      let (lpb, rpb) = tuple_of_list2 ii in
       nested_start indent strcode strname start len;
-      pp_functionType indent funtype start len;
+      pp_functionType indent funtype [lpb;rpb];
       nested_end indent
   | Ast_c.Enum(Some name,et) ->
       let strname = "Enum" in
@@ -357,16 +360,17 @@ and pp_basetype indent ty start len sign_and_base =
 
 and pp_inttype indent ty start len (sign_ii,base_ii) =
   let strcode = get_strcode PP_INTTYPE ty in
-  match ty with
-    Ast_c.CChar ->
+  match ty,sign_ii with
+    Ast_c.CChar,_ ->
       let strname = "CChar" in
       leaf_token indent strcode strname start len
-  | Ast_c.Si(sign,base) ->
+  | Ast_c.Si(sign,base),Some(_,sign_ii) ->
       let strname = "Si" in
       nested_start indent strcode strname start len;
-      pp_sign (indent + 1) sign sign_ii;
+      pp_sign (indent + 1) sign [sign_ii];
       pp_base (indent + 1) base base_ii;
       nested_end indent
+  | _ -> failwith "sign expected"
 
 and pp_sign indent ty sign_ii =
   let strcode = get_strcode PP_SIGN ty in
@@ -374,12 +378,10 @@ and pp_sign indent ty sign_ii =
   match ty with
     Ast_c.Signed ->
       let strname = "Signed" in
-      leaf_token indent strcode strname start len;
-      len
+      leaf_token indent strcode strname start len
   | Ast_c.UnSigned ->
       let strname = "UnSigned" in
-      leaf_token indent strcode strname start len;
-      len
+      leaf_token indent strcode strname start len
 
 and pp_base indent ty base_ii =
   let strcode = get_strcode PP_BASE ty in
@@ -431,6 +433,7 @@ and pp_structunion indent su i =
 
 and pp_structType indent fields ii =
   let strcode = get_entry_strcode PP_STRUCTTYPE in
+  let strname = "StructType" in
   let (start,len) = get_start_len (fun x -> x) ii in
   nested_start indent strcode strname start len;
   List.iter (pp_field (indent + 1)) fields;
@@ -461,8 +464,10 @@ and pp_field indent fld =
       nested_end indent
 
 and pp_field_declaration indent fd =
-  List.iter (function fk -> pp_fieldkind indent (Ast_c.unwrap fk))
-    (Ast_c.unwrap fd)
+  match fd with
+    Ast_c.FieldDeclList decls ->
+      List.iter (function fk -> pp_fieldkind indent (Ast_c.unwrap fk))
+	(Ast_c.unwrap decls)
 
 and pp_fieldkind indent fk =
   let strcode = get_strcode PP_FIELDKIND fk in
@@ -478,7 +483,7 @@ and pp_fieldkind indent fk =
       let nmstart = get_name_start name in
       let (ftstart,ftlen) = get_start_len Lib_parsing_c.ii_of_type ft in
       let len = (max nmstart ftstart) - (min nmstart ftstart) + ftlen in
-      nested_start indent strcode strname start len;
+      nested_start indent strcode strname ftstart len;
       pp_name (indent + 1) name;
       pp_fullType (indent + 1) ft;
       nested_end indent
@@ -489,17 +494,17 @@ and pp_fieldkind indent fk =
       let len = start2 - start + len in
       nested_start indent strcode strname start len;
       pp_fullType (indent + 1) ft;
-      pp_expression (indent + 1) e;
+      pp_expression (indent + 1) exp;
       nested_end indent
   | Ast_c.BitField(Some name,ft,_,exp) ->
       let strname = "BitField" in
       let nmstart = get_name_start name in
       let (exstart,exlen) = get_start_len Lib_parsing_c.ii_of_expr exp in
       let len = (max nmstart exstart) - (min nmstart exstart) + exlen in
-      nested_start indent strcode strname start len;
+      nested_start indent strcode strname (min nmstart exstart) len;
       pp_name (indent + 1) name;
       pp_fullType (indent + 1) ft;
-      pp_expression (indent + 1) e;
+      pp_expression (indent + 1) exp;
       nested_end indent
 
 and get_name_start = function
@@ -517,7 +522,7 @@ and get_name_start = function
 
 and pp_name indent name =
   let start = get_name_start name in
-  let s = Ast_c.str_of_name e in
+  let s = Ast_c.str_of_name name in
   leaf_string indent s start
 
 and pp_enumType indent enums ii =
@@ -528,7 +533,7 @@ and pp_enumType indent enums ii =
   List.iter (fun x -> pp_oneEnumType (indent + 1) (Ast_c.unwrap x)) enums;
   nested_end indent
 
-and pp_oneEnumType et =
+and pp_oneEnumType indent et =
   let strcode = get_entry_strcode PP_ONEENUMTYPE in
   let strname = "OneEnumType" in
   match et with
@@ -542,25 +547,29 @@ and pp_oneEnumType et =
       nested_end indent
   | (name,None) ->
       let start = get_name_start name in
-      let s = Ast_c.str_of_name e in
+      let s = Ast_c.str_of_name name in
       let len = String.length s in
       nested_start indent strcode strname start len;
       pp_name (indent + 1) name;
       nested_end indent
 
-and pp_functionType indent ft start len =
-  let strcode = get_entry_strcode PP_FUNCTIONTYPE in
-  let strname = "FunctionType" in
+and pp_functionType indent ft param_ii =
   let (ft, (params, hasdots)) = ft in
-  nested_start indent strcode strname start len;
   pp_fullType (indent + 1) ft;
-  List.iter (fun x -> pp_parameterType (indent + 1) (Ast_c.unwrap x)) params;
+  pp_param_list (indent + 1) params param_ii;
   (match hasdots with
     (false,_) -> ()
   | (true,[i]) ->
       let (start,len) = get_start_len (fun x -> x) [i] in
-      leaf_string (indent + 1) (Ast_c.string_of_tok i) start
-  | _ -> failwith "unexpected hasdots");
+      leaf_string (indent + 1) (Ast_c.str_of_info i) start
+  | _ -> failwith "unexpected hasdots")
+
+and pp_param_list indent params ii =
+  let strcode = get_entry_strcode PP_PARAMLIST in
+  let strname = "ParamList" in
+  let (start,len) = get_start_len (fun x -> x) ii in
+  nested_start indent strcode strname start len;
+  List.iter (fun x -> pp_parameterType (indent + 1) (Ast_c.unwrap x)) params;
   nested_end indent
   
 and pp_parameterType indent param =
@@ -572,10 +581,10 @@ and pp_parameterType indent param =
     (false,_) -> ()
   | (true,[i]) ->
       let (start,len) = get_start_len (fun x -> x) [i] in
-      leaf_string (indent + 1) (Ast_c.string_of_tok i) start
+      leaf_string (indent + 1) (Ast_c.str_of_info i) start
   | _ -> failwith "unexpected hasdots");
   pp_fullType (indent + 1) param.Ast_c.p_type;
-  (match name with
+  (match param.Ast_c.p_namei with
     None -> ()
   | Some name -> pp_name (indent + 1) name);
   nested_end indent
@@ -585,7 +594,7 @@ and pp_attribute indent attr =
   let strname = "Attribute" in
   let (start,len) = get_start_len (fun x -> x) (snd attr) in
   match Ast_c.unwrap attr with
-    | Attribute str -> leaf indent strcode strname start len str
+    Ast_c.Attribute str -> leaf indent strcode strname start len str
 
 (* ------------------------------------------------------------------------- *)
 (* C expression *)
@@ -595,139 +604,139 @@ and pp_expression indent = fun (((exp, typ), ii) as oe) ->
   let strcode = get_strcode PP_EXPRESSION exp in
   let (start,len) = get_start_len Lib_parsing_c.ii_of_expr oe in
   match exp with
-  | Ident (ident) ->
+  | Ast_c.Ident (ident) ->
       let strname = "Ident" in
       nested_start indent strcode strname start len;
-      pp_name (ident + 1) ident;
+      pp_name (indent + 1) ident;
       nested_end indent
     (* only a MultiString can have multiple ii *)
-  | Constant (MultiString _), is     ->
+  | Ast_c.Constant (Ast_c.MultiString _) ->
       let strname = "Constant" in
-      let s = String.concat "" (List.map Ast_c.str_of_info is) in
-      leaf indent s strcode strname start len
-  | Constant c ->
+      let s = String.concat "" (List.map Ast_c.str_of_info ii) in
+      leaf indent strcode strname start len s
+  | Ast_c.Constant c ->
       let strname = "Constant" in
       let s = Ast_c.str_of_info (List.hd ii) in
-      leaf indent s strcode strname start len
-  | StringConstant(s,os,w) ->
+      leaf indent strcode strname start len s
+  | Ast_c.StringConstant(s,os,w) ->
       let strname = "StringConstant" in
-      leaf indent os strcode strname start len
-  | FunCall (e, es) ->
+      leaf indent strcode strname start len os
+  | Ast_c.FunCall (e, es) ->
       let strname = "FunCall" in
       nested_start indent strcode strname start len;
       pp_expression (indent + 1) e;
-      pp_arg_list (indent + 1) es (snd oe);
+      pp_arg_list (indent + 1) es ii;
       nested_end indent
-  | CondExpr (e1, e2, e3) ->
+  | Ast_c.CondExpr (e1, e2, e3) ->
       let strname = "CondExpr" in
       nested_start indent strcode strname start len;
       pp_expression (indent + 1) e1;
       do_option (function x -> pp_expression (indent + 1) x) e2;
       pp_expression (indent + 1) e3;
       nested_end indent
-  | Sequence (e1, e2) ->
+  | Ast_c.Sequence (e1, e2) ->
       let strname = "Sequence" in
       nested_start indent strcode strname start len;
       pp_expression (indent + 1) e1;
       pp_expression (indent + 1) e2;
       nested_end indent
-  | Assignment (e1, op, e2) ->
+  | Ast_c.Assignment (e1, op, e2) ->
       let strname = "Assignment" in
       nested_start indent strcode strname start len;
       pp_expression (indent + 1) e1;
-      pp_op (indent + 1) op i;
+      List.iter (pp_token_leaf (indent + 1)) ii;
       pp_expression (indent + 1) e2;
       nested_end indent
-  | Postfix (e, op) ->
+  | Ast_c.Postfix (e, op) ->
       let strname = "Postfix" in
       nested_start indent strcode strname start len;
       pp_expression (indent + 1) e;
-      pp_op (indent + 1) op i;
+      List.iter (pp_token_leaf (indent + 1)) ii;
       nested_end indent
-  | Infix (e, op) ->
+  | Ast_c.Infix (e, op) ->
       let strname = "Infix" in
       nested_start indent strcode strname start len;
       pp_expression (indent + 1) e;
-      pp_op (indent + 1) op i;
+      List.iter (pp_token_leaf (indent + 1)) ii;
       nested_end indent
-  | Unary (e, op) ->
+  | Ast_c.Unary (e, op) ->
       let strname = "Unary" in
       nested_start indent strcode strname start len;
       pp_expression (indent + 1) e;
-      pp_op (indent + 1) op i;
+      List.iter (pp_token_leaf (indent + 1)) ii;
       nested_end indent
-  | Binary (e1, op, e2) ->
+  | Ast_c.Binary (e1, op, e2) ->
       let strname = "Binary" in
       let opbi = tuple_of_list1 ii in
       nested_start indent strcode strname start len;
       pp_expression (indent + 1) e1;
       let (start,len) = get_start_len (fun x -> x) [opbi] in
-      leaf_string (indent + 1) (TH.string_of_token opbi) start;
-      pp_op (indent + 1) op i;
+      leaf_string (indent + 1) (Ast_c.str_of_info opbi) start;
+      List.iter (pp_token_leaf (indent + 1)) ii;
       pp_expression (indent + 1) e2;
       nested_end indent
-  | ArrayAccess (e1, e2) ->
+  | Ast_c.ArrayAccess (e1, e2) ->
       let strname = "ArrayAccess" in
       nested_start indent strcode strname start len;
       pp_expression (indent + 1) e1;
       pp_expression (indent + 1) e2;
       nested_end indent
-  | RecordAccess (e, name) ->
+  | Ast_c.RecordAccess (e, name) ->
       let strname = "RecordAccess" in
       nested_start indent strcode strname start len;
-      pp_expression (indent + 1) e1;
-      pp_name (indent + 1) e2;
+      pp_expression (indent + 1) e;
+      pp_name (indent + 1) name;
       nested_end indent
-  | RecordPtAccess (e, name) ->
+  | Ast_c.RecordPtAccess (e, name) ->
       let strname = "RecordPtAccess" in
       nested_start indent strcode strname start len;
-      pp_expression (indent + 1) e1;
-      pp_name (indent + 1) e2;
+      pp_expression (indent + 1) e;
+      pp_name (indent + 1) name;
       nested_end indent
-  | SizeOfExpr (e) ->
+  | Ast_c.SizeOfExpr (e) ->
       let strname = "SizeOfExpr" in
       nested_start indent strcode strname start len;
       pp_expression (indent + 1) e;
       nested_end indent
-  | SizeOfType (t) ->
+  | Ast_c.SizeOfType (t) ->
       let strname = "SizeOfType" in
       nested_start indent strcode strname start len;
-      pp_type (indent + 1) t;
+      pp_fullType (indent + 1) t;
       nested_end indent
-  | Cast (t, e) ->
+  | Ast_c.Cast (t, e) ->
       let strname = "Cast" in
       nested_start indent strcode strname start len;
-      pp_type (indent + 1) t;
+      pp_fullType (indent + 1) t;
       pp_expression (indent + 1) e;
       nested_end indent
-  | StatementExpr (statxs, [ii1;ii2]) ->
+  | Ast_c.StatementExpr (statxs, _) ->
       let strname = "StatementExpr" in
       nested_start indent strcode strname start len;
-      List.iter (pp_statement (indent + 1)) statxs;
+      List.iter (pp_statement_sequencable (indent + 1)) statxs;
       nested_end indent
-  | Constructor (t, init) ->
+  | Ast_c.Constructor (t, init) ->
       let strname = "Constructor" in
       nested_start indent strcode strname start len;
       pp_fullType (indent + 1) t;
       pp_initialiser (indent + 1) init;
       nested_end indent
-  | ParenExpr (e) ->
+  | Ast_c.ParenExpr (e) ->
       let strname = "ParenExpr" in
       nested_start indent strcode strname start len;
       pp_expression (indent + 1) e;
       nested_end indent
-  | New (None, t) ->
+  | Ast_c.New (None, t) ->
       let strname = "New" in
       nested_start indent strcode strname start len;
       pp_argument (indent + 1) t;
       nested_end indent
-  | New (Some ts, t) ->
+  | Ast_c.New (Some ts, t) ->
       let strname = "New" in
       nested_start indent strcode strname start len;
       pp_arg_list (indent + 1) ts (List.tl(snd oe));
       pp_argument (indent + 1) t;
       nested_end indent
-  | Delete(t) ->
+  | Ast_c.Delete(t) ->
       let strname = "Delete" in
       nested_start indent strcode strname start len;
       pp_expression (indent + 1) t;
@@ -737,51 +746,53 @@ and pp_statement indent st =
   let strcode = get_wstrcode PP_STATEMENT st in
   let (start,len) = get_start_len Lib_parsing_c.ii_of_stmt st in
   match Ast_c.unwrap st with
-  | Labeled com -> pp_jump indent com start len
-  | Compound statxs -> pp_compound indent statxs start len
+  | Ast_c.Labeled com -> pp_label indent com start len
+  | Ast_c.Compound statxs -> pp_compound indent statxs start len
 	
-  | ExprStatement es ->
+  | Ast_c.ExprStatement es ->
       let strname = "ExprStatement" in
       nested_start indent strcode strname start len;
       pp_expression_statement (indent + 1) es (snd st) start len;
       nested_end indent
 	
-  | Selection com -> pp_selection indent com start len
-  | Iteration com -> pp_iteration indent com start len
-  | Jump com -> pp_jump indent com start len
-  | Decl decl -> pp_decl indent decl
+  | Ast_c.Selection com -> pp_selection indent com start len
+  | Ast_c.Iteration com -> pp_iteration indent com start len
+  | Ast_c.Jump com -> pp_jump indent com start len
+  | Ast_c.Decl decl -> pp_decl indent decl
 	
-  | Asm asmbody, ii -> failwith "not supporting assembly code"
+  | Ast_c.Asm asmbody -> failwith "not supporting assembly code"
 	
-  | NestedFunc def -> pp_definition indent def
-  | MacroStmt ii ->
+  | Ast_c.NestedFunc def -> pp_definition indent def
+  | Ast_c.MacroStmt ->
+      let ii = snd st in
       let strname = "MacroStmt" in
-      let s = String.concat "" (List.map Ast_c.str_of_info ii) in
-      leaf indent s strcode strname start len
+      nested_start indent strcode strname start len;
+      List.iter (pp_token_leaf (indent + 1)) ii;
+      nested_end indent
 
 and pp_label indent s start len =
   let strcode = get_strcode PP_LABEL s in
   match s with
-  | Label (name, st) ->
+  | Ast_c.Label (name, st) ->
       let strname = "Label" in
       nested_start indent strcode strname start len;
       pp_name (indent + 1) name;
       pp_statement (indent + 1) st;
       nested_end indent
-  | Case (e, st) ->
+  | Ast_c.Case (e, st) ->
       let strname = "Case" in
       nested_start indent strcode strname start len;
       pp_expression (indent + 1) e;
       pp_statement (indent + 1) st;
       nested_end indent
-  | CaseRange (e, e2, st) ->
+  | Ast_c.CaseRange (e, e2, st) ->
       let strname = "CaseRange" in
       nested_start indent strcode strname start len;
       pp_expression (indent + 1) e;
       pp_expression (indent + 1) e2;
       pp_statement (indent + 1) st;
       nested_end indent
-  | Default st ->
+  | Ast_c.Default st ->
       let strname = "Default" in
       nested_start indent strcode strname start len;
       pp_statement (indent + 1) st;
@@ -790,26 +801,26 @@ and pp_label indent s start len =
 and pp_jump indent s start len =
   let strcode = get_strcode PP_JUMP s in
   match s with
-  | Goto name ->
+  | Ast_c.Goto name ->
       let strname = "Goto" in
       nested_start indent strcode strname start len;
       pp_name (indent + 1) name;
       nested_end indent
-  | Continue ->
+  | Ast_c.Continue ->
       let strname = "Continue" in
       leaf_token indent strcode strname start len
-  | Break ->
+  | Ast_c.Break ->
       let strname = "Break" in
       leaf_token indent strcode strname start len
-  | Return ->
+  | Ast_c.Return ->
       let strname = "Return" in
       leaf_token indent strcode strname start len
-  | ReturnExpr e ->
+  | Ast_c.ReturnExpr e ->
       let strname = "ReturnExpr" in
       nested_start indent strcode strname start len;
       pp_expression (indent + 1) e;
       nested_end indent
-  | GotoComputed e ->
+  | Ast_c.GotoComputed e ->
       let strname = "GotoComputed" in
       nested_start indent strcode strname start len;
       pp_expression (indent + 1) e;
@@ -821,7 +832,7 @@ and pp_expression_statement indent es ii start len =
     match ii with
       [i] ->
 	let (start,_) = get_start_len (fun x -> x) ii in
-	leaf_string (indent + 1) (TH.string_of_tok i) start;
+	leaf_string (indent + 1) (Ast_c.str_of_info i) start;
     | _ -> () in
   match es with
     Some e ->
@@ -839,16 +850,17 @@ and pp_expression_statement indent es ii start len =
 and pp_selection indent s start len =
   let strcode = get_strcode PP_SELECTION s in
   match s with
-  | If (e, st1, st2) ->
+  | Ast_c.If (e, st1, st2) ->
       let strname = "If" in
       nested_start indent strcode strname start len;
       pp_expression (indent + 1) e;
       pp_statement (indent + 1) st1;
       (match Ast_c.unwrap st2 with
-      | ExprStatement None -> ()
+      | Ast_c.ExprStatement None -> ()
       | _ -> pp_statement (indent + 1) st2);
       nested_end indent
-  | Switch (e, st) ->
+  | Ast_c.Switch (e, st) ->
+      let strname = "Switch" in
       nested_start indent strcode strname start len;
       pp_expression (indent + 1) e;
       pp_statement (indent + 1) st;
@@ -857,36 +869,37 @@ and pp_selection indent s start len =
 and pp_iteration indent s start len =
   let strcode = get_strcode PP_ITERATION s in
   match s with
-  | While (e, st) ->
+  | Ast_c.While (e, st) ->
       let strname = "While" in
       nested_start indent strcode strname start len;
       pp_expression (indent + 1) e;
       pp_statement (indent + 1) st;
       nested_end indent
 
-  | DoWhile (st, e) ->
+  | Ast_c.DoWhile (st, e) ->
       let strname = "DoWhile" in
       nested_start indent strcode strname start len;
       pp_statement (indent + 1) st;
       pp_expression (indent + 1) e;
       nested_end indent
 
-  | For (first,(e2opt,il2),(e3opt, il3),st) ->
+  | Ast_c.For (first,(e2opt,il2),(e3opt, il3),st) ->
       let strname = "For" in
       nested_start indent strcode strname start len;
       (match first with
-	ForExp (e1opt,il1) ->
-          pp_statement (indent + 1) (Ast_c.mk_st (ExprStatement e1opt) il1)
-      | ForDecl decl -> pp_decl (indent + 1) decl);
-      pp_statement (indent + 1) (Ast_c.mk_st (ExprStatement e2opt) il2);
-      pp_statement (indent + 1) (Ast_c.mk_st (ExprStatement e3opt) il3);
+	Ast_c.ForExp (e1opt,il1) ->
+          pp_statement (indent + 1)
+	    (Ast_c.mk_st (Ast_c.ExprStatement e1opt) il1)
+      | Ast_c.ForDecl decl -> pp_decl (indent + 1) decl);
+      pp_statement (indent + 1) (Ast_c.mk_st (Ast_c.ExprStatement e2opt) il2);
+      pp_statement (indent + 1) (Ast_c.mk_st (Ast_c.ExprStatement e3opt) il3);
       pp_statement (indent + 1) st;
       nested_end indent
 
-  | MacroIteration (s,es,st) ->
+  | Ast_c.MacroIteration (s,es,st) ->
       let strname = "MacroIteration" in
       nested_start indent strcode strname start len;
-      leaf_string start (String.length s) s;
+      leaf_string (indent + 1) s start;
       es +> List.iter (fun (e, opt) -> pp_argument (indent + 1) e);
       pp_statement (indent + 1) st;
       nested_end indent
@@ -895,15 +908,15 @@ and pp_compound indent statxs start len =
   let strcode = get_entry_strcode PP_COMPOUND in
   let strname = "Compound" in
   nested_start indent strcode strname start len;
-  List.iter (pp_statement_sequencible (indent + 1)) statxs;
+  List.iter (pp_statement_sequencable (indent + 1)) statxs;
   nested_end indent
 
   (* cppext: easier to put at statement_list level than statement level *)
 and pp_statement_sequencable indent = function
-    StmtElem s -> pp_statement indent s
-  | CppDirectiveStmt cppd -> pp_cpp_directive indent cppd
-  | IfdefStmt idd -> pp_ifdef_directive indent idd
-  | IfdefStmt2 _ ->
+    Ast_c.StmtElem s -> pp_statement indent s
+  | Ast_c.CppDirectiveStmt cppd -> pp_cpp_directive indent cppd
+  | Ast_c.IfdefStmt idd -> pp_ifdef_directive indent idd
+  | Ast_c.IfdefStmt2 _ ->
       (* supporting this would require finding start and length of subterms *)
       failwith "IfdefStmt2 not supported"
 
@@ -919,75 +932,84 @@ and pp_decl indent decl =
   let strcode = get_strcode PP_DECL decl in
   let (start,len) = get_start_len Lib_parsing_c.ii_of_decl decl in
   match decl with
-  | DeclList decls ->
+  | Ast_c.DeclList decls ->
       let strname = "DeclList" in
       nested_start indent strcode strname start len;
       (match decls with
-	(onedecl::_,_::_::storage) ->
-	  pp_storage (indent + 1) ii;
-	  pp_fullType (indent + 1) onedecl.Ast_c.v_type
+	((onedecl::_),(_::_::storage)) ->
+	  pp_storage (indent + 1) storage;
+	  pp_fullType (indent + 1) (Ast_c.unwrap onedecl).Ast_c.v_type
       |	_ -> failwith "empty declaration");
-      List.iter (pp_one_decl (indent + 1)) decls;
+      List.iter (pp_one_decl (indent + 1)) (Ast_c.unwrap decls);
       nested_end indent
-  | MacroDecl arg ->
+  | Ast_c.MacroDecl arg ->
       let strname = "MacroDecl" in
       let (str,args,_) = Ast_c.unwrap arg in
       nested_start indent strcode strname start len;
       leaf_string (indent + 1) str start;
-      pp_arg_list (indent + 1) (fst args) (snd args);
+      let (lp,rp) =
+	match snd arg with
+	   iisb::lpb::rpb::iiendb::iifakestart::iisto -> (lpb,rpb)
+	| _ -> failwith "bad macrodecl" in
+      pp_arg_list (indent + 1) args [lp;rp];
       nested_end indent
-  | MacroDeclInit arg ->
+  | Ast_c.MacroDeclInit arg ->
       let strname = "MacroDeclInit" in
       let (str,args,init) = Ast_c.unwrap arg in
       nested_start indent strcode strname start len;
       leaf_string (indent + 1) str start;
-      pp_arg_list (indent + 1) (fst args) (snd args);
+      let (lp,rp) =
+	match snd arg with
+	   iisb::lpb::rpb::weqb::iiendb::iifakestart::iisto -> (lpb,rpb)
+	| _ -> failwith "bad macrodecl" in
+      pp_arg_list (indent + 1) args [lp;rp];
       pp_initialiser (indent + 1) init;
       nested_end indent
 
 and pp_one_decl indent decl =
+  let decl = Ast_c.unwrap decl in
   (match decl.Ast_c.v_namei with
     None -> ()
   | Some (nm,ini) ->
-      pp_name indent name;
-      pp_v_init ini);
+      pp_name indent nm;
+      pp_v_init indent ini);
   List.iter (pp_attribute indent) decl.Ast_c.v_attr
 
 and pp_v_init indent ini =
   match ini with
-    NoInit -> ()
-  | ValInit(_,init) ->
+    Ast_c.NoInit -> ()
+  | Ast_c.ValInit(_,init) ->
       pp_initialiser (indent + 1) init
-  | ConstrInit args ->
+  | Ast_c.ConstrInit args ->
       pp_arg_list (indent + 1) (Ast_c.unwrap args) (snd args)
 
 and pp_initialiser indent = fun init ->
-  let strcode = get_strcode PP_INITIALISER init in
-  let (start,len) = get_start_len Lib_parsing_c.ii_of_init init in
-  match init with
-    InitExpr(e) ->
+  let strcode = get_wstrcode PP_INITIALISER init in
+  let (start,len) = get_start_len Lib_parsing_c.ii_of_ini init in
+  match Ast_c.unwrap init with
+    Ast_c.InitExpr(e) ->
       let strname = "InitExpr" in
       nested_start indent strcode strname start len;
       pp_expression (indent + 1) e;
       nested_end indent
-  | InitList(inits) ->
+  | Ast_c.InitList(inits) ->
       let strname = "InitList" in
       nested_start indent strcode strname start len;
-      List.iter (function (i,_) -> pp_initialiser (indent + 1) u) inits;
+      List.iter (function (i,_) -> pp_initialiser (indent + 1) i) inits;
       nested_end indent
-  | InitDesignators(desigs,init) ->
+  | Ast_c.InitDesignators(desigs,init) ->
       let strname = "InitDesignators" in
       nested_start indent strcode strname start len;
       List.iter (pp_designator (indent + 1)) desigs;
       pp_initialiser (indent + 1) init;
       nested_end indent
-  | InitFieldOld(str,init) ->
+  | Ast_c.InitFieldOld(str,init) ->
       let strname = "InitFieldOld" in
       nested_start indent strcode strname start len;
       leaf_string (indent + 1) str start;
       pp_initialiser (indent + 1) init;
       nested_end indent
-  | InitIndexOld(exp,init) ->
+  | Ast_c.InitIndexOld(exp,init) ->
       let strname = "InitIndexOld" in
       nested_start indent strcode strname start len;
       pp_expression (indent + 1) exp;
@@ -995,18 +1017,18 @@ and pp_initialiser indent = fun init ->
       nested_end indent
 
 and pp_designator indent = fun desig ->
-  let strcode = get_strcode PP_DESIGNATOR desig in
-  let (start,len) = get_start_len Lib_parsing_c.ii_of_desig desig in
-  match desig with
-    DesignatorField(str) ->
+  let strcode = get_wstrcode PP_DESIGNATOR desig in
+  let (start,len) = get_start_len (fun x -> x) (snd desig) in
+  match Ast_c.unwrap desig with
+    Ast_c.DesignatorField(str) ->
       let strname = "DesignatorField" in
       leaf indent strcode strname start len str
-  | DesignatorIndex(exp) ->
+  | Ast_c.DesignatorIndex(exp) ->
       let strname = "DesignatorIndex" in
       nested_start indent strcode strname start len;
       pp_expression (indent + 1) exp;
       nested_end indent
-  | DesignatorRange(exp1,exp2) ->
+  | Ast_c.DesignatorRange(exp1,exp2) ->
       let strname = "DesignatorRange" in
       nested_start indent strcode strname start len;
       pp_expression (indent + 1) exp1;
@@ -1015,16 +1037,17 @@ and pp_designator indent = fun desig ->
 
 and pp_definition indent d =
   let strcode = get_entry_strcode PP_DEFINITION in
-  let (start,len) = get_start_len Lib_parsing_c.ii_of_def f in
+  let (start,len) = get_start_len Lib_parsing_c.ii_of_def d in
   let strname = "Definition" in
-  let (lb,rb,storage) =
-    match (snd d) with
-      _::_::lb::rb::_::storage -> storage (* ( ) { } fakestart sto *)
+  let (lp,rp,lb,rb,storage) =
+    match (snd d) with(* ( ) { } fakestart sto *)
+      lp::rp::lb::rb::_::storage -> (lp,rp,lb,rb,storage)
     | _ -> failwith "bad definition" in
+  let d = Ast_c.unwrap d in
   nested_start indent strcode strname start len;
   pp_storage (indent + 1) storage;
-  pp_fullType (indent + 1) d.Ast_c.f_type;
-  List.iter pp_attribute (indent + 1) d.Ast_c.attr;
+  pp_functionType (indent + 1) d.Ast_c.f_type [lp;rp];
+  List.iter (pp_attribute (indent + 1)) d.Ast_c.f_attr;
   pp_name (indent + 1) d.Ast_c.f_name;
   (match d.Ast_c.f_old_c_style with
     Some decls -> pp_declaration_list (indent + 1) decls
@@ -1035,41 +1058,47 @@ and pp_definition indent d =
 
 and pp_declaration_list indent decls =
   let strcode = get_entry_strcode PP_DECL_LIST in
-  let (start,len) = get_start_len Lib_parsing_c.ii_of_decl_list decls in
-  let strname = "DeclarationList" in
-  nested_start indent strcode strname start len;
-  List.iter (pp_decl (indent + 1)) decls;
-  nested_end indent
+  match (decls,List.rev decls) with
+    ((first::_),(last::_)) ->
+      let (start,_) = get_start_len Lib_parsing_c.ii_of_decl first in
+      let (start2,len) = get_start_len Lib_parsing_c.ii_of_decl last in
+      let len = start2 - start + len in
+      let strname = "DeclarationList" in
+      nested_start indent strcode strname start len;
+      List.iter (pp_decl (indent + 1)) decls;
+      nested_end indent
+  | ([],[]) -> ()
+  | _ -> failwith "not possible"
 
-and pp_cpp_directive cppd =
+and pp_cpp_directive indent cppd =
   let strcode = get_strcode PP_CPP_DIRECTIVE cppd in
   match cppd with
-    Define(def,(kind,vl)) ->
+    Ast_c.Define(def,(kind,vl)) ->
       let strname = "Define" in
       let (start,len) = get_start_len (fun x -> x) (snd def) in
       nested_start indent strcode strname start len;
       pp_define_kind (indent + 1) kind start len;
       pp_define_val (indent + 1) vl start len;
       nested_end indent
-  | Include(includ) ->
+  | Ast_c.Include(includ) ->
       let strname = "Include" in
       let ii = snd includ.Ast_c.i_include in
       let (start,len) =	get_start_len (fun x -> x) ii in
       nested_start indent strcode strname start len;
       let (_inc,file) = tuple_of_list2 ii in
       let (start,len) = get_start_len (fun x -> x) [file] in
-      leaf_string (indent + 1) (TH.string_of_tok file) start;
+      leaf_string (indent + 1) (Ast_c.str_of_info file) start;
       nested_end indent
-  | Pragma(wstr,pi) ->
+  | Ast_c.Pragma(wstr,pi) ->
       let strname = "Pragma" in
       let (start,_) = get_start_len (fun x -> x) (snd wstr) in
       let (start2,len) = get_start_len Lib_parsing_c.ii_of_pragmainfo pi in
       let len = start2 - start + len in
       nested_start indent strcode strname start len;
       leaf_string (indent + 1) (Ast_c.unwrap wstr) start;
-      pp_pragmainfo (indent + 1) pi
+      pp_pragmainfo (indent + 1) pi;
       nested_end indent
-  | OtherDirective(il) ->
+  | Ast_c.OtherDirective(il) ->
       let strname = "OtherDirective" in
       let (start,len) = get_start_len (fun x -> x) il in
       nested_start indent strcode strname start len;
@@ -1078,50 +1107,52 @@ and pp_cpp_directive cppd =
 
 and pp_token_leaf indent i =
   let (start,len) = get_start_len (fun x -> x) [i] in
-  leaf_string (indent + 1) (TH.string_of_tok i) start
+  leaf_string (indent + 1) (Ast_c.str_of_info i) start
 
 and pp_define_kind indent kind start len =
   let strcode = get_strcode PP_DEFINE_KIND kind in
   match kind with
-    DefineVar ->
+    Ast_c.DefineVar ->
       let strname = "DefineVar" in
+      (* no info, a general characterization of the #define *)
       leaf_token indent strcode strname start len
-  | DefineFunc(args) ->
+  | Ast_c.DefineFunc(args) ->
       let strname = "DefineFunc" in
       let (start,len) = get_start_len (fun x -> x) (snd args) in
       nested_start indent strcode strname start len;
       List.iter
 	(function (wstr,_) ->
 	  let (start,len) = get_start_len (fun x -> x) (snd wstr) in
-	  leaf_string indent (Ast.unwrap wstr) start)
-	args;
+	  leaf_string indent (Ast_c.unwrap wstr) start)
+	(Ast_c.unwrap args);
       nested_end indent
-  | Undef ->
+  | Ast_c.Undef ->
       let strname = "Undef" in
+      (* no info, a general characterization of the #define *)
       leaf_token indent strcode strname start len
 
-and pp_define_val indent d =
+and pp_define_val indent d parent_start parent_len =
   let strcode = get_strcode PP_DEFINE_VAL d in
   match d with
-    DefineExpr(exp) ->
+    Ast_c.DefineExpr(exp) ->
       let strname = "DefineExpr" in
       let (start,len) = get_start_len Lib_parsing_c.ii_of_expr exp in
       nested_start indent strcode strname start len;
       pp_expression (indent + 1) exp;
       nested_end indent
-  | DefineStmt(stm) ->
+  | Ast_c.DefineStmt(stm) ->
       let strname = "DefineStmt" in
       let (start,len) = get_start_len Lib_parsing_c.ii_of_stmt stm in
       nested_start indent strcode strname start len;
       pp_statement (indent + 1) stm;
       nested_end indent
-  | DefineType(ft) ->
+  | Ast_c.DefineType(ft) ->
       let strname = "DefineType" in
       let (start,len) = get_start_len Lib_parsing_c.ii_of_type ft in
       nested_start indent strcode strname start len;
       pp_fullType (indent + 1) ft;
       nested_end indent
-  | DefineDoWhileZero se ->
+  | Ast_c.DefineDoWhileZero se ->
       let strname = "DefineDoWhileZero" in
       let (start,len) = get_start_len (fun x -> x) (snd se) in
       let (stm,exp) = Ast_c.unwrap se in
@@ -1129,49 +1160,57 @@ and pp_define_val indent d =
       pp_statement (indent + 1) stm;
       pp_expression (indent + 1) exp;
       nested_end indent
-  | DefineFunction(def) ->
+  | Ast_c.DefineFunction(def) ->
       let strname = "DefineFunction" in
+      let (start,len) = get_start_len Lib_parsing_c.ii_of_def def in
       nested_start indent strcode strname start len;
       pp_definition (indent + 1) def;
       nested_end indent
-  | DefineInit(init) ->
+  | Ast_c.DefineInit(init) ->
       let strname = "DefineInit" in
+      let (start,len) = get_start_len Lib_parsing_c.ii_of_ini init in
       nested_start indent strcode strname start len;
-      pp_intialiser (indent + 1) init;
+      pp_initialiser (indent + 1) init;
       nested_end indent
-  | DefineMulti(stmts) ->
+  | Ast_c.DefineMulti(stmts) ->
       let strname = "DefineMulti" in
-      nested_start indent strcode strname start len;
-      List.iter (pp_statement (indent + 1)) stmts;
-      nested_end indent
-  | DefineText(wstr) ->
+      (match (stmts,List.rev stmts) with
+	((first::_),(last::_)) ->
+	  let (start,_) = get_start_len Lib_parsing_c.ii_of_stmt first in
+	  let (start2,len) = get_start_len Lib_parsing_c.ii_of_stmt last in
+	  let len = start2 - start + len in
+	  nested_start indent strcode strname start len;
+	  List.iter (pp_statement (indent + 1)) stmts;
+	  nested_end indent
+      | _ -> failwith "bad DefineMulti")
+  | Ast_c.DefineText(wstr) ->
       let strname = "DefineText" in
       let (start,len) = get_start_len (fun x -> x) (snd wstr) in
       let s = Ast_c.unwrap wstr in
       leaf indent strcode strname start (String.length s) s
-  | DefineEmpty ->
+  | Ast_c.DefineEmpty ->
       let strname = "DefineEmpty" in
-      leaf_token indent strcode strname start len
-  | DefineTodo ->
+      leaf_token indent strcode strname  parent_start parent_len
+  | Ast_c.DefineTodo ->
       let strname = "DefineTodo" in
-      leaf_token indent strcode strname start len
+      leaf_token indent strcode strname  parent_start parent_len
 
 and pp_pragmainfo indent pi =
   let strcode = get_strcode PP_PRAGMAINFO pi in
   let (start,len) = get_start_len Lib_parsing_c.ii_of_pragmainfo pi in
   match pi with
-    PragmaTuple args ->
+    Ast_c.PragmaTuple args ->
       let strname = "PragmaTuple" in
       nested_start indent strcode strname start len;
-      pp_arg_list (indent + 1) args;
+      pp_arg_list (indent + 1) (fst args) (snd args);
       nested_end indent
-  | PragmaIdList _ ->
+  | Ast_c.PragmaIdList _ ->
       failwith "PragmaIdList not supported"
 
 and pp_ifdef_directive indent id =
   let strcode = get_strcode PP_IFDEF_DIRECTIVE id in
   match id with
-    IfdefDirective(dir) ->
+    Ast_c.IfdefDirective(dir) ->
       let strname = "IfdefDirective" in
       let ii = snd dir in
       let (start,len) = get_start_len (fun x -> x) ii in
@@ -1186,48 +1225,48 @@ and pp_toplevel indent tl =
   let strcode = get_strcode PP_TOPLEVEL tl in
   let (start,len) = get_start_len Lib_parsing_c.ii_of_toplevel tl in
   match tl with
-  | Declaration decl ->
+  | Ast_c.Declaration decl ->
       let strname = "Declaration" in
       nested_start indent strcode strname start len;
       pp_decl (indent + 1) decl;
       nested_end indent
-  | Definition def ->
+  | Ast_c.Definition def ->
       let strname = "Definition" in
       nested_start indent strcode strname start len;
-      pp_def (indent + 1) def;
+      pp_definition (indent + 1) def;
       nested_end indent
-  | CppTop cppd ->
+  | Ast_c.CppTop cppd ->
       let strname = "CppTop" in
       nested_start indent strcode strname start len;
       pp_cpp_directive (indent + 1) cppd;
       nested_end indent
-  | IfdefTop ifd ->
+  | Ast_c.IfdefTop ifd ->
       let strname = "IfdefTop" in
       nested_start indent strcode strname start len;
       pp_ifdef_directive (indent + 1) ifd;
       nested_end indent
-  | MacroTop _ -> failwith "seems never to be used"
-  | EmptyDef il ->
+  | Ast_c.MacroTop _ -> failwith "seems never to be used"
+  | Ast_c.EmptyDef il ->
       let strname = "EmptyDef" in
       nested_start indent strcode strname start len;
       List.iter (pp_token_leaf (indent + 1)) il;
       nested_end indent
-  | NotParsedCorrectly il ->
+  | Ast_c.NotParsedCorrectly il ->
       let strname = "NotParsedCorrectly" in
       nested_start indent strcode strname start len;
       List.iter (pp_token_leaf (indent + 1)) il;
       nested_end indent
-  | FinalDef info ->
+  | Ast_c.FinalDef info ->
       let strname = "FinalDef" in
       let s = Ast_c.str_of_info info in
-      leaf indent s strcode strname start len
-  | Namespace _ -> failwith "not supporting c++"
+      leaf indent strcode strname start len s
+  | Ast_c.Namespace _ -> failwith "not supporting c++"
 
 (* ------------------------------------------------------------------------- *)
 and pp_program tll =
   let strcode = get_entry_strcode PP_PROGRAM in
   match (tll,List.rev tll) with
-    (first,last) ->
+    ((first::_),(last::_)) ->
       let strname = "Program" in
       let (start,_) = get_start_len Lib_parsing_c.ii_of_toplevel first in
       let (start2,len) = get_start_len Lib_parsing_c.ii_of_toplevel last in

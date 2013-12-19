@@ -820,7 +820,7 @@ let with_program2_unit f program2 =
   program2
   +> Common.unzip
   +> (fun (program, infos) ->
-    f program, infos
+    f program
   )
 
 
