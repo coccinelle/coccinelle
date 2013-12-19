@@ -233,11 +233,13 @@ let extract_info_visitor recursor x =
     !globals
   end
 
+let ii_of_def = extract_info_visitor Visitor_c.vk_def
 let ii_of_decl = extract_info_visitor Visitor_c.vk_decl
 let ii_of_field = extract_info_visitor Visitor_c.vk_struct_field
 let ii_of_node = extract_info_visitor Visitor_c.vk_node
 let ii_of_expr = extract_info_visitor Visitor_c.vk_expr
 let ii_of_stmt = extract_info_visitor Visitor_c.vk_statement
+let ii_of_stmtseq = extract_info_visitor Visitor_c.vk_statement_sequencable
 let ii_of_args = extract_info_visitor Visitor_c.vk_args_splitted
 let ii_of_type = extract_info_visitor Visitor_c.vk_type
 let ii_of_ini  = extract_info_visitor Visitor_c.vk_ini
