@@ -10,7 +10,7 @@ TARGET=parsing_c
 # - type_cocci.ml ast_cocci.ml  # + unparse_hrule
 SRC= token_annot.ml flag_parsing_c.ml parsing_stat.ml \
  token_c.ml ast_c.ml control_flow_c.ml \
- visitor_c.ml lib_parsing_c.ml xmlify.ml \
+ visitor_c.ml lib_parsing_c.ml \
  control_flow_c_build.ml \
  pretty_print_c.ml \
  semantic_c.ml lexer_parser.ml parser_c.ml lexer_c.ml \

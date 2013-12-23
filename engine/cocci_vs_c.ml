@@ -2033,7 +2033,6 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
             (function tin -> (
               onedecl allminus contextified_decla (var, iiptvirgb, iisto) >>=
               (fun _ _ ->
-		Printf.printf "and are we here? %s\n";
 		pr2_once
 		  (Printf.sprintf "%s: %d: %s"
 		     (Ast_c.file_of_info firstii) (Ast_c.line_of_info firstii)
