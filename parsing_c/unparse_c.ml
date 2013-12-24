@@ -140,7 +140,6 @@ let print_token2 = function
           (String.concat " " (List.map string_of_int index))
       | Ctx -> "" in
     b_str^"fake"
-  | Cocci2 (s,_,lc,rc,Some _) -> Printf.sprintf "Cocci2:%d:%d%s (H)" lc rc s
   | Cocci2 (s,_,lc,rc,_) -> Printf.sprintf "Cocci2:%d:%d%s" lc rc s
   | C2 s -> "C2:"^s
   | Comma s -> "Comma:"^s
