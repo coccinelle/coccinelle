@@ -123,14 +123,14 @@ let print_token2 = function
           (match adj with Ast_cocci.ADJ n -> n | _ -> -1)
           (String.concat " " (List.map string_of_int index))
       | Ctx -> "" in
-    let d_str =
+(*    let d_str =
       let info = TH.info_of_tok t in
       match !(info.Ast_c.danger) with
 	Ast_c.DangerStart -> ":DS:"
       |	Ast_c.DangerEnd -> ":DE:"
       |	Ast_c.Danger -> ":D:"
-      |	Ast_c.NoDanger -> ":ND:" in
-    "T2:"^b_str^t_str^d_str^TH.str_of_tok t
+      |	Ast_c.NoDanger -> ":ND:" in *)
+    "T2:"^b_str^t_str(*^d_str*)^TH.str_of_tok t
   | Fake2 (_,b) ->
     let b_str =
       match b with
