@@ -1321,7 +1321,22 @@ type info =
     CtxNL of string * int (*depthmin*) * int (*depthplus*) * int (*inparen*)
   | MinNL of string * int (*depthmin*) * int (*depthplus*) * int (*inparen*)
   | PlusNL of int (* depthplus *) * int (* inparen *)
-  | Other | Drop | Unindent
+  | Other of int | Drop | Unindent
+  | Label (* label is for a newline that should not be taken into account
+	     to compute indentation; it might be befor a label, a #, or
+	     just an empty line *)
+
+let print_info l =
+  List.iter
+    (function
+	(_,CtxNL _,_) -> Printf.printf "CtxNL\n"
+      |	(_,MinNL _,_) -> Printf.printf "MinNL\n"
+      |	(_,PlusNL _,_) -> Printf.printf "PlusNL\n"
+      |	(_,Other n,t) -> Printf.printf "Other %d |%s|\n" n (str_of_token2 t)
+      |	(_,Drop,_) -> Printf.printf "Drop\n"
+      |	(_,Unindent,_) -> Printf.printf "Unindent\n"
+      |	(_,Label,_) -> Printf.printf "Label\n")
+    l
 
 let close_brace l =
   let (added,rest) = span all_coccis l in
@@ -1348,8 +1363,19 @@ let newline = function
     T2(Parser_c.TCommentNewline _,_,_,_)::_ -> true
   | _ -> false
 
+let is_pragma t =
+  let str = TH.str_of_tok t in
+  match str with
+    "" -> false
+  | _ -> String.get str 0 = '#'
+
+let is_label = function
+    T2(t,_,_,_)::_ when is_pragma t -> true
+  | (T2 _)::T2(t,_,_,_)::_ when TH.str_of_tok t = ":" -> true
+  | _ -> false
+
 let parse_indentation xs =
-  let rec loop n dmin dplus inparens ind endparen = function
+  let rec loop n dmin dplus inparens preind ind endparen = function
       [] -> []
     | (x::xs) as l ->
 	let (front,x,xs) =
@@ -1357,116 +1383,137 @@ let parse_indentation xs =
 	  match List.rev newlines with
 	    nl::whitespace -> (List.rev whitespace, nl, rest)
 	  | [] -> ([],x,xs) in
-	let (res,dmin,dplus,inparens,ind,endparen) =
+	let (res,dmin,dplus,inparens,preind,ind,endparen) =
 	  match x with
 	    T2(t,_,_,_) when TH.str_of_tok t = "(" ->
-	      (Other,dmin,dplus,inparens+1,ind,false)
+	      (Other 1,dmin,dplus,inparens+1,preind,ind,false)
 	  | T2(t,_,_,_) when TH.str_of_tok t = ")" ->
-	      (Other,dmin,dplus,inparens-1,ind,true)
+	      (Other 2,dmin,dplus,inparens-1,preind,ind,true)
 	  | T2(t,Ctx,_,_) ->
 	      (match t with
 		Parser_c.TCommentNewline s ->
-		  let s = TH.str_of_tok t in
-		  (match Str.split_delim (Str.regexp "\n") s with
-		  | [before;after] ->
-		      let ind1 = simple_string_length after 0 in
-		      (match close_brace xs with
-			([],true) ->
-			  (CtxNL(after,dmin-1,dplus-1,inparens),
-			 dmin,dplus,inparens,ind1,false)
-		      |	(_,true) ->
-			(CtxNL(after,dmin-1,dplus,inparens),
-			 dmin,dplus,inparens,ind1,false)
-		      |	_ ->
-		      if open_brace xs
-		      then (* do nothing *)
-			(CtxNL(after,dmin,dplus,inparens),
-			 dmin,dplus,inparens,ind1,false)
-		      else
-			let (dmin1,dplus1) =
+		  if is_label xs
+		  then
+		    (* ignore indentation *)
+		    (Label,dmin,dplus,inparens,preind,ind,false)
+		  else
+		    let s = TH.str_of_tok t in
+		    (match Str.split_delim (Str.regexp "\n") s with
+		    | [before;after] ->
+			let ind1 = simple_string_length after 0 in
+			let npreind =
+			  if inparens = 0 then ind1 else preind in
+			(match close_brace xs with
+			  ([],true) ->
+			    (CtxNL(after,dmin-1,dplus-1,inparens),
+			     dmin,dplus,inparens,npreind,ind1,false)
+			| (_,true) ->
+			    (CtxNL(after,dmin-1,dplus,inparens),
+			     dmin,dplus,inparens,npreind,ind1,false)
+			| _ ->
+			    if open_brace xs
+			    then (* do nothing *)
+			      (CtxNL(after,dmin,dplus,inparens),
+			       dmin,dplus,inparens,npreind,ind1,false)
+			    else
+			      let (dmin1,dplus1) =
 			  (* if, etc without {} *)
 			  (* 0 is for the case of ifdef, that we want to
 			     ignore *)
-			  if ind1 > 0 && ind1 < ind && inparens = 0
-			  then (dmin-1,dplus-1)
-			  else if endparen && ind1 > ind && inparens = 0
-			  then (dmin+1,dplus+1)
-			  else (dmin,dplus) in
+				if ind1 > 0 && ind1 < preind && inparens = 0
+				then (dmin-1,dplus-1)
+				else
+				  if endparen && ind1 > preind && inparens = 0
+				  then (dmin+1,dplus+1)
+				  else (dmin,dplus) in
 			(* dplus is kept in the second position, because that
 			   is what to use if we continue at the same indent
 			   level. *)
-			(CtxNL(after,dmin1,dplus1,inparens),
-			 dmin1,dplus1,inparens,ind1,false))
-		  | _ -> (Other,dmin,dplus,inparens,ind,false))
+			      (CtxNL(after,dmin1,dplus1,inparens),
+			       dmin1,dplus1,inparens,npreind,ind1,false))
+		    | _ -> (Other 3,dmin,dplus,inparens,preind,ind,false))
 	      |	_->
 		  (match TH.str_of_tok t with
 		    "{" ->
-		      (Other,dmin+1,dplus+1,inparens,ind,false)
+		      (Other 4,dmin+1,dplus+1,inparens,preind,ind,false)
 		  | "}" ->
-		      (Other,dmin-1,dplus-1,inparens,ind,false)
-		  | _ -> (Other,dmin,dplus,inparens,ind,false)))
+		      (Other 5,dmin-1,dplus-1,inparens,preind,ind,false)
+		  | _ ->
+		      (Other 6,dmin,dplus,inparens,preind,ind,false)))
 	  | T2(t,Min _,_,_) ->
 	      (match t with
 		Parser_c.TCommentNewline s ->
 		  let s = TH.str_of_tok t in
+		  if is_label xs
+		  then
+		    (* ignore indentation *)
+		    (Label,dmin,dplus,inparens,preind,ind,false)
+		  else
 		  (match Str.split_delim (Str.regexp "\n") s with
 		    [before;after] ->
 		      let ind1 = simple_string_length after 0 in
+		      let npreind =
+			if inparens = 0 then ind1 else preind in
 		      (match close_brace xs with
 			(_,true) ->
 			  (MinNL(after,dmin-1,dplus-1,inparens),
-			   dmin,dplus,inparens,ind1,false)
+			   dmin,dplus,inparens,npreind,ind1,false)
 		      |	_ ->
 			  if open_brace xs (* do nothing *)
 			  then (MinNL(after,dmin,dplus,inparens),
-				dmin,dplus,inparens,ind1,false)
+				dmin,dplus,inparens,npreind,ind1,false)
 			  else
 			    let (dmin1,dplus1) =
 			  (* if, etc without {} *)
-			      if ind1 < ind && inparens = 0
+			      if ind1 < preind && inparens = 0
 			      then (dmin-1,dplus-1)
-			      else if endparen && ind1 > ind && inparens = 0
+			      else if endparen && ind1 > preind && inparens = 0
 			      then (dmin+1,dplus+1)
 			      else (dmin,dplus) in
 			    (MinNL(after,dmin1,dplus1,inparens),
-			     dmin1,dplus1,inparens,ind1,false))
-		  | _ -> (Other,dmin,dplus,inparens,ind,false))
+			     dmin1,dplus1,inparens,npreind,ind1,false))
+		  | _ -> (Other 7,dmin,dplus,inparens,preind,ind,false))
 	      |	_->
 		  (match TH.str_of_tok t with
-		    "{" -> (Other,dmin+1,dplus,inparens,ind,false)
-		  | "}" -> (Other,dmin-1,dplus,inparens,ind,false)
-		  | _ -> (Other,dmin,dplus,inparens,ind,false)))
+		    "{" -> (Other 8,dmin+1,dplus,inparens,preind,ind,false)
+		  | "}" -> (Other 9,dmin-1,dplus,inparens,preind,ind,false)
+		  | _ -> (Other 10,dmin,dplus,inparens,preind,ind,false)))
 	  | Cocci2("\n",_,_,_,_) ->
 	      if cocci_close_brace xs
-	      then (PlusNL(dplus-1,inparens),dmin,dplus,inparens,ind,false)
-	      else (PlusNL(dplus,inparens),dmin,dplus,inparens,ind,false)
+	      then
+		(PlusNL(dplus-1,inparens),dmin,dplus,inparens,preind,ind,false)
+	      else
+		(PlusNL(dplus,inparens),dmin,dplus,inparens,preind,ind,false)
 	  | Cocci2("{",_,_,_,_) ->
-	      (Other,dmin,dplus+1,inparens,ind,false)
+	      (Other 11,dmin,dplus+1,inparens,preind,ind,false)
 	  | Cocci2("}",_,_,_,_) ->
-	      (Other,dmin,dplus-1,inparens,ind,false)
+	      (Other 11,dmin,dplus-1,inparens,preind,ind,false)
 	  | C2("{") ->
-	      (Other,dmin,dplus+1,inparens,ind,false)
+	      (Other 12,dmin,dplus+1,inparens,preind,ind,false)
 	  | C2("}") ->
-	      (Other,dmin,dplus-1,inparens,ind,false)
+	      (Other 13,dmin,dplus-1,inparens,preind,ind,false)
 	  | Indent_cocci2 ->
-	      (Drop,dmin,dplus+1,inparens,ind,false)
+	      (Drop,dmin,dplus+1,inparens,preind,ind,false)
 	  | Unindent_cocci2 true ->
-	      (Drop,dmin,dplus-1,inparens,ind,false)
+	      (Drop,dmin,dplus-1,inparens,preind,ind,false)
 	  | Unindent_cocci2 false ->
 	      if dplus = 0
 	      then (* nothing to do *)
-		(Drop,dmin,dplus,inparens,ind,false)
-	      else (Unindent,dmin,dplus,inparens,ind,false)
-	  | _ -> (Other,dmin,dplus,inparens,ind,false) in
+		(Drop,dmin,dplus,inparens,preind,ind,false)
+	      else (Unindent,dmin,dplus,inparens,preind,ind,false)
+	  | _ -> (Other 14,dmin,dplus,inparens,preind,ind,false) in
 	let front =
 	  let rec loop n = function
 	      [] -> []
-	    | x::xs -> (n,Other,x) :: loop (n+1) xs in
+	    | x::xs ->
+		(* Label is better than other, because it is recognized
+		   as being like a newline *)
+		(n,Label,x) :: loop (n+1) xs in
 	  loop n front in
 	front @
 	((n+List.length front),res,x) ::
-	loop (n+1) dmin dplus inparens ind endparen xs in
-  loop 1 0 0 0 0 false xs
+	loop (n+1) dmin dplus inparens preind ind endparen xs in
+  loop 1 0 0 0 0 0 false xs
 
 exception NoInfo
 
@@ -1589,7 +1636,7 @@ let adjust_indentation xs =
 	    loop tabbing_unit past_minmap dmin dplus rest in
 	  (out_tu,minmap,(C2 "\n")::x::t2::res)
       | (n,PlusNL _,t)::(n1,Unindent,t1)::(_,_,x)::
-	((n2,CtxNL _,t2) as nl1)::rest ->
+	((n2,(CtxNL _|Label),t2) as nl1)::rest ->
 	  (* unindent false added after something, existing nl *)
 	  let rest = nl1::rest in
 	  let (out_tu,minmap,res) =
@@ -1636,7 +1683,7 @@ let adjust_indentation xs =
 	    search_in_maps n depth inparens past_minmap minmap
 	      tabbing_unit t in
 	  (out_tu, minmap, newtok::res)
-      | (n,Other,t)::rest ->
+      | (n,(Other _|Label),t)::rest ->
 	  let (out_tu,minmap,res) =
 	    loop tabbing_unit past_minmap dmin dplus rest in
 	  (out_tu,minmap,t::res)
