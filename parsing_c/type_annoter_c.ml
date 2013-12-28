@@ -217,6 +217,8 @@ let typedef_debug = ref false
 
 (* ------------------------------------------------------------ *)
 (* generic, lookup and also return remaining env for further lookup *)
+(*
+too slow on big environments
 let rec lookup_env2 f env =
   match env with
   | [] -> raise Not_found
@@ -226,6 +228,17 @@ let rec lookup_env2 f env =
       | None -> lookup_env2 f (xs::zs)
       | Some y -> y, xs::zs
       )
+*)
+let rec lookup_env2 f = function
+    [] -> raise Not_found
+  | cur::rest ->
+      let rec loop = function
+	  [] -> lookup_env2 f rest
+	| x::xs ->
+	    (match f x with
+	    | None -> loop xs
+	    | Some y -> y, xs::rest) in
+      loop cur
 let lookup_env a b =
   Common.profile_code "TAC.lookup_env" (fun () -> lookup_env2  a b)
 
