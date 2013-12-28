@@ -316,6 +316,7 @@
 #define  ASC_INITDATA
 #define  in2000__INITDATA
 #define  PACKED
+#define  __packed
 
 #define  WPMINFO
 #define  CPMINFO
