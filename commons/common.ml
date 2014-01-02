@@ -3529,7 +3529,11 @@ let (with_open_outfile_append: filename -> (((string -> unit) * out_channel) -> 
  * question: can we have a signal and so exn when in a exn handler ?
  *)
 
-let interval_timer = ref true
+let interval_timer = ref (
+  try
+    ignore(Unix.getitimer Unix.ITIMER_VIRTUAL);
+    true
+  with Unix.Unix_error(_, _, _) -> false)
 
 let timeout_function timeoutval = fun f ->
   try
