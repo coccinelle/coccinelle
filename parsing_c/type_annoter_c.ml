@@ -164,19 +164,12 @@ type namedef =
   (* cppext: *)
   | Macro        of string * (define_kind * define_val)
 
-let print_scoped_env e =
-  List.iter
-    (function e ->
-      List.iter
-	(function
-	    VarOrFunc(s,_) -> Printf.printf "%s " s
-	  | EnumConstant(s,_) -> Printf.printf "%s " s
-	  | TypeDef(s,t) -> Printf.printf "%s" s
-	  | StructUnionNameDef(s,_) -> Printf.printf "%s " s
-	  | Macro(s,_) -> Printf.printf "%s " s)
-	e;
-      Printf.printf "\n")
-    e
+type nameenv =
+    {var_or_func : (string * Ast_c.exp_type) list;
+      enum_constant : (string * string option) list;
+      typedef : (string * fullType) list;
+      struct_union_name_def : (string * (structUnion * structType) wrap) list;
+      macro : (string * (define_kind * define_val)) list}
 
 (* Because have nested scope, have nested list, hence the list list.
  *
@@ -188,17 +181,23 @@ let print_scoped_env e =
  * lookup_env below it's quite easy to do. With hash it may be
  * more complicated.
 *)
-type environment = namedef list list
+type environment = nameenv list
 
 
 (* ------------------------------------------------------------ *)
 (* can be modified by the init_env function below, by
  * the file environment_unix.h
  *)
+
+let empty_frame =
+  {var_or_func = []; enum_constant = []; typedef = [];
+      struct_union_name_def = []; macro = []}
+
 let initial_env = ref [
-  [VarOrFunc("NULL",
-            (Lib.al_type (Parse_c.type_of_string "void *"),
-	    Ast_c.NotLocalVar));
+  {empty_frame with
+    var_or_func = 
+    [("NULL",
+      (Lib.al_type (Parse_c.type_of_string "void *"),Ast_c.NotLocalVar))]}
 
   (*
    VarOrFunc("malloc",
@@ -208,7 +207,6 @@ let initial_env = ref [
             (Lib.al_type(Parse_c.type_of_string "void ( * )(void *ptr)"),
 	    Ast_c.NotLocalVar));
   *)
-  ]
 ]
 
 
@@ -217,32 +215,29 @@ let typedef_debug = ref false
 
 (* ------------------------------------------------------------ *)
 (* generic, lookup and also return remaining env for further lookup *)
-(*
-too slow on big environments
-let rec lookup_env2 f env =
-  match env with
-  | [] -> raise Not_found
-  | []::zs -> lookup_env2 f zs
-  | (x::xs)::zs ->
-      (match f x with
-      | None -> lookup_env2 f (xs::zs)
-      | Some y -> y, xs::zs
-      )
-*)
-let rec lookup_env2 f = function
-    [] -> raise Not_found
-  | cur::rest ->
-      let rec loop = function
-	  [] -> lookup_env2 f rest
-	| x::xs ->
-	    (match f x with
-	    | None -> loop xs
-	    | Some y -> y, xs::rest) in
-      loop cur
-let lookup_env a b =
-  Common.profile_code "TAC.lookup_env" (fun () -> lookup_env2  a b)
 
+(* optimization - names that have never been seen don't exist in
+   any environment *)
+let seen_names = Hashtbl.create 101
+let update_seen_names name =
+  if not (Hashtbl.mem seen_names name)
+  then Hashtbl.add seen_names name ()
+  else ()
 
+let rec lookup_env2 getter setter s env =
+  let _ = Hashtbl.find seen_names s in
+  let rec lookup_env2 = function
+      [] -> raise Not_found
+    | cur::rest ->
+	let rec loop = function
+	    [] -> lookup_env2 rest
+	  | (x,y)::xs ->
+	      if s =$= x then y, (setter cur xs) :: rest else loop xs in
+	loop (getter cur) in
+  lookup_env2 env
+
+let lookup_env a b c =
+  Common.profile_code "TAC.lookup_env" (fun () -> lookup_env2  a b c)
 
 let member_env lookupf env =
   try
@@ -250,53 +245,36 @@ let member_env lookupf env =
     true
   with Not_found -> false
 
-
-
-
 (* ------------------------------------------------------------ *)
 
-
 let lookup_var s env =
-  let f = function
-    | VarOrFunc (s2, typ) -> if s2 =$= s then Some typ else None
-    | _ -> None
-  in
-  lookup_env f env
+  let getter env = env.var_or_func in
+  let setter all env = {all with var_or_func = env} in
+  lookup_env getter setter s env
 
 let lookup_typedef s env =
   if !typedef_debug then pr2 ("looking for: " ^ s);
-  let f = function
-    | TypeDef (s2, typ) -> if s2 =$= s then Some typ else None
-    | _ -> None
-  in
-  lookup_env f env
+  let getter env = env.typedef in
+  let setter all env = {all with typedef = env} in
+  lookup_env getter setter s env
 
 let lookup_structunion (_su, s) env =
-  let f = function
-    | StructUnionNameDef (s2, typ) -> if s2 =$= s then Some typ else None
-    | _ -> None
-  in
-  lookup_env f env
+  let getter env = env.struct_union_name_def in
+  let setter all env = {all with struct_union_name_def = env} in
+  lookup_env getter setter s env
 
 let lookup_macro s env =
-  let f = function
-    | Macro (s2, typ) -> if s2 =$= s then Some typ else None
-    | _ -> None
-  in
-  lookup_env f env
+  let getter env = env.macro in
+  let setter all env = {all with macro = env} in
+  lookup_env getter setter s env
 
 let lookup_enum s env =
-  let f = function
-    | EnumConstant (s2, typ) -> if s2 =$= s then Some typ else None
-    | _ -> None
-  in
-  lookup_env f env
-
+  let getter env = env.enum_constant in
+  let setter all env = {all with enum_constant = env} in
+  lookup_env getter setter s env
 
 let lookup_typedef a b =
   Common.profile_code "TAC.lookup_typedef" (fun () -> lookup_typedef  a b)
-
-
 
 (*****************************************************************************)
 (* "type-lookup"  *)
@@ -539,10 +517,18 @@ let rec is_simple_expr expr =
 (* opti: cache ? use hash ? *)
 let _scoped_env = ref !initial_env
 
-(* memoise unnanoted var, to avoid too much warning messages *)
-let _notyped_var = ref (Hashtbl.create 100)
+let reinit_seen_names env =
+  let run (name,_) = update_seen_names name in
+  List.iter run env.var_or_func;
+  List.iter run env.typedef;
+  List.iter run env.struct_union_name_def;
+  List.iter run env.macro;
+  List.iter run env.enum_constant
 
-let new_scope() = _scoped_env := []::!_scoped_env
+(* memoise unnanoted var, to avoid too much warning messages *)
+let _notyped_var = ref (Hashtbl.create 101)
+
+let new_scope() = _scoped_env := empty_frame::!_scoped_env
 let del_scope() = _scoped_env := List.tl !_scoped_env
 
 let do_in_new_scope f =
@@ -553,9 +539,29 @@ let do_in_new_scope f =
     res
   end
 
+(* this is not functional at all, so why not use a hash table? *)
 let add_in_scope namedef =
   let (current, older) = Common.uncons !_scoped_env in
-  _scoped_env := (namedef::current)::older
+  let current =
+    match namedef with
+      | VarOrFunc (s, typ) ->
+	  update_seen_names s;
+	  {current with var_or_func = (s, typ) :: current.var_or_func}
+      | TypeDef   (s, typ) ->
+	  update_seen_names s;
+	  {current with typedef = (s, typ) :: current.typedef}
+      | StructUnionNameDef (s, (su, typ)) ->
+	  update_seen_names s;
+	  {current with
+	    struct_union_name_def =
+	    (s, (su, typ)) :: current.struct_union_name_def}
+      | Macro (s, body) ->
+	  update_seen_names s;
+	  {current with macro = (s, body) :: current.macro}
+      | EnumConstant (s, body) ->
+	  update_seen_names s;
+	  {current with enum_constant = (s, body) :: current.enum_constant} in
+  _scoped_env := current::older
 
 (* ------------------------------------------------------------ *)
 
@@ -625,11 +631,9 @@ let lookup_opt_env lookupf s =
     lookupf s !_scoped_env
   )
 
-let unwrap_unfold_env2 typ =
+let unwrap_unfold_env typ =
   Ast_c.unwrap_typeC
     (type_unfold_one_step typ !_scoped_env)
-let unwrap_unfold_env typ =
-  Common.profile_code "TAC.unwrap_unfold_env" (fun () -> unwrap_unfold_env2 typ)
 
 let typedef_fix a b =
   Common.profile_code "TAC.typedef_fix" (fun () -> typedef_fix a b)
@@ -904,7 +908,8 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
                         pr2 "TAC:MultiFound";
                         Type_c.noTypeHere
                   )
-              | _ -> Type_c.noTypeHere
+              | _ ->
+		  Type_c.noTypeHere
           )
         )
 
@@ -1340,6 +1345,7 @@ let rec (annotate_program2 :
 
   (* globals (re)initialialisation *)
   _scoped_env := env;
+  List.iter reinit_seen_names env;
   _notyped_var := (Hashtbl.create 100);
 
   prog +> List.map (fun elem ->

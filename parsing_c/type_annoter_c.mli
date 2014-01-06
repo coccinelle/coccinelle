@@ -1,15 +1,13 @@
-type namedef =
-  | VarOrFunc    of string * Ast_c.exp_type
-  | EnumConstant of string * string option
-
-  | TypeDef      of string * Ast_c.fullType
-  | StructUnionNameDef of string *
-      (Ast_c.structUnion * Ast_c.structType) Ast_c.wrap
-
-  | Macro of string * (Ast_c.define_kind * Ast_c.define_val)
+type nameenv =
+    {var_or_func : (string * Ast_c.exp_type) list;
+      enum_constant : (string * string option) list;
+      typedef : (string * Ast_c.fullType) list;
+      struct_union_name_def :
+	(string * (Ast_c.structUnion * Ast_c.structType) Ast_c.wrap) list;
+      macro : (string * (Ast_c.define_kind * Ast_c.define_val)) list}
 
 (* have nested scope, so nested list*)
-type environment = namedef list list
+type environment = nameenv list
 
 (* can be set with init_env *)
 val initial_env : environment ref
