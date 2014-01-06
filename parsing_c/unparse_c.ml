@@ -480,6 +480,8 @@ let is_added_space = function
   | C2(" ") -> true (* only whitespace *)
   | _ -> false
 
+let is_added_whitespace = function C2 " " | C2 "\n" -> true | _ -> false
+
 let is_newline = function
   | T2(Parser_c.TCommentNewline _,_b,_i,_h) -> true
   | T2(Parser_c.TComment _,_b,_i,_h) -> true (* only whitespace *)
@@ -1338,44 +1340,223 @@ let print_info l =
       |	(_,Label,_) -> Printf.printf "Label\n")
     l
 
-let close_brace l =
-  let (added,rest) = span all_coccis l in
-  (added,
-   match rest with
-     [] -> false
-   | t::_ -> (str_of_token2 t) = "}")
+(* ------------------------------------------------------------------------- *)
+(* preparsing *)
 
-let open_brace l =
-  let (added,rest) = span all_coccis l in
-  match rest with
+type op = PlusOnly | MinusOnly | Both | Neither
+
+let minplus = function
+    Ctx -> Both
+  | Min _ -> MinusOnly
+
+type parsed_tokens = NL of string | Tok of string | Ind of token2
+
+let parse_token tok =
+  match tok with
+    T2((Parser_c.TCommentNewline s) as t,a,_,_) ->
+      let s = TH.str_of_tok t in
+      (match Str.split_delim (Str.regexp "\n") s with
+	[before;after] -> (NL after, minplus a)
+      |	_ -> (Tok (str_of_token2 tok), minplus a))
+  | T2(_,a,_,_) -> (Tok (str_of_token2 tok), minplus a)
+  | C2 s -> (Tok s, PlusOnly)
+  | Cocci2("\n",_,_,_,_) -> (NL "", PlusOnly)
+  | Cocci2(s,_,_,_,_) -> (Tok s, PlusOnly)
+  | Indent_cocci2 | Unindent_cocci2 _ -> (Ind tok, PlusOnly)
+  | _ -> (Tok (str_of_token2 tok), Neither)
+
+(* ------------------------------------------------------------------------- *)
+
+let add1 op (am,ap) =
+  match op with
+    PlusOnly -> (am,ap+1)
+  | MinusOnly -> (am+1,ap)
+  | Both -> (am+1,ap+1)
+  | Neither -> (am,ap)
+
+let accadd1 op (am,ap) =
+  match op with
+    PlusOnly -> (am,0::ap)
+  | MinusOnly -> (0::am,ap)
+  | Both -> (0::am,0::ap)
+  | Neither -> (am,ap)
+
+let add op (am,ap) (bm,bp) =
+  match op with
+    PlusOnly -> (am,ap+bp)
+  | MinusOnly -> (am+bm,ap)
+  | Both -> (am+bm,ap+bp)
+  | Neither -> (am,ap)
+
+let sub1 op (am,ap) =
+  let sub1 = function 0 -> 0 | n -> n-1 in
+  match op with
+    PlusOnly -> (am,sub1 ap)
+  | MinusOnly -> (sub1 am,ap)
+  | Both -> (sub1 am,sub1 ap)
+  | Neither -> (am,ap)
+
+let subtract op (am,ap) (bm,bp) =
+  let subtract a b = max 0 (a - b) in
+  match op with
+    PlusOnly -> (am,subtract ap bp)
+  | MinusOnly -> (subtract am bm,ap)
+  | Both -> (subtract am bm,subtract ap bp)
+  | Neither -> (am,ap)
+
+let skip_unlike_me op xs is_whitespace =
+  let rec loop = function
+      [] -> []
+    | x::xs when is_whitespace x or is_added_whitespace x -> loop xs
+    | ((T2 (_,Ctx,_,_)) :: _) as xs -> xs
+    | ((T2 (_,Min _,_,_)) :: _) as xs when op = MinusOnly or op = Both -> xs
+    | (((Cocci2 _)::_) | ((C2 _)::_)) as xs
+      when op = PlusOnly or op = Both -> xs
+    | (Indent_cocci2::_) as xs when op = PlusOnly or op = Both -> xs
+    | (Unindent_cocci2 _::_) as xs when op = PlusOnly or op = Both -> xs
+    | _::xs -> loop xs in
+  loop xs
+
+let open_brace op xs =
+  let is_whitespace t = is_whitespace t or is_added_whitespace t in
+  match skip_unlike_me op xs is_whitespace with
     [] -> false
-  | t::_ -> (str_of_token2 t) = "{"
+  | t::_ -> (str_of_token2 t) = "{" or (str_of_token2 t) = ";"
 
-let cocci_close_brace = function
+let close_brace op xs =
+  let is_whitespace t = is_whitespace t or is_added_whitespace t in
+  match skip_unlike_me op xs is_whitespace with
     [] -> false
   | t::_ -> (str_of_token2 t) = "}"
 
-let is_cocci = function
+let is_nl op xs =
+  let is_whitespace t = is_space t or is_added_space t in
+  match skip_unlike_me op xs is_whitespace with
     [] -> false
-  | (_,_,t)::_ -> all_coccis t
-
-let newline = function
-    T2(Parser_c.TCommentNewline _,_,_,_)::_ -> true
+  | T2(Parser_c.TCommentNewline _,_b,_i,_h)::_ -> true
+  | C2 "\n"::_ -> true
+  | Indent_cocci2 :: _ -> true
+  | Unindent_cocci2 _ :: _ -> true
   | _ -> false
 
 let is_pragma t =
-  let str = TH.str_of_tok t in
+  let str = str_of_token2 t in
   match str with
     "" -> false
   | _ -> String.get str 0 = '#'
 
-let is_label = function
-    T2(t,_,_,_)::_ when is_pragma t -> true
-  | (T2 _)::T2(t,_,_,_)::_ when TH.str_of_tok t = ":" -> true
-  | _ -> false
+let is_label op xs =
+  let is_whitespace t = is_whitespace t or is_added_whitespace t in
+  match skip_unlike_me op xs is_whitespace with
+    [] -> false
+  | t::_ when is_pragma t -> true
+  | _::rest ->
+      (match skip_unlike_me op rest is_whitespace with
+	t::_ when str_of_token2 t = ":" -> true
+      | _ -> false)
+
+let adjust_by_function getter op k q vl xs =
+  match op with
+    MinusOnly | PlusOnly ->
+      let fn = if getter op xs then k else q in
+      fn op vl
+  | Both ->
+      let vl1 =
+	let fn = if getter MinusOnly xs then k else q in
+	fn MinusOnly vl in
+      let fn = if getter PlusOnly xs then k else q in
+      fn PlusOnly vl1
+  | _ -> vl
+
+let drop_zeroes (a,b) =
+  let drop_zeroes l =
+    let (_,rest) = span (function x -> x = 0) l in
+    rest in
+  (drop_zeroes a,drop_zeroes b)
+
+let add1top op (am,ap) =
+  let add1 = function x::xs -> (x+1)::xs | _ -> [] in
+  match op with
+    PlusOnly -> (am,add1 ap)
+  | MinusOnly -> (add1 am,ap)
+  | Both -> (add1 am,add1 ap)
+  | Neither -> (am,ap)
+
+let sub1top op (am,ap) =
+  let sub1 = function x::xs -> (max 0 (x-1))::xs | _ -> [] in
+  match op with
+    PlusOnly -> (am,sub1 ap)
+  | MinusOnly -> (sub1 am,ap)
+  | Both -> (sub1 am,sub1 ap)
+  | Neither -> (am,ap)
+
+let token_effect tok dmin dplus inparens inassn accumulator xs =
+  let info = parse_token tok in
+  match info with
+    (Tok ")",op)
+    when inparens <= 1 && inassn = 0 ->
+      let nopen_brace a b = not (open_brace a b) in
+      let do_nothing a b = b in
+      let accumulator =
+	adjust_by_function nopen_brace op accadd1 do_nothing accumulator xs in
+      (Other 1,dmin,dplus,0,0,accumulator)
+  | (Tok "else",op) ->
+      let do_nothing a b = b in
+      let accumulator =
+	adjust_by_function is_nl op accadd1 do_nothing accumulator xs in
+      (Other 1,dmin,dplus,0,0,accumulator)
+  | (Tok "{",op) ->
+      let (dmin,dplus) = add1 op (dmin,dplus) in
+      let accumulator = add1top op accumulator in
+      (Other 2,dmin,dplus,inparens,0,accumulator)
+  | (Tok "}",op) ->
+      let (dmin,dplus) = sub1 op (dmin,dplus) in
+      let accumulator = sub1top op accumulator in
+      (Other 3,dmin,dplus,inparens,0,drop_zeroes accumulator)
+  | (Tok(";"|","),op) when inparens = 0 && inassn <= 1 ->
+      (Other 4,dmin,dplus,inparens,0,drop_zeroes accumulator)
+  | (Tok ";",op) ->
+      (Other 5,dmin,dplus,inparens,max 0 (inassn-1),accumulator)
+  | (Tok "=",op) when inparens+inassn = 0 ->
+      (Other 6,dmin,dplus,inparens,1,accumulator)
+  | (Tok "(",op) -> (Other 7,dmin,dplus,inparens+1,inassn,accumulator)
+  | (Tok ")",op) -> (Other 8,dmin,dplus,inparens-1,inassn,accumulator)
+  | (Ind Indent_cocci2,op) ->
+      (Drop,dmin,dplus,inparens,inassn,accumulator)
+  | (Ind (Unindent_cocci2 true),op) ->
+      (Drop,dmin,dplus,inparens,inassn,accumulator)
+  | (Ind (Unindent_cocci2 false),op) ->
+      (Unindent,dmin,dplus,inparens,inassn,accumulator)
+  | (NL after,op) ->
+      if is_label Both xs
+      then (* ignore indentation *)
+	(Label,dmin,dplus,inparens,inassn,accumulator)
+      else
+	let rebuilder min plus =
+	  match op with
+	    Both -> CtxNL(after,min,plus,inparens+inassn)
+	  | MinusOnly -> MinNL(after,min,plus,inparens+inassn)
+	  | PlusOnly -> PlusNL(plus,inparens+inassn)
+	  | _ -> failwith "not possible" in
+	let numacc =
+	  (List.length (fst accumulator), List.length (snd accumulator)) in
+	let (admin,adplus) =
+	  adjust_by_function close_brace op
+	    (fun op x -> add op (sub1 op x) numacc)
+	    (fun op x -> add op x numacc)
+	    (dmin,dplus) xs in
+	(rebuilder admin adplus,
+	 dmin,dplus,inparens,inassn,accumulator)
+  | (_,op) -> (Other 9,dmin,dplus,inparens,inassn,accumulator)
 
 let parse_indentation xs =
-  let rec loop n dmin dplus inparens preind ind endparen = function
+  let xs =
+    match xs with
+      (Unindent_cocci2 false)::xs ->
+	(* Drop unindent at the very beginning; no need for prior nl *)
+	xs
+    | _ -> xs in
+  let rec loop n dmin dplus inparens inassn accumulator = function
       [] -> []
     | (x::xs) as l ->
 	let (front,x,xs) =
@@ -1383,125 +1564,11 @@ let parse_indentation xs =
 	  match List.rev newlines with
 	    nl::whitespace -> (List.rev whitespace, nl, rest)
 	  | [] -> ([],x,xs) in
-	let (res,dmin,dplus,inparens,preind,ind,endparen) =
-	  match x with
-	    T2(t,_,_,_) when TH.str_of_tok t = "(" ->
-	      (Other 1,dmin,dplus,inparens+1,preind,ind,false)
-	  | T2(t,_,_,_) when TH.str_of_tok t = ")" ->
-	      (Other 2,dmin,dplus,inparens-1,preind,ind,true)
-	  | T2(t,Ctx,_,_) ->
-	      (match t with
-		Parser_c.TCommentNewline s ->
-		  if is_label xs
-		  then
-		    (* ignore indentation *)
-		    (Label,dmin,dplus,inparens,preind,ind,false)
-		  else
-		    let s = TH.str_of_tok t in
-		    (match Str.split_delim (Str.regexp "\n") s with
-		    | [before;after] ->
-			let ind1 = simple_string_length after 0 in
-			let npreind =
-			  if inparens = 0 then ind1 else preind in
-			(match close_brace xs with
-			  ([],true) ->
-			    (CtxNL(after,dmin-1,dplus-1,inparens),
-			     dmin,dplus,inparens,npreind,ind1,false)
-			| (_,true) ->
-			    (CtxNL(after,dmin-1,dplus,inparens),
-			     dmin,dplus,inparens,npreind,ind1,false)
-			| _ ->
-			    if open_brace xs
-			    then (* do nothing *)
-			      (CtxNL(after,dmin,dplus,inparens),
-			       dmin,dplus,inparens,npreind,ind1,false)
-			    else
-			      let (dmin1,dplus1) =
-			  (* if, etc without {} *)
-			  (* 0 is for the case of ifdef, that we want to
-			     ignore *)
-				if ind1 > 0 && ind1 < preind && inparens = 0
-				then (dmin-1,dplus-1)
-				else
-				  if endparen && ind1 > preind && inparens = 0
-				  then (dmin+1,dplus+1)
-				  else (dmin,dplus) in
-			(* dplus is kept in the second position, because that
-			   is what to use if we continue at the same indent
-			   level. *)
-			      (CtxNL(after,dmin1,dplus1,inparens),
-			       dmin1,dplus1,inparens,npreind,ind1,false))
-		    | _ -> (Other 3,dmin,dplus,inparens,preind,ind,false))
-	      |	_->
-		  (match TH.str_of_tok t with
-		    "{" ->
-		      (Other 4,dmin+1,dplus+1,inparens,preind,ind,false)
-		  | "}" ->
-		      (Other 5,dmin-1,dplus-1,inparens,preind,ind,false)
-		  | _ ->
-		      (Other 6,dmin,dplus,inparens,preind,ind,false)))
-	  | T2(t,Min _,_,_) ->
-	      (match t with
-		Parser_c.TCommentNewline s ->
-		  let s = TH.str_of_tok t in
-		  if is_label xs
-		  then
-		    (* ignore indentation *)
-		    (Label,dmin,dplus,inparens,preind,ind,false)
-		  else
-		  (match Str.split_delim (Str.regexp "\n") s with
-		    [before;after] ->
-		      let ind1 = simple_string_length after 0 in
-		      let npreind =
-			if inparens = 0 then ind1 else preind in
-		      (match close_brace xs with
-			(_,true) ->
-			  (MinNL(after,dmin-1,dplus-1,inparens),
-			   dmin,dplus,inparens,npreind,ind1,false)
-		      |	_ ->
-			  if open_brace xs (* do nothing *)
-			  then (MinNL(after,dmin,dplus,inparens),
-				dmin,dplus,inparens,npreind,ind1,false)
-			  else
-			    let (dmin1,dplus1) =
-			  (* if, etc without {} *)
-			      if ind1 < preind && inparens = 0
-			      then (dmin-1,dplus-1)
-			      else if endparen && ind1 > preind && inparens = 0
-			      then (dmin+1,dplus+1)
-			      else (dmin,dplus) in
-			    (MinNL(after,dmin1,dplus1,inparens),
-			     dmin1,dplus1,inparens,npreind,ind1,false))
-		  | _ -> (Other 7,dmin,dplus,inparens,preind,ind,false))
-	      |	_->
-		  (match TH.str_of_tok t with
-		    "{" -> (Other 8,dmin+1,dplus,inparens,preind,ind,false)
-		  | "}" -> (Other 9,dmin-1,dplus,inparens,preind,ind,false)
-		  | _ -> (Other 10,dmin,dplus,inparens,preind,ind,false)))
-	  | Cocci2("\n",_,_,_,_) ->
-	      if cocci_close_brace xs
-	      then
-		(PlusNL(dplus-1,inparens),dmin,dplus,inparens,preind,ind,false)
-	      else
-		(PlusNL(dplus,inparens),dmin,dplus,inparens,preind,ind,false)
-	  | Cocci2("{",_,_,_,_) ->
-	      (Other 11,dmin,dplus+1,inparens,preind,ind,false)
-	  | Cocci2("}",_,_,_,_) ->
-	      (Other 11,dmin,dplus-1,inparens,preind,ind,false)
-	  | C2("{") ->
-	      (Other 12,dmin,dplus+1,inparens,preind,ind,false)
-	  | C2("}") ->
-	      (Other 13,dmin,dplus-1,inparens,preind,ind,false)
-	  | Indent_cocci2 ->
-	      (Drop,dmin,dplus+1,inparens,preind,ind,false)
-	  | Unindent_cocci2 true ->
-	      (Drop,dmin,dplus-1,inparens,preind,ind,false)
-	  | Unindent_cocci2 false ->
-	      if dplus = 0
-	      then (* nothing to do *)
-		(Drop,dmin,dplus,inparens,preind,ind,false)
-	      else (Unindent,dmin,dplus,inparens,preind,ind,false)
-	  | _ -> (Other 14,dmin,dplus,inparens,preind,ind,false) in
+	let (res,dmin,dplus,inparens,inassn,accumulator) =
+	  token_effect x dmin dplus inparens inassn accumulator xs in
+	(*Printf.printf "%s: dmin %d dplus %d accmin %d accplus %d\n"
+	  (print_token2 x) dmin dplus
+	  (List.length (fst accumulator)) (List.length (snd accumulator));*)
 	let front =
 	  let rec loop n = function
 	      [] -> []
@@ -1512,8 +1579,8 @@ let parse_indentation xs =
 	  loop n front in
 	front @
 	((n+List.length front),res,x) ::
-	loop (n+1) dmin dplus inparens preind ind endparen xs in
-  loop 1 0 0 0 0 0 false xs
+	loop (n+1) dmin dplus inparens inassn accumulator xs in
+  loop 1 0 0 0 0 ([],[]) xs
 
 exception NoInfo
 
@@ -1551,7 +1618,7 @@ let update_map_min n spaces tabbing_unit past_minus_map depthmin dmin
     then
       try
 	let (_,oldspaces) = List.assoc (dmin,inparens) past_minus_map in
-	if depthmin = dmin - 1 (* we have outdented *)
+	if depthmin < dmin (* we have outdented *)
 	then get_tabbing_unit spaces oldspaces
 	else if depthmin = dmin + 1 (* we have indented *)
 	then get_tabbing_unit oldspaces spaces
@@ -1611,51 +1678,54 @@ let search_in_maps n depth inparens past_minmap minmap tu t =
     try Some(List.assoc (depth,inparens) minmap) with _ -> None in
   get_answer fail2 map1 map2
 
+(* Add newlines where needed around unindents.  Lets adjust_indentation
+adjust them if needed. *)
+let rec newlines_for_unindents xs =
+  let is_ctxnl =
+    function T2(Parser_c.TCommentNewline _,_b,_i,_h) -> true | _ -> false in
+  let is_plusnl =
+    function C2 "\n" | Cocci2("\n",_,_,_,_) -> true | _ -> false in
+  let is_nl x = is_ctxnl x or is_plusnl x in
+  let rec loop = function
+      [] -> []
+    | (Unindent_cocci2 false)::x::nl::rest ->
+	x :: loop (nl::rest)
+    | ctxnl::(Unindent_cocci2 false)::x::plusnl::rest
+      when is_ctxnl ctxnl && is_plusnl plusnl ->
+	plusnl::(Unindent_cocci2 false)::x::loop (ctxnl::rest)
+    | ctxnl::(Unindent_cocci2 false)::x::rest when is_ctxnl ctxnl ->
+	(C2 "\n")::(Unindent_cocci2 false)::x::loop (ctxnl::rest)
+    | plusnl1::(Unindent_cocci2 false)::x::nl2::rest
+      when is_plusnl plusnl1 && is_nl nl2 ->
+	plusnl1::(Unindent_cocci2 false)::x::loop (nl2::rest)
+    | plusnl::(Unindent_cocci2 false)::x::[] when is_plusnl plusnl ->
+	plusnl::(Unindent_cocci2 false)::x::[]
+    | plusnl::(Unindent_cocci2 false)::x::rest when is_plusnl plusnl ->
+	plusnl::(Unindent_cocci2 false)::x::loop (C2 "\n"::rest)
+    | y::(Unindent_cocci2 false)::x::nl::rest when is_nl nl ->
+	y::C2 "\n"::(Unindent_cocci2 false)::x::loop (nl::rest)
+    | y::(Unindent_cocci2 false)::x::rest ->
+	y::C2 "\n"::(Unindent_cocci2 false)::x::C2 "\n"::rest
+    | x::rest -> x::loop rest in
+  loop xs
+
 let adjust_indentation xs =
+  let xs = newlines_for_unindents xs in
   let toks = parse_indentation xs in
   let rec loop tabbing_unit past_minmap dmin dplus =
     function
 	[] -> (tabbing_unit,past_minmap,[])
-      | (n,PlusNL _,t)::(n1,Unindent,t1)::(_,_,x)::((n2,PlusNL _,t2) as nl1)
-	::rest ->
-	  (* unindent false added in the middle of new things *)
-	  let rest = nl1::rest in
+      |	(n,PlusNL(depth,inparens),t)::(_,Unindent,_)::(_,_,x)::rest ->
 	  let (out_tu,minmap,res) =
 	    loop tabbing_unit past_minmap dmin dplus rest in
 	  (out_tu,minmap,t::x::res)
-      | ((n,CtxNL _,t) as nl1)::(n1,Unindent,t1)::(_,_,x)::
-	(n2,PlusNL _,t2)::rest ->
-	  (* unindent false added before something, existing nl *)
-	  let rest = nl1::rest in
-	  let (out_tu,minmap,res) =
-	    loop tabbing_unit past_minmap dmin dplus rest in
-	  (out_tu,minmap,t2::x::res)
-      | (n1,Unindent,t1)::(_,_,x)::(n2,PlusNL _,t2)::rest ->
-	  (* unindent false added before something, no existing nl *)
-	  let (out_tu,minmap,res) =
-	    loop tabbing_unit past_minmap dmin dplus rest in
-	  (out_tu,minmap,(C2 "\n")::x::t2::res)
-      | (n,PlusNL _,t)::(n1,Unindent,t1)::(_,_,x)::
-	((n2,(CtxNL _|Label),t2) as nl1)::rest ->
-	  (* unindent false added after something, existing nl *)
-	  let rest = nl1::rest in
-	  let (out_tu,minmap,res) =
-	    loop tabbing_unit past_minmap dmin dplus rest in
-	  (out_tu,minmap,t::x::res)
-      | (n,PlusNL _,t)::(n1,Unindent,t1)::(_,_,x)::rest ->
-	  (* unindent false added after something, no existing nl *)
-	  let (out_tu,minmap,res) =
-	    loop tabbing_unit past_minmap dmin dplus rest in
-	  (out_tu,minmap,t::x::(C2 "\n")::res)
-      |	(n,Unindent,t)::_ ->
-	  (* unparse_cocci adds newline before or after *)
-	  failwith "not possible"
+      |	(_,Unindent,_)::rest -> loop tabbing_unit past_minmap dmin dplus rest
       | (n,CtxNL(spaces,depthmin,depthplus,inparens),t)::rest ->
 	  let (tabbing_unit,past_minmap) =
 	    update_map_min n spaces tabbing_unit past_minmap
 	      depthmin dmin inparens true in
 	  let (out_tu,minmap,res) =
-	    loop tabbing_unit past_minmap dmin dplus rest in
+	    loop tabbing_unit past_minmap depthmin depthplus rest in
 	  let (_,minmap) =
 	    update_map_min n spaces tabbing_unit minmap
 	      depthmin dmin inparens false in
@@ -1671,14 +1741,14 @@ let adjust_indentation xs =
 	    update_map_min n spaces tabbing_unit past_minmap
 	      depthmin dmin inparens true in
 	  let (out_tu,minmap,res) =
-	    loop tabbing_unit past_minmap dmin dplus rest in
+	    loop tabbing_unit past_minmap depthmin depthplus rest in
 	  let (_,minmap) =
 	    update_map_min n spaces tabbing_unit minmap
 	      depthmin dmin inparens false in
 	  (out_tu,minmap,t::res)
       | (n,PlusNL(depth,inparens),t)::rest ->
 	  let (out_tu,minmap,res) =
-	    loop tabbing_unit past_minmap dmin dplus rest in
+	    loop tabbing_unit past_minmap dmin depth rest in
 	  let newtok =
 	    search_in_maps n depth inparens past_minmap minmap
 	      tabbing_unit t in
@@ -1691,11 +1761,12 @@ let adjust_indentation xs =
 	  let (out_tu,minmap,res) =
 	    loop tabbing_unit past_minmap dmin dplus rest in
 	  (out_tu,minmap,res) in
-  let nulmap = [((0,0),(-1,""))] in
+  let nulmap = [((0,0),(0,""))] in
   let (out_tu,_,res) = loop None nulmap 0 0 toks in
   (res,out_tu)
 
 (* ------------------------------------------------------------------------ *)
+(* Not used any more.  To clean... *)
 
 let rec old_adjust_indentation xs =
 
@@ -2081,7 +2152,7 @@ let pp_program2 xs outfile  =
 	      (* have to annotate droppable spaces early, so that can create
 		 the right minus and plus maps in adjust indentation.  For
 		 the same reason, cannot actually remove the minus tokens. *)
-              let toks = drop_line toks in
+	      let toks = drop_line toks in
               let toks = remove_minus_and_between_and_expanded_and_fake1 toks in
               let (toks,tu) = adjust_indentation toks in
               let toks = adjust_eat_space toks in
