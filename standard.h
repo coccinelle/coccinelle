@@ -317,6 +317,8 @@
 #define  in2000__INITDATA
 #define  PACKED
 #define  __packed
+#define  __rcu
+#define  __percpu
 
 #define  WPMINFO
 #define  CPMINFO
