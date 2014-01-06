@@ -259,13 +259,28 @@ let tokens2 file =
     | e -> raise e
  )
 
+(* The result of lexing can be large.  Just keep the result for the most
+  recent file *)
+let most_recent_file = ref ""
+let most_recent_res = ref []
+
 let time_lexing ?(profile=true) a =
   if profile
   then Common.profile_code_exclusif "LEXING" (fun () -> tokens2 a)
   else tokens2 a
 let tokens ?profile a =
-  Common.profile_code "C parsing.tokens" (fun () -> time_lexing ?profile a)
-
+  if a = !most_recent_file
+  then !most_recent_res
+  else
+    begin
+      most_recent_file := a;
+      most_recent_res := [];
+      let res =
+	Common.profile_code "C parsing.tokens"
+	  (fun () -> time_lexing ?profile a) in
+      most_recent_res := res;
+      res
+    end
 
 let tokens_of_string string =
   let lexbuf = Lexing.from_string string in
@@ -1059,7 +1074,12 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
 
 
 let time_total_parsing a b c d =
-  Common.profile_code "TOTAL" (fun () -> parse_print_error_heuristic2 a b c d)
+  let res =
+    Common.profile_code "TOTAL"
+      (fun () -> parse_print_error_heuristic2 a b c d) in
+  most_recent_file := ""; (* remove now useless lexer information *)
+  most_recent_res := [];
+  res
 
 let parse_print_error_heuristic a b c d =
   Common.profile_code "C parsing" (fun () -> time_total_parsing a b c d)
