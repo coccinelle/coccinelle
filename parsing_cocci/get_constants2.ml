@@ -133,9 +133,22 @@ let interpret_grep strict x =
 
 let interpret_cocci_grep strict x =
   (* convert to cnf *)
+  let subset l1 l2 = List.for_all (fun e1 -> List.mem e1 l2) l1 in
+  let opt_union_set longer shorter =
+    (* (A v B) & (A v B v C) = A v B *)
+    (* tries to be efficient by not updating prv, so optimize is still
+       needed *)
+    List.fold_left
+      (function prev ->
+	function cur ->
+	  if List.exists (function x -> subset x cur) prev
+	  then prev
+	  else cur :: prev)
+      longer shorter in
   let rec cnf = function
       Elem x -> [[x]]
-    | And l -> List.fold_left Common.union_set [] (List.map cnf l)
+    | And l ->
+	List.fold_left opt_union_set [] (List.map cnf l)
     | Or l ->
 	let l = List.map cnf l in
 	(match l with
@@ -143,7 +156,8 @@ let interpret_cocci_grep strict x =
 	    List.fold_left
 	      (function prev ->
 		function cur ->
-		  List.fold_left Common.union_set []
+		  List.fold_left opt_union_set
+		    []
 		    (List.map (fun x -> List.map (Common.union_set x) prev)
 		       cur))
 	      fst rest
@@ -157,7 +171,6 @@ let interpret_cocci_grep strict x =
     let l = List.map (function clause -> (List.length clause, clause)) l in
     let l = List.sort compare l in
     let l = List.rev (List.map (function (len,clause) -> clause) l) in
-    let subset l1 l2 = List.for_all (fun e1 -> List.mem e1 l2) l1 in
     List.fold_left
       (fun prev cur ->
 	if List.exists (subset cur) prev then prev else cur :: prev)
@@ -743,6 +756,7 @@ let run rules neg_pos_vars =
 let get_constants rules neg_pos_vars =
   if !Flag.worth_trying_opt
   then 
+    begin
     let res = run rules neg_pos_vars in
     let grep = interpret_grep true res in (* useful because in string form *)
     let coccigrep = interpret_cocci_grep true res in
@@ -754,5 +768,6 @@ let get_constants rules neg_pos_vars =
     | Flag.IdUtils ->
 	(grep,None,coccigrep,Some res)
     | Flag.CocciGrep -> (grep,None,coccigrep,None)
+    end
   else (None,None,None,None)
 

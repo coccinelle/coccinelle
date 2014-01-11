@@ -158,6 +158,8 @@
   create dependencies
 - Leave ifdefs-like directives in unparsed code, if they don't have
   beginning or ending counterparts.
+- Improved interpret_cocci_grep to try to avoid no accumulating lots of
+  anded data.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
