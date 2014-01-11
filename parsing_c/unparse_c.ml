@@ -503,10 +503,9 @@ let is_minusable_comment = function
     | Parser_c.TComment _ when !Flag_parsing_c.keep_comments -> false
     | Parser_c.TComment _
     | Parser_c.TCommentCpp (Token_c.CppAttr, _)
-    | Parser_c.TCommentCpp (Token_c.CppMacro, _)
-    | Parser_c.TCommentCpp (Token_c.CppIfDirective _, _)
-    | Parser_c.TCommentCpp (Token_c.CppDirective, _) -> (* result was false *)
-      true
+    | Parser_c.TCommentCpp (Token_c.CppMacro, _) -> true
+    | Parser_c.TCommentCpp (Token_c.CppIfDirective _, _) -> true
+    | Parser_c.TCommentCpp (Token_c.CppDirective, _) -> true
     (*
     | Parser_c.TCommentMisc _
     | Parser_c.TCommentCpp (Token_c.CppPassingCosWouldGetError, _) -> 
@@ -524,17 +523,6 @@ let is_minusable_comment_nocpp = function
     | Parser_c.TCommentNewline _ (* newline plus whitespace *) -> true
     | Parser_c.TComment _ when !Flag_parsing_c.keep_comments -> false
     | Parser_c.TComment _ -> true
-    (*
-    | Parser_c.TCommentCpp (Token_c.CppAttr, _)
-    | Parser_c.TCommentCpp (Token_c.CppMacro, _)
-    | Parser_c.TCommentCpp (Token_c.CppIfDirective _, _)
-    | Parser_c.TCommentCpp (Token_c.CppDirective, _) -> 
-      false
-
-    | Parser_c.TCommentMisc _
-    | Parser_c.TCommentCpp (Token_c.CppPassingCosWouldGetError, _) -> 
-      false
-    *)
     | _ -> false
     )
   | _ -> false
@@ -628,7 +616,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
     | [] -> []
     | (T2(Parser_c.TCommentNewline c,_b,_i,_h) as x)::
       ((Fake2(_,Min adj1) | T2(_,Min adj1,_,_)) as t1)::xs ->
-      let (minus_list,rest) = span not_context (t1::xs) in
+      let (minus_list,rest) = span_not_context (t1::xs) in
       let contains_plus = List.exists is_plus minus_list in
       let x =
         match List.rev minus_list with
@@ -639,7 +627,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
       x :: adjust_within_minus contains_plus minus_list 
          @ adjust_around_minus rest
     | ((Fake2(_,Min adj1) | T2(_,Min adj1,_,_)) as t1)::xs ->
-      let (minus_list,rest) = span not_context (t1::xs) in
+      let (minus_list,rest) = span_not_context (t1::xs) in
       let contains_plus = List.exists is_plus minus_list in
         adjust_within_minus contains_plus minus_list 
       @ adjust_around_minus rest
@@ -671,6 +659,44 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
           @ rest)
       )
     | xs -> failwith "should always start with minus"
+  and span_not_context xs =
+   (* like span not_context xs, but have to parse ifdefs *)
+   let rec loop seen_ifdefs = function
+       [] -> (0,[],[])
+     | ((T2(Parser_c.TCommentCpp (Token_c.CppIfDirective ifd, _),_,_,_)) as x)
+       ::xs when not_context x ->
+	 let fail _ = (0,[],x::xs) in
+	 (match ifd with
+	   Token_c.IfDef | Token_c.IfDef0 ->
+	     let (seen_end,ok,rest) = loop (seen_ifdefs+1) xs in
+	     if seen_end > 0
+	     then (seen_end-1,x::ok,rest)
+	     else fail()
+	 | Token_c.Else ->
+	     if seen_ifdefs > 0
+	     then
+	       let (seen_end,ok,rest) = loop seen_ifdefs xs in
+	       if seen_end > 0
+	       then (seen_end,x::ok,rest)
+	       else fail()
+	     else fail()
+	 | Token_c.Endif ->
+	     if seen_ifdefs > 0
+	     then
+	       let (seen_end,ok,rest) = loop (seen_ifdefs-1) xs in
+	       (seen_end+1,x::ok,rest)
+	     else fail()
+	 | Token_c.Other ->
+	     let (seen_end,ok,rest) = loop seen_ifdefs xs in
+	     (seen_end, x :: ok, rest))
+     | x :: xs ->
+	 if not_context x
+	 then
+	   let (seen_end,ok,rest) = loop seen_ifdefs xs in
+	   (seen_end,x::ok, rest)
+	 else (0,[],x::xs) in
+   let (_,ok,rest) = loop 0 xs in
+   (ok,rest)
   and not_context = function
     | (T2(_,Ctx,_,_) as x) when not (is_minusable_comment x) -> false
     | _ -> true

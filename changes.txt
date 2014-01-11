@@ -156,6 +156,8 @@
 - Allow multidecls when removing variable names or when modifying type.
 - Take fresh declarations into account when computing get_constants to
   create dependencies
+- Leave ifdefs-like directives in unparsed code, if they don't have
+  beginning or ending counterparts.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
