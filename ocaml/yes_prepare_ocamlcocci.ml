@@ -58,7 +58,7 @@ let print_match ctr nm kind =
   let index = !ctr in
   ctr := !ctr + 1;
   Printf.sprintf
-    "let %s = match List.nth args %d with Coccilib.%s x -> x %s"
+    "let %s = match List.nth __args__ %d with Coccilib.%s x -> x %s"
     nm index kind endlet
 
 let string_rep_binding ctr = function
@@ -113,7 +113,7 @@ let manage_script_vars script_vars =
   let rec loop n = function
       [] -> ""
     | (_,x)::xs ->
-	(Printf.sprintf "let %s = List.nth script_args %d in\n" x n) ^
+	(Printf.sprintf "let %s = List.nth __script_args__ %d in\n" x n) ^
 	(loop (n+1) xs) in
   loop 0 script_vars
 
@@ -165,11 +165,38 @@ class iteration () =
 
 (* ---------------------------------------------------------------------- *)
 
+let prepare_mvs o str = function
+    [] -> true
+  | metavars ->
+      let fn _ =
+	List.map
+	  (function
+	      ((Some nm,None),("virtual",vname),_) ->
+		let vl =
+		  try List.assoc vname !Flag.defined_virtual_env
+		  with Not_found ->
+		    begin
+		      Common.pr2
+			(str^": required variable "^nm^" not found, "^
+			 str^" ignored");
+		      raise Not_found
+		    end in
+		(nm,vl)
+	    | _ -> failwith "invalid metavar in initialize or finalize")
+	  metavars in
+      try
+	List.iter
+	  (function (nm,vl) -> Printf.fprintf o "let %s = \"%s\"\n" nm vl)
+	  (fn());
+	Printf.fprintf o "\n";
+	true
+      with Not_found -> false
+
 let prepare_rule (name, metavars, script_vars, code) =
   let fname = String.concat "_" (Str.split (Str.regexp " ") name) in
   (* function header *)
   let function_header body =
-    Printf.sprintf "let %s args script_args =\n %s" fname body in
+    Printf.sprintf "let %s __args__ __script_args__ =\n %s" fname body in
   (* parameter list *)
   let build_parameter_list body =
     let ctr = ref 0 in
@@ -192,24 +219,43 @@ let prepare_rule (name, metavars, script_vars, code) =
   hash_add (function_header (build_parameter_list code))
 
 let prepare coccifile code =
+  let (init_mvs,sub_final_mvs,all_final_mvs) =
+    let (init,final) =
+      List.fold_left
+	(function ((init,final) as prev) ->
+	  function
+	      Ast_cocci.InitialScriptRule (name,"ocaml",deps,mvs,code) ->
+		(Common.union_set mvs init,final)
+	    | Ast_cocci.FinalScriptRule (name,"ocaml",deps,mvs,code) ->
+		(init,Common.union_set mvs final)
+	    | _ -> prev)
+	([],[]) code in
+    (* minus_set because actually init declarations are global... *)
+    (init, Common.minus_set final init, final) in
   let init_rules =
     List.fold_left
       (function prev ->
 	function
-	    Ast_cocci.InitialScriptRule (name,"ocaml",deps,code) ->
+	    Ast_cocci.InitialScriptRule (name,"ocaml",deps,mvs,code) ->
 	      code :: prev
 	  | _ -> prev)
       [] code in
   let init_rules = List.rev init_rules in
+  let final_rules =
+    List.fold_left
+      (function prev ->
+	function
+	    Ast_cocci.FinalScriptRule (name,"ocaml",deps,mvs,code) ->
+	      (name,[],[],code) :: prev
+	  | _ -> prev)
+      [] code in
+  let final_rules = List.rev final_rules in
   let other_rules =
     List.fold_left
       (function prev ->
 	function
 	    Ast_cocci.ScriptRule (name,"ocaml",deps,mv,script_vars,code) ->
 	      (name,mv,script_vars,code) :: prev
-	  | Ast_cocci.InitialScriptRule (name,"ocaml",deps,code) -> prev
-	  | Ast_cocci.FinalScriptRule (name,"ocaml",deps,code) ->
-	      (name,[],[],code) :: prev
 	  | _ -> prev)
       [] code in
   let other_rules = List.rev other_rules in
@@ -238,11 +284,22 @@ let prepare coccifile code =
 		(List.map String.capitalize
 		   !Iteration.parsed_virtual_identifiers))));
       print_iteration_code o;
+      (* Virtual metavariables for initialize and finalize rules *)
+      let generate_init = prepare_mvs o "initialize" init_mvs in
+      let generate_final =
+	prepare_mvs o "finalize"
+	  (if generate_init then sub_final_mvs else all_final_mvs) in
       (* Semantic patch specific initialization *)
-      Printf.fprintf o "%s" (String.concat "\n\n" init_rules);
-      (* Semantic patch rules and finalizer *)
+      (if generate_init
+      then Printf.fprintf o "%s" (String.concat "\n\n" init_rules));
+      (* Semantic patch rules *)
       let rule_code = List.map prepare_rule other_rules in
       Printf.fprintf o "%s" (String.concat "\n\n" rule_code);
+      (* finalizer *)
+      (if generate_final
+      then
+	let rule_code = List.map prepare_rule final_rules in
+	Printf.fprintf o "%s" (String.concat "\n\n" rule_code));
       close_out o;
       check_runtime ();
       Some file

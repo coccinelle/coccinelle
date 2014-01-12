@@ -388,14 +388,19 @@ typing, metavariables for scripts do not include type declarations.
   \RULE{\rt{script\_metavariables}}
   \CASE{@ script:\NT{language} \OPT{\NT{rulename}} \OPT{depends on \NT{dep}} @
         \any{\NT{script\_metadecl}} @@}
-  \CASE{@ initialize:\NT{language} \OPT{depends on \NT{dep}} @}
-  \CASE{@ finalize:\NT{language} \OPT{depends on \NT{dep}} @}
+  \CASE{@ initialize:\NT{language} \OPT{depends on \NT{dep}} @
+        \any{\NT{script\_virt\_metadecl}} @@}
+  \CASE{@ finalize:\NT{language} \OPT{depends on \NT{dep}} @
+        \any{\NT{script\_virt\_metadecl}} @@}
 
   \RULE{\rt{language}} \CASE{python} \CASE{ocaml}
 
   \RULE{\rt{script\_metadecl}}
   \CASE{\T{id} <{}< \T{rulename\_id}.\T{id} ;}
   \CASE{\T{id} ;}
+
+  \RULE{\rt{script\_virt\_metadecl}}
+  \CASE{\T{id} <{}< virtual.\T{id} ;}
 \end{grammar}
 
 Currently, the only scripting languages that are supported are Python and
@@ -410,6 +415,11 @@ Initialize and finalize script rules do not have access to SmPL
 metavariables.  Nevertheless, a finalize script rule can access any
 variables initialized by the other script rules, allowing information to be
 transmitted from the matching process to the finalize rule.
+
+Initialize and finalize rules do have access to virtual metavariables,
+using the usual syntax.  As for other scripting language rules, the rule
+is not run (and essentially does not exist) if some of the required virtual
+metavariables are not bound.  In ocaml, a warning is printed in this case.
 
 A script metavariable that does not specify an origin, using \texttt{<<},
 is newly declared by the script.  This metavariable should be assigned to a

@@ -848,9 +848,10 @@ let collect_astfvs rules =
 	    (* why are metavars in rule, but outside for cocci rule??? *)
             let bound = script_vars @ bound in
 	    rule::(loop bound rules)
-	| Ast.InitialScriptRule (_,_,_,_) | Ast.FinalScriptRule (_,_,_,_) ->
-	    (* bound stays as is because script rules have no names, so no
-	       inheritance is possible *)
+        | Ast.InitialScriptRule (_,_,_,_,_)
+	| Ast.FinalScriptRule (_,_,_,_,_) ->
+	    (* bound stays as is because init/finalize provides no names, so
+	       inheritance by others is not possible *)
 	    rule::(loop bound rules)
         | Ast.CocciRule (nm, rule_info, minirules, isexp, ruletype) ->
           let bound =
@@ -932,8 +933,10 @@ let collect_top_level_used_after metavar_rule_list =
             match r with
               Ast.ScriptRule (_,_,_,mv,_,_) ->
                 drop_virt(List.map (function (_,(r,v),_) -> (r,v)) mv)
-            | Ast.InitialScriptRule (_,_,_,_)
-	    | Ast.FinalScriptRule (_,_,_,_) -> []
+            | Ast.InitialScriptRule (_,_,_,mv,_)
+	    | Ast.FinalScriptRule (_,_,_,mv,_) ->
+		(* only virtual identifiers *)
+		[]
             | Ast.CocciRule (_,_,rule,_,_) ->
 		drop_virt
 	          (Common.union_set (nub (collect_all_rule_refs rule))
@@ -1041,7 +1044,8 @@ let collect_used_after metavar_rule_list =
       function used_after ->
         match r with
           Ast.ScriptRule (_,_,_,_,_,_) (* no minirules, so nothing to do? *)
-	| Ast.InitialScriptRule (_,_,_,_) | Ast.FinalScriptRule (_,_,_,_) ->
+	| Ast.InitialScriptRule (_,_,_,_,_)
+	| Ast.FinalScriptRule (_,_,_,_,_) ->
 	    ([], [used_after], [[]], [])
         | Ast.CocciRule (name, rule_info, minirules, _,_) ->
           collect_local_used_after metavars minirules used_after

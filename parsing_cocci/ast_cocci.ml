@@ -629,9 +629,13 @@ and rule =
 	(script_meta_name * meta_name * metavar) list (*inherited vars*) *
 	meta_name list (*script vars*) * string
   | InitialScriptRule of  string (* name *) *
-	string (*language*) * dependency * string (*code*)
+	string (*language*) * dependency *
+	(script_meta_name * meta_name * metavar) list (*virtual vars*) *
+	string (*code*)
   | FinalScriptRule of  string (* name *) *
-	string (*language*) * dependency * string (*code*)
+	string (*language*) * dependency *
+	(script_meta_name * meta_name * metavar) list (*virtual vars*) *
+	string (*code*)
 
 and script_meta_name = string option (*string*) * string option (*ast*)
 

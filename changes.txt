@@ -59,6 +59,7 @@
 - Support variable declarations in the first element of a for loop header.
 - Support decimal type with the --ibm option
 - Support some matching on pragmas
+- Initialize and finalize rules contain a metavariable declaration region.
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line
