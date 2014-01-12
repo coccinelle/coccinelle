@@ -983,22 +983,24 @@ will turn into a MultiString. *)
 let fix_tokens_strings toks =
   let comments x = TH.is_comment x in
   let strings_and_comments =
-    function TString _ -> true | x -> TH.is_comment x in
+    function TString _ -> true | TIdent _ -> true | x -> TH.is_comment x in
+  let can_be_string =
+    function TString _ -> true | TIdent _ -> true | x -> false in
   let rec skip acc fn = function
       x :: xs when fn x -> skip (x :: acc) fn xs
     | xs -> (List.rev acc, xs)
   and out_strings = function
       [] -> []
-    | ((TString(str_isW,info)) as a)::rest ->
-	let (front,rest) = skip [] comments rest in
-	(match rest with
-	  ((TString _) as b) :: rest ->
-	    let (front2,rest) = skip [] strings_and_comments rest in
-	    a :: front @ b :: front2 @ out_strings rest
-	| _ ->
-	    (Parse_string_c.parse_string str_isW info) @ front @
-	    out_strings rest)
-    | x :: rest -> x :: out_strings rest in
+    | a :: rest ->
+	if can_be_string a
+	then
+	  let (front,rest) = skip [] comments rest in
+	  (match rest with
+	    b :: rest when can_be_string b ->
+	      let (front2,rest) = skip [] strings_and_comments rest in
+	      a :: front @ b :: front2 @ out_strings rest
+	  | _ -> a :: out_strings rest)
+	else a :: out_strings rest in
   out_strings toks
 
 (* ------------------------------------------------------------------------- *)
