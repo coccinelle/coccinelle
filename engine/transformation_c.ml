@@ -301,7 +301,7 @@ module XTRANS = struct
 	()
     | (Ast_cocci.MINUS(old_pos,old_inst,old_adj,Ast_cocci.NOREPLACEMENT),
        Ast_cocci.MINUS(new_pos,new_inst,new_adj,Ast_cocci.NOREPLACEMENT))
-	when old_pos = new_pos
+      when old_pos = new_pos
 	    (* not sure why the following condition is useful.
 	       should be ok to double remove even if the environments are
 	       different *)

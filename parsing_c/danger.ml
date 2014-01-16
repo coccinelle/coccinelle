@@ -28,7 +28,18 @@ let undanger_onedecl (onedecl,_ii) =
 	  Visitor_c.vk_ini undanger init
       |	Ast_c.ConstrInit((init,(ii : Ast_c.info list))) ->
 	  List.iter (Visitor_c.vk_info undanger) ii;
-	  Visitor_c.vk_argument_list undanger init)
+	  Visitor_c.vk_argument_list undanger init);
+      (match onedecl.Ast_c.v_type with
+	(* undanger the right bits *)
+	(tq,(Ast_c.Array (sz,ty),ii)) ->
+	  List.iter (Visitor_c.vk_info undanger) ii;
+	  Common.do_option (Visitor_c.vk_expr undanger) sz
+      |	(tq,(Ast_c.Pointer _,ii)) -> List.iter (Visitor_c.vk_info undanger) ii
+      |	(tq,(Ast_c.FunctionType(ret,(params,(dots,dotsii))),ii)) ->
+	  List.iter (Visitor_c.vk_info undanger) ii;
+	  List.iter (Visitor_c.vk_info undanger) dotsii;
+	  Visitor_c.vk_param_list undanger params
+      |	_ -> ())
   | None -> ()
 
 let add_danger xs =
