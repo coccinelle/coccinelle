@@ -1043,6 +1043,10 @@ and generate_outfiles outfiles x (* front file *) xs (* other files *) =
         Common.command2 ("cp " ^outfile^ " " ^ !output_file)
     | [infile, None] when infile =$= x && null xs ->
         Common.command2 ("cp " ^infile^ " " ^ !output_file)
+    | [] ->
+        failwith
+          ("-o can not be applied because there are no " ^
+           "modified files")
     | _ ->
         failwith
           ("-o can not be applied because there are multiple " ^

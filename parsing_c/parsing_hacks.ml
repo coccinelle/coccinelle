@@ -999,7 +999,12 @@ let fix_tokens_strings toks =
 	    b :: rest when can_be_string b ->
 	      let (front2,rest) = skip [] strings_and_comments rest in
 	      a :: front @ b :: front2 @ out_strings rest
-	  | _ -> a :: out_strings rest)
+	  | _ ->
+	      (match a with
+		TString(str_isW,info) ->
+		  (Parse_string_c.parse_string str_isW info) @ front @
+		  out_strings rest
+	      |	_ ->  a :: out_strings rest))
 	else a :: out_strings rest in
   out_strings toks
 
