@@ -25,6 +25,7 @@ On Debian/Ubuntu, install the following packages
  - ocaml-findlib
  - libpycaml-ocaml-dev
  - menhir and libmenhir-ocaml-dev
+ - libpcre-ocaml-dev
 
 On Fedora, install the following packages
  - pkgconfig (optional, but strongly recommended)
