@@ -157,10 +157,13 @@ class iteration () =
     val mutable files_changed = false
     val mutable virtual_rules = ([] : string list)
     val mutable virtual_identifiers = ([] : (string * string) list)
+    val mutable extend_virtual_ids = false
     method set_files f = files <- Some f
+    method extend_virtual_identifiers (x : unit) = extend_virtual_ids <- true
     %s%s
     method register () =
-      Iteration.add_pending_instance (files,virtual_rules,virtual_identifiers)
+      Iteration.add_pending_instance
+	(files,virtual_rules,virtual_identifiers,extend_virtual_ids)
   end\n\n" add_virt_rules_method add_virt_ids_method
 
 (* ---------------------------------------------------------------------- *)

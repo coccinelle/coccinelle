@@ -60,6 +60,7 @@
 - Support decimal type with the --ibm option
 - Support some matching on pragmas
 - Initialize and finalize rules contain a metavariable declaration region.
+- Added documentation about iteration.
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line
@@ -310,6 +311,7 @@
   metavariables. Thanks to Michael Stefaniuc for the report.
 - Try to fix pretty printing of directives.
 - Allow renaming types in multidecls, including renames in initializers.
+- Save virtual identifiers from the command line for use in finalize code.
 
 * 0.2.5
 ** Language:

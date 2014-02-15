@@ -1,5 +1,6 @@
 type init_info = (string (* language *) * string (* rule name *)) *
-      string list (* defined virtual rules *)
+      (string list (* defined virtual rules *) *
+	 (string * string) list (* defined virtual env *))
 
 let initialization_stack = ref ([] : init_info list)
 
@@ -18,19 +19,30 @@ type pending_info = string list (* files to treat *) *
 let pending_instances_file = ref ([] : pending_info list)
 let pending_instances_dir = ref ([] : pending_info list)
 
-let add_pending_instance (files,a,b) =
+let add_pending_instance (files,vrules,vids,extend_vids) =
+  let vids =
+    if extend_vids
+    then
+      let newdefs = List.map fst vids in
+      let olddefs =
+	List.filter
+	  (function (id,_) -> not (List.mem id newdefs))
+	  !Flag.defined_virtual_env in
+      vids @ olddefs
+    else vids in
   match files with
     None ->
-      pending_instances_dir := (!base_file_list,a,b) :: !pending_instances_dir
+      pending_instances_dir :=
+	(!base_file_list,vrules,vids) :: !pending_instances_dir
   | Some f ->
       (* if one specifies a file, it is assumed to be the current one *)
       (* put at the end of the list of information about this file *)
       let rec loop = function
-	  [] -> [(f,a,b)]
-	| ((f1,a1,b1) as front)::rest ->
+	  [] -> [(f,vrules,vids)]
+	| ((f1,vr1,vi1) as front)::rest ->
 	    if f = f1
 	    then front :: (loop rest)
-	    else (f,a,b) :: front :: rest in
+	    else (f,vrules,vids) :: front :: rest in
       pending_instances_file := loop !pending_instances_file
 					      
 let get_pending_instance _ =

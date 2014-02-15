@@ -1878,7 +1878,8 @@ let pre_engine2 (coccifile, isofile) =
     with Not_found ->
       begin
 	Iteration.initialization_stack :=
-	  ((rlang,rname),!Flag.defined_virtual_rules) ::
+	  ((rlang,rname),
+	   (!Flag.defined_virtual_rules,!Flag.defined_virtual_env)) ::
 	  !Iteration.initialization_stack;
 	initial_final_bigloop Initial
 	  (fun (x,mvs,_,y) -> fun deps ->
@@ -2000,8 +2001,9 @@ let full_engine a b =
 
 let post_engine2 (cocci_infos,_) =
   List.iter
-    (function ((language,_),virt_rules) ->
+    (function ((language,_),(virt_rules,virt_env)) ->
       Flag.defined_virtual_rules := virt_rules;
+      Flag.defined_virtual_env := virt_env;
       let _ =
 	List.fold_left
 	  (function languages ->
