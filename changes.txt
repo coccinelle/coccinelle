@@ -162,6 +162,7 @@
   beginning or ending counterparts.
 - Improved interpret_cocci_grep to try to avoid no accumulating lots of
   anded data.
+- Improve type inference performance when many files included by using maps.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
