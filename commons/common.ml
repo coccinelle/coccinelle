@@ -6147,8 +6147,6 @@ let md5sum_of_string s =
       s
   | _ -> failwith "md5sum_of_string wrong output"
 
-
-
 let with_pr2_to_string f =
   let file = new_temp_file "pr2" "out" in
   redirect_stdout_stderr file f;
