@@ -967,6 +967,8 @@ and restchars = parse
 
 and string  = parse
   | '\"'                                       { "" }
+  | ['\n' '\r' '\011' '\012'] as x
+    { line := !line + 1; (Printf.sprintf "%c" x) ^ string lexbuf }
   | (_ as x)                   { Common.string_of_char x ^ string lexbuf }
   | ("\\" (oct | oct oct | oct oct oct)) as x { x ^ string lexbuf }
   | ("\\x" (hex | hex hex)) as x              { x ^ string lexbuf }
