@@ -61,6 +61,11 @@ understanding the effect of a semantic patch.
 \normal{--parse-cocci $\langle$file$\rangle$}{ Parse a semantic
 patch file and print out some information about it.}
 
+\normal{--debug-parse-cocci}{ Print some information about the definition
+  of virtual rules and the bindings of virtual identifiers.  This is
+  particularly useful when using iteration, as it prints out this
+  information for each iteration.}
+
 \subsection{The semantic patch}
 
 \minimum{--sp-file $\langle$file$\rangle$, -c $\langle$file$\rangle$, 

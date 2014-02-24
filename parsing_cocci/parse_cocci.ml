@@ -1797,6 +1797,17 @@ let eval_depend dep virt =
     in
   loop dep
 
+let print_dep_image name deps virt depimage =
+  Printf.fprintf stderr "Rule: %s\n" name;
+  Printf.fprintf stderr "Dependencies: %s\n"
+    (Common.format_to_string
+       (function _ -> Pretty_print_cocci.dep true deps));
+  Format.print_newline();
+  Printf.fprintf stderr "Virtual rules: %s\n" (String.concat " " virt);
+  Printf.fprintf stderr "Res: %s\n\n"
+    (Common.format_to_string
+       (function _ -> Pretty_print_cocci.dep true depimage))
+
 let parse file =
   Lexer_cocci.init ();
   let rec parse_loop file =
@@ -2023,7 +2034,10 @@ let parse file =
 		| _ -> failwith "new metavariables not allowed in finalize") in
 
 	  let do_parse_script_rule fn name l old_metas deps =
-	    fn name l old_metas (eval_depend deps virt) in
+	    let depimage = eval_depend deps virt in
+	    (if !Flag_parsing_cocci.debug_parse_cocci
+	    then print_dep_image name deps virt depimage);
+	    fn name l old_metas depimage in
 
           let parse_rule old_metas starts_with_name =
             let rulename =
@@ -2031,7 +2045,10 @@ let parse file =
 		"rule" in
             match rulename with
               Ast.CocciRulename (Some s, dep, b, c, d, e) ->
-		(match eval_depend dep virt with
+		let depimage = eval_depend dep virt in
+		(if !Flag_parsing_cocci.debug_parse_cocci
+		then print_dep_image s dep virt depimage);
+		(match depimage with
 		  Ast.FailDep ->
 		    D.ignore_patch_or_match := true;
                     let res =
