@@ -62,7 +62,7 @@ let drop_positions =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing in
+    donothing donothing donothing donothing in
   res.VT0.rebuilder_rec_statement
 
 let get_all_functions rule =
@@ -166,7 +166,7 @@ and strip =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
     ident donothing typeC donothing param donothing donothing donothing
-    donothing donothing
+    donothing donothing donothing
 
 and changed_proto = function
     (mname,mdef,mproto,None) -> true

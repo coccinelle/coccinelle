@@ -1,5 +1,5 @@
 (* create an index for each constructor *)
-(* current max is 165 *)
+(* current max is 169 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -219,6 +219,13 @@ let case_line c =
   | Ast0.Case(case,exp,colon,code) -> [127]
   | Ast0.DisjCase(_,case_lines,_,_) -> [107]
   | Ast0.OptCase(case) -> [128]
+
+let string_fragment f =
+  match Ast0.unwrap f with
+    Ast0.ConstantFragment(str) -> [166]
+  | Ast0.FormatFragment(pct,fmt) -> [167]
+  | Ast0.Strdots(dots) -> [168]
+  | Ast0.MetaFormatList(pct,name,lenname) -> [169]
 
 let top_level t =
   match Ast0.unwrap t with

@@ -487,6 +487,7 @@ and anything =
   | StmtTag of statement
   | ForInfoTag of forinfo
   | CaseLineTag of case_line
+  | StringFragmentTag of string_fragment
   | TopTag of top_level
   | IsoWhenTag of Ast.when_modifier
   | IsoWhenTTag of expression
@@ -509,6 +510,7 @@ let decl x = DeclTag x
 let stmt x = StmtTag x
 let forinfo x = ForInfoTag x
 let case_line x = CaseLineTag x
+let string_fragment x = StringFragmentTag x
 let top x = TopTag x
 
 (* --------------------------------------------------------------------- *)

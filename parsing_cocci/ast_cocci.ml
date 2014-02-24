@@ -672,6 +672,7 @@ and anything =
   | StatementTag        of statement
   | ForInfoTag          of forinfo
   | CaseLineTag         of case_line
+  | StringFragmentTag   of string_fragment
   | ConstVolTag         of const_vol
   | Token               of string * info option
   | Directive           of added_string list
@@ -798,6 +799,7 @@ and tag2c = function
   | StatementTag _ -> "StatementTag"
   | ForInfoTag _   -> "ForInfoTag"
   | CaseLineTag _  -> "CaseLineTag"
+  | StringFragmentTag _ -> "StringFragmentTag"
   | ConstVolTag _  -> "ConstVolTag"
   | Token _ -> "Token"
   | Directive _ -> "Directive"

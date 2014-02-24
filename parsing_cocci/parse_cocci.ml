@@ -1552,7 +1552,7 @@ let any_modif rule =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing in
+      donothing donothing donothing donothing in
   List.exists fn.VT0.combiner_rec_top_level rule
 
 let eval_virt virt =
@@ -1854,7 +1854,8 @@ let parse file =
 		 Lexer_cocci.metavariables []);
 
             (* get transformation rules *)
-            let (more, tokens) = get_tokens (in_list [PC.TArobArob; PC.TArob]) in
+            let (more, tokens) =
+	      get_tokens (in_list [PC.TArobArob; PC.TArob]) in
             let (minus_tokens, _) = split_token_stream tokens in
             let (_, plus_tokens) =
 	      split_token_stream (minus_to_nothing tokens) in
@@ -1882,6 +1883,7 @@ let parse file =
                print_tokens "plus tokens" plus_tokens;
 	       Printf.printf "before minus parse\n";
 	    *)
+	    Flag_parsing_cocci.in_minus := true;
 	    let minus_res =
 	      let minus_parser =
 		match is_expression with
@@ -1902,12 +1904,15 @@ let parse file =
 		  (Iso_pattern.rebuild_mcode None).VT0.rebuilder_rec_top_level
 		  (Top_level.top_level false minus_res)
 	      else
-		let plus_parser =
-		  match is_expression with
-		    Ast.AnyP -> PC.plus_main
-		  | Ast.TyP -> PC.plus_ty_main
-		  | Ast.ExpP -> PC.plus_exp_main in
-		parse_one "plus" plus_parser file plus_tokens in
+		begin
+		  Flag_parsing_cocci.in_minus := false;
+		  let plus_parser =
+		    match is_expression with
+		      Ast.AnyP -> PC.plus_main
+		    | Ast.TyP -> PC.plus_ty_main
+		    | Ast.ExpP -> PC.plus_exp_main in
+		  parse_one "plus" plus_parser file plus_tokens
+		end in
 	    let plus_res = Top_level.top_level false plus_res in
 	    (* minus code has to be CODE if the + code is CODE, otherwise
 	       doesn't matter if + code is CODE or DECL or TOPCODE *)

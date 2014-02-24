@@ -567,6 +567,7 @@ let combiner bind option_default
       | Ast.StatementTag(rule) -> statement rule
       | Ast.ForInfoTag(rule) -> forinfo rule
       | Ast.CaseLineTag(case) -> case_line case
+      | Ast.StringFragmentTag(frag) -> string_fragment frag
       | Ast.ConstVolTag(cv) -> option_default
       | Ast.Token(tok,info) -> option_default
       | Ast.Directive(str) -> option_default
@@ -1175,6 +1176,8 @@ let rebuilder
       | Ast.StatementTag(rule) -> Ast.StatementTag(statement rule)
       | Ast.ForInfoTag(rule) -> Ast.ForInfoTag(forinfo rule)
       | Ast.CaseLineTag(case) -> Ast.CaseLineTag(case_line case)
+      | Ast.StringFragmentTag(frag) ->
+	  Ast.StringFragmentTag(string_fragment frag)
       | Ast.ConstVolTag(cv) as x -> x
       | Ast.Token(tok,info) as x -> x
       | Ast.Directive(str) as x -> x

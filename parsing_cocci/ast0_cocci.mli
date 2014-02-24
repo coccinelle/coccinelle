@@ -480,6 +480,7 @@ and anything =
   | StmtTag of statement
   | ForInfoTag of forinfo
   | CaseLineTag of case_line
+  | StringFragmentTag of string_fragment
   | TopTag of top_level
   | IsoWhenTag of Ast_cocci.when_modifier (*only for when code, in iso phase*)
   | IsoWhenTTag of expression(*only for when code, in iso phase*)
@@ -502,6 +503,7 @@ val decl : declaration -> anything
 val stmt : statement -> anything
 val forinfo : forinfo -> anything
 val case_line : case_line -> anything
+val string_fragment : string_fragment -> anything
 val top : top_level -> anything
 
 (* --------------------------------------------------------------------- *)

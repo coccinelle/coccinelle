@@ -170,7 +170,7 @@ let inline_mcodes =
     mcode mcode
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing do_nothing do_nothing do_nothing
+    do_nothing do_nothing do_nothing do_nothing do_nothing
 
 (* --------------------------------------------------------------------- *)
 (* For function declarations.  Can't use the mcode at the root, because that
@@ -238,7 +238,7 @@ let check_allminus =
     mcode mcode
     donothing donothing donothing donothing donothing donothing
     ident expression typeC initialiser donothing declaration
-    statement donothing case_line donothing
+    statement donothing case_line donothing donothing
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -1121,6 +1121,7 @@ and anything = function
   | Ast0.StmtTag(d) -> Ast.StatementTag(statement d)
   | Ast0.ForInfoTag(d) -> Ast.ForInfoTag(forinfo d)
   | Ast0.CaseLineTag(d) -> Ast.CaseLineTag(case_line d)
+  | Ast0.StringFragmentTag(d) -> Ast.StringFragmentTag(string_fragment d)
   | Ast0.TopTag(d) -> Ast.Code(top_level d)
   | Ast0.IsoWhenTag(_) -> failwith "not possible"
   | Ast0.IsoWhenTTag(_) -> failwith "not possible"

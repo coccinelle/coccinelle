@@ -32,6 +32,7 @@ let set_mcodekind x mcodekind =
   | Ast0.StmtTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.ForInfoTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.CaseLineTag(d) -> Ast0.set_mcodekind d mcodekind
+  | Ast0.StringFragmentTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.TopTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
   | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
@@ -58,6 +59,7 @@ let set_index x index =
   | Ast0.StmtTag(d) -> Ast0.set_index d index
   | Ast0.ForInfoTag(d) -> Ast0.set_index d index
   | Ast0.CaseLineTag(d) -> Ast0.set_index d index
+  | Ast0.StringFragmentTag(d) -> Ast0.set_index d index
   | Ast0.TopTag(d) -> Ast0.set_index d index
   | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
   | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
@@ -83,6 +85,7 @@ let get_index = function
   | Ast0.StmtTag(d) -> Index.statement d
   | Ast0.ForInfoTag(d) -> Index.forinfo d
   | Ast0.CaseLineTag(d) -> Index.case_line d
+  | Ast0.StringFragmentTag(d) -> Index.string_fragment d
   | Ast0.TopTag(d) -> Index.top_level d
   | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
   | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
@@ -132,7 +135,7 @@ let collect_plus_lines top =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing in
+      donothing donothing donothing donothing in
   fn.VT0.combiner_rec_top_level top
 
 (* --------------------------------------------------------------------- *)
@@ -428,9 +431,10 @@ let classify is_minus all_marked table code =
       | Ast0.For(start,_,_,_,_,_,_,_,(info,aft,adj)) ->
 	  let mcode_info (_,_,info,_,_,_) = info in
 	  bind (k s) (nc_mcode ((),(),mcode_info start,aft,(),adj))
-      |	_ -> k s
+      |	_ -> k s) in
 
-) in
+  let string_fragment r k s =
+    compute_result Ast0.string_fragment s (k s) in
 
   let do_top builder r k e = compute_result builder e (k e) in
 
@@ -441,7 +445,8 @@ let classify is_minus all_marked table code =
       (do_nothing Ast0.dotsParam) (do_nothing Ast0.dotsStmt)
       (do_nothing Ast0.dotsDecl) (do_nothing Ast0.dotsCase)
       ident expression typeC initialiser param declaration
-      statement (do_nothing Ast0.forinfo) case_line (do_top Ast0.top) in
+      statement (do_nothing Ast0.forinfo) case_line string_fragment
+      (do_top Ast0.top) in
   combiner.VT0.combiner_rec_top_level code
 
 (* --------------------------------------------------------------------- *)
@@ -823,7 +828,7 @@ let contextify_all =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing do_nothing do_nothing do_nothing
+    do_nothing do_nothing do_nothing do_nothing do_nothing
 
 let contextify_whencode =
   let bind x y = () in

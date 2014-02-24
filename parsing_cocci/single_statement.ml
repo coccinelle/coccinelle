@@ -402,7 +402,7 @@ and contains_only_minus =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     dots dots dots dots dots dots
     identifier expression typeC donothing donothing declaration
-    statement donothing case_line donothing
+    statement donothing case_line donothing donothing
 
 
 (* needs a special case when there is a Disj or an empty DOTS *)

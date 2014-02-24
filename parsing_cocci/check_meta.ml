@@ -529,7 +529,7 @@ let positions table rules =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing in
+      donothing donothing donothing donothing in
 
   List.iter fn.VT0.combiner_rec_top_level rules
 
@@ -583,7 +583,7 @@ let dup_positions rules =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing
       donothing expression typeC donothing donothing declaration statement
-      donothing donothing donothing in
+      donothing donothing donothing donothing in
 
   let res =
     List.sort compare

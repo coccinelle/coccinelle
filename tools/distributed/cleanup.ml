@@ -41,8 +41,9 @@ let process_file fl =
   !elements
 
 let process_all_files files out =
-  let elements =
-    List.sort compare (List.concat (List.map process_file files)) in
+  let elements = [] (* no clue what this is supposed to do,
+		       but can discard output
+    List.sort compare (List.concat (List.map process_file files)) *) in
   match elements with
     [] -> (* only python output *)
       let fl = String.concat " " (List.sort compare files) in

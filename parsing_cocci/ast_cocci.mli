@@ -641,6 +641,7 @@ and anything =
   | StatementTag        of statement
   | ForInfoTag          of forinfo
   | CaseLineTag         of case_line
+  | StringFragmentTag   of string_fragment
   | ConstVolTag         of const_vol
   | Token               of string * info option
   | Directive           of added_string list

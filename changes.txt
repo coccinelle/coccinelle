@@ -61,6 +61,7 @@
 - Support some matching on pragmas
 - Initialize and finalize rules contain a metavariable declaration region.
 - Added documentation about iteration.
+- Allow changes within strings.
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line
