@@ -849,6 +849,10 @@ and statement s =
 	  Ast.Atomic
 	    (rewrap_rule_elem s
 	       (Ast.ReturnExpr(mcode ret,expression exp,mcode sem)))
+      | Ast0.Exec(exec,lang,code,sem) ->
+	  Ast.Atomic
+	    (rewrap_rule_elem s
+	       (Ast.Exec(mcode exec,mcode lang,dots exec_code code,mcode sem)))
       | Ast0.MetaStmt(name,_) ->
 	  Ast.Atomic(rewrap_rule_elem s
 		       (Ast.MetaStmt(mcode name,unitary,seqible,false)))
@@ -1097,6 +1101,13 @@ and case_line c =
 	(*Ast.CaseLine(Ast.DisjRuleElem(List.map case_line case_lines))*)
 
     | Ast0.OptCase(case) -> Ast.OptCase(case_line case))
+
+and exec_code c =
+  rewrap c no_isos
+    (match Ast0.unwrap c with
+      Ast0.ExecEval(colon,id) -> Ast.ExecEval(mcode colon,expression id)
+    | Ast0.ExecToken(tok) -> Ast.ExecToken(mcode tok)
+    | Ast0.ExecDots(dots) -> Ast.ExecDots(mcode dots))
 
 and statement_dots l = dots statement l
 

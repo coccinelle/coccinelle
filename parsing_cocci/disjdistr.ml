@@ -367,6 +367,7 @@ let rec disj_rule_elem r k re =
   | Ast.ReturnExpr(ret,exp,sem) ->
       orify_rule_elem re exp
 	(function exp -> Ast.rewrap re (Ast.ReturnExpr(ret,exp,sem)))
+  | Ast.Exec _ -> re (* no ors possible *)
   | Ast.MetaRuleElem(_,_,_) | Ast.MetaStmt(_,_,_,_)
   | Ast.MetaStmtList(_,_,_) -> re
   | Ast.Exp(exp) ->

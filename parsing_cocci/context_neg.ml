@@ -712,6 +712,9 @@ let rec equal_statement s1 s2 =
       equal_mcode ret1 ret2 && equal_mcode sem1 sem2
   | (Ast0.ReturnExpr(ret1,_,sem1),Ast0.ReturnExpr(ret2,_,sem2)) ->
       equal_mcode ret1 ret2 && equal_mcode sem1 sem2
+  | (Ast0.Exec(exec1,lang1,_,sem1),Ast0.Exec(exec2,lang2,_,sem2)) ->
+      equal_mcode exec1 exec2 && equal_mcode lang1 lang2 &&
+      equal_mcode sem1 sem2
   | (Ast0.MetaStmt(name1,_),Ast0.MetaStmt(name2,_))
   | (Ast0.MetaStmtList(name1,_),Ast0.MetaStmtList(name2,_)) ->
       equal_mcode name1 name2

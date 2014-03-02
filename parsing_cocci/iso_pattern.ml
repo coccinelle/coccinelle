@@ -1171,6 +1171,8 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (Ast0.ReturnExpr(r1,expa,sc1),Ast0.ReturnExpr(r,expb,sc)) ->
 	      conjunct_many_bindings
 		[check_mcode r1 r; check_mcode sc1 sc; match_expr expa expb]
+	  | (Ast0.Exec(e1,l1,codea,sc1),Ast0.Exec(e2,l2,codeb,sc2)) ->
+	      failwith "exec not supported in patterns"
 	  | (Ast0.Disj(_,statement_dots_lista,_,_),_) ->
 	      failwith "disj not supported in patterns"
 	  | (Ast0.Nest(_,stmt_dotsa,_,[],multia),

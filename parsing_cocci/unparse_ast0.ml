@@ -544,6 +544,11 @@ and statement arity s =
       | Ast0.ReturnExpr(ret,exp,sem) ->
 	  print_string arity; mcode print_string ret; print_string " ";
 	  expression exp; mcode print_string sem
+      | Ast0.Exec(exec,lang,code,sem) ->
+	  print_string arity; mcode print_string exec; print_string " ";
+	  mcode print_string lang; print_string " ";
+	  dots (function _ -> print_string " ") exec_code code;
+	  mcode print_string sem
       | Ast0.MetaStmt(name,pure) ->
 	  print_string arity; mcode print_meta name;(*
 	  print_string "^";
@@ -665,6 +670,12 @@ and case_line arity c =
 
 and statement_dots l = dots (function _ -> ()) (statement "") l
 and case_dots l = dots (function _ -> ()) (case_line "") l
+
+and exec_code e =
+  match Ast0.unwrap e with
+    Ast0.ExecEval(colon,id) -> mcode print_string colon; expression id
+  | Ast0.ExecToken(tok) -> mcode print_string tok
+  | Ast0.ExecDots(dots) -> mcode print_string dots
 
 (* --------------------------------------------------------------------- *)
 (* Top level code *)

@@ -441,8 +441,7 @@ and statement = statementbis wrap3
 
   (* cppext: *)
   | MacroStmt
-
-
+  | Exec of exec_code list
 
   and labeled = Label   of name * statement
               | Case    of expression * statement
@@ -519,6 +518,11 @@ and statement = statementbis wrap3
       and colon_option = colon_option_bis wrap
           and colon_option_bis = ColonMisc | ColonExpr of expression
 
+  and exec_code_bis =
+    ExecEval of expression
+  | ExecToken
+
+  and exec_code = exec_code_bis wrap
 
 (* ------------------------------------------------------------------------- *)
 (* Declaration *)

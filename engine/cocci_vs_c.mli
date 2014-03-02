@@ -127,10 +127,6 @@ module type PARAM =
 
     val distrf_pragmainfo :
       (Ast_cocci.meta_name Ast_cocci.mcode, Ast_c.pragmainfo) matcher
-    val distrf_ident_list :
-      (Ast_cocci.meta_name Ast_cocci.mcode,
-       (Ast_c.name, Ast_c.il) Common.either list) matcher
-
     val distrf_enum_fields :
       (Ast_cocci.meta_name Ast_cocci.mcode,
        (Ast_c.oneEnumType, Ast_c.il) Common.either list) matcher
@@ -143,6 +139,14 @@ module type PARAM =
       (Ast_cocci.meta_name Ast_cocci.mcode,
       (Ast_c.constant, string) Common.either Ast_c.wrap)
       matcher
+
+    val distrf_ident_list :
+      (Ast_cocci.meta_name Ast_cocci.mcode,
+       (Ast_c.name, Ast_c.il) Common.either list) matcher
+
+    val distrf_exec_code_list :
+      (Ast_cocci.meta_name Ast_cocci.mcode,
+       (Ast_c.exec_code, Ast_c.il) Common.either list) matcher
 
     (* -------------------------------------------------------------------- *)
     (* Modifying nested expression and nested types, with Exp and Ty *)
