@@ -270,6 +270,7 @@ let id_tokens lexbuf =
   | "unsigned" ->   Tunsigned linetype
   | "signed" ->     Tsigned   linetype
   | "decimal" when !Flag.ibm -> Tdecimal linetype
+  | "EXEC" when !Flag.ibm -> Texec linetype
 
   | "auto"  ->      Tauto     linetype
   | "register" ->   Tregister linetype

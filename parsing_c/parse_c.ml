@@ -508,6 +508,8 @@ let clean_for_lookahead xs =
 (* Hacked lex. This function use refs passed by parse_print_error_heuristic
  * tr means token refs.
  *)
+let in_exec = ref false
+
 let rec lexer_function ~pass tr = fun lexbuf ->
   match tr.rest with
   | [] -> pr2_err "ALREADY AT END"; tr.current
@@ -526,6 +528,12 @@ let rec lexer_function ~pass tr = fun lexbuf ->
       let x = List.hd tr.rest_clean  in
       tr.rest_clean <- List.tl tr.rest_clean;
       assert (x =*= v);
+
+      (* ignore exec code *)
+      (match v with
+	Parser_c.Texec _ -> in_exec := true
+      |	Parser_c.TPtVirg _ -> if !in_exec then in_exec := false
+      |	_ -> ());
 
       (match v with
 
@@ -613,9 +621,13 @@ let rec lexer_function ~pass tr = fun lexbuf ->
             | x -> x
           in
 
-          let v = Parsing_hacks.lookahead ~pass
-            (clean_for_lookahead (v::tr.rest_clean))
-            tr.passed_clean in
+          let v =
+	    if !in_exec
+	    then v
+	    else
+	      Parsing_hacks.lookahead ~pass
+		(clean_for_lookahead (v::tr.rest_clean))
+		tr.passed_clean in
 
           tr.passed <- v::tr.passed;
 

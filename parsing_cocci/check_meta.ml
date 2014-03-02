@@ -406,6 +406,8 @@ and statement old_metas table minus s =
       dots (statement old_metas table minus) decls;
       dots (case_line old_metas table minus) cases
   | Ast0.ReturnExpr(ret,exp,sem) -> expression ID old_metas table minus exp
+  | Ast0.Exec(exec,lang,code,sem) ->
+      dots (exec_code ID old_metas table minus) code
   | Ast0.MetaStmt(name,_) ->     check_table table minus name
   | Ast0.MetaStmtList(name,_) -> check_table table minus name
   | Ast0.AsStmt(stm,asstm) -> failwith "not generated yet"
@@ -488,6 +490,12 @@ and case_line old_metas table minus c =
   | Ast0.DisjCase(_,case_lines,_,_) ->
       List.iter (case_line old_metas table minus) case_lines
   | Ast0.OptCase(case) -> failwith "unexpected code"
+
+and exec_code context old_metas table minus e =
+  match Ast0.unwrap e with
+    Ast0.ExecEval(colon,id) -> expression context old_metas table minus id
+  | Ast0.ExecToken(tok) -> ()
+  | Ast0.ExecDots(dots) -> ()
 
 (* --------------------------------------------------------------------- *)
 (* Rules *)

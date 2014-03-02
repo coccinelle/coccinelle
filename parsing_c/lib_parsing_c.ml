@@ -259,6 +259,8 @@ let ii_of_define_params =
   extract_info_visitor Visitor_c.vk_define_params_splitted
 let ii_of_pragmainfo = extract_info_visitor Visitor_c.vk_pragmainfo
 let ii_of_ident_list = extract_info_visitor Visitor_c.vk_ident_list_splitted
+let ii_of_exec_code_list =
+  extract_info_visitor Visitor_c.vk_exec_code_list_splitted
 let ii_of_toplevel = extract_info_visitor Visitor_c.vk_toplevel
 
 (*****************************************************************************)

@@ -847,6 +847,11 @@ let is_stm_dots s =
     Ast0.Dots(_,_) | Ast0.Circles(_,_) | Ast0.Stars(_,_) -> true
   | _ -> false
 
+let is_ec_dots e =
+  match Ast0.unwrap e with
+    Ast0.ExecDots(_) -> true
+  | _ -> false
+
 let rec statement s =
   let res =
     match Ast0.unwrap s with
@@ -997,6 +1002,13 @@ let rec statement s =
 	let sem = normal_mcode sem in
 	mkres s (Ast0.ReturnExpr(ret,exp,sem))
 	  (promote_mcode ret) (promote_mcode sem)
+    | Ast0.Exec(exec,lang,code,sem) ->
+	let exec = normal_mcode exec in
+	let lang = normal_mcode lang in
+	let code = dots is_ec_dots (Some(promote_mcode lang)) exec_code code in
+	let sem = normal_mcode sem in
+	mkres s (Ast0.Exec(exec,lang,code,sem))
+	  (promote_mcode exec) (promote_mcode sem)
     | Ast0.MetaStmt(name,a) ->
 	let ln = promote_mcode name in
 	mkres s (Ast0.MetaStmt(name,a)) ln ln
@@ -1183,6 +1195,21 @@ and case_line c =
 	  Ast0.DisjCase(starter,case_lines,mids,ender))
   | Ast0.OptCase(case) ->
       let case = case_line case in mkres c (Ast0.OptCase(case)) case case
+
+and exec_code e =
+  match Ast0.unwrap e with
+    Ast0.ExecEval(colon,id) ->
+      let colon = normal_mcode colon in
+      let id = expression id in
+      mkres e (Ast0.ExecEval(colon,id)) (promote_mcode colon) id
+  | Ast0.ExecToken(tok) ->
+      let tok = normal_mcode tok in
+      let ln = promote_mcode tok in
+      mkres e (Ast0.ExecToken tok) ln ln
+  | Ast0.ExecDots(dots) ->
+      let dots = bad_mcode dots in
+      let ln = promote_mcode dots in
+      mkres e (Ast0.ExecDots dots) ln ln
 
 and statement_dots x = dots is_stm_dots None statement x
 

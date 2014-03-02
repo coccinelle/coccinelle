@@ -73,6 +73,7 @@ type node = node1 * string (* For debugging. Used by print_graph *)
   | Asm of statement * asmbody wrap
   | MacroStmt of statement * unit wrap
 
+  | Exec of statement * exec_code list wrap
 
   (* ------------------------ *)
   | Enter

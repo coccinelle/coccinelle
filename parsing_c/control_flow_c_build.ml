@@ -438,6 +438,11 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       !g +> add_arc_opt (starti, newi);
       Some newi
 
+  | Ast_c.Exec(code) ->
+      let s = "exec" in
+      let newi = !g +> add_node (Exec (stmt, (code, ii))) lbl s in
+      !g +> add_arc_opt (starti, newi);
+      Some newi
 
    (* ------------------------- *)
   | Selection  (Ast_c.If (e, st1, st2)) ->

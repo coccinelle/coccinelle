@@ -51,6 +51,7 @@ let visitor mode bind option_default
     param all_functions k arg in
   let iddotsfn all_functions k arg = k arg in
   let strdotsfn all_functions k arg = k arg in
+  let ecdotsfn all_functions k arg = k arg in
 
   let rec expression_dots d = dotsfn dotsexprfn expression all_functions d
   and identifier_dots d = dotsfn iddotsfn ident all_functions d
@@ -60,6 +61,7 @@ let visitor mode bind option_default
   and declaration_dots d = dotsfn dotsdeclfn declaration all_functions d
   and case_line_dots d = dotsfn dotscasefn case_line all_functions d
   and string_fragment_dots d = dotsfn strdotsfn string_fragment all_functions d
+  and exec_code_dots d = dotsfn ecdotsfn exec_code all_functions d
 
   and ident i =
     let k i =
@@ -704,6 +706,13 @@ let visitor mode bind option_default
 	    let (exp_n,exp) = expression exp in
 	    let (sem_n,sem) = string_mcode sem in
 	    (multibind [ret_n;exp_n;sem_n], Ast0.ReturnExpr(ret,exp,sem))
+	| Ast0.Exec(exec,lang,code,sem) ->
+	    let (exec_n,exec) = string_mcode exec in
+	    let (lang_n,lang) = string_mcode lang in
+	    let (code_n,code) = exec_code_dots code in
+	    let (sem_n,sem) = string_mcode sem in
+	    (multibind [exec_n;lang_n;code_n;sem_n],
+	     Ast0.Exec(exec,lang,code,sem))
 	| Ast0.MetaStmt(name,pure) ->
 	    let (name_n,name) = meta_mcode name in
 	    (name_n,Ast0.MetaStmt(name,pure))
@@ -894,6 +903,21 @@ let visitor mode bind option_default
 	| Ast0.OptCase(case) ->
 	    let (n,case) = case_line case in (n,Ast0.OptCase(case))) in
     casefn all_functions k c
+
+  and exec_code e =
+    (* not configurable *)
+    rewrap e
+      (match Ast0.unwrap e with
+	Ast0.ExecEval(colon,id) ->
+	  let (colon_n,colon) = string_mcode colon in
+	  let (id_n,id) = expression id in
+	  (bind colon_n id_n,Ast0.ExecEval(colon,id))
+      | Ast0.ExecToken(tok) ->
+	  let (tok_n,tok) = string_mcode tok in
+	  (tok_n,Ast0.ExecToken(tok))
+      | Ast0.ExecDots(dots) ->
+	  let (dots_n,dots) = string_mcode dots in
+	  (dots_n,Ast0.ExecDots(dots)))
 
   and top_level t =
     let k t =

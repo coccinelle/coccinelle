@@ -438,7 +438,7 @@ let mk_string_wrap (s,info) = (s, [info])
        Tauto Tregister Textern Tstatic
        Ttypedef
        Tconst Tvolatile
-       Tstruct Tunion Tenum Tdecimal
+       Tstruct Tunion Tenum Tdecimal Texec
        Tbreak Telse Tswitch Tcase Tcontinue Tfor Tdo Tif  Twhile Treturn
        Tgoto Tdefault
        Tsizeof Tnew Tdelete TOParCplusplusInit Tnamespace
@@ -916,7 +916,7 @@ statement2:
  /*(* cppext: *)*/
  | TMacroStmt { MacroStmt, [snd $1] }
 
-
+ | Texec identifier exec_list TPtVirg { Exec($3), [$1;snd $2;$4] }
 
 
 /*(* note that case 1: case 2: i++;    would be correctly parsed, but with
@@ -1057,7 +1057,60 @@ colon_option:
  | identifier                       { ColonMisc, [snd $1] }
  | /*(* empty *)*/                  { ColonMisc, [] }
 
+// IBM C only
+exec_list:
+    /* empty */ { [] }
+  | TDotDot identifier_cpp exec_list
+      { (ExecEval (mk_e (Ident $2) []), [$1]) :: $3 }
+  | token exec_list { (ExecToken, [$1]) :: $2 }
+
 asm_expr: assign_expr { $1 }
+
+token:
+    TPlus   { $1 }
+  | TMinus  { $1 }
+  | TMul    { $1 }
+  | TDiv    { $1 }
+  | TMod    { $1 }
+  | TMin    { $1 }
+  | TMax    { $1 }
+  | TInc    { $1 }
+  | TDec    { $1 }
+  | TEq     { $1 }
+  | TAssign { snd $1 }
+
+  | TEqEq   { $1 }
+  | TNotEq  { $1 }
+  | TSupEq  { $1 }
+  | TInfEq  { $1 }
+  | TSup    { $1 }
+  | TInf    { $1 }
+
+  | TAndLog { $1 }
+  | TOrLog  { $1 }
+  | TShr    { $1 }
+  | TShl    { $1 }
+  | TAnd    { $1 }
+  | TOr     { $1 }
+  | TXor    { $1 }
+
+  | TOBrace { $1 }
+  | TCBrace { $1 }
+  | TOCro   { $1 }
+  | TCCro   { $1 }
+  | TOPar   { $1 }
+  | TCPar   { $1 }
+
+  | TPtrOp  { $1 }
+  | TDot    { $1 }
+  | TWhy    { $1 }
+  | TBang   { $1 }
+  | TComma  { $1 }
+  | TIdent  { snd $1 }
+  | TypedefIdent { snd $1 }
+
+  | Tif     { $1 }
+  | Telse   { $1 }
 
 /*(*************************************************************************)*/
 /*(* types *)*/

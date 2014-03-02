@@ -62,6 +62,7 @@
 - Initialize and finalize rules contain a metavariable declaration region.
 - Added documentation about iteration.
 - Allow changes within strings.
+- EXEC, for use with the --ibm option.
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line

@@ -239,6 +239,8 @@ type node = node1 * string
   | Asm of fullstatement * asmbody wrap
   | MacroStmt of fullstatement * unit wrap
 
+  | Exec of fullstatement * exec_code list wrap
+
   (* ------------------------ *)
   (* some control nodes *)
   | Enter
@@ -368,6 +370,7 @@ let extract_fullstatement node =
   | Continue (st, _)
   | Break    (st, _)
   | Asm (st,_)
+  | Exec (st,_)
       -> Some st
 
   | TopNode|EndNode

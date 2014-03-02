@@ -338,6 +338,8 @@ and base_statement =
   | Return        of string mcode (* return *) * string mcode (* ; *)
   | ReturnExpr    of string mcode (* return *) * expression *
 	             string mcode (* ; *)
+  | Exec          of string mcode (* EXEC *) * string mcode (* language *) *
+	             exec_code dots * string mcode (* ; *)
   | MetaStmt      of Ast_cocci.meta_name mcode * pure
   | MetaStmtList  of Ast_cocci.meta_name mcode (*only in statement lists*) *
 	             pure
@@ -406,6 +408,13 @@ and base_case_line =
   | OptCase of case_line
 
 and case_line = base_case_line wrap
+
+and base_exec_code =
+    ExecEval of string mcode (* : *) * expression
+  | ExecToken of string mcode
+  | ExecDots of string mcode (* ... *)
+
+and exec_code = base_exec_code wrap
 
 (* --------------------------------------------------------------------- *)
 (* Positions *)
