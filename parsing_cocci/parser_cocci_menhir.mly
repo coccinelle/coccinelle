@@ -2476,6 +2476,15 @@ exec_ident:
      { let (nm,constraints,pure,ty,clt) = $1 in
      Ast0.wrap
        (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.ID,pure)) }
+  | TMetaExp
+     { let (nm,constraints,pure,ty,clt) = $1 in
+     Ast0.wrap
+       (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.ANY,pure)) }
+ | exec_ident TDot   disj_ident
+     { Ast0.wrap(Ast0.RecordAccess($1, P.clt2mcode "." $2, $3)) }
+ | exec_ident TPtrOp disj_ident
+     { Ast0.wrap(Ast0.RecordPtAccess($1, P.clt2mcode "->" $2,
+				     $3)) }
 
 token:
     TPlus { P.clt2mcode "+" $1 }
@@ -2497,7 +2506,7 @@ token:
   | TOCro { P.clt2mcode "[" $1 }
   | TCCro { P.clt2mcode "]" $1 }
   | TEq { P.clt2mcode "=" $1 }
-  | TDot { P.clt2mcode "." $1 }
+/*  | TDot { P.clt2mcode "." $1 }*/
   | TWhy { P.clt2mcode "?" $1 }
   | TBang { P.clt2mcode "!" $1 }
   | TOPar { P.clt2mcode "(" $1 }
