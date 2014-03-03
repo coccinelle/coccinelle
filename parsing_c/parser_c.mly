@@ -1060,9 +1060,14 @@ colon_option:
 // IBM C only
 exec_list:
     /* empty */ { [] }
-  | TDotDot identifier_cpp exec_list
-      { (ExecEval (mk_e (Ident $2) []), [$1]) :: $3 }
+  | TDotDot exec_ident exec_list
+      { (ExecEval $2, [$1]) :: $3 }
   | token exec_list { (ExecToken, [$1]) :: $2 }
+
+exec_ident:
+   identifier_cpp { mk_e (Ident $1) [] }
+ | exec_ident TDot   ident_cpp { mk_e(RecordAccess   ($1,$3)) [$2] }
+ | exec_ident TPtrOp ident_cpp { mk_e(RecordPtAccess ($1,$3)) [$2] }
 
 asm_expr: assign_expr { $1 }
 
@@ -1101,8 +1106,8 @@ token:
   | TOPar   { $1 }
   | TCPar   { $1 }
 
-  | TPtrOp  { $1 }
-  | TDot    { $1 }
+/*| TPtrOp  { $1 }
+  | TDot    { $1 }*/
   | TWhy    { $1 }
   | TBang   { $1 }
   | TComma  { $1 }

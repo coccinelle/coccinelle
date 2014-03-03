@@ -25,20 +25,32 @@ constant r.n, r.pr;
 idexpression decimal(n,pr) r.i;
 identifier r.f;
 position r.p;
-fresh identifier tmp = "__exec__";
 statement S;
+fresh identifier tmp = "__exec__";
 @@
 
 f(...) {
   <... {
-++ int tmp;
+++ char tmp[64];
   ... when != S
 ++decToString(i, tmp);
   EXEC@p SQL ...;
-++i = tmp;
+++stringToDec(tmp, &i);
   }
   ...>
 }
+
+@@
+identifier i,tmp;
+@@
+
+ decToString(i, tmp);
+  ... when != stringToDec(...);
+  EXEC SQL ... :
+-i
++tmp
+    ...;
+
 
 /*
 @@
