@@ -106,33 +106,32 @@ let annotate_program toks asts =
 
   (* after phase. trick: reverse the tokens and reuse previous func *)
    let toks_with_after =
-     List.rev
-       (List.map
-	  (function (x,l) -> (x,List.rev l))
-	  (Common.exclude_but_keep_attached is_comment_or_space_or_stuff
-             (List.rev toks)))
+     List.fold_left (* comes out reversed *)
+       (function prev -> function (x,l) -> (x,List.rev l) :: prev) []
+       (Common.exclude_but_keep_attached is_comment_or_space_or_stuff
+          (List.rev toks))
    in
 
   (* merge *)
    assert(List.length toks_with_after =|= List.length toks_with_before);
 
-   Common.zip toks_with_before toks_with_after
-   +> List.iter (fun ((t1, before), (t2, after)) ->
+  List.iter2 (fun (t1, before) (t2, after) ->
 
-     assert(t1 =*= t2);
+    assert(t1 =*= t2);
 
-     let before' = before +> List.map convert_relevant_tokens in
-     let after' = after  +> List.map convert_relevant_tokens in
+    let before' = before +> List.map convert_relevant_tokens in
+    let after' = after  +> List.map convert_relevant_tokens in
 
-     let info = Token_helpers.info_of_tok t1 in
-     info.Ast_c.comments_tag :=
-       { Ast_c.mbefore = before';
-         Ast_c.mafter = after';
-         mbefore2 = [];
-         mafter2 = [];
-       };
+    let info = Token_helpers.info_of_tok t1 in
+    info.Ast_c.comments_tag :=
+      { Ast_c.mbefore = before';
+        Ast_c.mafter = after';
+        mbefore2 = [];
+        mafter2 = [];
+      };
 
-   );
+    )
+    toks_with_before toks_with_after;
    (* modified via side effect. I return it just to have a
     * clean signature.
     *)

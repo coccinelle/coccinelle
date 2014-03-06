@@ -239,6 +239,7 @@ rule_name
 %type <(Ast_cocci.metavar,Ast_cocci.metavar) Common.either list> meta_main
 
 %start <(string option (*string*) * string option (*ast*)) * (Ast_cocci.meta_name * Ast_cocci.metavar) option> script_meta_main
+%start <(string option (*string*) * string option (*ast*)) * (Ast_cocci.meta_name * Ast_cocci.metavar) option> script_meta_virt_nofresh_main
 
 %start iso_main
 %type <Ast0_cocci.anything list list> iso_main
@@ -2556,6 +2557,20 @@ script_name_decl:
         let mv = Parse_aux.lookup $2 nm in
         (($2, nm), mv) }
   | TShLOp TVirtual TDot cocci=pure_ident
+      { let nm = P.id2name cocci in
+	 Iteration.parsed_virtual_identifiers :=
+	   Common.union_set [nm]
+	     !Iteration.parsed_virtual_identifiers;
+        let name = ("virtual", nm) in
+        let mv = Ast.MetaIdDecl(Ast.NONE,name) in
+        (name,mv) }
+
+script_meta_virt_nofresh_main:
+    py=pure_ident script_virt_name_decl TMPtVirg
+  { ((Some (P.id2name py), None), Some $2) }
+
+script_virt_name_decl:
+    TShLOp TVirtual TDot cocci=pure_ident
       { let nm = P.id2name cocci in
 	 Iteration.parsed_virtual_identifiers :=
 	   Common.union_set [nm]

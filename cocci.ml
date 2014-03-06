@@ -986,8 +986,7 @@ let python_code =
     local_python_code ^
     "cocci = Cocci()\n"
 
-let make_init lang code rule_info =
-  let mv = [] in
+let make_init lang code rule_info mv =
   {
   scr_ast_rule = (lang, mv, [], code);
   language = lang;
@@ -1034,11 +1033,10 @@ let prepare_cocci ctls free_var_lists negated_pos_lists
               scr_rule_info = build_rule_info name deps;
 	    }
           in ScriptRuleCocciInfo r
-      | Ast_cocci.InitialScriptRule (name,lang,deps,code) ->
-	  let r = make_init lang code (build_rule_info name deps) in
-	    InitialScriptRuleCocciInfo r
-      | Ast_cocci.FinalScriptRule (name,lang,deps,code) ->
-	  let mv = [] in
+      | Ast_cocci.InitialScriptRule (name,lang,deps,mv,code) ->
+	  let r = make_init lang code (build_rule_info name deps) mv in
+	  InitialScriptRuleCocciInfo r
+      | Ast_cocci.FinalScriptRule (name,lang,deps,mv,code) ->
           let r =
             {
               scr_ast_rule = (lang, mv, [], code);
@@ -1826,7 +1824,8 @@ let initial_final_bigloop2 ty rebuild r =
 
       adjust_pp_with_indent (fun () ->
 	Format.force_newline();
-	Pretty_print_cocci.unparse(rebuild r.scr_ast_rule r.scr_rule_info.dependencies));
+	Pretty_print_cocci.unparse
+	  (rebuild r.scr_ast_rule r.scr_rule_info.dependencies));
     end;
 
   match r.language with
@@ -1906,11 +1905,12 @@ let pre_engine2 (coccifile, isofile) =
     with Not_found ->
       begin
 	Iteration.initialization_stack :=
-	  ((rlang,rname),!Flag.defined_virtual_rules) ::
+	  ((rlang,rname),
+	   (!Flag.defined_virtual_rules,!Flag.defined_virtual_env)) ::
 	  !Iteration.initialization_stack;
 	initial_final_bigloop Initial
-	  (fun (x,_,_,y) -> fun deps ->
-	    Ast_cocci.InitialScriptRule(rname,x,deps,y))
+	  (fun (x,mvs,_,y) -> fun deps ->
+	    Ast_cocci.InitialScriptRule(rname,x,deps,mvs,y))
 	  r
       end in
   
@@ -1945,7 +1945,7 @@ let pre_engine2 (coccifile, isofile) =
 	  used_after = [];
 	  ruleid = (-1);
 	  was_matched = ref false;} in
-      runrule (make_init lgg "" rule_info))
+      runrule (make_init lgg "" rule_info []))
     uninitialized_languages;
 
   ((cocci_infos,parse_strings),constants)
@@ -2028,8 +2028,9 @@ let full_engine a b =
 
 let post_engine2 (cocci_infos,_) =
   List.iter
-    (function ((language,_),virt_rules) ->
+    (function ((language,_),(virt_rules,virt_env)) ->
       Flag.defined_virtual_rules := virt_rules;
+      Flag.defined_virtual_env := virt_env;
       let _ =
 	List.fold_left
 	  (function languages ->
@@ -2038,9 +2039,9 @@ let post_engine2 (cocci_infos,_) =
 		  (if r.language = language && List.mem r.language languages
 		  then failwith ("double finalizer found for "^r.language));
 		  initial_final_bigloop Final
-		    (fun (x,_,_,y) -> fun deps ->
+		    (fun (x,mvs,_,y) -> fun deps ->
 		      Ast_cocci.FinalScriptRule(r.scr_rule_info.rulename,
-						x,deps,y))
+						x,deps,mvs,y))
 		    r;
 		  r.language::languages
 	      | _ -> languages)

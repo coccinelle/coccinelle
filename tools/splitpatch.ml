@@ -198,13 +198,56 @@ let get_template_information file =
     [subject] ->
       let cover = read_up_to_dashes i in
       let message = read_up_to_dashes i in
+      let nonmessage = read_up_to_dashes i in
       if message = []
-      then (subject,None,cover)
-      else (subject,Some cover,message)
+      then (subject,None,cover,[])
+      else (subject,Some cover,message,nonmessage)
   | _ ->
       failwith
 	("Subject must be exactly one line "^
 	 (string_of_int (List.length subject)))
+
+(* ------------------------------------------------------------------------ *)
+(* ------------------------------------------------------------------------ *)
+(* Info processing *)
+
+let get_info info_file =
+  let tbl = Hashtbl.create 101 in
+  (if Sys.file_exists info_file
+  then
+    let lines = cmd_to_list (Printf.sprintf "grep ^## %s" info_file) in
+    List.iter
+      (function line ->
+	if Str.string_match (Str.regexp "## *") line 0
+	then
+	  let line =
+	    let match_end = Str.match_end () in
+	    String.sub line match_end
+	      (String.length line - match_end) in
+	  try
+	    let line =
+	      match !prefix_before with
+		None -> line
+	      | Some pb ->
+		  let pb = pb^"/" in
+		  String.concat "" (Str.split (Str.regexp pb) line) in
+	    let end_of_file =
+	      Str.search_forward (Str.regexp " *: *") line 0 in
+	    let match_end = Str.match_end () in
+	    let file = String.sub line 0 end_of_file in
+	    let info =
+	      String.sub line match_end (String.length line - match_end) in
+	    let cell =
+	      try Hashtbl.find tbl file
+	      with Not_found ->
+		let cell = ref [] in
+		Hashtbl.add tbl file cell;
+		cell in
+	    cell := info :: !cell
+	  with Not_found ->
+	    Printf.fprintf stderr "no file found in %s\n" line)
+      lines);
+  tbl
 
 (* ------------------------------------------------------------------------ *)
 (* ------------------------------------------------------------------------ *)
@@ -436,8 +479,21 @@ let make_mail_header o date maintainers ctr number subject =
   then Printf.fprintf o "Subject: [PATCH] %s\n\n" subject
   else Printf.fprintf o "Subject: [PATCH %d/%d] %s\n\n" ctr number subject
 
-let make_message_files subject cover message date maintainer_table
-    patch front add_ext nomerge =
+let print_info o info_tbl files =
+  let do_one prefix file =
+    try
+      let lines = List.rev (!(Hashtbl.find info_tbl file)) in
+      Printf.fprintf o "%s" prefix;
+      List.iter (function line -> Printf.fprintf o "%s\n" line) lines;
+      Printf.fprintf o "\n"
+    with Not_found -> () in
+  match files with
+    [file] -> do_one "" file
+  | l ->
+      List.iter (function file -> do_one (Printf.sprintf "%s:\n" file) file) l
+
+let make_message_files subject cover message nonmessage date maintainer_table
+    patch front add_ext nomerge info_tbl =
   let ctr = ref 0 in
   let elements =
     Hashtbl.fold
@@ -475,8 +531,11 @@ let make_message_files subject cover message date maintainer_table
 	let o = open_out output_file in
 	make_mail_header o date maintainers ctr number
 	  (Printf.sprintf "%s %s" common subject);
+	print_info o info_tbl files;
 	print_all o message;
 	Printf.fprintf o "\n---\n";
+	print_all o nonmessage;
+	(if not (nonmessage = []) then Printf.fprintf o "\n");
 	let (nm,o1) = Filename.open_temp_file "patch" "patch" in
 	List.iter (print_all o1) (List.rev diffs);
 	close_out o1;
@@ -554,7 +613,8 @@ let generate_command front cover generated =
 	(String.concat " " ((front^".cover") :: generated)));
   close_out o
 
-let make_output_files subject cover message maintainer_table patch nomerge =
+let make_output_files subject cover message nonmessage
+    maintainer_table patch nomerge info_tbl =
   let date = List.hd (cmd_to_list "date") in
   let front = safe_chop_extension patch in
   let add_ext =
@@ -562,8 +622,8 @@ let make_output_files subject cover message maintainer_table patch nomerge =
       Some ext -> (function s -> s ^ "." ^ ext)
     | None -> (function s -> s) in
   let generated =
-    make_message_files subject cover message date maintainer_table
-      patch front add_ext nomerge in
+    make_message_files subject cover message nonmessage date maintainer_table
+      patch front add_ext nomerge info_tbl in
   make_cover_file (List.length generated) subject cover front date
     maintainer_table;
   generate_command front cover generated
@@ -586,10 +646,14 @@ let parse_args l =
 let _ =
   let (file,git_args) = parse_args (List.tl (Array.to_list Sys.argv)) in
   let message_file = (safe_chop_extension file)^".msg" in
+  let info_file = (safe_chop_extension file)^".info" in
   (* set up environment *)
   read_configs message_file;
   (* get message information *)
-  let (subject,cover,message) = get_template_information message_file in
+  let (subject,cover,message,nonmessage) =
+    get_template_information message_file in
+  (* get file-specific information, if any *)
+  let info_tbl = get_info info_file in
   (* split patch *)
   let i = open_in file in
   let patches = split_patch i in
@@ -597,4 +661,5 @@ let _ =
   let maintainer_table = resolve_maintainers patches in
   (if !found_a_maintainer = false then git_options := !not_linux);
   (if not (git_args = "") then git_options := !git_options^" "^git_args);
-  make_output_files subject cover message maintainer_table file !nomerge
+  make_output_files subject cover message nonmessage
+    maintainer_table file !nomerge info_tbl

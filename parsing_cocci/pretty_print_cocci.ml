@@ -965,9 +965,9 @@ let script_header str lang deps code =
 
 let unparse z =
   match z with
-    Ast.InitialScriptRule (name,lang,deps,code) ->
+    Ast.InitialScriptRule (name,lang,deps,mv,code) ->
       script_header "initialize" lang deps code
-  | Ast.FinalScriptRule (name,lang,deps,code) ->
+  | Ast.FinalScriptRule (name,lang,deps,mv,code) ->
       script_header "finalize" lang deps code
   | Ast.ScriptRule (name,lang,deps,bindings,script_vars,code) ->
       script_header "script" lang deps code

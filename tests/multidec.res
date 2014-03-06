@@ -1,4 +1,6 @@
 int main () {
   int x = 3,z;
-  int x = 12,y;
+  int y;
+  int
+y;
 }

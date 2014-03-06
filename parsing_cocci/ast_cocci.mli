@@ -626,10 +626,12 @@ and rule =
       string * dependency *
 	(script_meta_name * meta_name * metavar) list *
 	meta_name list (*script vars*) * string
-  | InitialScriptRule of  string (* name *) *
-	string * dependency * string
-  | FinalScriptRule of  string (* name *) *
-	string * dependency * string
+  | InitialScriptRule of  string (* name *) * string * dependency *
+	(script_meta_name * meta_name * metavar) list (*virtual vars*) *
+	string
+  | FinalScriptRule of  string (* name *) * string * dependency *
+	(script_meta_name * meta_name * metavar) list (*virtual vars*) *
+	string
 
 and script_meta_name = string option (*string*) * string option (*ast*)
 

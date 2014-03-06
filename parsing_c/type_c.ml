@@ -88,7 +88,8 @@ let mk_fulltype bt str =
     Ast_c.comments_tag = {contents =
         {Ast_c.mbefore = []; Ast_c.mafter = [];
          Ast_c.mbefore2 = []; Ast_c.mafter2 = []
-        }}}]
+        }};
+    Ast_c.danger = ref Ast_c.NoDanger;}]
 
 let (int_type: Ast_c.fullType) =
   (* Lib_parsing_c.al_type   (Parse_c.type_of_string "int")*)

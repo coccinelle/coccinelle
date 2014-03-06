@@ -5,17 +5,17 @@ int main () {
   else {
     two();
   }
- while (y) {
+  while (y) {
     one();
   }
- do {
+  do {
     one();
- } while(y);
- switch (y) {
- case 12:one();
- case 27:two();
+  } while(y);
+  switch (y) {
+  case 12:one();
+  case 27:two();
   }
-{
+  {
     one();
   }
 }

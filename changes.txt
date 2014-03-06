@@ -59,6 +59,8 @@
 - Support variable declarations in the first element of a for loop header.
 - Support decimal type with the --ibm option
 - Support some matching on pragmas
+- Initialize and finalize rules contain a metavariable declaration region.
+- Added documentation about iteration.
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line
@@ -153,6 +155,14 @@
   to Nic Volanschi for the bug report.
 - Eliminate the reliance on grep in most cases for worth trying, to improve
   performance.  Thanks to Johannes Berg for the suggestion.
+- Allow multidecls when removing variable names or when modifying type.
+- Take fresh declarations into account when computing get_constants to
+  create dependencies
+- Leave ifdefs-like directives in unparsed code, if they don't have
+  beginning or ending counterparts.
+- Improved interpret_cocci_grep to try to avoid no accumulating lots of
+  anded data.
+- Improve type inference performance when many files included by using maps.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
@@ -300,6 +310,9 @@
   Tegawende Bissyande for finding the problem.
 - Collect all types in get_constants when types mentioned on
   metavariables. Thanks to Michael Stefaniuc for the report.
+- Try to fix pretty printing of directives.
+- Allow renaming types in multidecls, including renames in initializers.
+- Save virtual identifiers from the command line for use in finalize code.
 
 * 0.2.5
 ** Language:

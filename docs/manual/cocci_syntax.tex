@@ -388,14 +388,19 @@ typing, metavariables for scripts do not include type declarations.
   \RULE{\rt{script\_metavariables}}
   \CASE{@ script:\NT{language} \OPT{\NT{rulename}} \OPT{depends on \NT{dep}} @
         \any{\NT{script\_metadecl}} @@}
-  \CASE{@ initialize:\NT{language} \OPT{depends on \NT{dep}} @}
-  \CASE{@ finalize:\NT{language} \OPT{depends on \NT{dep}} @}
+  \CASE{@ initialize:\NT{language} \OPT{depends on \NT{dep}} @
+        \any{\NT{script\_virt\_metadecl}} @@}
+  \CASE{@ finalize:\NT{language} \OPT{depends on \NT{dep}} @
+        \any{\NT{script\_virt\_metadecl}} @@}
 
   \RULE{\rt{language}} \CASE{python} \CASE{ocaml}
 
   \RULE{\rt{script\_metadecl}}
   \CASE{\T{id} <{}< \T{rulename\_id}.\T{id} ;}
   \CASE{\T{id} ;}
+
+  \RULE{\rt{script\_virt\_metadecl}}
+  \CASE{\T{id} <{}< virtual.\T{id} ;}
 \end{grammar}
 
 Currently, the only scripting languages that are supported are Python and
@@ -410,6 +415,12 @@ Initialize and finalize script rules do not have access to SmPL
 metavariables.  Nevertheless, a finalize script rule can access any
 variables initialized by the other script rules, allowing information to be
 transmitted from the matching process to the finalize rule.
+
+Initialize and finalize rules do have access to virtual metavariables,
+using the usual syntax.  As for other scripting language rules, the rule
+is not run (and essentially does not exist) if some of the required virtual
+metavariables are not bound.  In ocaml, a warning is printed in this case.
+An example is found in demos/initvirt.cocci.
 
 A script metavariable that does not specify an origin, using \texttt{<<},
 is newly declared by the script.  This metavariable should be assigned to a
@@ -1162,6 +1173,64 @@ but the expression \texttt{e} must be represented as a single token.
 
 The generated semantic match behaves as though there were a \texttt{*} in front
 of every token.
+
+\section{Iteration}
+
+It is possible to iterate Coccinelle, giving the subsequent iterations a
+different set of virtual rules or virtual identifier bindings.  And example
+is found in {\tt demos/iteration.cocci}.  The example shown there is as
+follows:
+
+\begin{quote}
+\begin{verbatim}
+virtual after_start
+
+@initialize:ocaml@
+
+let tbl = Hashtbl.create(100)
+
+let add_if_not_present from f file =
+try let _ = Hashtbl.find tbl (f,file) in ()
+with Not_found ->
+   Hashtbl.add tbl (f,file) file;
+   let it = new iteration() in
+   (match file with
+     Some fl -> it#set_files [fl]
+   | None -> ());
+   it#add_virtual_rule After_start;
+   it#add_virtual_identifier Err_ptr_function f;
+   it#register()
+\end{verbatim}
+\end{quote}
+
+The virtual rule {\tt after\_start} is used to distinguish between the
+first iteration (in which it is not considered to have matched) and all
+others.  This is done by not mentioning {\tt after\_start} in the command
+line, but adding it on each iteration.
+
+The main code for performing the iteration is found in the function {\tt
+  add\_if\_not\_present}, between the lines calling {\tt new iteration} and
+{\tt register}.  {\tt New iteration} creates a structure representing the
+new iteration.  {\tt set\_files} sets the list of files to be considered on
+the new iteration.  If this function is not called, the new iteration
+treats the same files as the current iteration.  {\tt add\_virtual\_rule A}
+has the same effect as putting {\tt -D a} on the command line.  Note that
+the first letter of the rule name is capitalized, although this is not done
+elsewhere.  {\tt add\_virtual\_identifier X v} has the same effect as
+putting {\tt -D x=v} on the command line.  Note again the case change.
+{\tt extend\_virtual\_identifiers()} (not shown) preserves all virtual
+identifiers of the current iteration that are not overridden by calls to 
+{\tt add\_virtual\_identifier}.  Finally, the call to {\tt register} queues
+the collected information to trigger a new iteration at some time in the
+future.
+
+Modification is not allowed when using iteration.  Thus, it is required to
+use the {\tt --no-show-diff}, unless the semantic patch contains {\tt *}s
+(a semantic match rather than a semantic patch).
+
+The remainder of the code above uses a hash table to ensure that the same
+information is not enqueued more than once.  Coccinelle itself provides no
+support for this.
 
 %%% Local Variables:
 %%% mode: LaTeX

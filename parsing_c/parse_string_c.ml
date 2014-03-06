@@ -31,6 +31,7 @@ let update_info str offset oldinfo pos maker =
 	  Ast_c.cocci_tag = ref Ast_c.emptyAnnot;
 	  annots_tag = Token_annot.empty;
 	  comments_tag = ref Ast_c.emptyComments;
+	  danger = ref Ast_c.NoDanger;
 	}
     | Before ->
 	let ct = !(oldinfo.Ast_c.comments_tag) in
@@ -42,6 +43,7 @@ let update_info str offset oldinfo pos maker =
 	  Ast_c.cocci_tag = ref Ast_c.emptyAnnot;
 	  annots_tag = Token_annot.empty;
 	  comments_tag = ref ct;
+	  danger = ref Ast_c.NoDanger;
 	}
     | After ->
 	let ct = !(oldinfo.Ast_c.comments_tag) in
@@ -53,6 +55,7 @@ let update_info str offset oldinfo pos maker =
 	  Ast_c.cocci_tag = ref Ast_c.emptyAnnot;
 	  annots_tag = Token_annot.empty;
 	  comments_tag = ref ct;
+	  danger = ref Ast_c.NoDanger;
 	} in
   maker str newinfo
 

@@ -2015,21 +2015,22 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 	  [] -> []
 	| x::xs ->
 	    if n = cur then vl :: xs else x :: (repln n vl (cur+1) xs) in
-      if !Flag.sgrep_mode2(*X.mode =*= PatternMode *) || A.get_safe_decl decla
-      then
-        (indexify xs) +> List.fold_left (fun acc (n,var) ->
+      let doit _ =
+	(indexify xs) +> List.fold_left (fun acc (n,var) ->
 	  (* consider all possible matches *)
           acc >||> (function tin -> (
             X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart ->
               onedecl allminus decla (var, iiptvirgb, iisto) >>=
-                (fun decla (var, iiptvirgb, iisto) ->
-                  return (
-                    (mckstart, allminus, decla),
+              (fun decla (var, iiptvirgb, iisto) ->
+                return (
+                (mckstart, allminus, decla),
 		    (* adjust the variable that was chosen *)
-                    (B.DeclList (repln n var 0 xs,
-				 iiptvirgb::iifakestart::iisto))
+                (B.DeclList (repln n var 0 xs,
+			     iiptvirgb::iifakestart::iisto))
                   )))) tin))
-          fail
+          fail in
+      if !Flag.sgrep_mode2(*X.mode =*= PatternMode *) || A.get_safe_decl decla
+      then doit()
       else
 	begin
 	  (* rather clunky... we only want to print the warning message if
@@ -2054,9 +2055,9 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 		donothing donothing donothing donothing donothing in
 	    v.Visitor_ast.rebuilder_declaration decla in
 
-	  (indexify xs) +> List.fold_left (fun acc (n,var) ->
+	  xs +> List.fold_left (fun acc var ->
 	  (* consider all possible matches *)
-            acc >||> (function tin -> (
+            (function tin -> (
               onedecl allminus contextified_decla (var, iiptvirgb, iisto) >>=
               (fun _ _ ->
 		pr2_once

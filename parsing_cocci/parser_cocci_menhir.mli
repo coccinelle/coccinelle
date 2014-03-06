@@ -201,6 +201,7 @@ type token =
   | EOF
 
 
+val script_meta_virt_nofresh_main: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> ((string option (*string*) * string option (*ast*)) * (Ast_cocci.meta_name * Ast_cocci.metavar) option)
 val script_meta_main: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> ((string option (*string*) * string option (*ast*)) * (Ast_cocci.meta_name * Ast_cocci.metavar) option)
 val rule_name: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Ast_cocci.rulename)
 val reinit: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (unit)

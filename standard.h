@@ -88,6 +88,11 @@
 // Attributes. could perhaps generalize via "__.*"
 // ----------------------------------------------------------------------------
 #define  __init
+#define  __initconst
+#define  __page_aligned_data
+#define  __page_aligned_bss
+#define  __always_unused
+#define  __visible
 #define  __exit
 #define  __user
 #define  __iomem
@@ -316,6 +321,9 @@
 #define  ASC_INITDATA
 #define  in2000__INITDATA
 #define  PACKED
+#define  __packed
+#define  __rcu
+#define  __percpu
 
 #define  WPMINFO
 #define  CPMINFO

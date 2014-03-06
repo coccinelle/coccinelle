@@ -232,11 +232,10 @@ let handle_metavar name fn =
 	     line name_string)
   | Some e  ->
       pr_barrier line lcol;
-      (if generating
-      then
-	(* call mcode to preserve the -+ annotation *)
-	mcode (fun _ _ _ -> fn e) name
-      else fn e);
+      (* call mcode to preserve the -+ annotation *)
+      (* This used to only call mcode if generating was true.  Not clear
+	 how that could work. *)
+      mcode (fun _ _ _ -> fn e) name;
       pr_barrier line rcol
 in
 (* --------------------------------------------------------------------- *)

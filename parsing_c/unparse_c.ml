@@ -57,7 +57,7 @@ type token2 =
   | T2 of Parser_c.token * min 
         * int option (* orig index, abstracting away comments and space *)
         * Unparse_cocci.nlhint option
-  | Fake2 of min
+  | Fake2 of Ast_c.info * min
   | Cocci2 of string * int (* line *) * int (* lcol *) * int (* rcol *)
             * Unparse_cocci.nlhint option
   | C2 of string
@@ -123,8 +123,15 @@ let print_token2 = function
           (match adj with Ast_cocci.ADJ n -> n | _ -> -1)
           (String.concat " " (List.map string_of_int index))
       | Ctx -> "" in
-    "T2:"^b_str^t_str^TH.str_of_tok t
-  | Fake2 b ->
+(*    let d_str =
+      let info = TH.info_of_tok t in
+      match !(info.Ast_c.danger) with
+	Ast_c.DangerStart -> ":DS:"
+      |	Ast_c.DangerEnd -> ":DE:"
+      |	Ast_c.Danger -> ":D:"
+      |	Ast_c.NoDanger -> ":ND:" in *)
+    "T2:"^b_str^t_str(*^d_str*)^TH.str_of_tok t
+  | Fake2 (_,b) ->
     let b_str =
       match b with
       | Min (index,adj) ->
@@ -133,7 +140,6 @@ let print_token2 = function
           (String.concat " " (List.map string_of_int index))
       | Ctx -> "" in
     b_str^"fake"
-  | Cocci2 (s,_,lc,rc,Some _) -> Printf.sprintf "Cocci2:%d:%d%s (H)" lc rc s
   | Cocci2 (s,_,lc,rc,_) -> Printf.sprintf "Cocci2:%d:%d%s" lc rc s
   | C2 s -> "C2:"^s
   | Comma s -> "Comma:"^s
@@ -170,8 +176,8 @@ let rebuild_tokens_extented toks_ext =
   let _tokens = ref [] in
   toks_ext +> List.iter (fun tok ->
     tok.new_tokens_before +> List.iter (fun x -> push2 x _tokens);
-    if not tok.remove then push2 tok.tok2 _tokens;
-    );
+    if not tok.remove
+    then push2 tok.tok2 _tokens);
   let tokens = List.rev !_tokens in
   (tokens +> List.map mk_token_extended)
 
@@ -339,7 +345,7 @@ let expand_mcode toks =
       let isminus = match minus with Min _ -> true | Ctx -> false in
       (* don't add fake string if the thing should be removed *)
       if str =$= "" or isminus
-      then push2 (Fake2 minus) toks_out
+      then push2 (Fake2 (info,minus)) toks_out
       (* fx the fake "," at the end of a structure or enum.
       no idea what other fake info there can be... *)
       else push2 (Comma str) toks_out
@@ -474,6 +480,8 @@ let is_added_space = function
   | C2(" ") -> true (* only whitespace *)
   | _ -> false
 
+let is_added_whitespace = function C2 " " | C2 "\n" -> true | _ -> false
+
 let is_newline = function
   | T2(Parser_c.TCommentNewline _,_b,_i,_h) -> true
   | T2(Parser_c.TComment _,_b,_i,_h) -> true (* only whitespace *)
@@ -495,10 +503,9 @@ let is_minusable_comment = function
     | Parser_c.TComment _ when !Flag_parsing_c.keep_comments -> false
     | Parser_c.TComment _
     | Parser_c.TCommentCpp (Token_c.CppAttr, _)
-    | Parser_c.TCommentCpp (Token_c.CppMacro, _)
-    | Parser_c.TCommentCpp (Token_c.CppIfDirective _, _)
-    | Parser_c.TCommentCpp (Token_c.CppDirective, _) -> (* result was false *)
-      true
+    | Parser_c.TCommentCpp (Token_c.CppMacro, _) -> true
+    | Parser_c.TCommentCpp (Token_c.CppIfDirective _, _) -> true
+    | Parser_c.TCommentCpp (Token_c.CppDirective, _) -> true
     (*
     | Parser_c.TCommentMisc _
     | Parser_c.TCommentCpp (Token_c.CppPassingCosWouldGetError, _) -> 
@@ -516,17 +523,6 @@ let is_minusable_comment_nocpp = function
     | Parser_c.TCommentNewline _ (* newline plus whitespace *) -> true
     | Parser_c.TComment _ when !Flag_parsing_c.keep_comments -> false
     | Parser_c.TComment _ -> true
-    (*
-    | Parser_c.TCommentCpp (Token_c.CppAttr, _)
-    | Parser_c.TCommentCpp (Token_c.CppMacro, _)
-    | Parser_c.TCommentCpp (Token_c.CppIfDirective _, _)
-    | Parser_c.TCommentCpp (Token_c.CppDirective, _) -> 
-      false
-
-    | Parser_c.TCommentMisc _
-    | Parser_c.TCommentCpp (Token_c.CppPassingCosWouldGetError, _) -> 
-      false
-    *)
     | _ -> false
     )
   | _ -> false
@@ -619,8 +615,8 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
   let rec adjust_around_minus = function
     | [] -> []
     | (T2(Parser_c.TCommentNewline c,_b,_i,_h) as x)::
-      ((Fake2(Min adj1) | T2(_,Min adj1,_,_)) as t1)::xs ->
-      let (minus_list,rest) = span not_context (t1::xs) in
+      ((Fake2(_,Min adj1) | T2(_,Min adj1,_,_)) as t1)::xs ->
+      let (minus_list,rest) = span_not_context (t1::xs) in
       let contains_plus = List.exists is_plus minus_list in
       let x =
         match List.rev minus_list with
@@ -630,20 +626,20 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
         | _ -> x in
       x :: adjust_within_minus contains_plus minus_list 
          @ adjust_around_minus rest
-    | ((Fake2(Min adj1) | T2(_,Min adj1,_,_)) as t1)::xs ->
-      let (minus_list,rest) = span not_context (t1::xs) in
+    | ((Fake2(_,Min adj1) | T2(_,Min adj1,_,_)) as t1)::xs ->
+      let (minus_list,rest) = span_not_context (t1::xs) in
       let contains_plus = List.exists is_plus minus_list in
         adjust_within_minus contains_plus minus_list 
       @ adjust_around_minus rest
     | x::xs ->
       x :: adjust_around_minus xs
   and adjust_within_minus cp (* contains plus *) = function
-    | ((Fake2(Min adj1) | T2(_,Min adj1,_,_)) as t1)::xs ->
+    | ((Fake2(_,Min adj1) | T2(_,Min adj1,_,_)) as t1)::xs ->
       let not_minus = function T2(_,Min _,_,_) -> false | _ -> true in
       let (not_minus_list,rest) = span not_minus xs in
       t1 ::
       (match rest with
-      | ((Fake2(Min adj2) | T2(_,Min adj2,_,_)) as t2)::xs ->
+      | ((Fake2(_,Min adj2) | T2(_,Min adj2,_,_)) as t2)::xs ->
         if common_adj adj1 adj2 
         || not cp && List.for_all is_whitespace not_minus_list
         then
@@ -663,6 +659,44 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
           @ rest)
       )
     | xs -> failwith "should always start with minus"
+  and span_not_context xs =
+   (* like span not_context xs, but have to parse ifdefs *)
+   let rec loop seen_ifdefs = function
+       [] -> (0,[],[])
+     | ((T2(Parser_c.TCommentCpp (Token_c.CppIfDirective ifd, _),_,_,_)) as x)
+       ::xs when not_context x ->
+	 let fail _ = (0,[],x::xs) in
+	 (match ifd with
+	   Token_c.IfDef | Token_c.IfDef0 ->
+	     let (seen_end,ok,rest) = loop (seen_ifdefs+1) xs in
+	     if seen_end > 0
+	     then (seen_end-1,x::ok,rest)
+	     else fail()
+	 | Token_c.Else ->
+	     if seen_ifdefs > 0
+	     then
+	       let (seen_end,ok,rest) = loop seen_ifdefs xs in
+	       if seen_end > 0
+	       then (seen_end,x::ok,rest)
+	       else fail()
+	     else fail()
+	 | Token_c.Endif ->
+	     if seen_ifdefs > 0
+	     then
+	       let (seen_end,ok,rest) = loop (seen_ifdefs-1) xs in
+	       (seen_end+1,x::ok,rest)
+	     else fail()
+	 | Token_c.Other ->
+	     let (seen_end,ok,rest) = loop seen_ifdefs xs in
+	     (seen_end, x :: ok, rest))
+     | x :: xs ->
+	 if not_context x
+	 then
+	   let (seen_end,ok,rest) = loop seen_ifdefs xs in
+	   (seen_end,x::ok, rest)
+	 else (0,[],x::xs) in
+   let (_,ok,rest) = loop 0 xs in
+   (ok,rest)
   and not_context = function
     | (T2(_,Ctx,_,_) as x) when not (is_minusable_comment x) -> false
     | _ -> true
@@ -866,6 +900,103 @@ let adjust_after_paren toks =
       a :: search_minus true rerest
     | _ -> if seen_minus then rest else xs in (* drop trailing space *)
   search_paren toks
+
+(* Danger is related to tokens that are shared between multiple AST
+representations, in particular for multidecls.  This attempts to clean up
+after any transformations that have been made.  It may not work in all
+cases... *)
+let check_danger toks =
+  let get_danger = function
+      T2(tok,_,_,_) ->
+	let info = TH.info_of_tok tok in
+	Some !(info.Ast_c.danger)
+    | Fake2(info,_) ->
+	Some !(info.Ast_c.danger)
+    | _ -> None in
+  let isnt_danger_end tok =
+    match get_danger tok with
+      Some Ast_c.DangerEnd -> false
+    | _ -> true in
+  let is_comma tok = (str_of_token2 tok) = "," in
+  let removed_or_comma = function
+      T2(_,Min _,_,_) -> true
+    | (T2(tok,Ctx,_,_)) as x ->
+	TH.str_of_tok tok = "," or is_whitespace x
+    | Fake2(info,Min _) -> true
+    | x -> false in
+  let rec undanger_untouched toks =
+    (* check that each entry before or after a comma contains at least
+       one context token. combined with safe for multi constraints, that
+       means that the rule can only have changed the type *)
+    let ctx =
+      function (T2(_,Ctx,_,_) as t) -> not (is_whitespace t) | _ -> false in
+    let safe = function [] -> true | toks -> List.exists ctx toks in
+    let res =
+      try Some (Common.split_when is_comma toks)
+      with Not_found -> None in
+    match res with
+      Some (bef,_,aft) -> safe bef && undanger_untouched aft
+    | None -> safe toks in
+  let unminus = function
+      (T2(tok,Min _,b,c)) as x ->
+	(match get_danger x with
+	  Some Ast_c.NoDanger -> x
+	| Some _ -> T2(tok,Ctx,b,c)
+	| None -> failwith "not possible")
+    | x -> x in
+  let nodanger x =
+    match get_danger x with
+      Some Ast_c.NoDanger | None -> true
+    | _ -> false in
+  let rec reminus = function
+      (* get rid of stray commas *)
+      [] -> []
+    | (x::xs) as l ->
+	if nodanger x
+	then x :: reminus xs
+	else
+	  let (nodanger,rest) = span nodanger xs in
+	  if List.for_all removed_or_comma nodanger
+	  then
+	    (match rest with
+	      [] -> l
+	    | ((T2(tok,Ctx,a,b)) :: rest) as rl ->
+		if TH.str_of_tok tok = ","
+		then
+		  let rec find_minus = function
+		      [] -> None
+		    | (T2(_,Min m,_,_)) :: _ | (Fake2(_,Min m)) :: _ -> Some m
+		    | x::xs -> find_minus xs in
+		  (match find_minus (List.rev nodanger) with
+		    Some m ->
+		      x :: nodanger @ (reminus ((T2(tok,Min m,a,b)) :: rest))
+		  | None -> (* perhaps impossible *)
+		      x :: nodanger @ reminus rl)
+		else x :: nodanger @ reminus rl
+	    | _ -> x :: nodanger @ reminus rest)
+	  else x :: nodanger @ reminus rest in
+  let rec search_danger = function
+      [] -> []
+    | x::xs ->
+	match get_danger x with
+	  Some Ast_c.DangerStart ->
+	    let (danger,rest) = span isnt_danger_end (x::xs) in
+	    (match rest with
+	      de::rest ->
+		(match get_danger de with
+		  Some Ast_c.DangerEnd ->
+		    if List.for_all removed_or_comma (de::danger)
+		    then danger @ de :: (search_danger rest)
+		    else
+		    if undanger_untouched (danger@[de])
+		    then danger @ de :: (search_danger rest)
+		    else
+		      (reminus (List.map unminus danger)) @
+		      (unminus de) :: (search_danger rest)
+		| _ -> failwith "missing danger end")
+	    | _ -> failwith "missing danger end")
+	| _ -> x :: search_danger xs in
+  search_danger toks
 
 (* this is for the case where braces are added around an if branch
 because of a change inside the branch *)
@@ -1218,35 +1349,240 @@ type info =
     CtxNL of string * int (*depthmin*) * int (*depthplus*) * int (*inparen*)
   | MinNL of string * int (*depthmin*) * int (*depthplus*) * int (*inparen*)
   | PlusNL of int (* depthplus *) * int (* inparen *)
-  | Other | Drop | Unindent
+  | Other of int | Drop | Unindent
+  | Label (* label is for a newline that should not be taken into account
+	     to compute indentation; it might be befor a label, a #, or
+	     just an empty line *)
 
-let close_brace l =
-  let (added,rest) = span all_coccis l in
-  (added,
-   match rest with
-     [] -> false
-   | t::_ -> (str_of_token2 t) = "}")
+let print_info l =
+  List.iter
+    (function
+	(_,CtxNL _,_) -> Printf.printf "CtxNL\n"
+      |	(_,MinNL _,_) -> Printf.printf "MinNL\n"
+      |	(_,PlusNL _,_) -> Printf.printf "PlusNL\n"
+      |	(_,Other n,t) -> Printf.printf "Other %d |%s|\n" n (str_of_token2 t)
+      |	(_,Drop,_) -> Printf.printf "Drop\n"
+      |	(_,Unindent,_) -> Printf.printf "Unindent\n"
+      |	(_,Label,_) -> Printf.printf "Label\n")
+    l
 
-let open_brace l =
-  let (added,rest) = span all_coccis l in
-  match rest with
+(* ------------------------------------------------------------------------- *)
+(* preparsing *)
+
+type op = PlusOnly | MinusOnly | Both | Neither
+
+let minplus = function
+    Ctx -> Both
+  | Min _ -> MinusOnly
+
+type parsed_tokens = NL of string | Tok of string | Ind of token2
+
+let parse_token tok =
+  match tok with
+    T2((Parser_c.TCommentNewline s) as t,a,_,_) ->
+      let s = TH.str_of_tok t in
+      (match Str.split_delim (Str.regexp "\n") s with
+	[before;after] -> (NL after, minplus a)
+      |	_ -> (Tok (str_of_token2 tok), minplus a))
+  | T2(_,a,_,_) -> (Tok (str_of_token2 tok), minplus a)
+  | C2 s -> (Tok s, PlusOnly)
+  | Cocci2("\n",_,_,_,_) -> (NL "", PlusOnly)
+  | Cocci2(s,_,_,_,_) -> (Tok s, PlusOnly)
+  | Indent_cocci2 | Unindent_cocci2 _ -> (Ind tok, PlusOnly)
+  | _ -> (Tok (str_of_token2 tok), Neither)
+
+(* ------------------------------------------------------------------------- *)
+
+let add1 op (am,ap) =
+  match op with
+    PlusOnly -> (am,ap+1)
+  | MinusOnly -> (am+1,ap)
+  | Both -> (am+1,ap+1)
+  | Neither -> (am,ap)
+
+let accadd1 op (am,ap) =
+  match op with
+    PlusOnly -> (am,0::ap)
+  | MinusOnly -> (0::am,ap)
+  | Both -> (0::am,0::ap)
+  | Neither -> (am,ap)
+
+let add op (am,ap) (bm,bp) =
+  match op with
+    PlusOnly -> (am,ap+bp)
+  | MinusOnly -> (am+bm,ap)
+  | Both -> (am+bm,ap+bp)
+  | Neither -> (am,ap)
+
+let sub1 op (am,ap) =
+  let sub1 = function 0 -> 0 | n -> n-1 in
+  match op with
+    PlusOnly -> (am,sub1 ap)
+  | MinusOnly -> (sub1 am,ap)
+  | Both -> (sub1 am,sub1 ap)
+  | Neither -> (am,ap)
+
+let subtract op (am,ap) (bm,bp) =
+  let subtract a b = max 0 (a - b) in
+  match op with
+    PlusOnly -> (am,subtract ap bp)
+  | MinusOnly -> (subtract am bm,ap)
+  | Both -> (subtract am bm,subtract ap bp)
+  | Neither -> (am,ap)
+
+let skip_unlike_me op xs is_whitespace =
+  let rec loop = function
+      [] -> []
+    | x::xs when is_whitespace x or is_added_whitespace x -> loop xs
+    | ((T2 (_,Ctx,_,_)) :: _) as xs -> xs
+    | ((T2 (_,Min _,_,_)) :: _) as xs when op = MinusOnly or op = Both -> xs
+    | (((Cocci2 _)::_) | ((C2 _)::_)) as xs
+      when op = PlusOnly or op = Both -> xs
+    | (Indent_cocci2::_) as xs when op = PlusOnly or op = Both -> xs
+    | (Unindent_cocci2 _::_) as xs when op = PlusOnly or op = Both -> xs
+    | _::xs -> loop xs in
+  loop xs
+
+let open_brace op xs =
+  let is_whitespace t = is_whitespace t or is_added_whitespace t in
+  match skip_unlike_me op xs is_whitespace with
     [] -> false
-  | t::_ -> (str_of_token2 t) = "{"
+  | t::_ -> (str_of_token2 t) = "{" or (str_of_token2 t) = ";"
 
-let cocci_close_brace = function
+let close_brace op xs =
+  let is_whitespace t = is_whitespace t or is_added_whitespace t in
+  match skip_unlike_me op xs is_whitespace with
     [] -> false
   | t::_ -> (str_of_token2 t) = "}"
 
-let is_cocci = function
+let is_nl op xs =
+  let is_whitespace t = is_space t or is_added_space t in
+  match skip_unlike_me op xs is_whitespace with
     [] -> false
-  | (_,_,t)::_ -> all_coccis t
-
-let newline = function
-    T2(Parser_c.TCommentNewline _,_,_,_)::_ -> true
+  | T2(Parser_c.TCommentNewline _,_b,_i,_h)::_ -> true
+  | C2 "\n"::_ -> true
+  | Indent_cocci2 :: _ -> true
+  | Unindent_cocci2 _ :: _ -> true
   | _ -> false
 
+let is_pragma t =
+  let str = str_of_token2 t in
+  match str with
+    "" -> false
+  | _ -> String.get str 0 = '#'
+
+let is_label op xs =
+  let is_whitespace t = is_whitespace t or is_added_whitespace t in
+  match skip_unlike_me op xs is_whitespace with
+    [] -> false
+  | t::_ when is_pragma t -> true
+  | _::rest ->
+      (match skip_unlike_me op rest is_whitespace with
+	t::_ when str_of_token2 t = ":" -> true
+      | _ -> false)
+
+let adjust_by_function getter op k q vl xs =
+  match op with
+    MinusOnly | PlusOnly ->
+      let fn = if getter op xs then k else q in
+      fn op vl
+  | Both ->
+      let vl1 =
+	let fn = if getter MinusOnly xs then k else q in
+	fn MinusOnly vl in
+      let fn = if getter PlusOnly xs then k else q in
+      fn PlusOnly vl1
+  | _ -> vl
+
+let drop_zeroes (a,b) =
+  let drop_zeroes l =
+    let (_,rest) = span (function x -> x = 0) l in
+    rest in
+  (drop_zeroes a,drop_zeroes b)
+
+let add1top op (am,ap) =
+  let add1 = function x::xs -> (x+1)::xs | _ -> [] in
+  match op with
+    PlusOnly -> (am,add1 ap)
+  | MinusOnly -> (add1 am,ap)
+  | Both -> (add1 am,add1 ap)
+  | Neither -> (am,ap)
+
+let sub1top op (am,ap) =
+  let sub1 = function x::xs -> (max 0 (x-1))::xs | _ -> [] in
+  match op with
+    PlusOnly -> (am,sub1 ap)
+  | MinusOnly -> (sub1 am,ap)
+  | Both -> (sub1 am,sub1 ap)
+  | Neither -> (am,ap)
+
+let token_effect tok dmin dplus inparens inassn accumulator xs =
+  let info = parse_token tok in
+  match info with
+    (Tok ")",op)
+    when inparens <= 1 && inassn = 0 ->
+      let nopen_brace a b = not (open_brace a b) in
+      let do_nothing a b = b in
+      let accumulator =
+	adjust_by_function nopen_brace op accadd1 do_nothing accumulator xs in
+      (Other 1,dmin,dplus,0,0,accumulator)
+  | (Tok "else",op) ->
+      let do_nothing a b = b in
+      let accumulator =
+	adjust_by_function is_nl op accadd1 do_nothing accumulator xs in
+      (Other 1,dmin,dplus,0,0,accumulator)
+  | (Tok "{",op) ->
+      let (dmin,dplus) = add1 op (dmin,dplus) in
+      let accumulator = add1top op accumulator in
+      (Other 2,dmin,dplus,inparens,0,accumulator)
+  | (Tok "}",op) ->
+      let (dmin,dplus) = sub1 op (dmin,dplus) in
+      let accumulator = sub1top op accumulator in
+      (Other 3,dmin,dplus,inparens,0,drop_zeroes accumulator)
+  | (Tok(";"|","),op) when inparens = 0 && inassn <= 1 ->
+      (Other 4,dmin,dplus,inparens,0,drop_zeroes accumulator)
+  | (Tok ";",op) ->
+      (Other 5,dmin,dplus,inparens,max 0 (inassn-1),accumulator)
+  | (Tok "=",op) when inparens+inassn = 0 ->
+      (Other 6,dmin,dplus,inparens,1,accumulator)
+  | (Tok "(",op) -> (Other 7,dmin,dplus,inparens+1,inassn,accumulator)
+  | (Tok ")",op) -> (Other 8,dmin,dplus,inparens-1,inassn,accumulator)
+  | (Ind Indent_cocci2,op) ->
+      (Drop,dmin,dplus,inparens,inassn,accumulator)
+  | (Ind (Unindent_cocci2 true),op) ->
+      (Drop,dmin,dplus,inparens,inassn,accumulator)
+  | (Ind (Unindent_cocci2 false),op) ->
+      (Unindent,dmin,dplus,inparens,inassn,accumulator)
+  | (NL after,op) ->
+      if is_label Both xs
+      then (* ignore indentation *)
+	(Label,dmin,dplus,inparens,inassn,accumulator)
+      else
+	let rebuilder min plus =
+	  match op with
+	    Both -> CtxNL(after,min,plus,inparens+inassn)
+	  | MinusOnly -> MinNL(after,min,plus,inparens+inassn)
+	  | PlusOnly -> PlusNL(plus,inparens+inassn)
+	  | _ -> failwith "not possible" in
+	let numacc =
+	  (List.length (fst accumulator), List.length (snd accumulator)) in
+	let (admin,adplus) =
+	  adjust_by_function close_brace op
+	    (fun op x -> add op (sub1 op x) numacc)
+	    (fun op x -> add op x numacc)
+	    (dmin,dplus) xs in
+	(rebuilder admin adplus,
+	 dmin,dplus,inparens,inassn,accumulator)
+  | (_,op) -> (Other 9,dmin,dplus,inparens,inassn,accumulator)
+
 let parse_indentation xs =
-  let rec loop n dmin dplus inparens ind endparen = function
+  let xs =
+    match xs with
+      (Unindent_cocci2 false)::xs ->
+	(* Drop unindent at the very beginning; no need for prior nl *)
+	xs
+    | _ -> xs in
+  let rec loop n dmin dplus inparens inassn accumulator = function
       [] -> []
     | (x::xs) as l ->
 	let (front,x,xs) =
@@ -1254,111 +1590,23 @@ let parse_indentation xs =
 	  match List.rev newlines with
 	    nl::whitespace -> (List.rev whitespace, nl, rest)
 	  | [] -> ([],x,xs) in
-	let (res,dmin,dplus,inparens,ind,endparen) =
-	  match x with
-	    T2(t,_,_,_) when TH.str_of_tok t = "(" ->
-	      (Other,dmin,dplus,inparens+1,ind,false)
-	  | T2(t,_,_,_) when TH.str_of_tok t = ")" ->
-	      (Other,dmin,dplus,inparens-1,ind,true)
-	  | T2(t,Ctx,_,_) ->
-	      (match t with
-		Parser_c.TCommentNewline s ->
-		  let s = TH.str_of_tok t in
-		  (match Str.split_delim (Str.regexp "\n") s with
-		  | [before;after] ->
-		      let ind1 = simple_string_length after 0 in
-		      (match close_brace xs with
-			([],true) ->
-			  (CtxNL(after,dmin-1,dplus-1,inparens),
-			 dmin,dplus,inparens,ind1,false)
-		      |	(_,true) ->
-			(CtxNL(after,dmin-1,dplus,inparens),
-			 dmin,dplus,inparens,ind1,false)
-		      |	_ ->
-		      if open_brace xs
-		      then (* do nothing *)
-			(CtxNL(after,dmin,dplus,inparens),
-			 dmin,dplus,inparens,ind1,false)
-		      else
-			let (dmin1,dplus1) =
-			  (* if, etc without {} *)
-			  if ind1 < ind && inparens = 0
-			  then (dmin-1,dplus-1)
-			  else if endparen && ind1 > ind && inparens = 0
-			  then (dmin+1,dplus+1)
-			  else (dmin,dplus) in
-			(* dplus is kept in the second position, because that
-			   is what to use if we continue at the same indent
-			   level. *)
-			(CtxNL(after,dmin1,dplus1,inparens),
-			 dmin1,dplus1,inparens,ind1,false))
-		  | _ -> (Other,dmin,dplus,inparens,ind,false))
-	      |	_->
-		  (match TH.str_of_tok t with
-		    "{" -> (Other,dmin+1,dplus+1,inparens,ind,false)
-		  | "}" -> (Other,dmin-1,dplus-1,inparens,ind,false)
-		  | _ -> (Other,dmin,dplus,inparens,ind,false)))
-	  | T2(t,Min _,_,_) ->
-	      (match t with
-		Parser_c.TCommentNewline s ->
-		  let s = TH.str_of_tok t in
-		  (match Str.split_delim (Str.regexp "\n") s with
-		    [before;after] ->
-		      let ind1 = simple_string_length after 0 in
-		      (match close_brace xs with
-			(_,true) ->
-			  (MinNL(after,dmin-1,dplus-1,inparens),
-			   dmin,dplus,inparens,ind1,false)
-		      |	_ ->
-			  if open_brace xs (* do nothing *)
-			  then (MinNL(after,dmin,dplus,inparens),
-				dmin,dplus,inparens,ind1,false)
-			  else
-			    let (dmin1,dplus1) =
-			  (* if, etc without {} *)
-			      if ind1 < ind && inparens = 0
-			      then (dmin-1,dplus-1)
-			      else if endparen && ind1 > ind && inparens = 0
-			      then (dmin+1,dplus+1)
-			      else (dmin,dplus) in
-			    (MinNL(after,dmin1,dplus1,inparens),
-			     dmin1,dplus1,inparens,ind1,false))
-		  | _ -> (Other,dmin,dplus,inparens,ind,false))
-	      |	_->
-		  (match TH.str_of_tok t with
-		    "{" -> (Other,dmin+1,dplus,inparens,ind,false)
-		  | "}" -> (Other,dmin-1,dplus,inparens,ind,false)
-		  | _ -> (Other,dmin,dplus,inparens,ind,false)))
-	  | Cocci2("\n",_,_,_,_) ->
-	      if cocci_close_brace xs
-	      then (PlusNL(dplus-1,inparens),dmin,dplus,inparens,ind,false)
-	      else (PlusNL(dplus,inparens),dmin,dplus,inparens,ind,false)
-	  | Cocci2("{",_,_,_,_) ->
-	      (Other,dmin,dplus+1,inparens,ind,false)
-	  | Cocci2("}",_,_,_,_) ->
-	      (Other,dmin,dplus-1,inparens,ind,false)
-	  | C2("{") ->
-	      (Other,dmin,dplus+1,inparens,ind,false)
-	  | C2("}") -> (Other,dmin,dplus-1,inparens,ind,false)
-	  | Indent_cocci2 ->
-	      (Drop,dmin,dplus+1,inparens,ind,false)
-	  | Unindent_cocci2 true ->
-	      (Drop,dmin,dplus-1,inparens,ind,false)
-	  | Unindent_cocci2 false ->
-	      if dplus = 0
-	      then (* nothing to do *)
-		(Drop,dmin,dplus,inparens,ind,false)
-	      else (Unindent,dmin,dplus,inparens,ind,false)
-	  | _ -> (Other,dmin,dplus,inparens,ind,false) in
+	let (res,dmin,dplus,inparens,inassn,accumulator) =
+	  token_effect x dmin dplus inparens inassn accumulator xs in
+	(*Printf.printf "%s: dmin %d dplus %d accmin %d accplus %d\n"
+	  (print_token2 x) dmin dplus
+	  (List.length (fst accumulator)) (List.length (snd accumulator));*)
 	let front =
 	  let rec loop n = function
 	      [] -> []
-	    | x::xs -> (n,Other,x) :: loop (n+1) xs in
+	    | x::xs ->
+		(* Label is better than other, because it is recognized
+		   as being like a newline *)
+		(n,Label,x) :: loop (n+1) xs in
 	  loop n front in
 	front @
 	((n+List.length front),res,x) ::
-	loop (n+1) dmin dplus inparens ind endparen xs in
-  loop 1 0 0 0 0 false xs
+	loop (n+1) dmin dplus inparens inassn accumulator xs in
+  loop 1 0 0 0 0 ([],[]) xs
 
 exception NoInfo
 
@@ -1396,7 +1644,7 @@ let update_map_min n spaces tabbing_unit past_minus_map depthmin dmin
     then
       try
 	let (_,oldspaces) = List.assoc (dmin,inparens) past_minus_map in
-	if depthmin = dmin - 1 (* we have outdented *)
+	if depthmin < dmin (* we have outdented *)
 	then get_tabbing_unit spaces oldspaces
 	else if depthmin = dmin + 1 (* we have indented *)
 	then get_tabbing_unit oldspaces spaces
@@ -1456,28 +1704,54 @@ let search_in_maps n depth inparens past_minmap minmap tu t =
     try Some(List.assoc (depth,inparens) minmap) with _ -> None in
   get_answer fail2 map1 map2
 
+(* Add newlines where needed around unindents.  Lets adjust_indentation
+adjust them if needed. *)
+let rec newlines_for_unindents xs =
+  let is_ctxnl =
+    function T2(Parser_c.TCommentNewline _,_b,_i,_h) -> true | _ -> false in
+  let is_plusnl =
+    function C2 "\n" | Cocci2("\n",_,_,_,_) -> true | _ -> false in
+  let is_nl x = is_ctxnl x or is_plusnl x in
+  let rec loop = function
+      [] -> []
+    | (Unindent_cocci2 false)::x::nl::rest ->
+	x :: loop (nl::rest)
+    | ctxnl::(Unindent_cocci2 false)::x::plusnl::rest
+      when is_ctxnl ctxnl && is_plusnl plusnl ->
+	plusnl::(Unindent_cocci2 false)::x::loop (ctxnl::rest)
+    | ctxnl::(Unindent_cocci2 false)::x::rest when is_ctxnl ctxnl ->
+	(C2 "\n")::(Unindent_cocci2 false)::x::loop (ctxnl::rest)
+    | plusnl1::(Unindent_cocci2 false)::x::nl2::rest
+      when is_plusnl plusnl1 && is_nl nl2 ->
+	plusnl1::(Unindent_cocci2 false)::x::loop (nl2::rest)
+    | plusnl::(Unindent_cocci2 false)::x::[] when is_plusnl plusnl ->
+	plusnl::(Unindent_cocci2 false)::x::[]
+    | plusnl::(Unindent_cocci2 false)::x::rest when is_plusnl plusnl ->
+	plusnl::(Unindent_cocci2 false)::x::loop (C2 "\n"::rest)
+    | y::(Unindent_cocci2 false)::x::nl::rest when is_nl nl ->
+	y::C2 "\n"::(Unindent_cocci2 false)::x::loop (nl::rest)
+    | y::(Unindent_cocci2 false)::x::rest ->
+	y::C2 "\n"::(Unindent_cocci2 false)::x::C2 "\n"::rest
+    | x::rest -> x::loop rest in
+  loop xs
+
 let adjust_indentation xs =
+  let xs = newlines_for_unindents xs in
   let toks = parse_indentation xs in
   let rec loop tabbing_unit past_minmap dmin dplus =
     function
 	[] -> (tabbing_unit,past_minmap,[])
-      | (n,CtxNL _,t)::(n1,Unindent,t1)::rest
-      | (n,PlusNL _,t)::(n1,Unindent,t1)::rest ->
-	  (* Drop preceding spaces and just make a newline *)
+      |	(n,PlusNL(depth,inparens),t)::(_,Unindent,_)::(_,_,x)::rest ->
 	  let (out_tu,minmap,res) =
 	    loop tabbing_unit past_minmap dmin dplus rest in
-	  (out_tu,minmap,(C2 "\n")::res)
-      |	(n,Unindent,t)::rest ->
-	  (* Add a newline *)
-	  let (out_tu,minmap,res) =
-	    loop tabbing_unit past_minmap dmin dplus rest in
-	  (out_tu,minmap,(C2 "\n")::res)
+	  (out_tu,minmap,t::x::res)
+      |	(_,Unindent,_)::rest -> loop tabbing_unit past_minmap dmin dplus rest
       | (n,CtxNL(spaces,depthmin,depthplus,inparens),t)::rest ->
 	  let (tabbing_unit,past_minmap) =
 	    update_map_min n spaces tabbing_unit past_minmap
 	      depthmin dmin inparens true in
 	  let (out_tu,minmap,res) =
-	    loop tabbing_unit past_minmap dmin dplus rest in
+	    loop tabbing_unit past_minmap depthmin depthplus rest in
 	  let (_,minmap) =
 	    update_map_min n spaces tabbing_unit minmap
 	      depthmin dmin inparens false in
@@ -1493,19 +1767,19 @@ let adjust_indentation xs =
 	    update_map_min n spaces tabbing_unit past_minmap
 	      depthmin dmin inparens true in
 	  let (out_tu,minmap,res) =
-	    loop tabbing_unit past_minmap dmin dplus rest in
+	    loop tabbing_unit past_minmap depthmin depthplus rest in
 	  let (_,minmap) =
 	    update_map_min n spaces tabbing_unit minmap
 	      depthmin dmin inparens false in
 	  (out_tu,minmap,t::res)
       | (n,PlusNL(depth,inparens),t)::rest ->
 	  let (out_tu,minmap,res) =
-	    loop tabbing_unit past_minmap dmin dplus rest in
+	    loop tabbing_unit past_minmap dmin depth rest in
 	  let newtok =
 	    search_in_maps n depth inparens past_minmap minmap
 	      tabbing_unit t in
 	  (out_tu, minmap, newtok::res)
-      | (n,Other,t)::rest ->
+      | (n,(Other _|Label),t)::rest ->
 	  let (out_tu,minmap,res) =
 	    loop tabbing_unit past_minmap dmin dplus rest in
 	  (out_tu,minmap,t::res)
@@ -1513,11 +1787,12 @@ let adjust_indentation xs =
 	  let (out_tu,minmap,res) =
 	    loop tabbing_unit past_minmap dmin dplus rest in
 	  (out_tu,minmap,res) in
-  let nulmap = [((0,0),(-1,""))] in
+  let nulmap = [((0,0),(0,""))] in
   let (out_tu,_,res) = loop None nulmap 0 0 toks in
   (res,out_tu)
 
 (* ------------------------------------------------------------------------ *)
+(* Not used any more.  To clean... *)
 
 let rec old_adjust_indentation xs =
 
@@ -1675,6 +1950,25 @@ let rec find_paren_comma = function
   | x::xs ->
     find_paren_comma xs
 
+(* remainder from removal of multidecls *)
+let rec find_decl = function
+  | [] -> ()
+
+  (* do nothing if was like this in original file *)
+  | { str = "{"; idx = Some p1 } :: ({ str = ","; idx = Some p2} :: _ as xs)
+  | { str = ","; idx = Some p1 } :: ({ str = ";"; idx = Some p2} :: _ as xs) 
+    when p2 =|= p1 + 1 ->
+    find_decl xs
+
+  (* for declarations *)
+  | { str = "{" } :: (({ str = ","} as rem) :: _ as xs)
+  | ({ str = "," } as rem) :: ({ str = ";"} :: _ as xs) ->
+    rem.remove <- true;
+    find_decl xs
+
+  | x::xs ->
+    find_decl xs
+
 
 let fix_tokens toks =
   let toks = toks +> List.map mk_token_extended in
@@ -1684,8 +1978,10 @@ let fix_tokens toks =
     | _ -> false
   ) in
   find_paren_comma cleaner;
-
   let toks = rebuild_tokens_extented toks in
+  find_decl toks;
+  let toks = rebuild_tokens_extented toks in
+
   toks +> List.map (fun x -> x.tok2)
 
 (* if we have to remove a '}' that is alone on a line, remove the line too *)
@@ -1876,12 +2172,13 @@ let pp_program2 xs outfile  =
           else 
             begin
               (* phase2: can now start to filter and adjust *)
+	      let toks = check_danger toks in
               let toks = paren_then_brace toks in
               let toks = drop_space_at_endline toks in
 	      (* have to annotate droppable spaces early, so that can create
 		 the right minus and plus maps in adjust indentation.  For
 		 the same reason, cannot actually remove the minus tokens. *)
-              let toks = drop_line toks in
+	      let toks = drop_line toks in
               let toks = remove_minus_and_between_and_expanded_and_fake1 toks in
               let (toks,tu) = adjust_indentation toks in
               let toks = adjust_eat_space toks in

@@ -160,9 +160,22 @@ let interpret_grep strict x =
 
 let interpret_cocci_grep strict x =
   (* convert to cnf *)
+  let subset l1 l2 = List.for_all (fun e1 -> List.mem e1 l2) l1 in
+  let opt_union_set longer shorter =
+    (* (A v B) & (A v B v C) = A v B *)
+    (* tries to be efficient by not updating prv, so optimize is still
+       needed *)
+    List.fold_left
+      (function prev ->
+	function cur ->
+	  if List.exists (function x -> subset x cur) prev
+	  then prev
+	  else cur :: prev)
+      longer shorter in
   let rec cnf = function
       Elem x -> [[x]]
-    | And l -> List.fold_left Common.union_set [] (List.map cnf l)
+    | And l ->
+	List.fold_left opt_union_set [] (List.map cnf l)
     | Or l ->
 	let l = List.map cnf l in
 	(match l with
@@ -170,7 +183,8 @@ let interpret_cocci_grep strict x =
 	    List.fold_left
 	      (function prev ->
 		function cur ->
-		  List.fold_left Common.union_set []
+		  List.fold_left opt_union_set
+		    []
 		    (List.map (fun x -> List.map (Common.union_set x) prev)
 		       cur))
 	      fst rest
@@ -184,7 +198,6 @@ let interpret_cocci_grep strict x =
     let l = List.map (function clause -> (List.length clause, clause)) l in
     let l = List.sort compare l in
     let l = List.rev (List.map (function (len,clause) -> clause) l) in
-    let subset l1 l2 = List.for_all (fun e1 -> List.mem e1 l2) l1 in
     List.fold_left
       (fun prev cur ->
 	if List.exists (subset cur) prev then prev else cur :: prev)
@@ -205,10 +218,10 @@ let interpret_cocci_grep strict x =
       let res = optimize res in
       let res = Cocci_grep.split res in
       let res2 = List.map orify res in (* atoms in conjunction *)
-(*      List.iter
+      (*List.iter
 	(function clause ->
 	  Printf.printf "%s\n" (String.concat " " clause))
-	res; *)
+	res;*)
       Some (res1,res2)
 
 let combine2c x =
@@ -319,6 +332,30 @@ let do_get_constants constants keywords env neg_pos =
 
   (* if one branch gives no information, then we have to take anything *)
   let disj_union_all = List.fold_left build_or False in
+
+  (*get inheritance information from fresh variable construction information*)
+  (* can't do anything with DisjRuleElem, don't know which will be used *)
+  (* expect that the same info will be in branches, which after disjdistr
+     should be atomic *)
+  let fresh_info re =
+    match Ast.unwrap re with
+      Ast.DisjRuleElem(res) -> option_default
+    | _ ->
+	let fresh = Ast.get_fresh re in
+	List.fold_left
+	  (function prev ->
+	    function
+		(_,Ast.NoVal) -> prev
+	      | (_,Ast.StringSeed _) -> prev
+	      | (_,Ast.ListSeed l) ->
+		  List.fold_left
+		    (function prev ->
+		      function
+			  Ast.SeedString _ -> prev
+			| Ast.SeedId name ->
+			    bind (inherited name) prev)
+		    prev l)
+	  option_default fresh in
 
   let ident r k i =
     match Ast.unwrap i with
@@ -472,7 +509,8 @@ let do_get_constants constants keywords env neg_pos =
     | _ -> k p in
 
   let rule_elem r k re =
-    match Ast.unwrap re with
+    bind (fresh_info re)
+    (match Ast.unwrap re with
       Ast.MetaRuleElem(name,_,_) | Ast.MetaStmt(name,_,_,_)
     | Ast.MetaStmtList(name,_,_) -> bind (minherited name) (k re)
     | Ast.WhileHeader(whl,lp,exp,rp) ->
@@ -511,7 +549,7 @@ let do_get_constants constants keywords env neg_pos =
 	bind (keywords "pragma") (k re)
     | Ast.DisjRuleElem(res) ->
 	disj_union_all (List.map r.V.combiner_rule_elem res)
-    | _ -> k re in
+    | _ -> k re) in
 
   let statement r k s =
     match Ast.unwrap s with
@@ -718,10 +756,11 @@ let run rules neg_pos_vars =
 		  (rest_info, in_plus, (nm,True)::env, nm::locals)
 	      | dependencies ->
 		  (build_or dependencies rest_info, in_plus, env, locals))
-          | (Ast.InitialScriptRule (_,_,deps,_),_)
-	  | (Ast.FinalScriptRule (_,_,deps,_),_) ->
-		  (* initialize and finalize dependencies are irrelevant to
-		     get_constants *)
+          | (Ast.InitialScriptRule (_,_,deps,_,_),_)
+	  | (Ast.FinalScriptRule (_,_,deps,_,_),_) ->
+	      (* initialize and finalize dependencies are irrelevant to
+		 get_constants *)
+	      (* only possible metavariables are virtual *)
 	      (rest_info, in_plus, env, locals)
           | (Ast.CocciRule (nm,(dep,_,_),cur,_,_),neg_pos_vars) ->
 	      let (cur_info,cur_plus) =
@@ -745,6 +784,7 @@ let run rules neg_pos_vars =
 let get_constants rules neg_pos_vars =
   if !Flag.worth_trying_opt
   then 
+    begin
     let res = run rules neg_pos_vars in
     let grep = interpret_grep true res in (* useful because in string form *)
     let coccigrep = interpret_cocci_grep true res in
@@ -756,4 +796,6 @@ let get_constants rules neg_pos_vars =
     | Flag.IdUtils ->
 	(grep,None,coccigrep,Some res)
     | Flag.CocciGrep -> (grep,None,coccigrep,None)
+    end
   else (None,None,None,None)
+

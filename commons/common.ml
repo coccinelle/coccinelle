@@ -423,7 +423,7 @@ let xxx_once f s =
     if not (Hashtbl.mem _already_printed s)
     then begin
       Hashtbl.add _already_printed s true;
-      f ("(ONCE) " ^ s);
+      f ("(ONCE) " ^ s)
     end
 
 let pr2_once s = xxx_once pr2 s
@@ -3529,7 +3529,11 @@ let (with_open_outfile_append: filename -> (((string -> unit) * out_channel) -> 
  * question: can we have a signal and so exn when in a exn handler ?
  *)
 
-let interval_timer = ref true
+let interval_timer = ref (
+  try
+    ignore(Unix.getitimer Unix.ITIMER_VIRTUAL);
+    true
+  with Unix.Unix_error(_, _, _) -> false)
 
 let timeout_function timeoutval = fun f ->
   try
@@ -4716,7 +4720,7 @@ let assoc_with_err_msg k l =
 module IntMap = Map.Make
     (struct
       type t = int
-      let compare = compare
+      let compare (x : int) (y : int) = Pervasives.compare x y
     end)
 let intmap_to_list m = IntMap.fold (fun id v acc -> (id, v) :: acc) m []
 let intmap_string_of_t f a = "<Not Yet>"
@@ -4724,7 +4728,12 @@ let intmap_string_of_t f a = "<Not Yet>"
 module IntIntMap = Map.Make
     (struct
       type t = int * int
-      let compare = compare
+      let compare ((x1, y1) : int * int) ((x2, y2) : int * int) =
+	let cmp_x = Pervasives.compare x1 x2 in
+	if cmp_x <> 0 then
+	  cmp_x
+	else
+	  Pervasives.compare y1 y2
 end)
 
 let intintmap_to_list m = IntIntMap.fold (fun id v acc -> (id, v) :: acc) m []

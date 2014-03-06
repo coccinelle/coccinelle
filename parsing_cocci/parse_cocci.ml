@@ -1966,7 +1966,8 @@ let parse file =
               (iso, dropiso, dependencies, rule_name, exists)),
               (plus_res, metavars), ruletype), metavars, tokens) in
 
-          let parse_script_rule name language old_metas deps =
+          let parse_any_script_rule meta_parser builder
+	      name language old_metas deps =
 	    Lexer_script.file := file;
 	    Lexer_script.language := language;
             let get_tokens = tokens_script_all table file false lexbuf in
@@ -1975,7 +1976,7 @@ let parse file =
             let metavars =
 	      Data.call_in_meta
 		(function _ ->
-		  get_script_metavars PC.script_meta_main table file lexbuf) in
+		  get_script_metavars meta_parser table file lexbuf) in
 	    let (metavars,script_metavars) =
 	      List.fold_left
 		(function (metavars,script_metavars) ->
@@ -2014,32 +2015,34 @@ let parse file =
 	      metavars;
 *)
               (* script code *)
-            let (more, tokens) = get_tokens (in_list [PC.TArobArob; PC.TArob]) in
+            let (more, tokens) =
+	      get_tokens (in_list [PC.TArobArob; PC.TArob]) in
             let data = collect_script_tokens tokens in
             (more,
-	     Ast0.ScriptRule(name, language, deps, metavars,
-			     script_metavars, data),
+	     builder(name, language, deps, metavars, script_metavars, data),
 	     [],tokens) in
 
-          let parse_if_script_rule k name language _ deps =
-	    Lexer_script.file := file;
-	    Lexer_script.language := language;
-            let get_tokens = tokens_script_all table file false lexbuf in
-
-              (* script code *)
-            let (more, tokens) = get_tokens (in_list [PC.TArobArob; PC.TArob]) in
-            let data = collect_script_tokens tokens in
-            (more,k (name, language, deps, data),[],tokens) in
+	  let parse_script_rule =
+	    parse_any_script_rule PC.script_meta_main
+	      (function (name, language, deps, mvs, script_mvs, data) ->
+		Ast0.ScriptRule(name,language,deps,mvs,script_mvs,data)) in
 
 	  let parse_iscript_rule =
-	    parse_if_script_rule
-	      (function (name,language,deps,data) ->
-		Ast0.InitialScriptRule(name,language,deps,data)) in
+	    parse_any_script_rule PC.script_meta_virt_nofresh_main
+	      (function (name, language, deps, mvs, script_mvs, data) ->
+		match script_mvs with
+		  [] ->
+		    Ast0.InitialScriptRule(name,language,deps,mvs,data)
+		| _ ->
+		    failwith "new metavariables not allowed in initalize") in
 
 	  let parse_fscript_rule =
-	    parse_if_script_rule
-	      (function (name,language,deps,data) ->
-		Ast0.FinalScriptRule(name,language,deps,data)) in
+	    parse_any_script_rule PC.script_meta_virt_nofresh_main
+	      (function (name, language, deps, mvs, script_mvs, data) ->
+		match script_mvs with
+		  [] ->
+		    Ast0.FinalScriptRule(name,language,deps,mvs,data)
+		| _ -> failwith "new metavariables not allowed in finalize") in
 
 	  let do_parse_script_rule fn name l old_metas deps =
 	    fn name l old_metas (eval_depend deps virt) in
@@ -2141,10 +2144,10 @@ let process file isofile verbose =
       (function
           Ast0.ScriptRule (a,b,c,d,fv,e) ->
 	    [([],Ast.ScriptRule (a,b,c,d,fv,e))]
-	| Ast0.InitialScriptRule(a,b,c,d) ->
-	    [([],Ast.InitialScriptRule (a,b,c,d))]
-	| Ast0.FinalScriptRule (a,b,c,d) ->
-	    [([],Ast.FinalScriptRule (a,b,c,d))]
+	| Ast0.InitialScriptRule(a,b,c,d,e) ->
+	    [([],Ast.InitialScriptRule (a,b,c,d,e))]
+	| Ast0.FinalScriptRule (a,b,c,d,e) ->
+	    [([],Ast.FinalScriptRule (a,b,c,d,e))]
 	| Ast0.CocciRule
 	    ((minus, metavarsm,
 	      (iso, dropiso, dependencies, rule_name, exists)),
