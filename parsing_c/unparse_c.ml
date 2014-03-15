@@ -2146,9 +2146,6 @@ let pp_program2 xs outfile  =
     in
 
     xs +> List.iter (fun ((e,(str, toks_e)), ppmethod) ->
-      List.iter
-	(function t -> Printf.printf "%s\n" (Dumper.dump t))
-	toks_e;
       (* here can still work on ast *)
       let e = remove_useless_fakeInfo_struct e in
 
