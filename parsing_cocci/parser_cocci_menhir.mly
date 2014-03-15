@@ -2464,13 +2464,16 @@ eexpr_list_option:
 // IBM C only
 exec_list:
     /* empty */ { [] }
-  | TDotDot exec_ident exec_list
-      { Ast0.wrap(Ast0.ExecEval(P.clt2mcode ":" $1,$2)) :: $3 }
+  | TDotDot exec_front_ident exec_ident exec_list
+      { Ast0.wrap(Ast0.ExecEval(P.clt2mcode ":" $1,$3 $2)) :: $4 }
+  | TIdent exec_ident2 exec_list
+      { Ast0.wrap(Ast0.ExecToken(P.clt2mcode (fst $1) (snd $1))) ::
+	List.map (function x -> Ast0.wrap(Ast0.ExecToken x)) $2 @ $3 }
   | token exec_list { Ast0.wrap(Ast0.ExecToken $1) :: $2 }
   | TEllipsis exec_list
       { Ast0.wrap(Ast0.ExecDots(P.clt2mcode "..." $1)) :: $2 }
 
-exec_ident:
+exec_front_ident:
     ident { Ast0.wrap(Ast0.Ident($1)) }
   | TMetaIdExp
      { let (nm,constraints,pure,ty,clt) = $1 in
@@ -2480,11 +2483,23 @@ exec_ident:
      { let (nm,constraints,pure,ty,clt) = $1 in
      Ast0.wrap
        (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.ANY,pure)) }
- | exec_ident TDot   disj_ident
-     { Ast0.wrap(Ast0.RecordAccess($1, P.clt2mcode "." $2, $3)) }
- | exec_ident TPtrOp disj_ident
-     { Ast0.wrap(Ast0.RecordPtAccess($1, P.clt2mcode "->" $2,
-				     $3)) }
+
+exec_ident:
+     { function prev -> prev }
+ | TDot   disj_ident exec_ident
+     { function prev ->
+       $3 (Ast0.wrap(Ast0.RecordAccess(prev, P.clt2mcode "." $1, $2))) }
+ | TPtrOp disj_ident exec_ident
+     { function prev ->
+       $3 (Ast0.wrap(Ast0.RecordPtAccess(prev, P.clt2mcode "->" $1,
+				     $2))) }
+
+exec_ident2:
+     { [] }
+ | TDot   TIdent exec_ident2
+     { (P.clt2mcode "." $1) :: (P.clt2mcode (fst $2) (snd $2)) :: $3 }
+ | TPtrOp TIdent exec_ident2
+     { (P.clt2mcode "." $1) :: (P.clt2mcode (fst $2) (snd $2)) :: $3 }
 
 token:
     TPlus { P.clt2mcode "+" $1 }
@@ -2506,12 +2521,10 @@ token:
   | TOCro { P.clt2mcode "[" $1 }
   | TCCro { P.clt2mcode "]" $1 }
   | TEq { P.clt2mcode "=" $1 }
-/*  | TDot { P.clt2mcode "." $1 }*/
   | TWhy { P.clt2mcode "?" $1 }
   | TBang { P.clt2mcode "!" $1 }
   | TOPar { P.clt2mcode "(" $1 }
   | TCPar { P.clt2mcode ")" $1 }
-  | TIdent { P.clt2mcode (fst $1) (snd $1) }
   | TIf { P.clt2mcode "if" $1 }
   | TElse { P.clt2mcode "else" $1 }
 

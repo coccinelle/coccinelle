@@ -1060,14 +1060,30 @@ colon_option:
 // IBM C only
 exec_list:
     /* empty */ { [] }
-  | TDotDot exec_ident exec_list
-      { (ExecEval $2, [$1]) :: $3 }
+  | TDotDot identifier_cpp exec_ident exec_list
+      { (ExecEval ($3 (mk_e (Ident $2) [])), [$1]) :: $4 }
+  | TIdent exec_ident2 exec_list
+      { (ExecToken, [snd $1]) :: $2 @ $3 }
   | token exec_list { (ExecToken, [$1]) :: $2 }
 
 exec_ident:
-   identifier_cpp { mk_e (Ident $1) [] }
- | exec_ident TDot   ident_cpp { mk_e(RecordAccess   ($1,$3)) [$2] }
- | exec_ident TPtrOp ident_cpp { mk_e(RecordPtAccess ($1,$3)) [$2] }
+    { function prev -> prev }
+ | TDot   TIdent exec_ident
+     { function prev ->
+       let fld = RegularName (mk_string_wrap $2) in
+       $3 (mk_e(RecordAccess   (prev,fld)) [$1]) }
+ | TPtrOp TIdent exec_ident
+     { function prev ->
+       let fld = RegularName (mk_string_wrap $2) in
+       $3 (mk_e(RecordPtAccess   (prev,fld)) [$1]) }
+ | TOCro expr TCCro exec_ident
+     { function prev ->
+       $4 (mk_e(ArrayAccess   (prev,$2)) [$1;$3]) }
+
+exec_ident2:
+    { [] }
+ | TDot   TIdent exec_ident2
+    { (ExecToken, [$1]) :: (ExecToken, [snd $2]) :: $3 }
 
 asm_expr: assign_expr { $1 }
 
@@ -1101,8 +1117,8 @@ token:
 
   | TOBrace { $1 }
   | TCBrace { $1 }
-  | TOCro   { $1 }
-  | TCCro   { $1 }
+/*  | TOCro   { $1 }
+  | TCCro   { $1 }*/
   | TOPar   { $1 }
   | TCPar   { $1 }
 
@@ -1111,7 +1127,7 @@ token:
   | TWhy    { $1 }
   | TBang   { $1 }
   | TComma  { $1 }
-  | TIdent  { snd $1 }
+/*  | TIdent  { snd $1 }*/
   | TypedefIdent { snd $1 }
 
   | Tif     { $1 }
