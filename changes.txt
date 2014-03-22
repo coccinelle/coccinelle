@@ -315,6 +315,11 @@
 - Try to fix pretty printing of directives.
 - Allow renaming types in multidecls, including renames in initializers.
 - Save virtual identifiers from the command line for use in finalize code.
+- Make ocaml file prefix name be just a constant string rather than being
+  determined by the semantic patch file name, to avoid
+  incompatabilities between the semantic patch file name and what is
+  allowed for the names of ocaml modules.  Thanks to Markus Elfring for
+  noticing the problem.
 
 * 0.2.5
 ** Language:
