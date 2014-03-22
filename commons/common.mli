@@ -2011,3 +2011,4 @@ class ['a] olist :
 
 val typing_sux_test : unit -> unit
 
+val show_file_content : string -> unit

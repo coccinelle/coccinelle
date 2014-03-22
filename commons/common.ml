@@ -286,6 +286,15 @@ let pr2_xxxxxxxxxxxxxxxxx () =
   pr2 "-----------------------------------------------------------------------"
 
 
+let show_file_content name =
+  let file = open_in name in
+  try
+    while true do
+      print_endline (input_line file);
+    done
+  with End_of_file -> close_in file
+
+
 let reset_pr_indent () =
   _tab_level_print := 0
 

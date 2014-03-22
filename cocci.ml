@@ -168,7 +168,7 @@ let show_or_not_cfile2 cfile =
     Common.pr2_xxxxxxxxxxxxxxxxx ();
     pr2 ("processing C file: " ^ cfile);
     Common.pr2_xxxxxxxxxxxxxxxxx ();
-    Common.command2 ("cat " ^ cfile);
+    Common.show_file_content cfile;
   end
 let show_or_not_cfile a =
   Common.profile_code "show_xxx" (fun () -> show_or_not_cfile2 a)
@@ -182,7 +182,7 @@ let show_or_not_cocci2 coccifile isofile =
     pr2 ("processing semantic patch file: " ^ coccifile);
     isofile +> (fun s -> pr2 ("with isos from: " ^ s));
     Common.pr2_xxxxxxxxxxxxxxxxx ();
-    Common.command2 ("cat " ^ coccifile);
+    Common.show_file_content coccifile;
     pr2 "";
   end
 let show_or_not_cocci a b =
