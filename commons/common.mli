@@ -2011,3 +2011,7 @@ class ['a] olist :
 
 val typing_sux_test : unit -> unit
 
+
+exception Inappropriate_string
+
+val generate_safe_id : string -> string

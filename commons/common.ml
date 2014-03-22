@@ -286,6 +286,40 @@ let pr2_xxxxxxxxxxxxxxxxx () =
   pr2 "-----------------------------------------------------------------------"
 
 
+exception Inappropriate_string
+
+let generate_safe_id name =
+  let length = String.length name in
+    if length < 1 then
+      raise Inappropriate_string
+    else
+      begin
+        let part = Buffer.create length in
+        begin
+          if Str.string_match (Str.regexp "^[a-zA-Z]$") (Char.escaped name.[0]) 0 then
+            Buffer.add_char part name.[0]
+          else
+            Buffer.add_char part 'X'
+        end;
+
+        if length > 1 then
+          begin
+            let pattern = Str.regexp "^[a-zA-Z0-9]$" in
+
+            for x = 1 to length - 1 do
+              if Str.string_match pattern (Char.escaped name.[x]) 0 then
+                Buffer.add_char part name.[x]
+              else
+                Buffer.add_char part '_'
+            done;
+
+            Buffer.contents part
+          end
+        else
+          Buffer.contents part
+      end
+
+
 let reset_pr_indent () =
   _tab_level_print := 0
 
