@@ -1004,7 +1004,7 @@ let fix_tokens_strings toks =
 		TString(str_isW,info) ->
 		  (Parse_string_c.parse_string str_isW info) @ front @
 		  out_strings rest
-	      |	_ ->  a :: out_strings rest))
+	      |	_ ->  a :: front @ out_strings rest))
 	else a :: out_strings rest in
   out_strings toks
 
