@@ -937,44 +937,87 @@ let check_danger toks =
     match res with
       Some (bef,_,aft) -> safe bef && undanger_untouched aft
     | None -> safe toks in
-  let unminus = function
-      (T2(tok,Min _,b,c)) as x ->
-	(match get_danger x with
-	  Some Ast_c.NoDanger -> x
-	| Some _ -> T2(tok,Ctx,b,c)
-	| None -> failwith "not possible")
+  let drop_danger_commas toks =
+    (* convert to minus a context comma that is at the end of minused
+       nondangers or spaces, preceded by a danger of any sort *)
+    let isnt_danger_or_end tok =
+      match (get_danger tok) with
+	Some Ast_c.DangerEnd -> false
+      | Some Ast_c.Danger -> false
+      | _ -> is_minus tok or is_comment_or_space tok or is_newline tok in
+    let rec loop = function
+	[] -> []
+      |	x::xs ->
+	  match get_danger x with
+	    Some Ast_c.Danger ->
+	      let (nodanger,rest) = span isnt_danger_or_end xs in
+	      (match rest with
+		[] -> x::xs
+	      |	y::ys ->
+		  (match (y,get_danger y) with
+		    (T2(tok,Ctx,a,b), Some Ast_c.Danger) when is_comma y ->
+		      let rec find_minus = function
+			  [] -> None
+			| (T2(_,Min m,_,_)) :: _
+			| (Fake2(_,Min m)) :: _ -> Some m
+			| x::xs -> find_minus xs in
+                      (match find_minus (List.rev nodanger) with
+			Some m ->
+			  x::nodanger@(loop(T2(tok,Min m,a,b)::ys))
+		      |	None -> failwith "no way to minus")
+		  | _ -> x::loop xs))
+	  | _ -> x :: loop xs in
+    loop toks in
+  let drop_last_danger_comma toks = (* avoid comma before ; if not all gone *)
+    let indanger_and_isminus_or_space tok =
+      match (get_danger tok) with
+	Some Ast_c.DangerStart -> false
+      | _ -> is_minus tok or is_comment_or_space tok or is_newline tok in
+    let rec loop = function
+	[] -> []
+      |	x::xs ->
+	  (match get_danger x with
+	    Some Ast_c.DangerEnd ->
+	      let (removed,rest) = span indanger_and_isminus_or_space xs in
+	      (match rest with
+		[] -> x::xs
+	      |	y::ys ->
+		  (match (y,get_danger y) with
+		    (T2(tok,Ctx,a,b), Some Ast_c.Danger) when is_comma y ->
+		      let rec find_minus = function
+			  [] -> None
+			| (T2(_,Min m,_,_)) :: _
+			| (Fake2(_,Min m)) :: _ -> Some m
+			| x::xs -> find_minus xs in
+                      (match find_minus removed with
+			Some m ->
+			  x :: removed @ (T2(tok,Min m,a,b)) :: loop ys
+		      |	None -> failwith "no way to minus")
+		  | _ -> x::loop xs))
+	  | _ -> x :: loop xs) in
+    (* reverse to find danger end first, and then work backwards *)
+    List.rev (loop (List.rev toks)) in
+  (* the following four functions are for unminusing the type if it is still
+     needed *)
+  let not_danger tok =
+    match get_danger tok with
+      Some Ast_c.Danger -> false
+    | _ -> true in
+  let not_nodanger tok =
+    match get_danger tok with
+      Some Ast_c.NoDanger -> false
+    | _ -> true in
+  let unminus tok =
+    match (tok,get_danger tok) with
+      (T2(tok,Min _,a,b),Some Ast_c.Danger) -> T2(tok,Ctx,a,b)
+    | _ -> tok in
+  let rec unminus_initial_danger toks =
+    let (front,rest) = span not_danger toks in
+    let (dangers,rest) = span not_nodanger rest in
+    front @ (List.map unminus dangers) @ rest in
+  let unminus_danger_end = function
+      T2(tok,Min _,a,b) -> T2(tok,Ctx,a,b)
     | x -> x in
-  let nodanger x =
-    match get_danger x with
-      Some Ast_c.NoDanger | None -> true
-    | _ -> false in
-  let rec reminus = function
-      (* get rid of stray commas *)
-      [] -> []
-    | (x::xs) as l ->
-	if nodanger x
-	then x :: reminus xs
-	else
-	  let (nodanger,rest) = span nodanger xs in
-	  if List.for_all removed_or_comma nodanger
-	  then
-	    (match rest with
-	      [] -> l
-	    | ((T2(tok,Ctx,a,b)) :: rest) as rl ->
-		if TH.str_of_tok tok = ","
-		then
-		  let rec find_minus = function
-		      [] -> None
-		    | (T2(_,Min m,_,_)) :: _ | (Fake2(_,Min m)) :: _ -> Some m
-		    | x::xs -> find_minus xs in
-		  (match find_minus (List.rev nodanger) with
-		    Some m ->
-		      x :: nodanger @ (reminus ((T2(tok,Min m,a,b)) :: rest))
-		  | None -> (* perhaps impossible *)
-		      x :: nodanger @ reminus rl)
-		else x :: nodanger @ reminus rl
-	    | _ -> x :: nodanger @ reminus rest)
-	  else x :: nodanger @ reminus rest in
   let rec search_danger = function
       [] -> []
     | x::xs ->
@@ -986,17 +1029,20 @@ let check_danger toks =
 		(match get_danger de with
 		  Some Ast_c.DangerEnd ->
 		    if List.for_all removed_or_comma (de::danger)
+			(* everything removed *)
+			or undanger_untouched (danger@[de])
+			(* nothing removed, type changed *)
 		    then danger @ de :: (search_danger rest)
 		    else
-		    if undanger_untouched (danger@[de])
-		    then danger @ de :: (search_danger rest)
-		    else
-		      (reminus (List.map unminus danger)) @
-		      (unminus de) :: (search_danger rest)
+		      (* some things removed, not others, unminus the type *)
+		      drop_last_danger_comma
+			((unminus_initial_danger danger) @
+			 [(unminus_danger_end de)]) @
+		      (search_danger rest)
 		| _ -> failwith "missing danger end")
 	    | _ -> failwith "missing danger end")
 	| _ -> x :: search_danger xs in
-  search_danger toks
+  search_danger (drop_danger_commas toks)
 
 (* this is for the case where braces are added around an if branch
 because of a change inside the branch *)
@@ -1950,26 +1996,6 @@ let rec find_paren_comma = function
   | x::xs ->
     find_paren_comma xs
 
-(* remainder from removal of multidecls *)
-let rec find_decl = function
-  | [] -> ()
-
-  (* do nothing if was like this in original file *)
-  | { str = "{"; idx = Some p1 } :: ({ str = ","; idx = Some p2} :: _ as xs)
-  | { str = ","; idx = Some p1 } :: ({ str = ";"; idx = Some p2} :: _ as xs) 
-    when p2 =|= p1 + 1 ->
-    find_decl xs
-
-  (* for declarations *)
-  | { str = "{" } :: (({ str = ","} as rem) :: _ as xs)
-  | ({ str = "," } as rem) :: ({ str = ";"} :: _ as xs) ->
-    rem.remove <- true;
-    find_decl xs
-
-  | x::xs ->
-    find_decl xs
-
-
 let fix_tokens toks =
   let toks = toks +> List.map mk_token_extended in
 
@@ -1978,8 +2004,6 @@ let fix_tokens toks =
     | _ -> false
   ) in
   find_paren_comma cleaner;
-  let toks = rebuild_tokens_extented toks in
-  find_decl toks;
   let toks = rebuild_tokens_extented toks in
 
   toks +> List.map (fun x -> x.tok2)

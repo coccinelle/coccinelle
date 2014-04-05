@@ -320,6 +320,10 @@
   incompatabilities between the semantic patch file name and what is
   allowed for the names of ocaml modules.  Thanks to Markus Elfring for
   noticing the problem.
+- Improved use of parsing_hacks when an item of interest is preceded by
+  a #define or #undef.  Thanks to Nic Volanschi for finding the problem.
+- Improved handling of commas in multidecls.  Thanks to Nic Volanschi for
+  finding the problem.
 
 * 0.2.5
 ** Language:
