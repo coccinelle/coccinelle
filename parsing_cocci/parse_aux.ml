@@ -682,44 +682,59 @@ let pct_split str =
 
 let parse_middle middle clt =
   let pieces = pct_split middle in
+  let update_clt (a,line,logical_line,offset,col,strbef,straft,pos) chars =
+    (* not sure how to update col: wrong if there are newlines *)
+    (a,line,logical_line,offset+chars,col+chars,strbef,straft,pos) in
   match pieces with
     [] -> failwith "not possible"
   | fst::rest ->
+      let chars = 1 in
+      let clt = update_clt clt chars in
       let first =
 	match fst with
 	  "" -> []
 	| "..." -> [Ast0.wrap(Ast0.Strdots(clt2mcode fst clt))]
 	| _ -> [Ast0.wrap (Ast0.ConstantFragment(clt2mcode fst clt))] in
-      let rest =
-	List.map
-	  (function r ->
+      let chars = String.length fst in
+      let rec loop chars = function
+	  [] -> []
+	| r::rs ->
+	    (* there may be bugs in the management of clt here... *)
+	    let clt = update_clt clt chars in
 	    let pct = clt2mcode "%" clt in
 	    let mkfmt d = Ast0.wrap (Ast0.ConstantFormat(clt2mcode d clt)) in
-	    match String.get r 0 with
-	      '@' ->
-		let mkrest = function
-		    "" -> []
-		  | "..." ->
-		      [Ast0.wrap(Ast0.Strdots(clt2mcode "..." clt))]
-		  | s ->
-		      [Ast0.wrap(Ast0.ConstantFragment(clt2mcode s clt))] in
-		(match Str.split (Str.regexp "@") r with
-		  first::rest ->
-		    (match string_metavariables first clt with
-		      MFmt fmtvar ->
-			(Ast0.wrap (Ast0.FormatFragment(pct,fmtvar)))::
-			(mkrest (String.concat "@" rest))
-		    | MFrag fragvar ->
-			(fragvar pct)::(mkrest (String.concat "@" rest)))
-		| _ -> failwith "bad string2")
-	    | _ ->
-		match Parse_printf.get_format_string r with
-		  (d,"") -> [Ast0.wrap (Ast0.FormatFragment(pct,mkfmt d))]
-		| (d,rest) ->
-		    [Ast0.wrap (Ast0.FormatFragment(pct,mkfmt d));
-		      Ast0.wrap (Ast0.ConstantFragment(clt2mcode rest clt))])
-	  rest in
-      first @ (List.concat rest)
+	    let rres =
+	      match String.get r 0 with
+		'@' ->
+		  let mkrest clt = function
+		      "" -> []
+		    | "..." ->
+			[Ast0.wrap(Ast0.Strdots(clt2mcode "..." clt))]
+		    | s ->
+			[Ast0.wrap(Ast0.ConstantFragment(clt2mcode s clt))] in
+		  (match Str.split (Str.regexp "@") r with
+		    first::rest ->
+		      (* 3+ for the % and the starting and ending @ *)
+		      let clt2 = update_clt clt (3+(String.length first)) in
+		      (match string_metavariables first clt with
+			MFmt fmtvar ->
+			  (Ast0.wrap (Ast0.FormatFragment(pct,fmtvar)))::
+			  (mkrest clt2 (String.concat "@" rest))
+		      | MFrag fragvar ->
+			  (fragvar pct)::
+			  (mkrest clt2 (String.concat "@" rest)))
+		  | _ -> failwith "bad string2")
+	      | _ ->
+		  match Parse_printf.get_format_string r with
+		    (d,"") -> [Ast0.wrap (Ast0.FormatFragment(pct,mkfmt d))]
+		  | (d,rest) ->
+		      let clt2 = update_clt clt 1 in
+		      [Ast0.wrap (Ast0.FormatFragment(pct,mkfmt d));
+			Ast0.wrap
+			  (Ast0.ConstantFragment(clt2mcode rest clt2))] in
+	    (* +1 is for the %, which is not shown *)
+	    rres @ (loop (chars + (String.length r) + 1) rs) in
+      first @ (loop chars rest)
 
 (* This doen't allow a newline in the middle of a string except at a %,
 perhaps not ideal *)

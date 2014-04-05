@@ -324,6 +324,7 @@
   a #define or #undef.  Thanks to Nic Volanschi for finding the problem.
 - Improved handling of commas in multidecls.  Thanks to Nic Volanschi for
   finding the problem.
+- Try to improve column offsets in complex strings.
 
 * 0.2.5
 ** Language:
