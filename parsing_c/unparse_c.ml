@@ -1573,9 +1573,12 @@ let token_effect tok dmin dplus inparens inassn accumulator xs =
 	adjust_by_function nopen_brace op accadd1 do_nothing accumulator xs in
       (Other 1,dmin,dplus,0,0,accumulator)
   | (Tok "else",op) ->
+      let nopen_brace a b = not (open_brace a b) in
       let do_nothing a b = b in
       let accumulator =
-	adjust_by_function is_nl op accadd1 do_nothing accumulator xs in
+	(* This used to have is_nl as the first argument.  Why different
+	   than ")" at top level above? *)
+	adjust_by_function nopen_brace op accadd1 do_nothing accumulator xs in
       (Other 1,dmin,dplus,0,0,accumulator)
   | (Tok "{",op) ->
       let (dmin,dplus) = add1 op (dmin,dplus) in
@@ -1638,9 +1641,6 @@ let parse_indentation xs =
 	  | [] -> ([],x,xs) in
 	let (res,dmin,dplus,inparens,inassn,accumulator) =
 	  token_effect x dmin dplus inparens inassn accumulator xs in
-	(*Printf.printf "%s: dmin %d dplus %d accmin %d accplus %d\n"
-	  (print_token2 x) dmin dplus
-	  (List.length (fst accumulator)) (List.length (snd accumulator));*)
 	let front =
 	  let rec loop n = function
 	      [] -> []
