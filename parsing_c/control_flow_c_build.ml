@@ -96,10 +96,12 @@ let pinfo_of_ii ii = Ast_c.get_opi (List.hd ii).Ast_c.pinfo
  * the context point to close the good number of '}' . For instance
  * where there is a 'continue', we must close only until the for.
  *)
+type braceinfo = (node * (nodei -> unit), node) Common.either
+
 type context_info =
   | NoInfo
-  | LoopInfo   of nodei * nodei (* start, end *) * node list * int list
-  | SwitchInfo of nodei * nodei (* start, end *) * node list * int list
+  | LoopInfo   of nodei * nodei (* start, end *) * braceinfo list * int list
+  | SwitchInfo of nodei * nodei (* start, end *) * braceinfo list * int list
 
 (* for the Compound case I need to do different things depending if
  * the compound is the compound of the function definition, the compound of
@@ -128,7 +130,7 @@ and xinfo =  {
    * It contains the must-close '}'.
    * update: now it is instead a node list.
    *)
-  braces: node list;
+  braces: braceinfo list;
 
   (* ctl: *)
   labels: int list;
@@ -206,11 +208,17 @@ let compute_labels_and_create_them st =
 
 (* ctl_braces: *)
 let insert_all_braces xs starti =
-  xs  +> List.fold_left (fun acc node ->
+  xs  +> List.fold_left (fun acc nodeinfo ->
     (* Have to build a new node (clone), cos cannot share it.
      * update: This is now done by the caller. The clones are in xs.
      *)
+    let (node,fn) =
+      match nodeinfo with
+	Common.Left(node,mkafter) ->
+	  (node,mkafter) (* statements where after link needed *)
+      | Common.Right node -> (node,function x -> ()) in (* ifdefs *)
     let newi = !g#add_node node in
+    fn newi;
     !g#add_arc ((acc, newi), Direct);
     newi
   ) starti
@@ -323,7 +331,21 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
 	mk_node (SeqEnd (brace, Ast_c.fakeInfo())) lbl [] s2 in
 *)
 
-      let newxi = { xi_lbl with braces = endnode_dup:: xi_lbl.braces } in
+      (* This code makes a link from the top of the block to any } created
+	 by a return from the braces list.  It is also called at the end
+	 of treating the block.  If there is a non-return way out of the
+	 block, then any link created by a } will be overwritten by a normal
+	 one.  This is the desired behavior. *)
+      let mkafter endi =
+	if xi.compound_caller = Statement
+	then
+	  (let afteri = !g +> add_node AfterNode lbl "[after]" in
+	  !g#add_arc ((newi, afteri), Direct);
+	  !g#add_arc ((afteri, endi), Direct)) in
+
+      let newxi =
+	{ xi_lbl with
+	  braces = Common.Left (endnode_dup,(*function x -> ()*)(mkafter)):: xi_lbl.braces } in
 
       let newxi = match xi.compound_caller with
         | Switch todo_in_compound ->
@@ -349,13 +371,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
              * il faut forcement au moins un return.
              *)
             let endi = !g#add_node endnode in
-	    if xi.compound_caller = Statement
-	    then
-	      (* Problem! This edge is only created if the block does not
-		 have return on all execution paths. *)
-	      (let afteri = !g +> add_node AfterNode lbl "[after]" in
-	      !g#add_arc ((newi, afteri), Direct);
-	      !g#add_arc ((afteri, endi), Direct));
+	      mkafter endi;
             !g#add_arc ((finishi, endi), Direct);
             endi
            )
@@ -1062,7 +1078,7 @@ and aux_statement_list starti (xi, newxi) statxs =
 	    (* not sure if this is correct... newxi seems to relate to
                the assigned level number *)
 	    let newerxi =
-	      { newxi with braces = taili_dup:: newxi.braces } in
+	      { newxi with braces = Common.Right taili_dup:: newxi.braces } in
             let finalthen =
               aux_statement_list (Some start_nodei) (newxi, newerxi) xs in
             !g +> add_arc_opt (finalthen, taili);
