@@ -345,7 +345,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
 
       let newxi =
 	{ xi_lbl with
-	  braces = Common.Left (endnode_dup,(*function x -> ()*)(mkafter)):: xi_lbl.braces } in
+	  braces = Common.Left (endnode_dup,mkafter):: xi_lbl.braces } in
 
       let newxi = match xi.compound_caller with
         | Switch todo_in_compound ->
