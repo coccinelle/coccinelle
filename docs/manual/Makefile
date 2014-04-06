@@ -23,7 +23,9 @@ PDFLATEX_CMD=$(PDFLATEX) -halt-on-error
 .PHONY: all clean distclean
 .SUFFIXES: .pdf .tex
 
-all: manual.pdf main_grammar.pdf options.pdf
+all: pdf html
+
+pdf: manual.pdf main_grammar.pdf options.pdf
 
 manual.pdf: $(SRC)
 	$(PDFLATEX_CMD) manual.tex
