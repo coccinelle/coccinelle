@@ -1375,7 +1375,8 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
 			else
 			  (ctl_or
 			     (ctl_and CTL.NONSTRICT
-				(ctl_or (retpred None) matchcontinue)
+				(ctl_or (aftpred None)
+				   (ctl_or (retpred None) matchcontinue))
 				(ctl_not seq_after))
 			     (ctl_and CTL.NONSTRICT
 				(ctl_or matchgoto matchbreak)
@@ -1396,6 +1397,23 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
 		  (ctl_and CTL.NONSTRICT (label_pred_maker label)
 		     (stop_early n (CTL.Ref v)))))
 
+let get_quantifier whencodes =
+  let check_quantifier whencodes quant other =
+    if List.exists (function Ast.WhenModifier(x) -> x = quant | _ -> false)
+	whencodes
+    then
+      if List.exists (function Ast.WhenModifier(x) -> x = other | _ -> false)
+	  whencodes
+      then failwith "inconsistent annotation on dots"
+      else true
+    else false in
+  if check_quantifier whencodes Ast.WhenExists Ast.WhenForall
+  then Exists
+  else
+    if check_quantifier whencodes Ast.WhenForall Ast.WhenExists
+    then Forall
+    else !exists
+
 let rec dots_and_nests plus nest whencodes bef aft dotcode after label
     process_bef_aft statement_list statement guard quantified wrapcode =
   let ctl_and_ns = ctl_and CTL.NONSTRICT in
@@ -1414,24 +1432,7 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
     List.exists
       (function Ast.WhenModifier(Ast.WhenStrict) -> true | _ -> false)
       whencodes in
-  let check_quantifier quant other =
-    if List.exists
-	(function Ast.WhenModifier(x) -> x = quant | _ -> false)
-	whencodes
-    then
-      if List.exists
-	  (function Ast.WhenModifier(x) -> x = other | _ -> false)
-	  whencodes
-      then failwith "inconsistent annotation on dots"
-      else true
-    else false in
-  let quantifier =
-    if check_quantifier Ast.WhenExists Ast.WhenForall
-    then Exists
-    else
-      if check_quantifier Ast.WhenForall Ast.WhenExists
-      then Forall
-      else !exists in
+  let quantifier = get_quantifier whencodes in
   (* the following is used when we find a goto, etc and consider accepting
      without finding the rest of the pattern *)
   let aft = shortest aft in
@@ -1540,11 +1541,16 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
 	if !exists
 	then ctl_or exit errorexit (* end anywhere *)
 	else exit (* end at the real end of the function *) *) in
+  let exists_without_after =
+    if quantifier = Exists
+    then (ctl_not (aftpred None))
+    else CTL.True in
   plus_modifier
     (dots_au is_strict ((after = Tail) or (after = VeryEnd))
        label (guard_to_strict guard) wrapcode just_nest
-       (ctl_and_ns dotcode
-	   (ctl_and_ns (ctl_and_ns (ctl_not bef_aft) ornest) labelled))
+       (ctl_and_ns exists_without_after
+	  (ctl_and_ns dotcode
+	     (ctl_and_ns (ctl_and_ns (ctl_not bef_aft) ornest) labelled)))
        aft ender quantifier)
 
 and get_whencond_exps e =
@@ -2270,6 +2276,11 @@ and statement stmt top after quantified minus_quantified
 		     (match d with
 		       Ast.MINUS(_,_,_,_) -> None
 		     | _ ->
+			 let quantifier = get_quantifier whencode in
+			 let op =
+			   if quantifier = !exists
+			   then ctl_au
+			   else ctl_anti_au CTL.NONSTRICT in
 			 let pv =
 			   (* no nested braces, because only dots *)
 			   string2var ("p1") in
@@ -2322,7 +2333,12 @@ and statement stmt top after quantified minus_quantified
 						CTL.True
 					    | Ast.WhenModifier(_) -> prev)
 					CTL.True whencode) in
-				 ctl_au leftarg
+				 let leftarg =
+				   if quantifier = Exists
+				   then
+				     ctl_and (ctl_not (aftpred None)) leftarg
+				   else leftarg in
+				 op leftarg
 				   (ctl_and
 				      (make_match stripped_rbrace)
 				      paren_pred)]))
