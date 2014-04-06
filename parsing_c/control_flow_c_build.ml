@@ -525,18 +525,28 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
 
       !g#add_arc ((newfakeelse, elsenode), Direct);
 
-      let finalthen = aux_statement (Some newfakethen, xi_lbl) st1 in
-      let finalelse = aux_statement (Some elsenode, xi_lbl) st2 in
+      let endnode =
+	mk_node (EndStatement(Some iifakeend)) lbl [] "[endif]" in
+      let endnode_dup =
+	mk_node (EndStatement(Some iifakeend)) lbl [] "[endif]" in
+
+      let mkafter lasti =
+	(let afteri = !g +> add_node AfterNode lbl "[after]" in
+        !g#add_arc ((newi, afteri), Direct);
+        !g#add_arc ((afteri, lasti), Direct)) in
+
+      let newxi =
+	{ xi_lbl with
+          braces = Common.Left (endnode_dup,mkafter):: xi_lbl.braces } in
+
+      let finalthen = aux_statement (Some newfakethen, newxi) st1 in
+      let finalelse = aux_statement (Some elsenode, newxi) st2 in
 
       (match finalthen, finalelse with
         | (None, None) -> None
         | _ ->
-            let lasti =
-              !g +> add_node (EndStatement(Some iifakeend)) lbl "[endif]" in
-            let afteri =
-              !g +> add_node AfterNode lbl "[after]" in
-            !g#add_arc ((newi, afteri),  Direct);
-            !g#add_arc ((afteri, lasti), Direct);
+            let lasti = !g#add_node endnode in
+	    mkafter lasti;
             begin
               !g +> add_arc_opt (finalthen, lasti);
               !g +> add_arc_opt (finalelse, lasti);
