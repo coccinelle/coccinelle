@@ -80,8 +80,6 @@ distclean:: clean
 check: $(HTML)
 	checklink $<
 
-world: all html
-
 universe: world install
 
 install:
