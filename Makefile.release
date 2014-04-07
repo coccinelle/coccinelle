@@ -176,7 +176,7 @@ srctar: Makefile.config
 	$(MAKE) distclean KEEP_GENERATED=1 KEEP_CONFIG=1
 	if test -f "$(TMP)/$(PACKAGE)/"; then rm -f "$(TMP)/$(PACKAGE)/"; fi # remove it if it is a symlink
 	$(MKDIR_P) "$(TMP)/$(PACKAGE)/"
-	cp -rfa ./*  "$(TMP)/$(PACKAGE)/"
+	cp -fa ./*  "$(TMP)/$(PACKAGE)/"
 	rm -f $(TMP)/$(PACKAGE)/Makefile.config
 	cd $(TMP); tar cvfz $(PACKAGE).tgz --exclude-vcs $(EXCL) $(PACKAGE)
 	rm -rf  $(TMP)/$(PACKAGE)
