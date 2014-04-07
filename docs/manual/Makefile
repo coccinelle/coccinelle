@@ -9,6 +9,7 @@ endif
 MAINSRC=main.tex
 SRC=$(wildcard *.tex)
 PDFLATEX_CMD=$(PDFLATEX) -halt-on-error
+PDF=manual.pdf main_grammar.pdf options.pdf
 
 #tools:
 # latex, pdflatex
@@ -25,7 +26,7 @@ PDFLATEX_CMD=$(PDFLATEX) -halt-on-error
 
 all: pdf html
 
-pdf: manual.pdf main_grammar.pdf options.pdf
+pdf: $(PDF)
 
 manual.pdf: $(SRC)
 	$(PDFLATEX_CMD) manual.tex
@@ -62,10 +63,8 @@ distclean:: clean
 .SUFFIXES: .html .tex
 
 TEX=main_grammar.tex
-WEB=/var/www/localhost/htdocs/coccinelle/
-EMNWEB=~/website
+WEB=~/website
 
-PDF=$(TEX:.tex=.pdf)
 HTML=$(TEX:.tex=.html)
 
 html: $(HTML)
@@ -79,19 +78,6 @@ distclean:: clean
 
 check: $(HTML)
 	checklink $<
-
-universe: world install
-
-install:
-	cp *.css *.gif *.html $(WEB)
-	cp $(PDF) $(WEB)
-	chown apache:apache -R $(WEB)
-	chmod a-w -R $(WEB)
-
-emn_install: world
-	cp *.css *.gif *.html $(EMNWEB)/docs
-	cp $(PDF) $(EMNWEB)/docs
-	cp options.pdf $(EMNWEB)/
 
 .tex.html:
 # For Gentoo: /usr/lib64/hevea
@@ -113,13 +99,16 @@ emn_install: world
 	echo -e "\n\n *** Hevea: Unable to find xxdate.exe ***\n\n"; \
 	fi
 	hacha -o index.html main_grammar.html
-#	hacha -o index.html cocci_syntax.html
-
 
 ##############################################################################
 # Install
 ##############################################################################
 
+install: all
+	cp *.css *.gif *.html $(WEB)/docs
+	cp $(PDF) $(WEB)/docs
+#	chown apache:apache -R $(WEB)
+#	chmod a-w -R $(WEB)
 
 ##############################################################################
 # Developer rules
