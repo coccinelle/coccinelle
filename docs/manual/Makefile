@@ -63,7 +63,8 @@ distclean:: clean
 .SUFFIXES: .html .tex
 
 TEX=main_grammar.tex
-WEB=~/website
+WEBBASE?=~/website
+WEBDOCS=$(WEBBASE)/docs
 
 HTML=$(TEX:.tex=.html)
 
@@ -105,10 +106,10 @@ check: $(HTML)
 ##############################################################################
 
 install: all
-	cp *.css *.gif *.html $(WEB)/docs
-	cp $(PDF) $(WEB)/docs
-#	chown apache:apache -R $(WEB)
-#	chmod a-w -R $(WEB)
+	cp *.css *.gif *.html $(WEBDOCS)
+	cp $(PDF) $(WEBDOCS)
+#	chown apache:apache -R $(WEBDOCS)
+#	chmod a-w -R $(WEBDOCS)
 
 ##############################################################################
 # Developer rules

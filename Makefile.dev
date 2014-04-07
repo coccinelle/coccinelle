@@ -19,6 +19,7 @@ website:
 		$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz \
 		$(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz
 #		$(PACKAGE)-bin-x86-static.tgz
+	$(MAKE) -C docs/manual WEBBASE=$(WEBBASE) install
 	@echo "\nYou need to manually update those files:\n"
 	@echo "\t$(WEBBASE)/download.php"
 	@echo "\t$(WEBSITE)/change.html\n"
