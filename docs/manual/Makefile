@@ -9,6 +9,7 @@ endif
 MAINSRC=main.tex
 SRC=$(wildcard *.tex)
 PDFLATEX_CMD=$(PDFLATEX) -halt-on-error
+PDF=manual.pdf main_grammar.pdf options.pdf
 
 #tools:
 # latex, pdflatex
@@ -23,7 +24,9 @@ PDFLATEX_CMD=$(PDFLATEX) -halt-on-error
 .PHONY: all clean distclean
 .SUFFIXES: .pdf .tex
 
-all: manual.pdf main_grammar.pdf options.pdf
+all: pdf html
+
+pdf: $(PDF)
 
 manual.pdf: $(SRC)
 	$(PDFLATEX_CMD) manual.tex
@@ -60,16 +63,15 @@ distclean:: clean
 .SUFFIXES: .html .tex
 
 TEX=main_grammar.tex
-WEB=/var/www/localhost/htdocs/coccinelle/
-EMNWEB=~/website
+WEBBASE?=~/website
+WEBDOCS=$(WEBBASE)/docs
 
-PDF=$(TEX:.tex=.pdf)
 HTML=$(TEX:.tex=.html)
 
 html: $(HTML)
 
 clean::
-	rm -f *.aux *.dvi *.haux *.htoc *.log *.out *~
+	rm -f *.aux *.dvi *.pdf *.haux *.htoc *.log *.out *~
 
 distclean:: clean
 	@if test -z "${KEEP_GENERATED}"; then \
@@ -77,21 +79,6 @@ distclean:: clean
 
 check: $(HTML)
 	checklink $<
-
-world: all html
-
-universe: world install
-
-install:
-	cp *.css *.gif *.html $(WEB)
-	cp $(PDF) $(WEB)
-	chown apache:apache -R $(WEB)
-	chmod a-w -R $(WEB)
-
-emn_install: world
-	cp *.css *.gif *.html $(EMNWEB)/docs
-	cp $(PDF) $(EMNWEB)/docs
-	cp options.pdf $(EMNWEB)/
 
 .tex.html:
 # For Gentoo: /usr/lib64/hevea
@@ -113,13 +100,16 @@ emn_install: world
 	echo -e "\n\n *** Hevea: Unable to find xxdate.exe ***\n\n"; \
 	fi
 	hacha -o index.html main_grammar.html
-#	hacha -o index.html cocci_syntax.html
-
 
 ##############################################################################
 # Install
 ##############################################################################
 
+install: all
+	cp *.css *.gif *.html $(WEBDOCS)
+	cp $(PDF) $(WEBDOCS)
+#	chown apache:apache -R $(WEBDOCS)
+#	chmod a-w -R $(WEBDOCS)
 
 ##############################################################################
 # Developer rules
