@@ -4083,7 +4083,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
       let default = A.MetaRuleElem(mcode,keep,inherited), unwrap_node in
       (match unwrap_node with
       | F.CaseNode _
-      | F.TrueNode | F.FalseNode | F.AfterNode
+      | F.TrueNode _ | F.FalseNode | F.AfterNode _
       | F.LoopFallThroughNode  | F.FallThroughNode
       | F.InLoopNode ->
           if X.mode =*= PatternMode
@@ -4133,7 +4133,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
    * TODO: and F.Fake ?
    *)
   | _, F.EndStatement _ | _, F.CaseNode _
-  | _, F.TrueNode | _, F.FalseNode | _, F.AfterNode
+  | _, F.TrueNode _ | _, F.FalseNode | _, F.AfterNode _
   | _, F.FallThroughNode | _, F.LoopFallThroughNode
   | _, F.InLoopNode -> fail2()
 
@@ -4494,13 +4494,13 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
           F.SwitchHeader (st, (eb,[ib1;ib2;ib3]))
         )))))
 
-  | A.Break (ia1, ia2), F.Break (st, ((),ii)) ->
+  | A.Break (ia1, ia2), F.Break (st, ((),ii),fromswitch) ->
       let (ib1, ib2) = tuple_of_list2 ii in
       tokenf ia1 ib1 >>= (fun ia1 ib1 ->
       tokenf ia2 ib2 >>= (fun ia2 ib2 ->
         return (
           A.Break (ia1, ia2),
-          F.Break (st, ((),[ib1;ib2]))
+          F.Break (st, ((),[ib1;ib2]), fromswitch)
         )))
 
   | A.Continue (ia1, ia2), F.Continue (st, ((),ii)) ->
@@ -4721,7 +4721,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
     (F.MacroStmt (_, _)| F.DefineDoWhileZeroHeader _| F.EndNode|F.TopNode)
       -> fail
   | _,
-    (F.Label (_, _, _)|F.Break (_, _)|F.Continue (_, _)|F.Default (_, _)|
+    (F.Label (_, _, _)|F.Break (_, _, _)|F.Continue (_, _)|F.Default (_, _)|
     F.Case (_, _)|F.Include _|F.Goto _|F.ExprStatement _|F.Exec _|
     F.DefineType _|F.DefineExpr _|F.DefineTodo|
     F.DefineHeader (_, _)|F.PragmaHeader (_, _)|

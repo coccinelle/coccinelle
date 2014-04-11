@@ -155,6 +155,7 @@ let endpred     = predmaker false (Lib_engine.Exit,        CTL.Control)
 let gotopred    = predmaker false (Lib_engine.Goto,        CTL.Control)
 let inlooppred  = predmaker false (Lib_engine.InLoop,      CTL.Control)
 let truepred    = predmaker false (Lib_engine.TrueBranch,  CTL.Control)
+let esctruepred = predmaker false (Lib_engine.EscTrueBranch,  CTL.Control)
 let falsepred   = predmaker false (Lib_engine.FalseBranch, CTL.Control)
 let fallpred    = predmaker false (Lib_engine.FallThrough, CTL.Control)
 let loopfallpred = predmaker false (Lib_engine.LoopFallThrough, CTL.Control)
@@ -1363,7 +1364,7 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
 	  ctl_or (aftpred label)
 	    (quantify false [lv]
 	       (ctl_and CTL.NONSTRICT
-		  (ctl_and CTL.NONSTRICT (truepred label) labelpred)
+		  (ctl_and CTL.NONSTRICT (esctruepred label) labelpred)
 		  (op CTL.NONSTRICT
 		     (ctl_and CTL.NONSTRICT (ctl_not v)
 			(ctl_and CTL.NONSTRICT vx preflabelpred))

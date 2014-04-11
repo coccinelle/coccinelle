@@ -903,7 +903,7 @@ and vk_node = fun bigf node ->
     | F.IfdefElse    (info) ->  vk_ifdef_directive bigf info
     | F.IfdefEndif    (info) ->  vk_ifdef_directive bigf info
 
-    | F.Break    (st,((),ii)) -> iif ii
+    | F.Break    (st,((),ii),_) -> iif ii
     | F.Continue (st,((),ii)) -> iif ii
     | F.Default  (st,((),ii)) -> iif ii
     | F.Return   (st,((),ii)) -> iif ii
@@ -930,7 +930,7 @@ and vk_node = fun bigf node ->
     | (
         F.TopNode|F.EndNode|
         F.ErrorExit|F.Exit|F.Enter|F.LoopFallThroughNode|F.FallThroughNode|
-        F.AfterNode|F.FalseNode|F.TrueNode|F.InLoopNode|
+        F.AfterNode _|F.FalseNode|F.TrueNode _|F.InLoopNode|
         F.Fake
       ) -> ()
 
@@ -1801,7 +1801,8 @@ and vk_node_s = fun bigf node ->
     | F.Exec(st, (code,ii)) ->
 	F.Exec(st,((List.map (vk_exec_code_s bigf) code),ii))
 
-    | F.Break    (st,((),ii)) -> F.Break    (st,((),iif ii))
+    | F.Break    (st,((),ii),fromswitch) ->
+	F.Break    (st,((),iif ii),fromswitch)
     | F.Continue (st,((),ii)) -> F.Continue (st,((),iif ii))
     | F.Default  (st,((),ii)) -> F.Default  (st,((),iif ii))
     | F.Return   (st,((),ii)) -> F.Return   (st,((),iif ii))
@@ -1823,7 +1824,7 @@ and vk_node_s = fun bigf node ->
         (
           F.TopNode|F.EndNode|
           F.ErrorExit|F.Exit|F.Enter|F.LoopFallThroughNode|F.FallThroughNode|
-          F.AfterNode|F.FalseNode|F.TrueNode|F.InLoopNode|
+          F.AfterNode _|F.FalseNode|F.TrueNode _|F.InLoopNode|
           F.Fake
         ) as x) -> x
 

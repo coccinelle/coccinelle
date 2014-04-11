@@ -785,7 +785,7 @@ let (transform2: string (* rule name *) -> string list (* dropped_isos *) ->
       | F.Enter | F.Exit | F.ErrorExit
       | F.EndStatement _ | F.CaseNode _
       | F.Fake
-      | F.TrueNode | F.FalseNode | F.AfterNode | F.FallThroughNode
+      | F.TrueNode _ | F.FalseNode | F.AfterNode _ | F.FallThroughNode
           -> ()
       | _ -> () (* assert (not (node =*= node')); *)
       );

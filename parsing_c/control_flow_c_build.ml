@@ -96,7 +96,8 @@ let pinfo_of_ii ii = Ast_c.get_opi (List.hd ii).Ast_c.pinfo
  * the context point to close the good number of '}' . For instance
  * where there is a 'continue', we must close only until the for.
  *)
-type braceinfo = (node * (nodei -> unit), node) Common.either
+type braceinfo =
+    (node * (after_type -> string -> nodei -> unit), node) Common.either
 
 type context_info =
   | NoInfo
@@ -207,7 +208,7 @@ let compute_labels_and_create_them st =
 
 
 (* ctl_braces: *)
-let insert_all_braces xs starti =
+let insert_all_braces xs starti nodety str =
   xs  +> List.fold_left (fun acc nodeinfo ->
     (* Have to build a new node (clone), cos cannot share it.
      * update: This is now done by the caller. The clones are in xs.
@@ -216,9 +217,9 @@ let insert_all_braces xs starti =
       match nodeinfo with
 	Common.Left(node,mkafter) ->
 	  (node,mkafter) (* statements where after link needed *)
-      | Common.Right node -> (node,function x -> ()) in (* ifdefs *)
+      | Common.Right node -> (node,fun _ _ _ -> ()) in (* ifdefs *)
     let newi = !g#add_node node in
-    fn newi;
+    fn nodety str newi;
     !g#add_arc ((acc, newi), Direct);
     newi
   ) starti
@@ -336,16 +337,20 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
 	 of treating the block.  If there is a non-return way out of the
 	 block, then any link created by a } will be overwritten by a normal
 	 one.  This is the desired behavior. *)
-      let mkafter endi =
+      let ret_afters = ref [] in
+      let mkafter ty str endi =
 	if xi.compound_caller = Statement
 	then
-	  (let afteri = !g +> add_node AfterNode lbl "[after]" in
-	  !g#add_arc ((newi, afteri), Direct);
-	  !g#add_arc ((afteri, endi), Direct)) in
+	  (let afteri = !g +> add_node (AfterNode ty) lbl str in
+	  let a1 = ((newi, afteri), Direct) in
+	  !g#add_arc a1;
+	  let a2 = ((afteri, endi), Direct) in
+	  !g#add_arc a2;
+	  ret_afters := (afteri,a1,a2) :: !ret_afters) in
 
       let newxi =
 	{ xi_lbl with
-	  braces = Common.Left (endnode_dup,mkafter):: xi_lbl.braces } in
+	  braces = Common.Left(endnode_dup,mkafter) :: xi_lbl.braces } in
 
       let newxi = match xi.compound_caller with
         | Switch todo_in_compound ->
@@ -371,7 +376,11 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
              * il faut forcement au moins un return.
              *)
             let endi = !g#add_node endnode in
-	      mkafter endi;
+	    List.iter
+	      (function (node,a1,a2) ->
+		!g#del_arc a1; !g#del_arc a2; !g#del_node node)
+	      !ret_afters;
+	    mkafter NormalAfterNode "[after]" endi;
             !g#add_arc ((finishi, endi), Direct);
             endi
            )
@@ -412,7 +421,9 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
 	  * todo?: can perhaps report when a goto is not a classic error_goto ?
 	  * that is when it does not jump to the toplevel of the function.
 	  *)
-	 let newi = insert_all_braces (Common.list_init xi.braces) newi in
+	 let newi =
+	   insert_all_braces (Common.list_init xi.braces) newi
+	     GotoAfterNode "[goto after]" in
 	 !g#add_arc ((newi, ilabel), Direct);
 	 None
        end
@@ -483,9 +494,10 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       *)
       let newi = !g +> add_node (IfHeader (stmt, (e, ii))) lbl ("if") in
       !g +> add_arc_opt (starti, newi);
-      let newfakethen = !g +> add_node TrueNode        lbl "[then]" in
+      let escapes = ref false in
+      let newfakethen = !g +> add_node (TrueNode escapes) lbl "[then]" in
       let newfakeelse = !g +> add_node FallThroughNode lbl "[fallthrough]" in
-      let afteri = !g +> add_node AfterNode lbl "[after]" in
+      let afteri = !g +> add_node (AfterNode NormalAfterNode) lbl "[after]" in
       let lasti  = !g +> add_node (EndStatement (Some iifakeend)) lbl "[endif]"
       in
 
@@ -499,6 +511,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       !g#add_arc ((newfakeelse, lasti), Direct);
 
       let finalthen = aux_statement (Some newfakethen, newxi) st1 in
+      (match finalthen with None -> escapes := true | _ -> ());
       !g +> add_arc_opt (finalthen, lasti);
       Some lasti
 
@@ -515,7 +528,8 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       in
       let newi = !g +> add_node (IfHeader (stmt, (e, iiheader))) lbl "if" in
       !g +> add_arc_opt (starti, newi);
-      let newfakethen = !g +> add_node TrueNode  lbl "[then]" in
+      let escapes = ref false in
+      let newfakethen = !g +> add_node (TrueNode escapes)  lbl "[then]" in
       let newfakeelse = !g +> add_node FalseNode lbl "[else]" in
       let elsenode = !g +> add_node (Else iielse) lbl "else" in
 
@@ -530,23 +544,33 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       let endnode_dup =
 	mk_node (EndStatement(Some iifakeend)) lbl [] "[endif]" in
 
-      let mkafter lasti =
-	(let afteri = !g +> add_node AfterNode lbl "[after]" in
-        !g#add_arc ((newi, afteri), Direct);
-        !g#add_arc ((afteri, lasti), Direct)) in
+      let ret_afters = ref [] in
+      let mkafter ty str lasti =
+	(let afteri = !g +> add_node (AfterNode ty) lbl str in
+	  let a1 = ((newi, afteri), Direct) in
+	  !g#add_arc a1;
+	  let a2 = ((afteri, lasti), Direct) in
+	  !g#add_arc a2;
+	  ret_afters := (afteri,a1,a2) :: !ret_afters) in
 
       let newxi =
 	{ xi_lbl with
-          braces = Common.Left (endnode_dup,mkafter):: xi_lbl.braces } in
+          braces = Common.Left (endnode_dup,mkafter) :: xi_lbl.braces } in
 
       let finalthen = aux_statement (Some newfakethen, newxi) st1 in
       let finalelse = aux_statement (Some elsenode, newxi) st2 in
+
+      (match finalthen with None -> escapes := true | _ -> ());
 
       (match finalthen, finalelse with
         | (None, None) -> None
         | _ ->
             let lasti = !g#add_node endnode in
-	    mkafter lasti;
+	    List.iter
+	      (function (node,a1,a2) ->
+		!g#del_arc a1; !g#del_arc a2; !g#del_node node)
+	      !ret_afters;
+	    mkafter NormalAfterNode "[after]" lasti;
             begin
               !g +> add_arc_opt (finalthen, lasti);
               !g +> add_arc_opt (finalelse, lasti);
@@ -642,7 +666,8 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
          (match finalthen with
          | Some finalthen ->
 
-             let afteri = !g +> add_node AfterNode lbl "[after]" in
+             let afteri =
+	       !g +> add_node (AfterNode NormalAfterNode) lbl "[after]" in
              !g#add_arc ((newswitchi, afteri),  Direct);
              !g#add_arc ((afteri, newendswitch), Direct);
 
@@ -658,7 +683,8 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
              end
              else begin
 
-               let afteri = !g +> add_node AfterNode lbl "[after]" in
+               let afteri =
+		 !g +> add_node (AfterNode NormalAfterNode) lbl "[after]" in
                !g#add_arc ((newswitchi, afteri),  Direct);
                !g#add_arc ((afteri, newendswitch), Direct);
 
@@ -795,7 +821,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       let newfakeelse =
         !g +> add_node (EndStatement (Some iifakeend)) lbl "[enddowhile]" in
 
-      let afteri = !g +> add_node AfterNode lbl "[after]" in
+      let afteri = !g +> add_node (AfterNode NormalAfterNode) lbl "[after]" in
       !g#add_arc ((doi,afteri), Direct);
       !g#add_arc ((afteri,newfakeelse), Direct);
 
@@ -919,6 +945,12 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
 	| SwitchInfo (startbrace, loopendi, braces, parent_lbl) -> parent_lbl
 	| NoInfo -> raise (Impossible 65) in
 
+      let from_switch =
+	match context_info with
+	  LoopInfo (loopstarti, loopendi, braces, parent_lbl) -> false
+	| SwitchInfo (startbrace, loopendi, braces, parent_lbl) -> true
+	| NoInfo -> raise (Impossible 65) in
+
       (* flow_to_ast: *)
       let (node_info, string) =
 	let parent_string =
@@ -928,7 +960,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
 	      (Continue (stmt, ((), ii)),
 	       Printf.sprintf "continue; [%s]" parent_string)
           | Ast_c.Break    ->
-	      (Break    (stmt, ((), ii)),
+	      (Break    (stmt, ((), ii), from_switch),
 	       Printf.sprintf "break; [%s]" parent_string)
           | _ -> raise (Impossible 66)
           ) in
@@ -942,19 +974,20 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
 
       (match context_info with
       | LoopInfo (loopstarti, loopendi, braces, parent_lbl) ->
-          let desti =
+          let (desti,nodety,str) =
             (match x with
-            | Ast_c.Break -> loopendi
+            | Ast_c.Break -> (loopendi,BreakAfterNode,"[break after]")
             | Ast_c.Continue ->
 		(* if no loops, then continue behaves like break - just
 		   one iteration *)
-		if !Flag_parsing_c.no_loops then loopendi else loopstarti
+		((if !Flag_parsing_c.no_loops then loopendi else loopstarti),
+		ContAfterNode, "[cont after]")
             | x -> raise (Impossible 67)
             ) in
           let difference = List.length xi.braces - List.length braces in
           assert (difference >= 0);
           let toend = take difference xi.braces in
-          let newi = insert_all_braces toend newi in
+          let newi = insert_all_braces toend newi nodety str in
           !g#add_arc ((newi, desti), Direct);
           None
 
@@ -963,7 +996,8 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
           let difference = List.length xi.braces - List.length braces in
           assert (difference >= 0);
           let toend = take difference xi.braces in
-          let newi = insert_all_braces toend newi in
+          let newi =
+	    insert_all_braces toend newi SWBreakAfterNode "[swbreak after]" in
           !g#add_arc ((newi, loopendi), Direct);
           None
       | NoInfo -> raise (Impossible 68)
@@ -991,7 +1025,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
           lbl s
       in
       !g +> add_arc_opt (starti, newi);
-      let newi = insert_all_braces xi.braces newi in
+      let newi = insert_all_braces xi.braces newi RetAfterNode "[ret after]" in
 
       if xi.under_ifthen
       then !g#add_arc ((newi, errorexiti), Direct)
@@ -1100,7 +1134,8 @@ and aux_statement_list starti (xi, newxi) statxs =
 	construct, but it doesn't work because #ifdef is not a statement.
         Not sure if this is a good or bad thing, at least if there is no else
 	because then no statement might be there.
-	let afteri = !g +> add_node AfterNode newxi'.labels "[after]" in
+	let afteri =
+          !g +> add_node (AfterNode NormalAfterNode) newxi'.labels "[after]" in
 	!g#add_arc ((newi, afteri), Direct);
 	!g#add_arc ((afteri, taili), Direct);
 *)

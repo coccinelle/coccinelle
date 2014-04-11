@@ -1346,7 +1346,7 @@ and pp_init (init, iinit) =
 	pr2 "XXX"
 
 
-    | F.Break    (st,((),ii)) ->
+    | F.Break    (st,((),ii),fromswitch) ->
         (* iif ii *)
 	pr2 "XXX"
     | F.Continue (st,((),ii)) ->
@@ -1405,7 +1405,7 @@ and pp_init (init, iinit) =
 
     | (F.TopNode|F.EndNode|
       F.ErrorExit|F.Exit|F.Enter|F.LoopFallThroughNode|F.FallThroughNode|
-      F.AfterNode|F.FalseNode|F.TrueNode|F.InLoopNode|
+      F.AfterNode _|F.FalseNode|F.TrueNode _|F.InLoopNode|
       F.Fake) ->
         pr2 "YYY" in
 

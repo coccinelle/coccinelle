@@ -239,6 +239,7 @@ let meta2c (_,s) = s
 let pred2c = function
     Lib_engine.InLoop -> ("\\msf{InLoop}",6)
   | Lib_engine.TrueBranch -> ("\\msf{TrueBranch}",10)
+  | Lib_engine.EscTrueBranch -> ("\\msf{EscTrueBranch}",13)
   | Lib_engine.FalseBranch -> ("\\msf{FalseBranch}",11)
   | Lib_engine.After -> ("\\msf{After}",5)
   | Lib_engine.FallThrough -> ("\\msf{FallThrough}",11)
