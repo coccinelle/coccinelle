@@ -325,6 +325,13 @@
 - Improved handling of commas in multidecls.  Thanks to Nic Volanschi for
   finding the problem.
 - Try to improve column offsets in complex strings.
+- Improve performance of error handling code detection by only doing it
+  when there is an escaping then branch.  Thanks to Ning Jiang for
+  motivating investigation of the problem.
+- Don't consider a break for a switch a indicating error handling code.
+  Thanks to Ning Jiang for motivating investigation of the problem.
+- Allow adding things after an escaping compound.  Thanks to Nic Volanschi
+  for finding the problem.
 
 * 0.2.5
 ** Language:
