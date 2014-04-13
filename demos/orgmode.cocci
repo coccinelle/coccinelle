@@ -1,4 +1,5 @@
 @initialize:python@
+@@
 
 from coccilib.org import print_todo, print_safe_todo, print_link, print_safe_link
 
