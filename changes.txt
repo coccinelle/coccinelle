@@ -332,6 +332,9 @@
   Thanks to Ning Jiang for motivating investigation of the problem.
 - Allow adding things after an escaping compound.  Thanks to Nic Volanschi
   for finding the problem.
+- split apart added strings when moving mcode information to bef of for
+  loop, function definition, etc.  Thanks to Luis R. Rodriguez for reporting
+  the problem.
 
 * 0.2.5
 ** Language:
