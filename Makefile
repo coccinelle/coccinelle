@@ -460,6 +460,7 @@ install-tools:
 		$(DESTDIR)$(BINDIR)/splitpatch
 	$(INSTALL_PROGRAM) tools/cocci-send-email.perl \
 		$(DESTDIR)$(BINDIR)/cocci-send-email.perl
+	$(INSTALL_PROGRAM) tools/pycocci $(DESTDIR)$(BINDIR)/
 
 install-python:
 	@$(ECHO) "Installing python support in: ${DESTDIR}${SHAREDIR}/python"
