@@ -335,6 +335,10 @@
 - split apart added strings when moving mcode information to bef of for
   loop, function definition, etc.  Thanks to Luis R. Rodriguez for reporting
   the problem.
+- Take into account depenencies when considering plus information in
+  get_constants.  Also removing constraints based on plus information
+  results in True, regardless on whether & or v is being considered.
+  Thanks to Luis R. Rodriguez for reporting the problem.
 
 * 0.2.5
 ** Language:

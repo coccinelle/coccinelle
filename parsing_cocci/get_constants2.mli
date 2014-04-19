@@ -1,5 +1,8 @@
+(* Not is never used in the result.  A bit ugly, but avoids reimplementing
+some operators in get_constants2 *)
 type combine =
-    And of combine list | Or of combine list | Elem of string | False | True
+    And of combine list | Or of combine list | Not of combine
+  | Elem of string | False | True
 
 val get_constants :
     Ast_cocci.rule list ->
