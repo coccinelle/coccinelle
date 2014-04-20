@@ -335,10 +335,15 @@
 - split apart added strings when moving mcode information to bef of for
   loop, function definition, etc.  Thanks to Luis R. Rodriguez for reporting
   the problem.
-- Take into account depenencies when considering plus information in
+- Take into account dependencies when considering plus information in
   get_constants.  Also removing constraints based on plus information
   results in True, regardless on whether & or v is being considered.
   Thanks to Luis R. Rodriguez for reporting the problem.
+- Move pcre regular expressions to a hashtable, and out of parsed smpl
+  terms to avoid problems with comparing rule_elems in ctl matching.
+  Note that this hash table is global and is never cleared, since we
+  work on only one semantic patch per execution of Coccinelle.  Thanks to
+  SF Markus Elfring for pointing out the problem.
 
 * 0.2.5
 ** Language:
