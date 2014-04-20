@@ -2,14 +2,15 @@ type regexp =
     Pcre of int (* Pcre.regexp *)
   | Str of Str.regexp
 
-(* A table is used because PCRE regular expressions are not comparable.  They
-sit in constraints of rule_elems that get bound to exists v variables in
-the matching process.  It would be expensive to strip them at runtime, and
-complex to strip them statically, because + and - annotations are added
-by cocci_vs_c into the same rule_elems.  So instead we just replace them
-by integers, which are comparable. *)
+(* A table is used because PCRE regular expressions are not comparable.
+They sit in constraints of rule_elems that get bound to exists v variables
+in the matching process.  It would be expensive to strip them at runtime,
+and complex to strip them statically, because both stripped and unstripped
+versions would be needed in cocci_vs_c.  So instead we just replace them by
+integers, which are comparable. *)
+
 let pcre_table = Hashtbl.create 101
-let pcre_ctr = ref 0 
+let pcre_ctr = ref 0
 
 let pcre_support = ref true
 
