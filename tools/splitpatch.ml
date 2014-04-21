@@ -415,33 +415,33 @@ let superset l1 l2 = List.for_all (function x -> List.mem x l1) l2
 let get_most_common_subject files default =
   let all =
     List.map (function file -> cmd_to_list (subject_command file)) files in
-    let entries =
-      List.map
-	(function entries ->
-	  List.rev
-	    (List.fold_left
-	       (fun prev line ->
-		 match Str.split (Str.regexp " +") line with
-		   [] -> failwith ("bad git log line: " ^ line)
-		 |	commit::rest ->
-		     let rec loop = function
-			 [] -> []
-		       | x::xs ->
-			   if last_char x = ':'
-			   then x :: loop xs
-			   else [] in
-		     let tags = loop rest in
+  let entries =
+    List.map
+      (function entries ->
+	List.rev
+	  (List.fold_left
+	     (fun prev line ->
+	       match Str.split (Str.regexp " +") line with
+		 [] -> failwith ("bad git log line: " ^ line)
+	       |	commit::rest ->
+		   let rec loop = function
+		       [] -> []
+		     | x::xs ->
+			 if last_char x = ':'
+			 then x :: loop xs
+			 else [] in
+		   let tags = loop rest in
 		  (* ignore lines with no : *)
-		     match tags with
-		       [] -> prev
-		     | _ ->
-			 let aff_files =
-			   List.tl (cmd_to_list (affected_files commit)) in
-			 let bonus = (* 0 is better *)
-			   if superset files aff_files then 0 else 1 in
-			 (bonus,tags)::prev)
-	       [] entries))
-	all in
+		   match tags with
+		     [] -> prev
+		   | _ ->
+		       let aff_files =
+			 List.tl (cmd_to_list (affected_files commit)) in
+		       let bonus = (* 0 is better *)
+			 if superset files aff_files then 0 else 1 in
+		       (bonus,tags)::prev)
+	     [] entries))
+      all in
   (* Does there exist a file for which we have no information? *)
   if List.exists (function x -> x = []) all
   then default^":"
