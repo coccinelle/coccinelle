@@ -375,12 +375,12 @@ let resolve_maintainers patches =
 let last_char s = String.get s ((String.length s) - 1)
 
 let get_counts l =
-  Printf.printf "getting counts for:\n";
+(*Printf.printf "getting counts for:\n";
   List.iter
     (function (bonus,x) ->
       Printf.printf "  %d: %s\n" bonus (String.concat " " x))
     l;
-  Printf.printf "\n";
+  Printf.printf "\n"; *)
   let tbl = Hashtbl.create 101 in
   let ct = ref 0 in
   let max = ((List.length l) / 10) + 1 in (* 10 ranges *)
@@ -401,10 +401,10 @@ let get_counts l =
     List.rev
       (List.sort compare
 	 (Hashtbl.fold (fun k v rest -> (!v,k)::rest) tbl [])) in
-  List.iter
+(*List.iter
     (function (wt,(bonus,x)) ->
       Printf.printf "  %f: %d: %s\n" wt bonus (String.concat " " x))
-    weighted;
+    weighted; *)
   let rec loop n = function
       [] -> []
     | (_,k)::rest -> (k,n) :: (loop (n+1) rest) in
@@ -458,14 +458,14 @@ let get_most_common_subject files default =
 		 (List.map (List.assoc allentry) entries),
 	       entry)))
 	   common_entries) in
-    Printf.printf "Files:\n";
+(*  Printf.printf "Files:\n";
     List.iter (function f -> Printf.printf "  %s\n" f) files;
     Printf.printf "Subjects:\n";
     List.iter
       (function (ct,(bonus,f)) ->
 	Printf.printf "  %d: %d: %s\n" ct bonus (String.concat " " f))
       common_entry_counts;
-    Printf.printf "\n";
+    Printf.printf "\n"; *)
     match common_entry_counts with
       [] -> default^":"
     | (_,(_,x))::_ -> String.concat " " x
