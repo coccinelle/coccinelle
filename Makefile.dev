@@ -34,7 +34,7 @@ website:
 ##############################################################################
 
 #UBUNTU=karmic lucid maverick natty
-UBUNTU=lucid maverick natty oneiric
+UBUNTU=lucid maverick natty oneiric precise
 UBUNTURELEASE=$(UBUNTU:%=ubuntu-%)
 
 .PHONY:: ubuntu $(UBUNTURELEASE)
@@ -63,11 +63,14 @@ ubuntu-natty:
 ubuntu-oneiric:
 	debchange -c debian/changelog.oneiric -D oneiric -v $(VERSION)~1110npalix$(IDX) "New release $(VERSION)"
 
-ubuntu-p:
+ubuntu-precise:
+	debchange -c debian/changelog.precise -D precise -v $(VERSION)~1204npalix$(IDX) "New release $(VERSION)"
+
+ubuntu-q:
 	if [ ! -f debian/changelog.$(@:ubuntu-%=%) ] ; then \
-		debchange --create -c debian/changelog.$(@:ubuntu-%=%) -D UNRELEASED \
+		debchange --create -c debian/changelog.$(@:ubuntu-%=%) -D $(@:ubuntu-%=%) \
 			-v $(VERSION)~npalix$(IDX) "New release $(VERSION)" --package $(PRJNAME) ; \
 	else \
-		debchange -c debian/changelog.$(@:ubuntu-%=%) -D UNRELEASED -v $(VERSION)~npalix$(IDX) "New release $(VERSION)" ; \
+		debchange -c debian/changelog.$(@:ubuntu-%=%) -D $(@:ubuntu-%=%) -v $(VERSION)~npalix$(IDX) "New release $(VERSION)" ; \
 	fi
 

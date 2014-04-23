@@ -296,11 +296,12 @@ EXCL_SYNC=--exclude ".git"          \
 	--cvs-exclude
 
 packsrc: prepack
+#	$(MAKE) -C $(TMP)/$(PACKAGE)/debian karmic
 	$(MAKE) -C $(TMP)/$(PACKAGE)/debian lucid
-	$(MAKE) -C $(TMP)/$(PACKAGE)/debian karmic
 	$(MAKE) -C $(TMP)/$(PACKAGE)/debian maverick
 	$(MAKE) -C $(TMP)/$(PACKAGE)/debian natty
 	$(MAKE) -C $(TMP)/$(PACKAGE)/debian oneiric
+	$(MAKE) -C $(TMP)/$(PACKAGE)/debian precise
 	$(MAKE) push
 	rm -rf  $(TMP)/$(PACKAGE)/
 

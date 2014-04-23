@@ -1,0 +1,17 @@
+coccinelle (1.0.0-rc14~1204npalix1) precise; urgency=low
+
+  * New release 1.0.0-rc14
+
+ -- Nicolas Palix <nicolas.palix@gmail.com>  Thu, 19 Jul 2012 21:28:48 +0200
+
+coccinelle (1.0.0-rc13~1204npalix1) precise; urgency=low
+
+  * New release 1.0.0-rc13
+
+ -- Nicolas Palix <nicolas.palix@gmail.com>  Sun, 01 Jul 2012 20:34:14 +0200
+
+coccinelle (1.0.0-rc12~npalix1) precise; urgency=low
+
+  * New release 1.0.0-rc12
+
+ -- Nicolas Palix <nicolas.palix@gmail.com>  Thu, 24 May 2012 23:26:28 +0200

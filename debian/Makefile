@@ -3,7 +3,7 @@ include /etc/lsb-release
 all:
 	debuild -S
 
-karmic lucid maverick natty oneiric:
+karmic lucid maverick natty oneiric precise:
 	cp changelog.$@ changelog
 	$(MAKE)
 
