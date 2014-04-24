@@ -1,0 +1,5 @@
+coccinelle (1.0.0-rc21~npalix3) saucy; urgency=low
+
+  * New release 1.0.0-rc21
+
+ -- Nicolas Palix (Lab) <nicolas.palix@imag.fr>  Thu, 24 Apr 2014 01:52:39 +0200
