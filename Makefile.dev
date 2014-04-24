@@ -66,11 +66,12 @@ ubuntu-oneiric:
 ubuntu-precise:
 	debchange -c debian/changelog.precise -D precise -v $(VERSION)~1204npalix$(IDX) "New release $(VERSION)"
 
-ubuntu-q:
-	if [ ! -f debian/changelog.$(@:ubuntu-%=%) ] ; then \
-		debchange --create -c debian/changelog.$(@:ubuntu-%=%) -D $(@:ubuntu-%=%) \
-			-v $(VERSION)~npalix$(IDX) "New release $(VERSION)" --package $(PRJNAME) ; \
+ubuntu-new:
+	if [ ! -f debian/changelog ] ; then \
+		debchange --create -c debian/changelog \
+			-v $(VERSION)~npalix$(IDX) "New release $(VERSION)" \
+			--package $(PRJNAME) --distribution $(DISTRIB_CODENAME); \
 	else \
-		debchange -c debian/changelog.$(@:ubuntu-%=%) -D $(@:ubuntu-%=%) -v $(VERSION)~npalix$(IDX) "New release $(VERSION)" ; \
+		debchange -c debian/changelog -D $(DISTRIB_CODENAME) -v $(VERSION)~npalix$(IDX) "New release $(VERSION)" ; \
 	fi
 
