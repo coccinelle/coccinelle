@@ -62,7 +62,7 @@ let strip_info =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing
+    donothing donothing donothing donothing
 
 let anything_equal = function
     (Ast0.DotsExprTag(d1),Ast0.DotsExprTag(d2)) ->
@@ -106,6 +106,9 @@ let anything_equal = function
   | (Ast0.CaseLineTag(d1),Ast0.CaseLineTag(d2)) ->
       (strip_info.VT0.rebuilder_rec_case_line d1) =
       (strip_info.VT0.rebuilder_rec_case_line d2)
+  | (Ast0.StringFragmentTag(d1),Ast0.StringFragmentTag(d2)) ->
+      (strip_info.VT0.rebuilder_rec_string_fragment d1) =
+      (strip_info.VT0.rebuilder_rec_string_fragment d2)
   | (Ast0.TopTag(d1),Ast0.TopTag(d2)) ->
       (strip_info.VT0.rebuilder_rec_top_level d1) =
       (strip_info.VT0.rebuilder_rec_top_level d2)
@@ -440,7 +443,7 @@ let match_maker checks_needed context_required whencode_allowed =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing
       ident expression typeC init param decl stmt donothing donothing
-      donothing in
+      donothing donothing in
 
   let add_pure_list_binding name pure is_pure builder1 builder2 lst =
     match (checks_needed,pure) with
@@ -1195,6 +1198,8 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (Ast0.ReturnExpr(r1,expa,sc1),Ast0.ReturnExpr(r,expb,sc)) ->
 	      conjunct_many_bindings
 		[check_mcode r1 r; check_mcode sc1 sc; match_expr expa expb]
+	  | (Ast0.Exec(e1,l1,codea,sc1),Ast0.Exec(e2,l2,codeb,sc2)) ->
+	      failwith "exec not supported in patterns"
 	  | (Ast0.Disj(_,statement_dots_lista,_,_),_) ->
 	      failwith "disj not supported in patterns"
 	  | (Ast0.Nest(_,stmt_dotsa,_,[],multia),
@@ -1463,7 +1468,7 @@ let make_minus =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     dots dots dots dots dots dots
     donothing expression donothing initialiser donothing declaration
-    statement donothing donothing donothing
+    statement donothing donothing donothing donothing
 
 (* --------------------------------------------------------------------- *)
 (* rebuild mcode cells in an instantiated alt *)
@@ -1551,7 +1556,7 @@ let rebuild_mcode start_line =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
-    donothing statement donothing donothing donothing
+    donothing statement donothing donothing donothing donothing
 
 (* --------------------------------------------------------------------- *)
 (* The problem of whencode.  If an isomorphism contains dots in multiple
@@ -1997,7 +2002,7 @@ let instantiate bindings mv_bindings =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     (dots elist) donothing (dots plist) (dots slist) donothing donothing
     identfn exprfn tyfn initfn paramfn declfn stmtfn donothing donothing
-    donothing
+    donothing donothing
 
 (* --------------------------------------------------------------------- *)
 
@@ -2645,7 +2650,7 @@ let rewrap =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing
+    donothing donothing donothing donothing
 
 let rewrap_anything = function
     Ast0.DotsExprTag(d) ->
@@ -2674,6 +2679,8 @@ let rewrap_anything = function
   | Ast0.ForInfoTag(d) -> Ast0.ForInfoTag(rewrap.VT0.rebuilder_rec_forinfo d)
   | Ast0.CaseLineTag(d) ->
       Ast0.CaseLineTag(rewrap.VT0.rebuilder_rec_case_line d)
+  | Ast0.StringFragmentTag(d) ->
+      Ast0.StringFragmentTag(rewrap.VT0.rebuilder_rec_string_fragment d)
   | Ast0.TopTag(d) -> Ast0.TopTag(rewrap.VT0.rebuilder_rec_top_level d)
   | Ast0.IsoWhenTag(_) | Ast0.IsoWhenTTag(_) | Ast0.IsoWhenFTag(_) ->
       failwith "only for isos within iso phase"

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="generator" content="hevea 2.06">
+<link rel="stylesheet" type="text/css" href="main_grammar.css">
+<title>Transformation</title>
+</head>
+<body >
+<a href="main_grammar003.html"><img src="previous_motif.gif" alt="Previous"></a>
+<a href="index.html"><img src="contents_motif.gif" alt="Up"></a>
+<a href="main_grammar005.html"><img src="next_motif.gif" alt="Next"></a>
+<hr>
+<h2 id="sec5" class="section">4  Transformation</h2>
+<p>The transformation specification essentially has the form of C code, except
+that lines to remove are annotated with <code>-</code> in the first column, and
+lines to add are annotated with <code>+</code>. A transformation specification
+can also use <em>dots</em>, “<code>...</code>”, describing an arbitrary sequence
+of function arguments or instructions within a control-flow path.
+Implicitly, “<code>...</code>” matches the shortest path between something that
+matches the pattern before the dots (or the beginning of the function, if
+there is nothing before the dots) and something that matches the pattern
+after the dots (or the end of the function, if there is nothing after the
+dots). Dots may be modified with a <span style="font-family:monospace">when</span> clause, indicating a pattern
+that should not occur anywhere within the matched sequence. <span style="font-family:monospace">when any</span>
+removes the aforementioned constraint that “<code>...</code>” matches the
+shortest path. Finally, a transformation can specify a disjunction of
+patterns, of the form <span style="font-family:monospace">( </span><span style="font-style:italic">pat</span><sub>1</sub><span style="font-family:monospace"> | </span><span style="font-family:monospace"><span style="font-style:italic">…</span></span><span style="font-family:monospace"> |
+</span><span style="font-style:italic">pat</span><sub><span style="font-style:italic">n</span></sub><span style="font-family:monospace"> )</span> where each <span style="font-family:monospace">(</span>, <span style="font-family:monospace">|</span> or <span style="font-family:monospace">)</span> is
+in column 0 or preceded by <span style="font-family:monospace">\</span>.</p><p>The grammar that we present for the transformation is not actually the
+grammar of the SmPL code that can be written by the programmer, but is
+instead the grammar of the slice of this consisting of the <span style="font-family:monospace">-</span>
+annotated and the unannotated code (the context of the transformed lines),
+or the <span style="font-family:monospace">+</span> annotated code and the unannotated code. For example, for
+parsing purposes, the following transformation
+is split into the two variants shown below and each is parsed
+separately.</p><div class="center">
+<table style="border-spacing:6px;border-collapse:separate;" class="cellpading0"><tr><td style="text-align:center;white-space:nowrap" >
+
+<div class="lstlisting"><span style="font-size:xx-small">   1</span>   proc_info_func(...) {
+<span style="font-size:xx-small">   2</span>     &lt;...
+<span style="font-size:xx-small">   3</span> <span style="color:#B7140B">-    hostno</span>
+<span style="font-size:xx-small">   4</span> <span style="color:#379907">+    hostptr-&gt;host_no</span>
+<span style="font-size:xx-small">   5</span>     ...&gt;
+<span style="font-size:xx-small">   6</span>  }</div></td></tr>
+</table>
+</div><div class="center">
+<table style="border-spacing:6px;border-collapse:separate;" class="cellpading0"><tr><td style="vertical-align:top;text-align:left;" >
+
+<div class="lstlisting"><span style="font-size:xx-small">   1</span>   proc_info_func(...) {
+<span style="font-size:xx-small">   2</span>     &lt;...
+<span style="font-size:xx-small">   3</span> <span style="color:#B7140B">-    hostno</span>
+<span style="font-size:xx-small">   4</span>     ...&gt;
+<span style="font-size:xx-small">   5</span>  }</div></td><td style="vertical-align:top;text-align:left;" >&nbsp;</td><td style="vertical-align:top;text-align:left;" >
+
+<div class="lstlisting"><span style="font-size:xx-small">   1</span>   proc_info_func(...) {
+<span style="font-size:xx-small">   2</span>     &lt;...
+<span style="font-size:xx-small">   3</span> <span style="color:#379907">+    hostptr-&gt;host_no</span>
+<span style="font-size:xx-small">   4</span>     ...&gt;
+<span style="font-size:xx-small">   5</span>  }</div></td></tr>
+</table>
+</div><p>Requiring that both slices parse correctly ensures that the rule matches
+syntactically valid C code and that it produces syntactically valid C code.
+The generated parse trees are then merged for use in the subsequent
+matching and transformation process.</p><p>The grammar for the minus or plus slice of a transformation is as follows:</p><div class="center"><table style="border-spacing:6px;border-collapse:separate;" class="cellpading0"><tr><td style="text-align:left;white-space:nowrap" >
+<a id="transformation"><span style="color:maroon">transformation</span></a><span style="color:maroon">
+</span></td><td style="text-align:center;white-space:nowrap" ><span style="color:black">  ::=  </span></td><td style="text-align:left;white-space:nowrap" ><a href="#include"><span style="color:maroon">include</span></a><sup><span style="color:black"> +</span></sup> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><a href="#OPTDOTSEQ"><span style="color:maroon">OPTDOTSEQ</span></a><span style="color:blue">(</span><a href="#top"><span style="color:maroon">top</span></a><span style="color:blue">, </span><a href="#when"><span style="color:maroon">when</span></a><span style="color:blue">)</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" >
+<a id="include"><span style="color:maroon">include</span></a><span style="color:maroon">
+</span></td><td style="text-align:center;white-space:nowrap" ><span style="color:black">  ::=  </span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">#include </span><span style="color:blue"><span style="font-family:sans-serif">include_string</span></span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" >
+<a id="top"><span style="color:maroon">top</span></a><span style="color:maroon">
+</span></td><td style="text-align:center;white-space:nowrap" ><span style="color:black">  ::=  </span></td><td style="text-align:left;white-space:nowrap" ><a href="main_grammar009.html#expr"><span style="color:maroon">expr</span></a> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><a href="main_grammar008.html#decl_stmt"><span style="color:maroon">decl_stmt</span></a><sup><span style="color:black"> +</span></sup> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><a href="main_grammar006.html#fundecl"><span style="color:maroon">fundecl</span></a> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" >
+  <a id="when"><span style="color:maroon">when</span></a><span style="color:maroon">
+</span></td><td style="text-align:center;white-space:nowrap" ><span style="color:black">  ::=  </span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">when != </span><a href="#when_code"><span style="color:maroon">when_code</span></a> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">when = </span><a href="#rule_elem_stmt"><span style="color:maroon">rule_elem_stmt</span></a> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">when </span><a href="main_grammar002.html#COMMA_LIST"><span style="color:maroon">COMMA_LIST</span></a><span style="color:blue">(</span><a href="#any_strict"><span style="color:maroon">any_strict</span></a><span style="color:blue">)</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">when true != </span><a href="main_grammar009.html#expr"><span style="color:maroon">expr</span></a> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">when false != </span><a href="main_grammar009.html#expr"><span style="color:maroon">expr</span></a> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" >
+<a id="when_code"><span style="color:maroon">when_code</span></a><span style="color:maroon">
+</span></td><td style="text-align:center;white-space:nowrap" ><span style="color:black">  ::=  </span></td><td style="text-align:left;white-space:nowrap" ><a href="#OPTDOTSEQ"><span style="color:maroon">OPTDOTSEQ</span></a><span style="color:blue">(</span><a href="main_grammar008.html#decl_stmt"><span style="color:maroon">decl_stmt</span></a><sup><span style="color:black"> +</span></sup><span style="color:blue">, </span><a href="#when"><span style="color:maroon">when</span></a><span style="color:blue">)</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><a href="#OPTDOTSEQ"><span style="color:maroon">OPTDOTSEQ</span></a><span style="color:blue">(</span><a href="main_grammar009.html#expr"><span style="color:maroon">expr</span></a><span style="color:blue">, </span><a href="#when"><span style="color:maroon">when</span></a><span style="color:blue">)</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" >
+<a id="rule_elem_stmt"><span style="color:maroon">rule_elem_stmt</span></a><span style="color:maroon">
+</span></td><td style="text-align:center;white-space:nowrap" ><span style="color:black">  ::=  </span></td><td style="text-align:left;white-space:nowrap" ><a href="main_grammar007.html#one_decl"><span style="color:maroon">one_decl</span></a> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><a href="main_grammar009.html#expr"><span style="color:maroon">expr</span></a><span style="color:blue">;</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">return </span><span style="color:black">[</span><a href="main_grammar009.html#expr"><span style="color:maroon">expr</span></a><span style="color:black">]</span><span style="color:blue">;</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">break;</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">continue;</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">\(</span><a href="#rule_elem_stmt"><span style="color:maroon">rule_elem_stmt</span></a><span style="color:blue"> </span><span style="color:black">(</span><span style="color:blue">\| </span><a href="#rule_elem_stmt"><span style="color:maroon">rule_elem_stmt</span></a><span style="color:black">)</span><sup><span style="color:black"> +</span></sup><span style="color:blue">\)</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" >
+<a id="any_strict"><span style="color:maroon">any_strict</span></a><span style="color:maroon">
+</span></td><td style="text-align:center;white-space:nowrap" ><span style="color:black">  ::=  </span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">any</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">strict</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">forall</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">exists</span> </td></tr>
+</table></div><div class="center"><table style="border-spacing:6px;border-collapse:separate;" class="cellpading0"><tr><td style="text-align:left;white-space:nowrap" > <a id="OPTDOTSEQ"><span style="color:maroon">OPTDOTSEQ</span></a><span style="color:maroon">(</span><a id="grammar_ds"><span style="color:maroon">grammar_ds</span></a><span style="color:maroon">, </span><a id="when_ds"><span style="color:maroon">when_ds</span></a><span style="color:maroon">)</span><span style="color:maroon">
+</span></td><td style="text-align:center;white-space:nowrap" ><span style="color:black">  ::=  </span></td><td style="text-align:left;white-space:nowrap" >&nbsp;</td></tr>
+<tr><td style="text-align:right;white-space:nowrap"  colspan=3>   
+<span style="color:black">[</span><span style="color:blue">... </span><span style="color:black">(</span><a href="#when_ds"><span style="color:maroon">when_ds</span></a><span style="color:black">)</span><sup><span style="color:black"> *</span></sup><span style="color:black">]</span><span style="color:blue"> </span><a href="#grammar_ds"><span style="color:maroon">grammar_ds</span></a><span style="color:blue">
+</span><span style="color:black">(</span><span style="color:blue">... </span><span style="color:black">(</span><a href="#when_ds"><span style="color:maroon">when_ds</span></a><span style="color:black">)</span><sup><span style="color:black"> *</span></sup><span style="color:blue"> </span><a href="#grammar_ds"><span style="color:maroon">grammar_ds</span></a><span style="color:black">)</span><sup><span style="color:black"> *</span></sup><span style="color:blue">
+</span><span style="color:black">[</span><span style="color:blue">... </span><span style="color:black">(</span><a href="#when_ds"><span style="color:maroon">when_ds</span></a><span style="color:black">)</span><sup><span style="color:black"> *</span></sup><span style="color:black">]</span>
+  </td></tr>
+</table></div><p>Lines may be annotated with an element of the set {<span style="font-family:monospace">-</span>, <span style="font-family:monospace">+</span>,
+<span style="font-family:monospace">*</span>} or the singleton <span style="font-family:monospace">?</span>, or one of each set. <span style="font-family:monospace">?</span>
+represents at most one match of the given pattern, ie a match of the
+pattern is optional. <span style="font-family:monospace">*</span> is used for
+semantic match, <em>i.e.</em>, a pattern that highlights the fragments
+annotated with <span style="font-family:monospace">*</span>, but does not perform any modification of the
+matched code. <span style="font-family:monospace">*</span> cannot be mixed with <span style="font-family:monospace">-</span> and <span style="font-family:monospace">+</span>. There are
+some constraints on the use of these annotations:
+</p><ul class="itemize"><li class="li-itemize">
+Dots, <em>i.e.</em> <span style="font-family:monospace">...</span>, cannot occur on a line marked
+<span style="font-family:monospace">+</span>.
+</li><li class="li-itemize">Nested dots, <em>i.e.</em>, dots enclosed in <span style="font-family:monospace">&lt;</span> and <span style="font-family:monospace">&gt;</span>, cannot
+occur on a line with any marking.
+</li></ul><p>Each element of a disjunction must be a proper term like an
+expression, a statement, an identifier or a declaration. Thus, the
+rule on the left below is not a syntactically correct SmPL rule. One may
+use the rule on the right instead.</p><div class="center">
+<table style="border-spacing:6px;border-collapse:separate;" class="cellpading0"><tr><td style="text-align:left;white-space:nowrap" >
+
+<div class="lstlisting"><span style="font-size:xx-small">   1</span> @@
+<span style="font-size:xx-small">   2</span> <span style="color:#379907"><span style="font-weight:bold">type</span></span> T;
+<span style="font-size:xx-small">   3</span> T b;
+<span style="font-size:xx-small">   4</span> @@
+<span style="font-size:xx-small">   5</span> 
+<span style="font-size:xx-small">   6</span> (
+<span style="font-size:xx-small">   7</span>  writeb(...,
+<span style="font-size:xx-small">   8</span> |
+<span style="font-size:xx-small">   9</span>  readb(...,
+<span style="font-size:xx-small">  10</span> )
+<span style="font-size:xx-small">  11</span> <span style="color:#B7140B">-(T)</span>
+<span style="font-size:xx-small">  12</span>  b)</div></td><td style="text-align:center;white-space:nowrap" >              </td><td style="text-align:right;white-space:nowrap" >
+
+<div class="lstlisting"><span style="font-size:xx-small">   1</span> @@
+<span style="font-size:xx-small">   2</span> <span style="color:#379907"><span style="font-weight:bold">type</span></span> T;
+<span style="font-size:xx-small">   3</span> T b;
+<span style="font-size:xx-small">   4</span> @@
+<span style="font-size:xx-small">   5</span> 
+<span style="font-size:xx-small">   6</span> (
+<span style="font-size:xx-small">   7</span> read
+<span style="font-size:xx-small">   8</span> |
+<span style="font-size:xx-small">   9</span> write
+<span style="font-size:xx-small">  10</span> )
+<span style="font-size:xx-small">  11</span>  (...,
+<span style="font-size:xx-small">  12</span> <span style="color:#B7140B">- (T)</span>
+<span style="font-size:xx-small">  13</span>   b)</div></td></tr>
+</table>
+</div><p>Some kinds of terms can only appear in + code. These include comments,
+ifdefs, and attributes (<span style="font-family:monospace">__attribute__((...))</span>).</p>
+<hr>
+<a href="main_grammar003.html"><img src="previous_motif.gif" alt="Previous"></a>
+<a href="index.html"><img src="contents_motif.gif" alt="Up"></a>
+<a href="main_grammar005.html"><img src="next_motif.gif" alt="Next"></a>
+</body>
+</html>

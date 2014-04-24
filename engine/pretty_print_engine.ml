@@ -108,6 +108,7 @@ let pp_binding_kind2 = function
 let rec pp_predicate = function
   | InLoop -> pp "InLoop"
   | TrueBranch -> pp "TrueBranch"
+  | EscTrueBranch -> pp "EscTrueBranch"
   | FalseBranch -> pp "FalseBranch"
   | After -> pp "After"
   | FallThrough -> pp "FallThrough"

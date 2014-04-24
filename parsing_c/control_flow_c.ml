@@ -228,7 +228,7 @@ type node = node1 * string
   | Default of fullstatement * unit wrap
 
   | Continue of fullstatement * unit wrap
-  | Break    of fullstatement * unit wrap
+  | Break    of fullstatement * unit wrap * bool (* true if from switch *)
 
   (* no counter part in cocci *)
   | CaseRange of fullstatement * (expression * expression) wrap
@@ -238,6 +238,8 @@ type node = node1 * string
 
   | Asm of fullstatement * asmbody wrap
   | MacroStmt of fullstatement * unit wrap
+
+  | Exec of fullstatement * exec_code list wrap
 
   (* ------------------------ *)
   (* some control nodes *)
@@ -260,15 +262,23 @@ type node = node1 * string
 
   (* ------------------------ *)
   (* for ctl:  *)
-  | TrueNode
+  | TrueNode of bool ref
   | FalseNode
   | InLoopNode (* almost equivalent to TrueNode but just for loops *)
 
-  | AfterNode
+  | AfterNode of after_type
   | FallThroughNode
   | LoopFallThroughNode
 
   | ErrorExit
+
+and after_type =
+  | RetAfterNode (* after for a block ending in return *)
+  | GotoAfterNode (* after for a block ending in goto *)
+  | BreakAfterNode (* after for a block ending in break *)
+  | ContAfterNode (* after for a block ending in continue *)
+  | SWBreakAfterNode (* after for a block ending in break from switch *)
+  | NormalAfterNode
 
 type edge = Direct (* Normal | Shadow *)
 
@@ -366,8 +376,9 @@ let extract_fullstatement node =
   | Default   (st, _)
   | Goto (st, _, _)
   | Continue (st, _)
-  | Break    (st, _)
+  | Break    (st, _, _)
   | Asm (st,_)
+  | Exec (st,_)
       -> Some st
 
   | TopNode|EndNode
@@ -380,10 +391,10 @@ let extract_fullstatement node =
   | Exit
   | Fake
   | CaseNode _
-  | TrueNode
+  | TrueNode _
   | FalseNode
   | InLoopNode
-  | AfterNode
+  | AfterNode _
   | FallThroughNode
   | LoopFallThroughNode
   | ErrorExit

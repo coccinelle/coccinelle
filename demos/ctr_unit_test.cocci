@@ -67,10 +67,10 @@ identifier rule1.C;
 @@
 identifier rule1.C;
 @@
- int C(int i) {
+ struct foo C(int i) {
   ...
   if(UnitTest()) {
-   int c;
+   struct foo c;
    ...
 +  c = C();
 +  Console.WriteLine("invoking test", name);

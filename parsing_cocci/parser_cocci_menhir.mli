@@ -20,6 +20,7 @@ type token =
   | Tinline of (Data.clt)
   | Tfloat of (Data.clt)
   | Textern of (Data.clt)
+  | Texec of (Data.clt)
   | Tenum of (Data.clt)
   | Tdouble of (Data.clt)
   | Tdecimal of (Data.clt)

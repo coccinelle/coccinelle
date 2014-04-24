@@ -1,4 +1,5 @@
 @initialize:ocaml@
+@@
 let a = ref 0
 let _ = Printf.printf "starting ocaml\n"
 
@@ -25,4 +26,5 @@ a := !a + 1;
 Printf.printf "%s again and %s again \n" zz y
 
 @finalize:ocaml@
+@@
 Printf.printf "ending ocaml %d\n" !a

@@ -125,6 +125,11 @@ let strdots e =
     Ast.Strdots(_) -> true
   | _ -> false
 
+let ecdots e =
+  match Ast.unwrap e with
+    Ast.ExecDots(_) -> true
+  | _ -> false
+
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
 
@@ -550,6 +555,10 @@ and unify_rule_elem re1 re2 =
   | (Ast.Return(r1,s1),Ast.Return(r2,s2)) -> return true
   | (Ast.ReturnExpr(r1,e1,s1),Ast.ReturnExpr(r2,e2,s2)) ->
       unify_expression e1 e2
+  | (Ast.Exec(exec1,lang1,code1,sem1),Ast.Exec(exec2,lang2,code2,sem2)) ->
+      if unify_mcode lang1 lang2
+      then unify_dots unify_exec_code ecdots code1 code2
+      else return false
 
   | (Ast.DisjRuleElem(res1),_) ->
       disjunct_all_bindings
@@ -607,6 +616,15 @@ and unify_fninfo patterninfo cinfo =
 	| _ -> failwith "not possible")
     | _ -> return false in
   loop (patterninfo,cinfo)
+
+and unify_exec_code ec1 ec2 =
+  match (Ast.unwrap ec1,Ast.unwrap ec2) with
+    (Ast.ExecEval(colon1,id1),Ast.ExecEval(colon2,id2)) ->
+      unify_expression id1 id2
+  | (Ast.ExecToken(tok1),Ast.ExecToken(tok2)) ->
+      return (unify_mcode tok1 tok2)
+  | (Ast.ExecDots(_),_) | (_,Ast.ExecDots(_)) ->  return true
+  | _ -> return false
 
 and subexp f =
   let bind = conjunct_bindings in

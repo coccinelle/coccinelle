@@ -743,6 +743,13 @@ and statement s =
 	  let (exp_n,exp) = expression exp in
 	  let (sem_n,sem) = mcode sem in
 	  (multibind [ret_n;exp_n;sem_n], Ast0.ReturnExpr(ret,exp,sem))
+      | Ast0.Exec(exec,lang,code,sem) ->
+	  let (exec_n,exec) = mcode exec in
+	  let (lang_n,lang) = mcode lang in
+	  let (code_n,code) = dots exec_code code in
+	  let (sem_n,sem) = mcode sem in
+	  (multibind [exec_n;lang_n;code_n;sem_n],
+	   Ast0.Exec(exec,lang,code,sem))
       | Ast0.MetaStmt(name,pure) ->
 	  let (name_n,name) = mcode name in
 	  (name_n,Ast0.MetaStmt(name,pure))
@@ -901,6 +908,20 @@ and case_line c =
 	    Ast0.DisjCase(starter,case_lines,mids,ender))
     | Ast0.OptCase(case) ->
 	let (n,case) = case_line case in (n,Ast0.OptCase(case)))
+
+and exec_code e =
+  rewrap e
+    (match Ast0.unwrap e with
+      Ast0.ExecEval(colon,id) ->
+	let (colon_n,colon) = mcode colon in
+	let (id_n,id) = expression id in
+	(multibind [colon_n;id_n], Ast0.ExecEval(colon,id))
+    | Ast0.ExecToken(tok) ->
+	let (tok_n,tok) = mcode tok in
+	(tok_n,Ast0.ExecToken(tok))
+    | Ast0.ExecDots(dots) ->
+	let (dots_n,dots) = mcode dots in
+	(dots_n,Ast0.ExecDots(dots)))
     
 and top_level t =
   rewrap t

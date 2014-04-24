@@ -1032,7 +1032,11 @@ and rule_elem arity re =
   | Ast.ReturnExpr(ret,exp,sem) ->
       pr_arity arity; mcode print_string ret; pr_space();
       expression exp; mcode print_string sem
-
+  | Ast.Exec(exec,lang,code,sem) ->
+      pr_arity arity; mcode print_string exec; pr_space();
+      mcode print_string lang; pr_space();
+      dots (function _ -> pr_space()) exec_code code;
+      mcode print_string sem
   | Ast.Exp(exp) -> pr_arity arity; expression exp
   | Ast.TopExp(exp) -> pr_arity arity; expression exp
   | Ast.Ty(ty) -> pr_arity arity; fullType ty
@@ -1108,7 +1112,13 @@ and print_fninfo = function
     Ast.FStorage(stg) -> mcode storage stg
   | Ast.FType(ty) -> fullType ty
   | Ast.FInline(inline) -> mcode print_string inline; pr_space()
-  | Ast.FAttr(attr) -> mcode print_string attr; pr_space() in
+  | Ast.FAttr(attr) -> mcode print_string attr; pr_space()
+
+and exec_code (e : Ast_cocci.exec_code) =
+  match Ast.unwrap e with
+    Ast.ExecEval(colon,id) -> mcode print_string colon; expression id
+  | Ast.ExecToken(tok) -> mcode print_string tok
+  | Ast.ExecDots(dots) -> mcode print_string dots in
 
 let indent_if_needed s f =
   let isseq =
@@ -1293,6 +1303,7 @@ let rec pp_any = function
   | Ast.StatementTag(x) -> statement "" x; false
   | Ast.ForInfoTag(x) -> forinfo x; false
   | Ast.CaseLineTag(x) -> case_line "" x; false
+  | Ast.StringFragmentTag(x) -> string_fragment x; false
 
   | Ast.ConstVolTag(x) ->  const_vol x unknown unknown; false
   | Ast.Directive(xs) ->

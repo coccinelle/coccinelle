@@ -57,7 +57,7 @@ wanted *)
 type combine =
     And of combine list | Or of combine list | Elem of string | False | True
 
-let false_on_top_err = "False should not be in the final result.  Perhaps your rule doesn't contain any +/-/* code, or you have a failed dependency."
+let false_on_top_err = "False should not be in the final result.  Perhaps your rule doesn't contain any +/-/* code, or you have a failed dependency.  If the problem is not clear, try the option --debug-parse-cocci."
 
 let rec dep2c = function
     And l -> Printf.sprintf "(%s)" (String.concat "&" (List.map dep2c l))
@@ -737,6 +737,17 @@ let rule_fn tls in_plus env neg_pos =
 	| x -> (build_or x rest_info, new_plusses))
     (False,in_plus) (List.combine tls neg_pos)
 
+let debug_deps nm deps res =
+  if !Flag_parsing_cocci.debug_parse_cocci
+  then
+    begin
+      Printf.fprintf stderr "Rule: %s\n" nm;
+      Printf.fprintf stderr "Dependecies: %s\n"
+	(Common.format_to_string
+	   (function _ -> Pretty_print_cocci.dep true deps));
+      Printf.fprintf stderr "Result: %s\n\n" (dep2c res)
+    end
+
 let run rules neg_pos_vars =
   let (info,_,_,_) =
     List.fold_left
@@ -751,7 +762,9 @@ let run rules neg_pos_vars =
 		      then prev
 		      else Ast.AndDep (Ast.Dep rule,prev))
 		  deps mv in
-	      (match dependencies env extra_deps with
+	      let dependencies = dependencies env extra_deps in
+	      debug_deps nm extra_deps dependencies;
+	      (match dependencies with
 		False ->
 		  (rest_info, in_plus, (nm,True)::env, nm::locals)
 	      | dependencies ->
@@ -765,7 +778,9 @@ let run rules neg_pos_vars =
           | (Ast.CocciRule (nm,(dep,_,_),cur,_,_),neg_pos_vars) ->
 	      let (cur_info,cur_plus) =
 		rule_fn cur in_plus ((nm,True)::env) neg_pos_vars in
-	      (match dependencies env dep with
+	      let dependencies = dependencies env dep in
+	      debug_deps nm dep dependencies;
+	      (match dependencies with
 		False -> (rest_info,cur_plus,env,locals)
 	      | dependencies ->
 		  if List.for_all all_context.V.combiner_top_level cur

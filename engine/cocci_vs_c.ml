@@ -692,6 +692,12 @@ module type PARAM =
     val distrf_cst :
       (A.meta_name A.mcode, (B.constant, string) either B.wrap) matcher
 
+    val distrf_ident_list :
+      (A.meta_name A.mcode, (Ast_c.name, Ast_c.il) either list) matcher
+
+    val distrf_exec_code_list :
+      (A.meta_name A.mcode, (Ast_c.exec_code, Ast_c.il) either list) matcher
+
     val cocciExp :
       (A.expression, B.expression) matcher -> (A.expression, F.node) matcher
 
@@ -1582,6 +1588,47 @@ and string_format ea eb =
           X.distrf_format ida eb
             ) >>= (fun ida eb ->
               return (A.MetaFormat(ida,constraints,keep,inherited) +> wa,eb)))
+
+(* ------------------------------------------------------------------------- *)
+
+and exec_code_list eas ebs =
+  let match_dots ea =
+    match A.unwrap ea with
+      A.ExecDots(mcode) -> Some (mcode, None)
+    |  _ -> None in
+  let build_dots (mcode,_) = A.ExecDots(mcode) in
+  let match_comma ea = None in
+  let build_comma _ = failwith "no commas" in
+  let match_metalist ea = None in
+  let build_metalist ea (ida,leninfo,keep,inherited) =
+    failwith "no metalist" in
+  let mktermval v = failwith "no metavariables" in
+  let special_cases ea eas ebs = None in
+  list_matcher match_dots build_dots match_comma build_comma
+    match_metalist build_metalist mktermval
+    special_cases exec_code X.distrf_exec_code_list
+    B.split_nocomma B.unsplit_nocomma
+    Lib_parsing_c.ii_of_exec_code_list (function x -> Some x) eas ebs
+
+and exec_code ea (eb,ii) =
+  X.all_bound (A.get_inherited ea) >&&>
+  let wa x = A.rewrap ea x in
+  match A.unwrap ea,eb with
+    A.ExecEval(colon1,id1),B.ExecEval(id2) ->
+      let colon2 = tuple_of_list1 ii in
+      tokenf colon1 colon2 >>= (fun colon1 colon2 ->
+      expression id1 id2 >>= (fun id1 id2 ->
+	return(
+	  A.ExecEval(colon1,id1) +> wa,
+	  (B.ExecEval(id2),[colon2]))))
+  | A.ExecToken(tok1),B.ExecToken ->
+      let tok2 = tuple_of_list1 ii in
+      tokenf tok1 tok2 >>= (fun tok1 tok2 ->
+	return(
+	  A.ExecToken(tok1) +> wa,
+	  (B.ExecToken,[tok2])))
+  | A.ExecDots(dots), eb -> failwith "not possible"
+  | _,_ -> fail
 
 (* ------------------------------------------------------------------------- *)
 and (ident_cpp: info_ident -> (A.ident, B.name) matcher) =
@@ -4063,7 +4110,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
       let default = A.MetaRuleElem(mcode,keep,inherited), unwrap_node in
       (match unwrap_node with
       | F.CaseNode _
-      | F.TrueNode | F.FalseNode | F.AfterNode
+      | F.TrueNode _ | F.FalseNode | F.AfterNode _
       | F.LoopFallThroughNode  | F.FallThroughNode
       | F.InLoopNode ->
           if X.mode =*= PatternMode
@@ -4113,7 +4160,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
    * TODO: and F.Fake ?
    *)
   | _, F.EndStatement _ | _, F.CaseNode _
-  | _, F.TrueNode | _, F.FalseNode | _, F.AfterNode
+  | _, F.TrueNode _ | _, F.FalseNode | _, F.AfterNode _
   | _, F.FallThroughNode | _, F.LoopFallThroughNode
   | _, F.InLoopNode -> fail2()
 
@@ -4474,13 +4521,13 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
           F.SwitchHeader (st, (eb,[ib1;ib2;ib3]))
         )))))
 
-  | A.Break (ia1, ia2), F.Break (st, ((),ii)) ->
+  | A.Break (ia1, ia2), F.Break (st, ((),ii),fromswitch) ->
       let (ib1, ib2) = tuple_of_list2 ii in
       tokenf ia1 ib1 >>= (fun ia1 ib1 ->
       tokenf ia2 ib2 >>= (fun ia2 ib2 ->
         return (
           A.Break (ia1, ia2),
-          F.Break (st, ((),[ib1;ib2]))
+          F.Break (st, ((),[ib1;ib2]), fromswitch)
         )))
 
   | A.Continue (ia1, ia2), F.Continue (st, ((),ii)) ->
@@ -4510,7 +4557,6 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
           A.ReturnExpr (ia1, ea, ia2),
           F.ReturnExpr (st, (eb, [ib1;ib2]))
         ))))
-
 
 
   | A.Include(incla,filea),
@@ -4674,6 +4720,19 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
             F.Goto (st,nameb, ((),[ib1;ib3]))
           ))))
 
+  | A.Exec(exec,lang,code,sem), F.Exec(st,(code2,ii)) ->
+      let (exec2,lang2,sem2) = tuple_of_list3 ii in
+      tokenf exec exec2 >>= (fun exec exec2 ->
+      tokenf lang lang2 >>= (fun lang lang2 ->
+      tokenf sem sem2 >>= (fun sem sem2 ->
+      exec_code_list (A.undots code) (B.split_nocomma code2) >>=
+	(fun code_undots code2_splitted ->
+	  let code = redots code code_undots in
+	  let code2 = Ast_c.unsplit_nocomma code2_splitted in
+	  return(
+	    A.Exec(exec,lang,code,sem),
+	    F.Exec(st,(code2,[exec2;lang2;sem2])))))))      
+
   (* have not a counter part in coccinelle, for the moment *)
   (* todo?: print a warning at least ? *)
   | _, F.CaseRange _
@@ -4689,8 +4748,8 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
     (F.MacroStmt (_, _)| F.DefineDoWhileZeroHeader _| F.EndNode|F.TopNode)
       -> fail
   | _,
-    (F.Label (_, _, _)|F.Break (_, _)|F.Continue (_, _)|F.Default (_, _)|
-    F.Case (_, _)|F.Include _|F.Goto _|F.ExprStatement _|
+    (F.Label (_, _, _)|F.Break (_, _, _)|F.Continue (_, _)|F.Default (_, _)|
+    F.Case (_, _)|F.Include _|F.Goto _|F.ExprStatement _|F.Exec _|
     F.DefineType _|F.DefineExpr _|F.DefineTodo|
     F.DefineHeader (_, _)|F.PragmaHeader (_, _)|
     F.ReturnExpr (_, _)|F.Return (_, _)|

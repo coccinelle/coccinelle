@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="generator" content="hevea 2.06">
+<link rel="stylesheet" type="text/css" href="main_grammar.css">
+<title>Tips and Tricks</title>
+</head>
+<body >
+<a href="main_grammar014.html"><img src="previous_motif.gif" alt="Previous"></a>
+<a href="index.html"><img src="contents_motif.gif" alt="Up"></a>
+<hr>
+<h2 id="sec22" class="section">15  Tips and Tricks</h2>
+<h3 id="sec23" class="subsection">15.1  How to remove useless parentheses?</h3>
+<p>If you want to rewrite any access to a pointer value by a function
+call, you may use the following semantic patch.</p><div class="lstlisting"><span style="font-size:xx-small">   1</span> <span style="color:#B7140B">- a = *b</span>
+<span style="font-size:xx-small">   2</span> <span style="color:#379907">+ a = readb(b)</span></div><p>However, if for some reason your code looks like <code>bar = *(foo)</code>,
+you will end up with <code>bar = readb((foo))</code> as the extra
+parentheses around <span style="font-family:monospace">foo</span> are capture by the metavariable
+<span style="font-family:monospace">b</span>.</p><p>In order to generate better output code, you can use the following
+semantic patch instead.
+
+
+</p><div class="lstlisting"><span style="font-size:xx-small">   1</span> <span style="color:#B7140B">- a = *(b)</span>
+<span style="font-size:xx-small">   2</span> <span style="color:#379907">+ a = readb(b)</span></div><p>And rely on your standard.iso isomorphism file which should contain:
+
+
+</p><div class="lstlisting"><span style="font-size:xx-small">   1</span> <span style="color:#379907"><span style="font-weight:bold">Expression</span></span>
+<span style="font-size:xx-small">   2</span> @ paren @
+<span style="font-size:xx-small">   3</span> <span style="color:#379907"><span style="font-weight:bold">expression</span></span> E;
+<span style="font-size:xx-small">   4</span> @@
+<span style="font-size:xx-small">   5</span> 
+<span style="font-size:xx-small">   6</span>  (E) =&gt; E</div><p>Coccinelle will then consider <code>bar = *(foo)</code> as equivalent to
+<code>bar = *foo</code> (but not the other way around) and capture both.
+Finally, it will generate <code>bar = readb(foo)</code> as expected.</p><hr>
+<a href="main_grammar014.html"><img src="previous_motif.gif" alt="Previous"></a>
+<a href="index.html"><img src="contents_motif.gif" alt="Up"></a>
+</body>
+</html>

@@ -129,6 +129,7 @@ let token2c (tok,_) =
   | PC.Tconst(clt) -> "const"^(line_type2c clt)
   | PC.Tvolatile(clt) -> "volatile"^(line_type2c clt)
   | PC.Tdecimal(clt) -> "decimal"^(line_type2c clt)
+  | PC.Texec(clt) -> "exec"^(line_type2c clt)
 
   | PC.TDirective(Ast.Noindent s,_) -> s
   | PC.TDirective(Ast.Indent s,_)   -> s
@@ -316,7 +317,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.Tsize_t(clt) | PC.Tssize_t(clt) | PC.Tptrdiff_t(clt)
   | PC.Tstruct(clt)
   | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
-  | PC.Tdecimal(clt) | PC.Tstatic(clt)
+  | PC.Tdecimal(clt) | PC.Texec(clt) | PC.Tstatic(clt)
   | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt)
   | PC.Tauto(clt) | PC.Tregister(clt)
   | PC.Textern(clt) | PC.Tconst(clt) | PC.Tvolatile(clt)
@@ -392,7 +393,7 @@ let get_clt (tok,_) =
   | PC.Tsize_t(clt) | PC.Tssize_t(clt) | PC.Tptrdiff_t(clt)
   | PC.Tstruct(clt)
   | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
-  | PC.Tdecimal(clt) | PC.Tstatic(clt)
+  | PC.Tdecimal(clt) | PC.Texec(clt) | PC.Tstatic(clt)
   | PC.Tinline(clt) | PC.Tattr(_,clt) | PC.Tauto(clt) | PC.Tregister(clt)
   | PC.Textern(clt) | PC.Tconst(clt) | PC.Tvolatile(clt)
 
@@ -473,6 +474,7 @@ let update_clt (tok,x) clt =
   | PC.Tunion(_) -> (PC.Tunion(clt),x)
   | PC.Tenum(_) -> (PC.Tenum(clt),x)
   | PC.Tdecimal(_) -> (PC.Tdecimal(clt),x)
+  | PC.Texec(_) -> (PC.Texec(clt),x)
   | PC.Tunsigned(_) -> (PC.Tunsigned(clt),x)
   | PC.Tsigned(_) -> (PC.Tsigned(clt),x)
   | PC.Tstatic(_) -> (PC.Tstatic(clt),x)
@@ -689,7 +691,7 @@ let split_token ((tok,_) as t) =
   | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt)
   | PC.Tsize_t(clt) | PC.Tssize_t(clt) | PC.Tptrdiff_t(clt)
   | PC.Tstruct(clt)
-  | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tdecimal(clt)
+  | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tdecimal(clt) | PC.Texec(clt)
   | PC.Tunsigned(clt) | PC.Tsigned(clt)
   | PC.Tstatic(clt) | PC.Tauto(clt) | PC.Tregister(clt) | PC.Textern(clt)
   | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt)
@@ -988,7 +990,7 @@ let token2line (tok,_) =
   | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt)
   | PC.Tsize_t(clt) | PC.Tssize_t(clt) | PC.Tptrdiff_t(clt)
   | PC.Tstruct(clt)
-  | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tdecimal(clt)
+  | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tdecimal(clt) | PC.Texec(clt)
   | PC.Tunsigned(clt) | PC.Tsigned(clt)
   | PC.Tstatic(clt) | PC.Tauto(clt) | PC.Tregister(clt) | PC.Textern(clt)
   | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt) | PC.Tconst(clt)
@@ -1579,7 +1581,7 @@ let any_modif rule =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing in
+      donothing donothing donothing donothing in
   List.exists fn.VT0.combiner_rec_top_level rule
 
 let eval_virt virt =
@@ -1824,6 +1826,17 @@ let eval_depend dep virt =
     in
   loop dep
 
+let print_dep_image name deps virt depimage =
+  Printf.fprintf stderr "Rule: %s\n" name;
+  Printf.fprintf stderr "Dependencies: %s\n"
+    (Common.format_to_string
+       (function _ -> Pretty_print_cocci.dep true deps));
+  Format.print_newline();
+  Printf.fprintf stderr "Virtual rules: %s\n" (String.concat " " virt);
+  Printf.fprintf stderr "Res: %s\n\n"
+    (Common.format_to_string
+       (function _ -> Pretty_print_cocci.dep true depimage))
+
 let parse file =
   Lexer_cocci.init ();
   let rec parse_loop file =
@@ -1881,7 +1894,8 @@ let parse file =
 		 Lexer_cocci.metavariables []);
 
             (* get transformation rules *)
-            let (more, tokens) = get_tokens (in_list [PC.TArobArob; PC.TArob]) in
+            let (more, tokens) =
+	      get_tokens (in_list [PC.TArobArob; PC.TArob]) in
             let (minus_tokens, _) = split_token_stream tokens in
             let (_, plus_tokens) =
 	      split_token_stream (minus_to_nothing tokens) in
@@ -1909,6 +1923,7 @@ let parse file =
                print_tokens "plus tokens" plus_tokens;
 	       Printf.printf "before minus parse\n";
 	    *)
+	    Flag_parsing_cocci.in_minus := true;
 	    let minus_res =
 	      let minus_parser =
 		match is_expression with
@@ -1929,12 +1944,15 @@ let parse file =
 		  (Iso_pattern.rebuild_mcode None).VT0.rebuilder_rec_top_level
 		  (Top_level.top_level false minus_res)
 	      else
-		let plus_parser =
-		  match is_expression with
-		    Ast.AnyP -> PC.plus_main
-		  | Ast.TyP -> PC.plus_ty_main
-		  | Ast.ExpP -> PC.plus_exp_main in
-		parse_one "plus" plus_parser file plus_tokens in
+		begin
+		  Flag_parsing_cocci.in_minus := false;
+		  let plus_parser =
+		    match is_expression with
+		      Ast.AnyP -> PC.plus_main
+		    | Ast.TyP -> PC.plus_ty_main
+		    | Ast.ExpP -> PC.plus_exp_main in
+		  parse_one "plus" plus_parser file plus_tokens
+		end in
 	    let plus_res = Top_level.top_level false plus_res in
 	    (* minus code has to be CODE if the + code is CODE, otherwise
 	       doesn't matter if + code is CODE or DECL or TOPCODE *)
@@ -2045,7 +2063,10 @@ let parse file =
 		| _ -> failwith "new metavariables not allowed in finalize") in
 
 	  let do_parse_script_rule fn name l old_metas deps =
-	    fn name l old_metas (eval_depend deps virt) in
+	    let depimage = eval_depend deps virt in
+	    (if !Flag_parsing_cocci.debug_parse_cocci
+	    then print_dep_image name deps virt depimage);
+	    fn name l old_metas depimage in
 
           let parse_rule old_metas starts_with_name =
             let rulename =
@@ -2053,7 +2074,10 @@ let parse file =
 		"rule" in
             match rulename with
               Ast.CocciRulename (Some s, dep, b, c, d, e) ->
-		(match eval_depend dep virt with
+		let depimage = eval_depend dep virt in
+		(if !Flag_parsing_cocci.debug_parse_cocci
+		then print_dep_image s dep virt depimage);
+		(match depimage with
 		  Ast.FailDep ->
 		    D.ignore_patch_or_match := true;
                     let res =

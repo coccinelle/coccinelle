@@ -179,6 +179,7 @@ let cpp_keyword_table = Common.hash_of_list [
 
 let ibm_keyword_table = Common.hash_of_list [
   "decimal",   (fun ii -> Tdecimal ii);
+  "EXEC",      (fun ii -> Texec ii);
 ] 
 
 let error_radix s =

@@ -349,6 +349,7 @@ let info_of_tok = function
   | Tstruct              (i) -> i
   | Tenum                (i) -> i
   | Tdecimal             (i) -> i
+  | Texec                (i) -> i
   | Ttypedef             (i) -> i
   | Tunion               (i) -> i
   | Tbreak               (i) -> i
@@ -518,6 +519,7 @@ let visitor_info_of_tok f = function
   | Tstruct              (i) -> Tstruct              (f i)
   | Tenum                (i) -> Tenum                (f i)
   | Tdecimal             (i) -> Tdecimal             (f i)
+  | Texec                (i) -> Texec                (f i)
   | Ttypedef             (i) -> Ttypedef             (f i)
   | Tunion               (i) -> Tunion               (f i)
   | Tbreak               (i) -> Tbreak               (f i)

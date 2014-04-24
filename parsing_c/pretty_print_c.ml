@@ -351,6 +351,10 @@ and pp_string_format (e,ii) =
     | MacroStmt, ii ->
         ii +> List.iter pr_elem ;
 
+    | Exec(code), [exec;lang;sem] ->
+	pr_elem exec; pr_space(); pr_elem lang; pr_space();
+	pp_list2 pp_exec_code code; pr_elem sem
+
     | (Labeled (Case  (_,_))
     | Labeled (CaseRange  (_,_,_)) | Labeled (Default _)
     | Compound _ | ExprStatement _
@@ -360,7 +364,7 @@ and pp_string_format (e,ii) =
     | Iteration  (MacroIteration (_,_,_))
     | Jump ((Continue|Break|Return)) | Jump (ReturnExpr _)
     | Jump (GotoComputed _)
-    | Decl _
+    | Decl _ | Exec _
 	), _ -> raise (Impossible 98)
 
   and pp_statement_seq = function
@@ -417,6 +421,11 @@ and pp_string_format (e,ii) =
 		pr_elem icpar
 	    | _ -> raise (Impossible 100)))
         ))
+
+  and pp_exec_code = function
+    ExecEval name, [colon] -> pr_elem colon; pp_expression name
+  | ExecToken, [tok] -> pr_elem tok
+  | _ -> raise (Impossible 101)
 
 
 (* ---------------------- *)
@@ -1337,7 +1346,7 @@ and pp_init (init, iinit) =
 	pr2 "XXX"
 
 
-    | F.Break    (st,((),ii)) ->
+    | F.Break    (st,((),ii),fromswitch) ->
         (* iif ii *)
 	pr2 "XXX"
     | F.Continue (st,((),ii)) ->
@@ -1381,6 +1390,7 @@ and pp_init (init, iinit) =
         *)
 	pr2 "XXX"
 
+    | F.Exec(st,(code,ii)) -> pr2 "XXX"
 
     | F.IfdefHeader (info) ->
 	pp_ifdef info
@@ -1395,7 +1405,7 @@ and pp_init (init, iinit) =
 
     | (F.TopNode|F.EndNode|
       F.ErrorExit|F.Exit|F.Enter|F.LoopFallThroughNode|F.FallThroughNode|
-      F.AfterNode|F.FalseNode|F.TrueNode|F.InLoopNode|
+      F.AfterNode _|F.FalseNode|F.TrueNode _|F.InLoopNode|
       F.Fake) ->
         pr2 "YYY" in
 

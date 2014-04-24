@@ -62,7 +62,7 @@ type node = node1 * string (* For debugging. Used by print_graph *)
   | Default   of statement * unit wrap
 
   | Continue  of statement * unit wrap
-  | Break     of statement * unit wrap
+  | Break     of statement * unit wrap * bool (* true for switch *)
 
   (* no counter part in cocci *)
   | CaseRange of statement * (expression * expression) wrap
@@ -73,6 +73,7 @@ type node = node1 * string (* For debugging. Used by print_graph *)
   | Asm of statement * asmbody wrap
   | MacroStmt of statement * unit wrap
 
+  | Exec of statement * exec_code list wrap
 
   (* ------------------------ *)
   | Enter
@@ -82,13 +83,21 @@ type node = node1 * string (* For debugging. Used by print_graph *)
 
   (* ------------------------ *)
   (* for ctl:  *)
-  | TrueNode
+  | TrueNode of bool ref
   | FalseNode
   | InLoopNode
-  | AfterNode
+  | AfterNode of after_type
   | FallThroughNode
   | LoopFallThroughNode
   | ErrorExit
+
+and after_type =
+  | RetAfterNode (* after for a block ending in return *)
+  | GotoAfterNode (* after for a block ending in goto *)
+  | BreakAfterNode (* after for a block ending in break *)
+  | ContAfterNode (* after for a block ending in continue *)
+  | SWBreakAfterNode (* after for a block ending in break from switch *)
+  | NormalAfterNode
 
 type edge = Direct
 

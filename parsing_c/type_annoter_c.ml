@@ -165,6 +165,7 @@ type namedef =
   | Macro        of string * (define_kind * define_val)
 
 module StringMap = Map.Make (String)
+let singleton k v = StringMap.add k v StringMap.empty
 
 (* Maps are used instead of lists in order to guarantee O(log(n))
    complexity when doing a lookup. The case of typedefs is a bit
@@ -201,7 +202,7 @@ let empty_frame =
 let initial_env = ref [
   { empty_frame with
     var_or_func =
-    StringMap.singleton
+    singleton
       "NULL"
       (Lib.al_type (Parse_c.type_of_string "void *"),Ast_c.NotLocalVar) }
   (*

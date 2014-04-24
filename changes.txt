@@ -61,6 +61,8 @@
 - Support some matching on pragmas
 - Initialize and finalize rules contain a metavariable declaration region.
 - Added documentation about iteration.
+- Allow changes within strings.
+- EXEC, for use with the --ibm option.
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line
@@ -313,6 +315,23 @@
 - Try to fix pretty printing of directives.
 - Allow renaming types in multidecls, including renames in initializers.
 - Save virtual identifiers from the command line for use in finalize code.
+- Make ocaml file prefix name be just a constant string rather than being
+  determined by the semantic patch file name, to avoid
+  incompatabilities between the semantic patch file name and what is
+  allowed for the names of ocaml modules.  Thanks to Markus Elfring for
+  noticing the problem.
+- Improved use of parsing_hacks when an item of interest is preceded by
+  a #define or #undef.  Thanks to Nic Volanschi for finding the problem.
+- Improved handling of commas in multidecls.  Thanks to Nic Volanschi for
+  finding the problem.
+- Try to improve column offsets in complex strings.
+- Improve performance of error handling code detection by only doing it
+  when there is an escaping then branch.  Thanks to Ning Jiang for
+  motivating investigation of the problem.
+- Don't consider a break for a switch a indicating error handling code.
+  Thanks to Ning Jiang for motivating investigation of the problem.
+- Allow adding things after an escaping compound.  Thanks to Nic Volanschi
+  for finding the problem.
 
 * 0.2.5
 ** Language:

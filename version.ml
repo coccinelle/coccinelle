@@ -1,2 +1,2 @@
-let version_date = "Sat, 15 Feb 2014 13:36:46 +0100"
+let version_date = "Sun, 13 Apr 2014 22:41:13 +0200"
 let configure_flags = "--enable-release --disable-python --disable-pcre-syntax"

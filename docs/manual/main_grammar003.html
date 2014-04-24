@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="generator" content="hevea 2.06">
+<link rel="stylesheet" type="text/css" href="main_grammar.css">
+<title>Metavariables for scripts</title>
+</head>
+<body >
+<a href="main_grammar002.html"><img src="previous_motif.gif" alt="Previous"></a>
+<a href="index.html"><img src="contents_motif.gif" alt="Up"></a>
+<a href="main_grammar004.html"><img src="next_motif.gif" alt="Next"></a>
+<hr>
+<h2 id="sec4" class="section">3  Metavariables for scripts</h2>
+<p>Metavariables for scripts can only be inherited from transformation rules.
+In the spirit of scripting languages such as Python that use dynamic
+typing, metavariables for scripts do not include type declarations.</p><div class="center"><table style="border-spacing:6px;border-collapse:separate;" class="cellpading0"><tr><td style="text-align:left;white-space:nowrap" > <a id="script_metavariables"><span style="color:maroon">script_metavariables</span></a><span style="color:maroon">
+</span></td><td style="text-align:center;white-space:nowrap" ><span style="color:black">  ::=  </span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">@ script:</span><a href="#language"><span style="color:maroon">language</span></a><span style="color:blue"> </span><span style="color:black">[</span><a href="main_grammar002.html#rulename"><span style="color:maroon">rulename</span></a><span style="color:black">]</span><span style="color:blue"> </span><span style="color:black">[</span><span style="color:blue">depends on </span><a href="main_grammar002.html#dep"><span style="color:maroon">dep</span></a><span style="color:black">]</span><span style="color:blue"> @
+</span><a href="#script_metadecl"><span style="color:maroon">script_metadecl</span></a><sup><span style="color:black"> *</span></sup><span style="color:blue"> @@</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">@ initialize:</span><a href="#language"><span style="color:maroon">language</span></a><span style="color:blue"> </span><span style="color:black">[</span><span style="color:blue">depends on </span><a href="main_grammar002.html#dep"><span style="color:maroon">dep</span></a><span style="color:black">]</span><span style="color:blue"> @
+</span><a href="#script_virt_metadecl"><span style="color:maroon">script_virt_metadecl</span></a><sup><span style="color:black"> *</span></sup><span style="color:blue"> @@</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">@ finalize:</span><a href="#language"><span style="color:maroon">language</span></a><span style="color:blue"> </span><span style="color:black">[</span><span style="color:blue">depends on </span><a href="main_grammar002.html#dep"><span style="color:maroon">dep</span></a><span style="color:black">]</span><span style="color:blue"> @
+</span><a href="#script_virt_metadecl"><span style="color:maroon">script_virt_metadecl</span></a><sup><span style="color:black"> *</span></sup><span style="color:blue"> @@</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" >
+<a id="language"><span style="color:maroon">language</span></a><span style="color:maroon"> </span></td><td style="text-align:center;white-space:nowrap" ><span style="color:black">  ::=  </span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">python</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" >&nbsp;</td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">ocaml</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" >
+<a id="script_metadecl"><span style="color:maroon">script_metadecl</span></a><span style="color:maroon">
+</span></td><td style="text-align:center;white-space:nowrap" ><span style="color:black">  ::=  </span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue"><span style="font-family:sans-serif">id</span></span><span style="color:blue"> &lt;&lt; </span><span style="color:blue"><span style="font-family:sans-serif">rulename_id</span></span><span style="color:blue">.</span><span style="color:blue"><span style="font-family:sans-serif">id</span></span><span style="color:blue"> ;</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue"><span style="font-family:sans-serif">id</span></span><span style="color:blue"> ;</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" >
+<a id="script_virt_metadecl"><span style="color:maroon">script_virt_metadecl</span></a><span style="color:maroon">
+</span></td><td style="text-align:center;white-space:nowrap" ><span style="color:black">  ::=  </span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue"><span style="font-family:sans-serif">id</span></span><span style="color:blue"> &lt;&lt; virtual.</span><span style="color:blue"><span style="font-family:sans-serif">id</span></span><span style="color:blue"> ;</span> </td></tr>
+</table></div><p>Currently, the only scripting languages that are supported are Python and
+OCaml, indicated using <span style="font-family:monospace">python</span> and <span style="font-family:monospace">ocaml</span>, respectively. The
+set of available scripting languages may be extended at some point.</p><p>Script rules declared with <span style="color:blue">initialize</span> are run before the treatment of
+any file. Script rules declared with <span style="color:blue">finalize</span> are run when the
+treatment of all of the files has completed. There can be at most one of
+each per scripting language (thus currently at most one of each).
+Initialize and finalize script rules do not have access to SmPL
+metavariables. Nevertheless, a finalize script rule can access any
+variables initialized by the other script rules, allowing information to be
+transmitted from the matching process to the finalize rule.</p><p>Initialize and finalize rules do have access to virtual metavariables,
+using the usual syntax. As for other scripting language rules, the rule
+is not run (and essentially does not exist) if some of the required virtual
+metavariables are not bound. In ocaml, a warning is printed in this case.
+An example is found in demos/initvirt.cocci.</p><p>A script metavariable that does not specify an origin, using <span style="font-family:monospace">&lt;&lt;</span>,
+is newly declared by the script. This metavariable should be assigned to a
+string and can be inherited by subsequent rules as an identifier. In
+Python, the assignment of such a metavariable <span style="font-style:italic">x</span> should refer to the
+metavariable as <span style="font-family:monospace">coccinelle.</span><span style="font-style:italic">x</span>. Examples are in the files
+<span style="font-family:monospace">demos/pythontococci.cocci</span> and <span style="font-family:monospace">demos/camltococci.cocci</span>.</p><p>In an ocaml script, the following extended form of <span style="font-style:italic">script_metadecl</span>
+may be used:</p><div class="center"><table style="border-spacing:6px;border-collapse:separate;" class="cellpading0"><tr><td style="text-align:left;white-space:nowrap" > <a id="script_metadecl"><span style="color:maroon">script_metadecl</span></a><span style="color:maroon">
+</span></td><td style="text-align:center;white-space:nowrap" ><span style="color:black">  ::=  </span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">(</span><span style="color:blue"><span style="font-family:sans-serif">id</span></span><span style="color:blue">,</span><span style="color:blue"><span style="font-family:sans-serif">id</span></span><span style="color:blue">) &lt;&lt; </span><span style="color:blue"><span style="font-family:sans-serif">rulename_id</span></span><span style="color:blue">.</span><span style="color:blue"><span style="font-family:sans-serif">id</span></span><span style="color:blue"> ;</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue"><span style="font-family:sans-serif">id</span></span><span style="color:blue"> &lt;&lt; </span><span style="color:blue"><span style="font-family:sans-serif">rulename_id</span></span><span style="color:blue">.</span><span style="color:blue"><span style="font-family:sans-serif">id</span></span><span style="color:blue"> ;</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue"><span style="font-family:sans-serif">id</span></span><span style="color:blue"> ;</span> </td></tr>
+</table></div><p>In a declaration of the form <span style="font-family:monospace">(</span><span style="font-family:monospace"><span style="font-family:sans-serif">id</span></span><span style="font-family:monospace">,</span><span style="font-family:monospace"><span style="font-family:sans-serif">id</span></span><span style="font-family:monospace">) &lt;&lt;
+</span><span style="font-family:monospace"><span style="font-family:sans-serif">rulename_id</span></span><span style="font-family:monospace">.</span><span style="font-family:monospace"><span style="font-family:sans-serif">id</span></span><span style="font-family:monospace"> ;</span>, the left component of <span style="font-family:monospace">(</span><span style="font-family:monospace"><span style="font-family:sans-serif">id</span></span><span style="font-family:monospace">,</span><span style="font-family:monospace"><span style="font-family:sans-serif">id</span></span><span style="font-family:monospace">)</span>
+receives a string representation of the value of the inherited metavariable
+while the right component receives its abstract syntax tree. The file
+<span style="font-family:monospace">parsing_c/ast_c.ml</span> in the Coccinelle implementation gives some
+information about the structure of the abstract syntax tree. Either the
+left or right component may be replaced by <code>_</code>, indicating that the
+string representation or abstract syntax trees representation is not
+wanted, respectively.</p><p>The abstract syntax tree of a metavariable declared using <span style="font-family:monospace">metavariable</span> is not available.</p>
+<hr>
+<a href="main_grammar002.html"><img src="previous_motif.gif" alt="Previous"></a>
+<a href="index.html"><img src="contents_motif.gif" alt="Up"></a>
+<a href="main_grammar004.html"><img src="next_motif.gif" alt="Next"></a>
+</body>
+</html>

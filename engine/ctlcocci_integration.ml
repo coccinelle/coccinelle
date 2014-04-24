@@ -135,9 +135,10 @@ let (labels_for_ctl: string list (* dropped isos *) ->
                 ))))
 
       | Lib_engine.InLoop,      F.InLoopNode ->  [nodei, (p,[])]
-      | Lib_engine.TrueBranch , F.TrueNode ->  [nodei, (p,[])]
+      | Lib_engine.TrueBranch , F.TrueNode _ ->  [nodei, (p,[])]
+      | Lib_engine.EscTrueBranch , F.TrueNode esc when !esc ->  [nodei, (p,[])]
       | Lib_engine.FalseBranch, F.FalseNode -> [nodei, (p,[])]
-      | Lib_engine.After,       F.AfterNode -> [nodei, (p,[])]
+      | Lib_engine.After,       F.AfterNode _ -> [nodei, (p,[])]
       | Lib_engine.FallThrough, F.FallThroughNode -> [nodei,(p,[])]
       | Lib_engine.LoopFallThrough, F.LoopFallThroughNode -> [nodei,(p,[])]
       | Lib_engine.FunHeader,   F.FunHeader _ -> [nodei, (p,[])]
@@ -150,13 +151,14 @@ let (labels_for_ctl: string list (* dropped isos *) ->
 	  (* cases where it it not safe to put something on the outer side
 	     of braces *)
 	  (match node with
-	    F.FunHeader _ | F.DoHeader _ | F.TrueNode | F.Else _
+	    F.FunHeader _ | F.DoHeader _ | F.TrueNode _ | F.Else _
 	  | F.InLoopNode (* while, for *) | F.SwitchHeader _ ->
 	      [nodei, (p,[])]
 	  | _ -> [])
 
       | Lib_engine.InLoop , _ -> []
       | Lib_engine.TrueBranch , _ -> []
+      | Lib_engine.EscTrueBranch , _ -> []
       | Lib_engine.FalseBranch, _ -> []
       | Lib_engine.After, _ -> []
       | Lib_engine.FallThrough, _ -> []

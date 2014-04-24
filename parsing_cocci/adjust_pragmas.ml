@@ -140,6 +140,9 @@ let rec right_statement s =
   | Ast0.ReturnExpr(ret,exp,sem) ->
       call_right right_mcode sem s
 	(function sem -> Ast0.ReturnExpr(ret,exp,sem))
+  | Ast0.Exec(exec,lang,exp,sem) ->
+      call_right right_mcode sem s
+	(function sem -> Ast0.Exec(exec,lang,exp,sem))
   | Ast0.MetaStmt(name,pure) ->
       call_right right_mcode name s
 	(function name -> Ast0.MetaStmt(name,pure))

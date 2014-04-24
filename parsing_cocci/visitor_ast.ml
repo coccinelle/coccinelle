@@ -101,6 +101,7 @@ let combiner bind option_default
 
   and iddotsfn all_functions k arg = k arg
   and strdotsfn all_functions k arg = k arg
+  and ecdotsfn all_functions k arg = k arg
 
   and expression_dots d = dotsfn expdotsfn expression all_functions d
   and identifier_dots d = dotsfn iddotsfn ident all_functions d
@@ -109,6 +110,7 @@ let combiner bind option_default
   and declaration_dots d = dotsfn decldotsfn declaration all_functions d
   and initialiser_dots d = dotsfn initdotsfn initialiser all_functions d
   and string_fragment_dots d = dotsfn strdotsfn string_fragment all_functions d
+  and exec_code_dots d = dotsfn ecdotsfn exec_code all_functions d
 
   and ident i =
     let k i =
@@ -418,6 +420,10 @@ let combiner bind option_default
       | Ast.Return(ret,sem) -> bind (string_mcode ret) (string_mcode sem)
       | Ast.ReturnExpr(ret,exp,sem) ->
 	  multibind [string_mcode ret; expression exp; string_mcode sem]
+      |	Ast.Exec(exec,lang,code,sem) ->
+	  multibind
+	    [string_mcode exec; string_mcode lang; exec_code_dots code;
+	      string_mcode sem]
       | Ast.MetaStmt(name,_,_,_) -> meta_mcode name
       | Ast.MetaStmtList(name,_,_) -> meta_mcode name
       | Ast.MetaRuleElem(name,_,_) -> meta_mcode name
@@ -560,6 +566,13 @@ let combiner bind option_default
       |	Ast.OptCase(case) -> case_line case in
     casefn all_functions k c
 
+  and exec_code e =
+    (* not configurable *)
+    match Ast.unwrap e with
+      Ast.ExecEval(colon,id) -> bind (string_mcode colon) (expression id)
+    | Ast.ExecToken(tok) -> string_mcode tok
+    | Ast.ExecDots(dots) -> string_mcode dots
+
   and top_level t =
     let k t =
       match Ast.unwrap t with
@@ -594,6 +607,7 @@ let combiner bind option_default
       | Ast.StatementTag(rule) -> statement rule
       | Ast.ForInfoTag(rule) -> forinfo rule
       | Ast.CaseLineTag(case) -> case_line case
+      | Ast.StringFragmentTag(frag) -> string_fragment frag
       | Ast.ConstVolTag(cv) -> option_default
       | Ast.Token(tok,info) -> option_default
       | Ast.Directive(str) -> option_default
@@ -684,6 +698,7 @@ let rebuilder
 
   let iddotsfn all_functions k arg = k arg in
   let strdotsfn all_functions k arg = k arg in
+  let ecdotsfn all_functions k arg = k arg in
 
   let rec expression_dots d = dotsfn expdotsfn expression all_functions d
   and identifier_dots d = dotsfn iddotsfn ident all_functions d
@@ -692,6 +707,7 @@ let rebuilder
   and declaration_dots d = dotsfn decldotsfn declaration all_functions d
   and initialiser_dots d = dotsfn initdotsfn initialiser all_functions d
   and string_fragment_dots d = dotsfn strdotsfn string_fragment all_functions d
+  and exec_code_dots d = dotsfn ecdotsfn exec_code all_functions d
 
   and ident i =
     let k i =
@@ -1000,6 +1016,9 @@ let rebuilder
 	    Ast.Return(string_mcode ret, string_mcode sem)
 	| Ast.ReturnExpr(ret,exp,sem) ->
 	    Ast.ReturnExpr(string_mcode ret, expression exp, string_mcode sem)
+	| Ast.Exec(exec,lang,code,sem) ->
+	    Ast.Exec(string_mcode exec,string_mcode lang,
+		     exec_code_dots code,string_mcode sem)
 	| Ast.MetaStmt(name,keep,seqible,inherited) ->
 	    Ast.MetaStmt(meta_mcode name,keep,seqible,inherited)
 	| Ast.MetaStmtList(name,keep,inherited) ->
@@ -1167,6 +1186,15 @@ let rebuilder
 	| Ast.OptCase(case) -> Ast.OptCase(case_line case)) in
     casefn all_functions k c
 
+  and exec_code e =
+    (* not configurable *)
+    Ast.rewrap e
+      (match Ast.unwrap e with
+	Ast.ExecEval(colon,id) ->
+	  Ast.ExecEval(string_mcode colon, expression id)
+      | Ast.ExecToken(tok) -> Ast.ExecToken(string_mcode tok)
+      | Ast.ExecDots(dots) -> Ast.ExecDots(string_mcode dots))
+
   and top_level t =
     let k t =
       Ast.rewrap t
@@ -1202,6 +1230,8 @@ let rebuilder
       | Ast.StatementTag(rule) -> Ast.StatementTag(statement rule)
       | Ast.ForInfoTag(rule) -> Ast.ForInfoTag(forinfo rule)
       | Ast.CaseLineTag(case) -> Ast.CaseLineTag(case_line case)
+      | Ast.StringFragmentTag(frag) ->
+	  Ast.StringFragmentTag(string_fragment frag)
       | Ast.ConstVolTag(cv) as x -> x
       | Ast.Token(tok,info) as x -> x
       | Ast.Directive(str) as x -> x

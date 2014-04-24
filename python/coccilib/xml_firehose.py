@@ -24,7 +24,7 @@ def import_firehose():
     try:
         globals()['firehose'] = __import__('firehose.model')
     except ImportError:
-        print "Error: Firehose is not installed or not in the Python path."
+        print("Error: Firehose is not installed or not in the Python path.")
 
 class Analysis(object):
     """

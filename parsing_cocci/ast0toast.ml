@@ -197,7 +197,7 @@ let inline_mcodes =
     mcode mcode
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing do_nothing do_nothing do_nothing
+    do_nothing do_nothing do_nothing do_nothing do_nothing
 
 (* --------------------------------------------------------------------- *)
 (* For function declarations.  Can't use the mcode at the root, because that
@@ -265,7 +265,7 @@ let check_allminus =
     mcode mcode
     donothing donothing donothing donothing donothing donothing
     ident expression typeC initialiser donothing declaration
-    statement donothing case_line donothing
+    statement donothing case_line donothing donothing
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -876,6 +876,10 @@ and statement s =
 	  Ast.Atomic
 	    (rewrap_rule_elem s
 	       (Ast.ReturnExpr(mcode ret,expression exp,mcode sem)))
+      | Ast0.Exec(exec,lang,code,sem) ->
+	  Ast.Atomic
+	    (rewrap_rule_elem s
+	       (Ast.Exec(mcode exec,mcode lang,dots exec_code code,mcode sem)))
       | Ast0.MetaStmt(name,_) ->
 	  Ast.Atomic(rewrap_rule_elem s
 		       (Ast.MetaStmt(mcode name,unitary,seqible,false)))
@@ -1125,6 +1129,13 @@ and case_line c =
 
     | Ast0.OptCase(case) -> Ast.OptCase(case_line case))
 
+and exec_code c =
+  rewrap c no_isos
+    (match Ast0.unwrap c with
+      Ast0.ExecEval(colon,id) -> Ast.ExecEval(mcode colon,expression id)
+    | Ast0.ExecToken(tok) -> Ast.ExecToken(mcode tok)
+    | Ast0.ExecDots(dots) -> Ast.ExecDots(mcode dots))
+
 and statement_dots l = dots statement l
 
 (* --------------------------------------------------------------------- *)
@@ -1148,6 +1159,7 @@ and anything = function
   | Ast0.StmtTag(d) -> Ast.StatementTag(statement d)
   | Ast0.ForInfoTag(d) -> Ast.ForInfoTag(forinfo d)
   | Ast0.CaseLineTag(d) -> Ast.CaseLineTag(case_line d)
+  | Ast0.StringFragmentTag(d) -> Ast.StringFragmentTag(string_fragment d)
   | Ast0.TopTag(d) -> Ast.Code(top_level d)
   | Ast0.IsoWhenTag(_) -> failwith "not possible"
   | Ast0.IsoWhenTTag(_) -> failwith "not possible"

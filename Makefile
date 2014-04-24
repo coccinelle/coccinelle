@@ -188,6 +188,7 @@ top: $(EXEC).top
 
 # the .cmi file of coccilib
 ocaml/coccilib/coccilib.cmi: ocaml/coccilib.cmi
+	@mkdir -p ocaml/coccilib/
 	cp ocaml/coccilib.cmi ocaml/coccilib/coccilib.cmi
 
 # ocamlbuild version of the main make targets

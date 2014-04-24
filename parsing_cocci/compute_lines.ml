@@ -458,40 +458,40 @@ let rec expression e =
 
 and expression_dots x = dots is_exp_dots None expression x
 
-(* all are bad mcode because can't have modifications inside a string *)
 and string_fragment e =
   match Ast0.unwrap e with
     Ast0.ConstantFragment(str) ->
-      let str = bad_mcode str in
+      let str = normal_mcode str in
       let ln = promote_mcode str in
       mkres e (Ast0.ConstantFragment(str)) ln ln
   | Ast0.FormatFragment(pct,fmt) ->
-      let pct = bad_mcode pct in
+      let pct = normal_mcode pct in
       let ln = promote_mcode pct in
       let fmt = string_format fmt in
       mkres e (Ast0.FormatFragment(pct,fmt)) ln fmt
   | Ast0.Strdots dots ->
-      let dots = bad_mcode dots in
+      let dots = normal_mcode dots in
       let ln = promote_mcode dots in
       mkres e (Ast0.Strdots dots) ln ln
   | Ast0.MetaFormatList(pct,name,lenname) ->
+      (* not sure what to do about the following comment... *)
       (* pct is particularly bad in this case, because it is ignored in
 	 the matching process.  The metavariable matches the complete format
 	 specification, including the % *)
-      let pct = bad_mcode pct in
+      let pct = normal_mcode pct in
       let ln1 = promote_mcode pct in
-      let name = bad_mcode name in
+      let name = normal_mcode name in
       let ln2 = promote_mcode name in
       mkres e (Ast0.MetaFormatList(pct,name,lenname)) ln1 ln2
 
 and string_format e =
   match Ast0.unwrap e with
     Ast0.ConstantFormat(str) ->
-      let str = bad_mcode str in
+      let str = normal_mcode str in
       let ln = promote_mcode str in
       mkres e (Ast0.ConstantFormat str) ln ln
   | Ast0.MetaFormat(name,constraints) ->
-      let name = bad_mcode name in
+      let name = normal_mcode name in
       let ln = promote_mcode name in
       mkres e (Ast0.MetaFormat(name,constraints)) ln ln
 
@@ -874,6 +874,11 @@ let is_stm_dots s =
     Ast0.Dots(_,_) | Ast0.Circles(_,_) | Ast0.Stars(_,_) -> true
   | _ -> false
 
+let is_ec_dots e =
+  match Ast0.unwrap e with
+    Ast0.ExecDots(_) -> true
+  | _ -> false
+
 let rec statement s =
   let res =
     match Ast0.unwrap s with
@@ -1024,6 +1029,13 @@ let rec statement s =
 	let sem = normal_mcode sem in
 	mkres s (Ast0.ReturnExpr(ret,exp,sem))
 	  (promote_mcode ret) (promote_mcode sem)
+    | Ast0.Exec(exec,lang,code,sem) ->
+	let exec = normal_mcode exec in
+	let lang = normal_mcode lang in
+	let code = dots is_ec_dots (Some(promote_mcode lang)) exec_code code in
+	let sem = normal_mcode sem in
+	mkres s (Ast0.Exec(exec,lang,code,sem))
+	  (promote_mcode exec) (promote_mcode sem)
     | Ast0.MetaStmt(name,a) ->
 	let ln = promote_mcode name in
 	mkres s (Ast0.MetaStmt(name,a)) ln ln
@@ -1210,6 +1222,21 @@ and case_line c =
 	  Ast0.DisjCase(starter,case_lines,mids,ender))
   | Ast0.OptCase(case) ->
       let case = case_line case in mkres c (Ast0.OptCase(case)) case case
+
+and exec_code e =
+  match Ast0.unwrap e with
+    Ast0.ExecEval(colon,id) ->
+      let colon = normal_mcode colon in
+      let id = expression id in
+      mkres e (Ast0.ExecEval(colon,id)) (promote_mcode colon) id
+  | Ast0.ExecToken(tok) ->
+      let tok = normal_mcode tok in
+      let ln = promote_mcode tok in
+      mkres e (Ast0.ExecToken tok) ln ln
+  | Ast0.ExecDots(dots) ->
+      let dots = bad_mcode dots in
+      let ln = promote_mcode dots in
+      mkres e (Ast0.ExecDots dots) ln ln
 
 and statement_dots x = dots is_stm_dots None statement x
 

@@ -683,6 +683,11 @@ let rec rule_elem arity re =
   | Ast.ReturnExpr(ret,exp,sem) ->
       print_string arity; mcode print_string ret; print_string " ";
       expression exp; mcode print_string sem
+  | Ast.Exec(exec,lang,code,sem) ->
+      print_string arity; mcode print_string exec; print_string " ";
+      mcode print_string lang; print_string " ";
+      dots (function _ -> print_string " ") exec_code code;
+      mcode print_string sem
   | Ast.MetaRuleElem(name,_,_) ->
       print_string arity; mcode print_meta name
   | Ast.MetaStmt(name,_,_,_) ->
@@ -851,6 +856,12 @@ and case_line arity c =
       dots force_newline (statement arity) code
   | Ast.OptCase(case) -> case_line "?" case
 
+and exec_code e =
+  match Ast.unwrap e with
+    Ast.ExecEval(colon,id) -> mcode print_string colon; expression id
+  | Ast.ExecToken(tok) -> mcode print_string tok
+  | Ast.ExecDots(dots) -> mcode print_string dots
+
 (* --------------------------------------------------------------------- *)
 (* CPP code *)
 
@@ -912,6 +923,7 @@ let _ =
     | Ast.StatementTag(x) -> statement "" x
     | Ast.ForInfoTag(x) -> forinfo x
     | Ast.CaseLineTag(x) -> case_line "" x
+    | Ast.StringFragmentTag(x) -> string_fragment x
     | Ast.ConstVolTag(x) -> const_vol x
     | Ast.Token(x,Some info) -> print_string_befaft print_string x info
     | Ast.Token(x,None) -> print_string x

@@ -100,6 +100,31 @@ let tmeta_to_ident (name,pure,clt) =
      (TMetaId(name,Ast.IdNoConstraint,Ast.NoVal,pure,clt))
      (function TMetaId(_,_,_,_,_) -> true | _ -> false));
   Ast0.wrap(Ast0.MetaId(P.clt2mcode name clt,Ast.IdNoConstraint,Ast.NoVal,pure))
+
+and  arithOp = function
+    Ast.Plus -> "+"
+  | Ast.Minus -> "-"
+  | Ast.Mul -> "*"
+  | Ast.Div -> "/"
+  | Ast.Min -> "<?"
+  | Ast.Max -> ">?"
+  | Ast.Mod -> "%"
+  | Ast.DecLeft -> "<<"
+  | Ast.DecRight -> ">>"
+  | Ast.And -> "&"
+  | Ast.Or -> "|"
+  | Ast.Xor -> "^"
+
+and  logicalOp = function
+    Ast.Inf -> "<"
+  | Ast.Sup -> ">"
+  | Ast.InfEq -> "<="
+  | Ast.SupEq -> ">="
+  | Ast.Eq -> "=="
+  | Ast.NotEq -> "!="
+  | Ast.AndLog -> "&&"
+  | Ast.OrLog -> "||"
+
 %}
 
 %token EOF
@@ -123,7 +148,7 @@ let tmeta_to_ident (name,pure,clt) =
 %token<string * Data.clt> Tattr
 
 %token <Data.clt> TIf TElse TWhile TFor TDo TSwitch TCase TDefault TReturn
-%token <Data.clt> TBreak TContinue TGoto TSizeof TFunDecl Tdecimal
+%token <Data.clt> TBreak TContinue TGoto TSizeof TFunDecl Tdecimal Texec
 %token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId TSymId
 %token <Ast_cocci.added_string * Data.clt> TDirective
 
@@ -1222,6 +1247,10 @@ statement:
 | TGoto disj_ident TPtVirg { P.goto $1 $2 $3 }
 | TOBrace fun_start TCBrace
     { P.seq $1 $2 $3 }
+| Texec TIdent exec_list TPtVirg
+    { Ast0.wrap(
+      Ast0.Exec(P.clt2mcode "EXEC" $1,P.clt2mcode (fst $2) (snd $2),
+		Ast0.wrap(Ast0.DOTS $3),P.clt2mcode ";" $4)) }
 
 stm_dots:
   TEllipsis w=list(whenppdecs)
@@ -2455,6 +2484,75 @@ eexpr_list_option:
 	     ($1
 		(fun _ d -> Ast0.wrap(Ast0.Edots(P.clt2mcode "..." d,None)))
 		(fun c -> Ast0.EComma c))) }
+
+/****************************************************************************/
+
+// IBM C only
+exec_list:
+    /* empty */ { [] }
+  | TDotDot exec_front_ident exec_ident exec_list
+      { Ast0.wrap(Ast0.ExecEval(P.clt2mcode ":" $1,$3 $2)) :: $4 }
+  | TIdent exec_ident2 exec_list
+      { Ast0.wrap(Ast0.ExecToken(P.clt2mcode (fst $1) (snd $1))) ::
+	List.map (function x -> Ast0.wrap(Ast0.ExecToken x)) $2 @ $3 }
+  | token exec_list { Ast0.wrap(Ast0.ExecToken $1) :: $2 }
+  | TEllipsis exec_list
+      { Ast0.wrap(Ast0.ExecDots(P.clt2mcode "..." $1)) :: $2 }
+
+exec_front_ident:
+    ident { Ast0.wrap(Ast0.Ident($1)) }
+  | TMetaIdExp
+     { let (nm,constraints,pure,ty,clt) = $1 in
+     Ast0.wrap
+       (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.ID,pure)) }
+  | TMetaExp
+     { let (nm,constraints,pure,ty,clt) = $1 in
+     Ast0.wrap
+       (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.ANY,pure)) }
+
+exec_ident:
+     { function prev -> prev }
+ | TDot   disj_ident exec_ident
+     { function prev ->
+       $3 (Ast0.wrap(Ast0.RecordAccess(prev, P.clt2mcode "." $1, $2))) }
+ | TPtrOp disj_ident exec_ident
+     { function prev ->
+       $3 (Ast0.wrap(Ast0.RecordPtAccess(prev, P.clt2mcode "->" $1,
+				     $2))) }
+
+exec_ident2:
+     { [] }
+ | TDot   TIdent exec_ident2
+     { (P.clt2mcode "." $1) :: (P.clt2mcode (fst $2) (snd $2)) :: $3 }
+ | TPtrOp TIdent exec_ident2
+     { (P.clt2mcode "." $1) :: (P.clt2mcode (fst $2) (snd $2)) :: $3 }
+
+token:
+    TPlus { P.clt2mcode "+" $1 }
+  | TMinus { P.clt2mcode "-" $1 }
+  | TMul { P.clt2mcode "*" $1 }
+  | TEqEq { P.clt2mcode "==" $1 }
+  | TNotEq { P.clt2mcode "!=" $1 }
+  | TDmOp { P.clt2mcode (arithOp(fst $1)) (snd $1) }
+  | TShLOp { P.clt2mcode (arithOp(fst $1)) (snd $1) }
+  | TShROp { P.clt2mcode (arithOp(fst $1)) (snd $1) }
+  | TLogOp { P.clt2mcode (logicalOp(fst $1)) (snd $1) }
+  | TOr { P.clt2mcode "|" $1 }
+  | TXor { P.clt2mcode "+" $1 }
+  | TAnd { P.clt2mcode "&" $1 }
+  | TOrLog { P.clt2mcode "||" $1 }
+  | TAndLog { P.clt2mcode "&&" $1 }
+  | TOBrace { P.clt2mcode "{" $1 }
+  | TCBrace { P.clt2mcode "}" $1 }
+  | TOCro { P.clt2mcode "[" $1 }
+  | TCCro { P.clt2mcode "]" $1 }
+  | TEq { P.clt2mcode "=" $1 }
+  | TWhy { P.clt2mcode "?" $1 }
+  | TBang { P.clt2mcode "!" $1 }
+  | TOPar { P.clt2mcode "(" $1 }
+  | TCPar { P.clt2mcode ")" $1 }
+  | TIf { P.clt2mcode "if" $1 }
+  | TElse { P.clt2mcode "else" $1 }
 
 /****************************************************************************/
 

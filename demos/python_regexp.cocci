@@ -1,4 +1,5 @@
 @initialize:python@
+@@
 import re
 m = re.compile('_new$')
 

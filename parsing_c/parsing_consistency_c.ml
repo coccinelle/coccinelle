@@ -129,7 +129,7 @@ let consistency_checking2 xs =
       let sorted = List.rev sorted in
       match sorted with
       | [CTypedef, i1;CIdent, i2] ->
-          pr2_err ("transforming some ident in typedef");
+          pr2_err ("transforming some ident into a typedef");
           push2 k ident_to_type;
       | [CIdent, i1;CTypedef, i2] ->
           pr2_err ("TODO:typedef now used as an identifier");

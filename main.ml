@@ -479,7 +479,8 @@ let other_options = [
     "--filter-passed-level",     Arg.Set_int Flag_parsing_c.filter_passed_level,"  ";
 (*  debug cfg doesn't seem to have any effect, so drop it as an option *)
 (*  "--debug_cfg",          Arg.Set Flag_parsing_c.debug_cfg , "  "; *)
-    "--debug-unparsing",         Arg.Set  Flag_parsing_c.debug_unparsing, "  ";
+    "--debug-unparsing",    Arg.Set Flag_parsing_c.debug_unparsing, "  ";
+    "--debug-parse-cocci",  Arg.Set Flag_parsing_cocci.debug_parse_cocci, "  ";
 
   ];
   (* could use Flag_parsing_c.options_debug_with_title instead *)
@@ -1011,6 +1012,7 @@ let rec main_action xs =
 	      then
 		begin
 		  (if !inplace_modif then generate_outfiles outfiles x xs);
+		  debug_restart virt_rules virt_ids;
 		  Flag.defined_virtual_rules := virt_rules;
 		  Flag.defined_virtual_env := virt_ids;
 		  Common.erase_temp_files();
@@ -1033,6 +1035,21 @@ let rec main_action xs =
 	generate_outfiles outfiles x xs;
         if !compare_with_expected
         then Testing.compare_with_expected outfiles)
+
+and debug_restart virt_rules virt_ids =
+  if !Flag_parsing_cocci.debug_parse_cocci
+  then
+    begin
+      Printf.fprintf stderr
+	"Starting a new iteration with:\nVirtual rules: %s\n"
+	(String.concat " " virt_rules);
+      Printf.fprintf stderr
+	"Virtual identifiers: %s\n\n"
+	(String.concat ", "
+	   (List.map
+	      (function (a,b) -> Printf.sprintf "%s: %s" a b)
+	      virt_ids))
+    end
 
 and generate_outfiles outfiles x (* front file *) xs (* other files *) =
   let outfiles = Cocci.check_duplicate_modif outfiles in

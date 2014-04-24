@@ -484,6 +484,8 @@ and base_rule_elem =
   | Return        of string mcode (* return *) * string mcode (* ; *)
   | ReturnExpr    of string mcode (* return *) * expression *
 	             string mcode (* ; *)
+  | Exec          of string mcode (* EXEC *) * string mcode (* language *) *
+	             exec_code dots * string mcode (* ; *)
 
   | MetaRuleElem  of meta_name mcode * keep_binding * inherited
   | MetaStmt      of meta_name mcode * keep_binding * metaStmtInfo *
@@ -586,6 +588,13 @@ and base_case_line =
 
 and case_line = base_case_line wrap
 
+and base_exec_code =
+    ExecEval of string mcode (* : *) * expression
+  | ExecToken of string mcode
+  | ExecDots of string mcode (* ... *)
+
+and exec_code = base_exec_code wrap
+
 and inc_file =
     Local of inc_elem list
   | NonLocal of inc_elem list
@@ -668,6 +677,7 @@ and anything =
   | StatementTag        of statement
   | ForInfoTag          of forinfo
   | CaseLineTag         of case_line
+  | StringFragmentTag   of string_fragment
   | ConstVolTag         of const_vol
   | Token               of string * info option
   | Directive           of added_string list
