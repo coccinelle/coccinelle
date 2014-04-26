@@ -344,6 +344,7 @@
   Note that this hash table is global and is never cleared, since we
   work on only one semantic patch per execution of Coccinelle.  Thanks to
   SF Markus Elfring for pointing out the problem.
+- Leave constraints in function prototypes, now that they are comparable.
 
 * 0.2.5
 ** Language:
