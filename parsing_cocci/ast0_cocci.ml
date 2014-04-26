@@ -540,7 +540,7 @@ let default_befaft _ =
   MIXED(ref (Ast.NOTHING,default_token_info,default_token_info))
 let context_befaft _ =
   CONTEXT(ref (Ast.NOTHING,default_token_info,default_token_info))
-	  let minus_befaft _ = MINUS(ref (Ast.NOREPLACEMENT,default_token_info))
+let minus_befaft _ = MINUS(ref (Ast.NOREPLACEMENT,default_token_info))
 
 let wrap x =
   { node = x;
