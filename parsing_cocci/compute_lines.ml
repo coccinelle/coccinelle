@@ -127,6 +127,39 @@ let promote_to_statement_start stm mcodekind =
      Ast0.strings_after = []},
    Ast0.set_info stm {info with Ast0.strings_before = []})
 
+let promote_to_statement_end stm mcodekind =
+  let info = Ast0.get_info stm in
+  let new_pos_info =
+    {info.Ast0.pos_info with
+      Ast0.logical_end = info.Ast0.pos_info.Ast0.logical_start;
+      Ast0.line_end = info.Ast0.pos_info.Ast0.line_start; } in
+  let new_info =
+    {info with
+     Ast0.pos_info = new_pos_info;
+     Ast0.mcode_start = [mcodekind]; Ast0.mcode_end = [mcodekind];
+     Ast0.attachable_start = check_attachable true;
+     Ast0.attachable_end = check_attachable true;
+     Ast0.strings_before = []} in
+  (new_info,
+   {(Ast0.wrap ()) with Ast0.info = new_info; Ast0.mcodekind = ref mcodekind},
+   Ast0.set_info stm {info with Ast0.strings_after = []})
+
+let promote_to_statement_end_mcode (a,ar,info,mc,al,adj) mcodekind =
+  let new_pos_info =
+    {info.Ast0.pos_info with
+      Ast0.logical_end = info.Ast0.pos_info.Ast0.logical_start;
+      Ast0.line_end = info.Ast0.pos_info.Ast0.line_start; } in
+  let new_info =
+    {info with
+     Ast0.pos_info = new_pos_info;
+     Ast0.mcode_start = [mcodekind]; Ast0.mcode_end = [mcodekind];
+     Ast0.attachable_start = check_attachable true;
+     Ast0.attachable_end = check_attachable true;
+     Ast0.strings_before = []} in
+  (new_info,
+   {(Ast0.wrap ()) with Ast0.info = new_info; Ast0.mcodekind = ref mcodekind},
+   (a,ar,{info with Ast0.strings_after = []},mc,al,adj))
+
 (* mcode is good by default *)
 let bad_mcode (t,a,info,mcodekind,pos,adj) =
   let new_info =
@@ -882,9 +915,9 @@ let rec statement s =
 	let exp = expression exp in
 	let rp = normal_mcode rp in
 	let branch = statement branch in
-	let right = promote_to_statement branch aft in
+	let (rightinfo,right,branch) = promote_to_statement_end branch aft in
 	mkres s
-	  (Ast0.IfThen(iff,lp,exp,rp,branch,(Ast0.get_info right,aft,adj)))
+	  (Ast0.IfThen(iff,lp,exp,rp,branch,(rightinfo,aft,adj)))
 	  (promote_mcode iff) right
     | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,(_,aft,adj)) ->
 	let iff = normal_mcode iff in
@@ -894,10 +927,10 @@ let rec statement s =
 	let branch1 = statement branch1 in
 	let els = normal_mcode els in
 	let branch2 = statement branch2 in
-	let right = promote_to_statement branch2 aft in
+	let (rightinfo,right,branch2) = promote_to_statement_end branch2 aft in
 	mkres s
 	  (Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,
-	    (Ast0.get_info right,aft,adj)))
+	    (rightinfo,aft,adj)))
 	  (promote_mcode iff) right
     | Ast0.While(wh,lp,exp,rp,body,(_,aft,adj)) ->
 	let wh = normal_mcode wh in
@@ -905,8 +938,8 @@ let rec statement s =
 	let exp = expression exp in
 	let rp = normal_mcode rp in
 	let body = statement body in
-	let right = promote_to_statement body aft in
-	mkres s (Ast0.While(wh,lp,exp,rp,body,(Ast0.get_info right,aft,adj)))
+	let (rightinfo,right,body) = promote_to_statement_end body aft in
+	mkres s (Ast0.While(wh,lp,exp,rp,body,(rightinfo,aft,adj)))
 	  (promote_mcode wh) right
     | Ast0.Do(d,body,wh,lp,exp,rp,sem) ->
 	let d = normal_mcode d in
@@ -940,9 +973,9 @@ let rec statement s =
 	let exp3 = get_option expression exp3 in
 	let rp = normal_mcode rp in
 	let body = statement body in
-	let right = promote_to_statement body aft in
+	let (rightinfo,right,body) = promote_to_statement_end body aft in
 	mkres s (Ast0.For(fr,lp,first,exp2,sem2,exp3,rp,body,
-			  (Ast0.get_info right,aft,adj)))
+			  (rightinfo,aft,adj)))
 	  (promote_mcode fr) right
     | Ast0.Iterator(nm,lp,args,rp,body,(_,aft,adj)) ->
 	let nm = ident nm in
@@ -950,9 +983,9 @@ let rec statement s =
 	let args = dots is_exp_dots (Some(promote_mcode lp)) expression args in
 	let rp = normal_mcode rp in
 	let body = statement body in
-	let right = promote_to_statement body aft in
+	let (rightinfo,right,body) = promote_to_statement_end body aft in
 	mkres s
-	  (Ast0.Iterator(nm,lp,args,rp,body,(Ast0.get_info right,aft,adj)))
+	  (Ast0.Iterator(nm,lp,args,rp,body,(rightinfo,aft,adj)))
 	  nm right
     | Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb) ->
 	let switch = normal_mcode switch in
@@ -1080,7 +1113,8 @@ let rec statement s =
 	let dots = bad_mcode dots in
 	let ln = promote_mcode dots in
 	mkres s (Ast0.Stars(dots,whencode)) ln ln
-    | Ast0.FunDecl((_,bef),fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
+    | Ast0.FunDecl((_,bef),fninfo,name,lp,params,rp,lbrace,body,rbrace,
+		   (_,aft)) ->
 	let fninfo =
 	  List.map
 	    (function Ast0.FType(ty) -> Ast0.FType(typeC ty) | x -> x)
@@ -1121,6 +1155,8 @@ let rec statement s =
 	      (leftinfo,
 	       Ast0.FAttr(set_mcode_info attr (Ast0.get_info attrinfo))::rest,
 	       name) in
+	let (rightinfo,right,rbrace) =
+	  promote_to_statement_end_mcode rbrace aft in
       (* pretend it is one line before the start of the function, so that it
 	 will catch things defined at top level.  We assume that these will not
 	 be defined on the same line as the function.  This is a HACK.
@@ -1129,18 +1165,15 @@ let rec statement s =
 	 insert_plus, which doesn't distinguish between different mcodekinds *)
 	let res =
 	  Ast0.FunDecl((leftinfo,bef),fninfo,name,lp,params,rp,lbrace,
-		       body,rbrace) in
+		       body,rbrace,(rightinfo,aft)) in
       (* have to do this test again, because of typing problems - can't save
 	 the result, only use it *)
 	(match fninfo with
-	  [] -> mkres s res name (promote_mcode rbrace)
-	| Ast0.FStorage(stg)::_ ->
-	    mkres s res (promote_mcode stg) (promote_mcode rbrace)
-	| Ast0.FType(ty)::_ -> mkres s res ty (promote_mcode rbrace)
-	| Ast0.FInline(inline)::_ ->
-	    mkres s res (promote_mcode inline) (promote_mcode rbrace)
-	| Ast0.FAttr(attr)::_ ->
-	    mkres s res (promote_mcode attr) (promote_mcode rbrace))
+	  [] -> mkres s res name right
+	| Ast0.FStorage(stg)::_ -> mkres s res (promote_mcode stg) right
+	| Ast0.FType(ty)::_ -> mkres s res ty right
+	| Ast0.FInline(inline)::_ -> mkres s res (promote_mcode inline) right
+	| Ast0.FAttr(attr)::_ -> mkres s res (promote_mcode attr) right)
 
     | Ast0.Include(inc,stm) ->
 	let inc = normal_mcode inc in

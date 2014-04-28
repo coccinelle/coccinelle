@@ -758,10 +758,11 @@ and statement arity s =
       List.iter (function x -> case_line arity x; force_newline()) cases;
       rule_elem arity rb
   | Ast.Atomic(re) -> rule_elem arity re
-  | Ast.FunDecl(header,lbrace,body,rbrace) ->
+  | Ast.FunDecl(header,lbrace,body,rbrace,(_,_,_,aft)) ->
       rule_elem arity header; rule_elem arity lbrace;
       dots force_newline (statement arity) body;
-      rule_elem arity rbrace
+      rule_elem arity rbrace;
+      mcode (function _ -> ()) ((),Ast.no_info,aft,[])
   | Ast.Disj([stmt_dots]) ->
       print_string arity;
       dots (function _ -> if !print_newlines_disj then force_newline())

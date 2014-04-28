@@ -413,7 +413,7 @@ let classify is_minus all_marked table code =
 	    r.VT0.combiner_rec_statement_dots
 	    ender
 	(* cases for everything with extra mcode *)
-      |	Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_)
+      |	Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_,_)
       | Ast0.Decl((info,bef),_) ->
 	  bind (nc_mcode ((),(),info,bef,(),-1)) (k s)
       (* For these, the info of the aft mcode is derived from the else
@@ -660,8 +660,8 @@ let equal_parameterTypeDef p1 p2 =
 
 let rec equal_statement s1 s2 =
   match (Ast0.unwrap s1,Ast0.unwrap s2) with
-    (Ast0.FunDecl(_,fninfo1,_,lp1,_,rp1,lbrace1,_,rbrace1),
-     Ast0.FunDecl(_,fninfo2,_,lp2,_,rp2,lbrace2,_,rbrace2)) ->
+    (Ast0.FunDecl(_,fninfo1,_,lp1,_,rp1,lbrace1,_,rbrace1,_),
+     Ast0.FunDecl(_,fninfo2,_,lp2,_,rp2,lbrace2,_,rbrace2,_)) ->
        (List.length fninfo1) = (List.length fninfo2) &&
        List.for_all2 equal_fninfo fninfo1 fninfo2 &&
        equal_mcode lp1 lp2 && equal_mcode rp1 rp2 &&
@@ -971,20 +971,20 @@ let rec is_init s =
 let rec is_decl s =
   match Ast0.unwrap s with
     Ast0.Decl(_,e) -> true
-  | Ast0.FunDecl(_,_,_,_,_,_,_,_,_) -> true
+  | Ast0.FunDecl(_,_,_,_,_,_,_,_,_,_) -> true
   | Ast0.Disj(_,stmts,_,_) -> isall is_decl stmts
   | _ -> false
 
 let rec is_fndecl s =
   match Ast0.unwrap s with
-    Ast0.FunDecl(_,_,_,_,_,_,_,_,_) -> true
+    Ast0.FunDecl(_,_,_,_,_,_,_,_,_,_) -> true
   | Ast0.Disj(_,stmts,_,_) -> isall is_fndecl stmts
   | _ -> false
 
 let rec is_toplevel s =
   match Ast0.unwrap s with
     Ast0.Decl(_,e) -> true
-  | Ast0.FunDecl(_,_,_,_,_,_,_,_,_) -> true
+  | Ast0.FunDecl(_,_,_,_,_,_,_,_,_,_) -> true
   | Ast0.Disj(_,stmts,_,_) -> isall is_toplevel stmts
   | Ast0.ExprStatement(Some fc,_) ->
       (match Ast0.unwrap fc with

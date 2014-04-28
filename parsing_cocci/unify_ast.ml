@@ -661,7 +661,7 @@ let rec unify_statement s1 s2 =
 	   s2)
   | (Ast.Nest(_,s1,_,_,_,_,_),Ast.Nest(_,s2,_,_,_,_,_)) ->
       unify_dots unify_statement sdots s1 s2
-  | (Ast.FunDecl(h1,lb1,s1,rb1),Ast.FunDecl(h2,lb2,s2,rb2)) ->
+  | (Ast.FunDecl(h1,lb1,s1,rb1,_),Ast.FunDecl(h2,lb2,s2,rb2,_)) ->
       conjunct_bindings (unify_rule_elem h1 h2)
 	(conjunct_bindings (unify_rule_elem lb1 lb2)
 	   (conjunct_bindings (unify_dots unify_statement sdots s1 s2)

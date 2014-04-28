@@ -461,7 +461,7 @@ and statement arity s =
   print_context s
     (function _ ->
       match Ast0.unwrap s with
-	Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
+	Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace,_) ->
 	  print_string arity;
 	  List.iter print_fninfo fninfo;
 	  ident name; mcode print_string_box lp;

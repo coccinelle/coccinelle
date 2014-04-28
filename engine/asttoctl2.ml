@@ -528,7 +528,7 @@ let count_nested_braces s =
   let option_default = 0 in
   let stmt_count r k s =
     match Ast.unwrap s with
-      Ast.Seq(_,_,_) | Ast.FunDecl(_,_,_,_) -> (k s) + 1
+      Ast.Seq(_,_,_) | Ast.FunDecl(_,_,_,_,_) -> (k s) + 1
     | _ -> k s in
   let donothing r k e = k e in
   let mcode r x = 0 in
@@ -679,9 +679,9 @@ and get_before_e s a =
 	  cases in
       (Ast.rewrap s (Ast.Switch(header,lb,de,cases,rb)),
        [Ast.WParen(rb,index)])
-  | Ast.FunDecl(header,lbrace,body,rbrace) ->
+  | Ast.FunDecl(header,lbrace,body,rbrace,aft) ->
       let (bd,_) = get_before body [] in
-      (Ast.rewrap s (Ast.FunDecl(header,lbrace,bd,rbrace)),[])
+      (Ast.rewrap s (Ast.FunDecl(header,lbrace,bd,rbrace,aft)),[])
   | _ ->
       Pretty_print_cocci.statement "" s; Format.print_newline();
       failwith "get_before_e: not supported"
@@ -818,9 +818,9 @@ and get_after_e s a =
 	  cases in
       let (de,_) = get_after decls [] in
       (Ast.rewrap s (Ast.Switch(header,lb,de,cases,rb)),[Ast.WParen(lb,index)])
-  | Ast.FunDecl(header,lbrace,body,rbrace) ->
+  | Ast.FunDecl(header,lbrace,body,rbrace,aft) ->
       let (bd,_) = get_after body [] in
-      (Ast.rewrap s (Ast.FunDecl(header,lbrace,bd,rbrace)),[])
+      (Ast.rewrap s (Ast.FunDecl(header,lbrace,bd,rbrace,aft)),[])
   | _ -> failwith "get_after_e: not supported"
 
 let preprocess_dots sl =
@@ -2199,7 +2199,8 @@ and statement stmt top after quantified minus_quantified
       wrapper
 	(end_control_structure b1fvs switch_header body
 	   after_pred (Some(ctl_ex after_pred)) None aft after label guard)
-  | Ast.FunDecl(header,lbrace,body,rbrace) ->
+  | Ast.FunDecl(header,lbrace,body,rbrace,(afvs,afresh,ainh,aft)) ->
+      (* what to do with afvs??? *)
       let (hfvs,b1fvs,lbfvs,b2fvs,b3fvs,rbfvs) =
 	match
 	  seq_fvs quantified
@@ -2381,6 +2382,17 @@ and statement stmt top after quantified minus_quantified
 		     (After (make_seq_after end_brace after))
 		     new_quantified3 new_mquantified3 None llabel slabel
 		     false guard)] in
+      let function_header =
+	match aft with
+	  Ast.CONTEXT(_,Ast.NOTHING) -> function_header
+	| _ ->
+	    let match_ender =
+	      ctl_and (endpred label)
+		(ctl_back_ex
+		   (make_match
+		      (make_meta_rule_elem aft (afvs,afresh,ainh)))) in
+	    CTL.AndAny(CTL.FORWARD,CTL.NONSTRICT,function_header,
+		       ctl_or (ctl_not (endpred label)) match_ender) in
       quantify guard b1fvs
 	(make_seq [function_header; quantify guard b2fvs body_code])
   | Ast.Define(header,body) ->

@@ -504,7 +504,7 @@ let combiner bind option_default
 	       (bind (string_mcode ender)
 		  (multibind
 		     (List.map (whencode statement_dots statement) whn))))
-      | Ast.FunDecl(header,lbrace,body,rbrace) ->
+      | Ast.FunDecl(header,lbrace,body,rbrace,_) ->
 	  multibind [rule_elem header; rule_elem lbrace;
 		      statement_dots body; rule_elem rbrace]
       | Ast.Define(header,body) ->
@@ -1113,9 +1113,9 @@ let rebuilder
 		     string_mcode ender,
 		     List.map (whencode statement_dots statement) whn,
 		     multi,bef,aft)
-	| Ast.FunDecl(header,lbrace,body,rbrace) ->
+	| Ast.FunDecl(header,lbrace,body,rbrace,aft) ->
 	    Ast.FunDecl(rule_elem header,rule_elem lbrace,
-			statement_dots body, rule_elem rbrace)
+			statement_dots body, rule_elem rbrace, aft)
 	| Ast.Define(header,body) ->
 	    Ast.Define(rule_elem header,statement_dots body)
 	| Ast.AsStmt(stm,asstm) -> Ast.AsStmt(statement stm,statement asstm)

@@ -1187,7 +1187,7 @@ let rec statement arity s =
 
   | Ast.Atomic(re) -> rule_elem arity re
 
-  | Ast.FunDecl(header,lbrace,body,rbrace) ->
+  | Ast.FunDecl(header,lbrace,body,rbrace,_) ->
       rule_elem arity header; rule_elem arity lbrace;
       dots force_newline (statement arity) body; rule_elem arity rbrace
 

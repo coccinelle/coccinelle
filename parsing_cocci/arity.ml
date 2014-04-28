@@ -1044,7 +1044,7 @@ and statement tgt stm =
 	     (expression Ast0.NONE))
 	  whn in
       make_rule_elem stm tgt arity (Ast0.Stars(dots,whn))
-  | Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace) ->
+  | Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace,aft) ->
       let arity =
 	all_same true tgt (mcode2line lp)
 	  ((List.map mcode2arity [lp;rp;lbrace;rbrace]) @ (fninfo2arity fi)) in
@@ -1057,7 +1057,7 @@ and statement tgt stm =
       let body = dots (statement arity) body in
       let rbrace = mcode rbrace in
       make_rule_elem stm tgt arity
-	(Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace))
+	(Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace,aft))
   | Ast0.Include(inc,s) ->
       let arity =
 	all_same true tgt (mcode2line inc) [mcode2arity inc; mcode2arity s] in

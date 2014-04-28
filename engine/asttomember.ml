@@ -232,9 +232,10 @@ and statement testfn mcode tail stmt : 'a list list =
 
   | Ast.Dots(_,whencodes,_,_) -> []
 
-  | Ast.FunDecl(header,lbrace,body,rbrace) ->
+  | Ast.FunDecl(header,lbrace,body,rbrace,(_,_,_,aft)) ->
       let body_info = statement_list testfn mcode true body in
-      if testfn header or testfn lbrace or testfn rbrace
+      if testfn header or testfn lbrace or testfn rbrace or
+	mcode () ((),(),aft,[])
       then conj (rule_elem header) body_info
       else body_info
 

@@ -362,7 +362,8 @@ and base_statement =
 	fninfo list * ident (* name *) *
 	string mcode (* ( *) * parameter_list * string mcode (* ) *) *
 	string mcode (* { *) * statement dots *
-	string mcode (* } *)
+	string mcode (* } *) *
+	(info * mcodekind) (* after the function decl *)
   | Include of string mcode (* #include *) * Ast_cocci.inc_file mcode(* file *)
   | Undef of string mcode (* #define *) * ident (* name *)
   | Define of string mcode (* #define *) * ident (* name *) *

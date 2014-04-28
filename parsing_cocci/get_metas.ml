@@ -591,7 +591,7 @@ and statement s =
   let (metas,s) =
     rewrap s
       (match Ast0.unwrap s with
-	Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace) ->
+	Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace,aft) ->
 	  let (fi_n,fi) = map_split_bind fninfo fi in
 	  let (name_n,name) = ident name in
 	  let (lp_n,lp) = mcode lp in
@@ -602,7 +602,7 @@ and statement s =
 	  let (rbrace_n,rbrace) = mcode rbrace in
 	  (multibind
 	     [fi_n;name_n;lp_n;params_n;rp_n;lbrace_n;body_n;rbrace_n],
-	   Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace))
+	   Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace,aft))
       | Ast0.Decl(bef,decl) ->
 	  let (decl_n,decl) = declaration decl in
 	  (decl_n,Ast0.Decl(bef,decl))

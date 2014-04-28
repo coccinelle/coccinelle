@@ -906,7 +906,8 @@ and statement s =
 		 (statement Ast.NotSequencible))
 	      whn in
 	  Ast.Stars(d,whn,[],[])
-      | Ast0.FunDecl((_,bef),fi,name,lp,params,rp,lbrace,body,rbrace) ->
+      | Ast0.FunDecl((_,bef),fi,name,lp,params,rp,lbrace,body,rbrace,
+		     (_,aft)) ->
 	  let fi = List.map fninfo fi in
 	  let name = ident name in
 	  let lp = mcode lp in
@@ -922,7 +923,8 @@ and statement s =
 			    allminus,fi,name,lp,params,rp)),
 		      tokenwrap lbrace s (Ast.SeqStart(lbrace)),
 		      body,
-		      tokenwrap rbrace s (Ast.SeqEnd(rbrace)))
+		      tokenwrap rbrace s (Ast.SeqEnd(rbrace)),
+		      ([],[],[],convert_allminus_mcodekind allminus aft))
       |	Ast0.Include(inc,str) ->
 	  Ast.Atomic(rewrap_rule_elem s (Ast.Include(mcode inc,mcode str)))
       |	Ast0.Undef(def,id) ->

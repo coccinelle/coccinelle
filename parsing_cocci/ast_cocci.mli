@@ -520,7 +520,7 @@ and base_statement =
 	             (statement dots,statement) whencode list * multi *
 	             dots_whencode list * dots_whencode list
   | FunDecl       of rule_elem (* header *) * rule_elem (* { *) *
-     	             statement dots * rule_elem (* } *)
+     	             statement dots * rule_elem (* } *) * end_info (*exit*)
   | Define        of rule_elem (* header *) * statement dots
   | AsStmt        of statement * statement (* as statement, always metavar *)
   | Dots          of string mcode (* ... *) *

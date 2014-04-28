@@ -1108,7 +1108,8 @@ fundecl:
 			       P.clt2mcode "(" lp, d,
 			       P.clt2mcode ")" rp,
 			       P.clt2mcode "{" lb, b,
-			       P.clt2mcode "}" rb)) }
+			       P.clt2mcode "}" rb,
+			       (Ast0.default_info(),Ast0.context_befaft()))) }
 
 fninfo:
     /* empty */ { [] }
