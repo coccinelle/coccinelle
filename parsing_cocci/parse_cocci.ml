@@ -1209,6 +1209,10 @@ having sequential logical lines.  Not sure that this is good enough,
 as it might result in later gaps in the logical lines... *)
 let rec process_pragmas bef skips = function
     [] -> add_bef bef @ List.rev skips
+  | ((PC.TEllipsis(_),_) as a)::((PC.TComma(_),_) as b)::xs ->
+      (* This is a ..., in an argument list, field initializer list etc,
+	 which might go away, so nothing should be attached to the , *)
+      process_pragmas bef (b::a::skips) xs
   | ((PC.TDirective(s,i),_)::_) as l ->
       let (pragmas,rest) = collect_all_pragmas [] l in
       let (pass,rest0) = collect_pass rest in

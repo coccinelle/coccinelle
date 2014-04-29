@@ -347,6 +347,9 @@
 - Leave constraints in function prototypes, now that they are comparable.
 - Make it possible to add something after the last brace of a function.
   Thanks to Benoit Taine for motivating this change.
+- Avoiding attaching # directives to , after ... as this comma may get
+  dropped or not match any code.  Thanks to Stefan Assmann for reporting
+  the problem.
 
 * 0.2.5
 ** Language:
