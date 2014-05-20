@@ -809,7 +809,7 @@ postfix_expr:
  /*(* gccext: also called compound literals *)*/
  | topar2 type_name tcpar2 TOBrace TCBrace
      { mk_e(Constructor ($2, (InitList [], [$4;$5]))) [$1;$3] }
- | topar2 type_name tcpar2 TOBrace initialize_list gcc_comma_opt TCBrace
+ | topar2 type_name tcpar2 TOBrace initialize_list gcc_comma_opt_struct TCBrace
      { mk_e(Constructor ($2, (InitList (List.rev $5),[$4;$7]++$6))) [$1;$3] }
 
 
@@ -2194,13 +2194,6 @@ attribute_storage_list:
 
 
 attributes: attribute_list { $1 }
-
-
-
-/*(* gccext:  which allow a trailing ',' in enum, as in perl *)*/
-gcc_comma_opt:
- | TComma {  [$1] }
- | /*(* empty *)*/  {  []  }
 
 comma_opt:
  | TComma {  [$1] }
