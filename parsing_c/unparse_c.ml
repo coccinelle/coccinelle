@@ -958,9 +958,10 @@ let check_danger toks =
 	  match get_danger x with
 	    Some Ast_c.Danger ->
 	      let (nodanger,rest) = span isnt_danger_or_end xs in
-	      (match rest with
-		[] -> x::xs
-	      |	y::ys ->
+	      (match (nodanger,rest) with
+		(_,[]) -> x::xs
+	      | ([],_) -> x:: loop xs (* still in danger region *)
+	      |	(_,y::ys) ->
 		  (match (y,get_danger y) with
 		    (T2(tok,Ctx,a,b), Some Ast_c.Danger) when is_comma y ->
 		      let rec find_minus = function
