@@ -1264,7 +1264,7 @@ let add_newlines toks tabbing_unit =
       when str_of_token2 t1 = "#define" ->
 	(* don't want to add newlines in a #define *)
 	let (def,rest) = scan_past_define rest in
-	def @ (loop info count rest)
+	t1 :: def @ (loop info count rest)
     | ((T2(commatok,Ctx,_,_))::_) as xs
       when seen_cocci && length stack = 1 &&
 	(TH.str_of_tok commatok) = "," && not (space_cell = None) ->
