@@ -352,6 +352,7 @@
 - For multidecls, take into account that type may comprise multiple tokens.
   Thanks to Nic Volanschi for noticing the problem.
 - don't add newlines in #defines, even if lines get long
+- consider # as a comment character in script code
 
 * 0.2.5
 ** Language:
