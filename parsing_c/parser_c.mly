@@ -1132,6 +1132,10 @@ token:
 
   | Tif     { $1 }
   | Telse   { $1 }
+  | TInt    { snd $1 }
+  | TFloat  { snd $1 }
+  | TString { snd $1 }
+  | TChar   { snd $1 } /* other constants needed? */
 
 /*(*************************************************************************)*/
 /*(* types *)*/
