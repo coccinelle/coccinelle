@@ -41,7 +41,13 @@ let get_files path =
       else ("find "^ path ^" -name \"*.c\"")) in
   let cpp =
     if !Flag.c_plus_plus
-    then cmd_to_list ("find "^ path ^" -name \"*.cpp\"")
+    then cmd_to_list
+      (if !Flag.include_headers
+      then
+        "find "^ path ^" -name \"*.cpp\" -o -name \"*.cxx\" -o -name \"*.cc\""
+        ^"-o name \"*.h\" -o -name \"*.hpp\" -o -name \"*.hxx\""
+      else
+        "find "^ path ^" -name \"*.cpp\" -o -name \"*.cxx\" -o -name \"*.cc\"")
     else [] in
   cpp @ ch
 

@@ -958,9 +958,10 @@ let check_danger toks =
 	  match get_danger x with
 	    Some Ast_c.Danger ->
 	      let (nodanger,rest) = span isnt_danger_or_end xs in
-	      (match rest with
-		[] -> x::xs
-	      |	y::ys ->
+	      (match (nodanger,rest) with
+		(_,[]) -> x::xs
+	      | ([],_) -> x:: loop xs (* still in danger region *)
+	      |	(_,y::ys) ->
 		  (match (y,get_danger y) with
 		    (T2(tok,Ctx,a,b), Some Ast_c.Danger) when is_comma y ->
 		      let rec find_minus = function
@@ -1194,6 +1195,24 @@ let string_length s count info =
   (*don't care about seen cocci - know no newline is possible, or don't care*)
 let simple_string_length s count = fst(string_length s count (None,false))
 
+let scan_past_define l =
+  let is_newline = function
+      T2(Parser_c.TCommentNewline _,_b,_i,_h) -> true
+    | C2 "\n" -> true
+    | _ -> false in
+  let rec loop = function
+      [] -> ([],[])
+    | x::xs when str_of_token2 x = "\\" ->
+	let (notnewline,nl,after) =
+	  xs +> split_when is_newline in
+	let (before,after) = loop after in
+	(notnewline @ nl :: before, after)
+    | x::xs when is_newline x -> ([x],xs)
+    | x::xs ->
+	let (before,after) = loop xs in
+	(x::before,after) in
+  loop l
+
 let add_newlines toks tabbing_unit =
   (* the following is for strings that may contain newline or tabs *)
   let create_indent n =
@@ -1241,6 +1260,11 @@ let add_newlines toks tabbing_unit =
     | _ -> (count,space_cell) in
   let rec loop ((stack,space_cell,seen_cocci) as info) count = function
     | [] -> []
+    | t1::rest
+      when str_of_token2 t1 = "#define" ->
+	(* don't want to add newlines in a #define *)
+	let (def,rest) = scan_past_define rest in
+	t1 :: def @ (loop info count rest)
     | ((T2(commatok,Ctx,_,_))::_) as xs
       when seen_cocci && length stack = 1 &&
 	(TH.str_of_tok commatok) = "," && not (space_cell = None) ->

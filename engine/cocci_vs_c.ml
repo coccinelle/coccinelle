@@ -653,8 +653,6 @@ module type PARAM =
       (A.meta_name A.mcode, (string Ast_c.wrap, Ast_c.il) either list) matcher
     val distrf_pragmainfo :
       (A.meta_name A.mcode, Ast_c.pragmainfo) matcher
-    val distrf_ident_list :
-      (A.meta_name A.mcode, (Ast_c.name, Ast_c.il) either list) matcher
 
     val distrf_enum_fields :
       (A.meta_name A.mcode, (B.oneEnumType, B.il) either list) matcher
