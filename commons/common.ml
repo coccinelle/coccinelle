@@ -2491,7 +2491,14 @@ let adjust_ext_if_needed filename ext =
   then failwith "I need an extension such as .c not just c";
 
   if not (filename =~ (".*\\" ^ ext))
-  then filename ^ ext
+  then
+    if Sys.file_exists filename
+    then filename
+    else
+      begin
+	pr2 ("Warning: extending nonstandard filename: "^filename);
+	filename ^ ext
+      end
   else filename
 
 
