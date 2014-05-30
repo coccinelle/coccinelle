@@ -2792,11 +2792,8 @@ and (struct_fields: (A.annotated_decl list, B.field list) matcher) =
   let build_metalist ea (ida,leninfo,keep,inherited) =
     match A.unwrap ea with
       A.DElem(mckstart,allminus,d) ->
-	(match A.unwrap d with
-	  A.MetaFieldList(ida,leninfo,keep,inherited) ->
-	    A.DElem(mckstart,allminus,
-		    A.rewrap d (A.MetaFieldList(ida,leninfo,keep,inherited)))
-	| _ -> failwith "not possible")
+	A.DElem(mckstart,allminus,
+		(A.rewrap ea (A.MetaFieldList(ida,leninfo,keep,inherited))))
     | _ -> failwith "not possible" in
   let mktermval v =
     (* drop empty ii information, because nothing between elements *)
