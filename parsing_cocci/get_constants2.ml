@@ -742,7 +742,8 @@ let all_context =
     match Ast.unwrap e with
       Ast.IfThen(_,_,ei) | Ast.IfThenElse(_,_,_,_,ei)
     | Ast.While(_,_,ei)  | Ast.For(_,_,ei)
-    | Ast.Iterator(_,_,ei) -> bind (k e) (end_info ei)
+    | Ast.Iterator(_,_,ei) | Ast.FunDecl(_,_,_,_,ei) ->
+	bind (k e) (end_info ei)
     | _ -> k e in
 
   V.combiner bind option_default
