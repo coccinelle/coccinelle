@@ -21,12 +21,18 @@ let contains_modif =
     | Ast.PLUS _ -> failwith "not possible"
     | Ast.CONTEXT(_,info) -> not (info = Ast.NOTHING) in
   let do_nothing r k e = k e in
+  let annotated_decl decl =
+    match Ast.unwrap decl with
+      Ast.DElem(bef,_,_) -> bef
+    | _ -> failwith "not possible" in
   let rule_elem r k re =
     let res = k re in
     match Ast.unwrap re with
       Ast.FunHeader(bef,_,fninfo,name,lp,params,rp) ->
       bind (mcode r ((),(),bef,[])) res
-    | Ast.Decl(bef,_,decl) -> bind (mcode r ((),(),bef,[])) res
+    | Ast.Decl decl -> bind (mcode r ((),(),annotated_decl decl,[])) res
+    | Ast.ForHeader(fr,lp,Ast.ForDecl(decl),e2,sem2,e3,rp) ->
+	bind (mcode r ((),(),annotated_decl decl,[])) res
     | _ -> res in
   let recursor =
     V.combiner bind option_default

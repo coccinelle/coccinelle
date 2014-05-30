@@ -1671,9 +1671,10 @@ field_declaration:
        if fst (unwrap storage) <> NoSto
        then internal_error "parsing dont allow this";
 
+       let iistart = Ast_c.fakeInfo () in (* for parallelism with DeclList *)
        FieldDeclList ($2 +> (List.map (fun (f, iivirg) ->
          f returnType, iivirg))
-                         ,[$3])
+                         ,[$3;iistart])
          (* dont need to check if typedef or func initialised cos
           * grammar dont allow typedef nor initialiser in struct
           *)
@@ -1686,7 +1687,8 @@ field_declaration:
        if fst (unwrap storage) <> NoSto
        then internal_error "parsing dont allow this";
 
-       FieldDeclList ([(Simple (None, returnType)) , []], [$2])
+       let iistart = Ast_c.fakeInfo () in (* for parallelism with DeclList *)
+       FieldDeclList ([(Simple (None, returnType)) , []], [$2;iistart])
      }
 
 

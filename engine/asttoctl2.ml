@@ -385,9 +385,9 @@ let fresh_metavar _ = "_S"
 (* fvinfo is going to end up being from the whole associated statement.
    it would be better if it were just the free variables in d, but free_vars.ml
    doesn't keep track of free variables on + code *)
-let make_meta_rule_elem d fvinfo =
+let make_meta_rule_elem n d fvinfo =
   let nm = fresh_metavar() in
-  Ast.make_meta_rule_elem nm d fvinfo
+  Ast.make_meta_rule_elem (nm^n) d fvinfo
 
 let get_unquantified quantified vars =
   List.filter (function x -> not (List.mem x quantified)) vars
@@ -426,12 +426,18 @@ let contains_modif =
     | Ast.PLUS _ -> failwith "not possible"
     | Ast.CONTEXT(_,info) -> not (info = Ast.NOTHING) in
   let do_nothing r k e = k e in
+  let annotated_decl decl =
+    match Ast.unwrap decl with
+      Ast.DElem(bef,_,_) -> bef
+    | _ -> failwith "not possible" in
   let rule_elem r k re =
     let res = k re in
     match Ast.unwrap re with
       Ast.FunHeader(bef,_,fninfo,name,lp,params,rp) ->
 	bind (mcode r ((),(),bef,[])) res
-    | Ast.Decl(bef,_,decl) -> bind (mcode r ((),(),bef,[])) res
+    | Ast.Decl decl -> bind (mcode r ((),(),annotated_decl decl,[])) res
+    | Ast.ForHeader(fr,lp,Ast.ForDecl(decl),e2,sem2,e3,rp) ->
+	bind (mcode r ((),(),annotated_decl decl,[])) res
     | _ -> res in
   let init r k i =
     let res = k i in
@@ -452,12 +458,18 @@ let contains_pos =
   let option_default = false in
   let mcode r (_,_,kind,metapos) = not (metapos = []) in
   let do_nothing r k e = k e in
+  let annotated_decl decl =
+    match Ast.unwrap decl with
+      Ast.DElem(bef,_,_) -> bef
+    | _ -> failwith "not possible" in
   let rule_elem r k re =
     let res = k re in
     match Ast.unwrap re with
       Ast.FunHeader(bef,_,fninfo,name,lp,params,rp) ->
 	bind (mcode r ((),(),bef,[])) res
-    | Ast.Decl(bef,_,decl) -> bind (mcode r ((),(),bef,[])) res
+    | Ast.Decl decl -> bind (mcode r ((),(),annotated_decl decl,[])) res
+    | Ast.ForHeader(fr,lp,Ast.ForDecl(decl),e2,sem2,e3,rp) ->
+	bind (mcode r ((),(),annotated_decl decl,[])) res
     | _ -> res in
   let recursor =
     V.combiner bind option_default
@@ -946,7 +958,7 @@ let end_control_structure fvs header body after_pred
     | _ ->
 	let match_endif =
 	  make_match label guard
-	    (make_meta_rule_elem aft (afvs,afresh,ainh)) in
+	    (make_meta_rule_elem "1" aft (afvs,afresh,ainh)) in
 	(true,
 	 make_seq_after guard after_pred
 	   (After(make_seq_after guard match_endif after))) in
@@ -1179,7 +1191,7 @@ let svar_context_with_add_after stmt s label quantified d ast
     CTL.Pred (Lib_engine.Label(label_var),CTL.Control) in
   (*let prelabel_pred =
     CTL.Pred (Lib_engine.PrefixLabel(label_var),CTL.Control) in*)
-  let matcher d = make_match None guard (make_meta_rule_elem d fvinfo) in
+  let matcher d = make_match None guard (make_meta_rule_elem "2" d fvinfo) in
   let full_metamatch = matcher d in
   let first_metamatch =
     matcher
@@ -1250,7 +1262,7 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
     CTL.Pred (Lib_engine.Label(label_var),CTL.Control) in
   let prelabel_pred =
     CTL.Pred (Lib_engine.PrefixLabel(label_var),CTL.Control) in
-  let matcher d = make_match None guard (make_meta_rule_elem d fvinfo) in
+  let matcher d = make_match None guard (make_meta_rule_elem "3" d fvinfo) in
   let ender =
     match (d,after) with
       (Ast.PLUS _, _) -> failwith "not possible"
@@ -1972,7 +1984,7 @@ and statement stmt top after quantified minus_quantified
             (* no need for the fresh metavar, but ... is a bit weird as a
 	       variable name *)
 	    (* drops minuses on pattern, because d will have the minus effect*)
-	    (Some(make_match (make_meta_rule_elem d ([],[],[]))),
+	    (Some(make_match (make_meta_rule_elem "4" d ([],[],[]))),
 	     drop_minuses stmt_dots)
 	| _ -> (None,stmt_dots) in
 
@@ -2002,7 +2014,7 @@ and statement stmt top after quantified minus_quantified
 	  Ast.MINUS(_,_,_,_) ->
             (* no need for the fresh metavar, but ... is a bit weird as a
 	       variable name *)
-	    Some(make_match (make_meta_rule_elem d ([],[],[])))
+	    Some(make_match (make_meta_rule_elem "5" d ([],[],[])))
 	| _ -> None in
       dots_and_nests false None whencodes bef aft dot_code after label
 	(process_bef_aft quantified minus_quantified None llabel slabel true)
@@ -2201,14 +2213,14 @@ and statement stmt top after quantified minus_quantified
 	   after_pred (Some(ctl_ex after_pred)) None aft after label guard)
   | Ast.FunDecl(header,lbrace,body,rbrace,(afvs,afresh,ainh,aft)) ->
       (* what to do with afvs??? *)
-      let (hfvs,b1fvs,lbfvs,b2fvs,b3fvs,rbfvs) =
+      let (aafvs,ahfvs,hfvs,b1fvs,lbfvs,b2fvs,b3fvs,rbfvs) =
 	match
 	  seq_fvs quantified
-	    [Ast.get_fvs header;Ast.get_fvs lbrace;
+	    [afvs;Ast.get_fvs header;Ast.get_fvs lbrace;
 	      Ast.get_fvs body;Ast.get_fvs rbrace]
 	with
-	  [(hfvs,b1fvs);(lbfvs,b2fvs);(_,b3fvs);(rbfvs,_)] ->
-	    (hfvs,b1fvs,lbfvs,b2fvs,b3fvs,rbfvs)
+	  [(afvs,ahfvs);(hfvs,b1fvs);(lbfvs,b2fvs);(_,b3fvs);(rbfvs,_)] ->
+	    (afvs,ahfvs,hfvs,b1fvs,lbfvs,b2fvs,b3fvs,rbfvs)
 	| _ -> failwith "not possible" in
       let (mhfvs,mb1fvs,mlbfvs,mb2fvs,mb3fvs,mrbfvs) =
 	match
@@ -2235,9 +2247,10 @@ and statement stmt top after quantified minus_quantified
 	  (ctl_and
 	     (* the following finds the beginning of the fake braces,
 		if there are any, not completely sure how this works.
-	     sse the examples sw and return *)
+		see the examples sw and return *)
 	     (ctl_back_ex (ctl_not fake_brace))
-	     (ctl_au (make_match stripped_rbrace) (ctl_or exit errorexit))) in
+	     (ctl_au (make_match stripped_rbrace)
+		(ctl_or exit errorexit))) in
       let new_quantified3 =
 	Common.union_set b1fvs
 	  (Common.union_set b2fvs (Common.union_set b3fvs quantified)) in
@@ -2366,7 +2379,7 @@ and statement stmt top after quantified minus_quantified
 			      (CTL.AndAny
 				 (CTL.FORWARD,guard_to_strict guard,CTL.True,
 				  make_match
-				    (make_meta_rule_elem d ([],[],[]))))))
+				    (make_meta_rule_elem "6" d ([],[],[]))))))
 		  | _ -> None)
 	    | _ -> None)
 	| _ -> None in
@@ -2387,14 +2400,16 @@ and statement stmt top after quantified minus_quantified
 	  Ast.CONTEXT(_,Ast.NOTHING) -> function_header
 	| _ ->
 	    let match_ender =
-	      ctl_and (endpred label)
-		(ctl_back_ex
-		   (make_match
-		      (make_meta_rule_elem aft (afvs,afresh,ainh)))) in
+	      quantify guard aafvs (* vars needed only for ender *)
+		(ctl_and (endpred label)
+		   (ctl_back_ex
+		      (make_match
+			 (make_meta_rule_elem "7" aft (afvs,afresh,ainh))))) in
 	    CTL.AndAny(CTL.FORWARD,CTL.NONSTRICT,function_header,
 		       ctl_or (ctl_not (endpred label)) match_ender) in
-      quantify guard b1fvs
-	(make_seq [function_header; quantify guard b2fvs body_code])
+      quantify guard ahfvs
+	(quantify guard b1fvs
+	   (make_seq [function_header; quantify guard b2fvs body_code]))
   | Ast.Define(header,body) ->
       let (hfvs,bfvs,bodyfvs) =
 	match seq_fvs quantified [Ast.get_fvs header;Ast.get_fvs body]

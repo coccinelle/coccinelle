@@ -48,7 +48,7 @@ let any_statements =
     (List.exists
        (function
 	   Ast.StatementTag(_) | Ast.StmtDotsTag(_)
-	 | Ast.DeclarationTag(_) | Ast.DeclDotsTag(_) -> true | _ -> false))
+	 | Ast.DeclarationTag(_) | Ast.AnnDeclDotsTag(_) -> true | _ -> false))
 
 let modif_before x =
   match Ast0.get_mcodekind x with

@@ -513,7 +513,6 @@ let do_get_constants constants keywords env neg_pos =
     | Ast.DisjDecl(decls) ->
 	disj_union_all (List.map r.V.combiner_declaration decls)
     | Ast.OptDecl(decl) -> option_default
-    | Ast.Ddots(dots,whencode) -> option_default
     | _ -> k d in
 
   let initialiser r k i =
@@ -650,10 +649,18 @@ let get_plus_constants =
   let mcode r mc = process_mcodekind (Ast.get_mcodekind mc) in
   let end_info (_,_,_,mc) = process_mcodekind mc in
 
+  let annotated_decl decl =
+    match Ast.unwrap decl with
+      Ast.DElem(bef,_,_) -> bef
+    | _ -> failwith "not possible" in
+
   let rule_elem r k e =
     match Ast.unwrap e with
-      Ast.FunHeader(bef,_,_,_,_,_,_)
-    | Ast.Decl(bef,_,_) -> bind (process_mcodekind bef) (k e)
+      Ast.FunHeader(bef,_,_,_,_,_,_) -> bind (process_mcodekind bef) (k e)
+    | Ast.Decl decl ->
+	bind (process_mcodekind (annotated_decl decl)) (k e)
+    | Ast.ForHeader(fr,lp,Ast.ForDecl(decl),e2,sem2,e3,rp) ->
+	bind (process_mcodekind (annotated_decl decl)) (k e)
     | _ -> k e in
 
   let statement r k e =
@@ -717,10 +724,18 @@ let all_context =
 	not all_minus && k e
     | _ -> k e in
 
+  let annotated_decl decl =
+    match Ast.unwrap decl with
+      Ast.DElem(bef,_,_) -> bef
+    | _ -> failwith "not possible" in
+
   let rule_elem r k e =
     match Ast.unwrap e with
-      Ast.FunHeader(bef,_,_,_,_,_,_)
-    | Ast.Decl(bef,_,_) -> bind (process_mcodekind bef) (k e)
+      Ast.FunHeader(bef,_,_,_,_,_,_) -> bind (process_mcodekind bef) (k e)
+    | Ast.Decl decl ->
+	bind (process_mcodekind (annotated_decl decl)) (k e)
+    | Ast.ForHeader(fr,lp,Ast.ForDecl(decl),e2,sem2,e3,rp) ->
+	bind (process_mcodekind (annotated_decl decl)) (k e)
     | _ -> k e in
 
   let statement r k e =

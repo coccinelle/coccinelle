@@ -603,7 +603,9 @@ and pp_string_format (e,ii) =
 
   and pp_field_list fields = fields +>  Common.print_between pr_nl pp_field
   and pp_field = function
-      DeclarationField(FieldDeclList(onefield_multivars,iiptvirg))->
+      DeclarationField
+	(FieldDeclList(onefield_multivars,[iiptvirg;ifakestart])) ->
+	pr_elem ifakestart;
         (match onefield_multivars with
           x::xs ->
 	    (* handling the first var. Special case, with the
@@ -666,9 +668,10 @@ and pp_string_format (e,ii) =
 
 	| [] -> raise (Impossible 108)
 	      ); (* onefield_multivars *)
-	assert (List.length iiptvirg =|= 1);
-	iiptvirg +> List.iter pr_elem;
+	pr_elem iiptvirg
 
+    | DeclarationField(FieldDeclList(onefield_multivars,_)) ->
+	failwith "wrong number of tokens"
 
     | MacroDeclField ((s, es), ii)  ->
         let (iis, lp, rp, iiend, ifakestart) =

@@ -27,7 +27,7 @@ type 'a combiner =
      combiner_anything : Ast.anything  -> 'a;
      combiner_expression_dots : Ast.expression Ast.dots -> 'a;
      combiner_statement_dots : Ast.statement Ast.dots -> 'a;
-     combiner_declaration_dots : Ast.declaration Ast.dots -> 'a;
+     combiner_anndecl_dots : Ast.annotated_decl Ast.dots -> 'a;
      combiner_initialiser_dots : Ast.initialiser Ast.dots -> 'a}
 
 type ('mc,'a) cmcode = 'a combiner -> 'mc Ast_cocci.mcode -> 'a
@@ -39,7 +39,7 @@ let combiner bind option_default
     unary_mcodefn binary_mcodefn
     cv_mcodefn sign_mcodefn struct_mcodefn storage_mcodefn
     inc_file_mcodefn
-    expdotsfn paramdotsfn stmtdotsfn decldotsfn initdotsfn
+    expdotsfn paramdotsfn stmtdotsfn anndecldotsfn initdotsfn
     identfn exprfn fragfn fmtfn ftfn tyfn initfn paramfn declfn rulefn
     stmtfn casefn topfn anyfn =
   let multibind l =
@@ -80,7 +80,8 @@ let combiner bind option_default
   and identifier_dots d = dotsfn iddotsfn ident all_functions d
   and parameter_dots d = dotsfn paramdotsfn parameterTypeDef all_functions d
   and statement_dots d = dotsfn stmtdotsfn statement all_functions d
-  and declaration_dots d = dotsfn decldotsfn declaration all_functions d
+  and annotated_decl_dots d =
+    dotsfn anndecldotsfn annotated_decl all_functions d
   and initialiser_dots d = dotsfn initdotsfn initialiser all_functions d
   and string_fragment_dots d = dotsfn strdotsfn string_fragment all_functions d
   and exec_code_dots d = dotsfn ecdotsfn exec_code all_functions d
@@ -241,7 +242,7 @@ let combiner bind option_default
 	  bind (struct_mcode kind) (get_option ident name)
       | Ast.StructUnionDef(ty,lb,decls,rb) ->
 	  multibind
-	    [fullType ty; string_mcode lb; declaration_dots decls;
+	    [fullType ty; string_mcode lb; annotated_decl_dots decls;
 	      string_mcode rb]
       | Ast.TypeName(name) -> string_mcode name
       | Ast.MetaType(name,_,_) -> meta_mcode name in
@@ -289,11 +290,17 @@ let combiner bind option_default
 	  bind (string_mcode stg)
 	    (bind (fullType ty) (bind (typeC id) (string_mcode sem)))
       | Ast.DisjDecl(decls) -> multibind (List.map declaration decls)
-      |	Ast.Ddots(dots,whencode) ->
-	  bind (string_mcode dots) (get_option declaration whencode)
       | Ast.OptDecl(decl) -> declaration decl
       | Ast.UniqueDecl(decl) -> declaration decl in
     declfn all_functions k d
+
+  and annotated_decl d =
+    let k d =
+      match Ast.unwrap d with
+	Ast.DElem(_,_,d) -> declaration d
+      | Ast.Ddots(dots,whencode) ->
+	  bind (string_mcode dots) (get_option declaration whencode) in
+    k d (* not parameterisable *)
 
   and initialiser i =
     let k i =
@@ -358,7 +365,7 @@ let combiner bind option_default
 	    ((List.map fninfo fi) @
 	     [ident name;string_mcode lp;parameter_dots params;
 	       string_mcode rp])
-      | Ast.Decl(_,_,decl) -> declaration decl
+      | Ast.Decl decl -> annotated_decl decl
       | Ast.SeqStart(brace) -> string_mcode brace
       | Ast.SeqEnd(brace) -> string_mcode brace
       | Ast.ExprStatement(exp,sem) ->
@@ -422,7 +429,7 @@ let combiner bind option_default
     let k = function
 	Ast.ForExp(e1,sem1) ->
 	  bind (get_option expression e1) (string_mcode sem1)
-      | Ast.ForDecl (_,_,decl) -> declaration decl in
+      | Ast.ForDecl decl -> annotated_decl decl in
     k fi
 
   (* not parameterisable, for now *)
@@ -588,7 +595,7 @@ let combiner bind option_default
       | Ast.ExprDotsTag(ed) -> expression_dots ed
       | Ast.ParamDotsTag(pd) -> parameter_dots pd
       | Ast.StmtDotsTag(sd) -> statement_dots sd
-      | Ast.DeclDotsTag(sd) -> declaration_dots sd
+      | Ast.AnnDeclDotsTag(sd) -> annotated_decl_dots sd
       | Ast.TypeCTag(ty) -> typeC ty
       | Ast.ParamTag(param) -> parameterTypeDef param
       | Ast.SgrepStartTag(tok) -> option_default
@@ -613,7 +620,7 @@ let combiner bind option_default
       combiner_anything = anything;
       combiner_expression_dots = expression_dots;
       combiner_statement_dots = statement_dots;
-      combiner_declaration_dots = declaration_dots;
+      combiner_anndecl_dots = annotated_decl_dots;
       combiner_initialiser_dots = initialiser_dots} in
   all_functions
 
@@ -638,7 +645,7 @@ type rebuilder =
       rebuilder_top_level : Ast.top_level inout;
       rebuilder_expression_dots : Ast.expression Ast.dots inout;
       rebuilder_statement_dots : Ast.statement Ast.dots inout;
-      rebuilder_declaration_dots : Ast.declaration Ast.dots inout;
+      rebuilder_anndecl_dots : Ast.annotated_decl Ast.dots inout;
       rebuilder_initialiser_dots : Ast.initialiser Ast.dots inout;
       rebuilder_define_param_dots : Ast.define_param Ast.dots inout;
       rebuilder_define_param : Ast.define_param inout;
@@ -653,7 +660,7 @@ let rebuilder
     meta_mcode string_mcode const_mcode assign_mcode fix_mcode unary_mcode
     binary_mcode cv_mcode sign_mcode struct_mcode storage_mcode
     inc_file_mcode
-    expdotsfn paramdotsfn stmtdotsfn decldotsfn initdotsfn
+    expdotsfn paramdotsfn stmtdotsfn anndecldotsfn initdotsfn
     identfn exprfn fragfn fmtfn ftfn tyfn initfn paramfn declfn rulefn
     stmtfn casefn topfn anyfn =
   let get_option f = function
@@ -677,7 +684,8 @@ let rebuilder
   and identifier_dots d = dotsfn iddotsfn ident all_functions d
   and parameter_dots d = dotsfn paramdotsfn parameterTypeDef all_functions d
   and statement_dots d = dotsfn stmtdotsfn statement all_functions d
-  and declaration_dots d = dotsfn decldotsfn declaration all_functions d
+  and annotated_decl_dots d =
+    dotsfn anndecldotsfn annotated_decl all_functions d
   and initialiser_dots d = dotsfn initdotsfn initialiser all_functions d
   and string_fragment_dots d = dotsfn strdotsfn string_fragment all_functions d
   and exec_code_dots d = dotsfn ecdotsfn exec_code all_functions d
@@ -839,7 +847,7 @@ let rebuilder
 	    Ast.StructUnionName (struct_mcode kind, get_option ident name)
 	| Ast.StructUnionDef(ty,lb,decls,rb) ->
 	    Ast.StructUnionDef (fullType ty,
-				string_mcode lb, declaration_dots decls,
+				string_mcode lb, annotated_decl_dots decls,
 				string_mcode rb)
 	| Ast.TypeName(name) -> Ast.TypeName(string_mcode name)
 	| Ast.MetaType(name,keep,inherited) ->
@@ -877,11 +885,19 @@ let rebuilder
 	    Ast.Typedef(string_mcode stg, fullType ty, typeC id,
 			string_mcode sem)
 	| Ast.DisjDecl(decls) -> Ast.DisjDecl(List.map declaration decls)
-	| Ast.Ddots(dots,whencode) ->
-	    Ast.Ddots(string_mcode dots, get_option declaration whencode)
 	| Ast.OptDecl(decl) -> Ast.OptDecl(declaration decl)
 	| Ast.UniqueDecl(decl) -> Ast.UniqueDecl(declaration decl)) in
     declfn all_functions k d
+
+  and annotated_decl d =
+    let k d =
+      Ast.rewrap d
+	(match Ast.unwrap d with
+	  Ast.DElem(bef,allminus,decl) ->
+	    Ast.DElem(bef,allminus,declaration decl)
+	| Ast.Ddots(dots,whencode) ->
+	    Ast.Ddots(string_mcode dots, get_option declaration whencode)) in
+    k d
 
   and initialiser i =
     let k i =
@@ -950,8 +966,7 @@ let rebuilder
 	    Ast.FunHeader(bef,allminus,List.map fninfo fi,ident name,
 			  string_mcode lp, parameter_dots params,
 			  string_mcode rp)
-	| Ast.Decl(bef,allminus,decl) ->
-	    Ast.Decl(bef,allminus,declaration decl)
+	| Ast.Decl decl -> Ast.Decl (annotated_decl decl)
 	| Ast.SeqStart(brace) -> Ast.SeqStart(string_mcode brace)
 	| Ast.SeqEnd(brace) -> Ast.SeqEnd(string_mcode brace)
 	| Ast.ExprStatement(exp,sem) ->
@@ -1023,8 +1038,7 @@ let rebuilder
     let k = function
       Ast.ForExp(e1,sem1) ->
 	Ast.ForExp(get_option expression e1,string_mcode sem1)
-    | Ast.ForDecl (bef,allminus,decl) ->
-	Ast.ForDecl(bef,allminus,declaration decl) in
+    | Ast.ForDecl decl -> Ast.ForDecl (annotated_decl decl) in
     k fi
 
   (* not parameterizable for now... *)
@@ -1212,7 +1226,7 @@ let rebuilder
       | Ast.ExprDotsTag(ed) -> Ast.ExprDotsTag(expression_dots ed)
       | Ast.ParamDotsTag(pd) -> Ast.ParamDotsTag(parameter_dots pd)
       | Ast.StmtDotsTag(sd) -> Ast.StmtDotsTag(statement_dots sd)
-      | Ast.DeclDotsTag(sd) -> Ast.DeclDotsTag(declaration_dots sd)
+      | Ast.AnnDeclDotsTag(sd) -> Ast.AnnDeclDotsTag(annotated_decl_dots sd)
       | Ast.TypeCTag(ty) -> Ast.TypeCTag(typeC ty)
       | Ast.ParamTag(param) -> Ast.ParamTag(parameterTypeDef param)
       | Ast.SgrepStartTag(tok) as x -> x
@@ -1236,7 +1250,7 @@ let rebuilder
       rebuilder_top_level = top_level;
       rebuilder_expression_dots = expression_dots;
       rebuilder_statement_dots = statement_dots;
-      rebuilder_declaration_dots = declaration_dots;
+      rebuilder_anndecl_dots = annotated_decl_dots;
       rebuilder_initialiser_dots = initialiser_dots;
       rebuilder_define_param_dots = define_param_dots;
       rebuilder_define_param = define_param;

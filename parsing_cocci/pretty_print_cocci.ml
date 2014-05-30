@@ -417,7 +417,7 @@ and typeC ty =
       print_option (function x -> ident x; print_string " ") name
   | Ast.StructUnionDef(ty,lb,decls,rb) ->
       fullType ty; mcode print_string lb;
-      dots force_newline declaration decls;
+      dots force_newline (annotated_decl "") decls;
       mcode print_string rb
   | Ast.TypeName(name) -> mcode print_string name; print_string " "
   | Ast.MetaType(name,_,_) ->
@@ -517,11 +517,18 @@ and declaration d =
       mcode print_string stg; print_string " "; fullType ty; typeC id;
       mcode print_string sem
   | Ast.DisjDecl(decls) -> print_disj_list declaration decls
+  | Ast.OptDecl(decl) -> print_string "?"; declaration decl
+  | Ast.UniqueDecl(decl) -> print_string "!"; declaration decl
+
+and annotated_decl arity d =
+  match Ast.unwrap d with
+    Ast.DElem(bef,allminus,decl) ->
+      mcode (function _ -> ()) ((),Ast.no_info,bef,[]);
+      print_string arity;
+      declaration decl
   | Ast.Ddots(dots,Some whencode) ->
       mcode print_string dots; print_string "   when != "; declaration whencode
   | Ast.Ddots(dots,None) -> mcode print_string dots
-  | Ast.OptDecl(decl) -> print_string "?"; declaration decl
-  | Ast.UniqueDecl(decl) -> print_string "!"; declaration decl
 
 (* --------------------------------------------------------------------- *)
 (* Initialiser *)
@@ -600,10 +607,7 @@ let rec rule_elem arity re =
       ident name; mcode print_string_box lp;
       parameter_list params; close_box(); mcode print_string rp;
       print_string " "
-  | Ast.Decl(bef,allminus,decl) ->
-      mcode (function _ -> ()) ((),Ast.no_info,bef,[]);
-      print_string arity;
-      declaration decl
+  | Ast.Decl(ann_decl) -> annotated_decl arity ann_decl
   | Ast.SeqStart(brace) ->
       print_string arity; mcode print_string brace;
       if !print_newlines_disj then start_block()
@@ -698,9 +702,7 @@ let rec rule_elem arity re =
 and forinfo = function
     Ast.ForExp(e1,sem1) ->
       print_option expression e1; mcode print_string sem1
-  | Ast.ForDecl (bef,allminus,decl) ->
-      mcode (function _ -> ()) ((),Ast.no_info,bef,[]);
-      declaration decl
+  | Ast.ForDecl(ann_decl) -> annotated_decl "" ann_decl
 
 and pragmainfo pi =
   match Ast.unwrap pi with
@@ -909,7 +911,7 @@ let _ =
     | Ast.ExprDotsTag(x) -> dots (function _ -> ()) expression x
     | Ast.ParamDotsTag(x) -> parameter_list x
     | Ast.StmtDotsTag(x) -> dots (function _ -> ()) (statement "") x
-    | Ast.DeclDotsTag(x) -> dots (function _ -> ()) declaration x
+    | Ast.AnnDeclDotsTag(x) -> dots (function _ -> ()) (annotated_decl "") x
     | Ast.TypeCTag(x) -> typeC x
     | Ast.ParamTag(x) -> parameterTypeDef x
     | Ast.SgrepStartTag(x) -> print_string x

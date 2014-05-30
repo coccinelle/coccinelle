@@ -678,7 +678,7 @@ and typeC ty =
   | Ast.StructUnionDef(ty,lb,decls,rb) ->
       fullType ty; ft_space ty;
       mcode print_string lb;
-      dots_before_and_after force_newline declaration decls;
+      dots_before_and_after force_newline annotated_decl decls;
       mcode print_string rb
   | Ast.TypeName(name)-> mcode print_string name
   | Ast.MetaType(name,_,_) ->
@@ -839,9 +839,13 @@ and declaration d =
       fullType ty; pr_space(); typeC id;
       mcode print_string sem
   | Ast.DisjDecl(_) -> raise CantBeInPlus
-  | Ast.Ddots(_,_) -> raise CantBeInPlus
   | Ast.OptDecl(decl)  | Ast.UniqueDecl(decl) ->
       raise CantBeInPlus
+
+and annotated_decl d =
+  match Ast.unwrap d with
+    Ast.DElem(_,_,decl) -> declaration decl
+  | Ast.Ddots(_,_) -> raise CantBeInPlus
 
 (* --------------------------------------------------------------------- *)
 (* Initialiser *)
@@ -974,7 +978,7 @@ and rule_elem arity re =
       ident name; mcode print_string_box lp;
       parameter_list params; close_box(); mcode print_string rp;
       pr_space()
-  | Ast.Decl(_,_,decl) -> pr_arity arity; declaration decl
+  | Ast.Decl decl -> pr_arity arity; annotated_decl decl
 
   | Ast.SeqStart(brace) ->
       pr_arity arity; mcode print_string brace; start_block()
@@ -1090,7 +1094,7 @@ and pragmainfo pi =
 and forinfo = function
     Ast.ForExp(e1,sem1) ->
       print_option expression e1; mcode print_string sem1
-  | Ast.ForDecl (_,_,decl) -> declaration decl
+  | Ast.ForDecl decl -> annotated_decl decl
 
 and print_define_parameters params =
   match Ast.unwrap params with
@@ -1342,7 +1346,7 @@ let rec pp_any = function
   | Ast.ExprDotsTag(x) -> dots (fun _ -> ()) expression x; false
   | Ast.ParamDotsTag(x) -> parameter_list x; false
   | Ast.StmtDotsTag(x) -> dots force_newline (statement "") x; false
-  | Ast.DeclDotsTag(x) -> dots force_newline declaration x; false
+  | Ast.AnnDeclDotsTag(x) -> dots force_newline annotated_decl x; false
 
   | Ast.TypeCTag(x) -> typeC x; false
   | Ast.ParamTag(x) -> parameterTypeDef x; false

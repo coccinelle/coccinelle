@@ -316,7 +316,7 @@ and unify_typeC t1 t2 =
   | (Ast.StructUnionDef(ty1,lb1,decls1,rb1),
      Ast.StructUnionDef(ty2,lb2,decls2,rb2)) ->
        conjunct_bindings (unify_fullType ty1 ty2)
-	 (unify_dots unify_declaration ddots decls1 decls2)
+	 (unify_dots unify_annotated_decl ddots decls1 decls2)
   | (Ast.TypeName(t1),Ast.TypeName(t2)) -> return (unify_mcode t1 t2)
 
   | (Ast.MetaType(_,_,_),_)
@@ -362,14 +362,18 @@ and unify_declaration d1 d2 =
   | (_,Ast.DisjDecl(d2)) ->
       disjunct_all_bindings
 	(List.map (function x -> unify_declaration d1 x) d2)
-  (* dots can match against anything.  return true to be safe. *)
-  | (Ast.Ddots(_,_),_) | (_,Ast.Ddots(_,_)) -> return true
 
   | (Ast.OptDecl(_),_)
   | (Ast.UniqueDecl(_),_)
   | (_,Ast.OptDecl(_))
   | (_,Ast.UniqueDecl(_)) -> failwith "unsupported decl"
   | _ -> return false
+
+and unify_annotated_decl d1 d2 =
+  match (Ast.unwrap d1,Ast.unwrap d2) with
+    (Ast.DElem(_,_,d1),Ast.DElem(_,_,d2)) -> unify_declaration d1 d2
+  (* dots can match against anything.  return true to be safe. *)
+  | (Ast.Ddots(_,_),_) | (_,Ast.Ddots(_,_)) -> return true
 
 (* --------------------------------------------------------------------- *)
 (* Initializer *)
@@ -483,7 +487,7 @@ and unify_rule_elem re1 re2 =
        conjunct_bindings (unify_fninfo fi1 fi2)
 	 (conjunct_bindings (unify_ident nm1 nm2)
 	    (unify_dots unify_parameterTypeDef pdots params1 params2))
-  | (Ast.Decl(_,_,d1),Ast.Decl(_,_,d2)) -> unify_declaration d1 d2
+  | (Ast.Decl d1,Ast.Decl d2) -> unify_annotated_decl d1 d2
 
   | (Ast.SeqStart(lb1),Ast.SeqStart(lb2)) -> return true
   | (Ast.SeqEnd(rb1),Ast.SeqEnd(rb2)) -> return true
@@ -504,8 +508,7 @@ and unify_rule_elem re1 re2 =
 	 match (first1,first2) with
 	   (Ast.ForExp(e11,s11),Ast.ForExp(e12,s1)) ->
 	     unify_option unify_expression e11 e12
-	 | (Ast.ForDecl(_,_,d1),Ast.ForDecl(_,_,d2)) ->
-	     unify_declaration d1 d2
+	 | (Ast.ForDecl d1,Ast.ForDecl d2) -> unify_annotated_decl d1 d2
 	 | _ -> return false in
        conjunct_bindings first
 	 (conjunct_bindings
