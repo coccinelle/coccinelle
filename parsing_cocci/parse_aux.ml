@@ -200,21 +200,20 @@ let lookup rule name =
       raise
 	(Semantic_cocci.Semantic("bad rule "^rule^" or bad variable "^name))
 
-let check_meta_tyopt type_irrelevant = function
+let check_meta_tyopt type_irrelevant v =
+  let fail name =
+    raise
+      (Semantic_cocci.Semantic
+	 ("incompatible inheritance declaration "^name)) in
+  match v with
     Ast.MetaMetaDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaMetaDecl(_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaIdDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaIdDecl(_,_) | Ast.MetaFreshIdDecl(_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaFreshIdDecl((rule,name),seed) ->
       raise
 	(Semantic_cocci.Semantic
@@ -222,137 +221,80 @@ let check_meta_tyopt type_irrelevant = function
   | Ast.MetaTypeDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaTypeDecl(_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaInitDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaInitDecl(_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaInitListDecl(Ast.NONE,(rule,name),len_name) ->
       (match lookup rule name with
 	Ast.MetaInitListDecl(_,_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaListlenDecl((rule,name)) ->
       (match lookup rule name with
 	Ast.MetaListlenDecl(_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaParamDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaParamDecl(_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaParamListDecl(Ast.NONE,(rule,name),len_name) ->
       (match lookup rule name with
 	Ast.MetaParamListDecl(_,_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaConstDecl(Ast.NONE,(rule,name),ty) ->
       (match lookup rule name with
 	Ast.MetaConstDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaErrDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaErrDecl(_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaExpDecl(Ast.NONE,(rule,name),ty) ->
       (match lookup rule name with
 	Ast.MetaExpDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaIdExpDecl(Ast.NONE,(rule,name),ty) ->
       (match lookup rule name with
 	Ast.MetaIdExpDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaLocalIdExpDecl(Ast.NONE,(rule,name),ty) ->
       (match lookup rule name with
 	Ast.MetaLocalIdExpDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaExpListDecl(Ast.NONE,(rule,name),len_name) ->
       (match lookup rule name with
 	Ast.MetaExpListDecl(_,_,_) -> ()
       | Ast.MetaParamListDecl(_,_,_) when not (!Flag.make_hrule = None) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaDeclDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaDeclDecl(_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaFieldDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaFieldDecl(_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaFieldListDecl(Ast.NONE,(rule,name),len_name) ->
       (match lookup rule name with
 	Ast.MetaFieldListDecl(_,_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaStmDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaStmDecl(_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaStmListDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaStmListDecl(_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaFuncDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaFuncDecl(_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaLocalFuncDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaLocalFuncDecl(_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaPosDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaPosDecl(_,_) ->
@@ -362,10 +304,30 @@ let check_meta_tyopt type_irrelevant = function
 	    raise
 	      (Semantic_cocci.Semantic
 		 ("position cannot be inherited over modifications: "^name))
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
+  | Ast.MetaFmtDecl(Ast.NONE,(rule,name)) ->
+      (match lookup rule name with
+	Ast.MetaFmtDecl(_,_) -> ()
+      | _ -> fail name)
+  | Ast.MetaFragListDecl(Ast.NONE,(rule,name),len) ->
+      (match lookup rule name with
+	Ast.MetaFragListDecl(_,_,_) -> ()
+      | _ -> fail name)
+  | Ast.MetaAnalysisDecl(analyzer,(rule,name)) ->
+      (match lookup rule name with
+	Ast.MetaAnalysisDecl(analyzer1,_) ->
+	  if analyzer = analyzer1
+	  then ()
+	  else fail name
+      | _ -> fail name)
+  | Ast.MetaDeclarerDecl(Ast.NONE,(rule,name)) ->
+      (match lookup rule name with
+	Ast.MetaDeclarerDecl(Ast.NONE,(rule,name)) -> ()
+      | _ -> fail name)
+  | Ast.MetaIteratorDecl(Ast.NONE,(rule,name)) ->
+      (match lookup rule name with
+	Ast.MetaIteratorDecl(Ast.NONE,(rule,name)) -> ()
+      | _ -> fail name)
   | _ ->
       raise
 	(Semantic_cocci.Semantic ("arity not allowed on imported declaration"))
