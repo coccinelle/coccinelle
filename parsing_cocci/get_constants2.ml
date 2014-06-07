@@ -417,7 +417,8 @@ let do_get_constants constants keywords env neg_pos =
 	  | Ast.Int s -> option_default (* glimpse doesn't index integers *)
 	  | Ast.Float s -> option_default (* probably not floats either *)
 	  | Ast.DecimalConst _ -> option_default (* or decimals *))
-    | Ast.StringConstant(lq,str,rq) ->
+    | Ast.StringConstant(lq,str,rq) -> option_default
+	(* Like the above constant case, this information is not likely indexed
 	let str = Ast.undots str in
 	(* pick up completely constant strings *)
 	let strs =
@@ -443,6 +444,7 @@ let do_get_constants constants keywords env neg_pos =
 	  (match strs with
 	    Some strs -> constants (String.concat "" (List.rev strs))
 	  | None ->  option_default)
+	*)
     | Ast.MetaExpr(name,_,_,Some type_list,_,_) ->
 	let types = List.fold_left type_collect option_default type_list in
 	bind (k e) (bind (minherited name) types)

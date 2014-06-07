@@ -358,6 +358,8 @@
   Thanks to Nic Volanschi for noticing the problem.
 - don't add newlines in #defines, even if lines get long
 - consider # as a comment character in script code
+- Don't take into account string constants in get_constants, as these are
+  not likely to be indexed.  Thanks to Benoit Taine for noting the problem.
 
 * 0.2.5
 ** Language:
