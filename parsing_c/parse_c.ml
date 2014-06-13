@@ -913,6 +913,8 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
     );
   );
 
+  let toks = Parsing_hacks.mark_initial_ident toks in
+
   let tr = mk_tokens_state toks in
 
   let rec loop tr =

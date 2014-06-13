@@ -409,7 +409,6 @@ let mk_string_wrap (s,info) = (s, [info])
 /*(* appears mostly after some fix_xxx in parsing_hack *)*/
 %token <string * Ast_c.info> TypedefIdent
 
-
 /*
 (* Some tokens like TOPar and TCPar are used as synchronisation stuff,
  * in parsing_hack.ml. So if define special tokens like TOParDefine and
@@ -558,7 +557,7 @@ let mk_string_wrap (s,info) = (s, [info])
 
 
 /*(*-----------------------------------------*)*/
-%token <Ast_c.info> EOF
+%token <Ast_c.info> EOF TStart
 
 /*(*-----------------------------------------*)*/
 
@@ -1786,6 +1785,12 @@ start_fun2: decl_spec declaratorfd
      { let (returnType,storage) = fixDeclSpecForFuncDef $1 in
        let (id, attrs) = $2 in
        (fst id, fixOldCDecl ((snd id) returnType) , storage, attrs)
+     }
+   | TStart declaratorfd
+     { let (id, attrs) = $2 in
+       let ty = mk_ty NoType [] in
+       let sto = (NoSto, false), [] in
+       (fst id, fixOldCDecl ((snd id) ty), sto, attrs)
      }
    | ctor_dtor { $1 }
 

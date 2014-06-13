@@ -62,7 +62,7 @@ val lookahead :
   pass:int ->
   Parser_c.token list -> Parser_c.token list -> Parser_c.token
 
-
+val mark_initial_ident : Parser_c.token list -> Parser_c.token list
 
 (* ------------------------------------------------------------------------ *)
 (* Parsing hack helpers related to #define or #include *)

@@ -375,6 +375,7 @@ let info_of_tok = function
   | TOParCplusplusInit   (i) -> i
 
   | EOF                  (i) -> i
+  | TStart               (i) -> i
   | Tnamespace           (i) -> i
 
 
@@ -544,6 +545,7 @@ let visitor_info_of_tok f = function
   | Tdelete              (i) -> Tdelete              (f i)
   | TOParCplusplusInit   (i) -> TOParCplusplusInit   (f i)
   | EOF                  (i) -> EOF                  (f i)
+  | TStart               (i) -> TStart               (f i)
   | Tnamespace           (i) -> Tnamespace           (f i)
 
 
