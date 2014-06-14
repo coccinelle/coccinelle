@@ -1576,27 +1576,25 @@ let adjust_by_function getter op k q vl xs =
       fn PlusOnly vl1
   | _ -> vl
 
-let drop_zeroes (a,b) =
+let adjust_by_op fn (am,ap) = function
+    PlusOnly -> (am,fn ap)
+  | MinusOnly -> (fn am,ap)
+  | Both -> (fn am,fn ap)
+  | Neither -> (am,ap)
+
+let drop_zeroes op accumulator =
   let drop_zeroes l =
     let (_,rest) = span (function x -> x = 0) l in
     rest in
-  (drop_zeroes a,drop_zeroes b)
+  adjust_by_op drop_zeroes accumulator op
 
-let add1top op (am,ap) =
+let add1top op accumulator =
   let add1 = function x::xs -> (x+1)::xs | _ -> [] in
-  match op with
-    PlusOnly -> (am,add1 ap)
-  | MinusOnly -> (add1 am,ap)
-  | Both -> (add1 am,add1 ap)
-  | Neither -> (am,ap)
+  adjust_by_op add1 accumulator op
 
-let sub1top op (am,ap) =
+let sub1top op accumulator =
   let sub1 = function x::xs -> (max 0 (x-1))::xs | _ -> [] in
-  match op with
-    PlusOnly -> (am,sub1 ap)
-  | MinusOnly -> (sub1 am,ap)
-  | Both -> (sub1 am,sub1 ap)
-  | Neither -> (am,ap)
+  adjust_by_op sub1 accumulator op
 
 let token_effect tok dmin dplus inparens inassn accumulator xs =
   let info = parse_token tok in
@@ -1623,9 +1621,9 @@ let token_effect tok dmin dplus inparens inassn accumulator xs =
   | (Tok "}",op) ->
       let (dmin,dplus) = sub1 op (dmin,dplus) in
       let accumulator = sub1top op accumulator in
-      (Other 3,dmin,dplus,inparens,0,drop_zeroes accumulator)
+      (Other 3,dmin,dplus,inparens,0,drop_zeroes op accumulator)
   | (Tok(";"|","),op) when inparens = 0 && inassn <= 1 ->
-      (Other 4,dmin,dplus,inparens,0,drop_zeroes accumulator)
+      (Other 4,dmin,dplus,inparens,0,drop_zeroes op accumulator)
   | (Tok ";",op) ->
       (Other 5,dmin,dplus,inparens,max 0 (inassn-1),accumulator)
   | (Tok "=",op) when inparens+inassn = 0 ->
