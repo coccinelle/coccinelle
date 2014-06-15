@@ -1308,3 +1308,5 @@ let put_annot_info info key value =
 let get_annot_info info key =
   Token_annot.get_annot info.annots_tag key
 
+let get_comments_before info = (!(info.comments_tag)).mbefore
+let get_comments_after info = (!(info.comments_tag)).mafter
