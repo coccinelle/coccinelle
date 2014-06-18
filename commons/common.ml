@@ -3764,7 +3764,7 @@ let _ = example
   (exclude_but_keep_attached (fun x -> x =|= 3) [3;3;1;3;2;3;3;3] =*=
       [(1,[3;3]);(2,[3])])
 
-let (group_by_post: ('a -> bool) -> 'a list -> ('a list * 'a) list * 'a list)=
+let group_by_post: ('a -> bool) -> 'a list -> ('a list * 'a) list * 'a list =
  fun f xs ->
    let rec aux_filter grouped_acc acc = function
    | [] ->
@@ -3794,7 +3794,7 @@ let _ = example
       ([1;1], [(3,[2]); (3,[4;5]); (3,[6;6;6])]))
 
 
-let (split_when: ('a -> bool) -> 'a list -> 'a list * 'a * 'a list) =
+let split_when: ('a -> bool) -> 'a list -> 'a list * 'a * 'a list =
  fun p l ->
   let rec loop acc = function
   | []    -> raise Not_found

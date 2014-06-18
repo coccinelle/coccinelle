@@ -377,8 +377,8 @@ and pp_string_format (e,ii) =
   and pp_ifdef_tree_sequence ifdef xxs =
     match ifdef with
     | if1::ifxs ->
-	pp_ifdef if1;
-	pp_ifdef_tree_sequence_aux  ifxs xxs
+        pp_ifdef if1;
+        pp_ifdef_tree_sequence_aux  ifxs xxs
     | _ -> raise (Impossible 99)
 
 (* XXX elsif YYY elsif ZZZ endif *)

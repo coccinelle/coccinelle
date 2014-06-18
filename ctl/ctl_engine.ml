@@ -175,9 +175,7 @@ let maybe f g opt =
 
 let some_map f opts = map (maybe (fun x -> Some (f x)) None) opts
 
-let some_tolist_alt opts = concatmap (maybe (fun x -> [x]) []) opts
-
-let rec some_tolist opts =
+let rec some_tolist (opts : 'a option list) : 'a list =
   match opts with
     | []             -> []
     | (Some x)::rest -> x::(some_tolist rest)
@@ -978,12 +976,11 @@ let rec pre_exist dir (grp,_,_) y reqst =
   let check s =
     match reqst with None -> true | Some reqst -> List.mem s reqst in
   let exp (s,th,wit) =
-    concatmap
-      (fun s' -> if check s' then [(s',th,wit)] else [])
-      (match dir with
-	A.FORWARD -> G.predecessors grp s
-      | A.BACKWARD -> G.successors grp s) in
-  setify (concatmap exp y)
+    let ss' = match dir with
+                A.FORWARD  -> G.predecessors grp s
+              | A.BACKWARD -> G.successors grp s
+      in concatmap (fun s' -> if check s' then [(s',th,wit)] else []) ss'
+    in setify (concatmap exp y)
 ;;
 
 exception Empty

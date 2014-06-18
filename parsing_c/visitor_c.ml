@@ -1580,8 +1580,8 @@ and vk_toplevel_s = fun bigf p ->
     | Namespace (tls, ii) -> Namespace (List.map (vk_toplevel_s bigf) tls, ii)
   in f (k, bigf) p
 
-and vk_program_s = fun bigf xs ->
-  xs +> List.map (vk_toplevel_s bigf)
+and vk_program_s : visitor_c_s -> toplevel list -> toplevel list =
+      fun bigf -> List.map (vk_toplevel_s bigf)
 
 
 and vk_cpp_directive_s = fun bigf top ->

@@ -790,7 +790,7 @@ let (transform2: string (* rule name *) -> string list (* dropped_isos *) ->
       | _ -> () (* assert (not (node =*= node')); *)
       );
 
-      (* useless, we dont go back from flow to ast now *)
+      (* useless, we don't go back from flow to ast now *)
       (* let node' = lastfix_comma_struct node' in *)
 
       acc#replace_node (nodei, node');

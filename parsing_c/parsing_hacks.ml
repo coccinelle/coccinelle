@@ -284,7 +284,7 @@ let not_macro s =
  * could do for ','   if encounter ',' at "toplevel", not inside () or {}
  * then if have ifdef, then certainly can lead to a problem.
  *)
-let (count_open_close_stuff_ifdef_clause: TV.ifdef_grouped list -> (int * int))=
+let count_open_close_stuff_ifdef_clause :TV.ifdef_grouped list -> (int * int) =
  fun xs ->
    let cnt_paren, cnt_brace = ref 0, ref 0 in
    xs +> TV.iter_token_ifdef (fun x ->
@@ -313,9 +313,9 @@ let rec is_really_foreach xs =
     | [] -> false, []
     | TCPar _::TOBrace _::xs -> true, xs
       (* the following attempts to handle the cases where there is a
-	 single statement in the body of the loop.  undoubtedly more
-	 cases are needed.
-         todo: premier(statement) - suivant(funcall)
+       * single statement in the body of the loop.  undoubtedly more
+       * cases are needed.
+       * todo: premier(statement) - suivant(funcall)
        *)
     | TCPar _::TIdent _::xs -> true, xs
     | TCPar _::Tif _::xs -> true, xs
@@ -719,14 +719,15 @@ let rec find_ifdef_bool xs =
       | [] -> raise (Impossible 90)
       | firstclause::xxs ->
           info_ifdef_stmt +>
-	  List.iter (TV.save_as_comment (fun x -> Token_c.CppIfDirective x));
+            List.iter (TV.save_as_comment (fun x ->
+                                    Token_c.CppIfDirective x));
 
           if is_ifdef_positif
           then xxs +> List.iter
-            (iter_token_ifdef (TV.set_as_comment Token_c.CppPassingNormal))
+                (iter_token_ifdef (TV.set_as_comment Token_c.CppPassingNormal))
           else begin
             firstclause +>
-	    iter_token_ifdef (TV.set_as_comment Token_c.CppPassingNormal);
+              iter_token_ifdef (TV.set_as_comment Token_c.CppPassingNormal);
             (match List.rev xxs with
             (* keep only last *)
             | last::startxs ->
@@ -776,11 +777,10 @@ let rec find_ifdef_mid xs =
               msg_ifdef_mid_something();
 
               (* keep only first, treat the rest as comment *)
-              info_ifdef_stmt +>
-	      List.iter
-		(TV.save_as_comment (function x -> Token_c.CppIfDirective x));
-              (second::rest) +> List.iter
-                (iter_token_ifdef (TV.set_as_comment Token_c.CppPassingCosWouldGetError));
+              info_ifdef_stmt +> List.iter
+                  (TV.save_as_comment (function x -> Token_c.CppIfDirective x));
+              (second::rest) +> List.iter (iter_token_ifdef (TV.set_as_comment
+                                            Token_c.CppPassingCosWouldGetError));
             end
 
       );
@@ -992,21 +992,21 @@ let fix_tokens_strings toks =
   and out_strings = function
       [] -> []
     | a :: rest ->
-	if can_be_string a
-	then
-	  let (front,rest) = skip [] comments rest in
-	  (match rest with
-	    b :: rest when can_be_string b ->
-	      let (front2,rest) = skip [] strings_and_comments rest in
-	      a :: front @ b :: front2 @ out_strings rest
-	  | _ ->
-	      (match a with
-		TString(str_isW,info) ->
-		  (Parse_string_c.parse_string str_isW info) @ front @
-		  out_strings rest
-	      |	_ ->  a :: front @ out_strings rest))
-	else a :: out_strings rest in
-  out_strings toks
+      if can_be_string a
+      then
+        let (front,rest) = skip [] comments rest in
+        (match rest with
+          b :: rest when can_be_string b ->
+            let (front2,rest) = skip [] strings_and_comments rest in
+            a :: front @ b :: front2 @ out_strings rest
+        | _ ->
+            (match a with
+        TString(str_isW,info) ->
+          (Parse_string_c.parse_string str_isW info) @ front @
+          out_strings rest
+            |	_ ->  a :: front @ out_strings rest))
+      else a :: out_strings rest
+	in out_strings toks
 
 (* ------------------------------------------------------------------------- *)
 (* macro2 *)
@@ -2441,15 +2441,15 @@ let lookahead2 ~pass next before =
           pr2_cpp("IFDEF: or related inside function. I treat it as comment");
           incr Stat.nIfdefPassing;
         end;
-	let x =
-	  match x with
-	    TIfdef _ | TIfdefMisc _ | TIfdefVersion _ -> Token_c.IfDef
-	  | TIfdefBool _ -> Token_c.IfDef0
-	  | TIfdefelse _ | TIfdefelif _ -> Token_c.Else
-	  | TEndif _ -> Token_c.Endif
-	  | _ -> Token_c.Other in (* not possible here *)
-        TCommentCpp (Token_c.CppIfDirective x, ii)
-      end
+        let x =
+          match x with
+            TIfdef _ | TIfdefMisc _ | TIfdefVersion _ -> Token_c.IfDef
+          | TIfdefBool _ -> Token_c.IfDef0
+          | TIfdefelse _ | TIfdefelif _ -> Token_c.Else
+          | TEndif _ -> Token_c.Endif
+          | _ -> Token_c.Other in (* not possible here *)
+              TCommentCpp (Token_c.CppIfDirective x, ii)
+        end
       else x
 
   | (TUndef (ii) as x)::_, _

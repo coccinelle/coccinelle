@@ -326,8 +326,6 @@ let is_ifdef_and_same_tag tag x =
   | StmtElem _ | CppDirectiveStmt _ -> false
   | IfdefStmt2 _ -> raise (Impossible 77)
 
-
-
 (* What if I skipped in the parser only some of the ifdef elements
  * of the same tag. Once I passed one, I should pass all of them and so
  * at least should detect here that one tag is not "valid". Maybe in the parser
@@ -337,7 +335,7 @@ let is_ifdef_and_same_tag tag x =
  * indice. Or simply count  the number of directives with the same tag and
  * put this information in the tag. Hence the total_with_this_tag below.
  *)
-let should_ifdefize (tag,ii) ifdefs_directives xxs =
+let should_ifdefize (tag,ii) ifdefs_directives _xxs =
   let IfdefTag (_tag, total_with_this_tag) = tag in
 
   if total_with_this_tag <> List.length ifdefs_directives
@@ -350,24 +348,28 @@ let should_ifdefize (tag,ii) ifdefs_directives xxs =
     (* todo? put more condition ? don't ifdefize declaration ? *)
     true
 
-
-
-
-
 (* return a triple, (ifdefs directive * grouped xs * remaining sequencable)
  * XXX1 XXX2 elsif YYY1 else ZZZ1 endif WWW1 WWW2
  * => [elsif, else, endif], [XXX1 XXX2; YYY1; ZZZ1], [WWW1 WWW2]
  *)
-let group_ifdef tag xs =
-  let (xxs, xs) = group_by_post (is_ifdef_and_same_tag tag) xs in
+let group_ifdef : Ast_c.matching_tag
+                  -> Ast_c.statement_sequencable list
+                  -> Ast_c.ifdef_directive list
+                      * Ast_c.statement_sequencable list list
+                      * Ast_c.statement_sequencable list
+  = fun tag xs ->
+  let (xxs, remaining) = group_by_post (is_ifdef_and_same_tag tag) xs in
 
-  xxs +> List.map snd +> List.map (fun x ->
+  (* TODO: Should replace this with a proper assert.
+   * - Iago Abal
+   *)
+  xxs +> List.map (fun (_,x) ->
     match x with
     | IfdefStmt y -> y
     | StmtElem _ | CppDirectiveStmt _ | IfdefStmt2 _ -> raise (Impossible 78)
   ),
   xxs +> List.map fst,
-  xs
+  remaining
 
 
 let rec cpp_ifdef_statementize ast =

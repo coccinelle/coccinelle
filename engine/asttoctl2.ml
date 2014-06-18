@@ -69,7 +69,7 @@ let ctl_ax s = function
   | CTL.False -> CTL.False
   | x ->
       match !exists with
-	Exists -> CTL.EX(CTL.FORWARD,x)
+        Exists -> CTL.EX(CTL.FORWARD,x)
       |	Forall -> CTL.AX(CTL.FORWARD,s,x)
 
 let ctl_ax_absolute s = function
