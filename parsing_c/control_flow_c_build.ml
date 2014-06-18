@@ -469,110 +469,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
       Some newi
 
    (* ------------------------- *)
-  | Selection  (Ast_c.If (e, st1, st2)) ->
-
-    let iist2 = Ast_c.get_ii_st_take_care st2 in
-    (match Ast_c.unwrap_st st2 with
-    | Ast_c.ExprStatement (None) when null iist2 ->
-      (* sometime can have ExprStatement None but it is a if-then-else,
-       * because something like   if() xx else ;
-       * so must force to have [] in the ii associated with ExprStatement
-       *)
-
-      let (i1,i2,i3, iifakeend) = tuple_of_list4 ii in
-      let ii = [i1;i2;i3] in
-      (* starti -> newi --->   newfakethen -> ... -> finalthen --> lasti
-       *                  |                                      |
-       *                  |->   newfakeelse -> ... -> finalelse -|
-       * update: there is now also a link directly to lasti.
-       *
-       * because of CTL, now do different things if we are in a ifthen or
-       * ifthenelse.
-       *)
-      let newi = !g +> add_node (IfHeader (stmt, (e, ii))) lbl ("if") in
-      !g +> add_arc_opt (starti, newi);
-      let escapes = ref false in
-      let newfakethen = !g +> add_node (TrueNode escapes) lbl "[then]" in
-      let newfakeelse = !g +> add_node FallThroughNode lbl "[fallthrough]" in
-      let afteri = !g +> add_node (AfterNode NormalAfterNode) lbl "[after]" in
-      let lasti  = !g +> add_node (EndStatement (Some iifakeend)) lbl "[endif]"
-      in
-
-      (* for ErrorExit heuristic *)
-      let newxi = { xi_lbl with  under_ifthen = true; } in
-
-      !g#add_arc ((newi, newfakethen), Direct);
-      !g#add_arc ((newi, newfakeelse), Direct);
-      !g#add_arc ((newi, afteri), Direct);
-      !g#add_arc ((afteri, lasti), Direct);
-      !g#add_arc ((newfakeelse, lasti), Direct);
-
-      let finalthen = aux_statement (Some newfakethen, newxi) st1 in
-      (match finalthen with None -> escapes := true | _ -> ());
-      !g +> add_arc_opt (finalthen, lasti);
-      Some lasti
-
-    | _unwrap_st2 ->
-     (* starti -> newi --->   newfakethen -> ... -> finalthen --> lasti
-      *                 |                                      |
-      *                 |->   newfakeelse -> ... -> finalelse -|
-      * update: there is now also a link directly to lasti.
-      *)
-      let (iiheader, iielse, iifakeend) =
-        match ii with
-        | [i1;i2;i3;i4;i5] -> [i1;i2;i3], i4, i5
-        | _ -> raise (Impossible 62)
-      in
-      let newi = !g +> add_node (IfHeader (stmt, (e, iiheader))) lbl "if" in
-      !g +> add_arc_opt (starti, newi);
-      let escapes = ref false in
-      let newfakethen = !g +> add_node (TrueNode escapes)  lbl "[then]" in
-      let newfakeelse = !g +> add_node FalseNode lbl "[else]" in
-      let elsenode = !g +> add_node (Else iielse) lbl "else" in
-
-
-      !g#add_arc ((newi, newfakethen), Direct);
-      !g#add_arc ((newi, newfakeelse), Direct);
-
-      !g#add_arc ((newfakeelse, elsenode), Direct);
-
-      let endnode =
-        mk_node (EndStatement(Some iifakeend)) lbl [] "[endif]" in
-      let endnode_dup =
-        mk_node (EndStatement(Some iifakeend)) lbl [] "[endif]" in
-
-      let ret_afters = ref [] in
-      let mkafter ty str lasti = (
-        let afteri = !g +> add_node (AfterNode ty) lbl str in
-        let a1 = ((newi, afteri), Direct) in
-        !g#add_arc a1;
-        let a2 = ((afteri, lasti), Direct) in
-        !g#add_arc a2;
-        ret_afters := (afteri,a1,a2) :: !ret_afters
-        ) in
-
-      let newxi = {
-        xi_lbl with braces = Common.Left (endnode_dup,mkafter) :: xi_lbl.braces
-        } in
-
-      let finalthen = aux_statement (Some newfakethen, newxi) st1 in
-      let finalelse = aux_statement (Some elsenode, newxi) st2 in
-
-      (match finalthen with None -> escapes := true | _ -> ());
-
-      (match finalthen, finalelse with
-        | (None, None) -> None
-        | _ -> let lasti = !g#add_node endnode in
-                 List.iter (function (node,a1,a2) ->
-                              !g#del_arc a1; !g#del_arc a2; !g#del_node node)
-	               !ret_afters;
-	               mkafter NormalAfterNode "[after]" lasti;
-	               begin
-	                 !g +> add_arc_opt (finalthen, lasti);
-	                 !g +> add_arc_opt (finalelse, lasti);
-	                 Some lasti
-	               end)
-    )
+  | Selection (Ast_c.If _) -> mk_If starti lbl xi_lbl stmt
 
    (* ------------------------- *)
   | Selection  (Ast_c.Switch (e, st)) ->
@@ -1061,10 +958,130 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
   | Ast_c.NestedFunc def ->
       raise (Error NestedFunc)
 
+and mk_If (starti :nodei option) (labels :int list) (xi_lbl :xinfo)
+          (stmt :statement)
+          : nodei option =
+  let ii = Ast_c.get_ii_st_take_care stmt in
+  match Ast_c.unwrap_st stmt with
+  | Selection (Ast_c.If (e, st1, st2)) ->
+    let iist2 = Ast_c.get_ii_st_take_care st2 in begin
+    match Ast_c.unwrap_st st2 with
+    | Ast_c.ExprStatement None when null iist2 ->
+      (* We could have 'ExprStatement None' as a result of something like
+       * 'if() xx else ;', so we must force to have a [] in the ii associated
+       * with ExprStatement.
+       *)
 
+      let (i1,i2,i3, iifakeend) = tuple_of_list4 ii in
+      let ii' = [i1;i2;i3] in
+      (* starti -> newi --->   newfakethen -> ... -> finalthen --> lasti
+       *                  |                                      |
+       *                  |->   newfakeelse -> ... -> finalelse -|
+       * update: there is now also a link directly to lasti.
+       *
+       * because of CTL, now do different things if we are in a ifthen or
+       * ifthenelse.
+       *)
 
+      (* starti -> newi *)
+      let newi = !g +> add_node (IfHeader (stmt, (e, ii'))) labels "if" in
+      !g +> add_arc_opt (starti, newi);
 
+      (* newi ---> newfakethen -> ... -> lasti
+       *       |                           |
+       *       |-> newfakeelse ----------->|
+       *)
+      let escapes = ref false in
+      let newfakethen = !g +> add_node (TrueNode escapes) labels "[then]" in
+      let newfakeelse = !g +> add_node FallThroughNode labels "[fallthrough]" in
+      let lasti  = !g +>
+            add_node (EndStatement (Some iifakeend)) labels "[endif]" in
+      !g#add_arc ((newi, newfakethen), Direct);
+      !g#add_arc ((newi, newfakeelse), Direct);
+      !g#add_arc ((newfakeelse, lasti), Direct);
 
+      (* if -> [after] -> [endif] *)
+      let afteri = !g +>
+            add_node (AfterNode NormalAfterNode) labels "[after]" in
+      !g#add_arc ((newi, afteri), Direct);
+      !g#add_arc ((afteri, lasti), Direct);
+
+      (* for ErrorExit heuristic *)
+      let newxi = { xi_lbl with  under_ifthen = true; } in
+
+      (* [then] -> {st1} -> lasti *)
+      let finalthen = aux_statement (Some newfakethen, newxi) st1 in
+      (match finalthen with None -> escapes := true | _ -> ());
+      !g +> add_arc_opt (finalthen, lasti);
+      Some lasti
+    | __else__ ->
+      (* starti -> newi --->   newfakethen -> ... -> finalthen --> lasti
+       *                 |                                      |
+       *                 |->   newfakeelse -> ... -> finalelse -|
+       * update: there is now also a link directly to lasti.
+       *)
+      let (iiheader, iielse, iifakeend) =
+        match ii with
+        | [i1;i2;i3;i4;i5] -> [i1;i2;i3], i4, i5
+        | _ -> raise (Impossible 62)
+        in
+
+      (* starti -> "if" *)
+      let newi = !g +> add_node (IfHeader (stmt, (e, iiheader))) labels "if" in
+      !g +> add_arc_opt (starti, newi);
+
+      (* if ---> [then] -> ...
+       *     |
+       *     |-> [else] -> else -> ...
+       *)
+      let escapes = ref false in
+      let newfakethen = !g +> add_node (TrueNode escapes) labels "[then]" in
+      let newfakeelse = !g +> add_node FalseNode labels "[else]" in
+      let elsenode = !g +> add_node (Else iielse) labels "else" in
+      !g#add_arc ((newi, newfakethen), Direct);
+      !g#add_arc ((newi, newfakeelse), Direct);
+      !g#add_arc ((newfakeelse, elsenode), Direct);
+
+      let endnode =
+        mk_node (EndStatement(Some iifakeend)) labels [] "[endif]" in
+      let endnode_dup =
+        mk_node (EndStatement(Some iifakeend)) labels [] "[endif]" in
+
+      let ret_afters = ref [] in
+      let mkafter ty str lasti = begin
+            (* if -> [after] -> [endif] *)
+            let afteri = !g +> add_node (AfterNode ty) labels str in
+            let a1 = ((newi, afteri), Direct) in
+            !g#add_arc a1;
+            let a2 = ((afteri, lasti), Direct) in
+            !g#add_arc a2;
+            ret_afters := (afteri,a1,a2) :: !ret_afters
+        end in
+
+      let newxi = { xi_lbl with
+            braces = Common.Left (endnode_dup,mkafter) :: xi_lbl.braces
+        } in
+
+      let finalthen = aux_statement (Some newfakethen, newxi) st1 in
+      let finalelse = aux_statement (Some elsenode, newxi) st2 in
+
+      (match finalthen with None -> escapes := true | _ -> ());
+
+      begin match finalthen, finalelse with
+        | (None, None) -> None
+        | __else__ ->
+          let lasti = !g#add_node endnode in
+          !ret_afters +> List.iter (function (node,a1,a2) ->
+                            !g#del_arc a1; !g#del_arc a2; !g#del_node node);
+          mkafter NormalAfterNode "[after]" lasti;
+          begin
+            !g +> add_arc_opt (finalthen, lasti);
+            !g +> add_arc_opt (finalelse, lasti);
+            Some lasti
+          end
+      end
+    end
+  | x -> error_cant_have x
 
 
 and aux_statement_list starti (xi, newxi) statxs =
