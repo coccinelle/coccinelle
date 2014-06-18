@@ -623,12 +623,12 @@ main:
  translation_unit EOF     { $1 }
 
 translation_unit:
- | 
+ |
      { [] }
  | translation_unit external_declaration
      { !LP._lexer_hint.context_stack <- [LP.InTopLevel]; $1 ++ [$2] }
  | translation_unit Tnamespace TIdent TOBrace translation_unit TCBrace
-     { !LP._lexer_hint.context_stack <- [LP.InTopLevel]; 
+     { !LP._lexer_hint.context_stack <- [LP.InTopLevel];
        $1 ++ [Namespace ($5, [$2; snd $3; $4; $6])] }
 
 
@@ -779,7 +779,7 @@ new_argument:
 	   let pty = { ty with p_type = fty } in
 	   Right(ArgType pty)
        | _ -> raise (Impossible 88)
-     } 
+     }
 
 unary_op:
  | TAnd   { GetRef,     $1 }
@@ -1914,7 +1914,7 @@ define_val:
  | Tinline { DefineTodo }
 *)*/
 
- | stat_or_decl stat_or_decl_list 
+ | stat_or_decl stat_or_decl_list
      { DefineMulti
 	 (List.map
 	    (function
@@ -2023,7 +2023,7 @@ external_declaration:
 
 celem:
  | Tnamespace TIdent TOBrace translation_unit TCBrace
-     { !LP._lexer_hint.context_stack <- [LP.InTopLevel]; 
+     { !LP._lexer_hint.context_stack <- [LP.InTopLevel];
        Namespace ($4, [$1; snd $2; $3; $5]) }
 
  | external_declaration                         { $1 }

@@ -80,7 +80,7 @@ let sp_of_file2 file iso =
     then code
     else (Hashtbl.remove _hparse (file,iso); redo())
   with Not_found -> redo()
-    
+
 let sp_of_file file iso    =
   Common.profile_code "parse cocci" (fun () -> sp_of_file2 file iso)
 
@@ -853,7 +853,7 @@ type rule_info = {
   used_after: Ast_cocci.meta_name list;
   ruleid: int;
   was_matched: bool ref;
-} 
+}
 
 type toplevel_cocci_info_script_rule = {
   scr_ast_rule:
@@ -1886,7 +1886,7 @@ let pre_engine2 (coccifile, isofile) =
 	    Ast_cocci.InitialScriptRule(rname,x,deps,mvs,y))
 	  r
       end in
-  
+
   let initialized_languages =
     List.fold_left
       (function languages ->

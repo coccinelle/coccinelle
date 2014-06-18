@@ -332,7 +332,7 @@ let rec vk_expr = fun bigf expr ->
     | ParenExpr (e) -> exprf e
 
     | New  (None, t)   -> vk_argument bigf t
-    | New  (Some ts, t)   -> 
+    | New  (Some ts, t)   ->
         vk_argument_list bigf ts;
 	vk_argument bigf t
     | Delete e -> vk_expr bigf e
@@ -778,7 +778,7 @@ and vk_define_val bigf defval =
   | DefineInit ini -> vk_ini bigf ini
     (* christia: added multi *)
   | DefineMulti stmts ->
-      List.fold_left (fun () d -> vk_statement bigf d) () stmts 
+      List.fold_left (fun () d -> vk_statement bigf d) () stmts
   | DefineTodo ->
       pr2_once "DefineTodo";
       ()
@@ -1139,7 +1139,7 @@ let rec vk_expr_s = fun bigf expr ->
       | ParenExpr (e)    -> ParenExpr (exprf e)
 
       | New (None, t)    -> New (None, vk_argument_s bigf t)
-      | New (Some ts, t) -> 
+      | New (Some ts, t) ->
 	  New (Some (ts +> List.map (fun (e,ii) ->
 	    vk_argument_s bigf e, iif ii)), vk_argument_s bigf t)
       | Delete e      -> Delete (vk_expr_s bigf e)

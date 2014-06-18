@@ -76,7 +76,7 @@ let new_test_parse_gen xs =
   Common.check_stack_nbfiles (List.length fullxs);
 
   fullxs +> List.iter (fun file ->
-    
+
     pr2 "";
     pr2 ("PARSING: " ^ file);
 
@@ -264,7 +264,7 @@ let local_test_cfg launchgv file =
 	      if launchgv
 	      then Filename.temp_file "output" ".dot"
 	      else
-		let fl = Filename.chop_extension (Filename.basename file) in 
+		let fl = Filename.chop_extension (Filename.basename file) in
 		fl^":"^fn^".dot" in
             Ograph_extended.print_ograph_mutable flow' (filename) launchgv
           )

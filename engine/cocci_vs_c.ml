@@ -3992,7 +3992,7 @@ and decimal_type_exp nm sb ii =
 	    let ida = A.make_term(A.Id(A.make_mcode n)) in
 	    ident_cpp DontKnow ida nameidb >>= (fun ida nameidb -> ok)
 	| _ -> fail)
-    | Type_cocci.Num sa -> 
+    | Type_cocci.Num sa ->
     | Type_cocci.MV(ida,keep,inherited) ->
 	(* degenerate version of MetaId, no transformation possible *)
         let (ib1, ib2) = tuple_of_list2 ii in
@@ -4682,7 +4682,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
       tokenf prga prgb >>= (fun prga prgb ->
       let wp x = A.rewrap pragmainfoa x  in
       (match A.unwrap pragmainfoa, pragmainfob with
-	A.PragmaTuple(lp,eas,rp), B.PragmaTuple(ebs,iib) ->	  
+	A.PragmaTuple(lp,eas,rp), B.PragmaTuple(ebs,iib) ->
 	  let (ib1, ib2) = tuple_of_list2 iib in
 	  tokenf lp ib1 >>= (fun lp ib1 ->
 	  tokenf rp ib2 >>= (fun rp ib2 ->
@@ -4773,7 +4773,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 	  let code2 = Ast_c.unsplit_nocomma code2_splitted in
 	  return(
 	    A.Exec(exec,lang,code,sem),
-	    F.Exec(st,(code2,[exec2;lang2;sem2])))))))      
+	    F.Exec(st,(code2,[exec2;lang2;sem2])))))))
 
   (* have not a counter part in coccinelle, for the moment *)
   (* todo?: print a warning at least ? *)

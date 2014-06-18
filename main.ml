@@ -825,10 +825,10 @@ let rec main_action xs =
        * files.
        *)
 	  dir := (Common.is_directory x);
-	
+
           if !cocci_file =$= ""
           then failwith "I need a cocci file,  use --sp-file <file>";
-	  
+
 	  if !dir && !Flag.patch =*= None
 	  then
 	    (match xs with
@@ -854,7 +854,7 @@ let rec main_action xs =
               | true, "", Flag.Glimpse, [] ->
                   (*if not (null xs)
                   then failwith "--use-glimpse can accept only one dir"*)
-		  
+
                   let files =
 		    match glimpse_filter constants x with
 		      None -> Test_parsing_c.get_files x
@@ -863,7 +863,7 @@ let rec main_action xs =
               | true, "", Flag.IdUtils, [] ->
                   (*if not (null xs)
                   then failwith "--id-utils can accept only one dir"*)
-		  
+
                   let files =
 		    match idutils_filter constants x with
 		      None -> Test_parsing_c.get_files x
@@ -872,7 +872,7 @@ let rec main_action xs =
               | true, "", Flag.CocciGrep, [] ->
                   (*if not (null xs)
                   then failwith "--id-utils can accept only one dir"*)
-		  
+
                   let files =
 		    match coccigrep_filter constants x with
 		      None -> Test_parsing_c.get_files x
@@ -880,9 +880,9 @@ let rec main_action xs =
                   files +> List.map (fun x -> [x])
                   (* normal *)
 	      | true, "", _, _ ->
-		  Test_parsing_c.get_files 
+		  Test_parsing_c.get_files
 		    (join " " (x::xs)) +> List.map (fun x -> [x])
-		    
+
             (* kbuild *)
 	      | true, kbuild_info_file,_,_ ->
 		  let dirs =
@@ -890,7 +890,7 @@ let rec main_action xs =
                   in
 		  let info = Kbuild.parse_kbuild_info kbuild_info_file in
 		  let groups = Kbuild.files_in_dirs dirs info in
-		  
+
 		  groups +> List.map (function Kbuild.Group xs -> xs)
 		    )
           in
@@ -945,7 +945,7 @@ let rec main_action xs =
 		  pr2 ("HANDLING: " ^ (join " " cfiles));
 		  (*pr2 (List.hd(Common.cmd_to_list "free -m | grep Mem"));*)
 		  flush stderr;
-		    
+
 		  Common.timeout_function_opt !FC.timeout (fun () ->
   	            Common.report_if_take_time 10 (join " " cfiles) (fun () ->
                       try
@@ -1036,10 +1036,10 @@ and generate_outfiles outfiles x (* front file *) xs (* other files *) =
 	| None -> ());
         Common.command2 ("cp "^outfile^" "^infile);
       end;
-      
+
       if !outplace_modif
       then Common.command2 ("cp "^outfile^" "^infile^".cocci_res")
-      
+
 	      (* potential source of security pb if the /tmp/ file is
 		 * a symlink, so simpler to not produce any regular file
 		 * (files created by Common.new_temp_file are still ok)
@@ -1104,11 +1104,11 @@ let main () =
                       "--test-okfailed";"--test-regression-okfailed"]))
 	or contains_cocci
     then run_profile quiet_profile;
-    
+
     let args = ref [] in
-    
+
     (* Gc.set {(Gc.get ()) with Gc.stack_limit = 1024 * 1024};*)
-    
+
     (* this call can set up many global flag variables via the cmd line *)
     arg_parse2 (Arg.align all_options) (fun x -> args := x::!args) usage_msg
       (Array.of_list arglist);
@@ -1130,7 +1130,7 @@ let main () =
 	Flag_parsing_c.cache_prefix :=
 	  Some (Printf.sprintf "%s_%d" cp n)
     | _ -> ());
-    
+
     (* julia hack so that one can override directories specified on
        * the command line. *)
     (if !dir

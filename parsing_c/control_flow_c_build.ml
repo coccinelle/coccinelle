@@ -1239,7 +1239,7 @@ let rec ast_to_control_flow e =
   match e with
   | Ast_c.Namespace (defs, _) ->
       (* todo: incorporate the other defs *)
-      let rec loop defs = 
+      let rec loop defs =
 	match defs with
 	| [] -> None
 	| def :: defs ->

@@ -3371,7 +3371,7 @@ let cache_computation_robust2
 	let _ = Sys.command
 	    (Printf.sprintf "mkdir -p %s" (Filename.dirname file_cache)) in
 	(file_cache,dependencies_cache) in
-  
+
   let dependencies =
     (* could do md5sum too *)
     ((file::need_no_changed_files) +> List.map (fun f -> f, filemtime f),
@@ -3709,7 +3709,7 @@ let _ = example (drop 3 [1;2;3;4] =*= [4])
 
 let rec drop_while p = function
   | [] -> []
-  | x::xs -> if p x then drop_while p xs else x::xs	
+  | x::xs -> if p x then drop_while p xs else x::xs
 
 
 let rec drop_until p xs =

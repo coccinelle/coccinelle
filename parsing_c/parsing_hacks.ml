@@ -538,7 +538,7 @@ let rec define_ident acc xs =
           let acc = (TCommentSpace i1) :: acc in
 	  let acc = (TIdentDefine (s,ii)) :: acc in
           define_ident acc xs
-          
+
       | TCommentSpace _::_::xs
       | xs ->
           pr2 "WEIRD: weird #define body";
@@ -569,7 +569,7 @@ let rec define_ident acc xs =
             let acc = (TCommentSpace i1) :: acc in
 	    let acc = (TIdentDefine (s,ii)) :: acc in
             define_ident acc xs
-          
+
 	| xs ->
             pr2 "WEIRD: weird #pragma";
             define_ident acc xs in
@@ -1735,7 +1735,7 @@ let can_be_on_top_level tl =
   match tl with
   | Tstruct _
   | Ttypedef _
-  | TDefine _ 
+  | TDefine _
   | TIfdef _
   | TIfdefelse _
   | TIfdefelif _
@@ -1779,13 +1779,13 @@ let not_struct_enum = function
   | (Parser_c.Tstruct _ | Parser_c.Tunion _ | Parser_c.Tenum _)::_ -> false
   | _ -> true
 
-let pointer ?(followed_by=fun _ -> true) 
-    ?(followed_by_more=fun _ -> true) ts = 
-  let rec loop ts = 
+let pointer ?(followed_by=fun _ -> true)
+    ?(followed_by_more=fun _ -> true) ts =
+  let rec loop ts =
     match ts with
     | TMul _ :: rest -> loop rest
     | TAnd _ :: rest when !Flag.c_plus_plus -> loop rest
-    | t :: ts' -> followed_by t && followed_by_more ts' 
+    | t :: ts' -> followed_by t && followed_by_more ts'
     | [] -> failwith "unexpected end of token stream" in
   match ts with
   | TMul _ :: rest -> loop rest
@@ -1797,7 +1797,7 @@ let ident = function
   | _ -> false
 
 let is_type = function
-  | TypedefIdent _ 
+  | TypedefIdent _
   | Tvoid _
   | Tchar _
   | Tfloat _
@@ -1806,7 +1806,7 @@ let is_type = function
   | Tsize_t _
   | Tssize_t _
   | Tptrdiff_t _
-      
+
   | Tint _
   | Tlong _
   | Tshort _ -> true
@@ -1853,7 +1853,7 @@ let paren_before_comma l =
 
 let lookahead2 ~pass next before =
   match (next, before) with
-      
+
   (* c++ hacks *)
   (* yy xx(   and in function *)
   | TOPar i1::_,              TIdent(s,i2)::TypedefIdent _::_
@@ -1861,7 +1861,7 @@ let lookahead2 ~pass next before =
         pr2_cpp("constructed_object: "  ^s);
         TOParCplusplusInit i1
   | TOPar i1::_,              TIdent(s,i2)::ptr
-      when !Flag.c_plus_plus 
+      when !Flag.c_plus_plus
 	  && pointer ~followed_by:(function TypedefIdent _ -> true | _ -> false) ptr
 	  && (LP.current_context () = (LP.InFunction)) ->
         pr2_cpp("constructed_object: "  ^s);
@@ -1896,43 +1896,43 @@ let lookahead2 ~pass next before =
 	(* christia *)
 
 	(* delete[] *)
-  | (TOCro i1 :: _, Tdelete _ :: _) 
+  | (TOCro i1 :: _, Tdelete _ :: _)
     when !Flag.c_plus_plus ->
       TCommentCpp (Token_c.CppDirective, i1)
 	(* delete[] *)
-  | (TCCro i1 :: _, Tdelete _ :: _) 
+  | (TCCro i1 :: _, Tdelete _ :: _)
     when !Flag.c_plus_plus ->
       TCommentCpp (Token_c.CppDirective, i1)
 
 	(* extern "_" tt *)
-  | ((TString ((s, _), i1) | TMacroString (s, i1)) :: _ , Textern _ :: _) 
+  | ((TString ((s, _), i1) | TMacroString (s, i1)) :: _ , Textern _ :: _)
     when !Flag.c_plus_plus ->
 	  TCommentCpp (Token_c.CppDirective, i1)
 
 	(* ) const { *)
-  | (Tconst i1 :: TOBrace _ :: _ , TCPar _ :: _) 
+  | (Tconst i1 :: TOBrace _ :: _ , TCPar _ :: _)
     when !Flag.c_plus_plus ->
 	  TCommentCpp (Token_c.CppDirective, i1)
 
 	(* xx const tt *)
-  | (TIdent (s, i1)::(Tconst _|Tvolatile _|Trestrict _)::type_::_  , _) 
+  | (TIdent (s, i1)::(Tconst _|Tvolatile _|Trestrict _)::type_::_  , _)
     when not_struct_enum before
 	&& is_type type_ ->
 	  TCommentCpp (Token_c.CppDirective, i1)
 
 	(* xx struct *)
-  | (TIdent (s, i1)::Tstruct _::_  , _) 
+  | (TIdent (s, i1)::Tstruct _::_  , _)
     when not_struct_enum before ->
 	  TCommentCpp (Token_c.CppDirective, i1)
 
 	(* xx tt *)
-  | (TIdent (s, i1)::type_::_  , _) 
+  | (TIdent (s, i1)::type_::_  , _)
     when not_struct_enum before
 	&& is_type type_ ->
 	  TCommentCpp (Token_c.CppDirective, i1)
 
 	(* tt xx yy *)
-  | (TIdent (s, i1)::TIdent (s2, i2)::_  , seen::_) 
+  | (TIdent (s, i1)::TIdent (s2, i2)::_  , seen::_)
     when not_struct_enum before
 	&& is_type seen ->
 	  if is_macro s2 then
@@ -1940,19 +1940,19 @@ let lookahead2 ~pass next before =
 	  else
 	    TCommentCpp (Token_c.CppDirective, i1)
 
-  | (TIdent (s2, i2)::_  , TIdent (s, i1)::seen::_) 
+  | (TIdent (s2, i2)::_  , TIdent (s, i1)::seen::_)
     when not_struct_enum before
 	&& is_macro s2 && is_type seen ->
 	  TCommentCpp (Token_c.CppDirective, i2)
 
 	(* tt xx * *)
-  | (TIdent (s, i1)::ptr  , seen::_) 
+  | (TIdent (s, i1)::ptr  , seen::_)
     when not_struct_enum before
 	&& pointer ptr && is_type seen ->
 	  TCommentCpp (Token_c.CppDirective, i1)
 
 	(* tt * xx yy *)
-  | (TIdent (s, i1)::TIdent(s2, i2)::_  , ptr) 
+  | (TIdent (s, i1)::TIdent(s2, i2)::_  , ptr)
     when not_struct_enum before
 	&& pointer ptr ->
 	  if is_macro s2 then
@@ -1961,18 +1961,18 @@ let lookahead2 ~pass next before =
 	    TCommentCpp (Token_c.CppDirective, i1)
 
 	(* tt * xx yy *)
-  | (TIdent(s2, i2)::_  , TIdent (s, i1)::ptr) 
+  | (TIdent(s2, i2)::_  , TIdent (s, i1)::ptr)
     when not_struct_enum before
 	&& is_macro s2 && pointer ptr ->
 	  TCommentCpp (Token_c.CppDirective, i2)
 
         (* exception to next rule *)
-  | (TIdent(s2, i2)::TOPar _ :: _ , TIdent(s, i1)::seen::_) 
+  | (TIdent(s2, i2)::TOPar _ :: _ , TIdent(s, i1)::seen::_)
     when not_struct_enum before
 	&& is_macro s2 && is_type seen ->
 	  TIdent(s2, i2)
 	(* tt xx yy *)
-  | (TIdent(s2, i2)::_  , TIdent(s, i1)::seen::_) 
+  | (TIdent(s2, i2)::_  , TIdent(s, i1)::seen::_)
     when not_struct_enum before
 	&& is_macro s2 && is_type seen ->
 	  TCommentCpp (Token_c.CppDirective, i2)
@@ -2012,8 +2012,8 @@ let lookahead2 ~pass next before =
   | (TIdent (s, i1)::(((TComma _|TCPar _)::_) as rest) ,
      ((TComma _ |TOPar _)::_ as bef))
     when not_struct_enum before && (LP.current_context() =*= LP.InParameter)
-      && k_and_r rest 
-      && not_has_type_before is_cparen rest 
+      && k_and_r rest
+      && not_has_type_before is_cparen rest
       && not_has_type_before is_oparen bef
       ->
 
@@ -2148,7 +2148,7 @@ let lookahead2 ~pass next before =
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TPtVirg _::_ , TEq _::_) ->
       TIdent (s, i1)
   | (TIdent (s, i1)::ptr , _)
-    when not_struct_enum before 
+    when not_struct_enum before
 	&& pointer ~followed_by:(function TIdent _ -> true | _ -> false)
               ~followed_by_more:(function TPtVirg _ :: _ -> true | _ -> false) ptr
 	&& (LP.is_top_or_struct (LP.current_context ()))
@@ -2160,7 +2160,7 @@ let lookahead2 ~pass next before =
   (*  xx * yy ,     AND in Toplevel  *)
   | (TIdent (s, i1)::ptr , _)
     when not_struct_enum before && (LP.current_context () =*= LP.InTopLevel)
-	&& ok_typedef s 
+	&& ok_typedef s
 	&& pointer ~followed_by:(function TIdent _ -> true | _ -> false)
               ~followed_by_more:(function TComma _ :: _ -> true | _ -> false) ptr
       ->
@@ -2172,7 +2172,7 @@ let lookahead2 ~pass next before =
   | (TIdent (s, i1)::ptr , _)
     when not_struct_enum before
 	&& (LP.is_top_or_struct (LP.current_context ()))
-	&& ok_typedef s 
+	&& ok_typedef s
 	&& pointer ~followed_by:(function TIdent _ -> true | _ -> false)
               ~followed_by_more:(function TOPar _ :: _ -> true | _ -> false) ptr
       ->
@@ -2183,9 +2183,9 @@ let lookahead2 ~pass next before =
   (* xx * yy [ *)
   (* todo? enough ? cos in struct def we can have some expression ! *)
   | (TIdent (s, i1)::ptr , _)
-    when not_struct_enum before 
+    when not_struct_enum before
 	&& (LP.is_top_or_struct (LP.current_context ()))
-	&& ok_typedef s 
+	&& ok_typedef s
 	&& pointer ~followed_by:(function TIdent _ -> true | _ -> false)
               ~followed_by_more:(function TOCro _ :: _ -> true | _ -> false) ptr
       ->
@@ -2219,7 +2219,7 @@ let lookahead2 ~pass next before =
   (*  xx * yy =  *)
   | (TIdent (s, i1)::ptr , _)
     when not_struct_enum before
-	&& ok_typedef s 
+	&& ok_typedef s
 	&& pointer ~followed_by:(function TIdent _ -> true | _ -> false)
               ~followed_by_more:(function TEq _ :: _ -> true | _ -> false) ptr
       ->
@@ -2231,7 +2231,7 @@ let lookahead2 ~pass next before =
   (*  xx * yy)      AND in paramdecl *)
   | (TIdent (s, i1)::ptr , _)
     when not_struct_enum before && (LP.current_context () =*= LP.InParameter)
-	&& ok_typedef s 
+	&& ok_typedef s
 	&& pointer ~followed_by:(function TIdent _ -> true | _ -> false)
               ~followed_by_more:(function TCPar _ :: _ -> true | _ -> false) ptr
         ->
@@ -2243,7 +2243,7 @@ let lookahead2 ~pass next before =
   (*  xx * yy; *) (* wrong ? *)
   | (TIdent (s, i1)::ptr ,
      (TOBrace _| TPtVirg _)::_) when not_struct_enum before
-	&& ok_typedef s 
+	&& ok_typedef s
 	&& pointer ~followed_by:(function TIdent _ -> true | _ -> false)
               ~followed_by_more:(function TPtVirg _ :: _ -> true | _ -> false) ptr
         ->
@@ -2256,7 +2256,7 @@ let lookahead2 ~pass next before =
   (*  xx * yy,  and ';' before xx *) (* wrong ? *)
   | (TIdent (s, i1)::ptr ,
      (TOBrace _| TPtVirg _)::_) when
-      ok_typedef s 
+      ok_typedef s
 	&& pointer ~followed_by:(function TIdent _ -> true | _ -> false)
               ~followed_by_more:(function TComma _ :: _ -> true | _ -> false) ptr
     ->
@@ -2269,7 +2269,7 @@ let lookahead2 ~pass next before =
   | (TIdent (s, i1)::ptr , _)
       when s ==~ regexp_typedef && not_struct_enum before
         (* struct user_info_t sometimes *)
-	&& ok_typedef s 
+	&& ok_typedef s
         && pointer ~followed_by:(function TIdent _ -> true | _ -> false) ptr
         ->
 
@@ -2291,7 +2291,7 @@ let lookahead2 ~pass next before =
     when not_struct_enum before
         (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
 	&& ok_typedef s
-	(* christia : this code catches 'a * *b' which is wrong 
+	(* christia : this code catches 'a * *b' which is wrong
 	 *)
     ->
 
@@ -2367,7 +2367,7 @@ let lookahead2 ~pass next before =
 
   (*  (xx * ) yy *)
   | (TIdent (s, i1)::ptr, (TOPar info)::_)
-    when ok_typedef s 
+    when ok_typedef s
 	&& pointer ~followed_by:(function TCPar _ -> true | _ -> false)
               ~followed_by_more:(function TIdent _ :: _ -> true | _ -> false) ptr
         ->
@@ -2496,8 +2496,8 @@ let lookahead2 ~pass next before =
     can_be_on_top_level tl && LP.current_context () = InTopLevel ->
       pr2_cpp ("'" ^ s ^ "' looks like a macro, I treat it as comment");
       TCommentCpp (Token_c.CppDirective, ii)
-*)      
-    
+*)
+
 (*-------------------------------------------------------------*)
  | v::xs, _ -> v
  | _ -> raise (Impossible 93)

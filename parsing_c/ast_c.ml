@@ -638,7 +638,7 @@ and define = string wrap (* #define s eol *) * (define_kind * define_val)
      | DefineFunction of definition
      | DefineInit of initialiser (* in practice only { } with possible ',' *)
 
-     | DefineMulti of statement list 
+     | DefineMulti of statement list
 
      | DefineText of string wrap
      | DefineEmpty

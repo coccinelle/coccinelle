@@ -374,7 +374,7 @@ let print_graph grp required_states res str = function
 		  ) in
 	      (if not (List.mem file !graph_stack) then
 		graph_stack := file :: !graph_stack);
-	    let filename = Filename.temp_file (file^":") ".dot" in	
+	    let filename = Filename.temp_file (file^":") ".dot" in
 	    Hashtbl.add graph_hash file filename;
 	    G.print_graph grp
 	      (if !Flag_ctl.gt_without_label then None else (Some label))
@@ -1806,7 +1806,7 @@ let rec satloop unchecked required required_states
 	let new_required = drop_required v required in
 	triples_witness v unchecked (not keep)
 	  (loop unchecked new_required required_states phi)
-	  
+
     | A.Let(v,phi1,phi2) ->
 	(* should only be used when the properties unchecked, required,
 	   and required_states are known to be the same or at least
