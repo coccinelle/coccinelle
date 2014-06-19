@@ -30,14 +30,7 @@ let cprogram_of_file saved_typedefs saved_macros parse_strings file =
 let cprogram_of_file_cached parse_strings file =
   let ((program2,typedefs,macros), _stat) =
     Parse_c.parse_cache parse_strings file in
-  if !Flag_cocci.ifdef_to_if
-  then
-    let p2 =
-      program2 +> Parse_c.with_program2 (fun asts ->
-	Cpp_ast_c.cpp_ifdef_statementize asts
-	  ) in
-    (p2,typedefs,macros)
-  else (program2,typedefs,macros)
+  (program2,typedefs,macros)
 
 let cfile_of_program program2_with_ppmethod outf =
   Unparse_c.pp_program program2_with_ppmethod outf

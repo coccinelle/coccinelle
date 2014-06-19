@@ -162,6 +162,7 @@ let cmdline_flags_algos () =
 
 let cpp_directive_passing = ref false
 let ifdef_directive_passing = ref false
+let ifdef_to_if = ref true(*false*)
 
 let disable_multi_pass = ref false
 let disable_add_typedef = ref false

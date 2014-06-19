@@ -1089,6 +1089,11 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
   let v = with_program2 Parsing_consistency_c.consistency_checking v in
   with_program2_unit Danger.add_danger v;
   let v =
+    if !Flag_parsing_c.ifdef_to_if
+       then with_program2 Parsing_hacks.cpp_ifdef_statementize v
+       else v
+  in
+  let v =
     let new_td = ref (Common.clone_scoped_h_env !LP._typedef) in
     Common.clean_scope_h new_td;
     (v, !new_td, macros) in

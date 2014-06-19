@@ -81,3 +81,10 @@ val tokens_include:
   Ast_c.info * string * string * bool ref ->
   Parser_c.token * Parser_c.token list
 
+(* ------------------------------------------------------------------------ *)
+(* Parsing hack helpers related to #ifdef *)
+(* ------------------------------------------------------------------------ *)
+
+(* #ifdef *)
+val cpp_ifdef_statementize:
+  Ast_c.program -> Ast_c.program

@@ -276,11 +276,10 @@ let test_cfg = local_test_cfg true
 
 
 let test_cfg_ifdef file =
+  Flag_parsing_c.ifdef_to_if := true;
   (* no point to parse format strings *)
   let (ast2, _stat) = Parse_c.parse_c_and_cpp false file in
   let ast = Parse_c.program_of_program2 ast2 in
-
-  let ast = Cpp_ast_c.cpp_ifdef_statementize ast in
 
   ast +> List.iter (fun e ->
     (try
@@ -449,12 +448,12 @@ let cpp_options () = [
   (!Flag_parsing_c.cpp_i_opts,!Flag_parsing_c.cpp_d_opts)
 
 let test_cpp file =
+  Flag_parsing_c.ifdef_to_if := true;
   (* no point to parse format strings *)
   let (ast2, _stat) = Parse_c.parse_c_and_cpp false file in
   let dirname = Filename.dirname file in
   let ast = Parse_c.program_of_program2 ast2 in
   let ast = Cpp_ast_c.cpp_expand_include (cpp_options()) dirname ast in
-  let _ast = Cpp_ast_c.cpp_ifdef_statementize ast in
 
 
   ()

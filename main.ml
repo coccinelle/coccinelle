@@ -539,9 +539,9 @@ let other_options = [
     "   use OCaml Str regular expressions for constraints";
 
     "--l1",                Arg.Clear Flag_parsing_c.label_strategy_2, " ";
-    "--ifdef-to-if",       Arg.Set FC.ifdef_to_if,
+    "--ifdef-to-if",       Arg.Set Flag_parsing_c.ifdef_to_if,
     "   convert ifdef to if (experimental)";
-    "--no-ifdef-to-if",              Arg.Clear FC.ifdef_to_if,
+    "--no-ifdef-to-if",              Arg.Clear Flag_parsing_c.ifdef_to_if,
     "   convert ifdef to if (experimental)";
 
     "--disable-multi-pass", Arg.Set Flag_parsing_c.disable_multi_pass, " ";
