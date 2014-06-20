@@ -1121,6 +1121,14 @@ and aux_statement_list starti (xi, newxi) statxs =
           mk_fake_node (IfdefEndif (tail)) newxi'.labels [] "[endif]" in
         !g +> add_arc_opt (starti, newi);
 
+        if body = [] then
+        begin
+          let newfakeelse = !g +> add_node FallThroughNode newxi'.labels
+                                           "[fallthrough]" in
+          !g#add_arc ((newi, newfakeelse), Direct);
+          !g#add_arc ((newfakeelse,taili), Direct);
+        end;
+
         let elsenodes =
           body +> List.map (fun elseif ->
             let elsei =
