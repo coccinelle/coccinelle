@@ -3669,6 +3669,13 @@ let rec zip xs ys =
   | (_,[]) -> failwith "zip: not same length"
   | (x::xs,y::ys) -> (x,y)::zip xs ys
 
+let rec combine4 : 'a list -> 'b list -> 'c list -> 'd list ->
+                      ('a * 'b * 'c * 'd) list
+  = fun a b c d -> match (a,b,c,d) with
+  | ([],[],[],[])             -> []
+  | (w::ws,x::xs,y::ys,z::zs) -> (w,x,y,z)::combine4 ws xs ys zs
+  | ___else___                -> invalid_arg "combine4: not same length"
+
 let rec zip_safe xs ys =
   match (xs,ys) with
   | ([],_) -> []

@@ -112,13 +112,13 @@ let ast_to_flow_with_error_messages a =
 
 let ctls_of_ast2 ast (ua,fua,fuas) pos =
   List.map2
-    (function ast -> function (ua,(fua,(fuas,pos))) ->
-      List.combine
-	(if !Flag_cocci.popl
-	then Popl.popl ast
-	else Asttoctl2.asttoctl ast (ua,fua,fuas) pos)
-	(Asttomember.asttomember ast ua))
-    ast (List.combine ua (List.combine fua (List.combine fuas pos)))
+    (function ast -> function (ua,fua,fuas,pos) ->
+      let ast1 = if !Flag_cocci.popl
+                    then Popl.popl ast
+	                  else Asttoctl2.asttoctl ast (ua,fua,fuas) pos in
+      List.combine ast1 (Asttomember.asttomember ast ua)
+	    )
+    ast (Common.combine4 ua fua fuas pos)
 
 let ctls_of_ast ast ua pl =
   Common.profile_code "asttoctl2" (fun () -> ctls_of_ast2 ast ua pl)
