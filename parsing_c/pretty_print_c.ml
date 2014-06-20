@@ -268,16 +268,8 @@ and pp_string_format (e,ii) =
            ';' hence the [] for ii *)
     | ExprStatement (Some e), [] -> pp_expression e;
     | Selection  (If (e, st1, st2)), i1::i2::i3::is ->
-        pr_elem i1; pr_space(); pr_elem i2; pp_expression e; pr_elem i3;
-	indent_if_needed st1 (function _ -> pp_statement st1);
-        (match (Ast_c.get_st_and_ii st2, is) with
-        | ((ExprStatement None, []), [])  -> ()
-        | ((ExprStatement None, []), [iifakend])  -> pr_elem iifakend
-        | _st2, [i4;iifakend] -> pr_elem i4;
-	    indent_if_needed st2 (function _ -> pp_statement st2);
-	    pr_elem iifakend
-        | x -> raise (Impossible 96)
-        )
+        pp_ifthen e st1 i1 i2 i3;
+        pp_else st2 is
     | Selection  (Switch (e, st)), [i1;i2;i3;iifakend] ->
         pr_elem i1; pr_space(); pr_elem i2; pp_expression e; pr_elem i3;
 	indent_if_needed st (function _-> pp_statement st); pr_elem iifakend
@@ -372,6 +364,21 @@ and pp_string_format (e,ii) =
     | IfdefStmt ifdef -> pp_ifdef ifdef
     | CppDirectiveStmt cpp -> pp_directive cpp
     | IfdefStmt2 (ifdef, xxs) -> pp_ifdef_tree_sequence ifdef xxs
+
+  and pp_ifthen e st1 i1 i2 i3 =
+        (* if (<e>) *)
+        pr_elem i1; pr_space(); pr_elem i2; pp_expression e; pr_elem i3;
+        indent_if_needed st1 (function _ -> pp_statement st1);
+  and pp_else st2 is =
+        match (Ast_c.get_st_and_ii st2, is) with
+          | ((ExprStatement None, []), [])  -> ()
+          | ((ExprStatement None, []), [iifakend])  -> pr_elem iifakend
+          | _st2, [i4;iifakend] ->
+              pr_elem i4;
+              indent_if_needed st2 (function _ -> pp_statement st2);
+              pr_elem iifakend
+          | x -> raise (Impossible 96)
+
 
 (* ifdef XXX elsif YYY elsif ZZZ endif *)
   and pp_ifdef_tree_sequence ifdef xxs =
