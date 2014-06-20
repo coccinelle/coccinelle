@@ -126,6 +126,20 @@ type brace_grouped =
  * x list list, because x list separated by #else or #elif
  *)
 type ifdef_grouped =
+  (*
+   * Example:
+   *
+   *     #ifdef A
+   *       x++;
+   *     #else
+   *       x--;
+   *     #endif
+   *
+   *   is represented as Ifdef ([[x++];[x--]],[#ifdef A;#else;#endif])
+   *   where x++ and x-- are NoIfdefLine.
+   *
+   * /Iago
+   *)
   | Ifdef     of ifdef_grouped list list * token_extended list
   | Ifdefbool of bool * ifdef_grouped list list * token_extended list
   | NotIfdefLine of token_extended list
