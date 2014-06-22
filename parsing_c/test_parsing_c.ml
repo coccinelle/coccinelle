@@ -28,28 +28,28 @@ let test_tokens_c file =
 
 (* Was in main, but using it in test_parsing_c *)
 let get_files path =
-  let ch =
-    cmd_to_list (* same as "true, "", _" case *)
-      (if !Flag.include_headers
-			  (* FIXME : Could we remove xs ?
-			     -use_glimpse requires a singleton.
-			     This is checked some lines before.
-			     then ("find "^(join " " (x::xs))^" -name \"*.[ch]\"")
-			     else ("find "^(join " " (x::xs))^" -name \"*.c\"")
-			  *)
-      then ("find "^ path ^" -name \"*.[ch]\"")
-      else ("find "^ path ^" -name \"*.c\"")) in
-  let cpp =
-    if !Flag.c_plus_plus
-    then cmd_to_list
+  if !Flag.c_plus_plus
+  then
+    (* only C++ files, but contains .h files as that extension is ambiguous *)
+    cmd_to_list
       (if !Flag.include_headers
       then
         "find "^ path ^" -name \"*.cpp\" -o -name \"*.cxx\" -o -name \"*.cc\""
         ^"-o name \"*.h\" -o -name \"*.hpp\" -o -name \"*.hxx\""
       else
         "find "^ path ^" -name \"*.cpp\" -o -name \"*.cxx\" -o -name \"*.cc\"")
-    else [] in
-  cpp @ ch
+  else
+    (* only .c files and .h files *)
+    cmd_to_list (* same as "true, "", _" case *)
+      (if !Flag.include_headers
+	  (* FIXME : Could we remove xs ?
+	     -use_glimpse requires a singleton.
+	     This is checked some lines before.
+	     then ("find "^(join " " (x::xs))^" -name \"*.[ch]\"")
+	     else ("find "^(join " " (x::xs))^" -name \"*.c\"")
+	  *)
+      then ("find "^ path ^" -name \"*.[ch]\"")
+      else ("find "^ path ^" -name \"*.c\""))
 
 let new_test_parse_gen xs =
 
