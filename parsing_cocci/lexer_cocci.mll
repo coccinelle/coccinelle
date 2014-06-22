@@ -535,6 +535,8 @@ rule token = parse
 	begin
 	  match !current_line_type with
 	    (D.PLUS,_,_) | (D.PLUSPLUS,_,_) ->
+	      (* increment the logical line even though nothing seen *)
+	      start_line true;
 	      let info = get_current_line_type lexbuf in
 	      reset_line lexbuf;
 	      TDirective (Ast.Noindent "", info)
