@@ -742,7 +742,50 @@ let rec find_ifdef_bool xs =
   | Ifdef (xxs, info_ifdef_stmt) -> xxs +> List.iter find_ifdef_bool
   )
 
-
+(* Note [Nasty Undisciplined Cpp]
+ *
+ * This function handles variability patterns that cannot be easily handled
+ * by cpp_ifdef_statementize, aka "nasty undisciplined uses of cpp" for the
+ * lay person. These are uses of cpp #ifdef that do not cover a full syntactic
+ * element. Even though the possibilities are infinite, there are maybe a ten
+ * patterns that one sees in practice.
+ *
+ * __Ideally__, we would like to handle these patterns with a AST-to-AST
+ * rewriting pass after parsing, in the same spirit as cpp_ifdef_statementize.
+ * But such nasty uses of cpp are handled by the parser by commenting out the
+ * code, and that makes difficult to handle it after parsing.
+ *
+ * Thus, __pragmatically__, if we find an occurrence of these patterns we mark
+ * it by replacing regular Cpp tokens by undisciplined Cpp tokens, before
+ * parsing. The pattern is finally recognized by the parser. Since we introduce
+ * these new tokens, the new parsing rules do not introduce shift/reduce
+ * conflicts.
+ *
+ * For each new pattern to be supported we need:
+ * - a helper match_cpp_* in Token_helpers, which is added to fix_tokens_ifdef,
+ * - a rule in the parser.
+ *
+ * /Iago
+ *)
+let rec fix_tokens_ifdef (xs :token list) :token list =
+  let skip_tok () = match xs with
+    | [] -> []
+    | x::xs -> x :: fix_tokens_ifdef xs
+    in
+  (* match rule *)
+  match TH.match_cpp_simple_ifdef_endif xs with
+  | Some (tok_ifdef,body_ifdef,tok_endif,rest_endif) ->
+    let (whites1,body_ifdef') = span TH.is_just_comment_or_space body_ifdef in
+    begin match (TH.match_simple_if_else body_ifdef') with
+    | Some (tok_if,body_if,tok_else,rest_else)
+      when List.for_all TH.is_just_comment_or_space rest_else ->
+        let tok_ifdef = TUifdef (TH.info_of_tok tok_ifdef) in
+        let tok_endif = TUendif (TH.info_of_tok tok_endif) in
+        (tok_ifdef :: body_ifdef) @ tok_endif :: fix_tokens_ifdef rest_endif
+  (* otherwise just skip the token *)
+    | __else__ -> skip_tok()
+    end
+  | None -> skip_tok()
 
 let thresholdIfdefSizeMid = 6
 

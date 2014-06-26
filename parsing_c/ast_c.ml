@@ -496,6 +496,8 @@ and statement = statementbis wrap3
   and selection     =
    | If     of expression * statement * statement
    | Switch of expression * statement
+   (* #ifdef A if e S1 else #endif S2 *)
+   | Ifdef_Ite of expression * statement * statement
 
 
   and iteration     =

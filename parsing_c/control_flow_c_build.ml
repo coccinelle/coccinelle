@@ -469,7 +469,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
       Some newi
 
    (* ------------------------- *)
-  | Selection (Ast_c.If _) -> mk_If starti lbl xi_lbl stmt
+  | Selection (Ast_c.If _) -> snd (mk_If starti lbl xi_lbl stmt)
 
    (* ------------------------- *)
   | Selection  (Ast_c.Switch (e, st)) ->
@@ -650,6 +650,9 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
 
 
 
+
+   (* ------------------------- *)
+  | Selection (Ast_c.Ifdef_Ite _) -> mk_Ifdef_Ite starti lbl xi_lbl stmt
 
    (* ------------------------- *)
   | Iteration  (Ast_c.While (e, st)) ->
@@ -960,7 +963,8 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
 
 and mk_If (starti :nodei option) (labels :int list) (xi_lbl :xinfo)
           (stmt :statement)
-          : nodei option =
+          : nodei (* first node of the else branch *)
+          * nodei option =
   let ii = Ast_c.get_ii_st_take_care stmt in
   match Ast_c.unwrap_st stmt with
   | Selection (Ast_c.If (e, st1, st2)) ->
@@ -1013,7 +1017,7 @@ and mk_If (starti :nodei option) (labels :int list) (xi_lbl :xinfo)
       let finalthen = aux_statement (Some newfakethen, newxi) st1 in
       (match finalthen with None -> escapes := true | _ -> ());
       !g +> add_arc_opt (finalthen, lasti);
-      Some lasti
+      lasti, Some lasti
     | __else__ ->
       (* starti -> newi --->   newfakethen -> ... -> finalthen --> lasti
        *                 |                                      |
@@ -1067,7 +1071,13 @@ and mk_If (starti :nodei option) (labels :int list) (xi_lbl :xinfo)
 
       (match finalthen with None -> escapes := true | _ -> ());
 
-      begin match finalthen, finalelse with
+      (* find the first node of the 'else' branch *)
+      let elsenode_succ = match finalelse with
+        | Some succ -> succ
+        | None      -> elsenode
+        in
+
+      elsenode_succ, begin match finalthen, finalelse with
         | (None, None) -> None
         | __else__ ->
           let lasti = !g#add_node endnode in
@@ -1083,6 +1093,54 @@ and mk_If (starti :nodei option) (labels :int list) (xi_lbl :xinfo)
     end
   | x -> error_cant_have x
 
+(* Builds the CFG for an Ifdef_Ite selection statement, i.e.
+ *
+ *     #ifdef A if e S1 else #endif S2
+ *
+ * This function works in fact as a decorator for an If statement:
+ *
+ * 1. We construct the CFG for 'if e S1 else S2', which coincides with
+ *    the _true_ branch for the #ifdef.
+ * 2. The _false_ path of is just an edge from the IfdefIteHeader to the
+ *    'else' branch of the if statement.
+ *
+ * Why doing it in this way:
+ *
+ * - Coccinelle cannot match #ifdef's so we can keep the CFG thin by
+ *   avoiding all the extra plumbing. We don't need, for instance, an
+ *   _after_ node.
+ * - We still want Coccinelle to be able to match the if statement, and
+ *   we don't want to replicate (aka copy-paste) code for this purpose.
+ *
+ * /Iago
+ *)
+and mk_Ifdef_Ite (starti :nodei option) (labels :int list) (xi_lbl :xinfo)
+                 (stmt :statement)
+                 : nodei option =
+  (* starti -> #ifdef-if ---> if -> ... -> [else] -> ... -> [endif]
+   *                      |                         ^
+   *                      |_________________________|
+   *)
+  let [i1;i2;i3;i4;i5;i6;i7] = Ast_c.get_ii_st_take_care stmt in
+  match Ast_c.unwrap_st stmt with
+  | Selection (Ast_c.Ifdef_Ite (e, st1, st2)) ->
+
+    let if_sel = Ast_c.If (e,st1,st2) in
+    let if_stmtbis = Selection if_sel in
+    let if_ii = [i2;i3;i4;i6;i7] in
+    let if_stmt = if_stmtbis, if_ii in
+
+    (* starti -> #ifdef-if *)
+    let ifdefite = !g +>
+          add_node (IfdefIteHeader (i1,i5)) labels "#ifdef-if" in
+    !g +> add_arc_opt (starti, ifdefite);
+
+    begin match mk_If (Some ifdefite) labels xi_lbl if_stmt with
+    | (elsenode,endnode_opt) ->
+        !g#add_arc ((ifdefite, elsenode), Direct);
+        endnode_opt
+    end
+  | x -> error_cant_have x
 
 and aux_statement_list starti (xi, newxi) statxs =
   statxs

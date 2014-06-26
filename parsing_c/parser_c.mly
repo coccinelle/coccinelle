@@ -504,6 +504,19 @@ let mk_string_wrap (s,info) = (s, [info])
 %token <(bool * (int * int) option ref * Ast_c.info)>
   TIfdefBool TIfdefMisc TIfdefVersion
 
+/* Note [Nasty Undisciplined Cpp]
+ *
+ * These tokens replace regular Cpp-ifdef tokens for nasty undisciplined
+ * variability patterns.
+ *
+ * Note that these tokens do not have matching_tag.
+ * (TU stands for Token-Undisciplined.)
+ *
+ * /Iago
+ */
+%token <Ast_c.info>
+  TUifdef TUelseif TUendif
+
 /*(*---------------*)*/
 /*(* other         *)*/
 /*(*---------------*)*/
@@ -999,6 +1012,9 @@ selection:
      { If ($3, $5, $7),  [$1;$2;$4;$6] }
  | Tswitch TOPar expr TCPar statement
      { Switch ($3,$5),   [$1;$2;$4]  }
+ /* [Nasty Undisciplined Cpp] #ifdef A if e S1 else #endif S2 */
+ | TUifdef Tif TOPar expr TCPar statement Telse TUendif statement
+     { Ifdef_Ite ($4,$6,$9), [$1;$2;$3;$5;$7;$8] }
 
 iteration:
  | Twhile TOPar expr TCPar statement

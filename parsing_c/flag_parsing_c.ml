@@ -169,6 +169,7 @@ let disable_add_typedef = ref false
 
 let if0_passing = ref true
 let add_typedef_root = ref true
+let exts_ITU = ref false (* ITU.dk extensions *)
 
 (* defined and undefined constants *)
 let add c s = c := (Str.split (Str.regexp ",") s) @ !c

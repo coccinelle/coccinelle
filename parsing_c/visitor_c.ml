@@ -389,6 +389,10 @@ and vk_statement = fun bigf (st: Ast_c.statement) ->
 
     | Selection  (If (e, st1, st2)) ->
         vk_expr bigf e; statf st1; statf st2;
+    | Selection  (Ifdef_Ite (e, st1, st2)) ->
+        vk_expr bigf e;
+        statf st1;
+        statf st2;
     | Selection  (Switch (e, st)) ->
         vk_expr bigf e; statf st;
     | Iteration  (While (e, st)) ->
@@ -903,6 +907,8 @@ and vk_node = fun bigf node ->
     | F.IfdefElse    (info) ->  vk_ifdef_directive bigf info
     | F.IfdefEndif    (info) ->  vk_ifdef_directive bigf info
 
+    | F.IfdefIteHeader (ifdef,endif) -> vk_ii bigf [ifdef;endif]
+
     | F.Break    (st,((),ii),_) -> iif ii
     | F.Continue (st,((),ii)) -> iif ii
     | F.Default  (st,((),ii)) -> iif ii
@@ -1207,6 +1213,8 @@ and vk_statement_s = fun bigf st ->
       | ExprStatement (Some e) -> ExprStatement (Some ((vk_expr_s bigf) e))
       | Selection (If (e, st1, st2)) ->
           Selection  (If ((vk_expr_s bigf) e, statf st1, statf st2))
+      | Selection (Ifdef_Ite (e, st1, st2)) ->
+          Selection  (Ifdef_Ite (vk_expr_s bigf e,statf st1,statf st2))
       | Selection (Switch (e, st))   ->
           Selection  (Switch ((vk_expr_s bigf) e, statf st))
       | Iteration (While (e, st))    ->
@@ -1819,6 +1827,8 @@ and vk_node_s = fun bigf node ->
     | F.IfdefHeader (info) -> F.IfdefHeader (vk_ifdef_directive_s bigf info)
     | F.IfdefElse (info) -> F.IfdefElse (vk_ifdef_directive_s bigf info)
     | F.IfdefEndif (info) -> F.IfdefEndif (vk_ifdef_directive_s bigf info)
+
+    | F.IfdefIteHeader (i1,i2) -> F.IfdefIteHeader (i1,i2)
 
     | (
         (

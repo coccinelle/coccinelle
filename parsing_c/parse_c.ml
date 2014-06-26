@@ -886,6 +886,10 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
 
   let toks_orig = tokens file in
   let toks = Parsing_hacks.fix_tokens_define toks_orig in
+  let toks = if !Flag_parsing_c.exts_ITU
+                then Parsing_hacks.fix_tokens_ifdef toks
+                else toks
+    in
   let toks = Parsing_hacks.fix_tokens_cpp ~macro_defs:!_defs_builtins toks in
   let toks =
     if parse_strings

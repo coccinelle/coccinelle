@@ -4786,6 +4786,9 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
   | _, (F.IfdefEndif _|F.IfdefElse _|F.IfdefHeader _)
     -> fail2 ()
 
+  | _, F.IfdefIteHeader _
+    -> fail2 ()
+
   | _,
     (F.MacroStmt (_, _)| F.DefineDoWhileZeroHeader _| F.EndNode|F.TopNode)
       -> fail

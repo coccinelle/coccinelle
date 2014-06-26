@@ -209,6 +209,9 @@ type node = node1 * string
 
 
   (* ------------------------ *)
+  | IfdefIteHeader of info * info
+
+  (* ------------------------ *)
   | DefineHeader of string wrap * define_kind
 
   | DefineExpr of expression
@@ -358,6 +361,9 @@ let extract_fullstatement node =
       -> None
 
   | IfdefHeader _ | IfdefElse _ | IfdefEndif _
+      -> None
+
+  | IfdefIteHeader _
       -> None
 
   | SeqStart (st,_,_)

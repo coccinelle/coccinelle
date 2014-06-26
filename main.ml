@@ -547,6 +547,8 @@ let other_options = [
     "--disable-multi-pass", Arg.Set Flag_parsing_c.disable_multi_pass, " ";
 
     "--noif0-passing",      Arg.Clear Flag_parsing_c.if0_passing, " ";
+    "--itu",      Arg.Set Flag_parsing_c.exts_ITU,
+    "Experimental extensions for handling #ifdef developed at ITU.dk";
     "--defined", Arg.String (Flag_parsing_c.add Flag_parsing_c.defined), " ";
     "--undefined", Arg.String
         (Flag_parsing_c.add Flag_parsing_c.undefined), " ";
