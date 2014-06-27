@@ -653,6 +653,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
 
    (* ------------------------- *)
   | Selection (Ast_c.Ifdef_Ite _) -> mk_Ifdef_Ite starti lbl xi_lbl stmt
+  | Selection (Ast_c.Ifdef_Ite2 _) -> mk_Ifdef_Ite2 starti lbl xi_lbl stmt
 
    (* ------------------------- *)
   | Iteration  (Ast_c.While (e, st)) ->
@@ -1127,18 +1128,60 @@ and mk_Ifdef_Ite (starti :nodei option) (labels :int list) (xi_lbl :xinfo)
 
     let if_sel = Ast_c.If (e,st1,st2) in
     let if_stmtbis = Selection if_sel in
-    let if_ii = [i2;i3;i4;i6;i7] in
+    let if_ii = [i2;i3;i4;i5;i7] in
     let if_stmt = if_stmtbis, if_ii in
 
     (* starti -> #ifdef-if *)
     let ifdefite = !g +>
-          add_node (IfdefIteHeader (i1,i5)) labels "#ifdef-if" in
+          add_node (IfdefIteHeader [i1;i6]) labels "#ifdef-if" in
     !g +> add_arc_opt (starti, ifdefite);
 
     begin match mk_If (Some ifdefite) labels xi_lbl if_stmt with
     | (elsenode,endnode_opt) ->
         !g#add_arc ((ifdefite, elsenode), Direct);
         endnode_opt
+    end
+  | x -> error_cant_have x
+
+(* Builds the CFG for an Ifdef_Ite selection statement, i.e.
+ *
+ *     #ifdef A if e S1 else #else S2 #endif S3
+ *
+ * The true path of the #ifdef implies:
+ *
+ *     if e S1 else S3
+ *
+ * See mk_Ifdef_Ite for further details.
+ *)
+and mk_Ifdef_Ite2 (starti :nodei option) (labels :int list) (xi_lbl :xinfo)
+                  (stmt :statement)
+                  : nodei option =
+  (* starti -> #ifdef-if ---> if -> {st1} -> [else] -> {st3} -> [endif]
+   *                      |                              ^
+   *                      |------------> {st2} ----------|
+   *)
+  let [i1;i2;i3;i4;i5;i6;i7;i8] = Ast_c.get_ii_st_take_care stmt in
+  match Ast_c.unwrap_st stmt with
+  | Selection (Ast_c.Ifdef_Ite2 (e, st1, st2, st3)) ->
+
+    let if_sel = Ast_c.If (e,st1,st3) in
+    let if_stmtbis = Selection if_sel in
+    let if_ii = [i2;i3;i4;i5;i8] in
+    let if_stmt = if_stmtbis, if_ii in
+
+    (* starti -> #ifdef-if *)
+    let ifdefite = !g +>
+          add_node (IfdefIteHeader [i1;i6;i7]) labels "#ifdef-if" in
+    !g +> add_arc_opt (starti, ifdefite);
+
+    begin match mk_If (Some ifdefite) labels xi_lbl if_stmt with
+    | (elsenode,endnode_opt) ->
+      let finalelse = aux_statement (Some ifdefite, xi_lbl) st2 in
+      begin match finalelse with
+      | Some st2_node -> !g#add_arc ((st2_node, elsenode), Direct)
+      | None -> ()
+      end;
+      endnode_opt
     end
   | x -> error_cant_have x
 

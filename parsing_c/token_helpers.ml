@@ -266,6 +266,19 @@ let match_cpp_simple_ifdef_endif (xs :token list)
       -> Some (tok_ifdef,body,tok_endif,rest_endif)
   | _ -> None
 
+let match_cpp_simple_ifdef_else_endif (xs :token list)
+      : (token * token list * token * token list * token * token list) option
+  = match match_cpp_simple_ifdef_endif_aux xs with
+  | Some (tok_ifdef,body,tok_endif,rest_endif) ->
+    begin try
+      let (body_if,tok_else,body_else) = split_when is_cpp_else body in
+      if List.exists is_cpp_instruction body_if
+         or List.exists is_cpp_instruction body_else
+         then None (* no nested CPP wanted *)
+         else Some (tok_ifdef,body_if,tok_else,body_else,tok_endif,rest_endif)
+    with Not_found -> None end
+  | _ -> None
+
 (*****************************************************************************)
 (* Visitors *)
 (*****************************************************************************)

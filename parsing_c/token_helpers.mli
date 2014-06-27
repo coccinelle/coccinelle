@@ -39,6 +39,8 @@ val match_simple_if_else
       : token list -> (token * token list * token * token list) option
 val match_cpp_simple_ifdef_endif
       : token list -> (token * token list * token * token list) option
+val match_cpp_simple_ifdef_else_endif : token list ->
+      (token * token list * token * token list * token * token list) option
 
 (* ---------------------------------------------------------------------- *)
 val info_of_tok : Parser_c.token -> Ast_c.info

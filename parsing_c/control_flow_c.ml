@@ -209,7 +209,7 @@ type node = node1 * string
 
 
   (* ------------------------ *)
-  | IfdefIteHeader of info * info
+  | IfdefIteHeader of il
 
   (* ------------------------ *)
   | DefineHeader of string wrap * define_kind

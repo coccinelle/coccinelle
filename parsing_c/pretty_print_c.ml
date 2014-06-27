@@ -275,6 +275,18 @@ and pp_string_format (e,ii) =
         pr_elem i1;
         pp_ifthen e st1 i2 i3 i4;
         pp_else st2 is
+    | Selection (Ifdef_Ite2 (e, st1, st2, st3))
+      , i1::i2::i3::i4::is ->
+        pr_elem i1;
+        pp_ifthen e st1 i2 i3 i4;
+        (* else #else S #endif *)
+        let [i4;i5;i6;iifakend] = is in
+          pr_elem i4; (* else *)
+          pr_elem i5; (* #else *)
+          indent_if_needed st2 (function _ -> pp_statement st2);
+          pr_elem i6; (* #endif *)
+          indent_if_needed st3 (function _ -> pp_statement st3);
+          pr_elem iifakend
     | Selection  (Switch (e, st)), [i1;i2;i3;iifakend] ->
         pr_elem i1; pr_space(); pr_elem i2; pp_expression e; pr_elem i3;
 	indent_if_needed st (function _-> pp_statement st); pr_elem iifakend
@@ -356,7 +368,7 @@ and pp_string_format (e,ii) =
     | Labeled (CaseRange  (_,_,_)) | Labeled (Default _)
     | Compound _ | ExprStatement _
     | Selection  (If (_, _, _)) | Selection  (Switch (_, _))
-    | Selection (Ifdef_Ite _)
+    | Selection (Ifdef_Ite _) | Selection (Ifdef_Ite2 _)
     | Iteration  (While (_, _)) | Iteration  (DoWhile (_, _))
     | Iteration  (For (_, (_,_), (_, _), _))
     | Iteration  (MacroIteration (_,_,_))
@@ -383,7 +395,7 @@ and pp_string_format (e,ii) =
               pr_elem i4;
               indent_if_needed st2 (function _ -> pp_statement st2);
               pr_elem iifakend
-          | _st2, [i4;i5;iifakend] -> (* else #endif *)
+          | _st2, [i4;i5;iifakend] -> (* else #endif S *)
               pr_elem i4;
               pr_elem i5;
               indent_if_needed st2 (function _ -> pp_statement st2);
@@ -1420,9 +1432,8 @@ and pp_init (init, iinit) =
     | F.IfdefEndif (info) ->
 	pp_ifdef info
 
-    | F.IfdefIteHeader (ifdef,endif) ->
-        pr_elem ifdef;
-        pr_elem endif
+    | F.IfdefIteHeader _ii ->
+        pr2 "XXX"
 
     | F.DefineTodo ->
 	pr2 "XXX"

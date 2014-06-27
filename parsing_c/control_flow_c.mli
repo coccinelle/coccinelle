@@ -45,8 +45,7 @@ type node = node1 * string (* For debugging. Used by print_graph *)
   (* IfdefIteHeader is the header node for Ifdef_Ite selection statements.
    * Ifdef_Ite is decorated on top of the CFG for an If statement.
    *)
-  | IfdefIteHeader of info (* #ifdef *)
-                    * info (* #endif *)
+  | IfdefIteHeader of il
 
   (* ------------------------ *)
   | DefineHeader of string wrap * define_kind

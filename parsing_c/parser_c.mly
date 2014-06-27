@@ -1015,6 +1015,9 @@ selection:
  /* [Nasty Undisciplined Cpp] #ifdef A if e S1 else #endif S2 */
  | TUifdef Tif TOPar expr TCPar statement Telse TUendif statement
      { Ifdef_Ite ($4,$6,$9), [$1;$2;$3;$5;$7;$8] }
+ /* [Nasty Undisciplined Cpp] #ifdef A if e S1 else #else S2 #endif S3 */
+ | TUifdef Tif TOPar expr TCPar statement Telse TUelseif statement TUendif statement
+     { Ifdef_Ite2 ($4,$6,$9,$11), [$1;$2;$3;$5;$7;$8;$10] }
 
 iteration:
  | Twhile TOPar expr TCPar statement

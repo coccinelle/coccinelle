@@ -742,6 +742,45 @@ let rec find_ifdef_bool xs =
   | Ifdef (xxs, info_ifdef_stmt) -> xxs +> List.iter find_ifdef_bool
   )
 
+(* Rules that fix input tokens. *)
+type fix_tokens_rule = token list (* input tokens *)
+                        -> (token list * token list) option
+                           (* fixed tokens, remaining tokens *)
+
+(* #ifdef A if e S1 else #endif S2 *)
+let fix_tokens_ifdef_endif :fix_tokens_rule = fun xs ->
+  match TH.match_cpp_simple_ifdef_endif xs with
+  | Some (tok_ifdef,body_ifdef,tok_endif,rest_endif) ->
+    let (whites1,body_ifdef') = span TH.is_just_comment_or_space body_ifdef in
+    begin match (TH.match_simple_if_else body_ifdef') with
+    | Some (tok_if,body_if,tok_else,rest_else)
+      when List.for_all TH.is_just_comment_or_space rest_else ->
+        let tok_ifdefif = TUifdef (TH.info_of_tok tok_ifdef) in
+        let tok_ifendif = TUendif (TH.info_of_tok tok_endif) in
+        let fixed_toks = (tok_ifdefif :: body_ifdef) @ [tok_ifendif] in
+        Some (fixed_toks,rest_endif)
+    | __else__ -> None
+    end
+  | None -> None
+
+(* #ifdef A if e S1 else #else S2 #endif S3 *)
+let fix_tokens_ifdef_else_endif :fix_tokens_rule = fun xs ->
+  match TH.match_cpp_simple_ifdef_else_endif xs with
+  | Some (tok_ifdef,body_ifdef,tok_else,body_else,tok_endif,rest_endif) ->
+    let (whites1,body_ifdef') = span TH.is_just_comment_or_space body_ifdef in
+    begin match (TH.match_simple_if_else body_ifdef') with
+    | Some (tok_if,body_if,tok_if_else,rest_else)
+      when List.for_all TH.is_just_comment_or_space rest_else ->
+        let tok_ifdefif = TUifdef (TH.info_of_tok tok_ifdef) in
+        let tok_elseu = TUelseif (TH.info_of_tok tok_else) in
+        let tok_endifu = TUendif (TH.info_of_tok tok_endif) in
+        let fixed_toks = (tok_ifdefif :: body_ifdef)
+                          @ (tok_elseu :: body_else) @ [tok_endifu] in
+        Some (fixed_toks,rest_endif)
+    | __else__ -> None
+    end
+  | None -> None
+
 (* Note [Nasty Undisciplined Cpp]
  *
  * This function handles variability patterns that cannot be easily handled
@@ -762,7 +801,8 @@ let rec find_ifdef_bool xs =
  * conflicts.
  *
  * For each new pattern to be supported we need:
- * - a helper match_cpp_* in Token_helpers, which is added to fix_tokens_ifdef,
+ * - a helper match_cpp_* in Token_helpers,
+ * - a fix_tokens_rule that must be added to fix_tokens_ifdef, and
  * - a rule in the parser.
  *
  * /Iago
@@ -772,20 +812,13 @@ let rec fix_tokens_ifdef (xs :token list) :token list =
     | [] -> []
     | x::xs -> x :: fix_tokens_ifdef xs
     in
-  (* match rule *)
-  match TH.match_cpp_simple_ifdef_endif xs with
-  | Some (tok_ifdef,body_ifdef,tok_endif,rest_endif) ->
-    let (whites1,body_ifdef') = span TH.is_just_comment_or_space body_ifdef in
-    begin match (TH.match_simple_if_else body_ifdef') with
-    | Some (tok_if,body_if,tok_else,rest_else)
-      when List.for_all TH.is_just_comment_or_space rest_else ->
-        let tok_ifdef = TUifdef (TH.info_of_tok tok_ifdef) in
-        let tok_endif = TUendif (TH.info_of_tok tok_endif) in
-        (tok_ifdef :: body_ifdef) @ tok_endif :: fix_tokens_ifdef rest_endif
-  (* otherwise just skip the token *)
-    | __else__ -> skip_tok()
-    end
-  | None -> skip_tok()
+  match fix_tokens_ifdef_endif xs with
+  | Some (fixed,xs') -> fixed @ fix_tokens_ifdef xs'
+  | None ->
+  match fix_tokens_ifdef_else_endif xs with
+  | Some (fixed,xs') -> fixed @ fix_tokens_ifdef xs'
+  | None ->
+      skip_tok()
 
 let thresholdIfdefSizeMid = 6
 
