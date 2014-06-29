@@ -360,8 +360,6 @@ let fix_add_params_ident x =
       )
   | _ -> ()
 
-
-
 (*-------------------------------------------------------------------------- *)
 (* shortcuts *)
 (*-------------------------------------------------------------------------- *)
@@ -369,6 +367,21 @@ let fix_add_params_ident x =
 let mk_e e ii = Ast_c.mk_e e ii
 
 let mk_string_wrap (s,info) = (s, [info])
+
+(*-------------------------------------------------------------------------- *)
+(* support for functions with no return type *)
+(*-------------------------------------------------------------------------- *)
+
+let args_are_params l =
+  List.for_all (function Right (ArgType x), ii -> true | _ -> false) l
+let args_to_params l =
+  List.map
+    (function
+	Right (ArgType x), ii -> x, ii
+      | _ ->
+	  failwith
+	    "function with no return type must have types in param list")
+    l
 
 %}
 
@@ -557,7 +570,7 @@ let mk_string_wrap (s,info) = (s, [info])
 
 
 /*(*-----------------------------------------*)*/
-%token <Ast_c.info> EOF TStart
+%token <Ast_c.info> EOF
 
 /*(*-----------------------------------------*)*/
 
@@ -1786,12 +1799,6 @@ start_fun2: decl_spec declaratorfd
        let (id, attrs) = $2 in
        (fst id, fixOldCDecl ((snd id) returnType) , storage, attrs)
      }
-   | TStart declaratorfd
-     { let (id, attrs) = $2 in
-       let ty = mk_ty NoType [] in
-       let sto = (NoSto, false), [] in
-       (fst id, fixOldCDecl ((snd id) ty), sto, attrs)
-     }
    | ctor_dtor { $1 }
 
 ctor_dtor:
@@ -1999,9 +2006,50 @@ cpp_other:
     *)*/
  | identifier TOPar argument_list TCPar TPtVirg
      {
-       Declaration(MacroDecl((fst $1, $3, true), [snd $1;$2;$4;$5;fakeInfo()]))
-       (* old: MacroTop (fst $1, $3,    [snd $1;$2;$4;$5])  *)
+       if args_are_params $3
+       then
+	 (* if all args are params, assume it is a prototype of a function
+	    with no return type *)
+	 let parameters = args_to_params $3 in
+	 let paramlist = (parameters, (false, [])) in (* no varargs *)
+	 let id = RegularName (mk_string_wrap $1) in
+	 let ret =
+	   warning "type defaults to 'int'"
+	     (mk_ty defaultInt [fakeInfo fake_pi]) in
+	 let ty =
+	   fixOldCDecl (mk_ty (FunctionType (ret, paramlist)) [$2;$4]) in
+	 let attrs = Ast_c.noattr in
+	 let sto = (NoSto, false), [] in
+	 let iistart = Ast_c.fakeInfo () in
+	 Declaration(
+	 DeclList ([{v_namei = Some (id,NoInit); v_type = ty;
+                      v_storage = unwrap sto; v_local = NotLocalDecl;
+                      v_attr = attrs; v_type_bis = ref None;
+                    },[]],
+                   ($5::iistart::snd sto)))
+       else
+	 Declaration
+	   (MacroDecl((fst $1, $3, true), [snd $1;$2;$4;$5;fakeInfo()]))
+           (* old: MacroTop (fst $1, $3,    [snd $1;$2;$4;$5])  *)
      }
+
+ /* cheap solution for functions with no return type.  Not really a
+       cpp_other, but avoids conflicts */
+ | identifier TOPar argument_list TCPar compound {
+   let parameters = args_to_params $3 in
+   let paramlist = (parameters, (false, [])) in (* no varargs *)
+   let fninfo =
+     let id = RegularName (mk_string_wrap $1) in
+     let ret =
+       warning "type defaults to 'int'"
+	 (mk_ty defaultInt [fakeInfo fake_pi]) in
+     let ty = mk_ty (FunctionType (ret, paramlist)) [$2;$4] in
+     let attrs = Ast_c.noattr in
+     let sto = (NoSto, false), [] in
+     (id, fixOldCDecl ty, sto, attrs) in
+   let fundef = fixFunc (fninfo, $5, None) in
+   Definition fundef
+ }
 
  /*(* TCParEOL to fix the end-of-stream bug of ocamlyacc *)*/
  | identifier TOPar argument_list TCParEOL
