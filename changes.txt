@@ -167,6 +167,7 @@
 - Improve type inference performance when many files included by using
   maps.
 - Extend file names only if the mentioned file does not exist.
+- Better support for functions that have no specified return type.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks

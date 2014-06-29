@@ -2582,10 +2582,6 @@ let lookahead2 ~pass next before =
 let lookahead ~pass a b =
   Common.profile_code "C parsing.lookahead" (fun () -> lookahead2 ~pass a b)
 
-let mark_initial_ident = function
-    (TIdent(s,ii) :: rest) as a -> TStart (Ast_c.rewrap_str "" ii) :: a
-  | rest -> rest
-
 (*****************************************************************************)
 (* Ifdef-statementize *)
 (*****************************************************************************)
@@ -2689,4 +2685,3 @@ let rec cpp_ifdef_statementize (ast :toplevel list) :toplevel list =
       aux xs
     );
   } ast
-
