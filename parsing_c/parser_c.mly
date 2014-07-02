@@ -374,13 +374,17 @@ let mk_string_wrap (s,info) = (s, [info])
 
 let args_are_params l =
   List.for_all (function Right (ArgType x), ii -> true | _ -> false) l
-let args_to_params l =
+let args_to_params l pb =
+  let pi =
+    match pb with Some pb -> Ast_c.parse_info_of_info pb | None -> fake_pi in
   List.map
     (function
 	Right (ArgType x), ii -> x, ii
       | _ ->
-	  failwith
-	    "function with no return type must have types in param list")
+	  raise
+	    (Semantic
+	       ("function with no return type must have types in param list",
+		pi)))
     l
 
 %}
@@ -2010,7 +2014,7 @@ cpp_other:
        then
 	 (* if all args are params, assume it is a prototype of a function
 	    with no return type *)
-	 let parameters = args_to_params $3 in
+	 let parameters = args_to_params $3 None in
 	 let paramlist = (parameters, (false, [])) in (* no varargs *)
 	 let id = RegularName (mk_string_wrap $1) in
 	 let ret =
@@ -2036,7 +2040,7 @@ cpp_other:
  /* cheap solution for functions with no return type.  Not really a
        cpp_other, but avoids conflicts */
  | identifier TOPar argument_list TCPar compound {
-   let parameters = args_to_params $3 in
+   let parameters = args_to_params $3 (Some (snd $1)) in
    let paramlist = (parameters, (false, [])) in (* no varargs *)
    let fninfo =
      let id = RegularName (mk_string_wrap $1) in
