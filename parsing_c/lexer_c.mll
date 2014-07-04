@@ -872,7 +872,9 @@ rule token = parse
       then
 	let len = string_of_int(String.length x - 1) in
         TDecimal ((x,len,"0"), tokinfo lexbuf)
-      else failwith "unrecognized constant modifier d/D" }
+      else
+	(pr2 ("LEXER: ZARB integer_string, certainly a macro:" ^ tok lexbuf);
+         TIdent (tok lexbuf, tokinfo lexbuf)) }
 
   | (real ['f' 'F']) as x { TFloat ((x, CFloat),      tokinfo lexbuf) }
   | (real ['l' 'L']) as x { TFloat ((x, CLongDouble), tokinfo lexbuf) }
