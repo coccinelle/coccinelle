@@ -57,7 +57,7 @@ let dots fn d =
 	let (n,l) = map_split_bind fn l in (n, Ast0.CIRCLES(l))
     | Ast0.STARS(l) ->
 	let (n,l) = map_split_bind fn l in (n, Ast0.STARS(l)))
-    
+
 let rec ident i =
   let (metas,i) =
   rewrap i
@@ -356,7 +356,7 @@ and typeC t =
 	    (other_metas,Ast0.rewrap ty (Ast0.AsType(ty,ty_meta)))
 	| x -> (x::other_metas,ty))
     ([],t) metas
-    
+
 and function_pointer (ty,lp1,star,rp1,lp2,params,rp2) extra =
   let (ty_n,ty) = typeC ty in
   let (lp1_n,lp1) = mcode lp1 in
@@ -383,7 +383,7 @@ and array_type (ty,lb,size,rb) extra =
   let (rb_n,rb) = mcode rb in
   (multibind (ty_n :: extra @ [lb_n;size_n;rb_n]),
    Ast0.Array(ty,lb,size,rb))
-    
+
 and named_type ty id =
   let (id_n,id) = ident id in
   match Ast0.unwrap ty with
@@ -398,7 +398,7 @@ and named_type ty id =
       let tyres = array_type (rty,lb,size,rb) [id_n] in
       (rewrap ty tyres, id)
   | _ -> let (ty_n,ty) = typeC ty in ((bind ty_n id_n, ty), id)
-      
+
 and declaration d =
   let (metas,d) =
     rewrap d
@@ -540,7 +540,7 @@ and designator = function
       let (rb_n,rb) = mcode rb in
       (multibind [lb_n;min_n;dots_n;max_n;rb_n],
        Ast0.DesignatorRange(lb,min,dots,max,rb))
-	
+
 and parameterTypeDef p =
   match Ast0.unwrap p with
     Ast0.MetaParamList(name,lenname,pure) ->
@@ -586,7 +586,7 @@ and parameterTypeDef p =
 	| Ast0.UniqueParam(param) ->
 	    let (n,param) = parameterTypeDef param in
 	    (n,Ast0.UniqueParam(param)))
-    
+
 and statement s =
   let (metas,s) =
     rewrap s
@@ -815,7 +815,7 @@ and pragmainfo pi =
     | Ast0.PragmaDots (dots) ->
 	let (dots_n,dots) = mcode dots in
 	(dots_n,Ast0.PragmaDots dots))
-    
+
   (* not parameterizable for now... *)
 and define_parameters p =
   rewrap p
@@ -826,7 +826,7 @@ and define_parameters p =
 	let (params_n,params) = dots define_param params in
 	let (rp_n,rp) = mcode rp in
 	(multibind [lp_n;params_n;rp_n], Ast0.DParams(lp,params,rp)))
-    
+
 and define_param p =
   rewrap p
     (match Ast0.unwrap p with
@@ -841,7 +841,7 @@ and define_param p =
 	let (n,dp) = define_param dp in (n,Ast0.OptDParam(dp))
     | Ast0.UniqueDParam(dp) ->
 	let (n,dp) = define_param dp in (n,Ast0.UniqueDParam(dp)))
-    
+
 and fninfo = function
     Ast0.FStorage(stg) ->
       let (n,stg) = mcode stg in (n,Ast0.FStorage(stg))
@@ -850,7 +850,7 @@ and fninfo = function
       let (n,inline) = mcode inline in (n,Ast0.FInline(inline))
   | Ast0.FAttr(init) ->
       let (n,init) = mcode init in (n,Ast0.FAttr(init))
-	
+
 and whencode notfn alwaysfn = function
     Ast0.WhenNot a -> let (n,a) = notfn a in (n,Ast0.WhenNot(a))
   | Ast0.WhenAlways a -> let (n,a) = alwaysfn a in (n,Ast0.WhenAlways(a))
@@ -859,7 +859,7 @@ and whencode notfn alwaysfn = function
       let (n,e) = expression e in (n,Ast0.WhenNotTrue(e))
   | Ast0.WhenNotFalse(e) ->
       let (n,e) = expression e in (n,Ast0.WhenNotFalse(e))
-	
+
 and case_line c =
   rewrap c
     (match Ast0.unwrap c with
@@ -895,7 +895,7 @@ and exec_code e =
     | Ast0.ExecDots(dots) ->
 	let (dots_n,dots) = mcode dots in
 	(dots_n,Ast0.ExecDots(dots)))
-    
+
 and top_level t =
   rewrap t
     (match Ast0.unwrap t with
@@ -916,7 +916,7 @@ and top_level t =
 	let (n,exps) = map_split_bind expression exps in
 	(n, Ast0.ERRORWORDS(exps))
     | Ast0.OTHER(_) -> failwith "unexpected code")
-    
+
 let process t =
   List.map
     (function x ->

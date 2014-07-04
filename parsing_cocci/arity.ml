@@ -167,10 +167,10 @@ let rec ident opt_allowed tgt i =
       Ast0.rewrap i (Ast0.DisjId(starter,id_list,mids,ender))
   | Ast0.OptIdent(_) | Ast0.UniqueIdent(_) | Ast0.AsIdent _ ->
       failwith "unexpected code"
-	
+
 (* --------------------------------------------------------------------- *)
 (* Expression *)
-	
+
 let make_exp =
   make_opt_unique
     (function x -> Ast0.OptExp x)

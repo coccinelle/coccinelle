@@ -3371,7 +3371,7 @@ let cache_computation_robust2
 	let _ = Sys.command
 	    (Printf.sprintf "mkdir -p %s" (Filename.dirname file_cache)) in
 	(file_cache,dependencies_cache) in
-  
+
   let dependencies =
     (* could do md5sum too *)
     ((file::need_no_changed_files) +> List.map (fun f -> f, filemtime f),
@@ -3669,6 +3669,13 @@ let rec zip xs ys =
   | (_,[]) -> failwith "zip: not same length"
   | (x::xs,y::ys) -> (x,y)::zip xs ys
 
+let rec combine4 : 'a list -> 'b list -> 'c list -> 'd list ->
+                      ('a * 'b * 'c * 'd) list
+  = fun a b c d -> match (a,b,c,d) with
+  | ([],[],[],[])             -> []
+  | (w::ws,x::xs,y::ys,z::zs) -> (w,x,y,z)::combine4 ws xs ys zs
+  | ___else___                -> invalid_arg "combine4: not same length"
+
 let rec zip_safe xs ys =
   match (xs,ys) with
   | ([],_) -> []
@@ -3709,7 +3716,7 @@ let _ = example (drop 3 [1;2;3;4] =*= [4])
 
 let rec drop_while p = function
   | [] -> []
-  | x::xs -> if p x then drop_while p xs else x::xs	
+  | x::xs -> if p x then drop_while p xs else x::xs
 
 
 let rec drop_until p xs =
@@ -3764,7 +3771,7 @@ let _ = example
   (exclude_but_keep_attached (fun x -> x =|= 3) [3;3;1;3;2;3;3;3] =*=
       [(1,[3;3]);(2,[3])])
 
-let (group_by_post: ('a -> bool) -> 'a list -> ('a list * 'a) list * 'a list)=
+let group_by_post: ('a -> bool) -> 'a list -> ('a list * 'a) list * 'a list =
  fun f xs ->
    let rec aux_filter grouped_acc acc = function
    | [] ->
@@ -3794,7 +3801,7 @@ let _ = example
       ([1;1], [(3,[2]); (3,[4;5]); (3,[6;6;6])]))
 
 
-let (split_when: ('a -> bool) -> 'a list -> 'a list * 'a * 'a list) =
+let split_when: ('a -> bool) -> 'a list -> 'a list * 'a * 'a list =
  fun p l ->
   let rec loop acc = function
   | []    -> raise Not_found

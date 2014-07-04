@@ -69,7 +69,7 @@ let ctl_ax s = function
   | CTL.False -> CTL.False
   | x ->
       match !exists with
-	Exists -> CTL.EX(CTL.FORWARD,x)
+        Exists -> CTL.EX(CTL.FORWARD,x)
       |	Forall -> CTL.AX(CTL.FORWARD,s,x)
 
 let ctl_ax_absolute s = function
@@ -2113,7 +2113,7 @@ and statement stmt top after quantified minus_quantified
       let switch_header = quantify guard exponlyfvs (make_match header) in
       let pv = count_nested_braces stmt in
       let paren_pred = CTL.Pred(Lib_engine.Paren pv,CTL.Control) in
-      let lb = quantify guard lbonlyfvs 
+      let lb = quantify guard lbonlyfvs
 	  (ctl_and (make_match lb) paren_pred) in
 (*      let rb = quantify guard rbonlyfvs (make_match rb) in*)
       let case_headers =
@@ -2460,7 +2460,7 @@ and do_between_dots stmt term after quantified minus_quantified
 	  (v,ctl_or
 	     (ctl_back_ex (ctl_or (truepred label) (inlooppred label)))
 	     (ctl_back_ex (ctl_back_ex (falsepred label))),
-	   ctl_or case1 case2)	
+	   ctl_or case1 case2)
     | Ast.NoDots -> term
 
 (* un_process_bef_aft is because we don't want to do transformation in this

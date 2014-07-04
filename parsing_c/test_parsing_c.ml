@@ -28,28 +28,28 @@ let test_tokens_c file =
 
 (* Was in main, but using it in test_parsing_c *)
 let get_files path =
-  let ch =
-    cmd_to_list (* same as "true, "", _" case *)
-      (if !Flag.include_headers
-			  (* FIXME : Could we remove xs ?
-			     -use_glimpse requires a singleton.
-			     This is checked some lines before.
-			     then ("find "^(join " " (x::xs))^" -name \"*.[ch]\"")
-			     else ("find "^(join " " (x::xs))^" -name \"*.c\"")
-			  *)
-      then ("find "^ path ^" -name \"*.[ch]\"")
-      else ("find "^ path ^" -name \"*.c\"")) in
-  let cpp =
-    if !Flag.c_plus_plus
-    then cmd_to_list
+  if !Flag.c_plus_plus
+  then
+    (* only C++ files, but contains .h files as that extension is ambiguous *)
+    cmd_to_list
       (if !Flag.include_headers
       then
         "find "^ path ^" -name \"*.cpp\" -o -name \"*.cxx\" -o -name \"*.cc\""
         ^"-o name \"*.h\" -o -name \"*.hpp\" -o -name \"*.hxx\""
       else
         "find "^ path ^" -name \"*.cpp\" -o -name \"*.cxx\" -o -name \"*.cc\"")
-    else [] in
-  cpp @ ch
+  else
+    (* only .c files and .h files *)
+    cmd_to_list (* same as "true, "", _" case *)
+      (if !Flag.include_headers
+	  (* FIXME : Could we remove xs ?
+	     -use_glimpse requires a singleton.
+	     This is checked some lines before.
+	     then ("find "^(join " " (x::xs))^" -name \"*.[ch]\"")
+	     else ("find "^(join " " (x::xs))^" -name \"*.c\"")
+	  *)
+      then ("find "^ path ^" -name \"*.[ch]\"")
+      else ("find "^ path ^" -name \"*.c\""))
 
 let new_test_parse_gen xs =
 
@@ -76,7 +76,7 @@ let new_test_parse_gen xs =
   Common.check_stack_nbfiles (List.length fullxs);
 
   fullxs +> List.iter (fun file ->
-    
+
     pr2 "";
     pr2 ("PARSING: " ^ file);
 
@@ -264,7 +264,7 @@ let local_test_cfg launchgv file =
 	      if launchgv
 	      then Filename.temp_file "output" ".dot"
 	      else
-		let fl = Filename.chop_extension (Filename.basename file) in 
+		let fl = Filename.chop_extension (Filename.basename file) in
 		fl^":"^fn^".dot" in
             Ograph_extended.print_ograph_mutable flow' (filename) launchgv
           )
@@ -276,11 +276,10 @@ let test_cfg = local_test_cfg true
 
 
 let test_cfg_ifdef file =
+  Flag_parsing_c.ifdef_to_if := true;
   (* no point to parse format strings *)
   let (ast2, _stat) = Parse_c.parse_c_and_cpp false file in
   let ast = Parse_c.program_of_program2 ast2 in
-
-  let ast = Cpp_ast_c.cpp_ifdef_statementize ast in
 
   ast +> List.iter (fun e ->
     (try
@@ -449,12 +448,12 @@ let cpp_options () = [
   (!Flag_parsing_c.cpp_i_opts,!Flag_parsing_c.cpp_d_opts)
 
 let test_cpp file =
+  Flag_parsing_c.ifdef_to_if := true;
   (* no point to parse format strings *)
   let (ast2, _stat) = Parse_c.parse_c_and_cpp false file in
   let dirname = Filename.dirname file in
   let ast = Parse_c.program_of_program2 ast2 in
   let ast = Cpp_ast_c.cpp_expand_include (cpp_options()) dirname ast in
-  let _ast = Cpp_ast_c.cpp_ifdef_statementize ast in
 
 
   ()

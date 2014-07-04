@@ -886,6 +886,10 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
 
   let toks_orig = tokens file in
   let toks = Parsing_hacks.fix_tokens_define toks_orig in
+  let toks = if !Flag_parsing_c.exts_ITU
+                then Parsing_hacks.fix_tokens_ifdef toks
+                else toks
+    in
   let toks = Parsing_hacks.fix_tokens_cpp ~macro_defs:!_defs_builtins toks in
   let toks =
     if parse_strings
@@ -1086,6 +1090,11 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
   let v = loop tr in
   let v = with_program2 Parsing_consistency_c.consistency_checking v in
   with_program2_unit Danger.add_danger v;
+  let v =
+    if !Flag_parsing_c.ifdef_to_if
+       then with_program2 Parsing_hacks.cpp_ifdef_statementize v
+       else v
+  in
   let v =
     let new_td = ref (Common.clone_scoped_h_env !LP._typedef) in
     Common.clean_scope_h new_td;

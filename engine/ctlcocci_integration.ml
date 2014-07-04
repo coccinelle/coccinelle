@@ -59,12 +59,11 @@ let (-->) x v = Ast_ctl.Subst (x,v);;
 (* Take list of predicate and for each predicate returns where in the
  * control flow it matches, and the set of substitutions for this match.
  *)
-let (labels_for_ctl: string list (* dropped isos *) ->
- (nodei * F.node) list -> Lib_engine.metavars_binding ->
- Lib_engine.label_ctlcocci) =
-  fun dropped_isos nodes binding ->
-
-   (fun p ->
+let labels_for_ctl (dropped_isos : string list)
+                   (nodes : (nodei * F.node) list)
+                   (binding : Lib_engine.metavars_binding)
+                   : Lib_engine.label_ctlcocci
+  = fun p ->
      show_or_not_predicate p;
 
      let nodes' = nodes +> List.map (fun (nodei, node) ->
@@ -163,7 +162,6 @@ let (labels_for_ctl: string list (* dropped isos *) ->
 
      show_or_not_nodes nodes';
      nodes'
-   )
 
 (*****************************************************************************)
 (* Some fix flow, for CTL, for unparse *)
@@ -175,7 +173,7 @@ let (control_flow_for_ctl: F.cflow -> ('a, 'b) ograph_mutable) =
 
 
 (* Just make the final node of the control flow loop over itself.
- * It seems that one hypothesis of the SAT algorithm is that each node as at
+ * It seems that one hypothesis of the SAT algorithm is that each node has at
  * least a successor.
  *
  * update: do same for errorexit node.
@@ -197,7 +195,7 @@ let (control_flow_for_ctl: F.cflow -> ('a, 'b) ograph_mutable) =
  * update: also make loop the deadcode nodes, the one that have
  * no predecessor.
  *)
-let (fix_flow_ctl2: F.cflow -> F.cflow) = fun flow ->
+let fix_flow_ctl2 (flow : F.cflow) : F.cflow =
   let g = ref flow in
 
   let topi = F.first_node !g in

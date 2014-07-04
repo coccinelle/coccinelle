@@ -48,6 +48,9 @@ val filter_cpp_stuff :
 val insert_virtual_positions:
   Parser_c.token list -> Parser_c.token list
 
+(* mark suppported undisciplined uses of #ifdef *)
+val fix_tokens_ifdef : Parser_c.token list -> Parser_c.token list
+
 (* expand format strings *)
 val fix_tokens_strings : Parser_c.token list -> Parser_c.token list
 
@@ -79,3 +82,10 @@ val tokens_include:
   Ast_c.info * string * string * bool ref ->
   Parser_c.token * Parser_c.token list
 
+(* ------------------------------------------------------------------------ *)
+(* Parsing hack helpers related to #ifdef *)
+(* ------------------------------------------------------------------------ *)
+
+(* #ifdef *)
+val cpp_ifdef_statementize:
+  Ast_c.program -> Ast_c.program

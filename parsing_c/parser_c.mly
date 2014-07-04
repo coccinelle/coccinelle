@@ -526,6 +526,19 @@ let args_to_params l pb =
 %token <(bool * (int * int) option ref * Ast_c.info)>
   TIfdefBool TIfdefMisc TIfdefVersion
 
+/* Note [Nasty Undisciplined Cpp]
+ *
+ * These tokens replace regular Cpp-ifdef tokens for nasty undisciplined
+ * variability patterns.
+ *
+ * Note that these tokens do not have matching_tag.
+ * (TU stands for Token-Undisciplined.)
+ *
+ * /Iago
+ */
+%token <Ast_c.info>
+  TUifdef TUelseif TUendif
+
 /*(*---------------*)*/
 /*(* other         *)*/
 /*(*---------------*)*/
@@ -645,12 +658,12 @@ main:
  translation_unit EOF     { $1 }
 
 translation_unit:
- | 
+ |
      { [] }
  | translation_unit external_declaration
      { !LP._lexer_hint.context_stack <- [LP.InTopLevel]; $1 ++ [$2] }
  | translation_unit Tnamespace TIdent TOBrace translation_unit TCBrace
-     { !LP._lexer_hint.context_stack <- [LP.InTopLevel]; 
+     { !LP._lexer_hint.context_stack <- [LP.InTopLevel];
        $1 ++ [Namespace ($5, [$2; snd $3; $4; $6])] }
 
 
@@ -801,7 +814,7 @@ new_argument:
 	   let pty = { ty with p_type = fty } in
 	   Right(ArgType pty)
        | _ -> raise (Impossible 88)
-     } 
+     }
 
 unary_op:
  | TAnd   { GetRef,     $1 }
@@ -1021,6 +1034,12 @@ selection:
      { If ($3, $5, $7),  [$1;$2;$4;$6] }
  | Tswitch TOPar expr TCPar statement
      { Switch ($3,$5),   [$1;$2;$4]  }
+ /* [Nasty Undisciplined Cpp] #ifdef A if e S1 else #endif S2 */
+ | TUifdef Tif TOPar expr TCPar statement Telse TUendif statement
+     { Ifdef_Ite ($4,$6,$9), [$1;$2;$3;$5;$7;$8] }
+ /* [Nasty Undisciplined Cpp] #ifdef A if e S1 else #else S2 #endif S3 */
+ | TUifdef Tif TOPar expr TCPar statement Telse TUelseif statement TUendif statement
+     { Ifdef_Ite2 ($4,$6,$9,$11), [$1;$2;$3;$5;$7;$8;$10] }
 
 iteration:
  | Twhile TOPar expr TCPar statement
@@ -1930,7 +1949,7 @@ define_val:
  | Tinline { DefineTodo }
 *)*/
 
- | stat_or_decl stat_or_decl_list 
+ | stat_or_decl stat_or_decl_list
      { DefineMulti
 	 (List.map
 	    (function
@@ -2080,7 +2099,7 @@ external_declaration:
 
 celem:
  | Tnamespace TIdent TOBrace translation_unit TCBrace
-     { !LP._lexer_hint.context_stack <- [LP.InTopLevel]; 
+     { !LP._lexer_hint.context_stack <- [LP.InTopLevel];
        Namespace ($4, [$1; snd $2; $3; $5]) }
 
  | external_declaration                         { $1 }

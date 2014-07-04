@@ -165,7 +165,7 @@ and name =
  * invariant: Array and FunctionType have also typeQualifier but they
  * don't have sense. I put this to factorise some code. If you look in
  * the grammar, you see that we can never specify const for the array
- * himself (but we can do it for pointer) or function, we always
+ * itself (but we can do it for pointer) or function, we always
  * have in the action rule of the grammar a { (nQ, FunctionType ...) }.
  *
  *
@@ -446,7 +446,7 @@ and statement = statementbis wrap3
   and labeled = Label   of name * statement
               | Case    of expression * statement
               | CaseRange of expression * expression * statement (* gccext: *)
-	      |	Default of statement
+              |	Default of statement
 
   (* cppext:
    * old: compound = (declaration list * statement list)
@@ -496,6 +496,10 @@ and statement = statementbis wrap3
   and selection     =
    | If     of expression * statement * statement
    | Switch of expression * statement
+   (* #ifdef A if e S1 else #endif S2 *)
+   | Ifdef_Ite of expression * statement * statement
+   (* #ifdef A if e S1 else #else S2 #endif S3 *)
+   | Ifdef_Ite2 of expression * statement * statement * statement
 
 
   and iteration     =
@@ -638,7 +642,7 @@ and define = string wrap (* #define s eol *) * (define_kind * define_val)
      | DefineFunction of definition
      | DefineInit of initialiser (* in practice only { } with possible ',' *)
 
-     | DefineMulti of statement list 
+     | DefineMulti of statement list
 
      | DefineText of string wrap
      | DefineEmpty

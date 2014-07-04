@@ -160,7 +160,7 @@ let mk_pretty_printers
     | ParenExpr (e), [i1;i2] -> pr_elem i1; pp_expression e; pr_elem i2;
 
     | New   (None, t),     [i1] -> pr_elem i1; pp_argument t
-    | New   (Some ts, t),     [i1; i2; i3] -> 
+    | New   (Some ts, t),     [i1; i2; i3] ->
 	pr_elem i1; pr_elem i2; pp_arg_list ts; pr_elem i3; pp_argument t
     | Delete(t),     [i1] -> pr_elem i1; pp_expression t
 
@@ -186,7 +186,7 @@ let mk_pretty_printers
 	    pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str s)));
       pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "*/");
     end
-     
+
   and pp_arg_list es = pp_list pp_argument es
 
   and pp_argument argument =
@@ -268,16 +268,25 @@ and pp_string_format (e,ii) =
            ';' hence the [] for ii *)
     | ExprStatement (Some e), [] -> pp_expression e;
     | Selection  (If (e, st1, st2)), i1::i2::i3::is ->
-        pr_elem i1; pr_space(); pr_elem i2; pp_expression e; pr_elem i3;
-	indent_if_needed st1 (function _ -> pp_statement st1);
-        (match (Ast_c.get_st_and_ii st2, is) with
-        | ((ExprStatement None, []), [])  -> ()
-        | ((ExprStatement None, []), [iifakend])  -> pr_elem iifakend
-        | _st2, [i4;iifakend] -> pr_elem i4;
-	    indent_if_needed st2 (function _ -> pp_statement st2);
-	    pr_elem iifakend
-        | x -> raise (Impossible 96)
-        )
+        pp_ifthen e st1 i1 i2 i3;
+        pp_else st2 is
+    | Selection  (Ifdef_Ite (e, st1, st2)), i1::i2::i3::i4::is ->
+        pr_elem i1;
+        pp_ifthen e st1 i2 i3 i4;
+        pp_else st2 is
+    | Selection (Ifdef_Ite2 (e, st1, st2, st3)), i1::i2::i3::i4::is ->
+        pr_elem i1;
+        pp_ifthen e st1 i2 i3 i4;
+        (* else #else S #endif *)
+	(match is with
+          [i4;i5;i6;iifakend] ->
+            pr_elem i4; (* else *)
+            pr_elem i5; (* #else *)
+            indent_if_needed st2 (function _ -> pp_statement st2);
+            pr_elem i6; (* #endif *)
+            indent_if_needed st3 (function _ -> pp_statement st3);
+            pr_elem iifakend
+	| _ -> raise (Impossible 90))
     | Selection  (Switch (e, st)), [i1;i2;i3;iifakend] ->
         pr_elem i1; pr_space(); pr_elem i2; pp_expression e; pr_elem i3;
 	indent_if_needed st (function _-> pp_statement st); pr_elem iifakend
@@ -359,6 +368,7 @@ and pp_string_format (e,ii) =
     | Labeled (CaseRange  (_,_,_)) | Labeled (Default _)
     | Compound _ | ExprStatement _
     | Selection  (If (_, _, _)) | Selection  (Switch (_, _))
+    | Selection (Ifdef_Ite _) | Selection (Ifdef_Ite2 _)
     | Iteration  (While (_, _)) | Iteration  (DoWhile (_, _))
     | Iteration  (For (_, (_,_), (_, _), _))
     | Iteration  (MacroIteration (_,_,_))
@@ -373,12 +383,32 @@ and pp_string_format (e,ii) =
     | CppDirectiveStmt cpp -> pp_directive cpp
     | IfdefStmt2 (ifdef, xxs) -> pp_ifdef_tree_sequence ifdef xxs
 
+  and pp_ifthen e st1 i1 i2 i3 =
+        (* if (<e>) *)
+        pr_elem i1; pr_space(); pr_elem i2; pp_expression e; pr_elem i3;
+        indent_if_needed st1 (function _ -> pp_statement st1);
+  and pp_else st2 is =
+        match (Ast_c.get_st_and_ii st2, is) with
+          | ((ExprStatement None, []), [])  -> ()
+          | ((ExprStatement None, []), [iifakend])  -> pr_elem iifakend
+          | _st2, [i4;iifakend] ->
+              pr_elem i4;
+              indent_if_needed st2 (function _ -> pp_statement st2);
+              pr_elem iifakend
+          | _st2, [i4;i5;iifakend] -> (* else #endif S *)
+              pr_elem i4;
+              pr_elem i5;
+              indent_if_needed st2 (function _ -> pp_statement st2);
+              pr_elem iifakend
+          | x -> raise (Impossible 96)
+
+
 (* ifdef XXX elsif YYY elsif ZZZ endif *)
   and pp_ifdef_tree_sequence ifdef xxs =
     match ifdef with
     | if1::ifxs ->
-	pp_ifdef if1;
-	pp_ifdef_tree_sequence_aux  ifxs xxs
+        pp_ifdef if1;
+        pp_ifdef_tree_sequence_aux  ifxs xxs
     | _ -> raise (Impossible 99)
 
 (* XXX elsif YYY elsif ZZZ endif *)
@@ -621,7 +651,7 @@ and pp_string_format (e,ii) =
                   | Some name -> Some (get_s_and_info_of_name name)
                 in
 		pp_type_with_ident identinfo None typ Ast_c.noattr;
-		
+
 	    | (BitField (nameopt, typ, iidot, expr)), iivirg ->
                       (* first var cannot have a preceding ',' *)
 		assert (List.length iivirg =|= 0);
@@ -1228,7 +1258,7 @@ and pp_init (init, iinit) =
 
     | IfdefTop ifdefdir -> pp_ifdef ifdefdir
 
-    | Namespace (tls, [i1; i2; i3; i4]) -> 
+    | Namespace (tls, [i1; i2; i3; i4]) ->
 	pr_elem i1; pr_elem i2; pr_elem i3;
 	List.iter pp_toplevel tls;
 	pr_elem i4;
@@ -1401,6 +1431,9 @@ and pp_init (init, iinit) =
 	pp_ifdef info
     | F.IfdefEndif (info) ->
 	pp_ifdef info
+
+    | F.IfdefIteHeader _ii ->
+        pr2 "XXX"
 
     | F.DefineTodo ->
 	pr2 "XXX"
