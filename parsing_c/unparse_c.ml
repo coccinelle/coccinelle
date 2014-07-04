@@ -487,7 +487,8 @@ let is_added_space = function
   | C2(" ") -> true (* only whitespace *)
   | _ -> false
 
-let is_added_whitespace = function C2 " " | C2 "\n" -> true | _ -> false
+let is_added_whitespace =
+  function C2 " " | C2 "\n" | Cocci2("\n",_,_,_,_) -> true | _ -> false
 
 let is_newline = function
   | T2(Parser_c.TCommentNewline _,_b,_i,_h) -> true
@@ -1515,7 +1516,7 @@ let subtract op (am,ap) (bm,bp) =
 let skip_unlike_me op xs is_whitespace =
   let rec loop = function
       [] -> []
-    | x::xs when is_whitespace x or is_added_whitespace x -> loop xs
+    | x::xs when is_whitespace x -> loop xs
     | ((T2 (_,Ctx,_,_)) :: _) as xs -> xs
     | ((T2 (_,Min _,_,_)) :: _) as xs when op = MinusOnly or op = Both -> xs
     | (((Cocci2 _)::_) | ((C2 _)::_)) as xs

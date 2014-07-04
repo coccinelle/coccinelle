@@ -957,26 +957,26 @@ filespec:
 includes:
   TIncludeL
     { Ast0.wrap
-	      (Ast0.Include(P.clt2mcode "#include"
-			      (P.drop_pos (P.drop_aft (P.id2clt $1))),
-			    let (arity,ln,lln,offset,col,strbef,straft,pos) =
-			      P.id2clt $1 in
-			    let clt =
-			      (arity,ln,lln,offset,0,strbef,straft,pos) in
-			    P.clt2mcode
-			      (Ast.Local (Parse_aux.str2inc (P.id2name $1)))
-			      (P.drop_bef clt))) }
+	(Ast0.Include(P.clt2mcode "#include"
+			(P.drop_pos (P.drop_aft (P.id2clt $1))),
+		      let (arity,ln,lln,llne,offset,col,strbef,straft,pos) =
+			P.id2clt $1 in
+		      let clt =
+			(arity,ln,lln,llne,offset,0,strbef,straft,pos) in
+		      P.clt2mcode
+			(Ast.Local (Parse_aux.str2inc (P.id2name $1)))
+			(P.drop_bef clt))) }
 | TIncludeNL
     { Ast0.wrap
-	      (Ast0.Include(P.clt2mcode "#include"
-			      (P.drop_pos (P.drop_aft (P.id2clt $1))),
-			    let (arity,ln,lln,offset,col,strbef,straft,pos) =
-			      P.id2clt $1 in
-			    let clt =
-			      (arity,ln,lln,offset,0,strbef,straft,pos) in
-			    P.clt2mcode
-			      (Ast.NonLocal (Parse_aux.str2inc (P.id2name $1)))
-			      (P.drop_bef clt))) }
+	(Ast0.Include(P.clt2mcode "#include"
+			(P.drop_pos (P.drop_aft (P.id2clt $1))),
+		      let (arity,ln,lln,llne,offset,col,strbef,straft,pos) =
+			P.id2clt $1 in
+		      let clt =
+			(arity,ln,lln,llne,offset,0,strbef,straft,pos) in
+		      P.clt2mcode
+			(Ast.NonLocal (Parse_aux.str2inc (P.id2name $1)))
+			(P.drop_bef clt))) }
 | TUndef TLineEnd
     { let (clt,ident) = $1 in
       let aft = P.get_aft clt in (* move stuff after the define to the ident *)
@@ -1051,10 +1051,10 @@ defineop:
     { let (clt,ident,parenoff,parencol) = $1 in
       let aft = P.get_aft clt in (* move stuff after the define to the ( *)
       (* clt is the start of the #define itself *)
-      let (arity,line,lline,offset,col,strbef,straft,pos) = clt in
+      let (arity,line,lline,llineend,offset,col,strbef,straft,pos) = clt in
       let lp =
 	P.clt2mcode "("
-	  (arity,line,lline,parenoff,parencol,[],[],[]) in
+	  (arity,line,lline,llineend,parenoff,parencol,[],[],[]) in
       function body ->
 	Ast0.wrap
 	  (Ast0.Define
