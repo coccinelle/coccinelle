@@ -47,16 +47,17 @@ let scan allpatterns i maxlen =
     List.filter (function (_,Neg,_) -> true | _ -> false) allpatterns in
   let git = ref "" in
   let pospatterns = ref allpospatterns in
-  let negpatterns = ref allpospatterns in
+  let negpatterns = ref allnegpatterns in
   let clear_patterns _ = pospatterns := []; negpatterns := [] in
   let ender isalldone =
     if too_many_changed maxlen
     then badgits := add !git !badgits
     else
-      if isalldone && !pospatterns = [] && !negpatterns = allnegpatterns
+      if isalldone
       then
 	begin
-	  res := Git(!git)::!res;
+	  (if !pospatterns = [] && !negpatterns = allnegpatterns
+	  then res := Git(!git)::!res);
 	  pospatterns := allpospatterns;
 	  negpatterns := allnegpatterns
 	end in
@@ -91,14 +92,16 @@ let scan allpatterns i maxlen =
 		loop cl
 	      end
 	    else
-	      (let remaining_patterns =
-		List.filter
-		  (function (dir,ok,pattern) ->
-		    not (* argument is true if match succeeds *)
-		      (match_one start dir cl pattern line))
-		  !pospatterns in
-	      pospatterns := remaining_patterns;
-	      loop cl)
+	      begin
+		let remaining_patterns =
+		  List.filter
+		    (function (dir,ok,pattern) ->
+		      not (* argument is true if match succeeds *)
+			(match_one start dir cl pattern line))
+		    !pospatterns in
+		pospatterns := remaining_patterns;
+		loop cl
+	      end
 	  end in
   try loop false
   with End_of_file -> ender true
@@ -111,10 +114,10 @@ let scan_grouped allpatterns i maxlen =
   let ender isdone =
     if too_many_changed maxlen
     then badgits := add !git !badgits
-    else if isdone && !patterns = []
+    else if isdone
     then
       begin
-	res := Block(!block,!git)::!res;
+	(if !patterns = [] then res := Block(!block,!git)::!res);
 	patterns := []
       end in
   (* mp = true in minus-plus region *)
