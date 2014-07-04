@@ -373,19 +373,24 @@ let mk_string_wrap (s,info) = (s, [info])
 (*-------------------------------------------------------------------------- *)
 
 let args_are_params l =
-  List.for_all (function Right (ArgType x), ii -> true | _ -> false) l
+  match l with
+    [Right (ArgAction(ActMisc [x])), ii] when Ast_c.is_fake x -> true
+  | _ -> List.for_all (function Right (ArgType x), ii -> true | _ -> false) l
 let args_to_params l pb =
   let pi =
     match pb with Some pb -> Ast_c.parse_info_of_info pb | None -> fake_pi in
-  List.map
-    (function
-	Right (ArgType x), ii -> x, ii
-      | _ ->
-	  raise
-	    (Semantic
-	       ("function with no return type must have types in param list",
-		pi)))
-    l
+  match l with
+    [(Right (ArgAction(ActMisc [x])), ii)] when Ast_c.is_fake x -> []
+  | l ->
+      List.map
+	(function
+	    Right (ArgType x), ii -> x, ii
+	  | x ->
+	      raise
+		(Semantic
+		   ("function with no return type must have types in param list",
+		    pi)))
+	l
 
 %}
 
