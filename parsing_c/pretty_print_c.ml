@@ -270,23 +270,23 @@ and pp_string_format (e,ii) =
     | Selection  (If (e, st1, st2)), i1::i2::i3::is ->
         pp_ifthen e st1 i1 i2 i3;
         pp_else st2 is
-    | Selection  (Ifdef_Ite (e, st1, st2))
-      , i1::i2::i3::i4::is ->
+    | Selection  (Ifdef_Ite (e, st1, st2)), i1::i2::i3::i4::is ->
         pr_elem i1;
         pp_ifthen e st1 i2 i3 i4;
         pp_else st2 is
-    | Selection (Ifdef_Ite2 (e, st1, st2, st3))
-      , i1::i2::i3::i4::is ->
+    | Selection (Ifdef_Ite2 (e, st1, st2, st3)), i1::i2::i3::i4::is ->
         pr_elem i1;
         pp_ifthen e st1 i2 i3 i4;
         (* else #else S #endif *)
-        let [i4;i5;i6;iifakend] = is in
-          pr_elem i4; (* else *)
-          pr_elem i5; (* #else *)
-          indent_if_needed st2 (function _ -> pp_statement st2);
-          pr_elem i6; (* #endif *)
-          indent_if_needed st3 (function _ -> pp_statement st3);
-          pr_elem iifakend
+	(match is with
+          [i4;i5;i6;iifakend] ->
+            pr_elem i4; (* else *)
+            pr_elem i5; (* #else *)
+            indent_if_needed st2 (function _ -> pp_statement st2);
+            pr_elem i6; (* #endif *)
+            indent_if_needed st3 (function _ -> pp_statement st3);
+            pr_elem iifakend
+	| _ -> raise (Impossible 90))
     | Selection  (Switch (e, st)), [i1;i2;i3;iifakend] ->
         pr_elem i1; pr_space(); pr_elem i2; pp_expression e; pr_elem i3;
 	indent_if_needed st (function _-> pp_statement st); pr_elem iifakend
