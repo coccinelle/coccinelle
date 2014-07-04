@@ -21,10 +21,11 @@ let get_option fn = function
     None -> None
   | Some x -> Some (fn x)
 
-let make_info line logical_line offset col strbef straft isSymbol =
+let make_info line logical_line logical_line_end offset col strbef straft
+    isSymbol =
   let new_pos_info =
     {Ast0.line_start = line; Ast0.line_end = line;
-      Ast0.logical_start = logical_line; Ast0.logical_end = logical_line;
+      Ast0.logical_start = logical_line; Ast0.logical_end = logical_line_end;
       Ast0.column = col; Ast0.offset = offset; } in
   { Ast0.pos_info = new_pos_info;
     Ast0.attachable_start = true; Ast0.attachable_end = true;
@@ -32,52 +33,61 @@ let make_info line logical_line offset col strbef straft isSymbol =
     Ast0.strings_before = strbef; Ast0.strings_after = straft;
     Ast0.isSymbolIdent = isSymbol; }
 
-let clt2info (_,line,logical_line,offset,col,strbef,straft,pos) =
-  make_info line logical_line offset col strbef straft false
+let clt2info (_,line,logical_line,logical_line_end,offset,col,
+	      strbef,straft,pos) =
+  make_info line logical_line logical_line_end offset col strbef straft false
 
-let drop_bef (arity,line,lline,offset,col,strbef,straft,pos) =
-  (arity,line,lline,offset,col,[],straft,pos)
+let drop_bef (arity,line,lline,llineend,offset,col,strbef,straft,pos) =
+  (arity,line,lline,llineend,offset,col,[],straft,pos)
 
-let drop_aft (arity,line,lline,offset,col,strbef,straft,pos) =
-  (arity,line,lline,offset,col,strbef,[],pos)
+let drop_aft (arity,line,lline,llineend,offset,col,strbef,straft,pos) =
+  (arity,line,lline,llineend,offset,col,strbef,[],pos)
 
 (* used for #define, to put aft on ident/( *)
-let get_aft (arity,line,lline,offset,col,strbef,straft,pos) = straft
+let get_aft (arity,line,lline,llineend,offset,col,strbef,straft,pos) = straft
 
-let set_aft aft (arity,line,lline,offset,col,strbef,_,pos) =
-  (arity,line,lline,offset,col,strbef,aft,pos)
+let set_aft aft (arity,line,lline,llineend,offset,col,strbef,_,pos) =
+  (arity,line,lline,llineend,offset,col,strbef,aft,pos)
 
-let drop_pos (arity,line,lline,offset,col,strbef,straft,pos) =
-  (arity,line,lline,offset,col,strbef,straft,[])
+let drop_pos (arity,line,lline,llineend,offset,col,strbef,straft,pos) =
+  (arity,line,lline,llineend,offset,col,strbef,straft,[])
 
 let clt2mcode_ext str isSymbol = function
-    (Data.MINUS,line,lline,offset,col,strbef,straft,pos)       ->
-      (str,Ast0.NONE,make_info line lline offset col strbef straft isSymbol,
+    (Data.MINUS,line,lline,llineend,offset,col,strbef,straft,pos) ->
+      (str,Ast0.NONE,
+       make_info line lline llineend offset col strbef straft isSymbol,
        Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,-1)
-  | (Data.OPTMINUS,line,lline,offset,col,strbef,straft,pos)    ->
-      (str,Ast0.OPT,make_info line lline offset col strbef straft isSymbol,
+  | (Data.OPTMINUS,line,lline,llineend,offset,col,strbef,straft,pos) ->
+      (str,Ast0.OPT,
+       make_info line lline llineend offset col strbef straft isSymbol,
        Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,-1)
-  | (Data.UNIQUEMINUS,line,lline,offset,col,strbef,straft,pos) ->
-      (str,Ast0.UNIQUE,make_info line lline offset col strbef straft isSymbol,
+  | (Data.UNIQUEMINUS,line,lline,llineend,offset,col,strbef,straft,pos) ->
+      (str,Ast0.UNIQUE,
+       make_info line lline llineend offset col strbef straft isSymbol,
        Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,-1)
-  | (Data.PLUS,line,lline,offset,col,strbef,straft,pos)        ->
-      (str,Ast0.NONE,make_info line lline offset col strbef straft isSymbol,
+  | (Data.PLUS,line,lline,llineend,offset,col,strbef,straft,pos) ->
+      (str,Ast0.NONE,
+       make_info line lline llineend offset col strbef straft isSymbol,
        Ast0.PLUS(Ast.ONE),ref pos,-1)
-  | (Data.PLUSPLUS,line,lline,offset,col,strbef,straft,pos)        ->
-      (str,Ast0.NONE,make_info line lline offset col strbef straft isSymbol,
+  | (Data.PLUSPLUS,line,lline,llineend,offset,col,strbef,straft,pos) ->
+      (str,Ast0.NONE,
+       make_info line lline llineend offset col strbef straft isSymbol,
        Ast0.PLUS(Ast.MANY),ref pos,-1)
-  | (Data.CONTEXT,line,lline,offset,col,strbef,straft,pos)     ->
-      (str,Ast0.NONE,make_info line lline offset col strbef straft isSymbol,
+  | (Data.CONTEXT,line,lline,llineend,offset,col,strbef,straft,pos) ->
+      (str,Ast0.NONE,
+       make_info line lline llineend offset col strbef straft isSymbol,
        Ast0.CONTEXT(ref(Ast.NOTHING,
 			Ast0.default_token_info,Ast0.default_token_info)),
        ref pos,-1)
-  | (Data.OPT,line,lline,offset,col,strbef,straft,pos)         ->
-      (str,Ast0.OPT,make_info line lline offset col strbef straft isSymbol,
+  | (Data.OPT,line,lline,llineend,offset,col,strbef,straft,pos) ->
+      (str,Ast0.OPT,
+       make_info line lline llineend offset col strbef straft isSymbol,
        Ast0.CONTEXT(ref(Ast.NOTHING,
 			Ast0.default_token_info,Ast0.default_token_info)),
        ref pos,-1)
-  | (Data.UNIQUE,line,lline,offset,col,strbef,straft,pos)      ->
-      (str,Ast0.UNIQUE,make_info line lline offset col strbef straft isSymbol,
+  | (Data.UNIQUE,line,lline,llineend,offset,col,strbef,straft,pos) ->
+      (str,Ast0.UNIQUE,
+       make_info line lline llineend offset col strbef straft isSymbol,
        Ast0.CONTEXT(ref(Ast.NOTHING,
 			Ast0.default_token_info,Ast0.default_token_info)),
        ref pos,-1)
@@ -644,9 +654,12 @@ let pct_split str =
 
 let parse_middle middle clt =
   let pieces = pct_split middle in
-  let update_clt (a,line,logical_line,offset,col,strbef,straft,pos) chars =
+  let update_clt
+      (a,line,logical_line,logical_line_end,offset,col,strbef,straft,pos)
+      chars =
     (* not sure how to update col: wrong if there are newlines *)
-    (a,line,logical_line,offset+chars,col+chars,strbef,straft,pos) in
+    (a,line,logical_line,logical_line_end,offset+chars,col+chars,
+     strbef,straft,pos) in
   match pieces with
     [] -> failwith "not possible"
   | fst::rest ->
@@ -713,16 +726,17 @@ let check_no_duplicates l =
 	| _ -> loop (y :: rest)) in
   loop l
 
-let update_line (c,l,ll,lex_start,preceeding_spaces,cb,ca,m) line =
+let update_line (c,l,ll,lle,lex_start,preceeding_spaces,cb,ca,m) line =
   let l = l + line in
   let ll = ll + line in
+  let lle = lle + line in
   let lex_start = if line > 0 then 0 else lex_start in
   let preceeding_spaces = if line > 0 then 0 else preceeding_spaces in
-  (c,l,ll,lex_start,preceeding_spaces,cb,ca,m)
+  (c,l,ll,lle,lex_start,preceeding_spaces,cb,ca,m)
 
 let drop_minus_plus l clt =
-  let pclt (_,a,b,c,d,cb,ca,m) = (Data.PLUS,a,b,c,d,cb,ca,m) in
-  let mclt (_,a,b,c,d,cb,ca,m) = (Data.MINUS,a,b,c,d,cb,ca,m) in
+  let pclt (_,a,b,c,d,e,cb,ca,m) = (Data.PLUS,a,b,c,d,e,cb,ca,m) in
+  let mclt (_,a,b,c,d,e,cb,ca,m) = (Data.MINUS,a,b,c,d,e,cb,ca,m) in
   (* not sure this works for all kinds of newlines, cf lexer *)
   let pieces = Str.split (Str.regexp "\n") l in
   if pieces = []

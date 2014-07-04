@@ -21,7 +21,7 @@ let reserved_names =
 (* ----------------------------------------------------------------------- *)
 (* Debugging... *)
 
-let line_type (d,_,_,_,_,_,_,_) = d
+let line_type (d,_,_,_,_,_,_,_,_) = d
 
 let line_type2c tok =
   match line_type tok with
@@ -30,8 +30,8 @@ let line_type2c tok =
   | D.PLUSPLUS -> ":++"
   | D.CONTEXT | D.UNIQUE | D.OPT -> ""
 
-let real_line (_,d,_,_,_,_,_,_) = d
-let log_line  (_,_,d,_,_,_,_,_) = d
+let real_line (_,d,_,_,_,_,_,_,_) = d
+let log_line  (_,_,d,_,_,_,_,_,_) = d
 
 let token2c (tok,_) =
   let add_clt str clt =
@@ -647,7 +647,7 @@ let tokens_script_all table file get_ats lexbuf end_markers :
 (* Split tokens into minus and plus fragments *)
 
 let split t clt =
-  let (d,_,_,_,_,_,_,_) = clt in
+  let (d,_,_,_,_,_,_,_,_) = clt in
   match d with
     D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> ([t],[])
   | D.PLUS | D.PLUSPLUS -> ([],[t])
@@ -1032,7 +1032,7 @@ let token2line (tok,_) =
 
   | PC.TEq(clt) | PC.TAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
   | PC.TPArob(clt) | PC.TPtVirg(clt) ->
-      let (_,line,_,_,_,_,_,_) = clt in Some line
+      let (_,line,_,_,_,_,_,_,_) = clt in Some line
 
   | _ -> None
 
@@ -1083,7 +1083,7 @@ let rec translate_when_true_false = function
 (* In a nest, if the nest is -, all of the nested code must also be -. *)
 let check_nests tokens =
   let is_minus t =
-    let (line_type,a,b,c,d,e,f,g) = get_clt t in
+    let (line_type,a,b,c,d,e,f,g,h) = get_clt t in
     List.mem line_type [D.MINUS;D.OPTMINUS;D.UNIQUEMINUS] in
   let check_minus t =
     match fst t with
@@ -1091,7 +1091,7 @@ let check_nests tokens =
     | _ ->
 	let clt = try Some(get_clt t) with Failure _ -> None in
 	match clt with
-	  Some (line_type,l,ll,c,d,e,f,g) ->
+	  Some (line_type,l,ll,c,d,e,f,g,h) ->
 	    (match line_type with
 	      D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> t
 	    | _ ->
@@ -1114,7 +1114,7 @@ let check_nests tokens =
   outside tokens
 
 let check_parentheses tokens =
-  let clt2line (_,line,_,_,_,_,_,_) = line in
+  let clt2line (_,line,_,_,_,_,_,_,_) = line in
   let rec loop seen_open = function
       [] -> tokens
     | (PC.TOPar(clt),q) :: rest
@@ -1185,10 +1185,12 @@ let find_top_init tokens =
 are not allowed. *)
 
 let rec collect_all_pragmas collected = function
-    (PC.TDirective(s,(_,line,logical_line,offset,col,_,_,pos)),_)::rest ->
+    (PC.TDirective(s,(_,line,logical_line,logical_line_end,
+		      offset,col,_,_,pos)),_)::rest ->
       let i =
 	{ Ast0.line_start = line; Ast0.line_end = line;
-	  Ast0.logical_start = logical_line; Ast0.logical_end = logical_line;
+	  Ast0.logical_start = logical_line;
+	  Ast0.logical_end = logical_line_end;
 	  Ast0.column = col; Ast0.offset = offset; } in
       collect_all_pragmas ((s,i)::collected) rest
   | l -> (List.rev collected,l)
@@ -1224,32 +1226,36 @@ let rec process_pragmas bef skips = function
   | ((PC.TDirective(s,i),_)::_) as l ->
       let (pragmas,rest) = collect_all_pragmas [] l in
       let (pass,rest0) = collect_pass rest in
-      let (_,_,prag_lline,_,_,_,_,_) = i in
+      let (_,_,prag_lline,_,_,_,_,_,_) = i in
       let (next,rest) =
 	match rest0 with [] -> (None,[]) | next::rest -> (Some next,rest) in
       (match (bef,plus_attach true bef,next,plus_attach true next) with
 	(Some bef,PLUS,_,_) ->
-	  let (a,b,c,d,e,strbef,straft,pos) = get_clt bef in
-	  (update_clt bef (a,b,c,d,e,strbef,pragmas,pos))::List.rev skips@
+	  let (a,b,c,d,e,f,strbef,straft,pos) = get_clt bef in
+	  (update_clt bef (a,b,c,d,e,f,strbef,pragmas,pos))::List.rev skips@
 	  pass@process_pragmas None [] rest0
       |	(_,_,Some next,PLUS) ->
-	  let (a,b,lline,d,e,strbef,straft,pos) = get_clt next in
+	  let (a,b,lline,llineend,d,e,strbef,straft,pos) = get_clt next in
 	  (add_bef bef) @ List.rev skips @ pass @
 	  (process_pragmas
-	     (Some (update_clt next (a,b,prag_lline,d,e,pragmas,straft,pos)))
+	     (Some
+		(update_clt next
+		   (a,b,prag_lline,llineend,d,e,pragmas,straft,pos)))
 	     [] rest)
       |	_ ->
 	  (match (bef,plus_attach false bef,next,plus_attach false next) with
 	    (Some bef,PLUS,_,_) ->
-	      let (a,b,c,d,e,strbef,straft,pos) = get_clt bef in
-	      (update_clt bef (a,b,c,d,e,strbef,pragmas,pos))::List.rev skips@
+	      let (a,b,c,d,e,f,strbef,straft,pos) = get_clt bef in
+	      (update_clt bef (a,b,c,d,e,f,strbef,pragmas,pos))::
+	      List.rev skips@
 	      pass@process_pragmas None [] rest0
 	  | (_,_,Some next,PLUS) ->
-	      let (a,b,lline,d,e,strbef,straft,pos) = get_clt next in
+	      let (a,b,lline,llineend,d,e,strbef,straft,pos) = get_clt next in
 	      (add_bef bef) @ List.rev skips @ pass @
 	      (process_pragmas
 		 (Some
-		    (update_clt next (a,b,prag_lline,d,e,pragmas,straft,pos)))
+		    (update_clt next
+		       (a,b,prag_lline,llineend,d,e,pragmas,straft,pos)))
 		 [] rest)
 	  | _ -> failwith "nothing to attach pragma to"))
   | x::xs ->
@@ -1283,7 +1289,7 @@ let minus_to_nothing l =
      code, depending on whether <... is a statement or expression *)
   let is_minus tok =
     try
-      let (d,_,_,_,_,_,_,_) = get_clt tok in
+      let (d,_,_,_,_,_,_,_,_) = get_clt tok in
       (match d with
 	D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> true
       | D.PLUS | D.PLUSPLUS -> false
@@ -1449,17 +1455,17 @@ let prepare_tokens tokens =
 let prepare_mv_tokens tokens =
   detect_types false (detect_attr tokens)
 
-let unminus (d,x1,x2,x3,x4,x5,x6,x7) = (* for hidden variables *)
+let unminus (d,x1,x2,x3,x4,x5,x6,x7,x8) = (* for hidden variables *)
   match d with
-    D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> (D.CONTEXT,x1,x2,x3,x4,x5,x6,x7)
+    D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> (D.CONTEXT,x1,x2,x3,x4,x5,x6,x7,x8)
   | D.PLUS -> failwith "unexpected plus code"
   | D.PLUSPLUS -> failwith "unexpected plus code"
-  | D.CONTEXT | D.UNIQUE | D.OPT -> (D.CONTEXT,x1,x2,x3,x4,x5,x6,x7)
+  | D.CONTEXT | D.UNIQUE | D.OPT -> (D.CONTEXT,x1,x2,x3,x4,x5,x6,x7,x8)
 
 let process_minus_positions x name clt meta =
-  let (arity,ln,lln,offset,col,strbef,straft,pos) = get_clt x in
+  let (arity,ln,lln,llne,offset,col,strbef,straft,pos) = get_clt x in
   let name = Parse_aux.clt2mcode name (unminus clt) in
-  update_clt x (arity,ln,lln,offset,col,strbef,straft,meta name::pos)
+  update_clt x (arity,ln,lln,llne,offset,col,strbef,straft,meta name::pos)
 
 (* first attach positions, then the others, so that positions can refer to
 the larger term represented by the preceding metavariable *)
