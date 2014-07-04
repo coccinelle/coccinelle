@@ -130,12 +130,27 @@ let collect_plus_lines top =
     match mcodekind with
       Ast0.PLUS _ -> insert info.Ast0.pos_info.Ast0.line_start
     | _ -> () in
+  let statement r k s =
+    let mcode info bef = mcode ((),(),info,bef,(),-1) in
+    match Ast0.unwrap s with
+	(* cases for everything with extra mcode *)
+      | Ast0.Decl((info,bef),_) ->
+	  bind (mcode info bef) (k s)
+      |	Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_,(ainfo,aft)) ->
+	  bind (mcode info bef) (bind (k s) (mcode ainfo aft))
+      | Ast0.IfThen(_,_,_,_,_,(info,aft,adj))
+      | Ast0.IfThenElse(_,_,_,_,_,_,_,(info,aft,adj))
+      | Ast0.Iterator(_,_,_,_,_,(info,aft,adj))
+      | Ast0.While(_,_,_,_,_,(info,aft,adj))
+      | Ast0.For(_,_,_,_,_,_,_,_,(info,aft,adj)) ->
+	  bind (k s) (mcode info aft)
+      |	_ -> k s in
   let fn =
     V0.flat_combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing in
+      donothing donothing donothing donothing donothing donothing
+      statement donothing donothing donothing donothing in
   fn.VT0.combiner_rec_top_level top
 
 (* --------------------------------------------------------------------- *)
@@ -216,6 +231,9 @@ let bind c1 c2 =
 let option_default = (*Bind(Neutral,[],[],[],[],[])*)
   Recursor(Neutral,[],[],[])
 
+let contains_added_strings info =
+  not (info.Ast0.strings_before = []) or not (info.Ast0.strings_after = [])
+
 let mcode (_,_,info,mcodekind,pos,_) =
   let offset = info.Ast0.pos_info.Ast0.offset in
   match mcodekind with
@@ -246,7 +264,11 @@ let nc_mcode (_,_,info,mcodekind,pos,_) =
 	 associated with is - or context.  In any case, the context offsets are
 	 used for identification, and this invisible node should not be needed
 	 for this purpose. *)
-      Token(Neutral,offset,mcodekind,[])
+      if contains_added_strings info
+      then
+	(* can we have ++ for strings? *)
+	Token(NotAllMarked,offset,mcodekind,[])
+      else Token(Neutral,offset,mcodekind,[])
   | _ -> failwith "not possible"
 
 let is_context = function Ast0.CONTEXT(_) -> true | _ -> false
@@ -413,9 +435,14 @@ let classify is_minus all_marked table code =
 	    r.VT0.combiner_rec_statement_dots
 	    ender
 	(* cases for everything with extra mcode *)
-      |	Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_,_)
       | Ast0.Decl((info,bef),_) ->
 	  bind (nc_mcode ((),(),info,bef,(),-1)) (k s)
+      | Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_,(ainfo,aft)) ->
+	  (* not sure that the use of start is relevant here *)
+	  let a1 = nc_mcode ((),(),info,bef,(),-1) in
+	  let a2 = nc_mcode ((),(),ainfo,aft,(),-1) in
+	  let b = k s in
+	  bind a1 (bind b a2)
       (* For these, the info of the aft mcode is derived from the else
 	 branch.  These might not correspond for a context if, eg if
 	 only the else branch is replaced.  Thus we take instead the

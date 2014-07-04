@@ -1323,7 +1323,7 @@ let rec pp_any = function
 	    unindent false; print_text s; force_newline(); loop rest
 	| Ast.Indent s :: rest ->
 	    print_text s; force_newline(); loop rest in
-      loop xs; false
+      loop xs; true
   | Ast.Token(x,None) ->
       print_text x; if_open_brace x
   | Ast.Token(x,Some info) ->
@@ -1391,7 +1391,7 @@ in
 	  | (Ast.Directive _::_)
           | (Ast.Rule_elemTag _::_) | (Ast.InitTag _::_)
 	  | (Ast.DeclarationTag _::_) | (Ast.Token ("{",_)::_) ->
-	      force_newline()
+	       force_newline()
           | _ -> () in
       (* print a newline at the beginning, if needed *)
       newline_before();

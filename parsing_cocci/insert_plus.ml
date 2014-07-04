@@ -458,7 +458,7 @@ let collect_plus_nodes root =
 	[] -> []
       |	strings_before ->
 	  let (_,first) = List.hd strings_before in
-	  let (_,last) = List.hd (List.rev strings_before) in
+	  let (l,last) = List.hd (List.rev strings_before) in
 	  let new_pos_info =
 	    {Ast0.line_start = first.Ast0.line_start;
 	      Ast0.line_end = last.Ast0.line_start;
@@ -476,7 +476,7 @@ let collect_plus_nodes root =
   let mcode fn (term,_,info,mcodekind,_,_) =
     match mcodekind with
       Ast0.PLUS c -> [(info,c,fn term)]
-    | Ast0.CONTEXT _ -> let (bef,aft) = extract_strings info in bef@aft
+    | Ast0.CONTEXT _ ->	let (bef,aft) = extract_strings info in bef@aft
     | _ -> [] in
 
   let imcode fn (term,_,info,mcodekind,_,_) =
@@ -488,11 +488,17 @@ let collect_plus_nodes root =
   let info (i,_,_) = let (bef,aft) = extract_strings i in bef@aft in
   let pre_info (i,_) = let (bef,aft) = extract_strings i in bef@aft in
 
-  let do_nothing fn r k e =
+  let do_nothing_extra bef aft fn r k e =
     match Ast0.get_mcodekind e with
       (Ast0.CONTEXT(_)) when not(Ast0.get_index e = root_index) -> []
     | Ast0.PLUS c -> [(Ast0.get_info e,c,fn e)]
-    | _ -> k e in
+    | _ -> bef@(k e)@aft in
+  let do_nothing fn r k e = do_nothing_extra [] [] fn r k e in
+
+  let is_static l =
+    List.exists
+      (function Ast0.FStorage (Ast.Static,_,_,_,_,_) -> true | _ -> false)
+      l in
 
   (* case for everything that is just a wrapper for a simpler thing *)
   (* case for things with bef aft *)
@@ -503,19 +509,19 @@ let collect_plus_nodes root =
     | Ast0.Ty(ty) -> r.VT0.combiner_rec_typeC ty
     | Ast0.TopInit(init) -> r.VT0.combiner_rec_initialiser init
     | Ast0.Decl(bef,decl) ->
-	(pre_info bef) @ (do_nothing mk_statement r k e)
+	 do_nothing_extra (pre_info bef) [] mk_statement r k e
     | Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace,aft) ->
-	(pre_info bef) @ (do_nothing mk_statement r k e) @ (pre_info aft)
+	do_nothing_extra (pre_info bef) (pre_info aft) mk_statement r k e
     | Ast0.IfThen(iff,lp,exp,rp,branch1,aft) ->
-	(do_nothing mk_statement r k e) @ (info aft)
+	do_nothing_extra [] (info aft) mk_statement r k e
     | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,aft) ->
-	(do_nothing mk_statement r k e) @ (info aft)
+	do_nothing_extra [] (info aft) mk_statement r k e
     | Ast0.While(whl,lp,exp,rp,body,aft) ->
-	(do_nothing mk_statement r k e) @ (info aft)
+	do_nothing_extra [] (info aft) mk_statement r k e
     | Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,aft) ->
-	(do_nothing mk_statement r k e) @ (info aft)
+	do_nothing_extra [] (info aft)mk_statement r k e
     | Ast0.Iterator(nm,lp,args,rp,body,aft) ->
-	(do_nothing mk_statement r k e) @ (info aft)
+	do_nothing_extra [] (info aft) mk_statement r k e
     | _ -> do_nothing mk_statement r k e in
 
   (* statementTag is preferred, because it indicates that one statement is
@@ -748,6 +754,7 @@ let insert thing thinginfo into intoinfo =
   let into_end = intoinfo.Ast0.tline_end in
   let into_left_offset = intoinfo.Ast0.left_offset in
   let into_right_offset = intoinfo.Ast0.right_offset in
+
   if thing_end < into_start && thing_start < into_start
   then (thing@into,
 	{{intoinfo with Ast0.tline_start = thing_start}
@@ -998,6 +1005,7 @@ let merge_one : (minus_join_point * Ast0.info * 'a) list *
       Pretty_print_cocci.print_anything "" p;
       Format.print_newline())
     p;
+  Printf.printf "end of plus code\n";
   *)
   match (m,p) with
     (_,[]) -> ()
@@ -1044,31 +1052,33 @@ let reevaluate_contextness =
        Ast0.CONTEXT(mc) -> let (ba,_,_) = !mc in [ba]
      | _ -> [] in
 
-   let donothing r k e =
+   let donothing_extra extra r k e =
      match Ast0.get_mcodekind e with
        Ast0.CONTEXT(mc) ->
-	 if List.exists (function Ast.NOTHING -> false | _ -> true) (k e)
+	 let updates = extra @ (k e) in
+	 if List.exists (function Ast.NOTHING -> false | _ -> true) updates
 	 then Ast0.set_mcodekind e (Ast0.MIXED(mc));
 	 []
      | _ -> let _ = k e in [] in
+   let donothing r k e = donothing_extra [] r k e in
 
    (* a case for everything with bef or aft *)
    let stmt r k e =
      match Ast0.unwrap e with
        Ast0.Decl(bef,decl) ->
-	 (pre_info bef) @ (donothing r k e)
+	 donothing_extra (pre_info bef) r k e
      | Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace,aft) ->
-	 (pre_info bef) @ (donothing r k e) @ (pre_info bef)
+	 donothing_extra ((pre_info bef) @ (pre_info aft)) r k e
      | Ast0.IfThen(iff,lp,exp,rp,branch1,aft) ->
-	 (donothing r k e) @ (info aft)
+	 donothing_extra (info aft) r k e
      | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,aft) ->
-	 (donothing r k e) @ (info aft)
+	 donothing_extra (info aft) r k e
      | Ast0.While(whl,lp,exp,rp,body,aft) ->
-	 (donothing r k e) @ (info aft)
+	 donothing_extra (info aft) r k e
      | Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,aft) ->
-	 (donothing r k e) @ (info aft)
+	 donothing_extra (info aft) r k e
      | Ast0.Iterator(nm,lp,args,rp,body,aft) ->
-	 (donothing r k e) @ (info aft)
+	 donothing_extra (info aft) r k e
      | _ -> donothing r k e in
 
   let res =

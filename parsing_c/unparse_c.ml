@@ -399,7 +399,8 @@ let expand_mcode toks =
         Printf.fprintf stderr "line: %s\n" (Dumper.dump info);
         failwith "not an abstract line"
       );
-      (!(info.Ast_c.comments_tag)).Ast_c.mafter +>
+      (* why nothing for mbefore? *)
+      (Ast_c.get_comments_after info) +>
       List.iter (fun x -> push2 (comment2t2 x) toks_out) in
 
     let pr_barrier ln col = (* marks a position, used around C code *)
