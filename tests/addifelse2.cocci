@@ -16,7 +16,6 @@ fresh identifier backport_drv_data_ready = "backport_" ## drv_data_ready;
 +{
 +       drv_data_ready(sk);
 +}
-+
 +#else
 +
 drv_data_ready(struct sock *sk)
