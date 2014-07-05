@@ -50,17 +50,17 @@ let scan allpatterns i maxlen =
   let negpatterns = ref allnegpatterns in
   let clear_patterns _ = pospatterns := []; negpatterns := [] in
   let ender isalldone =
-    if too_many_changed maxlen
+    (if too_many_changed maxlen
     then badgits := add !git !badgits
     else
       if isalldone
       then
-	begin
-	  (if !pospatterns = [] && !negpatterns = allnegpatterns
+	  if !pospatterns = [] && !negpatterns = allnegpatterns
 	  then res := Git(!git)::!res);
-	  pospatterns := allpospatterns;
-	  negpatterns := allnegpatterns
-	end in
+    if isalldone
+    then
+      (pospatterns := allpospatterns;
+       negpatterns := allnegpatterns) in
   let rec loop cl =
     let line = input_line i in
     match Str.split space line with
