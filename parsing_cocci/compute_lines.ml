@@ -131,8 +131,8 @@ let promote_to_statement_end stm mcodekind =
   let info = Ast0.get_info stm in
   let new_pos_info =
     {info.Ast0.pos_info with
-      Ast0.logical_end = info.Ast0.pos_info.Ast0.logical_start;
-      Ast0.line_end = info.Ast0.pos_info.Ast0.line_start; } in
+      Ast0.logical_start = info.Ast0.pos_info.Ast0.logical_end;
+      Ast0.line_start = info.Ast0.pos_info.Ast0.line_end; } in
   let new_info =
     {info with
      Ast0.pos_info = new_pos_info;
