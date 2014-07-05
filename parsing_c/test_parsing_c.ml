@@ -453,7 +453,7 @@ let test_cpp file =
   let (ast2, _stat) = Parse_c.parse_c_and_cpp false file in
   let dirname = Filename.dirname file in
   let ast = Parse_c.program_of_program2 ast2 in
-  let ast = Cpp_ast_c.cpp_expand_include (cpp_options()) dirname ast in
+  let _ast = Cpp_ast_c.cpp_expand_include (cpp_options()) dirname ast in
 
 
   ()
