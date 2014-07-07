@@ -410,7 +410,10 @@ let do_get_constants constants keywords env neg_pos =
       Ast.Constant(const) ->
 	bind (k e)
 	  (match Ast.unwrap_mcode const with
-	    Ast.String s -> constants s
+	    Ast.String s -> (*constants s*)
+	      (* not useful if the string contains non letters, etc *)
+	      (* seems safer to ignore *)
+	      option_default
 	  | Ast.Char "\\0" -> option_default (* glimpse doesn't like it *)
 	  | Ast.Char s -> option_default (* probably not chars either *)
 	  (* the following were eg keywords "1", but not good for glimpse *)
