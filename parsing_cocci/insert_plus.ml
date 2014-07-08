@@ -74,7 +74,8 @@ it *)
       (donothing Ast0.dotsDecl) (donothing Ast0.dotsCase)
       (donothing Ast0.ident) expression (donothing Ast0.typeC) initialiser
       (donothing Ast0.param) (donothing Ast0.decl) statement
-      (donothing Ast0.forinfo) (donothing Ast0.case_line) topfn in
+      (donothing Ast0.forinfo) (donothing Ast0.case_line)
+      (donothing Ast0.string_fragment) topfn in
   res.VT0.combiner_rec_top_level e
 
 (* --------------------------------------------------------------------- *)
@@ -116,6 +117,7 @@ let create_root_token_table minus =
 	  | Ast0.StmtTag(d) -> Ast0.get_index d
 	  | Ast0.ForInfoTag(d) -> Ast0.get_index d
 	  | Ast0.CaseLineTag(d) -> Ast0.get_index d
+	  | Ast0.StringFragmentTag(d) -> Ast0.get_index d
 	  | Ast0.TopTag(d) -> Ast0.get_index d
 	  | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
 	  | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
@@ -214,8 +216,9 @@ bind to that; not good for isomorphisms *)
     | Ast0.For(_,_,_,_,_,_,_,_,aft)
     | Ast0.Iterator(_,_,_,_,_,aft) ->
 	redo_branched (do_nothing r k s) aft*)
-    | Ast0.FunDecl((info,bef),fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
-	(Toplevel,info,bef)::(k s)
+    | Ast0.FunDecl((info,bef),fninfo,name,lp,params,rp,lbrace,body,rbrace,
+		   (aftinfo,aft)) ->
+	(Toplevel,info,bef)::(k s)@[(Toplevel,aftinfo,aft)]
     | Ast0.Decl((info,bef),decl) ->
 	(Decl,info,bef)::(k s)
     | Ast0.Nest(starter,stmt_dots,ender,whencode,multi) ->
@@ -295,7 +298,7 @@ bind to that; not good for isomorphisms *)
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     edots idots pdots sdots ddots cdots
     ident expression typeC initialiser param decl statement forinfo
-    case_line do_top
+    case_line do_nothing do_top
 
 
 let call_collect_minus context_nodes :
@@ -347,6 +350,9 @@ let call_collect_minus context_nodes :
       | Ast0.ForInfoTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).VT0.combiner_rec_forinfo e)
+      | Ast0.StringFragmentTag(e) ->
+	  (Ast0.get_index e,
+	   (collect_minus_join_points e).VT0.combiner_rec_string_fragment e)
       | Ast0.CaseLineTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).VT0.combiner_rec_case_line e)
@@ -424,6 +430,7 @@ let mk_inc_file x         = Ast.IncFileTag x
 let mk_statement x        = Ast.StatementTag (Ast0toast.statement x)
 let mk_forinfo x          = Ast.ForInfoTag (Ast0toast.forinfo x)
 let mk_case_line x        = Ast.CaseLineTag (Ast0toast.case_line x)
+let mk_string_fragment x  = Ast.StringFragmentTag (Ast0toast.string_fragment x)
 let mk_const_vol x        = Ast.ConstVolTag x
 let mk_token x info       = Ast.Token (x,Some info)
 let mk_meta (_,x) info    = Ast.Token (x,Some info)
@@ -432,7 +439,7 @@ let mk_code x             = Ast.Code (Ast0toast.top_level x)
 let mk_exprdots x  = Ast.ExprDotsTag (Ast0toast.expression_dots x)
 let mk_paramdots x = Ast.ParamDotsTag (Ast0toast.parameter_list x)
 let mk_stmtdots x  = Ast.StmtDotsTag (Ast0toast.statement_dots x)
-let mk_decldots x  = Ast.DeclDotsTag (Ast0toast.declaration_dots x)
+let mk_decldots x  = Ast.AnnDeclDotsTag (Ast0toast.declaration_dots x)
 let mk_casedots x  = failwith "+ case lines not supported"
 let mk_typeC x     = Ast.FullTypeTag (Ast0toast.typeC false x)
 let mk_init x      = Ast.InitTag (Ast0toast.initialiser x)
@@ -451,7 +458,7 @@ let collect_plus_nodes root =
 	[] -> []
       |	strings_before ->
 	  let (_,first) = List.hd strings_before in
-	  let (_,last) = List.hd (List.rev strings_before) in
+	  let (l,last) = List.hd (List.rev strings_before) in
 	  let new_pos_info =
 	    {Ast0.line_start = first.Ast0.line_start;
 	      Ast0.line_end = last.Ast0.line_start;
@@ -469,7 +476,7 @@ let collect_plus_nodes root =
   let mcode fn (term,_,info,mcodekind,_,_) =
     match mcodekind with
       Ast0.PLUS c -> [(info,c,fn term)]
-    | Ast0.CONTEXT _ -> let (bef,aft) = extract_strings info in bef@aft
+    | Ast0.CONTEXT _ ->	let (bef,aft) = extract_strings info in bef@aft
     | _ -> [] in
 
   let imcode fn (term,_,info,mcodekind,_,_) =
@@ -481,11 +488,17 @@ let collect_plus_nodes root =
   let info (i,_,_) = let (bef,aft) = extract_strings i in bef@aft in
   let pre_info (i,_) = let (bef,aft) = extract_strings i in bef@aft in
 
-  let do_nothing fn r k e =
+  let do_nothing_extra bef aft fn r k e =
     match Ast0.get_mcodekind e with
       (Ast0.CONTEXT(_)) when not(Ast0.get_index e = root_index) -> []
     | Ast0.PLUS c -> [(Ast0.get_info e,c,fn e)]
-    | _ -> k e in
+    | _ -> bef@(k e)@aft in
+  let do_nothing fn r k e = do_nothing_extra [] [] fn r k e in
+
+  let is_static l =
+    List.exists
+      (function Ast0.FStorage (Ast.Static,_,_,_,_,_) -> true | _ -> false)
+      l in
 
   (* case for everything that is just a wrapper for a simpler thing *)
   (* case for things with bef aft *)
@@ -496,19 +509,19 @@ let collect_plus_nodes root =
     | Ast0.Ty(ty) -> r.VT0.combiner_rec_typeC ty
     | Ast0.TopInit(init) -> r.VT0.combiner_rec_initialiser init
     | Ast0.Decl(bef,decl) ->
-	(pre_info bef) @ (do_nothing mk_statement r k e)
-    | Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace) ->
-	(pre_info bef) @ (do_nothing mk_statement r k e)
+	 do_nothing_extra (pre_info bef) [] mk_statement r k e
+    | Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace,aft) ->
+	do_nothing_extra (pre_info bef) (pre_info aft) mk_statement r k e
     | Ast0.IfThen(iff,lp,exp,rp,branch1,aft) ->
-	(do_nothing mk_statement r k e) @ (info aft)
+	do_nothing_extra [] (info aft) mk_statement r k e
     | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,aft) ->
-	(do_nothing mk_statement r k e) @ (info aft)
+	do_nothing_extra [] (info aft) mk_statement r k e
     | Ast0.While(whl,lp,exp,rp,body,aft) ->
-	(do_nothing mk_statement r k e) @ (info aft)
+	do_nothing_extra [] (info aft) mk_statement r k e
     | Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,aft) ->
-	(do_nothing mk_statement r k e) @ (info aft)
+	do_nothing_extra [] (info aft)mk_statement r k e
     | Ast0.Iterator(nm,lp,args,rp,body,aft) ->
-	(do_nothing mk_statement r k e) @ (info aft)
+	do_nothing_extra [] (info aft) mk_statement r k e
     | _ -> do_nothing mk_statement r k e in
 
   (* statementTag is preferred, because it indicates that one statement is
@@ -539,7 +552,8 @@ let collect_plus_nodes root =
     (do_nothing mk_ident) (do_nothing mk_expression)
     (do_nothing mk_typeC) (do_nothing mk_init) (do_nothing mk_param)
     (do_nothing mk_declaration)
-    stmt (do_nothing mk_forinfo) (do_nothing mk_case_line) toplevel
+    stmt (do_nothing mk_forinfo) (do_nothing mk_case_line)
+    (do_nothing mk_string_fragment) toplevel
 
 let call_collect_plus context_nodes :
     (int * (Ast0.info * Ast.count * Ast.anything) list) list =
@@ -593,6 +607,9 @@ let call_collect_plus context_nodes :
       | Ast0.CaseLineTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).VT0.combiner_rec_case_line e)
+      | Ast0.StringFragmentTag(e) ->
+	  (Ast0.get_index e,
+	   (collect_plus_nodes e).VT0.combiner_rec_string_fragment e)
       | Ast0.TopTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).VT0.combiner_rec_top_level e)
@@ -737,6 +754,7 @@ let insert thing thinginfo into intoinfo =
   let into_end = intoinfo.Ast0.tline_end in
   let into_left_offset = intoinfo.Ast0.left_offset in
   let into_right_offset = intoinfo.Ast0.right_offset in
+
   if thing_end < into_start && thing_start < into_start
   then (thing@into,
 	{{intoinfo with Ast0.tline_start = thing_start}
@@ -987,6 +1005,7 @@ let merge_one : (minus_join_point * Ast0.info * 'a) list *
       Pretty_print_cocci.print_anything "" p;
       Format.print_newline())
     p;
+  Printf.printf "end of plus code\n";
   *)
   match (m,p) with
     (_,[]) -> ()
@@ -1033,31 +1052,33 @@ let reevaluate_contextness =
        Ast0.CONTEXT(mc) -> let (ba,_,_) = !mc in [ba]
      | _ -> [] in
 
-   let donothing r k e =
+   let donothing_extra extra r k e =
      match Ast0.get_mcodekind e with
        Ast0.CONTEXT(mc) ->
-	 if List.exists (function Ast.NOTHING -> false | _ -> true) (k e)
+	 let updates = extra @ (k e) in
+	 if List.exists (function Ast.NOTHING -> false | _ -> true) updates
 	 then Ast0.set_mcodekind e (Ast0.MIXED(mc));
 	 []
      | _ -> let _ = k e in [] in
+   let donothing r k e = donothing_extra [] r k e in
 
    (* a case for everything with bef or aft *)
    let stmt r k e =
      match Ast0.unwrap e with
        Ast0.Decl(bef,decl) ->
-	 (pre_info bef) @ (donothing r k e)
-     | Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace) ->
-	 (pre_info bef) @ (donothing r k e)
+	 donothing_extra (pre_info bef) r k e
+     | Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace,aft) ->
+	 donothing_extra ((pre_info bef) @ (pre_info aft)) r k e
      | Ast0.IfThen(iff,lp,exp,rp,branch1,aft) ->
-	 (donothing r k e) @ (info aft)
+	 donothing_extra (info aft) r k e
      | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,aft) ->
-	 (donothing r k e) @ (info aft)
+	 donothing_extra (info aft) r k e
      | Ast0.While(whl,lp,exp,rp,body,aft) ->
-	 (donothing r k e) @ (info aft)
+	 donothing_extra (info aft) r k e
      | Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,aft) ->
-	 (donothing r k e) @ (info aft)
+	 donothing_extra (info aft) r k e
      | Ast0.Iterator(nm,lp,args,rp,body,aft) ->
-	 (donothing r k e) @ (info aft)
+	 donothing_extra (info aft) r k e
      | _ -> donothing r k e in
 
   let res =
@@ -1065,7 +1086,8 @@ let reevaluate_contextness =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing
-      donothing donothing donothing stmt donothing donothing donothing in
+      donothing donothing donothing stmt donothing donothing donothing
+      donothing in
   res.VT0.combiner_rec_top_level
 
 (* --------------------------------------------------------------------- *)

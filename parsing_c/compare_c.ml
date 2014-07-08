@@ -162,82 +162,10 @@ let normal_form_token adjust_cvs x =
  *
  * todo: do iso between if() S and  if() { S }
  *)
-let compare_ast filename1 filename2  =
-
-  let xs =
-    match !Flag_parsing_c.diff_lines with
-      None ->
-	Common.cmd_to_list ("diff -u -b -B "^filename1^ " "  ^ filename2)
-    | Some n ->
-	Common.cmd_to_list ("diff -U "^n^" -b -B "^filename1^" "^filename2) in
-
-  (* get rid of the --- and +++ lines *)
-  let xs =
-    if null xs
-    then xs
-    else Common.drop 2 xs
-  in
-
-
-  let process_filename filename =
-    (* no need for parsing of format strings *)
-    let (c, _stat) = Parse_c.parse_c_and_cpp false filename in
-    let c = List.map fst c in
-    c +> Lib_parsing_c.al_program +> normal_form_program
-  in
-
-  let c1 = process_filename filename1 in
-  let c2 = process_filename filename2 in
-
-  let error = ref 0 in
-  let pb_notparsed = ref 0 in
-
-  let res =
-    if List.length c1 <> List.length c2
-    then Pb "not same number of entities (func, decl, ...)"
-    else
-      begin
-	let rec check = function
-        | Declaration a, Declaration b -> if not (a =*= b) then incr error
-        | Definition a, Definition b ->   if not (a =*= b) then incr error
-        | EmptyDef a, EmptyDef b ->       if not (a =*= b) then incr error
-        | MacroTop (a1,b1,c1), MacroTop (a2,b2,c2) ->
-            if not ((a1,b1,c1) =*= (a2,b2,c2)) then incr error
-        | CppTop (Include {i_include = a}), CppTop (Include {i_include = b}) ->
-            if not (a =*= b) then incr error
-        | CppTop Define _, CppTop Define _ ->
-            raise Todo
-            (* if not (a =*= b) then incr error *)
-        | NotParsedCorrectly a, NotParsedCorrectly b ->
-            if not (a =*= b) then incr pb_notparsed
-        | NotParsedCorrectly a, _ ->
-            (* Pb only in generated file *)
-            incr error;
-
-        | _, NotParsedCorrectly b ->
-            incr pb_notparsed
-        | FinalDef a, FinalDef b -> if not (a =*= b) then incr error
-
-        | IfdefTop a, IfdefTop b -> if not (a =*= b) then incr error
-
-        | Namespace (tlsa, iia), Namespace (tlsb, iib) -> 
-	    if not (iia =*= iib) then incr error;
-	    zip tlsa tlsb +> List.iter check
-        | (FinalDef _|EmptyDef _|
-           MacroTop (_, _, _)|IfdefTop _|
-           CppTop _|Definition _|Declaration _|Namespace _), _ -> incr error
-       in
-        zip c1 c2 +> List.iter check;
-        (match () with
-        | _ when !pb_notparsed > 0 && !error =|= 0 ->
-            PbOnlyInNotParsedCorrectly ""
-        | _ when !error > 0 -> Pb ""
-        | _ -> Correct
-        )
-      end
-  in
-  res, xs
-
+(* I have removed this function as it was not used anywhere.
+ *     let compare_ast filename1 filename2  = ...
+ * /Iago
+ *)
 
 
 (*****************************************************************************)
@@ -249,7 +177,7 @@ let compare_ast filename1 filename2  =
  * Here I compare token, and so have still the TCommentCpp and TCommentMisc
  * so at least detect such differences.
  *
- * Morover compare_ast is not very precise in his report when it
+ * Moreover compare_ast is not very precise in his report when it
  * detects a difference. So token_diff is better.
  *
  * I do token_diff but I use programCelement2, so that

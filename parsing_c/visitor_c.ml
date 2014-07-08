@@ -332,7 +332,7 @@ let rec vk_expr = fun bigf expr ->
     | ParenExpr (e) -> exprf e
 
     | New  (None, t)   -> vk_argument bigf t
-    | New  (Some ts, t)   -> 
+    | New  (Some ts, t)   ->
         vk_argument_list bigf ts;
 	vk_argument bigf t
     | Delete e -> vk_expr bigf e
@@ -389,6 +389,15 @@ and vk_statement = fun bigf (st: Ast_c.statement) ->
 
     | Selection  (If (e, st1, st2)) ->
         vk_expr bigf e; statf st1; statf st2;
+    | Selection  (Ifdef_Ite (e, st1, st2)) ->
+        vk_expr bigf e;
+        statf st1;
+        statf st2;
+    | Selection  (Ifdef_Ite2 (e, st1, st2, st3)) ->
+        vk_expr bigf e;
+        statf st1;
+        statf st2;
+        statf st3;
     | Selection  (Switch (e, st)) ->
         vk_expr bigf e; statf st;
     | Iteration  (While (e, st)) ->
@@ -415,6 +424,8 @@ and vk_statement = fun bigf (st: Ast_c.statement) ->
     | Asm asmbody -> vk_asmbody bigf asmbody
     | NestedFunc def -> vk_def bigf def
     | MacroStmt -> ()
+
+    | Exec (code) -> List.iter (vk_exec_code bigf) code
 
   in statf st
 
@@ -492,6 +503,12 @@ and vk_attribute = fun bigf attr ->
   | Attribute s, ii ->
       iif ii
 
+
+and vk_exec_code = fun bigf e ->
+  let iif ii = vk_ii bigf ii in
+  match e with
+    ExecEval name, ii -> iif ii; vk_expr bigf name
+  | ExecToken, ii -> iif ii
 
 (* ------------------------------------------------------------------------ *)
 
@@ -770,7 +787,7 @@ and vk_define_val bigf defval =
   | DefineInit ini -> vk_ini bigf ini
     (* christia: added multi *)
   | DefineMulti stmts ->
-      List.fold_left (fun () d -> vk_statement bigf d) () stmts 
+      List.fold_left (fun () d -> vk_statement bigf d) () stmts
   | DefineTodo ->
       pr2_once "DefineTodo";
       ()
@@ -895,7 +912,9 @@ and vk_node = fun bigf node ->
     | F.IfdefElse    (info) ->  vk_ifdef_directive bigf info
     | F.IfdefEndif    (info) ->  vk_ifdef_directive bigf info
 
-    | F.Break    (st,((),ii)) -> iif ii
+    | F.IfdefIteHeader ii -> iif ii
+
+    | F.Break    (st,((),ii),_) -> iif ii
     | F.Continue (st,((),ii)) -> iif ii
     | F.Default  (st,((),ii)) -> iif ii
     | F.Return   (st,((),ii)) -> iif ii
@@ -915,10 +934,14 @@ and vk_node = fun bigf node ->
         iif ii;
         vk_asmbody bigf asmbody
 
+    | F.Exec (st,(code,ii)) ->
+	iif ii;
+	List.iter (vk_exec_code bigf) code
+
     | (
         F.TopNode|F.EndNode|
         F.ErrorExit|F.Exit|F.Enter|F.LoopFallThroughNode|F.FallThroughNode|
-        F.AfterNode|F.FalseNode|F.TrueNode|F.InLoopNode|
+        F.AfterNode _|F.FalseNode|F.TrueNode _|F.InLoopNode|
         F.Fake
       ) -> ()
 
@@ -1009,6 +1032,7 @@ let vk_enum_fields_splitted = vk_splitted vk_oneEnum
 let vk_inis_splitted = vk_splitted vk_ini
 let vk_ident_list_splitted = vk_splitted vk_name
 let vk_string_fragments_splitted = vk_splitted vk_string_fragment
+let vk_exec_code_list_splitted = vk_splitted vk_exec_code
 
 (* ------------------------------------------------------------------------ *)
 let vk_cst = fun bigf (cst, ii) ->
@@ -1126,7 +1150,7 @@ let rec vk_expr_s = fun bigf expr ->
       | ParenExpr (e)    -> ParenExpr (exprf e)
 
       | New (None, t)    -> New (None, vk_argument_s bigf t)
-      | New (Some ts, t) -> 
+      | New (Some ts, t) ->
 	  New (Some (ts +> List.map (fun (e,ii) ->
 	    vk_argument_s bigf e, iif ii)), vk_argument_s bigf t)
       | Delete e      -> Delete (vk_expr_s bigf e)
@@ -1194,6 +1218,12 @@ and vk_statement_s = fun bigf st ->
       | ExprStatement (Some e) -> ExprStatement (Some ((vk_expr_s bigf) e))
       | Selection (If (e, st1, st2)) ->
           Selection  (If ((vk_expr_s bigf) e, statf st1, statf st2))
+      | Selection (Ifdef_Ite (e, st1, st2)) ->
+          Selection  (Ifdef_Ite (vk_expr_s bigf e,statf st1,statf st2))
+      | Selection (Ifdef_Ite2 (e, st1, st2, st3)) ->
+          Selection  (Ifdef_Ite2 (vk_expr_s bigf e,statf st1
+                                                  ,statf st2
+                                                  ,statf st3))
       | Selection (Switch (e, st))   ->
           Selection  (Switch ((vk_expr_s bigf) e, statf st))
       | Iteration (While (e, st))    ->
@@ -1248,6 +1278,7 @@ and vk_statement_s = fun bigf st ->
       | Asm asmbody -> Asm (vk_asmbody_s bigf asmbody)
       | NestedFunc def -> NestedFunc (vk_def_s bigf def)
       | MacroStmt -> MacroStmt
+      |	Exec(code) -> Exec(List.map (vk_exec_code_s bigf) code)
     in
     st', vk_ii_s bigf ii
   in statf st
@@ -1354,6 +1385,12 @@ and vk_attribute_s = fun bigf attr ->
   match attr with
   | Attribute s, ii ->
       Attribute s, iif ii
+
+and vk_exec_code_s = fun bigf e ->
+  let iif ii = vk_ii_s bigf ii in
+  match e with
+    ExecEval name, ii -> ExecEval (vk_expr_s bigf name), iif ii
+  | ExecToken, ii -> ExecToken, iif ii
 
 
 
@@ -1560,8 +1597,8 @@ and vk_toplevel_s = fun bigf p ->
     | Namespace (tls, ii) -> Namespace (List.map (vk_toplevel_s bigf) tls, ii)
   in f (k, bigf) p
 
-and vk_program_s = fun bigf xs ->
-  xs +> List.map (vk_toplevel_s bigf)
+and vk_program_s : visitor_c_s -> toplevel list -> toplevel list =
+      fun bigf -> List.map (vk_toplevel_s bigf)
 
 
 and vk_cpp_directive_s = fun bigf top ->
@@ -1778,8 +1815,11 @@ and vk_node_s = fun bigf node ->
 
     | F.MacroStmt (st, ((),ii)) -> F.MacroStmt (st, ((),iif ii))
     | F.Asm (st, (body,ii)) -> F.Asm (st, (vk_asmbody_s bigf body,iif ii))
+    | F.Exec(st, (code,ii)) ->
+	F.Exec(st,((List.map (vk_exec_code_s bigf) code),ii))
 
-    | F.Break    (st,((),ii)) -> F.Break    (st,((),iif ii))
+    | F.Break    (st,((),ii),fromswitch) ->
+	F.Break    (st,((),iif ii),fromswitch)
     | F.Continue (st,((),ii)) -> F.Continue (st,((),iif ii))
     | F.Default  (st,((),ii)) -> F.Default  (st,((),iif ii))
     | F.Return   (st,((),ii)) -> F.Return   (st,((),iif ii))
@@ -1797,11 +1837,13 @@ and vk_node_s = fun bigf node ->
     | F.IfdefElse (info) -> F.IfdefElse (vk_ifdef_directive_s bigf info)
     | F.IfdefEndif (info) -> F.IfdefEndif (vk_ifdef_directive_s bigf info)
 
+    | F.IfdefIteHeader ii -> F.IfdefIteHeader (iif ii)
+
     | (
         (
           F.TopNode|F.EndNode|
           F.ErrorExit|F.Exit|F.Enter|F.LoopFallThroughNode|F.FallThroughNode|
-          F.AfterNode|F.FalseNode|F.TrueNode|F.InLoopNode|
+          F.AfterNode _|F.FalseNode|F.TrueNode _|F.InLoopNode|
           F.Fake
         ) as x) -> x
 
@@ -1855,3 +1897,4 @@ let vk_enum_fields_splitted_s = vk_splitted_s vk_oneEnum_s
 let vk_inis_splitted_s = vk_splitted_s vk_ini_s
 let vk_ident_list_splitted_s = vk_splitted_s vk_name_s
 let vk_string_fragments_splitted_s = vk_splitted_s vk_string_fragment_s
+let vk_exec_code_list_splitted_s = vk_splitted_s vk_exec_code_s

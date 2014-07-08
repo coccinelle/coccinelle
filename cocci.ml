@@ -30,14 +30,7 @@ let cprogram_of_file saved_typedefs saved_macros parse_strings file =
 let cprogram_of_file_cached parse_strings file =
   let ((program2,typedefs,macros), _stat) =
     Parse_c.parse_cache parse_strings file in
-  if !Flag_cocci.ifdef_to_if
-  then
-    let p2 =
-      program2 +> Parse_c.with_program2 (fun asts ->
-	Cpp_ast_c.cpp_ifdef_statementize asts
-	  ) in
-    (p2,typedefs,macros)
-  else (program2,typedefs,macros)
+  (program2,typedefs,macros)
 
 let cfile_of_program program2_with_ppmethod outf =
   Unparse_c.pp_program program2_with_ppmethod outf
@@ -80,7 +73,7 @@ let sp_of_file2 file iso =
     then code
     else (Hashtbl.remove _hparse (file,iso); redo())
   with Not_found -> redo()
-    
+
 let sp_of_file file iso    =
   Common.profile_code "parse cocci" (fun () -> sp_of_file2 file iso)
 
@@ -119,13 +112,13 @@ let ast_to_flow_with_error_messages a =
 
 let ctls_of_ast2 ast (ua,fua,fuas) pos =
   List.map2
-    (function ast -> function (ua,(fua,(fuas,pos))) ->
-      List.combine
-	(if !Flag_cocci.popl
-	then Popl.popl ast
-	else Asttoctl2.asttoctl ast (ua,fua,fuas) pos)
-	(Asttomember.asttomember ast ua))
-    ast (List.combine ua (List.combine fua (List.combine fuas pos)))
+    (function ast -> function (ua,fua,fuas,pos) ->
+      let ast1 = if !Flag_cocci.popl
+                    then Popl.popl ast
+	                  else Asttoctl2.asttoctl ast (ua,fua,fuas) pos in
+      List.combine ast1 (Asttomember.asttomember ast ua)
+	    )
+    ast (Common.combine4 ua fua fuas pos)
 
 let ctls_of_ast ast ua pl =
   Common.profile_code "asttoctl2" (fun () -> ctls_of_ast2 ast ua pl)
@@ -853,7 +846,7 @@ type rule_info = {
   used_after: Ast_cocci.meta_name list;
   ruleid: int;
   was_matched: bool ref;
-} 
+}
 
 type toplevel_cocci_info_script_rule = {
   scr_ast_rule:
@@ -1886,7 +1879,7 @@ let pre_engine2 (coccifile, isofile) =
 	    Ast_cocci.InitialScriptRule(rname,x,deps,mvs,y))
 	  r
       end in
-  
+
   let initialized_languages =
     List.fold_left
       (function languages ->

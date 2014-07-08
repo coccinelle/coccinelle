@@ -27,7 +27,7 @@ let brace_to_semi (_,arity,info,mcodekind,pos,adj) =
 
 let collect_function (stm : Ast0.statement) =
   match Ast0.unwrap stm with
-    Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
+    Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace,_) ->
       let stg =
 	match
 	  List.filter (function Ast0.FStorage(_) -> true | _ -> false)
@@ -62,7 +62,7 @@ let drop_positions =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing in
+    donothing donothing donothing donothing in
   res.VT0.rebuilder_rec_statement
 
 let get_all_functions rule =
@@ -130,19 +130,18 @@ and strip =
      ref [],-1) in
 
   (* need a case for everything that has an unvisited component and can be in
-     a function prototype.  Also get rid of constraints because pcre
-     constraints cannot be compared. *)
+     a function prototype. *)
 
   let ident r k e =
     donothing r k
       (Ast0.rewrap e
 	 (match Ast0.unwrap e with
 	   Ast0.MetaId(nm,constraints,seed,pure) ->
-	     Ast0.MetaId(nm,Ast.IdNoConstraint,seed,Ast0.Pure)
+	     Ast0.MetaId(nm,constraints,seed,Ast0.Pure)
 	 | Ast0.MetaFunc(nm,constraints,pure) ->
-	     Ast0.MetaFunc(nm,Ast.IdNoConstraint,Ast0.Pure)
+	     Ast0.MetaFunc(nm,constraints,Ast0.Pure)
 	 | Ast0.MetaLocalFunc(nm,constraints,pure) ->
-	     Ast0.MetaLocalFunc(nm,Ast.IdNoConstraint,Ast0.Pure)
+	     Ast0.MetaLocalFunc(nm,constraints,Ast0.Pure)
 	 | e -> e)) in
 
   let typeC r k e =
@@ -166,7 +165,7 @@ and strip =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
     ident donothing typeC donothing param donothing donothing donothing
-    donothing donothing
+    donothing donothing donothing
 
 and changed_proto = function
     (mname,mdef,mproto,None) -> true
@@ -299,7 +298,7 @@ let fresh_names old_name mdef dec =
 			     name,sem))))) in
 	      let (def_metavars,newdef) =
 		match Ast0.unwrap mdef with
-		  Ast0.FunDecl(x,fninfo,name,lp,params,rp,lb,body,rb) ->
+		  Ast0.FunDecl(x,fninfo,name,lp,params,rp,lb,body,rb,y) ->
 		    let (def_metavars,def_l) =
 		      let params = Ast0.undots params in
 		      List.split
@@ -309,7 +308,7 @@ let fresh_names old_name mdef dec =
 		     Ast0.rewrap mdef
 		       (Ast0.FunDecl(x,fninfo,name,lp,
 				     Ast0.rewrap params (Ast0.DOTS(def_l)),
-				     rp,lb,body,rb)))
+				     rp,lb,body,rb,y)))
 		   | _ -> failwith "unexpected function definition" in
 	      (metavars,def_metavars,newdec,newdef)
 	  | _ -> res)
@@ -385,7 +384,7 @@ let reinsert mdefs minus =
     List.map
       (function x ->
 	match Ast0.unwrap x with
-	  Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
+	  Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace,_) ->
 	    (name,x)
 	| _ -> failwith "bad mdef")
       mdefs in
@@ -394,7 +393,7 @@ let reinsert mdefs minus =
       match Ast0.unwrap x with
 	Ast0.NONDECL(stmt) ->
 	  (match Ast0.unwrap stmt with
-	    Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
+	    Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace,_) ->
 	      (try Ast0.rewrap x (Ast0.NONDECL(List.assoc name table))
 	      with Not_found -> x)
 	  | _ -> x)
@@ -402,7 +401,8 @@ let reinsert mdefs minus =
 	  (match Ast0.undots rule_elem_dots with
 	    [f] ->
 	      (match Ast0.unwrap f with
-		Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
+		Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,
+			     rbrace,_) ->
 		  (try
 		    Ast0.rewrap x
 		      (Ast0.CODE

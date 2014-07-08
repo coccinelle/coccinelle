@@ -84,6 +84,13 @@ let is_cpp_instruction = function
       -> true
   | _ -> false
 
+let is_cpp_else = function
+  | TIfdefelse _ -> true
+  | _            -> false
+
+let is_cpp_endif = function
+  | TEndif _ -> true
+  | _        -> false
 
 let is_gcc_token = function
   | Tasm _
@@ -128,6 +135,15 @@ let is_eof = function
 (* end of macro *)
 let is_eom = function
   | TDefEOL _ -> true
+  | _ -> false
+
+let is_else = function
+  | Telse _ -> true
+  | _       -> false
+
+let is_if_or_else = function
+  | Tif _ | Telse _
+      -> true
   | _ -> false
 
 let is_statement = function
@@ -207,6 +223,61 @@ let is_ident_like = function
 
   | _ -> false
 
+(*****************************************************************************)
+(* Matching functions for 'Nasty Undisciplined Cpp' *)
+(*****************************************************************************)
+
+(* matches 'if ... else ...'
+ * where there is no other if the '...'.
+ *)
+let match_simple_if_else
+    : token list -> (token * token list * token * token list) option
+  = function
+  | (Tif _ as tok_if)::rest_if ->
+    begin try
+      let (body,tok_else,rest_else) = split_when is_else rest_if in
+      if List.exists is_if_or_else body
+         or List.exists is_if_or_else rest_else
+         then None (* no nested if/else wanted *)
+         else Some (tok_if,body,tok_else,rest_else)
+    with Not_found -> None end
+  | _ -> None
+
+(* matches '#ifdef ... #endif ...' *)
+let match_cpp_simple_ifdef_endif_aux
+    : token list -> (token * token list * token * token list) option
+  = function
+  | (TIfdef _ as tok_ifdef)::rest_ifdef ->
+    begin try
+      let (body,tok_endif,rest_endif) = split_when is_cpp_endif rest_ifdef in
+      Some (tok_ifdef,body,tok_endif,rest_endif)
+    with Not_found -> None end
+  | _ -> None
+
+(* matches '#ifdef ...1 #endif ...2'
+ * where there is no other #ifdef within '...1'
+ *)
+let match_cpp_simple_ifdef_endif (xs :token list)
+      : (token * token list * token * token list) option
+  = match match_cpp_simple_ifdef_endif_aux xs with
+  | Some (tok_ifdef,body,tok_endif,rest_endif)
+      when not(List.exists is_cpp_instruction body)
+        (* no nested CPP wanted *)
+      -> Some (tok_ifdef,body,tok_endif,rest_endif)
+  | _ -> None
+
+let match_cpp_simple_ifdef_else_endif (xs :token list)
+      : (token * token list * token * token list * token * token list) option
+  = match match_cpp_simple_ifdef_endif_aux xs with
+  | Some (tok_ifdef,body,tok_endif,rest_endif) ->
+    begin try
+      let (body_if,tok_else,body_else) = split_when is_cpp_else body in
+      if List.exists is_cpp_instruction body_if
+         or List.exists is_cpp_instruction body_else
+         then None (* no nested CPP wanted *)
+         else Some (tok_ifdef,body_if,tok_else,body_else,tok_endif,rest_endif)
+    with Not_found -> None end
+  | _ -> None
 
 (*****************************************************************************)
 (* Visitors *)
@@ -287,6 +358,10 @@ let info_of_tok = function
   | TIfdefMisc           (b, _, i) -> i
   | TIfdefVersion           (b, _, i) -> i
 
+  | TUifdef              (i) -> i
+  | TUelseif             (i) -> i
+  | TUendif              (i) -> i
+
   | TOPar                (i) -> i
   | TCPar                (i) -> i
   | TOBrace              (i) -> i
@@ -349,6 +424,7 @@ let info_of_tok = function
   | Tstruct              (i) -> i
   | Tenum                (i) -> i
   | Tdecimal             (i) -> i
+  | Texec                (i) -> i
   | Ttypedef             (i) -> i
   | Tunion               (i) -> i
   | Tbreak               (i) -> i
@@ -456,6 +532,10 @@ let visitor_info_of_tok f = function
   | TIfdefMisc           (b, t, i) -> TIfdefMisc        (b, t, f i)
   | TIfdefVersion        (b, t, i) -> TIfdefVersion     (b, t, f i)
 
+  | TUifdef              (i) -> TUifdef              (f i)
+  | TUelseif             (i) -> TUelseif             (f i)
+  | TUendif              (i) -> TUendif              (f i)
+
   | TOPar                (i) -> TOPar                (f i)
   | TCPar                (i) -> TCPar                (f i)
   | TOBrace              (i) -> TOBrace              (f i)
@@ -518,6 +598,7 @@ let visitor_info_of_tok f = function
   | Tstruct              (i) -> Tstruct              (f i)
   | Tenum                (i) -> Tenum                (f i)
   | Tdecimal             (i) -> Tdecimal             (f i)
+  | Texec                (i) -> Texec                (f i)
   | Ttypedef             (i) -> Ttypedef             (f i)
   | Tunion               (i) -> Tunion               (f i)
   | Tbreak               (i) -> Tbreak               (f i)

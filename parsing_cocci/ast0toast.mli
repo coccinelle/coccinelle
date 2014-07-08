@@ -16,8 +16,9 @@ val statement_dots :
     Ast0_cocci.statement Ast0_cocci.dots -> Ast_cocci.statement Ast_cocci.dots
 val declaration_dots :
     Ast0_cocci.declaration Ast0_cocci.dots ->
-      Ast_cocci.declaration Ast_cocci.dots
+      Ast_cocci.annotated_decl Ast_cocci.dots
 val case_line : Ast0_cocci.case_line -> Ast_cocci.case_line
+val string_fragment : Ast0_cocci.string_fragment -> Ast_cocci.string_fragment
 val typeC : bool (*allminus*) -> Ast0_cocci.typeC -> Ast_cocci.fullType
 val declaration : Ast0_cocci.declaration -> Ast_cocci.declaration
 val parameterTypeDef :

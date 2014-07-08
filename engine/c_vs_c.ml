@@ -42,7 +42,7 @@ let (>&&>) = X.(>&&>)
 let return = X.return
 let fail = X.fail
 
-let (option: 'a matcher -> ('a option matcher)) = fun f t1 t2 ->
+let option: 'a matcher -> ('a option matcher) = fun f t1 t2 ->
   match (t1,t2) with
   | (Some t1, Some t2) ->
       f t1 t2 >>= (fun t ->

@@ -3,6 +3,7 @@
 virtual after_start
 
 @initialize:ocaml@
+@@
 
 let tbl = Hashtbl.create(100)
 

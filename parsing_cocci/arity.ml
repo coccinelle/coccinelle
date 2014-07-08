@@ -167,10 +167,10 @@ let rec ident opt_allowed tgt i =
       Ast0.rewrap i (Ast0.DisjId(starter,id_list,mids,ender))
   | Ast0.OptIdent(_) | Ast0.UniqueIdent(_) | Ast0.AsIdent _ ->
       failwith "unexpected code"
-	
+
 (* --------------------------------------------------------------------- *)
 (* Expression *)
-	
+
 let make_exp =
   make_opt_unique
     (function x -> Ast0.OptExp x)
@@ -916,6 +916,14 @@ and statement tgt stm =
       let exp = expression arity exp in
       let sem = mcode sem in
       make_rule_elem stm tgt arity (Ast0.ReturnExpr(ret,exp,sem))
+  | Ast0.Exec(exec,lang,code,sem) ->
+      let arity =
+	stm_same (mcode2line exec) (List.map mcode2arity [exec;lang;sem]) in
+      let exec = mcode exec in
+      let lang = mcode lang in
+      let code = dots (exec_code arity) code in
+      let sem = mcode sem in
+      make_rule_elem stm tgt arity (Ast0.Exec(exec,lang,code,sem))
   | Ast0.MetaStmt(name,pure) ->
       let arity = stm_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
@@ -1036,7 +1044,7 @@ and statement tgt stm =
 	     (expression Ast0.NONE))
 	  whn in
       make_rule_elem stm tgt arity (Ast0.Stars(dots,whn))
-  | Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace) ->
+  | Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace,aft) ->
       let arity =
 	all_same true tgt (mcode2line lp)
 	  ((List.map mcode2arity [lp;rp;lbrace;rbrace]) @ (fninfo2arity fi)) in
@@ -1049,7 +1057,7 @@ and statement tgt stm =
       let body = dots (statement arity) body in
       let rbrace = mcode rbrace in
       make_rule_elem stm tgt arity
-	(Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace))
+	(Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace,aft))
   | Ast0.Include(inc,s) ->
       let arity =
 	all_same true tgt (mcode2line inc) [mcode2arity inc; mcode2arity s] in
@@ -1201,6 +1209,27 @@ and case_line tgt c =
       |	_ -> ());
       Ast0.rewrap c (Ast0.DisjCase(starter,case_lines,mids,ender))
   | Ast0.OptCase(_) -> failwith "unexpected OptCase"
+
+and make_exec_code =
+  make_opt_unique
+    (function x -> failwith "opt not allowed for exec code")
+    (function x -> failwith "unique not allowed for exec code")
+
+and exec_code tgt e =
+  match Ast0.unwrap e with
+    Ast0.ExecEval(colon,id) ->
+      let arity = all_same false tgt (mcode2line colon) [mcode2arity colon] in
+      let colon = mcode colon in
+      let id = expression tgt id in
+      make_exec_code e tgt arity (Ast0.ExecEval(colon,id))
+  | Ast0.ExecToken(tok) ->
+      let arity = all_same false tgt (mcode2line tok) [mcode2arity tok] in
+      let tok = mcode tok in
+      make_exec_code e tgt arity (Ast0.ExecToken(tok))
+  | Ast0.ExecDots(dots) ->
+      let arity = all_same false tgt (mcode2line dots) [mcode2arity dots] in
+      let dots = mcode dots in
+      make_exec_code e tgt arity (Ast0.ExecDots(dots))
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)

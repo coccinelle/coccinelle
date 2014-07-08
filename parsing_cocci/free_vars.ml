@@ -431,6 +431,11 @@ let collect_in_plus_term =
 
   (* case for things with bef/aft mcode *)
 
+  let annotated_decl decl =
+    match Ast.unwrap decl with
+      Ast.DElem(bef,_,_) -> bef
+    | _ -> failwith "not possible" in
+
   let astfvrule_elem recursor k re =
     match Ast.unwrap re with
       Ast.FunHeader(bef,_,fi,nm,_,params,_) ->
@@ -458,15 +463,17 @@ let collect_in_plus_term =
 	  (bind nm_metas
 	     (bind param_metas
 		(bind (cip_mcodekind recursor bef) (k re))))
-    | Ast.Decl(bef,_,_) ->
-	bind (cip_mcodekind recursor bef) (k re)
+    | Ast.Decl decl ->
+	bind (cip_mcodekind recursor (annotated_decl decl)) (k re)
+    | Ast.ForHeader(fr,lp,Ast.ForDecl(decl),e2,sem2,e3,rp) ->
+	bind (cip_mcodekind recursor (annotated_decl decl)) (k re)
     | _ -> k re in
 
   let astfvstatement recursor k s =
     match Ast.unwrap s with
       Ast.IfThen(_,_,(_,_,_,aft)) | Ast.IfThenElse(_,_,_,_,(_,_,_,aft))
     | Ast.While(_,_,(_,_,_,aft)) | Ast.For(_,_,(_,_,_,aft))
-    | Ast.Iterator(_,_,(_,_,_,aft)) ->
+    | Ast.Iterator(_,_,(_,_,_,aft)) | Ast.FunDecl(_,_,_,_,(_,_,_,aft)) ->
 	bind (k s) (cip_mcodekind recursor aft)
     | _ -> k s in
 
@@ -793,6 +800,9 @@ let astfvs metavars bound =
       | Ast.Iterator(header,body,(_,_,_,aft)) ->
 	  let (unbound,_,fresh,inherited) = classify (cip_plus aft) [] in
 	  Ast.Iterator(header,body,(unbound,fresh,inherited,aft))
+      |	Ast.FunDecl(header,lbrace,body,rbrace,(_,_,_,aft)) ->
+	  let (unbound,_,fresh,inherited) = classify (cip_plus aft) [] in
+	  Ast.FunDecl(header,lbrace,body,rbrace,(unbound,fresh,inherited,aft))
       |	s -> s in
 
     let (matched,munbound,fresh,_) = classify free minus_free in

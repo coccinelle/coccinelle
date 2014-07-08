@@ -1,5 +1,5 @@
 (* create an index for each constructor *)
-(* current max is 165 *)
+(* current max is 170 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -166,7 +166,7 @@ let parameterTypeDef p =
 
 let statement s =
   match Ast0.unwrap s with
-    Ast0.FunDecl(bef,fninfo,name,lp,params,rp,lbrace,body,rbrace) -> [68]
+    Ast0.FunDecl(bef,fninfo,name,lp,params,rp,lbrace,body,rbrace,aft) -> [68]
   | Ast0.Decl(bef,decl) -> [69]
   | Ast0.Seq(lbrace,body,rbrace) -> [70]
   | Ast0.ExprStatement(exp,sem) -> [71]
@@ -183,6 +183,7 @@ let statement s =
   | Ast0.Goto(goto,l,sem) -> [145]
   | Ast0.Return(ret,sem) -> [77]
   | Ast0.ReturnExpr(ret,exp,sem) -> [78]
+  | Ast0.Exec(exec,lang,code,sem) -> [170]
   | Ast0.MetaStmt(name,_) -> [79]
   | Ast0.MetaStmtList(name,_) -> [80]
   | Ast0.Disj(_,statement_dots_list,_,_) -> [81]
@@ -219,6 +220,13 @@ let case_line c =
   | Ast0.Case(case,exp,colon,code) -> [127]
   | Ast0.DisjCase(_,case_lines,_,_) -> [107]
   | Ast0.OptCase(case) -> [128]
+
+let string_fragment f =
+  match Ast0.unwrap f with
+    Ast0.ConstantFragment(str) -> [166]
+  | Ast0.FormatFragment(pct,fmt) -> [167]
+  | Ast0.Strdots(dots) -> [168]
+  | Ast0.MetaFormatList(pct,name,lenname) -> [169]
 
 let top_level t =
   match Ast0.unwrap t with

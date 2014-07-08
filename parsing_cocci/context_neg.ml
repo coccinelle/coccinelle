@@ -32,6 +32,7 @@ let set_mcodekind x mcodekind =
   | Ast0.StmtTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.ForInfoTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.CaseLineTag(d) -> Ast0.set_mcodekind d mcodekind
+  | Ast0.StringFragmentTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.TopTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
   | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
@@ -58,6 +59,7 @@ let set_index x index =
   | Ast0.StmtTag(d) -> Ast0.set_index d index
   | Ast0.ForInfoTag(d) -> Ast0.set_index d index
   | Ast0.CaseLineTag(d) -> Ast0.set_index d index
+  | Ast0.StringFragmentTag(d) -> Ast0.set_index d index
   | Ast0.TopTag(d) -> Ast0.set_index d index
   | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
   | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
@@ -83,6 +85,7 @@ let get_index = function
   | Ast0.StmtTag(d) -> Index.statement d
   | Ast0.ForInfoTag(d) -> Index.forinfo d
   | Ast0.CaseLineTag(d) -> Index.case_line d
+  | Ast0.StringFragmentTag(d) -> Index.string_fragment d
   | Ast0.TopTag(d) -> Index.top_level d
   | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
   | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
@@ -127,12 +130,27 @@ let collect_plus_lines top =
     match mcodekind with
       Ast0.PLUS _ -> insert info.Ast0.pos_info.Ast0.line_start
     | _ -> () in
+  let statement r k s =
+    let mcode info bef = mcode ((),(),info,bef,(),-1) in
+    match Ast0.unwrap s with
+	(* cases for everything with extra mcode *)
+      | Ast0.Decl((info,bef),_) ->
+	  bind (mcode info bef) (k s)
+      |	Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_,(ainfo,aft)) ->
+	  bind (mcode info bef) (bind (k s) (mcode ainfo aft))
+      | Ast0.IfThen(_,_,_,_,_,(info,aft,adj))
+      | Ast0.IfThenElse(_,_,_,_,_,_,_,(info,aft,adj))
+      | Ast0.Iterator(_,_,_,_,_,(info,aft,adj))
+      | Ast0.While(_,_,_,_,_,(info,aft,adj))
+      | Ast0.For(_,_,_,_,_,_,_,_,(info,aft,adj)) ->
+	  bind (k s) (mcode info aft)
+      |	_ -> k s in
   let fn =
     V0.flat_combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing in
+      donothing donothing donothing donothing donothing donothing
+      statement donothing donothing donothing donothing in
   fn.VT0.combiner_rec_top_level top
 
 (* --------------------------------------------------------------------- *)
@@ -213,6 +231,9 @@ let bind c1 c2 =
 let option_default = (*Bind(Neutral,[],[],[],[],[])*)
   Recursor(Neutral,[],[],[])
 
+let contains_added_strings info =
+  not (info.Ast0.strings_before = []) or not (info.Ast0.strings_after = [])
+
 let mcode (_,_,info,mcodekind,pos,_) =
   let offset = info.Ast0.pos_info.Ast0.offset in
   match mcodekind with
@@ -243,7 +264,11 @@ let nc_mcode (_,_,info,mcodekind,pos,_) =
 	 associated with is - or context.  In any case, the context offsets are
 	 used for identification, and this invisible node should not be needed
 	 for this purpose. *)
-      Token(Neutral,offset,mcodekind,[])
+      if contains_added_strings info
+      then
+	(* can we have ++ for strings? *)
+	Token(NotAllMarked,offset,mcodekind,[])
+      else Token(Neutral,offset,mcodekind,[])
   | _ -> failwith "not possible"
 
 let is_context = function Ast0.CONTEXT(_) -> true | _ -> false
@@ -410,9 +435,14 @@ let classify is_minus all_marked table code =
 	    r.VT0.combiner_rec_statement_dots
 	    ender
 	(* cases for everything with extra mcode *)
-      |	Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_)
       | Ast0.Decl((info,bef),_) ->
 	  bind (nc_mcode ((),(),info,bef,(),-1)) (k s)
+      | Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_,(ainfo,aft)) ->
+	  (* not sure that the use of start is relevant here *)
+	  let a1 = nc_mcode ((),(),info,bef,(),-1) in
+	  let a2 = nc_mcode ((),(),ainfo,aft,(),-1) in
+	  let b = k s in
+	  bind a1 (bind b a2)
       (* For these, the info of the aft mcode is derived from the else
 	 branch.  These might not correspond for a context if, eg if
 	 only the else branch is replaced.  Thus we take instead the
@@ -428,9 +458,10 @@ let classify is_minus all_marked table code =
       | Ast0.For(start,_,_,_,_,_,_,_,(info,aft,adj)) ->
 	  let mcode_info (_,_,info,_,_,_) = info in
 	  bind (k s) (nc_mcode ((),(),mcode_info start,aft,(),adj))
-      |	_ -> k s
+      |	_ -> k s) in
 
-) in
+  let string_fragment r k s =
+    compute_result Ast0.string_fragment s (k s) in
 
   let do_top builder r k e = compute_result builder e (k e) in
 
@@ -441,7 +472,8 @@ let classify is_minus all_marked table code =
       (do_nothing Ast0.dotsParam) (do_nothing Ast0.dotsStmt)
       (do_nothing Ast0.dotsDecl) (do_nothing Ast0.dotsCase)
       ident expression typeC initialiser param declaration
-      statement (do_nothing Ast0.forinfo) case_line (do_top Ast0.top) in
+      statement (do_nothing Ast0.forinfo) case_line string_fragment
+      (do_top Ast0.top) in
   combiner.VT0.combiner_rec_top_level code
 
 (* --------------------------------------------------------------------- *)
@@ -655,8 +687,8 @@ let equal_parameterTypeDef p1 p2 =
 
 let rec equal_statement s1 s2 =
   match (Ast0.unwrap s1,Ast0.unwrap s2) with
-    (Ast0.FunDecl(_,fninfo1,_,lp1,_,rp1,lbrace1,_,rbrace1),
-     Ast0.FunDecl(_,fninfo2,_,lp2,_,rp2,lbrace2,_,rbrace2)) ->
+    (Ast0.FunDecl(_,fninfo1,_,lp1,_,rp1,lbrace1,_,rbrace1,_),
+     Ast0.FunDecl(_,fninfo2,_,lp2,_,rp2,lbrace2,_,rbrace2,_)) ->
        (List.length fninfo1) = (List.length fninfo2) &&
        List.for_all2 equal_fninfo fninfo1 fninfo2 &&
        equal_mcode lp1 lp2 && equal_mcode rp1 rp2 &&
@@ -707,6 +739,9 @@ let rec equal_statement s1 s2 =
       equal_mcode ret1 ret2 && equal_mcode sem1 sem2
   | (Ast0.ReturnExpr(ret1,_,sem1),Ast0.ReturnExpr(ret2,_,sem2)) ->
       equal_mcode ret1 ret2 && equal_mcode sem1 sem2
+  | (Ast0.Exec(exec1,lang1,_,sem1),Ast0.Exec(exec2,lang2,_,sem2)) ->
+      equal_mcode exec1 exec2 && equal_mcode lang1 lang2 &&
+      equal_mcode sem1 sem2
   | (Ast0.MetaStmt(name1,_),Ast0.MetaStmt(name2,_))
   | (Ast0.MetaStmtList(name1,_),Ast0.MetaStmtList(name2,_)) ->
       equal_mcode name1 name2
@@ -823,7 +858,7 @@ let contextify_all =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing do_nothing do_nothing do_nothing
+    do_nothing do_nothing do_nothing do_nothing do_nothing
 
 let contextify_whencode =
   let bind x y = () in
@@ -963,20 +998,20 @@ let rec is_init s =
 let rec is_decl s =
   match Ast0.unwrap s with
     Ast0.Decl(_,e) -> true
-  | Ast0.FunDecl(_,_,_,_,_,_,_,_,_) -> true
+  | Ast0.FunDecl(_,_,_,_,_,_,_,_,_,_) -> true
   | Ast0.Disj(_,stmts,_,_) -> isall is_decl stmts
   | _ -> false
 
 let rec is_fndecl s =
   match Ast0.unwrap s with
-    Ast0.FunDecl(_,_,_,_,_,_,_,_,_) -> true
+    Ast0.FunDecl(_,_,_,_,_,_,_,_,_,_) -> true
   | Ast0.Disj(_,stmts,_,_) -> isall is_fndecl stmts
   | _ -> false
 
 let rec is_toplevel s =
   match Ast0.unwrap s with
     Ast0.Decl(_,e) -> true
-  | Ast0.FunDecl(_,_,_,_,_,_,_,_,_) -> true
+  | Ast0.FunDecl(_,_,_,_,_,_,_,_,_,_) -> true
   | Ast0.Disj(_,stmts,_,_) -> isall is_toplevel stmts
   | Ast0.ExprStatement(Some fc,_) ->
       (match Ast0.unwrap fc with

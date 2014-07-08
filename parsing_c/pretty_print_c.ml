@@ -160,7 +160,7 @@ let mk_pretty_printers
     | ParenExpr (e), [i1;i2] -> pr_elem i1; pp_expression e; pr_elem i2;
 
     | New   (None, t),     [i1] -> pr_elem i1; pp_argument t
-    | New   (Some ts, t),     [i1; i2; i3] -> 
+    | New   (Some ts, t),     [i1; i2; i3] ->
 	pr_elem i1; pr_elem i2; pp_arg_list ts; pr_elem i3; pp_argument t
     | Delete(t),     [i1] -> pr_elem i1; pp_expression t
 
@@ -186,7 +186,7 @@ let mk_pretty_printers
 	    pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str s)));
       pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "*/");
     end
-     
+
   and pp_arg_list es = pp_list pp_argument es
 
   and pp_argument argument =
@@ -268,16 +268,25 @@ and pp_string_format (e,ii) =
            ';' hence the [] for ii *)
     | ExprStatement (Some e), [] -> pp_expression e;
     | Selection  (If (e, st1, st2)), i1::i2::i3::is ->
-        pr_elem i1; pr_space(); pr_elem i2; pp_expression e; pr_elem i3;
-	indent_if_needed st1 (function _ -> pp_statement st1);
-        (match (Ast_c.get_st_and_ii st2, is) with
-        | ((ExprStatement None, []), [])  -> ()
-        | ((ExprStatement None, []), [iifakend])  -> pr_elem iifakend
-        | _st2, [i4;iifakend] -> pr_elem i4;
-	    indent_if_needed st2 (function _ -> pp_statement st2);
-	    pr_elem iifakend
-        | x -> raise (Impossible 96)
-        )
+        pp_ifthen e st1 i1 i2 i3;
+        pp_else st2 is
+    | Selection  (Ifdef_Ite (e, st1, st2)), i1::i2::i3::i4::is ->
+        pr_elem i1;
+        pp_ifthen e st1 i2 i3 i4;
+        pp_else st2 is
+    | Selection (Ifdef_Ite2 (e, st1, st2, st3)), i1::i2::i3::i4::is ->
+        pr_elem i1;
+        pp_ifthen e st1 i2 i3 i4;
+        (* else #else S #endif *)
+	(match is with
+          [i4;i5;i6;iifakend] ->
+            pr_elem i4; (* else *)
+            pr_elem i5; (* #else *)
+            indent_if_needed st2 (function _ -> pp_statement st2);
+            pr_elem i6; (* #endif *)
+            indent_if_needed st3 (function _ -> pp_statement st3);
+            pr_elem iifakend
+	| _ -> raise (Impossible 90))
     | Selection  (Switch (e, st)), [i1;i2;i3;iifakend] ->
         pr_elem i1; pr_space(); pr_elem i2; pp_expression e; pr_elem i3;
 	indent_if_needed st (function _-> pp_statement st); pr_elem iifakend
@@ -351,16 +360,21 @@ and pp_string_format (e,ii) =
     | MacroStmt, ii ->
         ii +> List.iter pr_elem ;
 
+    | Exec(code), [exec;lang;sem] ->
+	pr_elem exec; pr_space(); pr_elem lang; pr_space();
+	pp_list2 pp_exec_code code; pr_elem sem
+
     | (Labeled (Case  (_,_))
     | Labeled (CaseRange  (_,_,_)) | Labeled (Default _)
     | Compound _ | ExprStatement _
     | Selection  (If (_, _, _)) | Selection  (Switch (_, _))
+    | Selection (Ifdef_Ite _) | Selection (Ifdef_Ite2 _)
     | Iteration  (While (_, _)) | Iteration  (DoWhile (_, _))
     | Iteration  (For (_, (_,_), (_, _), _))
     | Iteration  (MacroIteration (_,_,_))
     | Jump ((Continue|Break|Return)) | Jump (ReturnExpr _)
     | Jump (GotoComputed _)
-    | Decl _
+    | Decl _ | Exec _
 	), _ -> raise (Impossible 98)
 
   and pp_statement_seq = function
@@ -369,12 +383,32 @@ and pp_string_format (e,ii) =
     | CppDirectiveStmt cpp -> pp_directive cpp
     | IfdefStmt2 (ifdef, xxs) -> pp_ifdef_tree_sequence ifdef xxs
 
+  and pp_ifthen e st1 i1 i2 i3 =
+        (* if (<e>) *)
+        pr_elem i1; pr_space(); pr_elem i2; pp_expression e; pr_elem i3;
+        indent_if_needed st1 (function _ -> pp_statement st1);
+  and pp_else st2 is =
+        match (Ast_c.get_st_and_ii st2, is) with
+          | ((ExprStatement None, []), [])  -> ()
+          | ((ExprStatement None, []), [iifakend])  -> pr_elem iifakend
+          | _st2, [i4;iifakend] ->
+              pr_elem i4;
+              indent_if_needed st2 (function _ -> pp_statement st2);
+              pr_elem iifakend
+          | _st2, [i4;i5;iifakend] -> (* else #endif S *)
+              pr_elem i4;
+              pr_elem i5;
+              indent_if_needed st2 (function _ -> pp_statement st2);
+              pr_elem iifakend
+          | x -> raise (Impossible 96)
+
+
 (* ifdef XXX elsif YYY elsif ZZZ endif *)
   and pp_ifdef_tree_sequence ifdef xxs =
     match ifdef with
     | if1::ifxs ->
-	pp_ifdef if1;
-	pp_ifdef_tree_sequence_aux  ifxs xxs
+        pp_ifdef if1;
+        pp_ifdef_tree_sequence_aux  ifxs xxs
     | _ -> raise (Impossible 99)
 
 (* XXX elsif YYY elsif ZZZ endif *)
@@ -417,6 +451,11 @@ and pp_string_format (e,ii) =
 		pr_elem icpar
 	    | _ -> raise (Impossible 100)))
         ))
+
+  and pp_exec_code = function
+    ExecEval name, [colon] -> pr_elem colon; pp_expression name
+  | ExecToken, [tok] -> pr_elem tok
+  | _ -> raise (Impossible 101)
 
 
 (* ---------------------- *)
@@ -594,7 +633,9 @@ and pp_string_format (e,ii) =
 
   and pp_field_list fields = fields +>  Common.print_between pr_nl pp_field
   and pp_field = function
-      DeclarationField(FieldDeclList(onefield_multivars,iiptvirg))->
+      DeclarationField
+	(FieldDeclList(onefield_multivars,[iiptvirg;ifakestart])) ->
+	pr_elem ifakestart;
         (match onefield_multivars with
           x::xs ->
 	    (* handling the first var. Special case, with the
@@ -610,7 +651,7 @@ and pp_string_format (e,ii) =
                   | Some name -> Some (get_s_and_info_of_name name)
                 in
 		pp_type_with_ident identinfo None typ Ast_c.noattr;
-		
+
 	    | (BitField (nameopt, typ, iidot, expr)), iivirg ->
                       (* first var cannot have a preceding ',' *)
 		assert (List.length iivirg =|= 0);
@@ -657,9 +698,10 @@ and pp_string_format (e,ii) =
 
 	| [] -> raise (Impossible 108)
 	      ); (* onefield_multivars *)
-	assert (List.length iiptvirg =|= 1);
-	iiptvirg +> List.iter pr_elem;
+	pr_elem iiptvirg
 
+    | DeclarationField(FieldDeclList(onefield_multivars,_)) ->
+	failwith "wrong number of tokens"
 
     | MacroDeclField ((s, es), ii)  ->
         let (iis, lp, rp, iiend, ifakestart) =
@@ -1216,7 +1258,7 @@ and pp_init (init, iinit) =
 
     | IfdefTop ifdefdir -> pp_ifdef ifdefdir
 
-    | Namespace (tls, [i1; i2; i3; i4]) -> 
+    | Namespace (tls, [i1; i2; i3; i4]) ->
 	pr_elem i1; pr_elem i2; pr_elem i3;
 	List.iter pp_toplevel tls;
 	pr_elem i4;
@@ -1337,7 +1379,7 @@ and pp_init (init, iinit) =
 	pr2 "XXX"
 
 
-    | F.Break    (st,((),ii)) ->
+    | F.Break    (st,((),ii),fromswitch) ->
         (* iif ii *)
 	pr2 "XXX"
     | F.Continue (st,((),ii)) ->
@@ -1381,6 +1423,7 @@ and pp_init (init, iinit) =
         *)
 	pr2 "XXX"
 
+    | F.Exec(st,(code,ii)) -> pr2 "XXX"
 
     | F.IfdefHeader (info) ->
 	pp_ifdef info
@@ -1389,13 +1432,16 @@ and pp_init (init, iinit) =
     | F.IfdefEndif (info) ->
 	pp_ifdef info
 
+    | F.IfdefIteHeader _ii ->
+        pr2 "XXX"
+
     | F.DefineTodo ->
 	pr2 "XXX"
 
 
     | (F.TopNode|F.EndNode|
       F.ErrorExit|F.Exit|F.Enter|F.LoopFallThroughNode|F.FallThroughNode|
-      F.AfterNode|F.FalseNode|F.TrueNode|F.InLoopNode|
+      F.AfterNode _|F.FalseNode|F.TrueNode _|F.InLoopNode|
       F.Fake) ->
         pr2 "YYY" in
 
@@ -1425,18 +1471,29 @@ and pp_init (init, iinit) =
 (* Here we do not use (mcode, env). It is a simple C pretty printer. *)
 let pr_elem info =
   let s = Ast_c.str_of_info info in
-  if !Flag_parsing_c.pretty_print_comment_info then begin
-    let before = !(info.comments_tag).mbefore in
-    if not (null before) then begin
-      pp "-->";
-      before +> List.iter (fun (comment_like, pinfo) ->
-        let s = pinfo.Common.str in
-        pp s
-      );
-      pp "<--";
-    end;
-  end;
-  pp s
+  if !Flag_parsing_c.pretty_print_comment_info
+  then
+    (match get_comments_before info with
+      [] -> ()
+    | before ->
+	pp "-->";
+	before +> List.iter (fun (comment_like, pinfo) ->
+          let s = pinfo.Common.str in
+          pp s
+	    );
+	pp "<--");
+  pp s;
+  if !Flag_parsing_c.pretty_print_comment_info
+  then
+    (match get_comments_after info with
+      [] -> ()
+    | before ->
+	pp "==>";
+	before +> List.iter (fun (comment_like, pinfo) ->
+          let s = pinfo.Common.str in
+          pp s
+	    );
+	pp "<==")
 
 let pr_space _ = Format.print_space()
 

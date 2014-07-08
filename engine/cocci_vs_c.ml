@@ -653,8 +653,6 @@ module type PARAM =
       (A.meta_name A.mcode, (string Ast_c.wrap, Ast_c.il) either list) matcher
     val distrf_pragmainfo :
       (A.meta_name A.mcode, Ast_c.pragmainfo) matcher
-    val distrf_ident_list :
-      (A.meta_name A.mcode, (Ast_c.name, Ast_c.il) either list) matcher
 
     val distrf_enum_fields :
       (A.meta_name A.mcode, (B.oneEnumType, B.il) either list) matcher
@@ -664,6 +662,12 @@ module type PARAM =
 
     val distrf_cst :
       (A.meta_name A.mcode, (B.constant, string) either B.wrap) matcher
+
+    val distrf_ident_list :
+      (A.meta_name A.mcode, (Ast_c.name, Ast_c.il) either list) matcher
+
+    val distrf_exec_code_list :
+      (A.meta_name A.mcode, (Ast_c.exec_code, Ast_c.il) either list) matcher
 
     val cocciExp :
       (A.expression, B.expression) matcher -> (A.expression, F.node) matcher
@@ -1557,6 +1561,47 @@ and string_format ea eb =
               return (A.MetaFormat(ida,constraints,keep,inherited) +> wa,eb)))
 
 (* ------------------------------------------------------------------------- *)
+
+and exec_code_list eas ebs =
+  let match_dots ea =
+    match A.unwrap ea with
+      A.ExecDots(mcode) -> Some (mcode, None)
+    |  _ -> None in
+  let build_dots (mcode,_) = A.ExecDots(mcode) in
+  let match_comma ea = None in
+  let build_comma _ = failwith "no commas" in
+  let match_metalist ea = None in
+  let build_metalist ea (ida,leninfo,keep,inherited) =
+    failwith "no metalist" in
+  let mktermval v = failwith "no metavariables" in
+  let special_cases ea eas ebs = None in
+  list_matcher match_dots build_dots match_comma build_comma
+    match_metalist build_metalist mktermval
+    special_cases exec_code X.distrf_exec_code_list
+    B.split_nocomma B.unsplit_nocomma
+    Lib_parsing_c.ii_of_exec_code_list (function x -> Some x) eas ebs
+
+and exec_code ea (eb,ii) =
+  X.all_bound (A.get_inherited ea) >&&>
+  let wa x = A.rewrap ea x in
+  match A.unwrap ea,eb with
+    A.ExecEval(colon1,id1),B.ExecEval(id2) ->
+      let colon2 = tuple_of_list1 ii in
+      tokenf colon1 colon2 >>= (fun colon1 colon2 ->
+      expression id1 id2 >>= (fun id1 id2 ->
+	return(
+	  A.ExecEval(colon1,id1) +> wa,
+	  (B.ExecEval(id2),[colon2]))))
+  | A.ExecToken(tok1),B.ExecToken ->
+      let tok2 = tuple_of_list1 ii in
+      tokenf tok1 tok2 >>= (fun tok1 tok2 ->
+	return(
+	  A.ExecToken(tok1) +> wa,
+	  (B.ExecToken,[tok2])))
+  | A.ExecDots(dots), eb -> failwith "not possible"
+  | _,_ -> fail
+
+(* ------------------------------------------------------------------------- *)
 and (ident_cpp: info_ident -> (A.ident, B.name) matcher) =
  fun infoidb ida idb ->
    match idb with
@@ -2135,6 +2180,16 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
   | _, (B.MacroDecl _ |B.MacroDeclInit _ |B.DeclList _) -> fail
 
 
+and annotated_decl decla declb =
+  match A.unwrap decla with
+    A.Ddots _ -> failwith "not possible"
+  | A.DElem(mckstart, allminus, decl) ->
+      declaration (mckstart, allminus, decl) declb >>=
+      fun (mckstart, allminus, decl) declb ->
+	return
+	  (A.DElem(mckstart, allminus, decl) +> A.rewrap decla,
+	   declb)
+
 and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
  X.all_bound (A.get_inherited decla) >&&>
  match A.unwrap decla, declb with
@@ -2186,7 +2241,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
        tokenf lba lbb >>= (fun lba lbb ->
        tokenf rba rbb >>= (fun rba rbb ->
-       struct_fields (A.undots declsa) declsb >>=(fun undeclsa declsb ->
+       struct_fields (A.undots declsa) declsb >>= (fun undeclsa declsb ->
          let declsa = redots declsa undeclsa in
 
          (match A.unwrap tya2 with
@@ -2431,18 +2486,12 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 
 
 
-  | A.DisjDecl declas, declb ->
+   | A.DisjDecl declas, declb ->
       declas +> List.fold_left (fun acc decla ->
         acc >|+|>
             (* (declaration (mckstart, allminus, decla) declb) *)
             (onedecl allminus decla (declb,iiptvirgb, iistob))
       ) fail
-
-
-
-   (* only in struct type decls *)
-   | A.Ddots(dots,whencode), _ ->
-       raise (Impossible 34)
 
    | A.OptDecl _,    _ | A.UniqueDecl _,     _ ->
        failwith "not handling Opt/Unique Decl"
@@ -2723,7 +2772,7 @@ and initialiser_comma (x,xcomma) (y, commay) =
   | _ -> raise (Impossible 38) (* unsplit_iicomma wrong *)
 
 (* ------------------------------------------------------------------------- *)
-and (struct_fields: (A.declaration list, B.field list) matcher) =
+and (struct_fields: (A.annotated_decl list, B.field list) matcher) =
  fun eas ebs ->
   let match_dots ea =
     match A.unwrap ea with
@@ -2734,11 +2783,18 @@ and (struct_fields: (A.declaration list, B.field list) matcher) =
   let build_comma ia1 = failwith "not possible" in
   let match_metalist ea =
     match A.unwrap ea with
-      A.MetaFieldList(ida,leninfo,keep,inherited) ->
-	Some(ida,leninfo,keep,inherited,None)
+      A.DElem(mckstart,allminus,d) ->
+	(match A.unwrap d with
+	  A.MetaFieldList(ida,leninfo,keep,inherited) ->
+	    Some(ida,leninfo,keep,inherited,None)
+	| _ -> None)
     | _ -> None in
-  let build_metalist _ (ida,leninfo,keep,inherited) =
-    A.MetaFieldList(ida,leninfo,keep,inherited) in
+  let build_metalist ea (ida,leninfo,keep,inherited) =
+    match A.unwrap ea with
+      A.DElem(mckstart,allminus,d) ->
+	A.DElem(mckstart,allminus,
+		(A.rewrap ea (A.MetaFieldList(ida,leninfo,keep,inherited))))
+    | _ -> failwith "not possible" in
   let mktermval v =
     (* drop empty ii information, because nothing between elements *)
     let v = List.map Ast_c.unwrap v in
@@ -2770,85 +2826,145 @@ and (struct_fields: (A.declaration list, B.field list) matcher) =
     filter_fields eas (make_ebs ebs) >>=
   (fun eas ebs -> return (eas,unmake_ebs ebs))
 
-and (struct_field: (A.declaration, B.field) matcher) = fun fa fb ->
+and (struct_field: (A.annotated_decl, B.field) matcher) =
+  fun fa fb ->
+    match A.unwrap fa with
+      A.Ddots _ -> failwith "dots should be treated otherwise"
+    | A.DElem(mckstart,allminus,ifa) ->
 
-  match A.unwrap fa,fb with
-  | A.MetaField (ida,keep,inherited), _ ->
-      let max_min _ =
-	Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_field fb) in
-      X.envf keep inherited (ida, Ast_c.MetaFieldVal fb, max_min) (fun () ->
-        X.distrf_field ida fb
-          ) >>= (fun ida fb ->
-	    return ((A.MetaField (ida, keep, inherited))+> A.rewrap fa,
-		    fb))
-  | _,B.DeclarationField (B.FieldDeclList (onefield_multivars,iiptvirg)) ->
+	(match A.unwrap ifa,fb with
+	| A.MetaField (ida,keep,inherited), _ ->
+	    let max_min _ =
+	      Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_field fb) in
+	    X.envf keep inherited (ida, Ast_c.MetaFieldVal fb, max_min)
+	      (fun () ->
+		X.distrf_field ida fb
+		  ) >>= (fun ida fb ->
+		    return
+		      (A.DElem
+			 (mckstart,allminus,
+			  (A.MetaField (ida, keep, inherited))+> A.rewrap ifa)
+			 +> A.rewrap fa,
+		       fb))
+	| _,B.DeclarationField (B.FieldDeclList ([onevar,iivirg],iiptvirg)) ->
 
-    let iiptvirgb = tuple_of_list1 iiptvirg in
+        (* no modif possible on iistartb; included for parallelism with
+	   DeclList *)
+	    let (iiptvirgb,iifakestart) = tuple_of_list2 iiptvirg in
 
-    (match onefield_multivars with
-    | [] -> raise (Impossible 39)
-    | [onevar,iivirg] ->
-      assert (null iivirg);
-      (match onevar with
-      | B.BitField (sopt, typb, _, expr) ->
-          pr2_once "warning: bitfield not handled by ast_cocci";
-          fail
-      | B.Simple (None, typb) ->
-          pr2_once "warning: unnamed struct field not handled by ast_cocci";
-          fail
-      | B.Simple (Some nameidb, typb) ->
+	    assert (null iivirg);
+	    (match onevar with
+	    | B.BitField (sopt, typb, _, expr) ->
+		pr2_once "warning: bitfield not handled by ast_cocci";
+		fail
+	    | B.Simple (None, typb) ->
+		pr2_once
+		  "warning: unnamed struct field not handled by ast_cocci";
+		fail
+	    | B.Simple (Some nameidb, typb) ->
+		X.tokenf_mck mckstart iifakestart >>=
+		(fun mckstart iifakestart ->
+		  (* build a declaration from a struct field *)
+		  let (fake_var,iisto) = build_decl nameidb typb iivirg in
+		  onedecl allminus ifa (fake_var,iiptvirgb,iisto) >>=
+		  (fun ifa (fake_var,iiptvirgb,iisto) ->
+		    let (onevar,iivirg) = unbuild_decl fake_var in
 
-          (* build a declaration from a struct field *)
-          let allminus = false in
-          let iisto = [] in
-          let stob = B.NoSto, false in
-          let fake_var =
-            ({B.v_namei = Some (nameidb, B.NoInit);
-              B.v_type = typb;
-              B.v_storage = stob;
-              B.v_local = Ast_c.NotLocalDecl;
-              B.v_attr = Ast_c.noattr;
-              B.v_type_bis = ref None;
+		    return (
+		    (A.DElem(mckstart,allminus,ifa) +> A.rewrap fa),
+		    ((B.DeclarationField
+			(B.FieldDeclList([onevar, iivirg],
+					 [iiptvirgb;iifakestart]))))))))
+
+	| _,B.DeclarationField (B.FieldDeclList (xs,iiptvirg)) ->
+
+	    let (iiptvirgb,iifakestart) = tuple_of_list2 iiptvirg in
+
+	    let indexify l =
+	      let rec loop n = function
+		  [] -> []
+		| x::xs -> (n,x)::(loop (n+1) xs) in
+	      loop 0 l in
+	    let rec repln n vl cur = function
+		[] -> []
+	      | x::xs ->
+		  if n = cur then vl :: xs else x :: (repln n vl (cur+1) xs) in
+	    let doit _ =
+	      (indexify xs) +> List.fold_left (fun acc (n,(onevar,iivirg)) ->
+          (* consider all possible matches *)
+		acc >||>
+		(X.tokenf_mck mckstart iifakestart >>=
+		 (fun mckstart iifakestart ->
+		   (match onevar with
+		   | B.BitField (sopt, typb, _, expr) ->
+		       pr2_once "warning: bitfield not handled by ast_cocci";
+		       fail
+		   | B.Simple (None, typb) ->
+		       pr2_once
+			 "warning: unnamed struct field not handled by ast_cocci";
+		       fail
+		   | B.Simple (Some nameidb, typb) ->
+
+		       (* build a declaration from a struct field *)
+		       let (fake_var,iisto) = build_decl nameidb typb iivirg in
+		       onedecl allminus ifa (fake_var,iiptvirgb,iisto) >>=
+		       (fun ifa (fake_var,iiptvirgb,iisto) ->
+			 let (onevar,iivirg) = unbuild_decl fake_var in
+			 
+			 return (
+			 (A.DElem(mckstart,allminus,ifa) +> A.rewrap fa),
+			 ((B.DeclarationField
+			     (B.FieldDeclList
+				(repln n (onevar,iivirg) 0 xs,
+				 [iiptvirgb;iifakestart]))))))))))
+		fail in
+	    if !Flag.sgrep_mode2(*X.mode =*= PatternMode *) ||
+  	       A.get_safe_decl ifa
+	    then doit()
+	    else
+	      begin
+	        (* unambitious version of the DeclList case... *)
+		pr2_once "PB: More that one variable in decl. Have to split";
+		fail
+	      end
+
+	| _,B.EmptyField _iifield ->
+	    fail
+
+	| A.MacroDecl (sa,lpa,eas,rpa,enda),B.MacroDeclField ((sb,ebs),ii) ->
+	    raise Todo
+	| _,B.MacroDeclField ((sb,ebs),ii) -> fail
+
+	| _,B.CppDirectiveStruct directive -> fail
+	| _,B.IfdefStruct directive -> fail)
+
+and build_decl nameidb typb iivirg =
+  let iisto = [] in
+  let stob = B.NoSto, false in
+  let fake_var =
+    ({B.v_namei = Some (nameidb, B.NoInit);
+       B.v_type = typb;
+       B.v_storage = stob;
+       B.v_local = Ast_c.NotLocalDecl;
+       B.v_attr = Ast_c.noattr;
+       B.v_type_bis = ref None;
               (* the struct field should also get expanded ? no it's not
                * important here, we will rematch very soon *)
-            },
-	     iivirg)
-          in
-          onedecl allminus fa (fake_var,iiptvirgb,iisto) >>=
-            (fun fa (var,iiptvirgb,iisto) ->
+     },
+     iivirg) in
+  (fake_var,iisto)
 
-              match fake_var with
-              | ({B.v_namei = Some (nameidb, B.NoInit);
-                  B.v_type = typb;
-                  B.v_storage = stob;
-                }, iivirg) ->
+and unbuild_decl = function
+    ({B.v_namei = Some (nameidb, B.NoInit);
+       B.v_type = typb;
+       B.v_storage = stob;
+     }, iivirg) ->
 
-                  let onevar = B.Simple (Some nameidb, typb) in
+       let onevar = B.Simple (Some nameidb, typb) in
+       (onevar,iivirg)
+  | _ -> raise (Impossible 40)
 
-                  return (
-                    (fa),
-                    ((B.DeclarationField
-                        (B.FieldDeclList ([onevar, iivirg], [iiptvirgb])))
-                    )
-                  )
-              | _ -> raise (Impossible 40)
-            )
-      )
-
-    | x::y::xs ->
-      pr2_once "PB: More that one variable in decl. Have to split";
-      fail
-    )
-  | _,B.EmptyField _iifield ->
-      fail
-
-  | A.MacroDecl (sa,lpa,eas,rpa,enda),B.MacroDeclField ((sb,ebs),ii) ->
-      raise Todo
-  | _,B.MacroDeclField ((sb,ebs),ii) -> fail
-
-  | _,B.CppDirectiveStruct directive -> fail
-  | _,B.IfdefStruct directive -> fail
-
+(* ---------------------------------------------------------------------- *)
 
 and enum_fields = fun eas ebs ->
   let match_dots ea =
@@ -3876,7 +3992,7 @@ and decimal_type_exp nm sb ii =
 	    let ida = A.make_term(A.Id(A.make_mcode n)) in
 	    ident_cpp DontKnow ida nameidb >>= (fun ida nameidb -> ok)
 	| _ -> fail)
-    | Type_cocci.Num sa -> 
+    | Type_cocci.Num sa ->
     | Type_cocci.MV(ida,keep,inherited) ->
 	(* degenerate version of MetaId, no transformation possible *)
         let (ib1, ib2) = tuple_of_list2 ii in
@@ -4036,7 +4152,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
       let default = A.MetaRuleElem(mcode,keep,inherited), unwrap_node in
       (match unwrap_node with
       | F.CaseNode _
-      | F.TrueNode | F.FalseNode | F.AfterNode
+      | F.TrueNode _ | F.FalseNode | F.AfterNode _
       | F.LoopFallThroughNode  | F.FallThroughNode
       | F.InLoopNode ->
           if X.mode =*= PatternMode
@@ -4086,7 +4202,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
    * TODO: and F.Fake ?
    *)
   | _, F.EndStatement _ | _, F.CaseNode _
-  | _, F.TrueNode | _, F.FalseNode | _, F.AfterNode
+  | _, F.TrueNode _ | _, F.FalseNode | _, F.AfterNode _
   | _, F.FallThroughNode | _, F.LoopFallThroughNode
   | _, F.InLoopNode -> fail2()
 
@@ -4298,11 +4414,11 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
       | _ -> raise (Impossible 49)
       )
 
-  | A.Decl (mckstart,allminus,decla), F.Decl declb ->
-      declaration (mckstart,allminus,decla) declb >>=
-       (fun (mckstart,allminus,decla) declb ->
+  | A.Decl decla, F.Decl declb ->
+      annotated_decl decla declb >>=
+       (fun decla declb ->
         return (
-          A.Decl (mckstart,allminus,decla),
+          A.Decl decla,
           F.Decl declb
         ))
 
@@ -4414,11 +4530,11 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 	  tokenf ia3 ib3 >>= (fun ia3 ib3 ->
 	  option expression ea1opt eb1opt >>= (fun ea1opt eb1opt ->
 	    return (A.ForExp(ea1opt, ia3),B.ForExp(eb1opt,[ib3]))))
-      |	(A.ForDecl (mckstart,allminus,decla),B.ForDecl declb) ->
-	  declaration (mckstart,allminus,decla) declb >>=
-	  (fun (mckstart,allminus,decla) declb ->
+      |	(A.ForDecl decla,B.ForDecl declb) ->
+	  annotated_decl decla declb >>=
+	  (fun decla declb ->
 	    return (
-            A.ForDecl (mckstart,allminus,decla),
+            A.ForDecl decla,
             B.ForDecl declb
           ))
       |	_ -> fail)
@@ -4447,13 +4563,13 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
           F.SwitchHeader (st, (eb,[ib1;ib2;ib3]))
         )))))
 
-  | A.Break (ia1, ia2), F.Break (st, ((),ii)) ->
+  | A.Break (ia1, ia2), F.Break (st, ((),ii),fromswitch) ->
       let (ib1, ib2) = tuple_of_list2 ii in
       tokenf ia1 ib1 >>= (fun ia1 ib1 ->
       tokenf ia2 ib2 >>= (fun ia2 ib2 ->
         return (
           A.Break (ia1, ia2),
-          F.Break (st, ((),[ib1;ib2]))
+          F.Break (st, ((),[ib1;ib2]), fromswitch)
         )))
 
   | A.Continue (ia1, ia2), F.Continue (st, ((),ii)) ->
@@ -4483,7 +4599,6 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
           A.ReturnExpr (ia1, ea, ia2),
           F.ReturnExpr (st, (eb, [ib1;ib2]))
         ))))
-
 
 
   | A.Include(incla,filea),
@@ -4567,7 +4682,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
       tokenf prga prgb >>= (fun prga prgb ->
       let wp x = A.rewrap pragmainfoa x  in
       (match A.unwrap pragmainfoa, pragmainfob with
-	A.PragmaTuple(lp,eas,rp), B.PragmaTuple(ebs,iib) ->	  
+	A.PragmaTuple(lp,eas,rp), B.PragmaTuple(ebs,iib) ->
 	  let (ib1, ib2) = tuple_of_list2 iib in
 	  tokenf lp ib1 >>= (fun lp ib1 ->
 	  tokenf rp ib2 >>= (fun rp ib2 ->
@@ -4647,6 +4762,19 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
             F.Goto (st,nameb, ((),[ib1;ib3]))
           ))))
 
+  | A.Exec(exec,lang,code,sem), F.Exec(st,(code2,ii)) ->
+      let (exec2,lang2,sem2) = tuple_of_list3 ii in
+      tokenf exec exec2 >>= (fun exec exec2 ->
+      tokenf lang lang2 >>= (fun lang lang2 ->
+      tokenf sem sem2 >>= (fun sem sem2 ->
+      exec_code_list (A.undots code) (B.split_nocomma code2) >>=
+	(fun code_undots code2_splitted ->
+	  let code = redots code code_undots in
+	  let code2 = Ast_c.unsplit_nocomma code2_splitted in
+	  return(
+	    A.Exec(exec,lang,code,sem),
+	    F.Exec(st,(code2,[exec2;lang2;sem2])))))))
+
   (* have not a counter part in coccinelle, for the moment *)
   (* todo?: print a warning at least ? *)
   | _, F.CaseRange _
@@ -4658,12 +4786,15 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
   | _, (F.IfdefEndif _|F.IfdefElse _|F.IfdefHeader _)
     -> fail2 ()
 
+  | _, F.IfdefIteHeader _
+    -> fail2 ()
+
   | _,
     (F.MacroStmt (_, _)| F.DefineDoWhileZeroHeader _| F.EndNode|F.TopNode)
       -> fail
   | _,
-    (F.Label (_, _, _)|F.Break (_, _)|F.Continue (_, _)|F.Default (_, _)|
-    F.Case (_, _)|F.Include _|F.Goto _|F.ExprStatement _|
+    (F.Label (_, _, _)|F.Break (_, _, _)|F.Continue (_, _)|F.Default (_, _)|
+    F.Case (_, _)|F.Include _|F.Goto _|F.ExprStatement _|F.Exec _|
     F.DefineType _|F.DefineExpr _|F.DefineTodo|
     F.DefineHeader (_, _)|F.PragmaHeader (_, _)|
     F.ReturnExpr (_, _)|F.Return (_, _)|

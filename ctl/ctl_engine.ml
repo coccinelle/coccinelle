@@ -175,9 +175,7 @@ let maybe f g opt =
 
 let some_map f opts = map (maybe (fun x -> Some (f x)) None) opts
 
-let some_tolist_alt opts = concatmap (maybe (fun x -> [x]) []) opts
-
-let rec some_tolist opts =
+let rec some_tolist (opts : 'a option list) : 'a list =
   match opts with
     | []             -> []
     | (Some x)::rest -> x::(some_tolist rest)
@@ -374,7 +372,7 @@ let print_graph grp required_states res str = function
 		  ) in
 	      (if not (List.mem file !graph_stack) then
 		graph_stack := file :: !graph_stack);
-	    let filename = Filename.temp_file (file^":") ".dot" in	
+	    let filename = Filename.temp_file (file^":") ".dot" in
 	    Hashtbl.add graph_hash file filename;
 	    G.print_graph grp
 	      (if !Flag_ctl.gt_without_label then None else (Some label))
@@ -978,12 +976,11 @@ let rec pre_exist dir (grp,_,_) y reqst =
   let check s =
     match reqst with None -> true | Some reqst -> List.mem s reqst in
   let exp (s,th,wit) =
-    concatmap
-      (fun s' -> if check s' then [(s',th,wit)] else [])
-      (match dir with
-	A.FORWARD -> G.predecessors grp s
-      | A.BACKWARD -> G.successors grp s) in
-  setify (concatmap exp y)
+    let ss' = match dir with
+                A.FORWARD  -> G.predecessors grp s
+              | A.BACKWARD -> G.successors grp s
+      in concatmap (fun s' -> if check s' then [(s',th,wit)] else []) ss'
+    in setify (concatmap exp y)
 ;;
 
 exception Empty
@@ -1806,7 +1803,7 @@ let rec satloop unchecked required required_states
 	let new_required = drop_required v required in
 	triples_witness v unchecked (not keep)
 	  (loop unchecked new_required required_states phi)
-	  
+
     | A.Let(v,phi1,phi2) ->
 	(* should only be used when the properties unchecked, required,
 	   and required_states are known to be the same or at least

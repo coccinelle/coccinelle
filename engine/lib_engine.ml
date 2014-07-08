@@ -6,8 +6,8 @@ open Ograph_extended
 type mvar = Ast_cocci.meta_name
 
 type predicate =
-    InLoop | TrueBranch | FalseBranch
-  | After (* pointer to the code after an if or while *)
+    InLoop | TrueBranch | EscTrueBranch | FalseBranch
+  | After (* pointer to the code after a block, if, or while *)
   | FallThrough | LoopFallThrough
   | Return (* any exit from the current function *)
   | FunHeader | UnsafeBrace | Top | Exit | ErrorExit | Goto

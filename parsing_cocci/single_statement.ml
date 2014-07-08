@@ -48,7 +48,7 @@ let any_statements =
     (List.exists
        (function
 	   Ast.StatementTag(_) | Ast.StmtDotsTag(_)
-	 | Ast.DeclarationTag(_) | Ast.DeclDotsTag(_) -> true | _ -> false))
+	 | Ast.DeclarationTag(_) | Ast.AnnDeclDotsTag(_) -> true | _ -> false))
 
 let modif_before x =
   match Ast0.get_mcodekind x with
@@ -247,6 +247,7 @@ and left_statement s =
   | Ast0.Goto(goto,l,sem) -> modif_before_mcode goto
   | Ast0.Return(ret,sem) -> modif_before_mcode ret
   | Ast0.ReturnExpr(ret,exp,sem) -> modif_before_mcode ret
+  | Ast0.Exec(exec,lang,code,sem) -> modif_before_mcode exec
   | Ast0.MetaStmt(name,pure) -> modif_before_mcode name
   | Ast0.MetaStmtList(name,_) -> modif_before_mcode name
   | Ast0.Disj(_,statement_dots_list,_,_) ->
@@ -290,6 +291,7 @@ and right_statement s =
   | Ast0.Goto(goto,l,sem) -> modif_after_mcode sem
   | Ast0.Return(ret,sem) -> modif_after_mcode sem
   | Ast0.ReturnExpr(ret,exp,sem) -> modif_after_mcode sem
+  | Ast0.Exec(exec,lang,code,sem) -> modif_after_mcode sem
   | Ast0.MetaStmt(name,pure) -> modif_after_mcode name
   | Ast0.MetaStmtList(name,_) -> modif_after_mcode name
   | Ast0.Disj(_,statement_dots_list,_,_) ->
@@ -402,7 +404,7 @@ and contains_only_minus =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     dots dots dots dots dots dots
     identifier expression typeC donothing donothing declaration
-    statement donothing case_line donothing
+    statement donothing case_line donothing donothing
 
 
 (* needs a special case when there is a Disj or an empty DOTS *)
@@ -533,14 +535,14 @@ let rec statement dots_before dots_after s =
     else s in
 
   match Ast0.unwrap s with
-    Ast0.FunDecl(x,fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
+    Ast0.FunDecl(x,fninfo,name,lp,params,rp,lbrace,body,rbrace,y) ->
       (* true for close brace, because that represents any way we can
 	 exit the function, which is not necessarily followed by an explicit
 	 close brace. *)
       Ast0.rewrap s
 	(Ast0.FunDecl(x,fninfo,name,lp,params,rp,lbrace,
 		      statement_dots false true body,
-		      rbrace))
+		      rbrace,y))
   | Ast0.Decl(_,_) -> s
   | Ast0.Seq(lbrace,body,rbrace) ->
       Ast0.rewrap s
@@ -588,6 +590,7 @@ let rec statement dots_before dots_after s =
   | Ast0.Goto(goto,l,sem) -> do_one s
   | Ast0.Return(ret,sem) -> do_one s
   | Ast0.ReturnExpr(ret,exp,sem) -> do_one s
+  | Ast0.Exec(exec,lang,code,sem) -> do_one s
   | Ast0.MetaStmt(name,_) -> do_one s
   | Ast0.MetaStmtList(name,_) -> do_one s
   | Ast0.Disj(starter,statement_dots_list,mids,ender) ->

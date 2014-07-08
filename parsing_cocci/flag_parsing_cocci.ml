@@ -17,4 +17,6 @@ let keep_ml_script = ref false
 
 let id_utils_index = ref ".id-utils.index" (* default id-utils value *)
 
+let in_minus = ref false
+
 let debug_parse_cocci = ref false

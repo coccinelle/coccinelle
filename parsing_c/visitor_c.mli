@@ -75,6 +75,8 @@ val vk_define_params_splitted :
 val vk_pragmainfo : visitor_c -> pragmainfo -> unit
 val vk_ident_list_splitted : visitor_c -> (name, il) Common.either list -> unit
 
+val vk_exec_code_list_splitted :
+    visitor_c -> (exec_code, il) Common.either list -> unit
 
 
 (* ------------------------------------------------------------------------ *)
@@ -175,5 +177,10 @@ val vk_enum_fields_splitted_s : visitor_c_s ->
   (oneEnumType, il) Common.either list
 val vk_struct_field_s : visitor_c_s -> field -> field
 val vk_struct_fields_s : visitor_c_s -> field list -> field list
+
+val vk_exec_code_list_splitted_s :
+    visitor_c_s ->
+      (exec_code, il) Common.either list ->
+	(exec_code, il) Common.either list
 
 val vk_cst_s : visitor_c_s -> ((constant, string) Common.either wrap) inout

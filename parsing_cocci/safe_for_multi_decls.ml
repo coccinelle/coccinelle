@@ -44,6 +44,10 @@ let contains_modif =
   let bind x y = x or y in
   let option_default = false in
   let do_nothing r k e = k e in
+  let annotated_decl decl =
+    match Ast.unwrap decl with
+      Ast.DElem(bef,_,_) -> bef
+    | _ -> failwith "not possible" in
   let rule_elem r k re =
     (* Very obscure how this could arise.  Array type contains an expression
        and the expression could contain a statement. *)
@@ -51,7 +55,10 @@ let contains_modif =
     match Ast.unwrap re with
       Ast.FunHeader(bef,_,fninfo,name,lp,params,rp) ->
 	bind (mcode r ((),(),bef,[])) res
-    | Ast.Decl(bef,_,decl) -> bind (mcode r ((),(),bef,[])) res
+    | Ast.Decl decl ->
+	bind (mcode r ((),(),annotated_decl decl,[])) res
+    | Ast.ForHeader(fr,lp,Ast.ForDecl(decl),e2,sem2,e3,rp) ->
+	bind (mcode r ((),(),annotated_decl decl,[])) res
     | _ -> res in
   let init r k i =
     let res = k i in

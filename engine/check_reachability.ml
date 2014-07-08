@@ -140,7 +140,7 @@ let test_formula state formula cfg =
 	    (List.map
 	       (fun (nodei, node) ->
 		 match Control_flow_c.unwrap node with
-		   Control_flow_c.AfterNode -> [(nodei,[],[])]
+		   Control_flow_c.AfterNode _ -> [(nodei,[],[])]
 		 | _ -> [])
 	       cfg#nodes#tolist) in
     let verbose = !Flag_ctl.verbose_ctl_engine in

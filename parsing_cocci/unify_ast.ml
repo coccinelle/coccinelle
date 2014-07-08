@@ -98,6 +98,11 @@ let strdots e =
     Ast.Strdots(_) -> true
   | _ -> false
 
+let ecdots e =
+  match Ast.unwrap e with
+    Ast.ExecDots(_) -> true
+  | _ -> false
+
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
 
@@ -311,7 +316,7 @@ and unify_typeC t1 t2 =
   | (Ast.StructUnionDef(ty1,lb1,decls1,rb1),
      Ast.StructUnionDef(ty2,lb2,decls2,rb2)) ->
        conjunct_bindings (unify_fullType ty1 ty2)
-	 (unify_dots unify_declaration ddots decls1 decls2)
+	 (unify_dots unify_annotated_decl ddots decls1 decls2)
   | (Ast.TypeName(t1),Ast.TypeName(t2)) -> return (unify_mcode t1 t2)
 
   | (Ast.MetaType(_,_,_),_)
@@ -357,14 +362,18 @@ and unify_declaration d1 d2 =
   | (_,Ast.DisjDecl(d2)) ->
       disjunct_all_bindings
 	(List.map (function x -> unify_declaration d1 x) d2)
-  (* dots can match against anything.  return true to be safe. *)
-  | (Ast.Ddots(_,_),_) | (_,Ast.Ddots(_,_)) -> return true
 
   | (Ast.OptDecl(_),_)
   | (Ast.UniqueDecl(_),_)
   | (_,Ast.OptDecl(_))
   | (_,Ast.UniqueDecl(_)) -> failwith "unsupported decl"
   | _ -> return false
+
+and unify_annotated_decl d1 d2 =
+  match (Ast.unwrap d1,Ast.unwrap d2) with
+    (Ast.DElem(_,_,d1),Ast.DElem(_,_,d2)) -> unify_declaration d1 d2
+  (* dots can match against anything.  return true to be safe. *)
+  | (Ast.Ddots(_,_),_) | (_,Ast.Ddots(_,_)) -> return true
 
 (* --------------------------------------------------------------------- *)
 (* Initializer *)
@@ -478,7 +487,7 @@ and unify_rule_elem re1 re2 =
        conjunct_bindings (unify_fninfo fi1 fi2)
 	 (conjunct_bindings (unify_ident nm1 nm2)
 	    (unify_dots unify_parameterTypeDef pdots params1 params2))
-  | (Ast.Decl(_,_,d1),Ast.Decl(_,_,d2)) -> unify_declaration d1 d2
+  | (Ast.Decl d1,Ast.Decl d2) -> unify_annotated_decl d1 d2
 
   | (Ast.SeqStart(lb1),Ast.SeqStart(lb2)) -> return true
   | (Ast.SeqEnd(rb1),Ast.SeqEnd(rb2)) -> return true
@@ -499,8 +508,7 @@ and unify_rule_elem re1 re2 =
 	 match (first1,first2) with
 	   (Ast.ForExp(e11,s11),Ast.ForExp(e12,s1)) ->
 	     unify_option unify_expression e11 e12
-	 | (Ast.ForDecl(_,_,d1),Ast.ForDecl(_,_,d2)) ->
-	     unify_declaration d1 d2
+	 | (Ast.ForDecl d1,Ast.ForDecl d2) -> unify_annotated_decl d1 d2
 	 | _ -> return false in
        conjunct_bindings first
 	 (conjunct_bindings
@@ -523,6 +531,10 @@ and unify_rule_elem re1 re2 =
   | (Ast.Return(r1,s1),Ast.Return(r2,s2)) -> return true
   | (Ast.ReturnExpr(r1,e1,s1),Ast.ReturnExpr(r2,e2,s2)) ->
       unify_expression e1 e2
+  | (Ast.Exec(exec1,lang1,code1,sem1),Ast.Exec(exec2,lang2,code2,sem2)) ->
+      if unify_mcode lang1 lang2
+      then unify_dots unify_exec_code ecdots code1 code2
+      else return false
 
   | (Ast.DisjRuleElem(res1),_) ->
       disjunct_all_bindings
@@ -580,6 +592,15 @@ and unify_fninfo patterninfo cinfo =
 	| _ -> failwith "not possible")
     | _ -> return false in
   loop (patterninfo,cinfo)
+
+and unify_exec_code ec1 ec2 =
+  match (Ast.unwrap ec1,Ast.unwrap ec2) with
+    (Ast.ExecEval(colon1,id1),Ast.ExecEval(colon2,id2)) ->
+      unify_expression id1 id2
+  | (Ast.ExecToken(tok1),Ast.ExecToken(tok2)) ->
+      return (unify_mcode tok1 tok2)
+  | (Ast.ExecDots(_),_) | (_,Ast.ExecDots(_)) ->  return true
+  | _ -> return false
 
 and subexp f =
   let bind = conjunct_bindings in
@@ -643,7 +664,7 @@ let rec unify_statement s1 s2 =
 	   s2)
   | (Ast.Nest(_,s1,_,_,_,_,_),Ast.Nest(_,s2,_,_,_,_,_)) ->
       unify_dots unify_statement sdots s1 s2
-  | (Ast.FunDecl(h1,lb1,s1,rb1),Ast.FunDecl(h2,lb2,s2,rb2)) ->
+  | (Ast.FunDecl(h1,lb1,s1,rb1,_),Ast.FunDecl(h2,lb2,s2,rb2,_)) ->
       conjunct_bindings (unify_rule_elem h1 h2)
 	(conjunct_bindings (unify_rule_elem lb1 lb2)
 	   (conjunct_bindings (unify_dots unify_statement sdots s1 s2)

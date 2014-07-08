@@ -21,6 +21,7 @@ module LP = Lexer_parser
 
 module Stat = Parsing_stat
 
+open Ast_c
 open Parser_c
 
 open TV
@@ -284,7 +285,7 @@ let not_macro s =
  * could do for ','   if encounter ',' at "toplevel", not inside () or {}
  * then if have ifdef, then certainly can lead to a problem.
  *)
-let (count_open_close_stuff_ifdef_clause: TV.ifdef_grouped list -> (int * int))=
+let count_open_close_stuff_ifdef_clause :TV.ifdef_grouped list -> (int * int) =
  fun xs ->
    let cnt_paren, cnt_brace = ref 0, ref 0 in
    xs +> TV.iter_token_ifdef (fun x ->
@@ -313,9 +314,9 @@ let rec is_really_foreach xs =
     | [] -> false, []
     | TCPar _::TOBrace _::xs -> true, xs
       (* the following attempts to handle the cases where there is a
-	 single statement in the body of the loop.  undoubtedly more
-	 cases are needed.
-         todo: premier(statement) - suivant(funcall)
+       * single statement in the body of the loop.  undoubtedly more
+       * cases are needed.
+       * todo: premier(statement) - suivant(funcall)
        *)
     | TCPar _::TIdent _::xs -> true, xs
     | TCPar _::Tif _::xs -> true, xs
@@ -538,7 +539,7 @@ let rec define_ident acc xs =
           let acc = (TCommentSpace i1) :: acc in
 	  let acc = (TIdentDefine (s,ii)) :: acc in
           define_ident acc xs
-          
+
       | TCommentSpace _::_::xs
       | xs ->
           pr2 "WEIRD: weird #define body";
@@ -569,7 +570,7 @@ let rec define_ident acc xs =
             let acc = (TCommentSpace i1) :: acc in
 	    let acc = (TIdentDefine (s,ii)) :: acc in
             define_ident acc xs
-          
+
 	| xs ->
             pr2 "WEIRD: weird #pragma";
             define_ident acc xs in
@@ -719,14 +720,15 @@ let rec find_ifdef_bool xs =
       | [] -> raise (Impossible 90)
       | firstclause::xxs ->
           info_ifdef_stmt +>
-	  List.iter (TV.save_as_comment (fun x -> Token_c.CppIfDirective x));
+            List.iter (TV.save_as_comment (fun x ->
+                                    Token_c.CppIfDirective x));
 
           if is_ifdef_positif
           then xxs +> List.iter
-            (iter_token_ifdef (TV.set_as_comment Token_c.CppPassingNormal))
+                (iter_token_ifdef (TV.set_as_comment Token_c.CppPassingNormal))
           else begin
             firstclause +>
-	    iter_token_ifdef (TV.set_as_comment Token_c.CppPassingNormal);
+              iter_token_ifdef (TV.set_as_comment Token_c.CppPassingNormal);
             (match List.rev xxs with
             (* keep only last *)
             | last::startxs ->
@@ -740,7 +742,83 @@ let rec find_ifdef_bool xs =
   | Ifdef (xxs, info_ifdef_stmt) -> xxs +> List.iter find_ifdef_bool
   )
 
+(* Rules that fix input tokens. *)
+type fix_tokens_rule = token list (* input tokens *)
+                        -> (token list * token list) option
+                           (* fixed tokens, remaining tokens *)
 
+(* #ifdef A if e S1 else #endif S2 *)
+let fix_tokens_ifdef_endif :fix_tokens_rule = fun xs ->
+  match TH.match_cpp_simple_ifdef_endif xs with
+  | Some (tok_ifdef,body_ifdef,tok_endif,rest_endif) ->
+    let (whites1,body_ifdef') = span TH.is_just_comment_or_space body_ifdef in
+    begin match (TH.match_simple_if_else body_ifdef') with
+    | Some (tok_if,body_if,tok_else,rest_else)
+      when List.for_all TH.is_just_comment_or_space rest_else ->
+        let tok_ifdefif = TUifdef (TH.info_of_tok tok_ifdef) in
+        let tok_ifendif = TUendif (TH.info_of_tok tok_endif) in
+        let fixed_toks = (tok_ifdefif :: body_ifdef) @ [tok_ifendif] in
+        Some (fixed_toks,rest_endif)
+    | __else__ -> None
+    end
+  | None -> None
+
+(* #ifdef A if e S1 else #else S2 #endif S3 *)
+let fix_tokens_ifdef_else_endif :fix_tokens_rule = fun xs ->
+  match TH.match_cpp_simple_ifdef_else_endif xs with
+  | Some (tok_ifdef,body_ifdef,tok_else,body_else,tok_endif,rest_endif) ->
+    let (whites1,body_ifdef') = span TH.is_just_comment_or_space body_ifdef in
+    begin match (TH.match_simple_if_else body_ifdef') with
+    | Some (tok_if,body_if,tok_if_else,rest_else)
+      when List.for_all TH.is_just_comment_or_space rest_else ->
+        let tok_ifdefif = TUifdef (TH.info_of_tok tok_ifdef) in
+        let tok_elseu = TUelseif (TH.info_of_tok tok_else) in
+        let tok_endifu = TUendif (TH.info_of_tok tok_endif) in
+        let fixed_toks = (tok_ifdefif :: body_ifdef)
+                          @ (tok_elseu :: body_else) @ [tok_endifu] in
+        Some (fixed_toks,rest_endif)
+    | __else__ -> None
+    end
+  | None -> None
+
+(* Note [Nasty Undisciplined Cpp]
+ *
+ * This function handles variability patterns that cannot be easily handled
+ * by cpp_ifdef_statementize, aka "nasty undisciplined uses of cpp" for the
+ * lay person. These are uses of cpp #ifdef that do not cover a full syntactic
+ * element. Even though the possibilities are infinite, there are maybe a ten
+ * patterns that one sees in practice.
+ *
+ * __Ideally__, we would like to handle these patterns with a AST-to-AST
+ * rewriting pass after parsing, in the same spirit as cpp_ifdef_statementize.
+ * But such nasty uses of cpp are handled by the parser by commenting out the
+ * code, and that makes difficult to handle it after parsing.
+ *
+ * Thus, __pragmatically__, if we find an occurrence of these patterns we mark
+ * it by replacing regular Cpp tokens by undisciplined Cpp tokens, before
+ * parsing. The pattern is finally recognized by the parser. Since we introduce
+ * these new tokens, the new parsing rules do not introduce shift/reduce
+ * conflicts.
+ *
+ * For each new pattern to be supported we need:
+ * - a helper match_cpp_* in Token_helpers,
+ * - a fix_tokens_rule that must be added to fix_tokens_ifdef, and
+ * - a rule in the parser.
+ *
+ * /Iago
+ *)
+let rec fix_tokens_ifdef (xs :token list) :token list =
+  let skip_tok () = match xs with
+    | [] -> []
+    | x::xs -> x :: fix_tokens_ifdef xs
+    in
+  match fix_tokens_ifdef_endif xs with
+  | Some (fixed,xs') -> fixed @ fix_tokens_ifdef xs'
+  | None ->
+  match fix_tokens_ifdef_else_endif xs with
+  | Some (fixed,xs') -> fixed @ fix_tokens_ifdef xs'
+  | None ->
+      skip_tok()
 
 let thresholdIfdefSizeMid = 6
 
@@ -776,11 +854,10 @@ let rec find_ifdef_mid xs =
               msg_ifdef_mid_something();
 
               (* keep only first, treat the rest as comment *)
-              info_ifdef_stmt +>
-	      List.iter
-		(TV.save_as_comment (function x -> Token_c.CppIfDirective x));
-              (second::rest) +> List.iter
-                (iter_token_ifdef (TV.set_as_comment Token_c.CppPassingCosWouldGetError));
+              info_ifdef_stmt +> List.iter
+                  (TV.save_as_comment (function x -> Token_c.CppIfDirective x));
+              (second::rest) +> List.iter (iter_token_ifdef (TV.set_as_comment
+                                            Token_c.CppPassingCosWouldGetError));
             end
 
       );
@@ -992,21 +1069,21 @@ let fix_tokens_strings toks =
   and out_strings = function
       [] -> []
     | a :: rest ->
-	if can_be_string a
-	then
-	  let (front,rest) = skip [] comments rest in
-	  (match rest with
-	    b :: rest when can_be_string b ->
-	      let (front2,rest) = skip [] strings_and_comments rest in
-	      a :: front @ b :: front2 @ out_strings rest
-	  | _ ->
-	      (match a with
-		TString(str_isW,info) ->
-		  (Parse_string_c.parse_string str_isW info) @ front @
-		  out_strings rest
-	      |	_ ->  a :: out_strings rest))
-	else a :: out_strings rest in
-  out_strings toks
+      if can_be_string a
+      then
+        let (front,rest) = skip [] comments rest in
+        (match rest with
+          b :: rest when can_be_string b ->
+            let (front2,rest) = skip [] strings_and_comments rest in
+            a :: front @ b :: front2 @ out_strings rest
+        | _ ->
+            (match a with
+        TString(str_isW,info) ->
+          (Parse_string_c.parse_string str_isW info) @ front @
+          out_strings rest
+            |	_ ->  a :: front @ out_strings rest))
+      else a :: out_strings rest
+	in out_strings toks
 
 (* ------------------------------------------------------------------------- *)
 (* macro2 *)
@@ -1735,7 +1812,7 @@ let can_be_on_top_level tl =
   match tl with
   | Tstruct _
   | Ttypedef _
-  | TDefine _ 
+  | TDefine _
   | TIfdef _
   | TIfdefelse _
   | TIfdefelif _
@@ -1779,13 +1856,13 @@ let not_struct_enum = function
   | (Parser_c.Tstruct _ | Parser_c.Tunion _ | Parser_c.Tenum _)::_ -> false
   | _ -> true
 
-let pointer ?(followed_by=fun _ -> true) 
-    ?(followed_by_more=fun _ -> true) ts = 
-  let rec loop ts = 
+let pointer ?(followed_by=fun _ -> true)
+    ?(followed_by_more=fun _ -> true) ts =
+  let rec loop ts =
     match ts with
     | TMul _ :: rest -> loop rest
     | TAnd _ :: rest when !Flag.c_plus_plus -> loop rest
-    | t :: ts' -> followed_by t && followed_by_more ts' 
+    | t :: ts' -> followed_by t && followed_by_more ts'
     | [] -> failwith "unexpected end of token stream" in
   match ts with
   | TMul _ :: rest -> loop rest
@@ -1797,7 +1874,7 @@ let ident = function
   | _ -> false
 
 let is_type = function
-  | TypedefIdent _ 
+  | TypedefIdent _
   | Tvoid _
   | Tchar _
   | Tfloat _
@@ -1806,7 +1883,7 @@ let is_type = function
   | Tsize_t _
   | Tssize_t _
   | Tptrdiff_t _
-      
+
   | Tint _
   | Tlong _
   | Tshort _ -> true
@@ -1853,7 +1930,7 @@ let paren_before_comma l =
 
 let lookahead2 ~pass next before =
   match (next, before) with
-      
+
   (* c++ hacks *)
   (* yy xx(   and in function *)
   | TOPar i1::_,              TIdent(s,i2)::TypedefIdent _::_
@@ -1861,7 +1938,7 @@ let lookahead2 ~pass next before =
         pr2_cpp("constructed_object: "  ^s);
         TOParCplusplusInit i1
   | TOPar i1::_,              TIdent(s,i2)::ptr
-      when !Flag.c_plus_plus 
+      when !Flag.c_plus_plus
 	  && pointer ~followed_by:(function TypedefIdent _ -> true | _ -> false) ptr
 	  && (LP.current_context () = (LP.InFunction)) ->
         pr2_cpp("constructed_object: "  ^s);
@@ -1896,43 +1973,43 @@ let lookahead2 ~pass next before =
 	(* christia *)
 
 	(* delete[] *)
-  | (TOCro i1 :: _, Tdelete _ :: _) 
+  | (TOCro i1 :: _, Tdelete _ :: _)
     when !Flag.c_plus_plus ->
       TCommentCpp (Token_c.CppDirective, i1)
 	(* delete[] *)
-  | (TCCro i1 :: _, Tdelete _ :: _) 
+  | (TCCro i1 :: _, Tdelete _ :: _)
     when !Flag.c_plus_plus ->
       TCommentCpp (Token_c.CppDirective, i1)
 
 	(* extern "_" tt *)
-  | ((TString ((s, _), i1) | TMacroString (s, i1)) :: _ , Textern _ :: _) 
+  | ((TString ((s, _), i1) | TMacroString (s, i1)) :: _ , Textern _ :: _)
     when !Flag.c_plus_plus ->
 	  TCommentCpp (Token_c.CppDirective, i1)
 
 	(* ) const { *)
-  | (Tconst i1 :: TOBrace _ :: _ , TCPar _ :: _) 
+  | (Tconst i1 :: TOBrace _ :: _ , TCPar _ :: _)
     when !Flag.c_plus_plus ->
 	  TCommentCpp (Token_c.CppDirective, i1)
 
 	(* xx const tt *)
-  | (TIdent (s, i1)::(Tconst _|Tvolatile _|Trestrict _)::type_::_  , _) 
+  | (TIdent (s, i1)::(Tconst _|Tvolatile _|Trestrict _)::type_::_  , _)
     when not_struct_enum before
 	&& is_type type_ ->
 	  TCommentCpp (Token_c.CppDirective, i1)
 
 	(* xx struct *)
-  | (TIdent (s, i1)::Tstruct _::_  , _) 
+  | (TIdent (s, i1)::Tstruct _::_  , _)
     when not_struct_enum before ->
 	  TCommentCpp (Token_c.CppDirective, i1)
 
 	(* xx tt *)
-  | (TIdent (s, i1)::type_::_  , _) 
+  | (TIdent (s, i1)::type_::_  , _)
     when not_struct_enum before
 	&& is_type type_ ->
 	  TCommentCpp (Token_c.CppDirective, i1)
 
 	(* tt xx yy *)
-  | (TIdent (s, i1)::TIdent (s2, i2)::_  , seen::_) 
+  | (TIdent (s, i1)::TIdent (s2, i2)::_  , seen::_)
     when not_struct_enum before
 	&& is_type seen ->
 	  if is_macro s2 then
@@ -1940,19 +2017,19 @@ let lookahead2 ~pass next before =
 	  else
 	    TCommentCpp (Token_c.CppDirective, i1)
 
-  | (TIdent (s2, i2)::_  , TIdent (s, i1)::seen::_) 
+  | (TIdent (s2, i2)::_  , TIdent (s, i1)::seen::_)
     when not_struct_enum before
 	&& is_macro s2 && is_type seen ->
 	  TCommentCpp (Token_c.CppDirective, i2)
 
 	(* tt xx * *)
-  | (TIdent (s, i1)::ptr  , seen::_) 
+  | (TIdent (s, i1)::ptr  , seen::_)
     when not_struct_enum before
 	&& pointer ptr && is_type seen ->
 	  TCommentCpp (Token_c.CppDirective, i1)
 
 	(* tt * xx yy *)
-  | (TIdent (s, i1)::TIdent(s2, i2)::_  , ptr) 
+  | (TIdent (s, i1)::TIdent(s2, i2)::_  , ptr)
     when not_struct_enum before
 	&& pointer ptr ->
 	  if is_macro s2 then
@@ -1961,18 +2038,18 @@ let lookahead2 ~pass next before =
 	    TCommentCpp (Token_c.CppDirective, i1)
 
 	(* tt * xx yy *)
-  | (TIdent(s2, i2)::_  , TIdent (s, i1)::ptr) 
+  | (TIdent(s2, i2)::_  , TIdent (s, i1)::ptr)
     when not_struct_enum before
 	&& is_macro s2 && pointer ptr ->
 	  TCommentCpp (Token_c.CppDirective, i2)
 
         (* exception to next rule *)
-  | (TIdent(s2, i2)::TOPar _ :: _ , TIdent(s, i1)::seen::_) 
+  | (TIdent(s2, i2)::TOPar _ :: _ , TIdent(s, i1)::seen::_)
     when not_struct_enum before
 	&& is_macro s2 && is_type seen ->
 	  TIdent(s2, i2)
 	(* tt xx yy *)
-  | (TIdent(s2, i2)::_  , TIdent(s, i1)::seen::_) 
+  | (TIdent(s2, i2)::_  , TIdent(s, i1)::seen::_)
     when not_struct_enum before
 	&& is_macro s2 && is_type seen ->
 	  TCommentCpp (Token_c.CppDirective, i2)
@@ -2012,8 +2089,8 @@ let lookahead2 ~pass next before =
   | (TIdent (s, i1)::(((TComma _|TCPar _)::_) as rest) ,
      ((TComma _ |TOPar _)::_ as bef))
     when not_struct_enum before && (LP.current_context() =*= LP.InParameter)
-      && k_and_r rest 
-      && not_has_type_before is_cparen rest 
+      && k_and_r rest
+      && not_has_type_before is_cparen rest
       && not_has_type_before is_oparen bef
       ->
 
@@ -2148,7 +2225,7 @@ let lookahead2 ~pass next before =
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TPtVirg _::_ , TEq _::_) ->
       TIdent (s, i1)
   | (TIdent (s, i1)::ptr , _)
-    when not_struct_enum before 
+    when not_struct_enum before
 	&& pointer ~followed_by:(function TIdent _ -> true | _ -> false)
               ~followed_by_more:(function TPtVirg _ :: _ -> true | _ -> false) ptr
 	&& (LP.is_top_or_struct (LP.current_context ()))
@@ -2160,7 +2237,7 @@ let lookahead2 ~pass next before =
   (*  xx * yy ,     AND in Toplevel  *)
   | (TIdent (s, i1)::ptr , _)
     when not_struct_enum before && (LP.current_context () =*= LP.InTopLevel)
-	&& ok_typedef s 
+	&& ok_typedef s
 	&& pointer ~followed_by:(function TIdent _ -> true | _ -> false)
               ~followed_by_more:(function TComma _ :: _ -> true | _ -> false) ptr
       ->
@@ -2172,7 +2249,7 @@ let lookahead2 ~pass next before =
   | (TIdent (s, i1)::ptr , _)
     when not_struct_enum before
 	&& (LP.is_top_or_struct (LP.current_context ()))
-	&& ok_typedef s 
+	&& ok_typedef s
 	&& pointer ~followed_by:(function TIdent _ -> true | _ -> false)
               ~followed_by_more:(function TOPar _ :: _ -> true | _ -> false) ptr
       ->
@@ -2183,9 +2260,9 @@ let lookahead2 ~pass next before =
   (* xx * yy [ *)
   (* todo? enough ? cos in struct def we can have some expression ! *)
   | (TIdent (s, i1)::ptr , _)
-    when not_struct_enum before 
+    when not_struct_enum before
 	&& (LP.is_top_or_struct (LP.current_context ()))
-	&& ok_typedef s 
+	&& ok_typedef s
 	&& pointer ~followed_by:(function TIdent _ -> true | _ -> false)
               ~followed_by_more:(function TOCro _ :: _ -> true | _ -> false) ptr
       ->
@@ -2219,7 +2296,7 @@ let lookahead2 ~pass next before =
   (*  xx * yy =  *)
   | (TIdent (s, i1)::ptr , _)
     when not_struct_enum before
-	&& ok_typedef s 
+	&& ok_typedef s
 	&& pointer ~followed_by:(function TIdent _ -> true | _ -> false)
               ~followed_by_more:(function TEq _ :: _ -> true | _ -> false) ptr
       ->
@@ -2231,7 +2308,7 @@ let lookahead2 ~pass next before =
   (*  xx * yy)      AND in paramdecl *)
   | (TIdent (s, i1)::ptr , _)
     when not_struct_enum before && (LP.current_context () =*= LP.InParameter)
-	&& ok_typedef s 
+	&& ok_typedef s
 	&& pointer ~followed_by:(function TIdent _ -> true | _ -> false)
               ~followed_by_more:(function TCPar _ :: _ -> true | _ -> false) ptr
         ->
@@ -2243,7 +2320,7 @@ let lookahead2 ~pass next before =
   (*  xx * yy; *) (* wrong ? *)
   | (TIdent (s, i1)::ptr ,
      (TOBrace _| TPtVirg _)::_) when not_struct_enum before
-	&& ok_typedef s 
+	&& ok_typedef s
 	&& pointer ~followed_by:(function TIdent _ -> true | _ -> false)
               ~followed_by_more:(function TPtVirg _ :: _ -> true | _ -> false) ptr
         ->
@@ -2256,7 +2333,7 @@ let lookahead2 ~pass next before =
   (*  xx * yy,  and ';' before xx *) (* wrong ? *)
   | (TIdent (s, i1)::ptr ,
      (TOBrace _| TPtVirg _)::_) when
-      ok_typedef s 
+      ok_typedef s
 	&& pointer ~followed_by:(function TIdent _ -> true | _ -> false)
               ~followed_by_more:(function TComma _ :: _ -> true | _ -> false) ptr
     ->
@@ -2269,7 +2346,7 @@ let lookahead2 ~pass next before =
   | (TIdent (s, i1)::ptr , _)
       when s ==~ regexp_typedef && not_struct_enum before
         (* struct user_info_t sometimes *)
-	&& ok_typedef s 
+	&& ok_typedef s
         && pointer ~followed_by:(function TIdent _ -> true | _ -> false) ptr
         ->
 
@@ -2291,7 +2368,7 @@ let lookahead2 ~pass next before =
     when not_struct_enum before
         (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
 	&& ok_typedef s
-	(* christia : this code catches 'a * *b' which is wrong 
+	(* christia : this code catches 'a * *b' which is wrong
 	 *)
     ->
 
@@ -2367,7 +2444,7 @@ let lookahead2 ~pass next before =
 
   (*  (xx * ) yy *)
   | (TIdent (s, i1)::ptr, (TOPar info)::_)
-    when ok_typedef s 
+    when ok_typedef s
 	&& pointer ~followed_by:(function TCPar _ -> true | _ -> false)
               ~followed_by_more:(function TIdent _ :: _ -> true | _ -> false) ptr
         ->
@@ -2441,15 +2518,15 @@ let lookahead2 ~pass next before =
           pr2_cpp("IFDEF: or related inside function. I treat it as comment");
           incr Stat.nIfdefPassing;
         end;
-	let x =
-	  match x with
-	    TIfdef _ | TIfdefMisc _ | TIfdefVersion _ -> Token_c.IfDef
-	  | TIfdefBool _ -> Token_c.IfDef0
-	  | TIfdefelse _ | TIfdefelif _ -> Token_c.Else
-	  | TEndif _ -> Token_c.Endif
-	  | _ -> Token_c.Other in (* not possible here *)
-        TCommentCpp (Token_c.CppIfDirective x, ii)
-      end
+        let x =
+          match x with
+            TIfdef _ | TIfdefMisc _ | TIfdefVersion _ -> Token_c.IfDef
+          | TIfdefBool _ -> Token_c.IfDef0
+          | TIfdefelse _ | TIfdefelif _ -> Token_c.Else
+          | TEndif _ -> Token_c.Endif
+          | _ -> Token_c.Other in (* not possible here *)
+              TCommentCpp (Token_c.CppIfDirective x, ii)
+        end
       else x
 
   | (TUndef (ii) as x)::_, _
@@ -2496,8 +2573,8 @@ let lookahead2 ~pass next before =
     can_be_on_top_level tl && LP.current_context () = InTopLevel ->
       pr2_cpp ("'" ^ s ^ "' looks like a macro, I treat it as comment");
       TCommentCpp (Token_c.CppDirective, ii)
-*)      
-    
+*)
+
 (*-------------------------------------------------------------*)
  | v::xs, _ -> v
  | _ -> raise (Impossible 93)
@@ -2505,4 +2582,106 @@ let lookahead2 ~pass next before =
 let lookahead ~pass a b =
   Common.profile_code "C parsing.lookahead" (fun () -> lookahead2 ~pass a b)
 
+(*****************************************************************************)
+(* Ifdef-statementize *)
+(*****************************************************************************)
 
+(*
+ * cpp_ifdef_statementize: again better to separate concern and in parser
+ *  just add the directives in a flat way (IfdefStmt) and later do more
+ *  processing and transform them in a tree with some IfdefStmt2.
+ *)
+
+let is_ifdef_and_same_tag (tag : Ast_c.matching_tag)
+                          (x : Ast_c.statement_sequencable)
+                          :bool
+  = match x with
+  | IfdefStmt (IfdefDirective ((_, tag2),_)) ->
+      tag =*= tag2
+  | StmtElem _ | CppDirectiveStmt _ -> false
+  | IfdefStmt2 _ -> raise (Impossible 77)
+
+(* What if I skipped in the parser only some of the ifdef elements
+ * of the same tag. Once I passed one, I should pass all of them and so
+ * at least should detect here that one tag is not "valid". Maybe in the parser
+ * can return or marked some tags as "partially_passed_ifdef_tag".
+ * Maybe could do in ast_c a MatchingTag of int * bool ref (* one_was_passed *)
+ * where the ref will be shared by the ifdefs with the same matching tag
+ * indice. Or simply count  the number of directives with the same tag and
+ * put this information in the tag. Hence the total_with_this_tag below.
+ *)
+let should_ifdefize (tag,ii) ifdefs_directives _xxs =
+  let IfdefTag (_tag, total_with_this_tag) = tag in
+
+  if total_with_this_tag <> List.length ifdefs_directives
+  then begin
+    let strloc = Ast_c.strloc_of_info (List.hd ii) in
+    pr2 (spf "CPPASTC: can not ifdefize ifdef at %s" strloc);
+    pr2 "CPPASTC: some of its directives were passed";
+    false
+  end else
+    (* todo? put more condition ? don't ifdefize declaration ? *)
+    true
+
+(* return a triple, (ifdefs directive * grouped xs * remaining sequencable)
+ * XXX1 XXX2 elsif YYY1 else ZZZ1 endif WWW1 WWW2
+ * => [elsif, else, endif], [XXX1 XXX2; YYY1; ZZZ1], [WWW1 WWW2]
+ *)
+let group_ifdef : Ast_c.matching_tag
+                  -> Ast_c.statement_sequencable list
+                  -> Ast_c.ifdef_directive list
+                      * Ast_c.statement_sequencable list list
+                      * Ast_c.statement_sequencable list
+  = fun tag xs ->
+  let (xxs, remaining) = group_by_post (is_ifdef_and_same_tag tag) xs in
+
+  (* TODO: Should replace this with a proper assert.
+   * - Iago Abal
+   *)
+  xxs +> List.map (fun (_,x) ->
+    match x with
+    | IfdefStmt y -> y
+    | StmtElem _ | CppDirectiveStmt _ | IfdefStmt2 _ -> raise (Impossible 78)
+  ),
+  xxs +> List.map fst,
+  remaining
+
+
+let rec cpp_ifdef_statementize (ast :toplevel list) :toplevel list =
+  Visitor_c.vk_program_s { Visitor_c.default_visitor_c_s with
+    Visitor_c.kstatementseq_list_s = (fun (k, bigf) xs ->
+      let rec aux : statement_sequencable list -> statement_sequencable list
+        = function
+        | [] -> []
+        | stseq::xs ->
+            (match stseq with
+            | StmtElem st ->
+                Visitor_c.vk_statement_sequencable_s bigf stseq::aux xs
+            | CppDirectiveStmt directive ->
+                Visitor_c.vk_statement_sequencable_s bigf stseq::aux xs
+            | IfdefStmt ifdef ->
+                (match ifdef with
+                | IfdefDirective ((Ast_c.Ifdef,tag),ii) ->
+
+                    let (restifdefs, xxs, xs') = group_ifdef tag xs in
+                    if should_ifdefize (tag,ii) (ifdef::restifdefs) xxs
+                    then
+                      let res = IfdefStmt2 (ifdef::restifdefs, xxs) in
+                      Visitor_c.vk_statement_sequencable_s bigf res::aux xs'
+                    else
+                      Visitor_c.vk_statement_sequencable_s bigf stseq::aux xs
+
+                | IfdefDirective (((IfdefElseif|IfdefElse|IfdefEndif),b),ii) ->
+                    pr2 "weird: first directive is not a ifdef";
+                    (* maybe not weird, just that should_ifdefize
+                     * returned false *)
+                    Visitor_c.vk_statement_sequencable_s bigf stseq::aux xs
+                )
+
+            | IfdefStmt2 (ifdef, xxs) ->
+                failwith "already applied cpp_ifdef_statementize"
+            )
+      in
+      aux xs
+    );
+  } ast

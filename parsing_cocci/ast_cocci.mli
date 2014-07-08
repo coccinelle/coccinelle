@@ -280,7 +280,7 @@ and base_typeC =
 	string mcode (* { *) * expression dots * string mcode (* } *)
   | StructUnionName of structUnion mcode * ident option (* name *)
   | StructUnionDef  of fullType (* either StructUnionName or metavar *) *
-	string mcode (* { *) * declaration dots * string mcode (* } *)
+	string mcode (* { *) * annotated_decl dots * string mcode (* } *)
   | TypeName        of string mcode
 
   | MetaType        of meta_name mcode * keep_binding * inherited
@@ -316,7 +316,6 @@ and base_declaration =
         initialiser * string mcode (* ; *)
   | Typedef of string mcode (*typedef*) * fullType * typeC * string mcode (*;*)
   | DisjDecl   of declaration list
-  | Ddots    of string mcode (* ... *) * declaration option (* whencode *)
 
   | MetaDecl of meta_name mcode * keep_binding * inherited
   | MetaField of meta_name mcode * keep_binding * inherited
@@ -327,6 +326,14 @@ and base_declaration =
   | UniqueDecl of declaration
 
 and declaration = base_declaration wrap
+
+and base_annotated_decl =
+    DElem of mcodekind (* before the decl *) * bool (* true if all minus *) *
+      declaration
+  (* Ddots is for a structure declaration *)
+  | Ddots    of string mcode (* ... *) * declaration option (* whencode *)
+
+and annotated_decl = base_annotated_decl wrap
 
 (* --------------------------------------------------------------------- *)
 (* Initializers *)
@@ -426,8 +433,7 @@ and base_rule_elem =
 	             fninfo list * ident (* name *) *
 	             string mcode (* ( *) * parameter_list *
                      string mcode (* ) *)
-  | Decl          of mcodekind (* before the decl *) *
-                     bool (* true if all minus *) * declaration
+  | Decl          of annotated_decl
 
   | SeqStart      of string mcode (* { *)
   | SeqEnd        of string mcode (* } *)
@@ -457,6 +463,8 @@ and base_rule_elem =
   | Return        of string mcode (* return *) * string mcode (* ; *)
   | ReturnExpr    of string mcode (* return *) * expression *
 	             string mcode (* ; *)
+  | Exec          of string mcode (* EXEC *) * string mcode (* language *) *
+	             exec_code dots * string mcode (* ; *)
 
   | MetaRuleElem  of meta_name mcode * keep_binding * inherited
   | MetaStmt      of meta_name mcode * keep_binding * metaStmtInfo *
@@ -485,8 +493,7 @@ and pragmainfo = base_pragmainfo wrap
 
 and forinfo =
     ForExp of expression option * string mcode (*;*)
-  | ForDecl of mcodekind (* before the decl *) *
-        bool (* true if all minus *) * declaration
+  | ForDecl of annotated_decl
 
 and fninfo =
     FStorage of storage mcode
@@ -518,7 +525,7 @@ and base_statement =
 	             (statement dots,statement) whencode list * multi *
 	             dots_whencode list * dots_whencode list
   | FunDecl       of rule_elem (* header *) * rule_elem (* { *) *
-     	             statement dots * rule_elem (* } *)
+     	             statement dots * rule_elem (* } *) * end_info (*exit*)
   | Define        of rule_elem (* header *) * statement dots
   | AsStmt        of statement * statement (* as statement, always metavar *)
   | Dots          of string mcode (* ... *) *
@@ -558,6 +565,13 @@ and base_case_line =
   | OptCase of case_line
 
 and case_line = base_case_line wrap
+
+and base_exec_code =
+    ExecEval of string mcode (* : *) * expression
+  | ExecToken of string mcode
+  | ExecDots of string mcode (* ... *)
+
+and exec_code = base_exec_code wrap
 
 and inc_file =
     Local of inc_elem list
@@ -641,6 +655,7 @@ and anything =
   | StatementTag        of statement
   | ForInfoTag          of forinfo
   | CaseLineTag         of case_line
+  | StringFragmentTag   of string_fragment
   | ConstVolTag         of const_vol
   | Token               of string * info option
   | Directive           of added_string list
@@ -648,7 +663,7 @@ and anything =
   | ExprDotsTag         of expression dots
   | ParamDotsTag        of parameterTypeDef dots
   | StmtDotsTag         of statement dots
-  | DeclDotsTag         of declaration dots
+  | AnnDeclDotsTag      of annotated_decl dots
   | TypeCTag            of typeC
   | ParamTag            of parameterTypeDef
   | SgrepStartTag       of string

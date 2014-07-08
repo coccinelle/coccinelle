@@ -9,9 +9,9 @@ let prepare coccifile code =
 	function
 	    Ast_cocci.ScriptRule (name,"ocaml",deps,mv,script_vars,code) ->
 	      code :: prev
-	  | Ast_cocci.InitialScriptRule (name,"ocaml",deps,code) ->
+	  | Ast_cocci.InitialScriptRule (name,"ocaml",deps,mvs,code) ->
 	      code :: prev
-	  | Ast_cocci.FinalScriptRule (name,"ocaml",deps,code) ->
+	  | Ast_cocci.FinalScriptRule (name,"ocaml",deps,mvs,code) ->
 	      code :: prev
 	  | _ -> prev)
       [] code in

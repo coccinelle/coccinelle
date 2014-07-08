@@ -607,6 +607,12 @@ module XTRANS = struct
     Visitor_c.vk_ident_list_splitted_s
        (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
 
+  let distribute_mck_exec_code_list (maxpos, minpos) =
+    fun (lop,mop,rop,bop) -> fun x ->
+      Visitor_c.vk_exec_code_list_splitted_s
+	(mk_bigf (maxpos, minpos) (lop,mop,rop,bop))
+	x
+
    let get_pos mck =
      match mck with
      | Ast_cocci.PLUS _ -> raise (Impossible 54)
@@ -671,6 +677,8 @@ module XTRANS = struct
     distrf (Lib_parsing_c.ii_of_pragmainfo,distribute_mck_pragmainfo)
   let distrf_ident_list =
     distrf (Lib_parsing_c.ii_of_ident_list,distribute_mck_ident_list)
+  let distrf_exec_code_list =
+    distrf (Lib_parsing_c.ii_of_exec_code_list,distribute_mck_exec_code_list)
 
 
   (* ------------------------------------------------------------------------*)
@@ -777,12 +785,12 @@ let (transform2: string (* rule name *) -> string list (* dropped_isos *) ->
       | F.Enter | F.Exit | F.ErrorExit
       | F.EndStatement _ | F.CaseNode _
       | F.Fake
-      | F.TrueNode | F.FalseNode | F.AfterNode | F.FallThroughNode
+      | F.TrueNode _ | F.FalseNode | F.AfterNode _ | F.FallThroughNode
           -> ()
       | _ -> () (* assert (not (node =*= node')); *)
       );
 
-      (* useless, we dont go back from flow to ast now *)
+      (* useless, we don't go back from flow to ast now *)
       (* let node' = lastfix_comma_struct node' in *)
 
       acc#replace_node (nodei, node');

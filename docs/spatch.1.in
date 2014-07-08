@@ -1,6 +1,6 @@
 .\"  -*- nroff -*-
 .\" Please adjust this date whenever revising the manpage.
-.TH SPATCH 1 "aug 02, 2012"
+.TH SPATCH 1 "Jun 22, 2014"
 
 .\" see http://www.fnal.gov/docs/products/ups/ReferenceManual/html/manpages.html
 .\" see http://www.linuxjournal.com/article/1158
@@ -49,6 +49,10 @@ transform multiple files at any number of code sites.
 .PP
 Further information about spatch is available at
 \fBhttp://coccinelle.lip6.fr/\fP.
+
+Semantic patch examples can be found at \fBhttp://coccinellery.org/\fP,
+and at the \fBscripts/coccinelle\fP directory of the Linux Kernel source
+code.
 
 .SH OPTIONS
 Here is a summary of the most commonly used options:
@@ -430,7 +434,10 @@ spacing of + code follows the semantic patch
 indicate that a virtual rule should be considered to be matched
 .TP
 \fB\-\-c\fR++
-make a small attempt to parse C++ files
+make a small attempt to parse C++ files. The supported extensions for
+source files are .cpp, .cxx, .cc, and for header files are .h, .hpp
+and .hxx. Note that this option disables the processing of .c files
+as Coccinelle behaviour is different for C++.
 .PP
 .IP "MISC OPTIONS"
 .TP
@@ -583,15 +590,15 @@ Y. Padioleau, J.L. Lawall, R.R Hansen, G. Muller
 Glasgow, Scotland (April 2008) pp. 247-260.
 
 .SH AUTHOR
-\fBspatch\fP was written by Julia Lawall <julia@diku.dk>, Yoann Padioleau
+\fBspatch\fP was written by Julia Lawall <julia.lawall@lip6.fr>, Yoann Padioleau
 <yoann.padioleau@gmail.com>, Rene Rydhof Hansen <rrhansen@diku.dk> and
 Henrik Stuart <henrik@hstuart.dk>.
 .PP
-This manual page was written by Yoann Padioleau <yoann.padioleau@gmail.com>
-and Julia Lawall <julia@diku.dk>.
+This manual page was written by Yoann Padioleau <yoann.padioleau@gmail.com>,
+Julia Lawall <julia.lawall@lip6.fr>, and Peter Senna Tschudin <peter.senna@gmail.com>.
 
 .SH REPORTING BUGS
-Send a mail to <cocci@diku.dk>
+Send a mail to <cocci@systeme.lip6.fr>
 
 .SH COPYRIGHT
 Copyright 2010, 2011, University of Copenhagen DIKU and INRIA.

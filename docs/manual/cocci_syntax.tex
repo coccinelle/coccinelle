@@ -14,6 +14,12 @@ as \T{id}, \T{const}, etc.  These refer to the sets suggested by
 the name, {\em i.e.}, \T{id} refers to the set of possible
 C-language identifiers, while \T{const} refers to the set of
 possible C-language constants.
+
+A square bracket that is surrounded by spaces in the description of a term
+should appear explicitly in the term, as in an array reference.  On the
+other hand, square brackets that surround some other term indicat that the
+presence of that term is optional.
+
 %
 \ifhevea
 A PDF version of this documentation is available at
@@ -862,6 +868,11 @@ It may be necessary to consider several cases to ensure that the added ode
 is placed in the right position.  For example, one may need one pattern
 that considers that the function is declared {\tt inline} and another that
 considers that it is not.
+
+The C parser allows functions that have no return type, and assumes that
+the return type is \texttt{int}.  The support for parsing such functions is
+limited.  In particular, the parameter list must contain a type for each
+parameter, and may not contain varargs.
 
 %\newpage
 

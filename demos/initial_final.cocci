@@ -1,6 +1,7 @@
 // Options: -dir {directory}
 
 @initialize:python@
+@@
 counter = 0
 
 @x@
@@ -16,5 +17,6 @@ p<<x.p;
 counter = counter + 1
 
 @finalize:python@
+@@
 
 print "counter %d" % (counter)

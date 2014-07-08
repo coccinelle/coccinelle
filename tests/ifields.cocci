@@ -12,7 +12,7 @@ field list[nilla] F;
   } Tobj;
 
 
-@@
+@s@
 identifier obj;
 identifier vtbl;
 initializer list[object.nilla] E;

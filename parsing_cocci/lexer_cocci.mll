@@ -29,12 +29,12 @@ let get_current_line_type lexbuf =
     if !line_start < 0 then 0 else lex_start - !line_start in
   (*line_start := -1;*)
   prev_plus := (c = D.PLUS) or (c = D.PLUSPLUS);
-  (c,l,ll,lex_start,preceeding_spaces,[],[],[])
+  (c,l,ll,ll,lex_start,preceeding_spaces,[],[],[])
 let current_line_started = ref false
 let col_zero = ref true
 
-let contextify (c,l,ll,lex_start,preceeding_spaces,bef,aft,pos) =
-  (D.CONTEXT,l,ll,lex_start,preceeding_spaces,bef,aft,pos)
+let contextify (c,l,ll,lle,lex_start,preceeding_spaces,bef,aft,pos) =
+  (D.CONTEXT,l,ll,lle,lex_start,preceeding_spaces,bef,aft,pos)
 
 let reset_line lexbuf =
   line := !line + 1;
@@ -270,6 +270,7 @@ let id_tokens lexbuf =
   | "unsigned" ->   Tunsigned linetype
   | "signed" ->     Tsigned   linetype
   | "decimal" when !Flag.ibm -> Tdecimal linetype
+  | "EXEC" when !Flag.ibm -> Texec linetype
 
   | "auto"  ->      Tauto     linetype
   | "register" ->   Tregister linetype
@@ -450,7 +451,7 @@ let init _ =
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_pos_meta :=
     (fun name constraints any ->
-      let fn ((d,ln,_,_,_,_,_,_) as clt) =
+      let fn ((d,ln,_,_,_,_,_,_,_) as clt) =
 	(if d = Data.PLUS
 	then
 	  failwith
@@ -534,6 +535,8 @@ rule token = parse
 	begin
 	  match !current_line_type with
 	    (D.PLUS,_,_) | (D.PLUSPLUS,_,_) ->
+	      (* increment the logical line even though nothing seen *)
+	      start_line true;
 	      let info = get_current_line_type lexbuf in
 	      reset_line lexbuf;
 	      TDirective (Ast.Noindent "", info)
@@ -738,37 +741,37 @@ rule token = parse
   | (( ("#" [' ' '\t']*  "undef" [' ' '\t']+)) as def)
     ( (letter (letter |digit)*) as ident)
       { start_line true;
-	let (arity,line,lline,offset,col,strbef,straft,pos) as lt =
+	let (arity,line,lline,llend,offset,col,strbef,straft,pos) as lt =
 	  get_current_line_type lexbuf in
 	let off = String.length def in
 	(* -1 in the code below because the ident is not at the line start *)
 	TUndef
 	  (lt,
 	   check_var ident
-	     (arity,line,lline,offset+off,col+off,[],[],[])) }
+	     (arity,line,lline,llend,offset+off,col+off,[],[],[])) }
   | (( ("#" [' ' '\t']*  "define" [' ' '\t']+)) as def)
     ( (letter (letter |digit)*) as ident)
       { start_line true;
-	let (arity,line,lline,offset,col,strbef,straft,pos) as lt =
+	let (arity,line,lline,llend,offset,col,strbef,straft,pos) as lt =
 	  get_current_line_type lexbuf in
 	let off = String.length def in
 	(* -1 in the code below because the ident is not at the line start *)
 	TDefine
 	  (lt,
 	   check_var ident
-	     (arity,line,lline,offset+off,col+off,[],[],[])) }
+	     (arity,line,lline,llend,offset+off,col+off,[],[],[])) }
   | (( ("#" [' ' '\t']*  "define" [' ' '\t']+)) as def)
     ( (letter (letter | digit)*) as ident)
     '('
       { start_line true;
-	let (arity,line,lline,offset,col,strbef,straft,pos) as lt =
+	let (arity,line,lline,llend,offset,col,strbef,straft,pos) as lt =
 	  get_current_line_type lexbuf in
 	let off = String.length def in
 	TDefineParam
         (lt,
 	 check_var ident
 	   (* why pos here but not above? *)
-	   (arity,line,lline,offset+off,col+off,strbef,straft,pos),
+	   (arity,line,lline,llend,offset+off,col+off,strbef,straft,pos),
 	 offset + off + (String.length ident),
 	 col + off + (String.length ident)) }
   | ("#" [' ' '\t']*  "pragma")
@@ -967,6 +970,8 @@ and restchars = parse
 
 and string  = parse
   | '\"'                                       { "" }
+  | ['\n' '\r' '\011' '\012'] as x
+    { line := !line + 1; (Printf.sprintf "%c" x) ^ string lexbuf }
   | (_ as x)                   { Common.string_of_char x ^ string lexbuf }
   | ("\\" (oct | oct oct | oct oct oct)) as x { x ^ string lexbuf }
   | ("\\x" (hex | hex hex)) as x              { x ^ string lexbuf }

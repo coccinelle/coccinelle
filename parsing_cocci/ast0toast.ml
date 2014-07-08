@@ -170,7 +170,7 @@ let inline_mcodes =
     mcode mcode
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing do_nothing do_nothing do_nothing
+    do_nothing do_nothing do_nothing do_nothing do_nothing
 
 (* --------------------------------------------------------------------- *)
 (* For function declarations.  Can't use the mcode at the root, because that
@@ -238,7 +238,7 @@ let check_allminus =
     mcode mcode
     donothing donothing donothing donothing donothing donothing
     ident expression typeC initialiser donothing declaration
-    statement donothing case_line donothing
+    statement donothing case_line donothing donothing
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -548,8 +548,7 @@ and base_typeC allminus t =
       Ast.StructUnionName(mcode kind,get_option ident name)
   | Ast0.StructUnionDef(ty,lb,decls,rb) ->
       Ast.StructUnionDef(typeC allminus ty,mcode lb,
-			 dots declaration decls,
-			 mcode rb)
+			 declaration_dots decls, mcode rb)
   | Ast0.TypeName(name) -> Ast.TypeName(mcode name)
   | Ast0.MetaType(name,_) ->
       Ast.MetaType(mcode name,unitary,false)
@@ -622,15 +621,31 @@ and declaration d =
 	  Ast.Type(_,None,id) -> (* only MetaType or Id *)
 	    Ast.Typedef(mcode stg,typeC allminus ty,id,mcode sem)
 	| _ -> failwith "bad typedef")
+    | Ast0.Ddots(dots,whencode) -> failwith "should not be possible"
     | Ast0.DisjDecl(_,decls,_,_) -> Ast.DisjDecl(List.map declaration decls)
-    | Ast0.Ddots(dots,whencode) ->
-	let dots = mcode dots in
-	let whencode = get_option declaration whencode in
-	Ast.Ddots(dots,whencode)
     | Ast0.OptDecl(decl) -> Ast.OptDecl(declaration decl)
     | Ast0.UniqueDecl(decl) -> Ast.UniqueDecl(declaration decl))
 
-and declaration_dots l = dots declaration l
+and annotated_decl bef d =
+  rewrap d (do_isos (Ast0.get_iso d))
+    (match Ast0.unwrap d with
+      Ast0.Ddots(dots,whencode) ->
+	(* structure definitions only *)
+	let dots = mcode dots in
+	let whencode = get_option declaration whencode in
+	Ast.Ddots(dots,whencode)
+    | _ -> (* for decls where there is no bef information needed *)
+	let bef =
+	  match bef with
+	    None -> (* fake, no change here *)
+	      let bot = Ast0.default_token_info in
+	      Ast0.CONTEXT (ref(Ast.NOTHING,bot,bot))
+	  | Some bef -> bef in
+	let allminus = check_allminus.VT0.combiner_rec_declaration d in
+	Ast.DElem(convert_allminus_mcodekind allminus bef,allminus,
+		  declaration d))
+
+and declaration_dots l = dots (annotated_decl None) l
 
 (* --------------------------------------------------------------------- *)
 (* Initialiser *)
@@ -757,10 +772,8 @@ and statement s =
     rewrap_stmt s
       (match Ast0.unwrap s with
 	Ast0.Decl((_,bef),decl) ->
-	  let allminus = check_allminus.VT0.combiner_rec_statement s in
 	  Ast.Atomic(rewrap_rule_elem s
-		       (Ast.Decl(convert_allminus_mcodekind allminus bef,
-				 allminus,declaration decl)))
+		       (Ast.Decl(annotated_decl (Some bef) decl)))
       | Ast0.Seq(lbrace,body,rbrace) ->
 	  let lbrace = mcode lbrace in
 	  let body = dots (statement seqible) body in
@@ -849,6 +862,10 @@ and statement s =
 	  Ast.Atomic
 	    (rewrap_rule_elem s
 	       (Ast.ReturnExpr(mcode ret,expression exp,mcode sem)))
+      | Ast0.Exec(exec,lang,code,sem) ->
+	  Ast.Atomic
+	    (rewrap_rule_elem s
+	       (Ast.Exec(mcode exec,mcode lang,dots exec_code code,mcode sem)))
       | Ast0.MetaStmt(name,_) ->
 	  Ast.Atomic(rewrap_rule_elem s
 		       (Ast.MetaStmt(mcode name,unitary,seqible,false)))
@@ -902,7 +919,8 @@ and statement s =
 		 (statement Ast.NotSequencible))
 	      whn in
 	  Ast.Stars(d,whn,[],[])
-      | Ast0.FunDecl((_,bef),fi,name,lp,params,rp,lbrace,body,rbrace) ->
+      | Ast0.FunDecl((_,bef),fi,name,lp,params,rp,lbrace,body,rbrace,
+		     (_,aft)) ->
 	  let fi = List.map fninfo fi in
 	  let name = ident name in
 	  let lp = mcode lp in
@@ -918,7 +936,8 @@ and statement s =
 			    allminus,fi,name,lp,params,rp)),
 		      tokenwrap lbrace s (Ast.SeqStart(lbrace)),
 		      body,
-		      tokenwrap rbrace s (Ast.SeqEnd(rbrace)))
+		      tokenwrap rbrace s (Ast.SeqEnd(rbrace)),
+		      ([],[],[],convert_allminus_mcodekind allminus aft))
       |	Ast0.Include(inc,str) ->
 	  Ast.Atomic(rewrap_rule_elem s (Ast.Include(mcode inc,mcode str)))
       |	Ast0.Undef(def,id) ->
@@ -1062,11 +1081,7 @@ and forinfo fi =
       let exp1 = get_option expression exp1 in
       let sem1 = mcode sem1 in
       Ast.ForExp(exp1,sem1)
-  | Ast0.ForDecl ((_,bef),decl) ->
-      let allminus =
-	check_allminus.VT0.combiner_rec_declaration decl in
-      Ast.ForDecl (convert_allminus_mcodekind allminus bef,
-		   allminus, declaration decl)
+  | Ast0.ForDecl ((_,bef),decl) -> Ast.ForDecl(annotated_decl (Some bef) decl)
 
 and fninfo = function
     Ast0.FStorage(stg) -> Ast.FStorage(mcode stg)
@@ -1098,6 +1113,13 @@ and case_line c =
 
     | Ast0.OptCase(case) -> Ast.OptCase(case_line case))
 
+and exec_code c =
+  rewrap c no_isos
+    (match Ast0.unwrap c with
+      Ast0.ExecEval(colon,id) -> Ast.ExecEval(mcode colon,expression id)
+    | Ast0.ExecToken(tok) -> Ast.ExecToken(mcode tok)
+    | Ast0.ExecDots(dots) -> Ast.ExecDots(mcode dots))
+
 and statement_dots l = dots statement l
 
 (* --------------------------------------------------------------------- *)
@@ -1108,7 +1130,7 @@ and anything = function
   | Ast0.DotsParamTag(d) -> Ast.ParamDotsTag(parameter_list d)
   | Ast0.DotsInitTag(d) -> failwith "not possible"
   | Ast0.DotsStmtTag(d) -> Ast.StmtDotsTag(statement_dots d)
-  | Ast0.DotsDeclTag(d) -> Ast.DeclDotsTag(declaration_dots d)
+  | Ast0.DotsDeclTag(d) -> Ast.AnnDeclDotsTag(declaration_dots d)
   | Ast0.DotsCaseTag(d) -> failwith "not possible"
   | Ast0.IdentTag(d) -> Ast.IdentTag(ident d)
   | Ast0.ExprTag(d) -> Ast.ExpressionTag(expression d)
@@ -1121,6 +1143,7 @@ and anything = function
   | Ast0.StmtTag(d) -> Ast.StatementTag(statement d)
   | Ast0.ForInfoTag(d) -> Ast.ForInfoTag(forinfo d)
   | Ast0.CaseLineTag(d) -> Ast.CaseLineTag(case_line d)
+  | Ast0.StringFragmentTag(d) -> Ast.StringFragmentTag(string_fragment d)
   | Ast0.TopTag(d) -> Ast.Code(top_level d)
   | Ast0.IsoWhenTag(_) -> failwith "not possible"
   | Ast0.IsoWhenTTag(_) -> failwith "not possible"

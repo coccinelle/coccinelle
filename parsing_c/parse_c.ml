@@ -517,11 +517,21 @@ let clean_for_lookahead xs =
   | x::xs ->
       x::filter_noise 10 xs
 
-
+(* drops the first complete #define/#undefine - comment like *)
+let extend_passed_clean v xs =
+  let rec loop = function
+      [] -> []
+    | (Parser_c.TDefine _| Parser_c.TUndef _) :: rest -> rest
+    | x::xs -> loop xs in
+  match v with
+    Parser_c.TDefEOL _ ->  loop xs
+  | v -> v :: xs
 
 (* Hacked lex. This function use refs passed by parse_print_error_heuristic
  * tr means token refs.
  *)
+let in_exec = ref false
+
 let rec lexer_function ~pass tr = fun lexbuf ->
   match tr.rest with
   | [] -> pr2_err "ALREADY AT END"; tr.current
@@ -540,6 +550,12 @@ let rec lexer_function ~pass tr = fun lexbuf ->
       let x = List.hd tr.rest_clean  in
       tr.rest_clean <- List.tl tr.rest_clean;
       assert (x =*= v);
+
+      (* ignore exec code *)
+      (match v with
+	Parser_c.Texec _ -> in_exec := true
+      |	Parser_c.TPtVirg _ -> if !in_exec then in_exec := false
+      |	_ -> ());
 
       (match v with
 
@@ -566,7 +582,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
           end
           else begin
             tr.passed <- v::tr.passed;
-            tr.passed_clean <- v::tr.passed_clean;
+            tr.passed_clean <- extend_passed_clean v tr.passed_clean;
             v
           end
 
@@ -586,7 +602,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
           end
           else begin
             tr.passed <- v::tr.passed;
-            tr.passed_clean <- v::tr.passed_clean;
+            tr.passed_clean <- extend_passed_clean v tr.passed_clean;
             v
           end
 
@@ -607,7 +623,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
               new_tokens +> List.filter TH.is_not_comment  in
 
             tr.passed <- v::tr.passed;
-            tr.passed_clean <- v::tr.passed_clean;
+            tr.passed_clean <- extend_passed_clean v tr.passed_clean;
             tr.rest <- new_tokens ++ tr.rest;
             tr.rest_clean <- new_tokens_clean ++ tr.rest_clean;
             v
@@ -627,9 +643,13 @@ let rec lexer_function ~pass tr = fun lexbuf ->
             | x -> x
           in
 
-          let v = Parsing_hacks.lookahead ~pass
-            (clean_for_lookahead (v::tr.rest_clean))
-            tr.passed_clean in
+          let v =
+	    if !in_exec
+	    then v
+	    else
+	      Parsing_hacks.lookahead ~pass
+		(clean_for_lookahead (v::tr.rest_clean))
+		tr.passed_clean in
 
           tr.passed <- v::tr.passed;
 
@@ -639,7 +659,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
           match v with
           | Parser_c.TCommentCpp _ -> lexer_function ~pass tr lexbuf
           | v ->
-              tr.passed_clean <- v::tr.passed_clean;
+              tr.passed_clean <- extend_passed_clean v tr.passed_clean;
               v
       )
     end
@@ -880,6 +900,10 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
 
   let toks_orig = tokens file in
   let toks = Parsing_hacks.fix_tokens_define toks_orig in
+  let toks = if !Flag_parsing_c.exts_ITU
+                then Parsing_hacks.fix_tokens_ifdef toks
+                else toks
+    in
   let toks = Parsing_hacks.fix_tokens_cpp ~macro_defs:!_defs_builtins toks in
   let toks =
     if parse_strings
@@ -1080,6 +1104,11 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
   let v = loop tr in
   let v = with_program2 Parsing_consistency_c.consistency_checking v in
   with_program2_unit Danger.add_danger v;
+  let v =
+    if !Flag_parsing_c.ifdef_to_if
+       then with_program2 Parsing_hacks.cpp_ifdef_statementize v
+       else v
+  in
   let v =
     let new_td = ref (Common.clone_scoped_h_env !LP._typedef) in
     Common.clean_scope_h new_td;
