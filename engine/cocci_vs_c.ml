@@ -1546,10 +1546,13 @@ and string_format ea eb =
   match A.unwrap ea,eb with
     A.ConstantFormat(str1), (B.ConstantFormat(str2),ii) ->
       let ib1 = tuple_of_list1 ii in
-      tokenf str1 ib1 >>= (fun str1 ib1 ->
-	return
-	  (A.ConstantFormat(str1) +> wa,
-	   (B.ConstantFormat(str2),[ib1])))
+      if A.unwrap_mcode str1 = str2
+      then
+	tokenf str1 ib1 >>= (fun str1 ib1 ->
+	  return
+	    (A.ConstantFormat(str1) +> wa,
+	     (B.ConstantFormat(str2),[ib1])))
+      else fail
   | A.MetaFormat(ida,constraints,keep,inherited),(B.ConstantFormat(str2),ii) ->
       check_constraints constraints str2 >>=
       (fun () () ->
