@@ -89,20 +89,34 @@ let error_msg_tok tok =
   then Common.error_message file (token_to_strpos tok)
   else ("error in " ^ file  ^ "; set verbose_parsing for more info")
 
+type parse_error_function = int -> Parser_c.token list -> (int * int) ->
+    string array -> int -> unit
 
-let print_bad line_error (start_line, end_line) filelines  =
-  begin
-    pr2 ("badcount: " ^ i_to_s (end_line - start_line));
+let parse_error_function : parse_error_function option ref = ref None
 
-    for i = start_line to end_line do
-      let line = filelines.(i) in
+let set_parse_error_function f =
+   parse_error_function := Some f
 
-      if i =|= line_error
-      then  pr2 ("BAD:!!!!!" ^ " " ^ line)
-      else  pr2 ("bad:" ^ " " ^      line)
-    done
-  end
+let default_parse_error_function : parse_error_function =
+  fun line_error _tokens (start_line, end_line) filelines pass ->
+    begin
+      pr2 ("badcount: " ^ i_to_s (end_line - start_line));
 
+      for i = start_line to end_line do
+	let line = filelines.(i) in
+
+	if i =|= line_error
+	then  pr2 ("BAD:!!!!!" ^ " " ^ line)
+	else  pr2 ("bad:" ^ " " ^      line)
+      done
+    end
+
+let print_bad line_error tokens (start_line, end_line) filelines pass =
+  let func =
+    match !parse_error_function with
+      | Some f -> f
+      | None -> default_parse_error_function in
+  func line_error tokens (start_line, end_line) filelines pass
 
 (*****************************************************************************)
 (* Stats on what was passed/commentized  *)
@@ -681,7 +695,7 @@ let get_one_elem ~pass tr (file, filelines) =
       let info_of_bads = Common.map_eff_rev TH.info_of_tok tr.passed in
       Right (info_of_bads,  line_error,
             tr.passed, passed_before_error,
-            current, e)
+            current, e, pass)
   )
 
 
@@ -918,7 +932,7 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
         ) in
       match pass1 with
       | Left e -> Left e
-      | Right (info,line_err, passed, passed_before_error, cur, exn) ->
+      | Right (info,line_err, passed, passed_before_error, cur, exn, _) ->
           if !Flag_parsing_c.disable_multi_pass
           then pass1
           else begin
@@ -932,7 +946,7 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
 
             (match passx with
             | Left e -> passx
-            | Right (info,line_err,passed,passed_before_error,cur,exn) ->
+            | Right (info,line_err,passed,passed_before_error,cur,exn,_) ->
                 let candidates =
                   candidate_macros_in_passed ~defs:macros passed
                 in
@@ -953,7 +967,7 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
 
                   (match passx with
                   | Left e -> passx
-                  | Right (info,line_err,passed,passed_before_error,cur,exn) ->
+                  | Right (info,line_err,passed,passed_before_error,cur,exn,_) ->
                       pr2_err "parsing pass4: try again";
 
                       let candidates =
@@ -1003,7 +1017,7 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
           stat.Stat.correct <- stat.Stat.correct + diffline;
           e
       | Right (info_of_bads, line_error, toks_of_bads,
-              _passed_before_error, cur, exn) ->
+              passed_before_error, cur, exn, pass) ->
 
           let was_define = is_define_passed tr.passed in
 
@@ -1033,7 +1047,7 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
               (* bugfix: *)
               if (checkpoint_file =$= checkpoint2_file) &&
                 checkpoint_file =$= file
-              then print_bad line_error (checkpoint, checkpoint2) filelines
+              then print_bad line_error passed_before_error (checkpoint, checkpoint2) filelines pass
               else pr2 "PB: bad: but on tokens not from original file"
             end;
 

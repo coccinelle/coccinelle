@@ -2,6 +2,7 @@
  *)
 
 module Ast_c    = Ast_c      (* parsing_c/ast_c.ml *)
+module Parse_c  = Parse_c    (* parsing_c/parse_c.ml *)
 module Parser_c = Parser_c   (* parsing_c/parser_c.mly *)
 module Lexer_c  = Lexer_c    (* parsing_c/lexer_c.mll *)
 module Pretty_print_c = Pretty_print_c (* parsing_c/pretty_print_c.ml *)
