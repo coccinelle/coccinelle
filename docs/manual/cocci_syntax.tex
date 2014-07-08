@@ -263,6 +263,12 @@ expression list.  This pattern matches a parameter list, and then matches
 {\tt Es} to the list of expressions, ie a possible argument list,
 represented by the names of the parameters.
 
+Matching of various kinds of format strings within strings is supported.
+With the {\tt --ibm} option, matching of decimal format declarations is
+supported, but the length and precision arguments are not interpreted.
+Thus it is not possible to match metavariables in these fields.  Instead,
+the entire format is matched as a single string.
+
 \begin{grammar}
   \RULE{\rt{ids}}
   \CASE{\NT{COMMA\_LIST}\mth{(}\NT{pmid}\mth{)}}

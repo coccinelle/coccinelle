@@ -671,6 +671,10 @@ let parse_middle middle clt =
 	| "..." -> [Ast0.wrap(Ast0.Strdots(clt2mcode fst clt))]
 	| _ -> [Ast0.wrap (Ast0.ConstantFragment(clt2mcode fst clt))] in
       let chars = String.length fst in
+      let mkrest clt = function
+	  "" -> []
+	| "..." -> [Ast0.wrap(Ast0.Strdots(clt2mcode "..." clt))]
+	| s -> [Ast0.wrap(Ast0.ConstantFragment(clt2mcode s clt))] in
       let rec loop chars = function
 	  [] -> []
 	| r::rs ->
@@ -681,12 +685,6 @@ let parse_middle middle clt =
 	    let rres =
 	      match String.get r 0 with
 		'@' ->
-		  let mkrest clt = function
-		      "" -> []
-		    | "..." ->
-			[Ast0.wrap(Ast0.Strdots(clt2mcode "..." clt))]
-		    | s ->
-			[Ast0.wrap(Ast0.ConstantFragment(clt2mcode s clt))] in
 		  (match Str.split (Str.regexp "@") r with
 		    first::rest ->
 		      (* 3+ for the % and the starting and ending @ *)
@@ -704,9 +702,8 @@ let parse_middle middle clt =
 		    (d,"") -> [Ast0.wrap (Ast0.FormatFragment(pct,mkfmt d))]
 		  | (d,rest) ->
 		      let clt2 = update_clt clt 1 in
-		      [Ast0.wrap (Ast0.FormatFragment(pct,mkfmt d));
-			Ast0.wrap
-			  (Ast0.ConstantFragment(clt2mcode rest clt2))] in
+		      (Ast0.wrap (Ast0.FormatFragment(pct,mkfmt d))) ::
+		      (mkrest clt2 rest) in
 	    (* +1 is for the %, which is not shown *)
 	    rres @ (loop (chars + (String.length r) + 1) rs) in
       first @ (loop chars rest)
