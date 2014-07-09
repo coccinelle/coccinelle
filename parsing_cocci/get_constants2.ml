@@ -593,7 +593,7 @@ let do_get_constants constants keywords env neg_pos =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing
     ident expression string_fragment string_format fullType typeC
-    initialiser parameter declaration
+    initialiser parameter declaration donothing
     rule_elem statement donothing donothing donothing
 
 (* ------------------------------------------------------------------------ *)
@@ -627,7 +627,7 @@ let get_all_constants minus_only =
 
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
 
 (* ------------------------------------------------------------------------ *)
 
@@ -679,7 +679,7 @@ let get_plus_constants =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    rule_elem statement donothing donothing donothing
+    donothing rule_elem statement donothing donothing donothing
 
 (* ------------------------------------------------------------------------ *)
 
@@ -755,7 +755,7 @@ let all_context =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing initialiser donothing
-    donothing rule_elem statement donothing donothing donothing
+    donothing donothing rule_elem statement donothing donothing donothing
 
 (* ------------------------------------------------------------------------ *)
 

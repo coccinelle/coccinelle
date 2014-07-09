@@ -610,8 +610,8 @@ and subexp f =
   let donothing r k e = k e in
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing donothing
-      donothing expr donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing expr 
+      donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing in
   recursor.V.combiner_rule_elem
 
@@ -623,8 +623,8 @@ and subtype f =
   let donothing r k e = k e in
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing fullType donothing donothing
+      donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing fullType donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing in
   recursor.V.combiner_rule_elem
 

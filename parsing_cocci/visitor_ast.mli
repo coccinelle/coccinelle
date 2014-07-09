@@ -50,6 +50,7 @@ val combiner :
       ((Ast_cocci.initialiser,'a) ccode) ->
       ((Ast_cocci.parameterTypeDef,'a) ccode) ->
       ((Ast_cocci.declaration,'a) ccode) ->
+      ((Ast_cocci.annotated_decl,'a) ccode) ->
       ((Ast_cocci.rule_elem,'a) ccode) ->
       ((Ast_cocci.statement,'a) ccode) ->
       ((Ast_cocci.case_line,'a) ccode) ->
@@ -113,6 +114,7 @@ val rebuilder :
     (Ast_cocci.initialiser rcode) ->
     (Ast_cocci.parameterTypeDef rcode) ->
     (Ast_cocci.declaration rcode) ->
+    (Ast_cocci.annotated_decl rcode) ->
     (Ast_cocci.rule_elem rcode) ->
     (Ast_cocci.statement rcode) ->
     (Ast_cocci.case_line rcode) ->
