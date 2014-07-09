@@ -2069,7 +2069,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 		mcode mcode mcode
 		donothing donothing donothing donothing donothing
 		donothing donothing donothing donothing donothing
-		donothing donothing donothing donothing
+		donothing donothing donothing donothing donothing
 		donothing donothing donothing donothing donothing in
 	    v.Visitor_ast.rebuilder_declaration decla in
 

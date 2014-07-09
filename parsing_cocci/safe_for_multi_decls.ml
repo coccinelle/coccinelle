@@ -27,7 +27,7 @@ let all_removed =
     V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing do_nothing
+      do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_declaration
@@ -70,7 +70,7 @@ let contains_modif =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing
-      do_nothing do_nothing do_nothing do_nothing init do_nothing
+      do_nothing do_nothing do_nothing do_nothing init do_nothing do_nothing
       do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_fullType
 
@@ -100,7 +100,7 @@ let process =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing
-      donothing donothing decl donothing
+      donothing donothing decl donothing donothing
       donothing donothing donothing donothing in
   List.map fn.V.rebuilder_top_level
 

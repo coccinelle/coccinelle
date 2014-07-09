@@ -536,7 +536,6 @@ let combiner bind option_default
 	  let lsem = string_mcode sem in
 	  multibind [lwhl; llp; lexp; lrp; lsem]
       | Ast.ForHeader(fr,lp,first,e2,sem2,e3,rp) ->
-	    (*TODO: find out order*)
 	  let lfr = string_mcode fr in
 	  let llp = string_mcode lp in
 	  let lfirst = forinfo first in
@@ -688,7 +687,7 @@ let combiner bind option_default
     | Ast.AddingBetweenDots(stm,ind) -> let _ = statement stm in ()
 
   and statement s =
-    (*process_bef_aft s;*)
+    process_bef_aft s;
     let k s =
       match Ast.unwrap s with
 	Ast.Seq(lbrace,body,rbrace) ->
@@ -1387,7 +1386,6 @@ let rebuilder
 	    let lsem = string_mcode sem in
 	    Ast.WhileTail(lwhl, llp, lexp, lrp, lsem)
 	| Ast.ForHeader(fr,lp,first,e2,sem2,e3,rp) ->
-	    (*TODO: find out order*)
 	    let lfr = string_mcode fr in
 	    let llp = string_mcode lp in
 	    let lfirst = forinfo first in
