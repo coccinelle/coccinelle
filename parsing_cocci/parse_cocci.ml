@@ -374,7 +374,7 @@ let get_clt (tok,_) =
   | PC.Tsize_t(clt) | PC.Tssize_t(clt) | PC.Tptrdiff_t(clt)
   | PC.Tstruct(clt)
   | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
-  | PC.Tdecimal(clt) | PC.Texec(clt) | PC.Tstatic(clt)
+  | PC.Tdecimal(clt) | PC.Texec(clt) | PC.Tstatic(clt) | PC.Ttypedef(clt)
   | PC.Tinline(clt) | PC.Tattr(_,clt) | PC.Tauto(clt) | PC.Tregister(clt)
   | PC.Textern(clt) | PC.Tconst(clt) | PC.Tvolatile(clt)
 
@@ -400,7 +400,7 @@ let get_clt (tok,_) =
   | PC.TSub(clt) | PC.TLogOp(_,clt)
   | PC.TShLOp(_,clt) | PC.TShROp(_,clt)
   | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
-  | PC.TDmOp(_,clt) | PC.TTilde (clt)
+  | PC.TDmOp(_,clt) | PC.TTilde (clt) | PC.TTildeExclEq(clt)
 
   | PC.TMeta(_,_,clt) | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
   | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaErr(_,_,_,clt)
@@ -435,8 +435,8 @@ let get_clt (tok,_) =
   | PC.TOPar0(clt) | PC.TMid0(clt) | PC.TCPar0(clt)
   | PC.TOEllipsis(clt) | PC.TCEllipsis(clt)
   | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) (* | PC.TOCircles(clt)
-  | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *) -> clt
-
+  | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *)
+  | PC.TFunDecl(clt) | PC.TDirective(_,clt) | PC.TLineEnd(clt) -> clt
   | _ -> failwith "no clt"
 
 let update_clt (tok,x) clt =
@@ -596,6 +596,8 @@ let update_clt (tok,x) clt =
 
   | PC.TLineEnd(_) -> (PC.TLineEnd(clt),x)
   | PC.TFunDecl(_) -> (PC.TFunDecl(clt),x)
+  | PC.TTildeExclEq(_) -> (PC.TTildeExclEq(clt),x)
+  | PC.TDirective(a,_) -> (PC.TDirective(a,clt),x)
 
   | _ -> failwith "no clt"
 
