@@ -260,6 +260,7 @@ let convert_info info =
     Ast.column = info.Ast0.pos_info.Ast0.column;
     Ast.strbef = strings_to_s info.Ast0.strings_before;
     Ast.straft = strings_to_s info.Ast0.strings_after;
+    Ast.whitespace = info.Ast0.whitespace;
   }
 
 let convert_mcodekind adj = function

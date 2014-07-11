@@ -26,6 +26,7 @@ type position_info = { line_start : int; line_end : int;
 		       column : int; offset : int; }
 
 type info = { pos_info : position_info;
+              (* preceding whitespace*) whitespace : string;
 	      attachable_start : bool; attachable_end : bool;
 	      mcode_start : mcodekind list; mcode_end : mcodekind list;
 	      (* the following are only for + code *)
@@ -452,9 +453,10 @@ and rule = top_level list
 
 and parsed_rule =
     CocciRule of
-      (rule * Ast.metavar list *
-	 (string list * string list * Ast.dependency * string * Ast.exists)) *
-	(rule * Ast.metavar list) * Ast.ruletype
+      (rule (*minus*) * Ast.metavar list (*minus metavars*) *
+	(string list (*isos*) * string list (*drop_isos*) * 
+         Ast.dependency (*dependencies*) * string (*rulename*) * Ast.exists)) *
+      (rule (*plus*) * Ast.metavar list (*plus metavars*)) * Ast.ruletype
   | ScriptRule of string (* name *) * string * Ast.dependency *
 	(Ast.script_meta_name * Ast.meta_name * Ast.metavar) list *
 	Ast.meta_name list (*script vars*) *
@@ -532,7 +534,7 @@ let pos_info =
     column = -1; offset = -1; }
 
 let default_info _ = (* why is this a function? *)
-  { pos_info = pos_info;
+  { pos_info = pos_info; whitespace = "";
     attachable_start = true; attachable_end = true;
     mcode_start = []; mcode_end = [];
     strings_before = []; strings_after = []; isSymbolIdent = false; }

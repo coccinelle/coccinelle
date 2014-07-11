@@ -2332,6 +2332,7 @@ let disj_starter lst =
       Ast0.logical_end = old_info.Ast0.pos_info.Ast0.logical_start; } in
   let info =
     { Ast0.pos_info = new_pos_info;
+      Ast0.whitespace = "";
       Ast0.attachable_start = false; Ast0.attachable_end = false;
       Ast0.mcode_start = []; Ast0.mcode_end = [];
       Ast0.strings_before = []; Ast0.strings_after = [];
@@ -2346,6 +2347,7 @@ let disj_ender lst =
       Ast0.logical_start = old_info.Ast0.pos_info.Ast0.logical_end; } in
   let info =
     { Ast0.pos_info = new_pos_info;
+      Ast0.whitespace = "";
       Ast0.attachable_start = false; Ast0.attachable_end = false;
       Ast0.mcode_start = []; Ast0.mcode_end = [];
       Ast0.strings_before = []; Ast0.strings_after = [];

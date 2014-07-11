@@ -100,7 +100,7 @@ let mcode_simple_minus = function
 
 let minusizer =
   ("fake","fake"),
-  {A.line = 0; A.column =0; A.strbef=[]; A.straft=[]},
+  {A.line = 0; A.column =0; A.strbef=[]; A.straft=[]; A.whitespace=""},
   (A.MINUS(A.DontCarePos,[],A.ALLMINUS,A.NOREPLACEMENT)),
   []
 
