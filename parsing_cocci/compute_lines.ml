@@ -25,6 +25,7 @@ let mkres x e left right =
       Ast0.offset = lstart.Ast0.pos_info.Ast0.offset;} in
   let info =
     { Ast0.pos_info = pos_info;
+      Ast0.whitespace = lstart.Ast0.whitespace;
       (* not clear that the next two lines serve any purpose *)
       Ast0.attachable_start = check_attachable lstart.Ast0.attachable_start;
       Ast0.attachable_end = check_attachable lend.Ast0.attachable_end;
@@ -57,6 +58,7 @@ let mkmultires x e left right (astart,start_mcodes) (aend,end_mcodes) =
       Ast0.offset = lstart.Ast0.pos_info.Ast0.offset; } in
   let info =
     { Ast0.pos_info = pos_info;
+      Ast0.whitespace = lstart.Ast0.whitespace;
       Ast0.attachable_start =
       check_attachable (if !inherit_attachable then astart else false);
       Ast0.attachable_end =

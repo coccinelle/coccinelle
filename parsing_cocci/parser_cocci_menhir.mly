@@ -139,7 +139,8 @@ and  logicalOp = function
 
 %token TArob TArobArob
 %token <Data.clt> TPArob
-%token <string> TScriptData
+%token <string> TScriptData TWhitespace 
+(* TWhitespace is parsed manually beforehand, should not occur in here *)
 
 %token <Data.clt> TEllipsis TOEllipsis TCEllipsis TPOEllipsis TPCEllipsis
 %token <Data.clt> TWhen TWhenTrue TWhenFalse TAny TStrict TLineEnd
@@ -959,10 +960,10 @@ includes:
     { Ast0.wrap
 	(Ast0.Include(P.clt2mcode "#include"
 			(P.drop_pos (P.drop_aft (P.id2clt $1))),
-		      let (arity,ln,lln,llne,offset,col,strbef,straft,pos) =
+		      let (arity,ln,lln,llne,offset,col,strbef,straft,pos,_) =
 			P.id2clt $1 in
-		      let clt =
-			(arity,ln,lln,llne,offset,0,strbef,straft,pos) in
+		      let clt = (* default to one space whitespace *)
+			(arity,ln,lln,llne,offset,0,strbef,straft,pos," ") in
 		      P.clt2mcode
 			(Ast.Local (Parse_aux.str2inc (P.id2name $1)))
 			(P.drop_bef clt))) }
@@ -970,10 +971,10 @@ includes:
     { Ast0.wrap
 	(Ast0.Include(P.clt2mcode "#include"
 			(P.drop_pos (P.drop_aft (P.id2clt $1))),
-		      let (arity,ln,lln,llne,offset,col,strbef,straft,pos) =
+		      let (arity,ln,lln,llne,offset,col,strbef,straft,pos,_) =
 			P.id2clt $1 in
-		      let clt =
-			(arity,ln,lln,llne,offset,0,strbef,straft,pos) in
+		      let clt = (* default to one space whitespace *)
+			(arity,ln,lln,llne,offset,0,strbef,straft,pos," ") in
 		      P.clt2mcode
 			(Ast.NonLocal (Parse_aux.str2inc (P.id2name $1)))
 			(P.drop_bef clt))) }
@@ -1051,10 +1052,10 @@ defineop:
     { let (clt,ident,parenoff,parencol) = $1 in
       let aft = P.get_aft clt in (* move stuff after the define to the ( *)
       (* clt is the start of the #define itself *)
-      let (arity,line,lline,llineend,offset,col,strbef,straft,pos) = clt in
+      let (arity,line,lline,llineend,offset,col,strbef,straft,pos,ws) = clt in
       let lp =
 	P.clt2mcode "("
-	  (arity,line,lline,llineend,parenoff,parencol,[],[],[]) in
+	  (arity,line,lline,llineend,parenoff,parencol,[],[],[],ws) in
       function body ->
 	Ast0.wrap
 	  (Ast0.Define
@@ -1851,7 +1852,7 @@ no_dot_start_end(grammar,dotter):
 /*****************************************************************************/
 
 pure_ident:
-     TIdent { $1 }
+    TIdent { $1 }
 
 pure_ident_or_symbol:
     pure_ident { $1 }
