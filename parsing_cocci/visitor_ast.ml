@@ -92,7 +92,7 @@ let combiner bind option_default
       | Ast.MetaId(name,_,_,_) -> meta_mcode name
       | Ast.MetaFunc(name,_,_,_) -> meta_mcode name
       | Ast.MetaLocalFunc(name,_,_,_) -> meta_mcode name
-      | Ast.AsIdent(id,asid) -> 
+      | Ast.AsIdent(id,asid) ->
 (* use let-ins to ensure arg evaluation happens left-to-right *)
 	  let lid = ident id in 
 	  let lasid = ident asid in
@@ -285,12 +285,13 @@ let combiner bind option_default
     let lrp1 = string_mcode rp1 in
     multibind ([lty] @ lid @ [llp1; lparams; lrp1])
 
-  and array_type (ty,lb,size,rb) extra =
+  and array_type (ty,(id : Ast.ident option),lb,size,rb) =
     let lty = fullType ty in
+    let lid = match id with Some idd -> [ident idd] | None -> [] in
     let lb = string_mcode lb in
     let lsize = get_option expression size in
     let lrb = string_mcode rb in
-    multibind ([lty] @ extra @ [lb; lsize; lrb])
+    multibind ([lty] @ lid @ [lb; lsize; lrb])
 
   and typeC ty =
     let k ty =
@@ -308,7 +309,7 @@ let combiner bind option_default
 	  function_pointer (ty,lp1,star,None,rp1,lp2,params,rp2)
       |	Ast.FunctionType (_,ty,lp1,params,rp1) ->
 	  function_type (ty,None,lp1,params,rp1)
-      | Ast.Array(ty,lb,size,rb) -> array_type (ty,lb,size,rb) []
+      | Ast.Array(ty,lb,size,rb) -> array_type (ty,None,lb,size,rb)
       | Ast.Decimal(dec,lp,length,comma,precision_opt,rp) ->
 	  let ldec = string_mcode dec in
 	  let llp = string_mcode lp in
@@ -349,7 +350,7 @@ let combiner bind option_default
 	    function_pointer (ty, lp1, star, Some id, rp1, lp2, params, rp2)
 	| Ast.FunctionType(_,ty,lp1,params,rp1) ->
 	    function_type (ty, Some id, lp1, params, rp1)
-	| Ast.Array(ty,lb,size,rb) -> array_type (ty,lb,size,rb) [ident id]
+	| Ast.Array(ty,lb,size,rb) -> array_type (ty, Some id, lb, size, rb)
 	| _ -> let lty = fullType ty in
 	       let lid = ident id in
 	       bind lty lid)

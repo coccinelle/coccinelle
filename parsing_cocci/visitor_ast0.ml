@@ -303,10 +303,12 @@ let visitor mode bind option_default
 	    let (star_n,star) = string_mcode star in
 	    (bind ty_n star_n, Ast0.Pointer(ty,star))
 	| Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
-	    function_pointer (ty,lp1,star,rp1,lp2,params,rp2) []
+	    let (t,id) = 
+              function_pointer (ty,lp1,star,None,rp1,lp2,params,rp2) in t
 	| Ast0.FunctionType(ty,lp1,params,rp1) ->
-	    function_type (ty,lp1,params,rp1) []
-	| Ast0.Array(ty,lb,size,rb) -> array_type (ty,lb,size,rb) []
+	    let (t,id) = function_type (ty,None,lp1,params,rp1) in t
+	| Ast0.Array(ty,lb,size,rb) -> 
+            let (t,id) = array_type (ty,None,lb,size,rb) in t
 	| Ast0.Decimal(dec,lp,length,comma,precision_opt,rp) ->
 	    let (dec_n,dec) = string_mcode dec in
 	    let (lp_n,lp) = string_mcode lp in
@@ -358,47 +360,63 @@ let visitor mode bind option_default
 	    (bind ty_n asty_n, Ast0.AsType(ty,asty))) in
     tyfn all_functions k t
 
-  and function_pointer (ty,lp1,star,rp1,lp2,params,rp2) extra =
+  (* returns ((bind value,original value),id) since id may have been updated*)
+  and function_pointer
+      (ty,lp1,star,(id : Ast0.ident option),rp1,lp2,params,rp2) =
     let (ty_n,ty) = typeC ty in
     let (lp1_n,lp1) = string_mcode lp1 in
     let (star_n,star) = string_mcode star in
+    let (idl,idu) = (match id with 
+      | Some a -> let (b,c) = ident a in ([b],Some c)
+      | None -> ([],None)) in
     let (rp1_n,rp1) = string_mcode rp1 in
     let (lp2_n,lp2) = string_mcode lp2 in
     let (params_n,params) = parameter_dots params in
     let (rp2_n,rp2) = string_mcode rp2 in
     (* have to put the treatment of the identifier into the right position *)
-    (multibind ([ty_n;lp1_n;star_n] @ extra @ [rp1_n;lp2_n;params_n;rp2_n]),
-     Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2))
-  and function_type (ty,lp1,params,rp1) extra =
+    ((multibind ([ty_n;lp1_n;star_n] @ idl @ [rp1_n;lp2_n;params_n;rp2_n]),
+     Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2)), idu)
+
+  (* returns ((bind value,original value),id) since id may have been updated*)
+  and function_type (ty,(id : Ast0.ident option),lp1,params,rp1) =
     let (ty_n,ty) = get_option typeC ty in
+    let (idl,idu) = (match id with 
+      | Some a -> let (b,c) = ident a in ([b],Some c)
+      | None -> ([],None)) in
     let (lp1_n,lp1) = string_mcode lp1 in
     let (params_n,params) = parameter_dots params in
     let (rp1_n,rp1) = string_mcode rp1 in
     (* have to put the treatment of the identifier into the right position *)
-    (multibind (ty_n :: extra @ [lp1_n;params_n;rp1_n]),
-     Ast0.FunctionType(ty,lp1,params,rp1))
-  and array_type (ty,lb,size,rb) extra =
+    ((multibind ([ty_n] @ idl @ [lp1_n;params_n;rp1_n]),
+     Ast0.FunctionType(ty,lp1,params,rp1)), idu)
+
+  (* returns ((bind value,original value),id) since id may have been updated*)
+  and array_type (ty,(id : Ast0.ident option),lb,size,rb) =
     let (ty_n,ty) = typeC ty in
+    let (idl,idu) = (match id with 
+      | Some a -> let (b,c) = ident a in ([b],Some c)
+      | None -> ([],None)) in
     let (lb_n,lb) = string_mcode lb in
     let (size_n,size) = get_option expression size in
     let (rb_n,rb) = string_mcode rb in
-    (multibind (ty_n :: extra @ [lb_n;size_n;rb_n]),
-     Ast0.Array(ty,lb,size,rb))
+    ((multibind ([ty_n] @ idl @ [lb_n;size_n;rb_n]),
+     Ast0.Array(ty,lb,size,rb)), idu)
 
   and named_type ty id =
-    let (id_n,id) = ident id in
     match Ast0.unwrap ty with
       Ast0.FunctionPointer(rty,lp1,star,rp1,lp2,params,rp2) ->
-	let tyres =
-	  function_pointer (rty,lp1,star,rp1,lp2,params,rp2) [id_n] in
-	(rewrap ty tyres, id)
+	let (tyres, Some idn) =
+	  function_pointer (rty,lp1,star,Some id,rp1,lp2,params,rp2) in
+	(rewrap ty tyres, idn)
     | Ast0.FunctionType(rty,lp1,params,rp1) ->
-	let tyres = function_type (rty,lp1,params,rp1) [id_n] in
-	(rewrap ty tyres, id)
+	let (tyres, Some idn) = function_type (rty,Some id,lp1,params,rp1) in
+	(rewrap ty tyres, idn)
     | Ast0.Array(rty,lb,size,rb) ->
-	let tyres = array_type (rty,lb,size,rb) [id_n] in
-	(rewrap ty tyres, id)
-    | _ -> let (ty_n,ty) = typeC ty in ((bind ty_n id_n, ty), id)
+	let (tyres, Some idn) = array_type (rty,Some id,lb,size,rb) in
+	(rewrap ty tyres, idn)
+    | _ -> let (ty_n,ty) = typeC ty in
+           let (id_n,id) = ident id in
+             ((bind ty_n id_n, ty), id)
 
   and declaration d =
     let k d =
