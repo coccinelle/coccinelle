@@ -21,7 +21,7 @@ let reserved_names =
 (* ----------------------------------------------------------------------- *)
 (* Debugging... *)
 
-let line_type (d,_,_,_,_,_,_,_,_) = d
+let line_type (d,_,_,_,_,_,_,_,_,_) = d
 
 let line_type2c tok =
   match line_type tok with
@@ -30,8 +30,8 @@ let line_type2c tok =
   | D.PLUSPLUS -> ":++"
   | D.CONTEXT | D.UNIQUE | D.OPT -> ""
 
-let real_line (_,d,_,_,_,_,_,_,_) = d
-let log_line  (_,_,d,_,_,_,_,_,_) = d
+let real_line (_,d,_,_,_,_,_,_,_,_) = d
+let log_line  (_,_,d,_,_,_,_,_,_,_) = d
 
 let token2c (tok,_) =
   let add_clt str clt =
@@ -282,6 +282,7 @@ let token2c (tok,_) =
   | PC.TIsoType -> "Type"
   | PC.TUnderscore -> "_"
   | PC.TScriptData s -> s
+  | PC.TWhitespace _ -> ""
 
 let print_tokens s tokens =
   Printf.printf "%s\n" s;
@@ -649,7 +650,7 @@ let tokens_script_all table file get_ats lexbuf end_markers :
 (* Split tokens into minus and plus fragments *)
 
 let split t clt =
-  let (d,_,_,_,_,_,_,_,_) = clt in
+  let (d,_,_,_,_,_,_,_,_,_) = clt in
   match d with
     D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> ([t],[])
   | D.PLUS | D.PLUSPLUS -> ([],[t])
@@ -758,6 +759,8 @@ let split_token ((tok,_) as t) =
   | PC.TIsoToTestExpression ->
       failwith "unexpected tokens"
   | PC.TScriptData s -> ([t],[t])
+  | PC.TWhitespace _ -> ([t],[t]) 
+
 
 let split_token_stream tokens =
   let rec loop = function
@@ -1034,7 +1037,7 @@ let token2line (tok,_) =
 
   | PC.TEq(clt) | PC.TAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
   | PC.TPArob(clt) | PC.TPtVirg(clt) ->
-      let (_,line,_,_,_,_,_,_,_) = clt in Some line
+      let (_,line,_,_,_,_,_,_,_,_) = clt in Some line
 
   | _ -> None
 
@@ -1085,7 +1088,7 @@ let rec translate_when_true_false = function
 (* In a nest, if the nest is -, all of the nested code must also be -. *)
 let check_nests tokens =
   let is_minus t =
-    let (line_type,a,b,c,d,e,f,g,h) = get_clt t in
+    let (line_type,a,b,c,d,e,f,g,h,i) = get_clt t in
     List.mem line_type [D.MINUS;D.OPTMINUS;D.UNIQUEMINUS] in
   let check_minus t =
     match fst t with
@@ -1093,7 +1096,7 @@ let check_nests tokens =
     | _ ->
 	let clt = try Some(get_clt t) with Failure _ -> None in
 	match clt with
-	  Some (line_type,l,ll,c,d,e,f,g,h) ->
+	  Some (line_type,l,ll,c,d,e,f,g,h,i) ->
 	    (match line_type with
 	      D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> t
 	    | _ ->
@@ -1116,7 +1119,7 @@ let check_nests tokens =
   outside tokens
 
 let check_parentheses tokens =
-  let clt2line (_,line,_,_,_,_,_,_,_) = line in
+  let clt2line (_,line,_,_,_,_,_,_,_,_) = line in
   let rec loop seen_open = function
       [] -> tokens
     | (PC.TOPar(clt),q) :: rest
@@ -1188,7 +1191,7 @@ are not allowed. *)
 
 let rec collect_all_pragmas collected = function
     (PC.TDirective(s,(_,line,logical_line,logical_line_end,
-		      offset,col,_,_,pos)),_)::rest ->
+                      offset,col,_,_,pos,_)),_)::rest ->
       let i =
 	{ Ast0.line_start = line; Ast0.line_end = line;
 	  Ast0.logical_start = logical_line;
@@ -1219,7 +1222,7 @@ When stuff is added before some + code, the logical line of the + code
 becomes that of the pragma.  context_neg relies on things that are adjacent
 having sequential logical lines.  Not sure that this is good enough,
 as it might result in later gaps in the logical lines... *)
-let rec process_pragmas bef skips = function
+let rec process_pragmas (bef : 'a option) (skips : 'a list) = function
     [] -> add_bef bef @ List.rev skips
   | ((PC.TEllipsis(_),_) as a)::((PC.TComma(_),_) as b)::xs ->
       (* This is a ..., in an argument list, field initializer list etc,
@@ -1228,42 +1231,60 @@ let rec process_pragmas bef skips = function
   | ((PC.TDirective(s,i),_)::_) as l ->
       let (pragmas,rest) = collect_all_pragmas [] l in
       let (pass,rest0) = collect_pass rest in
-      let (_,_,prag_lline,_,_,_,_,_,_) = i in
+      let (_,_,prag_lline,_,_,_,_,_,_,_) = i in
       let (next,rest) =
 	match rest0 with [] -> (None,[]) | next::rest -> (Some next,rest) in
       (match (bef,plus_attach true bef,next,plus_attach true next) with
 	(Some bef,PLUS,_,_) ->
-	  let (a,b,c,d,e,f,strbef,straft,pos) = get_clt bef in
-	  (update_clt bef (a,b,c,d,e,f,strbef,pragmas,pos))::List.rev skips@
+	  let (a,b,c,d,e,f,strbef,straft,pos,ws) = get_clt bef in
+	  (update_clt bef (a,b,c,d,e,f,strbef,pragmas,pos,ws))::List.rev skips@
 	  pass@process_pragmas None [] rest0
       |	(_,_,Some next,PLUS) ->
-	  let (a,b,lline,llineend,d,e,strbef,straft,pos) = get_clt next in
+	  let (a,b,lline,llineend,d,e,strbef,straft,pos,ws) = get_clt next in
 	  (add_bef bef) @ List.rev skips @ pass @
 	  (process_pragmas
-	     (Some
-		(update_clt next
-		   (a,b,prag_lline,llineend,d,e,pragmas,straft,pos)))
+	     (Some (update_clt next 
+               (a,b,prag_lline,llineend,d,e,pragmas,straft,pos,ws)))
 	     [] rest)
       |	_ ->
 	  (match (bef,plus_attach false bef,next,plus_attach false next) with
 	    (Some bef,PLUS,_,_) ->
-	      let (a,b,c,d,e,f,strbef,straft,pos) = get_clt bef in
-	      (update_clt bef (a,b,c,d,e,f,strbef,pragmas,pos))::
-	      List.rev skips@
+	      let (a,b,c,d,e,f,strbef,straft,pos,ws) = get_clt bef in
+	      (update_clt bef (a,b,c,d,e,f,strbef,pragmas,pos,ws))::
+              List.rev skips@
 	      pass@process_pragmas None [] rest0
 	  | (_,_,Some next,PLUS) ->
-	      let (a,b,lline,llineend,d,e,strbef,straft,pos) = get_clt next in
+	      let (a,b,lline,llineend,d,e,strbef,straft,pos,ws) = 
+                get_clt next in
 	      (add_bef bef) @ List.rev skips @ pass @
 	      (process_pragmas
 		 (Some
-		    (update_clt next
-		       (a,b,prag_lline,llineend,d,e,pragmas,straft,pos)))
+		  (update_clt next
+                    (a,b,prag_lline,llineend,d,e,pragmas,straft,pos,ws)))
 		 [] rest)
 	  | _ -> failwith "nothing to attach pragma to"))
   | x::xs ->
       (match plus_attachable false x with
 	SKIP -> process_pragmas bef (x::skips) xs
       |	_ -> (add_bef bef) @ List.rev skips @ (process_pragmas (Some x) [] xs))
+
+(* Appends whitespace tokens to the nearest following token (assumes that
+ * any such token contains a clt as defined in parser_cocci_menhir.mly,
+ * otherwise get_clt and update_clt will fail).
+ * Returns token list with whitespace tokens removed.
+ *)
+
+let rec process_whitespaces toks = function
+  | [] ->  List.rev toks
+  | (PC.TWhitespace(_),_)::((PC.EOF,_) as e)::(_) ->
+      List.rev (e::toks)
+  | (PC.TWhitespace(s),a)::(PC.TWhitespace(b),_)::xs ->
+      process_whitespaces toks ((PC.TWhitespace(s^b),a)::xs)
+  | (PC.TWhitespace(s),_)::((tok,clt) as aft)::xs ->
+      let (a, b, c, d, e, f, g, h, i, _) = get_clt aft in
+      let aft = update_clt aft (a, b, c, d, e, f, g, h, i, s) in
+      process_whitespaces (aft::toks) xs
+  | x::xs -> process_whitespaces (x::toks) xs
 
 (* ----------------------------------------------------------------------- *)
 (* Drop ... ... .  This is only allowed in + code, and arises when there is
@@ -1291,7 +1312,7 @@ let minus_to_nothing l =
      code, depending on whether <... is a statement or expression *)
   let is_minus tok =
     try
-      let (d,_,_,_,_,_,_,_,_) = get_clt tok in
+      let (d,_,_,_,_,_,_,_,_,_) = get_clt tok in
       (match d with
 	D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> true
       | D.PLUS | D.PLUSPLUS -> false
@@ -1424,7 +1445,6 @@ let parse_one str parsefn file toks =
     Lexing.from_function
       (function buf -> function n -> raise (Common.Impossible 158))
   in
-
   reinit();
 
   try parsefn lexer_function lexbuf_fake
@@ -1457,17 +1477,18 @@ let prepare_tokens tokens =
 let prepare_mv_tokens tokens =
   detect_types false (detect_attr tokens)
 
-let unminus (d,x1,x2,x3,x4,x5,x6,x7,x8) = (* for hidden variables *)
+let unminus (d,x1,x2,x3,x4,x5,x6,x7,x8,x9) = (* for hidden variables *)
   match d with
-    D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> (D.CONTEXT,x1,x2,x3,x4,x5,x6,x7,x8)
+    D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> 
+      (D.CONTEXT,x1,x2,x3,x4,x5,x6,x7,x8,x9)
   | D.PLUS -> failwith "unexpected plus code"
   | D.PLUSPLUS -> failwith "unexpected plus code"
-  | D.CONTEXT | D.UNIQUE | D.OPT -> (D.CONTEXT,x1,x2,x3,x4,x5,x6,x7,x8)
+  | D.CONTEXT | D.UNIQUE | D.OPT -> (D.CONTEXT,x1,x2,x3,x4,x5,x6,x7,x8,x9)
 
 let process_minus_positions x name clt meta =
-  let (arity,ln,lln,llne,offset,col,strbef,straft,pos) = get_clt x in
+  let (arity,ln,lln,llne,offset,col,strbef,straft,pos,ws) = get_clt x in
   let name = Parse_aux.clt2mcode name (unminus clt) in
-  update_clt x (arity,ln,lln,llne,offset,col,strbef,straft,meta name::pos)
+  update_clt x (arity,ln,lln,llne,offset,col,strbef,straft,meta name::pos,ws)
 
 (* first attach positions, then the others, so that positions can refer to
 the larger term represented by the preceding metavariable *)
@@ -1896,6 +1917,10 @@ let parse file =
             (* get transformation rules *)
             let (more, tokens) =
 	      get_tokens (in_list [PC.TArobArob; PC.TArob]) in
+
+            (* remove whitespaces and glue to immediately following tokens *)
+            let tokens = process_whitespaces [] tokens in
+
             let (minus_tokens, _) = split_token_stream tokens in
             let (_, plus_tokens) =
 	      split_token_stream (minus_to_nothing tokens) in
@@ -1915,7 +1940,7 @@ let parse file =
 	       print_tokens "plus tokens" plus_tokens;
 	    *)
 
-	    let plus_tokens =
+            let plus_tokens =
 	      process_pragmas None []
 		(fix (function x -> drop_double_dots (drop_empty_or x))
 		   (drop_when plus_tokens)) in

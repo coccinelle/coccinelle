@@ -5,7 +5,8 @@ type added_string = Noindent of string | Indent of string | Space of string
 
 type info = { line : int; column : int;
 	      strbef : (added_string * int (* line *) * int (* col *)) list;
-	      straft : (added_string * int (* line *) * int (* col *)) list }
+	      straft : (added_string * int (* line *) * int (* col *)) list;
+              whitespace : string }
 type line = int
 type meta_name = string * string
 type 'a wrap =

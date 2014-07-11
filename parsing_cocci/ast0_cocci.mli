@@ -20,7 +20,7 @@ type position_info = { line_start : int; line_end : int;
 		       logical_start : int; logical_end : int;
 		       column : int; offset : int; }
 
-type info = { pos_info : position_info;
+type info = { pos_info : position_info;  whitespace : string;
 	      attachable_start : bool; attachable_end : bool;
 	      mcode_start : mcodekind list; mcode_end : mcodekind list;
 	      (* the following are only for + code *)
