@@ -282,7 +282,7 @@ let token2c (tok,_) =
   | PC.TIsoType -> "Type"
   | PC.TUnderscore -> "_"
   | PC.TScriptData s -> s
-  | PC.TWhitespace _ -> ""
+  | PC.TWhitespace s -> "Whitespace(" ^ s ^ ")"
 
 let print_tokens s tokens =
   Printf.printf "%s\n" s;
@@ -368,7 +368,9 @@ let plus_attachable only_plus (tok,_) =
 
   | _ -> SKIP
 
-let get_clt (tok,_) =
+exception NoClt of string
+
+let get_clt ((tok,_) as t) =
   match tok with
     PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
   | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt)
@@ -438,9 +440,9 @@ let get_clt (tok,_) =
   | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) (* | PC.TOCircles(clt)
   | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *)
   | PC.TFunDecl(clt) | PC.TDirective(_,clt) | PC.TLineEnd(clt) -> clt
-  | _ -> failwith "no clt"
+  | _ -> raise (NoClt("get_clt: token " ^ (token2c t) ^ " has no clt"))
 
-let update_clt (tok,x) clt =
+let update_clt ((tok,x) as t) clt =
   match tok with
     PC.Tchar(_) -> (PC.Tchar(clt),x)
   | PC.Tshort(_) -> (PC.Tshort(clt),x)
@@ -600,7 +602,7 @@ let update_clt (tok,x) clt =
   | PC.TTildeExclEq(_) -> (PC.TTildeExclEq(clt),x)
   | PC.TDirective(a,_) -> (PC.TDirective(a,clt),x)
 
-  | _ -> failwith "no clt"
+  | _ -> raise (NoClt ("update_clt: token " ^ (token2c t) ^ " has no clt"))
 
 
 (* ----------------------------------------------------------------------- *)
@@ -1271,19 +1273,28 @@ let rec process_pragmas (bef : 'a option) (skips : 'a list) = function
 (* Appends whitespace tokens to the nearest following token (assumes that
  * any such token contains a clt as defined in parser_cocci_menhir.mly,
  * otherwise get_clt and update_clt will fail).
+ * The third case handles double whitespaces which occur around script comments
+ * We only want to keep both whitespaces if the whitespaces are on the same
+ * line.
+
  * Returns token list with whitespace tokens removed.
  *)
 
 let rec process_whitespaces toks = function
-  | [] ->  List.rev toks
-  | (PC.TWhitespace(_),_)::((PC.EOF,_) as e)::(_) ->
+  | [] -> List.rev toks
+  | (PC.TWhitespace(_),_)::((endtok,_) as e)::(_) 
+      when endtok = PC.EOF || endtok = PC.TArob || endtok = PC.TArobArob ->
       List.rev (e::toks)
-  | (PC.TWhitespace(s),a)::(PC.TWhitespace(b),_)::xs ->
-      process_whitespaces toks ((PC.TWhitespace(s^b),a)::xs)
-  | (PC.TWhitespace(s),_)::((tok,clt) as aft)::xs ->
-      let (a, b, c, d, e, f, g, h, i, _) = get_clt aft in
-      let aft = update_clt aft (a, b, c, d, e, f, g, h, i, s) in
-      process_whitespaces (aft::toks) xs
+  | (PC.TWhitespace(a),((_,(l1,_),_) as b)):: (* this is for script comments *)
+    (PC.TWhitespace(c),(_,(l2,_),_))::xs ->
+      let s = if (l1 <> l2) then c else a^c in
+      process_whitespaces toks ((PC.TWhitespace(s),b)::xs)
+  | (PC.TWhitespace(s),_)::((tok,_) as aft)::xs ->
+     (try
+        let (a, b, c, d, e, f, g, h, i, _) = get_clt aft in
+        let aft = update_clt aft (a, b, c, d, e, f, g, h, i, s) in
+        process_whitespaces (aft::toks) xs
+      with NoClt(a) -> failwith ("process_whitespaces: "^a))
   | x::xs -> process_whitespaces (x::toks) xs
 
 (* ----------------------------------------------------------------------- *)
