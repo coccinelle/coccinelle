@@ -642,6 +642,11 @@ let tokens_all table file get_ats lexbuf end_markers :
     (bool * ((PC.token * (string * (int * int) * (int * int))) list)) =
   tokens_all_full Lexer_cocci.token table file get_ats lexbuf end_markers
 
+let metavariable_decl_tokens_all table file get_ats lexbuf end_markers :
+    (bool * ((PC.token * (string * (int * int) * (int * int))) list)) =
+  tokens_all_full Lexer_cocci.metavariable_decl_token
+    table file get_ats lexbuf end_markers
+
 let tokens_script_all table file get_ats lexbuf end_markers :
     (bool * ((PC.token * (string * (int * int) * (int * int))) list)) =
   tokens_all_full Lexer_script.token table file get_ats lexbuf end_markers
@@ -1635,7 +1640,7 @@ let get_metavars parse_fn table file lexbuf =
     let (_,tokens) =
       Data.call_in_meta
 	(function _ ->
-	  tokens_all table file true lexbuf
+	  metavariable_decl_tokens_all table file true lexbuf
 	    (in_list [PC.TArobArob;PC.TMPtVirg;PC.TAnalysis])) in
     let tokens = prepare_mv_tokens tokens in
     match tokens with
@@ -1666,7 +1671,7 @@ let get_metavars parse_fn table file lexbuf =
 	      let (_,tokens) =
 		Data.call_in_meta
 		  (function _ ->
-		    tokens_all table file true lexbuf
+		    metavariable_decl_tokens_all table file true lexbuf
 		      (in_list [PC.TArobArob;PC.TMPtVirg])) in
 	      begin
 		match tokens with
@@ -1691,7 +1696,7 @@ let get_metavars parse_fn table file lexbuf =
 let get_script_metavars parse_fn table file lexbuf =
   let rec meta_loop acc =
     let (_, tokens) =
-      tokens_all table file true lexbuf
+      metavariable_decl_tokens_all table file true lexbuf
 	(in_list [PC.TArobArob; PC.TMPtVirg]) in
     let tokens = prepare_tokens tokens in
     match tokens with

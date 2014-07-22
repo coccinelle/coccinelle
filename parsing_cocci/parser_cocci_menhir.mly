@@ -1724,9 +1724,6 @@ unary_expr(r,pe):
       { Ast0.wrap(Ast0.Infix ($2, P.clt2mcode Ast.Dec $1)) }
   | unary_op cast_expr(r,pe)
       { let mcode = $1 in Ast0.wrap(Ast0.Unary($2, mcode)) }
-  | TBang unary_expr_bis
-      { let mcode = P.clt2mcode Ast.Not $1 in
-      Ast0.wrap(Ast0.Unary($2, mcode)) }
   | TSizeof unary_expr_bis
       { Ast0.wrap(Ast0.SizeOfExpr (P.clt2mcode "sizeof" $1, $2)) }
   | s=TSizeof lp=TOPar t=ctype rp=TCPar
@@ -1743,9 +1740,6 @@ unary_expr_bis:
       { Ast0.wrap(Ast0.Infix ($2, P.clt2mcode Ast.Dec $1)) }
   | unary_op cast_expr(eexpr,dot_expressions)
       { let mcode = $1 in Ast0.wrap(Ast0.Unary($2, mcode)) }
-  | TBang unary_expr_bis
-      { let mcode = P.clt2mcode Ast.Not $1 in
-      Ast0.wrap(Ast0.Unary($2, mcode)) }
   | TSizeof unary_expr_bis
       { Ast0.wrap(Ast0.SizeOfExpr (P.clt2mcode "sizeof" $1, $2)) }
   | s=TSizeof lp=TOPar t=ctype rp=TCPar
@@ -1758,6 +1752,7 @@ unary_op: TAnd    { P.clt2mcode Ast.GetRef $1 }
 	| TPlus   { P.clt2mcode Ast.UnPlus $1 }
 	| TMinus  { P.clt2mcode Ast.UnMinus $1 }
 	| TTilde  { P.clt2mcode Ast.Tilde $1 }
+	| TBang   { P.clt2mcode Ast.Not $1 }
 
 postfix_expr(r,pe):
    primary_expr(r,pe)                            { $1 }
