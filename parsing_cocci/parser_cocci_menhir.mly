@@ -139,14 +139,14 @@ and  logicalOp = function
 
 %token TArob TArobArob
 %token <Data.clt> TPArob
-%token <string> TScriptData TWhitespace 
+%token <string> TScriptData TWhitespace
 (* TWhitespace is parsed manually beforehand, should not occur in here *)
 
 %token <Data.clt> TEllipsis TOEllipsis TCEllipsis TPOEllipsis TPCEllipsis
 %token <Data.clt> TWhen TWhenTrue TWhenFalse TAny TStrict TLineEnd
 
-%token <Data.clt> TWhy TDotDot TBang TOPar TOPar0
-%token <Data.clt> TMid0 TCPar TCPar0
+%token <Data.clt> TWhy TDotDot TBang TOPar TCPar
+%token <string * Data.clt> TOPar0 TMid0 TCPar0
 
 %token <string>  TPathIsoFile
 %token <string * Data.clt> TIncludeL TIncludeNL
@@ -799,7 +799,7 @@ ctype:
 | lp=TOPar0 t=midzero_list(ctype,ctype) rp=TCPar0
     { let (mids,code) = t in
       Ast0.wrap
-	(Ast0.DisjType(P.clt2mcode "(" lp,code,mids, P.clt2mcode ")" rp)) }
+	(Ast0.DisjType(P.id2mcode lp,code,mids, P.id2mcode rp)) }
 
 mul: a=TMul b=ioption(const_vol) { (a,b) }
 
@@ -814,7 +814,7 @@ typedef_ctype:
 | lp=TOPar0 t=midzero_list(mctype,mctype) rp=TCPar0
     { let (mids,code) = t in
       Ast0.wrap
-	(Ast0.DisjType(P.clt2mcode "(" lp,code,mids, P.clt2mcode ")" rp)) }
+	(Ast0.DisjType(P.id2mcode lp,code,mids, P.id2mcode rp)) }
 | TMeta { tmeta_to_type $1 }
 
 /* ---------------------------------------------------------------------- */
@@ -834,7 +834,7 @@ struct_decl_one:
     | lp=TOPar0 t=midzero_list(struct_decl_one,struct_decl_one) rp=TCPar0
 	{ let (mids,code) = t in
 	Ast0.wrap
-	  (Ast0.DisjDecl(P.clt2mcode "(" lp,code,mids, P.clt2mcode ")" rp)) }
+	  (Ast0.DisjDecl(P.id2mcode lp,code,mids, P.id2mcode rp)) }
     | t=ctype d=d_ident pv=TPtVirg
 	 { let (id,fn) = d in
 	 Ast0.wrap(Ast0.UnInit(None,fn t,id,P.clt2mcode ";" pv)) }
@@ -1266,9 +1266,9 @@ rule_elem_statement:
 | TOPar0 midzero_list(rule_elem_statement,rule_elem_statement) TCPar0
     { let (mids,code) = $2 in
     Ast0.wrap
-      (Ast0.Disj(P.clt2mcode "(" $1,
+      (Ast0.Disj(P.id2mcode $1,
 		 List.map (function x -> Ast0.wrap(Ast0.DOTS([x]))) code,
-		 mids, P.clt2mcode ")" $3)) }
+		 mids, P.id2mcode $3)) }
 
 /* a statement on its own */
 single_statement:
@@ -1278,9 +1278,9 @@ single_statement:
 	contain dots */
       { let (mids,code) = $2 in
         Ast0.wrap
-	  (Ast0.Disj(P.clt2mcode "(" $1,
+	  (Ast0.Disj(P.id2mcode $1,
 		     List.map (function x -> Ast0.wrap(Ast0.DOTS([x]))) code,
-		     mids, P.clt2mcode ")" $3)) }
+		     mids, P.id2mcode $3)) }
 
 iso_statement: /* statement or declaration used in statement context */
     statement                         { $1 }
@@ -1300,7 +1300,7 @@ case_line:
 /*  | lp=TOPar0 t=midzero_list(case_line,case_line) rp=TCPar0
     { let (mids,code) = ([],[t]) in
       Ast0.wrap
-	(Ast0.DisjCase(P.clt2mcode "(" lp,code,mids, P.clt2mcode ")" rp)) } */
+	(Ast0.DisjCase(P.id2mcode lp,code,mids, P.id2mcode rp)) } */
 
 /* In the following, an identifier as a type is not fully supported.  Indeed,
 the language is ambiguous: what is foo * bar; */
@@ -1522,8 +1522,8 @@ decl_statement:
 	    code
       then []
       else
-	  [Ast0.wrap(Ast0.Disj(P.clt2mcode "(" $1, code, mids,
-			       P.clt2mcode ")" $3))] }
+	  [Ast0.wrap(Ast0.Disj(P.id2mcode $1, code, mids,
+			       P.id2mcode $3))] }
 
 /* a statement that is part of a list */
 decl_statement_expr:
@@ -1551,8 +1551,8 @@ decl_statement_expr:
       else
 	  let dot_code =
 	    List.map (function x -> Ast0.wrap(Ast0.DOTS x)) code in
-	  [Ast0.wrap(Ast0.Disj(P.clt2mcode "(" $1, dot_code, mids,
-			       P.clt2mcode ")" $3))] }
+	  [Ast0.wrap(Ast0.Disj(P.id2mcode $1, dot_code, mids,
+			       P.id2mcode $3))] }
 
 /*****************************************************************************/
 
@@ -1835,9 +1835,9 @@ primary_expr(recurser,primary_extra):
 			    P.clt2mcode ")" $3)) }
  | TOPar0 midzero_list(recurser,eexpr) TCPar0
      { let (mids,code) = $2 in
-       Ast0.wrap(Ast0.DisjExpr(P.clt2mcode "(" $1,
+       Ast0.wrap(Ast0.DisjExpr(P.id2mcode $1,
 			       code, mids,
-			       P.clt2mcode ")" $3)) }
+			       P.id2mcode $3)) }
  | primary_extra { $1 }
 
 expr_dots(dotter):
@@ -2157,7 +2157,7 @@ disj_ident:
      | lp=TOPar0 t=midzero_list(disj_ident,disj_ident) rp=TCPar0
 	 { let (mids,code) = t in
 	 Ast0.wrap
-	   (Ast0.DisjId(P.clt2mcode "(" lp,code,mids, P.clt2mcode ")" rp)) }
+	   (Ast0.DisjId(P.id2mcode lp,code,mids, P.id2mcode rp)) }
 
 type_ident: disj_ident { $1 }
      | TTypeId
@@ -2541,7 +2541,7 @@ midzero_list(elem,aft):
      { let (mids,code) = List.split b in (mids,(a::code)) }
 
 mzl(elem):
-  a=TMid0 b=elem { (P.clt2mcode "|" a, b) }
+  a=TMid0 b=elem { (P.id2mcode a, b) }
 
 edots_when(dotter,when_grammar):
     d=dotter                                      { (d,None) }

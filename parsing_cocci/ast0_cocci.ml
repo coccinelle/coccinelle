@@ -8,7 +8,7 @@ type arity = OPT | UNIQUE | NONE
 
 type token_info =
     { tline_start : int; tline_end : int;
-      left_offset : int; right_offset : int }
+      left_offset : int; right_offset : int; }
 let default_token_info =
   { tline_start = -1; tline_end = -1; left_offset = -1; right_offset = -1 }
 
@@ -234,7 +234,7 @@ and base_declaration =
 	initialiser * string mcode (* ; *)
   | Typedef of string mcode (* typedef *) * typeC * typeC * string mcode (*;*)
   | DisjDecl   of string mcode * declaration list *
-                  string mcode list (* the |s *)  * string mcode
+	          string mcode list (* the |s *)  * string mcode
   (* Ddots is for a structure declaration *)
   | Ddots      of string mcode (* ... *) * declaration option (* whencode *)
   | OptDecl    of declaration

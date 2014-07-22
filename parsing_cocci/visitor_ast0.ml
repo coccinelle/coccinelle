@@ -31,12 +31,18 @@ let visitor mode bind option_default
     | None -> (option_default,None) in
   let do_disj starter lst mids ender processor rebuilder =
     let (starter_n,starter) = string_mcode starter in
-    let (lst_n,lst) = map_split processor lst in
-    let (mids_n,mids) = map_split string_mcode mids in
+    (* slightly ugly but ensures correct evaluation order. *)
+    let (first_n, first) = processor (List.hd lst) in
+    let rest = List.map2 (fun m l ->
+      let m1 = string_mcode m in
+      let p1 = processor l in (m1, p1)) mids (List.tl lst) in
+    let bind_value = first_n ::
+      List.rev(
+        List.fold_left (fun acc ((m1,_),(p1,_)) -> p1 :: m1 :: acc) [] rest) in
+    let lst = first :: (List.map (fun (_,(_,n)) -> n) rest) in
+    let mids = List.map (fun ((_,n),_) -> n) rest in
     let (ender_n,ender) = string_mcode ender in
-    (multibind
-       [starter_n;List.hd lst_n;
-	 multibind (List.map2 bind mids_n (List.tl lst_n));ender_n],
+    (multibind [starter_n; multibind bind_value;ender_n],
      rebuilder starter lst mids ender) in
   let dotsfn param default all_functions arg =
     let k d =
@@ -405,14 +411,18 @@ let visitor mode bind option_default
   and named_type ty id =
     match Ast0.unwrap ty with
       Ast0.FunctionPointer(rty,lp1,star,rp1,lp2,params,rp2) ->
-	let (tyres, Some idn) =
-	  function_pointer (rty,lp1,star,Some id,rp1,lp2,params,rp2) in
+	let (tyres, idn) = 
+          function_pointer (rty,lp1,star,Some id,rp1,lp2,params,rp2) in
+        let idn = match idn with Some i -> i | None -> failwith "Impossible" in
 	(rewrap ty tyres, idn)
     | Ast0.FunctionType(rty,lp1,params,rp1) ->
-	let (tyres, Some idn) = function_type (rty,Some id,lp1,params,rp1) in
+	let (tyres, idn) =
+          function_type (rty,Some id,lp1,params,rp1) in
+        let idn = match idn with Some i -> i | None -> failwith "Impossible" in
 	(rewrap ty tyres, idn)
     | Ast0.Array(rty,lb,size,rb) ->
-	let (tyres, Some idn) = array_type (rty,Some id,lb,size,rb) in
+	let (tyres, idn) = array_type (rty,Some id,lb,size,rb) in
+        let idn = match idn with Some i -> i | None -> failwith "Impossible" in
 	(rewrap ty tyres, idn)
     | _ -> let (ty_n,ty) = typeC ty in
            let (id_n,id) = ident id in

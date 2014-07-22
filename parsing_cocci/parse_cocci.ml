@@ -246,10 +246,10 @@ let token2c (tok,_) =
   | PC.TDotDot(clt)-> add_clt ":" clt
   | PC.TBang(clt)  -> add_clt "!" clt
   | PC.TOPar(clt)  -> add_clt "(" clt
-  | PC.TOPar0(clt) -> add_clt "(" clt
-  | PC.TMid0(clt)  -> add_clt "|" clt
+  | PC.TOPar0(s,clt) -> add_clt s clt
+  | PC.TMid0(s,clt)  -> add_clt s clt
   | PC.TCPar(clt)  -> add_clt ")" clt
-  | PC.TCPar0(clt) -> add_clt ")" clt
+  | PC.TCPar0(s,clt) -> add_clt s clt
 
   | PC.TOBrace(clt) -> add_clt "{" clt
   | PC.TCBrace(clt) -> add_clt "}" clt
@@ -362,7 +362,7 @@ let plus_attachable only_plus (tok,_) =
       else if only_plus then NOTPLUS
       else if line_type clt = D.CONTEXT then PLUS else NOTPLUS
 
-  | PC.TOPar0(clt) | PC.TMid0(clt) | PC.TCPar0(clt) -> NOTPLUS
+  | PC.TOPar0(s,clt) | PC.TMid0(s,clt) | PC.TCPar0(s,clt) -> NOTPLUS
   | PC.TMetaPos(nm,_,_,_) -> NOTPLUS
   | PC.TSub(clt) -> NOTPLUS
 
@@ -435,7 +435,7 @@ let get_clt ((tok,_) as t) =
   | PC.TEq(clt) | PC.TAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
   | PC.TPArob(clt) | PC.TPtVirg(clt)
 
-  | PC.TOPar0(clt) | PC.TMid0(clt) | PC.TCPar0(clt)
+  | PC.TOPar0(_,clt) | PC.TMid0(_,clt) | PC.TCPar0(_,clt)
   | PC.TOEllipsis(clt) | PC.TCEllipsis(clt)
   | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) (* | PC.TOCircles(clt)
   | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *)
@@ -577,10 +577,10 @@ let update_clt ((tok,x) as t) clt =
   | PC.TDotDot(_)   -> (PC.TDotDot(clt),x)
   | PC.TBang(_)  -> (PC.TBang(clt),x)
   | PC.TOPar(_)  -> (PC.TOPar(clt),x)
-  | PC.TOPar0(_) -> (PC.TOPar0(clt),x)
-  | PC.TMid0(_)  -> (PC.TMid0(clt),x)
+  | PC.TOPar0(s,_) -> (PC.TOPar0(s,clt),x)
+  | PC.TMid0(s,_)  -> (PC.TMid0(s,clt),x)
   | PC.TCPar(_)  -> (PC.TCPar(clt),x)
-  | PC.TCPar0(_) -> (PC.TCPar0(clt),x)
+  | PC.TCPar0(s,_) -> (PC.TCPar0(s,clt),x)
 
   | PC.TOBrace(_) -> (PC.TOBrace(clt),x)
   | PC.TCBrace(_) -> (PC.TCBrace(clt),x)
@@ -729,8 +729,8 @@ let split_token ((tok,_) as t) =
       ([t],[t])
 
   | PC.TWhy(clt)  | PC.TDotDot(clt)
-  | PC.TBang(clt) | PC.TOPar(clt) | PC.TOPar0(clt)
-  | PC.TMid0(clt) | PC.TCPar(clt) | PC.TCPar0(clt) -> split t clt
+  | PC.TBang(clt) | PC.TOPar(clt) | PC.TOPar0(_,clt)
+  | PC.TMid0(_,clt) | PC.TCPar(clt) | PC.TCPar0(_,clt) -> split t clt
 
   | PC.TInc(clt) | PC.TDec(clt) -> split t clt
 
@@ -1025,8 +1025,8 @@ let token2line (tok,_) =
   | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *)
 
   | PC.TWhy(clt) | PC.TDotDot(clt) | PC.TBang(clt) | PC.TOPar(clt)
-  | PC.TOPar0(clt) | PC.TMid0(clt) | PC.TCPar(clt)
-  | PC.TCPar0(clt)
+  | PC.TOPar0(_,clt) | PC.TMid0(_,clt) | PC.TCPar(clt)
+  | PC.TCPar0(_,clt)
 
   | PC.TOBrace(clt) | PC.TCBrace(clt) | PC.TOCro(clt) | PC.TCCro(clt)
   | PC.TOInit(clt)
@@ -1094,7 +1094,7 @@ let check_nests tokens =
     List.mem line_type [D.MINUS;D.OPTMINUS;D.UNIQUEMINUS] in
   let check_minus t =
     match fst t with
-      PC.TOPar0(clt) | PC.TMid0(clt) | PC.TCPar0(clt) -> t
+      PC.TOPar0(_,clt) | PC.TMid0(_,clt) | PC.TCPar0(_,clt) -> t
     | _ ->
 	let clt = try Some(get_clt t) with Failure _ -> None in
 	match clt with
@@ -1127,7 +1127,7 @@ let check_parentheses tokens =
     | (PC.TOPar(clt),q) :: rest
     | (PC.TDefineParam(clt,_,_,_),q) :: rest ->
 	loop (Common.Left (clt2line clt) :: seen_open) rest
-    | (PC.TOPar0(clt),q) :: rest ->
+    | (PC.TOPar0(_,clt),q) :: rest ->
 	loop (Common.Right (clt2line clt) :: seen_open) rest
     | (PC.TCPar(clt),q) :: rest ->
 	(match seen_open with
@@ -1140,7 +1140,7 @@ let check_parentheses tokens =
 	    failwith
 	      (Printf.sprintf
 		 "disjunction parenthesis in line %d column 0 matched to normal parenthesis on line %d\n" open_line (clt2line clt)))
-    | (PC.TCPar0(clt),q) :: rest ->
+    | (PC.TCPar0(_,clt),q) :: rest ->
 	(match seen_open with
 	  [] ->
 	    failwith
