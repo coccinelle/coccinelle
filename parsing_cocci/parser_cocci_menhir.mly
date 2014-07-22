@@ -140,7 +140,6 @@ and  logicalOp = function
 %token TArob TArobArob
 %token <Data.clt> TPArob
 %token <string> TScriptData TWhitespace
-(* TWhitespace is parsed manually beforehand, should not occur in here *)
 
 %token <Data.clt> TEllipsis TOEllipsis TCEllipsis TPOEllipsis TPCEllipsis
 %token <Data.clt> TWhen TWhenTrue TWhenFalse TAny TStrict TLineEnd
@@ -2545,15 +2544,20 @@ mzl(elem):
 
 edots_when(dotter,when_grammar):
     d=dotter                                      { (d,None) }
-  | d=dotter TWhen TNotEq w=when_grammar TLineEnd { (d,Some w) }
+  | d=dotter t=TWhen e=TNotEq w=when_grammar TLineEnd
+    { (d, Some (P.clt2mcode "when" t, P.clt2mcode "!=" e,w)) }
 
 whens(when_grammar,simple_when_grammar,any_strict):
-    TWhen TNotEq w=when_grammar TLineEnd { [Ast0.WhenNot w] }
-  | TWhen TEq w=simple_when_grammar TLineEnd { [Ast0.WhenAlways w] }
-  | TWhen comma_list(any_strict) TLineEnd
-      { List.map (function x -> Ast0.WhenModifier(x)) $2 }
-  | TWhenTrue TNotEq e = eexpr TLineEnd { [Ast0.WhenNotTrue e] }
-  | TWhenFalse TNotEq e = eexpr TLineEnd { [Ast0.WhenNotFalse e] }
+    t=TWhen e=TNotEq w=when_grammar TLineEnd
+      { [Ast0.WhenNot (P.clt2mcode "when" t, P.clt2mcode "!=" e, w)] }
+  | t=TWhen e=TEq w=simple_when_grammar TLineEnd
+      { [Ast0.WhenAlways (P.clt2mcode "when" t, P.clt2mcode "=" e, w)] }
+  | t=TWhen l=comma_list(any_strict) TLineEnd
+      { List.map (function x -> Ast0.WhenModifier(P.clt2mcode "when" t,x)) l }
+  | t=TWhenTrue ee=TNotEq e = eexpr TLineEnd
+      { [Ast0.WhenNotTrue (P.clt2mcode "when" t, P.clt2mcode "!=" ee, e)] }
+  | t=TWhenFalse ee=TNotEq e = eexpr TLineEnd 
+      { [Ast0.WhenNotFalse (P.clt2mcode "when" t, P.clt2mcode "!=" ee, e)] }
 
 any_strict:
     TAny    { Ast.WhenAny }
@@ -2612,6 +2616,7 @@ never_used: TDirective { () }
   | TPArob TMetaPos { () }
   | TScriptData     { () }
   | TAnalysis     { () }
+  | TWhitespace { () }
 
 script_meta_main:
     py=pure_ident TMPtVirg

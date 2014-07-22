@@ -140,10 +140,14 @@ and base_expression =
   | DisjExpr       of string mcode * expression list *
 	              string mcode list (* the |s *) * string mcode
   | NestExpr       of string mcode * expression dots * string mcode *
-	              expression option * Ast.multi
-  | Edots          of string mcode (* ... *) * expression option
-  | Ecircles       of string mcode (* ooo *) * expression option
-  | Estars         of string mcode (* *** *) * expression option
+	              (string mcode * string mcode * expression) option
+	              (* whencode *) * Ast.multi
+  | Edots          of string mcode (* ... *) * (string mcode * string mcode *
+                      expression) option (* whencode *)
+  | Ecircles       of string mcode (* ooo *) * (string mcode * string mcode *
+	              expression) option (* whencode *)
+  | Estars         of string mcode (* *** *) * (string mcode * string mcode *
+	              expression) option (* whencode *)
   | OptExp         of expression
   | UniqueExp      of expression
 
@@ -236,7 +240,8 @@ and base_declaration =
   | DisjDecl   of string mcode * declaration list *
 	          string mcode list (* the |s *)  * string mcode
   (* Ddots is for a structure declaration *)
-  | Ddots      of string mcode (* ... *) * declaration option (* whencode *)
+  | Ddots      of string mcode (* ... *) * (string mcode * string mcode *
+	          declaration) option (* whencode *)
   | OptDecl    of declaration
   | UniqueDecl of declaration
 
@@ -259,7 +264,8 @@ and base_initialiser =
   | InitGccName of ident (* name *) * string mcode (*:*) *
 	initialiser
   | IComma of string mcode (* , *)
-  | Idots  of string mcode (* ... *) * initialiser option (* whencode *)
+  | Idots  of string mcode (* ... *) *
+              (string mcode * string mcode * initialiser) option (* whencode *)
   | OptIni    of initialiser
   | UniqueIni of initialiser
 
@@ -406,11 +412,12 @@ and fninfo =
   | FAttr of string mcode
 
 and ('a,'b) whencode =
-    WhenNot of 'a
-  | WhenAlways of 'b
-  | WhenModifier of Ast.when_modifier
-  | WhenNotTrue of expression
-  | WhenNotFalse of expression
+    WhenNot of string mcode (* when *) * string mcode (* != *) * 'a
+  | WhenAlways of string mcode (* when *) * string mcode (* = *) * 'b
+  | WhenModifier of string mcode (* when *) * Ast.when_modifier
+  | WhenNotTrue of string mcode (* when *) * string mcode (* != *) * expression
+  | WhenNotFalse of string mcode (* when *) * string mcode (* != *) *
+    expression
 
 and statement = base_statement wrap
 
@@ -506,6 +513,8 @@ and anything =
   | IsoWhenFTag of expression
   | MetaPosTag of meta_pos
   | HiddenVarTag of anything list (* in iso_compile/pattern only *)
+  | WhenTag of string mcode (* when *) * string mcode option
+      (* !=, =, or none if whenmodifier*) * anything (* iso pattern *)
 
 let dotsExpr x = DotsExprTag x
 let dotsParam x = DotsParamTag x

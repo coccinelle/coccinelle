@@ -142,12 +142,12 @@ let visitor mode bind option_default
 	    let (op_n,op) = fix_mcode op in
 	    (bind exp_n op_n, Ast0.Postfix(exp,op))
 	| Ast0.Infix(exp,op) ->
-	    let (exp_n,exp) = expression exp in
 	    let (op_n,op) = fix_mcode op in
+	    let (exp_n,exp) = expression exp in
 	    (bind op_n exp_n, Ast0.Infix(exp,op))
 	| Ast0.Unary(exp,op) ->
-	    let (exp_n,exp) = expression exp in
 	    let (op_n,op) = unary_mcode op in
+	    let (exp_n,exp) = expression exp in
 	    (bind op_n exp_n, Ast0.Unary(exp,op))
 	| Ast0.Binary(left,op,right) ->
 	    let (left_n,left) = expression left in
@@ -223,22 +223,22 @@ let visitor mode bind option_default
 		Ast0.DisjExpr(starter,expr_list,mids,ender))
 	| Ast0.NestExpr(starter,expr_dots,ender,whencode,multi) ->
 	    let (starter_n,starter) = string_mcode starter in
+	    let (whencode_n, whencode) = whencode_option expression whencode in
 	    let (expr_dots_n,expr_dots) = expression_dots expr_dots in
 	    let (ender_n,ender) = string_mcode ender in
-	    let (whencode_n,whencode) = get_option expression whencode in
 	    (multibind [starter_n;expr_dots_n;ender_n;whencode_n],
 	     Ast0.NestExpr(starter,expr_dots,ender,whencode,multi))
 	| Ast0.Edots(dots,whencode) ->
 	    let (dots_n,dots) = string_mcode dots in
-	    let (whencode_n,whencode) = get_option expression whencode in
+	    let (whencode_n, whencode) = whencode_option expression whencode in
 	    (bind dots_n whencode_n,Ast0.Edots(dots,whencode))
 	| Ast0.Ecircles(dots,whencode) ->
 	    let (dots_n,dots) = string_mcode dots in
-	    let (whencode_n,whencode) = get_option expression whencode in
+	    let (whencode_n, whencode) = whencode_option expression whencode in
 	    (bind dots_n whencode_n,Ast0.Ecircles(dots,whencode))
 	| Ast0.Estars(dots,whencode) ->
 	    let (dots_n,dots) = string_mcode dots in
-	    let (whencode_n,whencode) = get_option expression whencode in
+	    let (whencode_n, whencode) = whencode_option expression whencode in
 	    (bind dots_n whencode_n,Ast0.Estars(dots,whencode))
 	| Ast0.OptExp(exp) ->
 	    let (exp_n,exp) = expression exp in
@@ -488,7 +488,12 @@ let visitor mode bind option_default
 		Ast0.DisjDecl(starter,decls,mids,ender))
 	| Ast0.Ddots(dots,whencode) ->
 	    let (dots_n,dots) = string_mcode dots in
-	    let (whencode_n,whencode) = get_option declaration whencode in
+	    let (whencode_n, whencode) = match whencode with
+              | Some (a,b,c) -> 
+                  let (_,a2) = string_mcode a in
+                  let (_,b2) = string_mcode b in
+                  let (c1,c2) = declaration c in (c1, Some (a2,b2,c2))
+              | None -> (option_default, None) in
 	    (bind dots_n whencode_n, Ast0.Ddots(dots,whencode))
 	| Ast0.OptDecl(decl) ->
 	    let (n,decl) = declaration decl in (n,Ast0.OptDecl(decl))
@@ -533,7 +538,12 @@ let visitor mode bind option_default
 	    let (n,cm) = string_mcode cm in (n,Ast0.IComma(cm))
 	| Ast0.Idots(d,whencode) ->
 	    let (d_n,d) = string_mcode d in
-	    let (whencode_n,whencode) = get_option initialiser whencode in
+	    let (whencode_n, whencode) = match whencode with
+	      | Some (a,b,c) -> 
+		  let (_,a2) = string_mcode a in
+		  let (_,b2) = string_mcode b in
+		  let (c1,c2) = initialiser c in (c1, Some (a2,b2,c2))
+	      | None -> (option_default, None) in
 	    (bind d_n whencode_n, Ast0.Idots(d,whencode))
 	| Ast0.OptIni(i) ->
 	    let (n,i) = initialiser i in (n,Ast0.OptIni(i))
@@ -754,9 +764,9 @@ let visitor mode bind option_default
 	| Ast0.Nest(starter,stmt_dots,ender,whn,multi) ->
 	    let (starter_n,starter) = string_mcode starter in
 	    let (stmt_dots_n,stmt_dots) = statement_dots stmt_dots in
-	    let (ender_n,ender) = string_mcode ender in
 	    let (whn_n,whn) =
 	      map_split_bind (whencode statement_dots statement) whn in
+	    let (ender_n,ender) = string_mcode ender in
 	    (multibind [starter_n;stmt_dots_n;ender_n;whn_n],
 	     Ast0.Nest(starter,stmt_dots,ender,whn,multi))
 	| Ast0.Exp(exp) ->
@@ -899,14 +909,37 @@ let visitor mode bind option_default
     | Ast0.FAttr(init) ->
 	let (n,init) = string_mcode init in (n,Ast0.FAttr(init))
 
+  (* we only include the when string mcode w because the parameterised
+     string_mcodefn function might have side-effects *)
   and whencode notfn alwaysfn = function
-      Ast0.WhenNot a -> let (n,a) = notfn a in (n,Ast0.WhenNot(a))
-    | Ast0.WhenAlways a -> let (n,a) = alwaysfn a in (n,Ast0.WhenAlways(a))
-    | Ast0.WhenModifier(x) -> (option_default,Ast0.WhenModifier(x))
-    | Ast0.WhenNotTrue(e) ->
-	let (n,e) = expression e in (n,Ast0.WhenNotTrue(e))
-    | Ast0.WhenNotFalse(e) ->
-	let (n,e) = expression e in (n,Ast0.WhenNotFalse(e))
+      Ast0.WhenNot (w,e,a) ->
+	let (_,w) = string_mcode w in
+	let (_,e) = string_mcode e in
+	let (n,a) = notfn a in (n,Ast0.WhenNot(w,e,a))
+    | Ast0.WhenAlways (w,e,a) -> 
+	let (_,w) = string_mcode w in
+	let (_,e) = string_mcode e in
+	let (n,a) = alwaysfn a in (n,Ast0.WhenAlways(w,e,a))
+    | Ast0.WhenModifier(w,x) ->
+	let (_,w) = string_mcode w in
+	(option_default,Ast0.WhenModifier(w,x))
+    | Ast0.WhenNotTrue(w,ee,e) ->
+	let (_,w) = string_mcode w in
+	let (_,ee) = string_mcode ee in
+	let (n,e) = expression e in (n,Ast0.WhenNotTrue(w,ee,e))
+    | Ast0.WhenNotFalse(w,ee,e) ->
+	let (_,w) = string_mcode w in
+	let (_,ee) = string_mcode ee in
+	let (n,e) = expression e in (n,Ast0.WhenNotFalse(w,ee,e))
+
+  (* for whencodes that do not have any of the above modifiers
+   * returns (the new whencode expression, the updated whencode) *)
+  and whencode_option cfn = function
+    | Some (a,b,c) -> 
+	let (_,a2) = string_mcode a in
+	let (_,b2) = string_mcode b in
+	let (c1,c2) = cfn c in (c1, Some (a2,b2,c2))
+    | None -> (option_default, None)
 
   and case_line c =
     let k c =
@@ -1037,7 +1070,8 @@ let visitor mode bind option_default
 	  let (e_n,e) = expression e in
 	  (e_n,Ast0.IsoWhenFTag(e))
       |	Ast0.MetaPosTag(var) -> failwith "not supported"
-      |	Ast0.HiddenVarTag(var) -> failwith "not supported" in
+      |	Ast0.HiddenVarTag(var) -> failwith "not supported"
+      |	Ast0.WhenTag(a,e,b) -> anything b in
     k a
 
   (* not done for combiner, because the statement is assumed to be already
