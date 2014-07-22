@@ -495,11 +495,6 @@ let collect_plus_nodes root =
     | _ -> bef@(k e)@aft in
   let do_nothing fn r k e = do_nothing_extra [] [] fn r k e in
 
-  let is_static l =
-    List.exists
-      (function Ast0.FStorage (Ast.Static,_,_,_,_,_) -> true | _ -> false)
-      l in
-
   (* case for everything that is just a wrapper for a simpler thing *)
   (* case for things with bef aft *)
   let stmt r k e =
