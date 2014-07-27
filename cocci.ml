@@ -1043,7 +1043,7 @@ let build_info_program (cprogram,typedefs,macros) env =
     Comment_annotater_c.annotate_program alltoks cs in
 
   let cs_with_envs =
-    Type_annoter_c.annotate_program env (*!g_contain_typedmetavar*) cs'
+    TAC.annotate_program env (*!g_contain_typedmetavar*) cs'
   in
 
   zip cs_with_envs parseinfos +> List.map (fun ((c, (enva,envb)), parseinfo)->
