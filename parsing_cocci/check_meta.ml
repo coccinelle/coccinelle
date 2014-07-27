@@ -175,9 +175,9 @@ let rec expression context old_metas table minus e =
   | Ast0.AsExpr(exp,asexp) -> failwith "not generated yet"
   | Ast0.DisjExpr(_,exps,_,_) ->
       List.iter (expression context old_metas table minus) exps
-  | Ast0.NestExpr(_,exp_dots,_,Some (_,_,x),_) ->
+  | Ast0.NestExpr(_,exp_dots,_,w,_) ->
       dots (expression ID old_metas table minus) exp_dots;
-      expression ID old_metas table minus x
+      get_opt (function (_,_,x) -> expression ID old_metas table minus x) w
   | Ast0.Edots(_,Some (_,_,x)) | Ast0.Ecircles(_,Some (_,_,x))
   | Ast0.Estars(_,Some (_,_,x)) ->
       expression ID old_metas table minus x
