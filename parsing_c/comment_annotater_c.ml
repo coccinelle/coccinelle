@@ -136,7 +136,3 @@ let annotate_program toks asts =
     * clean signature.
     *)
    asts
-
-
-
-
