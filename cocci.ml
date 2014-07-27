@@ -1191,7 +1191,9 @@ let prepare_c files choose_includes parse_strings : file_info list =
         fkind = Source
       }) in
 
-  includes @ cfiles
+  if !Flag_cocci.include_headers_for_types
+  then cfiles
+  else includes @ cfiles
 
 (*****************************************************************************)
 (* Manage environments as they are being built up *)
