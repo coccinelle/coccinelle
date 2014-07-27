@@ -720,14 +720,15 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (Ast0.Edots(d,None),Ast0.Edots(d1,None))
 	  | (Ast0.Ecircles(d,None),Ast0.Ecircles(d1,None))
 	  | (Ast0.Estars(d,None),Ast0.Estars(d1,None)) -> check_mcode d d1
-	  | (Ast0.Edots(ed,None),Ast0.Edots(ed1,Some wc))
-	  | (Ast0.Ecircles(ed,None),Ast0.Ecircles(ed1,Some wc))
-	  | (Ast0.Estars(ed,None),Ast0.Estars(ed1,Some wc)) ->
+	  | (Ast0.Edots(ed,None),Ast0.Edots(ed1,Some (wh,e,wc)))
+	  | (Ast0.Ecircles(ed,None),Ast0.Ecircles(ed1,Some (wh,e,wc)))
+	  | (Ast0.Estars(ed,None),Ast0.Estars(ed1,Some (wh,e,wc))) ->
 	    (* hope that mcode of edots is unique somehow *)
 	      conjunct_bindings (check_mcode ed ed1)
 		(let (edots_whencode_allowed,_,_) = whencode_allowed in
 		if edots_whencode_allowed
-		then add_dot_binding ed (Ast0.ExprTag wc)
+		then add_dot_binding ed 
+		  (Ast0.WhenTag(wh,Some e,Ast0.ExprTag wc))
 		else
 		  (Printf.printf
 		     "warning: not applying iso because of whencode";
@@ -923,12 +924,13 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (Ast0.DisjDecl(_,declsa,_,_),_) ->
 	      failwith "not allowed in the pattern of an isomorphism"
 	  | (Ast0.Ddots(d1,None),Ast0.Ddots(d,None)) -> check_mcode d1 d
-	  |	(Ast0.Ddots(dd,None),Ast0.Ddots(d,Some wc)) ->
+	  |	(Ast0.Ddots(dd,None),Ast0.Ddots(d,Some (wh,ee,wc))) ->
 	      conjunct_bindings (check_mcode dd d)
 	    (* hope that mcode of ddots is unique somehow *)
 		(let (ddots_whencode_allowed,_,_) = whencode_allowed in
 		if ddots_whencode_allowed
-		then add_dot_binding dd (Ast0.DeclTag wc)
+		then add_dot_binding dd
+		  (Ast0.WhenTag (wh,Some ee,Ast0.DeclTag wc))
 		else
 		  (Printf.printf "warning: not applying iso because of whencode";
 		   return false))
@@ -977,12 +979,13 @@ let match_maker checks_needed context_required whencode_allowed =
 		  match_init inia inib]
 	  | (Ast0.IComma(c1),Ast0.IComma(c)) -> check_mcode c1 c
 	  | (Ast0.Idots(d1,None),Ast0.Idots(d,None)) -> check_mcode d1 d
-	  | (Ast0.Idots(id,None),Ast0.Idots(d,Some wc)) ->
+	  | (Ast0.Idots(id,None),Ast0.Idots(d,Some (wh,e,wc))) ->
 	      conjunct_bindings (check_mcode id d)
 	  (* hope that mcode of edots is unique somehow *)
 		(let (_,idots_whencode_allowed,_) = whencode_allowed in
 		if idots_whencode_allowed
-		then add_dot_binding id (Ast0.InitTag wc)
+		then add_dot_binding id
+		  (Ast0.WhenTag(wh,Some e,Ast0.InitTag wc))
 		else
 		  (Printf.printf
 		     "warning: not applying iso because of whencode";
@@ -1212,25 +1215,26 @@ let match_maker checks_needed context_required whencode_allowed =
 		      (List.fold_left
 			 (function prev ->
 			   function
-			     | Ast0.WhenNot wc ->
+			     | Ast0.WhenNot (wh,e,wc) ->
 				 conjunct_bindings prev
-				   (add_multi_dot_binding d
-				      (Ast0.DotsStmtTag wc))
-			     | Ast0.WhenAlways wc ->
+				 (add_multi_dot_binding d
+				 (Ast0.WhenTag(wh,Some e,Ast0.DotsStmtTag wc)))
+			     | Ast0.WhenAlways (wh,e,wc) ->
 				 conjunct_bindings prev
-				   (add_multi_dot_binding d (Ast0.StmtTag wc))
-			     | Ast0.WhenNotTrue wc ->
+				 (add_multi_dot_binding d
+                                 (Ast0.WhenTag(wh,Some e,Ast0.StmtTag wc)))
+			     | Ast0.WhenNotTrue (wh,e,wc) ->
 				 conjunct_bindings prev
-				   (add_multi_dot_binding d
-				      (Ast0.IsoWhenTTag wc))
-			     | Ast0.WhenNotFalse wc ->
+				 (add_multi_dot_binding d
+				 (Ast0.WhenTag(wh,Some e,Ast0.IsoWhenTTag wc)))
+			     | Ast0.WhenNotFalse (wh,e,wc) ->
 				 conjunct_bindings prev
-				   (add_multi_dot_binding d
-				      (Ast0.IsoWhenFTag wc))
-			     | Ast0.WhenModifier(x) ->
+				 (add_multi_dot_binding d
+				 (Ast0.WhenTag(wh,Some e,Ast0.IsoWhenFTag wc)))
+			     | Ast0.WhenModifier(wh,x) ->
 				 conjunct_bindings prev
-				   (add_multi_dot_binding d
-				      (Ast0.IsoWhenTag x)))
+				 (add_multi_dot_binding d
+				 (Ast0.WhenTag(wh,None,Ast0.IsoWhenTag x))))
 			 (return true) wc)
 		  else
 		    (Printf.printf
@@ -1844,19 +1848,22 @@ let instantiate bindings mv_bindings =
     | Ast0.Edots(d,_) ->
 	(try
 	  (match List.assoc (dot_term d) bindings with
-	    Ast0.ExprTag(exp) -> Ast0.rewrap e (Ast0.Edots(d,Some exp))
+	    Ast0.WhenTag(wh,Some ee,Ast0.ExprTag exp) ->
+              Ast0.rewrap e (Ast0.Edots(d,Some (wh,ee,exp)))
 	  | _ -> failwith "unexpected binding")
 	with Not_found -> e)
     | Ast0.Ecircles(d,_) ->
 	(try
 	  (match List.assoc (dot_term d) bindings with
-	    Ast0.ExprTag(exp) -> Ast0.rewrap e (Ast0.Ecircles(d,Some exp))
+	    Ast0.WhenTag(wh,Some ee,Ast0.ExprTag exp) ->
+              Ast0.rewrap e (Ast0.Ecircles(d,Some (wh,ee,exp)))
 	  | _ -> failwith "unexpected binding")
 	with Not_found -> e)
     | Ast0.Estars(d,_) ->
 	(try
 	  (match List.assoc (dot_term d) bindings with
-	    Ast0.ExprTag(exp) -> Ast0.rewrap e (Ast0.Estars(d,Some exp))
+	    Ast0.WhenTag(wh,Some ee,Ast0.ExprTag(exp)) ->
+              Ast0.rewrap e (Ast0.Estars(d,Some (wh,ee,exp)))
 	  | _ -> failwith "unexpected binding")
 	with Not_found -> e)
     | _ -> e in
@@ -1912,7 +1919,8 @@ let instantiate bindings mv_bindings =
     | Ast0.Ddots(d,_) ->
 	(try
 	  (match List.assoc (dot_term d) bindings with
-	    Ast0.DeclTag(exp) -> Ast0.rewrap e (Ast0.Ddots(d,Some exp))
+	    Ast0.WhenTag(wh,Some ee,Ast0.DeclTag(exp)) ->
+              Ast0.rewrap e (Ast0.Ddots(d,Some (wh,ee,exp)))
 	  | _ -> failwith "unexpected binding")
 	with Not_found -> e)
     | _ -> e in
@@ -1934,11 +1942,15 @@ let instantiate bindings mv_bindings =
 
   let whenfn (_,v) =
     match v with
-      Ast0.DotsStmtTag(stms) -> Ast0.WhenNot stms
-    | Ast0.StmtTag(stm) -> Ast0.WhenAlways stm
-    | Ast0.IsoWhenTTag(stm) -> Ast0.WhenNotTrue stm
-    | Ast0.IsoWhenFTag(stm) -> Ast0.WhenNotFalse stm
-    | Ast0.IsoWhenTag(x) -> Ast0.WhenModifier(x)
+      Ast0.WhenTag(wh,Some ee,Ast0.DotsStmtTag(stms)) ->
+	Ast0.WhenNot (wh,ee,stms)
+    | Ast0.WhenTag(wh,Some ee,Ast0.StmtTag(stm)) ->
+	Ast0.WhenAlways (wh,ee,stm)
+    | Ast0.WhenTag(wh,Some ee,Ast0.IsoWhenTTag(stm)) ->
+	Ast0.WhenNotTrue (wh,ee,stm)
+    | Ast0.WhenTag(wh,Some ee,Ast0.IsoWhenFTag(stm)) ->
+	Ast0.WhenNotFalse (wh,ee,stm)
+    | Ast0.WhenTag(wh,None,Ast0.IsoWhenTag(x)) -> Ast0.WhenModifier(wh,x)
     | _ -> failwith "unexpected binding" in
 
   let stmtfn r k e =
@@ -2332,6 +2344,7 @@ let disj_starter lst =
       Ast0.logical_end = old_info.Ast0.pos_info.Ast0.logical_start; } in
   let info =
     { Ast0.pos_info = new_pos_info;
+      Ast0.whitespace = "";
       Ast0.attachable_start = false; Ast0.attachable_end = false;
       Ast0.mcode_start = []; Ast0.mcode_end = [];
       Ast0.strings_before = []; Ast0.strings_after = [];
@@ -2346,6 +2359,7 @@ let disj_ender lst =
       Ast0.logical_start = old_info.Ast0.pos_info.Ast0.logical_end; } in
   let info =
     { Ast0.pos_info = new_pos_info;
+      Ast0.whitespace = "";
       Ast0.attachable_start = false; Ast0.attachable_end = false;
       Ast0.mcode_start = []; Ast0.mcode_end = [];
       Ast0.strings_before = []; Ast0.strings_after = [];
@@ -2661,7 +2675,7 @@ let rewrap =
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing
 
-let rewrap_anything = function
+let rec rewrap_anything = function
     Ast0.DotsExprTag(d) ->
       Ast0.DotsExprTag(rewrap.VT0.rebuilder_rec_expression_dots d)
   | Ast0.DotsInitTag(d) ->
@@ -2695,6 +2709,7 @@ let rewrap_anything = function
       failwith "only for isos within iso phase"
   | Ast0.MetaPosTag(p) -> Ast0.MetaPosTag(p)
   | Ast0.HiddenVarTag(p) -> Ast0.HiddenVarTag(p) (* not sure it is possible *)
+  | Ast0.WhenTag(a,e,b) -> rewrap_anything b
 
 (* --------------------------------------------------------------------- *)
 

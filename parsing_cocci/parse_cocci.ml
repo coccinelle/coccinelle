@@ -21,7 +21,7 @@ let reserved_names =
 (* ----------------------------------------------------------------------- *)
 (* Debugging... *)
 
-let line_type (d,_,_,_,_,_,_,_,_) = d
+let line_type (d,_,_,_,_,_,_,_,_,_) = d
 
 let line_type2c tok =
   match line_type tok with
@@ -30,8 +30,8 @@ let line_type2c tok =
   | D.PLUSPLUS -> ":++"
   | D.CONTEXT | D.UNIQUE | D.OPT -> ""
 
-let real_line (_,d,_,_,_,_,_,_,_) = d
-let log_line  (_,_,d,_,_,_,_,_,_) = d
+let real_line (_,d,_,_,_,_,_,_,_,_) = d
+let log_line  (_,_,d,_,_,_,_,_,_,_) = d
 
 let token2c (tok,_) =
   let add_clt str clt =
@@ -246,10 +246,10 @@ let token2c (tok,_) =
   | PC.TDotDot(clt)-> add_clt ":" clt
   | PC.TBang(clt)  -> add_clt "!" clt
   | PC.TOPar(clt)  -> add_clt "(" clt
-  | PC.TOPar0(clt) -> add_clt "(" clt
-  | PC.TMid0(clt)  -> add_clt "|" clt
+  | PC.TOPar0(s,clt) -> add_clt s clt
+  | PC.TMid0(s,clt)  -> add_clt s clt
   | PC.TCPar(clt)  -> add_clt ")" clt
-  | PC.TCPar0(clt) -> add_clt ")" clt
+  | PC.TCPar0(s,clt) -> add_clt s clt
 
   | PC.TOBrace(clt) -> add_clt "{" clt
   | PC.TCBrace(clt) -> add_clt "}" clt
@@ -282,6 +282,7 @@ let token2c (tok,_) =
   | PC.TIsoType -> "Type"
   | PC.TUnderscore -> "_"
   | PC.TScriptData s -> s
+  | PC.TWhitespace s -> "Whitespace(" ^ s ^ ")"
 
 let print_tokens s tokens =
   Printf.printf "%s\n" s;
@@ -361,20 +362,22 @@ let plus_attachable only_plus (tok,_) =
       else if only_plus then NOTPLUS
       else if line_type clt = D.CONTEXT then PLUS else NOTPLUS
 
-  | PC.TOPar0(clt) | PC.TMid0(clt) | PC.TCPar0(clt) -> NOTPLUS
+  | PC.TOPar0(s,clt) | PC.TMid0(s,clt) | PC.TCPar0(s,clt) -> NOTPLUS
   | PC.TMetaPos(nm,_,_,_) -> NOTPLUS
   | PC.TSub(clt) -> NOTPLUS
 
   | _ -> SKIP
 
-let get_clt (tok,_) =
+exception NoClt of string
+
+let get_clt ((tok,_) as t) =
   match tok with
     PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
   | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt)
   | PC.Tsize_t(clt) | PC.Tssize_t(clt) | PC.Tptrdiff_t(clt)
   | PC.Tstruct(clt)
   | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
-  | PC.Tdecimal(clt) | PC.Texec(clt) | PC.Tstatic(clt)
+  | PC.Tdecimal(clt) | PC.Texec(clt) | PC.Tstatic(clt) | PC.Ttypedef(clt)
   | PC.Tinline(clt) | PC.Tattr(_,clt) | PC.Tauto(clt) | PC.Tregister(clt)
   | PC.Textern(clt) | PC.Tconst(clt) | PC.Tvolatile(clt)
 
@@ -400,7 +403,7 @@ let get_clt (tok,_) =
   | PC.TSub(clt) | PC.TLogOp(_,clt)
   | PC.TShLOp(_,clt) | PC.TShROp(_,clt)
   | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
-  | PC.TDmOp(_,clt) | PC.TTilde (clt)
+  | PC.TDmOp(_,clt) | PC.TTilde (clt) | PC.TTildeExclEq(clt)
 
   | PC.TMeta(_,_,clt) | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
   | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaErr(_,_,_,clt)
@@ -432,14 +435,14 @@ let get_clt (tok,_) =
   | PC.TEq(clt) | PC.TAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
   | PC.TPArob(clt) | PC.TPtVirg(clt)
 
-  | PC.TOPar0(clt) | PC.TMid0(clt) | PC.TCPar0(clt)
+  | PC.TOPar0(_,clt) | PC.TMid0(_,clt) | PC.TCPar0(_,clt)
   | PC.TOEllipsis(clt) | PC.TCEllipsis(clt)
   | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) (* | PC.TOCircles(clt)
-  | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *) -> clt
+  | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *)
+  | PC.TFunDecl(clt) | PC.TDirective(_,clt) | PC.TLineEnd(clt) -> clt
+  | _ -> raise (NoClt("get_clt: token " ^ (token2c t) ^ " has no clt"))
 
-  | _ -> failwith "no clt"
-
-let update_clt (tok,x) clt =
+let update_clt ((tok,x) as t) clt =
   match tok with
     PC.Tchar(_) -> (PC.Tchar(clt),x)
   | PC.Tshort(_) -> (PC.Tshort(clt),x)
@@ -574,10 +577,10 @@ let update_clt (tok,x) clt =
   | PC.TDotDot(_)   -> (PC.TDotDot(clt),x)
   | PC.TBang(_)  -> (PC.TBang(clt),x)
   | PC.TOPar(_)  -> (PC.TOPar(clt),x)
-  | PC.TOPar0(_) -> (PC.TOPar0(clt),x)
-  | PC.TMid0(_)  -> (PC.TMid0(clt),x)
+  | PC.TOPar0(s,_) -> (PC.TOPar0(s,clt),x)
+  | PC.TMid0(s,_)  -> (PC.TMid0(s,clt),x)
   | PC.TCPar(_)  -> (PC.TCPar(clt),x)
-  | PC.TCPar0(_) -> (PC.TCPar0(clt),x)
+  | PC.TCPar0(s,_) -> (PC.TCPar0(s,clt),x)
 
   | PC.TOBrace(_) -> (PC.TOBrace(clt),x)
   | PC.TCBrace(_) -> (PC.TCBrace(clt),x)
@@ -596,8 +599,10 @@ let update_clt (tok,x) clt =
 
   | PC.TLineEnd(_) -> (PC.TLineEnd(clt),x)
   | PC.TFunDecl(_) -> (PC.TFunDecl(clt),x)
+  | PC.TTildeExclEq(_) -> (PC.TTildeExclEq(clt),x)
+  | PC.TDirective(a,_) -> (PC.TDirective(a,clt),x)
 
-  | _ -> failwith "no clt"
+  | _ -> raise (NoClt ("update_clt: token " ^ (token2c t) ^ " has no clt"))
 
 
 (* ----------------------------------------------------------------------- *)
@@ -647,7 +652,7 @@ let tokens_script_all table file get_ats lexbuf end_markers :
 (* Split tokens into minus and plus fragments *)
 
 let split t clt =
-  let (d,_,_,_,_,_,_,_,_) = clt in
+  let (d,_,_,_,_,_,_,_,_,_) = clt in
   match d with
     D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> ([t],[])
   | D.PLUS | D.PLUSPLUS -> ([],[t])
@@ -724,8 +729,8 @@ let split_token ((tok,_) as t) =
       ([t],[t])
 
   | PC.TWhy(clt)  | PC.TDotDot(clt)
-  | PC.TBang(clt) | PC.TOPar(clt) | PC.TOPar0(clt)
-  | PC.TMid0(clt) | PC.TCPar(clt) | PC.TCPar0(clt) -> split t clt
+  | PC.TBang(clt) | PC.TOPar(clt) | PC.TOPar0(_,clt)
+  | PC.TMid0(_,clt) | PC.TCPar(clt) | PC.TCPar0(_,clt) -> split t clt
 
   | PC.TInc(clt) | PC.TDec(clt) -> split t clt
 
@@ -756,6 +761,8 @@ let split_token ((tok,_) as t) =
   | PC.TIsoToTestExpression ->
       failwith "unexpected tokens"
   | PC.TScriptData s -> ([t],[t])
+  | PC.TWhitespace _ -> ([t],[t]) 
+
 
 let split_token_stream tokens =
   let rec loop = function
@@ -1018,8 +1025,8 @@ let token2line (tok,_) =
   | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *)
 
   | PC.TWhy(clt) | PC.TDotDot(clt) | PC.TBang(clt) | PC.TOPar(clt)
-  | PC.TOPar0(clt) | PC.TMid0(clt) | PC.TCPar(clt)
-  | PC.TCPar0(clt)
+  | PC.TOPar0(_,clt) | PC.TMid0(_,clt) | PC.TCPar(clt)
+  | PC.TCPar0(_,clt)
 
   | PC.TOBrace(clt) | PC.TCBrace(clt) | PC.TOCro(clt) | PC.TCCro(clt)
   | PC.TOInit(clt)
@@ -1032,7 +1039,7 @@ let token2line (tok,_) =
 
   | PC.TEq(clt) | PC.TAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
   | PC.TPArob(clt) | PC.TPtVirg(clt) ->
-      let (_,line,_,_,_,_,_,_,_) = clt in Some line
+      let (_,line,_,_,_,_,_,_,_,_) = clt in Some line
 
   | _ -> None
 
@@ -1083,15 +1090,15 @@ let rec translate_when_true_false = function
 (* In a nest, if the nest is -, all of the nested code must also be -. *)
 let check_nests tokens =
   let is_minus t =
-    let (line_type,a,b,c,d,e,f,g,h) = get_clt t in
+    let (line_type,a,b,c,d,e,f,g,h,i) = get_clt t in
     List.mem line_type [D.MINUS;D.OPTMINUS;D.UNIQUEMINUS] in
   let check_minus t =
     match fst t with
-      PC.TOPar0(clt) | PC.TMid0(clt) | PC.TCPar0(clt) -> t
+      PC.TOPar0(_,clt) | PC.TMid0(_,clt) | PC.TCPar0(_,clt) -> t
     | _ ->
 	let clt = try Some(get_clt t) with Failure _ -> None in
 	match clt with
-	  Some (line_type,l,ll,c,d,e,f,g,h) ->
+	  Some (line_type,l,ll,c,d,e,f,g,h,i) ->
 	    (match line_type with
 	      D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> t
 	    | _ ->
@@ -1114,13 +1121,13 @@ let check_nests tokens =
   outside tokens
 
 let check_parentheses tokens =
-  let clt2line (_,line,_,_,_,_,_,_,_) = line in
+  let clt2line (_,line,_,_,_,_,_,_,_,_) = line in
   let rec loop seen_open = function
       [] -> tokens
     | (PC.TOPar(clt),q) :: rest
     | (PC.TDefineParam(clt,_,_,_),q) :: rest ->
 	loop (Common.Left (clt2line clt) :: seen_open) rest
-    | (PC.TOPar0(clt),q) :: rest ->
+    | (PC.TOPar0(_,clt),q) :: rest ->
 	loop (Common.Right (clt2line clt) :: seen_open) rest
     | (PC.TCPar(clt),q) :: rest ->
 	(match seen_open with
@@ -1133,7 +1140,7 @@ let check_parentheses tokens =
 	    failwith
 	      (Printf.sprintf
 		 "disjunction parenthesis in line %d column 0 matched to normal parenthesis on line %d\n" open_line (clt2line clt)))
-    | (PC.TCPar0(clt),q) :: rest ->
+    | (PC.TCPar0(_,clt),q) :: rest ->
 	(match seen_open with
 	  [] ->
 	    failwith
@@ -1186,7 +1193,7 @@ are not allowed. *)
 
 let rec collect_all_pragmas collected = function
     (PC.TDirective(s,(_,line,logical_line,logical_line_end,
-		      offset,col,_,_,pos)),_)::rest ->
+                      offset,col,_,_,pos,_)),_)::rest ->
       let i =
 	{ Ast0.line_start = line; Ast0.line_end = line;
 	  Ast0.logical_start = logical_line;
@@ -1217,7 +1224,7 @@ When stuff is added before some + code, the logical line of the + code
 becomes that of the pragma.  context_neg relies on things that are adjacent
 having sequential logical lines.  Not sure that this is good enough,
 as it might result in later gaps in the logical lines... *)
-let rec process_pragmas bef skips = function
+let rec process_pragmas (bef : 'a option) (skips : 'a list) = function
     [] -> add_bef bef @ List.rev skips
   | ((PC.TEllipsis(_),_) as a)::((PC.TComma(_),_) as b)::xs ->
       (* This is a ..., in an argument list, field initializer list etc,
@@ -1226,42 +1233,69 @@ let rec process_pragmas bef skips = function
   | ((PC.TDirective(s,i),_)::_) as l ->
       let (pragmas,rest) = collect_all_pragmas [] l in
       let (pass,rest0) = collect_pass rest in
-      let (_,_,prag_lline,_,_,_,_,_,_) = i in
+      let (_,_,prag_lline,_,_,_,_,_,_,_) = i in
       let (next,rest) =
 	match rest0 with [] -> (None,[]) | next::rest -> (Some next,rest) in
       (match (bef,plus_attach true bef,next,plus_attach true next) with
 	(Some bef,PLUS,_,_) ->
-	  let (a,b,c,d,e,f,strbef,straft,pos) = get_clt bef in
-	  (update_clt bef (a,b,c,d,e,f,strbef,pragmas,pos))::List.rev skips@
+	  let (a,b,c,d,e,f,strbef,straft,pos,ws) = get_clt bef in
+	  (update_clt bef (a,b,c,d,e,f,strbef,pragmas,pos,ws))::List.rev skips@
 	  pass@process_pragmas None [] rest0
       |	(_,_,Some next,PLUS) ->
-	  let (a,b,lline,llineend,d,e,strbef,straft,pos) = get_clt next in
+	  let (a,b,lline,llineend,d,e,strbef,straft,pos,ws) = get_clt next in
 	  (add_bef bef) @ List.rev skips @ pass @
 	  (process_pragmas
-	     (Some
-		(update_clt next
-		   (a,b,prag_lline,llineend,d,e,pragmas,straft,pos)))
+	     (Some (update_clt next 
+               (a,b,prag_lline,llineend,d,e,pragmas,straft,pos,ws)))
 	     [] rest)
       |	_ ->
 	  (match (bef,plus_attach false bef,next,plus_attach false next) with
 	    (Some bef,PLUS,_,_) ->
-	      let (a,b,c,d,e,f,strbef,straft,pos) = get_clt bef in
-	      (update_clt bef (a,b,c,d,e,f,strbef,pragmas,pos))::
-	      List.rev skips@
+	      let (a,b,c,d,e,f,strbef,straft,pos,ws) = get_clt bef in
+	      (update_clt bef (a,b,c,d,e,f,strbef,pragmas,pos,ws))::
+              List.rev skips@
 	      pass@process_pragmas None [] rest0
 	  | (_,_,Some next,PLUS) ->
-	      let (a,b,lline,llineend,d,e,strbef,straft,pos) = get_clt next in
+	      let (a,b,lline,llineend,d,e,strbef,straft,pos,ws) = 
+                get_clt next in
 	      (add_bef bef) @ List.rev skips @ pass @
 	      (process_pragmas
 		 (Some
-		    (update_clt next
-		       (a,b,prag_lline,llineend,d,e,pragmas,straft,pos)))
+		  (update_clt next
+                    (a,b,prag_lline,llineend,d,e,pragmas,straft,pos,ws)))
 		 [] rest)
 	  | _ -> failwith "nothing to attach pragma to"))
   | x::xs ->
       (match plus_attachable false x with
 	SKIP -> process_pragmas bef (x::skips) xs
       |	_ -> (add_bef bef) @ List.rev skips @ (process_pragmas (Some x) [] xs))
+
+(* Appends whitespace tokens to the nearest following token (assumes that
+ * any such token contains a clt as defined in parser_cocci_menhir.mly,
+ * otherwise get_clt and update_clt will fail).
+ * The third case handles double whitespaces which occur around script comments
+ * We only want to keep both whitespaces if the whitespaces are on the same
+ * line.
+
+ * Returns token list with whitespace tokens removed.
+ *)
+
+let rec process_whitespaces toks = function
+  | [] -> List.rev toks
+  | (PC.TWhitespace(_),_)::((endtok,_) as e)::(_) 
+      when endtok = PC.EOF || endtok = PC.TArob || endtok = PC.TArobArob ->
+      List.rev (e::toks)
+  | (PC.TWhitespace(a),((_,(l1,_),_) as b)):: (* this is for script comments *)
+    (PC.TWhitespace(c),(_,(l2,_),_))::xs ->
+      let s = if (l1 <> l2) then c else a^c in
+      process_whitespaces toks ((PC.TWhitespace(s),b)::xs)
+  | (PC.TWhitespace(s),_)::((tok,_) as aft)::xs ->
+     (try
+        let (a, b, c, d, e, f, g, h, i, _) = get_clt aft in
+        let aft = update_clt aft (a, b, c, d, e, f, g, h, i, s) in
+        process_whitespaces (aft::toks) xs
+      with NoClt(a) -> failwith ("process_whitespaces: "^a))
+  | x::xs -> process_whitespaces (x::toks) xs
 
 (* ----------------------------------------------------------------------- *)
 (* Drop ... ... .  This is only allowed in + code, and arises when there is
@@ -1289,7 +1323,7 @@ let minus_to_nothing l =
      code, depending on whether <... is a statement or expression *)
   let is_minus tok =
     try
-      let (d,_,_,_,_,_,_,_,_) = get_clt tok in
+      let (d,_,_,_,_,_,_,_,_,_) = get_clt tok in
       (match d with
 	D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> true
       | D.PLUS | D.PLUSPLUS -> false
@@ -1422,7 +1456,6 @@ let parse_one str parsefn file toks =
     Lexing.from_function
       (function buf -> function n -> raise (Common.Impossible 158))
   in
-
   reinit();
 
   try parsefn lexer_function lexbuf_fake
@@ -1455,17 +1488,18 @@ let prepare_tokens tokens =
 let prepare_mv_tokens tokens =
   detect_types false (detect_attr tokens)
 
-let unminus (d,x1,x2,x3,x4,x5,x6,x7,x8) = (* for hidden variables *)
+let unminus (d,x1,x2,x3,x4,x5,x6,x7,x8,x9) = (* for hidden variables *)
   match d with
-    D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> (D.CONTEXT,x1,x2,x3,x4,x5,x6,x7,x8)
+    D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> 
+      (D.CONTEXT,x1,x2,x3,x4,x5,x6,x7,x8,x9)
   | D.PLUS -> failwith "unexpected plus code"
   | D.PLUSPLUS -> failwith "unexpected plus code"
-  | D.CONTEXT | D.UNIQUE | D.OPT -> (D.CONTEXT,x1,x2,x3,x4,x5,x6,x7,x8)
+  | D.CONTEXT | D.UNIQUE | D.OPT -> (D.CONTEXT,x1,x2,x3,x4,x5,x6,x7,x8,x9)
 
 let process_minus_positions x name clt meta =
-  let (arity,ln,lln,llne,offset,col,strbef,straft,pos) = get_clt x in
+  let (arity,ln,lln,llne,offset,col,strbef,straft,pos,ws) = get_clt x in
   let name = Parse_aux.clt2mcode name (unminus clt) in
-  update_clt x (arity,ln,lln,llne,offset,col,strbef,straft,meta name::pos)
+  update_clt x (arity,ln,lln,llne,offset,col,strbef,straft,meta name::pos,ws)
 
 (* first attach positions, then the others, so that positions can refer to
 the larger term represented by the preceding metavariable *)
@@ -1894,6 +1928,10 @@ let parse file =
             (* get transformation rules *)
             let (more, tokens) =
 	      get_tokens (in_list [PC.TArobArob; PC.TArob]) in
+
+            (* remove whitespaces and glue to immediately following tokens *)
+            let tokens = process_whitespaces [] tokens in
+
             let (minus_tokens, _) = split_token_stream tokens in
             let (_, plus_tokens) =
 	      split_token_stream (minus_to_nothing tokens) in
@@ -1913,7 +1951,7 @@ let parse file =
 	       print_tokens "plus tokens" plus_tokens;
 	    *)
 
-	    let plus_tokens =
+            let plus_tokens =
 	      process_pragmas None []
 		(fix (function x -> drop_double_dots (drop_empty_or x))
 		   (drop_when plus_tokens)) in

@@ -39,6 +39,7 @@ let set_mcodekind x mcodekind =
   | Ast0.IsoWhenFTag(_) -> failwith "only within iso phase"
   | Ast0.MetaPosTag(p) -> failwith "invisible at this stage"
   | Ast0.HiddenVarTag(p) -> failwith "hiddenvar only within iso phase"
+  | Ast0.WhenTag _ -> failwith "whentag only within iso phase"
 
 let set_index x index =
   match x with
@@ -66,6 +67,7 @@ let set_index x index =
   | Ast0.IsoWhenFTag(_) -> failwith "only within iso phase"
   | Ast0.MetaPosTag(p) -> failwith "invisible at this stage"
   | Ast0.HiddenVarTag(p) -> failwith "hiddenvar only within iso phase"
+  | Ast0.WhenTag _ -> failwith "whentag only within iso phase"
 
 let get_index = function
     Ast0.DotsExprTag(d) -> Index.expression_dots d
@@ -92,6 +94,7 @@ let get_index = function
   | Ast0.IsoWhenFTag(_) -> failwith "only within iso phase"
   | Ast0.MetaPosTag(p) -> failwith "invisible at this stage"
   | Ast0.HiddenVarTag(p) -> failwith "hiddenvar only within iso phase"
+  | Ast0.WhenTag _ -> failwith "whentag only within iso phase"
 
 (* --------------------------------------------------------------------- *)
 (* Collect the line numbers of the plus code.  This is used for disjunctions.
@@ -867,25 +870,27 @@ let contextify_whencode =
   let expression r k e =
     k e;
     match Ast0.unwrap e with
-      Ast0.NestExpr(_,_,_,Some whencode,_)
-    | Ast0.Edots(_,Some whencode)
-    | Ast0.Ecircles(_,Some whencode)
-    | Ast0.Estars(_,Some whencode) ->
+      Ast0.NestExpr(_,_,_,Some (_,_,whencode),_)
+    | Ast0.Edots(_,Some (_,_,whencode))
+    | Ast0.Ecircles(_,Some (_,_,whencode))
+    | Ast0.Estars(_,Some (_,_,whencode)) ->
 	contextify_all.VT0.combiner_rec_expression whencode
     | _ -> () in
 
   let initialiser r k i =
     match Ast0.unwrap i with
-      Ast0.Idots(dots,Some whencode) ->
+      Ast0.Idots(dots,Some (_,_,whencode)) ->
 	contextify_all.VT0.combiner_rec_initialiser whencode
     | _ -> k i in
 
   let whencode = function
-      Ast0.WhenNot sd -> contextify_all.VT0.combiner_rec_statement_dots sd
-    | Ast0.WhenAlways s -> contextify_all.VT0.combiner_rec_statement s
-    | Ast0.WhenModifier(_) -> ()
-    | Ast0.WhenNotTrue(e) -> contextify_all.VT0.combiner_rec_expression e
-    | Ast0.WhenNotFalse(e) -> contextify_all.VT0.combiner_rec_expression e in
+      Ast0.WhenNot (_,_,sd) ->
+	contextify_all.VT0.combiner_rec_statement_dots sd
+    | Ast0.WhenAlways (_,_,s) -> contextify_all.VT0.combiner_rec_statement s
+    | Ast0.WhenModifier _ -> ()
+    | Ast0.WhenNotTrue(_,_,e) -> contextify_all.VT0.combiner_rec_expression e
+    | Ast0.WhenNotFalse(_,_,e) -> contextify_all.VT0.combiner_rec_expression e
+  in
 
   let statement r k (s : Ast0.statement) =
     k s;

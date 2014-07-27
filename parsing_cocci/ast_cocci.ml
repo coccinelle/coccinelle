@@ -5,7 +5,9 @@ type added_string = Noindent of string | Indent of string | Space of string
 
 type info = { line : int; column : int;
 	      strbef : (added_string * int (* line *) * int (* col *)) list;
-	      straft : (added_string * int (* line *) * int (* col *)) list }
+	      straft : (added_string * int (* line *) * int (* col *)) list;
+              whitespace : string }
+
 type line = int
 type meta_name = string * string
 (* need to be careful about rewrapping, to avoid duplicating pos info
@@ -827,7 +829,8 @@ and tag2c = function
 
 (* --------------------------------------------------------------------- *)
 
-let no_info = { line = 0; column = -1; strbef = []; straft = [] }
+let no_info = { line = 0; column = -1; strbef = []; straft = [];
+                whitespace = "" }
 
 let make_term x =
   {node = x;

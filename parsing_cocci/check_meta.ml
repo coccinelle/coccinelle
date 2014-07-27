@@ -175,10 +175,11 @@ let rec expression context old_metas table minus e =
   | Ast0.AsExpr(exp,asexp) -> failwith "not generated yet"
   | Ast0.DisjExpr(_,exps,_,_) ->
       List.iter (expression context old_metas table minus) exps
-  | Ast0.NestExpr(_,exp_dots,_,w,_) ->
+  | Ast0.NestExpr(_,exp_dots,_,Some (_,_,x),_) ->
       dots (expression ID old_metas table minus) exp_dots;
-      get_opt (expression ID old_metas table minus) w
-  | Ast0.Edots(_,Some x) | Ast0.Ecircles(_,Some x) | Ast0.Estars(_,Some x) ->
+      expression ID old_metas table minus x
+  | Ast0.Edots(_,Some (_,_,x)) | Ast0.Ecircles(_,Some (_,_,x))
+  | Ast0.Estars(_,Some (_,_,x)) ->
       expression ID old_metas table minus x
   | Ast0.OptExp(x) | Ast0.UniqueExp(x) ->
       expression ID old_metas table minus x
@@ -281,7 +282,7 @@ and declaration context old_metas table minus d =
       typeC old_metas table minus id
   | Ast0.DisjDecl(_,decls,_,_) ->
       List.iter (declaration ID old_metas table minus) decls
-  | Ast0.Ddots(_,Some x) -> declaration ID old_metas table minus x
+  | Ast0.Ddots(_,Some (_,_,x)) -> declaration ID old_metas table minus x
   | Ast0.Ddots(_,None) -> ()
   | Ast0.OptDecl(_) | Ast0.UniqueDecl(_) ->
       failwith "unexpected code"
@@ -308,7 +309,7 @@ and initialiser old_metas table minus ini =
   | Ast0.InitGccName(name,eq,ini) ->
       ident FIELD old_metas table minus name;
       initialiser old_metas table minus ini
-  | Ast0.Idots(_,Some x) -> initialiser old_metas table minus x
+  | Ast0.Idots(_,Some (_,_,x)) -> initialiser old_metas table minus x
   | Ast0.OptIni(_) | Ast0.UniqueIni(_) ->
       failwith "unexpected code"
   | _ -> () (* no metavariable subterms *)
@@ -474,11 +475,11 @@ and fninfo old_metas table minus = function
   | Ast0.FAttr(attr) -> ()
 
 and whencode notfn alwaysfn expression = function
-    Ast0.WhenNot a -> notfn a
-  | Ast0.WhenAlways a -> alwaysfn a
-  | Ast0.WhenModifier(_) -> ()
-  | Ast0.WhenNotTrue a -> expression a
-  | Ast0.WhenNotFalse a -> expression a
+    Ast0.WhenNot (_,_,a) -> notfn a
+  | Ast0.WhenAlways (_,_,a) -> alwaysfn a
+  | Ast0.WhenModifier _ -> ()
+  | Ast0.WhenNotTrue (_,_,a) -> expression a
+  | Ast0.WhenNotFalse (_,_,a) -> expression a
 
 and case_line old_metas table minus c =
   match Ast0.unwrap c with

@@ -260,6 +260,7 @@ let convert_info info =
     Ast.column = info.Ast0.pos_info.Ast0.column;
     Ast.strbef = strings_to_s info.Ast0.strings_before;
     Ast.straft = strings_to_s info.Ast0.strings_after;
+    Ast.whitespace = info.Ast0.whitespace;
   }
 
 let convert_mcodekind adj = function
@@ -422,20 +423,20 @@ and expression e =
 	Ast.DisjExpr(List.map expression exps)
     | Ast0.NestExpr(starter,exp_dots,ender,whencode,multi) ->
 	let starter = mcode starter in
-	let whencode = get_option expression whencode in
+	let whencode = get_option (fun (_,_,b) -> expression b) whencode in
 	let ender = mcode ender in
 	Ast.NestExpr(starter,dots expression exp_dots,ender,whencode,multi)
     | Ast0.Edots(dots,whencode) ->
 	let dots = mcode dots in
-	let whencode = get_option expression whencode in
+	let whencode = get_option (fun (_,_,b) -> expression b) whencode in
 	Ast.Edots(dots,whencode)
     | Ast0.Ecircles(dots,whencode) ->
 	let dots = mcode dots in
-	let whencode = get_option expression whencode in
+	let whencode = get_option (fun (_,_,b) -> expression b) whencode in
 	Ast.Ecircles(dots,whencode)
     | Ast0.Estars(dots,whencode) ->
 	let dots = mcode dots in
-	let whencode = get_option expression whencode in
+	let whencode = get_option (fun (_,_,b) -> expression b) whencode in
 	Ast.Estars(dots,whencode)
     | Ast0.OptExp(exp) -> Ast.OptExp(expression exp)
     | Ast0.UniqueExp(exp) -> Ast.UniqueExp(expression exp)) in
@@ -632,7 +633,7 @@ and annotated_decl bef d =
       Ast0.Ddots(dots,whencode) ->
 	(* structure definitions only *)
 	let dots = mcode dots in
-	let whencode = get_option declaration whencode in
+	let whencode = get_option (fun (_,_,b) -> declaration b) whencode in
 	Ast.Ddots(dots,whencode)
     | _ -> (* for decls where there is no bef information needed *)
 	let bef =
@@ -707,7 +708,7 @@ and initialiser i =
 	let (whencode,initlist,allminus) = strip_idots initlist in
 	Ast.StrInitList
 	  (allminus,mcode lb,List.map initialiser initlist,mcode rb,
-	   List.map initialiser whencode)
+	   List.map (fun (_,_,b) -> initialiser b) whencode)
     | Ast0.InitGccExt(designators,eq,ini) ->
 	Ast.InitGccExt(List.map designator designators,mcode eq,
 		       initialiser ini)
@@ -716,7 +717,7 @@ and initialiser i =
     | Ast0.IComma(comma) -> Ast.IComma(mcode comma)
     | Ast0.Idots(dots,whencode) ->
 	let dots = mcode dots in
-	let whencode = get_option initialiser whencode in
+	let whencode = get_option (fun (_,_,b) -> initialiser b) whencode in
 	Ast.Idots(dots,whencode)
     | Ast0.OptIni(ini) -> Ast.OptIni(initialiser ini)
     | Ast0.UniqueIni(ini) -> Ast.UniqueIni(initialiser ini))
@@ -985,16 +986,16 @@ and statement s =
       | Ast0.UniqueDParam(dp) -> Ast.UniqueDParam(define_param dp))
 
   and whencode notfn alwaysfn = function
-      Ast0.WhenNot a -> Ast.WhenNot (notfn a)
-    | Ast0.WhenAlways a -> Ast.WhenAlways (alwaysfn a)
-    | Ast0.WhenModifier(x) -> Ast.WhenModifier(x)
+      Ast0.WhenNot (_,_,a) -> Ast.WhenNot (notfn a)
+    | Ast0.WhenAlways (_,_,a) -> Ast.WhenAlways (alwaysfn a)
+    | Ast0.WhenModifier(_,x) -> Ast.WhenModifier(x)
     | x ->
 	let rewrap_rule_elem ast0 ast =
 	  rewrap ast0 (do_isos (Ast0.get_iso ast0)) ast in
 	match x with
-	  Ast0.WhenNotTrue(e) ->
+	  Ast0.WhenNotTrue(_,_,e) ->
 	    Ast.WhenNotTrue(rewrap_rule_elem e (Ast.Exp(expression e)))
-	| Ast0.WhenNotFalse(e) ->
+	| Ast0.WhenNotFalse(_,_,e) ->
 	    Ast.WhenNotFalse(rewrap_rule_elem e (Ast.Exp(expression e)))
 	| _ -> failwith "not possible"
 
@@ -1150,6 +1151,7 @@ and anything = function
   | Ast0.IsoWhenFTag(_) -> failwith "not possible"
   | Ast0.MetaPosTag _ -> failwith "not possible"
   | Ast0.HiddenVarTag _ -> failwith "not possible"
+  | Ast0.WhenTag _ -> failwith "not possible"
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)

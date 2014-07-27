@@ -100,7 +100,7 @@ let mcode_simple_minus = function
 
 let minusizer =
   ("fake","fake"),
-  {A.line = 0; A.column =0; A.strbef=[]; A.straft=[]},
+  {A.line = 0; A.column =0; A.strbef=[]; A.straft=[]; A.whitespace=""},
   (A.MINUS(A.DontCarePos,[],A.ALLMINUS,A.NOREPLACEMENT)),
   []
 
@@ -2069,7 +2069,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 		mcode mcode mcode
 		donothing donothing donothing donothing donothing
 		donothing donothing donothing donothing donothing
-		donothing donothing donothing donothing
+		donothing donothing donothing donothing donothing
 		donothing donothing donothing donothing donothing in
 	    v.Visitor_ast.rebuilder_declaration decla in
 

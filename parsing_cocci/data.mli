@@ -9,9 +9,10 @@ type incl_iso =
 
 type clt =
     line_type * int * int * int * int * int (* starting spaces *) *
-      (Ast_cocci.added_string * Ast0_cocci.position_info) list (*code before*)*
-      (Ast_cocci.added_string * Ast0_cocci.position_info) list (*code after *)*
-      Ast0_cocci.anything list (* position variable, minus only *)
+     (Ast_cocci.added_string * Ast0_cocci.position_info) list (*code before*) *
+     (Ast_cocci.added_string * Ast0_cocci.position_info) list (*code after *) *
+     Ast0_cocci.anything list (* position variable, minus only *) *
+     string (* whitespace before *)
 
 (* ---------------------------------------------------------------------- *)
 
