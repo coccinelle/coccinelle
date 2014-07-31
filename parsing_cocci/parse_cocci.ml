@@ -246,10 +246,10 @@ let token2c (tok,_) =
   | PC.TDotDot(clt)-> add_clt ":" clt
   | PC.TBang(clt)  -> add_clt "!" clt
   | PC.TOPar(clt)  -> add_clt "(" clt
-  | PC.TOPar0(clt) -> add_clt "(" clt
-  | PC.TMid0(clt)  -> add_clt "|" clt
+  | PC.TOPar0(s,clt) -> add_clt s clt
+  | PC.TMid0(s,clt)  -> add_clt s clt
   | PC.TCPar(clt)  -> add_clt ")" clt
-  | PC.TCPar0(clt) -> add_clt ")" clt
+  | PC.TCPar0(s,clt) -> add_clt s clt
 
   | PC.TOBrace(clt) -> add_clt "{" clt
   | PC.TCBrace(clt) -> add_clt "}" clt
@@ -282,7 +282,7 @@ let token2c (tok,_) =
   | PC.TIsoType -> "Type"
   | PC.TUnderscore -> "_"
   | PC.TScriptData s -> s
-  | PC.TWhitespace _ -> ""
+  | PC.TWhitespace s -> "Whitespace(" ^ s ^ ")"
 
 let print_tokens s tokens =
   Printf.printf "%s\n" s;
@@ -362,13 +362,15 @@ let plus_attachable only_plus (tok,_) =
       else if only_plus then NOTPLUS
       else if line_type clt = D.CONTEXT then PLUS else NOTPLUS
 
-  | PC.TOPar0(clt) | PC.TMid0(clt) | PC.TCPar0(clt) -> NOTPLUS
+  | PC.TOPar0(s,clt) | PC.TMid0(s,clt) | PC.TCPar0(s,clt) -> NOTPLUS
   | PC.TMetaPos(nm,_,_,_) -> NOTPLUS
   | PC.TSub(clt) -> NOTPLUS
 
   | _ -> SKIP
 
-let get_clt (tok,_) =
+exception NoClt of string
+
+let get_clt ((tok,_) as t) =
   match tok with
     PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
   | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt)
@@ -433,14 +435,14 @@ let get_clt (tok,_) =
   | PC.TEq(clt) | PC.TAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
   | PC.TPArob(clt) | PC.TPtVirg(clt)
 
-  | PC.TOPar0(clt) | PC.TMid0(clt) | PC.TCPar0(clt)
+  | PC.TOPar0(_,clt) | PC.TMid0(_,clt) | PC.TCPar0(_,clt)
   | PC.TOEllipsis(clt) | PC.TCEllipsis(clt)
   | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) (* | PC.TOCircles(clt)
   | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *)
   | PC.TFunDecl(clt) | PC.TDirective(_,clt) | PC.TLineEnd(clt) -> clt
-  | _ -> failwith "no clt"
+  | _ -> raise (NoClt("get_clt: token " ^ (token2c t) ^ " has no clt"))
 
-let update_clt (tok,x) clt =
+let update_clt ((tok,x) as t) clt =
   match tok with
     PC.Tchar(_) -> (PC.Tchar(clt),x)
   | PC.Tshort(_) -> (PC.Tshort(clt),x)
@@ -575,10 +577,10 @@ let update_clt (tok,x) clt =
   | PC.TDotDot(_)   -> (PC.TDotDot(clt),x)
   | PC.TBang(_)  -> (PC.TBang(clt),x)
   | PC.TOPar(_)  -> (PC.TOPar(clt),x)
-  | PC.TOPar0(_) -> (PC.TOPar0(clt),x)
-  | PC.TMid0(_)  -> (PC.TMid0(clt),x)
+  | PC.TOPar0(s,_) -> (PC.TOPar0(s,clt),x)
+  | PC.TMid0(s,_)  -> (PC.TMid0(s,clt),x)
   | PC.TCPar(_)  -> (PC.TCPar(clt),x)
-  | PC.TCPar0(_) -> (PC.TCPar0(clt),x)
+  | PC.TCPar0(s,_) -> (PC.TCPar0(s,clt),x)
 
   | PC.TOBrace(_) -> (PC.TOBrace(clt),x)
   | PC.TCBrace(_) -> (PC.TCBrace(clt),x)
@@ -600,7 +602,7 @@ let update_clt (tok,x) clt =
   | PC.TTildeExclEq(_) -> (PC.TTildeExclEq(clt),x)
   | PC.TDirective(a,_) -> (PC.TDirective(a,clt),x)
 
-  | _ -> failwith "no clt"
+  | _ -> raise (NoClt ("update_clt: token " ^ (token2c t) ^ " has no clt"))
 
 
 (* ----------------------------------------------------------------------- *)
@@ -732,8 +734,8 @@ let split_token ((tok,_) as t) =
       ([t],[t])
 
   | PC.TWhy(clt)  | PC.TDotDot(clt)
-  | PC.TBang(clt) | PC.TOPar(clt) | PC.TOPar0(clt)
-  | PC.TMid0(clt) | PC.TCPar(clt) | PC.TCPar0(clt) -> split t clt
+  | PC.TBang(clt) | PC.TOPar(clt) | PC.TOPar0(_,clt)
+  | PC.TMid0(_,clt) | PC.TCPar(clt) | PC.TCPar0(_,clt) -> split t clt
 
   | PC.TInc(clt) | PC.TDec(clt) -> split t clt
 
@@ -1028,8 +1030,8 @@ let token2line (tok,_) =
   | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *)
 
   | PC.TWhy(clt) | PC.TDotDot(clt) | PC.TBang(clt) | PC.TOPar(clt)
-  | PC.TOPar0(clt) | PC.TMid0(clt) | PC.TCPar(clt)
-  | PC.TCPar0(clt)
+  | PC.TOPar0(_,clt) | PC.TMid0(_,clt) | PC.TCPar(clt)
+  | PC.TCPar0(_,clt)
 
   | PC.TOBrace(clt) | PC.TCBrace(clt) | PC.TOCro(clt) | PC.TCCro(clt)
   | PC.TOInit(clt)
@@ -1097,7 +1099,7 @@ let check_nests tokens =
     List.mem line_type [D.MINUS;D.OPTMINUS;D.UNIQUEMINUS] in
   let check_minus t =
     match fst t with
-      PC.TOPar0(clt) | PC.TMid0(clt) | PC.TCPar0(clt) -> t
+      PC.TOPar0(_,clt) | PC.TMid0(_,clt) | PC.TCPar0(_,clt) -> t
     | _ ->
 	let clt = try Some(get_clt t) with Failure _ -> None in
 	match clt with
@@ -1130,7 +1132,7 @@ let check_parentheses tokens =
     | (PC.TOPar(clt),q) :: rest
     | (PC.TDefineParam(clt,_,_,_),q) :: rest ->
 	loop (Common.Left (clt2line clt) :: seen_open) rest
-    | (PC.TOPar0(clt),q) :: rest ->
+    | (PC.TOPar0(_,clt),q) :: rest ->
 	loop (Common.Right (clt2line clt) :: seen_open) rest
     | (PC.TCPar(clt),q) :: rest ->
 	(match seen_open with
@@ -1143,7 +1145,7 @@ let check_parentheses tokens =
 	    failwith
 	      (Printf.sprintf
 		 "disjunction parenthesis in line %d column 0 matched to normal parenthesis on line %d\n" open_line (clt2line clt)))
-    | (PC.TCPar0(clt),q) :: rest ->
+    | (PC.TCPar0(_,clt),q) :: rest ->
 	(match seen_open with
 	  [] ->
 	    failwith
@@ -1276,19 +1278,28 @@ let rec process_pragmas (bef : 'a option) (skips : 'a list) = function
 (* Appends whitespace tokens to the nearest following token (assumes that
  * any such token contains a clt as defined in parser_cocci_menhir.mly,
  * otherwise get_clt and update_clt will fail).
+ * The third case handles double whitespaces which occur around script comments
+ * We only want to keep both whitespaces if the whitespaces are on the same
+ * line.
+
  * Returns token list with whitespace tokens removed.
  *)
 
 let rec process_whitespaces toks = function
-  | [] ->  List.rev toks
-  | (PC.TWhitespace(_),_)::((PC.EOF,_) as e)::(_) ->
+  | [] -> List.rev toks
+  | (PC.TWhitespace(_),_)::((endtok,_) as e)::(_) 
+      when endtok = PC.EOF || endtok = PC.TArob || endtok = PC.TArobArob ->
       List.rev (e::toks)
-  | (PC.TWhitespace(s),a)::(PC.TWhitespace(b),_)::xs ->
-      process_whitespaces toks ((PC.TWhitespace(s^b),a)::xs)
-  | (PC.TWhitespace(s),_)::((tok,clt) as aft)::xs ->
-      let (a, b, c, d, e, f, g, h, i, _) = get_clt aft in
-      let aft = update_clt aft (a, b, c, d, e, f, g, h, i, s) in
-      process_whitespaces (aft::toks) xs
+  | (PC.TWhitespace(a),((_,(l1,_),_) as b)):: (* this is for script comments *)
+    (PC.TWhitespace(c),(_,(l2,_),_))::xs ->
+      let s = if (l1 <> l2) then c else a^c in
+      process_whitespaces toks ((PC.TWhitespace(s),b)::xs)
+  | (PC.TWhitespace(s),_)::((tok,_) as aft)::xs ->
+     (try
+        let (a, b, c, d, e, f, g, h, i, _) = get_clt aft in
+        let aft = update_clt aft (a, b, c, d, e, f, g, h, i, s) in
+        process_whitespaces (aft::toks) xs
+      with NoClt(a) -> failwith ("process_whitespaces: "^a))
   | x::xs -> process_whitespaces (x::toks) xs
 
 (* ----------------------------------------------------------------------- *)

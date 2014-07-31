@@ -281,6 +281,8 @@ let short_options = [
   "--local-includes",
   Arg.Unit (function _ -> FC.include_options := FC.I_NORMAL_INCLUDES),
   "  causes local include files to be used";
+  "--include-headers-for-types", Arg.Set FC.include_headers_for_types,
+  "    use only type information from header files";
   "--ignore-unknown-options", Arg.Set ignore_unknown_opt,
   "    For integration in a toolchain (must be set before the first unknown option)";
   "--include-headers", Arg.Set Flag.include_headers,

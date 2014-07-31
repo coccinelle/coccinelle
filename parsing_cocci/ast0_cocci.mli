@@ -130,10 +130,14 @@ and base_expression =
   | DisjExpr       of string mcode * expression list * string mcode list *
 	              string mcode
   | NestExpr       of string mcode * expression dots * string mcode *
-	              expression option * Ast_cocci.multi
-  | Edots          of string mcode (* ... *) * expression option
-  | Ecircles       of string mcode (* ooo *) * expression option
-  | Estars         of string mcode (* *** *) * expression option
+                      (string mcode * string mcode * expression) option 
+                      (* whencode *) * Ast_cocci.multi
+  | Edots          of string mcode (* ... *) * (string mcode * string mcode *
+                      expression) option (* whencode *)
+  | Ecircles       of string mcode (* ooo *) * (string mcode * string mcode *
+                      expression) option (* whencode *)
+  | Estars         of string mcode (* *** *) * (string mcode * string mcode *
+                      expression) option (* whencode *)
   | OptExp         of expression
   | UniqueExp      of expression
 
@@ -223,7 +227,8 @@ and base_declaration =
   | Typedef of string mcode (* typedef *) * typeC * typeC * string mcode (*;*)
   | DisjDecl   of string mcode * declaration list * string mcode list *
 	          string mcode
-  | Ddots      of string mcode (* ... *) * declaration option (* whencode *)
+  | Ddots      of string mcode (* ... *) * (string mcode * string mcode *
+                  declaration) option (* whencode *)
   | OptDecl    of declaration
   | UniqueDecl of declaration
 
@@ -245,7 +250,8 @@ and base_initialiser =
   | InitGccName of ident (* name *) * string mcode (*:*) *
 	initialiser
   | IComma of string mcode
-  | Idots  of string mcode (* ... *) * initialiser option (* whencode *)
+  | Idots  of string mcode (* ... *) *
+              (string mcode * string mcode * initialiser) option (* whencode *)
   | OptIni    of initialiser
   | UniqueIni of initialiser
 
@@ -392,11 +398,12 @@ and fninfo =
   | FAttr of string mcode
 
 and ('a,'b) whencode =
-    WhenNot of 'a
-  | WhenAlways of 'b
-  | WhenModifier of Ast_cocci.when_modifier
-  | WhenNotTrue of expression
-  | WhenNotFalse of expression
+    WhenNot of string mcode (* when *) * string mcode (* != *) * 'a
+  | WhenAlways of string mcode (* when *) * string mcode (* = *) * 'b
+  | WhenModifier of string mcode (* when *) * Ast_cocci.when_modifier
+  | WhenNotTrue of string mcode (* when *) * string mcode (* != *) * expression
+  | WhenNotFalse of string mcode (* when *) * string mcode (* != *) *
+    expression
 
 and statement = base_statement wrap
 
@@ -497,6 +504,8 @@ and anything =
   | IsoWhenFTag of expression(*only for when code, in iso phase*)
   | MetaPosTag of meta_pos
   | HiddenVarTag of anything list (* in iso_compile/pattern only *)
+  | WhenTag of string mcode (* when *) * string mcode option *
+    anything (* iso pattern *)
 
 val dotsExpr : expression dots -> anything
 val dotsInit : initialiser dots -> anything

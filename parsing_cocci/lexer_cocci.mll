@@ -631,23 +631,23 @@ rule token = parse
 	  then (start_line true; TOPar (get_current_line_type lexbuf))
           else
             (start_line true; check_context_linetype (tok lexbuf);
-	     TOPar0 (get_current_line_type lexbuf))}
+	     TOPar0 ("(",get_current_line_type lexbuf))}
   | "\\(" { start_line true;
-	    TOPar0 (contextify(get_current_line_type lexbuf)) }
+	    TOPar0 ("\\(",contextify(get_current_line_type lexbuf)) }
   | "|" { if not (!col_zero)
 	  then (start_line true; TOr(get_current_line_type lexbuf))
           else (start_line true;
 		check_context_linetype (tok lexbuf);
-		TMid0 (get_current_line_type lexbuf))}
+		TMid0 ("|",get_current_line_type lexbuf))}
   | "\\|" { start_line true;
-	    TMid0 (contextify(get_current_line_type lexbuf)) }
+	    TMid0 ("\\|",contextify(get_current_line_type lexbuf)) }
   | ")" { if not !col_zero
 	  then (start_line true; TCPar (get_current_line_type lexbuf))
           else
             (start_line true; check_context_linetype (tok lexbuf);
-	     TCPar0 (get_current_line_type lexbuf))}
+	     TCPar0 (")",get_current_line_type lexbuf))}
   | "\\)" { start_line true;
-	    TCPar0 (contextify(get_current_line_type lexbuf)) }
+	    TCPar0 ("\\)",contextify(get_current_line_type lexbuf)) }
 
   | '[' { start_line true; TOCro (get_current_line_type lexbuf)   }
   | ']' { start_line true; TCCro (get_current_line_type lexbuf)   }

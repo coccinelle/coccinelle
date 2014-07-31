@@ -26,6 +26,8 @@ let windows = ref false
 
 let popl = ref false
 
+let include_headers_for_types = ref false
+
 type include_options =
     I_UNSPECIFIED | I_NO_INCLUDES | I_NORMAL_INCLUDES
   | I_ALL_INCLUDES | I_REALLY_ALL_INCLUDES
