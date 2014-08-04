@@ -664,10 +664,9 @@ let (includes_to_parse:
 	      (* for our tests, all the files are flat in the current dir *)
 		  then
 		    let attempt2 = Filename.concat dir (Common.last xs) in
-		      if not (Sys.file_exists attempt2) && all_includes
-		      then
-			interpret_include_path xs
-		      else Some attempt2
+		    if all_includes && not (Sys.file_exists attempt2)
+		    then interpret_include_path xs
+		    else Some attempt2
 		  else
 		    if all_includes then interpret_include_path xs
 		    else None
