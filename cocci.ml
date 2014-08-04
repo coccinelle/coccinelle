@@ -657,8 +657,8 @@ let (includes_to_parse:
             | Ast_c.Local xs ->
 		let relpath = Common.join "/" xs in
 		let f = Filename.concat dir relpath in
-		if (Sys.file_exists f) then
-		  Some f
+		if (Sys.file_exists f)
+		then Some f
 		else
 		  if !Flag_cocci.relax_include_path
 	      (* for our tests, all the files are flat in the current dir *)
@@ -674,8 +674,7 @@ let (includes_to_parse:
             | Ast_c.NonLocal xs ->
 		if all_includes ||
 	        Common.fileprefix (Common.last xs) =$= Common.fileprefix file
-		then
-		  interpret_include_path xs
+		then interpret_include_path xs
 		else None
             | Ast_c.Weird _ -> None
 		  )
