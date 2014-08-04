@@ -591,7 +591,8 @@ let sp_contain_typed_metavar rules =
  * For the moment we base in part our heuristic on the name of the file, e.g.
  * serio.c is related we think to #include <linux/serio.h>
  *)
-let include_table = Hashtbl.create(100)
+let include_table = Hashtbl.create(101)
+let find_table = Hashtbl.create(101)
 
 let interpret_include_path relpath =
   let maxdepth = List.length relpath in
@@ -599,9 +600,14 @@ let interpret_include_path relpath =
     let cmd =
       Printf.sprintf "find %s -maxdepth %d -mindepth %d -path \"*/%s\""
 	dir maxdepth maxdepth f in
-    match Common.cmd_to_list cmd with
-      [x] -> Some x
-    | _ -> None in
+    try Hashtbl.find find_table cmd
+    with Not_found ->
+      let res =
+	match Common.cmd_to_list cmd with
+	  [x] -> Some x
+	| _ -> None in
+      Hashtbl.add find_table cmd res;
+      res in
   let native_file_exists dir f =
     let f = Filename.concat dir f in
     if Sys.file_exists f
@@ -1117,6 +1123,15 @@ let rebuild_info_c_and_headers ccs isexp parse_strings =
       rebuild_info_program c_or_h.asts c_or_h.full_fname isexp parse_strings }
   )
 
+(* remove ../ in the middle of an include path *)
+let fixpath s =
+  let s = Str.split_delim (Str.regexp "/") s in
+  let rec loop = function
+      x::".."::rest -> loop rest
+    | x::rest -> x :: loop rest
+    | [] -> [] in
+  String.concat "/" (loop s)
+
 let rec prepare_h seen env (hpath : string) choose_includes parse_strings
     : file_info list =
   if not (Common.lfile_exists hpath)
@@ -1133,7 +1148,8 @@ let rec prepare_h seen env (hpath : string) choose_includes parse_strings
 	then
 	  List.filter
 	    (function x -> not (List.mem x !seen))
-	    (includes_to_parse [(hpath,h_cs)] choose_includes)
+	    (List.map fixpath
+	       (includes_to_parse [(hpath,h_cs)] choose_includes))
 	else [] in
       seen := local_includes @ !seen;
       let others =
