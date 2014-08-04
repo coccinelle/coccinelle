@@ -591,7 +591,8 @@ let sp_contain_typed_metavar rules =
  * For the moment we base in part our heuristic on the name of the file, e.g.
  * serio.c is related we think to #include <linux/serio.h>
  *)
-let include_table = Hashtbl.create(100)
+let include_table = Hashtbl.create(101)
+let find_table = Hashtbl.create(101)
 
 let interpret_include_path relpath =
   let maxdepth = List.length relpath in
@@ -599,9 +600,14 @@ let interpret_include_path relpath =
     let cmd =
       Printf.sprintf "find %s -maxdepth %d -mindepth %d -path \"*/%s\""
 	dir maxdepth maxdepth f in
-    match Common.cmd_to_list cmd with
-      [x] -> Some x
-    | _ -> None in
+    try Hashtbl.find find_table cmd
+    with Not_found ->
+      let res =
+	match Common.cmd_to_list cmd with
+	  [x] -> Some x
+	| _ -> None in
+      Hashtbl.add find_table cmd res;
+      res in
   let native_file_exists dir f =
     let f = Filename.concat dir f in
     if Sys.file_exists f
@@ -657,17 +663,16 @@ let (includes_to_parse:
             | Ast_c.Local xs ->
 		let relpath = Common.join "/" xs in
 		let f = Filename.concat dir relpath in
-		if (Sys.file_exists f) then
-		  Some f
+		if (Sys.file_exists f)
+		then Some f
 		else
 		  if !Flag_cocci.relax_include_path
 	      (* for our tests, all the files are flat in the current dir *)
 		  then
 		    let attempt2 = Filename.concat dir (Common.last xs) in
-		      if not (Sys.file_exists attempt2) && all_includes
-		      then
-			interpret_include_path xs
-		      else Some attempt2
+		    if all_includes && not (Sys.file_exists attempt2)
+		    then interpret_include_path xs
+		    else Some attempt2
 		  else
 		    if all_includes then interpret_include_path xs
 		    else None
@@ -675,8 +680,7 @@ let (includes_to_parse:
             | Ast_c.NonLocal xs ->
 		if all_includes ||
 	        Common.fileprefix (Common.last xs) =$= Common.fileprefix file
-		then
-		  interpret_include_path xs
+		then interpret_include_path xs
 		else None
             | Ast_c.Weird _ -> None
 		  )
@@ -1043,7 +1047,7 @@ let build_info_program (cprogram,typedefs,macros) env =
     Comment_annotater_c.annotate_program alltoks cs in
 
   let cs_with_envs =
-    Type_annoter_c.annotate_program env (*!g_contain_typedmetavar*) cs'
+    TAC.annotate_program env (*!g_contain_typedmetavar*) cs'
   in
 
   zip cs_with_envs parseinfos +> List.map (fun ((c, (enva,envb)), parseinfo)->
@@ -1119,6 +1123,15 @@ let rebuild_info_c_and_headers ccs isexp parse_strings =
       rebuild_info_program c_or_h.asts c_or_h.full_fname isexp parse_strings }
   )
 
+(* remove ../ in the middle of an include path *)
+let fixpath s =
+  let s = Str.split_delim (Str.regexp "/") s in
+  let rec loop = function
+      x::".."::rest -> loop rest
+    | x::rest -> x :: loop rest
+    | [] -> [] in
+  String.concat "/" (loop s)
+
 let rec prepare_h seen env (hpath : string) choose_includes parse_strings
     : file_info list =
   if not (Common.lfile_exists hpath)
@@ -1135,7 +1148,8 @@ let rec prepare_h seen env (hpath : string) choose_includes parse_strings
 	then
 	  List.filter
 	    (function x -> not (List.mem x !seen))
-	    (includes_to_parse [(hpath,h_cs)] choose_includes)
+	    (List.map fixpath
+	       (includes_to_parse [(hpath,h_cs)] choose_includes))
 	else [] in
       seen := local_includes @ !seen;
       let others =
@@ -1191,7 +1205,9 @@ let prepare_c files choose_includes parse_strings : file_info list =
         fkind = Source
       }) in
 
-  includes @ cfiles
+  if !Flag_cocci.include_headers_for_types
+  then cfiles
+  else includes @ cfiles
 
 (*****************************************************************************)
 (* Manage environments as they are being built up *)

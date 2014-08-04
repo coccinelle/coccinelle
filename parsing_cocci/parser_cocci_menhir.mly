@@ -139,14 +139,13 @@ and  logicalOp = function
 
 %token TArob TArobArob
 %token <Data.clt> TPArob
-%token <string> TScriptData TWhitespace 
-(* TWhitespace is parsed manually beforehand, should not occur in here *)
+%token <string> TScriptData TWhitespace
 
 %token <Data.clt> TEllipsis TOEllipsis TCEllipsis TPOEllipsis TPCEllipsis
 %token <Data.clt> TWhen TWhenTrue TWhenFalse TAny TStrict TLineEnd
 
-%token <Data.clt> TWhy TDotDot TBang TOPar TOPar0
-%token <Data.clt> TMid0 TCPar TCPar0
+%token <Data.clt> TWhy TDotDot TBang TOPar TCPar
+%token <string * Data.clt> TOPar0 TMid0 TCPar0
 
 %token <string>  TPathIsoFile
 %token <string * Data.clt> TIncludeL TIncludeNL
@@ -799,7 +798,7 @@ ctype:
 | lp=TOPar0 t=midzero_list(ctype,ctype) rp=TCPar0
     { let (mids,code) = t in
       Ast0.wrap
-	(Ast0.DisjType(P.clt2mcode "(" lp,code,mids, P.clt2mcode ")" rp)) }
+	(Ast0.DisjType(P.id2mcode lp,code,mids, P.id2mcode rp)) }
 
 mul: a=TMul b=ioption(const_vol) { (a,b) }
 
@@ -814,7 +813,7 @@ typedef_ctype:
 | lp=TOPar0 t=midzero_list(mctype,mctype) rp=TCPar0
     { let (mids,code) = t in
       Ast0.wrap
-	(Ast0.DisjType(P.clt2mcode "(" lp,code,mids, P.clt2mcode ")" rp)) }
+	(Ast0.DisjType(P.id2mcode lp,code,mids, P.id2mcode rp)) }
 | TMeta { tmeta_to_type $1 }
 
 /* ---------------------------------------------------------------------- */
@@ -834,7 +833,7 @@ struct_decl_one:
     | lp=TOPar0 t=midzero_list(struct_decl_one,struct_decl_one) rp=TCPar0
 	{ let (mids,code) = t in
 	Ast0.wrap
-	  (Ast0.DisjDecl(P.clt2mcode "(" lp,code,mids, P.clt2mcode ")" rp)) }
+	  (Ast0.DisjDecl(P.id2mcode lp,code,mids, P.id2mcode rp)) }
     | t=ctype d=d_ident pv=TPtVirg
 	 { let (id,fn) = d in
 	 Ast0.wrap(Ast0.UnInit(None,fn t,id,P.clt2mcode ";" pv)) }
@@ -1266,9 +1265,9 @@ rule_elem_statement:
 | TOPar0 midzero_list(rule_elem_statement,rule_elem_statement) TCPar0
     { let (mids,code) = $2 in
     Ast0.wrap
-      (Ast0.Disj(P.clt2mcode "(" $1,
+      (Ast0.Disj(P.id2mcode $1,
 		 List.map (function x -> Ast0.wrap(Ast0.DOTS([x]))) code,
-		 mids, P.clt2mcode ")" $3)) }
+		 mids, P.id2mcode $3)) }
 
 /* a statement on its own */
 single_statement:
@@ -1278,9 +1277,9 @@ single_statement:
 	contain dots */
       { let (mids,code) = $2 in
         Ast0.wrap
-	  (Ast0.Disj(P.clt2mcode "(" $1,
+	  (Ast0.Disj(P.id2mcode $1,
 		     List.map (function x -> Ast0.wrap(Ast0.DOTS([x]))) code,
-		     mids, P.clt2mcode ")" $3)) }
+		     mids, P.id2mcode $3)) }
 
 iso_statement: /* statement or declaration used in statement context */
     statement                         { $1 }
@@ -1300,7 +1299,7 @@ case_line:
 /*  | lp=TOPar0 t=midzero_list(case_line,case_line) rp=TCPar0
     { let (mids,code) = ([],[t]) in
       Ast0.wrap
-	(Ast0.DisjCase(P.clt2mcode "(" lp,code,mids, P.clt2mcode ")" rp)) } */
+	(Ast0.DisjCase(P.id2mcode lp,code,mids, P.id2mcode rp)) } */
 
 /* In the following, an identifier as a type is not fully supported.  Indeed,
 the language is ambiguous: what is foo * bar; */
@@ -1522,8 +1521,8 @@ decl_statement:
 	    code
       then []
       else
-	  [Ast0.wrap(Ast0.Disj(P.clt2mcode "(" $1, code, mids,
-			       P.clt2mcode ")" $3))] }
+	  [Ast0.wrap(Ast0.Disj(P.id2mcode $1, code, mids,
+			       P.id2mcode $3))] }
 
 /* a statement that is part of a list */
 decl_statement_expr:
@@ -1551,8 +1550,8 @@ decl_statement_expr:
       else
 	  let dot_code =
 	    List.map (function x -> Ast0.wrap(Ast0.DOTS x)) code in
-	  [Ast0.wrap(Ast0.Disj(P.clt2mcode "(" $1, dot_code, mids,
-			       P.clt2mcode ")" $3))] }
+	  [Ast0.wrap(Ast0.Disj(P.id2mcode $1, dot_code, mids,
+			       P.id2mcode $3))] }
 
 /*****************************************************************************/
 
@@ -1724,9 +1723,6 @@ unary_expr(r,pe):
       { Ast0.wrap(Ast0.Infix ($2, P.clt2mcode Ast.Dec $1)) }
   | unary_op cast_expr(r,pe)
       { let mcode = $1 in Ast0.wrap(Ast0.Unary($2, mcode)) }
-  | TBang unary_expr_bis
-      { let mcode = P.clt2mcode Ast.Not $1 in
-      Ast0.wrap(Ast0.Unary($2, mcode)) }
   | TSizeof unary_expr_bis
       { Ast0.wrap(Ast0.SizeOfExpr (P.clt2mcode "sizeof" $1, $2)) }
   | s=TSizeof lp=TOPar t=ctype rp=TCPar
@@ -1743,9 +1739,6 @@ unary_expr_bis:
       { Ast0.wrap(Ast0.Infix ($2, P.clt2mcode Ast.Dec $1)) }
   | unary_op cast_expr(eexpr,dot_expressions)
       { let mcode = $1 in Ast0.wrap(Ast0.Unary($2, mcode)) }
-  | TBang unary_expr_bis
-      { let mcode = P.clt2mcode Ast.Not $1 in
-      Ast0.wrap(Ast0.Unary($2, mcode)) }
   | TSizeof unary_expr_bis
       { Ast0.wrap(Ast0.SizeOfExpr (P.clt2mcode "sizeof" $1, $2)) }
   | s=TSizeof lp=TOPar t=ctype rp=TCPar
@@ -1758,6 +1751,7 @@ unary_op: TAnd    { P.clt2mcode Ast.GetRef $1 }
 	| TPlus   { P.clt2mcode Ast.UnPlus $1 }
 	| TMinus  { P.clt2mcode Ast.UnMinus $1 }
 	| TTilde  { P.clt2mcode Ast.Tilde $1 }
+	| TBang   { P.clt2mcode Ast.Not $1 }
 
 postfix_expr(r,pe):
    primary_expr(r,pe)                            { $1 }
@@ -1835,9 +1829,9 @@ primary_expr(recurser,primary_extra):
 			    P.clt2mcode ")" $3)) }
  | TOPar0 midzero_list(recurser,eexpr) TCPar0
      { let (mids,code) = $2 in
-       Ast0.wrap(Ast0.DisjExpr(P.clt2mcode "(" $1,
+       Ast0.wrap(Ast0.DisjExpr(P.id2mcode $1,
 			       code, mids,
-			       P.clt2mcode ")" $3)) }
+			       P.id2mcode $3)) }
  | primary_extra { $1 }
 
 expr_dots(dotter):
@@ -2157,7 +2151,7 @@ disj_ident:
      | lp=TOPar0 t=midzero_list(disj_ident,disj_ident) rp=TCPar0
 	 { let (mids,code) = t in
 	 Ast0.wrap
-	   (Ast0.DisjId(P.clt2mcode "(" lp,code,mids, P.clt2mcode ")" rp)) }
+	   (Ast0.DisjId(P.id2mcode lp,code,mids, P.id2mcode rp)) }
 
 type_ident: disj_ident { $1 }
      | TTypeId
@@ -2541,19 +2535,24 @@ midzero_list(elem,aft):
      { let (mids,code) = List.split b in (mids,(a::code)) }
 
 mzl(elem):
-  a=TMid0 b=elem { (P.clt2mcode "|" a, b) }
+  a=TMid0 b=elem { (P.id2mcode a, b) }
 
 edots_when(dotter,when_grammar):
     d=dotter                                      { (d,None) }
-  | d=dotter TWhen TNotEq w=when_grammar TLineEnd { (d,Some w) }
+  | d=dotter t=TWhen e=TNotEq w=when_grammar TLineEnd
+    { (d, Some (P.clt2mcode "when" t, P.clt2mcode "!=" e,w)) }
 
 whens(when_grammar,simple_when_grammar,any_strict):
-    TWhen TNotEq w=when_grammar TLineEnd { [Ast0.WhenNot w] }
-  | TWhen TEq w=simple_when_grammar TLineEnd { [Ast0.WhenAlways w] }
-  | TWhen comma_list(any_strict) TLineEnd
-      { List.map (function x -> Ast0.WhenModifier(x)) $2 }
-  | TWhenTrue TNotEq e = eexpr TLineEnd { [Ast0.WhenNotTrue e] }
-  | TWhenFalse TNotEq e = eexpr TLineEnd { [Ast0.WhenNotFalse e] }
+    t=TWhen e=TNotEq w=when_grammar TLineEnd
+      { [Ast0.WhenNot (P.clt2mcode "when" t, P.clt2mcode "!=" e, w)] }
+  | t=TWhen e=TEq w=simple_when_grammar TLineEnd
+      { [Ast0.WhenAlways (P.clt2mcode "when" t, P.clt2mcode "=" e, w)] }
+  | t=TWhen l=comma_list(any_strict) TLineEnd
+      { List.map (function x -> Ast0.WhenModifier(P.clt2mcode "when" t,x)) l }
+  | t=TWhenTrue ee=TNotEq e = eexpr TLineEnd
+      { [Ast0.WhenNotTrue (P.clt2mcode "when" t, P.clt2mcode "!=" ee, e)] }
+  | t=TWhenFalse ee=TNotEq e = eexpr TLineEnd 
+      { [Ast0.WhenNotFalse (P.clt2mcode "when" t, P.clt2mcode "!=" ee, e)] }
 
 any_strict:
     TAny    { Ast.WhenAny }
@@ -2612,6 +2611,7 @@ never_used: TDirective { () }
   | TPArob TMetaPos { () }
   | TScriptData     { () }
   | TAnalysis     { () }
+  | TWhitespace { () }
 
 script_meta_main:
     py=pure_ident TMPtVirg

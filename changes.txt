@@ -169,6 +169,7 @@
   maps.
 - Extend file names only if the mentioned file does not exist.
 - Better support for functions that have no specified return type.
+- Added --include-headers-for-types option. 
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
@@ -363,6 +364,8 @@
 - Don't take into account string constants in get_constants, as these are
   not likely to be indexed.  Thanks to Benoit Taine for noting the problem.
 - Better pretty printing indentation for ifs.
+- Don't multiply propagate positions to the same token in isos that use the
+  same token more than once.  Problem reported by Riccardo Lucchese.
 
 * 0.2.5
 ** Language:

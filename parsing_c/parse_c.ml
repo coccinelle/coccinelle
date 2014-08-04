@@ -1071,7 +1071,9 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
               (* bugfix: *)
               if (checkpoint_file =$= checkpoint2_file) &&
                 checkpoint_file =$= file
-              then print_bad line_error passed_before_error (checkpoint, checkpoint2) filelines pass
+              then
+		print_bad line_error passed_before_error
+		  (checkpoint, checkpoint2) filelines pass
               else pr2 "PB: bad: but on tokens not from original file"
             end;
 

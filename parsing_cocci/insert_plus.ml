@@ -98,8 +98,8 @@ let create_root_token_table minus =
   Hashtbl.iter
     (function tokens ->
       function (node,_) ->
-	let key =
-	  match node with
+	let rec key n =
+	  match n with
 	    Ast0.DotsExprTag(d) -> Ast0.get_index d
 	  | Ast0.DotsInitTag(d) -> Ast0.get_index d
 	  | Ast0.DotsParamTag(d) -> Ast0.get_index d
@@ -124,8 +124,9 @@ let create_root_token_table minus =
 	  | Ast0.IsoWhenFTag(_) -> failwith "only within iso phase"
 	  | Ast0.MetaPosTag(p) -> failwith "not in plus code"
 	  | Ast0.HiddenVarTag(p) -> failwith "only within iso phase"
+	  | Ast0.WhenTag(_,_,w) -> key w
 	in
-	Hashtbl.add root_token_table key tokens)
+	Hashtbl.add root_token_table (key node) tokens)
     CN.minus_table;
   List.iter
     (function r ->
@@ -305,7 +306,7 @@ let call_collect_minus context_nodes :
     (int * (minus_join_point * Ast0.info * Ast0.mcodekind) list) list =
   List.map
     (function e ->
-      match e with
+      let rec f' = (function
 	Ast0.DotsExprTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).VT0.combiner_rec_expression_dots e)
@@ -363,7 +364,8 @@ let call_collect_minus context_nodes :
       | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
       | Ast0.IsoWhenFTag(_) -> failwith "only within iso phase"
       | Ast0.MetaPosTag(p) -> failwith "not in plus code"
-      | Ast0.HiddenVarTag(p) -> failwith "only within iso phase")
+      | Ast0.HiddenVarTag(p) -> failwith "only within iso phase"
+      | Ast0.WhenTag(_,_,w) -> f' w) in f' e)
     context_nodes
 
 (* result of collecting the join points should be sorted in nondecreasing
@@ -458,7 +460,7 @@ let collect_plus_nodes root =
 	[] -> []
       |	strings_before ->
 	  let (_,first) = List.hd strings_before in
-	  let (l,last) = List.hd (List.rev strings_before) in
+	  let (_,last) = List.hd (List.rev strings_before) in
 	  let new_pos_info =
 	    {Ast0.line_start = first.Ast0.line_start;
 	      Ast0.line_end = last.Ast0.line_start;
@@ -476,7 +478,7 @@ let collect_plus_nodes root =
   let mcode fn (term,_,info,mcodekind,_,_) =
     match mcodekind with
       Ast0.PLUS c -> [(info,c,fn term)]
-    | Ast0.CONTEXT _ ->	let (bef,aft) = extract_strings info in bef@aft
+    | Ast0.CONTEXT _ -> let (bef,aft) = extract_strings info in bef@aft
     | _ -> [] in
 
   let imcode fn (term,_,info,mcodekind,_,_) =
@@ -494,11 +496,6 @@ let collect_plus_nodes root =
     | Ast0.PLUS c -> [(Ast0.get_info e,c,fn e)]
     | _ -> bef@(k e)@aft in
   let do_nothing fn r k e = do_nothing_extra [] [] fn r k e in
-
-  let is_static l =
-    List.exists
-      (function Ast0.FStorage (Ast.Static,_,_,_,_,_) -> true | _ -> false)
-      l in
 
   (* case for everything that is just a wrapper for a simpler thing *)
   (* case for things with bef aft *)
@@ -559,7 +556,7 @@ let call_collect_plus context_nodes :
     (int * (Ast0.info * Ast.count * Ast.anything) list) list =
   List.map
     (function e ->
-      match e with
+      let rec f' = (function
 	Ast0.DotsExprTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).VT0.combiner_rec_expression_dots e)
@@ -617,7 +614,8 @@ let call_collect_plus context_nodes :
       | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
       | Ast0.IsoWhenFTag(_) -> failwith "only within iso phase"
       | Ast0.MetaPosTag(p) -> failwith "not visible here"
-      | Ast0.HiddenVarTag(_) -> failwith "only within iso phase")
+      | Ast0.HiddenVarTag(_) -> failwith "only within iso phase"
+      | Ast0.WhenTag(_,_,w) -> f' w) in f' e)
     context_nodes
 
 (* The plus fragments are converted to a list of lists of lists.
@@ -754,7 +752,6 @@ let insert thing thinginfo into intoinfo =
   let into_end = intoinfo.Ast0.tline_end in
   let into_left_offset = intoinfo.Ast0.left_offset in
   let into_right_offset = intoinfo.Ast0.right_offset in
-
   if thing_end < into_start && thing_start < into_start
   then (thing@into,
 	{{intoinfo with Ast0.tline_start = thing_start}

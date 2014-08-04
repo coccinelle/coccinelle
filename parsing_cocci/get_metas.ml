@@ -3,6 +3,8 @@
 (* @ attached metavariables can only be associated with positions, so nothing
 to do for them *)
 
+(* Why doesn't this use the Ast0 visitor? *)
+
 module Ast = Ast_cocci
 module Ast0 = Ast0_cocci
 
@@ -216,22 +218,22 @@ and expression e =
 	      Ast0.DisjExpr(starter,expr_list,mids,ender))
       | Ast0.NestExpr(starter,expr_dots,ender,whencode,multi) ->
 	  let (starter_n,starter) = mcode starter in
+	  let (whencode_n, whencode) = whencode_option expression whencode in
 	  let (expr_dots_n,expr_dots) = dots expression expr_dots in
 	  let (ender_n,ender) = mcode ender in
-	  let (whencode_n,whencode) = get_option expression whencode in
 	  (multibind [starter_n;expr_dots_n;ender_n;whencode_n],
 	   Ast0.NestExpr(starter,expr_dots,ender,whencode,multi))
       | Ast0.Edots(dots,whencode) ->
 	  let (dots_n,dots) = mcode dots in
-	  let (whencode_n,whencode) = get_option expression whencode in
+	  let (whencode_n, whencode) = whencode_option expression whencode in
 	  (bind dots_n whencode_n,Ast0.Edots(dots,whencode))
       | Ast0.Ecircles(dots,whencode) ->
 	  let (dots_n,dots) = mcode dots in
-	  let (whencode_n,whencode) = get_option expression whencode in
+	  let (whencode_n, whencode) = whencode_option expression whencode in
 	  (bind dots_n whencode_n,Ast0.Ecircles(dots,whencode))
       | Ast0.Estars(dots,whencode) ->
 	  let (dots_n,dots) = mcode dots in
-	  let (whencode_n,whencode) = get_option expression whencode in
+	  let (whencode_n, whencode) = whencode_option expression whencode in
 	  (bind dots_n whencode_n,Ast0.Estars(dots,whencode))
       | Ast0.OptExp(exp) ->
 	  let (exp_n,exp) = expression exp in
@@ -460,7 +462,12 @@ and declaration d =
 	      Ast0.DisjDecl(starter,decls,mids,ender))
       | Ast0.Ddots(dots,whencode) ->
 	  let (dots_n,dots) = mcode dots in
-	  let (whencode_n,whencode) = get_option declaration whencode in
+	  let (whencode_n, whencode) = match whencode with
+	    | Some (a,e,b) -> 
+		let (_,a2) = mcode a in
+		let (_,e2) = mcode e in
+		let (b1,b2) = declaration b in (b1, Some (a2,e2,b2))
+            | None -> (option_default, None) in
 	  (bind dots_n whencode_n, Ast0.Ddots(dots,whencode))
       | Ast0.OptDecl(decl) ->
 	  let (n,decl) = declaration decl in (n,Ast0.OptDecl(decl))
@@ -508,7 +515,12 @@ and initialiser i =
 	  let (n,cm) = mcode cm in (n,Ast0.IComma(cm))
       | Ast0.Idots(d,whencode) ->
 	  let (d_n,d) = mcode d in
-	  let (whencode_n,whencode) = get_option initialiser whencode in
+	  let (whencode_n, whencode) = match whencode with
+	    | Some (a,e,b) -> 
+		let (_,a2) = mcode a in
+		let (_,e2) = mcode e in
+		let (b1,b2) = initialiser b in (b1, Some (a2,e2,b2))
+	    | None -> (option_default, None) in
 	  (bind d_n whencode_n, Ast0.Idots(d,whencode))
       | Ast0.OptIni(i) ->
 	  let (n,i) = initialiser i in (n,Ast0.OptIni(i))
@@ -851,14 +863,37 @@ and fninfo = function
   | Ast0.FAttr(init) ->
       let (n,init) = mcode init in (n,Ast0.FAttr(init))
 
-and whencode notfn alwaysfn = function
-    Ast0.WhenNot a -> let (n,a) = notfn a in (n,Ast0.WhenNot(a))
-  | Ast0.WhenAlways a -> let (n,a) = alwaysfn a in (n,Ast0.WhenAlways(a))
-  | Ast0.WhenModifier(x) -> (option_default,Ast0.WhenModifier(x))
-  | Ast0.WhenNotTrue(e) ->
-      let (n,e) = expression e in (n,Ast0.WhenNotTrue(e))
-  | Ast0.WhenNotFalse(e) ->
-      let (n,e) = expression e in (n,Ast0.WhenNotFalse(e))
+  (* we only include the when string mcode w because the parameterised
+     mcodefn function might have side-effects *)
+  and whencode notfn alwaysfn = function
+      Ast0.WhenNot (w,e,a) ->
+	let (_,w) = mcode w in
+	let (_,e) = mcode e in
+	let (n,a) = notfn a in (n,Ast0.WhenNot(w,e,a))
+    | Ast0.WhenAlways (w,e,a) -> 
+	let (_,w) = mcode w in
+	let (_,e) = mcode e in
+	let (n,a) = alwaysfn a in (n,Ast0.WhenAlways(w,e,a))
+    | Ast0.WhenModifier(w,x) -> 
+	let (_,w) = mcode w in
+	(option_default,Ast0.WhenModifier(w,x))
+    | Ast0.WhenNotTrue(w,ee,e) ->
+	let (_,w) = mcode w in
+	let (_,ee) = mcode ee in
+	let (n,e) = expression e in (n,Ast0.WhenNotTrue(w,ee,e))
+    | Ast0.WhenNotFalse(w,ee,e) ->
+	let (_,w) = mcode w in
+	let (_,ee) = mcode ee in
+	let (n,e) = expression e in (n,Ast0.WhenNotFalse(w,ee,e))
+
+  (* for whencodes that do not have any of the above modifiers
+   * returns (the new whencode expression, the updated whencode) *)
+  and whencode_option bfn = function
+    | Some (a,e,b) -> 
+	let (_,a2) = mcode a in
+	let (_,e2) = mcode e in
+	let (b1,b2) = bfn b in (b1, Some (a2,e2,b2))
+    | None -> (option_default, None)
 
 and case_line c =
   rewrap c

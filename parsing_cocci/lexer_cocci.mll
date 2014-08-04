@@ -545,7 +545,7 @@ rule token = parse
 
   | ([' ' '\t'  ]+ as w) { (* collect whitespaces only when inside a rule *)
     start_line false;
-    if !Data.in_meta or !Data.in_rule_name or !Data.in_prolog or !Data.in_iso
+    if !Data.in_rule_name or !Data.in_prolog or !Data.in_iso
     then token lexbuf
     else TWhitespace w }
 
@@ -574,8 +574,6 @@ rule token = parse
 	   else (check_minus_context_linetype "@";
 		 TPArob (get_current_line_type lexbuf)) }
 
-  | "=~"  { start_line true; TTildeEq (get_current_line_type lexbuf) }
-  | "!~" { start_line true; TTildeExclEq (get_current_line_type lexbuf) }
   | "WHEN" | "when"
       { start_line true; check_minus_context_linetype (tok lexbuf);
 	TWhen (get_current_line_type lexbuf) }
@@ -619,43 +617,37 @@ rule token = parse
   | "+" { pass_zero();
 	  if !current_line_started
 	  then (start_line true; TPlus (get_current_line_type lexbuf))
-          else if !Data.in_meta
-	  then TPlus0
           else (patch_or_match PATCH;
 		add_current_line_type D.PLUS; token lexbuf) }
   | "?" { pass_zero();
 	  if !current_line_started
 	  then (start_line true; TWhy (get_current_line_type lexbuf))
-          else if !Data.in_meta
-	  then TWhy0
           else (add_current_line_type D.OPT; token lexbuf) }
   | "!" { pass_zero();
 	  if !current_line_started
 	  then (start_line true; TBang (get_current_line_type lexbuf))
-          else if !Data.in_meta
-	  then TBang0
           else (add_current_line_type D.UNIQUE; token lexbuf) }
-  | "(" { if !Data.in_meta or not !col_zero
+  | "(" { if not !col_zero
 	  then (start_line true; TOPar (get_current_line_type lexbuf))
           else
             (start_line true; check_context_linetype (tok lexbuf);
-	     TOPar0 (get_current_line_type lexbuf))}
+	     TOPar0 ("(",get_current_line_type lexbuf))}
   | "\\(" { start_line true;
-	    TOPar0 (contextify(get_current_line_type lexbuf)) }
+	    TOPar0 ("\\(",contextify(get_current_line_type lexbuf)) }
   | "|" { if not (!col_zero)
 	  then (start_line true; TOr(get_current_line_type lexbuf))
           else (start_line true;
 		check_context_linetype (tok lexbuf);
-		TMid0 (get_current_line_type lexbuf))}
+		TMid0 ("|",get_current_line_type lexbuf))}
   | "\\|" { start_line true;
-	    TMid0 (contextify(get_current_line_type lexbuf)) }
+	    TMid0 ("\\|",contextify(get_current_line_type lexbuf)) }
   | ")" { if not !col_zero
 	  then (start_line true; TCPar (get_current_line_type lexbuf))
           else
             (start_line true; check_context_linetype (tok lexbuf);
-	     TCPar0 (get_current_line_type lexbuf))}
+	     TCPar0 (")",get_current_line_type lexbuf))}
   | "\\)" { start_line true;
-	    TCPar0 (contextify(get_current_line_type lexbuf)) }
+	    TCPar0 ("\\)",contextify(get_current_line_type lexbuf)) }
 
   | '[' { start_line true; TOCro (get_current_line_type lexbuf)   }
   | ']' { start_line true; TCCro (get_current_line_type lexbuf)   }
@@ -665,10 +657,7 @@ rule token = parse
   | "->"           { start_line true; TPtrOp (get_current_line_type lexbuf)  }
   | '.'            { start_line true; TDot (get_current_line_type lexbuf)    }
   | ','            { start_line true; TComma (get_current_line_type lexbuf)  }
-  | ";"            { start_line true;
-		     if !Data.in_meta
-		     then TMPtVirg (* works better with tokens_all *)
-		     else TPtVirg (get_current_line_type lexbuf) }
+  | ";"            { start_line true; TPtVirg (get_current_line_type lexbuf) }
 
 
   | '*'            { pass_zero();
@@ -721,9 +710,7 @@ rule token = parse
   | ">="           { start_line true;
 		     TLogOp(Ast.SupEq,get_current_line_type lexbuf) }
   | "<="           { start_line true;
-		     if !Data.in_meta
-		     then TSub(get_current_line_type lexbuf)
-		     else TLogOp(Ast.InfEq,get_current_line_type lexbuf) }
+		     TLogOp(Ast.InfEq,get_current_line_type lexbuf) }
   | "<"            { start_line true;
 		     TLogOp(Ast.Inf,get_current_line_type lexbuf) }
   | ">"            { start_line true;
@@ -849,7 +836,9 @@ rule token = parse
       { 
 	start_line true; 
 	if not !Flag.c_plus_plus
-	then Common.pr2_once "< and > not allowed in C identifiers, try -c++ option";
+	then
+	  Common.pr2_once
+	    "< and > not allowed in C identifiers, try -c++ option";
 	id_tokens lexbuf 
       }
   | ((letter | '$') (letter | digit | '$') * )
@@ -858,7 +847,9 @@ rule token = parse
       { 
 	start_line true; 
 	if not !Flag.c_plus_plus
-	then Common.pr2_once "< and > not allowed in C identifiers, try -c++ option";
+	then
+	  Common.pr2_once
+	    "< and > not allowed in C identifiers, try -c++ option";
 	id_tokens lexbuf 
       }
 
@@ -872,7 +863,9 @@ rule token = parse
       { 
 	start_line true; 
 	if not !Flag.c_plus_plus
-	then Common.pr2_once "~ and :: not allowed in C identifiers, try -c++ option";
+	then
+	  Common.pr2_once
+	    "~ and :: not allowed in C identifiers, try -c++ option";
 	id_tokens lexbuf 
       }
 
@@ -883,7 +876,9 @@ rule token = parse
       { 
 	start_line true; 
 	if not !Flag.c_plus_plus
-	then Common.pr2_once "~ and :: not allowed in C identifiers, try -c++ option";
+	then
+	  Common.pr2_once
+	    "~ and :: not allowed in C identifiers, try -c++ option";
 	id_tokens lexbuf 
       }
        (* christia: end *)
@@ -921,6 +916,155 @@ rule token = parse
   | eof            { EOF }
 
   | _ { lexerr "unrecognised symbol, in token rule: " (tok lexbuf) }
+
+(* This is for both SmPL and script metavariable declarations *)
+and metavariable_decl_token = parse
+  | [' ' '\t']* ['\n' '\r' '\011' '\012']
+    { reset_line lexbuf; metavariable_decl_token lexbuf }
+
+  | [' ' '\t'  ]+ {
+    start_line false; metavariable_decl_token lexbuf }
+
+  | [' ' '\t'  ]* ("//" [^ '\n']*) {
+    start_line false; metavariable_decl_token lexbuf }
+
+  | "@@" { start_line true; TArobArob }
+
+  | "=~" { start_line true; TTildeEq (get_current_line_type lexbuf) }
+  | "!~" { start_line true; TTildeExclEq (get_current_line_type lexbuf) }
+  | "="  { start_line true; TEq (get_current_line_type lexbuf) }
+  | "+" { pass_zero(); TPlus0 }
+  | "?" { pass_zero(); TWhy0 }
+  | "!" { pass_zero(); TBang0 }
+  | "(" { start_line true; TOPar (get_current_line_type lexbuf) }
+  | ")" { start_line true; TCPar (get_current_line_type lexbuf) }
+
+  | '[' { start_line true; TOCro (get_current_line_type lexbuf)   }
+  | ']' { start_line true; TCCro (get_current_line_type lexbuf)   }
+  | '{' { start_line true; TOBrace (get_current_line_type lexbuf) }
+  | '}' { start_line true; TCBrace (get_current_line_type lexbuf) }
+
+  | "->"           { start_line true; TPtrOp (get_current_line_type lexbuf)  }
+  | '.'            { start_line true; TDot (get_current_line_type lexbuf)    }
+  | ','            { start_line true; TComma (get_current_line_type lexbuf)  }
+  | ";"            { start_line true;
+		     TMPtVirg (* works better with tokens_all *) }
+  | "<<"           { start_line true;
+		     TShLOp(Ast.DecLeft,get_current_line_type lexbuf) }
+
+  | '*'            { pass_zero();
+		     if !current_line_started
+		     then
+		       (start_line true; TMul (get_current_line_type lexbuf))
+		     else
+		       (patch_or_match MATCH;
+			add_current_line_type D.MINUS;
+			metavariable_decl_token lexbuf) }
+
+  | "=="           { start_line true; TEqEq    (get_current_line_type lexbuf) }
+  | "!="           { start_line true; TNotEq   (get_current_line_type lexbuf) }
+  | "<="           { start_line true; TSub     (get_current_line_type lexbuf) }
+  | "/*"
+      {match !current_line_type with
+        (D.PLUS,_,_) | (D.PLUSPLUS,_,_) ->
+        start_line true;
+	(* second argument to TDirective is not quite right, because
+	   it represents only the first token of the comment, but that
+	   should be good enough *)
+	TDirective (Ast.Indent("/*"^(comment check_comment lexbuf)),
+		 get_current_line_type lexbuf)
+      |	_ -> let _ = comment (fun _ -> ()) lexbuf in
+	     metavariable_decl_token lexbuf }
+
+  | "##"            { start_line true; TCppConcatOp (* for fresh vars *) }
+
+  | letter (letter | digit)*
+      { start_line true; id_tokens lexbuf }
+
+      (* christia: testing *)
+  | (letter | '$') (letter | digit | '$') *
+      { start_line true; id_tokens lexbuf }
+
+  | (letter | '$') (letter | digit | '$') *
+      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?
+    ("::~" (letter | '$') (letter | digit | '$') *
+      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) +
+
+      { start_line true; 
+	if not !Flag.c_plus_plus
+	then
+	  Common.pr2_once
+	    "< and > not allowed in C identifiers, try -c++ option";
+	id_tokens lexbuf 
+      }
+  | ((letter | '$') (letter | digit | '$') * )
+      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>')
+
+      { start_line true; 
+	if not !Flag.c_plus_plus
+	then
+	  Common.pr2_once
+	    "< and > not allowed in C identifiers, try -c++ option";
+	id_tokens lexbuf 
+      }
+
+  | (((letter | '$') (letter | digit | '$') * ))
+      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?
+    "::" (((letter | '$') (letter | digit | '$') * ))
+      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?
+    ("::" ((letter | '$') (letter | digit | '$') * )
+      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) *
+
+      { start_line true; 
+	if not !Flag.c_plus_plus
+	then
+	  Common.pr2_once
+	    "~ and :: not allowed in C identifiers, try -c++ option";
+	id_tokens lexbuf 
+      }
+
+   | "::" ((letter | '$') (letter | digit | '$') * )
+      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?
+    ("::" ((letter | '$') (letter | digit | '$') * )
+      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) *
+      { start_line true; 
+	if not !Flag.c_plus_plus
+	then
+	  Common.pr2_once
+	    "~ and :: not allowed in C identifiers, try -c++ option";
+	id_tokens lexbuf 
+      }
+       (* christia: end *)
+
+
+  | "'" { start_line true;
+	  TChar(char lexbuf,get_current_line_type lexbuf) }
+  | '\"' { start_line true;
+	  TString(string lexbuf,(get_current_line_type lexbuf)) }
+  | (real as x)    { Printf.printf "36\n"; start_line true;
+		     TFloat(x,(get_current_line_type lexbuf)) }
+  | ((( decimal | hexa | octal)
+      ( ['u' 'U']
+      | ['l' 'L']
+      | (['l' 'L'] ['u' 'U'])
+      | (['u' 'U'] ['l' 'L'])
+      | (['u' 'U'] ['l' 'L'] ['l' 'L'])
+      | (['l' 'L'] ['l' 'L'])
+      )?
+    ) as x) { start_line true; TInt(x,(get_current_line_type lexbuf)) }
+
+  | (decimal ['d' 'D']) as x
+      { if !Flag.ibm
+      then
+	begin
+	  start_line true;
+	  let len = string_of_int(String.length x - 1) in
+          TDecimalCst(x,len,"0",(get_current_line_type lexbuf))
+	end
+      else failwith "unrecognized constant modifier d/D" }
+
+  | _ { lexerr "metavariables: unrecognised symbol, in token rule: "
+	  (tok lexbuf) }
 
 
 and char = parse
