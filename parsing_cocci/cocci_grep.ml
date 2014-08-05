@@ -6,7 +6,7 @@ let interpret_clause re l =
   with Not_found -> false
 
 let interpret (big_regexp,regexps) file =
-  let i = open_in file in
+  let i = try open_in file with _ -> raise (Flag.UnreadableFile file) in
   let simple = match regexps with [_] -> true | _ -> false in
   let rec loop big_regexp simple regexps =
     let l = input_line i in
