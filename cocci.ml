@@ -506,7 +506,7 @@ let worth_trying2 cfiles (tokens,_,query,_) =
       | 0 (* success *) -> true
       | _ (* failure *) ->
 	  (if !Flag.show_misc
-	  then Printf.printf "grep failed: %s\n" com);
+	  then pr2 ("grep failed: " ^ com));
 	  false (* no match, so not worth trying *)) in
   (match (res,tokens) with
     (false,Some tokens) ->
