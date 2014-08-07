@@ -888,7 +888,8 @@ let with_program2_unit f program2 =
 let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
     file =
 
-  let filelines = Common.cat_array file in
+  let filelines =
+    try Common.cat_array file with _ -> raise (Flag.UnreadableFile file) in
   let stat = Parsing_stat.default_stat file in
 
   (* -------------------------------------------------- *)
