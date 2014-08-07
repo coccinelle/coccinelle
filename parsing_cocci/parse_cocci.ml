@@ -1125,39 +1125,48 @@ let check_nests tokens =
     | t :: r -> (check_minus t) :: (inside stack r) in
   outside tokens
 
-let check_parentheses tokens =
-  let clt2line (_,line,_,_,_,_,_,_,_,_) = line in
-  let rec loop seen_open = function
-      [] -> tokens
-    | (PC.TOPar(clt),q) :: rest
-    | (PC.TDefineParam(clt,_,_,_),q) :: rest ->
-	loop (Common.Left (clt2line clt) :: seen_open) rest
-    | (PC.TOPar0(_,clt),q) :: rest ->
-	loop (Common.Right (clt2line clt) :: seen_open) rest
-    | (PC.TCPar(clt),q) :: rest ->
-	(match seen_open with
-	  [] ->
-	    failwith
-	      (Printf.sprintf
-		 "unexpected close parenthesis in line %d\n" (clt2line clt))
-	| Common.Left _ :: seen_open -> loop seen_open rest
-	| Common.Right open_line :: _ ->
-	    failwith
-	      (Printf.sprintf
-		 "disjunction parenthesis in line %d column 0 matched to normal parenthesis on line %d\n" open_line (clt2line clt)))
-    | (PC.TCPar0(_,clt),q) :: rest ->
-	(match seen_open with
-	  [] ->
-	    failwith
-	      (Printf.sprintf
-		 "unexpected close parenthesis in line %d\n" (clt2line clt))
-	| Common.Right _ :: seen_open -> loop seen_open rest
-	| Common.Left open_line :: _ ->
-	    failwith
-	      (Printf.sprintf
-		 "normal parenthesis in line %d matched to disjunction parenthesis on line %d column 0\n" open_line (clt2line clt)))
-    | x::rest -> loop seen_open rest in
-  loop [] tokens
+(* This doesn't need to be done on plus code.  If it fails, it will already
+fail on the minus code.  It causes a problem when * is used and the * marks
+on the parentheses are unbalanced *)
+let check_parentheses plus tokens =
+  if plus
+  then tokens
+  else
+    begin
+      let clt2line (_,line,_,_,_,_,_,_,_,_) = line in
+      let rec loop seen_open = function
+	  [] -> tokens
+	| (PC.TOPar(clt),q) :: rest
+	| (PC.TDefineParam(clt,_,_,_),q) :: rest ->
+	    loop (Common.Left (clt2line clt) :: seen_open) rest
+	| (PC.TOPar0(_,clt),q) :: rest ->
+	    loop (Common.Right (clt2line clt) :: seen_open) rest
+	| (PC.TCPar(clt),q) :: rest ->
+	    (match seen_open with
+	      [] ->
+		failwith
+		  (Printf.sprintf
+		     "unexpected close parenthesis in line %d\n"
+		     (clt2line clt))
+	    | Common.Left _ :: seen_open -> loop seen_open rest
+	    | Common.Right open_line :: _ ->
+		failwith
+		  (Printf.sprintf
+		     "disjunction parenthesis in line %d column 0 matched to normal parenthesis on line %d\n" open_line (clt2line clt)))
+	| (PC.TCPar0(_,clt),q) :: rest ->
+	    (match seen_open with
+	      [] ->
+		failwith
+		  (Printf.sprintf
+		     "unexpected close parenthesis in line %d\n" (clt2line clt))
+	    | Common.Right _ :: seen_open -> loop seen_open rest
+	    | Common.Left open_line :: _ ->
+		failwith
+		  (Printf.sprintf
+		     "normal parenthesis in line %d matched to disjunction parenthesis on line %d column 0\n" open_line (clt2line clt)))
+	| x::rest -> loop seen_open rest in
+      loop [] tokens
+    end
 
 (* ----------------------------------------------------------------------- *)
 (* top level initializers: a sequence of braces followed by a dot *)
@@ -1480,7 +1489,7 @@ let parse_one str parsefn file toks =
 
   | e -> raise e
 
-let prepare_tokens tokens =
+let prepare_tokens plus tokens =
   find_top_init
     (translate_when_true_false (* after insert_line_end *)
        (insert_line_end
@@ -1488,7 +1497,7 @@ let prepare_tokens tokens =
 	     (find_function_names
 		(detect_attr
 		   (check_nests
-		      (check_parentheses tokens)))))))
+		      (check_parentheses plus tokens)))))))
 
 let prepare_mv_tokens tokens =
   detect_types false (detect_attr tokens)
@@ -1709,7 +1718,7 @@ let get_script_metavars parse_fn table file lexbuf =
     let (_, tokens) =
       metavariable_decl_tokens_all table file true lexbuf
 	(in_list [PC.TArobArob; PC.TMPtVirg]) in
-    let tokens = prepare_tokens tokens in
+    let tokens = prepare_tokens false tokens in
     match tokens with
       [(PC.TArobArob, _)] -> List.rev acc
     | _ ->
@@ -1785,7 +1794,7 @@ let parse_iso file =
 	    let next_start = List.hd(List.rev tokens) in
 	    let dummy_info = ("",(-1,-1),(-1,-1)) in
 	    let tokens = drop_last [(PC.EOF,dummy_info)] tokens in
-	    let tokens = prepare_tokens (start@tokens) in
+	    let tokens = prepare_tokens false (start@tokens) in
             (*
 	       print_tokens "iso tokens" tokens;
 	    *)
@@ -1948,8 +1957,8 @@ let parse file =
 
 	    let minus_tokens = consume_minus_positions minus_tokens in
 	    let plus_tokens = consume_plus_positions plus_tokens in
-	    let minus_tokens = prepare_tokens minus_tokens in
-	    let plus_tokens = prepare_tokens plus_tokens in
+	    let minus_tokens = prepare_tokens false minus_tokens in
+	    let plus_tokens = prepare_tokens true plus_tokens in
 
 	    (*
 	       print_tokens "minus tokens" minus_tokens;

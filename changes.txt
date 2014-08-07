@@ -367,6 +367,8 @@
 - Better pretty printing indentation for ifs.
 - Don't multiply propagate positions to the same token in isos that use the
   same token more than once.  Problem reported by Riccardo Lucchese.
+- Don't require balanced parentheses in + code for stars.  Problem reported
+  by Chi Pham.
 
 * 0.2.5
 ** Language:
