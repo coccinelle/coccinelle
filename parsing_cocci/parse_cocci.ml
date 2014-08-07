@@ -1294,22 +1294,24 @@ let rec process_pragmas (bef : 'a option) (skips : 'a list) = function
  * Returns token list with whitespace tokens removed.
  *)
 
-let rec process_whitespaces toks = function
-  | [] -> List.rev toks
-  | (PC.TWhitespace(_),_)::((endtok,_) as e)::(_) 
-      when endtok = PC.EOF || endtok = PC.TArob || endtok = PC.TArobArob ->
-      List.rev (e::toks)
-  | (PC.TWhitespace(a),((_,(l1,_),_) as b)):: (* this is for script comments *)
-    (PC.TWhitespace(c),(_,(l2,_),_))::xs ->
-      let s = if (l1 <> l2) then c else a^c in
-      process_whitespaces toks ((PC.TWhitespace(s),b)::xs)
-  | (PC.TWhitespace(s),_)::((tok,_) as aft)::xs ->
-     (try
-        let (a, b, c, d, e, f, g, h, i, _) = get_clt aft in
-        let aft = update_clt aft (a, b, c, d, e, f, g, h, i, s) in
-        process_whitespaces (aft::toks) xs
-      with NoClt(a) -> failwith ("process_whitespaces: "^a))
-  | x::xs -> process_whitespaces (x::toks) xs
+let process_whitespaces tok =
+  let rec pw fn = function
+    | [] -> fn []
+    | (PC.TWhitespace(_),_)::((endtok,_) as e)::(_)
+        when endtok = PC.EOF || endtok = PC.TArob || endtok = PC.TArobArob ->
+        fn [e]
+    | (PC.TWhitespace(a),((_,(l1,_),_) as b))::
+      (PC.TWhitespace(c),(_,(l2,_),_))::xs ->
+        let s = if (l1 <> l2) then c else a ^ c in
+        pw (fun lst -> fn ((PC.TWhitespace(s),b) :: lst)) xs
+    | (PC.TWhitespace(s),_)::((tok,_) as aft)::xs ->
+       (try
+          let (a, b, c, d, e, f, g, h, i, _) = get_clt aft in
+          let aft = update_clt aft (a, b, c, d, e, f, g, h, i, s) in
+          pw (fun lst -> fn (aft :: lst)) xs
+        with NoClt(a) -> failwith ("process_whitespaces: "^a))
+    | x::xs -> pw (fun lst -> fn (x :: lst)) xs in
+  pw (fun l -> l) tok
 
 (* ----------------------------------------------------------------------- *)
 (* Drop ... ... .  This is only allowed in + code, and arises when there is
@@ -1944,7 +1946,7 @@ let parse file =
 	      get_tokens (in_list [PC.TArobArob; PC.TArob]) in
 
             (* remove whitespaces and glue to immediately following tokens *)
-            let tokens = process_whitespaces [] tokens in
+            let tokens = process_whitespaces tokens in
 
             let (minus_tokens, _) = split_token_stream tokens in
             let (_, plus_tokens) =
