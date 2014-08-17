@@ -1055,6 +1055,10 @@ let check_danger toks =
 
 (* this is for the case where braces are added around an if branch
 because of a change inside the branch *)
+let minusify = function
+    T2(t,_,i,h) -> T2(t,Min([],Ast_cocci.ALLMINUS),i,h)
+  | _ -> failwith "not possible" (* see is_newline, below *)
+
 let paren_then_brace toks =
   let rec search_paren = function
     | [] -> []
@@ -1082,7 +1086,7 @@ let paren_then_brace toks =
 	match rest with
 	  (* move the brace up to the previous line *)
 	| ((Cocci2("{",_,_,_,_)) as x) :: (((Cocci2 _) :: _) as rest) ->
-	    spaces @ after @ x :: rest
+	    spaces @ after @ x :: (List.map minusify nls) @ rest
 	| _ -> xs in
   search_paren toks
 
@@ -1506,6 +1510,13 @@ let sub1 op (am,ap) =
   | Both -> (sub1 am,sub1 ap)
   | Neither -> (am,ap)
 
+let accsub1 op (am,ap) =
+  match op with
+    PlusOnly -> (am,List.tl ap)
+  | MinusOnly -> (List.tl am,ap)
+  | Both -> (List.tl am,List.tl ap)
+  | Neither -> (am,ap)
+
 let subtract op (am,ap) (bm,bp) =
   let subtract a b = max 0 (a - b) in
   match op with
@@ -1533,6 +1544,13 @@ let open_brace op xs =
     [] -> false
   | t::_ -> (str_of_token2 t) = "{" or (str_of_token2 t) = ";"
 
+let notelse op xs =
+  not
+    (let is_whitespace t = is_whitespace t or is_added_whitespace t in
+    match skip_unlike_me op xs is_whitespace with
+      [] -> false
+    | t::_ -> (str_of_token2 t) = "else")
+
 let close_brace op xs =
   let is_whitespace t = is_whitespace t or is_added_whitespace t in
   match skip_unlike_me op xs is_whitespace with
@@ -1544,7 +1562,7 @@ let is_nl op xs =
   match skip_unlike_me op xs is_whitespace with
     [] -> false
   | T2(Parser_c.TCommentNewline _,_b,_i,_h)::_ -> true
-  | C2 "\n"::_ -> true
+  | C2 "\n"::_ | Cocci2("\n",_,_,_,_)::_ -> true (*not sure if cocci2 is needed*)
   | Indent_cocci2 :: _ -> true
   | Unindent_cocci2 _ :: _ -> true
   | _ -> false
@@ -1584,11 +1602,13 @@ let adjust_by_op fn (am,ap) = function
   | Both -> (fn am,fn ap)
   | Neither -> (am,ap)
 
-let drop_zeroes op accumulator =
+let drop_zeroes op accumulator xs =
   let drop_zeroes l =
     let (_,rest) = span (function x -> x = 0) l in
     rest in
-  adjust_by_op drop_zeroes accumulator op
+  adjust_by_function notelse op
+    (fun o a -> adjust_by_op drop_zeroes a o) accsub1 accumulator xs
+  (*adjust_by_op drop_zeroes accumulator op*)
 
 let add1top op accumulator =
   let add1 = function x::xs -> (x+1)::xs | _ -> [] in
@@ -1611,7 +1631,9 @@ let token_effect tok dmin dplus inparens inassn accumulator xs =
   | (Tok "else",op) ->
       (* is_nl is for the case where the next statement is on the same line
 	 as the else *)
-      let nopen_brace a b = not (open_brace a b) && (is_nl a b) in
+      let nopen_brace a b =
+   let res = not (open_brace a b) && (is_nl a b) in
+   res in
       let do_nothing a b = b in
       let accumulator =
 	adjust_by_function nopen_brace op accadd1 do_nothing accumulator xs in
@@ -1623,9 +1645,9 @@ let token_effect tok dmin dplus inparens inassn accumulator xs =
   | (Tok "}",op) ->
       let (dmin,dplus) = sub1 op (dmin,dplus) in
       let accumulator = sub1top op accumulator in
-      (Other 3,dmin,dplus,inparens,0,drop_zeroes op accumulator)
+      (Other 3,dmin,dplus,inparens,0,drop_zeroes op accumulator xs)
   | (Tok(";"|","),op) when inparens = 0 && inassn <= 1 ->
-      (Other 4,dmin,dplus,inparens,0,drop_zeroes op accumulator)
+      (Other 4,dmin,dplus,inparens,0,drop_zeroes op accumulator xs)
   | (Tok ";",op) ->
       (Other 5,dmin,dplus,inparens,max 0 (inassn-1),accumulator)
   | (Tok "=",op) when inparens+inassn = 0 ->
