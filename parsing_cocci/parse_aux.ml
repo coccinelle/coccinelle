@@ -779,19 +779,19 @@ let drop_minus_plus l clt =
 let not_format_string str clt =
   Ast0.wrap(Ast0.Constant (clt2mcode (Ast.String str) clt))
 
-let parse_string str clt =
+let parse_string str ((a,b,c,d,e,f,g,h,i,_) as clt) =
   if List.length(Str.split_delim (Str.regexp "%") str) > 1
   then
     try
       begin
-	let first = "\"" in
-	let last = "\"" in
+	let first = clt2mcode "\"" clt in
+	(*do not want subsequent tokens to inherit whitespace from first*)
+	let clt = (a,b,c,d,e,f,g,h,i,"") in
 	let (line,middle) = drop_minus_plus str clt in
 	let middle = Ast0.wrap (Ast0.DOTS middle) in
+	let last = clt2mcode "\"" (update_line clt (line-1)) in
 	contains_string_constant := true;
-	Ast0.wrap
-	  (Ast0.StringConstant(clt2mcode first clt,middle,
-			       clt2mcode last (update_line clt (line-1))))
+	Ast0.wrap(Ast0.StringConstant(first,middle,last))
       end
     with Parse_printf.Not_format_string -> not_format_string str clt
   else not_format_string str clt

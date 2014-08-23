@@ -319,7 +319,10 @@ let short_options = [
   "    <file> improve -dir by grouping related c files";
   "--pyoutput", Arg.Set_string Flag.pyoutput,
   "    Sets output routine: Standard values: <coccilib.output.Gtk|coccilib.output.Console>";
-  "--parse-handler", Arg.String (fun f -> Prepare_ocamlcocci.load_file f),
+  "--parse-handler",
+  Arg.String (fun f ->
+    let f' = Prepare_ocamlcocci.prepare_simple f in
+    Prepare_ocamlcocci.load_file f'),
   "    <file> Loads the file containing the OCaml code in charge of parse errors reporting";
 
 

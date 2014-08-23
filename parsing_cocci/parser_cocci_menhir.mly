@@ -1054,7 +1054,7 @@ defineop:
       let (arity,line,lline,llineend,offset,col,strbef,straft,pos,ws) = clt in
       let lp =
 	P.clt2mcode "("
-	  (arity,line,lline,llineend,parenoff,parencol,[],[],[],ws) in
+	  (arity,line,lline,llineend,parenoff,parencol,[],[],[],"") in
       function body ->
 	Ast0.wrap
 	  (Ast0.Define
