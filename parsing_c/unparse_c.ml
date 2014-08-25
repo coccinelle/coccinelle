@@ -496,6 +496,12 @@ let is_newline = function
   | T2(Parser_c.TComment _,_b,_i,_h) -> true (* only whitespace *)
   | _ -> false
 
+let is_newline_space_or_minus = function
+  | T2(Parser_c.TCommentNewline _,_b,_i,_h) -> true
+  | T2(Parser_c.TComment _,_b,_i,_h) -> true (* only whitespace *)
+  | T2 (_, Min _, _, _) -> true
+  | _ -> false
+
 let contains_newline = List.exists is_newline
 
 let is_newline_or_comment = function
@@ -1075,7 +1081,7 @@ let paren_then_brace toks =
 	(* must be unsafe, ie //, moving brace up puts it under comment *)
 	xs
     | _ ->
-	let (nls, rest) = span is_newline rest in
+	let (nls, rest) = span is_newline_space_or_minus rest in
 	let after =
 	  match List.rev spaces with
 	    [] -> [(C2 " ")]
@@ -1508,10 +1514,11 @@ let sub1 op (am,ap) =
   | Neither -> (am,ap)
 
 let accsub1 op (am,ap) =
+  let tl = function x::xs -> xs | [] -> [] in
   match op with
-    PlusOnly -> (am,List.tl ap)
-  | MinusOnly -> (List.tl am,ap)
-  | Both -> (List.tl am,List.tl ap)
+    PlusOnly -> (am,tl ap)
+  | MinusOnly -> (tl am,ap)
+  | Both -> (tl am,tl ap)
   | Neither -> (am,ap)
 
 let subtract op (am,ap) (bm,bp) =
