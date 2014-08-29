@@ -1095,8 +1095,11 @@ let paren_then_brace toks =
 	      else [(C2 " ")] in
 	match rest with
 	  (* move the brace up to the previous line *)
-	| ((Cocci2("{",_,_,_,_)) as x) :: (((Cocci2 _) :: _) as rest) ->
-	    spaces @ after @ x :: (List.map minusify nls) @ rest
+	| ((Cocci2("{",_,_,_,_)) as x) :: ((Cocci2 ("\n",_,_,_,_)) as a) ::
+	  rest ->
+	    (* use what was there already, if available *)
+	    let nls = match nls with [] -> [a] | _ -> nls in
+	    spaces @ after @ x :: nls @ rest
 	| _ -> xs in
   search_paren toks
 
