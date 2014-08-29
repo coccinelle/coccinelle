@@ -554,6 +554,8 @@ let is_minusable_comment_or_plus x =
   is_minusable_comment x or all_coccis x
 
 let set_minus_comment adj = function
+    (T2 (Parser_c.TComment _,Ctx,idx,hint)) as x
+    when !Flag_parsing_c.keep_comments -> x
   | T2 (t,Ctx,idx,hint) ->
     let str = TH.str_of_tok t in
     (match t with
