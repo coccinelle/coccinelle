@@ -508,8 +508,13 @@ let is_newline_or_comment = function
   | T2(Parser_c.TCommentNewline _,_b,_i,_h) -> true
   | _ -> false
 
+let is_fake2 = function Fake2 _ -> true | _ -> false
+
 let is_whitespace x = 
   is_space x or is_newline x
+
+let is_whitespace_or_fake x = 
+  is_space x or is_newline x or is_fake2 x
 
 let is_minusable_comment = function
   | (T2 (t,_b,_i,_h)) ->
@@ -597,8 +602,6 @@ let drop_expanded xs =
     | _ -> false
   )
 
-let is_fake2 = function Fake2 _ -> true | _ -> false
-
 let drop_fake xs =
   xs +> exclude is_fake2
 
@@ -607,8 +610,8 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
   (* get rid of expanded tok *)
   let xs = drop_expanded xs in
 
-  let minus_or_comment x = 
-    is_minus x or is_minusable_comment x in
+  let minus_or_comment_or_fake x = 
+    is_minus x or is_minusable_comment x or is_fake2 x in
 
   let minus_or_comment_nocpp x =
     is_minus x or is_minusable_comment_nocpp x in
@@ -633,16 +636,29 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
   let rec adjust_around_minus = function
     | [] -> []
     | (T2(Parser_c.TCommentNewline c,_b,_i,_h) as x)::
-      ((Fake2(_,Min adj1) | T2(_,Min adj1,_,_)) as t1)::xs ->
+      ((T2(_,Min adj1,_,_)) as t1)::xs ->
       let (minus_list,rest) = span_not_context (t1::xs) in
       let contains_plus = List.exists is_plus minus_list in
       let x =
         match List.rev minus_list with
         | (T2(Parser_c.TCommentNewline c,_b,_i,_h))::rest
-          when List.for_all minus_or_comment minus_list ->
+          when List.for_all minus_or_comment_or_fake minus_list ->
           set_minus_comment_or_plus adj1 x
         | _ -> x in
       x :: adjust_within_minus contains_plus minus_list 
+         @ adjust_around_minus rest
+    | ((Fake2(_,Min _)) as t0)::
+      (T2(Parser_c.TCommentNewline c,_b,_i,_h) as x)::
+      ((T2(_,Min adj1,_,_)) as t1)::xs ->
+      let (minus_list,rest) = span_not_context (t1::xs) in
+      let contains_plus = List.exists is_plus minus_list in
+      let x =
+        match List.rev minus_list with
+        | (T2(Parser_c.TCommentNewline c,_b,_i,_h))::rest
+          when List.for_all minus_or_comment_or_fake minus_list ->
+          set_minus_comment_or_plus adj1 x
+        | _ -> x in
+      t0 :: x :: adjust_within_minus contains_plus minus_list 
          @ adjust_around_minus rest
     | ((Fake2(_,Min adj1) | T2(_,Min adj1,_,_)) as t1)::xs ->
       let (minus_list,rest) = span_not_context (t1::xs) in
@@ -658,8 +674,8 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
       t1 ::
       (match rest with
       | ((Fake2(_,Min adj2) | T2(_,Min adj2,_,_)) as t2)::xs ->
-        if common_adj adj1 adj2 
-        || not cp && List.for_all is_whitespace not_minus_list
+        if common_adj adj1 adj2
+        || not cp && List.for_all is_whitespace_or_fake not_minus_list
         then
           (List.map (set_minus_comment_or_plus adj1) not_minus_list)
           @ (adjust_within_minus cp (t2::xs))
