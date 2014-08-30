@@ -373,6 +373,7 @@
 - In pretty printing added if branch braces, allow minus code as well as
   spaces and newlines between the ) and the {.
 - Make the --keep-comments flag work.
+- Make the --force-diff flag work.
 * 0.2.5
 ** Language:
 - Make a very small attempt to parse C++ code, amounting to accepting

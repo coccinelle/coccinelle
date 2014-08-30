@@ -227,104 +227,110 @@ let normalize_path file =
 let generated_patches = Hashtbl.create(100)
 
 let show_or_not_diff2 cfile outfile =
-  if !Flag_cocci.show_diff then begin
-    match Common.fst(Compare_c.compare_to_original cfile outfile) with
-      Compare_c.Correct -> () (* diff only in spacing, etc *)
-    | _ ->
-        (* may need --strip-trailing-cr under windows *)
-	pr2 "diff = ";
+  let show_diff =
+    !Flag_cocci.show_diff &&
+    (!Flag_cocci.force_diff or
+     (not(Common.fst(Compare_c.compare_to_original cfile outfile) =
+	  Compare_c.Correct))) in (* diff only in spacing, etc *)
+  if show_diff
+  then
+    begin
+      (* may need --strip-trailing-cr under windows *)
+      pr2 "diff = ";
 
-	let line =
-	  match !Flag_parsing_c.diff_lines with
-	  | None ->   "diff -u -p " ^ cfile ^ " " ^ outfile
-	  | Some n -> "diff -U "^n^" -p "^cfile^" "^outfile in
-	let res = Common.cmd_to_list line in
-	let res =
-	  List.map
-	    (function l ->
-	      match Str.split (Str.regexp "[ \t]+") l with
-		"---"::file::date -> "--- "^file
-	      |	"+++"::file::date -> "+++ "^file
-	      |	_ -> l)
-	    res in
-	let xs =
-	  match (!Flag.patch,res) with
+      let line =
+	match !Flag_parsing_c.diff_lines with
+	| None ->   "diff -u -p " ^ cfile ^ " " ^ outfile
+	| Some n -> "diff -U "^n^" -p "^cfile^" "^outfile in
+      let res = Common.cmd_to_list line in
+      (match res with
+	[] -> ()
+      |	_ ->
+	  let res =
+	    List.map
+	      (function l ->
+		match Str.split (Str.regexp "[ \t]+") l with
+		  "---"::file::date -> "--- "^file
+		|	"+++"::file::date -> "+++ "^file
+		|	_ -> l)
+	      res in
+	  let xs =
+	    match (!Flag.patch,res) with
 	(* create something that looks like the output of patch *)
-	    (Some prefix,minus_file::plus_file::rest) ->
-	      let prefix =
-		let lp = String.length prefix in
-		if String.get prefix (lp-1) = '/'
-		then String.sub prefix 0 (lp-1)
-		else prefix in
-	      let drop_prefix file =
-		let file = normalize_path file in
-		if Str.string_match (Str.regexp prefix) file 0
-		then
+	      (Some prefix,minus_file::plus_file::rest) ->
+		let prefix =
 		  let lp = String.length prefix in
-		  let lf = String.length file in
-		  if lp < lf
-		  then String.sub file lp (lf - lp)
+		  if String.get prefix (lp-1) = '/'
+		  then String.sub prefix 0 (lp-1)
+		  else prefix in
+		let drop_prefix file =
+		  let file = normalize_path file in
+		  if Str.string_match (Str.regexp prefix) file 0
+		  then
+		    let lp = String.length prefix in
+		    let lf = String.length file in
+		    if lp < lf
+		    then String.sub file lp (lf - lp)
+		    else
+		      failwith
+			(Printf.sprintf "prefix %s doesn't match file %s"
+			   prefix file)
 		  else
 		    failwith
 		      (Printf.sprintf "prefix %s doesn't match file %s"
-			 prefix file)
-		else
-		  failwith
-		    (Printf.sprintf "prefix %s doesn't match file %s"
-		       prefix file) in
-	      let diff_line =
-		match List.rev(Str.split (Str.regexp " ") line) with
-		  new_file::old_file::cmdrev ->
-		    let old_base_file = drop_prefix old_file in
-		    if !Flag.sgrep_mode2
-		    then
-		      String.concat " "
-			(List.rev
-			   (("/tmp/nothing"^old_base_file)
-			    :: old_file :: cmdrev))
-		    else
-		      String.concat " "
-			(List.rev
-			   (("b"^old_base_file)::("a"^old_base_file)::
-			    cmdrev))
-		| _ -> failwith "bad command" in
-	      let (minus_line,plus_line) =
-		match (Str.split (Str.regexp "[ \t]") minus_file,
-		       Str.split (Str.regexp "[ \t]") plus_file) with
-		  ("---"::old_file::old_rest,"+++"::new_file::new_rest) ->
-		    let old_base_file = drop_prefix old_file in
-		    if !Flag.sgrep_mode2
-		    then (minus_file,"+++ /tmp/nothing"^old_base_file)
-		    else
-		      (String.concat " "
-			 ("---"::("a"^old_base_file)::old_rest),
-		       String.concat " "
-			 ("+++"::("b"^old_base_file)::new_rest))
-		| (l1,l2) ->
-		    failwith
-		      (Printf.sprintf "bad diff header lines: %s %s"
-			 (String.concat ":" l1) (String.concat ":" l2)) in
-	      diff_line::minus_line::plus_line::rest
-	  | _ -> res in
-	let xs = if !Flag.sgrep_mode2 then fix_sgrep_diffs xs else xs in
-	let cfile = normalize_path cfile in
-	let patches =
-	  try Hashtbl.find generated_patches cfile
-	  with Not_found ->
-	    let cell = ref [] in
-	    Hashtbl.add generated_patches cfile cell;
-	    cell in
-	if List.mem xs !patches
-	then ()
-	else
-	  begin
-	    patches := xs :: !patches;
-	    xs +> List.iter pr
-	  end
-  end
+			 prefix file) in
+		let diff_line =
+		  match List.rev(Str.split (Str.regexp " ") line) with
+		    new_file::old_file::cmdrev ->
+		      let old_base_file = drop_prefix old_file in
+		      if !Flag.sgrep_mode2
+		      then
+			String.concat " "
+			  (List.rev
+			     (("/tmp/nothing"^old_base_file)
+			      :: old_file :: cmdrev))
+		      else
+			String.concat " "
+			  (List.rev
+			     (("b"^old_base_file)::("a"^old_base_file)::
+			      cmdrev))
+		  | _ -> failwith "bad command" in
+		let (minus_line,plus_line) =
+		  match (Str.split (Str.regexp "[ \t]") minus_file,
+			 Str.split (Str.regexp "[ \t]") plus_file) with
+		    ("---"::old_file::old_rest,"+++"::new_file::new_rest) ->
+		      let old_base_file = drop_prefix old_file in
+		      if !Flag.sgrep_mode2
+		      then (minus_file,"+++ /tmp/nothing"^old_base_file)
+		      else
+			(String.concat " "
+			   ("---"::("a"^old_base_file)::old_rest),
+			 String.concat " "
+			   ("+++"::("b"^old_base_file)::new_rest))
+		  | (l1,l2) ->
+		      failwith
+			(Printf.sprintf "bad diff header lines: %s %s"
+			   (String.concat ":" l1) (String.concat ":" l2)) in
+		diff_line::minus_line::plus_line::rest
+	    | _ -> res in
+	  let xs = if !Flag.sgrep_mode2 then fix_sgrep_diffs xs else xs in
+	  let cfile = normalize_path cfile in
+	  let patches =
+	    try Hashtbl.find generated_patches cfile
+	    with Not_found ->
+	      let cell = ref [] in
+	      Hashtbl.add generated_patches cfile cell;
+	      cell in
+	  if List.mem xs !patches
+	  then ()
+	  else
+	    begin
+	      patches := xs :: !patches;
+	      xs +> List.iter pr
+	    end)
+    end
 let show_or_not_diff a b =
   Common.profile_code "show_xxx" (fun () -> show_or_not_diff2 a b)
-
 
 (* the derived input *)
 
