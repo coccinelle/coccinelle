@@ -1033,6 +1033,7 @@ let vk_inis_splitted = vk_splitted vk_ini
 let vk_ident_list_splitted = vk_splitted vk_name
 let vk_string_fragments_splitted = vk_splitted vk_string_fragment
 let vk_exec_code_list_splitted = vk_splitted vk_exec_code
+let vk_attrs_splitted = vk_splitted vk_attribute
 
 (* ------------------------------------------------------------------------ *)
 let vk_cst = fun bigf (cst, ii) ->
@@ -1898,3 +1899,4 @@ let vk_inis_splitted_s = vk_splitted_s vk_ini_s
 let vk_ident_list_splitted_s = vk_splitted_s vk_name_s
 let vk_string_fragments_splitted_s = vk_splitted_s vk_string_fragment_s
 let vk_exec_code_list_splitted_s = vk_splitted_s vk_exec_code_s
+let vk_attrs_splitted_s = vk_splitted_s vk_attribute_s

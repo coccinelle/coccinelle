@@ -669,6 +669,9 @@ module type PARAM =
     val distrf_exec_code_list :
       (A.meta_name A.mcode, (Ast_c.exec_code, Ast_c.il) either list) matcher
 
+    val distrf_attrs :
+      (A.meta_name A.mcode, (Ast_c.attribute, Ast_c.il) either list) matcher
+
     val cocciExp :
       (A.expression, B.expression) matcher -> (A.expression, F.node) matcher
 
@@ -703,6 +706,8 @@ module type PARAM =
     val optional_qualifier_flag : (bool -> tin -> 'x tout) -> (tin -> 'x tout)
     val value_format_flag : (bool -> tin -> 'x tout) -> (tin -> 'x tout)
     val optional_declarer_semicolon_flag :
+	(bool -> tin -> 'x tout) -> (tin -> 'x tout)
+    val optional_attributes_flag :
 	(bool -> tin -> 'x tout) -> (tin -> 'x tout)
 
   end
@@ -3812,7 +3817,60 @@ and fullType_optional_allminus allminus tya retb =
         return (Some tya, retb)
       )
 
+(* Works for many attributes, but assumes order will be preserved.  Looks
+for an exact match.  Actually the call site only allows a list of length
+one to come through.  Makes no requirement if attributes not present. *)
 
+(* The following is the intended version, on lists.  Unfortunately, this
+   requires SmPL attributes to be wrapped.  Which they are not, for some
+   reason. *)
+(*
+and attribute_list attras attrbs =
+  X.optional_attributes_flag (fun optional_attributes ->
+  match attras with
+    None -> return (None, attrbs)
+  | Some attras ->
+      let match_dots ea = None in
+      let build_dots (mcode, optexpr) = failwith "not possible" in
+      let match_comma ea = None in
+      let build_comma ia1 = failwith "not posible" in
+      let match_metalist ea = None in
+      let build_metalist _ (ida,leninfo,keep,inherited) =
+	failwith "not possible" in
+      let mktermval v = failwith "not possible" in
+      let special_cases ea eas ebs = None in
+      let no_ii x = failwith "not possible" in
+      list_matcher match_dots build_dots match_comma build_comma
+	match_metalist build_metalist mktermval
+	special_cases attribute X.distrf_attrs
+	B.split_nocomma B.unsplit_nocomma no_ii
+	(function x -> Some x) attras attrbs >>=
+      (fun attras attrbs -> return (Some attras, attrbs))) *)
+
+(* The cheap hackish version.  No wrapping requires... *)
+
+and attribute_list attras attrbs =
+  X.optional_attributes_flag (fun optional_attributes ->
+  match attras,attrbs with
+    None, _ -> return (None, attrbs)
+  | Some [attra], [attrb] ->
+    attribute attra attrb >>= (fun attra attrb ->
+      return (Some [attra], [attrb])
+    )
+  | Some [attra], attrb -> fail
+  | _ -> failwith "only one attribute allowed in SmPL")
+
+and attribute = fun ea eb ->
+  match ea, eb with
+    (A.FAttr attra), (B.Attribute attrb, ii)
+      when (A.unwrap_mcode attra) =$= attrb ->
+      let ib1 = tuple_of_list1 ii in
+      tokenf attra ib1 >>= (fun attra ib1 ->
+	return (
+	  A.FAttr attra,
+	  (B.Attribute attrb, [ib1])
+        ))
+  | _ -> fail
 
 (*---------------------------------------------------------------------------*)
 
@@ -4359,8 +4417,17 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 	match List.filter (function A.FInline(i) -> true | _ -> false) fninfoa
 	with [A.FInline(i)] -> Some i | _ -> None in
 
-      (match List.filter (function A.FAttr(a) -> true | _ -> false) fninfoa
-      with [A.FAttr(a)] -> failwith "not checking attributes" | _ -> ());
+      let attras =
+	match List.filter (function A.FAttr(a) -> true | _ -> false) fninfoa
+	with
+	  [] -> None | _ -> failwith "matching of attributes not supported"
+	(* The following provides matching of one attribute against one
+	   attribute.  But the problem is that in the C ast there are no
+	   attributes in the attr field.  The attributes are all comments.
+	   So there is nothing to match against. *)
+	(*  [A.FAttr(a)] -> Some [A.FAttr(a)]
+	| [] -> None
+	| _ -> failwith "only one attr match allowed" *) in
 
       (match ii with
       | ioparenb::icparenb::iifakestart::iistob ->
@@ -4381,6 +4448,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
             inla (stob, iistob) >>= (fun inla (stob, iistob) ->
           storage_optional_allminus allminus
             stoa (stob, iistob) >>= (fun stoa (stob, iistob) ->
+          attribute_list attras attrs >>= (fun attras attrs ->
               (
                 if isvaargs
                 then
@@ -4395,9 +4463,10 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
            fullType_optional_allminus allminus tya retb >>= (fun tya retb ->
 
              let fninfoa =
-               (match stoa with Some st -> [A.FStorage st] | None -> []) ++
-               (match inla with Some i -> [A.FInline i] | None -> []) ++
-               (match tya  with Some t -> [A.FType t] | None -> [])
+               (match stoa  with Some st -> [A.FStorage st] | None -> []) ++
+               (match inla   with Some i -> [A.FInline i] | None -> []) ++
+               (match tya    with Some t -> [A.FType t] | None -> []) ++
+               (match attras with Some a -> a | None -> [])
 
              in
 
@@ -4413,7 +4482,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
                            },
                            ioparenb::icparenb::iifakestart::iistob)
                 )
-              )))))))))
+              ))))))))))
       | _ -> raise (Impossible 49)
       )
 
