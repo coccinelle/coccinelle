@@ -374,6 +374,8 @@
   spaces and newlines between the ) and the {.
 - Make the --keep-comments flag work.
 - Make the --force-diff flag work.
+- Improve newlines around added else tokens.
+
 * 0.2.5
 ** Language:
 - Make a very small attempt to parse C++ code, amounting to accepting

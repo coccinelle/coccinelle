@@ -1275,7 +1275,7 @@ let rule =
 in
 *)
 
-let if_open_brace  = function "{" -> true | _ -> false in
+let if_open_brace  = function "{" | "else" -> true | _ -> false in
 
 (* boolean result indicates whether an indent is needed *)
 let rec pp_any = function
@@ -1329,9 +1329,13 @@ let rec pp_any = function
   | Ast.Token(x,Some info) ->
       mcode
 	(fun x line lcol ->
+	  (* adds a newline before else, but not sure why; not correct after
+	  brace in Linux, and normally should not be needed. *)
+	  (*
 	  (match x with
 	    "else" -> force_newline()
 	  | _ -> ());
+	  *)
 	  (match x with (* not sure if special case for comma is useful *)
 	    "," -> print_string_with_hint (SpaceOrNewline(ref " ")) x line lcol
 	  | _ -> print_string x line lcol))
