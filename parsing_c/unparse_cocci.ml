@@ -58,7 +58,7 @@ let close_box _ = () in
 let force_newline _ = print_text "\n" in
 
 let start_block () = (*indent();*) force_newline() in
-let end_block () = (*unindent true;*) force_newline () in
+let end_block = function [] -> () | _ -> (*unindent true;*) force_newline () in
 let print_string_box s = print_string s in
 
 let print_option = Common.do_option in
@@ -97,7 +97,7 @@ let rec print_anything = function
   | stream ->
       start_block();
       print_between force_newline print_anything_list stream;
-      end_block()
+      end_block stream
 
 and print_anything_list = function
     [] -> ()
@@ -257,10 +257,8 @@ let nest_dots starter ender fn f d =
   mcode print_string starter;
   f(); start_block();
   (match Ast.unwrap d with
-    Ast.DOTS(l)    -> print_between force_newline fn l
-  | Ast.CIRCLES(l) -> print_between force_newline fn l
-  | Ast.STARS(l)   -> print_between force_newline fn l);
-  end_block();
+    Ast.DOTS(l) | Ast.CIRCLES(l) | Ast.STARS(l) ->
+      print_between force_newline fn l; end_block l);
   mcode print_string ender
 in
 
@@ -870,13 +868,13 @@ and initialiser nlcomma i =
       |	lst ->
 	  mcode print_string lb; start_block();
 	  initialiser_list nlcomma lst;
-	  end_block(); mcode print_string rb)
+	  end_block lst; mcode print_string rb)
   | Ast.StrInitList(_,lb,[],rb,[]) ->
       mcode print_string lb; mcode print_string rb
   | Ast.StrInitList(_,lb,initlist,rb,[]) ->
       mcode print_string lb; start_block();
       initialiser_list nlcomma initlist;
-      end_block(); mcode print_string rb
+      end_block initlist; mcode print_string rb
   | Ast.StrInitList(_,lb,initlist,rb,_) ->
       failwith "unexpected whencode in plus"
   | Ast.InitGccExt(designators,eq,ini) ->
@@ -983,7 +981,7 @@ and rule_elem arity re =
   | Ast.SeqStart(brace) ->
       pr_arity arity; mcode print_string brace; start_block()
   | Ast.SeqEnd(brace) ->
-      end_block(); pr_arity arity; mcode print_string brace
+      pr_arity arity; mcode print_string brace
 
   | Ast.ExprStatement(exp,sem) ->
       pr_arity arity; print_option expression exp; mcode print_string sem
@@ -1157,6 +1155,7 @@ let rec statement arity s =
     Ast.Seq(lbrace,body,rbrace) ->
       rule_elem arity lbrace;
       dots force_newline (statement arity) body;
+      end_block (Ast.undots body);
       rule_elem arity rbrace
 
   | Ast.IfThen(header,branch,_) ->
@@ -1193,7 +1192,9 @@ let rec statement arity s =
 
   | Ast.FunDecl(header,lbrace,body,rbrace,_) ->
       rule_elem arity header; rule_elem arity lbrace;
-      dots force_newline (statement arity) body; rule_elem arity rbrace
+      dots force_newline (statement arity) body;
+      end_block (Ast.undots body);
+      rule_elem arity rbrace
 
   | Ast.Define(header,body) ->
       rule_elem arity header; pr_space();
