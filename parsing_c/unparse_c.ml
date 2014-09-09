@@ -675,7 +675,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
       (match rest with
       | ((Fake2(_,Min adj2) | T2(_,Min adj2,_,_)) as t2)::xs ->
         if common_adj adj1 adj2
-        || not cp && List.for_all is_whitespace_or_fake not_minus_list
+        || (not cp && List.for_all is_whitespace_or_fake not_minus_list)
         then
           (List.map (set_minus_comment_or_plus adj1) not_minus_list)
           @ (adjust_within_minus cp (t2::xs))
