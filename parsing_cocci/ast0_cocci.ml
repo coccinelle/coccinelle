@@ -596,6 +596,7 @@ let get_index x     = !(x.index)
 let set_index x i   = x.index := i
 let get_mcodekind x = !(x.mcodekind)
 let get_mcode_mcodekind (_,_,_,mcodekind,_,_) = mcodekind
+let get_mcode_line (_,_,info,_,_,_) = info.pos_info.line_start
 let get_mcodekind_ref x = x.mcodekind
 let set_mcodekind x mk  = x.mcodekind := mk
 let set_type x t        = x.exp_ty := t
@@ -612,6 +613,9 @@ let clear_test_exp x      = {x with true_if_test_exp = false}
 let get_iso x           = x.iso_info
 let set_iso x i = if !Flag.track_iso_usage then {x with iso_info = i} else x
 let set_mcode_data data (_,ar,info,mc,pos,adj) = (data,ar,info,mc,pos,adj)
+let get_rule_name = function
+  | CocciRule ((_,_,(_,_,_,nm,_)),_,_) | InitialScriptRule (nm,_,_,_,_)
+  | FinalScriptRule (nm,_,_,_,_) | ScriptRule (nm,_,_,_,_,_) -> nm
 
 (* --------------------------------------------------------------------- *)
 

@@ -550,6 +550,7 @@ val set_info : 'a wrap -> info -> 'a wrap
 val get_index : 'a wrap -> int
 val set_index : 'a wrap -> int -> unit
 val get_line : 'a wrap -> int
+val get_mcode_line : 'a mcode -> int
 val get_line_end : 'a wrap -> int
 val get_mcodekind : 'a wrap -> mcodekind
 val get_mcode_mcodekind : 'a mcode -> mcodekind
@@ -573,6 +574,7 @@ val set_mcode_data : 'a -> 'a mcode -> 'a mcode
 val make_mcode : 'a -> 'a mcode
 val make_mcode_info : 'a -> info -> 'a mcode
 val make_minus_mcode : 'a -> 'a mcode
+val get_rule_name : parsed_rule -> string
 
 val meta_pos_name : anything -> Ast_cocci.meta_name mcode
 
