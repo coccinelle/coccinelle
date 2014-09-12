@@ -83,7 +83,7 @@ $(LIBS):
 
 install: $(TARGET)
         # this is a small hack to avoid having to reconfigure the installation
-        # folder (from coccinelle)
+        # directory (from coccinelle)
 	if !([ -e scripts/sgen.sh ]); then \
 	  sed "\_^"PREFIX"=_ s_=.*_="$(prefix)"_" scripts/sgen.sh.in > \
 	  scripts/sgen.sh; \

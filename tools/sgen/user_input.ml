@@ -146,8 +146,8 @@ let get_preface {description=d; limitations=l; keywords=k; confidence=c;
   let options = Globals.pre_split_opt ~prefix:"// Options: " o in
   let authors = String.concat "\n" (List.map author_format a) in
   let url = Globals.pre_split_opt ~prefix:"// URL: " u in
-  let preface = [desc; limits; "///"; keys; confidence; comments; options;
-    authors;url] in
+  let preface = [desc; limits; "///"; confidence; authors; url; comments;
+    options; keys] in
   String.concat "\n" (List.filter ((<>) "") preface)
 
 (* gets rules from the input ordered according to the original */+/- rules *)

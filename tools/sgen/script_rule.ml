@@ -9,9 +9,6 @@ module M = Meta_variable
 
 type t = string list (*org*) * string list (*rep*)
 
-type virtual_mode = Org | Report
-let virt_tostring = function Org -> "org" | Report -> "report"
-
 let comma_sep = String.concat ","
 
 (* invariant: always at least one position *)
@@ -27,11 +24,9 @@ let printfn outch x =
 (* ------------------------------------------------------------------------- *)
 (* CONSTANTS *)
 
-(* this is just always used when the error message contains metavariables,
- * since they may contain brackets which interfere with org mode. *)
-let safe_msg = "msg_safe = msg.replace(\"[\",\"@(\").replace(\"]\",\")\")"
-
 let print_todo_fn = "coccilib.org.print_todo"
+let print_safe_todo_fn = "coccilib.org.print_safe_todo"
+let print_link_fn = "coccilib.org.print_link"
 let print_report_fn = "coccilib.report.print_report"
 
 
@@ -63,15 +58,30 @@ let format_err_msg err_msg mpnames mvnames =
   else
     "msg = \"" ^ err_msg ^ "\""
 
-(* assembles a script rule.
- * virt denotes whether it is an Org or Report rule *)
-let gen_script_rule nm virt (firstpos, restpos) metavars err_msg =
-  let need_safe = virt = Org && metavars <> [] in
-  let print_fn = match virt with
-    | Org -> print_todo_fn | Report -> print_report_fn in
-  let virt = virt_tostring virt in
-  let new_rulenm = nm ^ "_" ^ virt in
-  let msg = if need_safe then "msg_safe" else "msg" in
+(* assembles an org script rule. *)
+let gen_org_rule nm (firstpos, restpos) metavars err_msg =
+  (* if there are metavars, they might contain brackets which conflict with
+   * the todo format. In that case, use safe mode (replaces brackets). *)
+  let printfn = if metavars <> [] then print_safe_todo_fn else print_todo_fn in
+  let new_rulenm = nm ^ "_org" in
+  let headervars = format_header_vars (metavars @ (firstpos :: restpos)) in
+  (* the error message is used as is, positions are inserted in print calls *)
+  let metavars = List.map M.get_name metavars in
+  let err_msg = format_err_msg err_msg [] metavars in
+  let zero p = (M.get_name p) ^ "[0]" in
+  [
+   (*header*)
+   "@script:python " ^ new_rulenm ^ " depends on org@";
+   String.concat "\n" headervars;
+   "@@\n";
+   (*body*)
+   err_msg;
+   (printfn ^ "(" ^ (zero firstpos) ^ ", msg)")
+  ] @ (List.map (fun x -> print_link_fn ^ "(" ^ (zero x) ^ ", \"\")") restpos)
+
+(* assembles a report script rule. *)
+let gen_report_rule nm (firstpos, restpos) metavars err_msg =
+  let new_rulenm = nm ^ "_report" in
   let headervars = format_header_vars (metavars @ (firstpos :: restpos)) in
   let firstpos = (M.get_name (firstpos)) ^ "[0]" in
   let restpos = List.map M.get_name restpos in
@@ -79,12 +89,12 @@ let gen_script_rule nm virt (firstpos, restpos) metavars err_msg =
   let err_msg = format_err_msg err_msg restpos metavars in
   [
    (*header*)
-   "@script:python " ^ new_rulenm ^ " depends on " ^ virt ^ "@";
+   "@script:python " ^ new_rulenm ^ " depends on report@";
    String.concat "\n" headervars;
    "@@\n";
    (*body*)
-   err_msg ^ (if need_safe then ("\n"^safe_msg) else "");
-   (print_fn ^ "(" ^ firstpos ^ ", " ^ msg ^ ")")
+   err_msg;
+   (print_report_fn ^ "(" ^ firstpos ^ ", msg)")
   ]
 
 
@@ -100,8 +110,8 @@ let generate ~metapos ~user_input = match user_input with
   let new_rule = M.get_rule firstpos in
   (*make sure user-specified metavars are inherited from the context rule*)
   let omv, rmv = M.inherit_rule ~new_rule omv, M.inherit_rule ~new_rule rmv in
-  let org = gen_script_rule nm Org (firstpos, restpos) omv org_msg in
-  let report = gen_script_rule nm Report (firstpos, restpos) rmv report_msg in
+  let org = gen_org_rule nm (firstpos, restpos) omv org_msg in
+  let report = gen_report_rule nm (firstpos, restpos) rmv report_msg in
   (org, report)
 
 (* print the script rules *)
