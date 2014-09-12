@@ -4,7 +4,7 @@ COCCIDIR=../..
 include $(COCCIDIR)/Makefile.config
 
 # where to install the program
-INSTALLDIR=$(DESTDIR)/$(SHAREDIR)/sgen
+INSTALLDIR=$(DESTDIR)$(SHAREDIR)/sgen
 
 ##############################################################################
 # Variables
@@ -82,9 +82,16 @@ $(LIBS):
 	cd $(COCCIDIR);	make spatch
 
 install: $(TARGET)
+        # this is a small hack to avoid having to reconfigure the installation
+        # folder (from coccinelle)
+	if !([ -e scripts/sgen.sh ]); then \
+	  sed "\_^"PREFIX"=_ s_=.*_="$(prefix)"_" scripts/sgen.sh.in > \
+	  scripts/sgen.sh; \
+	fi;
+
 	$(MKDIR_P) $(INSTALLDIR)
 	$(INSTALL_PROGRAM) $(TARGET) $(INSTALLDIR)/$(TARGET)
-	$(INSTALL_PROGRAM) scripts/$(TARGET).sh $(DESTDIR)/$(BINDIR)/$(TARGET)
+	$(INSTALL_PROGRAM) scripts/sgen.sh $(DESTDIR)$(BINDIR)/sgen
 	@$(ECHO) -e "\n\tsgen installed: DONE!!!\n"
 
 uninstall:
