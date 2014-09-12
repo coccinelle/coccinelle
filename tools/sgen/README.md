@@ -11,7 +11,7 @@ Installation:
 You need to have Coccinelle and all of Coccinelle's dependencies installed.
 
 1.  Change the COCCIDIR path in the Makefile to point at the Coccinelle source
-code.
+code (default is within the tools directory of the Coccinelle directory).
 2.  Run the command 'make'.
 3.  Run 'make install' (needs superuser permissions).
 
