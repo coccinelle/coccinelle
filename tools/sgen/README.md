@@ -14,6 +14,9 @@ You need to have Coccinelle and all of Coccinelle's dependencies installed.
 code (default is within the tools directory of the Coccinelle directory).
 2.  Run the command 'make'.
 3.  Run 'make install' (needs superuser permissions).
+4.  Test the program e.g. with
+
+	sgen examples/tiny.cocci
 
 Usage:
 ------
@@ -26,7 +29,12 @@ to generate the file, using file.config (sgen config). Or
 	sgen file.cocci --interactive
 
 to run the program in interactive mode where the program will generate a config
-file for you.
+file for you. If running
+
+	sgen file.cocci
+
+with no flags, the program will use file.config per default if it exists, or
+else start in interactive mode.
 
 For all options, see
 

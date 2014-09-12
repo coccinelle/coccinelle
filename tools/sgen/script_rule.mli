@@ -7,9 +7,10 @@
  * x << rulename.x;
  * @@
  * 
- * msg="Warning: This is a message! Found %s on line %s" % (x,p2[0].line)
- * msg_safe=msg.replace("[","@(").replace("]",")")
- * coccilib.org.print_todo(p1[0], msg_safe)
+ * msg="Warning: This is a message! Found %s." % (x)
+ * coccilib.org.print_safe_todo(p1[0], msg)
+ * coccilib.org.print_link(p2[0], "")
+ * 
  * 
  * @script:python depends on report@
  * p1 << rulename.p1;

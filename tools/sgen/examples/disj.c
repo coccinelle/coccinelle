@@ -9,9 +9,8 @@ int main(int *arg) {
 
   // should match!
   if (*arg < 1) {
-    m = 30;
     some_function(20);
-
+    m = 30;
   }
 
   // should not match, contains some_function call to 0

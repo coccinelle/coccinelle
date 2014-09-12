@@ -38,8 +38,8 @@ let init ~rule_name:r ~pos_name:p ~error_msg:e ~char_limit:cl =
 (* list of things you can't call your rules, because it will mess with sgen *)
 let keywords =
   ["patch"; "context"; "org"; "report"; "description"; "limitations";
-   "keywords"; "comments"; "options"; "confidence"; "authors";
-   "d";"k";"c";"m";"o";"l";"a"]
+   "keywords"; "comments"; "options"; "confidence"; "authors"; "url";
+   "d";"k";"c";"m";"o";"l";"a";"u"]
 
 (* default virtual rule names *)
 let get_virtuals context_mode =
