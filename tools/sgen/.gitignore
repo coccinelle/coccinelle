@@ -1,0 +1,15 @@
+sgen
+scripts/sgen.sh
+
+*.cm[aiox]
+*.cmxa
+*.[ao]
+sgen_lexer.ml
+
+*~
+.depend
+
+_build
+_log
+*.native
+*.byte
