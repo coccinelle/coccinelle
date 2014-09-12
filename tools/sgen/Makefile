@@ -1,5 +1,5 @@
 # path to coccinelle source
-COCCIDIR=/CHANGE/THIS/IN/THE/MAKEFILE
+COCCIDIR=../..
 
 include $(COCCIDIR)/Makefile.config
 
