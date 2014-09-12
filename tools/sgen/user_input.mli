@@ -29,6 +29,7 @@ val set_keys : string -> t -> t
 val set_conf : confidence -> t -> t
 val set_comments : string -> t -> t
 val set_options : string -> t -> t
+val set_url : string -> t -> t
 val set_limits : string list -> t -> t
 val add_limit : string -> t -> t
 val set_authors : string list -> t -> t

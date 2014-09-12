@@ -81,6 +81,11 @@ let get_options t =
     "continue:\n");
   let options = get_input_save t in UI.set_options options t
 
+let get_url t =
+  print_string ("\nSpecify an URL for the script or press <enter> to " ^
+    "continue:\n");
+  let url = get_input_save t in UI.set_url url t
+
 let get_authors t =
   let rec get first t =
     print_string ("\nSpecify an" ^ (if first then "" else "other") ^
@@ -164,6 +169,7 @@ let interact ~ordered_rules ~config_name =
   let t = get_keywords t in
   let t = get_options t in
   let t = get_authors t in
+  let t = get_url t in
   let t = get_comments t in
   let t = List.fold_left
     (fun t r -> UI.add_rule (get_rule r t) t) t ordered_rules in

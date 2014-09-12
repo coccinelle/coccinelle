@@ -19,6 +19,7 @@ type part =
   | Comments of string
   | Options of string
   | Authors of string list (* author, affiliation, license in one *)
+  | Url of string
   | Rule of (string * string option) * attribute list
 
 (* the table is for line numbers to produce more meaningful error messages *)
@@ -63,6 +64,7 @@ rule token = parse
   | ("confidence" |"c") equal (notws as c) { Confidence c }
   | ("comments"   |"m") equal (notnl as m) { Comments m }
   | ("options"    |"o") equal (notnl as o) { Options o }
+  | ("url"        |"u") equal (notnl as u) { Url u }
   | ("limitations"|"l") equal (notnl as l) { Limitations (split_list "|" l) }
   | ("author"|"authors"|"a") equal (notnl as a) { Authors (split_list "|" a) }
   (* for naming unnamed rules. e.g. 8:name = ... for the rule on line 8. *)

@@ -8,20 +8,21 @@ module Lex = Sgen_lexer
 
 (* function to be applied continuously on the input coccinelle script *)
 let lex_config lexbuf =
-  let rec aux ((d,l,k,c,m,o,a,r) as res) =
+  let rec aux ((d,l,k,c,m,o,a,u,r) as res) =
     try
       let result = Lex.token lexbuf in
       match result with
-        | Lex.Description d -> aux (d,l,k,c,m,o,a,r)
-        | Lex.Limitations l -> aux (d,l,k,c,m,o,a,r)
-        | Lex.Keywords k -> aux (d,l,k,c,m,o,a,r)
-        | Lex.Confidence c -> aux (d,l,k,c,m,o,a,r)
-        | Lex.Comments m -> aux (d,l,k,c,m,o,a,r)
-        | Lex.Options o -> aux (d,l,k,c,m,o,a,r)
-        | Lex.Authors a -> aux (d,l,k,c,m,o,a,r)
-        | Lex.Rule (rn,attr) -> aux (d,l,k,c,m,o,a, (rn, attr) :: r)
+        | Lex.Description d -> aux (d,l,k,c,m,o,a,u,r)
+        | Lex.Limitations l -> aux (d,l,k,c,m,o,a,u,r)
+        | Lex.Keywords k -> aux (d,l,k,c,m,o,a,u,r)
+        | Lex.Confidence c -> aux (d,l,k,c,m,o,a,u,r)
+        | Lex.Comments m -> aux (d,l,k,c,m,o,a,u,r)
+        | Lex.Options o -> aux (d,l,k,c,m,o,a,u,r)
+        | Lex.Authors a -> aux (d,l,k,c,m,o,a,u,r)
+        | Lex.Url u -> aux (d,l,k,c,m,o,a,u,r)
+        | Lex.Rule (rn,attr) -> aux (d,l,k,c,m,o,a,u, (rn, attr) :: r)
     with Lex.Eof -> res in
-  aux ("",[],"","","","",[],[])
+  aux ("",[],"","","","",[],"",[])
 
 (* open the input coccinelle script and lex/parse it.
  * the table maps the absolute character position to its line and column number
@@ -68,7 +69,7 @@ let add_rules rule_exists rule_list t =
   List.fold_left (fun a b -> add_rule rule_exists a b) t rule_list
 
 (* expanded constructor for User_input.t *)
-let make desc limit keys conf comments options authors =
+let make desc limit keys conf comments options authors url =
   let t =
     try UI.make ~description:desc ~confidence:(UI.conf_fromstring conf)
     with Failure msg -> failwith ("Config error: " ^ msg) in
@@ -76,7 +77,8 @@ let make desc limit keys conf comments options authors =
     (UI.set_keys keys
       (UI.set_comments comments
         (UI.set_options options
-          (UI.set_authors authors t))))
+          (UI.set_authors authors
+            (UI.set_url url t)))))
 
 
 (* ------------------------------------------------------------------------- *)
@@ -89,8 +91,8 @@ let parse_local ~ordered_rules ~config_name =
       else x in
     if (List.mem x ordered_rules) then x
     else failwith ("Config error: no */+/- rule called \"" ^ x ^ "\".") in
-  let (d,l,k,c,m,o,a,r) = parse config_name in
-  let t = make d l k c m o a in
+  let (d,l,k,c,m,o,a,u,r) = parse config_name in
+  let t = make d l k c m o a u in
   let t = add_rules rule_exists r t in
   let preface = UI.get_preface t in
   let rules = UI.get_rules ordered_rules t in

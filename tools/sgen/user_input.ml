@@ -104,6 +104,7 @@ type t = {
   comments : string option;
   options : string option;
   authors : string list;
+  url : string option;
   rules :
    (string option * (string * string list) * (string * string list)) RuleMap.t;
 }
@@ -112,7 +113,8 @@ type t = {
 let make ~description ~confidence =
   if description = "" then failwith "Error: Description is required." else
   { description; limitations = []; keywords = None; confidence;
-    comments = None; options = None; authors = []; rules = RuleMap.empty }
+    comments = None; options = None; authors = []; url = None;
+    rules = RuleMap.empty }
 
 (* SETTERS *)
 let add_limit limit t = { t with limitations = limit :: t.limitations }
@@ -121,6 +123,7 @@ let set_keys keys t = { t with keywords = opt keys }
 let set_conf conf t = { t with confidence = conf }
 let set_comments cmnt t = { t with comments = opt cmnt }
 let set_options optn t = { t with options = opt optn }
+let set_url url t = { t with url = opt url }
 let add_author auth t = { t with authors = auth :: t.authors }
 let set_authors auths t = { t with authors = auths }
 let add_rule ((rnm,newnm),(om,ov),(rm,rv)) t =
@@ -130,7 +133,7 @@ let add_rule ((rnm,newnm),(om,ov),(rm,rv)) t =
 (* GETTERS *)
 (* format the preface information and turn it into one big string *)
 let get_preface {description=d; limitations=l; keywords=k; confidence=c;
-  comments=m; options=o; authors=a; _} =
+  comments=m; options=o; authors=a; url=u; _} =
   let author_format =
     let year = string_of_int (Globals.get_current_year()) in
     Globals.pre_split ~prefix:("// Copyright: (C) "^year^" ") in
@@ -142,8 +145,9 @@ let get_preface {description=d; limitations=l; keywords=k; confidence=c;
   let comments = Globals.pre_split_opt ~prefix:"// Comments: " m in
   let options = Globals.pre_split_opt ~prefix:"// Options: " o in
   let authors = String.concat "\n" (List.map author_format a) in
+  let url = Globals.pre_split_opt ~prefix:"// URL: " u in
   let preface = [desc; limits; "///"; keys; confidence; comments; options;
-    authors] in
+    authors;url] in
   String.concat "\n" (List.filter ((<>) "") preface)
 
 (* gets rules from the input ordered according to the original */+/- rules *)
@@ -166,7 +170,7 @@ let unparse_rule rnm (newnm,(orgmsg,orgmvs),(repmsg,repmvs)) =
 (* turn a user input collection into its corresponding config script *)
 let unparse
   { description; limitations; keywords; confidence; comments; options; rules;
-    authors } =
+    authors; url } =
   let a = "// Generated config\n" in
   let b = "description = " ^ description ^ "\n" in
   let c = if limitations = [] then "" else
@@ -177,8 +181,9 @@ let unparse
   let g = rev_opt "options = " options in
   let h = if authors = [] then "" else
     "authors = " ^ (String.concat "|" authors) ^ "\n" in
-  let i = RuleMap.fold
+  let i = rev_opt "url = " url in
+  let j = RuleMap.fold
     (fun rnm msg acc -> (unparse_rule rnm msg) :: acc) rules [] in
-  let preface = String.concat "" [a;b;c;d;e;f;g;h] in
-  let rules = String.concat "" i in
+  let preface = String.concat "" [a;b;c;d;e;f;g;h;i] in
+  let rules = String.concat "" j in
   preface ^ rules
