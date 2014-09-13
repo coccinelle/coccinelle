@@ -11,7 +11,7 @@ module M = Meta_variable
 (* TYPES AND HELPERS *)
 
 type t = {
-  first_line : string; (* rule declaration @rulename ...@ *)
+  first_line : string; (* @rulename ...@ *)
   meta_vars : M.t list;
   meta_pos : M.t list;
   last_line : string; (* @@ *)
