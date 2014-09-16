@@ -277,9 +277,10 @@ let split_patch i =
 	cur := l :: !cur;
 	read_hunk msize psize
     | "\\"::_ -> cur := l :: !cur; read_diff_or_atat()
-    | _ ->
+    | _ -> read_diff_or_atat()
+	(*
 	failwith
-	  "expected diff or @@ (diffstat information should not be present)"
+	  "expected diff or @@ (diffstat information should not be present)" *)
   and read_diff _ =
     let l = input_line i in
     let l = fix_date(fix_before_after l "a" !prefix_before) in

@@ -146,6 +146,9 @@ let collect_minus_join_points root =
     then [(Unfavored,info,mcodekind)]
     else [(Favored,info,mcodekind)] in
 
+  let unfavored_mcode (x,_,info,mcodekind,_,_) =
+    [(Unfavored,info,mcodekind)] in
+
   let do_nothing r k e =
     let info = Ast0.get_info e in
     let index = Ast0.get_index e in
@@ -248,6 +251,7 @@ bind to that; not good for isomorphisms *)
     | Ast0.OptExp e | Ast0.UniqueExp e ->
 	(* put the + code on the thing, not on the opt *)
 	r.VT0.combiner_rec_expression e
+    | Ast0.EComma(comma) -> unfavored_mcode comma
     | _ -> do_nothing r k e in
 
   let ident r k e =
@@ -277,6 +281,7 @@ bind to that; not good for isomorphisms *)
     | Ast0.OptIni i | Ast0.UniqueIni i ->
 	(* put the + code on the thing, not on the opt *)
 	r.VT0.combiner_rec_initialiser i
+    | Ast0.IComma(comma) -> unfavored_mcode comma
     | _ -> do_nothing r k e in
 
   let param r k e =
@@ -284,6 +289,7 @@ bind to that; not good for isomorphisms *)
       Ast0.OptParam p | Ast0.UniqueParam p ->
 	(* put the + code on the thing, not on the opt *)
 	r.VT0.combiner_rec_parameter p
+    | Ast0.PComma(comma) -> unfavored_mcode comma
     | _ -> do_nothing r k e in
 
   let case_line r k e =

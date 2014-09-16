@@ -148,6 +148,10 @@ module type PARAM =
       (Ast_cocci.meta_name Ast_cocci.mcode,
        (Ast_c.exec_code, Ast_c.il) Common.either list) matcher
 
+    val distrf_attrs :
+      (Ast_cocci.meta_name Ast_cocci.mcode,
+       (Ast_c.attribute, Ast_c.il) Common.either list) matcher
+
     (* -------------------------------------------------------------------- *)
     (* Modifying nested expression and nested types, with Exp and Ty *)
     (* -------------------------------------------------------------------- *)
@@ -195,6 +199,8 @@ module type PARAM =
     val optional_qualifier_flag : (bool -> tin -> 'x tout) -> (tin -> 'x tout)
     val value_format_flag: (bool -> tin -> 'x tout) -> (tin -> 'x tout)
     val optional_declarer_semicolon_flag :
+	(bool -> tin -> 'x tout) -> (tin -> 'x tout)
+    val optional_attributes_flag :
 	(bool -> tin -> 'x tout) -> (tin -> 'x tout)
 
   end

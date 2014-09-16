@@ -16,7 +16,8 @@ let pr2 s = Printf.printf "%s\n" s
 
 (* for isomorphisms.  all should be at the front!!! *)
 let reserved_names =
-  ["all";"optional_storage";"optional_qualifier";"value_format";"comm_assoc"]
+  ["all";"optional_storage";"optional_qualifier";"value_format";"comm_assoc";
+    "optional_attributes"]
 
 (* ----------------------------------------------------------------------- *)
 (* Debugging... *)
@@ -295,7 +296,7 @@ type plus = PLUS | NOTPLUS | SKIP
 let plus_attachable only_plus (tok,_) =
   match tok with
     PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
-  | PC.Tfloat(clt) | PC.Tlong(clt)
+  | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt)
   | PC.Tsize_t(clt) | PC.Tssize_t(clt) | PC.Tptrdiff_t(clt)
   | PC.Tstruct(clt)
   | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)

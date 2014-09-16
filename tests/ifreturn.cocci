@@ -3,6 +3,7 @@ statement s;
 @@
 
 if (...)
-+{blah();
++{
++ blah();
   s
 +}
