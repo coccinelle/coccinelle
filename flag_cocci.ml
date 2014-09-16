@@ -4,7 +4,7 @@ let show_cocci = ref false
 
 (* the output *)
 let show_diff = ref true
-let force_diff = ref false (*show diff even if thhere are only space changes*)
+let force_diff = ref false (*show diff even if there are only space changes*)
 
 (* the derived inputs *)
 let show_flow = ref false

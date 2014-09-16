@@ -123,14 +123,14 @@ let print_token2 = function
           (match adj with Ast_cocci.ADJ n -> n | _ -> -1)
           (String.concat " " (List.map string_of_int index))
       | Ctx -> "" in
-(**)    let d_str =
+(*    let d_str =
       let info = TH.info_of_tok t in
       match !(info.Ast_c.danger) with
 	Ast_c.DangerStart -> ":DS:"
       |	Ast_c.DangerEnd -> ":DE:"
       |	Ast_c.Danger -> ":D:"
-      |	Ast_c.NoDanger -> ":ND:" in (**)
-    "T2:"^b_str^t_str(**)^d_str(**)^TH.str_of_tok t
+      |	Ast_c.NoDanger -> ":ND:" in *)
+    "T2:"^b_str^t_str(*^d_str*)^TH.str_of_tok t
   | Fake2 (_,b) ->
     let b_str =
       match b with
@@ -496,12 +496,25 @@ let is_newline = function
   | T2(Parser_c.TComment _,_b,_i,_h) -> true (* only whitespace *)
   | _ -> false
 
+let is_newline_space_or_minus = function
+  | T2(Parser_c.TCommentNewline _,_b,_i,_h) -> true
+  | T2(Parser_c.TComment _,_b,_i,_h) -> true (* only whitespace *)
+  | T2 (_, Min _, _, _) -> true
+  | _ -> false
+
+let contains_newline = List.exists is_newline
+
 let is_newline_or_comment = function
   | T2(Parser_c.TCommentNewline _,_b,_i,_h) -> true
   | _ -> false
 
+let is_fake2 = function Fake2 _ -> true | _ -> false
+
 let is_whitespace x = 
   is_space x or is_newline x
+
+let is_whitespace_or_fake x = 
+  is_space x or is_newline x or is_fake2 x
 
 let is_minusable_comment = function
   | (T2 (t,_b,_i,_h)) ->
@@ -546,6 +559,8 @@ let is_minusable_comment_or_plus x =
   is_minusable_comment x or all_coccis x
 
 let set_minus_comment adj = function
+    (T2 (Parser_c.TComment _,Ctx,idx,hint)) as x
+    when !Flag_parsing_c.keep_comments -> x
   | T2 (t,Ctx,idx,hint) ->
     let str = TH.str_of_tok t in
     (match t with
@@ -587,8 +602,6 @@ let drop_expanded xs =
     | _ -> false
   )
 
-let is_fake2 = function Fake2 _ -> true | _ -> false
-
 let drop_fake xs =
   xs +> exclude is_fake2
 
@@ -597,8 +610,8 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
   (* get rid of expanded tok *)
   let xs = drop_expanded xs in
 
-  let minus_or_comment x = 
-    is_minus x or is_minusable_comment x in
+  let minus_or_comment_or_fake x = 
+    is_minus x or is_minusable_comment x or is_fake2 x in
 
   let minus_or_comment_nocpp x =
     is_minus x or is_minusable_comment_nocpp x in
@@ -613,7 +626,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
     not ((inter_set index1 index2) = []) in
 
   (* new idea: collects regions not containing non-space context code
-  if two adjacent adjacent minus tokens satisfy common_adj then delete
+  if two adjacent minus tokens satisfy common_adj then delete
   all spaces, comments etc between them
   if two adjacent minus tokens do not satisfy common_adj only delete
   the spaces between them if there are no comments, etc.
@@ -623,16 +636,29 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
   let rec adjust_around_minus = function
     | [] -> []
     | (T2(Parser_c.TCommentNewline c,_b,_i,_h) as x)::
-      ((Fake2(_,Min adj1) | T2(_,Min adj1,_,_)) as t1)::xs ->
+      ((T2(_,Min adj1,_,_)) as t1)::xs ->
       let (minus_list,rest) = span_not_context (t1::xs) in
       let contains_plus = List.exists is_plus minus_list in
       let x =
         match List.rev minus_list with
         | (T2(Parser_c.TCommentNewline c,_b,_i,_h))::rest
-          when List.for_all minus_or_comment minus_list ->
+          when List.for_all minus_or_comment_or_fake minus_list ->
           set_minus_comment_or_plus adj1 x
         | _ -> x in
       x :: adjust_within_minus contains_plus minus_list 
+         @ adjust_around_minus rest
+    | ((Fake2(_,Min _)) as t0)::
+      (T2(Parser_c.TCommentNewline c,_b,_i,_h) as x)::
+      ((T2(_,Min adj1,_,_)) as t1)::xs ->
+      let (minus_list,rest) = span_not_context (t1::xs) in
+      let contains_plus = List.exists is_plus minus_list in
+      let x =
+        match List.rev minus_list with
+        | (T2(Parser_c.TCommentNewline c,_b,_i,_h))::rest
+          when List.for_all minus_or_comment_or_fake minus_list ->
+          set_minus_comment_or_plus adj1 x
+        | _ -> x in
+      t0 :: x :: adjust_within_minus contains_plus minus_list 
          @ adjust_around_minus rest
     | ((Fake2(_,Min adj1) | T2(_,Min adj1,_,_)) as t1)::xs ->
       let (minus_list,rest) = span_not_context (t1::xs) in
@@ -648,8 +674,8 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
       t1 ::
       (match rest with
       | ((Fake2(_,Min adj2) | T2(_,Min adj2,_,_)) as t2)::xs ->
-        if common_adj adj1 adj2 
-        || not cp && List.for_all is_whitespace not_minus_list
+        if common_adj adj1 adj2
+        || (not cp && List.for_all is_whitespace_or_fake not_minus_list)
         then
           (List.map (set_minus_comment_or_plus adj1) not_minus_list)
           @ (adjust_within_minus cp (t2::xs))
@@ -1073,7 +1099,7 @@ let paren_then_brace toks =
 	(* must be unsafe, ie //, moving brace up puts it under comment *)
 	xs
     | _ ->
-	let (nls, rest) = span is_newline rest in
+	let (nls, rest) = span is_newline_space_or_minus rest in
 	let after =
 	  match List.rev spaces with
 	    [] -> [(C2 " ")]
@@ -1085,8 +1111,11 @@ let paren_then_brace toks =
 	      else [(C2 " ")] in
 	match rest with
 	  (* move the brace up to the previous line *)
-	| ((Cocci2("{",_,_,_,_)) as x) :: (((Cocci2 _) :: _) as rest) ->
-	    spaces @ after @ x :: (List.map minusify nls) @ rest
+	| ((Cocci2("{",_,_,_,_)) as x) :: ((Cocci2 ("\n",_,_,_,_)) as a) ::
+	  rest ->
+	    (* use what was there already, if available *)
+	    let nls = match nls with [] -> [a] | _ -> nls in
+	    spaces @ after @ x :: nls @ rest
 	| _ -> xs in
   search_paren toks
 
@@ -1263,13 +1292,13 @@ let add_newlines toks tabbing_unit =
       )
     | [] -> (count,space_cell)
     | _ -> (count,space_cell) in
-  let rec loop ((stack,space_cell,seen_cocci) as info) count = function
+  let rec loop ((stack,space_cell,seen_cocci) as info) count seeneq = function
     | [] -> []
     | t1::rest
       when str_of_token2 t1 = "#define" ->
 	(* don't want to add newlines in a #define *)
 	let (def,rest) = scan_past_define rest in
-	t1 :: def @ (loop info count rest)
+	t1 :: def @ (loop info count false rest)
     | ((T2(commatok,Ctx,_,_))::_) as xs
       when seen_cocci && length stack = 1 &&
 	(TH.str_of_tok commatok) = "," && not (space_cell = None) ->
@@ -1278,7 +1307,7 @@ let add_newlines toks tabbing_unit =
         let (count,newspacecell) = comma_in_box stack space_cell count "," in
 	(* newspacecell should be None, so this case won't get picked up
 	   again *)
-        loop (stack,newspacecell,seen_cocci) count xs
+        loop (stack,newspacecell,seen_cocci) count false xs
     | (T2(commatok,Ctx,_,_)) ::
       (T2(((Parser_c.TCommentSpace _) as sptok),Ctx,idx,_)) :: xs
       when
@@ -1288,67 +1317,61 @@ let add_newlines toks tabbing_unit =
       let newcount = count + 2 in (* count including space *)
       let a = T2(commatok,Ctx,idx,
 		 Some (Unparse_cocci.SpaceOrNewline sp)) in
-      a :: loop (stack,Some (newcount,sp),seen_cocci) newcount xs
+      a :: loop (stack,Some (newcount,sp),seen_cocci) newcount false xs
     | ((T2(tok,Ctx,idx,_)) as a)::xs ->
       (match TH.str_of_tok tok with
-      | "=" as s ->
-        let (spaces,rest) = span is_space xs in
-        (match rest with
-        | ((T2(tok,Ctx,_,_)) as b)::ixs ->
-          (match TH.str_of_tok tok with
-          | "{" ->
-            let (newcount,(space_cell,seen_cocci)) =
-              List.fold_left
-                (function (prev,info) ->
-                  function
-                  | (T2(tok,_b,_i,_h)) ->
-                      string_length (TH.str_of_tok tok) prev info
-                  | _ -> failwith "not possible")
-                (count,(space_cell,seen_cocci)) spaces in
-            let front = a :: spaces @ [b] in
-            let (newcount,newstack,newspacecell,seen_cocci) =
-              start_box stack space_cell newcount seen_cocci "{" in
-            front @ loop (newstack,newspacecell,seen_cocci) newcount ixs
-          | _ -> a :: loop info (simple_string_length s count) xs
-          )
-        | _ -> a :: loop info (simple_string_length s count) xs
-        )
+      | "=" as s -> a :: loop info (simple_string_length s count) true xs
       | "(" as s ->
         let (newcount,newstack,newspacecell, seen_cocci) =
           start_box stack space_cell count seen_cocci s in
-        a :: loop (newstack,newspacecell,seen_cocci) newcount xs
+        a :: loop (newstack,newspacecell,seen_cocci) newcount false xs
       | ")" as s ->
         let (newcount,newstack,newspacecell,seen_cocci) =
           end_box stack space_cell count seen_cocci s in
-        a :: loop (newstack,newspacecell,seen_cocci) newcount xs
+        a :: loop (newstack,newspacecell,seen_cocci) newcount false xs
+      | "{" as s when seeneq ->
+	  let (spaces_after,_) = span is_whitespace xs in
+	  let (newcount,(space_cell,seen_cocci)) =
+	    List.fold_left
+              (function (prev,info) ->
+		function
+		  | (T2(tok,_b,_i,_h)) ->
+		      string_length (TH.str_of_tok tok) prev info
+		  | _ -> failwith "not possible")
+              (count,(space_cell,seen_cocci)) spaces_after in
+	  let s = if contains_newline spaces_after then "" else s in
+	  let (newcount,newstack,newspacecell,seen_cocci) =
+	    start_box stack space_cell newcount seen_cocci s in
+	  a :: loop (newstack,newspacecell,seen_cocci) newcount false xs
       | "{" as s when not (stack = []) ->
         (* [] case means statement braces *)
         let (newcount,newstack,newspacecell,seen_cocci) =
           start_box stack space_cell count seen_cocci s in
-        a :: loop (newstack,newspacecell,seen_cocci) newcount xs
+        a :: loop (newstack,newspacecell,seen_cocci) newcount false xs
       | "}" as s when not (stack = []) ->
         (* [] case means statement braces *)
         let (newcount,newstack,newspacecell,seen_cocci) =
           end_box stack space_cell count seen_cocci s in
-        a :: loop (newstack,newspacecell,seen_cocci) newcount xs
+        a :: loop (newstack,newspacecell,seen_cocci) newcount false xs
       | s ->
 	  let (count,(space_cell,seen_cocci)) =
 	    string_length s count (space_cell,seen_cocci) in
-	  a :: loop (stack,space_cell,seen_cocci) count xs
+	  let seeneq = seeneq && is_whitespace a in
+	  a :: loop (stack,space_cell,seen_cocci) count seeneq xs
       )
     | ((Cocci2(s,line,lcol,rcol,Some Unparse_cocci.StartBox)) as a)::xs ->
 	let rest =
           let (newcount,newstack,newspacecell,seen_cocci) =
             start_box stack space_cell count seen_cocci s in
-          loop (newstack,newspacecell,true) newcount xs in
+          loop (newstack,newspacecell,true) newcount false xs in
 	a :: rest
     | ((Cocci2(s,line,lcol,rcol,Some Unparse_cocci.EndBox)) as a)::xs ->
 	let rest =
           let (newcount,newstack,newspacecell,seen_cocci) =
             end_box stack space_cell count true s in
-          loop (newstack,newspacecell,seen_cocci) newcount xs in
+          loop (newstack,newspacecell,seen_cocci) newcount false xs in
 	a :: rest
-    | ((Cocci2(s,line,lcol,rcol,Some (Unparse_cocci.SpaceOrNewline sp))) as a)::
+    | ((Cocci2(s,line,lcol,rcol,Some(Unparse_cocci.SpaceOrNewline sp))) as a)::
       (T2(((Parser_c.TCommentSpace _) as sptok),_,idx,_))::xs
       when (TH.str_of_tok sptok) = " " ->
 	(* if there was a single space, contemplate turning it into a
@@ -1359,42 +1382,43 @@ let add_newlines toks tabbing_unit =
         match stack with
         | [x] ->
             (match check_for_newline count x space_cell with
-            | Some count -> loop (stack,Some (x,sp), true) count xs
-            | None -> loop (stack,Some (count,sp),true) count xs)
-        | _ -> loop (stack,space_cell,true) count xs in
+            | Some count -> loop (stack,Some (x,sp), true) count false xs
+            | None -> loop (stack,Some (count,sp),true) count false xs)
+        | _ -> loop (stack,space_cell,true) count false xs in
       a :: rest
     | (Cocci2(s,line,lcol,rcol,_))::((T2 _) as a)::xs
       when is_newline_or_comment a ->
       (* if the added code is followed by any existing comment or newline,
 	 then just do nothing. *)
 	(Cocci2(s,line,lcol,rcol,None))::
-	loop (stack,space_cell,true) (simple_string_length s count) (a::xs)
-    | ((Cocci2(s,line,lcol,rcol,Some (Unparse_cocci.SpaceOrNewline sp))) as a)::
+	loop (stack,space_cell,true) (simple_string_length s count)
+	  false (a::xs)
+    | ((Cocci2(s,line,lcol,rcol,Some(Unparse_cocci.SpaceOrNewline sp))) as a)::
       xs ->
-      (* if the added code is followed by more added code, then add the space *)
+      (*if the added code is followed by more added code, then add the space*)
       let rest =
         let count = simple_string_length s (count + 1 (*space*)) in
         match stack with
         | [x] ->
             (match check_for_newline count x space_cell with
-            | Some count -> loop (stack,Some (x,sp), true) count xs
-            | None -> loop (stack,Some (count,sp),true) count xs)
-        | _ -> loop (stack,space_cell,true) count xs in
+            | Some count -> loop (stack,Some (x,sp), true) count false xs
+            | None -> loop (stack,Some (count,sp),true) count false xs)
+        | _ -> loop (stack,space_cell,true) count false xs in
       a :: rest
     | (Cocci2(s,line,lcol,rcol,_))::xs ->
 	(Cocci2(s,line,lcol,rcol,None))::
-	loop (stack,space_cell,true) (simple_string_length s count) xs
+	loop (stack,space_cell,true) (simple_string_length s count) false xs
     | ((T2(tok,_,_,_)) as a)::xs ->
 	let s = TH.str_of_tok tok in
 	let (count,(space_cell,seen_cocci)) =
 	  string_length s count (space_cell,seen_cocci) in
-      a :: loop (stack,space_cell,seen_cocci) count xs
+      a :: loop (stack,space_cell,seen_cocci) count false xs
     | ((C2(s)) as a)::xs ->
 	let (count,(space_cell,seen_cocci)) =
 	  string_length s count (space_cell,seen_cocci) in
-	a :: loop (stack,space_cell,seen_cocci) count xs
+	a :: loop (stack,space_cell,seen_cocci) count false xs
     | ((Comma(s)) as a)::xs ->
-	a :: loop info (simple_string_length s count) xs
+	a :: loop info (simple_string_length s count) false xs
     | Fake2 _ :: _ | Indent_cocci2 :: _
     | Unindent_cocci2 _::_ | EatSpace2::_ ->
       failwith "unexpected fake, indent, unindent, or eatspace" in
@@ -1407,7 +1431,7 @@ let add_newlines toks tabbing_unit =
   (match !Flag_parsing_c.spacing with
   | Flag_parsing_c.SMPL -> toks
   | _ ->
-      let preres = loop ([],None,false) 0 toks in
+      let preres = loop ([],None,false) 0 false toks in
       List.rev (List.fold_left redo_spaces [] preres)
   )
 
@@ -1511,10 +1535,11 @@ let sub1 op (am,ap) =
   | Neither -> (am,ap)
 
 let accsub1 op (am,ap) =
+  let tl = function x::xs -> xs | [] -> [] in
   match op with
-    PlusOnly -> (am,List.tl ap)
-  | MinusOnly -> (List.tl am,ap)
-  | Both -> (List.tl am,List.tl ap)
+    PlusOnly -> (am,tl ap)
+  | MinusOnly -> (tl am,ap)
+  | Both -> (tl am,tl ap)
   | Neither -> (am,ap)
 
 let subtract op (am,ap) (bm,bp) =

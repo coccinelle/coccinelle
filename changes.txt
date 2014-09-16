@@ -369,6 +369,12 @@
   same token more than once.  Problem reported by Riccardo Lucchese.
 - Don't require balanced parentheses in + code for stars.  Problem reported
   by Chi Pham.
+- Unfavor commas for attaching plus code; commas can disappear.
+- In pretty printing added if branch braces, allow minus code as well as
+  spaces and newlines between the ) and the {.
+- Make the --keep-comments flag work.
+- Make the --force-diff flag work.
+- Improve newlines around added else tokens.
 
 * 0.2.5
 ** Language:
