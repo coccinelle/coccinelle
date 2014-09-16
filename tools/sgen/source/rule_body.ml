@@ -248,7 +248,8 @@ type t = string list
 (* Creates a context mode rule for the input rule.
  * Returns list of added metapositions and the new rule.
  *)
-let generate ?(disj_map = Common.IntMap.empty) ?(context_mode = false) ~rule_name ast0 =
+let generate ?(disj_map = Common.IntMap.empty) ?(context_mode = false)
+  ~rule_name ast0 =
   let snp = GT.snap ~disj_map in
   let combiner = gen_combiner ~context_mode in
   let final = reduce combiner.VT0.combiner_rec_top_level ast0 snp in

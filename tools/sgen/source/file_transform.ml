@@ -27,7 +27,7 @@ let get_line inch = line_number := !line_number + 1; input_line inch
 
 let nothing _ = ()
 let print = output_string
-let print_newline out_channel = output_string out_channel "\n"
+let print_newline outch = output_string outch "\n"
 let print_nl outch x = print outch x; print_newline outch
 
 let print_virtuals outch virtuals =
