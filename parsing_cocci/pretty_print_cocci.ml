@@ -144,18 +144,18 @@ let print_disj_list fn l =
 (* --------------------------------------------------------------------- *)
 
 let print_type keep info = function
-    None -> ()
-	(* print_string "/* ";
+    None -> () (*
+	;print_string "/* notype ";(*
            print_string "keep:"; print_unitary keep;
-           print_string " inherited:"; print_bool inherited;
-           print_string " */"*)
-  | Some ty -> ()
-      (*;
+           print_string " inherited:"; print_bool inherited;*)
+           print_string " */" *)
+  | Some ty -> () (*
+     ;
       print_string "/* ";
       print_between (function _ -> print_string ", ") Type_cocci.typeC ty;(*
       print_string "keep:"; print_unitary keep;
       print_string " inherited:"; print_bool inherited;*)
-      print_string " */"*)
+      print_string " */" *)
 
 (* --------------------------------------------------------------------- *)
 (* Constraint on Identifier and Function *)
