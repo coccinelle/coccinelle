@@ -1933,14 +1933,23 @@ let rec find_paren_comma = function
     find_paren_comma xs
 
   (* otherwise yes can adjust *)
-  | { str = "(" } :: (({ str = ","} as rem) :: _ as xs)
-  | ({ str = "," } as rem) :: ({ str = ","} :: _ as xs)
-  | ({ str = "," } as rem) :: ({ str = ")"} :: _ as xs) ->
+  | { str = "(" } :: (({ str = ","} as rem) :: _ as xs) ->
     rem.remove <- true;
     find_paren_comma xs
+  | ({ str = "," } as rem) :: aft -> check_second rem [",";")"] aft
+  | x::xs -> find_paren_comma xs
 
-  | x::xs ->
-    find_paren_comma xs
+and check_second rem second aft =
+  let is_whitespace x =
+    is_whitespace x.tok2 (*original code*) or
+    is_added_whitespace x.tok2 (*can come from redo_spaces, case 2*) in
+  let (whitespace,rest) = span is_whitespace aft in
+  (match rest with
+    ({ str = s } :: _ as xs) when List.mem s second ->
+      List.iter (function rem -> rem.remove <- true) whitespace;
+      rem.remove <- true;
+      find_paren_comma xs
+  | _ -> find_paren_comma aft)
 
 let fix_tokens toks =
   let toks = toks +> List.map mk_token_extended in
