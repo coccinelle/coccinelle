@@ -56,7 +56,7 @@ let format_err_msg err_msg mpnames mvnames =
     let (linepos, formatvars) = line_vars ~metapos:mpnames ~metavars:mvnames in
     "msg = \"" ^ err_msg ^ " " ^ linepos ^ "\" % (" ^ formatvars ^ ")"
   else
-    "msg = \"" ^ err_msg ^ "\""
+    "msg = \"" ^ err_msg ^ ".\""
 
 (* assembles an org script rule. *)
 let gen_org_rule nm (firstpos, restpos) metavars err_msg =

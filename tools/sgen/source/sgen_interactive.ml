@@ -12,10 +12,12 @@ let name = ref ""
 let write_file ~file s =
   let chan =
     try open_out file
-    with Sys_error _ -> failwith ("Error: Invalid filename: " ^ file) in
+    with Sys_error msg -> failwith ("Error: Invalid filename: " ^ file ^
+      ". Message: " ^ msg) in
   try
     (output_string chan s; close_out chan)
-  with Sys_error _ -> failwith ("Error: failed writing to " ^ file)
+  with Sys_error msg -> failwith ("Error: failed writing to " ^ file ^
+    ". Message: " ^ msg)
 
 (* termination *)
 let exit() = print_string "\n~*~ GOODBYE! ~*~\n"; exit 0
@@ -127,7 +129,7 @@ let get_name r t =
   let rec get_name' r =
     print_string ("\nSpecify a name for the " ^ r ^ ":\n");
     let newnm = get_input_save t in
-    try Globals.check_rule ~strict:true newnm; (r, Some newnm)
+    try UI.check_name newnm t; (r, Some newnm)
     with Failure m -> print_string ("\n" ^ m); get_name' r in
   if not(String.contains r ' ') then (r, None) else get_name' r
 
@@ -171,8 +173,10 @@ let interact ~ordered_rules ~config_name =
   let t = get_authors t in
   let t = get_url t in
   let t = get_comments t in
-  let t = List.fold_left
-    (fun t r -> UI.add_rule (get_rule r t) t) t ordered_rules in
+  let rec add t r =
+    try UI.add_rule (get_rule r t) t
+    with Failure msg -> (print_string msg; add t r) in
+  let t = List.fold_left add t ordered_rules in
   let _ = save t in
   let preface = UI.get_preface t in
   let rules = UI.get_rules ~ordered_rules t in

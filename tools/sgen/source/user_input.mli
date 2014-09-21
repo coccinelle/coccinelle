@@ -41,6 +41,9 @@ val add_rule :
   t -> t
 
 (* getters *)
+
+(* check if there's already a rule with that name *)
+val check_name : string -> t -> t
 val get_preface : t -> string
 
 (* ordered_rules are all the original */+/- rules from input script, ordered

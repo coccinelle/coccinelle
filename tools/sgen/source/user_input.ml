@@ -126,8 +126,16 @@ let set_options optn t = { t with options = opt optn }
 let set_url url t = { t with url = opt url }
 let add_author auth t = { t with authors = auth :: t.authors }
 let set_authors auths t = { t with authors = auths }
+let check_name nm t =
+  let find a _ = function
+    | (Some newnm,_,_) -> nm = newnm | _ -> false in
+  if RuleMap.exists (find nm) t.rules
+  then failwith ("Error: trying to name two rules \"" ^ nm ^"\"!")
+  else Globals.check_rule ~strict:true nm; t
 let add_rule ((rnm,newnm),(om,ov),(rm,rv)) t =
   assert (rnm <> "" && not(om = "" && rm = "")); (*sanity check*)
+  let get_nm = function | Some nm -> nm | None -> "" in
+  let t = check_name (get_nm newnm) t in
   { t with rules = RuleMap.add rnm (newnm,(om,ov),(rm,rv)) t.rules }
 
 (* GETTERS *)

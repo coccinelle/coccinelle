@@ -144,7 +144,10 @@ and declaration_pos d snp = match Ast0.unwrap d with
       let _ = type_pos ty snp in (*sanity check*)
       let (id, snp) = ident_pos id snp in
       wrap (Ast0.UnInit(st, ty, id, sem)) snp
-  | Ast0.TyDecl _ | Ast0.Typedef _ -> failwith "typey things?"
+  | Ast0.TyDecl _ -> failwith "tydecl"
+  | Ast0.Typedef (tm, tc, tc2, sem) ->
+      let (mc, snp) = string_mcode_pos tm snp in
+      wrap (Ast0.Typedef (mc,tc,tc2,sem)) snp
   | Ast0.MacroDecl (id,lp,ed,rp,sem) ->
       let (id, snp) = ident_pos id snp in
       wrap (Ast0.MacroDecl (id,lp,ed,rp,sem)) snp

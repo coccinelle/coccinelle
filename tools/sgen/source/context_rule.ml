@@ -32,9 +32,9 @@ let generate ~new_name ~disj_map ~rule ~context_mode = match rule with
   | Ast0.ScriptRule (nm,_,_,_,_,_) ->
       failwith ("Internal error: "^
       "Can't generate a context rule for a script rule: " ^ nm)
-  | Ast0.CocciRule ((minus,_,(isos,dropisos,deps,nm,exists)),_,_) ->
+  | Ast0.CocciRule ((minus,_,(isos,dropisos,deps,nme,exists)),_,_) ->
 
-      let nm = (match new_name with Some nm -> nm | None -> nm) in
+      let nm = (match new_name with Some nm -> nm | None -> nme) in
 
       (* rule names *)
       let cnm = Globals.get_context_name ~context_mode nm in
@@ -50,8 +50,9 @@ let generate ~new_name ~disj_map ~rule ~context_mode = match rule with
       let (pos,(res,disj)) =
         Rule_body.generate ~rule_name:nm ~disj_map ~context_mode minus in
       let _ = if List.length pos = 0 then failwith
-        ("MEGA ERROR: Congratulations! You managed to write a Coccinelle " ^ 
-         "rule that sgen was unable to add a position to!") in
+        ("MEGA ERROR: Congratulations! You managed to write a Coccinelle " ^
+         "rule that sgen was unable to add a position to! The rule is \"" ^
+         nme ^ "\".") in
       let pos_mv = List.map (fun a -> M.make_metavar ~typ:"position " a) pos in
       let pos_inh = M.inherit_rule cnm pos_mv in
 

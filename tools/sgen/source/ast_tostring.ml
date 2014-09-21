@@ -1,7 +1,7 @@
 module Ast = Ast_cocci
 
 (* ------------------------------------------------------------------------- *)
-(* TOSTRING FUNCTIONS FOR AST_COCCI *)
+(* TOSTRING FUNCTIONS FOR AST_COCCI BASE TYPES *)
 
 (* takes a list of 'a and concatenates it using fn ('a -> string),
  * delimitering with between (string) *)

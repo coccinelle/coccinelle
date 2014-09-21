@@ -175,7 +175,7 @@ let add_position snp =
   (newpos, newsnp)
 
 (* dirty means that a position was added during a freeze period, ie. we need
- * to increment the counter. * 
+ * to increment the counter.
  * TODO: nested freezes in e.g. nested disjunctions are VERY error-prone. *)
 let set_freeze_pos b snp =
   let (freez,dirty) = snp.freeze_pos in
