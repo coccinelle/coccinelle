@@ -19,6 +19,9 @@ let prepare coccifile code =
   then None
   else failwith "OCaml scripting is unsupported. Compile spatch with OCaml version >= 3.11"
 
+let prepare_simple _ =
+  failwith "OCaml scripting is unsupported. Compile spatch with OCaml version >= 3.11"
+
 let load_file mlfile = ()
 let clean_file mlfile = ()
 let test () = ()
