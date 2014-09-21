@@ -1308,8 +1308,8 @@ let add_newlines toks tabbing_unit =
 	(* newspacecell should be None, so this case won't get picked up
 	   again *)
         loop (stack,newspacecell,seen_cocci) count false xs
-    | (T2(commatok,Ctx,_,_)) ::
-      (T2(((Parser_c.TCommentSpace _) as sptok),Ctx,idx,_)) :: xs
+    | (T2(commatok,Ctx,idx,_)) ::
+      (T2(((Parser_c.TCommentSpace _) as sptok),Ctx,_,_)) :: xs
       when
 	(TH.str_of_tok commatok) = "," && (TH.str_of_tok sptok) = " " &&
 	List.length stack = 1 (* not super elegant... *) ->
@@ -1947,6 +1947,7 @@ let fix_tokens toks =
 
   let cleaner = toks +> exclude (function
     | {tok2 = T2 (t,_,_,_)} -> TH.is_real_comment t (* I want the ifdef *)
+    | {tok2 = C2 " "} -> true (* added by redo_spaces *)
     | _ -> false
   ) in
   find_paren_comma cleaner;
