@@ -1304,7 +1304,7 @@ let process_whitespaces tok =
     | (PC.TWhitespace(a),((_,(l1,_),_) as b))::
       (PC.TWhitespace(c),(_,(l2,_),_))::xs ->
         let s = if (l1 <> l2) then c else a ^ c in
-        pw (fun lst -> fn ((PC.TWhitespace(s),b) :: lst)) xs
+        pw fn ((PC.TWhitespace(s),b) :: xs)
     | (PC.TWhitespace(s),_)::((tok,_) as aft)::xs ->
        (try
           let (a, b, c, d, e, f, g, h, i, _) = get_clt aft in

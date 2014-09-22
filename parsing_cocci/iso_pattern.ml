@@ -360,7 +360,10 @@ let match_maker checks_needed context_required whencode_allowed =
     let donothing r k e =
       bind (pure_mcodekind (Ast0.get_mcodekind e)) (k e) in
 
-    let mcode m = pure_mcodekind (Ast0.get_mcode_mcodekind m) in
+    let mcode m =
+      Ast0.lub_pure
+	(if Ast0.get_pos m = [] then Ast0.PureContext else Ast0.Impure)
+	(pure_mcodekind (Ast0.get_mcode_mcodekind m)) in
 
     (* a case for everything that has a metavariable *)
     (* pure is supposed to match only unitary metavars, not anything that

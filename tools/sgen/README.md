@@ -10,11 +10,9 @@ Installation:
 
 You need to have Coccinelle and all of Coccinelle's dependencies installed.
 
-1.  Change the COCCIDIR path in the Makefile to point at the Coccinelle source
-code (default is within the tools directory of the Coccinelle directory).
-2.  Run the command 'make'.
-3.  Run 'make install' (needs superuser permissions).
-4.  Test the program e.g. with
+1.  Run the command 'make'.
+2.  Run 'make install' (needs superuser permissions).
+2.  Test the program e.g. with
 
 	sgen examples/tiny.cocci
 
@@ -24,7 +22,7 @@ After installation, run e.g.
 
 	sgen file.cocci --config file.config
 
-to generate the file, using file.config (sgen config). Or
+to generate the file named file.cocci with file.config (sgen config). Or
 
 	sgen file.cocci --interactive
 
@@ -42,8 +40,9 @@ For all options, see
 
 Contents:
 ---------
-The home directory contains the source code, this file, a Makefile, and the
-directories mentioned below.
-The scripts directory contains the script used for installation.
+The home directory contains this file, a Makefile, and the directories
+mentioned below.  
+The source directory contains the source code for sgen.
+The scripts directory contains the script used for installation.  
 The examples directory contains examples of Coccinelle scripts and
 corresponding sgen config files as well as C files to test on.
