@@ -13,3 +13,9 @@ _build
 _log
 *.native
 *.byte
+
+*.aux
+*.log
+*.out
+*.pdf
+*.toc

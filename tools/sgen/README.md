@@ -5,16 +5,28 @@ Description:
 ------------
 This is a tool to generate context and printing modes for a Coccinelle script.
 
+
 Installation:
 -------------
-
-You need to have Coccinelle and all of Coccinelle's dependencies installed.
+You need to have Coccinelle and all of Coccinelle's dependencies installed. 
+Installation relies on the project being in the tools/sgen folder of the 
+Coccinelle source code (if not, change the COCCIDIR path in the makefile).
 
 1.  Run the command 'make'.
 2.  Run 'make install' (needs superuser permissions).
 2.  Test the program e.g. with
 
 	sgen examples/tiny.cocci
+
+    or
+
+	sgen &lt;your\_cocci\_script&gt;.cocci
+
+
+Uninstallation:
+---------------
+To uninstall, just run 'make uninstall'.
+
 
 Usage:
 ------
@@ -38,11 +50,12 @@ For all options, see
 
 	sgen -help
 
+
 Contents:
 ---------
 The home directory contains this file, a Makefile, and the directories
 mentioned below.  
-The source directory contains the source code for sgen.
+The source directory contains the OCaml source code for sgen.  
 The scripts directory contains the script used for installation.  
 The examples directory contains examples of Coccinelle scripts and
 corresponding sgen config files as well as C files to test on.
