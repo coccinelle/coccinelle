@@ -43,7 +43,7 @@ val add_rule :
 (* getters *)
 
 (* check if there's already a rule with that name *)
-val check_name : string -> t -> t
+val check_name : string -> t -> unit
 val get_preface : t -> string
 
 (* ordered_rules are all the original */+/- rules from input script, ordered

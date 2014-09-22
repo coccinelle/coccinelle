@@ -217,7 +217,9 @@ let gen_combiner ~context_mode =
 
   (* detect if disj is the only thing, in which case we don't want to split
    * the disjunction rule.
-   * TODO: should not split either if the only other stmts are unstarrable. *)
+   * TODO: should not split either if the only other stmts are unstarrable.
+   * This might be okay for now since it is unlikely that a rule would contain
+   * something unstarrable (dots, metastmt) and then a disjunction. *)
   let topfn c fn v =
     match Ast0.unwrap v with
     | Ast0.CODE stmtdots ->

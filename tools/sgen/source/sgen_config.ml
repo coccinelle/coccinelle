@@ -47,12 +47,10 @@ let parse_msgs attributes =
   List.fold_left read (("",[]), ("",[])) attributes
 
 (* add the rule to the User_input.t
- * rule check is a function that checks whether a rule exists*)
-let add_rule rule_exists t ((oldrnm,newrnm),a) =
-  let oldrnm = rule_exists oldrnm in
-  let newrnm = match newrnm with
-    | Some n -> Globals.check_rule ~strict:true n; Some n
-    | None -> Globals.generate_rule oldrnm in
+ * rule_exists is a function that checks whether a rule exists*)
+let add_rule rule_exists t ((oldnm,newnm),a) =
+  let oldrnm = rule_exists oldnm in
+  let newrnm = if newnm = None then Globals.generate_rule oldrnm else newnm in
   let (org,rep) = match parse_msgs a with
     | ("",_),("",_) ->
         failwith ("Config error: must specify at least org or report message.")
