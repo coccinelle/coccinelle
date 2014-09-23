@@ -18,6 +18,6 @@ Fix: Limit the allowed user-specified rulenames to \texttt{C} identifiers.
 Fix: ??? Somehow detect that two rules will match the same case and insert constraints such that any match in subsequent rules do not match the first one.
 \item \textbf{Dependencies in context rules}: In a \texttt{context} script, if there are dependencies between rules, they might be mixed up. This happens if there are rules dependent on the generated rules since they will then be printed before the rules on which they are dependent!\newline
 Fix: ???
-\item \textbf{Type and switch case disjunctions}: Currently, the program fails if attempting to generate a \texttt{Coccinelle} script with type or switch case disjunctions. The failure happens in the position generator. The reason it is not implemented is that it requires quite a lot of code for a case that seldomly appears.\newline
+\item \textbf{Type and switch case disjunctions}: Currently, the program fails if attempting to generate a \texttt{Coccinelle} script with type or switch case disjunctions. The failure happens in the position generator. The reason it is not implemented is that it requires quite a lot of code for a case that rarely appears.\newline
 Fix: Implement full position generation for types and switch cases.
 \end{itemize}

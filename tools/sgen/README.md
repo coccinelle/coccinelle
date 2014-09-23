@@ -55,6 +55,7 @@ Contents:
 ---------
 The home directory contains this file, a Makefile, and the directories
 mentioned below.  
+The documentation directory contains the documentation tex files.  
 The source directory contains the OCaml source code for sgen.  
 The scripts directory contains the script used for installation.  
 The examples directory contains examples of Coccinelle scripts and

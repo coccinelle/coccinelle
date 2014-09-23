@@ -4,7 +4,7 @@ module IntMap = Common.IntMap
 
 (* ------------------------------------------------------------------------- *)
 
-(* Types used to represent internal state during generation.
+(* Types used to represent internal state during context rule generation.
  * We cannot pass the states from function to function in the visitor due to
  * the function signatures already having been decided for us.
  * Basically glorified global variables (but with limited access and scope, so
