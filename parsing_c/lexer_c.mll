@@ -442,13 +442,15 @@ rule token = parse
       }
 
  (* DO NOT cherry pick to lexer_cplusplus !!! often used for the extern "C" { *)
-  | "#" [' ' '\t']* "if" sp "defined" sp "(" spopt "__cplusplus" spopt ")" [^'\n' '\r']* ('\n' | "\r\n")
+  | "#" [' ' '\t']* "if" sp "defined" sp "(" spopt "__cplusplus" spopt ")"
+    [^'\n' '\r']* (*('\n' | "\r\n")*) (* don't want the final newline *)
       { let info = tokinfo lexbuf in
         TIfdefMisc (false, no_ifdef_mark(), info)
       }
 
  (* DO NOT cherry pick to lexer_cplusplus !!! *)
-  | "#" [' ' '\t']* "ifdef" [' ' '\t']* "__cplusplus"   [^'\n']*  '\n'
+  | "#" [' ' '\t']* "ifdef" [' ' '\t']* "__cplusplus"   [^'\n']* (* '\n' *)
+      (* don't want the final newline *)
       { let info = tokinfo lexbuf in
         TIfdefMisc (false, no_ifdef_mark(), info)
       }
@@ -1044,6 +1046,7 @@ and comment = parse
  * - have to recognize comments in cpp_eat_until_nl.
  *)
 
+(*
 and cpp_eat_until_nl = parse
   (* bugfix: *)
   | "/*"
@@ -1062,3 +1065,20 @@ and cpp_eat_until_nl = parse
      { let s = tok lexbuf in s ^ cpp_eat_until_nl lexbuf }
   | eof { pr2 "LEXER: end of file in cpp_eat_until_nl"; ""}
   | _   { let s = tok lexbuf in s ^ cpp_eat_until_nl lexbuf }
+*)
+
+and cpp_eat_until_nl = parse
+  [^ '\n']+
+  { let s = tok lexbuf in
+    let splitted = Str.split_delim (Str.regexp_string "/*") s in
+    match List.rev splitted with
+      after_comment_start :: before_comment_start :: rest ->
+	let splitted2 =
+	  Str.split_delim (Str.regexp_string "*/") after_comment_start in
+	(match splitted2 with
+	  [bef;aft] -> s (* no unclosed comment *)
+	| _ ->
+	    let s2 = comment lexbuf in
+            let s3 = cpp_eat_until_nl lexbuf in
+            s ^ s2 ^ s3)
+    | _ -> s (* no comment *) }
