@@ -1791,7 +1791,34 @@ let times before n tabbing_unit ctr =
     | n -> (loop (n-1)) ^ tabbing_unit in
   loop n
 
-let search_in_maps n depth inparens past_minmap minmap tu t =
+(* adds to the front *)
+let times_before after n tabbing_unit ctr =
+  (if n < 0 then failwith (Printf.sprintf "n is %d\n" n));
+  let tabbing_unit = match tabbing_unit with None -> "\t" | Some tu -> tu in
+  let rec loop = function
+      0 -> after
+    | n -> tabbing_unit ^ (loop (n-1)) in
+  loop n
+
+(* drops from the front *)
+let untimes_before cur n tabbing_unit ctr =
+  (if n < 0 then failwith (Printf.sprintf "n is %d\n" n));
+  let tabbing_unit = match tabbing_unit with None -> "\t" | Some tu -> tu in
+  let len = String.length tabbing_unit in
+  let tabbing_unit = Str.regexp_string tabbing_unit in
+  let rec loop cur = function
+      0 -> cur
+    | n ->
+	if Str.string_match tabbing_unit cur 0
+	then loop (String.sub cur len (String.length cur - len)) (n-1)
+	else (* no idea what to do, just drop the first character... *)
+	  loop (String.sub cur 1 (String.length cur - 1)) (n-1) in
+  loop cur n
+
+(* Probably doesn't do a good job of parens.  Code in parens may be aligned
+by tabbing unit or may have extra space specific to the position of the
+parentheses.  Don't seem inheritable.  TODO... *)
+let plus_search_in_maps n depth inparens past_minmap minmap tu t =
   let get_answer fail map1 map2 =
     match (map1,map2) with
       (None,None) -> fail()
@@ -1809,6 +1836,7 @@ let search_in_maps n depth inparens past_minmap minmap tu t =
       ((-1,-1),(-1,"")) map in
   let fail2 _ =
     (* should we consider inparens here??? *)
+    let depth = depth + inparens in
     let ((brecent,_),(bn,bindent)) = find_recent past_minmap in
     let ((arecent,_),(an,aindent)) = find_recent minmap in
     match (brecent,arecent) with
@@ -1832,6 +1860,27 @@ let search_in_maps n depth inparens past_minmap minmap tu t =
   let map2 =
     try Some(List.assoc (depth,inparens) minmap) with _ -> None in
   get_answer fail2 map1 map2
+
+let context_search_in_maps n depth inparens past_minmap minmap tu t =
+  let findn map =
+    try
+      Some(List.find (function ((_,ip),(n1,_)) -> ip = inparens && n = n1) map)
+    with Not_found -> None in
+  let before = findn past_minmap in
+  let after = findn minmap in (* should be the same... *)
+  (if not (before = after)
+  then failwith "inconsistent maps for ctx info");
+  match before with
+    Some ((old_depth,_),(_,indent)) ->
+      if depth < old_depth
+      then update_indent t (untimes_before indent (old_depth-depth) tu 1)
+      else
+	if depth > old_depth
+	then update_indent t (times_before indent (depth-old_depth) tu 1)
+	else update_indent t indent
+  | None ->
+      (* parens must have changed, fall back on plus_search *)
+      plus_search_in_maps n depth inparens past_minmap minmap tu t
 
 (* Add newlines where needed around unindents.  Lets adjust_indentation
 adjust them if needed. *)
@@ -1887,7 +1936,7 @@ let adjust_indentation xs =
 	  let t =
 	    if not (depthmin = depthplus) (*&& is_cocci rest*)
 	    then
-	      search_in_maps n depthplus inparens past_minmap minmap
+	      context_search_in_maps n depthplus inparens past_minmap minmap
 		tabbing_unit (C2 "\n")
 	    else t in
 	  (out_tu,minmap,t::res)
@@ -1905,7 +1954,7 @@ let adjust_indentation xs =
 	  let (out_tu,minmap,res) =
 	    loop tabbing_unit past_minmap dmin depth rest in
 	  let newtok =
-	    search_in_maps n depth inparens past_minmap minmap
+	    plus_search_in_maps n depth inparens past_minmap minmap
 	      tabbing_unit t in
 	  (out_tu, minmap, newtok::res)
       | (n,(Other _|Label),t)::rest ->
