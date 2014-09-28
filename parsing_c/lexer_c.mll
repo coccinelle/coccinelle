@@ -549,7 +549,9 @@ rule token = parse
   (* can be at eof *)
   (*| "#" [' ' '\t']* "endif"                { TEndif     (tokinfo lexbuf) }*)
 
-  | "#" [' ' '\t']* "else" ([' ' '\t' '\n'] | "\r\n")
+  | "#" [' ' '\t']* "else" (*([' ' '\t' '\n'] | "\r\n")*)
+      (* don't include trailing \n like for #if, etc
+      doesn't seem needed from crx.cocci, but good to be uniform *)
       { TIfdefelse (no_ifdef_mark(), tokinfo lexbuf) }
 
 
