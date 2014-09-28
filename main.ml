@@ -946,7 +946,7 @@ let rec main_action xs =
           let outfiles =
             Common.profile_code "Main.outfiles computation" (fun () ->
 	      let res =
-		infiles +> List.fold_left (fun prev cfiles ->
+		infiles +> List.fold_left (fun prev cfiles -> (* put parmap here *)
 		  if (not !Flag.worth_trying_opt) or
 		    Cocci.worth_trying cfiles constants
 		      then
