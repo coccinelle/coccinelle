@@ -1,4 +1,5 @@
 @@
+symbol i, x, y;
 @@
 
 int func(int i) { 
