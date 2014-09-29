@@ -1069,18 +1069,29 @@ and cpp_eat_until_nl = parse
   | _   { let s = tok lexbuf in s ^ cpp_eat_until_nl lexbuf }
 *)
 
+and parse_newline = parse
+  ('\n' | "\r\n") { tok lexbuf }
+
 and cpp_eat_until_nl = parse
   [^ '\n']+
   { let s = tok lexbuf in
     let splitted = Str.split_delim (Str.regexp_string "/*") s in
+    let check_continue s =
+      let splitted = Str.split_delim (Str.regexp "\\\\ *") s in
+      match splitted with
+	[_;""] ->
+          let s2 = parse_newline lexbuf in
+          let s3 = cpp_eat_until_nl lexbuf in
+	  s ^ s2 ^ s3
+      |	_ -> s in
     match List.rev splitted with
       after_comment_start :: before_comment_start :: rest ->
 	let splitted2 =
 	  Str.split_delim (Str.regexp_string "*/") after_comment_start in
 	(match splitted2 with
-	  [bef;aft] -> s (* no unclosed comment *)
+	  [bef;aft] -> check_continue s (* no unclosed comment *)
 	| _ ->
 	    let s2 = comment lexbuf in
             let s3 = cpp_eat_until_nl lexbuf in
             s ^ s2 ^ s3)
-    | _ -> s (* no comment *) }
+    | _ -> check_continue s (* no comment *) }
