@@ -1,5 +1,5 @@
 (*
- * Copyright 2012, INRIA
+ * Copyright 2012-2014, INRIA
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -193,7 +193,7 @@ let parameterTypeDef p =
 
 let statement s =
   match Ast0.unwrap s with
-    Ast0.FunDecl(bef,fninfo,name,lp,params,rp,lbrace,body,rbrace) -> [68]
+    Ast0.FunDecl(bef,fninfo,name,lp,params,rp,lbrace,body,rbrace,aft) -> [68]
   | Ast0.Decl(bef,decl) -> [69]
   | Ast0.Seq(lbrace,body,rbrace) -> [70]
   | Ast0.ExprStatement(exp,sem) -> [71]

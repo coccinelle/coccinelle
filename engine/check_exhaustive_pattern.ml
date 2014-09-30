@@ -1,5 +1,5 @@
 (*
- * Copyright 2012, INRIA
+ * Copyright 2012-2014, INRIA
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -49,7 +49,7 @@ let dumb_astcocci_rule_elem = function
  | A.Ty ty -> ()
  | A.TopInit init -> ()
  | A.FunHeader (bef,allminus, fninfo, ida, _, paramsa, _) -> ()
- | A.Decl (bef,allminus,decla) -> ()
+ | A.Decl decl -> ()
  | A.SeqStart _ -> ()
  | A.SeqEnd _ -> ()
  | A.ExprStatement (ea, _) -> ()
@@ -82,7 +82,6 @@ let dumb_astcocci_decl = function
  | A.TyDecl (typa, _)     -> ()
  | A.MacroDecl(fn, _, eas, _, _) -> ()
  | A.MacroDeclInit(fn, _, eas, _, _, _, _) -> ()
- | A.Ddots(dots,whencode) -> ()
  | A.MetaDecl _ -> ()
  | A.MetaField _ -> ()
  | A.MetaFieldList _ -> ()
@@ -99,7 +98,6 @@ let dumb_astcocci_initialiser = function (* seems same as the above *)
   | A.TyDecl(ty,sem) -> ()
   | A.Typedef(d,ty1,ty2,pv) -> ()
   | A.DisjDecl(decls) -> ()
-  | A.Ddots(dots,whencode) -> ()
   | A.MetaDecl(name,_,_) -> ()
   | A.MetaField(name,_,_) -> ()
   | A.MetaFieldList(name,_,_,_) -> ()

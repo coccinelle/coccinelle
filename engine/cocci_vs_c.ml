@@ -1,5 +1,5 @@
 (*
- * Copyright 2012, INRIA
+ * Copyright 2012-2014, INRIA
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -127,7 +127,7 @@ let mcode_simple_minus = function
 
 let minusizer =
   ("fake","fake"),
-  {A.line = 0; A.column =0; A.strbef=[]; A.straft=[]},
+  {A.line = 0; A.column =0; A.strbef=[]; A.straft=[]; A.whitespace=""},
   (A.MINUS(A.DontCarePos,[],A.ALLMINUS,A.NOREPLACEMENT)),
   []
 
@@ -680,8 +680,6 @@ module type PARAM =
       (A.meta_name A.mcode, (string Ast_c.wrap, Ast_c.il) either list) matcher
     val distrf_pragmainfo :
       (A.meta_name A.mcode, Ast_c.pragmainfo) matcher
-    val distrf_ident_list :
-      (A.meta_name A.mcode, (Ast_c.name, Ast_c.il) either list) matcher
 
     val distrf_enum_fields :
       (A.meta_name A.mcode, (B.oneEnumType, B.il) either list) matcher
@@ -697,6 +695,9 @@ module type PARAM =
 
     val distrf_exec_code_list :
       (A.meta_name A.mcode, (Ast_c.exec_code, Ast_c.il) either list) matcher
+
+    val distrf_attrs :
+      (A.meta_name A.mcode, (Ast_c.attribute, Ast_c.il) either list) matcher
 
     val cocciExp :
       (A.expression, B.expression) matcher -> (A.expression, F.node) matcher
@@ -732,6 +733,8 @@ module type PARAM =
     val optional_qualifier_flag : (bool -> tin -> 'x tout) -> (tin -> 'x tout)
     val value_format_flag : (bool -> tin -> 'x tout) -> (tin -> 'x tout)
     val optional_declarer_semicolon_flag :
+	(bool -> tin -> 'x tout) -> (tin -> 'x tout)
+    val optional_attributes_flag :
 	(bool -> tin -> 'x tout) -> (tin -> 'x tout)
 
   end
@@ -1575,10 +1578,13 @@ and string_format ea eb =
   match A.unwrap ea,eb with
     A.ConstantFormat(str1), (B.ConstantFormat(str2),ii) ->
       let ib1 = tuple_of_list1 ii in
-      tokenf str1 ib1 >>= (fun str1 ib1 ->
-	return
-	  (A.ConstantFormat(str1) +> wa,
-	   (B.ConstantFormat(str2),[ib1])))
+      if A.unwrap_mcode str1 = str2
+      then
+	tokenf str1 ib1 >>= (fun str1 ib1 ->
+	  return
+	    (A.ConstantFormat(str1) +> wa,
+	     (B.ConstantFormat(str2),[ib1])))
+      else fail
   | A.MetaFormat(ida,constraints,keep,inherited),(B.ConstantFormat(str2),ii) ->
       check_constraints constraints str2 >>=
       (fun () () ->
@@ -2098,7 +2104,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 		mcode mcode mcode
 		donothing donothing donothing donothing donothing
 		donothing donothing donothing donothing donothing
-		donothing donothing donothing donothing
+		donothing donothing donothing donothing donothing
 		donothing donothing donothing donothing donothing in
 	    v.Visitor_ast.rebuilder_declaration decla in
 
@@ -2209,6 +2215,16 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
   | _, (B.MacroDecl _ |B.MacroDeclInit _ |B.DeclList _) -> fail
 
 
+and annotated_decl decla declb =
+  match A.unwrap decla with
+    A.Ddots _ -> failwith "not possible"
+  | A.DElem(mckstart, allminus, decl) ->
+      declaration (mckstart, allminus, decl) declb >>=
+      fun (mckstart, allminus, decl) declb ->
+	return
+	  (A.DElem(mckstart, allminus, decl) +> A.rewrap decla,
+	   declb)
+
 and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
  X.all_bound (A.get_inherited decla) >&&>
  match A.unwrap decla, declb with
@@ -2260,7 +2276,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
        tokenf lba lbb >>= (fun lba lbb ->
        tokenf rba rbb >>= (fun rba rbb ->
-       struct_fields (A.undots declsa) declsb >>=(fun undeclsa declsb ->
+       struct_fields (A.undots declsa) declsb >>= (fun undeclsa declsb ->
          let declsa = redots declsa undeclsa in
 
          (match A.unwrap tya2 with
@@ -2505,18 +2521,12 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 
 
 
-  | A.DisjDecl declas, declb ->
+   | A.DisjDecl declas, declb ->
       declas +> List.fold_left (fun acc decla ->
         acc >|+|>
             (* (declaration (mckstart, allminus, decla) declb) *)
             (onedecl allminus decla (declb,iiptvirgb, iistob))
       ) fail
-
-
-
-   (* only in struct type decls *)
-   | A.Ddots(dots,whencode), _ ->
-       raise (Impossible 34)
 
    | A.OptDecl _,    _ | A.UniqueDecl _,     _ ->
        failwith "not handling Opt/Unique Decl"
@@ -2797,7 +2807,7 @@ and initialiser_comma (x,xcomma) (y, commay) =
   | _ -> raise (Impossible 38) (* unsplit_iicomma wrong *)
 
 (* ------------------------------------------------------------------------- *)
-and (struct_fields: (A.declaration list, B.field list) matcher) =
+and (struct_fields: (A.annotated_decl list, B.field list) matcher) =
  fun eas ebs ->
   let match_dots ea =
     match A.unwrap ea with
@@ -2808,11 +2818,18 @@ and (struct_fields: (A.declaration list, B.field list) matcher) =
   let build_comma ia1 = failwith "not possible" in
   let match_metalist ea =
     match A.unwrap ea with
-      A.MetaFieldList(ida,leninfo,keep,inherited) ->
-	Some(ida,leninfo,keep,inherited,None)
+      A.DElem(mckstart,allminus,d) ->
+	(match A.unwrap d with
+	  A.MetaFieldList(ida,leninfo,keep,inherited) ->
+	    Some(ida,leninfo,keep,inherited,None)
+	| _ -> None)
     | _ -> None in
-  let build_metalist _ (ida,leninfo,keep,inherited) =
-    A.MetaFieldList(ida,leninfo,keep,inherited) in
+  let build_metalist ea (ida,leninfo,keep,inherited) =
+    match A.unwrap ea with
+      A.DElem(mckstart,allminus,d) ->
+	A.DElem(mckstart,allminus,
+		(A.rewrap ea (A.MetaFieldList(ida,leninfo,keep,inherited))))
+    | _ -> failwith "not possible" in
   let mktermval v =
     (* drop empty ii information, because nothing between elements *)
     let v = List.map Ast_c.unwrap v in
@@ -2844,85 +2861,145 @@ and (struct_fields: (A.declaration list, B.field list) matcher) =
     filter_fields eas (make_ebs ebs) >>=
   (fun eas ebs -> return (eas,unmake_ebs ebs))
 
-and (struct_field: (A.declaration, B.field) matcher) = fun fa fb ->
+and (struct_field: (A.annotated_decl, B.field) matcher) =
+  fun fa fb ->
+    match A.unwrap fa with
+      A.Ddots _ -> failwith "dots should be treated otherwise"
+    | A.DElem(mckstart,allminus,ifa) ->
 
-  match A.unwrap fa,fb with
-  | A.MetaField (ida,keep,inherited), _ ->
-      let max_min _ =
-	Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_field fb) in
-      X.envf keep inherited (ida, Ast_c.MetaFieldVal fb, max_min) (fun () ->
-        X.distrf_field ida fb
-          ) >>= (fun ida fb ->
-	    return ((A.MetaField (ida, keep, inherited))+> A.rewrap fa,
-		    fb))
-  | _,B.DeclarationField (B.FieldDeclList (onefield_multivars,iiptvirg)) ->
+	(match A.unwrap ifa,fb with
+	| A.MetaField (ida,keep,inherited), _ ->
+	    let max_min _ =
+	      Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_field fb) in
+	    X.envf keep inherited (ida, Ast_c.MetaFieldVal fb, max_min)
+	      (fun () ->
+		X.distrf_field ida fb
+		  ) >>= (fun ida fb ->
+		    return
+		      (A.DElem
+			 (mckstart,allminus,
+			  (A.MetaField (ida, keep, inherited))+> A.rewrap ifa)
+			 +> A.rewrap fa,
+		       fb))
+	| _,B.DeclarationField (B.FieldDeclList ([onevar,iivirg],iiptvirg)) ->
 
-    let iiptvirgb = tuple_of_list1 iiptvirg in
+        (* no modif possible on iistartb; included for parallelism with
+	   DeclList *)
+	    let (iiptvirgb,iifakestart) = tuple_of_list2 iiptvirg in
 
-    (match onefield_multivars with
-    | [] -> raise (Impossible 39)
-    | [onevar,iivirg] ->
-      assert (null iivirg);
-      (match onevar with
-      | B.BitField (sopt, typb, _, expr) ->
-          pr2_once "warning: bitfield not handled by ast_cocci";
-          fail
-      | B.Simple (None, typb) ->
-          pr2_once "warning: unnamed struct field not handled by ast_cocci";
-          fail
-      | B.Simple (Some nameidb, typb) ->
+	    assert (null iivirg);
+	    (match onevar with
+	    | B.BitField (sopt, typb, _, expr) ->
+		pr2_once "warning: bitfield not handled by ast_cocci";
+		fail
+	    | B.Simple (None, typb) ->
+		pr2_once
+		  "warning: unnamed struct field not handled by ast_cocci";
+		fail
+	    | B.Simple (Some nameidb, typb) ->
+		X.tokenf_mck mckstart iifakestart >>=
+		(fun mckstart iifakestart ->
+		  (* build a declaration from a struct field *)
+		  let (fake_var,iisto) = build_decl nameidb typb iivirg in
+		  onedecl allminus ifa (fake_var,iiptvirgb,iisto) >>=
+		  (fun ifa (fake_var,iiptvirgb,iisto) ->
+		    let (onevar,iivirg) = unbuild_decl fake_var in
 
-          (* build a declaration from a struct field *)
-          let allminus = false in
-          let iisto = [] in
-          let stob = B.NoSto, false in
-          let fake_var =
-            ({B.v_namei = Some (nameidb, B.NoInit);
-              B.v_type = typb;
-              B.v_storage = stob;
-              B.v_local = Ast_c.NotLocalDecl;
-              B.v_attr = Ast_c.noattr;
-              B.v_type_bis = ref None;
+		    return (
+		    (A.DElem(mckstart,allminus,ifa) +> A.rewrap fa),
+		    ((B.DeclarationField
+			(B.FieldDeclList([onevar, iivirg],
+					 [iiptvirgb;iifakestart]))))))))
+
+	| _,B.DeclarationField (B.FieldDeclList (xs,iiptvirg)) ->
+
+	    let (iiptvirgb,iifakestart) = tuple_of_list2 iiptvirg in
+
+	    let indexify l =
+	      let rec loop n = function
+		  [] -> []
+		| x::xs -> (n,x)::(loop (n+1) xs) in
+	      loop 0 l in
+	    let rec repln n vl cur = function
+		[] -> []
+	      | x::xs ->
+		  if n = cur then vl :: xs else x :: (repln n vl (cur+1) xs) in
+	    let doit _ =
+	      (indexify xs) +> List.fold_left (fun acc (n,(onevar,iivirg)) ->
+          (* consider all possible matches *)
+		acc >||>
+		(X.tokenf_mck mckstart iifakestart >>=
+		 (fun mckstart iifakestart ->
+		   (match onevar with
+		   | B.BitField (sopt, typb, _, expr) ->
+		       pr2_once "warning: bitfield not handled by ast_cocci";
+		       fail
+		   | B.Simple (None, typb) ->
+		       pr2_once
+			 "warning: unnamed struct field not handled by ast_cocci";
+		       fail
+		   | B.Simple (Some nameidb, typb) ->
+
+		       (* build a declaration from a struct field *)
+		       let (fake_var,iisto) = build_decl nameidb typb iivirg in
+		       onedecl allminus ifa (fake_var,iiptvirgb,iisto) >>=
+		       (fun ifa (fake_var,iiptvirgb,iisto) ->
+			 let (onevar,iivirg) = unbuild_decl fake_var in
+			 
+			 return (
+			 (A.DElem(mckstart,allminus,ifa) +> A.rewrap fa),
+			 ((B.DeclarationField
+			     (B.FieldDeclList
+				(repln n (onevar,iivirg) 0 xs,
+				 [iiptvirgb;iifakestart]))))))))))
+		fail in
+	    if !Flag.sgrep_mode2(*X.mode =*= PatternMode *) ||
+  	       A.get_safe_decl ifa
+	    then doit()
+	    else
+	      begin
+	        (* unambitious version of the DeclList case... *)
+		pr2_once "PB: More that one variable in decl. Have to split";
+		fail
+	      end
+
+	| _,B.EmptyField _iifield ->
+	    fail
+
+	| A.MacroDecl (sa,lpa,eas,rpa,enda),B.MacroDeclField ((sb,ebs),ii) ->
+	    raise Todo
+	| _,B.MacroDeclField ((sb,ebs),ii) -> fail
+
+	| _,B.CppDirectiveStruct directive -> fail
+	| _,B.IfdefStruct directive -> fail)
+
+and build_decl nameidb typb iivirg =
+  let iisto = [] in
+  let stob = B.NoSto, false in
+  let fake_var =
+    ({B.v_namei = Some (nameidb, B.NoInit);
+       B.v_type = typb;
+       B.v_storage = stob;
+       B.v_local = Ast_c.NotLocalDecl;
+       B.v_attr = Ast_c.noattr;
+       B.v_type_bis = ref None;
               (* the struct field should also get expanded ? no it's not
                * important here, we will rematch very soon *)
-            },
-	     iivirg)
-          in
-          onedecl allminus fa (fake_var,iiptvirgb,iisto) >>=
-            (fun fa (var,iiptvirgb,iisto) ->
+     },
+     iivirg) in
+  (fake_var,iisto)
 
-              match fake_var with
-              | ({B.v_namei = Some (nameidb, B.NoInit);
-                  B.v_type = typb;
-                  B.v_storage = stob;
-                }, iivirg) ->
+and unbuild_decl = function
+    ({B.v_namei = Some (nameidb, B.NoInit);
+       B.v_type = typb;
+       B.v_storage = stob;
+     }, iivirg) ->
 
-                  let onevar = B.Simple (Some nameidb, typb) in
+       let onevar = B.Simple (Some nameidb, typb) in
+       (onevar,iivirg)
+  | _ -> raise (Impossible 40)
 
-                  return (
-                    (fa),
-                    ((B.DeclarationField
-                        (B.FieldDeclList ([onevar, iivirg], [iiptvirgb])))
-                    )
-                  )
-              | _ -> raise (Impossible 40)
-            )
-      )
-
-    | x::y::xs ->
-      pr2_once "PB: More that one variable in decl. Have to split";
-      fail
-    )
-  | _,B.EmptyField _iifield ->
-      fail
-
-  | A.MacroDecl (sa,lpa,eas,rpa,enda),B.MacroDeclField ((sb,ebs),ii) ->
-      raise Todo
-  | _,B.MacroDeclField ((sb,ebs),ii) -> fail
-
-  | _,B.CppDirectiveStruct directive -> fail
-  | _,B.IfdefStruct directive -> fail
-
+(* ---------------------------------------------------------------------- *)
 
 and enum_fields = fun eas ebs ->
   let match_dots ea =
@@ -3767,7 +3844,60 @@ and fullType_optional_allminus allminus tya retb =
         return (Some tya, retb)
       )
 
+(* Works for many attributes, but assumes order will be preserved.  Looks
+for an exact match.  Actually the call site only allows a list of length
+one to come through.  Makes no requirement if attributes not present. *)
 
+(* The following is the intended version, on lists.  Unfortunately, this
+   requires SmPL attributes to be wrapped.  Which they are not, for some
+   reason. *)
+(*
+and attribute_list attras attrbs =
+  X.optional_attributes_flag (fun optional_attributes ->
+  match attras with
+    None -> return (None, attrbs)
+  | Some attras ->
+      let match_dots ea = None in
+      let build_dots (mcode, optexpr) = failwith "not possible" in
+      let match_comma ea = None in
+      let build_comma ia1 = failwith "not posible" in
+      let match_metalist ea = None in
+      let build_metalist _ (ida,leninfo,keep,inherited) =
+	failwith "not possible" in
+      let mktermval v = failwith "not possible" in
+      let special_cases ea eas ebs = None in
+      let no_ii x = failwith "not possible" in
+      list_matcher match_dots build_dots match_comma build_comma
+	match_metalist build_metalist mktermval
+	special_cases attribute X.distrf_attrs
+	B.split_nocomma B.unsplit_nocomma no_ii
+	(function x -> Some x) attras attrbs >>=
+      (fun attras attrbs -> return (Some attras, attrbs))) *)
+
+(* The cheap hackish version.  No wrapping requires... *)
+
+and attribute_list attras attrbs =
+  X.optional_attributes_flag (fun optional_attributes ->
+  match attras,attrbs with
+    None, _ -> return (None, attrbs)
+  | Some [attra], [attrb] ->
+    attribute attra attrb >>= (fun attra attrb ->
+      return (Some [attra], [attrb])
+    )
+  | Some [attra], attrb -> fail
+  | _ -> failwith "only one attribute allowed in SmPL")
+
+and attribute = fun ea eb ->
+  match ea, eb with
+    (A.FAttr attra), (B.Attribute attrb, ii)
+      when (A.unwrap_mcode attra) =$= attrb ->
+      let ib1 = tuple_of_list1 ii in
+      tokenf attra ib1 >>= (fun attra ib1 ->
+	return (
+	  A.FAttr attra,
+	  (B.Attribute attrb, [ib1])
+        ))
+  | _ -> fail
 
 (*---------------------------------------------------------------------------*)
 
@@ -3950,7 +4080,7 @@ and decimal_type_exp nm sb ii =
 	    let ida = A.make_term(A.Id(A.make_mcode n)) in
 	    ident_cpp DontKnow ida nameidb >>= (fun ida nameidb -> ok)
 	| _ -> fail)
-    | Type_cocci.Num sa -> 
+    | Type_cocci.Num sa ->
     | Type_cocci.MV(ida,keep,inherited) ->
 	(* degenerate version of MetaId, no transformation possible *)
         let (ib1, ib2) = tuple_of_list2 ii in
@@ -4314,8 +4444,17 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 	match List.filter (function A.FInline(i) -> true | _ -> false) fninfoa
 	with [A.FInline(i)] -> Some i | _ -> None in
 
-      (match List.filter (function A.FAttr(a) -> true | _ -> false) fninfoa
-      with [A.FAttr(a)] -> failwith "not checking attributes" | _ -> ());
+      let attras =
+	match List.filter (function A.FAttr(a) -> true | _ -> false) fninfoa
+	with
+	  [] -> None | _ -> failwith "matching of attributes not supported"
+	(* The following provides matching of one attribute against one
+	   attribute.  But the problem is that in the C ast there are no
+	   attributes in the attr field.  The attributes are all comments.
+	   So there is nothing to match against. *)
+	(*  [A.FAttr(a)] -> Some [A.FAttr(a)]
+	| [] -> None
+	| _ -> failwith "only one attr match allowed" *) in
 
       (match ii with
       | ioparenb::icparenb::iifakestart::iistob ->
@@ -4336,6 +4475,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
             inla (stob, iistob) >>= (fun inla (stob, iistob) ->
           storage_optional_allminus allminus
             stoa (stob, iistob) >>= (fun stoa (stob, iistob) ->
+          attribute_list attras attrs >>= (fun attras attrs ->
               (
                 if isvaargs
                 then
@@ -4350,9 +4490,10 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
            fullType_optional_allminus allminus tya retb >>= (fun tya retb ->
 
              let fninfoa =
-               (match stoa with Some st -> [A.FStorage st] | None -> []) ++
-               (match inla with Some i -> [A.FInline i] | None -> []) ++
-               (match tya  with Some t -> [A.FType t] | None -> [])
+               (match stoa  with Some st -> [A.FStorage st] | None -> []) ++
+               (match inla   with Some i -> [A.FInline i] | None -> []) ++
+               (match tya    with Some t -> [A.FType t] | None -> []) ++
+               (match attras with Some a -> a | None -> [])
 
              in
 
@@ -4368,15 +4509,15 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
                            },
                            ioparenb::icparenb::iifakestart::iistob)
                 )
-              )))))))))
+              ))))))))))
       | _ -> raise (Impossible 49)
       )
 
-  | A.Decl (mckstart,allminus,decla), F.Decl declb ->
-      declaration (mckstart,allminus,decla) declb >>=
-       (fun (mckstart,allminus,decla) declb ->
+  | A.Decl decla, F.Decl declb ->
+      annotated_decl decla declb >>=
+       (fun decla declb ->
         return (
-          A.Decl (mckstart,allminus,decla),
+          A.Decl decla,
           F.Decl declb
         ))
 
@@ -4488,11 +4629,11 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 	  tokenf ia3 ib3 >>= (fun ia3 ib3 ->
 	  option expression ea1opt eb1opt >>= (fun ea1opt eb1opt ->
 	    return (A.ForExp(ea1opt, ia3),B.ForExp(eb1opt,[ib3]))))
-      |	(A.ForDecl (mckstart,allminus,decla),B.ForDecl declb) ->
-	  declaration (mckstart,allminus,decla) declb >>=
-	  (fun (mckstart,allminus,decla) declb ->
+      |	(A.ForDecl decla,B.ForDecl declb) ->
+	  annotated_decl decla declb >>=
+	  (fun decla declb ->
 	    return (
-            A.ForDecl (mckstart,allminus,decla),
+            A.ForDecl decla,
             B.ForDecl declb
           ))
       |	_ -> fail)
@@ -4640,7 +4781,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
       tokenf prga prgb >>= (fun prga prgb ->
       let wp x = A.rewrap pragmainfoa x  in
       (match A.unwrap pragmainfoa, pragmainfob with
-	A.PragmaTuple(lp,eas,rp), B.PragmaTuple(ebs,iib) ->	  
+	A.PragmaTuple(lp,eas,rp), B.PragmaTuple(ebs,iib) ->
 	  let (ib1, ib2) = tuple_of_list2 iib in
 	  tokenf lp ib1 >>= (fun lp ib1 ->
 	  tokenf rp ib2 >>= (fun rp ib2 ->
@@ -4731,7 +4872,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 	  let code2 = Ast_c.unsplit_nocomma code2_splitted in
 	  return(
 	    A.Exec(exec,lang,code,sem),
-	    F.Exec(st,(code2,[exec2;lang2;sem2])))))))      
+	    F.Exec(st,(code2,[exec2;lang2;sem2])))))))
 
   (* have not a counter part in coccinelle, for the moment *)
   (* todo?: print a warning at least ? *)
@@ -4742,6 +4883,9 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
     -> fail2()
 
   | _, (F.IfdefEndif _|F.IfdefElse _|F.IfdefHeader _)
+    -> fail2 ()
+
+  | _, F.IfdefIteHeader _
     -> fail2 ()
 
   | _,

@@ -1,5 +1,6 @@
 @@
 type T;
+symbol x, y;
 @@
 
 -   T *x = y;

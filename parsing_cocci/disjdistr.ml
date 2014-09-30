@@ -1,5 +1,5 @@
 (*
- * Copyright 2012, INRIA
+ * Copyright 2012-2014, INRIA
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -115,10 +115,18 @@ and disjtypeC bty =
 	(function ty -> function ids ->
 	  Ast.rewrap bty (Ast.EnumDef(ty,lb,ids,rb)))
   | Ast.StructUnionDef(ty,lb,decls,rb) ->
-      disjmult2 (disjty ty) (disjdots disjdecl decls)
+      disjmult2 (disjty ty) (disjdots anndisjdecl decls)
 	(function ty -> function decls ->
 	  Ast.rewrap bty (Ast.StructUnionDef(ty,lb,decls,rb)))
   | Ast.TypeName(_) | Ast.MetaType(_,_,_) -> [bty]
+
+and anndisjdecl d =
+  match Ast.unwrap d with
+    Ast.DElem(bef,allminus,decls) ->
+      List.map
+	(function decl -> Ast.rewrap d (Ast.DElem(bef,allminus,decl)))
+	(disjdecl decls)
+  | Ast.Ddots(_,_) -> [d]
 
 and disjident e =
   match Ast.unwrap e with
@@ -321,7 +329,6 @@ and disjdecl d =
       let ty = disjty ty in (* disj not allowed in id *)
       List.map (function ty -> Ast.rewrap d (Ast.Typedef(stg,ty,id,sem))) ty
   | Ast.DisjDecl(decls) -> List.concat (List.map disjdecl decls)
-  | Ast.Ddots(_,_) -> [d]
   | Ast.OptDecl(decl) ->
       let decl = disjdecl decl in
       List.map (function decl -> Ast.rewrap d (Ast.OptDecl(decl))) decl
@@ -340,6 +347,7 @@ let orify_rule_elem re exp rebuild =
 let orify_rule_elem_ty = generic_orify_rule_elem disjty
 let orify_rule_elem_param = generic_orify_rule_elem disjparam
 let orify_rule_elem_decl = generic_orify_rule_elem disjdecl
+let orify_rule_elem_anndecl = generic_orify_rule_elem anndisjdecl
 let orify_rule_elem_ini = generic_orify_rule_elem disjini
 
 let rec disj_rule_elem r k re =
@@ -349,9 +357,9 @@ let rec disj_rule_elem r k re =
 	(function params ->
 	  Ast.rewrap re
 	    (Ast.FunHeader(bef,allminus,fninfo,name,lp,params,rp)))
-  | Ast.Decl(bef,allminus,decl) ->
-      orify_rule_elem_decl re decl
-	(function decl -> Ast.rewrap re (Ast.Decl(bef,allminus,decl)))
+  | Ast.Decl decl ->
+      orify_rule_elem_anndecl re decl
+	(function decl -> Ast.rewrap re (Ast.Decl decl))
   | Ast.SeqStart(brace) -> re
   | Ast.SeqEnd(brace) -> re
   | Ast.ExprStatement(Some exp,sem) ->
@@ -374,9 +382,8 @@ let rec disj_rule_elem r k re =
 	  Ast.ForExp(e1,sem1) ->
 	    List.map (function e1 -> Ast.ForExp(e1,sem1))
 	      (disjoption disjexp e1)
-	| Ast.ForDecl (bef,allminus,decl) ->
-	    List.map (function decl -> Ast.ForDecl (bef,allminus,decl))
-	      (disjdecl decl) in
+	| Ast.ForDecl decl ->
+	    List.map (function decl -> Ast.ForDecl decl) (anndisjdecl decl) in
       generic_orify_rule_elem
 	(disjmult_two disjfirst (disjoption disjexp)) re (first,[e2;e3])
         (function
@@ -436,7 +443,7 @@ let disj_all =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    disj_rule_elem donothing donothing donothing donothing
+    donothing disj_rule_elem donothing donothing donothing donothing
 
 (* ----------------------------------------------------------------------- *)
 (* collect iso information at the rule_elem level *)
@@ -451,7 +458,7 @@ let collect_all_isos =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing doanything
+    doanything donothing donothing donothing donothing doanything
 
 let collect_iso_info =
   let mcode x = x in
@@ -465,7 +472,7 @@ let collect_iso_info =
   V.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing
+    donothing donothing donothing donothing
     donothing donothing donothing donothing rule_elem donothing donothing
     donothing donothing
 

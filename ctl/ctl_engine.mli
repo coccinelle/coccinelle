@@ -1,5 +1,5 @@
 (*
- * Copyright 2012, INRIA
+ * Copyright 2012-2014, INRIA
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -83,11 +83,10 @@ module CTL_ENGINE :
 	type ('pred,'anno) triples =
 	    (G.node * substitution * ('pred,'anno) witness list) list
 
-        val sat :
-          G.cfg * (P.t -> (P.t,'anno) triples) * G.node list ->
+  val sat : G.cfg * (P.t -> (P.t,'anno) triples) * G.node list ->
             (P.t, SUB.mvar, 'c) Ast_ctl.generic_ctl ->
-	      (P.t list list (* optional and required things *)) ->
-		(P.t,'anno) triples
+            (P.t list list (* optional and required things *)) ->
+            (P.t,'anno) triples
 
 	val print_bench : unit -> unit
       end

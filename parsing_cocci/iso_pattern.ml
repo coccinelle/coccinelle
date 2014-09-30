@@ -1,5 +1,5 @@
 (*
- * Copyright 2012, INRIA
+ * Copyright 2012-2014, INRIA
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -387,7 +387,10 @@ let match_maker checks_needed context_required whencode_allowed =
     let donothing r k e =
       bind (pure_mcodekind (Ast0.get_mcodekind e)) (k e) in
 
-    let mcode m = pure_mcodekind (Ast0.get_mcode_mcodekind m) in
+    let mcode m =
+      Ast0.lub_pure
+	(if Ast0.get_pos m = [] then Ast0.PureContext else Ast0.Impure)
+	(pure_mcodekind (Ast0.get_mcode_mcodekind m)) in
 
     (* a case for everything that has a metavariable *)
     (* pure is supposed to match only unitary metavars, not anything that
@@ -747,14 +750,15 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (Ast0.Edots(d,None),Ast0.Edots(d1,None))
 	  | (Ast0.Ecircles(d,None),Ast0.Ecircles(d1,None))
 	  | (Ast0.Estars(d,None),Ast0.Estars(d1,None)) -> check_mcode d d1
-	  | (Ast0.Edots(ed,None),Ast0.Edots(ed1,Some wc))
-	  | (Ast0.Ecircles(ed,None),Ast0.Ecircles(ed1,Some wc))
-	  | (Ast0.Estars(ed,None),Ast0.Estars(ed1,Some wc)) ->
+	  | (Ast0.Edots(ed,None),Ast0.Edots(ed1,Some (wh,e,wc)))
+	  | (Ast0.Ecircles(ed,None),Ast0.Ecircles(ed1,Some (wh,e,wc)))
+	  | (Ast0.Estars(ed,None),Ast0.Estars(ed1,Some (wh,e,wc))) ->
 	    (* hope that mcode of edots is unique somehow *)
 	      conjunct_bindings (check_mcode ed ed1)
 		(let (edots_whencode_allowed,_,_) = whencode_allowed in
 		if edots_whencode_allowed
-		then add_dot_binding ed (Ast0.ExprTag wc)
+		then add_dot_binding ed 
+		  (Ast0.WhenTag(wh,Some e,Ast0.ExprTag wc))
 		else
 		  (Printf.printf
 		     "warning: not applying iso because of whencode";
@@ -950,12 +954,13 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (Ast0.DisjDecl(_,declsa,_,_),_) ->
 	      failwith "not allowed in the pattern of an isomorphism"
 	  | (Ast0.Ddots(d1,None),Ast0.Ddots(d,None)) -> check_mcode d1 d
-	  |	(Ast0.Ddots(dd,None),Ast0.Ddots(d,Some wc)) ->
+	  |	(Ast0.Ddots(dd,None),Ast0.Ddots(d,Some (wh,ee,wc))) ->
 	      conjunct_bindings (check_mcode dd d)
 	    (* hope that mcode of ddots is unique somehow *)
 		(let (ddots_whencode_allowed,_,_) = whencode_allowed in
 		if ddots_whencode_allowed
-		then add_dot_binding dd (Ast0.DeclTag wc)
+		then add_dot_binding dd
+		  (Ast0.WhenTag (wh,Some ee,Ast0.DeclTag wc))
 		else
 		  (Printf.printf "warning: not applying iso because of whencode";
 		   return false))
@@ -1004,12 +1009,13 @@ let match_maker checks_needed context_required whencode_allowed =
 		  match_init inia inib]
 	  | (Ast0.IComma(c1),Ast0.IComma(c)) -> check_mcode c1 c
 	  | (Ast0.Idots(d1,None),Ast0.Idots(d,None)) -> check_mcode d1 d
-	  | (Ast0.Idots(id,None),Ast0.Idots(d,Some wc)) ->
+	  | (Ast0.Idots(id,None),Ast0.Idots(d,Some (wh,e,wc))) ->
 	      conjunct_bindings (check_mcode id d)
 	  (* hope that mcode of edots is unique somehow *)
 		(let (_,idots_whencode_allowed,_) = whencode_allowed in
 		if idots_whencode_allowed
-		then add_dot_binding id (Ast0.InitTag wc)
+		then add_dot_binding id
+		  (Ast0.WhenTag(wh,Some e,Ast0.InitTag wc))
 		else
 		  (Printf.printf
 		     "warning: not applying iso because of whencode";
@@ -1081,8 +1087,8 @@ let match_maker checks_needed context_required whencode_allowed =
 	if not(checks_needed) or not(context_required) or is_context s
 	then
 	  match (up,Ast0.unwrap s) with
-	    (Ast0.FunDecl(_,fninfoa,namea,lp1,paramsa,rp1,lb1,bodya,rb1),
-	     Ast0.FunDecl(_,fninfob,nameb,lp,paramsb,rp,lb,bodyb,rb)) ->
+	    (Ast0.FunDecl(_,fninfoa,namea,lp1,paramsa,rp1,lb1,bodya,rb1,_),
+	     Ast0.FunDecl(_,fninfob,nameb,lp,paramsb,rp,lb,bodyb,rb,_)) ->
 	       conjunct_many_bindings
 		 [check_mcode lp1 lp; check_mcode rp1 rp;
 		   check_mcode lb1 lb; check_mcode rb1 rb;
@@ -1239,25 +1245,26 @@ let match_maker checks_needed context_required whencode_allowed =
 		      (List.fold_left
 			 (function prev ->
 			   function
-			     | Ast0.WhenNot wc ->
+			     | Ast0.WhenNot (wh,e,wc) ->
 				 conjunct_bindings prev
-				   (add_multi_dot_binding d
-				      (Ast0.DotsStmtTag wc))
-			     | Ast0.WhenAlways wc ->
+				 (add_multi_dot_binding d
+				 (Ast0.WhenTag(wh,Some e,Ast0.DotsStmtTag wc)))
+			     | Ast0.WhenAlways (wh,e,wc) ->
 				 conjunct_bindings prev
-				   (add_multi_dot_binding d (Ast0.StmtTag wc))
-			     | Ast0.WhenNotTrue wc ->
+				 (add_multi_dot_binding d
+                                 (Ast0.WhenTag(wh,Some e,Ast0.StmtTag wc)))
+			     | Ast0.WhenNotTrue (wh,e,wc) ->
 				 conjunct_bindings prev
-				   (add_multi_dot_binding d
-				      (Ast0.IsoWhenTTag wc))
-			     | Ast0.WhenNotFalse wc ->
+				 (add_multi_dot_binding d
+				 (Ast0.WhenTag(wh,Some e,Ast0.IsoWhenTTag wc)))
+			     | Ast0.WhenNotFalse (wh,e,wc) ->
 				 conjunct_bindings prev
-				   (add_multi_dot_binding d
-				      (Ast0.IsoWhenFTag wc))
-			     | Ast0.WhenModifier(x) ->
+				 (add_multi_dot_binding d
+				 (Ast0.WhenTag(wh,Some e,Ast0.IsoWhenFTag wc)))
+			     | Ast0.WhenModifier(wh,x) ->
 				 conjunct_bindings prev
-				   (add_multi_dot_binding d
-				      (Ast0.IsoWhenTag x)))
+				 (add_multi_dot_binding d
+				 (Ast0.WhenTag(wh,None,Ast0.IsoWhenTag x))))
 			 (return true) wc)
 		  else
 		    (Printf.printf
@@ -1539,10 +1546,12 @@ let rebuild_mcode start_line =
 	   | Ast0.Iterator(nm,lp,args,rp,body,(info,mc,adj)) ->
 	       Ast0.Iterator(nm,lp,args,rp,body,(info,copy_mcodekind mc,adj))
 	   | Ast0.FunDecl
-	       ((info,mc),fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
+	       ((info,mc),fninfo,name,lp,params,rp,lbrace,body,rbrace,
+		(aftinfo,aftmc)) ->
 		 Ast0.FunDecl
 		   ((info,copy_mcodekind mc),
-		    fninfo,name,lp,params,rp,lbrace,body,rbrace)
+		    fninfo,name,lp,params,rp,lbrace,body,rbrace,
+		    (aftinfo,copy_mcodekind aftmc))
 	   | s -> s)) in
     Ast0.set_dots_bef_aft res
       (match Ast0.get_dots_bef_aft res with
@@ -1869,19 +1878,22 @@ let instantiate bindings mv_bindings =
     | Ast0.Edots(d,_) ->
 	(try
 	  (match List.assoc (dot_term d) bindings with
-	    Ast0.ExprTag(exp) -> Ast0.rewrap e (Ast0.Edots(d,Some exp))
+	    Ast0.WhenTag(wh,Some ee,Ast0.ExprTag exp) ->
+              Ast0.rewrap e (Ast0.Edots(d,Some (wh,ee,exp)))
 	  | _ -> failwith "unexpected binding")
 	with Not_found -> e)
     | Ast0.Ecircles(d,_) ->
 	(try
 	  (match List.assoc (dot_term d) bindings with
-	    Ast0.ExprTag(exp) -> Ast0.rewrap e (Ast0.Ecircles(d,Some exp))
+	    Ast0.WhenTag(wh,Some ee,Ast0.ExprTag exp) ->
+              Ast0.rewrap e (Ast0.Ecircles(d,Some (wh,ee,exp)))
 	  | _ -> failwith "unexpected binding")
 	with Not_found -> e)
     | Ast0.Estars(d,_) ->
 	(try
 	  (match List.assoc (dot_term d) bindings with
-	    Ast0.ExprTag(exp) -> Ast0.rewrap e (Ast0.Estars(d,Some exp))
+	    Ast0.WhenTag(wh,Some ee,Ast0.ExprTag(exp)) ->
+              Ast0.rewrap e (Ast0.Estars(d,Some (wh,ee,exp)))
 	  | _ -> failwith "unexpected binding")
 	with Not_found -> e)
     | _ -> e in
@@ -1937,7 +1949,8 @@ let instantiate bindings mv_bindings =
     | Ast0.Ddots(d,_) ->
 	(try
 	  (match List.assoc (dot_term d) bindings with
-	    Ast0.DeclTag(exp) -> Ast0.rewrap e (Ast0.Ddots(d,Some exp))
+	    Ast0.WhenTag(wh,Some ee,Ast0.DeclTag(exp)) ->
+              Ast0.rewrap e (Ast0.Ddots(d,Some (wh,ee,exp)))
 	  | _ -> failwith "unexpected binding")
 	with Not_found -> e)
     | _ -> e in
@@ -1959,11 +1972,15 @@ let instantiate bindings mv_bindings =
 
   let whenfn (_,v) =
     match v with
-      Ast0.DotsStmtTag(stms) -> Ast0.WhenNot stms
-    | Ast0.StmtTag(stm) -> Ast0.WhenAlways stm
-    | Ast0.IsoWhenTTag(stm) -> Ast0.WhenNotTrue stm
-    | Ast0.IsoWhenFTag(stm) -> Ast0.WhenNotFalse stm
-    | Ast0.IsoWhenTag(x) -> Ast0.WhenModifier(x)
+      Ast0.WhenTag(wh,Some ee,Ast0.DotsStmtTag(stms)) ->
+	Ast0.WhenNot (wh,ee,stms)
+    | Ast0.WhenTag(wh,Some ee,Ast0.StmtTag(stm)) ->
+	Ast0.WhenAlways (wh,ee,stm)
+    | Ast0.WhenTag(wh,Some ee,Ast0.IsoWhenTTag(stm)) ->
+	Ast0.WhenNotTrue (wh,ee,stm)
+    | Ast0.WhenTag(wh,Some ee,Ast0.IsoWhenFTag(stm)) ->
+	Ast0.WhenNotFalse (wh,ee,stm)
+    | Ast0.WhenTag(wh,None,Ast0.IsoWhenTag(x)) -> Ast0.WhenModifier(wh,x)
     | _ -> failwith "unexpected binding" in
 
   let stmtfn r k e =
@@ -2022,63 +2039,91 @@ let merge_plus model_mcode e_mcode =
     Ast0.MINUS(mc) ->
       (* add the replacement information at the root *)
       (match e_mcode with
-	Ast0.MINUS(emc) ->
-	  emc :=
-	    (match (!mc,!emc) with
-	      ((Ast.NOREPLACEMENT,_),(x,t))
-	    | ((x,_),(Ast.NOREPLACEMENT,t)) -> (x,t)
-	    | _ -> failwith "how can we combine minuses?")
-      |	_ -> failwith "not possible 6")
-  | Ast0.CONTEXT(mc) ->
+        Ast0.MINUS(emc) ->
+          emc :=
+            (match (!mc,!emc) with
+              ((Ast.NOREPLACEMENT,_),(x,t))
+            |  ((x,_),(Ast.NOREPLACEMENT,t)) -> (x,t)
+            |  _ -> failwith "how can we combine minuses?")
+      |	 _ -> failwith "not possible 6")
+  |  Ast0.CONTEXT(mc) ->
       (match e_mcode with
-	Ast0.CONTEXT(emc) ->
-	  (* keep the logical line info as in the model *)
-	  let (mba,tb,ta) = !mc in
-	  let (eba,_,_) = !emc in
-	  (* merging may be required when a term is replaced by a subterm *)
-	  let merged =
-	    match (mba,eba) with
-	      (x,Ast.NOTHING) | (Ast.NOTHING,x) -> x
-	    | (Ast.BEFORE(b1,it1),Ast.BEFORE(b2,it2)) ->
-		Ast.BEFORE(b1@b2,Ast.lub_count it1 it2)
-	    | (Ast.BEFORE(b,it1),Ast.AFTER(a,it2)) ->
-		Ast.BEFOREAFTER(b,a,Ast.lub_count it1 it2)
-	    | (Ast.BEFORE(b1,it1),Ast.BEFOREAFTER(b2,a,it2)) ->
-		Ast.BEFOREAFTER(b1@b2,a,Ast.lub_count it1 it2)
-	    | (Ast.AFTER(a,it1),Ast.BEFORE(b,it2)) ->
-		Ast.BEFOREAFTER(b,a,Ast.lub_count it1 it2)
-	    | (Ast.AFTER(a1,it1),Ast.AFTER(a2,it2)) ->
-		Ast.AFTER(a2@a1,Ast.lub_count it1 it2)
-	    | (Ast.AFTER(a1,it1),Ast.BEFOREAFTER(b,a2,it2)) ->
-		Ast.BEFOREAFTER(b,a2@a1,Ast.lub_count it1 it2)
-	    | (Ast.BEFOREAFTER(b1,a,it1),Ast.BEFORE(b2,it2)) ->
-		Ast.BEFOREAFTER(b1@b2,a,Ast.lub_count it1 it2)
-	    | (Ast.BEFOREAFTER(b,a1,it1),Ast.AFTER(a2,it2)) ->
-		Ast.BEFOREAFTER(b,a2@a1,Ast.lub_count it1 it2)
-	    | (Ast.BEFOREAFTER(b1,a1,it1),Ast.BEFOREAFTER(b2,a2,it2)) ->
-		Ast.BEFOREAFTER(b1@b2,a2@a1,Ast.lub_count it1 it2) in
-	  emc := (merged,tb,ta)
-      |	Ast0.MINUS(emc) ->
-	  let (anything_bef_aft,_,_) = !mc in
-	  let (anythings,t) = !emc in
-	  (match (anything_bef_aft,anythings) with
-	    (Ast.BEFORE(b1,it1),Ast.NOREPLACEMENT) ->
-	      emc := (Ast.REPLACEMENT(b1,it1),t)
-	  | (Ast.AFTER(a1,it1),Ast.NOREPLACEMENT) ->
-	      emc := (Ast.REPLACEMENT(a1,it1),t)
-	  | (Ast.BEFOREAFTER(b1,a1,it1),Ast.NOREPLACEMENT) ->
-	      emc := (Ast.REPLACEMENT(b1@a1,it1),t)
-	  | (Ast.NOTHING,Ast.NOREPLACEMENT) ->
-	      emc := (Ast.NOREPLACEMENT,t)
-	  | (Ast.BEFORE(b1,it1),Ast.REPLACEMENT(a2,it2)) ->
-	      emc := (Ast.REPLACEMENT(b1@a2,Ast.lub_count it1 it2),t)
-	  | (Ast.AFTER(a1,it1),Ast.REPLACEMENT(a2,it2)) ->
-	      emc := (Ast.REPLACEMENT(a2@a1,Ast.lub_count it1 it2),t)
-	  | (Ast.BEFOREAFTER(b1,a1,it1),Ast.REPLACEMENT(a2,it2)) ->
-	      emc := (Ast.REPLACEMENT(b1@a2@a1,Ast.lub_count it1 it2),t)
-	  | (Ast.NOTHING,Ast.REPLACEMENT(a2,it2)) -> ()) (* no change *)
-      | Ast0.MIXED(_) -> failwith "how did this become mixed?"
-      |	_ -> failwith "not possible 7")
+        Ast0.CONTEXT(emc) ->
+          (* keep the logical line info as in the model *)
+          let (mba,tb,ta) = !mc in
+          let (eba,_,_) = !emc in
+          (* merging may be required when a term is replaced by a subterm *)
+          let merged =
+            match (mba,eba) with
+              (x,Ast.NOTHING) | (Ast.NOTHING,x) -> x
+            |  (Ast.BEFORE(b1,it1),Ast.BEFORE(b2,it2)) ->
+                Ast.BEFORE(b1@b2,Ast.lub_count it1 it2)
+            |  (Ast.BEFORE(b,it1),Ast.AFTER(a,it2)) ->
+                Ast.BEFOREAFTER(b,a,Ast.lub_count it1 it2)
+            |  (Ast.BEFORE(b1,it1),Ast.BEFOREAFTER(b2,a,it2)) ->
+                Ast.BEFOREAFTER(b1@b2,a,Ast.lub_count it1 it2)
+            |  (Ast.AFTER(a,it1),Ast.BEFORE(b,it2)) ->
+                Ast.BEFOREAFTER(b,a,Ast.lub_count it1 it2)
+            |  (Ast.AFTER(a1,it1),Ast.AFTER(a2,it2)) ->
+                Ast.AFTER(a2@a1,Ast.lub_count it1 it2)
+            |  (Ast.AFTER(a1,it1),Ast.BEFOREAFTER(b,a2,it2)) ->
+                Ast.BEFOREAFTER(b,a2@a1,Ast.lub_count it1 it2)
+            |  (Ast.BEFOREAFTER(b1,a,it1),Ast.BEFORE(b2,it2)) ->
+                Ast.BEFOREAFTER(b1@b2,a,Ast.lub_count it1 it2)
+            |  (Ast.BEFOREAFTER(b,a1,it1),Ast.AFTER(a2,it2)) ->
+                Ast.BEFOREAFTER(b,a2@a1,Ast.lub_count it1 it2)
+            |  (Ast.BEFOREAFTER(b1,a1,it1),Ast.BEFOREAFTER(b2,a2,it2)) ->
+                Ast.BEFOREAFTER(b1@b2,a2@a1,Ast.lub_count it1 it2) in
+          emc := (merged,tb,ta)
+      |	 Ast0.MINUS(emc) ->
+          let (anything_bef_aft,_,_) = !mc in
+          let (anythings,t) = !emc in
+          (match (anything_bef_aft,anythings) with
+            (Ast.BEFORE(b1,it1),Ast.NOREPLACEMENT) ->
+              emc := (Ast.REPLACEMENT(b1,it1),t)
+          |  (Ast.AFTER(a1,it1),Ast.NOREPLACEMENT) ->
+              emc := (Ast.REPLACEMENT(a1,it1),t)
+          |  (Ast.BEFOREAFTER(b1,a1,it1),Ast.NOREPLACEMENT) ->
+              emc := (Ast.REPLACEMENT(b1@a1,it1),t)
+          |  (Ast.NOTHING,Ast.NOREPLACEMENT) ->
+              emc := (Ast.NOREPLACEMENT,t)
+          |  (Ast.BEFORE(b1,it1),Ast.REPLACEMENT(a2,it2)) ->
+              emc := (Ast.REPLACEMENT(b1@a2,Ast.lub_count it1 it2),t)
+          |  (Ast.AFTER(a1,it1),Ast.REPLACEMENT(a2,it2)) ->
+              emc := (Ast.REPLACEMENT(a2@a1,Ast.lub_count it1 it2),t)
+          |  (Ast.BEFOREAFTER(b1,a1,it1),Ast.REPLACEMENT(a2,it2)) ->
+              emc := (Ast.REPLACEMENT(b1@a2@a1,Ast.lub_count it1 it2),t)
+          |  (Ast.NOTHING,Ast.REPLACEMENT(a2,it2)) -> ()) (* no change *)
+      |	 Ast0.MIXED(_) -> failwith "how did this become mixed?"
+      |	 _ -> failwith "not possible 7")
+  |  Ast0.MIXED(_) -> failwith "not possible 8"
+  |  Ast0.PLUS _ -> failwith "not possible 9"
+
+let merge_plus_before model_mcode e_mcode =
+  match model_mcode with
+    Ast0.MINUS(mc) -> merge_plus model_mcode e_mcode
+  | Ast0.CONTEXT(mc) ->
+      let (mba,tb,ta) = !mc in
+      (match mba with
+	Ast.NOTHING | Ast.BEFORE _ -> merge_plus model_mcode e_mcode
+      | Ast.AFTER(a,it1) ->
+	  failwith "before cell should only contain before modifications"
+      | Ast.BEFOREAFTER(b1,a,it1) ->
+	  failwith "before cell should only contain before modifications")
+  | Ast0.MIXED(_) -> failwith "not possible 8"
+  | Ast0.PLUS _ -> failwith "not possible 9"
+
+let merge_plus_after model_mcode e_mcode =
+  match model_mcode with
+    Ast0.MINUS(mc) -> merge_plus model_mcode e_mcode
+  | Ast0.CONTEXT(mc) ->
+      let (mba,tb,ta) = !mc in
+      (match mba with
+	Ast.NOTHING | Ast.AFTER _ ->  merge_plus model_mcode e_mcode
+      | Ast.BEFORE(b1,it1) ->
+	  failwith "after cell should only contain before modifications"
+      | Ast.BEFOREAFTER(b1,a,it1) ->
+	  failwith "after cell should only contain before modifications")
   | Ast0.MIXED(_) -> failwith "not possible 8"
   | Ast0.PLUS _ -> failwith "not possible 9"
 
@@ -2127,13 +2172,19 @@ let extra_copy_stmt_plus model e =
   (if not !Flag.sgrep_mode2 (* sgrep has no plus code, so nothing to do *)
   then
     (match Ast0.unwrap model with
-      Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_)
+      Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_,(aftinfo,aft)) ->
+	(match Ast0.unwrap e with
+	  Ast0.FunDecl((info,bef1),_,_,_,_,_,_,_,_,(aftinfo,aft1)) ->
+	    merge_plus_before bef bef1; merge_plus_after aft aft1
+	| _ -> 
+	    let mc = Ast0.get_mcodekind e in
+	    merge_plus_before bef mc;
+	    merge_plus_after aft mc)
     | Ast0.Decl((info,bef),_) ->
 	(match Ast0.unwrap e with
-	  Ast0.FunDecl((info,bef1),_,_,_,_,_,_,_,_)
-	| Ast0.Decl((info,bef1),_) ->
-	    merge_plus bef bef1
-	| _ ->  merge_plus bef (Ast0.get_mcodekind e))
+	  Ast0.Decl((info,bef1),_) ->
+	    merge_plus_before bef bef1
+	| _ ->  merge_plus_before bef (Ast0.get_mcodekind e))
     | Ast0.IfThen(_,_,_,_,_,(_,aft,_))
     | Ast0.IfThenElse(_,_,_,_,_,_,_,(_,aft,_))
     | Ast0.While(_,_,_,_,_,(_,aft,_))
@@ -2145,8 +2196,8 @@ let extra_copy_stmt_plus model e =
 	| Ast0.While(_,_,_,_,_,(_,aft1,_))
 	| Ast0.For(_,_,_,_,_,_,_,_,(_,aft1,_))
 	| Ast0.Iterator(_,_,_,_,_,(_,aft1,_)) ->
-	    merge_plus aft aft1
-	| _ -> merge_plus aft (Ast0.get_mcodekind e))
+	    merge_plus_after aft aft1
+	| _ -> merge_plus_after aft (Ast0.get_mcodekind e))
     | _ -> ()));
   e
 
@@ -2323,6 +2374,7 @@ let disj_starter lst =
       Ast0.logical_end = old_info.Ast0.pos_info.Ast0.logical_start; } in
   let info =
     { Ast0.pos_info = new_pos_info;
+      Ast0.whitespace = "";
       Ast0.attachable_start = false; Ast0.attachable_end = false;
       Ast0.mcode_start = []; Ast0.mcode_end = [];
       Ast0.strings_before = []; Ast0.strings_after = [];
@@ -2337,6 +2389,7 @@ let disj_ender lst =
       Ast0.logical_start = old_info.Ast0.pos_info.Ast0.logical_end; } in
   let info =
     { Ast0.pos_info = new_pos_info;
+      Ast0.whitespace = "";
       Ast0.attachable_start = false; Ast0.attachable_end = false;
       Ast0.mcode_start = []; Ast0.mcode_end = [];
       Ast0.strings_before = []; Ast0.strings_after = [];
@@ -2652,7 +2705,7 @@ let rewrap =
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing
 
-let rewrap_anything = function
+let rec rewrap_anything = function
     Ast0.DotsExprTag(d) ->
       Ast0.DotsExprTag(rewrap.VT0.rebuilder_rec_expression_dots d)
   | Ast0.DotsInitTag(d) ->
@@ -2686,6 +2739,7 @@ let rewrap_anything = function
       failwith "only for isos within iso phase"
   | Ast0.MetaPosTag(p) -> Ast0.MetaPosTag(p)
   | Ast0.HiddenVarTag(p) -> Ast0.HiddenVarTag(p) (* not sure it is possible *)
+  | Ast0.WhenTag(a,e,b) -> rewrap_anything b
 
 (* --------------------------------------------------------------------- *)
 

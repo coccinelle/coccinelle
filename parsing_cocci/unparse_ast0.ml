@@ -1,5 +1,5 @@
 (*
- * Copyright 2012, INRIA
+ * Copyright 2012-2014, INRIA
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -249,14 +249,14 @@ let rec expression e =
 	  mcode print_string starter;
 	  start_block(); dots force_newline expression expr_dots; end_block();
 	  mcode print_string ender
-      | Ast0.NestExpr(starter,expr_dots,ender,Some whencode,multi) ->
+      | Ast0.NestExpr(starter,expr_dots,ender,Some (_,_,whencode),multi) ->
 	  mcode print_string starter; print_string "   WHEN != ";
 	  expression whencode;
 	  start_block(); dots force_newline expression expr_dots; end_block();
 	  mcode print_string ender
-      | Ast0.Edots(dots,Some whencode)
-      | Ast0.Ecircles(dots,Some whencode)
-      | Ast0.Estars(dots,Some whencode) ->
+      | Ast0.Edots(dots,Some (_,_,whencode))
+      | Ast0.Ecircles(dots,Some (_,_,whencode))
+      | Ast0.Estars(dots,Some (_,_,whencode)) ->
 	  mcode print_string dots; print_string "   WHEN != ";
 	  expression whencode
       | Ast0.Edots(dots,None)
@@ -408,7 +408,7 @@ and declaration d =
 	    (function _ -> print_string "\n|"; force_newline())
 	    declaration decls;
 	  print_string "\n)"
-      | Ast0.Ddots(dots,Some whencode) ->
+      | Ast0.Ddots(dots,Some (_,_,whencode)) ->
 	  mcode print_string dots; print_string "   when != ";
 	  declaration whencode
       | Ast0.Ddots(dots,None) -> mcode print_string dots
@@ -440,7 +440,7 @@ and initialiser i =
       | Ast0.InitGccName(name,eq,ini) ->
 	  ident name; mcode print_string eq; initialiser ini
       | Ast0.IComma(cm) -> mcode print_string cm; force_newline()
-      | Ast0.Idots(d,Some whencode) ->
+      | Ast0.Idots(d,Some (_,_,whencode)) ->
 	  mcode print_string d; print_string "   WHEN != ";
 	  initialiser whencode
       | Ast0.Idots(d,None) -> mcode print_string d
@@ -488,7 +488,7 @@ and statement arity s =
   print_context s
     (function _ ->
       match Ast0.unwrap s with
-	Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
+	Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace,_) ->
 	  print_string arity;
 	  List.iter print_fninfo fninfo;
 	  ident name; mcode print_string_box lp;
@@ -664,14 +664,14 @@ and print_fninfo = function
   | Ast0.FAttr(attr) -> mcode print_string attr
 
 and whencode notfn alwaysfn = function
-    Ast0.WhenNot a ->
+    Ast0.WhenNot (_,_,a) ->
       print_string "   WHEN != "; open_box 0; notfn a; close_box()
-  | Ast0.WhenAlways a ->
+  | Ast0.WhenAlways (_,_,a) ->
       print_string "   WHEN = "; open_box 0; alwaysfn a; close_box()
-  | Ast0.WhenModifier x -> print_string "   WHEN "; U.print_when_modif x
-  | Ast0.WhenNotTrue a ->
+  | Ast0.WhenModifier (_,x) -> print_string "   WHEN "; U.print_when_modif x
+  | Ast0.WhenNotTrue (_,_,a) ->
       print_string "   WHEN != TRUE "; open_box 0; expression a; close_box()
-  | Ast0.WhenNotFalse a ->
+  | Ast0.WhenNotFalse (_,_,a) ->
       print_string "   WHEN != FALSE "; open_box 0; expression a; close_box()
 
 and case_line arity c =
@@ -727,7 +727,7 @@ let top_level t =
 let rule =
   print_between (function _ -> force_newline(); force_newline()) top_level
 
-let unparse_anything x =
+let rec unparse_anything x =
   let q = !quiet in
   quiet := true;
   (match x with
@@ -767,7 +767,8 @@ let unparse_anything x =
   | Ast0.IsoWhenTTag(e)  -> expression e
   | Ast0.IsoWhenFTag(e)  -> expression e
   | Ast0.MetaPosTag(var) -> meta_pos [x]
-  | Ast0.HiddenVarTag(var) -> failwith "should not need to be printed");
+  | Ast0.HiddenVarTag(var) -> failwith "should not need to be printed"
+  | Ast0.WhenTag(w,e,a) -> unparse_anything a);
   quiet := q;
   print_newline()
 

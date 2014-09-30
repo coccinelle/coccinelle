@@ -1,5 +1,5 @@
 (*
- * Copyright 2012, INRIA
+ * Copyright 2012-2014, INRIA
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -48,63 +48,77 @@ let get_option fn = function
     None -> None
   | Some x -> Some (fn x)
 
-let make_info line logical_line offset col strbef straft isSymbol =
+let make_info line logical_line logical_line_end offset col strbef straft 
+    isSymbol ws =
   let new_pos_info =
     {Ast0.line_start = line; Ast0.line_end = line;
-      Ast0.logical_start = logical_line; Ast0.logical_end = logical_line;
+      Ast0.logical_start = logical_line; Ast0.logical_end = logical_line_end;
       Ast0.column = col; Ast0.offset = offset; } in
-  { Ast0.pos_info = new_pos_info;
+  { Ast0.pos_info = new_pos_info; Ast0.whitespace = ws;
     Ast0.attachable_start = true; Ast0.attachable_end = true;
     Ast0.mcode_start = []; Ast0.mcode_end = [];
     Ast0.strings_before = strbef; Ast0.strings_after = straft;
     Ast0.isSymbolIdent = isSymbol; }
 
-let clt2info (_,line,logical_line,offset,col,strbef,straft,pos) =
-  make_info line logical_line offset col strbef straft false
+let clt2info (_,line,logical_line,logical_line_end,offset,col,
+              strbef,straft,pos,ws) =
+ make_info line logical_line logical_line_end offset col strbef straft false ws
 
-let drop_bef (arity,line,lline,offset,col,strbef,straft,pos) =
-  (arity,line,lline,offset,col,[],straft,pos)
+let drop_bef (arity,line,lline,llineend,offset,col,strbef,straft,pos,ws) =
+  (arity,line,lline,llineend,offset,col,[],straft,pos,ws)
 
-let drop_aft (arity,line,lline,offset,col,strbef,straft,pos) =
-  (arity,line,lline,offset,col,strbef,[],pos)
+let drop_aft (arity,line,lline,llineend,offset,col,strbef,straft,pos,ws) =
+  (arity,line,lline,llineend,offset,col,strbef,[],pos,ws)
 
 (* used for #define, to put aft on ident/( *)
-let get_aft (arity,line,lline,offset,col,strbef,straft,pos) = straft
+let get_aft (arity,line,lline,llineen,offset,col,strbef,straft,pos,ws) = straft
 
-let set_aft aft (arity,line,lline,offset,col,strbef,_,pos) =
-  (arity,line,lline,offset,col,strbef,aft,pos)
+let set_aft aft
+  (arity,line,lline,llineend,offset,col,strbef,_,pos,ws) =
+  (arity,line,lline,llineend,offset,col,strbef,aft,pos,ws)
 
-let drop_pos (arity,line,lline,offset,col,strbef,straft,pos) =
-  (arity,line,lline,offset,col,strbef,straft,[])
+let drop_pos
+  (arity,line,lline,llineend,offset,col,strbef,straft,pos,ws) =
+  (arity,line,lline,llineend,offset,col,strbef,straft,[],ws)
 
 let clt2mcode_ext str isSymbol = function
-    (Data.MINUS,line,lline,offset,col,strbef,straft,pos)       ->
-      (str,Ast0.NONE,make_info line lline offset col strbef straft isSymbol,
+(Data.MINUS,line,lline,llineend,offset,col,strbef,straft,pos,ws) ->
+      (str,Ast0.NONE,
+       make_info line lline llineend offset col strbef straft isSymbol ws,
+       Ast0.MINUS(ref
+(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,-1)
+ | (Data.OPTMINUS,line,lline,llineend,offset,col,strbef,
+straft,pos,ws)->
+      (str,Ast0.OPT,
+       make_info line lline llineend offset col strbef straft isSymbol ws,
        Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,-1)
-  | (Data.OPTMINUS,line,lline,offset,col,strbef,straft,pos)    ->
-      (str,Ast0.OPT,make_info line lline offset col strbef straft isSymbol,
+  | (Data.UNIQUEMINUS,line,lline,llineend,offset,col,strbef,straft,pos,ws) ->
+      (str,Ast0.UNIQUE,
+       make_info line lline llineend offset col strbef straft isSymbol ws,
        Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,-1)
-  | (Data.UNIQUEMINUS,line,lline,offset,col,strbef,straft,pos) ->
-      (str,Ast0.UNIQUE,make_info line lline offset col strbef straft isSymbol,
-       Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,-1)
-  | (Data.PLUS,line,lline,offset,col,strbef,straft,pos)        ->
-      (str,Ast0.NONE,make_info line lline offset col strbef straft isSymbol,
+  | (Data.PLUS,line,lline,llineend,offset,col,strbef,straft,pos,ws)        ->
+      (str,Ast0.NONE,
+       make_info line lline llineend offset col strbef straft isSymbol ws,
        Ast0.PLUS(Ast.ONE),ref pos,-1)
-  | (Data.PLUSPLUS,line,lline,offset,col,strbef,straft,pos)        ->
-      (str,Ast0.NONE,make_info line lline offset col strbef straft isSymbol,
+  | (Data.PLUSPLUS,line,lline,llineend,offset,col,strbef,straft,pos,ws)    ->
+      (str,Ast0.NONE,
+       make_info line lline llineend offset col strbef straft isSymbol ws,
        Ast0.PLUS(Ast.MANY),ref pos,-1)
-  | (Data.CONTEXT,line,lline,offset,col,strbef,straft,pos)     ->
-      (str,Ast0.NONE,make_info line lline offset col strbef straft isSymbol,
+  | (Data.CONTEXT,line,lline,llineend,offset,col,strbef,straft,pos,ws)     ->
+      (str,Ast0.NONE,
+       make_info line lline llineend offset col strbef straft isSymbol ws,
        Ast0.CONTEXT(ref(Ast.NOTHING,
 			Ast0.default_token_info,Ast0.default_token_info)),
        ref pos,-1)
-  | (Data.OPT,line,lline,offset,col,strbef,straft,pos)         ->
-      (str,Ast0.OPT,make_info line lline offset col strbef straft isSymbol,
+  | (Data.OPT,line,lline,llineend,offset,col,strbef,straft,pos,ws)         ->
+      (str,Ast0.OPT,
+       make_info line lline llineend offset col strbef straft isSymbol ws,
        Ast0.CONTEXT(ref(Ast.NOTHING,
 			Ast0.default_token_info,Ast0.default_token_info)),
        ref pos,-1)
-  | (Data.UNIQUE,line,lline,offset,col,strbef,straft,pos)      ->
-      (str,Ast0.UNIQUE,make_info line lline offset col strbef straft isSymbol,
+  | (Data.UNIQUE,line,lline,llineend,offset,col,strbef,straft,pos, ws)     ->
+      (str,Ast0.UNIQUE,
+       make_info line lline llineend offset col strbef straft isSymbol ws,
        Ast0.CONTEXT(ref(Ast.NOTHING,
 			Ast0.default_token_info,Ast0.default_token_info)),
        ref pos,-1)
@@ -227,21 +241,20 @@ let lookup rule name =
       raise
 	(Semantic_cocci.Semantic("bad rule "^rule^" or bad variable "^name))
 
-let check_meta_tyopt type_irrelevant = function
+let check_meta_tyopt type_irrelevant v =
+  let fail name =
+    raise
+      (Semantic_cocci.Semantic
+	 ("incompatible inheritance declaration "^name)) in
+  match v with
     Ast.MetaMetaDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaMetaDecl(_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaIdDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaIdDecl(_,_) | Ast.MetaFreshIdDecl(_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaFreshIdDecl((rule,name),seed) ->
       raise
 	(Semantic_cocci.Semantic
@@ -249,137 +262,80 @@ let check_meta_tyopt type_irrelevant = function
   | Ast.MetaTypeDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaTypeDecl(_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaInitDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaInitDecl(_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaInitListDecl(Ast.NONE,(rule,name),len_name) ->
       (match lookup rule name with
 	Ast.MetaInitListDecl(_,_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaListlenDecl((rule,name)) ->
       (match lookup rule name with
 	Ast.MetaListlenDecl(_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaParamDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaParamDecl(_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaParamListDecl(Ast.NONE,(rule,name),len_name) ->
       (match lookup rule name with
 	Ast.MetaParamListDecl(_,_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaConstDecl(Ast.NONE,(rule,name),ty) ->
       (match lookup rule name with
 	Ast.MetaConstDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaErrDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaErrDecl(_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaExpDecl(Ast.NONE,(rule,name),ty) ->
       (match lookup rule name with
 	Ast.MetaExpDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaIdExpDecl(Ast.NONE,(rule,name),ty) ->
       (match lookup rule name with
 	Ast.MetaIdExpDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaLocalIdExpDecl(Ast.NONE,(rule,name),ty) ->
       (match lookup rule name with
 	Ast.MetaLocalIdExpDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaExpListDecl(Ast.NONE,(rule,name),len_name) ->
       (match lookup rule name with
 	Ast.MetaExpListDecl(_,_,_) -> ()
       | Ast.MetaParamListDecl(_,_,_) when not (!Flag.make_hrule = None) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaDeclDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaDeclDecl(_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaFieldDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaFieldDecl(_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaFieldListDecl(Ast.NONE,(rule,name),len_name) ->
       (match lookup rule name with
 	Ast.MetaFieldListDecl(_,_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaStmDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaStmDecl(_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaStmListDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaStmListDecl(_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaFuncDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaFuncDecl(_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaLocalFuncDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaLocalFuncDecl(_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
   | Ast.MetaPosDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaPosDecl(_,_) ->
@@ -389,10 +345,30 @@ let check_meta_tyopt type_irrelevant = function
 	    raise
 	      (Semantic_cocci.Semantic
 		 ("position cannot be inherited over modifications: "^name))
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
+      | _ -> fail name)
+  | Ast.MetaFmtDecl(Ast.NONE,(rule,name)) ->
+      (match lookup rule name with
+	Ast.MetaFmtDecl(_,_) -> ()
+      | _ -> fail name)
+  | Ast.MetaFragListDecl(Ast.NONE,(rule,name),len) ->
+      (match lookup rule name with
+	Ast.MetaFragListDecl(_,_,_) -> ()
+      | _ -> fail name)
+  | Ast.MetaAnalysisDecl(analyzer,(rule,name)) ->
+      (match lookup rule name with
+	Ast.MetaAnalysisDecl(analyzer1,_) ->
+	  if analyzer = analyzer1
+	  then ()
+	  else fail name
+      | _ -> fail name)
+  | Ast.MetaDeclarerDecl(Ast.NONE,(rule,name)) ->
+      (match lookup rule name with
+	Ast.MetaDeclarerDecl(Ast.NONE,(rule,name)) -> ()
+      | _ -> fail name)
+  | Ast.MetaIteratorDecl(Ast.NONE,(rule,name)) ->
+      (match lookup rule name with
+	Ast.MetaIteratorDecl(Ast.NONE,(rule,name)) -> ()
+      | _ -> fail name)
   | _ ->
       raise
 	(Semantic_cocci.Semantic ("arity not allowed on imported declaration"))
@@ -709,9 +685,13 @@ let pct_split str =
 
 let parse_middle middle clt =
   let pieces = pct_split middle in
-  let update_clt (a,line,logical_line,offset,col,strbef,straft,pos) chars =
+  let update_clt 
+    (a,line,logical_line,logical_line_end,offset,col,strbef,straft,pos,ws) 
+    chars =
     (* not sure how to update col: wrong if there are newlines *)
-    (a,line,logical_line,offset+chars,col+chars,strbef,straft,pos) in
+    (a,line,logical_line,logical_line_end,offset+chars,col+chars,strbef,straft,
+     pos,ws)
+  in
   match pieces with
     [] -> failwith "not possible"
   | fst::rest ->
@@ -723,6 +703,10 @@ let parse_middle middle clt =
 	| "..." -> [Ast0.wrap(Ast0.Strdots(clt2mcode fst clt))]
 	| _ -> [Ast0.wrap (Ast0.ConstantFragment(clt2mcode fst clt))] in
       let chars = String.length fst in
+      let mkrest clt = function
+	  "" -> []
+	| "..." -> [Ast0.wrap(Ast0.Strdots(clt2mcode "..." clt))]
+	| s -> [Ast0.wrap(Ast0.ConstantFragment(clt2mcode s clt))] in
       let rec loop chars = function
 	  [] -> []
 	| r::rs ->
@@ -733,12 +717,6 @@ let parse_middle middle clt =
 	    let rres =
 	      match String.get r 0 with
 		'@' ->
-		  let mkrest clt = function
-		      "" -> []
-		    | "..." ->
-			[Ast0.wrap(Ast0.Strdots(clt2mcode "..." clt))]
-		    | s ->
-			[Ast0.wrap(Ast0.ConstantFragment(clt2mcode s clt))] in
 		  (match Str.split (Str.regexp "@") r with
 		    first::rest ->
 		      (* 3+ for the % and the starting and ending @ *)
@@ -756,9 +734,8 @@ let parse_middle middle clt =
 		    (d,"") -> [Ast0.wrap (Ast0.FormatFragment(pct,mkfmt d))]
 		  | (d,rest) ->
 		      let clt2 = update_clt clt 1 in
-		      [Ast0.wrap (Ast0.FormatFragment(pct,mkfmt d));
-			Ast0.wrap
-			  (Ast0.ConstantFragment(clt2mcode rest clt2))] in
+		      (Ast0.wrap (Ast0.FormatFragment(pct,mkfmt d))) ::
+		      (mkrest clt2 rest) in
 	    (* +1 is for the %, which is not shown *)
 	    rres @ (loop (chars + (String.length r) + 1) rs) in
       first @ (loop chars rest)
@@ -778,16 +755,17 @@ let check_no_duplicates l =
 	| _ -> loop (y :: rest)) in
   loop l
 
-let update_line (c,l,ll,lex_start,preceeding_spaces,cb,ca,m) line =
+let update_line (c,l,ll,lle,lex_start,preceeding_spaces,cb,ca,m,ws) line =
   let l = l + line in
   let ll = ll + line in
+  let lle = lle + line in
   let lex_start = if line > 0 then 0 else lex_start in
   let preceeding_spaces = if line > 0 then 0 else preceeding_spaces in
-  (c,l,ll,lex_start,preceeding_spaces,cb,ca,m)
+  (c,l,ll,lle,lex_start,preceeding_spaces,cb,ca,m,ws)
 
 let drop_minus_plus l clt =
-  let pclt (_,a,b,c,d,cb,ca,m) = (Data.PLUS,a,b,c,d,cb,ca,m) in
-  let mclt (_,a,b,c,d,cb,ca,m) = (Data.MINUS,a,b,c,d,cb,ca,m) in
+  let pclt (_,a,b,c,d,e,cb,ca,m,w) = (Data.PLUS,a,b,c,d,e,cb,ca,m,w) in
+  let mclt (_,a,b,c,d,e,cb,ca,m,w) = (Data.MINUS,a,b,c,d,e,cb,ca,m,w) in
   (* not sure this works for all kinds of newlines, cf lexer *)
   let pieces = Str.split (Str.regexp "\n") l in
   if pieces = []
@@ -828,19 +806,19 @@ let drop_minus_plus l clt =
 let not_format_string str clt =
   Ast0.wrap(Ast0.Constant (clt2mcode (Ast.String str) clt))
 
-let parse_string str clt =
+let parse_string str ((a,b,c,d,e,f,g,h,i,_) as clt) =
   if List.length(Str.split_delim (Str.regexp "%") str) > 1
   then
     try
       begin
-	let first = "\"" in
-	let last = "\"" in
+	let first = clt2mcode "\"" clt in
+	(*do not want subsequent tokens to inherit whitespace from first*)
+	let clt = (a,b,c,d,e,f,g,h,i,"") in
 	let (line,middle) = drop_minus_plus str clt in
 	let middle = Ast0.wrap (Ast0.DOTS middle) in
+	let last = clt2mcode "\"" (update_line clt (line-1)) in
 	contains_string_constant := true;
-	Ast0.wrap
-	  (Ast0.StringConstant(clt2mcode first clt,middle,
-			       clt2mcode last (update_line clt (line-1))))
+	Ast0.wrap(Ast0.StringConstant(first,middle,last))
       end
     with Parse_printf.Not_format_string -> not_format_string str clt
   else not_format_string str clt

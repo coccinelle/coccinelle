@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<meta name="generator" content="hevea 2.06">
+<meta name="generator" content="hevea 2.09">
 <link rel="stylesheet" type="text/css" href="main_grammar.css">
 <title>Function declarations</title>
 </head>
@@ -73,7 +73,10 @@ causes it to be placed just before the type</p><div class="lstlisting"><span sty
 <span style="font-size:xx-small">   6</span> T foo() { ... }</div><p>It may be necessary to consider several cases to ensure that the added ode
 is placed in the right position. For example, one may need one pattern
 that considers that the function is declared <span style="font-family:monospace">inline</span> and another that
-considers that it is not.</p>
+considers that it is not.</p><p>The C parser allows functions that have no return type, and assumes that
+the return type is <span style="font-family:monospace">int</span>. The support for parsing such functions is
+limited. In particular, the parameter list must contain a type for each
+parameter, and may not contain varargs.</p>
 <hr>
 <a href="main_grammar005.html"><img src="previous_motif.gif" alt="Previous"></a>
 <a href="index.html"><img src="contents_motif.gif" alt="Up"></a>

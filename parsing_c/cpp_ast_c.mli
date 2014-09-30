@@ -36,10 +36,6 @@ val cpp_expand_include:
   cpp_option list -> Common.dirname (* start point for relative paths *) ->
   Ast_c.program -> Ast_c.program
 
-(* #ifdef *)
-val cpp_ifdef_statementize:
-  Ast_c.program -> Ast_c.program
-
 (* #define *)
 val cpp_expand_macro_expr:
   Ast_c.define_kind -> Ast_c.argument Ast_c.wrap2 list ->

@@ -1,6 +1,5 @@
 @exists@
 expression x;
-statement S1,S2;
 @@
 
 f(x);
@@ -11,7 +10,6 @@ g(x);
 
 @exists@
 expression x;
-statement S1,S2;
 @@
 
 +before();

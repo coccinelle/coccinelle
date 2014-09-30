@@ -1,5 +1,5 @@
 (*
- * Copyright 2012, INRIA
+ * Copyright 2012-2014, INRIA
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -43,7 +43,7 @@ val statement_dots :
     Ast0_cocci.statement Ast0_cocci.dots -> Ast_cocci.statement Ast_cocci.dots
 val declaration_dots :
     Ast0_cocci.declaration Ast0_cocci.dots ->
-      Ast_cocci.declaration Ast_cocci.dots
+      Ast_cocci.annotated_decl Ast_cocci.dots
 val case_line : Ast0_cocci.case_line -> Ast_cocci.case_line
 val string_fragment : Ast0_cocci.string_fragment -> Ast_cocci.string_fragment
 val typeC : bool (*allminus*) -> Ast0_cocci.typeC -> Ast_cocci.fullType

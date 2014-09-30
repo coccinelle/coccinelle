@@ -1,5 +1,5 @@
 (*
- * Copyright 2012, INRIA
+ * Copyright 2012-2014, INRIA
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -25,8 +25,11 @@
 
 
 # 0 "./get_constants2.mli"
+(* Not is never used in the result.  A bit ugly, but avoids reimplementing
+some operators in get_constants2 *)
 type combine =
-    And of combine list | Or of combine list | Elem of string | False | True
+    And of combine list | Or of combine list | Not of combine
+  | Elem of string | False | True
 
 val get_constants :
     Ast_cocci.rule list ->

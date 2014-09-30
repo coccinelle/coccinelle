@@ -32,6 +32,7 @@ type token =
   | TWords
   | TWhy0
   | TWhy of (Data.clt)
+  | TWhitespace of (string)
   | TWhile of (Data.clt)
   | TWhenTrue of (Data.clt)
   | TWhenFalse of (Data.clt)
@@ -78,7 +79,7 @@ type token =
   | TOrLog of (Data.clt)
   | TOr of (Data.clt)
   | TOn
-  | TOPar0 of (Data.clt)
+  | TOPar0 of (string * Data.clt)
   | TOPar of (Data.clt)
   | TOInit of (Data.clt)
   | TOEllipsis of (Data.clt)
@@ -91,7 +92,7 @@ type token =
   | TMul of (Data.clt)
   | TMinusFile of (string * Data.clt)
   | TMinus of (Data.clt)
-  | TMid0 of (Data.clt)
+  | TMid0 of (string * Data.clt)
   | TMetavariable
   | TMetaType of (Parse_aux.info)
   | TMetaStmList of (Parse_aux.info)
@@ -184,7 +185,7 @@ type token =
   | TComma of (Data.clt)
   | TChar of (string * Data.clt)
   | TCase of (Data.clt)
-  | TCPar0 of (Data.clt)
+  | TCPar0 of (string * Data.clt)
   | TCPar of (Data.clt)
   | TCEllipsis of (Data.clt)
   | TCCro of (Data.clt)

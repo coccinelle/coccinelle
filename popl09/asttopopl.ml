@@ -1,5 +1,5 @@
 (*
- * Copyright 2012, INRIA
+ * Copyright 2012-2014, INRIA
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -40,7 +40,7 @@ let term s inif =
       (match Ast.unwrap ast with
 	Ast.ExprStatement(_,_) -> Past.Atomic ast
       | Ast.Exp(_) -> Past.Atomic ast
-      | Ast.Decl(_,_,_) -> Past.Atomic ast
+      | Ast.Decl(_) -> Past.Atomic ast
       | Ast.ReturnExpr(_,_,_) -> Past.Atomic ast
       | Ast.MetaStmt(_,_,_,_) when inif -> Past.Atomic ast
       | Ast.DisjRuleElem(_) -> Past.Atomic ast

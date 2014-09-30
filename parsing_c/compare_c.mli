@@ -6,9 +6,6 @@ type compare_result =
 
 (* the string list is the output of diff *)
 
-val compare_ast :
- Common.filename -> Common.filename -> compare_result * string list
-
 val compare_default : (* compare to a res file *)
   Common.filename -> Common.filename -> compare_result * string list
 

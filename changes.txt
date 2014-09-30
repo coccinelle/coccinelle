@@ -63,6 +63,7 @@
 - Added documentation about iteration.
 - Allow changes within strings.
 - EXEC, for use with the --ibm option.
+- Limited matching of decimal format strings, with the --ibm option
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line
@@ -164,7 +165,12 @@
   beginning or ending counterparts.
 - Improved interpret_cocci_grep to try to avoid no accumulating lots of
   anded data.
-- Improve type inference performance when many files included by using maps.
+- Improve type inference performance when many files included by using
+  maps.
+- Extend file names only if the mentioned file does not exist.
+- Better support for functions that have no specified return type.
+- Added --include-headers-for-types option. 
+- Cope with unreadable C files.  Thanks to Akos PASZTORY for the suggestion.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
@@ -332,6 +338,43 @@
   Thanks to Ning Jiang for motivating investigation of the problem.
 - Allow adding things after an escaping compound.  Thanks to Nic Volanschi
   for finding the problem.
+- split apart added strings when moving mcode information to bef of for
+  loop, function definition, etc.  Thanks to Luis R. Rodriguez for reporting
+  the problem.
+- Take into account dependencies when considering plus information in
+  get_constants.  Also removing constraints based on plus information
+  results in True, regardless on whether & or v is being considered.
+  Thanks to Luis R. Rodriguez for reporting the problem.
+- Move pcre regular expressions to a hashtable, and out of parsed smpl
+  terms to avoid problems with comparing rule_elems in ctl matching.
+  Note that this hash table is global and is never cleared, since we
+  work on only one semantic patch per execution of Coccinelle.  Thanks to
+  SF Markus Elfring for pointing out the problem.
+- Leave constraints in function prototypes, now that they are comparable.
+- Make it possible to add something after the last brace of a function.
+  Thanks to Benoit Taine for motivating this change.
+- Avoiding attaching # directives to , after ... as this comma may get
+  dropped or not match any code.  Thanks to Stefan Assmann for reporting
+  the problem.
+- Manage trailing comma in Constructor code.  Thanks to Viresh Kumar for
+  noting the problem.
+- For multidecls, take into account that type may comprise multiple tokens.
+  Thanks to Nic Volanschi for noticing the problem.
+- don't add newlines in #defines, even if lines get long
+- consider # as a comment character in script code
+- Don't take into account string constants in get_constants, as these are
+  not likely to be indexed.  Thanks to Benoit Taine for noting the problem.
+- Better pretty printing indentation for ifs.
+- Don't multiply propagate positions to the same token in isos that use the
+  same token more than once.  Problem reported by Riccardo Lucchese.
+- Don't require balanced parentheses in + code for stars.  Problem reported
+  by Chi Pham.
+- Unfavor commas for attaching plus code; commas can disappear.
+- In pretty printing added if branch braces, allow minus code as well as
+  spaces and newlines between the ) and the {.
+- Make the --keep-comments flag work.
+- Make the --force-diff flag work.
+- Improve newlines around added else tokens.
 
 * 0.2.5
 ** Language:

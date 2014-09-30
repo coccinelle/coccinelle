@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<meta name="generator" content="hevea 2.06">
+<meta name="generator" content="hevea 2.09">
 <style type="text/css">
 .li-itemize{margin:1ex 0ex;}
 .li-enumerate{margin:1ex 0ex;}
@@ -50,12 +50,12 @@ td p{margin:0px;}
 .part{margin:2ex auto;text-align:center}
 .lstlisting{font-family:monospace;white-space:pre;margin-right:auto;margin-left:0pt;text-align:left}
 </style>
-<title>The SmPL Grammar (version 1.0.0-rc21)
+<title>The SmPL Grammar (version 1.0.0-rc22)
 </title>
 </head>
 <body >
 <!--HEVEA command line is: /usr/bin/hevea -exec /usr/share/hevea/xxdate.exe main_grammar.tex -->
-<!--CUT STYLE article--><!--CUT DEF section 1 --><table class="title"><tr><td style="padding:1ex"><h1 class="titlemain">The SmPL Grammar (version 1.0.0-rc21)</h1><h3 class="titlerest">Research group on Coccinelle</h3><h3 class="titlerest">April 13, 2014</h3></td></tr>
+<!--CUT STYLE article--><!--CUT DEF section 1 --><table class="title"><tr><td style="padding:1ex"><h1 class="titlemain">The SmPL Grammar (version 1.0.0-rc22)</h1><h3 class="titlerest">Research group on Coccinelle</h3><h3 class="titlerest">September 29, 2014</h3></td></tr>
 </table><p>This document presents the grammar of the SmPL language used by the
 <a href="http://coccinelle.lip6.fr/">Coccinelle tool</a>. For the most
 part, the grammar is written using standard notation. In some rules,
@@ -65,8 +65,10 @@ arguments. The grammar also uses some unspecified nonterminals, such
 as <span style="font-family:sans-serif">id</span>, <span style="font-family:sans-serif">const</span>, etc. These refer to the sets suggested by
 the name, <em>i.e.</em>, <span style="font-family:sans-serif">id</span> refers to the set of possible
 C-language identifiers, while <span style="font-family:sans-serif">const</span> refers to the set of
-possible C-language constants.
-A PDF version of this documentation is available at
+possible C-language constants.</p><p>A square bracket that is surrounded by spaces in the description of a term
+should appear explicitly in the term, as in an array reference. On the
+other hand, square brackets that surround some other term indicat that the
+presence of that term is optional.</p><p>A PDF version of this documentation is available at
 <a href="http://coccinelle.lip6.fr/docs/main_grammar.pdf"><span style="font-family:monospace">http://coccinelle.lip6.fr/docs/main_grammar.pdf</span></a>.
 </p>
 <!--TOC section id="sec1" Program-->
@@ -143,6 +145,12 @@ declaration with any visibility or storage, respectively.
 </li><li class="li-itemize"><span style="color:blue">optional_qualifier</span>: This is similar to <span style="color:blue">optional_storage</span>,
 except that here is it the qualifier (i.e., const or volatile) that does
 not have to be specified in the SmPL code, but may be present in the C code.
+</li><li class="li-itemize"><span style="color:blue">optional_attributes</span>: This is similar to
+<span style="color:blue">optional_attributes</span>, except that here is it an attribute (e.g.,
+__init) that does not have to be specified in the SmPL code, but may be
+present in the C code. <span style="font-weight:bold">Note that this isomorphism is currently
+useless, because matching of attributes is not supported, due to the
+difficulty of parsing attributes in C code.</span>
 </li><li class="li-itemize"><span style="color:blue">value_format</span>: Integers in various formats, e.g., 1 and 0x1, are
 considered to be equivalent in the matching process.
 </li><li class="li-itemize"><span style="color:blue">optional_declarer_semicolon</span>: Some declarers (top-level terms
@@ -249,7 +257,11 @@ expression metavariable binds <span style="font-family:monospace">E</span> to <s
 <span style="font-family:monospace">Ps@Es</span>, where <span style="font-family:monospace">Ps</span> is a parameter list and <span style="font-family:monospace">Es</span> is an
 expression list. This pattern matches a parameter list, and then matches
 <span style="font-family:monospace">Es</span> to the list of expressions, ie a possible argument list,
-represented by the names of the parameters.</p><div class="center"><table style="border-spacing:6px;border-collapse:separate;" class="cellpading0"><tr><td style="text-align:left;white-space:nowrap" > <a id="ids"><span style="color:maroon">ids</span></a><span style="color:maroon">
+represented by the names of the parameters.</p><p>Matching of various kinds of format strings within strings is supported.
+With the <span style="font-family:monospace">--ibm</span> option, matching of decimal format declarations is
+supported, but the length and precision arguments are not interpreted.
+Thus it is not possible to match metavariables in these fields. Instead,
+the entire format is matched as a single string.</p><div class="center"><table style="border-spacing:6px;border-collapse:separate;" class="cellpading0"><tr><td style="text-align:left;white-space:nowrap" > <a id="ids"><span style="color:maroon">ids</span></a><span style="color:maroon">
 </span></td><td style="text-align:center;white-space:nowrap" ><span style="color:black">  ::=  </span></td><td style="text-align:left;white-space:nowrap" ><a href="#COMMA_LIST"><span style="color:maroon">COMMA_LIST</span></a><span style="color:blue">(</span><a href="#pmid"><span style="color:maroon">pmid</span></a><span style="color:blue">)</span> </td></tr>
 <tr><td style="text-align:left;white-space:nowrap" >
 <a id="pmid"><span style="color:maroon">pmid</span></a><span style="color:maroon">
@@ -659,7 +671,10 @@ causes it to be placed just before the type</p><div class="lstlisting"><span sty
 <span style="font-size:xx-small">   6</span> T foo() { ... }</div><p>It may be necessary to consider several cases to ensure that the added ode
 is placed in the right position. For example, one may need one pattern
 that considers that the function is declared <span style="font-family:monospace">inline</span> and another that
-considers that it is not.</p>
+considers that it is not.</p><p>The C parser allows functions that have no return type, and assumes that
+the return type is <span style="font-family:monospace">int</span>. The support for parsing such functions is
+limited. In particular, the parameter list must contain a type for each
+parameter, and may not contain varargs.</p>
 <!--TOC section id="sec8" Declarations-->
 <h2 id="sec8" class="section">7  Declarations</h2><!--SEC END --><div class="center"><table style="border-spacing:6px;border-collapse:separate;" class="cellpading0"><tr><td style="text-align:left;white-space:nowrap" > <a id="decl_var"><span style="color:maroon">decl_var</span></a><span style="color:maroon">
 </span></td><td style="text-align:center;white-space:nowrap" ><span style="color:black">  ::=  </span></td><td style="text-align:left;white-space:nowrap" ><a href="#type"><span style="color:maroon">type</span></a><span style="color:blue"> </span><span style="color:black">[</span><a href="#id"><span style="color:maroon">id</span></a><span style="color:blue"> </span><span style="color:black">[</span><span style="color:blue">[</span><span style="color:black">[</span><a href="#dot_expr"><span style="color:maroon">dot_expr</span></a><span style="color:black">]</span><span style="color:blue">]</span><span style="color:black">]</span><span style="color:blue">

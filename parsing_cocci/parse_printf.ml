@@ -1,5 +1,5 @@
 (*
- * Copyright 2012, INRIA
+ * Copyright 2012-2014, INRIA
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -102,6 +102,15 @@ let check_type s =
   match c1 with
     'd' | 'i' | 'u' | 'f' | 'F' | 'e' | 'E' | 'g' | 'G' | 'x' | 'X' |
     'o' | 's' | 'c' | 'p' | 'a' | 'A' | 'n' -> (string_of_char c1, suffix s 1)
+  | 'D' when !Flag.ibm ->
+      (match safe_get s 1 with
+	'(' ->
+	  (try
+	    let final = Str.search_forward (Str.regexp_string ")") s 2 in
+	    let len = final + 1 in
+	    (String.sub s 0 len, suffix s len)
+	  with _ -> raise Not_format_string)
+      |	_ -> raise Not_format_string)
   | _ -> raise Not_format_string
 
 (* perhaps useful for ocaml scripts *)

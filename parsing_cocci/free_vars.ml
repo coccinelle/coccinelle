@@ -1,5 +1,5 @@
 (*
- * Copyright 2012, INRIA
+ * Copyright 2012-2014, INRIA
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -236,8 +236,8 @@ let collect_refs include_constraints =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing
     astfvident astfvexpr astfvfrag astfvfmt astfvfullType astfvtypeC
-    astfvinit astfvparam
-    astfvdecls astfvrule_elem astfvstatement donothing donothing donothing_a
+    astfvinit astfvparam astfvdecls donothing astfvrule_elem astfvstatement
+    donothing donothing donothing_a
 
 let collect_all_refs = collect_refs true
 let collect_non_constraint_refs = collect_refs false
@@ -384,8 +384,8 @@ let collect_saved =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing
     astfvident astfvexpr astfvfrag astfvfmt donothing astfvtypeC
-    astfvinit astfvparam
-    astfvdecls astfvrule_elem donothing donothing donothing donothing
+    astfvinit astfvparam astfvdecls donothing astfvrule_elem 
+    donothing donothing donothing donothing
 
 (* ---------------------------------------------------------------- *)
 
@@ -458,6 +458,11 @@ let collect_in_plus_term =
 
   (* case for things with bef/aft mcode *)
 
+  let annotated_decl decl =
+    match Ast.unwrap decl with
+      Ast.DElem(bef,_,_) -> bef
+    | _ -> failwith "not possible" in
+
   let astfvrule_elem recursor k re =
     match Ast.unwrap re with
       Ast.FunHeader(bef,_,fi,nm,_,params,_) ->
@@ -485,22 +490,24 @@ let collect_in_plus_term =
 	  (bind nm_metas
 	     (bind param_metas
 		(bind (cip_mcodekind recursor bef) (k re))))
-    | Ast.Decl(bef,_,_) ->
-	bind (cip_mcodekind recursor bef) (k re)
+    | Ast.Decl decl ->
+	bind (cip_mcodekind recursor (annotated_decl decl)) (k re)
+    | Ast.ForHeader(fr,lp,Ast.ForDecl(decl),e2,sem2,e3,rp) ->
+	bind (cip_mcodekind recursor (annotated_decl decl)) (k re)
     | _ -> k re in
 
   let astfvstatement recursor k s =
     match Ast.unwrap s with
       Ast.IfThen(_,_,(_,_,_,aft)) | Ast.IfThenElse(_,_,_,_,(_,_,_,aft))
     | Ast.While(_,_,(_,_,_,aft)) | Ast.For(_,_,(_,_,_,aft))
-    | Ast.Iterator(_,_,(_,_,_,aft)) ->
+    | Ast.Iterator(_,_,(_,_,_,aft)) | Ast.FunDecl(_,_,_,_,(_,_,_,aft)) ->
 	bind (k s) (cip_mcodekind recursor aft)
     | _ -> k s in
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
     donothing astfvrule_elem astfvstatement donothing donothing donothing
 
 let collect_in_plus metavars minirules =
@@ -717,7 +724,7 @@ let classify_variables metavar_decls minirules used_after =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing
       ident expression string_fragment string_format donothing typeC
-      init param decl rule_elem
+      init param decl donothing rule_elem
       donothing donothing donothing donothing in
 
   List.map fn.V.rebuilder_top_level minirules
@@ -820,6 +827,9 @@ let astfvs metavars bound =
       | Ast.Iterator(header,body,(_,_,_,aft)) ->
 	  let (unbound,_,fresh,inherited) = classify (cip_plus aft) [] in
 	  Ast.Iterator(header,body,(unbound,fresh,inherited,aft))
+      |	Ast.FunDecl(header,lbrace,body,rbrace,(_,_,_,aft)) ->
+	  let (unbound,_,fresh,inherited) = classify (cip_plus aft) [] in
+	  Ast.FunDecl(header,lbrace,body,rbrace,(unbound,fresh,inherited,aft))
       |	s -> s in
 
     let (matched,munbound,fresh,_) = classify free minus_free in
@@ -849,7 +859,7 @@ let astfvs metavars bound =
   V.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing astfvstatement_dots donothing donothing
-    donothing donothing
+    donothing donothing donothing 
     donothing donothing donothing donothing donothing donothing donothing
     astfvrule_elem astfvstatement astfvcase_line astfvtoplevel donothing
 
@@ -915,7 +925,7 @@ let get_neg_pos_list (_,rule) used_after_list =
     V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing in
   match rule with
     Ast.CocciRule(_,_,minirules,_,_) ->

@@ -1,5 +1,5 @@
 (*
- * Copyright 2012, INRIA
+ * Copyright 2012-2014, INRIA
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -54,21 +54,20 @@ type 'a combiner =
      combiner_anything : Ast.anything  -> 'a;
      combiner_expression_dots : Ast.expression Ast.dots -> 'a;
      combiner_statement_dots : Ast.statement Ast.dots -> 'a;
-     combiner_declaration_dots : Ast.declaration Ast.dots -> 'a;
+     combiner_anndecl_dots : Ast.annotated_decl Ast.dots -> 'a;
      combiner_initialiser_dots : Ast.initialiser Ast.dots -> 'a}
 
 type ('mc,'a) cmcode = 'a combiner -> 'mc Ast_cocci.mcode -> 'a
 type ('cd,'a) ccode = 'a combiner -> ('cd -> 'a) -> 'cd -> 'a
-
 
 let combiner bind option_default
     meta_mcodefn string_mcodefn const_mcodefn assign_mcodefn fix_mcodefn
     unary_mcodefn binary_mcodefn
     cv_mcodefn sign_mcodefn struct_mcodefn storage_mcodefn
     inc_file_mcodefn
-    expdotsfn paramdotsfn stmtdotsfn decldotsfn initdotsfn
-    identfn exprfn fragfn fmtfn ftfn tyfn initfn paramfn declfn rulefn
-    stmtfn casefn topfn anyfn =
+    expdotsfn paramdotsfn stmtdotsfn anndecldotsfn initdotsfn
+    identfn exprfn fragfn fmtfn ftfn tyfn initfn paramfn declfn
+    annotated_declfn rulefn stmtfn casefn topfn anyfn =
   let multibind l =
     let rec loop = function
 	[] -> option_default
@@ -83,7 +82,7 @@ let combiner bind option_default
     let k d =
       match Ast.unwrap d with
 	Ast.DOTS(l) | Ast.CIRCLES(l) | Ast.STARS(l) ->
-	  multibind (List.map default l) in
+          multibind (List.map default l) in
     param all_functions k arg in
 
   let rec meta_mcode x = meta_mcodefn all_functions x
@@ -107,7 +106,8 @@ let combiner bind option_default
   and identifier_dots d = dotsfn iddotsfn ident all_functions d
   and parameter_dots d = dotsfn paramdotsfn parameterTypeDef all_functions d
   and statement_dots d = dotsfn stmtdotsfn statement all_functions d
-  and declaration_dots d = dotsfn decldotsfn declaration all_functions d
+  and annotated_decl_dots d =
+    dotsfn anndecldotsfn annotated_decl all_functions d
   and initialiser_dots d = dotsfn initdotsfn initialiser all_functions d
   and string_fragment_dots d = dotsfn strdotsfn string_fragment all_functions d
   and exec_code_dots d = dotsfn ecdotsfn exec_code all_functions d
@@ -119,7 +119,11 @@ let combiner bind option_default
       | Ast.MetaId(name,_,_,_) -> meta_mcode name
       | Ast.MetaFunc(name,_,_,_) -> meta_mcode name
       | Ast.MetaLocalFunc(name,_,_,_) -> meta_mcode name
-      |	Ast.AsIdent(id,asid) -> bind (ident id) (ident asid)
+      | Ast.AsIdent(id,asid) ->
+(* use let-ins to ensure arg evaluation happens left-to-right *)
+	  let lid = ident id in 
+	  let lasid = ident asid in
+	  bind lid lasid
       | Ast.DisjId(id_list) -> multibind (List.map ident id_list)
       | Ast.OptIdent(id) -> ident id
       | Ast.UniqueIdent(id) -> ident id in
@@ -131,62 +135,119 @@ let combiner bind option_default
 	Ast.Ident(id) -> ident id
       | Ast.Constant(const) -> const_mcode const
       | Ast.StringConstant(lq,str,rq) ->
-	  multibind
-	    [string_mcode lq; string_fragment_dots str; string_mcode rq]
+	  let llq = string_mcode lq in
+	  let lstr = string_fragment_dots str in
+	  let lrq = string_mcode rq in
+	  multibind [llq; lstr; lrq]
       | Ast.FunCall(fn,lp,args,rp) ->
-	  multibind [expression fn; string_mcode lp; expression_dots args;
-		      string_mcode rp]
+	  let lfn = expression fn in
+	  let llp = string_mcode lp in
+	  let largs = expression_dots args in
+	  let lrp = string_mcode rp in
+	  multibind [lfn; llp; largs; lrp]
       | Ast.Assignment(left,op,right,simple) ->
-	  multibind [expression left; assign_mcode op; expression right]
+	  let lleft = expression left in
+	  let lop = assign_mcode op in
+	  let lright = expression right in
+	  multibind [lleft; lop; lright]
       | Ast.Sequence(left,op,right) ->
-	  multibind [expression left; string_mcode op; expression right]
+	  let lleft = expression left in
+	  let lop = string_mcode op in
+	  let lright = expression right in
+	  multibind [lleft; lop; lright]
       | Ast.CondExpr(exp1,why,exp2,colon,exp3) ->
-	  multibind [expression exp1; string_mcode why;
-		      get_option expression exp2; string_mcode colon;
-		      expression exp3]
-      | Ast.Postfix(exp,op) -> bind (expression exp) (fix_mcode op)
-      | Ast.Infix(exp,op) -> bind (fix_mcode op) (expression exp)
-      | Ast.Unary(exp,op) -> bind (unary_mcode op) (expression exp)
+	  let lexp1 = expression exp1 in
+	  let lwhy = string_mcode why in
+	  let lexp2 = get_option expression exp2 in
+	  let lcolon = string_mcode colon in
+	  let lexp3 = expression exp3 in
+	  multibind [lexp1; lwhy; lexp2; lcolon; lexp3]
+      | Ast.Postfix(exp,op) -> 
+	  let lexp = expression exp in
+	  let lop = fix_mcode op in
+	  bind lexp lop
+      | Ast.Infix(exp,op) ->
+	  let lop = fix_mcode op in 
+	  let lexp = expression exp in
+	  bind lop lexp
+      | Ast.Unary(exp,op) -> 
+	  let lop = unary_mcode op in
+	  let lexp = expression exp in
+	  bind lop lexp
       | Ast.Binary(left,op,right) ->
-	  multibind [expression left; binary_mcode op; expression right]
+	  let lleft = expression left in
+	  let lop = binary_mcode op in
+	  let lright = expression right in
+	  multibind [lleft; lop; lright]
       | Ast.Nested(left,op,right) ->
-	  multibind [expression left; binary_mcode op; expression right]
+	  let lleft = expression left in
+	  let lop = binary_mcode op in
+	  let lright = expression right in
+	  multibind [lleft; lop; lright]
       | Ast.Paren(lp,exp,rp) ->
-	  multibind [string_mcode lp; expression exp; string_mcode rp]
+	  let llp = string_mcode lp in
+	  let lexp = expression exp in
+	  let lrp = string_mcode rp in
+	  multibind [llp; lexp; lrp]
       | Ast.ArrayAccess(exp1,lb,exp2,rb) ->
-	  multibind
-	    [expression exp1; string_mcode lb; expression exp2;
-	      string_mcode rb]
+	  let lexp1 = expression exp1 in
+	  let llb = string_mcode lb in
+	  let lexp2 = expression exp2 in
+	  let lrb = string_mcode rb in
+	  multibind [lexp1; llb; lexp2; lrb]
       | Ast.RecordAccess(exp,pt,field) ->
-	  multibind [expression exp; string_mcode pt; ident field]
+	  let lexp = expression exp in
+	  let lpt = string_mcode pt in
+	  let lfield = ident field in
+	  multibind [lexp; lpt; lfield]
       | Ast.RecordPtAccess(exp,ar,field) ->
-	  multibind [expression exp; string_mcode ar; ident field]
+	  let lexp = expression exp in
+	  let lar = string_mcode ar in
+	  let lfield = ident field in
+	  multibind [lexp; lar; lfield]
       | Ast.Cast(lp,ty,rp,exp) ->
-	  multibind
-	    [string_mcode lp; fullType ty; string_mcode rp; expression exp]
+	  let llp = string_mcode lp in
+	  let lty = fullType ty in
+	  let lrp = string_mcode rp in
+	  let lexp = expression exp in
+	  multibind [llp; lty; lrp; lexp]
       | Ast.SizeOfExpr(szf,exp) ->
-	  multibind [string_mcode szf; expression exp]
+	  let lszf = string_mcode szf in
+	  let lexp = expression exp in
+	  bind lszf lexp
       | Ast.SizeOfType(szf,lp,ty,rp) ->
-	  multibind
-	    [string_mcode szf; string_mcode lp; fullType ty; string_mcode rp]
+	  let lszf = string_mcode szf in
+	  let llp = string_mcode lp in
+	  let lty = fullType ty in
+	  let lrp = string_mcode rp in
+	  multibind [lszf; llp; lty; lrp]
       | Ast.TypeExp(ty) -> fullType ty
       | Ast.Constructor(lp,ty,rp,init) ->
-	  multibind
-	    [string_mcode lp; fullType ty; string_mcode rp; initialiser init]
+	  let llp = string_mcode lp in
+	  let lty = fullType ty in
+	  let lrp = string_mcode rp in
+	  let linit = initialiser init in
+	  multibind [llp; lty; lrp; linit]
       | Ast.MetaErr(name,_,_,_)
       | Ast.MetaExpr(name,_,_,_,_,_)
       | Ast.MetaExprList(name,_,_,_) -> meta_mcode name
-      |	Ast.AsExpr(exp,asexp) -> bind (expression exp) (expression asexp)
+      |	Ast.AsExpr(exp,asexp) -> 
+	  let lexp = expression exp in
+	  let lasexp = expression asexp in
+	  bind lexp lasexp
       | Ast.EComma(cm) -> string_mcode cm
       | Ast.DisjExpr(exp_list) -> multibind (List.map expression exp_list)
-      | Ast.NestExpr(starter,expr_dots,ender,whencode,multi) ->
-	  bind (string_mcode starter)
-	    (bind (expression_dots expr_dots)
-	       (bind (string_mcode ender)
-		  (get_option expression whencode)))
-      | Ast.Edots(dots,whencode) | Ast.Ecircles(dots,whencode)
-      | Ast.Estars(dots,whencode) ->
-	  bind (string_mcode dots) (get_option expression whencode)
+      | Ast.NestExpr(starter,expr_dots,ender,whncode,multi) ->
+	  let lstarter = string_mcode starter in
+	  let lexpr_dots = expression_dots expr_dots in
+	  let lender = string_mcode ender in
+	  let lwhncode = get_option expression whncode in
+	  multibind [lstarter; lexpr_dots; lender; lwhncode]
+      | Ast.Edots(dots,whncode) | Ast.Ecircles(dots,whncode)
+      | Ast.Estars(dots,whncode) ->
+	  let ldots = string_mcode dots in
+	  let lwhncode = get_option expression whncode in
+	  bind ldots lwhncode
       | Ast.OptExp(exp) | Ast.UniqueExp(exp) ->
 	  expression exp in
     exprfn all_functions k e
@@ -203,7 +264,7 @@ let combiner bind option_default
       | Ast.MetaFormatList(pct,name,lenname,_,_) ->
 	  let pct = string_mcode pct in
 	  let name = meta_mcode name in
-	  multibind [pct;name] in
+	  bind pct name in
     fragfn all_functions k e
 
   and string_format e =
@@ -216,60 +277,94 @@ let combiner bind option_default
   and fullType ft =
     let k ft =
       match Ast.unwrap ft with
-	Ast.Type(_,cv,ty) -> bind (get_option cv_mcode cv) (typeC ty)
-      |	Ast.AsType(ty,asty) -> bind (fullType ty) (fullType asty)
+	Ast.Type(_,cv,ty) -> 
+	  let lcv = get_option cv_mcode cv in
+	  let lty = typeC ty in
+	  bind lcv lty
+      |	Ast.AsType(ty,asty) ->
+	  let lty = fullType ty in
+	  let lasty = fullType asty in
+	  bind lty lasty
       | Ast.DisjType(types) -> multibind (List.map fullType types)
       | Ast.OptType(ty) -> fullType ty
       | Ast.UniqueType(ty) -> fullType ty in
     ftfn all_functions k ft
 
-  and function_pointer (ty,lp1,star,rp1,lp2,params,rp2) extra =
+  and function_pointer 
+	(ty, lp1, star, (id : Ast.ident option), rp1, lp2, params, rp2) =
     (* have to put the treatment of the identifier into the right position *)
-    multibind
-      ([fullType ty; string_mcode lp1; string_mcode star] @ extra @
-       [string_mcode rp1;
-	 string_mcode lp2; parameter_dots params; string_mcode rp2])
+    let lty = fullType ty in
+    let llp1 = string_mcode lp1 in
+    let lstar = string_mcode star in
+    let lid = match id with Some idd -> [ident idd] | None -> [] in
+    let lrp1 = string_mcode rp1 in
+    let llp2 = string_mcode lp2 in
+    let lparams = parameter_dots params in
+    let lrp2 = string_mcode rp2 in
+    multibind ([lty; llp1; lstar] @ lid @ [lrp1; llp2; lparams; lrp2])
 
-  and function_type (ty,lp1,params,rp1) extra =
+  and function_type (ty, (id : Ast.ident option) , lp1, params, rp1) =
     (* have to put the treatment of the identifier into the right position *)
-    multibind
-      ([get_option fullType ty] @ extra @
-       [string_mcode lp1; parameter_dots params; string_mcode rp1])
+    let lty = get_option fullType ty in
+    let lid = match id with Some idd -> [ident idd] | None -> [] in
+    let llp1 = string_mcode lp1 in
+    let lparams = parameter_dots params in
+    let lrp1 = string_mcode rp1 in
+    multibind ([lty] @ lid @ [llp1; lparams; lrp1])
 
-  and array_type (ty,lb,size,rb) extra =
-    multibind
-      ([fullType ty] @ extra @
-       [string_mcode lb; get_option expression size; string_mcode rb])
+  and array_type (ty,(id : Ast.ident option),lb,size,rb) =
+    let lty = fullType ty in
+    let lid = match id with Some idd -> [ident idd] | None -> [] in
+    let lb = string_mcode lb in
+    let lsize = get_option expression size in
+    let lrb = string_mcode rb in
+    multibind ([lty] @ lid @ [lb; lsize; lrb])
 
   and typeC ty =
     let k ty =
       match Ast.unwrap ty with
 	Ast.BaseType(ty,strings) -> multibind (List.map string_mcode strings)
-      | Ast.SignedT(sgn,ty) -> bind (sign_mcode sgn) (get_option typeC ty)
+      | Ast.SignedT(sgn,ty) -> 
+	  let lsgn = sign_mcode sgn in
+	  let lty = get_option typeC ty in
+	  bind lsgn lty
       | Ast.Pointer(ty,star) ->
-	  bind (fullType ty) (string_mcode star)
+	  let lty = fullType ty in
+	  let lstar = string_mcode star in
+	  bind lty lstar
       | Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
-	  function_pointer (ty,lp1,star,rp1,lp2,params,rp2) []
+	  function_pointer (ty,lp1,star,None,rp1,lp2,params,rp2)
       |	Ast.FunctionType (_,ty,lp1,params,rp1) ->
-	  function_type (ty,lp1,params,rp1) []
-      | Ast.Array(ty,lb,size,rb) -> array_type (ty,lb,size,rb) []
+	  function_type (ty,None,lp1,params,rp1)
+      | Ast.Array(ty,lb,size,rb) -> array_type (ty,None,lb,size,rb)
       | Ast.Decimal(dec,lp,length,comma,precision_opt,rp) ->
-	  multibind
-	    [string_mcode dec; string_mcode lp;
-	      expression length; get_option string_mcode comma;
-	      get_option expression precision_opt; string_mcode rp]
+	  let ldec = string_mcode dec in
+	  let llp = string_mcode lp in
+	  let llength = expression length in
+	  let lcomma = get_option string_mcode comma in
+	  let lprecision_opt = get_option expression precision_opt in
+	  let lrp = string_mcode rp in
+	  multibind [ldec; llp; llength; lcomma; lprecision_opt; lrp]
       | Ast.EnumName(kind,name) ->
-	  bind (string_mcode kind) (get_option ident name)
+	  let lkind = string_mcode kind in
+	  let lname = get_option ident name in
+	  bind lkind lname
       | Ast.EnumDef(ty,lb,ids,rb) ->
-	  multibind
-	    [fullType ty; string_mcode lb; expression_dots ids;
-	      string_mcode rb]
+	  let lty = fullType ty in
+	  let llb = string_mcode lb in
+	  let lids = expression_dots ids in
+	  let lrb = string_mcode rb in
+	  multibind [lty; llb; lids; lrb]
       | Ast.StructUnionName(kind,name) ->
-	  bind (struct_mcode kind) (get_option ident name)
+	  let lkind = struct_mcode kind in
+	  let lname = get_option ident name in
+	  bind lkind lname
       | Ast.StructUnionDef(ty,lb,decls,rb) ->
-	  multibind
-	    [fullType ty; string_mcode lb; declaration_dots decls;
-	      string_mcode rb]
+	  let lty = fullType ty in
+	  let llb = string_mcode lb in
+	  let ldecls = annotated_decl_dots decls in
+	  let lrb = string_mcode rb in
+	  multibind [lty; llb; ldecls; lrb]
       | Ast.TypeName(name) -> string_mcode name
       | Ast.MetaType(name,_,_) -> meta_mcode name in
     tyfn all_functions k ty
@@ -279,12 +374,16 @@ let combiner bind option_default
       Ast.Type(_,None,ty1) ->
 	(match Ast.unwrap ty1 with
 	  Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
-	    function_pointer (ty,lp1,star,rp1,lp2,params,rp2) [ident id]
+	    function_pointer (ty, lp1, star, Some id, rp1, lp2, params, rp2)
 	| Ast.FunctionType(_,ty,lp1,params,rp1) ->
-	    function_type (ty,lp1,params,rp1) [ident id]
-	| Ast.Array(ty,lb,size,rb) -> array_type (ty,lb,size,rb) [ident id]
-	| _ -> bind (fullType ty) (ident id))
-    | _ -> bind (fullType ty) (ident id)
+	    function_type (ty, Some id, lp1, params, rp1)
+	| Ast.Array(ty,lb,size,rb) -> array_type (ty, Some id, lb, size, rb)
+	| _ -> let lty = fullType ty in
+	       let lid = ident id in
+	       bind lty lid)
+    | _ -> let lty = fullType ty in
+	   let lid = ident id in
+	   bind lty lid
 
   and declaration d =
     let k d =
@@ -293,34 +392,61 @@ let combiner bind option_default
       |	Ast.MetaFieldList(name,_,_,_) ->
 	  meta_mcode name
       |	Ast.AsDecl(decl,asdecl) ->
-	  bind (declaration decl) (declaration asdecl)
+	  let ldecl = declaration decl in
+	  let lasdecl = declaration asdecl in
+	  bind ldecl lasdecl
       |	Ast.Init(stg,ty,id,eq,ini,sem) ->
-	  bind (get_option storage_mcode stg)
-	    (bind (named_type ty id)
-	       (multibind
-		  [string_mcode eq; initialiser ini; string_mcode sem]))
+	  let lstg = get_option storage_mcode stg in
+	  let lid = named_type ty id in
+	  let leq = string_mcode eq in
+	  let lini = initialiser ini in
+	  let lsem = string_mcode sem in
+	  multibind [lstg; lid; leq; lini; lsem]
       | Ast.UnInit(stg,ty,id,sem) ->
-	  bind (get_option storage_mcode stg)
-	    (bind (named_type ty id) (string_mcode sem))
+	  let lstg = get_option storage_mcode stg in
+	  let lid = named_type ty id in
+	  let lsem = string_mcode sem in
+	  multibind [lstg; lid; lsem]
       | Ast.MacroDecl(name,lp,args,rp,sem) ->
-	  multibind
-	    [ident name; string_mcode lp; expression_dots args;
-	      string_mcode rp; string_mcode sem]
+	  let lname = ident name in
+	  let llp = string_mcode lp in
+	  let largs = expression_dots args in
+	  let lrp = string_mcode rp in
+	  let lsem = string_mcode sem in
+	  multibind [lname; llp; largs; lrp; lsem]
       | Ast.MacroDeclInit(name,lp,args,rp,eq,ini,sem) ->
-	  multibind
-	    [ident name; string_mcode lp; expression_dots args;
-	      string_mcode rp; string_mcode eq; initialiser ini;
-	      string_mcode sem]
-      | Ast.TyDecl(ty,sem) -> bind (fullType ty) (string_mcode sem)
+	  let lname = ident name in
+	  let llp = string_mcode lp in
+	  let largs = expression_dots args in
+	  let lrp = string_mcode rp in
+	  let leq = string_mcode eq in
+	  let lini = initialiser ini in
+	  let lsem = string_mcode sem in
+	  multibind [lname; llp; largs; lrp; leq; lini; lsem]
+      | Ast.TyDecl(ty,sem) ->
+	  let lty = fullType ty in
+	  let lsem = string_mcode sem in
+	  bind lty lsem
       | Ast.Typedef(stg,ty,id,sem) ->
-	  bind (string_mcode stg)
-	    (bind (fullType ty) (bind (typeC id) (string_mcode sem)))
+	  let lstg = string_mcode stg in
+	  let lty = fullType ty in
+	  let lid = typeC id in
+	  let lsem = string_mcode sem in
+	  multibind [lstg; lty; lid; lsem]
       | Ast.DisjDecl(decls) -> multibind (List.map declaration decls)
-      |	Ast.Ddots(dots,whencode) ->
-	  bind (string_mcode dots) (get_option declaration whencode)
       | Ast.OptDecl(decl) -> declaration decl
       | Ast.UniqueDecl(decl) -> declaration decl in
     declfn all_functions k d
+
+  and annotated_decl d =
+    let k d =
+      match Ast.unwrap d with
+	Ast.DElem(_,_,d) -> declaration d
+      | Ast.Ddots(dots,whncode) ->
+	  let ldots = string_mcode dots in
+	  let lwhncode = get_option declaration whncode in
+	  bind ldots lwhncode in
+    annotated_declfn all_functions k d
 
   and initialiser i =
     let k i =
@@ -328,38 +454,57 @@ let combiner bind option_default
 	Ast.MetaInit(name,_,_) -> meta_mcode name
       |	Ast.MetaInitList(name,_,_,_) -> meta_mcode name
       |	Ast.AsInit(init,asinit) ->
-	  bind (initialiser init) (initialiser asinit)
+	  let linit = initialiser init in
+	  let lasinit = initialiser asinit in
+	  bind linit lasinit
       |	Ast.InitExpr(exp) -> expression exp
       | Ast.ArInitList(lb,initlist,rb) ->
-	  multibind
-	    [string_mcode lb; initialiser_dots initlist; string_mcode rb]
-      | Ast.StrInitList(allminus,lb,initlist,rb,whencode) ->
-	  multibind
-	    [string_mcode lb;
-	      multibind (List.map initialiser initlist);
-	      string_mcode rb;
-	      multibind (List.map initialiser whencode)]
+	  let llb = string_mcode lb in
+	  let linitlist = initialiser_dots initlist in
+	  let lrb = string_mcode rb in
+	  multibind [llb; linitlist; lrb]
+      | Ast.StrInitList(allminus,lb,initlist,rb,whncode) ->
+	  let llb = string_mcode lb in
+	  let linitlist = multibind (List.map initialiser initlist) in
+	  let lrb = string_mcode rb in
+	  let lwhncode = multibind (List.map initialiser whncode) in
+	  multibind [llb; linitlist; lrb; lwhncode]
       | Ast.InitGccName(name,eq,ini) ->
-	  multibind [ident name; string_mcode eq; initialiser ini]
+	  let lname = ident name in
+	  let leq = string_mcode eq in
+	  let lini = initialiser ini in
+	  multibind [lname; leq; lini]
       | Ast.InitGccExt(designators,eq,ini) ->
-	  multibind
-	    ((List.map designator designators) @
-	     [string_mcode eq; initialiser ini])
+	  let ldesignators = List.map designator designators in
+	  let leq = string_mcode eq in
+	  let lini = initialiser ini in 
+	  multibind (ldesignators @ [leq; lini])
       | Ast.IComma(cm) -> string_mcode cm
-      | Ast.Idots(dots,whencode) ->
-	  bind (string_mcode dots) (get_option initialiser whencode)
+      | Ast.Idots(dots,whncode) ->
+	  let ldots = string_mcode dots in
+	  let lwhncode = get_option initialiser whncode in
+	  bind ldots lwhncode
       | Ast.OptIni(i) -> initialiser i
       | Ast.UniqueIni(i) -> initialiser i in
     initfn all_functions k i
 
   and designator = function
-      Ast.DesignatorField(dot,id) -> bind (string_mcode dot) (ident id)
+      Ast.DesignatorField(dot,id) ->
+	let ldot = string_mcode dot in
+	let lid = ident id in
+	bind ldot lid
     | Ast.DesignatorIndex(lb,exp,rb) ->
-	bind (string_mcode lb) (bind (expression exp) (string_mcode rb))
+	let llb = string_mcode lb in
+	let lexp = expression exp in
+	let lrb = string_mcode rb in
+	multibind [llb; lexp; lrb]
     | Ast.DesignatorRange(lb,min,dots,max,rb) ->
-	multibind
-	  [string_mcode lb; expression min; string_mcode dots;
-	    expression max; string_mcode rb]
+	let llb = string_mcode lb in
+	let lmin = expression min in
+	let ldots = string_mcode dots in
+	let lmax = expression max in
+	let lrb = string_mcode rb in
+	multibind [llb; lmin; ldots; lmax; lrb]
 
   and parameterTypeDef p =
     let k p =
@@ -369,7 +514,10 @@ let combiner bind option_default
       | Ast.Param(ty,None) -> fullType ty
       | Ast.MetaParam(name,_,_) -> meta_mcode name
       | Ast.MetaParamList(name,_,_,_) -> meta_mcode name
-      |	Ast.AsParam(p,asexp) -> bind (parameterTypeDef p) (expression asexp)
+      |	Ast.AsParam(p,asexp) ->
+	  let lp = parameterTypeDef p in
+	  let lasexp = expression asexp in
+	  bind lp lasexp
       | Ast.PComma(cm) -> string_mcode cm
       | Ast.Pdots(dots) -> string_mcode dots
       | Ast.Pcircles(dots) -> string_mcode dots
@@ -381,49 +529,93 @@ let combiner bind option_default
     let k re =
       match Ast.unwrap re with
 	Ast.FunHeader(_,_,fi,name,lp,params,rp) ->
-	  multibind
-	    ((List.map fninfo fi) @
-	     [ident name;string_mcode lp;parameter_dots params;
-	       string_mcode rp])
-      | Ast.Decl(_,_,decl) -> declaration decl
+	  let lfi = List.map fninfo fi in
+	  let lname = ident name in
+	  let llp = string_mcode lp in
+	  let lparams = parameter_dots params in
+	  let lrp = string_mcode rp in
+	  multibind (lfi @ [lname; llp; lparams; lrp])
+      | Ast.Decl decl -> annotated_decl decl
       | Ast.SeqStart(brace) -> string_mcode brace
       | Ast.SeqEnd(brace) -> string_mcode brace
       | Ast.ExprStatement(exp,sem) ->
-	  bind (get_option expression exp) (string_mcode sem)
+	  let lexp = get_option expression exp in
+	  let lsem = string_mcode sem in
+	  bind lexp lsem
       | Ast.IfHeader(iff,lp,exp,rp) ->
-	  multibind [string_mcode iff; string_mcode lp; expression exp;
-		      string_mcode rp]
+	  let liff = string_mcode iff in
+	  let llp = string_mcode lp in
+	  let lexp = expression exp in
+	  let lrp = string_mcode rp in
+	  multibind [liff; llp; lexp; lrp]
       | Ast.Else(els) -> string_mcode els
       | Ast.WhileHeader(whl,lp,exp,rp) ->
-	  multibind [string_mcode whl; string_mcode lp; expression exp;
-		      string_mcode rp]
+	  let lwhl = string_mcode whl in
+	  let llp = string_mcode lp in
+	  let lexp = expression exp in
+	  let lrp = string_mcode rp in
+	  multibind [lwhl; llp; lexp; lrp]
       | Ast.DoHeader(d) -> string_mcode d
       | Ast.WhileTail(whl,lp,exp,rp,sem) ->
-	  multibind [string_mcode whl; string_mcode lp; expression exp;
-		      string_mcode rp; string_mcode sem]
+	  let lwhl = string_mcode whl in
+	  let llp = string_mcode lp in
+	  let lexp = expression exp in
+	  let lrp = string_mcode rp in
+	  let lsem = string_mcode sem in
+	  multibind [lwhl; llp; lexp; lrp; lsem]
       | Ast.ForHeader(fr,lp,first,e2,sem2,e3,rp) ->
-	  let first = forinfo first in
-	  multibind [string_mcode fr; string_mcode lp; first;
-		      get_option expression e2; string_mcode sem2;
-		      get_option expression e3; string_mcode rp]
+	  let lfr = string_mcode fr in
+	  let llp = string_mcode lp in
+	  let lfirst = forinfo first in
+	  let le2 = get_option expression e2 in
+	  let lsem2 = string_mcode sem2 in
+	  let le3 = get_option expression e3 in
+	  let lrp = string_mcode rp in
+	  multibind [lfr; llp; lfirst; le2; lsem2; le3; lrp]
       | Ast.IteratorHeader(nm,lp,args,rp) ->
-	  multibind [ident nm; string_mcode lp;
-		      expression_dots args; string_mcode rp]
+	  let lnm = ident nm in
+	  let llp = string_mcode lp in
+	  let largs = expression_dots args in
+	  let lrp = string_mcode rp in
+	  multibind [lnm; llp; largs; lrp]
       | Ast.SwitchHeader(switch,lp,exp,rp) ->
-	  multibind [string_mcode switch; string_mcode lp; expression exp;
-		      string_mcode rp]
-      | Ast.Break(br,sem) -> bind (string_mcode br) (string_mcode sem)
-      | Ast.Continue(cont,sem) -> bind (string_mcode cont) (string_mcode sem)
-      |	Ast.Label(l,dd) -> bind (ident l) (string_mcode dd)
+	  let lswitch = string_mcode switch in
+	  let llp = string_mcode lp in
+	  let lexp = expression exp in
+	  let lrp = string_mcode rp in
+	  multibind [lswitch; llp; lexp; lrp]
+      | Ast.Break(br,sem) -> 
+	  let lbr = string_mcode br in
+	  let lsem = string_mcode sem in
+	  bind lbr lsem
+      | Ast.Continue(cont,sem) ->
+	  let lcont = string_mcode cont in
+	  let lsem = string_mcode sem in
+	  bind lcont lsem
+      |	Ast.Label(l,dd) -> 
+	  let ll = ident l in
+	  let ldd = string_mcode dd in
+	  bind ll ldd
       |	Ast.Goto(goto,l,sem) ->
-	  bind (string_mcode goto) (bind (ident l) (string_mcode sem))
-      | Ast.Return(ret,sem) -> bind (string_mcode ret) (string_mcode sem)
+	  let lgoto = string_mcode goto in
+	  let ll = ident l in
+	  let lsem = string_mcode sem in
+	  multibind [lgoto; ll; lsem]
+      | Ast.Return(ret,sem) -> 
+	  let lret = string_mcode ret in
+	  let lsem = string_mcode sem in
+	  bind lret lsem
       | Ast.ReturnExpr(ret,exp,sem) ->
-	  multibind [string_mcode ret; expression exp; string_mcode sem]
+	  let lret = string_mcode ret in
+	  let lexp = expression exp in
+	  let lsem = string_mcode sem in
+	  multibind [lret; lexp; lsem]
       |	Ast.Exec(exec,lang,code,sem) ->
-	  multibind
-	    [string_mcode exec; string_mcode lang; exec_code_dots code;
-	      string_mcode sem]
+	  let lexec = string_mcode exec in
+	  let lland = string_mcode lang in
+	  let lcode = exec_code_dots code in
+	  let lsem = string_mcode sem in
+	  multibind [lexec; lland; lcode; lsem]
       | Ast.MetaStmt(name,_,_,_) -> meta_mcode name
       | Ast.MetaStmtList(name,_,_) -> meta_mcode name
       | Ast.MetaRuleElem(name,_,_) -> meta_mcode name
@@ -431,16 +623,33 @@ let combiner bind option_default
       | Ast.TopExp(exp) -> expression exp
       | Ast.Ty(ty) -> fullType ty
       | Ast.TopInit(init) -> initialiser init
-      |	Ast.Include(inc,name) -> bind (string_mcode inc) (inc_file_mcode name)
+      |	Ast.Include(inc,name) -> 
+	  let linc = string_mcode inc in
+	  let lname = inc_file_mcode name in
+	  bind linc lname
       |	Ast.Undef(def,id) ->
-	  multibind [string_mcode def; ident id]
+	  let ldef = string_mcode def in
+	  let lid = ident id in
+	  bind ldef lid
       |	Ast.DefineHeader(def,id,params) ->
-	  multibind [string_mcode def; ident id; define_parameters params]
+	  let ldef = string_mcode def in
+	  let lid = ident id in
+	  let lparams = define_parameters params in
+	  multibind [ldef; lid; lparams]
       |	Ast.Pragma(prg,id,body) ->
-	  multibind [string_mcode prg; ident id; pragmainfo body]
-      |	Ast.Default(def,colon) -> bind (string_mcode def) (string_mcode colon)
+	  let lprg = string_mcode prg in
+	  let lid = ident id in
+	  let lbody = pragmainfo body in
+	  multibind [lprg; lid; lbody]
+      |	Ast.Default(def,colon) -> 
+	  let ldef = string_mcode def in
+	  let lcolon = string_mcode colon in
+	  bind ldef lcolon
       |	Ast.Case(case,exp,colon) ->
-	  multibind [string_mcode case; expression exp; string_mcode colon]
+	  let lcase = string_mcode case in
+	  let lexp = expression exp in
+	  let lcolon = string_mcode colon in
+	  multibind [lcase; lexp; lcolon]
       |	Ast.DisjRuleElem(res) -> multibind (List.map rule_elem res) in
     rulefn all_functions k re
 
@@ -448,8 +657,10 @@ let combiner bind option_default
   and forinfo fi =
     let k = function
 	Ast.ForExp(e1,sem1) ->
-	  bind (get_option expression e1) (string_mcode sem1)
-      | Ast.ForDecl (_,_,decl) -> declaration decl in
+	  let le1 = get_option expression e1 in
+	  let lsem1 = string_mcode sem1 in
+	  bind le1 lsem1
+      | Ast.ForDecl decl -> annotated_decl decl in
     k fi
 
   (* not parameterisable, for now *)
@@ -457,7 +668,10 @@ let combiner bind option_default
     let k pi =
       match Ast.unwrap pi with
 	Ast.PragmaTuple(lp,args,rp) ->
-	  multibind [string_mcode lp;expression_dots args;string_mcode rp]
+	  let llp = string_mcode lp in
+	  let largs = expression_dots args in
+	  let lrp = string_mcode rp in
+	  multibind [llp; largs; lrp]
       | Ast.PragmaIdList(ids) -> identifier_dots ids
       | Ast.PragmaDots (dots) -> string_mcode dots in
     k pi
@@ -468,8 +682,10 @@ let combiner bind option_default
       match Ast.unwrap p with
 	Ast.NoParams -> option_default
       | Ast.DParams(lp,params,rp) ->
-	  multibind
-	    [string_mcode lp; define_param_dots params; string_mcode rp] in
+	  let llp = string_mcode lp in
+	  let lparams = define_param_dots params in
+	  let lrp = string_mcode rp in
+	  multibind [llp; lparams; lrp] in
     k p
 
   and define_param_dots d =
@@ -503,44 +719,73 @@ let combiner bind option_default
     let k s =
       match Ast.unwrap s with
 	Ast.Seq(lbrace,body,rbrace) ->
-	  multibind [rule_elem lbrace;
-		      statement_dots body; rule_elem rbrace]
+	  let llbrace = rule_elem lbrace in
+	  let lbody = statement_dots body in
+	  let lrbrace = rule_elem rbrace in
+	  multibind [llbrace; lbody; lrbrace]
       | Ast.IfThen(header,branch,_) ->
-	  multibind [rule_elem header; statement branch]
+	  let lheader = rule_elem header in
+	  let lbranch = statement branch in
+	  bind lheader lbranch
       | Ast.IfThenElse(header,branch1,els,branch2,_) ->
-	  multibind [rule_elem header; statement branch1; rule_elem els;
-		      statement branch2]
+	  let lheader = rule_elem header in
+	  let lbranch1 = statement branch1 in
+	  let lels = rule_elem els in
+	  let lbranch2 = statement branch2 in
+	  multibind [lheader; lbranch1; lels; lbranch2]
       | Ast.While(header,body,_) ->
-	  multibind [rule_elem header; statement body]
+	  let lheader = rule_elem header in
+	  let lbody = statement body in
+	  bind lheader lbody
       | Ast.Do(header,body,tail) ->
-	  multibind [rule_elem header; statement body; rule_elem tail]
-      | Ast.For(header,body,_) -> multibind [rule_elem header; statement body]
+	  let lheader = rule_elem header in
+	  let lbody = statement body in 
+	  let ltail = rule_elem tail in
+	  multibind [lheader; lbody; ltail]
+      | Ast.For(header,body,_) ->
+	  let lheader = rule_elem header in
+	  let lbody = statement body in
+	  bind lheader lbody
       | Ast.Iterator(header,body,_) ->
-	  multibind [rule_elem header; statement body]
+	  let lheader = rule_elem header in
+	  let lbody = statement body in
+	  bind lheader lbody
       |	Ast.Switch(header,lb,decls,cases,rb) ->
-	  multibind [rule_elem header;rule_elem lb;
-		      statement_dots decls;
-		      multibind (List.map case_line cases);
-		      rule_elem rb]
-      | Ast.Atomic(re) -> rule_elem re
+	  let lheader = rule_elem header in
+	  let llb = rule_elem lb in
+	  let ldecls = statement_dots decls in
+	  let lcases = multibind (List.map case_line cases) in
+	  let lrb = rule_elem rb in
+	  multibind [lheader; llb; ldecls; lcases; lrb]
+      | Ast.Atomic(re) ->rule_elem re
       | Ast.Disj(stmt_dots_list) ->
 	  multibind (List.map statement_dots stmt_dots_list)
       | Ast.Nest(starter,stmt_dots,ender,whn,_,_,_) ->
-	  bind (string_mcode starter)
-	    (bind (statement_dots stmt_dots)
-	       (bind (string_mcode ender)
-		  (multibind
-		     (List.map (whencode statement_dots statement) whn))))
-      | Ast.FunDecl(header,lbrace,body,rbrace) ->
-	  multibind [rule_elem header; rule_elem lbrace;
-		      statement_dots body; rule_elem rbrace]
+	  let lstarter = string_mcode starter in
+	  let lstmt_dots = statement_dots stmt_dots in
+	  let lender = string_mcode ender in
+	  let lwhn = multibind 
+	    (List.map (whencode statement_dots statement) whn) in
+	  multibind [lstarter; lstmt_dots; lender; lwhn]
+      | Ast.FunDecl(header,lbrace,body,rbrace,_) ->
+	  let lheader = rule_elem header in
+	  let lbraces = rule_elem lbrace in
+	  let lbody = statement_dots body in
+	  let lrbrace = rule_elem rbrace in
+	  multibind [lheader; lbraces; lbody; lrbrace]
       | Ast.Define(header,body) ->
-	  bind (rule_elem header) (statement_dots body)
+	  let lheader = rule_elem header in
+	  let lbody = statement_dots body in
+	  bind lheader lbody
       |	Ast.AsStmt(stm,asstm) ->
-	  bind (statement stm) (statement asstm)
+	  let lstm = statement stm in
+	  let lasstm = statement asstm in
+	  bind lstm lasstm
       | Ast.Dots(d,whn,_,_) | Ast.Circles(d,whn,_,_) | Ast.Stars(d,whn,_,_) ->
-	  bind (string_mcode d)
-	    (multibind (List.map (whencode statement_dots statement) whn))
+	  let ld = string_mcode d in
+	  let lwhn = multibind 
+	    (List.map (whencode statement_dots statement) whn) in
+	  bind ld lwhn
       | Ast.OptStm(stmt) | Ast.UniqueStm(stmt) ->
 	  statement stmt in
     stmtfn all_functions k s
@@ -562,14 +807,19 @@ let combiner bind option_default
     let k c =
       match Ast.unwrap c with
 	Ast.CaseLine(header,code) ->
-	  bind (rule_elem header) (statement_dots code)
+	  let lheader = rule_elem header in
+	  let lcode = statement_dots code in
+	  bind lheader lcode
       |	Ast.OptCase(case) -> case_line case in
     casefn all_functions k c
 
   and exec_code e =
     (* not configurable *)
     match Ast.unwrap e with
-      Ast.ExecEval(colon,id) -> bind (string_mcode colon) (expression id)
+      Ast.ExecEval(colon,id) -> 
+	let lcolon = string_mcode colon in
+	let lid = expression id in
+	bind lcolon lid
     | Ast.ExecToken(tok) -> string_mcode tok
     | Ast.ExecDots(dots) -> string_mcode dots
 
@@ -615,7 +865,7 @@ let combiner bind option_default
       | Ast.ExprDotsTag(ed) -> expression_dots ed
       | Ast.ParamDotsTag(pd) -> parameter_dots pd
       | Ast.StmtDotsTag(sd) -> statement_dots sd
-      | Ast.DeclDotsTag(sd) -> declaration_dots sd
+      | Ast.AnnDeclDotsTag(sd) -> annotated_decl_dots sd
       | Ast.TypeCTag(ty) -> typeC ty
       | Ast.ParamTag(param) -> parameterTypeDef param
       | Ast.SgrepStartTag(tok) -> option_default
@@ -640,7 +890,7 @@ let combiner bind option_default
       combiner_anything = anything;
       combiner_expression_dots = expression_dots;
       combiner_statement_dots = statement_dots;
-      combiner_declaration_dots = declaration_dots;
+      combiner_anndecl_dots = annotated_decl_dots;
       combiner_initialiser_dots = initialiser_dots} in
   all_functions
 
@@ -665,7 +915,7 @@ type rebuilder =
       rebuilder_top_level : Ast.top_level inout;
       rebuilder_expression_dots : Ast.expression Ast.dots inout;
       rebuilder_statement_dots : Ast.statement Ast.dots inout;
-      rebuilder_declaration_dots : Ast.declaration Ast.dots inout;
+      rebuilder_anndecl_dots : Ast.annotated_decl Ast.dots inout;
       rebuilder_initialiser_dots : Ast.initialiser Ast.dots inout;
       rebuilder_define_param_dots : Ast.define_param Ast.dots inout;
       rebuilder_define_param : Ast.define_param inout;
@@ -680,9 +930,9 @@ let rebuilder
     meta_mcode string_mcode const_mcode assign_mcode fix_mcode unary_mcode
     binary_mcode cv_mcode sign_mcode struct_mcode storage_mcode
     inc_file_mcode
-    expdotsfn paramdotsfn stmtdotsfn decldotsfn initdotsfn
-    identfn exprfn fragfn fmtfn ftfn tyfn initfn paramfn declfn rulefn
-    stmtfn casefn topfn anyfn =
+    expdotsfn paramdotsfn stmtdotsfn anndecldotsfn initdotsfn
+    identfn exprfn fragfn fmtfn ftfn tyfn initfn paramfn declfn 
+    annotated_declfn rulefn stmtfn casefn topfn anyfn =
   let get_option f = function
       Some x -> Some (f x)
     | None -> None in
@@ -704,7 +954,8 @@ let rebuilder
   and identifier_dots d = dotsfn iddotsfn ident all_functions d
   and parameter_dots d = dotsfn paramdotsfn parameterTypeDef all_functions d
   and statement_dots d = dotsfn stmtdotsfn statement all_functions d
-  and declaration_dots d = dotsfn decldotsfn declaration all_functions d
+  and annotated_decl_dots d =
+    dotsfn anndecldotsfn annotated_decl all_functions d
   and initialiser_dots d = dotsfn initdotsfn initialiser all_functions d
   and string_fragment_dots d = dotsfn strdotsfn string_fragment all_functions d
   and exec_code_dots d = dotsfn ecdotsfn exec_code all_functions d
@@ -733,67 +984,129 @@ let rebuilder
 	  Ast.Ident(id) -> Ast.Ident(ident id)
 	| Ast.Constant(const) -> Ast.Constant(const_mcode const)
 	| Ast.StringConstant(lq,str,rq) ->
-	    Ast.StringConstant(string_mcode lq, string_fragment_dots str,
-			       string_mcode rq)
+	    let llq = string_mcode lq in
+	    let lstr = string_fragment_dots str in
+	    let lrq = string_mcode rq in
+	    Ast.StringConstant(llq, lstr, lrq)
 	| Ast.FunCall(fn,lp,args,rp) ->
-	    Ast.FunCall(expression fn, string_mcode lp, expression_dots args,
-			string_mcode rp)
+	    let lfn = expression fn in
+	    let llp = string_mcode lp in 
+	    let largs = expression_dots args in
+	    let lrp = string_mcode rp in
+	    Ast.FunCall(lfn, llp, largs, lrp)
 	| Ast.Assignment(left,op,right,simple) ->
-	    Ast.Assignment(expression left, assign_mcode op, expression right,
-			   simple)
+	    let lleft = expression left in
+	    let lop = assign_mcode op in
+	    let lright = expression right in
+	    Ast.Assignment(lleft, lop, lright, simple)
 	| Ast.Sequence(left,op,right) ->
-	    Ast.Sequence(expression left, string_mcode op, expression right)
+	    let lleft = expression left in 
+	    let lop = string_mcode op in
+	    let lright = expression right in
+	    Ast.Sequence(lleft, lop, lright)
 	| Ast.CondExpr(exp1,why,exp2,colon,exp3) ->
-	    Ast.CondExpr(expression exp1, string_mcode why,
-			 get_option expression exp2, string_mcode colon,
-			 expression exp3)
-	| Ast.Postfix(exp,op) -> Ast.Postfix(expression exp,fix_mcode op)
-	| Ast.Infix(exp,op) -> Ast.Infix(expression exp,fix_mcode op)
-	| Ast.Unary(exp,op) -> Ast.Unary(expression exp,unary_mcode op)
+	    let lexp1 = expression exp1 in
+	    let lwhy = string_mcode why in
+	    let lexp2 = get_option expression exp2 in
+	    let lcolon = string_mcode colon in
+	    let lexp3 = expression exp3 in
+	    Ast.CondExpr(lexp1, lwhy, lexp2, lcolon, lexp3)
+	| Ast.Postfix(exp,op) -> 
+	    let lexp = expression exp in
+	    let lop = fix_mcode op in
+	    Ast.Postfix(lexp, lop)
+	| Ast.Infix(exp,op) -> 
+	    let lexp = expression exp in
+	    let lop = fix_mcode op in
+	    Ast.Infix(lexp, lop)
+	| Ast.Unary(exp,op) -> 
+	    let lexp = expression exp in
+	    let lop = unary_mcode op in
+	    Ast.Unary(lexp, lop)
 	| Ast.Binary(left,op,right) ->
-	    Ast.Binary(expression left, binary_mcode op, expression right)
+	    let lleft = expression left in
+	    let lop = binary_mcode op in
+	    let lright = expression right in
+	    Ast.Binary(lleft, lop, lright)
 	| Ast.Nested(left,op,right) ->
-	    Ast.Nested(expression left, binary_mcode op, expression right)
+	    let lleft = expression left in
+	    let lop = binary_mcode op in
+	    let lright = expression right in
+	    Ast.Nested(lleft, lop, lright)
 	| Ast.Paren(lp,exp,rp) ->
-	    Ast.Paren(string_mcode lp, expression exp, string_mcode rp)
+	    let llp = string_mcode lp in
+	    let lexp = expression exp in
+	    let lrp = string_mcode rp in
+	    Ast.Paren(llp, lexp, lrp)
 	| Ast.ArrayAccess(exp1,lb,exp2,rb) ->
-	    Ast.ArrayAccess(expression exp1, string_mcode lb, expression exp2,
-			    string_mcode rb)
+	    let lexp1 = expression exp1 in
+	    let llb = string_mcode lb in
+	    let lexp2 = expression exp2 in
+	    let lrb = string_mcode rb in
+	    Ast.ArrayAccess(lexp1, llb, lexp2, lrb)
 	| Ast.RecordAccess(exp,pt,field) ->
-	    Ast.RecordAccess(expression exp, string_mcode pt, ident field)
+	    let lexp = expression exp in
+	    let lpt = string_mcode pt in
+	    let lfield = ident field in
+	    Ast.RecordAccess(lexp, lpt, lfield)
 	| Ast.RecordPtAccess(exp,ar,field) ->
-	    Ast.RecordPtAccess(expression exp, string_mcode ar, ident field)
+	    let lexp = expression exp in
+	    let lar = string_mcode ar in
+	    let lfield = ident field in
+	    Ast.RecordPtAccess(lexp, lar, lfield)
 	| Ast.Cast(lp,ty,rp,exp) ->
-	    Ast.Cast(string_mcode lp, fullType ty, string_mcode rp,
-		     expression exp)
+	    let llp = string_mcode lp in
+	    let lty = fullType ty in
+	    let lrp = string_mcode rp in
+	    let lexp = expression exp in
+	    Ast.Cast(llp, lty, lrp, lexp)
 	| Ast.SizeOfExpr(szf,exp) ->
-	    Ast.SizeOfExpr(string_mcode szf, expression exp)
+	    let lszf = string_mcode szf in
+	    let lexp = expression exp in
+	    Ast.SizeOfExpr(lszf, lexp)
 	| Ast.SizeOfType(szf,lp,ty,rp) ->
-	    Ast.SizeOfType(string_mcode szf,string_mcode lp, fullType ty,
-                           string_mcode rp)
+	    let lszf = string_mcode szf in
+	    let llp = string_mcode lp in
+	    let lty = fullType ty in
+	    let lrp = string_mcode rp in
+	    Ast.SizeOfType(lszf, llp, lty, lrp)
 	| Ast.TypeExp(ty) -> Ast.TypeExp(fullType ty)
 	| Ast.Constructor(lp,ty,rp,init) ->
-	    Ast.Constructor(string_mcode lp, fullType ty, string_mcode rp,
-		     initialiser init)
+	    let llp = string_mcode lp in
+	    let lty = fullType ty in
+	    let lrp = string_mcode rp in
+	    let linit = initialiser init in
+	    Ast.Constructor(llp, lty, lrp, linit)
 	| Ast.MetaErr(name,constraints,keep,inherited) ->
 	    Ast.MetaErr(meta_mcode name,constraints,keep,inherited)
 	| Ast.MetaExpr(name,constraints,keep,ty,form,inherited) ->
 	    Ast.MetaExpr(meta_mcode name,constraints,keep,ty,form,inherited)
 	| Ast.MetaExprList(name,lenname_inh,keep,inherited) ->
 	    Ast.MetaExprList(meta_mcode name,lenname_inh,keep,inherited)
-	| Ast.AsExpr(exp,asexp) -> Ast.AsExpr(expression exp,expression asexp)
+	| Ast.AsExpr(exp,asexp) -> 
+	    let lexp = expression exp in
+	    let lasexp = expression asexp in
+	    Ast.AsExpr(lexp, lasexp)
 	| Ast.EComma(cm) -> Ast.EComma(string_mcode cm)
 	| Ast.DisjExpr(exp_list) -> Ast.DisjExpr(List.map expression exp_list)
-	| Ast.NestExpr(starter,expr_dots,ender,whencode,multi) ->
-	    Ast.NestExpr(string_mcode starter,expression_dots expr_dots,
-			 string_mcode ender,
-			 get_option expression whencode,multi)
-	| Ast.Edots(dots,whencode) ->
-	    Ast.Edots(string_mcode dots,get_option expression whencode)
-	| Ast.Ecircles(dots,whencode) ->
-	    Ast.Ecircles(string_mcode dots,get_option expression whencode)
-	| Ast.Estars(dots,whencode) ->
-	    Ast.Estars(string_mcode dots,get_option expression whencode)
+	| Ast.NestExpr(starter,expr_dots,ender,whncode,multi) ->
+	    let lstarter = string_mcode starter in
+	    let lexpr_dots = expression_dots expr_dots in
+	    let lender = string_mcode ender in
+	    let lwhncode = get_option expression whncode in
+	    Ast.NestExpr(lstarter, lexpr_dots, lender, lwhncode, multi)
+	| Ast.Edots(dots,whncode) ->
+	    let ldots = string_mcode dots in
+	    let lwhncode = get_option expression whncode in
+	    Ast.Edots(ldots, lwhncode)
+	| Ast.Ecircles(dots,whncode) ->
+	    let ldots = string_mcode dots in
+	    let lwhncode = get_option expression whncode in
+	    Ast.Ecircles(ldots, lwhncode)
+	| Ast.Estars(dots,whncode) ->
+	    let ldots = string_mcode dots in
+	    let lwhncode = get_option expression whncode in
+	    Ast.Estars(ldots, lwhncode)
 	| Ast.OptExp(exp) -> Ast.OptExp(expression exp)
 	| Ast.UniqueExp(exp) -> Ast.UniqueExp(expression exp)) in
     exprfn all_functions k e
@@ -804,11 +1117,14 @@ let rebuilder
 	(match Ast.unwrap e with
 	  Ast.ConstantFragment(str) -> Ast.ConstantFragment(string_mcode str)
 	| Ast.FormatFragment(pct,fmt) ->
-	    Ast.FormatFragment(string_mcode pct, string_format fmt)
+	    let lpct = string_mcode pct in
+	    let lfmt = string_format fmt in
+	    Ast.FormatFragment(lpct, lfmt)
 	| Ast.Strdots dots -> Ast.Strdots (string_mcode dots)
 	| Ast.MetaFormatList(pct,name,lenname,keep,inherited) ->
-	    Ast.MetaFormatList(string_mcode pct,meta_mcode name,lenname,
-			       keep,inherited)) in
+	    let lpct = string_mcode pct in
+	    let lname = meta_mcode name in
+	    Ast.MetaFormatList(lpct, lname, lenname, keep, inherited)) in
     fragfn all_functions k e
 
   and string_format e =
@@ -825,8 +1141,13 @@ let rebuilder
       Ast.rewrap ft
 	(match Ast.unwrap ft with
 	  Ast.Type(allminus,cv,ty) ->
-	    Ast.Type (allminus,get_option cv_mcode cv, typeC ty)
-	| Ast.AsType(ty,asty) -> Ast.AsType(fullType ty,fullType asty)
+	    let lcv = get_option cv_mcode cv in
+	    let lty = typeC ty in
+	    Ast.Type (allminus, lcv, lty)
+	| Ast.AsType(ty,asty) -> 
+	    let lty = fullType ty in
+	    let lasty = fullType asty in
+	    Ast.AsType(lty, lasty)
 	| Ast.DisjType(types) -> Ast.DisjType(List.map fullType types)
 	| Ast.OptType(ty) -> Ast.OptType(fullType ty)
 	| Ast.UniqueType(ty) -> Ast.UniqueType(fullType ty)) in
@@ -839,35 +1160,62 @@ let rebuilder
 	  Ast.BaseType(ty,strings) ->
 	    Ast.BaseType (ty, List.map string_mcode strings)
 	| Ast.SignedT(sgn,ty) ->
-	    Ast.SignedT(sign_mcode sgn,get_option typeC ty)
+	    let lsgn = sign_mcode sgn in
+	    let lty = get_option typeC ty in
+	    Ast.SignedT(lsgn, lty)
 	| Ast.Pointer(ty,star) ->
-	    Ast.Pointer (fullType ty, string_mcode star)
+	    let lty = fullType ty in
+	    let lstar = string_mcode star in
+	    Ast.Pointer (lty, lstar)
 	| Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
-	    Ast.FunctionPointer(fullType ty,string_mcode lp1,string_mcode star,
-				string_mcode rp1,string_mcode lp2,
-				parameter_dots params,
-				string_mcode rp2)
+	    let lty = fullType ty in
+	    let llp1 = string_mcode lp1 in
+	    let lstar = string_mcode star in
+	    let lrp1 = string_mcode rp1 in
+	    let llp2 = string_mcode lp2 in
+	    let lparams = parameter_dots params in
+	    let lrp2 = string_mcode rp2 in
+	    Ast.FunctionPointer(lty, llp1, lstar, lrp1, llp2, lparams, lrp2)
 	| Ast.FunctionType(allminus,ty,lp,params,rp) ->
-	    Ast.FunctionType(allminus,get_option fullType ty,string_mcode lp,
-			     parameter_dots params,string_mcode rp)
+	    let lty = get_option fullType ty in
+	    let llp = string_mcode lp in
+	    let lparams = parameter_dots params in
+	    let lrp = string_mcode rp in
+	    Ast.FunctionType(allminus, lty, llp, lparams, lrp)
 	| Ast.Array(ty,lb,size,rb) ->
-	    Ast.Array(fullType ty, string_mcode lb,
-		      get_option expression size, string_mcode rb)
+	    let lty = fullType ty in
+	    let llb = string_mcode lb in
+	    let lsize = get_option expression size in
+	    let lrb = string_mcode rb in
+	    Ast.Array(lty, llb, lsize, lrb)
       | Ast.Decimal(dec,lp,length,comma,precision_opt,rp) ->
-	  Ast.Decimal(string_mcode dec, string_mcode lp,
-		      expression length, get_option string_mcode comma,
-		      get_option expression precision_opt, string_mcode rp)
+	    let ldec = string_mcode dec in
+	    let llp = string_mcode lp in
+	    let llength = expression length in
+	    let lcomma = get_option string_mcode comma in
+	    let lprecision_opt = get_option expression precision_opt in
+	    let lrp = string_mcode rp in
+	  Ast.Decimal(ldec, llp, llength, lcomma, lprecision_opt, lrp)
 	| Ast.EnumName(kind,name) ->
-	    Ast.EnumName(string_mcode kind, get_option ident name)
+	    let lkind = string_mcode kind in
+	    let lname = get_option ident name in
+	    Ast.EnumName(lkind, lname)
 	| Ast.EnumDef(ty,lb,ids,rb) ->
-	    Ast.EnumDef (fullType ty, string_mcode lb, expression_dots ids,
-			 string_mcode rb)
+	    let lty = fullType ty in
+	    let llb = string_mcode lb in
+	    let lids = expression_dots ids in
+	    let lrb = string_mcode rb in
+	    Ast.EnumDef (lty, llb, lids, lrb)
 	| Ast.StructUnionName(kind,name) ->
-	    Ast.StructUnionName (struct_mcode kind, get_option ident name)
+	    let lkind = struct_mcode kind in
+	    let lname = get_option ident name in
+	    Ast.StructUnionName (lkind, lname)
 	| Ast.StructUnionDef(ty,lb,decls,rb) ->
-	    Ast.StructUnionDef (fullType ty,
-				string_mcode lb, declaration_dots decls,
-				string_mcode rb)
+	    let lty = fullType ty in
+	    let llb = string_mcode lb in
+	    let ldecls = annotated_decl_dots decls in
+	    let lrb = string_mcode rb in
+	    Ast.StructUnionDef (lty, llb, ldecls, lrb)
 	| Ast.TypeName(name) -> Ast.TypeName(string_mcode name)
 	| Ast.MetaType(name,keep,inherited) ->
 	    Ast.MetaType(meta_mcode name,keep,inherited)) in
@@ -884,31 +1232,65 @@ let rebuilder
 	| Ast.MetaFieldList(name,lenname_inh,keep,inherited) ->
 	    Ast.MetaFieldList(meta_mcode name,lenname_inh,keep,inherited)
 	| Ast.AsDecl(decl,asdecl) ->
-	    Ast.AsDecl(declaration decl,declaration asdecl)
+	    let ldecl = declaration decl in
+	    let lasdecl = declaration asdecl in
+	    Ast.AsDecl(ldecl, lasdecl)
 	| Ast.Init(stg,ty,id,eq,ini,sem) ->
-	    Ast.Init(get_option storage_mcode stg, fullType ty, ident id,
-		     string_mcode eq, initialiser ini, string_mcode sem)
+	    let lstg = get_option storage_mcode stg in
+	    let lty = fullType ty in
+	    let lid = ident id in
+	    let leq = string_mcode eq in
+	    let lini = initialiser ini in
+	    let lsem = string_mcode sem in
+	    Ast.Init(lstg, lty, lid, leq, lini, lsem)
 	| Ast.UnInit(stg,ty,id,sem) ->
-	    Ast.UnInit(get_option storage_mcode stg, fullType ty, ident id,
-		       string_mcode sem)
+	    let lstg = get_option storage_mcode stg in
+	    let lty = fullType ty in
+	    let lid = ident id in
+	    let lsem = string_mcode sem in
+	    Ast.UnInit(lstg, lty, lid, lsem)
 	| Ast.MacroDecl(name,lp,args,rp,sem) ->
-	    Ast.MacroDecl(ident name, string_mcode lp, expression_dots args,
-			  string_mcode rp,string_mcode sem)
+	    let lname = ident name in
+	    let llp = string_mcode lp in
+	    let largs = expression_dots args in
+	    let lrp = string_mcode rp in
+	    let lsem = string_mcode sem in
+	    Ast.MacroDecl(lname, llp, largs, lrp, lsem)
 	| Ast.MacroDeclInit(name,lp,args,rp,eq,ini,sem) ->
-	    Ast.MacroDeclInit
-	      (ident name, string_mcode lp, expression_dots args,
-	       string_mcode rp,string_mcode eq,initialiser ini,
-	       string_mcode sem)
-	| Ast.TyDecl(ty,sem) -> Ast.TyDecl(fullType ty, string_mcode sem)
+	    let lname = ident name in
+	    let llp = string_mcode lp in
+	    let largs = expression_dots args in
+	    let lrp = string_mcode rp in
+	    let leq = string_mcode eq in
+	    let lini = initialiser ini in
+	    let lsem = string_mcode sem in
+	    Ast.MacroDeclInit(lname, llp, largs, lrp, leq, lini, lsem)
+	| Ast.TyDecl(ty,sem) -> 
+	    let lty = fullType ty in
+	    let lsem = string_mcode sem in
+	    Ast.TyDecl(lty, lsem)
 	| Ast.Typedef(stg,ty,id,sem) ->
-	    Ast.Typedef(string_mcode stg, fullType ty, typeC id,
-			string_mcode sem)
+	    let lstg = string_mcode stg in
+	    let lty = fullType ty in
+	    let lid = typeC id in
+	    let lsem = string_mcode sem in
+	    Ast.Typedef(lstg, lty, lid, lsem)
 	| Ast.DisjDecl(decls) -> Ast.DisjDecl(List.map declaration decls)
-	| Ast.Ddots(dots,whencode) ->
-	    Ast.Ddots(string_mcode dots, get_option declaration whencode)
 	| Ast.OptDecl(decl) -> Ast.OptDecl(declaration decl)
 	| Ast.UniqueDecl(decl) -> Ast.UniqueDecl(declaration decl)) in
     declfn all_functions k d
+
+  and annotated_decl d =
+    let k d =
+      Ast.rewrap d
+	(match Ast.unwrap d with
+	  Ast.DElem(bef,allminus,decl) ->
+	    Ast.DElem(bef,allminus,declaration decl)
+	| Ast.Ddots(dots,whncode) ->
+	    let ldots = string_mcode dots in
+	    let lwhncode = get_option declaration whncode in
+	    Ast.Ddots(ldots, lwhncode)) in
+    annotated_declfn all_functions k d
 
   and initialiser i =
     let k i =
@@ -919,36 +1301,57 @@ let rebuilder
 	| Ast.MetaInitList(name,lenname_inh,keep,inherited) ->
 	    Ast.MetaInitList(meta_mcode name,lenname_inh,keep,inherited)
 	| Ast.AsInit(ini,asini) ->
-	    Ast.AsInit(initialiser ini,initialiser asini)
+	    let lini = initialiser ini in
+	    let lasinit = initialiser asini in
+	    Ast.AsInit(lini, lasinit)
 	| Ast.InitExpr(exp) -> Ast.InitExpr(expression exp)
 	| Ast.ArInitList(lb,initlist,rb) ->
-	    Ast.ArInitList(string_mcode lb, initialiser_dots initlist,
-			   string_mcode rb)
-	| Ast.StrInitList(allminus,lb,initlist,rb,whencode) ->
-	    Ast.StrInitList(allminus,
-			 string_mcode lb, List.map initialiser initlist,
-			 string_mcode rb, List.map initialiser whencode)
+	    let llb = string_mcode lb in
+	    let linitlist = initialiser_dots initlist in
+	    let lrb = string_mcode rb in
+	    Ast.ArInitList(llb, linitlist, lrb)
+	| Ast.StrInitList(allminus,lb,initlist,rb,whncode) ->
+	    let llb = string_mcode lb in
+	    let linitlist = List.map initialiser initlist in
+	    let lrb = string_mcode rb in
+	    let lwhncode = List.map initialiser whncode in
+	    Ast.StrInitList(allminus,llb, linitlist, lrb, lwhncode)
 	| Ast.InitGccName(name,eq,ini) ->
-	    Ast.InitGccName(ident name, string_mcode eq, initialiser ini)
+	    let lname = ident name in
+	    let leq = string_mcode eq in
+	    let lini = initialiser ini in
+	    Ast.InitGccName(lname, leq, lini)
 	| Ast.InitGccExt(designators,eq,ini) ->
-	    Ast.InitGccExt
-	      (List.map designator designators, string_mcode eq,
-	       initialiser ini)
+	    let ldesignators = List.map designator designators in
+	    let leq = string_mcode eq in
+	    let lini = initialiser ini in
+	    Ast.InitGccExt(ldesignators, leq, lini)
 	| Ast.IComma(cm) -> Ast.IComma(string_mcode cm)
-	| Ast.Idots(dots,whencode) ->
-	    Ast.Idots(string_mcode dots,get_option initialiser whencode)
+	| Ast.Idots(dots,whncode) ->
+	    let ldots = string_mcode dots in
+	    let lwhncode = get_option initialiser whncode in
+	    Ast.Idots(ldots, lwhncode)
 	| Ast.OptIni(i) -> Ast.OptIni(initialiser i)
 	| Ast.UniqueIni(i) -> Ast.UniqueIni(initialiser i)) in
     initfn all_functions k i
 
   and designator = function
       Ast.DesignatorField(dot,id) ->
-	Ast.DesignatorField(string_mcode dot,ident id)
+	let ldot = string_mcode dot in
+	let lid = ident id in
+	Ast.DesignatorField(ldot, lid)
     | Ast.DesignatorIndex(lb,exp,rb) ->
-	Ast.DesignatorIndex(string_mcode lb,expression exp,string_mcode rb)
+	let llb = string_mcode lb in
+	let lexp = expression exp in
+	let lrb = string_mcode rb in
+	Ast.DesignatorIndex(llb, lexp, lrb)
     | Ast.DesignatorRange(lb,min,dots,max,rb) ->
-	Ast.DesignatorRange(string_mcode lb,expression min,string_mcode dots,
-			     expression max,string_mcode rb)
+	let llb = string_mcode lb in
+	let lmin = expression min in
+	let ldots = string_mcode dots in
+	let lmax = expression max in
+	let lrb = string_mcode rb in
+	Ast.DesignatorRange(llb, lmin, ldots, lmax, lrb)
 
   and parameterTypeDef p =
     let k p =
@@ -961,7 +1364,9 @@ let rebuilder
 	| Ast.MetaParamList(name,lenname_inh,keep,inherited) ->
 	    Ast.MetaParamList(meta_mcode name,lenname_inh,keep,inherited)
 	| Ast.AsParam(p,asexp) ->
-	    Ast.AsParam(parameterTypeDef p, expression asexp)
+	    let lp = parameterTypeDef p in
+	    let lasexp = expression asexp in
+	    Ast.AsParam(lp, lasexp)
 	| Ast.PComma(cm) -> Ast.PComma(string_mcode cm)
 	| Ast.Pdots(dots) -> Ast.Pdots(string_mcode dots)
 	| Ast.Pcircles(dots) -> Ast.Pcircles(string_mcode dots)
@@ -974,51 +1379,93 @@ let rebuilder
       Ast.rewrap re
 	(match Ast.unwrap re with
 	  Ast.FunHeader(bef,allminus,fi,name,lp,params,rp) ->
-	    Ast.FunHeader(bef,allminus,List.map fninfo fi,ident name,
-			  string_mcode lp, parameter_dots params,
-			  string_mcode rp)
-	| Ast.Decl(bef,allminus,decl) ->
-	    Ast.Decl(bef,allminus,declaration decl)
+	    let lfi = List.map fninfo fi in
+	    let lname = ident name in
+	    let llp = string_mcode lp in
+	    let lparams = parameter_dots params in
+	    let lrp = string_mcode rp in
+	    Ast.FunHeader(bef,allminus, lfi, lname, llp, lparams, lrp)
+	| Ast.Decl decl -> Ast.Decl (annotated_decl decl)
 	| Ast.SeqStart(brace) -> Ast.SeqStart(string_mcode brace)
 	| Ast.SeqEnd(brace) -> Ast.SeqEnd(string_mcode brace)
 	| Ast.ExprStatement(exp,sem) ->
-	    Ast.ExprStatement (get_option expression exp, string_mcode sem)
+	    let lexp = get_option expression exp in
+	    let lsem = string_mcode sem in
+	    Ast.ExprStatement (lexp, lsem)
 	| Ast.IfHeader(iff,lp,exp,rp) ->
-	    Ast.IfHeader(string_mcode iff, string_mcode lp, expression exp,
-	      string_mcode rp)
+	    let liff = string_mcode iff in
+	    let llp = string_mcode lp in
+	    let lexp = expression exp in
+	    let lrp = string_mcode rp in
+	    Ast.IfHeader(liff, llp, lexp, lrp)
 	| Ast.Else(els) -> Ast.Else(string_mcode els)
 	| Ast.WhileHeader(whl,lp,exp,rp) ->
-	    Ast.WhileHeader(string_mcode whl, string_mcode lp, expression exp,
-			    string_mcode rp)
+	    let lwhl = string_mcode whl in
+	    let llp = string_mcode lp in
+	    let lexp = expression exp in
+	    let lrp = string_mcode rp in
+	    Ast.WhileHeader(lwhl, llp, lexp, lrp)
 	| Ast.DoHeader(d) -> Ast.DoHeader(string_mcode d)
 	| Ast.WhileTail(whl,lp,exp,rp,sem) ->
-	    Ast.WhileTail(string_mcode whl, string_mcode lp, expression exp,
-			  string_mcode rp, string_mcode sem)
+	    let lwhl = string_mcode whl in
+	    let llp = string_mcode lp in
+	    let lexp = expression exp in
+	    let lrp = string_mcode rp in
+	    let lsem = string_mcode sem in
+	    Ast.WhileTail(lwhl, llp, lexp, lrp, lsem)
 	| Ast.ForHeader(fr,lp,first,e2,sem2,e3,rp) ->
-	    let first = forinfo first in
-	    Ast.ForHeader(string_mcode fr, string_mcode lp, first,
-			  get_option expression e2, string_mcode sem2,
-			  get_option expression e3, string_mcode rp)
+	    let lfr = string_mcode fr in
+	    let llp = string_mcode lp in
+	    let lfirst = forinfo first in
+	    let le2 = get_option expression e2 in
+	    let lsem2 = string_mcode sem2 in
+	    let le3 = get_option expression e3 in
+	    let lrp = string_mcode rp in
+	    Ast.ForHeader(lfr, llp, lfirst, le2, lsem2, le3, lrp)
 	| Ast.IteratorHeader(whl,lp,args,rp) ->
-	    Ast.IteratorHeader(ident whl, string_mcode lp,
-			       expression_dots args, string_mcode rp)
+	    let lnm = ident whl in
+	    let llp = string_mcode lp in
+	    let largs = expression_dots args in
+	    let lrp = string_mcode rp in
+	    Ast.IteratorHeader(lnm, llp, largs, lrp)
 	| Ast.SwitchHeader(switch,lp,exp,rp) ->
-	    Ast.SwitchHeader(string_mcode switch, string_mcode lp,
-			     expression exp, string_mcode rp)
+	    let lswitch = string_mcode switch in
+	    let llp = string_mcode lp in
+	    let lexp = expression exp in
+	    let lrp = string_mcode rp in
+	    Ast.SwitchHeader(lswitch, llp, lexp, lrp)
 	| Ast.Break(br,sem) ->
-	    Ast.Break(string_mcode br, string_mcode sem)
+	    let lbr = string_mcode br in
+	    let lsem = string_mcode sem in
+	    Ast.Break(lbr, lsem)
 	| Ast.Continue(cont,sem) ->
-	    Ast.Continue(string_mcode cont, string_mcode sem)
-	| Ast.Label(l,dd) -> Ast.Label(ident l, string_mcode dd)
+	    let lcont = string_mcode cont in
+	    let lsem = string_mcode sem in
+	    Ast.Continue(lcont, lsem)
+	| Ast.Label(l,dd) -> 
+	    let ll = ident l in
+	    let ldd = string_mcode dd in
+	    Ast.Label(ll, ldd)
 	| Ast.Goto(goto,l,sem) ->
-	    Ast.Goto(string_mcode goto,ident l,string_mcode sem)
+	    let lgoto = string_mcode goto in
+	    let ll = ident l in
+	    let lsem = string_mcode sem in
+	    Ast.Goto(lgoto, ll, lsem)
 	| Ast.Return(ret,sem) ->
-	    Ast.Return(string_mcode ret, string_mcode sem)
+	    let lret = string_mcode ret in
+	    let lsem = string_mcode sem in
+	    Ast.Return(lret, lsem)
 	| Ast.ReturnExpr(ret,exp,sem) ->
-	    Ast.ReturnExpr(string_mcode ret, expression exp, string_mcode sem)
+	    let lret = string_mcode ret in
+	    let lexp =  expression exp in
+	    let lsem = string_mcode sem in
+	    Ast.ReturnExpr(lret, lexp, lsem)
 	| Ast.Exec(exec,lang,code,sem) ->
-	    Ast.Exec(string_mcode exec,string_mcode lang,
-		     exec_code_dots code,string_mcode sem)
+	    let lexec = string_mcode exec in
+	    let lland = string_mcode lang in
+	    let lcode = exec_code_dots code in
+	    let lsem = string_mcode sem in
+	    Ast.Exec(lexec, lland, lcode, lsem)
 	| Ast.MetaStmt(name,keep,seqible,inherited) ->
 	    Ast.MetaStmt(meta_mcode name,keep,seqible,inherited)
 	| Ast.MetaStmtList(name,keep,inherited) ->
@@ -1030,18 +1477,32 @@ let rebuilder
 	| Ast.Ty(ty) -> Ast.Ty(fullType ty)
 	| Ast.TopInit(init) -> Ast.TopInit(initialiser init)
 	| Ast.Include(inc,name) ->
-	    Ast.Include(string_mcode inc,inc_file_mcode name)
+	    let linc = string_mcode inc in
+	    let lname = inc_file_mcode name in
+	    Ast.Include(linc, lname)
 	| Ast.Undef(def,id) ->
-	    Ast.Undef(string_mcode def,ident id)
+	    let ldef = string_mcode def in
+	    let lid = ident id in
+	    Ast.Undef(ldef, lid)
 	| Ast.DefineHeader(def,id,params) ->
-	    Ast.DefineHeader(string_mcode def,ident id,
-			     define_parameters params)
+	    let ldef = string_mcode def in
+	    let lid = ident id in
+	    let lparams = define_parameters params in
+	    Ast.DefineHeader(ldef, lid, lparams)
 	| Ast.Pragma(prg,id,body) ->
-	    Ast.Pragma(string_mcode prg,ident id,pragmainfo body)
+	    let lprg = string_mcode prg in
+	    let lid = ident id in
+	    let lbody = pragmainfo body in
+	    Ast.Pragma(lprg, lid, lbody)
 	| Ast.Default(def,colon) ->
-	    Ast.Default(string_mcode def,string_mcode colon)
+	    let ldef = string_mcode def in
+	    let lcolon = string_mcode colon in
+	    Ast.Default(ldef, lcolon)
 	| Ast.Case(case,exp,colon) ->
-	    Ast.Case(string_mcode case,expression exp,string_mcode colon)
+	    let lcase = string_mcode case in
+	    let lexp = expression exp in
+	    let lcolon = string_mcode colon in
+	    Ast.Case(lcase, lexp, lcolon)
 	| Ast.DisjRuleElem(res) -> Ast.DisjRuleElem(List.map rule_elem res)) in
     rulefn all_functions k re
 
@@ -1049,9 +1510,10 @@ let rebuilder
   and forinfo fi =
     let k = function
       Ast.ForExp(e1,sem1) ->
-	Ast.ForExp(get_option expression e1,string_mcode sem1)
-    | Ast.ForDecl (bef,allminus,decl) ->
-	Ast.ForDecl(bef,allminus,declaration decl) in
+	let le1 = get_option expression e1 in
+	let lsem1 = string_mcode sem1 in
+	Ast.ForExp(le1, lsem1)
+    | Ast.ForDecl decl -> Ast.ForDecl (annotated_decl decl) in
     k fi
 
   (* not parameterizable for now... *)
@@ -1060,8 +1522,10 @@ let rebuilder
       Ast.rewrap pi
 	(match Ast.unwrap pi with
 	  Ast.PragmaTuple(lp,args,rp) ->
-	    Ast.PragmaTuple(string_mcode lp,expression_dots args,
-			    string_mcode rp)
+	    let llp = string_mcode lp in
+	    let largs = expression_dots args in
+	    let lrp = string_mcode rp in
+	    Ast.PragmaTuple(llp, largs, lrp)
 	| Ast.PragmaIdList(ids) -> Ast.PragmaIdList(identifier_dots ids)
 	| Ast.PragmaDots (dots) -> Ast.PragmaDots(string_mcode dots)) in
     k pi
@@ -1073,8 +1537,10 @@ let rebuilder
 	(match Ast.unwrap p with
 	  Ast.NoParams -> Ast.NoParams
 	| Ast.DParams(lp,params,rp) ->
-	    Ast.DParams(string_mcode lp,define_param_dots params,
-			string_mcode rp)) in
+	  let llp = string_mcode lp in
+	  let lparams = define_param_dots params in
+	  let lrp = string_mcode rp in
+	  Ast.DParams(llp, lparams, lrp)) in
     k p
 
   and define_param_dots d =
@@ -1113,49 +1579,79 @@ let rebuilder
       Ast.rewrap s
 	(match Ast.unwrap s with
 	  Ast.Seq(lbrace,body,rbrace) ->
-	    Ast.Seq(rule_elem lbrace,
-		    statement_dots body, rule_elem rbrace)
+	    let llbrace = rule_elem lbrace in
+	    let lbody = statement_dots body in
+	    let lrbrace = rule_elem rbrace in
+	    Ast.Seq(llbrace, lbody, lrbrace)
 	| Ast.IfThen(header,branch,aft) ->
-	    Ast.IfThen(rule_elem header, statement branch,aft)
+	    let lheader = rule_elem header in
+	    let lbranch = statement branch in
+	    Ast.IfThen(lheader, lbranch, aft)
 	| Ast.IfThenElse(header,branch1,els,branch2,aft) ->
-	    Ast.IfThenElse(rule_elem header, statement branch1, rule_elem els,
-			   statement branch2, aft)
+	    let lheader = rule_elem header in
+	    let lbranch1 = statement branch1 in
+	    let lels = rule_elem els in
+	    let lbranch2 = statement branch2 in
+	    Ast.IfThenElse(lheader, lbranch1, lels, lbranch2, aft)
 	| Ast.While(header,body,aft) ->
-	    Ast.While(rule_elem header, statement body, aft)
+	    let lheader = rule_elem header in
+	    let lbody = statement body in
+	    Ast.While(lheader, lbody, aft)
 	| Ast.Do(header,body,tail) ->
-	    Ast.Do(rule_elem header, statement body, rule_elem tail)
+	    let lheader = rule_elem header in
+	    let lbody = statement body in 
+	    let ltail = rule_elem tail in
+	    Ast.Do(lheader, lbody, ltail)
 	| Ast.For(header,body,aft) ->
-	    Ast.For(rule_elem header, statement body, aft)
+	    let lheader = rule_elem header in
+	    let lbody = statement body in
+	    Ast.For(lheader, lbody, aft)
 	| Ast.Iterator(header,body,aft) ->
-	    Ast.Iterator(rule_elem header, statement body, aft)
+	    let lheader = rule_elem header in
+	    let lbody = statement body in
+	    Ast.Iterator(lheader, lbody, aft)
 	| Ast.Switch(header,lb,decls,cases,rb) ->
-	    Ast.Switch(rule_elem header,rule_elem lb,
-		       statement_dots decls,
-		       List.map case_line cases,rule_elem rb)
+	    let lheader = rule_elem header in
+	    let llb = rule_elem lb in
+	    let ldecls = statement_dots decls in
+	    let lcases = List.map case_line cases in
+	    let lrb = rule_elem rb in
+	    Ast.Switch(lheader, llb, ldecls, lcases, lrb)
 	| Ast.Atomic(re) -> Ast.Atomic(rule_elem re)
 	| Ast.Disj(stmt_dots_list) ->
 	    Ast.Disj (List.map statement_dots stmt_dots_list)
 	| Ast.Nest(starter,stmt_dots,ender,whn,multi,bef,aft) ->
-	    Ast.Nest(string_mcode starter,statement_dots stmt_dots,
-		     string_mcode ender,
-		     List.map (whencode statement_dots statement) whn,
-		     multi,bef,aft)
-	| Ast.FunDecl(header,lbrace,body,rbrace) ->
-	    Ast.FunDecl(rule_elem header,rule_elem lbrace,
-			statement_dots body, rule_elem rbrace)
+	    let lstarter = string_mcode starter in
+	    let lstmt_dots = statement_dots stmt_dots in
+	    let lender = string_mcode ender in
+	    let lwhn = List.map (whencode statement_dots statement) whn in
+	    Ast.Nest(lstarter, lstmt_dots, lender, lwhn, multi, bef, aft)
+	| Ast.FunDecl(header,lbrace,body,rbrace,aft) ->
+	    let lheader = rule_elem header in
+	    let lbraces = rule_elem lbrace in
+	    let lbody = statement_dots body in
+	    let lrbrace = rule_elem rbrace in
+	    Ast.FunDecl(lheader, lbraces, lbody, lrbrace, aft)
 	| Ast.Define(header,body) ->
-	    Ast.Define(rule_elem header,statement_dots body)
-	| Ast.AsStmt(stm,asstm) -> Ast.AsStmt(statement stm,statement asstm)
+	    let lheader = rule_elem header in
+	    let lbody = statement_dots body in
+	    Ast.Define(lheader, lbody)
+	| Ast.AsStmt(stm,asstm) -> 
+	    let lstm = statement stm in
+	    let lasstm = statement asstm in
+	    Ast.AsStmt(lstm, lasstm)
 	| Ast.Dots(d,whn,bef,aft) ->
-	    Ast.Dots(string_mcode d,
-		     List.map (whencode statement_dots statement) whn,bef,aft)
+	    let ld = string_mcode d in
+	    let lwhn = List.map (whencode statement_dots statement) whn in
+	    Ast.Dots(ld, lwhn, bef, aft)
 	| Ast.Circles(d,whn,bef,aft) ->
-	    Ast.Circles(string_mcode d,
-			List.map (whencode statement_dots statement) whn,
-			bef,aft)
+	    let ld = string_mcode d in
+	    let lwhn = List.map (whencode statement_dots statement) whn in
+	    Ast.Circles(ld, lwhn, bef, aft)
 	| Ast.Stars(d,whn,bef,aft) ->
-	    Ast.Stars(string_mcode d,
-		      List.map (whencode statement_dots statement) whn,bef,aft)
+	    let ld = string_mcode d in
+	    let lwhn = List.map (whencode statement_dots statement) whn in
+	    Ast.Stars(ld, lwhn, bef, aft)
 	| Ast.OptStm(stmt) -> Ast.OptStm(statement stmt)
 	| Ast.UniqueStm(stmt) -> Ast.UniqueStm(statement stmt)) in
     let s = stmtfn all_functions k s in
@@ -1182,7 +1678,9 @@ let rebuilder
       Ast.rewrap c
 	(match Ast.unwrap c with
 	  Ast.CaseLine(header,code) ->
-	    Ast.CaseLine(rule_elem header,statement_dots code)
+	    let lheader = rule_elem header in
+	    let lcode = statement_dots code in
+	    Ast.CaseLine(lheader, lcode)
 	| Ast.OptCase(case) -> Ast.OptCase(case_line case)) in
     casefn all_functions k c
 
@@ -1191,7 +1689,9 @@ let rebuilder
     Ast.rewrap e
       (match Ast.unwrap e with
 	Ast.ExecEval(colon,id) ->
-	  Ast.ExecEval(string_mcode colon, expression id)
+	  let lcolon = string_mcode colon in
+	  let lid = expression id in
+	  Ast.ExecEval(lcolon, lid)
       | Ast.ExecToken(tok) -> Ast.ExecToken(string_mcode tok)
       | Ast.ExecDots(dots) -> Ast.ExecDots(string_mcode dots))
 
@@ -1239,7 +1739,7 @@ let rebuilder
       | Ast.ExprDotsTag(ed) -> Ast.ExprDotsTag(expression_dots ed)
       | Ast.ParamDotsTag(pd) -> Ast.ParamDotsTag(parameter_dots pd)
       | Ast.StmtDotsTag(sd) -> Ast.StmtDotsTag(statement_dots sd)
-      | Ast.DeclDotsTag(sd) -> Ast.DeclDotsTag(declaration_dots sd)
+      | Ast.AnnDeclDotsTag(sd) -> Ast.AnnDeclDotsTag(annotated_decl_dots sd)
       | Ast.TypeCTag(ty) -> Ast.TypeCTag(typeC ty)
       | Ast.ParamTag(param) -> Ast.ParamTag(parameterTypeDef param)
       | Ast.SgrepStartTag(tok) as x -> x
@@ -1263,7 +1763,7 @@ let rebuilder
       rebuilder_top_level = top_level;
       rebuilder_expression_dots = expression_dots;
       rebuilder_statement_dots = statement_dots;
-      rebuilder_declaration_dots = declaration_dots;
+      rebuilder_anndecl_dots = annotated_decl_dots;
       rebuilder_initialiser_dots = initialiser_dots;
       rebuilder_define_param_dots = define_param_dots;
       rebuilder_define_param = define_param;

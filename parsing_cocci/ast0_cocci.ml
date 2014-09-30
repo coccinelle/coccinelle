@@ -1,5 +1,5 @@
 (*
- * Copyright 2012, INRIA
+ * Copyright 2012-2014, INRIA
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -35,7 +35,7 @@ type arity = OPT | UNIQUE | NONE
 
 type token_info =
     { tline_start : int; tline_end : int;
-      left_offset : int; right_offset : int }
+      left_offset : int; right_offset : int; }
 let default_token_info =
   { tline_start = -1; tline_end = -1; left_offset = -1; right_offset = -1 }
 
@@ -53,6 +53,7 @@ type position_info = { line_start : int; line_end : int;
 		       column : int; offset : int; }
 
 type info = { pos_info : position_info;
+              (* preceding whitespace*) whitespace : string;
 	      attachable_start : bool; attachable_end : bool;
 	      mcode_start : mcodekind list; mcode_end : mcodekind list;
 	      (* the following are only for + code *)
@@ -166,10 +167,14 @@ and base_expression =
   | DisjExpr       of string mcode * expression list *
 	              string mcode list (* the |s *) * string mcode
   | NestExpr       of string mcode * expression dots * string mcode *
-	              expression option * Ast.multi
-  | Edots          of string mcode (* ... *) * expression option
-  | Ecircles       of string mcode (* ooo *) * expression option
-  | Estars         of string mcode (* *** *) * expression option
+	              (string mcode * string mcode * expression) option
+	              (* whencode *) * Ast.multi
+  | Edots          of string mcode (* ... *) * (string mcode * string mcode *
+                      expression) option (* whencode *)
+  | Ecircles       of string mcode (* ooo *) * (string mcode * string mcode *
+	              expression) option (* whencode *)
+  | Estars         of string mcode (* *** *) * (string mcode * string mcode *
+	              expression) option (* whencode *)
   | OptExp         of expression
   | UniqueExp      of expression
 
@@ -260,9 +265,10 @@ and base_declaration =
 	initialiser * string mcode (* ; *)
   | Typedef of string mcode (* typedef *) * typeC * typeC * string mcode (*;*)
   | DisjDecl   of string mcode * declaration list *
-                  string mcode list (* the |s *)  * string mcode
+	          string mcode list (* the |s *)  * string mcode
   (* Ddots is for a structure declaration *)
-  | Ddots      of string mcode (* ... *) * declaration option (* whencode *)
+  | Ddots      of string mcode (* ... *) * (string mcode * string mcode *
+	          declaration) option (* whencode *)
   | OptDecl    of declaration
   | UniqueDecl of declaration
 
@@ -285,7 +291,8 @@ and base_initialiser =
   | InitGccName of ident (* name *) * string mcode (*:*) *
 	initialiser
   | IComma of string mcode (* , *)
-  | Idots  of string mcode (* ... *) * initialiser option (* whencode *)
+  | Idots  of string mcode (* ... *) *
+              (string mcode * string mcode * initialiser) option (* whencode *)
   | OptIni    of initialiser
   | UniqueIni of initialiser
 
@@ -402,7 +409,8 @@ and base_statement =
 	fninfo list * ident (* name *) *
 	string mcode (* ( *) * parameter_list * string mcode (* ) *) *
 	string mcode (* { *) * statement dots *
-	string mcode (* } *)
+	string mcode (* } *) *
+	(info * mcodekind) (* after the function decl *)
   | Include of string mcode (* #include *) * Ast.inc_file mcode (* file *)
   | Undef of string mcode (* #define *) * ident (* name *)
   | Define of string mcode (* #define *) * ident (* name *) *
@@ -431,11 +439,12 @@ and fninfo =
   | FAttr of string mcode
 
 and ('a,'b) whencode =
-    WhenNot of 'a
-  | WhenAlways of 'b
-  | WhenModifier of Ast.when_modifier
-  | WhenNotTrue of expression
-  | WhenNotFalse of expression
+    WhenNot of string mcode (* when *) * string mcode (* != *) * 'a
+  | WhenAlways of string mcode (* when *) * string mcode (* = *) * 'b
+  | WhenModifier of string mcode (* when *) * Ast.when_modifier
+  | WhenNotTrue of string mcode (* when *) * string mcode (* != *) * expression
+  | WhenNotFalse of string mcode (* when *) * string mcode (* != *) *
+    expression
 
 and statement = base_statement wrap
 
@@ -478,9 +487,10 @@ and rule = top_level list
 
 and parsed_rule =
     CocciRule of
-      (rule * Ast.metavar list *
-	 (string list * string list * Ast.dependency * string * Ast.exists)) *
-	(rule * Ast.metavar list) * Ast.ruletype
+      (rule (*minus*) * Ast.metavar list (*minus metavars*) *
+	(string list (*isos*) * string list (*drop_isos*) * 
+         Ast.dependency (*dependencies*) * string (*rulename*) * Ast.exists)) *
+      (rule (*plus*) * Ast.metavar list (*plus metavars*)) * Ast.ruletype
   | ScriptRule of string (* name *) * string * Ast.dependency *
 	(Ast.script_meta_name * Ast.meta_name * Ast.metavar) list *
 	Ast.meta_name list (*script vars*) *
@@ -530,6 +540,8 @@ and anything =
   | IsoWhenFTag of expression
   | MetaPosTag of meta_pos
   | HiddenVarTag of anything list (* in iso_compile/pattern only *)
+  | WhenTag of string mcode (* when *) * string mcode option
+      (* !=, =, or none if whenmodifier*) * anything (* iso pattern *)
 
 let dotsExpr x = DotsExprTag x
 let dotsParam x = DotsParamTag x
@@ -558,7 +570,7 @@ let pos_info =
     column = -1; offset = -1; }
 
 let default_info _ = (* why is this a function? *)
-  { pos_info = pos_info;
+  { pos_info = pos_info; whitespace = "";
     attachable_start = true; attachable_end = true;
     mcode_start = []; mcode_end = [];
     strings_before = []; strings_after = []; isSymbolIdent = false; }
@@ -567,7 +579,7 @@ let default_befaft _ =
   MIXED(ref (Ast.NOTHING,default_token_info,default_token_info))
 let context_befaft _ =
   CONTEXT(ref (Ast.NOTHING,default_token_info,default_token_info))
-	  let minus_befaft _ = MINUS(ref (Ast.NOREPLACEMENT,default_token_info))
+let minus_befaft _ = MINUS(ref (Ast.NOREPLACEMENT,default_token_info))
 
 let wrap x =
   { node = x;
@@ -611,6 +623,7 @@ let get_index x     = !(x.index)
 let set_index x i   = x.index := i
 let get_mcodekind x = !(x.mcodekind)
 let get_mcode_mcodekind (_,_,_,mcodekind,_,_) = mcodekind
+let get_mcode_line (_,_,info,_,_,_) = info.pos_info.line_start
 let get_mcodekind_ref x = x.mcodekind
 let set_mcodekind x mk  = x.mcodekind := mk
 let set_type x t        = x.exp_ty := t
@@ -627,6 +640,9 @@ let clear_test_exp x      = {x with true_if_test_exp = false}
 let get_iso x           = x.iso_info
 let set_iso x i = if !Flag.track_iso_usage then {x with iso_info = i} else x
 let set_mcode_data data (_,ar,info,mc,pos,adj) = (data,ar,info,mc,pos,adj)
+let get_rule_name = function
+  | CocciRule ((_,_,(_,_,_,nm,_)),_,_) | InitialScriptRule (nm,_,_,_,_)
+  | FinalScriptRule (nm,_,_,_,_) | ScriptRule (nm,_,_,_,_,_) -> nm
 
 (* --------------------------------------------------------------------- *)
 

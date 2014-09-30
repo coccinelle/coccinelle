@@ -1,5 +1,5 @@
 (*
- * Copyright 2012, INRIA
+ * Copyright 2012-2014, INRIA
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -54,7 +54,7 @@ let all_removed =
     V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing do_nothing
+      do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_declaration
@@ -71,6 +71,10 @@ let contains_modif =
   let bind x y = x or y in
   let option_default = false in
   let do_nothing r k e = k e in
+  let annotated_decl decl =
+    match Ast.unwrap decl with
+      Ast.DElem(bef,_,_) -> bef
+    | _ -> failwith "not possible" in
   let rule_elem r k re =
     (* Very obscure how this could arise.  Array type contains an expression
        and the expression could contain a statement. *)
@@ -78,7 +82,10 @@ let contains_modif =
     match Ast.unwrap re with
       Ast.FunHeader(bef,_,fninfo,name,lp,params,rp) ->
 	bind (mcode r ((),(),bef,[])) res
-    | Ast.Decl(bef,_,decl) -> bind (mcode r ((),(),bef,[])) res
+    | Ast.Decl decl ->
+	bind (mcode r ((),(),annotated_decl decl,[])) res
+    | Ast.ForHeader(fr,lp,Ast.ForDecl(decl),e2,sem2,e3,rp) ->
+	bind (mcode r ((),(),annotated_decl decl,[])) res
     | _ -> res in
   let init r k i =
     let res = k i in
@@ -90,7 +97,7 @@ let contains_modif =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing
-      do_nothing do_nothing do_nothing do_nothing init do_nothing
+      do_nothing do_nothing do_nothing do_nothing init do_nothing do_nothing
       do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_fullType
 
@@ -120,7 +127,7 @@ let process =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing
-      donothing donothing decl donothing
+      donothing donothing decl donothing donothing
       donothing donothing donothing donothing in
   List.map fn.V.rebuilder_top_level
 

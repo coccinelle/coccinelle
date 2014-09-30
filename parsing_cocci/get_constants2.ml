@@ -1,5 +1,5 @@
 (*
- * Copyright 2012, INRIA
+ * Copyright 2012-2014, INRIA
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -55,16 +55,60 @@ wanted *)
    False should never drift to the top, it is the neutral element of or
    and an or is never empty *)
 type combine =
-    And of combine list | Or of combine list | Elem of string | False | True
+    And of combine list | Or of combine list | Not of combine
+  | Elem of string | False | True
 
 let false_on_top_err = "False should not be in the final result.  Perhaps your rule doesn't contain any +/-/* code, or you have a failed dependency.  If the problem is not clear, try the option --debug-parse-cocci."
 
 let rec dep2c = function
     And l -> Printf.sprintf "(%s)" (String.concat "&" (List.map dep2c l))
   | Or l -> Printf.sprintf "(%s)" (String.concat "|" (List.map dep2c l))
+  | Not x -> Printf.sprintf "!(%s)" (dep2c x)
   | Elem x -> x
   | False -> "false"
   | True -> "true"
+
+let sat f =
+  let subset l1 l2 = List.for_all (fun e1 -> List.mem e1 l2) l1 in
+  let opt_union_set (longer : (string list * string list) list)
+                    (shorter : (string list * string list) list) =
+    (* (A v B) & (A v B v C) = A v B *)
+    (* tries to be efficient by not updating prv, so optimize is still
+       needed *)
+    List.fold_left
+      (function prev ->
+	function ((p,n) as cur) ->
+	  if List.exists (function (p1,n1) -> subset p1 p && subset n1 n) prev
+	  then prev
+	  else cur :: prev)
+      longer shorter in
+  let double_union (p,n) (p1,n1) =
+    ((Common.union_set p p1), (Common.union_set n n1)) in
+  let rec cnf = function
+      Elem x -> [([x],[])]
+    | Not (Elem x) -> [([],[x])]
+    | Not (And l) -> cnf (Or (List.map (function x -> Not x) l))
+    | Not (Or l) -> cnf (And (List.map (function x -> Not x) l))
+    | Not (Not x) -> cnf x
+    | Not True -> [([],[])] (* false *)
+    | Not False -> []  (* true *)
+    | And l ->
+	List.fold_left opt_union_set [] (List.map cnf l)
+    | Or l ->
+	let l = List.map cnf l in
+	(match l with
+	  fst::rest ->
+	    List.fold_left
+	      (function prev ->
+		function cur ->
+		  List.fold_left opt_union_set
+		    []
+		    (List.map (fun x -> List.map (double_union x) prev) cur))
+	      fst rest
+	| [] -> [([],[])]) (* false *)
+    | True -> []
+    | False -> [([],[])] in
+  Dpll.dpll (cnf f)
 
 (* glimpse often fails on large queries.  We can safely remove arguments of
 && as long as we don't remove all of them (note that there is no negation).
@@ -76,6 +120,7 @@ let reduce_glimpse x =
   let rec loop x k q =
     match x with
       Elem _ -> q()
+    | Not _ -> failwith "no not in constant formula"
     | And [x] -> loop x (function changed_l -> k (And [changed_l])) q
     | And l ->
 	kloop l
@@ -115,6 +160,7 @@ let reduce_glimpse x =
 let interpret_glimpse strict x =
   let rec loop = function
       Elem x -> x
+    | Not x -> failwith "not unexpected in glimpse arg"
     | And [x] -> loop x
     | Or [x] -> loop x
     | And l -> Printf.sprintf "{%s}" (String.concat ";" (List.map loop l))
@@ -139,6 +185,7 @@ let interpret_grep strict x =
   let add x l = if List.mem x l then l else x :: l in
   let rec loop collected = function
       Elem x -> add x collected
+    | Not x -> failwith "not unexpected in grep arg"
     | And l | Or l ->
 	let rec iloop collected = function
 	    [] -> collected
@@ -174,6 +221,7 @@ let interpret_cocci_grep strict x =
       longer shorter in
   let rec cnf = function
       Elem x -> [[x]]
+    | Not x -> failwith "not unexpected in coccigrep arg"
     | And l ->
 	List.fold_left opt_union_set [] (List.map cnf l)
     | Or l ->
@@ -204,6 +252,7 @@ let interpret_cocci_grep strict x =
       [] l in
   let rec atoms acc = function
       Elem x -> if List.mem x acc then acc else x :: acc
+    | Not x -> failwith "not unexpected in atoms"
     | And l | Or l -> List.fold_left atoms acc l
     | True | False -> acc in
   let wordify x = "\\b" ^ x ^"\\b" in
@@ -388,14 +437,18 @@ let do_get_constants constants keywords env neg_pos =
       Ast.Constant(const) ->
 	bind (k e)
 	  (match Ast.unwrap_mcode const with
-	    Ast.String s -> constants s
+	    Ast.String s -> (*constants s*)
+	      (* not useful if the string contains non letters, etc *)
+	      (* seems safer to ignore *)
+	      option_default
 	  | Ast.Char "\\0" -> option_default (* glimpse doesn't like it *)
 	  | Ast.Char s -> option_default (* probably not chars either *)
 	  (* the following were eg keywords "1", but not good for glimpse *)
 	  | Ast.Int s -> option_default (* glimpse doesn't index integers *)
 	  | Ast.Float s -> option_default (* probably not floats either *)
 	  | Ast.DecimalConst _ -> option_default (* or decimals *))
-    | Ast.StringConstant(lq,str,rq) ->
+    | Ast.StringConstant(lq,str,rq) -> option_default
+	(* Like the above constant case, this information is not likely indexed
 	let str = Ast.undots str in
 	(* pick up completely constant strings *)
 	let strs =
@@ -421,6 +474,7 @@ let do_get_constants constants keywords env neg_pos =
 	  (match strs with
 	    Some strs -> constants (String.concat "" (List.rev strs))
 	  | None ->  option_default)
+	*)
     | Ast.MetaExpr(name,_,_,Some type_list,_,_) ->
 	let types = List.fold_left type_collect option_default type_list in
 	bind (k e) (bind (minherited name) types)
@@ -491,7 +545,6 @@ let do_get_constants constants keywords env neg_pos =
     | Ast.DisjDecl(decls) ->
 	disj_union_all (List.map r.V.combiner_declaration decls)
     | Ast.OptDecl(decl) -> option_default
-    | Ast.Ddots(dots,whencode) -> option_default
     | _ -> k d in
 
   let initialiser r k i =
@@ -567,7 +620,7 @@ let do_get_constants constants keywords env neg_pos =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing
     ident expression string_fragment string_format fullType typeC
-    initialiser parameter declaration
+    initialiser parameter declaration donothing
     rule_elem statement donothing donothing donothing
 
 (* ------------------------------------------------------------------------ *)
@@ -578,7 +631,7 @@ let filter_combine combine to_drop =
     | Or l ->  List.fold_left build_or  False (List.map or_loop l)
     | x -> x
   and or_loop = function
-      Elem x when List.mem x to_drop -> False
+      Elem x when List.mem x to_drop -> True
     | And l -> List.fold_left build_and True  (List.map and_loop l)
     | x -> x in
  or_loop combine
@@ -601,7 +654,7 @@ let get_all_constants minus_only =
 
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
 
 (* ------------------------------------------------------------------------ *)
 
@@ -628,10 +681,18 @@ let get_plus_constants =
   let mcode r mc = process_mcodekind (Ast.get_mcodekind mc) in
   let end_info (_,_,_,mc) = process_mcodekind mc in
 
+  let annotated_decl decl =
+    match Ast.unwrap decl with
+      Ast.DElem(bef,_,_) -> bef
+    | _ -> failwith "not possible" in
+
   let rule_elem r k e =
     match Ast.unwrap e with
-      Ast.FunHeader(bef,_,_,_,_,_,_)
-    | Ast.Decl(bef,_,_) -> bind (process_mcodekind bef) (k e)
+      Ast.FunHeader(bef,_,_,_,_,_,_) -> bind (process_mcodekind bef) (k e)
+    | Ast.Decl decl ->
+	bind (process_mcodekind (annotated_decl decl)) (k e)
+    | Ast.ForHeader(fr,lp,Ast.ForDecl(decl),e2,sem2,e3,rp) ->
+	bind (process_mcodekind (annotated_decl decl)) (k e)
     | _ -> k e in
 
   let statement r k e =
@@ -645,7 +706,7 @@ let get_plus_constants =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    rule_elem statement donothing donothing donothing
+    donothing rule_elem statement donothing donothing donothing
 
 (* ------------------------------------------------------------------------ *)
 
@@ -657,6 +718,19 @@ let rec dependencies env = function
   | Ast.NeverDep s -> True
   | Ast.AndDep (d1,d2) -> build_and (dependencies env d1) (dependencies env d2)
   | Ast.OrDep (d1,d2) -> build_or (dependencies env d1) (dependencies env d2)
+  | Ast.NoDep -> True
+  | Ast.FailDep -> False
+
+(* used with + items to find inconsistencies *)
+let rec exact_dependencies = function
+    Ast.Dep s -> Elem s
+  | Ast.AntiDep s -> Not (Elem s)
+  | Ast.EverDep s -> Elem s
+  | Ast.NeverDep s -> Not (Elem s)
+  | Ast.AndDep (d1,d2) ->
+      build_and (exact_dependencies d1) (exact_dependencies d2)
+  | Ast.OrDep (d1,d2) ->
+      build_or (exact_dependencies d1) (exact_dependencies d2)
   | Ast.NoDep -> True
   | Ast.FailDep -> False
 
@@ -682,28 +756,46 @@ let all_context =
 	not all_minus && k e
     | _ -> k e in
 
+  let annotated_decl decl =
+    match Ast.unwrap decl with
+      Ast.DElem(bef,_,_) -> bef
+    | _ -> failwith "not possible" in
+
   let rule_elem r k e =
     match Ast.unwrap e with
-      Ast.FunHeader(bef,_,_,_,_,_,_)
-    | Ast.Decl(bef,_,_) -> bind (process_mcodekind bef) (k e)
+      Ast.FunHeader(bef,_,_,_,_,_,_) -> bind (process_mcodekind bef) (k e)
+    | Ast.Decl decl ->
+	bind (process_mcodekind (annotated_decl decl)) (k e)
+    | Ast.ForHeader(fr,lp,Ast.ForDecl(decl),e2,sem2,e3,rp) ->
+	bind (process_mcodekind (annotated_decl decl)) (k e)
     | _ -> k e in
 
   let statement r k e =
     match Ast.unwrap e with
       Ast.IfThen(_,_,ei) | Ast.IfThenElse(_,_,_,_,ei)
     | Ast.While(_,_,ei)  | Ast.For(_,_,ei)
-    | Ast.Iterator(_,_,ei) -> bind (k e) (end_info ei)
+    | Ast.Iterator(_,_,ei) | Ast.FunDecl(_,_,_,_,ei) ->
+	bind (k e) (end_info ei)
     | _ -> k e in
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing initialiser donothing
-    donothing rule_elem statement donothing donothing donothing
+    donothing donothing rule_elem statement donothing donothing donothing
 
 (* ------------------------------------------------------------------------ *)
 
-let rule_fn tls in_plus env neg_pos =
+let rule_fn nm tls exact_dependencies in_plus env neg_pos =
+  (* tls seems like it is supposed to relate to multiple minirules.  If we
+     were to actually allow that, then the following could be inefficient,
+     because it could run sat on the same rule name (x) more than once. *)
+  let relevant_in_plus =
+    List.fold_left Common.union_set []
+      (List.map snd
+	 (List.filter
+	    (function (x,_) -> sat (build_and (Elem x) exact_dependencies))
+	    in_plus)) in
   List.fold_left
     (function (rest_info,in_plus) ->
       function (cur,neg_pos) ->
@@ -723,8 +815,8 @@ let rule_fn tls in_plus env neg_pos =
 	   something that is only in plus is really freshly created? *)
 	let plusses = Common.minus_set plusses all_minuses in
 	let was_bot = minuses = True in
-	let new_minuses = filter_combine minuses in_plus in
-	let new_plusses = Common.union_set plusses in_plus in
+	let new_minuses = filter_combine minuses relevant_in_plus in
+	let new_plusses = (nm,plusses) :: in_plus in
 	(* perhaps it should be build_and here?  we don't really have multiple
 	   minirules anymore anyway. *)
 	match new_minuses with
@@ -776,22 +868,24 @@ let run rules neg_pos_vars =
 	      (* only possible metavariables are virtual *)
 	      (rest_info, in_plus, env, locals)
           | (Ast.CocciRule (nm,(dep,_,_),cur,_,_),neg_pos_vars) ->
-	      let (cur_info,cur_plus) =
-		rule_fn cur in_plus ((nm,True)::env) neg_pos_vars in
 	      let dependencies = dependencies env dep in
+	      let exact_dependencies = exact_dependencies dep in
+	      let (cur_info,cur_plus) =
+		rule_fn nm cur exact_dependencies in_plus ((nm,True)::env)
+		  neg_pos_vars in
 	      debug_deps nm dep dependencies;
 	      (match dependencies with
 		False -> (rest_info,cur_plus,env,locals)
 	      | dependencies ->
+		  let re_cur_info = build_and dependencies cur_info in
 		  if List.for_all all_context.V.combiner_top_level cur
-		  then
-		    let cur_info = build_and dependencies cur_info in
-		    (rest_info,cur_plus,(nm,cur_info)::env,nm::locals)
+		  then (rest_info,cur_plus,(nm,re_cur_info)::env,nm::locals)
 		  else
-	       (* no constants if dependent on another rule; then we need to
-	          find the constants of that rule *)
-		      (build_or (build_and dependencies cur_info) rest_info,
-		       cur_plus,(nm,cur_info)::env,locals)))
+		    (* no constants if dependent on another rule; then we need
+		       to find the constants of that rule *)
+		    (* why does env not use re_cur_info? *)
+		    (build_or re_cur_info rest_info,
+		     cur_plus,(nm,cur_info)::env,locals)))
       (False,[],[],[])
       (List.combine (rules : Ast.rule list) neg_pos_vars) in
   info

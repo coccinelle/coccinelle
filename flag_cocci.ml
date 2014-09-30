@@ -1,5 +1,5 @@
 (*
- * Copyright 2012, INRIA
+ * Copyright 2012-2014, INRIA
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -31,7 +31,7 @@ let show_cocci = ref false
 
 (* the output *)
 let show_diff = ref true
-let force_diff = ref false (*show diff even if thhere are only space changes*)
+let force_diff = ref false (*show diff even if there are only space changes*)
 
 (* the derived inputs *)
 let show_flow = ref false
@@ -53,7 +53,7 @@ let windows = ref false
 
 let popl = ref false
 
-let ifdef_to_if = ref true(*false*)
+let include_headers_for_types = ref false
 
 type include_options =
     I_UNSPECIFIED | I_NO_INCLUDES | I_NORMAL_INCLUDES

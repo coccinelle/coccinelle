@@ -442,13 +442,15 @@ rule token = parse
       }
 
  (* DO NOT cherry pick to lexer_cplusplus !!! often used for the extern "C" { *)
-  | "#" [' ' '\t']* "if" sp "defined" sp "(" spopt "__cplusplus" spopt ")" [^'\n' '\r']* ('\n' | "\r\n")
+  | "#" [' ' '\t']* "if" sp "defined" sp "(" spopt "__cplusplus" spopt ")"
+    [^'\n' '\r']* (*('\n' | "\r\n")*) (* don't want the final newline *)
       { let info = tokinfo lexbuf in
         TIfdefMisc (false, no_ifdef_mark(), info)
       }
 
  (* DO NOT cherry pick to lexer_cplusplus !!! *)
-  | "#" [' ' '\t']* "ifdef" [' ' '\t']* "__cplusplus"   [^'\n']*  '\n'
+  | "#" [' ' '\t']* "ifdef" [' ' '\t']* "__cplusplus"   [^'\n']* (* '\n' *)
+      (* don't want the final newline *)
       { let info = tokinfo lexbuf in
         TIfdefMisc (false, no_ifdef_mark(), info)
       }
@@ -547,7 +549,9 @@ rule token = parse
   (* can be at eof *)
   (*| "#" [' ' '\t']* "endif"                { TEndif     (tokinfo lexbuf) }*)
 
-  | "#" [' ' '\t']* "else" ([' ' '\t' '\n'] | "\r\n")
+  | "#" [' ' '\t']* "else" (*([' ' '\t' '\n'] | "\r\n")*)
+      (* don't include trailing \n like for #if, etc
+      doesn't seem needed from crx.cocci, but good to be uniform *)
       { TIfdefelse (no_ifdef_mark(), tokinfo lexbuf) }
 
 
@@ -872,7 +876,9 @@ rule token = parse
       then
 	let len = string_of_int(String.length x - 1) in
         TDecimal ((x,len,"0"), tokinfo lexbuf)
-      else failwith "unrecognized constant modifier d/D" }
+      else
+	(pr2 ("LEXER: ZARB integer_string, certainly a macro:" ^ tok lexbuf);
+         TIdent (tok lexbuf, tokinfo lexbuf)) }
 
   | (real ['f' 'F']) as x { TFloat ((x, CFloat),      tokinfo lexbuf) }
   | (real ['l' 'L']) as x { TFloat ((x, CLongDouble), tokinfo lexbuf) }
@@ -1042,6 +1048,7 @@ and comment = parse
  * - have to recognize comments in cpp_eat_until_nl.
  *)
 
+(*
 and cpp_eat_until_nl = parse
   (* bugfix: *)
   | "/*"
@@ -1060,3 +1067,31 @@ and cpp_eat_until_nl = parse
      { let s = tok lexbuf in s ^ cpp_eat_until_nl lexbuf }
   | eof { pr2 "LEXER: end of file in cpp_eat_until_nl"; ""}
   | _   { let s = tok lexbuf in s ^ cpp_eat_until_nl lexbuf }
+*)
+
+and parse_newline = parse
+  ('\n' | "\r\n") { tok lexbuf }
+
+and cpp_eat_until_nl = parse
+  [^ '\n']+
+  { let s = tok lexbuf in
+    let splitted = Str.split_delim (Str.regexp_string "/*") s in
+    let check_continue s =
+      let splitted = Str.split_delim (Str.regexp "\\\\ *") s in
+      match splitted with
+	[_;""] ->
+          let s2 = parse_newline lexbuf in
+          let s3 = cpp_eat_until_nl lexbuf in
+	  s ^ s2 ^ s3
+      |	_ -> s in
+    match List.rev splitted with
+      after_comment_start :: before_comment_start :: rest ->
+	let splitted2 =
+	  Str.split_delim (Str.regexp_string "*/") after_comment_start in
+	(match splitted2 with
+	  [bef;aft] -> check_continue s (* no unclosed comment *)
+	| _ ->
+	    let s2 = comment lexbuf in
+            let s3 = cpp_eat_until_nl lexbuf in
+            s ^ s2 ^ s3)
+    | _ -> check_continue s (* no comment *) }

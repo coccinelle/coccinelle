@@ -1,5 +1,5 @@
 (*
- * Copyright 2012, INRIA
+ * Copyright 2012-2014, INRIA
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -287,6 +287,7 @@ let convert_info info =
     Ast.column = info.Ast0.pos_info.Ast0.column;
     Ast.strbef = strings_to_s info.Ast0.strings_before;
     Ast.straft = strings_to_s info.Ast0.strings_after;
+    Ast.whitespace = info.Ast0.whitespace;
   }
 
 let convert_mcodekind adj = function
@@ -449,20 +450,20 @@ and expression e =
 	Ast.DisjExpr(List.map expression exps)
     | Ast0.NestExpr(starter,exp_dots,ender,whencode,multi) ->
 	let starter = mcode starter in
-	let whencode = get_option expression whencode in
+	let whencode = get_option (fun (_,_,b) -> expression b) whencode in
 	let ender = mcode ender in
 	Ast.NestExpr(starter,dots expression exp_dots,ender,whencode,multi)
     | Ast0.Edots(dots,whencode) ->
 	let dots = mcode dots in
-	let whencode = get_option expression whencode in
+	let whencode = get_option (fun (_,_,b) -> expression b) whencode in
 	Ast.Edots(dots,whencode)
     | Ast0.Ecircles(dots,whencode) ->
 	let dots = mcode dots in
-	let whencode = get_option expression whencode in
+	let whencode = get_option (fun (_,_,b) -> expression b) whencode in
 	Ast.Ecircles(dots,whencode)
     | Ast0.Estars(dots,whencode) ->
 	let dots = mcode dots in
-	let whencode = get_option expression whencode in
+	let whencode = get_option (fun (_,_,b) -> expression b) whencode in
 	Ast.Estars(dots,whencode)
     | Ast0.OptExp(exp) -> Ast.OptExp(expression exp)
     | Ast0.UniqueExp(exp) -> Ast.UniqueExp(expression exp)) in
@@ -575,8 +576,7 @@ and base_typeC allminus t =
       Ast.StructUnionName(mcode kind,get_option ident name)
   | Ast0.StructUnionDef(ty,lb,decls,rb) ->
       Ast.StructUnionDef(typeC allminus ty,mcode lb,
-			 dots declaration decls,
-			 mcode rb)
+			 declaration_dots decls, mcode rb)
   | Ast0.TypeName(name) -> Ast.TypeName(mcode name)
   | Ast0.MetaType(name,_) ->
       Ast.MetaType(mcode name,unitary,false)
@@ -649,15 +649,31 @@ and declaration d =
 	  Ast.Type(_,None,id) -> (* only MetaType or Id *)
 	    Ast.Typedef(mcode stg,typeC allminus ty,id,mcode sem)
 	| _ -> failwith "bad typedef")
+    | Ast0.Ddots(dots,whencode) -> failwith "should not be possible"
     | Ast0.DisjDecl(_,decls,_,_) -> Ast.DisjDecl(List.map declaration decls)
-    | Ast0.Ddots(dots,whencode) ->
-	let dots = mcode dots in
-	let whencode = get_option declaration whencode in
-	Ast.Ddots(dots,whencode)
     | Ast0.OptDecl(decl) -> Ast.OptDecl(declaration decl)
     | Ast0.UniqueDecl(decl) -> Ast.UniqueDecl(declaration decl))
 
-and declaration_dots l = dots declaration l
+and annotated_decl bef d =
+  rewrap d (do_isos (Ast0.get_iso d))
+    (match Ast0.unwrap d with
+      Ast0.Ddots(dots,whencode) ->
+	(* structure definitions only *)
+	let dots = mcode dots in
+	let whencode = get_option (fun (_,_,b) -> declaration b) whencode in
+	Ast.Ddots(dots,whencode)
+    | _ -> (* for decls where there is no bef information needed *)
+	let bef =
+	  match bef with
+	    None -> (* fake, no change here *)
+	      let bot = Ast0.default_token_info in
+	      Ast0.CONTEXT (ref(Ast.NOTHING,bot,bot))
+	  | Some bef -> bef in
+	let allminus = check_allminus.VT0.combiner_rec_declaration d in
+	Ast.DElem(convert_allminus_mcodekind allminus bef,allminus,
+		  declaration d))
+
+and declaration_dots l = dots (annotated_decl None) l
 
 (* --------------------------------------------------------------------- *)
 (* Initialiser *)
@@ -719,7 +735,7 @@ and initialiser i =
 	let (whencode,initlist,allminus) = strip_idots initlist in
 	Ast.StrInitList
 	  (allminus,mcode lb,List.map initialiser initlist,mcode rb,
-	   List.map initialiser whencode)
+	   List.map (fun (_,_,b) -> initialiser b) whencode)
     | Ast0.InitGccExt(designators,eq,ini) ->
 	Ast.InitGccExt(List.map designator designators,mcode eq,
 		       initialiser ini)
@@ -728,7 +744,7 @@ and initialiser i =
     | Ast0.IComma(comma) -> Ast.IComma(mcode comma)
     | Ast0.Idots(dots,whencode) ->
 	let dots = mcode dots in
-	let whencode = get_option initialiser whencode in
+	let whencode = get_option (fun (_,_,b) -> initialiser b) whencode in
 	Ast.Idots(dots,whencode)
     | Ast0.OptIni(ini) -> Ast.OptIni(initialiser ini)
     | Ast0.UniqueIni(ini) -> Ast.UniqueIni(initialiser ini))
@@ -784,10 +800,8 @@ and statement s =
     rewrap_stmt s
       (match Ast0.unwrap s with
 	Ast0.Decl((_,bef),decl) ->
-	  let allminus = check_allminus.VT0.combiner_rec_statement s in
 	  Ast.Atomic(rewrap_rule_elem s
-		       (Ast.Decl(convert_allminus_mcodekind allminus bef,
-				 allminus,declaration decl)))
+		       (Ast.Decl(annotated_decl (Some bef) decl)))
       | Ast0.Seq(lbrace,body,rbrace) ->
 	  let lbrace = mcode lbrace in
 	  let body = dots (statement seqible) body in
@@ -933,7 +947,8 @@ and statement s =
 		 (statement Ast.NotSequencible))
 	      whn in
 	  Ast.Stars(d,whn,[],[])
-      | Ast0.FunDecl((_,bef),fi,name,lp,params,rp,lbrace,body,rbrace) ->
+      | Ast0.FunDecl((_,bef),fi,name,lp,params,rp,lbrace,body,rbrace,
+		     (_,aft)) ->
 	  let fi = List.map fninfo fi in
 	  let name = ident name in
 	  let lp = mcode lp in
@@ -949,7 +964,8 @@ and statement s =
 			    allminus,fi,name,lp,params,rp)),
 		      tokenwrap lbrace s (Ast.SeqStart(lbrace)),
 		      body,
-		      tokenwrap rbrace s (Ast.SeqEnd(rbrace)))
+		      tokenwrap rbrace s (Ast.SeqEnd(rbrace)),
+		      ([],[],[],convert_allminus_mcodekind allminus aft))
       |	Ast0.Include(inc,str) ->
 	  Ast.Atomic(rewrap_rule_elem s (Ast.Include(mcode inc,mcode str)))
       |	Ast0.Undef(def,id) ->
@@ -997,16 +1013,16 @@ and statement s =
       | Ast0.UniqueDParam(dp) -> Ast.UniqueDParam(define_param dp))
 
   and whencode notfn alwaysfn = function
-      Ast0.WhenNot a -> Ast.WhenNot (notfn a)
-    | Ast0.WhenAlways a -> Ast.WhenAlways (alwaysfn a)
-    | Ast0.WhenModifier(x) -> Ast.WhenModifier(x)
+      Ast0.WhenNot (_,_,a) -> Ast.WhenNot (notfn a)
+    | Ast0.WhenAlways (_,_,a) -> Ast.WhenAlways (alwaysfn a)
+    | Ast0.WhenModifier(_,x) -> Ast.WhenModifier(x)
     | x ->
 	let rewrap_rule_elem ast0 ast =
 	  rewrap ast0 (do_isos (Ast0.get_iso ast0)) ast in
 	match x with
-	  Ast0.WhenNotTrue(e) ->
+	  Ast0.WhenNotTrue(_,_,e) ->
 	    Ast.WhenNotTrue(rewrap_rule_elem e (Ast.Exp(expression e)))
-	| Ast0.WhenNotFalse(e) ->
+	| Ast0.WhenNotFalse(_,_,e) ->
 	    Ast.WhenNotFalse(rewrap_rule_elem e (Ast.Exp(expression e)))
 	| _ -> failwith "not possible"
 
@@ -1093,11 +1109,7 @@ and forinfo fi =
       let exp1 = get_option expression exp1 in
       let sem1 = mcode sem1 in
       Ast.ForExp(exp1,sem1)
-  | Ast0.ForDecl ((_,bef),decl) ->
-      let allminus =
-	check_allminus.VT0.combiner_rec_declaration decl in
-      Ast.ForDecl (convert_allminus_mcodekind allminus bef,
-		   allminus, declaration decl)
+  | Ast0.ForDecl ((_,bef),decl) -> Ast.ForDecl(annotated_decl (Some bef) decl)
 
 and fninfo = function
     Ast0.FStorage(stg) -> Ast.FStorage(mcode stg)
@@ -1146,7 +1158,7 @@ and anything = function
   | Ast0.DotsParamTag(d) -> Ast.ParamDotsTag(parameter_list d)
   | Ast0.DotsInitTag(d) -> failwith "not possible"
   | Ast0.DotsStmtTag(d) -> Ast.StmtDotsTag(statement_dots d)
-  | Ast0.DotsDeclTag(d) -> Ast.DeclDotsTag(declaration_dots d)
+  | Ast0.DotsDeclTag(d) -> Ast.AnnDeclDotsTag(declaration_dots d)
   | Ast0.DotsCaseTag(d) -> failwith "not possible"
   | Ast0.IdentTag(d) -> Ast.IdentTag(ident d)
   | Ast0.ExprTag(d) -> Ast.ExpressionTag(expression d)
@@ -1166,6 +1178,7 @@ and anything = function
   | Ast0.IsoWhenFTag(_) -> failwith "not possible"
   | Ast0.MetaPosTag _ -> failwith "not possible"
   | Ast0.HiddenVarTag _ -> failwith "not possible"
+  | Ast0.WhenTag _ -> failwith "not possible"
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)

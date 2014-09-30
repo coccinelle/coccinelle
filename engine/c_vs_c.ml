@@ -1,5 +1,5 @@
 (*
- * Copyright 2012, INRIA
+ * Copyright 2012-2014, INRIA
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -69,7 +69,7 @@ let (>&&>) = X.(>&&>)
 let return = X.return
 let fail = X.fail
 
-let (option: 'a matcher -> ('a option matcher)) = fun f t1 t2 ->
+let option: 'a matcher -> ('a option matcher) = fun f t1 t2 ->
   match (t1,t2) with
   | (Some t1, Some t2) ->
       f t1 t2 >>= (fun t ->

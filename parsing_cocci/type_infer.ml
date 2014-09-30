@@ -1,5 +1,5 @@
 (*
- * Copyright 2012, INRIA
+ * Copyright 2012-2014, INRIA
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -283,13 +283,13 @@ let rec propagate_types env =
 		     Some t)
 	| Ast0.NestExpr(starter,expr_dots,ender,None,multi) ->
 	    let _ = r.VT0.combiner_rec_expression_dots expr_dots in None
-	| Ast0.NestExpr(starter,expr_dots,ender,Some e,multi) ->
+	| Ast0.NestExpr(starter,expr_dots,ender,Some (_,_,e),multi) ->
 	    let _ = r.VT0.combiner_rec_expression_dots expr_dots in
 	    let _ = r.VT0.combiner_rec_expression e in None
 	| Ast0.Edots(_,None) | Ast0.Ecircles(_,None) | Ast0.Estars(_,None) ->
 	    None
-	| Ast0.Edots(_,Some e) | Ast0.Ecircles(_,Some e)
-	| Ast0.Estars(_,Some e) ->
+	| Ast0.Edots(_,Some (_,_,e)) | Ast0.Ecircles(_,Some (_,_,e))
+	| Ast0.Estars(_,Some (_,_,e)) ->
 	    let _ = r.VT0.combiner_rec_expression e in None
 	| Ast0.OptExp(exp) -> Ast0.get_type exp
 	| Ast0.UniqueExp(exp) -> Ast0.get_type exp
@@ -309,11 +309,11 @@ let rec propagate_types env =
     | Ast0.AsIdent _ -> failwith "not possible" in
 
   let process_whencode notfn allfn exp = function
-      Ast0.WhenNot(x) -> let _ = notfn x in ()
-    | Ast0.WhenAlways(x) -> let _ = allfn x in ()
-    | Ast0.WhenModifier(_) -> ()
-    | Ast0.WhenNotTrue(x) -> let _ = exp x in ()
-    | Ast0.WhenNotFalse(x) -> let _ = exp x in () in
+      Ast0.WhenNot(_,_,x) -> let _ = notfn x in ()
+    | Ast0.WhenAlways(_,_,x) -> let _ = allfn x in ()
+    | Ast0.WhenModifier _ -> ()
+    | Ast0.WhenNotTrue(_,_,x) -> let _ = exp x in ()
+    | Ast0.WhenNotFalse(_,_,x) -> let _ = exp x in () in
 
   (* assume that all of the declarations are at the beginning of a statement
      list, which is required by C, but not actually required by the cocci
@@ -394,7 +394,7 @@ let rec propagate_types env =
 
   let statement r k s =
     match Ast0.unwrap s with
-      Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
+      Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace,_) ->
 	let rec get_binding p =
 	  match Ast0.unwrap p with
 	    Ast0.Param(ty,Some id) ->

@@ -63,12 +63,6 @@ let pr2_debug,pr2_debug_once =
  *
  * TODO: macro expand,
  * TODO: handle ifdef
- *
- *
- *
- * cpp_ifdef_statementize: again better to separate concern and in parser
- *  just add the directives in a flat way (IfdefStmt) and later do more
- *  processing and transform them in a tree with some IfdefStmt2.
  *)
 
 
@@ -312,103 +306,6 @@ let cpp_expand_include ?depth_limit ?threshold_cache_nb_files a b c =
 (*
 let unparse_showing_include_content ?
 *)
-
-
-(*****************************************************************************)
-(* Ifdef-statementize *)
-(*****************************************************************************)
-
-
-let is_ifdef_and_same_tag tag x =
-  match x with
-  | IfdefStmt (IfdefDirective ((_, tag2),_)) ->
-      tag =*= tag2
-  | StmtElem _ | CppDirectiveStmt _ -> false
-  | IfdefStmt2 _ -> raise (Impossible 77)
-
-
-
-(* What if I skipped in the parser only some of the ifdef elements
- * of the same tag. Once I passed one, I should pass all of them and so
- * at least should detect here that one tag is not "valid". Maybe in the parser
- * can return or marked some tags as "partially_passed_ifdef_tag".
- * Maybe could do in ast_c a MatchingTag of int * bool ref (* one_was_passed *)
- * where the ref will be shared by the ifdefs with the same matching tag
- * indice. Or simply count  the number of directives with the same tag and
- * put this information in the tag. Hence the total_with_this_tag below.
- *)
-let should_ifdefize (tag,ii) ifdefs_directives xxs =
-  let IfdefTag (_tag, total_with_this_tag) = tag in
-
-  if total_with_this_tag <> List.length ifdefs_directives
-  then begin
-    let strloc = Ast_c.strloc_of_info (List.hd ii) in
-    pr2 (spf "CPPASTC: can not ifdefize ifdef at %s" strloc);
-    pr2 "CPPASTC: some of its directives were passed";
-    false
-  end else
-    (* todo? put more condition ? don't ifdefize declaration ? *)
-    true
-
-
-
-
-
-(* return a triple, (ifdefs directive * grouped xs * remaining sequencable)
- * XXX1 XXX2 elsif YYY1 else ZZZ1 endif WWW1 WWW2
- * => [elsif, else, endif], [XXX1 XXX2; YYY1; ZZZ1], [WWW1 WWW2]
- *)
-let group_ifdef tag xs =
-  let (xxs, xs) = group_by_post (is_ifdef_and_same_tag tag) xs in
-
-  xxs +> List.map snd +> List.map (fun x ->
-    match x with
-    | IfdefStmt y -> y
-    | StmtElem _ | CppDirectiveStmt _ | IfdefStmt2 _ -> raise (Impossible 78)
-  ),
-  xxs +> List.map fst,
-  xs
-
-
-let rec cpp_ifdef_statementize ast =
-  Visitor_c.vk_program_s { Visitor_c.default_visitor_c_s with
-    Visitor_c.kstatementseq_list_s = (fun (k, bigf) xs ->
-      let rec aux xs =
-        match xs with
-        | [] -> []
-        | stseq::xs ->
-            (match stseq with
-            | StmtElem st ->
-                Visitor_c.vk_statement_sequencable_s bigf stseq::aux xs
-            | CppDirectiveStmt directive ->
-                Visitor_c.vk_statement_sequencable_s bigf stseq::aux xs
-            | IfdefStmt ifdef ->
-                (match ifdef with
-                | IfdefDirective ((Ifdef,tag),ii) ->
-
-                    let (restifdefs, xxs, xs') = group_ifdef tag xs in
-                    if should_ifdefize (tag,ii) (ifdef::restifdefs) xxs
-                    then
-                      let res = IfdefStmt2 (ifdef::restifdefs, xxs) in
-                      Visitor_c.vk_statement_sequencable_s bigf res::aux xs'
-                    else
-                      Visitor_c.vk_statement_sequencable_s bigf stseq::aux xs
-
-                | IfdefDirective (((IfdefElseif|IfdefElse|IfdefEndif),b),ii) ->
-                    pr2 "weird: first directive is not a ifdef";
-                    (* maybe not weird, just that should_ifdefize
-                     * returned false *)
-                    Visitor_c.vk_statement_sequencable_s bigf stseq::aux xs
-                )
-
-            | IfdefStmt2 (ifdef, xxs) ->
-                failwith "already applied cpp_ifdef_statementize"
-            )
-      in
-      aux xs
-    );
-  } ast
-
 
 (*****************************************************************************)
 (* Macro *)

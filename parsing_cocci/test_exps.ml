@@ -1,5 +1,5 @@
 (*
- * Copyright 2012, INRIA
+ * Copyright 2012-2014, INRIA
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -65,8 +65,8 @@ let set_test_poss =
     | _ -> e in
 
   let process_wc = function
-      Ast0.WhenNotTrue(e) -> Ast0.WhenNotTrue(process_exp e)
-    | Ast0.WhenNotFalse(e) -> Ast0.WhenNotFalse(process_exp e)
+      Ast0.WhenNotTrue(w,ee,e) -> Ast0.WhenNotTrue(w,ee,process_exp e)
+    | Ast0.WhenNotFalse(w,ee,e) -> Ast0.WhenNotFalse(w,ee,process_exp e)
     | wc -> wc in
 
   let statement r k s =

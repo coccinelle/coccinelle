@@ -1,4 +1,4 @@
-# Copyright 2012, INRIA
+# Copyright 2012-2014, INRIA
 # Julia Lawall, Gilles Muller
 # Copyright 2010-2011, INRIA, University of Copenhagen
 # Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix

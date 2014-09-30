@@ -1,5 +1,5 @@
 (*
- * Copyright 2012, INRIA
+ * Copyright 2012-2014, INRIA
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -47,7 +47,7 @@ type position_info = { line_start : int; line_end : int;
 		       logical_start : int; logical_end : int;
 		       column : int; offset : int; }
 
-type info = { pos_info : position_info;
+type info = { pos_info : position_info;  whitespace : string;
 	      attachable_start : bool; attachable_end : bool;
 	      mcode_start : mcodekind list; mcode_end : mcodekind list;
 	      (* the following are only for + code *)
@@ -157,10 +157,14 @@ and base_expression =
   | DisjExpr       of string mcode * expression list * string mcode list *
 	              string mcode
   | NestExpr       of string mcode * expression dots * string mcode *
-	              expression option * Ast_cocci.multi
-  | Edots          of string mcode (* ... *) * expression option
-  | Ecircles       of string mcode (* ooo *) * expression option
-  | Estars         of string mcode (* *** *) * expression option
+                      (string mcode * string mcode * expression) option 
+                      (* whencode *) * Ast_cocci.multi
+  | Edots          of string mcode (* ... *) * (string mcode * string mcode *
+                      expression) option (* whencode *)
+  | Ecircles       of string mcode (* ooo *) * (string mcode * string mcode *
+                      expression) option (* whencode *)
+  | Estars         of string mcode (* *** *) * (string mcode * string mcode *
+                      expression) option (* whencode *)
   | OptExp         of expression
   | UniqueExp      of expression
 
@@ -250,7 +254,8 @@ and base_declaration =
   | Typedef of string mcode (* typedef *) * typeC * typeC * string mcode (*;*)
   | DisjDecl   of string mcode * declaration list * string mcode list *
 	          string mcode
-  | Ddots      of string mcode (* ... *) * declaration option (* whencode *)
+  | Ddots      of string mcode (* ... *) * (string mcode * string mcode *
+                  declaration) option (* whencode *)
   | OptDecl    of declaration
   | UniqueDecl of declaration
 
@@ -272,7 +277,8 @@ and base_initialiser =
   | InitGccName of ident (* name *) * string mcode (*:*) *
 	initialiser
   | IComma of string mcode
-  | Idots  of string mcode (* ... *) * initialiser option (* whencode *)
+  | Idots  of string mcode (* ... *) *
+              (string mcode * string mcode * initialiser) option (* whencode *)
   | OptIni    of initialiser
   | UniqueIni of initialiser
 
@@ -389,7 +395,8 @@ and base_statement =
 	fninfo list * ident (* name *) *
 	string mcode (* ( *) * parameter_list * string mcode (* ) *) *
 	string mcode (* { *) * statement dots *
-	string mcode (* } *)
+	string mcode (* } *) *
+	(info * mcodekind) (* after the function decl *)
   | Include of string mcode (* #include *) * Ast_cocci.inc_file mcode(* file *)
   | Undef of string mcode (* #define *) * ident (* name *)
   | Define of string mcode (* #define *) * ident (* name *) *
@@ -418,11 +425,12 @@ and fninfo =
   | FAttr of string mcode
 
 and ('a,'b) whencode =
-    WhenNot of 'a
-  | WhenAlways of 'b
-  | WhenModifier of Ast_cocci.when_modifier
-  | WhenNotTrue of expression
-  | WhenNotFalse of expression
+    WhenNot of string mcode (* when *) * string mcode (* != *) * 'a
+  | WhenAlways of string mcode (* when *) * string mcode (* = *) * 'b
+  | WhenModifier of string mcode (* when *) * Ast_cocci.when_modifier
+  | WhenNotTrue of string mcode (* when *) * string mcode (* != *) * expression
+  | WhenNotFalse of string mcode (* when *) * string mcode (* != *) *
+    expression
 
 and statement = base_statement wrap
 
@@ -523,6 +531,8 @@ and anything =
   | IsoWhenFTag of expression(*only for when code, in iso phase*)
   | MetaPosTag of meta_pos
   | HiddenVarTag of anything list (* in iso_compile/pattern only *)
+  | WhenTag of string mcode (* when *) * string mcode option *
+    anything (* iso pattern *)
 
 val dotsExpr : expression dots -> anything
 val dotsInit : initialiser dots -> anything
@@ -567,6 +577,7 @@ val set_info : 'a wrap -> info -> 'a wrap
 val get_index : 'a wrap -> int
 val set_index : 'a wrap -> int -> unit
 val get_line : 'a wrap -> int
+val get_mcode_line : 'a mcode -> int
 val get_line_end : 'a wrap -> int
 val get_mcodekind : 'a wrap -> mcodekind
 val get_mcode_mcodekind : 'a mcode -> mcodekind
@@ -590,6 +601,7 @@ val set_mcode_data : 'a -> 'a mcode -> 'a mcode
 val make_mcode : 'a -> 'a mcode
 val make_mcode_info : 'a -> info -> 'a mcode
 val make_minus_mcode : 'a -> 'a mcode
+val get_rule_name : parsed_rule -> string
 
 val meta_pos_name : anything -> Ast_cocci.meta_name mcode
 

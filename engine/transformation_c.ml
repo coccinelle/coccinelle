@@ -1,5 +1,5 @@
 (*
- * Copyright 2012, INRIA
+ * Copyright 2012-2014, INRIA
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -39,6 +39,7 @@ type xinfo = {
   optional_qualifier_iso : bool;
   value_format_iso : bool;
   optional_declarer_semicolon_iso : bool;
+  optional_attributes_iso : bool;
   current_rule_name : string; (* used for errors *)
   index : int list (* witness tree indices *)
 }
@@ -109,6 +110,9 @@ module XTRANS = struct
 
   let optional_declarer_semicolon_flag f = fun tin ->
     f (tin.extra.optional_declarer_semicolon_iso) tin
+
+  let optional_attributes_flag f = fun tin ->
+    f (tin.extra.optional_attributes_iso) tin
 
   let mode = Cocci_vs_c.TransformMode
 
@@ -254,7 +258,7 @@ module XTRANS = struct
 	mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
 	donothing donothing donothing donothing donothing
 	ident expression donothing donothing donothing donothing
-	donothing donothing
+	donothing donothing donothing
 	donothing donothing donothing donothing donothing donothing in
 
   fn.Visitor_ast.rebuilder_anything anything
@@ -640,6 +644,12 @@ module XTRANS = struct
 	(mk_bigf (maxpos, minpos) (lop,mop,rop,bop))
 	x
 
+  let distribute_mck_attrs (maxpos, minpos) =
+    fun (lop,mop,rop,bop) -> fun x ->
+      Visitor_c.vk_attrs_splitted_s
+	(mk_bigf (maxpos, minpos) (lop,mop,rop,bop))
+	x
+
    let get_pos mck =
      match mck with
      | Ast_cocci.PLUS _ -> raise (Impossible 54)
@@ -706,6 +716,8 @@ module XTRANS = struct
     distrf (Lib_parsing_c.ii_of_ident_list,distribute_mck_ident_list)
   let distrf_exec_code_list =
     distrf (Lib_parsing_c.ii_of_exec_code_list,distribute_mck_exec_code_list)
+  let distrf_attrs =
+    distrf (Lib_parsing_c.ii_of_attrs,distribute_mck_attrs)
 
 
   (* ------------------------------------------------------------------------*)
@@ -785,6 +797,8 @@ let (transform2: string (* rule name *) -> string list (* dropped_isos *) ->
      value_format_iso = not(List.mem "value_format" dropped_isos);
      optional_declarer_semicolon_iso =
        not(List.mem "optional_declarer_semicolon"   dropped_isos);
+     optional_attributes_iso =
+       not(List.mem "optional_attributes" dropped_isos);
      current_rule_name = rule_name;
      index = [];
    } in
@@ -817,7 +831,7 @@ let (transform2: string (* rule name *) -> string list (* dropped_isos *) ->
       | _ -> () (* assert (not (node =*= node')); *)
       );
 
-      (* useless, we dont go back from flow to ast now *)
+      (* useless, we don't go back from flow to ast now *)
       (* let node' = lastfix_comma_struct node' in *)
 
       acc#replace_node (nodei, node');

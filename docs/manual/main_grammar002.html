@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<meta name="generator" content="hevea 2.06">
+<meta name="generator" content="hevea 2.09">
 <link rel="stylesheet" type="text/css" href="main_grammar.css">
 <title>Metavariables for transformations</title>
 </head>
@@ -63,6 +63,12 @@ declaration with any visibility or storage, respectively.
 </li><li class="li-itemize"><span style="color:blue">optional_qualifier</span>: This is similar to <span style="color:blue">optional_storage</span>,
 except that here is it the qualifier (i.e., const or volatile) that does
 not have to be specified in the SmPL code, but may be present in the C code.
+</li><li class="li-itemize"><span style="color:blue">optional_attributes</span>: This is similar to
+<span style="color:blue">optional_attributes</span>, except that here is it an attribute (e.g.,
+__init) that does not have to be specified in the SmPL code, but may be
+present in the C code. <span style="font-weight:bold">Note that this isomorphism is currently
+useless, because matching of attributes is not supported, due to the
+difficulty of parsing attributes in C code.</span>
 </li><li class="li-itemize"><span style="color:blue">value_format</span>: Integers in various formats, e.g., 1 and 0x1, are
 considered to be equivalent in the matching process.
 </li><li class="li-itemize"><span style="color:blue">optional_declarer_semicolon</span>: Some declarers (top-level terms
@@ -169,7 +175,11 @@ expression metavariable binds <span style="font-family:monospace">E</span> to <s
 <span style="font-family:monospace">Ps@Es</span>, where <span style="font-family:monospace">Ps</span> is a parameter list and <span style="font-family:monospace">Es</span> is an
 expression list. This pattern matches a parameter list, and then matches
 <span style="font-family:monospace">Es</span> to the list of expressions, ie a possible argument list,
-represented by the names of the parameters.</p><div class="center"><table style="border-spacing:6px;border-collapse:separate;" class="cellpading0"><tr><td style="text-align:left;white-space:nowrap" > <a id="ids"><span style="color:maroon">ids</span></a><span style="color:maroon">
+represented by the names of the parameters.</p><p>Matching of various kinds of format strings within strings is supported.
+With the <span style="font-family:monospace">--ibm</span> option, matching of decimal format declarations is
+supported, but the length and precision arguments are not interpreted.
+Thus it is not possible to match metavariables in these fields. Instead,
+the entire format is matched as a single string.</p><div class="center"><table style="border-spacing:6px;border-collapse:separate;" class="cellpading0"><tr><td style="text-align:left;white-space:nowrap" > <a id="ids"><span style="color:maroon">ids</span></a><span style="color:maroon">
 </span></td><td style="text-align:center;white-space:nowrap" ><span style="color:black">  ::=  </span></td><td style="text-align:left;white-space:nowrap" ><a href="#COMMA_LIST"><span style="color:maroon">COMMA_LIST</span></a><span style="color:blue">(</span><a href="#pmid"><span style="color:maroon">pmid</span></a><span style="color:blue">)</span> </td></tr>
 <tr><td style="text-align:left;white-space:nowrap" >
 <a id="pmid"><span style="color:maroon">pmid</span></a><span style="color:maroon">

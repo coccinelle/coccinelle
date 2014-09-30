@@ -1,5 +1,5 @@
 (*
- * Copyright 2012, INRIA
+ * Copyright 2012-2014, INRIA
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -308,6 +308,8 @@ let short_options = [
   "--local-includes",
   Arg.Unit (function _ -> FC.include_options := FC.I_NORMAL_INCLUDES),
   "  causes local include files to be used";
+  "--include-headers-for-types", Arg.Set FC.include_headers_for_types,
+  "    use only type information from header files";
   "--ignore-unknown-options", Arg.Set ignore_unknown_opt,
   "    For integration in a toolchain (must be set before the first unknown option)";
   "--include-headers", Arg.Set Flag.include_headers,
@@ -344,6 +346,11 @@ let short_options = [
   "    <file> improve -dir by grouping related c files";
   "--pyoutput", Arg.Set_string Flag.pyoutput,
   "    Sets output routine: Standard values: <coccilib.output.Gtk|coccilib.output.Console>";
+  "--parse-handler",
+  Arg.String (fun f ->
+    let f' = Prepare_ocamlcocci.prepare_simple f in
+    Prepare_ocamlcocci.load_file f'),
+  "    <file> Loads the file containing the OCaml code in charge of parse errors reporting";
 
 
   "--version",   Arg.Unit (fun () ->
@@ -566,14 +573,16 @@ let other_options = [
     "   use OCaml Str regular expressions for constraints";
 
     "--l1",                Arg.Clear Flag_parsing_c.label_strategy_2, " ";
-    "--ifdef-to-if",       Arg.Set FC.ifdef_to_if,
+    "--ifdef-to-if",       Arg.Set Flag_parsing_c.ifdef_to_if,
     "   convert ifdef to if (experimental)";
-    "--no-ifdef-to-if",              Arg.Clear FC.ifdef_to_if,
+    "--no-ifdef-to-if",              Arg.Clear Flag_parsing_c.ifdef_to_if,
     "   convert ifdef to if (experimental)";
 
     "--disable-multi-pass", Arg.Set Flag_parsing_c.disable_multi_pass, " ";
 
     "--noif0-passing",      Arg.Clear Flag_parsing_c.if0_passing, " ";
+    "--itu",      Arg.Set Flag_parsing_c.exts_ITU,
+    "Experimental extensions for handling #ifdef developed at ITU.dk";
     "--defined", Arg.String (Flag_parsing_c.add Flag_parsing_c.defined), " ";
     "--undefined", Arg.String
         (Flag_parsing_c.add Flag_parsing_c.undefined), " ";
@@ -852,10 +861,10 @@ let rec main_action xs =
        * files.
        *)
 	  dir := (Common.is_directory x);
-	
+
           if !cocci_file =$= ""
           then failwith "I need a cocci file,  use --sp-file <file>";
-	  
+
 	  if !dir && !Flag.patch =*= None
 	  then
 	    (match xs with
@@ -881,7 +890,7 @@ let rec main_action xs =
               | true, "", Flag.Glimpse, [] ->
                   (*if not (null xs)
                   then failwith "--use-glimpse can accept only one dir"*)
-		  
+
                   let files =
 		    match glimpse_filter constants x with
 		      None -> Test_parsing_c.get_files x
@@ -890,7 +899,7 @@ let rec main_action xs =
               | true, "", Flag.IdUtils, [] ->
                   (*if not (null xs)
                   then failwith "--id-utils can accept only one dir"*)
-		  
+
                   let files =
 		    match idutils_filter constants x with
 		      None -> Test_parsing_c.get_files x
@@ -899,7 +908,7 @@ let rec main_action xs =
               | true, "", Flag.CocciGrep, [] ->
                   (*if not (null xs)
                   then failwith "--id-utils can accept only one dir"*)
-		  
+
                   let files =
 		    match coccigrep_filter constants x with
 		      None -> Test_parsing_c.get_files x
@@ -907,9 +916,9 @@ let rec main_action xs =
                   files +> List.map (fun x -> [x])
                   (* normal *)
 	      | true, "", _, _ ->
-		  Test_parsing_c.get_files 
+		  Test_parsing_c.get_files
 		    (join " " (x::xs)) +> List.map (fun x -> [x])
-		    
+
             (* kbuild *)
 	      | true, kbuild_info_file,_,_ ->
 		  let dirs =
@@ -917,7 +926,7 @@ let rec main_action xs =
                   in
 		  let info = Kbuild.parse_kbuild_info kbuild_info_file in
 		  let groups = Kbuild.files_in_dirs dirs info in
-		  
+
 		  groups +> List.map (function Kbuild.Group xs -> xs)
 		    )
           in
@@ -964,7 +973,7 @@ let rec main_action xs =
           let outfiles =
             Common.profile_code "Main.outfiles computation" (fun () ->
 	      let res =
-		infiles +> List.fold_left (fun prev cfiles ->
+		infiles +> List.fold_left (fun prev cfiles -> (* put parmap here *)
 		  if (not !Flag.worth_trying_opt) or
 		    Cocci.worth_trying cfiles constants
 		      then
@@ -972,7 +981,7 @@ let rec main_action xs =
 		  pr2 ("HANDLING: " ^ (join " " cfiles));
 		  (*pr2 (List.hd(Common.cmd_to_list "free -m | grep Mem"));*)
 		  flush stderr;
-		    
+
 		  Common.timeout_function_opt !FC.timeout (fun () ->
   	            Common.report_if_take_time 10 (join " " cfiles) (fun () ->
                       try
@@ -1063,10 +1072,10 @@ and generate_outfiles outfiles x (* front file *) xs (* other files *) =
 	| None -> ());
         Common.command2 ("cp "^outfile^" "^infile);
       end;
-      
+
       if !outplace_modif
       then Common.command2 ("cp "^outfile^" "^infile^".cocci_res")
-      
+
 	      (* potential source of security pb if the /tmp/ file is
 		 * a symlink, so simpler to not produce any regular file
 		 * (files created by Common.new_temp_file are still ok)
@@ -1122,59 +1131,54 @@ let main () =
 
     let contains_cocci =
       (* rather a hack... don't want to think about all possible options *)
-      List.exists
-	(function x -> Filename.check_suffix x ".cocci")
-	arglist &&
-      not (List.mem "--parse-cocci" arglist) in
+      List.exists (function x -> Filename.check_suffix x ".cocci") arglist
+        && not (List.mem "--parse-cocci" arglist) in
     if not (null (Common.inter_set arglist
 	            ["--cocci-file";"--sp-file";"--sp";"--test";"--testall";
                       "--test-okfailed";"--test-regression-okfailed"]))
-	or contains_cocci
+         or contains_cocci
     then run_profile quiet_profile;
-    
+
     let args = ref [] in
-    
+
     (* Gc.set {(Gc.get ()) with Gc.stack_limit = 1024 * 1024};*)
-    
+
     (* this call can set up many global flag variables via the cmd line *)
     arg_parse2 (Arg.align all_options) (fun x -> args := x::!args) usage_msg
-      (Array.of_list arglist);
-    args :=
-      List.filter
-	(function arg ->
-	  if Filename.check_suffix arg ".cocci"
-	  then
-	    begin
-	      (if !cocci_file = ""
-	      then cocci_file := arg
-	      else failwith "only one .cocci file allowed");
-	      false
-	    end
-	  else true)
-	!args;
+               (Array.of_list arglist);
+    args := List.filter (function arg ->
+              if Filename.check_suffix arg ".cocci"
+              then
+                begin
+                  (if !cocci_file = ""
+                  then cocci_file := arg
+                  else failwith "only one .cocci file allowed");
+                  false
+                end
+              else true)
+              !args;
     (match (!Flag_parsing_c.cache_prefix,!distrib_index) with
       (Some cp,Some n) ->
-	Flag_parsing_c.cache_prefix :=
-	  Some (Printf.sprintf "%s_%d" cp n)
-    | _ -> ());
-    
+        Flag_parsing_c.cache_prefix := Some (Printf.sprintf "%s_%d" cp n)
+      | _ -> ());
+
     (* julia hack so that one can override directories specified on
-       * the command line. *)
+     * the command line. *)
     (if !dir
     then
       let chosen_dir =
-	if List.length !args > 1
-	then
-	  begin
-	    let chosen = List.hd !args in
-	    Flag.dir := chosen;
-	    pr2 ("ignoring all but the last specified directory: "^chosen);
-	    args := [chosen];
-	    chosen
-	  end
-	else List.hd !args in
-      if !FC.include_path =*= []
-      then FC.include_path := [Filename.concat chosen_dir "include"]);
+            if List.length !args > 1
+            then
+              begin
+                let chosen = List.hd !args in
+                Flag.dir := chosen;
+                pr2 ("ignoring all but the last specified directory: "^chosen);
+                args := [chosen];
+                chosen
+              end
+            else List.hd !args
+        in if !FC.include_path =*= []
+           then FC.include_path := [Filename.concat chosen_dir "include"]);
 
     args := List.rev !args;
 
@@ -1204,30 +1208,29 @@ let main () =
     (* The test framework. Works with tests/ or .ok and .failed  *)
     (* --------------------------------------------------------- *)
     | [x] when !test_mode    ->
-	begin
+    begin
 	  let prefix = "tests/" in
 	  let testfile = x ^ ".cocci" in
 	    if Sys.file_exists (prefix ^ testfile) then
 	      begin
-		(if !FC.include_path = []
-		then FC.include_path := [prefix^"include"]);
-		Testing.testone prefix x !compare_with_expected
+        (if !FC.include_path = []
+        then FC.include_path := [prefix^"include"]);
+        Testing.testone prefix x !compare_with_expected
 	      end
 	    else
 	      if Sys.file_exists testfile then
-		begin
-		  (if !FC.include_path = []
-		  then FC.include_path := ["include"]);
-		  Testing.testone "" x !compare_with_expected
-		end
+	      begin
+	      (if !FC.include_path = []
+	      then FC.include_path := ["include"]);
+	      Testing.testone "" x !compare_with_expected
+	      end
 	      else
-		Printf.fprintf stderr
-		  "ERROR: File %s does not exist\n" testfile
-	end
+	        Printf.fprintf stderr "ERROR: File %s does not exist\n" testfile
+		end
 
     | []  when !test_all ->
         (if !FC.include_path = []
-	then FC.include_path := ["tests/include"]);
+         then FC.include_path := ["tests/include"]);
         let score_file = if !expected_score_file <> ""
                          then !expected_score_file
                          else "tests/SCORE_expected.sexp" in
@@ -1239,9 +1242,9 @@ let main () =
     | ((x::xs) as cfiles) when !test_okfailed ->
         (* do its own timeout on FC.timeout internally *)
         FC.relax_include_path := true;
-	adjust_stdin cfiles (fun () ->
+        adjust_stdin cfiles (fun () ->
           Testing.test_okfailed !cocci_file cfiles
-        )
+          )
 
     (* --------------------------------------------------------- *)
     (* Actions, useful to debug subpart of coccinelle *)
@@ -1251,7 +1254,7 @@ let main () =
         Common.do_action !action xs all_actions
 
     | [] when !action =$= "--parse-cocci" ->
-	Testing.test_parse_cocci !cocci_file
+        Testing.test_parse_cocci !cocci_file
 
      (* I think this is used by some scripts in some Makefile for our
       * big-tests. So don't remove.
@@ -1271,7 +1274,7 @@ let main () =
     (* empty entry *)
     (* --------------------------------------------------------- *)
     | [] -> short_usage()
-  ));
+    ));
     if !Pycocci.initialised && (Pycocci.py_isinitialized ()) != 0 then begin
       ignore(Pycocci.pyrun_simplestring "cocci.finalise()");
       if !Flag.show_misc

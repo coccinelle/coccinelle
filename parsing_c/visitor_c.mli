@@ -77,6 +77,8 @@ val vk_ident_list_splitted : visitor_c -> (name, il) Common.either list -> unit
 
 val vk_exec_code_list_splitted :
     visitor_c -> (exec_code, il) Common.either list -> unit
+val vk_attrs_splitted :
+    visitor_c -> (attribute, il) Common.either list -> unit
 
 
 (* ------------------------------------------------------------------------ *)
@@ -182,5 +184,9 @@ val vk_exec_code_list_splitted_s :
     visitor_c_s ->
       (exec_code, il) Common.either list ->
 	(exec_code, il) Common.either list
+val vk_attrs_splitted_s :
+    visitor_c_s ->
+      (attribute, il) Common.either list ->
+	(attribute, il) Common.either list
 
 val vk_cst_s : visitor_c_s -> ((constant, string) Common.either wrap) inout

@@ -1,5 +1,5 @@
 (*
- * Copyright 2012, INRIA
+ * Copyright 2012-2014, INRIA
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -75,7 +75,7 @@ let any_statements =
     (List.exists
        (function
 	   Ast.StatementTag(_) | Ast.StmtDotsTag(_)
-	 | Ast.DeclarationTag(_) | Ast.DeclDotsTag(_) -> true | _ -> false))
+	 | Ast.DeclarationTag(_) | Ast.AnnDeclDotsTag(_) -> true | _ -> false))
 
 let modif_before x =
   match Ast0.get_mcodekind x with
@@ -562,14 +562,14 @@ let rec statement dots_before dots_after s =
     else s in
 
   match Ast0.unwrap s with
-    Ast0.FunDecl(x,fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
+    Ast0.FunDecl(x,fninfo,name,lp,params,rp,lbrace,body,rbrace,y) ->
       (* true for close brace, because that represents any way we can
 	 exit the function, which is not necessarily followed by an explicit
 	 close brace. *)
       Ast0.rewrap s
 	(Ast0.FunDecl(x,fninfo,name,lp,params,rp,lbrace,
 		      statement_dots false true body,
-		      rbrace))
+		      rbrace,y))
   | Ast0.Decl(_,_) -> s
   | Ast0.Seq(lbrace,body,rbrace) ->
       Ast0.rewrap s
