@@ -1060,9 +1060,9 @@ will turn into a MultiString. *)
 let fix_tokens_strings toks =
   let comments x = TH.is_comment x in
   let strings_and_comments =
-    function TString _ -> true | TIdent _ -> true | x -> TH.is_comment x in
+    function TString _ | TMacroString _ -> true | x -> TH.is_comment x in
   let can_be_string =
-    function TString _ -> true | TIdent _ -> true | x -> false in
+    function TString _ | TMacroString _ -> true | x -> false in
   let rec skip acc fn = function
       x :: xs when fn x -> skip (x :: acc) fn xs
     | xs -> (List.rev acc, xs)
