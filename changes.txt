@@ -375,6 +375,7 @@
 - Make the --keep-comments flag work.
 - Make the --force-diff flag work.
 - Improve newlines around added else tokens.
+- Improve parsing of multi strings.
 
 * 0.2.5
 ** Language:
