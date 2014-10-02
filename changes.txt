@@ -376,6 +376,8 @@
 - Make the --force-diff flag work.
 - Improve newlines around added else tokens.
 - Improve parsing of multi strings.
+- Improve pretty printing of expression list metavariable values.  Problem
+  reported by Cyril Hrubis.
 
 * 0.2.5
 ** Language:
