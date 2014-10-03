@@ -1249,65 +1249,61 @@ let scan_past_define l =
 
 let add_newlines toks tabbing_unit =
   (* the following is for strings that may contain newline or tabs *)
-  let create_indent n =
-    let (tu,tlen) = 
-      match tabbing_unit with
-      | Some "\t" -> ("\t",8)
-      | Some "" -> ("\t",8) (* not sure why... *)
-      | Some s -> (s,simple_string_length s 0)(*assuming only tabs or spaces*)
-      |	None -> ("\t",8) in
-    let rec loop seen =
-      if seen + tlen <= n
-      then tu ^ loop (seen + tlen)
-      else String.make (n-seen) ' ' in
-    loop 0 in
-  let check_for_newline count x = function
+  let create_indent n = function
+      None ->
+	let (tu,tlen) = 
+	  match tabbing_unit with
+	  | Some "\t" -> ("\t",8)
+	  | Some "" -> ("\t",8) (* not sure why... *)
+	  | Some s ->
+	      (*assuming only tabs or spaces*)
+	      (s,simple_string_length s 0)
+	  |	None -> ("\t",8) in
+	let rec loop seen =
+	  if seen + tlen <= n
+	  then tu ^ loop (seen + tlen)
+	  else String.make (n-seen) ' ' in
+	loop 0
+    | Some tu -> tu in
+  let check_for_newline count x tuinfo = function
     | Some (start,space_cell) when count > Flag_parsing_c.max_width ->
-      space_cell := "\n"^(create_indent x);
+      space_cell := "\n"^(create_indent x tuinfo);
       Some (x + (count - start))
     | _ -> None in
   let start_box stack space_cell count seen_cocci s =
     let seen_cocci = match stack with [] -> false | _ -> seen_cocci in
     let inside_count = simple_string_length s count in
-    (inside_count,inside_count::stack,space_cell,seen_cocci) in
+    (inside_count,(inside_count,None)::stack,space_cell,seen_cocci) in
   let end_box stack space_cell count seen_cocci s =
     (* this assumes that start_box and end_box are matched, but this is not
     necessarily the case, if ( is modified and ) is context code *)
     let count = simple_string_length s count in
     match stack with
-    | [x] when seen_cocci ->
-      (match check_for_newline count x space_cell with
+    | [(x,tustack)] when seen_cocci ->
+      (match check_for_newline count x tustack space_cell with
       | Some count -> (count,[],None,false)
       | None -> (count,[],None,false)
       )
     | [] -> (count,stack,space_cell,false)
     | _ -> (count,List.tl stack,space_cell,seen_cocci) in
-  let comma_in_box stack space_cell count s =
-    let count = simple_string_length s count in
-    match stack with
-    | [x] ->
-      (match check_for_newline count x space_cell with
-      | Some count -> (count,None)
-      | None -> (count,None)
-      )
-    | [] -> (count,space_cell)
-    | _ -> (count,space_cell) in
-  let rec loop ((stack,space_cell,seen_cocci) as info) count seeneq = function
+  let update_by_stack s count stack sp space_cell seen_cocci =
+    let count = simple_string_length s (count + 1 (*space*)) in
+    let newinfo =
+      match stack with
+      | [(x,tustack)] ->
+          (match check_for_newline count x tustack space_cell with
+          | Some count -> (stack,Some (x,sp), seen_cocci)
+          | None -> (stack,Some (count,sp),seen_cocci))
+      | _ -> (stack,space_cell,seen_cocci) in
+    (newinfo,count) in
+  let rec loop ((stack,space_cell,seen_cocci) as info) count seeneq =
+    function
     | [] -> []
     | t1::rest
       when str_of_token2 t1 = "#define" ->
 	(* don't want to add newlines in a #define *)
 	let (def,rest) = scan_past_define rest in
 	t1 :: def @ (loop info count false rest)
-    | ((T2(commatok,Ctx,_,_))::_) as xs
-      when seen_cocci && length stack = 1 &&
-	(TH.str_of_tok commatok) = "," && not (space_cell = None) ->
-	(* deal with any preceding space, and then redo comma token to
-	   deal with subsequent space *)
-        let (count,newspacecell) = comma_in_box stack space_cell count "," in
-	(* newspacecell should be None, so this case won't get picked up
-	   again *)
-        loop (stack,newspacecell,seen_cocci) count false xs
     | (T2(commatok,Ctx,idx,_)) ::
       (T2(((Parser_c.TCommentSpace _) as sptok),Ctx,_,_)) :: xs
       when
@@ -1318,6 +1314,15 @@ let add_newlines toks tabbing_unit =
       let a = T2(commatok,Ctx,idx,
 		 Some (Unparse_cocci.SpaceOrNewline sp)) in
       a :: loop (stack,Some (newcount,sp),seen_cocci) newcount false xs
+    | ((T2((Parser_c.TCommentNewline _),Ctx,_i,_h)) as a) :: xs
+      when not (stack = []) && snd (List.hd stack) = None
+      ->
+	let s = str_of_token2 a in
+	let indent = List.hd (List.rev (Str.split (Str.regexp "\n") s)) in
+	let stackfront = fst(List.hd stack) in
+	a ::
+	loop ([stackfront,Some indent],space_cell,seen_cocci)
+	  (simple_string_length s count) false xs
     | ((T2(tok,Ctx,idx,_)) as a)::xs ->
       (match TH.str_of_tok tok with
       | "=" as s -> a :: loop info (simple_string_length s count) true xs
@@ -1342,7 +1347,7 @@ let add_newlines toks tabbing_unit =
 	  let s = if contains_newline spaces_after then "" else s in
 	  let (newcount,newstack,newspacecell,seen_cocci) =
 	    start_box stack space_cell newcount seen_cocci s in
-	  a :: loop (newstack,newspacecell,seen_cocci) newcount false xs
+	  a::loop (newstack,newspacecell,seen_cocci) newcount false xs
       | "{" as s when not (stack = []) ->
         (* [] case means statement braces *)
         let (newcount,newstack,newspacecell,seen_cocci) =
@@ -1377,29 +1382,17 @@ let add_newlines toks tabbing_unit =
 	(* if there was a single space, contemplate turning it into a
 	   newline.  By the way code is added, it would seem that this
 	   space has to be Ctx. *)
-      let rest =
-        let count = simple_string_length s (count + 1 (*space*)) in
-        match stack with
-        | [x] ->
-            (match check_for_newline count x space_cell with
-            | Some count -> loop (stack,Some (x,sp), true) count false xs
-            | None -> loop (stack,Some (count,sp),true) count false xs)
-        | _ -> loop (stack,space_cell,true) count false xs in
-      a :: rest
+	let (newinfo,count) =
+	  update_by_stack s count stack sp space_cell true in
+	a :: loop newinfo count false xs
     | (C2(",",_)) :: (C2(" ",_)) :: xs ->
 	(* if there was a single space, contemplate turning it into a
 	   newline. Used for value of an expression list. *)
 	let sp = ref " " in
 	let a = C2(",",Some(Unparse_cocci.SpaceOrNewline sp)) in
-	let rest =
-          let count = simple_string_length "," (count + 1 (*space*)) in
-          match stack with
-          | [x] ->
-              (match check_for_newline count x space_cell with
-              | Some count -> loop (stack,Some (x,sp), true) count false xs
-              | None -> loop (stack,Some (count,sp),true) count false xs)
-          | _ -> loop (stack,space_cell,true) count false xs in
-	a :: rest
+	let (newinfo,count) =
+	  update_by_stack "," count stack sp space_cell true in
+	a :: loop newinfo count false xs
     | (C2(s1,_)) :: (C2(" ",_)) :: (((C2(s2,_)) :: _) as xs)
       when (not (s1 = "")) && (not (s2 = "")) &&
 	(* not perfect, because only finds the string string case *)
@@ -1408,15 +1401,9 @@ let add_newlines toks tabbing_unit =
 	   newline. Used for value of an expression list. *)
 	let sp = ref " " in
 	let a = C2(s1,Some(Unparse_cocci.SpaceOrNewline sp)) in
-	let rest =
-          let count = simple_string_length s1 (count + 1 (*space*)) in
-          match stack with
-          | [x] ->
-              (match check_for_newline count x space_cell with
-              | Some count -> loop (stack,Some (x,sp), true) count false xs
-              | None -> loop (stack,Some (count,sp),true) count false xs)
-          | _ -> loop (stack,space_cell,true) count false xs in
-	a :: rest
+	let (newinfo,count) =
+	  update_by_stack s1 count stack sp space_cell true in
+	a :: loop newinfo count false xs
     | (Cocci2(s,line,lcol,rcol,_))::((T2 _) as a)::xs
       when is_newline_or_comment a ->
       (* if the added code is followed by any existing comment or newline,
@@ -1427,18 +1414,13 @@ let add_newlines toks tabbing_unit =
     | ((Cocci2(s,line,lcol,rcol,Some(Unparse_cocci.SpaceOrNewline sp))) as a)::
       xs ->
       (*if the added code is followed by more added code, then add the space*)
-      let rest =
-        let count = simple_string_length s (count + 1 (*space*)) in
-        match stack with
-        | [x] ->
-            (match check_for_newline count x space_cell with
-            | Some count -> loop (stack,Some (x,sp), true) count false xs
-            | None -> loop (stack,Some (count,sp),true) count false xs)
-        | _ -> loop (stack,space_cell,true) count false xs in
-      a :: rest
+	let (newinfo,count) =
+	  update_by_stack s count stack sp space_cell true in
+	a :: loop newinfo count false xs
     | (Cocci2(s,line,lcol,rcol,_))::xs ->
 	(Cocci2(s,line,lcol,rcol,None))::
-	loop (stack,space_cell,true) (simple_string_length s count) false xs
+	loop (stack,space_cell,true) (simple_string_length s count)
+	  false xs
     | ((T2(tok,_,_,_)) as a)::xs ->
 	let s = TH.str_of_tok tok in
 	let (count,(space_cell,seen_cocci)) =

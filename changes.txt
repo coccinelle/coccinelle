@@ -378,7 +378,8 @@
 - Improve parsing of multi strings.
 - Improve pretty printing of expression list metavariable values.  Problem
   reported by Cyril Hrubis.
-
+- Improve pretty printing of long parameter lists, improve added newlines
+  for things in parentheses.  Problem reported by Luis Rodriguez.
 * 0.2.5
 ** Language:
 - Make a very small attempt to parse C++ code, amounting to accepting
