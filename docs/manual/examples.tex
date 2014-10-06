@@ -194,7 +194,7 @@ Example of a generated patch hunk\\
 
 \newpage
 
-The \texttt{BUG\_ON} macro makes a assertion about the value of an
+The \texttt{BUG\_ON} macro makes an assertion about the value of an
 expression. However, because some parts of the kernel define
 \texttt{BUG\_ON} to be the empty statement when debugging is not wanted,
 care must be taken when the asserted expression may have some side-effects,
@@ -202,12 +202,12 @@ as is the case of a function call. Thus, we create a rule introducing
 \texttt{BUG\_ON} only in the case when the asserted expression does not
 perform a function call.
 
-On particular piece of code that has the form of a function call is a use
+One particular piece of code that has the form of a function call is a use
 of \texttt{unlikely}, which informs the compiler that a particular
 expression is unlikely to be true.  In this case, because \texttt{unlikely}
-does not perform any side effects, it is safe to use \texttt{BUG\_ON}.  The
+does not perform any side effect, it is safe to use \texttt{BUG\_ON}.  The
 second rule takes care of this case.  It furthermore disables the
-isomorphism that allows a call to \texttt{unlikely} be replaced with its
+isomorphism that allows a call to \texttt{unlikely} to be replaced with its
 argument, as then the second rule would be the same as the first one.\\
 
 \begin{tabular}{c}
@@ -392,7 +392,7 @@ by the use of a nest \texttt{<...~~...>} to describe the path between
 the call to \texttt{of\_find\_node\_by\_name}, the return and the
 conditional in the pattern on line 18.\\
 
-The previously semantic match has been used to generate the following
+The previous semantic match has been used to generate the following
 lines. They may be edited using the emacs Org mode to navigate in the code
 from a site to another.
 
@@ -420,15 +420,15 @@ cocci.print_sec(p2,"return")
 \end{lstlisting}
 \end{tabular}\\
 
-The function \texttt{cocci.print\_secs} is used when there is several
-positions which are matched by a single position variable and that
+The function \texttt{cocci.print\_secs} is used when several
+positions are matched by a single position variable and
 every matched position should be printed.
 
 Any metavariable could be inherited in the Python code. However,
 accessible fields are not currently equally supported among them.
 
 \newpage
-\subsection{Filtering identifiers, declarers or iterators with regular expression}
+\subsection{Filtering identifiers, declarers or iterators with regular expressions}
 
 If you consider the following SmPL file which uses the regexp functionality to
 filter the identifiers that contain, begin or end by \texttt{foo},
