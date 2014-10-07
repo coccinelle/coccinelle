@@ -11,7 +11,7 @@ int bar(int a, int b, int c)
 void main(void)
 {
 	int res;
-	int x,y,y;
+ 	int x,y,z;
 
 	res = foo(x,y);
 
