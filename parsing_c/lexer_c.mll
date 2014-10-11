@@ -932,6 +932,7 @@ rule token = parse
 
 (*****************************************************************************)
 and char = parse
+  | "'"                                { "" } (* allow empty char *)
   | (_ as x)                           { String.make 1 x ^ restchars lexbuf }
   (* todo?: as for octal, do exception  beyond radix exception ? *)
   | (("\\" (oct | oct oct | oct oct oct)) as x     ) { x ^ restchars lexbuf }
