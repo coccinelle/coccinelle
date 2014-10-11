@@ -1072,6 +1072,32 @@ and cpp_eat_until_nl = parse
 and parse_newline = parse
   ('\n' | "\r\n") { tok lexbuf }
 
+and cpp_in_comment_eat_until_nl = parse
+  [^ '\n']+
+  { let s = tok lexbuf in
+    let splitted = Str.split_delim (Str.regexp_string "*/") s in
+    let check_continue s =
+      let splitted = Str.split_delim (Str.regexp "\\\\ *") s in
+      match splitted with
+	[_;""] ->
+          let s2 = parse_newline lexbuf in
+          let s3 = cpp_eat_until_nl lexbuf in
+	  s ^ s2 ^ s3
+      |	_ -> s in
+    match List.rev splitted with
+      after_comment_start :: before_comment_start :: rest ->
+	let splitted2 =
+	  Str.split_delim (Str.regexp_string "/*") after_comment_start in
+	(match splitted2 with
+	  [bef;aft] ->
+	    let s2 = parse_newline lexbuf in
+	    s^s2^(cpp_in_comment_eat_until_nl lexbuf)
+	| _ -> (* no longer in comment *)
+	    check_continue s)
+    | _ ->
+	let s2 = parse_newline lexbuf in
+	s^s2^(cpp_in_comment_eat_until_nl lexbuf) (* still in comment *) }
+
 and cpp_eat_until_nl = parse
   [^ '\n']+
   { let s = tok lexbuf in
@@ -1091,7 +1117,6 @@ and cpp_eat_until_nl = parse
 	(match splitted2 with
 	  [bef;aft] -> check_continue s (* no unclosed comment *)
 	| _ ->
-	    let s2 = comment lexbuf in
-            let s3 = cpp_eat_until_nl lexbuf in
-            s ^ s2 ^ s3)
+	    let s2 = parse_newline lexbuf in
+	    s^s2^(cpp_in_comment_eat_until_nl lexbuf))
     | _ -> check_continue s (* no comment *) }
