@@ -891,7 +891,9 @@ rule token = parse
 	  let n = string_of_int (String.length before + lena) in
 	  let p = string_of_int lena in
 	  TDecimal ((x,n,p), tokinfo lexbuf)
-      |	_ -> failwith "bad decimal" }
+      |	_ ->
+	  pr2 ("LEXER: " ^ "bad decimal" ^ tok lexbuf);
+          TUnknown (tokinfo lexbuf) }
 
   | ['0'] ['0'-'9']+
       { pr2 ("LEXER: " ^ error_radix "octal" ^ tok lexbuf);
@@ -959,6 +961,9 @@ and char = parse
 
 and restchars = parse
   | "'"                                { "" }
+  | "\n"
+      { pr2 "LEXER: newline not expected in character";
+        tok lexbuf }
   | (_ as x)                           { String.make 1 x ^ restchars lexbuf }
   (* todo?: as for octal, do exception  beyond radix exception ? *)
   | (("\\" (oct | oct oct | oct oct oct)) as x     ) { x ^ restchars lexbuf }
