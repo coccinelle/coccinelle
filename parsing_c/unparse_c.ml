@@ -1318,7 +1318,10 @@ let add_newlines toks tabbing_unit =
       when not (stack = []) && snd (List.hd stack) = None
       ->
 	let s = str_of_token2 a in
-	let indent = List.hd (List.rev (Str.split (Str.regexp "\n") s)) in
+	let indent =
+	  match List.rev (Str.split (Str.regexp "\n") s) with
+	    indent::_ -> indent
+	  | [] -> "" (* no indentation seems desired *) in
 	let stackfront = fst(List.hd stack) in
 	a ::
 	loop ([stackfront,Some indent],space_cell,seen_cocci)
