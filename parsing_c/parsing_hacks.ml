@@ -1066,8 +1066,9 @@ let fix_tokens_strings toks =
   let rec skip acc fn = function
       x :: xs when fn x -> skip (x :: acc) fn xs
     | xs -> (List.rev acc, xs)
-  and out_strings = function
-      [] -> []
+  (* tail recursive for very large parsing units *)
+  and out_strings acc = function
+      [] -> List.rev acc
     | a :: rest ->
       if can_be_string a
       then
@@ -1075,15 +1076,20 @@ let fix_tokens_strings toks =
         (match rest with
           b :: rest when can_be_string b ->
             let (front2,rest) = skip [] strings_and_comments rest in
-            a :: front @ b :: front2 @ out_strings rest
+	    let new_acc =
+	      (List.rev front2) @ b :: (List.rev front) @ a :: acc in
+            out_strings new_acc rest
         | _ ->
             (match a with
-        TString(str_isW,info) ->
-          (Parse_string_c.parse_string str_isW info) @ front @
-          out_strings rest
-            |	_ ->  a :: front @ out_strings rest))
-      else a :: out_strings rest
-	in out_strings toks
+              TString(str_isW,info) ->
+		let str = Parse_string_c.parse_string str_isW info in
+		let new_acc = (List.rev str) @ (List.rev front) @ acc in
+		out_strings new_acc rest
+            | _ ->
+		let new_acc = (List.rev front) @ (a :: acc) in
+		out_strings new_acc rest))
+      else out_strings (a::acc) rest in
+  out_strings [] toks
 
 (* ------------------------------------------------------------------------- *)
 (* macro2 *)

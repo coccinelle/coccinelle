@@ -382,6 +382,7 @@
   for things in parentheses.  Problem reported by Luis Rodriguez.
 - Lex comment at end of #if.  Problem reported by Markus Elfring.
 - Allow ''
+- Make fix_tokens_strings tail recursive to avoid stack overflow
 * 0.2.5
 ** Language:
 - Make a very small attempt to parse C++ code, amounting to accepting
