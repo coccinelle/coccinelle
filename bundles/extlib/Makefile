@@ -48,7 +48,7 @@ $(EXTLIB).tar.gz:
 	@echo "$@ not found. Please download it and drop it in this directory ($(pwd))."
 	@false
 
-.PHONEY: all all.opt all-build all-opt-build clean distclean depend
+.PHONY: all all.opt all-build all-opt-build clean distclean depend
 
 # SOURCES
 MODULES = \

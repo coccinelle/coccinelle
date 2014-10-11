@@ -60,7 +60,7 @@ $(SEXPDIR).tar.gz:
 	@echo "$@ not found. Please download it and drop it in this directory ($(pwd))."
 	@false
 
-.PHONEY: all all.opt clean distclean depend depend-build all-build all-opt-build
+.PHONY: all all.opt clean distclean depend depend-build all-build all-opt-build
 
 
 # Sources needed for coccinelle
