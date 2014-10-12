@@ -219,7 +219,7 @@ let print_commentized xs =
 		(Str.regexp "\n") (fun s -> "") s
 	    in
 	    if newline =|= !line
-	    then prerr_string (s ^ " ")
+	    then pr2_no_nl (s ^ " ")
 	    else begin
               if !line =|= -1
               then pr2_no_nl "passed:"
