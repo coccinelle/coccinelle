@@ -1251,7 +1251,7 @@ let add_newlines toks tabbing_unit =
   (* the following is for strings that may contain newline or tabs *)
   let create_indent n = function
       None ->
-	let (tu,tlen) = 
+	let (tu,tlen) =
 	  match tabbing_unit with
 	  | Some "\t" -> ("\t",8)
 	  | Some "" -> ("\t",8) (* not sure why... *)
