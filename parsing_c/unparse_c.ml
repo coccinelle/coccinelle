@@ -1248,6 +1248,7 @@ let scan_past_define l =
   loop l
 
 let add_newlines toks tabbing_unit =
+simple_print_all_tokens2 "start" toks;
   (* the following is for strings that may contain newline or tabs *)
   let create_indent n = function
       None ->
@@ -1288,14 +1289,12 @@ let add_newlines toks tabbing_unit =
     | _ -> (count,List.tl stack,space_cell,seen_cocci) in
   let update_by_stack s count stack sp space_cell seen_cocci =
     let count = simple_string_length s (count + 1 (*space*)) in
-    let newinfo =
-      match stack with
-      | [(x,tustack)] ->
-          (match check_for_newline count x tustack space_cell with
-          | Some count -> (stack,Some (x,sp), seen_cocci)
-          | None -> (stack,Some (count,sp),seen_cocci))
-      | _ -> (stack,space_cell,seen_cocci) in
-    (newinfo,count) in
+    match stack with
+    | [(x,tustack)] ->
+        (match check_for_newline count x tustack space_cell with
+        | Some count -> ((stack,Some (x,sp), seen_cocci),count)
+        | None -> ((stack,Some (count,sp),seen_cocci),count))
+    | _ -> ((stack,space_cell,seen_cocci),count) in
   let rec loop ((stack,space_cell,seen_cocci) as info) count seeneq =
     function
     | [] -> []
@@ -1310,10 +1309,38 @@ let add_newlines toks tabbing_unit =
 	(TH.str_of_tok commatok) = "," && (TH.str_of_tok sptok) = " " &&
 	List.length stack = 1 (* not super elegant... *) ->
       let sp = ref " " in
-      let newcount = count + 2 in (* count including space *)
+      let (newinfo,count) =
+	update_by_stack "," count stack sp space_cell seen_cocci in
       let a = T2(commatok,Ctx,idx,
 		 Some (Unparse_cocci.SpaceOrNewline sp)) in
-      a :: loop (stack,Some (newcount,sp),seen_cocci) newcount false xs
+      a :: loop newinfo count false xs
+    | ((T2(commatok,Ctx,idx,_)) as a) ::
+      ((T2((Parser_c.TCommentNewline _),Ctx,_i,_h)) as b) :: xs
+      when (TH.str_of_tok commatok) = "," &&
+	   not (stack = []) && snd (List.hd stack) = None
+      ->
+	let sp = ref " " in (* not connected to code *)
+	let ((newstack,new_space_cell,new_seen_cocci),_count) =
+	  update_by_stack "," (count-1) stack sp space_cell seen_cocci in
+	let s = str_of_token2 b in
+	let indent =
+	  match List.rev (Str.split (Str.regexp "\n") s) with
+	    indent::_ -> indent
+	  | [] -> "" (* no indentation seems desired *) in
+	let stackfront = fst(List.hd newstack) in
+	a :: b ::
+	loop ([stackfront,Some indent],new_space_cell,new_seen_cocci)
+	  (simple_string_length s count) false xs
+    | (T2(commatok,Ctx,idx,_)) :: xs
+      when
+	(TH.str_of_tok commatok) = "," &&
+	List.length stack = 1 (* not super elegant... *) ->
+      let sp = ref " " in
+      let (newinfo,count) =
+	update_by_stack "," count stack sp space_cell seen_cocci in
+      let a = T2(commatok,Ctx,idx,
+		 Some (Unparse_cocci.SpaceOrNewline sp)) in
+      a :: loop newinfo count false xs
     | ((T2((Parser_c.TCommentNewline _),Ctx,_i,_h)) as a) :: xs
       when not (stack = []) && snd (List.hd stack) = None
       ->
