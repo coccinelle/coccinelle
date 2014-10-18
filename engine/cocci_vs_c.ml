@@ -4519,8 +4519,8 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
         )
       ))
 
-  | A.ExprStatement (None, ia1), F.ExprStatement (st, (None, ii)) ->
-      let ib1 = tuple_of_list1 ii in
+  | A.ExprStatement (None, ia1), F.ExprStatement (st, (None, [ib1])) ->
+      (* ia1/ib1 represents a ; *)
       tokenf ia1 ib1 >>= (fun ia1 ib1 ->
         return (
           A.ExprStatement (None, ia1),
@@ -4528,6 +4528,11 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
         )
       )
 
+  | _, F.ExprStatement (st, (None, [])) ->
+      (* This case occurs when we have eg nothing after a switch label
+	 and so there is no semicolon.  Indeed, there is no match, so any
+	 match against this fails. *)
+      fail
 
   | A.IfHeader (ia1,ia2, ea, ia3), F.IfHeader (st, (eb,ii)) ->
       let (ib1, ib2, ib3) = tuple_of_list3 ii in
