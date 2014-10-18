@@ -1248,7 +1248,6 @@ let scan_past_define l =
   loop l
 
 let add_newlines toks tabbing_unit =
-simple_print_all_tokens2 "start" toks;
   (* the following is for strings that may contain newline or tabs *)
   let create_indent n = function
       None ->
@@ -1290,7 +1289,7 @@ simple_print_all_tokens2 "start" toks;
   let update_by_stack s count stack sp space_cell seen_cocci =
     let count = simple_string_length s (count + 1 (*space*)) in
     match stack with
-    | [(x,tustack)] ->
+    | [(x,tustack)] when seen_cocci ->
         (match check_for_newline count x tustack space_cell with
         | Some count -> ((stack,Some (x,sp), seen_cocci),count)
         | None -> ((stack,Some (count,sp),seen_cocci),count))
@@ -1320,7 +1319,7 @@ simple_print_all_tokens2 "start" toks;
 	   not (stack = []) && snd (List.hd stack) = None
       ->
 	let sp = ref " " in (* not connected to code *)
-	let ((newstack,new_space_cell,new_seen_cocci),_count) =
+	let ((newstack,new_space_cell,_),_count) =
 	  update_by_stack "," (count-1) stack sp space_cell seen_cocci in
 	let s = str_of_token2 b in
 	let indent =
@@ -1329,7 +1328,7 @@ simple_print_all_tokens2 "start" toks;
 	  | [] -> "" (* no indentation seems desired *) in
 	let stackfront = fst(List.hd newstack) in
 	a :: b ::
-	loop ([stackfront,Some indent],new_space_cell,new_seen_cocci)
+	loop ([stackfront,Some indent],new_space_cell,false)
 	  (simple_string_length s count) false xs
     | (T2(commatok,Ctx,idx,_)) :: xs
       when
@@ -1351,7 +1350,7 @@ simple_print_all_tokens2 "start" toks;
 	  | [] -> "" (* no indentation seems desired *) in
 	let stackfront = fst(List.hd stack) in
 	a ::
-	loop ([stackfront,Some indent],space_cell,seen_cocci)
+	loop ([stackfront,Some indent],space_cell,false)
 	  (simple_string_length s count) false xs
     | ((T2(tok,Ctx,idx,_)) as a)::xs ->
       (match TH.str_of_tok tok with
