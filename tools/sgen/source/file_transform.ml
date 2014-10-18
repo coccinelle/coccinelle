@@ -65,7 +65,8 @@ let match_part rulename =
   regex_match ("^@"^spcmnt_re^(escape rulename)^"\\("^spp_re^".*\\)?$")
 let match_end = regex_match ".*@"
 let match_nameless_rule = regex_match "\\(^\\(@@\\)\\|^@.*@$\\)"
-let match_rule_start = regex_match ("^@"^spcmnt_re^"$")
+let match_rule_start = regex_match ("^@")
+let match_rule_start_arob = regex_match ("^@"^spcmnt_re^"$")
 let match_rule_end = regex_match (spcmnt_re^"@@")
 let match_non_empty = regex_match (spcmnt_re^"[^ \t]")
 
@@ -110,7 +111,7 @@ let traverse name outch inch =
       (line, inch)
     else if match_part name line then
       find_match nothing match_end inch
-    else if match_rule_start line && not(match_rule_end line) then
+    else if match_rule_start_arob line then
       let (line,inch) = find_match nothing match_non_empty inch in
       if regex_match (sp_re^name) line then
         find_match nothing match_end inch
