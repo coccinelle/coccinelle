@@ -65,7 +65,7 @@ let match_part rulename =
   regex_match ("^@"^spcmnt_re^(escape rulename)^"\\("^spp_re^".*\\)?$")
 let match_end = regex_match ".*@"
 let match_nameless_rule = regex_match "\\(^\\(@@\\)\\|^@.*@$\\)"
-let match_rule_start = regex_match "^@"
+let match_rule_start = regex_match ("^@"^spcmnt_re^"$")
 let match_rule_end = regex_match (spcmnt_re^"@@")
 let match_non_empty = regex_match (spcmnt_re^"[^ \t]")
 

@@ -53,7 +53,7 @@ let generate ~new_name ~disj_map ~rule ~context_mode = match rule with
         ("MEGA ERROR: Congratulations! You managed to write a Coccinelle " ^
          "rule that sgen was unable to add a position to! The rule is \"" ^
          nme ^ "\".") in
-      let pos_mv = List.map (fun a -> M.make_metavar ~typ:"position " a) pos in
+      let pos_mv = List.map (M.make_metavar ~typ:"position ") pos in
       let pos_inh = M.inherit_rule cnm pos_mv in
 
       (* check if any extra generated disj rule *)
