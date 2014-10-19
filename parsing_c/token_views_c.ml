@@ -102,9 +102,8 @@ let rebuild_tokens_extented toks_ext =
     tok.new_tokens_before +> List.iter (fun x -> push2 x _tokens);
     push2 tok.tok _tokens
   );
-  let tokens = List.rev !_tokens in
-  (tokens +> acc_map mk_token_extended)
-
+  (* use map_eff_rev because _tokens is already reversed *)
+  !_tokens +> map_eff_rev mk_token_extended
 
 
 (* x list list, because x list separated by ',' *)
