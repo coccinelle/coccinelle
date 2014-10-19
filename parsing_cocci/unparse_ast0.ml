@@ -470,8 +470,7 @@ and statement arity s =
 	  print_string arity; mcode print_string lbrace; start_block();
 	  dots force_newline (statement arity) body;
 	  end_block(); print_string arity; mcode print_string rbrace
-      | Ast0.Decl(pre,decl) ->
-	  Printf.printf "predecl: %s\n" (Dumper.dump pre);
+      | Ast0.Decl(_,decl) ->
 	  print_string arity; declaration decl
       | Ast0.Seq(lbrace,body,rbrace) ->
 	  print_string arity; mcode print_string lbrace; start_block();
