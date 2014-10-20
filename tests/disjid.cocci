@@ -1,4 +1,5 @@
 @@
+symbol x,y,z;
 @@
 
  \(foo\|bar\)(int \(x\|y\), int z) {

@@ -360,8 +360,6 @@ let fix_add_params_ident x =
       )
   | _ -> ()
 
-
-
 (*-------------------------------------------------------------------------- *)
 (* shortcuts *)
 (*-------------------------------------------------------------------------- *)
@@ -369,6 +367,30 @@ let fix_add_params_ident x =
 let mk_e e ii = Ast_c.mk_e e ii
 
 let mk_string_wrap (s,info) = (s, [info])
+
+(*-------------------------------------------------------------------------- *)
+(* support for functions with no return type *)
+(*-------------------------------------------------------------------------- *)
+
+let args_are_params l =
+  match l with
+    [Right (ArgAction(ActMisc [x])), ii] when Ast_c.is_fake x -> true
+  | _ -> List.for_all (function Right (ArgType x), ii -> true | _ -> false) l
+let args_to_params l pb =
+  let pi =
+    match pb with Some pb -> Ast_c.parse_info_of_info pb | None -> fake_pi in
+  match l with
+    [(Right (ArgAction(ActMisc [x])), ii)] when Ast_c.is_fake x -> []
+  | l ->
+      List.map
+	(function
+	    Right (ArgType x), ii -> x, ii
+	  | x ->
+	      raise
+		(Semantic
+		   ("function with no return type must have types in param list",
+		    pi)))
+	l
 
 %}
 
@@ -408,7 +430,6 @@ let mk_string_wrap (s,info) = (s, [info])
 %token <string * Ast_c.info> Tconstructorname /* parsing_hack for c++ */
 /*(* appears mostly after some fix_xxx in parsing_hack *)*/
 %token <string * Ast_c.info> TypedefIdent
-
 
 /*
 (* Some tokens like TOPar and TCPar are used as synchronisation stuff,
@@ -504,6 +525,19 @@ let mk_string_wrap (s,info) = (s, [info])
   TIfdef TIfdefelse TIfdefelif TEndif
 %token <(bool * (int * int) option ref * Ast_c.info)>
   TIfdefBool TIfdefMisc TIfdefVersion
+
+/* Note [Nasty Undisciplined Cpp]
+ *
+ * These tokens replace regular Cpp-ifdef tokens for nasty undisciplined
+ * variability patterns.
+ *
+ * Note that these tokens do not have matching_tag.
+ * (TU stands for Token-Undisciplined.)
+ *
+ * /Iago
+ */
+%token <Ast_c.info>
+  TUifdef TUelseif TUendif
 
 /*(*---------------*)*/
 /*(* other         *)*/
@@ -624,12 +658,12 @@ main:
  translation_unit EOF     { $1 }
 
 translation_unit:
- | 
+ |
      { [] }
  | translation_unit external_declaration
      { !LP._lexer_hint.context_stack <- [LP.InTopLevel]; $1 ++ [$2] }
  | translation_unit Tnamespace TIdent TOBrace translation_unit TCBrace
-     { !LP._lexer_hint.context_stack <- [LP.InTopLevel]; 
+     { !LP._lexer_hint.context_stack <- [LP.InTopLevel];
        $1 ++ [Namespace ($5, [$2; snd $3; $4; $6])] }
 
 
@@ -780,7 +814,7 @@ new_argument:
 	   let pty = { ty with p_type = fty } in
 	   Right(ArgType pty)
        | _ -> raise (Impossible 88)
-     } 
+     }
 
 unary_op:
  | TAnd   { GetRef,     $1 }
@@ -809,7 +843,7 @@ postfix_expr:
  /*(* gccext: also called compound literals *)*/
  | topar2 type_name tcpar2 TOBrace TCBrace
      { mk_e(Constructor ($2, (InitList [], [$4;$5]))) [$1;$3] }
- | topar2 type_name tcpar2 TOBrace initialize_list gcc_comma_opt TCBrace
+ | topar2 type_name tcpar2 TOBrace initialize_list gcc_comma_opt_struct TCBrace
      { mk_e(Constructor ($2, (InitList (List.rev $5),[$4;$7]++$6))) [$1;$3] }
 
 
@@ -1000,6 +1034,12 @@ selection:
      { If ($3, $5, $7),  [$1;$2;$4;$6] }
  | Tswitch TOPar expr TCPar statement
      { Switch ($3,$5),   [$1;$2;$4]  }
+ /* [Nasty Undisciplined Cpp] #ifdef A if e S1 else #endif S2 */
+ | TUifdef Tif TOPar expr TCPar statement Telse TUendif statement
+     { Ifdef_Ite ($4,$6,$9), [$1;$2;$3;$5;$7;$8] }
+ /* [Nasty Undisciplined Cpp] #ifdef A if e S1 else #else S2 #endif S3 */
+ | TUifdef Tif TOPar expr TCPar statement Telse TUelseif statement TUendif statement
+     { Ifdef_Ite2 ($4,$6,$9,$11), [$1;$2;$3;$5;$7;$8;$10] }
 
 iteration:
  | Twhile TOPar expr TCPar statement
@@ -1132,6 +1172,10 @@ token:
 
   | Tif     { $1 }
   | Telse   { $1 }
+  | TInt    { snd $1 }
+  | TFloat  { snd $1 }
+  | TString { snd $1 }
+  | TChar   { snd $1 } /* other constants needed? */
 
 /*(*************************************************************************)*/
 /*(* types *)*/
@@ -1667,9 +1711,10 @@ field_declaration:
        if fst (unwrap storage) <> NoSto
        then internal_error "parsing dont allow this";
 
+       let iistart = Ast_c.fakeInfo () in (* for parallelism with DeclList *)
        FieldDeclList ($2 +> (List.map (fun (f, iivirg) ->
          f returnType, iivirg))
-                         ,[$3])
+                         ,[$3;iistart])
          (* dont need to check if typedef or func initialised cos
           * grammar dont allow typedef nor initialiser in struct
           *)
@@ -1682,7 +1727,8 @@ field_declaration:
        if fst (unwrap storage) <> NoSto
        then internal_error "parsing dont allow this";
 
-       FieldDeclList ([(Simple (None, returnType)) , []], [$2])
+       let iistart = Ast_c.fakeInfo () in (* for parallelism with DeclList *)
+       FieldDeclList ([(Simple (None, returnType)) , []], [$2;iistart])
      }
 
 
@@ -1903,7 +1949,7 @@ define_val:
  | Tinline { DefineTodo }
 *)*/
 
- | stat_or_decl stat_or_decl_list 
+ | stat_or_decl stat_or_decl_list
      { DefineMulti
 	 (List.map
 	    (function
@@ -1988,9 +2034,50 @@ cpp_other:
     *)*/
  | identifier TOPar argument_list TCPar TPtVirg
      {
-       Declaration(MacroDecl((fst $1, $3, true), [snd $1;$2;$4;$5;fakeInfo()]))
-       (* old: MacroTop (fst $1, $3,    [snd $1;$2;$4;$5])  *)
+       if args_are_params $3
+       then
+	 (* if all args are params, assume it is a prototype of a function
+	    with no return type *)
+	 let parameters = args_to_params $3 None in
+	 let paramlist = (parameters, (false, [])) in (* no varargs *)
+	 let id = RegularName (mk_string_wrap $1) in
+	 let ret =
+	   warning "type defaults to 'int'"
+	     (mk_ty defaultInt [fakeInfo fake_pi]) in
+	 let ty =
+	   fixOldCDecl (mk_ty (FunctionType (ret, paramlist)) [$2;$4]) in
+	 let attrs = Ast_c.noattr in
+	 let sto = (NoSto, false), [] in
+	 let iistart = Ast_c.fakeInfo () in
+	 Declaration(
+	 DeclList ([{v_namei = Some (id,NoInit); v_type = ty;
+                      v_storage = unwrap sto; v_local = NotLocalDecl;
+                      v_attr = attrs; v_type_bis = ref None;
+                    },[]],
+                   ($5::iistart::snd sto)))
+       else
+	 Declaration
+	   (MacroDecl((fst $1, $3, true), [snd $1;$2;$4;$5;fakeInfo()]))
+           (* old: MacroTop (fst $1, $3,    [snd $1;$2;$4;$5])  *)
      }
+
+ /* cheap solution for functions with no return type.  Not really a
+       cpp_other, but avoids conflicts */
+ | identifier TOPar argument_list TCPar compound {
+   let parameters = args_to_params $3 (Some (snd $1)) in
+   let paramlist = (parameters, (false, [])) in (* no varargs *)
+   let fninfo =
+     let id = RegularName (mk_string_wrap $1) in
+     let ret =
+       warning "type defaults to 'int'"
+	 (mk_ty defaultInt [fakeInfo fake_pi]) in
+     let ty = mk_ty (FunctionType (ret, paramlist)) [$2;$4] in
+     let attrs = Ast_c.noattr in
+     let sto = (NoSto, false), [] in
+     (id, fixOldCDecl ty, sto, attrs) in
+   let fundef = fixFunc (fninfo, $5, None) in
+   Definition fundef
+ }
 
  /*(* TCParEOL to fix the end-of-stream bug of ocamlyacc *)*/
  | identifier TOPar argument_list TCParEOL
@@ -2012,7 +2099,7 @@ external_declaration:
 
 celem:
  | Tnamespace TIdent TOBrace translation_unit TCBrace
-     { !LP._lexer_hint.context_stack <- [LP.InTopLevel]; 
+     { !LP._lexer_hint.context_stack <- [LP.InTopLevel];
        Namespace ($4, [$1; snd $2; $3; $5]) }
 
  | external_declaration                         { $1 }
@@ -2194,13 +2281,6 @@ attribute_storage_list:
 
 
 attributes: attribute_list { $1 }
-
-
-
-/*(* gccext:  which allow a trailing ',' in enum, as in perl *)*/
-gcc_comma_opt:
- | TComma {  [$1] }
- | /*(* empty *)*/  {  []  }
 
 comma_opt:
  | TComma {  [$1] }

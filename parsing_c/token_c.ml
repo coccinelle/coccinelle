@@ -123,6 +123,7 @@ type comment_like_token = token
 (* simpler than in token_helpers :) because we don't have the ocamlyacc
  * constraints on how to define the token type. *)
 let info_of_token = snd
+let str_of_token t = (info_of_token t).Common.str
 
 
 

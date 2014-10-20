@@ -34,6 +34,7 @@ rule token = parse
   | "@"  { TArob }
   | "/"  { TScriptData (tok lexbuf) }
   | "//" [^ '\n']* { token lexbuf } (* skip SmPL comments *)
+  | "#"  [^ '\n']* { token lexbuf } (* skip python comments *)
   | '"'  { TScriptData (Printf.sprintf "\"%s\"" (string lexbuf)) }
   | "'"  { TScriptData (Printf.sprintf "'%s'" (cstring lexbuf)) }
   | eof  { EOF }

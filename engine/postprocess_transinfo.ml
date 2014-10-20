@@ -139,7 +139,7 @@ let numberify trees =
       (function acc -> function xs -> function n ->
 	(List.map (function x -> (n,x)) xs) @ acc)
       [] trees in
-    List.fold_left
+  List.fold_left
     (function res ->
       function (n,x) ->
 	let (same,diff) = List.partition (function (ns,xs) -> x = xs) res in

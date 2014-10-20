@@ -9,7 +9,6 @@ T I[E];
 @@
 identifier rule3.I;
 expression str;
-type rule3.T;
 declarer name MODULE_PARM;
 @@
 

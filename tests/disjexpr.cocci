@@ -1,4 +1,4 @@
-@@ identifier fld; 
+@@ identifier fld; symbol v;
 @@
 (
 - v.fld

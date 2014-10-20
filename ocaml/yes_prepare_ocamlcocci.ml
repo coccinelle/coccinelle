@@ -305,6 +305,23 @@ let prepare coccifile code =
       Some file
     end
 
+let prepare_simple ml_file =
+  let in_chan = open_in ml_file in
+  let file_name, out_chan = Filename.open_temp_file "ocaml_cocci_" ".ml" in
+  output_string out_chan (init_ocamlcocci ());
+  output_string out_chan "\n";
+  try
+    while true do
+      let line = input_line in_chan in
+      output_string out_chan line;
+      output_string out_chan "\n"
+    done;
+    assert false
+  with End_of_file ->
+    close_in_noerr in_chan;
+    close_out_noerr out_chan;
+    file_name
+
 (* give a path to the coccilib cmi file *)
 let find_cmifile name =
   let path1 = Printf.sprintf "%s/ocaml/%s.cmi" Config.path name in

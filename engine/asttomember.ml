@@ -20,13 +20,19 @@ let contains_modif used_after x =
     let bind x y = x or y in
     let option_default = false in
     let do_nothing r k e = k e in
+    let annotated_decl_bef decl =
+      match Ast.unwrap decl with
+	Ast.DElem(bef,_,_) -> bef
+      | _ -> failwith "not possible" in
     let rule_elem r k re =
       let res = k re in
       match Ast.unwrap re with
 	Ast.FunHeader(bef,_,fninfo,name,lp,params,rp) ->
 	  bind (mcode r ((),(),bef,[])) res
-      | Ast.Decl(bef,_,decl) ->
-	  bind (mcode r ((),(),bef,[])) res
+      | Ast.Decl decl ->
+	  bind (mcode r ((),(),annotated_decl_bef decl,[])) res
+      | Ast.ForHeader(fr,lp,Ast.ForDecl decl,e2,sem2,e3,rp) ->
+	  bind (mcode r ((),(),annotated_decl_bef decl,[])) res
       | _ -> res in
     let recursor =
       V.combiner bind option_default
@@ -34,7 +40,7 @@ let contains_modif used_after x =
 	mcode
 	do_nothing do_nothing do_nothing do_nothing do_nothing
 	do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-	do_nothing do_nothing
+	do_nothing do_nothing do_nothing
 	do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
     recursor.V.combiner_rule_elem x
 
@@ -60,7 +66,7 @@ let contains_constant x =
 	  mcode
 	  do_nothing do_nothing do_nothing do_nothing do_nothing
 	  ident expr do_nothing do_nothing do_nothing do_nothing
-	  do_nothing do_nothing
+	  do_nothing do_nothing do_nothing
 	  do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing in
       recursor.V.combiner_rule_elem x
   | _ -> true
@@ -96,6 +102,11 @@ let strip x =
     if Ast.get_safe_decl d
     then {res with Ast.safe_for_multi_decls = true}
     else res in
+  let annotated_decl no_mcode decl =
+    match Ast.unwrap decl with
+      Ast.DElem(bef,allminus,d) ->
+	Ast.rewrap decl (Ast.DElem(no_mcode,allminus,d))
+    | _ -> failwith "not possible" in
   let rule_elem r k re =
     let res = do_nothing r k re in
     let no_mcode = Ast.CONTEXT(Ast.NoPos,Ast.NOTHING) in
@@ -103,7 +114,11 @@ let strip x =
       Ast.FunHeader(bef,b,fninfo,name,lp,params,rp) ->
 	Ast.rewrap res
 	  (Ast.FunHeader(no_mcode,b,fninfo,name,lp,params,rp))
-    | Ast.Decl(bef,b,decl) -> Ast.rewrap res (Ast.Decl(no_mcode,b,decl))
+    | Ast.Decl decl -> Ast.rewrap res (Ast.Decl(annotated_decl no_mcode decl))
+    | Ast.ForHeader(fr,lp,Ast.ForDecl(decl),e2,sem2,e3,rp) ->
+	Ast.rewrap res
+	  (Ast.ForHeader(fr,lp,Ast.ForDecl(annotated_decl no_mcode decl),
+			 e2,sem2,e3,rp))
     | _ -> res in
   let recursor =
     V.rebuilder
@@ -111,7 +126,7 @@ let strip x =
       do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing
-      decl rule_elem do_nothing do_nothing
+      decl do_absolutely_nothing rule_elem do_nothing do_nothing
       do_nothing do_absolutely_nothing in
   recursor.V.rebuilder_rule_elem x
 
@@ -232,9 +247,10 @@ and statement testfn mcode tail stmt : 'a list list =
 
   | Ast.Dots(_,whencodes,_,_) -> []
 
-  | Ast.FunDecl(header,lbrace,body,rbrace) ->
+  | Ast.FunDecl(header,lbrace,body,rbrace,(_,_,_,aft)) ->
       let body_info = statement_list testfn mcode true body in
-      if testfn header or testfn lbrace or testfn rbrace
+      if testfn header or testfn lbrace or testfn rbrace or
+	mcode () ((),(),aft,[])
       then conj (rule_elem header) body_info
       else body_info
 

@@ -167,10 +167,10 @@ let rec ident opt_allowed tgt i =
       Ast0.rewrap i (Ast0.DisjId(starter,id_list,mids,ender))
   | Ast0.OptIdent(_) | Ast0.UniqueIdent(_) | Ast0.AsIdent _ ->
       failwith "unexpected code"
-	
+
 (* --------------------------------------------------------------------- *)
 (* Expression *)
-	
+
 let make_exp =
   make_opt_unique
     (function x -> Ast0.OptExp x)
@@ -328,17 +328,20 @@ let rec top_expression opt_allowed tgt expr =
   |  Ast0.Edots(dots,whencode) ->
       let arity = exp_same (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in
-      let whencode = get_option (expression Ast0.NONE) whencode in
+      let whencode =
+        get_option (fun (a,e,b) -> (a,e,expression Ast0.NONE b)) whencode in
       make_exp expr tgt arity (Ast0.Edots(dots,whencode))
   | Ast0.Ecircles(dots,whencode) ->
       let arity = exp_same (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in
-      let whencode = get_option (expression Ast0.NONE) whencode in
+      let whencode =
+        get_option (fun (a,e,b) -> (a,e,expression Ast0.NONE b)) whencode in
       make_exp expr tgt arity (Ast0.Ecircles(dots,whencode))
   | Ast0.Estars(dots,whencode) ->
       let arity = exp_same (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in
-      let whencode = get_option (expression Ast0.NONE) whencode in
+      let whencode =
+        get_option (fun (a,e,b) -> (a,e,expression Ast0.NONE b)) whencode in
       make_exp expr tgt arity (Ast0.Estars(dots,whencode))
   | Ast0.Constructor(lp,ty,rp,init) ->
       let arity = exp_same (mcode2line lp) [mcode2arity lp;mcode2arity rp] in
@@ -617,7 +620,8 @@ and declaration tgt decl =
   | Ast0.Ddots(dots,whencode) ->
       let arity = all_same true tgt (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in
-      let whencode = get_option (declaration Ast0.NONE) whencode in
+      let whencode =
+        get_option (fun (a,e,b) -> (a,e,declaration Ast0.NONE b)) whencode in
       make_decl decl tgt arity (Ast0.Ddots(dots,whencode))
   | Ast0.OptDecl(_) | Ast0.UniqueDecl(_) | Ast0.AsDecl _ ->
       failwith "unexpected code"
@@ -668,7 +672,8 @@ and initialiser tgt i =
   | Ast0.Idots(dots,whencode) ->
       let arity = init_same (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in
-      let whencode = get_option (initialiser Ast0.NONE) whencode in
+      let whencode =
+        get_option (fun (a,e,b) -> (a,e,initialiser Ast0.NONE b)) whencode in
       make_init i tgt arity (Ast0.Idots(dots,whencode))
   | Ast0.OptIni(_) | Ast0.UniqueIni(_) | Ast0.AsInit _ ->
       failwith "unexpected code"
@@ -1044,7 +1049,7 @@ and statement tgt stm =
 	     (expression Ast0.NONE))
 	  whn in
       make_rule_elem stm tgt arity (Ast0.Stars(dots,whn))
-  | Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace) ->
+  | Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace,aft) ->
       let arity =
 	all_same true tgt (mcode2line lp)
 	  ((List.map mcode2arity [lp;rp;lbrace;rbrace]) @ (fninfo2arity fi)) in
@@ -1057,7 +1062,7 @@ and statement tgt stm =
       let body = dots (statement arity) body in
       let rbrace = mcode rbrace in
       make_rule_elem stm tgt arity
-	(Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace))
+	(Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace,aft))
   | Ast0.Include(inc,s) ->
       let arity =
 	all_same true tgt (mcode2line inc) [mcode2arity inc; mcode2arity s] in
@@ -1170,11 +1175,11 @@ and fninfo2arity fninfo =
        fninfo)
 
 and whencode notfn alwaysfn expression = function
-    Ast0.WhenNot a -> Ast0.WhenNot (notfn a)
-  | Ast0.WhenAlways a -> Ast0.WhenAlways (alwaysfn a)
-  | Ast0.WhenModifier(x) -> Ast0.WhenModifier(x)
-  | Ast0.WhenNotTrue a -> Ast0.WhenNotTrue (expression a)
-  | Ast0.WhenNotFalse a -> Ast0.WhenNotFalse (expression a)
+    Ast0.WhenNot (w,e,a) -> Ast0.WhenNot (w,e,notfn a)
+  | Ast0.WhenAlways (w,e,a) -> Ast0.WhenAlways (w,e,alwaysfn a)
+  | Ast0.WhenModifier(w,x) -> Ast0.WhenModifier(w,x)
+  | Ast0.WhenNotTrue (w,e,a) -> Ast0.WhenNotTrue (w,e,expression a)
+  | Ast0.WhenNotFalse (w,e,a) -> Ast0.WhenNotFalse (w,e,expression a)
 
 and make_case_line =
   make_opt_unique
