@@ -126,7 +126,7 @@ clean::
 	rm -f *.cm[iox] *.o  *.annot
 	rm -f *~ .*~ #*#
 
-.PHONEY: depend
+.PHONY: depend
 .depend depend:
 	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 

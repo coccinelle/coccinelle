@@ -375,6 +375,16 @@
 - Make the --keep-comments flag work.
 - Make the --force-diff flag work.
 - Improve newlines around added else tokens.
+- Improve parsing of multi strings.
+- Improve pretty printing of expression list metavariable values.  Problem
+  reported by Cyril Hrubis.
+- Improve pretty printing of long parameter lists, improve added newlines
+  for things in parentheses.  Problem reported by Luis Rodriguez.
+- Lex comment at end of #if.  Problem reported by Markus Elfring.
+- Allow ''
+- Make fix_tokens_strings, List.flatten tail recursive to avoid stack
+  overflow
+- Make nothing match against empty statements.
 
 * 0.2.5
 ** Language:

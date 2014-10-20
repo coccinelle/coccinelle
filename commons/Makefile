@@ -323,7 +323,7 @@ clean::
 distclean: clean
 	rm -f commands.ml
 
-.PHONEY: depend
+.PHONY: depend
 .depend depend:
 	$(OCAMLDEP_CMD) *.mli *.ml  > .depend
 	for i in $(SUBDIRS); do $(OCAMLDEP_CMD) $$i/*.ml $$i/*.mli >> .depend; done

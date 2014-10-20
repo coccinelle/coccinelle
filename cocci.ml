@@ -1046,13 +1046,26 @@ let prepare_cocci ctls free_var_lists negated_pos_lists
 
 (* --------------------------------------------------------------------- *)
 
+(* Needs to be tail recursive, which List.flatten is not *)
+let flatten l =
+  List.rev
+    (List.fold_left
+       (function prev ->
+	 function cur ->
+	   List.fold_left
+	     (function prev ->
+	       function x ->
+		 x :: prev)
+	     prev cur)
+       [] l)
+
 let build_info_program (cprogram,typedefs,macros) env =
 
   let (cs, parseinfos) =
     Common.unzip cprogram in
 
   let alltoks =
-    parseinfos +> List.map (fun (s,toks) -> toks) +> List.flatten in
+    parseinfos +> List.map (fun (s,toks) -> toks) +> flatten in
 
   (* I use cs' but really annotate_xxx work by doing side effects on cs *)
   let cs' =

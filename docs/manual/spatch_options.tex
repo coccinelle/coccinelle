@@ -21,23 +21,23 @@ follows, for a semantic match {\tt foo.cocci}, a C file {\tt foo.c}, and a
 directory {\tt foodir}:
 
 \begin{itemize}
-\item {\tt spatch --parse-cocci foo.cocci}: Check that the semantic patch
+\item {\tt spatch -{}-parse-cocci foo.cocci}: Check that the semantic patch
   is syntactically correct.
-\item {\tt spatch --parse-c foo.c}: Check that the C file
+\item {\tt spatch -{}-parse-c foo.c}: Check that the C file
   is syntactically correct.  The Coccinelle C parser tries to recover
   during the parsing process, so if one function does not parse, it will
   start up again with the next one.  Thus, a parse error is often not a
   cause for concern, unless it occurs in a function that is relevant to the
   semantic patch.
-\item {\tt spatch --sp-file foo.cocci foo.c}: Apply the semantic patch {\tt
+\item {\tt spatch -{}-sp-file foo.cocci foo.c}: Apply the semantic patch {\tt
     foo.cocci} to the file {\tt foo.c} and print out any transformations as
   the changes between the original and transformed code, using the program
-  {\tt diff}.  {\tt --sp-file} is optional in this and the following cases.
-\item {\tt spatch --sp-file foo.cocci foo.c --debug}:  The same as the
+  {\tt diff}.  {\tt -{}-sp-file} is optional in this and the following cases.
+\item {\tt spatch -{}-sp-file foo.cocci foo.c -{}-debug}:  The same as the
   previous case, but print out some information about the matching process.
-\item {\tt spatch --sp-file foo.cocci --dir foodir}:  Apply the semantic
+\item {\tt spatch -{}-sp-file foo.cocci -{}-dir foodir}:  Apply the semantic
   patch {\tt foo.cocci} to all of the C files in the directory {\tt foodir}.
-\item {\tt spatch --sp-file foo.cocci --dir foodir --include-headers}:  Apply
+\item {\tt spatch -{}-sp-file foo.cocci -{}-dir foodir -{}-include-headers}:  Apply
   the semantic patch {\tt foo.cocci} to all of the C files and header files
   in the directory {\tt foodir}. 
 \end{itemize}
@@ -382,6 +382,10 @@ other \#ifdef.}
   in which to find non-local include files.  This option can be used
   several times to specify multipls include paths.}
 
+\normal{-{}-include-headers-for-types}{Header files are parsed to collect
+  type information, but are not involved in the subsequent matching and
+  transformation process.}
+
 \rare{-{}-include $\langle$file$\rangle$}{ This option give the name of a
   file to consider as being included in each processed file.  The file is
   added to the end of the file's list of included files.  The complete path
@@ -585,13 +589,13 @@ stars are used in column 0 rather than {\tt -} and {\tt +}, then the {\tt
 \rare{-U}{ Set number of context lines to be provided by {\tt diff}.}
 
 \rare{-{}-patch $\langle$path$\rangle$}{The prefix of the pathname of the
-  directory or file name that should dropped from the {\tt diff} line in the
-  generated patch.  This is useful if you want to apply a patch only to a
-  subdirectory of a source code tree but want to create a patch that can be
-  applied at the root of the source code tree.  An example could be {\tt
-  spatch --sp-file foo.cocci --dir /var/linuxes/linux-next/drivers --patch
-  /var/linuxes/linux-next}.  A trailing {\tt /} is permitted on the
-  directory name and has no impact on the result.}
+  directory or file name that should dropped from the {\tt diff} line in
+  the generated patch.  This is useful if you want to apply a patch only to
+  a subdirectory of a source code tree but want to create a patch that can
+  be applied at the root of the source code tree.  An example could be {\tt
+    spatch -{}-sp-file foo.cocci -{}-dir /var/linuxes/linux-next/drivers
+    -{}-patch /var/linuxes/linux-next}.  A trailing {\tt /} is permitted on
+  the directory name and has no impact on the result.}
 
 \rare{-{}-save-tmp-files}{Coccinelle creates some temporary
   files in {\tt /tmp} that it deletes after use.  This option causes these

@@ -41,7 +41,7 @@ OPTFLAGS ?= -g
 
 OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES)
 OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES)
-OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDESDEP)
+OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDES)
 OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDES)
 
 OBJS = $(SRC:.ml=.cmo)
@@ -106,7 +106,7 @@ clean::
 
 distclean: clean
 
-.PHONEY: depend
+.PHONY: depend
 .depend depend:
 	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 

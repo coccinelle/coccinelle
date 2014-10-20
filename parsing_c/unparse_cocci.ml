@@ -937,19 +937,14 @@ and parameterTypeDef p =
 
   | Ast.AsParam(p,e) -> raise CantBeInPlus
 
-  | Ast.PComma(cm) -> mcode print_string cm
+  | Ast.PComma(cm) ->
+      mcode (print_string_with_hint (SpaceOrNewline (ref " ")))  cm
   | Ast.Pdots(dots) | Ast.Pcircles(dots) when generating ->
       mcode print_string dots
   | Ast.Pdots(dots) | Ast.Pcircles(dots) -> raise CantBeInPlus
   | Ast.OptParam(param) | Ast.UniqueParam(param) -> raise CantBeInPlus
 
-and parameter_list l =
-  let comma p =
-    parameterTypeDef p;
-    match Ast.unwrap p with
-      Ast.PComma(cm) -> pr_space()
-    | _ -> () in
-  dots (function _ -> ()) comma l
+and parameter_list l = dots (function _ -> ()) parameterTypeDef l
 in
 
 
@@ -1427,9 +1422,13 @@ in
 	      |	Ast.Token(t,_) when List.mem t ["if";"for";"while";"do"] ->
 		  (* space always needed *)
 		  pr_space(); false
+	      |	Ast.ParamTag(x) ->
+		  (match Ast.unwrap x with
+		    Ast.PComma _ -> false (* due to hint *)
+		  | _ -> true)
 	      |	Ast.ExpressionTag(x) ->
 		  (match Ast.unwrap x with
-		    Ast.EComma _ -> false
+		    Ast.EComma _ -> false (* due to hint *)
 		  | _ -> true)
 	      |	t -> true in
 	    let indent_needed =

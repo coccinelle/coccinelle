@@ -15,16 +15,16 @@ To make it easy to express those transformations,
 Coccinelle proposes a WYSISWYG approach where the C programmer 
 can leverage the things he already knows: the C syntax
 and the patch syntax. Indeed, with Coccinelle transformations
-are written in specific language called SmPL, for 
-Semantic Patch Language, which as the name suggests is very
-close to the syntax of a patch, but which does not 
-work at a line level, than traditional patches do.
-but a more high level, or semantic level.
+are written in a specific language called SmPL, for 
+Semantic Patch Language, which as its name suggests is very
+close to the syntax of a patch, but does not 
+work at a line level, as traditional patches do,
+but rather at higher, semantic level.
 
 Here is an example of a simple program transformation.
-To replace every calls to \verb+foo+ of any expression $x$ 
-to a call to \verb+bar+, create a semantic patch file \verb+ex1.cocci+
-(semantic patches usually ends with the \verb+.cocci+  filename extension)
+To replace every call to \verb+foo+ of any expression $x$ 
+by a call to \verb+bar+, create a semantic patch file \verb+ex1.cocci+
+(semantic patches usually end with the \verb+.cocci+  filename extension)
 containing:
 \begin{verbatim}
 @@ expression x; @@

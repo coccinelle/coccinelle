@@ -54,7 +54,7 @@ $(MENHIRDIR).tar.gz:
 	@echo "$@ not found. Please download it and drop it in this directory ($(pwd))."
 	@false
 
-.PHONEY: all all.opt all-build all-opt-build clean distclean depend depend-build
+.PHONY: all all.opt all-build all-opt-build clean distclean depend depend-build
 
 # Sources needed for coccinelle
 MODULES=infiniteArray packedIntArray rowDisplacement engineTypes \

@@ -98,7 +98,7 @@ clean::
 
 distclean: clean
 
-.PHONEY: depend
+.PHONY: depend
 .depend depend: beforedepend
 	ocamldep $(INCLUDE) *.mli *.ml > .depend
 
