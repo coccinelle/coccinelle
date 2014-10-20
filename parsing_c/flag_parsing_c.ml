@@ -162,12 +162,14 @@ let cmdline_flags_algos () =
 
 let cpp_directive_passing = ref false
 let ifdef_directive_passing = ref false
+let ifdef_to_if = ref true(*false*)
 
 let disable_multi_pass = ref false
 let disable_add_typedef = ref false
 
 let if0_passing = ref true
 let add_typedef_root = ref true
+let exts_ITU = ref false (* ITU.dk extensions *)
 
 (* defined and undefined constants *)
 let add c s = c := (Str.split (Str.regexp ",") s) @ !c

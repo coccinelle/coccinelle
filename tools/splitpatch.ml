@@ -277,9 +277,10 @@ let split_patch i =
 	cur := l :: !cur;
 	read_hunk msize psize
     | "\\"::_ -> cur := l :: !cur; read_diff_or_atat()
-    | _ ->
+    | _ -> read_diff_or_atat()
+	(*
 	failwith
-	  "expected diff or @@ (diffstat information should not be present)"
+	  "expected diff or @@ (diffstat information should not be present)" *)
   and read_diff _ =
     let l = input_line i in
     let l = fix_date(fix_before_after l "a" !prefix_before) in
@@ -375,12 +376,12 @@ let resolve_maintainers patches =
 let last_char s = String.get s ((String.length s) - 1)
 
 let get_counts l =
-  Printf.printf "getting counts for:\n";
+(*Printf.printf "getting counts for:\n";
   List.iter
     (function (bonus,x) ->
       Printf.printf "  %d: %s\n" bonus (String.concat " " x))
     l;
-  Printf.printf "\n";
+  Printf.printf "\n"; *)
   let tbl = Hashtbl.create 101 in
   let ct = ref 0 in
   let max = ((List.length l) / 10) + 1 in (* 10 ranges *)
@@ -401,10 +402,10 @@ let get_counts l =
     List.rev
       (List.sort compare
 	 (Hashtbl.fold (fun k v rest -> (!v,k)::rest) tbl [])) in
-  List.iter
+(*List.iter
     (function (wt,(bonus,x)) ->
       Printf.printf "  %f: %d: %s\n" wt bonus (String.concat " " x))
-    weighted;
+    weighted; *)
   let rec loop n = function
       [] -> []
     | (_,k)::rest -> (k,n) :: (loop (n+1) rest) in
@@ -415,33 +416,33 @@ let superset l1 l2 = List.for_all (function x -> List.mem x l1) l2
 let get_most_common_subject files default =
   let all =
     List.map (function file -> cmd_to_list (subject_command file)) files in
-    let entries =
-      List.map
-	(function entries ->
-	  List.rev
-	    (List.fold_left
-	       (fun prev line ->
-		 match Str.split (Str.regexp " +") line with
-		   [] -> failwith ("bad git log line: " ^ line)
-		 |	commit::rest ->
-		     let rec loop = function
-			 [] -> []
-		       | x::xs ->
-			   if last_char x = ':'
-			   then x :: loop xs
-			   else [] in
-		     let tags = loop rest in
+  let entries =
+    List.map
+      (function entries ->
+	List.rev
+	  (List.fold_left
+	     (fun prev line ->
+	       match Str.split (Str.regexp " +") line with
+		 [] -> failwith ("bad git log line: " ^ line)
+	       | commit::rest ->
+		   let rec loop = function
+		       [] -> []
+		     | x::xs ->
+			 if last_char x = ':'
+			 then x :: loop xs
+			 else [] in
+		   let tags = loop rest in
 		  (* ignore lines with no : *)
-		     match tags with
-		       [] -> prev
-		     | _ ->
-			 let aff_files =
-			   List.tl (cmd_to_list (affected_files commit)) in
-			 let bonus = (* 0 is better *)
-			   if superset files aff_files then 0 else 1 in
-			 (bonus,tags)::prev)
-	       [] entries))
-	all in
+		   match tags with
+		     [] -> prev
+		   | _ ->
+		       let aff_files =
+			 List.tl (cmd_to_list (affected_files commit)) in
+		       let bonus = (* 0 is better *)
+			 if superset files aff_files then 0 else 1 in
+		       (bonus,tags)::prev)
+	     [] entries))
+      all in
   (* Does there exist a file for which we have no information? *)
   if List.exists (function x -> x = []) all
   then default^":"
@@ -458,14 +459,14 @@ let get_most_common_subject files default =
 		 (List.map (List.assoc allentry) entries),
 	       entry)))
 	   common_entries) in
-    Printf.printf "Files:\n";
+(*  Printf.printf "Files:\n";
     List.iter (function f -> Printf.printf "  %s\n" f) files;
     Printf.printf "Subjects:\n";
     List.iter
       (function (ct,(bonus,f)) ->
 	Printf.printf "  %d: %d: %s\n" ct bonus (String.concat " " f))
       common_entry_counts;
-    Printf.printf "\n";
+    Printf.printf "\n"; *)
     match common_entry_counts with
       [] -> default^":"
     | (_,(_,x))::_ -> String.concat " " x

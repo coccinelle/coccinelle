@@ -261,6 +261,7 @@ let ii_of_pragmainfo = extract_info_visitor Visitor_c.vk_pragmainfo
 let ii_of_ident_list = extract_info_visitor Visitor_c.vk_ident_list_splitted
 let ii_of_exec_code_list =
   extract_info_visitor Visitor_c.vk_exec_code_list_splitted
+let ii_of_attrs = extract_info_visitor Visitor_c.vk_attrs_splitted
 let ii_of_toplevel = extract_info_visitor Visitor_c.vk_toplevel
 
 (*****************************************************************************)

@@ -11,6 +11,7 @@ type xinfo = {
   optional_qualifier_iso : bool;
   value_format_iso : bool;
   optional_declarer_semicolon_iso : bool;
+  optional_attributes_iso : bool;
 }
 
 module XMATCH = struct
@@ -280,6 +281,7 @@ module XMATCH = struct
   let distrf_pragmainfo = distrf (Lib_parsing_c.ii_of_pragmainfo)
   let distrf_ident_list = distrf (Lib_parsing_c.ii_of_ident_list)
   let distrf_exec_code_list = distrf (Lib_parsing_c.ii_of_exec_code_list)
+  let distrf_attrs = distrf (Lib_parsing_c.ii_of_attrs)
 
 
   (* ------------------------------------------------------------------------*)
@@ -545,6 +547,9 @@ module XMATCH = struct
   let optional_declarer_semicolon_flag f = fun tin ->
     f (tin.extra.optional_declarer_semicolon_iso) tin
 
+  let optional_attributes_flag f = fun tin ->
+    f (tin.extra.optional_attributes_iso) tin
+
   (* ------------------------------------------------------------------------*)
   (* Tokens *)
   (* ------------------------------------------------------------------------*)
@@ -584,6 +589,8 @@ let match_re_node2 dropped_isos a b binding0 =
       value_format_iso       = not(List.mem "value_format"       dropped_isos);
       optional_declarer_semicolon_iso =
         not(List.mem "optional_declarer_semicolon"   dropped_isos);
+      optional_attributes_iso =
+        not(List.mem "optional_attributes" dropped_isos);
     };
     XMATCH.binding = [];
     XMATCH.binding0 = binding0;
@@ -595,5 +602,6 @@ let match_re_node2 dropped_isos a b binding0 =
 
 
 let match_re_node a b c d =
-  Common.profile_code "Pattern3.match_re_node"
-    (fun () -> match_re_node2 a b c d)
+  (*Common.profile_code "Pattern3.match_re_node"
+    (fun () -> *) match_re_node2 a b c d
+   (* ) *)

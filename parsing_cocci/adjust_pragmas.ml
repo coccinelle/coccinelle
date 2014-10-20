@@ -25,6 +25,10 @@ let update_before pragmas (info,x,adj) =
   ({info with Ast0.strings_before = pragmas @ info.Ast0.strings_before},
    Ast0.PLUS Ast.ONE,adj)(*not sure what the arg should be... one seems safe*)
 
+let update_before2 pragmas (info,x) =
+  ({info with Ast0.strings_before = pragmas @ info.Ast0.strings_before},
+   Ast0.PLUS Ast.ONE)(*not sure what the arg should be... one seems safe*)
+
 let update_after pragmas (info,x) =
   ({info with Ast0.strings_after = info.Ast0.strings_after @ pragmas},
    Ast0.PLUS Ast.ONE) (*not sure what the arg should be... one seems safe*)
@@ -74,7 +78,7 @@ let rec right_decl d =
 
 let rec right_statement s =
   match Ast0.unwrap s with
-    Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace) -> None
+    Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace,aft) -> None
   | Ast0.Decl(bef,decl) ->
       call_right right_decl decl s
 	(function decl -> Ast0.Decl(bef,decl))
@@ -292,18 +296,23 @@ let process =
     let s = k s in
     Ast0.rewrap s
       (match Ast0.unwrap s with
-	Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace) ->
+	Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace,aft) ->
+	  let (rbrace,aft) =
+	    match right_mcode rbrace with
+	      None -> (rbrace,aft)
+	    | Some (pragmas,rbrace) -> (rbrace,update_after pragmas aft) in
 	  (match left_fundecl name fi with
-	    None -> Ast0.unwrap s
-	  | Some (pragmas,fi,name) ->
-	      Ast0.FunDecl
-		(update_after pragmas bef,
-		 fi,name,lp,params,rp,lbrace,body,rbrace))
+	      None ->
+		Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace,aft)
+	    | Some (pragmas,fi,name) ->
+		Ast0.FunDecl
+		  (update_before2 pragmas bef,
+		   fi,name,lp,params,rp,lbrace,body,rbrace,aft))
       | Ast0.Decl(bef,decl) ->
 	  (match left_decl decl with
 	    None -> Ast0.unwrap s
 	  | Some (pragmas,decl) ->
-	      Ast0.Decl(update_after pragmas bef,decl))
+	      Ast0.Decl(update_before2 pragmas bef,decl))
       | Ast0.IfThen(iff,lp,exp,rp,branch1,aft) ->
 	  (match right_statement branch1 with
 	    None -> Ast0.unwrap s

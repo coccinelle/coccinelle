@@ -1,4 +1,6 @@
 
+open Parser_c
+
 val is_space               : Parser_c.token -> bool
 val is_just_comment        : Parser_c.token -> bool
 val is_just_comment_or_space    : Parser_c.token -> bool
@@ -12,11 +14,14 @@ val is_not_in_ast          : Parser_c.token -> bool
 
 
 val is_cpp_instruction     : Parser_c.token -> bool
+val is_cpp_endif           : Parser_c.token -> bool
 val is_gcc_token           : Parser_c.token -> bool
 
 val is_eof                 : Parser_c.token -> bool
 val is_eom                 : Parser_c.token -> bool
 
+val is_else                : Parser_c.token -> bool
+val is_if_or_else          : Parser_c.token -> bool
 val is_statement           : Parser_c.token -> bool
 val is_start_of_something  : Parser_c.token -> bool
 val is_binary_operator     : Parser_c.token -> bool
@@ -28,6 +33,14 @@ val is_obrace : Parser_c.token -> bool
 val is_cbrace : Parser_c.token -> bool
 
 val is_ident_like: Parser_c.token -> bool
+
+(* ---------------------------------------------------------------------- *)
+val match_simple_if_else
+      : token list -> (token * token list * token * token list) option
+val match_cpp_simple_ifdef_endif
+      : token list -> (token * token list * token * token list) option
+val match_cpp_simple_ifdef_else_endif : token list ->
+      (token * token list * token * token list * token * token list) option
 
 (* ---------------------------------------------------------------------- *)
 val info_of_tok : Parser_c.token -> Ast_c.info

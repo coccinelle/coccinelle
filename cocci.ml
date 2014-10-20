@@ -30,14 +30,7 @@ let cprogram_of_file saved_typedefs saved_macros parse_strings file =
 let cprogram_of_file_cached parse_strings file =
   let ((program2,typedefs,macros), _stat) =
     Parse_c.parse_cache parse_strings file in
-  if !Flag_cocci.ifdef_to_if
-  then
-    let p2 =
-      program2 +> Parse_c.with_program2 (fun asts ->
-	Cpp_ast_c.cpp_ifdef_statementize asts
-	  ) in
-    (p2,typedefs,macros)
-  else (program2,typedefs,macros)
+  (program2,typedefs,macros)
 
 let cfile_of_program program2_with_ppmethod outf =
   Unparse_c.pp_program program2_with_ppmethod outf
@@ -80,7 +73,7 @@ let sp_of_file2 file iso =
     then code
     else (Hashtbl.remove _hparse (file,iso); redo())
   with Not_found -> redo()
-    
+
 let sp_of_file file iso    =
   Common.profile_code "parse cocci" (fun () -> sp_of_file2 file iso)
 
@@ -119,13 +112,13 @@ let ast_to_flow_with_error_messages a =
 
 let ctls_of_ast2 ast (ua,fua,fuas) pos =
   List.map2
-    (function ast -> function (ua,(fua,(fuas,pos))) ->
-      List.combine
-	(if !Flag_cocci.popl
-	then Popl.popl ast
-	else Asttoctl2.asttoctl ast (ua,fua,fuas) pos)
-	(Asttomember.asttomember ast ua))
-    ast (List.combine ua (List.combine fua (List.combine fuas pos)))
+    (function ast -> function (ua,fua,fuas,pos) ->
+      let ast1 = if !Flag_cocci.popl
+                    then Popl.popl ast
+	                  else Asttoctl2.asttoctl ast (ua,fua,fuas) pos in
+      List.combine ast1 (Asttomember.asttomember ast ua)
+	    )
+    ast (Common.combine4 ua fua fuas pos)
 
 let ctls_of_ast ast ua pl =
   Common.profile_code "asttoctl2" (fun () -> ctls_of_ast2 ast ua pl)
@@ -234,104 +227,110 @@ let normalize_path file =
 let generated_patches = Hashtbl.create(100)
 
 let show_or_not_diff2 cfile outfile =
-  if !Flag_cocci.show_diff then begin
-    match Common.fst(Compare_c.compare_to_original cfile outfile) with
-      Compare_c.Correct -> () (* diff only in spacing, etc *)
-    | _ ->
-        (* may need --strip-trailing-cr under windows *)
-	pr2 "diff = ";
+  let show_diff =
+    !Flag_cocci.show_diff &&
+    (!Flag_cocci.force_diff or
+     (not(Common.fst(Compare_c.compare_to_original cfile outfile) =
+	  Compare_c.Correct))) in (* diff only in spacing, etc *)
+  if show_diff
+  then
+    begin
+      (* may need --strip-trailing-cr under windows *)
+      pr2 "diff = ";
 
-	let line =
-	  match !Flag_parsing_c.diff_lines with
-	  | None ->   "diff -u -p " ^ cfile ^ " " ^ outfile
-	  | Some n -> "diff -U "^n^" -p "^cfile^" "^outfile in
-	let res = Common.cmd_to_list line in
-	let res =
-	  List.map
-	    (function l ->
-	      match Str.split (Str.regexp "[ \t]+") l with
-		"---"::file::date -> "--- "^file
-	      |	"+++"::file::date -> "+++ "^file
-	      |	_ -> l)
-	    res in
-	let xs =
-	  match (!Flag.patch,res) with
+      let line =
+	match !Flag_parsing_c.diff_lines with
+	| None ->   "diff -u -p " ^ cfile ^ " " ^ outfile
+	| Some n -> "diff -U "^n^" -p "^cfile^" "^outfile in
+      let res = Common.cmd_to_list line in
+      (match res with
+	[] -> ()
+      |	_ ->
+	  let res =
+	    List.map
+	      (function l ->
+		match Str.split (Str.regexp "[ \t]+") l with
+		  "---"::file::date -> "--- "^file
+		|	"+++"::file::date -> "+++ "^file
+		|	_ -> l)
+	      res in
+	  let xs =
+	    match (!Flag.patch,res) with
 	(* create something that looks like the output of patch *)
-	    (Some prefix,minus_file::plus_file::rest) ->
-	      let prefix =
-		let lp = String.length prefix in
-		if String.get prefix (lp-1) = '/'
-		then String.sub prefix 0 (lp-1)
-		else prefix in
-	      let drop_prefix file =
-		let file = normalize_path file in
-		if Str.string_match (Str.regexp prefix) file 0
-		then
+	      (Some prefix,minus_file::plus_file::rest) ->
+		let prefix =
 		  let lp = String.length prefix in
-		  let lf = String.length file in
-		  if lp < lf
-		  then String.sub file lp (lf - lp)
+		  if String.get prefix (lp-1) = '/'
+		  then String.sub prefix 0 (lp-1)
+		  else prefix in
+		let drop_prefix file =
+		  let file = normalize_path file in
+		  if Str.string_match (Str.regexp prefix) file 0
+		  then
+		    let lp = String.length prefix in
+		    let lf = String.length file in
+		    if lp < lf
+		    then String.sub file lp (lf - lp)
+		    else
+		      failwith
+			(Printf.sprintf "prefix %s doesn't match file %s"
+			   prefix file)
 		  else
 		    failwith
 		      (Printf.sprintf "prefix %s doesn't match file %s"
-			 prefix file)
-		else
-		  failwith
-		    (Printf.sprintf "prefix %s doesn't match file %s"
-		       prefix file) in
-	      let diff_line =
-		match List.rev(Str.split (Str.regexp " ") line) with
-		  new_file::old_file::cmdrev ->
-		    let old_base_file = drop_prefix old_file in
-		    if !Flag.sgrep_mode2
-		    then
-		      String.concat " "
-			(List.rev
-			   (("/tmp/nothing"^old_base_file)
-			    :: old_file :: cmdrev))
-		    else
-		      String.concat " "
-			(List.rev
-			   (("b"^old_base_file)::("a"^old_base_file)::
-			    cmdrev))
-		| _ -> failwith "bad command" in
-	      let (minus_line,plus_line) =
-		match (Str.split (Str.regexp "[ \t]") minus_file,
-		       Str.split (Str.regexp "[ \t]") plus_file) with
-		  ("---"::old_file::old_rest,"+++"::new_file::new_rest) ->
-		    let old_base_file = drop_prefix old_file in
-		    if !Flag.sgrep_mode2
-		    then (minus_file,"+++ /tmp/nothing"^old_base_file)
-		    else
-		      (String.concat " "
-			 ("---"::("a"^old_base_file)::old_rest),
-		       String.concat " "
-			 ("+++"::("b"^old_base_file)::new_rest))
-		| (l1,l2) ->
-		    failwith
-		      (Printf.sprintf "bad diff header lines: %s %s"
-			 (String.concat ":" l1) (String.concat ":" l2)) in
-	      diff_line::minus_line::plus_line::rest
-	  | _ -> res in
-	let xs = if !Flag.sgrep_mode2 then fix_sgrep_diffs xs else xs in
-	let cfile = normalize_path cfile in
-	let patches =
-	  try Hashtbl.find generated_patches cfile
-	  with Not_found ->
-	    let cell = ref [] in
-	    Hashtbl.add generated_patches cfile cell;
-	    cell in
-	if List.mem xs !patches
-	then ()
-	else
-	  begin
-	    patches := xs :: !patches;
-	    xs +> List.iter pr
-	  end
-  end
+			 prefix file) in
+		let diff_line =
+		  match List.rev(Str.split (Str.regexp " ") line) with
+		    new_file::old_file::cmdrev ->
+		      let old_base_file = drop_prefix old_file in
+		      if !Flag.sgrep_mode2
+		      then
+			String.concat " "
+			  (List.rev
+			     (("/tmp/nothing"^old_base_file)
+			      :: old_file :: cmdrev))
+		      else
+			String.concat " "
+			  (List.rev
+			     (("b"^old_base_file)::("a"^old_base_file)::
+			      cmdrev))
+		  | _ -> failwith "bad command" in
+		let (minus_line,plus_line) =
+		  match (Str.split (Str.regexp "[ \t]") minus_file,
+			 Str.split (Str.regexp "[ \t]") plus_file) with
+		    ("---"::old_file::old_rest,"+++"::new_file::new_rest) ->
+		      let old_base_file = drop_prefix old_file in
+		      if !Flag.sgrep_mode2
+		      then (minus_file,"+++ /tmp/nothing"^old_base_file)
+		      else
+			(String.concat " "
+			   ("---"::("a"^old_base_file)::old_rest),
+			 String.concat " "
+			   ("+++"::("b"^old_base_file)::new_rest))
+		  | (l1,l2) ->
+		      failwith
+			(Printf.sprintf "bad diff header lines: %s %s"
+			   (String.concat ":" l1) (String.concat ":" l2)) in
+		diff_line::minus_line::plus_line::rest
+	    | _ -> res in
+	  let xs = if !Flag.sgrep_mode2 then fix_sgrep_diffs xs else xs in
+	  let cfile = normalize_path cfile in
+	  let patches =
+	    try Hashtbl.find generated_patches cfile
+	    with Not_found ->
+	      let cell = ref [] in
+	      Hashtbl.add generated_patches cfile cell;
+	      cell in
+	  if List.mem xs !patches
+	  then ()
+	  else
+	    begin
+	      patches := xs :: !patches;
+	      xs +> List.iter pr
+	    end)
+    end
 let show_or_not_diff a b =
   Common.profile_code "show_xxx" (fun () -> show_or_not_diff2 a b)
-
 
 (* the derived input *)
 
@@ -513,7 +512,7 @@ let worth_trying2 cfiles (tokens,_,query,_) =
       | 0 (* success *) -> true
       | _ (* failure *) ->
 	  (if !Flag.show_misc
-	  then Printf.printf "grep failed: %s\n" com);
+	  then pr2 ("grep failed: " ^ com));
 	  false (* no match, so not worth trying *)) in
   (match (res,tokens) with
     (false,Some tokens) ->
@@ -523,7 +522,13 @@ let worth_trying2 cfiles (tokens,_,query,_) =
   res
 
 let worth_trying a b  =
-  Common.profile_code "worth_trying" (fun () -> worth_trying2 a b)
+  Common.profile_code "worth_trying" (fun () ->
+    try worth_trying2 a b
+    with Flag.UnreadableFile file ->
+      begin
+	pr2 ("Skipping unreadable file: " ^ file);
+	false
+      end)
 
 let check_macro_in_sp_and_adjust = function
     None -> ()
@@ -567,7 +572,7 @@ let sp_contain_typed_metavar_z toplevel_list_list =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing
       donothing expression donothing donothing donothing donothing donothing
-      donothing donothing
+      donothing donothing donothing
       donothing donothing donothing donothing donothing
   in
   toplevel_list_list +>
@@ -598,7 +603,8 @@ let sp_contain_typed_metavar rules =
  * For the moment we base in part our heuristic on the name of the file, e.g.
  * serio.c is related we think to #include <linux/serio.h>
  *)
-let include_table = Hashtbl.create(100)
+let include_table = Hashtbl.create(101)
+let find_table = Hashtbl.create(101)
 
 let interpret_include_path relpath =
   let maxdepth = List.length relpath in
@@ -606,9 +612,14 @@ let interpret_include_path relpath =
     let cmd =
       Printf.sprintf "find %s -maxdepth %d -mindepth %d -path \"*/%s\""
 	dir maxdepth maxdepth f in
-    match Common.cmd_to_list cmd with
-      [x] -> Some x
-    | _ -> None in
+    try Hashtbl.find find_table cmd
+    with Not_found ->
+      let res =
+	match Common.cmd_to_list cmd with
+	  [x] -> Some x
+	| _ -> None in
+      Hashtbl.add find_table cmd res;
+      res in
   let native_file_exists dir f =
     let f = Filename.concat dir f in
     if Sys.file_exists f
@@ -664,17 +675,16 @@ let (includes_to_parse:
             | Ast_c.Local xs ->
 		let relpath = Common.join "/" xs in
 		let f = Filename.concat dir relpath in
-		if (Sys.file_exists f) then
-		  Some f
+		if (Sys.file_exists f)
+		then Some f
 		else
 		  if !Flag_cocci.relax_include_path
 	      (* for our tests, all the files are flat in the current dir *)
 		  then
 		    let attempt2 = Filename.concat dir (Common.last xs) in
-		      if not (Sys.file_exists attempt2) && all_includes
-		      then
-			interpret_include_path xs
-		      else Some attempt2
+		    if all_includes && not (Sys.file_exists attempt2)
+		    then interpret_include_path xs
+		    else Some attempt2
 		  else
 		    if all_includes then interpret_include_path xs
 		    else None
@@ -682,8 +692,7 @@ let (includes_to_parse:
             | Ast_c.NonLocal xs ->
 		if all_includes ||
 	        Common.fileprefix (Common.last xs) =$= Common.fileprefix file
-		then
-		  interpret_include_path xs
+		then interpret_include_path xs
 		else None
             | Ast_c.Weird _ -> None
 		  )
@@ -853,7 +862,7 @@ type rule_info = {
   used_after: Ast_cocci.meta_name list;
   ruleid: int;
   was_matched: bool ref;
-} 
+}
 
 type toplevel_cocci_info_script_rule = {
   scr_ast_rule:
@@ -1050,7 +1059,7 @@ let build_info_program (cprogram,typedefs,macros) env =
     Comment_annotater_c.annotate_program alltoks cs in
 
   let cs_with_envs =
-    Type_annoter_c.annotate_program env (*!g_contain_typedmetavar*) cs'
+    TAC.annotate_program env (*!g_contain_typedmetavar*) cs'
   in
 
   zip cs_with_envs parseinfos +> List.map (fun ((c, (enva,envb)), parseinfo)->
@@ -1126,23 +1135,42 @@ let rebuild_info_c_and_headers ccs isexp parse_strings =
       rebuild_info_program c_or_h.asts c_or_h.full_fname isexp parse_strings }
   )
 
+(* remove ../ in the middle of an include path *)
+let fixpath s =
+  let s = Str.split_delim (Str.regexp "/") s in
+  let rec loop = function
+      x::".."::rest -> loop rest
+    | x::rest -> x :: loop rest
+    | [] -> [] in
+  String.concat "/" (loop s)
+
 let rec prepare_h seen env (hpath : string) choose_includes parse_strings
     : file_info list =
-  if not (Common.lfile_exists hpath)
-  then
-    begin
-      pr2_once ("TYPE: header " ^ hpath ^ " not found");
-      []
-    end
-  else
-    begin
+  let h_cs =
+    if not (Common.lfile_exists hpath)
+    then
+      begin
+	pr2_once ("TYPE: header " ^ hpath ^ " not found");
+        None
+      end
+    else
+      try Some (cprogram_of_file_cached parse_strings hpath)
+      with Flag.UnreadableFile file ->
+	begin
+	  pr2_once ("TYPE: header " ^ hpath ^ " not readable");
+	  None
+	end in
+  match h_cs with
+    None -> []
+  | Some h_cs ->
       let h_cs = cprogram_of_file_cached parse_strings hpath in
       let local_includes =
 	if choose_includes =*= Flag_cocci.I_REALLY_ALL_INCLUDES
 	then
 	  List.filter
 	    (function x -> not (List.mem x !seen))
-	    (includes_to_parse [(hpath,h_cs)] choose_includes)
+	    (List.map fixpath
+	       (includes_to_parse [(hpath,h_cs)] choose_includes))
 	else [] in
       seen := local_includes @ !seen;
       let others =
@@ -1164,11 +1192,20 @@ let rec prepare_h seen env (hpath : string) choose_includes parse_strings
 	fpath = hpath;
 	fkind = Header;
       }]
-    end
 
 let prepare_c files choose_includes parse_strings : file_info list =
-  let cprograms = List.map (cprogram_of_file_cached parse_strings) files in
-  let includes = includes_to_parse (zip files cprograms) choose_includes in
+  let files_and_cprograms =
+    List.rev
+      (List.fold_left
+	 (function prev ->
+	   function file ->
+	     try (file,cprogram_of_file_cached parse_strings file) :: prev
+	     with Flag.UnreadableFile file ->
+	       pr2_once ("C file " ^ file ^ " not readable");
+	       prev)
+	 [] files) in
+  let (files,cprograms) = List.split files_and_cprograms in
+  let includes = includes_to_parse files_and_cprograms choose_includes in
   let seen = ref includes in
 
   (* todo?: may not be good to first have all the headers and then all the c *)
@@ -1198,7 +1235,9 @@ let prepare_c files choose_includes parse_strings : file_info list =
         fkind = Source
       }) in
 
-  includes @ cfiles
+  if !Flag_cocci.include_headers_for_types
+  then cfiles
+  else includes @ cfiles
 
 (*****************************************************************************)
 (* Manage environments as they are being built up *)
@@ -1886,7 +1925,7 @@ let pre_engine2 (coccifile, isofile) =
 	    Ast_cocci.InitialScriptRule(rname,x,deps,mvs,y))
 	  r
       end in
-  
+
   let initialized_languages =
     List.fold_left
       (function languages ->

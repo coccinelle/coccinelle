@@ -5,7 +5,9 @@ type added_string = Noindent of string | Indent of string | Space of string
 
 type info = { line : int; column : int;
 	      strbef : (added_string * int (* line *) * int (* col *)) list;
-	      straft : (added_string * int (* line *) * int (* col *)) list }
+	      straft : (added_string * int (* line *) * int (* col *)) list;
+              whitespace : string }
+
 type line = int
 type meta_name = string * string
 (* need to be careful about rewrapping, to avoid duplicating pos info
@@ -299,7 +301,7 @@ and base_typeC =
 	string mcode (* { *) * expression dots * string mcode (* } *)
   | StructUnionName of structUnion mcode * ident option (* name *)
   | StructUnionDef  of fullType (* either StructUnionName or metavar *) *
-	string mcode (* { *) * declaration dots * string mcode (* } *)
+	string mcode (* { *) * annotated_decl dots * string mcode (* } *)
   | TypeName        of string mcode (* pad: should be 'of ident' ? *)
 
   | MetaType        of meta_name mcode * keep_binding * inherited
@@ -336,9 +338,6 @@ and base_declaration =
   | Typedef of string mcode (*typedef*) * fullType *
                typeC (* either TypeName or metavar *) * string mcode (*;*)
   | DisjDecl of declaration list
-  (* Ddots is for a structure declaration *)
-  | Ddots    of string mcode (* ... *) * declaration option (* whencode *)
-
   | MetaDecl of meta_name mcode * keep_binding * inherited
   | MetaField of meta_name mcode * keep_binding * inherited
   | MetaFieldList of meta_name mcode * listlen * keep_binding * inherited
@@ -348,6 +347,14 @@ and base_declaration =
   | UniqueDecl of declaration
 
 and declaration = base_declaration wrap
+
+and base_annotated_decl =
+    DElem of mcodekind (* before the decl *) * bool (* true if all minus *) *
+      declaration
+  (* Ddots is for a structure declaration *)
+  | Ddots    of string mcode (* ... *) * declaration option (* whencode *)
+
+and annotated_decl = base_annotated_decl wrap
 
 (* --------------------------------------------------------------------- *)
 (* Initializers *)
@@ -448,8 +455,7 @@ and base_rule_elem =
 	             fninfo list * ident (* name *) *
 	             string mcode (* ( *) * parameter_list *
                      string mcode (* ) *)
-  | Decl          of mcodekind (* before the decl *) *
-                     bool (* true if all minus *) * declaration
+  | Decl          of annotated_decl
 
   | SeqStart      of string mcode (* { *)
   | SeqEnd        of string mcode (* } *)
@@ -510,8 +516,7 @@ and pragmainfo = base_pragmainfo wrap
 
 and forinfo =
     ForExp of expression option * string mcode (*;*)
-  | ForDecl of mcodekind (* before the decl *) *
-        bool (* true if all minus *) * declaration
+  | ForDecl of annotated_decl
 
 and fninfo =
     FStorage of storage mcode
@@ -543,7 +548,7 @@ and base_statement =
 	             (statement dots,statement) whencode list * multi *
 	             dots_whencode list * dots_whencode list
   | FunDecl       of rule_elem (* header *) * rule_elem (* { *) *
-     	             statement dots * rule_elem (* } *)
+     	             statement dots * rule_elem (* } *) * end_info (*exit*)
   | Define        of rule_elem (* header *) * statement dots
   | AsStmt        of statement * statement (* as statement, always metavar *)
   | Dots          of string mcode (* ... *) *
@@ -689,7 +694,7 @@ and anything =
   | ExprDotsTag         of expression dots
   | ParamDotsTag        of parameterTypeDef dots
   | StmtDotsTag         of statement dots
-  | DeclDotsTag         of declaration dots
+  | AnnDeclDotsTag      of annotated_decl dots
   | TypeCTag            of typeC
   | ParamTag            of parameterTypeDef
   | SgrepStartTag       of string
@@ -816,7 +821,7 @@ and tag2c = function
   | ExprDotsTag _ -> "ExprDotsTag"
   | ParamDotsTag _ -> "ParamDotsTag"
   | StmtDotsTag _ -> "StmtDotsTag"
-  | DeclDotsTag _ -> "DeclDotsTag"
+  | AnnDeclDotsTag _ -> "AnnDeclDotsTag"
   | TypeCTag _ -> "TypeCTag"
   | ParamTag _ -> "ParamTag"
   | SgrepStartTag _ -> "SgrepStartTag"
@@ -824,7 +829,8 @@ and tag2c = function
 
 (* --------------------------------------------------------------------- *)
 
-let no_info = { line = 0; column = -1; strbef = []; straft = [] }
+let no_info = { line = 0; column = -1; strbef = []; straft = [];
+                whitespace = "" }
 
 let make_term x =
   {node = x;

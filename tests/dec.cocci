@@ -1,4 +1,5 @@
 @@
+symbol x,y,z;
 @@
 
 f(int x) {

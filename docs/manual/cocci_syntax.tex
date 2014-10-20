@@ -14,6 +14,12 @@ as \T{id}, \T{const}, etc.  These refer to the sets suggested by
 the name, {\em i.e.}, \T{id} refers to the set of possible
 C-language identifiers, while \T{const} refers to the set of
 possible C-language constants.
+
+A square bracket that is surrounded by spaces in the description of a term
+should appear explicitly in the term, as in an array reference.  On the
+other hand, square brackets that surround some other term indicat that the
+presence of that term is optional.
+
 %
 \ifhevea
 A PDF version of this documentation is available at
@@ -123,6 +129,12 @@ behavior.  Using \NT{disable-iso} with the given name disables this behavior.
 \item \KW{optional\_qualifier}: This is similar to \KW{optional\_storage},
   except that here is it the qualifier (i.e., const or volatile) that does
   not have to be specified in the SmPL code, but may be present in the C code.
+\item \KW{optional\_attributes}: This is similar to
+  \KW{optional\_attributes}, except that here is it an attribute (e.g.,
+  \_\_init) that does not have to be specified in the SmPL code, but may be
+  present in the C code.  \textbf{Note that this isomorphism is currently
+    useless, because matching of attributes is not supported, due to the
+    difficulty of parsing attributes in C code.}
 \item \KW{value\_format}: Integers in various formats, e.g., 1 and 0x1, are
   considered to be equivalent in the matching process.
 \item \KW{optional\_declarer\_semicolon}: Some declarers (top-level terms
@@ -256,6 +268,12 @@ expression metavariable binds {\tt E} to {\tt 3 + 4}.  A particular case is
 expression list.  This pattern matches a parameter list, and then matches
 {\tt Es} to the list of expressions, ie a possible argument list,
 represented by the names of the parameters.
+
+Matching of various kinds of format strings within strings is supported.
+With the {\tt --ibm} option, matching of decimal format declarations is
+supported, but the length and precision arguments are not interpreted.
+Thus it is not possible to match metavariables in these fields.  Instead,
+the entire format is matched as a single string.
 
 \begin{grammar}
   \RULE{\rt{ids}}
@@ -862,6 +880,11 @@ It may be necessary to consider several cases to ensure that the added ode
 is placed in the right position.  For example, one may need one pattern
 that considers that the function is declared {\tt inline} and another that
 considers that it is not.
+
+The C parser allows functions that have no return type, and assumes that
+the return type is \texttt{int}.  The support for parsing such functions is
+limited.  In particular, the parameter list must contain a type for each
+parameter, and may not contain varargs.
 
 %\newpage
 

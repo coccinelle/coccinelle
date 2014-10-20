@@ -58,7 +58,7 @@ let close_box _ = () in
 let force_newline _ = print_text "\n" in
 
 let start_block () = (*indent();*) force_newline() in
-let end_block () = (*unindent true;*) force_newline () in
+let end_block = function [] -> () | _ -> (*unindent true;*) force_newline () in
 let print_string_box s = print_string s in
 
 let print_option = Common.do_option in
@@ -97,7 +97,7 @@ let rec print_anything = function
   | stream ->
       start_block();
       print_between force_newline print_anything_list stream;
-      end_block()
+      end_block stream
 
 and print_anything_list = function
     [] -> ()
@@ -257,10 +257,8 @@ let nest_dots starter ender fn f d =
   mcode print_string starter;
   f(); start_block();
   (match Ast.unwrap d with
-    Ast.DOTS(l)    -> print_between force_newline fn l
-  | Ast.CIRCLES(l) -> print_between force_newline fn l
-  | Ast.STARS(l)   -> print_between force_newline fn l);
-  end_block();
+    Ast.DOTS(l) | Ast.CIRCLES(l) | Ast.STARS(l) ->
+      print_between force_newline fn l; end_block l);
   mcode print_string ender
 in
 
@@ -678,7 +676,7 @@ and typeC ty =
   | Ast.StructUnionDef(ty,lb,decls,rb) ->
       fullType ty; ft_space ty;
       mcode print_string lb;
-      dots_before_and_after force_newline declaration decls;
+      dots_before_and_after force_newline annotated_decl decls;
       mcode print_string rb
   | Ast.TypeName(name)-> mcode print_string name
   | Ast.MetaType(name,_,_) ->
@@ -839,9 +837,13 @@ and declaration d =
       fullType ty; pr_space(); typeC id;
       mcode print_string sem
   | Ast.DisjDecl(_) -> raise CantBeInPlus
-  | Ast.Ddots(_,_) -> raise CantBeInPlus
   | Ast.OptDecl(decl)  | Ast.UniqueDecl(decl) ->
       raise CantBeInPlus
+
+and annotated_decl d =
+  match Ast.unwrap d with
+    Ast.DElem(_,_,decl) -> declaration decl
+  | Ast.Ddots(_,_) -> raise CantBeInPlus
 
 (* --------------------------------------------------------------------- *)
 (* Initialiser *)
@@ -866,13 +868,13 @@ and initialiser nlcomma i =
       |	lst ->
 	  mcode print_string lb; start_block();
 	  initialiser_list nlcomma lst;
-	  end_block(); mcode print_string rb)
+	  end_block lst; mcode print_string rb)
   | Ast.StrInitList(_,lb,[],rb,[]) ->
       mcode print_string lb; mcode print_string rb
   | Ast.StrInitList(_,lb,initlist,rb,[]) ->
       mcode print_string lb; start_block();
       initialiser_list nlcomma initlist;
-      end_block(); mcode print_string rb
+      end_block initlist; mcode print_string rb
   | Ast.StrInitList(_,lb,initlist,rb,_) ->
       failwith "unexpected whencode in plus"
   | Ast.InitGccExt(designators,eq,ini) ->
@@ -974,12 +976,12 @@ and rule_elem arity re =
       ident name; mcode print_string_box lp;
       parameter_list params; close_box(); mcode print_string rp;
       pr_space()
-  | Ast.Decl(_,_,decl) -> pr_arity arity; declaration decl
+  | Ast.Decl decl -> pr_arity arity; annotated_decl decl
 
   | Ast.SeqStart(brace) ->
       pr_arity arity; mcode print_string brace; start_block()
   | Ast.SeqEnd(brace) ->
-      end_block(); pr_arity arity; mcode print_string brace
+      pr_arity arity; mcode print_string brace
 
   | Ast.ExprStatement(exp,sem) ->
       pr_arity arity; print_option expression exp; mcode print_string sem
@@ -1090,7 +1092,7 @@ and pragmainfo pi =
 and forinfo = function
     Ast.ForExp(e1,sem1) ->
       print_option expression e1; mcode print_string sem1
-  | Ast.ForDecl (_,_,decl) -> declaration decl
+  | Ast.ForDecl decl -> annotated_decl decl
 
 and print_define_parameters params =
   match Ast.unwrap params with
@@ -1153,6 +1155,7 @@ let rec statement arity s =
     Ast.Seq(lbrace,body,rbrace) ->
       rule_elem arity lbrace;
       dots force_newline (statement arity) body;
+      end_block (Ast.undots body);
       rule_elem arity rbrace
 
   | Ast.IfThen(header,branch,_) ->
@@ -1187,9 +1190,11 @@ let rec statement arity s =
 
   | Ast.Atomic(re) -> rule_elem arity re
 
-  | Ast.FunDecl(header,lbrace,body,rbrace) ->
+  | Ast.FunDecl(header,lbrace,body,rbrace,_) ->
       rule_elem arity header; rule_elem arity lbrace;
-      dots force_newline (statement arity) body; rule_elem arity rbrace
+      dots force_newline (statement arity) body;
+      end_block (Ast.undots body);
+      rule_elem arity rbrace
 
   | Ast.Define(header,body) ->
       rule_elem arity header; pr_space();
@@ -1271,7 +1276,7 @@ let rule =
 in
 *)
 
-let if_open_brace  = function "{" -> true | _ -> false in
+let if_open_brace  = function "{" | "else" -> true | _ -> false in
 
 (* boolean result indicates whether an indent is needed *)
 let rec pp_any = function
@@ -1319,15 +1324,19 @@ let rec pp_any = function
 	    unindent false; print_text s; force_newline(); loop rest
 	| Ast.Indent s :: rest ->
 	    print_text s; force_newline(); loop rest in
-      loop xs; false
+      loop xs; true
   | Ast.Token(x,None) ->
       print_text x; if_open_brace x
   | Ast.Token(x,Some info) ->
       mcode
 	(fun x line lcol ->
+	  (* adds a newline before else, but not sure why; not correct after
+	  brace in Linux, and normally should not be needed. *)
+	  (*
 	  (match x with
 	    "else" -> force_newline()
 	  | _ -> ());
+	  *)
 	  (match x with (* not sure if special case for comma is useful *)
 	    "," -> print_string_with_hint (SpaceOrNewline(ref " ")) x line lcol
 	  | _ -> print_string x line lcol))
@@ -1342,7 +1351,7 @@ let rec pp_any = function
   | Ast.ExprDotsTag(x) -> dots (fun _ -> ()) expression x; false
   | Ast.ParamDotsTag(x) -> parameter_list x; false
   | Ast.StmtDotsTag(x) -> dots force_newline (statement "") x; false
-  | Ast.DeclDotsTag(x) -> dots force_newline declaration x; false
+  | Ast.AnnDeclDotsTag(x) -> dots force_newline annotated_decl x; false
 
   | Ast.TypeCTag(x) -> typeC x; false
   | Ast.ParamTag(x) -> parameterTypeDef x; false
@@ -1387,7 +1396,7 @@ in
 	  | (Ast.Directive _::_)
           | (Ast.Rule_elemTag _::_) | (Ast.InitTag _::_)
 	  | (Ast.DeclarationTag _::_) | (Ast.Token ("{",_)::_) ->
-	      force_newline()
+	       force_newline()
           | _ -> () in
       (* print a newline at the beginning, if needed *)
       newline_before();

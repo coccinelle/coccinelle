@@ -332,7 +332,7 @@ let rec vk_expr = fun bigf expr ->
     | ParenExpr (e) -> exprf e
 
     | New  (None, t)   -> vk_argument bigf t
-    | New  (Some ts, t)   -> 
+    | New  (Some ts, t)   ->
         vk_argument_list bigf ts;
 	vk_argument bigf t
     | Delete e -> vk_expr bigf e
@@ -389,6 +389,15 @@ and vk_statement = fun bigf (st: Ast_c.statement) ->
 
     | Selection  (If (e, st1, st2)) ->
         vk_expr bigf e; statf st1; statf st2;
+    | Selection  (Ifdef_Ite (e, st1, st2)) ->
+        vk_expr bigf e;
+        statf st1;
+        statf st2;
+    | Selection  (Ifdef_Ite2 (e, st1, st2, st3)) ->
+        vk_expr bigf e;
+        statf st1;
+        statf st2;
+        statf st3;
     | Selection  (Switch (e, st)) ->
         vk_expr bigf e; statf st;
     | Iteration  (While (e, st)) ->
@@ -778,7 +787,7 @@ and vk_define_val bigf defval =
   | DefineInit ini -> vk_ini bigf ini
     (* christia: added multi *)
   | DefineMulti stmts ->
-      List.fold_left (fun () d -> vk_statement bigf d) () stmts 
+      List.fold_left (fun () d -> vk_statement bigf d) () stmts
   | DefineTodo ->
       pr2_once "DefineTodo";
       ()
@@ -903,6 +912,8 @@ and vk_node = fun bigf node ->
     | F.IfdefElse    (info) ->  vk_ifdef_directive bigf info
     | F.IfdefEndif    (info) ->  vk_ifdef_directive bigf info
 
+    | F.IfdefIteHeader ii -> iif ii
+
     | F.Break    (st,((),ii),_) -> iif ii
     | F.Continue (st,((),ii)) -> iif ii
     | F.Default  (st,((),ii)) -> iif ii
@@ -1022,6 +1033,7 @@ let vk_inis_splitted = vk_splitted vk_ini
 let vk_ident_list_splitted = vk_splitted vk_name
 let vk_string_fragments_splitted = vk_splitted vk_string_fragment
 let vk_exec_code_list_splitted = vk_splitted vk_exec_code
+let vk_attrs_splitted = vk_splitted vk_attribute
 
 (* ------------------------------------------------------------------------ *)
 let vk_cst = fun bigf (cst, ii) ->
@@ -1139,7 +1151,7 @@ let rec vk_expr_s = fun bigf expr ->
       | ParenExpr (e)    -> ParenExpr (exprf e)
 
       | New (None, t)    -> New (None, vk_argument_s bigf t)
-      | New (Some ts, t) -> 
+      | New (Some ts, t) ->
 	  New (Some (ts +> List.map (fun (e,ii) ->
 	    vk_argument_s bigf e, iif ii)), vk_argument_s bigf t)
       | Delete e      -> Delete (vk_expr_s bigf e)
@@ -1207,6 +1219,12 @@ and vk_statement_s = fun bigf st ->
       | ExprStatement (Some e) -> ExprStatement (Some ((vk_expr_s bigf) e))
       | Selection (If (e, st1, st2)) ->
           Selection  (If ((vk_expr_s bigf) e, statf st1, statf st2))
+      | Selection (Ifdef_Ite (e, st1, st2)) ->
+          Selection  (Ifdef_Ite (vk_expr_s bigf e,statf st1,statf st2))
+      | Selection (Ifdef_Ite2 (e, st1, st2, st3)) ->
+          Selection  (Ifdef_Ite2 (vk_expr_s bigf e,statf st1
+                                                  ,statf st2
+                                                  ,statf st3))
       | Selection (Switch (e, st))   ->
           Selection  (Switch ((vk_expr_s bigf) e, statf st))
       | Iteration (While (e, st))    ->
@@ -1580,8 +1598,8 @@ and vk_toplevel_s = fun bigf p ->
     | Namespace (tls, ii) -> Namespace (List.map (vk_toplevel_s bigf) tls, ii)
   in f (k, bigf) p
 
-and vk_program_s = fun bigf xs ->
-  xs +> List.map (vk_toplevel_s bigf)
+and vk_program_s : visitor_c_s -> toplevel list -> toplevel list =
+      fun bigf -> List.map (vk_toplevel_s bigf)
 
 
 and vk_cpp_directive_s = fun bigf top ->
@@ -1820,6 +1838,8 @@ and vk_node_s = fun bigf node ->
     | F.IfdefElse (info) -> F.IfdefElse (vk_ifdef_directive_s bigf info)
     | F.IfdefEndif (info) -> F.IfdefEndif (vk_ifdef_directive_s bigf info)
 
+    | F.IfdefIteHeader ii -> F.IfdefIteHeader (iif ii)
+
     | (
         (
           F.TopNode|F.EndNode|
@@ -1879,3 +1899,4 @@ let vk_inis_splitted_s = vk_splitted_s vk_ini_s
 let vk_ident_list_splitted_s = vk_splitted_s vk_name_s
 let vk_string_fragments_splitted_s = vk_splitted_s vk_string_fragment_s
 let vk_exec_code_list_splitted_s = vk_splitted_s vk_exec_code_s
+let vk_attrs_splitted_s = vk_splitted_s vk_attribute_s

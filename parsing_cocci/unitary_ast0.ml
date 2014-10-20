@@ -55,11 +55,11 @@ let get_free checker t =
     unitary@nonunitary@nonunitary in
 
   let whencode afn bfn expression = function
-      Ast0.WhenNot(a) -> afn a
-    | Ast0.WhenAlways(b) -> bfn b
-    | Ast0.WhenModifier(_) -> option_default
-    | Ast0.WhenNotTrue(a) -> expression a
-    | Ast0.WhenNotFalse(a) -> expression a in
+      Ast0.WhenNot(_,_,a) -> afn a
+    | Ast0.WhenAlways(_,_,b) -> bfn b
+    | Ast0.WhenModifier(_,_) -> option_default
+    | Ast0.WhenNotTrue(_,_,a) -> expression a
+    | Ast0.WhenNotFalse(_,_,a) -> expression a in
 
   let ident r k i =
     match Ast0.unwrap i with

@@ -3,6 +3,8 @@
 (* @ attached metavariables can only be associated with positions, so nothing
 to do for them *)
 
+(* Why doesn't this use the Ast0 visitor? *)
+
 module Ast = Ast_cocci
 module Ast0 = Ast0_cocci
 
@@ -57,7 +59,7 @@ let dots fn d =
 	let (n,l) = map_split_bind fn l in (n, Ast0.CIRCLES(l))
     | Ast0.STARS(l) ->
 	let (n,l) = map_split_bind fn l in (n, Ast0.STARS(l)))
-    
+
 let rec ident i =
   let (metas,i) =
   rewrap i
@@ -216,22 +218,22 @@ and expression e =
 	      Ast0.DisjExpr(starter,expr_list,mids,ender))
       | Ast0.NestExpr(starter,expr_dots,ender,whencode,multi) ->
 	  let (starter_n,starter) = mcode starter in
+	  let (whencode_n, whencode) = whencode_option expression whencode in
 	  let (expr_dots_n,expr_dots) = dots expression expr_dots in
 	  let (ender_n,ender) = mcode ender in
-	  let (whencode_n,whencode) = get_option expression whencode in
 	  (multibind [starter_n;expr_dots_n;ender_n;whencode_n],
 	   Ast0.NestExpr(starter,expr_dots,ender,whencode,multi))
       | Ast0.Edots(dots,whencode) ->
 	  let (dots_n,dots) = mcode dots in
-	  let (whencode_n,whencode) = get_option expression whencode in
+	  let (whencode_n, whencode) = whencode_option expression whencode in
 	  (bind dots_n whencode_n,Ast0.Edots(dots,whencode))
       | Ast0.Ecircles(dots,whencode) ->
 	  let (dots_n,dots) = mcode dots in
-	  let (whencode_n,whencode) = get_option expression whencode in
+	  let (whencode_n, whencode) = whencode_option expression whencode in
 	  (bind dots_n whencode_n,Ast0.Ecircles(dots,whencode))
       | Ast0.Estars(dots,whencode) ->
 	  let (dots_n,dots) = mcode dots in
-	  let (whencode_n,whencode) = get_option expression whencode in
+	  let (whencode_n, whencode) = whencode_option expression whencode in
 	  (bind dots_n whencode_n,Ast0.Estars(dots,whencode))
       | Ast0.OptExp(exp) ->
 	  let (exp_n,exp) = expression exp in
@@ -356,7 +358,7 @@ and typeC t =
 	    (other_metas,Ast0.rewrap ty (Ast0.AsType(ty,ty_meta)))
 	| x -> (x::other_metas,ty))
     ([],t) metas
-    
+
 and function_pointer (ty,lp1,star,rp1,lp2,params,rp2) extra =
   let (ty_n,ty) = typeC ty in
   let (lp1_n,lp1) = mcode lp1 in
@@ -383,7 +385,7 @@ and array_type (ty,lb,size,rb) extra =
   let (rb_n,rb) = mcode rb in
   (multibind (ty_n :: extra @ [lb_n;size_n;rb_n]),
    Ast0.Array(ty,lb,size,rb))
-    
+
 and named_type ty id =
   let (id_n,id) = ident id in
   match Ast0.unwrap ty with
@@ -398,7 +400,7 @@ and named_type ty id =
       let tyres = array_type (rty,lb,size,rb) [id_n] in
       (rewrap ty tyres, id)
   | _ -> let (ty_n,ty) = typeC ty in ((bind ty_n id_n, ty), id)
-      
+
 and declaration d =
   let (metas,d) =
     rewrap d
@@ -460,7 +462,12 @@ and declaration d =
 	      Ast0.DisjDecl(starter,decls,mids,ender))
       | Ast0.Ddots(dots,whencode) ->
 	  let (dots_n,dots) = mcode dots in
-	  let (whencode_n,whencode) = get_option declaration whencode in
+	  let (whencode_n, whencode) = match whencode with
+	    | Some (a,e,b) -> 
+		let (_,a2) = mcode a in
+		let (_,e2) = mcode e in
+		let (b1,b2) = declaration b in (b1, Some (a2,e2,b2))
+            | None -> (option_default, None) in
 	  (bind dots_n whencode_n, Ast0.Ddots(dots,whencode))
       | Ast0.OptDecl(decl) ->
 	  let (n,decl) = declaration decl in (n,Ast0.OptDecl(decl))
@@ -508,7 +515,12 @@ and initialiser i =
 	  let (n,cm) = mcode cm in (n,Ast0.IComma(cm))
       | Ast0.Idots(d,whencode) ->
 	  let (d_n,d) = mcode d in
-	  let (whencode_n,whencode) = get_option initialiser whencode in
+	  let (whencode_n, whencode) = match whencode with
+	    | Some (a,e,b) -> 
+		let (_,a2) = mcode a in
+		let (_,e2) = mcode e in
+		let (b1,b2) = initialiser b in (b1, Some (a2,e2,b2))
+	    | None -> (option_default, None) in
 	  (bind d_n whencode_n, Ast0.Idots(d,whencode))
       | Ast0.OptIni(i) ->
 	  let (n,i) = initialiser i in (n,Ast0.OptIni(i))
@@ -540,7 +552,7 @@ and designator = function
       let (rb_n,rb) = mcode rb in
       (multibind [lb_n;min_n;dots_n;max_n;rb_n],
        Ast0.DesignatorRange(lb,min,dots,max,rb))
-	
+
 and parameterTypeDef p =
   match Ast0.unwrap p with
     Ast0.MetaParamList(name,lenname,pure) ->
@@ -586,12 +598,12 @@ and parameterTypeDef p =
 	| Ast0.UniqueParam(param) ->
 	    let (n,param) = parameterTypeDef param in
 	    (n,Ast0.UniqueParam(param)))
-    
+
 and statement s =
   let (metas,s) =
     rewrap s
       (match Ast0.unwrap s with
-	Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace) ->
+	Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace,aft) ->
 	  let (fi_n,fi) = map_split_bind fninfo fi in
 	  let (name_n,name) = ident name in
 	  let (lp_n,lp) = mcode lp in
@@ -602,7 +614,7 @@ and statement s =
 	  let (rbrace_n,rbrace) = mcode rbrace in
 	  (multibind
 	     [fi_n;name_n;lp_n;params_n;rp_n;lbrace_n;body_n;rbrace_n],
-	   Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace))
+	   Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace,aft))
       | Ast0.Decl(bef,decl) ->
 	  let (decl_n,decl) = declaration decl in
 	  (decl_n,Ast0.Decl(bef,decl))
@@ -815,7 +827,7 @@ and pragmainfo pi =
     | Ast0.PragmaDots (dots) ->
 	let (dots_n,dots) = mcode dots in
 	(dots_n,Ast0.PragmaDots dots))
-    
+
   (* not parameterizable for now... *)
 and define_parameters p =
   rewrap p
@@ -826,7 +838,7 @@ and define_parameters p =
 	let (params_n,params) = dots define_param params in
 	let (rp_n,rp) = mcode rp in
 	(multibind [lp_n;params_n;rp_n], Ast0.DParams(lp,params,rp)))
-    
+
 and define_param p =
   rewrap p
     (match Ast0.unwrap p with
@@ -841,7 +853,7 @@ and define_param p =
 	let (n,dp) = define_param dp in (n,Ast0.OptDParam(dp))
     | Ast0.UniqueDParam(dp) ->
 	let (n,dp) = define_param dp in (n,Ast0.UniqueDParam(dp)))
-    
+
 and fninfo = function
     Ast0.FStorage(stg) ->
       let (n,stg) = mcode stg in (n,Ast0.FStorage(stg))
@@ -850,16 +862,39 @@ and fninfo = function
       let (n,inline) = mcode inline in (n,Ast0.FInline(inline))
   | Ast0.FAttr(init) ->
       let (n,init) = mcode init in (n,Ast0.FAttr(init))
-	
-and whencode notfn alwaysfn = function
-    Ast0.WhenNot a -> let (n,a) = notfn a in (n,Ast0.WhenNot(a))
-  | Ast0.WhenAlways a -> let (n,a) = alwaysfn a in (n,Ast0.WhenAlways(a))
-  | Ast0.WhenModifier(x) -> (option_default,Ast0.WhenModifier(x))
-  | Ast0.WhenNotTrue(e) ->
-      let (n,e) = expression e in (n,Ast0.WhenNotTrue(e))
-  | Ast0.WhenNotFalse(e) ->
-      let (n,e) = expression e in (n,Ast0.WhenNotFalse(e))
-	
+
+  (* we only include the when string mcode w because the parameterised
+     mcodefn function might have side-effects *)
+  and whencode notfn alwaysfn = function
+      Ast0.WhenNot (w,e,a) ->
+	let (_,w) = mcode w in
+	let (_,e) = mcode e in
+	let (n,a) = notfn a in (n,Ast0.WhenNot(w,e,a))
+    | Ast0.WhenAlways (w,e,a) -> 
+	let (_,w) = mcode w in
+	let (_,e) = mcode e in
+	let (n,a) = alwaysfn a in (n,Ast0.WhenAlways(w,e,a))
+    | Ast0.WhenModifier(w,x) -> 
+	let (_,w) = mcode w in
+	(option_default,Ast0.WhenModifier(w,x))
+    | Ast0.WhenNotTrue(w,ee,e) ->
+	let (_,w) = mcode w in
+	let (_,ee) = mcode ee in
+	let (n,e) = expression e in (n,Ast0.WhenNotTrue(w,ee,e))
+    | Ast0.WhenNotFalse(w,ee,e) ->
+	let (_,w) = mcode w in
+	let (_,ee) = mcode ee in
+	let (n,e) = expression e in (n,Ast0.WhenNotFalse(w,ee,e))
+
+  (* for whencodes that do not have any of the above modifiers
+   * returns (the new whencode expression, the updated whencode) *)
+  and whencode_option bfn = function
+    | Some (a,e,b) -> 
+	let (_,a2) = mcode a in
+	let (_,e2) = mcode e in
+	let (b1,b2) = bfn b in (b1, Some (a2,e2,b2))
+    | None -> (option_default, None)
+
 and case_line c =
   rewrap c
     (match Ast0.unwrap c with
@@ -895,7 +930,7 @@ and exec_code e =
     | Ast0.ExecDots(dots) ->
 	let (dots_n,dots) = mcode dots in
 	(dots_n,Ast0.ExecDots(dots)))
-    
+
 and top_level t =
   rewrap t
     (match Ast0.unwrap t with
@@ -916,7 +951,7 @@ and top_level t =
 	let (n,exps) = map_split_bind expression exps in
 	(n, Ast0.ERRORWORDS(exps))
     | Ast0.OTHER(_) -> failwith "unexpected code")
-    
+
 let process t =
   List.map
     (function x ->
