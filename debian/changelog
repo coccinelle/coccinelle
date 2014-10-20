@@ -1,3 +1,9 @@
+coccinelle (1.0.0-rc22~12.04npalix1) precise; urgency=medium
+
+  * New release 1.0.0-rc22
+
+ -- Nicolas Palix (Lab) <nicolas.palix@imag.fr>  Mon, 20 Oct 2014 15:04:18 +0200
+
 coccinelle (1.0.0-rc21~1204npalix1) precise; urgency=low
 
   * New release 1.0.0-rc21
