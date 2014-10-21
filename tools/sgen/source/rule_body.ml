@@ -14,7 +14,9 @@ module DG = Disj_generator
  * Main logic for starring lines:
  * CONTEXT ( * ): put the stars where they were in the original rule.
  *
- * PATCH (+/-): All lines are always non-starred, unless there turns out to be
+ * PATCH (+/-): If a statement dots contain any minus transformations, put the
+ * star where the minus is. If not, put a star where a position was generated.
+ * All lines are always non-starred, unless there turns out to be
  * an added metaposition (from the position generator) on that same line, in
  * which case the whole line becomes star mode. A position is added if it is
  * in Ast0.PLUS context, since natural positions are NEVER in PLUS context.
@@ -99,7 +101,14 @@ let whencodes ~strfn ~exprfn ~notfn ~alwaysfn l =
 (* This is where the magic happens!
  * only position and star statements if they are the first in a dots or
  * come immediately after a nest, dots, disjunction, or metastatement. *)
-let star_dotsstmtfn stmtfn stmtdots =
+let star_dotsstmtfn comb stmtdots =
+
+  (* detects if any of the statements in here contain minuses in which case we
+   * put the stars where the minuses are. *)
+  let has_minuses = Detect_patch.detect_statement_dots stmtdots in
+  let c = comb ~context_mode:has_minuses in
+  let stmtfn = c.VT0.combiner_rec_statement in
+
   let star_stmtfn stmt snp =
     let _ = assert (not (GT.no_gen snp)) in
     match PG.statement_pos stmt snp with
@@ -134,8 +143,10 @@ let star_dotsstmtfn stmtfn stmtdots =
  * states from token to token. We need the states to keep track of our current
  * context and for proper line formatting.
  * The state also contains the generated rule.
+ * (not actually recursive, just needs to pass itself on to star_dotsstmtfn to
+ *  allow context_mode toggling without making them mutually recursive)
  *)
-let gen_combiner ~context_mode =
+let rec gen_combiner ~context_mode =
   let bind x y = x >> y in (* do x then apply y to the result *)
   let option_default = (fun x -> x) in
 
@@ -213,7 +224,7 @@ let gen_combiner ~context_mode =
     (fun x ->
        if GT.no_gen x (* relevant in whencodes *)
        then fn v x
-       else star_dotsstmtfn c.VT0.combiner_rec_statement v x) in
+       else star_dotsstmtfn gen_combiner v x) in
 
   (* detect if disj is the only thing, in which case we don't want to split
    * the disjunction rule.
