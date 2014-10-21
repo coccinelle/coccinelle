@@ -1,6 +1,6 @@
 (* Yoann Padioleau, Julia Lawall
  *
- * Copyright (C) 2012, INRIA.
+ * Copyright (C) 2012-2014, INRIA.
  * Copyright (C) 2010, 2011, University of Copenhagen DIKU and INRIA.
  * Copyright (C) 2006, 2007, 2008, 2009 Ecole des Mines de Nantes and DIKU
  *
@@ -1293,6 +1293,7 @@ let add_newlines toks tabbing_unit =
         (match check_for_newline count x tustack space_cell with
         | Some count -> ((stack,Some (x,sp), seen_cocci),count)
         | None -> ((stack,Some (count,sp),seen_cocci),count))
+    | [_] -> ((stack,Some (count,sp),seen_cocci),count)
     | _ -> ((stack,space_cell,seen_cocci),count) in
   let rec loop ((stack,space_cell,seen_cocci) as info) count seeneq =
     function
@@ -1330,6 +1331,16 @@ let add_newlines toks tabbing_unit =
 	a :: b ::
 	loop ([stackfront,Some indent],new_space_cell,false)
 	  (simple_string_length s count) false xs
+    | (T2(commatok,Ctx,idx,_)) :: ((T2 _ :: _) as xs)
+      when
+	(TH.str_of_tok commatok) = "," &&
+	List.length stack = 1 (* not super elegant... *) ->
+      let sp = ref "" in
+      let (newinfo,count) =
+	update_by_stack "," count stack sp space_cell seen_cocci in
+      let a = T2(commatok,Ctx,idx,
+		 Some (Unparse_cocci.SpaceOrNewline sp)) in
+      a :: loop newinfo count false xs
     | (T2(commatok,Ctx,idx,_)) :: xs
       when
 	(TH.str_of_tok commatok) = "," &&
