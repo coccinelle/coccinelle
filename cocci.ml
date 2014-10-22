@@ -229,7 +229,7 @@ let generated_patches = Hashtbl.create(100)
 let show_or_not_diff2 cfile outfile =
   let show_diff =
     !Flag_cocci.show_diff &&
-    (!Flag_cocci.force_diff or
+    (!Flag_cocci.force_diff ||
      (not(Common.fst(Compare_c.compare_to_original cfile outfile) =
 	  Compare_c.Correct))) in (* diff only in spacing, etc *)
   if show_diff
@@ -352,8 +352,8 @@ let show_or_not_ctl_tex a b  =
 
 
 let show_or_not_rule_name ast rulenb =
-  if !Flag_cocci.show_ctl_text or !Flag.show_trying or
-    !Flag.show_transinfo or !Flag_cocci.show_binding_in_out
+  if !Flag_cocci.show_ctl_text || !Flag.show_trying ||
+    !Flag.show_transinfo || !Flag_cocci.show_binding_in_out
   then
     begin
       let name =
@@ -366,8 +366,8 @@ let show_or_not_rule_name ast rulenb =
     end
 
 let show_or_not_scr_rule_name rulenb =
-  if !Flag_cocci.show_ctl_text or !Flag.show_trying or
-    !Flag.show_transinfo or !Flag_cocci.show_binding_in_out
+  if !Flag_cocci.show_ctl_text || !Flag.show_trying ||
+    !Flag.show_transinfo || !Flag_cocci.show_binding_in_out
   then
     begin
       let name = i_to_s rulenb in
@@ -555,7 +555,7 @@ let contain_loop gopt =
 
 
 let sp_contain_typed_metavar_z toplevel_list_list =
-  let bind x y = x or y in
+  let bind x y = x || y in
   let option_default = false in
   let mcode _ _ = option_default in
   let donothing r k e = k e in
@@ -718,7 +718,7 @@ let rec interpret_dependencies local global = function
       (interpret_dependencies local global s1) &&
       (interpret_dependencies local global s2)
   | Ast_cocci.OrDep(s1,s2)  ->
-      (interpret_dependencies local global s1) or
+      (interpret_dependencies local global s1) ||
       (interpret_dependencies local global s2)
   | Ast_cocci.NoDep -> true
   | Ast_cocci.FailDep -> false

@@ -50,7 +50,7 @@ let inline_mcodes =
 	      | _ -> false in
 	    if not (minus_try(einfo.Ast0.attachable_start,
 			      einfo.Ast0.mcode_start)
-		      or
+		      ||
     		    minus_try(einfo.Ast0.attachable_end,
 			      einfo.Ast0.mcode_end))
 	    then
