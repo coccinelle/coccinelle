@@ -85,11 +85,8 @@ _spatch()
     return 0
 }
 
-complete -F _spatch -o bashdefault -o default -o nospace spatch \
- || complete -F _spatch -o default -o nospace spatch
-
-complete -F _spatch -o bashdefault -o default -o nospace spatch.opt \
- || complete -F _spatch -o default -o nospace spatch.opt
+complete -F _spatch -o bashdefault -o default -o nospace spatch spatch.byte spatch.opt \
+ || complete -F _spatch -o default -o nospace spatch spatch.byte spatch.opt
 
 # Local variables:
 # mode: shell-script
