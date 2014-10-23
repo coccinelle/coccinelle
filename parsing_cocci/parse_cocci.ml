@@ -1668,7 +1668,7 @@ let get_metavars parse_fn table file lexbuf =
     let tokens = prepare_mv_tokens tokens in
     match tokens with
       [(PC.TArobArob,_)] -> List.rev acc
-    | (PC.TAnalysis _, _) :: tl -> 
+    | (PC.TAnalysis, _) :: tl -> 
 	Lexer_script.file := file;
 	Lexer_script.language := "ocaml";
         let get_tokens = tokens_script_all table file false lexbuf in
