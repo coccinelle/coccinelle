@@ -947,7 +947,7 @@ let rec main_action xs =
             Common.profile_code "Main.outfiles computation" (fun () ->
 	      let res =
 		infiles +> List.fold_left (fun prev cfiles -> (* put parmap here *)
-		  if (not !Flag.worth_trying_opt) or
+		  if (not !Flag.worth_trying_opt) ||
 		    Cocci.worth_trying cfiles constants
 		      then
 		    begin
@@ -989,8 +989,8 @@ let rec main_action xs =
 	    None ->
 	      (x,xs,cocci_infos,outfiles)
 	  | Some (files,virt_rules,virt_ids) ->
-	      if outfiles = [] or outfiles = [] or not !FC.show_diff
-		  or !inplace_modif
+	      if outfiles = [] || outfiles = [] || not !FC.show_diff
+		  || !inplace_modif
 	      then
 		begin
 		  (if !inplace_modif then generate_outfiles outfiles x xs);
@@ -1109,7 +1109,7 @@ let main () =
     if not (null (Common.inter_set arglist
 	            ["--cocci-file";"--sp-file";"--sp";"--test";"--testall";
                       "--test-okfailed";"--test-regression-okfailed"]))
-         or contains_cocci
+         || contains_cocci
     then run_profile quiet_profile;
 
     let args = ref [] in

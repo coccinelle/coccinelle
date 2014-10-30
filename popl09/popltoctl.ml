@@ -13,7 +13,7 @@ type formula =
 (* --------------------------------------------------------------------- *)
 
 let contains_modif =
-  let bind x y = x or y in
+  let bind x y = x || y in
   let option_default = false in
   let mcode r (_,_,kind,_) =
     match kind with
@@ -44,11 +44,11 @@ let contains_modif =
   recursor.V.combiner_rule_elem
 
 let ctl_exists keep_wit v x =
-  CTL.Exists(!Flag_popl.keep_all_wits or keep_wit,v,x)
+  CTL.Exists(!Flag_popl.keep_all_wits || keep_wit,v,x)
 
 let predmaker keep_wit term =
-  if (!Flag_popl.keep_all_wits or keep_wit) &&
-     (!Flag_popl.mark_all or contains_modif term)
+  if (!Flag_popl.keep_all_wits || keep_wit) &&
+     (!Flag_popl.mark_all || contains_modif term)
   then
     let v = ("","_v") in
     ctl_exists true v

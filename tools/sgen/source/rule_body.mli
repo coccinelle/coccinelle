@@ -2,7 +2,9 @@
  *
  * If context_mode (ie. the original rule is already * a context rule), just
  * add positions, but let the stars be.
- * If patch mode, add positions AND stars, disregard -/+.
+ * If patch mode, add positions structurally (see position_generator.ml) and
+ * add stars where the minus transformation are OR where the positions were
+ * generated.
  *
  *)
 

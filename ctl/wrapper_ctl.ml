@@ -129,7 +129,7 @@ struct
 	    [] -> [(st,acc,v)]
 	  | _ -> raise (NEVER_CTL "predvar tree should have no children"))
       | A.Wit(st,[A.Subst(x,PredVal(A.UnModif(v)))],anno,wit)
-	when not modifonly or !Flag.track_iso_usage ->
+	when not modifonly || !Flag.track_iso_usage ->
 	  (match wit with
 	    [] -> [(st,acc,v)]
 	  | _ -> raise (NEVER_CTL "predvar tree should have no children"))

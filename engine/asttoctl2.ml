@@ -418,7 +418,7 @@ let and_after guard first rest =
   match rest with After rest -> ctl_and s first rest | _ -> first
 
 let contains_modif =
-  let bind x y = x or y in
+  let bind x y = x || y in
   let option_default = false in
   let mcode r (_,_,kind,metapos) =
     match kind with
@@ -442,7 +442,7 @@ let contains_modif =
   let init r k i =
     let res = k i in
     match Ast.unwrap i with
-      Ast.StrInitList(allminus,_,_,_,_) -> allminus or res
+      Ast.StrInitList(allminus,_,_,_,_) -> allminus || res
     | _ -> res in
   let recursor =
     V.combiner bind option_default
@@ -454,7 +454,7 @@ let contains_modif =
   recursor.V.combiner_rule_elem
 
 let contains_pos =
-  let bind x y = x or y in
+  let bind x y = x || y in
   let option_default = false in
   let mcode r (_,_,kind,metapos) = not (metapos = []) in
   let do_nothing r k e = k e in
@@ -1150,7 +1150,7 @@ let forwhile header body ((afvs,_,_,_) as aft) after
       (match Ast.unwrap re with
 	Ast.MetaStmt((_,_,Ast.CONTEXT(_,Ast.NOTHING),_),
 		     Type_cocci.Unitary,_,false)
-	when after = Tail or after = End or after = VeryEnd ->
+	when after = Tail || after = End || after = VeryEnd ->
 	  let (efvs) =
 	    match seq_fvs quantified [Ast.get_fvs header] with
 	      [(efvs,_)] -> efvs
@@ -1559,7 +1559,7 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
     then (ctl_not (aftpred None))
     else CTL.True in
   plus_modifier
-    (dots_au is_strict ((after = Tail) or (after = VeryEnd))
+    (dots_au is_strict ((after = Tail) || (after = VeryEnd))
        label (guard_to_strict guard) wrapcode just_nest
        (ctl_and_ns exists_without_after
 	  (ctl_and_ns dotcode
@@ -1635,7 +1635,7 @@ let rec statement_list stmt_list top after quantified minus_quantified
     (* include Disj to be on the safe side *)
     match Ast.unwrap x with
       Ast.Dots _ | Ast.Nest _ | Ast.Disj _ -> true | _ -> false in
-  let compute_label l e db = if db or isdots e then l else None in
+  let compute_label l e db = if db || isdots e then l else None in
   match Ast.unwrap stmt_list with
     Ast.DOTS(x) ->
       let rec loop top quantified minus_quantified dots_before
@@ -2261,7 +2261,7 @@ and statement stmt top after quantified minus_quantified
       let not_minus = function Ast.MINUS(_,_,_,_) -> false | _ -> true in
       let optim1 =
 	match (Ast.undots body,
-	       contains_modif rbrace or contains_pos rbrace) with
+	       contains_modif rbrace || contains_pos rbrace) with
 	  ([body],false) ->
 	    (match Ast.unwrap body with
 	      Ast.Nest(starter,stmt_dots,ender,[],false,_,_)
@@ -2438,7 +2438,7 @@ and statement stmt top after quantified minus_quantified
       failwith "OptStm should have been compiled away\n"
   | Ast.UniqueStm(stm) -> failwith "arities not yet supported"
   | _ -> failwith "not supported" in
-  if guard or !dots_done
+  if guard || !dots_done
   then term
   else
     do_between_dots stmt term after quantified minus_quantified

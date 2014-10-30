@@ -82,6 +82,6 @@ let rec dpll formula =
       else
 	match pos@neg with
 	  x::_ ->
-	    (dpll (evaluate x true formula)) or
+	    (dpll (evaluate x true formula)) ||
 	    (dpll (evaluate x false formula))
 	| _ -> failwith "at least one of pos and neg must be nonempty"

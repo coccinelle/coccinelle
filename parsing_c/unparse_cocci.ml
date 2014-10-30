@@ -108,7 +108,7 @@ and print_anything_list = function
 	(match bef with
 	  Ast.Rule_elemTag(_) | Ast.AssignOpTag(_) | Ast.BinaryOpTag(_)
 	| Ast.ArithOpTag(_) | Ast.LogicalOpTag(_)
-	| Ast.Token("if",_) | Ast.Token("while",_) -> true | _ -> false) or
+	| Ast.Token("if",_) | Ast.Token("while",_) -> true | _ -> false) ||
 	(match aft with
 	  Ast.Rule_elemTag(_) | Ast.AssignOpTag(_) | Ast.BinaryOpTag(_)
 	| Ast.ArithOpTag(_) | Ast.LogicalOpTag(_) | Ast.Token("{",_) -> true

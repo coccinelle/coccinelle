@@ -12,11 +12,11 @@ VIM_RDIR = $(CURDIR)/debian/coccinelle/usr/share/vim/registry
 
 COMMON_CONFIG = --prefix=/usr
 
+CONFIG_FLAGS = $(COMMON_CONFIG) --enable-release
+
 ifeq ($(OCAML_NATDYNLINK),yes)
-CONFIG_FLAGS = $(COMMON_CONFIG) --opt
 MAKE_TGT = all.opt
 else
-CONFIG_FLAGS = $(COMMON_CONFIG) --no-opt
 MAKE_TGT = all
 endif
 

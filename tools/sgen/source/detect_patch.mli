@@ -26,6 +26,9 @@
 (* detects whether a rule contains */+/- *)
 val detect : Ast0_cocci.parsed_rule -> bool * bool list Common.IntMap.t
 
+(* returns true if the statement dots contain minus or plus code *)
+val detect_statement_dots : Ast0_cocci.statement Ast0_cocci.dots -> bool
+
 (* returns only the rules that contained */+/- along with their disjunction
  * maps. Preserves order. *)
 val get_patch_rules :

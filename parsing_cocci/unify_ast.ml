@@ -53,7 +53,7 @@ let unify_lists fn dfn la lb =
     | (cura::resta,curb::restb) ->
 	(match fn cura curb with
 	  MAYBE -> loop (resta,restb)
-	| NO -> if dfn cura or dfn curb then MAYBE else NO) in
+	| NO -> if dfn cura || dfn curb then MAYBE else NO) in
   loop (la,lb)
 
 let unify_dots fn dfn d1 d2 =
