@@ -2287,10 +2287,10 @@ let process file isofile verbose =
 			   [Ast0.Exp e] -> true | _ -> false)
 		     | _ -> false] in
 	       let minus = Arity.minus_arity minus in
+	       let plus = Adjust_pragmas.process plus in
 	       let ((metavars,minus),function_prototypes) =
 		 Function_prototypes.process
 		   rule_name metavars dropped_isos minus plus ruletype in
-	       let plus = Adjust_pragmas.process plus in
           (* warning! context_neg side-effects its arguments *)
 	       let (m,p) = List.split (Context_neg.context_neg minus plus) in
 	       Type_infer.type_infer p;

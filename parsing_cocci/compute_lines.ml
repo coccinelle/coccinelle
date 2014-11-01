@@ -892,9 +892,13 @@ let is_ec_dots e =
 let rec statement s =
   let res =
     match Ast0.unwrap s with
-      Ast0.Decl((_,bef),decl) ->
+      Ast0.Decl((info,bef),decl) ->
 	let decl = declaration decl in
 	let (leftinfo,decl) = promote_to_statement_start decl bef in
+	let leftinfo =
+	  (* for function prototypes, which may have information placed here
+	     before calling Compute_lines *)
+	  {leftinfo with Ast0.strings_before = info.Ast0.strings_before} in
 	mkres s (Ast0.Decl((leftinfo,bef),decl)) decl decl
     | Ast0.Seq(lbrace,body,rbrace) ->
 	let lbrace = normal_mcode lbrace in
