@@ -1157,6 +1157,21 @@ let fixpath s =
     | [] -> [] in
   String.concat "/" (loop s)
 
+let header_cache_table = Hashtbl.create 101 (* global *)
+
+let header_cache choose_includes f key1 key2 =
+  if List.mem choose_includes
+      [Flag_cocci.I_ALL_INCLUDES;Flag_cocci.I_REALLY_ALL_INCLUDES]
+      && !Flag_cocci.include_headers_for_types
+  then
+    let k = (key1,key2) in
+    try Hashtbl.find header_cache_table k
+    with Not_found ->
+      let res = f key1 key2 in
+      Hashtbl.add header_cache_table k res;
+      res
+  else f key1 key2
+
 let rec prepare_h seen env (hpath : string) choose_includes parse_strings
     : file_info list =
   let h_cs =
@@ -1167,7 +1182,10 @@ let rec prepare_h seen env (hpath : string) choose_includes parse_strings
         None
       end
     else
-      try Some (cprogram_of_file_cached parse_strings hpath)
+      try
+	Some
+	  (header_cache choose_includes cprogram_of_file_cached parse_strings
+	     hpath)
       with Flag.UnreadableFile file ->
 	begin
 	  pr2_once ("TYPE: header " ^ hpath ^ " not readable");
@@ -1176,7 +1194,7 @@ let rec prepare_h seen env (hpath : string) choose_includes parse_strings
   match h_cs with
     None -> []
   | Some h_cs ->
-      let h_cs = cprogram_of_file_cached parse_strings hpath in
+      (*let h_cs = cprogram_of_file_cached parse_strings hpath in*)
       let local_includes =
 	if choose_includes =*= Flag_cocci.I_REALLY_ALL_INCLUDES
 	then
@@ -1224,12 +1242,15 @@ let prepare_c files choose_includes parse_strings : file_info list =
   (* todo?: may not be good to first have all the headers and then all the c *)
   let env = ref !TAC.initial_env in
 
+  Flag_parsing_c.parsing_header_for_types :=
+    !Flag_cocci.include_headers_for_types;
   let includes =
     includes +>
     List.map
       (function hpath ->
 	prepare_h seen env hpath choose_includes parse_strings) +>
     List.concat in
+  Flag_parsing_c.parsing_header_for_types := false;
 
   let cfiles =
     (zip files cprograms) +>
