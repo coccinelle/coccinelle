@@ -385,6 +385,9 @@
 - Make fix_tokens_strings, List.flatten tail recursive to avoid stack
   overflow
 - Make nothing match against empty statements.
+- Improved propagation of #ifdef additions to function prototypes.
+  Reported by Stefan Assman.
+- Allow adding directives before and after ..., see ifif.cocci
 
 * 0.2.5
 ** Language:

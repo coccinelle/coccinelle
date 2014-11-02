@@ -293,6 +293,9 @@ let print_tokens s tokens =
 
 type plus = PLUS | NOTPLUS | SKIP
 
+(* skip means ignore completely, notplus means keep in the recursion, but don't
+attach to it, plus means that it is possible to attach to the token *)
+
 let plus_attachable only_plus (tok,_) =
   match tok with
     PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
@@ -341,12 +344,14 @@ let plus_attachable only_plus (tok,_) =
   | PC.TMetaFieldList(_,_,_,clt)
   | PC.TMetaFunc(_,_,_,clt) | PC.TMetaLocalFunc(_,_,_,clt)
 
+(* it would seem that this should all be skips
   | PC.TWhen(clt) |  PC.TWhenTrue(clt) |  PC.TWhenFalse(clt)
   | PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
   (* | PC.TCircles(clt) | PC.TStars(clt) *)
   | PC.TOEllipsis(clt) | PC.TCEllipsis(clt)
   | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) (* | PC.TOCircles(clt)
   | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *)
+*)
 
   | PC.TWhy(clt) | PC.TDotDot(clt) | PC.TBang(clt) | PC.TOPar(clt)
   | PC.TCPar(clt)
@@ -366,6 +371,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.TOPar0(s,clt) | PC.TMid0(s,clt) | PC.TCPar0(s,clt) -> NOTPLUS
   | PC.TMetaPos(nm,_,_,_) -> NOTPLUS
   | PC.TSub(clt) -> NOTPLUS
+  | PC.TDirective(_,clt) -> NOTPLUS
 
   | _ -> SKIP
 
