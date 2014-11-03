@@ -415,6 +415,16 @@ AS_IF([test "x$OCAMLATLEAST311" = xyes -a "x$enable_ocaml" = xyes -a "x$OCAMLOPT
   AC_SUBST([DYNLINK_IS_NATIVE], [false])
 ])
 
+AS_IF([test "x$OCAMLATLEAST4020" = xno  ],
+[dnl
+  AC_SUBST([COMPILE_EMBEDDED_BYTES_MODULE], [yes])
+],
+[dnl
+  AC_SUBST([COMPILE_EMBEDDED_BYTES_MODULE], [no])
+])
+
+
+
 dnl  in case of the compilation of the manual
 AC_COCCI_TOOL([PDFLATEX],[pdflatex],[$COCCI_SRCDIR/setup/fake-pdflatex.sh pdflatex])
 

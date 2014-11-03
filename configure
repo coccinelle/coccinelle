@@ -659,6 +659,7 @@ enable_release
 SUBSTITUTED_PDFLATEX
 with_PDFLATEX
 PDFLATEX
+COMPILE_EMBEDDED_BYTES_MODULE
 DYNLINK_IS_NATIVE
 FEATURE_OCAML
 FEATURE_PYTHON
@@ -776,6 +777,7 @@ CAMLP4O
 CAMLP4BOOT
 CAMLP4
 OCAMLCORIG
+OCAMLATLEAST4020
 OCAMLATLEAST311
 OCAMLATLEAST310
 OCAMLBUILD
@@ -2780,6 +2782,7 @@ END
     as_fn_error $? "Your 'rm' program is bad, sorry." "$LINENO" 5
   fi
 fi
+
 
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: determining version suffix" >&5
@@ -6650,6 +6653,27 @@ esac
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: $versioncheck" >&5
 $as_echo "$versioncheck" >&6; }
   OCAMLATLEAST311=$versioncheck
+
+
+  { versioncheck=; unset versioncheck;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking that the OCaml version is at least 4.02" >&5
+$as_echo_n "checking that the OCaml version is at least 4.02... " >&6; }
+  as_arg_v1=$OCAMLVERSION
+as_arg_v2=4.02
+awk "$as_awk_strverscmp" v1="$as_arg_v1" v2="$as_arg_v2" /dev/null
+case $? in #(
+  1) :
+    versioncheck=no ;; #(
+  0) :
+    versioncheck=yes ;; #(
+  2) :
+    versioncheck=yes ;; #(
+  *) :
+     ;;
+esac
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $versioncheck" >&5
+$as_echo "$versioncheck" >&6; }
+  OCAMLATLEAST4020=$versioncheck
 
 
 OCAMLCORIG="$OCAMLC"
@@ -15888,6 +15912,18 @@ else
 
 
 fi
+
+if test "x$OCAMLATLEAST4020" = xno  ; then :
+    COMPILE_EMBEDDED_BYTES_MODULE=yes
+
+
+else
+    COMPILE_EMBEDDED_BYTES_MODULE=no
+
+
+fi
+
+
 
 
 

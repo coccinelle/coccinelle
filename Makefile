@@ -33,6 +33,11 @@ PRJNAME=coccinelle
 ML_FILES=flag_cocci.ml cocci.ml testing.ml test.ml $(LEXER_SOURCES:.mll=.ml) main.ml
 MLI_FILES=cocci.mli testing.mli
 
+ifeq ($(COMPILE_EMBEDDED_BYTES_MODULE),yes)
+	ML_FILES += bytes.ml
+	MLI_FILES += bytes.mli
+endif
+
 ifeq ($(FEATURE_PYTHON),1)
 	PYTHON_INSTALL_TARGET=install-python
 else
