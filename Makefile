@@ -31,7 +31,7 @@ PKGVERSION=$(shell dpkg-parsechangelog -ldebian/changelog.$(DISTRIB_CODENAME) 2>
 TARGET=spatch
 PRJNAME=coccinelle
 ML_FILES=flag_cocci.ml cocci.ml testing.ml test.ml $(LEXER_SOURCES:.mll=.ml) main.ml
-MLI_FILES=bytes.mli cocci.mli testing.mli
+MLI_FILES=cocci.mli testing.mli
 
 ifeq ($(FEATURE_PYTHON),1)
 	PYTHON_INSTALL_TARGET=install-python
