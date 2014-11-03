@@ -1475,13 +1475,14 @@ let add_newlines toks tabbing_unit =
     | Fake2 _ :: _ | Indent_cocci2 :: _
     | Unindent_cocci2 _::_ | EatSpace2::_ ->
       failwith "unexpected fake, indent, unindent, or eatspace" in
+  let mkc2 = function "" -> [] | sp -> [C2 (sp,None)] in
   let redo_spaces prev = function
     | Cocci2(s,line,lcol,rcol,Some (Unparse_cocci.SpaceOrNewline sp)) ->
-      C2 (!sp,None) :: Cocci2(s,line,lcol,rcol,None) :: prev
+      mkc2 !sp @ Cocci2(s,line,lcol,rcol,None) :: prev
     | T2(tok,min,idx,Some (Unparse_cocci.SpaceOrNewline sp)) ->
-      C2 (!sp,None) :: T2(tok,min,idx,None) :: prev
+      mkc2 !sp @ T2(tok,min,idx,None) :: prev
     | C2(s,Some (Unparse_cocci.SpaceOrNewline sp)) ->
-      C2 (!sp,None) :: C2(s,None) :: prev
+      mkc2 !sp @ C2(s,None) :: prev
     | t -> t::prev in
   (match !Flag_parsing_c.spacing with
   | Flag_parsing_c.SMPL -> toks
@@ -1516,7 +1517,7 @@ type info =
     CtxNL of string * int (*depthmin*) * int (*depthplus*) * int (*inparen*)
   | MinNL of string * int (*depthmin*) * int (*depthplus*) * int (*inparen*)
   | PlusNL of int (* depthplus *) * int (* inparen *)
-  | Other of int | Drop | Unindent
+  | Other of int | Drop | Unindent | Unindent1
   | Label (* label is for a newline that should not be taken into account
 	     to compute indentation; it might be befor a label, a #, or
 	     just an empty line *)
@@ -1530,6 +1531,7 @@ let print_info l =
       |	(_,Other n,t) -> Printf.printf "Other %d |%s|\n" n (str_of_token2 t)
       |	(_,Drop,_) -> Printf.printf "Drop\n"
       |	(_,Unindent,_) -> Printf.printf "Unindent\n"
+      |	(_,Unindent1,_) -> Printf.printf "Unindent1\n"
       |	(_,Label,_) -> Printf.printf "Label\n")
     l
 
@@ -1713,8 +1715,8 @@ let token_effect tok dmin dplus inparens inassn accumulator xs =
       (* is_nl is for the case where the next statement is on the same line
 	 as the else *)
       let nopen_brace a b =
-   let res = not (open_brace a b) && (is_nl a b) in
-   res in
+	let res = not (open_brace a b) && (is_nl a b) in
+	res in
       let do_nothing a b = b in
       let accumulator =
 	adjust_by_function nopen_brace op accadd1 do_nothing accumulator xs in
@@ -1741,6 +1743,8 @@ let token_effect tok dmin dplus inparens inassn accumulator xs =
       (Drop,dmin,dplus,inparens,inassn,accumulator)
   | (Ind (Unindent_cocci2 false),op) ->
       (Unindent,dmin,dplus,inparens,inassn,accumulator)
+  | (Tok "case",op) ->
+      (Unindent1,dmin,dplus,inparens,inassn,accumulator)
   | (NL after,op) ->
       if is_label Both xs
       then (* ignore indentation *)
@@ -1969,9 +1973,24 @@ let rec newlines_for_unindents xs =
     | x::rest -> x::loop rest in
   loop xs
 
+(* needed because token_effect doesn't see context *)
+let rec clear_unindent1 = function
+    [] -> []
+  | (n,PlusNL(depth,inparens),t)::(n1,Unindent1,t1)::rest ->
+      (n,PlusNL(depth-1,inparens),t)::(n1,Other 0,t1)::(clear_unindent1 rest)
+  | (n,CtxNL(spaces,depthmin,depthplus,inparens),t)::(n1,Unindent1,t1)::rest ->
+      (n,CtxNL(spaces,depthmin-1,depthplus-1,inparens),t)::
+      (n1,Other 0,t1)::(clear_unindent1 rest)
+  | (n,MinNL(spaces,depthmin,depthplus,inparens),t)::(n1,Unindent1,t1)::rest ->
+      (n,MinNL(spaces,depthmin-1,depthplus-1,inparens),t)::
+      (n1,Other 0,t1)::(clear_unindent1 rest)
+  | (n,Unindent1,t)::rest -> (n,Other 0,t)::(clear_unindent1 rest)
+  | x::rest -> x :: (clear_unindent1 rest)
+
 let adjust_indentation xs =
   let xs = newlines_for_unindents xs in
   let toks = parse_indentation xs in
+  let toks = clear_unindent1 toks in
   let rec loop tabbing_unit past_minmap dmin dplus =
     function
 	[] -> (tabbing_unit,past_minmap,[])
@@ -1980,6 +1999,7 @@ let adjust_indentation xs =
 	    loop tabbing_unit past_minmap dmin dplus rest in
 	  (out_tu,minmap,t::x::res)
       |	(_,Unindent,_)::rest -> loop tabbing_unit past_minmap dmin dplus rest
+      |	(_,Unindent1,_)::rest -> failwith "removed by clear_unindent1"
       | (n,CtxNL(spaces,depthmin,depthplus,inparens),t)::rest ->
 	  let (tabbing_unit,past_minmap) =
 	    update_map_min n spaces tabbing_unit past_minmap
