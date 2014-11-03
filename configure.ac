@@ -83,6 +83,7 @@ dnl  ocaml compiler configuration
 AC_PROG_OCAML
 AC_CHECK_OCAMLVERSION([OCAMLATLEAST310],[3.10])
 AC_CHECK_OCAMLVERSION([OCAMLATLEAST311],[3.11])
+AC_CHECK_OCAMLVERSION([OCAMLATLEAST4020],[4.02])
 AC_SUBST([OCAMLCORIG],["$OCAMLC"])
 
 AS_IF([test "x$OCAMLC" = xno -o "x$OCAMLDEP" = xno -o "x$OCAMLDOC" = xno -o "x$OCAMLMKLIB" = xno],
@@ -423,6 +424,13 @@ AS_IF([test "x$OCAMLATLEAST4020" = xno  ],
   AC_SUBST([COMPILE_EMBEDDED_BYTES_MODULE], [no])
 ])
 
+AS_IF([test "x$OCAMLATLEAST4020" = xno  ],
+[dnl
+  AC_SUBST([GET_TEMP_DIR_NAME_EXPR], ["Filename.temp_dir_name"])
+],
+[dnl
+  AC_SUBST([GET_TEMP_DIR_NAME_EXPR], ["(Filename.get_temp_dir_name ())"])
+])
 
 
 dnl  in case of the compilation of the manual
@@ -547,7 +555,7 @@ AC_CONFIG_FILES([
   scripts/spatch.sh
   docs/spatch.1
   myocamlbuild.ml
-
+  testing.ml
   setup/Makefile
 ])
 

@@ -17,6 +17,7 @@ test.ml
 version.ml
 
 Makefile.config
+testing.ml
 Makefile.override
 result
 

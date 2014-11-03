@@ -659,6 +659,7 @@ enable_release
 SUBSTITUTED_PDFLATEX
 with_PDFLATEX
 PDFLATEX
+GET_TEMP_DIR_NAME_EXPR
 COMPILE_EMBEDDED_BYTES_MODULE
 DYNLINK_IS_NATIVE
 FEATURE_OCAML
@@ -15923,6 +15924,15 @@ else
 
 fi
 
+if test "x$OCAMLATLEAST4020" = xno  ; then :
+    GET_TEMP_DIR_NAME_EXPR="Filename.temp_dir_name"
+
+
+else
+    GET_TEMP_DIR_NAME_EXPR="(Filename.get_temp_dir_name ())"
+
+
+fi
 
 
 
@@ -17177,7 +17187,7 @@ fi
 
 
 
-ac_config_files="$ac_config_files Makefile.config version.ml commons/commands.ml globals/config.ml globals/regexp.ml python/pycocci.ml ocaml/prepare_ocamlcocci.ml scripts/spatch.sh docs/spatch.1 myocamlbuild.ml setup/Makefile"
+ac_config_files="$ac_config_files Makefile.config version.ml commons/commands.ml globals/config.ml globals/regexp.ml python/pycocci.ml ocaml/prepare_ocamlcocci.ml scripts/spatch.sh docs/spatch.1 myocamlbuild.ml testing.ml setup/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -17933,6 +17943,7 @@ do
     "scripts/spatch.sh") CONFIG_FILES="$CONFIG_FILES scripts/spatch.sh" ;;
     "docs/spatch.1") CONFIG_FILES="$CONFIG_FILES docs/spatch.1" ;;
     "myocamlbuild.ml") CONFIG_FILES="$CONFIG_FILES myocamlbuild.ml" ;;
+    "testing.ml") CONFIG_FILES="$CONFIG_FILES testing.ml" ;;
     "setup/Makefile") CONFIG_FILES="$CONFIG_FILES setup/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
