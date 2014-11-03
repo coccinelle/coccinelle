@@ -2144,12 +2144,12 @@ let print_all_tokens2 pr xs =
     );
   else
     let to_whitespace s = 
-      let r = String.copy s in
+      let r = Bytes.copy s in
       for i = 1 to String.length r do
         let c = String.get r (i-1) in
         match c with
         | ' ' | '\t' | '\r' | '\n' -> ()
-        | _ -> String.set r (i-1) ' '
+        | _ -> Bytes.set r (i-1) ' '
       done;
       r in
     let hiding_level = ref 0 in
