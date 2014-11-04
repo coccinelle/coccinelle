@@ -271,6 +271,7 @@ and initialiser_list = initialiser dots
 
 and base_parameterTypeDef =
     VoidParam     of typeC
+  | VarargParam   of string mcode
   | Param         of typeC * ident option
   | MetaParam     of Ast_cocci.meta_name mcode * pure
   | MetaParamList of Ast_cocci.meta_name mcode * listlen * pure

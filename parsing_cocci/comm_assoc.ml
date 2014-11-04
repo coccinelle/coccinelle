@@ -16,7 +16,7 @@ let is_minus e =
   match Ast0.get_mcodekind e with Ast0.MINUS(cell) -> true | _ -> false
 
 let is_context e =
-  !Flag.sgrep_mode2 or (* everything is context for sgrep *)
+  !Flag.sgrep_mode2 || (* everything is context for sgrep *)
   (match Ast0.get_mcodekind e with
     Ast0.CONTEXT(cell) -> true
   | _ -> false)

@@ -248,7 +248,7 @@ let bool_match_option f t1 t2 =
    The example seems strange.  Why isn't the cast attached to x?
  *)
 let is_context e =
-  !Flag.sgrep_mode2 or (* everything is context for sgrep *)
+  !Flag.sgrep_mode2 || (* everything is context for sgrep *)
   (match Ast0.get_mcodekind e with
     Ast0.CONTEXT(cell) -> true
   | _ -> false)
@@ -257,7 +257,7 @@ let is_context e =
    the following stops at the statement level, and gives true if one
    statement is replaced by another *)
 let rec is_pure_context s =
-  !Flag.sgrep_mode2 or (* everything is context for sgrep *)
+  !Flag.sgrep_mode2 || (* everything is context for sgrep *)
   (match Ast0.unwrap s with
     Ast0.Disj(starter,statement_dots_list,mids,ender) ->
       List.for_all
@@ -483,7 +483,7 @@ let match_maker checks_needed context_required whencode_allowed =
     | Ast0.MetaFunc(name,_,pure) -> failwith "metafunc not supported"
     | Ast0.MetaLocalFunc(name,_,pure) -> failwith "metalocalfunc not supported"
     | up ->
-	if not(checks_needed) or not(context_required) or is_context id
+	if not(checks_needed) || not(context_required) || is_context id
 	then
 	  match (up,Ast0.unwrap id) with
 	    (Ast0.Id(namea),Ast0.Id(nameb)) ->
@@ -618,7 +618,7 @@ let match_maker checks_needed context_required whencode_allowed =
     | Ast0.MetaErr(namea,_,pure) -> failwith "metaerr not supported"
     | Ast0.MetaExprList(_,_,_) -> failwith "metaexprlist not supported"
     | up ->
-	if not(checks_needed) or not(context_required) or is_context expr
+	if not(checks_needed) || not(context_required) || is_context expr
 	then
 	  match (up,Ast0.unwrap expr) with
 	    (Ast0.Ident(ida),Ast0.Ident(idb)) ->
@@ -783,7 +783,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	      (function ty -> Ast0.TypeCTag ty)
 	      t)
     | up ->
-	if not(checks_needed) or not(context_required) or is_context t
+	if not(checks_needed) || not(context_required) || is_context t
 	then
 	  match (up,Ast0.unwrap t) with
 	    (Ast0.ConstVol(cva,tya),Ast0.ConstVol(cvb,tyb)) ->
@@ -881,7 +881,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	  d
     | Ast0.MetaFieldList(name,_,pure) -> failwith "metafieldlist not supporte"
     | up ->
-	if not(checks_needed) or not(context_required) or is_context d
+	if not(checks_needed) || not(context_required) || is_context d
 	then
 	  match (up,Ast0.unwrap d) with
 	    (Ast0.Init(stga,tya,ida,eq1,inia,sc1),
@@ -956,7 +956,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	  (function ini -> Ast0.InitTag ini)
 	  i
     | up ->
-	if not(checks_needed) or not(context_required) or is_context i
+	if not(checks_needed) || not(context_required) || is_context i
 	then
 	  match (up,Ast0.unwrap i) with
 	    (Ast0.InitExpr(expa),Ast0.InitExpr(expb)) ->
@@ -1027,10 +1027,11 @@ let match_maker checks_needed context_required whencode_allowed =
 	  p
     | Ast0.MetaParamList(name,_,pure) -> failwith "metaparamlist not supported"
     | up ->
-	if not(checks_needed) or not(context_required) or is_context p
+	if not(checks_needed) || not(context_required) || is_context p
 	then
 	  match (up,Ast0.unwrap p) with
 	    (Ast0.VoidParam(tya),Ast0.VoidParam(tyb)) -> match_typeC tya tyb
+          | (Ast0.VarargParam(d1),Ast0.VarargParam(d)) -> check_mcode d1 d
 	  | (Ast0.Param(tya,ida),Ast0.Param(tyb,idb)) ->
 	      conjunct_bindings (match_typeC tya tyb)
 		(match_option match_ident ida idb)
@@ -1057,7 +1058,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	      s)
     | Ast0.MetaStmtList(name,pure) -> failwith "metastmtlist not supported"
     | up ->
-	if not(checks_needed) or not(context_required) or is_context s
+	if not(checks_needed) || not(context_required) || is_context s
 	then
 	  match (up,Ast0.unwrap s) with
 	    (Ast0.FunDecl(_,fninfoa,namea,lp1,paramsa,rp1,lb1,bodya,rb1,_),
@@ -1092,7 +1093,7 @@ let match_maker checks_needed context_required whencode_allowed =
               *)
 	      conjunct_bindings (check_mcode lb1 lb)
 		(conjunct_bindings (check_mcode rb1 rb)
-		   (if not(checks_needed) or is_minus s or
+		   (if not(checks_needed) || is_minus s ||
 		     (is_context s &&
 		      List.for_all is_pure_context (Ast0.undots bodyb))
 		   then
@@ -1188,7 +1189,7 @@ let match_maker checks_needed context_required whencode_allowed =
 		 (match wc with
 		   [] ->
 		   (* not sure this is correct, perhaps too restrictive *)
-		     if not(checks_needed) or is_minus s or
+		     if not(checks_needed) || is_minus s ||
 		       (is_context s &&
 			List.for_all is_pure_context (Ast0.undots stmt_dotsb))
 		     then
@@ -1282,7 +1283,7 @@ let match_maker checks_needed context_required whencode_allowed =
     loop (patterninfo,cinfo)
 
   and match_case_line pattern c =
-    if not(checks_needed) or not(context_required) or is_context c
+    if not(checks_needed) || not(context_required) || is_context c
     then
       match (Ast0.unwrap pattern,Ast0.unwrap c) with
 	(Ast0.Default(d1,c1,codea),Ast0.Default(d,c,codeb)) ->
@@ -2137,8 +2138,8 @@ let whencode_allowed prev_ecount prev_icount prev_dcount
   let other_dcount = (* number of dots *)
     List.fold_left (function rest -> function (_,ec,ic,dc) -> dc + rest)
       prev_dcount rest in
-  (ecount = 0 or other_ecount = 0, icount = 0 or other_icount = 0,
-   dcount = 0 or other_dcount = 0)
+  (ecount = 0 || other_ecount = 0, icount = 0 || other_icount = 0,
+   dcount = 0 || other_dcount = 0)
 
 (* copy the befores and afters to the instantiated code *)
 let extra_copy_stmt_plus model e =
@@ -2594,7 +2595,7 @@ let transform (alts : isomorphism) t =
   let in_limit n = function
       None -> true
     | Some n1 ->
-	n < n1 or
+	n < n1 ||
 	((if !Flag_parsing_cocci.show_iso_failures
 	then Common.pr2_once "execeeded iso threshold, see -iso_limit option");
 	 false) in

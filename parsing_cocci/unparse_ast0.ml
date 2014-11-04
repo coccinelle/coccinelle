@@ -440,6 +440,7 @@ and parameterTypeDef p =
     (function _ ->
       match Ast0.unwrap p with
 	Ast0.VoidParam(ty) -> typeC ty
+      | Ast0.VarargParam(dots) -> mcode print_string dots 
       | Ast0.Param(ty,Some id) -> print_named_type ty id
       |	Ast0.Param(ty,None) -> typeC ty
       | Ast0.MetaParam(name,_) -> mcode print_meta name

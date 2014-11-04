@@ -311,7 +311,10 @@ let fixFunc (typ, compound, old_style_opt) =
       {f_name = name;
        f_type = (fullt, (params, abool));
        f_storage = st;
-       f_body = cp;
+       f_body =
+	if !Flag_parsing_c.parsing_header_for_types
+	then []
+	else cp;
        f_attr = attrs;
        f_old_c_style = old_style_opt;
       },

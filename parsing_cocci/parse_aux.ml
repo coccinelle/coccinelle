@@ -258,7 +258,7 @@ let check_meta_tyopt type_irrelevant v =
       | _ -> fail name)
   | Ast.MetaConstDecl(Ast.NONE,(rule,name),ty) ->
       (match lookup rule name with
-	Ast.MetaConstDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
+	Ast.MetaConstDecl(_,_,ty1) when type_irrelevant || ty = ty1 -> ()
       | _ -> fail name)
   | Ast.MetaErrDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
@@ -266,15 +266,15 @@ let check_meta_tyopt type_irrelevant v =
       | _ -> fail name)
   | Ast.MetaExpDecl(Ast.NONE,(rule,name),ty) ->
       (match lookup rule name with
-	Ast.MetaExpDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
+	Ast.MetaExpDecl(_,_,ty1) when type_irrelevant || ty = ty1 -> ()
       | _ -> fail name)
   | Ast.MetaIdExpDecl(Ast.NONE,(rule,name),ty) ->
       (match lookup rule name with
-	Ast.MetaIdExpDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
+	Ast.MetaIdExpDecl(_,_,ty1) when type_irrelevant || ty = ty1 -> ()
       | _ -> fail name)
   | Ast.MetaLocalIdExpDecl(Ast.NONE,(rule,name),ty) ->
       (match lookup rule name with
-	Ast.MetaLocalIdExpDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
+	Ast.MetaLocalIdExpDecl(_,_,ty1) when type_irrelevant || ty = ty1 -> ()
       | _ -> fail name)
   | Ast.MetaExpListDecl(Ast.NONE,(rule,name),len_name) ->
       (match lookup rule name with
@@ -604,7 +604,7 @@ let struct_initializer initlist =
     | Ast0.MetaInit _ | Ast0.MetaInitList _ -> false (* ambiguous... *)
     | _ -> false in
   let l = Ast0.undots initlist in
-  (l = []) or (List.exists loop l)
+  (l = []) || (List.exists loop l)
 
 let drop_dot_commas initlist =
   match Ast0.unwrap initlist with

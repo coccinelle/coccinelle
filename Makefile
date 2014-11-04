@@ -30,7 +30,8 @@ PKGVERSION=$(shell dpkg-parsechangelog -ldebian/changelog.$(DISTRIB_CODENAME) 2>
 
 TARGET=spatch
 PRJNAME=coccinelle
-SRC=flag_cocci.ml cocci.ml testing.ml test.ml $(LEXER_SOURCES:.mll=.ml) main.ml
+ML_FILES=flag_cocci.ml cocci.ml testing.ml test.ml $(LEXER_SOURCES:.mll=.ml) main.ml
+MLI_FILES=cocci.mli testing.mli
 
 ifeq ($(FEATURE_PYTHON),1)
 	PYTHON_INSTALL_TARGET=install-python
@@ -70,8 +71,8 @@ INCLUDEDIRS=$(INCLUDEDIRSDEP) $(PCREDIR) $(INCLIBS)
 INCLUDESET=$(sort $(INCLUDEDIRS))
 INCLUDES=$(INCLUDESET:%=-I %)
 
-OBJS=    $(SRC:.ml=.cmo)
-OPTOBJS= $(SRC:.ml=.cmx)
+OBJS=    $(ML_FILES:.ml=.cmo)
+OPTOBJS= $(ML_FILES:.ml=.cmx)
 
 EXEC=$(TARGET)
 
@@ -659,7 +660,7 @@ depend: Makefile.config test.ml version
 	@$(ECHO) "Constructing '.depend'"
 	@rm -f .depend
 	@set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i depend; done
-	$(OCAMLDEP_CMD) *.mli *.ml > .depend
+	$(OCAMLDEP_CMD) $(MLI_FILES) $(ML_FILES) > .depend
 
 ##############################################################################
 # configure-related

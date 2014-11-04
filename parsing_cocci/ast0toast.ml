@@ -50,7 +50,7 @@ let inline_mcodes =
 	      | _ -> false in
 	    if not (minus_try(einfo.Ast0.attachable_start,
 			      einfo.Ast0.mcode_start)
-		      or
+		      ||
     		    minus_try(einfo.Ast0.attachable_end,
 			      einfo.Ast0.mcode_end))
 	    then
@@ -737,6 +737,7 @@ and parameterTypeDef p =
   rewrap p no_isos
     (match Ast0.unwrap p with
       Ast0.VoidParam(ty) -> Ast.VoidParam(typeC false ty)
+    | Ast0.VarargParam(dots) -> Ast.VarargParam(mcode dots)
     | Ast0.Param(ty,id) ->
 	let allminus = check_allminus.VT0.combiner_rec_parameter p in
 	Ast.Param(typeC allminus ty,get_option ident id)

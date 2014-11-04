@@ -237,7 +237,7 @@ let match_simple_if_else
     begin try
       let (body,tok_else,rest_else) = split_when is_else rest_if in
       if List.exists is_if_or_else body
-         or List.exists is_if_or_else rest_else
+         || List.exists is_if_or_else rest_else
          then None (* no nested if/else wanted *)
          else Some (tok_if,body,tok_else,rest_else)
     with Not_found -> None end
@@ -273,7 +273,7 @@ let match_cpp_simple_ifdef_else_endif (xs :token list)
     begin try
       let (body_if,tok_else,body_else) = split_when is_cpp_else body in
       if List.exists is_cpp_instruction body_if
-         or List.exists is_cpp_instruction body_else
+         || List.exists is_cpp_instruction body_else
          then None (* no nested CPP wanted *)
          else Some (tok_ifdef,body_if,tok_else,body_else,tok_endif,rest_endif)
     with Not_found -> None end

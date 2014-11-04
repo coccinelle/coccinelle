@@ -235,7 +235,7 @@ let option_default = (*Bind(Neutral,[],[],[],[],[])*)
   Recursor(Neutral,[],[],[])
 
 let contains_added_strings info =
-  not (info.Ast0.strings_before = []) or not (info.Ast0.strings_after = [])
+  not (info.Ast0.strings_before = []) || not (info.Ast0.strings_after = [])
 
 let mcode (_,_,info,mcodekind,pos,_) =
   let offset = info.Ast0.pos_info.Ast0.offset in
@@ -677,6 +677,7 @@ let equal_initialiser i1 i2 =
 let equal_parameterTypeDef p1 p2 =
   match (Ast0.unwrap p1,Ast0.unwrap p2) with
     (Ast0.VoidParam(_),Ast0.VoidParam(_)) -> true
+  | (Ast0.VarargParam(_),Ast0.VarargParam(_)) -> true
   | (Ast0.Param(_,_),Ast0.Param(_,_)) -> true
   | (Ast0.MetaParam(name1,_),Ast0.MetaParam(name2,_))
   | (Ast0.MetaParamList(name1,_,_),Ast0.MetaParamList(name2,_,_)) ->
@@ -1064,7 +1065,7 @@ let check_compatible m p =
 	  (function tester ->
 	    let v1 = isonly tester code1 in
 	    let v2 = isonly tester code2 in
-	    if (v1 && not v2) or (!Flag.make_hrule = None && v2 && not v1)
+	    if (v1 && not v2) || (!Flag.make_hrule = None && v2 && not v1)
 	    then fail())
 	  testers;
 	let v1 = isonly is_fndecl code1 in
@@ -1079,13 +1080,13 @@ let check_compatible m p =
 let check_complete m =
    match Ast0.unwrap m with
      Ast0.NONDECL(code) ->
-       if is_exp code or is_ty code
+       if is_exp code || is_ty code
        then
 	 failwith
 	   (Printf.sprintf "invalid minus starting on line %d"
 	      (Ast0.get_line m))
    | Ast0.CODE(code) ->
-       if isonly is_exp code or isonly is_ty code
+       if isonly is_exp code || isonly is_ty code
        then
 	 failwith
            (Printf.sprintf "invalid minus starting on line %d"
@@ -1123,9 +1124,9 @@ let context_neg minus plus =
 	let mend = minfo.Ast0.pos_info.Ast0.logical_end in
 	let pstart = pinfo.Ast0.pos_info.Ast0.logical_start in
 	let pend = pinfo.Ast0.pos_info.Ast0.logical_end in
-	if (iscode m or iscode p) &&
-	  (mend + 1 = pstart or pend + 1 = mstart or (* adjacent *)
-	   (mstart <= pstart && mend >= pstart) or
+	if (iscode m || iscode p) &&
+	  (mend + 1 = pstart || pend + 1 = mstart || (* adjacent *)
+	   (mstart <= pstart && mend >= pstart) ||
 	   (pstart <= mstart && pend >= mstart)) (* overlapping or nested *)
 	then
 	  begin
@@ -1146,7 +1147,7 @@ let context_neg minus plus =
 	    (m,p)::loop(minus,plus)
 	  end
 	else
-	  if not(iscode m or iscode p)
+	  if not(iscode m || iscode p)
 	  then loop(minus,plus)
 	  else
 	    if mstart < pstart

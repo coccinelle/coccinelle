@@ -108,7 +108,7 @@ and print_anything_list = function
 	(match bef with
 	  Ast.Rule_elemTag(_) | Ast.AssignOpTag(_) | Ast.BinaryOpTag(_)
 	| Ast.ArithOpTag(_) | Ast.LogicalOpTag(_)
-	| Ast.Token("if",_) | Ast.Token("while",_) -> true | _ -> false) or
+	| Ast.Token("if",_) | Ast.Token("while",_) -> true | _ -> false) ||
 	(match aft with
 	  Ast.Rule_elemTag(_) | Ast.AssignOpTag(_) | Ast.BinaryOpTag(_)
 	| Ast.ArithOpTag(_) | Ast.LogicalOpTag(_) | Ast.Token("{",_) -> true
@@ -919,6 +919,7 @@ and designator = function
 and parameterTypeDef p =
   match Ast.unwrap p with
     Ast.VoidParam(ty) -> fullType ty
+  | Ast.VarargParam(dots) -> mcode print_string dots
   | Ast.Param(ty,Some id) -> print_named_type ty id
   | Ast.Param(ty,None) -> fullType ty
 
@@ -941,7 +942,7 @@ and parameterTypeDef p =
       mcode (print_string_with_hint (SpaceOrNewline (ref " ")))  cm
   | Ast.Pdots(dots) | Ast.Pcircles(dots) when generating ->
       mcode print_string dots
-  | Ast.Pdots(dots) | Ast.Pcircles(dots) -> raise CantBeInPlus
+  | Ast.Pdots(_) | Ast.Pcircles(_) -> raise CantBeInPlus
   | Ast.OptParam(param) | Ast.UniqueParam(param) -> raise CantBeInPlus
 
 and parameter_list l = dots (function _ -> ()) parameterTypeDef l

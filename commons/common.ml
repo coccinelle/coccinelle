@@ -3235,7 +3235,7 @@ let read_file_orig file = cat file +> unlines
 let read_file file =
   let ic = open_in file  in
   let size = in_channel_length ic in
-  let buf = String.create size in
+  let buf = Bytes.create size in
   really_input ic buf 0 size;
   close_in ic;
   buf
@@ -5545,7 +5545,7 @@ let full_charpos_to_pos2 = fun filename ->
 
   let size = (filesize filename + 2) in
 
-    let arr = Array.create size  (0,0) in
+    let arr = Array.make size  (0,0) in
 
     let chan = open_in filename in
 

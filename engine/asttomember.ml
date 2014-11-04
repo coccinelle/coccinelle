@@ -17,7 +17,7 @@ let contains_modif used_after x =
   if List.exists (function x -> List.mem x used_after) (Ast.get_fvs x)
   then true
   else
-    let bind x y = x or y in
+    let bind x y = x || y in
     let option_default = false in
     let do_nothing r k e = k e in
     let annotated_decl_bef decl =
@@ -48,7 +48,7 @@ let contains_modif used_after x =
 let contains_constant x =
   match Ast.get_inherited x with
     [] ->
-      let bind x y = x or y in
+      let bind x y = x || y in
       let option_default = false in
       let do_nothing r k e = k e in
       let mcode _ _ = false in
@@ -202,7 +202,7 @@ and statement testfn mcode tail stmt : 'a list list =
       |	_ -> if testfn ast then rule_elem ast else [])
   | Ast.Seq(lbrace,body,rbrace) ->
       let body_info = statement_list testfn mcode tail body in
-      if testfn lbrace or testfn rbrace
+      if testfn lbrace || testfn rbrace
       then conj_wrapped [lbrace;rbrace] body_info
       else body_info
 
@@ -210,7 +210,7 @@ and statement testfn mcode tail stmt : 'a list list =
   | Ast.While(header,branch,(_,_,_,aft))
   | Ast.For(header,branch,(_,_,_,aft))
   | Ast.Iterator(header,branch,(_,_,_,aft)) ->
-      if testfn header or mcode () ((),(),aft,[])
+      if testfn header || mcode () ((),(),aft,[])
       then conj (rule_elem header) (statement testfn mcode tail branch)
       else statement testfn mcode tail branch
 
@@ -219,7 +219,7 @@ and statement testfn mcode tail stmt : 'a list list =
 	conj
 	  (statement_list testfn mcode false decls)
 	  (case_lines testfn mcode tail cases) in
-      if testfn header or testfn lb or testfn rb
+      if testfn header || testfn lb || testfn rb
       then conj (rule_elem header) body_info
       else body_info
 
@@ -228,7 +228,7 @@ and statement testfn mcode tail stmt : 'a list list =
 	conj
 	  (statement testfn mcode tail branch1)
 	  (statement testfn mcode tail branch2) in
-      if testfn ifheader or mcode () ((),(),aft,[])
+      if testfn ifheader || mcode () ((),(),aft,[])
       then conj (rule_elem ifheader) branches
       else branches
 
@@ -249,7 +249,7 @@ and statement testfn mcode tail stmt : 'a list list =
 
   | Ast.FunDecl(header,lbrace,body,rbrace,(_,_,_,aft)) ->
       let body_info = statement_list testfn mcode true body in
-      if testfn header or testfn lbrace or testfn rbrace or
+      if testfn header || testfn lbrace || testfn rbrace ||
 	mcode () ((),(),aft,[])
       then conj (rule_elem header) body_info
       else body_info

@@ -95,16 +95,18 @@ let mk_token_extended x =
     new_tokens_before = [];
   }
 
-
 let rebuild_tokens_extented toks_ext =
-  let _tokens = ref [] in
-  toks_ext +> List.iter (fun tok ->
-    tok.new_tokens_before +> List.iter (fun x -> push2 x _tokens);
-    push2 tok.tok _tokens
-  );
-  (* use map_eff_rev because _tokens is already reversed *)
-  !_tokens +> map_eff_rev mk_token_extended
-
+  List.rev
+    (List.fold_left
+       (function prev ->
+	 function tok ->
+	   (mk_token_extended tok.tok) ::
+	   List.fold_left
+	     (function prev ->
+	       function bef ->
+		 (mk_token_extended bef)::prev)
+	     prev tok.new_tokens_before)
+       [] toks_ext)
 
 (* x list list, because x list separated by ',' *)
 type paren_grouped =
