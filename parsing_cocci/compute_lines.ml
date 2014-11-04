@@ -796,7 +796,7 @@ and parameterTypeDef p =
     Ast0.VoidParam(ty) ->
       let ty = typeC ty in mkres p (Ast0.VoidParam(ty)) ty ty
   | Ast0.VarargParam(dots) ->
-      let dots = bad_mcode dots in
+      let dots = normal_mcode dots in
       let ln = promote_mcode dots in
       mkres p (Ast0.VarargParam(dots)) ln ln
   | Ast0.Param(ty,Some id) ->
