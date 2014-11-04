@@ -1031,6 +1031,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	then
 	  match (up,Ast0.unwrap p) with
 	    (Ast0.VoidParam(tya),Ast0.VoidParam(tyb)) -> match_typeC tya tyb
+          | (Ast0.VarargParam(d1),Ast0.VarargParam(d)) -> check_mcode d1 d
 	  | (Ast0.Param(tya,ida),Ast0.Param(tyb,idb)) ->
 	      conjunct_bindings (match_typeC tya tyb)
 		(match_option match_ident ida idb)

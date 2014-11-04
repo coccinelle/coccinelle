@@ -582,6 +582,7 @@ and designator = function
 and parameterTypeDef p =
   match Ast.unwrap p with
     Ast.VoidParam(ty) -> fullType ty
+  | Ast.VarargParam(dots) -> mcode print_string dots
   | Ast.Param(ty,Some id) -> print_named_type ty id
   | Ast.Param(ty,None) -> fullType ty
   | Ast.MetaParam(name,_,_) -> mcode print_meta name

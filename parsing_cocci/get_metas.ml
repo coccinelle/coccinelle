@@ -575,6 +575,8 @@ and parameterTypeDef p =
 	(match Ast0.unwrap p with
 	  Ast0.VoidParam(ty) ->
 	    let (n,ty) = typeC ty in (n,Ast0.VoidParam(ty))
+	| Ast0.VarargParam(dots) ->
+	    let (n,dots) = mcode dots in (n,Ast0.VarargParam(dots))
 	| Ast0.Param(ty,Some id) ->
 	    let ((ty_id_n,ty),id) = named_type ty id in
 	    (ty_id_n, Ast0.Param(ty,Some id))

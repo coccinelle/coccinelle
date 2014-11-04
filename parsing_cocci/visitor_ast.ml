@@ -483,6 +483,7 @@ let combiner bind option_default
     let k p =
       match Ast.unwrap p with
 	Ast.VoidParam(ty) -> fullType ty
+      | Ast.VarargParam(dots) -> string_mcode dots
       | Ast.Param(ty,Some id) -> named_type ty id
       | Ast.Param(ty,None) -> fullType ty
       | Ast.MetaParam(name,_,_) -> meta_mcode name
@@ -1331,6 +1332,7 @@ let rebuilder
       Ast.rewrap p
 	(match Ast.unwrap p with
 	  Ast.VoidParam(ty) -> Ast.VoidParam(fullType ty)
+        | Ast.VarargParam(dots) -> Ast.VarargParam(string_mcode dots)
 	| Ast.Param(ty,id) -> Ast.Param(fullType ty, get_option ident id)
 	| Ast.MetaParam(name,keep,inherited) ->
 	    Ast.MetaParam(meta_mcode name,keep,inherited)

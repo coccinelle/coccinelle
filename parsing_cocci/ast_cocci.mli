@@ -372,6 +372,7 @@ and initialiser = base_initialiser wrap
 
 and base_parameterTypeDef =
     VoidParam     of fullType
+  | VarargParam   of string mcode
   | Param         of fullType * ident option
 
   | MetaParam     of meta_name mcode * keep_binding * inherited

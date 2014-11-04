@@ -677,6 +677,7 @@ let equal_initialiser i1 i2 =
 let equal_parameterTypeDef p1 p2 =
   match (Ast0.unwrap p1,Ast0.unwrap p2) with
     (Ast0.VoidParam(_),Ast0.VoidParam(_)) -> true
+  | (Ast0.VarargParam(_),Ast0.VarargParam(_)) -> true
   | (Ast0.Param(_,_),Ast0.Param(_,_)) -> true
   | (Ast0.MetaParam(name1,_),Ast0.MetaParam(name2,_))
   | (Ast0.MetaParamList(name1,_,_),Ast0.MetaParamList(name2,_,_)) ->

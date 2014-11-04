@@ -737,6 +737,7 @@ and parameterTypeDef p =
   rewrap p no_isos
     (match Ast0.unwrap p with
       Ast0.VoidParam(ty) -> Ast.VoidParam(typeC false ty)
+    | Ast0.VarargParam(dots) -> Ast.VarargParam(mcode dots)
     | Ast0.Param(ty,id) ->
 	let allminus = check_allminus.VT0.combiner_rec_parameter p in
 	Ast.Param(typeC allminus ty,get_option ident id)
