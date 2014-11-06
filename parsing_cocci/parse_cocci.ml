@@ -63,6 +63,7 @@ let token2c (tok,_) =
   | PC.TPure -> "pure"
   | PC.TContext -> "context"
   | PC.TTypedef -> "typedef"
+  | PC.TAttribute -> "attribute"
   | PC.TDeclarer -> "declarer"
   | PC.TIterator -> "iterator"
   | PC.TName -> "name"
@@ -678,6 +679,7 @@ let split_token ((tok,_) as t) =
   | PC.TStatement | PC.TPosition | PC.TFormat | PC.TAnalysis | PC.TPosAny
   | PC.TInitialiser | PC.TSymbol
   | PC.TFunction | PC.TTypedef | PC.TDeclarer | PC.TIterator | PC.TName
+  | PC.TAttribute
   | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh
   | PC.TCppConcatOp | PC.TPure
   | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TVirtual | PC.TDisable

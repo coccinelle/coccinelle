@@ -107,7 +107,8 @@ and  logicalOp = function
 %token TIdExpression TInitialiser TDeclaration TField TMetavariable TSymbol
 %token Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
 %token TPure TContext TGenerated TFormat
-%token TTypedef TDeclarer TIterator TName TPosition TAnalysis TPosAny
+%token TTypedef TAttribute TDeclarer TIterator TName TPosition TAnalysis
+%token TPosAny
 %token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall
 %token TScript TInitialize TFinalize TNothing TVirtual
 %token<string> TRuleName
@@ -541,6 +542,11 @@ list_len:
       if arity = Ast.NONE && pure = Ast0.Impure
       then (!Data.add_type_name name; [])
       else raise (Semantic_cocci.Semantic "bad typedef")) }
+| TAttribute
+    { (fun arity (_,name) pure check_meta ->
+      if arity = Ast.NONE && pure = Ast0.Impure
+      then (!Data.add_attribute name; [])
+      else raise (Semantic_cocci.Semantic "bad attribute")) }
 | TDeclarer TName
     { (fun arity (_,name) pure check_meta ->
       if arity = Ast.NONE && pure = Ast0.Impure
