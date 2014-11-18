@@ -21,7 +21,7 @@ module IntMap = Common.IntMap
  * won't be many keys (each key representing one disjunction) *)
 let merge =
   let fn key aopt bopt = match aopt, bopt with
-    | Some a, Some b -> Some (List.map2 (fun a b -> a || b) a b)
+    | Some a, Some b -> Some (List.map2 (||) a b)
     | Some a, None | None, Some a -> Some a
     | None, None -> None in
   IntMap.merge fn
