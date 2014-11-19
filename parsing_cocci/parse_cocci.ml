@@ -2212,7 +2212,10 @@ let parse file =
       |	_ -> failwith "unexpected code before the first rule\n")
   | (false,[(PC.TArobArob,_)]) | (false,[(PC.TArob,_)]) ->
       ([],([] : Ast0.parsed_rule list),[] (*virtual rules*), [] (*all metas*))
-  | _ -> failwith "unexpected code before the first rule\n" in
+  | _ ->
+      failwith
+	(Printf.sprintf "unexpected code before the first rule: %s\n"
+	   (Dumper.dump initial_tokens)) in
   res) in
   parse_loop file
 
