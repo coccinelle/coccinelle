@@ -123,6 +123,8 @@ val add_fmtlist_meta: (Ast_cocci.meta_name -> Ast_cocci.list_len -> unit) ref
 
 val add_type_name: (string -> unit) ref
 
+val add_attribute: (string -> unit) ref
+
 val add_declarer_name: (string -> unit) ref
 
 val add_iterator_name: (string -> unit) ref

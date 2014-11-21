@@ -2045,9 +2045,13 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 	(indexify xs) +> List.fold_left (fun acc (n,var) ->
 	  (* consider all possible matches *)
           acc >||> (function tin -> (
-            X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart ->
-              onedecl allminus decla (var, iiptvirgb, iisto) >>=
-              (fun decla (var, iiptvirgb, iisto) ->
+            onedecl allminus decla (var, iiptvirgb, iisto) >>=
+            (fun decla (var, iiptvirgb, iisto) ->
+	      (* tokenf has to be after the onedecl, because ondecl
+		 detects whether there is actually a match and the
+		 tokenf should be done *)
+              X.tokenf_mck mckstart iifakestart >>=
+	      (fun mckstart iifakestart ->
                 return (
                 (mckstart, allminus, decla),
 		    (* adjust the variable that was chosen *)

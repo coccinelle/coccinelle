@@ -185,8 +185,9 @@ Y. Padioleau, J.L. Lawall, R.R Hansen, G. Muller
 .I EuroSys 2008, 
 Glasgow, Scotland (April 2008) pp. 247-260.
 .SH AUTHOR
-This manual page was written by Julia Lawall <julia@diku.dk>.
+This manual page was written by Julia Lawall <Julia.Lawall@lip6.fr>.
 .SH REPORTING BUGS
-Send a mail to <cocci@diku.dk>
+Send a mail to <cocci@systeme.lip6.fr>
 .SH COPYRIGHT
 Copyright 2011, DIKU, University of Copenhagen and INRIA.
+Copyright 2012-2014, INRIA.

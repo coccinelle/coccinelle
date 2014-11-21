@@ -63,6 +63,7 @@ let token2c (tok,_) =
   | PC.TPure -> "pure"
   | PC.TContext -> "context"
   | PC.TTypedef -> "typedef"
+  | PC.TAttribute -> "attribute"
   | PC.TDeclarer -> "declarer"
   | PC.TIterator -> "iterator"
   | PC.TName -> "name"
@@ -293,6 +294,9 @@ let print_tokens s tokens =
 
 type plus = PLUS | NOTPLUS | SKIP
 
+(* skip means ignore completely, notplus means keep in the recursion, but don't
+attach to it, plus means that it is possible to attach to the token *)
+
 let plus_attachable only_plus (tok,_) =
   match tok with
     PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
@@ -341,12 +345,14 @@ let plus_attachable only_plus (tok,_) =
   | PC.TMetaFieldList(_,_,_,clt)
   | PC.TMetaFunc(_,_,_,clt) | PC.TMetaLocalFunc(_,_,_,clt)
 
+(* it would seem that this should all be skips
   | PC.TWhen(clt) |  PC.TWhenTrue(clt) |  PC.TWhenFalse(clt)
   | PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
   (* | PC.TCircles(clt) | PC.TStars(clt) *)
   | PC.TOEllipsis(clt) | PC.TCEllipsis(clt)
   | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) (* | PC.TOCircles(clt)
   | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *)
+*)
 
   | PC.TWhy(clt) | PC.TDotDot(clt) | PC.TBang(clt) | PC.TOPar(clt)
   | PC.TCPar(clt)
@@ -366,6 +372,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.TOPar0(s,clt) | PC.TMid0(s,clt) | PC.TCPar0(s,clt) -> NOTPLUS
   | PC.TMetaPos(nm,_,_,_) -> NOTPLUS
   | PC.TSub(clt) -> NOTPLUS
+  | PC.TDirective(_,clt) -> NOTPLUS
 
   | _ -> SKIP
 
@@ -672,6 +679,7 @@ let split_token ((tok,_) as t) =
   | PC.TStatement | PC.TPosition | PC.TFormat | PC.TAnalysis | PC.TPosAny
   | PC.TInitialiser | PC.TSymbol
   | PC.TFunction | PC.TTypedef | PC.TDeclarer | PC.TIterator | PC.TName
+  | PC.TAttribute
   | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh
   | PC.TCppConcatOp | PC.TPure
   | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TVirtual | PC.TDisable
@@ -2204,7 +2212,10 @@ let parse file =
       |	_ -> failwith "unexpected code before the first rule\n")
   | (false,[(PC.TArobArob,_)]) | (false,[(PC.TArob,_)]) ->
       ([],([] : Ast0.parsed_rule list),[] (*virtual rules*), [] (*all metas*))
-  | _ -> failwith "unexpected code before the first rule\n" in
+  | _ ->
+      failwith
+	(Printf.sprintf "unexpected code before the first rule: %s\n"
+	   (Dumper.dump initial_tokens)) in
   res) in
   parse_loop file
 
@@ -2287,10 +2298,10 @@ let process file isofile verbose =
 			   [Ast0.Exp e] -> true | _ -> false)
 		     | _ -> false] in
 	       let minus = Arity.minus_arity minus in
+	       let plus = Adjust_pragmas.process plus in
 	       let ((metavars,minus),function_prototypes) =
 		 Function_prototypes.process
 		   rule_name metavars dropped_isos minus plus ruletype in
-	       let plus = Adjust_pragmas.process plus in
           (* warning! context_neg side-effects its arguments *)
 	       let (m,p) = List.split (Context_neg.context_neg minus plus) in
 	       Type_infer.type_infer p;

@@ -156,6 +156,8 @@ let all_metavariables =
 
 let type_names = (Hashtbl.create(100) : (string, D.clt -> token) Hashtbl.t)
 
+let attr_names = (Hashtbl.create(100) : (string, D.clt -> token) Hashtbl.t)
+
 let declarer_names = (Hashtbl.create(100) : (string, D.clt -> token) Hashtbl.t)
 
 let iterator_names = (Hashtbl.create(100) : (string, D.clt -> token) Hashtbl.t)
@@ -174,13 +176,18 @@ let check_var s linetype =
       with Not_found ->
 	(try (Hashtbl.find type_names s) linetype
 	with Not_found ->
-	  (try (Hashtbl.find declarer_names s) linetype
+	  (try
+	    let x = (Hashtbl.find attr_names s) linetype in
+	    check_plus_linetype s;
+	    x
 	  with Not_found ->
-	    (try (Hashtbl.find iterator_names s) linetype
+	    (try (Hashtbl.find declarer_names s) linetype
 	    with Not_found ->
-	      (try (Hashtbl.find symbol_names s) linetype
+	      (try (Hashtbl.find iterator_names s) linetype
 	      with Not_found ->
-                TIdent (s,linetype))))) in
+		(try (Hashtbl.find symbol_names s) linetype
+		with Not_found ->
+                  TIdent (s,linetype)))))) in
   if !Data.in_meta || !Data.in_rule_name
   then (try Hashtbl.find rule_names s; TRuleName s with Not_found -> fail())
   else fail()
@@ -220,6 +227,7 @@ let id_tokens lexbuf =
   | "list" when in_meta ->       check_arity_context_linetype s; Tlist
   | "fresh" when in_meta ->      check_arity_context_linetype s; TFresh
   | "typedef" when in_meta ->    check_arity_context_linetype s; TTypedef
+  | "attribute" when in_meta ->  check_arity_context_linetype s; TAttribute
   | "declarer" when in_meta ->   check_arity_context_linetype s; TDeclarer
   | "iterator" when in_meta ->   check_arity_context_linetype s; TIterator
   | "name" when in_meta ->       check_arity_context_linetype s; TName
@@ -462,6 +470,10 @@ let init _ =
     (function name ->
       let fn clt = TTypeId(name,clt) in
       Hashtbl.replace type_names name fn);
+  Data.add_attribute :=
+    (function name ->
+      let fn clt = TDirective (Ast.Space name, clt) in
+      Hashtbl.replace attr_names name fn);
   Data.add_declarer_name :=
     (function name ->
       let fn clt = TDeclarerId(name,clt) in
