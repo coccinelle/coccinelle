@@ -170,7 +170,10 @@
 - Extend file names only if the mentioned file does not exist.
 - Better support for functions that have no specified return type.
 - Added --include-headers-for-types option. 
-- Cope with unreadable C files.  Thanks to Akos PASZTORY for the suggestion.
+- Cope with unreadable C files.  Thanks to Akos PASZTORY for the
+  suggestion.
+- Add the ability to add, but not match or remove, attributes.  Thanks to
+  Johannes Berg for the suggestion.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
@@ -385,6 +388,9 @@
 - Make fix_tokens_strings, List.flatten tail recursive to avoid stack
   overflow
 - Make nothing match against empty statements.
+- Improved propagation of #ifdef additions to function prototypes.
+  Reported by Stefan Assman.
+- Allow adding directives before and after ..., see ifif.cocci
 
 * 0.2.5
 ** Language:
