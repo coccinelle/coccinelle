@@ -36,8 +36,7 @@ val skip: rule_line:int -> snapshot -> snapshot
 val add: string -> snapshot -> snapshot
 
 (* Add value, change the arity. *)
-val add_with_arity:
-      string -> Ast0_cocci.arity -> snapshot -> snapshot
+val add_with_arity: string -> Ast0_cocci.arity -> snapshot -> snapshot
 
 
 (* ------------------------------------------------------------------------- *)

@@ -101,12 +101,12 @@ let whencodes ~strfn ~exprfn ~notfn ~alwaysfn l =
 (* This is where the magic happens!
  * only position and star statements if they are the first in a dots or
  * come immediately after a nest, dots, disjunction, or metastatement. *)
-let star_dotsstmtfn comb stmtdots =
+let star_dotsstmtfn comb context_mode stmtdots =
 
   (* detects if any of the statements in here contain minuses in which case we
    * put the stars where the minuses are. *)
   let has_minuses = Detect_patch.detect_statement_dots stmtdots in
-  let c = comb ~context_mode:has_minuses in
+  let c = comb ~context_mode:(context_mode || has_minuses) in
   let stmtfn = c.VT0.combiner_rec_statement in
 
   let star_stmtfn stmt snp =
@@ -224,7 +224,7 @@ let rec gen_combiner ~context_mode =
     (fun x ->
        if GT.no_gen x (* relevant in whencodes *)
        then fn v x
-       else star_dotsstmtfn gen_combiner v x) in
+       else star_dotsstmtfn gen_combiner context_mode v x) in
 
   (* detect if disj is the only thing, in which case we don't want to split
    * the disjunction rule.

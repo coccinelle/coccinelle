@@ -29,10 +29,9 @@ context\_rule.ml contains the main rule generation:
  2. uses rule\_body.ml to generate the body of the new context rule.
      - uses the AST0 visitor module (in parsing\_cocci directory) to traverse AST0 and "reparse" original patch/context rule to new context rule.
      - uses the types defined in generator\_types.ml to keep state during the traversal.
-     - uses position\_generator.ml to generate metapositions at structurally suitable places in the rule (used for *org* and *report* printing modes). If the original rule was a plus rule (ie. no */-, only +), the positions dictate where the new \*'s are placed.
-     - uses disjunction\_generator.ml to handle special cases that arise in converting a *patch* rule to a *context* rule.
+     - uses position\_generator.ml to generate metapositions at structurally suitable places in the rule (used for *org* and *report* printing modes). If the original rule was a plus rule (ie. no */-, only +), the positions dictate where the new \*'s are placed. Otherwise, the original */- dictate where the new \*'s are placed.
+     - uses disjunction\_generator.ml to handle special disjunction cases that arise in converting a *patch* rule to a *context* rule.
  3. uses rule\_header.ml to generate a new rule header with the correct dependencies and metavariables.
- 4. rulebody does all the generation using position and disj generator
 
 
 Constraints
