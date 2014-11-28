@@ -225,6 +225,7 @@ let token2c (tok,_) =
   | PC.TAny(clt) -> add_clt "ANY" clt
   | PC.TStrict(clt) -> add_clt "STRICT" clt
   | PC.TEllipsis(clt) -> add_clt "..." clt
+  | PC.TVAEllipsis(clt) -> add_clt "......" clt
 (*
   | PC.TCircles(clt)  -> add_clt "ooo" clt
   | PC.TStars(clt)    -> add_clt "***" clt
@@ -448,6 +449,7 @@ let get_clt ((tok,_) as t) =
   | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) (* | PC.TOCircles(clt)
   | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *)
   | PC.TFunDecl(clt) | PC.TDirective(_,clt) | PC.TLineEnd(clt) -> clt
+  | PC.TVAEllipsis(clt) -> clt
   | _ -> raise (NoClt("get_clt: token " ^ (token2c t) ^ " has no clt"))
 
 let update_clt ((tok,x) as t) clt =
@@ -609,6 +611,7 @@ let update_clt ((tok,x) as t) clt =
   | PC.TFunDecl(_) -> (PC.TFunDecl(clt),x)
   | PC.TTildeExclEq(_) -> (PC.TTildeExclEq(clt),x)
   | PC.TDirective(a,_) -> (PC.TDirective(a,clt),x)
+  | PC.TVAEllipsis(_) -> (PC.TVAEllipsis(clt),x)
 
   | _ -> raise (NoClt ("update_clt: token " ^ (token2c t) ^ " has no clt"))
 
@@ -695,7 +698,7 @@ let split_token ((tok,_) as t) =
   | PC.Tunsigned(clt) | PC.Tsigned(clt)
   | PC.Tstatic(clt) | PC.Tauto(clt) | PC.Tregister(clt) | PC.Textern(clt)
   | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt)
-  | PC.Tconst(clt) | PC.Tvolatile(clt) -> split t clt
+  | PC.TVAEllipsis(clt) | PC.Tconst(clt) | PC.Tvolatile(clt) -> split t clt
 
   | PC.TDirective(s,_) -> ([],[t]) (* only allowed in + *)
   | PC.TPlusFile(s,clt) | PC.TMinusFile(s,clt)

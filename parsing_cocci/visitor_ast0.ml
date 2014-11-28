@@ -434,15 +434,21 @@ let visitor mode bind option_default
 	    let ((ty_id_n,ty),id) = named_type ty id in
 	    let (sem_n,sem) = string_mcode sem in
 	    (multibind [stg_n;ty_id_n;sem_n], Ast0.UnInit(stg,ty,id,sem))
-	| Ast0.FunProto(fi,name,lp1,params,rp1,sem) ->
+	| Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) ->
 	    let (fi_n,fi) = map_split_bind fninfo fi in
 	    let (name_n,name) = ident name in
 	    let (lp1_n,lp1) = string_mcode lp1 in
 	    let (params_n,params) = parameter_dots params in
+	    let (va_n,va) = begin match va with
+	      | None -> (option_default, None)
+	      | Some (comma, ellipsis) ->
+	        let (comma_n,comma) = string_mcode comma in
+	        let (ellipsis_n,ellipsis) = string_mcode ellipsis in
+	        (multibind [comma_n; ellipsis_n],Some(comma,ellipsis)) end in
 	    let (rp1_n,rp1) = string_mcode rp1 in
 	    let (sem_n,sem) = string_mcode sem in
-	    (multibind [fi_n;name_n;lp1_n;params_n;rp1_n;sem_n],
-	     Ast0.FunProto(fi,name,lp1,params,rp1,sem))
+	    (multibind [fi_n;name_n;lp1_n;params_n;va_n;rp1_n;sem_n],
+	     Ast0.FunProto(fi,name,lp1,params,va,rp1,sem))
 	| Ast0.MacroDecl(name,lp,args,rp,sem) ->
 	    let (name_n,name) = ident name in
 	    let (lp_n,lp) = string_mcode lp in
@@ -569,8 +575,6 @@ let visitor mode bind option_default
 	(match Ast0.unwrap p with
 	  Ast0.VoidParam(ty) ->
 	    let (n,ty) = typeC ty in (n,Ast0.VoidParam(ty))
-	| Ast0.VarargParam(dots) ->
-	    let (n,dots) = string_mcode dots in (n,Ast0.VarargParam(dots))
 	| Ast0.Param(ty,Some id) ->
 	    let ((ty_id_n,ty),id) = named_type ty id in
 	    (ty_id_n, Ast0.Param(ty,Some id))
@@ -618,18 +622,24 @@ let visitor mode bind option_default
     let k s =
       rewrap s
 	(match Ast0.unwrap s with
-	  Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace,aft) ->
+	  Ast0.FunDecl(bef,fi,name,lp,params,va,rp,lbrace,body,rbrace,aft) ->
 	    let (fi_n,fi) = map_split_bind fninfo fi in
 	    let (name_n,name) = ident name in
 	    let (lp_n,lp) = string_mcode lp in
 	    let (params_n,params) = parameter_dots params in
+            let (va_n,va) = match va with
+              | None -> (option_default, None)
+              | Some (comma,ellipsis) ->
+                let (comma_n, comma) = string_mcode comma in
+                let (ellipsis_n, ellipsis) = string_mcode ellipsis in
+                (multibind [comma_n;ellipsis_n],Some(comma,ellipsis)) in
 	    let (rp_n,rp) = string_mcode rp in
 	    let (lbrace_n,lbrace) = string_mcode lbrace in
 	    let (body_n,body) = statement_dots body in
 	    let (rbrace_n,rbrace) = string_mcode rbrace in
 	    (multibind
-	       [fi_n;name_n;lp_n;params_n;rp_n;lbrace_n;body_n;rbrace_n],
-	     Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace,aft))
+	       [fi_n;name_n;lp_n;params_n;va_n;rp_n;lbrace_n;body_n;rbrace_n],
+	     Ast0.FunDecl(bef,fi,name,lp,params,va,rp,lbrace,body,rbrace,aft))
 	| Ast0.Decl(bef,decl) ->
 	    let (decl_n,decl) = declaration decl in
 	    (decl_n,Ast0.Decl(bef,decl))

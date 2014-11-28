@@ -2399,7 +2399,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
      },iivirg)
        -> fail (* C++ constructor declaration not supported in SmPL *)
 
-   | A.FunProto(fninfoa,ida,lpa,paramsa,rpa,sema),
+   | A.FunProto(fninfoa,ida,lpa,paramsa,va,rpa,sema),
      ({B.v_namei = Some (idb, B.NoInit);
        B.v_type =
 	((({B.const = false; B.volatile = false},[]) as q),
@@ -2409,13 +2409,19 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_attr = attrs;
        B.v_type_bis = typbbis;
      }, iivirg) ->
+       (match (va,isvaargs) with
+        | (None,false) -> return (va,(isvaargs, iidotsb))
+        | (Some (commaa, dotsa), true) -> 
+           let (commab, dotsb) = tuple_of_list2 iidotsb in
+           tokenf commaa commab >>= (fun commaa commab ->
+           tokenf dotsa dotsb >>= (fun dotsa dotsb ->
+           return (Some(commaa,dotsa), (true,[commab;dotsb]))
+                                  ))
+        | _ -> fail
+       ) >>=
+        (fun va (isvaargs, iidotsb) -> let (lpb, rpb) = tuple_of_list2 ii in
 
         let (lpb, rpb) = tuple_of_list2 ii in
-        if isvaargs
-        then
-          pr2_once
-	    ("Not handling well variable length arguments func. "^
-             "You have been warned");
         tokenf lpa lpb >>= (fun lpa lpb ->
         tokenf rpa rpb >>= (fun rpa rpb ->
         tokenf sema iiptvirgb >>= (fun sema iiptvirgb ->
@@ -2432,7 +2438,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
           (fun paramsaundots paramsb ->
             let paramsa = redots paramsa paramsaundots in
             return (
-              (A.FunProto(fninfoa,ida,lpa,paramsa,rpa,sema) +> A.rewrap decla,
+              (A.FunProto(fninfoa,ida,lpa,paramsa,va,rpa,sema) +> A.rewrap decla,
 	       (({B.v_namei = Some (idb, B.NoInit);
 		  B.v_type =
 		  (q,
@@ -2443,7 +2449,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 		  B.v_attr = attrs;
 		  B.v_type_bis = typbbis;
 		}, iivirg), iiptvirgb, iistob))))
-	      ))))))))
+	      )))))))))
 
    (* do iso-by-absence here ? allow typedecl and var ? *)
    | A.TyDecl (typa, ptvirga),
@@ -4445,7 +4451,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
       )
 
 
-  | A.FunHeader (mckstart, allminus, fninfoa, ida, oparen, paramsa, cparen),
+  | A.FunHeader (mckstart, allminus, fninfoa, ida, oparen, paramsa, va, cparen),
     F.FunHeader ({B.f_name = nameidb;
                   f_type = (retb, (paramsb, (isvaargs, iidotsb)));
                   f_storage = stob;
@@ -4497,7 +4503,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 
              return (
                A.FunHeader(mckstart,allminus,fninfoa,ida,oparen,
-                          paramsa,cparen),
+                          paramsa,va,cparen),
                F.FunHeader ({B.f_name = nameidb;
                              f_type = (retb, (paramsb, (isvaargs, iidotsb)));
                              f_storage = stob;

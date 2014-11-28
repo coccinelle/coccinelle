@@ -266,7 +266,6 @@ and print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2) fn =
   mcode print_string rp1; mcode print_string lp2;
   parameter_list params; mcode print_string rp2
 
-
 and typeC t =
   print_context t
     (function _ ->
@@ -352,10 +351,11 @@ and declaration d =
       | Ast0.UnInit(stg,ty,id,sem) ->
 	  print_option (mcode U.storage) stg; print_named_type ty id;
 	  mcode print_string sem
-      | Ast0.FunProto(fninfo,name,lp1,params,rp1,sem) ->
+      | Ast0.FunProto(fninfo,name,lp1,params,va,rp1,sem) ->
 	  List.iter print_fninfo fninfo;
 	  ident name; mcode print_string_box lp1;
-	  parameter_list params; close_box(); mcode print_string rp1;
+	  parameter_list params; varargs va;
+	  close_box(); mcode print_string rp1;
 	  mcode print_string sem
       | Ast0.MacroDecl(name,lp,args,rp,sem) ->
 	  ident name; mcode print_string_box lp;
@@ -437,7 +437,6 @@ and parameterTypeDef p =
     (function _ ->
       match Ast0.unwrap p with
 	Ast0.VoidParam(ty) -> typeC ty
-      | Ast0.VarargParam(dots) -> mcode print_string dots 
       | Ast0.Param(ty,Some id) -> print_named_type ty id
       |	Ast0.Param(ty,None) -> typeC ty
       | Ast0.MetaParam(name,_) -> mcode print_meta name
@@ -451,7 +450,10 @@ and parameterTypeDef p =
 	  expression asexp)
 
 and parameter_list l = dots (function _ -> ()) parameterTypeDef l
-
+and varargs va = match va with
+  | None -> ()
+  | Some (comma, ellipsis) ->
+    mcode print_string comma; mcode print_string ellipsis
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
@@ -459,11 +461,11 @@ and statement arity s =
   print_context s
     (function _ ->
       match Ast0.unwrap s with
-	Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace,_) ->
+	Ast0.FunDecl(_,fninfo,name,lp,params,va,rp,lbrace,body,rbrace,_) ->
 	  print_string arity;
 	  List.iter print_fninfo fninfo;
 	  ident name; mcode print_string_box lp;
-	  parameter_list params; close_box(); mcode print_string rp;
+	  parameter_list params; varargs va; close_box(); mcode print_string rp;
 	  print_string " ";
 	  print_string arity; mcode print_string lbrace; start_block();
 	  dots force_newline (statement arity) body;
