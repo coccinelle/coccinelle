@@ -440,7 +440,12 @@ let expand_mcode toks =
       (match any_xxs with
       | Ast_cocci.NOREPLACEMENT -> ()
       | Ast_cocci.REPLACEMENT(any_xxs,_) ->
-        unparser any_xxs Unparse_cocci.InPlace
+	  (* second argument indicates whether newline is added for statements
+	     if a fake token is being replaced, there should be a newline,
+	     hence use before *)
+	  (match t with
+	    Fake1 _ -> unparser any_xxs Unparse_cocci.Before
+          | _ -> unparser any_xxs Unparse_cocci.InPlace)
       )
     | Ast_cocci.CONTEXT (_,any_befaft) ->
       (match any_befaft with
