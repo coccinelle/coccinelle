@@ -513,6 +513,14 @@ let is_newline_or_comment = function
   | T2(Parser_c.TCommentNewline _,_b,_i,_h) -> true
   | _ -> false
 
+let generated_newline = function
+    T2((Parser_c.TCommentNewline _),Ctx,_i,_h) -> true
+  | C2("\n",_) -> true
+  | Cocci2(s,_,_,_,_) ->
+      (try let _ = Str.search_forward (Str.regexp "\n") s 0 in true
+      with Not_found -> false)
+  | _ -> false
+
 let is_fake2 = function Fake2 _ -> true | _ -> false
 
 let is_whitespace x = 
@@ -1319,22 +1327,19 @@ let add_newlines toks tabbing_unit =
       let a = T2(commatok,Ctx,idx,
 		 Some (Unparse_cocci.SpaceOrNewline sp)) in
       a :: loop newinfo count false xs
-    | ((T2(commatok,Ctx,idx,_)) as a) ::
-      ((T2((Parser_c.TCommentNewline _),Ctx,_i,_h)) as b) :: xs
+    | ((T2(commatok,Ctx,idx,_)) as a) :: b :: xs
       when (TH.str_of_tok commatok) = "," &&
-	   not (stack = []) && snd (List.hd stack) = None
+	   generated_newline b &&
+	   not (stack = [])
       ->
-	let sp = ref " " in (* not connected to code *)
-	let ((newstack,new_space_cell,_),_count) =
-	  update_by_stack "," (count-1) stack sp space_cell seen_cocci in
 	let s = str_of_token2 b in
 	let indent =
 	  match List.rev (Str.split (Str.regexp "\n") s) with
 	    indent::_ -> indent
 	  | [] -> "" (* no indentation seems desired *) in
-	let stackfront = fst(List.hd newstack) in
+	let stackfront = fst(List.hd stack) in
 	a :: b ::
-	loop ([stackfront,Some indent],new_space_cell,false)
+	loop ([stackfront,Some indent],space_cell,false)
 	  (simple_string_length s count) false xs
     | (T2(commatok,Ctx,idx,_)) :: ((T2 _ :: _) as xs)
       when
