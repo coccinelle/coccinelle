@@ -1083,7 +1083,7 @@ let fix_tokens_strings toks =
             (match a with
               TString(str_isW,info) ->
 		let str = Parse_string_c.parse_string str_isW info in
-		let new_acc = (List.rev str) @ (List.rev front) @ acc in
+		let new_acc = (List.rev front) @ (List.rev str) @ acc in
 		out_strings new_acc rest
             | _ ->
 		let new_acc = (List.rev front) @ (a :: acc) in
