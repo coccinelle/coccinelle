@@ -637,7 +637,13 @@ let string_metavariables str clt =
 	match lenname with
 	  Ast.AnyLen -> Ast0.AnyListLen
 	| Ast.MetaLen nm -> Ast0.MetaListLen(clt2mcode nm clt)
-	| Ast.CstLen n -> Ast0.CstListLen n in
+	| Ast.CstLen n ->
+	    if n < 1
+	    then
+	      failwith
+		(Printf.sprintf "length of format list %s must be at least 1"
+		   str)
+	    else Ast0.CstListLen n in
       MFrag
 	(fun pct ->
 	  Ast0.wrap(Ast0.MetaFormatList(pct,clt2mcode name clt,lenname)))
