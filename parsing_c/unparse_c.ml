@@ -515,7 +515,8 @@ let is_newline_or_comment = function
 
 let generated_newline = function
     T2((Parser_c.TCommentNewline _),Ctx,_i,_h) -> true
-  | C2("\n",_) -> true
+  | C2("",_) -> false
+  | C2(s,_) -> String.get s 0 = '\n' (* may have whitespace after *)
   | Cocci2(s,_,_,_,_) ->
       (try let _ = Str.search_forward (Str.regexp "\n") s 0 in true
       with Not_found -> false)
