@@ -8,7 +8,6 @@ f (P,int x,...) { ... }
 @ rule3 disable add_signed @
 expression list[rule1.n] Es;
 expression E;
-identifier x;
 @@
 
 g (Es,
