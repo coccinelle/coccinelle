@@ -785,19 +785,31 @@ let drop_minus_plus l clt =
 let not_format_string str clt =
   Ast0.wrap(Ast0.Constant (clt2mcode (Ast.String str) clt))
 
-let parse_string str ((a,b,c,d,e,f,g,h,i,_) as clt) =
-  if List.length(Str.split_delim (Str.regexp "%") str) > 1
-  then
-    try
-      begin
-	let first = clt2mcode "\"" clt in
-	(*do not want subsequent tokens to inherit whitespace from first*)
-	let clt = (a,b,c,d,e,f,g,h,i,"") in
-	let (line,middle) = drop_minus_plus str clt in
-	let middle = Ast0.wrap (Ast0.DOTS middle) in
-	let last = clt2mcode "\"" (update_line clt (line-1)) in
-	contains_string_constant := true;
-	Ast0.wrap(Ast0.StringConstant(first,middle,last))
-      end
-    with Parse_printf.Not_format_string -> not_format_string str clt
-  else not_format_string str clt
+let nometas str =
+  match Str.split (Str.regexp "@") str with
+    before::within::after::_ -> false (* need at least %@d@ *)
+  | _ -> true
+
+let parse_string str ((mc,b,c,d,e,f,g,h,i,_) as clt) =
+  match mc with
+    Data.PLUS when nometas str ->
+      (* not matched against, no internal changes possible, so no need to
+	 parse *)
+      not_format_string str clt
+   | _ ->
+       if List.length(Str.split_delim (Str.regexp "%") str) > 1
+       then
+	 try
+	   begin
+	     let first = clt2mcode "\"" clt in
+	     (*do not want subsequent tokens to inherit whitespace
+		from first*)
+	     let clt = (mc,b,c,d,e,f,g,h,i,"") in
+	     let (line,middle) = drop_minus_plus str clt in
+	     let middle = Ast0.wrap (Ast0.DOTS middle) in
+	     let last = clt2mcode "\"" (update_line clt (line-1)) in
+	     contains_string_constant := true;
+	     Ast0.wrap(Ast0.StringConstant(first,middle,last))
+	   end
+	 with Parse_printf.Not_format_string -> not_format_string str clt
+       else not_format_string str clt
