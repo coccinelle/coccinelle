@@ -1193,12 +1193,13 @@ let main () =
 	    else
 	      if Sys.file_exists testfile then
 	      begin
-	      (if !FC.include_path = []
-	      then FC.include_path := ["include"]);
-	      Testing.testone "" x !compare_with_expected
+		(if !FC.include_path = []
+		then FC.include_path := ["include"]);
+		Testing.testone "" x !compare_with_expected
 	      end
 	      else
-	        Printf.fprintf stderr "ERROR: File %s does not exist\n" testfile
+	        Printf.fprintf stderr
+		  "ERROR: File %s does not exist\n" testfile
 		end
 
     | []  when !test_all ->
