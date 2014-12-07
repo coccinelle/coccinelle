@@ -1457,8 +1457,12 @@ let add_newlines toks tabbing_unit =
 	a :: loop newinfo count false xs
     | (Cocci2(s,line,lcol,rcol,_))::((T2 _) as a)::xs
       when is_newline_or_comment a ->
-      (* if the added code is followed by any existing comment or newline,
-	 then just do nothing. *)
+	(* if the added code is followed by any existing comment or newline,
+	   check on the previous space, but the sp defined here is not
+	   attached to anything. *)
+	let sp = ref " " in
+	let (newinfo,count) =
+	  update_by_stack s count stack sp space_cell true in
 	(Cocci2(s,line,lcol,rcol,None))::
 	loop (stack,space_cell,true) (simple_string_length s count)
 	  false (a::xs)
