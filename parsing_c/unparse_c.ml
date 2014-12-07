@@ -1281,8 +1281,8 @@ let add_newlines toks tabbing_unit =
     | Some tu -> tu in
   let check_for_newline count x tuinfo = function
     | Some (start,space_cell) when count > Flag_parsing_c.max_width ->
-      space_cell := "\n"^(create_indent x tuinfo);
-      Some (x + (count - start))
+	space_cell := "\n"^(create_indent x tuinfo);
+	Some (x + (count - start))
     | _ -> None in
   let start_box stack space_cell count seen_cocci s =
     let seen_cocci = match stack with [] -> false | _ -> seen_cocci in
@@ -1305,7 +1305,7 @@ let add_newlines toks tabbing_unit =
     match stack with
     | [(x,tustack)] when seen_cocci ->
         (match check_for_newline count x tustack space_cell with
-        | Some count -> ((stack,Some (x,sp), seen_cocci),count)
+        | Some count -> ((stack,Some (count,sp), seen_cocci),count)
         | None -> ((stack,Some (count,sp),seen_cocci),count))
     | [_] -> ((stack,Some (count,sp),seen_cocci),count)
     | _ -> ((stack,space_cell,seen_cocci),count) in
