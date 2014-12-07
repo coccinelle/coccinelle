@@ -1181,14 +1181,14 @@ let main () =
     (* The test framework. Works with tests/ or .ok and .failed  *)
     (* --------------------------------------------------------- *)
     | [x] when !test_mode    ->
-    begin
+	begin
 	  let prefix = "tests/" in
 	  let testfile = x ^ ".cocci" in
 	    if Sys.file_exists (prefix ^ testfile) then
 	      begin
-        (if !FC.include_path = []
-        then FC.include_path := [prefix^"include"]);
-        Testing.testone prefix x !compare_with_expected
+		(if !FC.include_path = []
+		then FC.include_path := [prefix^"include"]);
+		Testing.testone prefix x !compare_with_expected
 	      end
 	    else
 	      if Sys.file_exists testfile then
