@@ -47,3 +47,7 @@ let timeout = ref (None : int option)
 let selected_only = ref false (* just print files that would be treated *)
 
 let use_saved_typedefs = ref true (* hack! *)
+
+(* caching of header file information *)
+let cache_threshold = 500
+let elem_threshold = 10
