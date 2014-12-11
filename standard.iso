@@ -468,8 +468,8 @@ T Z; => T Z = ...;
 Declaration
 @ const_decl_init @
 type T;
-identifier Z;
-constant C;
+context identifier Z;
+context constant C;
 @@
 T Z; => T Z = C;
 
