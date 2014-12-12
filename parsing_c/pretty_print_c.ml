@@ -101,7 +101,8 @@ let mk_pretty_printers
     (match exp, ii with
     | Ident (ident),         []     -> pp_name ident
     (* only a MultiString can have multiple ii *)
-    | Constant (MultiString _), is     -> is +> List.iter pr_elem
+    | Constant (MultiString _), is     ->
+	is +> Common.print_between pr_space pr_elem
     | Constant (c),         [i]     -> pr_elem i
     | StringConstant(s,os,w),  [i1;i2] ->
 	pr_elem i1;

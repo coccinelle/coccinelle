@@ -13,7 +13,7 @@ export BUILD_OPT
 ifeq ($(BUILD_OPT),yes)
 %.cmo: %.ml
 %.cmo: %.cmx
-	@echo "skipped building $@ in optimizing mode: $< will be build instead."
+	@echo "skipped building $@ in optimizing mode: $< will be built instead."
 endif
 
 

@@ -268,3 +268,5 @@ let no_loops = ref false
 let no_gotos = ref false
 
 let keep_comments = ref false (* unparsing *)
+
+let parsing_header_for_types = ref false

@@ -99,7 +99,7 @@ clean:
 
 distclean: clean
 
-.PHONEY: depend
+.PHONY: depend
 .depend depend:
 	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 

@@ -55,7 +55,7 @@ let get_current_line_type lexbuf =
   let preceeding_spaces =
     if !line_start < 0 then 0 else lex_start - !line_start in
   (*line_start := -1;*)
-  prev_plus := (c = D.PLUS) or (c = D.PLUSPLUS);
+  prev_plus := (c = D.PLUS) || (c = D.PLUSPLUS);
   (c,l,ll,ll,lex_start,preceeding_spaces,[],[],[],"")
 let current_line_started = ref false
 let col_zero = ref true
@@ -183,6 +183,8 @@ let all_metavariables =
 
 let type_names = (Hashtbl.create(100) : (string, D.clt -> token) Hashtbl.t)
 
+let attr_names = (Hashtbl.create(100) : (string, D.clt -> token) Hashtbl.t)
+
 let declarer_names = (Hashtbl.create(100) : (string, D.clt -> token) Hashtbl.t)
 
 let iterator_names = (Hashtbl.create(100) : (string, D.clt -> token) Hashtbl.t)
@@ -201,14 +203,19 @@ let check_var s linetype =
       with Not_found ->
 	(try (Hashtbl.find type_names s) linetype
 	with Not_found ->
-	  (try (Hashtbl.find declarer_names s) linetype
+	  (try
+	    let x = (Hashtbl.find attr_names s) linetype in
+	    check_plus_linetype s;
+	    x
 	  with Not_found ->
-	    (try (Hashtbl.find iterator_names s) linetype
+	    (try (Hashtbl.find declarer_names s) linetype
 	    with Not_found ->
-	      (try (Hashtbl.find symbol_names s) linetype
+	      (try (Hashtbl.find iterator_names s) linetype
 	      with Not_found ->
-                TIdent (s,linetype))))) in
-  if !Data.in_meta or !Data.in_rule_name
+		(try (Hashtbl.find symbol_names s) linetype
+		with Not_found ->
+                  TIdent (s,linetype)))))) in
+  if !Data.in_meta || !Data.in_rule_name
   then (try Hashtbl.find rule_names s; TRuleName s with Not_found -> fail())
   else fail()
 
@@ -247,6 +254,7 @@ let id_tokens lexbuf =
   | "list" when in_meta ->       check_arity_context_linetype s; Tlist
   | "fresh" when in_meta ->      check_arity_context_linetype s; TFresh
   | "typedef" when in_meta ->    check_arity_context_linetype s; TTypedef
+  | "attribute" when in_meta ->  check_arity_context_linetype s; TAttribute
   | "declarer" when in_meta ->   check_arity_context_linetype s; TDeclarer
   | "iterator" when in_meta ->   check_arity_context_linetype s; TIterator
   | "name" when in_meta ->       check_arity_context_linetype s; TName
@@ -263,7 +271,7 @@ let id_tokens lexbuf =
   | "symbol" when in_meta ->     check_arity_context_linetype s; TSymbol
 
   | "using" when in_rule_name || in_prolog ->  check_context_linetype s; TUsing
-  | "virtual" when in_prolog or in_rule_name or in_meta ->
+  | "virtual" when in_prolog || in_rule_name || in_meta ->
       (* don't want to allow virtual as a rule name *)
       check_context_linetype s; TVirtual
   | "disable" when in_rule_name ->  check_context_linetype s; TDisable
@@ -489,6 +497,10 @@ let init _ =
     (function name ->
       let fn clt = TTypeId(name,clt) in
       Hashtbl.replace type_names name fn);
+  Data.add_attribute :=
+    (function name ->
+      let fn clt = TDirective (Ast.Space name, clt) in
+      Hashtbl.replace attr_names name fn);
   Data.add_declarer_name :=
     (function name ->
       let fn clt = TDeclarerId(name,clt) in
@@ -572,7 +584,7 @@ rule token = parse
 
   | ([' ' '\t'  ]+ as w) { (* collect whitespaces only when inside a rule *)
     start_line false;
-    if !Data.in_rule_name or !Data.in_prolog or !Data.in_iso
+    if !Data.in_rule_name || !Data.in_prolog || !Data.in_iso
     then token lexbuf
     else TWhitespace w }
 
@@ -596,7 +608,7 @@ rule token = parse
 
   | "@@" { start_line true; TArobArob }
   | "@"  { pass_zero();
-	   if !Data.in_rule_name or not !current_line_started
+	   if !Data.in_rule_name || not !current_line_started
 	   then (start_line true; TArob)
 	   else (check_minus_context_linetype "@";
 		 TPArob (get_current_line_type lexbuf)) }

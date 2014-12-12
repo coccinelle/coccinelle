@@ -193,6 +193,7 @@ type token =
   | TBreak of (Data.clt)
   | TBang0
   | TBang of (Data.clt)
+  | TAttribute
   | TAssign of (Ast_cocci.assignOp * Data.clt)
   | TArobArob
   | TArob

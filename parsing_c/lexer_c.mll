@@ -76,6 +76,27 @@ let no_ifdef_mark () = ref (None: (int * int) option)
 
 let tok_add_s s ii = Ast_c.rewrap_str ((Ast_c.str_of_info ii) ^ s) ii
 
+let function_cpp_eat_until_nl cpp_eat_until_nl cpp_in_comment_eat_until_nl
+    parse_newline s lexbuf =
+  let splitted = Str.split_delim (Str.regexp_string "/*") s in
+  let check_continue s =
+      let splitted = Str.split_delim (Str.regexp "\\\\ *") s in
+      match splitted with
+	[_;""] ->
+          let s2 = parse_newline lexbuf in
+          let s3 = cpp_eat_until_nl lexbuf in
+	  s2 ^ s3
+      |	_ -> "" in
+    match List.rev splitted with
+      after_comment_start :: before_comment_start :: rest ->
+	let splitted2 =
+	  Str.split_delim (Str.regexp_string "*/") after_comment_start in
+	(match splitted2 with
+	  [bef;aft] -> check_continue s (* no unclosed comment *)
+	| _ ->
+	    let s2 = parse_newline lexbuf in
+	    s2^(cpp_in_comment_eat_until_nl lexbuf))
+    | _ -> check_continue s (* no comment *)
 
 (* opti: less convenient, but using a hash is faster than using a match *)
 let keyword_table = Common.hash_of_list [
@@ -424,42 +445,66 @@ rule token = parse
   (* #ifdef *)
   (* ---------------------- *)
 
-  (* The ifdef_mark will be set later in Parsing_hacks.set_ifdef_parenthize_info
+  (* The ifdef_mark will be set later in
+   * Parsing_hacks.set_ifdef_parenthize_info
    * when working on the ifdef view.
    *)
 
   (* '0'+ because sometimes it is a #if 000 *)
-  | "#" [' ' '\t']* "if" [' ' '\t']* '0'+           (* [^'\n']*  '\n' *)
+  | "#" [' ' '\t']* "if" [' ' '\t']* '0'+ [^'\n']*
       { let info = tokinfo lexbuf in
-        TIfdefBool (false, no_ifdef_mark(), info)
-          (* +> tok_add_s (cpp_eat_until_nl lexbuf)*)
+        let s = tok lexbuf in
+        let rest =
+	  function_cpp_eat_until_nl cpp_eat_until_nl
+	    cpp_in_comment_eat_until_nl
+	    parse_newline s lexbuf in
+        TIfdefBool (false, no_ifdef_mark(), info +> tok_add_s rest)
       }
 
-  | "#" [' ' '\t']* "if" [' ' '\t']* '1'   (* [^'\n']*  '\n' *)
+  | "#" [' ' '\t']* "if" [' ' '\t']* '1' [^'\n']*
       { let info = tokinfo lexbuf in
-        TIfdefBool (true, no_ifdef_mark(), info)
-
+        let s = tok lexbuf in
+        let rest =
+	  function_cpp_eat_until_nl cpp_eat_until_nl
+	    cpp_in_comment_eat_until_nl
+	    parse_newline s lexbuf in
+        TIfdefBool (true, no_ifdef_mark(), info +> tok_add_s rest)
       }
 
  (* DO NOT cherry pick to lexer_cplusplus !!! often used for the extern "C" { *)
   | "#" [' ' '\t']* "if" sp "defined" sp "(" spopt "__cplusplus" spopt ")"
-    [^'\n' '\r']* (*('\n' | "\r\n")*) (* don't want the final newline *)
+    [^'\n' '\r']*
       { let info = tokinfo lexbuf in
-        TIfdefMisc (false, no_ifdef_mark(), info)
+        let s = tok lexbuf in
+        let rest =
+	  function_cpp_eat_until_nl cpp_eat_until_nl
+	    cpp_in_comment_eat_until_nl
+	    parse_newline s lexbuf in
+        TIfdefMisc (false, no_ifdef_mark(), info +> tok_add_s rest)
       }
 
  (* DO NOT cherry pick to lexer_cplusplus !!! *)
-  | "#" [' ' '\t']* "ifdef" [' ' '\t']* "__cplusplus"   [^'\n']* (* '\n' *)
+  | "#" [' ' '\t']* "ifdef" [' ' '\t']* "__cplusplus"   [^'\n']*
       (* don't want the final newline *)
       { let info = tokinfo lexbuf in
-        TIfdefMisc (false, no_ifdef_mark(), info)
+        let s = tok lexbuf in
+        let rest =
+	  function_cpp_eat_until_nl cpp_eat_until_nl
+	    cpp_in_comment_eat_until_nl
+	    parse_newline s lexbuf in
+        TIfdefMisc (false, no_ifdef_mark(), info +> tok_add_s rest)
       }
 
   (* in glibc *)
-  | "#" spopt ("ifdef"|"if") sp "__STDC__"
+  | "#" spopt ("ifdef"|"if") sp "__STDC__"   [^'\n']*
+      (* hope that there are no comments in the ifdef line... *)
       { let info = tokinfo lexbuf in
-        TIfdefVersion (true, no_ifdef_mark(),
-                      info +> tok_add_s (cpp_eat_until_nl lexbuf))
+        let s = tok lexbuf in
+        let rest =
+	  function_cpp_eat_until_nl cpp_eat_until_nl
+	    cpp_in_comment_eat_until_nl
+	    parse_newline s lexbuf in
+        TIfdefVersion (true, no_ifdef_mark(), info +> tok_add_s rest)
       }
 
 
@@ -891,7 +936,9 @@ rule token = parse
 	  let n = string_of_int (String.length before + lena) in
 	  let p = string_of_int lena in
 	  TDecimal ((x,n,p), tokinfo lexbuf)
-      |	_ -> failwith "bad decimal" }
+      |	_ ->
+	  pr2 ("LEXER: " ^ "bad decimal" ^ tok lexbuf);
+          TUnknown (tokinfo lexbuf) }
 
   | ['0'] ['0'-'9']+
       { pr2 ("LEXER: " ^ error_radix "octal" ^ tok lexbuf);
@@ -932,6 +979,7 @@ rule token = parse
 
 (*****************************************************************************)
 and char = parse
+  | "'"                                { "" } (* allow empty char *)
   | (_ as x)                           { String.make 1 x ^ restchars lexbuf }
   (* todo?: as for octal, do exception  beyond radix exception ? *)
   | (("\\" (oct | oct oct | oct oct oct)) as x     ) { x ^ restchars lexbuf }
@@ -958,6 +1006,9 @@ and char = parse
 
 and restchars = parse
   | "'"                                { "" }
+  | "\n"
+      { pr2 "LEXER: newline not expected in character";
+        tok lexbuf }
   | (_ as x)                           { String.make 1 x ^ restchars lexbuf }
   (* todo?: as for octal, do exception  beyond radix exception ? *)
   | (("\\" (oct | oct oct | oct oct oct)) as x     ) { x ^ restchars lexbuf }
@@ -1072,10 +1123,10 @@ and cpp_eat_until_nl = parse
 and parse_newline = parse
   ('\n' | "\r\n") { tok lexbuf }
 
-and cpp_eat_until_nl = parse
+and cpp_in_comment_eat_until_nl = parse
   [^ '\n']+
   { let s = tok lexbuf in
-    let splitted = Str.split_delim (Str.regexp_string "/*") s in
+    let splitted = Str.split_delim (Str.regexp_string "*/") s in
     let check_continue s =
       let splitted = Str.split_delim (Str.regexp "\\\\ *") s in
       match splitted with
@@ -1087,11 +1138,21 @@ and cpp_eat_until_nl = parse
     match List.rev splitted with
       after_comment_start :: before_comment_start :: rest ->
 	let splitted2 =
-	  Str.split_delim (Str.regexp_string "*/") after_comment_start in
+	  Str.split_delim (Str.regexp_string "/*") after_comment_start in
 	(match splitted2 with
-	  [bef;aft] -> check_continue s (* no unclosed comment *)
-	| _ ->
-	    let s2 = comment lexbuf in
-            let s3 = cpp_eat_until_nl lexbuf in
-            s ^ s2 ^ s3)
-    | _ -> check_continue s (* no comment *) }
+	  [bef;aft] ->
+	    let s2 = parse_newline lexbuf in
+	    s^s2^(cpp_in_comment_eat_until_nl lexbuf)
+	| _ -> (* no longer in comment *)
+	    check_continue s)
+    | _ ->
+	let s2 = parse_newline lexbuf in
+	s^s2^(cpp_in_comment_eat_until_nl lexbuf) (* still in comment *) }
+
+and cpp_eat_until_nl = parse
+  [^ '\n']+
+  { let s = tok lexbuf in
+    let rest =
+      function_cpp_eat_until_nl cpp_eat_until_nl cpp_in_comment_eat_until_nl
+	parse_newline s lexbuf in
+    s^rest }

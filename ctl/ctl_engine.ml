@@ -265,9 +265,9 @@ let subseteqBy eq xs ys = List.for_all (fun x -> memBy eq x ys) xs;;
 let subseteq xs ys = List.for_all (fun x -> List.mem x ys) xs;;
 let supseteq xs ys = subseteq ys xs
 
-let setequalBy eq xs ys = (subseteqBy eq xs ys) & (subseteqBy eq ys xs);;
+let setequalBy eq xs ys = (subseteqBy eq xs ys) && (subseteqBy eq ys xs);;
 
-let setequal xs ys = (subseteq xs ys) & (subseteq ys xs);;
+let setequal xs ys = (subseteq xs ys) && (subseteq ys xs);;
 
 (* Fix point calculation *)
 let rec fix eq f x =
@@ -974,7 +974,7 @@ let triples_witness x unchecked not_keep trips =
 		failwith"unexpected negative binding with positive witnesses")*)
 	  | _ ->
 	      let new_triple =
-		if unchecked or not_keep
+		if unchecked || not_keep
 		then (s,newth,wit)
 		else
 		  if anynegwit wit && allnegwit wit
@@ -2476,7 +2476,7 @@ let sat m phi reqopt =
     Hashtbl.clear reachable_table;
     Hashtbl.clear memo_label;
     let (x,label,states) = m in
-    if (!Flag_ctl.bench > 0) or (preprocess m label reqopt)
+    if (!Flag_ctl.bench > 0) || (preprocess m label reqopt)
     then
       ((* to drop when Yoann initialized this flag *)
       if List.exists (G.extract_is_loop x) states

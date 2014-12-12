@@ -974,7 +974,7 @@ let rec main_action xs =
             Common.profile_code "Main.outfiles computation" (fun () ->
 	      let res =
 		infiles +> List.fold_left (fun prev cfiles -> (* put parmap here *)
-		  if (not !Flag.worth_trying_opt) or
+		  if (not !Flag.worth_trying_opt) ||
 		    Cocci.worth_trying cfiles constants
 		      then
 		    begin
@@ -1016,8 +1016,8 @@ let rec main_action xs =
 	    None ->
 	      (x,xs,cocci_infos,outfiles)
 	  | Some (files,virt_rules,virt_ids) ->
-	      if outfiles = [] or outfiles = [] or not !FC.show_diff
-		  or !inplace_modif
+	      if outfiles = [] || outfiles = [] || not !FC.show_diff
+		  || !inplace_modif
 	      then
 		begin
 		  (if !inplace_modif then generate_outfiles outfiles x xs);
@@ -1136,7 +1136,7 @@ let main () =
     if not (null (Common.inter_set arglist
 	            ["--cocci-file";"--sp-file";"--sp";"--test";"--testall";
                       "--test-okfailed";"--test-regression-okfailed"]))
-         or contains_cocci
+         || contains_cocci
     then run_profile quiet_profile;
 
     let args = ref [] in
@@ -1208,24 +1208,25 @@ let main () =
     (* The test framework. Works with tests/ or .ok and .failed  *)
     (* --------------------------------------------------------- *)
     | [x] when !test_mode    ->
-    begin
+	begin
 	  let prefix = "tests/" in
 	  let testfile = x ^ ".cocci" in
 	    if Sys.file_exists (prefix ^ testfile) then
 	      begin
-        (if !FC.include_path = []
-        then FC.include_path := [prefix^"include"]);
-        Testing.testone prefix x !compare_with_expected
+		(if !FC.include_path = []
+		then FC.include_path := [prefix^"include"]);
+		Testing.testone prefix x !compare_with_expected
 	      end
 	    else
 	      if Sys.file_exists testfile then
 	      begin
-	      (if !FC.include_path = []
-	      then FC.include_path := ["include"]);
-	      Testing.testone "" x !compare_with_expected
+		(if !FC.include_path = []
+		then FC.include_path := ["include"]);
+		Testing.testone "" x !compare_with_expected
 	      end
 	      else
-	        Printf.fprintf stderr "ERROR: File %s does not exist\n" testfile
+	        Printf.fprintf stderr
+		  "ERROR: File %s does not exist\n" testfile
 		end
 
     | []  when !test_all ->

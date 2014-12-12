@@ -45,16 +45,21 @@ let rec get_name name =
 (* --------------------------------------------------------------------- *)
 (* collect all of the functions *)
 
-let brace_to_semi (_,arity,info,mcodekind,pos,adj) =
+let make_semi info =
   let info =
     (* drop column information, so that with -smpl_spacing the semicolon
        will come out right after the close parenthesis *)
-    {info with Ast0.pos_info = {info.Ast0.pos_info with Ast0.column = -1}} in
-  (";",Ast0.NONE,info,mcodekind,pos,adj)
+    {info with
+      Ast0.pos_info = {info.Ast0.pos_info with Ast0.column = -1};
+      Ast0.mcode_start = []; Ast0.mcode_end = []} in
+  let (tok,arity,_,mcodekind,pos,adj) = Ast0.make_mcode ";" in
+  (tok,arity,info,mcodekind,pos,adj)
 
 let collect_function (stm : Ast0.statement) =
   match Ast0.unwrap stm with
-    Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace,_) ->
+    Ast0.FunDecl((bef_info,_),
+		 fninfo,name,lp,params,rp,lbrace,body,rbrace,
+		 (aft_info,_)) ->
       let stg =
 	match
 	  List.filter (function Ast0.FStorage(_) -> true | _ -> false)
@@ -63,17 +68,20 @@ let collect_function (stm : Ast0.statement) =
 	match
 	  List.filter (function Ast0.FType(_) -> true | _ -> false)
 	    fninfo with [Ast0.FType(t)] -> Some t | _ -> None in
+      let new_bef_info =
+	{(Ast0.default_info()) with
+	  Ast0.strings_before = bef_info.Ast0.strings_before} in
       List.map
 	(function nm ->
 	  (nm,stm,
 	   Ast0.copywrap stm
-	     (Ast0.Decl((Ast0.default_info(),Ast0.context_befaft()),
+	     (Ast0.Decl((new_bef_info,Ast0.context_befaft()),
 			Ast0.copywrap stm
 			  (Ast0.UnInit
 			     (stg,
 			      Ast0.copywrap stm
 				(Ast0.FunctionType(ty,lp,params,rp)),
-			      name,brace_to_semi lbrace))))))
+			      name,make_semi aft_info))))))
 	(get_name name)
   | _ -> []
 
@@ -203,10 +211,80 @@ and changed_proto = function
 (* --------------------------------------------------------------------- *)
 (* make rules *)
 
+let rec collect_ident_strings id =
+  let bind x y = x @ y in
+  let option_default = [] in
+  let donothing r k e = k e in
+  let mcode (_,_,info,_,_,_) =
+    info.Ast0.strings_before @ info.Ast0.strings_after in
+  let v =
+    V0.flat_combiner bind option_default
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing in
+  v.VT0.combiner_rec_ident id
+
+let right_attach_mcode strings (x,ar,info,mc,pos,adj) =
+  let info =
+    {info with
+      Ast0.strings_after = info.Ast0.strings_after @ strings} in
+  (x,ar,info,mc,pos,adj)
+
+let rec right_attach_ident strings id =
+  Ast0.rewrap id
+    (match Ast0.unwrap id with
+      Ast0.Id(name) -> Ast0.Id(right_attach_mcode strings name)
+    | Ast0.MetaId(name,x,y,z) ->
+	Ast0.MetaId(right_attach_mcode strings name,x,y,z)
+    | Ast0.AsIdent(id,asid) -> Ast0.AsIdent(right_attach_ident strings id,asid)
+    | _ -> failwith "disj, opt, unique, and funcs not supported")
+
+let rec attach_right strings ty =
+  Ast0.rewrap ty
+    (match Ast0.unwrap ty with
+      Ast0.ConstVol(cv,ty) -> Ast0.ConstVol(cv,attach_right strings ty)
+    | Ast0.BaseType(bt,sl) ->
+	let slhd = right_attach_mcode strings (List.hd(List.rev sl)) in
+	Ast0.BaseType(bt,List.rev (slhd :: (List.tl (List.rev sl))))
+    | Ast0.Signed(sgn,None) -> Ast0.Signed(right_attach_mcode strings sgn,None)
+    | Ast0.Signed(sgn,Some ty) ->
+	Ast0.Signed(sgn,Some (attach_right strings ty))
+    | Ast0.Pointer(ty,star) -> Ast0.Pointer(ty,right_attach_mcode strings star)
+    | Ast0.FunctionPointer(ty,lp,star,rp,lp1,ps,rp1) ->
+	Ast0.FunctionPointer(ty,lp,star,rp,lp1,ps,
+			     right_attach_mcode strings rp1)
+    | Ast0.FunctionType(ty,lp,ps,rp) ->
+	Ast0.FunctionType(ty,lp,ps,right_attach_mcode strings rp)
+    | Ast0.Array(ty,lb,e,rb) ->
+	Ast0.Array(ty,lb,e,right_attach_mcode strings rb)
+    | Ast0.Decimal(dec,lp,e1,comma,e2,rp) ->
+	Ast0.Decimal(dec,lp,e1,comma,e2,right_attach_mcode strings rp)
+    | Ast0.EnumName(enum,None) ->
+	Ast0.EnumName(right_attach_mcode strings enum, None)
+    | Ast0.EnumName(enum,Some id) ->
+	Ast0.EnumName(enum,Some (right_attach_ident strings id))
+    | Ast0.EnumDef(ty,lb,es,rb) ->
+	Ast0.EnumDef(ty,lb,es,right_attach_mcode strings rb)
+    | Ast0.StructUnionName(su,None) ->
+	Ast0.StructUnionName(right_attach_mcode strings su, None)
+    | Ast0.StructUnionName(su,Some id) ->
+	Ast0.StructUnionName(su,Some (right_attach_ident strings id))
+    | Ast0.StructUnionDef(ty,lb,decls,rb) ->
+	Ast0.StructUnionDef(ty,lb,decls,right_attach_mcode strings rb)
+    | Ast0.TypeName(nm) -> Ast0.TypeName(right_attach_mcode strings nm)
+    | Ast0.MetaType(nm,pure) ->
+	Ast0.MetaType(right_attach_mcode strings nm,pure)
+    | Ast0.AsType(ty,asty) -> Ast0.AsType(attach_right strings ty,asty)
+    | _ -> failwith "disj, opt and unique type not supported")
+
 let rec drop_param_name p =
   Ast0.rewrap p
     (match Ast0.unwrap p with
-      Ast0.Param(p,_) -> Ast0.Param(p,None)
+      Ast0.Param(p,Some id) ->
+	let strings = collect_ident_strings id in
+	let p = attach_right strings p in
+	Ast0.Param(p,None)
     | Ast0.OptParam(p) -> Ast0.OptParam(drop_param_name p)
     | Ast0.UniqueParam(p) -> Ast0.UniqueParam(p)
     | p -> p)
@@ -348,6 +426,12 @@ let no_names dec =
     Ast0.Decl(info,uninit) ->
       (match Ast0.unwrap uninit with
 	Ast0.UnInit(stg,typ,name,sem) ->
+	  let sem =
+	    (* convert semicolon to minus, since we are dropping the whole
+	       thing *)
+	    let (_,_,info,_,_,_) = sem in
+	    let (tok,arity,_,mcodekind,pos,adj) = Ast0.make_minus_mcode ";" in
+	    (tok,arity,info,mcodekind,pos,adj) in
 	  (match Ast0.unwrap typ with
 	    Ast0.FunctionType(ty,lp,params,rp) ->
 	      Ast0.rewrap dec

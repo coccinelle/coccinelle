@@ -155,7 +155,7 @@ clean::
 	rm -f .depend
 
 
-.PHONEY: depend
+.PHONY: depend
 .depend depend: $(GENERATED)
 	$(OCAMLDEP) *.mli *.ml > .depend
 

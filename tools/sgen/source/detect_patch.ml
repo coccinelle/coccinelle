@@ -21,7 +21,7 @@ module IntMap = Common.IntMap
  * won't be many keys (each key representing one disjunction) *)
 let merge =
   let fn key aopt bopt = match aopt, bopt with
-    | Some a, Some b -> Some (List.map2 (fun a b -> a || b) a b)
+    | Some a, Some b -> Some (List.map2 (||) a b)
     | Some a, None | None, Some a -> Some a
     | None, None -> None in
   IntMap.merge fn
@@ -138,6 +138,10 @@ let detect = function
       let (p1,p2) = rule plus in
       let (m1,m2) = rule minus in
       (p1 || m1, merge p2 m2)
+
+let detect_statement_dots s =
+  let (has_minus, _) = patch_combiner.VT0.combiner_rec_statement_dots s in
+  has_minus
 
 let get_patch_rules =
   let rec get fn = function

@@ -195,6 +195,9 @@ let add_fmtlist_meta:
 let add_type_name: (string -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_type")
 
+let add_attribute: (string -> unit) ref =
+  ref (fun _ -> failwith "uninitialized add_attribute")
+
 let add_declarer_name: (string -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_decl")
 

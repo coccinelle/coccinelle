@@ -44,7 +44,7 @@ distclean: clean
 
 depend: $(PCRE_MARKER)
 
-.PHONEY: all all.opt clean distclean depend all-build all-opt-build
+.PHONY: all all.opt clean distclean depend all-build all-opt-build
 
 # prepare the pcre directory
 $(PCRE_MARKER): $(PCRE_DIR).tar.gz

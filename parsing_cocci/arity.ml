@@ -742,6 +742,10 @@ and parameterTypeDef tgt param =
   let param_same = all_same true tgt in
   match Ast0.unwrap param with
     Ast0.VoidParam(ty) -> Ast0.rewrap param (Ast0.VoidParam(typeC tgt ty))
+  | Ast0.VarargParam(dots) ->
+      let arity = param_same (mcode2line dots) [mcode2arity dots] in
+      let dots = mcode dots in
+      make_param param tgt arity (Ast0.VarargParam(dots))
   | Ast0.Param(ty,Some id) ->
       let ty = top_typeC tgt true ty in
       let id = ident true tgt id in

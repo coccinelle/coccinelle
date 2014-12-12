@@ -236,6 +236,7 @@ and disjexp e =
 and disjparam p =
   match Ast.unwrap p with
     Ast.VoidParam(ty) -> [p] (* void is the only possible value *)
+  | Ast.VarargParam(_) -> [p] (* vararg is the only possible value *)
   | Ast.Param(ty,id) ->
       let ty = disjty ty in
       List.map (function ty -> Ast.rewrap p (Ast.Param(ty,id))) ty

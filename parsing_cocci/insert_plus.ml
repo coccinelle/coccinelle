@@ -908,7 +908,7 @@ let allminus = function
 let rec before_m1 ((f1,infom1,m1) as x1) ((f2,infom2,m2) as x2) rest = function
     [] -> ()
   | (((infop,_,pcode) as p) :: ps) as all ->
-      if less_than_start infop infom1 or
+      if less_than_start infop infom1 ||
 	(allminus m1 && less_than_end infop infom1) (* account for trees *)
       then
 	if toplevel f1
@@ -936,7 +936,7 @@ and after_m1 ((f1,infom1,m1) as x1) ((f2,infom2,m2) as x2) rest = function
 	 what it can infer from something being CONTEXT with no top-level
 	 modifications.  for the moment, we thus give an error, asking the
 	 user to rewrite the semantic patch. *)
-      if greater_than_end infop infom1 or is_minus m1 or !empty_isos
+      if greater_than_end infop infom1 || is_minus m1 || !empty_isos
       then
 	if less_than_start infop infom2
 	then

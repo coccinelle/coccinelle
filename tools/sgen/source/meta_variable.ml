@@ -413,7 +413,6 @@ let unparse ~minus ~rulename =
   let comb = List.fold_left MVSet.union MVSet.empty minus in
   MVSet.elements comb
 
-
 let get_rule (_,(r,_),_) = r
 let get_name (_,(_,nm),_) = nm
 

@@ -285,7 +285,7 @@ let check_meta_tyopt type_irrelevant v =
       | _ -> fail name)
   | Ast.MetaConstDecl(Ast.NONE,(rule,name),ty) ->
       (match lookup rule name with
-	Ast.MetaConstDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
+	Ast.MetaConstDecl(_,_,ty1) when type_irrelevant || ty = ty1 -> ()
       | _ -> fail name)
   | Ast.MetaErrDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
@@ -293,15 +293,15 @@ let check_meta_tyopt type_irrelevant v =
       | _ -> fail name)
   | Ast.MetaExpDecl(Ast.NONE,(rule,name),ty) ->
       (match lookup rule name with
-	Ast.MetaExpDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
+	Ast.MetaExpDecl(_,_,ty1) when type_irrelevant || ty = ty1 -> ()
       | _ -> fail name)
   | Ast.MetaIdExpDecl(Ast.NONE,(rule,name),ty) ->
       (match lookup rule name with
-	Ast.MetaIdExpDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
+	Ast.MetaIdExpDecl(_,_,ty1) when type_irrelevant || ty = ty1 -> ()
       | _ -> fail name)
   | Ast.MetaLocalIdExpDecl(Ast.NONE,(rule,name),ty) ->
       (match lookup rule name with
-	Ast.MetaLocalIdExpDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
+	Ast.MetaLocalIdExpDecl(_,_,ty1) when type_irrelevant || ty = ty1 -> ()
       | _ -> fail name)
   | Ast.MetaExpListDecl(Ast.NONE,(rule,name),len_name) ->
       (match lookup rule name with
@@ -631,7 +631,7 @@ let struct_initializer initlist =
     | Ast0.MetaInit _ | Ast0.MetaInitList _ -> false (* ambiguous... *)
     | _ -> false in
   let l = Ast0.undots initlist in
-  (l = []) or (List.exists loop l)
+  (l = []) || (List.exists loop l)
 
 let drop_dot_commas initlist =
   match Ast0.unwrap initlist with
@@ -664,7 +664,13 @@ let string_metavariables str clt =
 	match lenname with
 	  Ast.AnyLen -> Ast0.AnyListLen
 	| Ast.MetaLen nm -> Ast0.MetaListLen(clt2mcode nm clt)
-	| Ast.CstLen n -> Ast0.CstListLen n in
+	| Ast.CstLen n ->
+	    if n < 1
+	    then
+	      failwith
+		(Printf.sprintf "length of format list %s must be at least 1"
+		   str)
+	    else Ast0.CstListLen n in
       MFrag
 	(fun pct ->
 	  Ast0.wrap(Ast0.MetaFormatList(pct,clt2mcode name clt,lenname)))
@@ -806,19 +812,31 @@ let drop_minus_plus l clt =
 let not_format_string str clt =
   Ast0.wrap(Ast0.Constant (clt2mcode (Ast.String str) clt))
 
-let parse_string str ((a,b,c,d,e,f,g,h,i,_) as clt) =
-  if List.length(Str.split_delim (Str.regexp "%") str) > 1
-  then
-    try
-      begin
-	let first = clt2mcode "\"" clt in
-	(*do not want subsequent tokens to inherit whitespace from first*)
-	let clt = (a,b,c,d,e,f,g,h,i,"") in
-	let (line,middle) = drop_minus_plus str clt in
-	let middle = Ast0.wrap (Ast0.DOTS middle) in
-	let last = clt2mcode "\"" (update_line clt (line-1)) in
-	contains_string_constant := true;
-	Ast0.wrap(Ast0.StringConstant(first,middle,last))
-      end
-    with Parse_printf.Not_format_string -> not_format_string str clt
-  else not_format_string str clt
+let nometas str =
+  match Str.split (Str.regexp "@") str with
+    before::within::after::_ -> false (* need at least %@d@ *)
+  | _ -> true
+
+let parse_string str ((mc,b,c,d,e,f,g,h,i,_) as clt) =
+  match mc with
+    Data.PLUS when nometas str ->
+      (* not matched against, no internal changes possible, so no need to
+	 parse *)
+      not_format_string str clt
+   | _ ->
+       if List.length(Str.split_delim (Str.regexp "%") str) > 1
+       then
+	 try
+	   begin
+	     let first = clt2mcode "\"" clt in
+	     (*do not want subsequent tokens to inherit whitespace
+		from first*)
+	     let clt = (mc,b,c,d,e,f,g,h,i,"") in
+	     let (line,middle) = drop_minus_plus str clt in
+	     let middle = Ast0.wrap (Ast0.DOTS middle) in
+	     let last = clt2mcode "\"" (update_line clt (line-1)) in
+	     contains_string_constant := true;
+	     Ast0.wrap(Ast0.StringConstant(first,middle,last))
+	   end
+	 with Parse_printf.Not_format_string -> not_format_string str clt
+       else not_format_string str clt

@@ -346,7 +346,7 @@ module ENV =
       match (v,v') with
 	(Lib_engine.NormalMetaVal(Ast_c.MetaPosVal(min1,max1)),
 	 Lib_engine.NormalMetaVal(Ast_c.MetaPosVal(min2,max2))) ->
-	   ((min1 <= min2) && (max1 >= max2)) or
+	   ((min1 <= min2) && (max1 >= max2)) ||
 	   ((min2 <= min1) && (max2 >= max1))
       |	(Lib_engine.NormalMetaVal(Ast_c.MetaTypeVal a),
 	 Lib_engine.NormalMetaVal(Ast_c.MetaTypeVal b)) ->

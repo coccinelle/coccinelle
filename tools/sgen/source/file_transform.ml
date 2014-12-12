@@ -35,6 +35,12 @@ let print_virtuals outch virtuals =
   List.iter (fun x -> print_nl outch ("virtual " ^ x)) virtuals;
   print_newline outch
 
+exception Eof_error of string
+
+let fail_eof name =
+  let errmsg = "Error: Reached end of file before rule "^name^" was found." in
+  raise (Eof_error errmsg)
+
 
 (* ------------------------------------------------------------------------- *)
 (* REGEXES AND STRING MATCH FUNCTIONS *)
@@ -65,7 +71,8 @@ let match_part rulename =
   regex_match ("^@"^spcmnt_re^(escape rulename)^"\\("^spp_re^".*\\)?$")
 let match_end = regex_match ".*@"
 let match_nameless_rule = regex_match "\\(^\\(@@\\)\\|^@.*@$\\)"
-let match_rule_start = regex_match "^@"
+let match_rule_start = regex_match ("^@")
+let match_rule_start_arob = regex_match ("^@"^spcmnt_re^"$")
 let match_rule_end = regex_match (spcmnt_re^"@@")
 let match_non_empty = regex_match (spcmnt_re^"[^ \t]")
 
@@ -92,14 +99,12 @@ let print_rest outch line =
   let rest = String.sub line i (length - i) in
   if i <> length then print_nl outch rest
 
-(* prints the contents of the opened channel until finishes, closes channel *)
+(* prints the contents of the opened channel until finishes *)
 let rec print_to_end outch inch =
-  try
-    print_nl outch (get_line inch);
-    print_to_end outch inch
-  with
-    | End_of_file -> print_newline outch; flush outch; close_in inch
-    | e -> close_in_noerr inch; raise e
+  let _ =
+    try print_nl outch (get_line inch)
+    with End_of_file -> print_newline outch; raise End_of_file in
+  print_to_end outch inch
 
 (* goes through the file until finding the rule declaration of name.
  * returns the line where the rule dec ends, and the inchannel at that stage *)
@@ -110,7 +115,7 @@ let traverse name outch inch =
       (line, inch)
     else if match_part name line then
       find_match nothing match_end inch
-    else if match_rule_start line && not(match_rule_end line) then
+    else if match_rule_start_arob line then
       let (line,inch) = find_match nothing match_non_empty inch in
       if regex_match (sp_re^name) line then
         find_match nothing match_end inch
@@ -169,10 +174,8 @@ let print_rule_patch outch inch (rule, new_name) =
     | None -> print_named_rule ~rule ~name ~handler ~outch ~inch
     | Some n -> print_nameless_rule ~rule ~name ~new_nm:n ~handler ~outch ~inch
   with
-    | End_of_file -> flush outch; close_in inch;
-        failwith ("Error: Reached end of file before rule " ^ name ^
-        " was found.")
-    | e -> close_in_noerr inch; raise e
+    | End_of_file -> fail_eof name
+    | e -> raise e (* propagate exception upwards *)
 
 let print_patch outch inch rules =
   let inch = List.fold_left (print_rule_patch outch) inch rules in
@@ -185,14 +188,16 @@ let print_patch outch inch rules =
 (* in context mode, we do not want to keep the original rules, since our
  * generated versions contain the same information + added metapositions. *)
 
-(* find the start of the next rule; if there is none, close the channel. *)
+(* find the start of the next rule. *)
 let next outch inch =
-  try let res = find_match nothing match_rule_start inch in Some res
-  with End_of_file -> flush outch; close_in inch; None
+  try
+    let r = find_match nothing match_rule_start inch in
+    Some r
+  with End_of_file -> None (* there were no more rules *)
 
 (* find the rule with that name and skip it entirely *)
 let skip_named_rule ~rule ~name ~last_line ~outch ~inch =
-  let (line,inch) =
+  let (_,inch) =
     if match_part name last_line then (last_line, inch)
     else begin
       if String.contains last_line '@' then failwith
@@ -205,12 +210,12 @@ let skip_named_rule ~rule ~name ~last_line ~outch ~inch =
   next outch inch
 
 (* find the rule that starts on that line and skip it entirely *)
-let skip_nameless_rule ~rule ~name ~last_line ~outch ~inch =
+let skip_nameless_rule ~rule ~name ~outch ~inch =
   let rule_line = Globals.extract_line name in
   let _ = assert (rule_line >= !line_number) in
-  let (_,inch) =
-    if rule_line = !line_number then (last_line, inch)
-    else find_line (fun x -> ()) rule_line inch in
+  let inch =
+    if rule_line = !line_number then inch
+    else snd (find_line nothing rule_line inch) in
   (*currently, line is the line that contains the rule header. so we need
    *the rule header end @@ and then the start of the new rule. *)
   let (_,inch) = find_match nothing match_rule_end inch in
@@ -220,24 +225,21 @@ let skip_nameless_rule ~rule ~name ~last_line ~outch ~inch =
 let print_rule_context outch lastres (rule, new_name) =
   let name = Ast0.get_rule_name rule in
   let (last_line, inch) = match lastres with
-    | Some (l,i) -> (l,i)
-    | None -> failwith ("Error: Reached end of file before rule " ^ name ^
-        " was found.") in
+    | Some r -> r
+    | None -> fail_eof name in
   try
     match new_name with
     | None -> skip_named_rule ~rule ~name ~last_line ~outch ~inch
-    | Some n -> skip_nameless_rule ~rule ~name ~last_line ~outch ~inch
+    | Some n -> skip_nameless_rule ~rule ~name ~outch ~inch
   with
-    | End_of_file -> flush outch; close_in inch;
-        failwith ("Error: Reached end of file before rule " ^ name ^
-        " was found.")
-    | e -> close_in_noerr inch; raise e
+    | End_of_file -> fail_eof name
+    | e -> raise e (* propagate exception upwards *)
 
 let print_context outch inch rules =
-  match List.fold_left (print_rule_context outch) (Some("",inch)) rules with
-  | Some (l,i) -> print_to_end outch i
-  | None -> ()
-
+  let res = List.fold_left (print_rule_context outch) (Some ("",inch)) rules in
+  match res with
+    | Some (_,i) -> print_to_end outch i
+    | None -> raise End_of_file
 
 (* ------------------------------------------------------------------------- *)
 (* ENTRY POINT *)
@@ -249,7 +251,12 @@ let print ~channel ~file_name ~preface ~virtuals ~rules ~context_mode =
   print_nl channel preface;
   print_virtuals channel virtuals;
   let inch = open_in file_name in
-  if context_mode then
-    print_context channel inch rules
-  else
-    print_patch channel inch rules
+  try
+    if context_mode then
+      print_context channel inch rules
+    else
+      print_patch channel inch rules
+  with
+    | End_of_file -> flush channel; close_in inch (* ended safely *)
+    | Eof_error msg -> flush channel; close_in inch; failwith msg
+    | e -> close_in_noerr inch; raise e

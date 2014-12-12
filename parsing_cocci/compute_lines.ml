@@ -822,6 +822,10 @@ and parameterTypeDef p =
   match Ast0.unwrap p with
     Ast0.VoidParam(ty) ->
       let ty = typeC ty in mkres p (Ast0.VoidParam(ty)) ty ty
+  | Ast0.VarargParam(dots) ->
+      let dots = normal_mcode dots in
+      let ln = promote_mcode dots in
+      mkres p (Ast0.VarargParam(dots)) ln ln
   | Ast0.Param(ty,Some id) ->
       let id = ident id in
       let ty = typeC ty in mkres p (Ast0.Param(ty,Some id)) ty id
@@ -919,9 +923,13 @@ let is_ec_dots e =
 let rec statement s =
   let res =
     match Ast0.unwrap s with
-      Ast0.Decl((_,bef),decl) ->
+      Ast0.Decl((info,bef),decl) ->
 	let decl = declaration decl in
 	let (leftinfo,decl) = promote_to_statement_start decl bef in
+	let leftinfo =
+	  (* for function prototypes, which may have information placed here
+	     before calling Compute_lines *)
+	  {leftinfo with Ast0.strings_before = info.Ast0.strings_before} in
 	mkres s (Ast0.Decl((leftinfo,bef),decl)) decl decl
     | Ast0.Seq(lbrace,body,rbrace) ->
 	let lbrace = normal_mcode lbrace in

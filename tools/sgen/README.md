@@ -14,7 +14,7 @@ Coccinelle source code (if not, change the COCCIDIR path in the makefile).
 
 1.  Run the command 'make'.
 2.  Run 'make install' (needs superuser permissions).
-2.  Test the program e.g. with
+3.  Test the program e.g. with
 
 	sgen examples/tiny.cocci
 
@@ -22,6 +22,7 @@ Coccinelle source code (if not, change the COCCIDIR path in the makefile).
 
 	sgen &lt;your\_cocci\_script&gt;.cocci
 
+    The output should be a Coccinelle script with equivalent functionality to the original one, but with added virtual modes patch, context, org, and report.
 
 Uninstallation:
 ---------------

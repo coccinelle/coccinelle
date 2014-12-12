@@ -90,6 +90,7 @@ let token2c (tok,_) =
   | PC.TPure -> "pure"
   | PC.TContext -> "context"
   | PC.TTypedef -> "typedef"
+  | PC.TAttribute -> "attribute"
   | PC.TDeclarer -> "declarer"
   | PC.TIterator -> "iterator"
   | PC.TName -> "name"
@@ -320,6 +321,9 @@ let print_tokens s tokens =
 
 type plus = PLUS | NOTPLUS | SKIP
 
+(* skip means ignore completely, notplus means keep in the recursion, but don't
+attach to it, plus means that it is possible to attach to the token *)
+
 let plus_attachable only_plus (tok,_) =
   match tok with
     PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
@@ -368,12 +372,14 @@ let plus_attachable only_plus (tok,_) =
   | PC.TMetaFieldList(_,_,_,clt)
   | PC.TMetaFunc(_,_,_,clt) | PC.TMetaLocalFunc(_,_,_,clt)
 
+(* it would seem that this should all be skips
   | PC.TWhen(clt) |  PC.TWhenTrue(clt) |  PC.TWhenFalse(clt)
   | PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
   (* | PC.TCircles(clt) | PC.TStars(clt) *)
   | PC.TOEllipsis(clt) | PC.TCEllipsis(clt)
   | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) (* | PC.TOCircles(clt)
   | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *)
+*)
 
   | PC.TWhy(clt) | PC.TDotDot(clt) | PC.TBang(clt) | PC.TOPar(clt)
   | PC.TCPar(clt)
@@ -393,6 +399,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.TOPar0(s,clt) | PC.TMid0(s,clt) | PC.TCPar0(s,clt) -> NOTPLUS
   | PC.TMetaPos(nm,_,_,_) -> NOTPLUS
   | PC.TSub(clt) -> NOTPLUS
+  | PC.TDirective(_,clt) -> NOTPLUS
 
   | _ -> SKIP
 
@@ -699,6 +706,7 @@ let split_token ((tok,_) as t) =
   | PC.TStatement | PC.TPosition | PC.TFormat | PC.TAnalysis | PC.TPosAny
   | PC.TInitialiser | PC.TSymbol
   | PC.TFunction | PC.TTypedef | PC.TDeclarer | PC.TIterator | PC.TName
+  | PC.TAttribute
   | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh
   | PC.TCppConcatOp | PC.TPure
   | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TVirtual | PC.TDisable
@@ -847,7 +855,7 @@ let rec find_function_names l =
     | (PC.TArobArob,_)::_ | (PC.TArob,_)::_ | (PC.EOF,_)::_ ->
 	raise Irrelevant
     | t::rest when is_ident t && level = 0 -> rest
-    | t::rest when is_ident t or is_mid t -> balanced_name level rest
+    | t::rest when is_ident t || is_mid t -> balanced_name level rest
     | _ -> raise Irrelevant in
   let rec balanced_args level = function
       [] -> raise Irrelevant
@@ -865,7 +873,7 @@ let rec find_function_names l =
   let rec loop = function
       [] -> []
     | t :: rest ->
-	if is_par t or is_mid t or is_ident t
+	if is_par t || is_mid t || is_ident t
 	then
 	  let (t,rest) =
 	    try
@@ -925,7 +933,7 @@ let detect_types in_meta_decls l =
     | (PC.TPure,_) | (PC.TContext,_)
     | (PC.Tstatic(_),_) | (PC.Textern(_),_)
     | (PC.Tinline(_),_) | (PC.Ttypedef(_),_) | (PC.Tattr(_),_) -> true
-    | (PC.TComma(_),_) when infn > 0 or in_meta_decls -> true
+    | (PC.TComma(_),_) when infn > 0 || in_meta_decls -> true
     | (PC.TDotDot(_),_) when in_meta_decls -> true
     | _ -> false in
   let is_choices_delim = function
@@ -1404,8 +1412,8 @@ let rec drop_double_dots l =
  (* | (PC.TCCircles(_),_) | (PC.TCStars(_),_) *) ->
 	true
     | _ -> false in
-  let any_before x = start x or middle x or final x or whenline x in
-  let any_after x = start x or middle x or final x in
+  let any_before x = start x || middle x || final x || whenline x in
+  let any_after x = start x || middle x || final x in
   let rec loop ((_,i) as prev) = function
       [] -> []
     | x::rest when any_before prev && any_after x ->
@@ -1643,7 +1651,7 @@ let any_modif rule =
       Ast0.MINUS _ | Ast0.PLUS _ -> true
     | _ -> false in
   let donothing r k e = k e in
-  let bind x y = x or y in
+  let bind x y = x || y in
   let option_default = false in
   let fn =
     V0.flat_combiner bind option_default
@@ -1695,7 +1703,7 @@ let get_metavars parse_fn table file lexbuf =
     let tokens = prepare_mv_tokens tokens in
     match tokens with
       [(PC.TArobArob,_)] -> List.rev acc
-    | (PC.TAnalysis _, _) :: tl -> 
+    | (PC.TAnalysis, _) :: tl -> 
 	Lexer_script.file := file;
 	Lexer_script.language := "ocaml";
         let get_tokens = tokens_script_all table file false lexbuf in
@@ -2018,7 +2026,7 @@ let parse file =
 	    let plus_res =
 	      (* put ignore_patch_or_match with * case, which is less
 		 constraining *)
-	      if !Flag.sgrep_mode2 or !D.ignore_patch_or_match
+	      if !Flag.sgrep_mode2 || !D.ignore_patch_or_match
 	      then (* not actually used for anything, except context_neg *)
 		List.map
 		  (Iso_pattern.rebuild_mcode None).VT0.rebuilder_rec_top_level
@@ -2053,7 +2061,7 @@ let parse file =
 	    *)
 
 	    (if not !Flag.sgrep_mode2 &&
-	      (any_modif minus_res or any_modif plus_res) &&
+	      (any_modif minus_res || any_modif plus_res) &&
 	      not(dependencies = Ast.FailDep)
 	    then Data.inheritable_positions := []);
 
@@ -2231,7 +2239,10 @@ let parse file =
       |	_ -> failwith "unexpected code before the first rule\n")
   | (false,[(PC.TArobArob,_)]) | (false,[(PC.TArob,_)]) ->
       ([],([] : Ast0.parsed_rule list),[] (*virtual rules*), [] (*all metas*))
-  | _ -> failwith "unexpected code before the first rule\n" in
+  | _ ->
+      failwith
+	(Printf.sprintf "unexpected code before the first rule: %s\n"
+	   (Dumper.dump initial_tokens)) in
   res) in
   parse_loop file
 
@@ -2314,14 +2325,14 @@ let process file isofile verbose =
 			   [Ast0.Exp e] -> true | _ -> false)
 		     | _ -> false] in
 	       let minus = Arity.minus_arity minus in
+	       let plus = Adjust_pragmas.process plus in
 	       let ((metavars,minus),function_prototypes) =
 		 Function_prototypes.process
 		   rule_name metavars dropped_isos minus plus ruletype in
-	       let plus = Adjust_pragmas.process plus in
           (* warning! context_neg side-effects its arguments *)
 	       let (m,p) = List.split (Context_neg.context_neg minus plus) in
 	       Type_infer.type_infer p;
-	       (if not (!Flag.sgrep_mode2 or dependencies = Ast.FailDep)
+	       (if not (!Flag.sgrep_mode2 || dependencies = Ast.FailDep)
 	       then Insert_plus.insert_plus m p (chosen_isos = []));
 	       Type_infer.type_infer minus;
 	       let (extra_meta, minus) =

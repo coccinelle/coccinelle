@@ -219,7 +219,7 @@ let print_commentized xs =
 		(Str.regexp "\n") (fun s -> "") s
 	    in
 	    if newline =|= !line
-	    then prerr_string (s ^ " ")
+	    then pr2_no_nl (s ^ " ")
 	    else begin
               if !line =|= -1
               then pr2_no_nl "passed:"
@@ -289,9 +289,7 @@ let tokens ?profile a =
     begin
       most_recent_file := a;
       most_recent_res := [];
-      let res =
-	Common.profile_code "C parsing.tokens"
-	  (fun () -> time_lexing ?profile a) in
+      let res = time_lexing ?profile a in
       most_recent_res := res;
       res
     end

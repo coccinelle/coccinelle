@@ -80,7 +80,7 @@ let unify_lists fn dfn la lb =
     | (cura::resta,curb::restb) ->
 	(match fn cura curb with
 	  MAYBE -> loop (resta,restb)
-	| NO -> if dfn cura or dfn curb then MAYBE else NO) in
+	| NO -> if dfn cura || dfn curb then MAYBE else NO) in
   loop (la,lb)
 
 let unify_dots fn dfn d1 d2 =
@@ -453,6 +453,7 @@ and unify_designator d1 d2 =
 and unify_parameterTypeDef p1 p2 =
   match (Ast.unwrap p1,Ast.unwrap p2) with
     (Ast.VoidParam(ft1),Ast.VoidParam(ft2)) -> unify_fullType ft1 ft2
+  | (Ast.VarargParam(_),_) | (_,Ast.VarargParam(_)) -> return true
   | (Ast.Param(ft1,i1),Ast.Param(ft2,i2)) ->
       conjunct_bindings (unify_fullType ft1 ft2)
 	(unify_option unify_ident i1 i2)

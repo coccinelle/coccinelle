@@ -182,18 +182,18 @@ the code with the <span style="font-family:monospace">DIV_ROUND_UP</span> macro 
 <span style="font-size:xx-small">  11</span>                 <span style="color:blue">return</span> 0;</div></td></tr>
 </table><p><br>
 
-</p><p>The <span style="font-family:monospace">BUG_ON</span> macro makes a assertion about the value of an
+</p><p>The <span style="font-family:monospace">BUG_ON</span> macro makes an assertion about the value of an
 expression. However, because some parts of the kernel define
 <span style="font-family:monospace">BUG_ON</span> to be the empty statement when debugging is not wanted,
 care must be taken when the asserted expression may have some side-effects,
 as is the case of a function call. Thus, we create a rule introducing
 <span style="font-family:monospace">BUG_ON</span> only in the case when the asserted expression does not
-perform a function call.</p><p>On particular piece of code that has the form of a function call is a use
+perform a function call.</p><p>One particular piece of code that has the form of a function call is a use
 of <span style="font-family:monospace">unlikely</span>, which informs the compiler that a particular
 expression is unlikely to be true. In this case, because <span style="font-family:monospace">unlikely</span>
-does not perform any side effects, it is safe to use <span style="font-family:monospace">BUG_ON</span>. The
+does not perform any side effect, it is safe to use <span style="font-family:monospace">BUG_ON</span>. The
 second rule takes care of this case. It furthermore disables the
-isomorphism that allows a call to <span style="font-family:monospace">unlikely</span> be replaced with its
+isomorphism that allows a call to <span style="font-family:monospace">unlikely</span> to be replaced with its
 argument, as then the second rule would be the same as the first one.<br>
 
 </p><table style="border-spacing:6px;border-collapse:separate;" class="cellpading0"><tr><td style="text-align:center;white-space:nowrap" >
@@ -353,7 +353,7 @@ by the use of a nest <span style="font-family:monospace">&lt;...  ...&gt;</spa
 the call to <span style="font-family:monospace">of_find_node_by_name</span>, the return and the
 conditional in the pattern on line 18.<br>
 
-The previously semantic match has been used to generate the following
+The previous semantic match has been used to generate the following
 lines. They may be edited using the emacs Org mode to navigate in the code
 from a site to another.</p><div class="lstlisting"><span style="font-size:xx-small">   1</span> * TODO [[view:/linux-next/arch/powerpc/platforms/pseries/setup.c::face=ovl-face1::linb=236::colb=18::cole=20][inc. counter:/linux-next/arch/powerpc/platforms/pseries/setup.c::236]]
 <span style="font-size:xx-small">   2</span> [[view:/linux-next/arch/powerpc/platforms/pseries/setup.c::face=ovl-face2::linb=250::colb=3::cole=9][return]]
@@ -372,11 +372,11 @@ SmPL rule instead of the previously presented one.</p><table style="border-spaci
 <span style="font-size:xx-small">   7</span> cocci.print_sec(p2,"return")</div></td></tr>
 </table><p><br>
 
-The function <span style="font-family:monospace">cocci.print_secs</span> is used when there is several
-positions which are matched by a single position variable and that
+The function <span style="font-family:monospace">cocci.print_secs</span> is used when several
+positions are matched by a single position variable and
 every matched position should be printed.</p><p>Any metavariable could be inherited in the Python code. However,
 accessible fields are not currently equally supported among them.</p>
-<h3 id="sec21" class="subsection">14.6  Filtering identifiers, declarers or iterators with regular expression</h3>
+<h3 id="sec21" class="subsection">14.6  Filtering identifiers, declarers or iterators with regular expressions</h3>
 <p>If you consider the following SmPL file which uses the regexp functionality to
 filter the identifiers that contain, begin or end by <span style="font-family:monospace">foo</span>,</p><table style="border-spacing:6px;border-collapse:separate;" class="cellpading0"><tr><td style="text-align:center;white-space:nowrap" >
 

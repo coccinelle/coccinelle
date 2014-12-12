@@ -256,7 +256,7 @@ let generated_patches = Hashtbl.create(100)
 let show_or_not_diff2 cfile outfile =
   let show_diff =
     !Flag_cocci.show_diff &&
-    (!Flag_cocci.force_diff or
+    (!Flag_cocci.force_diff ||
      (not(Common.fst(Compare_c.compare_to_original cfile outfile) =
 	  Compare_c.Correct))) in (* diff only in spacing, etc *)
   if show_diff
@@ -379,8 +379,8 @@ let show_or_not_ctl_tex a b  =
 
 
 let show_or_not_rule_name ast rulenb =
-  if !Flag_cocci.show_ctl_text or !Flag.show_trying or
-    !Flag.show_transinfo or !Flag_cocci.show_binding_in_out
+  if !Flag_cocci.show_ctl_text || !Flag.show_trying ||
+    !Flag.show_transinfo || !Flag_cocci.show_binding_in_out
   then
     begin
       let name =
@@ -393,8 +393,8 @@ let show_or_not_rule_name ast rulenb =
     end
 
 let show_or_not_scr_rule_name rulenb =
-  if !Flag_cocci.show_ctl_text or !Flag.show_trying or
-    !Flag.show_transinfo or !Flag_cocci.show_binding_in_out
+  if !Flag_cocci.show_ctl_text || !Flag.show_trying ||
+    !Flag.show_transinfo || !Flag_cocci.show_binding_in_out
   then
     begin
       let name = i_to_s rulenb in
@@ -582,7 +582,7 @@ let contain_loop gopt =
 
 
 let sp_contain_typed_metavar_z toplevel_list_list =
-  let bind x y = x or y in
+  let bind x y = x || y in
   let option_default = false in
   let mcode _ _ = option_default in
   let donothing r k e = k e in
@@ -745,7 +745,7 @@ let rec interpret_dependencies local global = function
       (interpret_dependencies local global s1) &&
       (interpret_dependencies local global s2)
   | Ast_cocci.OrDep(s1,s2)  ->
-      (interpret_dependencies local global s1) or
+      (interpret_dependencies local global s1) ||
       (interpret_dependencies local global s2)
   | Ast_cocci.NoDep -> true
   | Ast_cocci.FailDep -> false
@@ -1073,13 +1073,26 @@ let prepare_cocci ctls free_var_lists negated_pos_lists
 
 (* --------------------------------------------------------------------- *)
 
+(* Needs to be tail recursive, which List.flatten is not *)
+let flatten l =
+  List.rev
+    (List.fold_left
+       (function prev ->
+	 function cur ->
+	   List.fold_left
+	     (function prev ->
+	       function x ->
+		 x :: prev)
+	     prev cur)
+       [] l)
+
 let build_info_program (cprogram,typedefs,macros) env =
 
   let (cs, parseinfos) =
     Common.unzip cprogram in
 
   let alltoks =
-    parseinfos +> List.map (fun (s,toks) -> toks) +> List.flatten in
+    parseinfos +> List.map (fun (s,toks) -> toks) +> flatten in
 
   (* I use cs' but really annotate_xxx work by doing side effects on cs *)
   let cs' =
@@ -1171,6 +1184,21 @@ let fixpath s =
     | [] -> [] in
   String.concat "/" (loop s)
 
+let header_cache_table = Hashtbl.create 101 (* global *)
+
+let header_cache choose_includes f key1 key2 =
+  if List.mem choose_includes
+      [Flag_cocci.I_ALL_INCLUDES;Flag_cocci.I_REALLY_ALL_INCLUDES]
+      && !Flag_cocci.include_headers_for_types
+  then
+    let k = (key1,key2) in
+    try Hashtbl.find header_cache_table k
+    with Not_found ->
+      let res = f key1 key2 in
+      Hashtbl.add header_cache_table k res;
+      res
+  else f key1 key2
+
 let rec prepare_h seen env (hpath : string) choose_includes parse_strings
     : file_info list =
   let h_cs =
@@ -1181,7 +1209,10 @@ let rec prepare_h seen env (hpath : string) choose_includes parse_strings
         None
       end
     else
-      try Some (cprogram_of_file_cached parse_strings hpath)
+      try
+	Some
+	  (header_cache choose_includes cprogram_of_file_cached parse_strings
+	     hpath)
       with Flag.UnreadableFile file ->
 	begin
 	  pr2_once ("TYPE: header " ^ hpath ^ " not readable");
@@ -1190,7 +1221,7 @@ let rec prepare_h seen env (hpath : string) choose_includes parse_strings
   match h_cs with
     None -> []
   | Some h_cs ->
-      let h_cs = cprogram_of_file_cached parse_strings hpath in
+      (*let h_cs = cprogram_of_file_cached parse_strings hpath in*)
       let local_includes =
 	if choose_includes =*= Flag_cocci.I_REALLY_ALL_INCLUDES
 	then
@@ -1238,12 +1269,15 @@ let prepare_c files choose_includes parse_strings : file_info list =
   (* todo?: may not be good to first have all the headers and then all the c *)
   let env = ref !TAC.initial_env in
 
+  Flag_parsing_c.parsing_header_for_types :=
+    !Flag_cocci.include_headers_for_types;
   let includes =
     includes +>
     List.map
       (function hpath ->
 	prepare_h seen env hpath choose_includes parse_strings) +>
     List.concat in
+  Flag_parsing_c.parsing_header_for_types := false;
 
   let cfiles =
     (zip files cprograms) +>

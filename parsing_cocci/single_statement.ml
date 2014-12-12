@@ -114,7 +114,7 @@ let modif_after x =
 
 (* Identifier *)
 let rec left_ident i =
-  modif_before i or
+  modif_before i ||
   match Ast0.unwrap i with
     Ast0.Id(name) -> modif_before_mcode name
   | Ast0.MetaId(name,_,_,_) -> modif_before_mcode name
@@ -126,7 +126,7 @@ let rec left_ident i =
   | Ast0.AsIdent _ -> failwith "not possible"
 
 let rec right_ident i =
-  modif_after i or
+  modif_after i ||
   match Ast0.unwrap i with
     Ast0.Id(name) -> modif_after_mcode name
   | Ast0.MetaId(name,_,_,_) -> modif_after_mcode name
@@ -141,7 +141,7 @@ let rec right_ident i =
 (* Expression *)
 
 let rec left_expression e =
-  modif_before e or
+  modif_before e ||
   match Ast0.unwrap e with
     Ast0.Ident(id) -> left_ident id
   | Ast0.Constant(const) -> modif_before_mcode const
@@ -180,7 +180,7 @@ let rec left_expression e =
 (* Types *)
 
 and left_typeC t =
-  modif_before t or
+  modif_before t ||
   match Ast0.unwrap t with
     Ast0.ConstVol(cv,ty) -> modif_before_mcode cv
   | Ast0.BaseType(ty,strings) -> modif_before_mcode (List.hd strings)
@@ -209,7 +209,7 @@ and left_typeC t =
    split out into multiple declarations of a single variable each. *)
 
 and left_declaration d =
-  modif_before d or
+  modif_before d ||
   match Ast0.unwrap d with
     Ast0.MetaDecl(name,_) | Ast0.MetaField(name,_)
   | Ast0.MetaFieldList(name,_,_) ->
@@ -229,7 +229,7 @@ and left_declaration d =
   | Ast0.AsDecl _ -> failwith "not possible"
 
 and right_declaration d =
-  modif_before d or
+  modif_before d ||
   match Ast0.unwrap d with
     Ast0.MetaDecl(name,_) | Ast0.MetaField(name,_)
   | Ast0.MetaFieldList(name,_,_) ->

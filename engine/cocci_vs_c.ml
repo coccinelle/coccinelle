@@ -2072,9 +2072,13 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 	(indexify xs) +> List.fold_left (fun acc (n,var) ->
 	  (* consider all possible matches *)
           acc >||> (function tin -> (
-            X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart ->
-              onedecl allminus decla (var, iiptvirgb, iisto) >>=
-              (fun decla (var, iiptvirgb, iisto) ->
+            onedecl allminus decla (var, iiptvirgb, iisto) >>=
+            (fun decla (var, iiptvirgb, iisto) ->
+	      (* tokenf has to be after the onedecl, because ondecl
+		 detects whether there is actually a match and the
+		 tokenf should be done *)
+              X.tokenf_mck mckstart iifakestart >>=
+	      (fun mckstart iifakestart ->
                 return (
                 (mckstart, allminus, decla),
 		    (* adjust the variable that was chosen *)
@@ -4546,8 +4550,8 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
         )
       ))
 
-  | A.ExprStatement (None, ia1), F.ExprStatement (st, (None, ii)) ->
-      let ib1 = tuple_of_list1 ii in
+  | A.ExprStatement (None, ia1), F.ExprStatement (st, (None, [ib1])) ->
+      (* ia1/ib1 represents a ; *)
       tokenf ia1 ib1 >>= (fun ia1 ib1 ->
         return (
           A.ExprStatement (None, ia1),
@@ -4555,6 +4559,11 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
         )
       )
 
+  | _, F.ExprStatement (st, (None, [])) ->
+      (* This case occurs when we have eg nothing after a switch label
+	 and so there is no semicolon.  Indeed, there is no match, so any
+	 match against this fails. *)
+      fail
 
   | A.IfHeader (ia1,ia2, ea, ia3), F.IfHeader (st, (eb,ii)) ->
       let (ib1, ib2, ib3) = tuple_of_list3 ii in
