@@ -20,7 +20,7 @@ fi
 
 if [ ! -r "${COCCINELLE_HOME}/standard.iso" ] ; then
   echo "There is no standard.iso in ${COCCINELLE_HOME}." 1>&2
-  echo -n "Are you sure you run a properly installed version of spatch ?\n" 1>&2
+  echo "Are you sure you run a properly installed version of spatch ?" 1>&2
 else
 
 export COCCINELLE_HOME
