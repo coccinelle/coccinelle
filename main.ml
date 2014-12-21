@@ -555,7 +555,7 @@ let other_options = [
 
     "--noif0-passing",      Arg.Clear Flag_parsing_c.if0_passing, " ";
     "--itu",      Arg.Set Flag_parsing_c.exts_ITU,
-    "Experimental extensions for handling #ifdef developed at ITU.dk";
+    "   Experimental extensions for handling #ifdef developed at ITU.dk";
     "--defined", Arg.String (Flag_parsing_c.add Flag_parsing_c.defined), " ";
     "--undefined", Arg.String
         (Flag_parsing_c.add Flag_parsing_c.undefined), " ";
@@ -566,11 +566,11 @@ let other_options = [
     "--disallow-nested-exps", Arg.Set Flag_matcher.disallow_nested_exps,
        " disallow an expresion pattern from matching a term and its subterm";
     "--disable-worth-trying-opt", Arg.Clear Flag.worth_trying_opt,
-    "  ";
+    "   run the semantic patch even if the C file contains no relevant tokens";
     "--selected-only", Arg.Set FC.selected_only, "  only show selected files";
     "--only-return-is-error-exit",
     Arg.Set Flag_matcher.only_return_is_error_exit,
-    "if this flag is not set, then break and continue are also error exits";
+    "   if this flag is not set, then break and continue are also error exits";
     (* the following is a hack to make it easier to add code in sgrep-like
        code, essentially to compensate for the fact that we don't have
        any way of printing things out *)
