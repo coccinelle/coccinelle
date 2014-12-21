@@ -174,6 +174,8 @@
   suggestion.
 - Add the ability to add, but not match or remove, attributes.  Thanks to
   Johannes Berg for the suggestion.
+- Recognize for_each thing followed by ++ or -- as a loop.  Problem found
+  by Wolfram Sang.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
