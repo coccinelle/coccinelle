@@ -692,7 +692,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
       (match rest with
       | ((Fake2(_,Min adj2) | T2(_,Min adj2,_,_)) as t2)::xs ->
 	  let newcp =
-	    if List.exists not_context_newline not_minus_list
+	    if List.exists context_newline not_minus_list
 	    then
 	      let (pre_minus_list,_) = span not_context_newline rest in
 	      List.exists is_plus pre_minus_list
@@ -760,6 +760,9 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
   and not_context_newline = function
     | T2(Parser_c.TCommentNewline _,Ctx,_,_) -> false
     | _ -> true
+  and context_newline = function
+    | T2(Parser_c.TCommentNewline _,Ctx,_,_) -> true
+    | _ -> false
   and is_plus = function
     | C2 _ | Comma _ | Cocci2 _ -> true
     | _ -> false in
