@@ -2300,8 +2300,8 @@ let pp_program2 xs outfile  =
               let toks = remove_minus_and_between_and_expanded_and_fake2 toks in
               (* assert Origin + Cocci + C and no minus *)
               let toks = add_space toks in
-              let toks = add_newlines toks tu in
               let toks = fix_tokens toks in
+              let toks = add_newlines toks tu in
               toks
             end in
 
