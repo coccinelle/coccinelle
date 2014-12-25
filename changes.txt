@@ -395,6 +395,7 @@
   Reported by Stefan Assman.
 - Allow adding directives before and after ..., see ifif.cocci
 - No space after trailing comma.
+- Drop newlines when removing consecutive statements.
 
 * 0.2.5
 ** Language:
