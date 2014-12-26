@@ -698,13 +698,14 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
 	      List.exists is_plus pre_minus_list
 	    else cp in
         if common_adj adj1 adj2
-        || (not newcp && List.for_all is_whitespace_or_fake not_minus_list)
+        || ((not cp || not newcp) &&
+	    List.for_all is_whitespace_or_fake not_minus_list)
         then
           (List.map (set_minus_comment_or_plus adj1) not_minus_list)
-          @ (adjust_within_minus newcp (t2::xs))
+          @ (adjust_within_minus (cp || newcp) (t2::xs))
         else
           not_minus_list 
-	  @ (adjust_within_minus newcp (t2::xs))
+	  @ (adjust_within_minus (cp || newcp) (t2::xs))
       | _ ->
         if cp
         then xs
