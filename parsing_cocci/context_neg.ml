@@ -595,8 +595,6 @@ let rec equal_typeC t1 t2 =
        equal_mcode lb1 lb2 && equal_mcode rb1 rb2
   | (Ast0.StructUnionName(kind1,_),Ast0.StructUnionName(kind2,_)) ->
       equal_mcode kind1 kind2
-  | (Ast0.FunctionType(ty1,lp1,p1,rp1),Ast0.FunctionType(ty2,lp2,p2,rp2)) ->
-      equal_mcode lp1 lp2 && equal_mcode rp1 rp2
   | (Ast0.StructUnionDef(_,lb1,_,rb1),
      Ast0.StructUnionDef(_,lb2,_,rb2)) ->
        equal_mcode lb1 lb2 && equal_mcode rb1 rb2
@@ -612,6 +610,14 @@ let rec equal_typeC t1 t2 =
   | (Ast0.UniqueType(_),Ast0.UniqueType(_)) -> true
   | _ -> false
 
+let equal_fninfo x y =
+  match (x,y) with
+    (Ast0.FStorage(s1),Ast0.FStorage(s2)) -> equal_mcode s1 s2
+  | (Ast0.FType(_),Ast0.FType(_)) -> true
+  | (Ast0.FInline(i1),Ast0.FInline(i2)) -> equal_mcode i1 i2
+  | (Ast0.FAttr(i1),Ast0.FAttr(i2)) -> equal_mcode i1 i2
+  | _ -> false
+
 let equal_declaration d1 d2 =
   match (Ast0.unwrap d1,Ast0.unwrap d2) with
     (Ast0.MetaDecl(name1,_),Ast0.MetaDecl(name2,_))
@@ -622,6 +628,11 @@ let equal_declaration d1 d2 =
       equal_option stg1 stg2 && equal_mcode eq1 eq2 && equal_mcode sem1 sem2
   | (Ast0.UnInit(stg1,_,_,sem1),Ast0.UnInit(stg2,_,_,sem2)) ->
       equal_option stg1 stg2 && equal_mcode sem1 sem2
+  | (Ast0.FunProto(fninfo1,name1,lp1,p1,rp1,sem1),
+     Ast0.FunProto(fninfo2,name2,lp2,p2,rp2,sem2)) ->
+       (List.length fninfo1) = (List.length fninfo2) &&
+       List.for_all2 equal_fninfo fninfo1 fninfo2 &&
+       equal_mcode lp1 lp2 && equal_mcode rp1 rp2 && equal_mcode sem1 sem2
   | (Ast0.MacroDecl(nm1,lp1,_,rp1,sem1),Ast0.MacroDecl(nm2,lp2,_,rp2,sem2))->
       equal_mcode lp1 lp2 && equal_mcode rp1 rp2 && equal_mcode sem1 sem2
   | (Ast0.MacroDeclInit(nm1,lp1,_,rp1,eq1,_,sem1),
@@ -772,14 +783,6 @@ let rec equal_statement s1 s2 =
       equal_mcode prg1 prg2
   | (Ast0.OptStm(_),Ast0.OptStm(_)) -> true
   | (Ast0.UniqueStm(_),Ast0.UniqueStm(_)) -> true
-  | _ -> false
-
-and equal_fninfo x y =
-  match (x,y) with
-    (Ast0.FStorage(s1),Ast0.FStorage(s2)) -> equal_mcode s1 s2
-  | (Ast0.FType(_),Ast0.FType(_)) -> true
-  | (Ast0.FInline(i1),Ast0.FInline(i2)) -> equal_mcode i1 i2
-  | (Ast0.FAttr(i1),Ast0.FAttr(i2)) -> equal_mcode i1 i2
   | _ -> false
 
 let equal_case_line c1 c2 =

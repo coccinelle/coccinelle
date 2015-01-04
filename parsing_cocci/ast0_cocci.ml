@@ -189,9 +189,6 @@ and base_typeC =
   | FunctionPointer of typeC *
 	          string mcode(* ( *)*string mcode(* * *)*string mcode(* ) *)*
                   string mcode (* ( *)*parameter_list*string mcode(* ) *)
-  | FunctionType    of typeC option *
-	               string mcode (* ( *) * parameter_list *
-                       string mcode (* ) *)
   | Array           of typeC * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
   | Decimal         of string mcode (* decimal *) * string mcode (* ( *) *
@@ -230,6 +227,10 @@ and base_declaration =
   | Init of Ast.storage mcode option * typeC * ident * string mcode (*=*) *
 	initialiser * string mcode (*;*)
   | UnInit of Ast.storage mcode option * typeC * ident * string mcode (* ; *)
+  | FunProto of
+	fninfo list * ident (* name *) *
+	string mcode (* ( *) * parameter_list * string mcode (* ) *) *
+	string mcode (* ; *)
   | TyDecl of typeC * string mcode (* ; *)
   | MacroDecl of ident (* name *) * string mcode (* ( *) *
         expression dots * string mcode (* ) *) * string mcode (* ; *)
@@ -681,7 +682,6 @@ let rec ast0_type_to_type ty =
   | Pointer(ty,_) -> TC.Pointer(ast0_type_to_type ty)
   | FunctionPointer(ty,_,_,_,_,params,_) ->
       TC.FunctionPointer(ast0_type_to_type ty)
-  | FunctionType _ -> TC.Unknown (*failwith "not supported"*)
   | Array(ety,_,_,_) -> TC.Array(ast0_type_to_type ety)
   | Decimal(_, _, e1, _, e2, _) ->
       let e2tc e =

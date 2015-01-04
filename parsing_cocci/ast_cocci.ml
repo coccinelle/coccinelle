@@ -283,13 +283,6 @@ and base_typeC =
   | FunctionPointer of fullType *
 	          string mcode(* ( *)*string mcode(* * *)*string mcode(* ) *)*
                   string mcode (* ( *)*parameter_list*string mcode(* ) *)
-
-  (* used for the automatic managment of prototypes *)
-  | FunctionType     of bool (* true if all minus for dropping return type *) *
-                   fullType option *
-	           string mcode (* ( *) * parameter_list *
-                   string mcode (* ) *)
-
   | Array           of fullType * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
   | Decimal         of string mcode (* decimal *) * string mcode (* ( *) *
@@ -329,6 +322,10 @@ and base_declaration =
     Init of storage mcode option * fullType * ident * string mcode (*=*) *
 	initialiser * string mcode (*;*)
   | UnInit of storage mcode option * fullType * ident * string mcode (* ; *)
+  | FunProto of
+	fninfo list * ident (* name *) *
+	string mcode (* ( *) * parameter_list * string mcode (* ) *) *
+	string mcode (* ; *)
   | TyDecl of fullType * string mcode (* ; *)
   | MacroDecl of ident (* name *) * string mcode (* ( *) *
         expression dots * string mcode (* ) *) * string mcode (* ; *)

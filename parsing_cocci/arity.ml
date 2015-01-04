@@ -442,13 +442,6 @@ and top_typeC tgt opt_allowed typ =
       let params = parameter_list tgt params in
       make_typeC typ tgt arity
 	(Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2))
-  | Ast0.FunctionType(ty,lp1,params,rp1) ->
-      let arity =
-	all_same opt_allowed tgt (mcode2line lp1)
-	  (List.map mcode2arity [lp1;rp1]) in
-      let ty = get_option (typeC arity) ty in
-      let params = parameter_list tgt params in
-      make_typeC typ tgt arity (Ast0.FunctionType(ty,lp1,params,rp1))
   | Ast0.Array(ty,lb,size,rb) ->
       let arity =
 	all_same opt_allowed tgt (mcode2line lb)
@@ -571,6 +564,17 @@ and declaration tgt decl =
       let id = ident false arity id in
       let sem = mcode sem in
       make_decl decl tgt arity (Ast0.UnInit(stg,ty,id,sem))
+  | Ast0.FunProto(fi,name,lp1,params,rp1,sem) ->
+      let arity =
+	all_same true tgt (mcode2line lp1)
+	  (List.map mcode2arity [lp1;rp1;sem]) in
+      let fi = List.map (fninfo arity) fi in
+      let name = ident false arity name in
+      let lp1 = mcode lp1 in
+      let params = parameter_list tgt params in
+      let rp1 = mcode rp1 in
+      let sem = mcode sem in
+      make_decl decl tgt arity (Ast0.FunProto(fi,name,lp1,params,rp1,sem))
   | Ast0.MacroDecl(name,lp,args,rp,sem) ->
       let arity =
 	all_same true tgt (mcode2line lp)

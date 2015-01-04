@@ -1095,15 +1095,29 @@ define_param_list_option:
 /*****************************************************************************/
 
 funproto:
-  s=ioption(storage) t=ctype
+  s=ioption(storage) i=ioption(Tinline) t=ctype
   id=fn_ident lp=TOPar d=decl_list(name_opt_decl) rp=TCPar pt=TPtVirg
-      { Ast0.wrap
-	  (Ast0.UnInit
-	     (s,
-	      Ast0.wrap
-		(Ast0.FunctionType(Some t,
-				   P.clt2mcode "(" lp, d, P.clt2mcode ")" rp)),
-	      id, P.clt2mcode ";" pt)) }
+      { let s = match s with None -> [] | Some s -> [Ast0.FStorage s] in
+        let i =
+	  match i with
+	    None -> []
+	  | Some i -> [Ast0.FInline (P.clt2mcode "inline" i)] in
+	let t = [Ast0.FType t] in
+	Ast0.wrap
+	  (Ast0.FunProto
+	     (s @ i @ t, id,
+	      P.clt2mcode "(" lp, d, P.clt2mcode ")" rp,
+	      P.clt2mcode ";" pt)) }
+| i=Tinline s=storage t=ctype
+  id=fn_ident lp=TOPar d=decl_list(name_opt_decl) rp=TCPar pt=TPtVirg
+      { let s = [Ast0.FStorage s] in
+        let i = [Ast0.FInline (P.clt2mcode "inline" i)] in
+	let t = [Ast0.FType t] in
+	Ast0.wrap
+	  (Ast0.FunProto
+	     (s @ i @ t, id,
+	      P.clt2mcode "(" lp, d, P.clt2mcode ")" rp,
+	      P.clt2mcode ";" pt)) }
 
 fundecl:
   f=fninfo

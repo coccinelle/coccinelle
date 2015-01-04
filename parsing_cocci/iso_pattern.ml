@@ -776,12 +776,9 @@ let match_maker checks_needed context_required whencode_allowed =
   and match_typeC pattern t =
     match Ast0.unwrap pattern with
       Ast0.MetaType(name,pure) ->
-	(match Ast0.unwrap t with
-	  Ast0.FunctionType(tya,lp1a,paramsa,rp1a) -> return false
-	| _ ->
-	    add_pure_binding name pure pure_sp_code.VT0.combiner_rec_typeC
-	      (function ty -> Ast0.TypeCTag ty)
-	      t)
+	add_pure_binding name pure pure_sp_code.VT0.combiner_rec_typeC
+	  (function ty -> Ast0.TypeCTag ty)
+	  t
     | up ->
 	if not(checks_needed) || not(context_required) || is_context t
 	then
@@ -814,13 +811,6 @@ let match_maker checks_needed context_required whencode_allowed =
 		   check_mcode rp2a rp2b; match_typeC tya tyb;
 		   match_dots match_param is_plist_matcher
 		     do_plist_match paramsa paramsb]
-	  | (Ast0.FunctionType(tya,lp1a,paramsa,rp1a),
-	     Ast0.FunctionType(tyb,lp1b,paramsb,rp1b)) ->
-	       conjunct_many_bindings
-		 [check_mcode lp1a lp1b; check_mcode rp1a rp1b;
-		   match_option match_typeC tya tyb;
-		   match_dots match_param is_plist_matcher do_plist_match
-		     paramsa paramsb]
 	  | (Ast0.Array(tya,lb1,sizea,rb1),Ast0.Array(tyb,lb,sizeb,rb)) ->
 	      conjunct_many_bindings
 		[check_mcode lb1 lb; check_mcode rb1 rb;
@@ -901,6 +891,13 @@ let match_maker checks_needed context_required whencode_allowed =
 		  [check_mcode sc1 sc; match_option check_mcode stga stgb;
 		    match_typeC tya tyb; match_ident ida idb]
 	      else return false
+	  | (Ast0.FunProto(fninfo1,name1,lp1,params1,rp1,sem1),
+	     Ast0.FunProto(fninfo,name,lp,params,rp,sem)) ->
+	       conjunct_many_bindings
+		 [check_mcode lp1 lp; check_mcode rp1 rp; check_mcode sem1 sem;
+		   match_fninfo fninfo1 fninfo; match_ident name1 name;
+		   match_dots match_param is_plist_matcher do_plist_match
+		     params1 params]
 	  | (Ast0.MacroDecl(namea,lp1,argsa,rp1,sc1),
 	     Ast0.MacroDecl(nameb,lp,argsb,rp,sc)) ->
 	       conjunct_many_bindings

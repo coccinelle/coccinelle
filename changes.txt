@@ -176,7 +176,10 @@
   Johannes Berg for the suggestion.
 - Recognize for_each thing followed by ++ or -- as a loop.  Problem found
   by Wolfram Sang.
-- Newline before python code in error messages.  Suggested by Markus Elfring.
+- Newline before python code in error messages.  Suggested by Markus
+  Elfring.
+- Add prototypes implicit isomorphism to allow disabling generation of
+  rules based on changes in function prototypes.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
