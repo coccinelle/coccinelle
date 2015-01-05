@@ -374,9 +374,6 @@ and print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2) fn =
   mcode print_string rp1; mcode print_string lp1;
   parameter_list params; mcode print_string rp2
 
-and print_function_type (ty,lp1,params,rp1) fn =
-  print_option fullType ty; fn(); mcode print_string lp1;
-  parameter_list params; mcode print_string rp1
 
 and print_fninfo = function
     Ast.FStorage(stg) -> mcode storage stg
