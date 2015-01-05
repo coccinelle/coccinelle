@@ -338,9 +338,12 @@ and unify_declaration d1 d2 =
       else return false
   | (Ast.FunProto(fi1,nm1,lp1,params1,rp1,sem1),
      Ast.FunProto(fi2,nm2,lp2,params2,rp2,sem2)) ->
-       conjunct_bindings (unify_fninfo fi1 fi2)
-	 (conjunct_bindings (unify_ident nm1 nm2)
-	    (unify_dots unify_parameterTypeDef pdots params1 params2))
+       if List.for_all2 unify_mcode [lp1;rp1;sem1] [lp2;rp2;sem2]
+       then
+	 conjunct_bindings (unify_fninfo fi1 fi2)
+	   (conjunct_bindings (unify_ident nm1 nm2)
+	      (unify_dots unify_parameterTypeDef pdots params1 params2))
+       else return false
   | (Ast.MacroDecl(n1,lp1,args1,rp1,sem1),
      Ast.MacroDecl(n2,lp2,args2,rp2,sem2)) ->
        conjunct_bindings (unify_ident n1 n2)
