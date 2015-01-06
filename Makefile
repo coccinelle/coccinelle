@@ -45,11 +45,13 @@ LIBS=commons/commons.cma \
      ctl/ctl.cma \
      parsing_cocci/cocci_parser.cma parsing_c/parsing_c.cma \
      engine/cocciengine.cma popl09/popl.cma \
-     extra/extra.cma python/coccipython.cma ocaml/cocciocaml.cma
+     extra/extra.cma python/coccipython.cma ocaml/cocciocaml.cma \
+     parmap.cma
 
 MAKESUBDIRS=$(MAKELIBS) commons \
  globals ctl parsing_cocci parsing_c \
- engine popl09 extra python ocaml
+ engine popl09 extra python ocaml \
+ bundles/parmap
 
 CLEANSUBDIRS=commons \
  globals ctl parsing_cocci parsing_c \
@@ -61,7 +63,7 @@ INCLUDEDIRSDEP=commons commons/ocamlextra \
  parsing_cocci parsing_c engine popl09 extra python ocaml \
  $(MAKELIBS)
 
-INCLUDEDIRS=$(INCLUDEDIRSDEP) $(PCREDIR) $(INCLIBS)
+INCLUDEDIRS=$(INCLUDEDIRSDEP) $(PCREDIR) $(PARMAPDIR) $(INCLIBS)
 
 ##############################################################################
 # Generic variables
@@ -80,8 +82,8 @@ EXEC=$(TARGET)
 # Generic ocaml variables
 ##############################################################################
 
-OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES)
-OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES)
+OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(FLAGS_parmap) $(INCLUDES)
+OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(OPTFLAGS_parmap) $(INCLUDES)
 OCAMLYACC_CMD=$(OCAMLYACC) -v
 OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDEDIRSDEP:%=-I %)
 OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDES)

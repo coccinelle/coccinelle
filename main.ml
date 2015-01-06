@@ -46,6 +46,9 @@ let distrib_index = ref (None : int option)
 let distrib_max   = ref (None : int option)
 let mod_distrib   = ref false
 
+let parmap_cores      = ref (None : int option)
+let parmap_chunk_size = ref (None : int option)
+
 (*****************************************************************************)
 (* Profiles *)
 (*****************************************************************************)
@@ -620,6 +623,12 @@ let other_options = [
     "   the number of processors available";
     "--mod-distrib", Arg.Set mod_distrib,
     "   use mod to distribute files among the processors";
+    "--jobs",  Arg.Int (function x -> parmap_cores := Some x),
+    "   the number of cores to be used by parmap";
+    "-j",  Arg.Int (function x -> parmap_cores := Some x),
+    "   the number of cores to be used";
+    "--chunksize", Arg.Int (function x -> parmap_chunk_size := Some x),
+    "   the size of work chunks for parallelism";
   ];
 
   "pad options",
@@ -943,10 +952,37 @@ let rec main_action xs =
 		  end
 	    | _ -> failwith "inconsistent distribution information" in
 
+	  let ncores =
+	    match !parmap_cores with
+	    | Some x -> x
+	    | None -> succ (Parmap.get_default_ncores ()) in
+	  let chunksize =
+	    match !parmap_chunk_size with
+	    | Some x -> x
+	    | None -> 1 in
+	  let seq_fold merge op z l =
+	    List.fold_left op z l in
+	  let par_fold merge op z l =
+	    Parmap.parfold
+	      ~init:(fun id ->
+		Parmap.redirect
+		  ~path:(Printf.sprintf "/tmp/coccinelle.%d" (Unix.getpid ()))
+		  ~id;
+		())
+	      ~ncores
+	      ~chunksize
+	      (fun x y -> op y x) (Parmap.L l) z merge in
+	  let actual_fold, run_in_parallel =
+	    if Cocci.has_finalize cocci_infos then begin
+	      pr2 "warning: parallel mode is disabled due to a finalize";
+	      seq_fold, false
+	    end else
+	      par_fold, true in
+
           let outfiles =
             Common.profile_code "Main.outfiles computation" (fun () ->
 	      let res =
-		infiles +> List.fold_left (fun prev cfiles -> (* put parmap here *)
+		infiles +> actual_fold (@) (fun prev cfiles ->
 		  if (not !Flag.worth_trying_opt) ||
 		    Cocci.worth_trying cfiles constants
 		      then
@@ -1169,6 +1205,14 @@ let main () =
     if !macro_file <> ""
     then Parse_c.init_defs_macros !macro_file;
 
+    let uses_distribution =
+      (!distrib_index <> None) || (!distrib_max <> None) || !mod_distrib in
+    let uses_parmap =
+      (!parmap_cores <> None) || (!parmap_chunk_size <> None) in
+    if uses_distribution && uses_parmap then begin
+      pr2 "error: distribution and parallelism are not compatible";
+      exit 1
+    end;
 
     (* must be done after Arg.parse, because Common.profile is set by it *)
     Common.profile_code "Main total" (fun () ->
