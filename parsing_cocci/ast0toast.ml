@@ -504,7 +504,7 @@ and typeC allminus t =
 	  [ty] -> ty
 	| types -> Ast.DisjType(List.map (rewrap t no_isos) types))
     | Ast0.BaseType(_) | Ast0.Signed(_,_) | Ast0.Pointer(_,_)
-    | Ast0.FunctionPointer(_,_,_,_,_,_,_) | Ast0.FunctionType(_,_,_,_)
+    | Ast0.FunctionPointer(_,_,_,_,_,_,_)
     | Ast0.Array(_,_,_,_) | Ast0.Decimal(_,_,_,_,_,_)
     | Ast0.EnumName(_,_) | Ast0.StructUnionName(_,_)
     | Ast0.StructUnionDef(_,_,_,_) | Ast0.EnumDef(_,_,_,_)
@@ -529,11 +529,6 @@ and base_typeC allminus t =
       Ast.FunctionPointer
 	(typeC allminus ty,mcode lp1,mcode star,mcode rp1,
 	 mcode lp2,parameter_list params,mcode rp2)
-  | Ast0.FunctionType(ret,lp,params,rp) ->
-      let allminus = check_allminus.VT0.combiner_rec_typeC t in
-      Ast.FunctionType
-	(allminus,get_option (typeC allminus) ret,mcode lp,
-	 parameter_list params,mcode rp)
   | Ast0.Array(ty,lb,size,rb) ->
       Ast.Array(typeC allminus ty,mcode lb,get_option expression size,
 		mcode rb)
@@ -579,23 +574,17 @@ and declaration d =
 	let sem = mcode sem in
 	Ast.Init(stg,ty,id,eq,ini,sem)
     | Ast0.UnInit(stg,ty,id,sem) ->
-	(match Ast0.unwrap ty with
-	  Ast0.FunctionType(tyx,lp1,params,rp1) ->
-	    let allminus = check_allminus.VT0.combiner_rec_declaration d in
-	    Ast.UnInit(get_option mcode stg,
-		       rewrap ty (do_isos (Ast0.get_iso ty))
-			 (Ast.Type
-			    (allminus,None,
-			     rewrap ty no_isos
-			       (Ast.FunctionType
-				  (allminus,get_option (typeC allminus) tyx,
-				   mcode lp1,
-				   parameter_list params,mcode rp1)))),
-		       ident id,mcode sem)
-	| _ ->
-	    let allminus = check_allminus.VT0.combiner_rec_declaration d in
-	    Ast.UnInit(get_option mcode stg,typeC allminus ty,ident id,
-		       mcode sem))
+	let allminus = check_allminus.VT0.combiner_rec_declaration d in
+	Ast.UnInit(get_option mcode stg,typeC allminus ty,ident id,
+		   mcode sem)
+    | Ast0.FunProto(fi,name,lp,params,rp,sem) ->
+	  let fi = List.map fninfo fi in
+	  let name = ident name in
+	  let lp = mcode lp in
+	  let params = parameter_list params in
+	  let rp = mcode rp in
+	  let sem = mcode sem in
+	  Ast.FunProto(fi,name,lp,params,rp,sem)
     | Ast0.MacroDecl(name,lp,args,rp,sem) ->
 	let name = ident name in
 	let lp = mcode lp in

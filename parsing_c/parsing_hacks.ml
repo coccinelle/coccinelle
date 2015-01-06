@@ -324,6 +324,8 @@ let rec is_really_foreach xs =
     | TCPar _::Tfor _::xs -> true, xs
     | TCPar _::Tswitch _::xs -> true, xs
     | TCPar _::Treturn _::xs -> true, xs
+    | TCPar _::TInc _::xs -> true, xs
+    | TCPar _::TDec _::xs -> true, xs
 
 
     | TCPar _::xs -> false, xs

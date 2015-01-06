@@ -266,9 +266,6 @@ and print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2) fn =
   mcode print_string rp1; mcode print_string lp2;
   parameter_list params; mcode print_string rp2
 
-and print_function_type (ty,lp1,params,rp1) fn =
-  print_option typeC ty; fn(); mcode print_string lp1;
-  parameter_list params; mcode print_string rp1
 
 and typeC t =
   print_context t
@@ -284,8 +281,6 @@ and typeC t =
       | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	  print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
 	    (function _ -> ())
-      | Ast0.FunctionType(ty,lp1,params,rp1) ->
-	  print_function_type (ty,lp1,params,rp1) (function _ -> ())
       | Ast0.Array(ty,lb,size,rb) ->
 	  typeC ty; mcode print_string lb; print_option expression size;
 	  mcode print_string rb
@@ -327,9 +322,6 @@ and print_named_type ty id =
     Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
       print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
 	(function _ -> print_string " "; ident id)
-  | Ast0.FunctionType(ty,lp1,params,rp1) ->
-      print_function_type (ty,lp1,params,rp1)
-	(function _ -> print_string " "; ident id)
   | Ast0.Array(ty,lb,size,rb) ->
       let rec loop ty k =
 	match Ast0.unwrap ty with
@@ -359,6 +351,11 @@ and declaration d =
 	  mcode print_string sem
       | Ast0.UnInit(stg,ty,id,sem) ->
 	  print_option (mcode U.storage) stg; print_named_type ty id;
+	  mcode print_string sem
+      | Ast0.FunProto(fninfo,name,lp1,params,rp1,sem) ->
+	  List.iter print_fninfo fninfo;
+	  ident name; mcode print_string_box lp1;
+	  parameter_list params; close_box(); mcode print_string rp1;
 	  mcode print_string sem
       | Ast0.MacroDecl(name,lp,args,rp,sem) ->
 	  ident name; mcode print_string_box lp;

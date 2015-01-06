@@ -17,7 +17,7 @@ let pr2 s = Printf.printf "%s\n" s
 (* for isomorphisms.  all should be at the front!!! *)
 let reserved_names =
   ["all";"optional_storage";"optional_qualifier";"value_format";"comm_assoc";
-    "optional_attributes"]
+    "optional_attributes";"prototypes"]
 
 (* ----------------------------------------------------------------------- *)
 (* Debugging... *)

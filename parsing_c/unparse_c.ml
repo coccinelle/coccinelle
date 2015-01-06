@@ -652,7 +652,8 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
     | (T2(Parser_c.TCommentNewline c,_b,_i,_h) as x)::
       ((T2(_,Min adj1,_,_)) as t1)::xs ->
       let (minus_list,rest) = span_not_context (t1::xs) in
-      let contains_plus = List.exists is_plus minus_list in
+      let (pre_minus_list,_) = span not_context_newline minus_list in
+      let contains_plus = List.exists is_plus pre_minus_list in
       let x =
         match List.rev minus_list with
         | (T2(Parser_c.TCommentNewline c,_b,_i,_h))::rest
@@ -665,7 +666,8 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
       (T2(Parser_c.TCommentNewline c,_b,_i,_h) as x)::
       ((T2(_,Min adj1,_,_)) as t1)::xs ->
       let (minus_list,rest) = span_not_context (t1::xs) in
-      let contains_plus = List.exists is_plus minus_list in
+      let (pre_minus_list,_) = span not_context_newline minus_list in
+      let contains_plus = List.exists is_plus pre_minus_list in
       let x =
         match List.rev minus_list with
         | (T2(Parser_c.TCommentNewline c,_b,_i,_h))::rest
@@ -676,8 +678,9 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
          @ adjust_around_minus rest
     | ((Fake2(_,Min adj1) | T2(_,Min adj1,_,_)) as t1)::xs ->
       let (minus_list,rest) = span_not_context (t1::xs) in
-      let contains_plus = List.exists is_plus minus_list in
-        adjust_within_minus contains_plus minus_list 
+      let (pre_minus_list,_) = span not_context_newline minus_list in
+      let contains_plus = List.exists is_plus pre_minus_list in
+      adjust_within_minus contains_plus minus_list
       @ adjust_around_minus rest
     | x::xs ->
       x :: adjust_around_minus xs
@@ -688,14 +691,21 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
       t1 ::
       (match rest with
       | ((Fake2(_,Min adj2) | T2(_,Min adj2,_,_)) as t2)::xs ->
+	  let newcp =
+	    if List.exists context_newline not_minus_list
+	    then
+	      let (pre_minus_list,_) = span not_context_newline rest in
+	      List.exists is_plus pre_minus_list
+	    else cp in
         if common_adj adj1 adj2
-        || (not cp && List.for_all is_whitespace_or_fake not_minus_list)
+        || ((not cp || not newcp) &&
+	    List.for_all is_whitespace_or_fake not_minus_list)
         then
           (List.map (set_minus_comment_or_plus adj1) not_minus_list)
-          @ (adjust_within_minus cp (t2::xs))
+          @ (adjust_within_minus (cp || newcp) (t2::xs))
         else
           not_minus_list 
-	  @ (adjust_within_minus cp (t2::xs))
+	  @ (adjust_within_minus (cp || newcp) (t2::xs))
       | _ ->
         if cp
         then xs
@@ -748,6 +758,12 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
   and not_context = function
     | (T2(_,Ctx,_,_) as x) when not (is_minusable_comment x) -> false
     | _ -> true
+  and not_context_newline = function
+    | T2(Parser_c.TCommentNewline _,Ctx,_,_) -> false
+    | _ -> true
+  and context_newline = function
+    | T2(Parser_c.TCommentNewline _,Ctx,_,_) -> true
+    | _ -> false
   and is_plus = function
     | C2 _ | Comma _ | Cocci2 _ -> true
     | _ -> false in
@@ -1716,16 +1732,16 @@ let sub1top op accumulator =
   let sub1 = function x::xs -> (max 0 (x-1))::xs | _ -> [] in
   adjust_by_op sub1 accumulator op
 
-let token_effect tok dmin dplus inparens inassn accumulator xs =
+let token_effect tok dmin dplus inparens inassn inbrace accumulator xs =
   let info = parse_token tok in
   match info with
     (Tok ")",op)
-    when inparens <= 1 && inassn = 0 ->
+    when inparens <= 1 && inassn = 0 && inbrace > 0 ->
       let nopen_brace a b = not (open_brace a b) in
       let do_nothing a b = b in
       let accumulator =
 	adjust_by_function nopen_brace op accadd1 do_nothing accumulator xs in
-      (Other 1,dmin,dplus,0,0,accumulator)
+      (Other 1,dmin,dplus,0,0,inbrace,accumulator)
   | (Tok "else",op) ->
       (* is_nl is for the case where the next statement is on the same line
 	 as the else *)
@@ -1735,35 +1751,35 @@ let token_effect tok dmin dplus inparens inassn accumulator xs =
       let do_nothing a b = b in
       let accumulator =
 	adjust_by_function nopen_brace op accadd1 do_nothing accumulator xs in
-      (Other 1,dmin,dplus,0,0,accumulator)
+      (Other 1,dmin,dplus,0,0,inbrace,accumulator)
   | (Tok "{",op) ->
       let (dmin,dplus) = add1 op (dmin,dplus) in
       let accumulator = add1top op accumulator in
-      (Other 2,dmin,dplus,inparens,0,accumulator)
+      (Other 2,dmin,dplus,inparens,0,inbrace+1,accumulator)
   | (Tok "}",op) ->
       let (dmin,dplus) = sub1 op (dmin,dplus) in
       let accumulator = sub1top op accumulator in
-      (Other 3,dmin,dplus,inparens,0,drop_zeroes op accumulator xs)
+      (Other 3,dmin,dplus,inparens,0,inbrace-1,drop_zeroes op accumulator xs)
   | (Tok(";"|","),op) when inparens = 0 && inassn <= 1 ->
-      (Other 4,dmin,dplus,inparens,0,drop_zeroes op accumulator xs)
+      (Other 4,dmin,dplus,inparens,0,inbrace,drop_zeroes op accumulator xs)
   | (Tok ";",op) ->
-      (Other 5,dmin,dplus,inparens,max 0 (inassn-1),accumulator)
+      (Other 5,dmin,dplus,inparens,max 0 (inassn-1),inbrace,accumulator)
   | (Tok "=",op) when inparens+inassn = 0 ->
-      (Other 6,dmin,dplus,inparens,1,accumulator)
-  | (Tok "(",op) -> (Other 7,dmin,dplus,inparens+1,inassn,accumulator)
-  | (Tok ")",op) -> (Other 8,dmin,dplus,inparens-1,inassn,accumulator)
+      (Other 6,dmin,dplus,inparens,1,inbrace,accumulator)
+  | (Tok "(",op) -> (Other 7,dmin,dplus,inparens+1,inassn,inbrace,accumulator)
+  | (Tok ")",op) -> (Other 8,dmin,dplus,inparens-1,inassn,inbrace,accumulator)
   | (Ind Indent_cocci2,op) ->
-      (Drop,dmin,dplus,inparens,inassn,accumulator)
+      (Drop,dmin,dplus,inparens,inassn,inbrace,accumulator)
   | (Ind (Unindent_cocci2 true),op) ->
-      (Drop,dmin,dplus,inparens,inassn,accumulator)
+      (Drop,dmin,dplus,inparens,inassn,inbrace,accumulator)
   | (Ind (Unindent_cocci2 false),op) ->
-      (Unindent,dmin,dplus,inparens,inassn,accumulator)
+      (Unindent,dmin,dplus,inparens,inassn,inbrace,accumulator)
   | (Tok "case",op) ->
-      (Unindent1,dmin,dplus,inparens,inassn,accumulator)
+      (Unindent1,dmin,dplus,inparens,inassn,inbrace,accumulator)
   | (NL after,op) ->
       if is_label Both xs
       then (* ignore indentation *)
-	(Label,dmin,dplus,inparens,inassn,accumulator)
+	(Label,dmin,dplus,inparens,inassn,inbrace,accumulator)
       else
 	let rebuilder min plus =
 	  match op with
@@ -1779,8 +1795,8 @@ let token_effect tok dmin dplus inparens inassn accumulator xs =
 	    (fun op x -> add op x numacc)
 	    (dmin,dplus) xs in
 	(rebuilder admin adplus,
-	 dmin,dplus,inparens,inassn,accumulator)
-  | (_,op) -> (Other 9,dmin,dplus,inparens,inassn,accumulator)
+	 dmin,dplus,inparens,inassn,inbrace,accumulator)
+  | (_,op) -> (Other 9,dmin,dplus,inparens,inassn,inbrace,accumulator)
 
 let parse_indentation xs =
   let xs =
@@ -1789,7 +1805,7 @@ let parse_indentation xs =
 	(* Drop unindent at the very beginning; no need for prior nl *)
 	xs
     | _ -> xs in
-  let rec loop n dmin dplus inparens inassn accumulator = function
+  let rec loop n dmin dplus inparens inassn inbrace accumulator = function
       [] -> []
     | (x::xs) as l ->
 	let (front,x,xs) =
@@ -1797,8 +1813,8 @@ let parse_indentation xs =
 	  match List.rev newlines with
 	    nl::whitespace -> (List.rev whitespace, nl, rest)
 	  | [] -> ([],x,xs) in
-	let (res,dmin,dplus,inparens,inassn,accumulator) =
-	  token_effect x dmin dplus inparens inassn accumulator xs in
+	let (res,dmin,dplus,inparens,inassn,inbrace,accumulator) =
+	  token_effect x dmin dplus inparens inassn inbrace accumulator xs in
 	let front =
 	  let rec loop n = function
 	      [] -> []
@@ -1809,8 +1825,8 @@ let parse_indentation xs =
 	  loop n front in
 	front @
 	((n+List.length front),res,x) ::
-	loop (n+1) dmin dplus inparens inassn accumulator xs in
-  loop 1 0 0 0 0 ([],[]) xs
+	loop (n+1) dmin dplus inparens inassn inbrace accumulator xs in
+  loop 1 0 0 0 0 0 ([],[]) xs
 
 exception NoInfo
 
@@ -2300,8 +2316,8 @@ let pp_program2 xs outfile  =
               let toks = remove_minus_and_between_and_expanded_and_fake2 toks in
               (* assert Origin + Cocci + C and no minus *)
               let toks = add_space toks in
-              let toks = add_newlines toks tu in
               let toks = fix_tokens toks in
+              let toks = add_newlines toks tu in
               toks
             end in
 

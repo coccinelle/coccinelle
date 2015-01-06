@@ -302,8 +302,6 @@ and typeC t =
 	  (bind ty_n star_n, Ast0.Pointer(ty,star))
       | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	  function_pointer (ty,lp1,star,rp1,lp2,params,rp2) []
-      | Ast0.FunctionType(ty,lp1,params,rp1) ->
-	  function_type (ty,lp1,params,rp1) []
       | Ast0.Array(ty,lb,size,rb) -> array_type (ty,lb,size,rb) []
       |	Ast0.Decimal(dec,lp,length,comma,precision_opt,rp) ->
 	  let (dec_n,dec) = mcode dec in
@@ -370,14 +368,6 @@ and function_pointer (ty,lp1,star,rp1,lp2,params,rp2) extra =
     (* have to put the treatment of the identifier into the right position *)
   (multibind ([ty_n;lp1_n;star_n] @ extra @ [rp1_n;lp2_n;params_n;rp2_n]),
    Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2))
-and function_type (ty,lp1,params,rp1) extra =
-  let (ty_n,ty) = get_option typeC ty in
-  let (lp1_n,lp1) = mcode lp1 in
-  let (params_n,params) = dots parameterTypeDef params in
-  let (rp1_n,rp1) = mcode rp1 in
-    (* have to put the treatment of the identifier into the right position *)
-  (multibind (ty_n :: extra @ [lp1_n;params_n;rp1_n]),
-   Ast0.FunctionType(ty,lp1,params,rp1))
 and array_type (ty,lb,size,rb) extra =
   let (ty_n,ty) = typeC ty in
   let (lb_n,lb) = mcode lb in
@@ -392,9 +382,6 @@ and named_type ty id =
     Ast0.FunctionPointer(rty,lp1,star,rp1,lp2,params,rp2) ->
       let tyres =
 	function_pointer (rty,lp1,star,rp1,lp2,params,rp2) [id_n] in
-      (rewrap ty tyres, id)
-  | Ast0.FunctionType(rty,lp1,params,rp1) ->
-      let tyres = function_type (rty,lp1,params,rp1) [id_n] in
       (rewrap ty tyres, id)
   | Ast0.Array(rty,lb,size,rb) ->
       let tyres = array_type (rty,lb,size,rb) [id_n] in
@@ -428,6 +415,15 @@ and declaration d =
 	  let ((ty_id_n,ty),id) = named_type ty id in
 	  let (sem_n,sem) = mcode sem in
 	  (multibind [stg_n;ty_id_n;sem_n], Ast0.UnInit(stg,ty,id,sem))
+      | Ast0.FunProto(fi,name,lp,params,rp,sem) ->
+	  let (fi_n,fi) = map_split_bind fninfo fi in
+	  let (name_n,name) = ident name in
+	  let (lp_n,lp) = mcode lp in
+	  let (params_n,params) = dots parameterTypeDef params in
+	  let (rp_n,rp) = mcode rp in
+	  let (sem_n,sem) = mcode sem in
+	  (multibind [fi_n;name_n;lp_n;params_n;rp_n;sem_n],
+	   Ast0.FunProto(fi,name,lp,params,rp,sem))
       | Ast0.MacroDecl(name,lp,args,rp,sem) ->
 	  let (name_n,name) = ident name in
 	  let (lp_n,lp) = mcode lp in
