@@ -439,6 +439,7 @@ install-common: ocaml/coccilib/coccilib.cmi
 	$(INSTALL_DATA) standard.h $(DESTDIR)$(SHAREDIR)
 	$(INSTALL_DATA) standard.iso $(DESTDIR)$(SHAREDIR)
 	$(INSTALL_DATA) ocaml/coccilib/coccilib.cmi $(DESTDIR)$(SHAREDIR)/ocaml/
+	$(INSTALL_DATA) ocaml/*.cmi $(DESTDIR)$(SHAREDIR)/ocaml/
 #	$(INSTALL_DATA) parsing_c/*.cmi $(DESTDIR)$(SHAREDIR)/parsing_c/
 #	$(INSTALL_DATA) commons/*.cmi $(DESTDIR)$(SHAREDIR)/commons/
 #	$(INSTALL_DATA) globals/iteration.cmi $(DESTDIR)$(SHAREDIR)/globals/
