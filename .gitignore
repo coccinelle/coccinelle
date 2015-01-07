@@ -52,5 +52,4 @@ _log
 *.d.native
 *.p.byte
 .merlin
-bundles/pycaml/Camlp4Parsers
 description-pak
