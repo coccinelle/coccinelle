@@ -681,6 +681,7 @@ distclean::
 	rm -f globals/regexp.ml python/pycocci.ml ocaml/prepare_ocamlcocci.ml
 	rm -f scripts/spatch.sh
 	rm -f aclocal.m4
+	for i in `find . -name '*.in'`; do rm `echo $$i | sed "s/\.in$$//"`; done
 	@echo "Run 'configure' again prior to building coccinelle"
 
 
