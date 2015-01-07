@@ -160,8 +160,6 @@ and left_typeC t =
   | Ast0.Signed(sgn,ty) -> modif_before_mcode sgn
   | Ast0.Pointer(ty,star) -> left_typeC ty
   | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) -> left_typeC ty
-  | Ast0.FunctionType(Some ty,lp1,params,rp1) -> left_typeC ty
-  | Ast0.FunctionType(None,lp1,params,rp1) -> modif_before_mcode lp1
   | Ast0.Array(ty,lb,size,rb) -> left_typeC ty
   | Ast0.Decimal(dec,lp,length,comma,precision_opt,rp) ->
       modif_before_mcode dec
@@ -191,6 +189,9 @@ and left_declaration d =
   | Ast0.Init(None,ty,id,eq,ini,sem) -> left_typeC ty
   | Ast0.UnInit(Some stg,ty,id,sem) -> modif_before_mcode stg
   | Ast0.UnInit(None,ty,id,sem) -> left_typeC ty
+  | Ast0.FunProto(fninfo,name,lp1,params,rp1,sem) ->
+      (* should not be nested in anything anyway *)
+      false
   | Ast0.MacroDecl(name,lp,args,rp,sem) -> left_ident name
   | Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem) -> left_ident name
   | Ast0.TyDecl(ty,sem) -> left_typeC ty
@@ -209,6 +210,7 @@ and right_declaration d =
       modif_before_mcode name
   | Ast0.Init(_,ty,id,eq,ini,sem) -> modif_after_mcode sem
   | Ast0.UnInit(_,ty,id,sem) -> modif_after_mcode sem
+  | Ast0.FunProto(fninfo,name,lp1,params,rp1,sem) -> modif_after_mcode sem
   | Ast0.MacroDecl(name,lp,args,rp,sem) -> modif_after_mcode sem
   | Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem) -> modif_after_mcode sem
   | Ast0.TyDecl(ty,sem) -> modif_after_mcode sem

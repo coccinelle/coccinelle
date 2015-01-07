@@ -174,6 +174,12 @@
   suggestion.
 - Add the ability to add, but not match or remove, attributes.  Thanks to
   Johannes Berg for the suggestion.
+- Recognize for_each thing followed by ++ or -- as a loop.  Problem found
+  by Wolfram Sang.
+- Newline before python code in error messages.  Suggested by Markus
+  Elfring.
+- Add prototypes implicit isomorphism to allow disabling generation of
+  rules based on changes in function prototypes.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
@@ -391,6 +397,8 @@
 - Improved propagation of #ifdef additions to function prototypes.
   Reported by Stefan Assman.
 - Allow adding directives before and after ..., see ifif.cocci
+- No space after trailing comma.
+- Drop newlines when removing consecutive statements.
 
 * 0.2.5
 ** Language:

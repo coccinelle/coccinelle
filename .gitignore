@@ -51,3 +51,5 @@ _log
 *.byte
 *.d.native
 *.p.byte
+.merlin
+description-pak
