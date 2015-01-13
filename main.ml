@@ -958,7 +958,7 @@ let rec main_action xs =
 	    | None -> 0 in
 	  let chunksize =
 	    match !parmap_chunk_size with
-	    | Some x -> x
+	    | Some x when x > 0 -> x
 	    | None -> 1 in
 	  let seq_fold merge op z l =
 	    List.fold_left op z l in
