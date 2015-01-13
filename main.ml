@@ -973,13 +973,16 @@ let rec main_action xs =
 	      ~chunksize
 	      (fun x y -> op y x) (Parmap.L l) z merge in
 	  let actual_fold, run_in_parallel =
-	    if Cocci.has_finalize cocci_infos then begin
-	      pr2 "warning: parallel mode is disabled due to a finalize";
-	      seq_fold, false
+	    if Cocci.has_finalize cocci_infos
+	    then
+	      begin
+		pr2 "warning: parallel mode is disabled due to a finalize";
+		(seq_fold, false)
+	      end
 	    else if ncores <= 0 then
-	      seq_fold, false
-	    end else
-	      par_fold, true in
+	      (seq_fold, false)
+	    else
+	      (par_fold, true) in
 
           let outfiles =
             Common.profile_code "Main.outfiles computation" (fun () ->
