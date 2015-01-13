@@ -976,6 +976,8 @@ let rec main_action xs =
 	    if Cocci.has_finalize cocci_infos then begin
 	      pr2 "warning: parallel mode is disabled due to a finalize";
 	      seq_fold, false
+	    else if ncores <= 0 then
+	      seq_fold, false
 	    end else
 	      par_fold, true in
 
