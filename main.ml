@@ -955,7 +955,7 @@ let rec main_action xs =
 	  let ncores =
 	    match !parmap_cores with
 	    | Some x -> x
-	    | None -> succ (Parmap.get_default_ncores ()) in
+	    | None -> 0 in
 	  let chunksize =
 	    match !parmap_chunk_size with
 	    | Some x -> x
