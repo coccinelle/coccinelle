@@ -47,7 +47,7 @@ all.opt:
 
 $(TARGET).cma: $(OBJS)
 	$(OCAMLC_CMD) -a -o $(TARGET).cma $(OBJS)
-	for i in `grep " (\*" exposed_modules.ml | sed "s/^[^(]\+(\*[ ]\+\([^.]\+\)\..*$$/\1/g"`; do cp ../$$i.cmi .; done
+	for i in `grep " (\*" exposed_modules.ml | sed "s/^.*(\* //" | sed "s/ \*)$$//"`; do cp ../$$i.cmi .; done
 
 $(TARGET).cmxa: $(OPTOBJS) $(LIBS:.cma=.cmxa)
 	$(OCAMLOPT_CMD) -a -o $(TARGET).cmxa $(OPTOBJS)
