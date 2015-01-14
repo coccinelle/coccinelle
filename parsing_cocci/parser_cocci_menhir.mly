@@ -203,8 +203,10 @@ and  logicalOp = function
 %left TPlus TMinus
 %left TMul TDmOp /* TDiv TMod TMin TMax */
 
+/*
 %start reinit
 %type <unit> reinit
+*/
 
 %start minus_main
 %type <Ast0_cocci.rule> minus_main
@@ -252,7 +254,6 @@ rule_name
 
 %%
 
-reinit: { }
 minus_main: minus_body EOF { $1 } | m=minus_body TArobArob { m }
 | m=minus_body TArob { m }
 plus_main: plus_body EOF { $1 } | p=plus_body TArobArob { p }
