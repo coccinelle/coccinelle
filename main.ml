@@ -954,6 +954,7 @@ let rec main_action xs =
 
 	  let ncores =
 	    match !parmap_cores with
+	    | Some x when x <= 0 -> succ (Parmap.get_default_ncores ())
 	    | Some x -> x
 	    | None -> 0 in
 	  let chunksize =
@@ -979,7 +980,7 @@ let rec main_action xs =
 		pr2 "warning: parallel mode is disabled due to a finalize";
 		(seq_fold, false)
 	      end
-	    else if ncores <= 0 then
+	    else if ncores <= 1 then
 	      (seq_fold, false)
 	    else
 	      (par_fold, true) in
