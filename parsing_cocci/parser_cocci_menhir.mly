@@ -203,8 +203,10 @@ and  logicalOp = function
 %left TPlus TMinus
 %left TMul TDmOp /* TDiv TMod TMin TMax */
 
+/*
 %start reinit
 %type <unit> reinit
+*/
 
 %start minus_main
 %type <Ast0_cocci.rule> minus_main
@@ -252,7 +254,6 @@ rule_name
 
 %%
 
-reinit: { }
 minus_main: minus_body EOF { $1 } | m=minus_body TArobArob { m }
 | m=minus_body TArob { m }
 plus_main: plus_body EOF { $1 } | p=plus_body TArobArob { p }
@@ -2232,38 +2233,38 @@ fun c -> Ast0.EComma c
 
 empty_list_start(elem,dotter):
   /* empty */ { fun build_dots build_comma -> [] }
-| nonempty_list_start(elem,dotter) { $1 }
+| list=nonempty_list_start(elem,dotter) { list }
 
 nonempty_list_start(elem,dotter): /* dots allowed */
-  elem { fun build_dots build_comma -> [$1] }
-| elem TComma
+  element=elem { fun build_dots build_comma -> [element] }
+| element=elem comma=TComma
     { fun build_dots build_comma ->
-      $1::[Ast0.wrap(build_comma(P.clt2mcode "," $2))] }
-| elem TComma nonempty_list_start(elem,dotter)
+      element::[Ast0.wrap(build_comma(P.clt2mcode "," comma))] }
+| element=elem comma=TComma remainder=nonempty_list_start(elem,dotter)
     { fun build_dots build_comma ->
-      $1::(Ast0.wrap(build_comma(P.clt2mcode "," $2)))::
-      ($3 build_dots build_comma) }
-| TNothing nonempty_list_start(elem,dotter) { $2 }
-| d=dotter { fun build_dots build_comma -> [(build_dots "..." d)] }
-| d=dotter TComma
+      element::(Ast0.wrap(build_comma(P.clt2mcode "," comma)))::
+      (remainder build_dots build_comma) }
+| TNothing list=nonempty_list_start(elem,dotter) { list }
+| dotter=dotter { fun build_dots build_comma -> [(build_dots "..." dotter)] }
+| dotter=dotter comma=TComma
       { fun build_dots build_comma ->
-	[(build_dots "..." d);Ast0.wrap(build_comma(P.clt2mcode "," $2))] }
-| d=dotter TComma r=continue_list(elem,dotter)
+	[(build_dots "..." dotter);Ast0.wrap(build_comma(P.clt2mcode "," comma))] }
+| dotter=dotter comma=TComma remainder=continue_list(elem,dotter)
     { fun build_dots build_comma ->
-      (build_dots "..." d)::
-      (Ast0.wrap(build_comma(P.clt2mcode "," $2)))::
-      (r build_dots build_comma) }
+      (build_dots "..." dotter)::
+      (Ast0.wrap(build_comma(P.clt2mcode "," comma)))::
+      (remainder build_dots build_comma) }
 
 continue_list(elem,dotter): /* dots not allowed */
-  elem { fun build_dots build_comma -> [$1] }
-| elem TComma
+  element=elem { fun build_dots build_comma -> [element] }
+| element=elem comma=TComma
     { fun build_dots build_comma ->
-      $1::[Ast0.wrap(build_comma(P.clt2mcode "," $2))] }
-| elem TComma nonempty_list_start(elem,dotter)
+      element::[Ast0.wrap(build_comma(P.clt2mcode "," comma))] }
+| element=elem comma=TComma remainder=nonempty_list_start(elem,dotter)
     { fun build_dots build_comma ->
-      $1::(Ast0.wrap(build_comma(P.clt2mcode "," $2)))::
-      ($3 build_dots build_comma) }
-| TNothing nonempty_list_start(elem,dotter) { $2 }
+      element::(Ast0.wrap(build_comma(P.clt2mcode "," comma)))::
+      (remainder build_dots build_comma) }
+| TNothing list=nonempty_list_start(elem,dotter) { list }
 
 /* ---------------------------------------------------------------------- */
 

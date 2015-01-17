@@ -1463,10 +1463,12 @@ let pop2 l =
   l := List.tl !l;
   v
 
+(*
 let reinit _ =
   PC.reinit (function _ -> PC.TArobArob (* a handy token *))
     (Lexing.from_function
        (function buf -> function n -> raise (Common.Impossible 157)))
+*)
 
 let parse_one str parsefn file toks =
   let all_tokens = ref toks in
@@ -1481,7 +1483,7 @@ let parse_one str parsefn file toks =
     Lexing.from_function
       (function buf -> function n -> raise (Common.Impossible 158))
   in
-  reinit();
+  (* reinit(); *)
 
   try parsefn lexer_function lexbuf_fake
   with

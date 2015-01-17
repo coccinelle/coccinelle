@@ -954,12 +954,13 @@ let rec main_action xs =
 
 	  let ncores =
 	    match !parmap_cores with
+	    | Some x when x <= 0 -> succ (Parmap.get_default_ncores ())
 	    | Some x -> x
-	    | None -> succ (Parmap.get_default_ncores ()) in
+	    | None -> 0 in
 	  let chunksize =
 	    match !parmap_chunk_size with
-	    | Some x -> x
-	    | None -> 1 in
+	    | Some x when x > 0 -> x
+	    | Some _ | None -> 1 in
 	  let seq_fold merge op z l =
 	    List.fold_left op z l in
 	  let par_fold merge op z l =
@@ -973,11 +974,16 @@ let rec main_action xs =
 	      ~chunksize
 	      (fun x y -> op y x) (Parmap.L l) z merge in
 	  let actual_fold, run_in_parallel =
-	    if Cocci.has_finalize cocci_infos then begin
-	      pr2 "warning: parallel mode is disabled due to a finalize";
-	      seq_fold, false
-	    end else
-	      par_fold, true in
+	    if Cocci.has_finalize cocci_infos
+	    then
+	      begin
+		pr2 "warning: parallel mode is disabled due to a finalize";
+		(seq_fold, false)
+	      end
+	    else if ncores <= 1 then
+	      (seq_fold, false)
+	    else
+	      (par_fold, true) in
 
           let outfiles =
             Common.profile_code "Main.outfiles computation" (fun () ->

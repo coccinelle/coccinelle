@@ -7,6 +7,9 @@ module GT = Generator_types
 (* Given some Ast0 component, generates a position at an appropriate place
  * and returns the component with the inserted position (None, if it wasn't
  * possible to insert a statement).
+ * Note that it might return Some <component> even if no position was inserted
+ * if the component is optional (ie. on a line preceded with ? in SmPL)
+ *
  * The added position is always in an Ast0.PLUS context (using the fact
  * that a metaposition in the original script is NEVER in plus context).
  *)
@@ -52,34 +55,42 @@ and exp_two exp1 exp2 fn snp =
  * matter which type the mcode has; the end result should be the same.
  *)
 and string_mcode_pos ((x, a, info, mc, pos, q) as mco) snp =
+  if a = Ast0.OPT then (mco, snp) else
   let (newpos, snp) = make_pos mco snp in
   ((x, a, info, mc, ref (newpos :: !pos), q), snp)
 
 and meta_mcode_pos ((x, a, info, mc, pos, q) as mco) snp =
+  if a = Ast0.OPT then (mco, snp) else
   let (newpos, snp) = make_pos mco snp in
   ((x, a, info, mc, ref (newpos :: !pos), q), snp)
 
 and constant_pos ((x, a, info, mc, pos, q) as mco) snp =
+  if a = Ast0.OPT then (mco, snp) else
   let (newpos, snp) = make_pos mco snp in
   ((x, a, info, mc, ref (newpos :: !pos), q), snp)
 
 and binary_pos ((x, a, info, mc, pos, q) as mco) snp =
+  if a = Ast0.OPT then (mco, snp) else
   let (newpos, snp) = make_pos mco snp in
   ((x, a, info, mc, ref (newpos :: !pos), q), snp)
 
 and unary_pos ((x, a, info, mc, pos, q) as mco) snp =
+  if a = Ast0.OPT then (mco, snp) else
   let (newpos, snp) = make_pos mco snp in
   ((x, a, info, mc, ref (newpos :: !pos), q), snp)
 
 and fix_pos ((x, a, info, mc, pos, q) as mco) snp =
+  if a = Ast0.OPT then (mco, snp) else
   let (newpos, snp) = make_pos mco snp in
   ((x, a, info, mc, ref (newpos :: !pos), q), snp)
 
 and assign_pos ((x, a, info, mc, pos, q) as mco) snp =
+  if a = Ast0.OPT then (mco, snp) else
   let (newpos, snp) = make_pos mco snp in
   ((x, a, info, mc, ref (newpos :: !pos), q), snp)
 
-(* generate a position for an identifier. Always possible! *)
+(* generate a position for an identifier.
+ * Always possible! but not done in optional expressions *)
 and ident_pos i snp = match Ast0.unwrap i with
   | Ast0.Id mc ->
       let (mc, snp) = string_mcode_pos mc snp in
