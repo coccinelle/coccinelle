@@ -963,11 +963,12 @@ let rec main_action xs =
 	    | Some _ | None -> 1 in
 	  let seq_fold merge op z l =
 	    List.fold_left op z l in
+          let pid = Unix.getpid () in
 	  let par_fold merge op z l =
 	    Parmap.parfold
 	      ~init:(fun id ->
 		Parmap.redirect
-		  ~path:(Printf.sprintf "/tmp/coccinelle.%d" (Unix.getpid ()))
+		  ~path:(Printf.sprintf "/tmp/coccinelle.%d" pid)
 		  ~id;
 		())
 	      ~ncores
