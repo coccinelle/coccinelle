@@ -28,6 +28,7 @@ let string_of_arg = function
   | Ellipsis _ -> "Ellipsis"
   | VAEllipsis _ -> "VAEllipsis"
   | Separator _ -> "Comma"
+
 let is_nothing = function
   | Nothing -> true
   | _ -> false
@@ -51,6 +52,7 @@ let build_arg = function
   | Ellipsis e -> Ast0.wrap (Ast0.Pdots(P.clt2mcode "..." e))
   | Separator comma -> Ast0.wrap (Ast0.PComma (P.clt2mcode "," comma))
   | VAEllipsis _ -> assert false
+  | Nothing -> assert false
 
 let string_of_arglist l =
   "[" ^ (String.concat ";" (List.map string_of_arg l)) ^ "]"
