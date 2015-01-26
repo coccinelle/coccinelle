@@ -2420,8 +2420,6 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
         | _ -> fail
        ) >>=
         (fun va (isvaargs, iidotsb) -> let (lpb, rpb) = tuple_of_list2 ii in
-
-        let (lpb, rpb) = tuple_of_list2 ii in
         tokenf lpa lpb >>= (fun lpa lpb ->
         tokenf rpa rpb >>= (fun rpa rpb ->
         tokenf sema iiptvirgb >>= (fun sema iiptvirgb ->
