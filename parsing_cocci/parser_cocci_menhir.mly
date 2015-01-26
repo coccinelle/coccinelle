@@ -13,6 +13,68 @@ module Ast = Ast_cocci
 module P = Parse_aux
 
 (* ---------------------------------------------------------------------- *)
+(* support for argument lists *)
+
+type 'a argorellipsis =
+  | Nothing
+  | Arg of 'a
+  | Ellipsis of Data.clt
+  | VAEllipsis of Data.clt
+  | Separator of Data.clt
+
+let string_of_arg = function
+  | Nothing -> "Nothing"
+  | Arg _ -> "Arg"
+  | Ellipsis _ -> "Ellipsis"
+  | VAEllipsis _ -> "VAEllipsis"
+  | Separator _ -> "Comma"
+
+let is_nothing = function
+  | Nothing -> true
+  | _ -> false
+
+let is_separator = function
+  | Separator _ -> true
+  | _ -> false
+
+let is_vaellipsis = function
+  | VAEllipsis _ -> true
+  | _ -> false
+
+let rec adjacent_ellipsis = function
+  | [] -> false
+  | [_] -> false 
+  | (Ellipsis _) :: (Ellipsis _) :: _ -> true
+  | x::xs -> adjacent_ellipsis xs
+
+let build_arg = function
+  | Arg arg -> arg
+  | Ellipsis e -> Ast0.wrap (Ast0.Pdots(P.clt2mcode "..." e))
+  | Separator comma -> Ast0.wrap (Ast0.PComma (P.clt2mcode "," comma))
+  | VAEllipsis _ -> assert false
+  | Nothing -> assert false
+
+let string_of_arglist l =
+  "[" ^ (String.concat ";" (List.map string_of_arg l)) ^ "]"
+
+let cleanup_arglist l =
+  if l=[] then ([], None)
+  else begin
+    let (args, vararg) = match l with
+      | (VAEllipsis vaellipsis)::(Separator comma)::rem ->
+        let c = P.clt2mcode "," comma in
+        let e = P.clt2mcode "......" vaellipsis in
+        (rem, Some (c, e))
+      | _ -> (l, None) in
+    let just_args = List.filter (fun x -> not (is_separator x)) args in
+    if List.exists is_vaellipsis just_args then failwith "...... can occur only as last argument"
+    else if adjacent_ellipsis just_args then failwith "Argument list contains adjacent ellipsis"
+    else
+      let pure_args = List.filter (fun x -> not (is_nothing x)) args in
+      (List.map build_arg (List.rev pure_args), vararg)
+  end
+
+(* ---------------------------------------------------------------------- *)
 (* support for TMeta *)
 
 let print_meta (r,n) = r^"."^n
@@ -122,6 +184,7 @@ and  logicalOp = function
 %token<Data.clt> Tconst Tvolatile
 %token<string * Data.clt> Tattr
 
+%token <Data.clt> TVAEllipsis
 %token <Data.clt> TIf TElse TWhile TFor TDo TSwitch TCase TDefault TReturn
 %token <Data.clt> TBreak TContinue TGoto TSizeof TFunDecl Tdecimal Texec
 %token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId TSymId
@@ -1095,38 +1158,82 @@ define_param_list_option:
 
 /*****************************************************************************/
 
+/* Lists of arguments in function declarations */
+
+arg_list(arg):
+  arglist=separated_llist(TComma, argorellipsis(one_arg(arg)))
+     { let (args,vararg) = cleanup_arglist arglist in
+       ((Ast0.wrap (Ast0.DOTS args)), vararg) }
+
+argorellipsis(arg):
+  arg=arg { Arg arg }
+| x=TVAEllipsis { VAEllipsis (x) }
+| y=TEllipsis { Ellipsis (y) } 
+
+one_arg(arg):
+  arg=arg  { arg }
+| metaparamlist=TMetaParamList
+    { let (nm,lenname,pure,clt) = metaparamlist in
+      let nm = P.clt2mcode nm clt in
+      let lenname =
+	match lenname with
+	  Ast.AnyLen -> Ast0.AnyListLen
+	| Ast.MetaLen nm -> Ast0.MetaListLen(P.clt2mcode nm clt)
+	| Ast.CstLen n -> Ast0.CstListLen n in
+      Ast0.wrap(Ast0.MetaParamList(nm,lenname,pure)) }
+
+%inline separated_llist(separator, X):
+  xs = reverse_separated_llist(separator, X)
+    { xs }
+
+%inline reverse_separated_llist(separator, X):
+    { [] }
+| xs = reverse_separated_nonempty_llist(separator, X)
+    { xs }
+
+reverse_separated_nonempty_llist(separator, X):
+  x = X
+    { [ x ] }
+| xs = reverse_separated_nonempty_llist(separator, X); s=separator; x = X
+    { x :: (Separator s) :: xs }
+| xs = reverse_separated_nonempty_llist(separator, X); s=separator; TNothing; x = X
+    { x :: Nothing :: (Separator s) :: xs }
+
 funproto:
   s=ioption(storage) i=ioption(Tinline) t=ctype
-  id=fn_ident lp=TOPar d=decl_list(name_opt_decl) rp=TCPar pt=TPtVirg
+  id=fn_ident lp=TOPar arglist=arg_list(name_opt_decl) rp=TCPar pt=TPtVirg
       { let s = match s with None -> [] | Some s -> [Ast0.FStorage s] in
         let i =
 	  match i with
 	    None -> []
 	  | Some i -> [Ast0.FInline (P.clt2mcode "inline" i)] in
 	let t = [Ast0.FType t] in
+        let (args,vararg) = arglist in
 	Ast0.wrap
 	  (Ast0.FunProto
 	     (s @ i @ t, id,
-	      P.clt2mcode "(" lp, d, P.clt2mcode ")" rp,
+	      P.clt2mcode "(" lp, args, vararg, P.clt2mcode ")" rp,
 	      P.clt2mcode ";" pt)) }
 | i=Tinline s=storage t=ctype
-  id=fn_ident lp=TOPar d=decl_list(name_opt_decl) rp=TCPar pt=TPtVirg
+  id=fn_ident lp=TOPar arglist=arg_list(name_opt_decl) rp=TCPar pt=TPtVirg
       { let s = [Ast0.FStorage s] in
         let i = [Ast0.FInline (P.clt2mcode "inline" i)] in
 	let t = [Ast0.FType t] in
+        let (args,vararg) = arglist in
 	Ast0.wrap
 	  (Ast0.FunProto
 	     (s @ i @ t, id,
-	      P.clt2mcode "(" lp, d, P.clt2mcode ")" rp,
+	      P.clt2mcode "(" lp, args, vararg, P.clt2mcode ")" rp,
 	      P.clt2mcode ";" pt)) }
 
 fundecl:
   f=fninfo
-  TFunDecl i=fn_ident lp=TOPar d=decl_list(decl) rp=TCPar
+  TFunDecl i=fn_ident lp=TOPar arglist=arg_list(decl) rp=TCPar
   lb=TOBrace b=fun_start rb=TCBrace
-      { Ast0.wrap(Ast0.FunDecl((Ast0.default_info(),Ast0.context_befaft()),
+      { let (args,vararg) = arglist in
+        Ast0.wrap(Ast0.FunDecl((Ast0.default_info(),Ast0.context_befaft()),
 			       f, i,
-			       P.clt2mcode "(" lp, d,
+			       P.clt2mcode "(" (lp), args, vararg,
 			       P.clt2mcode ")" rp,
 			       P.clt2mcode "{" lb, b,
 			       P.clt2mcode "}" rb,

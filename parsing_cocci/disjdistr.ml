@@ -203,7 +203,6 @@ and disjexp e =
 and disjparam p =
   match Ast.unwrap p with
     Ast.VoidParam(ty) -> [p] (* void is the only possible value *)
-  | Ast.VarargParam(_) -> [p] (* vararg is the only possible value *)
   | Ast.Param(ty,id) ->
       let ty = disjty ty in
       List.map (function ty -> Ast.rewrap p (Ast.Param(ty,id))) ty
@@ -286,11 +285,11 @@ and disjdecl d =
   | Ast.UnInit(stg,ty,id,sem) ->
       let ty = disjty ty in
       List.map (function ty -> Ast.rewrap d (Ast.UnInit(stg,ty,id,sem))) ty
-  | Ast.FunProto(fninfo,name,lp1,params,rp1,sem) ->
+  | Ast.FunProto(fninfo,name,lp1,params,va,rp1,sem) ->
       let fninfo = disjmult disjfninfo fninfo in
       List.map
 	(function fninfo ->
-	  Ast.rewrap d (Ast.FunProto(fninfo,name,lp1,params,rp1,sem)))
+	  Ast.rewrap d (Ast.FunProto(fninfo,name,lp1,params,va,rp1,sem)))
 	fninfo
   | Ast.MacroDecl(name,lp,args,rp,sem) ->
       List.map
@@ -330,11 +329,11 @@ let orify_rule_elem_ini = generic_orify_rule_elem disjini
 
 let rec disj_rule_elem r k re =
   match Ast.unwrap re with
-    Ast.FunHeader(bef,allminus,fninfo,name,lp,params,rp) ->
+    Ast.FunHeader(bef,allminus,fninfo,name,lp,params,va,rp) ->
       generic_orify_rule_elem (disjdots disjparam) re params
 	(function params ->
 	  Ast.rewrap re
-	    (Ast.FunHeader(bef,allminus,fninfo,name,lp,params,rp)))
+	    (Ast.FunHeader(bef,allminus,fninfo,name,lp,params,va,rp)))
   | Ast.Decl decl ->
       orify_rule_elem_anndecl re decl
 	(function decl -> Ast.rewrap re (Ast.Decl decl))

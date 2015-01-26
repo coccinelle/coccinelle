@@ -31,7 +31,7 @@ let make_semi info =
 let collect_function (stm : Ast0.statement) =
   match Ast0.unwrap stm with
     Ast0.FunDecl((bef_info,_),
-		 fninfo,name,lp,params,rp,lbrace,body,rbrace,
+		 fninfo,name,lp,params,va,rp,lbrace,body,rbrace,
 		 (aft_info,_)) ->
       let new_bef_info =
 	{(Ast0.default_info()) with
@@ -43,7 +43,7 @@ let collect_function (stm : Ast0.statement) =
 	     (Ast0.Decl((new_bef_info,Ast0.context_befaft()),
 			Ast0.copywrap stm
 			  (Ast0.FunProto
-			     (fninfo,name,lp,params,rp,make_semi aft_info))))))
+			     (fninfo,name,lp,params,None,rp,make_semi aft_info))))))
 	(get_name name)
   | _ -> []
 
@@ -254,7 +254,7 @@ let drop_names dec =
   match Ast0.unwrap dec with
     Ast0.Decl(info,proto) ->
       (match Ast0.unwrap proto with
-	Ast0.FunProto(fninfo,name,lp,params,rp,sem) ->
+	Ast0.FunProto(fninfo,name,lp,params,va,rp,sem) ->
 	  let params =
 	    match Ast0.unwrap params with
 	      Ast0.DOTS(l) ->
@@ -266,7 +266,7 @@ let drop_names dec =
 	    (Ast0.Decl
 	       (info,
 		Ast0.rewrap proto
-		  (Ast0.FunProto(fninfo,name,lp,params,rp,sem))))
+		  (Ast0.FunProto(fninfo,name,lp,params,va,rp,sem))))
       |	_ -> failwith "unexpected declaration")
   | _ -> failwith "unexpected term"
 
@@ -332,7 +332,7 @@ let fresh_names old_name mdef dec =
   match Ast0.unwrap dec with
     Ast0.Decl(info,proto) ->
       (match Ast0.unwrap proto with
-	Ast0.FunProto(fninfo,name,lp,params,rp,sem) ->
+	Ast0.FunProto(fninfo,name,lp,params,va,rp,sem) ->
 	  let (metavars,newdec) =
 	    let (metavars,l) =
 	      let params = Ast0.undots params in
@@ -345,11 +345,11 @@ let fresh_names old_name mdef dec =
 		  (info,
 		   Ast0.rewrap proto
 		     (Ast0.FunProto
-			(fninfo,name,lp,Ast0.rewrap params (Ast0.DOTS(l)),
+			(fninfo,name,lp,Ast0.rewrap params (Ast0.DOTS(l)),va,
 			 rp,sem))))) in
 	  let (def_metavars,newdef) =
 	    match Ast0.unwrap mdef with
-	      Ast0.FunDecl(x,fninfo,name,lp,params,rp,lb,body,rb,y) ->
+	      Ast0.FunDecl(x,fninfo,name,lp,params,va,rp,lb,body,rb,y) ->
 		let (def_metavars,def_l) =
 		  let params = Ast0.undots params in
 		  List.split
@@ -358,7 +358,7 @@ let fresh_names old_name mdef dec =
 		(List.concat def_metavars,
 		 Ast0.rewrap mdef
 		   (Ast0.FunDecl(x,fninfo,name,lp,
-				 Ast0.rewrap params (Ast0.DOTS(def_l)),
+				 Ast0.rewrap params (Ast0.DOTS(def_l)),va,
 				 rp,lb,body,rb,y)))
 	    | _ -> failwith "unexpected function definition" in
 	  (metavars,def_metavars,newdec,newdef)
@@ -370,7 +370,7 @@ let no_names dec =
   match Ast0.unwrap dec with
     Ast0.Decl(info,proto) ->
       (match Ast0.unwrap proto with
-	Ast0.FunProto(fninfo,name,lp,params,rp,sem) ->
+	Ast0.FunProto(fninfo,name,lp,params,va,rp,sem) ->
 	  let sem =
 	    (* convert semicolon to minus, since we are dropping the whole
 	       thing *)
@@ -391,7 +391,7 @@ let no_names dec =
 			let pdots =
 			  ("...",Ast0.NONE,info,mcodekind,ref [],-1) in
 			Ast0.DOTS([Ast0.rewrap params (Ast0.Pdots(pdots))])),
-		      rp,sem))))
+		      va,rp,sem))))
       |	_ -> dec)
   | _ -> dec
 
@@ -429,7 +429,7 @@ let reinsert mdefs minus =
     List.map
       (function x ->
 	match Ast0.unwrap x with
-	  Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace,_) ->
+	  Ast0.FunDecl(_,fninfo,name,lp,params,va,rp,lbrace,body,rbrace,_) ->
 	    (name,x)
 	| _ -> failwith "bad mdef")
       mdefs in
@@ -438,7 +438,7 @@ let reinsert mdefs minus =
       match Ast0.unwrap x with
 	Ast0.NONDECL(stmt) ->
 	  (match Ast0.unwrap stmt with
-	    Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace,_) ->
+	    Ast0.FunDecl(_,fninfo,name,lp,params,va,rp,lbrace,body,rbrace,_) ->
 	      (try Ast0.rewrap x (Ast0.NONDECL(List.assoc name table))
 	      with Not_found -> x)
 	  | _ -> x)
@@ -446,7 +446,7 @@ let reinsert mdefs minus =
 	  (match Ast0.undots rule_elem_dots with
 	    [f] ->
 	      (match Ast0.unwrap f with
-		Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,
+		Ast0.FunDecl(_,fninfo,name,lp,params,va,rp,lbrace,body,
 			     rbrace,_) ->
 		  (try
 		    Ast0.rewrap x

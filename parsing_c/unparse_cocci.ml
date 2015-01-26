@@ -818,10 +818,17 @@ and declaration d =
       print_option (function _ -> pr_space()) stg;
       print_named_type ty id;
       mcode print_string sem
-  | Ast.FunProto (fninfo,name,lp1,params,rp1,sem) ->
+  | Ast.FunProto (fninfo,name,lp1,params,va,rp1,sem) ->
       List.iter print_fninfo fninfo;
       ident name; mcode print_string_box lp1;
-      parameter_list params; close_box(); mcode print_string rp1;
+      parameter_list params;
+      begin match va with
+        | None -> ()
+        | Some (comma, ellipsis) ->
+          mcode print_string comma;
+          mcode print_string ellipsis
+      end;
+      close_box(); mcode print_string rp1;
       mcode print_string sem
   | Ast.MacroDecl(name,lp,args,rp,sem) ->
       ident name; mcode print_string_box lp;
@@ -921,7 +928,6 @@ and designator = function
 and parameterTypeDef p =
   match Ast.unwrap p with
     Ast.VoidParam(ty) -> fullType ty
-  | Ast.VarargParam(dots) -> mcode print_string dots
   | Ast.Param(ty,Some id) -> print_named_type ty id
   | Ast.Param(ty,None) -> fullType ty
 
@@ -969,10 +975,17 @@ and inc_elem = function
 
 and rule_elem arity re =
   match Ast.unwrap re with
-    Ast.FunHeader(_,_,fninfo,name,lp,params,rp) ->
+    Ast.FunHeader(_,_,fninfo,name,lp,params,va,rp) ->
       pr_arity arity; List.iter print_fninfo fninfo;
       ident name; mcode print_string_box lp;
-      parameter_list params; close_box(); mcode print_string rp;
+      parameter_list params;
+      begin match va with
+        | None -> ()
+        | Some (comma, ellipsis) ->
+          mcode print_string comma;
+          mcode print_string ellipsis
+      end;
+      close_box(); mcode print_string rp;
       pr_space()
   | Ast.Decl decl -> pr_arity arity; annotated_decl decl
 

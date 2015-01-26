@@ -51,9 +51,9 @@ let rec right_decl d =
   | Ast0.UnInit(stg,ty,id,sem) ->
       call_right right_mcode sem d
 	(function sem -> Ast0.UnInit(stg,ty,id,sem))
-  | Ast0.FunProto(fninfo,id,lp1,params,rp1,sem) ->
+  | Ast0.FunProto(fninfo,id,lp1,params,va,rp1,sem) ->
       call_right right_mcode sem d
-	(function ty -> Ast0.FunProto(fninfo,id,lp1,params,rp1,sem))
+	(function ty -> Ast0.FunProto(fninfo,id,lp1,params,va,rp1,sem))
   | Ast0.MacroDecl(name,lp,args,rp,sem) ->
       call_right right_mcode sem d
 	(function sem -> Ast0.MacroDecl(name,lp,args,rp,sem))
@@ -75,7 +75,7 @@ let rec right_decl d =
 
 let rec right_statement s =
   match Ast0.unwrap s with
-    Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace,aft) -> None
+    Ast0.FunDecl(bef,fi,name,lp,params,va,rp,lbrace,body,rbrace,aft) -> None
   | Ast0.Decl(bef,decl) ->
       call_right right_decl decl s
 	(function decl -> Ast0.Decl(bef,decl))
@@ -264,27 +264,27 @@ let rec left_decl decl =
   | Ast0.UnInit(None,ty,id,sem) ->
       call_right left_ty ty decl
 	(function ty -> Ast0.UnInit(None,ty,id,sem))
-  | Ast0.FunProto(fi,name,lp1,params,rp1,sem) ->
+  | Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) ->
       (match fi with
 	[] ->
           call_right left_ident name decl
-	    (function name -> Ast0.FunProto(fi,name,lp1,params,rp1,sem))
+	    (function name -> Ast0.FunProto(fi,name,lp1,params,va,rp1,sem))
       | (Ast0.FStorage sto)::x ->
 	  call_right left_mcode sto decl
 	    (function sto ->
-	      Ast0.FunProto((Ast0.FStorage sto)::x,name,lp1,params,rp1,sem))
+	      Ast0.FunProto((Ast0.FStorage sto)::x,name,lp1,params,va,rp1,sem))
       |	(Ast0.FType ty)::x ->
 	  call_right left_ty ty decl
 	    (function ty ->
-	      Ast0.FunProto((Ast0.FType ty)::x,name,lp1,params,rp1,sem))
+	      Ast0.FunProto((Ast0.FType ty)::x,name,lp1,params,va,rp1,sem))
       | (Ast0.FInline inl)::x ->
 	  call_right left_mcode inl decl
 	    (function inl ->
-	      Ast0.FunProto((Ast0.FInline inl)::x,name,lp1,params,rp1,sem))
+	      Ast0.FunProto((Ast0.FInline inl)::x,name,lp1,params,va,rp1,sem))
       | (Ast0.FAttr attr)::x ->
 	  call_right left_mcode attr decl
 	    (function attr ->
-	      Ast0.FunProto((Ast0.FAttr attr)::x,name,lp1,params,rp1,sem)))
+	      Ast0.FunProto((Ast0.FAttr attr)::x,name,lp1,params,va,rp1,sem)))
   | Ast0.MacroDecl(name,lp,args,rp,sem) ->
       call_right left_ident name decl
 	(function name -> Ast0.MacroDecl(name,lp,args,rp,sem))
@@ -308,18 +308,18 @@ let process =
     let s = k s in
     Ast0.rewrap s
       (match Ast0.unwrap s with
-	Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace,aft) ->
+	Ast0.FunDecl(bef,fi,name,lp,params,va,rp,lbrace,body,rbrace,aft) ->
 	  let (rbrace,aft) =
 	    match right_mcode rbrace with
 	      None -> (rbrace,aft)
 	    | Some (pragmas,rbrace) -> (rbrace,update_after pragmas aft) in
 	  (match left_fundecl name fi with
 	      None ->
-		Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace,aft)
+		Ast0.FunDecl(bef,fi,name,lp,params,va,rp,lbrace,body,rbrace,aft)
 	    | Some (pragmas,fi,name) ->
 		Ast0.FunDecl
 		  (update_before2 pragmas bef,
-		   fi,name,lp,params,rp,lbrace,body,rbrace,aft))
+		   fi,name,lp,params,va,rp,lbrace,body,rbrace,aft))
       | Ast0.Decl(bef,decl) ->
 	  (match left_decl decl with
 	    None -> Ast0.unwrap s

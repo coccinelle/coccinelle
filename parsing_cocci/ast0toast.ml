@@ -577,14 +577,17 @@ and declaration d =
 	let allminus = check_allminus.VT0.combiner_rec_declaration d in
 	Ast.UnInit(get_option mcode stg,typeC allminus ty,ident id,
 		   mcode sem)
-    | Ast0.FunProto(fi,name,lp,params,rp,sem) ->
+    | Ast0.FunProto(fi,name,lp,params,va,rp,sem) ->
 	  let fi = List.map fninfo fi in
 	  let name = ident name in
 	  let lp = mcode lp in
 	  let params = parameter_list params in
+          let va = match va with
+            | None -> None
+            | Some (comma,ellipsis) -> Some(mcode comma,mcode ellipsis) in
 	  let rp = mcode rp in
 	  let sem = mcode sem in
-	  Ast.FunProto(fi,name,lp,params,rp,sem)
+	  Ast.FunProto(fi,name,lp,params,va,rp,sem)
     | Ast0.MacroDecl(name,lp,args,rp,sem) ->
 	let name = ident name in
 	let lp = mcode lp in
@@ -726,7 +729,6 @@ and parameterTypeDef p =
   rewrap p no_isos
     (match Ast0.unwrap p with
       Ast0.VoidParam(ty) -> Ast.VoidParam(typeC false ty)
-    | Ast0.VarargParam(dots) -> Ast.VarargParam(mcode dots)
     | Ast0.Param(ty,id) ->
 	let allminus = check_allminus.VT0.combiner_rec_parameter p in
 	Ast.Param(typeC allminus ty,get_option ident id)
@@ -910,12 +912,15 @@ and statement s =
 		 (statement Ast.NotSequencible))
 	      whn in
 	  Ast.Stars(d,whn,[],[])
-      | Ast0.FunDecl((_,bef),fi,name,lp,params,rp,lbrace,body,rbrace,
+      | Ast0.FunDecl((_,bef),fi,name,lp,params,va,rp,lbrace,body,rbrace,
 		     (_,aft)) ->
 	  let fi = List.map fninfo fi in
 	  let name = ident name in
 	  let lp = mcode lp in
 	  let params = parameter_list params in
+          let newva = match va with
+            | None -> None
+            | Some (comma, ellipsis) -> Some (mcode comma, mcode ellipsis) in
 	  let rp = mcode rp in
 	  let lbrace = mcode lbrace in
 	  let body = dots (statement seqible) body in
@@ -924,7 +929,7 @@ and statement s =
 	  Ast.FunDecl(rewrap_rule_elem s
 			(Ast.FunHeader
 			   (convert_allminus_mcodekind allminus bef,
-			    allminus,fi,name,lp,params,rp)),
+			    allminus,fi,name,lp,params,newva,rp)),
 		      tokenwrap lbrace s (Ast.SeqStart(lbrace)),
 		      body,
 		      tokenwrap rbrace s (Ast.SeqEnd(rbrace)),
