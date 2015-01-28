@@ -946,9 +946,6 @@ and metavariable_decl_token = parse
   | "=~" { start_line true; TTildeEq (get_current_line_type lexbuf) }
   | "!~" { start_line true; TTildeExclEq (get_current_line_type lexbuf) }
   | "="  { start_line true; TEq (get_current_line_type lexbuf) }
-  | "+" { pass_zero(); TPlus0 }
-  | "?" { pass_zero(); TWhy0 }
-  | "!" { pass_zero(); TBang0 }
   | "(" { start_line true; TOPar (get_current_line_type lexbuf) }
   | ")" { start_line true; TCPar (get_current_line_type lexbuf) }
 
