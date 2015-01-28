@@ -1073,7 +1073,7 @@ and metavariable_decl_token = parse
 	end
       else failwith "unrecognized constant modifier d/D" }
 
-  | _ { lexerr "metavariables: unrecognised symbol, in token rule: "
+  | _ { lexerr "metavariables: unrecognised symbol in metavariable_decl_token rule: "
 	  (tok lexbuf) }
 
 
