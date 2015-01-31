@@ -346,7 +346,7 @@ distclean: clean
 ifeq ($(COMPILE_EMBEDDED_BYTES_MODULE),yes)
 	$(OCAMLDEP_CMD) $(MLI_FILES) $(MYSRC)  > .depend
 else
-	$(OCAMLDEP_CMD) $(MLI_FILES) $(MYSRC) | sed "s/bytes\.cm\w\+//g" > .depend
+	$(OCAMLDEP_CMD) $(MLI_FILES) $(MYSRC) | sed 's/bytes\.cm[a-z]\{1,\}//g' > .depend
 endif
 	for i in $(SUBDIRS); do $(OCAMLDEP_CMD) $$i/*.ml $$i/*.mli >> .depend; done
 

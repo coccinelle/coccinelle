@@ -77,7 +77,7 @@ let is_not_comment x =
 let is_cpp_instruction = function
   | TInclude _
   | TDefine _  | TPragma _
-  | TIfdef _   | TIfdefelse _ | TIfdefelif _ | TEndif _
+  | TIfdef _ | TIfdefelse _ | TIfdefelif _ | TEndif _
   | TIfdefBool _ | TIfdefMisc _ | TIfdefVersion _
   | TUndef _
   | TCppDirectiveOther _
@@ -350,9 +350,9 @@ let info_of_tok = function
   | TCommentSkipTagStart (i) -> i
   | TCommentSkipTagEnd (i) -> i
 
-  | TIfdef               (_, i) -> i
+  | TIfdef               (_, _, i) -> i
   | TIfdefelse           (_, i) -> i
-  | TIfdefelif           (_, i) -> i
+  | TIfdefelif           (_, _, i) -> i
   | TEndif               (_, i) -> i
   | TIfdefBool           (b, _, i) -> i
   | TIfdefMisc           (b, _, i) -> i
@@ -524,9 +524,9 @@ let visitor_info_of_tok f = function
   | TCommentSkipTagStart         (i) -> TCommentSkipTagStart         (f i)
   | TCommentSkipTagEnd         (i) -> TCommentSkipTagEnd         (f i)
 
-  | TIfdef               (t, i) -> TIfdef               (t, f i)
+  | TIfdef               (c, t, i) -> TIfdef            (c, t, f i)
   | TIfdefelse           (t, i) -> TIfdefelse           (t, f i)
-  | TIfdefelif           (t, i) -> TIfdefelif           (t, f i)
+  | TIfdefelif           (c, t, i) -> TIfdefelif        (c, t, f i)
   | TEndif               (t, i) -> TEndif               (t, f i)
   | TIfdefBool           (b, t, i) -> TIfdefBool        (b, t, f i)
   | TIfdefMisc           (b, t, i) -> TIfdefMisc        (b, t, f i)

@@ -46,6 +46,9 @@ let distrib_index = ref (None : int option)
 let distrib_max   = ref (None : int option)
 let mod_distrib   = ref false
 
+let parmap_cores      = ref (None : int option)
+let parmap_chunk_size = ref (None : int option)
+
 (*****************************************************************************)
 (* Profiles *)
 (*****************************************************************************)
@@ -555,7 +558,7 @@ let other_options = [
 
     "--noif0-passing",      Arg.Clear Flag_parsing_c.if0_passing, " ";
     "--itu",      Arg.Set Flag_parsing_c.exts_ITU,
-    "Experimental extensions for handling #ifdef developed at ITU.dk";
+    "   Experimental extensions for handling #ifdef developed at ITU.dk";
     "--defined", Arg.String (Flag_parsing_c.add Flag_parsing_c.defined), " ";
     "--undefined", Arg.String
         (Flag_parsing_c.add Flag_parsing_c.undefined), " ";
@@ -566,11 +569,11 @@ let other_options = [
     "--disallow-nested-exps", Arg.Set Flag_matcher.disallow_nested_exps,
        " disallow an expresion pattern from matching a term and its subterm";
     "--disable-worth-trying-opt", Arg.Clear Flag.worth_trying_opt,
-    "  ";
+    "   run the semantic patch even if the C file contains no relevant tokens";
     "--selected-only", Arg.Set FC.selected_only, "  only show selected files";
     "--only-return-is-error-exit",
     Arg.Set Flag_matcher.only_return_is_error_exit,
-    "if this flag is not set, then break and continue are also error exits";
+    "   if this flag is not set, then break and continue are also error exits";
     (* the following is a hack to make it easier to add code in sgrep-like
        code, essentially to compensate for the fact that we don't have
        any way of printing things out *)
@@ -620,6 +623,12 @@ let other_options = [
     "   the number of processors available";
     "--mod-distrib", Arg.Set mod_distrib,
     "   use mod to distribute files among the processors";
+    "--jobs",  Arg.Int (function x -> parmap_cores := Some x),
+    "   the number of cores to be used by parmap";
+    "-j",  Arg.Int (function x -> parmap_cores := Some x),
+    "   the number of cores to be used";
+    "--chunksize", Arg.Int (function x -> parmap_chunk_size := Some x),
+    "   the size of work chunks for parallelism";
   ];
 
   "pad options",
@@ -943,10 +952,44 @@ let rec main_action xs =
 		  end
 	    | _ -> failwith "inconsistent distribution information" in
 
+	  let ncores =
+	    match !parmap_cores with
+	    | Some x when x <= 0 -> succ (Parmap.get_default_ncores ())
+	    | Some x -> x
+	    | None -> 0 in
+	  let chunksize =
+	    match !parmap_chunk_size with
+	    | Some x when x > 0 -> x
+	    | Some _ | None -> 1 in
+	  let seq_fold merge op z l =
+	    List.fold_left op z l in
+          let pid = Unix.getpid () in
+	  let par_fold merge op z l =
+	    Parmap.parfold
+	      ~init:(fun id ->
+		Parmap.redirect
+		  ~path:(Printf.sprintf "/tmp/coccinelle.%d" pid)
+		  ~id;
+		())
+	      ~ncores
+	      ~chunksize
+	      (fun x y -> op y x) (Parmap.L l) z merge in
+	  let actual_fold, run_in_parallel =
+	    if Cocci.has_finalize cocci_infos
+	    then
+	      begin
+		pr2 "warning: parallel mode is disabled due to a finalize";
+		(seq_fold, false)
+	      end
+	    else if ncores <= 1 then
+	      (seq_fold, false)
+	    else
+	      (par_fold, true) in
+
           let outfiles =
             Common.profile_code "Main.outfiles computation" (fun () ->
 	      let res =
-		infiles +> List.fold_left (fun prev cfiles -> (* put parmap here *)
+		infiles +> actual_fold (@) (fun prev cfiles ->
 		  if (not !Flag.worth_trying_opt) ||
 		    Cocci.worth_trying cfiles constants
 		      then
@@ -1169,6 +1212,14 @@ let main () =
     if !macro_file <> ""
     then Parse_c.init_defs_macros !macro_file;
 
+    let uses_distribution =
+      (!distrib_index <> None) || (!distrib_max <> None) || !mod_distrib in
+    let uses_parmap =
+      (!parmap_cores <> None) || (!parmap_chunk_size <> None) in
+    if uses_distribution && uses_parmap then begin
+      pr2 "error: distribution and parallelism are not compatible";
+      exit 1
+    end;
 
     (* must be done after Arg.parse, because Common.profile is set by it *)
     Common.profile_code "Main total" (fun () ->

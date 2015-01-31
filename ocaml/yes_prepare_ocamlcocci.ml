@@ -404,7 +404,7 @@ let filter_dep existing_deps (accld, accinc) dep =
 
     | _ ->
 	let l = Char.lowercase (String.get dep 0)in
-	  String.set dep 0 l;
+	  Bytes.set dep 0 l;
 	  (accld, dep::accinc)
 
 let get_dir p =

@@ -773,15 +773,18 @@ let match_maker checks_needed context_required whencode_allowed =
 (* the special case for function types prevents the eg T X; -> T X = E; iso
    from applying, which doesn't seem very relevant, but it also avoids a
    mysterious bug that is obtained with eg int attach(...); *)
+  and varargs_equal (comma1, ellipsis1) (comma2, ellipsis2) =
+    let c1 = Ast0_cocci.unwrap_mcode comma1  
+    and e1 = Ast0_cocci.unwrap_mcode ellipsis1
+    and c2 = Ast0_cocci.unwrap_mcode comma2
+    and e2 = Ast0_cocci.unwrap_mcode ellipsis2
+    in return (c1="," && e1="......" && c2=c1 && e2=e1)
   and match_typeC pattern t =
     match Ast0.unwrap pattern with
       Ast0.MetaType(name,pure) ->
-	(match Ast0.unwrap t with
-	  Ast0.FunctionType(tya,lp1a,paramsa,rp1a) -> return false
-	| _ ->
-	    add_pure_binding name pure pure_sp_code.VT0.combiner_rec_typeC
-	      (function ty -> Ast0.TypeCTag ty)
-	      t)
+	add_pure_binding name pure pure_sp_code.VT0.combiner_rec_typeC
+	  (function ty -> Ast0.TypeCTag ty)
+	  t
     | up ->
 	if not(checks_needed) || not(context_required) || is_context t
 	then
@@ -814,13 +817,6 @@ let match_maker checks_needed context_required whencode_allowed =
 		   check_mcode rp2a rp2b; match_typeC tya tyb;
 		   match_dots match_param is_plist_matcher
 		     do_plist_match paramsa paramsb]
-	  | (Ast0.FunctionType(tya,lp1a,paramsa,rp1a),
-	     Ast0.FunctionType(tyb,lp1b,paramsb,rp1b)) ->
-	       conjunct_many_bindings
-		 [check_mcode lp1a lp1b; check_mcode rp1a rp1b;
-		   match_option match_typeC tya tyb;
-		   match_dots match_param is_plist_matcher do_plist_match
-		     paramsa paramsb]
 	  | (Ast0.Array(tya,lb1,sizea,rb1),Ast0.Array(tyb,lb,sizeb,rb)) ->
 	      conjunct_many_bindings
 		[check_mcode lb1 lb; check_mcode rb1 rb;
@@ -901,6 +897,15 @@ let match_maker checks_needed context_required whencode_allowed =
 		  [check_mcode sc1 sc; match_option check_mcode stga stgb;
 		    match_typeC tya tyb; match_ident ida idb]
 	      else return false
+	  | (Ast0.FunProto(fninfo1,name1,lp1,params1,va1a,rp1,sem1),
+	     Ast0.FunProto(fninfo,name,lp,params,va1b,rp,sem)) ->
+	       conjunct_many_bindings
+		 [check_mcode lp1 lp; check_mcode rp1 rp; check_mcode sem1 sem;
+		   match_fninfo fninfo1 fninfo; match_ident name1 name;
+		   match_dots match_param is_plist_matcher do_plist_match
+		     params1 params;
+                   match_option varargs_equal va1a va1b
+                 ]
 	  | (Ast0.MacroDecl(namea,lp1,argsa,rp1,sc1),
 	     Ast0.MacroDecl(nameb,lp,argsb,rp,sc)) ->
 	       conjunct_many_bindings
@@ -1031,7 +1036,6 @@ let match_maker checks_needed context_required whencode_allowed =
 	then
 	  match (up,Ast0.unwrap p) with
 	    (Ast0.VoidParam(tya),Ast0.VoidParam(tyb)) -> match_typeC tya tyb
-          | (Ast0.VarargParam(d1),Ast0.VarargParam(d)) -> check_mcode d1 d
 	  | (Ast0.Param(tya,ida),Ast0.Param(tyb,idb)) ->
 	      conjunct_bindings (match_typeC tya tyb)
 		(match_option match_ident ida idb)
@@ -1061,10 +1065,11 @@ let match_maker checks_needed context_required whencode_allowed =
 	if not(checks_needed) || not(context_required) || is_context s
 	then
 	  match (up,Ast0.unwrap s) with
-	    (Ast0.FunDecl(_,fninfoa,namea,lp1,paramsa,rp1,lb1,bodya,rb1,_),
-	     Ast0.FunDecl(_,fninfob,nameb,lp,paramsb,rp,lb,bodyb,rb,_)) ->
+	    (Ast0.FunDecl(_,fninfoa,namea,lp1,paramsa,vaa,rp1,lb1,bodya,rb1,_),
+	     Ast0.FunDecl(_,fninfob,nameb,lp,paramsb,vab,rp,lb,bodyb,rb,_)) ->
 	       conjunct_many_bindings
-		 [check_mcode lp1 lp; check_mcode rp1 rp;
+		 [check_mcode lp1 lp; match_option varargs_equal vaa vab;
+                   check_mcode rp1 rp;
 		   check_mcode lb1 lb; check_mcode rb1 rb;
 		   match_fninfo fninfoa fninfob; match_ident namea nameb;
 		   match_dots match_param is_plist_matcher do_plist_match
@@ -1520,11 +1525,11 @@ let rebuild_mcode start_line =
 	   | Ast0.Iterator(nm,lp,args,rp,body,(info,mc,adj)) ->
 	       Ast0.Iterator(nm,lp,args,rp,body,(info,copy_mcodekind mc,adj))
 	   | Ast0.FunDecl
-	       ((info,mc),fninfo,name,lp,params,rp,lbrace,body,rbrace,
+	       ((info,mc),fninfo,name,lp,params,va,rp,lbrace,body,rbrace,
 		(aftinfo,aftmc)) ->
 		 Ast0.FunDecl
 		   ((info,copy_mcodekind mc),
-		    fninfo,name,lp,params,rp,lbrace,body,rbrace,
+		    fninfo,name,lp,params,va,rp,lbrace,body,rbrace,
 		    (aftinfo,copy_mcodekind aftmc))
 	   | s -> s)) in
     Ast0.set_dots_bef_aft res
@@ -2146,9 +2151,9 @@ let extra_copy_stmt_plus model e =
   (if not !Flag.sgrep_mode2 (* sgrep has no plus code, so nothing to do *)
   then
     (match Ast0.unwrap model with
-      Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_,(aftinfo,aft)) ->
+      Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_,_,(aftinfo,aft)) ->
 	(match Ast0.unwrap e with
-	  Ast0.FunDecl((info,bef1),_,_,_,_,_,_,_,_,(aftinfo,aft1)) ->
+	  Ast0.FunDecl((info,bef1),_,_,_,_,_,_,_,_,_,(aftinfo,aft1)) ->
 	    merge_plus_before bef bef1; merge_plus_after aft aft1
 	| _ -> 
 	    let mc = Ast0.get_mcodekind e in

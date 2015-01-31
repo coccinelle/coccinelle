@@ -674,6 +674,7 @@ rule token = parse
   | "->"           { start_line true; TPtrOp (get_current_line_type lexbuf)  }
   | '.'            { start_line true; TDot (get_current_line_type lexbuf)    }
   | ','            { start_line true; TComma (get_current_line_type lexbuf)  }
+  | "......"            { start_line true; TVAEllipsis (get_current_line_type lexbuf)  }
   | ";"            { start_line true; TPtVirg (get_current_line_type lexbuf) }
 
 
@@ -950,9 +951,6 @@ and metavariable_decl_token = parse
   | "=~" { start_line true; TTildeEq (get_current_line_type lexbuf) }
   | "!~" { start_line true; TTildeExclEq (get_current_line_type lexbuf) }
   | "="  { start_line true; TEq (get_current_line_type lexbuf) }
-  | "+" { pass_zero(); TPlus0 }
-  | "?" { pass_zero(); TWhy0 }
-  | "!" { pass_zero(); TBang0 }
   | "(" { start_line true; TOPar (get_current_line_type lexbuf) }
   | ")" { start_line true; TCPar (get_current_line_type lexbuf) }
 
@@ -1080,7 +1078,7 @@ and metavariable_decl_token = parse
 	end
       else failwith "unrecognized constant modifier d/D" }
 
-  | _ { lexerr "metavariables: unrecognised symbol, in token rule: "
+  | _ { lexerr "metavariables: unrecognised symbol in metavariable_decl_token rule: "
 	  (tok lexbuf) }
 
 

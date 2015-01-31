@@ -541,19 +541,6 @@ and typeC t =
       let rp2 = normal_mcode rp2 in
       mkres t (Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2))
 	ty (promote_mcode rp2)
-  | Ast0.FunctionType(Some ty,lp1,params,rp1) ->
-      let ty = typeC ty in
-      let lp1 = normal_mcode lp1 in
-      let params = parameter_list (Some(promote_mcode lp1)) params in
-      let rp1 = normal_mcode rp1 in
-      let res = Ast0.FunctionType(Some ty,lp1,params,rp1) in
-      mkres t res ty (promote_mcode rp1)
-  | Ast0.FunctionType(None,lp1,params,rp1) ->
-      let lp1 = normal_mcode lp1 in
-      let params = parameter_list (Some(promote_mcode lp1)) params in
-      let rp1 = normal_mcode rp1 in
-      let res = Ast0.FunctionType(None,lp1,params,rp1) in
-      mkres t res (promote_mcode lp1) (promote_mcode rp1)
   | Ast0.Array(ty,lb,size,rb) ->
       let ty = typeC ty in
       let lb = normal_mcode lb in
@@ -664,6 +651,27 @@ and declaration d =
 	  let stg = Some (normal_mcode x) in
 	  mkres d (Ast0.UnInit(stg,ty,id,sem))
 	    (promote_mcode x) (promote_mcode sem))
+  | Ast0.FunProto(fninfo,name,lp1,params,va1,rp1,sem) ->
+      let fninfo =
+	List.map
+	  (function Ast0.FType(ty) -> Ast0.FType(typeC ty) | x -> x)
+	  fninfo in
+      let name = ident name in
+      let lp1 = normal_mcode lp1 in
+      let params = parameter_list (Some(promote_mcode lp1)) params in
+      let va1 = match va1 with
+        | None -> None
+        | Some (c1,e1) -> Some (normal_mcode c1, normal_mcode e1) in 
+      let rp1 = normal_mcode rp1 in
+      let sem = normal_mcode sem in
+      let res = Ast0.FunProto(fninfo,name,lp1,params,va1,rp1,sem) in
+      let right = promote_mcode sem in
+      (match fninfo with
+	  [] -> mkres d res name right
+	| Ast0.FStorage(stg)::_ -> mkres d res (promote_mcode stg) right
+	| Ast0.FType(ty)::_ -> mkres d res ty right
+	| Ast0.FInline(inline)::_ -> mkres d res (promote_mcode inline) right
+	| Ast0.FAttr(attr)::_ -> mkres d res (promote_mcode attr) right)
   | Ast0.MacroDecl(name,lp,args,rp,sem) ->
       let name = ident name in
       let lp = normal_mcode lp in
@@ -795,10 +803,6 @@ and parameterTypeDef p =
   match Ast0.unwrap p with
     Ast0.VoidParam(ty) ->
       let ty = typeC ty in mkres p (Ast0.VoidParam(ty)) ty ty
-  | Ast0.VarargParam(dots) ->
-      let dots = normal_mcode dots in
-      let ln = promote_mcode dots in
-      mkres p (Ast0.VarargParam(dots)) ln ln
   | Ast0.Param(ty,Some id) ->
       let id = ident id in
       let ty = typeC ty in mkres p (Ast0.Param(ty,Some id)) ty id
@@ -1123,7 +1127,7 @@ let rec statement s =
 	let dots = bad_mcode dots in
 	let ln = promote_mcode dots in
 	mkres s (Ast0.Stars(dots,whencode)) ln ln
-    | Ast0.FunDecl((_,bef),fninfo,name,lp,params,rp,lbrace,body,rbrace,
+    | Ast0.FunDecl((_,bef),fninfo,name,lp,params,va,rp,lbrace,body,rbrace,
 		   (_,aft)) ->
 	let fninfo =
 	  List.map
@@ -1137,34 +1141,7 @@ let rec statement s =
 	let body =
 	  dots is_stm_dots (Some(promote_mcode lbrace)) statement body in
 	let rbrace = normal_mcode rbrace in
-	let (leftinfo,fninfo,name) =
-	(* cases on what is leftmost *)
-	  match fninfo with
-	    [] ->
-	      let (leftinfo,name) = promote_to_statement_start name bef in
-	      (leftinfo,[],name)
-	  | Ast0.FStorage(stg)::rest ->
-	      let (leftinfo,stginfo) =
-		promote_to_statement_start (promote_mcode stg) bef in
-	      (leftinfo,
-	       Ast0.FStorage(set_mcode_info stg (Ast0.get_info stginfo))::rest,
-	       name)
-	  | Ast0.FType(ty)::rest ->
-	      let (leftinfo,ty) = promote_to_statement_start ty bef in
-	      (leftinfo,Ast0.FType(ty)::rest,name)
-	  | Ast0.FInline(inline)::rest ->
-	      let (leftinfo,inlinfo) =
-		promote_to_statement_start (promote_mcode inline) bef in
-	      (leftinfo,
-	       Ast0.FInline(set_mcode_info inline (Ast0.get_info inlinfo))::
-	       rest,
-	       name)
-	  | Ast0.FAttr(attr)::rest ->
-	      let (leftinfo,attrinfo) =
-		promote_to_statement_start (promote_mcode attr) bef in
-	      (leftinfo,
-	       Ast0.FAttr(set_mcode_info attr (Ast0.get_info attrinfo))::rest,
-	       name) in
+	let (leftinfo,fninfo,name) = leftfninfo fninfo name bef in
 	let (rightinfo,right,rbrace) =
 	  promote_to_statement_end_mcode rbrace aft in
       (* pretend it is one line before the start of the function, so that it
@@ -1174,7 +1151,7 @@ let rec statement s =
 	 and other things to the node after, but that would complicate
 	 insert_plus, which doesn't distinguish between different mcodekinds *)
 	let res =
-	  Ast0.FunDecl((leftinfo,bef),fninfo,name,lp,params,rp,lbrace,
+	  Ast0.FunDecl((leftinfo,bef),fninfo,name,lp,params,va,rp,lbrace,
 		       body,rbrace,(rightinfo,aft)) in
       (* have to do this test again, because of typing problems - can't save
 	 the result, only use it *)
@@ -1219,6 +1196,33 @@ let rec statement s =
 	Ast0.AddingBetweenDots(statement s)
     | Ast0.DroppingBetweenDots s ->
 	Ast0.DroppingBetweenDots(statement s))
+
+and leftfninfo fninfo name bef = (* cases on what is leftmost *)
+  match fninfo with
+    [] ->
+      let (leftinfo,name) = promote_to_statement_start name bef in
+      (leftinfo,[],name)
+  | Ast0.FStorage(stg)::rest ->
+      let (leftinfo,stginfo) =
+	promote_to_statement_start (promote_mcode stg) bef in
+      (leftinfo,
+       Ast0.FStorage(set_mcode_info stg (Ast0.get_info stginfo))::rest,
+       name)
+  | Ast0.FType(ty)::rest ->
+      let (leftinfo,ty) = promote_to_statement_start ty bef in
+      (leftinfo,Ast0.FType(ty)::rest,name)
+  | Ast0.FInline(inline)::rest ->
+      let (leftinfo,inlinfo) =
+	promote_to_statement_start (promote_mcode inline) bef in
+      (leftinfo,
+       Ast0.FInline(set_mcode_info inline (Ast0.get_info inlinfo))::rest,
+       name)
+  | Ast0.FAttr(attr)::rest ->
+      let (leftinfo,attrinfo) =
+	promote_to_statement_start (promote_mcode attr) bef in
+      (leftinfo,
+       Ast0.FAttr(set_mcode_info attr (Ast0.get_info attrinfo))::rest,
+       name)
 
 and pragmainfo pi =
   match Ast0.unwrap pi with

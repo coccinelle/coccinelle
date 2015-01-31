@@ -469,7 +469,6 @@ Declaration
 @ const_decl_init @
 type T;
 context identifier Z;
-context constant C;
 @@
 T Z; => T Z = C;
 

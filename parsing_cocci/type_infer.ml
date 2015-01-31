@@ -327,6 +327,7 @@ let rec propagate_types env =
     | Ast0.UnInit(_,ty,id,_) ->
 	let ty = Ast0.ast0_type_to_type ty in
 	List.map (function i -> (i,ty)) (strip id)
+    | Ast0.FunProto(fi,nm,lp,params,va,rp,sem) -> []
     | Ast0.MacroDecl(_,_,_,_,_) -> []
     | Ast0.MacroDeclInit(_,_,_,_,_,exp,_) ->
         let _ = (propagate_types env).VT0.combiner_rec_initialiser exp in
@@ -367,7 +368,7 @@ let rec propagate_types env =
 
   let statement r k s =
     match Ast0.unwrap s with
-      Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace,_) ->
+      Ast0.FunDecl(_,fninfo,name,lp,params,va,rp,lbrace,body,rbrace,_) ->
 	let rec get_binding p =
 	  match Ast0.unwrap p with
 	    Ast0.Param(ty,Some id) ->

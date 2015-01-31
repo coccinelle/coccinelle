@@ -174,12 +174,13 @@ let add_position snp =
     } in
   (newpos, newsnp)
 
-(* dirty means that a position was added during a freeze period, ie. we need
- * to increment the counter.
+(* set the freeze position flag to b.
+ * if we're ending a freeze period AND one position was added during this time
+ * (aka the dirty flag), then we need to increment the counter.
  * TODO: nested freezes in e.g. nested disjunctions are VERY error-prone. *)
 let set_freeze_pos b snp =
   let (freez,dirty) = snp.freeze_pos in
-  if freez && dirty then
+  if freez && dirty && not(b) then
     { snp with freeze_pos = (b,false); pos_counter = snp.pos_counter + 1 }
   else
     { snp with freeze_pos = (b,false) }
@@ -188,7 +189,8 @@ let set_freeze_pos b snp =
  * this is e.g. used in disjunctions where we want all cases to have the
  * same position. *)
 let do_freeze_pos fn snp =
-  set_freeze_pos false (fn (set_freeze_pos true snp))
+  let (current,_) = snp.freeze_pos in
+  set_freeze_pos current (fn (set_freeze_pos true snp))
 
 
 (* ------------------------------------------------------------------------- *)

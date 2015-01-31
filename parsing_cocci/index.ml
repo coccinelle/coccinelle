@@ -106,7 +106,6 @@ let typeC t =
   | Ast0.Signed(sign,ty) -> [129]
   | Ast0.Pointer(ty,star) -> [49]
   | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) -> [131]
-  | Ast0.FunctionType(ty,lp1,params,rp1) -> [132]
   | Ast0.Array(ty,lb,size,rb) -> [50]
   | Ast0.Decimal(dec,lp,length,comma,precision_opt,rp) -> [160]
   | Ast0.EnumName(kind,name) -> [146]
@@ -127,6 +126,7 @@ let declaration d =
   | Ast0.MetaFieldList(name,_,_) -> [152]
   | Ast0.Init(stg,ty,id,eq,exp,sem) -> [54]
   | Ast0.UnInit(stg,ty,id,sem) -> [55]
+  | Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) -> [132]
   | Ast0.MacroDecl(name,lp,args,rp,sem) -> [137]
   | Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem) -> [157]
   | Ast0.TyDecl(ty,sem) -> [116]
@@ -154,7 +154,6 @@ let initialiser i =
 let parameterTypeDef p =
   match Ast0.unwrap p with
     Ast0.VoidParam(ty) -> [59]
-  | Ast0.VarargParam(_) -> [155]
   | Ast0.Param(ty,id) -> [60]
   | Ast0.MetaParam(name,_) -> [61]
   | Ast0.MetaParamList(name,_,_) -> [62]
@@ -167,7 +166,7 @@ let parameterTypeDef p =
 
 let statement s =
   match Ast0.unwrap s with
-    Ast0.FunDecl(bef,fninfo,name,lp,params,rp,lbrace,body,rbrace,aft) -> [68]
+    Ast0.FunDecl(bef,fninfo,name,lp,params,va,rp,lbrace,body,rbrace,aft) -> [68]
   | Ast0.Decl(bef,decl) -> [69]
   | Ast0.Seq(lbrace,body,rbrace) -> [70]
   | Ast0.ExprStatement(exp,sem) -> [71]

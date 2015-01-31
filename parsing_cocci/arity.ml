@@ -442,13 +442,6 @@ and top_typeC tgt opt_allowed typ =
       let params = parameter_list tgt params in
       make_typeC typ tgt arity
 	(Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2))
-  | Ast0.FunctionType(ty,lp1,params,rp1) ->
-      let arity =
-	all_same opt_allowed tgt (mcode2line lp1)
-	  (List.map mcode2arity [lp1;rp1]) in
-      let ty = get_option (typeC arity) ty in
-      let params = parameter_list tgt params in
-      make_typeC typ tgt arity (Ast0.FunctionType(ty,lp1,params,rp1))
   | Ast0.Array(ty,lb,size,rb) ->
       let arity =
 	all_same opt_allowed tgt (mcode2line lb)
@@ -571,6 +564,23 @@ and declaration tgt decl =
       let id = ident false arity id in
       let sem = mcode sem in
       make_decl decl tgt arity (Ast0.UnInit(stg,ty,id,sem))
+  | Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) ->
+    let tokens = match va with
+      | None -> [lp1;rp1;sem]
+      | Some (c1,e1) -> [lp1;c1;e1;rp1;sem] in
+      let arity =
+	all_same true tgt (mcode2line lp1)
+	  (List.map mcode2arity tokens) in
+      let fi = List.map (fninfo arity) fi in
+      let name = ident false arity name in
+      let lp1 = mcode lp1 in
+      let params = parameter_list tgt params in
+      let va = match va with
+        | None -> None
+        | Some (c1, e1) -> Some (mcode c1, mcode e1) in 
+      let rp1 = mcode rp1 in
+      let sem = mcode sem in
+      make_decl decl tgt arity (Ast0.FunProto(fi,name,lp1,params,va,rp1,sem))
   | Ast0.MacroDecl(name,lp,args,rp,sem) ->
       let arity =
 	all_same true tgt (mcode2line lp)
@@ -715,10 +725,6 @@ and parameterTypeDef tgt param =
   let param_same = all_same true tgt in
   match Ast0.unwrap param with
     Ast0.VoidParam(ty) -> Ast0.rewrap param (Ast0.VoidParam(typeC tgt ty))
-  | Ast0.VarargParam(dots) ->
-      let arity = param_same (mcode2line dots) [mcode2arity dots] in
-      let dots = mcode dots in
-      make_param param tgt arity (Ast0.VarargParam(dots))
   | Ast0.Param(ty,Some id) ->
       let ty = top_typeC tgt true ty in
       let id = ident true tgt id in
@@ -1053,7 +1059,7 @@ and statement tgt stm =
 	     (expression Ast0.NONE))
 	  whn in
       make_rule_elem stm tgt arity (Ast0.Stars(dots,whn))
-  | Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace,aft) ->
+  | Ast0.FunDecl(bef,fi,name,lp,params,va,rp,lbrace,body,rbrace,aft) ->
       let arity =
 	all_same true tgt (mcode2line lp)
 	  ((List.map mcode2arity [lp;rp;lbrace;rbrace]) @ (fninfo2arity fi)) in
@@ -1061,12 +1067,15 @@ and statement tgt stm =
       let name = ident false arity name in
       let lp = mcode lp in
       let params = parameter_list arity params in
+      let newva = match va with
+        | None -> None
+        | Some (comma, ellipsis) -> Some (mcode comma, mcode ellipsis) in
       let rp = mcode rp in
       let lbrace = mcode lbrace in
       let body = dots (statement arity) body in
       let rbrace = mcode rbrace in
       make_rule_elem stm tgt arity
-	(Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace,aft))
+	(Ast0.FunDecl(bef,fi,name,lp,params,newva,rp,lbrace,body,rbrace,aft))
   | Ast0.Include(inc,s) ->
       let arity =
 	all_same true tgt (mcode2line inc) [mcode2arity inc; mcode2arity s] in

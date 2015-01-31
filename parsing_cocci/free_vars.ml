@@ -438,7 +438,7 @@ let collect_in_plus_term =
 
   let astfvrule_elem recursor k re =
     match Ast.unwrap re with
-      Ast.FunHeader(bef,_,fi,nm,_,params,_) ->
+      Ast.FunHeader(bef,_,fi,nm,_,params,_,_) ->
 	let fi_metas =
 	  List.concat
 	    (List.map

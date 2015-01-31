@@ -286,14 +286,6 @@ and unify_typeC t1 t2 =
 	 conjunct_bindings (unify_fullType tya tyb)
 	   (unify_dots unify_parameterTypeDef pdots paramsa paramsb)
        else return false
-  | (Ast.FunctionType(_,tya,lp1a,paramsa,rp1a),
-     Ast.FunctionType(_,tyb,lp1b,paramsb,rp1b)) ->
-       if List.for_all2 unify_mcode [lp1a;rp1a] [lp1b;rp1b]
-       then
-	 conjunct_bindings (unify_option unify_fullType tya tyb)
-	   (unify_dots unify_parameterTypeDef pdots paramsa paramsb)
-       else return false
-  | (Ast.FunctionType _ , _) -> failwith "not supported"
   | (Ast.Array(ty1,lb1,e1,rb1),Ast.Array(ty2,lb2,e2,rb2)) ->
       conjunct_bindings
 	(unify_fullType ty1 ty2) (unify_option unify_expression e1 e2)
@@ -344,6 +336,20 @@ and unify_declaration d1 d2 =
       if bool_unify_option unify_mcode stg1 stg2
       then conjunct_bindings (unify_fullType ft1 ft2) (unify_ident id1 id2)
       else return false
+  | (Ast.FunProto(fi1,nm1,lp1,params1,va1,rp1,sem1),
+     Ast.FunProto(fi2,nm2,lp2,params2,va2,rp2,sem2)) ->
+       let l1 = match va1 with
+         | None -> [lp1;rp1]
+         | Some (c1,e1) -> [lp1;c1;e1;rp1] in
+       let l2 = match va2 with
+         | None -> [lp2;rp2]
+         | Some (c2,e2) -> [lp2;c2;e2;rp2] in
+       if List.for_all2 unify_mcode l1 l2
+       then
+         conjunct_bindings (unify_fninfo fi1 fi2)
+	   (conjunct_bindings (unify_ident nm1 nm2)
+	      (unify_dots unify_parameterTypeDef pdots params1 params2))
+       else return false
   | (Ast.MacroDecl(n1,lp1,args1,rp1,sem1),
      Ast.MacroDecl(n2,lp2,args2,rp2,sem2)) ->
        conjunct_bindings (unify_ident n1 n2)
@@ -426,7 +432,6 @@ and unify_designator d1 d2 =
 and unify_parameterTypeDef p1 p2 =
   match (Ast.unwrap p1,Ast.unwrap p2) with
     (Ast.VoidParam(ft1),Ast.VoidParam(ft2)) -> unify_fullType ft1 ft2
-  | (Ast.VarargParam(_),_) | (_,Ast.VarargParam(_)) -> return true
   | (Ast.Param(ft1,i1),Ast.Param(ft2,i2)) ->
       conjunct_bindings (unify_fullType ft1 ft2)
 	(unify_option unify_ident i1 i2)
@@ -483,8 +488,8 @@ and unify_define_param p1 p2 =
 
 and unify_rule_elem re1 re2 =
   match (Ast.unwrap re1,Ast.unwrap re2) with
-    (Ast.FunHeader(_,_,fi1,nm1,lp1,params1,rp1),
-     Ast.FunHeader(_,_,fi2,nm2,lp2,params2,rp2)) ->
+    (Ast.FunHeader(_,_,fi1,nm1,lp1,params1,va1,rp1),
+     Ast.FunHeader(_,_,fi2,nm2,lp2,params2,v2,rp2)) ->
        conjunct_bindings (unify_fninfo fi1 fi2)
 	 (conjunct_bindings (unify_ident nm1 nm2)
 	    (unify_dots unify_parameterTypeDef pdots params1 params2))

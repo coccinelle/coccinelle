@@ -268,10 +268,6 @@ and base_typeC =
   | FunctionPointer of fullType *
 	          string mcode(* ( *)*string mcode(* * *)*string mcode(* ) *)*
                   string mcode (* ( *)*parameter_list*string mcode(* ) *)
-  | FunctionType     of bool (* true if all minus for dropping return type *) *
-                   fullType option *
-	           string mcode (* ( *) * parameter_list *
-                   string mcode (* ) *)
   | Array           of fullType * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
   | Decimal         of string mcode (* decimal *) * string mcode (* ( *) *
@@ -311,6 +307,11 @@ and base_declaration =
     Init of storage mcode option * fullType * ident * string mcode (*=*) *
 	initialiser * string mcode (*;*)
   | UnInit of storage mcode option * fullType * ident * string mcode (* ; *)
+  | FunProto of
+	fninfo list * ident (* name *) *
+	string mcode (* ( *) * parameter_list *
+	(string mcode (* , *) * string mcode (* ...... *) ) option *
+	string mcode (* ) *) * string mcode (* ; *)
   | TyDecl of fullType * string mcode (* ; *)
   | MacroDecl of ident (* name *) * string mcode (* ( *) *
         expression dots * string mcode (* ) *) * string mcode (* ; *)
@@ -374,7 +375,6 @@ and initialiser = base_initialiser wrap
 
 and base_parameterTypeDef =
     VoidParam     of fullType
-  | VarargParam   of string mcode
   | Param         of fullType * ident option
 
   | MetaParam     of meta_name mcode * keep_binding * inherited
@@ -436,6 +436,7 @@ and base_rule_elem =
 	             bool (* true if all minus, for dropping static, etc *) *
 	             fninfo list * ident (* name *) *
 	             string mcode (* ( *) * parameter_list *
+                     (string mcode (* , *) * string mcode (* ...... *) ) option *
                      string mcode (* ) *)
   | Decl          of annotated_decl
 
