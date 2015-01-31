@@ -525,7 +525,7 @@ let match_maker checks_needed context_required whencode_allowed =
 		    (Ast0.lub_pure p pure) = pure
 		| _ -> false in
 	      matches e
-	  | (Ast.ID,e) | (Ast.LocalID,e) ->
+	  | (Ast.ID,e) | (Ast.LocalID,e) | (Ast.GlobalID,e) ->
 	      let rec matches e =
 		match Ast0.unwrap e with
 		  Ast0.Ident(c) -> true
@@ -2214,6 +2214,8 @@ let get_name = function
       (nm,function nm -> Ast.MetaIdExpDecl(ar,nm,ty))
   | Ast.MetaLocalIdExpDecl(ar,nm,ty) ->
       (nm,function nm -> Ast.MetaLocalIdExpDecl(ar,nm,ty))
+  | Ast.MetaGlobalIdExpDecl(ar,nm,ty) ->
+      (nm,function nm -> Ast.MetaGlobalIdExpDecl(ar,nm,ty))
   | Ast.MetaExpListDecl(ar,nm,nm1) ->
       (nm,function nm -> Ast.MetaExpListDecl(ar,nm,nm1))
   | Ast.MetaDeclDecl(ar,nm) ->

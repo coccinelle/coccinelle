@@ -224,6 +224,7 @@ let id_tokens lexbuf =
   | "statement" when in_meta ->  check_arity_context_linetype s; TStatement
   | "function"  when in_meta ->  check_arity_context_linetype s; TFunction
   | "local" when in_meta ->      check_arity_context_linetype s; TLocal
+  | "global" when in_meta ->     check_arity_context_linetype s; TGlobal
   | "list" when in_meta ->       check_arity_context_linetype s; Tlist
   | "fresh" when in_meta ->      check_arity_context_linetype s; TFresh
   | "typedef" when in_meta ->    check_arity_context_linetype s; TTypedef
@@ -403,6 +404,10 @@ let init _ =
   Data.add_local_idexp_meta :=
     (fun tyopt name constraints pure ->
       let fn clt = TMetaLocalIdExp(name,constraints,pure,tyopt,clt) in
+      Hashtbl.replace metavariables (get_name name) fn);
+  Data.add_global_idexp_meta :=
+    (fun tyopt name constraints pure ->
+      let fn clt = TMetaGlobalIdExp(name,constraints,pure,tyopt,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_explist_meta :=
     (function name -> function lenname -> function pure ->

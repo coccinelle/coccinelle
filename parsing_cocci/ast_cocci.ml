@@ -98,6 +98,8 @@ and metavar =
       arity * meta_name (* name *) * Type_cocci.typeC list option
   | MetaLocalIdExpDecl of
       arity * meta_name (* name *) * Type_cocci.typeC list option
+  | MetaGlobalIdExpDecl of
+      arity * meta_name (* name *) * Type_cocci.typeC list option
   | MetaExpListDecl of arity * meta_name (*name*) * list_len (*len*)
   | MetaDeclDecl of arity * meta_name (* name *)
   | MetaFieldDecl of arity * meta_name (* name *)
@@ -225,7 +227,7 @@ and reconstraint =
   | IdNotRegExp     of string * Regexp.regexp
 
 (* ANY = int E; ID = idexpression int X; CONST = constant int X; *)
-and form = ANY | ID | LocalID | CONST (* form for MetaExp *)
+and form = ANY | ID | LocalID | GlobalID | CONST (* form for MetaExp *)
 
 and expression = base_expression wrap
 
@@ -775,6 +777,7 @@ let get_meta_name = function
   | MetaExpDecl(ar,nm,ty) -> nm
   | MetaIdExpDecl(ar,nm,ty) -> nm
   | MetaLocalIdExpDecl(ar,nm,ty) -> nm
+  | MetaGlobalIdExpDecl(ar,nm,ty) -> nm
   | MetaExpListDecl(ar,nm,nm1) -> nm
   | MetaDeclDecl(ar,nm) -> nm
   | MetaFieldDecl(ar,nm) -> nm

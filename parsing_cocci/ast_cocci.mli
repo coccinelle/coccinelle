@@ -83,6 +83,8 @@ and metavar =
       arity * meta_name (* name *) * Type_cocci.typeC list option
   | MetaLocalIdExpDecl of
       arity * meta_name (* name *) * Type_cocci.typeC list option
+  | MetaGlobalIdExpDecl of
+      arity * meta_name (* name *) * Type_cocci.typeC list option
   | MetaExpListDecl of arity * meta_name (*name*) * list_len (*len*)
   | MetaDeclDecl of arity * meta_name (* name *)
   | MetaFieldDecl of arity * meta_name (* name *)
@@ -208,7 +210,7 @@ and reconstraint =
   | IdRegExp        of string * Regexp.regexp
   | IdNotRegExp     of string * Regexp.regexp
 
-and form = ANY | ID | LocalID | CONST (* form for MetaExp *)
+and form = ANY | ID | LocalID| GlobalID | CONST (* form for MetaExp *)
 
 and expression = base_expression wrap
 

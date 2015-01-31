@@ -1018,6 +1018,11 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	    (match !opttypb with
 	      (Some (_,Ast_c.LocalVar _),_) -> true
 	    | _ -> false)
+	| (A.GlobalID,e) ->
+	    (matches_id e) &&
+	    (match !opttypb with
+	      (Some (_,Ast_c.LocalVar _),_) -> false
+	    | _ -> true)
 	| (A.ID,e) -> matches_id e in
       if form_ok
       then
@@ -1458,8 +1463,12 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
   | A.DisjExpr eas, eb ->
       eas +> List.fold_left (fun acc ea -> acc >|+|> (expression ea eb)) fail
 
-  | A.UniqueExp _,_ | A.OptExp _,_ ->
-      failwith "not handling Opt/Unique/Multi on expr"
+  | A.UniqueExp e,_ | A.OptExp e,_ ->
+      Pretty_print_cocci.expression e;
+      Format.print_newline();
+      failwith
+        (Printf.sprintf "not handling Opt/Unique/Multi on expr on line %d"
+           (A.get_line e))
 
  (* Because of Exp cant put a raise Impossible; have to put a fail *)
 

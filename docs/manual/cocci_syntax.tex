@@ -183,9 +183,9 @@ the same, but for structure fields.
   \CASE{iterator \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_regexp}\mth{)} ;}
   \CASE{iterator \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
 %  \CASE{error \NT{pmid\_with\_not\_eq\_list} ; }
-  \CASE{\opt{local} idexpression \opt{\NT{ctype}} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
-  \CASE{\opt{local} idexpression \OPT{\ttlb \NT{ctypes}\ttrb~\any{*}} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
-  \CASE{\opt{local} idexpression \some{*} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+  \CASE{\opt{local \mth{\mid} global} idexpression \opt{\NT{ctype}} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+  \CASE{\opt{local \mth{\mid} global} idexpression \OPT{\ttlb \NT{ctypes}\ttrb~\any{*}} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+  \CASE{\opt{local \mth{\mid} global} idexpression \some{*} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
   \CASE{expression list \NT{ids} ;}
   \CASE{expression \some{*} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
   \CASE{expression enum \any{*} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
