@@ -963,17 +963,29 @@ let rec main_action xs =
 	    | Some _ | None -> 1 in
 	  let seq_fold merge op z l =
 	    List.fold_left op z l in
-          let pid = Unix.getpid () in
 	  let par_fold merge op z l =
-	    Parmap.parfold
-	      ~init:(fun id ->
-		Parmap.redirect
-		  ~path:(Printf.sprintf "/tmp/coccinelle.%d" pid)
-		  ~id;
-		())
-	      ~ncores
-	      ~chunksize
-	      (fun x y -> op y x) (Parmap.L l) z merge in
+            let prefix =
+	      Filename.chop_extension (Filename.basename !cocci_file) in
+	    (if Sys.file_exists prefix
+	    then failwith (Printf.sprintf "Directory %s used for temporary files already exists and should be removed." prefix));
+	    let res =
+	      Parmap.parfold
+		~init:(fun id -> Parmap.redirect ~path:prefix ~id)
+		~ncores
+		~chunksize
+		(fun x y -> op y x) (Parmap.L l) z merge in
+	    let files = Array.to_list(Sys.readdir prefix) in
+	    let (stdouts,stderrs) =
+	      List.partition
+		(function x -> Str.string_match (Str.regexp "stdout") x 0)
+		files in
+	    List.iter (function x -> Common.file_to_stdout (prefix^"/"^x))
+	      stdouts;
+	    List.iter (function x -> Common.file_to_stderr (prefix^"/"^x))
+	      stderrs;
+	    let _ = Sys.command (Printf.sprintf "rm -rf %s" prefix) in
+	    res
+	  in
 	  let actual_fold, run_in_parallel =
 	    if Cocci.has_finalize cocci_infos
 	    then
