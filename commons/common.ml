@@ -3202,6 +3202,19 @@ let cmd_to_list command =
 let process_output_to_list = cmd_to_list
 let cmd_to_list_and_status = process_output_to_list2
 
+let file_to_stdout file =
+  let i = open_in file in
+  let rec loop _ =
+    Printf.printf "%s\n" (input_line i); loop() in
+  try loop() with End_of_file -> close_in i
+
+let file_to_stderr file =
+  let i = open_in file in
+  let rec loop _ =
+    Printf.eprintf "%s\n" (input_line i); loop() in
+  try loop() with End_of_file -> close_in i
+
+
 (* now in prelude:
  * let command2 s = ignore(Sys.command s)
  *)
