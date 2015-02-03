@@ -163,7 +163,12 @@ let print_type keep info = function
 
 let rec idconstraint = function
     Ast.IdNoConstraint  -> print_string "/* No constraint */"
+  | Ast.IdPosIdSet (str,meta)     ->
+      print_string " =";
+      List.iter (function s -> print_string (" "^s)) str;
+      List.iter (function (r,n) -> print_string " "; print_meta(r,n)) meta
   | Ast.IdNegIdSet (str,meta)     ->
+      print_string " !=";
       List.iter (function s -> print_string (" "^s)) str;
       List.iter (function (r,n) -> print_string " "; print_meta(r,n)) meta
   | Ast.IdRegExpConstraint re -> regconstraint re

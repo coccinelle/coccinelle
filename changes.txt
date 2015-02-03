@@ -65,6 +65,7 @@
 - EXEC, for use with the --ibm option.
 - Limited matching of decimal format strings, with the --ibm option
 - Add a global idexpression operator, like the local one.
+- Positive constraint set for identifier metavariables.
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line
