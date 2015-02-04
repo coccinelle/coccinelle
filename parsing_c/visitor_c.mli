@@ -15,6 +15,7 @@ type visitor_c = {
   kfield     : (field -> unit)        * visitor_c -> field       -> unit;
 
   kcppdirective: (cpp_directive -> unit) * visitor_c -> cpp_directive -> unit;
+  kifdefdirective : (ifdef_directive -> unit) * visitor_c -> ifdef_directive -> unit;
   kdefineval :   (define_val -> unit)    * visitor_c -> define_val    -> unit;
   kstatementseq: (statement_sequencable   -> unit) * visitor_c -> statement_sequencable   -> unit;
 
@@ -95,6 +96,7 @@ type visitor_c_s = {
   kini_s       : initialiser    inout * visitor_c_s -> initialiser    inout;
 
   kcppdirective_s : (cpp_directive inout * visitor_c_s) -> cpp_directive inout;
+  kifdefdirective_s : (ifdef_directive inout * visitor_c_s) -> ifdef_directive inout;
   kdefineval_s : (define_val inout * visitor_c_s) -> define_val inout;
   kstatementseq_s: (statement_sequencable inout * visitor_c_s) -> statement_sequencable inout;
   kstatementseq_list_s:
