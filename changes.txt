@@ -24,6 +24,7 @@
 
 * 1.0.0
 ** Language:
+- Add ...... to match ... in C function declarations and definitions.
 - Addition of initializer list metavariables.  Thanks to Michael Stefaniuc
   for noticing the need for them.
 - Allow multiple position variables per token
