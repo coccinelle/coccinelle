@@ -182,6 +182,7 @@
   Elfring.
 - Add prototypes implicit isomorphism to allow disabling generation of
   rules based on changes in function prototypes.
+- Support dynamic parallelism via the Parmap library.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
