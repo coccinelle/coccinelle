@@ -689,7 +689,7 @@ val lub_count : count -> count -> count
 (* --------------------------------------------------------------------- *)
 
 val rewrap : 'a wrap -> 'b -> 'b wrap
-val rewrap_mcode : 'a mcode -> 'a -> 'a mcode
+val rewrap_mcode : 'a mcode -> 'b -> 'b mcode
 val unwrap : 'a wrap -> 'a
 val unwrap_mcode : 'a mcode -> 'a
 val get_mcodekind : 'a mcode -> mcodekind
