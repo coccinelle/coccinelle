@@ -695,37 +695,26 @@ and ifdef_directive = (* or and 'a ifdefed = 'a list wrap *)
      * Having #if guards in the AST is useful for cpp-aware analyses, or to
      * later add support for matching against #ifS.
      *
-     * What I wanted to do:
-     * The lexer should tokenize the #if guard, we use the TDefEOL-trick to
-     * mark the end of the guard, and finally we add a rule to the ocamlyacc
-     * parser.
+     * General #if guards are stored as a string in a [Gif_str] constructor.
+     * A traversal of the syntax tree with a parsing function would transform
+     * these into the parsed [Gif] form.
      *
-     * Problem:
-     * The [lookahead] pass in [Parsing_hacks] assumes that an #if header is
-     * a single token. The above solution breaks that assumption. So, when an
-     * #if appears in some weird position, [lookahead] will comment out the #if
-     * token, but not any subsequent token of the guard. It seems doable to
-     * modify [lookahead] to handle this new situation, but this seems a complex
-     * and delicate function to touch, and (who knows) we may break something
-     * else. Also note that [TCommentCpp] only takes one [info], so we would
-     * need to combine all the [info]s of an #if into one.
+     * NOTE that there is no actually guaranteee that a traversal will
+     * eliminate all [Gif_str] constructors, since the parsing function may
+     * fail.
      *
-     * What I finally did:
-     * The safest way I found is to save the #if guard in the [TIfdef] token as
-     * a (yet-to-be-parsed) string. This is enough to reason about, or match
-     * against, simple and most-common #ifdef and #ifndef conditionals. (Rough
-     * estimate: 80% of #if conditionals in Linux are #if[n]def.) But the
-     * AST for #if guards can still be easily obtained by traversing the syntax
-     * tree with a parsing function.
+     * See [Parsing #if guards] to know why this design choice.
      *
      * @author Iago Abal
      *)
-  and ifdef_guard = Gifdef  of string (* #ifdef <macro symbol> *)
-                  | Gifndef of string (* #ifndef <macro symbol> *)
-                  | Gif     of string (* #if <guard string to be parsed> *)
-                  | Gnone             (* ignored #if condition:
-                                       * TIfdefBool, TIfdefMisc, TIfdefVersion
-                                       *)
+  and ifdef_guard = Gifdef  of macro_symbol (* #ifdef *)
+                  | Gifndef of macro_symbol (* #ifndef *)
+                  | Gif_str of string       (* #if <string to be parsed> *)
+                  | Gif     of expression   (* #if *)
+                  | Gnone   (* ignored #if condition: TIfdefBool,
+                             * TIfdefMisc, and TIfdefVersion
+                             *)
+  and macro_symbol = string
   (* set in Parsing_hacks.set_ifdef_parenthize_info. It internally use
    * a global so it means if you parse the same file twice you may get
    * different id. I try now to avoid this pb by resetting it each
@@ -735,7 +724,33 @@ and ifdef_directive = (* or and 'a ifdefed = 'a list wrap *)
     IfdefTag of (int (* tag *) * int (* total with this tag *))
 
 
-
+(* Note [Parsing #if guards]
+ *
+ * What I wanted to do:
+ * The lexer should tokenize the #if guard, we use the TDefEOL-trick to
+ * mark the end of the guard, and finally we add a rule to the ocamlyacc
+ * parser.
+ *
+ * Problem:
+ * The [lookahead] pass in [Parsing_hacks] assumes that an #if header is
+ * a single token. The above solution breaks that assumption. So, when an
+ * #if appears in some weird position, [lookahead] will comment out the #if
+ * token, but not any subsequent token of the guard. It seems doable to
+ * modify [lookahead] to handle this new situation, but this seems a complex
+ * and delicate function to touch, and (who knows) we may break something
+ * else. Also note that [TCommentCpp] only takes one [info], so we would
+ * need to combine all the [info]s of an #if into one.
+ *
+ * What I finally did:
+ * The safest way I found is to save the #if guard in the [TIfdef] token as
+ * a (yet-to-be-parsed) string. This is enough to reason about, or match
+ * against, simple and most-common #ifdef and #ifndef conditionals. (Rough
+ * estimate: 80% of #if conditionals in Linux are #if[n]def.) But the
+ * AST for #if guards can still be easily obtained by traversing the syntax
+ * tree with a parsing function.
+ *
+ * @author Iago Abal
+ *)
 
 
 (* ------------------------------------------------------------------------- *)
@@ -1351,19 +1366,3 @@ let get_annot_info info key =
 let get_comments_before info = (!(info.comments_tag)).mbefore
 let get_comments_after info = (!(info.comments_tag)).mafter
 
-(* ------------------------------------------------------------------------- *)
-(* Ifdef-related helpers *)
-(* ------------------------------------------------------------------------- *)
-
-(** Normalized string representation of an [Ifdef] guard.
- *
- * Ignored #if conditions (cf. [Gnone]) are treated as 0, which is consistent
- * with the way Coccinelle handles them.
- *
- * @author Iago Abal
- *)
-let string_of_ifdef_guard = function
-  | Gifdef s  -> "defined(" ^ s ^ ")"
-  | Gifndef s -> "!defined(" ^ s ^ ")"
-  | Gif    s  -> s
-  | Gnone     -> "0"

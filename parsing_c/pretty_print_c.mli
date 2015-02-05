@@ -86,4 +86,12 @@ val debug_info_of_node:
   Ograph_extended.nodei -> Control_flow_c.cflow -> string
 
 val string_of_expression: Ast_c.expression -> string
+(** Normalized string representation of an [Ifdef] guard.
+ *
+ * Ignored #if conditions (cf. [Gnone]) are treated as 0, which is consistent
+ * with the way Coccinelle handles them.
+ *
+ * @author Iago Abal
+ *)
+val string_of_ifdef_guard: Ast_c.ifdef_guard -> string
 val string_of_toplevel: Ast_c.toplevel -> string

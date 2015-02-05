@@ -247,6 +247,7 @@ type visitor_c =
    kfield: (field -> unit) * visitor_c -> field -> unit;
 
    kcppdirective: (cpp_directive -> unit) * visitor_c -> cpp_directive -> unit;
+   kifdefdirective : (ifdef_directive -> unit) * visitor_c -> ifdef_directive -> unit;
    kdefineval : (define_val -> unit) * visitor_c -> define_val -> unit;
    kstatementseq: (statement_sequencable   -> unit) * visitor_c -> statement_sequencable   -> unit;
 
@@ -262,24 +263,25 @@ type visitor_c =
  }
 
 let default_visitor_c =
-  { kexpr         = (fun (k,_) e  -> k e);
-    kstatement    = (fun (k,_) st -> k st);
-    ktype         = (fun (k,_) t  -> k t);
-    kdecl         = (fun (k,_) d  -> k d);
-    konedecl      = (fun (k,_) d  -> k d);
-    kparam        = (fun (k,_) d  -> k d);
-    kdef          = (fun (k,_) d  -> k d);
-    kini          = (fun (k,_) ie  -> k ie);
-    kname         = (fun (k,_) x -> k x);
-    kfragment     = (fun (k,_) f  -> k f);
-    kformat       = (fun (k,_) f  -> k f);
-    kinfo         = (fun (k,_) ii  -> k ii);
-    knode         = (fun (k,_) n  -> k n);
-    ktoplevel     = (fun (k,_) p  -> k p);
-    kcppdirective = (fun (k,_) p  -> k p);
-    kdefineval    = (fun (k,_) p  -> k p);
-    kstatementseq = (fun (k,_) p  -> k p);
-    kfield        = (fun (k,_) p  -> k p);
+  { kexpr           = (fun (k,_) e  -> k e);
+    kstatement      = (fun (k,_) st -> k st);
+    ktype           = (fun (k,_) t  -> k t);
+    kdecl           = (fun (k,_) d  -> k d);
+    konedecl        = (fun (k,_) d  -> k d);
+    kparam          = (fun (k,_) d  -> k d);
+    kdef            = (fun (k,_) d  -> k d);
+    kini            = (fun (k,_) ie  -> k ie);
+    kname           = (fun (k,_) x -> k x);
+    kfragment       = (fun (k,_) f  -> k f);
+    kformat         = (fun (k,_) f  -> k f);
+    kinfo           = (fun (k,_) ii  -> k ii);
+    knode           = (fun (k,_) n  -> k n);
+    ktoplevel       = (fun (k,_) p  -> k p);
+    kcppdirective   = (fun (k,_) p  -> k p);
+    kifdefdirective = (fun (k,_) p  -> k p);
+    kdefineval      = (fun (k,_) p  -> k p);
+    kstatementseq   = (fun (k,_) p  -> k p);
+    kfield          = (fun (k,_) p  -> k p);
   }
 
 
@@ -722,10 +724,23 @@ and vk_program = fun bigf xs ->
   xs +> List.iter (vk_toplevel bigf)
 
 and vk_ifdef_directive bigf directive =
-  let iif ii =  vk_ii bigf ii in
-  match directive with
-  | IfdefDirective (ifkind, ii) -> iif ii
+  let f = bigf.kifdefdirective in
+  let k d =
+    let iif ii =  vk_ii bigf ii in
+    match d with
+    | IfdefDirective ((ifkind,_tag), ii) ->
+        vk_ifdefkind bigf ifkind;
+        iif ii
+  in f (k, bigf) directive
 
+and vk_ifdefkind bigf = function
+  | Ifdef       ifguard
+  | IfdefElseif ifguard -> vk_ifdef_guard bigf ifguard
+  | x                   -> ()
+
+and vk_ifdef_guard bigf = function
+  | Gif e -> vk_expr bigf e
+  | x     -> ()
 
 and vk_cpp_directive bigf directive =
   let iif ii =  vk_ii bigf ii in
@@ -1072,6 +1087,7 @@ type visitor_c_s = {
   kini_s:  (initialiser  inout * visitor_c_s) -> initialiser inout;
 
   kcppdirective_s: (cpp_directive inout * visitor_c_s) -> cpp_directive inout;
+  kifdefdirective_s : (ifdef_directive inout * visitor_c_s) -> ifdef_directive inout;
   kdefineval_s: (define_val inout * visitor_c_s) -> define_val inout;
   kstatementseq_s: (statement_sequencable inout * visitor_c_s) -> statement_sequencable inout;
   kstatementseq_list_s: (statement_sequencable list inout * visitor_c_s) -> statement_sequencable list inout;
@@ -1102,6 +1118,7 @@ let default_visitor_c_s =
     kstatementseq_s = (fun (k,_) x  -> k x);
     kstatementseq_list_s = (fun (k,_) x  -> k x);
     kcppdirective_s = (fun (k,_) x  -> k x);
+    kifdefdirective_s = (fun (k,_) x -> k x);
   }
 
 let rec vk_expr_s = fun bigf expr ->
@@ -1629,12 +1646,25 @@ and vk_cpp_directive_s = fun bigf top ->
 
   in f (k, bigf) top
 
-and vk_ifdef_directive_s = fun bigf ifdef ->
-  let iif ii = vk_ii_s bigf ii in
-  match ifdef with
-  | IfdefDirective (ifkind, ii) -> IfdefDirective (ifkind, iif ii)
+and vk_ifdef_directive_s bigf ifdef =
+  let f = bigf.kifdefdirective_s in
+  let k d =
+    let iif ii = vk_ii_s bigf ii in
+    match d with
+    | IfdefDirective ((ifkind,tag), ii) ->
+        let ifkind' = vk_ifdefkind_s bigf ifkind in
+        IfdefDirective ((ifkind',tag), iif ii)
+  in f (k, bigf) ifdef
 
+and vk_ifdefkind_s bigf = function
+  | Ifdef       ifguard -> Ifdef       (vk_ifdef_guard_s bigf ifguard)
+  | IfdefElseif ifguard -> IfdefElseif (vk_ifdef_guard_s bigf ifguard)
+  | IfdefElse           -> IfdefElse
+  | IfdefEndif          -> IfdefEndif
 
+and vk_ifdef_guard_s bigf = function
+  | Gif e -> Gif (vk_expr_s bigf e)
+  | x     -> x
 
 and vk_define_kind_s  = fun bigf defkind ->
   match defkind with

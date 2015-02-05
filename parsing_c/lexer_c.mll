@@ -571,17 +571,20 @@ rule token = parse
   | "#" [' ''\t']* "if" [' ' '\t']+
       { let info = tokinfo lexbuf in
         let str_guard = cpp_eat_until_nl lexbuf in
-        TIfdef (Gif str_guard, no_ifdef_mark(), info +> tok_add_s str_guard)
+        TIfdef (Gif_str str_guard, no_ifdef_mark(), info +> tok_add_s str_guard)
       }
   | "#" [' ' '\t']* "if" '('
       { let info = tokinfo lexbuf in
         let str_guard = cpp_eat_until_nl lexbuf in
-        TIfdef (Gif str_guard, no_ifdef_mark(), info +> tok_add_s str_guard)
+        TIfdef (Gif_str str_guard, no_ifdef_mark(), info +> tok_add_s str_guard)
       }
   | "#" [' ' '\t']* "elif" [' ' '\t']+
       { let info = tokinfo lexbuf in
         let str_guard = cpp_eat_until_nl lexbuf in
-        TIfdefelif (Gif str_guard, no_ifdef_mark(), info +> tok_add_s str_guard)
+        TIfdefelif (Gif_str str_guard,
+                    no_ifdef_mark(),
+                    info +> tok_add_s str_guard
+                   )
       }
 
 
