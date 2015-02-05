@@ -166,7 +166,7 @@ let collect_plus_lines top =
 	(* cases for everything with extra mcode *)
       | Ast0.Decl((info,bef),_) ->
 	  bind (mcode info bef) (k s)
-      |	Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_,(ainfo,aft)) ->
+      |	Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_,_,(ainfo,aft)) ->
 	  bind (mcode info bef) (bind (k s) (mcode ainfo aft))
       | Ast0.IfThen(_,_,_,_,_,(info,aft,adj))
       | Ast0.IfThenElse(_,_,_,_,_,_,_,(info,aft,adj))
@@ -467,7 +467,7 @@ let classify is_minus all_marked table code =
 	(* cases for everything with extra mcode *)
       | Ast0.Decl((info,bef),_) ->
 	  bind (nc_mcode ((),(),info,bef,(),-1)) (k s)
-      | Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_,(ainfo,aft)) ->
+      | Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_,_,(ainfo,aft)) ->
 	  (* not sure that the use of start is relevant here *)
 	  let a1 = nc_mcode ((),(),info,bef,(),-1) in
 	  let a2 = nc_mcode ((),(),ainfo,aft,(),-1) in
@@ -622,8 +622,6 @@ let rec equal_typeC t1 t2 =
        equal_mcode lb1 lb2 && equal_mcode rb1 rb2
   | (Ast0.StructUnionName(kind1,_),Ast0.StructUnionName(kind2,_)) ->
       equal_mcode kind1 kind2
-  | (Ast0.FunctionType(ty1,lp1,p1,rp1),Ast0.FunctionType(ty2,lp2,p2,rp2)) ->
-      equal_mcode lp1 lp2 && equal_mcode rp1 rp2
   | (Ast0.StructUnionDef(_,lb1,_,rb1),
      Ast0.StructUnionDef(_,lb2,_,rb2)) ->
        equal_mcode lb1 lb2 && equal_mcode rb1 rb2
@@ -639,6 +637,14 @@ let rec equal_typeC t1 t2 =
   | (Ast0.UniqueType(_),Ast0.UniqueType(_)) -> true
   | _ -> false
 
+let equal_fninfo x y =
+  match (x,y) with
+    (Ast0.FStorage(s1),Ast0.FStorage(s2)) -> equal_mcode s1 s2
+  | (Ast0.FType(_),Ast0.FType(_)) -> true
+  | (Ast0.FInline(i1),Ast0.FInline(i2)) -> equal_mcode i1 i2
+  | (Ast0.FAttr(i1),Ast0.FAttr(i2)) -> equal_mcode i1 i2
+  | _ -> false
+
 let equal_declaration d1 d2 =
   match (Ast0.unwrap d1,Ast0.unwrap d2) with
     (Ast0.MetaDecl(name1,_),Ast0.MetaDecl(name2,_))
@@ -649,6 +655,17 @@ let equal_declaration d1 d2 =
       equal_option stg1 stg2 && equal_mcode eq1 eq2 && equal_mcode sem1 sem2
   | (Ast0.UnInit(stg1,_,_,sem1),Ast0.UnInit(stg2,_,_,sem2)) ->
       equal_option stg1 stg2 && equal_mcode sem1 sem2
+  | (Ast0.FunProto(fninfo1,name1,lp1,p1,va1,rp1,sem1),
+     Ast0.FunProto(fninfo2,name2,lp2,p2,va2,rp2,sem2)) ->
+       let equal_varargs va1 va2 = match (va1,va2) with
+         | None, None -> true
+         | Some (c1, e1), Some (c2, e2) ->
+           equal_mcode c1 c2 && equal_mcode e1 e2
+         | _ -> false in
+       (List.length fninfo1) = (List.length fninfo2) &&
+       List.for_all2 equal_fninfo fninfo1 fninfo2 &&
+       equal_mcode lp1 lp2 && equal_varargs va1 va2 &&
+       equal_mcode rp1 rp2 && equal_mcode sem1 sem2
   | (Ast0.MacroDecl(nm1,lp1,_,rp1,sem1),Ast0.MacroDecl(nm2,lp2,_,rp2,sem2))->
       equal_mcode lp1 lp2 && equal_mcode rp1 rp2 && equal_mcode sem1 sem2
   | (Ast0.MacroDeclInit(nm1,lp1,_,rp1,eq1,_,sem1),
@@ -704,7 +721,6 @@ let equal_initialiser i1 i2 =
 let equal_parameterTypeDef p1 p2 =
   match (Ast0.unwrap p1,Ast0.unwrap p2) with
     (Ast0.VoidParam(_),Ast0.VoidParam(_)) -> true
-  | (Ast0.VarargParam(_),Ast0.VarargParam(_)) -> true
   | (Ast0.Param(_,_),Ast0.Param(_,_)) -> true
   | (Ast0.MetaParam(name1,_),Ast0.MetaParam(name2,_))
   | (Ast0.MetaParamList(name1,_,_),Ast0.MetaParamList(name2,_,_)) ->
@@ -718,8 +734,8 @@ let equal_parameterTypeDef p1 p2 =
 
 let rec equal_statement s1 s2 =
   match (Ast0.unwrap s1,Ast0.unwrap s2) with
-    (Ast0.FunDecl(_,fninfo1,_,lp1,_,rp1,lbrace1,_,rbrace1,_),
-     Ast0.FunDecl(_,fninfo2,_,lp2,_,rp2,lbrace2,_,rbrace2,_)) ->
+    (Ast0.FunDecl(_,fninfo1,_,lp1,_,_,rp1,lbrace1,_,rbrace1,_),
+     Ast0.FunDecl(_,fninfo2,_,lp2,_,_,rp2,lbrace2,_,rbrace2,_)) ->
        (List.length fninfo1) = (List.length fninfo2) &&
        List.for_all2 equal_fninfo fninfo1 fninfo2 &&
        equal_mcode lp1 lp2 && equal_mcode rp1 rp2 &&
@@ -799,14 +815,6 @@ let rec equal_statement s1 s2 =
       equal_mcode prg1 prg2
   | (Ast0.OptStm(_),Ast0.OptStm(_)) -> true
   | (Ast0.UniqueStm(_),Ast0.UniqueStm(_)) -> true
-  | _ -> false
-
-and equal_fninfo x y =
-  match (x,y) with
-    (Ast0.FStorage(s1),Ast0.FStorage(s2)) -> equal_mcode s1 s2
-  | (Ast0.FType(_),Ast0.FType(_)) -> true
-  | (Ast0.FInline(i1),Ast0.FInline(i2)) -> equal_mcode i1 i2
-  | (Ast0.FAttr(i1),Ast0.FAttr(i2)) -> equal_mcode i1 i2
   | _ -> false
 
 let equal_case_line c1 c2 =
@@ -1031,20 +1039,20 @@ let rec is_init s =
 let rec is_decl s =
   match Ast0.unwrap s with
     Ast0.Decl(_,e) -> true
-  | Ast0.FunDecl(_,_,_,_,_,_,_,_,_,_) -> true
+  | Ast0.FunDecl(_,_,_,_,_,_,_,_,_,_,_) -> true
   | Ast0.Disj(_,stmts,_,_) -> isall is_decl stmts
   | _ -> false
 
 let rec is_fndecl s =
   match Ast0.unwrap s with
-    Ast0.FunDecl(_,_,_,_,_,_,_,_,_,_) -> true
+    Ast0.FunDecl(_,_,_,_,_,_,_,_,_,_,_) -> true
   | Ast0.Disj(_,stmts,_,_) -> isall is_fndecl stmts
   | _ -> false
 
 let rec is_toplevel s =
   match Ast0.unwrap s with
     Ast0.Decl(_,e) -> true
-  | Ast0.FunDecl(_,_,_,_,_,_,_,_,_,_) -> true
+  | Ast0.FunDecl(_,_,_,_,_,_,_,_,_,_,_) -> true
   | Ast0.Disj(_,stmts,_,_) -> isall is_toplevel stmts
   | Ast0.ExprStatement(Some fc,_) ->
       (match Ast0.unwrap fc with

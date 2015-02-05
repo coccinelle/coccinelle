@@ -112,6 +112,10 @@ val add_local_idexp_meta:
     (Type_cocci.typeC list option -> Ast_cocci.meta_name ->
       econstraints -> Ast0_cocci.pure -> unit) ref
 
+val add_global_idexp_meta:
+    (Type_cocci.typeC list option -> Ast_cocci.meta_name ->
+      econstraints -> Ast0_cocci.pure -> unit) ref
+
 val add_explist_meta:
     (Ast_cocci.meta_name -> Ast_cocci.list_len -> Ast0_cocci.pure ->
       unit) ref

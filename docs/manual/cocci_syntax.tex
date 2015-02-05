@@ -146,6 +146,8 @@ behavior.  Using \NT{disable-iso} with the given name disables this behavior.
   \KW{...}, where \NT{bin\_op} is commutative and associative, is
   considered to match any top-level sequence of \NT{bin\_op} operators
   containing \NT{exp} as the top-level argument.
+\item \KW{prototypes}: A rule for transforming a function prototype is
+  generated when a function header changes.
 \end{itemize}
 
 The possible types of metavariable declarations are defined by the grammar
@@ -183,9 +185,9 @@ the same, but for structure fields.
   \CASE{iterator \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_regexp}\mth{)} ;}
   \CASE{iterator \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
 %  \CASE{error \NT{pmid\_with\_not\_eq\_list} ; }
-  \CASE{\opt{local} idexpression \opt{\NT{ctype}} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
-  \CASE{\opt{local} idexpression \OPT{\ttlb \NT{ctypes}\ttrb~\any{*}} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
-  \CASE{\opt{local} idexpression \some{*} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+  \CASE{\opt{local \mth{\mid} global} idexpression \opt{\NT{ctype}} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+  \CASE{\opt{local \mth{\mid} global} idexpression \OPT{\ttlb \NT{ctypes}\ttrb~\any{*}} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+  \CASE{\opt{local \mth{\mid} global} idexpression \some{*} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
   \CASE{expression list \NT{ids} ;}
   \CASE{expression \some{*} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
   \CASE{expression enum \any{*} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
@@ -817,6 +819,7 @@ $^\dag$ The optional \texttt{when} construct ends at the end of the line.
   \CASE{\NT{type} \T{id}}
   \CASE{\mth{\T{metaid}^{\ssf{Param}}}}
   \CASE{\mth{\T{metaid}^{\ssf{ParamList}}}}
+  \CASE{......}
 
   \RULE{\rt{decl}}
   \CASE{\NT{ctype} \NT{id}}
@@ -885,6 +888,10 @@ It may be necessary to consider several cases to ensure that the added ode
 is placed in the right position.  For example, one may need one pattern
 that considers that the function is declared {\tt inline} and another that
 considers that it is not.
+
+Varargs are written in C using {\tt \ldots}.  Unfortunately, this notation
+is already used in the semantic patch language.  A pattern for a varargs
+parameter is written as a sequence of 6 dots.
 
 The C parser allows functions that have no return type, and assumes that
 the return type is \texttt{int}.  The support for parsing such functions is

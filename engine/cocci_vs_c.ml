@@ -1045,6 +1045,11 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	    (match !opttypb with
 	      (Some (_,Ast_c.LocalVar _),_) -> true
 	    | _ -> false)
+	| (A.GlobalID,e) ->
+	    (matches_id e) &&
+	    (match !opttypb with
+	      (Some (_,Ast_c.LocalVar _),_) -> false
+	    | _ -> true)
 	| (A.ID,e) -> matches_id e in
       if form_ok
       then
@@ -1485,8 +1490,12 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
   | A.DisjExpr eas, eb ->
       eas +> List.fold_left (fun acc ea -> acc >|+|> (expression ea eb)) fail
 
-  | A.UniqueExp _,_ | A.OptExp _,_ ->
-      failwith "not handling Opt/Unique/Multi on expr"
+  | A.UniqueExp e,_ | A.OptExp e,_ ->
+      Pretty_print_cocci.expression e;
+      Format.print_newline();
+      failwith
+        (Printf.sprintf "not handling Opt/Unique/Multi on expr on line %d"
+           (A.get_line e))
 
  (* Because of Exp cant put a raise Impossible; have to put a fail *)
 
@@ -2426,6 +2435,56 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
      },iivirg)
        -> fail (* C++ constructor declaration not supported in SmPL *)
 
+   | A.FunProto(fninfoa,ida,lpa,paramsa,va,rpa,sema),
+     ({B.v_namei = Some (idb, B.NoInit);
+       B.v_type =
+	((({B.const = false; B.volatile = false},[]) as q),
+	 (B.FunctionType(tyb, (paramsb, (isvaargs, iidotsb))), ii));
+       B.v_storage = stob;
+       B.v_local = local;
+       B.v_attr = attrs;
+       B.v_type_bis = typbbis;
+     }, iivirg) ->
+       (match (va,isvaargs) with
+        | (None,false) -> return (va,(isvaargs, iidotsb))
+        | (Some (commaa, dotsa), true) -> 
+           let (commab, dotsb) = tuple_of_list2 iidotsb in
+           tokenf commaa commab >>= (fun commaa commab ->
+           tokenf dotsa dotsb >>= (fun dotsa dotsb ->
+           return (Some(commaa,dotsa), (true,[commab;dotsb]))
+                                  ))
+        | _ -> fail
+       ) >>=
+        (fun va (isvaargs, iidotsb) -> let (lpb, rpb) = tuple_of_list2 ii in
+        tokenf lpa lpb >>= (fun lpa lpb ->
+        tokenf rpa rpb >>= (fun rpa rpb ->
+        tokenf sema iiptvirgb >>= (fun sema iiptvirgb ->
+        ident_cpp DontKnow ida idb >>= (fun ida idb ->
+	let (stoa,tya,inla,attras) = get_fninfo fninfoa in
+        inline_optional_allminus allminus
+          inla (stob, iistob) >>= (fun inla (stob, iistob) ->
+        storage_optional_allminus allminus
+          stoa (stob, iistob) >>= (fun stoa (stob, iistob) ->
+        attribute_list attras attrs >>= (fun attras attrs ->
+        fullType_optional_allminus allminus tya tyb >>= (fun tya tyb ->
+	let fninfoa = put_fninfo stoa tya inla attras in
+        parameters (seqstyle paramsa) (A.undots paramsa) paramsb >>=
+          (fun paramsaundots paramsb ->
+            let paramsa = redots paramsa paramsaundots in
+            return (
+              (A.FunProto(fninfoa,ida,lpa,paramsa,va,rpa,sema) +> A.rewrap decla,
+	       (({B.v_namei = Some (idb, B.NoInit);
+		  B.v_type =
+		  (q,
+		   (B.FunctionType(tyb, (paramsb, (isvaargs, iidotsb))),
+		    [lpb; rpb]));
+		  B.v_storage = stob;
+		  B.v_local = local;
+		  B.v_attr = attrs;
+		  B.v_type_bis = typbbis;
+		}, iivirg), iiptvirgb, iistob))))
+	      )))))))))
+
    (* do iso-by-absence here ? allow typedecl and var ? *)
    | A.TyDecl (typa, ptvirga),
      ({B.v_namei = None; B.v_type = typb;
@@ -2538,8 +2597,40 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
    | _, ({B.v_namei=Some _}, _) ->
        fail
 
+and get_fninfo fninfoa =
+      (* fninfoa records the order in which the SP specified the various
+	 information, but this isn't taken into account in the matching.
+	 Could this be a problem for transformation? *)
+  let stoa =
+    match
+      List.filter (function A.FStorage(s) -> true | _ -> false) fninfoa
+    with [A.FStorage(s)] -> Some s | _ -> None in
+  let tya =
+    match List.filter (function A.FType(s) -> true | _ -> false) fninfoa
+    with [A.FType(t)] -> Some t | _ -> None in
 
+  let inla =
+    match List.filter (function A.FInline(i) -> true | _ -> false) fninfoa
+    with [A.FInline(i)] -> Some i | _ -> None in
 
+  let attras =
+    match List.filter (function A.FAttr(a) -> true | _ -> false) fninfoa
+    with
+      [] -> None | _ -> failwith "matching of attributes not supported"
+	(* The following provides matching of one attribute against one
+	   attribute.  But the problem is that in the C ast there are no
+	   attributes in the attr field.  The attributes are all comments.
+	   So there is nothing to match against. *)
+	(*  [A.FAttr(a)] -> Some [A.FAttr(a)]
+	| [] -> None
+	| _ -> failwith "only one attr match allowed" *) in
+  (stoa,tya,inla,attras)
+
+and put_fninfo stoa tya inla attras =
+  (match stoa  with Some st -> [A.FStorage st] | None -> []) ++
+    (match inla   with Some i -> [A.FInline i] | None -> []) ++
+    (match tya    with Some t -> [A.FType t] | None -> []) ++
+    (match attras with Some a -> a | None -> [])
 
 (* ------------------------------------------------------------------------- *)
 
@@ -3393,31 +3484,6 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
             (A.Pointer (typa, iamult)) +> A.rewrap ta,
             (B.Pointer typb, [ibmult])
           )))
-
-    | A.FunctionType(allminus,tyaopt,lpa,paramsa,rpa),
-      (B.FunctionType(tyb, (paramsb, (isvaargs, iidotsb))), ii) ->
-
-        let (lpb, rpb) = tuple_of_list2 ii in
-        if isvaargs
-        then
-          pr2_once
-	    ("Not handling well variable length arguments func. "^
-             "You have been warned");
-        tokenf lpa lpb >>= (fun lpa lpb ->
-        tokenf rpa rpb >>= (fun rpa rpb ->
-        fullType_optional_allminus allminus tyaopt tyb >>= (fun tyaopt tyb ->
-        parameters (seqstyle paramsa) (A.undots paramsa) paramsb >>=
-          (fun paramsaundots paramsb ->
-            let paramsa = redots paramsa paramsaundots in
-            return (
-              (A.FunctionType(allminus,tyaopt,lpa,paramsa,rpa) +> A.rewrap ta,
-              (B.FunctionType(tyb, (paramsb, (isvaargs, iidotsb))), [lpb;rpb])
-              )
-            )))))
-
-
-
-
 
     | A.FunctionPointer(tya,lp1a,stara,rp1a,lp2a,paramsa,rp2a),
         (B.ParenType t1, ii) ->
@@ -4419,7 +4485,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
       )
 
 
-  | A.FunHeader (mckstart, allminus, fninfoa, ida, oparen, paramsa, cparen),
+  | A.FunHeader (mckstart, allminus, fninfoa, ida, oparen, paramsa, va, cparen),
     F.FunHeader ({B.f_name = nameidb;
                   f_type = (retb, (paramsb, (isvaargs, iidotsb)));
                   f_storage = stob;
@@ -4432,33 +4498,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
       if oldstyle <> None
       then pr2 "OLD STYLE DECL NOT WELL SUPPORTED";
 
-
-      (* fninfoa records the order in which the SP specified the various
-	 information, but this isn't taken into account in the matching.
-	 Could this be a problem for transformation? *)
-      let stoa =
-	match
-	  List.filter (function A.FStorage(s) -> true | _ -> false) fninfoa
-	with [A.FStorage(s)] -> Some s | _ -> None in
-      let tya =
-	match List.filter (function A.FType(s) -> true | _ -> false) fninfoa
-	with [A.FType(t)] -> Some t | _ -> None in
-
-      let inla =
-	match List.filter (function A.FInline(i) -> true | _ -> false) fninfoa
-	with [A.FInline(i)] -> Some i | _ -> None in
-
-      let attras =
-	match List.filter (function A.FAttr(a) -> true | _ -> false) fninfoa
-	with
-	  [] -> None | _ -> failwith "matching of attributes not supported"
-	(* The following provides matching of one attribute against one
-	   attribute.  But the problem is that in the C ast there are no
-	   attributes in the attr field.  The attributes are all comments.
-	   So there is nothing to match against. *)
-	(*  [A.FAttr(a)] -> Some [A.FAttr(a)]
-	| [] -> None
-	| _ -> failwith "only one attr match allowed" *) in
+      let (stoa,tya,inla,attras) = get_fninfo fninfoa in
 
       (match ii with
       | ioparenb::icparenb::iifakestart::iistob ->
@@ -4493,17 +4533,11 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 
            fullType_optional_allminus allminus tya retb >>= (fun tya retb ->
 
-             let fninfoa =
-               (match stoa  with Some st -> [A.FStorage st] | None -> []) ++
-               (match inla   with Some i -> [A.FInline i] | None -> []) ++
-               (match tya    with Some t -> [A.FType t] | None -> []) ++
-               (match attras with Some a -> a | None -> [])
-
-             in
+             let fninfoa = put_fninfo stoa tya inla attras in
 
              return (
                A.FunHeader(mckstart,allminus,fninfoa,ida,oparen,
-                          paramsa,cparen),
+                          paramsa,va,cparen),
                F.FunHeader ({B.f_name = nameidb;
                              f_type = (retb, (paramsb, (isvaargs, iidotsb)));
                              f_storage = stob;

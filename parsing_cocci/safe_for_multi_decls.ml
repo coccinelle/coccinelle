@@ -80,7 +80,7 @@ let contains_modif =
        and the expression could contain a statement. *)
     let res = k re in
     match Ast.unwrap re with
-      Ast.FunHeader(bef,_,fninfo,name,lp,params,rp) ->
+      Ast.FunHeader(bef,_,fninfo,name,lp,params,va,rp) ->
 	bind (mcode r ((),(),bef,[])) res
     | Ast.Decl decl ->
 	bind (mcode r ((),(),annotated_decl decl,[])) res

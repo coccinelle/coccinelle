@@ -637,9 +637,11 @@ and print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2) fn =
   mcode print_string rp1; mcode print_string lp1;
   parameter_list params; mcode print_string rp2
 
-and print_function_type (ty,lp1,params,rp1) fn =
-  print_option fullType ty; fn(); mcode print_string lp1;
-  parameter_list params; mcode print_string rp1
+and print_fninfo = function
+    Ast.FStorage(stg) -> mcode storage stg
+  | Ast.FType(ty) -> fullType ty
+  | Ast.FInline(inline) -> mcode print_string inline; pr_space()
+  | Ast.FAttr(attr) -> mcode print_string attr; pr_space()
 
 and typeC ty =
   match Ast.unwrap ty with
@@ -651,8 +653,6 @@ and typeC ty =
   | Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
       print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
 	(function _ -> ())
-  | Ast.FunctionType (am,ty,lp1,params,rp1) ->
-      print_function_type (ty,lp1,params,rp1) (function _ -> ())
   | Ast.Array(ty,lb,size,rb) ->
       fullType ty; mcode print_string lb; print_option expression size;
       mcode print_string rb
@@ -733,9 +733,6 @@ and print_named_type ty id =
       (match Ast.unwrap ty1 with
 	Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	  print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
-	    (function _ -> pr_space(); ident id)
-      | Ast.FunctionType(am,ty,lp1,params,rp1) ->
-	  print_function_type (ty,lp1,params,rp1)
 	    (function _ -> pr_space(); ident id)
       | Ast.Array(_,_,_,_) ->
 	  let rec loop ty k =
@@ -820,6 +817,18 @@ and declaration d =
       print_option (mcode storage) stg;
       print_option (function _ -> pr_space()) stg;
       print_named_type ty id;
+      mcode print_string sem
+  | Ast.FunProto (fninfo,name,lp1,params,va,rp1,sem) ->
+      List.iter print_fninfo fninfo;
+      ident name; mcode print_string_box lp1;
+      parameter_list params;
+      begin match va with
+        | None -> ()
+        | Some (comma, ellipsis) ->
+          mcode print_string comma;
+          mcode print_string ellipsis
+      end;
+      close_box(); mcode print_string rp1;
       mcode print_string sem
   | Ast.MacroDecl(name,lp,args,rp,sem) ->
       ident name; mcode print_string_box lp;
@@ -919,7 +928,6 @@ and designator = function
 and parameterTypeDef p =
   match Ast.unwrap p with
     Ast.VoidParam(ty) -> fullType ty
-  | Ast.VarargParam(dots) -> mcode print_string dots
   | Ast.Param(ty,Some id) -> print_named_type ty id
   | Ast.Param(ty,None) -> fullType ty
 
@@ -967,10 +975,17 @@ and inc_elem = function
 
 and rule_elem arity re =
   match Ast.unwrap re with
-    Ast.FunHeader(_,_,fninfo,name,lp,params,rp) ->
+    Ast.FunHeader(_,_,fninfo,name,lp,params,va,rp) ->
       pr_arity arity; List.iter print_fninfo fninfo;
       ident name; mcode print_string_box lp;
-      parameter_list params; close_box(); mcode print_string rp;
+      parameter_list params;
+      begin match va with
+        | None -> ()
+        | Some (comma, ellipsis) ->
+          mcode print_string comma;
+          mcode print_string ellipsis
+      end;
+      close_box(); mcode print_string rp;
       pr_space()
   | Ast.Decl decl -> pr_arity arity; annotated_decl decl
 
@@ -1105,12 +1120,6 @@ and print_define_param param =
   | Ast.DPcircles(circles) -> mcode print_string circles
   | Ast.OptDParam(dp) -> print_text "?"; print_define_param dp
   | Ast.UniqueDParam(dp) -> print_text "!"; print_define_param dp
-
-and print_fninfo = function
-    Ast.FStorage(stg) -> mcode storage stg
-  | Ast.FType(ty) -> fullType ty
-  | Ast.FInline(inline) -> mcode print_string inline; pr_space()
-  | Ast.FAttr(attr) -> mcode print_string attr; pr_space()
 
 and exec_code (e : Ast_cocci.exec_code) =
   match Ast.unwrap e with

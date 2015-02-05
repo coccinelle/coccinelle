@@ -39,6 +39,7 @@
 </span></td><td style="text-align:center;white-space:nowrap" ><span style="color:black">  ::=  </span></td><td style="text-align:left;white-space:nowrap" ><a href="main_grammar010.html#type"><span style="color:maroon">type</span></a><span style="color:blue"> </span><span style="color:blue"><span style="font-family:sans-serif">id</span></span> </td></tr>
 <tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue"><span style="font-family:sans-serif"><span style="font-style:italic">metaid</span></span></span><sup><span style="color:blue"><span style="font-size:small"><span style="font-family:sans-serif">Param</span></span></span></sup> </td></tr>
 <tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue"><span style="font-family:sans-serif"><span style="font-style:italic">metaid</span></span></span><sup><span style="color:blue"><span style="font-size:small"><span style="font-family:sans-serif">ParamList</span></span></span></sup> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">......</span> </td></tr>
 <tr><td style="text-align:left;white-space:nowrap" >
 <a id="decl"><span style="color:maroon">decl</span></a><span style="color:maroon">
 </span></td><td style="text-align:center;white-space:nowrap" ><span style="color:black">  ::=  </span></td><td style="text-align:left;white-space:nowrap" ><a href="main_grammar005.html#ctype"><span style="color:maroon">ctype</span></a><span style="color:blue"> </span><a href="main_grammar010.html#id"><span style="color:maroon">id</span></a> </td></tr>
@@ -73,7 +74,9 @@ causes it to be placed just before the type</p><div class="lstlisting"><span sty
 <span style="font-size:xx-small">   6</span> T foo() { ... }</div><p>It may be necessary to consider several cases to ensure that the added ode
 is placed in the right position. For example, one may need one pattern
 that considers that the function is declared <span style="font-family:monospace">inline</span> and another that
-considers that it is not.</p><p>The C parser allows functions that have no return type, and assumes that
+considers that it is not.</p><p>Varargs are written in C using <span style="font-family:monospace">…</span>. Unfortunately, this notation
+is already used in the semantic patch language. A pattern for a varargs
+parameter is written as a sequence of 6 dots.</p><p>The C parser allows functions that have no return type, and assumes that
 the return type is <span style="font-family:monospace">int</span>. The support for parsing such functions is
 limited. In particular, the parameter list must contain a type for each
 parameter, and may not contain varargs.</p>

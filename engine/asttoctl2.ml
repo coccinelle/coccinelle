@@ -460,7 +460,7 @@ let contains_modif =
   let rule_elem r k re =
     let res = k re in
     match Ast.unwrap re with
-      Ast.FunHeader(bef,_,fninfo,name,lp,params,rp) ->
+      Ast.FunHeader(bef,_,fninfo,name,lp,params,va,rp) ->
 	bind (mcode r ((),(),bef,[])) res
     | Ast.Decl decl -> bind (mcode r ((),(),annotated_decl decl,[])) res
     | Ast.ForHeader(fr,lp,Ast.ForDecl(decl),e2,sem2,e3,rp) ->
@@ -492,7 +492,7 @@ let contains_pos =
   let rule_elem r k re =
     let res = k re in
     match Ast.unwrap re with
-      Ast.FunHeader(bef,_,fninfo,name,lp,params,rp) ->
+      Ast.FunHeader(bef,_,fninfo,name,lp,params,va,rp) ->
 	bind (mcode r ((),(),bef,[])) res
     | Ast.Decl decl -> bind (mcode r ((),(),annotated_decl decl,[])) res
     | Ast.ForHeader(fr,lp,Ast.ForDecl(decl),e2,sem2,e3,rp) ->

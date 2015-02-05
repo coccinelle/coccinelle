@@ -39,6 +39,68 @@ module Ast = Ast_cocci
 module P = Parse_aux
 
 (* ---------------------------------------------------------------------- *)
+(* support for argument lists *)
+
+type 'a argorellipsis =
+  | Nothing
+  | Arg of 'a
+  | Ellipsis of Data.clt
+  | VAEllipsis of Data.clt
+  | Separator of Data.clt
+
+let string_of_arg = function
+  | Nothing -> "Nothing"
+  | Arg _ -> "Arg"
+  | Ellipsis _ -> "Ellipsis"
+  | VAEllipsis _ -> "VAEllipsis"
+  | Separator _ -> "Comma"
+
+let is_nothing = function
+  | Nothing -> true
+  | _ -> false
+
+let is_separator = function
+  | Separator _ -> true
+  | _ -> false
+
+let is_vaellipsis = function
+  | VAEllipsis _ -> true
+  | _ -> false
+
+let rec adjacent_ellipsis = function
+  | [] -> false
+  | [_] -> false 
+  | (Ellipsis _) :: (Ellipsis _) :: _ -> true
+  | x::xs -> adjacent_ellipsis xs
+
+let build_arg = function
+  | Arg arg -> arg
+  | Ellipsis e -> Ast0.wrap (Ast0.Pdots(P.clt2mcode "..." e))
+  | Separator comma -> Ast0.wrap (Ast0.PComma (P.clt2mcode "," comma))
+  | VAEllipsis _ -> assert false
+  | Nothing -> assert false
+
+let string_of_arglist l =
+  "[" ^ (String.concat ";" (List.map string_of_arg l)) ^ "]"
+
+let cleanup_arglist l =
+  if l=[] then ([], None)
+  else begin
+    let (args, vararg) = match l with
+      | (VAEllipsis vaellipsis)::(Separator comma)::rem ->
+        let c = P.clt2mcode "," comma in
+        let e = P.clt2mcode "......" vaellipsis in
+        (rem, Some (c, e))
+      | _ -> (l, None) in
+    let just_args = List.filter (fun x -> not (is_separator x)) args in
+    if List.exists is_vaellipsis just_args then failwith "...... can occur only as last argument"
+    else if adjacent_ellipsis just_args then failwith "Argument list contains adjacent ellipsis"
+    else
+      let pure_args = List.filter (fun x -> not (is_nothing x)) args in
+      (List.map build_arg (List.rev pure_args), vararg)
+  end
+
+(* ---------------------------------------------------------------------- *)
 (* support for TMeta *)
 
 let print_meta (r,n) = r^"."^n
@@ -129,10 +191,10 @@ and  logicalOp = function
 
 %token EOF
 
-%token TIdentifier TExpression TStatement TFunction TLocal TType TParameter
+%token TIdentifier TExpression TStatement TFunction TType TParameter
 %token TIdExpression TInitialiser TDeclaration TField TMetavariable TSymbol
 %token Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
-%token TPure TContext TGenerated TFormat
+%token TPure TContext TGenerated TFormat TLocal TGlobal
 %token TTypedef TAttribute TDeclarer TIterator TName TPosition TAnalysis
 %token TPosAny
 %token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall
@@ -148,6 +210,7 @@ and  logicalOp = function
 %token<Data.clt> Tconst Tvolatile
 %token<string * Data.clt> Tattr
 
+%token <Data.clt> TVAEllipsis
 %token <Data.clt> TIf TElse TWhile TFor TDo TSwitch TCase TDefault TReturn
 %token <Data.clt> TBreak TContinue TGoto TSizeof TFunDecl Tdecimal Texec
 %token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId TSymId
@@ -161,7 +224,8 @@ and  logicalOp = function
 %token <Parse_aux.info>          TMetaInit TMetaDecl TMetaField TMeta
 %token <Parse_aux.list_info>     TMetaParamList TMetaExpList TMetaInitList
 %token <Parse_aux.list_info>     TMetaFieldList
-%token <Parse_aux.typed_expinfo> TMetaExp TMetaIdExp TMetaLocalIdExp TMetaConst
+%token <Parse_aux.typed_expinfo> TMetaExp TMetaIdExp TMetaLocalIdExp
+%token <Parse_aux.typed_expinfo> TMetaGlobalIdExp TMetaConst
 %token <Parse_aux.pos_info>      TMetaPos
 
 %token TArob TArobArob
@@ -229,8 +293,10 @@ and  logicalOp = function
 %left TPlus TMinus
 %left TMul TDmOp /* TDiv TMod TMin TMax */
 
+/*
 %start reinit
 %type <unit> reinit
+*/
 
 %start minus_main
 %type <Ast0_cocci.rule> minus_main
@@ -278,7 +344,6 @@ rule_name
 
 %%
 
-reinit: { }
 minus_main: minus_body EOF { $1 } | m=minus_body TArobArob { m }
 | m=minus_body TArob { m }
 plus_main: plus_body EOF { $1 } | p=plus_body TArobArob { p }
@@ -646,6 +711,15 @@ list_len:
       | Some _ ->
 	  !Data.add_local_idexp_meta ty name constraints pure;
 	  check_meta(Ast.MetaLocalIdExpDecl(arity,name,ty))) }
+| TGlobal TIdExpression ty=ioption(meta_exp_type)
+    { (fun arity name pure check_meta constraints ->
+      !Data.add_global_idexp_meta ty name constraints pure;
+      check_meta(Ast.MetaGlobalIdExpDecl(arity,name,ty))) }
+| TGlobal TIdExpression m=nonempty_list(TMul)
+    { (fun arity name pure check_meta constraints ->
+      let ty = Some [P.ty_pointerify Type_cocci.Unknown m] in
+      !Data.add_global_idexp_meta ty name constraints pure;
+      check_meta(Ast.MetaGlobalIdExpDecl(arity,name,ty))) }
 | TExpression ty=expression_type
     { (fun arity name pure check_meta constraints ->
       let ty = Some [ty] in
@@ -1120,24 +1194,82 @@ define_param_list_option:
 
 /*****************************************************************************/
 
+/* Lists of arguments in function declarations */
+
+arg_list(arg):
+  arglist=separated_llist(TComma, argorellipsis(one_arg(arg)))
+     { let (args,vararg) = cleanup_arglist arglist in
+       ((Ast0.wrap (Ast0.DOTS args)), vararg) }
+
+argorellipsis(arg):
+  arg=arg { Arg arg }
+| x=TVAEllipsis { VAEllipsis (x) }
+| y=TEllipsis { Ellipsis (y) } 
+
+one_arg(arg):
+  arg=arg  { arg }
+| metaparamlist=TMetaParamList
+    { let (nm,lenname,pure,clt) = metaparamlist in
+      let nm = P.clt2mcode nm clt in
+      let lenname =
+	match lenname with
+	  Ast.AnyLen -> Ast0.AnyListLen
+	| Ast.MetaLen nm -> Ast0.MetaListLen(P.clt2mcode nm clt)
+	| Ast.CstLen n -> Ast0.CstListLen n in
+      Ast0.wrap(Ast0.MetaParamList(nm,lenname,pure)) }
+
+%inline separated_llist(separator, X):
+  xs = reverse_separated_llist(separator, X)
+    { xs }
+
+%inline reverse_separated_llist(separator, X):
+    { [] }
+| xs = reverse_separated_nonempty_llist(separator, X)
+    { xs }
+
+reverse_separated_nonempty_llist(separator, X):
+  x = X
+    { [ x ] }
+| xs = reverse_separated_nonempty_llist(separator, X); s=separator; x = X
+    { x :: (Separator s) :: xs }
+| xs = reverse_separated_nonempty_llist(separator, X); s=separator; TNothing; x = X
+    { x :: Nothing :: (Separator s) :: xs }
+
 funproto:
-  s=ioption(storage) t=ctype
-  id=fn_ident lp=TOPar d=decl_list(name_opt_decl) rp=TCPar pt=TPtVirg
-      { Ast0.wrap
-	  (Ast0.UnInit
-	     (s,
-	      Ast0.wrap
-		(Ast0.FunctionType(Some t,
-				   P.clt2mcode "(" lp, d, P.clt2mcode ")" rp)),
-	      id, P.clt2mcode ";" pt)) }
+  s=ioption(storage) i=ioption(Tinline) t=ctype
+  id=fn_ident lp=TOPar arglist=arg_list(name_opt_decl) rp=TCPar pt=TPtVirg
+      { let s = match s with None -> [] | Some s -> [Ast0.FStorage s] in
+        let i =
+	  match i with
+	    None -> []
+	  | Some i -> [Ast0.FInline (P.clt2mcode "inline" i)] in
+	let t = [Ast0.FType t] in
+        let (args,vararg) = arglist in
+	Ast0.wrap
+	  (Ast0.FunProto
+	     (s @ i @ t, id,
+	      P.clt2mcode "(" lp, args, vararg, P.clt2mcode ")" rp,
+	      P.clt2mcode ";" pt)) }
+| i=Tinline s=storage t=ctype
+  id=fn_ident lp=TOPar arglist=arg_list(name_opt_decl) rp=TCPar pt=TPtVirg
+      { let s = [Ast0.FStorage s] in
+        let i = [Ast0.FInline (P.clt2mcode "inline" i)] in
+	let t = [Ast0.FType t] in
+        let (args,vararg) = arglist in
+	Ast0.wrap
+	  (Ast0.FunProto
+	     (s @ i @ t, id,
+	      P.clt2mcode "(" lp, args, vararg, P.clt2mcode ")" rp,
+	      P.clt2mcode ";" pt)) }
 
 fundecl:
   f=fninfo
-  TFunDecl i=fn_ident lp=TOPar d=decl_list(decl) rp=TCPar
+  TFunDecl i=fn_ident lp=TOPar arglist=arg_list(decl) rp=TCPar
   lb=TOBrace b=fun_start rb=TCBrace
-      { Ast0.wrap(Ast0.FunDecl((Ast0.default_info(),Ast0.context_befaft()),
+      { let (args,vararg) = arglist in
+        Ast0.wrap(Ast0.FunDecl((Ast0.default_info(),Ast0.context_befaft()),
 			       f, i,
-			       P.clt2mcode "(" lp, d,
+			       P.clt2mcode "(" (lp), args, vararg,
 			       P.clt2mcode ")" rp,
 			       P.clt2mcode "{" lb, b,
 			       P.clt2mcode "}" rb,
@@ -1856,6 +1988,10 @@ primary_expr(recurser,primary_extra):
      { let (nm,constraints,pure,ty,clt) = $1 in
      Ast0.wrap
        (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.LocalID,pure)) }
+ | TMetaGlobalIdExp
+     { let (nm,constraints,pure,ty,clt) = $1 in
+     Ast0.wrap
+       (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.GlobalID,pure)) }
  | TOPar eexpr TCPar
      { Ast0.wrap(Ast0.Paren(P.clt2mcode "(" $1,$2,
 			    P.clt2mcode ")" $3)) }
@@ -2244,38 +2380,38 @@ fun c -> Ast0.EComma c
 
 empty_list_start(elem,dotter):
   /* empty */ { fun build_dots build_comma -> [] }
-| nonempty_list_start(elem,dotter) { $1 }
+| list=nonempty_list_start(elem,dotter) { list }
 
 nonempty_list_start(elem,dotter): /* dots allowed */
-  elem { fun build_dots build_comma -> [$1] }
-| elem TComma
+  element=elem { fun build_dots build_comma -> [element] }
+| element=elem comma=TComma
     { fun build_dots build_comma ->
-      $1::[Ast0.wrap(build_comma(P.clt2mcode "," $2))] }
-| elem TComma nonempty_list_start(elem,dotter)
+      element::[Ast0.wrap(build_comma(P.clt2mcode "," comma))] }
+| element=elem comma=TComma remainder=nonempty_list_start(elem,dotter)
     { fun build_dots build_comma ->
-      $1::(Ast0.wrap(build_comma(P.clt2mcode "," $2)))::
-      ($3 build_dots build_comma) }
-| TNothing nonempty_list_start(elem,dotter) { $2 }
-| d=dotter { fun build_dots build_comma -> [(build_dots "..." d)] }
-| d=dotter TComma
+      element::(Ast0.wrap(build_comma(P.clt2mcode "," comma)))::
+      (remainder build_dots build_comma) }
+| TNothing list=nonempty_list_start(elem,dotter) { list }
+| dotter=dotter { fun build_dots build_comma -> [(build_dots "..." dotter)] }
+| dotter=dotter comma=TComma
       { fun build_dots build_comma ->
-	[(build_dots "..." d);Ast0.wrap(build_comma(P.clt2mcode "," $2))] }
-| d=dotter TComma r=continue_list(elem,dotter)
+	[(build_dots "..." dotter);Ast0.wrap(build_comma(P.clt2mcode "," comma))] }
+| dotter=dotter comma=TComma remainder=continue_list(elem,dotter)
     { fun build_dots build_comma ->
-      (build_dots "..." d)::
-      (Ast0.wrap(build_comma(P.clt2mcode "," $2)))::
-      (r build_dots build_comma) }
+      (build_dots "..." dotter)::
+      (Ast0.wrap(build_comma(P.clt2mcode "," comma)))::
+      (remainder build_dots build_comma) }
 
 continue_list(elem,dotter): /* dots not allowed */
-  elem { fun build_dots build_comma -> [$1] }
-| elem TComma
+  element=elem { fun build_dots build_comma -> [element] }
+| element=elem comma=TComma
     { fun build_dots build_comma ->
-      $1::[Ast0.wrap(build_comma(P.clt2mcode "," $2))] }
-| elem TComma nonempty_list_start(elem,dotter)
+      element::[Ast0.wrap(build_comma(P.clt2mcode "," comma))] }
+| element=elem comma=TComma remainder=nonempty_list_start(elem,dotter)
     { fun build_dots build_comma ->
-      $1::(Ast0.wrap(build_comma(P.clt2mcode "," $2)))::
-      ($3 build_dots build_comma) }
-| TNothing nonempty_list_start(elem,dotter) { $2 }
+      element::(Ast0.wrap(build_comma(P.clt2mcode "," comma)))::
+      (remainder build_dots build_comma) }
+| TNothing list=nonempty_list_start(elem,dotter) { list }
 
 /* ---------------------------------------------------------------------- */
 

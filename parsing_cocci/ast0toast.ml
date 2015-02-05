@@ -438,9 +438,9 @@ and expression e =
 	let allminus = check_allminus.VT0.combiner_rec_expression e in
 	Ast.Constructor(mcode lp,typeC allminus ty,mcode rp,initialiser init)
     | Ast0.MetaErr(name,cstrts,_)  ->
-	  Ast.MetaErr(mcode name,constraints cstrts,unitary,false)
+	Ast.MetaErr(mcode name,constraints cstrts,unitary,false)
     | Ast0.MetaExpr(name,cstrts,ty,form,_)  ->
-	  Ast.MetaExpr(mcode name,constraints cstrts,unitary,ty,form,false)
+	Ast.MetaExpr(mcode name,constraints cstrts,unitary,ty,form,false)
     | Ast0.MetaExprList(name,lenname,_) ->
 	Ast.MetaExprList(mcode name,do_lenname lenname,unitary,false)
     | Ast0.AsExpr(expr,asexpr) ->
@@ -531,7 +531,7 @@ and typeC allminus t =
 	  [ty] -> ty
 	| types -> Ast.DisjType(List.map (rewrap t no_isos) types))
     | Ast0.BaseType(_) | Ast0.Signed(_,_) | Ast0.Pointer(_,_)
-    | Ast0.FunctionPointer(_,_,_,_,_,_,_) | Ast0.FunctionType(_,_,_,_)
+    | Ast0.FunctionPointer(_,_,_,_,_,_,_)
     | Ast0.Array(_,_,_,_) | Ast0.Decimal(_,_,_,_,_,_)
     | Ast0.EnumName(_,_) | Ast0.StructUnionName(_,_)
     | Ast0.StructUnionDef(_,_,_,_) | Ast0.EnumDef(_,_,_,_)
@@ -556,11 +556,6 @@ and base_typeC allminus t =
       Ast.FunctionPointer
 	(typeC allminus ty,mcode lp1,mcode star,mcode rp1,
 	 mcode lp2,parameter_list params,mcode rp2)
-  | Ast0.FunctionType(ret,lp,params,rp) ->
-      let allminus = check_allminus.VT0.combiner_rec_typeC t in
-      Ast.FunctionType
-	(allminus,get_option (typeC allminus) ret,mcode lp,
-	 parameter_list params,mcode rp)
   | Ast0.Array(ty,lb,size,rb) ->
       Ast.Array(typeC allminus ty,mcode lb,get_option expression size,
 		mcode rb)
@@ -606,23 +601,20 @@ and declaration d =
 	let sem = mcode sem in
 	Ast.Init(stg,ty,id,eq,ini,sem)
     | Ast0.UnInit(stg,ty,id,sem) ->
-	(match Ast0.unwrap ty with
-	  Ast0.FunctionType(tyx,lp1,params,rp1) ->
-	    let allminus = check_allminus.VT0.combiner_rec_declaration d in
-	    Ast.UnInit(get_option mcode stg,
-		       rewrap ty (do_isos (Ast0.get_iso ty))
-			 (Ast.Type
-			    (allminus,None,
-			     rewrap ty no_isos
-			       (Ast.FunctionType
-				  (allminus,get_option (typeC allminus) tyx,
-				   mcode lp1,
-				   parameter_list params,mcode rp1)))),
-		       ident id,mcode sem)
-	| _ ->
-	    let allminus = check_allminus.VT0.combiner_rec_declaration d in
-	    Ast.UnInit(get_option mcode stg,typeC allminus ty,ident id,
-		       mcode sem))
+	let allminus = check_allminus.VT0.combiner_rec_declaration d in
+	Ast.UnInit(get_option mcode stg,typeC allminus ty,ident id,
+		   mcode sem)
+    | Ast0.FunProto(fi,name,lp,params,va,rp,sem) ->
+	  let fi = List.map fninfo fi in
+	  let name = ident name in
+	  let lp = mcode lp in
+	  let params = parameter_list params in
+          let va = match va with
+            | None -> None
+            | Some (comma,ellipsis) -> Some(mcode comma,mcode ellipsis) in
+	  let rp = mcode rp in
+	  let sem = mcode sem in
+	  Ast.FunProto(fi,name,lp,params,va,rp,sem)
     | Ast0.MacroDecl(name,lp,args,rp,sem) ->
 	let name = ident name in
 	let lp = mcode lp in
@@ -764,7 +756,6 @@ and parameterTypeDef p =
   rewrap p no_isos
     (match Ast0.unwrap p with
       Ast0.VoidParam(ty) -> Ast.VoidParam(typeC false ty)
-    | Ast0.VarargParam(dots) -> Ast.VarargParam(mcode dots)
     | Ast0.Param(ty,id) ->
 	let allminus = check_allminus.VT0.combiner_rec_parameter p in
 	Ast.Param(typeC allminus ty,get_option ident id)
@@ -948,12 +939,15 @@ and statement s =
 		 (statement Ast.NotSequencible))
 	      whn in
 	  Ast.Stars(d,whn,[],[])
-      | Ast0.FunDecl((_,bef),fi,name,lp,params,rp,lbrace,body,rbrace,
+      | Ast0.FunDecl((_,bef),fi,name,lp,params,va,rp,lbrace,body,rbrace,
 		     (_,aft)) ->
 	  let fi = List.map fninfo fi in
 	  let name = ident name in
 	  let lp = mcode lp in
 	  let params = parameter_list params in
+          let newva = match va with
+            | None -> None
+            | Some (comma, ellipsis) -> Some (mcode comma, mcode ellipsis) in
 	  let rp = mcode rp in
 	  let lbrace = mcode lbrace in
 	  let body = dots (statement seqible) body in
@@ -962,7 +956,7 @@ and statement s =
 	  Ast.FunDecl(rewrap_rule_elem s
 			(Ast.FunHeader
 			   (convert_allminus_mcodekind allminus bef,
-			    allminus,fi,name,lp,params,rp)),
+			    allminus,fi,name,lp,params,newva,rp)),
 		      tokenwrap lbrace s (Ast.SeqStart(lbrace)),
 		      body,
 		      tokenwrap rbrace s (Ast.SeqEnd(rbrace)),

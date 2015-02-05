@@ -95,6 +95,7 @@ let ast_rep_binding ctr = function
   | (Some nm,Ast.MetaExpDecl _) -> print_match ctr nm "Expr"
   | (Some nm,Ast.MetaIdExpDecl _) -> print_match ctr nm "Expr"
   | (Some nm,Ast.MetaLocalIdExpDecl _) -> print_match ctr nm "Expr"
+  | (Some nm,Ast.MetaGlobalIdExpDecl _) -> print_match ctr nm "Expr"
   | (Some nm,Ast.MetaExpListDecl _) -> print_match ctr nm "ExprList"
   | (Some nm,Ast.MetaDeclDecl _) -> print_match ctr nm "Decl"
   | (Some nm,Ast.MetaFieldDecl _) -> print_match ctr nm "Field"
@@ -404,7 +405,7 @@ let filter_dep existing_deps (accld, accinc) dep =
 
     | _ ->
 	let l = Char.lowercase (String.get dep 0)in
-	  String.set dep 0 l;
+	  Bytes.set dep 0 l;
 	  (accld, dep::accinc)
 
 let get_dir p =

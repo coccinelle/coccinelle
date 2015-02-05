@@ -469,9 +469,15 @@ Declaration
 @ const_decl_init @
 type T;
 context identifier Z;
-context constant C;
 @@
 T Z; => T Z = C;
+
+Declaration
+@ const_decl_init_null @
+type T;
+identifier Z;
+@@
+T Z; => T Z = NULL;
 
 Declaration
 @ extern_decl_init @

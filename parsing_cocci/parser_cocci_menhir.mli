@@ -38,6 +38,7 @@ type token =
   | TWhenFalse of (Data.clt)
   | TWhen of (Data.clt)
   | TVirtual
+  | TVAEllipsis of (Data.clt)
   | TUsing
   | TUnderscore
   | TUndef of (Data.clt * token)
@@ -107,6 +108,7 @@ type token =
   | TMetaInit of (Parse_aux.info)
   | TMetaIdExp of (Parse_aux.typed_expinfo)
   | TMetaId of (Parse_aux.midinfo)
+  | TMetaGlobalIdExp of (Parse_aux.typed_expinfo)
   | TMetaFunc of (Parse_aux.idinfo)
   | TMetaFieldList of (Parse_aux.list_info)
   | TMetaField of (Parse_aux.info)
@@ -144,6 +146,7 @@ type token =
   | TIdent of (string * Data.clt)
   | TIdExpression
   | TGoto of (Data.clt)
+  | TGlobal
   | TGenerated
   | TFunction
   | TFunDecl of (Data.clt)
@@ -207,7 +210,6 @@ type token =
 val script_meta_virt_nofresh_main: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> ((string option (*string*) * string option (*ast*)) * (Ast_cocci.meta_name * Ast_cocci.metavar) option)
 val script_meta_main: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> ((string option (*string*) * string option (*ast*)) * (Ast_cocci.meta_name * Ast_cocci.metavar) option)
 val rule_name: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Ast_cocci.rulename)
-val reinit: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (unit)
 val plus_ty_main: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Ast0_cocci.rule)
 val plus_main: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Ast0_cocci.rule)
 val plus_exp_main: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Ast0_cocci.rule)

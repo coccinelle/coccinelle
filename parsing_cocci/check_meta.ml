@@ -238,9 +238,6 @@ and typeC old_metas table minus t =
   | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
       typeC old_metas table minus ty;
       parameter_list old_metas table minus params
-  | Ast0.FunctionType(ty,lp1,params,rp1) ->
-      get_opt (typeC old_metas table minus) ty;
-      parameter_list old_metas table minus params
   | Ast0.Array(ty,lb,size,rb) ->
       typeC old_metas table minus ty;
       get_opt (expression ID old_metas table minus) size
@@ -294,6 +291,10 @@ and declaration context old_metas table minus d =
 	    initialiser old_metas table minus ini)
   | Ast0.UnInit(stg,ty,id,sem) ->
       typeC old_metas table minus ty; ident context old_metas table minus id
+  | Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) ->
+      ident FN old_metas table minus name;
+      List.iter (fninfo old_metas table minus) fi;
+      parameter_list old_metas table minus params
   | Ast0.MacroDecl(name,lp,args,rp,sem) ->
       ident GLOBAL old_metas table minus name;
       dots (expression ID old_metas table minus) args
@@ -456,7 +457,7 @@ and statement old_metas table minus s =
 	(whencode (dots (statement old_metas table minus))
 	   (statement old_metas table minus)
 	   (expression ID old_metas table minus)) x
-  | Ast0.FunDecl(_,fi,name,lp,params,rp,lbrace,body,rbrace,_) ->
+  | Ast0.FunDecl(_,fi,name,lp,params,va,rp,lbrace,body,rbrace,_) ->
       ident FN old_metas table minus name;
       List.iter (fninfo old_metas table minus) fi;
       parameter_list old_metas table minus params;

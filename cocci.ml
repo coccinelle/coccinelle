@@ -2125,6 +2125,15 @@ let post_engine2 (cocci_infos,_) =
 let post_engine a =
   Common.profile_code "post_engine" (fun () -> post_engine2 a)
 
+let has_finalize (cocci_infos,_) =
+  List.exists
+    (function
+      | FinalScriptRuleCocciInfo _ -> true
+      | ScriptRuleCocciInfo _
+      | InitialScriptRuleCocciInfo _
+      | CocciRuleCocciInfo _ -> false)
+    cocci_infos
+
 (*****************************************************************************)
 (* check duplicate from result of full_engine *)
 (*****************************************************************************)

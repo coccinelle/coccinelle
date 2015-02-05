@@ -95,12 +95,6 @@ and disjtypeC bty =
 	(function ty ->
 	  Ast.rewrap bty (Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2)))
 	ty
-  | Ast.FunctionType (s,ty,lp1,params,rp1) ->
-      let ty = disjoption disjty ty in
-      List.map
-	(function ty ->
-	  Ast.rewrap bty (Ast.FunctionType (s,ty,lp1,params,rp1)))
-	ty
   | Ast.Array(ty,lb,size,rb) ->
       disjmult2 (disjty ty) (disjoption disjexp size)
 	(function ty -> function size ->
@@ -236,7 +230,6 @@ and disjexp e =
 and disjparam p =
   match Ast.unwrap p with
     Ast.VoidParam(ty) -> [p] (* void is the only possible value *)
-  | Ast.VarargParam(_) -> [p] (* vararg is the only possible value *)
   | Ast.Param(ty,id) ->
       let ty = disjty ty in
       List.map (function ty -> Ast.rewrap p (Ast.Param(ty,id))) ty
@@ -301,6 +294,10 @@ and designator = function
 	(function min -> function max ->
 	  Ast.DesignatorRange(lb,min,dots,max,rb))
 
+and disjfninfo = function
+  | Ast.FType(ty) -> List.map (function ty -> Ast.FType(ty)) (disjty ty)
+  | fi -> [fi]
+
 and disjdecl d =
   match Ast.unwrap d with
     Ast.MetaDecl(_,_,_) | Ast.MetaField(_,_,_)
@@ -315,6 +312,12 @@ and disjdecl d =
   | Ast.UnInit(stg,ty,id,sem) ->
       let ty = disjty ty in
       List.map (function ty -> Ast.rewrap d (Ast.UnInit(stg,ty,id,sem))) ty
+  | Ast.FunProto(fninfo,name,lp1,params,va,rp1,sem) ->
+      let fninfo = disjmult disjfninfo fninfo in
+      List.map
+	(function fninfo ->
+	  Ast.rewrap d (Ast.FunProto(fninfo,name,lp1,params,va,rp1,sem)))
+	fninfo
   | Ast.MacroDecl(name,lp,args,rp,sem) ->
       List.map
 	(function args -> Ast.rewrap d (Ast.MacroDecl(name,lp,args,rp,sem)))
@@ -353,11 +356,11 @@ let orify_rule_elem_ini = generic_orify_rule_elem disjini
 
 let rec disj_rule_elem r k re =
   match Ast.unwrap re with
-    Ast.FunHeader(bef,allminus,fninfo,name,lp,params,rp) ->
+    Ast.FunHeader(bef,allminus,fninfo,name,lp,params,va,rp) ->
       generic_orify_rule_elem (disjdots disjparam) re params
 	(function params ->
 	  Ast.rewrap re
-	    (Ast.FunHeader(bef,allminus,fninfo,name,lp,params,rp)))
+	    (Ast.FunHeader(bef,allminus,fninfo,name,lp,params,va,rp)))
   | Ast.Decl decl ->
       orify_rule_elem_anndecl re decl
 	(function decl -> Ast.rewrap re (Ast.Decl decl))

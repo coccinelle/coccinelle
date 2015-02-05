@@ -303,15 +303,6 @@ let combiner bind option_default
     let lrp2 = string_mcode rp2 in
     multibind ([lty; llp1; lstar] @ lid @ [lrp1; llp2; lparams; lrp2])
 
-  and function_type (ty, (id : Ast.ident option) , lp1, params, rp1) =
-    (* have to put the treatment of the identifier into the right position *)
-    let lty = get_option fullType ty in
-    let lid = match id with Some idd -> [ident idd] | None -> [] in
-    let llp1 = string_mcode lp1 in
-    let lparams = parameter_dots params in
-    let lrp1 = string_mcode rp1 in
-    multibind ([lty] @ lid @ [llp1; lparams; lrp1])
-
   and array_type (ty,(id : Ast.ident option),lb,size,rb) =
     let lty = fullType ty in
     let lid = match id with Some idd -> [ident idd] | None -> [] in
@@ -334,8 +325,6 @@ let combiner bind option_default
 	  bind lty lstar
       | Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	  function_pointer (ty,lp1,star,None,rp1,lp2,params,rp2)
-      |	Ast.FunctionType (_,ty,lp1,params,rp1) ->
-	  function_type (ty,None,lp1,params,rp1)
       | Ast.Array(ty,lb,size,rb) -> array_type (ty,None,lb,size,rb)
       | Ast.Decimal(dec,lp,length,comma,precision_opt,rp) ->
 	  let ldec = string_mcode dec in
@@ -375,8 +364,6 @@ let combiner bind option_default
 	(match Ast.unwrap ty1 with
 	  Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	    function_pointer (ty, lp1, star, Some id, rp1, lp2, params, rp2)
-	| Ast.FunctionType(_,ty,lp1,params,rp1) ->
-	    function_type (ty, Some id, lp1, params, rp1)
 	| Ast.Array(ty,lb,size,rb) -> array_type (ty, Some id, lb, size, rb)
 	| _ -> let lty = fullType ty in
 	       let lid = ident id in
@@ -407,6 +394,16 @@ let combiner bind option_default
 	  let lid = named_type ty id in
 	  let lsem = string_mcode sem in
 	  multibind [lstg; lid; lsem]
+      | Ast.FunProto(fi,name,lp1,params,va,rp1,sem) ->
+	  let lfi = List.map fninfo fi in
+	  let lname = ident name in
+	  let llp1 = string_mcode lp1 in
+	  let lparams = parameter_dots params in
+          let (lcomma,lellipsis) = match va with
+            | None -> ([],[])
+            | Some (comma,ellipsis) -> ([string_mcode comma],[string_mcode ellipsis]) in
+	  let lrp1 = string_mcode rp1 in
+	  multibind (lfi @ [lname; llp1; lparams] @ lcomma @ lellipsis @ [lrp1])
       | Ast.MacroDecl(name,lp,args,rp,sem) ->
 	  let lname = ident name in
 	  let llp = string_mcode lp in
@@ -510,7 +507,6 @@ let combiner bind option_default
     let k p =
       match Ast.unwrap p with
 	Ast.VoidParam(ty) -> fullType ty
-      | Ast.VarargParam(dots) -> string_mcode dots
       | Ast.Param(ty,Some id) -> named_type ty id
       | Ast.Param(ty,None) -> fullType ty
       | Ast.MetaParam(name,_,_) -> meta_mcode name
@@ -529,13 +525,16 @@ let combiner bind option_default
   and rule_elem re =
     let k re =
       match Ast.unwrap re with
-	Ast.FunHeader(_,_,fi,name,lp,params,rp) ->
+	Ast.FunHeader(_,_,fi,name,lp,params,va,rp) ->
 	  let lfi = List.map fninfo fi in
 	  let lname = ident name in
 	  let llp = string_mcode lp in
 	  let lparams = parameter_dots params in
+          let (lcomma,lellipsis) = match va with
+            | None -> ([],[])
+            | Some (comma,ellipsis) -> ([string_mcode comma],[string_mcode ellipsis]) in
 	  let lrp = string_mcode rp in
-	  multibind (lfi @ [lname; llp; lparams; lrp])
+	  multibind (lfi @ [lname; llp; lparams] @ lcomma @ lellipsis @ [lrp])
       | Ast.Decl decl -> annotated_decl decl
       | Ast.SeqStart(brace) -> string_mcode brace
       | Ast.SeqEnd(brace) -> string_mcode brace
@@ -1177,12 +1176,6 @@ let rebuilder
 	    let lparams = parameter_dots params in
 	    let lrp2 = string_mcode rp2 in
 	    Ast.FunctionPointer(lty, llp1, lstar, lrp1, llp2, lparams, lrp2)
-	| Ast.FunctionType(allminus,ty,lp,params,rp) ->
-	    let lty = get_option fullType ty in
-	    let llp = string_mcode lp in
-	    let lparams = parameter_dots params in
-	    let lrp = string_mcode rp in
-	    Ast.FunctionType(allminus, lty, llp, lparams, lrp)
 	| Ast.Array(ty,lb,size,rb) ->
 	    let lty = fullType ty in
 	    let llb = string_mcode lb in
@@ -1250,6 +1243,17 @@ let rebuilder
 	    let lid = ident id in
 	    let lsem = string_mcode sem in
 	    Ast.UnInit(lstg, lty, lid, lsem)
+	| Ast.FunProto(fi,name,lp,params,va,rp,sem) ->
+	    let lfi = List.map fninfo fi in
+	    let lname = ident name in
+	    let llp = string_mcode lp in
+	    let lparams = parameter_dots params in
+            let lva = match va with
+              | None -> None
+              | Some (comma,ellipsis) -> Some (string_mcode comma,string_mcode ellipsis) in 
+	    let lrp = string_mcode rp in
+	    let lsem = string_mcode sem in
+	    Ast.FunProto(lfi,lname,llp,lparams,lva,lrp,lsem)
 	| Ast.MacroDecl(name,lp,args,rp,sem) ->
 	    let lname = ident name in
 	    let llp = string_mcode lp in
@@ -1359,7 +1363,6 @@ let rebuilder
       Ast.rewrap p
 	(match Ast.unwrap p with
 	  Ast.VoidParam(ty) -> Ast.VoidParam(fullType ty)
-        | Ast.VarargParam(dots) -> Ast.VarargParam(string_mcode dots)
 	| Ast.Param(ty,id) -> Ast.Param(fullType ty, get_option ident id)
 	| Ast.MetaParam(name,keep,inherited) ->
 	    Ast.MetaParam(meta_mcode name,keep,inherited)
@@ -1380,13 +1383,16 @@ let rebuilder
     let k re =
       Ast.rewrap re
 	(match Ast.unwrap re with
-	  Ast.FunHeader(bef,allminus,fi,name,lp,params,rp) ->
+	  Ast.FunHeader(bef,allminus,fi,name,lp,params,va,rp) ->
 	    let lfi = List.map fninfo fi in
 	    let lname = ident name in
 	    let llp = string_mcode lp in
 	    let lparams = parameter_dots params in
+            let lva = match va with
+              | None -> None
+              | Some (comma,ellipsis) -> Some(string_mcode comma,string_mcode ellipsis) in
 	    let lrp = string_mcode rp in
-	    Ast.FunHeader(bef,allminus, lfi, lname, llp, lparams, lrp)
+	    Ast.FunHeader(bef,allminus, lfi, lname, llp, lparams, lva, lrp)
 	| Ast.Decl decl -> Ast.Decl (annotated_decl decl)
 	| Ast.SeqStart(brace) -> Ast.SeqStart(string_mcode brace)
 	| Ast.SeqEnd(brace) -> Ast.SeqEnd(string_mcode brace)

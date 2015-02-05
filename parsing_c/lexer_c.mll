@@ -534,6 +534,7 @@ rule token = parse
 
   *)
 
+(*
   (* linuxext: must be before the generic rules for if and ifdef *)
   | "#" spopt "if" sp "("?  "LINUX_VERSION_CODE" sp (">=" | ">") sp
       { let info = tokinfo lexbuf in
@@ -548,7 +549,7 @@ rule token = parse
         TIfdefVersion (false, no_ifdef_mark(),
                       info +> tok_add_s (cpp_eat_until_nl lexbuf))
       }
-
+*)
 
 
 
@@ -559,26 +560,28 @@ rule token = parse
         then TIfdefBool (false, no_ifdef_mark(), tokinfo lexbuf)
         else if List.mem x !Flag_parsing_c.defined
         then TIfdefBool (true, no_ifdef_mark(), tokinfo lexbuf)
-        else TIfdef (no_ifdef_mark(), tokinfo lexbuf) }
+        else TIfdef (Gifdef x, no_ifdef_mark(), tokinfo lexbuf) }
   | "#" [' ''\t']* "ifndef" [' ''\t']+
      (((letter|digit) ((letter|digit)*)) as x) [' ''\t']*
       { if List.mem x !Flag_parsing_c.defined
         then TIfdefBool (false, no_ifdef_mark(), tokinfo lexbuf)
         else if List.mem x !Flag_parsing_c.undefined
         then TIfdefBool (true, no_ifdef_mark(), tokinfo lexbuf)
-        else TIfdef (no_ifdef_mark(), tokinfo lexbuf) }
+        else TIfdef (Gifndef x, no_ifdef_mark(), tokinfo lexbuf) }
   | "#" [' ''\t']* "if" [' ' '\t']+
       { let info = tokinfo lexbuf in
-        TIfdef (no_ifdef_mark(), info +> tok_add_s (cpp_eat_until_nl lexbuf))
+        let str_guard = cpp_eat_until_nl lexbuf in
+        TIfdef (Gif str_guard, no_ifdef_mark(), info +> tok_add_s str_guard)
       }
   | "#" [' ' '\t']* "if" '('
       { let info = tokinfo lexbuf in
-        TIfdef (no_ifdef_mark(), info +> tok_add_s (cpp_eat_until_nl lexbuf))
+        let str_guard = cpp_eat_until_nl lexbuf in
+        TIfdef (Gif str_guard, no_ifdef_mark(), info +> tok_add_s str_guard)
       }
-
   | "#" [' ' '\t']* "elif" [' ' '\t']+
       { let info = tokinfo lexbuf in
-        TIfdefelif (no_ifdef_mark(), info +> tok_add_s (cpp_eat_until_nl lexbuf))
+        let str_guard = cpp_eat_until_nl lexbuf in
+        TIfdefelif (Gif str_guard, no_ifdef_mark(), info +> tok_add_s str_guard)
       }
 
 
