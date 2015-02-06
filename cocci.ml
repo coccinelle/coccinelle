@@ -359,6 +359,7 @@ let show_or_not_rule_name ast rulenb =
       let name =
 	match ast with
 	  Ast_cocci.CocciRule (nm, (deps, drops, exists), x, _, _) -> nm
+	| Ast_cocci.ScriptRule (Some nm, _, _, _) -> nm
 	| _ -> i_to_s rulenb in
       Common.pr_xxxxxxxxxxxxxxxxx ();
       pr (name ^ " = ");
