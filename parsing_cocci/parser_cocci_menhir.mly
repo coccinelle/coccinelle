@@ -2095,8 +2095,9 @@ pure_ident_or_meta_ident_with_idconstraint(constraint_type):
     }
 
 re_or_not_eqid:
-   re=regexp_eqid {Ast.IdRegExpConstraint re}
- | ne=not_eqid    {ne}
+   re=regexp_eqid   {Ast.IdRegExpConstraint re}
+ | TEq ne=idcstr    {Ast.IdPosIdSet (fst ne,snd ne)}
+ | TNotEq ne=idcstr {Ast.IdNegIdSet (fst ne,snd ne)}
 
 re_only:
    re=regexp_eqid {Ast.IdRegExpConstraint re}
@@ -2117,8 +2118,8 @@ regexp_eqid:
 	   let (s,_) = re in Ast.IdNotRegExp (s,Regexp.regexp s)
 	 }
 
-not_eqid:
-       TNotEq i=pure_ident_or_meta_ident
+idcstr:
+       i=pure_ident_or_meta_ident
          { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
@@ -2130,9 +2131,9 @@ not_eqid:
 	       let i =
 		 P.check_inherited_constraint i
 		   (function mv -> Ast.MetaIdDecl(Ast.NONE,mv)) in
-	       Ast.IdNegIdSet([],[i])
-	   | (None,i) -> Ast.IdNegIdSet([i],[])) }
-     | TNotEq TOBrace l=comma_list(pure_ident_or_meta_ident) TCBrace
+	       ([],[i])
+	   | (None,i) -> ([i],[])) }
+     | TOBrace l=comma_list(pure_ident_or_meta_ident) TCBrace
 	 { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
@@ -2148,7 +2149,7 @@ not_eqid:
 		     (str,i::meta)
 		 | (None,i) -> (i::str,meta))
 	       ([],[]) l in
-	   Ast.IdNegIdSet(str,meta)
+	   (str,meta)
 	 }
 
 re_or_not_eqe_or_sub:
