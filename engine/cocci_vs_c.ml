@@ -1460,8 +1460,10 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
       ->
 	raise (Impossible 24)
 
-  | A.DisjExpr eas, eb ->
+  | A.DisjExpr eas, eb -> failwith "DisjExpr should not arise"
+(*
       eas +> List.fold_left (fun acc ea -> acc >|+|> (expression ea eb)) fail
+*)
 
   | A.UniqueExp e,_ | A.OptExp e,_ ->
       Pretty_print_cocci.expression e;
@@ -1726,7 +1728,10 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
 
   (* not clear why disj things are needed, after disjdistr? *)
   | A.DisjId ias ->
+      failwith "DisjId should not arise"
+(*
       ias +> List.fold_left (fun acc ia -> acc >|+|> (ident infoidb ia ib)) fail
+*)
 
   | A.OptIdent _ | A.UniqueIdent _ ->
       failwith "not handling Opt/Unique for ident"
@@ -2557,12 +2562,14 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 
 
 
-   | A.DisjDecl declas, declb ->
+   | A.DisjDecl declas, declb -> failwith "DisjDecl should not arise"
+(*
       declas +> List.fold_left (fun acc decla ->
         acc >|+|>
             (* (declaration (mckstart, allminus, decla) declb) *)
             (onedecl allminus decla (declb,iiptvirgb, iistob))
       ) fail
+*)
 
    | A.OptDecl _,    _ | A.UniqueDecl _,     _ ->
        failwith "not handling Opt/Unique Decl"
