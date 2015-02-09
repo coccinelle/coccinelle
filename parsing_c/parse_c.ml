@@ -827,7 +827,7 @@ let parse_ifdef_guard_visitor (parse :string -> Ast_c.expression)
           try Ast_c.Gif (parse input) with
           | Parsing.Parse_error _ ->
               pr2 ("Unable to parse #if condition: " ^ input);
-              Gif_str input
+              Ast_c.Gif_str input
         end
     | x                   -> x
   in
