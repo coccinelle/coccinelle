@@ -16,6 +16,7 @@ type 'a wrap =
       minus_free_vars : meta_name list; (*minus free vars*)
       fresh_vars : (meta_name * seed) list; (*fresh vars*)
       inherited : meta_name list; (*inherited vars*)
+      positive_inherited_positions : meta_name list;
       saved_witness : meta_name list; (*witness vars*)
       bef_aft : dots_bef_aft;
       pos_info : meta_name mcode option; (* pos info, try not to duplicate *)
