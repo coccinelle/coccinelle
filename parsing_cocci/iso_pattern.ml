@@ -16,6 +16,7 @@ module V0 = Visitor_ast0
 module VT0 = Visitor_ast0_types
 
 let current_rule = ref ""
+let verbose_iso = ref true
 
 (* --------------------------------------------------------------------- *)
 
@@ -108,6 +109,7 @@ type reason =
   | Position of Ast.meta_name
   | TypeMatch of reason list
 
+(* it would be nice if this would go to standard error *)
 let rec interpret_reason name line reason printer =
   Printf.printf
     "warning: iso %s does not match the code below on line %d\n" name line;
@@ -2305,7 +2307,7 @@ let mkdisj matcher metavars alts e instantiater mkiso disj_maker minusify
 	    then ()
 	    else
 	      (match matcher false false wc pattern e init_env with
-		OK _ ->
+		OK _ when !verbose_iso ->
 		  interpret_reason name (Ast0.get_line e) reason
 		    (function () -> printer e)
 	      | _ -> ());
