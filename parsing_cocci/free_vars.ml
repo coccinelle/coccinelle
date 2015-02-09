@@ -195,15 +195,15 @@ let collect_refs include_constraints =
 	  bind_disj (List.map recursor.V.combiner_statement_dots stms)
       | _ -> option_default) in
 
-  let mcode r mc =
+  let mcode r mc = (*
     if include_constraints
-    then
+    then *)
       List.concat
 	(List.map
 	   (function Ast.MetaPos(name,constraints,_,_,_) ->
-	     (metaid name)::constraints)
+	     (metaid name)::(if include_constraints then constraints else []))
 	   (Ast.get_pos_var mc))
-    else option_default in
+    (* else option_default *) in
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
@@ -439,6 +439,8 @@ let collect_in_plus_term =
   let astfvrule_elem recursor k re =
     match Ast.unwrap re with
       Ast.FunHeader(bef,_,fi,nm,_,params,_,_) ->
+	bind (cip_mcodekind recursor bef) (k re)
+	  (* no clue why this code is here *) (*
 	let fi_metas =
 	  List.concat
 	    (List.map
@@ -462,7 +464,7 @@ let collect_in_plus_term =
 	bind fi_metas
 	  (bind nm_metas
 	     (bind param_metas
-		(bind (cip_mcodekind recursor bef) (k re))))
+		(bind (cip_mcodekind recursor bef) (k re)))) *)
     | Ast.Decl decl ->
 	bind (cip_mcodekind recursor (annotated_decl decl)) (k re)
     | Ast.ForHeader(fr,lp,Ast.ForDecl(decl),e2,sem2,e3,rp) ->
@@ -713,8 +715,8 @@ are referenced.  Store them in a hash table. *)
 multiple times.  But we get the advantage of not having too many variants
 of the same functions. *)
 
-(* Inherited doesn't include position constraints.  If they are not bound
-then there is no constraint. *)
+(* Inherited doesn't include negative position constraints.  If they are
+not bound then there is no constraint. *)
 
 let astfvs metavars bound =
   let fresh =
@@ -814,6 +816,7 @@ let astfvs metavars bound =
       Ast.minus_free_vars = munbound;
       Ast.fresh_vars = fresh;
       Ast.inherited = inherited;
+      Ast.positive_inherited_positions = [];
       Ast.saved_witness = []} in
 
   let astfvstatement_dots recursor k sd =
@@ -871,7 +874,7 @@ let collect_astfvs rules =
 	      (List.map (astfvs metavars bound).V.rebuilder_top_level
 		 minirules),
 	      isexp, ruletype))::
-            (loop ((List.map Ast.get_meta_name metavars)@bound) rules) in
+	  (loop ((List.map Ast.get_meta_name metavars)@bound) rules) in
   loop [] rules
 
 (* ---------------------------------------------------------------- *)

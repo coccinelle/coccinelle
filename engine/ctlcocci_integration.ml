@@ -56,6 +56,26 @@ let show_isos rule_elem =
 (*****************************************************************************)
 let (-->) x v = Ast_ctl.Subst (x,v);;
 
+let valid_positions binding = function
+  Lib_engine.Match re ->
+    let vars = re.Ast_cocci.inherited in
+    List.for_all
+      (function v ->
+	try
+	  let b = List.assoc v binding in
+	  match b with
+	    Ast_c.MetaPosValList l ->
+	      let possible =
+		List.fold_left
+		  (fun prev (_,elem,_,_) ->
+		    if not (List.mem elem prev) then elem::prev else prev)
+		  [] l in
+	      List.mem !Flag.current_element possible
+	  | _ -> true
+	with Not_found -> true) (* assume the worst *)
+      vars
+  | _ -> true
+
 (* Take list of predicate and for each predicate returns where in the
  * control flow it matches, and the set of substitutions for this match.
  *)
@@ -65,6 +85,10 @@ let labels_for_ctl (dropped_isos : string list)
                    : Lib_engine.label_ctlcocci
   = fun p ->
      show_or_not_predicate p;
+
+    if not (valid_positions binding p)
+    then []
+    else
 
      let nodes' = nodes +> List.map (fun (nodei, node) ->
       (* todo? put part of this code in pattern ? *)
