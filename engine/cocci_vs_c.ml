@@ -763,6 +763,9 @@ let satisfies_regexpconstraint c id : bool =
   | A.IdNotRegExp (_,recompiled) -> not (Regexp.string_match recompiled id)
 
 let satisfies_iconstraint c id : bool =
+  List.mem id c
+
+let satisfies_niconstraint c id : bool =
   not (List.mem id c)
 
 let satisfies_econstraint c exp : bool =
@@ -1644,8 +1647,11 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
      let meta_id_val l x = Ast_c.MetaIdVal(x,l) in
      match constraints with
        A.IdNoConstraint -> return (meta_id_val [],())
-     | A.IdNegIdSet (str,meta) ->
+     | A.IdPosIdSet (str,meta) ->
 	 X.check_idconstraint satisfies_iconstraint str idb
+	   (fun () -> return (meta_id_val meta,()))
+     | A.IdNegIdSet (str,meta) ->
+	 X.check_idconstraint satisfies_niconstraint str idb
 	   (fun () -> return (meta_id_val meta,()))
      | A.IdRegExpConstraint re ->
 	 X.check_idconstraint satisfies_regexpconstraint re idb

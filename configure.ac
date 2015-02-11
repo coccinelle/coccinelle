@@ -555,7 +555,6 @@ AC_CONFIG_FILES([
   scripts/spatch.sh
   docs/spatch.1
   myocamlbuild.ml
-  testing.ml
   setup/Makefile
 ])
 

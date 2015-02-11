@@ -807,7 +807,54 @@ let find_optional_macro_to_expand ~defs a =
     Common.profile_code "MACRO managment" (fun () ->
       find_optional_macro_to_expand2 ~defs a)
 
+(*****************************************************************************)
+(* Parsing #if guards *)
+(*****************************************************************************)
 
+(** Traverses the syntax tree parsing #if guard strings
+  * with a given parsing function.
+  *
+  * NOTE that whenever the parsing fails, we keep the ifdef_guard unchanged.
+  *
+  * @author Iago Abal
+  *)
+let parse_ifdef_guard_visitor (parse :string -> Ast_c.expression)
+    :Visitor_c.visitor_c_s =
+  let v_ifdef_guard = function
+      (* Gif_str <string> --parse--> Gif <expression> *)
+    | Ast_c.Gif_str input ->
+        begin
+          try Ast_c.Gif (parse input) with
+          | Parsing.Parse_error _ ->
+              pr2 ("Unable to parse #if condition: " ^ input);
+              Ast_c.Gif_str input
+        end
+    | x                   -> x
+  in
+  let v_ifdefkind = function
+    | Ast_c.Ifdef       ifguard -> Ast_c.Ifdef       (v_ifdef_guard ifguard)
+    | Ast_c.IfdefElseif ifguard -> Ast_c.IfdefElseif (v_ifdef_guard ifguard)
+    | x                         -> x
+  in
+  { Visitor_c.default_visitor_c_s with
+      Visitor_c.kifdefdirective_s = fun (k,bigf) d ->
+        match d with
+       | Ast_c.IfdefDirective ((ifkind,tag), ii) ->
+           let ifkind' = v_ifdefkind ifkind in
+           Ast_c.IfdefDirective ((ifkind',tag), ii)
+  }
+
+(** Traverses the syntax tree parsing #if guard strings with [Parse_c.expr].
+  *
+  * Known issue: [Parse_c.expr] is invoked through [expression_of_string],
+  * which does not handle backslash-newlines #if guards. Those guards will
+  * be kept unparsed. Possible solution would be to run [fix_tokens_define]
+  * on the token stream before parsing.
+  *
+  * @author Iago Abal
+  *)
+let parse_ifdef_guards : Ast_c.program -> Ast_c.program =
+  Visitor_c.vk_program_s (parse_ifdef_guard_visitor expression_of_string)
 
 
 
@@ -1110,6 +1157,17 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
        then with_program2 Parsing_hacks.cpp_ifdef_statementize v
        else v
   in
+  (* We parse #if guards when --ifdef-to-if is enabled, mostly because
+   * I don't see a need (yet) to have yet-another flag. Right now, there
+   * is also little interest in parsing #if guards without --ifdef-to-if.
+   * Review this decision in the future!
+   * / Iago
+   *)
+  let v =
+    if !Flag_parsing_c.ifdef_to_if
+       then with_program2 parse_ifdef_guards v
+       else v
+  in
   let v =
     let new_td = ref (Common.clone_scoped_h_env !LP._typedef) in
     Common.clean_scope_h new_td;
@@ -1226,3 +1284,4 @@ let (cexpression_of_string: string -> Ast_c.expression) = fun s ->
         )
     | _ -> None
   )
+

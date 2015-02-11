@@ -220,6 +220,7 @@ and constraints =
 (* Constraints on Meta-* Identifiers, Functions *)
 and idconstraint =
     IdNoConstraint
+  | IdPosIdSet         of string list * meta_name list
   | IdNegIdSet         of string list * meta_name list
   | IdRegExpConstraint of reconstraint
 

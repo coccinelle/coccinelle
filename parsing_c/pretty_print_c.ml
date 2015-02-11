@@ -1579,6 +1579,13 @@ let string_of_expression e =
     pp_expression_simple e
   )
 
+let string_of_ifdef_guard = function
+  | Gifdef s  -> "defined(" ^ s ^ ")"
+  | Gifndef s -> "!defined(" ^ s ^ ")"
+  | Gif_str s -> s
+  | Gif e     -> string_of_expression e
+  | Gnone     -> "0"
+
 let string_of_toplevel top =
   Common.format_to_string (fun () ->
     pp_toplevel_simple top
