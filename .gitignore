@@ -51,4 +51,5 @@ _log
 *.d.native
 *.p.byte
 .merlin
+.mascotrc
 description-pak
