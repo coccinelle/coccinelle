@@ -412,22 +412,26 @@ let get_celem celem : string =
     | _ -> ""
 
 let show_or_not_celem2 prelude celem =
-  let (tag,trying) =
-  (match celem with
-  | Ast_c.Definition ({Ast_c.f_name = namefuncs},_) ->
-      let funcs = Ast_c.str_of_name namefuncs in
-      Flag.current_element := funcs;
-      (" function: ",funcs)
-  | Ast_c.Declaration
-      (Ast_c.DeclList ([{Ast_c.v_namei = Some (name,_)}, _], _)) ->
-      let s = Ast_c.str_of_name name in
-      Flag.current_element := s;
-      (" variable ",s);
-  | _ ->
-      Flag.current_element := "something_else";
-      (" ","something else");
-  ) in
-  if !Flag.show_trying then pr2 (prelude ^ tag ^ trying)
+  if !Flag.show_trying
+  then
+    begin
+      let (tag,trying) =
+	(match celem with
+	| Ast_c.Definition ({Ast_c.f_name = namefuncs},_) ->
+	    let funcs = Ast_c.str_of_name namefuncs in
+	    Flag.current_element := funcs;
+	    (" function: ",funcs)
+	| Ast_c.Declaration
+	    (Ast_c.DeclList ([{Ast_c.v_namei = Some (name,_)}, _], _)) ->
+	      let s = Ast_c.str_of_name name in
+	      Flag.current_element := s;
+	      (" variable ",s);
+	| _ ->
+	    Flag.current_element := "something_else";
+	    (" ","something else");
+	    ) in
+      pr2 (prelude ^ tag ^ trying)
+    end
 
 let show_or_not_celem a b  =
   Common.profile_code "show_xxx" (fun () -> show_or_not_celem2 a b)
