@@ -698,6 +698,11 @@ SUBSTITUTED_MENHIR
 with_MENHIR
 MENHIR
 OPTIMIZED_dynlink
+MAKE_parmap
+OPTFLAGS_parmap
+enable_parmap
+GLOBAL_parmap
+OCAML_PKG_parmap
 MAKE_menhirLib
 OPTFLAGS_menhirLib
 enable_menhirLib
@@ -721,6 +726,12 @@ PATH_bigarray
 OCAML_PKG_bigarray
 PATH_unix
 OCAML_PKG_unix
+PATH_parmap
+MODULESOPT_parmap
+MODULES_parmap
+FLAGS_parmap
+LOCALLIB_parmap
+FEATURE_parmap
 PATH_camlp4
 MODULESOPT_camlp4
 MODULES_camlp4
@@ -918,6 +929,7 @@ with_runtime_camlp4o
 enable_dynlink
 enable_camlp4
 enable_menhirLib
+enable_parmap
 with_menhir
 enable_ocaml
 enable_python
@@ -1586,6 +1598,8 @@ Optional Features:
   --enable-camlp4         enable global package camlp4 (yes,no) (default:
                           auto)
   --enable-menhirLib      enable global package menhirLib (yes,no) (default:
+                          auto)
+  --enable-parmap         enable global package parmap (yes,no) (default:
                           auto)
   --enable-ocaml          enable ocaml scripting (default: auto)
   --enable-python         enable python scripting (yes/no) (default: auto)
@@ -12302,6 +12316,19 @@ $as_echo "$as_me: coccinelle may use external ocaml libraries in $COCCI_OCAML_EX
   PATH_camlp4=
 
 
+  FEATURE_parmap=0
+
+  LOCALLIB_parmap=0
+
+  FLAGS_parmap=
+
+  MODULES_parmap=
+
+  MODULESOPT_parmap=
+
+  PATH_parmap=
+
+
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: the following OCaml packages should be provided by your ocaml installation" >&5
 $as_echo "$as_me: the following OCaml packages should be provided by your ocaml installation" >&6;}
@@ -12812,6 +12839,129 @@ fi
 
   if test "x$enable_menhirLib" = xno; then :
       as_fn_error $? "OCaml package menhirLib is required. Please make sure it is available." "$LINENO" 5
+
+fi
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: configuring package parmap" >&5
+$as_echo "$as_me: configuring package parmap" >&6;}
+  # Check whether --enable-parmap was given.
+if test "${enable_parmap+set}" = set; then :
+  enableval=$enable_parmap;
+fi
+
+
+      if test "x$enable_parmap" != xno; then :
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OCaml findlib package parmap" >&5
+$as_echo_n "checking for OCaml findlib package parmap... " >&6; }
+
+  unset found
+  unset pkg
+  found=no
+  for pkg in parmap  ; do
+    if $OCAMLFIND query $pkg >/dev/null 2>/dev/null; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
+$as_echo "found" >&6; }
+      OCAML_PKG_parmap=$pkg
+      found=yes
+      break
+    fi
+  done
+  if test "$found" = "no" ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+    OCAML_PKG_parmap=no
+  fi
+
+
+
+  if test "x$OCAML_PKG_parmap" != xno; then :
+    PATH_parmap=`$OCAMLFIND query parmap 2>/dev/null`
+
+
+fi
+
+    GLOBAL_parmap=$OCAML_PKG_parmap
+
+
+    if test "x$GLOBAL_parmap" != xno; then :
+        enable_parmap=yes
+
+
+else
+        if test "x$enable_parmap" = xyes; then :
+          as_fn_error $? "OCaml package parmap is not available but requested explicitly" "$LINENO" 5
+
+fi
+      { $as_echo "$as_me:${as_lineno-$LINENO}: OCaml package parmap is not available" >&5
+$as_echo "$as_me: OCaml package parmap is not available" >&6;}
+      enable_parmap=no
+
+
+fi
+
+fi
+
+    if test "x$enable_parmap" = xno; then :
+      { pkgdir=; unset pkgdir;}
+    pkgdir="$COCCI_OCAML_EXTERNAL/parmap/"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a bundled substitute of parmap" >&5
+$as_echo_n "checking for a bundled substitute of parmap... " >&6; }
+    if test -d "$pkgdir"; then :
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+      { $as_echo "$as_me:${as_lineno-$LINENO}: using bundled substitute for parmap in $pkgdir" >&5
+$as_echo "$as_me: using bundled substitute for parmap in $pkgdir" >&6;}
+      enable_parmap=local
+
+      PATH_parmap="$pkgdir"
+
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not available" >&5
+$as_echo "not available" >&6; }
+fi
+
+fi
+
+    if test "x$enable_parmap" != xno; then :
+      FEATURE_parmap=1
+
+    FLAGS_parmap='$(FLAGS_parmap)'
+
+    OPTFLAGS_parmap='$(OPTFLAGS_parmap)'
+
+
+        if test "x$enable_parmap" = xlocal; then :
+        LOCALLIB_parmap=1
+
+      MODULES_parmap='$(LOCAL_parmap)'
+
+      MODULESOPT_parmap='$(LOCALOPT_parmap)'
+
+
+            if test -f "$PATH_parmap/Makefile"; then :
+          MAKE_parmap=$PATH_parmap
+
+
+else
+          MAKE_parmap=
+
+
+fi
+
+else
+        MODULES_parmap='$(GLOBAL_parmap)'
+
+      MODULESOPT_parmap='$(GLOBALOPT_parmap)'
+
+
+fi
+
+fi
+
+  if test "x$enable_parmap" = xno; then :
+      as_fn_error $? "OCaml package parmap is required. Please make sure it is available." "$LINENO" 5
 
 fi
 
