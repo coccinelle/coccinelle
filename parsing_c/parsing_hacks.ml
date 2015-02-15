@@ -2496,6 +2496,27 @@ let lookahead2 ~pass next before =
       msg_typedef s i1 35; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
+  (* x ( *const y )(params),  function pointer *)
+  (* This means that the function pointer is constant *)
+  | (TIdent (s, i1)::TOPar _::TMul _::Tconst _::TIdent _::TCPar _::TOPar _::_,
+     _)
+      when not_struct_enum before
+      && ok_typedef s
+        ->
+
+      msg_typedef s i1 36; LP.add_typedef_root s;
+      TypedefIdent (s, i1)
+
+  (* x* ( *const y )(params),  function pointer 2 *)
+  | (TIdent (s, i1)::TMul _::TOPar _::TMul _::Tconst _::TIdent _::TCPar _::
+     TOPar _::_,  _)
+      when not_struct_enum before
+      && ok_typedef s
+        ->
+
+      msg_typedef s i1 37; LP.add_typedef_root s;
+      TypedefIdent (s, i1)
+
 
   (*-------------------------------------------------------------*)
   (* CPP *)
