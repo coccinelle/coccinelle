@@ -986,17 +986,16 @@ let rec main_action xs =
 	    let _ = Sys.command (Printf.sprintf "rm -rf %s" prefix) in
 	    res
 	  in
-	  let actual_fold, run_in_parallel =
-	    if Cocci.has_finalize cocci_infos
+	  let (actual_fold, run_in_parallel) =
+	    if ncores <= 1
+	    then (seq_fold, false)
+	    else if Cocci.has_finalize cocci_infos
 	    then
 	      begin
 		pr2 "warning: parallel mode is disabled due to a finalize";
 		(seq_fold, false)
 	      end
-	    else if ncores <= 1 then
-	      (seq_fold, false)
-	    else
-	      (par_fold, true) in
+	    else (par_fold, true) in
 
           let outfiles =
             Common.profile_code "Main.outfiles computation" (fun () ->
