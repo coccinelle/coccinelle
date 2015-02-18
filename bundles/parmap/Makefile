@@ -17,6 +17,7 @@ all all.opt: $(PARMAP_MARKER)
 	cd $(PARMAP_DIR) && \
 	  $(MAKE) && \
 	  cd ..
+	mv $(PARMAP_DIR)/_build/* .
 
 clean:
 	cd $(PARMAP_DIR) && \
