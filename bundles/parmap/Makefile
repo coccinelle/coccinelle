@@ -23,6 +23,7 @@ clean:
 	cd $(PARMAP_DIR) && \
 	  $(MAKE) clean && \
 	  cd ..
+	rm -f *.a *.o *.ml* *.c *.h *.so _* *.cm* *.annot *.clib *build  ocamlc.where
 
 distclean:
 	rm -fr $(PARMAP_DIR)
