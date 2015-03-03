@@ -365,6 +365,16 @@ let parse_print_error file =
 
 let parse_gen parsefunc s =
   let toks = tokens_of_string s +> List.filter TH.is_not_comment in
+  (* We filter out CPP backslash-newlines (i.e. "\\\n"), thus making
+   * possible to parse expressions in CPP directives.
+   *
+   * E.g.
+   *          #if defined(A) || \
+   *                defined(B)
+   *
+   * /Iago
+   *)
+  let toks' = List.filter (fun x -> not (TH.is_escaped_newline x)) toks in
 
 
   (* Why use this lexing scheme ? Why not classically give lexer func
@@ -372,7 +382,7 @@ let parse_gen parsefunc s =
    * just do a simple wrapper that when comment ask again for a token,
    * but maybe simpler to use cur_tok technique.
    *)
-  let all_tokens = ref toks in
+  let all_tokens = ref toks' in
   let cur_tok    = ref (List.hd !all_tokens) in
 
   let lexer_function =
