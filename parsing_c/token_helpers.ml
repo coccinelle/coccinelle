@@ -100,7 +100,9 @@ let is_gcc_token = function
       -> true
   | _ -> false
 
-
+let is_escaped_newline = function
+  | TCppEscapedNewline _ -> true
+  | _                    -> false
 
 
 (* ---------------------------------------------------------------------- *)
