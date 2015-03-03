@@ -89,6 +89,11 @@ and assign_pos ((x, a, info, mc, pos, q) as mco) snp =
   let (newpos, snp) = make_pos mco snp in
   ((x, a, info, mc, ref (newpos :: !pos), q), snp)
 
+and inc_file_pos ((x, a, info, mc, pos, q) as mco) snp =
+  if a = Ast0.OPT then (mco, snp) else
+  let (newpos, snp) = make_pos mco snp in
+  ((x, a, info, mc, ref (newpos :: !pos), q), snp)
+
 (* generate a position for an identifier.
  * Always possible! but not done in optional expressions *)
 and ident_pos i snp = match Ast0.unwrap i with
@@ -336,7 +341,9 @@ and statement_pos s snp = match Ast0.unwrap s with
   | Ast0.TopExp _ -> None
   | Ast0.Ty _ -> None
   | Ast0.TopInit _ -> None
-  | Ast0.Include _ -> None
+  | Ast0.Include (incmc,filemc) ->
+      let (filemc, snp) = inc_file_pos filemc snp in
+      wrap (Ast0.Include(incmc, filemc)) snp
   | Ast0.Undef _ -> None
   | Ast0.Define _ -> None
   | Ast0.Pragma _ -> None
@@ -428,6 +435,6 @@ and statement_pos s snp = match Ast0.unwrap s with
   | Ast0.Return (retmc,sem) ->
       let (retmc, snp) = string_mcode_pos retmc snp in
       wrap (Ast0.Return(retmc,sem)) snp
-  | Ast0.FunDecl (b, f, id, lp, ps, rp, lb, sd, rb, a) ->
+  | Ast0.FunDecl (b, f, id, lp, ps, op, rp, lb, sd, rb, a) ->
       let (id, snp) = ident_pos id snp in
-      wrap (Ast0.FunDecl(b,f,id, lp, ps, rp, lb, sd, rb, a)) snp
+      wrap (Ast0.FunDecl(b,f,id, lp, ps, op, rp, lb, sd, rb, a)) snp
