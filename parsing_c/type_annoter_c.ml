@@ -442,11 +442,11 @@ let rec typedef_fix ty env =
 	(EnumName s) (* todo? *) +> Ast_c.rewrap_typeC ty
     | Decimal(l,p) ->
 	(Decimal(l,p)) (* todo? *) +> Ast_c.rewrap_typeC ty
-	  
+
   (* we prefer StructUnionName to StructUnion when it comes to typed metavar *)
     | StructUnionName (su, s) ->
 	ty
-	  
+
   (* keep the typename but complete with more information *)
     | TypeName (name, typ) ->
 	let s = Ast_c.str_of_name name in
@@ -458,7 +458,7 @@ let rec typedef_fix ty env =
             (try
               if !typedef_debug then pr2 "typedef_fix: lookup_typedef";
               let (t', env') = lookup_typedef s env in
-	      
+
           (* bugfix: termination bug if use env instead of env' below, because
              * can have some weird mutually recursive typedef which
              * each new type alias search for its mutual def.
@@ -1024,6 +1024,9 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
 	pr2_once "Type annotater:not handling Delete";
 	Type_c.noTypeHere (* TODO *)
 
+    | Defined _ ->
+	make_info_def (type_of_s "int")
+
   in
   Ast_c.set_type_expr expr ty
 
@@ -1180,7 +1183,7 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
 			       ("0",Ast_c.Si(Ast_c.Signed,Ast_c.CInt)))) in
 		    Ast_c.rewrap_typeC t (Ast_c.Decimal (len,Some newp))
 		| _ -> t in
-		
+
 
               match sto with
               | StoTypedef, _inline ->

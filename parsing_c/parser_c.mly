@@ -465,7 +465,7 @@ let args_to_params l pb =
        Tstruct Tunion Tenum Tdecimal Texec
        Tbreak Telse Tswitch Tcase Tcontinue Tfor Tdo Tif  Twhile Treturn
        Tgoto Tdefault
-       Tsizeof Tnew Tdelete TOParCplusplusInit Tnamespace
+       Tsizeof Tnew Tdelete Tdefined TOParCplusplusInit Tnamespace
 
 /*(* C99 *)*/
 %token <Ast_c.info>
@@ -789,6 +789,9 @@ unary_expr:
  | Tnew new_argument               { mk_e(New (None, $2))     [$1] }
  | Tnew TOPar argument_list_ne TCPar new_argument { mk_e(New (Some $3, $5))             [$1; $2; $4] }
  | Tdelete cast_expr               { mk_e(Delete $2)          [$1] }
+ | Tdefined identifier_cpp         { mk_e(Defined $2)         [$1] }
+ | Tdefined TOPar identifier_cpp TCPar
+ { mk_e(Defined $3) [$1;$2;$4] }
 
 new_argument:
  | TIdent TOPar argument_list_ne TCPar
@@ -2306,5 +2309,3 @@ opt_ptvirg:
  | TPtVirg { [$1] }
  | { [] }
 *)*/
-
-

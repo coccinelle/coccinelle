@@ -351,6 +351,9 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
   | New of (argument wrap2 (* , *) list) option * argument
   | Delete of expression
 
+  (* CPP [defined] operator, e.g. #if defined(A) *)
+  | Defined of name
+
   (* cppext: IfdefExpr TODO *)
 
   (* cppext: normally just expression *)
@@ -1368,4 +1371,3 @@ let get_annot_info info key =
 
 let get_comments_before info = (!(info.comments_tag)).mbefore
 let get_comments_after info = (!(info.comments_tag)).mafter
-

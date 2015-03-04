@@ -355,6 +355,16 @@ let parse_print_error file =
  * It use globals defined in Lexer_parser.
  *)
 
+(** Converts occurrences of the identifier ["defined"] in a token stream,
+ * into the CPP defined operator [Tdefined].
+ *
+ * @author Iago Abal
+ *)
+let fix_cpp_defined_operator =
+  List.map (function
+    | Parser_c.TIdent("defined",info) -> Parser_c.Tdefined(info)
+    | x                               -> x
+    )
 
 (* old:
  *   let parse_gen parsefunc s =
@@ -363,18 +373,19 @@ let parse_print_error file =
  *     result
  *)
 
-let parse_gen parsefunc s =
+let parse_gen ~cpp parsefunc s =
   let toks = tokens_of_string s +> List.filter TH.is_not_comment in
-  (* We filter out CPP backslash-newlines (i.e. "\\\n"), thus making
-   * possible to parse expressions in CPP directives.
-   *
-   * E.g.
-   *          #if defined(A) || \
-   *                defined(B)
-   *
-   * /Iago
-   *)
-  let toks' = List.filter (fun x -> not (TH.is_escaped_newline x)) toks in
+  let toks' =
+    if cpp
+    (* We have fix_tokens_define that relaces \\\n by [TCommentSpace]
+     * within #define and other CPP directives, but
+     * a) it's not clear to me where [TCommentSpace] gets removed;
+     * b) TH.filter_out_escaped_newline is simple but enough.
+     * /Iago
+     *)
+    then fix_cpp_defined_operator (TH.filter_out_escaped_newline toks)
+    else toks
+  in
 
 
   (* Why use this lexing scheme ? Why not classically give lexer func
@@ -400,9 +411,10 @@ let parse_gen parsefunc s =
   result
 
 
-let type_of_string       = parse_gen Parser_c.type_name
-let statement_of_string  = parse_gen Parser_c.statement
-let expression_of_string = parse_gen Parser_c.expr
+let type_of_string       = parse_gen ~cpp:false Parser_c.type_name
+let statement_of_string  = parse_gen ~cpp:false Parser_c.statement
+let expression_of_string = parse_gen ~cpp:false Parser_c.expr
+let cpp_expression_of_string = parse_gen ~cpp:true Parser_c.expr
 
 (* ex: statement_of_string "(struct us_data* )psh->hostdata = NULL;" *)
 
@@ -864,7 +876,7 @@ let parse_ifdef_guard_visitor (parse :string -> Ast_c.expression)
   * @author Iago Abal
   *)
 let parse_ifdef_guards : Ast_c.program -> Ast_c.program =
-  Visitor_c.vk_program_s (parse_ifdef_guard_visitor expression_of_string)
+  Visitor_c.vk_program_s (parse_ifdef_guard_visitor cpp_expression_of_string)
 
 
 
@@ -1294,4 +1306,3 @@ let (cexpression_of_string: string -> Ast_c.expression) = fun s ->
         )
     | _ -> None
   )
-

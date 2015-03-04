@@ -167,13 +167,23 @@ let mk_pretty_printers
 	pr_elem i1; pr_elem i2; pp_arg_list ts; pr_elem i3; pp_argument t
     | Delete(t),     [i1] -> pr_elem i1; pp_expression t
 
+    | Defined name, [i1] ->
+        pr_elem i1; (* defined *)
+        pp_name name;
+    | Defined name, [i1;i2;i3] ->
+        pr_elem i1; (* defined *)
+        pr_elem i2; (* ( *)
+        pp_name name;
+        pr_elem i3; (* ) *)
+
     | (Ident (_) | Constant _ | StringConstant _ | FunCall (_,_)
     | CondExpr (_,_,_) | Sequence (_,_) | Assignment (_,_,_)
     | Postfix (_,_) | Infix (_,_) | Unary (_,_) | Binary (_,_,_)
     | ArrayAccess (_,_) | RecordAccess (_,_) | RecordPtAccess (_,_)
     | SizeOfExpr (_) | SizeOfType (_) | Cast (_,_)
     | StatementExpr (_) | Constructor _
-    | ParenExpr (_) | New (_) | Delete (_)),_ -> raise (Impossible 95)
+    | ParenExpr (_) | New (_) | Delete (_)
+    | Defined (_)),_ -> raise (Impossible 95)
     );
 
     if !Flag_parsing_c.pretty_print_type_info
