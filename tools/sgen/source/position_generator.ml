@@ -178,6 +178,10 @@ and declaration_pos d snp = match Ast0.unwrap d with
       (match declaration_pos dec snp with
        | Some (d, snp) -> wrap (Ast0.UniqueDecl d) snp
        | None -> None)
+  | Ast0.FunProto(fninfo,name,lp1,params,va,rp1,sem) ->
+      (* based on FunDecl, to check *)
+      let (name, snp) = ident_pos name snp in
+      wrap (Ast0.FunProto(fninfo,name,lp1,params,va,rp1,sem)) snp
 
 (* Returns Some Ast0.forinfo with inserted pos if it was possible to insert
  * a pos or None if it was not possible. *)
