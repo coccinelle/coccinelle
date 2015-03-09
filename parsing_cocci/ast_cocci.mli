@@ -83,6 +83,8 @@ and metavar =
       arity * meta_name (* name *) * Type_cocci.typeC list option
   | MetaLocalIdExpDecl of
       arity * meta_name (* name *) * Type_cocci.typeC list option
+  | MetaGlobalIdExpDecl of
+      arity * meta_name (* name *) * Type_cocci.typeC list option
   | MetaExpListDecl of arity * meta_name (*name*) * list_len (*len*)
   | MetaDeclDecl of arity * meta_name (* name *)
   | MetaFieldDecl of arity * meta_name (* name *)
@@ -201,6 +203,7 @@ and constraints =
 (* Constraints on Meta-* Identifiers, Functions *)
 and idconstraint =
     IdNoConstraint
+  | IdPosIdSet         of string list * meta_name list
   | IdNegIdSet         of string list * meta_name list
   | IdRegExpConstraint of reconstraint
 
@@ -208,7 +211,7 @@ and reconstraint =
   | IdRegExp        of string * Regexp.regexp
   | IdNotRegExp     of string * Regexp.regexp
 
-and form = ANY | ID | LocalID | CONST (* form for MetaExp *)
+and form = ANY | ID | LocalID| GlobalID | CONST (* form for MetaExp *)
 
 and expression = base_expression wrap
 
@@ -687,7 +690,7 @@ val lub_count : count -> count -> count
 (* --------------------------------------------------------------------- *)
 
 val rewrap : 'a wrap -> 'b -> 'b wrap
-val rewrap_mcode : 'a mcode -> 'a -> 'a mcode
+val rewrap_mcode : 'a mcode -> 'b -> 'b mcode
 val unwrap : 'a wrap -> 'a
 val unwrap_mcode : 'a mcode -> 'a
 val get_mcodekind : 'a mcode -> mcodekind

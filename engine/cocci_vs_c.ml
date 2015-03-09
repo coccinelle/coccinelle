@@ -763,6 +763,9 @@ let satisfies_regexpconstraint c id : bool =
   | A.IdNotRegExp (_,recompiled) -> not (Regexp.string_match recompiled id)
 
 let satisfies_iconstraint c id : bool =
+  List.mem id c
+
+let satisfies_niconstraint c id : bool =
   not (List.mem id c)
 
 let satisfies_econstraint c exp : bool =
@@ -1018,6 +1021,11 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	    (match !opttypb with
 	      (Some (_,Ast_c.LocalVar _),_) -> true
 	    | _ -> false)
+	| (A.GlobalID,e) ->
+	    (matches_id e) &&
+	    (match !opttypb with
+	      (Some (_,Ast_c.LocalVar _),_) -> false
+	    | _ -> true)
 	| (A.ID,e) -> matches_id e in
       if form_ok
       then
@@ -1458,8 +1466,12 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
   | A.DisjExpr eas, eb ->
       eas +> List.fold_left (fun acc ea -> acc >|+|> (expression ea eb)) fail
 
-  | A.UniqueExp _,_ | A.OptExp _,_ ->
-      failwith "not handling Opt/Unique/Multi on expr"
+  | A.UniqueExp e,_ | A.OptExp e,_ ->
+      Pretty_print_cocci.expression e;
+      Format.print_newline();
+      failwith
+        (Printf.sprintf "not handling Opt/Unique/Multi on expr on line %d"
+           (A.get_line e))
 
  (* Because of Exp cant put a raise Impossible; have to put a fail *)
 
@@ -1633,8 +1645,11 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
      let meta_id_val l x = Ast_c.MetaIdVal(x,l) in
      match constraints with
        A.IdNoConstraint -> return (meta_id_val [],())
-     | A.IdNegIdSet (str,meta) ->
+     | A.IdPosIdSet (str,meta) ->
 	 X.check_idconstraint satisfies_iconstraint str idb
+	   (fun () -> return (meta_id_val meta,()))
+     | A.IdNegIdSet (str,meta) ->
+	 X.check_idconstraint satisfies_niconstraint str idb
 	   (fun () -> return (meta_id_val meta,()))
      | A.IdRegExpConstraint re ->
 	 X.check_idconstraint satisfies_regexpconstraint re idb
@@ -2420,8 +2435,6 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
         | _ -> fail
        ) >>=
         (fun va (isvaargs, iidotsb) -> let (lpb, rpb) = tuple_of_list2 ii in
-
-        let (lpb, rpb) = tuple_of_list2 ii in
         tokenf lpa lpb >>= (fun lpa lpb ->
         tokenf rpa rpb >>= (fun rpa rpb ->
         tokenf sema iiptvirgb >>= (fun sema iiptvirgb ->

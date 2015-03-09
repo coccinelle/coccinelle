@@ -380,6 +380,9 @@ let pp_meta_decl pr env decl =
   | Ast.MetaLocalIdExpDecl(ar, name, types) ->
       no_arity ar; pr "local idexpression ";
       print_types pr env types; pp_name name; pr ";\n"
+  | Ast.MetaGlobalIdExpDecl(ar, name, types) ->
+      no_arity ar; pr "global idexpression ";
+      print_types pr env types; pp_name name; pr ";\n"
   | Ast.MetaExpListDecl(ar, name, len) ->
       no_arity ar; pr "parameter list "; pp_name name; pp_len pr len; pr ";\n"
   | Ast.MetaDeclDecl(ar, name) ->

@@ -224,6 +224,7 @@ let id_tokens lexbuf =
   | "statement" when in_meta ->  check_arity_context_linetype s; TStatement
   | "function"  when in_meta ->  check_arity_context_linetype s; TFunction
   | "local" when in_meta ->      check_arity_context_linetype s; TLocal
+  | "global" when in_meta ->     check_arity_context_linetype s; TGlobal
   | "list" when in_meta ->       check_arity_context_linetype s; Tlist
   | "fresh" when in_meta ->      check_arity_context_linetype s; TFresh
   | "typedef" when in_meta ->    check_arity_context_linetype s; TTypedef
@@ -403,6 +404,10 @@ let init _ =
   Data.add_local_idexp_meta :=
     (fun tyopt name constraints pure ->
       let fn clt = TMetaLocalIdExp(name,constraints,pure,tyopt,clt) in
+      Hashtbl.replace metavariables (get_name name) fn);
+  Data.add_global_idexp_meta :=
+    (fun tyopt name constraints pure ->
+      let fn clt = TMetaGlobalIdExp(name,constraints,pure,tyopt,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_explist_meta :=
     (function name -> function lenname -> function pure ->
@@ -946,9 +951,6 @@ and metavariable_decl_token = parse
   | "=~" { start_line true; TTildeEq (get_current_line_type lexbuf) }
   | "!~" { start_line true; TTildeExclEq (get_current_line_type lexbuf) }
   | "="  { start_line true; TEq (get_current_line_type lexbuf) }
-  | "+" { pass_zero(); TPlus0 }
-  | "?" { pass_zero(); TWhy0 }
-  | "!" { pass_zero(); TBang0 }
   | "(" { start_line true; TOPar (get_current_line_type lexbuf) }
   | ")" { start_line true; TCPar (get_current_line_type lexbuf) }
 
@@ -1076,7 +1078,7 @@ and metavariable_decl_token = parse
 	end
       else failwith "unrecognized constant modifier d/D" }
 
-  | _ { lexerr "metavariables: unrecognised symbol, in token rule: "
+  | _ { lexerr "metavariables: unrecognised symbol in metavariable_decl_token rule: "
 	  (tok lexbuf) }
 
 

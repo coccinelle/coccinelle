@@ -340,9 +340,9 @@ let rec is_really_foreach xs =
 (* ------------------------------------------------------------------------- *)
 let set_ifdef_token_parenthize_info cnt x =
     match x with
-    | TIfdef (tag, _)
+    | TIfdef (_, tag, _)
     | TIfdefelse (tag, _)
-    | TIfdefelif (tag, _)
+    | TIfdefelif (_, tag, _)
     | TEndif (tag, _)
 
     | TIfdefBool (_, tag, _)
@@ -2500,7 +2500,7 @@ let lookahead2 ~pass next before =
   (*-------------------------------------------------------------*)
   (* CPP *)
   (*-------------------------------------------------------------*)
-  | ((TIfdef (_,ii) |TIfdefelse (_,ii) |TIfdefelif (_,ii) |TEndif (_,ii) |
+  | ((TIfdef (_,_,ii) |TIfdefelse (_,ii) |TIfdefelif (_,_,ii) |TEndif (_,ii) |
       TIfdefBool (_,_,ii)|TIfdefMisc(_,_,ii)|TIfdefVersion(_,_,ii))
         as x)
     ::_, _
@@ -2667,7 +2667,7 @@ let rec cpp_ifdef_statementize (ast :toplevel list) :toplevel list =
                 Visitor_c.vk_statement_sequencable_s bigf stseq::aux xs
             | IfdefStmt ifdef ->
                 (match ifdef with
-                | IfdefDirective ((Ast_c.Ifdef,tag),ii) ->
+                | IfdefDirective ((Ast_c.Ifdef _,tag),ii) ->
 
                     let (restifdefs, xxs, xs') = group_ifdef tag xs in
                     if should_ifdefize (tag,ii) (ifdef::restifdefs) xxs
@@ -2677,7 +2677,7 @@ let rec cpp_ifdef_statementize (ast :toplevel list) :toplevel list =
                     else
                       Visitor_c.vk_statement_sequencable_s bigf stseq::aux xs
 
-                | IfdefDirective (((IfdefElseif|IfdefElse|IfdefEndif),b),ii) ->
+                | IfdefDirective (((IfdefElseif _|IfdefElse|IfdefEndif),b),ii) ->
                     pr2 "weird: first directive is not a ifdef";
                     (* maybe not weird, just that should_ifdefize
                      * returned false *)

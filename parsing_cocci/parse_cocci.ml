@@ -57,6 +57,7 @@ let token2c (tok,_) =
   | PC.TPosAny -> "any"
   | PC.TFunction -> "function"
   | PC.TLocal -> "local"
+  | PC.TGlobal -> "global"
   | PC.Tlist -> "list"
   | PC.TFresh -> "fresh"
   | PC.TCppConcatOp -> "##"
@@ -198,6 +199,7 @@ let token2c (tok,_) =
   | PC.TMetaExp(_,_,_,_,clt) -> add_clt "expmeta" clt
   | PC.TMetaIdExp(_,_,_,_,clt) -> add_clt "idexpmeta" clt
   | PC.TMetaLocalIdExp(_,_,_,_,clt) -> add_clt "localidexpmeta" clt
+  | PC.TMetaGlobalIdExp(_,_,_,_,clt) -> add_clt "globalidexpmeta" clt
   | PC.TMetaExpList(_,_,_,clt) -> add_clt "explistmeta" clt
   | PC.TMetaId(nm,_,_,_,clt)    -> "idmeta-"^add_clt (Dumper.dump nm) clt
   | PC.TMetaType(_,_,clt)    -> add_clt "typemeta" clt
@@ -336,7 +338,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.TMeta(_,_,clt) | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
   | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaErr(_,_,_,clt)
   | PC.TMetaExp(_,_,_,_,clt) | PC.TMetaIdExp(_,_,_,_,clt)
-  | PC.TMetaLocalIdExp(_,_,_,_,clt)
+  | PC.TMetaLocalIdExp(_,_,_,_,clt) | PC.TMetaGlobalIdExp(_,_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
   | PC.TMetaId(_,_,_,_,clt)
   | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt) | PC.TMetaInitList(_,_,_,clt)
@@ -417,7 +419,7 @@ let get_clt ((tok,_) as t) =
   | PC.TMeta(_,_,clt) | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
   | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaErr(_,_,_,clt)
   | PC.TMetaExp(_,_,_,_,clt) | PC.TMetaIdExp(_,_,_,_,clt)
-  | PC.TMetaLocalIdExp(_,_,_,_,clt)
+  | PC.TMetaLocalIdExp(_,_,_,_,clt) | PC.TMetaGlobalIdExp(_,_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
   | PC.TMetaId(_,_,_,_,clt)
   | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt) | PC.TMetaInitList(_,_,_,clt)
@@ -545,6 +547,7 @@ let update_clt ((tok,x) as t) clt =
   | PC.TMetaExp(a,b,c,d,_) -> (PC.TMetaExp(a,b,c,d,clt),x)
   | PC.TMetaIdExp(a,b,c,d,_) -> (PC.TMetaIdExp(a,b,c,d,clt),x)
   | PC.TMetaLocalIdExp(a,b,c,d,_) -> (PC.TMetaLocalIdExp(a,b,c,d,clt),x)
+  | PC.TMetaGlobalIdExp(a,b,c,d,_) -> (PC.TMetaGlobalIdExp(a,b,c,d,clt),x)
   | PC.TMetaExpList(a,b,c,_) -> (PC.TMetaExpList(a,b,c,clt),x)
   | PC.TMetaId(a,b,c,d,_)    -> (PC.TMetaId(a,b,c,d,clt),x)
   | PC.TMetaType(a,b,_)    -> (PC.TMetaType(a,b,clt),x)
@@ -683,7 +686,7 @@ let split_token ((tok,_) as t) =
   | PC.TInitialiser | PC.TSymbol
   | PC.TFunction | PC.TTypedef | PC.TDeclarer | PC.TIterator | PC.TName
   | PC.TAttribute
-  | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh
+  | PC.TType | PC.TParameter | PC.TLocal | PC.TGlobal | PC.Tlist | PC.TFresh
   | PC.TCppConcatOp | PC.TPure
   | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TVirtual | PC.TDisable
   | PC.TExtends | PC.TPathIsoFile(_)
@@ -716,7 +719,8 @@ let split_token ((tok,_) as t) =
   | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
   | PC.TSymId(_,clt)
   | PC.TMeta(_,_,clt) | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaExp(_,_,_,_,clt)
-  | PC.TMetaIdExp(_,_,_,_,clt) | PC.TMetaLocalIdExp(_,_,_,_,clt)
+  | PC.TMetaIdExp(_,_,_,_,clt)
+  | PC.TMetaLocalIdExp(_,_,_,_,clt) | PC.TMetaGlobalIdExp(_,_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
   | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
   | PC.TMetaId(_,_,_,_,clt) | PC.TMetaType(_,_,clt)
@@ -924,6 +928,7 @@ let detect_types in_meta_decls l =
     | (PC.TMetaExp(_,_,_,_,_),_)
     | (PC.TMetaIdExp(_,_,_,_,_),_)
     | (PC.TMetaLocalIdExp(_,_,_,_,_),_)
+    | (PC.TMetaGlobalIdExp(_,_,_,_,_),_)
     | (PC.TMetaExpList(_,_,_,_),_)
     | (PC.TMetaType(_,_,_),_)
     | (PC.TMetaInit(_,_,_),_)
@@ -1023,7 +1028,8 @@ let token2line (tok,_) =
 
   | PC.TMeta(_,_,clt) | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
   | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaExp(_,_,_,_,clt)
-  | PC.TMetaIdExp(_,_,_,_,clt) | PC.TMetaLocalIdExp(_,_,_,_,clt)
+  | PC.TMetaIdExp(_,_,_,_,clt)
+  | PC.TMetaLocalIdExp(_,_,_,_,clt) | PC.TMetaGlobalIdExp(_,_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
   | PC.TMetaId(_,_,_,_,clt) | PC.TMetaType(_,_,clt)
   | PC.TMetaInit(_,_,clt) | PC.TMetaInitList(_,_,_,clt)
@@ -1419,6 +1425,8 @@ let strip_for_fix l =
 	  (PC.TMetaIdExp(nm,Ast0.NoConstraint,pure,ty,clt),info)
       |	(PC.TMetaLocalIdExp(nm,_,pure,ty,clt),info) ->
 	  (PC.TMetaLocalIdExp(nm,Ast0.NoConstraint,pure,ty,clt),info)
+      |	(PC.TMetaGlobalIdExp(nm,_,pure,ty,clt),info) ->
+	  (PC.TMetaGlobalIdExp(nm,Ast0.NoConstraint,pure,ty,clt),info)
       |	(PC.TMetaConst(nm,_,pure,ty,clt),info) ->
 	  (PC.TMetaConst(nm,Ast0.NoConstraint,pure,ty,clt),info)
       |	t -> t)

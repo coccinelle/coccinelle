@@ -411,9 +411,9 @@ and expression e =
 	let allminus = check_allminus.VT0.combiner_rec_expression e in
 	Ast.Constructor(mcode lp,typeC allminus ty,mcode rp,initialiser init)
     | Ast0.MetaErr(name,cstrts,_)  ->
-	  Ast.MetaErr(mcode name,constraints cstrts,unitary,false)
+	Ast.MetaErr(mcode name,constraints cstrts,unitary,false)
     | Ast0.MetaExpr(name,cstrts,ty,form,_)  ->
-	  Ast.MetaExpr(mcode name,constraints cstrts,unitary,ty,form,false)
+	Ast.MetaExpr(mcode name,constraints cstrts,unitary,ty,form,false)
     | Ast0.MetaExprList(name,lenname,_) ->
 	Ast.MetaExprList(mcode name,do_lenname lenname,unitary,false)
     | Ast0.AsExpr(expr,asexpr) ->

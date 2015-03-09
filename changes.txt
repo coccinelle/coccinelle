@@ -24,6 +24,7 @@
 
 * 1.0.0
 ** Language:
+- Add ...... to match ... in C function declarations and definitions.
 - Addition of initializer list metavariables.  Thanks to Michael Stefaniuc
   for noticing the need for them.
 - Allow multiple position variables per token
@@ -64,6 +65,8 @@
 - Allow changes within strings.
 - EXEC, for use with the --ibm option.
 - Limited matching of decimal format strings, with the --ibm option
+- Add a global idexpression operator, like the local one.
+- Positive constraint set for identifier metavariables.
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line
@@ -180,6 +183,7 @@
   Elfring.
 - Add prototypes implicit isomorphism to allow disabling generation of
   rules based on changes in function prototypes.
+- Support dynamic parallelism via the Parmap library.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
@@ -399,6 +403,7 @@
 - Allow adding directives before and after ..., see ifif.cocci
 - No space after trailing comma.
 - Drop newlines when removing consecutive statements.
+- Make build system use installed rather than bundled parmap when available.
 
 * 0.2.5
 ** Language:

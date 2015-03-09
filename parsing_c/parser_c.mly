@@ -524,8 +524,10 @@ let args_to_params l pb =
 /*(*---------------*)*/
 
 /*(* coupling: Token_helpers.is_cpp_instruction *)*/
+%token <(Ast_c.ifdef_guard * (int * int) option ref * Ast_c.info)>
+  TIfdef TIfdefelif
 %token <((int * int) option ref * Ast_c.info)>
-  TIfdef TIfdefelse TIfdefelif TEndif
+  TIfdefelse TEndif
 %token <(bool * (int * int) option ref * Ast_c.info)>
   TIfdefBool TIfdefMisc TIfdefVersion
 
@@ -2006,27 +2008,27 @@ param_define:
 
 cpp_ifdef_directive:
  | TIfdef
-     { let (tag,ii) = $1 in
-       IfdefDirective ((Ifdef, IfdefTag (Common.some !tag)),  [ii]) }
+     { let (cond,tag,ii) = $1 in
+       IfdefDirective ((Ifdef cond, IfdefTag (Common.some !tag)),  [ii]) }
  | TIfdefelse
      { let (tag,ii) = $1 in
        IfdefDirective ((IfdefElse, IfdefTag (Common.some !tag)), [ii]) }
  | TIfdefelif
-     { let (tag,ii) = $1 in
-       IfdefDirective ((IfdefElseif, IfdefTag (Common.some !tag)), [ii]) }
+     { let (cond,tag,ii) = $1 in
+       IfdefDirective ((IfdefElseif cond, IfdefTag (Common.some !tag)), [ii]) }
  | TEndif
      { let (tag,ii) = $1 in
        IfdefDirective ((IfdefEndif, IfdefTag (Common.some !tag)), [ii]) }
 
  | TIfdefBool
      { let (_b, tag,ii) = $1 in
-       IfdefDirective ((Ifdef, IfdefTag (Common.some !tag)), [ii]) }
+       IfdefDirective ((Ifdef Gnone, IfdefTag (Common.some !tag)), [ii]) }
  | TIfdefMisc
      { let (_b, tag,ii) = $1 in
-       IfdefDirective ((Ifdef, IfdefTag (Common.some !tag)), [ii]) }
+       IfdefDirective ((Ifdef Gnone, IfdefTag (Common.some !tag)), [ii]) }
  | TIfdefVersion
      { let (_b, tag,ii) = $1 in
-       IfdefDirective ((Ifdef, IfdefTag (Common.some !tag)), [ii]) }
+       IfdefDirective ((Ifdef Gnone, IfdefTag (Common.some !tag)), [ii]) }
 
 
 /*(* cppext: *)*/

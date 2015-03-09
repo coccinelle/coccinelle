@@ -165,10 +165,10 @@ and  logicalOp = function
 
 %token EOF
 
-%token TIdentifier TExpression TStatement TFunction TLocal TType TParameter
+%token TIdentifier TExpression TStatement TFunction TType TParameter
 %token TIdExpression TInitialiser TDeclaration TField TMetavariable TSymbol
 %token Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
-%token TPure TContext TGenerated TFormat
+%token TPure TContext TGenerated TFormat TLocal TGlobal
 %token TTypedef TAttribute TDeclarer TIterator TName TPosition TAnalysis
 %token TPosAny
 %token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall
@@ -198,7 +198,8 @@ and  logicalOp = function
 %token <Parse_aux.info>          TMetaInit TMetaDecl TMetaField TMeta
 %token <Parse_aux.list_info>     TMetaParamList TMetaExpList TMetaInitList
 %token <Parse_aux.list_info>     TMetaFieldList
-%token <Parse_aux.typed_expinfo> TMetaExp TMetaIdExp TMetaLocalIdExp TMetaConst
+%token <Parse_aux.typed_expinfo> TMetaExp TMetaIdExp TMetaLocalIdExp
+%token <Parse_aux.typed_expinfo> TMetaGlobalIdExp TMetaConst
 %token <Parse_aux.pos_info>      TMetaPos
 
 %token TArob TArobArob
@@ -684,6 +685,15 @@ list_len:
       | Some _ ->
 	  !Data.add_local_idexp_meta ty name constraints pure;
 	  check_meta(Ast.MetaLocalIdExpDecl(arity,name,ty))) }
+| TGlobal TIdExpression ty=ioption(meta_exp_type)
+    { (fun arity name pure check_meta constraints ->
+      !Data.add_global_idexp_meta ty name constraints pure;
+      check_meta(Ast.MetaGlobalIdExpDecl(arity,name,ty))) }
+| TGlobal TIdExpression m=nonempty_list(TMul)
+    { (fun arity name pure check_meta constraints ->
+      let ty = Some [P.ty_pointerify Type_cocci.Unknown m] in
+      !Data.add_global_idexp_meta ty name constraints pure;
+      check_meta(Ast.MetaGlobalIdExpDecl(arity,name,ty))) }
 | TExpression ty=expression_type
     { (fun arity name pure check_meta constraints ->
       let ty = Some [ty] in
@@ -1952,6 +1962,10 @@ primary_expr(recurser,primary_extra):
      { let (nm,constraints,pure,ty,clt) = $1 in
      Ast0.wrap
        (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.LocalID,pure)) }
+ | TMetaGlobalIdExp
+     { let (nm,constraints,pure,ty,clt) = $1 in
+     Ast0.wrap
+       (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.GlobalID,pure)) }
  | TOPar eexpr TCPar
      { Ast0.wrap(Ast0.Paren(P.clt2mcode "(" $1,$2,
 			    P.clt2mcode ")" $3)) }
@@ -2081,8 +2095,9 @@ pure_ident_or_meta_ident_with_idconstraint(constraint_type):
     }
 
 re_or_not_eqid:
-   re=regexp_eqid {Ast.IdRegExpConstraint re}
- | ne=not_eqid    {ne}
+   re=regexp_eqid   {Ast.IdRegExpConstraint re}
+ | TEq ne=idcstr    {Ast.IdPosIdSet (fst ne,snd ne)}
+ | TNotEq ne=idcstr {Ast.IdNegIdSet (fst ne,snd ne)}
 
 re_only:
    re=regexp_eqid {Ast.IdRegExpConstraint re}
@@ -2103,8 +2118,8 @@ regexp_eqid:
 	   let (s,_) = re in Ast.IdNotRegExp (s,Regexp.regexp s)
 	 }
 
-not_eqid:
-       TNotEq i=pure_ident_or_meta_ident
+idcstr:
+       i=pure_ident_or_meta_ident
          { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
@@ -2116,9 +2131,9 @@ not_eqid:
 	       let i =
 		 P.check_inherited_constraint i
 		   (function mv -> Ast.MetaIdDecl(Ast.NONE,mv)) in
-	       Ast.IdNegIdSet([],[i])
-	   | (None,i) -> Ast.IdNegIdSet([i],[])) }
-     | TNotEq TOBrace l=comma_list(pure_ident_or_meta_ident) TCBrace
+	       ([],[i])
+	   | (None,i) -> ([i],[])) }
+     | TOBrace l=comma_list(pure_ident_or_meta_ident) TCBrace
 	 { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
@@ -2134,7 +2149,7 @@ not_eqid:
 		     (str,i::meta)
 		 | (None,i) -> (i::str,meta))
 	       ([],[]) l in
-	   Ast.IdNegIdSet(str,meta)
+	   (str,meta)
 	 }
 
 re_or_not_eqe_or_sub:
