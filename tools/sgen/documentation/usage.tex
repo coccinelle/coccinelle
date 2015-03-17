@@ -78,7 +78,7 @@ where \texttt{<attribute\_name>} can be either the attribute name or its shortha
   org:<message>
   report:<message>
 \end{verbatim}
-for \texttt{org} and \texttt{report} error messages, respectively. Here, \texttt{<rule\_name>} is either the actual rule name, or, if it is a nameless rule, \texttt{<line\_that\_rule\_starts\_on>.<new\_name>}.\newline
+for \texttt{org} and \texttt{report} error messages, respectively. Here, \texttt{<rule\_name>} is either the actual rule name, or, if it is a nameless rule, \texttt{<line\_that\_rule\_starts\_on>:<new\_name>}.\newline
 Meanwhile, \texttt{<message>} follow the syntax of \texttt{python} format strings, e.g.
 \begin{verbatim}
 "This is a message that references two metavariables %s and %s." % (x,y)

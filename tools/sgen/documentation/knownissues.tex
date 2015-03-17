@@ -20,4 +20,6 @@ Fix: ??? Somehow detect that two rules will match the same case and insert const
 Fix: ???
 \item \textbf{Type and switch case disjunctions}: Currently, the program fails if attempting to generate a \texttt{Coccinelle} script with type or switch case disjunctions. The failure happens in the position generator. The reason it is not implemented is that it requires quite a lot of code for a case that rarely appears.\newline
 Fix: Implement full position generation for types and switch cases.
+\item \textbf{File transformation not context-dependent}: When printing the transformed script, a somewhat primitive string replacement strategy is used to rename rules and inject dependencies (e.g. change \texttt{@rulename@} to \texttt{@rulename depends on patch@}). The transformation is not context-dependent which means that the script will get mangled if there is e.g. a \texttt{@@} \textit{inside comments} on a new line, since this will be mistaken for a SmPL-syntax \texttt{@@}.\newline
+Fix: Use simple parsing in the file transformation. Another solution is to not transform the original file at all, but to completely reconstruct it from the AST (this requires a pretty printer for AST that retains comments and plus slices!). In practice, however, this is only a problem in very specific cases that are unlikely to occur.
 \end{itemize}
