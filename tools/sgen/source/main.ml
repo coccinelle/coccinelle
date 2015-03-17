@@ -41,7 +41,7 @@ let speclist =
   ("--no-output", Arg.Set hide, " Don't print the result.");
 ]
 
-let fail m = Arg.usage (Arg.align speclist) usage; failwith m
+let fail m = Arg.usage (Arg.align speclist) usage; exit 1
 
 
 (* ------------------------------------------------------------------------- *)
@@ -65,10 +65,11 @@ let main _ =
     interactive := true;
 
   (* ------------- PARSE ------------- *)
+
   Flag_parsing_cocci.generating_mode := true;
   let (_, rules, virtuals, _) = Parse_cocci.parse !file in
 
-  (* the sgrep_mode2 flag is set after parsing, if the rule is a star rule *)
+  (* if the rule is a star rule, the sgrep_mode2 flag is set after parsing *)
   let context_mode = !Flag.sgrep_mode2 in
 
   (* check rulenames for validity and get the */+/- rules *)
@@ -81,10 +82,11 @@ let main _ =
 
   let (_(*author*), _(*license*), rule_name, pos_name, error_msg, char_limit) =
     Sgen_config.parse_global ~config_name:"" in
-  Globals.init ~rule_name ~pos_name ~error_msg ~char_limit;
+  let _ = Globals.init ~rule_name ~pos_name ~error_msg ~char_limit in
   let virtuals = Globals.key_virtuals virtuals context_mode in
 
   (* ------------- LOCALS ------------- *)
+
   let (preface, input) =
     if !interactive then
       Sgen_interactive.interact ~ordered_rules:rulenames ~config_name:name
@@ -94,25 +96,29 @@ let main _ =
       Sgen_config.parse_local ~ordered_rules:rulenames ~config_name:!config in
 
   (* ------------- GENERATE ------------- *)
-  (* drules are all patch rules, tupled with their disj maps
-   * userinput are the user input infos for the patch rules, in sorted order *)
+
+  (* drules are all patch rules, tupled with their disj maps.
+   * userinput are the ordered user input infos for the patch rules.
+   *)
   let generate drules userinput =
-    let generate_rule (rule,disj_map) (((old_name,new_name),_,_) as ui) =
-      let _ = assert (Ast0_cocci.get_rule_name rule = old_name) in
-      let (generated, pos) =
-        Context_rule.generate ~new_name ~disj_map ~rule ~context_mode in
-      let scripted = Script_rule.generate ~metapos:pos ~user_input:ui in
-      ((rule, new_name), (generated, scripted)) in
-    let rec split fn = function
-      | (nrule,(gen,script))::xs ->
-          split (fun (a,b,c) -> fn (nrule::a, gen::b, script::c)) xs
-      | [] -> fn ([],[],[]) in
-    split (fun x -> x) (List.map2 generate_rule drules userinput) in
+    let rec generate_split rules ui fn = match rules, ui with
+      | [], [] -> fn ([],[],[])
+      | (rule,disj_map)::rs,
+        (((old_name,new_name),_,_) as user_input)::us ->
+          let _ = assert (Ast0_cocci.get_rule_name rule = old_name) in
+          let rle = (rule, new_name) in
+          let (ctxt, metapos) =
+            Context_rule.generate ~new_name ~disj_map ~rule ~context_mode in
+          let script = Script_rule.generate ~metapos ~user_input in
+          generate_split rs us (fun (a,b,c) -> fn (rle::a, ctxt::b, script::c))
+      | _ -> failwith "Internal error: drules.length <> userinput.length." in
+    generate_split drules userinput (fun x -> x) in
 
   let combined = List.combine rules disj_maps in
   let (namedrules, contexts, scripts) = generate combined input in
 
   (* ------------- PRINT ------------- *)
+
   if not(!hide) then begin
     let outp = if !output = "" then stdout else (open_out !output) in
     let split() = output_string outp
@@ -125,8 +131,7 @@ let main _ =
       split(); Script_rule.print_split outp scripts split;
       flush outp; close_out outp
     with Failure msg ->
-      flush outp;
-      close_out outp;
+      flush outp; close_out outp;
       if !output <> "" && Sys.file_exists !output then Sys.remove !output;
       failwith msg
   end

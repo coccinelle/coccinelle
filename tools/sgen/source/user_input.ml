@@ -134,10 +134,15 @@ let check_name nm t =
   then failwith ("Error: trying to name two rules \"" ^ nm ^"\"!")
   else Globals.check_rule ~strict:true nm
 
+(* add rule to rulemap in t.
+ * for nameless rules: check legality of user-declared name or generate one if
+ * user only declared line number in config. *)
 let add_rule ((rnm,newnm),(om,ov),(rm,rv)) t =
-  assert (rnm <> "" && not(om = "" && rm = "")); (*sanity check*)
-  let _ = match newnm with (* check if newname, if any, is valid *)
-    | Some nm -> check_name nm t | None -> () in
+  let _ = assert (rnm <> "" && not(om = "" && rm = "")) in
+  let newnm = match newnm with
+    | Some nm -> (check_name nm t; newnm)
+    | None ->
+        if String.contains rnm ' ' then Globals.generate_rule rnm else None in
   { t with rules = RuleMap.add rnm (newnm,(om,ov),(rm,rv)) t.rules }
 
 (* GETTERS *)
