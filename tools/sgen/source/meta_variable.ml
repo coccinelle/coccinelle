@@ -74,6 +74,7 @@ let type_c ~form =
     | Ast.ANY -> ("expression ", "")
     | Ast.ID -> ("idexpression ", "idexpression ")
     | Ast.LocalID -> ("local idexpression ", "local idexpression ")
+    | Ast.GlobalID -> ("global idexpression ", "global idexpression ")
     | Ast.CONST -> ("constant ", "constant ") in
   let type2c a = match TC.type2c a with
     | "unknown *" -> default ^ " *"
@@ -104,6 +105,11 @@ let list_constraints ~tostring_fn ~op = function
 
 let id_constraint ~rn = function
   | Ast.IdNoConstraint -> ""
+  | Ast.IdPosIdSet(slist,mnlist) ->
+      let combined =
+        (List.map (fun x -> "\"" ^ x ^ "\"") slist) @
+        (List.map (name_str ~rn) mnlist) in
+      list_constraints ~tostring_fn:(fun x -> x) ~op:" = " combined
   | Ast.IdNegIdSet(slist,mnlist) ->
       let combined = (List.map (fun x -> "\"" ^ x ^ "\"") slist) @
         (List.map (name_str ~rn) mnlist) in
