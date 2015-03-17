@@ -179,7 +179,6 @@ and declaration_pos d snp = match Ast0.unwrap d with
        | Some (d, snp) -> wrap (Ast0.UniqueDecl d) snp
        | None -> None)
   | Ast0.FunProto(fninfo,name,lp1,params,va,rp1,sem) ->
-      (* based on FunDecl, to check *)
       let (name, snp) = ident_pos name snp in
       wrap (Ast0.FunProto(fninfo,name,lp1,params,va,rp1,sem)) snp
 
@@ -339,18 +338,27 @@ and expression_pos e snp =
 and statement_pos s snp = match Ast0.unwrap s with
   | Ast0.Nest _ | Ast0.Dots _ | Ast0.Circles _ | Ast0.Stars _ | Ast0.Disj _
   | Ast0.MetaStmt _ | Ast0.Seq _ -> None
+
+  (* uncertainty of whether these should be handled! *)
   | Ast0.Exec _ -> None
   | Ast0.MetaStmtList _ -> None
   | Ast0.AsStmt _ -> None
   | Ast0.TopExp _ -> None
   | Ast0.Ty _ -> None
   | Ast0.TopInit _ -> None
+
   | Ast0.Include (incmc,filemc) ->
       let (filemc, snp) = inc_file_pos filemc snp in
       wrap (Ast0.Include(incmc, filemc)) snp
-  | Ast0.Undef _ -> None
-  | Ast0.Define _ -> None
-  | Ast0.Pragma _ -> None
+  | Ast0.Undef (defmc, id) ->
+      let (id, snp) = ident_pos id snp in
+      wrap (Ast0.Undef(defmc, id)) snp
+  | Ast0.Define (defmc, id, defparam, stmtdots) ->
+      let (id, snp) = ident_pos id snp in
+      wrap (Ast0.Define(defmc, id, defparam, stmtdots)) snp
+  | Ast0.Pragma (pragmc, id, praginfo) ->
+      let (id, snp) = ident_pos id snp in
+      wrap (Ast0.Pragma(pragmc, id, praginfo)) snp
   | Ast0.OptStm stm ->
       (match statement_pos stm snp with
        | Some (v, sn) -> wrap (Ast0.OptStm v) sn
