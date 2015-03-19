@@ -6,11 +6,15 @@
 # The sgen program
 SGEN=sgen
 
+# abs path to dir containing this script (http://stackoverflow.com/a/246128)
+DIR=$( cd "$( dirname "$0" )" && pwd )
+
 START=$(date +%s)
 diffs=0
-for f in ./*[!'_'].cocci
+
+for f in ${DIR}/*[!'_'].cocci
 do
-   filename=$(basename "$f")
+   filename="${DIR}/$(basename "$f")"
    actual="${filename}f"
    expected="${filename%.*}_.cocci"
 
