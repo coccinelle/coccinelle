@@ -8,6 +8,33 @@ module PG = Position_generator
  * and updated disj_result (rule with stars) *)
 
 (* ------------------------------------------------------------------------- *)
+(* TYPE HANDLER FUNCTIONS *)
+
+type statement_dots_fn =
+  (Ast0_cocci.statement Ast0_cocci.dots -> Generator_types.snapshot ->
+   Generator_types.snapshot)
+
+type string_fn =
+  (string Ast0_cocci.mcode -> Generator_types.snapshot ->
+   Generator_types.snapshot)
+
+type statement_fn =
+  (Ast0_cocci.statement -> Generator_types.snapshot ->
+   Generator_types.snapshot)
+
+type expression_fn =
+  (Ast0_cocci.expression -> Generator_types.snapshot ->
+   Generator_types.snapshot)
+
+type ident_fn =
+  (Ast0_cocci.ident -> Generator_types.snapshot ->
+   Generator_types.snapshot)
+
+type declaration_fn =
+  (Ast0_cocci.declaration -> Generator_types.snapshot ->
+   Generator_types.snapshot)
+
+(* ------------------------------------------------------------------------- *)
 (* DISJUNCTION HANDLER *)
 
 let ( >> ) f g x = g (f x)

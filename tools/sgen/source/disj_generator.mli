@@ -30,52 +30,58 @@
 (* ------------------------------------------------------------------------- *)
 (* DISJ GENERATION FUNCTIONS *)
 
+type statement_dots_fn =
+  (Ast0_cocci.statement Ast0_cocci.dots -> Generator_types.snapshot ->
+   Generator_types.snapshot)
+
+type string_fn =
+  (string Ast0_cocci.mcode -> Generator_types.snapshot ->
+   Generator_types.snapshot)
+
+type statement_fn =
+  (Ast0_cocci.statement -> Generator_types.snapshot ->
+   Generator_types.snapshot)
+
+type expression_fn =
+  (Ast0_cocci.expression -> Generator_types.snapshot ->
+   Generator_types.snapshot)
+
+type ident_fn =
+  (Ast0_cocci.ident -> Generator_types.snapshot ->
+   Generator_types.snapshot)
+
+type declaration_fn =
+  (Ast0_cocci.declaration -> Generator_types.snapshot ->
+   Generator_types.snapshot)
+
 val generate_statement :
-  stmtdotsfn:
-    (Ast0_cocci.statement Ast0_cocci.dots -> Generator_types.snapshot ->
-     Generator_types.snapshot) ->
-  strfn:
-    (string Ast0_cocci.mcode -> Generator_types.snapshot ->
-     Generator_types.snapshot) ->
-  stmtfn:
-    (Ast0_cocci.statement -> Generator_types.snapshot ->
-     Generator_types.snapshot) ->
+  stmtdotsfn:statement_dots_fn ->
+  strfn:string_fn ->
+  stmtfn:statement_fn ->
   stmt:Ast0_cocci.statement ->
   at_top:bool ->
   Generator_types.snapshot ->
   Generator_types.snapshot
 
 val generate_expression :
-  strfn:
-    (string Ast0_cocci.mcode -> Generator_types.snapshot ->
-     Generator_types.snapshot) ->
-  exprfn:
-    (Ast0_cocci.expression -> Generator_types.snapshot ->
-     Generator_types.snapshot) ->
+  strfn:string_fn ->
+  exprfn:expression_fn ->
   expr:Ast0_cocci.expression ->
   at_top:bool ->
   Generator_types.snapshot ->
   Generator_types.snapshot
 
 val generate_ident :
-  strfn:
-    (string Ast0_cocci.mcode -> Generator_types.snapshot ->
-     Generator_types.snapshot) ->
-  identfn:
-    (Ast0_cocci.ident -> Generator_types.snapshot ->
-     Generator_types.snapshot) ->
+  strfn:string_fn ->
+  identfn:ident_fn ->
   ident:Ast0_cocci.ident ->
   at_top:bool ->
   Generator_types.snapshot ->
   Generator_types.snapshot
 
 val generate_declaration :
-  strfn:
-    (string Ast0_cocci.mcode -> Generator_types.snapshot ->
-     Generator_types.snapshot) ->
-  declfn:
-    (Ast0_cocci.declaration -> Generator_types.snapshot ->
-     Generator_types.snapshot) ->
+  strfn:string_fn ->
+  declfn:declaration_fn ->
   decl:Ast0_cocci.declaration ->
   at_top:bool ->
   Generator_types.snapshot ->
