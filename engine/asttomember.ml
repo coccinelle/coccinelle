@@ -83,8 +83,10 @@ let print_info = function
 	  List.iter
 	    (function (_,thing) ->
 	      Printf.printf "%s\n"
+		(Dumper.dump thing.Ast.positive_inherited_positions);
+	      Printf.printf "%s\n"
 		(Pretty_print_cocci.rule_elem_to_string thing))
-	    disj;)
+	    disj)
 	l
 
 (* --------------------------------------------------------------------- *)
@@ -94,7 +96,8 @@ let print_info = function
 let strip x =
   let do_nothing r k e =
     let inh = Ast.get_inherited e in
-    Ast.make_inherited_term (Ast.unwrap (k e)) inh in
+    let inh_pos = Ast.get_inherited_pos e in
+    Ast.make_inherited_term (Ast.unwrap (k e)) inh inh_pos in
   let do_absolutely_nothing r k e = k e in
   let mcode m = Ast.make_mcode(Ast.unwrap_mcode m) in
   let decl r k d =
@@ -172,7 +175,8 @@ let rec rule_elem re =
 	      function inh ->
 		Common.inter_set inh prev)
 	    (List.hd all_inhs) (List.tl all_inhs) in
-	Ast.make_inherited_term (Ast.unwrap re) inhs in
+	let inhs_poss = Ast.get_inherited_pos re in (* already intersection *)
+	Ast.make_inherited_term (Ast.unwrap re) inhs inhs_poss in
       [[(List.length res,strip re)]]
   | _ -> [[(1,strip re)]]
 
@@ -318,6 +322,14 @@ let asttomemberz (_,_,l) used_after =
         let info =
           List.sort (function (n1,_) -> function (n2,_) -> compare n1 n2)
             info in
+	let info =
+	  let (with_pos,without_pos) =
+	    (* put cases with inherited positions first *)
+	    List.partition
+	      (function (_,thing) ->
+		not (thing.Ast.positive_inherited_positions = []))
+	      info in
+	  with_pos @ without_pos in
         List.map (function (_,x) -> (Lib_engine.Match(x),CTL.Control)) info)
       l in
   List.map2
@@ -330,14 +342,14 @@ let asttomemberz (_,_,l) used_after =
       | _ -> process_one min)
     (List.map (top_level contains_constant no_mcode) l)
     (List.combine
-        (List.map2
-           (function x -> function ua -> function _ ->
-             top_level (contains_modif ua) mcode x)
-           l used_after)
-        (List.map
-           (function x -> function _ ->
-             top_level (function _ -> true) no_mcode x)
-           l))
+       (List.map2
+          (function x -> function ua -> function _ ->
+            top_level (contains_modif ua) mcode x)
+          l used_after)
+       (List.map
+          (function x -> function _ ->
+            top_level (function _ -> true) no_mcode x)
+          l))
 
 let asttomember r used_after =
   match r with
