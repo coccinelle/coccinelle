@@ -31,8 +31,8 @@ let parse filename =
   let _ = Lex.table := Common.full_charpos_to_pos filename in
   Common.with_open_infile filename
     (fun channel ->
-      let lexbuf = Lexing.from_channel channel in
-      lex_config lexbuf)
+       let lexbuf = Lexing.from_channel channel in
+       lex_config lexbuf)
 
 
 (* ------------------------------------------------------------------------- *)
@@ -47,20 +47,25 @@ let parse_msgs attributes =
     | Lex.Report (rm,rv) -> ((om,ov), (rm,rv)) in
   List.fold_left read (("",[]), ("",[])) attributes
 
-(* add the rule to the User_input.t
- * rule_exists is a function that checks whether a rule exists
+(* add the rule to the User_input.t.
  *)
 let add_rule rule_exists t ((oldnm,newnm),a) =
   let oldrnm = rule_exists oldnm in
 
-  let (org,rep) = match parse_msgs a with
+  let (org,rep) =
+    match parse_msgs a with
     | ("",_),("",_) ->
         failwith ("Config error: must specify at least org or report message.")
     | ("",_),mgv | mgv,("",_) ->
-        (try (UI.check_format_string mgv; (mgv,mgv))
+        (try
+          UI.check_format_string mgv;
+          (mgv,mgv)
         with Failure msg -> failwith ("Config error: " ^ msg))
     | org, rep ->
-        try UI.check_format_string org; UI.check_format_string rep; (org, rep)
+        try
+          UI.check_format_string org;
+          UI.check_format_string rep;
+          (org, rep)
         with Failure msg -> failwith ("Config error: " ^ msg) in
 
   UI.add_rule ((oldrnm, newnm),org,rep) t
@@ -88,8 +93,7 @@ let make desc limit keys conf comments options authors url =
 let parse_local ~ordered_rules ~config_name =
   let rule_exists x =
     let x =
-      if Globals.starts_with_digit x then "rule starting on line "^ x
-      else x in
+      if Globals.starts_with_digit x then "rule starting on line "^ x else x in
     if (List.mem x ordered_rules) then x
     else failwith ("Config error: no */+/- rule called \"" ^ x ^ "\".") in
   let (d,l,k,c,m,o,a,u,r) = parse config_name in

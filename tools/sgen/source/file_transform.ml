@@ -17,7 +17,6 @@ module Ast0 = Ast0_cocci
  * some of it might already have been printed.
  * Naming conventions: outch = out_channel, inch = in_channel.
  *
- *
  * TODO: There are a number of edge cases that are not handled well in this
  * module due to using pure string-matching without context.
  * Example: @'s inside comments within rule declarations.
@@ -175,11 +174,13 @@ let print_named_rule ~rule ~handler ~outch ~inch =
   let (line,inch) = skip_rule_dec name outch inch in
   handler line inch
 
-(* prints the file until the rule declaration (name must follow the format
- * "line starting on <num>"), which is substituted with whatever handler does.
+(* prints the file until the rule declaration (rule_name must follow the format
+ * "rule starting on line <num>"), which is substituted with whatever handler
+ * does.
  *)
 let print_nameless_rule ~rule ~handler ~outch ~inch =
-  let rule_line = Globals.extract_line (Ast0.get_rule_name rule) in
+  let rule_name = Ast0.get_rule_name rule in
+  let rule_line = Globals.extract_line rule_name in
   let _ = assert (rule_line > !line_number) in
   let (line, inch) =
     find_line ~do_this:(print_nl outch) ~until_line:rule_line inch in
@@ -190,10 +191,7 @@ let print_nameless_rule ~rule ~handler ~outch ~inch =
     let (line, inch) = find_match ~do_this:nothing ~until:match_end inch in
     handler line inch
   else
-    let line_str = string_of_int rule_line in
-    failwith
-      ("Error: Did not find a rule starting on line " ^ line_str ^
-       ", instead found: " ^ line)
+    failwith ("Error: Did not find a " ^ rule_name ^ ", instead found: " ^ line)
 
 (* Finds the declaration of the input rule ("@rulename ...@") and substitutes
  * it with a patch dependent version ("@rulename depends on patch ...@").
@@ -255,20 +253,27 @@ let skip_nameless_rule ~rule ~outch ~inch =
   let inch =
     if rule_line = !line_number then inch
     else snd (find_line ~do_this:nothing ~until_line:rule_line inch) in
-  (*currently, line is the line that contains the rule header. so we need
-   *the rule header end @@ and then the start of the next rule. *)
+
+  (* currently, line is the line that contains the rule header. so we need
+   * the rule header end @@ and then the start of the next rule.
+   *)
   let (_,inch) = find_match ~do_this:nothing ~until:match_rule_end inch in
   next outch inch
 
-(* print a context rule (that is, don't print it, but find it and skip it!) *)
-let print_rule_context outch lastres (rule, new_name) =
+(* print a context rule (that is, don't print it, but find it and skip it!)
+ * last_res is (the last line contents, the in_channel) from the previous call.
+ *
+ * returns Some (last line contents, in_channel) if there was another rule after
+ * the input rule, otherwise None.
+ *)
+let print_rule_context outch last_res (rule, new_name) =
   try
-    let (last_line, inch) = match lastres with
-      | Some r -> r
-      | None -> raise End_of_file in
-    match new_name with
-    | None -> skip_named_rule ~rule ~last_line ~outch ~inch
-    | Some n -> skip_nameless_rule ~rule ~outch ~inch
+    match last_res, new_name with
+    | None, _ -> raise End_of_file
+    | Some (last_line, inch), None ->
+        skip_named_rule ~rule ~last_line ~outch ~inch
+    | Some (_, inch), Some n ->
+        skip_nameless_rule ~rule ~outch ~inch
   with
     | End_of_file -> fail_eof (Ast0.get_rule_name rule)
     | e -> raise e (* propagate exception upwards *)
@@ -283,11 +288,12 @@ let print_context outch inch rules =
 (* ENTRY POINT *)
 
 (* reads the file and prints it with transformations.
- * assumes rules are sorted in order of when they occur in the script. *)
+ * assumes rules are sorted in order of when they occur in the script.
+ *)
 let print ~channel ~file_name ~preface ~virtuals ~rules ~context_mode =
-  line_number := 0;
-  print_nl channel preface;
-  print_virtuals channel virtuals;
+  let _ = line_number := 0 in
+  let _ = print_nl channel preface in
+  let _ = print_virtuals channel virtuals in
   let inch = open_in file_name in
   try
     if context_mode then

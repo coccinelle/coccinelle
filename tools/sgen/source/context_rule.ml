@@ -44,12 +44,12 @@ let generate ~new_name ~disj_map ~rule ~context_mode =
       let dnm = Globals.get_disj_name nm in
 
       (* rule header *)
-      (* call mv unparser on original name in order avoid rule inheritance *)
+      (* call mv unparser on original name in order to avoid rule inheritance *)
       let meta_vars = M.unparse ~minus ~rulename:nme in
       let rh = Rule_header.generate_context
         ~isos ~dropisos ~deps ~meta_vars ~context_mode in
 
-      (* generated context rule and positions *)
+      (* generated context rule body and positions *)
       let (pos,(res,disj)) =
         Rule_body.generate ~rule_name:nm ~disj_map ~context_mode minus in
 
@@ -67,7 +67,7 @@ let generate ~new_name ~disj_map ~rule ~context_mode =
           let rhd = rh ~exists ~rulename:cnm ~meta_pos:pos_mv in
           ([(rhd, res)], pos_inh)
       | Some disj ->
-          (*first generated rule has no stars, therefore exists in header*)
+          (* first generated rule has no stars, therefore exists in header *)
           let crh = rh ~rulename:cnm ~exists:Ast.Exists ~meta_pos:pos_mv in
           let drh = rh ~rulename:dnm ~exists ~meta_pos:pos_inh in
           ([(crh, res); (drh, disj)], pos_inh)

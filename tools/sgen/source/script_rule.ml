@@ -61,8 +61,10 @@ let format_err_msg err_msg mpnames mvnames =
 
 (* assembles an org script rule. *)
 let gen_org_rule nm (firstpos, restpos) metavars err_msg =
+
   (* if there are metavars, they might contain brackets which conflict with
-   * the todo format. In that case, use safe mode (replaces brackets). *)
+   * the todo format. In that case, use safe mode (replaces brackets).
+   *)
   let printfn = if metavars <> [] then print_safe_todo_fn else print_todo_fn in
   let new_rulenm = nm ^ "_org" in
   let headervars = format_header_vars (metavars @ (firstpos :: restpos)) in
@@ -105,16 +107,17 @@ let gen_report_rule nm (firstpos, restpos) metavars err_msg =
 (* generate org and report rule for the added metapositions and with the user
  * specified information (error messages).
  *)
-let generate ~metapos ~user_input = match user_input with
+let generate ~metapos ~user_input =
+  match user_input with
   | ((_, Some nm), (org_msg, omv), (report_msg, rmv))
   | ((nm, None), (org_msg, omv), (report_msg, rmv)) ->
-  let (firstpos, restpos) = split_pos metapos in
-  let new_rule = M.get_rule firstpos in
-  (*make sure user-specified metavars are inherited from the context rule*)
-  let omv, rmv = M.inherit_rule ~new_rule omv, M.inherit_rule ~new_rule rmv in
-  let org = gen_org_rule nm (firstpos, restpos) omv org_msg in
-  let report = gen_report_rule nm (firstpos, restpos) rmv report_msg in
-  (org, report)
+    let (firstpos, restpos) = split_pos metapos in
+    let new_rule = M.get_rule firstpos in
+    (* make sure user-specified metavars are inherited from the context rule *)
+    let omv, rmv = M.inherit_rule ~new_rule omv, M.inherit_rule ~new_rule rmv in
+    let org = gen_org_rule nm (firstpos, restpos) omv org_msg in
+    let report = gen_report_rule nm (firstpos, restpos) rmv report_msg in
+    (org, report)
 
 (* print the script rules *)
 let print outch (org, rep) = printfn outch org; printfn outch rep

@@ -5,7 +5,8 @@ module PG = Position_generator
 (* ------------------------------------------------------------------------- *)
 
 (* Returns snapshot that has both updated result (added rule with no stars)
- * and updated disj_result (rule with stars) *)
+ * and updated disj_result (rule with stars).
+ *)
 
 (* ------------------------------------------------------------------------- *)
 (* TYPE HANDLER FUNCTIONS *)
@@ -69,11 +70,14 @@ let handle_disj
    * tblist is a list of (disj case, whether it is a patch)
    *)
   let handle_cases set_modefn tblist pipes =
-    let rec handle_cases' tblist pipes fn = match tblist, pipes with
-      | [(t,b)], [] -> fn >> set_modefn b >> casefn t
+    let rec handle_cases' tblist pipes fn =
+      match tblist, pipes with
+      | [(t,b)], [] ->
+          fn >> set_modefn b >> casefn t
       | (t,b) :: ts, p :: ps ->
           handle_cases' ts ps (fn >> set_modefn b >> casefn t >> strfn p)
-      | _ -> assert false (*should be exactly one more stmt than pipes*) in
+      | _ ->
+          assert false (*should be exactly one more stmt than pipes*) in
     handle_cases' tblist pipes (fun x -> x) in
 
   let disj =

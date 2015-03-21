@@ -12,27 +12,33 @@ let name = ref ""
 let write_file ~file s =
   let chan =
     try open_out file
-    with Sys_error msg -> failwith ("Error: Invalid filename: " ^ file ^
-      ". Message: " ^ msg) in
+    with Sys_error msg ->
+      let msg = "Error: Invalid filename: " ^ file ^ ". Message: " ^ msg in
+      failwith msg in
   try
     (output_string chan s; close_out chan)
-  with Sys_error msg -> failwith ("Error: failed writing to " ^ file ^
-    ". Message: " ^ msg)
+  with Sys_error msg ->
+    let msg = "Error: failed writing to " ^ file ^ ". Message: " ^ msg in
+    failwith msg
 
 (* termination *)
 let exit() = print_string "\n~*~ GOODBYE! ~*~\n"; exit 0
 
 (* allow the user to save the current progress in a config file *)
 let save t =
-  let save' t name =
-    let unp = UI.unparse t in write_file ~file:name unp;
-    print_string ("\nSaved progress to " ^ name ^ "!\n" ^ "-------------\n") in
   let name = !name in
-  print_string ("\nSave progress to " ^name^"?\n");
-  print_string ("Options:\n" ^
-     "  Type y(es) or press <enter> to save.\n"^
-     "  Type n(o) to not save.\n"^
-     "  Write another filename to save to.\n");
+
+  let save' t name =
+    let unp = UI.unparse t in
+    let _ = write_file ~file:name unp in
+    print_string ("\nSaved progress to " ^ name ^ "!\n" ^ "-------------\n") in
+
+  let _ = print_string ("\nSave progress to " ^name^"?\n") in
+  let _ = print_string ("Options:\n" ^
+    "  Type y(es) or press <enter> to save.\n"^
+    "  Type n(o) to not save.\n"^
+    "  Write another filename to save to.\n") in
+
   match String.lowercase (read_line()) with
   | "" | "y" | "yes" -> save' t name
   | "n" | "no" -> ()
@@ -142,12 +148,12 @@ let rec get_rule (rulename : string) (t : UI.t) =
   print_string ("\nHandling rule \"" ^ rulename ^ "\" ...");
   let (rnm, newnm) = get_name rulename t in
   let nm = (match newnm with Some n -> n | None -> rnm) in
-  print_string ("\n~ Getting messages for org and report mode ~\n\n" ^
+  let _ = print_string ("\n~ Getting messages for org and report mode ~\n\n" ^
     "No quotes necessary around the message.\n" ^
     "It is possible to include formatted variables like %s (Python style), " ^
     "you will get a chance to declare them afterwards.\n" ^
     "Example message: Unneeded variable \\\"%s\\\". Return \\\"%s\\\".\n" ^
-    "Example format variables: x, other_rule.y. \n");
+    "Example format variables: x, other_rule.y. \n") in
   let (orgmsg,orgmvs) = get_message ("\nRule \"" ^ nm ^ "\". Write a message"^
     " for org mode:\n") true t in
   let (repmsg,repmvs) = get_message ("\nRule \"" ^ nm ^ "\". Write a message" ^

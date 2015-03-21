@@ -69,7 +69,8 @@ let set_arity m a = match m, a with
 (* STATE *)
 
 (* Wrapper for state variables. *)
-type snapshot = {
+type snapshot =
+{
   result : (mode * string) IntMap.t; (* maps line number to content *)
   current_mode : mode; (* whether current line is in context or star mode *)
   current_line : int;  (* current line number (for hashtable indexing) *)
@@ -88,7 +89,8 @@ type snapshot = {
 (* Constructor.
  * Note: disj_map stays invariant throughout the processing of the rule ...
  *)
-let snap ~disj_map = {
+let snap ~disj_map =
+{
   result = IntMap.empty;
   current_mode = Context NONE;
   current_line = 0;
@@ -141,15 +143,24 @@ let add_map (v : string) (i : int) (m : mode) (r : (mode * string) IntMap.t) =
     IntMap.add i (m, v) r
 
 (* add the value in v to the current line entry, possibly changing arity. *)
-let add_result (v : string) (a : arity option) (s : snapshot) =
-  let (r, i, m) = (s.result, s.current_line, set_arity s.current_mode a) in
-  if s.disj_mode then
-  (match s.disj_result with
-    | Some d -> { s with result = add_map v i m r;
-        disj_result = Some (add_map v i m d) }
-    | None -> { s with result = add_map v i m r})
-  else
-  { s with result = add_map v i m r }
+let add_result (v : string) (a : arity option) (snp : snapshot) =
+  let (r, i, m) =
+    (snp.result, snp.current_line, set_arity snp.current_mode a) in
+  if snp.disj_mode then begin
+    match snp.disj_result with
+    | Some d ->
+        {
+          snp with
+          result = add_map v i m r;
+          disj_result = Some (add_map v i m d)
+        }
+    | None ->
+        {
+          snp with
+          result = add_map v i m r
+        }
+  end else
+    { snp with result = add_map v i m r }
 
 (* add to current line *)
 let add_with_arity value arity = add_result value (Some (to_a arity))
@@ -167,14 +178,18 @@ let add_position snp =
   let newpos = pos_name ^ (string_of_int snp.pos_counter) in
   let newsnp =
     if fst snp.freeze_pos
-    then { snp with
-      positions = StringSet.add newpos snp.positions;
-      freeze_pos = (true, true) (* set dirty bit, because adding position *)
-    }
-    else { snp with
-      pos_counter = snp.pos_counter + 1;
-      positions = StringSet.add newpos snp.positions;
-    } in
+    then
+      {
+        snp with
+        positions = StringSet.add newpos snp.positions;
+        freeze_pos = (true, true) (* set dirty bit, because adding position *)
+      }
+    else
+      {
+        snp with
+        pos_counter = snp.pos_counter + 1;
+        positions = StringSet.add newpos snp.positions;
+      } in
   (newpos, newsnp)
 
 (* set the freeze position flag to b.
@@ -185,7 +200,11 @@ let add_position snp =
 let set_freeze_pos b snp =
   let (freez,dirty) = snp.freeze_pos in
   if freez && dirty && not(b) then
-    { snp with freeze_pos = (b,false); pos_counter = snp.pos_counter + 1 }
+    {
+       snp with
+       freeze_pos = (b,false);
+       pos_counter = snp.pos_counter + 1;
+    }
   else
     { snp with freeze_pos = (b,false) }
 

@@ -35,7 +35,8 @@ module DG = Disj_generator
 let ( >> ) f g x = g (f x)
 
 (* Continuously apply function ('b -> 'a -> 'a) with start value ('a) and
- * the values in a 'b list. *)
+ * the values in a 'b list.
+ *)
 let reduce fn lst start = List.fold_left (fun a b -> fn b a) start lst
 
 (* print helpers for context rules (which are really just string lists) *)
@@ -52,7 +53,8 @@ let starrify_line a = GT.set_mode_star ~arity:a
 (* metapositions are represented as lists of Ast0.anythings.
  * PATCH MODE: if a position is in plus mode ("added"), ie. made by the
  * position generator, it indicates an important line which should be starred.
- * Mutual recursion because meta anythings can have metas themselves ... *)
+ * Mutual recursion because meta anythings can have metas themselves ...
+ *)
 let rec add_positions ~context_mode lst =
   reduce (add_pos ~context_mode) lst
 
@@ -74,7 +76,8 @@ and add_pos ~context_mode = function
   | _ -> failwith "add_pos only supported for metavariables."
 
 (* renders the mcode as a string in the map and updates the line number.
- * context_mode means that the stars are put where the minuses are. *)
+ * context_mode means that the stars are put where the minuses are.
+ *)
 let mcode ~context_mode fn (x, a, info, mc, pos, _) =
   let default ~add_star =
     GT.skip ~rule_line:(info.Ast0.pos_info.Ast0.line_start)
@@ -104,13 +107,18 @@ let whencodes ~strfn ~exprfn ~notfn ~alwaysfn l =
         strfn w >> strfn e >> GT.add " false" >> exprfn a in
   GT.do_whencode (reduce add_whens l)
 
+
 (* This is where the magic happens!
- * only position and star statements if they are the first in a dots or
- * come immediately after a nest, dots, disjunction, or metastatement. *)
+ * inserts stars/positions into the statements of a statement_dots.
+ *
+ * only give positions and stars to statements if they are the first in a dots
+ * or come immediately after a nest, dots, disjunction, or metastatement.
+ *)
 let star_dotsstmtfn comb context_mode stmtdots =
 
   (* detects if any of the statements in here contain minuses in which case we
-   * put the stars where the minuses are. *)
+   * put the stars where the minuses are.
+   *)
   let has_minuses = Detect_patch.detect_statement_dots stmtdots in
   let c = comb ~context_mode:(context_mode || has_minuses) in
   let stmtfn = c.VT0.combiner_rec_statement in
@@ -122,13 +130,16 @@ let star_dotsstmtfn comb context_mode stmtdots =
     | None -> stmtfn stmt snp in
 
   (* returns true if the statement can potentially cover large amounts of
-   * code/requires special handling and therefore should not be starred. *)
-  let do_not_star x = match Ast0.unwrap x with
+   * code/requires special handling and therefore should not be starred.
+   *)
+  let do_not_star x =
+    match Ast0.unwrap x with
     | Ast0.Nest _ | Ast0.Dots _ | Ast0.Circles _ | Ast0.Stars _ | Ast0.Disj _
     | Ast0.MetaStmt _ -> true | _ -> false in
 
   (* puts stars and positions in statements that come after one of the cases
-   * in no_star. Insert newline after a no_star case. *)
+   * in no_star. Insert newline after a no_star case.
+   *)
   let rec insert_stars star_current fn =
     let starfn = if star_current then star_stmtfn else stmtfn in
     function
@@ -194,17 +205,20 @@ let rec gen_combiner ~context_mode =
    *- Disjunctions with SmPL style pattern-matching may need to be split into
    *  two rules.
    *)
-  let identfn c fn v = match Ast0.unwrap v with
+  let identfn c fn v =
+    match Ast0.unwrap v with
     | Ast0.DisjId _ -> DG.generate_ident
         ~strfn:string_mcode ~identfn:fn ~ident:v ~at_top:false
     | _ -> fn v in
 
-  let exprfn c fn v = match Ast0.unwrap v with
+  let exprfn c fn v =
+    match Ast0.unwrap v with
     | Ast0.DisjExpr _ -> DG.generate_expression
         ~strfn:string_mcode ~exprfn:fn ~expr:v ~at_top:false
     | _ -> fn v in
 
-  let declfn c fn v = match Ast0.unwrap v with
+  let declfn c fn v =
+    match Ast0.unwrap v with
     | Ast0.DisjDecl _ -> DG.generate_declaration
         ~strfn:string_mcode ~declfn:fn ~decl:v ~at_top:false
     | _ -> fn v in
@@ -236,7 +250,8 @@ let rec gen_combiner ~context_mode =
    * the disjunction rule.
    * TODO: should not split either if the only other stmts are unstarrable.
    * This might be okay for now since it is unlikely that a rule would contain
-   * something unstarrable (dots, metastmt) and then a disjunction. *)
+   * something unstarrable (dots, metastmt) and then a disjunction.
+   *)
   let topfn c fn v =
     match Ast0.unwrap v with
     | Ast0.CODE stmtdots ->
@@ -246,7 +261,8 @@ let rec gen_combiner ~context_mode =
                ~stmtdotsfn:c.VT0.combiner_rec_statement_dots
                ~stmtfn:c.VT0.combiner_rec_statement
                ~strfn:string_mcode ~stmt:x ~at_top:true
-         | _ -> fn v)
+         | _ -> fn v
+        )
     | _ -> fn v
   in
 

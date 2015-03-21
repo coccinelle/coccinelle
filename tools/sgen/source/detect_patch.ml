@@ -32,7 +32,8 @@ let mcode = function
   | (x, a, info, Ast0.CONTEXT _, pos, _) -> (false, IntMap.empty)
   | (x, a, info, Ast0.MINUS _, pos, _) -> (true, IntMap.empty)
   | (x, a, info, Ast0.PLUS _, pos, _) -> (true, IntMap.empty)
-  | (x, a, info, Ast0.MIXED _, pos, _) -> failwith "not possible"
+  | (x, a, info, Ast0.MIXED _, pos, _) ->
+      failwith "detect_patch: mixed not supported"
 
 (* Disjunction handler.
  * takes left and right parenthesis mcodes, list of pipe separator mcodes,
@@ -49,9 +50,9 @@ let handle_disj lp rp pipelist clist cfn =
     let (case_is_p, case_map) = cfn case in
     (is_patch || case_is_p, case_is_p :: acc_list, merge case_map acc_map) in
 
-  (*contains_patch is a bool denoting whether the whole disj contains a patch
-   *disj_patch is a list of bools, each bool representing a disj case
-   *acc are the accumulated disjunctions within the disjunction
+  (* contains_patch is a bool denoting whether the whole disj contains a patch
+   * disj_patch is a list of bools, each bool representing a disj case
+   * acc are the accumulated disjunctions within the disjunction
    *)
   let (contains_patch, disj_patch, acc) =
     List.fold_left disj_patches (false, [], IntMap.empty) clist in

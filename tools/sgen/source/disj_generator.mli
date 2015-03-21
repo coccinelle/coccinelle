@@ -13,22 +13,15 @@
  *   - Disregard the above rule in cases where there is no risk of false
  *     positives - e.g. if the disjunction is the only thing in the rule.
  *     Determined by at_top flag.
- *
- * All functions take:
- *   - strfn: a function to handle string_mcodes.
- *   - some Ast0 component, ie. the thing that contains the disjunction.
- *   - some function to handle the Ast0 component.
- *   - at_top: a flag that indicates whether it is safe to just generate one
- *     rule, even though the disjunction uses pattern matching.
- *     TODO: better detection of when to set the at_top flag (in rule_body).
- *
- * Returns:
- *   - an updated snapshot with the inserted disjunction, possible an extra
- *     disjunction rule if needed.
  *)
 
 (* ------------------------------------------------------------------------- *)
 (* DISJ GENERATION FUNCTIONS *)
+
+(* These types are just aliases for functions that take some AST0 component and
+ * a snapshot, handle the component with regards to the input snapshot and
+ * return the resulting snapshot.
+ *)
 
 type statement_dots_fn =
   (Ast0_cocci.statement Ast0_cocci.dots -> Generator_types.snapshot ->
@@ -53,6 +46,23 @@ type ident_fn =
 type declaration_fn =
   (Ast0_cocci.declaration -> Generator_types.snapshot ->
    Generator_types.snapshot)
+
+(* These functions take a disjunction component (stmt, expr, ident, decl) and a
+ * snapshot + some other things, and perform the disjunction rule generation.
+ * Fails if the disjunction component is NOT a disjunction.
+ *
+ * All functions take:
+ *   - strfn: a function to handle string_mcodes.
+ *   - some Ast0 component, ie. the thing that contains the disjunction.
+ *   - some function to handle the Ast0 component.
+ *   - at_top: a flag that indicates whether it is safe to just generate one
+ *     rule, even though the disjunction uses pattern matching.
+ *     TODO: better detection of when to set the at_top flag (in rule_body).
+ *
+ * Return:
+ *   - an updated snapshot with the inserted disjunction, possibly an extra
+ *     disjunction rule if needed.
+ *)
 
 val generate_statement :
   stmtdotsfn:statement_dots_fn ->

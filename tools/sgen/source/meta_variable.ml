@@ -112,7 +112,8 @@ let type_c ~form =
     | None -> default
 
 (* TODO: in SeedId, we sometimes (?) want to keep the rulename; but not if it
- * has been declared before? *)
+ * has been declared before?
+ *)
 let seed ~rn =
   let se = function
     | Ast.SeedString s -> "\"" ^ s ^ "\"" | Ast.SeedId (r,nm) -> nm in
@@ -339,7 +340,8 @@ let metavar_combiner rn =
 
   (* --- Implementations of functions that handle possible metavariables --- *)
 
-  let identfn c fn v = match Ast0.unwrap v with
+  let identfn c fn v =
+    match Ast0.unwrap v with
     | Ast0.MetaId(mc, idconstr, s, _) ->
         let constr = id_constraint ~rn idconstr in
         let seed = seed ~rn s in
@@ -376,51 +378,57 @@ let metavar_combiner rn =
     | Ast0.AsExpr (e1, e2) -> as_format e1 e2 exprfn exprfn
     | _ -> fn v in
 
-  let tyfn c fn v = match Ast0.unwrap v with
+  let tyfn c fn v =
+    match Ast0.unwrap v with
     | Ast0.MetaType (mc, pure) -> meta_mc_format ~mc ~typ:"type " ~constr:""
     | Ast0.AsType (tc1, tc2) ->
         let ty = c.VT0.combiner_rec_typeC in as_format tc1 tc2 ty ty
     | Ast0.TypeName mc -> str_mc_format ~mc ~typ:"typedef "
     | _ -> fn v in
 
-  let initfn c fn v = match Ast0.unwrap v with
-  | Ast0.MetaInit(mc, pure) ->
-      meta_mc_format ~mc ~typ:"initializer " ~constr:""
-  | Ast0.MetaInitList(mc, listlen, pure) ->
-      lst_format ~mc ~typ:"initializer list " ~listlen
-  | Ast0.AsInit(i1,i2) ->
-      let ini = c.VT0.combiner_rec_initialiser in as_format i1 i2 ini ini
-  | _ -> fn v in
+  let initfn c fn v =
+    match Ast0.unwrap v with
+    | Ast0.MetaInit(mc, pure) ->
+        meta_mc_format ~mc ~typ:"initializer " ~constr:""
+    | Ast0.MetaInitList(mc, listlen, pure) ->
+        lst_format ~mc ~typ:"initializer list " ~listlen
+    | Ast0.AsInit(i1,i2) ->
+        let ini = c.VT0.combiner_rec_initialiser in as_format i1 i2 ini ini
+    | _ -> fn v in
 
-  let paramfn c fn v = match Ast0.unwrap v with
-  | Ast0.MetaParam(mc, pure) -> meta_mc_format ~mc ~typ:"parameter " ~constr:""
-  | Ast0.MetaParamList(mc, listlen, pure) ->
-      lst_format ~mc ~typ:"parameter list" ~listlen
-  | Ast0.AsParam (ptd,ex) ->
-      let par = c.VT0.combiner_rec_parameter in
-      let expr = c.VT0.combiner_rec_expression in
-      as_format ptd ex par expr
-  | _ -> fn v in
+  let paramfn c fn v =
+    match Ast0.unwrap v with
+    | Ast0.MetaParam(mc, pure) ->
+        meta_mc_format ~mc ~typ:"parameter " ~constr:""
+    | Ast0.MetaParamList(mc, listlen, pure) ->
+        lst_format ~mc ~typ:"parameter list" ~listlen
+    | Ast0.AsParam (ptd,ex) ->
+        let par = c.VT0.combiner_rec_parameter in
+        let expr = c.VT0.combiner_rec_expression in
+        as_format ptd ex par expr
+    | _ -> fn v in
 
-  let declfn c fn v = match Ast0.unwrap v with
+  let declfn c fn v =
+    match Ast0.unwrap v with
     | Ast0.MetaDecl(mc, pure) ->
         meta_mc_format ~mc ~typ:"declaration " ~constr:""
     | Ast0.MetaField(mc, pure) -> meta_mc_format ~mc ~typ:"field " ~constr:""
     | Ast0.MetaFieldList (mc, listlen, pure) ->
         lst_format ~mc ~typ:"field list" ~listlen
     | Ast0.AsDecl(dc1, dc2) ->
-      let dec = c.VT0.combiner_rec_declaration in as_format dc1 dc2 dec dec
+        let dec = c.VT0.combiner_rec_declaration in as_format dc1 dc2 dec dec
     | Ast0.MacroDecl(id, _, expdots, _, _) ->
-      let expids = c.VT0.combiner_rec_expression_dots expdots in
-      MVSet.union (ids ~rn ~typ:"declarer" ~id) expids
+        let expids = c.VT0.combiner_rec_expression_dots expdots in
+        MVSet.union (ids ~rn ~typ:"declarer" ~id) expids
     | Ast0.MacroDeclInit(id, _, expdots, _, _, ini, _) ->
-      let expids = c.VT0.combiner_rec_expression_dots expdots in
-      let inid = MVSet.union expids (c.VT0.combiner_rec_initialiser ini) in
-      let declids = ids ~rn ~typ:"declarer" ~id in
+        let expids = c.VT0.combiner_rec_expression_dots expdots in
+        let inid = MVSet.union expids (c.VT0.combiner_rec_initialiser ini) in
+        let declids = ids ~rn ~typ:"declarer" ~id in
       MVSet.union declids inid
     | _ -> fn v in
 
-  let string_fragmentfn c fn v = match Ast0.unwrap v with 
+  let string_fragmentfn c fn v =
+    match Ast0.unwrap v with 
     | Ast0.MetaFormatList(_, mc, listlen) ->
         lst_format ~mc ~typ:"format list" ~listlen
     | Ast0.FormatFragment(_, format) ->
@@ -431,21 +439,22 @@ let metavar_combiner rn =
         | _ -> fn v)
     | _ -> fn v in
 
-  let stmtfn c fn v = match Ast0.unwrap v with
-  | Ast0.MetaStmt (mc, pure) ->
-      meta_mc_format ~mc ~typ:"statement " ~constr:""
-  | Ast0.MetaStmtList (mc, pure) ->
-      meta_mc_format ~mc ~typ:"statementlist[]" ~constr:""
-  | Ast0.AsStmt (s1, s2)->
-      let stmt = c.VT0.combiner_rec_statement in as_format s1 s2 stmt stmt
-  | Ast0.Iterator (id, _, expdots, _, stmt,_) ->
+  let stmtfn c fn v =
+    match Ast0.unwrap v with
+    | Ast0.MetaStmt (mc, pure) ->
+        meta_mc_format ~mc ~typ:"statement " ~constr:""
+    | Ast0.MetaStmtList (mc, pure) ->
+        meta_mc_format ~mc ~typ:"statementlist[]" ~constr:""
+    | Ast0.AsStmt (s1, s2)->
+        let stmt = c.VT0.combiner_rec_statement in as_format s1 s2 stmt stmt
+    | Ast0.Iterator (id, _, expdots, _, stmt,_) ->
 
-      (* the iterator might contain metavariables *)
-      let expids = c.VT0.combiner_rec_expression_dots expdots in
-      let stmtid = MVSet.union expids (c.VT0.combiner_rec_statement stmt) in
-      let iteids = ids ~rn ~typ:"iterator" ~id in
-      MVSet.union iteids stmtid
-  | _ -> fn v in
+        (* the iterator might contain metavariables *)
+        let expids = c.VT0.combiner_rec_expression_dots expdots in
+        let stmtid = MVSet.union expids (c.VT0.combiner_rec_statement stmt) in
+        let iteids = ids ~rn ~typ:"iterator" ~id in
+        MVSet.union iteids stmtid
+    | _ -> fn v in
 
   V0.flat_combiner bind option_default
     meta_mcode string_mcode const_mcode assign_mcode fix_mcode unary_mcode
@@ -478,9 +487,12 @@ let make_metavar ?(rulename = "") ?(constraints = "") ?(typ = "") mvname =
   make_mv typ (rulename, mvname) constraints
 
 (* forces inheritance on a list of metavars (not including the ones that were
- * already inherited. *)
-let inherit_rule ~new_rule = List.map
-  (fun s -> match s with | (a,("",c),d) -> (a,(new_rule,c),d) | _ -> s)
+ * already inherited).
+ *)
+let inherit_rule ~new_rule =
+  let force_inheritance ((a,(b,c),d) as mv) =
+    if b = "" then (a,(new_rule,c),d) else mv in
+  List.map force_inheritance
 
 (* prints the strings in the set on separate lines, ended with semicolons.
  * if do_group, group all metavars of same type on the same line.

@@ -28,7 +28,8 @@ type t
 
 (* generates org and report script for one rule.
  * metapos is the list of added metapositions that show where the match is.
- * INVARIANT: there MUST be at least one position in the metapos list!!! *)
+ * INVARIANT: there MUST be at least one position in the metapos list!!!
+ *)
 val generate :
   metapos:Meta_variable.t list ->
   user_input:
@@ -41,5 +42,6 @@ val generate :
 val print : out_channel -> t -> unit
 
 (* print a list of script rules, grouping the org and the report rules
- * the (unit -> unit) function is called between org and report *)
+ * the (unit -> unit) function is called between org and report
+ *)
 val print_split : out_channel -> t list -> (unit -> unit) -> unit

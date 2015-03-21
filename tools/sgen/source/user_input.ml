@@ -48,7 +48,8 @@ let make_format_string msg =
 
 (* turn user-specified metavariable strings into metavariables.
  * important that they are created with no rulename if within the same rule,
- * since this is used to generate the right inheritance later on. *)
+ * since this is used to generate the right inheritance later on.
+ *)
 let make_metavars =
   let mv a =
     let a = Str.bounded_split (Str.regexp "\\.") a 2 in
@@ -60,7 +61,8 @@ let make_metavars =
 
 (* sort the rules in userinput in the order specified by ordered_rules
  * ordered_rules must all be valid for generation (ie. */+/- rules)
- * if the original rule could not be found in the userinput, use default msg *)
+ * if the original rule could not be found in the userinput, use default msg
+ *)
 let sort_rules ordered_rules userinput =
   let default = Globals.get_default_message() in
   let format_rule x =
@@ -136,10 +138,12 @@ let check_name nm t =
 
 (* add rule to rulemap in t.
  * for nameless rules: check legality of user-declared name or generate one if
- * user only declared line number in config. *)
+ * user only declared line number in config.
+ *)
 let add_rule ((rnm,newnm),(om,ov),(rm,rv)) t =
   let _ = assert (rnm <> "" && not(om = "" && rm = "")) in
-  let newnm = match newnm with
+  let newnm =
+    match newnm with
     | Some nm -> (check_name nm t; newnm)
     | None ->
         if String.contains rnm ' ' then Globals.generate_rule rnm else None in

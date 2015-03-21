@@ -30,7 +30,8 @@ val detect : Ast0_cocci.parsed_rule -> bool * bool list Common.IntMap.t
 val detect_statement_dots : Ast0_cocci.statement Ast0_cocci.dots -> bool
 
 (* returns only the rules that contained */+/- along with their disjunction
- * maps. Preserves order. *)
+ * maps. Preserves order.
+ *)
 val get_patch_rules :
   Ast0_cocci.parsed_rule list ->
   Ast0_cocci.parsed_rule list * (bool list Common.IntMap.t) list

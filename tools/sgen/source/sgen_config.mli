@@ -35,7 +35,8 @@ val parse_local :
 
 (* no user input, default is:
  * description = No description.
- * confidence = Moderate *)
+ * confidence = Moderate
+ *)
 val parse_default :
   ordered_rules:string list ->
   string *                           (* preface *)

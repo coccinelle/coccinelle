@@ -13,7 +13,7 @@ type t
  *)
 val unparse : minus:Ast0_cocci.rule -> rulename:string -> t list
 
-(* constructor *)
+(* constructor, rulename+constraints+type are optional (default to "") *)
 val make_metavar :
   ?rulename:string ->
   ?constraints:string ->

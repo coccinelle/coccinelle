@@ -10,7 +10,8 @@ module M = Meta_variable
 (* ------------------------------------------------------------------------- *)
 (* TYPES AND HELPERS *)
 
-type t = {
+type t =
+{
   first_line : string; (* @rulename ...@ *)
   meta_vars : M.t list;
   meta_pos : M.t list;
@@ -25,7 +26,8 @@ let comma_sep = String.concat ", "
 
 (* adds the hardcoded 'default' context rule dependency.
  * context mode: context || org || report
- * patch mode: !patch && (context || org || report) *)
+ * patch mode: !patch && (context || org || report)
+ *)
 let add_context_dependency dep context_mode =
   let context_dep = (* context || org || report *)
     Ast.OrDep(Ast.Dep "context", Ast.OrDep(Ast.Dep "org", Ast.Dep "report")) in
@@ -35,7 +37,8 @@ let add_context_dependency dep context_mode =
   if dep = Ast.NoDep then context_dep else Ast.AndDep(dep, context_dep)
 
 (* adds the hardcoded 'default' patch rule dependency.
- * patch && !context && !org && !report *)
+ * patch && !context && !org && !report
+ *)
 let add_patch_dependency dep =
   let patch_dep =
     Ast.AndDep(
@@ -94,7 +97,10 @@ let rule_declaration ~rulename ~isos ~dropisos ~deps ~exists =
 let generate ~rulename ~isos ~dropisos ~deps ~exists ~meta_vars ~meta_pos =
   let first_line = rule_declaration ~rulename ~isos ~dropisos ~deps ~exists in
   let last_line = "@@\n\n" in
-  {first_line = first_line ^ "\n"; meta_vars; meta_pos; last_line;}
+  {
+    first_line = first_line ^ "\n";
+    meta_vars; meta_pos; last_line;
+  }
 
 (* generate rule header with patch dependency *)
 let generate_patch

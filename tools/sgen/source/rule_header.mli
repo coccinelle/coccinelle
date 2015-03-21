@@ -27,7 +27,8 @@ val generate :
  t
 
 (* Generates header with context/org/report dependency.
- * If context_mode, don't include !patch in the dependencies. *)
+ * If context_mode, don't include !patch in the dependencies.
+ *)
 val generate_context :
  rulename:string ->
  isos:string list ->

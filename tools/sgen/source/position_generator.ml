@@ -96,7 +96,8 @@ and inc_file_pos ((x, a, info, mc, pos, q) as mco) snp =
 
 (* generate a position for an identifier.
  * Always possible! but not done in optional expressions *)
-and ident_pos i snp = match Ast0.unwrap i with
+and ident_pos i snp =
+  match Ast0.unwrap i with
   | Ast0.Id mc ->
       let (mc, snp) = string_mcode_pos mc snp in
       (Ast0.wrap (Ast0.Id(mc)), snp)
@@ -122,7 +123,8 @@ and ident_pos i snp = match Ast0.unwrap i with
  * at the types, but we can be forced to if there are disjunctions with
  * types that use SmPL pattern-matching.
  *)
-and type_pos t snp = match Ast0.unwrap t with
+and type_pos t snp =
+  match Ast0.unwrap t with
   | Ast0.DisjType(lp,tlist,pipelist,rp) ->
       let boollist = GT.get_disj (Ast0.get_mcode_line lp) snp in
       if all_same boollist then None
@@ -136,7 +138,8 @@ and type_pos t snp = match Ast0.unwrap t with
  * NB: make sure that the statement dots in the case_line cases are generated
  * in no_gen mode...
  *)
-and case_line_pos c snp = match Ast0.unwrap c with
+and case_line_pos c snp =
+  match Ast0.unwrap c with
   | Ast0.DisjCase(lp, clist, pipelist, rp) ->
       let boollist = GT.get_disj (Ast0.get_mcode_line lp) snp in
       if all_same boollist then None
@@ -149,7 +152,8 @@ and case_line_dots_pos c snp =
 
 (* Returns Some Ast0.declaration with inserted pos if it was possible to insert
  * a pos or None if it was not possible. *)
-and declaration_pos d snp = match Ast0.unwrap d with
+and declaration_pos d snp =
+  match Ast0.unwrap d with
   | Ast0.DisjDecl _ | Ast0.Ddots _ | Ast0.MetaDecl _ | Ast0.MetaField _
   | Ast0.MetaFieldList _ | Ast0.AsDecl _ -> None
   | Ast0.Init(st, ty, id, eq, ini, sem) ->
@@ -184,20 +188,23 @@ and declaration_pos d snp = match Ast0.unwrap d with
 
 (* Returns Some Ast0.forinfo with inserted pos if it was possible to insert
  * a pos or None if it was not possible. *)
-and forinfo_pos f snp = match Ast0.unwrap f with
+and forinfo_pos f snp =
+  match Ast0.unwrap f with
   | Ast0.ForExp (Some exp, sem) ->
       (match expression_pos exp snp with
        | Some (a, snp) -> wrap (Ast0.ForExp(Some a, sem)) snp
        | None ->
            let (m, snp) = string_mcode_pos sem snp in
-           wrap (Ast0.ForExp(Some exp, m)) snp)
+           wrap (Ast0.ForExp(Some exp, m)) snp
+      )
   | Ast0.ForExp (None, sem) ->
       let (m,snp) = string_mcode_pos sem snp in
       wrap (Ast0.ForExp (None, m)) snp
   | Ast0.ForDecl (bef, decl) ->
       (match declaration_pos decl snp with
        | Some (d, snp) -> wrap (Ast0.ForDecl(bef, d)) snp
-       | None -> None)
+       | None -> None
+      )
 
 (* Returns Some Ast0.expression with inserted pos if it was possible to insert
  * a pos or None if it was not possible. *)
@@ -218,89 +225,104 @@ and expression_pos e snp =
        | None ->
            let (m,snp) = string_mcode_pos lp snp in
            wrap (Ast0.FunCall(exp, m, expdots, rp)) snp
-       | a -> a)
+       | a -> a
+      )
   | Ast0.Assignment(exp1, amc, exp2, st) ->
       let fn x y =  Ast0.Assignment(x, amc, y, st) in
       (match exp_two exp1 exp2 fn snp with
        | None ->
            let (m,snp) = assign_pos amc snp in
            wrap (Ast0.Assignment(exp1, m, exp2, st)) snp
-       | a -> a)
+       | a -> a
+      )
   | Ast0.Sequence(exp1, com, exp2) ->
       let fn x y = Ast0.Sequence(x, com, y) in
       (match exp_two exp1 exp2 fn snp with
        | None ->
            let (m,snp) = string_mcode_pos com snp in
            wrap (Ast0.Sequence(exp1,m,exp2)) snp
-       | a -> a)
+       | a -> a
+      )
   | Ast0.CondExpr(exp1, why, expopt, colon, exp2) ->
       let fn x y = Ast0.CondExpr(x, why, expopt, colon, y) in
       (match exp_two exp1 exp2 fn snp with
        | None ->
            let (m,snp) = string_mcode_pos why snp in
            wrap (Ast0.CondExpr(exp1, m, expopt, colon, exp2)) snp
-       | a -> a)
+       | a -> a
+      )
   | Ast0.Postfix(exp, fixmc) ->
       let fn x = Ast0.Postfix(x, fixmc) in
       (match exp_one exp fn snp with
        | None ->
            let (m,snp) = fix_pos fixmc snp in
            wrap (Ast0.Postfix(exp,m)) snp
-       | a -> a)
+       | a -> a
+      )
   | Ast0.Infix(exp, fixmc) ->
       let fn x = Ast0.Infix(x, fixmc) in
       (match exp_one exp fn snp with
        | None ->
            let (m,snp) = fix_pos fixmc snp in
            wrap (Ast0.Infix(exp,m)) snp
-       | a -> a)
+       | a -> a
+      )
   | Ast0.Unary(exp, unmc) ->
       let fn x = Ast0.Unary(x, unmc) in
       (match exp_one exp fn snp with
        | None ->
            let (m,snp) = unary_pos unmc snp in
            wrap (Ast0.Unary(exp,m)) snp
-       | a -> a)
+       | a -> a
+      )
   | Ast0.Binary(exp1, bin, exp2) ->
       let fn x y = Ast0.Binary(x, bin, y) in
       (match exp_two exp1 exp2 fn snp with
        | None ->
            let (m,snp) = binary_pos bin snp in
            wrap (Ast0.Binary(exp1, m, exp2)) snp
-       | a -> a)
+       | a -> a
+      )
   | Ast0.Nested(exp1, bin, exp2) ->
       let fn x y = Ast0.Nested(x, bin, y) in
       (match exp_two exp1 exp2 fn snp with
        | None ->
            let (m,snp) = binary_pos bin snp in
            wrap (Ast0.Nested(exp1, m, exp2)) snp
-       | a -> a)
+       | a -> a
+      )
   | Ast0.Paren(lp, exp, rp) ->
       let fn x = Ast0.Paren(lp, x, rp) in
       (match exp_one exp fn snp with
        | None ->
            let (m,snp) = string_mcode_pos lp snp in
            wrap (Ast0.Paren(m,exp,rp)) snp
-       | a -> a)
+       | a -> a
+      )
   | Ast0.ArrayAccess(arrexp, lb, exp, rb) ->
       let fn x y = Ast0.ArrayAccess(x, lb, y, rb) in
       (match exp_two arrexp exp fn snp with
        | None ->
            let (m,snp) = string_mcode_pos lb snp in
            wrap (Ast0.ArrayAccess(arrexp, m, exp,rb)) snp
-       | a -> a)
+       | a -> a
+      )
   | Ast0.RecordAccess(exp, stop, id) ->
-      Some (match expression_pos exp snp with
+      Some (
+        match expression_pos exp snp with
         | Some (a, snp) -> (Ast0.wrap (Ast0.RecordAccess(a, stop, id)), snp)
         | None ->
             let (id, snp) = ident_pos id snp in
-            (Ast0.wrap (Ast0.RecordAccess(exp, stop, id)), snp))
+            (Ast0.wrap (Ast0.RecordAccess(exp, stop, id)), snp)
+      )
   | Ast0.RecordPtAccess(exp, arrow, id) ->
-      Some (match expression_pos exp snp with
+      Some (
+        match expression_pos exp snp with
         | Some (a,snp) -> (Ast0.wrap (Ast0.RecordPtAccess(a, arrow, id)), snp)
         | None ->
             let (id, snp) = ident_pos id snp in
-            (Ast0.wrap(Ast0.RecordPtAccess(exp, arrow, id)), snp))
+            (Ast0.wrap(Ast0.RecordPtAccess(exp, arrow, id)), snp)
+      )
   | Ast0.Cast(lp, typec, rp, exp) ->
       let _ = type_pos typec snp in (*sanity check for disj*)
       let fn x = Ast0.Cast(lp, typec, rp, exp) in
@@ -308,7 +330,8 @@ and expression_pos e snp =
        | None ->
            let (m,snp) = string_mcode_pos rp snp in
            wrap (Ast0.Cast(lp, typec, m,exp)) snp
-       | a -> a)
+       | a -> a
+      )
   | Ast0.SizeOfExpr(sizeofmc, exp) ->
       let (sizeofmc, snp) = string_mcode_pos sizeofmc snp in
       wrap (Ast0.SizeOfExpr (sizeofmc, exp)) snp
@@ -335,7 +358,8 @@ and expression_pos e snp =
 
 (* returns Some statement with inserted position if it was possible to insert
  * a position or None if it was not possible. *)
-and statement_pos s snp = match Ast0.unwrap s with
+and statement_pos s snp =
+  match Ast0.unwrap s with
   | Ast0.Nest _ | Ast0.Dots _ | Ast0.Circles _ | Ast0.Stars _ | Ast0.Disj _
   | Ast0.MetaStmt _ | Ast0.Seq _ -> None
 
@@ -362,58 +386,68 @@ and statement_pos s snp = match Ast0.unwrap s with
   | Ast0.OptStm stm ->
       (match statement_pos stm snp with
        | Some (v, sn) -> wrap (Ast0.OptStm v) sn
-       | None -> None)
+       | None -> None
+      )
   | Ast0.UniqueStm stm ->
       (match statement_pos stm snp with
        | Some (v, sn) -> wrap (Ast0.UniqueStm v) sn
-       | None -> None)
+       | None -> None
+      )
   | Ast0.ExprStatement(None, sem) -> None
   | Ast0.ExprStatement(Some e, sem) ->
       (match expression_pos e snp with
        | Some (v, sn) -> wrap (Ast0.ExprStatement(Some v, sem)) sn
        | None ->
            let (m,snp) = string_mcode_pos sem snp in
-           wrap (Ast0.ExprStatement(Some e, m)) snp)
+           wrap (Ast0.ExprStatement(Some e, m)) snp
+      )
   | Ast0.Exp e ->
       (match expression_pos e snp with
        | Some (v, sn) -> wrap (Ast0.Exp v) sn
-       | None -> None)
+       | None -> None 
+      )
   | Ast0.Decl (bef, decl) ->
       (match declaration_pos decl snp with
        | Some (d, sn) -> wrap (Ast0.Decl(bef, d)) sn
-       | None -> None)
+       | None -> None
+      )
   | Ast0.IfThen (ifm, l, exp, r, st, a) ->
       (match expression_pos exp snp with
        | Some (v, sn) -> wrap (Ast0.IfThen(ifm, l, v, r, st, a)) sn
        | None ->
            let (ifm, snp) = string_mcode_pos ifm snp in
-          wrap (Ast0.IfThen(ifm, l, exp, r, st, a)) snp)
+          wrap (Ast0.IfThen(ifm, l, exp, r, st, a)) snp
+      )
   | Ast0.IfThenElse (ifm, l, exp, r, s1, e, s2, a) ->
       (match expression_pos exp snp with
        | Some (v, snp) ->
            wrap (Ast0.IfThenElse(ifm,l,v,r,s1,e,s2,a)) snp
        | None ->
            let (ifm, snp) = string_mcode_pos ifm snp in
-           wrap (Ast0.IfThenElse(ifm,l,exp,r,s1,e,s2,a)) snp)
+           wrap (Ast0.IfThenElse(ifm,l,exp,r,s1,e,s2,a)) snp
+      )
   | Ast0.While (whmc, l, exp, r, s, a) ->
       (match expression_pos exp snp with
        | Some (v, snp) -> wrap (Ast0.While(whmc, l, v, r, s, a)) snp
        | None ->
            let (whmc, snp) = string_mcode_pos whmc snp in
-           wrap (Ast0.While(whmc, l, exp, r, s, a)) snp)
+           wrap (Ast0.While(whmc, l, exp, r, s, a)) snp
+      )
   | Ast0.Do (d, s, whmc, l, exp, r, sem) ->
       (match expression_pos exp snp with
        | Some (v,snp) -> wrap (Ast0.Do(d, s, whmc, l, v, r, sem)) snp
        | None ->
            let (d, snp) = string_mcode_pos d snp in
-           wrap (Ast0.Do(d, s, whmc, l, exp, r, sem)) snp)
+           wrap (Ast0.Do(d, s, whmc, l, exp, r, sem)) snp
+      )
   | Ast0.For (fo,lp, fi,expo1,sem,expo2,rp,stmt,a) ->
       (match forinfo_pos fi snp with
        | Some (f,snp) ->
            wrap (Ast0.For (fo,lp, f, expo1, sem, expo2, rp, stmt, a)) snp
        | None ->
            let (fo, snp) = string_mcode_pos fo snp in
-           wrap (Ast0.For(fo, lp,fi,expo1,sem,expo2,rp,stmt,a)) snp)
+           wrap (Ast0.For(fo, lp,fi,expo1,sem,expo2,rp,stmt,a)) snp
+      )
   | Ast0.Iterator (id,lp,expdots,rp,stmt,a) ->
       let (id, snp) = ident_pos id snp in
       wrap (Ast0.Iterator(id, lp, expdots, rp, stmt, a)) snp
@@ -425,7 +459,8 @@ and statement_pos s snp = match Ast0.unwrap s with
            wrap (Ast0.Switch(sw, lp, v, rp, lb, sd, cd, rb)) snp
        | None ->
            let (sw, snp) = string_mcode_pos sw snp in
-           wrap (Ast0.Switch(sw, lp, exp, rp, lb, sd, cd,rb)) snp)
+           wrap (Ast0.Switch(sw, lp, exp, rp, lb, sd, cd,rb)) snp
+      )
   | Ast0.Label (id,col) ->
       let (id, snp) = ident_pos id snp in
       wrap (Ast0.Label (id, col)) snp
@@ -443,7 +478,8 @@ and statement_pos s snp = match Ast0.unwrap s with
        | Some (v,snp) -> wrap (Ast0.ReturnExpr(retmc, v, sem)) snp
        | None ->
            let (retmc, snp) = string_mcode_pos retmc snp in
-           wrap (Ast0.ReturnExpr(retmc, exp, sem)) snp)
+           wrap (Ast0.ReturnExpr(retmc, exp, sem)) snp
+      )
   | Ast0.Return (retmc,sem) ->
       let (retmc, snp) = string_mcode_pos retmc snp in
       wrap (Ast0.Return(retmc,sem)) snp
