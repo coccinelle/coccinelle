@@ -1463,10 +1463,9 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
       ->
 	raise (Impossible 24)
 
-  | A.DisjExpr eas, eb -> failwith "DisjExpr should not arise"
-(*
+  | A.DisjExpr eas, eb ->
+      (* remains inside nests, not sure if this is necessary *)
       eas +> List.fold_left (fun acc ea -> acc >|+|> (expression ea eb)) fail
-*)
 
   | A.UniqueExp e,_ | A.OptExp e,_ ->
       Pretty_print_cocci.expression e;
