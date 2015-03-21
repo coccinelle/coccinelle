@@ -29,16 +29,35 @@ module S = Ast_tostring
 type meta_variable = string * (string * string) * string
 
 let make_mv typ (rule, name) constr = (typ, (rule,name), constr)
-let no_inherit r rn = r = rn || String.contains r ' '
-let name_str ~rn (r, mn) = if no_inherit r rn then mn else r ^ "." ^ mn
-let name_tup ~rn (r, mn) = if no_inherit r rn then ("", mn) else (r, mn)
+
+(* If the externally specified rulename is the same as the internal rulename
+ * (ie. the one attached to the metavariable) OR the external rulename is
+ * nameless ("rule starting on line ..."), then there is no inheritance
+ * required; ie. return true.
+ *)
+let no_inherit extern intern =
+  extern = intern || String.contains extern ' '
+
+let name_str ~rn (r, mn) =
+  if no_inherit r rn
+  then mn
+  else r ^ "." ^ mn
+
+let name_tup ~rn (r, mn) =
+  if no_inherit r rn
+  then ("", mn)
+  else (r, mn)
+
 let str_tup str = ("", str)
 
 let tostring_mv (t, rnm, c) =
   let full_name = name_str ~rn:"" rnm in
   String.concat "" [t; full_name; c]
 
-(* use a set to eliminate duplicates *)
+(* the type used and returned by the visitor.
+ * we're using a set to eliminate duplicates, since a metavariable might
+ * appear several times in a rule, but we only want it declared once.
+ *)
 module MVSet = Set.Make(
   struct
     type t = meta_variable
@@ -46,19 +65,25 @@ module MVSet = Set.Make(
     (* we use the normal string comparison, except if the string starts with
      * "type", "typedef" or "identifier" in which case it comes before others.
      * This is to ensure that types and identifiers get printed first since
-     * other metavariables might be dependent on them. *)
+     * other metavariables might be dependent on them.
+     *)
     let compare (t1,(_,n1),_) (t2,(_,n2),_) =
-      let is_type c = Str.string_match (Str.regexp "^type") c 0 in
-      let is_identifier c = Str.string_match (Str.regexp "^identifier") c 0 in
-      match (is_type t1, is_type t2) with
-        | (true,false) -> -1 | (false,true) -> 1
-        | (true,true) -> String.compare n1 n2
-        | (false,false) -> 
-          (match (is_identifier t1, is_identifier t2) with
-            | (true,false) -> -1 | (false,true) -> 1
-            | _ -> String.compare n1 n2)
-  end)
 
+      let starts_with s c = Str.string_match (Str.regexp ("^"^s)) c 0 in
+      let is_type = starts_with "type" in
+      let is_identifier = starts_with "identifier" in
+
+      match (is_type t1, is_type t2) with
+        | true, false -> -1
+        | false, true -> 1
+        | true, true -> String.compare n1 n2
+        | false, false -> 
+            (match (is_identifier t1, is_identifier t2) with
+              | (true,false) -> -1 | (false,true) -> 1
+              | _ -> String.compare n1 n2
+            )
+  end
+)
 
 (* ------------------------------------------------------------------------- *)
 (* STRING HELPERS *)
@@ -70,12 +95,15 @@ module MVSet = Set.Make(
 
 (* get string formatted version of type (used as front of meta expressions) *)
 let type_c ~form =
-  let (default, prefix) = match form with
+  let (default, prefix) =
+    match form with
     | Ast.ANY -> ("expression ", "")
     | Ast.ID -> ("idexpression ", "idexpression ")
     | Ast.LocalID -> ("local idexpression ", "local idexpression ")
+    | Ast.GlobalID -> ("global idexpression ", "global idexpression ")
     | Ast.CONST -> ("constant ", "constant ") in
-  let type2c a = match TC.type2c a with
+  let type2c a =
+    match TC.type2c a with
     | "unknown *" -> default ^ " *"
     | a -> prefix ^ a in
   function
@@ -83,8 +111,8 @@ let type_c ~form =
     | Some a -> prefix ^ ("{" ^ (String.concat "," (List.map type2c a)) ^ "} ")
     | None -> default
 
-(* TODO: in SeedId, we sometimes (?) want to keep the rulename;
- * but not if it has been declared before? *)
+(* TODO: in SeedId, we sometimes (?) want to keep the rulename; but not if it
+ * has been declared before? *)
 let seed ~rn =
   let se = function
     | Ast.SeedString s -> "\"" ^ s ^ "\"" | Ast.SeedId (r,nm) -> nm in
@@ -104,8 +132,14 @@ let list_constraints ~tostring_fn ~op = function
 
 let id_constraint ~rn = function
   | Ast.IdNoConstraint -> ""
+  | Ast.IdPosIdSet(slist,mnlist) ->
+      let combined =
+        (List.map (fun x -> "\"" ^ x ^ "\"") slist) @
+        (List.map (name_str ~rn) mnlist) in
+      list_constraints ~tostring_fn:(fun x -> x) ~op:" = " combined
   | Ast.IdNegIdSet(slist,mnlist) ->
-      let combined = (List.map (fun x -> "\"" ^ x ^ "\"") slist) @
+      let combined =
+        (List.map (fun x -> "\"" ^ x ^ "\"") slist) @
         (List.map (name_str ~rn) mnlist) in
       list_constraints ~tostring_fn:(fun x -> x) ~op:" != " combined
   | Ast.IdRegExpConstraint(re) -> regex_constraint re
@@ -114,14 +148,21 @@ let constraints ~rn = function
     Ast0.NoConstraint -> ""
   | Ast0.NotIdCstrt recstr -> regex_constraint recstr
   | Ast0.NotExpCstrt exps ->
+
     (* exps is a list of expressions, but it is limited to numbers and ids
-     * (e.g. expression e != {0,1,n,4l}). See parser entry for NotExpCstrt. *)
+     * (e.g. expression e != {0,1,n,4l}). See parser entry for NotExpCstrt.
+     *)
     let stringify e =
       (match Ast0.unwrap e with
-       | Ast0.Constant c -> S.constant_tostring (Ast0.unwrap_mcode c)
-       | Ast0.Ident {Ast0.node = Ast0.Id m; _} -> Ast0.unwrap_mcode m
-       | _ -> failwith ("Error: Non-int/id exp constraints not supported. " ^
-                        "Should have failed in the parser.")) in
+       | Ast0.Constant c ->
+           S.constant_tostring (Ast0.unwrap_mcode c)
+       | Ast0.Ident {Ast0.node = Ast0.Id m; _} ->
+           Ast0.unwrap_mcode m
+       | _ ->
+           failwith ("Error: Non-int/id exp constraints not supported. " ^
+                     "Should have failed in the parser.")
+      )
+    in
     let res = List.map stringify exps in
       list_constraints ~tostring_fn:(fun x -> x) ~op:" != " res
   | Ast0.SubExpCstrt mns ->
@@ -154,18 +195,27 @@ let types ~rn = function
         | TC.Saved -> "" in
       let get_meta_id acc = function
         | TC.MV(mn, b, _) ->
-            MVSet.add (make_mv "identifier" (name_tup ~rn mn) (bin b)) acc
+            let metavar = make_mv "identifier" (name_tup ~rn mn) (bin b) in
+            MVSet.add metavar acc
         | _ -> acc in
       let rec get_meta_type acc = function
         | TC.MetaType(mn, b, _) ->
-            MVSet.add (make_mv "type " (name_tup ~rn mn) (bin b)) acc
+            let metavar = make_mv "type " (name_tup ~rn mn) (bin b) in
+            MVSet.add metavar acc
         | TC.TypeName s ->
-            MVSet.add ("typedef ", str_tup s, "") acc
-        | TC.ConstVol (_, t) | TC.SignedT (_, Some t) | TC.Pointer t
-        | TC.FunctionPointer t | TC.Array t -> get_meta_type acc t
+            let metavar = ("typedef ", str_tup s, "") in
+            MVSet.add metavar acc
         | TC.Decimal(nm1, nm2) ->
             MVSet.union (get_meta_id acc nm1) (get_meta_id acc nm2)
-        | TC.EnumName n | TC.StructUnionName(_, n) -> get_meta_id acc n
+        | TC.EnumName n
+        | TC.StructUnionName(_, n) ->
+            get_meta_id acc n
+        | TC.ConstVol (_, t)
+        | TC.SignedT (_, Some t)
+        | TC.Pointer t
+        | TC.FunctionPointer t
+        | TC.Array t ->
+            get_meta_type acc t
         | _ -> acc in
       List.fold_left get_meta_type MVSet.empty typecs
   | None -> MVSet.empty
@@ -177,18 +227,15 @@ let types ~rn = function
  *)
 let mcode ~rn ~mc:(_,_,_,_,pos,_) =
   let rec add_one_pos set =
+
+    (* adds the mn metavar + any metapositions attached to it to the set. *)
     let handle_metavar ~typ ~mn ~positions ~set =
       let mv = make_mv typ (name_tup ~rn mn) "" in
       let added_mv_set = MVSet.add mv set in
       MVSet.union added_mv_set (add_all_pos positions) in
-    function
-    | Ast0.MetaPosTag(Ast0.MetaPos((mn,_,_,_,_,_), mns, colt)) ->
-        let constr =
-          list_constraints ~tostring_fn:(name_str ~rn) ~op:" != " mns in
-        let collect = (match colt with Ast.PER -> "" | Ast.ALL -> " any") in
-        let pos = make_mv "position " (name_tup ~rn mn) (constr ^ collect) in
-        MVSet.add pos set
+
     (* extracting the node is equivalent to calling Ast0.unwrap *)
+    function
     | Ast0.ExprTag {Ast0.node = Ast0.MetaExpr((mn,_,_,_,p,_),_,_,_,_); _} ->
         handle_metavar ~typ:"expression " ~mn ~positions:!p ~set
     | Ast0.StmtTag {Ast0.node = Ast0.MetaStmt((mn,_,_,_,p,_),_); _} ->
@@ -199,19 +246,27 @@ let mcode ~rn ~mc:(_,_,_,_,pos,_) =
         handle_metavar ~typ:"identifier " ~mn ~positions:!p ~set
     | Ast0.TypeCTag {Ast0.node = Ast0.MetaType((mn,_,_,_,p,_),_); _} ->
         handle_metavar ~typ:"type " ~mn ~positions:!p ~set
+    | Ast0.MetaPosTag(Ast0.MetaPos((mn,_,_,_,_,_), mns, colt)) ->
+        let constr =
+          list_constraints ~tostring_fn:(name_str ~rn) ~op:" != " mns in
+        let collect = (match colt with Ast.PER -> "" | Ast.ALL -> " any") in
+        let pos = make_mv "position " (name_tup ~rn mn) (constr ^ collect) in
+        MVSet.add pos set
     | _ -> failwith "should only have metavariables in here."
+
   and add_all_pos lst = List.fold_left add_one_pos MVSet.empty lst in
   add_all_pos !pos
 
 (* turns mcode into MVSet of formatted strings.
- * (mc : 'a mcode) is the mcode, (fn : 'a -> string) formats the mcode value.
+ * (mc : 'a mcode) is the mcode,
+ * (totup_fn : 'a -> string * string) formats the mcode value.
  *)
 let mc_format ~rn ~mc:((mn,_,_,_,_,_) as mc) ~totup_fn ~before ~after =
   let pos = mcode ~rn ~mc in
   let mv = make_mv before (totup_fn mn) after in
   MVSet.add mv pos
 
-let as_format a b afn bfn = failwith "as metavariables not supported"
+let as_format a b afn bfn = failwith "\"as\" metavariables not supported"
 
 (* turns meta_name mcode with list information into MVSet of formatted strings.
  * (mc : Ast.meta_name mcode) becomes <before mc[ll_output]>.
@@ -283,6 +338,7 @@ let metavar_combiner rn =
     list_format ~rn ~before:typ ~mc ~listlen in
 
   (* --- Implementations of functions that handle possible metavariables --- *)
+
   let identfn c fn v = match Ast0.unwrap v with
     | Ast0.MetaId(mc, idconstr, s, _) ->
         let constr = id_constraint ~rn idconstr in
@@ -306,9 +362,11 @@ let metavar_combiner rn =
         let constr = constraints ~rn constr in
         meta_mc_format ~mc ~typ:"error " ~constr
     | Ast0.MetaExpr (mc, constr, typeclist, form, _) ->
+
         (* types function finds metavariable types and identifiers that were
          * used in this expression and therefore need to be declared. *)
         let types = types ~rn typeclist in
+
         (* type_c function returns the types in pretty string format *)
         let typ = type_c ~form typeclist in
         let constr = constraints ~rn constr in
@@ -381,6 +439,7 @@ let metavar_combiner rn =
   | Ast0.AsStmt (s1, s2)->
       let stmt = c.VT0.combiner_rec_statement in as_format s1 s2 stmt stmt
   | Ast0.Iterator (id, _, expdots, _, stmt,_) ->
+
       (* the iterator might contain metavariables *)
       let expids = c.VT0.combiner_rec_expression_dots expdots in
       let stmtid = MVSet.union expids (c.VT0.combiner_rec_statement stmt) in
@@ -405,7 +464,6 @@ type t = meta_variable
 (* takes abstract syntax trees for a rule and extract all metavariables.
  * That is, metavariables declared in the header, but unused in the body, are
  * discarded. Returns list of meta_variable.t's.
- * TODO: can the plus tree contain other metavariables ?
  *)
 let unparse ~minus ~rulename =
   let mvcomb = metavar_combiner rulename in

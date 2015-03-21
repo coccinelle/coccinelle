@@ -2,7 +2,8 @@
 COCCIDIR=../../..
 SCRIPTDIR=../scripts
 
-include $(COCCIDIR)/Makefile.config
+# do not raise error if config does not exist; handle in $(CONFIG) rule below
+-include $(COCCIDIR)/Makefile.config
 
 # where to install the program
 INSTALLDIR=$(DESTDIR)$(SHAREDIR)/sgen
@@ -13,16 +14,20 @@ INSTALLDIR=$(DESTDIR)$(SHAREDIR)/sgen
 
 TARGET=sgen
 
-SYSLIBS= str.cma unix.cma bigarray.cma nums.cma $(PCREDIR)/pcre.cma \
-	$(DYNLINKDIR)/dynlink.cma
+CONFIG= $(COCCIDIR)/Makefile.config
+
+SYSLIBS= str.cma unix.cma bigarray.cma nums.cma $(PCREDIR)/pcre.cma
+
 LIBS= $(COCCIDIR)/commons/commons.cma \
-     $(COCCIDIR)/globals/globals.cma \
-     $(COCCIDIR)/parsing_cocci/cocci_parser.cma
+	$(COCCIDIR)/globals/globals.cma \
+	$(COCCIDIR)/parsing_cocci/cocci_parser.cma
+
 INCLUDEDIRS= $(COCCIDIR)/commons $(COCCIDIR)/commons/ocamlextra \
      $(COCCIDIR)/globals $(COCCIDIR)/parsing_cocci
+
 INCLUDES=$(INCLUDEDIRS:%=-I %)
 
-# lexers
+# lexer source
 LEXER_SRC= sgen_lexer.mll
 
 # compiled lexers
@@ -51,12 +56,13 @@ LFLAGS = -lflags '$(SYSLIBS) $(LIBS)'
 ##############################################################################
 
 ifneq ($(FEATURE_OCAMLBUILD),yes)
+
 all: $(TARGET)
 
-$(TARGET): $(COCCIDIR)/Makefile.config $(LIBS) $(GENERATED) $(FULL_SRC)
-	$(ECHO) -e "\n\tCompiling sgen ...\n"
+$(TARGET): $(CONFIG) $(LIBS) $(GENERATED) $(FULL_SRC)
+	@$(ECHO) -e "\n\n\tCompiling sgen ...\n\n"
 	$(OCAMLC_CMD) -o $(TARGET) $(SYSLIBS) $(LIBS) $(GENERATED) $(FULL_SRC)
-	@$(ECHO) -e "\n\n\tsgen can now be installed via 'make install'\n\n"
+	@$(ECHO) -e "\n\n\tsgen can now be installed via 'make install'.\n\n"
 
 clean:
 	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot
@@ -66,21 +72,23 @@ clean:
 	rm -f $(GENERATED)
 
 else
+
 all: $(TARGET)
 
-$(TARGET): $(COCCIDIR)/Makefile.config $(LIBS) $(FULL_SRC)
-	$(ECHO) -e "\n\tCompiling sgen ...\n"
+$(TARGET): $(CONFIG) $(LIBS) $(FULL_SRC)
+	@$(ECHO) -e "\n\n\tCompiling sgen ...\n\n"
 	$(OCAMLBUILD) $(CFLAGS) $(LFLAGS) main.byte;
 	cp _build/main.byte $(TARGET);
-	@$(ECHO) -e "\n\n\tsgen can now be installed via 'make install'\n\n"
+	@$(ECHO) -e "\n\n\tsgen can now be installed via 'make install'.\n\n"
 
 clean:
 	rm *~; rm $(TARGET); $(OCAMLBUILD) -clean
+
 endif
 
-$(LIBS):
-	$(ECHO) -e "\n\tCompiling Coccinelle ...\n"
-	cd $(COCCIDIR);	make spatch
+$(CONFIG) $(LIBS):
+	@echo "\n\n\tYou need to compile Coccinelle first.\n\n"
+	@false
 
 install: $(TARGET)
         # this is a small hack to avoid having to reconfigure the installation

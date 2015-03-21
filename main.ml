@@ -794,9 +794,19 @@ let glimpse_filter2 (_,query,_,_) dir =
 	    match stat with
 	      Unix.WEXITED(0) | Unix.WEXITED(1) ->
 		Some
-		  (glimpse_res +>
+		  (let filelist = glimpse_res +>
 		   List.filter
-		     (fun file -> List.mem (Common.filesuffix file) suffixes))
+		     (fun file -> List.mem (Common.filesuffix file) suffixes) in
+		   if filelist <> [] then
+		     begin
+		       let firstfile = List.hd filelist in
+		       if Filename.is_relative firstfile || Filename.is_implicit firstfile then			 
+			 List.map (fun file -> dir ^ Filename.dir_sep ^ file) filelist
+		       else
+			 filelist
+		     end
+		   else []
+		  )
 	    |	_ -> loop queries (* error, eg due to pattern too big *) in
       loop queries
 

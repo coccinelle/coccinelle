@@ -18,7 +18,8 @@ module IntMap = Common.IntMap
 
 (* merges two disjunction maps.
  * runs through all keys in both maps, unlikely to be a problem since there
- * won't be many keys (each key representing one disjunction) *)
+ * won't be many keys (each key representing one disjunction)
+ *)
 let merge =
   let fn key aopt bopt = match aopt, bopt with
     | Some a, Some b -> Some (List.map2 (||) a b)
@@ -40,17 +41,21 @@ let mcode = function
  * Returns
  * (whether there is a patch in any of the disjunction cases,
  *  a mapping of the beginning line number of the disj to a list of
- *  bools indicating whether each of the disjunctions are a patch or no) *)
+ *  bools indicating whether each of the disjunctions are a patch or no)
+ *)
 let handle_disj lp rp pipelist clist cfn =
   let index = Ast0.get_mcode_line lp in
   let disj_patches (is_patch, acc_list, acc_map) case =
     let (case_is_p, case_map) = cfn case in
     (is_patch || case_is_p, case_is_p :: acc_list, merge case_map acc_map) in
+
   (*contains_patch is a bool denoting whether the whole disj contains a patch
    *disj_patch is a list of bools, each bool representing a disj case
-   *acc are the accumulated disjunctions within the disjunction *)
+   *acc are the accumulated disjunctions within the disjunction
+   *)
   let (contains_patch, disj_patch, acc) =
     List.fold_left disj_patches (false, [], IntMap.empty) clist in
+
   (contains_patch, IntMap.add index (List.rev disj_patch) acc)
 
 

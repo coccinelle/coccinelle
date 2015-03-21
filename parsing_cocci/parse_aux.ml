@@ -55,13 +55,11 @@ let drop_pos
   (arity,line,lline,llineend,offset,col,strbef,straft,[],ws)
 
 let clt2mcode_ext str isSymbol = function
-(Data.MINUS,line,lline,llineend,offset,col,strbef,straft,pos,ws) ->
+    (Data.MINUS,line,lline,llineend,offset,col,strbef,straft,pos,ws) ->
       (str,Ast0.NONE,
        make_info line lline llineend offset col strbef straft isSymbol ws,
-       Ast0.MINUS(ref
-(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,-1)
- | (Data.OPTMINUS,line,lline,llineend,offset,col,strbef,
-straft,pos,ws)->
+       Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,-1)
+  | (Data.OPTMINUS,line,lline,llineend,offset,col,strbef,straft,pos,ws)->
       (str,Ast0.OPT,
        make_info line lline llineend offset col strbef straft isSymbol ws,
        Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,-1)

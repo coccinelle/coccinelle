@@ -118,7 +118,8 @@ let inc_line snp = inc_current_line (set_mode_context Ast0.NONE snp)
 let inc_star snp = if is_star snp.current_mode then inc_line snp else snp
 
 (* if input number exceeds the current rule line number, increase the internal
- * line number. *)
+ * line number.
+ *)
 let skip ~rule_line snp =
   let snp = if rule_line > snp.rule_line then inc_line snp else snp in
   set_rule_line rule_line snp 
@@ -128,7 +129,8 @@ let skip ~rule_line snp =
 (* STATE: ADDING CONTENT TO MAP FUNCTIONS *)
 
 (* Functions for modifying the generated rule (represented as map that maps
- * line number to mode and contents (string)). *)
+ * line number to mode and contents (string)).
+ *)
 
 (* add the value in v to the entry that has i as key *)
 let add_map (v : string) (i : int) (m : mode) (r : (mode * string) IntMap.t) =
@@ -158,7 +160,8 @@ let add value = add_result value None
 (* STATE: POSITION FUNCTIONS *)
 
 (* generate a position and add it to the internal list.
- * return the name of the new position and the modified snapshot. *)
+ * return the name of the new position and the modified snapshot.
+ *)
 let add_position snp =
   let pos_name = Globals.get_pos_name() in
   let newpos = pos_name ^ (string_of_int snp.pos_counter) in
@@ -177,7 +180,8 @@ let add_position snp =
 (* set the freeze position flag to b.
  * if we're ending a freeze period AND one position was added during this time
  * (aka the dirty flag), then we need to increment the counter.
- * TODO: nested freezes in e.g. nested disjunctions are VERY error-prone. *)
+ * TODO: nested freezes in e.g. nested disjunctions are VERY error-prone.
+ *)
 let set_freeze_pos b snp =
   let (freez,dirty) = snp.freeze_pos in
   if freez && dirty && not(b) then
@@ -187,7 +191,8 @@ let set_freeze_pos b snp =
 
 (* do fn (snapshot -> snapshot) while position incrementing is frozen.
  * this is e.g. used in disjunctions where we want all cases to have the
- * same position. *)
+ * same position.
+ *)
 let do_freeze_pos fn snp =
   let (current,_) = snp.freeze_pos in
   set_freeze_pos current (fn (set_freeze_pos true snp))
@@ -217,7 +222,8 @@ let set_disj_mode b snp = { snp with disj_mode = b }
 (* STATE: WHENCODES FUNCTIONS *)
 
 (* We never want to add stars or positions to whencodes, so we keep track of
- * whether we are currently inside a whencode (and they may be nested). *)
+ * whether we are currently inside a whencode (and they may be nested).
+ *)
 
 let inc_whencode snp = { snp with whencode_nest = snp.whencode_nest + 1 }
 let dec_whencode snp = { snp with whencode_nest = snp.whencode_nest - 1 }
@@ -230,8 +236,8 @@ let do_whencode fn snp = dec_whencode (fn (inc_whencode snp))
 (* STATE: NO GEN *)
 
 (* if no_gen flag is set, unparse the AST0 as normal, don't insert positions
- * or forced newlines. *)
-
+ * or forced newlines.
+ *)
 let set_no_gen b snp = { snp with no_gen_mode = b }
 
 (* do not add positions or newlines if ... *)
@@ -244,7 +250,8 @@ let no_gen snp = in_whencode snp || snp.no_gen_mode
 let get_positions snp = StringSet.elements snp.positions
 
 (* Returns the map as a string list, sorted by key and the same for
- * the disjunction result if any *)
+ * the disjunction result if any.
+ *)
 let get_result snp =
   let transform x no_mode =
     List.map (fun (_,(c,s)) -> if no_mode then s else (tostring_mode c) ^ s)

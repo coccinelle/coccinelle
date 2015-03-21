@@ -144,6 +144,7 @@ AC_COCCI_INIT_PKG_EMPTY([dynlink])
 AC_COCCI_INIT_PKG_EMPTY([pcre])
 AC_COCCI_INIT_PKG_EMPTY([pycaml])
 AC_COCCI_INIT_PKG_EMPTY([camlp4])
+AC_COCCI_INIT_PKG_EMPTY([parmap])
 
 dnl  required ocaml packages
 AC_MSG_NOTICE([the following OCaml packages should be provided by your ocaml installation])
@@ -156,6 +157,7 @@ dnl  required modules (Some are available locally too)
 AC_REQ_COCCI_EXTPKG([dynlink])
 AC_REQ_COCCI_EXTPKG([camlp4])
 AC_REQ_COCCI_EXTPKG([menhirLib])
+AC_REQ_COCCI_EXTPKG([parmap])
 
 
 dnl  AC_CACHE_SAVE

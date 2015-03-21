@@ -16,6 +16,7 @@ val is_not_in_ast          : Parser_c.token -> bool
 val is_cpp_instruction     : Parser_c.token -> bool
 val is_cpp_endif           : Parser_c.token -> bool
 val is_gcc_token           : Parser_c.token -> bool
+val is_escaped_newline     : Parser_c.token -> bool
 
 val is_eof                 : Parser_c.token -> bool
 val is_eom                 : Parser_c.token -> bool

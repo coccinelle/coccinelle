@@ -55,12 +55,15 @@ let starrify_line a = GT.set_mode_star ~arity:a
  * Mutual recursion because meta anythings can have metas themselves ... *)
 let rec add_positions ~context_mode lst =
   reduce (add_pos ~context_mode) lst
+
 and add_pos ~context_mode = function
+
   (* these are the added/generated positions (hence the PLUS mode) *)
   | Ast0.MetaPosTag(Ast0.MetaPos(((_,nm),arity,_,Ast0.PLUS _,_,_),_,_)) ->
       let default = GT.add_with_arity ("@"^nm) arity in
       if context_mode then default else starrify_line arity >> default
   | Ast0.MetaPosTag(Ast0.MetaPos(((_,nm),arity,_,_,p,_),_,_))
+
   (* extracting the node is equivalent to calling Ast0.unwrap *)
   | Ast0.ExprTag {Ast0.node = Ast0.MetaExpr(((_,nm),arity,_,_,p,_),_,_,_,_); _}
   | Ast0.StmtTag {Ast0.node = Ast0.MetaStmt(((_,nm),arity,_,_,p,_),_); _}
@@ -70,17 +73,20 @@ and add_pos ~context_mode = function
       GT.add_with_arity ("@"^nm) arity >> add_positions ~context_mode !p
   | _ -> failwith "add_pos only supported for metavariables."
 
-(* renders the mcode as a string in the map and updates the line number. *)
+(* renders the mcode as a string in the map and updates the line number.
+ * context_mode means that the stars are put where the minuses are. *)
 let mcode ~context_mode fn (x, a, info, mc, pos, _) =
-  let default =
+  let default ~add_star =
     GT.skip ~rule_line:(info.Ast0.pos_info.Ast0.line_start)
+    >> (if add_star then starrify_line a else (fun a -> a))
     >> GT.add info.Ast0.whitespace
     >> GT.add_with_arity (fn x) a
     >> add_positions ~context_mode !pos in
   match mc with
   | Ast0.MINUS _ ->
-      if context_mode then starrify_line a >> default else default
-  | Ast0.CONTEXT _ -> default
+      default ~add_star:context_mode
+  | Ast0.CONTEXT _ ->
+      default ~add_star:false
   | _ -> failwith "plus and mixed not allowed, should be the minus ast0..."
 
 (* Handle Ast0_cocci.whenmodes. Primary purpose is to handle WhenModifiers

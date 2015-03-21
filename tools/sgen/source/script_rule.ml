@@ -34,14 +34,15 @@ let print_report_fn = "coccilib.report.print_report"
 (* SCRIPT GENERATION FUNCTIONS *)
 
 (* Format the variables used in the format string.
- * Returns ("on lines" string for metapositions, comma-separated mv names) *)
+ * Returns ("around lines" string for metapos's, comma-separated mv names)
+ *)
 let line_vars ~metapos ~metavars =
   let line = List.map (fun x -> x ^ "[0].line") in
   match metapos with
    | [] -> ("", comma_sep metavars)
-   | [x] -> ("on line %s.", comma_sep (metavars @ (line [x])))
+   | [x] -> ("around line %s.", comma_sep (metavars @ (line [x])))
    | x -> let agg = comma_sep (List.map (fun _ -> "%s") x) in
-       ("on lines " ^ agg ^ ".", comma_sep (metavars @ (line x)))
+       ("around lines " ^ agg ^ ".", comma_sep (metavars @ (line x)))
 
 (* turn metavariables into script header variables *)
 let format_header_vars =
@@ -102,7 +103,8 @@ let gen_report_rule nm (firstpos, restpos) metavars err_msg =
 (* ENTRY POINT *)
 
 (* generate org and report rule for the added metapositions and with the user
- * specified information (error messages). *)
+ * specified information (error messages).
+ *)
 let generate ~metapos ~user_input = match user_input with
   | ((_, Some nm), (org_msg, omv), (report_msg, rmv))
   | ((nm, None), (org_msg, omv), (report_msg, rmv)) ->

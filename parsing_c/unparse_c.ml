@@ -496,7 +496,7 @@ let is_added_space = function
 let is_added_whitespace =
   function C2 (" ",_) | C2 ("\n",_) | Cocci2("\n",_,_,_,_) -> true | _ -> false
 
-let is_newline = function
+let is_newline_or_comment = function
   | T2(Parser_c.TCommentNewline _,_b,_i,_h) -> true
   | T2(Parser_c.TComment _,_b,_i,_h) -> true (* only whitespace *)
   | _ -> false
@@ -507,11 +507,11 @@ let is_newline_space_or_minus = function
   | T2 (_, Min _, _, _) -> true
   | _ -> false
 
-let contains_newline = List.exists is_newline
-
-let is_newline_or_comment = function
+let is_newline = function
   | T2(Parser_c.TCommentNewline _,_b,_i,_h) -> true
   | _ -> false
+
+let contains_newline = List.exists is_newline
 
 let generated_newline = function
     T2((Parser_c.TCommentNewline _),Ctx,_i,_h) -> true
@@ -525,10 +525,10 @@ let generated_newline = function
 let is_fake2 = function Fake2 _ -> true | _ -> false
 
 let is_whitespace x = 
-  is_space x || is_newline x
+  is_space x || is_newline_or_comment x
 
 let is_whitespace_or_fake x = 
-  is_space x || is_newline x || is_fake2 x
+  is_space x || is_newline_or_comment x || is_fake2 x
 
 let is_minusable_comment = function
   | (T2 (t,_b,_i,_h)) ->
@@ -804,12 +804,24 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
 
   (* search backwards from context } over spaces until reaching a newline.
   then go back over all minus code until reaching some context or + code.
-  get rid of all intervening spaces, newlines, and comments
-  input is reversed *)
+  get rid of all intervening spaces, newlines, and comments that are alone
+  on a line. input is reversed *)
+
+  let rec span_minus_or_comment_nocpp xs =
+    let (pre,rest) = span (function x -> not(is_newline x)) xs in
+    if List.for_all minus_or_comment_nocpp pre
+    then
+      match rest with
+	((T2 (Parser_c.TCommentNewline _,(Min _|Ctx),_i,_h)) as x)::rest ->
+	  let (spaces,rest) = span_minus_or_comment_nocpp rest in
+	  (pre@x::spaces,rest)
+      | _ -> Printf.printf "match fails\n"; ([],xs)
+    else ([],xs) in
+
   let rec adjust_before_brace = function
     | [] -> []
     | ((T2(t,Ctx,_,_)) as x)::xs
-      when str_of_token2 x =$= "}" || is_newline x ->
+      when str_of_token2 x =$= "}" || is_newline_or_comment x ->
       let (outer_spaces,rest) = span is_space xs in
       x :: outer_spaces @
       (match rest with
@@ -817,7 +829,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
         (* the rest of this code is the same as from_newline below
         but merging them seems to be error prone... *)
         ((T2 (t, Min adj, idx, hint)) as m) :: rest ->
-        let (spaces,rest) = span minus_or_comment_nocpp rest in
+        let (spaces,rest) = span_minus_or_comment_nocpp rest in
         h :: m ::
         (List.map (set_minus_comment adj) spaces) @
         (adjust_before_brace rest)
@@ -827,7 +839,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
 
   let from_newline = function
     | ((T2 (t, Min adj, idx, hint)) as m) :: rest ->
-      let (spaces,rest) = span minus_or_comment_nocpp rest in
+      let (spaces,rest) = span_minus_or_comment_nocpp rest in
       m ::
       (List.map (set_minus_comment adj) spaces) @
       (adjust_before_brace rest)
@@ -840,7 +852,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
       "", but it seems like changing the kind of token might break
       the end of entity recognition in the C parser.
       See parsing_hacks.ml *)
-      let (spaces,rest) = span minus_or_comment_nocpp rest in
+      let (spaces,rest) = span_minus_or_comment_nocpp rest in
       m0 :: m ::
       (List.map (set_minus_comment adj) spaces) @
       (adjust_before_brace rest)

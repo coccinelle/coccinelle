@@ -39,7 +39,8 @@ let parse filename =
 (* PARSER FUNCTIONS *)
 
 (* parse org/report messages and associated metavars.
- * if several org/report messages defined, take the last one *)
+ * if several org/report messages defined, take the last one
+ *)
 let parse_msgs attributes =
   let read ((om,ov),(rm,rv)) = function
     | Lex.Org (om,ov) -> ((om,ov), (rm,rv))
@@ -47,10 +48,11 @@ let parse_msgs attributes =
   List.fold_left read (("",[]), ("",[])) attributes
 
 (* add the rule to the User_input.t
- * rule_exists is a function that checks whether a rule exists*)
+ * rule_exists is a function that checks whether a rule exists
+ *)
 let add_rule rule_exists t ((oldnm,newnm),a) =
   let oldrnm = rule_exists oldnm in
-  let newrnm = if newnm = None then Globals.generate_rule oldrnm else newnm in
+
   let (org,rep) = match parse_msgs a with
     | ("",_),("",_) ->
         failwith ("Config error: must specify at least org or report message.")
@@ -60,7 +62,8 @@ let add_rule rule_exists t ((oldnm,newnm),a) =
     | org, rep ->
         try UI.check_format_string org; UI.check_format_string rep; (org, rep)
         with Failure msg -> failwith ("Config error: " ^ msg) in
-  UI.add_rule ((oldrnm, newrnm),org,rep) t
+
+  UI.add_rule ((oldrnm, newnm),org,rep) t
 
 (*rule list is a list of (rulename, attribute list) *)
 let add_rules rule_exists rule_list t =

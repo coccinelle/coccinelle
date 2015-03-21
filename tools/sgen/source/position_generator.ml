@@ -89,6 +89,11 @@ and assign_pos ((x, a, info, mc, pos, q) as mco) snp =
   let (newpos, snp) = make_pos mco snp in
   ((x, a, info, mc, ref (newpos :: !pos), q), snp)
 
+and inc_file_pos ((x, a, info, mc, pos, q) as mco) snp =
+  if a = Ast0.OPT then (mco, snp) else
+  let (newpos, snp) = make_pos mco snp in
+  ((x, a, info, mc, ref (newpos :: !pos), q), snp)
+
 (* generate a position for an identifier.
  * Always possible! but not done in optional expressions *)
 and ident_pos i snp = match Ast0.unwrap i with
@@ -173,6 +178,9 @@ and declaration_pos d snp = match Ast0.unwrap d with
       (match declaration_pos dec snp with
        | Some (d, snp) -> wrap (Ast0.UniqueDecl d) snp
        | None -> None)
+  | Ast0.FunProto(fninfo,name,lp1,params,va,rp1,sem) ->
+      let (name, snp) = ident_pos name snp in
+      wrap (Ast0.FunProto(fninfo,name,lp1,params,va,rp1,sem)) snp
 
 (* Returns Some Ast0.forinfo with inserted pos if it was possible to insert
  * a pos or None if it was not possible. *)
@@ -330,16 +338,27 @@ and expression_pos e snp =
 and statement_pos s snp = match Ast0.unwrap s with
   | Ast0.Nest _ | Ast0.Dots _ | Ast0.Circles _ | Ast0.Stars _ | Ast0.Disj _
   | Ast0.MetaStmt _ | Ast0.Seq _ -> None
+
+  (* uncertainty of whether these should be handled! *)
   | Ast0.Exec _ -> None
   | Ast0.MetaStmtList _ -> None
   | Ast0.AsStmt _ -> None
   | Ast0.TopExp _ -> None
   | Ast0.Ty _ -> None
   | Ast0.TopInit _ -> None
-  | Ast0.Include _ -> None
-  | Ast0.Undef _ -> None
-  | Ast0.Define _ -> None
-  | Ast0.Pragma _ -> None
+
+  | Ast0.Include (incmc,filemc) ->
+      let (filemc, snp) = inc_file_pos filemc snp in
+      wrap (Ast0.Include(incmc, filemc)) snp
+  | Ast0.Undef (defmc, id) ->
+      let (id, snp) = ident_pos id snp in
+      wrap (Ast0.Undef(defmc, id)) snp
+  | Ast0.Define (defmc, id, defparam, stmtdots) ->
+      let (id, snp) = ident_pos id snp in
+      wrap (Ast0.Define(defmc, id, defparam, stmtdots)) snp
+  | Ast0.Pragma (pragmc, id, praginfo) ->
+      let (id, snp) = ident_pos id snp in
+      wrap (Ast0.Pragma(pragmc, id, praginfo)) snp
   | Ast0.OptStm stm ->
       (match statement_pos stm snp with
        | Some (v, sn) -> wrap (Ast0.OptStm v) sn
@@ -428,6 +447,6 @@ and statement_pos s snp = match Ast0.unwrap s with
   | Ast0.Return (retmc,sem) ->
       let (retmc, snp) = string_mcode_pos retmc snp in
       wrap (Ast0.Return(retmc,sem)) snp
-  | Ast0.FunDecl (b, f, id, lp, ps, rp, lb, sd, rb, a) ->
+  | Ast0.FunDecl (b, f, id, lp, ps, op, rp, lb, sd, rb, a) ->
       let (id, snp) = ident_pos id snp in
-      wrap (Ast0.FunDecl(b,f,id, lp, ps, rp, lb, sd, rb, a)) snp
+      wrap (Ast0.FunDecl(b,f,id, lp, ps, op, rp, lb, sd, rb, a)) snp
