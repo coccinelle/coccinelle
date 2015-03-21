@@ -366,14 +366,13 @@ let show_or_not_rule_name ast rulenb =
       Common.pr_xxxxxxxxxxxxxxxxx ()
     end
 
-let show_or_not_scr_rule_name rulenb =
+let show_or_not_scr_rule_name name =
   if !Flag_cocci.show_ctl_text || !Flag.show_trying ||
     !Flag.show_transinfo || !Flag_cocci.show_binding_in_out
   then
     begin
-      let name = i_to_s rulenb in
       Common.pr_xxxxxxxxxxxxxxxxx ();
-      pr ("script rule " ^ name ^ " = ");
+      pr ("script " ^ name ^ " = ");
       Common.pr_xxxxxxxxxxxxxxxxx ()
     end
 
@@ -411,27 +410,27 @@ let get_celem celem : string =
         Ast_c.str_of_name name
     | _ -> ""
 
+(* Warning The following function has the absolutely essential property of
+setting Flag.current_element, whether or not one wants to print tracing
+information!  This is probably not smart... *)
+
 let show_or_not_celem2 prelude celem =
-  if !Flag.show_trying
-  then
-    begin
-      let (tag,trying) =
-	(match celem with
-	| Ast_c.Definition ({Ast_c.f_name = namefuncs},_) ->
-	    let funcs = Ast_c.str_of_name namefuncs in
-	    Flag.current_element := funcs;
-	    (" function: ",funcs)
-	| Ast_c.Declaration
-	    (Ast_c.DeclList ([{Ast_c.v_namei = Some (name,_)}, _], _)) ->
-	      let s = Ast_c.str_of_name name in
-	      Flag.current_element := s;
-	      (" variable ",s);
-	| _ ->
-	    Flag.current_element := "something_else";
-	    (" ","something else");
-	    ) in
-      pr2 (prelude ^ tag ^ trying)
-    end
+  let (tag,trying) =
+  (match celem with
+  |  Ast_c.Definition ({Ast_c.f_name = namefuncs},_) ->
+      let funcs = Ast_c.str_of_name namefuncs in
+      Flag.current_element := funcs;
+      (" function: ",funcs)
+  |  Ast_c.Declaration
+      (Ast_c.DeclList ([{Ast_c.v_namei = Some (name,_)}, _], _)) ->
+      let s = Ast_c.str_of_name name in
+      Flag.current_element := s;
+      (" variable ",s);
+  |  _ ->
+      Flag.current_element := "something_else";
+      (" ","something else");
+  ) in
+  if !Flag.show_trying then pr2 (prelude ^ tag ^ trying)
 
 let show_or_not_celem a b  =
   Common.profile_code "show_xxx" (fun () -> show_or_not_celem2 a b)
@@ -1282,15 +1281,46 @@ let prepare_c files choose_includes parse_strings : file_info list =
 (* Manage environments as they are being built up *)
 (*****************************************************************************)
 
-let init_env _ = Hashtbl.create 101
+module MyHashedType :
+    Hashtbl.HashedType with type t = Ast_c.metavars_binding =
+  struct
+    type t = Ast_c.metavars_binding
+    let my_n = 5000
+    let my_m = 10000
+    let equal = (=)
+    let hash = Hashtbl.hash_param my_n my_m
+  end
 
-let update_env env v i = Hashtbl.replace env v i; env
+module MyHashtbl = Hashtbl.Make(MyHashedType)
+
+let max_tbl = ref 1001
+let env_tbl = MyHashtbl.create !max_tbl
+let init_env _ = env_tbl
+let init_env_list _ = []
+
+let update_env env v i =
+(*  let v = (List.map Hashtbl.hash (List.map snd v), v) in*)
+  MyHashtbl.replace env v i; env
+let update_env_list env v i = (v,i)::env
 
 (* know that there are no conflicts *)
-let safe_update_env env v i = Hashtbl.add env v i; env
+let safe_update_env env v i =
+  (*let v = (List.map Hashtbl.hash (List.map snd v), v) in*)
+  MyHashtbl.add env v i; env
 
 let end_env env =
-  List.sort compare (Hashtbl.fold (fun k v rest -> (k,v) :: rest) env [])
+  let res =
+    List.sort compare
+      (MyHashtbl.fold (fun k v rest -> (k,v) :: rest) env []) in
+  MyHashtbl.clear env;
+  res
+
+let end_env_list env =
+  let env = List.sort compare env in
+  let rec loop = function
+      x::((y::_) as xs) -> if x = y then loop xs else x :: loop xs
+    | l -> l in
+  loop env
 
 (*****************************************************************************)
 (* Processing the ctls and toplevel C elements *)
@@ -1349,6 +1379,8 @@ let merge_env new_e old_e =
       let _ = update_env old_e e rules in ()) new_e;
   old_e
 
+let merge_env_list new_e old_e = new_e@old_e
+
 let contains_binding e (_,(r,m),_) =
   try
     let _ = List.find (function ((re, rm), _) -> r =*= re && m =$= rm) e in
@@ -1397,7 +1429,7 @@ let ocaml_application mv ve script_vars r =
 let apply_script_rule r cache newes e rules_that_have_matched
     rules_that_have_ever_matched script_application =
   Common.profile_code r.language (fun () ->
-  show_or_not_scr_rule_name r.scr_rule_info.ruleid;
+  show_or_not_scr_rule_name r.scr_rule_info.rulename;
   if not(interpret_dependencies rules_that_have_matched
 	   !rules_that_have_ever_matched r.scr_rule_info.dependencies)
   then
@@ -1477,6 +1509,54 @@ let apply_script_rule r cache newes e rules_that_have_matched
 	  (cache, update_env newes e rules_that_have_matched))
     end)
 
+exception Missing_position
+
+let consistent_positions binding reqopts =
+  try
+    let positions =
+      List.fold_left
+	(fun prev p ->
+	  match fst p with
+	    Lib_engine.Match re ->
+	      let vars = re.Ast_cocci.positive_inherited_positions in
+	      let pvars =
+		List.fold_left
+		  (fun prev v ->
+		    try
+		      let b = List.assoc v binding in
+		      match b with
+			Ast_c.MetaPosValList l -> l :: prev
+		      | _ ->
+			  failwith
+			    "position variable should have a position binding"
+		    with Not_found -> raise Missing_position)
+		  [] vars in
+	      Common.union_set pvars prev
+	  | _ -> prev)
+	[] reqopts in
+    match positions with
+      [] -> true
+    | [_] -> true
+    | l::ls ->
+	let desired_functions = 
+	  List.fold_left
+            (fun prev (_,elem,_,_) ->
+              if not (List.mem elem prev) then elem::prev else prev)
+            [] l in
+	let inter =
+	  List.fold_left
+	    (fun prev l ->
+	      Common.inter_set prev
+		(List.fold_left
+		   (fun prev (_,elem,_,_) ->
+		     if not (List.mem elem prev) then elem::prev else prev)
+		   [] l))
+	    desired_functions ls in
+	match inter with [] -> false | _ -> true
+  with Missing_position -> false
+
+let printtime str = Printf.printf "%s: %f\n" str (Unix.gettimeofday ())
+
 let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
     (ccs:file_info list ref) =
   Common.profile_code r.rule_info.rulename (fun () ->
@@ -1491,9 +1571,20 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
       List.fold_left
 	(function (cache,newes) ->
 	  function ((e,rules_that_have_matched),relevant_bindings) ->
-	    if not(interpret_dependencies rules_that_have_matched
-		     !rules_that_have_ever_matched
-		     r.rule_info.dependencies)
+	    let consistent =
+	      List.exists (consistent_positions relevant_bindings)
+		(snd r.ctl) in
+	    if not consistent
+	    then
+	      (cache,
+	       update_env newes
+		 (e +>
+		  List.filter
+		    (fun (s,v) -> List.mem s r.rule_info.used_after))
+		 rules_that_have_matched)
+	    else if not(interpret_dependencies rules_that_have_matched
+			  !rules_that_have_ever_matched
+			  r.rule_info.dependencies)
 	    then
 	      begin
 		print_dependencies
@@ -1505,13 +1596,12 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
 		(cache,
 		 update_env newes
 		   (e +>
-
 		    List.filter
 		      (fun (s,v) -> List.mem s r.rule_info.used_after))
 		   rules_that_have_matched)
 	      end
 	    else
-	      let new_bindings =
+	      let (new_bindings,new_bindings_ua) =
 		try List.assoc relevant_bindings cache
 		with
 		  Not_found ->
@@ -1525,35 +1615,47 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
 		    show_or_not_binding "relevant in" relevant_bindings;
 
 		    (* applying the rule *)
-		    (match r.ruletype with
-		      Ast_cocci.Normal ->
+		    let new_bindings =
+		      match r.ruletype with
+			Ast_cocci.Normal ->
                       (* looping over the functions and toplevel elements in
 			 .c and .h *)
-			List.rev
-			  (concat_headers_and_c !ccs +>
-			   List.fold_left (fun children_e (c,f) ->
-			     if c.flow <> None
-			     then
+			  List.rev
+			    (concat_headers_and_c !ccs +>
+			     List.fold_left (fun children_e (c,f) ->
+			       if c.flow <> None
+			       then
                              (* does also some side effects on c and r *)
-			       let processed =
-				 process_a_ctl_a_env_a_toplevel r
-				   relevant_bindings c f in
-			       match processed with
-			       | None -> children_e
-			       | Some newbindings ->
-				   newbindings +>
-				   List.fold_left
-				     (fun children_e newbinding ->
-				       if List.mem newbinding children_e
-				       then children_e
-				       else newbinding :: children_e)
-				     children_e
-			     else children_e)
-			     [])
-		    | Ast_cocci.Generated ->
-			process_a_generated_a_env_a_toplevel r
-			  relevant_bindings !ccs;
-			[]) in
+				 let processed =
+				   process_a_ctl_a_env_a_toplevel r
+				     relevant_bindings c f in
+				 match processed with
+				 | None -> children_e
+				 | Some newbindings ->
+				     newbindings +>
+				     List.fold_left
+				       (fun children_e newbinding ->
+					 if List.mem newbinding children_e
+					 then children_e
+					 else newbinding :: children_e)
+				       children_e
+			       else children_e)
+			       [])
+		      | Ast_cocci.Generated ->
+			  process_a_generated_a_env_a_toplevel r
+			    relevant_bindings !ccs;
+			  [] in
+		    let new_bindings_ua =
+		      Common.nub
+			(new_bindings +>
+			 List.map
+			   (List.filter
+			      (function
+				(* see comment before combine_pos *)
+				(s,Ast_c.MetaPosValList []) -> false
+			      |	(s,v) ->
+				  List.mem s r.rule_info.used_after))) in
+		    (new_bindings,new_bindings_ua) in
 
 	      let old_bindings_to_keep =
 		Common.nub
@@ -1574,6 +1676,7 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
 		else
 		(* combine the new bindings with the old ones, and
 		   specialize to the used_after_list *)
+		  begin
 		  let old_variables = List.map fst old_bindings_to_keep in
 		  (* have to explicitly discard the inherited variables
 		     because we want the inherited value of the positions
@@ -1582,29 +1685,26 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
 		     according to the free variables of each rule. *)
 		  let new_bindings_to_add =
 		    Common.nub
-		      (new_bindings +>
+		      (new_bindings_ua +>
 		       List.map
 			 (List.filter
-			    (function
-				(* see comment before combine_pos *)
-				(s,Ast_c.MetaPosValList []) -> false
-			      |	(s,v) ->
-				  List.mem s r.rule_info.used_after &&
-				  not (List.mem s old_variables)))) in
+			    (function (s,v) ->
+			      not (List.mem s old_variables)))) in
+		  Common.profile_code ("union "^r.rule_info.rulename)
+		    (fun () ->
 		  List.map
 		    (function new_binding_to_add ->
 		      (List.sort compare
 			 (Common.union_set
 			    old_bindings_to_keep new_binding_to_add),
 		       r.rule_info.rulename::rules_that_have_matched))
-		    new_bindings_to_add in
-	      ((relevant_bindings,new_bindings)::cache,
-  Common.profile_code "merge_env" (function _ ->
-	       merge_env new_e newes)))
+		    new_bindings_to_add)
+		  end in
+	      ((relevant_bindings,(new_bindings,new_bindings_ua))::cache,
+	       merge_env new_e newes))
 	([],init_env()) reorganized_env in (* end iter es *)
     if !(r.rule_info.was_matched)
     then Common.push2 r.rule_info.rulename rules_that_have_ever_matched;
-
     es := end_env newes;
 
     (* apply the tagged modifs and reparse *)
@@ -1644,33 +1744,43 @@ and reassociate_positions free_vars negated_pos_vars envs =
        (function (non_pos,pos) ->
 	 (List.sort compare non_pos,List.sort compare pos))
        splitted_relevant in
-   let non_poss =
-     List.fold_left
-       (function non_pos ->
-	 function (np,_) ->
-	   if List.mem np non_pos then non_pos else np::non_pos)
-       [] splitted_relevant in
-   let extended_relevant =
-     (* extend the position variables with the values found at other identical
-	variable bindings *)
-     List.map
-       (function non_pos ->
-	 let others =
-	   List.filter
-	     (function (other_non_pos,other_pos) ->
-               (* do we want equal? or just somehow compatible? eg non_pos
-	       binds only E, but other_non_pos binds both E and E1 *)
-	       non_pos =*= other_non_pos)
-	     splitted_relevant in
-	 (non_pos,
-	  List.sort compare
-	    (non_pos @
-	     (combine_pos negated_pos_vars
-		(List.map (function (_,x) -> x) others)))))
-       non_poss in
-   List.combine envs
-     (List.map (function (non_pos,_) -> List.assoc non_pos extended_relevant)
-	splitted_relevant)
+   match negated_pos_vars with
+     [] ->
+       List.combine envs
+	 (List.map (function (non_pos,_) -> List.sort compare non_pos)
+	    splitted_relevant)
+   | _ ->
+       (* when there are negated position variables, extend the position
+	  variables with the values found at other identical variable
+	  bindings *)
+       let non_poss =
+	 let non_poss =
+	   List.sort compare (List.map fst splitted_relevant) in
+	 let rec loop = function
+	     [] -> []
+	   | [x] -> [x]
+	   | x::((y::_) as xs) ->
+	       if x = y then loop xs else x :: loop xs in
+	 loop non_poss in
+       let extended_relevant = Hashtbl.create 101 in
+       List.iter
+	 (function non_pos ->
+	   let others =
+	     List.filter
+	       (function (other_non_pos,other_pos) ->
+                 (* do we want equal? or just somehow compatible? eg non_pos
+		    binds only E, but other_non_pos binds both E and E1 *)
+		 non_pos =*= other_non_pos)
+	       splitted_relevant in
+	   Hashtbl.add extended_relevant non_pos
+	     (List.sort compare
+		(non_pos @
+		 (combine_pos negated_pos_vars (List.map snd others)))))
+	 non_poss;
+       List.combine envs
+	 (List.map
+	    (function (non_pos,_) -> Hashtbl.find extended_relevant non_pos)
+	    splitted_relevant)
 
 (* If the negated posvar is not bound at all, this function will
 nevertheless bind it to [].  If we get rid of these bindings, then the
@@ -1839,7 +1949,7 @@ let rec bigloop2 rs (ccs: file_info list) parse_strings =
 	(* just newes can't work, because if one does include_match false
            on everything that binds a variable, then nothing is left *)
         es := (*newes*)
-	  (if Hashtbl.length newes = 0 then init_es else end_env newes)
+	  (if MyHashtbl.length newes = 0 then init_es else end_env newes)
     | CocciRuleCocciInfo r ->
 	apply_cocci_rule r rules_that_have_ever_matched parse_strings
 	  es ccs)
