@@ -1712,15 +1712,13 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
 			 (List.filter
 			    (function (s,v) ->
 			      not (List.mem s old_variables)))) in
-		  Common.profile_code ("union "^r.rule_info.rulename)
-		    (fun () ->
 		  List.map
 		    (function new_binding_to_add ->
 		      (List.sort compare
 			 (Common.union_set
 			    old_bindings_to_keep new_binding_to_add),
 		       r.rule_info.rulename::rules_that_have_matched))
-		    new_bindings_to_add)
+		    new_bindings_to_add
 		  end in
 	      ((relevant_bindings,(new_bindings,new_bindings_ua))::cache,
 	       merge_env new_e newes))
@@ -1848,7 +1846,7 @@ and process_a_generated_a_env_a_toplevel2 r env = function
   | _ -> failwith "multiple files not supported"
 
 and process_a_generated_a_env_a_toplevel rule env ccs =
-  Common.profile_code "process_a_ctl_a_env_a_toplevel"
+  Common.profile_code "process_a_generated_a_env_a_toplevel"
     (fun () -> process_a_generated_a_env_a_toplevel2 rule env ccs)
 
 (* does side effects on C ast and on Cocci info rule *)
