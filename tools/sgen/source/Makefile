@@ -16,7 +16,8 @@ TARGET=sgen
 
 CONFIG= $(COCCIDIR)/Makefile.config
 
-SYSLIBS= str.cma unix.cma bigarray.cma nums.cma $(PCREDIR)/pcre.cma
+SYSLIBS= str.cma unix.cma bigarray.cma nums.cma $(PCREDIR)/pcre.cma \
+	$(DYNLINKDIR)/dynlink.cma
 
 LIBS= $(COCCIDIR)/commons/commons.cma \
 	$(COCCIDIR)/globals/globals.cma \
