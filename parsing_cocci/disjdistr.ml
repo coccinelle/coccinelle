@@ -27,6 +27,11 @@ let rec disjmult_two fstart frest (start,rest) =
   let rest = disjmult frest rest in
   disjmult2 cur rest (function cur -> function rest -> (cur,rest))
 
+let rec disjtwoelems fstart frest (start,rest) =
+  let cur = fstart start in
+  let rest = frest rest in
+  disjmult2 cur rest (function cur -> function rest -> (cur,rest))
+
 let disjoption f = function
     None -> [None]
   | Some x -> List.map (function x -> Some x) (f x)
@@ -204,8 +209,8 @@ and disjparam p =
   match Ast.unwrap p with
     Ast.VoidParam(ty) -> [p] (* void is the only possible value *)
   | Ast.Param(ty,id) ->
-      let ty = disjty ty in
-      List.map (function ty -> Ast.rewrap p (Ast.Param(ty,id))) ty
+      disjmult2 (disjty ty) (disjoption disjident id)
+	(fun ty id -> Ast.rewrap p (Ast.Param(ty,id)))
   | Ast.AsParam(pm,asexp) -> (* as exp doesn't contain disj *)
       let pm = disjparam pm in
       List.map (function pm -> Ast.rewrap p (Ast.AsParam(pm,asexp))) pm
@@ -330,8 +335,10 @@ let orify_rule_elem_ini = generic_orify_rule_elem disjini
 let rec disj_rule_elem r k re =
   match Ast.unwrap re with
     Ast.FunHeader(bef,allminus,fninfo,name,lp,params,va,rp) ->
-      generic_orify_rule_elem (disjdots disjparam) re params
-	(function params ->
+      generic_orify_rule_elem
+	(disjtwoelems disjident (disjdots disjparam)) re
+	(name,params)
+	(fun (name,params) ->
 	  Ast.rewrap re
 	    (Ast.FunHeader(bef,allminus,fninfo,name,lp,params,va,rp)))
   | Ast.Decl decl ->

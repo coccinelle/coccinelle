@@ -683,6 +683,8 @@ let other_options = [
     [
     (let s = "--parse-cocci"  in s, Arg.Unit (fun () -> action := s),
     "   <file>");
+    (let s = "--rule-dependencies"  in s, Arg.Unit (fun () -> action := s),
+    "   <file>");
     (let s = "--compare-c"  in s, Arg.Unit (fun () -> action := s),
     "   <file1> <file2>");
     ]);
@@ -1170,7 +1172,8 @@ let main () =
     let contains_cocci =
       (* rather a hack... don't want to think about all possible options *)
       List.exists (function x -> Filename.check_suffix x ".cocci") arglist
-        && not (List.mem "--parse-cocci" arglist) in
+        && not (List.mem "--parse-cocci" arglist)
+	&& not (List.mem "--rule-dependencies" arglist) in
     if not (null (Common.inter_set arglist
 	            ["--cocci-file";"--sp-file";"--sp";"--test";"--testall";
                       "--test-okfailed";"--test-regression-okfailed"]))
@@ -1302,6 +1305,9 @@ let main () =
 
     | [] when !action =$= "--parse-cocci" ->
         Testing.test_parse_cocci !cocci_file
+
+    | [] when !action =$= "--rule-dependencies" ->
+        Testing.test_rule_dependencies !cocci_file
 
      (* I think this is used by some scripts in some Makefile for our
       * big-tests. So don't remove.

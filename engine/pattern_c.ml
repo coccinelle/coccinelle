@@ -93,12 +93,14 @@ module XMATCH = struct
 *)
     let res1 = m1 tin in
     let res2 = m2 tin in
-    let list_bindings_already = List.map snd res1 in
-    res1 ++
-      (res2 +> List.filter (fun (x, binding) ->
-        not
-          (list_bindings_already +> List.exists (fun already ->
-            Lib_engine.equal_binding binding already))
+    if res2 = [] (*try to avoid a trivial @*)
+    then res1
+    else
+      res1 ++
+	(res2 +> List.filter (fun (x, binding) ->
+          not
+            (res1 +> List.exists (fun (_,already) ->
+              Lib_engine.equal_binding binding already))
       ))
 
 

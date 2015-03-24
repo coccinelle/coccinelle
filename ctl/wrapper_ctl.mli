@@ -11,6 +11,9 @@ type ('pred,'state,'mvar,'value) labelfunc =
     'pred ->
       ('state * ('pred * ('mvar, 'value) Ast_ctl.generic_substitution))  list
 
+type 'pred preprocfunc =
+    'pred -> bool
+
 module CTL_ENGINE_BIS :
   functor (SUB : Ctl_engine.SUBST) ->
     functor (G : Ctl_engine.GRAPH) ->
@@ -43,6 +46,7 @@ module CTL_ENGINE_BIS :
     val satbis_noclean :
 	G.cfg *
 	(predicate, G.node, WRAPPER_ENV.mvar, SUB.value) labelfunc *
+	predicate preprocfunc *
 	G.node list ->
 	  ((WRAPPER_PRED.t, WRAPPER_ENV.mvar, int) Ast_ctl.generic_ctl *
 	     (WRAPPER_PRED.t list list)) ->
@@ -51,6 +55,7 @@ module CTL_ENGINE_BIS :
     val satbis :
 	G.cfg *
 	 (predicate,G.node,SUB.mvar,SUB.value) labelfunc *
+	 predicate preprocfunc *
          G.node list ->
 	   ((predicate,SUB.mvar) wrapped_ctl *
 	      (WRAPPER_PRED.t list list)) ->

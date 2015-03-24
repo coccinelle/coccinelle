@@ -30,6 +30,7 @@ val compare_with_expected : (filename * filename option) list -> unit
  *)
 
 val test_parse_cocci : filename -> unit
+val test_rule_dependencies : filename -> unit
 
 (*****************************************************************************)
 (* to be called by ocaml toplevel, to test. *)

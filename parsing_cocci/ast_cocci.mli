@@ -16,6 +16,7 @@ type 'a wrap =
       minus_free_vars : meta_name list; (*minus free vars*)
       fresh_vars : (meta_name * seed) list; (*fresh vars*)
       inherited : meta_name list; (*inherited vars*)
+      positive_inherited_positions : meta_name list;
       saved_witness : meta_name list; (*witness vars*)
       bef_aft : dots_bef_aft;
       pos_info : meta_name mcode option; (* pos info, try not to duplicate *)
@@ -704,6 +705,7 @@ val get_mfvs : 'a wrap -> meta_name list
 val set_mfvs : meta_name list -> 'a wrap -> 'a wrap
 val get_fresh : 'a wrap -> (meta_name * seed) list
 val get_inherited : 'a wrap -> meta_name list
+val get_inherited_pos : 'a wrap -> meta_name list
 val get_saved : 'a wrap -> meta_name list
 val get_dots_bef_aft : statement -> dots_bef_aft
 val set_dots_bef_aft : dots_bef_aft -> statement -> statement
@@ -735,7 +737,8 @@ val make_meta_decl :
       declaration
 
 val make_term : 'a -> 'a wrap
-val make_inherited_term : 'a -> meta_name list (* inherited vars *) -> 'a wrap
+val make_inherited_term : 'a -> meta_name list (* inherited vars *) ->
+  meta_name list (* definitely inherited positions *) -> 'a wrap
 val make_mcode : 'a -> 'a mcode
 
 val equal_pos : fixpos -> fixpos -> bool

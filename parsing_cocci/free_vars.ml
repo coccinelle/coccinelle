@@ -195,15 +195,15 @@ let collect_refs include_constraints =
 	  bind_disj (List.map recursor.V.combiner_statement_dots stms)
       | _ -> option_default) in
 
-  let mcode r mc =
+  let mcode r mc = (*
     if include_constraints
-    then
+    then *)
       List.concat
 	(List.map
 	   (function Ast.MetaPos(name,constraints,_,_,_) ->
-	     (metaid name)::constraints)
+	     (metaid name)::(if include_constraints then constraints else []))
 	   (Ast.get_pos_var mc))
-    else option_default in
+    (* else option_default *) in
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
@@ -220,6 +220,43 @@ let collect_all_rule_refs minirules =
     (List.map collect_all_refs.V.combiner_top_level minirules)
 
 let collect_all_minirule_refs = collect_all_refs.V.combiner_top_level
+
+let collect_pos_positions =
+  let bind x y = x @ y in
+  let option_default = [] in
+  let donothing recursor k e = k e in (* just combine in the normal way *)
+
+  let metaid (x,_,_,_) = x in
+
+  let mcode r mc =
+      List.concat
+	(List.map
+	   (function Ast.MetaPos(name,constraints,_,_,_) -> [metaid name])
+	   (Ast.get_pos_var mc)) in
+
+  let cprule_elem recursor k re =
+    match Ast.unwrap re with
+      Ast.DisjRuleElem relist ->
+	(*take the intersection of the results*)
+	let subres = List.map k relist in
+	List.fold_left Common.inter_set (List.hd subres) (List.tl subres)
+    | _ -> k re in
+
+  let cpstmt recursor k s =
+    match Ast.unwrap s with
+      Ast.Disj stmlist ->
+	(*take the intersection of the results*)
+	let subres =
+	  List.map recursor.V.combiner_statement_dots stmlist in
+	List.fold_left Common.inter_set (List.hd subres) (List.tl subres)
+    | _ -> k s in
+
+  V.combiner bind option_default
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing cprule_elem cpstmt
+    donothing donothing donothing
 
 (* ---------------------------------------------------------------- *)
 
@@ -439,6 +476,8 @@ let collect_in_plus_term =
   let astfvrule_elem recursor k re =
     match Ast.unwrap re with
       Ast.FunHeader(bef,_,fi,nm,_,params,_,_) ->
+	bind (cip_mcodekind recursor bef) (k re)
+	  (* no clue why this code is here *) (*
 	let fi_metas =
 	  List.concat
 	    (List.map
@@ -462,7 +501,7 @@ let collect_in_plus_term =
 	bind fi_metas
 	  (bind nm_metas
 	     (bind param_metas
-		(bind (cip_mcodekind recursor bef) (k re))))
+		(bind (cip_mcodekind recursor bef) (k re)))) *)
     | Ast.Decl decl ->
 	bind (cip_mcodekind recursor (annotated_decl decl)) (k re)
     | Ast.ForHeader(fr,lp,Ast.ForDecl(decl),e2,sem2,e3,rp) ->
@@ -713,8 +752,8 @@ are referenced.  Store them in a hash table. *)
 multiple times.  But we get the advantage of not having too many variants
 of the same functions. *)
 
-(* Inherited doesn't include position constraints.  If they are not bound
-then there is no constraint. *)
+(* Inherited doesn't include negative position constraints.  If they are
+not bound then there is no constraint. *)
 
 let astfvs metavars bound =
   let fresh =
@@ -736,11 +775,50 @@ let astfvs metavars bound =
 	([],[]) l in
     (List.rev matched, List.rev freshvars) in
 
+  let refront re =
+    match Ast.unwrap re with
+      Ast.FunHeader _ -> "FunHeader"
+    | Ast.Decl _ -> "Decl"
+    | Ast.SeqStart _ -> "SeqStart"
+    | Ast.SeqEnd _ -> "SeqEnd"
+    | Ast.ExprStatement _ -> "ExprStatement"
+    | Ast.IfHeader _ -> "IfHeader"
+    | Ast.Else _ -> "Else"
+    | Ast.WhileHeader _ -> "WhileHeader"
+    | Ast.DoHeader _ -> "DoHeader"
+    | Ast.WhileTail _ -> "WhileTail"
+    | Ast.ForHeader _ -> "ForHeader"
+    | Ast.IteratorHeader _ -> "IteratorHeader"
+    | Ast.SwitchHeader _ -> "SwitchHeader"
+    | Ast.Break _ -> "Break"
+    | Ast.Continue _ -> "Continue"
+    | Ast.Label _ -> "Label"
+    | Ast.Goto _ -> "Goto"
+    | Ast.Return _ -> "Return"
+    | Ast.ReturnExpr _ -> "ReturnExpr"
+    | Ast.Exec _ -> "Exec"
+    | Ast.MetaRuleElem _ -> "MetaRuleElem"
+    | Ast.MetaStmt _ -> "MetaStmt"
+    | Ast.MetaStmtList _ -> "MetaStmtList"
+    | Ast.Exp _ -> "Exp"
+    | Ast.TopExp _ -> "TopExp"
+    | Ast.Ty _ -> "Ty"
+    | Ast.TopInit _ -> "TopInit"
+    | Ast.Include _ -> "Include"
+    | Ast.Undef _ -> "Undef"
+    | Ast.DefineHeader _ -> "DefineHeader"
+    | Ast.Pragma _ -> "Pragma"
+    | Ast.Case _ -> "Case"
+    | Ast.Default _ -> "Default"
+    | Ast.DisjRuleElem _ -> "DisjRuleElem" in
+
   (* cases for the elements of anything *)
-  let simple_setup getter k re =
+  let simple_setup refront getter k re =
     let minus_free = nub (getter collect_all_refs re) in
     let minus_nc_free =
       nub (getter collect_non_constraint_refs re) in
+    let minus_pos_free =
+      nub (getter collect_pos_positions re) in
     let plus_free =
       collect_fresh_seed metavars (getter collect_in_plus_term re) in
     let free = Common.union_set minus_free plus_free in
@@ -749,6 +827,8 @@ let astfvs metavars bound =
       List.filter (function x -> not(List.mem x bound)) free in
     let inherited =
       List.filter (function x -> List.mem x bound) nc_free in
+    let inherited_pos =
+      List.filter (function x -> List.mem x bound) minus_pos_free in
     let munbound =
       List.filter (function x -> not(List.mem x bound)) minus_free in
     let (matched,fresh) = collect_fresh unbound in
@@ -757,10 +837,11 @@ let astfvs metavars bound =
       Ast.minus_free_vars = munbound;
       Ast.fresh_vars = fresh;
       Ast.inherited = inherited;
+      Ast.positive_inherited_positions = inherited_pos;
       Ast.saved_witness = []} in
 
   let astfvrule_elem recursor k re =
-    simple_setup (function x -> x.V.combiner_rule_elem) k re in
+    simple_setup refront (function x -> x.V.combiner_rule_elem) k re in
 
   let astfvstatement recursor k s =
     let minus_free = nub (collect_all_refs.V.combiner_statement s) in
@@ -817,10 +898,12 @@ let astfvs metavars bound =
       Ast.saved_witness = []} in
 
   let astfvstatement_dots recursor k sd =
-    simple_setup (function x -> x.V.combiner_statement_dots) k sd in
+    simple_setup (fun _ -> "statement")
+      (function x -> x.V.combiner_statement_dots) k sd in
 
   let astfvcase_line recursor k cl =
-    simple_setup (function x -> x.V.combiner_case_line) k cl in
+    simple_setup (fun _ -> "case")
+      (function x -> x.V.combiner_case_line) k cl in
 
   let astfvtoplevel recursor k tl =
     let saved = collect_saved.V.combiner_top_level tl in
@@ -871,7 +954,7 @@ let collect_astfvs rules =
 	      (List.map (astfvs metavars bound).V.rebuilder_top_level
 		 minirules),
 	      isexp, ruletype))::
-            (loop ((List.map Ast.get_meta_name metavars)@bound) rules) in
+	  (loop ((List.map Ast.get_meta_name metavars)@bound) rules) in
   loop [] rules
 
 (* ---------------------------------------------------------------- *)

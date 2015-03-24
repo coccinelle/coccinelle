@@ -480,6 +480,56 @@ let test_parse_cocci file =
       Printf.printf "glimpse tokens\n";
       pr (String.concat "\nor on glimpse failure\n" x))
 
+let print_link t a b =
+  if not (a = b)
+  then
+    (try Hashtbl.find t (a,b)
+    with Not_found ->
+      (Hashtbl.add t (a,b) ();
+       Printf.printf "  \"%s\" -> \"%s\";\n" b a))
+
+let print_dotted_link dst = function
+    "" -> ()
+  | src -> Printf.printf "  \"%s\" -> \"%s\" [style = dotted];\n" src dst
+
+let rec depto t from = function
+    Ast_cocci.Dep x | Ast_cocci.EverDep x | Ast_cocci.NeverDep x ->
+      print_link t from x
+  | Ast_cocci.AndDep(x,y) | Ast_cocci.OrDep(x,y) ->
+      depto t from x; depto t from y
+  | _ -> ()
+
+let test_rule_dependencies file =
+  let t = Hashtbl.create 101 in
+  if not (file =~ ".*\\.cocci")
+  then pr2 "warning: seems not a .cocci file";
+  Iso_pattern.verbose_iso := false;
+  let (_,xs,fvs,_,_,_,_,_) =
+    Parse_cocci.process file (Some !Config.std_iso) false in
+  Printf.printf "digraph {\n";
+  let prevrule = ref "" in
+  List.iter2
+    (fun def fvs ->
+      match def with
+	Ast_cocci.ScriptRule (nm,_,dep,script_vars,_,_) ->
+	  print_dotted_link nm !prevrule;
+	  prevrule := nm;
+	  depto t nm dep;
+	  List.iter (function (_,(parent,_),_) -> print_link t nm parent)
+	    script_vars
+      | Ast_cocci.InitialScriptRule (_,_,_,_,_)
+      | Ast_cocci.FinalScriptRule (_,_,_,_,_) -> ()
+      | Ast_cocci.CocciRule (nm,(dep,_,_),_,_,_) ->
+	  print_dotted_link nm !prevrule;
+	  prevrule := nm;
+	  depto t nm dep;
+	  List.iter (function (parent,_) -> print_link t nm parent)
+	    (List.concat fvs))
+    xs fvs;
+  Printf.printf "}\n";
+  Printf.printf
+    "// pipe to: ccomps -Cx | dot | gvpack -array_1 | neato -n2 -T pdf\n"
+
 (*****************************************************************************)
 (* to be called by ocaml toplevel, to test. *)
 (*****************************************************************************)

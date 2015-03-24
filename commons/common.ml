@@ -4600,9 +4600,13 @@ let ($=$) = equal_set
 (* as $+$ but do not check for memberness, allow to have set of func *)
 let ($@$) = fun a b -> a @ b
 
-let rec nub = function
-    [] -> []
-  | x::xs -> if List.mem x xs then nub xs else x::(nub xs)
+let rec nub l =
+  let l = List.sort compare l in
+  let rec loop = function
+      [] -> []
+    | x::((y::_) as xs) when x =*= y -> loop xs
+    | x::xs -> x :: loop xs in
+  loop l
 
 (*****************************************************************************)
 (* Set as normal list *)
