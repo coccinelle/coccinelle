@@ -753,3 +753,7 @@ let unparse x =
   print_newline()
 
 let unparse_to_string x = Common.format_to_string (function _ -> unparse x)
+
+let show_cocci_parse_tree comment parse_tree =
+  Printf.printf "%s\n" comment;
+  top_level parse_tree; Format.print_newline()
