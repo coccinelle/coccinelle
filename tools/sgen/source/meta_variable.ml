@@ -79,7 +79,8 @@ module MVSet = Set.Make(
         | true, true -> String.compare n1 n2
         | false, false -> 
             (match (is_identifier t1, is_identifier t2) with
-              | (true,false) -> -1 | (false,true) -> 1
+              | true, false -> -1
+              | false, true -> 1
               | _ -> String.compare n1 n2
             )
   end
@@ -131,18 +132,16 @@ let list_constraints ~tostring_fn ~op = function
   | [x] -> op ^ (tostring_fn x)
   | x -> op ^ "{" ^ (String.concat "," (List.map tostring_fn x)) ^ "}"
 
-let id_constraint ~rn = function
+let id_constraint ~rn =
+  let list_constraints' slist mnlist op =
+    let combined =
+      (List.map (fun x -> "\"" ^ x ^ "\"") slist) @
+      (List.map (name_str ~rn) mnlist) in
+    list_constraints ~tostring_fn:(fun x -> x) ~op combined in
+  function
   | Ast.IdNoConstraint -> ""
-  | Ast.IdPosIdSet(slist,mnlist) ->
-      let combined =
-        (List.map (fun x -> "\"" ^ x ^ "\"") slist) @
-        (List.map (name_str ~rn) mnlist) in
-      list_constraints ~tostring_fn:(fun x -> x) ~op:" = " combined
-  | Ast.IdNegIdSet(slist,mnlist) ->
-      let combined =
-        (List.map (fun x -> "\"" ^ x ^ "\"") slist) @
-        (List.map (name_str ~rn) mnlist) in
-      list_constraints ~tostring_fn:(fun x -> x) ~op:" != " combined
+  | Ast.IdPosIdSet(slist,mnlist) -> list_constraints' slist mnlist " = "
+  | Ast.IdNegIdSet(slist,mnlist) -> list_constraints' slist mnlist " != "
   | Ast.IdRegExpConstraint(re) -> regex_constraint re
 
 let constraints ~rn = function

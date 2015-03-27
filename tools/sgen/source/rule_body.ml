@@ -34,13 +34,12 @@ module DG = Disj_generator
 (* Function composition *)
 let ( >> ) f g x = g (f x)
 
-(* Continuously apply function ('b -> 'a -> 'a) with start value ('a) and
- * the values in a 'b list.
- *)
+(* Continuously apply fn ('b -> 'a -> 'a) with lst ('b list) and start ('a). *)
 let reduce fn lst start = List.fold_left (fun a b -> fn b a) start lst
 
 (* print helpers for context rules (which are really just string lists) *)
 let print_newl outch = output_string outch "\n"
+
 let printfn outch x =
   List.iter (fun x -> output_string outch x; print_newl outch) x;
   print_newl outch
@@ -97,21 +96,33 @@ let mcode ~context_mode fn (x, a, info, mc, pos, _) =
  *)
 let whencodes ~strfn ~exprfn ~notfn ~alwaysfn l =
   let add_whens = function
-    | Ast0.WhenNot(w,e,a) -> strfn w >> strfn e >> notfn a
-    | Ast0.WhenAlways(w,e,a) -> strfn w >> strfn e >> alwaysfn a
-    | Ast0.WhenModifier(w,a) ->
-        strfn w >> GT.add (" " ^ (S.whenmodifier_tostring a))
-    | Ast0.WhenNotTrue(w,e,a) ->
-        strfn w >> strfn e >> GT.add " true" >> exprfn a
-    | Ast0.WhenNotFalse(w,e,a) ->
-        strfn w >> strfn e >> GT.add " false" >> exprfn a in
+    | Ast0.WhenNot(whenmc, notequalmc, a) ->
+        strfn whenmc
+        >> strfn notequalmc
+        >> notfn a
+    | Ast0.WhenAlways(whenmc, equalmc, a) ->
+        strfn whenmc
+        >> strfn equalmc
+        >> alwaysfn a
+    | Ast0.WhenModifier(whenmc, a) ->
+        strfn whenmc
+        >> GT.add (" " ^ (S.whenmodifier_tostring a))
+    | Ast0.WhenNotTrue(whenmc, notequalmc, expr) ->
+        strfn whenmc
+        >> strfn notequalmc
+        >> GT.add " true"
+        >> exprfn expr
+    | Ast0.WhenNotFalse(whenmc, equalmc, expr) ->
+        strfn whenmc
+        >> strfn equalmc
+        >> GT.add " false"
+        >> exprfn expr in
   GT.do_whencode (reduce add_whens l)
 
 
 (* This is where the magic happens!
- * inserts stars/positions into the statements of a statement_dots.
- *
- * only give positions and stars to statements if they are the first in a dots
+ * Inserts stars/positions into the statements of a statement_dots.
+ * Only give positions and stars to statements if they are the first in a dots
  * or come immediately after a nest, dots, disjunction, or metastatement.
  *)
 let star_dotsstmtfn comb context_mode stmtdots =
@@ -123,6 +134,7 @@ let star_dotsstmtfn comb context_mode stmtdots =
   let c = comb ~context_mode:(context_mode || has_minuses) in
   let stmtfn = c.VT0.combiner_rec_statement in
 
+  (* inserts position into statement where structurally appropriate *)
   let star_stmtfn stmt snp =
     let _ = assert (not (GT.no_gen snp)) in
     match PG.statement_pos stmt snp with
@@ -138,7 +150,7 @@ let star_dotsstmtfn comb context_mode stmtdots =
     | Ast0.MetaStmt _ -> true | _ -> false in
 
   (* puts stars and positions in statements that come after one of the cases
-   * in no_star. Insert newline after a no_star case.
+   * in do_not_star. Insert newline after a do_not_star case.
    *)
   let rec insert_stars star_current fn =
     let starfn = if star_current then star_stmtfn else stmtfn in
@@ -196,55 +208,71 @@ let rec gen_combiner ~context_mode =
   let casefn = donothing in
   let string_fragmentfn = donothing in
 
-  (* universal special cases, regardless of no_gen mode:
-   *- Stmts: Nest, dots, circles, and stars need special whencode handling,
-   *  since whencodes are ignored in the visitor.
-   *- Stmts: Nest, dots, circles, stars, and metastatements can represent code
-   *  slices of arbitrary length and should therefore not be starred, so if
-   *  their current line is starred, put them on a new line.
-   *- Disjunctions with SmPL style pattern-matching may need to be split into
-   *  two rules.
+  (* Universal special cases, regardless of no_gen mode:
+   * Disjunctions with SmPL style pattern-matching may need to be split into
+   * two rules.
    *)
-  let identfn c fn v =
-    match Ast0.unwrap v with
-    | Ast0.DisjId _ -> DG.generate_ident
-        ~strfn:string_mcode ~identfn:fn ~ident:v ~at_top:false
-    | _ -> fn v in
+  let identfn _ c_identfn ident =
+    match Ast0.unwrap ident with
+    | Ast0.DisjId _ ->
+        DG.generate_ident
+          ~strfn:string_mcode ~identfn:c_identfn ~ident ~at_top:false
+    | _ -> c_identfn ident in
 
-  let exprfn c fn v =
-    match Ast0.unwrap v with
-    | Ast0.DisjExpr _ -> DG.generate_expression
-        ~strfn:string_mcode ~exprfn:fn ~expr:v ~at_top:false
-    | _ -> fn v in
+  let exprfn _ c_exprfn expr =
+    match Ast0.unwrap expr with
+    | Ast0.DisjExpr _ ->
+        DG.generate_expression
+          ~strfn:string_mcode ~exprfn:c_exprfn ~expr ~at_top:false
+    | _ -> c_exprfn expr in
 
-  let declfn c fn v =
-    match Ast0.unwrap v with
-    | Ast0.DisjDecl _ -> DG.generate_declaration
-        ~strfn:string_mcode ~declfn:fn ~decl:v ~at_top:false
-    | _ -> fn v in
+  let declfn _ c_declfn decl =
+    match Ast0.unwrap decl with
+    | Ast0.DisjDecl _ ->
+        DG.generate_declaration
+          ~strfn:string_mcode ~declfn:c_declfn ~decl ~at_top:false
+    | _ -> c_declfn decl in
 
-  let stmtfn combiner fn v =
+  (* Statements; universal special cases, regardless of no_gen mode:
+   * - Nest, dots, circles, and stars need special whencode handling, since
+   *   whencodes are ignored in the visitor.
+   * - Nest, dots, circles, stars, and metastatements can represent code
+   *   slices of arbitrary length and should therefore not be starred, so if
+   *   their current line is starred, put them on a new line.
+   * - Disjunction handling
+   *)
+  let stmtfn combiner c_stmtfn stmt =
     let c_dotsstmtfn = combiner.VT0.combiner_rec_statement_dots in
     let c_exprfn = combiner.VT0.combiner_rec_expression in
     let whncodes = whencodes
-      ~strfn:string_mcode ~exprfn:c_exprfn ~notfn:c_dotsstmtfn ~alwaysfn:fn in
-    match Ast0.unwrap v with
+      ~strfn:string_mcode ~exprfn:c_exprfn ~notfn:c_dotsstmtfn
+      ~alwaysfn:c_stmtfn in
+    match Ast0.unwrap stmt with
     | Ast0.Nest(starter,stmt_dots,ender,whn,multi) ->
-        GT.inc_star >> string_mcode starter >> whncodes whn
-        >> c_dotsstmtfn stmt_dots >> string_mcode ender
-    | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) ->
-        GT.inc_star >> string_mcode d >> whncodes whn
-    | Ast0.MetaStmt _ -> GT.inc_star >> fn v
-    | Ast0.Disj _ -> DG.generate_statement
-        ~stmtdotsfn:combiner.VT0.combiner_rec_statement_dots
-        ~strfn:string_mcode ~stmtfn:fn ~stmt:v ~at_top:false
-    | _ -> fn v in
+        GT.inc_star
+        >> string_mcode starter
+        >> whncodes whn
+        >> c_dotsstmtfn stmt_dots
+        >> string_mcode ender
+    | Ast0.Dots(dots,whn) | Ast0.Circles(dots,whn) | Ast0.Stars(dots,whn) ->
+        GT.inc_star
+        >> string_mcode dots
+        >> whncodes whn
+    | Ast0.MetaStmt _ ->
+        GT.inc_star
+        >> c_stmtfn stmt
+    | Ast0.Disj _ ->
+        DG.generate_statement
+          ~stmtdotsfn:c_dotsstmtfn ~strfn:string_mcode ~stmtfn:c_stmtfn ~stmt
+          ~at_top:false
+    | _ -> c_stmtfn stmt in
 
-  let dotsstmtfn c fn v =
-    (fun x ->
-       if GT.no_gen x (* relevant in whencodes *)
-       then fn v x
-       else star_dotsstmtfn gen_combiner context_mode v x) in
+  (* positions and stars are added here!!! *)
+  let dotsstmtfn _ c_dotsstmtfn dotsstmt =
+    (fun snp ->
+       if GT.no_gen snp (* add no positions; this is relevant in whencodes *)
+       then c_dotsstmtfn dotsstmt snp
+       else star_dotsstmtfn gen_combiner context_mode dotsstmt snp) in
 
   (* detect if disj is the only thing, in which case we don't want to split
    * the disjunction rule.
@@ -252,8 +280,8 @@ let rec gen_combiner ~context_mode =
    * This might be okay for now since it is unlikely that a rule would contain
    * something unstarrable (dots, metastmt) and then a disjunction.
    *)
-  let topfn c fn v =
-    match Ast0.unwrap v with
+  let topfn c c_topfn top =
+    match Ast0.unwrap top with
     | Ast0.CODE stmtdots ->
         (match Ast0.undots stmtdots with
          | [{Ast0.node = Ast0.Disj _; _} as x] ->
@@ -261,9 +289,9 @@ let rec gen_combiner ~context_mode =
                ~stmtdotsfn:c.VT0.combiner_rec_statement_dots
                ~stmtfn:c.VT0.combiner_rec_statement
                ~strfn:string_mcode ~stmt:x ~at_top:true
-         | _ -> fn v
+         | _ -> c_topfn top
         )
-    | _ -> fn v
+    | _ -> c_topfn top
   in
 
   V0.flat_combiner bind option_default
