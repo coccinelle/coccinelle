@@ -92,8 +92,8 @@ $(CONFIG) $(LIBS):
 	@false
 
 install: $(TARGET)
-        # this is a small hack to avoid having to reconfigure the installation
-        # directory path (and to avoid having the cocci config depend on sgen)
+	# this is a small hack to avoid having to reconfigure the installation
+	# directory path (and to avoid having the cocci config depend on sgen)
 	if !([ -e $(SCRIPTDIR)/sgen.sh ]); then \
 	  sed "\_^"PREFIX"=_ s_=.*_="$(prefix)"_" $(SCRIPTDIR)/sgen.sh.in > \
 	  $(SCRIPTDIR)/sgen.sh; \
