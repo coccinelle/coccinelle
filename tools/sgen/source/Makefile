@@ -107,6 +107,7 @@ install: $(TARGET)
 uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/$(TARGET)
 	rm -f $(INSTALLDIR)/$(TARGET)
+	rm -f $(SCRIPTDIR)/sgen.sh
 	rmdir $(INSTALLDIR)
 	@$(ECHO) -e "\n\n\tsgen uninstalled: DONE!!!\n\n"
 
