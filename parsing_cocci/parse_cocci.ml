@@ -195,6 +195,8 @@ let token2c (tok,_) =
   | PC.TTilde (clt) -> add_clt "~" clt
 
   | PC.TMeta(_,_,clt) -> add_clt "meta" clt
+  | PC.TMetaAssignOp(_,_,_,clt) -> add_clt "metaassignop" clt
+  | PC.TMetaBinaryOp(_,_,_,clt) -> add_clt "metabinaryop" clt
   | PC.TMetaParam(_,_,clt) -> add_clt "parammeta" clt
   | PC.TMetaParamList(_,_,_,clt) -> add_clt "paramlistmeta" clt
   | PC.TMetaConst(_,_,_,_,clt) -> add_clt "constmeta" clt
@@ -724,6 +726,7 @@ let split_token ((tok,_) as t) =
   | PC.TMeta(_,_,clt) | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaExp(_,_,_,_,clt)
   | PC.TMetaIdExp(_,_,_,_,clt)
   | PC.TMetaLocalIdExp(_,_,_,_,clt) | PC.TMetaGlobalIdExp(_,_,_,_,clt)
+  | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
   | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
   | PC.TMetaId(_,_,_,_,clt) | PC.TMetaType(_,_,clt)

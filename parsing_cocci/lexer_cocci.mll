@@ -164,6 +164,10 @@ let iterator_names = (Hashtbl.create(100) : (string, D.clt -> token) Hashtbl.t)
 
 let symbol_names = (Hashtbl.create(15) : (string, D.clt -> token) Hashtbl.t)
 
+let assignOp_names = (Hashtbl.create(15) : (string, D.clt -> token) Hashtbl.t)
+
+let binaryOp_names = (Hashtbl.create(15) : (string, D.clt -> token) Hashtbl.t)
+
 let rule_names = (Hashtbl.create(100) : (string, unit) Hashtbl.t)
 
 let check_var s linetype =
@@ -347,6 +351,8 @@ let init _ =
   Hashtbl.clear iterator_names;
   Hashtbl.clear declarer_names;
   Hashtbl.clear symbol_names;
+  Hashtbl.clear assignOp_names;
+  Hashtbl.clear binaryOp_names;
   let get_name (_,x) = x in
   Data.add_meta_meta :=
     (fun name pure ->
@@ -494,6 +500,14 @@ let init _ =
     (function name ->
       let fn clt = TSymId (name,clt) in
       Hashtbl.replace symbol_names name fn);
+  Data.add_assignOp_meta :=
+    (fun name constraints pure ->
+      let fn clt = TMetaAssignOp (name, constraints, pure, clt) in
+      Hashtbl.replace assignOp_names (get_name name) fn);
+  Data.add_binaryOp_meta :=
+    (fun name constraints pure ->
+      let fn clt = TMetaBinaryOp (name, constraints, pure, clt) in
+      Hashtbl.replace binaryOp_names (get_name name) fn);
   Data.init_rule := (function _ -> Hashtbl.clear metavariables);
   Data.install_bindings :=
     (function parent ->

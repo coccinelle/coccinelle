@@ -125,6 +125,14 @@ val add_fmt_meta: (Ast_cocci.meta_name -> iconstraints -> unit) ref
 
 val add_fmtlist_meta: (Ast_cocci.meta_name -> Ast_cocci.list_len -> unit) ref
 
+val add_assignOp_meta: 
+    (Ast_cocci.meta_name ->
+      Ast_cocci.assignOpconstraint -> Ast0_cocci.pure -> unit) ref
+
+val add_binaryOp_meta: 
+    (Ast_cocci.meta_name ->
+      Ast_cocci.binaryOpconstraint -> Ast0_cocci.pure -> unit) ref
+
 val add_type_name: (string -> unit) ref
 
 val add_attribute: (string -> unit) ref
