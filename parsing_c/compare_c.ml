@@ -201,8 +201,20 @@ let is_normal_space_or_comment to_expected = function
   | Parser_c.TComment _ -> to_expected (* only ignore in compare to expected *)
   | _ -> false
 
+let get_diff filename1 filename2 bs =
+  let com =
+    match !Flag_parsing_c.diff_lines with
+      None -> Printf.sprintf "diff -u %s %s %s" bs filename1 filename2
+    | Some n ->
+	Printf.sprintf "diff -U %s %s %s %s" n bs filename1 filename2 in
+  let xs = Common.cmd_to_list com in
 
-(* convetion: compare_token generated_file  expected_res
+  (* get rid of the --- and +++ lines *)
+  if null xs
+  then xs
+  else Common.drop 2 xs
+
+(* convention: compare_token generated_file  expected_res
  * because when there is a notparsablezone in generated_file, I
  * don't issue a PbOnlyInNotParsedCorrectly
  *)
@@ -281,19 +293,7 @@ let do_compare_token adjust_cvs to_expected filename1 filename2 =
           (Correct)
   in
 
-  let xs =
-    match !Flag_parsing_c.diff_lines with
-      None ->
-	Common.cmd_to_list ("diff -u -b -B "^filename1^ " "  ^ filename2)
-    | Some n ->
-	Common.cmd_to_list ("diff -U "^n^" -b -B "^filename1^" "^filename2) in
-
-  (* get rid of the --- and +++ lines *)
-  let xs =
-    if null xs
-    then xs
-    else Common.drop 2 xs
-  in
+  let xs = get_diff filename1 filename2 "-b -B" in
 
   if null xs && (res <> Correct)
   then failwith
@@ -312,6 +312,10 @@ let compare_default = do_compare_token true true
 (* compare to the source of the transformation *)
 let compare_to_original = do_compare_token false false
 
+let exact_compare file1 file2 =
+  match get_diff file1 file2 "" with
+    [] -> (Correct, [])
+  | res -> (Pb "files differ", res)
 
 let compare_result_to_string (correct, diffxs) =
   match correct with

@@ -56,7 +56,10 @@ let testone prefix x compare_with_expected_flag =
  * (via -testall). Fortunately such bugs are rare.
  *
  *)
-let testall expected_score_file update_score_file =
+(* If extra test is provided, then all failing tests with the standard
+   comparison are considered ok, and only the correct result are subjected to
+   the extra test *)
+let testall_bis extra_test expected_score_file update_score_file =
 
   let score  = empty_score () in
 
@@ -70,7 +73,9 @@ let testall expected_score_file update_score_file =
   begin
     expected_result_files +> List.iter (fun res ->
       let x =
-        if res =~ "\\(.*\\).res" then matched1 res else raise (Impossible 164) in
+        if res =~ "\\(.*\\).res"
+	then matched1 res
+	else raise (Impossible 164) in
       let base = if x =~ "\\(.*\\)_ver[0-9]+" then matched1 x else x in
       let cfile      = "tests/" ^ x ^ ".c" in
       let cocci_file = "tests/" ^ base ^ ".cocci" in
@@ -94,8 +99,19 @@ let testall expected_score_file update_score_file =
             | None -> cfile
           in
 
-          let (correct, diffxs) = Compare_c.compare_default generated expected
-          in
+          let (correct, diffxs) =
+	    Compare_c.compare_default generated expected in
+
+	  let (correct, diffxs) =
+	    match extra_test with
+	      None -> (correct, diffxs)
+	    | Some extra_test ->
+		(match correct with
+		  Compare_c.Correct -> extra_test generated expected
+		| _ ->
+		    (* if there is an extra test, we don't care about the
+		       things that fail on the first test *)
+		    (Compare_c.Correct,[])) in
 
           (* I don't use Compare_c.compare_result_to_string because
            * I want to indent a little more the messages.
@@ -107,8 +123,10 @@ let testall expected_score_file update_score_file =
                 (Str.regexp "\"/tmp/cocci-output.*\"") "<COCCIOUTPUTFILE>" s
               in
               (* on macos the temporary files are stored elsewhere *)
-              let s = Str.global_replace
-                (Str.regexp "\"/var/folders/.*/cocci-output.*\"") "<COCCIOUTPUTFILE>" s
+              let s =
+		Str.global_replace
+                  (Str.regexp "\"/var/folders/.*/cocci-output.*\"")
+		  "<COCCIOUTPUTFILE>" s
               in
               let s =
                 "INCORRECT:" ^ s ^ "\n" ^
@@ -243,6 +261,9 @@ let testall expected_score_file update_score_file =
       end
 
   end
+
+let testall = testall_bis None
+let test_spacing = testall_bis (Some Compare_c.exact_compare)
 
 (* ------------------------------------------------------------------------ *)
 

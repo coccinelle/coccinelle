@@ -35,6 +35,7 @@ let test_spacing = ref false
 let test_okfailed = ref false
 let test_regression_okfailed = ref false
 let expected_score_file = ref ""
+let expected_spacing_score_file = ref ""
 let allow_update_score_file = ref true
 
 (* action mode *)
@@ -669,7 +670,10 @@ let other_options = [
     "--compare-with-expected", Arg.Set compare_with_expected,
     "   use also file.res";
     "--expected-score-file", Arg.Set_string expected_score_file,
-    "   which score file to compare with in -testall";
+    "   which score file to compare with in --testall";
+    "--expected-spacing-score-file",
+    Arg.Set_string expected_spacing_score_file,
+    "   which score file to compare with in --test-spacing";
     "--no-update-score-file", Arg.Clear allow_update_score_file,
     "   do not update the score file when -testall succeeds";
     "--relax-include-path", Arg.Set FC.relax_include_path,
@@ -1274,6 +1278,14 @@ let main () =
                          then !expected_score_file
                          else "tests/SCORE_expected.sexp" in
         Testing.testall score_file !allow_update_score_file
+
+    | []  when !test_spacing ->
+        (if !FC.include_path = []
+         then FC.include_path := ["tests/include"]);
+        let score_file = if !expected_spacing_score_file <> ""
+                         then !expected_spacing_score_file
+                         else "tests/SCORE_spacing_expected.sexp" in
+        Testing.test_spacing score_file !allow_update_score_file
 
     | [] when !test_regression_okfailed ->
         Testing.test_regression_okfailed ()
