@@ -155,8 +155,12 @@ let collect_minus_join_points root =
     match Ast0.get_mcodekind e with
       (Ast0.MINUS(_)) as mc -> [(Favored,info,mc)]
     | (Ast0.CONTEXT(_)) as mc when not(index = root_index) ->
-	(* This was unfavored at one point, but I don't remember why *)
-      [(Favored,info,mc)]
+	(* The idea is that when a context node is next to a minus node, the
+   	   minus node should be favored, because the plus code is likely to
+	   be replacing the minus thing.  It is not clear that this is
+	   always desirable, or maybe the property needs to be checked for in
+	   another way. *)
+      [(Unfavored,info,mc)]
     | _ -> k e in
 
 (* don't want to attach to the outside of DOTS, because metavariables can't
