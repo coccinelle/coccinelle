@@ -31,6 +31,7 @@ let macro_file = ref ""
 (* test mode *)
 let test_mode = ref false
 let test_all = ref false
+let test_spacing = ref false
 let test_okfailed = ref false
 let test_regression_okfailed = ref false
 let expected_score_file = ref ""
@@ -658,6 +659,8 @@ let other_options = [
     "   <file> launch spatch on tests/file.[c,cocci]";
     "--testall", Arg.Set test_all,
     "   launch spatch on all files in tests/ having a .res";
+    "--test-spacing", Arg.Set test_spacing,
+    "    check that the result matches the .res file exactly";
     "--test-okfailed", Arg.Set test_okfailed,
     "    generates .{ok,failed,spatch_ok} files using .res files";
     "--test-regression-okfailed", Arg.Set test_regression_okfailed,
