@@ -119,14 +119,14 @@ let mk_pretty_printers
         pr_space(); pp_expression e3
     | Sequence (e1, e2),          [i]  ->
         pp_expression e1; pr_elem i; pr_space(); pp_expression e2
-    | Assignment (e1, op, e2),    [i]  ->
-        pp_expression e1; pr_space(); pr_elem i; pr_space(); pp_expression e2
+    | Assignment (e1, op, e2),    []  ->
+        pp_expression e1; pr_space(); pr_assignOp op; pr_space(); pp_expression e2
 
     | Postfix  (e, op),    [i] -> pp_expression e; pr_elem i;
     | Infix    (e, op),    [i] -> pr_elem i; pp_expression e;
     | Unary    (e, op),    [i] -> pr_elem i; pp_expression e
-    | Binary   (e1, op, e2),    [i] ->
-        pp_expression e1; pr_space(); pr_elem i; pr_space(); pp_expression e2
+    | Binary   (e1, op, e2),    [] ->
+        pp_expression e1; pr_space(); pr_binaryOp op; pr_space(); pp_expression e2
 
     | ArrayAccess    (e1, e2),   [i1;i2] ->
         pp_expression e1; pr_elem i1; pp_expression e2; pr_elem i2
@@ -187,6 +187,14 @@ let mk_pretty_printers
 	    pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str s)));
       pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "*/");
     end
+
+  and pr_assignOp (_,ii) =
+    let i = Common.tuple_of_list1 ii in
+    pr_elem i
+
+  and pr_binaryOp (_,ii) =
+    let i = Common.tuple_of_list1 ii in
+    pr_elem i
 
   and pp_arg_list es = pp_list pp_argument es
 

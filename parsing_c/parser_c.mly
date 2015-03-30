@@ -444,7 +444,7 @@ let args_to_params l pb =
 %token <Ast_c.info> TOPar TCPar TOBrace TCBrace TOCro TCCro
 %token <Ast_c.info> TDot TComma TPtrOp
 %token <Ast_c.info> TInc TDec
-%token <Ast_c.assignOp * Ast_c.info> TAssign
+%token <Ast_c.assignOp> TAssign
 %token <Ast_c.info> TEq
 %token <Ast_c.info> TWhy  TTilde TBang
 %token <Ast_c.info> TEllipsis
@@ -738,8 +738,8 @@ expr:
    *)*/
 assign_expr:
  | cond_expr                     { $1 }
- | cast_expr TAssign assign_expr { mk_e(Assignment ($1,fst $2,$3)) [snd $2]}
- | cast_expr TEq     assign_expr { mk_e(Assignment ($1,SimpleAssign,$3)) [$2]}
+ | cast_expr TAssign assign_expr { mk_e(Assignment ($1, $2, $3)) []}
+ | cast_expr TEq     assign_expr { mk_e (Assignment ($1, (SimpleAssign, [$2]),$3)) []}
 
 /*(* gccext: allow optional then part hence gcc_opt_expr
    * bugfix: in C grammar they put TDotDot cond_expr, but in fact it must be
@@ -754,26 +754,26 @@ cond_expr:
 
 arith_expr:
  | cast_expr                     { $1 }
- | arith_expr TMul    arith_expr { mk_e(Binary ($1, Arith Mul,      $3)) [$2] }
- | arith_expr TDiv    arith_expr { mk_e(Binary ($1, Arith Div,      $3)) [$2] }
- | arith_expr TMin    arith_expr { mk_e(Binary ($1, Arith Min,      $3)) [$2] }
- | arith_expr TMax    arith_expr { mk_e(Binary ($1, Arith Max,      $3)) [$2] }
- | arith_expr TMod    arith_expr { mk_e(Binary ($1, Arith Mod,      $3)) [$2] }
- | arith_expr TPlus   arith_expr { mk_e(Binary ($1, Arith Plus,     $3)) [$2] }
- | arith_expr TMinus  arith_expr { mk_e(Binary ($1, Arith Minus,    $3)) [$2] }
- | arith_expr TShl    arith_expr { mk_e(Binary ($1, Arith DecLeft,  $3)) [$2] }
- | arith_expr TShr    arith_expr { mk_e(Binary ($1, Arith DecRight, $3)) [$2] }
- | arith_expr TInf    arith_expr { mk_e(Binary ($1, Logical Inf,    $3)) [$2] }
- | arith_expr TSup    arith_expr { mk_e(Binary ($1, Logical Sup,    $3)) [$2] }
- | arith_expr TInfEq  arith_expr { mk_e(Binary ($1, Logical InfEq,  $3)) [$2] }
- | arith_expr TSupEq  arith_expr { mk_e(Binary ($1, Logical SupEq,  $3)) [$2] }
- | arith_expr TEqEq   arith_expr { mk_e(Binary ($1, Logical Eq,     $3)) [$2] }
- | arith_expr TNotEq  arith_expr { mk_e(Binary ($1, Logical NotEq,  $3)) [$2] }
- | arith_expr TAnd    arith_expr { mk_e(Binary ($1, Arith And,      $3)) [$2] }
- | arith_expr TOr     arith_expr { mk_e(Binary ($1, Arith Or,       $3)) [$2] }
- | arith_expr TXor    arith_expr { mk_e(Binary ($1, Arith Xor,      $3)) [$2] }
- | arith_expr TAndLog arith_expr { mk_e(Binary ($1, Logical AndLog, $3)) [$2] }
- | arith_expr TOrLog  arith_expr { mk_e(Binary ($1, Logical OrLog,  $3)) [$2] }
+ | arith_expr TMul    arith_expr { mk_e(Binary ($1, (Arith Mul,[$2]), $3)) [] }
+ | arith_expr TDiv    arith_expr { mk_e(Binary ($1, (Arith Div, [$2]), $3)) [] }
+ | arith_expr TMin    arith_expr { mk_e(Binary ($1, (Arith Min, [$2]), $3)) [] }
+ | arith_expr TMax    arith_expr { mk_e(Binary ($1, (Arith Max, [$2]), $3)) [] }
+ | arith_expr TMod    arith_expr { mk_e(Binary ($1, (Arith Mod, [$2]), $3)) [] }
+ | arith_expr TPlus   arith_expr { mk_e(Binary ($1, (Arith Plus, [$2]), $3)) [] }
+ | arith_expr TMinus  arith_expr { mk_e(Binary ($1, (Arith Minus, [$2]), $3)) [] }
+ | arith_expr TShl    arith_expr { mk_e(Binary ($1, (Arith DecLeft, [$2]), $3)) [] }
+ | arith_expr TShr    arith_expr { mk_e(Binary ($1, (Arith DecRight, [$2]), $3)) [] }
+ | arith_expr TInf    arith_expr { mk_e(Binary ($1, (Logical Inf, [$2]), $3)) [] }
+ | arith_expr TSup    arith_expr { mk_e(Binary ($1, (Logical Sup, [$2]), $3)) [] }
+ | arith_expr TInfEq  arith_expr { mk_e(Binary ($1, (Logical InfEq, [$2]), $3)) [] }
+ | arith_expr TSupEq  arith_expr { mk_e(Binary ($1, (Logical SupEq, [$2]), $3)) [] }
+ | arith_expr TEqEq   arith_expr { mk_e(Binary ($1, (Logical Eq, [$2]), $3)) [] }
+ | arith_expr TNotEq  arith_expr { mk_e(Binary ($1, (Logical NotEq, [$2]), $3)) [] }
+ | arith_expr TAnd    arith_expr { mk_e(Binary ($1, (Arith And, [$2]), $3)) [] }
+ | arith_expr TOr     arith_expr { mk_e(Binary ($1, (Arith Or, [$2]), $3)) [] }
+ | arith_expr TXor    arith_expr { mk_e(Binary ($1, (Arith Xor, [$2]), $3)) [] }
+ | arith_expr TAndLog arith_expr { mk_e(Binary ($1, (Logical AndLog, [$2]), $3)) [] }
+ | arith_expr TOrLog  arith_expr { mk_e(Binary ($1, (Logical OrLog, [$2]), $3)) [] }
 
 cast_expr:
  | unary_expr                        { $1 }
@@ -1143,7 +1143,7 @@ token:
   | TInc    { $1 }
   | TDec    { $1 }
   | TEq     { $1 }
-  | TAssign { snd $1 }
+  | TAssign { List.hd (snd $1) }
 
   | TEqEq   { $1 }
   | TNotEq  { $1 }

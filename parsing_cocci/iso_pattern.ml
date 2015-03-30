@@ -33,10 +33,10 @@ let strip_info =
       Ast0.mcodekind = ref (Ast0.PLUS Ast.ONE);
       Ast0.true_if_test = x.Ast0.true_if_test} in
   V0.flat_rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
 
 let anything_equal = function
     (Ast0.DotsExprTag(d1),Ast0.DotsExprTag(d2)) ->
@@ -221,6 +221,20 @@ let rec conjunct_many_bindings = function
 
 let mcode_equal (x,_,_,_,_,_) (y,_,_,_,_,_) = x = y
 
+let assignOp_equal op1 op2 = match (Ast0.unwrap op1, Ast0.unwrap op2) with
+  | Ast0.SimpleAssign _, Ast0.SimpleAssign _ -> true
+  | Ast0.OpAssign o1, Ast0.OpAssign o2 -> mcode_equal o1 o2
+  | Ast0.MetaAssign (mv1, _, _), Ast0.MetaAssign (mv2, _, _) ->
+    mcode_equal mv1 mv2
+  | _, _ -> false
+
+let binaryOp_equal op1 op2 = match (Ast0.unwrap op1, Ast0.unwrap op2) with
+  | Ast0.Arith o1, Ast0.Arith o2 -> mcode_equal o1 o2
+  | Ast0.Logical o1, Ast0.Logical o2 -> mcode_equal o1 o2
+  | Ast0.MetaBinary (mv1, _, _), Ast0.MetaBinary (mv2, _, _) ->
+    mcode_equal mv1 mv2
+  | _, _ -> false
+
 let return b binding = if b then OK binding else Fail NonMatch
 let return_false reason binding = Fail reason
 
@@ -315,6 +329,21 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | _ -> failwith "badly compiled iso - multiple hidden variable")
     else OK binding in
 
+  let check_assignOp_mcode op1 op2 binding =
+    match (Ast0.unwrap op1, Ast0.unwrap op2) with
+      Ast0.SimpleAssign o1, Ast0.SimpleAssign o2 -> check_mcode o1 o2 binding
+    | Ast0.OpAssign o1, Ast0.OpAssign o2 -> check_mcode o1 o2 binding
+    | Ast0.MetaAssign(mv1,_,_), Ast0.MetaAssign(mv2,_,_) ->
+      check_mcode mv1 mv2 binding
+    | _ -> Fail(NonMatch) in
+
+  let check_binaryOp_mcode op1 op2 binding =
+    match (Ast0.unwrap op1, Ast0.unwrap op2) with
+      Ast0.Arith o1, Ast0.Arith o2 -> check_mcode o1 o2 binding
+    | Ast0.Logical o1, Ast0.Logical o2 -> check_mcode o1 o2 binding
+    | Ast0.MetaBinary(mv1,_,_), Ast0.MetaBinary(mv2,_,_) ->
+      check_mcode mv1 mv2 binding
+    | _ -> Fail(NonMatch) in
   let match_dots matcher is_list_matcher do_list_match d1 d2 =
     match (Ast0.unwrap d1, Ast0.unwrap d2) with
       (Ast0.DOTS(la),Ast0.DOTS(lb))
@@ -385,6 +414,18 @@ let match_maker checks_needed context_required whencode_allowed =
 	    pure
 	| _ -> Ast0.Impure) in
 
+    let assignOp r k e =
+      bind (bind (pure_mcodekind (Ast0.get_mcodekind e)) (k e))
+	   (match Ast0.unwrap e with
+              Ast0.MetaAssign(_, _, pure) -> pure
+            | _ -> Ast0.Impure) in
+
+    let binaryOp r k e =
+      bind (bind (pure_mcodekind (Ast0.get_mcodekind e)) (k e))
+	   (match Ast0.unwrap e with
+              Ast0.MetaBinary(_, _, pure) -> pure
+            | _ -> Ast0.Impure) in
+
     let typeC r k t =
       bind (bind (pure_mcodekind (Ast0.get_mcodekind t)) (k t))
 	(match Ast0.unwrap t with
@@ -418,9 +459,9 @@ let match_maker checks_needed context_required whencode_allowed =
 	| _ -> Ast0.Impure) in
 
     V0.flat_combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing
-      ident expression typeC init param decl stmt donothing donothing
+      ident expression assignOp binaryOp typeC init param decl stmt donothing donothing
       donothing donothing in
 
   let add_pure_list_binding name pure is_pure builder1 builder2 lst =
@@ -642,10 +683,10 @@ let match_maker checks_needed context_required whencode_allowed =
 		    argsa argsb]
 	  | (Ast0.Assignment(lefta,opa,righta,_),
 	     Ast0.Assignment(leftb,opb,rightb,_)) ->
-	       if mcode_equal opa opb
+	       if assignOp_equal opa opb
 	       then
 		 conjunct_many_bindings
-		   [check_mcode opa opb; match_expr lefta leftb;
+		   [check_assignOp_mcode opa opb; match_expr lefta leftb;
 		     match_expr righta rightb]
 	       else return false
 	  | (Ast0.Sequence(lefta,opa,righta),
@@ -678,10 +719,10 @@ let match_maker checks_needed context_required whencode_allowed =
 		conjunct_bindings (check_mcode opa opb) (match_expr expa expb)
 	      else return false
 	  | (Ast0.Binary(lefta,opa,righta),Ast0.Binary(leftb,opb,rightb)) ->
-	      if mcode_equal opa opb
+	      if binaryOp_equal opa opb
 	      then
 		conjunct_many_bindings
-		  [check_mcode opa opb; match_expr lefta leftb;
+		  [check_binaryOp_mcode opa opb; match_expr lefta leftb;
 		    match_expr righta rightb]
 	      else return false
 	  | (Ast0.Paren(lp1,expa,rp1),Ast0.Paren(lp,expb,rp)) ->
@@ -1453,9 +1494,9 @@ let make_minus =
     | _ -> donothing r k e in
 
   V0.flat_rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     dots dots dots dots dots dots
-    donothing expression donothing initialiser donothing declaration
+    donothing expression donothing donothing donothing initialiser donothing declaration
     statement donothing donothing donothing donothing
 
 (* --------------------------------------------------------------------- *)
@@ -1543,9 +1584,9 @@ let rebuild_mcode start_line =
 	  Ast0.DroppingBetweenDots(r.VT0.rebuilder_rec_statement s)) in
 
   V0.flat_rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
     donothing statement donothing donothing donothing donothing
 
 (* --------------------------------------------------------------------- *)
@@ -1786,6 +1827,11 @@ let instantiate bindings mv_bindings =
 	    if was_meta
 	    then
 	      let idcont x = x in
+              let get_binaryOp_mcodekind op =
+                match Ast0.unwrap op with
+                  Ast0.Logical o -> Ast0.get_mcode_mcodekind o
+                | Ast0.Arith o -> Ast0.get_mcode_mcodekind o
+                | Ast0.MetaBinary(mv,_,_) -> Ast0.get_mcode_mcodekind mv in
 	      let rec negate e (*for rewrapping*) res (*code to process*) k =
 		(* k accumulates parens, to keep negation outside if no
 		   propagation is possible *)
@@ -1805,35 +1851,40 @@ let instantiate bindings mv_bindings =
 		  | Ast0.Binary(e1,op,e2) when
 		      same_modif
 			(Ast0.get_mcode_mcodekind unop)
-			(Ast0.get_mcode_mcodekind op) ->
+			(get_binaryOp_mcodekind op) ->
 			  let reb nop =
-			    Ast0.rewrap_mcode op (Ast.Logical(nop)) in
+			    Ast0.rewrap op (Ast0.Logical(nop)) in
 			  let k1 x = k (Ast0.rewrap e x) in
-			  (match Ast0.unwrap_mcode op with
-			    Ast.Logical(Ast.Inf) ->
-			      k1 (Ast0.Binary(e1,reb Ast.SupEq,e2))
-			  | Ast.Logical(Ast.Sup) ->
-			      k1 (Ast0.Binary(e1,reb Ast.InfEq,e2))
-			  | Ast.Logical(Ast.InfEq) ->
-			      k1 (Ast0.Binary(e1,reb Ast.Sup,e2))
-			  | Ast.Logical(Ast.SupEq) ->
-			      k1 (Ast0.Binary(e1,reb Ast.Inf,e2))
-			  | Ast.Logical(Ast.Eq) ->
-			      k1 (Ast0.Binary(e1,reb Ast.NotEq,e2))
-			  | Ast.Logical(Ast.NotEq) ->
-			      k1 (Ast0.Binary(e1,reb Ast.Eq,e2))
-			  | Ast.Logical(Ast.AndLog) ->
+			  (match Ast0.unwrap op with
+			    Ast0.Logical op' when (Ast0.unwrap_mcode op')=Ast.Inf ->
+			      k1 (Ast0.Binary(e1,reb (Ast0.rewrap_mcode op' Ast.SupEq),e2))
+			  | Ast0.Logical op' when (Ast0.unwrap_mcode op')=Ast.Sup ->
+			      k1 (Ast0.Binary(e1,reb (Ast0.rewrap_mcode op' Ast.InfEq),e2))
+			  | Ast0.Logical op' when (Ast0.unwrap_mcode op')=Ast.InfEq ->
+			      k1 (Ast0.Binary(e1,reb (Ast0.rewrap_mcode op' Ast.Sup),e2))
+			  | Ast0.Logical op' when (Ast0.unwrap_mcode op')=Ast.SupEq ->
+			      k1 (Ast0.Binary(e1,reb (Ast0.rewrap_mcode op' Ast.Inf),e2))
+			  | Ast0.Logical op' when (Ast0.unwrap_mcode op')=Ast.Eq ->
+			      k1 (Ast0.Binary(e1,reb (Ast0.rewrap_mcode op' Ast.NotEq),e2))
+			  | Ast0.Logical op' when (Ast0.unwrap_mcode op')=Ast.NotEq ->
+			      k1 (Ast0.Binary(e1,reb (Ast0.rewrap_mcode op' Ast.Eq),e2))
+			  | Ast0.Logical op' when (Ast0.unwrap_mcode op')=Ast.AndLog ->
 			      k1 (Ast0.Binary(negate_reb e e1 idcont,
-					      reb Ast.OrLog,
+					      reb (Ast0.rewrap_mcode op' Ast.OrLog),
 					      negate_reb e e2 idcont))
-			  | Ast.Logical(Ast.OrLog) ->
+			  | Ast0.Logical op' when (Ast0.unwrap_mcode op')=Ast.OrLog ->
 			      k1 (Ast0.Binary(negate_reb e e1 idcont,
-					      reb Ast.AndLog,
+					      reb (Ast0.rewrap_mcode op' Ast.AndLog),
 					      negate_reb e e2 idcont))
 			  | _ ->
+                             let rewrap_binaryOp_mcode op x =
+                               match Ast0.unwrap op with
+                                 Ast0.Arith o -> Ast0.rewrap_mcode o x
+                               | Ast0.Logical o -> Ast0.rewrap_mcode o x
+                               | Ast0.MetaBinary (mv,_,_) -> Ast0.rewrap_mcode mv x in
 			      Ast0.rewrap e
 				(Ast0.Unary(k res,
-					    Ast0.rewrap_mcode op Ast.Not)))
+					    rewrap_binaryOp_mcode op Ast.Not)))
 		  | Ast0.DisjExpr(lp,exps,mids,rp) ->
 		      (* use res because it is the transformed argument *)
 		      let exps =
@@ -1997,9 +2048,9 @@ let instantiate bindings mv_bindings =
     | _ -> e in
 
   V0.flat_rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     (dots elist) donothing (dots plist) (dots slist) donothing donothing
-    identfn exprfn tyfn initfn paramfn declfn stmtfn donothing donothing
+    identfn exprfn donothing donothing tyfn initfn paramfn declfn stmtfn donothing donothing
     donothing donothing
 
 (* --------------------------------------------------------------------- *)
@@ -2211,6 +2262,10 @@ let get_name = function
       (nm,function nm -> Ast.MetaParamDecl(ar,nm))
   | Ast.MetaParamListDecl(ar,nm,nm1) ->
       (nm,function nm -> Ast.MetaParamListDecl(ar,nm,nm1))
+  | Ast.MetaBinaryOperatorDecl(ar,nm) ->
+      (nm,function nm -> Ast.MetaBinaryOperatorDecl(ar,nm))
+  | Ast.MetaAssignmentOperatorDecl(ar,nm) ->
+      (nm,function nm -> Ast.MetaAssignmentOperatorDecl(ar,nm))
   | Ast.MetaConstDecl(ar,nm,ty) ->
       (nm,function nm -> Ast.MetaConstDecl(ar,nm,ty))
   | Ast.MetaErrDecl(ar,nm) ->
@@ -2683,10 +2738,10 @@ let rewrap =
   let mcode (x,a,i,mc,pos,adj) = (x,a,i,Ast0.context_befaft(),pos,adj) in
   let donothing r k e = Ast0.context_wrap(Ast0.unwrap(k e)) in
   V0.flat_rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
 
 let rec rewrap_anything = function
     Ast0.DotsExprTag(d) ->
@@ -2703,6 +2758,8 @@ let rec rewrap_anything = function
       Ast0.DotsCaseTag(rewrap.VT0.rebuilder_rec_case_line_dots d)
   | Ast0.IdentTag(d) -> Ast0.IdentTag(rewrap.VT0.rebuilder_rec_ident d)
   | Ast0.ExprTag(d) -> Ast0.ExprTag(rewrap.VT0.rebuilder_rec_expression d)
+  | Ast0.AssignOpTag(d) -> Ast0.AssignOpTag(rewrap.VT0.rebuilder_rec_assignOp d)
+  | Ast0.BinaryOpTag(d) -> Ast0.BinaryOpTag(rewrap.VT0.rebuilder_rec_binaryOp d)
   | Ast0.ArgExprTag(d) ->
       Ast0.ArgExprTag(rewrap.VT0.rebuilder_rec_expression d)
   | Ast0.TestExprTag(d) ->

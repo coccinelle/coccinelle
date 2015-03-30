@@ -12,11 +12,11 @@ let map_split f l = List.split(List.map f l)
 let rewrap x (n,e) = (n,Ast0.rewrap x e)
 
 let visitor mode bind option_default
-    meta_mcode string_mcode const_mcode assign_mcode fix_mcode unary_mcode
-    binary_mcode cv_mcode sign_mcode struct_mcode storage_mcode
+    meta_mcode string_mcode const_mcode simpleAssign_mcode opAssign_mcode fix_mcode unary_mcode
+    arithOp_mcode logicalOp_mcode cv_mcode sign_mcode struct_mcode storage_mcode
     inc_mcode
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotscasefn
-    identfn exprfn tyfn initfn paramfn declfn stmtfn forinfofn casefn
+    identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn declfn stmtfn forinfofn casefn
     string_fragmentfn topfn =
   let multibind l =
     let rec loop = function
@@ -119,7 +119,7 @@ let visitor mode bind option_default
 	    (multibind [fn_n;lp_n;args_n;rp_n], Ast0.FunCall(fn,lp,args,rp))
 	| Ast0.Assignment(left,op,right,simple) ->
 	    let (left_n,left) = expression left in
-	    let (op_n,op) = assign_mcode op in
+	    let (op_n,op) = assignOp op in
 	    let (right_n,right) = expression right in
 	    (multibind [left_n;op_n;right_n],
 	     Ast0.Assignment(left,op,right,simple))
@@ -151,12 +151,12 @@ let visitor mode bind option_default
 	    (bind op_n exp_n, Ast0.Unary(exp,op))
 	| Ast0.Binary(left,op,right) ->
 	    let (left_n,left) = expression left in
-	    let (op_n,op) = binary_mcode op in
+	    let (op_n,op) = binaryOp op in
 	    let (right_n,right) = expression right in
 	    (multibind [left_n;op_n;right_n], Ast0.Binary(left,op,right))
 	| Ast0.Nested(left,op,right) ->
 	    let (left_n,left) = expression left in
-	    let (op_n,op) = binary_mcode op in
+	    let (op_n,op) = binaryOp op in
 	    let (right_n,right) = expression right in
 	    (multibind [left_n;op_n;right_n], Ast0.Nested(left,op,right))
 	| Ast0.Paren(lp,exp,rp) ->
@@ -283,6 +283,36 @@ let visitor mode bind option_default
 	    let (name_n,name) = meta_mcode name in
 	    (name_n,Ast0.MetaFormat(name,constraints))) in
     k e
+
+  and assignOp e =
+    let k e =
+      rewrap e
+        (match Ast0.unwrap e with
+           Ast0.SimpleAssign o ->
+           let (o_n,o) = simpleAssign_mcode o in
+           (o_n, Ast0.SimpleAssign o)
+         | Ast0.OpAssign o ->
+            let (o_n,o) = opAssign_mcode o in
+            (o_n, Ast0.OpAssign o)
+        | Ast0.MetaAssign (name, c, pure) ->
+          let (name_n,name) = meta_mcode name in 
+          (name_n,Ast0.MetaAssign(name,c, pure))) in
+    assignOpfn all_functions k e
+
+  and binaryOp e =
+    let k e =
+      rewrap e
+        (match Ast0.unwrap e with
+           Ast0.Arith o ->
+             let (o_n,o) = arithOp_mcode o in
+             (o_n,Ast0.Arith o)
+         | Ast0.Logical o ->
+            let (o_n, o) = logicalOp_mcode o in
+            (o_n, Ast0.Logical o)
+        | Ast0.MetaBinary (name, c, pure) ->
+          let (name_n,name) = meta_mcode name in 
+          (name_n,Ast0.MetaBinary(name, c, pure))) in
+    binaryOpfn all_functions k e  
 
   and typeC t =
     let k t =
@@ -1030,6 +1060,12 @@ let visitor mode bind option_default
       | Ast0.ExprTag(exp) ->
 	  let (exp_n,exp) = expression exp in
 	  (exp_n,Ast0.ExprTag(exp))
+      | Ast0.AssignOpTag(op) ->
+	  let (op_n,op) = assignOp op in
+	  (op_n,Ast0.AssignOpTag(op))
+      | Ast0.BinaryOpTag(op) ->
+	  let (op_n,op) = binaryOp op in
+	  (op_n,Ast0.BinaryOpTag(op))
       | Ast0.ArgExprTag(exp) ->
 	  let (exp_n,exp) = expression exp in
 	  (exp_n,Ast0.ArgExprTag(exp))
@@ -1081,6 +1117,8 @@ let visitor mode bind option_default
   and all_functions =
     {VT0.ident = ident;
       VT0.expression = expression;
+      VT0.assignOp = assignOp;
+      VT0.binaryOp = binaryOp;
       VT0.typeC = typeC;
       VT0.declaration = declaration;
       VT0.initialiser = initialiser;
@@ -1103,10 +1141,12 @@ let combiner_functions =
   {VT0.combiner_meta_mcode = (fun opt_default mc -> opt_default);
    VT0.combiner_string_mcode = (fun opt_default mc -> opt_default);
    VT0.combiner_const_mcode = (fun opt_default mc -> opt_default);
-   VT0.combiner_assign_mcode = (fun opt_default mc -> opt_default);
+   VT0.combiner_simpleAssign_mcode = (fun opt_default mc -> opt_default);
+   VT0.combiner_opAssign_mcode = (fun opt_default mc -> opt_default);
    VT0.combiner_fix_mcode = (fun opt_default mc -> opt_default);
    VT0.combiner_unary_mcode = (fun opt_default mc -> opt_default);
-   VT0.combiner_binary_mcode = (fun opt_default mc -> opt_default);
+   VT0.combiner_arithOp_mcode = (fun opt_default mc -> opt_default);
+   VT0.combiner_logicalOp_mcode = (fun opt_default mc -> opt_default);
    VT0.combiner_cv_mcode = (fun opt_default mc -> opt_default);
    VT0.combiner_sign_mcode = (fun opt_default mc -> opt_default);
    VT0.combiner_struct_mcode = (fun opt_default mc -> opt_default);
@@ -1120,6 +1160,8 @@ let combiner_functions =
    VT0.combiner_dotscasefn = (fun r k e -> k e);
    VT0.combiner_identfn = (fun r k e -> k e);
    VT0.combiner_exprfn = (fun r k e -> k e);
+   VT0.combiner_assignOpfn = (fun r k e -> k e);
+   VT0.combiner_binaryOpfn = (fun r k e -> k e);
    VT0.combiner_tyfn = (fun r k e -> k e);
    VT0.combiner_initfn = (fun r k e -> k e);
    VT0.combiner_paramfn = (fun r k e -> k e);
@@ -1135,6 +1177,10 @@ let combiner_dz r =
       (function e -> let (n,_) = r.VT0.ident e in n);
       VT0.combiner_rec_expression =
       (function e -> let (n,_) = r.VT0.expression e in n);
+      VT0.combiner_rec_assignOp =
+      (function e -> let (n,_) = r.VT0.assignOp e in n);
+      VT0.combiner_rec_binaryOp =
+      (function e -> let (n,_) = r.VT0.binaryOp e in n);
       VT0.combiner_rec_typeC =
       (function e -> let (n,_) = r.VT0.typeC e in n);
       VT0.combiner_rec_declaration =
@@ -1176,15 +1222,17 @@ let combiner bind option_default functions =
     (function mc -> (functions.VT0.combiner_meta_mcode option_default mc,mc))
     (function mc -> (functions.VT0.combiner_string_mcode option_default mc,mc))
     (function mc -> (functions.VT0.combiner_const_mcode option_default mc,mc))
-    (function mc -> (functions.VT0.combiner_assign_mcode option_default mc,mc))
+    (function mc -> (functions.VT0.combiner_simpleAssign_mcode option_default mc,mc))
+    (function mc -> (functions.VT0.combiner_opAssign_mcode option_default mc,mc))
     (function mc -> (functions.VT0.combiner_fix_mcode option_default mc,mc))
     (function mc -> (functions.VT0.combiner_unary_mcode option_default mc,mc))
-    (function mc -> (functions.VT0.combiner_binary_mcode option_default mc,mc))
+    (function mc -> (functions.VT0.combiner_arithOp_mcode option_default mc,mc))
+    (function mc -> (functions.VT0.combiner_logicalOp_mcode option_default mc,mc))
     (function mc -> (functions.VT0.combiner_cv_mcode option_default mc,mc))
     (function mc -> (functions.VT0.combiner_sign_mcode option_default mc,mc))
     (function mc -> (functions.VT0.combiner_struct_mcode option_default mc,mc))
     (function mc ->
-      (functions.VT0.combiner_storage_mcode option_default mc,mc))
+    (functions.VT0.combiner_storage_mcode option_default mc,mc))
     (function mc -> (functions.VT0.combiner_inc_mcode option_default mc,mc))
     (fun r k e -> (functions.VT0.combiner_dotsexprfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_dotsinitfn (dz r) (xk k) e, e))
@@ -1194,6 +1242,8 @@ let combiner bind option_default functions =
     (fun r k e -> (functions.VT0.combiner_dotscasefn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_identfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_exprfn (dz r) (xk k) e, e))
+    (fun r k e -> (functions.VT0.combiner_assignOpfn (dz r) (xk k) e, e))
+    (fun r k e -> (functions.VT0.combiner_binaryOpfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_tyfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_initfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_paramfn (dz r) (xk k) e, e))
@@ -1205,11 +1255,11 @@ let combiner bind option_default functions =
     (fun r k e -> (functions.VT0.combiner_topfn (dz r) (xk k) e, e)))
 
 let flat_combiner bind option_default
-    meta_mcode string_mcode const_mcode assign_mcode fix_mcode unary_mcode
-    binary_mcode cv_mcode sign_mcode struct_mcode storage_mcode
+    meta_mcode string_mcode const_mcode simpleAssign_mcode opAssign_mcode fix_mcode unary_mcode
+    arithOp_mcode logicalOp_mcode cv_mcode sign_mcode struct_mcode storage_mcode
     inc_mcode
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotscasefn
-    identfn exprfn tyfn initfn paramfn declfn stmtfn forinfofn casefn
+    identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn declfn stmtfn forinfofn casefn
     string_fragmentfn topfn =
   let dz = combiner_dz in
   let xk k e = let (n,_) = k e in n in
@@ -1217,10 +1267,12 @@ let flat_combiner bind option_default
     (function mc -> (meta_mcode mc,mc))
     (function mc -> (string_mcode mc,mc))
     (function mc -> (const_mcode mc,mc))
-    (function mc -> (assign_mcode mc,mc))
+    (function mc -> (simpleAssign_mcode mc,mc))
+    (function mc -> (opAssign_mcode mc,mc))
     (function mc -> (fix_mcode mc,mc))
     (function mc -> (unary_mcode mc,mc))
-    (function mc -> (binary_mcode mc,mc))
+    (function mc -> (arithOp_mcode mc,mc))
+    (function mc -> (logicalOp_mcode mc,mc))
     (function mc -> (cv_mcode mc,mc))
     (function mc -> (sign_mcode mc,mc))
     (function mc -> (struct_mcode mc,mc))
@@ -1234,6 +1286,8 @@ let flat_combiner bind option_default
     (fun r k e -> (dotscasefn (dz r) (xk k) e, e))
     (fun r k e -> (identfn (dz r) (xk k) e, e))
     (fun r k e -> (exprfn (dz r) (xk k) e, e))
+    (fun r k e -> (assignOpfn (dz r) (xk k) e, e))
+    (fun r k e -> (binaryOpfn (dz r) (xk k) e, e))
     (fun r k e -> (tyfn (dz r) (xk k) e, e))
     (fun r k e -> (initfn (dz r) (xk k) e, e))
     (fun r k e -> (paramfn (dz r) (xk k) e, e))
@@ -1248,10 +1302,12 @@ let rebuilder_functions =
   {VT0.rebuilder_meta_mcode = (fun mc -> mc);
    VT0.rebuilder_string_mcode = (fun mc -> mc);
    VT0.rebuilder_const_mcode = (fun mc -> mc);
-   VT0.rebuilder_assign_mcode = (fun mc -> mc);
+   VT0.rebuilder_simpleAssign_mcode = (fun mc -> mc);
+   VT0.rebuilder_opAssign_mcode = (fun mc -> mc);
    VT0.rebuilder_fix_mcode = (fun mc -> mc);
    VT0.rebuilder_unary_mcode = (fun mc -> mc);
-   VT0.rebuilder_binary_mcode = (fun mc -> mc);
+   VT0.rebuilder_arithOp_mcode = (fun mc -> mc);
+   VT0.rebuilder_logicalOp_mcode = (fun mc -> mc);
    VT0.rebuilder_cv_mcode = (fun mc -> mc);
    VT0.rebuilder_sign_mcode = (fun mc -> mc);
    VT0.rebuilder_struct_mcode = (fun mc -> mc);
@@ -1265,6 +1321,8 @@ let rebuilder_functions =
    VT0.rebuilder_dotscasefn = (fun r k e -> k e);
    VT0.rebuilder_identfn = (fun r k e -> k e);
    VT0.rebuilder_exprfn = (fun r k e -> k e);
+   VT0.rebuilder_assignOpfn = (fun r k e -> k e);
+   VT0.rebuilder_binaryOpfn = (fun r k e -> k e);
    VT0.rebuilder_tyfn = (fun r k e -> k e);
    VT0.rebuilder_initfn = (fun r k e -> k e);
    VT0.rebuilder_paramfn = (fun r k e -> k e);
@@ -1279,7 +1337,11 @@ let rebuilder_dz r =
   {VT0.rebuilder_rec_ident =
       (function e -> let (_,e) = r.VT0.ident e in e);
       VT0.rebuilder_rec_expression =
-      (function e -> let (_,e) = r.VT0.expression e in e);
+        (function e -> let (_,e) = r.VT0.expression e in e);
+      VT0.rebuilder_rec_assignOp =
+        (function e -> let (_,e) = r.VT0.assignOp e in e);
+      VT0.rebuilder_rec_binaryOp =
+      (function e -> let (_,e) = r.VT0.binaryOp e in e);
       VT0.rebuilder_rec_typeC =
       (function e -> let (_,e) = r.VT0.typeC e in e);
       VT0.rebuilder_rec_declaration =
@@ -1321,10 +1383,12 @@ let rebuilder functions =
     (function mc -> ((),functions.VT0.rebuilder_meta_mcode mc))
     (function mc -> ((),functions.VT0.rebuilder_string_mcode mc))
     (function mc -> ((),functions.VT0.rebuilder_const_mcode mc))
-    (function mc -> ((),functions.VT0.rebuilder_assign_mcode mc))
+    (function mc -> ((),functions.VT0.rebuilder_simpleAssign_mcode mc))
+    (function mc -> ((),functions.VT0.rebuilder_opAssign_mcode mc))
     (function mc -> ((),functions.VT0.rebuilder_fix_mcode mc))
     (function mc -> ((),functions.VT0.rebuilder_unary_mcode mc))
-    (function mc -> ((),functions.VT0.rebuilder_binary_mcode mc))
+    (function mc -> ((),functions.VT0.rebuilder_arithOp_mcode mc))
+    (function mc -> ((),functions.VT0.rebuilder_logicalOp_mcode mc))
     (function mc -> ((),functions.VT0.rebuilder_cv_mcode mc))
     (function mc -> ((),functions.VT0.rebuilder_sign_mcode mc))
     (function mc -> ((),functions.VT0.rebuilder_struct_mcode mc))
@@ -1338,6 +1402,8 @@ let rebuilder functions =
     (fun r k e -> ((),functions.VT0.rebuilder_dotscasefn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_identfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_exprfn (dz r) (xk k) e))
+    (fun r k e -> ((),functions.VT0.rebuilder_assignOpfn (dz r) (xk k) e))
+    (fun r k e -> ((),functions.VT0.rebuilder_binaryOpfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_tyfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_initfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_paramfn (dz r) (xk k) e))
@@ -1350,11 +1416,11 @@ let rebuilder functions =
     (fun r k e -> ((),functions.VT0.rebuilder_topfn (dz r) (xk k) e)))
 
 let flat_rebuilder
-    meta_mcode string_mcode const_mcode assign_mcode fix_mcode unary_mcode
-    binary_mcode cv_mcode sign_mcode struct_mcode storage_mcode
+    meta_mcode string_mcode const_mcode simpleAssign_mcode opAssign_mcode fix_mcode unary_mcode
+    arithOp_mcode logicalOp_mcode cv_mcode sign_mcode struct_mcode storage_mcode
     inc_mcode
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotscasefn
-    identfn exprfn tyfn initfn paramfn declfn stmtfn forinfofn casefn
+    identfn exprfn assignOpfn arithOpfn tyfn initfn paramfn declfn stmtfn forinfofn casefn
     string_fragmentfn topfn =
   let dz = rebuilder_dz in
   let xk k e = let (_,e) = k e in e in
@@ -1363,10 +1429,12 @@ let flat_rebuilder
     (function mc -> ((),meta_mcode mc))
     (function mc -> ((),string_mcode mc))
     (function mc -> ((),const_mcode mc))
-    (function mc -> ((),assign_mcode mc))
+    (function mc -> ((),simpleAssign_mcode mc))
+    (function mc -> ((),opAssign_mcode mc))
     (function mc -> ((),fix_mcode mc))
     (function mc -> ((),unary_mcode mc))
-    (function mc -> ((),binary_mcode mc))
+    (function mc -> ((),arithOp_mcode mc))
+    (function mc -> ((),logicalOp_mcode mc))
     (function mc -> ((),cv_mcode mc))
     (function mc -> ((),sign_mcode mc))
     (function mc -> ((),struct_mcode mc))
@@ -1380,6 +1448,8 @@ let flat_rebuilder
     (fun r k e -> ((),dotscasefn (dz r) (xk k) e))
     (fun r k e -> ((),identfn (dz r) (xk k) e))
     (fun r k e -> ((),exprfn (dz r) (xk k) e))
+    (fun r k e -> ((),assignOpfn (dz r) (xk k) e))
+    (fun r k e -> ((),arithOpfn (dz r) (xk k) e))
     (fun r k e -> ((),tyfn (dz r) (xk k) e))
     (fun r k e -> ((),initfn (dz r) (xk k) e))
     (fun r k e -> ((),paramfn (dz r) (xk k) e))
@@ -1397,13 +1467,17 @@ let combiner_rebuilder_functions =
     (fun opt_default mc -> (opt_default,mc));
    VT0.combiner_rebuilder_const_mcode =
     (fun opt_default mc -> (opt_default,mc));
-   VT0.combiner_rebuilder_assign_mcode =
+   VT0.combiner_rebuilder_simpleAssign_mcode =
+     (fun opt_default mc -> (opt_default,mc));
+   VT0.combiner_rebuilder_opAssign_mcode =
     (fun opt_default mc -> (opt_default,mc));
    VT0.combiner_rebuilder_fix_mcode =
     (fun opt_default mc -> (opt_default,mc));
    VT0.combiner_rebuilder_unary_mcode =
     (fun opt_default mc -> (opt_default,mc));
-   VT0.combiner_rebuilder_binary_mcode =
+   VT0.combiner_rebuilder_arithOp_mcode =
+     (fun opt_default mc -> (opt_default,mc));
+   VT0.combiner_rebuilder_logicalOp_mcode =
     (fun opt_default mc -> (opt_default,mc));
    VT0.combiner_rebuilder_cv_mcode =
     (fun opt_default mc -> (opt_default,mc));
@@ -1423,6 +1497,8 @@ let combiner_rebuilder_functions =
    VT0.combiner_rebuilder_dotscasefn = (fun r k e -> k e);
    VT0.combiner_rebuilder_identfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_exprfn = (fun r k e -> k e);
+   VT0.combiner_rebuilder_assignOpfn = (fun r k e -> k e);
+   VT0.combiner_rebuilder_binaryOpfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_tyfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_initfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_paramfn = (fun r k e -> k e);
@@ -1438,10 +1514,12 @@ let combiner_rebuilder bind option_default functions =
     (functions.VT0.combiner_rebuilder_meta_mcode option_default)
     (functions.VT0.combiner_rebuilder_string_mcode option_default)
     (functions.VT0.combiner_rebuilder_const_mcode option_default)
-    (functions.VT0.combiner_rebuilder_assign_mcode option_default)
+    (functions.VT0.combiner_rebuilder_simpleAssign_mcode option_default)
+    (functions.VT0.combiner_rebuilder_opAssign_mcode option_default)
     (functions.VT0.combiner_rebuilder_fix_mcode option_default)
     (functions.VT0.combiner_rebuilder_unary_mcode option_default)
-    (functions.VT0.combiner_rebuilder_binary_mcode option_default)
+    (functions.VT0.combiner_rebuilder_arithOp_mcode option_default)
+    (functions.VT0.combiner_rebuilder_logicalOp_mcode option_default)
     (functions.VT0.combiner_rebuilder_cv_mcode option_default)
     (functions.VT0.combiner_rebuilder_sign_mcode option_default)
     (functions.VT0.combiner_rebuilder_struct_mcode option_default)
@@ -1455,6 +1533,8 @@ let combiner_rebuilder bind option_default functions =
     functions.VT0.combiner_rebuilder_dotscasefn
     functions.VT0.combiner_rebuilder_identfn
     functions.VT0.combiner_rebuilder_exprfn
+    functions.VT0.combiner_rebuilder_assignOpfn
+    functions.VT0.combiner_rebuilder_binaryOpfn
     functions.VT0.combiner_rebuilder_tyfn
     functions.VT0.combiner_rebuilder_initfn
     functions.VT0.combiner_rebuilder_paramfn

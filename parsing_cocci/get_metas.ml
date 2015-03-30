@@ -113,7 +113,7 @@ and expression e =
 	  (multibind [fn_n;lp_n;args_n;rp_n], Ast0.FunCall(fn,lp,args,rp))
       | Ast0.Assignment(left,op,right,simple) ->
 	  let (left_n,left) = expression left in
-	  let (op_n,op) = mcode op in
+	  let (op_n,op) = assignOp op in
 	  let (right_n,right) = expression right in
 	  (multibind [left_n;op_n;right_n],
 	   Ast0.Assignment(left,op,right,simple))
@@ -145,12 +145,12 @@ and expression e =
 	  (bind op_n exp_n, Ast0.Unary(exp,op))
       | Ast0.Binary(left,op,right) ->
 	  let (left_n,left) = expression left in
-	  let (op_n,op) = mcode op in
+	  let (op_n,op) = binaryOp op in
 	  let (right_n,right) = expression right in
 	  (multibind [left_n;op_n;right_n], Ast0.Binary(left,op,right))
       | Ast0.Nested(left,op,right) ->
 	  let (left_n,left) = expression left in
-	  let (op_n,op) = mcode op in
+	  let (op_n,op) = binaryOp op in
 	  let (right_n,right) = expression right in
 	  (multibind [left_n;op_n;right_n], Ast0.Nested(left,op,right))
       | Ast0.Paren(lp,exp,rp) ->
@@ -252,6 +252,32 @@ and expression e =
 		 (Ast0.AsExpr(exp,Ast0.rewrap exp (Ast0.Ident(id_meta)))))
 	  | x -> (x::other_metas,exp))
       ([],e) metas
+
+and assignOp op =
+  rewrap op
+    (match Ast0.unwrap op with
+      Ast0.SimpleAssign op' ->
+        let (n,op') = mcode op' in
+        (n, Ast0.SimpleAssign op')
+    | Ast0.OpAssign op' ->
+      let (n, op') = mcode op' in
+      (n, Ast0.OpAssign op')
+    | Ast0.MetaAssign(name, c, pure) ->
+      let (n,name) = mcode name in
+      (n, Ast0.MetaAssign(name, c, pure)))
+  
+and binaryOp op =
+  rewrap op
+    (match Ast0.unwrap op with
+      Ast0.Arith op' ->
+      let (n, op') = mcode op' in
+      (n, Ast0.Arith op')
+    | Ast0.Logical op' ->
+      let (n, op') = mcode op' in
+      (n, Ast0.Logical op')
+    | Ast0.MetaBinary(name, c, pure) ->
+      let (n,name) = mcode name in
+      (n, Ast0.MetaBinary(name, c, pure)))
 
 and string_fragment e =
   rewrap e

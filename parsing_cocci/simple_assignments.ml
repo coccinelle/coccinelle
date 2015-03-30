@@ -12,14 +12,27 @@ let pure_mcodekind = function
       |	_ -> false)
   | _ -> false
 
+let semi_pure_mcodekind = function
+    Ast0.CONTEXT(mc) | Ast0.MIXED(mc) ->
+      (match !mc with
+	(Ast.NOTHING,_,_) -> true
+      |	_ -> false)
+  | _ -> false
+
 let is_simple_assign left op =
+  let is_simple_assign_op op = match Ast0.unwrap op with
+    | Ast0.OpAssign _ -> false
+    | _ -> true in
   (match Ast0.unwrap left with
     Ast0.Ident(_) | Ast0.MetaExpr(_,_,_,_,_) -> true
   | _ -> false)
     &&
-  ((Ast0.unwrap_mcode op) = Ast.SimpleAssign)
+  is_simple_assign_op op
 
 let is_simple_ast_assign left op minus_left =
+  let is_simple_ast_assign_op op = match Ast.unwrap op with
+    | Ast.SimpleAssign _ -> true
+    | _ -> false in
   (match Ast.unwrap left with
     Ast.Ident(_) -> true
   | Ast.MetaExpr(name,_,_,_,_,_) ->
@@ -29,7 +42,7 @@ let is_simple_ast_assign left op minus_left =
       |	_ -> false)
   | _ -> false)
     &&
-  ((Ast.unwrap_mcode op) = Ast.SimpleAssign)
+  is_simple_ast_assign_op op
 
 let warning e msg =
   if not !Flag.sgrep_mode2
@@ -64,10 +77,16 @@ let rec exp mc e1 =
 		  | _ -> warning e1 "replacement is not an assignment")
 	      | _ -> warning e1 "multiple replacements")
 	  | m ->
-	      let pure =
-		(pure_mcodekind m) &&
+             let k = match Ast0.unwrap op with
+               | Ast0.SimpleAssign o -> Ast0.get_mcode_mcodekind o
+               | Ast0.OpAssign o -> Ast0.get_mcode_mcodekind o
+               | Ast0.MetaAssign(mv,_,_) -> Ast0.get_mcode_mcodekind mv in
+	     let pure =
+	        (* The goal of this code is to ensure that neither the
+	        left side of the assignment nor its operator is changed. *)
+		(semi_pure_mcodekind m) &&
 		(pure_mcodekind (Ast0.get_mcodekind left)) &&
-		(pure_mcodekind (Ast0.get_mcode_mcodekind op)) in
+		(pure_mcodekind k) in
 	      if not pure
 	      then warning e1 "not pure"
 	      else rebuild e1 left right op pure)

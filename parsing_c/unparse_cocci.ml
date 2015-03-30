@@ -321,54 +321,48 @@ let rec expression e =
   let unary = 14 in
   let postfix = 15 in
   let primary = 16 in
-  let left_prec_of (op, _, _, _) = 
-    match op with
-    | Ast.Arith Ast.Plus -> addit
-    | Ast.Arith Ast.Minus -> addit
-    | Ast.Arith Ast.Mul -> mulit
-    | Ast.Arith Ast.Div -> mulit
-    | Ast.Arith Ast.Min -> relat
-    | Ast.Arith Ast.Max -> relat
-    | Ast.Arith Ast.Mod -> mulit
-    | Ast.Arith Ast.DecLeft -> shift
-    | Ast.Arith Ast.DecRight -> shift
-    | Ast.Arith Ast.And -> bit_and
-    | Ast.Arith Ast.Or -> bit_or
-    | Ast.Arith Ast.Xor -> bit_xor
-	  
-    | Ast.Logical Ast.Inf -> relat
-    | Ast.Logical Ast.Sup -> relat
-    | Ast.Logical Ast.InfEq -> relat
-    | Ast.Logical Ast.SupEq -> relat
-    | Ast.Logical Ast.Eq -> equal
-    | Ast.Logical Ast.NotEq -> equal
-    | Ast.Logical Ast.AndLog -> log_and
-    | Ast.Logical Ast.OrLog -> log_or
-  in
-  let right_prec_of (op, _, _, _) = 
-    match op with
-    | Ast.Arith Ast.Plus -> mulit
-    | Ast.Arith Ast.Minus -> mulit
-    | Ast.Arith Ast.Mul -> cast
-    | Ast.Arith Ast.Div -> cast
-    | Ast.Arith Ast.Min -> shift
-    | Ast.Arith Ast.Max -> shift
-    | Ast.Arith Ast.Mod -> cast
-    | Ast.Arith Ast.DecLeft -> addit
-    | Ast.Arith Ast.DecRight -> addit
-    | Ast.Arith Ast.And -> equal
-    | Ast.Arith Ast.Or -> bit_xor
-    | Ast.Arith Ast.Xor -> bit_and
-	  
-    | Ast.Logical Ast.Inf -> shift
-    | Ast.Logical Ast.Sup -> shift
-    | Ast.Logical Ast.InfEq -> shift
-    | Ast.Logical Ast.SupEq -> shift
-    | Ast.Logical Ast.Eq -> relat
-    | Ast.Logical Ast.NotEq -> relat
-    | Ast.Logical Ast.AndLog -> bit_or
-    | Ast.Logical Ast.OrLog -> log_and
-  in
+  let left_prec_of op =
+    let left_prec_of_arith op = match Ast.unwrap_mcode op with
+      | Ast.Plus | Ast.Minus -> addit
+      | Ast.Mul | Ast.Div | Ast.Mod -> mulit
+      | Ast.Min | Ast.Max -> relat
+      | Ast.DecLeft | Ast.DecRight -> shift
+      | Ast.And -> bit_and
+      | Ast.Or -> bit_or
+      | Ast.Xor -> bit_xor in
+    let left_prec_of_logical op = match Ast.unwrap_mcode op with	  
+      | Ast.Inf | Ast.Sup | Ast.InfEq | Ast.SupEq -> relat
+      | Ast.Eq | Ast.NotEq -> equal
+      | Ast.AndLog -> log_and
+      | Ast.OrLog -> log_or in
+    match Ast.unwrap op with
+      | Ast.Arith op' -> left_prec_of_arith op'
+      | Ast.Logical op' -> left_prec_of_logical op'    
+      | Ast.MetaBinary (mv,_,_,_)->
+        failwith "Here, see to which operator the metavariable has been bound and return thepriority of that operator." in
+  let right_prec_of op =
+    let right_prec_of_arith op = match Ast.unwrap_mcode op with
+      | Ast.Plus | Ast.Minus -> mulit
+      | Ast.Mul | Ast.Div | Ast.Mod -> cast
+      | Ast.Min | Ast.Max -> shift
+      | Ast.DecLeft | Ast.DecRight -> addit
+      | Ast.And -> equal
+      | Ast.Or -> bit_xor
+      | Ast.Xor -> bit_and in
+    let right_prec_of_logical op = match Ast.unwrap_mcode op with	  
+      | Ast.Inf -> shift
+      | Ast.Sup -> shift
+      | Ast.InfEq -> shift
+      | Ast.SupEq -> shift
+      | Ast.Eq -> relat
+      | Ast.NotEq -> relat
+      | Ast.AndLog -> bit_or
+      | Ast.OrLog -> log_and in
+    match Ast.unwrap op with
+      | Ast.Arith op' -> right_prec_of_arith op'
+      | Ast.Logical op' -> right_prec_of_logical op'    
+      | Ast.MetaBinary (mv,_,_,_)->
+        failwith "Here, see to which operator the metavariable has been bound and return thepriority of that operator." in
   let prec_of_c = function
     | Ast_c.Ident (ident) -> primary
     | Ast_c.Constant (c) -> primary
@@ -380,26 +374,26 @@ let rec expression e =
     | Ast_c.Postfix(e, op) -> postfix
     | Ast_c.Infix  (e, op) -> unary
     | Ast_c.Unary  (e, op) -> unary
-    | Ast_c.Binary (e1, Ast_c.Arith Ast_c.Plus, e2) -> addit
-    | Ast_c.Binary (e1, Ast_c.Arith Ast_c.Minus, e2) -> addit
-    | Ast_c.Binary (e1, Ast_c.Arith Ast_c.Mul, e2) -> addit
-    | Ast_c.Binary (e1, Ast_c.Arith Ast_c.Div, e2) -> addit
-    | Ast_c.Binary (e1, Ast_c.Arith Ast_c.Min, e2) -> relat
-    | Ast_c.Binary (e1, Ast_c.Arith Ast_c.Max, e2) -> relat
-    | Ast_c.Binary (e1, Ast_c.Arith Ast_c.Mod, e2) -> addit
-    | Ast_c.Binary (e1, Ast_c.Arith Ast_c.DecLeft, e2) -> addit
-    | Ast_c.Binary (e1, Ast_c.Arith Ast_c.DecRight, e2) -> addit
-    | Ast_c.Binary (e1, Ast_c.Arith Ast_c.And, e2) -> addit
-    | Ast_c.Binary (e1, Ast_c.Arith Ast_c.Or, e2) -> addit
-    | Ast_c.Binary (e1, Ast_c.Arith Ast_c.Xor, e2) -> addit
-    | Ast_c.Binary (e1, Ast_c.Logical Ast_c.AndLog, e2) -> addit
-    | Ast_c.Binary (e1, Ast_c.Logical Ast_c.OrLog, e2) -> addit
-    | Ast_c.Binary (e1, Ast_c.Logical Ast_c.Eq, e2) -> addit
-    | Ast_c.Binary (e1, Ast_c.Logical Ast_c.NotEq, e2) -> addit
-    | Ast_c.Binary (e1, Ast_c.Logical Ast_c.Sup, e2) -> addit
-    | Ast_c.Binary (e1, Ast_c.Logical Ast_c.Inf, e2) -> addit
-    | Ast_c.Binary (e1, Ast_c.Logical Ast_c.SupEq, e2) -> addit
-    | Ast_c.Binary (e1, Ast_c.Logical Ast_c.InfEq, e2) -> addit
+    | Ast_c.Binary (e1, (Ast_c.Arith Ast_c.Plus, _), e2) -> addit
+    | Ast_c.Binary (e1, (Ast_c.Arith Ast_c.Minus, _), e2) -> addit
+    | Ast_c.Binary (e1, (Ast_c.Arith Ast_c.Mul, _), e2) -> addit
+    | Ast_c.Binary (e1, (Ast_c.Arith Ast_c.Div, _), e2) -> addit
+    | Ast_c.Binary (e1, (Ast_c.Arith Ast_c.Min, _), e2) -> relat
+    | Ast_c.Binary (e1, (Ast_c.Arith Ast_c.Max, _), e2) -> relat
+    | Ast_c.Binary (e1, (Ast_c.Arith Ast_c.Mod, _), e2) -> addit
+    | Ast_c.Binary (e1, (Ast_c.Arith Ast_c.DecLeft, _), e2) -> addit
+    | Ast_c.Binary (e1, (Ast_c.Arith Ast_c.DecRight, _), e2) -> addit
+    | Ast_c.Binary (e1, (Ast_c.Arith Ast_c.And, _), e2) -> addit
+    | Ast_c.Binary (e1, (Ast_c.Arith Ast_c.Or, _), e2) -> addit
+    | Ast_c.Binary (e1, (Ast_c.Arith Ast_c.Xor, _), e2) -> addit
+    | Ast_c.Binary (e1, (Ast_c.Logical Ast_c.AndLog, _), e2) -> addit
+    | Ast_c.Binary (e1, (Ast_c.Logical Ast_c.OrLog, _), e2) -> addit
+    | Ast_c.Binary (e1, (Ast_c.Logical Ast_c.Eq, _), e2) -> addit
+    | Ast_c.Binary (e1, (Ast_c.Logical Ast_c.NotEq, _), e2) -> addit
+    | Ast_c.Binary (e1, (Ast_c.Logical Ast_c.Sup, _), e2) -> addit
+    | Ast_c.Binary (e1, (Ast_c.Logical Ast_c.Inf, _), e2) -> addit
+    | Ast_c.Binary (e1, (Ast_c.Logical Ast_c.SupEq, _), e2) -> addit
+    | Ast_c.Binary (e1, (Ast_c.Logical Ast_c.InfEq, _), e2) -> addit
     | Ast_c.ArrayAccess (e1, e2) -> postfix
     | Ast_c.RecordAccess (e, name) -> postfix
     | Ast_c.RecordPtAccess (e, name) -> postfix
@@ -426,7 +420,7 @@ let rec expression e =
       dots (function _ -> ()) arg_expression args;
       mcode (print_string_with_hint EndBox) rp
   | Ast.Assignment(left,op,right,_) ->
-      loop left unary; pr_space(); mcode assignOp op;
+      loop left unary; pr_space(); assignOp op unknown unknown;
       pr_space(); loop right assign
   | Ast.Sequence(left,op,right) ->
       loop left top; mcode print_string op;
@@ -439,7 +433,7 @@ let rec expression e =
   | Ast.Infix(exp,op) -> mcode fixOp op; loop exp unary
   | Ast.Unary(exp,op) -> mcode unaryOp op; loop exp unary
   | Ast.Binary(left,op,right) ->
-      loop left (left_prec_of op); pr_space(); mcode binaryOp op; pr_space();
+      loop left (left_prec_of op); pr_space(); binaryOp op unknown unknown; pr_space();
       loop right (right_prec_of op)
   | Ast.Nested(left,op,right) -> failwith "nested only in minus code"
   | Ast.Paren(lp,exp,rp) ->
@@ -570,19 +564,25 @@ and  unaryOp = function
   | Ast.Tilde -> print_string "~"
   | Ast.Not -> print_string "!"
 
-and  assignOp = function
-    Ast.SimpleAssign -> print_string "="
+and  assignOp op = match Ast.unwrap op with
+    Ast.SimpleAssign _ -> print_string "="
   | Ast.OpAssign(aop) ->
       (function line -> function lcol ->
-	arithOp aop line lcol; print_string "=" line lcol)
-
+	arithOp (Ast.unwrap_mcode aop) line lcol; print_string "=" line lcol)
+  | Ast.MetaAssign(mv,_,_,_) ->
+    failwith "Here, see to which operator the metavariable has been bound and return thepriority of that operator."
+and opAssignOp op line col =
+  (arithOp op line col);
+  print_string "=" line col   
 and  fixOp = function
     Ast.Dec -> print_string "--"
   | Ast.Inc -> print_string "++"
 
-and  binaryOp = function
-    Ast.Arith(aop) -> arithOp aop
-  | Ast.Logical(lop) -> logicalOp lop
+and  binaryOp op = match Ast.unwrap op with
+    Ast.Arith(aop) -> arithOp (Ast.unwrap_mcode aop)
+  | Ast.Logical(lop) -> logicalOp (Ast.unwrap_mcode lop)
+  | Ast.MetaBinary(mv,_,_,_) ->
+    failwith "Here, see to which operator the metavariable has been bound and return thepriority of that operator."
 
 and  arithOp = function
    Ast.Plus -> print_string "+"
@@ -1298,6 +1298,8 @@ let rec pp_any = function
   | Ast.ConstantTag(x) -> constant x unknown unknown; false
   | Ast.UnaryOpTag(x) -> unaryOp x unknown unknown; false
   | Ast.AssignOpTag(x) -> assignOp x unknown unknown; false
+  | Ast.SimpleAssignOpTag(x) -> print_string "=" unknown unknown; false
+  | Ast.OpAssignOpTag(x) -> opAssignOp x unknown unknown; false
   | Ast.FixOpTag(x) -> fixOp x unknown unknown; false
   | Ast.BinaryOpTag(x) -> binaryOp x unknown unknown; false
   | Ast.ArithOpTag(x) -> arithOp x unknown unknown; false

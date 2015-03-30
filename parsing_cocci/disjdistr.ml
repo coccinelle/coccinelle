@@ -424,9 +424,11 @@ let disj_all =
   let mcode x = x in
   let donothing r k e = k e in
   V.rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing
     donothing disj_rule_elem donothing donothing donothing donothing
 
 (* ----------------------------------------------------------------------- *)
@@ -439,9 +441,11 @@ let collect_all_isos =
   let donothing r k e = Common.union_set (Ast.get_isos e) (k e) in
   let doanything r k e = k e in
   V.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing
     doanything donothing donothing donothing donothing doanything
 
 let collect_iso_info =
@@ -454,8 +458,10 @@ let collect_iso_info =
 	let isos = collect_all_isos.V.combiner_rule_elem e in
 	Ast.set_isos e isos in
   V.rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing
     donothing donothing donothing donothing
     donothing donothing donothing donothing rule_elem donothing donothing
     donothing donothing
