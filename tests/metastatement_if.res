@@ -5,5 +5,4 @@ void main(void)
 		printf("%d", i);
 	}
 
-
 }

@@ -404,6 +404,8 @@
 - No space after trailing comma.
 - Drop newlines when removing consecutive statements.
 - Make build system use installed rather than bundled parmap when available.
+- Extend parsing_hacks to recognize constant function pointers.  This issue
+  was detected by Sören Brinkmann.
 
 * 0.2.5
 ** Language:

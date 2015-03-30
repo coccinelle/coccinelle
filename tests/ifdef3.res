@@ -8,7 +8,9 @@
 #undef  CONFIG_NKERNEL_DEBUG_IRQ
 #endif
 
-static inline void nop(void) { int i; }
+static inline void nop(void) {
+	int i;
+}
 
 
 void init_IRQ(void)

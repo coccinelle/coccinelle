@@ -1455,7 +1455,14 @@ in
 		    let space_after = space_needed_after x in
 		    loop space_after indent_needed xs in
 	      loop false false x in
-	    loop true indent_needed xs in
+	    let newline_needed =
+	      (* tokens don't group into multiline terms, so may need to avoid
+		 adding newline *)
+	      match List.hd(List.rev x) with
+		Ast.Token(t,_) when List.mem t [";";"{";"}"] -> true
+	      |	Ast.Token(t,_) -> false
+	      |	_ -> true in
+	    loop newline_needed indent_needed xs in
       loop false false (x::xs);
       (* print a newline at the end, if needed *)
       newline_after()

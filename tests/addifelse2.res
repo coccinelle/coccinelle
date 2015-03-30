@@ -2,7 +2,6 @@
 static void backport_rfcomm_l2data_ready(struct sock *sk, int unused) {
 	rfcomm_l2data_ready(sk);
 }
-
 #else
 
 static void rfcomm_l2data_ready(struct sock *sk)
