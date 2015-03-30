@@ -184,6 +184,7 @@
 - Add prototypes implicit isomorphism to allow disabling generation of
   rules based on changes in function prototypes.
 - Support dynamic parallelism via the Parmap library.
+- --test-spacing option for regression testing of format issues
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
@@ -406,6 +407,9 @@
 - Make build system use installed rather than bundled parmap when available.
 - Extend parsing_hacks to recognize constant function pointers.  This issue
   was detected by Sören Brinkmann.
+- Unfavor only trailing commas in insert_plus.  This has an impact on where
+  plus code is put, and thus formatting of output.
+- Put newlines only after certain Tokens in unparse_cocci.
 
 * 0.2.5
 ** Language:
