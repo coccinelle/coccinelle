@@ -155,18 +155,14 @@ let collect_minus_join_points root =
     match Ast0.get_mcodekind e with
       (Ast0.MINUS(_)) as mc -> [(Favored,info,mc)]
     | (Ast0.CONTEXT(_)) as mc when not(index = root_index) ->
-	(* The idea is that when a context node is next to a minus node, the
-   	   minus node should be favored, because the plus code is likely to
-	   be replacing the minus thing.  It is not clear that this is
-	   always desirable, or maybe the property needs to be checked for in
-	   another way. *)
-      [(Unfavored,info,mc)]
+	(* was unfavored, not sure why *)
+      [(Favored,info,mc)]
     | _ -> k e in
 
 (* don't want to attach to the outside of DOTS, because metavariables can't
 bind to that; not good for isomorphisms *)
 
-  let dots f k d =
+  let dots f k d checklast =
     let multibind l =
       let rec loop = function
 	  [] -> option_default
@@ -174,17 +170,40 @@ bind to that; not good for isomorphisms *)
 	| x::xs -> bind x (loop xs) in
       loop l in
 
-    match Ast0.unwrap d with
-      Ast0.DOTS(l) -> multibind (List.map f l)
-    | Ast0.CIRCLES(l) -> multibind (List.map f l)
-    | Ast0.STARS(l) -> multibind (List.map f l) in
+    let l = Ast0.undots d in
+    match checklast with
+      None -> multibind (List.map f l)
+    | Some checklast ->
+	match List.rev l with
+	  last::others ->
+	    multibind ((List.map f (List.rev others)) @ [checklast last])
+	| [] -> multibind [] in
 
-  let edots r k d = dots r.VT0.combiner_rec_expression k d in
-  let idots r k d = dots r.VT0.combiner_rec_initialiser k d in
-  let pdots r k d = dots r.VT0.combiner_rec_parameter k d in
-  let sdots r k d = dots r.VT0.combiner_rec_statement k d in
-  let ddots r k d = dots r.VT0.combiner_rec_declaration k d in
-  let cdots r k d = dots r.VT0.combiner_rec_case_line k d in
+  (* have to unfavor a trailing comme because it might not match anything *)
+  let edots r k d = dots r.VT0.combiner_rec_expression k d
+      (Some
+	 (function e ->
+	   match Ast0.unwrap e with
+	     Ast0.EComma(comma) -> unfavored_mcode comma
+	   | _ -> r.VT0.combiner_rec_expression e))
+  in
+  let idots r k d = dots r.VT0.combiner_rec_initialiser k d
+      (Some
+	 (function i ->
+	   match Ast0.unwrap i with
+	     Ast0.IComma(comma) -> unfavored_mcode comma
+	   | _ -> r.VT0.combiner_rec_initialiser i)) in
+
+  let pdots r k d = dots r.VT0.combiner_rec_parameter k d
+      (Some
+	 (function p ->
+	   match Ast0.unwrap p with
+	     Ast0.PComma(comma) -> unfavored_mcode comma
+	   | _ -> r.VT0.combiner_rec_parameter p)) in
+
+  let sdots r k d = dots r.VT0.combiner_rec_statement k d None in
+  let ddots r k d = dots r.VT0.combiner_rec_declaration k d None in
+  let cdots r k d = dots r.VT0.combiner_rec_case_line k d None in
 
   (* a case for everything that has a Opt *)
 
@@ -255,7 +274,6 @@ bind to that; not good for isomorphisms *)
     | Ast0.OptExp e | Ast0.UniqueExp e ->
 	(* put the + code on the thing, not on the opt *)
 	r.VT0.combiner_rec_expression e
-    | Ast0.EComma(comma) -> unfavored_mcode comma
     | _ -> do_nothing r k e in
 
   let ident r k e =
@@ -285,7 +303,6 @@ bind to that; not good for isomorphisms *)
     | Ast0.OptIni i | Ast0.UniqueIni i ->
 	(* put the + code on the thing, not on the opt *)
 	r.VT0.combiner_rec_initialiser i
-    | Ast0.IComma(comma) -> unfavored_mcode comma
     | _ -> do_nothing r k e in
 
   let param r k e =
@@ -293,7 +310,6 @@ bind to that; not good for isomorphisms *)
       Ast0.OptParam p | Ast0.UniqueParam p ->
 	(* put the + code on the thing, not on the opt *)
 	r.VT0.combiner_rec_parameter p
-    | Ast0.PComma(comma) -> unfavored_mcode comma
     | _ -> do_nothing r k e in
 
   let case_line r k e =
@@ -419,7 +435,6 @@ let process_minus minus =
 	 verify res;
 	 res)
        minus)
-
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
 (* collect the plus tokens *)
