@@ -1997,6 +1997,14 @@ let lookahead2 ~pass next before =
     when !Flag.c_plus_plus ->
 	  TCommentCpp (Token_c.CppDirective, i1)
 
+  (* const ident const: ident must be a type *)
+  | (TIdent (s, i1)::Tconst _::_,  Tconst _::_)
+      when not_struct_enum before
+      && ok_typedef s
+        ->
+      msg_typedef s i1 38; LP.add_typedef_root s;
+      TypedefIdent (s, i1)
+
 	(* xx const tt *)
   | (TIdent (s, i1)::(Tconst _|Tvolatile _|Trestrict _)::type_::_  , _)
     when not_struct_enum before
