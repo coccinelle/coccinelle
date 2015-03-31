@@ -1,6 +1,6 @@
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
-module M = Meta_variable
+module MV = Meta_variable
 
 (* ------------------------------------------------------------------------- *)
 
@@ -45,7 +45,7 @@ let generate ~new_name ~disj_map ~rule ~context_mode =
 
       (* rule header *)
       (* call mv unparser on original name in order to avoid rule inheritance *)
-      let meta_vars = M.unparse ~minus ~rulename:nme in
+      let meta_vars = MV.unparse ~minus ~rulename:nme in
       let rh = Rule_header.generate_context
         ~isos ~dropisos ~deps ~meta_vars ~context_mode in
 
@@ -58,8 +58,8 @@ let generate ~new_name ~disj_map ~rule ~context_mode =
          "rule that sgen was unable to add a position to! The rule is \"" ^
          nme ^ "\".") in
 
-      let pos_mv = List.map (M.make_metavar ~typ:"position ") pos in
-      let pos_inh = M.inherit_rule cnm pos_mv in
+      let pos_mv = List.map (MV.make ~typ:"position " ~rule_name:"") pos in
+      let pos_inh = List.map (MV.inherit_rule ~new_rule:cnm) pos_mv in
 
       (* check if any extra generated disj rule *)
       match disj with

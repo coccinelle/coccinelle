@@ -1,5 +1,5 @@
 module Ast = Ast_cocci
-module M = Meta_variable
+module MV = Meta_variable
 
 (* ------------------------------------------------------------------------- *)
 
@@ -13,8 +13,8 @@ module M = Meta_variable
 type t =
 {
   first_line : string; (* @rulename ...@ *)
-  meta_vars : M.t list;
-  meta_pos : M.t list;
+  meta_vars : MV.t list;
+  meta_pos : MV.t list;
   last_line : string; (* @@ *)
 }
 
@@ -118,8 +118,8 @@ let generate_context
 (* print a rule header *)
 let print chan {first_line = f; meta_vars = mv; meta_pos = mp; last_line = l;} =
   output_string chan f;
-  M.print chan ~do_group:true mv;
-  M.print chan ~do_group:true mp;
+  MV.print_list chan ~do_group:true mv;
+  MV.print_list chan ~do_group:true mp;
   output_string chan l
 
 (* prints only the first line of the rule header, ie. the declaration *)

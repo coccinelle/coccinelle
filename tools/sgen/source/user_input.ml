@@ -1,4 +1,4 @@
-module M = Meta_variable
+module MV = Meta_variable
 module RuleMap = Map.Make (String)
 
 (* ------------------------------------------------------------------------- *)
@@ -49,13 +49,14 @@ let make_format_string msg =
 (* turn user-specified metavariable strings into metavariables.
  * important that they are created with no rulename if within the same rule,
  * since this is used to generate the right inheritance later on.
+ * They are initialised with type = "" since we don't need it.
  *)
 let make_metavars =
   let mv a =
-    let a = Str.bounded_split (Str.regexp "\\.") a 2 in
-    match a with
-    | [a] -> M.make_metavar a
-    | [a;b] -> M.make_metavar ~rulename:a b
+    let split_name = Str.bounded_split (Str.regexp "\\.") a 2 in
+    match split_name with
+    | [meta_name] -> MV.make ~typ:"" ~rule_name:"" meta_name
+    | [rule_name; meta_name] -> MV.make ~typ:"" ~rule_name meta_name
     | _ -> failwith "bounded split" in
   List.map mv
 

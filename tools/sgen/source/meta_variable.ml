@@ -469,6 +469,16 @@ let metavar_combiner rn =
 
 type t = meta_variable
 
+let make ?(constraints = "") ~typ ~rule_name meta_name =
+  make_mv typ (rule_name, meta_name) constraints
+
+let get_rule (_,(r,_),_) = r
+let get_name (_,(_,nm),_) = nm
+
+(* forces rule inheritance (except if rule is already inherited). *)
+let inherit_rule ~new_rule ((a,(b,c),d) as mv) =
+  if b = "" then (a,(new_rule,c),d) else mv
+
 (* takes abstract syntax trees for a rule and extract all metavariables.
  * That is, metavariables declared in the header, but unused in the body, are
  * discarded. Returns list of meta_variable.t's.
@@ -479,24 +489,12 @@ let unparse ~minus ~rulename =
   let comb = List.fold_left MVSet.union MVSet.empty minus in
   MVSet.elements comb
 
-let get_rule (_,(r,_),_) = r
-let get_name (_,(_,nm),_) = nm
-
-let make_metavar ?(rulename = "") ?(constraints = "") ?(typ = "") mvname =
-  make_mv typ (rulename, mvname) constraints
-
-(* forces inheritance on a list of metavars (not including the ones that were
- * already inherited).
- *)
-let inherit_rule ~new_rule =
-  let force_inheritance ((a,(b,c),d) as mv) =
-    if b = "" then (a,(new_rule,c),d) else mv in
-  List.map force_inheritance
+let print chan mv = output_string chan (tostring_mv mv)
 
 (* prints the strings in the set on separate lines, ended with semicolons.
  * if do_group, group all metavars of same type on the same line.
  *)
-let print chan ~do_group mvs =
+let print_list chan ~do_group mvs =
   let group_by_type mvs =
     let rec group acc = function
       | [] -> acc
