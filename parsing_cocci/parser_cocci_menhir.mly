@@ -120,6 +120,16 @@ let tmeta_to_param (name,pure,clt) =
      (function TMetaParam(_,_,_) -> true | _ -> false));
   Ast0.wrap(Ast0.MetaParam(P.clt2mcode name clt,pure))
 
+let tmeta_to_assignOp (name,pure,clt) =
+  (coerce_tmeta "an assignment operator" name (TMetaAssignOp(name,Ast.AssignOpNoConstraint,pure,clt))
+     (function TMetaAssignOp(_,_,_,_) -> true | _ -> false));
+  Ast0.wrap(Ast0.MetaAssign(P.clt2mcode name clt,Ast.AssignOpNoConstraint, pure))
+
+let tmeta_to_binaryOp (name,pure,clt) =
+  (coerce_tmeta "a binary operator" name (TMetaBinaryOp(name,Ast.BinaryOpNoConstraint,pure,clt))
+     (function TMetaBinaryOp(_,_,_,_) -> true | _ -> false));
+  Ast0.wrap(Ast0.MetaBinary(P.clt2mcode name clt,Ast.BinaryOpNoConstraint, pure),clt)
+
 let tmeta_to_statement (name,pure,clt) =
   (coerce_tmeta "a statement" name (TMetaType(name,pure,clt))
      (function TMetaType(_,_,_) -> true | _ -> false));
