@@ -810,7 +810,8 @@ and metavars_binding = (Ast_cocci.meta_name, metavar_binding_kind) assoc
   | MetaStmtVal      of statement
   | MetaFmtVal       of string_format
   | MetaFragListVal  of string_fragment list
-
+  | MetaAssignOpVal  of assignOp
+  | MetaBinaryOpVal  of binaryOp
   (* Could also be in Lib_engine.metavars_binding2 with the ParenVal,
    * because don't need to have the value for a position in the env of
    * a '+'. But ParenVal or LabelVal are used only by CTL, they are not
