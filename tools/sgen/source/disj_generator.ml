@@ -40,13 +40,17 @@ type declaration_fn =
 
 let ( >> ) f g x = g (f x)
 
+(* given the components of a disjunction + functions to handle them + snapshot:
+ * returns new snapshot that has the disjunction added in the context rule.
+ * this may include splitting the rule and/or adding stars where appropriate.
+ *)
 let handle_disj
   ~lp (* left parenthesis, string mcode *)
   ~rp (* right parenthesis, string mcode *)
   ~pipes (* separator pipes, string mcode list *)
   ~cases (* disjunction cases, 'a list *)
   ~casefn (* function to handle one disj case, 'a -> snapshot -> snapshot *)
-  ?(singlefn = casefn) (* casefn for only one patch, same type as casefn *)
+  ~singlefn (* casefn for only one patch, same type as casefn *)
   ~strfn (* string mcode handler, string mcode -> snapshot -> snapshot *)
   ~at_top (* true: disj is the only thing so don't add another rule, bool *)
   snapshot =
@@ -100,6 +104,7 @@ let handle_disj
       >> set_add_disj mult_stmt >> strfn rp
       >> set_add_disj true >> GT.set_no_gen false
     end in
+
   freeze_pos disj snapshot
 
 
@@ -110,9 +115,8 @@ let handle_disj
  * generated (if necessary) *)
 
 (* The at_top flag means that the code is not surrounded by starrable
- * components, ie. it should not be split into two rules.
- * TODO: better 'top-level' detection; for non-statements in general and for
- * statements when the only surrounding ones are non-starrable types.
+ * components, ie. it should not be split into two rules. (it needs to be more
+ * accurate; see rule_body.ml)
  *)
 
 (* Returns snapshot that has added generated statement disjunction rule *)
@@ -156,7 +160,9 @@ let generate_expression ~strfn ~exprfn ~expr ~at_top s =
 
   match Ast0.unwrap expr with
   | Ast0.DisjExpr(lp, elist, pipes, rp) ->
-      handle_disj ~lp ~rp ~pipes ~cases:elist ~casefn:expposfn ~strfn ~at_top s
+      handle_disj
+        ~lp ~rp ~pipes ~cases:elist
+        ~casefn:expposfn ~singlefn:expposfn ~strfn ~at_top s
   | _ -> failwith "only disj allowed in here"
 
 
@@ -173,7 +179,9 @@ let generate_ident ~strfn ~identfn ~ident ~at_top s =
 
   match Ast0.unwrap ident with
   | Ast0.DisjId(lp, ilist, pipes, rp) ->
-      handle_disj ~lp ~rp ~pipes ~cases:ilist ~casefn:idposfn ~strfn ~at_top s
+      handle_disj
+        ~lp ~rp ~pipes ~cases:ilist
+        ~casefn:idposfn ~singlefn:idposfn ~strfn ~at_top s
   | _ -> failwith "only disj allowed in here"
 
 
@@ -191,5 +199,7 @@ let generate_declaration ~strfn ~declfn ~decl ~at_top s =
 
   match Ast0.unwrap decl with
   | Ast0.DisjDecl(lp, dlist, pipes, rp) ->
-      handle_disj ~lp ~rp ~pipes ~cases:dlist ~casefn:decposfn ~strfn ~at_top s
+      handle_disj
+        ~lp ~rp ~pipes ~cases:dlist
+        ~casefn:decposfn ~singlefn:decposfn ~strfn ~at_top s
   | _ -> failwith "only disj allowed in here"

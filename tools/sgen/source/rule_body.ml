@@ -130,7 +130,7 @@ let star_dotsstmtfn comb context_mode stmtdots =
   (* detects if any of the statements in here contain minuses in which case we
    * put the stars where the minuses are.
    *)
-  let has_minuses = Detect_patch.detect_statement_dots stmtdots in
+  let (has_minuses, _) = Detect_patch.detect_statement_dots stmtdots in
   let c = comb ~context_mode:(context_mode || has_minuses) in
   let stmtfn = c.VT0.combiner_rec_statement in
 
@@ -233,34 +233,41 @@ let rec gen_combiner ~context_mode =
           ~strfn:string_mcode ~declfn:c_declfn ~decl ~at_top:false
     | _ -> c_declfn decl in
 
-  (* Statements; universal special cases, regardless of no_gen mode:
-   * - Nest, dots, circles, and stars need special whencode handling, since
-   *   whencodes are ignored in the visitor.
-   * - Nest, dots, circles, stars, and metastatements can represent code
-   *   slices of arbitrary length and should therefore not be starred, so if
-   *   their current line is starred, put them on a new line.
-   * - Disjunction handling
-   *)
   let stmtfn combiner c_stmtfn stmt =
     let c_dotsstmtfn = combiner.VT0.combiner_rec_statement_dots in
     let c_exprfn = combiner.VT0.combiner_rec_expression in
     let whncodes = whencodes
       ~strfn:string_mcode ~exprfn:c_exprfn ~notfn:c_dotsstmtfn
       ~alwaysfn:c_stmtfn in
+
     match Ast0.unwrap stmt with
+
+    (* nest, dots, circles, and stars are explicitly written out rather than
+     * letting the visitor handle them. Otherwise they would be ignored.
+     * (whencodes are difficult to parameterise in the visitor due to typing).
+     *
+     * nest, dots, cicles, stars, and metastatements can represents code slices
+     * of arbitrary length and should therefore not be starred, so if their
+     * current line is starred, put them on a new line (inc_star).
+     *)
     | Ast0.Nest(starter,stmt_dots,ender,whn,multi) ->
         GT.inc_star
         >> string_mcode starter
         >> whncodes whn
         >> c_dotsstmtfn stmt_dots
         >> string_mcode ender
-    | Ast0.Dots(dots,whn) | Ast0.Circles(dots,whn) | Ast0.Stars(dots,whn) ->
+
+    | Ast0.Dots(dots,whn)
+    | Ast0.Circles(dots,whn)
+    | Ast0.Stars(dots,whn) ->
         GT.inc_star
         >> string_mcode dots
         >> whncodes whn
+
     | Ast0.MetaStmt _ ->
         GT.inc_star
         >> c_stmtfn stmt
+
     | Ast0.Disj _ ->
         DG.generate_statement
           ~stmtdotsfn:c_dotsstmtfn ~strfn:string_mcode ~stmtfn:c_stmtfn ~stmt
@@ -276,9 +283,10 @@ let rec gen_combiner ~context_mode =
 
   (* detect if disj is the only thing, in which case we don't want to split
    * the disjunction rule.
-   * TODO: should not split either if the only other stmts are unstarrable.
-   * This might be okay for now since it is unlikely that a rule would contain
-   * something unstarrable (dots, metastmt) and then a disjunction.
+   * TODO: better detection of when to set at_top! for example, should not
+   * split if the only other stmts are unstarrable.
+   * (this includes the case where no statement outside the disjunction has a
+   * minus, since the pos generator will ignore them due to minus inside disj!)
    *)
   let topfn c c_topfn top =
     match Ast0.unwrap top with

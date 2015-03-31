@@ -4,14 +4,15 @@ module RuleMap = Map.Make (String)
 (* ------------------------------------------------------------------------- *)
 
 (* Encapsulates all local input for the rule to be generated:
- * * Description of the script.
- * * Limitations of the script.
- * * Keywords for the script.
- * * Confidence level of the script (Low, Moderate, High).
- * * Additional comments for the script.
- * * Coccinelle options with which to call the script.
- * * Authors of the script (copyright). TODO: make globally configurable.
- * * Error messages for org and report mode for each rule.
+ *  - Description of the script.
+ *  - Limitations of the script.
+ *  - Keywords for the script.
+ *  - Confidence level of the script (Low, Moderate, High).
+ *  - Additional comments for the script.
+ *  - Coccinelle options with which to call the script.
+ *  - Authors of the script (copyright).
+ *    Not yet globally configurable; see sgen_config.ml.
+ *  - Error messages for org and report mode for each rule.
  *)
 
 (* ------------------------------------------------------------------------- *)

@@ -110,6 +110,6 @@ let parse_default ~ordered_rules =
   let rules = UI.get_rules ordered_rules t in
   (preface, rules)
 
-(*TODO*)
+(* TODO: implement *)
 let parse_global ~config_name =
   (None, None, "rule_", "j", "found a match around here ...", 80)

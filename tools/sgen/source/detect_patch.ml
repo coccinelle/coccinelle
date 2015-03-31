@@ -21,7 +21,8 @@ module IntMap = Common.IntMap
  * won't be many keys (each key representing one disjunction)
  *)
 let merge =
-  let fn key aopt bopt = match aopt, bopt with
+  let fn key aopt bopt =
+    match aopt, bopt with
     | Some a, Some b -> Some (List.map2 (||) a b)
     | Some a, None | None, Some a -> Some a
     | None, None -> None in
@@ -95,27 +96,38 @@ let patch_combiner =
   let topfn = donothing in
   let dotsstmtfn = donothing in
 
-  let identfn c fn v = match Ast0.unwrap v with
+  let identfn c fn v =
+    match Ast0.unwrap v with
     | Ast0.DisjId(lp, idlist, pipelist, rp) ->
         handle_disj lp rp pipelist idlist c.VT0.combiner_rec_ident
     | _ -> fn v in
-  let exprfn c fn v = match Ast0.unwrap v with
+
+  let exprfn c fn v =
+    match Ast0.unwrap v with
     | Ast0.DisjExpr(lp, exprlist, pipelist, rp) ->
         handle_disj lp rp pipelist exprlist c.VT0.combiner_rec_expression
     | _ -> fn v in
-  let tyfn c fn v = match Ast0.unwrap v with
+
+  let tyfn c fn v =
+    match Ast0.unwrap v with
     | Ast0.DisjType(lp, tylist, pipelist, rp) ->
         handle_disj lp rp pipelist tylist c.VT0.combiner_rec_typeC
     | _ -> fn v in
-  let declfn c fn v = match Ast0.unwrap v with
+
+  let declfn c fn v =
+    match Ast0.unwrap v with
     | Ast0.DisjDecl(lp, decllist, pipelist, rp) ->
         handle_disj lp rp pipelist decllist c.VT0.combiner_rec_declaration
     | _ -> fn v in
-  let casefn c fn v = match Ast0.unwrap v with
+
+  let casefn c fn v =
+    match Ast0.unwrap v with
     | Ast0.DisjCase(lp, caselist, pipelist, rp) ->
         handle_disj lp rp pipelist caselist c.VT0.combiner_rec_case_line
     | _ -> fn v in
-  let stmtfn c fn v = match Ast0.unwrap v with
+
+  let stmtfn c fn v =
+    match Ast0.unwrap v with
     | Ast0.Disj(lp, sdlist, pipelist, rp) ->
         handle_disj lp rp pipelist sdlist c.VT0.combiner_rec_statement_dots
     | _ -> fn v in
@@ -145,9 +157,7 @@ let detect = function
       let (m1,m2) = rule minus in
       (p1 || m1, merge p2 m2)
 
-let detect_statement_dots s =
-  let (has_minus, _) = patch_combiner.VT0.combiner_rec_statement_dots s in
-  has_minus
+let detect_statement_dots s = patch_combiner.VT0.combiner_rec_statement_dots s
 
 let get_patch_rules =
   let rec get fn = function
