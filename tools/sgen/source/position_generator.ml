@@ -4,30 +4,23 @@ module GT = Generator_types
 
 (* ------------------------------------------------------------------------- *)
 
-(* Given some Ast0 component, generates a position at an appropriate place
- * and returns the component with the inserted position (None, if it wasn't
- * possible to insert a statement).
- * Note that it might return Some <component> even if no position was inserted
- * if the component is optional (ie. on a line preceded with ? in SmPL)
- *
- * The added position is always in an Ast0.PLUS context (using the fact
- * that a metaposition in the original script is NEVER in plus context).
+(* Given an Ast0 component, returns the same component with a generated
+ * metaposition added.
  *)
 
 (* ------------------------------------------------------------------------- *)
 (* POSITION HELPERS *)
 
-(* always make a new pos even if the mcode already has an associated position
- * - an existing pos might have undesirable constraints or inheritance
+(* always make a new pos even if the mcode already has an associated position,
+ * an existing pos might have undesirable constraints or inheritance.
  *)
 let make_pos (_, arity, info, mcodekind, _, adj) snp =
   let (name, snp) = GT.add_position snp in
-  (Ast0.MetaPosTag(
-    Ast0.MetaPos(
-      (("",name), arity, info, Ast0.PLUS Ast.ONE, ref [], adj), (*mn mcode*)
-      [], (*metaname list constraints*)
-      Ast.PER)), (*meta collect*)
-   snp)
+  let meta_mcode = (("",name), arity, info, Ast0.PLUS Ast.ONE, ref [], adj) in
+  let list_constraints = [] in
+  let meta_collect = Ast.PER in
+  let new_pos = Ast0.MetaPos(meta_mcode, list_constraints, meta_collect) in
+  (Ast0.MetaPosTag(new_pos), snp)
 
 
 (* ------------------------------------------------------------------------- *)
@@ -36,7 +29,7 @@ let make_pos (_, arity, info, mcodekind, _, adj) snp =
 let wrap a snp = Some (Ast0.wrap a, snp)
 let all_same = function [] -> true | x :: xs -> List.for_all (( = ) x) xs
 
-(* given mcode + snapshot, returns mcode with added metapos + new snapshot *)
+(* adds generated metaposition to mcode *)
 let mcode_pos ((x, a, info, mc, pos, q) as mco) snp =
   if a = Ast0.OPT then (mco, snp) else
   let (newpos, snp) = make_pos mco snp in
@@ -54,7 +47,8 @@ and exp_two exp1 exp2 fn snp =
   | None ->
       (match expression_pos exp2 snp with
        | None -> None
-       | Some (a, snp) -> wrap (fn exp1 a) snp)
+       | Some (a, snp) -> wrap (fn exp1 a) snp
+      )
 
 (* generate a position for an identifier.
  * Always possible! but not done in optional expressions *)
@@ -89,7 +83,8 @@ and type_pos t snp =
   match Ast0.unwrap t with
   | Ast0.DisjType(lp,tlist,pipelist,rp) ->
       let boollist = GT.get_disj (Ast0.get_mcode_line lp) snp in
-      if all_same boollist then None
+      if all_same boollist
+      then None
       else failwith ("Mixed match/patch type disjunctions not supported " ^
                      "in position generator.")
   | _ -> None
@@ -104,7 +99,8 @@ and case_line_pos c snp =
   match Ast0.unwrap c with
   | Ast0.DisjCase(lp, clist, pipelist, rp) ->
       let boollist = GT.get_disj (Ast0.get_mcode_line lp) snp in
-      if all_same boollist then None
+      if all_same boollist
+      then None
       else failwith ("Mixed match/patch case disjunctions in switch cases " ^
                      "not supported in position generator.")
   | _ -> None
@@ -119,11 +115,11 @@ and declaration_pos d snp =
   | Ast0.DisjDecl _ | Ast0.Ddots _ | Ast0.MetaDecl _ | Ast0.MetaField _
   | Ast0.MetaFieldList _ | Ast0.AsDecl _ -> None
   | Ast0.Init(st, ty, id, eq, ini, sem) ->
-      let _ = type_pos ty snp in (*sanity check*)
+      let _ = type_pos ty snp in (* sanity check *)
       let (id, snp) = ident_pos id snp in
       wrap (Ast0.Init(st, ty, id, eq, ini, sem)) snp
   | Ast0.UnInit(st, ty, id, sem) ->
-      let _ = type_pos ty snp in (*sanity check*)
+      let _ = type_pos ty snp in (* sanity check *)
       let (id, snp) = ident_pos id snp in
       wrap (Ast0.UnInit(st, ty, id, sem)) snp
   | Ast0.TyDecl _ -> failwith "tydecl"
@@ -139,17 +135,20 @@ and declaration_pos d snp =
   | Ast0.OptDecl(dec) ->
       (match declaration_pos dec snp with
        | Some (d, snp) -> wrap (Ast0.OptDecl d) snp
-       | None -> None)
+       | None -> None
+      )
   | Ast0.UniqueDecl(dec) ->
       (match declaration_pos dec snp with
        | Some (d, snp) -> wrap (Ast0.UniqueDecl d) snp
-       | None -> None)
+       | None -> None
+      )
   | Ast0.FunProto(fninfo,name,lp1,params,va,rp1,sem) ->
       let (name, snp) = ident_pos name snp in
       wrap (Ast0.FunProto(fninfo,name,lp1,params,va,rp1,sem)) snp
 
 (* Returns Some Ast0.forinfo with inserted pos if it was possible to insert
- * a pos or None if it was not possible. *)
+ * a pos or None if it was not possible.
+ *)
 and forinfo_pos f snp =
   match Ast0.unwrap f with
   | Ast0.ForExp (Some exp, sem) ->
@@ -169,7 +168,8 @@ and forinfo_pos f snp =
       )
 
 (* Returns Some Ast0.expression with inserted pos if it was possible to insert
- * a pos or None if it was not possible. *)
+ * a pos or None if it was not possible.
+ *)
 and expression_pos e snp =
   match Ast0.unwrap e with
   | Ast0.Ident(id) ->
@@ -298,22 +298,24 @@ and expression_pos e snp =
       let (sizeofmc, snp) = mcode_pos sizeofmc snp in
       wrap (Ast0.SizeOfExpr (sizeofmc, exp)) snp
   | Ast0.SizeOfType(sizeofmc, lp, typec, rp) ->
-      let _ = type_pos typec snp in (*sanity check for disj*)
+      let _ = type_pos typec snp in (* sanity check for disj *)
       let (sizeofmc, snp) = mcode_pos sizeofmc snp in
       wrap (Ast0.SizeOfType (sizeofmc, lp, typec, rp)) snp
-  | Ast0.TypeExp(typec) -> type_pos typec snp (*sanity check, always None*)
+  | Ast0.TypeExp(typec) -> type_pos typec snp (* sanity check, always None *)
   | Ast0.Constructor(lp, typec, rp, init) ->
-      let _ = type_pos typec snp in (*sanity check for disj*)
+      let _ = type_pos typec snp in (* sanity check for disj *)
       let (lp, snp) = mcode_pos lp snp in
       wrap (Ast0.Constructor (lp, typec, rp, init)) snp
-  | Ast0.MetaErr (mc, co, pu) -> (*is this ever within the rule cody?*)
+  | Ast0.MetaErr (mc, co, pu) -> (* is this ever within the rule body? *)
       let (mc, snp) = mcode_pos mc snp in
       wrap (Ast0.MetaErr (mc, co, pu)) snp
   | Ast0.MetaExpr(mc, co, ty, fo, pu) ->
       let (mc, snp) = mcode_pos mc snp in
       wrap (Ast0.MetaExpr(mc, co, ty, fo, pu)) snp
-  | Ast0.UniqueExp e -> exp_one e (fun x -> Ast0.UniqueExp x) snp
-  | Ast0.OptExp e -> exp_one e (fun x -> Ast0.OptExp x) snp
+  | Ast0.UniqueExp e ->
+      exp_one e (fun x -> Ast0.UniqueExp x) snp
+  | Ast0.OptExp e ->
+      exp_one e (fun x -> Ast0.OptExp x) snp
   | Ast0.NestExpr _ | Ast0.Edots _ | Ast0.Ecircles _ | Ast0.Estars _
   | Ast0.AsExpr _ | Ast0.EComma _ | Ast0.MetaExprList _ -> None
   | Ast0.DisjExpr _ -> None
@@ -414,8 +416,7 @@ and statement_pos s snp =
       let (id, snp) = ident_pos id snp in
       wrap (Ast0.Iterator(id, lp, expdots, rp, stmt, a)) snp
   | Ast0.Switch (sw, lp, exp, rp, lb, sd, cd, rb) ->
-      (*case_line_dots is currently only inserted as sanity check*)
-      let _ = case_line_dots_pos cd snp in
+      let _ = case_line_dots_pos cd snp in (* sanity check for disj *)
       (match expression_pos exp snp with
        | Some (v, snp) ->
            wrap (Ast0.Switch(sw, lp, v, rp, lb, sd, cd, rb)) snp
