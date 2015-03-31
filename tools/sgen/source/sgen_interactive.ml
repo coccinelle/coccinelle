@@ -75,24 +75,24 @@ let get_limitations t =
       " limitation for the script or press <enter> to continue:\n");
     match get_input_save t with
     | "" -> t
-    | x -> get false (UI.add_limit x t) in
+    | x -> get false (UI.add_limit t x) in
   get true t
 
 let get_keywords t =
   print_string ("\nSpecify keywords for the script or press <enter> to " ^
     "continue:\n");
   let keys = get_input_save t in
-  UI.set_keys keys t
+  UI.set_keys t keys
 
 let get_options t =
   print_string ("\nSpecify options for the script or press <enter> to " ^
     "continue:\n");
-  let options = get_input_save t in UI.set_options options t
+  let options = get_input_save t in UI.set_options t options
 
 let get_url t =
   print_string ("\nSpecify an URL for the script or press <enter> to " ^
     "continue:\n");
-  let url = get_input_save t in UI.set_url url t
+  let url = get_input_save t in UI.set_url t url
 
 let get_authors t =
   let rec get first t =
@@ -101,13 +101,13 @@ let get_authors t =
       "Standard format is: <author name>, <affiliation>. <license>.\n");
     match get_input_save t with
     | "" -> t
-    | x -> get false (UI.add_author x t) in
+    | x -> get false (UI.add_author t x) in
   get true t
 
 let get_comments t =
   print_string ("\nWrite any further comments for the script or press " ^
     "<enter> to continue:\n");
-  let comments = get_input_save t in UI.set_comments comments t
+  let comments = get_input_save t in UI.set_comments t comments
 
 (* get org or report msg. strict denotes whether it is required. *)
 let rec get_message pmsg strict t =
@@ -135,7 +135,7 @@ let get_name r t =
   let rec get_name' r =
     print_string ("\nSpecify a name for the " ^ r ^ ":\n");
     let newnm = get_input_save t in
-    try UI.check_name newnm t; (r, Some newnm)
+    try UI.check_name t newnm; (r, Some newnm)
     with Failure m -> print_string ("\n" ^ m); get_name' r in
   if not(String.contains r ' ') then (r, None) else get_name' r
 
@@ -185,5 +185,5 @@ let interact ~ordered_rules ~config_name =
   let t = List.fold_left add t ordered_rules in
   let _ = save t in
   let preface = UI.get_preface t in
-  let rules = UI.get_rules ~ordered_rules t in
+  let rules = UI.get_rules t ~ordered_rules in
   (preface, rules)

@@ -38,11 +38,11 @@ let ( >> ) f g x = g (f x)
 let reduce fn lst start = List.fold_left (fun a b -> fn b a) start lst
 
 (* print helpers for context rules (which are really just string lists) *)
-let print_newl outch = output_string outch "\n"
+let print_newl out = output_string out "\n"
 
-let printfn outch x =
-  List.iter (fun x -> output_string outch x; print_newl outch) x;
-  print_newl outch
+let printfn x out =
+  List.iter (fun x -> output_string out x; print_newl out) x;
+  print_newl out
 
 (* ------------------------------------------------------------------------- *)
 (* FUNCTIONS TO HANDLE SPECIAL CASES *)

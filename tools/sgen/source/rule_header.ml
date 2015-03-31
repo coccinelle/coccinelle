@@ -116,11 +116,11 @@ let generate_context
   generate ~rulename ~isos ~dropisos ~deps ~exists ~meta_vars ~meta_pos
 
 (* print a rule header *)
-let print chan {first_line = f; meta_vars = mv; meta_pos = mp; last_line = l;} =
-  output_string chan f;
-  MV.print_list chan ~do_group:true mv;
-  MV.print_list chan ~do_group:true mp;
-  output_string chan l
+let print {first_line = f; meta_vars = mv; meta_pos = mp; last_line = l;} out =
+  output_string out f;
+  MV.print_list mv out ~do_group:true;
+  MV.print_list mp out ~do_group:true;
+  output_string out l
 
 (* prints only the first line of the rule header, ie. the declaration *)
-let print_declaration chan {first_line = f; _} = output_string chan f
+let print_declaration {first_line = f; _} out = output_string out f

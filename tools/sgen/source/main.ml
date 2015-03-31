@@ -120,18 +120,19 @@ let main _ =
   (* ------------- PRINT ------------- *)
 
   if not(!hide) then begin
-    let outp = if !output = "" then stdout else (open_out !output) in
-    let split() = output_string outp
+    let out = if !output = "" then stdout else (open_out !output) in
+    let split() = output_string out
       ("// -----------------------------------------------------------------" ^
       "-----------\n\n") in
     try
-      File_transform.print ~channel:outp ~file_name:!file ~preface ~virtuals
-        ~rules:namedrules ~context_mode;
-      split(); List.iter (Context_rule.print outp) contexts;
-      split(); Script_rule.print_split outp scripts split;
-      flush outp; close_out outp
+      File_transform.print
+        ~file_name:!file ~preface ~virtuals
+        ~rules:namedrules ~context_mode out;
+      split(); List.iter (fun x -> Context_rule.print x out) contexts;
+      split(); Script_rule.print_split scripts out split;
+      flush out; close_out out
     with Failure msg ->
-      flush outp; close_out outp;
+      flush out; close_out out;
       if !output <> "" && Sys.file_exists !output then Sys.remove !output;
       failwith msg
   end

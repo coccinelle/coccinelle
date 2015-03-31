@@ -12,10 +12,10 @@
 (* TRANSFORMATION FUNCTIONS *)
 
 val print :
-  channel:out_channel ->
   file_name:string ->
   preface:string ->
   virtuals:string list ->
   rules:(Ast0_cocci.parsed_rule * string option (* new name *)) list ->
   context_mode:bool ->
+  out_channel ->
   unit

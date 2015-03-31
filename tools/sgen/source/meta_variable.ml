@@ -476,25 +476,15 @@ let get_rule (_,(r,_),_) = r
 let get_name (_,(_,nm),_) = nm
 
 (* forces rule inheritance (except if rule is already inherited). *)
-let inherit_rule ~new_rule ((a,(b,c),d) as mv) =
+let inherit_rule ((a,(b,c),d) as mv) ~new_rule =
   if b = "" then (a,(new_rule,c),d) else mv
 
-(* takes abstract syntax trees for a rule and extract all metavariables.
- * That is, metavariables declared in the header, but unused in the body, are
- * discarded. Returns list of meta_variable.t's.
- *)
-let unparse ~minus ~rulename =
-  let mvcomb = metavar_combiner rulename in
-  let minus = List.map mvcomb.VT0.combiner_rec_top_level minus in
-  let comb = List.fold_left MVSet.union MVSet.empty minus in
-  MVSet.elements comb
-
-let print chan mv = output_string chan (tostring_mv mv)
+let print mv out = output_string out (tostring_mv mv)
 
 (* prints the strings in the set on separate lines, ended with semicolons.
  * if do_group, group all metavars of same type on the same line.
  *)
-let print_list chan ~do_group mvs =
+let print_list mvs out ~do_group =
   let group_by_type mvs =
     let rec group acc = function
       | [] -> acc
@@ -508,6 +498,16 @@ let print_list chan ~do_group mvs =
 
   if do_group then begin
     let grouped = group_by_type mvs in
-    List.iter (fun b -> output_string chan (b ^ ";\n")) grouped
+    List.iter (fun b -> output_string out (b ^ ";\n")) grouped
   end else
-    List.iter (fun b -> output_string chan ((tostring_mv b) ^ ";\n")) mvs
+    List.iter (fun b -> output_string out ((tostring_mv b) ^ ";\n")) mvs
+
+(* takes abstract syntax trees for a rule and extract all metavariables.
+ * That is, metavariables declared in the header, but unused in the body, are
+ * discarded. Returns list of meta_variable.t's.
+ *)
+let unparse ~minus ~rulename =
+  let mvcomb = metavar_combiner rulename in
+  let minus = List.map mvcomb.VT0.combiner_rec_top_level minus in
+  let comb = List.fold_left MVSet.union MVSet.empty minus in
+  MVSet.elements comb

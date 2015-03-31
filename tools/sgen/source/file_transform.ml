@@ -15,7 +15,7 @@ module Ast0 = Ast0_cocci
  *
  * The transformation is done alongside the printing so if anything fails,
  * some of it might already have been printed.
- * Naming conventions: outch = out_channel, inch = in_channel.
+ * Naming conventions: outch = outch, inch = in_channel.
  *
  * TODO: There are a number of edge cases that are not handled well in this
  * module due to using pure string-matching without context.
@@ -164,7 +164,7 @@ let print_patch_decl outch newnm = function
       let rulename = (match newnm with | Some n -> n | None -> rulename) in
       let patch_header = Rule_header.generate_patch
         ~isos ~dropisos ~deps ~rulename ~exists ~meta_vars:[] ~meta_pos:[] in
-      Rule_header.print_declaration outch patch_header
+      Rule_header.print_declaration patch_header outch
 
 (* prints the file until the declaration of the rule, which is then substituted
  * with whatever handler does.
@@ -290,17 +290,17 @@ let print_context outch inch rules =
 (* reads the file and prints it with transformations.
  * assumes rules are sorted in order of when they occur in the script.
  *)
-let print ~channel ~file_name ~preface ~virtuals ~rules ~context_mode =
+let print ~file_name ~preface ~virtuals ~rules ~context_mode outch =
   let _ = line_number := 0 in
-  let _ = print_nl channel preface in
-  let _ = print_virtuals channel virtuals in
+  let _ = print_nl outch preface in
+  let _ = print_virtuals outch virtuals in
   let inch = open_in file_name in
   try
     if context_mode then
-      print_context channel inch rules
+      print_context outch inch rules
     else
-      print_patch channel inch rules
+      print_patch outch inch rules
   with
-    | End_of_file -> flush channel; close_in inch (* ended safely *)
-    | Eof_error msg -> flush channel; close_in inch; failwith msg
+    | End_of_file -> flush outch; close_in inch (* ended safely *)
+    | Eof_error msg -> flush outch; close_in inch; failwith msg
     | e -> close_in_noerr inch; raise e

@@ -39,9 +39,9 @@ val generate :
   t
 
 (* prints the script rules, org first, then report *)
-val print : out_channel -> t -> unit
+val print : t -> out_channel -> unit
 
 (* print a list of script rules, grouping the org and the report rules
  * the (unit -> unit) function is called between org and report
  *)
-val print_split : out_channel -> t list -> (unit -> unit) -> unit
+val print_split : t list -> out_channel -> (unit -> unit) -> unit

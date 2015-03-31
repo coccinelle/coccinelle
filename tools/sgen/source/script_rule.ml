@@ -15,10 +15,10 @@ let comma_sep = String.concat ","
 let split_pos = function mv::mvs -> (mv,mvs) | _ -> assert false
 
 (* print helpers for script rules (which are really just string lists) *)
-let print_newl outch = output_string outch "\n"
-let printfn outch x =
-  List.iter (fun x -> output_string outch x; print_newl outch) x;
-  print_newl outch
+let print_newl out = output_string out "\n"
+let printfn out x =
+  List.iter (fun x -> output_string out x; print_newl out) x;
+  print_newl out
 
 
 (* ------------------------------------------------------------------------- *)
@@ -121,9 +121,9 @@ let generate ~metapos ~user_input =
     (org, report)
 
 (* print the script rules *)
-let print outch (org, rep) = printfn outch org; printfn outch rep
+let print (org, rep) out = printfn out org; printfn out rep
 
 (* print first orgs then reps, call between() in between. *)
-let print_split outch r between =
+let print_split r out between =
   let (orgs, reps) = List.split r in
-  List.iter (printfn outch) orgs; between(); List.iter (printfn outch) reps
+  List.iter (printfn out) orgs; between(); List.iter (printfn out) reps

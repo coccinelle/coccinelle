@@ -79,13 +79,12 @@ let make desc limit keys conf comments options authors url =
   let t =
     try UI.make ~description:desc ~confidence:(UI.conf_fromstring conf)
     with Failure msg -> failwith ("Config error: " ^ msg) in
-  UI.set_limits limit
-    (UI.set_keys keys
-      (UI.set_comments comments
-        (UI.set_options options
-          (UI.set_authors authors
-            (UI.set_url url t)))))
-
+  let t = UI.set_limits t limit in
+  let t = UI.set_keys t keys in
+  let t = UI.set_comments t comments in
+  let t = UI.set_options t options in
+  let t = UI.set_authors t authors in
+  UI.set_url t url
 
 (* ------------------------------------------------------------------------- *)
 (* ENTRY POINT *)
@@ -100,14 +99,14 @@ let parse_local ~ordered_rules ~config_name =
   let t = make d l k c m o a u in
   let t = add_rules rule_exists r t in
   let preface = UI.get_preface t in
-  let rules = UI.get_rules ordered_rules t in
+  let rules = UI.get_rules t ~ordered_rules in
   (preface, rules)
 
 let parse_default ~ordered_rules =
   let t = UI.make ~description:"No description."
     ~confidence:(UI.conf_fromstring "moderate") in
   let preface = UI.get_preface t in
-  let rules = UI.get_rules ordered_rules t in
+  let rules = UI.get_rules t ~ordered_rules in
   (preface, rules)
 
 (* TODO: implement *)

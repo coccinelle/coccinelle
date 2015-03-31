@@ -25,15 +25,15 @@ type t
 val make : description:string -> confidence:confidence -> t
 
 (* setters *)
-val set_keys : string -> t -> t
-val set_conf : confidence -> t -> t
-val set_comments : string -> t -> t
-val set_options : string -> t -> t
-val set_url : string -> t -> t
-val set_limits : string list -> t -> t
-val add_limit : string -> t -> t
-val set_authors : string list -> t -> t
-val add_author : string -> t -> t
+val set_keys : t -> string -> t
+val set_conf : t -> confidence -> t
+val set_comments : t -> string -> t
+val set_options : t -> string -> t
+val set_url : t -> string -> t
+val set_limits : t -> string list -> t
+val add_limit : t -> string -> t
+val set_authors : t -> string list -> t
+val add_author : t -> string -> t
 val add_rule :
   ((string * string option) * (* original rule name, new rule name *)
    (string * string list) * (* org message, org metavars *)
@@ -43,17 +43,18 @@ val add_rule :
 (* getters *)
 
 (* check if there's already a rule with that name *)
-val check_name : string -> t -> unit
+val check_name : t -> string -> unit
 val get_preface : t -> string
 
 (* ordered_rules are all the original */+/- rules from input script, ordered
  * by when they occur in the script. Returns the same rules mapped to the
  * specified user input messages - or generated messages if no user input. *)
 val get_rules :
-  ordered_rules:string list -> t ->
-  ((string * string option) *
-   (string * Meta_variable.t list) *
-   (string * Meta_variable.t list)) list
+  t ->
+  ordered_rules:string list ->
+  ((string * string option) *             (* original rule name, new name *)
+   (string * Meta_variable.t list) *      (* org *)
+   (string * Meta_variable.t list)) list  (* rep *)
 
 (* turns a user input into the config that generates it *)
 val unparse : t -> string

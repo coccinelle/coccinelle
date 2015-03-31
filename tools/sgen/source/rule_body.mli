@@ -6,6 +6,8 @@
  * add stars where the minus transformation are OR where the positions were
  * generated.
  *
+ * TODO: disjmap should not be optional, otherwise the invariant in disj_map
+ * can be violated.
  *)
 
 (* ------------------------------------------------------------------------- *)
@@ -32,4 +34,4 @@ val generate :
   string list * (t * t option)
 
 (* prints a context rule *)
-val print : out_channel -> t -> unit
+val print : t -> out_channel -> unit

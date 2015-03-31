@@ -74,5 +74,5 @@ let generate ~new_name ~disj_map ~rule ~context_mode =
 
 
 (* prints list of Context_rule.t's *)
-let print chan =
-  List.iter (fun (rh,rb) -> Rule_header.print chan rh; Rule_body.print chan rb)
+let print l out =
+  List.iter (fun (rh,rb) -> Rule_header.print rh out; Rule_body.print rb out) l

@@ -52,7 +52,7 @@ val generate_patch :
  t
 
 (* print the full header, metavariables and all *)
-val print : out_channel -> t -> unit
+val print : t -> out_channel -> unit
 
 (* print only the first line @rulename depends on ...@ *)
-val print_declaration : out_channel -> t -> unit
+val print_declaration : t -> out_channel -> unit

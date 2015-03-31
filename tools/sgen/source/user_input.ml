@@ -121,17 +121,17 @@ let make ~description ~confidence =
     rules = RuleMap.empty }
 
 (* SETTERS *)
-let add_limit limit t = { t with limitations = limit :: t.limitations }
-let set_limits limits t = { t with limitations = limits }
-let set_keys keys t = { t with keywords = opt keys }
-let set_conf conf t = { t with confidence = conf }
-let set_comments cmnt t = { t with comments = opt cmnt }
-let set_options optn t = { t with options = opt optn }
-let set_url url t = { t with url = opt url }
-let add_author auth t = { t with authors = auth :: t.authors }
-let set_authors auths t = { t with authors = auths }
+let add_limit t limit = { t with limitations = limit :: t.limitations }
+let set_limits t limits = { t with limitations = limits }
+let set_keys t keys = { t with keywords = opt keys }
+let set_conf t conf = { t with confidence = conf }
+let set_comments t cmnt = { t with comments = opt cmnt }
+let set_options t optn = { t with options = opt optn }
+let set_url t url = { t with url = opt url }
+let add_author t auth = { t with authors = auth :: t.authors }
+let set_authors t auths = { t with authors = auths }
 
-let check_name nm t =
+let check_name t nm =
   let find a _ = function
     | (Some newnm,_,_) -> nm = newnm | _ -> false in
   if RuleMap.exists (find nm) t.rules
@@ -146,7 +146,7 @@ let add_rule ((rnm,newnm),(om,ov),(rm,rv)) t =
   let _ = assert (rnm <> "" && not(om = "" && rm = "")) in
   let newnm =
     match newnm with
-    | Some nm -> (check_name nm t; newnm)
+    | Some nm -> (check_name t nm; newnm)
     | None ->
         if String.contains rnm ' ' then Globals.generate_rule rnm else None in
   { t with rules = RuleMap.add rnm (newnm,(om,ov),(rm,rv)) t.rules }
@@ -172,7 +172,7 @@ let get_preface {description=d; limitations=l; keywords=k; confidence=c;
   String.concat "\n" (List.filter ((<>) "") preface)
 
 (* gets rules from the input ordered according to the original */+/- rules *)
-let get_rules ~ordered_rules {rules=r; _} = sort_rules ordered_rules r
+let get_rules {rules=r; _} ~ordered_rules = sort_rules ordered_rules r
 
 
 (* ------------------------------------------------------------------------- *)

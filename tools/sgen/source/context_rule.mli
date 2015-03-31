@@ -56,4 +56,4 @@ val generate :
   t * Meta_variable.t list
 
 (* prints the generated context rule to the specified out_channel. *)
-val print : out_channel -> t -> unit
+val print : t -> out_channel -> unit
