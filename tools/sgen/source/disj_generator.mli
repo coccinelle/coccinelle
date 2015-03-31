@@ -9,10 +9,57 @@
  *     only some cases are matched/patched. However, this may create false
  *     positives when generating a context rule from a patch rule. Therefore
  *     two rules have to be generated (aka the ugly part).
+ *     This is the case when there is:
+ *      - something interesting outside the disjunction
+ *      - something uninteresting inside the disjunction
+ *      - something interesting inside the disjunction
  *
  *   - Disregard the above rule in cases where there is no risk of false
  *     positives - e.g. if the disjunction is the only thing in the rule.
  *     Determined by at_top flag.
+ *
+ * ----------------------------------------------------------------------------
+ * Example of rule splitting:
+ *
+ *      @disj@ expression n; identifier x; @@
+ *
+ *      - x = call(x);
+ *      (
+ *       some_function(0);
+ *      |
+ *      - some_function(n);
+ *      + some_function(x);
+ *      )
+ *
+ * The following would NOT work:
+ *
+ *      @disj@ expression n; identifier x; position p1,p2; @@
+ *
+ *      * x@p1 = call(x);
+ *      (
+ *       some_function(0);
+ *      |
+ *      * some_function@p2(n);
+ *      )
+ *
+ * because that would match even when some_function is called on 0 (due to the
+ * first star) which we don't want. Instead we want two rules:
+ *
+ *      @disj1@ expression n; identifier x; position p1,p2; @@
+ *
+ *      x@p1 = call(x);
+ *      (
+ *       some_function(0);
+ *      |
+ *       some_function@p2(n);
+ *      )
+ *
+ *      @disj2@ expression n; identifier x; position disj1.p1, disj1.p2 @@
+ *
+ *      * x@p1 = call(x);
+ *      * some_function@p2(n);
+ *
+ * which would match if and only if n is not 0 (in this particular example).
  *)
 
 (* ------------------------------------------------------------------------- *)
@@ -57,7 +104,6 @@ type declaration_fn =
  *   - some function to handle the Ast0 component.
  *   - at_top: a flag that indicates whether it is safe to just generate one
  *     rule, even though the disjunction uses pattern matching.
- *     TODO: better detection of when to set the at_top flag (in rule_body).
  *
  * Return:
  *   - an updated snapshot with the inserted disjunction, possibly an extra
