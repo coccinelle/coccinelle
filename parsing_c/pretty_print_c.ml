@@ -37,6 +37,8 @@ type 'a printer = 'a -> unit
 
 type pretty_printers = {
   expression      : Ast_c.expression printer;
+  assignOp        : Ast_c.assignOp printer;
+  binaryOp        : Ast_c.binaryOp printer;
   arg_list        : (Ast_c.argument Ast_c.wrap2 list) printer;
   arg             : Ast_c.argument printer;
   statement       : Ast_c.statement printer;
@@ -1456,6 +1458,8 @@ and pp_init (init, iinit) =
 
 
   { expression = pp_expression;
+    assignOp   = pr_assignOp;
+    binaryOp   = pr_binaryOp;
     arg_list   = pp_arg_list;
     arg        = pp_argument;
     statement  = pp_statement;
@@ -1517,6 +1521,8 @@ let ppc =
     ~pr_elem ~pr_space ~pr_nl ~pr_outdent ~pr_indent ~pr_unindent
 
 let pp_expression_simple = ppc.expression
+let pp_assignOp_simple   = ppc.assignOp
+let pp_binaryOp_simple   = ppc.binaryOp
 let pp_decl_simple       = ppc.decl
 let pp_field_simple      = ppc.field
 let pp_statement_simple  = ppc.statement
@@ -1535,6 +1541,12 @@ let pp_elem_sp ~pr_elem ~pr_space =
 
 let pp_expression_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).expression
+
+let pp_assignOp_gen ~pr_elem ~pr_space =
+  (pp_elem_sp pr_elem pr_space).assignOp
+
+let pp_binaryOp_gen ~pr_elem ~pr_space =
+  (pp_elem_sp pr_elem pr_space).binaryOp
 
 let pp_arg_list_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).arg_list
