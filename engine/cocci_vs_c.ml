@@ -216,6 +216,8 @@ let equal_storage a b =
 let equal_metavarval valu valu' =
   match valu, valu' with
   | Ast_c.MetaIdVal (a,_), Ast_c.MetaIdVal (b,_) -> a =$= b
+  | Ast_c.MetaAssignOpVal a, Ast_c.MetaAssignOpVal b -> a =*= b
+  | Ast_c.MetaBinaryOpVal a, Ast_c.MetaBinaryOpVal b -> a =*= b
   | Ast_c.MetaFuncVal a, Ast_c.MetaFuncVal b -> a =$= b
   | Ast_c.MetaLocalFuncVal a, Ast_c.MetaLocalFuncVal b ->
       (* do something more ? *)
@@ -279,6 +281,7 @@ let equal_metavarval valu valu' =
       |B.MetaTypeVal _ |B.MetaInitVal _ |B.MetaInitListVal _
       |B.MetaParamListVal _|B.MetaParamVal _|B.MetaExprListVal _
       |B.MetaExprVal _|B.MetaLocalFuncVal _|B.MetaFuncVal _|B.MetaIdVal _
+      |B.MetaAssignOpVal _ | B.MetaBinaryOpVal _
       |B.MetaFmtVal _|B.MetaFragListVal _
     ), _
       -> raise (Impossible 16)
@@ -289,6 +292,8 @@ know which one is which... *)
 let equal_inh_metavarval valu valu'=
   match valu, valu' with
   | Ast_c.MetaIdVal (a,_), Ast_c.MetaIdVal (b,_) -> a =$= b
+  | Ast_c.MetaAssignOpVal a, Ast_c.MetaAssignOpVal b -> a =*= b
+  | Ast_c.MetaBinaryOpVal a, Ast_c.MetaBinaryOpVal b -> a =*= b
   | Ast_c.MetaFuncVal a, Ast_c.MetaFuncVal b -> a =$= b
   | Ast_c.MetaLocalFuncVal a, Ast_c.MetaLocalFuncVal b ->
       (* do something more ? *)
@@ -353,6 +358,7 @@ let equal_inh_metavarval valu valu'=
       |B.MetaTypeVal _ |B.MetaInitVal _ |B.MetaInitListVal _
       |B.MetaParamListVal _|B.MetaParamVal _|B.MetaExprListVal _
       |B.MetaExprVal _|B.MetaLocalFuncVal _|B.MetaFuncVal _|B.MetaIdVal _
+      |B.MetaAssignOpVal _ | B.MetaBinaryOpVal _
       |B.MetaFmtVal _|B.MetaFragListVal _
     ), _
       -> raise (Impossible 17)
