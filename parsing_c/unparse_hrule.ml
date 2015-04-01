@@ -232,6 +232,7 @@ let print_extra_typedefs pr env =
     (function (_,vl) ->
       match vl with
 	Ast_c.MetaIdVal(_) | Ast_c.MetaFuncVal(_)
+      | Ast_c.MetaAssignOpVal(_) | Ast_c.MetaBinaryOpVal(_)
       | Ast_c.MetaLocalFuncVal(_) -> ()
       | Ast_c.MetaExprVal(exp,_) -> Visitor_c.vk_expr bigf exp
       | Ast_c.MetaExprListVal(args) -> Visitor_c.vk_argument_list bigf args
@@ -277,6 +278,7 @@ let rename argids env =
       (x,
        match vl with
 	 Ast_c.MetaIdVal(_) | Ast_c.MetaFuncVal(_)
+       | Ast_c.MetaAssignOpVal(_) | Ast_c.MetaBinaryOpVal(_)
        | Ast_c.MetaLocalFuncVal(_) -> vl
        | Ast_c.MetaExprVal(exp,c) ->
 	   Ast_c.MetaExprVal(Visitor_c.vk_expr_s bigf exp,c)
