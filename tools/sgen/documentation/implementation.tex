@@ -3,7 +3,7 @@ TODO: make a graph illustrating the workflow.\\\\
 Some notes:
 \begin{itemize}
 \item See \texttt{sgen/source/README.md} for a broad overview of the workflow and dependencies
-\item Several of the modules make extensive use of the AST0 visitor\footnote{\texttt{coccinelle/parsing\_cocci/ast0\_visitor.ml}}. It is used because it abstracts away a lot of the boilerplace code needed for accessing the components of the abstract syntax tree.
+\item Several of the modules make extensive use of the AST0 visitor\footnote{\texttt{coccinelle/parsing\_cocci/visitor\_ast0.ml}}. It is used because it abstracts away a lot of the boilerplace code needed for accessing the components of the abstract syntax tree.
 \item An easy way to debug in \texttt{sgen/source/rule\_body.ml}: add
 \begin{verbatim}
 >> Snap.add "debug msg" >>

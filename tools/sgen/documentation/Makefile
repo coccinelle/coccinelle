@@ -4,4 +4,4 @@ docs:
 	latexmk -pdf -pdflatex="pdflatex" -use-make documentation.tex
 
 clean:
-	find . -type f ! \( -name "*.tex" -o -name "Makefile" \) -delete
+	rm -f *.aux *.fdb_latexmk *.log *.out *.toc *.pdf *~
