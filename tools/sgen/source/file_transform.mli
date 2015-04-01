@@ -6,6 +6,50 @@
  * In context mode: skip the rules.
  *
  * Rules must be sorted in order of when they occur in the script.
+ *
+ * ----------------------------------------------------------------------------
+ * Example:
+ * Input file (ie. the one in file_name) is:
+ *
+ *      @im_a_rule@
+ *      @@
+ *
+ *      function();
+ *
+ *      @depends on im_a_rule@
+ *      @@
+ *
+ *      another_function( ... );
+ *      + call_me();
+ *      ...
+ *
+ * Then if we call it with e.g.
+ * preface = { confidence = Moderate; description = "this is a script" },
+ * virtuals = ["patch";"context";"org";"report"],
+ * rules = [(<im_a_rule>, None); (<rule starting on line 6>, Some "NAME")],
+ * context_mode = false (because it has a +),
+ * it would print the following to the out_channel:
+ *
+ *      /// this is a script
+ *      ///
+ *      // Confidence: Moderate
+ *
+ *      virtual patch
+ *      virtual context
+ *      virtual org
+ *      virtual report
+ *
+ *      @im_a_rule@
+ *      @@
+ *
+ *      function();
+ *
+ *      @NAME depends on im_a_rule && patch && !context && !org && !report@
+ *      @@
+ *
+ *      another_function( ... );
+ *      + call_me();
+ *      ...
  *)
 
 (* ------------------------------------------------------------------------- *)

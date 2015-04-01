@@ -11,27 +11,25 @@
  * Example of generated context rule:
  * Input rule is a "+" rule represented as an AST0.
  *
- * @some_rule@
- * identifier i;
- * @@
+ *      @some_rule@
+ *      identifier i;
+ *      @@
  *
- * i = 2;
- * + call_me(i);
- * ...
+ *      int i = 2;
+ *      + call_me(i);
+ *      ...
  *
- * ----------------------------------------------------------------------------
  * Then the output will be a "*" rule similar to the one below.
  * It is not returned as AST0 because the contents of the rule may require a
  * splitting into several rules.
  *
- * @some_rule_context depends on !patch && (context || org || report)@
- * identifier i;
- * position p;
- * @@
+ *      @some_rule_context depends on !patch && (context || org || report)@
+ *      identifier i;
+ *      position p;
+ *      @@
  *
- * * i@p = 2;
- * ...
- *
+ *      * int i@p = 2;
+ *      ...
  *)
 
 (* ------------------------------------------------------------------------- *)

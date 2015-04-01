@@ -6,17 +6,26 @@
  * beginning of the disjunction to an ordered list of bools, each indicating
  * whether their corresponding disjunction case contains */+/-.
  *
- * Example:
- *   (
- *    f(0)
- *   |
- *    f(1)
- *   |
- *   - f(e)
- *   + g(e)
- *   )
- * would have as key the line number of the opening parenthesis and as value
- * the list [false;false;true;].
+ * ----------------------------------------------------------------------------
+ * Example of disjunction map:
+ *
+ *      @@ expression e; @@
+ *
+ *      (
+ *       f(0)
+ *      |
+ *       f(1)
+ *      |
+ *      - f(e)
+ *      + g(e)
+ *      )
+ *
+ * This rule contains both +/- so it would return true on a call to detect.
+ *
+ * It also has one disjunction on <line number of opening parenthesis> so the
+ * disjunction map would have one entry with
+ * key = <line number>
+ * value = [false;false;true;].
  *
  *)
 

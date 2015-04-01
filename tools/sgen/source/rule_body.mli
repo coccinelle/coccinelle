@@ -8,6 +8,9 @@
  *
  * TODO: disjmap should not be optional, otherwise the invariant in disj_map
  * can be violated.
+ *
+ * ----------------------------------------------------------------------------
+ * Example: see context_rule.mli (basically does that, without the headers)
  *)
 
 (* ------------------------------------------------------------------------- *)
