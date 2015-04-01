@@ -13,9 +13,13 @@ val print_mcodekind : Ast_cocci.mcodekind -> unit
 
 val constant : Ast_cocci.constant -> unit
 val assignOp : Ast_cocci.assignOp -> unit
+val simpleAssignOp : Ast_cocci.simpleAssignOp -> unit
+val opAssignOp : Ast_cocci.arithOp -> unit
 val fixOp : Ast_cocci.fixOp -> unit
 val unaryOp : Ast_cocci.unaryOp -> unit
 val binaryOp : Ast_cocci.binaryOp -> unit
+val arithOp : Ast_cocci.arithOp -> unit
+val logicalOp : Ast_cocci.logicalOp -> unit
 val const_vol : Ast_cocci.const_vol -> unit
 val sign : Ast_cocci.sign -> unit
 val structUnion : Ast_cocci.structUnion -> unit

@@ -9,8 +9,6 @@ struct foo {
 int main() {
   struct foo *a;
   struct notfoo *b;
-  
-  
   f(b->first);
   f(b->second);
 }

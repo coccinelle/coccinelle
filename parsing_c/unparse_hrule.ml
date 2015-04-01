@@ -131,10 +131,11 @@ let get_function_name rule env =
     | _ -> []) in
   let names =
     (V.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing
       donothing expression donothing donothing donothing donothing donothing
-      donothing donothing donothing
+      donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing).V.combiner_top_level
       rule in
   match names with
@@ -365,6 +366,10 @@ let pp_meta_decl pr env decl =
       no_arity ar; pr "parameter "; pp_name name; pr ";\n"
   | Ast.MetaParamListDecl(ar, name, len) ->
       no_arity ar; pr "parameter list "; pp_name name; pp_len pr len; pr ";\n"
+  | Ast.MetaBinaryOperatorDecl(ar, name) ->
+      no_arity ar; pr "binary operator "; pp_name name; pr ";\n"
+  | Ast.MetaAssignmentOperatorDecl(ar, name) ->
+      no_arity ar; pr "assignment operator "; pp_name name; pr ";\n"
   | Ast.MetaConstDecl(ar, name, types) ->
       no_arity ar; pr "constant "; print_types pr env types;
       pp_name name; pr ";\n"

@@ -10,7 +10,7 @@ int main() {
   @return void
 */
 void foo() {
-/* Do nothing */
+   /* Do nothing */
 	
 }
 

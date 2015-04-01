@@ -161,12 +161,21 @@ and  logicalOp = function
   | Ast.AndLog -> "&&"
   | Ast.OrLog -> "||"
 
+let mkarithop (op, clt) =
+  let op' = P.clt2mcode op clt in
+  Ast0.wrap (Ast0.Arith op')
+
+let mklogop (op,clt) =
+  let op' = P.clt2mcode op clt in
+  Ast0.wrap (Ast0.Logical op')
+
 %}
 
 %token EOF
 
 %token TIdentifier TExpression TStatement TFunction TType TParameter
 %token TIdExpression TInitialiser TDeclaration TField TMetavariable TSymbol
+%token TOperator TBinary TAssignment
 %token Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
 %token TPure TContext TGenerated TFormat TLocal TGlobal
 %token TTypedef TAttribute TDeclarer TIterator TName TPosition TAnalysis
@@ -243,7 +252,7 @@ and  logicalOp = function
 
 %token TMPtVirg TCppConcatOp
 %token <Data.clt> TEq TDot TComma TPtVirg
-%token <Ast_cocci.assignOp * Data.clt> TAssign
+%token <Ast_cocci.arithOp * Data.clt> TOpAssign
 
 %token TIso TRightIso TIsoExpression TIsoStatement TIsoDeclaration TIsoType
 %token TIsoTopLevel TIsoArgExpression TIsoTestExpression TIsoToTestExpression
@@ -408,8 +417,8 @@ incl:
   TIncludeL           { let (x,_) = $1 in Data.Include(x) }
 | TUsing TString      { Data.Iso(Common.Left(P.id2name $2)) }
 | TUsing TPathIsoFile { Data.Iso(Common.Right $2) }
-| TVirtual comma_list(pure_ident)
-    { let names = List.map P.id2name $2 in
+| TVirtual ids=comma_list(pure_ident)
+    { let names = List.map P.id2name ids in
       Iteration.parsed_virtual_rules :=
 	Common.union_set names !Iteration.parsed_virtual_rules;
       (* ensure that the names of virtual and real rules don't overlap *)
@@ -523,6 +532,45 @@ metadec:
 	  let tok = check_meta(Ast.MetaFragListDecl(arity,name,lenname)) in
 	  !Data.add_fmtlist_meta name lenname; tok)
 	len ids }
+| ar=arity TBinary TOperator id_=pure_ident TEq TOBrace ops=comma_list(binary_operator) TCBrace TMPtVirg
+  { let (id0,_) = id_ in
+    let id = (id0, id0) in
+    Printf.fprintf stderr "binary operator %s = { %s }\n" id0
+    (String.concat ", " (List.map Ast0.string_of_binaryOp ops));
+    fun _ -> [Common.Right (Ast.MetaBinaryOperatorDecl (ar, id))] }
+| ar=arity TAssignment TOperator id_=pure_ident TEq TOBrace ops=comma_list(assignment_operator) TCBrace TMPtVirg
+  { let (id0,_) = id_ in
+    let id = (id0, id0) in
+    Printf.fprintf stderr "assignment operator %s = { %s }\n" id0
+    (String.concat ", " (List.map Ast0.string_of_assignOp ops));
+    fun _ -> [Common.Right (Ast.MetaAssignmentOperatorDecl (ar, id))] }
+
+binary_operator:
+| TShLOp { mkarithop $1 } (* Ast.Arith Ast.DecLeft *)
+| TMul { mkarithop (Ast.Mul,$1) }
+| TEqEq { mklogop (Ast.Eq,$1) }
+| TNotEq { mklogop (Ast.NotEq,$1) }
+| TSub { mklogop (Ast.InfEq,$1) }
+| TPlus { mkarithop (Ast.Plus,$1) }
+| TMinus { mkarithop (Ast.Minus,$1) }
+| TDmOp { mkarithop $1 }
+| TShROp { mkarithop $1 }
+| TAnd { mkarithop (Ast.And,$1) }
+| TOr { mkarithop (Ast.Or,$1) }
+| TXor { mkarithop (Ast.Xor,$1) }
+| TLogOp { mklogop $1 } 
+| TAndLog { mklogop (Ast.AndLog,$1) }
+| TOrLog { mklogop (Ast.OrLog,$1) }
+
+assignment_operator:
+| TEq 
+  { let clt = $1 in
+  let op' = P.clt2mcode "=" clt in
+  Ast0.wrap (Ast0.SimpleAssign op') }
+| TOpAssign
+  { let (op,clt) = $1 in
+  let op' = P.clt2mcode op clt in
+  Ast0.wrap (Ast0.OpAssign op') }
 
 list_len:
   pure_ident_or_meta_ident { Common.Left $1 }
@@ -953,10 +1001,12 @@ enum_decl_one:
     | disj_ident    { Ast0.wrap(Ast0.Ident($1)) }
     | disj_ident TEq enum_val
 	{ let id = Ast0.wrap(Ast0.Ident($1)) in
+        let (op,clt) = ("=",$2) in
+        let op' = P.clt2mcode op clt in
+        let op'' = Ast0.wrap (Ast0.SimpleAssign op') in
 	Ast0.wrap
 	  (Ast0.Assignment
-	     (id,P.clt2mcode Ast.SimpleAssign $2,Ast0.set_arg_exp $3,
-	      false)) }
+	     (id, op'', Ast0.set_arg_exp $3, false)) }
 
 enum_val:
    ident    { Ast0.wrap(Ast0.Ident($1)) }
@@ -1756,25 +1806,33 @@ basic_expr(recurser,primary_extra):
 
 assign_expr(r,pe):
     cond_expr(r,pe)                        { $1 }
-  | unary_expr(r,pe) TAssign assign_expr_bis
+  | unary_expr(r,pe) TOpAssign assign_expr_bis
       { let (op,clt) = $2 in
-      Ast0.wrap(Ast0.Assignment($1,P.clt2mcode op clt,
-				Ast0.set_arg_exp $3,false)) }
+      let op' = P.clt2mcode op clt in
+      let op'' = Ast0.wrap (Ast0.OpAssign op') in
+      Ast0.wrap(Ast0.Assignment($1, op'', Ast0.set_arg_exp $3,false)) }
   | unary_expr(r,pe) TEq assign_expr_bis
-      { Ast0.wrap
+      { let (op,clt) = ("=",$2) in
+      let op' = P.clt2mcode op clt in
+      let op'' = Ast0.wrap (Ast0.SimpleAssign op') in
+      Ast0.wrap
 	  (Ast0.Assignment
-	     ($1,P.clt2mcode Ast.SimpleAssign $2,Ast0.set_arg_exp $3,false)) }
+	     ($1, op'', Ast0.set_arg_exp $3,false)) }
 
 assign_expr_bis:
     cond_expr(eexpr,dot_expressions)                        { $1 }
-  | unary_expr(eexpr,dot_expressions) TAssign assign_expr_bis
+  | unary_expr(eexpr,dot_expressions) TOpAssign assign_expr_bis
       { let (op,clt) = $2 in
-      Ast0.wrap(Ast0.Assignment($1,P.clt2mcode op clt,
-				Ast0.set_arg_exp $3,false)) }
+      let op' = P.clt2mcode op clt in
+      let op'' = Ast0.wrap (Ast0.OpAssign op') in
+      Ast0.wrap(Ast0.Assignment($1, op'', Ast0.set_arg_exp $3,false)) }
   | unary_expr(eexpr,dot_expressions) TEq assign_expr_bis
-      { Ast0.wrap
+      { let (op,clt) = ("=",$2) in
+      let op' = P.clt2mcode op clt in
+      let op'' = Ast0.wrap (Ast0.SimpleAssign op') in
+      Ast0.wrap
 	  (Ast0.Assignment
-	     ($1,P.clt2mcode Ast.SimpleAssign $2,Ast0.set_arg_exp $3,false)) }
+	     ($1, op'', Ast0.set_arg_exp $3,false)) }
 
 cond_expr(r,pe):
     arith_expr(r,pe)                         { $1 }
@@ -1786,7 +1844,7 @@ cond_expr(r,pe):
 arith_expr(r,pe):
     cast_expr(r,pe)                         { $1 }
   | arith_expr(r,pe) TMul    arith_expr_bis
-      { P.arith_op Ast.Mul $1 $2 $3 }
+    { P.arith_op Ast.Mul $1 $2 $3 }
   | arith_expr(r,pe) TDmOp    arith_expr_bis
       { let (op,clt) = $2 in P.arith_op op $1 clt $3 }
   | arith_expr(r,pe) TPlus   arith_expr_bis
@@ -2670,8 +2728,8 @@ token:
 /****************************************************************************/
 
 // non-empty lists - drop separator
-comma_list(elem):
-  separated_nonempty_list(TComma,elem) { $1 }
+%inline comma_list(elem):
+  l=separated_nonempty_list(TComma,elem) { l }
 
 midzero_list(elem,aft):
   a=elem b=list(mzl(aft))

@@ -10,12 +10,12 @@ static int empeg_write (struct usb_serial_port *port, const unsigned char *buf, 
 
 } 
 
-static void empeg_write_bulk_callback (struct urb *urb)
+static void empeg_write_bulk_callback(struct urb *urb)
 {
 }
 
 
-static void empeg_read_bulk_callback (struct urb *urb)
+static void empeg_read_bulk_callback(struct urb *urb)
 {
 	usb_fill_bulk_urb(empeg_read_bulk_callback);
 

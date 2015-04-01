@@ -74,6 +74,8 @@ and metavar =
   | MetaInitListDecl of arity * meta_name (* name *) * list_len (*len*)
   | MetaListlenDecl of meta_name (* name *)
   | MetaParamDecl of arity * meta_name (* name *)
+  | MetaBinaryOperatorDecl of arity * meta_name
+  | MetaAssignmentOperatorDecl of arity * meta_name
   | MetaParamListDecl of arity * meta_name (*name*) * list_len (*len*)
   | MetaConstDecl of
       arity * meta_name (* name *) * Type_cocci.typeC list option
@@ -143,15 +145,15 @@ and base_expression =
 		      string mcode (* quote *)
   | FunCall        of expression * string mcode (* ( *) *
                       expression dots * string mcode (* ) *)
-  | Assignment     of expression * assignOp mcode * expression * bool
+  | Assignment     of expression * assignOp * expression * bool
   | Sequence       of expression * string mcode (* , *) * expression
   | CondExpr       of expression * string mcode (* ? *) * expression option *
 	              string mcode (* : *) * expression
   | Postfix        of expression * fixOp mcode
   | Infix          of expression * fixOp mcode
   | Unary          of expression * unaryOp mcode
-  | Binary         of expression * binaryOp mcode * expression
-  | Nested         of expression * binaryOp mcode * expression
+  | Binary         of expression * binaryOp * expression
+  | Nested         of expression * binaryOp * expression
   | ArrayAccess    of expression * string mcode (* [ *) * expression *
 	              string mcode (* ] *)
   | RecordAccess   of expression * string mcode (* . *) * ident
@@ -212,6 +214,14 @@ and reconstraint =
   | IdRegExp        of string * Regexp.regexp
   | IdNotRegExp     of string * Regexp.regexp
 
+and assignOpconstraint =
+    AssignOpNoConstraint
+  | AssignOpInSet of arithOp list
+
+and binaryOpconstraint =
+    BinaryOpNoConstraint
+  | BinaryOpInSet of binaryOp list
+
 and form = ANY | ID | LocalID| GlobalID | CONST (* form for MetaExp *)
 
 and expression = base_expression wrap
@@ -237,10 +247,19 @@ and base_string_format =
 and string_format = base_string_format wrap
 
 and  unaryOp = GetRef | GetRefLabel | DeRef | UnPlus |  UnMinus | Tilde | Not
-and  assignOp = SimpleAssign | OpAssign of arithOp
+and  base_assignOp = 
+    SimpleAssign of simpleAssignOp mcode
+  | OpAssign of arithOp mcode
+  | MetaAssign of meta_name mcode * assignOpconstraint * keep_binding * inherited
+and simpleAssignOp = string
+and assignOp = base_assignOp wrap
 and  fixOp = Dec | Inc
 
-and  binaryOp = Arith of arithOp | Logical of logicalOp
+and  base_binaryOp =
+    Arith of arithOp mcode
+  | Logical of logicalOp mcode
+  | MetaBinary of meta_name mcode * binaryOpconstraint * keep_binding * inherited
+and binaryOp = base_binaryOp wrap
 and  arithOp =
     Plus | Minus | Mul | Div | Mod | DecLeft | DecRight | And | Or | Xor | Min | Max
 and  logicalOp = Inf | Sup | InfEq | SupEq | Eq | NotEq | AndLog | OrLog
@@ -650,6 +669,8 @@ and anything =
   | ConstantTag         of constant
   | UnaryOpTag          of unaryOp
   | AssignOpTag         of assignOp
+  | SimpleAssignOpTag   of simpleAssignOp
+  | OpAssignOpTag       of arithOp
   | FixOpTag            of fixOp
   | BinaryOpTag         of binaryOp
   | ArithOpTag          of arithOp
@@ -742,3 +763,8 @@ val make_inherited_term : 'a -> meta_name list (* inherited vars *) ->
 val make_mcode : 'a -> 'a mcode
 
 val equal_pos : fixpos -> fixpos -> bool
+
+val string_of_arithOp : arithOp -> string
+val string_of_logicalOp : logicalOp -> string
+val string_of_assignOp : assignOp -> string
+val string_of_binaryOp : binaryOp -> string

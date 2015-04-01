@@ -206,6 +206,9 @@ let id_tokens lexbuf =
   | "identifier" when in_meta -> check_arity_context_linetype s; TIdentifier
   | "type" when in_meta ->       check_arity_context_linetype s; TType
   | "parameter" when in_meta ->  check_arity_context_linetype s; TParameter
+  | "operator" when in_meta ->   check_arity_context_linetype s; TOperator
+  | "binary" when in_meta ->   check_arity_context_linetype s; TBinary
+  | "assignment" when in_meta ->   check_arity_context_linetype s; TAssignment
   | "constant"  when in_meta ->  check_arity_context_linetype s; TConstant
   | "generated" when in_rule_name && not (!Flag.make_hrule = None) ->
       check_arity_context_linetype s; TGenerated
@@ -320,7 +323,7 @@ let id_tokens lexbuf =
   | s -> check_var s linetype
 
 let mkassign op lexbuf =
-  TAssign (Ast.OpAssign op, (get_current_line_type lexbuf))
+  TOpAssign (op, (get_current_line_type lexbuf))
 
 let init _ =
   line := 1;
@@ -979,6 +982,29 @@ and metavariable_decl_token = parse
   | "=="           { start_line true; TEqEq    (get_current_line_type lexbuf) }
   | "!="           { start_line true; TNotEq   (get_current_line_type lexbuf) }
   | "<="           { start_line true; TSub     (get_current_line_type lexbuf) }
+  | "+" { (start_line true; TPlus (get_current_line_type lexbuf)) }
+  | "-" { (start_line true; TMinus (get_current_line_type lexbuf)) }
+  | "/" { start_line true; TDmOp (Ast.Div,get_current_line_type lexbuf) }
+  | "%" { start_line true; TDmOp (Ast.Mod,get_current_line_type lexbuf) }
+  | ">>" { start_line true; TShROp(Ast.DecRight,get_current_line_type lexbuf) }  
+  | "&" { start_line true; TAnd (get_current_line_type lexbuf) }
+  | "|" {  (start_line true; TOr(get_current_line_type lexbuf)) }
+  | "^" { start_line true; TXor(get_current_line_type lexbuf) }
+  | ">=" { start_line true; TLogOp(Ast.SupEq,get_current_line_type lexbuf) }
+  | "<" { start_line true; TLogOp(Ast.Inf,get_current_line_type lexbuf) }
+  | ">" { start_line true; TLogOp(Ast.Sup,get_current_line_type lexbuf) }
+  | "&&" { start_line true; TAndLog (get_current_line_type lexbuf) }
+  | "||" { start_line true; TOrLog  (get_current_line_type lexbuf) }
+  | "-="           { start_line true; mkassign Ast.Minus lexbuf }
+  | "+="           { start_line true; mkassign Ast.Plus lexbuf }
+  | "*="           { start_line true; mkassign Ast.Mul lexbuf }
+  | "/="           { start_line true; mkassign Ast.Div lexbuf }
+  | "%="           { start_line true; mkassign Ast.Mod lexbuf }
+  | "&="           { start_line true; mkassign Ast.And lexbuf }
+  | "|="           { start_line true; mkassign Ast.Or lexbuf }
+  | "^="           { start_line true; mkassign Ast.Xor lexbuf }
+  | "<<="          { start_line true; mkassign Ast.DecLeft lexbuf }
+  | ">>="          { start_line true; mkassign Ast.DecRight lexbuf }
   | "/*"
       {match !current_line_type with
         (D.PLUS,_,_) | (D.PLUSPLUS,_,_) ->

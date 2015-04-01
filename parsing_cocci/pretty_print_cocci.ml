@@ -214,7 +214,7 @@ let rec expression e =
       dots (function _ -> ()) expression args;
       close_box(); mcode print_string rp
   | Ast.Assignment(left,op,right,simple) ->
-      expression left; print_string " "; mcode assignOp op;
+      expression left; print_string " "; assignOp op;
       print_string " "; expression right
   | Ast.Sequence(left,op,right) ->
       expression left; mcode print_string op;
@@ -227,10 +227,10 @@ let rec expression e =
   | Ast.Infix(exp,op) -> mcode fixOp op; expression exp
   | Ast.Unary(exp,op) -> mcode unaryOp op; expression exp
   | Ast.Binary(left,op,right) ->
-      expression left; print_string " "; mcode binaryOp op; print_string " ";
+      expression left; print_string " "; binaryOp op; print_string " ";
       expression right
   | Ast.Nested(left,op,right) ->
-      expression left; print_string " "; mcode binaryOp op; print_string " ";
+      expression left; print_string " "; binaryOp op; print_string " ";
       expression right
   | Ast.Paren(lp,exp,rp) ->
       mcode print_string_box lp; expression exp; close_box();
@@ -304,17 +304,23 @@ and  unaryOp = function
   | Ast.Tilde -> print_string "~"
   | Ast.Not -> print_string "!"
 
-and  assignOp = function
-    Ast.SimpleAssign -> print_string "="
-  | Ast.OpAssign(aop) -> arithOp aop; print_string "="
+and  assignOp op = match Ast.unwrap op with
+    Ast.SimpleAssign _ -> print_string "="
+  | Ast.OpAssign(aop) -> arithOp (Ast.unwrap_mcode aop); print_string "="
+  | Ast.MetaAssign(metavar,_,_,_) -> mcode print_meta metavar
+                                                   
+and  simpleAssignOp op = print_string "="
+
+and  opAssignOp aop = arithOp aop; print_string "=" 
 
 and  fixOp = function
     Ast.Dec -> print_string "--"
   | Ast.Inc -> print_string "++"
 
-and  binaryOp = function
-    Ast.Arith(aop) -> arithOp aop
-  | Ast.Logical(lop) -> logicalOp lop
+and  binaryOp op = match Ast.unwrap op with
+    Ast.Arith(aop) -> arithOp (Ast.unwrap_mcode aop)
+  | Ast.Logical(lop) -> logicalOp (Ast.unwrap_mcode lop)
+  | Ast.MetaBinary(metavar,_,_,_) -> mcode print_meta metavar
 
 and  arithOp = function
     Ast.Plus -> print_string "+"
@@ -901,6 +907,8 @@ let _ =
     | Ast.ConstantTag(x) -> constant x
     | Ast.UnaryOpTag(x) -> unaryOp x
     | Ast.AssignOpTag(x) -> assignOp x
+    | Ast.SimpleAssignOpTag(x) -> simpleAssignOp (Ast.make_mcode x)
+    | Ast.OpAssignOpTag(x) -> opAssignOp x
     | Ast.FixOpTag(x) -> fixOp x
     | Ast.BinaryOpTag(x) -> binaryOp x
     | Ast.ArithOpTag(x) -> arithOp x
