@@ -1,9 +1,9 @@
 (* Generates rule headers like
  *
- * @rulename depends on ...@
- * metavariable mv;
- * position p;
- * @@
+ *      @rulename depends on ...@
+ *      metavariable mv;
+ *      position p;
+ *      @@
  *
  * Can insert default (aka hardcoded) dependencies.
  * Context: !patch && (context || org || report)

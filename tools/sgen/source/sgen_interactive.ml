@@ -75,24 +75,24 @@ let get_limitations t =
       " limitation for the script or press <enter> to continue:\n");
     match get_input_save t with
     | "" -> t
-    | x -> get false (UI.add_limit t x) in
+    | x -> get false (UI.add_limit x t) in
   get true t
 
 let get_keywords t =
   print_string ("\nSpecify keywords for the script or press <enter> to " ^
     "continue:\n");
   let keys = get_input_save t in
-  UI.set_keys t keys
+  UI.set_keys keys t
 
 let get_options t =
   print_string ("\nSpecify options for the script or press <enter> to " ^
     "continue:\n");
-  let options = get_input_save t in UI.set_options t options
+  let options = get_input_save t in UI.set_options options t
 
 let get_url t =
   print_string ("\nSpecify an URL for the script or press <enter> to " ^
     "continue:\n");
-  let url = get_input_save t in UI.set_url t url
+  let url = get_input_save t in UI.set_url url t
 
 let get_authors t =
   let rec get first t =
@@ -101,32 +101,41 @@ let get_authors t =
       "Standard format is: <author name>, <affiliation>. <license>.\n");
     match get_input_save t with
     | "" -> t
-    | x -> get false (UI.add_author t x) in
+    | x -> get false (UI.add_author x t) in
   get true t
 
 let get_comments t =
   print_string ("\nWrite any further comments for the script or press " ^
     "<enter> to continue:\n");
-  let comments = get_input_save t in UI.set_comments t comments
+  let comments = get_input_save t in UI.set_comments comments t
 
 (* get org or report msg. strict denotes whether it is required. *)
 let rec get_message pmsg strict t =
   print_string pmsg;
   let msg = get_input_save t in
-  if msg = "" && strict then get_message pmsg strict t else
-  begin
+  if msg = "" && strict
+  then get_message pmsg strict t
+  else begin
     let pcts = UI.count_format_vars msg in
-    if pcts = 0 then (msg,[]) else
-    begin
-      print_string ("\nDeclare the " ^(string_of_int pcts) ^" variable(s) " ^
+    if pcts = 0
+    then (msg,[])
+    else begin
+      let _ = print_string (
+        "\nDeclare the " ^(string_of_int pcts) ^" variable(s) " ^
         "used in the message, in order, separated by comma.\n" ^
-        "Inherited metavariables are declared by <rulename>.<metavarname>.\n");
+        "Inherited metavariables are declared by <rulename>.<metavarname>.\n"
+      ) in
       let mv = get_input_save t in
       let mv = Str.split (Str.regexp " *, *") mv in
-      if List.length mv <> pcts then (print_string ("\nIll-formed message; " ^
-        "number of format variables does not match number of declared " ^
-        "metavariables. Try again.\n"); get_message pmsg strict t)
-      else (msg, mv)
+      if List.length mv = pcts
+      then (msg, mv)
+      else
+        let _ = print_string (
+          "\nIll-formed message; " ^
+          "number of format variables does not match number of declared " ^
+          "metavariables. Try again.\n"
+        ) in
+        get_message pmsg strict t
     end
   end
 
@@ -135,9 +144,13 @@ let get_name r t =
   let rec get_name' r =
     print_string ("\nSpecify a name for the " ^ r ^ ":\n");
     let newnm = get_input_save t in
-    try UI.check_name t newnm; (r, Some newnm)
-    with Failure m -> print_string ("\n" ^ m); get_name' r in
-  if not(String.contains r ' ') then (r, None) else get_name' r
+    try
+      UI.check_name newnm t;
+      (r, Some newnm)
+    with Failure m ->
+      print_string ("\n" ^ m);
+      get_name' r in
+  if String.contains r ' ' then get_name' r else (r, None)
 
 (* returns
  * ((original rulename : string, new rulename : string option),

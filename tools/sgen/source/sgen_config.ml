@@ -60,13 +60,15 @@ let add_rule rule_exists t ((oldnm,newnm),a) =
         (try
           UI.check_format_string mgv;
           (mgv,mgv)
-        with Failure msg -> failwith ("Config error: " ^ msg))
+        with Failure msg ->
+          failwith ("Config error: " ^ msg))
     | org, rep ->
         try
           UI.check_format_string org;
           UI.check_format_string rep;
           (org, rep)
-        with Failure msg -> failwith ("Config error: " ^ msg) in
+        with Failure msg ->
+          failwith ("Config error: " ^ msg) in
 
   UI.add_rule ((oldrnm, newnm),org,rep) t
 
@@ -79,12 +81,12 @@ let make desc limit keys conf comments options authors url =
   let t =
     try UI.make ~description:desc ~confidence:(UI.conf_fromstring conf)
     with Failure msg -> failwith ("Config error: " ^ msg) in
-  let t = UI.set_limits t limit in
-  let t = UI.set_keys t keys in
-  let t = UI.set_comments t comments in
-  let t = UI.set_options t options in
-  let t = UI.set_authors t authors in
-  UI.set_url t url
+  let t = UI.set_limits limit t in
+  let t = UI.set_keys keys t in
+  let t = UI.set_comments comments t in
+  let t = UI.set_options options t in
+  let t = UI.set_authors authors t in
+  UI.set_url url t
 
 (* ------------------------------------------------------------------------- *)
 (* ENTRY POINT *)

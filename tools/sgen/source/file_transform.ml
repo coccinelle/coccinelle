@@ -6,11 +6,11 @@ module Ast0 = Ast0_cocci
  * Prints preface and added virtual rules.
  *
  * In patch mode, transformations include:
- *   - adding rule names to previously unnamed rules
- *   - adding standard dependencies to existing patch rules
+ *  - adding rule names to previously unnamed rules
+ *  - adding standard dependencies to existing patch rules
  *
  * In context mode, transformations include:
- *   - skipping all original context rules, since we now have the same rules
+ *  - skipping all original context rules, since we now have the same rules
  *     but in a generated (and therefore superior!) version.
  *
  * The transformation is done alongside the printing so if anything fails,

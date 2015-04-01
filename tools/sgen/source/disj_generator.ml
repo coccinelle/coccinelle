@@ -116,7 +116,8 @@ let generate_statement ~stmtdotsfn ~strfn ~stmtfn ~stmt ~at_top =
    *)
   let sdotsfn sd snp =
     let std_no_pos = List.fold_left (fun a b -> a >> stmtfn b) (fun x -> x) in
-    let rec std' l snp = match l with
+    let rec std' l snp =
+      match l with
       | [] -> assert false (* no disj patches with only unpositionable cases *)
       | x::xs ->
           (match PG.statement_pos x snp with

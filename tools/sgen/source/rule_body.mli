@@ -7,7 +7,62 @@
  * generated.
  *
  * ----------------------------------------------------------------------------
- * Example: see context_rule.mli (basically does that, without the headers)
+ * Example:
+ * Say we have two rule bodies like this (rule headers included for context):
+ *
+ *      @minus@ expression e; @@
+ *
+ *      if (e
+ *      - != NULL
+ *       ) {
+ *      function1(e);
+ *      ...
+ *      e++;
+ *      function2();
+ *      - function3(e);
+ *      + function4(e);
+ *
+ *      @plus@ expression e; @@
+ *
+ *      if (e
+ *      + != NULL
+ *       ) {
+ *      function1(e);
+ *      ...
+ *      e++;
+ *      function2();
+ *      + function3(e);
+ *
+ * They are both patch rules, but one doesn't contain minuses.
+ * In the first case, stars are added where the minuses were. Positions are
+ * added according to the same heuristics as the other example.
+ *
+ *      @minus_context@ expression e; position p1,p2,p2; @@
+ *
+ *      if (e@p1
+ *      * != NULL
+ *       ) {
+ *        function1@p2(e);
+ *        ...
+ *        e@p3++;
+ *        function2();
+ *      * function3(e);
+ *      }
+ *
+ * In the second case, we don't know where the interesting parts are, so we add
+ * positions on a best-guess basis (ie. the first in a sequence). The stars are
+ * added on the same lines as the positions.
+ *
+ *      @plus_context@ expression e; position p1,p2,p3; @@
+ *
+ *      * if (e@p1)
+ *      {
+ *      * function1@p2(e);
+ *        ...
+ *      * e@p3++;
+ *        function2();
+ *      }
+ *
  *)
 
 (* ------------------------------------------------------------------------- *)
