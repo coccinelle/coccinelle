@@ -23,15 +23,15 @@ val get_rule : t -> string
 val get_name : t -> string
 
 (* forces inheritance if the metavar is not already inherited *)
-val inherit_rule : t -> new_rule:string -> t
+val inherit_rule : new_rule:string -> t -> t
 
 (* prints the metavariable in the format used in rule headers to out_channel *)
-val print : t -> out_channel -> unit
+val print : out_channel -> t -> unit
 
 (* prints the metavariables in the format used in rule headers to out_channel.
  * if do_group, group by type
  *)
-val print_list : t list -> out_channel -> do_group:bool -> unit
+val print_list : out_channel -> do_group:bool -> t list -> unit
 
 (* Given the minus abstract syntax tree (Ast0) for a rule, extracts all
  * metavariables used in the rule.

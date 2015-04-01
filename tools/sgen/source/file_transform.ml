@@ -164,7 +164,7 @@ let print_patch_decl outch newnm = function
       let rulename = (match newnm with | Some n -> n | None -> rulename) in
       let patch_header = Rule_header.generate_patch
         ~isos ~dropisos ~deps ~rulename ~exists ~meta_vars:[] ~meta_pos:[] in
-      Rule_header.print_declaration patch_header outch
+      Rule_header.print_declaration outch patch_header
 
 (* prints the file until the declaration of the rule, which is then substituted
  * with whatever handler does.

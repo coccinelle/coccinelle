@@ -16,14 +16,14 @@
 type t
 
 (* Input:
- * * disjunction map, indicates */+/- slices in disjunctions
- * * context_mode, indicates whether the rule already has stars in it.
- * * the name of the rule
- * * the AST0 for the minus rule (we don't need the plus rule to generate *'s).
+ *  - disjunction map, indicates */+/- slices in disjunctions
+ *  - context_mode, indicates whether the rule already has stars in it.
+ *  - the name of the rule
+ *  - the AST0 for the minus rule (we don't need the plus rule to generate *'s).
  *
  * Returns:
- * * List of added metapositions (as strings)
- * * The generated context rule, optional generated disjunction rule
+ *  - List of added metapositions (as strings)
+ *  - The generated context rule, optional generated disjunction rule
  *)
 val generate :
   disj_map:Detect_patch.t ->
@@ -33,4 +33,4 @@ val generate :
   string list * (t * t option)
 
 (* prints a context rule *)
-val print : t -> out_channel -> unit
+val print : out_channel -> t -> unit

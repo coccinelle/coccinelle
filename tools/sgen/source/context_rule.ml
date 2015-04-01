@@ -8,9 +8,9 @@ module MV = Meta_variable
  * May generate an extra disjunction rule if the original rule calls for it.
  *
  * Invariants:
- * The rule contains */+/- ! No need for context generation otherwise ...
- * The rule's name or new name has to be valid! no whitespace funny business
- * (however, it can be <default rule name><number> at this point).
+ *  - The rule contains */+/- ! No need for context generation otherwise ...
+ *  - The rule's name or new name has to be valid! no whitespace funny business
+ *  - (however, it can be <default rule name><number> at this point).
  *)
 
 (* ------------------------------------------------------------------------- *)
@@ -19,7 +19,7 @@ module MV = Meta_variable
 type t = (Rule_header.t * Rule_body.t) list
 
 (* new_name is Some <new rulename> if the original rule is unnamed.
- * disj_map is a disjunction map for checking for patches (see detect_patch.ml)
+ * disj_map is a disjunction map for checking patches (see detect_patch.ml)
  * rule is the Ast0_cocci.parsed_rule that we want to generate!
  * context_mode indicates which generation logic to follow (see above)
  *
@@ -74,5 +74,5 @@ let generate ~new_name ~disj_map ~rule ~context_mode =
 
 
 (* prints list of Context_rule.t's *)
-let print l out =
-  List.iter (fun (rh,rb) -> Rule_header.print rh out; Rule_body.print rb out) l
+let print out l =
+  List.iter (fun (rh,rb) -> Rule_header.print out rh; Rule_body.print out rb) l

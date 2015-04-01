@@ -140,9 +140,9 @@ let run { file; config; output; interactive; default; hide; } =
         ~file_name:file ~preface ~virtuals ~ordered_rules:namedrules
         ~context_mode out;
       split();
-      List.iter (fun x -> Context_rule.print x out) contexts;
+      List.iter (Context_rule.print out) contexts;
       split();
-      Script_rule.print_split scripts out split;
+      Script_rule.print_split out split scripts;
       flush out;
       close_out out
 

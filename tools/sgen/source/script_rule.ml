@@ -121,9 +121,9 @@ let generate ~metapos ~user_input =
     (org, report)
 
 (* print the script rules *)
-let print (org, rep) out = printfn out org; printfn out rep
+let print out (org, rep) = printfn out org; printfn out rep
 
 (* print first orgs then reps, call between() in between. *)
-let print_split r out between =
+let print_split out between r =
   let (orgs, reps) = List.split r in
   List.iter (printfn out) orgs; between(); List.iter (printfn out) reps

@@ -4,8 +4,8 @@
  * add positions, but let the stars be.
  *
  * If patch mode, add positions.
- *   - If rule has -, then put the *'s at the -'s place.
- *   - If rule only has +, put the *'s where the added positions are.
+ *  - If rule has -, then put the *'s at the -'s place.
+ *  - If rule only has +, put the *'s where the added positions are.
  *
  * ----------------------------------------------------------------------------
  * Example of generated context rule:
@@ -38,10 +38,11 @@ type t
 (* generates a context rule from a */+/- rule.
  * Invariants: rule contains */+/-. new_name, if any, must be valid.
  *
- * new_name: Some <name> if input rule is nameless, else None
- * disj_map: disjunction map. TODO: description
- * rule: the input rule, must be a */+/- rule
- * context_mode: if true, input rule has *, else input rule has +/-
+ * Arguments:
+ *  - new_name: Some <name> if input rule is nameless, else None.
+ *  - disj_map: disjunction map. See detect_patch.ml.
+ *  - rule: the input rule, must be a */+/- rule.
+ *  - context_mode: if true, input rule has *, else input rule has +/-.
  *
  * Returns the generated context rule and list of added metapositions
  * (at least one, and inherited from the generated rule for convenience).
@@ -54,4 +55,4 @@ val generate :
   t * Meta_variable.t list
 
 (* prints the generated context rule to the specified out_channel. *)
-val print : t -> out_channel -> unit
+val print : out_channel -> t -> unit

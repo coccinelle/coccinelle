@@ -1,6 +1,6 @@
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
-module GT = Generator_types
+module Snap = Snapshot
 
 (* ------------------------------------------------------------------------- *)
 
@@ -15,7 +15,7 @@ module GT = Generator_types
  * an existing pos might have undesirable constraints or inheritance.
  *)
 let make_pos (_, arity, info, mcodekind, _, adj) snp =
-  let (name, snp) = GT.add_position snp in
+  let (name, snp) = Snap.add_position snp in
   let meta_mcode = (("",name), arity, info, Ast0.PLUS Ast.ONE, ref [], adj) in
   let list_constraints = [] in
   let meta_collect = Ast.PER in
@@ -82,7 +82,7 @@ and ident_pos i snp =
 and type_pos t snp =
   match Ast0.unwrap t with
   | Ast0.DisjType(lp,tlist,pipelist,rp) ->
-      let boollist = GT.get_disj (Ast0.get_mcode_line lp) snp in
+      let boollist = Snap.get_disj (Ast0.get_mcode_line lp) snp in
       if all_same boollist
       then None
       else failwith ("Mixed match/patch type disjunctions not supported " ^
@@ -98,7 +98,7 @@ and type_pos t snp =
 and case_line_pos c snp =
   match Ast0.unwrap c with
   | Ast0.DisjCase(lp, clist, pipelist, rp) ->
-      let boollist = GT.get_disj (Ast0.get_mcode_line lp) snp in
+      let boollist = Snap.get_disj (Ast0.get_mcode_line lp) snp in
       if all_same boollist
       then None
       else failwith ("Mixed match/patch case disjunctions in switch cases " ^

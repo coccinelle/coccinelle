@@ -1,5 +1,5 @@
 module Ast0 = Ast0_cocci
-module GT = Generator_types
+module Snap = Snapshot
 module PG = Position_generator
 
 (* ------------------------------------------------------------------------- *)
@@ -11,29 +11,17 @@ module PG = Position_generator
 (* ------------------------------------------------------------------------- *)
 (* TYPE HANDLER FUNCTIONS *)
 
-type statement_dots_fn =
-  (Ast0_cocci.statement Ast0_cocci.dots -> Generator_types.snapshot ->
-   Generator_types.snapshot)
+type statement_dots_fn = Ast0.statement Ast0.dots -> Snap.t -> Snap.t
 
-type string_fn =
-  (string Ast0_cocci.mcode -> Generator_types.snapshot ->
-   Generator_types.snapshot)
+type string_fn = string Ast0.mcode -> Snap.t -> Snap.t
 
-type statement_fn =
-  (Ast0_cocci.statement -> Generator_types.snapshot ->
-   Generator_types.snapshot)
+type statement_fn = Ast0.statement -> Snap.t -> Snap.t
 
-type expression_fn =
-  (Ast0_cocci.expression -> Generator_types.snapshot ->
-   Generator_types.snapshot)
+type expression_fn = Ast0.expression -> Snap.t -> Snap.t
 
-type ident_fn =
-  (Ast0_cocci.ident -> Generator_types.snapshot ->
-   Generator_types.snapshot)
+type ident_fn = Ast0.ident -> Snap.t -> Snap.t
 
-type declaration_fn =
-  (Ast0_cocci.declaration -> Generator_types.snapshot ->
-   Generator_types.snapshot)
+type declaration_fn = Ast0.declaration -> Snap.t -> Snap.t
 
 (* ------------------------------------------------------------------------- *)
 (* DISJUNCTION HANDLER *)
@@ -56,7 +44,7 @@ let handle_disj
   snapshot =
 
   let index = Ast0.get_mcode_line lp in
-  let boollist = GT.get_disj index snapshot in
+  let boollist = Snap.get_disj index snapshot in
   let combined = List.combine cases boollist in
 
   (* determine if all or none are patches *)
@@ -67,7 +55,7 @@ let handle_disj
   let casefn = if mult_stmt then casefn else singlefn in
 
   (* keep the same positions if several disjunctions *)
-  let freeze_pos = if mult_stmt then GT.do_freeze_pos else (fun x -> x) in
+  let freeze_pos = if mult_stmt then Snap.do_freeze_pos else (fun x -> x) in
 
   (* handle each disjunction case one at a time
    * setmodefn is the function that sets the generation mode of the snapshot.
@@ -96,13 +84,13 @@ let handle_disj
 
     (* CASE 2: only some are patches, generate extra rule *)
     else begin
-      let set_add_disj b = GT.set_no_gen (not b) >> GT.set_disj_mode b in
+      let set_add_disj b = Snap.set_no_gen (not b) >> Snap.set_disj_mode b in
       let handle_gen = handle_cases set_add_disj in
-      GT.init_disj_result
+      Snap.init_disj_result
       >> set_add_disj mult_stmt >> strfn lp
       >> handle_gen combined pipes
       >> set_add_disj mult_stmt >> strfn rp
-      >> set_add_disj true >> GT.set_no_gen false
+      >> set_add_disj true >> Snap.set_no_gen false
     end in
 
   freeze_pos disj snapshot
@@ -133,11 +121,11 @@ let generate_statement ~stmtdotsfn ~strfn ~stmtfn ~stmt ~at_top =
       | x::xs ->
           (match PG.statement_pos x snp with
            | Some (x, snp) ->
-               (GT.set_no_gen true
+               (Snap.set_no_gen true
                 >> std_no_pos (x::xs)
-                >> GT.set_no_gen false) snp
+                >> Snap.set_no_gen false) snp
            | None -> std' xs (stmtfn x snp)) in
-    let add_pos_function = if GT.no_gen snp then std_no_pos else std' in
+    let add_pos_function = if Snap.no_gen snp then std_no_pos else std' in
     add_pos_function (Ast0.undots sd) snp in
 
   match Ast0.unwrap stmt with
@@ -152,7 +140,7 @@ let generate_expression ~strfn ~exprfn ~expr ~at_top s =
 
   (* inserts one position if in generation mode *)
   let expposfn e snp =
-    if GT.no_gen snp then
+    if Snap.no_gen snp then
       exprfn e snp
     else
       match PG.expression_pos e snp with
@@ -171,7 +159,7 @@ let generate_ident ~strfn ~identfn ~ident ~at_top s =
 
   (* inserts one position if in generation mode *)
   let idposfn i snp =
-    if GT.no_gen snp then
+    if Snap.no_gen snp then
       identfn i snp
     else
       let (i, snp) = PG.ident_pos i snp in
@@ -190,7 +178,7 @@ let generate_declaration ~strfn ~declfn ~decl ~at_top s =
 
   (* inserts one position if in generation mode *)
   let decposfn d snp =
-    if GT.no_gen snp then
+    if Snap.no_gen snp then
       declfn d snp 
     else
       match PG.declaration_pos d snp with

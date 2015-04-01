@@ -18,23 +18,23 @@
 (* transforms the given statement into one with an added metaposition *)
 val statement_pos :
   Ast0_cocci.statement ->
-  Generator_types.snapshot ->
-  (Ast0_cocci.statement * Generator_types.snapshot) option
+  Snapshot.t ->
+  (Ast0_cocci.statement * Snapshot.t) option
 
 (* transforms the given expression into one with an added metaposition *)
 val expression_pos :
   Ast0_cocci.expression ->
-  Generator_types.snapshot ->
-  (Ast0_cocci.expression * Generator_types.snapshot) option
+  Snapshot.t ->
+  (Ast0_cocci.expression * Snapshot.t) option
 
 (* transforms the given declaration into one with an added metaposition *)
 val declaration_pos :
   Ast0_cocci.declaration ->
-  Generator_types.snapshot ->
-  (Ast0_cocci.declaration * Generator_types.snapshot) option
+  Snapshot.t ->
+  (Ast0_cocci.declaration * Snapshot.t) option
 
 (* transforms the given identifier into one with an added metaposition *)
 val ident_pos :
   Ast0_cocci.ident ->
-  Generator_types.snapshot ->
-  Ast0_cocci.ident * Generator_types.snapshot
+  Snapshot.t ->
+  Ast0_cocci.ident * Snapshot.t

@@ -1,22 +1,22 @@
 (* Handles disjunctions.
 
  * Disjunctions need special rule generation hence the separate module:
- *   - The positions have to be the same over each disjunction case. Therefore
- *     there can at most be generated one position per disjunction case. Also,
- *     it has to be the exact same position for all cases.
+ *  - The positions have to be the same over each disjunction case. Therefore
+ *    there can at most be generated one position per disjunction case. Also,
+ *    it has to be the exact same position for all cases.
  *
- *   - Disjunctions can be used for pattern matching in Coccinelle rules, where
- *     only some cases are matched/patched. However, this may create false
- *     positives when generating a context rule from a patch rule. Therefore
- *     two rules have to be generated (aka the ugly part).
- *     This is the case when there is:
- *      - something interesting outside the disjunction
- *      - something uninteresting inside the disjunction
- *      - something interesting inside the disjunction
+ *  - Disjunctions can be used for pattern matching in Coccinelle rules, where
+ *    only some cases are matched/patched. However, this may create false
+ *    positives when generating a context rule from a patch rule. Therefore two
+ *    rules have to be generated (aka the ugly part).
+ *    This is the case when there is:
+ *     - something interesting outside the disjunction
+ *     - something uninteresting inside the disjunction
+ *     - something interesting inside the disjunction
  *
- *   - Disregard the above rule in cases where there is no risk of false
- *     positives - e.g. if the disjunction is the only thing in the rule.
- *     Determined by at_top flag.
+ *  - Disregard the above rule in cases where there is no risk of false
+ *    positives - e.g. if the disjunction is the only thing in the rule.
+ *    Determined by at_top flag.
  *
  * ----------------------------------------------------------------------------
  * Example of rule splitting:
@@ -71,43 +71,32 @@
  *)
 
 type statement_dots_fn =
-  (Ast0_cocci.statement Ast0_cocci.dots -> Generator_types.snapshot ->
-   Generator_types.snapshot)
+  Ast0_cocci.statement Ast0_cocci.dots -> Snapshot.t ->  Snapshot.t
 
-type string_fn =
-  (string Ast0_cocci.mcode -> Generator_types.snapshot ->
-   Generator_types.snapshot)
+type string_fn = string Ast0_cocci.mcode -> Snapshot.t -> Snapshot.t
 
-type statement_fn =
-  (Ast0_cocci.statement -> Generator_types.snapshot ->
-   Generator_types.snapshot)
+type statement_fn = Ast0_cocci.statement -> Snapshot.t -> Snapshot.t
 
-type expression_fn =
-  (Ast0_cocci.expression -> Generator_types.snapshot ->
-   Generator_types.snapshot)
+type expression_fn = Ast0_cocci.expression -> Snapshot.t -> Snapshot.t
 
-type ident_fn =
-  (Ast0_cocci.ident -> Generator_types.snapshot ->
-   Generator_types.snapshot)
+type ident_fn = Ast0_cocci.ident -> Snapshot.t -> Snapshot.t
 
-type declaration_fn =
-  (Ast0_cocci.declaration -> Generator_types.snapshot ->
-   Generator_types.snapshot)
+type declaration_fn = Ast0_cocci.declaration -> Snapshot.t -> Snapshot.t
 
 (* These functions take a disjunction component (stmt, expr, ident, decl) and a
  * snapshot + some other things, and perform the disjunction rule generation.
  * Fails if the disjunction component is NOT a disjunction.
  *
  * All functions take:
- *   - strfn: a function to handle string_mcodes.
- *   - some Ast0 component, ie. the thing that contains the disjunction.
- *   - some function to handle the Ast0 component.
- *   - at_top: a flag that indicates whether it is safe to just generate one
+ *  - strfn: a function to handle string_mcodes.
+ *  - some Ast0 component, ie. the thing that contains the disjunction.
+ *  - some function to handle the Ast0 component.
+ *  - at_top: a flag that indicates whether it is safe to just generate one
  *     rule, even though the disjunction uses pattern matching.
  *
  * Return:
- *   - an updated snapshot with the inserted disjunction, possibly an extra
- *     disjunction rule if needed.
+ *  - an updated snapshot with the inserted disjunction, possibly an extra
+ *    disjunction rule if needed.
  *)
 
 val generate_statement :
@@ -116,29 +105,29 @@ val generate_statement :
   stmtfn:statement_fn ->
   stmt:Ast0_cocci.statement ->
   at_top:bool ->
-  Generator_types.snapshot ->
-  Generator_types.snapshot
+  Snapshot.t ->
+  Snapshot.t
 
 val generate_expression :
   strfn:string_fn ->
   exprfn:expression_fn ->
   expr:Ast0_cocci.expression ->
   at_top:bool ->
-  Generator_types.snapshot ->
-  Generator_types.snapshot
+  Snapshot.t ->
+  Snapshot.t
 
 val generate_ident :
   strfn:string_fn ->
   identfn:ident_fn ->
   ident:Ast0_cocci.ident ->
   at_top:bool ->
-  Generator_types.snapshot ->
-  Generator_types.snapshot
+  Snapshot.t ->
+  Snapshot.t
 
 val generate_declaration :
   strfn:string_fn ->
   declfn:declaration_fn ->
   decl:Ast0_cocci.declaration ->
   at_top:bool ->
-  Generator_types.snapshot ->
-  Generator_types.snapshot
+  Snapshot.t ->
+  Snapshot.t

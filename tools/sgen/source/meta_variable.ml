@@ -15,12 +15,12 @@ module S = Ast_tostring
  * and position free.p1!=loop.ok is ("position", ("free", "p1"), "!=loop.ok")
  *
  * Named arguments in here:
- * rn is the rulename (string)
- * mc is an Ast0.mcode ('a mcode)
- * mn is an Ast.meta_name (type alias for (rule_name, metavar_name) tuple)
- * typ/before is the type (string), put in the type spot
- * constr/after is the constraint (string), put in the constraints spot
- * listlen is a list_len (Ast.list_len)
+ *  - rn is the rulename (string)
+ *  - mc is an Ast0.mcode ('a mcode)
+ *  - mn is an Ast.meta_name (type alias for (rule_name, metavar_name) tuple)
+ *  - typ/before is the type (string), put in the type spot
+ *  - constr/after is the constraint (string), put in the constraints spot
+ *  - listlen is a list_len (Ast.list_len)
  *)
 
 (* ------------------------------------------------------------------------- *)
@@ -476,15 +476,15 @@ let get_rule (_,(r,_),_) = r
 let get_name (_,(_,nm),_) = nm
 
 (* forces rule inheritance (except if rule is already inherited). *)
-let inherit_rule ((a,(b,c),d) as mv) ~new_rule =
+let inherit_rule ~new_rule ((a,(b,c),d) as mv) =
   if b = "" then (a,(new_rule,c),d) else mv
 
-let print mv out = output_string out (tostring_mv mv)
+let print out mv = output_string out (tostring_mv mv)
 
 (* prints the strings in the set on separate lines, ended with semicolons.
  * if do_group, group all metavars of same type on the same line.
  *)
-let print_list mvs out ~do_group =
+let print_list out ~do_group mvs =
   let group_by_type mvs =
     let rec group acc = function
       | [] -> acc

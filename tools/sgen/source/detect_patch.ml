@@ -166,7 +166,7 @@ let detect_statement_dots s = patch_combiner.VT0.combiner_rec_statement_dots s
 
 let is_patch (t,_) = t
 
-let get_disj_patch (_,t) index =
+let get_disj_patch index (_,t) =
   try
     IntMap.find index t
   with Not_found ->

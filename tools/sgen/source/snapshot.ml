@@ -15,19 +15,19 @@ module IntMap = Common.IntMap
  *
  * During execution, there are quite many cases dictated by the three internal
  * flags:
- * * disj_mode (add to disj result)
- * * no_gen_mode (do not generate positions) ALSO TRIGGERED BY WHENCODES!
- * * freeze_pos (don't increment position counter).
+ *  - disj_mode (add to disj result)
+ *  - no_gen_mode (do not generate positions) ALSO TRIGGERED BY WHENCODES!
+ *  - freeze_pos (don't increment position counter).
  *
  * An overview of the logic:
- * State              |Add to disj result|Generate position   |Incr pos counter
- * ----------------------------------------------------------------------------
- * normal             |NO                | YES                | YES
- * normal whencodes   |NO                | NO                 | x
- * disj context       |NO                | NO                 | x
- * disj patch         |YES               | YES                | NO
- * disj patch whencode|YES               | NO                 | x
- * after special disj |YES               | YES                | YES
+ * State              | Add to disj result| Generate position| Incr pos counter
+ * ---------------------------------------------------------------------------
+ * normal             | NO                | YES              | YES
+ * normal whencodes   | NO                | NO               | x
+ * disj context       | NO                | NO               | x
+ * disj patch         | YES               | YES              | NO
+ * disj patch whencode| YES               | NO               | x
+ * after special disj | YES               | YES              | YES
  *
  *)
 
@@ -69,7 +69,7 @@ let set_arity m a = match m, a with
 (* STATE *)
 
 (* Wrapper for state variables. *)
-type snapshot =
+type t =
 {
   result : (mode * string) IntMap.t; (* maps line number to content *)
   current_mode : mode; (* whether current line is in context or star mode *)
@@ -143,7 +143,7 @@ let add_map (v : string) (i : int) (m : mode) (r : (mode * string) IntMap.t) =
     IntMap.add i (m, v) r
 
 (* add the value in v to the current line entry, possibly changing arity. *)
-let add_result (v : string) (a : arity option) (snp : snapshot) =
+let add_result (v : string) (a : arity option) (snp : t) =
   let (r, i, m) =
     (snp.result, snp.current_line, set_arity snp.current_mode a) in
   if snp.disj_mode then begin
@@ -208,7 +208,7 @@ let set_freeze_pos b snp =
   else
     { snp with freeze_pos = (b,false) }
 
-(* do fn (snapshot -> snapshot) while position incrementing is frozen.
+(* do fn (t -> t) while position incrementing is frozen.
  * this is e.g. used in disjunctions where we want all cases to have the
  * same position.
  *)
@@ -221,7 +221,7 @@ let do_freeze_pos fn snp =
 (* STATE: DISJUNCTION FUNCTIONS *)
 
 (* get the bool list for the disjunction starting at line l. *)
-let get_disj l snp = Detect_patch.get_disj_patch snp.disj_map l
+let get_disj l snp = Detect_patch.get_disj_patch l snp.disj_map
 
 (* start generation of disjunction rule, copy the existing generated rule *)
 let init_disj_result snp =

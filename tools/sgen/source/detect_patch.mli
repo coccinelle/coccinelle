@@ -53,7 +53,7 @@ val is_patch : t -> bool
  * the patch map for the disjunction starting on line index.
  * fails if no disjunction found on that line.
  *)
-val get_disj_patch : t -> int -> bool list
+val get_disj_patch : int -> t -> bool list
 
 (* returns only the rules that contained */+/- along with their disjunction
  * maps. Preserves order.

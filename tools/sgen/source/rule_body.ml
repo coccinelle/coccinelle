@@ -3,7 +3,7 @@ module Ast0 = Ast0_cocci
 module V0 = Visitor_ast0
 module VT0 = Visitor_ast0_types
 module S = Ast_tostring
-module GT = Generator_types
+module Snap = Snapshot
 module PG = Position_generator
 module DG = Disj_generator
 
@@ -21,7 +21,7 @@ module DG = Disj_generator
  * which case the whole line becomes star mode. A position is added if it is
  * in Ast0.PLUS context, since natural positions are NEVER in PLUS context.
  *
- * Uses a (snapshot -> snapshot) combiner. Snapshot is a state type that
+ * Uses a (Snapshot.t -> Snapshot.t) combiner. Snapshot is a state type that
  * contains the generated rule and state information. So each rule component
  * gets turned into a function that modifies the state. The result is a
  * composite function that takes an initial (presumably empty) snapshot and
@@ -40,14 +40,14 @@ let reduce fn lst start = List.fold_left (fun a b -> fn b a) start lst
 (* print helpers for context rules (which are really just string lists) *)
 let print_newl out = output_string out "\n"
 
-let printfn x out =
+let printfn out x =
   List.iter (fun x -> output_string out x; print_newl out) x;
   print_newl out
 
 (* ------------------------------------------------------------------------- *)
 (* FUNCTIONS TO HANDLE SPECIAL CASES *)
 
-let starrify_line a = GT.set_mode_star ~arity:a
+let starrify_line a = Snap.set_mode_star ~arity:a
 
 (* metapositions are represented as lists of Ast0.anythings.
  * PATCH MODE: if a position is in plus mode ("added"), ie. made by the
@@ -61,7 +61,7 @@ and add_pos ~context_mode = function
 
   (* these are the added/generated positions (hence the PLUS mode) *)
   | Ast0.MetaPosTag(Ast0.MetaPos(((_,nm),arity,_,Ast0.PLUS _,_,_),_,_)) ->
-      let default = GT.add_with_arity ("@"^nm) arity in
+      let default = Snap.add_with_arity ("@"^nm) arity in
       if context_mode then default else starrify_line arity >> default
   | Ast0.MetaPosTag(Ast0.MetaPos(((_,nm),arity,_,_,p,_),_,_))
 
@@ -71,7 +71,7 @@ and add_pos ~context_mode = function
   | Ast0.DeclTag {Ast0.node = Ast0.MetaDecl(((_,nm),arity,_,_,p,_),_); _}
   | Ast0.IdentTag {Ast0.node = Ast0.MetaId(((_,nm),arity,_,_,p,_),_,_,_); _}
   | Ast0.TypeCTag {Ast0.node = Ast0.MetaType(((_,nm),arity,_,_,p,_),_); _} ->
-      GT.add_with_arity ("@"^nm) arity >> add_positions ~context_mode !p
+      Snap.add_with_arity ("@"^nm) arity >> add_positions ~context_mode !p
   | _ -> failwith "add_pos only supported for metavariables."
 
 (* renders the mcode as a string in the map and updates the line number.
@@ -79,10 +79,10 @@ and add_pos ~context_mode = function
  *)
 let mcode ~context_mode fn (x, a, info, mc, pos, _) =
   let default ~add_star =
-    GT.skip ~rule_line:(info.Ast0.pos_info.Ast0.line_start)
+    Snap.skip ~rule_line:(info.Ast0.pos_info.Ast0.line_start)
     >> (if add_star then starrify_line a else (fun a -> a))
-    >> GT.add info.Ast0.whitespace
-    >> GT.add_with_arity (fn x) a
+    >> Snap.add info.Ast0.whitespace
+    >> Snap.add_with_arity (fn x) a
     >> add_positions ~context_mode !pos in
   match mc with
   | Ast0.MINUS _ ->
@@ -106,18 +106,18 @@ let whencodes ~strfn ~exprfn ~notfn ~alwaysfn l =
         >> alwaysfn a
     | Ast0.WhenModifier(whenmc, a) ->
         strfn whenmc
-        >> GT.add (" " ^ (S.whenmodifier_tostring a))
+        >> Snap.add (" " ^ (S.whenmodifier_tostring a))
     | Ast0.WhenNotTrue(whenmc, notequalmc, expr) ->
         strfn whenmc
         >> strfn notequalmc
-        >> GT.add " true"
+        >> Snap.add " true"
         >> exprfn expr
     | Ast0.WhenNotFalse(whenmc, equalmc, expr) ->
         strfn whenmc
         >> strfn equalmc
-        >> GT.add " false"
+        >> Snap.add " false"
         >> exprfn expr in
-  GT.do_whencode (reduce add_whens l)
+  Snap.do_whencode (reduce add_whens l)
 
 
 (* This is where the magic happens!
@@ -138,7 +138,7 @@ let star_dotsstmtfn comb context_mode stmtdots =
 
   (* inserts position into statement where structurally appropriate *)
   let star_stmtfn stmt snp =
-    let _ = assert (not (GT.no_gen snp)) in
+    let _ = assert (not (Snap.no_gen snp)) in
     match PG.statement_pos stmt snp with
     | Some (stmt, snp) -> stmtfn stmt snp
     | None -> stmtfn stmt snp in
@@ -161,7 +161,7 @@ let star_dotsstmtfn comb context_mode stmtdots =
       | [x] -> if do_not_star x then fn >> stmtfn x else fn >> starfn x
       | x::xs ->
           if do_not_star x
-          then insert_stars true (fn >> stmtfn x >> GT.inc_line) xs
+          then insert_stars true (fn >> stmtfn x >> Snap.inc_line) xs
           else insert_stars false (fn >> starfn x) xs in
 
   insert_stars true (fun x -> x) (Ast0.undots stmtdots)
@@ -170,9 +170,9 @@ let star_dotsstmtfn comb context_mode stmtdots =
 (* ------------------------------------------------------------------------- *)
 (* THE COMBINER *)
 
-(* The type of the combiner is (snapshot -> snapshot) which enables us to pass
- * states from token to token. We need the states to keep track of our current
- * context and for proper line formatting.
+(* The type of the combiner is (Snapshot.t -> Snapshot.t) which enables us to
+ * pass states from token to token. We need the states to keep track of our
+ * current context and for proper line formatting.
  * The state also contains the generated rule.
  * (not actually recursive, just needs to pass itself on to star_dotsstmtfn to
  *  allow context_mode toggling without making them mutually recursive)
@@ -253,7 +253,7 @@ let rec gen_combiner ~context_mode =
      * current line is starred, put them on a new line (inc_star).
      *)
     | Ast0.Nest(starter,stmt_dots,ender,whn,multi) ->
-        GT.inc_star
+        Snap.inc_star
         >> string_mcode starter
         >> whncodes whn
         >> c_dotsstmtfn stmt_dots
@@ -262,12 +262,12 @@ let rec gen_combiner ~context_mode =
     | Ast0.Dots(dots,whn)
     | Ast0.Circles(dots,whn)
     | Ast0.Stars(dots,whn) ->
-        GT.inc_star
+        Snap.inc_star
         >> string_mcode dots
         >> whncodes whn
 
     | Ast0.MetaStmt _ ->
-        GT.inc_star
+        Snap.inc_star
         >> c_stmtfn stmt
 
     | Ast0.Disj _ ->
@@ -279,7 +279,7 @@ let rec gen_combiner ~context_mode =
   (* positions and stars are added here!!! *)
   let dotsstmtfn _ c_dotsstmtfn dotsstmt =
     (fun snp ->
-       if GT.no_gen snp (* add no positions; this is relevant in whencodes *)
+       if Snap.no_gen snp (* add no positions; this is relevant in whencodes *)
        then c_dotsstmtfn dotsstmt snp
        else star_dotsstmtfn gen_combiner context_mode dotsstmt snp) in
 
@@ -322,9 +322,9 @@ type t = string list
  * Returns list of added metapositions and the new rule.
  *)
 let generate ~disj_map ~context_mode ~rule_name ~minus_rule =
-  let snp = GT.make ~disj_map in
+  let snp = Snap.make ~disj_map in
   let combiner = gen_combiner ~context_mode in
   let final = reduce combiner.VT0.combiner_rec_top_level minus_rule snp in
-  (GT.get_positions final, GT.get_result final)
+  (Snap.get_positions final, Snap.get_result final)
 
 let print = printfn
