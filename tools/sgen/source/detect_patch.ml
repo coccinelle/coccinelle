@@ -144,6 +144,10 @@ let patch_combiner =
 (* ------------------------------------------------------------------------- *)
 (* ENTRY POINT *)
 
+(* true if contains */+/-, disjunction map *)
+type t = bool * bool list Common.IntMap.t
+
+(* constructs t from rule *)
 let detect = function
   | Ast0.InitialScriptRule _
   | Ast0.FinalScriptRule _
@@ -157,14 +161,24 @@ let detect = function
       let (m1,m2) = rule minus in
       (p1 || m1, merge p2 m2)
 
+(* constructs t from statement dots (ie. subset of a full rule) *)
 let detect_statement_dots s = patch_combiner.VT0.combiner_rec_statement_dots s
 
-let get_patch_rules =
+let is_patch (t,_) = t
+
+let get_disj_patch (_,t) index =
+  try
+    IntMap.find index t
+  with Not_found ->
+   failwith ("detect_patch: Could not find disjunction starting on line " ^
+     (string_of_int index))
+
+let filter_patch_rules =
   let rec get fn = function
     | x::xs ->
-        let (is_patch, disj_map) = detect x in
+        let ((is_patch, disj_map) as dp) = detect x in
         if is_patch
-        then get (fun (a,b) -> fn (x::a, disj_map::b)) xs
+        then get (fun a -> fn ((x, dp)::a)) xs
         else get fn xs
-    | [] -> fn ([],[]) in
+    | [] -> fn [] in
   get (fun x -> x)

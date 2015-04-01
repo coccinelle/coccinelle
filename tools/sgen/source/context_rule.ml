@@ -35,7 +35,7 @@ let generate ~new_name ~disj_map ~rule ~context_mode =
         ("Internal error: Can't generate a context rule for a script rule! " ^
          "The rule is: " ^ nm)
 
-  | Ast0.CocciRule ((minus,_,(isos,dropisos,deps,nme,exists)),_,_) ->
+  | Ast0.CocciRule ((minus_rule,_,(isos,dropisos,deps,nme,exists)),_,_) ->
 
       let nm = (match new_name with Some nm -> nm | None -> nme) in
 
@@ -45,13 +45,13 @@ let generate ~new_name ~disj_map ~rule ~context_mode =
 
       (* rule header *)
       (* call mv unparser on original name in order to avoid rule inheritance *)
-      let meta_vars = MV.unparse ~minus ~rulename:nme in
+      let meta_vars = MV.unparse ~minus_rule ~rulename:nme in
       let rh = Rule_header.generate_context
         ~isos ~dropisos ~deps ~meta_vars ~context_mode in
 
       (* generated context rule body and positions *)
       let (pos,(res,disj)) =
-        Rule_body.generate ~rule_name:nm ~disj_map ~context_mode minus in
+        Rule_body.generate ~rule_name:nm ~disj_map ~context_mode ~minus_rule in
 
       let _ = if List.length pos = 0 then failwith
         ("MEGA ERROR: Congratulations! You managed to write a Coccinelle " ^

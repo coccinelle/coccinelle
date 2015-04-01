@@ -78,7 +78,7 @@ type snapshot =
   whencode_nest : int; (* number of levels of whencode nests *)
   pos_counter : int;   (* number of added metapositions *)
   positions : StringSet.t; (* names of added metapositions *)
-  disj_map : bool list IntMap.t; (* maps line number to disj patch detect *)
+  disj_map : Detect_patch.t; (* maps line number to disj patch detect *)
   disj_result : (mode * string) IntMap.t option; (* generated disj rule *)
   disj_mode : bool;    (* flag for adding content to disj rule *)
   no_gen_mode : bool;  (* flag for not generating positions *)
@@ -89,7 +89,7 @@ type snapshot =
 (* Constructor.
  * Note: disj_map stays invariant throughout the processing of the rule ...
  *)
-let snap ~disj_map =
+let make ~disj_map =
 {
   result = IntMap.empty;
   current_mode = Context NONE;
@@ -221,12 +221,7 @@ let do_freeze_pos fn snp =
 (* STATE: DISJUNCTION FUNCTIONS *)
 
 (* get the bool list for the disjunction starting at line l. *)
-let get_disj l snp =
-  try
-    IntMap.find l snp.disj_map
-  with Not_found ->
-   failwith ("State error: Could not find disj starting on line " ^
-     (string_of_int l)) (* is this even possible? *)
+let get_disj l snp = Detect_patch.get_disj_patch snp.disj_map l
 
 (* start generation of disjunction rule, copy the existing generated rule *)
 let init_disj_result snp =

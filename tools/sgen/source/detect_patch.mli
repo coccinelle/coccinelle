@@ -1,4 +1,5 @@
-(* Detects if a rule contains */+/- or not.
+(* Detects if a rule contains */+/- or not. Such a rule is here referred to as
+ * a patch rule (includes also * rules).
  * Does not distinguish between whether it has *, +, or -, just returns true
  * if it contains either.
  *
@@ -32,19 +33,31 @@
 (* ------------------------------------------------------------------------- *)
 (* DETECTION FUNCTIONS *)
 
-(* detects whether a rule contains */+/- *)
-val detect :
-  Ast0_cocci.parsed_rule ->
-  bool * bool list Common.IntMap.t
+type t
 
-(* returns true if the statement dots contain minus or plus code *)
-val detect_statement_dots :
-  Ast0_cocci.statement Ast0_cocci.dots ->
-  bool * bool list Common.IntMap.t
+(* constructs t from AST0 rule, uses both minus and plus tree. *)
+val detect : Ast0_cocci.parsed_rule -> t
+
+(* constructs t from statement dots.
+ * NOTE: minus and plus slices are stored in separate AST0s, so the statement
+ * dots here will only cover either the */- portion of the tree OR the
+ * + portion of the tree. Ie. a call to is_patch will only return true if the
+ * statement dots contain EITHER */- or +, depending on which AST0 it is from.
+ *)
+val detect_statement_dots : Ast0_cocci.statement Ast0_cocci.dots -> t
+
+(* returns true if the rule contains */+/- *)
+val is_patch : t -> bool
+
+(* get_disj_patch disj_map index returns
+ * the patch map for the disjunction starting on line index.
+ * fails if no disjunction found on that line.
+ *)
+val get_disj_patch : t -> int -> bool list
 
 (* returns only the rules that contained */+/- along with their disjunction
  * maps. Preserves order.
  *)
-val get_patch_rules :
+val filter_patch_rules :
   Ast0_cocci.parsed_rule list ->
-  Ast0_cocci.parsed_rule list * (bool list Common.IntMap.t) list
+  (Ast0_cocci.parsed_rule * t) list

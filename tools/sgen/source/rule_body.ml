@@ -129,8 +129,10 @@ let star_dotsstmtfn comb context_mode stmtdots =
 
   (* detects if any of the statements in here contain minuses in which case we
    * put the stars where the minuses are.
+   * NOTE: uses minus rule, so does not detect + slices which is what we want!
    *)
-  let (has_minuses, _) = Detect_patch.detect_statement_dots stmtdots in
+  let detect_patch = Detect_patch.detect_statement_dots stmtdots in
+  let has_minuses = Detect_patch.is_patch detect_patch in
   let c = comb ~context_mode:(context_mode || has_minuses) in
   let stmtfn = c.VT0.combiner_rec_statement in
 
@@ -243,7 +245,7 @@ let rec gen_combiner ~context_mode =
     match Ast0.unwrap stmt with
 
     (* nest, dots, circles, and stars are explicitly written out rather than
-     * letting the visitor handle them. Otherwise they would be ignored.
+     * letting the visitor handle them. Otherwise whencodes would be ignored.
      * (whencodes are difficult to parameterise in the visitor due to typing).
      *
      * nest, dots, cicles, stars, and metastatements can represents code slices
@@ -319,11 +321,10 @@ type t = string list
 (* Creates a context mode rule for the input rule.
  * Returns list of added metapositions and the new rule.
  *)
-let generate ?(disj_map = Common.IntMap.empty) ?(context_mode = false)
-  ~rule_name ast0 =
-  let snp = GT.snap ~disj_map in
+let generate ~disj_map ~context_mode ~rule_name ~minus_rule =
+  let snp = GT.make ~disj_map in
   let combiner = gen_combiner ~context_mode in
-  let final = reduce combiner.VT0.combiner_rec_top_level ast0 snp in
+  let final = reduce combiner.VT0.combiner_rec_top_level minus_rule snp in
   (GT.get_positions final, GT.get_result final)
 
 let print = printfn

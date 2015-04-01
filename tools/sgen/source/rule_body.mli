@@ -6,9 +6,6 @@
  * add stars where the minus transformation are OR where the positions were
  * generated.
  *
- * TODO: disjmap should not be optional, otherwise the invariant in disj_map
- * can be violated.
- *
  * ----------------------------------------------------------------------------
  * Example: see context_rule.mli (basically does that, without the headers)
  *)
@@ -19,21 +16,20 @@
 type t
 
 (* Input:
- * * disj_map that maps disjunctions (represented by the line number they
- *   start on) to a list of bools indicating whether each case contains */+/-.
- *   Default is empty (ie. no disjunctions).
+ * * disjunction map, indicates */+/- slices in disjunctions
  * * context_mode, indicates whether the rule already has stars in it.
- * * the name of the rule and the AST0 for the rule.
+ * * the name of the rule
+ * * the AST0 for the minus rule (we don't need the plus rule to generate *'s).
  *
  * Returns:
  * * List of added metapositions (as strings)
  * * The generated context rule, optional generated disjunction rule
  *)
 val generate :
-  ?disj_map: bool list Common.IntMap.t ->
-  ?context_mode: bool ->
-  rule_name: string ->
-  Ast0_cocci.rule ->
+  disj_map:Detect_patch.t ->
+  context_mode:bool ->
+  rule_name:string ->
+  minus_rule:Ast0_cocci.rule ->
   string list * (t * t option)
 
 (* prints a context rule *)

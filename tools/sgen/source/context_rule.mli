@@ -48,7 +48,7 @@ type t
  *)
 val generate :
   new_name:string option ->
-  disj_map:bool list Common.IntMap.t ->
+  disj_map:Detect_patch.t ->
   rule:Ast0_cocci.parsed_rule ->
   context_mode:bool ->
   t * Meta_variable.t list

@@ -37,4 +37,4 @@ val print_list : t list -> out_channel -> do_group:bool -> unit
  * metavariables used in the rule.
  * Rulename used to determine whether the metavariables are inherited or not.
  *)
-val unparse : minus:Ast0_cocci.rule -> rulename:string -> t list
+val unparse : minus_rule:Ast0_cocci.rule -> rulename:string -> t list

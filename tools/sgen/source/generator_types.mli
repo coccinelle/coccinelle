@@ -9,7 +9,7 @@
 type snapshot
 
 (* Constructor *)
-val snap: disj_map:bool list Common.IntMap.t -> snapshot
+val make: disj_map:Detect_patch.t -> snapshot
 
 
 (* ------------------------------------------------------------------------- *)

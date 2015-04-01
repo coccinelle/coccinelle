@@ -74,8 +74,9 @@ let run { file; config; output; interactive; default; hide; } =
   (* check rulenames for validity and get the */+/- rules *)
   let rulenames = List.map Ast0_cocci.get_rule_name rules in
   let _ = List.iter (Globals.check_rule ~strict:false) rulenames in
-  let (rules, disj_maps) = Detect_patch.get_patch_rules rules in
-  let rulenames = List.map Ast0_cocci.get_rule_name rules in
+  let rules_disj_maps = Detect_patch.filter_patch_rules rules in
+  let rulenames =
+    List.map (fun (x,_) -> Ast0_cocci.get_rule_name x) rules_disj_maps in
 
 
   (* ------------- GLOBALS ------------- *)
@@ -110,17 +111,20 @@ let run { file; config; output; interactive; default; hide; } =
       | [], [] -> fn ([],[],[])
       | (rule,disj_map)::rs,
         (((old_name,new_name),_,_) as user_input)::us ->
+
+          (* make sure the lists are aligned; if fail, it's probably because
+           * rulenames and rules_disj_maps are not properly aligned *)
           let _ = assert (Ast0_cocci.get_rule_name rule = old_name) in
           let rle = (rule, new_name) in
           let (ctxt, metapos) =
             Context_rule.generate ~new_name ~disj_map ~rule ~context_mode in
           let script = Script_rule.generate ~metapos ~user_input in
           generate_split rs us (fun (a,b,c) -> fn (rle::a, ctxt::b, script::c))
+
       | _ -> failwith "Internal error: drules.length <> userinput.length." in
     generate_split drules userinput (fun x -> x) in
 
-  let combined = List.combine rules disj_maps in
-  let (namedrules, contexts, scripts) = generate combined input in
+  let (namedrules, contexts, scripts) = generate rules_disj_maps input in
 
 
   (* ------------- PRINT ------------- *)
@@ -133,7 +137,8 @@ let run { file; config; output; interactive; default; hide; } =
     try
 
       File_transform.print
-        ~file_name:file ~preface ~virtuals ~rules:namedrules ~context_mode out;
+        ~file_name:file ~preface ~virtuals ~ordered_rules:namedrules
+        ~context_mode out;
       split();
       List.iter (fun x -> Context_rule.print x out) contexts;
       split();

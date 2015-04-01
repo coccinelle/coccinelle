@@ -290,16 +290,16 @@ let print_context outch inch rules =
 (* reads the file and prints it with transformations.
  * assumes rules are sorted in order of when they occur in the script.
  *)
-let print ~file_name ~preface ~virtuals ~rules ~context_mode outch =
+let print ~file_name ~preface ~virtuals ~ordered_rules ~context_mode outch =
   let _ = line_number := 0 in
   let _ = print_nl outch preface in
   let _ = print_virtuals outch virtuals in
   let inch = open_in file_name in
   try
     if context_mode then
-      print_context outch inch rules
+      print_context outch inch ordered_rules
     else
-      print_patch outch inch rules
+      print_patch outch inch ordered_rules
   with
     | End_of_file -> flush outch; close_in inch (* ended safely *)
     | Eof_error msg -> flush outch; close_in inch; failwith msg

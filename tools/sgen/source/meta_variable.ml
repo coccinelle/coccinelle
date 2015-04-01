@@ -506,8 +506,8 @@ let print_list mvs out ~do_group =
  * That is, metavariables declared in the header, but unused in the body, are
  * discarded. Returns list of meta_variable.t's.
  *)
-let unparse ~minus ~rulename =
+let unparse ~minus_rule ~rulename =
   let mvcomb = metavar_combiner rulename in
-  let minus = List.map mvcomb.VT0.combiner_rec_top_level minus in
+  let minus = List.map mvcomb.VT0.combiner_rec_top_level minus_rule in
   let comb = List.fold_left MVSet.union MVSet.empty minus in
   MVSet.elements comb
