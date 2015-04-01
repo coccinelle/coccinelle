@@ -38,7 +38,7 @@ GENERATED= $(LEXER_SRC:.mll=.ml)
 SRC= globals.ml ast_tostring.ml detect_patch.ml meta_variable.ml \
  generator_types.ml position_generator.ml disj_generator.ml rule_body.ml \
  rule_header.ml context_rule.ml script_rule.ml user_input.ml \
- file_transform.ml sgen_interactive.ml sgen_config.ml
+ file_transform.ml sgen_interactive.ml sgen_config.ml sgen.ml
 
 # all source OCaml interface files (ocamlfind??)
 SRC_INTERFACE= $(SRC:.ml=.mli)
