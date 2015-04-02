@@ -10,9 +10,12 @@ module S = Ast_tostring
 (* Takes a minus AST0 and extracts all metavariables used in the rule.
  *
  * In general, the metavariable layout is
- * (type, (rulename, metaname), constraints)
+ * (type, (inherit_rule, metaname), constraints)
  * e.g. parameter list[rule1.n] P is ("parameter list[rule1.n]", ("","P"), "")
  * and position free.p1!=loop.ok is ("position", ("free", "p1"), "!=loop.ok")
+ *
+ * NOTE: inherit_rule is only for inherited rules, ie. akin to "rulename.mv".
+ * If the metavariable is in local scope, it will be "".
  *
  * Named arguments in here:
  *  - rn is the rulename (string)
@@ -469,8 +472,8 @@ let metavar_combiner rn =
 
 type t = meta_variable
 
-let make ?(constraints = "") ~typ ~rule_name meta_name =
-  make_mv typ (rule_name, meta_name) constraints
+let make ?(inherit_rule = "") ?(constraints = "") ~typ meta_name =
+  make_mv typ (inherit_rule, meta_name) constraints
 
 let get_rule (_,(r,_),_) = r
 let get_name (_,(_,nm),_) = nm
@@ -506,8 +509,8 @@ let print_list out ~do_group mvs =
  * That is, metavariables declared in the header, but unused in the body, are
  * discarded. Returns list of meta_variable.t's.
  *)
-let unparse ~minus_rule ~rulename =
-  let mvcomb = metavar_combiner rulename in
+let unparse ~minus_rule ~rule_name =
+  let mvcomb = metavar_combiner rule_name in
   let minus = List.map mvcomb.VT0.combiner_rec_top_level minus_rule in
   let comb = List.fold_left MVSet.union MVSet.empty minus in
   MVSet.elements comb

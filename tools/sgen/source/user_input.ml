@@ -56,8 +56,8 @@ let make_metavars =
   let mv a =
     let split_name = Str.bounded_split (Str.regexp "\\.") a 2 in
     match split_name with
-    | [meta_name] -> MV.make ~typ:"" ~rule_name:"" meta_name
-    | [rule_name; meta_name] -> MV.make ~typ:"" ~rule_name meta_name
+    | [meta_name] -> MV.make ~typ:"" meta_name
+    | [inherit_rule; meta_name] -> MV.make ~typ:"" ~inherit_rule meta_name
     | _ -> failwith "bounded split" in
   List.map mv
 

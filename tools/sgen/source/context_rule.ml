@@ -45,7 +45,7 @@ let generate ~new_name ~disj_map ~rule ~context_mode =
 
       (* rule header *)
       (* call mv unparser on original name in order to avoid rule inheritance *)
-      let meta_vars = MV.unparse ~minus_rule ~rulename:nme in
+      let meta_vars = MV.unparse ~minus_rule ~rule_name:nme in
       let rh = Rule_header.generate_context
         ~isos ~dropisos ~deps ~meta_vars ~context_mode in
 
@@ -58,7 +58,7 @@ let generate ~new_name ~disj_map ~rule ~context_mode =
          "rule that sgen was unable to add a position to! The rule is \"" ^
          nme ^ "\".") in
 
-      let pos_mv = List.map (MV.make ~typ:"position " ~rule_name:"") pos in
+      let pos_mv = List.map (MV.make ~typ:"position ") pos in
       let pos_inh = List.map (MV.inherit_rule ~new_rule:cnm) pos_mv in
 
       (* check if any extra generated disj rule *)
