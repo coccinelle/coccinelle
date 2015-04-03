@@ -2,6 +2,8 @@ open Ast_c
 
 type visitor_c = {
   kexpr      : (expression  -> unit)  * visitor_c -> expression  -> unit;
+  kassignOp  : (assignOp    -> unit)  * visitor_c -> assignOp    -> unit;
+  kbinaryOp  : (binaryOp    -> unit)  * visitor_c -> binaryOp    -> unit;
   kstatement : (statement   -> unit)  * visitor_c -> statement   -> unit;
   ktype      : (fullType    -> unit)  * visitor_c -> fullType    -> unit;
 
@@ -32,6 +34,8 @@ type visitor_c = {
 val default_visitor_c : visitor_c
 
 val vk_expr      : visitor_c -> expression  -> unit
+val vk_assignOp  : visitor_c -> assignOp    -> unit
+val vk_binaryOp  : visitor_c -> binaryOp    -> unit
 val vk_statement : visitor_c -> statement   -> unit
 val vk_statement_sequencable : visitor_c -> statement_sequencable -> unit
 val vk_type      : visitor_c -> fullType    -> unit
@@ -86,6 +90,8 @@ val vk_attrs_splitted :
 type 'a inout = 'a -> 'a
 type visitor_c_s = {
   kexpr_s      : expression     inout * visitor_c_s -> expression     inout;
+  kassignOp_s  : assignOp       inout * visitor_c_s -> assignOp       inout;
+  kbinaryOp_s  : binaryOp       inout * visitor_c_s -> binaryOp       inout;
   kstatement_s : statement      inout * visitor_c_s -> statement      inout;
   ktype_s      : fullType       inout * visitor_c_s -> fullType       inout;
 
@@ -114,6 +120,8 @@ type visitor_c_s = {
 val default_visitor_c_s : visitor_c_s
 
 val vk_expr_s : visitor_c_s -> expression -> expression
+val vk_assignOp_s : visitor_c_s -> assignOp -> assignOp
+val vk_binaryOp_s : visitor_c_s -> binaryOp -> binaryOp
 val vk_argument_s : visitor_c_s -> argument -> argument
 val vk_statement_s : visitor_c_s -> statement -> statement
 val vk_statement_sequencable_s : visitor_c_s -> statement_sequencable -> statement_sequencable
