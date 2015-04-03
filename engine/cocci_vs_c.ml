@@ -613,6 +613,10 @@ module type PARAM =
 
     val distrf_e :
       (A.meta_name A.mcode, B.expression) matcher
+    val distrf_assignOp :
+      (A.meta_name A.mcode, B.assignOp) matcher
+    val distrf_binaryOp :
+      (A.meta_name A.mcode, B.binaryOp) matcher
     val distrf_args :
       (A.meta_name A.mcode, (Ast_c.argument, Ast_c.il) either list) matcher
     val distrf_type :
@@ -964,6 +968,46 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
  *  - type
  *  - node
  *)
+
+let arithA_of_arithB = function
+  | B.Plus -> A.Plus
+  | B.Minus -> A.Minus
+  | B.Mul -> A.Mul
+  | B.Div -> A.Div
+  | B.Mod -> A.Mod
+  | B.DecLeft -> A.DecLeft
+  | B.DecRight -> A.DecRight
+  | B.And -> A.And
+  | B.Or -> A.Or
+  | B.Xor -> A.Xor
+  | B.Min -> A.Min
+  | B.Max -> A.Max
+
+let logicalA_of_logicalB = function
+  | B.Inf -> A.Inf
+  | B.Sup -> A.Sup
+  | B.InfEq -> A.InfEq
+  | B.SupEq -> A.SupEq
+  | B.Eq -> A.Eq
+  | B.NotEq -> A.NotEq
+  | B.AndLog -> A.AndLog
+  | B.OrLog -> A.OrLog
+
+let assignOpA_of_assignOpB = function
+  | B.SimpleAssign -> A.SimpleAssign (A.make_mcode "=")
+  | B.OpAssign op -> A.OpAssign (A.make_mcode (arithA_of_arithB op))
+  
+let binaryOpA_of_binaryOpB = function
+  | B.Arith op -> A.Arith (A.make_mcode (arithA_of_arithB op))
+  | B.Logical op -> A.Logical (A.make_mcode (logicalA_of_logicalB op))
+
+let check_assignOp_constraint (opb',ii) = function
+  | A.AssignOpNoConstraint -> true
+  | A.AssignOpInSet ops -> List.mem (assignOpA_of_assignOpB opb') (List.map A.unwrap ops)
+
+let check_binaryOp_constraint (opb',ii) = function
+  | A.BinaryOpNoConstraint -> true
+  | A.BinaryOpInSet ops -> List.mem (binaryOpA_of_binaryOpB opb') (List.map A.unwrap ops)
 
 (*---------------------------------------------------------------------------*)
 let rec (expression: (A.expression, Ast_c.expression) matcher) =
@@ -1491,7 +1535,6 @@ and assignOp opa opb =
       tokenf a opbi >>= (fun a opbi ->
 	return
 	  (A.rewrap opa (A.SimpleAssign a), (B.SimpleAssign, [opbi])))
-
   | A.OpAssign oa, (B.OpAssign ob,opb') ->
     if equal_arithOp oa ob
     then
@@ -1500,8 +1543,16 @@ and assignOp opa opb =
 	return
           (A.rewrap opa (A.OpAssign oa), (B.OpAssign ob,[opbi])))
     else fail
-  | A.MetaAssign _, _ ->
-      failwith "Matching of meta assignment operators not supported yet"
+  | A.MetaAssign (mv, c, keep, inherited), _ ->
+    if check_assignOp_constraint opb c
+    then begin
+      let max_min _ =
+        Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_assignOp opb) in
+      X.envf keep inherited (mv,Ast_c.MetaAssignOpVal opb,max_min)
+        (fun () -> X.distrf_assignOp mv opb)
+      >>= (fun mv opb ->
+            return (A.MetaAssign(mv,c,keep,inherited)+> A.rewrap opa,opb))
+    end else fail
   | _ -> fail
 
 and binaryOp opa opb =
@@ -1522,8 +1573,16 @@ and binaryOp opa opb =
 	  return
             (A.rewrap opa (A.Logical oa), (B.Logical ob,[opbi])))
       else fail
-  | A.MetaBinary _, _ ->
-      failwith "Matching of meta binary operators not supported yet"
+  | A.MetaBinary (mv, c, keep, inherited), _ ->
+    if check_binaryOp_constraint opb c
+    then begin
+      let max_min _ =
+        Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_binaryOp opb) in
+      X.envf keep inherited (mv,Ast_c.MetaBinaryOpVal opb,max_min)
+        (fun () -> X.distrf_binaryOp mv opb)
+      >>= (fun mv opb ->
+            return (A.MetaBinary(mv,c,keep,inherited)+> A.rewrap opa,opb))
+    end else fail
   | _ -> fail
 
 and string_fragments eas ebs =
