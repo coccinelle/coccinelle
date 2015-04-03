@@ -36,6 +36,8 @@ type pos = {
 *)
 type param_type =
     Pos of pos list
+  | AssignOp of Ast_c.assignOp
+  | BinaryOp of Ast_c.binaryOp
   | Str of string
   | Type of Ast_c.fullType
   | Init of Ast_c.initialiser

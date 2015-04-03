@@ -369,6 +369,10 @@ module XMATCH = struct
 		    | Some _ -> failwith "Not possible"
 		    | None -> success(Ast_c.MetaIdVal(a,[]))) in
 	      loop c
+          | Ast_c.MetaAssignOpVal op      ->
+	      success(Ast_c.MetaAssignOpVal op)
+          | Ast_c.MetaBinaryOpVal op      ->
+	      success(Ast_c.MetaBinaryOpVal op)
           | Ast_c.MetaFuncVal a      ->
 	      success(Ast_c.MetaFuncVal a)
           | Ast_c.MetaLocalFuncVal a ->
