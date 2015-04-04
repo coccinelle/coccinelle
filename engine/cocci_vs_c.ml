@@ -1275,45 +1275,40 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	expression ea1 eb >|+|>
 	(match eb with
 	  ((B.Binary (eb1, opb, eb2), typ),ii) ->
-	    Printf.printf "nested binary\n";
 	    if ii<>[]
 	    then
 	      failwith "cocci_vs_c: ii should be empty for nested operators."
             else
 	      let left_to_right =
 		expression ea1 eb1 >>= (fun ea1 eb1 ->
-		nestedOp opa opb >>= (fun opa opb ->
+		binaryOp opa opb >>= (fun opa opb ->
 		expression ea2 eb2 >>= (fun ea2 eb2 ->
-		  Printf.printf "nested binary success1\n";
 		  return (
 		  ((A.Nested (ea1, opa, ea2))) +> wa,
 		  ((B.Binary (eb1, opb, eb2), typ),[]
 		     ))))) in
 	      let right_to_left =
 		expression ea2 eb1 >>= (fun ea2 eb1 ->
-                nestedOp opa opb >>= (fun opa opb ->
+                binaryOp opa opb >>= (fun opa opb ->
 		expression ea1 eb2 >>= (fun ea1 eb2 ->
-		  Printf.printf "nested binary success2\n";
 		  return (
 		  ((A.Nested (ea1, opa, ea2))) +> wa,
 		  ((B.Binary (eb1, opb, eb2), typ),[]
 		     ))))) in
 	      let in_left =
 		expression ea2 eb2 >>= (fun ea2 eb2 ->
-		nestedOp opa opb >>= (fun opa opb ->
+		binaryOp opa opb >>= (fun opa opb ->
 		(* be last, to be sure the rest is marked *)
 		loop eb1 >>= (fun ea1 eb1 ->
-		  Printf.printf "nested binary success3\n";
 		  return (
 		    ((A.Nested (ea1, opa, ea2))) +> wa,
 		    ((B.Binary (eb1, opb, eb2), typ),[]
 		       ))))) in
 	      let in_right =
 		expression ea2 eb1 >>= (fun ea2 eb1 ->
-		nestedOp opa opb >>= (fun opa opb ->
+		binaryOp opa opb >>= (fun opa opb ->
 		(* be last, to be sure the rest is marked *)
 		loop eb2 >>= (fun ea1 eb2 ->
-		  Printf.printf "nested binary success4\n";
 		  return (
 		  ((A.Nested (ea1, opa, ea2))) +> wa,
 		  ((B.Binary (eb1, opb, eb2), typ),[]
@@ -1523,21 +1518,6 @@ and binaryOp opa opb =
       else fail
   | A.MetaBinary _, _ ->
       failwith "Matching of meta binary operators not supported yet"
-  | _ -> fail
-
-and nestedOp opa opb =
-  match (A.unwrap opa), opb with
-    A.Arith oa, (B.Arith ob,opb') ->
-      let opbi = tuple_of_list1 opb' in
-      tokenf oa opbi >>= (fun oa opbi ->
-	return
-	  (A.rewrap opa (A.Arith oa), (B.Arith ob,[opbi])))
-
-  | A.Logical oa, (B.Logical ob,opb') ->
-      let opbi = tuple_of_list1 opb' in
-      tokenf oa opbi >>= (fun oa opbi ->
-	return
-	  (A.rewrap opa (A.Logical oa), (B.Logical ob,[opbi])))
   | _ -> fail
 
 and string_fragments eas ebs =
