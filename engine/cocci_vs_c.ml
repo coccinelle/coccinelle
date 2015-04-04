@@ -1275,6 +1275,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	expression ea1 eb >|+|>
 	(match eb with
 	  ((B.Binary (eb1, opb, eb2), typ),ii) ->
+	    Printf.printf "nested binary\n";
 	    if ii<>[]
 	    then
 	      failwith "cocci_vs_c: ii should be empty for nested operators."
@@ -1283,6 +1284,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 		expression ea1 eb1 >>= (fun ea1 eb1 ->
 		nestedOp opa opb >>= (fun opa opb ->
 		expression ea2 eb2 >>= (fun ea2 eb2 ->
+		  Printf.printf "nested binary success1\n";
 		  return (
 		  ((A.Nested (ea1, opa, ea2))) +> wa,
 		  ((B.Binary (eb1, opb, eb2), typ),[]
@@ -1291,6 +1293,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 		expression ea2 eb1 >>= (fun ea2 eb1 ->
                 nestedOp opa opb >>= (fun opa opb ->
 		expression ea1 eb2 >>= (fun ea1 eb2 ->
+		  Printf.printf "nested binary success2\n";
 		  return (
 		  ((A.Nested (ea1, opa, ea2))) +> wa,
 		  ((B.Binary (eb1, opb, eb2), typ),[]
@@ -1300,6 +1303,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 		nestedOp opa opb >>= (fun opa opb ->
 		(* be last, to be sure the rest is marked *)
 		loop eb1 >>= (fun ea1 eb1 ->
+		  Printf.printf "nested binary success3\n";
 		  return (
 		    ((A.Nested (ea1, opa, ea2))) +> wa,
 		    ((B.Binary (eb1, opb, eb2), typ),[]
@@ -1309,6 +1313,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 		nestedOp opa opb >>= (fun opa opb ->
 		(* be last, to be sure the rest is marked *)
 		loop eb2 >>= (fun ea1 eb2 ->
+		  Printf.printf "nested binary success4\n";
 		  return (
 		  ((A.Nested (ea1, opa, ea2))) +> wa,
 		  ((B.Binary (eb1, opb, eb2), typ),[]
@@ -1478,58 +1483,61 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
      _),_)
        -> fail
 
-and assignOp opa opb = match (A.unwrap opa), opb with
-  | A.SimpleAssign a, (B.SimpleAssign, opb') ->
-    let opbi = tuple_of_list1 opb' in
-    (tokenf a opbi) >>= fun opa_ opb_ ->
-    ( return
-      (A.rewrap opa (A.SimpleAssign opa_), (B.SimpleAssign, [opb_]))
-    )
+and assignOp opa opb =
+  match (A.unwrap opa), opb with
+    A.SimpleAssign a, (B.SimpleAssign, opb') ->
+      let opbi = tuple_of_list1 opb' in
+      tokenf a opbi >>= (fun a opbi ->
+	return
+	  (A.rewrap opa (A.SimpleAssign a), (B.SimpleAssign, [opbi])))
+
   | A.OpAssign oa, (B.OpAssign ob,opb') ->
-    if equal_arithOp oa ob then
-    begin
+    if equal_arithOp oa ob
+    then
       let opbi = tuple_of_list1 opb' in
-      (tokenf oa opbi) >>= fun opa_ opb_ ->
-      ( return
-        (A.rewrap opa (A.OpAssign opa_), (B.OpAssign ob,[opb_])))
-    end else fail
-  | A.MetaAssign _, _ -> failwith "Matching of meta assignment operators not supported yet"
-  | _ -> fail
-and binaryOp opa opb = match (A.unwrap opa), opb with
-  | A.Arith oa, (B.Arith ob,opb') ->
-    if equal_arithOp oa ob then
-    begin
-      let opbi = tuple_of_list1 opb' in
-      (tokenf oa opbi) >>= fun opa_ opb_ ->
-      ( return
-        (A.rewrap opa (A.Arith opa_), (B.Arith ob,[opb_]))
-      )
-    end else fail
-  | A.Logical oa, (B.Logical ob,opb') ->
-    if equal_logicalOp oa ob then
-    begin
-      let opbi = tuple_of_list1 opb' in
-      (tokenf oa opbi) >>= fun opa_ opb_ ->
-      ( return
-        (A.rewrap opa (A.Logical opa_), (B.Logical ob,[opb_]))
-      )
-    end else fail
-  | A.MetaBinary _, _ -> failwith "Matching of meta binary operators not supported yet"
+      tokenf oa opbi >>= (fun oa opbi_ ->
+	return
+          (A.rewrap opa (A.OpAssign oa), (B.OpAssign ob,[opbi])))
+    else fail
+  | A.MetaAssign _, _ ->
+      failwith "Matching of meta assignment operators not supported yet"
   | _ -> fail
 
-and nestedOp opa opb = match (A.unwrap opa), opb with
-  | A.Arith oa, (B.Arith ob,opb') ->
-    let opbi = tuple_of_list1 opb' in
-    (tokenf oa opbi) >>= fun opa_ opb_ ->
-    ( return
-      (A.rewrap opa (A.Arith opa_), (B.Arith ob,[opbi]))
-    )
+and binaryOp opa opb =
+  match (A.unwrap opa), opb with
+    A.Arith oa, (B.Arith ob,opb') ->
+      if equal_arithOp oa ob
+      then
+	let opbi = tuple_of_list1 opb' in
+	tokenf oa opbi >>= (fun oa opbi ->
+	  return
+            (A.rewrap opa (A.Arith oa), (B.Arith ob,[opbi])))
+      else fail
   | A.Logical oa, (B.Logical ob,opb') ->
-    let opbi = tuple_of_list1 opb' in
-    (tokenf oa opbi) >>= fun opa_ opb_ ->
-    ( return
-      (A.rewrap opa (A.Logical opa_), (B.Logical ob,[opbi]))
-    )
+      if equal_logicalOp oa ob
+      then
+	let opbi = tuple_of_list1 opb' in
+	tokenf oa opbi >>= (fun oa opbi ->
+	  return
+            (A.rewrap opa (A.Logical oa), (B.Logical ob,[opbi])))
+      else fail
+  | A.MetaBinary _, _ ->
+      failwith "Matching of meta binary operators not supported yet"
+  | _ -> fail
+
+and nestedOp opa opb =
+  match (A.unwrap opa), opb with
+    A.Arith oa, (B.Arith ob,opb') ->
+      let opbi = tuple_of_list1 opb' in
+      tokenf oa opbi >>= (fun oa opbi ->
+	return
+	  (A.rewrap opa (A.Arith oa), (B.Arith ob,[opbi])))
+
+  | A.Logical oa, (B.Logical ob,opb') ->
+      let opbi = tuple_of_list1 opb' in
+      tokenf oa opbi >>= (fun oa opbi ->
+	return
+	  (A.rewrap opa (A.Logical oa), (B.Logical ob,[opbi])))
   | _ -> fail
 
 and string_fragments eas ebs =
@@ -3152,16 +3160,10 @@ and enum_field ida idb =
 	  let assignOp opa0 opbi =
 	    match A.unwrap opa0 with
               A.SimpleAssign oa ->
-		tokenf oa opbi >>= fun opa_ opb_ ->
+		tokenf oa opbi >>= fun oa opbi ->
 		  return
-                    (A.rewrap opa (A.SimpleAssign opa_), opbi)
-            | A.OpAssign oa ->
-		tokenf oa opbi >>= fun opa_ opb_ ->
-		  return
-                    (A.rewrap opa (A.OpAssign opa_), opbi)
-            | A.MetaAssign _ ->
-		failwith
-		  "Don't know what to do with meta assignment operator here" in
+                    (A.rewrap opa (A.SimpleAssign oa), opbi)
+            | _ -> failwith "only simple assignment possible here" in
 	  ident_cpp DontKnow id nameidb >>= (fun id nameidb ->
 	  expression ea2 eb2 >>= (fun ea2 eb2 ->
           assignOp opa opbi >>= (fun opa opbi ->(* only one kind of assignop *)
