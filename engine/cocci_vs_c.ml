@@ -1259,59 +1259,62 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
       else fail
 
   | A.Binary (ea1, opa, ea2), ((B.Binary (eb1, opb, eb2), typ),ii) ->
-      if ii<>[] then failwith "In cocci_vs_c: ii shold be empty for binary operators."
-      else (
-      expression ea1 eb1 >>= (fun ea1 eb1 ->
-      binaryOp opa opb >>= (fun opa opb ->
-      expression ea2 eb2 >>= (fun ea2 eb2 ->
-      return (
+      if ii <> []
+      then failwith "cocci_vs_c: ii should be empty for binary operators."
+      else
+	expression ea1 eb1 >>= (fun ea1 eb1 ->
+	binaryOp opa opb >>= (fun opa opb ->
+	expression ea2 eb2 >>= (fun ea2 eb2 ->
+	  return (
           ((A.Binary (ea1, opa, ea2))) +> wa,
           ((B.Binary (eb1, opb, eb2), typ),[]
-      ))))))
+	     )))))
 
   | A.Nested (ea1, opa, ea2), eb ->
       let rec loop eb =
 	expression ea1 eb >|+|>
 	(match eb with
 	  ((B.Binary (eb1, opb, eb2), typ),ii) ->
-	    if ii<>[] then failwith "In cocci_vs_c: ii should be empty for nested operators."
-            else (
-	    let left_to_right =
-              (expression ea1 eb1 >>= (fun ea1 eb1 ->
-              nestedOp opa opb >>= (fun opa opb ->
+	    if ii<>[]
+	    then
+	      failwith "cocci_vs_c: ii should be empty for nested operators."
+            else
+	      let left_to_right =
+		expression ea1 eb1 >>= (fun ea1 eb1 ->
+		nestedOp opa opb >>= (fun opa opb ->
 		expression ea2 eb2 >>= (fun ea2 eb2 ->
-		    return (
-		    ((A.Nested (ea1, opa, ea2))) +> wa,
-		    ((B.Binary (eb1, opb, eb2), typ),[]
-		       )))))) in
-	    let right_to_left =
-              (expression ea2 eb1 >>= (fun ea2 eb1 ->
-              nestedOp opa opb >>= (fun opa opb ->
+		  return (
+		  ((A.Nested (ea1, opa, ea2))) +> wa,
+		  ((B.Binary (eb1, opb, eb2), typ),[]
+		     ))))) in
+	      let right_to_left =
+		expression ea2 eb1 >>= (fun ea2 eb1 ->
+                nestedOp opa opb >>= (fun opa opb ->
 		expression ea1 eb2 >>= (fun ea1 eb2 ->
-		    return (
-		    ((A.Nested (ea1, opa, ea2))) +> wa,
-		    ((B.Binary (eb1, opb, eb2), typ),[]
-		       )))))) in
-	    let in_left =
-              (expression ea2 eb2 >>= (fun ea2 eb2 ->
+		  return (
+		  ((A.Nested (ea1, opa, ea2))) +> wa,
+		  ((B.Binary (eb1, opb, eb2), typ),[]
+		     ))))) in
+	      let in_left =
+		expression ea2 eb2 >>= (fun ea2 eb2 ->
 		nestedOp opa opb >>= (fun opa opb ->
-		  (* be last, to be sure the rest is marked *)
-		  loop eb1 >>= (fun ea1 eb1 ->
-		    return (
+		(* be last, to be sure the rest is marked *)
+		loop eb1 >>= (fun ea1 eb1 ->
+		  return (
 		    ((A.Nested (ea1, opa, ea2))) +> wa,
 		    ((B.Binary (eb1, opb, eb2), typ),[]
-		       )))))) in
-	    let in_right =
-              (expression ea2 eb1 >>= (fun ea2 eb1 ->
+		       ))))) in
+	      let in_right =
+		expression ea2 eb1 >>= (fun ea2 eb1 ->
 		nestedOp opa opb >>= (fun opa opb ->
-		  (* be last, to be sure the rest is marked *)
-		  loop eb2 >>= (fun ea1 eb2 ->
-		    return (
-		    ((A.Nested (ea1, opa, ea2))) +> wa,
-		    ((B.Binary (eb1, opb, eb2), typ),[]
-		       )))))) in
-	    left_to_right >|+|> right_to_left >|+|> in_left >|+|> in_right)
-	| _ -> fail) in
+		(* be last, to be sure the rest is marked *)
+		loop eb2 >>= (fun ea1 eb2 ->
+		  return (
+		  ((A.Nested (ea1, opa, ea2))) +> wa,
+		  ((B.Binary (eb1, opb, eb2), typ),[]
+		     ))))) in
+	      left_to_right >|+|> right_to_left >|+|> in_left >|+|> in_right
+	    | _ -> fail) in
       loop eb
 
   (* todo?: handle some isomorphisms here ?  (with pointers = Unary Deref) *)
@@ -3146,23 +3149,24 @@ and enum_field ida idb =
   | A.Assignment(ea1,opa,ea2,init),(nameidb,Some(opbi,eb2)) ->
       (match A.unwrap ea1 with
 	A.Ident(id) ->
-	  let assignOp opa0 opbi = match (A.unwrap opa0) with
-            | A.SimpleAssign oa ->
-              tokenf oa opbi >>= fun opa_ opb_ ->
-              ( return
-                (A.rewrap opa (A.SimpleAssign opa_), opbi)
-              )
+	  let assignOp opa0 opbi =
+	    match A.unwrap opa0 with
+              A.SimpleAssign oa ->
+		tokenf oa opbi >>= fun opa_ opb_ ->
+		  return
+                    (A.rewrap opa (A.SimpleAssign opa_), opbi)
             | A.OpAssign oa ->
-              tokenf oa opbi >>= fun opa_ opb_ ->
-              ( return
-                (A.rewrap opa (A.OpAssign opa_), opbi)
-              )
-            | A.MetaAssign _ -> failwith "Don't know what to do with meta assignment operator here." in
+		tokenf oa opbi >>= fun opa_ opb_ ->
+		  return
+                    (A.rewrap opa (A.OpAssign opa_), opbi)
+            | A.MetaAssign _ ->
+		failwith
+		  "Don't know what to do with meta assignment operator here" in
 	  ident_cpp DontKnow id nameidb >>= (fun id nameidb ->
 	  expression ea2 eb2 >>= (fun ea2 eb2 ->
-          assignOp opa opbi >>= (fun opa opbi -> (* only one kind of assignop *)
+          assignOp opa opbi >>= (fun opa opbi ->(* only one kind of assignop *)
 	    return (
-	    (A.Assignment((A.Ident(id))+>A.rewrap ea1,opa,ea2,init)) +>
+	    (A.Assignment((A.Ident(id)) +> A.rewrap ea1,opa,ea2,init)) +>
 	    A.rewrap ida,
 	    (nameidb,Some(opbi,eb2))))))
       |	_ -> failwith "not possible")
