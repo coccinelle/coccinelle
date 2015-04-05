@@ -1595,7 +1595,7 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
 	(function (cache,newes) ->
 	  function ((e,rules_that_have_matched),relevant_bindings) ->
 	    let consistent =
-	      List.exists (consistent_positions relevant_bindings)
+	      List.for_all (consistent_positions relevant_bindings)
 		(snd r.ctl) in
 	    if not consistent
 	    then
