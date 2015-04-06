@@ -1594,9 +1594,14 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
       List.fold_left
 	(function (cache,newes) ->
 	  function ((e,rules_that_have_matched),relevant_bindings) ->
+	    (* choices come from a disjunction, but if the pattern is
+	       <... ...> there may be nothing at all, hence the first case *)
 	    let consistent =
-	      List.for_all (consistent_positions relevant_bindings)
-		(snd r.ctl) in
+	      match snd r.ctl with
+		[] -> true
+	      | reqopts ->
+		  List.exists (consistent_positions relevant_bindings)
+		    reqopts in
 	    if not consistent
 	    then
 	      (cache,
