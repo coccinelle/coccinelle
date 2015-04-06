@@ -730,31 +730,14 @@ let rec ast0_type_to_type ty =
       (match unwrap tag with
 	Id(tag) ->
 	  TC.EnumName(TC.Name(unwrap_mcode tag))
-      | MetaId(tag,_,_,_) ->
-	  (Common.pr2_once
-	     "warning: enum with a metavariable name detected.";
-	   Common.pr2_once
-	     "For type checking assuming the name of the metavariable is the name of the type\n";
-	   TC.EnumName(TC.MV(unwrap_mcode tag,TC.Unitary,false)))
-      | _ -> failwith "unexpected enum type name")
+      | _ -> TC.EnumName(TC.NoName))
   | EnumName(su,None) -> TC.EnumName TC.NoName
   | EnumDef(ty,_,_,_) -> ast0_type_to_type ty
   | StructUnionName(su,Some tag) ->
       (match unwrap tag with
 	Id(tag) ->
 	  TC.StructUnionName(structUnion su,TC.Name(unwrap_mcode tag))
-      | MetaId(tag,Ast.IdNoConstraint,_,_) ->
-	  (Common.pr2_once
-	     "warning: struct/union with a metavariable name detected.";
-	   Common.pr2_once
-	     "For type checking assuming the name of the metavariable is the name of the type\n";
-	   TC.StructUnionName(structUnion su,
-			      TC.MV(unwrap_mcode tag,TC.Unitary,false)))
-      | MetaId(tag,_,_,_) ->
-	  (* would have to duplicate the type in type_cocci.ml?
-	     perhaps polymorphism would help? *)
-	  failwith "constraints not supported on struct type name"
-      | _ -> failwith "unexpected struct/union type name")
+      | _ -> TC.StructUnionName(structUnion su,TC.NoName))
   | StructUnionName(su,None) -> TC.StructUnionName(structUnion su,TC.NoName)
   | StructUnionDef(ty,_,_,_) -> ast0_type_to_type ty
   | TypeName(name) -> TC.TypeName(unwrap_mcode name)
@@ -822,20 +805,9 @@ let rec reverse_type ty =
       Signed(reverse_sign sgn,Some (context_wrap(reverse_type ty)))
   | TC.Pointer(ty) ->
       Pointer(context_wrap(reverse_type ty),make_mcode "*")
-  | TC.EnumName(TC.MV(name,_,_)) ->
-      EnumName
-	(make_mcode "enum",
-	 Some (context_wrap(MetaId(make_mcode name,Ast.IdNoConstraint,Ast.NoVal,
-				   Impure))))
   | TC.EnumName(TC.Name tag) ->
       EnumName(make_mcode "enum",Some(context_wrap(Id(make_mcode tag))))
-  | TC.StructUnionName(su,TC.MV(name,_,_)) ->
-      (* not right?... *)
-      StructUnionName
-	(reverse_structUnion su,
-	 Some(context_wrap(MetaId(make_mcode name,Ast.IdNoConstraint,Ast.NoVal,
-				  Impure(*not really right*)))))
-  |  TC.StructUnionName(su,TC.Name tag) ->
+  | TC.StructUnionName(su,TC.Name tag) ->
       StructUnionName
 	(reverse_structUnion su,
 	 Some (context_wrap(Id(make_mcode tag))))

@@ -184,6 +184,7 @@
 - Add prototypes implicit isomorphism to allow disabling generation of
   rules based on changes in function prototypes.
 - Support dynamic parallelism via the Parmap library.
+- Allow disjunction in struct or enum name.  Problem noticed by Daniel Granat.
 - --test-spacing option for regression testing of format issues
 
 ** Bugfix:
