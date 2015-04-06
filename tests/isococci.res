@@ -1,5 +1,4 @@
 
 void f(int i) {
 
-
 }

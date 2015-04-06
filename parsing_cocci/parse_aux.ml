@@ -143,12 +143,12 @@ let mkpdots str dot =
   | _ -> failwith "cannot happen"
 
 let arith_op ast_op left op right =
-  Ast0.wrap
-    (Ast0.Binary(left, clt2mcode (Ast.Arith ast_op) op, right))
+  let op' = Ast0.wrap (Ast0.Arith (clt2mcode ast_op op)) in  
+  Ast0.wrap (Ast0.Binary(left, op', right))
 
 let logic_op ast_op left op right =
-  Ast0.wrap
-    (Ast0.Binary(left, clt2mcode (Ast.Logical ast_op) op, right))
+  let op' = Ast0.wrap (Ast0.Logical (clt2mcode ast_op op)) in  
+  Ast0.wrap (Ast0.Binary(left, op', right))
 
 let make_cv cv ty =
   match cv with None -> ty | Some x -> Ast0.wrap (Ast0.ConstVol(x,ty))

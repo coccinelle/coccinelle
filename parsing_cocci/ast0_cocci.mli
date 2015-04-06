@@ -96,7 +96,7 @@ and base_expression =
 		      string mcode (* quote *)
   | FunCall        of expression * string mcode (* ( *) *
                       expression dots * string mcode (* ) *)
-  | Assignment     of expression * Ast_cocci.assignOp mcode * expression *
+  | Assignment     of expression * assignOp * expression *
 	              bool (* true if it can match an initialization *)
   | Sequence       of expression * string mcode (* , *) * expression
   | CondExpr       of expression * string mcode (* ? *) * expression option *
@@ -104,8 +104,8 @@ and base_expression =
   | Postfix        of expression * Ast_cocci.fixOp mcode
   | Infix          of expression * Ast_cocci.fixOp mcode
   | Unary          of expression * Ast_cocci.unaryOp mcode
-  | Binary         of expression * Ast_cocci.binaryOp mcode * expression
-  | Nested         of expression * Ast_cocci.binaryOp mcode * expression
+  | Binary         of expression * binaryOp * expression
+  | Nested         of expression * binaryOp * expression
   | Paren          of string mcode (* ( *) * expression *
                       string mcode (* ) *)
   | ArrayAccess    of expression * string mcode (* [ *) * expression *
@@ -167,6 +167,21 @@ and base_string_format =
   | MetaFormat of Ast_cocci.meta_name mcode * Ast_cocci.idconstraint
 
 and string_format = base_string_format wrap
+
+(* --------------------------------------------------------------------- *)
+(* First class operators *)
+and  base_assignOp = 
+    SimpleAssign of simpleAssignOp mcode
+  | OpAssign of Ast_cocci.arithOp mcode
+  | MetaAssign of Ast_cocci.meta_name mcode * Ast_cocci.assignOpconstraint * pure
+and simpleAssignOp = string
+and assignOp = base_assignOp wrap
+
+and  base_binaryOp =
+    Arith of Ast_cocci.arithOp mcode
+  | Logical of Ast_cocci.logicalOp mcode
+  | MetaBinary of Ast_cocci.meta_name mcode * Ast_cocci.binaryOpconstraint * pure
+and binaryOp = base_binaryOp wrap
 
 (* --------------------------------------------------------------------- *)
 (* Types *)
@@ -492,6 +507,8 @@ and anything =
   | DotsCaseTag of case_line dots
   | IdentTag of ident
   | ExprTag of expression
+  | AssignOpTag of assignOp
+  | BinaryOpTag of binaryOp
   | ArgExprTag of expression  (* for isos *)
   | TestExprTag of expression (* for isos *)
   | TypeCTag of typeC
@@ -519,6 +536,8 @@ val dotsDecl : declaration dots -> anything
 val dotsCase : case_line dots -> anything
 val ident : ident -> anything
 val expr : expression -> anything
+val assignOp : assignOp -> anything
+val binaryOp : binaryOp -> anything
 val typeC : typeC -> anything
 val param : parameterTypeDef -> anything
 val ini : initialiser -> anything
@@ -591,3 +610,6 @@ val lub_pure : pure -> pure -> pure
 (* --------------------------------------------------------------------- *)
 
 val rule_name : string ref (* for the convenience of the parser *)
+
+val string_of_assignOp : assignOp -> string
+val string_of_binaryOp : binaryOp -> string

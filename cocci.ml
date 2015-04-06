@@ -573,10 +573,11 @@ let sp_contain_typed_metavar_z toplevel_list_list =
 
   let combiner =
     Visitor_ast.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing
       donothing expression donothing donothing donothing donothing donothing
-      donothing donothing donothing
+      donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing
   in
   toplevel_list_list +>
@@ -1317,7 +1318,7 @@ module MyHashtbl = Hashtbl.Make(MyHashedType)
 
 let max_tbl = ref 1001
 let env_tbl = MyHashtbl.create !max_tbl
-let init_env _ = env_tbl
+let init_env _ = MyHashtbl.clear env_tbl; env_tbl
 let init_env_list _ = []
 
 let update_env env v i =
@@ -1594,7 +1595,7 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
 	(function (cache,newes) ->
 	  function ((e,rules_that_have_matched),relevant_bindings) ->
 	    let consistent =
-	      List.exists (consistent_positions relevant_bindings)
+	      List.for_all (consistent_positions relevant_bindings)
 		(snd r.ctl) in
 	    if not consistent
 	    then

@@ -299,7 +299,7 @@ let info_of_tok = function
   | TFormat(str,i) -> i
   | TSubString(str,i) -> i
 
-  | TAssign  (assignOp, i) -> i
+  | TAssign  (assignOp, ii) -> Common.tuple_of_list1 ii
 
   | TIdent  (s, i) -> i
   | TKRParam  (s, i) -> i
@@ -463,7 +463,7 @@ let visitor_info_of_tok f = function
   | TChar  ((s, isWchar), i)   -> TChar  ((s, isWchar), f i)
   | TFloat ((s, floatType), i) -> TFloat ((s, floatType), f i)
   | TDecimal ((s, n, p), i)    -> TDecimal ((s, n, p), f i)
-  | TAssign  (assignOp, i)     -> TAssign  (assignOp, f i)
+  | TAssign  (assignOp, ii)     -> TAssign  (assignOp, List.map f ii)
 
   | TQuote ((str,isW),i) -> TQuote ((str,isW),f i)
   | TPct i -> TPct (f i)

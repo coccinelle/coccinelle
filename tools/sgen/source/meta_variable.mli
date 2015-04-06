@@ -7,26 +7,34 @@
 
 type t
 
-(* Given the minus abstract syntax tree (Ast0) for a rule, extracts all
- * metavariables used in the rule.
- * Rulename used to determine whether the metavariables are inherited or not.
+(* constructor, constraints are optional (default to "")
+ * NOTE: rule_name is only for inherited rules, ie. akin to "rulename.mv". If
+ * the metavariable is in local scope, set rule_name to "".
  *)
-val unparse : minus:Ast0_cocci.rule -> rulename:string -> t list
-
-(* constructor *)
-val make_metavar :
-  ?rulename:string ->
+val make :
   ?constraints:string ->
-  ?typ:string ->
-  string (* metavariable name *) -> t
+  typ:string ->
+  rule_name:string ->
+  string (* metavariable name *) ->
+  t
 
 (* getters *)
 val get_rule : t -> string
 val get_name : t -> string
 
 (* forces inheritance if the metavar is not already inherited *)
-val inherit_rule : new_rule:string -> t list -> t list
+val inherit_rule : new_rule:string -> t -> t
+
+(* prints the metavariable in the format used in rule headers to out_channel *)
+val print : out_channel -> t -> unit
 
 (* prints the metavariables in the format used in rule headers to out_channel.
- * if do_group, group by type *)
-val print : out_channel -> do_group:bool -> t list -> unit
+ * if do_group, group by type
+ *)
+val print_list : out_channel -> do_group:bool -> t list -> unit
+
+(* Given the minus abstract syntax tree (Ast0) for a rule, extracts all
+ * metavariables used in the rule.
+ * Rulename used to determine whether the metavariables are inherited or not.
+ *)
+val unparse : minus_rule:Ast0_cocci.rule -> rulename:string -> t list

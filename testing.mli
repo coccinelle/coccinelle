@@ -5,6 +5,7 @@ open Common
 (*****************************************************************************)
 val testone : string (*prefix*) -> string (*test*) -> bool (*compare_expected*) -> unit
 val testall : string -> bool -> unit
+val test_spacing : string -> bool -> unit
 
 (*****************************************************************************)
 (* works with tests-big/. The .res, .ok, .spatch_ok, .failed, .var *)

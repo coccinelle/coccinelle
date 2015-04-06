@@ -4,7 +4,7 @@
 # simply runs sgen on each .cocci/.config combo and compares with _.cocci file.
 
 # The sgen program
-SGEN=sgen
+SGEN=../source/sgen
 
 # abs path to dir containing this script (http://stackoverflow.com/a/246128)
 DIR=$( cd "$( dirname "$0" )" && pwd )

@@ -305,12 +305,12 @@ let rec vk_expr = fun bigf expr ->
     | CondExpr (e1, e2, e3)    ->
         exprf e1; do_option (exprf) e2; exprf e3
     | Sequence (e1, e2)        -> exprf e1; exprf e2;
-    | Assignment (e1, op, e2)  -> exprf e1; exprf e2;
+    | Assignment (e1, op, e2)  -> exprf e1; assignOp bigf op; exprf e2;
 
     | Postfix  (e, op) -> exprf e
     | Infix    (e, op) -> exprf e
     | Unary    (e, op) -> exprf e
-    | Binary   (e1, op, e2) -> exprf e1; exprf  e2;
+    | Binary   (e1, op, e2) -> exprf e1; binaryOp bigf op; exprf  e2;
 
     | ArrayAccess    (e1, e2) -> exprf e1; exprf e2;
     | RecordAccess   (e, name) -> exprf e; vk_name bigf name
@@ -342,6 +342,13 @@ let rec vk_expr = fun bigf expr ->
 
   in exprf expr
 
+and assignOp = fun bigf (_,ii) ->
+  let iif ii = vk_ii bigf ii in
+  iif ii
+
+and binaryOp = fun bigf (_,ii) ->
+  let iif ii = vk_ii bigf ii in
+  iif ii
 
 (* ------------------------------------------------------------------------ *)
 and vk_name = fun bigf ident ->
@@ -1144,12 +1151,19 @@ let rec vk_expr_s = fun bigf expr ->
 
       | CondExpr (e1, e2, e3)   -> CondExpr (exprf e1, fmap exprf e2, exprf e3)
       | Sequence (e1, e2)        -> Sequence (exprf e1, exprf e2)
-      | Assignment (e1, op, e2)  -> Assignment (exprf e1, op, exprf e2)
-
+      | Assignment (e1, op, e2)  ->
+        let e1 = exprf e1 in 
+        let op = assignOp bigf op in
+        let e2 = exprf e2 in
+        Assignment (e1, op, e2)
       | Postfix  (e, op) -> Postfix (exprf e, op)
       | Infix    (e, op) -> Infix   (exprf e, op)
       | Unary    (e, op) -> Unary   (exprf e, op)
-      | Binary   (e1, op, e2) -> Binary (exprf e1, op, exprf e2)
+      | Binary   (e1, op, e2) ->
+        let e1 = exprf e1 in
+        let op = binaryOp bigf op in
+        let e2 = exprf e2 in
+        Binary (e1, op, e2)
 
       | ArrayAccess    (e1, e2)  -> ArrayAccess (exprf e1, exprf e2)
       | RecordAccess   (e, name) -> RecordAccess (exprf e, vk_name_s bigf name)
@@ -1177,6 +1191,11 @@ let rec vk_expr_s = fun bigf expr ->
     (e', typ'), (iif ii)
   in exprf expr
 
+and assignOp bigf (op,ii) =
+  let iif ii = vk_ii_s bigf ii in (op, iif ii)
+
+and binaryOp bigf (op,ii) =
+  let iif ii = vk_ii_s bigf ii in (op, iif ii)
 
 and vk_argument_s bigf argument =
   let iif ii = vk_ii_s bigf ii in

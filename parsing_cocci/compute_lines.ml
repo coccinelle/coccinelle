@@ -306,6 +306,38 @@ let is_str_dots e =
     Ast0.Strdots(_) -> true
   | _ -> false
 
+let assignOp op =
+  let (newop, promoted) = match Ast0.unwrap op with
+    | Ast0.SimpleAssign op0 -> 
+      let op1 = normal_mcode op0 in
+      let op2 = promote_mcode op1 in
+      ( (Ast0.SimpleAssign op1), op2)
+    | Ast0.OpAssign op0 ->
+      let op1 = normal_mcode op0 in
+      let op2 = promote_mcode op1 in
+      ( (Ast0.OpAssign op1), op2)
+    | Ast0.MetaAssign (mv0, c, pure) ->
+      let mv1 = normal_mcode mv0 in
+      let mv2 = promote_mcode mv1 in
+      ( Ast0.MetaAssign(mv1, c, pure), mv2) in
+  mkres op newop promoted promoted
+
+let binaryOp op =
+  let (newop, promoted) = match Ast0.unwrap op with
+    | Ast0.Arith op0 -> 
+      let op1 = normal_mcode op0 in
+      let op2 = promote_mcode op1 in
+      ( (Ast0.Arith op1), op2)
+    | Ast0.Logical op0 ->
+      let op1 = normal_mcode op0 in
+      let op2 = promote_mcode op1 in
+      ( (Ast0.Logical op1), op2)
+    | Ast0.MetaBinary (mv0, c, pure) ->
+      let mv1 = normal_mcode mv0 in
+      let mv2 = promote_mcode mv1 in
+      ( Ast0.MetaBinary(mv1, c, pure), mv2) in
+  mkres op newop promoted promoted
+
 let rec expression e =
   match Ast0.unwrap e with
     Ast0.Ident(id) ->
@@ -330,7 +362,7 @@ let rec expression e =
       mkres e (Ast0.FunCall(fn,lp,args,rp)) fn (promote_mcode rp)
   | Ast0.Assignment(left,op,right,simple) ->
       let left = expression left in
-      let op = normal_mcode op in
+      let op = assignOp op in
       let right = expression right in
       mkres e (Ast0.Assignment(left,op,right,simple)) left right
   | Ast0.Sequence(left,op,right) ->
@@ -359,14 +391,15 @@ let rec expression e =
       mkres e (Ast0.Unary(exp,op)) (promote_mcode op) exp
   | Ast0.Binary(left,op,right) ->
       let left = expression left in
-      let op = normal_mcode op in
+      let op = binaryOp op in
       let right = expression right in
       mkres e (Ast0.Binary(left,op,right)) left right
   | Ast0.Nested(left,op,right) ->
       let left = expression left in
-      let op = normal_mcode op in
+      let op = binaryOp op in
       let right = expression right in
-      mkres e (Ast0.Nested(left,op,right)) left right
+      mkres e
+        (Ast0.Nested(left,op,right)) left right
   | Ast0.Paren(lp,exp,rp) ->
       let lp = normal_mcode lp in
       let rp = normal_mcode rp in

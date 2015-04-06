@@ -384,10 +384,12 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
 
   and unaryOp  = GetRef | DeRef | UnPlus |  UnMinus | Tilde | Not
                  | GetRefLabel (* gccext: GetRefLabel, via &&label notation *)
-  and assignOp = SimpleAssign | OpAssign of arithOp
+  and assignOpbis = SimpleAssign | OpAssign of arithOp
+  and assignOp = assignOpbis wrap
   and fixOp    = Dec | Inc
 
-  and binaryOp = Arith of arithOp | Logical of logicalOp
+  and binaryOpbis = Arith of arithOp | Logical of logicalOp
+  and binaryOp = binaryOpbis wrap
 
        and arithOp   =
          | Plus | Minus | Mul | Div | Mod

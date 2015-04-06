@@ -36,9 +36,9 @@ GENERATED= $(LEXER_SRC:.mll=.ml)
 
 # all source OCaml files that have interfaces (.mli)
 SRC= globals.ml ast_tostring.ml detect_patch.ml meta_variable.ml \
- generator_types.ml position_generator.ml disj_generator.ml rule_body.ml \
+ snapshot.ml position_generator.ml disj_generator.ml rule_body.ml \
  rule_header.ml context_rule.ml script_rule.ml user_input.ml \
- file_transform.ml sgen_interactive.ml sgen_config.ml
+ file_transform.ml sgen_interactive.ml sgen_config.ml sgen.ml
 
 # all source OCaml interface files (ocamlfind??)
 SRC_INTERFACE= $(SRC:.ml=.mli)
@@ -92,8 +92,8 @@ $(CONFIG) $(LIBS):
 	@false
 
 install: $(TARGET)
-        # this is a small hack to avoid having to reconfigure the installation
-        # directory path (and to avoid having the cocci config depend on sgen)
+	# this is a small hack to avoid having to reconfigure the installation
+	# directory path (and to avoid having the cocci config depend on sgen)
 	if !([ -e $(SCRIPTDIR)/sgen.sh ]); then \
 	  sed "\_^"PREFIX"=_ s_=.*_="$(prefix)"_" $(SCRIPTDIR)/sgen.sh.in > \
 	  $(SCRIPTDIR)/sgen.sh; \
@@ -107,6 +107,7 @@ install: $(TARGET)
 uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/$(TARGET)
 	rm -f $(INSTALLDIR)/$(TARGET)
+	rm -f $(SCRIPTDIR)/sgen.sh
 	rmdir $(INSTALLDIR)
 	@$(ECHO) -e "\n\n\tsgen uninstalled: DONE!!!\n\n"
 

@@ -24,11 +24,15 @@ let set_config x = config := x; interactive := false
 let anonymous s = if !file = "" then file := s
 
 let usage =
-  Printf.sprintf "Usage: %s [options] <filename> \nOptions are:"
-    (Filename.basename Sys.argv.(0))
+  let msg =
+    "Usage: %s [options] <filename>\n" ^^ (* format string concatenation *)
+    "Example: sgen --config file.config file.cocci.\n\n" ^^
+    "Options are:" in
+  Printf.sprintf msg (Filename.basename Sys.argv.(0))
 
 let speclist =
-[ ("--config", Arg.String set_config,
+[
+  ("--config", Arg.String set_config,
    " <file> Configuration file for the generated file.");
   ("-c", Arg.String set_config, " <file> Shorthand for --config.");
   ("--interactive", Arg.Set interactive,
@@ -41,99 +45,22 @@ let speclist =
   ("--no-output", Arg.Set hide, " Don't print the result.");
 ]
 
-let fail m = Arg.usage (Arg.align speclist) usage; exit 1
-
-
 (* ------------------------------------------------------------------------- *)
 (* ENTRY POINT *)
 
 let main _ =
   Arg.parse (Arg.align speclist) anonymous usage;
-  if !file = "" then
-    fail "Filename required.\n Example: sgen --config file.config file.cocci.";
-  if not(Sys.file_exists !file) then
-    fail ("The file \""^ !file ^"\" doesn't exist!");
-  if !config <> "" && not(Sys.file_exists !config) then
-    fail ("The config file \"" ^ !config ^ "\" doesn't exist!");
+  if !file = "" then (Arg.usage (Arg.align speclist) usage; exit 1);
 
-  (* if not interactive mode and not specified config name, look for
-   * <file>.config. If no config, run in interactive mode *)
-  let name = Globals.new_extension ~new_ext:"config" !file in
-  if not(!interactive || !default) && !config = "" && Sys.file_exists name then
-    config := name
-  else if not(!default) && !config = "" then
-    interactive := true;
+  let options =
+    Sgen.make_options
+      ~config:!config
+      ~interactive:!interactive
+      ~default:!default
+      ~output:!output
+      ~hide:!hide
+      !file in
 
-  (* ------------- PARSE ------------- *)
-
-  Flag_parsing_cocci.generating_mode := true;
-  let (_, rules, virtuals, _) = Parse_cocci.parse !file in
-
-  (* if the rule is a star rule, the sgrep_mode2 flag is set after parsing *)
-  let context_mode = !Flag.sgrep_mode2 in
-
-  (* check rulenames for validity and get the */+/- rules *)
-  let rulenames = List.map Ast0_cocci.get_rule_name rules in
-  let _ = List.iter (Globals.check_rule ~strict:false) rulenames in
-  let (rules, disj_maps) = Detect_patch.get_patch_rules rules in
-  let rulenames = List.map Ast0_cocci.get_rule_name rules in
-
-  (* ------------- GLOBALS ------------- *)
-
-  let (_(*author*), _(*license*), rule_name, pos_name, error_msg, char_limit) =
-    Sgen_config.parse_global ~config_name:"" in
-  let _ = Globals.init ~rule_name ~pos_name ~error_msg ~char_limit in
-  let virtuals = Globals.key_virtuals virtuals context_mode in
-
-  (* ------------- LOCALS ------------- *)
-
-  let (preface, input) =
-    if !interactive then
-      Sgen_interactive.interact ~ordered_rules:rulenames ~config_name:name
-    else if !default then
-      Sgen_config.parse_default ~ordered_rules:rulenames
-    else
-      Sgen_config.parse_local ~ordered_rules:rulenames ~config_name:!config in
-
-  (* ------------- GENERATE ------------- *)
-
-  (* drules are all patch rules, tupled with their disj maps.
-   * userinput are the ordered user input infos for the patch rules.
-   *)
-  let generate drules userinput =
-    let rec generate_split rules ui fn = match rules, ui with
-      | [], [] -> fn ([],[],[])
-      | (rule,disj_map)::rs,
-        (((old_name,new_name),_,_) as user_input)::us ->
-          let _ = assert (Ast0_cocci.get_rule_name rule = old_name) in
-          let rle = (rule, new_name) in
-          let (ctxt, metapos) =
-            Context_rule.generate ~new_name ~disj_map ~rule ~context_mode in
-          let script = Script_rule.generate ~metapos ~user_input in
-          generate_split rs us (fun (a,b,c) -> fn (rle::a, ctxt::b, script::c))
-      | _ -> failwith "Internal error: drules.length <> userinput.length." in
-    generate_split drules userinput (fun x -> x) in
-
-  let combined = List.combine rules disj_maps in
-  let (namedrules, contexts, scripts) = generate combined input in
-
-  (* ------------- PRINT ------------- *)
-
-  if not(!hide) then begin
-    let outp = if !output = "" then stdout else (open_out !output) in
-    let split() = output_string outp
-      ("// -----------------------------------------------------------------" ^
-      "-----------\n\n") in
-    try
-      File_transform.print ~channel:outp ~file_name:!file ~preface ~virtuals
-        ~rules:namedrules ~context_mode;
-      split(); List.iter (Context_rule.print outp) contexts;
-      split(); Script_rule.print_split outp scripts split;
-      flush outp; close_out outp
-    with Failure msg ->
-      flush outp; close_out outp;
-      if !output <> "" && Sys.file_exists !output then Sys.remove !output;
-      failwith msg
-  end
+  Sgen.run options
 
 let _ = main ()

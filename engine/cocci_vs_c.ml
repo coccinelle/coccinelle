@@ -154,11 +154,8 @@ let equal_unaryOp a b =
   | A.Not      , B.Not     -> true
   | _, (B.Not|B.Tilde|B.UnMinus|B.UnPlus|B.DeRef|B.GetRef|B.GetRefLabel) ->
       false
-
-
-
 let equal_arithOp a b =
-  match a, b with
+  match (A.unwrap_mcode a), b with
   | A.Plus     , B.Plus     -> true
   | A.Minus    , B.Minus    -> true
   | A.Mul      , B.Mul      -> true
@@ -173,9 +170,8 @@ let equal_arithOp a b =
   | A.Xor      , B.Xor      -> true
   | _, (B.Xor|B.Or|B.And|B.DecRight|B.DecLeft|B.Mod|B.Div|B.Mul|B.Minus|B.Plus|B.Min|B.Max)
       -> false
-
 let equal_logicalOp a b =
-  match a, b with
+  match (A.unwrap_mcode a), b with
   | A.Inf    , B.Inf    -> true
   | A.Sup    , B.Sup    -> true
   | A.InfEq  , B.InfEq  -> true
@@ -186,24 +182,11 @@ let equal_logicalOp a b =
   | A.OrLog  , B.OrLog  -> true
   | _, (B.OrLog|B.AndLog|B.NotEq|B.Eq|B.SupEq|B.InfEq|B.Sup|B.Inf)
       -> false
-
-let equal_assignOp a b =
-  match a, b with
-  | A.SimpleAssign, B.SimpleAssign -> true
-  | A.OpAssign a,   B.OpAssign b -> equal_arithOp a b
-  | _, (B.OpAssign _|B.SimpleAssign) -> false
-
 let equal_fixOp a b =
   match a, b with
   | A.Dec, B.Dec -> true
   | A.Inc, B.Inc -> true
   | _, (B.Inc|B.Dec) -> false
-
-let equal_binaryOp a b =
-  match a, b with
-  | A.Arith a,    B.Arith b ->   equal_arithOp a b
-  | A.Logical a,  B.Logical b -> equal_logicalOp a b
-  | _, (B.Logical _ | B.Arith _) -> false
 
 let equal_structUnion a b =
   match a, b with
@@ -540,7 +523,7 @@ let one_initialisation_to_affectation x =
           let ident = name in
           let idexpr = Ast_c.mk_e_bis (B.Ident ident) typ Ast_c.noii in
           let assign =
-            Ast_c.mk_e (B.Assignment (idexpr,B.SimpleAssign, e)) [iini] in
+            Ast_c.mk_e (B.Assignment (idexpr, (B.SimpleAssign, [iini]), e)) [] in
           Some assign
       | _ -> None)
   | _ -> None
@@ -1204,18 +1187,16 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 
   | A.Assignment (ea1, opa, ea2, simple),
       ((B.Assignment (eb1, opb, eb2), typ),ii) ->
-      let (opbi) = tuple_of_list1 ii in
-      if equal_assignOp (term opa) opb
-      then
-        expression ea1 eb1 >>= (fun ea1 eb1 ->
-        expression ea2 eb2 >>= (fun ea2 eb2 ->
-        tokenf opa opbi >>= (fun opa opbi ->
-          return (
-            (A.Assignment (ea1, opa, ea2, simple)) +> wa,
-            ((B.Assignment (eb1, opb, eb2), typ), [opbi])
-        ))))
-      else fail
-
+      if ii<>[] then failwith "In cocci_vs_c, ii for Assign should be empty."
+      else (
+      expression ea1 eb1 >>= (fun ea1 eb1 ->
+      assignOp opa opb >>= (fun opa opb ->
+      expression ea2 eb2 >>= (fun ea2 eb2 ->
+        return (
+          (A.Assignment (ea1, opa, ea2, simple)) +> wa,
+          ((B.Assignment (eb1, opb, eb2), typ), [])
+      )))))
+  
   | A.Sequence (ea1, opa, ea2),
       ((B.Sequence (eb1, eb2), typ),ii) ->
       let (opbi) = tuple_of_list1 ii in
@@ -1278,61 +1259,62 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
       else fail
 
   | A.Binary (ea1, opa, ea2), ((B.Binary (eb1, opb, eb2), typ),ii) ->
-      let opbi = tuple_of_list1 ii in
-      if equal_binaryOp (term opa) opb
-      then
-        expression ea1 eb1 >>= (fun ea1 eb1 ->
-        expression ea2 eb2 >>= (fun ea2 eb2 ->
-        tokenf opa opbi >>= (fun opa opbi ->
-          return (
-            ((A.Binary (ea1, opa, ea2))) +> wa,
-            ((B.Binary (eb1, opb, eb2), typ),[opbi]
-          )))))
-      else fail
+      if ii <> []
+      then failwith "cocci_vs_c: ii should be empty for binary operators."
+      else
+	expression ea1 eb1 >>= (fun ea1 eb1 ->
+	binaryOp opa opb >>= (fun opa opb ->
+	expression ea2 eb2 >>= (fun ea2 eb2 ->
+	  return (
+          ((A.Binary (ea1, opa, ea2))) +> wa,
+          ((B.Binary (eb1, opb, eb2), typ),[]
+	     )))))
 
   | A.Nested (ea1, opa, ea2), eb ->
       let rec loop eb =
 	expression ea1 eb >|+|>
 	(match eb with
-	  ((B.Binary (eb1, opb, eb2), typ),ii)
-	  when equal_binaryOp (term opa) opb ->
-	    let opbi = tuple_of_list1 ii in
-	    let left_to_right =
-              (expression ea1 eb1 >>= (fun ea1 eb1 ->
+	  ((B.Binary (eb1, opb, eb2), typ),ii) ->
+	    if ii<>[]
+	    then
+	      failwith "cocci_vs_c: ii should be empty for nested operators."
+            else
+	      let left_to_right =
+		expression ea1 eb1 >>= (fun ea1 eb1 ->
+		binaryOp opa opb >>= (fun opa opb ->
 		expression ea2 eb2 >>= (fun ea2 eb2 ->
-		  tokenf opa opbi >>= (fun opa opbi ->
-		    return (
-		    ((A.Nested (ea1, opa, ea2))) +> wa,
-		    ((B.Binary (eb1, opb, eb2), typ),[opbi]
-		       )))))) in
-	    let right_to_left =
-              (expression ea2 eb1 >>= (fun ea2 eb1 ->
+		  return (
+		  ((A.Nested (ea1, opa, ea2))) +> wa,
+		  ((B.Binary (eb1, opb, eb2), typ),[]
+		     ))))) in
+	      let right_to_left =
+		expression ea2 eb1 >>= (fun ea2 eb1 ->
+                binaryOp opa opb >>= (fun opa opb ->
 		expression ea1 eb2 >>= (fun ea1 eb2 ->
-		  tokenf opa opbi >>= (fun opa opbi ->
-		    return (
+		  return (
+		  ((A.Nested (ea1, opa, ea2))) +> wa,
+		  ((B.Binary (eb1, opb, eb2), typ),[]
+		     ))))) in
+	      let in_left =
+		expression ea2 eb2 >>= (fun ea2 eb2 ->
+		binaryOp opa opb >>= (fun opa opb ->
+		(* be last, to be sure the rest is marked *)
+		loop eb1 >>= (fun ea1 eb1 ->
+		  return (
 		    ((A.Nested (ea1, opa, ea2))) +> wa,
-		    ((B.Binary (eb1, opb, eb2), typ),[opbi]
-		       )))))) in
-	    let in_left =
-              (expression ea2 eb2 >>= (fun ea2 eb2 ->
-		tokenf opa opbi >>= (fun opa opbi ->
-		  (* be last, to be sure the rest is marked *)
-		  loop eb1 >>= (fun ea1 eb1 ->
-		    return (
-		    ((A.Nested (ea1, opa, ea2))) +> wa,
-		    ((B.Binary (eb1, opb, eb2), typ),[opbi]
-		       )))))) in
-	    let in_right =
-              (expression ea2 eb1 >>= (fun ea2 eb1 ->
-		tokenf opa opbi >>= (fun opa opbi ->
-		  (* be last, to be sure the rest is marked *)
-		  loop eb2 >>= (fun ea1 eb2 ->
-		    return (
-		    ((A.Nested (ea1, opa, ea2))) +> wa,
-		    ((B.Binary (eb1, opb, eb2), typ),[opbi]
-		       )))))) in
-	    left_to_right >|+|> right_to_left >|+|> in_left >|+|> in_right
-	| _ -> fail) in
+		    ((B.Binary (eb1, opb, eb2), typ),[]
+		       ))))) in
+	      let in_right =
+		expression ea2 eb1 >>= (fun ea2 eb1 ->
+		binaryOp opa opb >>= (fun opa opb ->
+		(* be last, to be sure the rest is marked *)
+		loop eb2 >>= (fun ea1 eb2 ->
+		  return (
+		  ((A.Nested (ea1, opa, ea2))) +> wa,
+		  ((B.Binary (eb1, opb, eb2), typ),[]
+		     ))))) in
+	      left_to_right >|+|> right_to_left >|+|> in_left >|+|> in_right
+	    | _ -> fail) in
       loop eb
 
   (* todo?: handle some isomorphisms here ?  (with pointers = Unary Deref) *)
@@ -1495,6 +1477,48 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
      B.FunCall (_, _)|B.Constant _|B.StringConstant _|B.Ident _),
      _),_)
        -> fail
+
+and assignOp opa opb =
+  match (A.unwrap opa), opb with
+    A.SimpleAssign a, (B.SimpleAssign, opb') ->
+      let opbi = tuple_of_list1 opb' in
+      tokenf a opbi >>= (fun a opbi ->
+	return
+	  (A.rewrap opa (A.SimpleAssign a), (B.SimpleAssign, [opbi])))
+
+  | A.OpAssign oa, (B.OpAssign ob,opb') ->
+    if equal_arithOp oa ob
+    then
+      let opbi = tuple_of_list1 opb' in
+      tokenf oa opbi >>= (fun oa opbi_ ->
+	return
+          (A.rewrap opa (A.OpAssign oa), (B.OpAssign ob,[opbi])))
+    else fail
+  | A.MetaAssign _, _ ->
+      failwith "Matching of meta assignment operators not supported yet"
+  | _ -> fail
+
+and binaryOp opa opb =
+  match (A.unwrap opa), opb with
+    A.Arith oa, (B.Arith ob,opb') ->
+      if equal_arithOp oa ob
+      then
+	let opbi = tuple_of_list1 opb' in
+	tokenf oa opbi >>= (fun oa opbi ->
+	  return
+            (A.rewrap opa (A.Arith oa), (B.Arith ob,[opbi])))
+      else fail
+  | A.Logical oa, (B.Logical ob,opb') ->
+      if equal_logicalOp oa ob
+      then
+	let opbi = tuple_of_list1 opb' in
+	tokenf oa opbi >>= (fun oa opbi ->
+	  return
+            (A.rewrap opa (A.Logical oa), (B.Logical ob,[opbi])))
+      else fail
+  | A.MetaBinary _, _ ->
+      failwith "Matching of meta binary operators not supported yet"
+  | _ -> fail
 
 and string_fragments eas ebs =
   let match_dots ea =
@@ -2097,10 +2121,10 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 	    let v =
 	      Visitor_ast.rebuilder
 		mcode mcode mcode mcode mcode mcode mcode mcode mcode
-		mcode mcode mcode
+		mcode mcode mcode mcode mcode
 		donothing donothing donothing donothing donothing
-		donothing donothing donothing donothing donothing
-		donothing donothing donothing donothing donothing
+		donothing donothing donothing donothing donothing donothing
+		donothing donothing donothing donothing donothing donothing
 		donothing donothing donothing donothing donothing in
 	    v.Visitor_ast.rebuilder_declaration decla in
 
@@ -3113,11 +3137,18 @@ and enum_field ida idb =
   | A.Assignment(ea1,opa,ea2,init),(nameidb,Some(opbi,eb2)) ->
       (match A.unwrap ea1 with
 	A.Ident(id) ->
+	  let assignOp opa0 opbi =
+	    match A.unwrap opa0 with
+              A.SimpleAssign oa ->
+		tokenf oa opbi >>= fun oa opbi ->
+		  return
+                    (A.rewrap opa (A.SimpleAssign oa), opbi)
+            | _ -> failwith "only simple assignment possible here" in
 	  ident_cpp DontKnow id nameidb >>= (fun id nameidb ->
 	  expression ea2 eb2 >>= (fun ea2 eb2 ->
-          tokenf opa opbi >>= (fun opa opbi -> (* only one kind of assignop *)
+          assignOp opa opbi >>= (fun opa opbi ->(* only one kind of assignop *)
 	    return (
-	    (A.Assignment((A.Ident(id))+>A.rewrap ea1,opa,ea2,init)) +>
+	    (A.Assignment((A.Ident(id)) +> A.rewrap ea1,opa,ea2,init)) +>
 	    A.rewrap ida,
 	    (nameidb,Some(opbi,eb2))))))
       |	_ -> failwith "not possible")
@@ -4408,7 +4439,6 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
    *)
 
   | A.Exp exp, nodeb ->
-
       (* kind of iso, initialisation vs affectation *)
       let node =
         match A.unwrap exp, nodeb with

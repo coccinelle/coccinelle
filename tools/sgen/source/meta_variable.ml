@@ -15,12 +15,12 @@ module S = Ast_tostring
  * and position free.p1!=loop.ok is ("position", ("free", "p1"), "!=loop.ok")
  *
  * Named arguments in here:
- * rn is the rulename (string)
- * mc is an Ast0.mcode ('a mcode)
- * mn is an Ast.meta_name (type alias for (rule_name, metavar_name) tuple)
- * typ/before is the type (string), put in the type spot
- * constr/after is the constraint (string), put in the constraints spot
- * listlen is a list_len (Ast.list_len)
+ *  - rn is the rulename (string)
+ *  - mc is an Ast0.mcode ('a mcode)
+ *  - mn is an Ast.meta_name (type alias for (rule_name, metavar_name) tuple)
+ *  - typ/before is the type (string), put in the type spot
+ *  - constr/after is the constraint (string), put in the constraints spot
+ *  - listlen is a list_len (Ast.list_len)
  *)
 
 (* ------------------------------------------------------------------------- *)
@@ -79,7 +79,8 @@ module MVSet = Set.Make(
         | true, true -> String.compare n1 n2
         | false, false -> 
             (match (is_identifier t1, is_identifier t2) with
-              | (true,false) -> -1 | (false,true) -> 1
+              | true, false -> -1
+              | false, true -> 1
               | _ -> String.compare n1 n2
             )
   end
@@ -112,7 +113,8 @@ let type_c ~form =
     | None -> default
 
 (* TODO: in SeedId, we sometimes (?) want to keep the rulename; but not if it
- * has been declared before? *)
+ * has been declared before?
+ *)
 let seed ~rn =
   let se = function
     | Ast.SeedString s -> "\"" ^ s ^ "\"" | Ast.SeedId (r,nm) -> nm in
@@ -130,18 +132,16 @@ let list_constraints ~tostring_fn ~op = function
   | [x] -> op ^ (tostring_fn x)
   | x -> op ^ "{" ^ (String.concat "," (List.map tostring_fn x)) ^ "}"
 
-let id_constraint ~rn = function
+let id_constraint ~rn =
+  let list_constraints' slist mnlist op =
+    let combined =
+      (List.map (fun x -> "\"" ^ x ^ "\"") slist) @
+      (List.map (name_str ~rn) mnlist) in
+    list_constraints ~tostring_fn:(fun x -> x) ~op combined in
+  function
   | Ast.IdNoConstraint -> ""
-  | Ast.IdPosIdSet(slist,mnlist) ->
-      let combined =
-        (List.map (fun x -> "\"" ^ x ^ "\"") slist) @
-        (List.map (name_str ~rn) mnlist) in
-      list_constraints ~tostring_fn:(fun x -> x) ~op:" = " combined
-  | Ast.IdNegIdSet(slist,mnlist) ->
-      let combined =
-        (List.map (fun x -> "\"" ^ x ^ "\"") slist) @
-        (List.map (name_str ~rn) mnlist) in
-      list_constraints ~tostring_fn:(fun x -> x) ~op:" != " combined
+  | Ast.IdPosIdSet(slist,mnlist) -> list_constraints' slist mnlist " = "
+  | Ast.IdNegIdSet(slist,mnlist) -> list_constraints' slist mnlist " != "
   | Ast.IdRegExpConstraint(re) -> regex_constraint re
 
 let constraints ~rn = function
@@ -339,7 +339,8 @@ let metavar_combiner rn =
 
   (* --- Implementations of functions that handle possible metavariables --- *)
 
-  let identfn c fn v = match Ast0.unwrap v with
+  let identfn c fn v =
+    match Ast0.unwrap v with
     | Ast0.MetaId(mc, idconstr, s, _) ->
         let constr = id_constraint ~rn idconstr in
         let seed = seed ~rn s in
@@ -376,51 +377,57 @@ let metavar_combiner rn =
     | Ast0.AsExpr (e1, e2) -> as_format e1 e2 exprfn exprfn
     | _ -> fn v in
 
-  let tyfn c fn v = match Ast0.unwrap v with
+  let tyfn c fn v =
+    match Ast0.unwrap v with
     | Ast0.MetaType (mc, pure) -> meta_mc_format ~mc ~typ:"type " ~constr:""
     | Ast0.AsType (tc1, tc2) ->
         let ty = c.VT0.combiner_rec_typeC in as_format tc1 tc2 ty ty
     | Ast0.TypeName mc -> str_mc_format ~mc ~typ:"typedef "
     | _ -> fn v in
 
-  let initfn c fn v = match Ast0.unwrap v with
-  | Ast0.MetaInit(mc, pure) ->
-      meta_mc_format ~mc ~typ:"initializer " ~constr:""
-  | Ast0.MetaInitList(mc, listlen, pure) ->
-      lst_format ~mc ~typ:"initializer list " ~listlen
-  | Ast0.AsInit(i1,i2) ->
-      let ini = c.VT0.combiner_rec_initialiser in as_format i1 i2 ini ini
-  | _ -> fn v in
+  let initfn c fn v =
+    match Ast0.unwrap v with
+    | Ast0.MetaInit(mc, pure) ->
+        meta_mc_format ~mc ~typ:"initializer " ~constr:""
+    | Ast0.MetaInitList(mc, listlen, pure) ->
+        lst_format ~mc ~typ:"initializer list " ~listlen
+    | Ast0.AsInit(i1,i2) ->
+        let ini = c.VT0.combiner_rec_initialiser in as_format i1 i2 ini ini
+    | _ -> fn v in
 
-  let paramfn c fn v = match Ast0.unwrap v with
-  | Ast0.MetaParam(mc, pure) -> meta_mc_format ~mc ~typ:"parameter " ~constr:""
-  | Ast0.MetaParamList(mc, listlen, pure) ->
-      lst_format ~mc ~typ:"parameter list" ~listlen
-  | Ast0.AsParam (ptd,ex) ->
-      let par = c.VT0.combiner_rec_parameter in
-      let expr = c.VT0.combiner_rec_expression in
-      as_format ptd ex par expr
-  | _ -> fn v in
+  let paramfn c fn v =
+    match Ast0.unwrap v with
+    | Ast0.MetaParam(mc, pure) ->
+        meta_mc_format ~mc ~typ:"parameter " ~constr:""
+    | Ast0.MetaParamList(mc, listlen, pure) ->
+        lst_format ~mc ~typ:"parameter list" ~listlen
+    | Ast0.AsParam (ptd,ex) ->
+        let par = c.VT0.combiner_rec_parameter in
+        let expr = c.VT0.combiner_rec_expression in
+        as_format ptd ex par expr
+    | _ -> fn v in
 
-  let declfn c fn v = match Ast0.unwrap v with
+  let declfn c fn v =
+    match Ast0.unwrap v with
     | Ast0.MetaDecl(mc, pure) ->
         meta_mc_format ~mc ~typ:"declaration " ~constr:""
     | Ast0.MetaField(mc, pure) -> meta_mc_format ~mc ~typ:"field " ~constr:""
     | Ast0.MetaFieldList (mc, listlen, pure) ->
         lst_format ~mc ~typ:"field list" ~listlen
     | Ast0.AsDecl(dc1, dc2) ->
-      let dec = c.VT0.combiner_rec_declaration in as_format dc1 dc2 dec dec
+        let dec = c.VT0.combiner_rec_declaration in as_format dc1 dc2 dec dec
     | Ast0.MacroDecl(id, _, expdots, _, _) ->
-      let expids = c.VT0.combiner_rec_expression_dots expdots in
-      MVSet.union (ids ~rn ~typ:"declarer" ~id) expids
+        let expids = c.VT0.combiner_rec_expression_dots expdots in
+        MVSet.union (ids ~rn ~typ:"declarer" ~id) expids
     | Ast0.MacroDeclInit(id, _, expdots, _, _, ini, _) ->
-      let expids = c.VT0.combiner_rec_expression_dots expdots in
-      let inid = MVSet.union expids (c.VT0.combiner_rec_initialiser ini) in
-      let declids = ids ~rn ~typ:"declarer" ~id in
+        let expids = c.VT0.combiner_rec_expression_dots expdots in
+        let inid = MVSet.union expids (c.VT0.combiner_rec_initialiser ini) in
+        let declids = ids ~rn ~typ:"declarer" ~id in
       MVSet.union declids inid
     | _ -> fn v in
 
-  let string_fragmentfn c fn v = match Ast0.unwrap v with 
+  let string_fragmentfn c fn v =
+    match Ast0.unwrap v with 
     | Ast0.MetaFormatList(_, mc, listlen) ->
         lst_format ~mc ~typ:"format list" ~listlen
     | Ast0.FormatFragment(_, format) ->
@@ -431,21 +438,22 @@ let metavar_combiner rn =
         | _ -> fn v)
     | _ -> fn v in
 
-  let stmtfn c fn v = match Ast0.unwrap v with
-  | Ast0.MetaStmt (mc, pure) ->
-      meta_mc_format ~mc ~typ:"statement " ~constr:""
-  | Ast0.MetaStmtList (mc, pure) ->
-      meta_mc_format ~mc ~typ:"statementlist[]" ~constr:""
-  | Ast0.AsStmt (s1, s2)->
-      let stmt = c.VT0.combiner_rec_statement in as_format s1 s2 stmt stmt
-  | Ast0.Iterator (id, _, expdots, _, stmt,_) ->
+  let stmtfn c fn v =
+    match Ast0.unwrap v with
+    | Ast0.MetaStmt (mc, pure) ->
+        meta_mc_format ~mc ~typ:"statement " ~constr:""
+    | Ast0.MetaStmtList (mc, pure) ->
+        meta_mc_format ~mc ~typ:"statementlist[]" ~constr:""
+    | Ast0.AsStmt (s1, s2)->
+        let stmt = c.VT0.combiner_rec_statement in as_format s1 s2 stmt stmt
+    | Ast0.Iterator (id, _, expdots, _, stmt,_) ->
 
-      (* the iterator might contain metavariables *)
-      let expids = c.VT0.combiner_rec_expression_dots expdots in
-      let stmtid = MVSet.union expids (c.VT0.combiner_rec_statement stmt) in
-      let iteids = ids ~rn ~typ:"iterator" ~id in
-      MVSet.union iteids stmtid
-  | _ -> fn v in
+        (* the iterator might contain metavariables *)
+        let expids = c.VT0.combiner_rec_expression_dots expdots in
+        let stmtid = MVSet.union expids (c.VT0.combiner_rec_statement stmt) in
+        let iteids = ids ~rn ~typ:"iterator" ~id in
+        MVSet.union iteids stmtid
+    | _ -> fn v in
 
   V0.flat_combiner bind option_default
     meta_mcode string_mcode const_mcode assign_mcode fix_mcode unary_mcode
@@ -461,31 +469,22 @@ let metavar_combiner rn =
 
 type t = meta_variable
 
-(* takes abstract syntax trees for a rule and extract all metavariables.
- * That is, metavariables declared in the header, but unused in the body, are
- * discarded. Returns list of meta_variable.t's.
- *)
-let unparse ~minus ~rulename =
-  let mvcomb = metavar_combiner rulename in
-  let minus = List.map mvcomb.VT0.combiner_rec_top_level minus in
-  let comb = List.fold_left MVSet.union MVSet.empty minus in
-  MVSet.elements comb
+let make ?(constraints = "") ~typ ~rule_name meta_name =
+  make_mv typ (rule_name, meta_name) constraints
 
 let get_rule (_,(r,_),_) = r
 let get_name (_,(_,nm),_) = nm
 
-let make_metavar ?(rulename = "") ?(constraints = "") ?(typ = "") mvname =
-  make_mv typ (rulename, mvname) constraints
+(* forces rule inheritance (except if rule is already inherited). *)
+let inherit_rule ~new_rule ((a,(b,c),d) as mv) =
+  if b = "" then (a,(new_rule,c),d) else mv
 
-(* forces inheritance on a list of metavars (not including the ones that were
- * already inherited. *)
-let inherit_rule ~new_rule = List.map
-  (fun s -> match s with | (a,("",c),d) -> (a,(new_rule,c),d) | _ -> s)
+let print out mv = output_string out (tostring_mv mv)
 
 (* prints the strings in the set on separate lines, ended with semicolons.
  * if do_group, group all metavars of same type on the same line.
  *)
-let print chan ~do_group mvs =
+let print_list out ~do_group mvs =
   let group_by_type mvs =
     let rec group acc = function
       | [] -> acc
@@ -499,6 +498,16 @@ let print chan ~do_group mvs =
 
   if do_group then begin
     let grouped = group_by_type mvs in
-    List.iter (fun b -> output_string chan (b ^ ";\n")) grouped
+    List.iter (fun b -> output_string out (b ^ ";\n")) grouped
   end else
-    List.iter (fun b -> output_string chan ((tostring_mv b) ^ ";\n")) mvs
+    List.iter (fun b -> output_string out ((tostring_mv b) ^ ";\n")) mvs
+
+(* takes abstract syntax trees for a rule and extract all metavariables.
+ * That is, metavariables declared in the header, but unused in the body, are
+ * discarded. Returns list of meta_variable.t's.
+ *)
+let unparse ~minus_rule ~rulename =
+  let mvcomb = metavar_combiner rulename in
+  let minus = List.map mvcomb.VT0.combiner_rec_top_level minus_rule in
+  let comb = List.fold_left MVSet.union MVSet.empty minus in
+  MVSet.elements comb

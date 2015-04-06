@@ -1,9 +1,9 @@
 (* Generates rule headers like
  *
- * @rulename depends on ...@
- * metavariable mv;
- * position p;
- * @@
+ *      @rulename depends on ...@
+ *      metavariable mv;
+ *      position p;
+ *      @@
  *
  * Can insert default (aka hardcoded) dependencies.
  * Context: !patch && (context || org || report)
@@ -27,7 +27,8 @@ val generate :
  t
 
 (* Generates header with context/org/report dependency.
- * If context_mode, don't include !patch in the dependencies. *)
+ * If context_mode, don't include !patch in the dependencies.
+ *)
 val generate_context :
  rulename:string ->
  isos:string list ->

@@ -12,27 +12,33 @@ let name = ref ""
 let write_file ~file s =
   let chan =
     try open_out file
-    with Sys_error msg -> failwith ("Error: Invalid filename: " ^ file ^
-      ". Message: " ^ msg) in
+    with Sys_error msg ->
+      let msg = "Error: Invalid filename: " ^ file ^ ". Message: " ^ msg in
+      failwith msg in
   try
     (output_string chan s; close_out chan)
-  with Sys_error msg -> failwith ("Error: failed writing to " ^ file ^
-    ". Message: " ^ msg)
+  with Sys_error msg ->
+    let msg = "Error: failed writing to " ^ file ^ ". Message: " ^ msg in
+    failwith msg
 
 (* termination *)
 let exit() = print_string "\n~*~ GOODBYE! ~*~\n"; exit 0
 
 (* allow the user to save the current progress in a config file *)
 let save t =
-  let save' t name =
-    let unp = UI.unparse t in write_file ~file:name unp;
-    print_string ("\nSaved progress to " ^ name ^ "!\n" ^ "-------------\n") in
   let name = !name in
-  print_string ("\nSave progress to " ^name^"?\n");
-  print_string ("Options:\n" ^
-     "  Type y(es) or press <enter> to save.\n"^
-     "  Type n(o) to not save.\n"^
-     "  Write another filename to save to.\n");
+
+  let save' t name =
+    let unp = UI.unparse t in
+    let _ = write_file ~file:name unp in
+    print_string ("\nSaved progress to " ^ name ^ "!\n" ^ "-------------\n") in
+
+  let _ = print_string ("\nSave progress to " ^name^"?\n") in
+  let _ = print_string ("Options:\n" ^
+    "  Type y(es) or press <enter> to save.\n"^
+    "  Type n(o) to not save.\n"^
+    "  Write another filename to save to.\n") in
+
   match String.lowercase (read_line()) with
   | "" | "y" | "yes" -> save' t name
   | "n" | "no" -> ()
@@ -107,20 +113,29 @@ let get_comments t =
 let rec get_message pmsg strict t =
   print_string pmsg;
   let msg = get_input_save t in
-  if msg = "" && strict then get_message pmsg strict t else
-  begin
+  if msg = "" && strict
+  then get_message pmsg strict t
+  else begin
     let pcts = UI.count_format_vars msg in
-    if pcts = 0 then (msg,[]) else
-    begin
-      print_string ("\nDeclare the " ^(string_of_int pcts) ^" variable(s) " ^
+    if pcts = 0
+    then (msg,[])
+    else begin
+      let _ = print_string (
+        "\nDeclare the " ^(string_of_int pcts) ^" variable(s) " ^
         "used in the message, in order, separated by comma.\n" ^
-        "Inherited metavariables are declared by <rulename>.<metavarname>.\n");
+        "Inherited metavariables are declared by <rulename>.<metavarname>.\n"
+      ) in
       let mv = get_input_save t in
       let mv = Str.split (Str.regexp " *, *") mv in
-      if List.length mv <> pcts then (print_string ("\nIll-formed message; " ^
-        "number of format variables does not match number of declared " ^
-        "metavariables. Try again.\n"); get_message pmsg strict t)
-      else (msg, mv)
+      if List.length mv = pcts
+      then (msg, mv)
+      else
+        let _ = print_string (
+          "\nIll-formed message; " ^
+          "number of format variables does not match number of declared " ^
+          "metavariables. Try again.\n"
+        ) in
+        get_message pmsg strict t
     end
   end
 
@@ -129,9 +144,13 @@ let get_name r t =
   let rec get_name' r =
     print_string ("\nSpecify a name for the " ^ r ^ ":\n");
     let newnm = get_input_save t in
-    try UI.check_name newnm t; (r, Some newnm)
-    with Failure m -> print_string ("\n" ^ m); get_name' r in
-  if not(String.contains r ' ') then (r, None) else get_name' r
+    try
+      UI.check_name newnm t;
+      (r, Some newnm)
+    with Failure m ->
+      print_string ("\n" ^ m);
+      get_name' r in
+  if String.contains r ' ' then get_name' r else (r, None)
 
 (* returns
  * ((original rulename : string, new rulename : string option),
@@ -142,12 +161,12 @@ let rec get_rule (rulename : string) (t : UI.t) =
   print_string ("\nHandling rule \"" ^ rulename ^ "\" ...");
   let (rnm, newnm) = get_name rulename t in
   let nm = (match newnm with Some n -> n | None -> rnm) in
-  print_string ("\n~ Getting messages for org and report mode ~\n\n" ^
+  let _ = print_string ("\n~ Getting messages for org and report mode ~\n\n" ^
     "No quotes necessary around the message.\n" ^
     "It is possible to include formatted variables like %s (Python style), " ^
     "you will get a chance to declare them afterwards.\n" ^
     "Example message: Unneeded variable \\\"%s\\\". Return \\\"%s\\\".\n" ^
-    "Example format variables: x, other_rule.y. \n");
+    "Example format variables: x, other_rule.y. \n") in
   let (orgmsg,orgmvs) = get_message ("\nRule \"" ^ nm ^ "\". Write a message"^
     " for org mode:\n") true t in
   let (repmsg,repmvs) = get_message ("\nRule \"" ^ nm ^ "\". Write a message" ^
@@ -179,5 +198,5 @@ let interact ~ordered_rules ~config_name =
   let t = List.fold_left add t ordered_rules in
   let _ = save t in
   let preface = UI.get_preface t in
-  let rules = UI.get_rules ~ordered_rules t in
+  let rules = UI.get_rules t ~ordered_rules in
   (preface, rules)

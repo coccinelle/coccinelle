@@ -46,6 +46,9 @@ let token2c (tok,_) =
   | PC.TConstant -> "constant"
   | PC.TExpression -> "expression"
   | PC.TIdExpression -> "idexpression"
+  | PC.TOperator -> "operator"
+  | PC.TBinary -> "binary"
+  | PC.TAssignment -> "assignment"
   | PC.TInitialiser -> "initialiser"
   | PC.TSymbol -> "symbol"
   | PC.TDeclaration -> "declaration"
@@ -265,7 +268,7 @@ let token2c (tok,_) =
   | PC.TPtrOp(clt) -> add_clt "->" clt
 
   | PC.TEq(clt) -> add_clt "=" clt
-  | PC.TAssign(_,clt) -> add_clt "=op" clt
+  | PC.TOpAssign(_,clt) -> add_clt "=op" clt
   | PC.TDot(clt) -> add_clt "." clt
   | PC.TComma(clt) -> add_clt "," clt
   | PC.TPtVirg(clt) -> add_clt ";" clt
@@ -365,7 +368,7 @@ let plus_attachable only_plus (tok,_) =
 
   | PC.TPtrOp(clt)
 
-  | PC.TEq(clt) | PC.TAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
+  | PC.TEq(clt) | PC.TOpAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
   | PC.TPtVirg(clt) ->
       if List.mem (line_type clt) [D.PLUS;D.PLUSPLUS]
       then PLUS
@@ -443,7 +446,7 @@ let get_clt ((tok,_) as t) =
 
   | PC.TPtrOp(clt)
 
-  | PC.TEq(clt) | PC.TAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
+  | PC.TEq(clt) | PC.TOpAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
   | PC.TPArob(clt) | PC.TPtVirg(clt)
 
   | PC.TOPar0(_,clt) | PC.TMid0(_,clt) | PC.TCPar0(_,clt)
@@ -604,7 +607,7 @@ let update_clt ((tok,x) as t) clt =
   | PC.TPtrOp(_) -> (PC.TPtrOp(clt),x)
 
   | PC.TEq(_) -> (PC.TEq(clt),x)
-  | PC.TAssign(s,_) -> (PC.TAssign(s,clt),x)
+  | PC.TOpAssign(s,_) -> (PC.TOpAssign(s,clt),x)
   | PC.TDot(_) -> (PC.TDot(clt),x)
   | PC.TComma(_) -> (PC.TComma(clt),x)
   | PC.TPArob(_) -> (PC.TPArob(clt),x)
@@ -679,7 +682,7 @@ let split t clt =
 
 let split_token ((tok,_) as t) =
   match tok with
-    PC.TMetavariable | PC.TIdentifier
+    PC.TMetavariable | PC.TIdentifier | PC.TOperator | PC.TBinary | PC.TAssignment
   | PC.TConstant | PC.TExpression | PC.TIdExpression
   | PC.TDeclaration | PC.TField
   | PC.TStatement | PC.TPosition | PC.TFormat | PC.TAnalysis | PC.TPosAny
@@ -771,7 +774,7 @@ let split_token ((tok,_) as t) =
 
   | PC.TPtrOp(clt) -> split t clt
 
-  | PC.TEq(clt) | PC.TAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
+  | PC.TEq(clt) | PC.TOpAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
   | PC.TPtVirg(clt) -> split t clt
 
   | PC.EOF | PC.TInvalid | PC.TUnderscore -> ([t],[t])
@@ -1060,7 +1063,7 @@ let token2line (tok,_) =
   | PC.TPragma(clt)
   | PC.TIncludeL(_,clt) | PC.TIncludeNL(_,clt)
 
-  | PC.TEq(clt) | PC.TAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
+  | PC.TEq(clt) | PC.TOpAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
   | PC.TPArob(clt) | PC.TPtVirg(clt) ->
       let (_,line,_,_,_,_,_,_,_,_) = clt in Some line
 
@@ -1641,10 +1644,11 @@ let any_modif rule =
   let option_default = false in
   let fn =
     V0.flat_combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing in
+      donothing donothing donothing donothing donothing donothing in
   List.exists fn.VT0.combiner_rec_top_level rule
 
 let eval_virt virt =

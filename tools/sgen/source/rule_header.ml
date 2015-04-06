@@ -1,5 +1,5 @@
 module Ast = Ast_cocci
-module M = Meta_variable
+module MV = Meta_variable
 
 (* ------------------------------------------------------------------------- *)
 
@@ -10,10 +10,11 @@ module M = Meta_variable
 (* ------------------------------------------------------------------------- *)
 (* TYPES AND HELPERS *)
 
-type t = {
+type t =
+{
   first_line : string; (* @rulename ...@ *)
-  meta_vars : M.t list;
-  meta_pos : M.t list;
+  meta_vars : MV.t list;
+  meta_pos : MV.t list;
   last_line : string; (* @@ *)
 }
 
@@ -25,7 +26,8 @@ let comma_sep = String.concat ", "
 
 (* adds the hardcoded 'default' context rule dependency.
  * context mode: context || org || report
- * patch mode: !patch && (context || org || report) *)
+ * patch mode: !patch && (context || org || report)
+ *)
 let add_context_dependency dep context_mode =
   let context_dep = (* context || org || report *)
     Ast.OrDep(Ast.Dep "context", Ast.OrDep(Ast.Dep "org", Ast.Dep "report")) in
@@ -35,7 +37,8 @@ let add_context_dependency dep context_mode =
   if dep = Ast.NoDep then context_dep else Ast.AndDep(dep, context_dep)
 
 (* adds the hardcoded 'default' patch rule dependency.
- * patch && !context && !org && !report *)
+ * patch && !context && !org && !report
+ *)
 let add_patch_dependency dep =
   let patch_dep =
     Ast.AndDep(
@@ -94,7 +97,10 @@ let rule_declaration ~rulename ~isos ~dropisos ~deps ~exists =
 let generate ~rulename ~isos ~dropisos ~deps ~exists ~meta_vars ~meta_pos =
   let first_line = rule_declaration ~rulename ~isos ~dropisos ~deps ~exists in
   let last_line = "@@\n\n" in
-  {first_line = first_line ^ "\n"; meta_vars; meta_pos; last_line;}
+  {
+    first_line = first_line ^ "\n";
+    meta_vars; meta_pos; last_line;
+  }
 
 (* generate rule header with patch dependency *)
 let generate_patch
@@ -110,11 +116,11 @@ let generate_context
   generate ~rulename ~isos ~dropisos ~deps ~exists ~meta_vars ~meta_pos
 
 (* print a rule header *)
-let print chan {first_line = f; meta_vars = mv; meta_pos = mp; last_line = l;} =
-  output_string chan f;
-  M.print chan ~do_group:true mv;
-  M.print chan ~do_group:true mp;
-  output_string chan l
+let print out {first_line = f; meta_vars = mv; meta_pos = mp; last_line = l;} =
+  output_string out f;
+  MV.print_list out ~do_group:true mv;
+  MV.print_list out ~do_group:true mp;
+  output_string out l
 
 (* prints only the first line of the rule header, ie. the declaration *)
-let print_declaration chan {first_line = f; _} = output_string chan f
+let print_declaration out {first_line = f; _} = output_string out f

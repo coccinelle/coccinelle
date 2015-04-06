@@ -40,20 +40,23 @@ val add_rule :
    (string * string list)) -> (* rep message, rep metavars *)
   t -> t
 
-(* getters *)
-
 (* check if there's already a rule with that name *)
 val check_name : string -> t -> unit
+
+(* get string formatted version of preface *)
 val get_preface : t -> string
 
 (* ordered_rules are all the original */+/- rules from input script, ordered
- * by when they occur in the script. Returns the same rules mapped to the
- * specified user input messages - or generated messages if no user input. *)
+ * by when they occur in the script.
+ * Returns the same rules mapped to the specified user input messages - or
+ * generated messages if no user input.
+ *)
 val get_rules :
-  ordered_rules:string list -> t ->
-  ((string * string option) *
-   (string * Meta_variable.t list) *
-   (string * Meta_variable.t list)) list
+  ordered_rules:string list ->
+  t ->
+  ((string * string option) *             (* original rule name, new name *)
+   (string * Meta_variable.t list) *      (* org *)
+   (string * Meta_variable.t list)) list  (* rep *)
 
 (* turns a user input into the config that generates it *)
 val unparse : t -> string

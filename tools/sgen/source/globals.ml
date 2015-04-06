@@ -113,7 +113,6 @@ let key_virtuals v context_mode =
   List.iter check v;
   keyvirtuals
 
-
 (* check if a rulename is valid *)
 let check_rule ~strict x =
 
@@ -140,7 +139,6 @@ let check_rule ~strict x =
   if List.mem x keywords
   then failwith
     ("Error: A rule can't be called \""^ x ^"\"! That's a keyword in sgen ...")
-
 
 (* for rules with no name; get the line they are starting on *)
 let extract_line str =

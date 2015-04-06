@@ -8,7 +8,7 @@ int main () {
     foo();
     rrr();
   }
-}
+ }
 }
 
 int main () {

@@ -1,3 +1,3 @@
 int main () {
-  foo(sizeof (struct xxx),12);
+  foo(sizeof(struct xxx), 12);
 }

@@ -206,11 +206,12 @@ let collect_refs include_constraints =
     (* else option_default *) in
 
   V.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode
     donothing donothing donothing donothing donothing
-    astfvident astfvexpr astfvfrag astfvfmt astfvfullType astfvtypeC
-    astfvinit astfvparam astfvdecls donothing astfvrule_elem astfvstatement
-    donothing donothing donothing_a
+    astfvident astfvexpr astfvfrag astfvfmt donothing donothing
+    astfvfullType astfvtypeC astfvinit astfvparam astfvdecls donothing
+    astfvrule_elem astfvstatement donothing donothing donothing_a
 
 let collect_all_refs = collect_refs true
 let collect_non_constraint_refs = collect_refs false
@@ -252,8 +253,9 @@ let collect_pos_positions =
     | _ -> k s in
 
   V.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode
+    donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing cprule_elem cpstmt
     donothing donothing donothing
@@ -392,9 +394,10 @@ let collect_saved =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode
     donothing donothing donothing donothing donothing
-    astfvident astfvexpr astfvfrag astfvfmt donothing astfvtypeC
-    astfvinit astfvparam astfvdecls donothing astfvrule_elem 
+    astfvident astfvexpr astfvfrag astfvfmt donothing donothing donothing
+    astfvtypeC astfvinit astfvparam astfvdecls donothing astfvrule_elem 
     donothing donothing donothing donothing
 
 (* ---------------------------------------------------------------- *)
@@ -518,6 +521,7 @@ let collect_in_plus_term =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing astfvrule_elem astfvstatement donothing donothing donothing
@@ -734,8 +738,9 @@ let classify_variables metavar_decls minirules used_after =
 
   let fn = V.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode
       donothing donothing donothing donothing donothing
-      ident expression string_fragment string_format donothing typeC
+      ident expression string_fragment string_format donothing donothing donothing typeC
       init param decl donothing rule_elem
       donothing donothing donothing donothing in
 
@@ -914,9 +919,11 @@ let astfvs metavars bound =
 
   V.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode
     donothing donothing astfvstatement_dots donothing donothing
     donothing donothing donothing 
     donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing
     astfvrule_elem astfvstatement astfvcase_line astfvtoplevel donothing
 
 (*
@@ -980,9 +987,11 @@ let get_neg_pos_list (_,rule) used_after_list =
   let v =
     V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing in
+    donothing donothing donothing donothing donothing donothing
+    donothing donothing in
   match rule with
     Ast.CocciRule(_,_,minirules,_,_) ->
       List.map

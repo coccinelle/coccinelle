@@ -21,7 +21,8 @@ module IntMap = Common.IntMap
  * won't be many keys (each key representing one disjunction)
  *)
 let merge =
-  let fn key aopt bopt = match aopt, bopt with
+  let fn key aopt bopt =
+    match aopt, bopt with
     | Some a, Some b -> Some (List.map2 (||) a b)
     | Some a, None | None, Some a -> Some a
     | None, None -> None in
@@ -32,7 +33,8 @@ let mcode = function
   | (x, a, info, Ast0.CONTEXT _, pos, _) -> (false, IntMap.empty)
   | (x, a, info, Ast0.MINUS _, pos, _) -> (true, IntMap.empty)
   | (x, a, info, Ast0.PLUS _, pos, _) -> (true, IntMap.empty)
-  | (x, a, info, Ast0.MIXED _, pos, _) -> failwith "not possible"
+  | (x, a, info, Ast0.MIXED _, pos, _) ->
+      failwith "detect_patch: mixed not supported"
 
 (* Disjunction handler.
  * takes left and right parenthesis mcodes, list of pipe separator mcodes,
@@ -49,9 +51,9 @@ let handle_disj lp rp pipelist clist cfn =
     let (case_is_p, case_map) = cfn case in
     (is_patch || case_is_p, case_is_p :: acc_list, merge case_map acc_map) in
 
-  (*contains_patch is a bool denoting whether the whole disj contains a patch
-   *disj_patch is a list of bools, each bool representing a disj case
-   *acc are the accumulated disjunctions within the disjunction
+  (* contains_patch is a bool denoting whether the whole disj contains a patch
+   * disj_patch is a list of bools, each bool representing a disj case
+   * acc are the accumulated disjunctions within the disjunction
    *)
   let (contains_patch, disj_patch, acc) =
     List.fold_left disj_patches (false, [], IntMap.empty) clist in
@@ -94,27 +96,38 @@ let patch_combiner =
   let topfn = donothing in
   let dotsstmtfn = donothing in
 
-  let identfn c fn v = match Ast0.unwrap v with
+  let identfn c fn v =
+    match Ast0.unwrap v with
     | Ast0.DisjId(lp, idlist, pipelist, rp) ->
         handle_disj lp rp pipelist idlist c.VT0.combiner_rec_ident
     | _ -> fn v in
-  let exprfn c fn v = match Ast0.unwrap v with
+
+  let exprfn c fn v =
+    match Ast0.unwrap v with
     | Ast0.DisjExpr(lp, exprlist, pipelist, rp) ->
         handle_disj lp rp pipelist exprlist c.VT0.combiner_rec_expression
     | _ -> fn v in
-  let tyfn c fn v = match Ast0.unwrap v with
+
+  let tyfn c fn v =
+    match Ast0.unwrap v with
     | Ast0.DisjType(lp, tylist, pipelist, rp) ->
         handle_disj lp rp pipelist tylist c.VT0.combiner_rec_typeC
     | _ -> fn v in
-  let declfn c fn v = match Ast0.unwrap v with
+
+  let declfn c fn v =
+    match Ast0.unwrap v with
     | Ast0.DisjDecl(lp, decllist, pipelist, rp) ->
         handle_disj lp rp pipelist decllist c.VT0.combiner_rec_declaration
     | _ -> fn v in
-  let casefn c fn v = match Ast0.unwrap v with
+
+  let casefn c fn v =
+    match Ast0.unwrap v with
     | Ast0.DisjCase(lp, caselist, pipelist, rp) ->
         handle_disj lp rp pipelist caselist c.VT0.combiner_rec_case_line
     | _ -> fn v in
-  let stmtfn c fn v = match Ast0.unwrap v with
+
+  let stmtfn c fn v =
+    match Ast0.unwrap v with
     | Ast0.Disj(lp, sdlist, pipelist, rp) ->
         handle_disj lp rp pipelist sdlist c.VT0.combiner_rec_statement_dots
     | _ -> fn v in
@@ -131,6 +144,10 @@ let patch_combiner =
 (* ------------------------------------------------------------------------- *)
 (* ENTRY POINT *)
 
+(* true if contains */+/-, disjunction map *)
+type t = bool * bool list Common.IntMap.t
+
+(* constructs t from rule *)
 let detect = function
   | Ast0.InitialScriptRule _
   | Ast0.FinalScriptRule _
@@ -144,16 +161,24 @@ let detect = function
       let (m1,m2) = rule minus in
       (p1 || m1, merge p2 m2)
 
-let detect_statement_dots s =
-  let (has_minus, _) = patch_combiner.VT0.combiner_rec_statement_dots s in
-  has_minus
+(* constructs t from statement dots (ie. subset of a full rule) *)
+let detect_statement_dots s = patch_combiner.VT0.combiner_rec_statement_dots s
 
-let get_patch_rules =
+let is_patch (t,_) = t
+
+let get_disj_patch index (_,t) =
+  try
+    IntMap.find index t
+  with Not_found ->
+   failwith ("detect_patch: Could not find disjunction starting on line " ^
+     (string_of_int index))
+
+let filter_patch_rules =
   let rec get fn = function
     | x::xs ->
-        let (is_patch, disj_map) = detect x in
+        let ((is_patch, disj_map) as dp) = detect x in
         if is_patch
-        then get (fun (a,b) -> fn (x::a, disj_map::b)) xs
+        then get (fun a -> fn ((x, dp)::a)) xs
         else get fn xs
-    | [] -> fn ([],[]) in
+    | [] -> fn [] in
   get (fun x -> x)

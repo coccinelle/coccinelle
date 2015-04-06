@@ -184,11 +184,12 @@ let rec propagate_types env =
 	      | (t1,t2) ->
 		  let ty = lub_type t1 t2 in
 		    Ast0.set_type exp1 ty; Ast0.set_type exp2 ty; ty in
-	      (match Ast0.unwrap_mcode op with
-		   Ast.Arith(op) -> same_type (ty1, ty2)
-		 | Ast.Logical(Ast.AndLog) | Ast.Logical(Ast.OrLog) ->
+	      (match Ast0.unwrap op with
+		 Ast0.Arith(op) -> same_type (ty1, ty2)
+                 | Ast0.MetaBinary _ -> same_type (ty1, ty2)
+		 | Ast0.Logical(op') when (let op''=Ast0.unwrap_mcode op' in op''=Ast.AndLog || op''=Ast.OrLog) ->
 		     Some(bool_type)
-		 | Ast.Logical(op) ->
+		 | Ast0.Logical(op) ->
 		     let ty = lub_type ty1 ty2 in
 		     Ast0.set_type exp1 ty; Ast0.set_type exp2 ty;
 		     Some(bool_type))

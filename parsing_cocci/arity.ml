@@ -60,6 +60,25 @@ let allopt l fn =
 
 let mcode2line (_,_,info,_,_,_) = info.Ast0.pos_info.Ast0.line_start
 let mcode2arity (_,arity,_,_,_,_) = arity
+let mcodeassignOp2line op = match Ast0.unwrap op with
+    Ast0.SimpleAssign op -> mcode2line op
+  | Ast0.OpAssign op -> mcode2line op
+  | Ast0.MetaAssign(mv,_,_) -> mcode2line mv
+
+let mcodeassignOp2arity op = match Ast0.unwrap op with
+    Ast0.SimpleAssign op -> mcode2arity op
+  | Ast0.OpAssign op -> mcode2arity op
+  | Ast0.MetaAssign(mv,_,_) -> mcode2arity mv
+
+let mcodebinaryOp2line op = match Ast0.unwrap op with
+    Ast0.Arith op -> mcode2line op
+  | Ast0.Logical op -> mcode2line op
+  | Ast0.MetaBinary(mv,_,_) -> mcode2line mv
+
+let mcodebinaryOp2arity op = match Ast0.unwrap op with
+    Ast0.Arith op -> mcode2arity op
+  | Ast0.Logical op -> mcode2arity op
+  | Ast0.MetaBinary(mv,_,_) -> mcode2arity mv
 
 let mcode x = x (* nothing to do ... *)
 
@@ -207,7 +226,7 @@ let rec top_expression opt_allowed tgt expr =
       let rp = mcode rp in
       make_exp expr tgt arity (Ast0.FunCall(fn,lp,args,rp))
   | Ast0.Assignment(left,op,right,simple) ->
-      let arity = exp_same (mcode2line op) [mcode2arity op] in
+      let arity = exp_same (mcodeassignOp2line op) [mcodeassignOp2arity op] in
       let left = expression arity left in
       let op = mcode op in
       let right = expression arity right in
@@ -243,7 +262,7 @@ let rec top_expression opt_allowed tgt expr =
       let op = mcode op in
       make_exp expr tgt arity (Ast0.Unary(exp,op))
   | Ast0.Binary(left,op,right) ->
-      let arity = exp_same (mcode2line op) [mcode2arity op] in
+      let arity = exp_same (mcodebinaryOp2line op) [mcodebinaryOp2arity op] in
       let left = expression arity left in
       let op = mcode op in
       let right = expression arity right in

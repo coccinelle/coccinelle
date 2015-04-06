@@ -228,10 +228,11 @@ module XTRANS = struct
 	    (Ast_cocci.MetaExpr(name,Ast_cocci.NoConstraint,u,ty,form,i))
       | _ -> e in
     let fn = Visitor_ast.rebuilder
-	mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+	mcode mcode mcode mcode mcode mcode mcode mcode mcode
+	mcode mcode mcode mcode mcode
 	donothing donothing donothing donothing donothing
 	ident expression donothing donothing donothing donothing
-	donothing donothing donothing
+	donothing donothing donothing donothing donothing
 	donothing donothing donothing donothing donothing donothing in
 
   fn.Visitor_ast.rebuilder_anything anything

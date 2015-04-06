@@ -17,7 +17,6 @@ void main() {
     h(1);
   }
 
-  
   g(1);  // if  add this then the CTL even with the direct path will this time
   //  accept, but we cheat.
 }

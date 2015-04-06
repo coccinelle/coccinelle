@@ -44,18 +44,21 @@ val new_extension : new_ext:string -> string -> string
 (* SANITY CHECKS AND RULE HELPERS *)
 
 (* specific for nameless rule that are automatically given the name
- * "rule starting on line <number>". extracts the number or fails if none. *)
+ * "rule starting on line <number>". extracts the number or fails if none.
+ *)
 val extract_line : string -> int
 
 (* check rulename for validity. fails if invalid. if strict, fail on rulenames
- * containing spaces. *)
+ * containing spaces.
+ *)
 val check_rule : strict:bool -> string -> unit
 
 (* takes a rulename as input and generates a new one if it is invalid. *)
 val generate_rule : string -> string option
 
 (* takes existing virtual rulenames, checks them, and returns the standard
- * ones: (patch), context, org, and report. *)
+ * ones: (patch), context, org, and report.
+ *)
 val key_virtuals : string list -> bool -> string list
 
 

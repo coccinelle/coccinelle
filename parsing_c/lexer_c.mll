@@ -689,18 +689,18 @@ rule token = parse
 
   | "="  { TEq(tokinfo lexbuf) }
 
-  | "-=" { TAssign (OpAssign Minus, (tokinfo lexbuf))}
-  | "+=" { TAssign (OpAssign Plus, (tokinfo lexbuf))}
-  | "*=" { TAssign (OpAssign Mul, (tokinfo lexbuf))}
-  | "/=" { TAssign (OpAssign Div, (tokinfo lexbuf))}
-  | "%=" { TAssign (OpAssign Mod, (tokinfo lexbuf))}
-  | "&=" { TAssign (OpAssign And, (tokinfo lexbuf))}
-  | "|=" { TAssign (OpAssign Or, (tokinfo lexbuf)) }
-  | "^=" { TAssign (OpAssign Xor, (tokinfo lexbuf))}
-  | "<<=" {TAssign (OpAssign DecLeft, (tokinfo lexbuf)) }
-  | ">>=" {TAssign (OpAssign DecRight, (tokinfo lexbuf))}
-  | ">?=" { TAssign(OpAssign Max, (tokinfo lexbuf))}
-  | "<?=" { TAssign(OpAssign Min, (tokinfo lexbuf))}
+  | "-=" { TAssign (OpAssign Minus, [tokinfo lexbuf]) }
+  | "+=" { TAssign (OpAssign Plus, [tokinfo lexbuf]) }
+  | "*=" { TAssign (OpAssign Mul, [tokinfo lexbuf]) }
+  | "/=" { TAssign (OpAssign Div, [tokinfo lexbuf]) }
+  | "%=" { TAssign (OpAssign Mod,[tokinfo lexbuf]) }
+  | "&=" { TAssign (OpAssign And,[tokinfo lexbuf]) }
+  | "|=" { TAssign (OpAssign Or,[tokinfo lexbuf]) }
+  | "^=" { TAssign (OpAssign Xor,[tokinfo lexbuf]) }
+  | "<<=" {TAssign (OpAssign DecLeft,[tokinfo lexbuf]) }
+  | ">>=" {TAssign (OpAssign DecRight,[tokinfo lexbuf]) }
+  | ">?=" { TAssign(OpAssign Max,[tokinfo lexbuf]) }
+  | "<?=" { TAssign(OpAssign Min,[tokinfo lexbuf]) }
 
   | "==" { TEqEq(tokinfo lexbuf) }  | "!=" { TNotEq(tokinfo lexbuf) }
   | ">=" { TSupEq(tokinfo lexbuf) } | "<=" { TInfEq(tokinfo lexbuf) }

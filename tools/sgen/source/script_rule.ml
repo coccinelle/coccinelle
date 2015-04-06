@@ -1,4 +1,4 @@
-module M = Meta_variable
+module MV = Meta_variable
 
 (* ------------------------------------------------------------------------- *)
 
@@ -15,10 +15,10 @@ let comma_sep = String.concat ","
 let split_pos = function mv::mvs -> (mv,mvs) | _ -> assert false
 
 (* print helpers for script rules (which are really just string lists) *)
-let print_newl outch = output_string outch "\n"
-let printfn outch x =
-  List.iter (fun x -> output_string outch x; print_newl outch) x;
-  print_newl outch
+let print_newl out = output_string out "\n"
+let printfn out x =
+  List.iter (fun x -> output_string out x; print_newl out) x;
+  print_newl out
 
 
 (* ------------------------------------------------------------------------- *)
@@ -47,7 +47,7 @@ let line_vars ~metapos ~metavars =
 (* turn metavariables into script header variables *)
 let format_header_vars =
   let binding mv =
-    let (rn,nm) = (M.get_rule mv, M.get_name mv) in
+    let (rn,nm) = (MV.get_rule mv, MV.get_name mv) in
     nm ^ " << " ^ rn ^ "." ^ nm ^ ";" in
   List.map binding
 
@@ -61,15 +61,17 @@ let format_err_msg err_msg mpnames mvnames =
 
 (* assembles an org script rule. *)
 let gen_org_rule nm (firstpos, restpos) metavars err_msg =
+
   (* if there are metavars, they might contain brackets which conflict with
-   * the todo format. In that case, use safe mode (replaces brackets). *)
+   * the todo format. In that case, use safe mode (replaces brackets).
+   *)
   let printfn = if metavars <> [] then print_safe_todo_fn else print_todo_fn in
   let new_rulenm = nm ^ "_org" in
   let headervars = format_header_vars (metavars @ (firstpos :: restpos)) in
   (* the error message is used as is, positions are inserted in print calls *)
-  let metavars = List.map M.get_name metavars in
+  let metavars = List.map MV.get_name metavars in
   let err_msg = format_err_msg err_msg [] metavars in
-  let zero p = (M.get_name p) ^ "[0]" in
+  let zero p = (MV.get_name p) ^ "[0]" in
   [
    (*header*)
    "@script:python " ^ new_rulenm ^ " depends on org@";
@@ -84,9 +86,9 @@ let gen_org_rule nm (firstpos, restpos) metavars err_msg =
 let gen_report_rule nm (firstpos, restpos) metavars err_msg =
   let new_rulenm = nm ^ "_report" in
   let headervars = format_header_vars (metavars @ (firstpos :: restpos)) in
-  let firstpos = (M.get_name (firstpos)) ^ "[0]" in
-  let restpos = List.map M.get_name restpos in
-  let metavars = List.map M.get_name metavars in
+  let firstpos = (MV.get_name (firstpos)) ^ "[0]" in
+  let restpos = List.map MV.get_name restpos in
+  let metavars = List.map MV.get_name metavars in
   let err_msg = format_err_msg err_msg restpos metavars in
   [
    (*header*)
@@ -105,21 +107,23 @@ let gen_report_rule nm (firstpos, restpos) metavars err_msg =
 (* generate org and report rule for the added metapositions and with the user
  * specified information (error messages).
  *)
-let generate ~metapos ~user_input = match user_input with
+let generate ~metapos ~user_input =
+  match user_input with
   | ((_, Some nm), (org_msg, omv), (report_msg, rmv))
   | ((nm, None), (org_msg, omv), (report_msg, rmv)) ->
-  let (firstpos, restpos) = split_pos metapos in
-  let new_rule = M.get_rule firstpos in
-  (*make sure user-specified metavars are inherited from the context rule*)
-  let omv, rmv = M.inherit_rule ~new_rule omv, M.inherit_rule ~new_rule rmv in
-  let org = gen_org_rule nm (firstpos, restpos) omv org_msg in
-  let report = gen_report_rule nm (firstpos, restpos) rmv report_msg in
-  (org, report)
+    let (firstpos, restpos) = split_pos metapos in
+    let new_rule = MV.get_rule firstpos in
+    (* make sure user-specified metavars are inherited from the context rule *)
+    let omv = List.map (MV.inherit_rule ~new_rule) omv in
+    let rmv = List.map (MV.inherit_rule ~new_rule) rmv in
+    let org = gen_org_rule nm (firstpos, restpos) omv org_msg in
+    let report = gen_report_rule nm (firstpos, restpos) rmv report_msg in
+    (org, report)
 
 (* print the script rules *)
-let print outch (org, rep) = printfn outch org; printfn outch rep
+let print out (org, rep) = printfn out org; printfn out rep
 
 (* print first orgs then reps, call between() in between. *)
-let print_split outch r between =
+let print_split out between r =
   let (orgs, reps) = List.split r in
-  List.iter (printfn outch) orgs; between(); List.iter (printfn outch) reps
+  List.iter (printfn out) orgs; between(); List.iter (printfn out) reps

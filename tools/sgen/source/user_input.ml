@@ -1,17 +1,18 @@
-module M = Meta_variable
+module MV = Meta_variable
 module RuleMap = Map.Make (String)
 
 (* ------------------------------------------------------------------------- *)
 
 (* Encapsulates all local input for the rule to be generated:
- * * Description of the script.
- * * Limitations of the script.
- * * Keywords for the script.
- * * Confidence level of the script (Low, Moderate, High).
- * * Additional comments for the script.
- * * Coccinelle options with which to call the script.
- * * Authors of the script (copyright). TODO: make globally configurable.
- * * Error messages for org and report mode for each rule.
+ *  - Description of the script.
+ *  - Limitations of the script.
+ *  - Keywords for the script.
+ *  - Confidence level of the script (Low, Moderate, High).
+ *  - Additional comments for the script.
+ *  - Coccinelle options with which to call the script.
+ *  - Authors of the script (copyright).
+ *    Not yet globally configurable; see sgen_config.ml.
+ *  - Error messages for org and report mode for each rule.
  *)
 
 (* ------------------------------------------------------------------------- *)
@@ -48,19 +49,22 @@ let make_format_string msg =
 
 (* turn user-specified metavariable strings into metavariables.
  * important that they are created with no rulename if within the same rule,
- * since this is used to generate the right inheritance later on. *)
+ * since this is used to generate the right inheritance later on.
+ * They are initialised with type = "" since we don't need it.
+ *)
 let make_metavars =
   let mv a =
-    let a = Str.bounded_split (Str.regexp "\\.") a 2 in
-    match a with
-    | [a] -> M.make_metavar a
-    | [a;b] -> M.make_metavar ~rulename:a b
+    let split_name = Str.bounded_split (Str.regexp "\\.") a 2 in
+    match split_name with
+    | [meta_name] -> MV.make ~typ:"" ~rule_name:"" meta_name
+    | [rule_name; meta_name] -> MV.make ~typ:"" ~rule_name meta_name
     | _ -> failwith "bounded split" in
   List.map mv
 
 (* sort the rules in userinput in the order specified by ordered_rules
  * ordered_rules must all be valid for generation (ie. */+/- rules)
- * if the original rule could not be found in the userinput, use default msg *)
+ * if the original rule could not be found in the userinput, use default msg
+ *)
 let sort_rules ordered_rules userinput =
   let default = Globals.get_default_message() in
   let format_rule x =
@@ -96,7 +100,8 @@ let conf_fromstring s =
  * rules are a map, mapping rulename to
  * (new rulename, (org message, org metavars), (rep message, rep metavars)
  *)
-type t = {
+type t =
+{
   description : string;
   limitations : string list;
   keywords : string option;
@@ -111,10 +116,14 @@ type t = {
 
 (* CONSTRUCTOR, description and confidence levels are required. *)
 let make ~description ~confidence =
-  if description = "" then failwith "Error: Description is required." else
-  { description; limitations = []; keywords = None; confidence;
-    comments = None; options = None; authors = []; url = None;
-    rules = RuleMap.empty }
+  if description = ""
+  then failwith "Error: Description is required."
+  else
+    {
+      description; limitations = []; keywords = None; confidence;
+      comments = None; options = None; authors = []; url = None;
+      rules = RuleMap.empty
+    }
 
 (* SETTERS *)
 let add_limit limit t = { t with limitations = limit :: t.limitations }
@@ -136,10 +145,12 @@ let check_name nm t =
 
 (* add rule to rulemap in t.
  * for nameless rules: check legality of user-declared name or generate one if
- * user only declared line number in config. *)
+ * user only declared line number in config.
+ *)
 let add_rule ((rnm,newnm),(om,ov),(rm,rv)) t =
   let _ = assert (rnm <> "" && not(om = "" && rm = "")) in
-  let newnm = match newnm with
+  let newnm =
+    match newnm with
     | Some nm -> (check_name nm t; newnm)
     | None ->
         if String.contains rnm ' ' then Globals.generate_rule rnm else None in
@@ -147,8 +158,12 @@ let add_rule ((rnm,newnm),(om,ov),(rm,rv)) t =
 
 (* GETTERS *)
 (* format the preface information and turn it into one big string *)
-let get_preface {description=d; limitations=l; keywords=k; confidence=c;
-  comments=m; options=o; authors=a; url=u; _} =
+let get_preface
+  {
+    description=d; limitations=l; keywords=k; confidence=c;
+    comments=m; options=o; authors=a; url=u; _
+  } =
+
   let author_format =
     let year = string_of_int (Globals.get_current_year()) in
     Globals.pre_split ~prefix:("// Copyright: (C) "^year^" ") in
@@ -176,7 +191,8 @@ let get_rules ~ordered_rules {rules=r; _} = sort_rules ordered_rules r
 let unparse_rule rnm (newnm,(orgmsg,orgmvs),(repmsg,repmvs)) =
   let orgmsg = make_format_string orgmsg orgmvs in
   let repmsg = make_format_string repmsg repmvs in
-  let rnm = match newnm with
+  let rnm =
+    match newnm with
     | Some nm ->
         let l = Globals.extract_line rnm in (string_of_int l) ^ ":" ^ nm
     | None -> rnm in
@@ -184,8 +200,11 @@ let unparse_rule rnm (newnm,(orgmsg,orgmvs),(repmsg,repmvs)) =
 
 (* turn a user input collection into its corresponding config script *)
 let unparse
-  { description; limitations; keywords; confidence; comments; options; rules;
-    authors; url } =
+  {
+    description; limitations; keywords; confidence; comments; options; rules;
+    authors; url
+  } =
+
   let a = "// Generated config\n" in
   let b = "description = " ^ description ^ "\n" in
   let c = if limitations = [] then "" else

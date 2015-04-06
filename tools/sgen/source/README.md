@@ -11,15 +11,15 @@ Ast\_cocci.ml Ast0\_cocci.ml Visitor\_ast0.ml Visitor\_ast0\_types.ml Type\_cocc
 **Internal dependency order (partial; ie. not total, some can be interchanged)**:
 
 globals.ml ast\_tostring.ml detect_patch.ml  
-meta\_variable.ml generator\_types.ml position\_generator.ml disj\_generator.ml  
+meta\_variable.ml snapshot.ml position\_generator.ml disj\_generator.ml  
 rule\_body.ml rule\_header.ml context\_rule.ml script\_rule.ml  
-user\_input.ml file\_transform.ml sgen\_interactive.ml sgen\_config.ml  
+user\_input.ml file\_transform.ml sgen\_interactive.ml sgen\_config.ml sgen.ml  
 main.ml
 
 
 Workflow
 --------
-**main.ml contains the entry point**:
+**sgen.ml contains the entry point**:
 
  1. uses the Coccinelle parser to get parsed output, in particular the generated abstract syntax trees (AST0), a list of rulenames in the script, and a list of virtual modes in the script.
  2. uses globals.ml to check validity of virtual modes and rule names.
@@ -34,7 +34,7 @@ Workflow
  1. uses meta\_variable.ml to extract all metavariables from a rule represented as AST0.
  2. uses rule\_body.ml to generate the body of the new context rule.
      - uses the AST0 visitor module (in parsing\_cocci directory) to traverse AST0 and "reparse" original patch/context rule to new context rule.
-     - uses the types defined in generator\_types.ml to keep state during the traversal.
+     - uses the type defined in snapshot.ml to keep state during the traversal.
      - uses position\_generator.ml to generate metapositions at structurally suitable places in the rule (used for *org* and *report* printing modes). If the original rule was a plus rule (ie. no \*/-, only +), the positions dictate where the new \*'s are placed. Otherwise, the original \*/- dictate where the new \*'s are placed.
      - uses disjunction\_generator.ml to handle special disjunction cases that arise in converting a *patch* rule to a *context* rule.
  3. uses rule\_header.ml to generate a new rule header with the correct dependencies and metavariables.

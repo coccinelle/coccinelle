@@ -19,3 +19,4 @@ _log
 *.out
 *.pdf
 *.toc
+*.fdb_latexmk
