@@ -285,7 +285,7 @@ let mklogop (op,clt) =
 %left TEqEq TNotEq
 %left TLogOp /* TInf TSup TInfEq TSupEq */
 %left TShLOp TShROp /* TShl TShr */
-%left TPlus TMinus
+%left TPlus TMinus TMetaBinaryOp
 %left TMul TDmOp /* TDiv TMod TMin TMax */
 
 /*
@@ -1830,6 +1830,13 @@ assign_expr(r,pe):
       Ast0.wrap
 	  (Ast0.Assignment
 	     ($1, op'', Ast0.set_arg_exp $3,false)) }
+  | unary_expr(r,pe) TMetaAssignOp assign_expr_bis
+      { let (mv, cstrt, pure, clt) = $2 in
+      let op' = P.clt2mcode mv clt in
+      let op'' = Ast0.wrap (Ast0.MetaAssign (op', cstrt, pure)) in
+      Ast0.wrap
+	  (Ast0.Assignment
+	     ($1, op'', Ast0.set_arg_exp $3,false)) }
 
 assign_expr_bis:
     cond_expr(eexpr,dot_expressions)                        { $1 }
@@ -1883,6 +1890,11 @@ arith_expr(r,pe):
       { P.logic_op Ast.AndLog $1 $2 $3 }
   | arith_expr(r,pe) TOrLog  arith_expr_bis
       { P.logic_op Ast.OrLog $1 $2 $3 }
+  | arith_expr(r,pe) TMetaBinaryOp  arith_expr_bis
+      { let (mv, cstrt, pure, clt) = $2 in
+      let op' = P.clt2mcode mv clt in
+      let op = Ast0.wrap (Ast0.MetaBinary (op', cstrt, pure)) in
+      Ast0.wrap (Ast0.Binary($1, op, $3)) }
 
 // allows dots now that an expression-specific token has been seen
 // need an extra rule because of recursion restrictions
