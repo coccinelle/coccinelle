@@ -12,7 +12,8 @@ module DG = Disj_generator
 (* Generates the rule body of a context rule.
  *
  * Main logic for starring lines:
- * CONTEXT ( * ): put the stars where they were in the original rule.
+ * CONTEXT ( * ): put the stars where they were in the original rule. Do not
+ * change rule layout, only add positions.
  *
  * PATCH (+/-): If a statement dots contain any minus transformations, put the
  * star where the minus is. If not, put a star where a position was generated.
@@ -151,6 +152,11 @@ let star_dotsstmtfn comb context_mode stmtdots =
     | Ast0.Nest _ | Ast0.Dots _ | Ast0.Circles _ | Ast0.Stars _ | Ast0.Disj _
     | Ast0.MetaStmt _ -> true | _ -> false in
 
+  (* increase line number if not in context_mode (if context_mode, we don't
+   * want to modify layout, only add positions
+   *)
+  let inc_line = if context_mode then (fun x -> x) else Snap.inc_line in
+
   (* puts stars and positions in statements that come after one of the cases
    * in do_not_star. Insert newline after a do_not_star case.
    *)
@@ -161,7 +167,7 @@ let star_dotsstmtfn comb context_mode stmtdots =
       | [x] -> if do_not_star x then fn >> stmtfn x else fn >> starfn x
       | x::xs ->
           if do_not_star x
-          then insert_stars true (fn >> stmtfn x >> Snap.inc_line) xs
+          then insert_stars true (fn >> stmtfn x >> inc_line) xs
           else insert_stars false (fn >> starfn x) xs in
 
   insert_stars true (fun x -> x) (Ast0.undots stmtdots)
@@ -241,6 +247,7 @@ let rec gen_combiner ~context_mode =
     let whncodes = whencodes
       ~strfn:string_mcode ~exprfn:c_exprfn ~notfn:c_dotsstmtfn
       ~alwaysfn:c_stmtfn in
+    let inc_star = if context_mode then (fun x -> x) else Snap.inc_star in
 
     match Ast0.unwrap stmt with
 
@@ -253,7 +260,7 @@ let rec gen_combiner ~context_mode =
      * current line is starred, put them on a new line (inc_star).
      *)
     | Ast0.Nest(starter,stmt_dots,ender,whn,multi) ->
-        Snap.inc_star
+        inc_star
         >> string_mcode starter
         >> whncodes whn
         >> c_dotsstmtfn stmt_dots
@@ -262,12 +269,12 @@ let rec gen_combiner ~context_mode =
     | Ast0.Dots(dots,whn)
     | Ast0.Circles(dots,whn)
     | Ast0.Stars(dots,whn) ->
-        Snap.inc_star
+        inc_star
         >> string_mcode dots
         >> whncodes whn
 
     | Ast0.MetaStmt _ ->
-        Snap.inc_star
+        inc_star
         >> c_stmtfn stmt
 
     | Ast0.Disj _ ->
