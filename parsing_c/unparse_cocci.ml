@@ -881,9 +881,9 @@ and initialiser nlcomma i =
   | Ast.StrInitList(_,lb,[],rb,[]) ->
       mcode print_string lb; mcode print_string rb
   | Ast.StrInitList(_,lb,initlist,rb,[]) ->
-      mcode print_string lb; start_block();
+      mcode (print_string_with_hint StartBox) lb; start_block();
       initialiser_list nlcomma initlist;
-      end_block initlist; mcode print_string rb
+      end_block initlist; mcode (print_string_with_hint EndBox) rb
   | Ast.StrInitList(_,lb,initlist,rb,_) ->
       failwith "unexpected whencode in plus"
   | Ast.InitGccExt(designators,eq,ini) ->
