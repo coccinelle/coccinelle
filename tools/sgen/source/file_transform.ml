@@ -251,8 +251,10 @@ let skip_nameless_rule ~rule ~outch ~inch =
   let rule_line = Globals.extract_line name in
   let _ = assert (rule_line >= !line_number) in
   let inch =
-    if rule_line = !line_number then inch
-    else snd (find_line ~do_this:nothing ~until_line:rule_line inch) in
+    if rule_line = !line_number then
+      inch
+    else
+      snd (find_line ~do_this:(print_nl outch) ~until_line:rule_line inch) in
 
   (* currently, line is the line that contains the rule header. so we need
    * the rule header end @@ and then the start of the next rule.
