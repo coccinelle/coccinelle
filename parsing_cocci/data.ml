@@ -175,12 +175,12 @@ let add_fmtlist_meta:
 
 let add_assignOp_meta:
     (Ast.meta_name ->
-      Ast.assignOpconstraint -> Ast0.pure -> unit) ref =
+      Ast0.assignOpconstraint -> Ast0.pure -> unit) ref =
   ref uninitialized_add_meta
 
 let add_binaryOp_meta:
     (Ast.meta_name ->
-      Ast.binaryOpconstraint -> Ast0.pure -> unit) ref =
+      Ast0.binaryOpconstraint -> Ast0.pure -> unit) ref =
   ref uninitialized_add_meta
 
 let add_type_name: (string -> unit) ref =

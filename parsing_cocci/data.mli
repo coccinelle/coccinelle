@@ -127,11 +127,11 @@ val add_fmtlist_meta: (Ast_cocci.meta_name -> Ast_cocci.list_len -> unit) ref
 
 val add_assignOp_meta: 
     (Ast_cocci.meta_name ->
-      Ast_cocci.assignOpconstraint -> Ast0_cocci.pure -> unit) ref
+      Ast0_cocci.assignOpconstraint -> Ast0_cocci.pure -> unit) ref
 
 val add_binaryOp_meta: 
     (Ast_cocci.meta_name ->
-      Ast_cocci.binaryOpconstraint -> Ast0_cocci.pure -> unit) ref
+      Ast0_cocci.binaryOpconstraint -> Ast0_cocci.pure -> unit) ref
 
 val add_type_name: (string -> unit) ref
 
