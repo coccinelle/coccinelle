@@ -74,11 +74,11 @@ let spcmnt_re = sp_re ^ cmnt_re ^ sp_re
  *)
 let escape = Str.global_replace (Str.regexp "\\$") "\\\\$"
 
-let match_full rulename =
-  regex_match ("^@"^spcmnt_re^(escape rulename)^"\\(@\\|"^spp_re^".*@\\)")
+let match_full rule_name =
+  regex_match ("^@"^spcmnt_re^(escape rule_name)^"\\(@\\|"^spp_re^".*@\\)")
 
-let match_part rulename =
-  regex_match ("^@"^spcmnt_re^(escape rulename)^"\\("^spp_re^".*\\)?$")
+let match_part rule_name =
+  regex_match ("^@"^spcmnt_re^(escape rule_name)^"\\("^spp_re^".*\\)?$")
 
 let match_end = regex_match ".*@"
 
@@ -122,8 +122,8 @@ let rec print_to_end outch inch =
     End_of_file -> (print_newline outch; raise End_of_file));
   print_to_end outch inch
 
-(* goes through the file until finding the rule declaration of name, without
- * printing the rule declaration.
+(* goes through the file, printing it as it goes, until finding the rule
+ * declaration of name, without printing the rule declaration.
  * returns the line where the rule dec ends, and the in_channel at that stage.
  *)
 let skip_rule_dec name outch inch =
@@ -154,16 +154,18 @@ let skip_rule_dec name outch inch =
 (* ------------------------------------------------------------------------- *)
 (* PATCH SPECIFIC *)
 
-(* outputs the rule declaration with standard patch dependencies (hardcoded) *)
-let print_patch_decl outch newnm = function
+(* outputs the rule declaration with standard patch dependencies.
+ * rule_name is the new name which overrules the one in the Ast0 rule.
+ *)
+let print_patch_decl outch rule_name = function
   | Ast0.InitialScriptRule (nm,_,_,_,_)
   | Ast0.FinalScriptRule (nm,_,_,_,_)
   | Ast0.ScriptRule (nm,_,_,_,_,_) ->
       failwith ("Error: The rule " ^ nm ^ " is a script rule ...!")
-  | Ast0.CocciRule ((_,_,(isos,dropisos,deps,rulename,exists)),_,_) ->
-      let rulename = (match newnm with | Some n -> n | None -> rulename) in
-      let patch_header = Rule_header.generate_patch
-        ~isos ~dropisos ~deps ~rulename ~exists ~meta_vars:[] ~meta_pos:[] in
+  | Ast0.CocciRule ((_,_,(isos,drop_isos,deps,_,exists)),_,_) ->
+      let deps = Globals.add_patch_dependency deps in
+      let patch_header = Rule_header.generate
+        ~isos ~drop_isos ~deps ~rule_name ~exists ~meta_vars:[] ~meta_pos:[] in
       Rule_header.print_declaration outch patch_header
 
 (* prints the file until the declaration of the rule, which is then substituted
@@ -191,7 +193,7 @@ let print_nameless_rule ~rule ~handler ~outch ~inch =
     let (line, inch) = find_match ~do_this:nothing ~until:match_end inch in
     handler line inch
   else
-    failwith ("Error: Did not find a " ^ rule_name ^ ", instead found: " ^ line)
+    failwith ("Error: Did not find a " ^rule_name^ ", instead found: " ^line)
 
 (* Finds the declaration of the input rule ("@rulename ...@") and substitutes
  * it with a patch dependent version ("@rulename depends on patch ...@").
@@ -199,16 +201,22 @@ let print_nameless_rule ~rule ~handler ~outch ~inch =
 let print_rule_patch outch inch (rule, new_name) =
 
   (* prints out patch header. If there was anything after the rule declaration,
-   * print that too. returns the in channel *)
+   * print that too. returns the in_channel at the point after the printing.
+   *)
   let handler line inch =
-    print_patch_decl outch new_name rule; print_rest outch line; inch in
+    print_patch_decl outch new_name rule;
+    print_rest outch line;
+    inch in
+
+  let old_name = Ast0.get_rule_name rule in
 
   try
-    match new_name with
-    | Some n -> print_nameless_rule ~rule ~handler ~outch ~inch
-    | None -> print_named_rule ~rule ~handler ~outch ~inch
+    if old_name = new_name then
+       print_named_rule ~rule ~handler ~outch ~inch
+    else
+       print_nameless_rule ~rule ~handler ~outch ~inch
   with
-    | End_of_file -> fail_eof (Ast0.get_rule_name rule)
+    | End_of_file -> fail_eof old_name
     | e -> raise e (* propagate exception upwards *)
 
 
@@ -234,7 +242,8 @@ let next outch inch =
 let skip_named_rule ~rule ~last_line ~outch ~inch =
   let name = Ast0.get_rule_name rule in
   let (_,inch) =
-    if match_part name last_line then (last_line, inch)
+    if match_part name last_line
+    then (last_line, inch)
     else begin
       if String.contains last_line '@' then failwith
         ("Transform error: Can't currently handle this case. Don't " ^
@@ -256,7 +265,7 @@ let skip_nameless_rule ~rule ~outch ~inch =
     else
       snd (find_line ~do_this:(print_nl outch) ~until_line:rule_line inch) in
 
-  (* currently, line is the line that contains the rule header. so we need
+  (* at this point, line is the line that contains the rule header. so we need
    * the rule header end @@ and then the start of the next rule.
    *)
   let (_,inch) = find_match ~do_this:nothing ~until:match_rule_end inch in
@@ -265,19 +274,23 @@ let skip_nameless_rule ~rule ~outch ~inch =
 (* print a context rule (that is, don't print it, but find it and skip it!)
  * last_res is (the last line contents, the in_channel) from the previous call.
  *
- * returns Some (last line contents, in_channel) if there was another rule after
- * the input rule, otherwise None.
+ * returns Some (last line contents, in_channel) if there was another rule
+ * after the input rule, otherwise None.
  *)
 let print_rule_context outch last_res (rule, new_name) =
+
+  let old_name = Ast0.get_rule_name rule in
+
   try
-    match last_res, new_name with
-    | None, _ -> raise End_of_file
-    | Some (last_line, inch), None ->
-        skip_named_rule ~rule ~last_line ~outch ~inch
-    | Some (_, inch), Some n ->
-        skip_nameless_rule ~rule ~outch ~inch
+    match last_res with
+    | None -> raise End_of_file
+    | Some (last_line, inch) ->
+        if old_name = new_name then
+          skip_named_rule ~rule ~last_line ~outch ~inch
+        else
+          skip_nameless_rule ~rule ~outch ~inch
   with
-    | End_of_file -> fail_eof (Ast0.get_rule_name rule)
+    | End_of_file -> fail_eof old_name
     | e -> raise e (* propagate exception upwards *)
 
 let print_context outch inch rules =
@@ -292,7 +305,7 @@ let print_context outch inch rules =
 (* reads the file and prints it with transformations.
  * assumes rules are sorted in order of when they occur in the script.
  *)
-let print ~file_name ~preface ~virtuals ~ordered_rules ~context_mode outch =
+let print ~context_mode ~file_name ~preface ~virtuals ~ordered_rules outch =
   let _ = line_number := 0 in
   let _ = print_nl outch preface in
   let _ = print_virtuals outch virtuals in

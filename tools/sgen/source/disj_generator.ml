@@ -69,7 +69,7 @@ let handle_disj
       | (t,b) :: ts, p :: ps ->
           handle_cases' ts ps (fn >> set_modefn b >> casefn t >> strfn p)
       | _ ->
-          assert false (*should be exactly one more stmt than pipes*) in
+          assert false (* should be exactly one more stmt than pipes *) in
     handle_cases' tblist pipes (fun x -> x) in
 
   let disj =
@@ -82,15 +82,18 @@ let handle_disj
       strfn lp >> handle_no_gen combined pipes >> strfn rp
     end
 
-    (* CASE 2: only some are patches, generate extra rule *)
+    (* CASE 2: only some are patches, generate extra rule (disj result) *)
     else begin
+
+      (* if b is true, DO generate positions/stars and add to disj result *)
       let set_add_disj b = Snap.set_no_gen (not b) >> Snap.set_disj_mode b in
-      let handle_gen = handle_cases set_add_disj in
+      let handle_do_gen = handle_cases set_add_disj in
+
       Snap.init_disj_result
       >> set_add_disj mult_stmt >> strfn lp
-      >> handle_gen combined pipes
+      >> handle_do_gen combined pipes
       >> set_add_disj mult_stmt >> strfn rp
-      >> set_add_disj true >> Snap.set_no_gen false
+      >> set_add_disj true
     end in
 
   freeze_pos disj snapshot

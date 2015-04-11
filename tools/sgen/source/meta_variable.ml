@@ -80,7 +80,7 @@ module MVSet = Set.Make(
         | true, false -> -1
         | false, true -> 1
         | true, true -> String.compare n1 n2
-        | false, false -> 
+        | false, false ->
             (match (is_identifier t1, is_identifier t2) with
               | true, false -> -1
               | false, true -> 1
@@ -281,7 +281,8 @@ let list_format ~rn ~before ~mc:((mn,_,_,_,_,_) as mc) ~listlen =
   MVSet.add mv pos
 
 (* for iterators and declarers *)
-let ids ~rn ~typ ~id = match Ast0.unwrap id with
+let ids ~rn ~typ ~id =
+  match Ast0.unwrap id with
   | Ast0.Id mc ->
       mc_format ~rn ~mc ~totup_fn:str_tup ~before:(typ ^ " name ") ~after:""
   | Ast0.MetaId (mc, idconstr, s, _) -> (* ever seed here? *)
@@ -295,7 +296,8 @@ let ids ~rn ~typ ~id = match Ast0.unwrap id with
 (* THE COMBINER *)
 
 (* MVSet Visitor_ast0_types.combiner_rec_functions
- * Using the flat combiner from Visitor_ast0 *)
+ * Using the flat combiner from Visitor_ast0
+ *)
 
 let metavar_combiner rn =
   let option_default = MVSet.empty in
@@ -328,6 +330,7 @@ let metavar_combiner rn =
   let topfn = donothing in
 
   (* --- These are shortened formatting functions that return MVSets --- *)
+
   (* Formats as <bef mn aft> where mn is extracted from meta_name mcode mc *)
   let meta_mc_format ~mc ~typ ~constr =
     mc_format ~rn ~mc ~totup_fn:(name_tup ~rn) ~before:typ ~after:constr in
@@ -385,6 +388,8 @@ let metavar_combiner rn =
     | Ast0.MetaType (mc, pure) -> meta_mc_format ~mc ~typ:"type " ~constr:""
     | Ast0.AsType (tc1, tc2) ->
         let ty = c.VT0.combiner_rec_typeC in as_format tc1 tc2 ty ty
+    (* this clause generates unparsable scripts for who knows what reason ...
+     * TODO: need to find out if it should be included or not. *)
     | Ast0.TypeName mc -> str_mc_format ~mc ~typ:"typedef "
     | _ -> fn v in
 

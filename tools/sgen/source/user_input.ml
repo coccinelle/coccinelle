@@ -16,13 +16,14 @@ module RuleMap = Map.Make (String)
  *)
 
 (* ------------------------------------------------------------------------- *)
-(* HELPERS *)
+(* HELPERS FOR USER INPUT *)
 
 let opt s = if s = "" then None else Some s
 let rev_opt p = function Some s -> p ^ s ^ "\n" | None -> ""
 
 (* Count number of format variables, effectively number of unescaped %'s. *)
 let count_format_vars s =
+
   (* ignore escaped percent signs, which in python is %%. *)
   let s = Str.global_replace (Str.regexp_string "%%") "" s in
   let rec count_pct acc i s =
@@ -45,7 +46,11 @@ let check_format_string (msg, mvs) =
 (* reconstructs a format string from the message and metavars (as strings) *)
 let make_format_string msg =
   let msg = "\"" ^ msg ^ "\"" in
-  function [] -> msg | x -> msg ^ " % " ^ "(" ^ (String.concat "," x) ^ ")"
+  function
+    | [] -> msg
+    | x ->
+        let x = List.map MV.tostring_mv x in
+        msg ^ " % " ^ "(" ^ (String.concat "," x) ^ ")"
 
 (* turn user-specified metavariable strings into metavariables.
  * important that they are created with no rulename if within the same rule,
@@ -61,43 +66,64 @@ let make_metavars =
     | _ -> failwith "bounded split" in
   List.map mv
 
-(* sort the rules in userinput in the order specified by ordered_rules
- * ordered_rules must all be valid for generation (ie. */+/- rules)
- * if the original rule could not be found in the userinput, use default msg
- *)
-let sort_rules ordered_rules userinput =
-  let default = Globals.get_default_message() in
-  let format_rule x =
-    try
-      let (newnm, (om, ov), (rm, rv)) = RuleMap.find x userinput in
-      let ov, rv = make_metavars ov, make_metavars rv in
-      ((x, newnm), (om, ov), (rm, rv))
-    with Not_found ->
-      let rulenm = Globals.generate_rule x in
-      ((x, rulenm), (default, []), (default, [])) in
-  List.map format_rule ordered_rules
-
 
 (* ------------------------------------------------------------------------- *)
 (* CONFIDENCE TYPE *)
 
 (* confidence in the accuracy of the script *)
-type confidence = Low | Moderate | High
 
-let conf_tostring =
-  function Low -> "Low" | Moderate -> "Moderate" | High -> "High"
+module Confidence = struct
+  type t =  Low | Moderate | High
 
-let conf_fromstring s =
-  match String.lowercase s with
-  | "low" | "l" -> Low | "moderate" | "m" -> Moderate | "high" | "h" -> High
-  | s -> failwith ("Confidence must be low, moderate, or high, not " ^ s)
+  let to_string =
+    function Low -> "Low" | Moderate -> "Moderate" | High -> "High"
+
+  let from_string s =
+    match String.lowercase s with
+    | "low" | "l" -> Low
+    | "moderate" | "m" -> Moderate
+    | "high" | "h" -> High
+    | s -> failwith ("Confidence must be low, moderate, or high, not " ^ s)
+end
+
+
+(* ------------------------------------------------------------------------- *)
+(* USER RULE TYPE *)
+
+(* user-specified data to put in sgenerated script.
+ * type is (rulename, (org message, org metavars), (rep message, rep metavars))
+ * rulename can be original rulename or a new user-specified one.
+ *)
+
+module Rule = struct
+  type t = string * (string * MV.t list) * (string * MV.t list)
+
+  (* constructor. If rulename is nameless ie. "rule starting on line ...",
+   * generate a new one.
+   *)
+  let make ~rule_name ~org ~report =
+    let ((om,ov),(rm,rv)) = (org, report) in
+    let _ = assert (rule_name <> "" && not(om = "" && rm = "")) in
+    let rule_name =
+      if String.contains rule_name ' '
+      then Globals.generate_rule rule_name
+      else rule_name in
+    let ov, rv = make_metavars ov, make_metavars rv in
+    (rule_name, (om,ov), (rm,rv))
+
+  let get_name (n,_,_) = n
+
+  let get_org (_,o,_) = o
+
+  let get_report (_,_,r) = r
+end
 
 
 (* ------------------------------------------------------------------------- *)
 (* USER INPUT TYPE *)
 
 (* user_input type that covers all the data specified by the user
- * rules are a map, mapping rulename to
+ * rules are a map, mapping original rulename to
  * (new rulename, (org message, org metavars), (rep message, rep metavars)
  *)
 type t =
@@ -105,13 +131,12 @@ type t =
   description : string;
   limitations : string list;
   keywords : string option;
-  confidence : confidence;
+  confidence : Confidence.t;
   comments : string option;
   options : string option;
   authors : string list;
   url : string option;
-  rules :
-   (string option * (string * string list) * (string * string list)) RuleMap.t;
+  rules : Rule.t RuleMap.t;
 }
 
 (* CONSTRUCTOR, description and confidence levels are required. *)
@@ -136,25 +161,24 @@ let set_url url t = { t with url = opt url }
 let add_author auth t = { t with authors = auth :: t.authors }
 let set_authors auths t = { t with authors = auths }
 
+(* check that rulename is valid + is not already added. Returns unit. *)
 let check_name nm t =
-  let find a _ = function
-    | (Some newnm,_,_) -> nm = newnm | _ -> false in
-  if RuleMap.exists (find nm) t.rules
-  then failwith ("Error: trying to name two rules \"" ^ nm ^"\"!")
-  else Globals.check_rule ~strict:true nm
+  let already key value =
+    let new_name = Rule.get_name value in
+    (key = new_name && key = nm) || (* nm is same as already added rule *)
+    (new_name = nm) in              (* nm is same as other rule with new nm *)
+  if RuleMap.exists already t.rules then
+    failwith ("Error: already another rule named \"" ^ nm ^"\"!")
+  else
+    Globals.check_rule ~strict:true nm
 
 (* add rule to rulemap in t.
- * for nameless rules: check legality of user-declared name or generate one if
- * user only declared line number in config.
+ * for nameless rules: check legality of user-declared name.
  *)
-let add_rule ((rnm,newnm),(om,ov),(rm,rv)) t =
-  let _ = assert (rnm <> "" && not(om = "" && rm = "")) in
-  let newnm =
-    match newnm with
-    | Some nm -> (check_name nm t; newnm)
-    | None ->
-        if String.contains rnm ' ' then Globals.generate_rule rnm else None in
-  { t with rules = RuleMap.add rnm (newnm,(om,ov),(rm,rv)) t.rules }
+let add_rule ~rule_name rule t =
+  let newnm = Rule.get_name rule in
+  let _ = if rule_name <> newnm then check_name newnm t in
+  { t with rules = RuleMap.add rule_name rule t.rules }
 
 (* GETTERS *)
 (* format the preface information and turn it into one big string *)
@@ -171,7 +195,7 @@ let get_preface
   let limits =
     String.concat "\n" (List.map (Globals.pre_split ~prefix:"//# ") l) in
   let keys = Globals.pre_split_opt ~prefix:"// Keywords: " k in
-  let confidence = "// Confidence: " ^ (conf_tostring c) in
+  let confidence = "// Confidence: " ^ (Confidence.to_string c) in
   let comments = Globals.pre_split_opt ~prefix:"// Comments: " m in
   let options = Globals.pre_split_opt ~prefix:"// Options: " o in
   let authors = String.concat "\n" (List.map author_format a) in
@@ -180,8 +204,16 @@ let get_preface
     options; keys] in
   String.concat "\n" (List.filter ((<>) "") preface)
 
-(* gets rules from the input ordered according to the original */+/- rules *)
-let get_rules ~ordered_rules {rules=r; _} = sort_rules ordered_rules r
+(* get the user-input rulename and org and report messages for rule_name.
+ * if the original rule could not be found in the userinput, use default msg
+ *)
+let get_rule ~rule_name {rules = r; _} =
+  try
+    RuleMap.find rule_name r
+  with Not_found ->
+    let rulenm = Globals.generate_rule rule_name in
+    let default = Globals.get_default_message() in
+    (rulenm, (default, []), (default, []))
 
 
 (* ------------------------------------------------------------------------- *)
@@ -192,10 +224,10 @@ let unparse_rule rnm (newnm,(orgmsg,orgmvs),(repmsg,repmvs)) =
   let orgmsg = make_format_string orgmsg orgmvs in
   let repmsg = make_format_string repmsg repmvs in
   let rnm =
-    match newnm with
-    | Some nm ->
-        let l = Globals.extract_line rnm in (string_of_int l) ^ ":" ^ nm
-    | None -> rnm in
+    if rnm <> newnm then
+      let l = Globals.extract_line rnm in (string_of_int l) ^ ":" ^ newnm
+    else
+      rnm in
   rnm ^ " =\n" ^ "  org:" ^ orgmsg ^ "\n  report:" ^ repmsg ^ "\n"
 
 (* turn a user input collection into its corresponding config script *)
@@ -210,7 +242,7 @@ let unparse
   let c = if limitations = [] then "" else
     "limitations = " ^ (String.concat "|" limitations) ^ "\n" in
   let d = rev_opt "keywords = " keywords in
-  let e = "confidence = " ^ (conf_tostring confidence) ^ "\n" in
+  let e = "confidence = " ^ (Confidence.to_string confidence) ^ "\n" in
   let f = rev_opt "comments = " comments in
   let g = rev_opt "options = " options in
   let h = if authors = [] then "" else

@@ -25,25 +25,15 @@
  * currently being generated.
  *)
 val parse_local :
-  ordered_rules:string list ->
+  rule_names:string list ->
   config_name:string ->
-  string *                           (* preface *)
-  ((string * string option) *        (* old rulename, new rulename *)
-   (string * Meta_variable.t list) * (* org *)
-   (string * Meta_variable.t list)   (* rep *)
-  ) list
+  User_input.t
 
 (* no user input, default is:
  * description = No description.
  * confidence = Moderate
  *)
-val parse_default :
-  ordered_rules:string list ->
-  string *                           (* preface *)
-  ((string * string option) *        (* old rulename, new rulename *)
-   (string * Meta_variable.t list) * (* org *)
-   (string * Meta_variable.t list)   (* rep *)
-  ) list
+val parse_default : User_input.t
 
 (* read global config for general information in any rule generation.
  * TODO: implement.

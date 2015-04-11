@@ -56,10 +56,10 @@
 (* TRANSFORMATION FUNCTIONS *)
 
 val print :
+  context_mode:bool ->
   file_name:string ->
   preface:string ->
   virtuals:string list ->
-  ordered_rules:(Ast0_cocci.parsed_rule * string option (* new name *)) list ->
-  context_mode:bool ->
+  ordered_rules:(Ast0_cocci.parsed_rule * string (* new name *)) list ->
   out_channel ->
   unit

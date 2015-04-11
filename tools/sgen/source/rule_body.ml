@@ -12,7 +12,7 @@ module DG = Disj_generator
 (* Generates the rule body of a context rule.
  *
  * Main logic for starring lines:
- * CONTEXT ( * ): put the stars where they were in the original rule. Do not
+ * CONTEXT ( * ): put the stars where they were in the original rule.  Do not
  * change rule layout, only add positions.
  *
  * PATCH (+/-): If a statement dots contain any minus transformations, put the
@@ -45,6 +45,7 @@ let printfn out x =
   List.iter (fun x -> output_string out x; print_newl out) x;
   print_newl out
 
+
 (* ------------------------------------------------------------------------- *)
 (* FUNCTIONS TO HANDLE SPECIAL CASES *)
 
@@ -63,7 +64,11 @@ and add_pos ~context_mode = function
   (* these are the added/generated positions (hence the PLUS mode) *)
   | Ast0.MetaPosTag(Ast0.MetaPos(((_,nm),arity,_,Ast0.PLUS _,_,_),_,_)) ->
       let default = Snap.add_with_arity ("@"^nm) arity in
-      if context_mode then default else starrify_line arity >> default
+      if context_mode then
+        default
+      else
+        starrify_line arity
+        >> default
   | Ast0.MetaPosTag(Ast0.MetaPos(((_,nm),arity,_,_,p,_),_,_))
 
   (* extracting the node is equivalent to calling Ast0.unwrap *)
@@ -72,24 +77,25 @@ and add_pos ~context_mode = function
   | Ast0.DeclTag {Ast0.node = Ast0.MetaDecl(((_,nm),arity,_,_,p,_),_); _}
   | Ast0.IdentTag {Ast0.node = Ast0.MetaId(((_,nm),arity,_,_,p,_),_,_,_); _}
   | Ast0.TypeCTag {Ast0.node = Ast0.MetaType(((_,nm),arity,_,_,p,_),_); _} ->
-      Snap.add_with_arity ("@"^nm) arity >> add_positions ~context_mode !p
+      Snap.add_with_arity ("@"^nm) arity
+      >> add_positions ~context_mode !p
   | _ -> failwith "add_pos only supported for metavariables."
 
 (* renders the mcode as a string in the map and updates the line number.
  * context_mode means that the stars are put where the minuses are.
  *)
-let mcode ~context_mode fn (x, a, info, mc, pos, _) =
+let mcode ~context_mode ~tostring_fn (x, a, info, mc, pos, _) =
+
   let default ~add_star =
     Snap.skip ~rule_line:(info.Ast0.pos_info.Ast0.line_start)
     >> (if add_star then starrify_line a else (fun a -> a))
     >> Snap.add info.Ast0.whitespace
-    >> Snap.add_with_arity (fn x) a
+    >> Snap.add_with_arity (tostring_fn x) a
     >> add_positions ~context_mode !pos in
+
   match mc with
-  | Ast0.MINUS _ ->
-      default ~add_star:context_mode
-  | Ast0.CONTEXT _ ->
-      default ~add_star:false
+  | Ast0.MINUS _ -> default ~add_star:context_mode
+  | Ast0.CONTEXT _ -> default ~add_star:false
   | _ -> failwith "plus and mixed not allowed, should be the minus ast0..."
 
 (* Handle Ast0_cocci.whenmodes. Primary purpose is to handle WhenModifiers
@@ -126,15 +132,16 @@ let whencodes ~strfn ~exprfn ~notfn ~alwaysfn l =
  * Only give positions and stars to statements if they are the first in a dots
  * or come immediately after a nest, dots, disjunction, or metastatement.
  *)
-let star_dotsstmtfn comb context_mode stmtdots =
+let star_dotsstmtfn ~context_mode combiner stmtdots =
 
   (* detects if any of the statements in here contain minuses in which case we
    * put the stars where the minuses are.
-   * NOTE: uses minus rule, so does not detect + slices which is what we want!
+   * NOTE: uses only minus rule, so does not detect plus slices. This is
+   * exactly what we want to happen as plus slices are not in generated rule!
    *)
   let detect_patch = Detect_patch.detect_statement_dots stmtdots in
   let has_minuses = Detect_patch.is_patch detect_patch in
-  let c = comb ~context_mode:(context_mode || has_minuses) in
+  let c = combiner ~context_mode:(context_mode || has_minuses) in
   let stmtfn = c.VT0.combiner_rec_statement in
 
   (* inserts position into statement where structurally appropriate *)
@@ -153,7 +160,7 @@ let star_dotsstmtfn comb context_mode stmtdots =
     | Ast0.MetaStmt _ -> true | _ -> false in
 
   (* increase line number if not in context_mode (if context_mode, we don't
-   * want to modify layout, only add positions
+   * want to modify layout, only add positions).
    *)
   let inc_line = if context_mode then (fun x -> x) else Snap.inc_line in
 
@@ -164,7 +171,10 @@ let star_dotsstmtfn comb context_mode stmtdots =
     let starfn = if star_current then star_stmtfn else stmtfn in
     function
       | [] -> fn
-      | [x] -> if do_not_star x then fn >> stmtfn x else fn >> starfn x
+      | [x] ->
+          if do_not_star x
+          then fn >> stmtfn x
+          else fn >> starfn x
       | x::xs ->
           if do_not_star x
           then insert_stars true (fn >> stmtfn x >> inc_line) xs
@@ -190,7 +200,7 @@ let rec gen_combiner ~context_mode =
   (* apply the passed function, do nothing else *)
   let donothing r k e = k e in
 
-  let mcode a = mcode ~context_mode a in
+  let mcode a = mcode ~context_mode ~tostring_fn:a in
   let meta_mcode = mcode S.meta_tostring in
   let string_mcode = mcode (fun x -> x) in
   let const_mcode = mcode S.constant_tostring in
@@ -288,7 +298,7 @@ let rec gen_combiner ~context_mode =
     (fun snp ->
        if Snap.no_gen snp (* add no positions; this is relevant in whencodes *)
        then c_dotsstmtfn dotsstmt snp
-       else star_dotsstmtfn gen_combiner context_mode dotsstmt snp) in
+       else star_dotsstmtfn ~context_mode gen_combiner dotsstmt snp) in
 
   (* detect if disj is the only thing, in which case we don't want to split
    * the disjunction rule.
@@ -328,7 +338,7 @@ type t = string list
 (* Creates a context mode rule for the input rule.
  * Returns list of added metapositions and the new rule.
  *)
-let generate ~disj_map ~context_mode ~rule_name ~minus_rule =
+let generate ~context_mode ~disj_map ~minus_rule =
   let snp = Snap.make ~disj_map in
   let combiner = gen_combiner ~context_mode in
   let final = reduce combiner.VT0.combiner_rec_top_level minus_rule snp in

@@ -25,6 +25,7 @@ val make :
 (* getters *)
 val get_rule : t -> string
 val get_name : t -> string
+val tostring_mv : t -> string
 
 (* forces inheritance if the metavar is not already inherited *)
 val inherit_rule : new_rule:string -> t -> t
