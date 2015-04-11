@@ -34,15 +34,24 @@ let speclist =
 [
   ("--config", Arg.String set_config,
    " <file> Configuration file for the generated file.");
-  ("-c", Arg.String set_config, " <file> Shorthand for --config.");
+
+  ("-c", Arg.String set_config,
+   " <file> Shorthand for --config.");
+
   ("--interactive", Arg.Set interactive,
    " Run the program in interactive mode.");
-  ("-i", Arg.Set interactive, " Shorthand for --interactive.");
+
+  ("-i", Arg.Set interactive,
+   " Shorthand for --interactive.");
+
   ("-o", Arg.Set_string output,
    " <file> Output result to this file instead of standard output.");
+
   ("--default", Arg.Set default,
    " Generate the file using generic default values instead of user input.");
-  ("--no-output", Arg.Set hide, " Don't print the result.");
+
+  ("--no-output", Arg.Set hide,
+   " Don't print the result.");
 ]
 
 (* ------------------------------------------------------------------------- *)

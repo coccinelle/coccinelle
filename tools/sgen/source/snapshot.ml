@@ -40,11 +40,14 @@ module IntMap = Common.IntMap
 
 type arity = OPT | NONE
 
-let tostring_arity = function OPT -> "?" | NONE -> ""
+let tostring_arity = function
+  | OPT -> "?"
+  | NONE -> ""
 
 (* converts Ast0.arity to local arity *)
 let to_a = function
-  | Ast0.OPT -> OPT | Ast0.NONE -> NONE
+  | Ast0.OPT -> OPT
+  | Ast0.NONE -> NONE
   | Ast0.UNIQUE -> failwith "Unique not supported."
 
 
@@ -56,13 +59,17 @@ let to_a = function
 type mode = Star of arity | Context of arity
 
 let tostring_mode = function
-  | Context a -> (tostring_arity a) ^ ""
   | Star a -> (tostring_arity a) ^ "* "
+  | Context a -> (tostring_arity a) ^ ""
 
-let is_star m = match m with | Star _ -> true | Context _ -> false
+let is_star = function
+  | Star _ -> true
+  | Context _ -> false
 
 let set_arity m a = match m, a with
-  | Context _, Some a -> Context a | Star _, Some a -> Star a | m, None -> m
+  | Context _, Some a -> Context a
+  | Star _, Some a -> Star a
+  | m, None -> m
 
 
 (* ------------------------------------------------------------------------- *)
@@ -132,6 +139,10 @@ let skip ~rule_line snp =
 
 (* Functions for modifying the generated rule (represented as map that maps
  * line number to mode and contents (string)).
+ *
+ * NOTE: can be changed to hashtbl if needed. Just also need to
+ *  - make the record field mutable.
+ *  - in get_result, need to sort by line number when extracting the lines.
  *)
 
 (* add the value in v to the entry that has i as key *)
@@ -226,8 +237,8 @@ let get_disj l snp = Detect_patch.get_disj_patch l snp.disj_map
 (* start generation of disjunction rule, copy the existing generated rule *)
 let init_disj_result snp =
   match snp.disj_result with
-   | Some s -> snp
-   | None -> { snp with disj_result = Some snp.result }
+  | Some s -> snp
+  | None -> { snp with disj_result = Some snp.result }
 
 let set_disj_mode b snp = { snp with disj_mode = b }
 
@@ -271,5 +282,5 @@ let get_result snp =
     List.map (fun (_,(c,s)) -> if no_mode then s else (tostring_mode c) ^ s)
       (IntMap.bindings x) in
   match snp.disj_result with
-    | Some d -> (transform snp.result true, Some (transform d false))
-    | None -> (transform snp.result false, None)
+  | Some d -> (transform snp.result true, Some (transform d false))
+  | None -> (transform snp.result false, None)

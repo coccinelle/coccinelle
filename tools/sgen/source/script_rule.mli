@@ -28,20 +28,17 @@ type t
 
 (* generates org and report script for one rule.
  * metapos is the list of added metapositions that show where the match is.
+ * user_rule contains the rule name, the rule messages and the metavars.
+ *
  * INVARIANT: there MUST be at least one position in the metapos list!!!
  *)
 val generate :
-  metapos:Meta_variable.t list ->
-  user_input:
-    (string * string option) *         (* old rulename, new rulename *)
-    (string * Meta_variable.t list) *  (* org message and metavars *)
-    (string * Meta_variable.t list) -> (* report message and metavars *)
+  meta_pos:Meta_variable.t list ->
+  user_rule:User_input.Rule.t ->
   t
 
-(* prints the script rules, org first, then report *)
-val print : out_channel -> t -> unit
+(* prints org rule *)
+val print_org : out_channel -> t -> unit
 
-(* print a list of script rules, grouping the org and the report rules
- * the (unit -> unit) function is called between org and report
- *)
-val print_split : out_channel -> (unit -> unit) -> t list -> unit
+(* prints report rule *)
+val print_report : out_channel -> t -> unit
