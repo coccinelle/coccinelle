@@ -29,7 +29,7 @@ let make_pos (_, arity, info, mcodekind, _, adj) snp =
 let wrap a snp = Some (Ast0.wrap a, snp)
 let all_same = function [] -> true | x :: xs -> List.for_all (( = ) x) xs
 
-(* adds generated metaposition to mcode *)
+(* adds generated metaposition to mcode unless it is optional *)
 let mcode_pos ((x, a, info, mc, pos, q) as mco) snp =
   if a = Ast0.OPT then (mco, snp) else
   let (newpos, snp) = make_pos mco snp in

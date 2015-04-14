@@ -120,6 +120,16 @@ let tmeta_to_param (name,pure,clt) =
      (function TMetaParam(_,_,_) -> true | _ -> false));
   Ast0.wrap(Ast0.MetaParam(P.clt2mcode name clt,pure))
 
+let tmeta_to_assignOp (name,pure,clt) =
+  (coerce_tmeta "an assignment operator" name (TMetaAssignOp(name,Ast0.AssignOpNoConstraint,pure,clt))
+     (function TMetaAssignOp(_,_,_,_) -> true | _ -> false));
+  Ast0.wrap(Ast0.MetaAssign(P.clt2mcode name clt,Ast0.AssignOpNoConstraint, pure))
+
+let tmeta_to_binaryOp (name,pure,clt) =
+  (coerce_tmeta "a binary operator" name (TMetaBinaryOp(name,Ast0.BinaryOpNoConstraint,pure,clt))
+     (function TMetaBinaryOp(_,_,_,_) -> true | _ -> false));
+  Ast0.wrap(Ast0.MetaBinary(P.clt2mcode name clt,Ast0.BinaryOpNoConstraint, pure),clt)
+
 let tmeta_to_statement (name,pure,clt) =
   (coerce_tmeta "a statement" name (TMetaType(name,pure,clt))
      (function TMetaType(_,_,_) -> true | _ -> false));
@@ -202,6 +212,8 @@ let mklogop (op,clt) =
 %token <Parse_aux.midinfo>       TMetaId
 %token <Parse_aux.idinfo>        TMetaFunc TMetaLocalFunc
 %token <Parse_aux.idinfo>        TMetaIterator TMetaDeclarer
+%token <Parse_aux.assignOpinfo> TMetaAssignOp
+%token <Parse_aux.binaryOpinfo> TMetaBinaryOp
 %token <Parse_aux.expinfo>       TMetaErr
 %token <Parse_aux.info>          TMetaParam TMetaStm TMetaStmList TMetaType
 %token <Parse_aux.info>          TMetaInit TMetaDecl TMetaField TMeta
@@ -273,7 +285,7 @@ let mklogop (op,clt) =
 %left TEqEq TNotEq
 %left TLogOp /* TInf TSup TInfEq TSupEq */
 %left TShLOp TShROp /* TShl TShr */
-%left TPlus TMinus
+%left TPlus TMinus TMetaBinaryOp
 %left TMul TDmOp /* TDiv TMod TMin TMax */
 
 /*
@@ -532,18 +544,37 @@ metadec:
 	  let tok = check_meta(Ast.MetaFragListDecl(arity,name,lenname)) in
 	  !Data.add_fmtlist_meta name lenname; tok)
 	len ids }
-| ar=arity TBinary TOperator id_=pure_ident TEq TOBrace ops=comma_list(binary_operator) TCBrace TMPtVirg
-  { let (id0,_) = id_ in
-    let id = (id0, id0) in
-    Printf.fprintf stderr "binary operator %s = { %s }\n" id0
-    (String.concat ", " (List.map Ast0.string_of_binaryOp ops));
-    fun _ -> [Common.Right (Ast.MetaBinaryOperatorDecl (ar, id))] }
-| ar=arity TAssignment TOperator id_=pure_ident TEq TOBrace ops=comma_list(assignment_operator) TCBrace TMPtVirg
-  { let (id0,_) = id_ in
-    let id = (id0, id0) in
-    Printf.fprintf stderr "assignment operator %s = { %s }\n" id0
-    (String.concat ", " (List.map Ast0.string_of_assignOp ops));
-    fun _ -> [Common.Right (Ast.MetaAssignmentOperatorDecl (ar, id))] }
+| ar=arity TBinary TOperator
+    ids=comma_list(pure_ident_or_meta_ident_with_binop_constraint) TMPtVirg
+    { P.create_metadec_with_constraints ar Ast0.Impure
+	(fun arity name pure check_meta constraints ->
+	  let tok = check_meta(Ast.MetaBinaryOperatorDecl(arity,name)) in
+	  !Data.add_binaryOp_meta name constraints pure; tok)
+        ids }
+| ar=arity TAssignment TOperator
+    ids=comma_list(pure_ident_or_meta_ident_with_assignop_constraint)
+    TMPtVirg
+    { P.create_metadec_with_constraints ar Ast0.Impure
+	(fun arity name pure check_meta constraints ->
+	  let tok = check_meta(Ast.MetaAssignmentOperatorDecl(arity,name)) in
+	  !Data.add_assignOp_meta name constraints pure; tok)
+        ids }
+
+pure_ident_or_meta_ident_with_binop_constraint:
+    i=pure_ident_or_meta_ident c=binaryopconstraint { (i,c) }
+
+binaryopconstraint:
+  { Ast0.BinaryOpNoConstraint }
+| TEq TOBrace ops=comma_list(binary_operator) TCBrace 
+  { Ast0.BinaryOpInSet ops }
+
+pure_ident_or_meta_ident_with_assignop_constraint:
+    i=pure_ident_or_meta_ident c=assignopconstraint { (i,c) }
+
+assignopconstraint:
+  { Ast0.AssignOpNoConstraint }
+| TEq TOBrace ops=comma_list(assignment_operator) TCBrace 
+  { Ast0.AssignOpInSet ops }
 
 binary_operator:
 | TShLOp { mkarithop $1 } (* Ast.Arith Ast.DecLeft *)
@@ -1818,6 +1849,13 @@ assign_expr(r,pe):
       Ast0.wrap
 	  (Ast0.Assignment
 	     ($1, op'', Ast0.set_arg_exp $3,false)) }
+  | unary_expr(r,pe) TMetaAssignOp assign_expr_bis
+      { let (mv, cstrt, pure, clt) = $2 in
+      let op' = P.clt2mcode mv clt in
+      let op'' = Ast0.wrap (Ast0.MetaAssign (op', cstrt, pure)) in
+      Ast0.wrap
+	  (Ast0.Assignment
+	     ($1, op'', Ast0.set_arg_exp $3,false)) }
 
 assign_expr_bis:
     cond_expr(eexpr,dot_expressions)                        { $1 }
@@ -1871,6 +1909,11 @@ arith_expr(r,pe):
       { P.logic_op Ast.AndLog $1 $2 $3 }
   | arith_expr(r,pe) TOrLog  arith_expr_bis
       { P.logic_op Ast.OrLog $1 $2 $3 }
+  | arith_expr(r,pe) TMetaBinaryOp  arith_expr_bis
+      { let (mv, cstrt, pure, clt) = $2 in
+      let op' = P.clt2mcode mv clt in
+      let op = Ast0.wrap (Ast0.MetaBinary (op', cstrt, pure)) in
+      Ast0.wrap (Ast0.Binary($1, op, $3)) }
 
 // allows dots now that an expression-specific token has been seen
 // need an extra rule because of recursion restrictions

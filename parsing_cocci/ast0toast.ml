@@ -448,14 +448,22 @@ and assignOp op =
     (match Ast0.unwrap op with
       Ast0.SimpleAssign op' -> Ast.SimpleAssign (mcode op')
     | Ast0.OpAssign op' -> Ast.OpAssign (mcode op')
-    | Ast0.MetaAssign(mv, c, _) -> Ast.MetaAssign(mcode mv, c, unitary, false))
+    | Ast0.MetaAssign(mv, c, _) ->
+      Ast.MetaAssign(mcode mv, assignOpconstraint c, unitary, false))
+and assignOpconstraint = function
+  | Ast0.AssignOpNoConstraint -> Ast.AssignOpNoConstraint
+  | Ast0.AssignOpInSet ops -> Ast.AssignOpInSet (List.map assignOp ops)
 
 and binaryOp op =
   rewrap op no_isos
     (match Ast0.unwrap op with
       Ast0.Arith op' -> Ast.Arith (mcode op')
     | Ast0.Logical op' -> Ast.Logical (mcode op')
-    | Ast0.MetaBinary(mv, c, _) -> Ast.MetaBinary(mcode mv, c, unitary, false))    
+    | Ast0.MetaBinary(mv, c, _) ->
+      Ast.MetaBinary(mcode mv, binaryOpconstraint c, unitary, false))    
+and binaryOpconstraint = function
+  | Ast0.BinaryOpNoConstraint -> Ast.BinaryOpNoConstraint
+  | Ast0.BinaryOpInSet ops -> Ast.BinaryOpInSet (List.map binaryOp ops)
 
 and expression_dots ed = dots expression ed
 

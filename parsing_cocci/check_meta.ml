@@ -106,6 +106,19 @@ and seed table minus = function
 	elems
 
 (* --------------------------------------------------------------------- *)
+(* Operators *)
+
+let assignOp context old_metas table minus op = match Ast0.unwrap op with
+  | Ast0.SimpleAssign _ -> ()
+  | Ast0.OpAssign _ -> ()
+  | Ast0.MetaAssign (name,_,_) -> check_table table minus name
+
+let binaryOp context old_metas table minus op = match Ast0.unwrap op with
+  | Ast0.Arith _ -> ()
+  | Ast0.Logical _ -> ()
+  | Ast0.MetaBinary (name,_,_) -> check_table table minus name
+
+(* --------------------------------------------------------------------- *)
 (* Expression *)
 
 let rec expression context old_metas table minus e =
@@ -119,6 +132,7 @@ let rec expression context old_metas table minus e =
       dots (expression ID old_metas table minus) args
   | Ast0.Assignment(left,op,right,_) ->
       expression context old_metas table minus left;
+      assignOp context old_metas table minus op;
       expression ID old_metas table minus right
   | Ast0.Sequence(left,op,right) ->
       expression context old_metas table minus left;
@@ -135,9 +149,11 @@ let rec expression context old_metas table minus e =
       expression ID old_metas table minus exp
   | Ast0.Binary(left,op,right) ->
       expression ID old_metas table minus left;
+      binaryOp context old_metas table minus op;
       expression ID old_metas table minus right
   | Ast0.Nested(left,op,right) ->
       expression ID old_metas table minus left;
+      binaryOp context old_metas table minus op;
       expression ID old_metas table minus right
   | Ast0.Paren(lp,exp,rp) ->
       expression ID old_metas table minus exp

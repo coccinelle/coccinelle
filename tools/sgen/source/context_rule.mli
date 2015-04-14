@@ -8,7 +8,7 @@
  *  - If rule only has +, put the *'s where the added positions are.
  *
  * ----------------------------------------------------------------------------
- * Example of generated context rule:
+ * Example of generated context rule (see more in rule_body.mli):
  * Input rule is a "+" rule represented as an AST0.
  *
  *      @some_rule@
@@ -39,19 +39,21 @@ type t
  * Invariants: rule contains */+/-. new_name, if any, must be valid.
  *
  * Arguments:
- *  - new_name: Some <name> if input rule is nameless, else None.
- *  - disj_map: disjunction map. See detect_patch.ml.
- *  - rule: the input rule, must be a */+/- rule.
  *  - context_mode: if true, input rule has *, else input rule has +/-.
+ *  - disj_map: disjunction map, indicates */+/- slices in disjunctions.
+ *  - new_name: new name if input rule is nameless, else same as name in rule.
+ *  - rule: the input rule, must be a */+/- rule.
  *
- * Returns the generated context rule and list of added metapositions
- * (at least one, and inherited from the generated rule for convenience).
+ * Returns:
+ *  - the generated context rule
+ *  - list of added metapositions (at least one, and inherited from the
+ *    generated rule for convenience).
  *)
 val generate :
-  new_name:string option ->
-  disj_map:Detect_patch.t ->
-  rule:Ast0_cocci.parsed_rule ->
   context_mode:bool ->
+  disj_map:Detect_patch.t ->
+  new_name:string ->
+  rule:Ast0_cocci.parsed_rule ->
   t * Meta_variable.t list
 
 (* prints the generated context rule to the specified out_channel. *)

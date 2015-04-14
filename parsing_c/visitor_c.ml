@@ -189,12 +189,12 @@ let (iter_expr:((expression -> unit) -> expression -> unit) -> expression -> uni
     | FunCall  (e, es)         ->  f k e; List.iter (f k) es
     | CondExpr (e1, e2, e3)    -> f k e1; f k e2; f k e3
     | Sequence (e1, e2)        -> f k e1; f k e2;
-    | Assignment (e1, op, e2)  -> f k e1; f k e2;
+    | Assignment (e1, op, e2)  -> f k e1; vk_asignOp k op; f k e2;
 
     | Postfix  (e, op) -> f k e
     | Infix    (e, op) -> f k e
     | Unary    (e, op) -> f k e
-    | Binary   (e1, op, e2) -> f k e1; f k  e2;
+    | Binary   (e1, op, e2) -> f k e1; vk_binaryOp k op; f k  e2;
 
     | ArrayAccess    (e1, e2) -> f k e1; f k e2;
     | RecordAccess   (e, s) -> f k e
@@ -234,6 +234,8 @@ let test =
 type visitor_c =
  {
    kexpr:      (expression  -> unit) * visitor_c -> expression  -> unit;
+   kassignOp:  (assignOp    -> unit) * visitor_c -> assignOp    -> unit;
+   kbinaryOp:  (binaryOp    -> unit) * visitor_c -> binaryOp    -> unit;
    kstatement: (statement   -> unit) * visitor_c -> statement   -> unit;
    ktype:      (fullType    -> unit) * visitor_c -> fullType    -> unit;
 
@@ -264,6 +266,8 @@ type visitor_c =
 
 let default_visitor_c =
   { kexpr           = (fun (k,_) e  -> k e);
+    kassignOp       = (fun (k,_) op -> k op);
+    kbinaryOp       = (fun (k,_) op -> k op);
     kstatement      = (fun (k,_) st -> k st);
     ktype           = (fun (k,_) t  -> k t);
     kdecl           = (fun (k,_) d  -> k d);
@@ -305,12 +309,12 @@ let rec vk_expr = fun bigf expr ->
     | CondExpr (e1, e2, e3)    ->
         exprf e1; do_option (exprf) e2; exprf e3
     | Sequence (e1, e2)        -> exprf e1; exprf e2;
-    | Assignment (e1, op, e2)  -> exprf e1; assignOp bigf op; exprf e2;
+    | Assignment (e1, op, e2)  -> exprf e1; vk_assignOp bigf op; exprf e2;
 
     | Postfix  (e, op) -> exprf e
     | Infix    (e, op) -> exprf e
     | Unary    (e, op) -> exprf e
-    | Binary   (e1, op, e2) -> exprf e1; binaryOp bigf op; exprf  e2;
+    | Binary   (e1, op, e2) -> exprf e1; vk_binaryOp bigf op; exprf  e2;
 
     | ArrayAccess    (e1, e2) -> exprf e1; exprf e2;
     | RecordAccess   (e, name) -> exprf e; vk_name bigf name
@@ -342,11 +346,11 @@ let rec vk_expr = fun bigf expr ->
 
   in exprf expr
 
-and assignOp = fun bigf (_,ii) ->
+and vk_assignOp = fun bigf (_,ii) ->
   let iif ii = vk_ii bigf ii in
   iif ii
 
-and binaryOp = fun bigf (_,ii) ->
+and vk_binaryOp = fun bigf (_,ii) ->
   let iif ii = vk_ii bigf ii in
   iif ii
 
@@ -1084,6 +1088,8 @@ type 'a inout = 'a -> 'a
  *)
 type visitor_c_s = {
   kexpr_s:      (expression inout * visitor_c_s) -> expression inout;
+  kassignOp_s:  (assignOp inout * visitor_c_s) -> assignOp inout;
+  kbinaryOp_s:  (binaryOp inout * visitor_c_s) -> binaryOp inout;
   kstatement_s: (statement  inout * visitor_c_s) -> statement  inout;
   ktype_s:      (fullType   inout * visitor_c_s) -> fullType   inout;
 
@@ -1109,7 +1115,9 @@ type visitor_c_s = {
  }
 
 let default_visitor_c_s =
-  { kexpr_s =      (fun (k,_) e  -> k e);
+  { kexpr_s      = (fun (k,_) e  -> k e);
+    kassignOp_s  = (fun (k,_) op -> k op);
+    kbinaryOp_s  = (fun (k,_) op -> k op);
     kstatement_s = (fun (k,_) st -> k st);
     ktype_s      = (fun (k,_) t  -> k t);
     kdecl_s      = (fun (k,_) d  -> k d);
@@ -1153,7 +1161,7 @@ let rec vk_expr_s = fun bigf expr ->
       | Sequence (e1, e2)        -> Sequence (exprf e1, exprf e2)
       | Assignment (e1, op, e2)  ->
         let e1 = exprf e1 in 
-        let op = assignOp bigf op in
+        let op = vk_assignOp_s bigf op in
         let e2 = exprf e2 in
         Assignment (e1, op, e2)
       | Postfix  (e, op) -> Postfix (exprf e, op)
@@ -1161,7 +1169,7 @@ let rec vk_expr_s = fun bigf expr ->
       | Unary    (e, op) -> Unary   (exprf e, op)
       | Binary   (e1, op, e2) ->
         let e1 = exprf e1 in
-        let op = binaryOp bigf op in
+        let op = vk_binaryOp_s bigf op in
         let e2 = exprf e2 in
         Binary (e1, op, e2)
 
@@ -1191,10 +1199,10 @@ let rec vk_expr_s = fun bigf expr ->
     (e', typ'), (iif ii)
   in exprf expr
 
-and assignOp bigf (op,ii) =
+and vk_assignOp_s bigf (op,ii) =
   let iif ii = vk_ii_s bigf ii in (op, iif ii)
 
-and binaryOp bigf (op,ii) =
+and vk_binaryOp_s bigf (op,ii) =
   let iif ii = vk_ii_s bigf ii in (op, iif ii)
 
 and vk_argument_s bigf argument =

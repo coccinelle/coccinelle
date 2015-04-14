@@ -46,11 +46,10 @@ val detect : Ast0_cocci.parsed_rule -> t
  *)
 val detect_statement_dots : Ast0_cocci.statement Ast0_cocci.dots -> t
 
-(* returns true if the rule contains */+/- *)
+(* returns true if the rule contains stars, pluses, or minuses. *)
 val is_patch : t -> bool
 
-(* get_disj_patch disj_map index returns
- * the patch map for the disjunction starting on line index.
+(* get the patch map for the disjunction starting on given line number.
  * fails if no disjunction found on that line.
  *)
 val get_disj_patch : int -> t -> bool list

@@ -3,11 +3,11 @@
 # preliminary test script
 # simply runs sgen on each .cocci/.config combo and compares with _.cocci file.
 
-# The sgen program
-SGEN=../source/sgen
-
 # abs path to dir containing this script (http://stackoverflow.com/a/246128)
 DIR=$( cd "$( dirname "$0" )" && pwd )
+
+# The sgen program
+SGEN=${DIR}/../source/sgen
 
 START=$(date +%s)
 diffs=0
@@ -18,7 +18,7 @@ do
    actual="${filename}f"
    expected="${filename%.*}_.cocci"
 
-   sgen ${filename} -o ${actual}
+   ${SGEN} ${filename} -o ${actual}
    if diff ${expected} ${actual} > /dev/null ; then
        echo "${filename}: All good."
    else

@@ -195,6 +195,8 @@ let token2c (tok,_) =
   | PC.TTilde (clt) -> add_clt "~" clt
 
   | PC.TMeta(_,_,clt) -> add_clt "meta" clt
+  | PC.TMetaAssignOp(_,_,_,clt) -> add_clt "metaassignop" clt
+  | PC.TMetaBinaryOp(_,_,_,clt) -> add_clt "metabinaryop" clt
   | PC.TMetaParam(_,_,clt) -> add_clt "parammeta" clt
   | PC.TMetaParamList(_,_,_,clt) -> add_clt "paramlistmeta" clt
   | PC.TMetaConst(_,_,_,_,clt) -> add_clt "constmeta" clt
@@ -384,7 +386,7 @@ let plus_attachable only_plus (tok,_) =
 
 exception NoClt of string
 
-let get_clt ((tok,_) as t) =
+let get_clt (tok,_) =
   match tok with
     PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
   | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt)
@@ -431,6 +433,7 @@ let get_clt ((tok,_) as t) =
   | PC.TMetaDecl(_,_,clt) | PC.TMetaField(_,_,clt)
   | PC.TMetaFieldList(_,_,_,clt)
   | PC.TMetaFunc(_,_,_,clt) | PC.TMetaLocalFunc(_,_,_,clt)
+  | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt)
   | PC.TMetaPos(_,_,_,clt)
   | PC.TMetaDeclarer(_,_,_,clt) | PC.TMetaIterator(_,_,_,clt)
 
@@ -455,9 +458,81 @@ let get_clt ((tok,_) as t) =
   | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *)
   | PC.TFunDecl(clt) | PC.TDirective(_,clt) | PC.TLineEnd(clt) -> clt
   | PC.TVAEllipsis(clt) -> clt
-  | _ -> raise (NoClt("get_clt: token " ^ (token2c t) ^ " has no clt"))
 
-let update_clt ((tok,x) as t) clt =
+  | PC.Tlist -> failwith "No clt attached to token Tlist"
+  | PC.TWords -> failwith "No clt attached to token TWords"
+  | PC.TWhy0 -> failwith "No clt attached to token TWhy0"
+  | PC.TWhitespace _ -> failwith "No clt attached to token TWhitespace"
+  | PC.TVirtual -> failwith "No clt attached to token TVirtual"
+  | PC.TUsing -> failwith "No clt attached to token TUsing"
+  | PC.TUnderscore -> failwith "No clt attached to token TUnderscore"
+  | PC.TTypedef -> failwith "No clt attached to token TTypedef"
+  | PC.TType -> failwith "No clt attached to token TType"
+  | PC.TSymbol -> failwith "No clt attached to token TSymbol"
+  | PC.TStatement -> failwith "No clt attached to token TStatement"
+  | PC.TScriptData _ -> failwith "No clt attached to token TScriptData" 
+  | PC.TScript -> failwith "No clt attached to token TScript"
+  | PC.TRuleName _ -> failwith "No clt attached to token TRuleName"
+  | PC.TRightIso -> failwith "No clt attached to token TRightIso"
+  | PC.TPure -> failwith "No clt attached to token TPure"
+  | PC.TPosition -> failwith "No clt attached to token TPosition"
+  | PC.TPosAny -> failwith "No clt attached to token TPosAny"
+  | PC.TPlus0 -> failwith "No clt attached to token TPlus0"
+  | PC.TPathIsoFile _ -> failwith "No clt attached to token TPathIsoFile"
+  | PC.TParameter -> failwith "No clt attached to token TParameter"
+  | PC.TOperator -> failwith "No clt attached to token TOperator"
+  | PC.TOn -> failwith "No clt attached to token TOn"
+  | PC.TNothing -> failwith "No clt attached to token TNothing"
+  | PC.TNever -> failwith "No clt attached to token TNever"
+  | PC.TName -> failwith "No clt attached to token TName"
+  | PC.TMetavariable -> failwith "No clt attached to token TMetavariable"
+  | PC.TMPtVirg -> failwith "No clt attached to token TMPtVirg"
+  | PC.TLocal -> failwith "No clt attached to token TLocal"
+  | PC.TIterator -> failwith "No clt attached to token TIterator"
+  | PC.TIsoType -> failwith "No clt attached to token TIsoType"
+  | PC.TIsoTopLevel -> failwith "No clt attached to token TIsoTopLevel"
+  | PC.TIsoToTestExpression -> failwith "No clt attached to token TIsoToTestExpression"
+  | PC.TIsoTestExpression -> failwith "No clt attached to token TIsoTestExpression"
+  | PC.TIsoStatement -> failwith "No clt attached to token TIsoStatement"
+  | PC.TIsoExpression -> failwith "No clt attached to token TIsoExpression"
+  | PC.TIsoDeclaration -> failwith "No clt attached to token TIsoDeclaration"
+  | PC.TIsoArgExpression -> failwith "No clt attached to token TIsoArgExpression"
+  | PC.TIso -> failwith "No clt attached to token TIso"
+  | PC.TInvalid -> failwith "No clt attached to token TInvalid"
+  | PC.TInitialize -> failwith "No clt attached to token TInitialize"
+  | PC.TInitialiser -> failwith "No clt attached to token TInitialiser"
+  | PC.TIdentifier -> failwith "No clt attached to token TIdentifier"
+  | PC.TIdExpression -> failwith "No clt attached to token TIdExpression"
+  | PC.TGlobal -> failwith "No clt attached to token TGlobal"
+  | PC.TGenerated -> failwith "No clt attached to token TGenerated"
+  | PC.TFunction -> failwith "No clt attached to token TFunction"
+  | PC.TFresh -> failwith "No clt attached to token TFresh"
+  | PC.TFormat -> failwith "No clt attached to token TFormat"
+  | PC.TForall -> failwith "No clt attached to token TForall"
+  | PC.TFinalize -> failwith "No clt attached to token TFinalize"
+  | PC.TField -> failwith "No clt attached to token TField"
+  | PC.TExtends -> failwith "No clt attached to token TExtends"
+  | PC.TExpression -> failwith "No clt attached to token TExpression"
+  | PC.TExists -> failwith "No clt attached to token TExists"
+  | PC.TEver -> failwith "No clt attached to token TEver"
+  | PC.TError -> failwith "No clt attached to token TError"
+  | PC.TDisable -> failwith "No clt attached to token TDisable"
+  | PC.TDepends -> failwith "No clt attached to token TDepends"
+  | PC.TDeclarer -> failwith "No clt attached to token TDeclarer"
+  | PC.TDeclaration -> failwith "No clt attached to token TDeclaration"
+  | PC.TCppConcatOp -> failwith "No clt attached to token TCppConcatOp"
+  | PC.TContext -> failwith "No clt attached to token TContext"
+  | PC.TConstant -> failwith "No clt attached to token TConstant"
+  | PC.TBinary -> failwith "No clt attached to token TBinary"
+  | PC.TBang0 -> failwith "No clt attached to token TBang0"
+  | PC.TAttribute -> failwith "No clt attached to token TAttribute"
+  | PC.TAssignment -> failwith "No clt attached to token TAssignment"
+  | PC.TArobArob -> failwith "No clt attached to token TArobArob"
+  | PC.TArob -> failwith "No clt attached to token TArob"
+  | PC.TAnalysis -> failwith "No clt attached to token TAnalysis"
+  | PC.EOF -> failwith "No clt attached to token EOF"
+
+let update_clt (tok,x) clt =
   match tok with
     PC.Tchar(_) -> (PC.Tchar(clt),x)
   | PC.Tshort(_) -> (PC.Tshort(clt),x)
@@ -553,6 +628,8 @@ let update_clt ((tok,x) as t) clt =
   | PC.TMetaGlobalIdExp(a,b,c,d,_) -> (PC.TMetaGlobalIdExp(a,b,c,d,clt),x)
   | PC.TMetaExpList(a,b,c,_) -> (PC.TMetaExpList(a,b,c,clt),x)
   | PC.TMetaId(a,b,c,d,_)    -> (PC.TMetaId(a,b,c,d,clt),x)
+  | PC.TMetaAssignOp(a,b,c,_)    -> (PC.TMetaAssignOp(a,b,c,clt),x)
+  | PC.TMetaBinaryOp(a,b,c,_)    -> (PC.TMetaBinaryOp(a,b,c,clt),x)
   | PC.TMetaType(a,b,_)    -> (PC.TMetaType(a,b,clt),x)
   | PC.TMetaInit(a,b,_)    -> (PC.TMetaInit(a,b,clt),x)
   | PC.TMetaInitList(a,b,c,_) -> (PC.TMetaInitList(a,b,c,clt),x)
@@ -619,8 +696,79 @@ let update_clt ((tok,x) as t) clt =
   | PC.TDirective(a,_) -> (PC.TDirective(a,clt),x)
   | PC.TVAEllipsis(_) -> (PC.TVAEllipsis(clt),x)
 
-  | _ -> raise (NoClt ("update_clt: token " ^ (token2c t) ^ " has no clt"))
-
+  | PC.Tlist -> assert false
+  | PC.TWords -> assert false
+  | PC.TWhy0 -> assert false
+  | PC.TWhitespace _ -> assert false
+  | PC.TVirtual -> assert false
+  | PC.TUsing -> assert false
+  | PC.TUnderscore -> assert false
+  | PC.TTypedef -> assert false
+  | PC.TType -> assert false
+  | PC.TSymbol -> assert false
+  | PC.TStatement -> assert false
+  | PC.TScriptData _ -> assert false
+  | PC.TScript -> assert false
+  | PC.TRuleName _ -> assert false
+  | PC.TRightIso -> assert false
+  | PC.TPure -> assert false
+  | PC.TPosition -> assert false
+  | PC.TPosAny -> assert false
+  | PC.TPlus0 -> assert false
+  | PC.TPathIsoFile _ -> assert false
+  | PC.TParameter -> assert false
+  | PC.TOperator -> assert false
+  | PC.TOn -> assert false
+  | PC.TNothing -> assert false
+  | PC.TNever -> assert false
+  | PC.TName -> assert false
+  | PC.TMetavariable -> assert false
+  | PC.TMetaPos _ -> assert false
+  | PC.TMPtVirg -> assert false
+  | PC.TLocal -> assert false
+  | PC.TIterator -> assert false
+  | PC.TIsoType -> assert false
+  | PC.TIsoTopLevel -> assert false
+  | PC.TIsoToTestExpression -> assert false
+  | PC.TIsoTestExpression -> assert false
+  | PC.TIsoStatement -> assert false
+  | PC.TIsoExpression -> assert false
+  | PC.TIsoDeclaration -> assert false
+  | PC.TIsoArgExpression -> assert false
+  | PC.TIso -> assert false
+  | PC.TInvalid -> assert false
+  | PC.TInitialize -> assert false
+  | PC.TInitialiser -> assert false
+  | PC.TIdentifier -> assert false
+  | PC.TIdExpression -> assert false
+  | PC.TGlobal -> assert false
+  | PC.TGenerated -> assert false
+  | PC.TFunction -> assert false
+  | PC.TFresh -> assert false
+  | PC.TFormat -> assert false
+  | PC.TForall -> assert false
+  | PC.TFinalize -> assert false
+  | PC.TField -> assert false
+  | PC.TExtends -> assert false
+  | PC.TExpression -> assert false
+  | PC.TExists -> assert false
+  | PC.TEver -> assert false
+  | PC.TError -> assert false
+  | PC.TDisable -> assert false
+  | PC.TDepends -> assert false
+  | PC.TDeclarer -> assert false
+  | PC.TDeclaration -> assert false
+  | PC.TCppConcatOp -> assert false
+  | PC.TContext -> assert false
+  | PC.TConstant -> assert false
+  | PC.TBinary -> assert false
+  | PC.TBang0 -> assert false
+  | PC.TAttribute -> assert false
+  | PC.TAssignment -> assert false
+  | PC.TArobArob -> assert false
+  | PC.TArob -> assert false
+  | PC.TAnalysis -> assert false
+  | PC.EOF -> assert false
 
 (* ----------------------------------------------------------------------- *)
 
@@ -724,6 +872,7 @@ let split_token ((tok,_) as t) =
   | PC.TMeta(_,_,clt) | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaExp(_,_,_,_,clt)
   | PC.TMetaIdExp(_,_,_,_,clt)
   | PC.TMetaLocalIdExp(_,_,_,_,clt) | PC.TMetaGlobalIdExp(_,_,_,_,clt)
+  | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
   | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
   | PC.TMetaId(_,_,_,_,clt) | PC.TMetaType(_,_,clt)
@@ -1977,12 +2126,10 @@ let parse file =
             let (minus_tokens, _) = split_token_stream tokens in
             let (_, plus_tokens) =
 	      split_token_stream (minus_to_nothing tokens) in
-
-	    (*
+            (*
 	       print_tokens "minus tokens" minus_tokens;
 	       print_tokens "plus tokens" plus_tokens;
-	    *)
-
+            *)
 	    let minus_tokens = consume_minus_positions minus_tokens in
 	    let plus_tokens = consume_plus_positions plus_tokens in
 	    let minus_tokens = prepare_tokens false minus_tokens in
