@@ -1,4 +1,5 @@
 @@
+symbol retval1, retval2;
 @@
 
  	if (retval1) {
