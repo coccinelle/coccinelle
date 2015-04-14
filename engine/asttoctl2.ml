@@ -853,15 +853,21 @@ let preprocess_dots_e sl =
 (* various return_related things *)
 
 let rec ends_in_return stmt_list =
+  let stm_dots s =
+    (* doesn't do anything for dots in disj; not sure that makes sense *)
+    match Ast.unwrap s with
+      Ast.Nest _ | Ast.Dots _ | Ast.Circles _ | Ast.Stars _ -> true
+    | _ -> false in
   match Ast.unwrap stmt_list with
-    Ast.DOTS(x) ->
-      (match List.rev x with
+    Ast.DOTS(l) ->
+      (match List.rev l with
 	x::_ ->
 	  (match Ast.unwrap x with
 	    Ast.Atomic(x) ->
 	      let rec loop x =
 		match Ast.unwrap x with
-		  Ast.Return(_,_) | Ast.ReturnExpr(_,_,_) -> true
+		  Ast.Return(_,_) | Ast.ReturnExpr(_,_,_) ->
+		    List.exists stm_dots l
 		| Ast.DisjRuleElem((_::_) as l) -> List.for_all loop l
 		| _ -> false in
 	      loop x
