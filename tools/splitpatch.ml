@@ -476,7 +476,7 @@ let get_most_common_subject files default =
 let print_all o l =
   List.iter (function x -> Printf.fprintf o "%s\n" x) l
 
-let make_mail_header o date maintainers ctr number subject =
+let make_mail_header o date maintainers ctr number cover subject =
   Printf.fprintf o "From nobody %s\n" date;
   Printf.fprintf o "From: %s\n" !from;
   (match Str.split (Str.regexp_string ",") maintainers with
@@ -485,7 +485,7 @@ let make_mail_header o date maintainers ctr number subject =
       Printf.fprintf o "To: %s\n" x;
       Printf.fprintf o "Cc: %s\n" (String.concat "," xs)
   | _ -> failwith "no maintainers");
-  if number = 1
+  if number = 1 && not cover
   then Printf.fprintf o "Subject: [PATCH] %s\n\n" subject
   else Printf.fprintf o "Subject: [PATCH %d/%d] %s\n\n" ctr number subject
 
@@ -574,7 +574,7 @@ let make_message_files subject cover message nonmessage date maintainer_table
       (function (common,(ctr,the_rest,maintainers,files,diffs)) ->
 	let output_file = add_ext(Printf.sprintf "%s%d" front ctr) in
 	let o = open_out output_file in
-	make_mail_header o date maintainers ctr number
+	make_mail_header o date maintainers ctr number (not (cover=None))
 	  (Printf.sprintf "%s %s" common subject);
 	print_info o info_tbl files;
 	print_all o message;
@@ -634,7 +634,7 @@ let make_cover_file n subject cover front date maintainer_table =
       let maintainers_and_lists = String.concat "," maintainers_and_lists in
       let output_file = Printf.sprintf "%s.cover" front in
       let o = open_out output_file in
-      make_mail_header o date maintainers_and_lists 0 n subject;
+      make_mail_header o date maintainers_and_lists 0 n true subject;
       print_all o cover;
       Printf.fprintf o "\n";
       close_out o

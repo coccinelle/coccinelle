@@ -852,10 +852,20 @@ let preprocess_dots_e sl =
 (* --------------------------------------------------------------------- *)
 (* various return_related things *)
 
-let rec ends_in_return stmt_list =
+let rec ends_in_return_bis preok stmt_list =
   match Ast.unwrap stmt_list with
-    Ast.DOTS(x) ->
-      (match List.rev x with
+    Ast.DOTS(l) ->
+      let contains_dots l =
+	List.exists
+	  (function s ->
+	    (* doesn't do anything for dots in disj; not sure that makes
+	       sense *)
+	    match Ast.unwrap s with
+	      Ast.Nest _ | Ast.Dots _ | Ast.Circles _ | Ast.Stars _ -> true
+	    | _ -> false)
+	  l in
+      let preok = preok or contains_dots l in
+      (match List.rev l with
 	x::_ ->
 	  (match Ast.unwrap x with
 	    Ast.Atomic(x) ->
@@ -864,12 +874,14 @@ let rec ends_in_return stmt_list =
 		  Ast.Return(_,_) | Ast.ReturnExpr(_,_,_) -> true
 		| Ast.DisjRuleElem((_::_) as l) -> List.for_all loop l
 		| _ -> false in
-	      loop x
-	  | Ast.Disj(disjs) -> List.for_all ends_in_return disjs
+	      preok && loop x
+	  | Ast.Disj(disjs) -> List.for_all (ends_in_return_bis preok) disjs
 	  | _ -> false)
-      |	_ -> false)
+      | _ -> false)
   | Ast.CIRCLES(x) -> failwith "not supported"
   | Ast.STARS(x) -> failwith "not supported"
+	    
+let ends_in_return stmt_list = ends_in_return_bis false stmt_list
 
 (* --------------------------------------------------------------------- *)
 (* expressions *)
