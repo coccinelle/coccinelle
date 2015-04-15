@@ -16,15 +16,16 @@ TARGET=sgen
 
 CONFIG= $(COCCIDIR)/Makefile.config
 
-SYSLIBS= str.cma unix.cma bigarray.cma nums.cma $(PCREDIR)/pcre.cma \
-	$(DYNLINKDIR)/dynlink.cma
+SYSLIBS= str.cma unix.cma bigarray.cma nums.cma
 
-LIBS= $(COCCIDIR)/commons/commons.cma \
+LIBS= $(PCREDIR)/pcre.cma \
+	$(DYNLINKDIR)/dynlink.cma \
+	$(COCCIDIR)/commons/commons.cma \
 	$(COCCIDIR)/globals/globals.cma \
 	$(COCCIDIR)/parsing_cocci/cocci_parser.cma
 
 INCLUDEDIRS= $(COCCIDIR)/commons $(COCCIDIR)/commons/ocamlextra \
-     $(COCCIDIR)/globals $(COCCIDIR)/parsing_cocci
+     $(COCCIDIR)/globals $(COCCIDIR)/parsing_cocci $(PCREDIR)
 
 INCLUDES=$(INCLUDEDIRS:%=-I %)
 
@@ -62,7 +63,7 @@ all: $(TARGET)
 
 $(TARGET): $(CONFIG) $(LIBS) $(GENERATED) $(FULL_SRC)
 	@$(ECHO) -e "\n\n\tCompiling sgen ...\n\n"
-	$(OCAMLC_CMD) -o $(TARGET) $(SYSLIBS) $(LIBS) $(GENERATED) $(FULL_SRC)
+	$(OCAMLC_CMD) -custom -o $(TARGET) $(SYSLIBS) $(LIBS) $(GENERATED) $(FULL_SRC)
 	@$(ECHO) -e "\n\n\tsgen can now be installed via 'make install'.\n\n"
 
 clean:
