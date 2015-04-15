@@ -74,10 +74,12 @@ let patch_combiner =
   let meta_mcode = mcode in
   let string_mcode = mcode in
   let const_mcode = mcode in
-  let assign_mcode = mcode in
+  let simpleAssign_mcode = mcode in
+  let opAssign_mcode = mcode in
   let fix_mcode = mcode in
   let unary_mcode = mcode in
-  let binary_mcode = mcode in
+  let arithOp_mcode = mcode in
+  let logicalOp_mcode = mcode in
   let cv_mcode = mcode in
   let sign_mcode = mcode in
   let struct_mcode = mcode in
@@ -89,6 +91,8 @@ let patch_combiner =
   let dotsparamfn = donothing in
   let dotsdeclfn = donothing in
   let dotscasefn = donothing in
+  let assignOpfn = donothing in
+  let binaryOpfn = donothing in
   let initfn = donothing in
   let paramfn = donothing in
   let forinfofn = donothing in
@@ -133,12 +137,12 @@ let patch_combiner =
     | _ -> fn v in
 
   V0.flat_combiner bind option_default
-    meta_mcode string_mcode const_mcode assign_mcode fix_mcode unary_mcode
-    binary_mcode cv_mcode sign_mcode struct_mcode storage_mcode
-    inc_mcode
+    meta_mcode string_mcode const_mcode simpleAssign_mcode opAssign_mcode
+    fix_mcode unary_mcode arithOp_mcode logicalOp_mcode cv_mcode sign_mcode
+    struct_mcode storage_mcode inc_mcode
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotscasefn
-    identfn exprfn tyfn initfn paramfn declfn stmtfn forinfofn casefn
-    string_fragmentfn topfn
+    identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn declfn stmtfn
+    forinfofn casefn string_fragmentfn topfn
 
 
 (* ------------------------------------------------------------------------- *)

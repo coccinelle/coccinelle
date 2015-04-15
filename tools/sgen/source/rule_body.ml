@@ -204,10 +204,12 @@ let rec gen_combiner ~context_mode =
   let meta_mcode = mcode S.meta_tostring in
   let string_mcode = mcode (fun x -> x) in
   let const_mcode = mcode S.constant_tostring in
-  let assign_mcode = mcode S.assign_tostring in
+  let simpleAssign_mcode = mcode (fun x -> x) in
+  let opAssign_mcode = mcode S.arith_tostring in
   let fix_mcode = mcode S.fix_tostring in
   let unary_mcode = mcode S.unary_tostring in
-  let binary_mcode = mcode S.binary_tostring in
+  let arithOp_mcode = mcode S.arith_tostring in
+  let logicalOp_mcode = mcode S.logic_tostring in
   let cv_mcode = mcode S.const_vol_tostring in
   let sign_mcode = mcode S.sign_tostring in
   let struct_mcode = mcode S.struct_union_tostring in
@@ -219,6 +221,8 @@ let rec gen_combiner ~context_mode =
   let dotsparamfn = donothing in
   let dotsdeclfn = donothing in
   let dotscasefn = donothing in
+  let assignOpfn = donothing in
+  let binaryOpfn = donothing in
   let tyfn = donothing in
   let initfn = donothing in
   let paramfn = donothing in
@@ -265,7 +269,7 @@ let rec gen_combiner ~context_mode =
      * letting the visitor handle them. Otherwise whencodes would be ignored.
      * (whencodes are difficult to parameterise in the visitor due to typing).
      *
-     * nest, dots, cicles, stars, and metastatements can represents code slices
+     * nest, dots, cicles, stars, and metastatements can represent code slices
      * of arbitrary length and should therefore not be starred, so if their
      * current line is starred, put them on a new line (inc_star).
      *)
@@ -322,12 +326,12 @@ let rec gen_combiner ~context_mode =
   in
 
   V0.flat_combiner bind option_default
-    meta_mcode string_mcode const_mcode assign_mcode fix_mcode unary_mcode
-    binary_mcode cv_mcode sign_mcode struct_mcode storage_mcode
-    inc_mcode
+    meta_mcode string_mcode const_mcode simpleAssign_mcode opAssign_mcode
+    fix_mcode unary_mcode arithOp_mcode logicalOp_mcode cv_mcode sign_mcode
+    struct_mcode storage_mcode inc_mcode
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotscasefn
-    identfn exprfn tyfn initfn paramfn declfn stmtfn forinfofn casefn
-    string_fragmentfn topfn
+    identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn declfn stmtfn
+    forinfofn casefn string_fragmentfn topfn
 
 
 (* ------------------------------------------------------------------------- *)

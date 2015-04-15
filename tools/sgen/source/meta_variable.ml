@@ -99,6 +99,7 @@ module MVSet = Set.Make(
 
 (* get string formatted version of type (used as front of meta expressions) *)
 let type_c ~form =
+  (* TODO: figure out when default and prefix are used ... *)
   let (default, prefix) =
     match form with
     | Ast.ANY -> ("expression ", "")
@@ -170,6 +171,16 @@ let constraints ~rn = function
       list_constraints ~tostring_fn:(fun x -> x) ~op:" != " res
   | Ast0.SubExpCstrt mns ->
       list_constraints ~tostring_fn:(name_str ~rn) ~op:" <= " mns
+
+let assign_constraints = function
+  | Ast.AssignOpNoConstraint -> ""
+  | Ast.AssignOpInSet l ->
+      list_constraints ~tostring_fn:S.arith_tostring ~op:" = " l
+
+let binary_constraints = function
+  | Ast.BinaryOpNoConstraint -> ""
+  | Ast.BinaryOpInSet l ->
+      list_constraints ~tostring_fn:S.binary_tostring ~op:" = " l
 
 let list_len ~rn = function
   | Ast0.AnyListLen -> " "
@@ -304,18 +315,21 @@ let metavar_combiner rn =
   let bind x y = MVSet.union x y in
 
   (* the mcodes might contain positions which should be declared as metavars *)
+  let mcode mc = mcode ~rn ~mc in
   let meta_mcode a = failwith ("NOT ALLOWED") in (* should be handled before *)
-  let string_mcode mc = mcode ~rn ~mc in
-  let const_mcode mc = mcode ~rn ~mc in
-  let assign_mcode mc = mcode ~rn ~mc in
-  let fix_mcode mc = mcode ~rn ~mc in
-  let unary_mcode mc = mcode ~rn ~mc in
-  let binary_mcode mc = mcode ~rn ~mc in
-  let cv_mcode mc = mcode ~rn ~mc in
-  let sign_mcode mc = mcode ~rn ~mc in
-  let struct_mcode mc = mcode ~rn ~mc in
-  let storage_mcode mc = mcode ~rn ~mc in
-  let inc_mcode mc = mcode ~rn ~mc in
+  let string_mcode = mcode in
+  let const_mcode = mcode in
+  let simpleAssign_mcode = mcode in
+  let opAssign_mcode = mcode in
+  let fix_mcode = mcode in
+  let unary_mcode = mcode in
+  let arithOp_mcode = mcode in
+  let logicalOp_mcode = mcode in
+  let cv_mcode = mcode in
+  let sign_mcode = mcode in
+  let struct_mcode = mcode in
+  let storage_mcode = mcode in
+  let inc_mcode = mcode in
 
   (* apply the passed function, do nothing else *)
   let donothing c fn v = fn v in
@@ -388,9 +402,27 @@ let metavar_combiner rn =
     | Ast0.MetaType (mc, pure) -> meta_mc_format ~mc ~typ:"type " ~constr:""
     | Ast0.AsType (tc1, tc2) ->
         let ty = c.VT0.combiner_rec_typeC in as_format tc1 tc2 ty ty
+
     (* this clause generates unparsable scripts for who knows what reason ...
-     * TODO: need to find out if it should be included or not. *)
-    | Ast0.TypeName mc -> str_mc_format ~mc ~typ:"typedef "
+     * TODO: need to find out if it should be included or not. For now, ignore.
+     *)
+    | Ast0.TypeName mc ->
+        let _ = str_mc_format ~mc ~typ:"typedef " in
+        fn v
+    | _ -> fn v in
+
+  let assignOpfn c fn v =
+    match Ast0.unwrap v with
+    | Ast0.MetaAssign (mc, constr, pure) ->
+        let constr = assign_constraints constr in
+        meta_mc_format ~mc ~typ:"assignment operator " ~constr
+    | _ -> fn v in
+
+  let binaryOpfn c fn v =
+    match Ast0.unwrap v with
+    | Ast0.MetaBinary (mc, constr, pure) ->
+        let constr  = binary_constraints constr in
+        meta_mc_format ~mc ~typ:"binary operator " ~constr
     | _ -> fn v in
 
   let initfn c fn v =
@@ -464,12 +496,12 @@ let metavar_combiner rn =
     | _ -> fn v in
 
   V0.flat_combiner bind option_default
-    meta_mcode string_mcode const_mcode assign_mcode fix_mcode unary_mcode
-    binary_mcode cv_mcode sign_mcode struct_mcode storage_mcode
-    inc_mcode
+    meta_mcode string_mcode const_mcode simpleAssign_mcode opAssign_mcode
+    fix_mcode unary_mcode arithOp_mcode logicalOp_mcode cv_mcode sign_mcode
+    struct_mcode storage_mcode inc_mcode
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotscasefn
-    identfn exprfn tyfn initfn paramfn declfn stmtfn forinfofn casefn
-    string_fragmentfn topfn
+    identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn declfn stmtfn
+    forinfofn casefn string_fragmentfn topfn
 
 
 (* ------------------------------------------------------------------------- *)

@@ -107,9 +107,7 @@ let run { file; config; output; interactive; default; hide; } =
 
   (* ------------- GENERATE ------------- *)
 
-  (* drules is the ordered list of patch rules, tupled with their disj maps.
-   * userinput contains mappings from rulenames to user-specified info.
-   *)
+  (* drules is the ordered list of patch rules, tupled with their disj maps. *)
   let generate drules =
     let rec generate' rules fn =
       match rules with
