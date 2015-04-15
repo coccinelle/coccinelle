@@ -1015,7 +1015,6 @@ let check_assignOp_constraint (opb',ii) = function
 let binaryOp_eq op1 op2 = match (op1, op2) with
   | A.Arith o1, A.Arith o2 -> (A.unwrap_mcode o1) = (A.unwrap_mcode o2) 
   | A.Logical o1, A.Logical o2 -> (A.unwrap_mcode o1) = (A.unwrap_mcode o2) 
-  | A.Logical o1, A.Logical o2 -> (A.unwrap_mcode o1) = (A.unwrap_mcode o2) 
   | _ -> false
 
 let check_binaryOp_constraint (opb',ii) = function
