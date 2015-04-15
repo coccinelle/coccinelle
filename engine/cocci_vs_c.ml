@@ -1001,13 +1001,28 @@ let binaryOpA_of_binaryOpB = function
   | B.Arith op -> A.Arith (A.make_mcode (arithA_of_arithB op))
   | B.Logical op -> A.Logical (A.make_mcode (logicalA_of_logicalB op))
 
+let assignOp_eq op1 op2 = match (op1, op2) with
+  | A.SimpleAssign _, A.SimpleAssign _ -> true
+  | A.OpAssign o1, A.OpAssign o2 -> (A.unwrap_mcode o1) = (A.unwrap_mcode o2) 
+  | _ -> false
+
 let check_assignOp_constraint (opb',ii) = function
   | A.AssignOpNoConstraint -> true
-  | A.AssignOpInSet ops -> List.mem (assignOpA_of_assignOpB opb') (List.map A.unwrap ops)
+  | A.AssignOpInSet ops ->
+    let opb'' = (assignOpA_of_assignOpB opb') in
+    List.exists (assignOp_eq opb'') (List.map A.unwrap ops)
+
+let binaryOp_eq op1 op2 = match (op1, op2) with
+  | A.Arith o1, A.Arith o2 -> (A.unwrap_mcode o1) = (A.unwrap_mcode o2) 
+  | A.Logical o1, A.Logical o2 -> (A.unwrap_mcode o1) = (A.unwrap_mcode o2) 
+  | A.Logical o1, A.Logical o2 -> (A.unwrap_mcode o1) = (A.unwrap_mcode o2) 
+  | _ -> false
 
 let check_binaryOp_constraint (opb',ii) = function
   | A.BinaryOpNoConstraint -> true
-  | A.BinaryOpInSet ops -> List.mem (binaryOpA_of_binaryOpB opb') (List.map A.unwrap ops)
+  | A.BinaryOpInSet ops ->
+    let opb'' = (binaryOpA_of_binaryOpB opb') in
+    List.exists (binaryOp_eq opb'') (List.map A.unwrap ops)
 
 (*---------------------------------------------------------------------------*)
 let rec (expression: (A.expression, Ast_c.expression) matcher) =
