@@ -12,12 +12,12 @@ let map_split f l = List.split(List.map f l)
 let rewrap x (n,e) = (n,Ast0.rewrap x e)
 
 let visitor mode bind option_default
-    meta_mcode string_mcode const_mcode simpleAssign_mcode opAssign_mcode fix_mcode unary_mcode
-    arithOp_mcode logicalOp_mcode cv_mcode sign_mcode struct_mcode storage_mcode
-    inc_mcode
+    meta_mcode string_mcode const_mcode simpleAssign_mcode opAssign_mcode
+    fix_mcode unary_mcode arithOp_mcode logicalOp_mcode cv_mcode sign_mcode
+    struct_mcode storage_mcode inc_mcode
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotscasefn
-    identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn declfn stmtfn forinfofn casefn
-    string_fragmentfn topfn =
+    identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn declfn stmtfn
+    forinfofn casefn string_fragmentfn topfn =
   let multibind l =
     let rec loop = function
 	[] -> option_default
