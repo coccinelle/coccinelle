@@ -278,7 +278,8 @@ and  base_binaryOp =
   | MetaBinary of meta_name mcode * binaryOpconstraint * keep_binding * inherited
 and binaryOp = base_binaryOp wrap
 and  arithOp =
-    Plus | Minus | Mul | Div | Mod | DecLeft | DecRight | And | Or | Xor | Min | Max
+    Plus | Minus | Mul | Div | Mod | DecLeft | DecRight | And | Or | Xor
+  | Min | Max
 and  logicalOp = Inf | Sup | InfEq | SupEq | Eq | NotEq | AndLog | OrLog
 
 and constant =
