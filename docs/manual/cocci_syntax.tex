@@ -1092,10 +1092,12 @@ in a concise way.
 
   \RULE{\rt{EXPR}\mth{(}\rt{exp}\mth{)}}
   \CASE{\NT{exp} \NT{assign\_op} \NT{exp}}
+  \CASE{\NT{exp} \mth{\T{metaid}^{\ssf{AssignOp}}} \NT{exp}}
   \CASE{\NT{exp}++}
   \CASE{\NT{exp}--}
   \CASE{\NT{unary\_op} \NT{exp}}
   \CASE{\NT{exp} \NT{bin\_op} \NT{exp}}
+  \CASE{\NT{exp} \mth{\T{metaid}^{\ssf{BinOp}}} \NT{exp}}
   \CASE{\NT{exp} ?~\NT{dot\_expr} :~\NT{exp}}
   \CASE{(\NT{type}) \NT{exp}}
   \CASE{\NT{exp} [\NT{dot\_expr}]}
