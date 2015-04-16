@@ -121,14 +121,18 @@ let tmeta_to_param (name,pure,clt) =
   Ast0.wrap(Ast0.MetaParam(P.clt2mcode name clt,pure))
 
 let tmeta_to_assignOp (name,pure,clt) =
-  (coerce_tmeta "an assignment operator" name (TMetaAssignOp(name,Ast0.AssignOpNoConstraint,pure,clt))
+  (coerce_tmeta "an assignment operator" name
+     (TMetaAssignOp(name,Ast0.AssignOpNoConstraint,pure,clt))
      (function TMetaAssignOp(_,_,_,_) -> true | _ -> false));
-  Ast0.wrap(Ast0.MetaAssign(P.clt2mcode name clt,Ast0.AssignOpNoConstraint, pure))
+  Ast0.wrap
+    (Ast0.MetaAssign(P.clt2mcode name clt,Ast0.AssignOpNoConstraint, pure))
 
 let tmeta_to_binaryOp (name,pure,clt) =
-  (coerce_tmeta "a binary operator" name (TMetaBinaryOp(name,Ast0.BinaryOpNoConstraint,pure,clt))
+  (coerce_tmeta "a binary operator" name
+     (TMetaBinaryOp(name,Ast0.BinaryOpNoConstraint,pure,clt))
      (function TMetaBinaryOp(_,_,_,_) -> true | _ -> false));
-  Ast0.wrap(Ast0.MetaBinary(P.clt2mcode name clt,Ast0.BinaryOpNoConstraint, pure),clt)
+  Ast0.wrap
+    (Ast0.MetaBinary(P.clt2mcode name clt,Ast0.BinaryOpNoConstraint, pure),clt)
 
 let tmeta_to_statement (name,pure,clt) =
   (coerce_tmeta "a statement" name (TMetaType(name,pure,clt))
