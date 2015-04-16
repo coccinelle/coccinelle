@@ -1498,8 +1498,21 @@ let add_newlines toks tabbing_unit =
 	      else count+1 in
 	    t1 :: loop stack None newcount newseencocci false rest
 	| _ -> t1 :: loop stack None newcount newseencocci false rest)
-    | ((T2(tok,Ctx,idx,_)) as a)::xs ->
-      (match TH.str_of_tok tok with
+    | (C2(s1,_)) :: (C2(" ",_)) :: (((C2(s2,_)) :: _) as xs)
+      when (not (s1 = "")) && (not (s2 = "")) &&
+	(* not perfect, because only finds the string string case *)
+	(String.get s1 0 = '\"') && (String.get s2 0 = '\"') ->
+        let count =
+	  update_previous_space stack space_cell count s1 in
+	let sp = ref " " in
+	let a = C2(s1,Some(Unparse_cocci.SpaceOrNewline sp)) in
+	a ::
+	loop stack space_cell ((simple_string_length s1 count)+1) true false xs
+    | Fake2 _ :: _ | Indent_cocci2 :: _
+    | Unindent_cocci2 _::_ | EatSpace2::_ ->
+      failwith "unexpected fake, indent, unindent, or eatspace"
+    | a::xs ->
+      (match str_of_token2 a with
       | "=" -> a :: loop stack space_cell (count+1) seen_cocci true xs
       | "(" as s ->
         let (newcount,newstack) = start_box stack count s in
@@ -1533,25 +1546,8 @@ let add_newlines toks tabbing_unit =
       | s ->
 	  let count = simple_string_length s count in
 	  let seeneq = seeneq && is_whitespace a in
-	  a :: loop stack space_cell count seen_cocci seeneq xs
-      )
-    | (C2(s1,_)) :: (C2(" ",_)) :: (((C2(s2,_)) :: _) as xs)
-      when (not (s1 = "")) && (not (s2 = "")) &&
-	(* not perfect, because only finds the string string case *)
-	(String.get s1 0 = '\"') && (String.get s2 0 = '\"') ->
-        let count =
-	  update_previous_space stack space_cell count s1 in
-	let sp = ref " " in
-	let a = C2(s1,Some(Unparse_cocci.SpaceOrNewline sp)) in
-	a ::
-	loop stack space_cell ((simple_string_length s1 count)+1) true false xs
-    | Fake2 _ :: _ | Indent_cocci2 :: _
-    | Unindent_cocci2 _::_ | EatSpace2::_ ->
-      failwith "unexpected fake, indent, unindent, or eatspace"
-    | a::xs ->
-	let newseencocci = seen_cocci or (iscocci a && nonempty stack) in
-	let newcount = simple_string_length (str_of_token2 a) count in
-	a :: loop stack space_cell newcount newseencocci false xs in
+	  let seen_cocci = seen_cocci or (iscocci a && nonempty stack) in
+	  a :: loop stack space_cell count seen_cocci seeneq xs) in
   let mkc2 = function "" -> [] | sp -> [C2 (sp,None)] in
   let redo_spaces prev = function
     | Cocci2(s,line,lcol,rcol,Some (Unparse_cocci.SpaceOrNewline sp)) ->
