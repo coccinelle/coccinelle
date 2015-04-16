@@ -263,16 +263,16 @@ and base_string_format =
 
 and string_format = base_string_format wrap
 
-and  unaryOp = GetRef | GetRefLabel | DeRef | UnPlus |  UnMinus | Tilde | Not
-and  base_assignOp =
+and unaryOp = GetRef | GetRefLabel | DeRef | UnPlus |  UnMinus | Tilde | Not
+and base_assignOp =
     SimpleAssign of simpleAssignOp mcode
   | OpAssign of arithOp mcode
   | MetaAssign of meta_name mcode * assignOpconstraint * keep_binding * inherited
-and  simpleAssignOp = string
-and  assignOp = base_assignOp wrap
-and  fixOp = Dec | Inc
+and simpleAssignOp = string
+and assignOp = base_assignOp wrap
+and fixOp = Dec | Inc
 
-and  base_binaryOp =
+and base_binaryOp =
     Arith of arithOp mcode
   | Logical of logicalOp mcode
   | MetaBinary of meta_name mcode * binaryOpconstraint * keep_binding * inherited
