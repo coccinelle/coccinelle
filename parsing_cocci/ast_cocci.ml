@@ -277,7 +277,7 @@ and  base_binaryOp =
   | Logical of logicalOp mcode
   | MetaBinary of meta_name mcode * binaryOpconstraint * keep_binding * inherited
 and binaryOp = base_binaryOp wrap
-and  arithOp =
+and arithOp =
     Plus | Minus | Mul | Div | Mod | DecLeft | DecRight | And | Or | Xor
   | Min | Max
 and  logicalOp = Inf | Sup | InfEq | SupEq | Eq | NotEq | AndLog | OrLog
