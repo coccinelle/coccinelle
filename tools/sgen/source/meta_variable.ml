@@ -147,6 +147,18 @@ let id_constraint ~rn =
   | Ast.IdNegIdSet(slist,mnlist) -> list_constraints' slist mnlist " != "
   | Ast.IdRegExpConstraint(re) -> regex_constraint re
 
+let id_constraint ~rn =
+  let list_constraints' slist mnlist op =
+    let combined =
+      (List.map (fun x -> "\"" ^ x ^ "\"") slist) @
+      (List.map (name_str ~rn) mnlist) in
+    list_constraints ~tostring_fn:(fun x -> x) ~op combined in
+  function
+  | Ast.IdNoConstraint -> ""
+  | Ast.IdPosIdSet(slist,mnlist) -> list_constraints' slist mnlist " = "
+  | Ast.IdNegIdSet(slist,mnlist) -> list_constraints' slist mnlist " != "
+  | Ast.IdRegExpConstraint(re) -> regex_constraint re
+
 let constraints ~rn = function
     Ast0.NoConstraint -> ""
   | Ast0.NotIdCstrt recstr -> regex_constraint recstr
@@ -176,6 +188,29 @@ let list_len ~rn = function
   | Ast0.MetaListLen (mn,_,_,_,_,_) -> "[" ^ (name_str ~rn mn) ^ "] "
   | Ast0.CstListLen i -> "[" ^ (string_of_int i) ^ "] "
 
+let assignOp_constraint ~rn =
+  let tostring op =
+    match Ast0.unwrap op with
+      Ast0.SimpleAssign _ -> "="
+    | Ast0.OpAssign(aop) -> S.assign_tostring (Ast0.unwrap_mcode aop)
+    | Ast0.MetaAssign(metavar,_,_) -> failwith "not possible" in
+  let list_constraints' oplist op =
+    list_constraints ~tostring_fn:tostring ~op oplist in
+  function
+  | Ast0.AssignOpNoConstraint -> ""
+  | Ast0.AssignOpInSet(oplist) -> list_constraints' oplist " = "
+
+let binaryOp_constraint ~rn =
+  let tostring op =
+    match Ast0.unwrap op with
+      Ast0.Arith(aop) -> S.arith_tostring (Ast0.unwrap_mcode aop)
+    | Ast0.Logical(lop) -> S.logic_tostring (Ast0.unwrap_mcode lop)
+    | Ast0.MetaBinary(metavar,_,_) -> failwith "not possible" in
+  let list_constraints' oplist op =
+    list_constraints ~tostring_fn:tostring ~op oplist in
+  function
+  | Ast0.BinaryOpNoConstraint -> ""
+  | Ast0.BinaryOpInSet(oplist) -> list_constraints' oplist " = "
 
 (* ------------------------------------------------------------------------- *)
 (* MSET HELPERS *)
@@ -307,10 +342,12 @@ let metavar_combiner rn =
   let meta_mcode a = failwith ("NOT ALLOWED") in (* should be handled before *)
   let string_mcode mc = mcode ~rn ~mc in
   let const_mcode mc = mcode ~rn ~mc in
-  let assign_mcode mc = mcode ~rn ~mc in
+  let simpleAssign_mcode mc = mcode ~rn ~mc in
+  let opAssign_mcode mc = mcode ~rn ~mc in
   let fix_mcode mc = mcode ~rn ~mc in
   let unary_mcode mc = mcode ~rn ~mc in
-  let binary_mcode mc = mcode ~rn ~mc in
+  let arithOp_mcode mc = mcode ~rn ~mc in
+  let logicalOp_mcode mc = mcode ~rn ~mc in
   let cv_mcode mc = mcode ~rn ~mc in
   let sign_mcode mc = mcode ~rn ~mc in
   let struct_mcode mc = mcode ~rn ~mc in
@@ -381,6 +418,20 @@ let metavar_combiner rn =
     | Ast0.MetaExprList (mc, listlen, _) ->
         lst_format ~mc ~typ:"expression list" ~listlen
     | Ast0.AsExpr (e1, e2) -> as_format e1 e2 exprfn exprfn
+    | _ -> fn v in
+
+  let binaryOpfn c fn v =
+    match Ast0.unwrap v with
+    | Ast0.MetaBinary(mc, c, pure) ->
+        let constr = binaryOp_constraint ~rn c in
+	meta_mc_format ~mc ~typ:"binary operator " ~constr
+    | _ -> fn v in
+
+  let assignOpfn c fn v =
+    match Ast0.unwrap v with
+    | Ast0.MetaAssign(mc, c, pure) ->
+        let constr = assignOp_constraint ~rn c in
+	meta_mc_format ~mc ~typ:"assignment operator " ~constr
     | _ -> fn v in
 
   let tyfn c fn v =
@@ -464,12 +515,12 @@ let metavar_combiner rn =
     | _ -> fn v in
 
   V0.flat_combiner bind option_default
-    meta_mcode string_mcode const_mcode assign_mcode fix_mcode unary_mcode
-    binary_mcode cv_mcode sign_mcode struct_mcode storage_mcode
-    inc_mcode
+    meta_mcode string_mcode const_mcode simpleAssign_mcode opAssign_mcode
+    fix_mcode unary_mcode arithOp_mcode logicalOp_mcode cv_mcode sign_mcode
+    struct_mcode storage_mcode inc_mcode
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotscasefn
-    identfn exprfn tyfn initfn paramfn declfn stmtfn forinfofn casefn
-    string_fragmentfn topfn
+    identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn declfn stmtfn
+    forinfofn casefn string_fragmentfn topfn
 
 
 (* ------------------------------------------------------------------------- *)

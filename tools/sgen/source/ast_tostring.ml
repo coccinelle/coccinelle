@@ -87,13 +87,7 @@ let unary_tostring = function
   | Ast.Tilde -> "~"
   | Ast.Not -> "!"
 
-let binary_tostring = function
-  | Ast.Arith(aop) -> arith_tostring aop
-  | Ast.Logical(lop) -> logic_tostring lop
-
-let assign_tostring = function
-  | Ast.SimpleAssign -> "="
-  | Ast.OpAssign(aop) -> arith_tostring aop ^ "="
+let assign_tostring aop = arith_tostring aop ^ "="
 
 let type_tostring = function
   | Ast.VoidType -> "void"

@@ -27,6 +27,7 @@ let make_pos (_, arity, info, mcodekind, _, adj) snp =
 (* POSITION GENERATORS *)
 
 let wrap a snp = Some (Ast0.wrap a, snp)
+let wrap0 a snp = (Ast0.wrap a, snp)
 let all_same = function [] -> true | x :: xs -> List.for_all (( = ) x) xs
 
 (* adds generated metaposition to mcode unless it is optional *)
@@ -56,23 +57,23 @@ and ident_pos i snp =
   match Ast0.unwrap i with
   | Ast0.Id mc ->
       let (mc, snp) = mcode_pos mc snp in
-      (Ast0.wrap (Ast0.Id(mc)), snp)
+      wrap0 (Ast0.Id(mc)) snp
   | Ast0.MetaId(metamc, i, s, p) ->
       let (metamc, snp) = mcode_pos metamc snp in
-      (Ast0.wrap (Ast0.MetaId(metamc, i, s, p)), snp)
+      wrap0 (Ast0.MetaId(metamc, i, s, p)) snp
   | Ast0.MetaFunc(metamc, i, p) ->
       let (metamc, snp) = mcode_pos metamc snp in
-      (Ast0.wrap (Ast0.MetaFunc(metamc, i, p)), snp)
+      wrap0 (Ast0.MetaFunc(metamc, i, p)) snp
   | Ast0.MetaLocalFunc(metamc, i, p) ->
       let (metamc, snp) = mcode_pos metamc snp in
-      (Ast0.wrap (Ast0.MetaLocalFunc(metamc, i, p)), snp)
+      wrap0 (Ast0.MetaLocalFunc(metamc, i, p)) snp
   | Ast0.DisjId _ -> (i, snp)
   | Ast0.OptIdent (id) ->
       let (id, snp) = ident_pos id snp in
-      (Ast0.wrap (Ast0.OptIdent (id)), snp)
+      wrap0 (Ast0.OptIdent (id)) snp
   | Ast0.UniqueIdent (id) ->
       let (id, snp) = ident_pos id snp in
-      (Ast0.wrap (Ast0.UniqueIdent (id)), snp)
+      wrap0 (Ast0.UniqueIdent (id)) snp
   | Ast0.AsIdent(id1, id2) -> failwith "Should only be in metavars"
 
 (* TODO: fix the disjunction thing. Usually we don't want to put positions
@@ -193,7 +194,7 @@ and expression_pos e snp =
       let fn x y =  Ast0.Assignment(x, amc, y, st) in
       (match exp_two exp1 exp2 fn snp with
        | None ->
-           let (m,snp) = mcode_pos amc snp in
+           let (m,snp) = assignOp_pos amc snp in
            wrap (Ast0.Assignment(exp1, m, exp2, st)) snp
        | a -> a
       )
@@ -241,7 +242,7 @@ and expression_pos e snp =
       let fn x y = Ast0.Binary(x, bin, y) in
       (match exp_two exp1 exp2 fn snp with
        | None ->
-           let (m,snp) = mcode_pos bin snp in
+           let (m,snp) = binaryOp_pos bin snp in
            wrap (Ast0.Binary(exp1, m, exp2)) snp
        | a -> a
       )
@@ -249,7 +250,7 @@ and expression_pos e snp =
       let fn x y = Ast0.Nested(x, bin, y) in
       (match exp_two exp1 exp2 fn snp with
        | None ->
-           let (m,snp) = mcode_pos bin snp in
+           let (m,snp) = binaryOp_pos bin snp in
            wrap (Ast0.Nested(exp1, m, exp2)) snp
        | a -> a
       )
@@ -319,6 +320,30 @@ and expression_pos e snp =
   | Ast0.NestExpr _ | Ast0.Edots _ | Ast0.Ecircles _ | Ast0.Estars _
   | Ast0.AsExpr _ | Ast0.EComma _ | Ast0.MetaExprList _ -> None
   | Ast0.DisjExpr _ -> None
+
+and assignOp_pos op snp =
+  match Ast0.unwrap op with
+    Ast0.SimpleAssign(op) ->
+      let (op, snp) = mcode_pos op snp in
+      wrap0 (Ast0.SimpleAssign(op)) snp
+  | Ast0.OpAssign(aop) ->
+      let (aop, snp) = mcode_pos aop snp in
+      wrap0 (Ast0.OpAssign(aop)) snp
+  | Ast0.MetaAssign(mc,c,pure) ->
+      let (mc, snp) = mcode_pos mc snp in
+      wrap0 (Ast0.MetaAssign(mc,c,pure)) snp
+
+and binaryOp_pos op snp =
+  match Ast0.unwrap op with
+    Ast0.Arith(aop) ->
+      let (aop, snp) = mcode_pos aop snp in
+      wrap0 (Ast0.Arith(aop)) snp
+  | Ast0.Logical(lop) ->
+      let (lop, snp) = mcode_pos lop snp in
+      wrap0 (Ast0.Logical(lop)) snp
+  | Ast0.MetaBinary(mc,c,pure) ->
+      let (mc, snp) = mcode_pos mc snp in
+      wrap0 (Ast0.MetaBinary(mc,c,pure)) snp
 
 (* returns Some statement with inserted position if it was possible to insert
  * a position or None if it was not possible. *)
