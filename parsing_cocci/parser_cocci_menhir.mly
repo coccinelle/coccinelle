@@ -571,6 +571,8 @@ binaryopconstraint:
   { Ast0.BinaryOpNoConstraint }
 | TEq TOBrace ops=comma_list(binary_operator) TCBrace 
   { Ast0.BinaryOpInSet ops }
+| TEq op=binary_operator
+  { Ast0.BinaryOpInSet [op] }
 
 pure_ident_or_meta_ident_with_assignop_constraint:
     i=pure_ident_or_meta_ident c=assignopconstraint { (i,c) }
@@ -579,6 +581,8 @@ assignopconstraint:
   { Ast0.AssignOpNoConstraint }
 | TEq TOBrace ops=comma_list(assignment_operator) TCBrace 
   { Ast0.AssignOpInSet ops }
+| TEq op=assignment_operator
+  { Ast0.AssignOpInSet [op] }
 
 binary_operator:
 | TShLOp { mkarithop $1 } (* Ast.Arith Ast.DecLeft *)
