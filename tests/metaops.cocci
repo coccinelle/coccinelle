@@ -1,7 +1,7 @@
 @@
 expression e1, e2;
 binary operator op1 = { -, *, /, %, |, &, ^, <<, >>, &&, ||, ==, !=, >, >=, <, <= } ;
-binary operator op2 = { + } ;
+binary operator op2 = + ;
 @@
 
 (
@@ -15,7 +15,7 @@ binary operator op2 = { + } ;
 @@
 expression e1, e2;
 assignment operator aop1 = { +=, -=, *=, /=, %=, |=, &=, ^=, <<=, >>= };
-assignment operator aop2 = { = };
+assignment operator aop2 = = ;
 @@
 
 (
