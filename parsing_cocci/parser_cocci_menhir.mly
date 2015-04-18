@@ -832,12 +832,12 @@ expression_type:
 
 meta_exp_type:
   t=typedef_ctype
-    { [Ast0_cocci.ast0_type_to_type t] }
+    { [Ast0_cocci.ast0_type_to_type true t] }
 | t=typedef_ctype TOCro TCCro
-    { [Type_cocci.Array (Ast0_cocci.ast0_type_to_type t)] }
+    { [Type_cocci.Array (Ast0_cocci.ast0_type_to_type true t)] }
 | TOBrace t=comma_list(ctype) TCBrace m=list(TMul)
     { List.map
-	(function x -> P.ty_pointerify (Ast0_cocci.ast0_type_to_type x) m)
+	(function x -> P.ty_pointerify (Ast0_cocci.ast0_type_to_type true x) m)
 	t }
 
 arity: TBang0 { Ast.UNIQUE }

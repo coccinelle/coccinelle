@@ -609,7 +609,7 @@ val get_rule_name : parsed_rule -> string
 
 val meta_pos_name : anything -> Ast_cocci.meta_name mcode
 
-val ast0_type_to_type : typeC -> Type_cocci.typeC
+val ast0_type_to_type : bool -> typeC -> Type_cocci.typeC
 val reverse_type : Type_cocci.typeC -> base_typeC
 exception TyConv
 
