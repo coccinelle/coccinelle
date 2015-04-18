@@ -864,7 +864,7 @@ let rec ends_in_return_bis preok stmt_list =
 	      Ast.Nest _ | Ast.Dots _ | Ast.Circles _ | Ast.Stars _ -> true
 	    | _ -> false)
 	  l in
-      let preok = preok or contains_dots l in
+      let preok = preok || contains_dots l in
       (match List.rev l with
 	x::_ ->
 	  (match Ast.unwrap x with

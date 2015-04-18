@@ -1446,7 +1446,7 @@ let add_newlines toks tabbing_unit =
 	  | _ -> space_cell in
 	a :: loop stack space_cell count_after_space true false xs
     | t1 :: t2 :: rest when nonempty stack && iscomma t1 && isspace t2 ->
-	let seen_cocci = seen_cocci or iscocci t1 or iscocci t2 in
+	let seen_cocci = seen_cocci || iscocci t1 || iscocci t2 in
 	let space_sz = simple_string_length (str_of_token2 t2) 0 in
 	(match stack with
 	  [_] ->
@@ -1462,7 +1462,7 @@ let add_newlines toks tabbing_unit =
 	    loop stack space_cell (count+space_sz+1) seen_cocci false rest)
     | t1 :: t2 :: rest
       when nonempty stack && iscomma t1 && isnewline t2 ->
-	let seen_cocci = seen_cocci or iscocci t1 or iscocci t2 in
+	let seen_cocci = seen_cocci || iscocci t1 || iscocci t2 in
 	let (stack,newcount,t2,newseencocci) =
 	  get_indent stack t2 seen_cocci rest in
 	(match stack with
@@ -1475,7 +1475,7 @@ let add_newlines toks tabbing_unit =
 	| _ -> t1::t2::loop stack None newcount newseencocci false rest)
     | t1 :: rest
       when nonempty stack && iscomma t1 ->
-	let seen_cocci = seen_cocci or iscocci t1 in
+	let seen_cocci = seen_cocci || iscocci t1 in
 	(match stack with
 	  [_] ->
 	    let count =
@@ -1487,7 +1487,7 @@ let add_newlines toks tabbing_unit =
 	| _ -> t1 :: loop stack space_cell (count+1) seen_cocci false rest)
     | t1 :: rest
       when nonempty stack && isnewline t1 ->
-	let seen_cocci = seen_cocci or iscocci t1 in
+	let seen_cocci = seen_cocci || iscocci t1 in
 	let (stack,newcount,t1,newseencocci) =
 	  get_indent stack t1 seen_cocci rest in
 	(match stack with
@@ -1546,7 +1546,7 @@ let add_newlines toks tabbing_unit =
       | s ->
 	  let count = simple_string_length s count in
 	  let seeneq = seeneq && is_whitespace a in
-	  let seen_cocci = seen_cocci or (iscocci a && nonempty stack) in
+	  let seen_cocci = seen_cocci || (iscocci a && nonempty stack) in
 	  a :: loop stack space_cell count seen_cocci seeneq xs) in
   let mkc2 = function "" -> [] | sp -> [C2 (sp,None)] in
   let redo_spaces prev = function
