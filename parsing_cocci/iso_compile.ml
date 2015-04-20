@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -45,9 +45,9 @@ let sequence_tokens =
   let bind x y = x @ y in
   let option_default = [] in
   V0.flat_combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
 
 (* In general, we will get a list of lists:

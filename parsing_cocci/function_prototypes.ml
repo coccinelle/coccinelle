@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -84,9 +84,10 @@ let drop_positions =
   let res =
     V0.flat_rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing in
+    donothing donothing donothing donothing donothing donothing in
   res.VT0.rebuilder_rec_statement
 
 let get_all_functions rule =
@@ -187,9 +188,10 @@ and strip =
 
   V0.flat_rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode
     donothing donothing donothing donothing donothing donothing
-    ident donothing typeC donothing param donothing donothing donothing
-    donothing donothing donothing
+    ident donothing donothing donothing typeC donothing param
+    donothing donothing donothing donothing donothing donothing
 
 and changed_proto = function
     (mname,mdef,mproto,None) -> true
@@ -209,10 +211,11 @@ let rec collect_ident_strings id =
   let v =
     V0.flat_combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode
       donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing in
-  v.VT0.combiner_rec_ident id
+      donothing donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing in
+      v.VT0.combiner_rec_ident id
 
 let right_attach_mcode strings (x,ar,info,mc,pos,adj) =
   let info =

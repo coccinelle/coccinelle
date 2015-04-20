@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -126,6 +126,8 @@ let rec propagate_types env =
       Some (T.ConstVol(_,t)) -> Some t
     | t -> t in
 
+  let ast0_type_to_type = Ast0.ast0_type_to_type false in
+
   (* types that might be integer types.  should char be allowed? *)
   let rec is_int_type = function
       T.BaseType(T.IntType)
@@ -211,11 +213,12 @@ let rec propagate_types env =
 	      | (t1,t2) ->
 		  let ty = lub_type t1 t2 in
 		    Ast0.set_type exp1 ty; Ast0.set_type exp2 ty; ty in
-	      (match Ast0.unwrap_mcode op with
-		   Ast.Arith(op) -> same_type (ty1, ty2)
-		 | Ast.Logical(Ast.AndLog) | Ast.Logical(Ast.OrLog) ->
+	      (match Ast0.unwrap op with
+		 Ast0.Arith(op) -> same_type (ty1, ty2)
+                 | Ast0.MetaBinary _ -> same_type (ty1, ty2)
+		 | Ast0.Logical(op') when (let op''=Ast0.unwrap_mcode op' in op''=Ast.AndLog || op''=Ast.OrLog) ->
 		     Some(bool_type)
-		 | Ast.Logical(op) ->
+		 | Ast0.Logical(op) ->
 		     let ty = lub_type ty1 ty2 in
 		     Ast0.set_type exp1 ty; Ast0.set_type exp2 ty;
 		     Some(bool_type))
@@ -263,11 +266,11 @@ let rec propagate_types env =
 	       | Some (T.TypeName(s)) ->
 		   None
 	       | Some x -> err exp x "non-structure pointer type in field ref")
-	| Ast0.Cast(lp,ty,rp,exp) -> Some(Ast0.ast0_type_to_type ty)
+	| Ast0.Cast(lp,ty,rp,exp) -> Some(ast0_type_to_type ty)
 	| Ast0.SizeOfExpr(szf,exp) -> Some(int_type)
 	| Ast0.SizeOfType(szf,lp,ty,rp) -> Some(int_type)
 	| Ast0.TypeExp(ty) -> None
-	| Ast0.Constructor(lp,ty,rp,init) -> Some(Ast0.ast0_type_to_type ty)
+	| Ast0.Constructor(lp,ty,rp,init) -> Some(ast0_type_to_type ty)
 	| Ast0.MetaErr(name,_,_) -> None
 	| Ast0.MetaExpr(name,_,Some [ty],_,_) -> Some ty
 	| Ast0.MetaExpr(name,_,ty,_,_) -> None
@@ -349,10 +352,10 @@ let rec propagate_types env =
     | Ast0.MetaFieldList(_,_,_) -> []
     | Ast0.Init(_,ty,id,_,exp,_) ->
 	let _ = (propagate_types env).VT0.combiner_rec_initialiser exp in
-	let ty = Ast0.ast0_type_to_type ty in
+	let ty = ast0_type_to_type ty in
 	List.map (function i -> (i,ty)) (strip id)
     | Ast0.UnInit(_,ty,id,_) ->
-	let ty = Ast0.ast0_type_to_type ty in
+	let ty = ast0_type_to_type ty in
 	List.map (function i -> (i,ty)) (strip id)
     | Ast0.FunProto(fi,nm,lp,params,va,rp,sem) -> []
     | Ast0.MacroDecl(_,_,_,_,_) -> []
@@ -399,7 +402,7 @@ let rec propagate_types env =
 	let rec get_binding p =
 	  match Ast0.unwrap p with
 	    Ast0.Param(ty,Some id) ->
-	      let ty = Ast0.ast0_type_to_type ty in
+	      let ty = ast0_type_to_type ty in
 	      List.map (function i -> (i,ty)) (strip id)
 	  | Ast0.OptParam(param) -> get_binding param
 	  | Ast0.AsParam(param,e) -> get_binding param

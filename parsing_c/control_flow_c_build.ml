@@ -442,7 +442,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
                     Ast_c.str_of_name namef ^ "(...)"
                 | _ -> "statement"
                 )
-            | Assignment (e1, SimpleAssign, e2) ->
+            | Assignment (e1, (SimpleAssign,_), e2) ->
                 (match Ast_c.unwrap_expr e1 with
                 | Ident namevar ->
                     Ast_c.str_of_name namevar ^ " = ... ;"

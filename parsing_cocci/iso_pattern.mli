@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -33,3 +33,5 @@ val apply_isos :
       Ast_cocci.metavar list * Ast0_cocci.rule
 
 val rebuild_mcode : int option -> Visitor_ast0_types.rebuilder_rec_functions
+
+val verbose_iso : bool ref

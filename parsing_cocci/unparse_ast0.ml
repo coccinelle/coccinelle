@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -172,6 +172,20 @@ let rec ident i =
 
 let print_string_box s = print_string s; open_box 0
 
+let assignOp op =
+  print_context op 
+    (function _ -> match Ast0.unwrap op with
+      | Ast0.SimpleAssign op' -> mcode U.simpleAssignOp op'
+      | Ast0.OpAssign op' -> mcode U.opAssignOp op'
+      | Ast0.MetaAssign(name,_,_) -> mcode print_meta name)
+
+let binaryOp op =
+  print_context op 
+    (function _ -> match Ast0.unwrap op with
+      | Ast0.Arith op' -> mcode U.arithOp op'
+      | Ast0.Logical op' -> mcode U.logicalOp op'
+      | Ast0.MetaBinary(name,_,_) -> mcode print_meta name)
+
 let rec expression e =
   print_option Type_cocci.typeC (Ast0.get_type e);
   print_context e
@@ -188,8 +202,11 @@ let rec expression e =
 	  let _ = dots (function _ -> ()) expression args in
 	  close_box(); mcode print_string rp
       | Ast0.Assignment(left,op,right,_) ->
-	  expression left; print_string " "; mcode U.assignOp op;
-	  print_string " "; expression right
+	expression left;
+        print_string " ";
+        assignOp op;
+	print_string " ";
+        expression right
       | Ast0.Sequence(left,op,right) ->
 	  expression left; mcode print_string op;
 	  print_string " "; expression right
@@ -202,13 +219,19 @@ let rec expression e =
       | Ast0.Unary(exp,op) -> mcode U.unaryOp op; expression exp
       | Ast0.Binary(left,op,right) ->
 	  print_string "(";
-	  expression left; print_string " "; mcode U.binaryOp op;
-	  print_string " "; expression right;
+	  expression left;
+          print_string " ";
+          binaryOp op;
+          print_string " ";
+          expression right;
 	  print_string ")"
       | Ast0.Nested(left,op,right) ->
 	  print_string "(";
-	  expression left; print_string " "; mcode U.binaryOp op;
-	  print_string " "; expression right;
+	  expression left;
+          print_string " ";
+          binaryOp op;
+	  print_string " ";
+          expression right;
 	  print_string ")"
       | Ast0.Paren(lp,exp,rp) ->
 	  mcode print_string_box lp; expression exp; close_box();
@@ -747,6 +770,10 @@ let rec unparse_anything x =
   | Ast0.ExprTag(d) | Ast0.ArgExprTag(d) | Ast0.TestExprTag(d) ->
       print_string "Exp:"; force_newline();
       expression d
+  | Ast0.AssignOpTag(d) ->
+      print_string ("AssignOp: " ^ (Ast0.string_of_assignOp d)); force_newline();
+  | Ast0.BinaryOpTag(d) ->
+      print_string ("BinaryOp: " ^ (Ast0.string_of_binaryOp d)); force_newline();
   | Ast0.TypeCTag(d) -> typeC d
   | Ast0.ParamTag(d) -> parameterTypeDef d
   | Ast0.InitTag(d)  -> initialiser d
@@ -780,3 +807,7 @@ let unparse x =
   print_newline()
 
 let unparse_to_string x = Common.format_to_string (function _ -> unparse x)
+
+let show_cocci_parse_tree comment parse_tree =
+  Printf.printf "%s\n" comment;
+  top_level parse_tree; Format.print_newline()

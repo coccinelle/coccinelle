@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -54,8 +54,8 @@ let set_test_poss =
       Ast0.CondExpr(e1,q,e2,c,e3) ->
 	Ast0.rewrap e (Ast0.CondExpr(process_exp e1,q,e2,c,e3))
     | Ast0.Binary(e1,op,e2) ->
-	(match Ast0.unwrap_mcode op with
-	  Ast.Logical(Ast.AndLog) | Ast.Logical(Ast.OrLog) ->
+	(match Ast0.unwrap op with
+	  Ast0.Logical op' when (let op''=Ast0.unwrap_mcode op' in op''=Ast.AndLog || op''=Ast.OrLog) ->
 	    Ast0.rewrap e (Ast0.Binary(process_exp e1,op,process_exp e2))
 	| _ -> e)
     | Ast0.Unary(e1,op) ->

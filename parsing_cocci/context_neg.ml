@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -50,6 +50,8 @@ let set_mcodekind x mcodekind =
   | Ast0.DotsCaseTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.IdentTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.ExprTag(d) -> Ast0.set_mcodekind d mcodekind
+  | Ast0.AssignOpTag(d) -> Ast0.set_mcodekind d mcodekind
+  | Ast0.BinaryOpTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.ArgExprTag(d) | Ast0.TestExprTag(d) ->
       failwith "not possible - iso only"
   | Ast0.TypeCTag(d) -> Ast0.set_mcodekind d mcodekind
@@ -78,6 +80,8 @@ let set_index x index =
   | Ast0.DotsCaseTag(d) -> Ast0.set_index d index
   | Ast0.IdentTag(d) -> Ast0.set_index d index
   | Ast0.ExprTag(d) -> Ast0.set_index d index
+  | Ast0.AssignOpTag(d) -> Ast0.set_index d index
+  | Ast0.BinaryOpTag(d) -> Ast0.set_index d index
   | Ast0.ArgExprTag(d) | Ast0.TestExprTag(d) ->
       failwith "not possible - iso only"
   | Ast0.TypeCTag(d) -> Ast0.set_index d index
@@ -105,6 +109,8 @@ let get_index = function
   | Ast0.DotsCaseTag(d) -> Index.case_line_dots d
   | Ast0.IdentTag(d) -> Index.ident d
   | Ast0.ExprTag(d) -> Index.expression d
+  | Ast0.AssignOpTag(d) -> Index.assignOp d
+  | Ast0.BinaryOpTag(d) -> Index.binaryOp d
   | Ast0.ArgExprTag(d) | Ast0.TestExprTag(d) ->
       failwith "not possible - iso only"
   | Ast0.TypeCTag(d) -> Index.typeC d
@@ -178,8 +184,9 @@ let collect_plus_lines top =
   let fn =
     V0.flat_combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing
+      mcode mcode
+      donothing donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing donothing
       statement donothing donothing donothing donothing in
   fn.VT0.combiner_rec_top_level top
 
@@ -497,11 +504,12 @@ let classify is_minus all_marked table code =
 
   let combiner =
     V0.flat_combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode
       (do_nothing Ast0.dotsExpr) (do_nothing Ast0.dotsInit)
       (do_nothing Ast0.dotsParam) (do_nothing Ast0.dotsStmt)
       (do_nothing Ast0.dotsDecl) (do_nothing Ast0.dotsCase)
-      ident expression typeC initialiser param declaration
+      ident expression (do_nothing Ast0.assignOp) (do_nothing Ast0.binaryOp) typeC initialiser param declaration
       statement (do_nothing Ast0.forinfo) case_line string_fragment
       (do_top Ast0.top) in
   combiner.VT0.combiner_rec_top_level code
@@ -514,6 +522,20 @@ the same context children *)
    structure *)
 let equal_mcode (_,_,info1,_,_,_) (_,_,info2,_,_,_) =
   info1.Ast0.pos_info.Ast0.offset = info2.Ast0.pos_info.Ast0.offset
+
+let assignOp_equal_mcode op1 op2 =
+  match (Ast0.unwrap op1, Ast0.unwrap op2) with
+    Ast0.SimpleAssign op1', Ast0.SimpleAssign op2' -> equal_mcode op1' op2'
+  | Ast0.OpAssign op1', Ast0.OpAssign op2' -> equal_mcode op1' op2'
+  | Ast0.MetaAssign(mv1,_,_), Ast0.MetaAssign(mv2,_,_) -> equal_mcode mv1 mv2
+  | _ -> false
+
+let binaryOp_equal_mcode op1 op2 =
+  match (Ast0.unwrap op1, Ast0.unwrap op2) with
+    Ast0.Arith op1', Ast0.Arith op2' -> equal_mcode op1' op2'
+  | Ast0.Logical op1', Ast0.Logical op2' -> equal_mcode op1' op2'
+  | Ast0.MetaBinary(mv1,_,_), Ast0.MetaBinary(mv2,_,_) -> equal_mcode mv1 mv2
+  | _ -> false
 
 let equal_option e1 e2 =
   match (e1,e2) with
@@ -555,7 +577,7 @@ let rec equal_expression e1 e2 =
   | (Ast0.FunCall(_,lp1,_,rp1),Ast0.FunCall(_,lp2,_,rp2)) ->
       equal_mcode lp1 lp2 && equal_mcode rp1 rp2
   | (Ast0.Assignment(_,op1,_,_),Ast0.Assignment(_,op2,_,_)) ->
-      equal_mcode op1 op2
+      assignOp_equal op1 op2
   | (Ast0.Sequence(_,op1,_),Ast0.Sequence(_,op2,_)) ->
       equal_mcode op1 op2
   | (Ast0.CondExpr(_,why1,_,colon1,_),Ast0.CondExpr(_,why2,_,colon2,_)) ->
@@ -563,7 +585,7 @@ let rec equal_expression e1 e2 =
   | (Ast0.Postfix(_,op1),Ast0.Postfix(_,op2)) -> equal_mcode op1 op2
   | (Ast0.Infix(_,op1),Ast0.Infix(_,op2)) -> equal_mcode op1 op2
   | (Ast0.Unary(_,op1),Ast0.Unary(_,op2)) -> equal_mcode op1 op2
-  | (Ast0.Binary(_,op1,_),Ast0.Binary(_,op2,_)) -> equal_mcode op1 op2
+  | (Ast0.Binary(_,op1,_),Ast0.Binary(_,op2,_)) -> binaryOp_equal op1 op2
   | (Ast0.Paren(lp1,_,rp1),Ast0.Paren(lp2,_,rp2)) ->
       equal_mcode lp1 lp2 && equal_mcode rp1 rp2
   | (Ast0.ArrayAccess(_,lb1,_,rb1),Ast0.ArrayAccess(_,lb2,_,rb2)) ->
@@ -600,6 +622,21 @@ let rec equal_expression e1 e2 =
   | (Ast0.OptExp(_),Ast0.OptExp(_)) -> true
   | (Ast0.UniqueExp(_),Ast0.UniqueExp(_)) -> true
   | _ -> false
+
+and assignOp_equal op1 op2 =
+  match (Ast0.unwrap op1, Ast0.unwrap op2) with
+    | Ast0.SimpleAssign o1, Ast0.SimpleAssign o2 -> equal_mcode o1 o2
+    | Ast0.OpAssign o1, Ast0.OpAssign o2 -> equal_mcode o1 o2
+    | Ast0.MetaAssign(mv1,_,_), Ast0.MetaAssign(mv2,_,_) ->
+      equal_mcode mv1 mv2
+    | _ -> false
+and binaryOp_equal op1 op2 =
+  match (Ast0.unwrap op1, Ast0.unwrap op2) with
+    | Ast0.Arith o1, Ast0.Arith o2 -> equal_mcode o1 o2
+    | Ast0.Logical o1, Ast0.Logical o2 -> equal_mcode o1 o2
+    | Ast0.MetaBinary(mv1,_,_), Ast0.MetaBinary(mv2,_,_) ->
+      equal_mcode mv1 mv2
+    | _ -> false
 
 let rec equal_typeC t1 t2 =
   match (Ast0.unwrap t1,Ast0.unwrap t2) with
@@ -895,8 +932,9 @@ let contextify_all =
 
   V0.flat_combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+    mcode mcode
+    do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+    do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing
 
 let contextify_whencode =

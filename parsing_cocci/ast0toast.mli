@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -33,6 +33,8 @@ val ast0toast_toplevel : Ast0_cocci.top_level -> Ast_cocci.top_level
 
 val ident : Ast0_cocci.ident -> Ast_cocci.ident
 val expression : Ast0_cocci.expression -> Ast_cocci.expression
+val assignOp : Ast0_cocci.assignOp -> Ast_cocci.assignOp
+val binaryOp : Ast0_cocci.binaryOp -> Ast_cocci.binaryOp
 val expression_dots :
     Ast0_cocci.expression Ast0_cocci.dots ->
       Ast_cocci.expression Ast_cocci.dots

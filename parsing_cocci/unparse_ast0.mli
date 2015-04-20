@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -38,3 +38,5 @@ val top_level : Ast0_cocci.top_level -> unit
 
 val unparse : Ast0_cocci.rule -> unit
 val unparse_anything : Ast0_cocci.anything -> unit
+
+val show_cocci_parse_tree : string -> Ast0_cocci.top_level -> unit

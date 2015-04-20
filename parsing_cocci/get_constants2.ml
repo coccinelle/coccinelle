@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -617,10 +617,11 @@ let do_get_constants constants keywords env neg_pos =
     | _ -> k s in
 
   V.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing
-    ident expression string_fragment string_format fullType typeC
-    initialiser parameter declaration donothing
+    ident expression string_fragment string_format donothing donothing
+    fullType typeC initialiser parameter declaration donothing
     rule_elem statement donothing donothing donothing
 
 (* ------------------------------------------------------------------------ *)
@@ -651,10 +652,11 @@ let get_all_constants minus_only =
 
   V.combiner bind option_default
     other mcode other other other other other other other other other other
-
+    other other
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
+    donothing
 
 (* ------------------------------------------------------------------------ *)
 
@@ -703,10 +705,12 @@ let get_plus_constants =
     | _ -> k e in
 
   V.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing rule_elem statement donothing donothing donothing
+    donothing donothing donothing rule_elem statement donothing
+    donothing donothing
 
 (* ------------------------------------------------------------------------ *)
 
@@ -779,10 +783,12 @@ let all_context =
     | _ -> k e in
 
   V.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing initialiser donothing
-    donothing donothing rule_elem statement donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
+    initialiser donothing donothing donothing rule_elem statement
+    donothing donothing donothing
 
 (* ------------------------------------------------------------------------ *)
 

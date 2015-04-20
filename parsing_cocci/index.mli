@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -33,6 +33,8 @@ val declaration_dots : Ast0_cocci.declaration Ast0_cocci.dots -> int list
 val case_line_dots : Ast0_cocci.case_line Ast0_cocci.dots -> int list
 val ident : Ast0_cocci.ident -> int list
 val expression : Ast0_cocci.expression -> int list
+val assignOp : Ast0_cocci.assignOp -> int list
+val binaryOp : Ast0_cocci.binaryOp -> int list
 val typeC : Ast0_cocci.typeC -> int list
 val declaration : Ast0_cocci.declaration -> int list
 val initialiser : Ast0_cocci.initialiser -> int list

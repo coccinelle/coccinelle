@@ -37,6 +37,8 @@ type 'a printer = 'a -> unit
 
 type pretty_printers = {
   expression      : Ast_c.expression printer;
+  assignOp        : Ast_c.assignOp printer;
+  binaryOp        : Ast_c.binaryOp printer;
   arg_list        : (Ast_c.argument Ast_c.wrap2 list) printer;
   arg             : Ast_c.argument printer;
   statement       : Ast_c.statement printer;
@@ -119,14 +121,14 @@ let mk_pretty_printers
         pr_space(); pp_expression e3
     | Sequence (e1, e2),          [i]  ->
         pp_expression e1; pr_elem i; pr_space(); pp_expression e2
-    | Assignment (e1, op, e2),    [i]  ->
-        pp_expression e1; pr_space(); pr_elem i; pr_space(); pp_expression e2
+    | Assignment (e1, op, e2),    []  ->
+        pp_expression e1; pr_space(); pr_assignOp op; pr_space(); pp_expression e2
 
     | Postfix  (e, op),    [i] -> pp_expression e; pr_elem i;
     | Infix    (e, op),    [i] -> pr_elem i; pp_expression e;
     | Unary    (e, op),    [i] -> pr_elem i; pp_expression e
-    | Binary   (e1, op, e2),    [i] ->
-        pp_expression e1; pr_space(); pr_elem i; pr_space(); pp_expression e2
+    | Binary   (e1, op, e2),    [] ->
+        pp_expression e1; pr_space(); pr_binaryOp op; pr_space(); pp_expression e2
 
     | ArrayAccess    (e1, e2),   [i1;i2] ->
         pp_expression e1; pr_elem i1; pp_expression e2; pr_elem i2
@@ -187,6 +189,14 @@ let mk_pretty_printers
 	    pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str s)));
       pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "*/");
     end
+
+  and pr_assignOp (_,ii) =
+    let i = Common.tuple_of_list1 ii in
+    pr_elem i
+
+  and pr_binaryOp (_,ii) =
+    let i = Common.tuple_of_list1 ii in
+    pr_elem i
 
   and pp_arg_list es = pp_list pp_argument es
 
@@ -1448,6 +1458,8 @@ and pp_init (init, iinit) =
 
 
   { expression = pp_expression;
+    assignOp   = pr_assignOp;
+    binaryOp   = pr_binaryOp;
     arg_list   = pp_arg_list;
     arg        = pp_argument;
     statement  = pp_statement;
@@ -1509,6 +1521,8 @@ let ppc =
     ~pr_elem ~pr_space ~pr_nl ~pr_outdent ~pr_indent ~pr_unindent
 
 let pp_expression_simple = ppc.expression
+let pp_assignOp_simple   = ppc.assignOp
+let pp_binaryOp_simple   = ppc.binaryOp
 let pp_decl_simple       = ppc.decl
 let pp_field_simple      = ppc.field
 let pp_statement_simple  = ppc.statement
@@ -1527,6 +1541,12 @@ let pp_elem_sp ~pr_elem ~pr_space =
 
 let pp_expression_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).expression
+
+let pp_assignOp_gen ~pr_elem ~pr_space =
+  (pp_elem_sp pr_elem pr_space).assignOp
+
+let pp_binaryOp_gen ~pr_elem ~pr_space =
+  (pp_elem_sp pr_elem pr_space).binaryOp
 
 let pp_arg_list_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).arg_list
@@ -1578,6 +1598,13 @@ let string_of_expression e =
   Common.format_to_string (fun () ->
     pp_expression_simple e
   )
+
+let string_of_ifdef_guard = function
+  | Gifdef s  -> "defined(" ^ s ^ ")"
+  | Gifndef s -> "!defined(" ^ s ^ ")"
+  | Gif_str s -> s
+  | Gif e     -> string_of_expression e
+  | Gnone     -> "0"
 
 let string_of_toplevel top =
   Common.format_to_string (fun () ->

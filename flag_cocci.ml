@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -74,3 +74,7 @@ let timeout = ref (None : int option)
 let selected_only = ref false (* just print files that would be treated *)
 
 let use_saved_typedefs = ref true (* hack! *)
+
+(* caching of header file information *)
+let cache_threshold = 500
+let elem_threshold = 10

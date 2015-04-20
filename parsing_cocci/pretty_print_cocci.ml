@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -190,7 +190,12 @@ let print_type keep info = function
 
 let rec idconstraint = function
     Ast.IdNoConstraint  -> print_string "/* No constraint */"
+  | Ast.IdPosIdSet (str,meta)     ->
+      print_string " =";
+      List.iter (function s -> print_string (" "^s)) str;
+      List.iter (function (r,n) -> print_string " "; print_meta(r,n)) meta
   | Ast.IdNegIdSet (str,meta)     ->
+      print_string " !=";
       List.iter (function s -> print_string (" "^s)) str;
       List.iter (function (r,n) -> print_string " "; print_meta(r,n)) meta
   | Ast.IdRegExpConstraint re -> regconstraint re
@@ -236,7 +241,7 @@ let rec expression e =
       dots (function _ -> ()) expression args;
       close_box(); mcode print_string rp
   | Ast.Assignment(left,op,right,simple) ->
-      expression left; print_string " "; mcode assignOp op;
+      expression left; print_string " "; assignOp op;
       print_string " "; expression right
   | Ast.Sequence(left,op,right) ->
       expression left; mcode print_string op;
@@ -249,10 +254,10 @@ let rec expression e =
   | Ast.Infix(exp,op) -> mcode fixOp op; expression exp
   | Ast.Unary(exp,op) -> mcode unaryOp op; expression exp
   | Ast.Binary(left,op,right) ->
-      expression left; print_string " "; mcode binaryOp op; print_string " ";
+      expression left; print_string " "; binaryOp op; print_string " ";
       expression right
   | Ast.Nested(left,op,right) ->
-      expression left; print_string " "; mcode binaryOp op; print_string " ";
+      expression left; print_string " "; binaryOp op; print_string " ";
       expression right
   | Ast.Paren(lp,exp,rp) ->
       mcode print_string_box lp; expression exp; close_box();
@@ -317,7 +322,7 @@ and string_format e =
     Ast.ConstantFormat(str) -> mcode print_string str
   | Ast.MetaFormat(name,_,_,_) -> mcode print_meta name
 
-and  unaryOp = function
+and unaryOp = function
     Ast.GetRef -> print_string "&"
   | Ast.GetRefLabel -> print_string "&&"
   | Ast.DeRef -> print_string "*"
@@ -326,17 +331,25 @@ and  unaryOp = function
   | Ast.Tilde -> print_string "~"
   | Ast.Not -> print_string "!"
 
-and  assignOp = function
-    Ast.SimpleAssign -> print_string "="
-  | Ast.OpAssign(aop) -> arithOp aop; print_string "="
+and assignOp op =
+  match Ast.unwrap op with
+    Ast.SimpleAssign _ -> print_string "="
+  | Ast.OpAssign(aop) -> arithOp (Ast.unwrap_mcode aop); print_string "="
+  | Ast.MetaAssign(metavar,_,_,_) -> mcode print_meta metavar
+                                                   
+and simpleAssignOp op = print_string "="
 
-and  fixOp = function
+and opAssignOp aop = arithOp aop; print_string "=" 
+
+and fixOp = function
     Ast.Dec -> print_string "--"
   | Ast.Inc -> print_string "++"
 
-and  binaryOp = function
-    Ast.Arith(aop) -> arithOp aop
-  | Ast.Logical(lop) -> logicalOp lop
+and binaryOp op =
+  match Ast.unwrap op with
+    Ast.Arith(aop) -> arithOp (Ast.unwrap_mcode aop)
+  | Ast.Logical(lop) -> logicalOp (Ast.unwrap_mcode lop)
+  | Ast.MetaBinary(metavar,_,_,_) -> mcode print_meta metavar
 
 and  arithOp = function
     Ast.Plus -> print_string "+"
@@ -923,6 +936,8 @@ let _ =
     | Ast.ConstantTag(x) -> constant x
     | Ast.UnaryOpTag(x) -> unaryOp x
     | Ast.AssignOpTag(x) -> assignOp x
+    | Ast.SimpleAssignOpTag(x) -> simpleAssignOp (Ast.make_mcode x)
+    | Ast.OpAssignOpTag(x) -> opAssignOp x
     | Ast.FixOpTag(x) -> fixOp x
     | Ast.BinaryOpTag(x) -> binaryOp x
     | Ast.ArithOpTag(x) -> arithOp x

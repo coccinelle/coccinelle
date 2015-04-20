@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -43,6 +43,7 @@ type 'a wrap =
       minus_free_vars : meta_name list; (*minus free vars*)
       fresh_vars : (meta_name * seed) list; (*fresh vars*)
       inherited : meta_name list; (*inherited vars*)
+      positive_inherited_positions : meta_name list;
       saved_witness : meta_name list; (*witness vars*)
       bef_aft : dots_bef_aft;
       pos_info : meta_name mcode option; (* pos info, try not to duplicate *)
@@ -100,6 +101,8 @@ and metavar =
   | MetaInitListDecl of arity * meta_name (* name *) * list_len (*len*)
   | MetaListlenDecl of meta_name (* name *)
   | MetaParamDecl of arity * meta_name (* name *)
+  | MetaBinaryOperatorDecl of arity * meta_name
+  | MetaAssignmentOperatorDecl of arity * meta_name
   | MetaParamListDecl of arity * meta_name (*name*) * list_len (*len*)
   | MetaConstDecl of
       arity * meta_name (* name *) * Type_cocci.typeC list option
@@ -169,15 +172,15 @@ and base_expression =
 		      string mcode (* quote *)
   | FunCall        of expression * string mcode (* ( *) *
                       expression dots * string mcode (* ) *)
-  | Assignment     of expression * assignOp mcode * expression * bool
+  | Assignment     of expression * assignOp * expression * bool
   | Sequence       of expression * string mcode (* , *) * expression
   | CondExpr       of expression * string mcode (* ? *) * expression option *
 	              string mcode (* : *) * expression
   | Postfix        of expression * fixOp mcode
   | Infix          of expression * fixOp mcode
   | Unary          of expression * unaryOp mcode
-  | Binary         of expression * binaryOp mcode * expression
-  | Nested         of expression * binaryOp mcode * expression
+  | Binary         of expression * binaryOp * expression
+  | Nested         of expression * binaryOp * expression
   | ArrayAccess    of expression * string mcode (* [ *) * expression *
 	              string mcode (* ] *)
   | RecordAccess   of expression * string mcode (* . *) * ident
@@ -230,12 +233,21 @@ and constraints =
 (* Constraints on Meta-* Identifiers, Functions *)
 and idconstraint =
     IdNoConstraint
+  | IdPosIdSet         of string list * meta_name list
   | IdNegIdSet         of string list * meta_name list
   | IdRegExpConstraint of reconstraint
 
 and reconstraint =
   | IdRegExp        of string * Regexp.regexp
   | IdNotRegExp     of string * Regexp.regexp
+
+and assignOpconstraint =
+    AssignOpNoConstraint
+  | AssignOpInSet of assignOp list
+
+and binaryOpconstraint =
+    BinaryOpNoConstraint
+  | BinaryOpInSet of binaryOp list
 
 and form = ANY | ID | LocalID| GlobalID | CONST (* form for MetaExp *)
 
@@ -262,10 +274,19 @@ and base_string_format =
 and string_format = base_string_format wrap
 
 and  unaryOp = GetRef | GetRefLabel | DeRef | UnPlus |  UnMinus | Tilde | Not
-and  assignOp = SimpleAssign | OpAssign of arithOp
+and  base_assignOp = 
+    SimpleAssign of simpleAssignOp mcode
+  | OpAssign of arithOp mcode
+  | MetaAssign of meta_name mcode * assignOpconstraint * keep_binding * inherited
+and simpleAssignOp = string
+and assignOp = base_assignOp wrap
 and  fixOp = Dec | Inc
 
-and  binaryOp = Arith of arithOp | Logical of logicalOp
+and  base_binaryOp =
+    Arith of arithOp mcode
+  | Logical of logicalOp mcode
+  | MetaBinary of meta_name mcode * binaryOpconstraint * keep_binding * inherited
+and binaryOp = base_binaryOp wrap
 and  arithOp =
     Plus | Minus | Mul | Div | Mod | DecLeft | DecRight | And | Or | Xor | Min | Max
 and  logicalOp = Inf | Sup | InfEq | SupEq | Eq | NotEq | AndLog | OrLog
@@ -675,6 +696,8 @@ and anything =
   | ConstantTag         of constant
   | UnaryOpTag          of unaryOp
   | AssignOpTag         of assignOp
+  | SimpleAssignOpTag   of simpleAssignOp
+  | OpAssignOpTag       of arithOp
   | FixOpTag            of fixOp
   | BinaryOpTag         of binaryOp
   | ArithOpTag          of arithOp
@@ -716,7 +739,7 @@ val lub_count : count -> count -> count
 (* --------------------------------------------------------------------- *)
 
 val rewrap : 'a wrap -> 'b -> 'b wrap
-val rewrap_mcode : 'a mcode -> 'a -> 'a mcode
+val rewrap_mcode : 'a mcode -> 'b -> 'b mcode
 val unwrap : 'a wrap -> 'a
 val unwrap_mcode : 'a mcode -> 'a
 val get_mcodekind : 'a mcode -> mcodekind
@@ -730,6 +753,7 @@ val get_mfvs : 'a wrap -> meta_name list
 val set_mfvs : meta_name list -> 'a wrap -> 'a wrap
 val get_fresh : 'a wrap -> (meta_name * seed) list
 val get_inherited : 'a wrap -> meta_name list
+val get_inherited_pos : 'a wrap -> meta_name list
 val get_saved : 'a wrap -> meta_name list
 val get_dots_bef_aft : statement -> dots_bef_aft
 val set_dots_bef_aft : dots_bef_aft -> statement -> statement
@@ -761,7 +785,13 @@ val make_meta_decl :
       declaration
 
 val make_term : 'a -> 'a wrap
-val make_inherited_term : 'a -> meta_name list (* inherited vars *) -> 'a wrap
+val make_inherited_term : 'a -> meta_name list (* inherited vars *) ->
+  meta_name list (* definitely inherited positions *) -> 'a wrap
 val make_mcode : 'a -> 'a mcode
 
 val equal_pos : fixpos -> fixpos -> bool
+
+val string_of_arithOp : arithOp -> string
+val string_of_logicalOp : logicalOp -> string
+val string_of_assignOp : assignOp -> string
+val string_of_binaryOp : binaryOp -> string

@@ -127,7 +127,7 @@ behavior.  Using \NT{disable-iso} with the given name disables this behavior.
   register, or extern), matches a function declaration or variable
   declaration with any visibility or storage, respectively.
 \item \KW{optional\_qualifier}: This is similar to \KW{optional\_storage},
-  except that here is it the qualifier (i.e., const or volatile) that does
+  except that here it is the qualifier (i.e., const or volatile) that does
   not have to be specified in the SmPL code, but may be present in the C code.
 \item \KW{optional\_attributes}: This is similar to
   \KW{optional\_attributes}, except that here is it an attribute (e.g.,
@@ -207,6 +207,22 @@ the same, but for structure fields.
   \CASE{format \NT{ids};}
   \CASE{format list [ \NT{id} ] \NT{ids} ;}
   \CASE{format list [ \NT{const} ] \NT{ids} ;}
+  \CASE{assignment operator \NT{COMMA\_LIST}\mth{(}\T{assignopdecl}\mth{)} ;}
+  \CASE{binary operator \NT{COMMA\_LIST}\mth{(}\T{binopdecl}\mth{)} ;}
+
+  \RULE{\rt{assignopdecl}}
+  \CASE{\NT{id} \OPT{ = \NT{assignop\_contraint}}}
+
+  \RULE{\rt{assignop\_contraint}}
+  \CASE{\mth{\{}\NT{COMMA\_LIST}\mth{(}\NT{assign\_op}\mth{)}\mth{\}}}  
+  \CASE{\NT{assign\_op}}
+
+  \RULE{\rt{binopdecl}}
+  \CASE{\NT{id} \OPT{ = \NT{binop\_contraint}}}
+
+  \RULE{\rt{binop\_contraint}}
+  \CASE{\mth{\{}\NT{COMMA\_LIST}\mth{(}\NT{binary\_op}\mth{)}\mth{\}}}  
+  \CASE{\NT{binary\_op}}
 \end{grammar}
 
 A metavariable declaration local idexpression v means that v is restricted
@@ -217,7 +233,7 @@ ideexpression.
 
 Constant is for constants, such as 27.  But it also considers an identifier
 that is all capital letters (possibly containing numbers) as a constant as
-well, because the names gives to macros in Linux usually have this form.
+well, because the names given to macros in Linux usually have this form.
 
 An identifier is the name of a structure field, a macro, a function, or a
 variable.  Is is the name of something rather than an expression that has a
@@ -266,6 +282,11 @@ to match exactly in a string, if the semantic patch string contains format
 descriptors.  If that is needed, some processing with a scripting language
 would be required.  And example for the use of string format metavariables
 is found in demos/format.cocci.
+
+Assignment (resp. binary) operator metavariables match any assignment
+(resp. binary) operator. The list of operators that can be matched can
+be restrected by adding an operator constraint, i.e. a list of accepted
+operators.
 
 Other kinds of metavariables can also be attached using \texttt{@} to any
 token.  In this case, the metavariable floats up to the enclosing
@@ -1078,10 +1099,12 @@ in a concise way.
 
   \RULE{\rt{EXPR}\mth{(}\rt{exp}\mth{)}}
   \CASE{\NT{exp} \NT{assign\_op} \NT{exp}}
+  \CASE{\NT{exp} \mth{\T{metaid}^{\ssf{AssignOp}}} \NT{exp}}
   \CASE{\NT{exp}++}
   \CASE{\NT{exp}--}
   \CASE{\NT{unary\_op} \NT{exp}}
   \CASE{\NT{exp} \NT{bin\_op} \NT{exp}}
+  \CASE{\NT{exp} \mth{\T{metaid}^{\ssf{BinOp}}} \NT{exp}}
   \CASE{\NT{exp} ?~\NT{dot\_expr} :~\NT{exp}}
   \CASE{(\NT{type}) \NT{exp}}
   \CASE{\NT{exp} [\NT{dot\_expr}]}

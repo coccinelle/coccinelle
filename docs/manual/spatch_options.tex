@@ -249,12 +249,21 @@ is a concern, then do not use this option.
 }
 
 \developer{-{}-testall}{A shortcut for running Coccinelle on all files in a
-  subdirectory {\tt tests} such that there are all of a {\tt .cocci} file, a {\tt
-    .c} file, and a {\tt .res} file, where the {\tt .res} contains the
-  expected result.}
+  subdirectory {\tt tests} such that there are all of a {\tt .cocci} file,
+  a {\tt .c} file, and a {\tt .res} file, where the {\tt .res} contains the
+  expected result.  If the argument -()-expected-score-file is provided,
+  then that file is used for the result.  Otherwise, the result goes in
+  ``tests/SCORE\_expected.sexp''. {\bf Warning:} It is intended that not all
+  of the test cases provided with Coccinelle actually pass.}
 
-\developer{-{}-test-okfailed, -{}-test-regression-okfailed} Other options for
-keeping track of tests that have succeeded and failed.
+\rare{-{}-test-spacing}{Like -{}-testall, but ensures that the spacing is
+  the same as in the .res file.  If the argument
+  -()-expected-spacing-score-file is provided, then that file is used for
+  the result.  Otherwise, the result goes in
+  ``tests/SCORE\_spacing\_expected.sexp''.}
+
+\developer{-{}-test-okfailed, -{}-test-regression-okfailed}{Other options for
+keeping track of tests that have succeeded and failed.}
 
 \developer{-{}-compare-with-expected}{Compare the result of applying
   Coccinelle to file{\tt{.c}} to the file file{\tt{.res}} representing the
@@ -272,6 +281,15 @@ which score file to compare with in the testall run}
 \rare{-{}-verbose-parsing}{Show parsing errors in the C file, as well as
   information about attempts to accomodate such errors.  This implicitly
   sets {\bf -{}-parse-error-msg.}}
+
+\rare{-{}-parse-handler $\langle$file$\rangle$}{Loads the file containing
+  the OCaml code in charge of parse error reporting.  This function should
+  have arguments 1) the line number containing the error, 2) the sequence
+  of tokens, the starting and ending line of the function containing the
+  error, and array containing the lines of the file containing the error,
+  and the pass of the parser on which the error occurs.  This functyion
+  should then be passed to the fuction {\tt
+    Parse\_c.set\_parse\_error\_function}.}
 
 \rare{-{}-type-error-msg}{Show information about where the C type checker
   was not able to determine the type of an expression.}

@@ -50,14 +50,14 @@ td p{margin:0px;}
 .part{margin:2ex auto;text-align:center}
 .lstlisting{font-family:monospace;white-space:pre;margin-right:auto;margin-left:0pt;text-align:left}
 </style>
-<title>The SmPL Grammar (version 1.0.0-rc24
+<title>The SmPL Grammar (version 1.0.0
 )
 </title>
 </head>
 <body >
 <!--HEVEA command line is: /usr/bin/hevea -exec /usr/share/hevea/xxdate.exe main_grammar.tex -->
-<!--CUT STYLE article--><!--CUT DEF section 1 --><table class="title"><tr><td style="padding:1ex"><h1 class="titlemain">The SmPL Grammar (version 1.0.0-rc24
-)</h1><h3 class="titlerest">Research group on Coccinelle</h3><h3 class="titlerest">February 1, 2015</h3></td></tr>
+<!--CUT STYLE article--><!--CUT DEF section 1 --><table class="title"><tr><td style="padding:1ex"><h1 class="titlemain">The SmPL Grammar (version 1.0.0
+)</h1><h3 class="titlerest">Research group on Coccinelle</h3><h3 class="titlerest">April 18, 2015</h3></td></tr>
 </table><p>This document presents the grammar of the SmPL language used by the
 <a href="http://coccinelle.lip6.fr/">Coccinelle tool</a>. For the most
 part, the grammar is written using standard notation. In some rules,
@@ -145,7 +145,7 @@ declaration that does not specify any storage (i.e., auto, static,
 register, or extern), matches a function declaration or variable
 declaration with any visibility or storage, respectively.
 </li><li class="li-itemize"><span style="color:blue">optional_qualifier</span>: This is similar to <span style="color:blue">optional_storage</span>,
-except that here is it the qualifier (i.e., const or volatile) that does
+except that here it is the qualifier (i.e., const or volatile) that does
 not have to be specified in the SmPL code, but may be present in the C code.
 </li><li class="li-itemize"><span style="color:blue">optional_attributes</span>: This is similar to
 <span style="color:blue">optional_attributes</span>, except that here is it an attribute (e.g.,
@@ -218,13 +218,29 @@ the same, but for structure fields.</p><div class="center"><table style="border-
 <tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">format </span><a href="#ids"><span style="color:maroon">ids</span></a><span style="color:blue">;</span> </td></tr>
 <tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">format list [ </span><a href="#id"><span style="color:maroon">id</span></a><span style="color:blue"> ] </span><a href="#ids"><span style="color:maroon">ids</span></a><span style="color:blue"> ;</span> </td></tr>
 <tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">format list [ </span><a href="#const"><span style="color:maroon">const</span></a><span style="color:blue"> ] </span><a href="#ids"><span style="color:maroon">ids</span></a><span style="color:blue"> ;</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">assignment operator </span><a href="#COMMA_LIST"><span style="color:maroon">COMMA_LIST</span></a><span style="color:blue">(</span><span style="color:blue"><span style="font-family:sans-serif">assignopdecl</span></span><span style="color:blue">)</span><span style="color:blue"> ;</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">binary operator </span><a href="#COMMA_LIST"><span style="color:maroon">COMMA_LIST</span></a><span style="color:blue">(</span><span style="color:blue"><span style="font-family:sans-serif">binopdecl</span></span><span style="color:blue">)</span><span style="color:blue"> ;</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" >
+<a id="assignopdecl"><span style="color:maroon">assignopdecl</span></a><span style="color:maroon">
+</span></td><td style="text-align:center;white-space:nowrap" ><span style="color:black">  ::=  </span></td><td style="text-align:left;white-space:nowrap" ><a href="#id"><span style="color:maroon">id</span></a><span style="color:blue"> </span><span style="color:black">[</span><span style="color:blue"> = </span><a href="#assignop_contraint"><span style="color:maroon">assignop_contraint</span></a><span style="color:black">]</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" >
+<a id="assignop_contraint"><span style="color:maroon">assignop_contraint</span></a><span style="color:maroon">
+</span></td><td style="text-align:center;white-space:nowrap" ><span style="color:black">  ::=  </span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">{</span><a href="#COMMA_LIST"><span style="color:maroon">COMMA_LIST</span></a><span style="color:blue">(</span><a href="#assign_op"><span style="color:maroon">assign_op</span></a><span style="color:blue">)</span><span style="color:blue">}</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><a href="#assign_op"><span style="color:maroon">assign_op</span></a> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" >
+<a id="binopdecl"><span style="color:maroon">binopdecl</span></a><span style="color:maroon">
+</span></td><td style="text-align:center;white-space:nowrap" ><span style="color:black">  ::=  </span></td><td style="text-align:left;white-space:nowrap" ><a href="#id"><span style="color:maroon">id</span></a><span style="color:blue"> </span><span style="color:black">[</span><span style="color:blue"> = </span><a href="#binop_contraint"><span style="color:maroon">binop_contraint</span></a><span style="color:black">]</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" >
+<a id="binop_contraint"><span style="color:maroon">binop_contraint</span></a><span style="color:maroon">
+</span></td><td style="text-align:center;white-space:nowrap" ><span style="color:black">  ::=  </span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">{</span><a href="#COMMA_LIST"><span style="color:maroon">COMMA_LIST</span></a><span style="color:blue">(</span><a href="#binary_op"><span style="color:maroon">binary_op</span></a><span style="color:blue">)</span><span style="color:blue">}</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><a href="#binary_op"><span style="color:maroon">binary_op</span></a> </td></tr>
 </table></div><p>A metavariable declaration local idexpression v means that v is restricted
 to be a local variable. If it should just be a variable, but not
 necessarily a local one, then drop local. A more complex description of a
 location, such as a-&gt;b is considered to be an expression, not an
 ideexpression.</p><p>Constant is for constants, such as 27. But it also considers an identifier
 that is all capital letters (possibly containing numbers) as a constant as
-well, because the names gives to macros in Linux usually have this form.</p><p>An identifier is the name of a structure field, a macro, a function, or a
+well, because the names given to macros in Linux usually have this form.</p><p>An identifier is the name of a structure field, a macro, a function, or a
 variable. Is is the name of something rather than an expression that has a
 value. But an identifier can be used in the position of an expression as
 well, where it represents a variable.</p><p>It is possible to specify that an expression list or a parameter list
@@ -257,7 +273,10 @@ descriptors. Note that this makes it impossible to require <span style="font-fam
 to match exactly in a string, if the semantic patch string contains format
 descriptors. If that is needed, some processing with a scripting language
 would be required. And example for the use of string format metavariables
-is found in demos/format.cocci.</p><p>Other kinds of metavariables can also be attached using <span style="font-family:monospace">@</span> to any
+is found in demos/format.cocci.</p><p>Assignment (resp. binary) operator metavariables match any assignment
+(resp. binary) operator. The list of operators that can be matched can
+be restrected by adding an operator constraint, i.e. a list of accepted
+operators.</p><p>Other kinds of metavariables can also be attached using <span style="font-family:monospace">@</span> to any
 token. In this case, the metavariable floats up to the enclosing
 appropriate expression. For example, <span style="font-family:monospace">3 +@E 4</span>, where <span style="font-family:monospace">E</span> is an
 expression metavariable binds <span style="font-family:monospace">E</span> to <span style="font-family:monospace">3 + 4</span>. A particular case is
@@ -838,10 +857,12 @@ in a concise way.</p><div class="center"><table style="border-spacing:6px;border
 <tr><td style="text-align:left;white-space:nowrap" >
 <a id="EXPR"><span style="color:maroon">EXPR</span></a><span style="color:maroon">(</span><a id="exp"><span style="color:maroon">exp</span></a><span style="color:maroon">)</span><span style="color:maroon">
 </span></td><td style="text-align:center;white-space:nowrap" ><span style="color:black">  ::=  </span></td><td style="text-align:left;white-space:nowrap" ><a href="#exp"><span style="color:maroon">exp</span></a><span style="color:blue"> </span><a href="#assign_op"><span style="color:maroon">assign_op</span></a><span style="color:blue"> </span><a href="#exp"><span style="color:maroon">exp</span></a> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><a href="#exp"><span style="color:maroon">exp</span></a><span style="color:blue"> </span><span style="color:blue"><span style="font-family:sans-serif"><span style="font-style:italic">metaid</span></span></span><sup><span style="color:blue"><span style="font-size:small"><span style="font-family:sans-serif">AssignOp</span></span></span></sup><span style="color:blue"> </span><a href="#exp"><span style="color:maroon">exp</span></a> </td></tr>
 <tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><a href="#exp"><span style="color:maroon">exp</span></a><span style="color:blue">++</span> </td></tr>
 <tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><a href="#exp"><span style="color:maroon">exp</span></a><span style="color:blue">–</span> </td></tr>
 <tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><a href="#unary_op"><span style="color:maroon">unary_op</span></a><span style="color:blue"> </span><a href="#exp"><span style="color:maroon">exp</span></a> </td></tr>
 <tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><a href="#exp"><span style="color:maroon">exp</span></a><span style="color:blue"> </span><a href="#bin_op"><span style="color:maroon">bin_op</span></a><span style="color:blue"> </span><a href="#exp"><span style="color:maroon">exp</span></a> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><a href="#exp"><span style="color:maroon">exp</span></a><span style="color:blue"> </span><span style="color:blue"><span style="font-family:sans-serif"><span style="font-style:italic">metaid</span></span></span><sup><span style="color:blue"><span style="font-size:small"><span style="font-family:sans-serif">BinOp</span></span></span></sup><span style="color:blue"> </span><a href="#exp"><span style="color:maroon">exp</span></a> </td></tr>
 <tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><a href="#exp"><span style="color:maroon">exp</span></a><span style="color:blue"> ? </span><a href="#dot_expr"><span style="color:maroon">dot_expr</span></a><span style="color:blue"> : </span><a href="#exp"><span style="color:maroon">exp</span></a> </td></tr>
 <tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">(</span><a href="#type"><span style="color:maroon">type</span></a><span style="color:blue">) </span><a href="#exp"><span style="color:maroon">exp</span></a> </td></tr>
 <tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><a href="#exp"><span style="color:maroon">exp</span></a><span style="color:blue"> [</span><a href="#dot_expr"><span style="color:maroon">dot_expr</span></a><span style="color:blue">]</span> </td></tr>
@@ -1422,7 +1443,7 @@ and the following C program, on the left, which defines the functions
 <span style="font-size:xx-small">  13</span> Begins by foo: foobar</div></td></tr>
 </table>
 <!--TOC section id="sec22" Tips and Tricks-->
-<h2 id="sec22" class="section">15  Tips and Tricks</h2><!--SEC END -->
+<h2 id="sec22" class="section">15  Tips and Tricks</h2><!--SEC END --><p>This section presents some tips and tricks for using Coccinelle.</p>
 <!--TOC subsection id="sec23" How to remove useless parentheses?-->
 <h3 id="sec23" class="subsection">15.1  How to remove useless parentheses?</h3><!--SEC END --><p>If you want to rewrite any access to a pointer value by a function
 call, you may use the following semantic patch.</p><div class="lstlisting"><span style="font-size:xx-small">   1</span> <span style="color:#B7140B">- a = *b</span>

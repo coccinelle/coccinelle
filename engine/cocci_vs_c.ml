@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -181,11 +181,8 @@ let equal_unaryOp a b =
   | A.Not      , B.Not     -> true
   | _, (B.Not|B.Tilde|B.UnMinus|B.UnPlus|B.DeRef|B.GetRef|B.GetRefLabel) ->
       false
-
-
-
 let equal_arithOp a b =
-  match a, b with
+  match (A.unwrap_mcode a), b with
   | A.Plus     , B.Plus     -> true
   | A.Minus    , B.Minus    -> true
   | A.Mul      , B.Mul      -> true
@@ -200,9 +197,8 @@ let equal_arithOp a b =
   | A.Xor      , B.Xor      -> true
   | _, (B.Xor|B.Or|B.And|B.DecRight|B.DecLeft|B.Mod|B.Div|B.Mul|B.Minus|B.Plus|B.Min|B.Max)
       -> false
-
 let equal_logicalOp a b =
-  match a, b with
+  match (A.unwrap_mcode a), b with
   | A.Inf    , B.Inf    -> true
   | A.Sup    , B.Sup    -> true
   | A.InfEq  , B.InfEq  -> true
@@ -213,24 +209,11 @@ let equal_logicalOp a b =
   | A.OrLog  , B.OrLog  -> true
   | _, (B.OrLog|B.AndLog|B.NotEq|B.Eq|B.SupEq|B.InfEq|B.Sup|B.Inf)
       -> false
-
-let equal_assignOp a b =
-  match a, b with
-  | A.SimpleAssign, B.SimpleAssign -> true
-  | A.OpAssign a,   B.OpAssign b -> equal_arithOp a b
-  | _, (B.OpAssign _|B.SimpleAssign) -> false
-
 let equal_fixOp a b =
   match a, b with
   | A.Dec, B.Dec -> true
   | A.Inc, B.Inc -> true
   | _, (B.Inc|B.Dec) -> false
-
-let equal_binaryOp a b =
-  match a, b with
-  | A.Arith a,    B.Arith b ->   equal_arithOp a b
-  | A.Logical a,  B.Logical b -> equal_logicalOp a b
-  | _, (B.Logical _ | B.Arith _) -> false
 
 let equal_structUnion a b =
   match a, b with
@@ -260,6 +243,8 @@ let equal_storage a b =
 let equal_metavarval valu valu' =
   match valu, valu' with
   | Ast_c.MetaIdVal (a,_), Ast_c.MetaIdVal (b,_) -> a =$= b
+  | Ast_c.MetaAssignOpVal a, Ast_c.MetaAssignOpVal b -> a =*= b
+  | Ast_c.MetaBinaryOpVal a, Ast_c.MetaBinaryOpVal b -> a =*= b
   | Ast_c.MetaFuncVal a, Ast_c.MetaFuncVal b -> a =$= b
   | Ast_c.MetaLocalFuncVal a, Ast_c.MetaLocalFuncVal b ->
       (* do something more ? *)
@@ -323,6 +308,7 @@ let equal_metavarval valu valu' =
       |B.MetaTypeVal _ |B.MetaInitVal _ |B.MetaInitListVal _
       |B.MetaParamListVal _|B.MetaParamVal _|B.MetaExprListVal _
       |B.MetaExprVal _|B.MetaLocalFuncVal _|B.MetaFuncVal _|B.MetaIdVal _
+      |B.MetaAssignOpVal _ | B.MetaBinaryOpVal _
       |B.MetaFmtVal _|B.MetaFragListVal _
     ), _
       -> raise (Impossible 16)
@@ -333,6 +319,8 @@ know which one is which... *)
 let equal_inh_metavarval valu valu'=
   match valu, valu' with
   | Ast_c.MetaIdVal (a,_), Ast_c.MetaIdVal (b,_) -> a =$= b
+  | Ast_c.MetaAssignOpVal a, Ast_c.MetaAssignOpVal b -> a =*= b
+  | Ast_c.MetaBinaryOpVal a, Ast_c.MetaBinaryOpVal b -> a =*= b
   | Ast_c.MetaFuncVal a, Ast_c.MetaFuncVal b -> a =$= b
   | Ast_c.MetaLocalFuncVal a, Ast_c.MetaLocalFuncVal b ->
       (* do something more ? *)
@@ -397,6 +385,7 @@ let equal_inh_metavarval valu valu'=
       |B.MetaTypeVal _ |B.MetaInitVal _ |B.MetaInitListVal _
       |B.MetaParamListVal _|B.MetaParamVal _|B.MetaExprListVal _
       |B.MetaExprVal _|B.MetaLocalFuncVal _|B.MetaFuncVal _|B.MetaIdVal _
+      |B.MetaAssignOpVal _ | B.MetaBinaryOpVal _
       |B.MetaFmtVal _|B.MetaFragListVal _
     ), _
       -> raise (Impossible 17)
@@ -567,7 +556,7 @@ let one_initialisation_to_affectation x =
           let ident = name in
           let idexpr = Ast_c.mk_e_bis (B.Ident ident) typ Ast_c.noii in
           let assign =
-            Ast_c.mk_e (B.Assignment (idexpr,B.SimpleAssign, e)) [iini] in
+            Ast_c.mk_e (B.Assignment (idexpr, (B.SimpleAssign, [iini]), e)) [] in
           Some assign
       | _ -> None)
   | _ -> None
@@ -651,6 +640,10 @@ module type PARAM =
 
     val distrf_e :
       (A.meta_name A.mcode, B.expression) matcher
+    val distrf_assignOp :
+      (A.meta_name A.mcode, B.assignOp) matcher
+    val distrf_binaryOp :
+      (A.meta_name A.mcode, B.binaryOp) matcher
     val distrf_args :
       (A.meta_name A.mcode, (Ast_c.argument, Ast_c.il) either list) matcher
     val distrf_type :
@@ -790,6 +783,9 @@ let satisfies_regexpconstraint c id : bool =
   | A.IdNotRegExp (_,recompiled) -> not (Regexp.string_match recompiled id)
 
 let satisfies_iconstraint c id : bool =
+  List.mem id c
+
+let satisfies_niconstraint c id : bool =
   not (List.mem id c)
 
 let satisfies_econstraint c exp : bool =
@@ -999,6 +995,60 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
  *  - type
  *  - node
  *)
+
+let arithA_of_arithB = function
+  | B.Plus -> A.Plus
+  | B.Minus -> A.Minus
+  | B.Mul -> A.Mul
+  | B.Div -> A.Div
+  | B.Mod -> A.Mod
+  | B.DecLeft -> A.DecLeft
+  | B.DecRight -> A.DecRight
+  | B.And -> A.And
+  | B.Or -> A.Or
+  | B.Xor -> A.Xor
+  | B.Min -> A.Min
+  | B.Max -> A.Max
+
+let logicalA_of_logicalB = function
+  | B.Inf -> A.Inf
+  | B.Sup -> A.Sup
+  | B.InfEq -> A.InfEq
+  | B.SupEq -> A.SupEq
+  | B.Eq -> A.Eq
+  | B.NotEq -> A.NotEq
+  | B.AndLog -> A.AndLog
+  | B.OrLog -> A.OrLog
+
+let assignOpA_of_assignOpB = function
+  | B.SimpleAssign -> A.SimpleAssign (A.make_mcode "=")
+  | B.OpAssign op -> A.OpAssign (A.make_mcode (arithA_of_arithB op))
+  
+let binaryOpA_of_binaryOpB = function
+  | B.Arith op -> A.Arith (A.make_mcode (arithA_of_arithB op))
+  | B.Logical op -> A.Logical (A.make_mcode (logicalA_of_logicalB op))
+
+let assignOp_eq op1 op2 = match (op1, op2) with
+  | A.SimpleAssign _, A.SimpleAssign _ -> true
+  | A.OpAssign o1, A.OpAssign o2 -> (A.unwrap_mcode o1) = (A.unwrap_mcode o2) 
+  | _ -> false
+
+let check_assignOp_constraint (opb',ii) = function
+  | A.AssignOpNoConstraint -> true
+  | A.AssignOpInSet ops ->
+    let opb'' = (assignOpA_of_assignOpB opb') in
+    List.exists (assignOp_eq opb'') (List.map A.unwrap ops)
+
+let binaryOp_eq op1 op2 = match (op1, op2) with
+  | A.Arith o1, A.Arith o2 -> (A.unwrap_mcode o1) = (A.unwrap_mcode o2) 
+  | A.Logical o1, A.Logical o2 -> (A.unwrap_mcode o1) = (A.unwrap_mcode o2) 
+  | _ -> false
+
+let check_binaryOp_constraint (opb',ii) = function
+  | A.BinaryOpNoConstraint -> true
+  | A.BinaryOpInSet ops ->
+    let opb'' = (binaryOpA_of_binaryOpB opb') in
+    List.exists (binaryOp_eq opb'') (List.map A.unwrap ops)
 
 (*---------------------------------------------------------------------------*)
 let rec (expression: (A.expression, Ast_c.expression) matcher) =
@@ -1228,18 +1278,16 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 
   | A.Assignment (ea1, opa, ea2, simple),
       ((B.Assignment (eb1, opb, eb2), typ),ii) ->
-      let (opbi) = tuple_of_list1 ii in
-      if equal_assignOp (term opa) opb
-      then
-        expression ea1 eb1 >>= (fun ea1 eb1 ->
-        expression ea2 eb2 >>= (fun ea2 eb2 ->
-        tokenf opa opbi >>= (fun opa opbi ->
-          return (
-            (A.Assignment (ea1, opa, ea2, simple)) +> wa,
-            ((B.Assignment (eb1, opb, eb2), typ), [opbi])
-        ))))
-      else fail
-
+      if ii<>[] then failwith "In cocci_vs_c, ii for Assign should be empty."
+      else (
+      expression ea1 eb1 >>= (fun ea1 eb1 ->
+      assignOp opa opb >>= (fun opa opb ->
+      expression ea2 eb2 >>= (fun ea2 eb2 ->
+        return (
+          (A.Assignment (ea1, opa, ea2, simple)) +> wa,
+          ((B.Assignment (eb1, opb, eb2), typ), [])
+      )))))
+  
   | A.Sequence (ea1, opa, ea2),
       ((B.Sequence (eb1, eb2), typ),ii) ->
       let (opbi) = tuple_of_list1 ii in
@@ -1302,61 +1350,62 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
       else fail
 
   | A.Binary (ea1, opa, ea2), ((B.Binary (eb1, opb, eb2), typ),ii) ->
-      let opbi = tuple_of_list1 ii in
-      if equal_binaryOp (term opa) opb
-      then
-        expression ea1 eb1 >>= (fun ea1 eb1 ->
-        expression ea2 eb2 >>= (fun ea2 eb2 ->
-        tokenf opa opbi >>= (fun opa opbi ->
-          return (
-            ((A.Binary (ea1, opa, ea2))) +> wa,
-            ((B.Binary (eb1, opb, eb2), typ),[opbi]
-          )))))
-      else fail
+      if ii <> []
+      then failwith "cocci_vs_c: ii should be empty for binary operators."
+      else
+	expression ea1 eb1 >>= (fun ea1 eb1 ->
+	binaryOp opa opb >>= (fun opa opb ->
+	expression ea2 eb2 >>= (fun ea2 eb2 ->
+	  return (
+          ((A.Binary (ea1, opa, ea2))) +> wa,
+          ((B.Binary (eb1, opb, eb2), typ),[]
+	     )))))
 
   | A.Nested (ea1, opa, ea2), eb ->
       let rec loop eb =
 	expression ea1 eb >|+|>
 	(match eb with
-	  ((B.Binary (eb1, opb, eb2), typ),ii)
-	  when equal_binaryOp (term opa) opb ->
-	    let opbi = tuple_of_list1 ii in
-	    let left_to_right =
-              (expression ea1 eb1 >>= (fun ea1 eb1 ->
+	  ((B.Binary (eb1, opb, eb2), typ),ii) ->
+	    if ii<>[]
+	    then
+	      failwith "cocci_vs_c: ii should be empty for nested operators."
+            else
+	      let left_to_right =
+		expression ea1 eb1 >>= (fun ea1 eb1 ->
+		binaryOp opa opb >>= (fun opa opb ->
 		expression ea2 eb2 >>= (fun ea2 eb2 ->
-		  tokenf opa opbi >>= (fun opa opbi ->
-		    return (
-		    ((A.Nested (ea1, opa, ea2))) +> wa,
-		    ((B.Binary (eb1, opb, eb2), typ),[opbi]
-		       )))))) in
-	    let right_to_left =
-              (expression ea2 eb1 >>= (fun ea2 eb1 ->
+		  return (
+		  ((A.Nested (ea1, opa, ea2))) +> wa,
+		  ((B.Binary (eb1, opb, eb2), typ),[]
+		     ))))) in
+	      let right_to_left =
+		expression ea2 eb1 >>= (fun ea2 eb1 ->
+                binaryOp opa opb >>= (fun opa opb ->
 		expression ea1 eb2 >>= (fun ea1 eb2 ->
-		  tokenf opa opbi >>= (fun opa opbi ->
-		    return (
+		  return (
+		  ((A.Nested (ea1, opa, ea2))) +> wa,
+		  ((B.Binary (eb1, opb, eb2), typ),[]
+		     ))))) in
+	      let in_left =
+		expression ea2 eb2 >>= (fun ea2 eb2 ->
+		binaryOp opa opb >>= (fun opa opb ->
+		(* be last, to be sure the rest is marked *)
+		loop eb1 >>= (fun ea1 eb1 ->
+		  return (
 		    ((A.Nested (ea1, opa, ea2))) +> wa,
-		    ((B.Binary (eb1, opb, eb2), typ),[opbi]
-		       )))))) in
-	    let in_left =
-              (expression ea2 eb2 >>= (fun ea2 eb2 ->
-		tokenf opa opbi >>= (fun opa opbi ->
-		  (* be last, to be sure the rest is marked *)
-		  loop eb1 >>= (fun ea1 eb1 ->
-		    return (
-		    ((A.Nested (ea1, opa, ea2))) +> wa,
-		    ((B.Binary (eb1, opb, eb2), typ),[opbi]
-		       )))))) in
-	    let in_right =
-              (expression ea2 eb1 >>= (fun ea2 eb1 ->
-		tokenf opa opbi >>= (fun opa opbi ->
-		  (* be last, to be sure the rest is marked *)
-		  loop eb2 >>= (fun ea1 eb2 ->
-		    return (
-		    ((A.Nested (ea1, opa, ea2))) +> wa,
-		    ((B.Binary (eb1, opb, eb2), typ),[opbi]
-		       )))))) in
-	    left_to_right >|+|> right_to_left >|+|> in_left >|+|> in_right
-	| _ -> fail) in
+		    ((B.Binary (eb1, opb, eb2), typ),[]
+		       ))))) in
+	      let in_right =
+		expression ea2 eb1 >>= (fun ea2 eb1 ->
+		binaryOp opa opb >>= (fun opa opb ->
+		(* be last, to be sure the rest is marked *)
+		loop eb2 >>= (fun ea1 eb2 ->
+		  return (
+		  ((A.Nested (ea1, opa, ea2))) +> wa,
+		  ((B.Binary (eb1, opb, eb2), typ),[]
+		     ))))) in
+	      left_to_right >|+|> right_to_left >|+|> in_left >|+|> in_right
+	    | _ -> fail) in
       loop eb
 
   (* todo?: handle some isomorphisms here ?  (with pointers = Unary Deref) *)
@@ -1488,6 +1537,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	raise (Impossible 24)
 
   | A.DisjExpr eas, eb ->
+      (* remains inside nests, not sure if this is necessary *)
       eas +> List.fold_left (fun acc ea -> acc >|+|> (expression ea eb)) fail
 
   | A.UniqueExp e,_ | A.OptExp e,_ ->
@@ -1518,6 +1568,63 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
      B.FunCall (_, _)|B.Constant _|B.StringConstant _|B.Ident _),
      _),_)
        -> fail
+
+and assignOp opa opb =
+  match (A.unwrap opa), opb with
+    A.SimpleAssign a, (B.SimpleAssign, opb') ->
+      let opbi = tuple_of_list1 opb' in
+      tokenf a opbi >>= (fun a opbi ->
+	return
+	  (A.rewrap opa (A.SimpleAssign a), (B.SimpleAssign, [opbi])))
+  | A.OpAssign oa, (B.OpAssign ob,opb') ->
+    if equal_arithOp oa ob
+    then
+      let opbi = tuple_of_list1 opb' in
+      tokenf oa opbi >>= (fun oa opbi_ ->
+	return
+          (A.rewrap opa (A.OpAssign oa), (B.OpAssign ob,[opbi])))
+    else fail
+  | A.MetaAssign (mv, c, keep, inherited), _ ->
+    if check_assignOp_constraint opb c
+    then begin
+      let max_min _ =
+        Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_assignOp opb) in
+      X.envf keep inherited (mv,Ast_c.MetaAssignOpVal opb,max_min)
+        (fun () -> X.distrf_assignOp mv opb)
+      >>= (fun mv opb ->
+            return (A.MetaAssign(mv,c,keep,inherited)+> A.rewrap opa,opb))
+    end else fail
+  | _ -> fail
+
+and binaryOp opa opb =
+  match (A.unwrap opa), opb with
+    A.Arith oa, (B.Arith ob,opb') ->
+      if equal_arithOp oa ob
+      then
+	let opbi = tuple_of_list1 opb' in
+	tokenf oa opbi >>= (fun oa opbi ->
+	  return
+            (A.rewrap opa (A.Arith oa), (B.Arith ob,[opbi])))
+      else fail
+  | A.Logical oa, (B.Logical ob,opb') ->
+      if equal_logicalOp oa ob
+      then
+	let opbi = tuple_of_list1 opb' in
+	tokenf oa opbi >>= (fun oa opbi ->
+	  return
+            (A.rewrap opa (A.Logical oa), (B.Logical ob,[opbi])))
+      else fail
+  | A.MetaBinary (mv, c, keep, inherited), _ ->
+    if check_binaryOp_constraint opb c
+    then begin
+      let max_min _ =
+        Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_binaryOp opb) in
+      X.envf keep inherited (mv,Ast_c.MetaBinaryOpVal opb,max_min)
+        (fun () -> X.distrf_binaryOp mv opb)
+      >>= (fun mv opb ->
+            return (A.MetaBinary(mv,c,keep,inherited)+> A.rewrap opa,opb))
+    end else fail
+  | _ -> fail
 
 and string_fragments eas ebs =
   let match_dots ea =
@@ -1669,8 +1776,11 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
      let meta_id_val l x = Ast_c.MetaIdVal(x,l) in
      match constraints with
        A.IdNoConstraint -> return (meta_id_val [],())
-     | A.IdNegIdSet (str,meta) ->
+     | A.IdPosIdSet (str,meta) ->
 	 X.check_idconstraint satisfies_iconstraint str idb
+	   (fun () -> return (meta_id_val meta,()))
+     | A.IdNegIdSet (str,meta) ->
+	 X.check_idconstraint satisfies_niconstraint str idb
 	   (fun () -> return (meta_id_val meta,()))
      | A.IdRegExpConstraint re ->
 	 X.check_idconstraint satisfies_regexpconstraint re idb
@@ -1753,7 +1863,10 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
 
   (* not clear why disj things are needed, after disjdistr? *)
   | A.DisjId ias ->
+      failwith "DisjId should not arise"
+(*
       ias +> List.fold_left (fun acc ia -> acc >|+|> (ident infoidb ia ib)) fail
+*)
 
   | A.OptIdent _ | A.UniqueIdent _ ->
       failwith "not handling Opt/Unique for ident"
@@ -2114,10 +2227,10 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 	    let v =
 	      Visitor_ast.rebuilder
 		mcode mcode mcode mcode mcode mcode mcode mcode mcode
-		mcode mcode mcode
+		mcode mcode mcode mcode mcode
 		donothing donothing donothing donothing donothing
-		donothing donothing donothing donothing donothing
-		donothing donothing donothing donothing donothing
+		donothing donothing donothing donothing donothing donothing
+		donothing donothing donothing donothing donothing donothing
 		donothing donothing donothing donothing donothing in
 	    v.Visitor_ast.rebuilder_declaration decla in
 
@@ -2584,12 +2697,14 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 
 
 
-   | A.DisjDecl declas, declb ->
+   | A.DisjDecl declas, declb -> failwith "DisjDecl should not arise"
+(*
       declas +> List.fold_left (fun acc decla ->
         acc >|+|>
             (* (declaration (mckstart, allminus, decla) declb) *)
             (onedecl allminus decla (declb,iiptvirgb, iistob))
       ) fail
+*)
 
    | A.OptDecl _,    _ | A.UniqueDecl _,     _ ->
        failwith "not handling Opt/Unique Decl"
@@ -3128,11 +3243,18 @@ and enum_field ida idb =
   | A.Assignment(ea1,opa,ea2,init),(nameidb,Some(opbi,eb2)) ->
       (match A.unwrap ea1 with
 	A.Ident(id) ->
+	  let assignOp opa0 opbi =
+	    match A.unwrap opa0 with
+              A.SimpleAssign oa ->
+		tokenf oa opbi >>= fun oa opbi ->
+		  return
+                    (A.rewrap opa (A.SimpleAssign oa), opbi)
+            | _ -> failwith "only simple assignment possible here" in
 	  ident_cpp DontKnow id nameidb >>= (fun id nameidb ->
 	  expression ea2 eb2 >>= (fun ea2 eb2 ->
-          tokenf opa opbi >>= (fun opa opbi -> (* only one kind of assignop *)
+          assignOp opa opbi >>= (fun opa opbi ->(* only one kind of assignop *)
 	    return (
-	    (A.Assignment((A.Ident(id))+>A.rewrap ea1,opa,ea2,init)) +>
+	    (A.Assignment((A.Ident(id)) +> A.rewrap ea1,opa,ea2,init)) +>
 	    A.rewrap ida,
 	    (nameidb,Some(opbi,eb2))))))
       |	_ -> failwith "not possible")
@@ -4423,7 +4545,6 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
    *)
 
   | A.Exp exp, nodeb ->
-
       (* kind of iso, initialisation vs affectation *)
       let node =
         match A.unwrap exp, nodeb with

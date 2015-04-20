@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -26,4 +26,5 @@
 
 # 0 "./asttomember.mli"
 val asttomember : Ast_cocci.rule -> Ast_cocci.meta_name list list ->
-  (Lib_engine.predicate * Ast_cocci.meta_name Ast_ctl.modif) list list list
+  (Lib_engine.predicate * Ast_cocci.meta_name Ast_ctl.modif)
+    list list list

@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -133,7 +133,7 @@ and base_expression =
 		      string mcode (* quote *)
   | FunCall        of expression * string mcode (* ( *) *
                       expression dots * string mcode (* ) *)
-  | Assignment     of expression * Ast.assignOp mcode * expression *
+  | Assignment     of expression * assignOp * expression *
 	              bool (* true if it can match an initialization *)
   | Sequence       of expression * string mcode (* , *) * expression
   | CondExpr       of expression * string mcode (* ? *) * expression option *
@@ -141,8 +141,8 @@ and base_expression =
   | Postfix        of expression * Ast.fixOp mcode
   | Infix          of expression * Ast.fixOp mcode
   | Unary          of expression * Ast.unaryOp mcode
-  | Binary         of expression * Ast.binaryOp mcode * expression
-  | Nested         of expression * Ast.binaryOp mcode * expression
+  | Binary         of expression * binaryOp * expression
+  | Nested         of expression * binaryOp * expression
   | Paren          of string mcode (* ( *) * expression *
                       string mcode (* ) *)
   | ArrayAccess    of expression * string mcode (* [ *) * expression *
@@ -204,6 +204,28 @@ and base_string_format =
   | MetaFormat of Ast.meta_name mcode * Ast.idconstraint
 
 and string_format = base_string_format wrap
+
+(* --------------------------------------------------------------------- *)
+(* First class operators *)
+and base_assignOp = 
+    SimpleAssign of simpleAssignOp mcode
+  | OpAssign of Ast_cocci.arithOp mcode
+  | MetaAssign of Ast_cocci.meta_name mcode * assignOpconstraint * pure
+and simpleAssignOp = string
+and assignOp = base_assignOp wrap
+
+and base_binaryOp =
+    Arith of Ast_cocci.arithOp mcode
+  | Logical of Ast_cocci.logicalOp mcode
+  | MetaBinary of Ast_cocci.meta_name mcode * binaryOpconstraint * pure
+and binaryOp = base_binaryOp wrap
+and assignOpconstraint =
+    AssignOpNoConstraint
+  | AssignOpInSet of assignOp list
+
+and binaryOpconstraint =
+    BinaryOpNoConstraint
+  | BinaryOpInSet of binaryOp list
 
 (* --------------------------------------------------------------------- *)
 (* Types *)
@@ -529,6 +551,8 @@ and anything =
   | DotsCaseTag of case_line dots
   | IdentTag of ident
   | ExprTag of expression
+  | AssignOpTag of assignOp
+  | BinaryOpTag of binaryOp
   | ArgExprTag of expression  (* for isos *)
   | TestExprTag of expression (* for isos *)
   | TypeCTag of typeC
@@ -556,6 +580,8 @@ let dotsDecl x = DotsDeclTag x
 let dotsCase x = DotsCaseTag x
 let ident x = IdentTag x
 let expr x = ExprTag x
+let assignOp x = AssignOpTag x
+let binaryOp x = BinaryOpTag x
 let typeC x = TypeCTag x
 let param x = ParamTag x
 let ini x = InitTag x
@@ -699,20 +725,20 @@ let undots d =
 
 (* --------------------------------------------------------------------- *)
 
-let rec ast0_type_to_type ty =
+let rec ast0_type_to_type inmeta ty =
   match unwrap ty with
-    ConstVol(cv,ty) -> TC.ConstVol(const_vol cv,ast0_type_to_type ty)
+    ConstVol(cv,ty) -> TC.ConstVol(const_vol cv,ast0_type_to_type inmeta ty)
   | BaseType(bty,strings) ->
       TC.BaseType(baseType bty)
   | Signed(sgn,None) ->
       TC.SignedT(sign sgn,None)
   | Signed(sgn,Some ty) ->
-      let bty = ast0_type_to_type ty in
+      let bty = ast0_type_to_type inmeta ty in
       TC.SignedT(sign sgn,Some bty)
-  | Pointer(ty,_) -> TC.Pointer(ast0_type_to_type ty)
+  | Pointer(ty,_) -> TC.Pointer(ast0_type_to_type inmeta ty)
   | FunctionPointer(ty,_,_,_,_,params,_) ->
-      TC.FunctionPointer(ast0_type_to_type ty)
-  | Array(ety,_,_,_) -> TC.Array(ast0_type_to_type ety)
+      TC.FunctionPointer(ast0_type_to_type inmeta ty)
+  | Array(ety,_,_,_) -> TC.Array(ast0_type_to_type inmeta ety)
   | Decimal(_, _, e1, _, e2, _) ->
       let e2tc e =
 	match unwrap e with
@@ -736,33 +762,35 @@ let rec ast0_type_to_type ty =
       (match unwrap tag with
 	Id(tag) ->
 	  TC.EnumName(TC.Name(unwrap_mcode tag))
-      | MetaId(tag,_,_,_) ->
-	  (Common.pr2_once
-	     "warning: enum with a metavariable name detected.";
-	   Common.pr2_once
-	     "For type checking assuming the name of the metavariable is the name of the type\n";
-	   TC.EnumName(TC.MV(unwrap_mcode tag,TC.Unitary,false)))
-      | _ -> failwith "unexpected enum type name")
+      | MetaId(tag,Ast.IdNoConstraint,_,_) when inmeta ->
+	  TC.EnumName(TC.MV(unwrap_mcode tag,TC.Unitary,false))
+      | MetaId(tag,_,_,_) when inmeta ->
+	  (* would have to duplicate the type in type_cocci.ml?
+	     perhaps polymorphism would help? *)
+	  failwith "constraints not supported on enum type name"
+      | _ ->
+	  (* can't arise for metavariables and doesn't matter for type
+	     checking *)
+	  TC.EnumName(TC.NoName))
   | EnumName(su,None) -> TC.EnumName TC.NoName
-  | EnumDef(ty,_,_,_) -> ast0_type_to_type ty
+  | EnumDef(ty,_,_,_) -> ast0_type_to_type inmeta ty
   | StructUnionName(su,Some tag) ->
       (match unwrap tag with
 	Id(tag) ->
 	  TC.StructUnionName(structUnion su,TC.Name(unwrap_mcode tag))
-      | MetaId(tag,Ast.IdNoConstraint,_,_) ->
-	  (Common.pr2_once
-	     "warning: struct/union with a metavariable name detected.";
-	   Common.pr2_once
-	     "For type checking assuming the name of the metavariable is the name of the type\n";
-	   TC.StructUnionName(structUnion su,
-			      TC.MV(unwrap_mcode tag,TC.Unitary,false)))
-      | MetaId(tag,_,_,_) ->
+      | MetaId(tag,Ast.IdNoConstraint,_,_) when inmeta ->
+	  TC.StructUnionName(structUnion su,
+			     TC.MV(unwrap_mcode tag,TC.Unitary,false))
+      | MetaId(tag,_,_,_) when inmeta ->
 	  (* would have to duplicate the type in type_cocci.ml?
 	     perhaps polymorphism would help? *)
 	  failwith "constraints not supported on struct type name"
-      | _ -> failwith "unexpected struct/union type name")
+      | _ ->
+	  (* can't arise for metavariables and doesn't matter for type
+	     checking *)
+	  TC.StructUnionName(structUnion su,TC.NoName))
   | StructUnionName(su,None) -> TC.StructUnionName(structUnion su,TC.NoName)
-  | StructUnionDef(ty,_,_,_) -> ast0_type_to_type ty
+  | StructUnionDef(ty,_,_,_) -> ast0_type_to_type inmeta ty
   | TypeName(name) -> TC.TypeName(unwrap_mcode name)
   | MetaType(name,_) ->
       TC.MetaType(unwrap_mcode name,TC.Unitary,false)
@@ -772,7 +800,7 @@ let rec ast0_type_to_type ty =
 	"disjtype not supported in smpl type inference, assuming unknown";
       TC.Unknown
   | OptType(ty) | UniqueType(ty) ->
-      ast0_type_to_type ty
+      ast0_type_to_type inmeta ty
 
 and baseType = function
     Ast.VoidType -> TC.VoidType
@@ -900,3 +928,16 @@ let lub_pure x y =
 (* --------------------------------------------------------------------- *)
 
 let rule_name = ref "" (* for the convenience of the parser *)
+
+let string_of_binaryOp op = match (unwrap op) with
+  | Arith arithOp -> Ast.string_of_arithOp (unwrap_mcode arithOp)
+  | Logical logicalOp -> Ast.string_of_logicalOp (unwrap_mcode logicalOp)
+  | MetaBinary _ -> "MetaBinary"
+
+let string_of_assignOp op = match (unwrap op) with
+  | SimpleAssign _ -> "="
+  | OpAssign op' ->
+    let op'' = rewrap op (Arith op') in
+    let s = string_of_binaryOp op'' in
+    s ^ "="
+  | MetaAssign _ -> "MetaAssign"

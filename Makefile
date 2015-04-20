@@ -1,4 +1,4 @@
-# Copyright 2012-2014, INRIA
+# Copyright 2012-2015, Inria
 # Julia Lawall, Gilles Muller
 # Copyright 2010-2011, INRIA, University of Copenhagen
 # Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -69,13 +69,11 @@ LIBS=commons/commons.cma \
      ctl/ctl.cma \
      parsing_cocci/cocci_parser.cma parsing_c/parsing_c.cma \
      engine/cocciengine.cma popl09/popl.cma \
-     extra/extra.cma python/coccipython.cma ocaml/cocciocaml.cma \
-     parmap.cma
+     extra/extra.cma python/coccipython.cma ocaml/cocciocaml.cma
 
 MAKESUBDIRS=$(MAKELIBS) commons \
  globals ctl parsing_cocci parsing_c \
- engine popl09 extra python ocaml \
- bundles/parmap
+ engine popl09 extra python ocaml
 
 CLEANSUBDIRS=commons \
  globals ctl parsing_cocci parsing_c \
@@ -106,8 +104,8 @@ EXEC=$(TARGET)
 # Generic ocaml variables
 ##############################################################################
 
-OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(FLAGS_parmap) $(INCLUDES)
-OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(OPTFLAGS_parmap) $(INCLUDES)
+OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES)
+OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES)
 OCAMLYACC_CMD=$(OCAMLYACC) -v
 OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDEDIRSDEP:%=-I %)
 OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDES)

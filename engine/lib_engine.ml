@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -79,7 +79,10 @@ type label_ctlcocci =
  (predicate * (mvar, metavar_binding_kind2) Ast_ctl.generic_substitution))
  list
 
-type model = Control_flow_c.cflow * label_ctlcocci * nodei list
+type quicklabel_ctlcocci = predicate -> bool
+
+type model = Control_flow_c.cflow * label_ctlcocci * quicklabel_ctlcocci *
+      nodei list
 
 type transformation_info =
  (nodei * metavars_binding * Ast_cocci.rule_elem) list

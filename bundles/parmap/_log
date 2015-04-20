@@ -1,0 +1,49 @@
+### Starting build.
+# Target: bytearray_stubs.c, tags: { annot, c, compile, extension:c, file:bytearray_stubs.c, quiet, traverse }
+ocamlfind ocamlc -ccopt -D_GNU_SOURCE -ccopt -fPIC -c bytearray_stubs.c
+# Target: setcore_stubs.c, tags: { annot, c, compile, extension:c, file:setcore_stubs.c, quiet, traverse }
+ocamlfind ocamlc -ccopt -D_GNU_SOURCE -ccopt -fPIC -c setcore_stubs.c
+# Target: parmap_stubs, tags: { annot, c, extension:a, file:libparmap_stubs.a, ocamlmklib, quiet, traverse }
+/usr/bin/ocamlmklib -o parmap_stubs bytearray_stubs.o setcore_stubs.o
+# Target: parmap.mli.depends, tags: { annot, extension:mli, file:parmap.mli, ocaml, ocamldep, package(bigarray), package(unix), quiet, traverse, warn(Ae) }
+ocamlfind ocamldep -package unix -package bigarray -modules parmap.mli > parmap.mli.depends
+# Target: parmap.cmi, tags: { annot, byte, compile, extension:mli, file:parmap.mli, interf, ocaml, package(bigarray), package(unix), quiet, traverse, warn(Ae) }
+ocamlfind ocamlc -c -annot -package unix -package bigarray -w Ae -o parmap.cmi parmap.mli
+# Target: parmap.ml.depends, tags: { annot, extension:ml, file:parmap.ml, ocaml, ocamldep, package(bigarray), package(unix), quiet, traverse, warn(Ae) }
+ocamlfind ocamldep -package unix -package bigarray -modules parmap.ml > parmap.ml.depends
+# Target: bytearray.mli.depends, tags: { annot, extension:mli, file:bytearray.mli, ocaml, ocamldep, package(bigarray), package(unix), quiet, traverse, warn(Ae) }
+ocamlfind ocamldep -package unix -package bigarray -modules bytearray.mli > bytearray.mli.depends
+# Target: parmap_utils.mli.depends, tags: { annot, extension:mli, file:parmap_utils.mli, ocaml, ocamldep, package(bigarray), package(unix), quiet, traverse, warn(Ae) }
+ocamlfind ocamldep -package unix -package bigarray -modules parmap_utils.mli > parmap_utils.mli.depends
+# Target: setcore.mli.depends, tags: { annot, extension:mli, file:setcore.mli, ocaml, ocamldep, package(bigarray), package(unix), quiet, traverse, warn(Ae) }
+ocamlfind ocamldep -package unix -package bigarray -modules setcore.mli > setcore.mli.depends
+# Target: bytearray.cmi, tags: { annot, byte, compile, extension:mli, file:bytearray.mli, interf, ocaml, package(bigarray), package(unix), quiet, traverse, warn(Ae) }
+ocamlfind ocamlc -c -annot -package unix -package bigarray -w Ae -o bytearray.cmi bytearray.mli
+# Target: parmap_utils.cmi, tags: { annot, byte, compile, extension:mli, file:parmap_utils.mli, interf, ocaml, package(bigarray), package(unix), quiet, traverse, warn(Ae) }
+ocamlfind ocamlc -c -annot -package unix -package bigarray -w Ae -o parmap_utils.cmi parmap_utils.mli
+# Target: setcore.cmi, tags: { annot, byte, compile, extension:mli, file:setcore.mli, interf, ocaml, package(bigarray), package(unix), quiet, traverse, warn(Ae) }
+ocamlfind ocamlc -c -annot -package unix -package bigarray -w Ae -o setcore.cmi setcore.mli
+# Target: bytearray.ml.depends, tags: { annot, extension:ml, file:bytearray.ml, ocaml, ocamldep, package(bigarray), package(unix), quiet, traverse, warn(Ae) }
+ocamlfind ocamldep -package unix -package bigarray -modules bytearray.ml > bytearray.ml.depends
+# Target: parmap_utils.ml.depends, tags: { annot, extension:ml, file:parmap_utils.ml, ocaml, ocamldep, package(bigarray), package(unix), quiet, traverse, warn(Ae) }
+ocamlfind ocamldep -package unix -package bigarray -modules parmap_utils.ml > parmap_utils.ml.depends
+# Target: parmap.cmo, tags: { annot, byte, compile, extension:cmo, extension:ml, file:parmap.cmo, file:parmap.ml, implem, ocaml, package(bigarray), package(unix), quiet, traverse, warn(Ae) }
+ocamlfind ocamlc -c -annot -package unix -package bigarray -w Ae -o parmap.cmo parmap.ml
+# Target: bytearray.cmo, tags: { annot, byte, compile, extension:cmo, extension:ml, file:bytearray.cmo, file:bytearray.ml, implem, ocaml, package(bigarray), package(unix), quiet, traverse, warn(Ae) }
+ocamlfind ocamlc -c -annot -package unix -package bigarray -w Ae -o bytearray.cmo bytearray.ml
+# Target: parmap_utils.cmo, tags: { annot, byte, compile, extension:cmo, extension:ml, file:parmap_utils.cmo, file:parmap_utils.ml, implem, ocaml, package(bigarray), package(unix), quiet, traverse, warn(Ae) }
+ocamlfind ocamlc -c -annot -package unix -package bigarray -w Ae -o parmap_utils.cmo parmap_utils.ml
+# Target: parmap.cma, tags: { annot, byte, extension:cma, file:parmap.cma, library, link, ocaml, quiet, traverse, use_libparmap }
+ocamlfind ocamlc -a -dllib -lparmap_stubs bytearray.cmo parmap_utils.cmo parmap.cmo -o parmap.cma
+# Target: bytearray.cmx, tags: { annot, compile, extension:cmx, extension:ml, file:bytearray.cmx, file:bytearray.ml, implem, native, ocaml, package(bigarray), package(unix), quiet, traverse, warn(Ae) }
+ocamlfind ocamlopt -c -annot -package unix -package bigarray -w Ae -o bytearray.cmx bytearray.ml
+# Target: parmap_utils.cmx, tags: { annot, compile, extension:cmx, extension:ml, file:parmap_utils.cmx, file:parmap_utils.ml, implem, native, ocaml, package(bigarray), package(unix), quiet, traverse, warn(Ae) }
+ocamlfind ocamlopt -c -annot -package unix -package bigarray -w Ae -o parmap_utils.cmx parmap_utils.ml
+# Target: parmap.cmx, tags: { annot, compile, extension:cmx, extension:ml, file:parmap.cmx, file:parmap.ml, implem, native, ocaml, package(bigarray), package(unix), quiet, traverse, warn(Ae) }
+ocamlfind ocamlopt -c -annot -package unix -package bigarray -w Ae -o parmap.cmx parmap.ml
+# Target: parmap.cmxa, tags: { annot, extension:cmxa, file:parmap.cmxa, library, link, native, ocaml, quiet, traverse, use_libparmap }
+ocamlfind ocamlopt -a -cclib -lparmap_stubs bytearray.cmx parmap_utils.cmx parmap.cmx -o parmap.cmxa
+# Target: parmap.cmxs, tags: { annot, extension:cmxs, file:parmap.cmxs, library, link, link_libparmap, native, ocaml, quiet, shared, traverse }
+ocamlfind ocamlopt -shared libparmap_stubs.a bytearray.cmx parmap_utils.cmx parmap.cmx -o parmap.cmxs
+# Parallel statistics: { count(total): 4(18), max: 3, min: 2, average(total): 2.500(1.333) }
+# Compilation successful.

@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -46,6 +46,7 @@ type 'a wrap =
       minus_free_vars : meta_name list; (*minus free vars*)
       fresh_vars : (meta_name * seed) list; (*fresh vars*)
       inherited : meta_name list; (*inherited vars*)
+      positive_inherited_positions : meta_name list;
       saved_witness : meta_name list; (*witness vars*)
       bef_aft : dots_bef_aft;
       (* the following is for or expressions *)
@@ -115,6 +116,8 @@ and metavar =
   | MetaInitListDecl of arity * meta_name (* name *) * list_len (*len*)
   | MetaListlenDecl of meta_name (* name *)
   | MetaParamDecl of arity * meta_name (* name *)
+  | MetaBinaryOperatorDecl of arity * meta_name
+  | MetaAssignmentOperatorDecl of arity * meta_name
   | MetaParamListDecl of arity * meta_name (*name*) * list_len (*len*)
   | MetaConstDecl of
       arity * meta_name (* name *) * Type_cocci.typeC list option
@@ -184,7 +187,7 @@ and base_expression =
 		      string mcode (* quote *)
   | FunCall        of expression * string mcode (* ( *) *
                       expression dots * string mcode (* ) *)
-  | Assignment     of expression * assignOp mcode * expression *
+  | Assignment     of expression * assignOp * expression *
 	              bool (* true if it can match an initialization *)
   | Sequence       of expression * string mcode (* , *) * expression
   | CondExpr       of expression * string mcode (* ? *) * expression option *
@@ -192,8 +195,8 @@ and base_expression =
   | Postfix        of expression * fixOp mcode
   | Infix          of expression * fixOp mcode
   | Unary          of expression * unaryOp mcode
-  | Binary         of expression * binaryOp mcode * expression
-  | Nested         of expression * binaryOp mcode * expression
+  | Binary         of expression * binaryOp * expression
+  | Nested         of expression * binaryOp * expression
   | ArrayAccess    of expression * string mcode (* [ *) * expression *
 	              string mcode (* ] *)
   | RecordAccess   of expression * string mcode (* . *) * ident
@@ -246,12 +249,21 @@ and constraints =
 (* Constraints on Meta-* Identifiers, Functions *)
 and idconstraint =
     IdNoConstraint
+  | IdPosIdSet         of string list * meta_name list
   | IdNegIdSet         of string list * meta_name list
   | IdRegExpConstraint of reconstraint
 
 and reconstraint =
   | IdRegExp        of string * Regexp.regexp
   | IdNotRegExp     of string * Regexp.regexp
+
+and assignOpconstraint =
+    AssignOpNoConstraint
+  | AssignOpInSet of assignOp list
+
+and binaryOpconstraint =
+    BinaryOpNoConstraint
+  | BinaryOpInSet of binaryOp list
 
 (* ANY = int E; ID = idexpression int X; CONST = constant int X; *)
 and form = ANY | ID | LocalID | GlobalID | CONST (* form for MetaExp *)
@@ -278,13 +290,25 @@ and base_string_format =
 
 and string_format = base_string_format wrap
 
-and  unaryOp = GetRef | GetRefLabel | DeRef | UnPlus |  UnMinus | Tilde | Not
-and  assignOp = SimpleAssign | OpAssign of arithOp
-and  fixOp = Dec | Inc
+and unaryOp = GetRef | GetRefLabel | DeRef | UnPlus |  UnMinus | Tilde | Not
+and base_assignOp =
+    SimpleAssign of simpleAssignOp mcode
+  | OpAssign of arithOp mcode
+  | MetaAssign of
+      meta_name mcode * assignOpconstraint * keep_binding * inherited
+and simpleAssignOp = string
+and assignOp = base_assignOp wrap
+and fixOp = Dec | Inc
 
-and  binaryOp = Arith of arithOp | Logical of logicalOp
-and  arithOp =
-    Plus | Minus | Mul | Div | Mod | DecLeft | DecRight | And | Or | Xor | Min | Max
+and base_binaryOp =
+    Arith of arithOp mcode
+  | Logical of logicalOp mcode
+  | MetaBinary of
+      meta_name mcode * binaryOpconstraint * keep_binding * inherited
+and binaryOp = base_binaryOp wrap
+and arithOp =
+    Plus | Minus | Mul | Div | Mod | DecLeft | DecRight | And | Or | Xor
+  | Min | Max
 and  logicalOp = Inf | Sup | InfEq | SupEq | Eq | NotEq | AndLog | OrLog
 
 and constant =
@@ -702,6 +726,8 @@ and anything =
   | ConstantTag         of constant
   | UnaryOpTag          of unaryOp
   | AssignOpTag         of assignOp
+  | SimpleAssignOpTag   of simpleAssignOp
+  | OpAssignOpTag       of arithOp
   | FixOpTag            of fixOp
   | BinaryOpTag         of binaryOp
   | ArithOpTag          of arithOp
@@ -760,6 +786,7 @@ let get_mfvs x             = x.minus_free_vars
 let set_mfvs mfvs x        = {x with minus_free_vars = mfvs}
 let get_fresh x            = x.fresh_vars
 let get_inherited x        = x.inherited
+let get_inherited_pos x    = x.positive_inherited_positions
 let get_saved x            = x.saved_witness
 let get_dots_bef_aft x     = x.bef_aft
 let set_dots_bef_aft d x   = {x with bef_aft = d}
@@ -797,6 +824,8 @@ let get_meta_name = function
   | MetaListlenDecl(nm) -> nm
   | MetaParamDecl(ar,nm) -> nm
   | MetaParamListDecl(ar,nm,nm1) -> nm
+  | MetaBinaryOperatorDecl(_,name) -> name
+  | MetaAssignmentOperatorDecl(_,name) -> name
   | MetaConstDecl(ar,nm,ty) -> nm
   | MetaErrDecl(ar,nm) -> nm
   | MetaExpDecl(ar,nm,ty) -> nm
@@ -830,6 +859,8 @@ and tag2c = function
   | ConstantTag _  -> "ConstantTag"
   | UnaryOpTag _   -> "UnaryOpTag"
   | AssignOpTag _  -> "AssignOpTag"
+  | SimpleAssignOpTag _  -> "SimpleAssignOpTag"
+  | OpAssignOpTag _  -> "OpAssignOpTag"
   | FixOpTag _     -> "FixOpTag"
   | BinaryOpTag _  -> "BinaryOpTag"
   | ArithOpTag _   -> "ArithOpTag"
@@ -868,6 +899,7 @@ let make_term x =
     minus_free_vars = [];
     fresh_vars = [];
     inherited = [];
+    positive_inherited_positions = [];
     saved_witness = [];
     bef_aft = NoDots;
     pos_info = None;
@@ -875,13 +907,14 @@ let make_term x =
     safe_for_multi_decls = false;
     iso_info = [] }
 
-let make_inherited_term x inherited =
+let make_inherited_term x inherited inh_pos =
   {node = x;
     node_line = 0;
     free_vars = [];
     minus_free_vars = [];
     fresh_vars = [];
     inherited = inherited;
+    positive_inherited_positions = inh_pos;
     saved_witness = [];
     bef_aft = NoDots;
     pos_info = None;
@@ -914,3 +947,39 @@ let undots x =
     DOTS    e -> e
   | CIRCLES e -> e
   | STARS   e -> e
+
+let string_of_arithOp = function
+  | Plus -> "+"
+  | Minus -> "-"
+  | Mul -> "*"
+  | Div -> "/"
+  | Mod -> "%"
+  | DecLeft -> "<<"
+  | DecRight -> ">>"
+  | And -> "&"
+  | Or -> "|"
+  | Xor -> "^"
+  | Min -> "min"
+  | Max -> "max"
+
+let string_of_logicalOp = function
+  | Eq -> "=="
+  | NotEq -> "!="
+  | InfEq -> "<="
+  | SupEq -> ">="
+  | Sup -> ">"
+  | Inf -> "<"
+  | AndLog -> "&&"
+  | OrLog -> "||"
+
+let string_of_binaryOp op = match (unwrap op) with
+  | Arith arithOp -> string_of_arithOp (unwrap_mcode arithOp)
+  | Logical logicalOp -> string_of_logicalOp (unwrap_mcode logicalOp)
+  | MetaBinary _ -> "MetaBinary"
+
+let string_of_assignOp op = match (unwrap op) with
+  | SimpleAssign _ -> "="
+  | OpAssign op' ->
+    let s = string_of_arithOp (unwrap_mcode op') in
+    s ^ "="
+  | MetaAssign _ -> "MetaAssign"

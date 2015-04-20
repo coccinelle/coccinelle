@@ -4,7 +4,8 @@ module Ast = Ast_cocci
 (* TOSTRING FUNCTIONS FOR AST_COCCI BASE TYPES *)
 
 (* takes a list of 'a and concatenates it using fn ('a -> string),
- * delimitering with between (string) *)
+ * delimitering with between (string)
+ *)
 let between_tostring between tostring_fn =
   let rec between_tostring' acc between fn = function
     | [] -> acc
@@ -86,13 +87,7 @@ let unary_tostring = function
   | Ast.Tilde -> "~"
   | Ast.Not -> "!"
 
-let binary_tostring = function
-  | Ast.Arith(aop) -> arith_tostring aop
-  | Ast.Logical(lop) -> logic_tostring lop
-
-let assign_tostring = function
-  | Ast.SimpleAssign -> "="
-  | Ast.OpAssign(aop) -> arith_tostring aop ^ "="
+let assign_tostring aop = arith_tostring aop ^ "="
 
 let type_tostring = function
   | Ast.VoidType -> "void"

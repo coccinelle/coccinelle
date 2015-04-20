@@ -88,7 +88,7 @@ AC_SUBST([OCAMLCORIG],["$OCAMLC"])
 
 AS_IF([test "x$OCAMLC" = xno -o "x$OCAMLDEP" = xno -o "x$OCAMLDOC" = xno -o "x$OCAMLMKLIB" = xno],
 [dnl
-  AC_MSG_ERROR([You must install the OCaml compiler])
+  AC_MSG_ERROR([It seems a few components of the OCaml distribution could nt be found. Make sure the following tools are installed and in your path: ocamlc, ocamldep, ocamldoc, ocamlmklib.])
 ])
 AS_IF([test "x$OCAMLATLEAST310" = xno],[AC_MSG_NOTICE([a more recent OCaml installation may be required])])
 
@@ -144,6 +144,7 @@ AC_COCCI_INIT_PKG_EMPTY([dynlink])
 AC_COCCI_INIT_PKG_EMPTY([pcre])
 AC_COCCI_INIT_PKG_EMPTY([pycaml])
 AC_COCCI_INIT_PKG_EMPTY([camlp4])
+AC_COCCI_INIT_PKG_EMPTY([parmap])
 
 dnl  required ocaml packages
 AC_MSG_NOTICE([the following OCaml packages should be provided by your ocaml installation])
@@ -156,6 +157,7 @@ dnl  required modules (Some are available locally too)
 AC_REQ_COCCI_EXTPKG([dynlink])
 AC_REQ_COCCI_EXTPKG([camlp4])
 AC_REQ_COCCI_EXTPKG([menhirLib])
+AC_REQ_COCCI_EXTPKG([parmap])
 
 
 dnl  AC_CACHE_SAVE
@@ -555,7 +557,6 @@ AC_CONFIG_FILES([
   scripts/spatch.sh
   docs/spatch.1
   myocamlbuild.ml
-  testing.ml
   setup/Makefile
 ])
 

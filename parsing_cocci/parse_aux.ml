@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -36,6 +36,8 @@ type info = Ast.meta_name * Ast0.pure * Data.clt
 type midinfo =
     Ast.meta_name * Data.iconstraints * Ast.seed * Ast0.pure * Data.clt
 type idinfo = Ast.meta_name * Data.iconstraints * Ast0.pure * Data.clt
+type assignOpinfo = Ast.meta_name * Ast0_cocci.assignOpconstraint * Ast0.pure * Data.clt
+type binaryOpinfo = Ast.meta_name * Ast0_cocci.binaryOpconstraint * Ast0.pure * Data.clt
 type expinfo = Ast.meta_name * Data.econstraints * Ast0.pure * Data.clt
 type tyinfo = Ast.meta_name * Ast0.typeC list * Ast0.pure * Data.clt
 type list_info = Ast.meta_name * Ast.list_len * Ast0.pure * Data.clt
@@ -82,13 +84,11 @@ let drop_pos
   (arity,line,lline,llineend,offset,col,strbef,straft,[],ws)
 
 let clt2mcode_ext str isSymbol = function
-(Data.MINUS,line,lline,llineend,offset,col,strbef,straft,pos,ws) ->
+    (Data.MINUS,line,lline,llineend,offset,col,strbef,straft,pos,ws) ->
       (str,Ast0.NONE,
        make_info line lline llineend offset col strbef straft isSymbol ws,
-       Ast0.MINUS(ref
-(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,-1)
- | (Data.OPTMINUS,line,lline,llineend,offset,col,strbef,
-straft,pos,ws)->
+       Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,-1)
+  | (Data.OPTMINUS,line,lline,llineend,offset,col,strbef,straft,pos,ws)->
       (str,Ast0.OPT,
        make_info line lline llineend offset col strbef straft isSymbol ws,
        Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,-1)
@@ -172,12 +172,12 @@ let mkpdots str dot =
   | _ -> failwith "cannot happen"
 
 let arith_op ast_op left op right =
-  Ast0.wrap
-    (Ast0.Binary(left, clt2mcode (Ast.Arith ast_op) op, right))
+  let op' = Ast0.wrap (Ast0.Arith (clt2mcode ast_op op)) in  
+  Ast0.wrap (Ast0.Binary(left, op', right))
 
 let logic_op ast_op left op right =
-  Ast0.wrap
-    (Ast0.Binary(left, clt2mcode (Ast.Logical ast_op) op, right))
+  let op' = Ast0.wrap (Ast0.Logical (clt2mcode ast_op op)) in  
+  Ast0.wrap (Ast0.Binary(left, op', right))
 
 let make_cv cv ty =
   match cv with None -> ty | Some x -> Ast0.wrap (Ast0.ConstVol(x,ty))

@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -198,6 +198,16 @@ let add_fmt_meta: (Ast.meta_name -> iconstraints -> unit) ref =
 
 let add_fmtlist_meta:
     (Ast.meta_name -> Ast.list_len -> unit) ref =
+  ref uninitialized_add_meta
+
+let add_assignOp_meta:
+    (Ast.meta_name ->
+      Ast0.assignOpconstraint -> Ast0.pure -> unit) ref =
+  ref uninitialized_add_meta
+
+let add_binaryOp_meta:
+    (Ast.meta_name ->
+      Ast0.binaryOpconstraint -> Ast0.pure -> unit) ref =
   ref uninitialized_add_meta
 
 let add_type_name: (string -> unit) ref =

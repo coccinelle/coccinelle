@@ -1,6 +1,6 @@
 #ifdef FOO
 int xxx() {
-   return 12; }
+  return 12; }
 #endif
 static int foo() {
   return 12;
@@ -8,7 +8,7 @@ static int foo() {
 
 #ifdef FOO
 int xxx() {
-   return 12; }
+  return 12; }
 #endif
 static int bar() {
   return 12;

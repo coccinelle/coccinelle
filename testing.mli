@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -32,6 +32,7 @@ open Common
 (*****************************************************************************)
 val testone : string (*prefix*) -> string (*test*) -> bool (*compare_expected*) -> unit
 val testall : string -> bool -> unit
+val test_spacing : string -> bool -> unit
 
 (*****************************************************************************)
 (* works with tests-big/. The .res, .ok, .spatch_ok, .failed, .var *)
@@ -57,6 +58,7 @@ val compare_with_expected : (filename * filename option) list -> unit
  *)
 
 val test_parse_cocci : filename -> unit
+val test_rule_dependencies : filename -> unit
 
 (*****************************************************************************)
 (* to be called by ocaml toplevel, to test. *)

@@ -26,7 +26,8 @@ let ast_binding vl = function
 	Ast_c.MetaIdVal(id,_) | Ast_c.MetaFuncVal id
       | Ast_c.MetaLocalFuncVal id ->
 	  Coccilib.Str id
-
+      | Ast_c.MetaAssignOpVal op -> Coccilib.AssignOp op
+      | Ast_c.MetaBinaryOpVal op -> Coccilib.BinaryOp op
       | Ast_c.MetaExprVal(expr,_) -> Coccilib.Expr expr
       | Ast_c.MetaExprListVal arglist -> Coccilib.ExprList arglist
       | Ast_c.MetaParamVal param -> Coccilib.Param param

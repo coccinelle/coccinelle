@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -112,7 +112,10 @@ module type PARAM =
 
     val distrf_e :
       (Ast_cocci.meta_name Ast_cocci.mcode, Ast_c.expression) matcher
-
+    val distrf_assignOp :
+      (Ast_cocci.meta_name Ast_cocci.mcode, Ast_c.assignOp) matcher
+    val distrf_binaryOp :
+      (Ast_cocci.meta_name Ast_cocci.mcode, Ast_c.binaryOp) matcher
     val distrf_args :
       (Ast_cocci.meta_name Ast_cocci.mcode,
       (Ast_c.argument, Ast_c.il) Common.either list)

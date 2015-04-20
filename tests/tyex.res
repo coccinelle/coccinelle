@@ -2,8 +2,10 @@
   double x;
   double y;
 } Point;
-typedef struct {char *name;
-Point p;}Location;
+typedef struct {
+  char *name;
+  Point p;
+} Location;
 
 int main () {
   Location a;

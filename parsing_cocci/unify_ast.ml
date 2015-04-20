@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -40,6 +40,22 @@ type res = NO | MAYBE
 let return b = if b then MAYBE else NO
 
 let unify_mcode (x,_,_,_) (y,_,_,_) = x = y
+
+let unify_assignOp_mcode op1 op2 =
+  match (Ast.unwrap op1, Ast.unwrap op2) with
+    | (Ast.SimpleAssign op1', Ast.SimpleAssign op2') -> unify_mcode op1' op2'
+    | (Ast.OpAssign op1', Ast.OpAssign op2') -> unify_mcode op1' op2'
+    | (Ast.MetaAssign(mv1,_,_,_), Ast.MetaAssign(mv2,_,_,_)) ->
+      unify_mcode mv1 mv2
+    | _ -> false
+
+let unify_binaryOp_mcode op1 op2 =
+  match (Ast.unwrap op1, Ast.unwrap op2) with
+    | (Ast.Arith op1', Ast.Arith op2') -> unify_mcode op1' op2'
+    | (Ast.Logical op1', Ast.Logical op2') -> unify_mcode op1' op2'
+    | (Ast.MetaBinary(mv1,_,_,_), Ast.MetaBinary(mv2,_,_,_)) ->
+      unify_mcode mv1 mv2
+    | _ -> false
 
 let ret_unify_mcode a b = return (unify_mcode a b)
 
@@ -175,7 +191,7 @@ and unify_expression e1 e2 =
 	(unify_expression f1 f2)
 	(unify_dots unify_expression edots args1 args2)
   | (Ast.Assignment(l1,op1,r1,_),Ast.Assignment(l2,op2,r2,_)) ->
-      if unify_mcode op1 op2
+      if unify_assignOp_mcode op1 op2
       then conjunct_bindings (unify_expression l1 l2) (unify_expression r1 r2)
       else return false
   | (Ast.Sequence(l1,_,r1),Ast.Sequence(l2,_,r2)) ->
@@ -191,7 +207,7 @@ and unify_expression e1 e2 =
   | (Ast.Unary(e1,op1),Ast.Unary(e2,op2)) ->
       if unify_mcode op1 op2 then unify_expression e1 e2 else return false
   | (Ast.Binary(l1,op1,r1),Ast.Binary(l2,op2,r2)) ->
-      if unify_mcode op1 op2
+      if unify_binaryOp_mcode op1 op2
       then conjunct_bindings (unify_expression l1 l2) (unify_expression r1 r2)
       else return false
   | (Ast.ArrayAccess(ar1,lb1,e1,rb1),Ast.ArrayAccess(ar2,lb2,e2,rb2)) ->
@@ -643,9 +659,11 @@ and subexp f =
   let donothing r k e = k e in
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode
       donothing donothing donothing donothing donothing donothing expr 
       donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing donothing in
+      donothing donothing donothing donothing donothing donothing donothing
+      donothing donothing in
   recursor.V.combiner_rule_elem
 
 and subtype f =
@@ -656,9 +674,11 @@ and subtype f =
   let donothing r k e = k e in
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode
       donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing fullType donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing donothing in
+      donothing donothing donothing donothing donothing fullType
+      donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing in
   recursor.V.combiner_rule_elem
 
 let rec unify_statement s1 s2 =

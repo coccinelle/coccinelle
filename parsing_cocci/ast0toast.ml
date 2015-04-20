@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -193,11 +193,12 @@ let inline_mcodes =
 	| (Ast.NOTHING,_,_) -> ())
     | Ast0.PLUS _ -> () in
   V0.flat_combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing
+    do_nothing do_nothing
 
 (* --------------------------------------------------------------------- *)
 (* For function declarations.  Can't use the mcode at the root, because that
@@ -262,9 +263,9 @@ let check_allminus =
 
   V0.flat_combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode mcode
+    mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
-    ident expression typeC initialiser donothing declaration
+    ident expression donothing donothing typeC initialiser donothing declaration
     statement donothing case_line donothing donothing
 
 (* --------------------------------------------------------------------- *)
@@ -395,7 +396,7 @@ and expression e =
 	let rp = mcode rp in
 	Ast.FunCall(fn,lp,args,rp)
     | Ast0.Assignment(left,op,right,simple) ->
-	Ast.Assignment(expression left,mcode op,expression right,simple)
+	Ast.Assignment(expression left,assignOp op,expression right,simple)
     | Ast0.Sequence(left,op,right) ->
 	Ast.Sequence(expression left,mcode op,expression right)
     | Ast0.CondExpr(exp1,why,exp2,colon,exp3) ->
@@ -412,9 +413,9 @@ and expression e =
     | Ast0.Unary(exp,op) ->
 	Ast.Unary(expression exp,mcode op)
     | Ast0.Binary(left,op,right) ->
-	Ast.Binary(expression left,mcode op,expression right)
+	Ast.Binary(expression left,binaryOp op,expression right)
     | Ast0.Nested(left,op,right) ->
-	Ast.Nested(expression left,mcode op,expression right)
+	Ast.Nested(expression left,binaryOp op,expression right)
     | Ast0.Paren(lp,exp,rp) ->
 	Ast.Paren(mcode lp,expression exp,mcode rp)
     | Ast0.ArrayAccess(exp1,lb,exp2,rb) ->
@@ -468,6 +469,28 @@ and expression e =
     | Ast0.OptExp(exp) -> Ast.OptExp(expression exp)
     | Ast0.UniqueExp(exp) -> Ast.UniqueExp(expression exp)) in
   if Ast0.get_test_exp e then Ast.set_test_exp e1 else e1
+
+and assignOp op =
+  rewrap op no_isos
+    (match Ast0.unwrap op with
+      Ast0.SimpleAssign op' -> Ast.SimpleAssign (mcode op')
+    | Ast0.OpAssign op' -> Ast.OpAssign (mcode op')
+    | Ast0.MetaAssign(mv, c, _) ->
+      Ast.MetaAssign(mcode mv, assignOpconstraint c, unitary, false))
+and assignOpconstraint = function
+  | Ast0.AssignOpNoConstraint -> Ast.AssignOpNoConstraint
+  | Ast0.AssignOpInSet ops -> Ast.AssignOpInSet (List.map assignOp ops)
+
+and binaryOp op =
+  rewrap op no_isos
+    (match Ast0.unwrap op with
+      Ast0.Arith op' -> Ast.Arith (mcode op')
+    | Ast0.Logical op' -> Ast.Logical (mcode op')
+    | Ast0.MetaBinary(mv, c, _) ->
+      Ast.MetaBinary(mcode mv, binaryOpconstraint c, unitary, false))    
+and binaryOpconstraint = function
+  | Ast0.BinaryOpNoConstraint -> Ast.BinaryOpNoConstraint
+  | Ast0.BinaryOpInSet ops -> Ast.BinaryOpInSet (List.map binaryOp ops)
 
 and expression_dots ed = dots expression ed
 
@@ -1157,6 +1180,8 @@ and anything = function
   | Ast0.DotsCaseTag(d) -> failwith "not possible"
   | Ast0.IdentTag(d) -> Ast.IdentTag(ident d)
   | Ast0.ExprTag(d) -> Ast.ExpressionTag(expression d)
+  | Ast0.AssignOpTag d -> Ast.AssignOpTag(assignOp d)
+  | Ast0.BinaryOpTag d -> Ast.BinaryOpTag(binaryOp d)
   | Ast0.ArgExprTag(d) | Ast0.TestExprTag(d) ->
      failwith "only in isos, not converted to ast"
   | Ast0.TypeCTag(d) -> Ast.FullTypeTag(typeC false d)

@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -120,12 +120,14 @@ module XMATCH = struct
 *)
     let res1 = m1 tin in
     let res2 = m2 tin in
-    let list_bindings_already = List.map snd res1 in
-    res1 ++
-      (res2 +> List.filter (fun (x, binding) ->
-        not
-          (list_bindings_already +> List.exists (fun already ->
-            Lib_engine.equal_binding binding already))
+    if res2 = [] (*try to avoid a trivial @*)
+    then res1
+    else
+      res1 ++
+	(res2 +> List.filter (fun (x, binding) ->
+          not
+            (res1 +> List.exists (fun (_,already) ->
+              Lib_engine.equal_binding binding already))
       ))
 
 
@@ -289,26 +291,28 @@ module XMATCH = struct
 	in
 	tag_mck_pos_mcode mcode posmck x tin
 
-  let distrf_e      = distrf (Lib_parsing_c.ii_of_expr)
-  let distrf_args   = distrf (Lib_parsing_c.ii_of_args)
-  let distrf_type   = distrf (Lib_parsing_c.ii_of_type)
-  let distrf_param  = distrf (Lib_parsing_c.ii_of_param)
-  let distrf_params = distrf (Lib_parsing_c.ii_of_params)
-  let distrf_ini    = distrf (Lib_parsing_c.ii_of_ini)
-  let distrf_inis   = distrf (Lib_parsing_c.ii_of_inis)
-  let distrf_decl   = distrf (Lib_parsing_c.ii_of_decl)
-  let distrf_field  = distrf (Lib_parsing_c.ii_of_field)
-  let distrf_node   = distrf (Lib_parsing_c.ii_of_node)
-  let distrf_fragments = distrf (Lib_parsing_c.ii_of_fragments)
-  let distrf_format = distrf (Lib_parsing_c.ii_of_format)
-  let distrf_enum_fields = distrf (Lib_parsing_c.ii_of_enum_fields)
-  let distrf_struct_fields = distrf (Lib_parsing_c.ii_of_struct_fields)
-  let distrf_cst    = distrf (Lib_parsing_c.ii_of_cst)
-  let distrf_define_params = distrf (Lib_parsing_c.ii_of_define_params)
-  let distrf_pragmainfo = distrf (Lib_parsing_c.ii_of_pragmainfo)
-  let distrf_ident_list = distrf (Lib_parsing_c.ii_of_ident_list)
-  let distrf_exec_code_list = distrf (Lib_parsing_c.ii_of_exec_code_list)
-  let distrf_attrs = distrf (Lib_parsing_c.ii_of_attrs)
+  let distrf_e              = distrf Lib_parsing_c.ii_of_expr
+  let distrf_assignOp       = distrf Lib_parsing_c.ii_of_assignOp
+  let distrf_binaryOp       = distrf Lib_parsing_c.ii_of_binaryOp
+  let distrf_args           = distrf Lib_parsing_c.ii_of_args
+  let distrf_type           = distrf Lib_parsing_c.ii_of_type
+  let distrf_param          = distrf Lib_parsing_c.ii_of_param
+  let distrf_params         = distrf Lib_parsing_c.ii_of_params
+  let distrf_ini            = distrf Lib_parsing_c.ii_of_ini
+  let distrf_inis           = distrf Lib_parsing_c.ii_of_inis
+  let distrf_decl           = distrf Lib_parsing_c.ii_of_decl
+  let distrf_field          = distrf Lib_parsing_c.ii_of_field
+  let distrf_node           = distrf Lib_parsing_c.ii_of_node
+  let distrf_fragments      = distrf Lib_parsing_c.ii_of_fragments
+  let distrf_format         = distrf Lib_parsing_c.ii_of_format
+  let distrf_enum_fields    = distrf Lib_parsing_c.ii_of_enum_fields
+  let distrf_struct_fields  = distrf Lib_parsing_c.ii_of_struct_fields
+  let distrf_cst            = distrf Lib_parsing_c.ii_of_cst
+  let distrf_define_params  = distrf Lib_parsing_c.ii_of_define_params
+  let distrf_pragmainfo     = distrf Lib_parsing_c.ii_of_pragmainfo
+  let distrf_ident_list     = distrf Lib_parsing_c.ii_of_ident_list
+  let distrf_exec_code_list = distrf Lib_parsing_c.ii_of_exec_code_list
+  let distrf_attrs          = distrf Lib_parsing_c.ii_of_attrs
 
 
   (* ------------------------------------------------------------------------*)
@@ -394,6 +398,10 @@ module XMATCH = struct
 		    | Some _ -> failwith "Not possible"
 		    | None -> success(Ast_c.MetaIdVal(a,[]))) in
 	      loop c
+          | Ast_c.MetaAssignOpVal op      ->
+	      success(Ast_c.MetaAssignOpVal op)
+          | Ast_c.MetaBinaryOpVal op      ->
+	      success(Ast_c.MetaBinaryOpVal op)
           | Ast_c.MetaFuncVal a      ->
 	      success(Ast_c.MetaFuncVal a)
           | Ast_c.MetaLocalFuncVal a ->

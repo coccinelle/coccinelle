@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -430,9 +430,9 @@ and contains_only_minus =
     | _ -> k e in
 
   V0.flat_combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     dots dots dots dots dots dots
-    identifier expression typeC donothing donothing declaration
+    identifier expression donothing donothing typeC donothing donothing declaration
     statement donothing case_line donothing donothing
 
 

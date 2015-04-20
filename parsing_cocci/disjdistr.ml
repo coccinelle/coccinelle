@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -54,6 +54,11 @@ let rec disjmult_two fstart frest (start,rest) =
   let rest = disjmult frest rest in
   disjmult2 cur rest (function cur -> function rest -> (cur,rest))
 
+let rec disjtwoelems fstart frest (start,rest) =
+  let cur = fstart start in
+  let rest = frest rest in
+  disjmult2 cur rest (function cur -> function rest -> (cur,rest))
+
 let disjoption f = function
     None -> [None]
   | Some x -> List.map (function x -> Some x) (f x)
@@ -103,7 +108,14 @@ and disjtypeC bty =
       disjmult2 (disjexp length) (disjoption disjexp precision_opt)
 	(function length -> function precision_opt ->
 	  Ast.rewrap bty (Ast.Decimal(dec,lp,length,comma,precision_opt,rp)))
-  | Ast.EnumName(_,_) | Ast.StructUnionName(_,_) -> [bty]
+  | Ast.EnumName(enum,name) ->
+      let name = disjoption disjident name in
+      List.map (function name -> Ast.rewrap bty (Ast.EnumName(enum,name))) name
+  | Ast.StructUnionName(su,name) ->
+      let name = disjoption disjident name in
+      List.map
+	(function name -> Ast.rewrap bty (Ast.StructUnionName(su,name)))
+	name
   | Ast.EnumDef(ty,lb,ids,rb) ->
       disjmult2 (disjty ty) (disjdots disjexp ids)
 	(function ty -> function ids ->
@@ -231,8 +243,8 @@ and disjparam p =
   match Ast.unwrap p with
     Ast.VoidParam(ty) -> [p] (* void is the only possible value *)
   | Ast.Param(ty,id) ->
-      let ty = disjty ty in
-      List.map (function ty -> Ast.rewrap p (Ast.Param(ty,id))) ty
+      disjmult2 (disjty ty) (disjoption disjident id)
+	(fun ty id -> Ast.rewrap p (Ast.Param(ty,id)))
   | Ast.AsParam(pm,asexp) -> (* as exp doesn't contain disj *)
       let pm = disjparam pm in
       List.map (function pm -> Ast.rewrap p (Ast.AsParam(pm,asexp))) pm
@@ -357,8 +369,10 @@ let orify_rule_elem_ini = generic_orify_rule_elem disjini
 let rec disj_rule_elem r k re =
   match Ast.unwrap re with
     Ast.FunHeader(bef,allminus,fninfo,name,lp,params,va,rp) ->
-      generic_orify_rule_elem (disjdots disjparam) re params
-	(function params ->
+      generic_orify_rule_elem
+	(disjtwoelems disjident (disjdots disjparam)) re
+	(name,params)
+	(fun (name,params) ->
 	  Ast.rewrap re
 	    (Ast.FunHeader(bef,allminus,fninfo,name,lp,params,va,rp)))
   | Ast.Decl decl ->
@@ -444,9 +458,11 @@ let disj_all =
   let mcode x = x in
   let donothing r k e = k e in
   V.rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing
     donothing disj_rule_elem donothing donothing donothing donothing
 
 (* ----------------------------------------------------------------------- *)
@@ -459,9 +475,11 @@ let collect_all_isos =
   let donothing r k e = Common.union_set (Ast.get_isos e) (k e) in
   let doanything r k e = k e in
   V.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing
     doanything donothing donothing donothing donothing doanything
 
 let collect_iso_info =
@@ -474,8 +492,10 @@ let collect_iso_info =
 	let isos = collect_all_isos.V.combiner_rule_elem e in
 	Ast.set_isos e isos in
   V.rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing
     donothing donothing donothing donothing
     donothing donothing donothing donothing rule_elem donothing donothing
     donothing donothing

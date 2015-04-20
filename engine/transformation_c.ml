@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -255,10 +255,11 @@ module XTRANS = struct
 	    (Ast_cocci.MetaExpr(name,Ast_cocci.NoConstraint,u,ty,form,i))
       | _ -> e in
     let fn = Visitor_ast.rebuilder
-	mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+	mcode mcode mcode mcode mcode mcode mcode mcode mcode
+	mcode mcode mcode mcode mcode
 	donothing donothing donothing donothing donothing
 	ident expression donothing donothing donothing donothing
-	donothing donothing donothing
+	donothing donothing donothing donothing donothing
 	donothing donothing donothing donothing donothing donothing in
 
   fn.Visitor_ast.rebuilder_anything anything
@@ -568,6 +569,12 @@ module XTRANS = struct
   let distribute_mck_expr (maxpos, minpos) = fun (lop,mop,rop,bop) -> fun x ->
     Visitor_c.vk_expr_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
 
+  let distribute_mck_assignOp (maxpos, minpos) = fun (lop,mop,rop,bop) -> fun x ->
+    Visitor_c.vk_assignOp_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
+
+  let distribute_mck_binaryOp (maxpos, minpos) = fun (lop,mop,rop,bop) -> fun x ->
+    Visitor_c.vk_binaryOp_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
+
   let distribute_mck_args (maxpos, minpos) = fun (lop,mop,rop,bop) -> fun x ->
     Visitor_c.vk_args_splitted_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
 
@@ -690,6 +697,8 @@ module XTRANS = struct
 
 
   let distrf_e    = distrf (Lib_parsing_c.ii_of_expr,  distribute_mck_expr)
+  let distrf_assignOp = distrf (Lib_parsing_c.ii_of_assignOp, distribute_mck_assignOp)
+  let distrf_binaryOp = distrf (Lib_parsing_c.ii_of_binaryOp, distribute_mck_binaryOp)
   let distrf_args = distrf (Lib_parsing_c.ii_of_args,  distribute_mck_args)
   let distrf_type = distrf (Lib_parsing_c.ii_of_type,  distribute_mck_type)
   let distrf_param  = distrf (Lib_parsing_c.ii_of_param, distribute_mck_param)

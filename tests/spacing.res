@@ -1,7 +1,7 @@
 typedef int *foo;
 
 void *bar(int *baz) {
-return baz;
+	return baz;
 }
 
 int f(int x) {

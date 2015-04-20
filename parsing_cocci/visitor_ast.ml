@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -41,6 +41,8 @@ type 'a combiner =
      combiner_expression : Ast.expression -> 'a;
      combiner_fragment : Ast.string_fragment -> 'a;
      combiner_format : Ast.string_format -> 'a;
+     combiner_assignOp : Ast_cocci.assignOp -> 'a;
+     combiner_binaryOp : Ast_cocci.binaryOp -> 'a;
      combiner_fullType : Ast.fullType -> 'a;
      combiner_typeC : Ast.typeC -> 'a;
      combiner_declaration : Ast.declaration -> 'a;
@@ -61,12 +63,12 @@ type ('mc,'a) cmcode = 'a combiner -> 'mc Ast_cocci.mcode -> 'a
 type ('cd,'a) ccode = 'a combiner -> ('cd -> 'a) -> 'cd -> 'a
 
 let combiner bind option_default
-    meta_mcodefn string_mcodefn const_mcodefn assign_mcodefn fix_mcodefn
-    unary_mcodefn binary_mcodefn
+    meta_mcodefn string_mcodefn const_mcodefn simpleassign_mcodefn opassign_mcodefn fix_mcodefn
+    unary_mcodefn arithop_mcodefn logicalop_mcodefn
     cv_mcodefn sign_mcodefn struct_mcodefn storage_mcodefn
     inc_file_mcodefn
     expdotsfn paramdotsfn stmtdotsfn anndecldotsfn initdotsfn
-    identfn exprfn fragfn fmtfn ftfn tyfn initfn paramfn declfn
+    identfn exprfn fragfn fmtfn assignOpfn binaryOpfn ftfn tyfn initfn paramfn declfn
     annotated_declfn rulefn stmtfn casefn topfn anyfn =
   let multibind l =
     let rec loop = function
@@ -88,10 +90,12 @@ let combiner bind option_default
   let rec meta_mcode x = meta_mcodefn all_functions x
   and string_mcode x = string_mcodefn all_functions x
   and const_mcode x = const_mcodefn all_functions x
-  and assign_mcode x = assign_mcodefn all_functions x
+  and simpleassign_mcode x = simpleassign_mcodefn all_functions x
+  and opassign_mcode x = opassign_mcodefn all_functions x
   and fix_mcode x = fix_mcodefn all_functions x
   and unary_mcode x = unary_mcodefn all_functions x
-  and binary_mcode x = binary_mcodefn all_functions x
+  and arithop_mcode x = arithop_mcodefn all_functions x
+  and logicalop_mcode x = logicalop_mcodefn all_functions x
   and cv_mcode x = cv_mcodefn all_functions x
   and sign_mcode x = sign_mcodefn all_functions x
   and struct_mcode x = struct_mcodefn all_functions x
@@ -147,7 +151,7 @@ let combiner bind option_default
 	  multibind [lfn; llp; largs; lrp]
       | Ast.Assignment(left,op,right,simple) ->
 	  let lleft = expression left in
-	  let lop = assign_mcode op in
+	  let lop = assignOp op in
 	  let lright = expression right in
 	  multibind [lleft; lop; lright]
       | Ast.Sequence(left,op,right) ->
@@ -176,12 +180,12 @@ let combiner bind option_default
 	  bind lop lexp
       | Ast.Binary(left,op,right) ->
 	  let lleft = expression left in
-	  let lop = binary_mcode op in
+	  let lop = binaryOp op in
 	  let lright = expression right in
 	  multibind [lleft; lop; lright]
       | Ast.Nested(left,op,right) ->
 	  let lleft = expression left in
-	  let lop = binary_mcode op in
+	  let lop = binaryOp op in
 	  let lright = expression right in
 	  multibind [lleft; lop; lright]
       | Ast.Paren(lp,exp,rp) ->
@@ -251,6 +255,22 @@ let combiner bind option_default
       | Ast.OptExp(exp) | Ast.UniqueExp(exp) ->
 	  expression exp in
     exprfn all_functions k e
+
+  and assignOp op =
+    let k e =
+      match Ast.unwrap e with
+        Ast.SimpleAssign o -> simpleassign_mcode o
+      | Ast.OpAssign o -> opassign_mcode o
+      | Ast.MetaAssign (mv,_,_,_) -> meta_mcode mv in
+    assignOpfn all_functions k op
+
+  and binaryOp op =
+    let k e =
+      match Ast.unwrap e with
+        Ast.Arith o -> arithop_mcode o
+      | Ast.Logical o -> logicalop_mcode o
+      | Ast.MetaBinary (mv,_,_,_) -> meta_mcode mv in
+    binaryOpfn all_functions k op
 
   and string_fragment e =
     let k e =
@@ -845,6 +865,8 @@ let combiner bind option_default
       | Ast.ConstantTag(cst) -> option_default
       | Ast.UnaryOpTag(unop) -> option_default
       | Ast.AssignOpTag(asgnop) -> option_default
+      | Ast.SimpleAssignOpTag _ -> option_default
+      | Ast.OpAssignOpTag _ -> option_default
       | Ast.FixOpTag(fixop) -> option_default
       | Ast.BinaryOpTag(binop) -> option_default
       | Ast.ArithOpTag(arithop) -> option_default
@@ -877,6 +899,8 @@ let combiner bind option_default
       combiner_expression = expression;
       combiner_fragment = string_fragment;
       combiner_format = string_format;
+      combiner_assignOp = assignOp;
+      combiner_binaryOp = binaryOp;
       combiner_fullType = fullType;
       combiner_typeC = typeC;
       combiner_declaration = declaration;
@@ -903,6 +927,8 @@ type rebuilder =
       rebuilder_expression : Ast.expression inout;
       rebuilder_fragment : Ast.string_fragment inout;
       rebuilder_format : Ast.string_format inout;
+      rebuilder_assignOp : Ast_cocci.assignOp inout;
+      rebuilder_binaryOp : Ast_cocci.binaryOp inout;
       rebuilder_fullType : Ast.fullType inout;
       rebuilder_typeC : Ast.typeC inout;
       rebuilder_declaration : Ast.declaration inout;
@@ -927,11 +953,11 @@ type 'cd rcode = rebuilder -> ('cd inout) -> 'cd inout
 
 
 let rebuilder
-    meta_mcode string_mcode const_mcode assign_mcode fix_mcode unary_mcode
-    binary_mcode cv_mcode sign_mcode struct_mcode storage_mcode
+    meta_mcode string_mcode const_mcode simpleassign_mcode opassign_mcode fix_mcode unary_mcode
+    arithop_mcode logicalop_mcode cv_mcode sign_mcode struct_mcode storage_mcode
     inc_file_mcode
     expdotsfn paramdotsfn stmtdotsfn anndecldotsfn initdotsfn
-    identfn exprfn fragfn fmtfn ftfn tyfn initfn paramfn declfn 
+    identfn exprfn fragfn fmtfn assignOpfn binaryOpfn ftfn tyfn initfn paramfn declfn 
     annotated_declfn rulefn stmtfn casefn topfn anyfn =
   let get_option f = function
       Some x -> Some (f x)
@@ -996,7 +1022,7 @@ let rebuilder
 	    Ast.FunCall(lfn, llp, largs, lrp)
 	| Ast.Assignment(left,op,right,simple) ->
 	    let lleft = expression left in
-	    let lop = assign_mcode op in
+	    let lop = assignOp op in
 	    let lright = expression right in
 	    Ast.Assignment(lleft, lop, lright, simple)
 	| Ast.Sequence(left,op,right) ->
@@ -1025,12 +1051,12 @@ let rebuilder
 	    Ast.Unary(lexp, lop)
 	| Ast.Binary(left,op,right) ->
 	    let lleft = expression left in
-	    let lop = binary_mcode op in
+	    let lop = binaryOp op in
 	    let lright = expression right in
 	    Ast.Binary(lleft, lop, lright)
 	| Ast.Nested(left,op,right) ->
 	    let lleft = expression left in
-	    let lop = binary_mcode op in
+	    let lop = binaryOp op in
 	    let lright = expression right in
 	    Ast.Nested(lleft, lop, lright)
 	| Ast.Paren(lp,exp,rp) ->
@@ -1135,6 +1161,26 @@ let rebuilder
 	| Ast.MetaFormat(name,constraints,keep,inherited) ->
 	    Ast.MetaFormat(meta_mcode name,constraints,keep,inherited)) in
     fmtfn all_functions k e
+
+  and assignOp op =
+    let k op =
+      Ast.rewrap op
+        (match Ast.unwrap op with
+          Ast.SimpleAssign o -> Ast.SimpleAssign (simpleassign_mcode o)
+        | Ast.OpAssign o -> Ast.OpAssign (opassign_mcode o)
+        | Ast.MetaAssign (mv,x,y,z) -> Ast.MetaAssign ((meta_mcode mv),x,y,z)
+        ) in
+    assignOpfn all_functions k op
+
+  and binaryOp op =
+    let k op =
+      Ast.rewrap op
+        (match Ast.unwrap op with
+          Ast.Arith o -> Ast.Arith (arithop_mcode o)
+        | Ast.Logical o -> Ast.Logical (logicalop_mcode o) 
+        | Ast.MetaBinary (mv,x,y,z) -> Ast.MetaBinary ((meta_mcode mv),x,y,z)
+        ) in
+    binaryOpfn all_functions k op
 
   and fullType ft =
     let k ft =
@@ -1726,6 +1772,8 @@ let rebuilder
       | Ast.ConstantTag(cst) as x -> x
       | Ast.UnaryOpTag(unop) as x -> x
       | Ast.AssignOpTag(asgnop) as x -> x
+      | Ast.SimpleAssignOpTag _ as x -> x
+      | Ast.OpAssignOpTag _ as x -> x
       | Ast.FixOpTag(fixop) as x -> x
       | Ast.BinaryOpTag(binop) as x -> x
       | Ast.ArithOpTag(arithop) as x -> x
@@ -1759,6 +1807,8 @@ let rebuilder
       rebuilder_expression = expression;
       rebuilder_fragment = string_fragment;
       rebuilder_format = string_format;
+      rebuilder_assignOp = assignOp;
+      rebuilder_binaryOp = binaryOp;
       rebuilder_fullType = fullType;
       rebuilder_typeC = typeC;
       rebuilder_declaration = declaration;

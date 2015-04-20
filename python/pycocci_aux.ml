@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -72,6 +72,8 @@ let fieldlistrep =
 
 let stringrep = function
   Ast_c.MetaIdVal        (s,_) -> s
+| Ast_c.MetaAssignOpVal op -> call_pretty Pretty_print_c.pp_assignOp_gen op
+| Ast_c.MetaBinaryOpVal op -> call_pretty Pretty_print_c.pp_binaryOp_gen op
 | Ast_c.MetaFuncVal      s -> s
 | Ast_c.MetaLocalFuncVal s -> s
 | Ast_c.MetaExprVal      (expr,_) -> exprrep expr

@@ -79,6 +79,8 @@ type token =
   | TPArob of (Data.clt)
   | TOrLog of (Data.clt)
   | TOr of (Data.clt)
+  | TOperator
+  | TOpAssign of (Ast_cocci.arithOp * Data.clt)
   | TOn
   | TOPar0 of (string * Data.clt)
   | TOPar of (Data.clt)
@@ -118,6 +120,8 @@ type token =
   | TMetaDeclarer of (Parse_aux.idinfo)
   | TMetaDecl of (Parse_aux.info)
   | TMetaConst of (Parse_aux.typed_expinfo)
+  | TMetaBinaryOp of (Parse_aux.binaryOpinfo)
+  | TMetaAssignOp of (Parse_aux.assignOpinfo)
   | TMeta of (Parse_aux.info)
   | TMPtVirg
   | TLogOp of (Ast_cocci.logicalOp * Data.clt)
@@ -194,10 +198,11 @@ type token =
   | TCCro of (Data.clt)
   | TCBrace of (Data.clt)
   | TBreak of (Data.clt)
+  | TBinary
   | TBang0
   | TBang of (Data.clt)
   | TAttribute
-  | TAssign of (Ast_cocci.assignOp * Data.clt)
+  | TAssignment
   | TArobArob
   | TArob
   | TAny of (Data.clt)

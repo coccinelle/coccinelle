@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -30,6 +30,8 @@ type 'a combiner =
      combiner_expression : Ast_cocci.expression -> 'a;
      combiner_fragment : Ast_cocci.string_fragment -> 'a;
      combiner_format : Ast_cocci.string_format -> 'a;
+     combiner_assignOp : Ast_cocci.assignOp -> 'a;
+     combiner_binaryOp : Ast_cocci.binaryOp -> 'a;
      combiner_fullType : Ast_cocci.fullType -> 'a;
      combiner_typeC : Ast_cocci.typeC -> 'a;
      combiner_declaration : Ast_cocci.declaration -> 'a;
@@ -54,10 +56,12 @@ val combiner :
       ((Ast_cocci.meta_name,'a) cmcode) ->
       ((string,'a) cmcode) ->
       ((Ast_cocci.constant,'a) cmcode) ->
-      ((Ast_cocci.assignOp,'a) cmcode) ->
+      ((Ast_cocci.simpleAssignOp,'a) cmcode) ->
+      ((Ast_cocci.arithOp,'a) cmcode) ->
       ((Ast_cocci.fixOp,'a) cmcode) ->
       ((Ast_cocci.unaryOp,'a) cmcode) ->
-      ((Ast_cocci.binaryOp,'a) cmcode) ->
+      ((Ast_cocci.arithOp,'a) cmcode) ->
+      ((Ast_cocci.logicalOp,'a) cmcode) ->
       ((Ast_cocci.const_vol,'a) cmcode) ->
       ((Ast_cocci.sign,'a) cmcode) ->
       ((Ast_cocci.structUnion,'a) cmcode) ->
@@ -72,6 +76,8 @@ val combiner :
       ((Ast_cocci.expression,'a) ccode) ->
       ((Ast_cocci.string_fragment,'a) ccode) ->
       ((Ast_cocci.string_format,'a) ccode) ->
+      ((Ast_cocci.assignOp,'a) ccode) ->
+      ((Ast_cocci.binaryOp,'a) ccode) ->
       ((Ast_cocci.fullType,'a) ccode) ->
       ((Ast_cocci.typeC,'a) ccode) ->
       ((Ast_cocci.initialiser,'a) ccode) ->
@@ -92,6 +98,8 @@ type rebuilder =
       rebuilder_expression : Ast_cocci.expression inout;
       rebuilder_fragment : Ast_cocci.string_fragment inout;
       rebuilder_format : Ast_cocci.string_format inout;
+      rebuilder_assignOp : Ast_cocci.assignOp inout;
+      rebuilder_binaryOp : Ast_cocci.binaryOp inout;
       rebuilder_fullType : Ast_cocci.fullType inout;
       rebuilder_typeC : Ast_cocci.typeC inout;
       rebuilder_declaration : Ast_cocci.declaration inout;
@@ -118,10 +126,12 @@ val rebuilder :
     (Ast_cocci.meta_name rmcode) ->
     (string rmcode) ->
     (Ast_cocci.constant rmcode) ->
-    (Ast_cocci.assignOp rmcode) ->
+    (Ast_cocci.simpleAssignOp rmcode) ->
+    (Ast_cocci.arithOp rmcode) ->
     (Ast_cocci.fixOp rmcode) ->
     (Ast_cocci.unaryOp rmcode) ->
-    (Ast_cocci.binaryOp rmcode) ->
+    (Ast_cocci.arithOp rmcode) ->
+    (Ast_cocci.logicalOp rmcode) ->
     (Ast_cocci.const_vol rmcode) ->
     (Ast_cocci.sign rmcode) ->
     (Ast_cocci.structUnion rmcode) ->
@@ -136,6 +146,8 @@ val rebuilder :
     (Ast_cocci.expression rcode) ->
     (Ast_cocci.string_fragment rcode) ->
     (Ast_cocci.string_format rcode) ->
+    (Ast_cocci.assignOp rcode) ->
+    (Ast_cocci.binaryOp rcode) ->
     (Ast_cocci.fullType rcode) ->
     (Ast_cocci.typeC rcode) ->
     (Ast_cocci.initialiser rcode) ->

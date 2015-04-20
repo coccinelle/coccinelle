@@ -1,6 +1,6 @@
 int two () { return 12; }
 
-int one () __attribute__((always_inline)) ;
+int one () __attribute__((always_inline));
 
 int one () { return 12; }
 

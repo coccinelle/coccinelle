@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -85,10 +85,12 @@ let compute_adjacency p =
 	VT0.rebuilder_meta_mcode = mcode;
 	VT0.rebuilder_string_mcode = string_mcode;
 	VT0.rebuilder_const_mcode = mcode;
-	VT0.rebuilder_assign_mcode = mcode;
+	VT0.rebuilder_simpleAssign_mcode = mcode;
+	VT0.rebuilder_opAssign_mcode = mcode;
 	VT0.rebuilder_fix_mcode = mcode;
 	VT0.rebuilder_unary_mcode = mcode;
-	VT0.rebuilder_binary_mcode = mcode;
+	VT0.rebuilder_arithOp_mcode = mcode;
+	VT0.rebuilder_logicalOp_mcode = mcode;
 	VT0.rebuilder_cv_mcode = mcode;
 	VT0.rebuilder_sign_mcode = mcode;
 	VT0.rebuilder_struct_mcode = mcode;

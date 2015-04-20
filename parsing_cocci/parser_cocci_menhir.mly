@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -146,6 +146,20 @@ let tmeta_to_param (name,pure,clt) =
      (function TMetaParam(_,_,_) -> true | _ -> false));
   Ast0.wrap(Ast0.MetaParam(P.clt2mcode name clt,pure))
 
+let tmeta_to_assignOp (name,pure,clt) =
+  (coerce_tmeta "an assignment operator" name
+     (TMetaAssignOp(name,Ast0.AssignOpNoConstraint,pure,clt))
+     (function TMetaAssignOp(_,_,_,_) -> true | _ -> false));
+  Ast0.wrap
+    (Ast0.MetaAssign(P.clt2mcode name clt,Ast0.AssignOpNoConstraint, pure))
+
+let tmeta_to_binaryOp (name,pure,clt) =
+  (coerce_tmeta "a binary operator" name
+     (TMetaBinaryOp(name,Ast0.BinaryOpNoConstraint,pure,clt))
+     (function TMetaBinaryOp(_,_,_,_) -> true | _ -> false));
+  Ast0.wrap
+    (Ast0.MetaBinary(P.clt2mcode name clt,Ast0.BinaryOpNoConstraint, pure),clt)
+
 let tmeta_to_statement (name,pure,clt) =
   (coerce_tmeta "a statement" name (TMetaType(name,pure,clt))
      (function TMetaType(_,_,_) -> true | _ -> false));
@@ -187,12 +201,21 @@ and  logicalOp = function
   | Ast.AndLog -> "&&"
   | Ast.OrLog -> "||"
 
+let mkarithop (op, clt) =
+  let op' = P.clt2mcode op clt in
+  Ast0.wrap (Ast0.Arith op')
+
+let mklogop (op,clt) =
+  let op' = P.clt2mcode op clt in
+  Ast0.wrap (Ast0.Logical op')
+
 %}
 
 %token EOF
 
 %token TIdentifier TExpression TStatement TFunction TType TParameter
 %token TIdExpression TInitialiser TDeclaration TField TMetavariable TSymbol
+%token TOperator TBinary TAssignment
 %token Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
 %token TPure TContext TGenerated TFormat TLocal TGlobal
 %token TTypedef TAttribute TDeclarer TIterator TName TPosition TAnalysis
@@ -219,6 +242,8 @@ and  logicalOp = function
 %token <Parse_aux.midinfo>       TMetaId
 %token <Parse_aux.idinfo>        TMetaFunc TMetaLocalFunc
 %token <Parse_aux.idinfo>        TMetaIterator TMetaDeclarer
+%token <Parse_aux.assignOpinfo> TMetaAssignOp
+%token <Parse_aux.binaryOpinfo> TMetaBinaryOp
 %token <Parse_aux.expinfo>       TMetaErr
 %token <Parse_aux.info>          TMetaParam TMetaStm TMetaStmList TMetaType
 %token <Parse_aux.info>          TMetaInit TMetaDecl TMetaField TMeta
@@ -269,7 +294,7 @@ and  logicalOp = function
 
 %token TMPtVirg TCppConcatOp
 %token <Data.clt> TEq TDot TComma TPtVirg
-%token <Ast_cocci.assignOp * Data.clt> TAssign
+%token <Ast_cocci.arithOp * Data.clt> TOpAssign
 
 %token TIso TRightIso TIsoExpression TIsoStatement TIsoDeclaration TIsoType
 %token TIsoTopLevel TIsoArgExpression TIsoTestExpression TIsoToTestExpression
@@ -290,7 +315,7 @@ and  logicalOp = function
 %left TEqEq TNotEq
 %left TLogOp /* TInf TSup TInfEq TSupEq */
 %left TShLOp TShROp /* TShl TShr */
-%left TPlus TMinus
+%left TPlus TMinus TMetaBinaryOp
 %left TMul TDmOp /* TDiv TMod TMin TMax */
 
 /*
@@ -434,8 +459,8 @@ incl:
   TIncludeL           { let (x,_) = $1 in Data.Include(x) }
 | TUsing TString      { Data.Iso(Common.Left(P.id2name $2)) }
 | TUsing TPathIsoFile { Data.Iso(Common.Right $2) }
-| TVirtual comma_list(pure_ident)
-    { let names = List.map P.id2name $2 in
+| TVirtual ids=comma_list(pure_ident)
+    { let names = List.map P.id2name ids in
       Iteration.parsed_virtual_rules :=
 	Common.union_set names !Iteration.parsed_virtual_rules;
       (* ensure that the names of virtual and real rules don't overlap *)
@@ -549,6 +574,68 @@ metadec:
 	  let tok = check_meta(Ast.MetaFragListDecl(arity,name,lenname)) in
 	  !Data.add_fmtlist_meta name lenname; tok)
 	len ids }
+| ar=arity TBinary TOperator
+    ids=comma_list(pure_ident_or_meta_ident_with_binop_constraint) TMPtVirg
+    { P.create_metadec_with_constraints ar Ast0.Impure
+	(fun arity name pure check_meta constraints ->
+	  let tok = check_meta(Ast.MetaBinaryOperatorDecl(arity,name)) in
+	  !Data.add_binaryOp_meta name constraints pure; tok)
+        ids }
+| ar=arity TAssignment TOperator
+    ids=comma_list(pure_ident_or_meta_ident_with_assignop_constraint)
+    TMPtVirg
+    { P.create_metadec_with_constraints ar Ast0.Impure
+	(fun arity name pure check_meta constraints ->
+	  let tok = check_meta(Ast.MetaAssignmentOperatorDecl(arity,name)) in
+	  !Data.add_assignOp_meta name constraints pure; tok)
+        ids }
+
+pure_ident_or_meta_ident_with_binop_constraint:
+    i=pure_ident_or_meta_ident c=binaryopconstraint { (i,c) }
+
+binaryopconstraint:
+  { Ast0.BinaryOpNoConstraint }
+| TEq TOBrace ops=comma_list(binary_operator) TCBrace 
+  { Ast0.BinaryOpInSet ops }
+| TEq op=binary_operator
+  { Ast0.BinaryOpInSet [op] }
+
+pure_ident_or_meta_ident_with_assignop_constraint:
+    i=pure_ident_or_meta_ident c=assignopconstraint { (i,c) }
+
+assignopconstraint:
+  { Ast0.AssignOpNoConstraint }
+| TEq TOBrace ops=comma_list(assignment_operator) TCBrace 
+  { Ast0.AssignOpInSet ops }
+| TEq op=assignment_operator
+  { Ast0.AssignOpInSet [op] }
+
+binary_operator:
+| TShLOp { mkarithop $1 } (* Ast.Arith Ast.DecLeft *)
+| TMul { mkarithop (Ast.Mul,$1) }
+| TEqEq { mklogop (Ast.Eq,$1) }
+| TNotEq { mklogop (Ast.NotEq,$1) }
+| TSub { mklogop (Ast.InfEq,$1) }
+| TPlus { mkarithop (Ast.Plus,$1) }
+| TMinus { mkarithop (Ast.Minus,$1) }
+| TDmOp { mkarithop $1 }
+| TShROp { mkarithop $1 }
+| TAnd { mkarithop (Ast.And,$1) }
+| TOr { mkarithop (Ast.Or,$1) }
+| TXor { mkarithop (Ast.Xor,$1) }
+| TLogOp { mklogop $1 } 
+| TAndLog { mklogop (Ast.AndLog,$1) }
+| TOrLog { mklogop (Ast.OrLog,$1) }
+
+assignment_operator:
+| TEq 
+  { let clt = $1 in
+  let op' = P.clt2mcode "=" clt in
+  Ast0.wrap (Ast0.SimpleAssign op') }
+| TOpAssign
+  { let (op,clt) = $1 in
+  let op' = P.clt2mcode op clt in
+  Ast0.wrap (Ast0.OpAssign op') }
 
 list_len:
   pure_ident_or_meta_ident { Common.Left $1 }
@@ -775,12 +862,12 @@ expression_type:
 
 meta_exp_type:
   t=typedef_ctype
-    { [Ast0_cocci.ast0_type_to_type t] }
+    { [Ast0_cocci.ast0_type_to_type true t] }
 | t=typedef_ctype TOCro TCCro
-    { [Type_cocci.Array (Ast0_cocci.ast0_type_to_type t)] }
+    { [Type_cocci.Array (Ast0_cocci.ast0_type_to_type true t)] }
 | TOBrace t=comma_list(ctype) TCBrace m=list(TMul)
     { List.map
-	(function x -> P.ty_pointerify (Ast0_cocci.ast0_type_to_type x) m)
+	(function x -> P.ty_pointerify (Ast0_cocci.ast0_type_to_type true x) m)
 	t }
 
 arity: TBang0 { Ast.UNIQUE }
@@ -979,10 +1066,12 @@ enum_decl_one:
     | disj_ident    { Ast0.wrap(Ast0.Ident($1)) }
     | disj_ident TEq enum_val
 	{ let id = Ast0.wrap(Ast0.Ident($1)) in
+        let (op,clt) = ("=",$2) in
+        let op' = P.clt2mcode op clt in
+        let op'' = Ast0.wrap (Ast0.SimpleAssign op') in
 	Ast0.wrap
 	  (Ast0.Assignment
-	     (id,P.clt2mcode Ast.SimpleAssign $2,Ast0.set_arg_exp $3,
-	      false)) }
+	     (id, op'', Ast0.set_arg_exp $3, false)) }
 
 enum_val:
    ident    { Ast0.wrap(Ast0.Ident($1)) }
@@ -1782,25 +1871,40 @@ basic_expr(recurser,primary_extra):
 
 assign_expr(r,pe):
     cond_expr(r,pe)                        { $1 }
-  | unary_expr(r,pe) TAssign assign_expr_bis
+  | unary_expr(r,pe) TOpAssign assign_expr_bis
       { let (op,clt) = $2 in
-      Ast0.wrap(Ast0.Assignment($1,P.clt2mcode op clt,
-				Ast0.set_arg_exp $3,false)) }
+      let op' = P.clt2mcode op clt in
+      let op'' = Ast0.wrap (Ast0.OpAssign op') in
+      Ast0.wrap(Ast0.Assignment($1, op'', Ast0.set_arg_exp $3,false)) }
   | unary_expr(r,pe) TEq assign_expr_bis
-      { Ast0.wrap
+      { let (op,clt) = ("=",$2) in
+      let op' = P.clt2mcode op clt in
+      let op'' = Ast0.wrap (Ast0.SimpleAssign op') in
+      Ast0.wrap
 	  (Ast0.Assignment
-	     ($1,P.clt2mcode Ast.SimpleAssign $2,Ast0.set_arg_exp $3,false)) }
+	     ($1, op'', Ast0.set_arg_exp $3,false)) }
+  | unary_expr(r,pe) TMetaAssignOp assign_expr_bis
+      { let (mv, cstrt, pure, clt) = $2 in
+      let op' = P.clt2mcode mv clt in
+      let op'' = Ast0.wrap (Ast0.MetaAssign (op', cstrt, pure)) in
+      Ast0.wrap
+	  (Ast0.Assignment
+	     ($1, op'', Ast0.set_arg_exp $3,false)) }
 
 assign_expr_bis:
     cond_expr(eexpr,dot_expressions)                        { $1 }
-  | unary_expr(eexpr,dot_expressions) TAssign assign_expr_bis
+  | unary_expr(eexpr,dot_expressions) TOpAssign assign_expr_bis
       { let (op,clt) = $2 in
-      Ast0.wrap(Ast0.Assignment($1,P.clt2mcode op clt,
-				Ast0.set_arg_exp $3,false)) }
+      let op' = P.clt2mcode op clt in
+      let op'' = Ast0.wrap (Ast0.OpAssign op') in
+      Ast0.wrap(Ast0.Assignment($1, op'', Ast0.set_arg_exp $3,false)) }
   | unary_expr(eexpr,dot_expressions) TEq assign_expr_bis
-      { Ast0.wrap
+      { let (op,clt) = ("=",$2) in
+      let op' = P.clt2mcode op clt in
+      let op'' = Ast0.wrap (Ast0.SimpleAssign op') in
+      Ast0.wrap
 	  (Ast0.Assignment
-	     ($1,P.clt2mcode Ast.SimpleAssign $2,Ast0.set_arg_exp $3,false)) }
+	     ($1, op'', Ast0.set_arg_exp $3,false)) }
 
 cond_expr(r,pe):
     arith_expr(r,pe)                         { $1 }
@@ -1812,7 +1916,7 @@ cond_expr(r,pe):
 arith_expr(r,pe):
     cast_expr(r,pe)                         { $1 }
   | arith_expr(r,pe) TMul    arith_expr_bis
-      { P.arith_op Ast.Mul $1 $2 $3 }
+    { P.arith_op Ast.Mul $1 $2 $3 }
   | arith_expr(r,pe) TDmOp    arith_expr_bis
       { let (op,clt) = $2 in P.arith_op op $1 clt $3 }
   | arith_expr(r,pe) TPlus   arith_expr_bis
@@ -1839,6 +1943,11 @@ arith_expr(r,pe):
       { P.logic_op Ast.AndLog $1 $2 $3 }
   | arith_expr(r,pe) TOrLog  arith_expr_bis
       { P.logic_op Ast.OrLog $1 $2 $3 }
+  | arith_expr(r,pe) TMetaBinaryOp  arith_expr_bis
+      { let (mv, cstrt, pure, clt) = $2 in
+      let op' = P.clt2mcode mv clt in
+      let op = Ast0.wrap (Ast0.MetaBinary (op', cstrt, pure)) in
+      Ast0.wrap (Ast0.Binary($1, op, $3)) }
 
 // allows dots now that an expression-specific token has been seen
 // need an extra rule because of recursion restrictions
@@ -2121,8 +2230,9 @@ pure_ident_or_meta_ident_with_idconstraint(constraint_type):
     }
 
 re_or_not_eqid:
-   re=regexp_eqid {Ast.IdRegExpConstraint re}
- | ne=not_eqid    {ne}
+   re=regexp_eqid   {Ast.IdRegExpConstraint re}
+ | TEq ne=idcstr    {Ast.IdPosIdSet (fst ne,snd ne)}
+ | TNotEq ne=idcstr {Ast.IdNegIdSet (fst ne,snd ne)}
 
 re_only:
    re=regexp_eqid {Ast.IdRegExpConstraint re}
@@ -2143,8 +2253,8 @@ regexp_eqid:
 	   let (s,_) = re in Ast.IdNotRegExp (s,Regexp.regexp s)
 	 }
 
-not_eqid:
-       TNotEq i=pure_ident_or_meta_ident
+idcstr:
+       i=pure_ident_or_meta_ident
          { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
@@ -2156,9 +2266,9 @@ not_eqid:
 	       let i =
 		 P.check_inherited_constraint i
 		   (function mv -> Ast.MetaIdDecl(Ast.NONE,mv)) in
-	       Ast.IdNegIdSet([],[i])
-	   | (None,i) -> Ast.IdNegIdSet([i],[])) }
-     | TNotEq TOBrace l=comma_list(pure_ident_or_meta_ident) TCBrace
+	       ([],[i])
+	   | (None,i) -> ([i],[])) }
+     | TOBrace l=comma_list(pure_ident_or_meta_ident) TCBrace
 	 { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
@@ -2174,7 +2284,7 @@ not_eqid:
 		     (str,i::meta)
 		 | (None,i) -> (i::str,meta))
 	       ([],[]) l in
-	   Ast.IdNegIdSet(str,meta)
+	   (str,meta)
 	 }
 
 re_or_not_eqe_or_sub:
@@ -2695,8 +2805,8 @@ token:
 /****************************************************************************/
 
 // non-empty lists - drop separator
-comma_list(elem):
-  separated_nonempty_list(TComma,elem) { $1 }
+%inline comma_list(elem):
+  l=separated_nonempty_list(TComma,elem) { l }
 
 midzero_list(elem,aft):
   a=elem b=list(mzl(aft))

@@ -8,6 +8,8 @@ type 'a printer = 'a -> unit
 
 type pretty_printers = {
   expression      : Ast_c.expression printer;
+  assignOp        : Ast_c.assignOp printer;
+  binaryOp        : Ast_c.binaryOp printer;
   arg_list        : (Ast_c.argument Ast_c.wrap2 list) printer;
   arg             : Ast_c.argument printer;
   statement       : Ast_c.statement printer;
@@ -39,6 +41,10 @@ val mk_pretty_printers :
 (* used in pycocci mostly *)
 val pp_expression_gen: pr_elem:Ast_c.info printer -> pr_space: unit printer ->
   Ast_c.expression printer
+val pp_assignOp_gen: pr_elem:Ast_c.info printer -> pr_space: unit printer ->
+  Ast_c.assignOp printer
+val pp_binaryOp_gen: pr_elem:Ast_c.info printer -> pr_space: unit printer ->
+  Ast_c.binaryOp printer
 val pp_arg_list_gen: pr_elem:Ast_c.info printer -> pr_space: unit printer ->
   (Ast_c.argument Ast_c.wrap2 list) printer
 val pp_arg_gen: pr_elem:Ast_c.info printer -> pr_space: unit printer ->
@@ -73,6 +79,8 @@ val pp_program_gen : pr_elem:Ast_c.info printer -> pr_space:unit printer ->
 
 (* used in pretty_print_engine.ml mostly *)
 val pp_expression_simple: Ast_c.expression printer
+val pp_assignOp_simple: Ast_c.assignOp printer
+val pp_binaryOp_simple: Ast_c.binaryOp printer
 val pp_init_simple:       Ast_c.initialiser printer
 val pp_type_simple:       Ast_c.fullType printer
 val pp_decl_simple:       Ast_c.declaration printer
@@ -86,4 +94,12 @@ val debug_info_of_node:
   Ograph_extended.nodei -> Control_flow_c.cflow -> string
 
 val string_of_expression: Ast_c.expression -> string
+(** Normalized string representation of an [Ifdef] guard.
+ *
+ * Ignored #if conditions (cf. [Gnone]) are treated as 0, which is consistent
+ * with the way Coccinelle handles them.
+ *
+ * @author Iago Abal
+ *)
+val string_of_ifdef_guard: Ast_c.ifdef_guard -> string
 val string_of_toplevel: Ast_c.toplevel -> string

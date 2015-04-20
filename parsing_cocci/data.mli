@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -151,6 +151,14 @@ val add_pos_meta:
 val add_fmt_meta: (Ast_cocci.meta_name -> iconstraints -> unit) ref
 
 val add_fmtlist_meta: (Ast_cocci.meta_name -> Ast_cocci.list_len -> unit) ref
+
+val add_assignOp_meta: 
+    (Ast_cocci.meta_name ->
+      Ast0_cocci.assignOpconstraint -> Ast0_cocci.pure -> unit) ref
+
+val add_binaryOp_meta: 
+    (Ast_cocci.meta_name ->
+      Ast0_cocci.binaryOpconstraint -> Ast0_cocci.pure -> unit) ref
 
 val add_type_name: (string -> unit) ref
 

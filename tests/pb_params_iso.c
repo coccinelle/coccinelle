@@ -11,7 +11,6 @@ int f(bool a, int i) {
   i++;
 }
 
-
 int f(int i) {
   i++;
 }

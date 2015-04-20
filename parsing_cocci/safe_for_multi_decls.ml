@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -52,9 +52,10 @@ let all_removed =
     | Ast.CONTEXT(_,info) -> false in
   let recursor =
     V.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode
       do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing do_nothing do_nothing
+      do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_declaration
@@ -94,9 +95,10 @@ let contains_modif =
     | _ -> res in
   let recursor =
     V.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode
       do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing do_nothing
+      do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing init do_nothing do_nothing
       do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_fullType
@@ -124,9 +126,10 @@ let donothing r k e = k e
 
 let process =
   let fn = V.rebuilder
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing
       donothing donothing decl donothing donothing
       donothing donothing donothing donothing in
   List.map fn.V.rebuilder_top_level

@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -359,10 +359,11 @@ let elim_opt =
       | Ast.STARS(l) -> failwith "elimopt: not supported") in
 
   V.rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing stmtdotsfn donothing donothing donothing donothing
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode
+    donothing donothing stmtdotsfn donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
 
 (* --------------------------------------------------------------------- *)
 (* after management *)
@@ -473,9 +474,10 @@ let contains_modif =
     | _ -> res in
   let recursor =
     V.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode
       do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing do_nothing
+      do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing init do_nothing do_nothing
       do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_rule_elem
@@ -500,9 +502,10 @@ let contains_pos =
     | _ -> res in
   let recursor =
     V.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode
       do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing do_nothing do_nothing
+      do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_rule_elem
@@ -572,9 +575,10 @@ let count_nested_braces s =
   let donothing r k e = k e in
   let mcode r x = 0 in
   let recursor = V.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing
-      donothing donothing
+      donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing stmt_count donothing donothing donothing in
   let res = string_of_int (recursor.V.combiner_statement s) in
@@ -875,10 +879,20 @@ let preprocess_dots_e sl =
 (* --------------------------------------------------------------------- *)
 (* various return_related things *)
 
-let rec ends_in_return stmt_list =
+let rec ends_in_return_bis preok stmt_list =
   match Ast.unwrap stmt_list with
-    Ast.DOTS(x) ->
-      (match List.rev x with
+    Ast.DOTS(l) ->
+      let contains_dots l =
+	List.exists
+	  (function s ->
+	    (* doesn't do anything for dots in disj; not sure that makes
+	       sense *)
+	    match Ast.unwrap s with
+	      Ast.Nest _ | Ast.Dots _ | Ast.Circles _ | Ast.Stars _ -> true
+	    | _ -> false)
+	  l in
+      let preok = preok || contains_dots l in
+      (match List.rev l with
 	x::_ ->
 	  (match Ast.unwrap x with
 	    Ast.Atomic(x) ->
@@ -887,12 +901,14 @@ let rec ends_in_return stmt_list =
 		  Ast.Return(_,_) | Ast.ReturnExpr(_,_,_) -> true
 		| Ast.DisjRuleElem((_::_) as l) -> List.for_all loop l
 		| _ -> false in
-	      loop x
-	  | Ast.Disj(disjs) -> List.for_all ends_in_return disjs
+	      preok && loop x
+	  | Ast.Disj(disjs) -> List.for_all (ends_in_return_bis preok) disjs
 	  | _ -> false)
-      |	_ -> false)
+      | _ -> false)
   | Ast.CIRCLES(x) -> failwith "not supported"
   | Ast.STARS(x) -> failwith "not supported"
+	    
+let ends_in_return stmt_list = ends_in_return_bis false stmt_list
 
 (* --------------------------------------------------------------------- *)
 (* expressions *)
@@ -2568,9 +2584,10 @@ and drop_minuses stmt_dots =
   let donothing r k e = k e in
   let v =
     V.rebuilder
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing
-      donothing donothing
+      donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing in
   v.V.rebuilder_statement_dots stmt_dots

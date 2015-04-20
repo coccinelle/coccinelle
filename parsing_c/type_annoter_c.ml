@@ -952,12 +952,12 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
         k expr;
         Ast_c.get_type_expr e2
 
-    | Binary (e1, Logical _, e2) ->
+    | Binary (e1, ((Logical _),_), e2) ->
         k expr;
         make_info_def (type_of_s "int")
 
     (* todo: lub *)
-    | Binary (e1, Arith op, e2) ->
+    | Binary (e1, (Arith op, _), e2) ->
         k expr;
         Type_c.lub op (Type_c.get_opt_type e1) (Type_c.get_opt_type e2)
 
@@ -1386,8 +1386,8 @@ let annotate_test_expressions prog =
     let (ty,_) = !info in
     info := (ty,Test);
     match e_term with
-      Binary(e1,Logical(AndLog),e2)
-    | Binary(e1,Logical(OrLog),e2) -> propagate_test e1; propagate_test e2
+      Binary(e1,(Logical AndLog,_),e2)
+    | Binary(e1,(Logical OrLog,_),e2) -> propagate_test e1; propagate_test e2
     | Unary(e1,Not) -> propagate_test e1
     | ParenExpr(e) -> propagate_test e
     | FunCall(e,args) -> (* not very nice, but so painful otherwise *)
@@ -1404,8 +1404,8 @@ let annotate_test_expressions prog =
     Visitor_c.kexpr = (fun (k,bigf) expr ->
       (match unwrap_expr expr with
 	CondExpr(e,_,_) -> propagate_test e
-      |	Binary(e1,Logical(AndLog),e2)
-      | Binary(e1,Logical(OrLog),e2) -> propagate_test e1; propagate_test e2
+      |	Binary(e1,(Logical AndLog,_),e2)
+      | Binary(e1,(Logical OrLog,_),e2) -> propagate_test e1; propagate_test e2
       | Unary(e1,Not) -> propagate_test e1
       | _ -> ()
       );

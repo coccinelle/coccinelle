@@ -5,8 +5,8 @@ i2c_new_device(struct i2c_adapter *adap, struct i2c_board_info const *info)
 
 	client = kzalloc(sizeof *client, GFP_KERNEL);
 	if (!client) {
-	  client = NULL;
-	  return NULL;
+		client = NULL;
+		return NULL;
 	}
 
 	client->adapter = adap;

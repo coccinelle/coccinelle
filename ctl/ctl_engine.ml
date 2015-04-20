@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -232,20 +232,13 @@ let rec nubBy eq ls =
   | (x::xs) -> x::(nubBy eq xs)
 ;;
 
-let rec nub ls =
-  match ls with
-    [] -> []
-  | (x::xs) when (List.mem x xs) -> nub xs
-  | (x::xs) -> x::(nub xs)
-;;
-
 let state_compare (s1,_,_) (s2,_,_) = compare s1 s2
 
 let setifyBy eq xs = nubBy eq xs;;
 
-let setify xs = nub xs;;
+let setify xs = Common.nub xs;;
 
-let inner_setify xs = List.sort compare (nub xs);;
+let inner_setify xs = List.sort compare (Common.nub xs);;
 
 let unionBy compare eq xs = function
     [] -> xs
@@ -278,7 +271,7 @@ let rec fix eq f x =
 let setfix f x = (fix subseteq f x) (*if new is a subset of old, stop*)
 let setgfix f x = (fix supseteq f x) (*if new is a supset of old, stop*)
 
-let get_states l = nub (List.map (function (s,_,_) -> s) l)
+let get_states l = Common.nub (List.map (function (s,_,_) -> s) l)
 
 (* ********************************************************************** *)
 (* Module: CTL_ENGINE                                                     *)
@@ -1293,7 +1286,7 @@ let satAW dir ((grp,_,states) as m) s1 s2 reqst =
 	 out of the loop. s1 is like a guard. To see the problem, consider
 	 an example where both s1 and s2 match some code after the loop.
 	 we only want the witness from s2. *)
-      setgfix f (triples_union (nub(drop_wits s1)) s2)
+      setgfix f (triples_union (Common.nub(drop_wits s1)) s2)
 ;;
 
 let satAF dir m s reqst =
@@ -1509,7 +1502,7 @@ let drop_required v required =
 
 (* no idea how to write this function ... *)
 let memo_label =
-  (Hashtbl.create(50) : (P.t, (G.node * substitution) list) Hashtbl.t)
+  (Hashtbl.create(101) : (P.t, (G.node * substitution) list) Hashtbl.t)
 
 let satLabel label required p =
     let triples =
@@ -2415,30 +2408,22 @@ let print_bench _ =
 (* ---------------------------------------------------------------------- *)
 (* preprocessing: ignore irrelevant functions *)
 
-let preprocess (cfg,_,_) label = function
+let preprocess (cfg,label,preproc,_) = function
     [] -> true (* no information, try everything *)
   | l ->
       let sz = G.size cfg in
       let verbose_output pred = function
-	  [] ->
+	  false ->
 	    Printf.printf "did not find:\n";
 	    P.print_predicate pred; Format.print_newline()
-	| _ ->
+	| true ->
 	    Printf.printf "found:\n";
 	    P.print_predicate pred; Format.print_newline();
 	    Printf.printf "but it was not enough\n" in
       let get_any verbose x =
-	let res =
-	  try Hashtbl.find memo_label x
-	  with
-	    Not_found ->
-	      (let triples = label x in
-	      let filtered =
-		List.map (function (st,th,_) -> (st,th)) triples in
-	      Hashtbl.add memo_label x filtered;
-	      filtered) in
-	if verbose then verbose_output x res;
-	not([] = res) in
+	let res = preproc x in
+	(if verbose then verbose_output x res);
+	res in
       let get_all l =
 	(* don't bother testing when there are more patterns than nodes *)
 	if List.length l > sz-2
@@ -2475,9 +2460,9 @@ let sat m phi reqopt =
     | Some x -> step_count := x);
     Hashtbl.clear reachable_table;
     Hashtbl.clear memo_label;
-    let (x,label,states) = m in
-    if (!Flag_ctl.bench > 0) || (preprocess m label reqopt)
-    then
+    let (x,label,preproc,states) = m in
+    if (!Flag_ctl.bench > 0) || preprocess m reqopt
+    then    
       ((* to drop when Yoann initialized this flag *)
       if List.exists (G.extract_is_loop x) states
       then Flag_ctl.loop_in_src_code := true;

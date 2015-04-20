@@ -1,5 +1,5 @@
 (*
- * Copyright 2012-2014, INRIA
+ * Copyright 2012-2015, Inria
  * Julia Lawall, Gilles Muller
  * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
@@ -26,7 +26,7 @@
 
 # 0 "./index.ml"
 (* create an index for each constructor *)
-(* current max is 170 *)
+(* current max is 185 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -125,6 +125,16 @@ let expression e =
   | Ast0.OptExp(exp) -> [41]
   | Ast0.UniqueExp(exp) -> [42]
   | Ast0.AsExpr _ -> failwith "not possible"
+
+let assignOp op = match Ast0.unwrap op with
+  | Ast0.SimpleAssign _ -> [180]
+  | Ast0.OpAssign _ -> [181]
+  | Ast0.MetaAssign(_,_,_) -> [182]
+
+let binaryOp op = match Ast0.unwrap op with
+  | Ast0.Arith _ -> [183]
+  | Ast0.Logical _ -> [184]
+  | Ast0.MetaBinary(_,_,_) -> [185]
 
 let typeC t =
   match Ast0.unwrap t with
