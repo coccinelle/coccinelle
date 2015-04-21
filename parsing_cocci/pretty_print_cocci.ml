@@ -295,7 +295,7 @@ and string_format e =
     Ast.ConstantFormat(str) -> mcode print_string str
   | Ast.MetaFormat(name,_,_,_) -> mcode print_meta name
 
-and  unaryOp = function
+and unaryOp = function
     Ast.GetRef -> print_string "&"
   | Ast.GetRefLabel -> print_string "&&"
   | Ast.DeRef -> print_string "*"
@@ -304,20 +304,22 @@ and  unaryOp = function
   | Ast.Tilde -> print_string "~"
   | Ast.Not -> print_string "!"
 
-and  assignOp op = match Ast.unwrap op with
+and assignOp op =
+  match Ast.unwrap op with
     Ast.SimpleAssign _ -> print_string "="
   | Ast.OpAssign(aop) -> arithOp (Ast.unwrap_mcode aop); print_string "="
   | Ast.MetaAssign(metavar,_,_,_) -> mcode print_meta metavar
                                                    
-and  simpleAssignOp op = print_string "="
+and simpleAssignOp op = print_string "="
 
-and  opAssignOp aop = arithOp aop; print_string "=" 
+and opAssignOp aop = arithOp aop; print_string "=" 
 
-and  fixOp = function
+and fixOp = function
     Ast.Dec -> print_string "--"
   | Ast.Inc -> print_string "++"
 
-and  binaryOp op = match Ast.unwrap op with
+and binaryOp op =
+  match Ast.unwrap op with
     Ast.Arith(aop) -> arithOp (Ast.unwrap_mcode aop)
   | Ast.Logical(lop) -> logicalOp (Ast.unwrap_mcode lop)
   | Ast.MetaBinary(metavar,_,_,_) -> mcode print_meta metavar

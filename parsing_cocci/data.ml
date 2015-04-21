@@ -173,6 +173,16 @@ let add_fmtlist_meta:
     (Ast.meta_name -> Ast.list_len -> unit) ref =
   ref uninitialized_add_meta
 
+let add_assignOp_meta:
+    (Ast.meta_name ->
+      Ast0.assignOpconstraint -> Ast0.pure -> unit) ref =
+  ref uninitialized_add_meta
+
+let add_binaryOp_meta:
+    (Ast.meta_name ->
+      Ast0.binaryOpconstraint -> Ast0.pure -> unit) ref =
+  ref uninitialized_add_meta
+
 let add_type_name: (string -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_type")
 

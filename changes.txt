@@ -24,6 +24,7 @@
 
 * 1.0.0
 ** Language:
+- Add metavariables for matcing assignment and binary operators.
 - Add ...... to match ... in C function declarations and definitions.
 - Addition of initializer list metavariables.  Thanks to Michael Stefaniuc
   for noticing the need for them.
@@ -184,6 +185,7 @@
 - Add prototypes implicit isomorphism to allow disabling generation of
   rules based on changes in function prototypes.
 - Support dynamic parallelism via the Parmap library.
+- Allow disjunction in struct or enum name.  Problem noticed by Daniel Granat.
 - --test-spacing option for regression testing of format issues
 
 ** Bugfix:

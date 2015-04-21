@@ -1,6 +1,6 @@
 int main(int x) {
   f();
-  foo(); 
+  foo();
   if (1) {
     replace();
   }

@@ -173,15 +173,23 @@ and string_format = base_string_format wrap
 and  base_assignOp = 
     SimpleAssign of simpleAssignOp mcode
   | OpAssign of Ast_cocci.arithOp mcode
-  | MetaAssign of Ast_cocci.meta_name mcode * Ast_cocci.assignOpconstraint * pure
+  | MetaAssign of Ast_cocci.meta_name mcode * assignOpconstraint * pure
 and simpleAssignOp = string
 and assignOp = base_assignOp wrap
 
 and  base_binaryOp =
     Arith of Ast_cocci.arithOp mcode
   | Logical of Ast_cocci.logicalOp mcode
-  | MetaBinary of Ast_cocci.meta_name mcode * Ast_cocci.binaryOpconstraint * pure
+  | MetaBinary of Ast_cocci.meta_name mcode * binaryOpconstraint * pure
 and binaryOp = base_binaryOp wrap
+and assignOpconstraint =
+    AssignOpNoConstraint
+  | AssignOpInSet of assignOp list
+
+and binaryOpconstraint =
+    BinaryOpNoConstraint
+  | BinaryOpInSet of binaryOp list
+
 
 (* --------------------------------------------------------------------- *)
 (* Types *)
@@ -601,7 +609,7 @@ val get_rule_name : parsed_rule -> string
 
 val meta_pos_name : anything -> Ast_cocci.meta_name mcode
 
-val ast0_type_to_type : typeC -> Type_cocci.typeC
+val ast0_type_to_type : bool -> typeC -> Type_cocci.typeC
 val reverse_type : Type_cocci.typeC -> base_typeC
 exception TyConv
 

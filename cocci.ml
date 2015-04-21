@@ -1318,7 +1318,7 @@ module MyHashtbl = Hashtbl.Make(MyHashedType)
 
 let max_tbl = ref 1001
 let env_tbl = MyHashtbl.create !max_tbl
-let init_env _ = env_tbl
+let init_env _ = MyHashtbl.clear env_tbl; env_tbl
 let init_env_list _ = []
 
 let update_env env v i =
@@ -1594,9 +1594,14 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
       List.fold_left
 	(function (cache,newes) ->
 	  function ((e,rules_that_have_matched),relevant_bindings) ->
+	    (* choices come from a disjunction, but if the pattern is
+	       <... ...> there may be nothing at all, hence the first case *)
 	    let consistent =
-	      List.exists (consistent_positions relevant_bindings)
-		(snd r.ctl) in
+	      match snd r.ctl with
+		[] -> true
+	      | reqopts ->
+		  List.exists (consistent_positions relevant_bindings)
+		    reqopts in
 	    if not consistent
 	    then
 	      (cache,

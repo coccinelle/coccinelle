@@ -232,7 +232,7 @@ and reconstraint =
 
 and assignOpconstraint =
     AssignOpNoConstraint
-  | AssignOpInSet of arithOp list
+  | AssignOpInSet of assignOp list
 
 and binaryOpconstraint =
     BinaryOpNoConstraint
@@ -263,22 +263,25 @@ and base_string_format =
 
 and string_format = base_string_format wrap
 
-and  unaryOp = GetRef | GetRefLabel | DeRef | UnPlus |  UnMinus | Tilde | Not
-and  base_assignOp =
+and unaryOp = GetRef | GetRefLabel | DeRef | UnPlus |  UnMinus | Tilde | Not
+and base_assignOp =
     SimpleAssign of simpleAssignOp mcode
   | OpAssign of arithOp mcode
-  | MetaAssign of meta_name mcode * assignOpconstraint * keep_binding * inherited
-and  simpleAssignOp = string
-and  assignOp = base_assignOp wrap
-and  fixOp = Dec | Inc
+  | MetaAssign of
+      meta_name mcode * assignOpconstraint * keep_binding * inherited
+and simpleAssignOp = string
+and assignOp = base_assignOp wrap
+and fixOp = Dec | Inc
 
-and  base_binaryOp =
+and base_binaryOp =
     Arith of arithOp mcode
   | Logical of logicalOp mcode
-  | MetaBinary of meta_name mcode * binaryOpconstraint * keep_binding * inherited
+  | MetaBinary of
+      meta_name mcode * binaryOpconstraint * keep_binding * inherited
 and binaryOp = base_binaryOp wrap
-and  arithOp =
-    Plus | Minus | Mul | Div | Mod | DecLeft | DecRight | And | Or | Xor | Min | Max
+and arithOp =
+    Plus | Minus | Mul | Div | Mod | DecLeft | DecRight | And | Or | Xor
+  | Min | Max
 and  logicalOp = Inf | Sup | InfEq | SupEq | Eq | NotEq | AndLog | OrLog
 
 and constant =
@@ -929,8 +932,8 @@ let string_of_arithOp = function
   | And -> "&"
   | Or -> "|"
   | Xor -> "^"
-  | Min -> "min"
-  | Max -> "max"
+  | Min -> "<?"
+  | Max -> ">?"
 
 let string_of_logicalOp = function
   | Eq -> "=="

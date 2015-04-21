@@ -11,7 +11,6 @@ void init_IRQ(void)
 		uselessCall();
 	}
 }
-
 #ifdef CONFIG_NKERNEL
 #ifndef TIMER_32K_SYNCHRONIZED
 #define TIMER_32K_SYNCHRONIZED 0xffffffff

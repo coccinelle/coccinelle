@@ -180,20 +180,25 @@ and string_format = base_string_format wrap
 
 (* --------------------------------------------------------------------- *)
 (* First class operators *)
-and  base_assignOp = 
+and base_assignOp = 
     SimpleAssign of simpleAssignOp mcode
   | OpAssign of Ast_cocci.arithOp mcode
-  | MetaAssign of Ast_cocci.meta_name mcode * Ast_cocci.assignOpconstraint * pure
+  | MetaAssign of Ast_cocci.meta_name mcode * assignOpconstraint * pure
 and simpleAssignOp = string
 and assignOp = base_assignOp wrap
 
-and  base_binaryOp =
+and base_binaryOp =
     Arith of Ast_cocci.arithOp mcode
   | Logical of Ast_cocci.logicalOp mcode
-  | MetaBinary of Ast_cocci.meta_name mcode * Ast_cocci.binaryOpconstraint * pure
+  | MetaBinary of Ast_cocci.meta_name mcode * binaryOpconstraint * pure
 and binaryOp = base_binaryOp wrap
+and assignOpconstraint =
+    AssignOpNoConstraint
+  | AssignOpInSet of assignOp list
 
-
+and binaryOpconstraint =
+    BinaryOpNoConstraint
+  | BinaryOpInSet of binaryOp list
 
 (* --------------------------------------------------------------------- *)
 (* Types *)
@@ -693,20 +698,20 @@ let undots d =
 
 (* --------------------------------------------------------------------- *)
 
-let rec ast0_type_to_type ty =
+let rec ast0_type_to_type inmeta ty =
   match unwrap ty with
-    ConstVol(cv,ty) -> TC.ConstVol(const_vol cv,ast0_type_to_type ty)
+    ConstVol(cv,ty) -> TC.ConstVol(const_vol cv,ast0_type_to_type inmeta ty)
   | BaseType(bty,strings) ->
       TC.BaseType(baseType bty)
   | Signed(sgn,None) ->
       TC.SignedT(sign sgn,None)
   | Signed(sgn,Some ty) ->
-      let bty = ast0_type_to_type ty in
+      let bty = ast0_type_to_type inmeta ty in
       TC.SignedT(sign sgn,Some bty)
-  | Pointer(ty,_) -> TC.Pointer(ast0_type_to_type ty)
+  | Pointer(ty,_) -> TC.Pointer(ast0_type_to_type inmeta ty)
   | FunctionPointer(ty,_,_,_,_,params,_) ->
-      TC.FunctionPointer(ast0_type_to_type ty)
-  | Array(ety,_,_,_) -> TC.Array(ast0_type_to_type ety)
+      TC.FunctionPointer(ast0_type_to_type inmeta ty)
+  | Array(ety,_,_,_) -> TC.Array(ast0_type_to_type inmeta ety)
   | Decimal(_, _, e1, _, e2, _) ->
       let e2tc e =
 	match unwrap e with
@@ -730,33 +735,35 @@ let rec ast0_type_to_type ty =
       (match unwrap tag with
 	Id(tag) ->
 	  TC.EnumName(TC.Name(unwrap_mcode tag))
-      | MetaId(tag,_,_,_) ->
-	  (Common.pr2_once
-	     "warning: enum with a metavariable name detected.";
-	   Common.pr2_once
-	     "For type checking assuming the name of the metavariable is the name of the type\n";
-	   TC.EnumName(TC.MV(unwrap_mcode tag,TC.Unitary,false)))
-      | _ -> failwith "unexpected enum type name")
+      | MetaId(tag,Ast.IdNoConstraint,_,_) when inmeta ->
+	  TC.EnumName(TC.MV(unwrap_mcode tag,TC.Unitary,false))
+      | MetaId(tag,_,_,_) when inmeta ->
+	  (* would have to duplicate the type in type_cocci.ml?
+	     perhaps polymorphism would help? *)
+	  failwith "constraints not supported on enum type name"
+      | _ ->
+	  (* can't arise for metavariables and doesn't matter for type
+	     checking *)
+	  TC.EnumName(TC.NoName))
   | EnumName(su,None) -> TC.EnumName TC.NoName
-  | EnumDef(ty,_,_,_) -> ast0_type_to_type ty
+  | EnumDef(ty,_,_,_) -> ast0_type_to_type inmeta ty
   | StructUnionName(su,Some tag) ->
       (match unwrap tag with
 	Id(tag) ->
 	  TC.StructUnionName(structUnion su,TC.Name(unwrap_mcode tag))
-      | MetaId(tag,Ast.IdNoConstraint,_,_) ->
-	  (Common.pr2_once
-	     "warning: struct/union with a metavariable name detected.";
-	   Common.pr2_once
-	     "For type checking assuming the name of the metavariable is the name of the type\n";
-	   TC.StructUnionName(structUnion su,
-			      TC.MV(unwrap_mcode tag,TC.Unitary,false)))
-      | MetaId(tag,_,_,_) ->
+      | MetaId(tag,Ast.IdNoConstraint,_,_) when inmeta ->
+	  TC.StructUnionName(structUnion su,
+			     TC.MV(unwrap_mcode tag,TC.Unitary,false))
+      | MetaId(tag,_,_,_) when inmeta ->
 	  (* would have to duplicate the type in type_cocci.ml?
 	     perhaps polymorphism would help? *)
 	  failwith "constraints not supported on struct type name"
-      | _ -> failwith "unexpected struct/union type name")
+      | _ ->
+	  (* can't arise for metavariables and doesn't matter for type
+	     checking *)
+	  TC.StructUnionName(structUnion su,TC.NoName))
   | StructUnionName(su,None) -> TC.StructUnionName(structUnion su,TC.NoName)
-  | StructUnionDef(ty,_,_,_) -> ast0_type_to_type ty
+  | StructUnionDef(ty,_,_,_) -> ast0_type_to_type inmeta ty
   | TypeName(name) -> TC.TypeName(unwrap_mcode name)
   | MetaType(name,_) ->
       TC.MetaType(unwrap_mcode name,TC.Unitary,false)
@@ -766,7 +773,7 @@ let rec ast0_type_to_type ty =
 	"disjtype not supported in smpl type inference, assuming unknown";
       TC.Unknown
   | OptType(ty) | UniqueType(ty) ->
-      ast0_type_to_type ty
+      ast0_type_to_type inmeta ty
 
 and baseType = function
     Ast.VoidType -> TC.VoidType

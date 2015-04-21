@@ -216,7 +216,7 @@ and reconstraint =
 
 and assignOpconstraint =
     AssignOpNoConstraint
-  | AssignOpInSet of arithOp list
+  | AssignOpInSet of assignOp list
 
 and binaryOpconstraint =
     BinaryOpNoConstraint

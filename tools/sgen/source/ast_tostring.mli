@@ -15,7 +15,7 @@ val fix_tostring : Ast_cocci.fixOp -> string
 val arith_tostring : Ast_cocci.arithOp -> string
 val logic_tostring : Ast_cocci.logicalOp -> string
 val unary_tostring : Ast_cocci.unaryOp -> string
-val binary_tostring : Ast_cocci.binaryOp -> string
 val assign_tostring : Ast_cocci.assignOp -> string
+val  binary_tostring : Ast_cocci.binaryOp -> string
 val type_tostring : Ast_cocci.baseType -> string
 val whenmodifier_tostring : Ast_cocci.when_modifier -> string

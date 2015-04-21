@@ -148,6 +148,18 @@ let id_constraint ~rn =
   | Ast.IdNegIdSet(slist,mnlist) -> list_constraints' slist mnlist " != "
   | Ast.IdRegExpConstraint(re) -> regex_constraint re
 
+let id_constraint ~rn =
+  let list_constraints' slist mnlist op =
+    let combined =
+      (List.map (fun x -> "\"" ^ x ^ "\"") slist) @
+      (List.map (name_str ~rn) mnlist) in
+    list_constraints ~tostring_fn:(fun x -> x) ~op combined in
+  function
+  | Ast.IdNoConstraint -> ""
+  | Ast.IdPosIdSet(slist,mnlist) -> list_constraints' slist mnlist " = "
+  | Ast.IdNegIdSet(slist,mnlist) -> list_constraints' slist mnlist " != "
+  | Ast.IdRegExpConstraint(re) -> regex_constraint re
+
 let constraints ~rn = function
     Ast0.NoConstraint -> ""
   | Ast0.NotIdCstrt recstr -> regex_constraint recstr
@@ -173,14 +185,14 @@ let constraints ~rn = function
       list_constraints ~tostring_fn:(name_str ~rn) ~op:" <= " mns
 
 let assign_constraints = function
-  | Ast.AssignOpNoConstraint -> ""
-  | Ast.AssignOpInSet l ->
-      list_constraints ~tostring_fn:S.arith_tostring ~op:" = " l
+  | Ast0.AssignOpNoConstraint -> ""
+  | Ast0.AssignOpInSet l ->
+      list_constraints ~tostring_fn:Ast0.string_of_assignOp ~op:" = " l
 
 let binary_constraints = function
-  | Ast.BinaryOpNoConstraint -> ""
-  | Ast.BinaryOpInSet l ->
-      list_constraints ~tostring_fn:S.binary_tostring ~op:" = " l
+  | Ast0.BinaryOpNoConstraint -> ""
+  | Ast0.BinaryOpInSet l ->
+      list_constraints ~tostring_fn:Ast0.string_of_binaryOp ~op:" = " l
 
 let list_len ~rn = function
   | Ast0.AnyListLen -> " "
@@ -397,20 +409,6 @@ let metavar_combiner rn =
     | Ast0.AsExpr (e1, e2) -> as_format e1 e2 exprfn exprfn
     | _ -> fn v in
 
-  let tyfn c fn v =
-    match Ast0.unwrap v with
-    | Ast0.MetaType (mc, pure) -> meta_mc_format ~mc ~typ:"type " ~constr:""
-    | Ast0.AsType (tc1, tc2) ->
-        let ty = c.VT0.combiner_rec_typeC in as_format tc1 tc2 ty ty
-
-    (* this clause generates unparsable scripts for who knows what reason ...
-     * TODO: need to find out if it should be included or not. For now, ignore.
-     *)
-    | Ast0.TypeName mc ->
-        let _ = str_mc_format ~mc ~typ:"typedef " in
-        fn v
-    | _ -> fn v in
-
   let assignOpfn c fn v =
     match Ast0.unwrap v with
     | Ast0.MetaAssign (mc, constr, pure) ->
@@ -423,6 +421,20 @@ let metavar_combiner rn =
     | Ast0.MetaBinary (mc, constr, pure) ->
         let constr  = binary_constraints constr in
         meta_mc_format ~mc ~typ:"binary operator " ~constr
+    | _ -> fn v in
+
+  let tyfn c fn v =
+    match Ast0.unwrap v with
+    | Ast0.MetaType (mc, pure) -> meta_mc_format ~mc ~typ:"type " ~constr:""
+    | Ast0.AsType (tc1, tc2) ->
+        let ty = c.VT0.combiner_rec_typeC in as_format tc1 tc2 ty ty
+
+    (* this clause generates unparsable scripts for who knows what reason ...
+     * TODO: need to find out if it should be included or not. For now, ignore.
+     *)
+    | Ast0.TypeName mc ->
+        let _ = str_mc_format ~mc ~typ:"typedef " in
+        fn v
     | _ -> fn v in
 
   let initfn c fn v =

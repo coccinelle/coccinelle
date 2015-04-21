@@ -474,6 +474,14 @@ let init _ =
 	    (Printf.sprintf "%d: positions only allowed in minus code" ln));
 	TMetaPos(name,constraints,any,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
+  Data.add_assignOp_meta :=
+    (fun name constraints pure ->
+      let fn clt = TMetaAssignOp (name, constraints, pure, clt) in
+      Hashtbl.replace metavariables (get_name name) fn);
+  Data.add_binaryOp_meta :=
+    (fun name constraints pure ->
+      let fn clt = TMetaBinaryOp (name, constraints, pure, clt) in
+      Hashtbl.replace metavariables (get_name name) fn);
   Data.add_type_name :=
     (function name ->
       let fn clt = TTypeId(name,clt) in
