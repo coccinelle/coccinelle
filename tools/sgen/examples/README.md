@@ -13,3 +13,9 @@ Each example has four corresponding files:
 
     	spatch --sp-file name\_.cocci name.c -D report --no-show-diff
 
+Examples:  
+
+ - addvoid: minimal patch example
+ - context: context example (all others are patches)
+ - disj: example of using sgen on a rule with pattern-matching disjunctions
+ - inherited: example of metavariable inheritance and usage for printing modes

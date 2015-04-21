@@ -20,7 +20,7 @@ and metadata about the script through the commandline in interactive mode or a c
 
 	// Generated config from interactive mode.
 	description = Adds void to function headers with no arguments.
-	limitations = If a matched function has a prototype declaration, the script will not match the prototype.|Another limitation can be specified with a pipe as a delimiter.
+	limitations = If a matched function has a prototype declaration, the script will not match the prototype.
 	confidence = High
 	options = --recursive-includes
 	url = http://coccinelle.lip6.fr
@@ -104,7 +104,7 @@ Coccinelle source code (if not, change the COCCIDIR path in the makefile).
     to install the program.
 3.  Test the program e.g. with
 
-    	sgen examples/tiny.cocci
+    	sgen examples/addvoid.cocci
 
     or
 
@@ -148,7 +148,8 @@ Contents
 The home directory contains this file, a Makefile, and the directories
 mentioned below.  
 The documentation directory contains the documentation tex files.  
-The source directory contains the OCaml source code for sgen.  
-The scripts directory contains the script used for installation.  
 The examples directory contains examples of Coccinelle scripts and
-corresponding sgen config files as well as C files to test on.
+corresponding sgen config files as well as C files to test on.  
+The scripts directory contains the script used for installation.  
+The source directory contains the OCaml source code for sgen.  
+The tests directory contains test files.
