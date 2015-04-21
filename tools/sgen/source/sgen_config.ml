@@ -80,8 +80,11 @@ let add_rules rule_exists rule_list t =
 (* expanded constructor for User_input.t *)
 let make desc limit keys conf comments options authors url =
   let t =
-    try UI.make ~description:desc ~confidence:(UI.Confidence.from_string conf)
-    with Failure msg -> failwith ("Config error: " ^ msg) in
+    try
+      UI.make ~description:desc ~confidence:(UI.Confidence.from_string conf)
+    with UI.Confidence.Not_confidence s ->
+      failwith
+        ("Config error: Confidence must be low, moderate, or high, not "^s) in
   let t = UI.set_limits limit t in
   let t = UI.set_keys keys t in
   let t = UI.set_comments comments t in

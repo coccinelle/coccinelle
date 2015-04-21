@@ -139,7 +139,7 @@ let star_dotsstmtfn ~context_mode combiner stmtdots =
    * NOTE: uses only minus rule, so does not detect plus slices. This is
    * exactly what we want to happen as plus slices are not in generated rule!
    *)
-  let detect_patch = Detect_patch.detect_statement_dots stmtdots in
+  let detect_patch = Detect_patch.make_statement_dots stmtdots in
   let has_minuses = Detect_patch.is_patch detect_patch in
   let c = combiner ~context_mode:(context_mode || has_minuses) in
   let stmtfn = c.VT0.combiner_rec_statement in

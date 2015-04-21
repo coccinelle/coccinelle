@@ -47,9 +47,13 @@ let mcode = function
  *)
 let handle_disj lp rp pipelist clist cfn =
   let index = Ast0.get_mcode_line lp in
+
   let disj_patches (is_patch, acc_list, acc_map) case =
     let (case_is_p, case_map) = cfn case in
-    (is_patch || case_is_p, case_is_p :: acc_list, merge case_map acc_map) in
+    let p = is_patch || case_is_p in
+    let dp = case_is_p :: acc_list in
+    let dps = merge case_map acc_map in
+    (p, dp, dps) in
 
   (* contains_patch is a bool denoting whether the whole disj contains a patch
    * disj_patch is a list of bools, each bool representing a disj case
@@ -148,11 +152,10 @@ let patch_combiner =
 (* ------------------------------------------------------------------------- *)
 (* ENTRY POINT *)
 
-(* true if contains */+/-, disjunction map *)
+(* (true if contains */+/-, disjunction map) *)
 type t = bool * bool list Common.IntMap.t
 
-(* constructs t from rule *)
-let detect = function
+let make = function
   | Ast0.InitialScriptRule _
   | Ast0.FinalScriptRule _
   | Ast0.ScriptRule _ -> (false, IntMap.empty)
@@ -165,8 +168,7 @@ let detect = function
       let (m1,m2) = rule minus in
       (p1 || m1, merge p2 m2)
 
-(* constructs t from statement dots (ie. subset of a full rule) *)
-let detect_statement_dots s = patch_combiner.VT0.combiner_rec_statement_dots s
+let make_statement_dots s = patch_combiner.VT0.combiner_rec_statement_dots s
 
 let is_patch (t,_) = t
 
@@ -174,13 +176,13 @@ let get_disj_patch index (_,t) =
   try
     IntMap.find index t
   with Not_found ->
-   failwith ("detect_patch: Could not find disjunction starting on line " ^
-     (string_of_int index))
+    let i = string_of_int index in
+    failwith ("detect_patch: Could not find disjunction starting on line " ^ i)
 
 let filter_patch_rules =
   let rec get fn = function
     | x::xs ->
-        let ((is_patch, disj_map) as dp) = detect x in
+        let ((is_patch, disj_map) as dp) = make x in
         if is_patch
         then get (fun a -> fn ((x, dp)::a)) xs
         else get fn xs

@@ -75,6 +75,8 @@ let make_metavars =
 module Confidence = struct
   type t =  Low | Moderate | High
 
+  exception Not_confidence of string
+
   let to_string =
     function Low -> "Low" | Moderate -> "Moderate" | High -> "High"
 
@@ -83,7 +85,7 @@ module Confidence = struct
     | "low" | "l" -> Low
     | "moderate" | "m" -> Moderate
     | "high" | "h" -> High
-    | s -> failwith ("Confidence must be low, moderate, or high, not " ^ s)
+    | s -> raise (Not_confidence s)
 end
 
 
@@ -189,7 +191,7 @@ let get_preface
   } =
 
   let author_format =
-    let year = string_of_int (Globals.get_current_year()) in
+    let year = string_of_int (Common.this_year()) in
     Globals.pre_split ~prefix:("// Copyright: (C) "^year^" ") in
   let desc = Globals.pre_split ~prefix:"/// " d in
   let limits =

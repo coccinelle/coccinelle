@@ -1196,7 +1196,7 @@ let (+!>) refo f = refo := f !refo
 
 let ($)     f g x = g (f x)
 let compose f g x = f (g x)
-(* dont work :( let ( ° ) f g x = f(g(x)) *)
+(* dont work :( let ( \B0 ) f g x = f(g(x)) *)
 
 (* trick to have something similar to the   1 `max` 4   haskell infix notation.
    by Keisuke Nakano on the caml mailing list.
@@ -3049,7 +3049,9 @@ let month_before  : float_time -> float_time = fun d ->
 let week_after  : float_time -> float_time = fun d ->
   (d +. (7.0 *. day_secs))
 
-
+let this_year() =
+  let time = Unix.gmtime (Unix.time()) in
+  time.Unix.tm_year + 1900
 
 (*****************************************************************************)
 (* Lines/words/strings *)

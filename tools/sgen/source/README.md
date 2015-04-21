@@ -48,7 +48,7 @@ Workflow
      - generate metapositions at structurally suitable places in the rule, used for *org* and *report* printing modes (position\_generator.ml).  
        If the original rule was a plus rule (ie. no \*/-, only +), the positions dictate where the new \*'s are placed. Otherwise, the original \*/- dictate where the new \*'s are placed.
 
-     - special disjunction cases that arise in converting a *patch* rule to a *context* rule are handled as well (disjunction\_generator.ml).
+     - special disjunction cases that arise in converting a *patch* rule to a *context* rule are handled as well (disj\_generator.ml).
 
  3. Generate the header of the new rule with inserted dependencies and metapositions (rule\_header.ml).
 

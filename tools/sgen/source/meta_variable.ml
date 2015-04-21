@@ -15,7 +15,7 @@ module S = Ast_tostring
  * and position free.p1!=loop.ok is ("position", ("free", "p1"), "!=loop.ok")
  *
  * NOTE: inherit_rule is only for inherited rules, ie. akin to "rulename.mv".
- * If the metavariable is in local scope, it will be "".
+ * If the metavariable is in local scope, inherit_rule will be "".
  *
  * Named arguments in here:
  *  - rn is the rulename (string)
@@ -487,7 +487,8 @@ let metavar_combiner rn =
         | Ast0.MetaFormat(mc, idconstr) ->
             let constr = id_constraint rn idconstr in
             meta_mc_format ~mc ~typ:"format " ~constr
-        | _ -> fn v)
+        | _ -> fn v
+       )
     | _ -> fn v in
 
   let stmtfn c fn v =
@@ -499,8 +500,6 @@ let metavar_combiner rn =
     | Ast0.AsStmt (s1, s2)->
         let stmt = c.VT0.combiner_rec_statement in as_format s1 s2 stmt stmt
     | Ast0.Iterator (id, _, expdots, _, stmt,_) ->
-
-        (* the iterator might contain metavariables *)
         let expids = c.VT0.combiner_rec_expression_dots expdots in
         let stmtid = MVSet.union expids (c.VT0.combiner_rec_statement stmt) in
         let iteids = ids ~rn ~typ:"iterator" ~id in
@@ -558,7 +557,7 @@ let print_list out ~do_group mvs =
  * That is, metavariables declared in the header, but unused in the body, are
  * discarded. Returns list of meta_variable.t's.
  *)
-let unparse ~minus_rule ~rule_name =
+let extract ~minus_rule ~rule_name =
   let mvcomb = metavar_combiner rule_name in
   let minus = List.map mvcomb.VT0.combiner_rec_top_level minus_rule in
   let comb = List.fold_left MVSet.union MVSet.empty minus in

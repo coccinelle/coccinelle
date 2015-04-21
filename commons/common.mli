@@ -1039,6 +1039,8 @@ val min_dmy : date_dmy -> date_dmy -> date_dmy
 val maximum_dmy : date_dmy list -> date_dmy
 val minimum_dmy : date_dmy list -> date_dmy
 
+val this_year : unit -> int
+
 (*****************************************************************************)
 (* Lines/Words/Strings *)
 (*****************************************************************************)

@@ -73,8 +73,9 @@ let rec get_description() =
 let rec get_confidence() =
   print_string ("\nSpecify a confidence level for the script (required):\n" ^
     "Options: l(ow), m(oderate), h(igh).\n");
-  try UI.Confidence.from_string (get_input())
-  with Failure _ ->
+  try
+    UI.Confidence.from_string (get_input())
+  with UI.Confidence.Not_confidence _ ->
     (print_error "Error: Ill-formed confidence level!"; get_confidence())
 
 let get_limitations t =

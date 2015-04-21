@@ -31,11 +31,6 @@ val declaration_pos :
   Snapshot.t ->
   (Ast0_cocci.declaration * Snapshot.t) option
 
-val forinfo_pos :
-  Ast0_cocci.forinfo ->
-  Snapshot.t ->
-  (Ast0_cocci.forinfo * Snapshot.t) option
-
 val statement_pos :
   Ast0_cocci.statement ->
   Snapshot.t ->
