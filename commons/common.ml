@@ -5903,7 +5903,7 @@ let clone_scoped_h_env x =
     scoped_list = x.scoped_list;
   }
 
-let rec lookup_h_env k env =
+let lookup_h_env k env =
   Hashtbl.find env.scoped_h k
 
 let member_h_env_key k env =
@@ -5939,12 +5939,6 @@ let do_in_new_scope_h scoped_env f =
     del_scope_h scoped_env;
     res
   end
-
-(*
-let add_in_scope scoped_env def =
-  let (current, older) = uncons !scoped_env in
-  scoped_env := (def::current)::older
-*)
 
 let add_in_scope_h x (k,v) =
   begin
