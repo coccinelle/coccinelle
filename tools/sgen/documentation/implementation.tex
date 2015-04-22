@@ -17,8 +17,8 @@ in some function sequence. Then "debug message" will appear in the exact same pl
   \item Most importantly, the generally small size of Coccinelle scripts means that performance is not actually a problem in practice.
   \end{itemize}
 \item sgen needs its own flag in the Coccinelle parser: \texttt{Flag\_parsing\_cocci.generating\_mode}. This ensures that dependencies are not optimised away in the parser, as we need that information for printing the rules properly. It cannot be substituted for the \texttt{ignore\_patch\_or\_match} option, because that option also affects other parts of the parser.
+\item Regression tests: run sgen with flag \texttt{-{}-test <path\_to\_test\_dir} to run the tests. They should be run once before changing anything in the code. The tests test diff equality with expected files (ie. a bit too strict) and that generated files are parsable.
 \end{itemize}
-
 %Some notes for later:
 %\begin{itemize}
 %\item Workflow graph (based on the workflow described in the source/README.md file
