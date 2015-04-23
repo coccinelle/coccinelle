@@ -493,7 +493,6 @@ val exn_to_s : exn -> string
 (* alias *)
 val string_of_exn : exn -> string
 
-type error = Error of string
 
 type evotype = unit
 val evoval : evotype

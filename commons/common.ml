@@ -1438,8 +1438,6 @@ let (|||) a b = try a with _ -> b
  * let finalize f cleanup =  ...
  *)
 
-type error = Error of string
-
 (* sometimes to get help from ocaml compiler to tell me places where
  * I should update, we sometimes need to change some type from pair
  * to triple, hence this kind of fake type.
