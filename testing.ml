@@ -401,12 +401,12 @@ let test_regression_okfailed () =
   let newscore  = Common.empty_score () in
   let oks =
     Common.cmd_to_list ("find . -name \"*.ok\"")
-    ++
+    @
     Common.cmd_to_list ("find . -name \"*.spatch_ok\"")
   in
   let failed = Common.cmd_to_list ("find . -name \"*.failed\"") in
 
-  if null (oks ++ failed)
+  if null (oks @ failed)
   then failwith "no ok/failed file, you certainly did a make clean"
   else begin
     oks +> List.iter (fun s ->

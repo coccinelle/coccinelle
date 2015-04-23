@@ -851,7 +851,7 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
                       loop (eas, endxs) >>= (fun eas endxs ->
 			return (
 			(rebuild_dots (mcode, optexpr) +> A.rewrap ea) ::eas,
-			startxs ++ endxs
+			startxs @ endxs
 			  )))
 		    )
 		    ) fail)
@@ -937,7 +937,7 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 				(rebuild_metalist ea
 				   (ida,leninfo,keep,inherited))
 				  +> A.rewrap ea::eas,
-				startxs ++ endxs
+				startxs @ endxs
 				  )))
 				)
 			    )
@@ -2244,7 +2244,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
             (mckstart, allminus,
             (A.MacroDecl (sa,lpa,eas,rpa,enda)) +> A.rewrap decla),
             (B.MacroDecl ((sb,ebs,true),
-                         [iisb;lpb;rpb;iiendb;iifakestart] ++ iistob))
+                         [iisb;lpb;rpb;iiendb;iifakestart] @ iistob))
           ))))))))
 
   | A.MacroDecl (sa,lpa,eas,rpa,enda), B.MacroDecl ((sb,ebs,false),ii) ->
@@ -2274,7 +2274,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 		  (mckstart, allminus,
 		   (A.MacroDecl (sa,lpa,eas,rpa,enda)) +> A.rewrap decla),
 		  (B.MacroDecl ((sb,ebs,false),
-				[iisb;lpb;rpb;iifakestart] ++ iistob))
+				[iisb;lpb;rpb;iifakestart] @ iistob))
 		  )))))))
       | _ -> fail)
 
@@ -2305,7 +2305,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
             (mckstart, allminus,
             (A.MacroDeclInit(sa,lpa,eas,rpa,weqa,inia,enda)) +> A.rewrap decla),
             (B.MacroDeclInit ((sb,ebs,inib),
-                         [iisb;lpb;rpb;iiendb;iifakestart] ++ iistob))
+                         [iisb;lpb;rpb;iiendb;iifakestart] @ iistob))
           ))))))))))
 
 
@@ -2715,9 +2715,9 @@ and get_fninfo fninfoa =
   (stoa,tya,inla,attras)
 
 and put_fninfo stoa tya inla attras =
-  (match stoa  with Some st -> [A.FStorage st] | None -> []) ++
-    (match inla   with Some i -> [A.FInline i] | None -> []) ++
-    (match tya    with Some t -> [A.FType t] | None -> []) ++
+  (match stoa  with Some st -> [A.FStorage st] | None -> []) @
+    (match inla   with Some i -> [A.FInline i] | None -> []) @
+    (match tya    with Some t -> [A.FType t] | None -> []) @
     (match attras with Some a -> a | None -> [])
 
 (* ------------------------------------------------------------------------- *)
@@ -3414,7 +3414,7 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
           tokenf stringa ibaseb >>= (fun stringa ibaseb ->
             return (
                (rebuilda ([stringa], signaopt)) +> A.rewrap ta,
-               (B.BaseType (baseb), iisignbopt ++ [ibaseb])
+               (B.BaseType (baseb), iisignbopt @ [ibaseb])
                )))
 
       | A.ShortType, B.IntType (B.Si (_, B.CShort))
@@ -3432,7 +3432,7 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
                 sign signaopt signbopt >>= (fun signaopt iisignbopt ->
                     return (
                       (rebuilda ([stringa], signaopt)) +> A.rewrap ta,
-                      (B.BaseType (baseb), iisignbopt ++ [])
+                      (B.BaseType (baseb), iisignbopt)
                     ))
 
 
@@ -3446,7 +3446,7 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
           tokenf stringa ibaseb >>= (fun stringa ibaseb ->
             return (
                (rebuilda ([stringa], signaopt)) +> A.rewrap ta,
-               (B.BaseType (baseb), iisignbopt ++ [ibaseb])
+               (B.BaseType (baseb), iisignbopt @ [ibaseb])
                )))
           | _ -> raise (Impossible 41)
 
@@ -3462,7 +3462,7 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
               tokenf string3a ibase3b >>= (fun base3a ibase3b ->
               return (
 		(rebuilda ([base1a;base2a;base3a], signaopt)) +> A.rewrap ta,
-		(B.BaseType (baseb), iisignbopt ++ [ibase1b;ibase2b;ibase3b])
+		(B.BaseType (baseb), iisignbopt @ [ibase1b;ibase2b;ibase3b])
               )))))
 	  | [ibase1b;ibase2b] -> fail (* int omitted *)
 	  | [] -> fail (* should something be done in this case? *)
@@ -3481,7 +3481,7 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
               tokenf string2a ibase2b >>= (fun base2a ibase2b ->
               return (
 		(rebuilda ([base1a;base2a], signaopt)) +> A.rewrap ta,
-		(B.BaseType (baseb), iisignbopt ++ [ibase1b;ibase2b])
+		(B.BaseType (baseb), iisignbopt @ [ibase1b;ibase2b])
               ))))
 	  | [ibase1b] -> fail (* short or long *)
 	  | [ibase1b;ibase2b;ibase3b] -> fail (* long long case *)
@@ -3510,7 +3510,7 @@ and simulate_signed_meta ta basea signaopt tb baseb ii rebuilda =
 	    A.Type(_,_,basea), (B.BaseType baseb, ii) ->
 	      return (
 	      (rebuilda (basea, signaopt)) +> A.rewrap ta,
-	      (B.BaseType (baseb), iisignbopt ++ ii)
+	      (B.BaseType (baseb), iisignbopt @ ii)
 		)
 	  | _ -> failwith "not possible"))) in
 

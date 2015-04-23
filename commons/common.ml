@@ -91,8 +91,6 @@
  * reference. *)
 
 let (+>) o f = f o
-let (++) = (@)
-
 exception Timeout
 exception UnixExit of int
 
@@ -791,7 +789,7 @@ let (test: string -> unit) = fun s ->
   Printf.printf "%s: %s\n" s
     (if (List.assoc s (!_list_bool)) then "passed" else "failed")
 
-let _ex = example3 "++" ([1;2]++[3;4;5] = [1;2;3;4;5])
+let _ex = example3 "@" ([1;2]@[3;4;5] = [1;2;3;4;5])
 
 (*-------------------------------------------------------------------*)
 (* Regression testing *)
@@ -971,9 +969,9 @@ let (laws2:
 
 (*
 let b = laws "unit" (fun x       -> reverse [x]          = [x]                   )ig
-let b = laws "app " (fun (xs,ys) -> reverse (xs++ys)     = reverse ys++reverse xs)(pg (lg ig)(lg ig))
+let b = laws "app " (fun (xs,ys) -> reverse (xs @ ys)     = reverse ys @ reverse xs)(pg (lg ig)(lg ig))
 let b = laws "rev " (fun xs      -> reverse (reverse xs) = xs                    )(lg ig)
-let b = laws "appb" (fun (xs,ys) -> reverse (xs++ys)     = reverse xs++reverse ys)(pg (lg ig)(lg ig))
+let b = laws "appb" (fun (xs,ys) -> reverse (xs @ ys)     = reverse xs @ reverse ys)(pg (lg ig)(lg ig))
 let b = laws "max"  (fun (x,y)   -> x <= y ==> (max x y  = y)                       )(pg ig ig)
 
 let b = laws2 "max"  (fun (x,y)   -> ((x <= y ==> (max x y  = y)), x <= y))(pg ig ig)
@@ -1685,7 +1683,7 @@ let arg_parse2 l msg short_usage_fun =
  * dispatch.
  *
  * Use like this at option place:
- *   (Common.options_of_actions actionref (Test_parsing_c.actions())) ++
+ *   (Common.options_of_actions actionref (Test_parsing_c.actions())) @
  * Use like this at dispatch action place:
  *   | xs when List.mem !action (Common.action_list all_actions) ->
  *        Common.do_action !action xs all_actions
@@ -3901,11 +3899,6 @@ let head_middle_tail xs =
 let _ = assert_equal (head_middle_tail [1;2;3]) (1, [2], 3)
 let _ = assert_equal (head_middle_tail [1;3]) (1, [], 3)
 
-(* now in prelude
- * let (++) = (@)
- *)
-
-(* let (++) = (@), could do that, but if load many times the common, then pb *)
 (* let (++) l1 l2 = List.fold_right (fun x acc -> x::acc) l1 l2 *)
 
 let remove x xs =
@@ -4088,7 +4081,7 @@ let rec all_assoc e = function
 let prepare_want_all_assoc l =
   List.map (fun n -> n, uniq (all_assoc n l)) (uniq (List.map fst l))
 
-let rotate list = List.tl list ++ [(List.hd list)]
+let rotate list = List.tl list @ [(List.hd list)]
 
 let or_list  = List.fold_left (||) false
 let and_list = List.fold_left (&&) true
@@ -4108,11 +4101,11 @@ let rec splitAt n xs =
 let pack n xs =
   let rec pack_aux l i = function
     | [] -> failwith "not on a boundary"
-    | [x] -> if i =|= n then [l++[x]] else failwith "not on a boundary"
+    | [x] -> if i =|= n then [l @ [x]] else failwith "not on a boundary"
     | x::xs ->
         if i =|= n
-        then (l++[x])::(pack_aux [] 1 xs)
-        else pack_aux (l++[x]) (i+1) xs
+        then (l @ [x])::(pack_aux [] 1 xs)
+        else pack_aux (l @ [x]) (i+1) xs
   in
   pack_aux [] 1 xs
 
@@ -4178,7 +4171,7 @@ let iter_with_before_after f xs =
 (* kind of cartesian product of x*x  *)
 let rec (get_pair: ('a list) -> (('a * 'a) list)) = function
   | [] -> []
-  | x::xs -> (List.map (fun y -> (x,y)) xs) ++ (get_pair xs)
+  | x::xs -> (List.map (fun y -> (x,y)) xs) @ (get_pair xs)
 
 
 (* retourne le rang dans une liste d'un element *)
@@ -4246,7 +4239,7 @@ let rec uncons_permut_lazy xs =
 let rec map_flatten f l =
   let rec map_flatten_aux accu = function
     | [] -> accu
-    | e :: l -> map_flatten_aux (List.rev (f e) ++ accu) l
+    | e :: l -> map_flatten_aux (List.rev (f e) @ accu) l
   in List.rev (map_flatten_aux [] l)
 
 
@@ -4360,7 +4353,7 @@ let rec realCombinaison = function
   | a::l  ->
       let res  = realCombinaison l in
       let res2 = List.map (function x -> a::x) res in
-      res2 ++ res ++ [[a]]
+      res2 @ res @ [[a]]
 
 (* genere toutes les combinaisons possible de paire      *)
 (* par example combinaison [1;2;4] -> [1, 2; 1, 4; 2, 4] *)
@@ -4368,7 +4361,7 @@ let rec combinaison = function
   | [] -> []
   | [a] -> []
   | [a;b] -> [(a, b)]
-  | a::b::l -> (List.map (function elem -> (a, elem)) (b::l)) ++
+  | a::b::l -> (List.map (function elem -> (a, elem)) (b::l)) @
      (combinaison (b::l))
 
 (*----------------------------------*)
@@ -5200,12 +5193,12 @@ let empty_graph = ([], [])
 (*
 let (add_arcs_toward: int -> (int list) -> 'a graph -> 'a graph) = fun i xs ->
   function
-    (nodes, arcs) -> (nodes, (List.map (fun j -> (j,i) ) xs)++arcs)
+    (nodes, arcs) -> (nodes, (List.map (fun j -> (j,i) ) xs) @ arcs)
 let (del_arcs_toward: int -> (int list) -> 'a graph -> 'a graph)= fun i xs g ->
     List.fold_left (fun acc el -> del_arc (el, i) acc) g xs
 let (add_arcs_from: int -> (int list) -> 'a graph -> 'a graph) = fun i xs ->
  function
-    (nodes, arcs) -> (nodes, (List.map (fun j -> (i,j) ) xs)++arcs)
+    (nodes, arcs) -> (nodes, (List.map (fun j -> (i,j) ) xs) @ arcs)
 
 
 let (del_node: (int * 'node) -> 'node graph -> 'node graph) = fun node ->
@@ -5380,7 +5373,7 @@ let (write_ppm: int -> int -> (pixel list) -> string -> unit) = fun
     end
 
 let test_ppm1 () = write_ppm 100 100
-    ((generate (50*100) (1,45,100)) ++ (generate (50*100) (1,1,100)))
+    ((generate (50*100) (1,45,100)) @ (generate (50*100) (1,1,100)))
     "img.ppm"
 
 (*****************************************************************************)

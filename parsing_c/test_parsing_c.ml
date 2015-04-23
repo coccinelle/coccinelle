@@ -443,7 +443,7 @@ let test_attributes file =
 
 let cpp_options () = [
   Cpp_ast_c.I "/home/yyzhou/pad/linux/include";
-] ++
+] @
   Cpp_ast_c.cpp_option_of_cmdline
   (!Flag_parsing_c.cpp_i_opts,!Flag_parsing_c.cpp_d_opts)
 

@@ -632,8 +632,8 @@ let rec lexer_function ~pass tr = fun lexbuf ->
 
             tr.passed <- v::tr.passed;
             tr.passed_clean <- extend_passed_clean v tr.passed_clean;
-            tr.rest <- new_tokens ++ tr.rest;
-            tr.rest_clean <- new_tokens_clean ++ tr.rest_clean;
+            tr.rest <- new_tokens @ tr.rest;
+            tr.rest_clean <- new_tokens_clean @ tr.rest_clean;
             v
           end
 
@@ -1019,7 +1019,7 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
             Common.profile_code "Parsing: multi pass" (fun () ->
 
             pr2_err "parsing pass2: try again";
-            let toks = List.rev passed ++ tr.rest in
+            let toks = List.rev passed @ tr.rest in
             let new_tr = mk_tokens_state toks in
             copy_tokens_state ~src:new_tr ~dst:tr;
             let passx = get_one_elem ~pass:2 tr (file, filelines) in
@@ -1038,7 +1038,7 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
                   (* todo factorize code *)
 
                   pr2_err "parsing pass3: try again";
-                  let toks = List.rev passed ++ tr.rest in
+                  let toks = List.rev passed @ tr.rest in
                   let toks' =
                     find_optional_macro_to_expand ~defs:candidates toks in
                   let new_tr = mk_tokens_state toks' in
@@ -1055,7 +1055,7 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
                           ~defs:macros passed
                       in
 
-                      let toks = List.rev passed ++ tr.rest in
+                      let toks = List.rev passed @ tr.rest in
                       let toks' =
                       find_optional_macro_to_expand ~defs:candidates toks in
                       let new_tr = mk_tokens_state toks' in

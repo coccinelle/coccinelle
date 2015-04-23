@@ -84,7 +84,7 @@ let i_of_cpp_options xs =
   )
 
 let cpp_option_of_cmdline (xs, ys) =
-  (xs +> List.map (fun s -> I s)) ++
+  (xs +> List.map (fun s -> I s)) @
   (ys +> List.map (fun s ->
     if s =~ "\\([A-Z][A-Z0-9_]*\\)=\\(.*\\)"
     then

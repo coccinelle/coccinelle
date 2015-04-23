@@ -500,14 +500,14 @@ and pp_string_format (e,ii) =
         | None -> [] | Some (s, iis) -> (*assert (List.length iis = 1);*) iis
       in
       let print_sto_qu (sto, (qu, iiqu)) =
-        let all_ii = get_sto sto ++ iiqu in
+        let all_ii = get_sto sto @ iiqu in
         all_ii
           +> List.sort Ast_c.compare_pos
           +> Common.print_between pr_space pr_elem
 
       in
       let print_sto_qu_ty (sto, (qu, iiqu), iity) =
-        let all_ii = get_sto sto ++ iiqu ++ iity in
+        let all_ii = get_sto sto @ iiqu @ iity in
         let all_ii2 = all_ii +> List.sort Ast_c.compare_pos in
 
         if all_ii <> all_ii2
@@ -597,7 +597,7 @@ and pp_string_format (e,ii) =
 
       | (Decimal(l,p), [dec;lp;cm;rp]) ->
 	  (* hope that sto before qu is right... cf print_sto_qu_ty *)
-	  let stoqulp = get_sto sto ++ (snd qu) ++ [dec] in
+	  let stoqulp = get_sto sto @ (snd qu) @ [dec] in
 	  Common.print_between pr_space pr_elem stoqulp;
 	  pr_elem lp; pp_expression l; pr_elem cm;
 	  do_option pp_expression p; pr_elem rp

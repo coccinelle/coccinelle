@@ -96,7 +96,7 @@ module XMATCH = struct
     if res2 = [] (*try to avoid a trivial @*)
     then res1
     else
-      res1 ++
+      res1 @
 	(res2 +> List.filter (fun (x, binding) ->
           not
             (res1 +> List.exists (fun (_,already) ->
@@ -115,8 +115,7 @@ module XMATCH = struct
 *)
     (* opti? use set instead of list *)
     let l1 = m1 tin in
-    let l2 = m2 tin in
-    if l2 = [] then l1 else l1 ++ l2 (*a small benefit; avoid a trivial @*)
+    let l2 = m2 tin in l1 @ l2
 
 
   let return res = fun tin ->

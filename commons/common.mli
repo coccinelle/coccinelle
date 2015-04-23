@@ -1271,9 +1271,6 @@ val removelast : 'a list -> 'a list
 val inits : 'a list -> 'a list list
 val tails : 'a list -> 'a list list
 
-
-val ( ++ ) : 'a list -> 'a list -> 'a list
-
 val foldl1 : ('a -> 'a -> 'a) -> 'a list -> 'a
 val fold_k : ('a -> 'b -> ('a -> 'a) -> 'a) -> ('a -> 'a) -> 'a -> 'b list -> 'a
 val fold_right1 : ('a -> 'a -> 'a) -> 'a list -> 'a

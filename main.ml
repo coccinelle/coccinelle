@@ -686,7 +686,7 @@ let other_options = [
   ),
 
     (* -token_c, -parse_c, etc  *)
-  ((Common.options_of_actions action (Test_parsing_c.actions())) ++
+  ((Common.options_of_actions action (Test_parsing_c.actions())) @
     [
     (let s = "--parse-cocci"  in s, Arg.Unit (fun () -> action := s),
     "   <file>");
@@ -699,7 +699,7 @@ let other_options = [
 
 
 let all_options =
-  short_options ++ List.concat (List.map Common.thd3 other_options)
+  short_options @ List.concat (List.map Common.thd3 other_options)
 
 (* I don't want the -help and --help that are appended by Arg.align *)
 let arg_align2 xs =
