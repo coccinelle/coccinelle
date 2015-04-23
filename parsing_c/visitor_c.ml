@@ -1857,7 +1857,7 @@ and vk_node_s = fun bigf node ->
                  i_content = copt;
                  }
       ->
-        assert (copt =*= None);
+        assert (copt = None);
         F.Include {i_include = (s, iif ii);
                     i_rel_pos = h_rel_pos;
                     i_is_in_ifdef = b;

@@ -1769,13 +1769,10 @@ let (=:=) : bool   -> bool   -> bool = (=)
  * it, cos the '=' sign is syntactically overloaded in caml. It is also
  * used to define function.
  *)
-let (=*=) = (=)
-
 (* if really want to forbid to use '='
 let (=) = (=|=)
-*)
 let (=) () () = false
-
+*)
 
 
 
@@ -1795,10 +1792,10 @@ let (=) () () = false
 let (==>) b1 b2 = if b1 then b2 else true (* could use too => *)
 
 (* superseded by another <=> below
-let (<=>) a b = if a =*= b then 0 else if a < b then -1 else 1
+let (<=>) a b = if a = b then 0 else if a < b then -1 else 1
 *)
 
-let xor a b = not (a =*= b)
+let xor a b = not (a = b)
 
 
 (*****************************************************************************)
@@ -1902,8 +1899,8 @@ let sqr a = a *. a
 
 
 type compare = Equal | Inf | Sup
-let (<=>) a b = if a =*= b then Equal else if a < b then Inf else Sup
-let (<==>) a b = if a =*= b then 0 else if a < b then -1 else 1
+let (<=>) a b = if a = b then Equal else if a < b then Inf else Sup
+let (<==>) a b = if a = b then 0 else if a < b then -1 else 1
 
 type uint = int
 
@@ -2229,7 +2226,7 @@ let (regexp_match: string -> string -> string) = fun s re ->
 
 
 let split sep s = Str.split (Str.regexp sep) s
-let _ = example (split "/" "" =*= [])
+let _ = example ((split "/" "") = [])
 let join  sep xs = String.concat sep xs
 let _ = example (join "/" ["toto"; "titi"; "tata"] =$= "toto/titi/tata")
 (*
@@ -2250,7 +2247,7 @@ let (split_list_regexp: string -> string list -> (string * string list) list) =
         else split_lr_aux (heading, x::accu) xs
   in
   split_lr_aux ("__noheading__", []) xs
-  +> (fun xs -> if (List.hd xs) =*= ("__noheading__",[]) then List.tl xs else xs)
+  +> (fun xs -> if List.hd xs = ("__noheading__",[]) then List.tl xs else xs)
 
 
 
@@ -2271,7 +2268,7 @@ let all_match re s =
   List.rev !res
 
 let _ = example (all_match "\\(@[A-Za-z]+\\)" "ca va @Et toi @Comment"
-                  =*= ["@Et";"@Comment"])
+                  = ["@Et";"@Comment"])
 
 
 let global_replace_regexp re f_on_substr s =
@@ -2913,7 +2910,7 @@ let rough_days_between_dates d1 d2 =
 let _ = example
   (rough_days_between_dates
       (DMY (Day 7, Jan, Year 1977))
-      (DMY (Day 13, Jan, Year 1977)) =*= Days 6)
+      (DMY (Day 13, Jan, Year 1977)) = Days 6)
 
 (* because of rough days, it is a bit buggy, here it should return 1 *)
 (*
@@ -3060,7 +3057,7 @@ let this_year() =
  * (enum 0 ((String.length s) - 1) +> List.map (String.get s))
  *)
 
-let _ = example (list_of_string "abcd" =*= ['a';'b';'c';'d'])
+let _ = example (list_of_string "abcd" = ['a';'b';'c';'d'])
 
 (*
 let rec (list_of_stream: ('a Stream.t) -> 'a list) =
@@ -3283,7 +3280,7 @@ let lfile_exists filename =
 	   (Unix.error_message error) fl)
 
 let is_directory file =
-  (Unix.stat file).Unix.st_kind =*= Unix.S_DIR
+  (Unix.stat file).Unix.st_kind = Unix.S_DIR
 
 
 (* src: from chailloux et al book *)
@@ -3300,7 +3297,7 @@ let (readdir_to_kind_list: string -> Unix.file_kind -> string list) =
   +> List.filter (fun s ->
     try
       let stat = Unix.lstat (path ^ "/" ^  s) in
-      stat.Unix.st_kind =*= kind
+      stat.Unix.st_kind = kind
     with e ->
       pr2 ("EXN pb stating file: " ^ s);
       false
@@ -3321,7 +3318,7 @@ let (readdir_to_dir_size_list: string -> (string * int) list) = fun path ->
   +> Array.to_list
   +> map_filter (fun s ->
     let stat = Unix.lstat (path ^ "/" ^  s) in
-    if stat.Unix.st_kind =*= Unix.S_DIR
+    if stat.Unix.st_kind = Unix.S_DIR
     then Some (s, stat.Unix.st_size)
     else None
     )
@@ -3371,12 +3368,12 @@ let cache_computation_robust2
     | Some dir ->
 	let file_cache =
 	  Filename.concat dir
-	    (if String.get file_cache 0 =*= '/'
+	    (if String.get file_cache 0 = '/'
 	    then String.sub file_cache 1 ((String.length file_cache) - 1)
 	    else file_cache) in
 	let dependencies_cache =
 	  Filename.concat dir
-	    (if String.get dependencies_cache 0 =*= '/'
+	    (if String.get dependencies_cache 0 = '/'
 	    then
 	      String.sub dependencies_cache 1
 		((String.length dependencies_cache) - 1)
@@ -3392,7 +3389,7 @@ let cache_computation_robust2
   in
 
   if Sys.file_exists dependencies_cache &&
-     get_value dependencies_cache =*= dependencies
+     get_value dependencies_cache = dependencies
   then
     (*begin
     pr2 ("cache computation reuse " ^ file);*)
@@ -3725,7 +3722,7 @@ let take_while p = take_until (p $ not)
 
 
 (* now in prelude: let rec drop n xs = ... *)
-let _ = example (drop 3 [1;2;3;4] =*= [4])
+let _ = example (drop 3 [1;2;3;4] = [4])
 
 let rec drop_while p = function
   | [] -> []
@@ -3734,7 +3731,7 @@ let rec drop_while p = function
 
 let rec drop_until p xs =
   drop_while (fun x -> not (p x)) xs
-let _ = example (drop_until (fun x -> x =|= 3) [1;2;3;4;5] =*= [3;4;5])
+let _ = example (drop_until (fun x -> x =|= 3) [1;2;3;4;5] = [3;4;5])
 
 
 let span p xs = (take_while p xs, drop_while p xs)
@@ -3748,7 +3745,7 @@ let rec (span: ('a -> bool) -> 'a list -> 'a list * 'a list) =
 	let (l1, l2) = span p xs in
 	(x::l1, l2)
       else ([], x::xs)
-let _ = example ((span (fun x -> x <= 3) [1;2;3;4;1;2] =*= ([1;2;3],[4;1;2])))
+let _ = example ((span (fun x -> x <= 3) [1;2;3;4;1;2] = ([1;2;3],[4;1;2])))
 
 let rec groupBy eq l =
   match l with
@@ -3762,7 +3759,7 @@ let rec group_by_mapped_key fkey l =
   | [] -> []
   | x::xs ->
       let k = fkey x in
-      let (xs1,xs2) = List.partition (fun x' -> let k2 = fkey x' in k=*=k2) xs
+      let (xs1,xs2) = List.partition (fun x' -> let k2 = fkey x' in k=k2) xs
       in
       (k, (x::xs1))::(group_by_mapped_key fkey xs2)
 
@@ -3781,7 +3778,7 @@ let (exclude_but_keep_attached: ('a -> bool) -> 'a list -> ('a * 'a list) list)=
    in
    aux_filter [] [] xs
 let _ = example
-  (exclude_but_keep_attached (fun x -> x =|= 3) [3;3;1;3;2;3;3;3] =*=
+  (exclude_but_keep_attached (fun x -> x =|= 3) [3;3;1;3;2;3;3;3] =
       [(1,[3;3]);(2,[3])])
 
 let group_by_post: ('a -> bool) -> 'a list -> ('a list * 'a) list * 'a list =
@@ -3799,7 +3796,7 @@ let group_by_post: ('a -> bool) -> 'a list -> ('a list * 'a) list * 'a list =
    aux_filter [] [] xs
 
 let _ = example
-  (group_by_post (fun x -> x =|= 3) [1;1;3;2;3;4;5;3;6;6;6] =*=
+  (group_by_post (fun x -> x =|= 3) [1;1;3;2;3;4;5;3;6;6;6] =
       ([([1;1],3);([2],3);[4;5],3], [6;6;6]))
 
 let (group_by_pre: ('a -> bool) -> 'a list -> 'a list * ('a * 'a list) list)=
@@ -3810,7 +3807,7 @@ let (group_by_pre: ('a -> bool) -> 'a list -> 'a list * ('a * 'a list) list)=
     ys +> List.rev +> List.map (fun (xs, x) -> x, List.rev xs )
 
 let _ = example
-  (group_by_pre (fun x -> x =|= 3) [1;1;3;2;3;4;5;3;6;6;6] =*=
+  (group_by_pre (fun x -> x =|= 3) [1;1;3;2;3;4;5;3;6;6;6] =
       ([1;1], [(3,[2]); (3,[4;5]); (3,[6;6;6])]))
 
 
@@ -3824,7 +3821,7 @@ let split_when: ('a -> bool) -> 'a list -> 'a list * 'a * 'a list =
       else loop (x :: acc) xs in
   loop [] l
 let _ = example (split_when (fun x -> x =|= 3)
-                    [1;2;3;4;1;2] =*= ([1;2],3,[4;1;2]))
+                    [1;2;3;4;1;2] = ([1;2],3,[4;1;2]))
 
 
 (* not so easy to come up with ... used in aComment for split_paragraph *)
@@ -3855,11 +3852,11 @@ let rec (skip_until: ('a list -> bool) -> 'a list -> 'a list) = fun p xs ->
   if p xs then xs else skip_until p (List.tl xs)
 let _ = example
   (skip_until (function 1::2::xs -> true | _ -> false)
-      [1;3;4;1;2;4;5] =*= [1;2;4;5])
+      [1;3;4;1;2;4;5] = [1;2;4;5])
 
 let rec skipfirst e = function
   | [] -> []
-  | e'::l when e =*= e' -> skipfirst e l
+  | e'::l when e = e' -> skipfirst e l
   | l -> l
 
 
@@ -4085,7 +4082,7 @@ let rec get_duplicates xs =
 
 let rec all_assoc e = function
   | [] -> []
-  | (e',v) :: l when e=*=e' -> v :: all_assoc e l
+  | (e',v) :: l when e=e' -> v :: all_assoc e l
   | _ :: l -> all_assoc e l
 
 let prepare_want_all_assoc l =
@@ -4188,7 +4185,7 @@ let rec (get_pair: ('a list) -> (('a * 'a) list)) = function
 let rang elem liste =
   let rec rang_rec elem accu = function
     | []   -> raise Not_found
-    | a::l -> if a =*= elem then accu
+    | a::l -> if a = elem then accu
     else rang_rec elem (accu+1) l in
   rang_rec elem 1 liste
 
@@ -4229,7 +4226,7 @@ let rec uncons_permut xs =
   indexed +> List.map (fun (x, pos) -> (x, pos),  remove_elem_pos pos xs)
 let _ =
   example
-    (uncons_permut ['a';'b';'c'] =*=
+    (uncons_permut ['a';'b';'c'] =
      [('a', 0),  ['b';'c'];
       ('b', 1),  ['a';'c'];
       ('c', 2),  ['a';'b']
@@ -4285,7 +4282,7 @@ let pack_sorted same xs =
 	  if same (List.hd cur) y then pack_s_aux (y::cur, rest) ys
 	  else pack_s_aux ([y], cur::rest) ys
     in pack_s_aux ([List.hd xs],[]) (List.tl xs) +> List.rev
-let test = pack_sorted (=*=) [1;1;1;2;2;3;4]
+let test = pack_sorted (=) [1;1;1;2;2;3;4]
 
 
 let rec keep_best f =
@@ -4332,8 +4329,8 @@ let sort_by_key_highfirst xs =
 let sort_by_key_lowfirst xs =
   sort_prof (fun (k1,v1) (k2,v2) -> compare k1 k2) xs
 
-let _ = example (sort_by_key_lowfirst [4, (); 7,()] =*= [4,(); 7,()])
-let _ = example (sort_by_key_highfirst [4,(); 7,()] =*= [7,(); 4,()])
+let _ = example (sort_by_key_lowfirst [4, (); 7,()] = [4,(); 7,()])
+let _ = example (sort_by_key_highfirst [4,(); 7,()] = [7,(); 4,()])
 
 
 let sortgen_by_key_highfirst xs =
@@ -4506,8 +4503,8 @@ let ex_columns1 =
     [1;4;7];
     [2;5;8];
   ]
-let _ = example (rows_of_matrix ex_matrix1 =*= ex_rows1)
-let _ = example (columns_of_matrix ex_matrix1 =*= ex_columns1)
+let _ = example (rows_of_matrix ex_matrix1 = ex_rows1)
+let _ = example (columns_of_matrix ex_matrix1 = ex_columns1)
 
 
 (*****************************************************************************)
@@ -4604,7 +4601,7 @@ let rec nub l =
   let l = List.sort compare l in
   let rec loop = function
       [] -> []
-    | x::((y::_) as xs) when x =*= y -> loop xs
+    | x::((y::_) as xs) when x = y -> loop xs
     | x::xs -> x :: loop xs in
   loop l
 
@@ -4679,7 +4676,7 @@ type ('a,'b) assoc  = ('a * 'b) list
 let (assoc_to_function: ('a, 'b) assoc -> ('a -> 'b)) = fun xs ->
   xs +> List.fold_left (fun acc (k, v) ->
     (fun k' ->
-      if k =*= k' then v else acc k'
+      if k = k' then v else acc k'
     )) (fun k -> failwith "no key in this assoc")
 (* simpler:
 let (assoc_to_function: ('a, 'b) assoc -> ('a -> 'b)) = fun xs ->
@@ -4731,7 +4728,7 @@ let (lookup_list2: 'a -> ('a , 'b) assoc list -> ('b * int)) = fun el xxs ->
   in lookup_l_aux 0 xxs
 
 let _ = example
-  (lookup_list2 "c" [["a",1;"b",2];["a",1;"b",3];["a",1;"c",7]] =*= (7,2))
+  (lookup_list2 "c" [["a",1;"b",2];["a",1;"b",3];["a",1;"c",7]] = (7,2))
 
 
 let assoc_option  k l =
@@ -4804,7 +4801,7 @@ let _  =
   let h = Hashtbl.create 101 in
   Hashtbl.add h "toto" 1;
   Hashtbl.add h "toto" 1;
-  assert(hash_to_list h =*= ["toto",1; "toto",1])
+  assert(hash_to_list h = ["toto",1; "toto",1])
 
 
 let hfind_default key value_if_not_found h =
@@ -5176,13 +5173,13 @@ let (add_arc: ('a * 'a) -> 'a graph -> 'a graph) = fun arc (nodes, arcs) ->
   (nodes, set [arc] $+$ arcs)
 
 let (del_arc: ('a * 'a) -> 'a graph -> 'a graph) = fun arc (nodes, arcs) ->
-  (nodes, arcs +> List.filter (fun a -> not (arc =*= a)))
+  (nodes, arcs +> List.filter (fun a -> not (arc = a)))
 
 let (successors: 'a -> 'a graph -> 'a set) = fun x (nodes, arcs) ->
-  arcs +> List.filter (fun (src, dst) -> src =*= x) +> List.map snd
+  arcs +> List.filter (fun (src, dst) -> src = x) +> List.map snd
 
 let (predecessors: 'a -> 'a graph -> 'a set) = fun x (nodes, arcs) ->
-  arcs +> List.filter (fun (src, dst) -> dst =*= x) +> List.map fst
+  arcs +> List.filter (fun (src, dst) -> dst = x) +> List.map fst
 
 let (nodes: 'a graph -> 'a set) = fun (nodes, arcs) -> nodes
 
@@ -5804,7 +5801,7 @@ let string_of_score_result v =
 let total_scores score =
   let total = hash_to_list score +> List.length in
   let good  = hash_to_list score +> List.filter
-    (fun (s, v) -> v =*= Ok) +> List.length in
+    (fun (s, v) -> v = Ok) +> List.length in
   good, total
 
 
@@ -5856,7 +5853,7 @@ let rec lookup_env k env =
   | [] -> raise Not_found
   | []::zs -> lookup_env k zs
   | ((k',v)::xs)::zs ->
-      if k =*= k'
+      if k = k'
       then v
       else lookup_env k (xs::zs)
 

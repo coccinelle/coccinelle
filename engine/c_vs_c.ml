@@ -80,12 +80,12 @@ and typeC tya tyb =
 
   match a, b with
   | BaseType a, BaseType b ->
-      a =*= b >&&> return (BaseType a, iix)
+      a = b >&&> return (BaseType a, iix)
   | Pointer a, Pointer b ->
       fullType a b >>= (fun x -> return (Pointer x, iix))
 
   | StructUnionName (sua, sa), StructUnionName (sub, sb) ->
-      (sua =*= sub && sa =$= sb) >&&>
+      (sua = sub && sa =$= sb) >&&>
         return (StructUnionName (sua, sa), iix)
 
   | TypeName (namea, opta), TypeName (nameb, optb) ->
@@ -112,7 +112,7 @@ and typeC tya tyb =
       let get_option f = function Some x -> Some (f x) | None -> None in
       let ea = get_option Lib_parsing_c.al_expr ea in
       let eb = get_option Lib_parsing_c.al_expr eb in
-      ea =*= eb >&&> fullType a b >>= (fun x -> return (Array (ea, x), iix))
+      ea = eb >&&> fullType a b >>= (fun x -> return (Array (ea, x), iix))
 
   | FunctionType (returna, paramsa), FunctionType (returnb, paramsb) ->
       let (tsa, (ba,iihas3dotsa)) = paramsa in
@@ -156,7 +156,7 @@ and typeC tya tyb =
       ))
 
   | Enum (saopt, enuma), Enum (sbopt, enumb) ->
-      (saopt =*= sbopt &&
+      (saopt = sbopt &&
       List.length enuma =|= List.length enumb &&
       Common.zip enuma enumb +> List.for_all (fun
         (((namesa,eopta), iicommaa), ((namesb,eoptb),iicommab))
@@ -164,8 +164,8 @@ and typeC tya tyb =
             let sa = str_of_name namesa in
             let sb = str_of_name namesb in
             sa =$= sb &&
-            (* todo ? eopta and b can have some info so ok to use =*= ?  *)
-            eopta =*= eoptb
+            (* todo ? eopta and b can have some info so ok to use = ?  *)
+            eopta = eoptb
         )
       ) >&&>
         return (Enum (saopt, enuma), iix)
@@ -181,7 +181,7 @@ and typeC tya tyb =
   | TypeOfExpr ea, TypeOfExpr eb ->
       let ea = Lib_parsing_c.al_expr ea in
       let eb = Lib_parsing_c.al_expr eb in
-      ea =*= eb >&&> return (TypeOfExpr ea, iix)
+      ea = eb >&&> return (TypeOfExpr ea, iix)
 
   | TypeOfType a, TypeOfType b ->
       fullType a b >>= (fun x -> return (TypeOfType x, iix))
@@ -192,7 +192,7 @@ and typeC tya tyb =
 
 
   | StructUnion (sua, saopt, sta), StructUnion (sub, sbopt, stb) ->
-      (sua =*= sub && saopt =*= sbopt && List.length sta =|= List.length stb)
+      (sua = sub && saopt = sbopt && List.length sta =|= List.length stb)
       >&&>
       (function tin ->
 	(* zip is only safe if the above succeeds *)
@@ -226,7 +226,7 @@ and typeC tya tyb =
                       | BitField (nameopta, ta, infoa, ea),
                         BitField (nameoptb, tb, infob, eb) ->
                           let infox = infoa in
-                          (same_s nameopta nameoptb && ea =*= eb) >&&>
+                          (same_s nameopta nameoptb && ea = eb) >&&>
                           fullType ta tb >>= (fun tx ->
                             return (((BitField (nameopta,tx,infox,ea)), iix)::xs)
                           )
@@ -316,7 +316,7 @@ let subexpression_of_expression small_exp big_exp =
     (* comparison used in Cocci_vs_c.equal_inh_metavarval *)
     (* have to strip each subexp, because stripping puts some offsets in the
        term rather than setting everything to 0.  No idea why... *)
-    if small_exp =*= Lib_parsing_c.al_inh_expr big_exp
+    if small_exp = Lib_parsing_c.al_inh_expr big_exp
     then res := true
     else k big_exp in
   let bigf = { Visitor_c.default_visitor_c with Visitor_c.kexpr = expr } in

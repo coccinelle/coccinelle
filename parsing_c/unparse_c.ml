@@ -241,9 +241,9 @@ let get_fakeInfo_and_tokens celem toks =
       (* get the associated comments/space/cppcomment tokens *)
       let (before, x, after) =
         !toks_in +> split_when (fun tok ->
-          info =*= TH.info_of_tok tok)
+          info = TH.info_of_tok tok)
       in
-      assert(info =*= TH.info_of_tok x);
+      assert(info = TH.info_of_tok x);
       (*old: assert(before +> List.for_all (TH.is_comment)); *)
       before +> List.iter (fun x ->
         if not (TH.is_comment x)
@@ -2225,7 +2225,7 @@ let print_all_tokens2 pr xs =
     let current_kind = ref KOrigin in
     xs +> List.iter (fun t ->
       let newkind = kind_of_token2 t in
-      if newkind =*= !current_kind
+      if newkind = !current_kind
       then pr (str_of_token2 t)
       else 
         begin

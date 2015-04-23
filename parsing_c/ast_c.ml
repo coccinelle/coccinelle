@@ -1100,7 +1100,7 @@ let info_to_fixpos ii =
 let is_test (e : expression) =
   let (_,info), _ = e in
   let (_,test) = !info in
-  test =*= Test
+  test = Test
 
 (*****************************************************************************)
 (* Abstract line *)

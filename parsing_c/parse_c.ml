@@ -557,7 +557,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
     else begin
       let x = List.hd tr.rest_clean  in
       tr.rest_clean <- List.tl tr.rest_clean;
-      assert (x =*= v);
+      assert (x = v);
 
       (* ignore exec code *)
       (match v with
@@ -575,7 +575,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
        * tr.passed, tr.rest, etc.
        *)
       | Parser_c.TDefine (tok) ->
-          if not (LP.current_context () =*= LP.InTopLevel) &&
+          if not (LP.current_context () = LP.InTopLevel) &&
             (!Flag_parsing_c.cpp_directive_passing || (pass >= 2))
           then begin
             incr Stat.nDefinePassing;
@@ -595,7 +595,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
           end
 
       | Parser_c.TUndef (tok) ->
-          if not (LP.current_context () =*= LP.InTopLevel) &&
+          if not (LP.current_context () = LP.InTopLevel) &&
             (!Flag_parsing_c.cpp_directive_passing || (pass >= 2))
           then begin
             incr Stat.nUndefPassing;
@@ -615,7 +615,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
           end
 
       | Parser_c.TInclude (includes, filename, inifdef, info) ->
-          if not (LP.current_context () =*= LP.InTopLevel)  &&
+          if not (LP.current_context () = LP.InTopLevel)  &&
             (!Flag_parsing_c.cpp_directive_passing || (pass >= 2))
           then begin
             incr Stat.nIncludePassing;

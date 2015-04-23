@@ -823,7 +823,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
       let context_info =
 	match xi.ctx with
 	  SwitchInfo (startbrace, loopendi, braces, parent_lbl) ->
-            if x =*= Ast_c.Break
+            if x = Ast_c.Break
 	    then xi.ctx
 	    else
 	      (try
@@ -888,7 +888,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
           None
 
       | SwitchInfo (startbrace, loopendi, braces, parent_lbl) ->
-	  assert (x =*= Ast_c.Break);
+	  assert (x = Ast_c.Break);
           let difference = List.length xi.braces - List.length braces in
           assert (difference >= 0);
           let toend = take difference xi.braces in

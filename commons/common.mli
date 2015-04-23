@@ -594,8 +594,6 @@ val (=<=) : char   -> char   -> bool
 val (=$=) : string -> string -> bool
 val (=:=) : bool   -> bool   -> bool
 
-val (=*=): 'a -> 'a -> bool
-
 (* if want to restrict the use of '=', uncomment this:
  *
  * val (=): unit -> unit -> bool

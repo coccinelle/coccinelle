@@ -63,7 +63,7 @@ let fake_pi = Common.fake_parse_info
 let addStorageD  = function
   | ((x,ii), ({storageD = (NoSto,[])} as v)) -> { v with storageD = (x, [ii]) }
   | ((x,ii), ({storageD = (y, ii2)} as v)) ->
-      if x =*= y then warning "duplicate storage classes" v
+      if x = y then warning "duplicate storage classes" v
       else raise (Semantic ("multiple storage classes", fake_pi))
 
 let addInlineD  = function
@@ -265,7 +265,7 @@ let fixFunc (typ, compound, old_style_opt) =
       let iifunc = Ast_c.get_ii_typeC_take_care tybis in
 
       let iistart = Ast_c.fakeInfo () in
-      assert (qu =*= nullQualif);
+      assert (qu = nullQualif);
 
       (match params with
       | [{p_namei= None; p_type = ty2}, _] ->
@@ -1487,7 +1487,7 @@ decl2:
        DeclList (
          ($2 +> List.map (fun ((((name,f),attrs), ini), iivirg) ->
            let s = str_of_name name in
-	   if fst (unwrap storage) =*= StoTypedef
+	   if fst (unwrap storage) = StoTypedef
 	   then LP.add_typedef s;
            {v_namei = Some (name, ini);
             v_type = f returnType;

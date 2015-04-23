@@ -147,7 +147,7 @@ let iter f xs = xs +> List.iter
   | Interv (i, j) -> for k = i to j do f k done
   )
 
-let is_empty xs = xs =*= []
+let is_empty xs = xs = []
 let choose = function
   | [] -> failwith "not supposed to be called with empty set"
   | (Exact i)::xs -> i

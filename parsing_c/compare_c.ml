@@ -238,7 +238,7 @@ let do_compare_token adjust_cvs to_expected filename1 filename2 =
     | x::xs, y::ys ->
         let x' = normal_form_token adjust_cvs x in
         let y' = normal_form_token adjust_cvs y in
-        if x' =*= y'
+        if x' = y'
         then loop xs ys
         else
           let str1, pos1 =
@@ -333,4 +333,4 @@ let compare_result_to_string (correct, diffxs) =
 
 
 let compare_result_to_bool correct =
-  correct =*= Correct
+  correct = Correct

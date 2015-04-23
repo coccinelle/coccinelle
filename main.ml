@@ -866,7 +866,7 @@ let rec main_action xs =
           if !cocci_file =$= ""
           then failwith "I need a cocci file,  use --sp-file <file>";
 
-	  if !dir && !Flag.patch =*= None
+	  if !dir && !Flag.patch = None
 	  then
 	    (match xs with
 	    | [] -> Flag.patch := Some (Cocci.normalize_path x)
@@ -1224,7 +1224,7 @@ let main () =
                 chosen
               end
             else List.hd !args
-        in if !FC.include_path =*= []
+        in if !FC.include_path = []
            then FC.include_path := [Filename.concat chosen_dir "include"]);
 
     args := List.rev !args;

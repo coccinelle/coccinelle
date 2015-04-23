@@ -975,7 +975,7 @@ and pp_string_format (e,ii) =
 	  }, iivirg) ->
 
             let (s,iis) = get_s_and_info_of_name name in
-	    assert (storage2 =*= storage);
+	    assert (storage2 = storage);
 	    iivirg +> List.iter pr_elem;
 	    pp_type_with_ident_rest
 	      (Some (s, iis)) returnType attrs;

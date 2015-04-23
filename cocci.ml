@@ -1223,7 +1223,7 @@ let rec prepare_h seen env (hpath : string) choose_includes parse_strings
   | Some h_cs ->
       (*let h_cs = cprogram_of_file_cached parse_strings hpath in*)
       let local_includes =
-	if choose_includes =*= Flag_cocci.I_REALLY_ALL_INCLUDES
+	if choose_includes = Flag_cocci.I_REALLY_ALL_INCLUDES
 	then
 	  List.filter
 	    (function x -> not (List.mem x !seen))
@@ -1406,7 +1406,7 @@ let merge_env_list new_e old_e = new_e@old_e
 
 let contains_binding e (_,(r,m),_) =
   try
-    let _ = List.find (function ((re, rm), _) -> r =*= re && m =$= rm) e in
+    let _ = List.find (function ((re, rm), _) -> r = re && m =$= rm) e in
     true
   with Not_found -> false
 
@@ -1475,7 +1475,7 @@ let apply_script_rule r cache newes e rules_that_have_matched
 	  let relevant_bindings =
 	    List.filter
 	      (function ((re,rm),_) ->
-		List.exists (function (_,(r,m),_) -> r =*= re && m =$= rm) mv)
+		List.exists (function (_,(r,m),_) -> r = re && m =$= rm) mv)
 	      e in
 	  (try
 	    match List.assoc relevant_bindings cache with
@@ -1796,7 +1796,7 @@ and reassociate_positions free_vars negated_pos_vars envs =
 	       (function (other_non_pos,other_pos) ->
                  (* do we want equal? or just somehow compatible? eg non_pos
 		    binds only E, but other_non_pos binds both E and E1 *)
-		 non_pos =*= other_non_pos)
+		 non_pos = other_non_pos)
 	       splitted_relevant in
 	   Hashtbl.add extended_relevant non_pos
 	     (List.sort compare
@@ -2195,7 +2195,7 @@ let full_engine2 (cocci_infos,parse_strings) cfiles =
             let outfile =
 	      Common.new_temp_file "cocci-output" ("-" ^ c_or_h.fname) in
 
-            if c_or_h.fkind =*= Header
+            if c_or_h.fkind = Header
             then pr2 ("a header file was modified: " ^ c_or_h.fname);
 
             (* and now unparse everything *)
@@ -2265,7 +2265,7 @@ let check_duplicate_modif2 xs =
     | res::xs ->
         match res with
         | None ->
-            if not (List.for_all (fun res2 -> res2 =*= None) xs)
+            if not (List.for_all (fun res2 -> res2 = None) xs)
             then begin
               pr2 ("different modification result for " ^ file);
               None

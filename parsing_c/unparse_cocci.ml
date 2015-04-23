@@ -1379,7 +1379,7 @@ in
 	match Ast.unwrap s with Ast.FunDecl _ -> true | _ -> false in
       let prnl x = force_newline() in
       let newline_before _ =
-	if before =*= After
+	if before = After
 	then
 	  let hd = List.hd xxs in
 	  match hd with
@@ -1394,7 +1394,7 @@ in
 	  | (Ast.DeclarationTag _::_) | (Ast.Token ("}",_)::_) -> prnl hd
           | _ -> () in
       let newline_after _ =
-	if before =*= Before
+	if before = Before
 	then
 	  match List.rev(List.hd(List.rev xxs)) with
 	    (Ast.StatementTag s::_) ->
