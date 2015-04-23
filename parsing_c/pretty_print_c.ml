@@ -322,7 +322,7 @@ and pp_string_format (e,ii) =
               pp_statement (Ast_c.mk_st (ExprStatement e1opt) il1)
 	  | ForDecl decl -> pp_decl decl);
           pp_statement (Ast_c.mk_st (ExprStatement e2opt) il2);
-          assert (null il3);
+          assert (il3 = []);
           pp_statement (Ast_c.mk_st (ExprStatement e3opt) il3);
           pr_elem i3;
           indent_if_needed st (function _ -> pp_statement st);
@@ -366,7 +366,7 @@ and pp_string_format (e,ii) =
         )
 
     | NestedFunc def, ii ->
-        assert (null ii);
+        assert (ii = []);
         pp_def def
     | MacroStmt, ii ->
         ii +> List.iter pr_elem ;
@@ -603,7 +603,7 @@ and pp_string_format (e,ii) =
 	  do_option pp_expression p; pr_elem rp
 
       | (TypeName (name,typ), noii) ->
-          assert (null noii);
+          assert (noii = []);
           let (_s, iis) = get_s_and_info_of_name name in
           print_sto_qu_ty (sto, qu, [iis]);
 
@@ -1124,8 +1124,8 @@ and pp_init (init, iinit) =
 		 | qu, (BaseType Void, ii) -> true
 		 | _ -> true
 	       );
-               assert (null iicomma);
-               assert (null ii_b_s);
+               assert (iicomma = []);
+               assert (ii_b_s = []);
                pp_type_with_ident None None t
 
            | paramst ->
@@ -1286,7 +1286,7 @@ and pp_init (init, iinit) =
                      f_body = body;
                      f_attr = attrs},ii) ->
 
-		       assert(null body);
+		       assert (body = []);
       (*
 	 iif ii;
 	 iif iidotsb;

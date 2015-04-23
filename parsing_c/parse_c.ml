@@ -228,7 +228,7 @@ let print_commentized xs =
               pr2_no_nl (s ^ " ");
 	    end
 	| _ -> ());
-    if not (null ys) then pr2 "";
+    if ys<>[] then pr2 "";
   end
 
 
@@ -759,7 +759,7 @@ let candidate_macros_in_passed2 ~defs passed  =
 
   | _ -> ()
   );
-  if null !res
+  if !res = []
   then !res2
   else !res
 
@@ -1032,7 +1032,7 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
                 in
 
 
-                if is_define_passed passed || null candidates
+                if is_define_passed passed || candidates=[]
                 then passx
                 else begin
                   (* todo factorize code *)

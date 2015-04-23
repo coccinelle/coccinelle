@@ -265,7 +265,7 @@ let get_fakeInfo_and_tokens celem toks =
 
   Pretty_print_c.pp_program_gen pr_elem pr_space celem;
 
-  if not (null !toks_in)
+  if  (!toks_in <> [])
   then failwith "WEIRD: unparsing not finished";
 
   List.rev !toks_out

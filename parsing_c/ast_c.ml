@@ -1220,7 +1220,7 @@ let rec (split_comma: 'a wrap2 list -> ('a, il) either list) =
   function
   | [] -> []
   | (e, ii)::xs ->
-      if null ii
+      if ii=[]
       then (Left e)::split_comma xs
       else Right ii::Left e::split_comma xs
 
@@ -1315,7 +1315,7 @@ let get_local_ii_of_expr_inlining_ii_of_name e =
   let (ebis,_),ii = e in
   match ebis, ii with
   | Ident name, noii ->
-      assert(null noii);
+      assert (noii = []);
       ii_of_name name
   | RecordAccess   (e, name), ii ->
       ii @ ii_of_name name

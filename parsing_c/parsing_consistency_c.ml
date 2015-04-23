@@ -144,7 +144,7 @@ let consistency_checking2 xs =
    * sizeof(id) and even if id was for a long time an identifier, maybe
    * a few time, because of the scope it's actually really a type.
    *)
-  if (null !ident_to_type)
+  if (!ident_to_type = [])
   then xs
   else
     let bigf = { Visitor_c.default_visitor_c_s with

@@ -971,7 +971,7 @@ and mk_If (starti :nodei option) (labels :int list) (xi_lbl :xinfo)
   | Selection (Ast_c.If (e, st1, st2)) ->
     let iist2 = Ast_c.get_ii_st_take_care st2 in begin
     match Ast_c.unwrap_st st2 with
-    | Ast_c.ExprStatement None when null iist2 ->
+    | Ast_c.ExprStatement None when iist2=[] ->
       (* We could have 'ExprStatement None' as a result of something like
        * 'if() xx else ;', so we must force to have a [] in the ii associated
        * with ExprStatement.
@@ -1633,7 +1633,7 @@ let check_control_flow (g : cflow) : unit =
       in
 
 
-      if null children#tolist
+      if (children#tolist) = []
       then
         if (* (depth = 0) *) startbraces <> []
         then print_trace_error trace2

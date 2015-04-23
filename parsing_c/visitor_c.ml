@@ -873,7 +873,7 @@ and vk_node = fun bigf node ->
     match F.unwrap n with
 
     | F.FunHeader (def) ->
-        assert(null (fst def).f_body);
+        assert( (fst def).f_body = []);
         vk_def bigf def;
 
     | F.Decl decl -> vk_decl bigf decl
@@ -1794,7 +1794,7 @@ and vk_node_s = fun bigf node ->
     F.rewrap node (
     match F.unwrap node with
     | F.FunHeader (def) ->
-        assert (null (fst def).f_body);
+        assert ( (fst def).f_body = []);
         F.FunHeader (vk_def_s bigf def)
 
     | F.Decl declb -> F.Decl (vk_decl_s bigf declb)

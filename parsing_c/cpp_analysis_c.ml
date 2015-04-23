@@ -277,7 +277,7 @@ let rec (recurse_expand_macro_topological_order:
           (spf "/tmp/graph-%d.dot" depth)
           g;
 
-        assert(not (null leafs)); 
+        assert (leafs <> []); 
 
 
         (* little specialisation to avoid useless work *)

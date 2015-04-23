@@ -712,7 +712,7 @@ ident_extra_cpp:
          match $3 with
          | [] -> raise (Impossible 87)
          | (x,concatnull)::xs ->
-             assert(null concatnull);
+             assert (concatnull = []);
              (mk_string_wrap $1, [])::(x,[$2])::xs
        )
    }
@@ -907,7 +907,7 @@ argument:
 
 action_higherordermacro_ne:
  | taction_list_ne
-     { if null $1
+     { if $1=[]
        then ActMisc [Ast_c.fakeInfo()]
        else ActMisc $1
      }
@@ -915,7 +915,7 @@ action_higherordermacro_ne:
 
 action_higherordermacro:
  | taction_list
-     { if null $1
+     { if $1=[]
        then ActMisc [Ast_c.fakeInfo()]
        else ActMisc $1
      }

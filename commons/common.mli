@@ -1814,14 +1814,9 @@ val forall : ('a -> bool) -> 'a list -> bool
 
 val big_union : ('a -> 'b set) -> 'a list -> 'b set
 
-(* same than [] but easier to search for, because [] can also be a pattern *)
-val empty_list : 'a list
-
 val sort : ('a -> 'a -> int) -> 'a list -> 'a list
 
 val length : 'a list -> int
-
-val null : 'a list -> bool
 
 val head : 'a list -> 'a
 val tail : 'a list -> 'a list

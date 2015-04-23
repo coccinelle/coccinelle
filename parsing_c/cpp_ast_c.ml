@@ -98,14 +98,14 @@ let cpp_option_of_cmdline (xs, ys) =
 (* Debug *)
 (*****************************************************************************)
 let (show_cpp_i_opts: string list -> unit) = fun xs ->
-  if not (null xs) then begin
+  if xs <> [] then begin
     pr2 "-I";
     xs +> List.iter pr2
   end
 
 
 let (show_cpp_d_opts: string list -> unit) = fun xs ->
-  if not (null xs) then begin
+  if xs <> [] then begin
     pr2 "-D";
     xs +> List.iter pr2
   end

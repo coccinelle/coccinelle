@@ -323,8 +323,8 @@ let fix_flow_ctl2 (flow : F.cflow) : F.cflow =
 
     !g#add_arc ((exitnodei, exitnodei), F.Direct);
 
-    if null ((!g#successors   errornodei)#tolist) &&
-       null ((!g#predecessors errornodei)#tolist)
+    if ((!g#successors   errornodei)#tolist) = [] &&
+       ((!g#predecessors errornodei)#tolist) = []
     then !g#del_node errornodei
     else !g#add_arc ((errornodei, errornodei), F.Direct);
    with Not_found -> ()

@@ -153,11 +153,6 @@ let (lines: string -> string list) = fun s ->
 let push2 v l =
   l := v :: !l
 
-let null xs = match xs with [] -> true | _ -> false
-
-
-
-
 let debugger = ref false
 
 let unwind_protect f cleanup =
@@ -991,7 +986,7 @@ let b = laws "funs" (fun (f,g,h) -> x <= y ==> (max x y  = y)       )(pg ig ig)
 (*
 let one_of xs = List.nth xs (Random.int (List.length xs))
 let take_one xs =
-  if empty xs then failwith "Take_one: empty list"
+  if xs=[] then failwith "Take_one: empty list"
   else
     let i = Random.int (List.length xs) in
     List.nth xs i, filter_index (fun j _ -> i <> j) xs
@@ -3826,7 +3821,7 @@ let _ = example (split_when (fun x -> x =|= 3)
 let rec split_gen_when_aux f acc xs =
   match xs with
   | [] ->
-      if null acc
+      if acc=[]
       then []
       else [List.rev acc]
   | (x::xs) ->
@@ -3835,7 +3830,7 @@ let rec split_gen_when_aux f acc xs =
           split_gen_when_aux f (x::acc) xs
       | Some (rest) ->
           let before = List.rev acc in
-          if null before
+          if before=[]
           then split_gen_when_aux f [] rest
           else before::split_gen_when_aux f [] rest
       )
@@ -3864,12 +3859,12 @@ let rec skipfirst e = function
 
 
 let index_list xs =
-  if null xs then [] (* enum 0 (-1) generate an exception *)
+  if xs=[] then [] (* enum 0 (-1) generate an exception *)
   else zip xs (enum 0 ((List.length xs) -1))
 
 let index_list_and_total xs =
   let total = List.length xs in
-  if null xs then [] (* enum 0 (-1) generate an exception *)
+  if xs=[] then [] (* enum 0 (-1) generate an exception *)
   else zip xs (enum 0 ((List.length xs) -1))
     +> List.map (fun (a,b) -> (a,b,total))
 
@@ -4008,8 +4003,6 @@ let rec removelast = function
   | e::l -> e :: removelast l
 
 let remove x = List.filter (fun y -> y != x)
-let empty list = null list
-
 
 let rec inits = function
   | [] -> [[]]
@@ -5159,7 +5152,7 @@ let (add_node: 'a -> 'a graph -> 'a graph) = fun node (nodes, arcs) ->
 let (del_node: 'a -> 'a graph -> 'a graph) = fun node (nodes, arcs) ->
   (nodes $-$ set [node], arcs)
 (* could do more job:
-  let _ = assert (successors node (nodes, arcs) = empty) in
+  let _ = assert (successors node (nodes, arcs) = []) in
    +> List.filter (fun (src, dst) -> dst != node))
 *)
 let (add_arc: ('a * 'a) -> 'a graph -> 'a graph) = fun arc (nodes, arcs) ->
@@ -5306,11 +5299,8 @@ let find = List.find
 let exists = List.exists
 let forall = List.for_all
 let big_union f xs = xs +> map f +> fold union_set empty_set
-(* let empty = [] *)
-let empty_list = []
 let sort = List.sort
 let length = List.length
-(* in prelude now: let null xs = match xs with [] -> true | _ -> false *)
 let head = List.hd
 let tail = List.tl
 let is_singleton = fun xs -> List.length xs =|= 1

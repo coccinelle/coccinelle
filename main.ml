@@ -1138,9 +1138,9 @@ and generate_outfiles outfiles x (* front file *) xs (* other files *) =
 	    ));
   if !output_file <> "" && not !compat_mode then
     (match outfiles with
-    | [infile, Some outfile] when infile =$= x && null xs ->
+    | [infile, Some outfile] when infile =$= x && xs=[] ->
         Common.command2 ("cp " ^outfile^ " " ^ !output_file)
-    | [infile, None] when infile =$= x && null xs ->
+    | [infile, None] when infile =$= x && xs=[] ->
         Common.command2 ("cp " ^infile^ " " ^ !output_file)
     | [] ->
         failwith
@@ -1180,9 +1180,9 @@ let main () =
       List.exists (function x -> Filename.check_suffix x ".cocci") arglist
         && not (List.mem "--parse-cocci" arglist)
 	&& not (List.mem "--rule-dependencies" arglist) in
-    if not (null (Common.inter_set arglist
+    if (Common.inter_set arglist
 	            ["--cocci-file";"--sp-file";"--sp";"--test";"--testall";
-                      "--test-okfailed";"--test-regression-okfailed"]))
+                      "--test-okfailed";"--test-regression-okfailed"]) <> []
          || contains_cocci
     then run_profile quiet_profile;
 

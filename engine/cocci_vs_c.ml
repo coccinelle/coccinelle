@@ -828,7 +828,7 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 		 * for the associated ',' see below how we handle the EComma
 		 * to match nothing.
               *)
-		  (if null startxs
+		  (if startxs=[]
 		  then
                     if mcode_contain_plus (mcodekind mcode)
                     then fail
@@ -885,7 +885,7 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 		  (startendxs +> List.fold_left (fun acc (startxs, endxs) ->
 		    acc >||> (
 		    let ok =
-		      if null startxs
+		      if startxs=[]
 		      then
 			if mcode_contain_plus (mcodekind ida)
 			then false
@@ -928,7 +928,7 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 			  X.envf keep inherited
 			    (ida, mktermval startxs', max_min)
 			    (fun () ->
-			      if null startxs
+			      if startxs=[]
 			      then return (ida, [])
 			      else distrf ida (split_comma startxs'))
 			    >>= (fun ida startxs ->
@@ -1149,7 +1149,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 
 
   | A.Ident ida,   ((B.Ident (nameidb), typ),noii) ->
-      assert (null noii);
+      assert (noii = []);
       ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
         return (
         ((A.Ident ida)) +> wa,
@@ -2759,7 +2759,7 @@ and (initialiser: (A.initialiser, Ast_c.initialiser) matcher) =  fun ia ib ->
         | A.Edots (_, Some expr), _    -> failwith "not handling when on Edots"
 
         | _, (B.InitExpr expb, ii) ->
-            assert (null ii);
+            assert (ii = []);
             expression expa expb >>= (fun expa expb ->
               return (
                 (A.InitExpr expa) +> A.rewrap ia,
@@ -3070,7 +3070,7 @@ and (struct_field: (A.annotated_decl, B.field) matcher) =
 	   DeclList *)
 	    let (iiptvirgb,iifakestart) = tuple_of_list2 iiptvirg in
 
-	    assert (null iivirg);
+	    assert (iivirg = []);
 	    (match onevar with
 	    | B.BitField (sopt, typb, _, expr) ->
 		pr2_once "warning: bitfield not handled by ast_cocci";
@@ -3763,7 +3763,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
     * so we don't want apply isomorphisms every time.
     *)
     | A.TypeName sa,  (B.TypeName (nameb, typb), noii) ->
-        assert (null noii);
+        assert (noii = []);
 
         (match nameb with
         | B.RegularName (sb, iidb) ->
@@ -4587,7 +4587,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
                   f_body = body;
                   f_old_c_style = oldstyle;
                   }, ii) ->
-      assert (null body);
+      assert (body = []);
 
       if oldstyle <> None
       then pr2 "OLD STYLE DECL NOT WELL SUPPORTED";
@@ -4756,7 +4756,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
   | A.ForHeader (ia1, ia2, firsta, ea2opt, ia4, ea3opt, ia5),
     F.ForHeader (st, ((firstb, (eb2opt,ib4s), (eb3opt,ib4vide)), ii))
     ->
-      assert (null ib4vide);
+      assert (ib4vide = []);
       let (ib1, ib2, ib5) = tuple_of_list3 ii in
       let ib4 = tuple_of_list1 ib4s in
 

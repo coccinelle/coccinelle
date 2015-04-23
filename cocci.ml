@@ -441,7 +441,7 @@ let show_or_not_trans_info2 trans_info =
   let trans_info =
     List.map (function (index,trans_info) -> trans_info) trans_info in
   if !Flag.show_transinfo then begin
-    if null trans_info then pr2 "transformation info is empty"
+    if trans_info = [] then pr2 "transformation info is empty"
     else begin
       pr2 "transformation info returned:";
       let trans_info =
@@ -1238,7 +1238,7 @@ let rec prepare_h seen env (hpath : string) choose_includes parse_strings
 	     local_includes) in
       let info_h_cs = build_info_program h_cs !env in
       env :=
-	if null info_h_cs
+	if info_h_cs = []
 	then !env
 	else last_env_toplevel_c_info info_h_cs;
       others@
@@ -1691,7 +1691,7 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
 		   List.filter
 		     (fun (s,v) -> List.mem s r.rule_info.used_after)) in
 	      let new_e =
-		if null new_bindings
+		if new_bindings = []
 		then
 		  begin
 		  (*use the old bindings, specialized to the used_after_list*)
@@ -1888,7 +1888,7 @@ and process_a_ctl_a_env_a_toplevel2 r e c f =
 
 	   r.rule_info.was_matched := true;
 
-	   if not (null trans_info) &&
+	   if trans_info <> [] &&
 	     not (!Flag.sgrep_mode2 && not !Flag_cocci.show_diff)
 	   then
 	     begin
@@ -2278,7 +2278,7 @@ let check_duplicate_modif2 xs =
               | Some res2 ->
                   let diff = Common.cmd_to_list ("diff -u -b -B "^res^" "^res2)
                   in
-                  null diff
+                  diff = []
             ) xs) then begin
               pr2 ("different modification result for " ^ file);
               None

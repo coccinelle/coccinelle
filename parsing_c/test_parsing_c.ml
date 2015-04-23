@@ -113,7 +113,7 @@ let new_test_parse_gen xs =
   );
 *)
 
-  if not (null !stat_list)
+  if !stat_list <> []
   then begin
     Parsing_stat.print_recurring_problematic_tokens !stat_list;
     Parsing_stat.print_parsing_stat_list !stat_list;
@@ -186,7 +186,7 @@ let test_parse_gen xs ext =
   );
 *)
 
-  if not (null !stat_list)
+  if !stat_list <> []
   then begin
     Parsing_stat.print_recurring_problematic_tokens !stat_list;
     Parsing_stat.print_parsing_stat_list !stat_list;
@@ -550,7 +550,7 @@ let test_parse xs =
     Common.push2 stat stat_list;
   );
 
-  if not (null !stat_list)
+  if !stat_list <> []
   then begin
     Parsing_stat.print_recurring_problematic_tokens !stat_list;
     Parsing_stat.print_parsing_stat_list !stat_list;

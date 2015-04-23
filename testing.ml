@@ -406,7 +406,7 @@ let test_regression_okfailed () =
   in
   let failed = Common.cmd_to_list ("find . -name \"*.failed\"") in
 
-  if null (oks @ failed)
+  if (oks @ failed) = []
   then failwith "no ok/failed file, you certainly did a make clean"
   else begin
     oks +> List.iter (fun s ->

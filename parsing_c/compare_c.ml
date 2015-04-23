@@ -210,7 +210,7 @@ let get_diff filename1 filename2 bs =
   let xs = Common.cmd_to_list com in
 
   (* get rid of the --- and +++ lines *)
-  if null xs
+  if xs=[]
   then xs
   else Common.drop 2 xs
 
@@ -295,7 +295,7 @@ let do_compare_token adjust_cvs to_expected filename1 filename2 =
 
   let xs = get_diff filename1 filename2 "-b -B" in
 
-  if null xs && (res <> Correct)
+  if xs=[] && (res <> Correct)
   then failwith
     "Impossible: How can diff be null and have not Correct in compare_c?";
 
