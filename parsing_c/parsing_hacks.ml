@@ -465,7 +465,7 @@ and define_line_2 acc line lastinfo xs =
 	  let acc = (TCommentSpace ii) :: acc in
           define_line_2 acc (line+1) info xs
       | x ->
-          if line' =|= line
+          if line' = line
           then define_line_2 (x::acc) (end_line_of_tok line' x) info xs
           else
 	    (* Put end of line token before the newline.  A newline at least
@@ -1402,13 +1402,13 @@ let rec find_macro_lineparen xs =
           Parenthised (xxs,info_parens);
         ] as _line1
         ))
-    ::xs when col1 =|= 0
+    ::xs when col1 = 0
     ->
       let condition =
         (* to reduce number of false positive *)
         (match xs with
         | (Line (PToken ({col = col2 } as other)::restline2))::_ ->
-            TH.is_eof other.tok || (col2 =|= 0 &&
+            TH.is_eof other.tok || (col2 = 0 &&
              (match other.tok with
              | TOBrace _ -> false (* otherwise would match funcdecl *)
              | TCBrace _ when ctx <> InFunction -> false
@@ -1457,7 +1457,7 @@ let rec find_macro_lineparen xs =
       (* This can give a false positive for K&R functions if the function
          name is in the same column as the first parameter declaration. *)
       let condition =
-        (col1 =|= col2 &&
+        (col1 = col2 &&
             (match other.tok with
             | TOBrace _ -> false (* otherwise would match funcdecl *)
             | TCBrace _ when ctx <> InFunction -> false
@@ -1490,7 +1490,7 @@ let rec find_macro_lineparen xs =
 
       if condition
       then
-        if col1 =|= 0 then ()
+        if col1 = 0 then ()
         else begin
           msg_macro_noptvirg s;
           macro.tok <- TMacroStmt (s, TH.info_of_tok macro.tok);
@@ -1518,7 +1518,7 @@ let rec find_macro_lineparen xs =
     (* when s ==~ regexp_macro *)
 
       let condition =
-        (col1 =|= col2 &&
+        (col1 = col2 &&
             col1 <> 0 && (* otherwise can match typedef of fundecl*)
             (match other.tok with
             | TPtVirg _ -> false
@@ -2422,7 +2422,7 @@ let lookahead2 ~pass next before =
   | (TIdent (s, i1)::TCPar i2::(TIdent (_,i3)|TInt (_,i3))::_ ,
     (TOPar info)::x::_)
     when not (TH.is_stuff_taking_parenthized x) (* &&
-      Ast_c.line_of_info i2 =|= Ast_c.line_of_info i3 - why useful?
+      Ast_c.line_of_info i2 = Ast_c.line_of_info i3 - why useful?
       *)
       && ok_typedef s
       && not (ident x) (* possible K&R declaration *)

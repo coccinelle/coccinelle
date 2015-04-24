@@ -1737,41 +1737,6 @@ let mk_action_3_arg f =
 
 let mk_action_n_arg f = f
 
-
-(*****************************************************************************)
-(* Equality *)
-(*****************************************************************************)
-
-(* Using the generic (=) is tempting, but it backfires, so better avoid it *)
-
-(* To infer all the code that use an equal, and that should be
- * transformed, is not that easy, because (=) is used by many
- * functions, such as List.find, List.mem, and so on. So the strategy
- * is to turn what you were previously using into a function, because
- * (=) return an exception when applied to a function. Then you simply
- * use ocamldebug to infer where the code has to be transformed.
- *)
-
-(* src: caml mailing list ? *)
-let (=|=) : int    -> int    -> bool = (=)
-let (=<=) : char   -> char   -> bool = (=)
-let (=:=) : bool   -> bool   -> bool = (=)
-
-(* the evil generic (=). I define another symbol to more easily detect
- * it, cos the '=' sign is syntactically overloaded in caml. It is also
- * used to define function.
- *)
-(* if really want to forbid to use '='
-let (=) = (=|=)
-let (=) () () = false
-*)
-
-
-
-
-
-
-
 (*###########################################################################*)
 (* And now basic types *)
 (*###########################################################################*)
@@ -1816,7 +1781,7 @@ let string_of_chars cs = cs +> List.map (String.make 1) +> String.concat ""
 (*****************************************************************************)
 
 (* since 3.08, div by 0 raise Div_by_rezo, and not anymore a hardware trap :)*)
-let (/!) x y = if y =|= 0 then (log "common.ml: div by 0"; 0) else x / y
+let (/!) x y = if y = 0 then (log "common.ml: div by 0"; 0) else x / y
 
 (* now in prelude
  * let rec (do_n: int -> (unit -> unit) -> unit) = fun i f ->
@@ -1846,7 +1811,7 @@ let clampf = function
 
 let square x = x *. x
 
-let rec power x n = if n =|= 0 then 1 else x * power x (n-1)
+let rec power x n = if n = 0 then 1 else x * power x (n-1)
 
 let between i min max = i > min && i < max
 
@@ -1859,18 +1824,18 @@ let bitrange x p = let v = power 2 p in between x (-v) v
 (* descendant *)
 let (prime1: int -> int option)  = fun x ->
   let rec prime1_aux n =
-    if n =|= 1 then None
+    if n = 1 then None
     else
-      if (x / n) * n =|= x then Some n else prime1_aux (n-1)
-  in if x =|= 1 then None else if x < 0 then failwith "negative" else prime1_aux (x-1)
+      if (x / n) * n = x then Some n else prime1_aux (n-1)
+  in if x = 1 then None else if x < 0 then failwith "negative" else prime1_aux (x-1)
 
 (* montant, better *)
 let (prime: int -> int option)  = fun x ->
   let rec prime_aux n =
-    if n =|= x then None
+    if n = x then None
     else
-      if (x / n) * n =|= x then Some n else prime_aux (n+1)
-  in if x =|= 1 then None else if x < 0 then failwith "negative" else prime_aux 2
+      if (x / n) * n = x then Some n else prime_aux (n+1)
+  in if x = 1 then None else if x < 0 then failwith "negative" else prime_aux 2
 
 let sum xs = List.fold_left (+) 0 xs
 let product = List.fold_left ( * ) 1
@@ -1878,13 +1843,13 @@ let product = List.fold_left ( * ) 1
 
 let decompose x =
   let rec decompose x =
-  if x =|= 1 then []
+  if x = 1 then []
   else
     (match prime x with
     | None -> [x]
     | Some n -> n::decompose (x / n)
     )
-  in assert (product (decompose x) =|= x); decompose x
+  in assert (product (decompose x) = x); decompose x
 
 let mysquare x = x * x
 let sqr a = a *. a
@@ -1909,15 +1874,15 @@ let int_of_base s base =
     0  (List.rev (list_of_string s))
 
 let int_of_stringbits s = int_of_base s 2
-let _ = example (int_of_stringbits "1011" =|= 1*8 + 1*2 + 1*1)
+let _ = example (int_of_stringbits "1011" = 1*8 + 1*2 + 1*1)
 
 let int_of_octal s = int_of_base s 8
-let _ = example (int_of_octal "017" =|= 15)
+let _ = example (int_of_octal "017" = 15)
 
 (* let int_of_hex s = int_of_base s 16, NONONONO cos 'A' - '0' does not give 10 !! *)
 
 let int_of_all s =
-  if String.length s >= 2 && (String.get s 0 =<= '0') && is_digit (String.get s 1)
+  if String.length s >= 2 && (String.get s 0 = '0') && is_digit (String.get s 1)
   then int_of_octal s else int_of_string s
 
 
@@ -2345,7 +2310,7 @@ let is_string_prefix s1 s2 =
   (String.sub s2 0 (String.length s1) = s1)
 
 let plural i s =
-  if i =|= 1
+  if i = 1
   then Printf.sprintf "%d %s" i s
   else Printf.sprintf "%d %ss" i s
 
@@ -2407,7 +2372,7 @@ let matrix_distance s1 s2 =
   let m = (String.length s2) in
   let mat = Array.make_matrix (n+1) (m+1) 0 in
   let t i j =
-    if String.get s1 (i-1) =<= String.get s2 (j-1)
+    if String.get s1 (i-1) = String.get s2 (j-1)
     then 0
     else 1
   in
@@ -2433,8 +2398,8 @@ let edit_distance s1 s2 =
 
 
 let test = edit_distance "vintner" "writers"
-let _ = assert (edit_distance "winter" "winter" =|= 0)
-let _ = assert (edit_distance "vintner" "writers" =|= 5)
+let _ = assert (edit_distance "winter" "winter" = 0)
+let _ = assert (edit_distance "vintner" "writers" = 5)
 
 
 (*****************************************************************************)
@@ -2831,7 +2796,7 @@ let days_in_week_of_day day =
   let tm = Unix.localtime day in
 
   let wday = tm.Unix.tm_wday in
-  let wday = if wday =|= 0 then 6 else wday -1 in
+  let wday = if wday = 0 then 6 else wday -1 in
 
   let mday = tm.Unix.tm_mday in
 
@@ -3101,11 +3066,11 @@ let (split_space: string -> string list)   = fun s ->
 (* todo opti ? *)
 let nblines s =
   lines s +> List.length
-let _ = example (nblines "" =|= 0)
-let _ = example (nblines "toto" =|= 1)
-let _ = example (nblines "toto\n" =|= 1)
-let _ = example (nblines "toto\ntata" =|= 2)
-let _ = example (nblines "toto\ntata\n" =|= 2)
+let _ = example (nblines "" = 0)
+let _ = example (nblines "toto" = 1)
+let _ = example (nblines "toto\n" = 1)
+let _ = example (nblines "toto\ntata" = 2)
+let _ = example (nblines "toto\ntata\n" = 2)
 
 (*****************************************************************************)
 (* Process/Files *)
@@ -3159,7 +3124,7 @@ let sleep_little () =
 
 let do_in_fork f =
   let pid = Unix.fork () in
-  if pid =|= 0
+  if pid = 0
   then
     begin
       (* Unix.setsid(); *)
@@ -3720,7 +3685,7 @@ let rec drop_while p = function
 
 let rec drop_until p xs =
   drop_while (fun x -> not (p x)) xs
-let _ = example (drop_until (fun x -> x =|= 3) [1;2;3;4;5] = [3;4;5])
+let _ = example (drop_until (fun x -> x = 3) [1;2;3;4;5] = [3;4;5])
 
 
 let span p xs = (take_while p xs, drop_while p xs)
@@ -3767,7 +3732,7 @@ let (exclude_but_keep_attached: ('a -> bool) -> 'a list -> ('a * 'a list) list)=
    in
    aux_filter [] [] xs
 let _ = example
-  (exclude_but_keep_attached (fun x -> x =|= 3) [3;3;1;3;2;3;3;3] =
+  (exclude_but_keep_attached (fun x -> x = 3) [3;3;1;3;2;3;3;3] =
       [(1,[3;3]);(2,[3])])
 
 let group_by_post: ('a -> bool) -> 'a list -> ('a list * 'a) list * 'a list =
@@ -3785,7 +3750,7 @@ let group_by_post: ('a -> bool) -> 'a list -> ('a list * 'a) list * 'a list =
    aux_filter [] [] xs
 
 let _ = example
-  (group_by_post (fun x -> x =|= 3) [1;1;3;2;3;4;5;3;6;6;6] =
+  (group_by_post (fun x -> x = 3) [1;1;3;2;3;4;5;3;6;6;6] =
       ([([1;1],3);([2],3);[4;5],3], [6;6;6]))
 
 let (group_by_pre: ('a -> bool) -> 'a list -> 'a list * ('a * 'a list) list)=
@@ -3796,7 +3761,7 @@ let (group_by_pre: ('a -> bool) -> 'a list -> 'a list * ('a * 'a list) list)=
     ys +> List.rev +> List.map (fun (xs, x) -> x, List.rev xs )
 
 let _ = example
-  (group_by_pre (fun x -> x =|= 3) [1;1;3;2;3;4;5;3;6;6;6] =
+  (group_by_pre (fun x -> x = 3) [1;1;3;2;3;4;5;3;6;6;6] =
       ([1;1], [(3,[2]); (3,[4;5]); (3,[6;6;6])]))
 
 
@@ -3809,7 +3774,7 @@ let split_when: ('a -> bool) -> 'a list -> 'a list * 'a * 'a list =
         List.rev acc, x, xs
       else loop (x :: acc) xs in
   loop [] l
-let _ = example (split_when (fun x -> x =|= 3)
+let _ = example (split_when (fun x -> x = 3)
                     [1;2;3;4;1;2] = ([1;2],3,[4;1;2]))
 
 
@@ -3894,7 +3859,7 @@ let _ = assert_equal (head_middle_tail [1;3]) (1, [], 3)
 
 let remove x xs =
   let newxs = List.filter (fun y -> y <> x) xs in
-  assert (List.length newxs =|= List.length xs - 1);
+  assert (List.length newxs = List.length xs - 1);
   newxs
 
 
@@ -4042,7 +4007,7 @@ let acc_map f l =
 
 
 let rec (generate: int -> 'a -> 'a list) = fun i el ->
-  if i =|= 0 then []
+  if i = 0 then []
   else el::(generate (i-1) el)
 
 let rec uniq = function
@@ -4050,7 +4015,7 @@ let rec uniq = function
   | e::l -> if List.mem e l then uniq l else e :: uniq l
 
 let has_no_duplicate xs =
-  List.length xs =|= List.length (uniq xs)
+  List.length xs = List.length (uniq xs)
 let is_set_as_list = has_no_duplicate
 
 
@@ -4080,7 +4045,7 @@ let rec (return_when: ('a -> 'b option) -> 'a list -> 'b) = fun p -> function
   | x::xs -> (match p x with None -> return_when p xs | Some b -> b)
 
 let rec splitAt n xs =
-  if n =|= 0 then ([],xs)
+  if n = 0 then ([],xs)
   else
     (match xs with
     | []      -> ([],[])
@@ -4090,9 +4055,9 @@ let rec splitAt n xs =
 let pack n xs =
   let rec pack_aux l i = function
     | [] -> failwith "not on a boundary"
-    | [x] -> if i =|= n then [l @ [x]] else failwith "not on a boundary"
+    | [x] -> if i = n then [l @ [x]] else failwith "not on a boundary"
     | x::xs ->
-        if i =|= n
+        if i = n
         then (l @ [x])::(pack_aux [] 1 xs)
         else pack_aux (l @ [x]) (i+1) xs
   in
@@ -5299,7 +5264,7 @@ let sort = List.sort
 let length = List.length
 let head = List.hd
 let tail = List.tl
-let is_singleton = fun xs -> List.length xs =|= 1
+let is_singleton = fun xs -> List.length xs = 1
 
 let tail_map f l = (* tail recursive map, using rev *)
   let rec loop acc = function
@@ -5509,7 +5474,7 @@ let (info_from_charpos2: int -> filename -> (int * int * string)) =
   let rec charpos_to_pos_aux last_valid =
     let s =
       try Some (input_line chan)
-      with End_of_file when charpos =|= last_valid -> None in
+      with End_of_file when charpos = last_valid -> None in
     incr linen;
     match s with
       Some s ->

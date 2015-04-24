@@ -664,7 +664,7 @@ let is_abstract x =
 (* Helpers *)
 (*****************************************************************************)
 let is_same_line_or_close line tok =
-  line_of_tok tok =|= line ||
-  line_of_tok tok =|= line - 1 ||
-  line_of_tok tok =|= line - 2
+  line_of_tok tok = line ||
+  line_of_tok tok = line - 1 ||
+  line_of_tok tok = line - 2
 

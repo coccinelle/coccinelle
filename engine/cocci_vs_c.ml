@@ -128,7 +128,7 @@ let generalize_mcode ia =
 (* 0x0 is equivalent to 0,  value format isomorphism *)
 let equal_c_int s1 s2 =
   try
-    int_of_string s1 =|= int_of_string s2
+    int_of_string s1 = int_of_string s2
   with Failure("int_of_string") ->
     s1 = s2
 
@@ -256,7 +256,7 @@ let equal_metavarval valu valu' =
       (* old: Lib_parsing_c.al_type a = Lib_parsing_c.al_type b *)
       C_vs_c.eq_type a b
 
-  | Ast_c.MetaListlenVal a, Ast_c.MetaListlenVal b -> a =|= b
+  | Ast_c.MetaListlenVal a, Ast_c.MetaListlenVal b -> a = b
 
   | Ast_c.MetaParamVal a, Ast_c.MetaParamVal b ->
       Lib_parsing_c.al_param a = Lib_parsing_c.al_param b
@@ -333,7 +333,7 @@ let equal_inh_metavarval valu valu'=
       (* old: Lib_parsing_c.al_inh_type a = Lib_parsing_c.al_inh_type b *)
       C_vs_c.eq_type a b
 
-  | Ast_c.MetaListlenVal a, Ast_c.MetaListlenVal b -> a =|= b
+  | Ast_c.MetaListlenVal a, Ast_c.MetaListlenVal b -> a = b
 
   | Ast_c.MetaParamVal a, Ast_c.MetaParamVal b ->
       Lib_parsing_c.al_param a = Lib_parsing_c.al_param b

@@ -60,7 +60,7 @@ let mk_info_item a b =
 
 
 let info_same_line line xs =
-  xs +> List.filter (fun info -> Ast_c.line_of_info info =|= line)
+  xs +> List.filter (fun info -> Ast_c.line_of_info info = line)
 
 
 (* move in cpp_token_c ? *)
@@ -105,7 +105,7 @@ let default_parse_error_function : parse_error_function =
       for i = start_line to end_line do
 	let line = filelines.(i) in
 
-	if i =|= line_error
+	if i = line_error
 	then  pr2 ("BAD:!!!!!" ^ " " ^ line)
 	else  pr2 ("bad:" ^ " " ^      line)
       done
@@ -218,10 +218,10 @@ let print_commentized xs =
 	    let s = Str.global_substitute
 		(Str.regexp "\n") (fun s -> "") s
 	    in
-	    if newline =|= !line
+	    if newline = !line
 	    then pr2_no_nl (s ^ " ")
 	    else begin
-              if !line =|= -1
+              if !line = -1
               then pr2_no_nl "passed:"
               else pr2_no_nl "\npassed:";
               line := newline;
@@ -645,7 +645,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
                 if
                   LP.is_typedef s &&
                     not (!Flag_parsing_c.disable_add_typedef) &&
-                    pass =|= 1
+                    pass = 1
                 then Parser_c.TypedefIdent (s, ii)
                 else Parser_c.TIdent (s, ii)
             | x -> x

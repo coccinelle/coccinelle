@@ -574,35 +574,6 @@ val action_list:
 val do_action:
   Arg.key -> string list (* args *) -> cmdline_actions -> unit
 
-(*****************************************************************************)
-(* Equality *)
-(*****************************************************************************)
-
-(* Using the generic (=) is tempting, but it backfires, so better avoid it *)
-
-(* To infer all the code that use an equal, and that should be
- * transformed, is not that easy, because (=) is used by many
- * functions, such as List.find, List.mem, and so on. The strategy to find
- * them is to turn what you were previously using into a function, because
- * (=) return an exception when applied to a function, then you simply
- * use ocamldebug to detect where the code has to be transformed by
- * finding where the exception was launched from.
- *)
-
-val (=|=) : int    -> int    -> bool
-val (=<=) : char   -> char   -> bool
-val (=:=) : bool   -> bool   -> bool
-
-(* if want to restrict the use of '=', uncomment this:
- *
- * val (=): unit -> unit -> bool
- *
- * But it will not forbid you to use caml functions like List.find, List.mem
- * which internally use this convenient but evolution-unfriendly (=)
-*)
-
-
-
 (*###########################################################################*)
 (* And now basic types *)
 (*###########################################################################*)

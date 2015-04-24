@@ -118,7 +118,7 @@ let consistency_checking2 xs =
     then begin
       pr2_err ("TYPEDEF CONFLICT:" ^ k);
       let sorted = xs +> List.sort (fun (ka,va) (kb,vb) ->
-        if !va =|= !vb then
+        if !va = !vb then
           (match ka, kb with
           | CTypedef, _ -> 1 (* first is smaller *)
           | _, CTypedef -> -1

@@ -1068,9 +1068,9 @@ let compare_pos ii1 ii2 =
     (Real p1, Real p2) ->
       compare p1.Common.charpos p2.Common.charpos
   | (Virt (p1,_), Real p2) ->
-      if (compare p1.Common.charpos p2.Common.charpos) =|= (-1) then (-1) else 1
+      if (compare p1.Common.charpos p2.Common.charpos) = (-1) then (-1) else 1
   | (Real p1, Virt (p2,_)) ->
-      if (compare p1.Common.charpos p2.Common.charpos) =|= 1 then 1 else (-1)
+      if (compare p1.Common.charpos p2.Common.charpos) = 1 then 1 else (-1)
   | (Virt (p1,o1), Virt (p2,o2)) ->
       let poi1 = p1.Common.charpos in
       let poi2 = p2.Common.charpos in
@@ -1080,7 +1080,7 @@ let compare_pos ii1 ii2 =
       |	x -> x
 
 let equal_posl (l1,c1) (l2,c2) =
-  (l1 =|= l2) && (c1 =|= c2)
+  (l1 = l2) && (c1 = c2)
 
 let compare_posl (l1,c1) (l2,c2) =
   match l2 - l1 with

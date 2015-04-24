@@ -1576,7 +1576,7 @@ let add_newlines toks tabbing_unit =
 let new_tabbing2 space =
   list_of_string space
     +> List.rev
-    +> take_until (fun c -> c =<= '\n')
+    +> take_until (fun c -> c = '\n')
     +> List.rev
     +> List.map string_of_char
     +> String.concat ""
@@ -2127,7 +2127,7 @@ let rec find_paren_comma = function
   | { str = "("; idx = Some p1 } :: ({ str = ","; idx = Some p2} :: _ as xs)
   | { str = ","; idx = Some p1 } :: ({ str = ","; idx = Some p2} :: _ as xs)
   | { str = ","; idx = Some p1 } :: ({ str = ")"; idx = Some p2} :: _ as xs) 
-    when p2 =|= p1 + 1 ->
+    when p2 = p1 + 1 ->
     find_paren_comma xs
 
   (* otherwise yes can adjust *)

@@ -163,7 +163,7 @@ let mcode fn (s,info,mc,pos) =
 		    | Ast.Indent s -> s
 		    | Ast.Space s -> s in
 		  print_string str line col; Some line
-	      |	Some lb when line =|= lb ->
+	      |	Some lb when line = lb ->
 		  print_string (get_string_info str) line col; Some line
 	      |	_ ->
 		  force_newline();
@@ -179,7 +179,7 @@ let mcode fn (s,info,mc,pos) =
       let line_before = print_comments None info.Ast.strbef in
       (match line_before with
 	None -> ()
-      |	Some lb when lb =|= info.Ast.line -> ()
+      |	Some lb when lb = info.Ast.line -> ()
       |	_ -> force_newline());
       fn s line lcol;
       let _ = print_comments (Some info.Ast.line) info.Ast.straft in

@@ -65,7 +65,7 @@ let same_s saopt sbopt =
 let rec fullType a b =
   let ((qua,iiqa), tya) = a in
   let ((qub,iiqb), tyb) = b in
-  (qua.const =:= qub.const && qua.volatile =:= qub.volatile) >&&>
+  (qua.const = qub.const && qua.volatile = qub.volatile) >&&>
 
     let (qu,iiq) = (qua, iiqa) in
     typeC tya tyb >>= (fun ty ->
@@ -121,7 +121,7 @@ and typeC tya tyb =
       let bx = ba in
       let iihas3dotsx = iihas3dotsa in
 
-      (ba =:= bb && List.length tsa =|= List.length tsb) >&&>
+      (ba = bb && List.length tsa = List.length tsb) >&&>
       fullType returna returnb >>= (fun returnx ->
 
       Common.zip tsa tsb +> List.fold_left
@@ -141,7 +141,7 @@ and typeC tya tyb =
 
 
             (* todo?  iso on name or argument ? *)
-            (ba =:= bb && same_s saopt sbopt) >&&>
+            (ba = bb && same_s saopt sbopt) >&&>
             fullType ta tb >>= (fun tx ->
               let paramx = { p_register = (bx, iibx);
                              p_namei = sxopt;
@@ -157,7 +157,7 @@ and typeC tya tyb =
 
   | Enum (saopt, enuma), Enum (sbopt, enumb) ->
       (saopt = sbopt &&
-      List.length enuma =|= List.length enumb &&
+      List.length enuma = List.length enumb &&
       Common.zip enuma enumb +> List.for_all (fun
         (((namesa,eopta), iicommaa), ((namesb,eoptb),iicommab))
           ->
@@ -192,7 +192,7 @@ and typeC tya tyb =
 
 
   | StructUnion (sua, saopt, sta), StructUnion (sub, sbopt, stb) ->
-      (sua = sub && saopt = sbopt && List.length sta =|= List.length stb)
+      (sua = sub && saopt = sbopt && List.length sta = List.length stb)
       >&&>
       (function tin ->
 	(* zip is only safe if the above succeeds *)
@@ -207,7 +207,7 @@ and typeC tya tyb =
             | DeclarationField (FieldDeclList (fa, iipta)),
               DeclarationField (FieldDeclList (fb, iiptb)) ->
                 let iipt = iipta in (* TODO ?*)
-                (List.length fa =|= List.length fb) >&&>
+                (List.length fa = List.length fb) >&&>
 		(function tin ->
 		  (* only executable if the length is correct *)
                 (Common.zip fa fb +> List.fold_left

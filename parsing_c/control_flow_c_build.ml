@@ -1616,7 +1616,7 @@ let check_control_flow (g : cflow) : unit =
         (match unwrap (nodes#find nodei),  startbraces with
         | SeqStart (_,i,_), xs  -> i::xs
         | SeqEnd (i,_), j::xs ->
-            if i =|= j
+            if i = j
             then xs
             else
               begin

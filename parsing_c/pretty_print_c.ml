@@ -588,11 +588,11 @@ and pp_string_format (e,ii) =
           print_sto_qu_ty (sto, qu, iis);
 
       | (StructUnionName (s, structunion), iis) ->
-          assert (List.length iis =|= 2);
+          assert (List.length iis = 2);
           print_sto_qu_ty (sto, qu, iis);
 
       | (EnumName  s, iis) ->
-          assert (List.length iis =|= 2);
+          assert (List.length iis = 2);
           print_sto_qu_ty (sto, qu, iis);
 
       | (Decimal(l,p), [dec;lp;cm;rp]) ->
@@ -655,7 +655,7 @@ and pp_string_format (e,ii) =
 	    (match x with
 	      (Simple (nameopt, typ)), iivirg ->
               (* first var cannot have a preceding ',' *)
-		assert (List.length iivirg =|= 0);
+		assert (List.length iivirg = 0);
 		let identinfo =
                   match nameopt with
 		  | None -> None
@@ -665,7 +665,7 @@ and pp_string_format (e,ii) =
 
 	    | (BitField (nameopt, typ, iidot, expr)), iivirg ->
                       (* first var cannot have a preceding ',' *)
-		assert (List.length iivirg =|= 0);
+		assert (List.length iivirg = 0);
 		(match nameopt with
 		| None ->
 		    pp_type typ;

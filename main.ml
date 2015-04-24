@@ -951,7 +951,7 @@ let rec main_action xs =
 		  let rec loop ct = function
 		      [] -> []
 		    | x::xs ->
-			if (ct mod max) =|= index
+			if (ct mod max) = index
 			then x::(loop (ct+1) xs)
 			else loop (ct+1) xs in
 		  loop 0 infiles

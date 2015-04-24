@@ -91,7 +91,7 @@ let new_test_parse_gen xs =
       sprintf "bad = %d, timeout = %B"
         stat.Parsing_stat.bad stat.Parsing_stat.have_timeout
     in
-    if stat.Parsing_stat.bad =|= 0 && not stat.Parsing_stat.have_timeout
+    if stat.Parsing_stat.bad = 0 && not stat.Parsing_stat.have_timeout
     then Hashtbl.add newscore file (Common.Ok)
     else Hashtbl.add newscore file (Common.Pb s)
   );
@@ -164,7 +164,7 @@ let test_parse_gen xs ext =
       sprintf "bad = %d, timeout = %B"
         stat.Parsing_stat.bad stat.Parsing_stat.have_timeout
     in
-    if stat.Parsing_stat.bad =|= 0 && not stat.Parsing_stat.have_timeout
+    if stat.Parsing_stat.bad = 0 && not stat.Parsing_stat.have_timeout
     then Hashtbl.add newscore file (Common.Ok)
     else Hashtbl.add newscore file (Common.Pb s)
   );

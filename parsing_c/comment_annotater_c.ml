@@ -113,7 +113,7 @@ let annotate_program toks asts =
    in
 
   (* merge *)
-   assert(List.length toks_with_after =|= List.length toks_with_before);
+   assert(List.length toks_with_after = List.length toks_with_before);
 
   List.iter2 (fun (t1, before) (t2, after) ->
 

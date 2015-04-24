@@ -37,7 +37,7 @@ let check_return_value msg v =
 	  raise Pycocciexception)
   else ()
 let check_int_return_value msg v =
-  if v =|= -1 then
+  if v = -1 then
 	  (pyerr_print ();
           Common.pr2 ("while " ^ msg ^ ":");
 	  raise Pycocciexception)

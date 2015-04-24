@@ -1029,7 +1029,7 @@ let prepare_cocci ctls free_var_lists negated_pos_lists
 	| Ast_cocci.InitialScriptRule _ | Ast_cocci.FinalScriptRule _ -> true
 	| _ -> false in
 
-      if not (List.length ctl_toplevel_list =|= 1) && not (is_script_rule ast)
+      if not (List.length ctl_toplevel_list = 1) && not (is_script_rule ast)
       then failwith "not handling multiple minirules";
 
       match ast with
