@@ -251,7 +251,7 @@ let rec (recurse_expand_macro_topological_order:
   (* naive: *)
   if !no_inlining then
     g#nodes#tolist +> List.iter (fun (k, v) ->
-      if k =$= rootname then ()
+      if k = rootname then ()
       else
         let def = get_single_file_and_def_of_node k v +> snd in
         Hashtbl.add current_def k def
@@ -325,7 +325,7 @@ let is_dangerous_macro def =
   | Cpp_token_c.Params([s1]),
 	Cpp_token_c.DefineBody [TIdent (s2,i1)] ->
 	  (match s1 with
-	    Cpp_token_c.FixedArg s1 -> s1 =$= s2
+	    Cpp_token_c.FixedArg s1 -> s1 = s2
 	  | Cpp_token_c.VariadicArg _ -> false)
 
   (* keyword aliases. eg: APR_inline __inline__ *)

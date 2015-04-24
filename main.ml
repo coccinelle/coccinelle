@@ -781,7 +781,7 @@ let adjust_stdin cfiles k =
 	try
           let (dir, base, ext) = Common.dbe_of_filename cfile in
           let varfile = Common.filename_of_dbe (dir, base, "var") in
-          if ext =$= "c" && Common.lfile_exists varfile
+          if ext = "c" && Common.lfile_exists varfile
           then Some varfile
           else None
 	with Invalid_argument("Filename.chop_extension") -> None in
@@ -863,7 +863,7 @@ let rec main_action xs =
        *)
 	  dir := (Common.is_directory x);
 
-          if !cocci_file =$= ""
+          if !cocci_file = ""
           then failwith "I need a cocci file,  use --sp-file <file>";
 
 	  if !dir && !Flag.patch = None
@@ -1128,7 +1128,7 @@ and generate_outfiles outfiles x (* front file *) xs (* other files *) =
 		 * anymore in /tmp.
               *)
               (*
-	         if !output_file =$= ""
+	         if !output_file = ""
 	         then begin
                  let tmpfile = "/tmp/"^Common.basename infile in
                  pr2 (spf "One file modified. Result is here: %s" tmpfile);
@@ -1138,9 +1138,9 @@ and generate_outfiles outfiles x (* front file *) xs (* other files *) =
 	    ));
   if !output_file <> "" && not !compat_mode then
     (match outfiles with
-    | [infile, Some outfile] when infile =$= x && xs=[] ->
+    | [infile, Some outfile] when infile = x && xs=[] ->
         Common.command2 ("cp " ^outfile^ " " ^ !output_file)
-    | [infile, None] when infile =$= x && xs=[] ->
+    | [infile, None] when infile = x && xs=[] ->
         Common.command2 ("cp " ^infile^ " " ^ !output_file)
     | [] ->
         failwith
@@ -1317,16 +1317,16 @@ let main () =
     | xs when List.mem !action (Common.action_list all_actions) ->
         Common.do_action !action xs all_actions
 
-    | [] when !action =$= "--parse-cocci" ->
+    | [] when !action = "--parse-cocci" ->
         Testing.test_parse_cocci !cocci_file
 
-    | [] when !action =$= "--rule-dependencies" ->
+    | [] when !action = "--rule-dependencies" ->
         Testing.test_rule_dependencies !cocci_file
 
      (* I think this is used by some scripts in some Makefile for our
       * big-tests. So don't remove.
       *)
-    | [file1;file2] when !action =$= "--compare-c" ->
+    | [file1;file2] when !action = "--compare-c" ->
        Test_parsing_c.test_compare_c file1 file2 (* result = unix code *)
 
     (* could add the Test_parsing_c.test_actions such as -parse_c & co *)

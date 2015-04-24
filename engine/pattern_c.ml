@@ -364,7 +364,7 @@ module XMATCH = struct
 			(fun () -> tin.binding0 +> List.assoc c) in
 		    (match tmp with
 		      Some (Ast_c.MetaIdVal(v,_)) ->
-			if a =$= v
+			if a = v
 			then None (* failure *)
 			else success(Ast_c.MetaIdVal(a,[]))
 		    | Some _ -> failwith "Not possible"

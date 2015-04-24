@@ -718,7 +718,7 @@ let (includes_to_parse:
 
             | Ast_c.NonLocal xs ->
 		if all_includes ||
-	        Common.fileprefix (Common.last xs) =$= Common.fileprefix file
+	        Common.fileprefix (Common.last xs) = Common.fileprefix file
 		then interpret_include_path xs
 		else None
             | Ast_c.Weird _ -> None
@@ -1406,7 +1406,7 @@ let merge_env_list new_e old_e = new_e@old_e
 
 let contains_binding e (_,(r,m),_) =
   try
-    let _ = List.find (function ((re, rm), _) -> r = re && m =$= rm) e in
+    let _ = List.find (function ((re, rm), _) -> r = re && m = rm) e in
     true
   with Not_found -> false
 
@@ -1475,7 +1475,7 @@ let apply_script_rule r cache newes e rules_that_have_matched
 	  let relevant_bindings =
 	    List.filter
 	      (function ((re,rm),_) ->
-		List.exists (function (_,(r,m),_) -> r = re && m =$= rm) mv)
+		List.exists (function (_,(r,m),_) -> r = re && m = rm) mv)
 	      e in
 	  (try
 	    match List.assoc relevant_bindings cache with
@@ -1837,7 +1837,7 @@ and process_a_generated_a_env_a_toplevel2 r env = function
       let free_vars =
 	List.filter
 	  (function
-	      (rule,_) when rule =$= r.rule_info.rulename -> false
+	      (rule,_) when rule = r.rule_info.rulename -> false
 	    | (_,"ARGS") -> false
 	    | _ -> true)
 	  r.free_vars in
@@ -1845,7 +1845,7 @@ and process_a_generated_a_env_a_toplevel2 r env = function
       let metavars =
 	List.filter
 	  (function md ->
-	    let (rl,_) = Ast_cocci.get_meta_name md in rl =$= r.rule_info.rulename)
+	    let (rl,_) = Ast_cocci.get_meta_name md in rl = r.rule_info.rulename)
 	  r.metavars in
       if Common.include_set free_vars env_domain
       then Unparse_hrule.pp_rule metavars r.ast_rule env cfile.full_fname
@@ -2253,7 +2253,7 @@ let has_finalize (cocci_infos,_) =
 (*****************************************************************************)
 
 let check_duplicate_modif2 xs =
-  (* opti: let groups = Common.groupBy (fun (a,resa) (b,resb) -> a =$= b) xs *)
+  (* opti: let groups = Common.groupBy (fun (a,resa) (b,resb) -> a = b) xs *)
   if !Flag_cocci.verbose_cocci
   then pr2 ("Check duplication for " ^ i_to_s (List.length xs) ^ " files");
 

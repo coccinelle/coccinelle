@@ -1075,7 +1075,7 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
     let checkpoint2_file = TH.file_of_tok tr.current in
 
     let diffline =
-      if (checkpoint_file =$= checkpoint2_file) && (checkpoint_file =$= file)
+      if (checkpoint_file = checkpoint2_file) && (checkpoint_file = file)
       then (checkpoint2 - checkpoint)
       else 0
         (* TODO? so if error come in middle of something ? where the
@@ -1125,8 +1125,8 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
               | e -> raise (Impossible 82)
               );
               (* bugfix: *)
-              if (checkpoint_file =$= checkpoint2_file) &&
-                checkpoint_file =$= file
+              if (checkpoint_file = checkpoint2_file) &&
+                checkpoint_file = file
               then
 		print_bad line_error passed_before_error
 		  (checkpoint, checkpoint2) filelines pass

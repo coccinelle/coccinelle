@@ -58,7 +58,7 @@ let same_s saopt sbopt =
   | Some namea, Some nameb ->
       let sa = Ast_c.str_of_name namea in
       let sb = Ast_c.str_of_name nameb in
-      sa =$= sb
+      sa = sb
   | _ -> false
 
 
@@ -85,7 +85,7 @@ and typeC tya tyb =
       fullType a b >>= (fun x -> return (Pointer x, iix))
 
   | StructUnionName (sua, sa), StructUnionName (sub, sb) ->
-      (sua = sub && sa =$= sb) >&&>
+      (sua = sub && sa = sb) >&&>
         return (StructUnionName (sua, sa), iix)
 
   | TypeName (namea, opta), TypeName (nameb, optb) ->
@@ -94,7 +94,7 @@ and typeC tya tyb =
 
       (* assert compatible opta optb ? *)
       (*option fullType opta optb*)
-      sa =$= sb >&&>
+      sa = sb >&&>
        let opt =
          (match opta, optb with
          | None, None -> None
@@ -163,14 +163,14 @@ and typeC tya tyb =
           ->
             let sa = str_of_name namesa in
             let sb = str_of_name namesb in
-            sa =$= sb &&
+            sa = sb &&
             (* todo ? eopta and b can have some info so ok to use = ?  *)
             eopta = eoptb
         )
       ) >&&>
         return (Enum (saopt, enuma), iix)
 
-  | EnumName sa, EnumName sb -> sa =$= sb >&&> return (EnumName sa, iix)
+  | EnumName sa, EnumName sb -> sa = sb >&&> return (EnumName sa, iix)
 
   | ParenType a, ParenType b ->
       (* iso here ? *)

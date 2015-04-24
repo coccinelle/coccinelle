@@ -344,7 +344,7 @@ let expand_mcode toks =
       let str = Ast_c.str_of_info info in
       let isminus = match minus with Min _ -> true | Ctx -> false in
       (* don't add fake string if the thing should be removed *)
-      if str =$= "" || isminus
+      if str = "" || isminus
       then push2 (Fake2 (info,minus)) toks_out
       (* fx the fake "," at the end of a structure or enum.
       no idea what other fake info there can be... *)
@@ -782,7 +782,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
   let rec adjust_after_brace = function
     | [] -> []
     | ((T2(_,Ctx,_,_)) as x)::((T2(_,Min adj,_,_)::_) as xs)
-      when str_of_token2 x =$= "{" ->
+      when str_of_token2 x = "{" ->
       let (between_minus,rest) = span minus_or_comment_nonl xs in
       let (newlines,rest) = span is_whitespace rest in
       let (drop_newlines,last_newline) =
@@ -821,7 +821,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
   let rec adjust_before_brace = function
     | [] -> []
     | ((T2(t,Ctx,_,_)) as x)::xs
-      when str_of_token2 x =$= "}" || is_newline_or_comment x ->
+      when str_of_token2 x = "}" || is_newline_or_comment x ->
       let (outer_spaces,rest) = span is_space xs in
       x :: outer_spaces @
       (match rest with
@@ -2171,7 +2171,7 @@ let drop_line toks =
   let rec loop toks =
     match toks with
     | (T2(_, Min _, _, _) as x) :: tl 
-      when str_of_token2 x =$= "}" -> 
+      when str_of_token2 x = "}" -> 
 	let (drop, tl) = space_until_newline tl in
 	(drop, x :: tl)
     | hd :: tl when is_whitespace hd ->

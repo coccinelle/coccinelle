@@ -1755,7 +1755,6 @@ let mk_action_n_arg f = f
 (* src: caml mailing list ? *)
 let (=|=) : int    -> int    -> bool = (=)
 let (=<=) : char   -> char   -> bool = (=)
-let (=$=) : string -> string -> bool = (=)
 let (=:=) : bool   -> bool   -> bool = (=)
 
 (* the evil generic (=). I define another symbol to more easily detect
@@ -2221,7 +2220,7 @@ let (regexp_match: string -> string -> string) = fun s re ->
 let split sep s = Str.split (Str.regexp sep) s
 let _ = example ((split "/" "") = [])
 let join  sep xs = String.concat sep xs
-let _ = example (join "/" ["toto"; "titi"; "tata"] =$= "toto/titi/tata")
+let _ = example (join "/" ["toto"; "titi"; "tata"] = "toto/titi/tata")
 (*
 let rec join str = function
   | [] -> ""
@@ -2337,16 +2336,13 @@ let quote s = "\"" ^ s ^ "\""
 (* easier to have this to be passed as hof, because ocaml don't have
  * haskell "section" operators
  *)
-let null_string s =
-  s =$= ""
-
 let is_blank_string s =
   s =~ "^\\([ \t]\\)*$"
 
 (* src: lablgtk2/examples/entrycompletion.ml *)
 let is_string_prefix s1 s2 =
   (String.length s1 <= String.length s2) &&
-  (String.sub s2 0 (String.length s1) =$= s1)
+  (String.sub s2 0 (String.length s1) = s1)
 
 let plural i s =
   if i =|= 1
@@ -2463,8 +2459,8 @@ let (filesuffix: filename -> string) = fun s ->
 let (fileprefix: filename -> string) = fun s ->
   (try regexp_match s "\\(.+\\)\\.\\([a-zA-Z0-9_]+\\)?$" with _ ->  s)
 
-let _ = example (filesuffix "toto.c" =$= "c")
-let _ = example (fileprefix "toto.c" =$= "toto")
+let _ = example (filesuffix "toto.c" = "c")
+let _ = example (fileprefix "toto.c" = "toto")
 
 (*
 assert (s = fileprefix s ^ filesuffix s)
@@ -2520,7 +2516,7 @@ let dbe_of_filename_safe file =
 
 let dbe_of_filename_nodot file =
   let (d,b,e) = dbe_of_filename file in
-  let d = if d =$= "." then "" else d in
+  let d = if d = "." then "" else d in
   d,b,e
 
 
@@ -2529,7 +2525,7 @@ let dbe_of_filename_nodot file =
 
 let replace_ext file oldext newext =
   let (d,b,e) = dbe_of_filename file in
-  assert(e =$= oldext);
+  assert(e = oldext);
   filename_of_dbe (d,b,newext)
 
 
@@ -3069,7 +3065,7 @@ let (list_of_string: string -> char list) =
 let (lines_with_nl: string -> string list) = fun s ->
   let rec lines_aux = function
     | [] -> []
-    | [x] -> if x =$= "" then [] else [x ^ "\n"] (* old: [x] *)
+    | [x] -> if x = "" then [] else [x ^ "\n"] (* old: [x] *)
     | x::xs ->
         let e = x ^ "\n" in
         e::lines_aux xs
@@ -3628,7 +3624,7 @@ let erase_temp_files () =
 let erase_this_temp_file f =
   if not !save_tmp_files then begin
     _temp_files_created :=
-      List.filter (function x -> not (x =$= f)) !_temp_files_created;
+      List.filter (function x -> not (x = f)) !_temp_files_created;
     remove_file f
   end
 
@@ -4857,7 +4853,7 @@ let group_assoc_bykey_eff xs =
 let test_group_assoc () =
   let xs = enum 0 10000 +> List.map (fun i -> i_to_s i, i) in
   let xs = ("0", 2)::xs in
-(*    let _ys = xs +> Common.groupBy (fun (a,resa) (b,resb) -> a =$= b)  *)
+(*    let _ys = xs +> Common.groupBy (fun (a,resa) (b,resb) -> a = b)  *)
   let ys = xs +> group_assoc_bykey_eff
   in
   pr2_gen ys
@@ -5747,7 +5743,7 @@ let regression_testing_vs newscore bestscore =
               Hashtbl.add newbestscore res Ok
           | Pb x, Pb y ->
               Hashtbl.add newbestscore res (Pb x);
-              if not (x =$= y)
+              if not (x = y)
               then begin
                 Printf.printf
 		  "Semipb: still error but not same error : %s\n" res;
@@ -6124,7 +6120,7 @@ let main_boilerplate f =
        * Common.debugger will be set in main(), so too late, so
        * have to be quicker
        *)
-      if Sys.argv +> Array.to_list +> List.exists (fun x -> x =$= "-debugger")
+      if Sys.argv +> Array.to_list +> List.exists (fun x -> x = "-debugger")
       then debugger := true;
 
       finalize          (fun ()->

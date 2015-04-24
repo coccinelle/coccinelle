@@ -130,7 +130,7 @@ let equal_c_int s1 s2 =
   try
     int_of_string s1 =|= int_of_string s2
   with Failure("int_of_string") ->
-    s1 =$= s2
+    s1 = s2
 
 
 
@@ -215,13 +215,13 @@ let equal_storage a b =
 
 let equal_metavarval valu valu' =
   match valu, valu' with
-  | Ast_c.MetaIdVal (a,_), Ast_c.MetaIdVal (b,_) -> a =$= b
+  | Ast_c.MetaIdVal (a,_), Ast_c.MetaIdVal (b,_) -> a = b
   | Ast_c.MetaAssignOpVal a, Ast_c.MetaAssignOpVal b -> a = b
   | Ast_c.MetaBinaryOpVal a, Ast_c.MetaBinaryOpVal b -> a = b
-  | Ast_c.MetaFuncVal a, Ast_c.MetaFuncVal b -> a =$= b
+  | Ast_c.MetaFuncVal a, Ast_c.MetaFuncVal b -> a = b
   | Ast_c.MetaLocalFuncVal a, Ast_c.MetaLocalFuncVal b ->
       (* do something more ? *)
-      a =$= b
+      a = b
 
   (* al_expr before comparing !!! and accept when they match.
    * Note that here we have Astc._expression, so it is a match
@@ -271,7 +271,7 @@ let equal_metavarval valu valu' =
 	(function (fla,cea,posa1,posa2) ->
 	  List.exists
 	    (function (flb,ceb,posb1,posb2) ->
-	      fla =$= flb && cea =$= ceb &&
+	      fla = flb && cea = ceb &&
 	      Ast_c.equal_posl posa1 posb1 && Ast_c.equal_posl posa2 posb2)
             l2)
 	l1
@@ -291,13 +291,13 @@ metavariables containing expressions are stripped in advance. But don't
 know which one is which... *)
 let equal_inh_metavarval valu valu'=
   match valu, valu' with
-  | Ast_c.MetaIdVal (a,_), Ast_c.MetaIdVal (b,_) -> a =$= b
+  | Ast_c.MetaIdVal (a,_), Ast_c.MetaIdVal (b,_) -> a = b
   | Ast_c.MetaAssignOpVal a, Ast_c.MetaAssignOpVal b -> a = b
   | Ast_c.MetaBinaryOpVal a, Ast_c.MetaBinaryOpVal b -> a = b
-  | Ast_c.MetaFuncVal a, Ast_c.MetaFuncVal b -> a =$= b
+  | Ast_c.MetaFuncVal a, Ast_c.MetaFuncVal b -> a = b
   | Ast_c.MetaLocalFuncVal a, Ast_c.MetaLocalFuncVal b ->
       (* do something more ? *)
-      a =$= b
+      a = b
 
   (* al_expr before comparing !!! and accept when they match.
    * Note that here we have Astc._expression, so it is a match
@@ -348,7 +348,7 @@ let equal_inh_metavarval valu valu'=
 	(function (fla,cea,posa1,posa2) ->
 	  List.exists
 	    (function (flb,ceb,posb1,posb2) ->
-	      fla =$= flb && cea =$= ceb &&
+	      fla = flb && cea = ceb &&
 	      Ast_c.equal_posl posa1 posb1 && Ast_c.equal_posl posa2 posb2)
             l2)
 	l1
@@ -1186,19 +1186,19 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
               then do1()
               else fail
             else
-              if x =$= y
+              if x = y
               then do1()
             else fail
           )
-      | A.Char x, B.Char (y,_) when x =$= y  (* todo: use kind ? *)
+      | A.Char x, B.Char (y,_) when x = y  (* todo: use kind ? *)
           -> do1()
-      | A.Float x, B.Float (y,_) when x =$= y (* todo: use floatType ? *)
+      | A.Float x, B.Float (y,_) when x = y (* todo: use floatType ? *)
           -> do1()
       | A.DecimalConst (x,lx,px),B.DecimalConst (y,ly,py)
-	when x =$= y && lx =$= ly && px =$= py(*lx etc perhaps implied by x=y*)
+	when x = y && lx = ly && px = py(*lx etc perhaps implied by x=y*)
           -> do1()
 
-      |	 A.String sa, B.String (sb,_kind) when sa =$= sb ->
+      |	 A.String sa, B.String (sb,_kind) when sa = sb ->
           (match ii with
           | [ib1] ->
             tokenf ia1 ib1 >>= (fun ia1 ib1 ->
@@ -1637,7 +1637,7 @@ and string_fragment ea (eb,ii) =
   let wa x = A.rewrap ea x in
   match A.unwrap ea,eb with
     A.ConstantFragment(str1), B.ConstantFragment(str2)
-      when A.unwrap_mcode str1 =$= str2 ->
+      when A.unwrap_mcode str1 = str2 ->
       let ib1 = tuple_of_list1 ii in
       tokenf str1 ib1 >>= (fun str1 ib1 ->
 	return
@@ -1761,7 +1761,7 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
   X.all_bound (A.get_inherited ida) >&&>
   match A.unwrap ida with
   | A.Id sa ->
-      if (term sa) =$= idb then
+      if (term sa) = idb then
       tokenf sa iib >>= (fun sa iib ->
         return (
           ((A.Id sa)) +> A.rewrap ida,
@@ -2633,7 +2633,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
            | B.RegularName (sb, iidb) ->
                let iidb1 = tuple_of_list1 iidb in
 
-               if (term sa) =$= sb
+               if (term sa) = sb
                then
                  tokenf sa iidb1 >>= (fun sa iidb1 ->
                    return (
@@ -3682,7 +3682,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
         This case is also called from the case for A.StructUnionDef when
         a name is present in the C code. *)
     | A.StructUnionName(sua, Some sa), (B.StructUnionName (sub, sb), ii) ->
-        (* sa is now an ident, not an mcode, old: ... && (term sa) =$= sb *)
+        (* sa is now an ident, not an mcode, old: ... && (term sa) = sb *)
         let (ib1, ib2) = tuple_of_list2 ii in
         if equal_structUnion  (term sua) sub
         then
@@ -3769,7 +3769,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
         | B.RegularName (sb, iidb) ->
             let iidb1 = tuple_of_list1 iidb in
 
-            if (term sa) =$= sb
+            if (term sa) = sb
             then
               tokenf sa iidb1 >>= (fun sa iidb1 ->
                 return (
@@ -4055,7 +4055,7 @@ and attribute_list attras attrbs =
 and attribute = fun ea eb ->
   match ea, eb with
     (A.FAttr attra), (B.Attribute attrb, ii)
-      when (A.unwrap_mcode attra) =$= attrb ->
+      when (A.unwrap_mcode attra) = attrb ->
       let ib1 = tuple_of_list1 ii in
       tokenf attra ib1 >>= (fun attra ib1 ->
 	return (
@@ -4182,7 +4182,7 @@ and compatible_type a (b,local) =
 	(qub, (B.EnumName (sb),ii)) -> structure_type_name name sb ii
     | Type_cocci.TypeName sa, (qub, (B.TypeName (namesb, _typb),noii)) ->
         let sb = Ast_c.str_of_name namesb in
-	if sa =$= sb
+	if sa = sb
 	then ok
 	else fail
 
@@ -4258,7 +4258,7 @@ and structure_type_name nm sb ii =
     match nm with
       Type_cocci.NoName -> ok
     | Type_cocci.Name sa ->
-	if sa =$= sb
+	if sa = sb
 	then ok
 	else fail
     | Type_cocci.Num sa -> failwith "unexpected Num in structure type"
@@ -4312,7 +4312,7 @@ and inc_file (a, before_after) (b, h_rel_pos) =
         | _, None -> false
         )
 
-    | (A.IncPath x)::xs, y::ys -> x =$= y && aux_inc (xs, ys) (x::passed)
+    | (A.IncPath x)::xs, y::ys -> x = y && aux_inc (xs, ys) (x::passed)
     | _ -> failwith "IncDots not in last place or other pb"
 
   in

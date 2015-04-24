@@ -1957,7 +1957,7 @@ let lookahead2 ~pass next before =
   (* typedef inference, parse_typedef_fix3 *)
   (*-------------------------------------------------------------*)
   (* xx xx *)
-  | (TIdent(s,i1)::TIdent(s2,i2)::_ , _) when not_struct_enum before && s =$= s2
+  | (TIdent(s,i1)::TIdent(s2,i2)::_ , _) when not_struct_enum before && s = s2
       && ok_typedef s
       (* (take_safe 1 !passed_tok <> [TOPar]) ->  *)
     ->

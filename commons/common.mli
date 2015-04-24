@@ -591,7 +591,6 @@ val do_action:
 
 val (=|=) : int    -> int    -> bool
 val (=<=) : char   -> char   -> bool
-val (=$=) : string -> string -> bool
 val (=:=) : bool   -> bool   -> bool
 
 (* if want to restrict the use of '=', uncomment this:
@@ -842,7 +841,6 @@ val lowercase : string -> string
 
 val quote : string -> string
 
-val null_string : string -> bool
 val is_blank_string : string -> bool
 val is_string_prefix : string -> string -> bool
 

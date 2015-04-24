@@ -103,7 +103,7 @@ let new_test_parse_gen xs =
     pr2_xxxxxxxxxxxxxxxxx();
     let str = Str.global_replace (Str.regexp "/") "__" dirname in
     let def = if !Flag_parsing_c.filter_define_error then "_def_" else "" in
-    let ext = if ext =$= "c" then "" else ext in
+    let ext = if ext = "c" then "" else ext in
     let filename = "score_parsing__" ^str ^ def ^ ext ^ ".marshalled" in
     if Sys.file_exists filename
     then
@@ -176,7 +176,7 @@ let test_parse_gen xs ext =
     pr2_xxxxxxxxxxxxxxxxx();
     let str = Str.global_replace (Str.regexp "/") "__" dirname in
     let def = if !Flag_parsing_c.filter_define_error then "_def_" else "" in
-    let ext = if ext =$= "c" then "" else ext in
+    let ext = if ext = "c" then "" else ext in
     let filename = "score_parsing__" ^str ^ def ^ ext ^ ".marshalled" in
     if Sys.file_exists filename
     then
@@ -239,7 +239,7 @@ let local_test_cfg launchgv file =
 	  Some (Ast_c.str_of_name (defbis.Ast_c.f_name))
       | Some s, Ast_c.Definition (defbis,_)  ->
 	  let nm = Ast_c.str_of_name (defbis.Ast_c.f_name) in
-          if s =$= nm then Some nm else None
+          if s = nm then Some nm else None
       | _, _ -> None
     in
 
