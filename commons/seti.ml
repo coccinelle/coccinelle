@@ -66,7 +66,6 @@ let rec (add2: int -> seti -> seti) = fun x -> function
   | (Interv (i,j)::xs) when x <= j && x >= i -> (Interv (i,j))::xs
   | other ->
 (*         let _ = log "Cache miss" in *)
-      let _ = count2 () in
       (match other with
       |       (Exact i)::xs when x = i-1 -> pack x i xs
       |       (Exact i)::xs when x < i-1 -> (Exact i)::add x xs
@@ -75,7 +74,7 @@ let rec (add2: int -> seti -> seti) = fun x -> function
       |       (Interv (i,j)::xs) when x < i-1 -> (Interv (i,j))::add x xs
       |       _ -> raise (Impossible 6)
       )
-and add x y = let _ = count5 () in add2 x y
+and add x y = add2 x y
 
 
 let rec tolist2 = function

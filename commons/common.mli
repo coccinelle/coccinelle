@@ -201,24 +201,6 @@ val debug : (unit -> unit) -> unit
 (* Profiling (cpu/mem) *)
 (*****************************************************************************)
 
-val get_mem : unit -> unit
-val memory_stat : unit -> string
-
-val timenow : unit -> string
-
-val _count1 : int ref
-val _count2 : int ref
-val _count3 : int ref
-val _count4 : int ref
-val _count5 : int ref
-
-val count1 : unit -> unit
-val count2 : unit -> unit
-val count3 : unit -> unit
-val count4 : unit -> unit
-val count5 : unit -> unit
-val profile_diagnostic_basic : unit -> string
-
 val time_func : (unit -> 'a) -> 'a
 
 

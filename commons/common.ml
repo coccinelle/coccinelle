@@ -578,43 +578,6 @@ let debug f = if !_debug then f () else ()
 (* Profiling *)
 (*****************************************************************************)
 
-let get_mem() =
-  command2("grep VmData /proc/" ^ string_of_int (Unix.getpid()) ^ "/status")
-
-let memory_stat () =
-  let stat = Gc.stat() in
-  let conv_mo x = x * 4 / 1000000 in
-  Printf.sprintf "maximal = %d Mo\n" (conv_mo stat.Gc.top_heap_words) ^
-  Printf.sprintf "current = %d Mo\n" (conv_mo stat.Gc.heap_words) ^
-  Printf.sprintf "lives   = %d Mo\n" (conv_mo stat.Gc.live_words)
-  (* Printf.printf "fragments = %d Mo\n" (conv_mo stat.Gc.fragments); *)
-
-let timenow () =
-  "sys:" ^ (string_of_float (Sys.time ())) ^ " seconds" ^
-  ":real:" ^
-    (let tm = Unix.time () +> Unix.gmtime in
-     tm.Unix.tm_min +> string_of_int ^ " min:" ^
-     tm.Unix.tm_sec +> string_of_int ^ ".00 seconds")
-
-let _count1 = ref 0
-let _count2 = ref 0
-let _count3 = ref 0
-let _count4 = ref 0
-let _count5 = ref 0
-
-let count1 () = incr _count1
-let count2 () = incr _count2
-let count3 () = incr _count3
-let count4 () = incr _count4
-let count5 () = incr _count5
-
-let profile_diagnostic_basic () =
-  Printf.sprintf
-    "count1 = %d\ncount2 = %d\ncount3 = %d\ncount4 = %d\ncount5 = %d\n"
-    !_count1 !_count2 !_count3 !_count4 !_count5
-
-
-
 let time_func f =
   (*   let _ = Timing () in *)
   let x = f () in
