@@ -578,14 +578,6 @@ let debug f = if !_debug then f () else ()
 (* Profiling *)
 (*****************************************************************************)
 
-let time_func f =
-  (*   let _ = Timing () in *)
-  let x = f () in
-  (*   let _ = Timing () in *)
-  x
-
-(* ---------------------------------------------------------------------- *)
-
 type prof = PALL | PNONE | PSOME of string list
 let profile = ref PNONE
 let show_trace_profile = ref false
@@ -2998,7 +2990,7 @@ let (lines_with_nl: string -> string list) = fun s ->
         let e = x ^ "\n" in
         e::lines_aux xs
   in
-  (time_func (fun () -> Str.split_delim (Str.regexp "\n") s)) +> lines_aux
+  (Str.split_delim (Str.regexp "\n") s) +> lines_aux
 
 (* in fact better make it return always complete lines, simplify *)
 (*  Str.split, but lines "\n1\n2\n" don't return the \n and forget the first \n => split_delim better than split *)

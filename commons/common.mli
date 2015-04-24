@@ -201,10 +201,6 @@ val debug : (unit -> unit) -> unit
 (* Profiling (cpu/mem) *)
 (*****************************************************************************)
 
-val time_func : (unit -> 'a) -> 'a
-
-
-
 (* see flag: type prof = PALL | PNONE | PSOME of string list *)
 (* see flag: val profile : prof ref *)
 
