@@ -5,7 +5,10 @@
  *  - file.cocci      (original cocci file)
  *  - file.config     (config file for running sgen)
  *  - file.expected   (expected sgenerated file)
- * Run <sgen file.cocci --config file.config>, compare with file.expected.
+ *
+ * Run <sgen file.cocci --config file.config -o file.actual.cocci>
+ * Compare file.actual.cocci with file.expected
+ * Run <spatch --parse-cocci file.actual.cocci -D context>.
  *)
 
 (* ------------------------------------------------------------------------- *)

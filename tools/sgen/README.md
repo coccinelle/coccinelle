@@ -32,7 +32,6 @@ the program outputs a hardened semantic patch with virtual rules patch, context,
 	/// Adds void to function headers with no arguments.
 	//# If a matched function has a prototype declaration, the script will not
 	//# match the prototype.
-	//# Another limitation can be specified with a pipe as a delimiter.
 	///
 	// Confidence: High
 	// URL: http://coccinelle.lip6.fr
