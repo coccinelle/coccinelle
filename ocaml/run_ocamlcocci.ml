@@ -51,7 +51,7 @@ let run mv ve script_vars name code =
   let find_binding (r,m) =
     try
       let elem =
-	List.find (function ((re,rm),_) -> r =*= re && m =$= rm) ve in
+	List.find (function ((re,rm),_) -> r = re && m = rm) ve in
       Some elem
     with Not_found -> None in
 

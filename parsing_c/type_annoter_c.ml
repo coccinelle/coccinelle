@@ -580,7 +580,7 @@ let add_in_scope namedef =
 
 (* sort of hackish... *)
 let islocal info =
-  if List.length (!_scoped_env) =|= List.length !initial_env
+  if List.length (!_scoped_env) = List.length !initial_env
   then Ast_c.NotLocalVar
   else Ast_c.LocalVar info
 

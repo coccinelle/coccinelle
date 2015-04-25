@@ -96,7 +96,7 @@ module XMATCH = struct
     if res2 = [] (*try to avoid a trivial @*)
     then res1
     else
-      res1 ++
+      res1 @
 	(res2 +> List.filter (fun (x, binding) ->
           not
             (res1 +> List.exists (fun (_,already) ->
@@ -115,8 +115,7 @@ module XMATCH = struct
 *)
     (* opti? use set instead of list *)
     let l1 = m1 tin in
-    let l2 = m2 tin in
-    if l2 = [] then l1 else l1 ++ l2 (*a small benefit; avoid a trivial @*)
+    let l2 = m2 tin in l1 @ l2
 
 
   let return res = fun tin ->
@@ -234,10 +233,10 @@ module XMATCH = struct
     match mck with
     | Ast_cocci.PLUS c -> Ast_cocci.PLUS c
     | Ast_cocci.CONTEXT (pos, xs) ->
-        assert (pos =*= Ast_cocci.NoPos || pos =*= Ast_cocci.DontCarePos);
+        assert (pos = Ast_cocci.NoPos || pos = Ast_cocci.DontCarePos);
         Ast_cocci.CONTEXT (posmck, xs)
     | Ast_cocci.MINUS (pos, inst, adj, xs) ->
-        assert (pos =*= Ast_cocci.NoPos || pos =*= Ast_cocci.DontCarePos);
+        assert (pos = Ast_cocci.NoPos || pos = Ast_cocci.DontCarePos);
         Ast_cocci.MINUS (posmck, inst, adj, xs)
 
 
@@ -365,7 +364,7 @@ module XMATCH = struct
 			(fun () -> tin.binding0 +> List.assoc c) in
 		    (match tmp with
 		      Some (Ast_c.MetaIdVal(v,_)) ->
-			if a =$= v
+			if a = v
 			then None (* failure *)
 			else success(Ast_c.MetaIdVal(a,[]))
 		    | Some _ -> failwith "Not possible"

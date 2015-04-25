@@ -1068,9 +1068,9 @@ let compare_pos ii1 ii2 =
     (Real p1, Real p2) ->
       compare p1.Common.charpos p2.Common.charpos
   | (Virt (p1,_), Real p2) ->
-      if (compare p1.Common.charpos p2.Common.charpos) =|= (-1) then (-1) else 1
+      if (compare p1.Common.charpos p2.Common.charpos) = (-1) then (-1) else 1
   | (Real p1, Virt (p2,_)) ->
-      if (compare p1.Common.charpos p2.Common.charpos) =|= 1 then 1 else (-1)
+      if (compare p1.Common.charpos p2.Common.charpos) = 1 then 1 else (-1)
   | (Virt (p1,o1), Virt (p2,o2)) ->
       let poi1 = p1.Common.charpos in
       let poi2 = p2.Common.charpos in
@@ -1080,7 +1080,7 @@ let compare_pos ii1 ii2 =
       |	x -> x
 
 let equal_posl (l1,c1) (l2,c2) =
-  (l1 =|= l2) && (c1 =|= c2)
+  (l1 = l2) && (c1 = c2)
 
 let compare_posl (l1,c1) (l2,c2) =
   match l2 - l1 with
@@ -1100,7 +1100,7 @@ let info_to_fixpos ii =
 let is_test (e : expression) =
   let (_,info), _ = e in
   let (_,test) = !info in
-  test =*= Test
+  test = Test
 
 (*****************************************************************************)
 (* Abstract line *)
@@ -1220,7 +1220,7 @@ let rec (split_comma: 'a wrap2 list -> ('a, il) either list) =
   function
   | [] -> []
   | (e, ii)::xs ->
-      if null ii
+      if ii=[]
       then (Left e)::split_comma xs
       else Right ii::Left e::split_comma xs
 
@@ -1315,7 +1315,7 @@ let get_local_ii_of_expr_inlining_ii_of_name e =
   let (ebis,_),ii = e in
   match ebis, ii with
   | Ident name, noii ->
-      assert(null noii);
+      assert (noii = []);
       ii_of_name name
   | RecordAccess   (e, name), ii ->
       ii @ ii_of_name name

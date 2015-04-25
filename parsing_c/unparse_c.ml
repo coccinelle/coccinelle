@@ -241,9 +241,9 @@ let get_fakeInfo_and_tokens celem toks =
       (* get the associated comments/space/cppcomment tokens *)
       let (before, x, after) =
         !toks_in +> split_when (fun tok ->
-          info =*= TH.info_of_tok tok)
+          info = TH.info_of_tok tok)
       in
-      assert(info =*= TH.info_of_tok x);
+      assert(info = TH.info_of_tok x);
       (*old: assert(before +> List.for_all (TH.is_comment)); *)
       before +> List.iter (fun x ->
         if not (TH.is_comment x)
@@ -265,7 +265,7 @@ let get_fakeInfo_and_tokens celem toks =
 
   Pretty_print_c.pp_program_gen pr_elem pr_space celem;
 
-  if not (null !toks_in)
+  if  (!toks_in <> [])
   then failwith "WEIRD: unparsing not finished";
 
   List.rev !toks_out
@@ -344,7 +344,7 @@ let expand_mcode toks =
       let str = Ast_c.str_of_info info in
       let isminus = match minus with Min _ -> true | Ctx -> false in
       (* don't add fake string if the thing should be removed *)
-      if str =$= "" || isminus
+      if str = "" || isminus
       then push2 (Fake2 (info,minus)) toks_out
       (* fx the fake "," at the end of a structure or enum.
       no idea what other fake info there can be... *)
@@ -782,7 +782,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
   let rec adjust_after_brace = function
     | [] -> []
     | ((T2(_,Ctx,_,_)) as x)::((T2(_,Min adj,_,_)::_) as xs)
-      when str_of_token2 x =$= "{" ->
+      when str_of_token2 x = "{" ->
       let (between_minus,rest) = span minus_or_comment_nonl xs in
       let (newlines,rest) = span is_whitespace rest in
       let (drop_newlines,last_newline) =
@@ -821,7 +821,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
   let rec adjust_before_brace = function
     | [] -> []
     | ((T2(t,Ctx,_,_)) as x)::xs
-      when str_of_token2 x =$= "}" || is_newline_or_comment x ->
+      when str_of_token2 x = "}" || is_newline_or_comment x ->
       let (outer_spaces,rest) = span is_space xs in
       x :: outer_spaces @
       (match rest with
@@ -1576,7 +1576,7 @@ let add_newlines toks tabbing_unit =
 let new_tabbing2 space =
   list_of_string space
     +> List.rev
-    +> take_until (fun c -> c =<= '\n')
+    +> take_until (fun c -> c = '\n')
     +> List.rev
     +> List.map string_of_char
     +> String.concat ""
@@ -2127,7 +2127,7 @@ let rec find_paren_comma = function
   | { str = "("; idx = Some p1 } :: ({ str = ","; idx = Some p2} :: _ as xs)
   | { str = ","; idx = Some p1 } :: ({ str = ","; idx = Some p2} :: _ as xs)
   | { str = ","; idx = Some p1 } :: ({ str = ")"; idx = Some p2} :: _ as xs) 
-    when p2 =|= p1 + 1 ->
+    when p2 = p1 + 1 ->
     find_paren_comma xs
 
   (* otherwise yes can adjust *)
@@ -2171,7 +2171,7 @@ let drop_line toks =
   let rec loop toks =
     match toks with
     | (T2(_, Min _, _, _) as x) :: tl 
-      when str_of_token2 x =$= "}" -> 
+      when str_of_token2 x = "}" -> 
 	let (drop, tl) = space_until_newline tl in
 	(drop, x :: tl)
     | hd :: tl when is_whitespace hd ->
@@ -2225,7 +2225,7 @@ let print_all_tokens2 pr xs =
     let current_kind = ref KOrigin in
     xs +> List.iter (fun t ->
       let newkind = kind_of_token2 t in
-      if newkind =*= !current_kind
+      if newkind = !current_kind
       then pr (str_of_token2 t)
       else 
         begin

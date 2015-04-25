@@ -163,7 +163,7 @@ let mcode fn (s,info,mc,pos) =
 		    | Ast.Indent s -> s
 		    | Ast.Space s -> s in
 		  print_string str line col; Some line
-	      |	Some lb when line =|= lb ->
+	      |	Some lb when line = lb ->
 		  print_string (get_string_info str) line col; Some line
 	      |	_ ->
 		  force_newline();
@@ -179,7 +179,7 @@ let mcode fn (s,info,mc,pos) =
       let line_before = print_comments None info.Ast.strbef in
       (match line_before with
 	None -> ()
-      |	Some lb when lb =|= info.Ast.line -> ()
+      |	Some lb when lb = info.Ast.line -> ()
       |	_ -> force_newline());
       fn s line lcol;
       let _ = print_comments (Some info.Ast.line) info.Ast.straft in
@@ -1379,7 +1379,7 @@ in
 	match Ast.unwrap s with Ast.FunDecl _ -> true | _ -> false in
       let prnl x = force_newline() in
       let newline_before _ =
-	if before =*= After
+	if before = After
 	then
 	  let hd = List.hd xxs in
 	  match hd with
@@ -1394,7 +1394,7 @@ in
 	  | (Ast.DeclarationTag _::_) | (Ast.Token ("}",_)::_) -> prnl hd
           | _ -> () in
       let newline_after _ =
-	if before =*= Before
+	if before = Before
 	then
 	  match List.rev(List.hd(List.rev xxs)) with
 	    (Ast.StatementTag s::_) ->
