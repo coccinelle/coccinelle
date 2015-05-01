@@ -391,7 +391,7 @@ dnl  backwards compatibility
 dnl
 
 dnl  defines some variables needed by the Make infrastructure
-AC_SUBST(SHAREDIR,["${prefix}/share/coccinelle"])
+AC_SUBST(SHAREDIR,["${libdir}/coccinelle"])
 
 AS_IF([test "x$enable_python" != xno],
 [dnl
@@ -612,7 +612,7 @@ You may need to set some environment variables so that the python
 libraries are found. The frontend 'spatch' sets the following variables:
 
   \$ export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$prefix/lib
-  \$ export PYTHONPATH=\$PYTHONPATH:$prefix/share/coccinelle/python
+  \$ export PYTHONPATH=\$PYTHONPATH:$libdir/coccinelle/python
 
 EOF
 fi
