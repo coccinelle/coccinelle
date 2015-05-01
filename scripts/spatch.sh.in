@@ -4,8 +4,8 @@
 # it sets the python variables (if relevant)
 # and COCCINELLE_HOME
 
-SHAREDIR="@prefix@/share/coccinelle"
 LIBDIR="@prefix@/lib"
+SHAREDIR="${LIBDIR}/coccinelle"
 
 if test ! -d "$SHAREDIR"; then
     SHAREDIR="$(pwd)"
