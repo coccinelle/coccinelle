@@ -487,7 +487,12 @@ let make_mail_header o date maintainers ctr number cover subject =
   | _ -> failwith "no maintainers");
   if number = 1 && not cover
   then Printf.fprintf o "Subject: [PATCH] %s\n\n" subject
-  else Printf.fprintf o "Subject: [PATCH %d/%d] %s\n\n" ctr number subject
+  else
+    if number >= 100
+    then Printf.fprintf o "Subject: [PATCH %03d/%d] %s\n\n" ctr number subject
+    else if number >= 10
+    then Printf.fprintf o "Subject: [PATCH %02d/%d] %s\n\n" ctr number subject
+    else Printf.fprintf o "Subject: [PATCH %d/%d] %s\n\n" ctr number subject
 
 let print_info o info_tbl files =
   let do_one prefix file =
