@@ -555,7 +555,7 @@ and string_format e =
 	    pretty_print_c.Pretty_print_c.format fmt
 	| _ -> raise (Impossible 157))
 
-and  unaryOp = function
+and unaryOp = function
     Ast.GetRef -> print_string "&"
   | Ast.GetRefLabel -> print_string "&&"
   | Ast.DeRef -> print_string "*"
@@ -564,27 +564,30 @@ and  unaryOp = function
   | Ast.Tilde -> print_string "~"
   | Ast.Not -> print_string "!"
 
-and  assignOp op = match Ast.unwrap op with
+and assignOp op =
+  match Ast.unwrap op with
     Ast.SimpleAssign _ -> print_string "="
   | Ast.OpAssign(aop) ->
       (function line -> function lcol ->
 	arithOp (Ast.unwrap_mcode aop) line lcol; print_string "=" line lcol)
   | Ast.MetaAssign(mv,_,_,_) ->
-    failwith "Here, see to which operator the metavariable has been bound and return thepriority of that operator."
+      failwith "Here, see to which operator the metavariable has been bound and return the priority of that operator."
+
 and opAssignOp op line col =
   (arithOp op line col);
-  print_string "=" line col   
-and  fixOp = function
+  print_string "=" line col
+
+and fixOp = function
     Ast.Dec -> print_string "--"
   | Ast.Inc -> print_string "++"
 
-and  binaryOp op = match Ast.unwrap op with
+and binaryOp op = match Ast.unwrap op with
     Ast.Arith(aop) -> arithOp (Ast.unwrap_mcode aop)
   | Ast.Logical(lop) -> logicalOp (Ast.unwrap_mcode lop)
   | Ast.MetaBinary(mv,_,_,_) ->
-    failwith "Here, see to which operator the metavariable has been bound and return thepriority of that operator."
+    failwith "Here, see to which operator the metavariable has been bound and return the priority of that operator."
 
-and  arithOp = function
+and arithOp = function
    Ast.Plus -> print_string "+"
   | Ast.Minus -> print_string "-"
   | Ast.Mul -> print_string "*"
