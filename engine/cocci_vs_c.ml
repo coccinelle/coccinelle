@@ -2899,7 +2899,9 @@ and str_initialisers = fun allminus ias (ibs, iicomma) ->
   let ias_unsplit = unsplit_icomma      ias in
   let ibs_split   = resplit_initialiser ibs iicomma in
 
-  if need_unordered_initialisers ibs
+  (* need unordered is to check if an expensive computation is useful, but if
+     ias is null, then the computation is not expensive *)
+  if ias = [] || need_unordered_initialisers ibs
   then
     initialisers_unordered2 allminus ias_unsplit ibs_split >>=
     (fun ias_unsplit ibs_split ->
