@@ -1,6 +1,7 @@
-/// hello
+/// Removes field and name struct fields from module_ calls.
 ///
 // Confidence: Low
+// Keywords: MACRO, .name, .field.
 
 virtual patch
 virtual context
@@ -76,32 +77,36 @@ position j0;
 // ----------------------------------------------------------------------------
 
 @script:python fix1_org depends on org@
+d << match1.d;
 j0 << fix1_context.j0;
 @@
 
-msg = "this is afix."
-coccilib.org.print_todo(j0[0], msg)
+msg = "Found .field = MACRO for identifier %s " % (d)
+coccilib.org.print_safe_todo(j0[0], msg)
 
 @script:python fix2_org depends on org@
+d << match2.d;
 j0 << fix2_context.j0;
 @@
 
-msg = "this is asfs s."
-coccilib.org.print_todo(j0[0], msg)
+msg = "Found .name = MACRO for identifier %s " % (d)
+coccilib.org.print_safe_todo(j0[0], msg)
 
 // ----------------------------------------------------------------------------
 
 @script:python fix1_report depends on report@
+d << match1.d;
 j0 << fix1_context.j0;
 @@
 
-msg = "this is afix."
+msg = "Found .field = MACRO for identifier %s " % (d)
 coccilib.report.print_report(j0[0], msg)
 
 @script:python fix2_report depends on report@
+d << match2.d;
 j0 << fix2_context.j0;
 @@
 
-msg = "this is asfs s."
+msg = "Found .name = MACRO for identifier %s " % (d)
 coccilib.report.print_report(j0[0], msg)
 

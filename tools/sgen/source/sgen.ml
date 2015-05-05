@@ -72,6 +72,7 @@ let run { file; config; output; interactive; default; hide; } =
 
   Flag_parsing_cocci.generating_mode := true;
   let (_, rules, virtuals, _) = Parse_cocci.parse file in
+  Flag_parsing_cocci.generating_mode := false; (* cleanup! for tests, etc. *)
 
   (* if the rule is a star rule, the sgrep_mode2 flag is set after parsing *)
   let context_mode = !Flag.sgrep_mode2 in

@@ -5,7 +5,10 @@
  *  - file.cocci      (original cocci file)
  *  - file.config     (config file for running sgen)
  *  - file.expected   (expected sgenerated file)
- * Run <sgen file.cocci --config file.config>, compare with file.expected.
+ *
+ * Run <sgen file.cocci --config file.config -o file.actual.cocci>
+ * Compare file.actual.cocci with file.expected
+ * Run <spatch --parse-cocci file.actual.cocci -D context>.
  *)
 
 (* ------------------------------------------------------------------------- *)
@@ -20,7 +23,7 @@ let nm2dbe = Common.dbe_of_filename     (* path/file.ext -> (path,file,ext) *)
 (* hardcoded values; timeout for testing + extension names *)
 let timeout_per_file = 60
 let exp_ext = "expected"
-let act_ext = "actual"
+let act_ext = "actual.cocci"
 let score_ext = "score" (* marshalling format used by Common *)
 
 
@@ -46,6 +49,7 @@ let get_diff filename1 filename2 =
 let compare_one score expected =
 
   let (dir, base, ext) = nm2dbe expected in
+  let hashkey = base ^ "." ^ ext in
   let actual = dbe2nm (dir, base, act_ext) in
   let cocci = dbe2nm (dir, base, "cocci") in
   let config = dbe2nm (dir, base, "config") in
@@ -60,14 +64,22 @@ let compare_one score expected =
       fun () ->
 
         perr_nl cocci;
+
+        (* sgenerate the file *)
         let options = Sgen.make_options ~output:actual cocci in
         let _ = Sgen.run options in
+
+        (* check that the sgenerated file is parsable. Note that the parsing
+         * flag generating_mode must be false (this should be done in sgen.ml).
+         *)
+        Flag.set_defined_virtual_rules "context";
+        let _ = Parse_cocci.process actual None false in
 
         match get_diff actual expected with
         | [] ->
 
             let _ = if Sys.file_exists actual then Sys.remove actual in
-            Hashtbl.add score expected Common.Ok
+            Hashtbl.add score hashkey Common.Ok
 
         | difflist ->
 
@@ -76,13 +88,13 @@ let compare_one score expected =
             let diff =
               spf "INCORRECT: %s\n    diff (actual vs expected) = \n%s"
               actual difflist in
-            Hashtbl.add score expected (Common.Pb diff)
+            Hashtbl.add score hashkey (Common.Pb diff)
     )
 
   with exn ->
 
     let s = spf "PROBLEM\n   exn = %s\n" (Printexc.to_string exn) in
-    Hashtbl.add score expected (Common.Pb s)
+    Hashtbl.add score hashkey (Common.Pb s)
 
 (* Prints regression test statistics and information + updates score files.
  * (perhaps split, but then also have to refactor Common.regression_testing_vs)

@@ -27,6 +27,7 @@ clean:
 
 distclean:
 	rm -fr $(PARMAP_DIR)
+	rm -f *.a *.o *.ml* *.c *.h *.so _* *.cm* *.annot *.clib *build  ocamlc.where
 
 depend: $(PARMAP_MARKER)
 

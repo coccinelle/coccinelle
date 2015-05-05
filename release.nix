@@ -481,11 +481,11 @@ let
 
 	# initialize essential environment variables
         # for the makefile
-	export COCCINELLE_HOME=${coccinelle}/share/coccinelle
+	export COCCINELLE_HOME=${coccinelle}/lib/coccinelle
         export COCCIDIR=$TMPDIR
         export SPATCH=${coccinelle}/bin/spatch.opt
-        export ISO=${coccinelle}/share/coccinelle/standard.iso
-        export DEFS=${coccinelle}/share/coccinelle/standard.h
+        export ISO=${coccinelle}/lib/coccinelle/standard.iso
+        export DEFS=${coccinelle}/lib/coccinelle/standard.h
 
 	# generate the test outcomes using a parallel build
         make -e all -j$NIX_BUILD_CORES -l$NIX_BUILD_CORES

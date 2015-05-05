@@ -128,9 +128,9 @@ let generalize_mcode ia =
 (* 0x0 is equivalent to 0,  value format isomorphism *)
 let equal_c_int s1 s2 =
   try
-    int_of_string s1 =|= int_of_string s2
+    int_of_string s1 = int_of_string s2
   with Failure("int_of_string") ->
-    s1 =$= s2
+    s1 = s2
 
 
 
@@ -215,53 +215,53 @@ let equal_storage a b =
 
 let equal_metavarval valu valu' =
   match valu, valu' with
-  | Ast_c.MetaIdVal (a,_), Ast_c.MetaIdVal (b,_) -> a =$= b
-  | Ast_c.MetaAssignOpVal a, Ast_c.MetaAssignOpVal b -> a =*= b
-  | Ast_c.MetaBinaryOpVal a, Ast_c.MetaBinaryOpVal b -> a =*= b
-  | Ast_c.MetaFuncVal a, Ast_c.MetaFuncVal b -> a =$= b
+  | Ast_c.MetaIdVal (a,_), Ast_c.MetaIdVal (b,_) -> a = b
+  | Ast_c.MetaAssignOpVal a, Ast_c.MetaAssignOpVal b -> a = b
+  | Ast_c.MetaBinaryOpVal a, Ast_c.MetaBinaryOpVal b -> a = b
+  | Ast_c.MetaFuncVal a, Ast_c.MetaFuncVal b -> a = b
   | Ast_c.MetaLocalFuncVal a, Ast_c.MetaLocalFuncVal b ->
       (* do something more ? *)
-      a =$= b
+      a = b
 
   (* al_expr before comparing !!! and accept when they match.
    * Note that here we have Astc._expression, so it is a match
    * modulo isomorphism (there is no metavariable involved here,
    * just isomorphisms). => TODO call isomorphism_c_c instead of
-   * =*=. Maybe would be easier to transform ast_c in ast_cocci
+   * =. Maybe would be easier to transform ast_c in ast_cocci
    * and call the iso engine of julia. *)
   | Ast_c.MetaExprVal (a,_), Ast_c.MetaExprVal (b,_) ->
-      Lib_parsing_c.al_expr a =*= Lib_parsing_c.al_expr b
+      Lib_parsing_c.al_expr a = Lib_parsing_c.al_expr b
   | Ast_c.MetaExprListVal a, Ast_c.MetaExprListVal b ->
-      Lib_parsing_c.al_arguments a =*= Lib_parsing_c.al_arguments b
+      Lib_parsing_c.al_arguments a = Lib_parsing_c.al_arguments b
 
   | Ast_c.MetaFmtVal a, Ast_c.MetaFmtVal b ->
-      Lib_parsing_c.al_string_format a =*= Lib_parsing_c.al_string_format b
+      Lib_parsing_c.al_string_format a = Lib_parsing_c.al_string_format b
   | Ast_c.MetaFragListVal a, Ast_c.MetaFragListVal b ->
-      Lib_parsing_c.al_string_fragments a =*=
+      Lib_parsing_c.al_string_fragments a =
       Lib_parsing_c.al_string_fragments b
 
   | Ast_c.MetaDeclVal a, Ast_c.MetaDeclVal b ->
-      Lib_parsing_c.al_declaration a =*= Lib_parsing_c.al_declaration b
+      Lib_parsing_c.al_declaration a = Lib_parsing_c.al_declaration b
   | Ast_c.MetaFieldVal a, Ast_c.MetaFieldVal b ->
-      Lib_parsing_c.al_field a =*= Lib_parsing_c.al_field b
+      Lib_parsing_c.al_field a = Lib_parsing_c.al_field b
   | Ast_c.MetaFieldListVal a, Ast_c.MetaFieldListVal b ->
-      Lib_parsing_c.al_fields a =*= Lib_parsing_c.al_fields b
+      Lib_parsing_c.al_fields a = Lib_parsing_c.al_fields b
   | Ast_c.MetaStmtVal a, Ast_c.MetaStmtVal b ->
-      Lib_parsing_c.al_statement a =*= Lib_parsing_c.al_statement b
+      Lib_parsing_c.al_statement a = Lib_parsing_c.al_statement b
   | Ast_c.MetaInitVal a, Ast_c.MetaInitVal b ->
-      Lib_parsing_c.al_init a =*= Lib_parsing_c.al_init b
+      Lib_parsing_c.al_init a = Lib_parsing_c.al_init b
   | Ast_c.MetaInitListVal a, Ast_c.MetaInitListVal b ->
-      Lib_parsing_c.al_inits a =*= Lib_parsing_c.al_inits b
+      Lib_parsing_c.al_inits a = Lib_parsing_c.al_inits b
   | Ast_c.MetaTypeVal a, Ast_c.MetaTypeVal b ->
-      (* old: Lib_parsing_c.al_type a =*= Lib_parsing_c.al_type b *)
+      (* old: Lib_parsing_c.al_type a = Lib_parsing_c.al_type b *)
       C_vs_c.eq_type a b
 
-  | Ast_c.MetaListlenVal a, Ast_c.MetaListlenVal b -> a =|= b
+  | Ast_c.MetaListlenVal a, Ast_c.MetaListlenVal b -> a = b
 
   | Ast_c.MetaParamVal a, Ast_c.MetaParamVal b ->
-      Lib_parsing_c.al_param a =*= Lib_parsing_c.al_param b
+      Lib_parsing_c.al_param a = Lib_parsing_c.al_param b
   | Ast_c.MetaParamListVal a, Ast_c.MetaParamListVal b ->
-      Lib_parsing_c.al_params a =*= Lib_parsing_c.al_params b
+      Lib_parsing_c.al_params a = Lib_parsing_c.al_params b
 
   | Ast_c.MetaPosVal (posa1,posa2), Ast_c.MetaPosVal (posb1,posb2) ->
       Ast_cocci.equal_pos posa1 posb1 && Ast_cocci.equal_pos posa2 posb2
@@ -271,7 +271,7 @@ let equal_metavarval valu valu' =
 	(function (fla,cea,posa1,posa2) ->
 	  List.exists
 	    (function (flb,ceb,posb1,posb2) ->
-	      fla =$= flb && cea =$= ceb &&
+	      fla = flb && cea = ceb &&
 	      Ast_c.equal_posl posa1 posb1 && Ast_c.equal_posl posa2 posb2)
             l2)
 	l1
@@ -291,54 +291,54 @@ metavariables containing expressions are stripped in advance. But don't
 know which one is which... *)
 let equal_inh_metavarval valu valu'=
   match valu, valu' with
-  | Ast_c.MetaIdVal (a,_), Ast_c.MetaIdVal (b,_) -> a =$= b
-  | Ast_c.MetaAssignOpVal a, Ast_c.MetaAssignOpVal b -> a =*= b
-  | Ast_c.MetaBinaryOpVal a, Ast_c.MetaBinaryOpVal b -> a =*= b
-  | Ast_c.MetaFuncVal a, Ast_c.MetaFuncVal b -> a =$= b
+  | Ast_c.MetaIdVal (a,_), Ast_c.MetaIdVal (b,_) -> a = b
+  | Ast_c.MetaAssignOpVal a, Ast_c.MetaAssignOpVal b -> a = b
+  | Ast_c.MetaBinaryOpVal a, Ast_c.MetaBinaryOpVal b -> a = b
+  | Ast_c.MetaFuncVal a, Ast_c.MetaFuncVal b -> a = b
   | Ast_c.MetaLocalFuncVal a, Ast_c.MetaLocalFuncVal b ->
       (* do something more ? *)
-      a =$= b
+      a = b
 
   (* al_expr before comparing !!! and accept when they match.
    * Note that here we have Astc._expression, so it is a match
    * modulo isomorphism (there is no metavariable involved here,
    * just isomorphisms). => TODO call isomorphism_c_c instead of
-   * =*=. Maybe would be easier to transform ast_c in ast_cocci
+   * =. Maybe would be easier to transform ast_c in ast_cocci
    * and call the iso engine of julia. *)
   | Ast_c.MetaExprVal (a,_), Ast_c.MetaExprVal (b,_) ->
-      Lib_parsing_c.al_inh_expr a =*= Lib_parsing_c.al_inh_expr b
+      Lib_parsing_c.al_inh_expr a = Lib_parsing_c.al_inh_expr b
   | Ast_c.MetaExprListVal a, Ast_c.MetaExprListVal b ->
-      Lib_parsing_c.al_inh_arguments a =*= Lib_parsing_c.al_inh_arguments b
+      Lib_parsing_c.al_inh_arguments a = Lib_parsing_c.al_inh_arguments b
 
   | Ast_c.MetaFmtVal a, Ast_c.MetaFmtVal b ->
-      Lib_parsing_c.al_inh_string_format a =*=
+      Lib_parsing_c.al_inh_string_format a =
       Lib_parsing_c.al_inh_string_format b
   | Ast_c.MetaFragListVal a, Ast_c.MetaFragListVal b ->
-      Lib_parsing_c.al_inh_string_fragments a =*=
+      Lib_parsing_c.al_inh_string_fragments a =
       Lib_parsing_c.al_inh_string_fragments b
 
   | Ast_c.MetaDeclVal a, Ast_c.MetaDeclVal b ->
-      Lib_parsing_c.al_inh_declaration a =*= Lib_parsing_c.al_inh_declaration b
+      Lib_parsing_c.al_inh_declaration a = Lib_parsing_c.al_inh_declaration b
   | Ast_c.MetaFieldVal a, Ast_c.MetaFieldVal b ->
-      Lib_parsing_c.al_inh_field a =*= Lib_parsing_c.al_inh_field b
+      Lib_parsing_c.al_inh_field a = Lib_parsing_c.al_inh_field b
   | Ast_c.MetaFieldListVal a, Ast_c.MetaFieldListVal b ->
-      Lib_parsing_c.al_inh_field_list a =*= Lib_parsing_c.al_inh_field_list b
+      Lib_parsing_c.al_inh_field_list a = Lib_parsing_c.al_inh_field_list b
   | Ast_c.MetaStmtVal a, Ast_c.MetaStmtVal b ->
-      Lib_parsing_c.al_inh_statement a =*= Lib_parsing_c.al_inh_statement b
+      Lib_parsing_c.al_inh_statement a = Lib_parsing_c.al_inh_statement b
   | Ast_c.MetaInitVal a, Ast_c.MetaInitVal b ->
-      Lib_parsing_c.al_inh_init a =*= Lib_parsing_c.al_inh_init b
+      Lib_parsing_c.al_inh_init a = Lib_parsing_c.al_inh_init b
   | Ast_c.MetaInitListVal a, Ast_c.MetaInitListVal b ->
-      Lib_parsing_c.al_inh_inits a =*= Lib_parsing_c.al_inh_inits b
+      Lib_parsing_c.al_inh_inits a = Lib_parsing_c.al_inh_inits b
   | Ast_c.MetaTypeVal a, Ast_c.MetaTypeVal b ->
-      (* old: Lib_parsing_c.al_inh_type a =*= Lib_parsing_c.al_inh_type b *)
+      (* old: Lib_parsing_c.al_inh_type a = Lib_parsing_c.al_inh_type b *)
       C_vs_c.eq_type a b
 
-  | Ast_c.MetaListlenVal a, Ast_c.MetaListlenVal b -> a =|= b
+  | Ast_c.MetaListlenVal a, Ast_c.MetaListlenVal b -> a = b
 
   | Ast_c.MetaParamVal a, Ast_c.MetaParamVal b ->
-      Lib_parsing_c.al_param a =*= Lib_parsing_c.al_param b
+      Lib_parsing_c.al_param a = Lib_parsing_c.al_param b
   | Ast_c.MetaParamListVal a, Ast_c.MetaParamListVal b ->
-      Lib_parsing_c.al_params a =*= Lib_parsing_c.al_params b
+      Lib_parsing_c.al_params a = Lib_parsing_c.al_params b
 
   | Ast_c.MetaPosVal (posa1,posa2), Ast_c.MetaPosVal (posb1,posb2) ->
       Ast_cocci.equal_pos posa1 posb1 && Ast_cocci.equal_pos posa2 posb2
@@ -348,7 +348,7 @@ let equal_inh_metavarval valu valu'=
 	(function (fla,cea,posa1,posa2) ->
 	  List.exists
 	    (function (flb,ceb,posb1,posb2) ->
-	      fla =$= flb && cea =$= ceb &&
+	      fla = flb && cea = ceb &&
 	      Ast_c.equal_posl posa1 posb1 && Ast_c.equal_posl posa2 posb2)
             l2)
 	l1
@@ -828,7 +828,7 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 		 * for the associated ',' see below how we handle the EComma
 		 * to match nothing.
               *)
-		  (if null startxs
+		  (if startxs=[]
 		  then
                     if mcode_contain_plus (mcodekind mcode)
                     then fail
@@ -851,7 +851,7 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
                       loop (eas, endxs) >>= (fun eas endxs ->
 			return (
 			(rebuild_dots (mcode, optexpr) +> A.rewrap ea) ::eas,
-			startxs ++ endxs
+			startxs @ endxs
 			  )))
 		    )
 		    ) fail)
@@ -885,7 +885,7 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 		  (startendxs +> List.fold_left (fun acc (startxs, endxs) ->
 		    acc >||> (
 		    let ok =
-		      if null startxs
+		      if startxs=[]
 		      then
 			if mcode_contain_plus (mcodekind ida)
 			then false
@@ -928,7 +928,7 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 			  X.envf keep inherited
 			    (ida, mktermval startxs', max_min)
 			    (fun () ->
-			      if null startxs
+			      if startxs=[]
 			      then return (ida, [])
 			      else distrf ida (split_comma startxs'))
 			    >>= (fun ida startxs ->
@@ -937,7 +937,7 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 				(rebuild_metalist ea
 				   (ida,leninfo,keep,inherited))
 				  +> A.rewrap ea::eas,
-				startxs ++ endxs
+				startxs @ endxs
 				  )))
 				)
 			    )
@@ -1149,7 +1149,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 
 
   | A.Ident ida,   ((B.Ident (nameidb), typ),noii) ->
-      assert (null noii);
+      assert (noii = []);
       ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
         return (
         ((A.Ident ida)) +> wa,
@@ -1186,19 +1186,19 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
               then do1()
               else fail
             else
-              if x =$= y
+              if x = y
               then do1()
             else fail
           )
-      | A.Char x, B.Char (y,_) when x =$= y  (* todo: use kind ? *)
+      | A.Char x, B.Char (y,_) when x = y  (* todo: use kind ? *)
           -> do1()
-      | A.Float x, B.Float (y,_) when x =$= y (* todo: use floatType ? *)
+      | A.Float x, B.Float (y,_) when x = y (* todo: use floatType ? *)
           -> do1()
       | A.DecimalConst (x,lx,px),B.DecimalConst (y,ly,py)
-	when x =$= y && lx =$= ly && px =$= py(*lx etc perhaps implied by x=y*)
+	when x = y && lx = ly && px = py(*lx etc perhaps implied by x=y*)
           -> do1()
 
-      |	 A.String sa, B.String (sb,_kind) when sa =$= sb ->
+      |	 A.String sa, B.String (sb,_kind) when sa = sb ->
           (match ii with
           | [ib1] ->
             tokenf ia1 ib1 >>= (fun ia1 ib1 ->
@@ -1637,7 +1637,7 @@ and string_fragment ea (eb,ii) =
   let wa x = A.rewrap ea x in
   match A.unwrap ea,eb with
     A.ConstantFragment(str1), B.ConstantFragment(str2)
-      when A.unwrap_mcode str1 =$= str2 ->
+      when A.unwrap_mcode str1 = str2 ->
       let ib1 = tuple_of_list1 ii in
       tokenf str1 ib1 >>= (fun str1 ib1 ->
 	return
@@ -1761,7 +1761,7 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
   X.all_bound (A.get_inherited ida) >&&>
   match A.unwrap ida with
   | A.Id sa ->
-      if (term sa) =$= idb then
+      if (term sa) = idb then
       tokenf sa iib >>= (fun sa iib ->
         return (
           ((A.Id sa)) +> A.rewrap ida,
@@ -2023,7 +2023,7 @@ and parameters_bis eas ebs =
                     p_namei = idbopt;
                     p_type=tb; } = eb in
 
-              if idbopt =*= None && not hasreg
+              if idbopt = None && not hasreg
               then
                 match tb with
                 | (qub, (B.BaseType B.Void,_)) ->
@@ -2181,7 +2181,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 			     iiptvirgb::iifakestart::iisto))
                   )))) tin))
           fail in
-      if !Flag.sgrep_mode2(*X.mode =*= PatternMode *) || A.get_safe_decl decla
+      if !Flag.sgrep_mode2(*X.mode = PatternMode *) || A.get_safe_decl decla
       then doit()
       else
 	begin
@@ -2244,7 +2244,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
             (mckstart, allminus,
             (A.MacroDecl (sa,lpa,eas,rpa,enda)) +> A.rewrap decla),
             (B.MacroDecl ((sb,ebs,true),
-                         [iisb;lpb;rpb;iiendb;iifakestart] ++ iistob))
+                         [iisb;lpb;rpb;iiendb;iifakestart] @ iistob))
           ))))))))
 
   | A.MacroDecl (sa,lpa,eas,rpa,enda), B.MacroDecl ((sb,ebs,false),ii) ->
@@ -2274,7 +2274,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 		  (mckstart, allminus,
 		   (A.MacroDecl (sa,lpa,eas,rpa,enda)) +> A.rewrap decla),
 		  (B.MacroDecl ((sb,ebs,false),
-				[iisb;lpb;rpb;iifakestart] ++ iistob))
+				[iisb;lpb;rpb;iifakestart] @ iistob))
 		  )))))))
       | _ -> fail)
 
@@ -2305,7 +2305,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
             (mckstart, allminus,
             (A.MacroDeclInit(sa,lpa,eas,rpa,weqa,inia,enda)) +> A.rewrap decla),
             (B.MacroDeclInit ((sb,ebs,inib),
-                         [iisb;lpb;rpb;iiendb;iifakestart] ++ iistob))
+                         [iisb;lpb;rpb;iiendb;iifakestart] @ iistob))
           ))))))))))
 
 
@@ -2580,7 +2580,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_type_bis = typbbis;
      }, iivirg)  ->
 
-       if stob =*= (B.NoSto, false)
+       if stob = (B.NoSto, false)
        then
          tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
          fullType typa typb >>= (fun typa typb ->
@@ -2633,7 +2633,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
            | B.RegularName (sb, iidb) ->
                let iidb1 = tuple_of_list1 iidb in
 
-               if (term sa) =$= sb
+               if (term sa) = sb
                then
                  tokenf sa iidb1 >>= (fun sa iidb1 ->
                    return (
@@ -2715,9 +2715,9 @@ and get_fninfo fninfoa =
   (stoa,tya,inla,attras)
 
 and put_fninfo stoa tya inla attras =
-  (match stoa  with Some st -> [A.FStorage st] | None -> []) ++
-    (match inla   with Some i -> [A.FInline i] | None -> []) ++
-    (match tya    with Some t -> [A.FType t] | None -> []) ++
+  (match stoa  with Some st -> [A.FStorage st] | None -> []) @
+    (match inla   with Some i -> [A.FInline i] | None -> []) @
+    (match tya    with Some t -> [A.FType t] | None -> []) @
     (match attras with Some a -> a | None -> [])
 
 (* ------------------------------------------------------------------------- *)
@@ -2759,7 +2759,7 @@ and (initialiser: (A.initialiser, Ast_c.initialiser) matcher) =  fun ia ib ->
         | A.Edots (_, Some expr), _    -> failwith "not handling when on Edots"
 
         | _, (B.InitExpr expb, ii) ->
-            assert (null ii);
+            assert (ii = []);
             expression expa expb >>= (fun expa expb ->
               return (
                 (A.InitExpr expa) +> A.rewrap ia,
@@ -3072,7 +3072,7 @@ and (struct_field: (A.annotated_decl, B.field) matcher) =
 	   DeclList *)
 	    let (iiptvirgb,iifakestart) = tuple_of_list2 iiptvirg in
 
-	    assert (null iivirg);
+	    assert (iivirg = []);
 	    (match onevar with
 	    | B.BitField (sopt, typb, _, expr) ->
 		pr2_once "warning: bitfield not handled by ast_cocci";
@@ -3138,7 +3138,7 @@ and (struct_field: (A.annotated_decl, B.field) matcher) =
 				(repln n (onevar,iivirg) 0 xs,
 				 [iiptvirgb;iifakestart]))))))))))
 		fail in
-	    if !Flag.sgrep_mode2(*X.mode =*= PatternMode *) ||
+	    if !Flag.sgrep_mode2(*X.mode = PatternMode *) ||
   	       A.get_safe_decl ifa
 	    then doit()
 	    else
@@ -3391,7 +3391,7 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
       |	A.SizeType,   B.SizeType
       |	A.SSizeType,  B.SSizeType
       |	A.PtrDiffType,B.PtrDiffType ->
-           assert (signaopt =*= None);
+           assert (signaopt = None);
 	   let stringa = tuple_of_list1 stringsa in
            let (ibaseb) = tuple_of_list1 ii in
            tokenf stringa ibaseb >>= (fun stringa ibaseb ->
@@ -3400,7 +3400,7 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
                (B.BaseType baseb, [ibaseb])
              ))
 
-      | A.CharType,  B.IntType B.CChar when signaopt =*= None ->
+      | A.CharType,  B.IntType B.CChar when signaopt = None ->
 	  let stringa = tuple_of_list1 stringsa in
           let ibaseb = tuple_of_list1 ii in
            tokenf stringa ibaseb >>= (fun stringa ibaseb ->
@@ -3416,7 +3416,7 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
           tokenf stringa ibaseb >>= (fun stringa ibaseb ->
             return (
                (rebuilda ([stringa], signaopt)) +> A.rewrap ta,
-               (B.BaseType (baseb), iisignbopt ++ [ibaseb])
+               (B.BaseType (baseb), iisignbopt @ [ibaseb])
                )))
 
       | A.ShortType, B.IntType (B.Si (_, B.CShort))
@@ -3434,7 +3434,7 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
                 sign signaopt signbopt >>= (fun signaopt iisignbopt ->
                     return (
                       (rebuilda ([stringa], signaopt)) +> A.rewrap ta,
-                      (B.BaseType (baseb), iisignbopt ++ [])
+                      (B.BaseType (baseb), iisignbopt)
                     ))
 
 
@@ -3448,7 +3448,7 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
           tokenf stringa ibaseb >>= (fun stringa ibaseb ->
             return (
                (rebuilda ([stringa], signaopt)) +> A.rewrap ta,
-               (B.BaseType (baseb), iisignbopt ++ [ibaseb])
+               (B.BaseType (baseb), iisignbopt @ [ibaseb])
                )))
           | _ -> raise (Impossible 41)
 
@@ -3464,7 +3464,7 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
               tokenf string3a ibase3b >>= (fun base3a ibase3b ->
               return (
 		(rebuilda ([base1a;base2a;base3a], signaopt)) +> A.rewrap ta,
-		(B.BaseType (baseb), iisignbopt ++ [ibase1b;ibase2b;ibase3b])
+		(B.BaseType (baseb), iisignbopt @ [ibase1b;ibase2b;ibase3b])
               )))))
 	  | [ibase1b;ibase2b] -> fail (* int omitted *)
 	  | [] -> fail (* should something be done in this case? *)
@@ -3483,7 +3483,7 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
               tokenf string2a ibase2b >>= (fun base2a ibase2b ->
               return (
 		(rebuilda ([base1a;base2a], signaopt)) +> A.rewrap ta,
-		(B.BaseType (baseb), iisignbopt ++ [ibase1b;ibase2b])
+		(B.BaseType (baseb), iisignbopt @ [ibase1b;ibase2b])
               ))))
 	  | [ibase1b] -> fail (* short or long *)
 	  | [ibase1b;ibase2b;ibase3b] -> fail (* long long case *)
@@ -3512,7 +3512,7 @@ and simulate_signed_meta ta basea signaopt tb baseb ii rebuilda =
 	    A.Type(_,_,basea), (B.BaseType baseb, ii) ->
 	      return (
 	      (rebuilda (basea, signaopt)) +> A.rewrap ta,
-	      (B.BaseType (baseb), iisignbopt ++ ii)
+	      (B.BaseType (baseb), iisignbopt @ ii)
 		)
 	  | _ -> failwith "not possible"))) in
 
@@ -3684,7 +3684,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
         This case is also called from the case for A.StructUnionDef when
         a name is present in the C code. *)
     | A.StructUnionName(sua, Some sa), (B.StructUnionName (sub, sb), ii) ->
-        (* sa is now an ident, not an mcode, old: ... && (term sa) =$= sb *)
+        (* sa is now an ident, not an mcode, old: ... && (term sa) = sb *)
         let (ib1, ib2) = tuple_of_list2 ii in
         if equal_structUnion  (term sua) sub
         then
@@ -3765,13 +3765,13 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
     * so we don't want apply isomorphisms every time.
     *)
     | A.TypeName sa,  (B.TypeName (nameb, typb), noii) ->
-        assert (null noii);
+        assert (noii = []);
 
         (match nameb with
         | B.RegularName (sb, iidb) ->
             let iidb1 = tuple_of_list1 iidb in
 
-            if (term sa) =$= sb
+            if (term sa) = sb
             then
               tokenf sa iidb1 >>= (fun sa iidb1 ->
                 return (
@@ -4057,7 +4057,7 @@ and attribute_list attras attrbs =
 and attribute = fun ea eb ->
   match ea, eb with
     (A.FAttr attra), (B.Attribute attrb, ii)
-      when (A.unwrap_mcode attra) =$= attrb ->
+      when (A.unwrap_mcode attra) = attrb ->
       let ib1 = tuple_of_list1 ii in
       tokenf attra ib1 >>= (fun attra ib1 ->
 	return (
@@ -4076,9 +4076,9 @@ and compatible_base_type a signa b =
   | Type_cocci.SizeType,    B.SizeType
   | Type_cocci.SSizeType,   B.SSizeType
   | Type_cocci.PtrDiffType, B.PtrDiffType ->
-      assert (signa =*= None);
+      assert (signa = None);
       ok
-  | Type_cocci.CharType, B.IntType B.CChar when signa =*= None ->
+  | Type_cocci.CharType, B.IntType B.CChar when signa = None ->
       ok
   | Type_cocci.CharType, B.IntType (B.Si (signb, B.CChar2)) ->
       compatible_sign signa signb
@@ -4091,10 +4091,10 @@ and compatible_base_type a signa b =
   | Type_cocci.LongLongType, B.IntType (B.Si (signb, B.CLongLong)) ->
       compatible_sign signa signb
   | Type_cocci.FloatType, B.FloatType B.CFloat ->
-      assert (signa =*= None);
+      assert (signa = None);
       ok
   | Type_cocci.DoubleType, B.FloatType B.CDouble ->
-      assert (signa =*= None);
+      assert (signa = None);
       ok
   | _, B.FloatType B.CLongDouble ->
       pr2_once "no longdouble in cocci";
@@ -4184,7 +4184,7 @@ and compatible_type a (b,local) =
 	(qub, (B.EnumName (sb),ii)) -> structure_type_name name sb ii
     | Type_cocci.TypeName sa, (qub, (B.TypeName (namesb, _typb),noii)) ->
         let sb = Ast_c.str_of_name namesb in
-	if sa =$= sb
+	if sa = sb
 	then ok
 	else fail
 
@@ -4260,7 +4260,7 @@ and structure_type_name nm sb ii =
     match nm with
       Type_cocci.NoName -> ok
     | Type_cocci.Name sa ->
-	if sa =$= sb
+	if sa = sb
 	then ok
 	else fail
     | Type_cocci.Num sa -> failwith "unexpected Num in structure type"
@@ -4314,7 +4314,7 @@ and inc_file (a, before_after) (b, h_rel_pos) =
         | _, None -> false
         )
 
-    | (A.IncPath x)::xs, y::ys -> x =$= y && aux_inc (xs, ys) (x::passed)
+    | (A.IncPath x)::xs, y::ys -> x = y && aux_inc (xs, ys) (x::passed)
     | _ -> failwith "IncDots not in last place or other pb"
 
   in
@@ -4410,7 +4410,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
       | F.TrueNode _ | F.FalseNode | F.AfterNode _
       | F.LoopFallThroughNode  | F.FallThroughNode
       | F.InLoopNode ->
-          if X.mode =*= PatternMode
+          if X.mode = PatternMode
           then return default
           else
             if mcode_contain_plus (mcodekind mcode)
@@ -4419,7 +4419,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
             else return default
 
       | F.EndStatement None ->
-          if X.mode =*= PatternMode then return default
+          if X.mode = PatternMode then return default
           else
               (* DEAD CODE NOW ? only useful in -no_cocci_vs_c_3 ?
                  if mcode_contain_plus (mcodekind mcode)
@@ -4439,10 +4439,10 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
             ))
 
       | F.FunHeader _ ->
-          if X.mode =*= PatternMode then return default
+          if X.mode = PatternMode then return default
           else failwith "a MetaRuleElem can't transform a headfunc"
       | _n ->
-          if X.mode =*= PatternMode then return default
+          if X.mode = PatternMode then return default
           else
           X.distrf_node (generalize_mcode mcode) node >>= (fun mcode node ->
             return (
@@ -4589,7 +4589,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
                   f_body = body;
                   f_old_c_style = oldstyle;
                   }, ii) ->
-      assert (null body);
+      assert (body = []);
 
       if oldstyle <> None
       then pr2 "OLD STYLE DECL NOT WELL SUPPORTED";
@@ -4758,7 +4758,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
   | A.ForHeader (ia1, ia2, firsta, ea2opt, ia4, ea3opt, ia5),
     F.ForHeader (st, ((firstb, (eb2opt,ib4s), (eb3opt,ib4vide)), ii))
     ->
-      assert (null ib4vide);
+      assert (ib4vide = []);
       let (ib1, ib2, ib5) = tuple_of_list3 ii in
       let ib4 = tuple_of_list1 ib4s in
 
@@ -4845,7 +4845,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
                B.i_is_in_ifdef = inifdef;
                B.i_content = copt;
               } ->
-      assert (copt =*= None);
+      assert (copt = None);
 
       let include_requirment =
         match mcodekind incla, mcodekind filea with

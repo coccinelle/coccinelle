@@ -65,3 +65,5 @@ val is_fake : Parser_c.token -> bool
 val is_abstract : Parser_c.token -> bool
 
 val is_same_line_or_close: int -> Parser_c.token -> bool
+
+val filter_out_escaped_newline : token list -> token list

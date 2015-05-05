@@ -210,7 +210,7 @@ let get_diff filename1 filename2 bs =
   let xs = Common.cmd_to_list com in
 
   (* get rid of the --- and +++ lines *)
-  if null xs
+  if xs=[]
   then xs
   else Common.drop 2 xs
 
@@ -238,7 +238,7 @@ let do_compare_token adjust_cvs to_expected filename1 filename2 =
     | x::xs, y::ys ->
         let x' = normal_form_token adjust_cvs x in
         let y' = normal_form_token adjust_cvs y in
-        if x' =*= y'
+        if x' = y'
         then loop xs ys
         else
           let str1, pos1 =
@@ -295,7 +295,7 @@ let do_compare_token adjust_cvs to_expected filename1 filename2 =
 
   let xs = get_diff filename1 filename2 "-b -B" in
 
-  if null xs && (res <> Correct)
+  if xs=[] && (res <> Correct)
   then failwith
     "Impossible: How can diff be null and have not Correct in compare_c?";
 
@@ -333,4 +333,4 @@ let compare_result_to_string (correct, diffxs) =
 
 
 let compare_result_to_bool correct =
-  correct =*= Correct
+  correct = Correct

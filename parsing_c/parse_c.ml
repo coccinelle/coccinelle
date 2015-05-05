@@ -60,7 +60,7 @@ let mk_info_item a b =
 
 
 let info_same_line line xs =
-  xs +> List.filter (fun info -> Ast_c.line_of_info info =|= line)
+  xs +> List.filter (fun info -> Ast_c.line_of_info info = line)
 
 
 (* move in cpp_token_c ? *)
@@ -105,7 +105,7 @@ let default_parse_error_function : parse_error_function =
       for i = start_line to end_line do
 	let line = filelines.(i) in
 
-	if i =|= line_error
+	if i = line_error
 	then  pr2 ("BAD:!!!!!" ^ " " ^ line)
 	else  pr2 ("bad:" ^ " " ^      line)
       done
@@ -218,17 +218,17 @@ let print_commentized xs =
 	    let s = Str.global_substitute
 		(Str.regexp "\n") (fun s -> "") s
 	    in
-	    if newline =|= !line
+	    if newline = !line
 	    then pr2_no_nl (s ^ " ")
 	    else begin
-              if !line =|= -1
+              if !line = -1
               then pr2_no_nl "passed:"
               else pr2_no_nl "\npassed:";
               line := newline;
               pr2_no_nl (s ^ " ");
 	    end
 	| _ -> ());
-    if not (null ys) then pr2 "";
+    if ys<>[] then pr2 "";
   end
 
 
@@ -355,6 +355,16 @@ let parse_print_error file =
  * It use globals defined in Lexer_parser.
  *)
 
+(** Converts occurrences of the identifier ["defined"] in a token stream,
+ * into the CPP defined operator [Tdefined].
+ *
+ * @author Iago Abal
+ *)
+let fix_cpp_defined_operator =
+  List.map (function
+    | Parser_c.TIdent("defined",info) -> Parser_c.Tdefined(info)
+    | x                               -> x
+    )
 
 (* old:
  *   let parse_gen parsefunc s =
@@ -363,18 +373,19 @@ let parse_print_error file =
  *     result
  *)
 
-let parse_gen parsefunc s =
+let parse_gen ~cpp parsefunc s =
   let toks = tokens_of_string s +> List.filter TH.is_not_comment in
-  (* We filter out CPP backslash-newlines (i.e. "\\\n"), thus making
-   * possible to parse expressions in CPP directives.
-   *
-   * E.g.
-   *          #if defined(A) || \
-   *                defined(B)
-   *
-   * /Iago
-   *)
-  let toks' = List.filter (fun x -> not (TH.is_escaped_newline x)) toks in
+  let toks' =
+    if cpp
+    (* We have fix_tokens_define that relaces \\\n by [TCommentSpace]
+     * within #define and other CPP directives, but
+     * a) it's not clear to me where [TCommentSpace] gets removed;
+     * b) TH.filter_out_escaped_newline is simple but enough.
+     * /Iago
+     *)
+    then fix_cpp_defined_operator (TH.filter_out_escaped_newline toks)
+    else toks
+  in
 
 
   (* Why use this lexing scheme ? Why not classically give lexer func
@@ -400,9 +411,10 @@ let parse_gen parsefunc s =
   result
 
 
-let type_of_string       = parse_gen Parser_c.type_name
-let statement_of_string  = parse_gen Parser_c.statement
-let expression_of_string = parse_gen Parser_c.expr
+let type_of_string       = parse_gen ~cpp:false Parser_c.type_name
+let statement_of_string  = parse_gen ~cpp:false Parser_c.statement
+let expression_of_string = parse_gen ~cpp:false Parser_c.expr
+let cpp_expression_of_string = parse_gen ~cpp:true Parser_c.expr
 
 (* ex: statement_of_string "(struct us_data* )psh->hostdata = NULL;" *)
 
@@ -557,7 +569,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
     else begin
       let x = List.hd tr.rest_clean  in
       tr.rest_clean <- List.tl tr.rest_clean;
-      assert (x =*= v);
+      assert (x = v);
 
       (* ignore exec code *)
       (match v with
@@ -575,7 +587,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
        * tr.passed, tr.rest, etc.
        *)
       | Parser_c.TDefine (tok) ->
-          if not (LP.current_context () =*= LP.InTopLevel) &&
+          if not (LP.current_context () = LP.InTopLevel) &&
             (!Flag_parsing_c.cpp_directive_passing || (pass >= 2))
           then begin
             incr Stat.nDefinePassing;
@@ -595,7 +607,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
           end
 
       | Parser_c.TUndef (tok) ->
-          if not (LP.current_context () =*= LP.InTopLevel) &&
+          if not (LP.current_context () = LP.InTopLevel) &&
             (!Flag_parsing_c.cpp_directive_passing || (pass >= 2))
           then begin
             incr Stat.nUndefPassing;
@@ -615,7 +627,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
           end
 
       | Parser_c.TInclude (includes, filename, inifdef, info) ->
-          if not (LP.current_context () =*= LP.InTopLevel)  &&
+          if not (LP.current_context () = LP.InTopLevel)  &&
             (!Flag_parsing_c.cpp_directive_passing || (pass >= 2))
           then begin
             incr Stat.nIncludePassing;
@@ -632,8 +644,8 @@ let rec lexer_function ~pass tr = fun lexbuf ->
 
             tr.passed <- v::tr.passed;
             tr.passed_clean <- extend_passed_clean v tr.passed_clean;
-            tr.rest <- new_tokens ++ tr.rest;
-            tr.rest_clean <- new_tokens_clean ++ tr.rest_clean;
+            tr.rest <- new_tokens @ tr.rest;
+            tr.rest_clean <- new_tokens_clean @ tr.rest_clean;
             v
           end
 
@@ -645,7 +657,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
                 if
                   LP.is_typedef s &&
                     not (!Flag_parsing_c.disable_add_typedef) &&
-                    pass =|= 1
+                    pass = 1
                 then Parser_c.TypedefIdent (s, ii)
                 else Parser_c.TIdent (s, ii)
             | x -> x
@@ -759,7 +771,7 @@ let candidate_macros_in_passed2 ~defs passed  =
 
   | _ -> ()
   );
-  if null !res
+  if !res = []
   then !res2
   else !res
 
@@ -864,7 +876,7 @@ let parse_ifdef_guard_visitor (parse :string -> Ast_c.expression)
   * @author Iago Abal
   *)
 let parse_ifdef_guards : Ast_c.program -> Ast_c.program =
-  Visitor_c.vk_program_s (parse_ifdef_guard_visitor expression_of_string)
+  Visitor_c.vk_program_s (parse_ifdef_guard_visitor cpp_expression_of_string)
 
 
 
@@ -1019,7 +1031,7 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
             Common.profile_code "Parsing: multi pass" (fun () ->
 
             pr2_err "parsing pass2: try again";
-            let toks = List.rev passed ++ tr.rest in
+            let toks = List.rev passed @ tr.rest in
             let new_tr = mk_tokens_state toks in
             copy_tokens_state ~src:new_tr ~dst:tr;
             let passx = get_one_elem ~pass:2 tr (file, filelines) in
@@ -1032,13 +1044,13 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
                 in
 
 
-                if is_define_passed passed || null candidates
+                if is_define_passed passed || candidates=[]
                 then passx
                 else begin
                   (* todo factorize code *)
 
                   pr2_err "parsing pass3: try again";
-                  let toks = List.rev passed ++ tr.rest in
+                  let toks = List.rev passed @ tr.rest in
                   let toks' =
                     find_optional_macro_to_expand ~defs:candidates toks in
                   let new_tr = mk_tokens_state toks' in
@@ -1055,7 +1067,7 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
                           ~defs:macros passed
                       in
 
-                      let toks = List.rev passed ++ tr.rest in
+                      let toks = List.rev passed @ tr.rest in
                       let toks' =
                       find_optional_macro_to_expand ~defs:candidates toks in
                       let new_tr = mk_tokens_state toks' in
@@ -1075,7 +1087,7 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
     let checkpoint2_file = TH.file_of_tok tr.current in
 
     let diffline =
-      if (checkpoint_file =$= checkpoint2_file) && (checkpoint_file =$= file)
+      if (checkpoint_file = checkpoint2_file) && (checkpoint_file = file)
       then (checkpoint2 - checkpoint)
       else 0
         (* TODO? so if error come in middle of something ? where the
@@ -1125,8 +1137,8 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
               | e -> raise (Impossible 82)
               );
               (* bugfix: *)
-              if (checkpoint_file =$= checkpoint2_file) &&
-                checkpoint_file =$= file
+              if (checkpoint_file = checkpoint2_file) &&
+                checkpoint_file = file
               then
 		print_bad line_error passed_before_error
 		  (checkpoint, checkpoint2) filelines pass
@@ -1294,4 +1306,3 @@ let (cexpression_of_string: string -> Ast_c.expression) = fun s ->
         )
     | _ -> None
   )
-

@@ -27,8 +27,9 @@ type glimpsedir = Common.dirname
 (*****************************************************************************)
 
 let check_have_glimpse () =
+  let null_string s = (s = "") in
   let xs =
-    Common.cmd_to_list ("glimpse -V") +> Common.exclude Common.null_string in
+    Common.cmd_to_list ("glimpse -V") +> Common.exclude null_string in
   (match xs with
   | ["This is glimpse version 4.18.2, 2006."] -> ()
   | ["This is glimpse version 4.18.5, 2006."] -> ()

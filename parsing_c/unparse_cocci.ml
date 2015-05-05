@@ -163,7 +163,7 @@ let mcode fn (s,info,mc,pos) =
 		    | Ast.Indent s -> s
 		    | Ast.Space s -> s in
 		  print_string str line col; Some line
-	      |	Some lb when line =|= lb ->
+	      |	Some lb when line = lb ->
 		  print_string (get_string_info str) line col; Some line
 	      |	_ ->
 		  force_newline();
@@ -179,7 +179,7 @@ let mcode fn (s,info,mc,pos) =
       let line_before = print_comments None info.Ast.strbef in
       (match line_before with
 	None -> ()
-      |	Some lb when lb =|= info.Ast.line -> ()
+      |	Some lb when lb = info.Ast.line -> ()
       |	_ -> force_newline());
       fn s line lcol;
       let _ = print_comments (Some info.Ast.line) info.Ast.straft in
@@ -555,7 +555,7 @@ and string_format e =
 	    pretty_print_c.Pretty_print_c.format fmt
 	| _ -> raise (Impossible 157))
 
-and  unaryOp = function
+and unaryOp = function
     Ast.GetRef -> print_string "&"
   | Ast.GetRefLabel -> print_string "&&"
   | Ast.DeRef -> print_string "*"
@@ -564,27 +564,30 @@ and  unaryOp = function
   | Ast.Tilde -> print_string "~"
   | Ast.Not -> print_string "!"
 
-and  assignOp op = match Ast.unwrap op with
+and assignOp op =
+  match Ast.unwrap op with
     Ast.SimpleAssign _ -> print_string "="
   | Ast.OpAssign(aop) ->
       (function line -> function lcol ->
 	arithOp (Ast.unwrap_mcode aop) line lcol; print_string "=" line lcol)
   | Ast.MetaAssign(mv,_,_,_) ->
-    failwith "Here, see to which operator the metavariable has been bound and return thepriority of that operator."
+      failwith "Here, see to which operator the metavariable has been bound and return the priority of that operator."
+
 and opAssignOp op line col =
   (arithOp op line col);
-  print_string "=" line col   
-and  fixOp = function
+  print_string "=" line col
+
+and fixOp = function
     Ast.Dec -> print_string "--"
   | Ast.Inc -> print_string "++"
 
-and  binaryOp op = match Ast.unwrap op with
+and binaryOp op = match Ast.unwrap op with
     Ast.Arith(aop) -> arithOp (Ast.unwrap_mcode aop)
   | Ast.Logical(lop) -> logicalOp (Ast.unwrap_mcode lop)
   | Ast.MetaBinary(mv,_,_,_) ->
-    failwith "Here, see to which operator the metavariable has been bound and return thepriority of that operator."
+    failwith "Here, see to which operator the metavariable has been bound and return the priority of that operator."
 
-and  arithOp = function
+and arithOp = function
    Ast.Plus -> print_string "+"
   | Ast.Minus -> print_string "-"
   | Ast.Mul -> print_string "*"
@@ -1379,7 +1382,7 @@ in
 	match Ast.unwrap s with Ast.FunDecl _ -> true | _ -> false in
       let prnl x = force_newline() in
       let newline_before _ =
-	if before =*= After
+	if before = After
 	then
 	  let hd = List.hd xxs in
 	  match hd with
@@ -1394,7 +1397,7 @@ in
 	  | (Ast.DeclarationTag _::_) | (Ast.Token ("}",_)::_) -> prnl hd
           | _ -> () in
       let newline_after _ =
-	if before =*= Before
+	if before = Before
 	then
 	  match List.rev(List.hd(List.rev xxs)) with
 	    (Ast.StatementTag s::_) ->

@@ -165,13 +165,13 @@ set number of diff context lines
 report partial matches of the SP on the C file
 .TP
 \fB\-\-iso\-file\fR
-<file> (default=/usr/local/share/coccinelle/standard.iso)
+<file> (default=/usr/local/lib/coccinelle/standard.iso)
 .TP
 \fB\-\-macro\-file\fR
 <file>
 .TP
 \fB\-\-macro\-file\-builtins\fR
-<file> (default=/usr/local/share/coccinelle/standard.h)
+<file> (default=/usr/local/lib/coccinelle/standard.h)
 .TP
 \fB\-\-recursive\-includes\fR
 causes all available include files, both those included in the C file(s) and those included in header files, to be used
