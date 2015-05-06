@@ -420,7 +420,7 @@ let rec expression e =
       dots (function _ -> ()) arg_expression args;
       mcode (print_string_with_hint EndBox) rp
   | Ast.Assignment(left,op,right,_) ->
-      loop left unary; pr_space(); assignOp op unknown unknown;
+      loop left unary; pr_space(); assignOp op;
       pr_space(); loop right assign
   | Ast.Sequence(left,op,right) ->
       loop left top; mcode print_string op;
@@ -433,7 +433,7 @@ let rec expression e =
   | Ast.Infix(exp,op) -> mcode fixOp op; loop exp unary
   | Ast.Unary(exp,op) -> mcode unaryOp op; loop exp unary
   | Ast.Binary(left,op,right) ->
-      loop left (left_prec_of op); pr_space(); binaryOp op unknown unknown; pr_space();
+      loop left (left_prec_of op); pr_space(); binaryOp op; pr_space();
       loop right (right_prec_of op)
   | Ast.Nested(left,op,right) -> failwith "nested only in minus code"
   | Ast.Paren(lp,exp,rp) ->
@@ -566,29 +566,26 @@ and unaryOp = function
 
 and assignOp op =
   match Ast.unwrap op with
-    Ast.SimpleAssign _ -> print_string "="
-  | Ast.OpAssign(aop) ->
-      (function line -> function lcol ->
-	arithOp (Ast.unwrap_mcode aop) line lcol; print_string "=" line lcol)
+    Ast.SimpleAssign op -> mcode print_string op
+  | Ast.OpAssign(aop) -> mcode (arithOp true) aop
   | Ast.MetaAssign(mv,_,_,_) ->
       failwith "Here, see to which operator the metavariable has been bound and return the priority of that operator."
-
-and opAssignOp op line col =
-  (arithOp op line col);
-  print_string "=" line col
 
 and fixOp = function
     Ast.Dec -> print_string "--"
   | Ast.Inc -> print_string "++"
 
-and binaryOp op = match Ast.unwrap op with
-    Ast.Arith(aop) -> arithOp (Ast.unwrap_mcode aop)
-  | Ast.Logical(lop) -> logicalOp (Ast.unwrap_mcode lop)
+and binaryOp op =
+  match Ast.unwrap op with
+    Ast.Arith(aop) -> mcode (arithOp false) aop
+  | Ast.Logical(lop) -> mcode logicalOp lop
   | Ast.MetaBinary(mv,_,_,_) ->
     failwith "Here, see to which operator the metavariable has been bound and return the priority of that operator."
 
-and arithOp = function
-   Ast.Plus -> print_string "+"
+and arithOp eq op =
+  let print_string s = if eq then print_string (s^"=") else print_string s in
+  match op with
+    Ast.Plus -> print_string "+"
   | Ast.Minus -> print_string "-"
   | Ast.Mul -> print_string "*"
   | Ast.Div -> print_string "/"
@@ -1300,12 +1297,12 @@ let rec pp_any = function
 
   | Ast.ConstantTag(x) -> constant x unknown unknown; false
   | Ast.UnaryOpTag(x) -> unaryOp x unknown unknown; false
-  | Ast.AssignOpTag(x) -> assignOp x unknown unknown; false
-  | Ast.SimpleAssignOpTag(x) -> print_string "=" unknown unknown; false
-  | Ast.OpAssignOpTag(x) -> opAssignOp x unknown unknown; false
+  | Ast.AssignOpTag(x) -> assignOp x; false
+  | Ast.SimpleAssignOpTag(x) -> print_string x unknown unknown; false
+  | Ast.OpAssignOpTag(x) -> arithOp true x; false
   | Ast.FixOpTag(x) -> fixOp x unknown unknown; false
-  | Ast.BinaryOpTag(x) -> binaryOp x unknown unknown; false
-  | Ast.ArithOpTag(x) -> arithOp x unknown unknown; false
+  | Ast.BinaryOpTag(x) -> binaryOp x; false
+  | Ast.ArithOpTag(x) -> arithOp false x; false
   | Ast.LogicalOpTag(x) -> logicalOp x unknown unknown; false
 
   | Ast.InitTag(x) -> initialiser false x; false
