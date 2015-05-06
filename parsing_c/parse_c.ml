@@ -687,7 +687,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
 
 let max_pass = 4
 
-let get_one_elem ~pass tr (file, filelines) =
+let get_one_elem ~pass tr =
 
   if not (LP.is_enabled_typedef()) && !Flag_parsing_c.debug_typedef
   then pr2_err "TYPEDEF:_handle_typedef=false. Not normal if dont come from exn";
@@ -955,8 +955,6 @@ let with_program2_unit f program2 =
 let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
     file =
 
-  let filelines =
-    try Common.cat_array file with _ -> raise (Flag.UnreadableFile file) in
   let stat = Parsing_stat.default_stat file in
 
   (* -------------------------------------------------- *)
@@ -1020,7 +1018,7 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
     let elem =
       let pass1 =
         Common.profile_code "Parsing: 1st pass" (fun () ->
-          get_one_elem ~pass:1 tr (file, filelines)
+          get_one_elem ~pass:1 tr
         ) in
       match pass1 with
       | Left e -> Left e
@@ -1034,7 +1032,7 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
             let toks = List.rev passed @ tr.rest in
             let new_tr = mk_tokens_state toks in
             copy_tokens_state ~src:new_tr ~dst:tr;
-            let passx = get_one_elem ~pass:2 tr (file, filelines) in
+            let passx = get_one_elem ~pass:2 tr in
 
             (match passx with
             | Left e -> passx
@@ -1055,7 +1053,7 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
                     find_optional_macro_to_expand ~defs:candidates toks in
                   let new_tr = mk_tokens_state toks' in
                   copy_tokens_state ~src:new_tr ~dst:tr;
-                  let passx = get_one_elem ~pass:3 tr (file, filelines) in
+                  let passx = get_one_elem ~pass:3 tr in
 
                   (match passx with
                   | Left e -> passx
@@ -1072,7 +1070,7 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
                       find_optional_macro_to_expand ~defs:candidates toks in
                       let new_tr = mk_tokens_state toks' in
                       copy_tokens_state ~src:new_tr ~dst:tr;
-                      let passx = get_one_elem ~pass:4 tr (file, filelines) in
+                      let passx = get_one_elem ~pass:4 tr in
                       passx
                   )
                  end
@@ -1140,6 +1138,8 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
               if (checkpoint_file = checkpoint2_file) &&
                 checkpoint_file = file
               then
+                let filelines =
+                  try Common.cat_array file with _ -> raise (Flag.UnreadableFile file) in
 		print_bad line_error passed_before_error
 		  (checkpoint, checkpoint2) filelines pass
               else pr2 "PB: bad: but on tokens not from original file"
