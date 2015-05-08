@@ -598,7 +598,7 @@ and arithOp eq op =
   | Ast.Or -> print_string "|"
   | Ast.Xor -> print_string "^"
 
-and  logicalOp = function
+and logicalOp = function
     Ast.Inf -> print_string "<"
   | Ast.Sup -> print_string ">"
   | Ast.InfEq -> print_string "<="
