@@ -1303,10 +1303,10 @@ let rec pp_any = function
   | Ast.UnaryOpTag(x) -> unaryOp x unknown unknown; false
   | Ast.AssignOpTag(x) -> assignOp x; false
   | Ast.SimpleAssignOpTag(x) -> print_string x unknown unknown; false
-  | Ast.OpAssignOpTag(x) -> arithOp true x; false
+  | Ast.OpAssignOpTag(x) -> arithOp true x unknown unknown; false
   | Ast.FixOpTag(x) -> fixOp x unknown unknown; false
   | Ast.BinaryOpTag(x) -> binaryOp x; false
-  | Ast.ArithOpTag(x) -> arithOp false x; false
+  | Ast.ArithOpTag(x) -> arithOp false x unknown unknown; false
   | Ast.LogicalOpTag(x) -> logicalOp x unknown unknown; false
 
   | Ast.InitTag(x) -> initialiser false x; false
