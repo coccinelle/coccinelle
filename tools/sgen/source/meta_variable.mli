@@ -34,7 +34,7 @@ val inherit_rule : new_rule:string -> t -> t
 val print : out_channel -> t -> unit
 
 (* prints the metavariables in the format used in rule headers to out_channel.
- * if do_group, group by type
+ * if do_group, group by type.
  *)
 val print_list : out_channel -> do_group:bool -> t list -> unit
 
@@ -42,4 +42,4 @@ val print_list : out_channel -> do_group:bool -> t list -> unit
  * metavariables used in the rule.
  * Rulename used to determine whether the metavariables are inherited or not.
  *)
-val unparse : minus_rule:Ast0_cocci.rule -> rule_name:string -> t list
+val extract : minus_rule:Ast0_cocci.rule -> rule_name:string -> t list

@@ -441,7 +441,7 @@ let show_or_not_trans_info2 trans_info =
   let trans_info =
     List.map (function (index,trans_info) -> trans_info) trans_info in
   if !Flag.show_transinfo then begin
-    if null trans_info then pr2 "transformation info is empty"
+    if trans_info = [] then pr2 "transformation info is empty"
     else begin
       pr2 "transformation info returned:";
       let trans_info =
@@ -718,7 +718,7 @@ let (includes_to_parse:
 
             | Ast_c.NonLocal xs ->
 		if all_includes ||
-	        Common.fileprefix (Common.last xs) =$= Common.fileprefix file
+	        Common.fileprefix (Common.last xs) = Common.fileprefix file
 		then interpret_include_path xs
 		else None
             | Ast_c.Weird _ -> None
@@ -1029,7 +1029,7 @@ let prepare_cocci ctls free_var_lists negated_pos_lists
 	| Ast_cocci.InitialScriptRule _ | Ast_cocci.FinalScriptRule _ -> true
 	| _ -> false in
 
-      if not (List.length ctl_toplevel_list =|= 1) && not (is_script_rule ast)
+      if not (List.length ctl_toplevel_list = 1) && not (is_script_rule ast)
       then failwith "not handling multiple minirules";
 
       match ast with
@@ -1223,7 +1223,7 @@ let rec prepare_h seen env (hpath : string) choose_includes parse_strings
   | Some h_cs ->
       (*let h_cs = cprogram_of_file_cached parse_strings hpath in*)
       let local_includes =
-	if choose_includes =*= Flag_cocci.I_REALLY_ALL_INCLUDES
+	if choose_includes = Flag_cocci.I_REALLY_ALL_INCLUDES
 	then
 	  List.filter
 	    (function x -> not (List.mem x !seen))
@@ -1238,7 +1238,7 @@ let rec prepare_h seen env (hpath : string) choose_includes parse_strings
 	     local_includes) in
       let info_h_cs = build_info_program h_cs !env in
       env :=
-	if null info_h_cs
+	if info_h_cs = []
 	then !env
 	else last_env_toplevel_c_info info_h_cs;
       others@
@@ -1406,7 +1406,7 @@ let merge_env_list new_e old_e = new_e@old_e
 
 let contains_binding e (_,(r,m),_) =
   try
-    let _ = List.find (function ((re, rm), _) -> r =*= re && m =$= rm) e in
+    let _ = List.find (function ((re, rm), _) -> r = re && m = rm) e in
     true
   with Not_found -> false
 
@@ -1475,7 +1475,7 @@ let apply_script_rule r cache newes e rules_that_have_matched
 	  let relevant_bindings =
 	    List.filter
 	      (function ((re,rm),_) ->
-		List.exists (function (_,(r,m),_) -> r =*= re && m =$= rm) mv)
+		List.exists (function (_,(r,m),_) -> r = re && m = rm) mv)
 	      e in
 	  (try
 	    match List.assoc relevant_bindings cache with
@@ -1691,7 +1691,7 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
 		   List.filter
 		     (fun (s,v) -> List.mem s r.rule_info.used_after)) in
 	      let new_e =
-		if null new_bindings
+		if new_bindings = []
 		then
 		  begin
 		  (*use the old bindings, specialized to the used_after_list*)
@@ -1796,7 +1796,7 @@ and reassociate_positions free_vars negated_pos_vars envs =
 	       (function (other_non_pos,other_pos) ->
                  (* do we want equal? or just somehow compatible? eg non_pos
 		    binds only E, but other_non_pos binds both E and E1 *)
-		 non_pos =*= other_non_pos)
+		 non_pos = other_non_pos)
 	       splitted_relevant in
 	   Hashtbl.add extended_relevant non_pos
 	     (List.sort compare
@@ -1837,7 +1837,7 @@ and process_a_generated_a_env_a_toplevel2 r env = function
       let free_vars =
 	List.filter
 	  (function
-	      (rule,_) when rule =$= r.rule_info.rulename -> false
+	      (rule,_) when rule = r.rule_info.rulename -> false
 	    | (_,"ARGS") -> false
 	    | _ -> true)
 	  r.free_vars in
@@ -1845,7 +1845,7 @@ and process_a_generated_a_env_a_toplevel2 r env = function
       let metavars =
 	List.filter
 	  (function md ->
-	    let (rl,_) = Ast_cocci.get_meta_name md in rl =$= r.rule_info.rulename)
+	    let (rl,_) = Ast_cocci.get_meta_name md in rl = r.rule_info.rulename)
 	  r.metavars in
       if Common.include_set free_vars env_domain
       then Unparse_hrule.pp_rule metavars r.ast_rule env cfile.full_fname
@@ -1888,7 +1888,7 @@ and process_a_ctl_a_env_a_toplevel2 r e c f =
 
 	   r.rule_info.was_matched := true;
 
-	   if not (null trans_info) &&
+	   if trans_info <> [] &&
 	     not (!Flag.sgrep_mode2 && not !Flag_cocci.show_diff)
 	   then
 	     begin
@@ -2195,7 +2195,7 @@ let full_engine2 (cocci_infos,parse_strings) cfiles =
             let outfile =
 	      Common.new_temp_file "cocci-output" ("-" ^ c_or_h.fname) in
 
-            if c_or_h.fkind =*= Header
+            if c_or_h.fkind = Header
             then pr2 ("a header file was modified: " ^ c_or_h.fname);
 
             (* and now unparse everything *)
@@ -2253,7 +2253,7 @@ let has_finalize (cocci_infos,_) =
 (*****************************************************************************)
 
 let check_duplicate_modif2 xs =
-  (* opti: let groups = Common.groupBy (fun (a,resa) (b,resb) -> a =$= b) xs *)
+  (* opti: let groups = Common.groupBy (fun (a,resa) (b,resb) -> a = b) xs *)
   if !Flag_cocci.verbose_cocci
   then pr2 ("Check duplication for " ^ i_to_s (List.length xs) ^ " files");
 
@@ -2265,7 +2265,7 @@ let check_duplicate_modif2 xs =
     | res::xs ->
         match res with
         | None ->
-            if not (List.for_all (fun res2 -> res2 =*= None) xs)
+            if not (List.for_all (fun res2 -> res2 = None) xs)
             then begin
               pr2 ("different modification result for " ^ file);
               None
@@ -2278,7 +2278,7 @@ let check_duplicate_modif2 xs =
               | Some res2 ->
                   let diff = Common.cmd_to_list ("diff -u -b -B "^res^" "^res2)
                   in
-                  null diff
+                  diff = []
             ) xs) then begin
               pr2 ("different modification result for " ^ file);
               None

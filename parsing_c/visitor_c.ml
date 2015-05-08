@@ -342,6 +342,7 @@ let rec vk_expr = fun bigf expr ->
         vk_argument_list bigf ts;
 	vk_argument bigf t
     | Delete e -> vk_expr bigf e
+    | Defined name -> vk_name bigf name
 
 
   in exprf expr
@@ -873,7 +874,7 @@ and vk_node = fun bigf node ->
     match F.unwrap n with
 
     | F.FunHeader (def) ->
-        assert(null (fst def).f_body);
+        assert( (fst def).f_body = []);
         vk_def bigf def;
 
     | F.Decl decl -> vk_decl bigf decl
@@ -1194,6 +1195,7 @@ let rec vk_expr_s = fun bigf expr ->
 	  New (Some (ts +> List.map (fun (e,ii) ->
 	    vk_argument_s bigf e, iif ii)), vk_argument_s bigf t)
       | Delete e      -> Delete (vk_expr_s bigf e)
+      | Defined name  -> Defined (vk_name_s bigf name)
 
     in
     (e', typ'), (iif ii)
@@ -1794,7 +1796,7 @@ and vk_node_s = fun bigf node ->
     F.rewrap node (
     match F.unwrap node with
     | F.FunHeader (def) ->
-        assert (null (fst def).f_body);
+        assert ( (fst def).f_body = []);
         F.FunHeader (vk_def_s bigf def)
 
     | F.Decl declb -> F.Decl (vk_decl_s bigf declb)
@@ -1857,7 +1859,7 @@ and vk_node_s = fun bigf node ->
                  i_content = copt;
                  }
       ->
-        assert (copt =*= None);
+        assert (copt = None);
         F.Include {i_include = (s, iif ii);
                     i_rel_pos = h_rel_pos;
                     i_is_in_ifdef = b;

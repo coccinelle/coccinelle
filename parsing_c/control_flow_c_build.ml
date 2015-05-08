@@ -823,7 +823,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
       let context_info =
 	match xi.ctx with
 	  SwitchInfo (startbrace, loopendi, braces, parent_lbl) ->
-            if x =*= Ast_c.Break
+            if x = Ast_c.Break
 	    then xi.ctx
 	    else
 	      (try
@@ -888,7 +888,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
           None
 
       | SwitchInfo (startbrace, loopendi, braces, parent_lbl) ->
-	  assert (x =*= Ast_c.Break);
+	  assert (x = Ast_c.Break);
           let difference = List.length xi.braces - List.length braces in
           assert (difference >= 0);
           let toend = take difference xi.braces in
@@ -971,7 +971,7 @@ and mk_If (starti :nodei option) (labels :int list) (xi_lbl :xinfo)
   | Selection (Ast_c.If (e, st1, st2)) ->
     let iist2 = Ast_c.get_ii_st_take_care st2 in begin
     match Ast_c.unwrap_st st2 with
-    | Ast_c.ExprStatement None when null iist2 ->
+    | Ast_c.ExprStatement None when iist2=[] ->
       (* We could have 'ExprStatement None' as a result of something like
        * 'if() xx else ;', so we must force to have a [] in the ii associated
        * with ExprStatement.
@@ -1616,7 +1616,7 @@ let check_control_flow (g : cflow) : unit =
         (match unwrap (nodes#find nodei),  startbraces with
         | SeqStart (_,i,_), xs  -> i::xs
         | SeqEnd (i,_), j::xs ->
-            if i =|= j
+            if i = j
             then xs
             else
               begin
@@ -1633,7 +1633,7 @@ let check_control_flow (g : cflow) : unit =
       in
 
 
-      if null children#tolist
+      if (children#tolist) = []
       then
         if (* (depth = 0) *) startbraces <> []
         then print_trace_error trace2

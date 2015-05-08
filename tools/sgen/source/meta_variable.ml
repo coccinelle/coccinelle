@@ -15,7 +15,7 @@ module S = Ast_tostring
  * and position free.p1!=loop.ok is ("position", ("free", "p1"), "!=loop.ok")
  *
  * NOTE: inherit_rule is only for inherited rules, ie. akin to "rulename.mv".
- * If the metavariable is in local scope, it will be "".
+ * If the metavariable is in local scope, inherit_rule will be "".
  *
  * Named arguments in here:
  *  - rn is the rulename (string)
@@ -99,6 +99,7 @@ module MVSet = Set.Make(
 
 (* get string formatted version of type (used as front of meta expressions) *)
 let type_c ~form =
+  (* TODO: figure out when default and prefix are used ... *)
   let (default, prefix) =
     match form with
     | Ast.ANY -> ("expression ", "")
@@ -183,34 +184,21 @@ let constraints ~rn = function
   | Ast0.SubExpCstrt mns ->
       list_constraints ~tostring_fn:(name_str ~rn) ~op:" <= " mns
 
+let assign_constraints = function
+  | Ast0.AssignOpNoConstraint -> ""
+  | Ast0.AssignOpInSet l ->
+      list_constraints ~tostring_fn:Ast0.string_of_assignOp ~op:" = " l
+
+let binary_constraints = function
+  | Ast0.BinaryOpNoConstraint -> ""
+  | Ast0.BinaryOpInSet l ->
+      list_constraints ~tostring_fn:Ast0.string_of_binaryOp ~op:" = " l
+
 let list_len ~rn = function
   | Ast0.AnyListLen -> " "
   | Ast0.MetaListLen (mn,_,_,_,_,_) -> "[" ^ (name_str ~rn mn) ^ "] "
   | Ast0.CstListLen i -> "[" ^ (string_of_int i) ^ "] "
 
-let assignOp_constraint ~rn =
-  let tostring op =
-    match Ast0.unwrap op with
-      Ast0.SimpleAssign _ -> "="
-    | Ast0.OpAssign(aop) -> S.assign_tostring (Ast0.unwrap_mcode aop)
-    | Ast0.MetaAssign(metavar,_,_) -> failwith "not possible" in
-  let list_constraints' oplist op =
-    list_constraints ~tostring_fn:tostring ~op oplist in
-  function
-  | Ast0.AssignOpNoConstraint -> ""
-  | Ast0.AssignOpInSet(oplist) -> list_constraints' oplist " = "
-
-let binaryOp_constraint ~rn =
-  let tostring op =
-    match Ast0.unwrap op with
-      Ast0.Arith(aop) -> S.arith_tostring (Ast0.unwrap_mcode aop)
-    | Ast0.Logical(lop) -> S.logic_tostring (Ast0.unwrap_mcode lop)
-    | Ast0.MetaBinary(metavar,_,_) -> failwith "not possible" in
-  let list_constraints' oplist op =
-    list_constraints ~tostring_fn:tostring ~op oplist in
-  function
-  | Ast0.BinaryOpNoConstraint -> ""
-  | Ast0.BinaryOpInSet(oplist) -> list_constraints' oplist " = "
 
 (* ------------------------------------------------------------------------- *)
 (* MSET HELPERS *)
@@ -339,20 +327,21 @@ let metavar_combiner rn =
   let bind x y = MVSet.union x y in
 
   (* the mcodes might contain positions which should be declared as metavars *)
+  let mcode mc = mcode ~rn ~mc in
   let meta_mcode a = failwith ("NOT ALLOWED") in (* should be handled before *)
-  let string_mcode mc = mcode ~rn ~mc in
-  let const_mcode mc = mcode ~rn ~mc in
-  let simpleAssign_mcode mc = mcode ~rn ~mc in
-  let opAssign_mcode mc = mcode ~rn ~mc in
-  let fix_mcode mc = mcode ~rn ~mc in
-  let unary_mcode mc = mcode ~rn ~mc in
-  let arithOp_mcode mc = mcode ~rn ~mc in
-  let logicalOp_mcode mc = mcode ~rn ~mc in
-  let cv_mcode mc = mcode ~rn ~mc in
-  let sign_mcode mc = mcode ~rn ~mc in
-  let struct_mcode mc = mcode ~rn ~mc in
-  let storage_mcode mc = mcode ~rn ~mc in
-  let inc_mcode mc = mcode ~rn ~mc in
+  let string_mcode = mcode in
+  let const_mcode = mcode in
+  let simpleAssign_mcode = mcode in
+  let opAssign_mcode = mcode in
+  let fix_mcode = mcode in
+  let unary_mcode = mcode in
+  let arithOp_mcode = mcode in
+  let logicalOp_mcode = mcode in
+  let cv_mcode = mcode in
+  let sign_mcode = mcode in
+  let struct_mcode = mcode in
+  let storage_mcode = mcode in
+  let inc_mcode = mcode in
 
   (* apply the passed function, do nothing else *)
   let donothing c fn v = fn v in
@@ -420,18 +409,18 @@ let metavar_combiner rn =
     | Ast0.AsExpr (e1, e2) -> as_format e1 e2 exprfn exprfn
     | _ -> fn v in
 
-  let binaryOpfn c fn v =
-    match Ast0.unwrap v with
-    | Ast0.MetaBinary(mc, c, pure) ->
-        let constr = binaryOp_constraint ~rn c in
-	meta_mc_format ~mc ~typ:"binary operator " ~constr
-    | _ -> fn v in
-
   let assignOpfn c fn v =
     match Ast0.unwrap v with
-    | Ast0.MetaAssign(mc, c, pure) ->
-        let constr = assignOp_constraint ~rn c in
-	meta_mc_format ~mc ~typ:"assignment operator " ~constr
+    | Ast0.MetaAssign (mc, constr, pure) ->
+        let constr = assign_constraints constr in
+        meta_mc_format ~mc ~typ:"assignment operator " ~constr
+    | _ -> fn v in
+
+  let binaryOpfn c fn v =
+    match Ast0.unwrap v with
+    | Ast0.MetaBinary (mc, constr, pure) ->
+        let constr  = binary_constraints constr in
+        meta_mc_format ~mc ~typ:"binary operator " ~constr
     | _ -> fn v in
 
   let tyfn c fn v =
@@ -439,9 +428,13 @@ let metavar_combiner rn =
     | Ast0.MetaType (mc, pure) -> meta_mc_format ~mc ~typ:"type " ~constr:""
     | Ast0.AsType (tc1, tc2) ->
         let ty = c.VT0.combiner_rec_typeC in as_format tc1 tc2 ty ty
+
     (* this clause generates unparsable scripts for who knows what reason ...
-     * TODO: need to find out if it should be included or not. *)
-    | Ast0.TypeName mc -> str_mc_format ~mc ~typ:"typedef "
+     * TODO: need to find out if it should be included or not. For now, ignore.
+     *)
+    | Ast0.TypeName mc ->
+        let _ = str_mc_format ~mc ~typ:"typedef " in
+        fn v
     | _ -> fn v in
 
   let initfn c fn v =
@@ -494,7 +487,8 @@ let metavar_combiner rn =
         | Ast0.MetaFormat(mc, idconstr) ->
             let constr = id_constraint rn idconstr in
             meta_mc_format ~mc ~typ:"format " ~constr
-        | _ -> fn v)
+        | _ -> fn v
+       )
     | _ -> fn v in
 
   let stmtfn c fn v =
@@ -506,8 +500,6 @@ let metavar_combiner rn =
     | Ast0.AsStmt (s1, s2)->
         let stmt = c.VT0.combiner_rec_statement in as_format s1 s2 stmt stmt
     | Ast0.Iterator (id, _, expdots, _, stmt,_) ->
-
-        (* the iterator might contain metavariables *)
         let expids = c.VT0.combiner_rec_expression_dots expdots in
         let stmtid = MVSet.union expids (c.VT0.combiner_rec_statement stmt) in
         let iteids = ids ~rn ~typ:"iterator" ~id in
@@ -565,7 +557,7 @@ let print_list out ~do_group mvs =
  * That is, metavariables declared in the header, but unused in the body, are
  * discarded. Returns list of meta_variable.t's.
  *)
-let unparse ~minus_rule ~rule_name =
+let extract ~minus_rule ~rule_name =
   let mvcomb = metavar_combiner rule_name in
   let minus = List.map mvcomb.VT0.combiner_rec_top_level minus_rule in
   let comb = List.fold_left MVSet.union MVSet.empty minus in

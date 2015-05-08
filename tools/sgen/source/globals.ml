@@ -177,18 +177,3 @@ let pre_split ?(prefix = "") s =
 let pre_split_opt ?(prefix = "") = function
   | Some s -> pre_split ~prefix s
   | None -> ""
-
-(* change extension of filename *)
-let new_extension ~new_ext str =
-  let extless =
-    try String.sub str 0 (String.index str '.')
-    with Not_found -> str in
-  extless ^ "." ^ new_ext
-
-
-(* ------------------------------------------------------------------------- *)
-(* MISC *)
-
-let get_current_year() =
-  let time = Unix.gmtime (Unix.time()) in
-  time.Unix.tm_year + 1900

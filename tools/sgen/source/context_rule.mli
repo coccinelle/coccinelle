@@ -36,7 +36,10 @@
 type t
 
 (* generates a context rule from a */+/- rule.
- * Invariants: rule contains */+/-. new_name, if any, must be valid.
+ * Invariants:
+ *  - rule contains */+/-.
+ *  - new_name, if any, must be valid. no whitespace funny business
+ *    (however, it can be <default rule name><number> at this point).
  *
  * Arguments:
  *  - context_mode: if true, input rule has *, else input rule has +/-.

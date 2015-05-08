@@ -139,7 +139,7 @@ let star_dotsstmtfn ~context_mode combiner stmtdots =
    * NOTE: uses only minus rule, so does not detect plus slices. This is
    * exactly what we want to happen as plus slices are not in generated rule!
    *)
-  let detect_patch = Detect_patch.detect_statement_dots stmtdots in
+  let detect_patch = Detect_patch.make_statement_dots stmtdots in
   let has_minuses = Detect_patch.is_patch detect_patch in
   let c = combiner ~context_mode:(context_mode || has_minuses) in
   let stmtfn = c.VT0.combiner_rec_statement in
@@ -205,7 +205,7 @@ let rec gen_combiner ~context_mode =
   let string_mcode = mcode (fun x -> x) in
   let const_mcode = mcode S.constant_tostring in
   let simpleAssign_mcode = mcode (fun x -> x) in
-  let opAssign_mcode = mcode S.assign_tostring in
+  let opAssign_mcode = mcode S.arith_tostring in
   let fix_mcode = mcode S.fix_tostring in
   let unary_mcode = mcode S.unary_tostring in
   let arithOp_mcode = mcode S.arith_tostring in
@@ -269,7 +269,7 @@ let rec gen_combiner ~context_mode =
      * letting the visitor handle them. Otherwise whencodes would be ignored.
      * (whencodes are difficult to parameterise in the visitor due to typing).
      *
-     * nest, dots, cicles, stars, and metastatements can represents code slices
+     * nest, dots, cicles, stars, and metastatements can represent code slices
      * of arbitrary length and should therefore not be starred, so if their
      * current line is starred, put them on a new line (inc_star).
      *)

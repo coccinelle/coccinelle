@@ -449,6 +449,7 @@ let info_of_tok = function
   | Ttypeof              (i) -> i
   | Tnew                 (i) -> i
   | Tdelete              (i) -> i
+  | Tdefined             (i) -> i
   | TOParCplusplusInit   (i) -> i
 
   | EOF                  (i) -> i
@@ -623,6 +624,7 @@ let visitor_info_of_tok f = function
   | Ttypeof              (i) -> Ttypeof              (f i)
   | Tnew                 (i) -> Tnew                 (f i)
   | Tdelete              (i) -> Tdelete              (f i)
+  | Tdefined             (i) -> Tdefined             (f i)
   | TOParCplusplusInit   (i) -> TOParCplusplusInit   (f i)
   | EOF                  (i) -> EOF                  (f i)
   | Tnamespace           (i) -> Tnamespace           (f i)
@@ -664,7 +666,20 @@ let is_abstract x =
 (* Helpers *)
 (*****************************************************************************)
 let is_same_line_or_close line tok =
-  line_of_tok tok =|= line ||
-  line_of_tok tok =|= line - 1 ||
-  line_of_tok tok =|= line - 2
+  line_of_tok tok = line ||
+  line_of_tok tok = line - 1 ||
+  line_of_tok tok = line - 2
 
+(** Filter out CPP backslash-newlines (i.e. "\\\n") from a token stream.
+ *
+ * This helps parsing expressions in CPP directives using
+ * [expression_of_string].
+ *
+ * E.g.
+ *          #if defined(A) || \
+ *                defined(B)
+ *
+ * @author Iago Abal
+ *)
+let filter_out_escaped_newline =
+  List.filter (fun tok -> not (is_escaped_newline tok))

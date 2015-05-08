@@ -350,14 +350,14 @@ let test_okfailed cocci_file cfiles =
 
               let diff = Compare_c.compare_default outfile expected_res in
               let s1 = (Compare_c.compare_result_to_string diff) in
-              if fst diff =*= Compare_c.Correct
+              if fst diff = Compare_c.Correct
               then push2 (infile ^ (t_to_s Ok), [s1;time_str]) final_files
               else
                 if Common.lfile_exists expected_res2
                 then begin
                   let diff = Compare_c.compare_default outfile expected_res2 in
                   let s2 = Compare_c.compare_result_to_string diff in
-                  if fst diff =*= Compare_c.Correct
+                  if fst diff = Compare_c.Correct
                   then push2 (infile ^ (t_to_s SpatchOK),[s2;s1;time_str])
                       final_files
                   else push2 (infile ^ (t_to_s Failed), [s2;s1;time_str])
@@ -401,12 +401,12 @@ let test_regression_okfailed () =
   let newscore  = Common.empty_score () in
   let oks =
     Common.cmd_to_list ("find . -name \"*.ok\"")
-    ++
+    @
     Common.cmd_to_list ("find . -name \"*.spatch_ok\"")
   in
   let failed = Common.cmd_to_list ("find . -name \"*.failed\"") in
 
-  if null (oks ++ failed)
+  if (oks @ failed) = []
   then failwith "no ok/failed file, you certainly did a make clean"
   else begin
     oks +> List.iter (fun s ->
@@ -453,14 +453,14 @@ let compare_with_expected outfiles =
         in
         let diff = Compare_c.compare_default outfile expected_res in
         let s1 = (Compare_c.compare_result_to_string diff) in
-        if fst diff =*= Compare_c.Correct
+        if fst diff = Compare_c.Correct
         then pr2_no_nl (infile ^ " " ^ s1)
         else
           if Common.lfile_exists expected_res2
           then begin
             let diff = Compare_c.compare_default outfile expected_res2 in
             let s2 = Compare_c.compare_result_to_string diff in
-            if fst diff =*= Compare_c.Correct
+            if fst diff = Compare_c.Correct
             then pr2 (infile ^ " is spatchOK " ^ s2)
             else pr2 (infile ^ " is failed " ^ s2)
           end

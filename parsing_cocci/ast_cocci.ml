@@ -934,8 +934,8 @@ let string_of_arithOp = function
   | And -> "&"
   | Or -> "|"
   | Xor -> "^"
-  | Min -> "min"
-  | Max -> "max"
+  | Min -> "<?"
+  | Max -> ">?"
 
 let string_of_logicalOp = function
   | Eq -> "=="
