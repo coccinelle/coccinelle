@@ -321,36 +321,84 @@ let rec expression e =
   let unary = 14 in
   let postfix = 15 in
   let primary = 16 in
+  let minprio = top in
+  let left_prec_of_c op =
+    let left_prec_of_arith = function
+	Ast_c.Plus | Ast_c.Minus -> addit
+      | Ast_c.Mul | Ast_c.Div | Ast_c.Mod -> mulit
+      | Ast_c.Min | Ast_c.Max -> relat
+      | Ast_c.DecLeft | Ast_c.DecRight -> shift
+      | Ast_c.And -> bit_and
+      | Ast_c.Or -> bit_or
+      | Ast_c.Xor -> bit_xor in
+    let left_prec_of_logical = function
+	Ast_c.Inf | Ast_c.Sup | Ast_c.InfEq | Ast_c.SupEq -> relat
+      | Ast_c.Eq | Ast_c.NotEq -> equal
+      | Ast_c.AndLog -> log_and
+      | Ast_c.OrLog -> log_or in
+    match Ast_c.unwrap op with
+      | Ast_c.Arith op' -> left_prec_of_arith op'
+      | Ast_c.Logical op' -> left_prec_of_logical op' in
+  let right_prec_of_c op =
+    let right_prec_of_arith = function
+	Ast_c.Plus | Ast_c.Minus -> mulit
+      | Ast_c.Mul | Ast_c.Div | Ast_c.Mod -> cast
+      | Ast_c.Min | Ast_c.Max -> shift
+      | Ast_c.DecLeft | Ast_c.DecRight -> addit
+      | Ast_c.And -> equal
+      | Ast_c.Or -> bit_xor
+      | Ast_c.Xor -> bit_and in
+    let right_prec_of_logical = function
+	Ast_c.Inf -> shift
+      | Ast_c.Sup -> shift
+      | Ast_c.InfEq -> shift
+      | Ast_c.SupEq -> shift
+      | Ast_c.Eq -> relat
+      | Ast_c.NotEq -> relat
+      | Ast_c.AndLog -> bit_or
+      | Ast_c.OrLog -> log_and in
+    match Ast_c.unwrap op with
+      Ast_c.Arith op' -> right_prec_of_arith op'
+    | Ast_c.Logical op' -> right_prec_of_logical op' in
   let left_prec_of op =
-    let left_prec_of_arith op = match Ast.unwrap_mcode op with
-      | Ast.Plus | Ast.Minus -> addit
+    let left_prec_of_arith op =
+      match Ast.unwrap_mcode op with
+	Ast.Plus | Ast.Minus -> addit
       | Ast.Mul | Ast.Div | Ast.Mod -> mulit
       | Ast.Min | Ast.Max -> relat
       | Ast.DecLeft | Ast.DecRight -> shift
       | Ast.And -> bit_and
       | Ast.Or -> bit_or
       | Ast.Xor -> bit_xor in
-    let left_prec_of_logical op = match Ast.unwrap_mcode op with	  
-      | Ast.Inf | Ast.Sup | Ast.InfEq | Ast.SupEq -> relat
+    let left_prec_of_logical op =
+      match Ast.unwrap_mcode op with	  
+	Ast.Inf | Ast.Sup | Ast.InfEq | Ast.SupEq -> relat
       | Ast.Eq | Ast.NotEq -> equal
       | Ast.AndLog -> log_and
       | Ast.OrLog -> log_or in
     match Ast.unwrap op with
-      | Ast.Arith op' -> left_prec_of_arith op'
-      | Ast.Logical op' -> left_prec_of_logical op'    
-      | Ast.MetaBinary (mv,_,_,_)->
-        failwith "Here, see to which operator the metavariable has been bound and return thepriority of that operator." in
-  let right_prec_of op =
-    let right_prec_of_arith op = match Ast.unwrap_mcode op with
-      | Ast.Plus | Ast.Minus -> mulit
+      Ast.Arith op' -> left_prec_of_arith op'
+    | Ast.Logical op' -> left_prec_of_logical op' 
+    | Ast.MetaBinary (mv,_,_,_) ->
+	let (res,name_string,line,lcol,rcol) = lookup_metavar mv in
+	(match res with
+	  None ->
+	    if generating then minprio else failwith "unbound MetaBinary"
+	| Some (Ast_c.MetaBinaryOpVal bop) -> left_prec_of_c bop
+	| Some _ -> failwith "bad MetaBinary value") in
+  let rec right_prec_of op =
+    let right_prec_of_arith op =
+      match Ast.unwrap_mcode op with
+	Ast.Plus | Ast.Minus -> mulit
       | Ast.Mul | Ast.Div | Ast.Mod -> cast
       | Ast.Min | Ast.Max -> shift
       | Ast.DecLeft | Ast.DecRight -> addit
       | Ast.And -> equal
       | Ast.Or -> bit_xor
       | Ast.Xor -> bit_and in
-    let right_prec_of_logical op = match Ast.unwrap_mcode op with	  
-      | Ast.Inf -> shift
+    let right_prec_of_logical op =
+      match Ast.unwrap_mcode op with	  
+	Ast.Inf -> shift
       | Ast.Sup -> shift
       | Ast.InfEq -> shift
       | Ast.SupEq -> shift
@@ -359,10 +407,15 @@ let rec expression e =
       | Ast.AndLog -> bit_or
       | Ast.OrLog -> log_and in
     match Ast.unwrap op with
-      | Ast.Arith op' -> right_prec_of_arith op'
-      | Ast.Logical op' -> right_prec_of_logical op'    
-      | Ast.MetaBinary (mv,_,_,_)->
-        failwith "Here, see to which operator the metavariable has been bound and return thepriority of that operator." in
+      Ast.Arith op' -> right_prec_of_arith op'
+    | Ast.Logical op' -> right_prec_of_logical op'    
+    | Ast.MetaBinary (mv,_,_,_) ->
+	let (res,name_string,line,lcol,rcol) = lookup_metavar mv in
+	(match res with
+	  None ->
+	    if generating then minprio else failwith "unbound MetaBinary"
+	| Some (Ast_c.MetaBinaryOpVal bop) -> right_prec_of_c bop
+	| Some _ -> failwith "bad MetaBinary value") in
   let prec_of_c = function
     | Ast_c.Ident (ident) -> primary
     | Ast_c.Constant (c) -> primary
@@ -568,8 +621,11 @@ and assignOp op =
   match Ast.unwrap op with
     Ast.SimpleAssign op -> mcode print_string op
   | Ast.OpAssign(aop) -> mcode (arithOp true) aop
-  | Ast.MetaAssign(mv,_,_,_) ->
-      failwith "Here, see to which operator the metavariable has been bound and return the priority of that operator."
+  | Ast.MetaAssign(name,_,_,_) ->
+      handle_metavar name (function
+	  Ast_c.MetaAssignOpVal aop ->
+	    pretty_print_c.Pretty_print_c.assignOp aop
+	| _ -> raise (Impossible 159))
 
 and fixOp = function
     Ast.Dec -> print_string "--"
@@ -579,8 +635,11 @@ and binaryOp op =
   match Ast.unwrap op with
     Ast.Arith(aop) -> mcode (arithOp false) aop
   | Ast.Logical(lop) -> mcode logicalOp lop
-  | Ast.MetaBinary(mv,_,_,_) ->
-    failwith "Here, see to which operator the metavariable has been bound and return the priority of that operator."
+  | Ast.MetaBinary(name,_,_,_) ->
+      handle_metavar name (function
+	  Ast_c.MetaBinaryOpVal bop -> 
+	    pretty_print_c.Pretty_print_c.binaryOp bop
+	| _ -> raise (Impossible 160))
 
 and arithOp eq op =
   let print_string s = if eq then print_string (s^"=") else print_string s in
