@@ -303,14 +303,15 @@ and disjdecl d =
 	(function fninfo ->
 	  Ast.rewrap d (Ast.FunProto(fninfo,name,lp1,params,va,rp1,sem)))
 	fninfo
-  | Ast.MacroDecl(name,lp,args,rp,sem) ->
+  | Ast.MacroDecl(stg,name,lp,args,rp,sem) ->
       List.map
-	(function args -> Ast.rewrap d (Ast.MacroDecl(name,lp,args,rp,sem)))
+	(function args ->
+	  Ast.rewrap d (Ast.MacroDecl(stg,name,lp,args,rp,sem)))
 	(disjdots disjexp args)
-  | Ast.MacroDeclInit(name,lp,args,rp,eq,ini,sem) ->
+  | Ast.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
       disjmult2 (disjdots disjexp args) (disjini ini)
 	(function args -> function ini ->
-	  Ast.rewrap d (Ast.MacroDeclInit(name,lp,args,rp,eq,ini,sem)))
+	  Ast.rewrap d (Ast.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem)))
   | Ast.TyDecl(ty,sem) ->
       let ty = disjty ty in
       List.map (function ty -> Ast.rewrap d (Ast.TyDecl(ty,sem))) ty

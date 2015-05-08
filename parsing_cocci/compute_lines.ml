@@ -705,14 +705,21 @@ and declaration d =
 	| Ast0.FType(ty)::_ -> mkres d res ty right
 	| Ast0.FInline(inline)::_ -> mkres d res (promote_mcode inline) right
 	| Ast0.FAttr(attr)::_ -> mkres d res (promote_mcode attr) right)
-  | Ast0.MacroDecl(name,lp,args,rp,sem) ->
+  | Ast0.MacroDecl(stg,name,lp,args,rp,sem) ->
       let name = ident name in
       let lp = normal_mcode lp in
       let args = dots is_exp_dots (Some(promote_mcode lp)) expression args in
       let rp = normal_mcode rp in
       let sem = normal_mcode sem in
-      mkres d (Ast0.MacroDecl(name,lp,args,rp,sem)) name (promote_mcode sem)
-  | Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem) ->
+      (match stg with
+	None ->
+	  mkres d (Ast0.MacroDecl(None,name,lp,args,rp,sem))
+	    name (promote_mcode sem)
+      | Some x ->
+	  let stg = Some (normal_mcode x) in
+	  mkres d (Ast0.MacroDecl(stg,name,lp,args,rp,sem))
+	    (promote_mcode x) (promote_mcode sem))
+  | Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
       let name = ident name in
       let lp = normal_mcode lp in
       let args = dots is_exp_dots (Some(promote_mcode lp)) expression args in
@@ -720,8 +727,14 @@ and declaration d =
       let eq = normal_mcode eq in
       let ini = initialiser ini in
       let sem = normal_mcode sem in
-      mkres d (Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem))
-	name (promote_mcode sem)
+      (match stg with
+	None ->
+	  mkres d (Ast0.MacroDeclInit(None,name,lp,args,rp,eq,ini,sem))
+	    name (promote_mcode sem)
+      | Some x ->
+	  let stg = Some (normal_mcode x) in
+	  mkres d (Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem))
+	    (promote_mcode x) (promote_mcode sem))
   | Ast0.TyDecl(ty,sem) ->
       let ty = typeC ty in
       let sem = normal_mcode sem in

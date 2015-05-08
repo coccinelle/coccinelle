@@ -2220,18 +2220,16 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 	      fail
 	end
 
-  | A.MacroDecl (sa,lpa,eas,rpa,enda), B.MacroDecl ((sb,ebs,true),ii) ->
+  | A.MacroDecl (stoa,sa,lpa,eas,rpa,enda),
+	B.MacroDecl ((stob,sb,ebs,true),ii) ->
       let (iisb, lpb, rpb, iiendb, iifakestart, iistob) =
         (match ii with
         | iisb::lpb::rpb::iiendb::iifakestart::iisto ->
             (iisb,lpb,rpb,iiendb, iifakestart,iisto)
         | _ -> raise (Impossible 26)
         ) in
-      (if allminus
-      then minusize_list iistob
-      else return ((), iistob)
-      ) >>= (fun () iistob ->
-
+        storage_optional_allminus allminus
+          stoa ((stob, false), iistob) >>= (fun stoa ((stob, _), iistob) ->
         X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart ->
 	ident DontKnow sa (sb, iisb) >>= (fun sa (sb, iisb) ->
         tokenf lpa lpb >>= (fun lpa lpb ->
@@ -2242,25 +2240,26 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 
           return (
             (mckstart, allminus,
-            (A.MacroDecl (sa,lpa,eas,rpa,enda)) +> A.rewrap decla),
-            (B.MacroDecl ((sb,ebs,true),
+            (A.MacroDecl (stoa,sa,lpa,eas,rpa,enda)) +> A.rewrap decla),
+            (B.MacroDecl ((stob,sb,ebs,true),
                          [iisb;lpb;rpb;iiendb;iifakestart] ++ iistob))
           ))))))))
 
-  | A.MacroDecl (sa,lpa,eas,rpa,enda), B.MacroDecl ((sb,ebs,false),ii) ->
+  | A.MacroDecl (None,sa,lpa,eas,rpa,enda),
+      B.MacroDecl ((B.NoSto,sb,ebs,false),ii) ->
+	(* This is for macrodecls with no semicolons, which come from
+	   a parsing rule that deals with function prototypes with no
+	   return type.  That parsing rule would have a conflict if there
+	   were storage, so there is no point to treat the possibility of
+	   storage here. *)
       X.optional_declarer_semicolon_flag (fun optional_declarer_semicolon ->
       match mcodekind enda, optional_declarer_semicolon with
 	A.CONTEXT (_,A.NOTHING), true ->
-	  let (iisb, lpb, rpb, iifakestart, iistob) =
+	  let (iisb, lpb, rpb, iifakestart) =
             (match ii with
-            | iisb::lpb::rpb::iifakestart::iisto ->
-		(iisb,lpb,rpb,iifakestart,iisto)
+            | [iisb;lpb;rpb;iifakestart] ->
+		(iisb,lpb,rpb,iifakestart)
             | _ -> raise (Impossible 27)) in
-	  (if allminus
-	  then minusize_list iistob
-	  else return ((), iistob)) >>=
-	  (fun () iistob ->
-
 	    X.tokenf_mck mckstart iifakestart >>=
 	    (fun mckstart iifakestart ->
 	      ident DontKnow sa (sb, iisb) >>= (fun sa (sb, iisb) ->
@@ -2272,25 +2271,22 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 
 		  return (
 		  (mckstart, allminus,
-		   (A.MacroDecl (sa,lpa,eas,rpa,enda)) +> A.rewrap decla),
-		  (B.MacroDecl ((sb,ebs,false),
-				[iisb;lpb;rpb;iifakestart] ++ iistob))
-		  )))))))
+		   (A.MacroDecl (None,sa,lpa,eas,rpa,enda)) +> A.rewrap decla),
+		  (B.MacroDecl ((B.NoSto,sb,ebs,false),
+				[iisb;lpb;rpb;iifakestart]))
+		  ))))))
       | _ -> fail)
 
-  | A.MacroDeclInit (sa,lpa,eas,rpa,weqa,inia,enda),
-      B.MacroDeclInit ((sb,ebs,inib),ii) ->
+  | A.MacroDeclInit (stoa,sa,lpa,eas,rpa,weqa,inia,enda),
+      B.MacroDeclInit ((stob,sb,ebs,inib),ii) ->
       let (iisb, lpb, rpb, weqb, iiendb, iifakestart, iistob) =
         (match ii with
         |  iisb::lpb::rpb::weqb::iiendb::iifakestart::iisto ->
             (iisb,lpb,rpb,weqb,iiendb, iifakestart,iisto)
         |  _ -> raise (Impossible 28)
         ) in
-      (if allminus
-      then minusize_list iistob
-      else return ((), iistob)
-      ) >>= (fun () iistob ->
-
+        storage_optional_allminus allminus
+          stoa ((stob, false), iistob) >>= (fun stoa ((stob, _), iistob) ->
         X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart ->
         ident DontKnow sa (sb, iisb) >>= (fun sa (sb, iisb) ->
         tokenf lpa lpb >>= (fun lpa lpb ->
@@ -2303,13 +2299,14 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 
           return (
             (mckstart, allminus,
-            (A.MacroDeclInit(sa,lpa,eas,rpa,weqa,inia,enda)) +> A.rewrap decla),
-            (B.MacroDeclInit ((sb,ebs,inib),
+            (A.MacroDeclInit(stoa,sa,lpa,eas,rpa,weqa,inia,enda)) +>
+	     A.rewrap decla),
+            (B.MacroDeclInit ((stob,sb,ebs,inib),
                          [iisb;lpb;rpb;iiendb;iifakestart] ++ iistob))
           ))))))))))
 
 
-  | A.MacroDeclInit (sa,lpa,eas,rpa,weqa,inia,enda), _ -> fail
+  | A.MacroDeclInit (stoa,sa,lpa,eas,rpa,weqa,inia,enda), _ -> fail
 
   | _, (B.MacroDecl _ |B.MacroDeclInit _ |B.DeclList _) -> fail
 
@@ -3149,7 +3146,8 @@ and (struct_field: (A.annotated_decl, B.field) matcher) =
 	| _,B.EmptyField _iifield ->
 	    fail
 
-	| A.MacroDecl (sa,lpa,eas,rpa,enda),B.MacroDeclField ((sb,ebs),ii) ->
+	| A.MacroDecl (stoa,bsa,lpa,eas,rpa,enda),
+	    B.MacroDeclField ((sb,ebs),ii) ->
 	    raise Todo
 	| _,B.MacroDeclField ((sb,ebs),ii) -> fail
 

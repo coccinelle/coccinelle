@@ -1502,29 +1502,32 @@ decl2:
      }
  /*(* cppext: *)*/
 
- | TMacroDecl TOPar argument_list TCPar TPtVirg
+ | storage_const_opt TMacroDecl TOPar argument_list TCPar TPtVirg
      { function _ ->
-       MacroDecl ((fst $1, $3, true), [snd $1;$2;$4;$5;fakeInfo()]) }
- | Tstatic TMacroDecl TOPar argument_list TCPar TPtVirg
-     { function _ ->
-       MacroDecl ((fst $2, $4, true), [snd $2;$3;$5;$6;fakeInfo();$1]) }
- | Tstatic TMacroDeclConst TMacroDecl TOPar argument_list TCPar TPtVirg
-     { function _ ->
-       MacroDecl ((fst $3, $5, true), [snd $3;$4;$6;$7;fakeInfo();$1;$2])}
+       match $1 with
+	 Some (sto,stoii) ->
+	   MacroDecl
+	     ((sto, fst $2, $4, true), (snd $2::$3::$5::$6::fakeInfo()::stoii))
+       | None ->
+	   MacroDecl
+	     ((NoSto, fst $2, $4, true), [snd $2;$3;$5;$6;fakeInfo()]) }
 
+ | storage_const_opt
+     TMacroDecl TOPar argument_list TCPar teq initialize TPtVirg
+     { function _ ->
+       match $1 with
+	 Some (sto,stoii) ->
+	   MacroDeclInit
+	     ((sto, fst $2, $4, $7),
+	      (snd $2::$3::$5::$6::$8::fakeInfo()::stoii))
+       | None ->
+	   MacroDeclInit
+	     ((NoSto, fst $2, $4, $7), [snd $2;$3;$5;$6;$8;fakeInfo()]) }
 
- | TMacroDecl TOPar argument_list TCPar teq initialize TPtVirg
-     { function _ ->
-       MacroDeclInit ((fst $1, $3, $6), [snd $1;$2;$4;$5;$7;fakeInfo()]) }
- | Tstatic TMacroDecl TOPar argument_list TCPar teq initialize TPtVirg
-     { function _ ->
-       MacroDeclInit ((fst $2, $4, $7),[snd $2;$3;$5;$6;$8;fakeInfo();$1]) }
- | Tstatic TMacroDeclConst TMacroDecl TOPar argument_list TCPar
-     teq initialize TPtVirg
-     { function _ ->
-       MacroDeclInit
-	 ((fst $3, $5, $8), [snd $3;$4;$6;$7;$9;fakeInfo();$1;$2])}
-
+storage_const_opt:
+   storage_class_spec_nt TMacroDeclConst { Some (fst $1,[snd $1; $2]) }
+ | storage_class_spec_nt { Some (fst $1,[snd $1]) }
+ |                       { None }
 
 /*(*-----------------------------------------------------------------------*)*/
 decl_spec2:
@@ -1542,11 +1545,14 @@ decl_spec2:
    *)*/
 
 
-storage_class_spec2:
+storage_class_spec_nt:
  | Tstatic      { Sto Static,  $1 }
  | Textern      { Sto Extern,  $1 }
  | Tauto        { Sto Auto,    $1 }
  | Tregister    { Sto Register,$1 }
+
+storage_class_spec2:
+ | storage_class_spec_nt { $1 }
  | Ttypedef     { StoTypedef,  $1 }
 
 storage_class_spec:
@@ -2062,7 +2068,7 @@ cpp_other:
                    ($5::iistart::snd sto)))
        else
 	 Declaration
-	   (MacroDecl((fst $1, $3, true), [snd $1;$2;$4;$5;fakeInfo()]))
+	   (MacroDecl((NoSto, fst $1, $3, true), [snd $1;$2;$4;$5;fakeInfo()]))
            (* old: MacroTop (fst $1, $3,    [snd $1;$2;$4;$5])  *)
      }
 
@@ -2086,7 +2092,8 @@ cpp_other:
 
  /*(* TCParEOL to fix the end-of-stream bug of ocamlyacc *)*/
  | identifier TOPar argument_list TCParEOL
-     { Declaration (MacroDecl ((fst $1, $3, false), [snd $1;$2;$4;fakeInfo()])) }
+     { Declaration
+	 (MacroDecl ((NoSto, fst $1, $3, false), [snd $1;$2;$4;fakeInfo()])) }
 
   /*(* ex: EXPORT_NO_SYMBOLS; *)*/
  | identifier TPtVirg { EmptyDef [snd $1;$2] }

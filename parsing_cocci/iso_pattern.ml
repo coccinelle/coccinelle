@@ -949,24 +949,30 @@ let match_maker checks_needed context_required whencode_allowed =
 		     params1 params;
                    match_option varargs_equal va1a va1b
                  ]
-	  | (Ast0.MacroDecl(namea,lp1,argsa,rp1,sc1),
-	     Ast0.MacroDecl(nameb,lp,argsb,rp,sc)) ->
-	       conjunct_many_bindings
-		 [match_ident namea nameb;
-		   check_mcode lp1 lp; check_mcode rp1 rp;
-		   check_mcode sc1 sc;
-		   match_dots match_expr is_elist_matcher do_elist_match
-		     argsa argsb]
-	  | (Ast0.MacroDeclInit(namea,lp1,argsa,rp1,eq1,ini1,sc1),
-	     Ast0.MacroDeclInit(nameb,lp,argsb,rp,eq,ini,sc)) ->
-	       conjunct_many_bindings
-		 [match_ident namea nameb;
-		   check_mcode lp1 lp; check_mcode rp1 rp;
-		   check_mcode eq1 eq;
-		   check_mcode sc1 sc;
-		   match_dots match_expr is_elist_matcher do_elist_match
-		     argsa argsb;
-		   match_init ini1 ini]
+	  | (Ast0.MacroDecl(stga,namea,lp1,argsa,rp1,sc1),
+	     Ast0.MacroDecl(stgb,nameb,lp,argsb,rp,sc)) ->
+	       if bool_match_option mcode_equal stga stgb
+	       then
+		 conjunct_many_bindings
+		   [match_ident namea nameb;
+		     check_mcode lp1 lp; check_mcode rp1 rp;
+		     check_mcode sc1 sc;
+		     match_dots match_expr is_elist_matcher do_elist_match
+		       argsa argsb]
+	       else return false
+	  | (Ast0.MacroDeclInit(stga,namea,lp1,argsa,rp1,eq1,ini1,sc1),
+	     Ast0.MacroDeclInit(stgb,nameb,lp,argsb,rp,eq,ini,sc)) ->
+	       if bool_match_option mcode_equal stga stgb
+	       then
+		 conjunct_many_bindings
+		   [match_ident namea nameb;
+		     check_mcode lp1 lp; check_mcode rp1 rp;
+		     check_mcode eq1 eq;
+		     check_mcode sc1 sc;
+		     match_dots match_expr is_elist_matcher do_elist_match
+		       argsa argsb;
+		     match_init ini1 ini]
+	       else return false
 	  | (Ast0.TyDecl(tya,sc1),Ast0.TyDecl(tyb,sc)) ->
 	      conjunct_bindings (check_mcode sc1 sc) (match_typeC tya tyb)
 	  | (Ast0.Typedef(stga,tya,ida,sc1),Ast0.Typedef(stgb,tyb,idb,sc)) ->
