@@ -492,8 +492,9 @@ let worth_trying2 cfiles (tokens,_,query,_) =
   let res =
   match (!Flag_cocci.windows,!Flag.scanner,tokens,query,cfiles) with
     (true,_,_,_,_) | (_,_,None,_,_) | (_,_,_,None,_) | (_,Flag.CocciGrep,_,_,_)
+      | (_,Flag.GitGrep,_,_,_)
     -> true
-  | (_,_,_,Some query,[cfile]) -> Cocci_grep.interpret query cfile
+  | (_,_,_,Some (q1,q2,_),[cfile]) -> Cocci_grep.interpret (q1,q2) cfile
   | (_,_,Some tokens,_,_) ->
    (* could also modify the code in get_constants.ml *)
       let tokens = tokens +> List.map (fun s ->
@@ -934,7 +935,8 @@ type cocci_info = toplevel_cocci_info list *
 type constant_info =
     (string list option (*grep tokens*) *
        string list option (*glimpse tokens*) *
-       (Str.regexp * Str.regexp list) option (*coccigrep tokens*) *
+       (Str.regexp * Str.regexp list * string list)
+       option (*coccigrep/gitgrep tokens*) *
        Get_constants2.combine option)
 
 type kind_file = Header | Source

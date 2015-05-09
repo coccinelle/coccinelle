@@ -10,7 +10,7 @@ let track_iso_usage = ref false
 
 let worth_trying_opt = ref true
 
-type scanner = IdUtils | Glimpse | CocciGrep | NoScanner
+type scanner = IdUtils | Glimpse | CocciGrep | GitGrep | NoScanner
 let scanner = ref NoScanner
 
 let pyoutput = ref "coccilib.output.Console"
