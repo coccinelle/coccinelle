@@ -486,7 +486,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
 
       !g +> add_arc_opt (starti, newswitchi);
 
-      (* allows multiple lacase labels to stack up *)
+      (* allows multiple case labels to stack up *)
       let rec contains_default s =
 	match Ast_c.unwrap_st s with
 	  Labeled (Ast_c.Default _) -> true

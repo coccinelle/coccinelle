@@ -29,6 +29,8 @@
 - add --use-gitgrep option, for scanning with git grep
 ** Bugfix:
 - Take into account constraints when determining whether a metavar is pure
+- don't add switch fall through when a default is hidden under another case
+  label.
 * 1.0.0
 ** Language:
 - Add metavariables for matcing assignment and binary operators.
