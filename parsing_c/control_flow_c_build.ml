@@ -486,6 +486,14 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
 
       !g +> add_arc_opt (starti, newswitchi);
 
+      (* allows multiple lacase labels to stack up *)
+      let rec contains_default s =
+	match Ast_c.unwrap_st s with
+	  Labeled (Ast_c.Default _) -> true
+	| Labeled (Ast_c.Case(e,s)) -> contains_default s
+	| Labeled (Ast_c.CaseRange(e1,e2,s)) -> contains_default s
+	| _ -> false in
+
        (* call compound case. Need special info to pass to compound case
         * because we need to build a context_info that need some of the
         * information build inside the compound case: the nodei of {
@@ -512,11 +520,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
                 * between start to end.
                 * todo? except if the case[range] coverthe whole spectrum
                 *)
-               if not (statxs +> List.exists (fun x ->
-                 match Ast_c.unwrap_st x with
-                 | Labeled (Ast_c.Default _) -> true
-                 | _ -> false
-               ))
+               if not (statxs +> List.exists contains_default)
                then begin
                  (* when there is no default, then a valid path is
                   * from the switchheader to the end. In between we
