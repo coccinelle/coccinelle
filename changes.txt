@@ -25,6 +25,7 @@
 * 1.0.1
 ** Language:
 - allow static on type-level declarers
+- ... in for loop header and in array declaration size matches nothing.
 ** Features:
 - add --use-gitgrep option, for scanning with git grep
 ** Bugfix:
