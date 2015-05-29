@@ -45,22 +45,22 @@ class CoccinelleError(Exception):
 class ExecutionErrorThread(CoccinelleError):
     def __init__(self, errcode, fn, cocci_file, threads, t, logwrite, print_name):
         self.error_code = errcode
-        logwrite("Failed to apply changes from %s" % print_name)
+        logwrite("Failed to apply changes from %s\n" % print_name)
 
-        logwrite("Specific log output from change that failed using %s" % print_name)
+        logwrite("Specific log output from change that failed using %s\n" % print_name)
         tf = open(fn, 'r')
         for line in tf.read():
-            logwrite('> %s' % line)
+            logwrite(line)
         tf.close()
 
-        logwrite("Full log using %s" % print_name)
+        logwrite("Full log using %s\n" % print_name)
         for num in range(threads):
             fn = os.path.join(t, '.tmp_spatch_worker.' + str(num))
             if (not os.path.isfile(fn)):
                 continue
             tf = open(fn, 'r')
             for line in tf.read():
-                logwrite('> %s' % line)
+                logwrite(line)
             tf.close()
             os.unlink(fn)
 
@@ -82,6 +82,7 @@ def spatch(cocci_file, outdir,
 
     fn = os.path.join(temp_dir, '.tmp_spatch_worker.' + str(thread_id))
     outfile = open(fn, 'w')
+    logwrite("%s\n" % " ".join(cmd))
 
     sprocess = subprocess.Popen(cmd,
                                stdout=outfile, stderr=subprocess.STDOUT,
