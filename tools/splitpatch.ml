@@ -650,7 +650,7 @@ let mail_sender = "cocci-send-email.perl"
 let generate_command front cover generated =
   let output_file = front^".cmd" in
   let o = open_out output_file in
-  let generated = List.rev generated in
+  let generated = List.sort compare generated in
   (match cover with
     None ->
       Printf.fprintf o
