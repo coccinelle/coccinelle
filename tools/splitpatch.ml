@@ -574,6 +574,10 @@ let make_message_files subject cover message nonmessage date maintainer_table
 		rest)
       maintainer_table [] in
   let number = List.length elements in
+  let elements =
+    List.sort
+      (fun (_,(ctr1,_,_,_,_)) (_,(ctr2,_,_,_,_)) -> compare ctr1 ctr2)
+      elements in
   let generated =
     List.map
       (function (common,(ctr,the_rest,maintainers,files,diffs)) ->
@@ -603,7 +607,7 @@ let make_message_files subject cover message nonmessage date maintainer_table
 	(if not(stat = Unix.WEXITED 0)
 	then (print_all stderr info; Printf.fprintf stderr "\n"));
 	output_file)
-      (List.rev elements) in
+      elements in
   let later = add_ext(Printf.sprintf "%s%d" front (number+1)) in
   if Sys.file_exists later
   then Printf.fprintf stderr "Warning: %s and other files may be left over from a previous run\n" later;
@@ -650,7 +654,6 @@ let mail_sender = "cocci-send-email.perl"
 let generate_command front cover generated =
   let output_file = front^".cmd" in
   let o = open_out output_file in
-  let generated = List.sort compare generated in
   (match cover with
     None ->
       Printf.fprintf o
