@@ -664,7 +664,7 @@ COMPILE_EMBEDDED_BYTES_MODULE
 DYNLINK_IS_NATIVE
 FEATURE_OCAML
 FEATURE_PYTHON
-SHAREDIR
+LIBDIR
 REGEXP_FILE
 REGEXP_MODULE
 MAKE_pcre
@@ -16030,7 +16030,7 @@ fi
 
 
 
-SHAREDIR="${libdir}/coccinelle"
+LIBDIR="${libdir}/coccinelle"
 
 
 if test "x$enable_python" != xno; then :
