@@ -4,7 +4,7 @@
 # it sets the python variables (if relevant)
 # and COCCINELLE_HOME
 
-LIBDIR="@LIBDIR@"
+LIBDIR="@prefix@/lib/coccinelle"
 
 if test ! -d "$LIBDIR"; then
     LIBDIR="$(pwd)"
