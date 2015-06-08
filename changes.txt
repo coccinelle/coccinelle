@@ -18,6 +18,8 @@
 - interpret #if, as is done for #ifdef
 
 ** Bugfix:
+- Coccinelle's "make install" now copies files to /usr/local/lib instead of
+  /usr/local/share
 - Add more information in documentation, man pages and wiki
 - typedefs from C code should not be used before their point of inference
   (saved_typedefs in cprogram_of_file)
