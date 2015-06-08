@@ -310,11 +310,11 @@ let elim_opt =
 	     Ast.inherited = inh_both;
 	     Ast.saved_witness = saved_both}]
 
-    | ([Ast.Nest(_,_,_,_,_,_,_);Ast.OptStm(stm)],[d1;_]) ->
+    | ([Ast.Nest(_,_,_,w,_,_,_);Ast.OptStm(stm)],[d1;_]) ->
 	let l = Ast.get_line stm in
 	let rw = Ast.rewrap stm in
 	let rwd = Ast.rewrap stm in
-	let dots = Ast.Dots(Ast.make_mcode "...",[],[],[]) in
+	let dots = Ast.Dots(Ast.make_mcode "...",w,[],[]) in
 	[d1;rw(Ast.Disj
 		 [rwd(Ast.DOTS([stm]));
 		   {(Ast.make_term(Ast.DOTS([rw dots])))
