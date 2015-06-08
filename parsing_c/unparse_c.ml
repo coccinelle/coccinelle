@@ -1080,17 +1080,18 @@ let check_danger toks =
     match get_danger tok with
       Some Ast_c.Danger -> false
     | _ -> true in
-  let not_nodanger tok =
+  let nonspace_danger tok =
     match get_danger tok with
-      Some Ast_c.NoDanger -> false
-    | _ -> true in
+      Some Ast_c.Danger -> true
+    | Some Ast_c.NoDanger -> is_space tok or is_newline_or_comment tok
+    | _ -> false in
   let unminus tok =
     match (tok,get_danger tok) with
       (T2(tok,Min _,a,b),Some Ast_c.Danger) -> T2(tok,Ctx,a,b)
     | _ -> tok in
   let rec unminus_initial_danger toks =
     let (front,rest) = span not_danger toks in
-    let (dangers,rest) = span not_nodanger rest in
+    let (dangers,rest) = span nonspace_danger rest in
     front @ (List.map unminus dangers) @ rest in
   let unminus_danger_end = function
       T2(tok,Min _,a,b) -> T2(tok,Ctx,a,b)
@@ -1109,13 +1110,14 @@ let check_danger toks =
 			(* everything removed *)
 			|| undanger_untouched (danger@[de])
 			(* nothing removed, type changed *)
-		    then danger @ de :: (search_danger rest)
-		    else
+		    then begin Printf.printf "case 1\n";
+		      danger @ de :: (search_danger rest) end
+		    else begin Printf.printf "case 2\n";
 		      (* some things removed, not others, unminus the type *)
 		      drop_last_danger_comma
 			((unminus_initial_danger danger) @
 			 [(unminus_danger_end de)]) @
-		      (search_danger rest)
+		      (search_danger rest) end
 		| _ -> failwith "missing danger end")
 	    | _ -> failwith "missing danger end")
 	| _ -> x :: search_danger xs in
