@@ -664,7 +664,7 @@ COMPILE_EMBEDDED_BYTES_MODULE
 DYNLINK_IS_NATIVE
 FEATURE_OCAML
 FEATURE_PYTHON
-SHAREDIR
+LIBDIR
 REGEXP_FILE
 REGEXP_MODULE
 MAKE_pcre
@@ -16030,7 +16030,7 @@ fi
 
 
 
-SHAREDIR="${prefix}/share/coccinelle"
+LIBDIR="${libdir}/coccinelle"
 
 
 if test "x$enable_python" != xno; then :
@@ -18705,7 +18705,7 @@ You may need to set some environment variables so that the python
 libraries are found. The frontend 'spatch' sets the following variables:
 
   \$ export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$prefix/lib
-  \$ export PYTHONPATH=\$PYTHONPATH:$prefix/share/coccinelle/python
+  \$ export PYTHONPATH=\$PYTHONPATH:$libdir/coccinelle/python
 
 EOF
 fi

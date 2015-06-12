@@ -1543,6 +1543,19 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
      _),_)
        -> fail
 
+(* Allow ... to match nothing.  Useful in for loop headers and in array
+declarations.  Put a metavariable to require it to match something. *)
+and (eoption:
+       (A.expression,B.expression) matcher ->
+	 (A.expression option,B.expression option) matcher) = fun f t1 t2 ->
+  match (t1,t2) with
+    (Some t, None) ->
+      (match A.unwrap t with
+	A.Edots(edots,None) ->
+	  return (t1,t2)
+      | _ -> option f t1 t2)
+  | _ -> option f t1 t2
+
 and assignOp opa opb =
   match (A.unwrap opa), opb with
     A.SimpleAssign a, (B.SimpleAssign, opb') ->
@@ -3639,7 +3652,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
     | A.Array (typa, ia1, eaopt, ia2), (B.Array (ebopt, typb), ii) ->
         let (ib1, ib2) = tuple_of_list2 ii in
         fullType typa typb >>= (fun typa typb ->
-        option expression eaopt ebopt >>= (fun eaopt ebopt ->
+        eoption expression eaopt ebopt >>= (fun eaopt ebopt ->
         tokenf ia1 ib1 >>= (fun ia1 ib1 ->
         tokenf ia2 ib2 >>= (fun ia2 ib2 ->
           return (
@@ -4765,7 +4778,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 	(A.ForExp(ea1opt, ia3),B.ForExp(eb1opt,ib3s)) ->
 	  let ib3 = tuple_of_list1 ib3s in
 	  tokenf ia3 ib3 >>= (fun ia3 ib3 ->
-	  option expression ea1opt eb1opt >>= (fun ea1opt eb1opt ->
+	  eoption expression ea1opt eb1opt >>= (fun ea1opt eb1opt ->
 	    return (A.ForExp(ea1opt, ia3),B.ForExp(eb1opt,[ib3]))))
       |	(A.ForDecl decla,B.ForDecl declb) ->
 	  annotated_decl decla declb >>=
@@ -4781,8 +4794,8 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
       tokenf ia2 ib2 >>= (fun ia2 ib2 ->
       tokenf ia4 ib4 >>= (fun ia4 ib4 ->
       tokenf ia5 ib5 >>= (fun ia5 ib5 ->
-      option expression ea2opt eb2opt >>= (fun ea2opt eb2opt ->
-      option expression ea3opt eb3opt >>= (fun ea3opt eb3opt ->
+      eoption expression ea2opt eb2opt >>= (fun ea2opt eb2opt ->
+      eoption expression ea3opt eb3opt >>= (fun ea3opt eb3opt ->
         return (
           A.ForHeader(ia1, ia2, firsta, ea2opt, ia4, ea3opt, ia5),
           F.ForHeader(st,((firstb,(eb2opt,[ib4]),(eb3opt,[])),[ib1;ib2;ib5]))

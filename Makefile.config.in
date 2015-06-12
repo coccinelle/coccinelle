@@ -107,7 +107,7 @@ BINDIR=${bindir}
 MANDIR=${mandir}
 
 # Where to install the lib
-LIBDIR=${libdir}
+LIBDIR=@LIBDIR@
 
 # Where to install the configuration files
 SHAREDIR=@SHAREDIR@

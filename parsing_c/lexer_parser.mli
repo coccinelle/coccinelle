@@ -1,6 +1,4 @@
 
-val _handle_typedef : bool ref
-
 val enable_typedef  : unit -> unit
 val disable_typedef : unit -> unit
 val is_enabled_typedef : unit -> bool

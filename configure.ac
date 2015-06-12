@@ -391,7 +391,7 @@ dnl  backwards compatibility
 dnl
 
 dnl  defines some variables needed by the Make infrastructure
-AC_SUBST(SHAREDIR,["${libdir}/coccinelle"])
+AC_SUBST(LIBDIR,["${libdir}/coccinelle"])
 
 AS_IF([test "x$enable_python" != xno],
 [dnl
