@@ -129,8 +129,8 @@ world: Makefile.config version.ml
 # note: the 'all-dev' target excludes the documentation
 all-dev: Makefile.config version.ml
 	@$(MAKE) .depend
-	@$(ECHO) "Building the unoptimized version of spatch"
-	$(MAKE) byte
+	@$(ECHO) "Building $(TARGET_SPATCH)"
+	$(MAKE) $(TARGET_SPATCH)
 	@$(MAKE) preinstall
 	@$(ECHO) -e "\n\tcoccinelle can now be installed via 'make install'"
 
@@ -185,7 +185,8 @@ world: Makefile.config myocamlbuild.ml version.ml prepare-bundles
 
 # note: the 'all-dev' target excludes the documentation and is less noisy
 all-dev: Makefile.config myocamlbuild.ml version.ml prepare-bundles
-	$(MAKE) byte
+	@$(ECHO) "Building $(TARGET_SPATCH)"
+	$(MAKE) $(TARGET_SPATCH)
 	@$(MAKE) coccilib-cmi
 	@$(MAKE) preinstall
 
