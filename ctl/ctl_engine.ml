@@ -683,6 +683,7 @@ let triples_conj_none trips trips' =
 
 exception AW
 
+(* This is never used, but keeping it because it is referenced in a comment *)
 let triples_conj_AW trips trips' =
   let (trips,shared,trips') =
     if false && !pTRIPLES_CONJ_OPT
@@ -1020,44 +1021,6 @@ let pre_forall dir (grp,_,states) y all reqst =
       (*normalize*)
         (foldl1 (@) (List.map (foldl1 triples_conj) neighbor_triples))
 
-let pre_forall_AW dir (grp,_,states) y all reqst =
-  let check s =
-    match reqst with
-      None -> true | Some reqst -> List.mem s reqst in
-  let pred =
-    match dir with
-      A.FORWARD -> G.predecessors | A.BACKWARD -> G.successors in
-  let succ =
-    match dir with
-      A.FORWARD -> G.successors | A.BACKWARD -> G.predecessors in
-  let neighbors =
-    List.map
-      (function p -> (p,succ grp p))
-      (setify
-	 (concatmap
-	    (function (s,_,_) -> List.filter check (pred grp s)) y)) in
-  (* would a hash table be more efficient? *)
-  let all = List.sort state_compare all in
-  let rec up_nodes child s = function
-      [] -> []
-    | (s1,th,wit)::xs ->
-	(match compare s1 child with
-	  -1 -> up_nodes child s xs
-	| 0 -> (s,th,wit)::(up_nodes child s xs)
-	| _ -> []) in
-  let neighbor_triples =
-    List.fold_left
-      (function rest ->
-	function (s,children) ->
-	  (List.map
-	     (function child ->
-	       match up_nodes child s all with [] -> raise AW | l -> l)
-	     children) :: rest)
-      [] neighbors in
-  match neighbor_triples with
-    [] -> []
-  | _ -> foldl1 (@) (List.map (foldl1 triples_conj_AW) neighbor_triples)
-
 (* drop_negwits will call setify *)
 let satEX dir m s reqst = pre_exist dir m s reqst;;
 
@@ -1143,54 +1106,50 @@ let satAU dir ((cfg,_,states) as m) s1 s2 reqst print_graph =
   if s1 = []
   then AUok s2
   else
+    if !Flag_ctl.loop_in_src_code
+    then AUfailed s2
+    else
     (*let ctr = ref 0 in*)
-    let pre_forall =
-      if !Flag_ctl.loop_in_src_code
-      then pre_forall_AW
-      else pre_forall in
-    if !pNEW_INFO_OPT
-    then
-      let rec f y newinfo =
-	inc_step();
-	match newinfo with
-	  [] -> AUok y
-	| new_info ->
-	    ctr := !ctr + 1;
+      if !pNEW_INFO_OPT
+      then
+	let rec f y newinfo =
+	  inc_step();
+	  match newinfo with
+	    [] -> AUok y
+	  | new_info ->
+	      ctr := !ctr + 1;
 	    (*print_state (Printf.sprintf "iteration %d\n" !ctr) y;
-	    flush stdout;*)
-	    print_graph y ctr;
-	    let pre =
-	      try Some (pre_forall dir m new_info y reqst)
-	      with AW -> None in
-	    match pre with
-	      None -> AUfailed y
-	    | Some pre ->
-		match triples_conj s1 pre with
-		  [] -> AUok y
-		| first ->
+	       flush stdout;*)
+	      print_graph y ctr;
+	      let pre =
+		try Some (pre_forall dir m new_info y reqst)
+		with AW -> None in
+	      match pre with
+		None -> AUfailed y
+	      | Some pre ->
+		  match triples_conj s1 pre with
+		    [] -> AUok y
+		  | first ->
 		    (*print_state "s1" s1;
-		    print_state "pre" pre;
-		    print_state "first" first;*)
-		    let res = triples_union first y in
-		    let new_info =
-		      if not !something_dropped
-		      then first
-		      else setdiff res y in
+		       print_state "pre" pre;
+		       print_state "first" first;*)
+		      let res = triples_union first y in
+		      let new_info =
+			if not !something_dropped
+			then first
+			else setdiff res y in
 		  (*Printf.printf
 		     "iter %d res %d new_info %d\n"
 		     !ctr (List.length res) (List.length new_info);
 		     flush stdout;*)
-		    f res new_info in
-      f s2 s2
-    else
-      if !Flag_ctl.loop_in_src_code
-      then AUfailed s2
+		      f res new_info in
+	f s2 s2
       else
 	(*let setfix =
-	  fix (function s1 -> function s2 ->
-	    let s1 = List.map (function (s,th,w) -> (s,th,nub w)) s1 in
-	    let s2 = List.map (function (s,th,w) -> (s,th,nub w)) s2 in
-	    subseteq s1 s2) in for popl *)
+	   fix (function s1 -> function s2 ->
+	   let s1 = List.map (function (s,th,w) -> (s,th,nub w)) s1 in
+	   let s2 = List.map (function (s,th,w) -> (s,th,nub w)) s2 in
+	   subseteq s1 s2) in for popl *)
 	let f y =
 	  inc_step();
 	  ctr := !ctr + 1;
@@ -1198,9 +1157,8 @@ let satAU dir ((cfg,_,states) as m) s1 s2 reqst print_graph =
 	  let pre = pre_forall dir m y y reqst in
 	  triples_union s2 (triples_conj s1 pre) in
 	AUok (setfix f s2)
-;;
-
-
+;;	  
+	  
 (* reqst could be the states of s1 *)
       (*
       let lstates = mkstates states reqst in
