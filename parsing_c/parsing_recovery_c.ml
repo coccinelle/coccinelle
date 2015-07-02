@@ -59,7 +59,7 @@ let rec find_next_synchro ~next ~already_passed =
 
   let last_round = List.rev already_passed in
   if is_defined_passed_bis last_round
-  then find_next_synchro_define (last_round ++ next) []
+  then find_next_synchro_define (last_round @ next) []
   else
 
   let (before, after) =
@@ -73,7 +73,7 @@ let rec find_next_synchro ~next ~already_passed =
       | _ -> true
     )
   in
-  find_next_synchro_orig (after ++ next)  (List.rev before)
+  find_next_synchro_orig (after @ next)  (List.rev before)
 
 
 
@@ -97,7 +97,7 @@ and find_next_synchro_orig next already_passed =
       pr2_err "ERROR-RECOV: end of file while in recovery mode";
       already_passed, []
 
-  | (Parser_c.TCBrace i as v)::xs when TH.col_of_tok v =|= 0 ->
+  | (Parser_c.TCBrace i as v)::xs when TH.col_of_tok v = 0 ->
       pr2_err ("ERROR-RECOV: found sync '}' at line "^i_to_s (TH.line_of_tok v));
 
       (match xs with
@@ -136,7 +136,7 @@ and find_next_synchro_orig next already_passed =
       | _ ->
           v::already_passed, xs
       )
-  | v::xs when TH.col_of_tok v =|= 0 && TH.is_start_of_something v  ->
+  | v::xs when TH.col_of_tok v = 0 && TH.is_start_of_something v  ->
       pr2_err ("ERROR-RECOV: found sync col 0 at line "^ i_to_s(TH.line_of_tok v));
       already_passed, v::xs
 

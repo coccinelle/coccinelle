@@ -205,7 +205,7 @@ let interpret_grep strict x =
       failwith false_on_top_err
   | _ -> Some (loop [] x)
 
-let interpret_cocci_grep strict x =
+let interpret_cocci_git_grep strict x =
   (* convert to cnf *)
   let subset l1 l2 = List.for_all (fun e1 -> List.mem e1 l2) l1 in
   let opt_union_set longer shorter =
@@ -271,7 +271,10 @@ let interpret_cocci_grep strict x =
 	(function clause ->
 	  Printf.printf "%s\n" (String.concat " " clause))
 	res;*)
-      Some (res1,res2)
+      let res3 =
+	List.map (function x -> "\\( -e "^(String.concat " -e " x)^" \\)")
+	  res in
+      Some (res1,res2,res3)
 
 let combine2c x =
   match interpret_glimpse false x with
@@ -895,6 +898,15 @@ let run rules neg_pos_vars =
       (False,[],[],[])
       (List.combine (rules : Ast.rule list) neg_pos_vars) in
   info
+
+(* The return value is a tuple of four components.
+1. A list of all words, regardless of & and |, for use with grep (or only)
+2. A list of single strings using the glimpse ; and ,  operators
+3. A triple of 1 and of a CNF representation, both as regexps, and of the
+CNF as a list of git grep strings.  coccigrep uses 1 for basic scanning and
+then the CNF regexp for more refined scanning.  git grep uses the second
+CNF representation.
+4. An arbitrary formula, usable by the support for idutils *)
     
 let get_constants rules neg_pos_vars =
   if !Flag.worth_trying_opt
@@ -902,7 +914,7 @@ let get_constants rules neg_pos_vars =
     begin
     let res = run rules neg_pos_vars in
     let grep = interpret_grep true res in (* useful because in string form *)
-    let coccigrep = interpret_cocci_grep true res in
+    let coccigrep = interpret_cocci_git_grep true res in
     match !Flag.scanner with
       Flag.NoScanner ->
 	(grep,None,coccigrep,None)
@@ -910,7 +922,6 @@ let get_constants rules neg_pos_vars =
 	(grep,interpret_glimpse true res,coccigrep,None)
     | Flag.IdUtils ->
 	(grep,None,coccigrep,Some res)
-    | Flag.CocciGrep -> (grep,None,coccigrep,None)
+    | Flag.CocciGrep | Flag.GitGrep -> (grep,None,coccigrep,None)
     end
   else (None,None,None,None)
-

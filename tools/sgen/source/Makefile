@@ -16,15 +16,16 @@ TARGET=sgen
 
 CONFIG= $(COCCIDIR)/Makefile.config
 
-SYSLIBS= str.cma unix.cma bigarray.cma nums.cma $(PCREDIR)/pcre.cma \
-	$(DYNLINKDIR)/dynlink.cma
+SYSLIBS= str.cma unix.cma bigarray.cma nums.cma
 
-LIBS= $(COCCIDIR)/commons/commons.cma \
+LIBS= $(PCREDIR)/pcre.cma \
+	$(DYNLINKDIR)/dynlink.cma \
+	$(COCCIDIR)/commons/commons.cma \
 	$(COCCIDIR)/globals/globals.cma \
 	$(COCCIDIR)/parsing_cocci/cocci_parser.cma
 
 INCLUDEDIRS= $(COCCIDIR)/commons $(COCCIDIR)/commons/ocamlextra \
-     $(COCCIDIR)/globals $(COCCIDIR)/parsing_cocci
+     $(COCCIDIR)/globals $(COCCIDIR)/parsing_cocci $(PCREDIR)
 
 INCLUDES=$(INCLUDEDIRS:%=-I %)
 
@@ -38,7 +39,7 @@ GENERATED= $(LEXER_SRC:.mll=.ml)
 SRC= globals.ml ast_tostring.ml detect_patch.ml meta_variable.ml \
  snapshot.ml user_input.ml position_generator.ml disj_generator.ml \
  rule_body.ml rule_header.ml context_rule.ml script_rule.ml \
- file_transform.ml sgen_interactive.ml sgen_config.ml sgen.ml
+ file_transform.ml sgen_interactive.ml sgen_config.ml sgen.ml sgen_test.ml
 
 # all source OCaml interface files (ocamlfind??)
 SRC_INTERFACE= $(SRC:.ml=.mli)
@@ -62,7 +63,7 @@ all: $(TARGET)
 
 $(TARGET): $(CONFIG) $(LIBS) $(GENERATED) $(FULL_SRC)
 	@$(ECHO) -e "\n\n\tCompiling sgen ...\n\n"
-	$(OCAMLC_CMD) -o $(TARGET) $(SYSLIBS) $(LIBS) $(GENERATED) $(FULL_SRC)
+	$(OCAMLC_CMD) -custom -o $(TARGET) $(SYSLIBS) $(LIBS) $(GENERATED) $(FULL_SRC)
 	@$(ECHO) -e "\n\n\tsgen can now be installed via 'make install'.\n\n"
 
 clean:

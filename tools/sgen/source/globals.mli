@@ -82,12 +82,3 @@ val pre_split : ?prefix:string -> string -> string
 
 (* same as above, except for string options. If None, return "". *)
 val pre_split_opt : ?prefix:string -> string option -> string
-
-(* takes in a filename and gives it a new extension. *)
-val new_extension : new_ext:string -> string -> string
-
-
-(* ------------------------------------------------------------------------- *)
-(* MISC *)
-
-val get_current_year : unit -> int

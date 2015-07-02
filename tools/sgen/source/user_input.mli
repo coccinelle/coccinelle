@@ -11,10 +11,12 @@
 module Confidence : sig
   type t = Low | Moderate | High
 
+  exception Not_confidence of string
+
   val to_string : t -> string
 
-  (* fails if the string is not l, m, h, low, moderate, or high.
-   * case insensitive.
+  (* fails with Not_confidence if the string is not l, m, h, low, moderate, or
+   * high. Case insensitive.
    *)
   val from_string : string -> t
 end

@@ -2,10 +2,17 @@
  * done while printing).
  *
  * Prints preface, added virtual rules.
- * In patch mode: add rule names to unnamed rules, add patch dependencies.
- * In context mode: skip the rules.
  *
- * Rules must be sorted in order of when they occur in the script.
+ * Patch mode:
+ *  - add rule names to previously unnamed rules.
+ *  - add standard dependencies to existing patch rules.
+ *
+ * Context mode:
+ *  - skip all original context rules, since we now have the same rules but in
+ *    a generated (and therefore superior!) version.
+ *
+ * The transformation is done alongside the printing so if anything fails,
+ * some of it might already have been printed.
  *
  * ----------------------------------------------------------------------------
  * Example:
@@ -55,6 +62,7 @@
 (* ------------------------------------------------------------------------- *)
 (* TRANSFORMATION FUNCTIONS *)
 
+(* rules must be in the same order that they occurred in the original file *)
 val print :
   context_mode:bool ->
   file_name:string ->

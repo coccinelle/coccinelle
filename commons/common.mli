@@ -201,28 +201,6 @@ val debug : (unit -> unit) -> unit
 (* Profiling (cpu/mem) *)
 (*****************************************************************************)
 
-val get_mem : unit -> unit
-val memory_stat : unit -> string
-
-val timenow : unit -> string
-
-val _count1 : int ref
-val _count2 : int ref
-val _count3 : int ref
-val _count4 : int ref
-val _count5 : int ref
-
-val count1 : unit -> unit
-val count2 : unit -> unit
-val count3 : unit -> unit
-val count4 : unit -> unit
-val count5 : unit -> unit
-val profile_diagnostic_basic : unit -> string
-
-val time_func : (unit -> 'a) -> 'a
-
-
-
 (* see flag: type prof = PALL | PNONE | PSOME of string list *)
 (* see flag: val profile : prof ref *)
 
@@ -493,7 +471,6 @@ val exn_to_s : exn -> string
 (* alias *)
 val string_of_exn : exn -> string
 
-type error = Error of string
 
 type evotype = unit
 val evoval : evotype
@@ -574,38 +551,6 @@ val action_list:
   cmdline_actions -> Arg.key list
 val do_action:
   Arg.key -> string list (* args *) -> cmdline_actions -> unit
-
-(*****************************************************************************)
-(* Equality *)
-(*****************************************************************************)
-
-(* Using the generic (=) is tempting, but it backfires, so better avoid it *)
-
-(* To infer all the code that use an equal, and that should be
- * transformed, is not that easy, because (=) is used by many
- * functions, such as List.find, List.mem, and so on. The strategy to find
- * them is to turn what you were previously using into a function, because
- * (=) return an exception when applied to a function, then you simply
- * use ocamldebug to detect where the code has to be transformed by
- * finding where the exception was launched from.
- *)
-
-val (=|=) : int    -> int    -> bool
-val (=<=) : char   -> char   -> bool
-val (=$=) : string -> string -> bool
-val (=:=) : bool   -> bool   -> bool
-
-val (=*=): 'a -> 'a -> bool
-
-(* if want to restrict the use of '=', uncomment this:
- *
- * val (=): unit -> unit -> bool
- *
- * But it will not forbid you to use caml functions like List.find, List.mem
- * which internally use this convenient but evolution-unfriendly (=)
-*)
-
-
 
 (*###########################################################################*)
 (* And now basic types *)
@@ -845,7 +790,6 @@ val lowercase : string -> string
 
 val quote : string -> string
 
-val null_string : string -> bool
 val is_blank_string : string -> bool
 val is_string_prefix : string -> string -> bool
 
@@ -1038,6 +982,8 @@ val max_dmy : date_dmy -> date_dmy -> date_dmy
 val min_dmy : date_dmy -> date_dmy -> date_dmy
 val maximum_dmy : date_dmy list -> date_dmy
 val minimum_dmy : date_dmy list -> date_dmy
+
+val this_year : unit -> int
 
 (*****************************************************************************)
 (* Lines/Words/Strings *)
@@ -1271,9 +1217,6 @@ val removelast : 'a list -> 'a list
 
 val inits : 'a list -> 'a list list
 val tails : 'a list -> 'a list list
-
-
-val ( ++ ) : 'a list -> 'a list -> 'a list
 
 val foldl1 : ('a -> 'a -> 'a) -> 'a list -> 'a
 val fold_k : ('a -> 'b -> ('a -> 'a) -> 'a) -> ('a -> 'a) -> 'a -> 'b list -> 'a
@@ -1818,14 +1761,9 @@ val forall : ('a -> bool) -> 'a list -> bool
 
 val big_union : ('a -> 'b set) -> 'a list -> 'b set
 
-(* same than [] but easier to search for, because [] can also be a pattern *)
-val empty_list : 'a list
-
 val sort : ('a -> 'a -> int) -> 'a list -> 'a list
 
 val length : 'a list -> int
-
-val null : 'a list -> bool
 
 val head : 'a list -> 'a
 val tail : 'a list -> 'a list

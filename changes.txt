@@ -22,6 +22,15 @@
 - typedefs from C code should not be used before their point of inference
   (saved_typedefs in cprogram_of_file)
 
+* 1.0.1
+** Language:
+- allow static on type-level declarers
+** Features:
+- add --use-gitgrep option, for scanning with git grep
+** Bugfix:
+- Take into account constraints when determining whether a metavar is pure
+- don't add switch fall through when a default is hidden under another case
+  label.
 * 1.0.0
 ** Language:
 - Add metavariables for matcing assignment and binary operators.

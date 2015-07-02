@@ -36,7 +36,7 @@
 type t
 
 (* constructs t from AST0 rule, uses both minus and plus tree. *)
-val detect : Ast0_cocci.parsed_rule -> t
+val make : Ast0_cocci.parsed_rule -> t
 
 (* constructs t from statement dots.
  * NOTE: minus and plus slices are stored in separate AST0s, so the statement
@@ -44,7 +44,7 @@ val detect : Ast0_cocci.parsed_rule -> t
  * + portion of the tree. Ie. a call to is_patch will only return true if the
  * statement dots contain EITHER */- or +, depending on which AST0 it is from.
  *)
-val detect_statement_dots : Ast0_cocci.statement Ast0_cocci.dots -> t
+val make_statement_dots : Ast0_cocci.statement Ast0_cocci.dots -> t
 
 (* returns true if the rule contains stars, pluses, or minuses. *)
 val is_patch : t -> bool

@@ -393,15 +393,21 @@ and unify_declaration d1 d2 =
 	   (conjunct_bindings (unify_ident nm1 nm2)
 	      (unify_dots unify_parameterTypeDef pdots params1 params2))
        else return false
-  | (Ast.MacroDecl(n1,lp1,args1,rp1,sem1),
-     Ast.MacroDecl(n2,lp2,args2,rp2,sem2)) ->
-       conjunct_bindings (unify_ident n1 n2)
-	 (unify_dots unify_expression edots args1 args2)
-  | (Ast.MacroDeclInit(n1,lp1,args1,rp1,eq1,ini1,sem1),
-     Ast.MacroDeclInit(n2,lp2,args2,rp2,eq2,ini2,sem2)) ->
-       conjunct_bindings (unify_ident n1 n2)
-	 (conjunct_bindings (unify_dots unify_expression edots args1 args2)
-	    (unify_initialiser ini1 ini2))
+  | (Ast.MacroDecl(s1,n1,lp1,args1,rp1,sem1),
+     Ast.MacroDecl(s2,n2,lp2,args2,rp2,sem2)) ->
+       if bool_unify_option unify_mcode s1 s2
+       then
+	 conjunct_bindings (unify_ident n1 n2)
+	   (unify_dots unify_expression edots args1 args2)
+       else return false
+  | (Ast.MacroDeclInit(s1,n1,lp1,args1,rp1,eq1,ini1,sem1),
+     Ast.MacroDeclInit(s2,n2,lp2,args2,rp2,eq2,ini2,sem2)) ->
+       if bool_unify_option unify_mcode s1 s2
+       then
+	 conjunct_bindings (unify_ident n1 n2)
+	   (conjunct_bindings (unify_dots unify_expression edots args1 args2)
+	      (unify_initialiser ini1 ini2))
+       else return false
   | (Ast.TyDecl(ft1,s1),Ast.TyDecl(ft2,s2)) -> unify_fullType ft1 ft2
   | (Ast.Typedef(stg1,ft1,id1,s1),Ast.Typedef(stg2,ft2,id2,s2)) ->
       conjunct_bindings (unify_fullType ft1 ft2) (unify_typeC id1 id2)

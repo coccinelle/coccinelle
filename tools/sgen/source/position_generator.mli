@@ -1,8 +1,9 @@
 (* Given some Ast0 component x, generates a position at an appropriate place
  * and returns
- *  - Some x, where x has an inserted position
+ *  - Some (x,snp), where x has an inserted metaposition and snp is the updated
+      snapshot.
  *  - None, if no position could be generated (this is the case in e.g. dots
- *    (...) because they don't really have a well-defined position.
+ *    (...) because they don't really have a well-defined position).
  *
  * "appropriate place" means usually after an id if possible.
  * The added position is always in an Ast0.PLUS context (using the fact
@@ -15,26 +16,22 @@
 (* ------------------------------------------------------------------------- *)
 (* POSITION GENERATION FUNCTIONS *)
 
-(* transforms the given statement into one with an added metaposition *)
-val statement_pos :
-  Ast0_cocci.statement ->
+val ident_pos :
+  Ast0_cocci.ident ->
   Snapshot.t ->
-  (Ast0_cocci.statement * Snapshot.t) option
+  Ast0_cocci.ident * Snapshot.t
 
-(* transforms the given expression into one with an added metaposition *)
 val expression_pos :
   Ast0_cocci.expression ->
   Snapshot.t ->
   (Ast0_cocci.expression * Snapshot.t) option
 
-(* transforms the given declaration into one with an added metaposition *)
 val declaration_pos :
   Ast0_cocci.declaration ->
   Snapshot.t ->
   (Ast0_cocci.declaration * Snapshot.t) option
 
-(* transforms the given identifier into one with an added metaposition *)
-val ident_pos :
-  Ast0_cocci.ident ->
+val statement_pos :
+  Ast0_cocci.statement ->
   Snapshot.t ->
-  Ast0_cocci.ident * Snapshot.t
+  (Ast0_cocci.statement * Snapshot.t) option

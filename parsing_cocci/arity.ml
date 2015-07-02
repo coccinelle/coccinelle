@@ -627,20 +627,24 @@ and declaration tgt decl =
       let rp1 = mcode rp1 in
       let sem = mcode sem in
       make_decl decl tgt arity (Ast0.FunProto(fi,name,lp1,params,va,rp1,sem))
-  | Ast0.MacroDecl(name,lp,args,rp,sem) ->
+  | Ast0.MacroDecl(stg,name,lp,args,rp,sem) ->
       let arity =
 	all_same true tgt (mcode2line lp)
-	  (List.map mcode2arity [lp;rp;sem]) in
+	  ((match stg with None -> [] | Some x -> [mcode2arity x]) @
+	   (List.map mcode2arity [lp;rp;sem])) in
+      let stg = get_option mcode stg in
       let name = ident false arity name in
       let lp = mcode lp in
       let args = dots (expression arity) args in
       let rp = mcode rp in
       let sem = mcode sem in
-      make_decl decl tgt arity (Ast0.MacroDecl(name,lp,args,rp,sem))
-  | Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem) ->
+      make_decl decl tgt arity (Ast0.MacroDecl(stg,name,lp,args,rp,sem))
+  | Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
       let arity =
 	all_same true tgt (mcode2line lp)
-	  (List.map mcode2arity [lp;rp;eq;sem]) in
+	  ((match stg with None -> [] | Some x -> [mcode2arity x]) @
+	   (List.map mcode2arity [lp;rp;eq;sem])) in
+      let stg = get_option mcode stg in
       let name = ident false arity name in
       let lp = mcode lp in
       let args = dots (expression arity) args in
@@ -648,7 +652,7 @@ and declaration tgt decl =
       let ini = initialiser arity ini in
       let sem = mcode sem in
       make_decl decl tgt arity
-	(Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem))
+	(Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem))
   | Ast0.TyDecl(ty,sem) ->
       let arity =
 	all_same true tgt (mcode2line sem) [mcode2arity sem] in

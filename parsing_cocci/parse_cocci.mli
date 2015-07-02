@@ -47,7 +47,8 @@ val process :
 	  Ast_cocci.meta_name list list list (*positions list*) *
 	  (string list option (*non metavars in - code, for grep*) *
 	     string list option (*non metavars in - code, for glimpse/google*)*
-	     (Str.regexp * Str.regexp list) option(*cocci-grep result, if any*)
+	     (Str.regexp * Str.regexp list * string list)
+	     option(*cocci-grep/git grep result, if any*)
 	     * (*non metavars in - code, for other tools*)
 	     Get_constants2.combine option) *
 	     (* true if string constants need to be parsed *)

@@ -5,17 +5,7 @@ module Ast0 = Ast0_cocci
 (* Transforms the original Coccinelle script and prints it.
  * Prints preface and added virtual rules.
  *
- * In patch mode, transformations include:
- *  - adding rule names to previously unnamed rules
- *  - adding standard dependencies to existing patch rules
- *
- * In context mode, transformations include:
- *  - skipping all original context rules, since we now have the same rules
- *     but in a generated (and therefore superior!) version.
- *
- * The transformation is done alongside the printing so if anything fails,
- * some of it might already have been printed.
- * Naming conventions: outch = outch, inch = in_channel.
+ * Naming conventions: outch = out_channel, inch = in_channel.
  *
  * TODO: There are a number of edge cases that are not handled well in this
  * module due to using pure string-matching without context.

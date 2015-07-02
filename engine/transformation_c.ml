@@ -684,7 +684,7 @@ module XTRANS = struct
       (match get_pos mck with
       | Ast_cocci.DontCarePos -> true
       | Ast_cocci.FixPos (i1, i2) ->
-          i1 =*= min && i2 =*= max
+          i1 = min && i2 = max
       | _ -> raise (Impossible 55)
       )
 
@@ -737,7 +737,7 @@ module XTRANS = struct
   let envf keep inherited = fun (s, value, _) f tin ->
     let s = Ast_cocci.unwrap_mcode s in
     let v =
-      if keep =*= Type_cocci.Saved
+      if keep = Type_cocci.Saved
       then (
         try Some (List.assoc s tin.binding)
         with Not_found ->
@@ -837,7 +837,7 @@ let (transform2: string (* rule name *) -> string list (* dropped_isos *) ->
       | F.Fake
       | F.TrueNode _ | F.FalseNode | F.AfterNode _ | F.FallThroughNode
           -> ()
-      | _ -> () (* assert (not (node =*= node')); *)
+      | _ -> () (* assert (not (node = node')); *)
       );
 
       (* useless, we don't go back from flow to ast now *)

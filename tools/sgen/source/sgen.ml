@@ -55,7 +55,8 @@ let run { file; config; output; interactive; default; hide; } =
   (* ------------- SETTINGS ------------- *)
 
   (* default config name. Ie. <file_name>.config *)
-  let name = Globals.new_extension ~new_ext:"config" file in
+  let (dir, base, _) = Common.dbe_of_filename file in
+  let name = Common.filename_of_dbe (dir, base, "config") in
 
   (* if no config specified, but the default config exists, use it *)
   let config =
@@ -71,6 +72,7 @@ let run { file; config; output; interactive; default; hide; } =
 
   Flag_parsing_cocci.generating_mode := true;
   let (_, rules, virtuals, _) = Parse_cocci.parse file in
+  Flag_parsing_cocci.generating_mode := false; (* cleanup! for tests, etc. *)
 
   (* if the rule is a star rule, the sgrep_mode2 flag is set after parsing *)
   let context_mode = !Flag.sgrep_mode2 in
@@ -107,9 +109,7 @@ let run { file; config; output; interactive; default; hide; } =
 
   (* ------------- GENERATE ------------- *)
 
-  (* drules is the ordered list of patch rules, tupled with their disj maps.
-   * userinput contains mappings from rulenames to user-specified info.
-   *)
+  (* drules is the ordered list of patch rules, tupled with their disj maps. *)
   let generate drules =
     let rec generate' rules fn =
       match rules with
@@ -120,15 +120,15 @@ let run { file; config; output; interactive; default; hide; } =
           let user_rule = User_input.get_rule ~rule_name:old_name user_input in
           let new_name = User_input.Rule.get_name user_rule in
 
-          (* generate context and script rules, add them to list *)
+          (* generate context and script rules *)
           let nrule = (rule, new_name) in
           let (ctxt, meta_pos) =
             Context_rule.generate ~context_mode ~new_name ~disj_map ~rule in
           let script =
             Script_rule.generate ~meta_pos ~user_rule in
-          let append (rs, cs, ss) = fn (nrule::rs, ctxt::cs, script::ss) in
 
-          generate' rs append
+          let add (rs, cs, ss) = fn (nrule::rs, ctxt::cs, script::ss) in
+          generate' rs add
 
       | [] -> fn ([],[],[]) in
     generate' drules (fun x -> x) in

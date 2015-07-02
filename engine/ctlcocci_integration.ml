@@ -338,20 +338,20 @@ let fix_flow_ctl2 (flow : F.cflow) : F.cflow =
 
   (* for the #define CFG who have no Exit but have at least a EndNode *)
   (try
-      let endi  = F.find_node (fun x -> x =*= F.EndNode) !g in
+      let endi  = F.find_node (fun x -> x = F.EndNode) !g in
       !g#add_arc ((endi, endi), F.Direct);
     with Not_found -> ()
   );
 
   (* for the regular functions *)
   (try
-    let exitnodei  = F.find_node (fun x -> x =*= F.Exit) !g in
-    let errornodei = F.find_node (fun x -> x =*= F.ErrorExit) !g in
+    let exitnodei  = F.find_node (fun x -> x = F.Exit) !g in
+    let errornodei = F.find_node (fun x -> x = F.ErrorExit) !g in
 
     !g#add_arc ((exitnodei, exitnodei), F.Direct);
 
-    if null ((!g#successors   errornodei)#tolist) &&
-       null ((!g#predecessors errornodei)#tolist)
+    if ((!g#successors   errornodei)#tolist) = [] &&
+       ((!g#predecessors errornodei)#tolist) = []
     then !g#del_node errornodei
     else !g#add_arc ((errornodei, errornodei), F.Direct);
    with Not_found -> ()
@@ -427,12 +427,12 @@ let prefix l1 l2 =
 
 let compatible_labels l1 l2 =
   match (l1,l2) with
-    (Lib_engine.Absolute(l1),Lib_engine.Absolute(l2)) -> l1 =*= l2
+    (Lib_engine.Absolute(l1),Lib_engine.Absolute(l2)) -> l1 = l2
   | (Lib_engine.Absolute(l1),Lib_engine.Prefix(l2))   -> prefix l1 l2
   | (Lib_engine.Prefix(l1),Lib_engine.Absolute(l2))   -> prefix l2 l1
   | (Lib_engine.Prefix(l1),Lib_engine.Prefix(l2))     ->
       not (l1 = []) && not (l2 = []) &&
-      List.hd l1 =*= List.hd l2 (* labels are never empty *)
+      List.hd l1 = List.hd l2 (* labels are never empty *)
 
 let merge_labels l1 l2 =
   match (l1,l2) with
@@ -450,7 +450,7 @@ module ENV =
   struct
     type value = Lib_engine.metavar_binding_kind2
     type mvar = Ast_cocci.meta_name
-    let eq_mvar x x' = x =*= x'
+    let eq_mvar x x' = x = x'
     let eq_val v v' =
       (* v = v' *)
       match (v,v') with
@@ -463,7 +463,7 @@ module ENV =
           C_vs_c.eq_type a b
       |	(Lib_engine.LabelVal(l1),Lib_engine.LabelVal(l2)) ->
 	  compatible_labels l1 l2
-      |	_ -> v =*= v'
+      |	_ -> v = v'
     let merge_val v v' = (* values guaranteed to be compatible *)
       (* v *)
       match (v,v') with
@@ -563,7 +563,7 @@ let (satbis_to_trans_info:
 let rec coalesce_positions = function
     [] -> []
   | (x,Ast_c.MetaPosValList l)::rest ->
-      let (same,others) = List.partition (function (x1,_) -> x =*= x1) rest in
+      let (same,others) = List.partition (function (x1,_) -> x = x1) rest in
       let ls =
 	List.fold_left
 	  (function prev ->

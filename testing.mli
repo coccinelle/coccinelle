@@ -77,7 +77,7 @@ val sp_of_file :
       Ast_cocci.meta_name list list list *
       (string list option *
 	 string list option *
-	 (Str.regexp * Str.regexp list) option *
+	 (Str.regexp * Str.regexp list * string list) option *
 	 Get_constants2.combine option) *
       bool (* format info needed for strings *)
 

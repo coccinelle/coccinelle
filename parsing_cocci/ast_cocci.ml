@@ -381,9 +381,11 @@ and base_declaration =
 	(string mcode (* , *) * string mcode (* ...... *) ) option *
 	string mcode (* ) *) * string mcode (* ; *)
   | TyDecl of fullType * string mcode (* ; *)
-  | MacroDecl of ident (* name *) * string mcode (* ( *) *
+  | MacroDecl of storage mcode option *
+	ident (* name *) * string mcode (* ( *) *
         expression dots * string mcode (* ) *) * string mcode (* ; *)
-  | MacroDeclInit of ident (* name *) * string mcode (* ( *) *
+  | MacroDeclInit of storage mcode option *
+	ident (* name *) * string mcode (* ( *) *
         expression dots * string mcode (* ) *) * string mcode (*=*) *
         initialiser * string mcode (* ; *)
   | Typedef of string mcode (*typedef*) * fullType *
@@ -959,8 +961,8 @@ let string_of_arithOp = function
   | And -> "&"
   | Or -> "|"
   | Xor -> "^"
-  | Min -> "min"
-  | Max -> "max"
+  | Min -> "<?"
+  | Max -> ">?"
 
 let string_of_logicalOp = function
   | Eq -> "=="
