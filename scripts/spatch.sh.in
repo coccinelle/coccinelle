@@ -3,8 +3,8 @@
 # generic wrapper script to invoke 'spatch' or 'spatch.opt'
 # it sets the python variables (if relevant)
 # and COCCINELLE_HOME
-
-LIBDIR="@prefix@/lib/coccinelle"
+exec_prefix=@prefix@
+LIBDIR="@libdir@/coccinelle"
 
 if test ! -d "$LIBDIR"; then
     LIBDIR="$(pwd)"
