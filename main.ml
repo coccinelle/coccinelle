@@ -563,9 +563,11 @@ let other_options = [
     "--noif0-passing",      Arg.Clear Flag_parsing_c.if0_passing, " ";
     "--itu",      Arg.Set Flag_parsing_c.exts_ITU,
     "   Experimental extensions for handling #ifdef developed at ITU.dk";
-    "--defined", Arg.String (Flag_parsing_c.add Flag_parsing_c.defined), " ";
+    "--defined", Arg.String (Flag_parsing_c.add Flag_parsing_c.defined),
+    "   <symbol> treat cpp symbol as defined in #ifdef";
     "--undefined", Arg.String
-        (Flag_parsing_c.add Flag_parsing_c.undefined), " ";
+        (Flag_parsing_c.add Flag_parsing_c.undefined),
+    "   <symbol> treat cpp symbol as undefined in #ifdef";
     "--noadd-typedef-root", Arg.Clear Flag_parsing_c.add_typedef_root, " ";
     (* could use Flag_parsing_c.options_algo instead *)
 
