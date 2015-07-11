@@ -2086,7 +2086,7 @@ let merge_plus model_mcode e_mcode =
       |	 _ -> failwith "not possible 6")
   | Ast0.CONTEXT(mc) ->
       (match e_mcode with
-        Ast0.CONTEXT(emc) ->
+        Ast0.CONTEXT(emc) | Ast0.MIXED(emc) ->
           (* keep the logical line info as in the model *)
           let (mba,tb,ta) = !mc in
           let (eba,_,_) = !emc in
@@ -2132,7 +2132,8 @@ let merge_plus model_mcode e_mcode =
           | (Ast.BEFOREAFTER(b1,a1,it1),Ast.REPLACEMENT(a2,it2)) ->
               emc := (Ast.REPLACEMENT(b1@a2@a1,Ast.lub_count it1 it2),t)
           | (Ast.NOTHING,Ast.REPLACEMENT(a2,it2)) -> ()) (* no change *)
-      |	Ast0.MIXED(_) -> failwith "how did this become mixed?"
+      (* Allowed because of possibility of metavar as model of macro
+	 | Ast0.MIXED(_) -> failwith "how did this become mixed?" *)
       |	 _ -> failwith "not possible 7")
   | Ast0.MIXED(_) -> failwith "not possible 8"
   | Ast0.PLUS _ -> failwith "not possible 9"
