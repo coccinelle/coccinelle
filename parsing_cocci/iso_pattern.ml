@@ -2184,9 +2184,10 @@ let copy_minus printer minusify model e =
     Ast0.MINUS(mc) -> minusify e
   | Ast0.CONTEXT(mc) -> e
   | Ast0.MIXED(_) ->
-      if !Flag.sgrep_mode2
-      then e
-      else failwith "not possible 8"
+      (* This is possible if the model of an isomorphism is a single
+	 metavariable, and this metavariable matches mixed code.
+	 Previously, this failed with impossible if not in sgrep mode. *)
+      e
   | Ast0.PLUS _ -> failwith "not possible 9"
 
 let whencode_allowed prev_ecount prev_icount prev_dcount
