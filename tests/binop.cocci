@@ -2,7 +2,6 @@
 identifier i, i2;
 statement S;
 constant c;
-binary operator b;
 @@
 
 + i = i2;
