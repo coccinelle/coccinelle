@@ -36,7 +36,8 @@ type ('mc,'a) cmcode = 'a combiner -> 'mc Ast_cocci.mcode -> 'a
 type ('cd,'a) ccode = 'a combiner -> ('cd -> 'a) -> 'cd -> 'a
 
 let combiner bind option_default
-    meta_mcodefn string_mcodefn const_mcodefn simpleassign_mcodefn opassign_mcodefn fix_mcodefn
+    meta_mcodefn string_mcodefn const_mcodefn simpleassign_mcodefn
+    opassign_mcodefn fix_mcodefn
     unary_mcodefn arithop_mcodefn logicalop_mcodefn
     cv_mcodefn sign_mcodefn struct_mcodefn storage_mcodefn
     inc_file_mcodefn
