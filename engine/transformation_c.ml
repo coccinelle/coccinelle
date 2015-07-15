@@ -114,6 +114,12 @@ module XTRANS = struct
 	    (v,Ast_c.MetaDeclVal(Lib_parsing_c.real_al_decl d))
 	| Ast_c.MetaStmtVal(s) ->
 	    (v,Ast_c.MetaStmtVal(Lib_parsing_c.real_al_statement s))
+	(* These don't contain local variables, but the cocci_tag field
+	   causes problems too.  Why is this not needd for other metavars? *)
+	| Ast_c.MetaAssignOpVal(b) ->
+	    (v,Ast_c.MetaAssignOpVal(Lib_parsing_c.real_al_assignop b))
+	| Ast_c.MetaBinaryOpVal(b) ->
+	    (v,Ast_c.MetaBinaryOpVal(Lib_parsing_c.real_al_binop b))
 	| _ -> (v,vl))
       env
 

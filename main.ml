@@ -563,9 +563,11 @@ let other_options = [
     "--noif0-passing",      Arg.Clear Flag_parsing_c.if0_passing, " ";
     "--itu",      Arg.Set Flag_parsing_c.exts_ITU,
     "   Experimental extensions for handling #ifdef developed at ITU.dk";
-    "--defined", Arg.String (Flag_parsing_c.add Flag_parsing_c.defined), " ";
+    "--defined", Arg.String (Flag_parsing_c.add Flag_parsing_c.defined),
+    "   <symbol> treat cpp symbol as defined in #ifdef";
     "--undefined", Arg.String
-        (Flag_parsing_c.add Flag_parsing_c.undefined), " ";
+        (Flag_parsing_c.add Flag_parsing_c.undefined),
+    "   <symbol> treat cpp symbol as undefined in #ifdef";
     "--noadd-typedef-root", Arg.Clear Flag_parsing_c.add_typedef_root, " ";
     (* could use Flag_parsing_c.options_algo instead *)
 
@@ -986,22 +988,29 @@ let rec main_action xs =
 	      Filename.chop_extension (Filename.basename !cocci_file) in
 	    (if Sys.file_exists prefix
 	    then failwith (Printf.sprintf "Directory %s used for temporary files already exists and should be removed." prefix));
+	    let clean _ =
+	      let files = Array.to_list(Sys.readdir prefix) in
+	      let (stdouts,stderrs) =
+		List.partition
+		  (function x -> Str.string_match (Str.regexp "stdout") x 0)
+		  files in
+	      List.iter (function x -> Common.file_to_stdout (prefix^"/"^x))
+		stdouts;
+	      List.iter (function x -> Common.file_to_stderr (prefix^"/"^x))
+		stderrs;
+	      let _ = Sys.command (Printf.sprintf "rm -rf %s" prefix) in
+	      () in
 	    let res =
-	      Parmap.parfold
-		~init:(fun id -> Parmap.redirect ~path:prefix ~id)
-		~ncores
-		~chunksize
-		(fun x y -> op y x) (Parmap.L l) z merge in
-	    let files = Array.to_list(Sys.readdir prefix) in
-	    let (stdouts,stderrs) =
-	      List.partition
-		(function x -> Str.string_match (Str.regexp "stdout") x 0)
-		files in
-	    List.iter (function x -> Common.file_to_stdout (prefix^"/"^x))
-	      stdouts;
-	    List.iter (function x -> Common.file_to_stderr (prefix^"/"^x))
-	      stderrs;
-	    let _ = Sys.command (Printf.sprintf "rm -rf %s" prefix) in
+	      try
+		Parmap.parfold
+		  ~init:(fun id -> Parmap.redirect ~path:prefix ~id)
+		  ~ncores
+		  ~chunksize
+		  (fun x y -> op y x) (Parmap.L l) z merge
+	      with e ->
+		(Printf.eprintf "exception on %s: %s\n" prefix (Dumper.dump e);
+		 clean(); raise e) in
+	    clean();
 	    res
 	  in
 	  let (actual_fold, run_in_parallel) =

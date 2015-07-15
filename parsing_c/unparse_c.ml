@@ -1110,14 +1110,13 @@ let check_danger toks =
 			(* everything removed *)
 			|| undanger_untouched (danger@[de])
 			(* nothing removed, type changed *)
-		    then begin Printf.printf "case 1\n";
-		      danger @ de :: (search_danger rest) end
-		    else begin Printf.printf "case 2\n";
+		    then danger @ de :: (search_danger rest)
+		    else
 		      (* some things removed, not others, unminus the type *)
 		      drop_last_danger_comma
 			((unminus_initial_danger danger) @
 			 [(unminus_danger_end de)]) @
-		      (search_danger rest) end
+		      (search_danger rest)
 		| _ -> failwith "missing danger end")
 	    | _ -> failwith "missing danger end")
 	| _ -> x :: search_danger xs in

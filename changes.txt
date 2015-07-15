@@ -24,6 +24,12 @@
 - typedefs from C code should not be used before their point of inference
   (saved_typedefs in cprogram_of_file)
 
+* 1.0.2
+** Language:
+** Features:
+** Bugfix:
+- Iso: allow mixed for model for the case where the model is just a metavar
+  Thanks to Kris Borer for reporting the problem
 * 1.0.1
 ** Language:
 - allow static on type-level declarers
@@ -34,6 +40,7 @@
 - Take into account constraints when determining whether a metavar is pure
 - don't add switch fall through when a default is hidden under another case
   label.
+- Safer handing of loops in ...
 * 1.0.0
 ** Language:
 - Add metavariables for matcing assignment and binary operators.
