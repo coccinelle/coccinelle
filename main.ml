@@ -834,14 +834,16 @@ let coccigrep_filter (_,_,query,_) dir =
       Printf.eprintf "%d files match\n" (List.length res);
       Some res
 
-let gitgrep_filter (_,_,query,_) dir =
+let gitgrep_filter ((_,_,query,_) as x) dir =
   match query with
     None -> pr2 "no inferred keywords"; None
   | Some (_,_,query) ->
       let suffixes = if !Flag.include_headers then "'*.[ch]'" else "'*.c'" in
-      let res = Git_grep.interpret dir query suffixes in
-      Printf.eprintf "%d files match\n" (List.length res);
-      Some res
+      match Git_grep.interpret dir query suffixes with
+	Some res ->
+	  Printf.eprintf "%d files match\n" (List.length res);
+	  Some res
+      |	None -> coccigrep_filter x dir
 
 let idutils_filter (_,_,_,query) dir =
   match query with

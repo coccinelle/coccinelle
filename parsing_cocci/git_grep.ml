@@ -13,5 +13,5 @@ let interpret dir query suffixes =
       [] -> failwith "not possible"
     | x::xs ->
 	let res = List.fold_left Common.inter_set x xs in
-	List.map (function x -> dir^"/"^x) res
-  with Failed -> []
+	Some(List.map (function x -> dir^"/"^x) res)
+  with Failed -> None
