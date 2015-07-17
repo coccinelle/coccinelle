@@ -215,6 +215,86 @@ class Req:
     def gcc(self, version):
         return self.require_version('gcc', '--version', version, 3, self.linux_version_cmp)
 
+class GitError(Exception):
+    pass
+class ExecutionGitError(GitError):
+    def __init__(self, errcode):
+        self.error_code = errcode
+
+def _check(process):
+    if process.returncode != 0:
+        raise ExecutionError(process.returncode)
+
+def git_init(tree=None):
+    process = subprocess.Popen(['git', 'init'],
+                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                               close_fds=True, universal_newlines=True, cwd=tree)
+    stdout = process.communicate()[0]
+    process.wait()
+    _check(process)
+
+def git_rev_parse(tree=None, extra_args=None):
+    cmd = ['git', 'rev-parse' ] + extra_args
+    process = subprocess.Popen(cmd,
+                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                               close_fds=True, universal_newlines=True, cwd=tree)
+    stdout = process.communicate()[0]
+    process.wait()
+    if process.returncode != 0:
+        return None
+    return stdout.split('\n', 1)[0]
+
+def gitname(path=None):
+    work_dir = path
+    if not os.path.isdir(path):
+        work_dir = os.path.dirname(path)
+    process = subprocess.Popen(['git', 'rev-parse', '--show-toplevel', path],
+                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                               close_fds=True, universal_newlines=True, cwd=work_dir)
+    stdout = process.communicate()[0]
+    process.wait()
+    if process.returncode != 0:
+        return None
+    return stdout.split('\n', 1)[0]
+
+def git_add(path, tree=None):
+    process = subprocess.Popen(['git', 'add', '--ignore-removal', path],
+                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                               close_fds=True, universal_newlines=True, cwd=tree)
+    stdout = process.communicate()[0]
+    process.wait()
+    _check(process)
+
+def git_checkout(tree=None, extra_args=None):
+    cmd = ['git', 'checkout' ] + extra_args
+    process = subprocess.Popen(cmd,
+                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                               close_fds=True, universal_newlines=True, cwd=tree)
+    stdout = process.communicate()[0]
+    process.wait()
+    _check(process)
+
+def git_commit_all(message, tree=None):
+    git_add('.', tree=tree)
+    process = subprocess.Popen(['git', 'commit', '--allow-empty', '-a', '-m', message],
+                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                               close_fds=True, universal_newlines=True, cwd=tree)
+    stdout = process.communicate()[0]
+    process.wait()
+    _check(process)
+
+def git_diff(tree=None, extra_args=None):
+    cmd = ['git', 'diff', '--color=always'] + extra_args
+
+    process = subprocess.Popen(cmd,
+                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                               close_fds=True, universal_newlines=True, cwd=tree)
+    stdout = process.communicate()[0]
+    process.wait()
+    _check(process)
+
+    return stdout
+
 # simple tempdir wrapper object for 'with' statement
 #
 # Usage:
