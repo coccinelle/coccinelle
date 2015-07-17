@@ -27,6 +27,7 @@
 * 1.0.2
 ** Language:
 ** Features:
+- --use-gitgrep fallse back to --use-coccigrep for a non-git repository.
 ** Bugfix:
 - Iso: allow mixed for model for the case where the model is just a metavar
   Thanks to Kris Borer for reporting the problem
