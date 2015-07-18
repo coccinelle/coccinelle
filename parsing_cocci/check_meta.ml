@@ -533,19 +533,26 @@ let rule old_metas table minus rules =
 (* --------------------------------------------------------------------- *)
 
 let positions table rules =
+  let do_cnames var =
+    let cnames = Ast0.meta_pos_constraint_names var in
+    List.iter
+      (function name -> (find_loop table name) := true)
+      cnames in
   let rec rmcode x = (* needed for type inference, nonpolymorphic *)
     List.iter
       (function var ->
 	let name = Ast0.meta_pos_name var in
 	(find_loop table (Ast0.unwrap_mcode name)) := true;
-	rmcode name)
+	rmcode name;
+	do_cnames var)
       (Ast0.get_pos x) in
   let rec mcode x =
     List.iter
       (function var ->
 	let name = Ast0.meta_pos_name var in
 	(find_loop table (Ast0.unwrap_mcode name)) := true;
-	rmcode name)
+	rmcode name;
+	do_cnames var)
       (Ast0.get_pos x) in
   let option_default = () in
   let bind x y = () in

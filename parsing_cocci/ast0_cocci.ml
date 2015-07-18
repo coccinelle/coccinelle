@@ -684,6 +684,40 @@ let rec meta_pos_name = function
       | _ -> failwith "bad metavariable")
   | _ -> failwith "bad metavariable"
 
+let rec meta_pos_constraint_names = function
+    MetaPosTag(MetaPos(name,constraints,_)) -> constraints
+  | IdentTag(i) ->
+      (match unwrap i with
+	MetaId(name,constraints,seed,pure) ->
+	  (match constraints with
+	    Ast.IdPosIdSet(_,l) | Ast.IdNegIdSet(_,l) -> l
+	  | _ -> [])
+      | _ -> failwith "bad metavariable")
+  | ExprTag(e) ->
+      (match unwrap e with
+	MetaExpr(name,constraints,ty,form,pure) ->
+	  let c =
+	    match constraints with
+	      SubExpCstrt(l) -> l
+	    | _ -> [] in
+	  let t =
+	    match ty with
+	      Some tylist ->
+		List.fold_left
+		  (function prev ->
+		    function
+			Type_cocci.MetaType(nm,_,_) -> nm::prev
+		      | _ -> prev)
+		  [] tylist
+	    | None -> [] in
+	  c@t
+      | MetaExprList(name,len,pure) ->
+	  (match len with
+	    MetaListLen(n) -> [unwrap_mcode n]
+	  | _ -> [])
+      | _ -> failwith "bad metavariable")
+  | _ -> []
+
 (* --------------------------------------------------------------------- *)
 
 (* unique indices, for mcode and tree nodes *)
