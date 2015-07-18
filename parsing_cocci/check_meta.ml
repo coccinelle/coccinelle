@@ -532,19 +532,22 @@ let rule old_metas table minus rules =
 
 (* --------------------------------------------------------------------- *)
 
-let positions table rules =
-  let do_cnames var =
-    let cnames = Ast0.meta_pos_constraint_names var in
+let positions rname table rules =
+  let do_tynames var =
+    let tynames = Ast0.meta_pos_constraint_names var in
     List.iter
-      (function name -> (find_loop table name) := true)
-      cnames in
+      (function name ->
+	(* only needed if the name is a local variable, not an inherited one *)
+	if fst name = rname
+	then (find_loop table name) := true)
+      tynames in
   let rec rmcode x = (* needed for type inference, nonpolymorphic *)
     List.iter
       (function var ->
 	let name = Ast0.meta_pos_name var in
 	(find_loop table (Ast0.unwrap_mcode name)) := true;
 	rmcode name;
-	do_cnames var)
+	do_tynames var)
       (Ast0.get_pos x) in
   let rec mcode x =
     List.iter
@@ -552,7 +555,7 @@ let positions table rules =
 	let name = Ast0.meta_pos_name var in
 	(find_loop table (Ast0.unwrap_mcode name)) := true;
 	rmcode name;
-	do_cnames var)
+	do_tynames var)
       (Ast0.get_pos x) in
   let option_default = () in
   let bind x y = () in
@@ -679,7 +682,7 @@ let check_meta rname old_metas inherited_metavars metavars minus plus =
 
   add_to_fresh_table fresh;
   rule old_metas [iother_table;other_table;err_table] true minus;
-  positions [iother_table;other_table] minus;
+  positions rname [iother_table;other_table] minus;
   dup_positions minus;
   check_all_marked rname "metavariable" other_table "in the - or context code";
   rule old_metas [iother_table;fresh_table;err_table] false plus;
