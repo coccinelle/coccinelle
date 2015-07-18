@@ -12,6 +12,7 @@
 from multiprocessing import Process, cpu_count, Queue
 import argparse, subprocess, os, sys, re
 import tempfile, shutil
+import uuid
 
 class ReqError(Exception):
     pass
@@ -321,6 +322,44 @@ class tempdir(object):
         else:
             shutil.rmtree(self._name)
 
+def apply_patches(args, patch_src, target_dir, logwrite=lambda x:None):
+    """
+    Given a path of a directories of patches apply the patches
+    """
+    patches = []
+    for root, dirs, files in os.walk(patch_src):
+        for f in files:
+            if f.endswith('.patch'):
+                    patches.append(os.path.join(root, f))
+    patches.sort()
+    prefix_len = len(patch_src) + 1
+    for pfile in patches:
+        print_name = pfile[prefix_len:]
+
+        logwrite("Applying patch %s\n" % pfile)
+
+        process = subprocess.Popen(['patch', '-p1'], stdout=subprocess.PIPE,
+                                   stderr=subprocess.STDOUT, stdin=subprocess.PIPE,
+                                   close_fds=True, universal_newlines=True,
+                                   cwd=target_dir)
+        output = process.communicate(input=open(pfile, 'r').read())[0]
+        output = output.split('\n')
+        if output[-1] == '':
+            output = output[:-1]
+        if process.returncode != 0:
+            if not args.verbose:
+                logwrite("Failed to apply changes from %s" % print_name)
+                for line in output:
+                    logwrite('> %s' % line)
+            raise Exception('Patch failed')
+
+        # remove orig/rej files that patch sometimes creates
+        for root, dirs, files in os.walk(target_dir):
+            for f in files:
+                if f[-5:] == '.orig' or f[-4:] == '.rej':
+                    os.unlink(os.path.join(root, f))
+        git_commit_all(tree=target_dir, message="apply patch %s" % (print_name))
+
 class CoccinelleError(Exception):
     pass
 
@@ -465,6 +504,8 @@ def _main():
                         help='Target source directory to modify')
     parser.add_argument('-p', '--profile-cocci', const=True, default=False, action="store_const",
                         help='Enable profile, this will pass --profile  to Coccinelle.')
+    parser.add_argument('-s', '--show-proof', const=True, default=False, action="store_const",
+                        help='Show proof that the provided SmPL patch can replace a respective patch series')
     parser.add_argument('-j', '--jobs', metavar='<jobs>', type=str, default=None,
                         help='Only use the cocci file passed for Coccinelle, don\'t do anything else, ' +
                         'also creates a git repo on the target directory for easy inspection ' +
@@ -475,6 +516,13 @@ def _main():
 
     if not os.path.isfile(args.cocci_file):
         return -2
+    if not os.path.isfile(args.target_dir) and not os.path.isdir(args.target_dir):
+        logwrite("Path (%s) is not a file or directory\n" % (args.target_dir))
+        return -2
+
+    current_branch = None
+    smpl_branch_name = "pycocci-smpl-" + str(uuid.uuid4())[:8]
+    patch_branch_name = "pycocci-patch-" + str(uuid.uuid4())[:8]
 
     extra_spatch_args = []
     if args.profile_cocci:
@@ -497,6 +545,40 @@ def _main():
 
     if git_reqs.reqs_match():
         git_dir = gitname(args.target_dir)
+
+    if args.show_proof:
+        # As an example if you use --show-proof patches/collateral-evolutions/network/09-threaded-irq.cocci
+        # the patches under 09-threaded-irq will be used for the proof.
+        patch_src = args.cocci_file.split('/')[-1].split('.cocci')[0]
+        dirname = os.path.dirname(args.cocci_file)
+        patch_src = os.path.abspath(os.path.join(dirname, patch_src))
+        if not os.path.isdir(patch_src):
+            logwrite("Path given (%s) must be a directory with patches\n" % (patch_src))
+            return -2
+        git_reqs = Req(chatty=True)
+        git_reqs.require('git')
+        if not git_dir:
+            if os.path.isfile(args.target_dir):
+                logwrite("Path given (%s) is a file, try passing the directory "
+                         "(%s) if you are certain you want us to create a git repo to provide a"
+                         "a proof there\n" % (args.target_dir, os.path.dirname(args.target_dir)))
+                return -2
+            logwrite("Path (%s) not part of a git tree, creating one for you...\n" % (args.target_dir))
+            git_init(tree=args.target_dir)
+            git_commit_all(tree=args.target_dir, message="Initial commit")
+        cmd = [ '--abbrev-ref', 'HEAD' ]
+        current_branch = git_rev_parse(tree=args.target_dir, extra_args = cmd)
+        logwrite("\n")
+        logwrite("Current branch: %s\n" % (current_branch))
+        logwrite("Patch   branch: %s\n" % (patch_branch_name))
+        logwrite("SmPL    branch: %s\n" % (smpl_branch_name))
+        logwrite("\n")
+        git_checkout(tree=args.target_dir, extra_args = ['-b', smpl_branch_name])
+        git_checkout(tree=args.target_dir, extra_args = ['-b', patch_branch_name])
+
+        apply_patches(args, patch_src, args.target_dir, logwrite)
+
+        git_checkout(tree=args.target_dir, extra_args = [smpl_branch_name])
 
     if os.path.isfile(glimpse_index):
        extra_spatch_args.append('--use-glimpse')
@@ -521,6 +603,18 @@ def _main():
                                  extra_args=extra_spatch_args)
     if args.verbose:
         logwrite(output)
+    if args.show_proof:
+        git_commit_all(tree=args.target_dir, message="Initial commit")
+        git_checkout(tree=args.target_dir, extra_args = [current_branch])
+        cmd = [ '--stat', patch_branch_name + ".." + smpl_branch_name ]
+        diff_stat = git_diff(tree=args.target_dir, extra_args = cmd)
+        if len(diff_stat) == 0:
+            logwrite('\nSmPL patch fully replaces patch series!')
+        else:
+            logwrite('\nDifferences found:\n\n')
+            logwrite('Change directory to %s and run:\n\n\tgit diff %s..%s\n\n' % (args.target_dir, patch_branch_name, smpl_branch_name))
+            logwrite('diffstat of the changes:\n')
+            logwrite(diff_stat)
     return 0
 
 if __name__ == '__main__':
