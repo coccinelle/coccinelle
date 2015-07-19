@@ -270,17 +270,21 @@ let get_fakeInfo_and_tokens celem toks =
 
   List.rev !toks_out
 
-(* Fake nodes that have BEFORE code or are - should be moved over any subsequent
-whitespace and newlines, but not any comments, to get as close to the affected
-code as possible.  Similarly, fake nodes that have AFTER code should be moved
-backwards.  No fake nodes should have both before and after code. *)
+(* Fake nodes that have BEFORE code or are - should be moved over any
+subsequent whitespace and newlines, but not any comments starting in column
+0, to get as close to the affected code as possible.  Similarly, fake nodes
+that have AFTER code should be moved backwards.  No fake nodes should have
+both before and after code. *)
 
 let displace_fake_nodes toks =
   let is_fake = function Fake1 _ -> true | _ -> false in
-  let is_whitespace = function
+  let is_whitespace_or_noncol0_comment = function
     | T1(Parser_c.TCommentSpace _)
   (* patch: cocci    *)
     | T1(Parser_c.TCommentNewline _) -> true
+    | T1(Parser_c.TComment i) ->
+	(* column 0 is the leftmost column. *)
+	Ast_c.col_of_info i > 0
     | _ -> false in
   let rec loop toks =
     let fake_info =
@@ -292,18 +296,19 @@ let displace_fake_nodes toks =
       | Some x ->
         (match x with
         | (Ast_cocci.MINUS(_,_,_,Ast_cocci.REPLACEMENT _),_)
-          (* for , replacement is more likely to be like after, but not clear...
+          (* for , replacement is more likely to be like after, but not clear.
 	     but treating it as after breaks a lot of tests. *)
 
         | (Ast_cocci.CONTEXT(_,Ast_cocci.BEFORE _),_) ->
           (* move the fake node forwards *)
-          let (whitespace,rest) = span is_whitespace aft in
+          let (whitespace,rest) = span is_whitespace_or_noncol0_comment aft in
           bef @ whitespace @ fake :: (loop rest)
 
         | (Ast_cocci.CONTEXT(_,Ast_cocci.AFTER _),_) ->
           (* move the fake node backwards *)
           let revbef = List.rev bef in
-          let (revwhitespace,revprev) = span is_whitespace revbef in
+          let (revwhitespace,revprev) =
+	    span is_whitespace_or_noncol0_comment revbef in
           let whitespace = List.rev revwhitespace in
           let prev = List.rev revprev in
           prev @ fake :: (loop (whitespace @ aft))
