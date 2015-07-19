@@ -690,11 +690,7 @@ let rec meta_pos_constraint_names = function
 	MetaExpr(name,constraints,ty,form,pure) ->
 	  (match ty with
 	    Some tylist ->
-	      List.fold_left
-		(function prev ->
-		  function
-		      Type_cocci.MetaType(nm,_,_) -> nm::prev
-		    | _ -> prev)
+	      List.fold_left (fun prev cur -> TC.meta_names cur @ prev)
 		[] tylist
 	  | None -> []))
   | _ -> []
