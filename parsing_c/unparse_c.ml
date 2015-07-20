@@ -286,6 +286,15 @@ let displace_fake_nodes toks =
 	(* column 0 is the leftmost column. *)
 	Ast_c.col_of_info i > 0
     | _ -> false in
+  let is_whitespace_or_comment = function
+    | T1(Parser_c.TCommentSpace _)
+    | T1(Parser_c.TCommentNewline _)
+    | T1(Parser_c.TComment _) -> true
+    | _ -> false in
+  let all_directives l =
+    List.for_all
+      (List.for_all (function Ast_cocci.Directive _ -> true | _ -> false))
+      l in
   let rec loop toks =
     let fake_info =
       try Some (split_when is_fake toks)
@@ -295,15 +304,18 @@ let displace_fake_nodes toks =
       (match !(info.Ast_c.cocci_tag) with
       | Some x ->
         (match x with
+        | (Ast_cocci.CONTEXT(_,Ast_cocci.BEFORE (l,_)),_)
+	  when all_directives l ->
+          (* move the fake node forwards *)
+          let (whitespace,rest) = span is_whitespace_or_comment aft in
+          bef @ whitespace @ fake :: (loop rest)
         | (Ast_cocci.MINUS(_,_,_,Ast_cocci.REPLACEMENT _),_)
           (* for , replacement is more likely to be like after, but not clear.
 	     but treating it as after breaks a lot of tests. *)
-
         | (Ast_cocci.CONTEXT(_,Ast_cocci.BEFORE _),_) ->
           (* move the fake node forwards *)
           let (whitespace,rest) = span is_whitespace_or_noncol0_comment aft in
           bef @ whitespace @ fake :: (loop rest)
-
         | (Ast_cocci.CONTEXT(_,Ast_cocci.AFTER _),_) ->
           (* move the fake node backwards *)
           let revbef = List.rev bef in

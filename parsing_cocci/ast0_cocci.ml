@@ -692,7 +692,8 @@ let rec meta_pos_constraint_names = function
 	    Some tylist ->
 	      List.fold_left (fun prev cur -> TC.meta_names cur @ prev)
 		[] tylist
-	  | None -> []))
+	  | None -> [])
+      |	_ -> [])
   | _ -> []
 
 (* --------------------------------------------------------------------- *)
