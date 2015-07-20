@@ -448,6 +448,7 @@ install-man:
 	$(MKDIR_P) $(DESTDIR)$(MANDIR)/man1
 	$(MKDIR_P) $(DESTDIR)$(MANDIR)/man3
 	$(INSTALL_DATA) docs/spatch.1 $(DESTDIR)$(MANDIR)/man1/
+	$(INSTALL_DATA) docs/pycocci.1 $(DESTDIR)$(MANDIR)/man1/
 	$(INSTALL_DATA) docs/Coccilib.3cocci $(DESTDIR)$(MANDIR)/man3/
 
 install-bash:
@@ -463,7 +464,6 @@ install-tools:
 		$(DESTDIR)$(BINDIR)/splitpatch
 	$(INSTALL_PROGRAM) tools/cocci-send-email.perl \
 		$(DESTDIR)$(BINDIR)/cocci-send-email.perl
-	$(INSTALL_PROGRAM) tools/pycocci $(DESTDIR)$(BINDIR)/
 
 install-python:
 	@$(ECHO) "Installing python support in: ${DESTDIR}${LIBDIR}/python"
@@ -487,6 +487,8 @@ install-stubs:
 install: install-man install-common install-stubs $(PYTHON_INSTALL_TARGET)
 	rm -f $(DESTDIR)$(LIBDIR)/spatch
 	rm -f $(DESTDIR)$(LIBDIR)/spatch.opt
+	rm -f $(DESTDIR)$(BINDIR)/pycocci
+	$(INSTALL_PROGRAM) tools/pycocci $(DESTDIR)$(BINDIR)
 	@if test -x spatch -o -x spatch.opt; then \
 		$(MAKE) install-def;fi
 	@if test -x spatch ; then \

@@ -495,13 +495,12 @@ def logwrite(msg):
     sys.stdout.flush()
 
 def _main():
-    parser = argparse.ArgumentParser(description='Multithreaded Python wrapper for Coccinelle ' +
-                                     'with sensible defaults, targetted specifically ' +
-                                     'for git development environments')
-    parser.add_argument('cocci_file', metavar='<Coccinelle SmPL rules file>', type=str,
+    parser = argparse.ArgumentParser(description='Wrapper around Coccinelle spatch ' +
+                                     'which infers which options to enable.')
+    parser.add_argument('cocci_file', metavar='<SmPL patch>', type=str,
                         help='This is the Coccinelle file you want to use')
-    parser.add_argument('target_dir', metavar='<target directory>', type=str,
-                        help='Target source directory to modify')
+    parser.add_argument('target_dir', metavar='<target>', type=str,
+                        help='Target directory or file to modify')
     parser.add_argument('-p', '--profile-cocci', const=True, default=False, action="store_const",
                         help='Enable profile, this will pass --profile  to Coccinelle.')
     parser.add_argument('-s', '--show-proof', const=True, default=False, action="store_const",
