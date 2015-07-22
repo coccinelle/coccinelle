@@ -20,17 +20,17 @@ open Ast_c (* to factorise tokens, OpAssign, ... *)
 
 (*****************************************************************************)
 (*
- * subtil: ocamllex use side effect on lexbuf, so must take care.
- * For instance must do
+ * Warning: ocamllex uses side effects on lexbuf.
+ * For instance one must do
  *
  *  let info = tokinfo lexbuf in
  *  TComment (info +> tok_add_s (comment lexbuf))
  *
- * and not
+ * rather than
  *
  *   TComment (tokinfo lexbuf +> tok_add_s (comment lexbuf))
  *
- * because of the "wierd" order of evaluation of OCaml.
+ * because of the "weird" order of evaluation of OCaml.
  *
  *
  *
@@ -308,13 +308,13 @@ rule token = parse
   (* spacing/comments *)
   (* ----------------------------------------------------------------------- *)
 
-  (* note: this lexer generate tokens for comments!! so can not give
+  (* note: this lexer generates tokens for comments!! so can not give
    * this lexer as-is to the parsing function. The caller must preprocess
    * it, e.g. by using techniques like cur_tok ref in parse_c.ml.
    *
    * update: we now also generate a separate token for newlines, so now
    * the caller may also have to reagglomerate all those commentspace
-   * tokens if he was assuming that spaces were agglomerate in a single
+   * tokens if it was assuming that spaces were agglomerate in a single
    * token.
    *)
 
