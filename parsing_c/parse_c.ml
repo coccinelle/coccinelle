@@ -248,7 +248,7 @@ let tokens2 file =
     let rec tokens_aux acc =
       let tok = Lexer_c.token lexbuf in
       (* fill in the line and col information *)
-      let tok = tok +> TH.visitor_info_of_tok (fun ii ->
+      let tok = TH.visitor_info_of_tok (fun ii ->
         { ii with Ast_c.pinfo=
           (* could assert pinfo.filename = file ? *)
 	  match Ast_c.pinfo_of_info ii with
@@ -258,7 +258,7 @@ let tokens2 file =
               Ast_c.ExpandedTok((Common.complete_parse_info_large file table pi),vpi)
 	  | Ast_c.FakeTok (s,vpi) -> Ast_c.FakeTok (s,vpi)
 	  | Ast_c.AbstractLineTok pi -> failwith "should not occur"
-      })
+      }) tok
       in
 
       if TH.is_eof tok
