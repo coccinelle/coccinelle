@@ -54,15 +54,20 @@ exception Lexical of string
 
 let tok     lexbuf  = Lexing.lexeme lexbuf
 
+let eoltok lexbuf =
+  let t = tok lexbuf in
+  Lexing.new_line lexbuf;
+  t
+
 let tokinfo lexbuf  =
+  let start_pos = Lexing.lexeme_start_p lexbuf in
   {
     pinfo = Ast_c.OriginTok {
-      Common.charpos = Lexing.lexeme_start lexbuf;
+      Common.charpos = start_pos.Lexing.pos_cnum;
       Common.str     = Lexing.lexeme lexbuf;
-      (* info filled in a post-lexing phase *)
-      Common.line = -1;
-      Common.column = -1;
-      Common.file = "";
+      Common.line = start_pos.Lexing.pos_lnum;
+      Common.column = start_pos.Lexing.pos_cnum - start_pos.Lexing.pos_bol;
+      Common.file = start_pos.Lexing.pos_fname;
     };
    (* must generate a new ref each time, otherwise share *)
     cocci_tag = ref Ast_c.emptyAnnot;
@@ -70,6 +75,11 @@ let tokinfo lexbuf  =
     comments_tag = ref Ast_c.emptyComments;
     danger = ref NoDanger;
   }
+
+let eoltokinfo lexbuf =
+  let t = tokinfo lexbuf in
+  Lexing.new_line lexbuf;
+  t
 
 (* cppext: must generate a new ref each time, otherwise share *)
 let no_ifdef_mark () = ref (None: (int * int) option)
@@ -320,7 +330,16 @@ rule token = parse
 
   | ['\n'] [' ' '\t' '\r' '\011' '\012' ]*
       (* starting a new line; the newline character followed by whitespace *)
-      { TCommentNewline (tokinfo lexbuf) }
+      { let s = Lexing.lexeme lexbuf in
+        let l = String.length s in
+        let t = TCommentNewline (tokinfo lexbuf) in
+        (* Adjust the position manually *)
+        let lcp = lexbuf.Lexing.lex_curr_p in
+        lexbuf.Lexing.lex_curr_p <- { lcp with
+          Lexing.pos_lnum = lcp.Lexing.pos_lnum + 1;
+          Lexing.pos_bol = lcp.Lexing.pos_cnum - (l-1)
+        };
+        t } 
   | [' ' '\t' '\r' '\011' '\012' ]+
       { TCommentSpace (tokinfo lexbuf) }
   | "/*"
@@ -386,14 +405,14 @@ rule token = parse
   | "#" spopt "error"   sp  [^'\n' '\r']* ('\n' | "\r\n")
   | "#" spopt "warning" sp  [^'\n' '\r']* ('\n' | "\r\n")
   | "#" spopt "abort"   sp  [^'\n' '\r']* ('\n' | "\r\n")
-      { TCppDirectiveOther (tokinfo lexbuf) }
+      { TCppDirectiveOther (eoltokinfo lexbuf) }
 
   | "#" [' ' '\t']* ('\n' | "\r\n")
-      { TCppDirectiveOther (tokinfo lexbuf) }
+      { TCppDirectiveOther (eoltokinfo lexbuf) }
 
   (* only after cpp, ex: # 1 "include/linux/module.h" 1 *)
   | "#" sp pent sp  '\"' [^ '\"']* '\"' (spopt pent)*  spopt ('\n' | "\r\n")
-      { TCppDirectiveOther (tokinfo lexbuf) }
+      { TCppDirectiveOther (eoltokinfo lexbuf) }
 
 
 
@@ -613,7 +632,7 @@ rule token = parse
   (* ---------------------- *)
 
   (* only in cpp directives normally *)
-  | "\\" ('\n' | "\r\n") { TCppEscapedNewline (tokinfo lexbuf) }
+  | "\\" ('\n' | "\r\n") { TCppEscapedNewline (eoltokinfo lexbuf) }
 
   (* We must generate separate tokens for #, ## and extend the grammar.
    * Note there can be "elaborated" idents in many different places, in
@@ -1059,7 +1078,7 @@ and string  = parse
          (* old: "x" -> 10 gccext ? todo ugly, I put a fake value *)
 
          (* cppext:  can have   \ for multiline in string too *)
-         | '\n' -> ()
+         | '\n' -> Lexing.new_line lexbuf
          | _ -> pr2 ("LEXER: unrecognised symbol in string:"^tok lexbuf);
 	 );
           x ^ string lexbuf
@@ -1084,8 +1103,9 @@ and string  = parse
 (* less: allow only char-'*' ? *)
 and comment = parse
   | "*/"     { tok lexbuf }
+  | ('\n' | "\r\n") { let s = eoltok lexbuf in s ^ comment lexbuf }
   (* noteopti: *)
-  | [^ '*']+ { let s = tok lexbuf in s ^ comment lexbuf }
+  | [^ '*' '\r' '\n']+ { let s = tok lexbuf in s ^ comment lexbuf }
   | [ '*']   { let s = tok lexbuf in s ^ comment lexbuf }
   | eof { pr2 "LEXER: end of file in comment"; "*/"}
   | _
@@ -1127,7 +1147,7 @@ and cpp_eat_until_nl = parse
 *)
 
 and parse_newline = parse
-  ('\n' | "\r\n") { tok lexbuf }
+  ('\n' | "\r\n") { eoltok lexbuf }
 
 and cpp_in_comment_eat_until_nl = parse
   [^ '\n']+
