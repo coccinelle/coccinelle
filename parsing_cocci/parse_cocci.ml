@@ -2232,6 +2232,11 @@ let parse file =
 		([],[]) metavars in
 	    let metavars = List.rev metavars in
 	    let script_metavars = List.rev script_metavars in
+	    (* No idea whether any vars are position vars, but if there are
+	       any, they can be inherited. Probably provides a way of
+	       laundering positions over changes. *)
+            Data.inheritable_positions :=
+		name :: !Data.inheritable_positions;
 
 	    Hashtbl.add Data.all_metadecls name
 	      (List.map (function x -> Ast.MetaScriptDecl(ref None,x))

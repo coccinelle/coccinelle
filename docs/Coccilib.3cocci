@@ -143,11 +143,29 @@ Make an identifier
 Make an expression
 .sp
 
+.I val make_expr_with_env
+: 
+.B string -> string -> Ast_c.metavar_binding_kind
+.sp
+Make an expression in a type environment.  The first argument is a string
+containing any C variable declarations needed to make the environment and
+the second argument is a string containing the expression.
+.sp
+
 .I val make_stmt
 : 
 .B string -> Ast_c.metavar_binding_kind
 .sp
-Make a statement
+Make a single statement
+.sp
+
+.I val make_stmt_in_env
+: 
+.B string -> Ast_c.metavar_binding_kind
+.sp
+Make a single statement in a type environment.  The first argument is a
+string containing any C variable declarations needed to make the
+environment and the second argument is a string containing the statement.
 .sp
 
 .I val make_type
@@ -162,6 +180,18 @@ Make a type
 .B int -> Ast_c.metavar_binding_kind
 .sp
 Make a list length, for parameter lists, expression lists, etc.
+.sp
+
+.I val make_position
+: 
+.B string -> string -> int -> int -> int -> int -> Ast_c.metavar_binding_kind
+.sp
+Make a position.  The arguments are the file name, the function or other
+toplevel element containing the position, the starting line, the starting
+column, the ending line, and the ending column.  Lines start at 1.  Columns
+start at 0.  The ending line is the one that contains the last character of
+what is to be matched.  The ending character is one past the last character
+of the thing to be matched.
 .sp
 
 .B === 

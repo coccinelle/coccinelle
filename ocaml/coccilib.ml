@@ -76,24 +76,32 @@ let no_format s =
 
 (* no point to parse strings in these cases. never applied to a format
    string *)
-let (cstatement_of_string: string -> Ast_c.statement) = fun s ->
+(* The env argument makes it possible to add some variable declarations to
+   create a type environment.  This could be exploited for other things, but
+   not clear why that would be useful. *)
+let (cstatement_of_string: string -> string -> Ast_c.statement) =
+  fun env s ->
   assert (no_format s);
   let tmpfile = Common.new_temp_file "cocci_stmt_of_s" "c" in
-  Common.write_file tmpfile ("void main() { \n" ^ s ^ "\n}");
+  Common.write_file tmpfile (Printf.sprintf "void main() {\n%s\n%s\n}" env s);
   let program = Parse_c.parse_c_and_cpp false tmpfile +> fst in
   let _ =
     Type_annoter_c.annotate_program !Type_annoter_c.initial_env
       (List.map fst program) in
   program +> Common.find_some (fun (e,_) ->
     match e with
-    | Ast_c.Definition ({Ast_c.f_body = [Ast_c.StmtElem st]},_) -> Some st
+    | Ast_c.Definition ({Ast_c.f_body = l},_) ->
+	(match List.rev l with
+	  (Ast_c.StmtElem st) :: _ -> Some st
+	| _ -> None)
     | _ -> None
   )
 
-let (cexpression_of_string: string -> Ast_c.expression) = fun s ->
+let (cexpression_of_string: string -> string -> Ast_c.expression) =
+  fun env s ->
   assert (no_format s);
   let tmpfile = Common.new_temp_file "cocci_expr_of_s" "c" in
-  Common.write_file tmpfile ("void main() { \n" ^ s ^ ";\n}");
+  Common.write_file tmpfile (Printf.sprintf "void main() {\n%s\n%s;\n}" env s);
   let program = Parse_c.parse_c_and_cpp false tmpfile +> fst in
   let _ =
     Type_annoter_c.annotate_program !Type_annoter_c.initial_env
@@ -101,25 +109,28 @@ let (cexpression_of_string: string -> Ast_c.expression) = fun s ->
   program +> Common.find_some (fun (e,_) ->
     match e with
     | Ast_c.Definition ({Ast_c.f_body = compound},_) ->
-   (match compound with
-   | [Ast_c.StmtElem st] ->
-            (match Ast_c.unwrap_st st with
-            | Ast_c.ExprStatement (Some e) -> Some e
-            | _ -> None
-            )
-        | _ -> None
-        )
-    | _ -> None
-  )
+	(match List.rev compound with
+	| Ast_c.StmtElem st :: _ ->
+	    (match Ast_c.unwrap_st st with
+	    | Ast_c.ExprStatement (Some e) -> Some e
+	    | _ -> None)
+	| _ -> None)
+    | _ -> None)
 
 let make_ident s = Ast_c.MetaIdVal(s,[])
 let make_expr s =
-  Ast_c.MetaExprVal(Lib_parsing_c.al_expr(cexpression_of_string s), [])
+  Ast_c.MetaExprVal(Lib_parsing_c.al_expr(cexpression_of_string "" s), [])
+let make_expr_with_env env s =
+  Ast_c.MetaExprVal(Lib_parsing_c.al_expr(cexpression_of_string env s), [])
 let make_stmt s =
-  Ast_c.MetaStmtVal(Lib_parsing_c.al_statement(cstatement_of_string s))
+  Ast_c.MetaStmtVal(Lib_parsing_c.al_statement(cstatement_of_string "" s))
+let make_stmt_with_env env s =
+  Ast_c.MetaStmtVal(Lib_parsing_c.al_statement(cstatement_of_string env s))
 let make_type s =
   Ast_c.MetaTypeVal(Lib_parsing_c.al_type(Parse_c.type_of_string s))
 let make_listlen i = Ast_c.MetaListlenVal i
+let make_position fl fn startl startc endl endc =
+  Ast_c.MetaPosValList [(fl, fn, (startl, startc), (endl,endc))]
 
 (* ---------------------------------------------------------------------- *)
 (* Match management *)
