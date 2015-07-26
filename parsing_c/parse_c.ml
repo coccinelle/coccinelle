@@ -410,7 +410,7 @@ let parse_gen ~cpp parsefunc s =
   let result = parsefunc lexer_function lexbuf_fake in
   result
 
-
+(* Please DO NOT remove this code, even though it is not used *)
 let type_of_string       = parse_gen ~cpp:false Parser_c.type_name
 let statement_of_string  = parse_gen ~cpp:false Parser_c.statement
 let expression_of_string = parse_gen ~cpp:false Parser_c.expr
@@ -1272,6 +1272,7 @@ let parse_cache parse_strings file =
 (* Some special cases *)
 (*****************************************************************************)
 
+(* Please DO NOT remove this code, even though it is not used *)
 let no_format s =
   try let _ = Str.search_forward (Str.regexp_string "%") s 0 in false
   with Not_found -> true
