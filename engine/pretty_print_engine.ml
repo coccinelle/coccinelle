@@ -51,6 +51,7 @@ let rec pp_binding_kind = function
 		    Printf.sprintf "(%s,%s,(%d,%d),(%d,%d))"
 		      fl ce minl minc maxl maxc)
 		  l)))
+  | Ast_c.MetaNoVal -> pp "no value"
 
 and pp_binding subst =
   begin

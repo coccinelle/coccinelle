@@ -1,6 +1,6 @@
 .\"  -*- nroff -*-
 .\" Please adjust this date whenever revising the manpage.
-.TH COCCILIB 3COCCI "May 18, 2011"
+.TH COCCILIB 3COCCI "Jul 26, 2015"
 
 .\" see http://www.fnal.gov/docs/products/ups/ReferenceManual/html/manpages.html
 .\" see http://www.linuxjournal.com/article/1158
@@ -129,6 +129,41 @@ is the (0-based) column containing the last character of the matched position\&.
 .B Ast_c.statement
 .sp
 
+.I val make_ident
+: 
+.B string -> Ast_c.metavar_binding_kind
+.sp
+Make an identifier
+.sp
+
+.I val make_expr
+: 
+.B string -> Ast_c.metavar_binding_kind
+.sp
+Make an expression
+.sp
+
+.I val make_stmt
+: 
+.B string -> Ast_c.metavar_binding_kind
+.sp
+Make a statement
+.sp
+
+.I val make_type
+: 
+.B string -> Ast_c.metavar_binding_kind
+.sp
+Make a type
+.sp
+
+.I val make_listlen
+: 
+.B int -> Ast_c.metavar_binding_kind
+.sp
+Make a list length, for parameter lists, expression lists, etc.
+.sp
+
 .B === 
 .B Match management functions
 .B ===
@@ -190,4 +225,4 @@ This manual page was written by Julia Lawall <Julia.Lawall@lip6.fr>.
 Send a mail to <cocci@systeme.lip6.fr>
 .SH COPYRIGHT
 Copyright 2011, DIKU, University of Copenhagen and INRIA.
-Copyright 2012-2014, INRIA.
+Copyright 2012-2015, INRIA.

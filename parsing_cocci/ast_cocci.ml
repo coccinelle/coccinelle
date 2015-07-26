@@ -117,6 +117,7 @@ and metavar =
   | MetaAnalysisDecl of string * meta_name (* name *)
   | MetaDeclarerDecl of arity * meta_name (* name *)
   | MetaIteratorDecl of arity * meta_name (* name *)
+  | MetaScriptDecl of metavar option ref * meta_name (* name *)
 
 and list_len = AnyLen | MetaLen of meta_name | CstLen of int
 
@@ -821,6 +822,7 @@ let get_meta_name = function
   | MetaAnalysisDecl(code,nm) -> nm
   | MetaDeclarerDecl(ar,nm) -> nm
   | MetaIteratorDecl(ar,nm) -> nm
+  | MetaScriptDecl(ar,nm) -> nm
 
 (* --------------------------------------------------------------------- *)
 

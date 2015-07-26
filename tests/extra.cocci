@@ -17,13 +17,13 @@ ff << r.ff;
 newargs;
 @@
 
-newargs := String.concat ", "
+newargs := make_ident (String.concat ", "
   (List.map
    (function pt ->
      match (Ast_c.unwrap pt).Ast_c.p_namei with
        None -> failwith "bad param"
      | Some nm -> Ast_c.str_of_name nm)
-    pl)
+    pl))
 
 @@
 identifier s.newargs;

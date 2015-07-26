@@ -276,6 +276,8 @@ let equal_metavarval valu valu' =
             l2)
 	l1
 
+  | (Ast_c.MetaNoVal, _) | (_, Ast_c.MetaNoVal) -> false
+
   | (B.MetaPosValList _|B.MetaListlenVal _|B.MetaPosVal _|B.MetaStmtVal _
       |B.MetaDeclVal _ |B.MetaFieldVal _ |B.MetaFieldListVal _
       |B.MetaTypeVal _ |B.MetaInitVal _ |B.MetaInitListVal _
@@ -352,6 +354,8 @@ let equal_inh_metavarval valu valu'=
 	      Ast_c.equal_posl posa1 posb1 && Ast_c.equal_posl posa2 posb2)
             l2)
 	l1
+
+  | (Ast_c.MetaNoVal, _) | (_, Ast_c.MetaNoVal) -> false
 
   | (B.MetaPosValList _|B.MetaListlenVal _|B.MetaPosVal _|B.MetaStmtVal _
       |B.MetaDeclVal _ |B.MetaFieldVal _ |B.MetaFieldListVal _

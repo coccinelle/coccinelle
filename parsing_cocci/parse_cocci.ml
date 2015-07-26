@@ -2234,7 +2234,7 @@ let parse file =
 	    let script_metavars = List.rev script_metavars in
 
 	    Hashtbl.add Data.all_metadecls name
-	      (List.map (function x -> Ast.MetaIdDecl(Ast.NONE,x))
+	      (List.map (function x -> Ast.MetaScriptDecl(ref None,x))
 		 script_metavars);
 	    Hashtbl.add Lexer_cocci.rule_names name ();
 	    (*TODOHashtbl.add Lexer_cocci.all_metavariables name script_metavars;*)

@@ -313,7 +313,7 @@ let construct_script_variables mv =
     mv
 
 let retrieve_script_variables mv =
-  List.map (function (_,py) -> get_variable py) mv
+  List.map (function (_,py) -> Ast_c.MetaIdVal(get_variable py,[])) mv
 
 let set_coccifile cocci_file =
 	cocci_file_name := cocci_file;

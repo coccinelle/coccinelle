@@ -2314,6 +2314,7 @@ let get_name = function
       (nm,function nm -> Ast.MetaDeclarerDecl(ar,nm))
   | Ast.MetaIteratorDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaIteratorDecl(ar,nm))
+  | Ast.MetaScriptDecl(cell,nm) -> failwith "not relevant to isos"
 
 let make_new_metavars metavars bindings =
   let new_metavars =

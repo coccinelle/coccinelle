@@ -826,7 +826,7 @@ and metavars_binding = (Ast_cocci.meta_name, metavar_binding_kind) assoc
   | MetaPosValList   of
       (Common.filename * string (*element*) * posl * posl) list (* min, max *)
   | MetaListlenVal   of int
-
+  | MetaNoVal
 
 (*****************************************************************************)
 (* C comments *)

@@ -42,6 +42,7 @@ let ast_binding vl = function
       | Ast_c.MetaStmtVal stm -> Coccilib.Stmt stm
       | Ast_c.MetaFragListVal frags -> Coccilib.FragList frags
       | Ast_c.MetaFmtVal fmt -> Coccilib.Fmt fmt
+      | Ast_c.MetaNoVal -> failwith "no value for script metavariable"
 
       | Ast_c.MetaPosVal _ | Ast_c.MetaPosValList _ | Ast_c.MetaListlenVal _ ->
 	  failwith "not associated with a declared metavariable"]
@@ -65,7 +66,7 @@ let run mv ve script_vars name code =
 	       (string_binding vl str_name) @ (ast_binding vl ast_name))
 	 mv) in
 
-  let script_args = List.map (function _ -> ref "") script_vars in
+  let script_args = List.map (function _ -> ref Ast_c.MetaNoVal) script_vars in
 
   (* call the function *)
   Coccilib.include_match true;

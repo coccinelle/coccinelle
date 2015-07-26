@@ -1509,9 +1509,6 @@ let apply_script_rule r cache newes e rules_that_have_matched
 		  (* failure means we should drop e, no new bindings *)
 		  (((relevant_bindings,None) :: cache), newes)
 	      | Some script_vals ->
-		  let script_vals =
-		    List.map (function x -> Ast_c.MetaIdVal(x,[]))
-		      script_vals in
 		  let new_e = (List.combine script_vars script_vals) @ e in
 		  let new_e =
 		    new_e +>
