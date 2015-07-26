@@ -411,7 +411,6 @@ let parse_gen ~cpp parsefunc s =
   result
 
 
-(* This code is not used.  Please DO NOT under any circumstances remove it *)
 let type_of_string       = parse_gen ~cpp:false Parser_c.type_name
 let statement_of_string  = parse_gen ~cpp:false Parser_c.statement
 let expression_of_string = parse_gen ~cpp:false Parser_c.expr
@@ -1272,8 +1271,6 @@ let parse_cache parse_strings file =
 (*****************************************************************************)
 (* Some special cases *)
 (*****************************************************************************)
-
-(* This code is not used.  Please DO NOT under any circumstances remove it *)
 
 let no_format s =
   try let _ = Str.search_forward (Str.regexp_string "%") s 0 in false
