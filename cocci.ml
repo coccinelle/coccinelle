@@ -1509,7 +1509,11 @@ let apply_script_rule r cache newes e rules_that_have_matched
 		  (* failure means we should drop e, no new bindings *)
 		  (((relevant_bindings,None) :: cache), newes)
 	      | Some script_vals ->
-		  let new_e = (List.combine script_vars script_vals) @ e in
+		  let script_var_env =
+		    List.filter
+		      (function (x,Ast_c.MetaNoVal) -> false | _ -> true)
+		      (List.combine script_vars script_vals) in
+		  let new_e = script_var_env @ e in
 		  let new_e =
 		    new_e +>
 		    List.filter
