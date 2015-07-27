@@ -222,7 +222,7 @@
  * filter them as soon as possible so that they will not polluate
  * our pattern-matching that come later.
  */
-  
+
 #define  KERN_EMERG "KERN_EMERG"
 #define  KERN_ALERT "KERN_ALERT"
 #define  KERN_CRIT "KERN_CRIT"
