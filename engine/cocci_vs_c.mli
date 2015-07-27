@@ -220,8 +220,6 @@ module COCCI_VS_C :
 
       val rule_elem_node : (Ast_cocci.rule_elem, Control_flow_c.node) matcher
 
-      val expression :     (Ast_cocci.expression, Ast_c.expression)   matcher
-
       (* there are far more functions in this functor but they do not have
        * to be exported
        *)
