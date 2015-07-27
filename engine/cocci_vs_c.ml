@@ -639,7 +639,7 @@ module type PARAM =
     val distrf_field :
       (A.meta_name A.mcode, Ast_c.field) matcher
     val distrf_node :
-      (A.meta_name A.mcode, Control_flow_c.node) matcher
+      (A.meta_name A.mcode, F.node) matcher
     val distrf_fragments :
       (A.meta_name A.mcode, (Ast_c.string_fragment, Ast_c.il) either list)
       matcher
@@ -4398,7 +4398,7 @@ and define_parameter = fun parama paramb ->
 (* no global solution for positions here, because for a statement metavariable
 we want a MetaStmtVal, and for the others, it's not clear what we want *)
 
-let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
+let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
  fun re node ->
   let rewrap x =
     x >>= (fun a b -> return (A.rewrap re a, F.rewrap node b))
@@ -4490,7 +4490,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
   | A.MetaStmt (ida,keep,metainfoMaybeTodo,inherited),  unwrap_node ->
       (* todo: should not happen in transform mode *)
 
-      (match Control_flow_c.extract_fullstatement node with
+      (match F.extract_fullstatement node with
       | Some stb ->
 	    let max_min _ =
 	      Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_stmt stb) in
