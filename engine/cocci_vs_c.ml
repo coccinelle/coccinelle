@@ -1028,6 +1028,9 @@ let check_binaryOp_constraint (opb',ii) = function
     List.exists (binaryOp_eq opb'') (List.map A.unwrap ops)
 
 (*---------------------------------------------------------------------------*)
+let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
+ fun re node ->
+
 let rec (expression: (A.expression, Ast_c.expression) matcher) =
  fun ea eb ->
    if A.get_test_exp ea && not (Ast_c.is_test eb) then
@@ -1133,6 +1136,12 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
       expression asexp expb >>= (fun asexp expb ->
 	return(
 	  ((A.AsExpr(exp,asexp)) +> wa,
+	   expb))))
+  | A.AsSExpr(exp,asstm), expb ->
+      expression exp expb >>= (fun exp expb ->
+      rule_elem_node asstm node >>= (fun asstm _node ->
+	return(
+	  ((A.AsSExpr(exp,asstm)) +> wa,
 	   expb))))
 
   (* old:
@@ -4389,7 +4398,7 @@ and define_parameter = fun parama paramb ->
   | (A.OptDParam _ | A.UniqueDParam _), _ ->
       failwith "handling Opt/Unique for define parameters"
   | A.DPcircles (_), ys -> raise (Impossible 48) (* in Ordered mode *)
-  | _ -> fail
+  | _ -> fail in
 
 (*****************************************************************************)
 (* Entry points *)
@@ -4398,8 +4407,10 @@ and define_parameter = fun parama paramb ->
 (* no global solution for positions here, because for a statement metavariable
 we want a MetaStmtVal, and for the others, it's not clear what we want *)
 
+(*
 let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
  fun re node ->
+*)
   let rewrap x =
     x >>= (fun a b -> return (A.rewrap re a, F.rewrap node b))
   in
