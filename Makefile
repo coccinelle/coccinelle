@@ -19,7 +19,6 @@ endif
 -include /etc/Makefile.coccinelle  # local customizations, if any
 
 
-VERSION=$(shell cat ./version | tr -d '\n')
 CCVERSION=$(shell cat scripts/coccicheck/README | egrep -o '[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' | head -n1)
 PKGVERSION=$(shell dpkg-parsechangelog -ldebian/changelog.$(DISTRIB_CODENAME) 2> /dev/null \
 	 | sed -n 's/^Version: \(.*\)/\1/p' )

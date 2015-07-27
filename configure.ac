@@ -3,7 +3,7 @@ dnl  run 'automake -acf' to update setup/{install-sh,missing}
 
 dnl  standard initialization (we only use autoconf not automake)
 AC_PREREQ([2.68])
-AC_INIT([coccinelle], m4_esyscmd([cat ./version | tr -d '\n']), [cocci@systeme.lip6.fr], [], [http://coccinelle.lip6.fr/])
+AC_INIT([coccinelle], m4_esyscmd([./version.sh]), [cocci@systeme.lip6.fr], [], [http://coccinelle.lip6.fr/])
 AC_CONFIG_MACRO_DIR([setup])
 AC_CONFIG_AUX_DIR([setup])
 AC_SUBST([CONFIGURE_FLAGS], ["$*"])
