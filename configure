@@ -791,7 +791,6 @@ CAMLP4
 OCAMLCORIG
 OCAMLATLEAST4020
 OCAMLATLEAST311
-OCAMLATLEAST310
 OCAMLBUILD
 OCAMLDOC
 OCAMLMKLIB
@@ -2391,8 +2390,8 @@ test "$program_suffix" != NONE &&
 ac_script='s/[\\$]/&&/g;s/;s,x,x,$//'
 program_transform_name=`$as_echo "$program_transform_name" | sed "$ac_script"`
 
-# expand $ac_aux_dir to an absolute path
-am_aux_dir=`cd $ac_aux_dir && pwd`
+# Expand $ac_aux_dir to an absolute path.
+am_aux_dir=`cd "$ac_aux_dir" && pwd`
 
 if test x"${MISSING+set}" != xset; then
   case $am_aux_dir in
@@ -2797,6 +2796,7 @@ END
     as_fn_error $? "Your 'rm' program is bad, sorry." "$LINENO" 5
   fi
 fi
+
 
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: determining version suffix" >&5
@@ -6628,27 +6628,6 @@ fi
 
 
   { versioncheck=; unset versioncheck;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking that the OCaml version is at least 3.10" >&5
-$as_echo_n "checking that the OCaml version is at least 3.10... " >&6; }
-  as_arg_v1=$OCAMLVERSION
-as_arg_v2=3.10
-awk "$as_awk_strverscmp" v1="$as_arg_v1" v2="$as_arg_v2" /dev/null
-case $? in #(
-  1) :
-    versioncheck=no ;; #(
-  0) :
-    versioncheck=yes ;; #(
-  2) :
-    versioncheck=yes ;; #(
-  *) :
-     ;;
-esac
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $versioncheck" >&5
-$as_echo "$versioncheck" >&6; }
-  OCAMLATLEAST310=$versioncheck
-
-
-  { versioncheck=; unset versioncheck;}
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking that the OCaml version is at least 3.11" >&5
 $as_echo_n "checking that the OCaml version is at least 3.11... " >&6; }
   as_arg_v1=$OCAMLVERSION
@@ -6697,7 +6676,7 @@ if test "x$OCAMLC" = xno -o "x$OCAMLDEP" = xno -o "x$OCAMLDOC" = xno -o "x$OCAML
     as_fn_error $? "It seems a few components of the OCaml distribution could nt be found. Make sure the following tools are installed and in your path: ocamlc, ocamldep, ocamldoc, ocamlmklib." "$LINENO" 5
 
 fi
-if test "x$OCAMLATLEAST310" = xno; then :
+if test "x$OCAMLATLEAST311" = xno; then :
   { $as_echo "$as_me:${as_lineno-$LINENO}: a more recent OCaml installation may be required" >&5
 $as_echo "$as_me: a more recent OCaml installation may be required" >&6;}
 fi
