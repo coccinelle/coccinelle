@@ -1888,12 +1888,6 @@ val full_charpos_to_pos : filename -> (int * int) array
 val complete_parse_info :
   filename -> (int * int) array -> parse_info -> parse_info
 
-val full_charpos_to_pos_large:
-  filename -> (int -> (int * int))
-
-val complete_parse_info_large :
-  filename -> (int -> (int * int))  -> parse_info -> parse_info
-
 (* return line x col x str_line  from a charpos. This function is quite
  * expensive so don't use it to get the line x col from every token in
  * a file. Instead use full_charpos_to_pos.
