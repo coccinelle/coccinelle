@@ -1100,7 +1100,7 @@ let check_danger toks =
   let nonspace_danger tok =
     match get_danger tok with
       Some Ast_c.Danger -> true
-    | Some Ast_c.NoDanger -> is_space tok or is_newline_or_comment tok
+    | Some Ast_c.NoDanger -> is_space tok || is_newline_or_comment tok
     | _ -> false in
   let unminus tok =
     match (tok,get_danger tok) with
