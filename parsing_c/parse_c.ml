@@ -240,8 +240,12 @@ let print_commentized xs =
 
 (* called by parse_print_error_heuristic *)
 let tokens2 file =
- let table     = Common.full_charpos_to_pos_large file in
-
+  let is_abstract_line_tok tok =
+    let ii = TH.info_of_tok tok in
+    match ii.Ast_c.pinfo with
+      | Ast_c.AbstractLineTok _ -> true
+      | _ -> false
+  in
  Common.with_open_infile file (fun chan ->
   let lexbuf = Lexing.from_channel chan in
   let curp = { lexbuf.Lexing.lex_curr_p with Lexing.pos_fname = file } in
@@ -249,20 +253,7 @@ let tokens2 file =
   try
     let rec tokens_aux acc =
       let tok = Lexer_c.token lexbuf in
-      (* fill in the line and col information *)
-      let tok = TH.visitor_info_of_tok (fun ii ->
-        { ii with Ast_c.pinfo=
-          (* could assert pinfo.filename = file ? *)
-	  match Ast_c.pinfo_of_info ii with
-	    Ast_c.OriginTok pi ->
-              Ast_c.OriginTok (Common.complete_parse_info_large file table pi)
-	  | Ast_c.ExpandedTok (pi,vpi) ->
-              Ast_c.ExpandedTok((Common.complete_parse_info_large file table pi),vpi)
-	  | Ast_c.FakeTok (s,vpi) -> Ast_c.FakeTok (s,vpi)
-	  | Ast_c.AbstractLineTok pi -> failwith "should not occur"
-      }) tok
-      in
-
+      if is_abstract_line_tok tok then failwith "should not occur";
       if TH.is_eof tok
       then List.rev (tok::acc)
       else tokens_aux (tok::acc)
