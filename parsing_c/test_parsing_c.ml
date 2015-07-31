@@ -639,4 +639,3 @@ let actions () = [
   "--xxx", "   <file1> <>",
   Common.mk_action_n_arg test_xxx;
 ]
-

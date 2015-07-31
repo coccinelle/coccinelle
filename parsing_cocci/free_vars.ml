@@ -433,7 +433,7 @@ let collect_saved =
     mcode mcode
     donothing donothing donothing donothing donothing
     astfvident astfvexpr astfvfrag astfvfmt astfvassign astfvbinary donothing
-    astfvtypeC astfvinit astfvparam astfvdecls donothing astfvrule_elem 
+    astfvtypeC astfvinit astfvparam astfvdecls donothing astfvrule_elem
     donothing donothing donothing donothing
 
 (* ---------------------------------------------------------------- *)
@@ -974,7 +974,7 @@ let astfvs metavars bound =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
     donothing donothing astfvstatement_dots donothing donothing
-    donothing donothing donothing 
+    donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing
     astfvrule_elem astfvstatement astfvcase_line astfvtoplevel donothing

@@ -644,8 +644,8 @@ let pos_of_tok x =  Ast_c.opos_of_info (info_of_tok x)
 let str_of_tok x =  Ast_c.str_of_info (info_of_tok x)
 
 let string_of_token = function
-  | TUnknown _ -> "TUnknown" 
-  | TCommentSpace _ -> "TCommentSpace" 
+  | TUnknown _ -> "TUnknown"
+  | TCommentSpace _ -> "TCommentSpace"
   | TCommentNewline _ -> "TCommentNewline"
   | TComment _ -> "TComment"
   | TInt _ -> "TInt"

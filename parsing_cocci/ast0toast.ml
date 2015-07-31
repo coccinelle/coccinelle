@@ -460,7 +460,7 @@ and binaryOp op =
       Ast0.Arith op' -> Ast.Arith (mcode op')
     | Ast0.Logical op' -> Ast.Logical (mcode op')
     | Ast0.MetaBinary(mv, c, _) ->
-      Ast.MetaBinary(mcode mv, binaryOpconstraint c, unitary, false))    
+      Ast.MetaBinary(mcode mv, binaryOpconstraint c, unitary, false))
 and binaryOpconstraint = function
   | Ast0.BinaryOpNoConstraint -> Ast.BinaryOpNoConstraint
   | Ast0.BinaryOpInSet ops -> Ast.BinaryOpInSet (List.map binaryOp ops)

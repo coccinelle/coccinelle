@@ -1,7 +1,7 @@
-(* 
+(*
  * Enum - Enumeration over abstract collection of elements.
  * Copyright (C) 2003 Nicolas Cannasse
- * 
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -51,7 +51,7 @@ let rec init n f =
 				f (n - 1 - !count));
 		clone = (fun () -> init !count f);
 		fast = true;
-	}			
+	}
 
 let rec empty () =
 	{
@@ -91,7 +91,7 @@ let force t =
 		dst.tl <- x;
 		loop x
 	in
-	let enum = ref _empty  in 
+	let enum = ref _empty  in
 	(try
 		enum := { hd = t.next(); tl = _empty };
 		incr count;
@@ -339,7 +339,7 @@ let rec filter_map f t =
     in
 	from2 next (fun () -> filter_map f (t.clone()))
 
-let rec append ta tb = 
+let rec append ta tb =
 	let t = {
 		count = (fun () -> ta.count() + tb.count());
 		next = _dummy;

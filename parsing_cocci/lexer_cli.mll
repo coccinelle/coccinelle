@@ -35,4 +35,3 @@ rule token = parse
   | id   { Id(tok lexbuf)    }
   | eof  { EOF               }
   | _    { Other(tok lexbuf) }
-

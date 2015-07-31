@@ -35,4 +35,3 @@ class ['a,'b] oassoch xs =
       List.map fst (o#tolist)
 
 end
-

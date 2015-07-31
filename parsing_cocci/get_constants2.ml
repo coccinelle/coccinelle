@@ -863,10 +863,10 @@ CNF as a list of git grep strings.  coccigrep uses 1 for basic scanning and
 then the CNF regexp for more refined scanning.  git grep uses the second
 CNF representation.
 4. An arbitrary formula, usable by the support for idutils *)
-    
+
 let get_constants rules neg_pos_vars =
   if !Flag.worth_trying_opt
-  then 
+  then
     begin
     let res = run rules neg_pos_vars in
     let grep = interpret_grep true res in (* useful because in string form *)

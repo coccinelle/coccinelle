@@ -103,4 +103,3 @@ let check_up_to_date a b  =
   (set2 $-$ set1) +> List.iter (fun s ->
     pr2 ("new directory appeared: " ^ s)
   )
-

@@ -54,7 +54,7 @@ type min =
   | Ctx
 
 type token2 =
-  | T2 of Parser_c.token * min 
+  | T2 of Parser_c.token * min
         * int option (* orig index, abstracting away comments and space *)
         * Unparse_cocci.nlhint option
   | Fake2 of Ast_c.info * min
@@ -74,7 +74,7 @@ type token3 =
 
 
 (* similar to the tech in parsing_hack *)
-type token_extended = 
+type token_extended =
   { tok2 : token2;
     str  : string;
     idx  : int option; (* to know if 2 tokens were consecutive in orig file *)
@@ -210,10 +210,10 @@ let remove_useless_fakeInfo_struct program =
       | Ast_c.InitList args, ii ->
         (match ii with
         | [_;_] -> ini
-        | i1 :: i2 :: iicommaopt :: tl when 
-           (not (contain_plus iicommaopt)) 
+        | i1 :: i2 :: iicommaopt :: tl when
+           (not (contain_plus iicommaopt))
         && (not (contain_plus i2))
-        && (Ast_c.is_fake iicommaopt) -> 
+        && (Ast_c.is_fake iicommaopt) ->
           (* sometimes the guy put a normal iicommaopt *)
           Ast_c.InitList args, (i1 :: i2 :: tl)
         | ii -> Ast_c.InitList args, ii
@@ -325,7 +325,7 @@ let displace_fake_nodes toks =
           let prev = List.rev revprev in
           prev @ fake :: (loop (whitespace @ aft))
         | (Ast_cocci.CONTEXT(_,Ast_cocci.BEFOREAFTER _),_) ->
-          failwith "fake node should not be before-after"	
+          failwith "fake node should not be before-after"
         | (Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING),_)
         | _ -> bef @ fake :: (loop aft) (* old: was removed when have simpler yacfe *)
         )
@@ -389,7 +389,7 @@ let expand_mcode toks =
 
       let optindex =
         if TH.is_origin tok && not (TH.is_real_comment tok)
-        then 
+        then
           begin
             incr index;
             Some !index
@@ -541,10 +541,10 @@ let generated_newline = function
 
 let is_fake2 = function Fake2 _ -> true | _ -> false
 
-let is_whitespace x = 
+let is_whitespace x =
   is_space x || is_newline_or_comment x
 
-let is_whitespace_or_fake x = 
+let is_whitespace_or_fake x =
   is_space x || is_newline_or_comment x || is_fake2 x
 
 let is_minusable_comment = function
@@ -561,7 +561,7 @@ let is_minusable_comment = function
     | Parser_c.TCommentCpp (Token_c.CppDirective, _) -> true
     (*
     | Parser_c.TCommentMisc _
-    | Parser_c.TCommentCpp (Token_c.CppPassingCosWouldGetError, _) -> 
+    | Parser_c.TCommentCpp (Token_c.CppPassingCosWouldGetError, _) ->
       false
     *)
     | _ -> false
@@ -581,12 +581,12 @@ let is_minusable_comment_nocpp = function
   | _ -> false
 
 let all_coccis = function
-  | Cocci2 _ | C2 _ | Comma _ | Indent_cocci2 
+  | Cocci2 _ | C2 _ | Comma _ | Indent_cocci2
   | Unindent_cocci2 _ | EatSpace2 -> true
   | _ -> false
 
 (* previously gave up if the first character was a newline, but not clear why *)
-let is_minusable_comment_or_plus x = 
+let is_minusable_comment_or_plus x =
   is_minusable_comment x || all_coccis x
 
 let set_minus_comment adj = function
@@ -616,16 +616,16 @@ let set_minus_comment adj = function
 
 (* don't touch ifdefs, done after *)
 let set_minus_comment_or_plus adj = function
-  | Cocci2 _ | C2 _ | Comma _ | Indent_cocci2 
+  | Cocci2 _ | C2 _ | Comma _ | Indent_cocci2
   | Unindent_cocci2 _ | EatSpace2 as x -> x
   | x -> set_minus_comment adj x
 
 let is_minus = function
   | T2 (_, Min _, _, _) -> true
-  | _ -> false 
+  | _ -> false
 
 let drop_minus xs =
-  xs +> exclude is_minus 
+  xs +> exclude is_minus
 
 let drop_expanded xs =
   xs +> exclude (function
@@ -641,7 +641,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
   (* get rid of expanded tok *)
   let xs = drop_expanded xs in
 
-  let minus_or_comment_or_fake x = 
+  let minus_or_comment_or_fake x =
     is_minus x || is_minusable_comment x || is_fake2 x in
 
   let minus_or_comment_nocpp x =
@@ -677,7 +677,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
           when List.for_all minus_or_comment_or_fake minus_list ->
           set_minus_comment_or_plus adj1 x
         | _ -> x in
-      x :: adjust_within_minus contains_plus minus_list 
+      x :: adjust_within_minus contains_plus minus_list
          @ adjust_around_minus rest
     | ((Fake2(_,Min _)) as t0)::
       (T2(Parser_c.TCommentNewline c,_b,_i,_h) as x)::
@@ -691,7 +691,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
           when List.for_all minus_or_comment_or_fake minus_list ->
           set_minus_comment_or_plus adj1 x
         | _ -> x in
-      t0 :: x :: adjust_within_minus contains_plus minus_list 
+      t0 :: x :: adjust_within_minus contains_plus minus_list
          @ adjust_around_minus rest
     | ((Fake2(_,Min adj1) | T2(_,Min adj1,_,_)) as t1)::xs ->
       let (minus_list,rest) = span_not_context (t1::xs) in
@@ -721,7 +721,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
           (List.map (set_minus_comment_or_plus adj1) not_minus_list)
           @ (adjust_within_minus (cp || newcp) (t2::xs))
         else
-          not_minus_list 
+          not_minus_list
 	  @ (adjust_within_minus (cp || newcp) (t2::xs))
       | _ ->
         if cp
@@ -860,7 +860,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
       m ::
       (List.map (set_minus_comment adj) spaces) @
       (adjust_before_brace rest)
-    | ((T2 (t0,Ctx, idx0,h0)) as m0) :: 
+    | ((T2 (t0,Ctx, idx0,h0)) as m0) ::
       ((T2 (t,Min adj,idx,h)) as m) :: rest
       when TH.str_of_tok t0 = "" ->
       (* This is for the case of a #define that is completely deleted,
@@ -2144,7 +2144,7 @@ let rec find_paren_comma = function
   (* do nothing if was like this in original file *)
   | { str = "("; idx = Some p1 } :: ({ str = ","; idx = Some p2} :: _ as xs)
   | { str = ","; idx = Some p1 } :: ({ str = ","; idx = Some p2} :: _ as xs)
-  | { str = ","; idx = Some p1 } :: ({ str = ")"; idx = Some p2} :: _ as xs) 
+  | { str = ","; idx = Some p1 } :: ({ str = ")"; idx = Some p2} :: _ as xs)
     when p2 = p1 + 1 ->
     find_paren_comma xs
 
@@ -2188,8 +2188,8 @@ let drop_line toks =
 	(false, toks) in
   let rec loop toks =
     match toks with
-    | (T2(_, Min _, _, _) as x) :: tl 
-      when str_of_token2 x = "}" -> 
+    | (T2(_, Min _, _, _) as x) :: tl
+      when str_of_token2 x = "}" ->
 	let (drop, tl) = space_until_newline tl in
 	(drop, x :: tl)
     | hd :: tl when is_whitespace hd ->
@@ -2245,7 +2245,7 @@ let print_all_tokens2 pr xs =
       let newkind = kind_of_token2 t in
       if newkind = !current_kind
       then pr (str_of_token2 t)
-      else 
+      else
         begin
           pr (end_mark);
           pr (start_mark newkind);
@@ -2254,7 +2254,7 @@ let print_all_tokens2 pr xs =
         end
     );
   else
-    let to_whitespace s = 
+    let to_whitespace s =
       let r = Bytes.copy s in
       for i = 1 to String.length r do
         let c = String.get r (i-1) in
@@ -2356,7 +2356,7 @@ let pp_program2 xs outfile  =
           then
             (* nothing else to do for sgrep *)
             drop_expanded(drop_fake(drop_minus toks))
-          else 
+          else
             begin
               (* phase2: can now start to filter and adjust *)
 	      let toks = check_danger toks in
@@ -2383,7 +2383,7 @@ let pp_program2 xs outfile  =
 
         (* in theory here could reparse and rework the ast! or
          * apply some SP. Not before cos julia may have generated
-         * not parsable file. Need do unparsing_tricks call before 
+         * not parsable file. Need do unparsing_tricks call before
 	 * being ready to reparse. *)
         print_all_tokens2 pr toks;
 

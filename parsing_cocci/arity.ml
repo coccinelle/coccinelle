@@ -596,7 +596,7 @@ and declaration tgt decl =
       let params = parameter_list tgt params in
       let va = match va with
         | None -> None
-        | Some (c1, e1) -> Some (mcode c1, mcode e1) in 
+        | Some (c1, e1) -> Some (mcode c1, mcode e1) in
       let rp1 = mcode rp1 in
       let sem = mcode sem in
       make_decl decl tgt arity (Ast0.FunProto(fi,name,lp1,params,va,rp1,sem))

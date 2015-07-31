@@ -880,7 +880,7 @@ let rec ends_in_return_bis preok stmt_list =
       | _ -> false)
   | Ast.CIRCLES(x) -> failwith "not supported"
   | Ast.STARS(x) -> failwith "not supported"
-	    
+
 let ends_in_return stmt_list = ends_in_return_bis false stmt_list
 
 (* --------------------------------------------------------------------- *)

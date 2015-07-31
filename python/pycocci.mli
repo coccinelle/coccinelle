@@ -8,9 +8,9 @@ val inc_match : bool ref
 val exited : bool ref
 val retrieve_script_variables :
     Ast_cocci.meta_name list -> Ast_c.metavar_binding_kind list
-exception Pycocciexception 
+exception Pycocciexception
 val set_coccifile : string -> unit
 val python_support : bool
 val initialised : bool ref
 val py_isinitialized : unit -> int
-val py_finalize : unit -> unit 
+val py_finalize : unit -> unit

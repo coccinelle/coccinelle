@@ -811,7 +811,7 @@ let glimpse_filter2 (_,query,_,_) dir =
 		   if filelist <> [] then
 		     begin
 		       let firstfile = List.hd filelist in
-		       if Filename.is_relative firstfile || Filename.is_implicit firstfile then			 
+		       if Filename.is_relative firstfile || Filename.is_implicit firstfile then
 			 List.map (fun file -> dir ^ Filename.dir_sep ^ file) filelist
 		       else
 			 filelist

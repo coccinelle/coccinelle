@@ -1000,14 +1000,14 @@ let logicalA_of_logicalB = function
 let assignOpA_of_assignOpB = function
   | B.SimpleAssign -> A.SimpleAssign (A.make_mcode "=")
   | B.OpAssign op -> A.OpAssign (A.make_mcode (arithA_of_arithB op))
-  
+
 let binaryOpA_of_binaryOpB = function
   | B.Arith op -> A.Arith (A.make_mcode (arithA_of_arithB op))
   | B.Logical op -> A.Logical (A.make_mcode (logicalA_of_logicalB op))
 
 let assignOp_eq op1 op2 = match (op1, op2) with
   | A.SimpleAssign _, A.SimpleAssign _ -> true
-  | A.OpAssign o1, A.OpAssign o2 -> (A.unwrap_mcode o1) = (A.unwrap_mcode o2) 
+  | A.OpAssign o1, A.OpAssign o2 -> (A.unwrap_mcode o1) = (A.unwrap_mcode o2)
   | _ -> false
 
 let check_assignOp_constraint (opb',ii) = function
@@ -1017,8 +1017,8 @@ let check_assignOp_constraint (opb',ii) = function
     List.exists (assignOp_eq opb'') (List.map A.unwrap ops)
 
 let binaryOp_eq op1 op2 = match (op1, op2) with
-  | A.Arith o1, A.Arith o2 -> (A.unwrap_mcode o1) = (A.unwrap_mcode o2) 
-  | A.Logical o1, A.Logical o2 -> (A.unwrap_mcode o1) = (A.unwrap_mcode o2) 
+  | A.Arith o1, A.Arith o2 -> (A.unwrap_mcode o1) = (A.unwrap_mcode o2)
+  | A.Logical o1, A.Logical o2 -> (A.unwrap_mcode o1) = (A.unwrap_mcode o2)
   | _ -> false
 
 let check_binaryOp_constraint (opb',ii) = function
@@ -1273,7 +1273,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
           (A.Assignment (ea1, opa, ea2, simple)) +> wa,
           ((B.Assignment (eb1, opb, eb2), typ), [])
       )))))
-  
+
   | A.Sequence (ea1, opa, ea2),
       ((B.Sequence (eb1, eb2), typ),ii) ->
       let (opbi) = tuple_of_list1 ii in
@@ -2557,7 +2557,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
      }, iivirg) ->
        (match (va,isvaargs) with
         | (None,false) -> return (va,(isvaargs, iidotsb))
-        | (Some (commaa, dotsa), true) -> 
+        | (Some (commaa, dotsa), true) ->
            let (commab, dotsb) = tuple_of_list2 iidotsb in
            tokenf commaa commab >>= (fun commaa commab ->
            tokenf dotsa dotsb >>= (fun dotsa dotsb ->
@@ -3154,7 +3154,7 @@ and (struct_field: (A.annotated_decl, B.field) matcher) =
 		       onedecl allminus ifa (fake_var,iiptvirgb,iisto) >>=
 		       (fun ifa (fake_var,iiptvirgb,iisto) ->
 			 let (onevar,iivirg) = unbuild_decl fake_var in
-			 
+
 			 return (
 			 (A.DElem(mckstart,allminus,ifa) +> A.rewrap fa),
 			 ((B.DeclarationField

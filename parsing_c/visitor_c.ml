@@ -1161,7 +1161,7 @@ let rec vk_expr_s = fun bigf expr ->
       | CondExpr (e1, e2, e3)   -> CondExpr (exprf e1, fmap exprf e2, exprf e3)
       | Sequence (e1, e2)        -> Sequence (exprf e1, exprf e2)
       | Assignment (e1, op, e2)  ->
-        let e1 = exprf e1 in 
+        let e1 = exprf e1 in
         let op = vk_assignOp_s bigf op in
         let e2 = exprf e2 in
         Assignment (e1, op, e2)

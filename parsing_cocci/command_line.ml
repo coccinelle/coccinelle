@@ -43,7 +43,7 @@ let find_metavariables tokens =
 	  match Str.bounded_split (Str.regexp ":") x 2 with
 	    [before;after] ->
 	      let (ty,endty,afterty) = split_when (ends_with ':') (after::xs) in
-	      let decl = 
+	      let decl =
 		Printf.sprintf "%s %s;\n"
 		  (String.concat "" (ty@[endty]))
 		  before in

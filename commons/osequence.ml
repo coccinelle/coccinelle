@@ -10,4 +10,3 @@ object(o: 'o)
   method virtual last: 'a
   (* head tail push pop top cons snoc *)
 end
-

@@ -82,4 +82,3 @@ let create_dbm metapath dbname =
   in
   let assoc = new oassocdbm [] x_db id id in
   x_db, assoc
-

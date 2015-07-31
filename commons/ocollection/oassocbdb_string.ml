@@ -168,4 +168,3 @@ let create_bdb metapath dbname env  transact size_buffer_oassoc_buffer =
   db,
   new Oassoc_buffer.oassoc_buffer size_buffer_oassoc_buffer
     (new oassoc_btree_string db dbname transact)
-

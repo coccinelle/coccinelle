@@ -1564,7 +1564,7 @@ let consistent_positions binding reqopts =
       [] -> true
     | [_] -> true
     | l::ls ->
-	let desired_functions = 
+	let desired_functions =
 	  List.fold_left
             (fun prev (_,elem,_,_) ->
               if not (List.mem elem prev) then elem::prev else prev)
@@ -2290,4 +2290,3 @@ let check_duplicate_modif2 xs =
   )
 let check_duplicate_modif a =
   Common.profile_code "check_duplicate" (fun () -> check_duplicate_modif2 a)
-

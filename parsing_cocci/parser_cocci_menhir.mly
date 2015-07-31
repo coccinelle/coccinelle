@@ -43,7 +43,7 @@ let is_vaellipsis = function
 
 let rec adjacent_ellipsis = function
   | [] -> false
-  | [_] -> false 
+  | [_] -> false
   | (Ellipsis _) :: (Ellipsis _) :: _ -> true
   | x::xs -> adjacent_ellipsis xs
 
@@ -569,7 +569,7 @@ pure_ident_or_meta_ident_with_binop_constraint:
 
 binaryopconstraint:
   { Ast0.BinaryOpNoConstraint }
-| TEq TOBrace ops=comma_list(binary_operator) TCBrace 
+| TEq TOBrace ops=comma_list(binary_operator) TCBrace
   { Ast0.BinaryOpInSet ops }
 | TEq op=binary_operator
   { Ast0.BinaryOpInSet [op] }
@@ -579,7 +579,7 @@ pure_ident_or_meta_ident_with_assignop_constraint:
 
 assignopconstraint:
   { Ast0.AssignOpNoConstraint }
-| TEq TOBrace ops=comma_list(assignment_operator) TCBrace 
+| TEq TOBrace ops=comma_list(assignment_operator) TCBrace
   { Ast0.AssignOpInSet ops }
 | TEq op=assignment_operator
   { Ast0.AssignOpInSet [op] }
@@ -597,12 +597,12 @@ binary_operator:
 | TAnd { mkarithop (Ast.And,$1) }
 | TOr { mkarithop (Ast.Or,$1) }
 | TXor { mkarithop (Ast.Xor,$1) }
-| TLogOp { mklogop $1 } 
+| TLogOp { mklogop $1 }
 | TAndLog { mklogop (Ast.AndLog,$1) }
 | TOrLog { mklogop (Ast.OrLog,$1) }
 
 assignment_operator:
-| TEq 
+| TEq
   { let clt = $1 in
   let op' = P.clt2mcode "=" clt in
   Ast0.wrap (Ast0.SimpleAssign op') }
@@ -1267,7 +1267,7 @@ arg_list(arg):
 argorellipsis(arg):
   arg=arg { Arg arg }
 | x=TVAEllipsis { VAEllipsis (x) }
-| y=TEllipsis { Ellipsis (y) } 
+| y=TEllipsis { Ellipsis (y) }
 
 one_arg(arg):
   arg=arg  { arg }
@@ -2809,7 +2809,7 @@ whens(when_grammar,simple_when_grammar,any_strict):
       { List.map (function x -> Ast0.WhenModifier(P.clt2mcode "when" t,x)) l }
   | t=TWhenTrue ee=TNotEq e = eexpr TLineEnd
       { [Ast0.WhenNotTrue (P.clt2mcode "when" t, P.clt2mcode "!=" ee, e)] }
-  | t=TWhenFalse ee=TNotEq e = eexpr TLineEnd 
+  | t=TWhenFalse ee=TNotEq e = eexpr TLineEnd
       { [Ast0.WhenNotFalse (P.clt2mcode "when" t, P.clt2mcode "!=" ee, e)] }
 
 any_strict:

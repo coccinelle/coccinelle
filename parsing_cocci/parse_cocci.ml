@@ -408,7 +408,7 @@ let get_clt (tok,_) =
   | PC.TBreak(clt) | PC.TContinue(clt) | PC.TGoto(clt) | PC.TIdent(_,clt)
   | PC.TTypeId(_,clt) | PC.TSymId(_,clt)
   | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
-  
+
   | PC.TSizeof(clt)
 
   | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
@@ -470,7 +470,7 @@ let get_clt (tok,_) =
   | PC.TType -> failwith "No clt attached to token TType"
   | PC.TSymbol -> failwith "No clt attached to token TSymbol"
   | PC.TStatement -> failwith "No clt attached to token TStatement"
-  | PC.TScriptData _ -> failwith "No clt attached to token TScriptData" 
+  | PC.TScriptData _ -> failwith "No clt attached to token TScriptData"
   | PC.TScript -> failwith "No clt attached to token TScript"
   | PC.TRuleName _ -> failwith "No clt attached to token TRuleName"
   | PC.TRightIso -> failwith "No clt attached to token TRightIso"
@@ -934,7 +934,7 @@ let split_token ((tok,_) as t) =
   | PC.TIsoToTestExpression ->
       failwith "unexpected tokens"
   | PC.TScriptData s -> ([t],[t])
-  | PC.TWhitespace _ -> ([t],[t]) 
+  | PC.TWhitespace _ -> ([t],[t])
 
 
 let split_token_stream tokens =
@@ -1429,7 +1429,7 @@ let rec process_pragmas (bef : 'a option) (skips : 'a list) = function
 	  let (a,b,lline,llineend,d,e,strbef,straft,pos,ws) = get_clt next in
 	  (add_bef bef) @ List.rev skips @ pass @
 	  (process_pragmas
-	     (Some (update_clt next 
+	     (Some (update_clt next
                (a,b,prag_lline,llineend,d,e,pragmas,straft,pos,ws)))
 	     [] rest)
       |	_ ->
@@ -1440,7 +1440,7 @@ let rec process_pragmas (bef : 'a option) (skips : 'a list) = function
               List.rev skips@
 	      pass@process_pragmas None [] rest0
 	  | (_,_,Some next,PLUS) ->
-	      let (a,b,lline,llineend,d,e,strbef,straft,pos,ws) = 
+	      let (a,b,lline,llineend,d,e,strbef,straft,pos,ws) =
                 get_clt next in
 	      (add_bef bef) @ List.rev skips @ pass @
 	      (process_pragmas
@@ -1680,7 +1680,7 @@ let prepare_mv_tokens tokens =
 
 let unminus (d,x1,x2,x3,x4,x5,x6,x7,x8,x9) = (* for hidden variables *)
   match d with
-    D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> 
+    D.MINUS | D.OPTMINUS | D.UNIQUEMINUS ->
       (D.CONTEXT,x1,x2,x3,x4,x5,x6,x7,x8,x9)
   | D.PLUS -> failwith "unexpected plus code"
   | D.PLUSPLUS -> failwith "unexpected plus code"
@@ -1772,12 +1772,12 @@ let rec consume_minus_positions toks =
 		   (Ast0.MetaExpr(name,constraints,ty,Ast.ANY,pure)))) in
 	(loop_other (x::xs))
 
-    | x::((PC.TPArob _,_) as x')::x''::xs -> 
+    | x::((PC.TPArob _,_) as x')::x''::xs ->
 	x::loop_other (x'::x''::xs)
 
     | x::xs -> x::loop_other xs in
   loop_other(loop_pos toks)
-    
+
 let rec consume_plus_positions = function
     [] -> []
   | (PC.TPArob _,_)::x::xs -> consume_plus_positions xs
@@ -1820,9 +1820,9 @@ let partition_either l =
 
 let rec collect_script_tokens = function
     [(PC.EOF,_)] | [(PC.TArobArob,_)] | [(PC.TArob,_)] -> ""
-  | (PC.TScriptData(s),_)::[] -> 
+  | (PC.TScriptData(s),_)::[] ->
       s
-  | (PC.TScriptData(s),_)::xs -> 
+  | (PC.TScriptData(s),_)::xs ->
       s^(collect_script_tokens xs)
   | toks ->
       List.iter
@@ -1842,7 +1842,7 @@ let get_metavars parse_fn table file lexbuf =
     let tokens = prepare_mv_tokens tokens in
     match tokens with
       [(PC.TArobArob,_)] -> List.rev acc
-    | (PC.TAnalysis, _) :: tl -> 
+    | (PC.TAnalysis, _) :: tl ->
 	Lexer_script.file := file;
 	Lexer_script.language := "ocaml";
         let get_tokens = tokens_script_all table file false lexbuf in
@@ -1853,17 +1853,17 @@ let get_metavars parse_fn table file lexbuf =
 	  (* count open parens *)
 	  let count str toks =
 	    List.fold_left (fun n (t, _) ->
-	      if t = PC.TScriptData str 
+	      if t = PC.TScriptData str
 	      then n + 1
 	      else n) 0 toks in
 	  let n = n + count "(" newtoks in
 	  (* continue parsing *)
-	  if n = 0 
+	  if n = 0
 	  then toks @ newtoks
 	  else loop n (toks @ newtoks) in
 	begin
 	  match get_tokens (in_list [PC.TScriptData "("]) with
-	  | (_, ([(s, _)] as toks)) -> 
+	  | (_, ([(s, _)] as toks)) ->
 	      let data = collect_script_tokens (loop 1 toks) in
 	      let (_,tokens) =
 		Data.call_in_meta

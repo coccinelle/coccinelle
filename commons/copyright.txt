@@ -15,4 +15,3 @@ Copyright (C) 1998-2009 Yoann Padioleau
 The contents of some files in this directory was derived from external
 sources with compatible licenses.  The original copyright and license
 notice was preserved in the affected files.
-

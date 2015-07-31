@@ -411,7 +411,7 @@ module XMATCH = struct
 		   (if strip
 		   then Lib_parsing_c.al_arguments a
 		   else Lib_parsing_c.semi_al_arguments a))
-		
+
           | Ast_c.MetaDeclVal a ->
 	      success
 		(Ast_c.MetaDeclVal
@@ -442,23 +442,23 @@ module XMATCH = struct
 		   (if strip
 		   then Lib_parsing_c.al_type a
 		   else Lib_parsing_c.semi_al_type a))
-		
+
           | Ast_c.MetaInitVal a ->
 	      success
 		(Ast_c.MetaInitVal
 		   (if strip
 		   then Lib_parsing_c.al_init a
 		   else Lib_parsing_c.semi_al_init a))
-		
+
           | Ast_c.MetaInitListVal a ->
 	      success
 		(Ast_c.MetaInitListVal
 		   (if strip
 		   then Lib_parsing_c.al_inits a
 		   else Lib_parsing_c.semi_al_inits a))
-		
+
           | Ast_c.MetaListlenVal a -> success(Ast_c.MetaListlenVal a)
-		
+
           | Ast_c.MetaParamVal a ->
 	      success
 		(Ast_c.MetaParamVal
@@ -471,7 +471,7 @@ module XMATCH = struct
 		   (if strip
 		   then Lib_parsing_c.al_params a
 		   else Lib_parsing_c.semi_al_params a))
-		
+
           | Ast_c.MetaFragListVal a ->
 	      success
 		(Ast_c.MetaFragListVal
@@ -484,7 +484,7 @@ module XMATCH = struct
 		   (if strip
 		   then Lib_parsing_c.al_string_format a
 		   else Lib_parsing_c.semi_al_string_format a))
-		
+
           | Ast_c.MetaPosVal (pos1,pos2) ->
 	      success(Ast_c.MetaPosVal (pos1,pos2))
           | Ast_c.MetaPosValList l -> success (Ast_c.MetaPosValList l)
@@ -574,7 +574,7 @@ module XMATCH = struct
       pos_variables tin ia
 	(function _ -> [Lib_parsing_c.lin_col_by_pos [ib]])
 	finish
-      
+
   let tokenf_mck mck ib = fun tin ->
     let pos = Ast_c.info_to_fixpos ib in
     let posmck = Ast_cocci.FixPos (pos, pos) in

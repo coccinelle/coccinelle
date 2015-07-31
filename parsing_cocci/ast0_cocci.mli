@@ -130,7 +130,7 @@ and base_expression =
   | DisjExpr       of string mcode * expression list * string mcode list *
 	              string mcode
   | NestExpr       of string mcode * expression dots * string mcode *
-                      (string mcode * string mcode * expression) option 
+                      (string mcode * string mcode * expression) option
                       (* whencode *) * Ast_cocci.multi
   | Edots          of string mcode (* ... *) * (string mcode * string mcode *
                       expression) option (* whencode *)
@@ -170,7 +170,7 @@ and string_format = base_string_format wrap
 
 (* --------------------------------------------------------------------- *)
 (* First class operators *)
-and  base_assignOp = 
+and  base_assignOp =
     SimpleAssign of simpleAssignOp mcode
   | OpAssign of Ast_cocci.arithOp mcode
   | MetaAssign of Ast_cocci.meta_name mcode * assignOpconstraint * pure

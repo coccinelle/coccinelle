@@ -773,7 +773,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	      conjunct_bindings (check_mcode ed ed1)
 		(let (edots_whencode_allowed,_,_) = whencode_allowed in
 		if edots_whencode_allowed
-		then add_dot_binding ed 
+		then add_dot_binding ed
 		  (Ast0.WhenTag(wh,Some e,Ast0.ExprTag wc))
 		else
 		  (Printf.printf
@@ -817,7 +817,7 @@ let match_maker checks_needed context_required whencode_allowed =
    from applying, which doesn't seem very relevant, but it also avoids a
    mysterious bug that is obtained with eg int attach(...); *)
   and varargs_equal (comma1, ellipsis1) (comma2, ellipsis2) =
-    let c1 = Ast0_cocci.unwrap_mcode comma1  
+    let c1 = Ast0_cocci.unwrap_mcode comma1
     and e1 = Ast0_cocci.unwrap_mcode ellipsis1
     and c2 = Ast0_cocci.unwrap_mcode comma2
     and e2 = Ast0_cocci.unwrap_mcode ellipsis2
@@ -993,7 +993,7 @@ let match_maker checks_needed context_required whencode_allowed =
 		   return false))
 	  | (Ast0.Ddots(_,Some _),_) ->
 	      failwith "whencode not allowed in a pattern1"
-		
+
 	  | (Ast0.OptDecl(decla),Ast0.OptDecl(declb))
 	  | (Ast0.UniqueDecl(decla),Ast0.UniqueDecl(declb)) ->
 	      match_decl decla declb
@@ -1786,7 +1786,7 @@ let instantiate bindings mv_bindings =
 			  Type_cocci.Array(renamer ty)
 		      | t -> t in
 		    Some(List.map renamer types) in
-	      Ast0.clear_test_exp 
+	      Ast0.clear_test_exp
 		(Ast0.rewrap e
 		   (Ast0.MetaExpr
 		      (Ast0.set_mcode_data new_mv name,constraints,
@@ -2216,7 +2216,7 @@ let extra_copy_stmt_plus model e =
 	(match Ast0.unwrap e with
 	  Ast0.FunDecl((info,bef1),_,_,_,_,_,_,_,_,_,(aftinfo,aft1)) ->
 	    merge_plus_before bef bef1; merge_plus_after aft aft1
-	| _ -> 
+	| _ ->
 	    let mc = Ast0.get_mcodekind e in
 	    merge_plus_before bef mc;
 	    merge_plus_after aft mc)

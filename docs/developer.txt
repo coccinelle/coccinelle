@@ -1,17 +1,17 @@
 -*- org -*-
 
 
-* How to install coccinelle 
+* How to install coccinelle
 ------------------------------
 
-** CVS 
+** CVS
 
 export CVS_RSH=ssh
 export CVSROOT=:ext:topps.diku.dk:/var/cvs/cocci
 
 You must be a member of the cocci group on the topps.diku.dk machine.
 
-Then 
+Then
 cvs checkout coccinelle.
 
 ** Dependencies
@@ -28,12 +28,12 @@ make depend
 make
 
 
-* How to use coccinelle 
+* How to use coccinelle
 ------------------------------
 
 ** Test
 
-** Tutorial 
+** Tutorial
 
 I have put demos/examples.
 
@@ -47,7 +47,7 @@ See emacs/cocci.el for instructions.
 
 See docs/manual.tex
 
-* How to extend coccinelle 
+* How to extend coccinelle
 ------------------------------
 
 
@@ -64,11 +64,11 @@ Send us a semantic patch :)
 
 
 
-** Software architecture 
+** Software architecture
 
 See docs/graph-module-dependencies.ps
 
-** coccinelle/ organization 
+** coccinelle/ organization
 
 See authors.txt
 
@@ -79,18 +79,18 @@ See authors.txt
 Do not use the 'open' OCaml module instruction.
 Qualify, like in 'Cocci.full_engine x'.
 
-Have a makefile in each directory with a clean:, depend:, 
+Have a makefile in each directory with a clean:, depend:,
 and possibly all: and all.opt: targets.
 
 
-* How to contribute to Linux 
+* How to contribute to Linux
 ------------------------------
 
 ** How to use git
 ** How to use spatch
 ** How to prepare a patch for Linus
 
-* Tools 
+* Tools
 ------------------------------
 
 ** Emacs
@@ -99,7 +99,7 @@ and possibly all: and all.opt: targets.
 
 ** profiling: gprof (but can also use the -profile option of spatch)
 
-** CVS tricks 
+** CVS tricks
 
 *** To remove <directory>:
 
@@ -107,7 +107,7 @@ and possibly all: and all.opt: targets.
 
 *** To update the code and allow the checkout of new directories but
 pruning empty (obsolete but still there because CVS sux) directories:
- 
+
     cvs update -d -P
 
 *** To see what has changed since 2 days
@@ -116,8 +116,8 @@ pruning empty (obsolete but still there because CVS sux) directories:
 
 *** To create a new CVS module:
 
-    mkdir nameofdir; 
-    cd nameofdir; 
+    mkdir nameofdir;
+    cd nameofdir;
     cvs import -m"your commit message" <nameofdir> yoyo start
     cd ..;
     rm -rf nameofdir;

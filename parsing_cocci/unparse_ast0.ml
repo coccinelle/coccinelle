@@ -146,14 +146,14 @@ let rec ident i =
 let print_string_box s = print_string s; open_box 0
 
 let assignOp op =
-  print_context op 
+  print_context op
     (function _ -> match Ast0.unwrap op with
       | Ast0.SimpleAssign op' -> mcode U.simpleAssignOp op'
       | Ast0.OpAssign op' -> mcode U.opAssignOp op'
       | Ast0.MetaAssign(name,_,_) -> mcode print_meta name)
 
 let binaryOp op =
-  print_context op 
+  print_context op
     (function _ -> match Ast0.unwrap op with
       | Ast0.Arith op' -> mcode U.arithOp op'
       | Ast0.Logical op' -> mcode U.logicalOp op'

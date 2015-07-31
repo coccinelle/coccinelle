@@ -13,7 +13,7 @@ Each example has four corresponding files:
 
     	spatch --sp-file name\_.cocci name.c -D report --no-show-diff
 
-Examples:  
+Examples:
 
  - addvoid: minimal patch example
  - context: context example (all others are patches)

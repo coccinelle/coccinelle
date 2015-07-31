@@ -15,16 +15,15 @@ wants to, he can also leverage the other commons_xxx libraries by
 explicitly building them after he has installed the necessary
 external files.
 
-For many configurable things we can use some flags in ml files, 
+For many configurable things we can use some flags in ml files,
 and have some -xxx command line argument to set them or not,
 but for other things flags are not enough as they will not remove
 the header and linker dependencies in Makefiles. A solution is
 to use cpp and pre-process many files that have such configuration
 issue. Another solution is to centralize all the cpp issue in one
 file, features.ml.cpp, that acts as a generic wrapper for other
-librairies and depending on the configuration actually call 
+librairies and depending on the configuration actually call
 the external library or provide a fake empty services indicating
-that the service is not present. 
+that the service is not present.
 So you should have a ../configure that call cpp on features.ml.cpp
 to set those linking-related configuration settings.
-

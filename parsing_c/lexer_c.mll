@@ -211,7 +211,7 @@ let cpp_keyword_table = Common.hash_of_list [
 let ibm_keyword_table = Common.hash_of_list [
   "decimal",   (fun ii -> Tdecimal ii);
   "EXEC",      (fun ii -> Texec ii);
-] 
+]
 
 let error_radix s =
   ("numeric " ^ s ^ " constant contains digits beyond the radix:")
@@ -281,7 +281,7 @@ let cplusplus_ident_ext = (letter | '~' | '$') (letter | digit | '~' | '$') *
 
 (* not used for the moment *)
 let punctuation = ['!' '\"' '#' '%' '&' '\'' '(' ')' '*' '+' ',' '-' '.' '/' ':'
-		   ';' '<' '=' '>' '?' '[' '\\' ']' '^' '{' '|' '}' '~']  
+		   ';' '<' '=' '>' '?' '[' '\\' ']' '^' '{' '|' '}' '~']
 let space = [' ' '\t' '\n' '\r' '\011' '\012' ]
 let additionnal = [ ' ' '\b' '\t' '\011' '\n' '\r' '\007' ]
 (* 7 = \a = bell in C. this is not the only char allowed !!
@@ -339,7 +339,7 @@ rule token = parse
           Lexing.pos_lnum = lcp.Lexing.pos_lnum + 1;
           Lexing.pos_bol = lcp.Lexing.pos_cnum - (l-1)
         };
-        t } 
+        t }
   | [' ' '\t' '\r' '\011' '\012' ]+
       { TCommentSpace (tokinfo lexbuf) }
   | "/*"
@@ -443,7 +443,7 @@ rule token = parse
    * later in parser_c.mly. So redo a little bit of lexing there; ugly but
    * simpler to generate a single token here.  *)
   | (("#" [' ''\t']* "include" [' ' '\t']*) as includes)
-    (('\"' ([^ '\"']+) '\"' | 
+    (('\"' ([^ '\"']+) '\"' |
      '<' [^ '>']+ '>' |
       ['A'-'Z''_']+
     ) as filename)
@@ -452,7 +452,7 @@ rule token = parse
       }
   (* gccext: found in glibc *)
   | (("#" [' ''\t']* "include_next" [' ' '\t']*) as includes)
-    (('\"' ([^ '\"']+) '\"' | 
+    (('\"' ([^ '\"']+) '\"' |
      '<' [^ '>']+ '>' |
       ['A'-'Z''_']+
     ) as filename)
@@ -792,7 +792,7 @@ rule token = parse
    * thing a few time in linux and in glibc. No need look in keyword_table
    * here.
    *)
-  | (cplusplus_ident "::")+ "operator new" 
+  | (cplusplus_ident "::")+ "operator new"
       {
         let info = tokinfo lexbuf in
         let s = tok lexbuf in
@@ -807,10 +807,10 @@ rule token = parse
       }
 
   | cplusplus_ident
-      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* 
+      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'*
       (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>') ?
     ("::~" cplusplus_ident
-      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* 
+      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'*
       (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>') ?) +
 
       {
@@ -825,9 +825,9 @@ rule token = parse
 	  end
       }
   | cplusplus_ident
-      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* 
+      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'*
       (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>')
-  
+
       {
         let info = tokinfo lexbuf in
         let s = tok lexbuf in
@@ -842,13 +842,13 @@ rule token = parse
 
 
   | (cplusplus_ident as first)
-      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* 
+      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'*
       (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>') ?
     "::" (cplusplus_ident as second)
-      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* 
+      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'*
       (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>') ?
     ("::" cplusplus_ident
-      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* 
+      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'*
       (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>') ?) *
 
       {
@@ -869,10 +869,10 @@ rule token = parse
       }
 
    | "::" cplusplus_ident
-      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* 
+      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'*
       (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>') ?
     ("::" cplusplus_ident
-      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* 
+      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'*
       (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>') ?) *
 
       {
@@ -893,7 +893,7 @@ rule token = parse
         let s = char lexbuf   in
         TChar     ((s,   IsChar),  (info +> tok_add_s (s ^ "'")))
       }
-  | '\"' 
+  | '\"'
       { let info = tokinfo lexbuf in
         let s = string lexbuf in
         TString   ((s,   IsChar),  (info +> tok_add_s (s ^ "\"")))
@@ -904,7 +904,7 @@ rule token = parse
         let s = char lexbuf   in
         TChar     ((s,   IsWchar),  (info +> tok_add_s (s ^ "'")))
       }
-  | 'L' '\"' 
+  | 'L' '\"'
       { let info = tokinfo lexbuf in
         let s = string lexbuf in
         TString   ((s,   IsWchar),  (info +> tok_add_s (s ^ "\"")))
@@ -1017,7 +1017,7 @@ and char = parse
           (match v with (* Machine specific ? *)
           | 'n' -> ()  | 't' -> ()   | 'v' -> ()  | 'b' -> () | 'r' -> ()
           | 'f' -> () | 'a' -> ()
-	  | '\\' -> () | '?'  -> () | '\'' -> ()  | '\"' -> () 
+	  | '\\' -> () | '?'  -> () | '\'' -> ()  | '\"' -> ()
           | 'e' -> () (* linuxext: ? *)
 	  | _ ->
               pr2 ("LEXER: unrecognised symbol in char:"^tok lexbuf);
@@ -1046,7 +1046,7 @@ and restchars = parse
           (match v with (* Machine specific ? *)
           | 'n' -> ()  | 't' -> ()   | 'v' -> ()  | 'b' -> () | 'r' -> ()
           | 'f' -> () | 'a' -> ()
-	  | '\\' -> () | '?'  -> () | '\'' -> ()  | '\"' -> () 
+	  | '\\' -> () | '?'  -> () | '\'' -> ()  | '\"' -> ()
           | 'e' -> () (* linuxext: ? *)
 	  | _ ->
               pr2 ("LEXER: unrecognised symbol in char:"^tok lexbuf);
@@ -1063,7 +1063,7 @@ and restchars = parse
 
 (* todo? factorise code with char ? but not same ending token so hard. *)
 and string  = parse
-  | '\"'                                       { "" } 
+  | '\"'                                       { "" }
   | (_ as x)                                  { string_of_char x^string lexbuf}
   | ("\\" (oct | oct oct | oct oct oct)) as x { x ^ string lexbuf }
   | ("\\x" (hex | hex hex)) as x              { x ^ string lexbuf }
@@ -1072,7 +1072,7 @@ and string  = parse
          (match v with (* Machine specific ? *)
          | 'n' -> ()  | 't' -> ()   | 'v' -> ()  | 'b' -> () | 'r' -> ()
          | 'f' -> () | 'a' -> ()
-	 | '\\' -> () | '?'  -> () | '\'' -> ()  | '\"' -> () 
+	 | '\\' -> () | '?'  -> () | '\'' -> ()  | '\"' -> ()
          | 'e' -> () (* linuxext: ? *)
 
          (* old: "x" -> 10 gccext ? todo ugly, I put a fake value *)

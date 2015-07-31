@@ -51,4 +51,3 @@ let stringrep = function
     Common.sprintf ("pos(%s,%s)") (print_pos pos1) (print_pos pos2)
 | Ast_c.MetaPosValList positions -> "TODO: <<postvallist>>"
 | Ast_c.MetaNoVal -> failwith "no value"
-

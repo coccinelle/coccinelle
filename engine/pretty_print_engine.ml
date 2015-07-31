@@ -164,5 +164,3 @@ let pp_ctlcocci show_plus inline_let_def ctl =
         inline_let_def ctl;
       );
   end
-
-

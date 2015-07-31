@@ -180,7 +180,7 @@ and string_format = base_string_format wrap
 
 (* --------------------------------------------------------------------- *)
 (* First class operators *)
-and base_assignOp = 
+and base_assignOp =
     SimpleAssign of simpleAssignOp mcode
   | OpAssign of Ast_cocci.arithOp mcode
   | MetaAssign of Ast_cocci.meta_name mcode * assignOpconstraint * pure
@@ -490,7 +490,7 @@ and rule = top_level list
 and parsed_rule =
     CocciRule of
       (rule (*minus*) * Ast.metavar list (*minus metavars*) *
-	(string list (*isos*) * string list (*drop_isos*) * 
+	(string list (*isos*) * string list (*drop_isos*) *
          Ast.dependency (*dependencies*) * string (*rulename*) * Ast.exists)) *
       (rule (*plus*) * Ast.metavar list (*plus metavars*)) * Ast.ruletype
   | ScriptRule of string (* name *) * string * Ast.dependency *

@@ -214,14 +214,14 @@ the same, but for structure fields.
   \CASE{\NT{id} \OPT{ = \NT{assignop\_contraint}}}
 
   \RULE{\rt{assignop\_contraint}}
-  \CASE{\mth{\{}\NT{COMMA\_LIST}\mth{(}\NT{assign\_op}\mth{)}\mth{\}}}  
+  \CASE{\mth{\{}\NT{COMMA\_LIST}\mth{(}\NT{assign\_op}\mth{)}\mth{\}}}
   \CASE{\NT{assign\_op}}
 
   \RULE{\rt{binopdecl}}
   \CASE{\NT{id} \OPT{ = \NT{binop\_contraint}}}
 
   \RULE{\rt{binop\_contraint}}
-  \CASE{\mth{\{}\NT{COMMA\_LIST}\mth{(}\NT{binary\_op}\mth{)}\mth{\}}}  
+  \CASE{\mth{\{}\NT{COMMA\_LIST}\mth{(}\NT{binary\_op}\mth{)}\mth{\}}}
   \CASE{\NT{binary\_op}}
 \end{grammar}
 
@@ -1277,7 +1277,7 @@ the first letter of the rule name is capitalized, although this is not done
 elsewhere.  {\tt add\_virtual\_identifier X v} has the same effect as
 putting {\tt -D x=v} on the command line.  Note again the case change.
 {\tt extend\_virtual\_identifiers()} (not shown) preserves all virtual
-identifiers of the current iteration that are not overridden by calls to 
+identifiers of the current iteration that are not overridden by calls to
 {\tt add\_virtual\_identifier}.  Finally, the call to {\tt register} queues
 the collected information to trigger a new iteration at some time in the
 future.

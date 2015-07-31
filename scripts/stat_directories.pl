@@ -1,7 +1,7 @@
-#!/usr/bin/perl 
+#!/usr/bin/perl
 
-#usage: 
-# cd tests-big; 
+#usage:
+# cd tests-big;
 # ~/coccinelle/scripts/stat_directories.pl bluetooth/* rules/* megas/*
 
 printf "%-20s  %10s %10s %4s\n", "dir/", "failed" , "total", "%ok";
@@ -22,9 +22,9 @@ foreach my $dir (@ARGV) {
     $totalfailed += $failed;
     my $sum = $failed + $ok;
     $total += $sum;
-    if ($sum == 0) { 
+    if ($sum == 0) {
       print "$dir/ have 0 sum\n";
-    } else { 
+    } else {
       my $pourcent = ($ok * 100.0) / ($sum);
       printf "%-20s  %10d %10d %5.1f%%\n", "$dir/", $failed, $sum, $pourcent;
     }
@@ -36,5 +36,5 @@ foreach my $dir (@ARGV) {
 my $pourcent = (($total - $totalfailed) * 100.0) / ($total);
 
 print "------------------------------------------------------\n";
-printf "total failed = %10d / %10d % 3.1f%%\n", 
+printf "total failed = %10d / %10d % 3.1f%%\n",
   $totalfailed, $total, $pourcent;

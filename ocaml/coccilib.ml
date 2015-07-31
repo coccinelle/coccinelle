@@ -241,7 +241,7 @@ module Ana = struct
     Externalanalysis.load_external_results
 
   (** finds the analysis results for a given position. *)
-  let find pos = 
+  let find pos =
     Externalanalysis.find_results pos.file (pos.line, pos.col) (pos.line_end, pos.col_end)
 
   (** computes the intersection of analysis results, if possible. *)
@@ -252,7 +252,7 @@ module Ana = struct
     Externalanalysis.satisfy f pos.file (pos.line, pos.col) (pos.line_end, pos.col_end)
 
   (** predicate over the intersection of analysis results. *)
-  let satisfy1 f pos = 
+  let satisfy1 f pos =
     Externalanalysis.satisfy1 f pos.file (pos.line, pos.col) (pos.line_end, pos.col_end)
 
   (** true if an analysis result exists for the given position. *)

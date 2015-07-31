@@ -309,10 +309,10 @@ and assignOp op =
     Ast.SimpleAssign _ -> print_string "="
   | Ast.OpAssign(aop) -> arithOp (Ast.unwrap_mcode aop); print_string "="
   | Ast.MetaAssign(metavar,_,_,_) -> mcode print_meta metavar
-                                                   
+
 and simpleAssignOp op = print_string "="
 
-and opAssignOp aop = arithOp aop; print_string "=" 
+and opAssignOp aop = arithOp aop; print_string "="
 
 and fixOp = function
     Ast.Dec -> print_string "--"
@@ -1019,4 +1019,3 @@ let print_rule_elem re =
   print_newlines_disj := false;
   rule_elem "" re;
   print_newlines_disj := nl
-

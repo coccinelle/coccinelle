@@ -260,8 +260,8 @@ let rec (recurse_expand_macro_topological_order:
     let remaining = g#nodes#tolist in
     (match remaining with
     | [] -> () (* christia: commented this out: raise (Impossible 76)
-		* This seems to be the case when there are no 
-		* problematic macros. Which is possible. 
+		* This seems to be the case when there are no
+		* problematic macros. Which is possible.
 		*)
     | [(k,n)] ->
         assert (k = rootname);
@@ -277,7 +277,7 @@ let rec (recurse_expand_macro_topological_order:
           (spf "/tmp/graph-%d.dot" depth)
           g;
 
-        assert (leafs <> []); 
+        assert (leafs <> []);
 
 
         (* little specialisation to avoid useless work *)
@@ -476,4 +476,3 @@ let extract_dangerous_macros xs =
 
   let grouped = Common.group_assoc_bykey_eff final_macros in
   grouped
-

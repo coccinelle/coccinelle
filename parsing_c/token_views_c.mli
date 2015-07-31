@@ -61,4 +61,3 @@ val set_context_tag: brace_grouped list -> unit
 val set_as_comment : Token_c.cppcommentkind -> token_extended -> unit
 val save_as_comment :
   (Token_c.ifdef -> Token_c.cppcommentkind)-> token_extended -> unit
-

@@ -249,7 +249,7 @@ let tokens2 file =
  Common.with_open_infile file (fun chan ->
   let lexbuf = Lexing.from_channel chan in
   let curp = { lexbuf.Lexing.lex_curr_p with Lexing.pos_fname = file } in
-  let lexbuf = { lexbuf with Lexing.lex_curr_p = curp } in 
+  let lexbuf = { lexbuf with Lexing.lex_curr_p = curp } in
   try
     let rec tokens_aux acc =
       let tok = Lexer_c.token lexbuf in

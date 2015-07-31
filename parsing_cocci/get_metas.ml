@@ -265,7 +265,7 @@ and assignOp op =
     | Ast0.MetaAssign(name, c, pure) ->
       let (n,name) = mcode name in
       (n, Ast0.MetaAssign(name, c, pure)))
-  
+
 and binaryOp op =
   rewrap op
     (match Ast0.unwrap op with
@@ -493,7 +493,7 @@ and declaration d =
       | Ast0.Ddots(dots,whencode) ->
 	  let (dots_n,dots) = mcode dots in
 	  let (whencode_n, whencode) = match whencode with
-	    | Some (a,e,b) -> 
+	    | Some (a,e,b) ->
 		let (_,a2) = mcode a in
 		let (_,e2) = mcode e in
 		let (b1,b2) = declaration b in (b1, Some (a2,e2,b2))
@@ -546,7 +546,7 @@ and initialiser i =
       | Ast0.Idots(d,whencode) ->
 	  let (d_n,d) = mcode d in
 	  let (whencode_n, whencode) = match whencode with
-	    | Some (a,e,b) -> 
+	    | Some (a,e,b) ->
 		let (_,a2) = mcode a in
 		let (_,e2) = mcode e in
 		let (b1,b2) = initialiser b in (b1, Some (a2,e2,b2))
@@ -906,11 +906,11 @@ and fninfo = function
 	let (_,w) = mcode w in
 	let (_,e) = mcode e in
 	let (n,a) = notfn a in (n,Ast0.WhenNot(w,e,a))
-    | Ast0.WhenAlways (w,e,a) -> 
+    | Ast0.WhenAlways (w,e,a) ->
 	let (_,w) = mcode w in
 	let (_,e) = mcode e in
 	let (n,a) = alwaysfn a in (n,Ast0.WhenAlways(w,e,a))
-    | Ast0.WhenModifier(w,x) -> 
+    | Ast0.WhenModifier(w,x) ->
 	let (_,w) = mcode w in
 	(option_default,Ast0.WhenModifier(w,x))
     | Ast0.WhenNotTrue(w,ee,e) ->
@@ -925,7 +925,7 @@ and fninfo = function
   (* for whencodes that do not have any of the above modifiers
    * returns (the new whencode expression, the updated whencode) *)
   and whencode_option bfn = function
-    | Some (a,e,b) -> 
+    | Some (a,e,b) ->
 	let (_,a2) = mcode a in
 	let (_,e2) = mcode e in
 	let (b1,b2) = bfn b in (b1, Some (a2,e2,b2))

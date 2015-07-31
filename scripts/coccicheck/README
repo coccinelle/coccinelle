@@ -36,7 +36,6 @@ If you edit/add some SmPL files in `cocci` directory, you can use
 Once the results are computed, you can either:
  - run `make viewres` to view all the bug reports
  - run `make viewlog` to view the complete execution trace
- - run `make viewfilteredlog` to only view unlikely errors of the trace 
+ - run `make viewfilteredlog` to only view unlikely errors of the trace
 	Note that this filter will remove some error messages about
 	timeout, parsing ... Check Makefile to see the exact list.
-
