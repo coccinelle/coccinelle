@@ -541,6 +541,7 @@ let rec expression e =
       )
 
   | Ast.AsExpr(expr,asexpr) -> loop expr prec
+  | Ast.AsSExpr(expr,asstm) -> loop expr prec
 
   | Ast.EComma(cm) ->
       mcode (print_string_with_hint (SpaceOrNewline (ref " ")))  cm

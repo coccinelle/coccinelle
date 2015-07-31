@@ -189,6 +189,7 @@ let rec expression context old_metas table minus e =
   | Ast0.MetaExprList(name,_,_) ->
       check_table table minus name
   | Ast0.AsExpr(exp,asexp) -> failwith "not generated yet"
+  | Ast0.AsSExpr(exp,asstm) -> failwith "not generated yet"
   | Ast0.DisjExpr(_,exps,_,_) ->
       List.iter (expression context old_metas table minus) exps
   | Ast0.NestExpr(_,exp_dots,_,w,_) ->

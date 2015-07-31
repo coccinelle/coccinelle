@@ -215,6 +215,10 @@ and unify_expression e1 e2 =
       disjunct_all_bindings
 	(List.map (function x -> unify_expression x e1) [exp2;asexp2])
 
+  (* no idea what to do with the statement *)
+  | (Ast.AsSExpr(exp1,asstm1),_) -> unify_expression exp1 e2
+  | (_,Ast.AsSExpr(exp2,asstm2)) -> unify_expression exp2 e2
+
   | (Ast.EComma(cm1),Ast.EComma(cm2)) -> return true
 
   | (Ast.DisjExpr(e1),_) ->

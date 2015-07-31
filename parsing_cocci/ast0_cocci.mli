@@ -126,6 +126,7 @@ and base_expression =
   | MetaExprList   of Ast_cocci.meta_name mcode (* only in arglists *) *
 	              listlen * pure
   | AsExpr         of expression * expression (* as expr, always metavar *)
+  | AsSExpr        of expression * statement (* as expr, always metavar *)
   | EComma         of string mcode (* only in arglists *)
   | DisjExpr       of string mcode * expression list * string mcode list *
 	              string mcode

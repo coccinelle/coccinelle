@@ -97,7 +97,7 @@ let expression e =
   | Ast0.Estars(dots,whencode) -> [40]
   | Ast0.OptExp(exp) -> [41]
   | Ast0.UniqueExp(exp) -> [42]
-  | Ast0.AsExpr _ -> failwith "not possible"
+  | Ast0.AsExpr _  | Ast0.AsSExpr _ -> failwith "not possible"
 
 let assignOp op = match Ast0.unwrap op with
   | Ast0.SimpleAssign _ -> [180]

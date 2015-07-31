@@ -209,7 +209,7 @@ and expression e =
       | Ast0.MetaExprList(name,lenname,pure) ->
 	  let (name_n,name) = mcode name in
 	  (name_n,Ast0.MetaExprList(name,lenname,pure))
-      | Ast0.AsExpr _ -> failwith "not possible"
+      | Ast0.AsExpr _ | Ast0.AsSExpr _ -> failwith "not possible"
       | Ast0.EComma(cm) ->
 	  let (cm_n,cm) = mcode cm in (cm_n,Ast0.EComma(cm))
       | Ast0.DisjExpr(starter,expr_list,mids,ender) ->
@@ -250,6 +250,8 @@ and expression e =
 	      (other_metas,
 	       Ast0.rewrap exp
 		 (Ast0.AsExpr(exp,Ast0.rewrap exp (Ast0.Ident(id_meta)))))
+	  | Ast0.StmtTag(stm_meta) ->
+	      (other_metas, Ast0.rewrap exp (Ast0.AsSExpr(exp,stm_meta)))
 	  | x -> (x::other_metas,exp))
       ([],e) metas
 

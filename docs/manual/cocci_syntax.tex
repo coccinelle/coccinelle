@@ -295,7 +295,10 @@ expression metavariable binds {\tt E} to {\tt 3 + 4}.  A particular case is
 {\tt Ps@Es}, where {\tt Ps} is a parameter list and {\tt Es} is an
 expression list.  This pattern matches a parameter list, and then matches
 {\tt Es} to the list of expressions, ie a possible argument list,
-represented by the names of the parameters.
+represented by the names of the parameters.  Another particular case is
+{\tt E@S}, where {\tt E} is any expression and {\tt S} is a statement
+metavariable.  {\tt S} matches the closest enclosing statement, which may
+be more than what is matches by the semantic match pattern itself.
 
 Matching of various kinds of format strings within strings is supported.
 With the {\tt --ibm} option, matching of decimal format declarations is

@@ -261,6 +261,8 @@ let rec expression e =
       mcode print_meta name; print_type keep inherited ty
   | Ast.MetaExprList(name,_,_,_) -> mcode print_meta name
   | Ast.AsExpr(exp,asexp) -> expression exp; print_string "@"; expression asexp
+  | Ast.AsSExpr(exp,asstm) ->
+      expression exp; print_string "@"; rule_elem "" asstm
   | Ast.EComma(cm) -> mcode print_string cm; print_space()
   | Ast.DisjExpr(exp_list) -> print_disj_list expression exp_list
   | Ast.NestExpr(starter,expr_dots,ender,Some whencode,multi) ->
@@ -615,7 +617,7 @@ and parameter_list l = dots (function _ -> ()) parameterTypeDef l
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
-let rec rule_elem arity re =
+and rule_elem arity re =
   match Ast.unwrap re with
     Ast.FunHeader(bef,allminus,fninfo,name,lp,params,va,rp) ->
       mcode (function _ -> ()) ((),Ast.no_info,bef,[]);

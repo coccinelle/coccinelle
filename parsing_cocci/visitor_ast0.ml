@@ -249,7 +249,11 @@ let visitor mode bind option_default
 	| Ast0.AsExpr(exp,asexp) ->
 	    let (exp_n,exp) = expression exp in
 	    let (asexp_n,asexp) = expression asexp in
-	    (bind exp_n asexp_n, Ast0.AsExpr(exp,asexp))) in
+	    (bind exp_n asexp_n, Ast0.AsExpr(exp,asexp))
+	| Ast0.AsSExpr(exp,asstm) ->
+	    let (exp_n,exp) = expression exp in
+	    let (asstm_n,asstm) = statement asstm in
+	    (bind exp_n asstm_n, Ast0.AsSExpr(exp,asstm))) in
     exprfn all_functions k e
 
   and string_fragment e =

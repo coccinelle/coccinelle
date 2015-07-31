@@ -261,7 +261,9 @@ let rec expression e =
       | Ast0.OptExp(exp) -> print_string "?"; expression exp
       | Ast0.UniqueExp(exp) -> print_string "!"; expression exp
       |	Ast0.AsExpr(exp,asexp) -> expression exp; print_string "@";
-	  expression asexp)
+	  expression asexp
+      |	Ast0.AsSExpr(exp,asstm) -> expression exp; print_string "@";
+	  statement "" asstm)
 
 and expression_dots x = dots (function _ -> ()) expression x
 

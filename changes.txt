@@ -30,6 +30,7 @@
 - --use-gitgrep falls back to --use-coccigrep for a non-git repository.
 - ocaml coccilib allows propagating identifiers, expressions, statements,
   listlens, and positions to subsequent matching rules
+- Allow @S, for statement metavariable S on expressions
 ** Bugfix:
 - Iso: allow mixed for model for the case where the model is just a metavar
   Thanks to Kris Borer for reporting the problem

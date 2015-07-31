@@ -83,6 +83,7 @@ let dumb_astcocci_initialiser = function (* seems same as the above *)
 let dumb_astcocci_expr = function
  | A.MetaExpr (ida,_,_, opttypa, _, _) -> ()
  | A.AsExpr (_,_) -> ()
+ | A.AsSExpr (_,_) -> ()
  | A.Edots (_,_) -> ()
  | A.MetaErr _ -> ()
  | A.Ident ida -> ()

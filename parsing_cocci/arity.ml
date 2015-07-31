@@ -370,7 +370,7 @@ let rec top_expression opt_allowed tgt expr =
       let init = initialiser arity init in
       make_exp expr tgt arity (Ast0.Constructor(lp,ty,rp,init))
   (* why does optexp exist???? *)
-  | Ast0.OptExp(_) | Ast0.UniqueExp(_) | Ast0.AsExpr _ ->
+  | Ast0.OptExp(_) | Ast0.UniqueExp(_) | Ast0.AsExpr _ | Ast0.AsSExpr _ ->
       failwith "unexpected code"
 
 and expression tgt exp = top_expression false tgt exp

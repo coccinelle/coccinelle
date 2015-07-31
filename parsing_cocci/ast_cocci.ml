@@ -195,6 +195,7 @@ and base_expression =
   | MetaExprList   of meta_name mcode * listlen * keep_binding *
                       inherited (* only in arg lists *)
   | AsExpr         of expression * expression (* as expr, always metavar *)
+  | AsSExpr        of expression * rule_elem (* as expr, always metavar *)
 
   | EComma         of string mcode (* only in arg lists *)
 

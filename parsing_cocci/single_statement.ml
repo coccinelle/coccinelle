@@ -147,7 +147,7 @@ let rec left_expression e =
   | Ast0.Edots(dots,_) | Ast0.Ecircles(dots,_) | Ast0.Estars(dots,_) -> false
   | Ast0.OptExp(exp) -> left_expression exp
   | Ast0.UniqueExp(exp) -> left_expression exp
-  | Ast0.AsExpr _ -> failwith "not possible"
+  | Ast0.AsExpr _ | Ast0.AsSExpr _ -> failwith "not possible"
 
 (* --------------------------------------------------------------------- *)
 (* Types *)

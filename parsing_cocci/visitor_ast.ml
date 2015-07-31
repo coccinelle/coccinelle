@@ -214,6 +214,10 @@ let combiner bind option_default
 	  let lexp = expression exp in
 	  let lasexp = expression asexp in
 	  bind lexp lasexp
+      | Ast.AsSExpr(exp,asstm) -> 
+	  let lexp = expression exp in
+	  let lasstm = rule_elem asstm in
+	  bind lexp lasstm
       | Ast.EComma(cm) -> string_mcode cm
       | Ast.DisjExpr(exp_list) -> multibind (List.map expression exp_list)
       | Ast.NestExpr(starter,expr_dots,ender,whncode,multi) ->
@@ -1092,6 +1096,10 @@ let rebuilder
 	    let lexp = expression exp in
 	    let lasexp = expression asexp in
 	    Ast.AsExpr(lexp, lasexp)
+	| Ast.AsSExpr(exp,asstm) -> 
+	    let lexp = expression exp in
+	    let lasstm = rule_elem asstm in
+	    Ast.AsSExpr(lexp, lasstm)
 	| Ast.EComma(cm) -> Ast.EComma(string_mcode cm)
 	| Ast.DisjExpr(exp_list) -> Ast.DisjExpr(List.map expression exp_list)
 	| Ast.NestExpr(starter,expr_dots,ender,whncode,multi) ->

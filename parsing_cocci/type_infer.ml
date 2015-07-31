@@ -269,7 +269,7 @@ let rec propagate_types env =
 	    let _ = r.VT0.combiner_rec_expression e in None
 	| Ast0.OptExp(exp) -> Ast0.get_type exp
 	| Ast0.UniqueExp(exp) -> Ast0.get_type exp
-	| Ast0.AsExpr _ -> failwith "not possible" in
+	| Ast0.AsExpr _ | Ast0.AsSExpr _ -> failwith "not possible" in
       Ast0.set_type e ty;
       ty in
 

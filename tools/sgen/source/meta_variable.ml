@@ -407,6 +407,7 @@ let metavar_combiner rn =
     | Ast0.MetaExprList (mc, listlen, _) ->
         lst_format ~mc ~typ:"expression list" ~listlen
     | Ast0.AsExpr (e1, e2) -> as_format e1 e2 exprfn exprfn
+    | Ast0.AsSExpr (e1, s2) -> as_format e1 s2 exprfn stmtfn
     | _ -> fn v in
 
   let assignOpfn c fn v =

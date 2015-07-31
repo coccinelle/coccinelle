@@ -200,6 +200,7 @@ let check_allminus =
       Ast0.DisjExpr(starter,expr_list,mids,ender) ->
 	List.for_all r.VT0.combiner_rec_expression expr_list
     | Ast0.AsExpr(exp,asexp) -> k exp
+    | Ast0.AsSExpr(exp,asstm) -> k exp
     | _ -> k e in
 
   let declaration r k e =
@@ -419,6 +420,12 @@ and expression e =
 	Ast.MetaExprList(mcode name,do_lenname lenname,unitary,false)
     | Ast0.AsExpr(expr,asexpr) ->
 	Ast.AsExpr(expression expr,expression asexpr)
+    | Ast0.AsSExpr(expr,asstm) ->
+	let stm =
+	  match Ast.unwrap (statement asstm) with
+	    Ast.Atomic(re) -> re
+	  | _ -> failwith "stmt should be metavar, and thus atomic" in
+	Ast.AsSExpr(expression expr,stm)
     | Ast0.EComma(cm)         -> Ast.EComma(mcode cm)
     | Ast0.DisjExpr(_,exps,_,_)     ->
 	Ast.DisjExpr(List.map expression exps)

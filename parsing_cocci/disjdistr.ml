@@ -200,6 +200,9 @@ and disjexp e =
   | Ast.AsExpr(exp,asexp) -> (* as exp doesn't contain disj *)
       let exp = disjexp exp in
       List.map (function exp -> Ast.rewrap e (Ast.AsExpr(exp,asexp))) exp
+  | Ast.AsSExpr(exp,asstm) -> (* as exp doesn't contain disj *)
+      let exp = disjexp exp in
+      List.map (function exp -> Ast.rewrap e (Ast.AsSExpr(exp,asstm))) exp
   | Ast.DisjExpr(exp_list) -> List.concat (List.map disjexp exp_list)
   | Ast.NestExpr(starter,expr_dots,ender,whencode,multi) ->
       (* not sure what to do here, so ambiguities still possible *)

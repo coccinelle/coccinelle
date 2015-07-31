@@ -218,6 +218,7 @@ let rec expression_pos exp snp
   | Ast0.Ecircles _
   | Ast0.Estars _
   | Ast0.AsExpr _
+  | Ast0.AsSExpr _
   | Ast0.EComma _
   | Ast0.MetaExprList _
   | Ast0.DisjExpr _ ->

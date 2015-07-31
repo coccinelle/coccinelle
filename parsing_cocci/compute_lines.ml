@@ -497,7 +497,7 @@ let rec expression e =
   | Ast0.UniqueExp(exp) ->
       let exp = expression exp in
       mkres e (Ast0.UniqueExp(exp)) exp exp
-  | Ast0.AsExpr _ -> failwith "not possible"
+  | Ast0.AsExpr _ | Ast0.AsSExpr _ -> failwith "not possible"
 
 and expression_dots x = dots is_exp_dots None expression x
 
