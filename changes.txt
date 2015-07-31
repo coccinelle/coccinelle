@@ -27,6 +27,10 @@
 * 1.0.2
 ** Language:
 ** Features:
+- Positions of C tokens are now computed while lexing rather than
+  during a distinct pass. This makes use of the Lexing.new_line function
+  which has been introduced in OCaml 3.11.
+  Coccinelle can thus no longer be compiled with OCaml 3.10.
 - --use-gitgrep falls back to --use-coccigrep for a non-git repository.
 - ocaml coccilib allows propagating identifiers, expressions, statements,
   listlens, and positions to subsequent matching rules
