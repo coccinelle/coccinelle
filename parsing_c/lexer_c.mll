@@ -81,6 +81,24 @@ let eoltokinfo lexbuf =
   Lexing.new_line lexbuf;
   t
 
+let eoftokinfo lexbuf =
+  let start_pos = Lexing.lexeme_start_p lexbuf in
+  let t = {
+    pinfo = Ast_c.OriginTok {
+      Common.charpos = start_pos.Lexing.pos_cnum;
+      Common.str     = "";
+      Common.line = start_pos.Lexing.pos_lnum - 1;
+      Common.column = start_pos.Lexing.pos_cnum - start_pos.Lexing.pos_bol;
+      Common.file = start_pos.Lexing.pos_fname;
+    };
+   (* must generate a new ref each time, otherwise share *)
+    cocci_tag = ref Ast_c.emptyAnnot;
+    annots_tag = Token_annot.empty;
+    comments_tag = ref Ast_c.emptyComments;
+    danger = ref NoDanger;
+  } in
+  EOF t
+
 (* cppext: must generate a new ref each time, otherwise share *)
 let no_ifdef_mark () = ref (None: (int * int) option)
 
@@ -991,7 +1009,7 @@ rule token = parse
 
 
   (*------------------------------------------------------------------------ *)
-  | eof { EOF (tokinfo lexbuf +> Ast_c.rewrap_str "") }
+  | eof { eoftokinfo lexbuf }
 
   | _
       {
