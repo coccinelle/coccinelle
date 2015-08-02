@@ -2750,7 +2750,8 @@ let rewrap =
   let mcode (x,a,i,mc,pos,adj) = (x,a,i,Ast0.context_befaft(),pos,adj) in
   let donothing r k e = Ast0.context_wrap(Ast0.unwrap(k e)) in
   V0.flat_rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing
@@ -2770,8 +2771,10 @@ let rec rewrap_anything = function
       Ast0.DotsCaseTag(rewrap.VT0.rebuilder_rec_case_line_dots d)
   | Ast0.IdentTag(d) -> Ast0.IdentTag(rewrap.VT0.rebuilder_rec_ident d)
   | Ast0.ExprTag(d) -> Ast0.ExprTag(rewrap.VT0.rebuilder_rec_expression d)
-  | Ast0.AssignOpTag(d) -> Ast0.AssignOpTag(rewrap.VT0.rebuilder_rec_assignOp d)
-  | Ast0.BinaryOpTag(d) -> Ast0.BinaryOpTag(rewrap.VT0.rebuilder_rec_binaryOp d)
+  | Ast0.AssignOpTag(d) ->
+      Ast0.AssignOpTag(rewrap.VT0.rebuilder_rec_assignOp d)
+  | Ast0.BinaryOpTag(d) ->
+      Ast0.BinaryOpTag(rewrap.VT0.rebuilder_rec_binaryOp d)
   | Ast0.ArgExprTag(d) ->
       Ast0.ArgExprTag(rewrap.VT0.rebuilder_rec_expression d)
   | Ast0.TestExprTag(d) ->
