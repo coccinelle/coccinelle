@@ -308,8 +308,8 @@ and unaryOp = function
 
 and assignOp op =
   match Ast.unwrap op with
-    Ast.SimpleAssign _ -> print_string "="
-  | Ast.OpAssign(aop) -> arithOp (Ast.unwrap_mcode aop); print_string "="
+    Ast.SimpleAssign op -> mcode print_string op
+  | Ast.OpAssign(aop) -> mcode arithOp aop; print_string "="
   | Ast.MetaAssign(metavar,_,_,_) -> mcode print_meta metavar
 
 and simpleAssignOp op = print_string "="
