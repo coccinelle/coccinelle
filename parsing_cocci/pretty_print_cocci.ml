@@ -322,8 +322,8 @@ and fixOp = function
 
 and binaryOp op =
   match Ast.unwrap op with
-    Ast.Arith(aop) -> arithOp (Ast.unwrap_mcode aop)
-  | Ast.Logical(lop) -> logicalOp (Ast.unwrap_mcode lop)
+    Ast.Arith(aop) -> mcode arithOp aop
+  | Ast.Logical(lop) -> mcode logicalOp lop
   | Ast.MetaBinary(metavar,_,_,_) -> mcode print_meta metavar
 
 and arithOp = function
