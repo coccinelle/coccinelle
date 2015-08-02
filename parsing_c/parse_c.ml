@@ -403,7 +403,7 @@ let parse_gen ~cpp parsefunc s =
   let result = parsefunc lexer_function lexbuf_fake in
   result
 
-(* Please DO NOT remove this code, even though it is not used *)
+(* Please DO NOT remove this code, even though most of it is not used *)
 let type_of_string       = parse_gen ~cpp:false Parser_c.type_name
 let statement_of_string  = parse_gen ~cpp:false Parser_c.statement
 let expression_of_string = parse_gen ~cpp:false Parser_c.expr
