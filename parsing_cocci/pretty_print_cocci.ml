@@ -326,7 +326,7 @@ and binaryOp op =
   | Ast.Logical(lop) -> logicalOp (Ast.unwrap_mcode lop)
   | Ast.MetaBinary(metavar,_,_,_) -> mcode print_meta metavar
 
-and  arithOp = function
+and arithOp = function
     Ast.Plus -> print_string "+"
   | Ast.Minus -> print_string "-"
   | Ast.Mul -> print_string "*"
