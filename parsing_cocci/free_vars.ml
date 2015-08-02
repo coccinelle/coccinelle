@@ -71,6 +71,7 @@ let collect_refs include_constraints =
 	    then
 	      match idconstraint with
 		Ast.IdNegIdSet (_,metas) -> metas
+	      | Ast.IdPosIdSet (_,metas) -> metas
 	      | _ -> []
 	    else [] in
 	  bind (List.rev metas) [metaid name]
