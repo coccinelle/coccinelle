@@ -35,6 +35,8 @@
 - ocaml coccilib allows propagating identifiers, expressions, statements,
   listlens, and positions to subsequent matching rules
 - Allow @S, for statement metavariable S on expressions
+- Exploit explicit positive constraints (no regexps) on identifiers in
+  file filtering
 ** Bugfix:
 - Iso: allow mixed for model for the case where the model is just a metavar
   Thanks to Kris Borer for reporting the problem

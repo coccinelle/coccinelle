@@ -389,6 +389,14 @@ let do_get_constants constants keywords env neg_pos =
 	  (match Ast.unwrap_mcode name with
 	    "NULL" -> keywords "NULL"
 	  | nm -> constants nm)
+    | Ast.MetaId(name,Ast.IdPosIdSet(strs,mids),_,_)
+    | Ast.MetaFunc(name,Ast.IdPosIdSet(strs,mids),_,_)
+    | Ast.MetaLocalFunc(name,Ast.IdPosIdSet(strs,mids),_,_) ->
+	let cur =
+	  build_or
+	    (disj_union_all (List.map constants strs))
+	    (disj_union_all (List.map inherited mids)) in
+	bind (k i) (bind (minherited name) cur)
     | Ast.MetaId(name,_,_,_) | Ast.MetaFunc(name,_,_,_)
     | Ast.MetaLocalFunc(name,_,_,_) ->
 	bind (k i) (minherited name)
