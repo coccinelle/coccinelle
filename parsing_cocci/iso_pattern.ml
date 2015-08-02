@@ -1838,13 +1838,14 @@ let instantiate bindings mv_bindings =
                   Ast0.Logical o -> Ast0.get_mcode_mcodekind o
                 | Ast0.Arith o -> Ast0.get_mcode_mcodekind o
                 | Ast0.MetaBinary(mv,_,_) -> Ast0.get_mcode_mcodekind mv in
+	      let get_op op = Ast0.unwrap_mcode op in
 	      let rec negate e (*for rewrapping*) res (*code to process*) k =
 		(* k accumulates parens, to keep negation outside if no
 		   propagation is possible *)
 		if nomodif (Ast0.get_mcodekind e)
 		then
 		  match Ast0.unwrap res with
-		    Ast0.Unary(e1,op) when Ast0.unwrap_mcode op = Ast.Not &&
+		    Ast0.Unary(e1,op) when get_op op = Ast.Not &&
 		      same_modif
 			(Ast0.get_mcode_mcodekind unop)
 			(Ast0.get_mcode_mcodekind op) ->
@@ -1858,36 +1859,38 @@ let instantiate bindings mv_bindings =
 		      same_modif
 			(Ast0.get_mcode_mcodekind unop)
 			(get_binaryOp_mcodekind op) ->
-			  let reb nop =
-			    Ast0.rewrap op (Ast0.Logical(nop)) in
+			  let reb model nop =
+			    let nop = Ast0.rewrap_mcode model nop in
+			    Ast0.rewrap op (Ast0.Logical nop) in
 			  let k1 x = k (Ast0.rewrap e x) in
 			  (match Ast0.unwrap op with
-			    Ast0.Logical op' when (Ast0.unwrap_mcode op')=Ast.Inf ->
-			      k1 (Ast0.Binary(e1,reb (Ast0.rewrap_mcode op' Ast.SupEq),e2))
-			  | Ast0.Logical op' when (Ast0.unwrap_mcode op')=Ast.Sup ->
-			      k1 (Ast0.Binary(e1,reb (Ast0.rewrap_mcode op' Ast.InfEq),e2))
-			  | Ast0.Logical op' when (Ast0.unwrap_mcode op')=Ast.InfEq ->
-			      k1 (Ast0.Binary(e1,reb (Ast0.rewrap_mcode op' Ast.Sup),e2))
-			  | Ast0.Logical op' when (Ast0.unwrap_mcode op')=Ast.SupEq ->
-			      k1 (Ast0.Binary(e1,reb (Ast0.rewrap_mcode op' Ast.Inf),e2))
-			  | Ast0.Logical op' when (Ast0.unwrap_mcode op')=Ast.Eq ->
-			      k1 (Ast0.Binary(e1,reb (Ast0.rewrap_mcode op' Ast.NotEq),e2))
-			  | Ast0.Logical op' when (Ast0.unwrap_mcode op')=Ast.NotEq ->
-			      k1 (Ast0.Binary(e1,reb (Ast0.rewrap_mcode op' Ast.Eq),e2))
-			  | Ast0.Logical op' when (Ast0.unwrap_mcode op')=Ast.AndLog ->
+			    Ast0.Logical op' when get_op op' = Ast.Inf ->
+			      k1 (Ast0.Binary(e1,reb op' Ast.SupEq,e2))
+			  | Ast0.Logical op' when get_op op' = Ast.Sup ->
+			      k1 (Ast0.Binary(e1,reb op' Ast.InfEq,e2))
+			  | Ast0.Logical op' when get_op op' = Ast.InfEq ->
+			      k1 (Ast0.Binary(e1,reb op' Ast.Sup,e2))
+			  | Ast0.Logical op' when get_op op' = Ast.SupEq ->
+			      k1 (Ast0.Binary(e1,reb op' Ast.Inf,e2))
+			  | Ast0.Logical op' when get_op op' = Ast.Eq ->
+			      k1 (Ast0.Binary(e1,reb op' Ast.NotEq,e2))
+			  | Ast0.Logical op' when get_op op' = Ast.NotEq ->
+			      k1 (Ast0.Binary(e1,reb op' Ast.Eq,e2))
+			  | Ast0.Logical op' when get_op op' = Ast.AndLog ->
 			      k1 (Ast0.Binary(negate_reb e e1 idcont,
-					      reb (Ast0.rewrap_mcode op' Ast.OrLog),
+					      reb op' Ast.OrLog,
 					      negate_reb e e2 idcont))
-			  | Ast0.Logical op' when (Ast0.unwrap_mcode op')=Ast.OrLog ->
+			  | Ast0.Logical op' when get_op op' = Ast.OrLog ->
 			      k1 (Ast0.Binary(negate_reb e e1 idcont,
-					      reb (Ast0.rewrap_mcode op' Ast.AndLog),
+					      reb op' Ast.AndLog,
 					      negate_reb e e2 idcont))
 			  | _ ->
                              let rewrap_binaryOp_mcode op x =
                                match Ast0.unwrap op with
                                  Ast0.Arith o -> Ast0.rewrap_mcode o x
                                | Ast0.Logical o -> Ast0.rewrap_mcode o x
-                               | Ast0.MetaBinary (mv,_,_) -> Ast0.rewrap_mcode mv x in
+                               | Ast0.MetaBinary (mv,_,_) ->
+				   Ast0.rewrap_mcode mv x in
 			      Ast0.rewrap e
 				(Ast0.Unary(k res,
 					    rewrap_binaryOp_mcode op Ast.Not)))
