@@ -40,6 +40,7 @@
 ** Bugfix:
 - Iso: allow mixed for model for the case where the model is just a metavar
   Thanks to Kris Borer for reporting the problem
+- Allow ! to propagate into == or other ops in more cases.
 * 1.0.1
 ** Language:
 - allow static on type-level declarers

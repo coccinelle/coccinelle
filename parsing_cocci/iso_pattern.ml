@@ -1642,8 +1642,8 @@ let lookup name bindings mv_bindings =
       Common.Right (List.assoc (term name) mv_bindings)
 
 (* mv_bindings is for the fresh metavariables that are introduced by the
-   isomorphism *)
-let instantiate bindings mv_bindings =
+   isomorphism.  Model to know whether new code will be -. *)
+let instantiate bindings mv_bindings model =
   let mcode x =
     let (hidden,others) =
       List.partition
@@ -1821,11 +1821,18 @@ let instantiate bindings mv_bindings =
 		    (Ast.NOTHING,_,_) -> true
 		  | _ -> false)
 	      |	_ -> failwith "plus not possible" in
-	    let same_modif newop oldop =
-	      (* only propagate ! is they have the same modification
+	    let same_modif oldop =
+	      (* only propagate ! if they, ie model and oldop, have the
+		 same modification
 		 and no + code on the old one (the new one from the iso
 		 surely has no + code) *)
-	      match (newop,oldop) with
+	      (* This is not ideal, because the model is the top level
+		 term, and this is a subterm, so minus minus is only detected
+		 when the whole matched term is minus.  Not sure what to do
+		 in general, because not clear where the ! comes from.
+		 Be more flexible for !, because it doesn't really matter *)
+	      !Flag.sgrep_mode2 ||
+	      match (Ast0.get_mcodekind model,oldop) with
 		(Ast0.MINUS(x1),Ast0.MINUS(x2)) -> nomodif oldop
 	      | (Ast0.CONTEXT(x1),Ast0.CONTEXT(x2)) -> nomodif oldop
 	      | (Ast0.MIXED(x1),Ast0.MIXED(x2)) -> nomodif oldop
@@ -1846,9 +1853,7 @@ let instantiate bindings mv_bindings =
 		then
 		  match Ast0.unwrap res with
 		    Ast0.Unary(e1,op) when get_op op = Ast.Not &&
-		      same_modif
-			(Ast0.get_mcode_mcodekind unop)
-			(Ast0.get_mcode_mcodekind op) ->
+		      same_modif (Ast0.get_mcode_mcodekind op) ->
 			  k e1
 		  | Ast0.Edots(_,_) -> k (Ast0.rewrap e (Ast0.unwrap res))
 		  | Ast0.Paren(lp,e1,rp) ->
@@ -1856,9 +1861,8 @@ let instantiate bindings mv_bindings =
 			(function x ->
 			  k (Ast0.rewrap res (Ast0.Paren(lp,x,rp))))
 		  | Ast0.Binary(e1,op,e2) when
-		      same_modif
-			(Ast0.get_mcode_mcodekind unop)
-			(get_binaryOp_mcodekind op) ->
+		      let v = same_modif (get_binaryOp_mcodekind op) in
+		      v ->
 			  let reb model nop =
 			    let nop = Ast0.rewrap_mcode model nop in
 			    Ast0.rewrap op (Ast0.Logical nop) in
@@ -2349,7 +2353,7 @@ let mkdisj matcher metavars alts e instantiater mkiso disj_maker minusify
 	     (List.map
 		(function bindings ->
 		  let instantiated =
-		    instantiater bindings mv_bindings (rebuild_mcodes a) in
+		    instantiater bindings mv_bindings e (rebuild_mcodes a) in
 		  let plus_added =
 		    if has_context (* ie if pat is not just a metavara *)
 		    then
@@ -2504,8 +2508,8 @@ let transform_type (metavars,alts,name) e =
 	       | _ -> failwith "invalid alt"))
 	  alts in
       mkdisj match_typeC metavars alts e
-	(function b -> function mv_b ->
-	  (instantiate b mv_b).VT0.rebuilder_rec_typeC)
+	(fun b mv_b model ->
+	  (instantiate b mv_b model).VT0.rebuilder_rec_typeC)
 	(function t -> Ast0.TypeCTag t)
 	make_disj_type make_minus.VT0.rebuilder_rec_typeC
 	(rebuild_mcode start_line).VT0.rebuilder_rec_typeC
@@ -2531,8 +2535,8 @@ let transform_expr (metavars,alts,name) e =
 	     | _ -> failwith "invalid alt"))
 	alts in
     mkdisj match_expr metavars alts e
-      (function b -> function mv_b ->
-	(instantiate b mv_b).VT0.rebuilder_rec_expression)
+      (fun b mv_b model ->
+	(instantiate b mv_b model).VT0.rebuilder_rec_expression)
       (function e -> Ast0.ExprTag e)
       (make_disj_expr e)
       make_minus.VT0.rebuilder_rec_expression
@@ -2574,8 +2578,8 @@ let transform_decl (metavars,alts,name) e =
 	       | _ -> failwith "invalid alt"))
 	  alts in
       mkdisj match_decl metavars alts e
-	(function b -> function mv_b ->
-	  (instantiate b mv_b).VT0.rebuilder_rec_declaration)
+	(fun b mv_b model ->
+	  (instantiate b mv_b model).VT0.rebuilder_rec_declaration)
 	(function d -> Ast0.DeclTag d)
 	make_disj_decl
 	make_minus.VT0.rebuilder_rec_declaration
@@ -2601,8 +2605,8 @@ let transform_stmt (metavars,alts,name) e =
 	       | _ -> failwith "invalid alt"))
 	  alts in
       mkdisj match_statement metavars alts e
-	(function b -> function mv_b ->
-	  (instantiate b mv_b).VT0.rebuilder_rec_statement)
+	(fun b mv_b model ->
+	  (instantiate b mv_b model).VT0.rebuilder_rec_statement)
 	(function s -> Ast0.StmtTag s)
 	make_disj_stmt make_minus.VT0.rebuilder_rec_statement
 	(rebuild_mcode start_line).VT0.rebuilder_rec_statement
@@ -2649,8 +2653,8 @@ let transform_top (metavars,alts,name) e =
 		     | _ -> failwith "invalid alt"))
 		alts in
 	    mkdisj match_statement_dots metavars alts stmts
-	      (function b -> function mv_b ->
-		(instantiate b mv_b).VT0.rebuilder_rec_statement_dots)
+	      (fun b mv_b model ->
+		(instantiate b mv_b model).VT0.rebuilder_rec_statement_dots)
 	      (function s -> Ast0.DotsStmtTag s)
 	      (function x ->
 		Ast0.rewrap e (Ast0.DOTS([make_disj_stmt_list x])))
