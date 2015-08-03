@@ -366,7 +366,7 @@ let fix_cpp_defined_operator =
  *     result
  *)
 
-let parse_gen ~cpp parsefunc s =
+let parse_gen ~cpp ~tos parsefunc s =
   let toks = tokens_of_string s +> List.filter TH.is_not_comment in
   let toks' =
     if cpp
@@ -389,12 +389,23 @@ let parse_gen ~cpp parsefunc s =
   let all_tokens = ref toks' in
   let cur_tok    = ref (List.hd !all_tokens) in
 
+  let type_start = ref tos in
+
   let lexer_function =
     (fun _ ->
       if TH.is_eof !cur_tok
       then (pr2_err "LEXER: ALREADY AT END"; !cur_tok)
       else
         let v = Common.pop2 all_tokens in
+        let v = match v with
+        | Parser_c.TIdent (s, ii) ->
+            if (* an id at the start of a type must be a type name *)
+              (LP.is_typedef s || !type_start) &&
+              not (!Flag_parsing_c.disable_add_typedef)
+	    then Parser_c.TypedefIdent (s, ii)
+            else Parser_c.TIdent (s, ii)
+        | x -> x in
+	type_start := false;
         cur_tok := v;
         !cur_tok
     )
@@ -404,10 +415,10 @@ let parse_gen ~cpp parsefunc s =
   result
 
 (* Please DO NOT remove this code, even though most of it is not used *)
-let type_of_string       = parse_gen ~cpp:false Parser_c.type_name
-let statement_of_string  = parse_gen ~cpp:false Parser_c.statement
-let expression_of_string = parse_gen ~cpp:false Parser_c.expr
-let cpp_expression_of_string = parse_gen ~cpp:true Parser_c.expr
+let type_of_string       = parse_gen ~cpp:false ~tos:true Parser_c.type_name
+let statement_of_string  = parse_gen ~cpp:false ~tos:false Parser_c.statement
+let expression_of_string = parse_gen ~cpp:false ~tos:false Parser_c.expr
+let cpp_expression_of_string = parse_gen ~cpp:true ~tos:false Parser_c.expr
 
 (* ex: statement_of_string "(struct us_data* )psh->hostdata = NULL;" *)
 
