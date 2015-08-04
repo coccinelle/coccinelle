@@ -420,17 +420,25 @@ let show_or_not_celem2 prelude celem =
   |  Ast_c.Definition ({Ast_c.f_name = namefuncs},_) ->
       let funcs = Ast_c.str_of_name namefuncs in
       Flag.current_element := funcs;
-      (" function: ",funcs)
+      (" function: ",Some (funcs,namefuncs))
   |  Ast_c.Declaration
       (Ast_c.DeclList ([{Ast_c.v_namei = Some (name,_)}, _], _)) ->
       let s = Ast_c.str_of_name name in
       Flag.current_element := s;
-      (" variable ",s);
+      (" variable ",Some(s,name));
   |  _ ->
       Flag.current_element := "something_else";
-      (" ","something else");
+      (" ",None);
   ) in
-  if !Flag.show_trying then pr2 (prelude ^ tag ^ trying)
+  if !Flag.show_trying
+  then
+    match trying with
+      Some(str,name) ->
+	let info = Ast_c.info_of_name name in
+	let file = Filename.basename(Ast_c.file_of_info info) in
+	let line = Ast_c.line_of_info info in
+	pr2 (Printf.sprintf "%s%s%s: %s:%d" prelude tag str file line)
+    | None -> pr2 (Printf.sprintf "%s%s something else" prelude tag)
 
 let show_or_not_celem a b  =
   Common.profile_code "show_xxx" (fun () -> show_or_not_celem2 a b)
