@@ -16,7 +16,7 @@ let call_pretty0 f a = caller "" f a
 let exprrep = call_pretty Pretty_print_c.pp_expression_gen
 
 let stringrep = function
-  Ast_c.MetaIdVal        (s,_) -> s
+  Ast_c.MetaIdVal        s -> s
 | Ast_c.MetaAssignOpVal op -> call_pretty Pretty_print_c.pp_assignOp_gen op
 | Ast_c.MetaBinaryOpVal op -> call_pretty Pretty_print_c.pp_binaryOp_gen op
 | Ast_c.MetaFuncVal      s -> s

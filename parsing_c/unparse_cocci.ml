@@ -275,7 +275,7 @@ let rec ident i =
       Ast.Id(name) -> mcode print_string name
     | Ast.MetaId(name,_,_,_) ->
 	handle_metavar name (function
-			       | (Ast_c.MetaIdVal (id,_)) -> print_text id
+			       | (Ast_c.MetaIdVal id) -> print_text id
 			       | _ -> raise (Impossible 142)
 			    )
     | Ast.MetaFunc(name,_,_,_) ->

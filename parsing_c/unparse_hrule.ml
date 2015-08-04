@@ -141,7 +141,7 @@ let get_function_name rule env =
   match names with
     [name] ->
       (match env_lookup (function nm -> nm = name) env with
-	Ast_c.MetaIdVal(s,_) | Ast_c.MetaFuncVal(s)
+	Ast_c.MetaIdVal(s) | Ast_c.MetaFuncVal(s)
       | Ast_c.MetaLocalFuncVal(s) -> s
       |	_ -> error rule "not possible")
   | _ -> error rule "inconsistent rule generation"

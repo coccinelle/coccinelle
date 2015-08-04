@@ -1469,7 +1469,7 @@ let apply_script_rule r cache newes e rules_that_have_matched
     begin
       let (_, mv, script_vars, _) = r.scr_ast_rule in
       let ve =
-	(List.map (function (n,v) -> (("virtual",n),Ast_c.MetaIdVal (v,[])))
+	(List.map (function (n,v) -> (("virtual",n),Ast_c.MetaIdVal (v)))
 	   !Flag.defined_virtual_env) @ e in
       let not_bound x = not (contains_binding ve x) in
       (match List.filter not_bound mv with

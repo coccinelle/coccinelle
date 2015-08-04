@@ -290,13 +290,6 @@ module XMATCH = struct
   (* ------------------------------------------------------------------------*)
   (* Constraints on metavariable values *)
   (* ------------------------------------------------------------------------*)
-  let check_idconstraint matcher c id = fun f tin ->
-    if matcher c id then
-      (* success *)
-      f () tin
-    else
-      (* failure *)
-      fail tin
 
   let check_constraints_ne matcher constraints exp = fun f tin ->
     let rec loop = function
@@ -306,6 +299,11 @@ module XMATCH = struct
 	    [] (* failure *) -> loop cs
 	  | _ (* success *) -> fail tin in
     loop constraints
+
+  let check_constraints matcher constraints term = fun f tin ->
+    if matcher constraints term (function id -> tin.binding0 +> List.assoc id)
+    then f () tin (* success *)
+    else fail tin (* failure *)
 
   let check_pos_constraints constraints pvalu f tin =
     check_constraints_ne
@@ -354,27 +352,8 @@ module XMATCH = struct
 	  let success valu' =
 	    Some (tin.binding +> Common.insert_assoc (k, valu')) in
           (match valu with
-            Ast_c.MetaIdVal (a,c)    ->
-	      (* c is a negated constraint *)
-	      (* This is only useful if some of the constraints are
-		 for locally defined metavariables.  But currently the
-		 only metavariables allowed in constraints are inherited
-		 ones.  These should be checked in check_idconstraint,
-		 not here *)
-	      let rec loop = function
-		  [] -> success(Ast_c.MetaIdVal(a,[]))
-		| c::cs ->
-		    let tmp =
-		      Common.optionise
-			(fun () -> tin.binding0 +> List.assoc c) in
-		    (match tmp with
-		      Some (Ast_c.MetaIdVal(v,_)) ->
-			if a = v
-			then None (* failure *)
-			else success(Ast_c.MetaIdVal(a,[]))
-		    | Some _ -> failwith "Not possible"
-		    | None -> success(Ast_c.MetaIdVal(a,[]))) in
-	      loop c
+            Ast_c.MetaIdVal (a)    ->
+	      success(Ast_c.MetaIdVal(a))
           | Ast_c.MetaAssignOpVal op      ->
 	      success(Ast_c.MetaAssignOpVal op)
           | Ast_c.MetaBinaryOpVal op      ->

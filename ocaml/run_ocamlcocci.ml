@@ -23,7 +23,7 @@ let ast_binding vl = function
     None -> []
   | Some _ ->
       [match vl with
-	Ast_c.MetaIdVal(id,_) | Ast_c.MetaFuncVal id
+	Ast_c.MetaIdVal id | Ast_c.MetaFuncVal id
       | Ast_c.MetaLocalFuncVal id ->
 	  Coccilib.Str id
       | Ast_c.MetaAssignOpVal op -> Coccilib.AssignOp op

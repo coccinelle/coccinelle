@@ -117,7 +117,7 @@ let (cexpression_of_string: string -> string -> Ast_c.expression) =
 	| _ -> None)
     | _ -> None)
 
-let make_ident s = Ast_c.MetaIdVal(s,[])
+let make_ident s = Ast_c.MetaIdVal(s)
 let make_expr s =
   Ast_c.MetaExprVal(Lib_parsing_c.al_expr(cexpression_of_string "" s), [])
 let make_expr_with_env env s =

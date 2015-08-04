@@ -267,7 +267,7 @@ let construct_variables mv e =
        let expr_repr = instantiate_Expression(expr) in
        let _ = build_variable py expr_repr in
        () *)
-  (*  | Some (_, Ast_c.MetaIdVal (id,_)) ->
+  (*  | Some (_, Ast_c.MetaIdVal id) ->
        let id_repr = instantiate_Identifier(id) in
        let _ = build_variable py id_repr in
        () *)
@@ -313,7 +313,7 @@ let construct_script_variables mv =
     mv
 
 let retrieve_script_variables mv =
-  List.map (function (_,py) -> Ast_c.MetaIdVal(get_variable py,[])) mv
+  List.map (function (_,py) -> Ast_c.MetaIdVal(get_variable py)) mv
 
 let set_coccifile cocci_file =
 	cocci_file_name := cocci_file;

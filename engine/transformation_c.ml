@@ -753,7 +753,7 @@ module XTRANS = struct
         else fail tin
 
 
-  let check_idconstraint matcher c id = fun f tin -> f () tin
+  let check_constraints matcher c id = fun f tin -> f () tin
   let check_constraints_ne matcher constraints exp = fun f tin -> f () tin
 
   (* ------------------------------------------------------------------------*)
