@@ -356,6 +356,11 @@ module XMATCH = struct
           (match valu with
             Ast_c.MetaIdVal (a,c)    ->
 	      (* c is a negated constraint *)
+	      (* This is only useful if some of the constraints are
+		 for locally defined metavariables.  But currently the
+		 only metavariables allowed in constraints are inherited
+		 ones.  These should be checked in check_idconstraint,
+		 not here *)
 	      let rec loop = function
 		  [] -> success(Ast_c.MetaIdVal(a,[]))
 		| c::cs ->
