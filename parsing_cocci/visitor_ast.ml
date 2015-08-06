@@ -625,6 +625,7 @@ let combiner bind option_default
       | Ast.Exp(exp) -> expression exp
       | Ast.TopExp(exp) -> expression exp
       | Ast.Ty(ty) -> fullType ty
+      | Ast.TopId(ty) -> ident ty
       | Ast.TopInit(init) -> initialiser init
       |	Ast.Include(inc,name) ->
 	  let linc = string_mcode inc in
@@ -1519,6 +1520,7 @@ let rebuilder
 	| Ast.Exp(exp) -> Ast.Exp(expression exp)
 	| Ast.TopExp(exp) -> Ast.TopExp(expression exp)
 	| Ast.Ty(ty) -> Ast.Ty(fullType ty)
+	| Ast.TopId(id) -> Ast.TopId(ident id)
 	| Ast.TopInit(init) -> Ast.TopInit(initialiser init)
 	| Ast.Include(inc,name) ->
 	    let linc = string_mcode inc in

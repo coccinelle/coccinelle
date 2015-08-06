@@ -203,7 +203,8 @@ let id_tokens lexbuf =
   then Common.pr2 "Warning: should identifer be identifier?");
   match s with
     "metavariable" when in_meta -> check_arity_context_linetype s; TMetavariable
-  | "identifier" when in_meta -> check_arity_context_linetype s; TIdentifier
+  | "identifier" when in_meta || in_rule_name ->
+      check_arity_context_linetype s; TIdentifier
   | "type" when in_meta ->       check_arity_context_linetype s; TType
   | "parameter" when in_meta ->  check_arity_context_linetype s; TParameter
   | "operator" when in_meta ->   check_arity_context_linetype s; TOperator

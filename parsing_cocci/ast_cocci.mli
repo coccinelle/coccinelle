@@ -504,6 +504,7 @@ and base_rule_elem =
   | Exp           of expression
   | TopExp        of expression (* for macros body *)
   | Ty            of fullType (* only at top level *)
+  | TopId         of ident (* only at top level *)
   | TopInit       of initialiser (* only at top level *)
   | Include       of string mcode (*#include*) * inc_file mcode (*file *)
   | Undef         of string mcode (* #define *) * ident (* name *)
@@ -619,7 +620,7 @@ and base_top_level =
 
 and top_level = base_top_level wrap
 
-and parser_kind = ExpP | TyP | AnyP
+and parser_kind = ExpP | IdP | TyP | AnyP
 
 and rulename =
     CocciRulename of string option * dependency * string list * string list *

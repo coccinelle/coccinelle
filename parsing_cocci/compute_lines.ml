@@ -1118,6 +1118,9 @@ let rec statement s =
     | Ast0.Ty(ty) ->
 	let ty = typeC ty in
 	mkres s (Ast0.Ty(ty)) ty ty
+    | Ast0.TopId(id) ->
+	let id = ident id in
+	mkres s (Ast0.TopId(id)) id id
     | Ast0.TopInit(init) ->
 	let init = initialiser init in
 	mkres s (Ast0.TopInit(init)) init init

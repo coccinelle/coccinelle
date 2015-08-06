@@ -680,6 +680,9 @@ module type PARAM =
     val cocciTy :
       (A.fullType, B.fullType) matcher -> (A.fullType, F.node) matcher
 
+    val cocciId :
+      (A.ident, Ast_c.name) matcher -> (A.ident, F.node) matcher
+
     val cocciInit :
       (A.initialiser, B.initialiser) matcher -> (A.initialiser, F.node) matcher
 
@@ -4607,6 +4610,14 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
       X.cocciTy fullType ty node >>= (fun ty node ->
         return (
           A.Ty ty,
+          F.unwrap node
+        )
+      )
+
+  | A.TopId id, nodeb ->
+      X.cocciId (ident_cpp DontKnow) id node >>= (fun id node ->
+        return (
+          A.TopId id,
           F.unwrap node
         )
       )

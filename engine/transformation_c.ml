@@ -170,6 +170,18 @@ module XTRANS = struct
     in
     Some (expa, Visitor_c.vk_node_s bigf node)
 
+  let cocciId = fun expf expa node -> fun tin ->
+
+    let bigf = {
+      Visitor_c.default_visitor_c_s with
+      Visitor_c.kname_s = (fun (k, bigf) expb ->
+	match expf expa expb tin with
+	| None -> (* failed *) k expb
+	| Some (x, expb) -> expb);
+    }
+    in
+    Some (expa, Visitor_c.vk_node_s bigf node)
+
   let cocciInit = fun expf expa node -> fun tin ->
 
     let bigf = {

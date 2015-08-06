@@ -862,6 +862,7 @@ let astfvs metavars bound =
     | Ast.Exp _ -> "Exp"
     | Ast.TopExp _ -> "TopExp"
     | Ast.Ty _ -> "Ty"
+    | Ast.TopId _ -> "TopId"
     | Ast.TopInit _ -> "TopInit"
     | Ast.Include _ -> "Include"
     | Ast.Undef _ -> "Undef"

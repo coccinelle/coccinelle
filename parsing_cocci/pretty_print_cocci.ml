@@ -698,6 +698,7 @@ and rule_elem arity re =
   | Ast.Exp(exp) -> print_string arity; expression exp
   | Ast.TopExp(exp) -> print_string arity; expression exp
   | Ast.Ty(ty) -> print_string arity; fullType ty
+  | Ast.TopId(id) -> print_string arity; ident id
   | Ast.TopInit(init) -> initialiser init
   | Ast.Include(inc,s) ->
       mcode print_string inc; print_string " "; mcode inc_file s

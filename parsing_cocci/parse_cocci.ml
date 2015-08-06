@@ -2154,6 +2154,7 @@ let parse file =
 		match is_expression with
 		  Ast.AnyP -> PC.minus_main
 		| Ast.TyP -> PC.minus_ty_main
+		| Ast.IdP -> PC.minus_id_main
 		| Ast.ExpP -> PC.minus_exp_main in
 	      parse_one "minus" minus_parser file minus_tokens in
 	    (*
@@ -2175,6 +2176,7 @@ let parse file =
 		    match is_expression with
 		      Ast.AnyP -> PC.plus_main
 		    | Ast.TyP -> PC.plus_ty_main
+		    | Ast.IdP -> PC.plus_id_main
 		    | Ast.ExpP -> PC.plus_exp_main in
 		  parse_one "plus" plus_parser file plus_tokens
 		end in

@@ -801,6 +801,9 @@ and statement s =
       | Ast0.Ty(ty) ->
 	  let (ty_n,ty) = typeC ty in
 	  (ty_n,Ast0.Ty(ty))
+      | Ast0.TopId(id) ->
+	  let (id_n,id) = ident id in
+	  (id_n,Ast0.TopId(id))
       | Ast0.TopInit(init) ->
 	  let (init_n,init) = initialiser init in
 	  (init_n,Ast0.TopInit(init))

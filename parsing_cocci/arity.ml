@@ -997,6 +997,16 @@ and statement tgt stm =
 	| Ast0.UniqueType(ty) ->
 	    Ast0.UniqueStm(Ast0.rewrap stm (Ast0.Ty(ty)))
 	| _ -> Ast0.Ty(new_ty))
+  | Ast0.TopId(id) ->
+      (* opt makes no sense alone at top level *)
+      let new_id = ident false tgt id in
+      Ast0.rewrap stm
+	(match Ast0.unwrap new_id with
+	  Ast0.OptIdent(id) ->
+	    Ast0.OptStm(Ast0.rewrap stm (Ast0.TopId(id)))
+	| Ast0.UniqueIdent(id) ->
+	    Ast0.UniqueStm(Ast0.rewrap stm (Ast0.TopId(id)))
+	| _ -> Ast0.TopId(new_id))
   | Ast0.TopInit(init) ->
       let new_init = initialiser tgt init in
       Ast0.rewrap stm

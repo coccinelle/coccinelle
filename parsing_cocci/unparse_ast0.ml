@@ -609,6 +609,7 @@ and statement arity s =
       | Ast0.Exp(exp) -> print_string arity; expression exp
       | Ast0.TopExp(exp) -> print_string arity; expression exp
       | Ast0.Ty(ty) -> print_string arity; typeC ty
+      | Ast0.TopId(id) -> print_string arity; ident id
       |	Ast0.TopInit(init) -> initialiser init
       | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) ->
 	  print_string arity; mcode print_string d;

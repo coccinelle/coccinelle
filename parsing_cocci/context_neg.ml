@@ -814,6 +814,7 @@ let rec equal_statement s1 s2 =
   | (Ast0.Exp(_),Ast0.Exp(_)) -> true
   | (Ast0.TopExp(_),Ast0.TopExp(_)) -> true
   | (Ast0.Ty(_),Ast0.Ty(_)) -> true
+  | (Ast0.TopId(_),Ast0.TopId(_)) -> true
   | (Ast0.TopInit(_),Ast0.TopInit(_)) -> true
   | (Ast0.Dots(d1,_),Ast0.Dots(d2,_))
   | (Ast0.Circles(d1,_),Ast0.Circles(d2,_))

@@ -306,6 +306,9 @@ let mklogop (op,clt) =
 %start minus_ty_main
 %type <Ast0_cocci.rule> minus_ty_main
 
+%start minus_id_main
+%type <Ast0_cocci.rule> minus_id_main
+
 %start plus_main
 %type <Ast0_cocci.rule> plus_main
 
@@ -314,6 +317,9 @@ let mklogop (op,clt) =
 
 %start plus_ty_main
 %type <Ast0_cocci.rule> plus_ty_main
+
+%start plus_id_main
+%type <Ast0_cocci.rule> plus_id_main
 
 %start include_main
 %type <Data.incl_iso list> include_main
@@ -351,10 +357,14 @@ minus_exp_main: minus_exp_body EOF { $1 } | m=minus_exp_body TArobArob { m }
 | m=minus_exp_body TArob { m }
 minus_ty_main: minus_ty_body EOF { $1 } | m=minus_ty_body TArobArob { m }
 | m=minus_ty_body TArob { m }
+minus_id_main: minus_id_body EOF { $1 } | m=minus_id_body TArobArob { m }
+| m=minus_id_body TArob { m }
 plus_exp_main: plus_exp_body EOF { $1 } | p=plus_exp_body TArobArob { p }
 | p=plus_exp_body TArob { p }
 plus_ty_main: plus_ty_body EOF { $1 } | p=plus_ty_body TArobArob { p }
 | p=plus_ty_body TArob { p }
+plus_id_main: plus_id_body EOF { $1 } | p=plus_id_body TArobArob { p }
+| p=plus_id_body TArob { p }
 meta_main: m=metadec   { m (!Ast0.rule_name) }
 iso_meta_main: m=metadec { m "" }
 
@@ -423,6 +433,7 @@ exists:
 is_expression: // for more flexible parsing of top level expressions
               { Ast.AnyP }
 | TExpression { Ast.ExpP }
+| TIdentifier { Ast.IdP }
 | TType       { Ast.TyP }
 
 include_main:
@@ -1114,6 +1125,20 @@ minus_ty_body:
 plus_ty_body:
     f=loption(filespec)
     b=top_ctype
+    /*ew=loption(error_words)*/
+    { f@[b](*@ew*) }
+
+minus_id_body:
+    f=loption(filespec)
+    b=top_ident
+    /*ew=loption(error_words)*/
+    { match f@[b](*@ew*) with
+      [] -> raise (Semantic_cocci.Semantic "minus slice can't be empty")
+    | code -> code }
+
+plus_id_body:
+    f=loption(filespec)
+    b=top_ident
     /*ew=loption(error_words)*/
     { f@[b](*@ew*) }
 
@@ -2410,6 +2435,9 @@ disj_ident:
 	 { let (mids,code) = t in
 	 Ast0.wrap
 	   (Ast0.DisjId(P.id2mcode lp,code,mids, P.id2mcode rp)) }
+
+top_ident:
+  disj_ident { Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.TopId($1)))) }
 
 type_ident: disj_ident { $1 }
      | TTypeId

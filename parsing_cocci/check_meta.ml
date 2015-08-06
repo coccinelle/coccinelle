@@ -433,6 +433,7 @@ and statement old_metas table minus s =
   | Ast0.Exp(exp) -> expression ID old_metas table minus exp
   | Ast0.TopExp(exp) -> expression ID old_metas table minus exp
   | Ast0.Ty(ty) -> typeC old_metas table minus ty
+  | Ast0.TopId(id) -> ident ID old_metas table minus id
   | Ast0.TopInit(init) -> initialiser old_metas table minus init
   | Ast0.Disj(_,rule_elem_dots_list,_,_) ->
       List.iter (dots (statement old_metas table minus)) rule_elem_dots_list

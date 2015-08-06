@@ -208,6 +208,24 @@ module XMATCH = struct
       (a, node), binding
     )
 
+  let cocciId = fun expf expa node -> fun tin ->
+    (* This is not correct.  It should not match type names, ie name
+       defined by a typedef, and it should match struct and enum names,
+       which are currently not names.  TODO *)
+    let globals = ref [] in
+    let bigf = {
+      Visitor_c.default_visitor_c with
+        Visitor_c.kname = (fun (k, bigf) expb ->
+	  match expf expa expb tin with
+	  | [] -> (* failed *) k expb
+	  | xs -> globals := xs @ !globals)
+    }
+    in
+    Visitor_c.vk_node bigf node;
+    !globals +> List.map (fun ((a, _exp), binding) ->
+      (a, node), binding
+    )
+
   let cocciInit = fun expf expa node -> fun tin ->
 
     let globals = ref [] in

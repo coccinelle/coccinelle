@@ -910,6 +910,9 @@ and statement s =
       | Ast0.Ty(ty) ->
 	  let allminus = check_allminus.VT0.combiner_rec_statement s in
 	  Ast.Atomic(rewrap_rule_elem s (Ast.Ty(typeC allminus ty)))
+      | Ast0.TopId(id) ->
+	  let allminus = check_allminus.VT0.combiner_rec_statement s in
+	  Ast.Atomic(rewrap_rule_elem s (Ast.TopId(ident id)))
       | Ast0.Disj(_,rule_elem_dots_list,_,_) ->
 	  Ast.Disj(List.map (function x -> statement_dots seqible x)
 		     rule_elem_dots_list)
