@@ -37,6 +37,8 @@
 - Allow @S, for statement metavariable S on expressions
 - Exploit explicit positive constraints (no regexps) on identifiers in
   file filtering
+- Ability to declare a rule as matching an identifier.  Doesn't work
+  properly for names of typedefs, enums, structures, or unions.
 ** Bugfix:
 - Iso: allow mixed for model for the case where the model is just a metavar
   Thanks to Kris Borer for reporting the problem
