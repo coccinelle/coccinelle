@@ -1071,7 +1071,8 @@ let detect_types in_meta_decls l =
   let is_choices_delim = function
       (PC.TOBrace(_),_) | (PC.TComma(_),_) -> true | _ -> false in
   let is_id = function
-      (PC.TIdent(_,_),_) | (PC.TMetaId(_,_,_,_,_),_) | (PC.TMetaFunc(_,_,_,_),_)
+      (PC.TIdent(_,_),_) | (PC.TMetaId(_,_,_,_,_),_)
+    | (PC.TMetaFunc(_,_,_,_),_)
     | (PC.TMetaLocalFunc(_,_,_,_),_) -> true
     | (PC.TMetaParam(_,_,_),_)
     | (PC.TMetaParamList(_,_,_,_),_)
@@ -1092,6 +1093,10 @@ let detect_types in_meta_decls l =
     | (PC.TMetaStmList(_,_,_),_)
     | (PC.TMetaPos(_,_,_,_),_) -> in_meta_decls
     | _ -> false in
+  let is_tyleft = function (* things that can start a var decl *)
+      (PC.TMul(_),_)
+    | (PC.TOPar(_),_) -> true
+    | _ -> false in
   let redo_id ident clt v =
     !Data.add_type_name ident;
     (PC.TTypeId(ident,clt),v) in
@@ -1101,8 +1106,8 @@ let detect_types in_meta_decls l =
       [] -> []
     | ((PC.TOBrace(clt),v)::_) as all when in_meta_decls ->
 	collect_choices type_names all (* never a function header *)
-    | delim::(PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::rest
-      when is_delim infn delim ->
+    | delim::(PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::((id::_) as rest)
+      when is_delim infn delim && (is_id id || is_tyleft id) ->
 	let newid = redo_id ident clt v in
 	delim::newid::x::(loop false infn (ident::type_names) rest)
     | delim::(PC.TIdent(ident,clt),v)::id::rest
@@ -1117,7 +1122,8 @@ let detect_types in_meta_decls l =
 	if infn - 1 = 1
 	then rp::(loop false 0 type_names rest) (* 0 means not in fn header *)
 	else rp::(loop false (infn - 1) type_names rest)
-    | (PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::rest when start ->
+    | (PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::((id::_) as rest)
+      when start && (is_id id || is_tyleft id) ->
 	let newid = redo_id ident clt v in
 	newid::x::(loop false infn (ident::type_names) rest)
     | (PC.TIdent(ident,clt),v)::id::rest when start && is_id id ->
