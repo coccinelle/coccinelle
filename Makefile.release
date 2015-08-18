@@ -125,7 +125,7 @@ release:
 	$(GIT) add setup/Makefile.in
 	$(GIT) commit -m "Release $(VERSION)"
 	$(GIT) tag -a -m "Release $(VERSION)" $(VERSION)
-	$(GIT) push origin $(VERSION)
+	$(GIT) push origin $(VERSION) master:master
 	$(MAKE) licensify
 	@echo "\n\tLicensify has run: do not commit any files from now on!"
 	@echo "\n\tRun 'make package'\n"
