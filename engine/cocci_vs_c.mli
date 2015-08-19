@@ -199,6 +199,10 @@ module type PARAM =
       (Ast_cocci.fullType, Ast_c.fullType) matcher ->
       (Ast_cocci.fullType, Control_flow_c.node) matcher
 
+    val cocciId :
+      (Ast_cocci.ident, Ast_c.name) matcher ->
+      (Ast_cocci.ident, Control_flow_c.node) matcher
+
     val cocciInit :
       (Ast_cocci.initialiser, Ast_c.initialiser) matcher ->
       (Ast_cocci.initialiser, Control_flow_c.node) matcher
@@ -214,8 +218,10 @@ module type PARAM =
 	  (unit -> Common.filename * string * Ast_c.posl * Ast_c.posl) ->
       (unit -> tin -> 'x tout) -> (tin -> 'x tout)
 
-    val check_idconstraint :
-      ('a -> 'b -> bool) -> 'a -> 'b ->
+    val check_constraints :
+      ('a -> 'b -> (Ast_cocci.meta_name -> Ast_c.metavar_binding_kind) ->
+	bool) ->
+	'a -> 'b ->
 	(unit -> tin -> 'x tout) -> (tin -> 'x tout)
 
     val check_constraints_ne :
@@ -246,8 +252,6 @@ module COCCI_VS_C :
       type ('a, 'b) matcher = 'a -> 'b -> X.tin -> ('a * 'b) X.tout
 
       val rule_elem_node : (Ast_cocci.rule_elem, Control_flow_c.node) matcher
-
-      val expression :     (Ast_cocci.expression, Ast_c.expression)   matcher
 
       (* there are far more functions in this functor but they do not have
        * to be exported

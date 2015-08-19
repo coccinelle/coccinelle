@@ -30,7 +30,7 @@ sub mylog { print @_;}
 
 
 # to be launched from the git directory
-die "usage: $0 commithashafter [commithashbefore]" 
+die "usage: $0 commithashafter [commithashbefore]"
   if(@ARGV <= 0 || @ARGV >= 3);
 
 # update: now I also extract the headers files, the one
@@ -49,7 +49,7 @@ my $new_dir = "/tmp/extract_c_and_res/$ARGV[0]_new";
 `mkdir -p $new_dir`;
 
 my $commit_new = $ARGV[0];
-my $commit_old = $ARGV[1] || "$commit_new^"; # default parent 
+my $commit_old = $ARGV[1] || "$commit_new^"; # default parent
 
 my $gitfile = "$target_dir/$commit_new.gitinfo";
 my $makefile = "$target_dir/Makefile";
@@ -57,7 +57,7 @@ my $makefile = "$target_dir/Makefile";
 `git show $commit_new > $gitfile `;
 
 
-# processing the patch 
+# processing the patch
 
 my @files = ();
 my $files = {};
@@ -68,12 +68,12 @@ open FILE, "$gitfile" or die "$!";
 while(<FILE>) {
 
   # allow other dir ? # fs|mm   there is drivers under arch/ too
-  if(/^diff --git a\/((drivers|sound)\/.*?\.[ch]) b/){ 
+  if(/^diff --git a\/((drivers|sound)\/.*?\.[ch]) b/){
         mylog "  $1\n";
 
         push @files, $1;
-        $files->{$1} = 1;                
-                        
+        $files->{$1} = 1;
+
     }
     elsif(/^diff --git a\/(include\/.*?\.h) b/) {
         mylog "potential header driver $1\n";
@@ -103,14 +103,14 @@ foreach my $f (@files) {
   my $res = $base;
   if($base =~ /\.c$/) {
     $res =~ s/\.c$/.res/;
-  } 
+  }
   if($base =~ /\.h$/) {
     $res =~ s/\.h$/.h.res/;
-  } 
+  }
 
   pr2 "processing: $f $base $res";
   if(-e "$target_dir/$base") {
-    $counter++;                              
+    $counter++;
     $base = "${counter}_$base";
     $res = "${counter}_$res";
     pr2 "try transform one file because already exist: $base";
@@ -118,7 +118,7 @@ foreach my $f (@files) {
       die "PB: Two header files share the same name: $base.";
     }
 
-  }                         
+  }
   die "PB: one of the file already exist: $base" if (-e "$target_dir/$base");
 
   `git cat-file blob $commit_old:$f > $target_dir/$base`;
@@ -183,7 +183,7 @@ foreach my $f (@driverheaders_in_include) {
     `mkdir -p $new_dir/$dir`;
     `git cat-file blob $commit_old:$f > $old_dir/$f`;
     `git cat-file blob $commit_new:$f > $new_dir/$f`;
-    
+
   }
 }
 
@@ -234,9 +234,9 @@ foreach my $line (@headers) {
     } else {
       $hfiles->{$fullheader} = 1;
     }
-    
+
   } else { pr2 "pb regexp: $line"; }
-  
+
 }
 
 foreach my $h (keys %{$hfiles}) {

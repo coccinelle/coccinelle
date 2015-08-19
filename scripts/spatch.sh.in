@@ -3,16 +3,14 @@
 # generic wrapper script to invoke 'spatch' or 'spatch.opt'
 # it sets the python variables (if relevant)
 # and COCCINELLE_HOME
+exec_prefix=@prefix@
+LIBDIR="@libdir@/coccinelle"
 
-LIBDIR="@prefix@/lib"
-SHAREDIR="${LIBDIR}/coccinelle"
-
-if test ! -d "$SHAREDIR"; then
-    SHAREDIR="$(pwd)"
+if test ! -d "$LIBDIR"; then
+    LIBDIR="$(pwd)"
 fi
 
-COCCINELLE_HOME="${COCCINELLE_HOME:=$SHAREDIR}"
-#echo setting COCCINELLE_HOME=${COCCINELLE_HOME:=$SHAREDIR}
+COCCINELLE_HOME="${COCCINELLE_HOME:=$LIBDIR}"
 
 if [ ! -d "${COCCINELLE_HOME}" ]; then
   echo "\$COCCINELLE_HOME is not a directory: ${COCCINELLE_HOME}" 1>&2

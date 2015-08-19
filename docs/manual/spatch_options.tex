@@ -39,7 +39,7 @@ directory {\tt foodir}:
   patch {\tt foo.cocci} to all of the C files in the directory {\tt foodir}.
 \item {\tt spatch -{}-sp-file foo.cocci -{}-dir foodir -{}-include-headers}:  Apply
   the semantic patch {\tt foo.cocci} to all of the C files and header files
-  in the directory {\tt foodir}. 
+  in the directory {\tt foodir}.
 \end{itemize}
 
 In the rest of this document, the options are annotated as follows:
@@ -68,7 +68,7 @@ patch file and print out some information about it.}
 
 \subsection{The semantic patch}
 
-\minimum{-{}-sp-file $\langle$file$\rangle$, -c $\langle$file$\rangle$, 
+\minimum{-{}-sp-file $\langle$file$\rangle$, -c $\langle$file$\rangle$,
 -{}-cocci-file $\langle$file$\rangle$}{ Specify the name of the file
   containing the semantic patch.  The file name should end in {\tt .cocci}.
 All three options do the same thing.  These options are optional.  If they
@@ -314,7 +314,7 @@ is none, the constant is assumed to be a signed integer.  If there is only
 \developer{-{}-use-cache}{Use preparsed versions of the C files that are
 stored in a cache.}
 
-\developer{-{}-cache-prefix}{Specify the directory in which to store 
+\developer{-{}-cache-prefix}{Specify the directory in which to store
 preparsed versions of the C files.  This sets {\bf -{}-use-cache}}
 
 \developer{-{}-cache-limit}{Specify the maximum number of

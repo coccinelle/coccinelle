@@ -1,3 +1,5 @@
+open Common
+
 (** A library of functions for use with Coccinelle OCaml script code.
 *)
 
@@ -61,9 +63,74 @@ type param_type =
 (**
    For internal use only.
 *)
-let fcts : (string, param_type list -> string ref list -> unit) Hashtbl.t =
+let fcts :
+ (string, param_type list -> Ast_c.metavar_binding_kind ref list -> unit)
+    Hashtbl.t =
   Hashtbl.create 11 (* Use prime number *)
 (**/**)
+
+(* This code needs to be here because we need to call the type annotater *)
+let no_format s =
+  try let _ = Str.search_forward (Str.regexp_string "%") s 0 in false
+  with Not_found -> true
+
+(* no point to parse strings in these cases. never applied to a format
+   string *)
+(* The env argument makes it possible to add some variable declarations to
+   create a type environment.  This could be exploited for other things, but
+   not clear why that would be useful. *)
+let (cstatement_of_string: string -> string -> Ast_c.statement) =
+  fun env s ->
+  assert (no_format s);
+  let tmpfile = Common.new_temp_file "cocci_stmt_of_s" "c" in
+  Common.write_file tmpfile (Printf.sprintf "void main() {\n%s\n%s\n}" env s);
+  let program = Parse_c.parse_c_and_cpp false tmpfile +> fst in
+  let _ =
+    Type_annoter_c.annotate_program !Type_annoter_c.initial_env
+      (List.map fst program) in
+  program +> Common.find_some (fun (e,_) ->
+    match e with
+    | Ast_c.Definition ({Ast_c.f_body = l},_) ->
+	(match List.rev l with
+	  (Ast_c.StmtElem st) :: _ -> Some st
+	| _ -> None)
+    | _ -> None
+  )
+
+let (cexpression_of_string: string -> string -> Ast_c.expression) =
+  fun env s ->
+  assert (no_format s);
+  let tmpfile = Common.new_temp_file "cocci_expr_of_s" "c" in
+  Common.write_file tmpfile (Printf.sprintf "void main() {\n%s\n%s;\n}" env s);
+  let program = Parse_c.parse_c_and_cpp false tmpfile +> fst in
+  let _ =
+    Type_annoter_c.annotate_program !Type_annoter_c.initial_env
+      (List.map fst program) in
+  program +> Common.find_some (fun (e,_) ->
+    match e with
+    | Ast_c.Definition ({Ast_c.f_body = compound},_) ->
+	(match List.rev compound with
+	| Ast_c.StmtElem st :: _ ->
+	    (match Ast_c.unwrap_st st with
+	    | Ast_c.ExprStatement (Some e) -> Some e
+	    | _ -> None)
+	| _ -> None)
+    | _ -> None)
+
+let make_ident s = Ast_c.MetaIdVal(s)
+let make_expr s =
+  Ast_c.MetaExprVal(Lib_parsing_c.al_expr(cexpression_of_string "" s), [])
+let make_expr_with_env env s =
+  Ast_c.MetaExprVal(Lib_parsing_c.al_expr(cexpression_of_string env s), [])
+let make_stmt s =
+  Ast_c.MetaStmtVal(Lib_parsing_c.al_statement(cstatement_of_string "" s))
+let make_stmt_with_env env s =
+  Ast_c.MetaStmtVal(Lib_parsing_c.al_statement(cstatement_of_string env s))
+let make_type s =
+  Ast_c.MetaTypeVal(Lib_parsing_c.al_type(Parse_c.type_of_string s))
+let make_listlen i = Ast_c.MetaListlenVal i
+let make_position fl fn startl startc endl endc =
+  Ast_c.MetaPosValList [(fl, fn, (startl, startc), (endl,endc))]
 
 (* ---------------------------------------------------------------------- *)
 (* Match management *)
@@ -91,6 +158,9 @@ let exited = ref false
 let exit () = exited := true
 
 let dir () = !Flag.dir
+
+let file () =
+  match !Flag.currentfile with Some f -> f | None -> failwith "no file"
 
 (* ---------------------------------------------------------------------- *)
 (* org mode *)
@@ -171,7 +241,7 @@ module Ana = struct
     Externalanalysis.load_external_results
 
   (** finds the analysis results for a given position. *)
-  let find pos = 
+  let find pos =
     Externalanalysis.find_results pos.file (pos.line, pos.col) (pos.line_end, pos.col_end)
 
   (** computes the intersection of analysis results, if possible. *)
@@ -182,7 +252,7 @@ module Ana = struct
     Externalanalysis.satisfy f pos.file (pos.line, pos.col) (pos.line_end, pos.col_end)
 
   (** predicate over the intersection of analysis results. *)
-  let satisfy1 f pos = 
+  let satisfy1 f pos =
     Externalanalysis.satisfy1 f pos.file (pos.line, pos.col) (pos.line_end, pos.col_end)
 
   (** true if an analysis result exists for the given position. *)

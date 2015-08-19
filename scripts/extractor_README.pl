@@ -28,8 +28,8 @@ use strict;
 
 my $ok = 0; #ok+spatch-ok
 my $wrong = 0; #Error,  file level
-my $fail = 0; 
-my $unknown = 0; 
+my $fail = 0;
+my $unknown = 0;
 my $nbfiles = 0;
 
 my $bugfix = 0; # site level ?

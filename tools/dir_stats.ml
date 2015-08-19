@@ -186,5 +186,3 @@ let _ =
   let l = iterate !str l in
   collect_counts l;
   histify()
-
-

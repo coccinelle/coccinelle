@@ -34,7 +34,7 @@ fi
 
 #
 # Before we actually try to substitute a given
-# command, we first try to execute the original command 
+# command, we first try to execute the original command
 #
 
 # Check if the given program exists.
@@ -141,7 +141,7 @@ if test -n "${found}"; then
   exit 0
 else
   # fallback case
-  echo "fake-subst.sh: no substitution for: ${cmdline}. Running the 
+  echo "fake-subst.sh: no substitution for: ${cmdline}. Running the
 original." 1>&2
   exec $@
 fi

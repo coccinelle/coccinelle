@@ -204,7 +204,7 @@ let find_results filename p_begin p_end =
   with Not_found -> []
 
 
-(* 
+(*
  * some convenience functions on analysis results.
  *)
 
@@ -216,7 +216,7 @@ let within_bounds c l u =
   | (Some k, Some n) -> k <= c && c <= n
 
 let contains_bounds m n l u =
-  begin 
+  begin
     match (l, m) with
       (None, None)     -> true
     | (Some k, Some i) -> k <= i

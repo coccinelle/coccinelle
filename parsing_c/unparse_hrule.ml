@@ -141,7 +141,7 @@ let get_function_name rule env =
   match names with
     [name] ->
       (match env_lookup (function nm -> nm = name) env with
-	Ast_c.MetaIdVal(s,_) | Ast_c.MetaFuncVal(s)
+	Ast_c.MetaIdVal(s) | Ast_c.MetaFuncVal(s)
       | Ast_c.MetaLocalFuncVal(s) -> s
       |	_ -> error rule "not possible")
   | _ -> error rule "inconsistent rule generation"
@@ -251,7 +251,8 @@ let print_extra_typedefs pr env =
 	  Visitor_c.vk_string_fragments bigf frags
       | Ast_c.MetaStmtVal(stm) -> Visitor_c.vk_statement bigf stm
       | Ast_c.MetaPosVal _ | Ast_c.MetaPosValList _
-      | Ast_c.MetaListlenVal _ -> ())
+      | Ast_c.MetaListlenVal _ -> ()
+      | Ast_c.MetaNoVal -> failwith "referencing a metavar with no value")
     env
 
 let rename argids env =
@@ -308,7 +309,8 @@ let rename argids env =
        | Ast_c.MetaStmtVal(stm) ->
 	   Ast_c.MetaStmtVal(Visitor_c.vk_statement_s bigf stm)
        | Ast_c.MetaPosVal _ | Ast_c.MetaPosValList _
-       | Ast_c.MetaListlenVal _ -> vl))
+       | Ast_c.MetaListlenVal _ -> vl
+       | Ast_c.MetaNoVal -> failwith "referencing a metavar with no value"))
     env
 
 let print_one_type pr env = function
@@ -418,6 +420,7 @@ let pp_meta_decl pr env decl =
       no_arity ar; pr "declarer "; pp_name name; pr ";\n"
   | Ast.MetaIteratorDecl(ar, name) ->
       no_arity ar; pr "iterator "; pp_name name; pr ";\n"
+  | Ast.MetaScriptDecl(_, name) -> failwith "script metavariable"
 
 let print_metavariables pr local_metas paramst env header_req function_name =
   (if header_req

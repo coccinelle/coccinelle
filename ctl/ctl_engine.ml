@@ -710,7 +710,6 @@ let triples_conj_none trips trips' =
 
 exception AW
 
-(* This is never used, but keeping it because it is referenced in a comment *)
 let triples_conj_AW trips trips' =
   let (trips,shared,trips') =
     if false && !pTRIPLES_CONJ_OPT
@@ -1092,6 +1091,31 @@ let satEU dir ((_,_,states) as m) s1 s2 reqst print_graph =
       setfix f s2
 ;;
 
+let satEU_forAW dir ((cfg,_,states) as m) s1 s2 reqst print_graph =
+  if s1 = []
+  then s2
+  else
+    if !pNEW_INFO_OPT
+    then
+      let rec f y new_info =
+	if List.exists (G.extract_is_loop cfg) (get_states new_info)
+	then raise AW
+	else
+	  match new_info with
+	    [] -> y
+	  | new_info ->
+	      let first = triples_conj s1 (pre_exist dir m new_info reqst) in
+	      let res = triples_union first y in
+	      let new_info = setdiff res y in
+	      f res new_info in
+      f s2 s2
+    else
+      let f y =
+	let pre = pre_exist dir m y reqst in
+	triples_union s2 (triples_conj s1 pre) in
+      setfix f s2
+;;
+
 (* EF phi == E[true U phi] *)
 let satEF dir m s2 reqst =
   inc satEF_calls;
@@ -1128,49 +1152,43 @@ type ('pred,'anno) auok =
 
 (* A[phi1 U phi2] == phi2 \/ (phi1 /\ AXA[phi1 U phi2]) *)
 let satAU dir ((cfg,_,states) as m) s1 s2 reqst print_graph =
+  let strip s = List.map (function s -> (s,[],[])) (get_states s) in
   let ctr = ref 0 in
   inc satAU_calls;
   if s1 = []
   then AUok s2
   else
-    if !Flag_ctl.loop_in_src_code
-    then AUfailed s2
-    else
     (*let ctr = ref 0 in*)
-      if !pNEW_INFO_OPT
-      then
-	let rec f y newinfo =
-	  inc_step();
-	  match newinfo with
-	    [] -> AUok y
-	  | new_info ->
-	      ctr := !ctr + 1;
-	    (*print_state (Printf.sprintf "iteration %d\n" !ctr) y;
-	       flush stdout;*)
-	      print_graph y ctr;
-	      let pre =
-		try Some (pre_forall dir m new_info y reqst)
-		with AW -> None in
-	      match pre with
-		None -> AUfailed y
-	      | Some pre ->
-		  match triples_conj s1 pre with
-		    [] -> AUok y
-		  | first ->
-		    (*print_state "s1" s1;
-		       print_state "pre" pre;
-		       print_state "first" first;*)
-		      let res = triples_union first y in
-		      let new_info =
-			if not !something_dropped
-			then first
-			else setdiff res y in
-		  (*Printf.printf
-		     "iter %d res %d new_info %d\n"
-		     !ctr (List.length res) (List.length new_info);
-		     flush stdout;*)
-		      f res new_info in
-	f s2 s2
+    if !pNEW_INFO_OPT
+    then
+      let rec f y newinfo =
+	inc_step();
+	match newinfo with
+	  [] -> AUok y
+	| new_info ->
+	    ctr := !ctr + 1;
+	    print_graph y ctr;
+	    let pre = pre_forall dir m new_info y reqst in
+	    match triples_conj s1 pre with
+	      [] -> AUok y
+	    | first ->
+		let res = triples_union first y in
+		let new_info =
+		  if not !something_dropped
+		  then first
+		  else setdiff res y in
+		f res new_info in
+	  try
+	    (if !Flag_ctl.loop_in_src_code
+	    then
+	      let _ =
+		satEU_forAW dir m (strip s1) (strip s2) reqst print_graph in
+	      ());
+	    f s2 s2
+	  with AW -> AUfailed s2
+    else
+      if !Flag_ctl.loop_in_src_code
+      then AUfailed s2
       else
 	(*let setfix =
 	   fix (function s1 -> function s2 ->
@@ -1184,8 +1202,9 @@ let satAU dir ((cfg,_,states) as m) s1 s2 reqst print_graph =
 	  let pre = pre_forall dir m y y reqst in
 	  triples_union s2 (triples_conj s1 pre) in
 	AUok (setfix f s2)
-;;	  
-	  
+;;
+
+
 (* reqst could be the states of s1 *)
       (*
       let lstates = mkstates states reqst in
@@ -2420,7 +2439,7 @@ let sat m phi reqopt =
     Hashtbl.clear memo_label;
     let (x,label,preproc,states) = m in
     if (!Flag_ctl.bench > 0) || preprocess m reqopt
-    then    
+    then
       ((* to drop when Yoann initialized this flag *)
       if List.exists (G.extract_is_loop x) states
       then Flag_ctl.loop_in_src_code := true;

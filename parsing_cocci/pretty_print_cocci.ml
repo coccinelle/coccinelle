@@ -288,6 +288,8 @@ let rec expression e =
       mcode print_meta name; print_type keep inherited ty
   | Ast.MetaExprList(name,_,_,_) -> mcode print_meta name
   | Ast.AsExpr(exp,asexp) -> expression exp; print_string "@"; expression asexp
+  | Ast.AsSExpr(exp,asstm) ->
+      expression exp; print_string "@"; rule_elem "" asstm
   | Ast.EComma(cm) -> mcode print_string cm; print_space()
   | Ast.DisjExpr(exp_list) -> print_disj_list expression exp_list
   | Ast.NestExpr(starter,expr_dots,ender,Some whencode,multi) ->
@@ -333,13 +335,13 @@ and unaryOp = function
 
 and assignOp op =
   match Ast.unwrap op with
-    Ast.SimpleAssign _ -> print_string "="
-  | Ast.OpAssign(aop) -> arithOp (Ast.unwrap_mcode aop); print_string "="
+    Ast.SimpleAssign op -> mcode print_string op
+  | Ast.OpAssign(aop) -> mcode arithOp aop; print_string "="
   | Ast.MetaAssign(metavar,_,_,_) -> mcode print_meta metavar
-                                                   
+
 and simpleAssignOp op = print_string "="
 
-and opAssignOp aop = arithOp aop; print_string "=" 
+and opAssignOp aop = arithOp aop; print_string "="
 
 and fixOp = function
     Ast.Dec -> print_string "--"
@@ -347,11 +349,11 @@ and fixOp = function
 
 and binaryOp op =
   match Ast.unwrap op with
-    Ast.Arith(aop) -> arithOp (Ast.unwrap_mcode aop)
-  | Ast.Logical(lop) -> logicalOp (Ast.unwrap_mcode lop)
+    Ast.Arith(aop) -> mcode arithOp aop
+  | Ast.Logical(lop) -> mcode logicalOp lop
   | Ast.MetaBinary(metavar,_,_,_) -> mcode print_meta metavar
 
-and  arithOp = function
+and arithOp = function
     Ast.Plus -> print_string "+"
   | Ast.Minus -> print_string "-"
   | Ast.Mul -> print_string "*"
@@ -642,7 +644,7 @@ and parameter_list l = dots (function _ -> ()) parameterTypeDef l
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
-let rec rule_elem arity re =
+and rule_elem arity re =
   match Ast.unwrap re with
     Ast.FunHeader(bef,allminus,fninfo,name,lp,params,va,rp) ->
       mcode (function _ -> ()) ((),Ast.no_info,bef,[]);
@@ -723,6 +725,7 @@ let rec rule_elem arity re =
   | Ast.Exp(exp) -> print_string arity; expression exp
   | Ast.TopExp(exp) -> print_string arity; expression exp
   | Ast.Ty(ty) -> print_string arity; fullType ty
+  | Ast.TopId(id) -> print_string arity; ident id
   | Ast.TopInit(init) -> initialiser init
   | Ast.Include(inc,s) ->
       mcode print_string inc; print_string " "; mcode inc_file s
@@ -1046,4 +1049,3 @@ let print_rule_elem re =
   print_newlines_disj := false;
   rule_elem "" re;
   print_newlines_disj := nl
-

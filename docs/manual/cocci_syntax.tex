@@ -214,14 +214,14 @@ the same, but for structure fields.
   \CASE{\NT{id} \OPT{ = \NT{assignop\_contraint}}}
 
   \RULE{\rt{assignop\_contraint}}
-  \CASE{\mth{\{}\NT{COMMA\_LIST}\mth{(}\NT{assign\_op}\mth{)}\mth{\}}}  
+  \CASE{\mth{\{}\NT{COMMA\_LIST}\mth{(}\NT{assign\_op}\mth{)}\mth{\}}}
   \CASE{\NT{assign\_op}}
 
   \RULE{\rt{binopdecl}}
   \CASE{\NT{id} \OPT{ = \NT{binop\_contraint}}}
 
   \RULE{\rt{binop\_contraint}}
-  \CASE{\mth{\{}\NT{COMMA\_LIST}\mth{(}\NT{binary\_op}\mth{)}\mth{\}}}  
+  \CASE{\mth{\{}\NT{COMMA\_LIST}\mth{(}\NT{binary\_op}\mth{)}\mth{\}}}
   \CASE{\NT{binary\_op}}
 \end{grammar}
 
@@ -295,7 +295,10 @@ expression metavariable binds {\tt E} to {\tt 3 + 4}.  A particular case is
 {\tt Ps@Es}, where {\tt Ps} is a parameter list and {\tt Es} is an
 expression list.  This pattern matches a parameter list, and then matches
 {\tt Es} to the list of expressions, ie a possible argument list,
-represented by the names of the parameters.
+represented by the names of the parameters.  Another particular case is
+{\tt E@S}, where {\tt E} is any expression and {\tt S} is a statement
+metavariable.  {\tt S} matches the closest enclosing statement, which may
+be more than what is matches by the semantic match pattern itself.
 
 Matching of various kinds of format strings within strings is supported.
 With the {\tt --ibm} option, matching of decimal format declarations is
@@ -375,6 +378,19 @@ rule that declares an identifier metavariable with the name {\tt
   alloc=kmalloc}.  There should not be space around the {\tt =}.  An
 example is in {\tt demos/vm.cocci} and {\tt demos/vm.c}.
 
+It is possible to give an identifier metavariable a list of constraints
+that it should or should not be equal to.  If the constraint is a list of
+(unquoted) strings, then the value of the metavariable should be the same
+as one of the strings, in the case of an equality constraint, or different
+from all of the strings, in the case of an inequality constraint.  It is
+also possible to include inherited identifier metavariables among the
+constraints.  In the case of a positive constraint, things work in the same
+way, but not with respect to the inherited value of the metavariable.  On
+the other hand, an inequality constraint does not work so well, because the
+only value available is the one available in the ciurrent environment.  If
+the proposed value is different from the one in teh current environment,
+but perhaps the same as the one in some other environment, the match will
+still succeed.
 
 \paragraph*{Warning:} Each metavariable declaration causes the declared
 metavariables to be immediately usable, without any inheritance
@@ -688,7 +704,7 @@ some constraints on the use of these annotations:
 \item Dots, {\em i.e.} \texttt{...}, cannot occur on a line marked
   \texttt{+}.
 \item Nested dots, {\em i.e.}, dots enclosed in {\tt <} and {\tt >}, cannot
-  occur on a line with any marking.
+  occur on a line marked \texttt{+}.
 \end{itemize}
 
 Each element of a disjunction must be a proper term like an
@@ -1277,7 +1293,7 @@ the first letter of the rule name is capitalized, although this is not done
 elsewhere.  {\tt add\_virtual\_identifier X v} has the same effect as
 putting {\tt -D x=v} on the command line.  Note again the case change.
 {\tt extend\_virtual\_identifiers()} (not shown) preserves all virtual
-identifiers of the current iteration that are not overridden by calls to 
+identifiers of the current iteration that are not overridden by calls to
 {\tt add\_virtual\_identifier}.  Finally, the call to {\tt register} queues
 the collected information to trigger a new iteration at some time in the
 future.

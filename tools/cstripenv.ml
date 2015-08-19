@@ -31,7 +31,7 @@
  * The resulting file is more likely to be analyzable without the
  * headers, although it does affect the semantics of the original
  * program.
- * 
+ *
  * It does so by removing toplevel elements that cannot be parsed
  * correctly because of macro's. Macro's that are interpreted as
  * functions are still kept.
@@ -48,7 +48,7 @@ let hide_visitor =
       begin
 	match p with
 	  Ast_c.NotParsedCorrectly ii ->
-            let first_i = List.hd ii in	  
+            let first_i = List.hd ii in
 	    let last_i  = List.hd (List.rev ii) in
 	    Ast_c.put_annot_info first_i Token_annot.Exclude_start Token_annot.Unit;
 	    Ast_c.put_annot_info last_i Token_annot.Exclude_end Token_annot.Unit

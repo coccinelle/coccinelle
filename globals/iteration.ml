@@ -71,7 +71,7 @@ let add_pending_instance (files,vrules,vids,extend_vids) =
 	    then front :: (loop rest)
 	    else (f,vrules,vids) :: front :: rest in
       pending_instances_file := loop !pending_instances_file
-					      
+
 let get_pending_instance _ =
   (if (List.length !pending_instances_file) > 0 ||
     (List.length !pending_instances_dir) > 0

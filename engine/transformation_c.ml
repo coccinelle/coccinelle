@@ -141,6 +141,12 @@ module XTRANS = struct
 	    (v,Ast_c.MetaDeclVal(Lib_parsing_c.real_al_decl d))
 	| Ast_c.MetaStmtVal(s) ->
 	    (v,Ast_c.MetaStmtVal(Lib_parsing_c.real_al_statement s))
+	(* These don't contain local variables, but the cocci_tag field
+	   causes problems too.  Why is this not needd for other metavars? *)
+	| Ast_c.MetaAssignOpVal(b) ->
+	    (v,Ast_c.MetaAssignOpVal(Lib_parsing_c.real_al_assignop b))
+	| Ast_c.MetaBinaryOpVal(b) ->
+	    (v,Ast_c.MetaBinaryOpVal(Lib_parsing_c.real_al_binop b))
 	| _ -> (v,vl))
       env
 
@@ -184,6 +190,18 @@ module XTRANS = struct
     let bigf = {
       Visitor_c.default_visitor_c_s with
       Visitor_c.ktype_s = (fun (k, bigf) expb ->
+	match expf expa expb tin with
+	| None -> (* failed *) k expb
+	| Some (x, expb) -> expb);
+    }
+    in
+    Some (expa, Visitor_c.vk_node_s bigf node)
+
+  let cocciId = fun expf expa node -> fun tin ->
+
+    let bigf = {
+      Visitor_c.default_visitor_c_s with
+      Visitor_c.kname_s = (fun (k, bigf) expb ->
 	match expf expa expb tin with
 	| None -> (* failed *) k expb
 	| Some (x, expb) -> expb);
@@ -774,7 +792,7 @@ module XTRANS = struct
         else fail tin
 
 
-  let check_idconstraint matcher c id = fun f tin -> f () tin
+  let check_constraints matcher c id = fun f tin -> f () tin
   let check_constraints_ne matcher constraints exp = fun f tin -> f () tin
 
   (* ------------------------------------------------------------------------*)

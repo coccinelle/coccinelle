@@ -151,3 +151,12 @@ let compatible t1 = function
 	| (Array(ty1),Array(ty2)) -> loop(ty1,ty2)
 	| (_,_) -> t1=t2 in
       loop (t1,t2)
+
+let rec meta_names = function
+    ConstVol(_,ty) -> meta_names ty
+  | SignedT(_,Some ty) -> meta_names ty
+  | Pointer(ty) -> meta_names ty
+  | FunctionPointer(ty) -> meta_names ty
+  | Array(ty) -> meta_names ty
+  | MetaType(nm,_,_) -> [nm]
+  | _ -> []

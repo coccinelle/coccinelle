@@ -148,6 +148,3 @@ let _ =
       List.iter (function (_,x) -> Printf.printf "%s \\\n" x) (List.rev prev);
       Printf.printf "%s\n" last
   | _ -> ()
-
-
-

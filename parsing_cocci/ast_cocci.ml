@@ -144,6 +144,7 @@ and metavar =
   | MetaAnalysisDecl of string * meta_name (* name *)
   | MetaDeclarerDecl of arity * meta_name (* name *)
   | MetaIteratorDecl of arity * meta_name (* name *)
+  | MetaScriptDecl of metavar option ref * meta_name (* name *)
 
 and list_len = AnyLen | MetaLen of meta_name | CstLen of int
 
@@ -221,6 +222,7 @@ and base_expression =
   | MetaExprList   of meta_name mcode * listlen * keep_binding *
                       inherited (* only in arg lists *)
   | AsExpr         of expression * expression (* as expr, always metavar *)
+  | AsSExpr        of expression * rule_elem (* as expr, always metavar *)
 
   | EComma         of string mcode (* only in arg lists *)
 
@@ -551,6 +553,7 @@ and base_rule_elem =
   | TopExp        of expression (* for macros body, exp at top level,
 				   not subexp *)
   | Ty            of fullType (* only at SP top level, matches a subterm *)
+  | TopId         of ident (* only at top level *)
   | TopInit       of initialiser (* only at top level *)
   | Include       of string mcode (*#include*) * inc_file mcode (*file *)
   | Undef         of string mcode (* #define *) * ident (* name *)
@@ -671,7 +674,7 @@ and base_top_level =
 
 and top_level = base_top_level wrap
 
-and parser_kind = ExpP | TyP | AnyP
+and parser_kind = ExpP | IdP | TyP | AnyP
 
 and rulename =
     CocciRulename of string option * dependency *
@@ -848,6 +851,7 @@ let get_meta_name = function
   | MetaAnalysisDecl(code,nm) -> nm
   | MetaDeclarerDecl(ar,nm) -> nm
   | MetaIteratorDecl(ar,nm) -> nm
+  | MetaScriptDecl(ar,nm) -> nm
 
 (* --------------------------------------------------------------------- *)
 

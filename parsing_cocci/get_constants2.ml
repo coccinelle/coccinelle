@@ -416,6 +416,14 @@ let do_get_constants constants keywords env neg_pos =
 	  (match Ast.unwrap_mcode name with
 	    "NULL" -> keywords "NULL"
 	  | nm -> constants nm)
+    | Ast.MetaId(name,Ast.IdPosIdSet(strs,mids),_,_)
+    | Ast.MetaFunc(name,Ast.IdPosIdSet(strs,mids),_,_)
+    | Ast.MetaLocalFunc(name,Ast.IdPosIdSet(strs,mids),_,_) ->
+	let cur =
+	  build_or
+	    (disj_union_all (List.map constants strs))
+	    (disj_union_all (List.map inherited mids)) in
+	bind (k i) (bind (minherited name) cur)
     | Ast.MetaId(name,_,_,_) | Ast.MetaFunc(name,_,_,_)
     | Ast.MetaLocalFunc(name,_,_,_) ->
 	bind (k i) (minherited name)
@@ -629,19 +637,6 @@ let do_get_constants constants keywords env neg_pos =
 
 (* ------------------------------------------------------------------------ *)
 
-let filter_combine combine to_drop =
-  let rec and_loop = function
-      Elem x when List.mem x to_drop -> True
-    | Or l ->  List.fold_left build_or  False (List.map or_loop l)
-    | x -> x
-  and or_loop = function
-      Elem x when List.mem x to_drop -> True
-    | And l -> List.fold_left build_and True  (List.map and_loop l)
-    | x -> x in
- or_loop combine
-
-(* ------------------------------------------------------------------------ *)
-
 let get_all_constants minus_only =
   let donothing r k e = k e in
   let bind = Common.union_set in
@@ -795,18 +790,18 @@ let all_context =
 
 (* ------------------------------------------------------------------------ *)
 
-let rule_fn nm tls exact_dependencies in_plus env neg_pos =
+(* The whole "in_plus" idea is flawed.  If something is added in one rule and
+matched in a later one, we want to include files that originally contain
+the thing, so no point to keep track of what is added by earlier rules.
+The situation is something like a -> b v (b & c).  We don't actually need
+both b and c, but if we don't have b, then the only way that we can get it is
+fro the first rule matching, in which case the formula is already true. *)
+let rule_fn nm tls exact_dependencies env neg_pos =
   (* tls seems like it is supposed to relate to multiple minirules.  If we
      were to actually allow that, then the following could be inefficient,
      because it could run sat on the same rule name (x) more than once. *)
-  let relevant_in_plus =
-    List.fold_left Common.union_set []
-      (List.map snd
-	 (List.filter
-	    (function (x,_) -> sat (build_and (Elem x) exact_dependencies))
-	    in_plus)) in
   List.fold_left
-    (function (rest_info,in_plus) ->
+    (function rest_info ->
       function (cur,neg_pos) ->
 	let minuses =
 	  let getter = do_get_constants keep drop env neg_pos in
@@ -815,28 +810,24 @@ let rule_fn nm tls exact_dependencies in_plus env neg_pos =
 	  if !Flag.sgrep_mode2
 	  then [] (* nothing removed for sgrep *)
 	  else (get_all_constants true).V.combiner_top_level cur in
-	let plusses = get_plus_constants.V.combiner_top_level cur in
 	(* the following is for eg -foo(2) +foo(x) then in another rule
 	   -foo(10); don't want to consider that foo is guaranteed to be
 	   created by the rule.  not sure this works completely: what if foo is
 	   in both - and +, but in an or, so the cases aren't related?
 	   not sure this whole thing is a good idea.  how do we know that
 	   something that is only in plus is really freshly created? *)
-	let plusses = Common.minus_set plusses all_minuses in
 	let was_bot = minuses = True in
-	let new_minuses = filter_combine minuses relevant_in_plus in
-	let new_plusses = (nm,plusses) :: in_plus in
 	(* perhaps it should be build_and here?  we don't really have multiple
 	   minirules anymore anyway. *)
-	match new_minuses with
+	match minuses with
 	  True ->
 	    let getter = do_get_constants drop keep env neg_pos in
 	    let retry = getter.V.combiner_top_level cur in
 	    (match retry with
-	      True when not was_bot -> (rest_info, new_plusses)
-	    | x -> (build_or x rest_info, new_plusses))
-	| x -> (build_or x rest_info, new_plusses))
-    (False,in_plus) (List.combine tls neg_pos)
+	      True when not was_bot -> rest_info
+	    | x -> build_or x rest_info)
+	| x -> build_or x rest_info)
+    False (List.combine tls neg_pos)
 
 let debug_deps nm deps res =
   if !Flag_parsing_cocci.debug_parse_cocci
@@ -850,9 +841,9 @@ let debug_deps nm deps res =
     end
 
 let run rules neg_pos_vars =
-  let (info,_,_,_) =
+  let (info,_,_) =
     List.fold_left
-      (function (rest_info,in_plus,env,locals(*dom of env*)) ->
+      (function (rest_info,env,locals(*dom of env*)) ->
         function
 	    (Ast.ScriptRule (nm,_,deps,mv,_,_),_) ->
 	      let extra_deps =
@@ -867,35 +858,35 @@ let run rules neg_pos_vars =
 	      debug_deps nm extra_deps dependencies;
 	      (match dependencies with
 		False ->
-		  (rest_info, in_plus, (nm,True)::env, nm::locals)
+		  (rest_info, (nm,True)::env, nm::locals)
 	      | dependencies ->
-		  (build_or dependencies rest_info, in_plus, env, locals))
+		  (build_or dependencies rest_info, env, locals))
           | (Ast.InitialScriptRule (_,_,deps,_,_),_)
 	  | (Ast.FinalScriptRule (_,_,deps,_,_),_) ->
 	      (* initialize and finalize dependencies are irrelevant to
 		 get_constants *)
 	      (* only possible metavariables are virtual *)
-	      (rest_info, in_plus, env, locals)
+	      (rest_info, env, locals)
           | (Ast.CocciRule (nm,(dep,_,_),cur,_,_),neg_pos_vars) ->
 	      let dependencies = dependencies env dep in
 	      let exact_dependencies = exact_dependencies dep in
-	      let (cur_info,cur_plus) =
-		rule_fn nm cur exact_dependencies in_plus ((nm,True)::env)
+	      let cur_info =
+		rule_fn nm cur exact_dependencies ((nm,True)::env)
 		  neg_pos_vars in
 	      debug_deps nm dep dependencies;
 	      (match dependencies with
-		False -> (rest_info,cur_plus,env,locals)
+		False -> (rest_info,env,locals)
 	      | dependencies ->
 		  let re_cur_info = build_and dependencies cur_info in
 		  if List.for_all all_context.V.combiner_top_level cur
-		  then (rest_info,cur_plus,(nm,re_cur_info)::env,nm::locals)
+		  then (rest_info,(nm,re_cur_info)::env,nm::locals)
 		  else
 		    (* no constants if dependent on another rule; then we need
 		       to find the constants of that rule *)
 		    (* why does env not use re_cur_info? *)
 		    (build_or re_cur_info rest_info,
-		     cur_plus,(nm,cur_info)::env,locals)))
-      (False,[],[],[])
+		     (nm,cur_info)::env,locals)))
+      (False,[],[])
       (List.combine (rules : Ast.rule list) neg_pos_vars) in
   info
 
@@ -907,10 +898,10 @@ CNF as a list of git grep strings.  coccigrep uses 1 for basic scanning and
 then the CNF regexp for more refined scanning.  git grep uses the second
 CNF representation.
 4. An arbitrary formula, usable by the support for idutils *)
-    
+
 let get_constants rules neg_pos_vars =
   if !Flag.worth_trying_opt
-  then 
+  then
     begin
     let res = run rules neg_pos_vars in
     let grep = interpret_grep true res in (* useful because in string form *)

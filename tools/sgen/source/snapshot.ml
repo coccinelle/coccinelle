@@ -131,7 +131,7 @@ let inc_star snp = if is_star snp.current_mode then inc_line snp else snp
  *)
 let skip ~rule_line snp =
   let snp = if rule_line > snp.rule_line then inc_line snp else snp in
-  set_rule_line rule_line snp 
+  set_rule_line rule_line snp
 
 
 (* ------------------------------------------------------------------------- *)

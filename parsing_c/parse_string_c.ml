@@ -119,4 +119,3 @@ let parse_string (str,isW) info =
       end
     with Parse_printf.Not_format_string -> not_format_string (str,isW) info
   else not_format_string (str,isW) info
-

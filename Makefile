@@ -43,7 +43,6 @@ endif
 -include /etc/Makefile.coccinelle  # local customizations, if any
 
 
-VERSION=$(shell cat ./version | tr -d '\n')
 CCVERSION=$(shell cat scripts/coccicheck/README | egrep -o '[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' | head -n1)
 PKGVERSION=$(shell dpkg-parsechangelog -ldebian/changelog.$(DISTRIB_CODENAME) 2> /dev/null \
 	 | sed -n 's/^Version: \(.*\)/\1/p' )
@@ -153,8 +152,8 @@ world: Makefile.config version.ml
 # note: the 'all-dev' target excludes the documentation
 all-dev: Makefile.config version.ml
 	@$(MAKE) .depend
-	@$(ECHO) "Building the unoptimized version of spatch"
-	$(MAKE) byte
+	@$(ECHO) "Building $(TARGET_SPATCH)"
+	$(MAKE) $(TARGET_SPATCH)
 	@$(MAKE) preinstall
 	@$(ECHO) -e "\n\tcoccinelle can now be installed via 'make install'"
 
@@ -209,7 +208,8 @@ world: Makefile.config myocamlbuild.ml version.ml prepare-bundles
 
 # note: the 'all-dev' target excludes the documentation and is less noisy
 all-dev: Makefile.config myocamlbuild.ml version.ml prepare-bundles
-	$(MAKE) byte
+	@$(ECHO) "Building $(TARGET_SPATCH)"
+	$(MAKE) $(TARGET_SPATCH)
 	@$(MAKE) coccilib-cmi
 	@$(MAKE) preinstall
 
@@ -454,23 +454,24 @@ distclean::
 install-common: ocaml/coccilib/coccilib.cmi
 	$(MKDIR_P) $(DESTDIR)$(BINDIR)
 	$(MKDIR_P) $(DESTDIR)$(LIBDIR)
-	$(MKDIR_P) $(DESTDIR)$(SHAREDIR)/ocaml
-#	$(MKDIR_P) $(DESTDIR)$(SHAREDIR)/commons
-#	$(MKDIR_P) $(DESTDIR)$(SHAREDIR)/globals
-#	$(MKDIR_P) $(DESTDIR)$(SHAREDIR)/parsing_c
-	$(INSTALL_DATA) standard.h $(DESTDIR)$(SHAREDIR)
-	$(INSTALL_DATA) standard.iso $(DESTDIR)$(SHAREDIR)
-	$(INSTALL_DATA) ocaml/coccilib/coccilib.cmi $(DESTDIR)$(SHAREDIR)/ocaml/
-	$(INSTALL_DATA) ocaml/*.cmi $(DESTDIR)$(SHAREDIR)/ocaml/
-#	$(INSTALL_DATA) parsing_c/*.cmi $(DESTDIR)$(SHAREDIR)/parsing_c/
-#	$(INSTALL_DATA) commons/*.cmi $(DESTDIR)$(SHAREDIR)/commons/
-#	$(INSTALL_DATA) globals/iteration.cmi $(DESTDIR)$(SHAREDIR)/globals/
+	$(MKDIR_P) $(DESTDIR)$(LIBDIR)/ocaml
+#	$(MKDIR_P) $(DESTDIR)$(LIBDIR)/commons
+#	$(MKDIR_P) $(DESTDIR)$(LIBDIR)/globals
+#	$(MKDIR_P) $(DESTDIR)$(LIBDIR)/parsing_c
+	$(INSTALL_DATA) standard.h $(DESTDIR)$(LIBDIR)
+	$(INSTALL_DATA) standard.iso $(DESTDIR)$(LIBDIR)
+	$(INSTALL_DATA) ocaml/coccilib/coccilib.cmi $(DESTDIR)$(LIBDIR)/ocaml/
+	$(INSTALL_DATA) ocaml/*.cmi $(DESTDIR)$(LIBDIR)/ocaml/
+#	$(INSTALL_DATA) parsing_c/*.cmi $(DESTDIR)$(LIBDIR)/parsing_c/
+#	$(INSTALL_DATA) commons/*.cmi $(DESTDIR)$(LIBDIR)/commons/
+#	$(INSTALL_DATA) globals/iteration.cmi $(DESTDIR)$(LIBDIR)/globals/
 
 install-man:
 	@$(ECHO) "Installing manuals in: ${DESTDIR}${MANDIR}"
 	$(MKDIR_P) $(DESTDIR)$(MANDIR)/man1
 	$(MKDIR_P) $(DESTDIR)$(MANDIR)/man3
 	$(INSTALL_DATA) docs/spatch.1 $(DESTDIR)$(MANDIR)/man1/
+	$(INSTALL_DATA) docs/pycocci.1 $(DESTDIR)$(MANDIR)/man1/
 	$(INSTALL_DATA) docs/Coccilib.3cocci $(DESTDIR)$(MANDIR)/man3/
 
 install-bash:
@@ -486,30 +487,31 @@ install-tools:
 		$(DESTDIR)$(BINDIR)/splitpatch
 	$(INSTALL_PROGRAM) tools/cocci-send-email.perl \
 		$(DESTDIR)$(BINDIR)/cocci-send-email.perl
-	$(INSTALL_PROGRAM) tools/pycocci $(DESTDIR)$(BINDIR)/
 
 install-python:
-	@$(ECHO) "Installing python support in: ${DESTDIR}${SHAREDIR}/python"
-	$(MKDIR_P) $(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
+	@$(ECHO) "Installing python support in: ${DESTDIR}${LIBDIR}/python"
+	$(MKDIR_P) $(DESTDIR)$(LIBDIR)/python/coccilib/coccigui
 	$(INSTALL_DATA) python/coccilib/*.py \
-		$(DESTDIR)$(SHAREDIR)/python/coccilib
+		$(DESTDIR)$(LIBDIR)/python/coccilib
 	$(INSTALL_DATA) python/coccilib/coccigui/*.py \
-		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
+		$(DESTDIR)$(LIBDIR)/python/coccilib/coccigui
 	$(INSTALL_DATA) python/coccilib/coccigui/pygui.glade \
-		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
+		$(DESTDIR)$(LIBDIR)/python/coccilib/coccigui
 	$(INSTALL_DATA) python/coccilib/coccigui/pygui.gladep \
-		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
+		$(DESTDIR)$(LIBDIR)/python/coccilib/coccigui
 
 install-stubs:
-	$(MKDIR_P) $(DESTDIR)$(SHAREDIR)
+	$(MKDIR_P) $(DESTDIR)$(LIBDIR)
 	@if test -f ./bundles/pycaml/dllpycaml_stubs.so; then \
-		cp -fv ./bundles/pycaml/dllpycaml_stubs.so $(DESTDIR)$(SHAREDIR); fi
+		cp -fv ./bundles/pycaml/dllpycaml_stubs.so $(DESTDIR)$(LIBDIR); fi
 	@if test -f ./bundles/pcre/dllpcre_stubs.so; then \
-		cp -fv ./bundles/pcre/dllpcre_stubs.so $(DESTDIR)$(SHAREDIR); fi
+		cp -fv ./bundles/pcre/dllpcre_stubs.so $(DESTDIR)$(LIBDIR); fi
 
 install: install-man install-common install-stubs $(PYTHON_INSTALL_TARGET)
-	rm -f $(DESTDIR)$(SHAREDIR)/spatch
-	rm -f $(DESTDIR)$(SHAREDIR)/spatch.opt
+	rm -f $(DESTDIR)$(LIBDIR)/spatch
+	rm -f $(DESTDIR)$(LIBDIR)/spatch.opt
+	rm -f $(DESTDIR)$(BINDIR)/pycocci
+	$(INSTALL_PROGRAM) tools/pycocci $(DESTDIR)$(BINDIR)
 	@if test -x spatch -o -x spatch.opt; then \
 		$(MAKE) install-def;fi
 	@if test -x spatch ; then \
@@ -532,37 +534,34 @@ install-def:
 
 # user will use spatch.byte to run spatch (bytecode)
 install-byte:
-	$(INSTALL_PROGRAM) spatch $(DESTDIR)$(SHAREDIR)
+	$(INSTALL_PROGRAM) spatch $(DESTDIR)$(LIBDIR)
 	$(INSTALL_PROGRAM) scripts/spatch.byte $(DESTDIR)$(BINDIR)/spatch.byte
 
 # user will use spatch.opt to run spatch.opt (native)
 install-opt:
-	$(INSTALL_PROGRAM) spatch.opt $(DESTDIR)$(SHAREDIR)
+	$(INSTALL_PROGRAM) spatch.opt $(DESTDIR)$(LIBDIR)
 	$(INSTALL_PROGRAM) scripts/spatch.opt $(DESTDIR)$(BINDIR)/spatch.opt
 
 uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/spatch
 	rm -f $(DESTDIR)$(BINDIR)/spatch.opt
 	rm -f $(DESTDIR)$(BINDIR)/spatch.byte
-	rm -f $(DESTDIR)$(SHAREDIR)/dllpycaml_stubs.so
-	rm -f $(DESTDIR)$(SHAREDIR)/dllpcre_stubs.so
-	rm -f $(DESTDIR)$(SHAREDIR)/spatch
-	rm -f $(DESTDIR)$(SHAREDIR)/spatch.opt
-	rm -f $(DESTDIR)$(SHAREDIR)/standard.h
-	rm -f $(DESTDIR)$(SHAREDIR)/standard.iso
-	rm -f $(DESTDIR)$(SHAREDIR)/ocaml/coccilib.cmi
-	rm -f $(DESTDIR)$(SHAREDIR)/parsing_c/*.cmi
-	rm -f $(DESTDIR)$(SHAREDIR)/commons/*.cmi
-	rm -f $(DESTDIR)$(SHAREDIR)/globals/*.cmi
-	rm -f $(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui/*
-	rm -f $(DESTDIR)$(SHAREDIR)/python/coccilib/*.py
+	rm -f $(DESTDIR)$(LIBDIR)/dllpycaml_stubs.so
+	rm -f $(DESTDIR)$(LIBDIR)/dllpcre_stubs.so
+	rm -f $(DESTDIR)$(LIBDIR)/spatch
+	rm -f $(DESTDIR)$(LIBDIR)/spatch.opt
+	rm -f $(DESTDIR)$(LIBDIR)/standard.h
+	rm -f $(DESTDIR)$(LIBDIR)/standard.iso
+	rm -f $(DESTDIR)$(LIBDIR)/ocaml/coccilib.cmi
+	rm -f $(DESTDIR)$(LIBDIR)/parsing_c/*.cmi
+	rm -f $(DESTDIR)$(LIBDIR)/commons/*.cmi
+	rm -f $(DESTDIR)$(LIBDIR)/globals/*.cmi
+	rm -f $(DESTDIR)$(LIBDIR)/python/coccilib/coccigui/*
+	rm -f $(DESTDIR)$(LIBDIR)/python/coccilib/*.py
 	rmdir --ignore-fail-on-non-empty -p \
-		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
-	rmdir $(DESTDIR)$(SHAREDIR)/globals
-	rmdir $(DESTDIR)$(SHAREDIR)/commons
-	rmdir $(DESTDIR)$(SHAREDIR)/parsing_c
-	rmdir $(DESTDIR)$(SHAREDIR)/ocaml
-	rmdir $(DESTDIR)$(SHAREDIR)
+		$(DESTDIR)$(LIBDIR)/python/coccilib/coccigui
+	rmdir --ignore-fail-on-non-empty $(DESTDIR)$(LIBDIR)/ocaml
+	rmdir $(DESTDIR)$(LIBDIR)
 	rm -f $(DESTDIR)$(MANDIR)/man1/spatch.1
 	rm -f $(DESTDIR)$(MANDIR)/man3/Coccilib.3cocci
 

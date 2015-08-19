@@ -17,7 +17,7 @@ open Common
 (* Tricks used to handle the ambiguity in the grammar with the typedef
  * which impose a cooperation between the lexer and the parser.
  *
- * An example by hughes casse: "in the symbol table, local
+ * An example by Hug_es Cassé: "in the symbol table, local
  * definition must replace type definition in order to correctly parse
  * local variable in functions body. This is the only way to correctly
  * handle this kind of exception, that is,
@@ -69,7 +69,7 @@ let is_typedef s  =
 let new_scope() = Common.new_scope_h _typedef
 let del_scope() = Common.del_scope_h _typedef
 
-let add_typedef  s = 
+let add_typedef  s =
   Common.add_in_scope_h _typedef (s, TypeDefI)
 let add_ident s    = Common.add_in_scope_h _typedef (s, IdentI)
 

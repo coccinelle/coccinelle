@@ -236,7 +236,7 @@ and expression e =
       | Ast0.MetaExprList(name,lenname,pure) ->
 	  let (name_n,name) = mcode name in
 	  (name_n,Ast0.MetaExprList(name,lenname,pure))
-      |	Ast0.AsExpr _ -> failwith "not possible"
+      | Ast0.AsExpr _ | Ast0.AsSExpr _ -> failwith "not possible"
       | Ast0.EComma(cm) ->
 	  let (cm_n,cm) = mcode cm in (cm_n,Ast0.EComma(cm))
       | Ast0.DisjExpr(starter,expr_list,mids,ender) ->
@@ -277,6 +277,8 @@ and expression e =
 	      (other_metas,
 	       Ast0.rewrap exp
 		 (Ast0.AsExpr(exp,Ast0.rewrap exp (Ast0.Ident(id_meta)))))
+	  | Ast0.StmtTag(stm_meta) ->
+	      (other_metas, Ast0.rewrap exp (Ast0.AsSExpr(exp,stm_meta)))
 	  | x -> (x::other_metas,exp))
       ([],e) metas
 
@@ -292,7 +294,7 @@ and assignOp op =
     | Ast0.MetaAssign(name, c, pure) ->
       let (n,name) = mcode name in
       (n, Ast0.MetaAssign(name, c, pure)))
-  
+
 and binaryOp op =
   rewrap op
     (match Ast0.unwrap op with
@@ -520,7 +522,7 @@ and declaration d =
       | Ast0.Ddots(dots,whencode) ->
 	  let (dots_n,dots) = mcode dots in
 	  let (whencode_n, whencode) = match whencode with
-	    | Some (a,e,b) -> 
+	    | Some (a,e,b) ->
 		let (_,a2) = mcode a in
 		let (_,e2) = mcode e in
 		let (b1,b2) = declaration b in (b1, Some (a2,e2,b2))
@@ -573,7 +575,7 @@ and initialiser i =
       | Ast0.Idots(d,whencode) ->
 	  let (d_n,d) = mcode d in
 	  let (whencode_n, whencode) = match whencode with
-	    | Some (a,e,b) -> 
+	    | Some (a,e,b) ->
 		let (_,a2) = mcode a in
 		let (_,e2) = mcode e in
 		let (b1,b2) = initialiser b in (b1, Some (a2,e2,b2))
@@ -826,6 +828,9 @@ and statement s =
       | Ast0.Ty(ty) ->
 	  let (ty_n,ty) = typeC ty in
 	  (ty_n,Ast0.Ty(ty))
+      | Ast0.TopId(id) ->
+	  let (id_n,id) = ident id in
+	  (id_n,Ast0.TopId(id))
       | Ast0.TopInit(init) ->
 	  let (init_n,init) = initialiser init in
 	  (init_n,Ast0.TopInit(init))
@@ -933,11 +938,11 @@ and fninfo = function
 	let (_,w) = mcode w in
 	let (_,e) = mcode e in
 	let (n,a) = notfn a in (n,Ast0.WhenNot(w,e,a))
-    | Ast0.WhenAlways (w,e,a) -> 
+    | Ast0.WhenAlways (w,e,a) ->
 	let (_,w) = mcode w in
 	let (_,e) = mcode e in
 	let (n,a) = alwaysfn a in (n,Ast0.WhenAlways(w,e,a))
-    | Ast0.WhenModifier(w,x) -> 
+    | Ast0.WhenModifier(w,x) ->
 	let (_,w) = mcode w in
 	(option_default,Ast0.WhenModifier(w,x))
     | Ast0.WhenNotTrue(w,ee,e) ->
@@ -952,7 +957,7 @@ and fninfo = function
   (* for whencodes that do not have any of the above modifiers
    * returns (the new whencode expression, the updated whencode) *)
   and whencode_option bfn = function
-    | Some (a,e,b) -> 
+    | Some (a,e,b) ->
 	let (_,a2) = mcode a in
 	let (_,e2) = mcode e in
 	let (b1,b2) = bfn b in (b1, Some (a2,e2,b2))

@@ -98,6 +98,7 @@ let collect_refs include_constraints =
 	    then
 	      match idconstraint with
 		Ast.IdNegIdSet (_,metas) -> metas
+	      | Ast.IdPosIdSet (_,metas) -> metas
 	      | _ -> []
 	    else [] in
 	  bind (List.rev metas) [metaid name]
@@ -164,6 +165,30 @@ let collect_refs include_constraints =
 	     include_constraints or check for Ast.IdNegIdSet *)
 	  [metaid name]
       | _ -> option_default) in
+
+  let rec collect_assign_names aop =
+    match Ast.unwrap aop with
+      Ast.MetaAssign(name,Ast.AssignOpNoConstraint,_,_) ->
+	[metaid name]
+    | Ast.MetaAssign(name,Ast.AssignOpInSet l,_,_) ->
+	List.fold_left (fun prev a -> bind (collect_assign_names a) prev)
+	  [metaid name] l
+    | _ -> option_default in
+
+  let astfvassignop recursor k bop =
+    bind (k bop) (collect_assign_names bop) in
+
+  let rec collect_binary_names bop =
+    match Ast.unwrap bop with
+      Ast.MetaBinary(name,Ast.BinaryOpNoConstraint,_,_) ->
+	[metaid name]
+    | Ast.MetaBinary(name,Ast.BinaryOpInSet l,_,_) ->
+	List.fold_left (fun prev a -> bind (collect_binary_names a) prev)
+	  [metaid name] l
+    | _ -> option_default in
+
+  let astfvbinaryop recursor k bop =
+    bind (k bop) (collect_binary_names bop) in
 
   let astfvdecls recursor k d =
     bind (k d)
@@ -236,7 +261,7 @@ let collect_refs include_constraints =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode mcode mcode
     donothing donothing donothing donothing donothing
-    astfvident astfvexpr astfvfrag astfvfmt donothing donothing
+    astfvident astfvexpr astfvfrag astfvfmt astfvassignop astfvbinaryop
     astfvfullType astfvtypeC astfvinit astfvparam astfvdecls donothing
     astfvrule_elem astfvstatement donothing donothing donothing_a
 
@@ -357,6 +382,18 @@ let collect_saved =
 	Ast.MetaFormat(name,_,TC.Saved,_) -> [metaid name]
       | _ -> option_default) in
 
+  let astfvassign recursor k aop =
+    bind (k aop)
+      (match Ast.unwrap aop with
+	Ast.MetaAssign(name,_,TC.Saved,_) -> [metaid name]
+      | _ -> option_default) in
+
+  let astfvbinary recursor k bop =
+    bind (k bop)
+      (match Ast.unwrap bop with
+	Ast.MetaBinary(name,_,TC.Saved,_) -> [metaid name]
+      | _ -> option_default) in
+
   let astfvtypeC recursor k ty =
     bind (k ty)
       (match Ast.unwrap ty with
@@ -423,8 +460,8 @@ let collect_saved =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
     donothing donothing donothing donothing donothing
-    astfvident astfvexpr astfvfrag astfvfmt donothing donothing donothing
-    astfvtypeC astfvinit astfvparam astfvdecls donothing astfvrule_elem 
+    astfvident astfvexpr astfvfrag astfvfmt astfvassign astfvbinary donothing
+    astfvtypeC astfvinit astfvparam astfvdecls donothing astfvrule_elem
     donothing donothing donothing donothing
 
 (* ---------------------------------------------------------------- *)
@@ -687,6 +724,22 @@ let classify_variables metavar_decls minirules used_after =
 	Ast.rewrap ft (Ast.MetaFormat(name,constraints,unitary,inherited))
     | _ -> ft in
 
+  let assignop r k ft =
+    let ft = k ft in
+    match Ast.unwrap ft with
+      Ast.MetaAssign(name,constraints,_,_) ->
+	let (unitary,inherited) = classify name in
+	Ast.rewrap ft (Ast.MetaAssign(name,constraints,unitary,inherited))
+    | _ -> ft in
+
+  let binaryop r k ft =
+    let ft = k ft in
+    match Ast.unwrap ft with
+      Ast.MetaBinary(name,constraints,_,_) ->
+	let (unitary,inherited) = classify name in
+	Ast.rewrap ft (Ast.MetaBinary(name,constraints,unitary,inherited))
+    | _ -> ft in
+
   let typeC r k e =
     let e = k e in
     match Ast.unwrap e with
@@ -767,7 +820,8 @@ let classify_variables metavar_decls minirules used_after =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode
       donothing donothing donothing donothing donothing
-      ident expression string_fragment string_format donothing donothing donothing typeC
+      ident expression string_fragment string_format assignop binaryop
+      donothing typeC
       init param decl donothing rule_elem
       donothing donothing donothing donothing in
 
@@ -835,6 +889,7 @@ let astfvs metavars bound =
     | Ast.Exp _ -> "Exp"
     | Ast.TopExp _ -> "TopExp"
     | Ast.Ty _ -> "Ty"
+    | Ast.TopId _ -> "TopId"
     | Ast.TopInit _ -> "TopInit"
     | Ast.Include _ -> "Include"
     | Ast.Undef _ -> "Undef"
@@ -948,7 +1003,7 @@ let astfvs metavars bound =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
     donothing donothing astfvstatement_dots donothing donothing
-    donothing donothing donothing 
+    donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing
     astfvrule_elem astfvstatement astfvcase_line astfvtoplevel donothing

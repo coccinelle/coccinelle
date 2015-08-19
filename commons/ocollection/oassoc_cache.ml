@@ -167,5 +167,3 @@ class ['a,'b] oassoc_cache cache cached max =
     method delkey k = (cache#delkey (k,v); cached#del (k,v); o)
 end
 *)
-
-

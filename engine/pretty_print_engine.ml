@@ -35,7 +35,7 @@ let pp = Common.pp
 let pp_meta (_,x) = pp x
 
 let rec pp_binding_kind = function
-  | Ast_c.MetaIdVal        (s,_) -> pp ("id " ^ s)
+  | Ast_c.MetaIdVal        s -> pp ("id " ^ s)
   | Ast_c.MetaFuncVal      s -> pp ("func " ^ s)
   | Ast_c.MetaLocalFuncVal s -> pp ("localfunc " ^ s)
   | Ast_c.MetaExprVal      (expr,_) -> Pretty_print_c.pp_expression_simple expr
@@ -78,6 +78,7 @@ let rec pp_binding_kind = function
 		    Printf.sprintf "(%s,%s,(%d,%d),(%d,%d))"
 		      fl ce minl minc maxl maxc)
 		  l)))
+  | Ast_c.MetaNoVal -> pp "no value"
 
 and pp_binding subst =
   begin
@@ -190,5 +191,3 @@ let pp_ctlcocci show_plus inline_let_def ctl =
         inline_let_def ctl;
       );
   end
-
-

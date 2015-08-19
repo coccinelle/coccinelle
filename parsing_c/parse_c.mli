@@ -56,7 +56,7 @@ val tokens_of_string: string -> Parser_c.token list
 
 val parse:                        Common.filename -> Ast_c.program
 val parse_print_error:            Common.filename -> Ast_c.program
-val parse_gen: cpp:bool
+val parse_gen: cpp:bool -> tos:bool
     -> ((Lexing.lexbuf -> Parser_c.token) -> Lexing.lexbuf -> 'a)
     -> string -> 'a
 

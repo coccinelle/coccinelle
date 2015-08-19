@@ -313,6 +313,3 @@ let exact_matches : t -> string -> (int * int) list =
 
 let contained_string gst word =
   List.map (fun (i,j) -> Array.get (fst gst) i)  (exact_matches gst word)
-
-
-

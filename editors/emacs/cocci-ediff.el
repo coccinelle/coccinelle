@@ -10,9 +10,9 @@
 ;; URL: http://www.emn.fr/x-info/coccinelle/
 
 
-;;; Ediff and dired support 
+;;; Ediff and dired support
 
-;; You must modify the variables `cocci-spatch-path', 
+;; You must modify the variables `cocci-spatch-path',
 ;; `cocci-isofile-path', and `cocci-spatch-args' according to your setup.
 
 ;; Once it is installed you use it by loading a .cocci file (called the
@@ -33,7 +33,7 @@
 (require 'dired-x)
 (require 'ediff)
 
-(require 'cocci-mode) 
+(require 'cocci-mode)
 
 ;--------------------------------------------------
 ; Defaults
@@ -41,7 +41,7 @@
 
 (defvar cocci-spatch-path "~/coccinelle/spatch")
 (defvar cocci-isofile-path "~/coccinelle/standard.iso")
-(defvar cocci-spatch-args 
+(defvar cocci-spatch-args
   "-no_show_ctl_text -no_show_transinfo -no_parse_error_msg -no_show_misc")
 (defvar cocci-spatch-default-output "/tmp/output.c")
 (defvar cocci-save-merge-result nil
@@ -76,7 +76,7 @@
 
 ;--------------------------------------------------
 ; Internal Variables
-;-------------------------------------------------- 
+;--------------------------------------------------
 
 (defvar cocci-current-cocci nil
   "The current cocci-file")
@@ -102,17 +102,17 @@
 ;--------------------------------------------------
 (defun cocci-spatch-cmd (sp)
   "Assembles command line for spatch"
-  (concat cocci-spatch-path 
-	  " -iso_file " cocci-isofile-path 
+  (concat cocci-spatch-path
+	  " -iso_file " cocci-isofile-path
 ;	  " -compare_with_expected"
-	  " -cocci_file " sp 
+	  " -cocci_file " sp
 	  " " cocci-spatch-args))
 
 (defun cocci-makeok-cmd (sp)
   "Assembles command line for make ok"
   (concat "make "
 	  " ISOFILE=\"-iso_file " cocci-isofile-path "\""
-	  " SP=" sp 
+	  " SP=" sp
 	  " ARGS=\"" cocci-spatch-args "\""))
 
 
@@ -121,7 +121,7 @@
 ;--------------------------------------------------
 (defun cocci-convert-ends (from to files)
   "Convert files (in files) from ending in from to ending to"
-  (mapcar (lambda (f) 
+  (mapcar (lambda (f)
 	    (if (string-match (concat from "$") f)
 		(replace-match to t t f)
 	      f))
@@ -192,7 +192,7 @@
 
 
 ; pad's code
-; merge between ediff-setup-windows-plain-compare and 
+; merge between ediff-setup-windows-plain-compare and
 ; ediff-setup-windows-plain from 'ediff-wind.el'
 (defun cocci-ediff-setup-windows-plain (buf-A buf-B buf-C control-buffer)
   (ediff-with-current-buffer control-buffer
@@ -221,7 +221,7 @@
     (setq lowest-wind (selected-window))
 
     (ediff-setup-control-buffer control-buffer)
-    
+
     ;; go to the upper window and split it betw A, B, and possibly C
     (other-window 1)
 
@@ -241,20 +241,20 @@
 		     (window-height wind-A)
 		   (window-width wind-A))
 		 3)))
-    
+
     ;; XEmacs used to have a lot of trouble with display
     ;; It did't set things right unless we told it to sit still
     ;; 19.12 seems ok.
     ;;(if ediff-xemacs-p (sit-for 0))
-    
+
 ;    (funcall split-window-function wind-width-or-height)
     (split-window-horizontally)
-		  
+
     (if (eq (selected-window) wind-A)
 	(other-window 1))
     (switch-to-buffer buf-B)
     (setq wind-B (selected-window))
-	  
+
     (if three-way-comparison
 	(progn
 	  (funcall split-window-function) ; equally
@@ -262,19 +262,19 @@
 	      (other-window 1))
 	  (switch-to-buffer buf-C)
 	  (setq wind-C (selected-window))))
-	  
+
     (ediff-with-current-buffer control-buffer
       (setq ediff-window-A wind-A
 	    ediff-window-B wind-B
 	    ediff-window-C wind-C))
-    
+
     ;; It is unlikely that we will want to implement 3way window comparison.
     ;; So, only buffers A and B are used here.
     (if ediff-windows-job
 	(progn
 	  (set-window-start wind-A wind-A-start)
 	  (set-window-start wind-B wind-B-start)))
-  
+
     (ediff-select-lowest-window)
     (ediff-setup-control-buffer control-buffer)
     ))
@@ -354,13 +354,13 @@
   "Compiles the marked files in cocci/dired mode. With prefix arg no file
 names are substituted (useful for Makefiles)."
   (interactive "P")
-  (if arg 
+  (if arg
       (compile (read-from-minibuffer "Compile command: "
 				     (eval compile-command) nil nil
 				     '(compile-history . 1)))
     (let* ((file-list (cocci-convert-ends ".c" ".ok" (dired-get-marked-files t)))
 	   (command (dired-mark-read-string
-		     "Make targets %s with: " 
+		     "Make targets %s with: "
 		     (cocci-makeok-cmd cocci-current-cocci)
 		     'compile nil file-list)))
       (compile (concat command " " (mapconcat 'identity file-list " "))))))
@@ -368,7 +368,7 @@ names are substituted (useful for Makefiles)."
 (defun cocci-dired-compile-spatch (&optional arg)
   "Runs spatch on current file. Non-nil optional arg to specify command."
   (interactive "P")
-  (if arg 
+  (if arg
       (compile (read-from-minibuffer "Command: "
 				     (eval compile-command) nil nil
 				     '(compile-history . 1)))
@@ -387,12 +387,12 @@ names are substituted (useful for Makefiles)."
   (interactive)
   (let ((file (dired-get-filename t))
 	(out-buf (get-spatch-output-buffer)))
-    (message "Applying SP '%s' to file '%s'..." 
-	     (file-name-nondirectory cocci-current-cocci) 
+    (message "Applying SP '%s' to file '%s'..."
+	     (file-name-nondirectory cocci-current-cocci)
 	     (file-name-nondirectory file))
     (cocci-apply-spatch file cocci-current-cocci out-buf)
-    (message "Applying SP '%s' to file '%s'... done." 
-	     (file-name-nondirectory cocci-current-cocci) 
+    (message "Applying SP '%s' to file '%s'... done."
+	     (file-name-nondirectory cocci-current-cocci)
 	     (file-name-nondirectory file))
 ;    (ediff-merge-files file (or res-file cocci-spatch-default-output))
     (cocci-merge-files file (or res-file cocci-spatch-default-output))))
@@ -403,18 +403,18 @@ names are substituted (useful for Makefiles)."
   (interactive)
   (let ((file (dired-get-filename t))
 	(out-buf (get-spatch-output-buffer)))
-    (message "Applying SP '%s' to file '%s'..." 
-	     (file-name-nondirectory cocci-current-cocci) 
+    (message "Applying SP '%s' to file '%s'..."
+	     (file-name-nondirectory cocci-current-cocci)
 	     (file-name-nondirectory file))
     (cocci-apply-spatch file cocci-current-cocci out-buf)
-    (message "Applying SP '%s' to file '%s'... done." 
-	     (file-name-nondirectory cocci-current-cocci) 
+    (message "Applying SP '%s' to file '%s'... done."
+	     (file-name-nondirectory cocci-current-cocci)
 	     (file-name-nondirectory file))
 ;    (ediff-merge-files file (or res-file cocci-spatch-default-output))
     (cocci-diff-files file (or res-file cocci-spatch-default-output))))
 
 (defun cocci-dired-view-file ()
-  "In cocci dired, visit the file or directory named on this line 
+  "In cocci dired, visit the file or directory named on this line
 using diff-mode."
   (interactive)
   (let ((file-name (file-name-sans-versions (dired-get-filename) t))
@@ -430,11 +430,11 @@ using diff-mode."
 	(error "File no longer exists; type `g' to update Dired buffer")))))
 
 (defun cocci-dired-view-corresponding-file ()
-  "In cocci dired, visit the file or directory named on this line 
+  "In cocci dired, visit the file or directory named on this line
 using diff-mode."
   (interactive)
-  (let* ((file-name 
-	  (cocci-corresponding-file 
+  (let* ((file-name
+	  (cocci-corresponding-file
 	   (file-name-sans-versions (dired-get-filename) t)))
 	 (find-file-run-dired t))
     (if (file-exists-p file-name)
@@ -457,12 +457,12 @@ using diff-mode."
 			  (dired-get-marked-files t current-prefix-arg)))
 
 (defun cocci-dired-run-makeok (spfile)
-  "In a dired buffer, runs 'make ok' on marked files with 
+  "In a dired buffer, runs 'make ok' on marked files with
 source buffer as SP file"
   (interactive)
   (let ((files (dired-get-marked-files t current-prefix-arg)))
-    (dired-do-shell-command (concat (cocci-makeok-cmd spfile) " ?") 
-			    current-prefix-arg 
+    (dired-do-shell-command (concat (cocci-makeok-cmd spfile) " ?")
+			    current-prefix-arg
 			    (cocci-convert-ends ".c" ".ok" files))))
 
 (defun cocci-run-makeok (spfile)
@@ -485,7 +485,7 @@ source buffer as SP file"
   (dired-mark-extension ".cocci"))
 
 (defun cocci-dired-mark-ok-files ()
-  "Mark all .ok files. In terse mode mark all .c files that have a 
+  "Mark all .ok files. In terse mode mark all .c files that have a
 corresponding .ok file"
   (interactive)
   (if (not cocci-dired-terse-mode)
@@ -497,7 +497,7 @@ corresponding .ok file"
 		   "source file(s) with OK result file")))
 
 (defun cocci-dired-mark-failed-files ()
-  "Mark all .failed files. In terse mode mark all .c files that have a 
+  "Mark all .failed files. In terse mode mark all .c files that have a
 corresponding .failed file"
   (interactive)
   (if (not cocci-dired-terse-mode)
@@ -509,7 +509,7 @@ corresponding .failed file"
 		   "source file(s) with FAILED result file")))
 
 (defun cocci-dired-mark-expected-files ()
-  "Mark all .res files. In terse mode mark all .c files that have a 
+  "Mark all .res files. In terse mode mark all .c files that have a
 corresponding .res file"
   (interactive)
   (if (not cocci-dired-terse-mode)
@@ -532,10 +532,10 @@ corresponding .res file"
 	    (sok (count-matches "\\[status\\] spatch-ok"))
 	    (fail (count-matches "\\[status\\] fail"))
 	    (wrong (count-matches "\\[status\\] wrong")))
-	(setq res (replace-regexp-in-string 
-		 " occurrences" 
-		 "" 
-		 (concat "[ok: " ok "; spatch-ok: " sok 
+	(setq res (replace-regexp-in-string
+		 " occurrences"
+		 ""
+		 (concat "[ok: " ok "; spatch-ok: " sok
 			 "; fail: " fail "; wrong: " wrong "]")))))
     (insert res)))
 
@@ -565,9 +565,9 @@ corresponding .res file"
 (define-derived-mode cocci-dired-mode dired-mode "Dired under Cocci"
   "The major mode used in Cocci directory buffers.
 
-It works like Dired, with the current Cocci state of each file being 
+It works like Dired, with the current Cocci state of each file being
 indicated in the place of the file's link count, owner, group and size.
-Subdirectories are also listed, and you may insert them into the buffer 
+Subdirectories are also listed, and you may insert them into the buffer
 as desired, like in Dired."
   ;; define-derived-mode does it for us in Emacs-21, but not in Emacs-20.
   ;; We do it here because dired might not be loaded yet
@@ -627,7 +627,7 @@ as desired, like in Dired."
   (concat (file-name-sans-extension file) ext))
 
 (defvar cocci-file-types
-  '((cocci . ".cocci") (source . ".c") (ok . ".ok") 
+  '((cocci . ".cocci") (source . ".c") (ok . ".ok")
     (fail . ".failed") (expected . ".res"))
 "Alist of file name extensions used by Cocci.")
 
@@ -750,12 +750,12 @@ Called by dired after any portion of a cocci-dired buffer has been read in."
 	;; Ugly hack to display the current cocci file.
 	;; Needed because of hardcoded dired regexps
 	(when cocci-current-cocci
-	  (insert 
+	  (insert
 	   (concat
 	    (propertize " " 'display '((margin nil) "  Current cocci file: "))
-	    (propertize " " 
-			'display 
-			`((margin nil) 
+	    (propertize " "
+			'display
+			`((margin nil)
 			  ,(file-name-nondirectory cocci-current-cocci))))))
 	(beginning-of-line)
 	(forward-line 1))
@@ -868,8 +868,8 @@ With prefix arg READ-SWITCHES, specify a value to override
 
 (define-key cocci-mode-map  "\C-cd" 'cocci-directory)
 
-(add-hook 'cocci-mode-hook 
-          (lambda () 
+(add-hook 'cocci-mode-hook
+          (lambda ()
             (setq cocci-current-cocci (buffer-file-name))
             (setq cocci-current-cocci-buffer (current-buffer))
             (setq compile-command (cocci-makeok-cmd cocci-current-cocci))))

@@ -211,6 +211,8 @@ let real_al_expr      x = Visitor_c.vk_expr_s   (real_strip_info_visitor()) x
 let real_al_arguments x = Visitor_c.vk_arguments_s (real_strip_info_visitor()) x
 let real_al_node      x = Visitor_c.vk_node_s   (real_strip_info_visitor()) x
 let real_al_type      x = Visitor_c.vk_type_s   (real_strip_info_visitor()) x
+let real_al_binop     x = Visitor_c.vk_binaryOp_s (real_strip_info_visitor()) x
+let real_al_assignop  x = Visitor_c.vk_assignOp_s (real_strip_info_visitor()) x
 let real_al_decl      x = Visitor_c.vk_decl_s   (real_strip_info_visitor()) x
 let real_al_init      x = Visitor_c.vk_ini_s    (real_strip_info_visitor()) x
 let real_al_inits     x = Visitor_c.vk_inis_s   (real_strip_info_visitor()) x
@@ -369,6 +371,3 @@ let rec stmt_elems_of_sequencable xs =
           xs'
         ) +> List.flatten
   ) +> List.flatten
-
-
-

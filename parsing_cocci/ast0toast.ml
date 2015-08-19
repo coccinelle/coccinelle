@@ -227,6 +227,7 @@ let check_allminus =
       Ast0.DisjExpr(starter,expr_list,mids,ender) ->
 	List.for_all r.VT0.combiner_rec_expression expr_list
     | Ast0.AsExpr(exp,asexp) -> k exp
+    | Ast0.AsSExpr(exp,asstm) -> k exp
     | _ -> k e in
 
   let declaration r k e =
@@ -446,6 +447,12 @@ and expression e =
 	Ast.MetaExprList(mcode name,do_lenname lenname,unitary,false)
     | Ast0.AsExpr(expr,asexpr) ->
 	Ast.AsExpr(expression expr,expression asexpr)
+    | Ast0.AsSExpr(expr,asstm) ->
+	let stm =
+	  match Ast.unwrap (statement asstm) with
+	    Ast.Atomic(re) -> re
+	  | _ -> failwith "stmt should be metavar, and thus atomic" in
+	Ast.AsSExpr(expression expr,stm)
     | Ast0.EComma(cm)         -> Ast.EComma(mcode cm)
     | Ast0.DisjExpr(_,exps,_,_)     ->
 	Ast.DisjExpr(List.map expression exps)
@@ -487,7 +494,7 @@ and binaryOp op =
       Ast0.Arith op' -> Ast.Arith (mcode op')
     | Ast0.Logical op' -> Ast.Logical (mcode op')
     | Ast0.MetaBinary(mv, c, _) ->
-      Ast.MetaBinary(mcode mv, binaryOpconstraint c, unitary, false))    
+      Ast.MetaBinary(mcode mv, binaryOpconstraint c, unitary, false))
 and binaryOpconstraint = function
   | Ast0.BinaryOpNoConstraint -> Ast.BinaryOpNoConstraint
   | Ast0.BinaryOpInSet ops -> Ast.BinaryOpInSet (List.map binaryOp ops)
@@ -930,6 +937,9 @@ and statement s =
       | Ast0.Ty(ty) ->
 	  let allminus = check_allminus.VT0.combiner_rec_statement s in
 	  Ast.Atomic(rewrap_rule_elem s (Ast.Ty(typeC allminus ty)))
+      | Ast0.TopId(id) ->
+	  let allminus = check_allminus.VT0.combiner_rec_statement s in
+	  Ast.Atomic(rewrap_rule_elem s (Ast.TopId(ident id)))
       | Ast0.Disj(_,rule_elem_dots_list,_,_) ->
 	  Ast.Disj(List.map (function x -> statement_dots seqible x)
 		     rule_elem_dots_list)

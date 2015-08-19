@@ -235,6 +235,24 @@ module XMATCH = struct
       (a, node), binding
     )
 
+  let cocciId = fun expf expa node -> fun tin ->
+    (* This is not correct.  It should not match type names, ie name
+       defined by a typedef, and it should match struct and enum names,
+       which are currently not names.  TODO *)
+    let globals = ref [] in
+    let bigf = {
+      Visitor_c.default_visitor_c with
+        Visitor_c.kname = (fun (k, bigf) expb ->
+	  match expf expa expb tin with
+	  | [] -> (* failed *) k expb
+	  | xs -> globals := xs @ !globals)
+    }
+    in
+    Visitor_c.vk_node bigf node;
+    !globals +> List.map (fun ((a, _exp), binding) ->
+      (a, node), binding
+    )
+
   let cocciInit = fun expf expa node -> fun tin ->
 
     let globals = ref [] in
@@ -317,13 +335,6 @@ module XMATCH = struct
   (* ------------------------------------------------------------------------*)
   (* Constraints on metavariable values *)
   (* ------------------------------------------------------------------------*)
-  let check_idconstraint matcher c id = fun f tin ->
-    if matcher c id then
-      (* success *)
-      f () tin
-    else
-      (* failure *)
-      fail tin
 
   let check_constraints_ne matcher constraints exp = fun f tin ->
     let rec loop = function
@@ -333,6 +344,11 @@ module XMATCH = struct
 	    [] (* failure *) -> loop cs
 	  | _ (* success *) -> fail tin in
     loop constraints
+
+  let check_constraints matcher constraints term = fun f tin ->
+    if matcher constraints term (function id -> tin.binding0 +> List.assoc id)
+    then f () tin (* success *)
+    else fail tin (* failure *)
 
   let check_pos_constraints constraints pvalu f tin =
     check_constraints_ne
@@ -381,22 +397,8 @@ module XMATCH = struct
 	  let success valu' =
 	    Some (tin.binding +> Common.insert_assoc (k, valu')) in
           (match valu with
-            Ast_c.MetaIdVal (a,c)    ->
-	      (* c is a negated constraint *)
-	      let rec loop = function
-		  [] -> success(Ast_c.MetaIdVal(a,[]))
-		| c::cs ->
-		    let tmp =
-		      Common.optionise
-			(fun () -> tin.binding0 +> List.assoc c) in
-		    (match tmp with
-		      Some (Ast_c.MetaIdVal(v,_)) ->
-			if a = v
-			then None (* failure *)
-			else success(Ast_c.MetaIdVal(a,[]))
-		    | Some _ -> failwith "Not possible"
-		    | None -> success(Ast_c.MetaIdVal(a,[]))) in
-	      loop c
+            Ast_c.MetaIdVal (a)    ->
+	      success(Ast_c.MetaIdVal(a))
           | Ast_c.MetaAssignOpVal op      ->
 	      success(Ast_c.MetaAssignOpVal op)
           | Ast_c.MetaBinaryOpVal op      ->
@@ -438,7 +440,7 @@ module XMATCH = struct
 		   (if strip
 		   then Lib_parsing_c.al_arguments a
 		   else Lib_parsing_c.semi_al_arguments a))
-		
+
           | Ast_c.MetaDeclVal a ->
 	      success
 		(Ast_c.MetaDeclVal
@@ -469,23 +471,23 @@ module XMATCH = struct
 		   (if strip
 		   then Lib_parsing_c.al_type a
 		   else Lib_parsing_c.semi_al_type a))
-		
+
           | Ast_c.MetaInitVal a ->
 	      success
 		(Ast_c.MetaInitVal
 		   (if strip
 		   then Lib_parsing_c.al_init a
 		   else Lib_parsing_c.semi_al_init a))
-		
+
           | Ast_c.MetaInitListVal a ->
 	      success
 		(Ast_c.MetaInitListVal
 		   (if strip
 		   then Lib_parsing_c.al_inits a
 		   else Lib_parsing_c.semi_al_inits a))
-		
+
           | Ast_c.MetaListlenVal a -> success(Ast_c.MetaListlenVal a)
-		
+
           | Ast_c.MetaParamVal a ->
 	      success
 		(Ast_c.MetaParamVal
@@ -498,7 +500,7 @@ module XMATCH = struct
 		   (if strip
 		   then Lib_parsing_c.al_params a
 		   else Lib_parsing_c.semi_al_params a))
-		
+
           | Ast_c.MetaFragListVal a ->
 	      success
 		(Ast_c.MetaFragListVal
@@ -511,10 +513,11 @@ module XMATCH = struct
 		   (if strip
 		   then Lib_parsing_c.al_string_format a
 		   else Lib_parsing_c.semi_al_string_format a))
-		
+
           | Ast_c.MetaPosVal (pos1,pos2) ->
 	      success(Ast_c.MetaPosVal (pos1,pos2))
-          | Ast_c.MetaPosValList l -> success (Ast_c.MetaPosValList l))
+          | Ast_c.MetaPosValList l -> success (Ast_c.MetaPosValList l)
+	  | Ast_c.MetaNoVal -> None)
 
   let pos_variables tin ia get_pvalu finish =
     match Ast_cocci.get_pos_var ia with
@@ -600,7 +603,7 @@ module XMATCH = struct
       pos_variables tin ia
 	(function _ -> [Lib_parsing_c.lin_col_by_pos [ib]])
 	finish
-      
+
   let tokenf_mck mck ib = fun tin ->
     let pos = Ast_c.info_to_fixpos ib in
     let posmck = Ast_cocci.FixPos (pos, pos) in

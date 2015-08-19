@@ -241,6 +241,14 @@ let lookup rule name =
       raise
 	(Semantic_cocci.Semantic("bad rule "^rule^" or bad variable "^name))
 
+let meta_lookup rule name v =
+  match lookup rule name with
+    Ast.MetaScriptDecl(cell,_) ->
+      (match !cell with
+	Some x -> x
+      | None -> cell := Some v; v)
+  | res -> res
+
 let check_meta_tyopt type_irrelevant v =
   let fail name =
     raise
@@ -248,11 +256,11 @@ let check_meta_tyopt type_irrelevant v =
 	 ("incompatible inheritance declaration "^name)) in
   match v with
     Ast.MetaMetaDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaMetaDecl(_,_) -> ()
       | _ -> fail name)
   | Ast.MetaIdDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaIdDecl(_,_) | Ast.MetaFreshIdDecl(_,_) -> ()
       | _ -> fail name)
   | Ast.MetaFreshIdDecl((rule,name),seed) ->
@@ -260,84 +268,84 @@ let check_meta_tyopt type_irrelevant v =
 	(Semantic_cocci.Semantic
 	   "can't inherit the freshness of an identifier")
   | Ast.MetaTypeDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaTypeDecl(_,_) -> ()
       | _ -> fail name)
   | Ast.MetaInitDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaInitDecl(_,_) -> ()
       | _ -> fail name)
   | Ast.MetaInitListDecl(Ast.NONE,(rule,name),len_name) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaInitListDecl(_,_,_) -> ()
       | _ -> fail name)
   | Ast.MetaListlenDecl((rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaListlenDecl(_) -> ()
       | _ -> fail name)
   | Ast.MetaParamDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaParamDecl(_,_) -> ()
       | _ -> fail name)
   | Ast.MetaParamListDecl(Ast.NONE,(rule,name),len_name) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaParamListDecl(_,_,_) -> ()
       | _ -> fail name)
   | Ast.MetaConstDecl(Ast.NONE,(rule,name),ty) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaConstDecl(_,_,ty1) when type_irrelevant || ty = ty1 -> ()
       | _ -> fail name)
   | Ast.MetaErrDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaErrDecl(_,_) -> ()
       | _ -> fail name)
   | Ast.MetaExpDecl(Ast.NONE,(rule,name),ty) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaExpDecl(_,_,ty1) when type_irrelevant || ty = ty1 -> ()
       | _ -> fail name)
   | Ast.MetaIdExpDecl(Ast.NONE,(rule,name),ty) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaIdExpDecl(_,_,ty1) when type_irrelevant || ty = ty1 -> ()
       | _ -> fail name)
   | Ast.MetaLocalIdExpDecl(Ast.NONE,(rule,name),ty) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaLocalIdExpDecl(_,_,ty1) when type_irrelevant || ty = ty1 -> ()
       | _ -> fail name)
   | Ast.MetaExpListDecl(Ast.NONE,(rule,name),len_name) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaExpListDecl(_,_,_) -> ()
       | Ast.MetaParamListDecl(_,_,_) when not (!Flag.make_hrule = None) -> ()
       | _ -> fail name)
   | Ast.MetaDeclDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaDeclDecl(_,_) -> ()
       | _ -> fail name)
   | Ast.MetaFieldDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaFieldDecl(_,_) -> ()
       | _ -> fail name)
   | Ast.MetaFieldListDecl(Ast.NONE,(rule,name),len_name) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaFieldListDecl(_,_,_) -> ()
       | _ -> fail name)
   | Ast.MetaStmDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaStmDecl(_,_) -> ()
       | _ -> fail name)
   | Ast.MetaStmListDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaStmListDecl(_,_) -> ()
       | _ -> fail name)
   | Ast.MetaFuncDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaFuncDecl(_,_) -> ()
       | _ -> fail name)
   | Ast.MetaLocalFuncDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaLocalFuncDecl(_,_) -> ()
       | _ -> fail name)
   | Ast.MetaPosDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaPosDecl(_,_) ->
 	  if not (List.mem rule !Data.inheritable_positions) &&
 	    not !Data.ignore_patch_or_match
@@ -347,26 +355,26 @@ let check_meta_tyopt type_irrelevant v =
 		 ("position cannot be inherited over modifications: "^name))
       | _ -> fail name)
   | Ast.MetaFmtDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaFmtDecl(_,_) -> ()
       | _ -> fail name)
   | Ast.MetaFragListDecl(Ast.NONE,(rule,name),len) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaFragListDecl(_,_,_) -> ()
       | _ -> fail name)
   | Ast.MetaAnalysisDecl(analyzer,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaAnalysisDecl(analyzer1,_) ->
 	  if analyzer = analyzer1
 	  then ()
 	  else fail name
       | _ -> fail name)
   | Ast.MetaDeclarerDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaDeclarerDecl(Ast.NONE,(rule,name)) -> ()
       | _ -> fail name)
   | Ast.MetaIteratorDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaIteratorDecl(Ast.NONE,(rule,name)) -> ()
       | _ -> fail name)
   | _ ->

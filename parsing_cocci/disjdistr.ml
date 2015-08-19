@@ -227,6 +227,9 @@ and disjexp e =
   | Ast.AsExpr(exp,asexp) -> (* as exp doesn't contain disj *)
       let exp = disjexp exp in
       List.map (function exp -> Ast.rewrap e (Ast.AsExpr(exp,asexp))) exp
+  | Ast.AsSExpr(exp,asstm) -> (* as exp doesn't contain disj *)
+      let exp = disjexp exp in
+      List.map (function exp -> Ast.rewrap e (Ast.AsSExpr(exp,asstm))) exp
   | Ast.DisjExpr(exp_list) -> List.concat (List.map disjexp exp_list)
   | Ast.NestExpr(starter,expr_dots,ender,whencode,multi) ->
       (* not sure what to do here, so ambiguities still possible *)
@@ -362,6 +365,7 @@ let orify_rule_elem re exp rebuild =
   generic_orify_rule_elem disjexp re exp rebuild
 
 let orify_rule_elem_ty = generic_orify_rule_elem disjty
+let orify_rule_elem_id = generic_orify_rule_elem disjident
 let orify_rule_elem_param = generic_orify_rule_elem disjparam
 let orify_rule_elem_decl = generic_orify_rule_elem disjdecl
 let orify_rule_elem_anndecl = generic_orify_rule_elem anndisjdecl
@@ -429,6 +433,8 @@ let rec disj_rule_elem r k re =
       orify_rule_elem re exp (function exp -> Ast.rewrap exp (Ast.TopExp(exp)))
   | Ast.Ty(ty) ->
       orify_rule_elem_ty re ty (function ty -> Ast.rewrap ty (Ast.Ty(ty)))
+  | Ast.TopId(id) ->
+      orify_rule_elem_id re id (function id -> Ast.rewrap id (Ast.TopId(id)))
   | Ast.TopInit(init) ->
       orify_rule_elem_ini re init
 	(function init -> Ast.rewrap init (Ast.TopInit(init)))

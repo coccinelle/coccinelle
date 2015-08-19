@@ -163,6 +163,7 @@ and base_expression =
   | MetaExprList   of Ast.meta_name mcode (* only in arg lists *) *
 	              listlen * pure
   | AsExpr         of expression * expression (* as expr, always metavar *)
+  | AsSExpr        of expression * statement (* as expr, always metavar *)
   | EComma         of string mcode (* only in arg lists *)
   | DisjExpr       of string mcode * expression list *
 	              string mcode list (* the |s *) * string mcode
@@ -207,7 +208,7 @@ and string_format = base_string_format wrap
 
 (* --------------------------------------------------------------------- *)
 (* First class operators *)
-and base_assignOp = 
+and base_assignOp =
     SimpleAssign of simpleAssignOp mcode
   | OpAssign of Ast_cocci.arithOp mcode
   | MetaAssign of Ast_cocci.meta_name mcode * assignOpconstraint * pure
@@ -421,6 +422,7 @@ and base_statement =
   | Exp           of expression  (* only in dotted statement lists *)
   | TopExp        of expression (* for macros body *)
   | Ty            of typeC (* only at top level *)
+  | TopId         of ident (* only at top level *)
   | TopInit       of initialiser (* only at top level *)
   | Disj          of string mcode * statement dots list *
 	             string mcode list (* the |s *)  * string mcode
@@ -517,7 +519,7 @@ and rule = top_level list
 and parsed_rule =
     CocciRule of
       (rule (*minus*) * Ast.metavar list (*minus metavars*) *
-	(string list (*isos*) * string list (*drop_isos*) * 
+	(string list (*isos*) * string list (*drop_isos*) *
          Ast.dependency (*dependencies*) * string (*rulename*) * Ast.exists)) *
       (rule (*plus*) * Ast.metavar list (*plus metavars*)) * Ast.ruletype
   | ScriptRule of string (* name *) * string * Ast.dependency *
@@ -710,6 +712,18 @@ let rec meta_pos_name = function
 	MetaStmt(name,pure) -> name
       | _ -> failwith "bad metavariable")
   | _ -> failwith "bad metavariable"
+
+let rec meta_pos_constraint_names = function
+    ExprTag(e) ->
+      (match unwrap e with
+	MetaExpr(name,constraints,ty,form,pure) ->
+	  (match ty with
+	    Some tylist ->
+	      List.fold_left (fun prev cur -> TC.meta_names cur @ prev)
+		[] tylist
+	  | None -> [])
+      |	_ -> [])
+  | _ -> []
 
 (* --------------------------------------------------------------------- *)
 

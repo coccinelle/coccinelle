@@ -1,6 +1,4 @@
 
-val _handle_typedef : bool ref
-
 val enable_typedef  : unit -> unit
 val disable_typedef : unit -> unit
 val is_enabled_typedef : unit -> bool
@@ -49,4 +47,3 @@ val pop_context: unit -> unit
 val default_hint : unit -> lexer_hint
 
 val is_top_or_struct : context -> bool
-

@@ -55,7 +55,7 @@ foreach $_ (@files) {
 
 # Process std. input
 while(<>) {
-    
+
     # Find an ignore header
     if(/^-+$/) {
 	$header = $header + 1;
@@ -63,7 +63,7 @@ while(<>) {
 
     #
     if($header > 1) {
-	
+
 	# Filename
 	if(/^([0-9a-zA-Z_-]+)\.c\s*$/) {
 	    $currentfile = $1;

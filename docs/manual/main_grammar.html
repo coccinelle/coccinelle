@@ -50,14 +50,14 @@ td p{margin:0px;}
 .part{margin:2ex auto;text-align:center}
 .lstlisting{font-family:monospace;white-space:pre;margin-right:auto;margin-left:0pt;text-align:left}
 </style>
-<title>The SmPL Grammar (version 1.0.1
+<title>The SmPL Grammar (version 1.0.2
 )
 </title>
 </head>
 <body >
 <!--HEVEA command line is: /usr/bin/hevea -exec /usr/share/hevea/xxdate.exe main_grammar.tex -->
-<!--CUT STYLE article--><!--CUT DEF section 1 --><table class="title"><tr><td style="padding:1ex"><h1 class="titlemain">The SmPL Grammar (version 1.0.1
-)</h1><h3 class="titlerest">Research group on Coccinelle</h3><h3 class="titlerest">June 14, 2015</h3></td></tr>
+<!--CUT STYLE article--><!--CUT DEF section 1 --><table class="title"><tr><td style="padding:1ex"><h1 class="titlemain">The SmPL Grammar (version 1.0.2
+)</h1><h3 class="titlerest">Research group on Coccinelle</h3><h3 class="titlerest">August 18, 2015</h3></td></tr>
 </table><p>This document presents the grammar of the SmPL language used by the
 <a href="http://coccinelle.lip6.fr/">Coccinelle tool</a>. For the most
 part, the grammar is written using standard notation. In some rules,
@@ -283,7 +283,10 @@ expression metavariable binds <span style="font-family:monospace">E</span> to <s
 <span style="font-family:monospace">Ps@Es</span>, where <span style="font-family:monospace">Ps</span> is a parameter list and <span style="font-family:monospace">Es</span> is an
 expression list. This pattern matches a parameter list, and then matches
 <span style="font-family:monospace">Es</span> to the list of expressions, ie a possible argument list,
-represented by the names of the parameters.</p><p>Matching of various kinds of format strings within strings is supported.
+represented by the names of the parameters. Another particular case is
+<span style="font-family:monospace">E@S</span>, where <span style="font-family:monospace">E</span> is any expression and <span style="font-family:monospace">S</span> is a statement
+metavariable. <span style="font-family:monospace">S</span> matches the closest enclosing statement, which may
+be more than what is matches by the semantic match pattern itself.</p><p>Matching of various kinds of format strings within strings is supported.
 With the <span style="font-family:monospace">--ibm</span> option, matching of decimal format declarations is
 supported, but the length and precision arguments are not interpreted.
 Thus it is not possible to match metavariables in these fields. Instead,
@@ -342,7 +345,19 @@ defined on page <a href="#types">??</a>.</p><p>An identifier metavariable with 
 a value on the command line. For example, if a semantic patch contains a
 rule that declares an identifier metavariable with the name <span style="font-family:monospace">virtual.alloc</span>, then the command line could contain <span style="font-family:monospace">-D
 alloc=kmalloc</span>. There should not be space around the <span style="font-family:monospace">=</span>. An
-example is in <span style="font-family:monospace">demos/vm.cocci</span> and <span style="font-family:monospace">demos/vm.c</span>.</p><!--TOC paragraph id="sec3" Warning:-->
+example is in <span style="font-family:monospace">demos/vm.cocci</span> and <span style="font-family:monospace">demos/vm.c</span>.</p><p>It is possible to give an identifier metavariable a list of constraints
+that it should or should not be equal to. If the constraint is a list of
+(unquoted) strings, then the value of the metavariable should be the same
+as one of the strings, in the case of an equality constraint, or different
+from all of the strings, in the case of an inequality constraint. It is
+also possible to include inherited identifier metavariables among the
+constraints. In the case of a positive constraint, things work in the same
+way, but not with respect to the inherited value of the metavariable. On
+the other hand, an inequality constraint does not work so well, because the
+only value available is the one available in the ciurrent environment. If
+the proposed value is different from the one in teh current environment,
+but perhaps the same as the one in some other environment, the match will
+still succeed.</p><!--TOC paragraph id="sec3" Warning:-->
 <h4 id="sec3" class="paragraph">Warning:</h4><!--SEC END --><p> Each metavariable declaration causes the declared
 metavariables to be immediately usable, without any inheritance
 indication. Thus the following are correct:</p><blockquote class="quote">
@@ -532,7 +547,7 @@ some constraints on the use of these annotations:
 Dots, <em>i.e.</em> <span style="font-family:monospace">...</span>, cannot occur on a line marked
 <span style="font-family:monospace">+</span>.
 </li><li class="li-itemize">Nested dots, <em>i.e.</em>, dots enclosed in <span style="font-family:monospace">&lt;</span> and <span style="font-family:monospace">&gt;</span>, cannot
-occur on a line with any marking.
+occur on a line marked <span style="font-family:monospace">+</span>.
 </li></ul><p>Each element of a disjunction must be a proper term like an
 expression, a statement, an identifier or a declaration. Thus, the
 rule on the left below is not a syntactically correct SmPL rule. One may
@@ -999,7 +1014,7 @@ the first letter of the rule name is capitalized, although this is not done
 elsewhere. <span style="font-family:monospace">add_virtual_identifier X v</span> has the same effect as
 putting <span style="font-family:monospace">-D x=v</span> on the command line. Note again the case change.
 <span style="font-family:monospace">extend_virtual_identifiers()</span> (not shown) preserves all virtual
-identifiers of the current iteration that are not overridden by calls to 
+identifiers of the current iteration that are not overridden by calls to
 <span style="font-family:monospace">add_virtual_identifier</span>. Finally, the call to <span style="font-family:monospace">register</span> queues
 the collected information to trigger a new iteration at some time in the
 future.</p><p>Modification is not allowed when using iteration. Thus, it is required to

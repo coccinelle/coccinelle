@@ -22,7 +22,7 @@
 # Coccinelle under other licenses.
 
 
-#!/usr/bin/perl 
+#!/usr/bin/perl
 
 # usage: gather_failed.pl **/*.failed > /tmp/big.failed
 

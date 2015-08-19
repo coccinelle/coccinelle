@@ -1,0 +1,117 @@
+#!/bin/sh
+#
+# Copyright (c) 2005-2006 Ryan Anderson <ryan@michonline.com>
+# Copyright (c) 2006 Rene Scharfe <rene.scharfe@lsrfire.ath.cx>
+# Copyright (c) 2006 Uwe Zeisberger <zeisberg@informatik.uni-freiburg.de>
+# Copyright (c) 2007 Aron Griffis <aron@hp.com>
+# Copyright (c) 2007 Theodore Ts'o <tytso@mit.edu>
+# Copyright (c) 2008 Bryan Wu <bryan.wu@analog.com>
+# Copyright (c) 2008 Mike Frysinger <vapier@gentoo.org>
+# Copyright (c) 2008 Peter Korsgaard <jacmet@sunsite.dk>
+# Copyright (c) 2008 Sebastian Siewior <lkml@ml.breakpoint.cc>
+# Copyright (c) 2008 Trent Piepho <tpiepho@freescale.com>
+# Copyright (c) 2009 Mike Frysinger <vapier.adi@gmail.com>
+# Copyright (c) 2009 Nico Schottelius <nico-linuxsetlocalversion@schottelius.org>
+# Copyright (c) 2009 Peter Korsgaard <jacmet@sunsite.dk>
+# Copyright (c) 2010 Linus Torvalds <torvalds@linux-foundation.org>
+# Copyright (c) 2010 Michael Prokop <mika@grml.org>
+# Copyright (c) 2010 Michał Górny <gentoo@mgorny.alt.pl>
+# Copyright (c) 2010 Michal Marek <mmarek@suse.cz>
+# Copyright (c) 2010 Milton Miller <miltonm@bga.com>
+# Copyright (c) 2011 Mike Crowe <mcrowe@zipitwireless.com>
+# Copyright (c) 2012 Roland Dreier <roland@purestorage.com>
+# Copyright (c) 2013 Christian Kujau <lists@nerdbynature.de>
+# Copyright (c) 2013 Christophe Leroy <christophe.leroy@c-s.fr>
+# Copyright (c) 2013 Franck Bui-Huu <fbuihuu@gmail.com>
+# Copyright (c) 2015 Luis R. Rodriguez <mcgrof@do-not-panic.com>
+#
+# This file is released under the GPLv2.
+#
+# Taken from the Linux kernel as of v4.2-rc2 with a few modifications
+# described below.
+#
+# This scripts adds local version information from the version
+# control systems. It was taken from the Linux kernel as of v4.2-rc2
+# and simplified for use on Coccinelle by mcgrof. The version info
+# was hard coded to use long version. The svn postfix details were
+# also removed. I also added the option to enable this script to
+# work well for trees that do not use PGP signed tags or annotated
+# tags (git tag -s or git tag -a), git describe by default will only
+# look for these tags. If you do not use these you will want to set
+# the below variable to TAGS="--tags". If  you requires --tags, consider
+# to start signing your releases "git tag -s" and use a subkey for that.
+# If you do that, consider also using another PGP subkey for annotating
+# releases as deprecated.
+#
+# Set to emtpy variable if you use properly signed tags. You should do this!
+TAGS="--tags"
+
+srctree=.
+
+scm_version()
+{
+	local short
+	short=false
+
+
+	# Check for git and a git repo.
+	if test -z "$(git rev-parse --show-cdup 2>/dev/null)" &&
+	   head=`git rev-parse --verify --short HEAD 2>/dev/null`; then
+
+		# If we are at a tagged commit (like "v2.6.30-rc6"), we ignore
+		# it, because this version is defined in the top level Makefile.
+		if [ -z "`git describe $TAGS --exact-match 2>/dev/null`" ]; then
+
+			# If only the short version is requested, don't bother
+			# running further git commands
+			if $short; then
+				echo "+"
+				return
+			fi
+			# If we are past a tagged commit (like
+			# "v2.6.30-rc5-302-g72357d5"), we pretty print it.
+			if atag="`git describe $TAGS 2>/dev/null`"; then
+				echo "$atag" | awk -F- '{printf("-%05d-%s", $(NF-1),$(NF))}'
+
+			# If we don't have a tag at all we print -g{commitish}.
+			else
+				printf '%s%s' -g $head
+			fi
+		fi
+
+		# Check for uncommitted changes
+		if git diff-index --name-only HEAD | grep -qv "^scripts/package"; then
+			printf '%s' -dirty
+		fi
+
+		# All done with git
+		return
+	fi
+
+	# Check for mercurial and a mercurial repo.
+	if test -d .hg && hgid=`hg id 2>/dev/null`; then
+		# Do we have an tagged version?  If so, latesttagdistance == 1
+		if [ "`hg log -r . --template '{latesttagdistance}'`" == "1" ]; then
+			id=`hg log -r . --template '{latesttag}'`
+			printf '%s%s' -hg "$id"
+		else
+			tag=`printf '%s' "$hgid" | cut -d' ' -f2`
+			if [ -z "$tag" -o "$tag" = tip ]; then
+				id=`printf '%s' "$hgid" | sed 's/[+ ].*//'`
+				printf '%s%s' -hg "$id"
+			fi
+		fi
+
+		# Are there uncommitted changes?
+		# These are represented by + after the changeset id.
+		case "$hgid" in
+			*+|*+\ *) printf '%s' -dirty ;;
+		esac
+
+		# All done with mercurial
+		return
+	fi
+}
+
+res="$res$(scm_version)"
+echo "$res"

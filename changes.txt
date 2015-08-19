@@ -9,7 +9,7 @@
 - function-typed metavariables
 - virtual typedef, declarer name, iterator name
 - regexps for type metavariables
-- 'symbol' metadeclaration for C identifiers that are guaranteed not intended as meta variables. 
+- 'symbol' metadeclaration for C identifiers that are guaranteed not intended as meta variables.
 - allow mixing isomorpisms with normal rules
 
 ** Features:
@@ -18,19 +18,42 @@
 - interpret #if, as is done for #ifdef
 
 ** Bugfix:
+- Coccinelle's "make install" now copies files to /usr/local/lib instead of
+  /usr/local/share
 - Add more information in documentation, man pages and wiki
 - typedefs from C code should not be used before their point of inference
   (saved_typedefs in cprogram_of_file)
 
+* 1.0.2
+** Language:
+** Features:
+- Positions of C tokens are now computed while lexing rather than
+  during a distinct pass. This makes use of the Lexing.new_line function
+  which has been introduced in OCaml 3.11.
+  Coccinelle can thus no longer be compiled with OCaml 3.10.
+- --use-gitgrep falls back to --use-coccigrep for a non-git repository.
+- ocaml coccilib allows propagating identifiers, expressions, statements,
+  listlens, and positions to subsequent matching rules
+- Allow @S, for statement metavariable S on expressions
+- Exploit explicit positive constraints (no regexps) on identifiers in
+  file filtering
+- Ability to declare a rule as matching an identifier.  Doesn't work
+  properly for names of typedefs, enums, structures, or unions.
+** Bugfix:
+- Iso: allow mixed for model for the case where the model is just a metavar
+  Thanks to Kris Borer for reporting the problem
+- Allow ! to propagate into == or other ops in more cases.
 * 1.0.1
 ** Language:
 - allow static on type-level declarers
+- ... in for loop header and in array declaration size matches nothing.
 ** Features:
 - add --use-gitgrep option, for scanning with git grep
 ** Bugfix:
 - Take into account constraints when determining whether a metavar is pure
 - don't add switch fall through when a default is hidden under another case
   label.
+- Safer handing of loops in ...
 * 1.0.0
 ** Language:
 - Add metavariables for matcing assignment and binary operators.
@@ -182,7 +205,7 @@
   maps.
 - Extend file names only if the mentioned file does not exist.
 - Better support for functions that have no specified return type.
-- Added --include-headers-for-types option. 
+- Added --include-headers-for-types option.
 - Cope with unreadable C files.  Thanks to Akos PASZTORY for the
   suggestion.
 - Add the ability to add, but not match or remove, attributes.  Thanks to
@@ -750,7 +773,7 @@
   both strings and previously declared metavariables
 
 ** Features:
-- better handling of expanded code containing ##. Now compute the 
+- better handling of expanded code containing ##. Now compute the
   result.
 - more precise warning message for the "'\' outside define".
   Thanks to Nicholas Mc Guire for pointing out the problem.
@@ -815,7 +838,7 @@
 - new semantics for the -macro_file option, by default now expand macros
   only when necessary. To force use the -macro_file_builtins option instead.
 - a new -extract_macros command line action to help the parser. Works with
-  the -macro_file option. e.g. 
+  the -macro_file option. e.g.
     $ ./spatch -extract_macros ~/linux > /tmp/alldefs.h
     $ ./spatch -macro_file /tmp/alldefs.h -sp_file foo.cocci -dir ~/linux
 - removed -D macro_file option, not consistent with what -D usually means
@@ -835,7 +858,7 @@
   Thanks to Erik Hovland for the suggestion.
 
 ** Bugfix:
-- better parsing of declare macro at toplevel and in structure. 
+- better parsing of declare macro at toplevel and in structure.
   cf -text xfield
 - allowing back typedef names for fieldname
 - better printing of else in generated code
@@ -860,9 +883,9 @@
   not removed.
 - correct treatment of function pointer typed parameters in the SmPL ast0
   visitor.
-- better parsing error message and error recovery when comments are not ended, 
+- better parsing error message and error recovery when comments are not ended,
   when some macros have a weird body, and when some switch have a weird
-  Body. 
+  Body.
   Thanks to Derek Jones for pointing out the problem.
 - better detection and passing of "dangerous" ifdefs, cf -test
   double_switch.
@@ -876,7 +899,7 @@
 
 * 0.1.7
 
-** Language: 
+** Language:
 - initialize and finalize script code, cf demos/initial_final.cocci
 
 ** Features:
@@ -885,7 +908,7 @@
   subdirectory of the specified directory, if the option -I is not used.
 - give a seed for the name of a fresh identifier
 - better handling of cpp "constructed" identifiers as in a##b, that in
-  the futur will make it easier to match over those idents. 
+  the futur will make it easier to match over those idents.
   cf tests/pb_parsing_macro.c. Thanks to Ali-Erdem Ozcan for pointing
   out the problem. A new "parsing hack hint" is also available:
   YACFE_IDENT_BUILDER, cf standard.h.
@@ -905,11 +928,11 @@
 - -ifdef_to_if option made to process nested ifdefs
   (partial support)
 
-** Internals: 
+** Internals:
 - improve and fix installation process (usable on BSD)
 - improve and fix testing process
 - apply patches from Eugeniy Meshcheryakov
-- reorganize the way we parse C identifiers, especially concatenated cpp 
+- reorganize the way we parse C identifiers, especially concatenated cpp
   identifiers as in a##b. This may lead to some regressions as we may
   not parse as much code as before.
 - removed popl/ and popl09/ and popl related stuff from official distrib.
@@ -919,9 +942,9 @@
 ** Language:
 - the ability to add comments
 
-** Features: 
+** Features:
 - grouping of generated rules with -hrule option
-- handling of special coccinelle comments 
+- handling of special coccinelle comments
   /* {{coccinelle:skip_start}} */ and
   /* {{coccinelle:skip_end}} */
   allowing to give more hints to the C parser.
@@ -932,7 +955,7 @@
   Thanks to Alexander Faroy.
 
 ** Bugfix:
-- consider the ident tokens also in the 2 lines before the error line for the 
+- consider the ident tokens also in the 2 lines before the error line for the
   10-most-problematic-parsing-errors diagnostic.
 - SmPL parser allows cast as the argument of a pointer
 - SmPL type checker allows enum as an array index
@@ -942,15 +965,15 @@
 - bugfix in parser, better error message.
   Thanks to Ali-Erdem OZCAN <ali-erdem.ozcan@st.com> for the bug report.
 
-** Internals: 
+** Internals:
 
 * 0.1.5
 
-** Language: 
+** Language:
 - added initialiser metavariable
 - added sequences of designators in structures
 
-** Features: 
+** Features:
 - improved printing of the C code corresponding to metavariables
 - improved printing when code (eg declarations) is removed at the beginning
   of a block, and then is followed by a blank line
@@ -962,17 +985,17 @@
 - less quiet for -parse_c
 - improve parsing heuristics regarding macro statement
 
-** Internals: 
+** Internals:
 
 * 0.1.4
 
-** Language: 
+** Language:
 - long long added to SmPL
 
 ** Documentation:
 - add grammar reference and spatch command line options reference
 
-** Features: 
+** Features:
 - can match patterns of the form unsigned T or signed T, where T is a
   metavariable
 - dropped the sizeof_parens isomorphism, which was made redundant by the
@@ -996,13 +1019,13 @@
 - better formatting of generated if/while/etc. code
 - better parse error reporting when the problem is at the end of the file
 
-** Internals: 
+** Internals:
 - isomorphisms don't apply under signed/unsigned, to prevent the creation
   of things like unsigned signed int.  Need a better solution for this.
 
 * 0.1.3
 
-** Features: 
+** Features:
 - help in building the configuration macro file. The -parse_c action
   now returns the 10 most frequent parsing errors. This give useful
   hints to extend standard.h.
@@ -1013,13 +1036,13 @@
 - convert Todos in flow graph construction to recoverable errors
 - fixed bug in treatment of when != true and when != false, to allow more
   than one of them per ...
-- improve parsing of typedef of function pointer. 
+- improve parsing of typedef of function pointer.
 - improve typing.
 - parsing and typing support for old style C function declaration.
 - consider position variables as modifications when optimizing the
   translation into CTL of function definitions
 
-** Internals: 
+** Internals:
 
 * 0.1.2
 
@@ -1027,25 +1050,25 @@
 - better handling of ifdef on statements in control flow graph.
 - transform files even if they do not end in .c (thanks to Vegard Nossum)
 
-** Internals: 
+** Internals:
 - merge code of yacfe
 
 * 0.1.1
 
-** Language: 
+** Language:
  - support for initializer at toplevel, cf -test substruct
 
 * 0.1
 
 ** first public release of the source code:
 
-** Language: 
+** Language:
  - embeded python scripting
  - position
 
 ** Features
 
-* beta 
+* beta
 
 ** first public release of the binary
 

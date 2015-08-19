@@ -40,7 +40,7 @@ let add_comma is_comma is_dots make_comma itemlist =
     Ast0.DOTS(x) ->
       (match List.rev x with
         [] -> itemlist
-(* Not sure if comma is needed if the list is just ...; leave it there for      
+(* Not sure if comma is needed if the list is just ...; leave it there for
 now. See list_matcher in cocci_vs_c.ml in first try_matches case. *)
 (*      |       [e] when is_dots e -> itemlist*)
       |	 e::es ->

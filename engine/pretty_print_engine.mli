@@ -44,4 +44,3 @@ val predicate_to_string : Lib_engine.predicate -> string
 
 val pp_ctlcocci :
   bool (* show_plus *) -> bool (* inline_let *) -> Lib_engine.ctlcocci -> unit
-

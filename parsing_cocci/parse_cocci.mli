@@ -29,7 +29,7 @@ exception Bad_virt of string
 
 val parse : string ->
     (string, string) Common.either Common.set (* iso files *) *
-    Ast0_cocci.parsed_rule list (* rules *) * 
+    Ast0_cocci.parsed_rule list (* rules *) *
     string list (* virtuals *) *
     Ast_cocci.metavar list (* metavariables *)
 

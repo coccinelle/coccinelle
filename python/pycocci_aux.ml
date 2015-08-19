@@ -71,7 +71,7 @@ let fieldlistrep =
     (function x -> x)
 
 let stringrep = function
-  Ast_c.MetaIdVal        (s,_) -> s
+  Ast_c.MetaIdVal        s -> s
 | Ast_c.MetaAssignOpVal op -> call_pretty Pretty_print_c.pp_assignOp_gen op
 | Ast_c.MetaBinaryOpVal op -> call_pretty Pretty_print_c.pp_binaryOp_gen op
 | Ast_c.MetaFuncVal      s -> s
@@ -105,4 +105,4 @@ let stringrep = function
       | Ast_cocci.Virt(x,off) -> Printf.sprintf "%d+%d" x off in
     Common.sprintf ("pos(%s,%s)") (print_pos pos1) (print_pos pos2)
 | Ast_c.MetaPosValList positions -> "TODO: <<postvallist>>"
-
+| Ast_c.MetaNoVal -> failwith "no value, should not occur"

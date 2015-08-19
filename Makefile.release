@@ -104,7 +104,7 @@ prerelease:
 	$(MAKE) fix-expected
 	$(MAKE) distclean KEEP_CONFIG=1
 	@echo "\n\tEdit ./version"
-	@echo "\n\tRun ./autogen"
+	@echo "\n\tRun ./autogen --ignore_localversion"
 	@echo "\tCommit with 'make release'\n"
 	@echo "\t* set the GIT env variable to 'echo' to skip performing any git commands"
 	@echo "\t* changes to files other than ./version will not be committed automatically."

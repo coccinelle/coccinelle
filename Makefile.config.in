@@ -1,3 +1,5 @@
+VERSION=@PACKAGE_VERSION@
+
 # * for each library $1, add another entry in the same manner
 MAKELIBS=@MAKE_dynlink@ @MAKE_menhirLib@ @MAKE_pycaml@ @MAKE_pcre@ \
   @MAKE_parmap@
@@ -107,7 +109,7 @@ BINDIR=${bindir}
 MANDIR=${mandir}
 
 # Where to install the lib
-LIBDIR=${libdir}
+LIBDIR=@LIBDIR@
 
 # Where to install the configuration files
 SHAREDIR=@SHAREDIR@

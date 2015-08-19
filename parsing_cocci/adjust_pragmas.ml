@@ -157,6 +157,7 @@ let rec right_statement s =
   | Ast0.Exp(exp) -> None
   | Ast0.TopExp(exp) -> None
   | Ast0.Ty(ty) -> None
+  | Ast0.TopId(id) -> None
   | Ast0.TopInit(init) -> None
   | Ast0.Dots(d,whn) -> None
   | Ast0.Circles(d,whn) -> None

@@ -46,7 +46,7 @@ the first letter of the rule name is capitalized, although this is not done
 elsewhere. <span style="font-family:monospace">add_virtual_identifier X v</span> has the same effect as
 putting <span style="font-family:monospace">-D x=v</span> on the command line. Note again the case change.
 <span style="font-family:monospace">extend_virtual_identifiers()</span> (not shown) preserves all virtual
-identifiers of the current iteration that are not overridden by calls to 
+identifiers of the current iteration that are not overridden by calls to
 <span style="font-family:monospace">add_virtual_identifier</span>. Finally, the call to <span style="font-family:monospace">register</span> queues
 the collected information to trigger a new iteration at some time in the
 future.</p><p>Modification is not allowed when using iteration. Thus, it is required to

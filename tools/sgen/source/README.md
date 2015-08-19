@@ -10,11 +10,11 @@ ast\_cocci.ml ast0\_cocci.ml visitor\_ast0.ml visitor\_ast0\_types.ml type\_cocc
 
 **Internal dependency order (partial; ie. not total, some can be interchanged)**:
 
-globals.ml ast\_tostring.ml detect_patch.ml  
-meta\_variable.ml snapshot.ml user\_input.ml  
-position\_generator.ml disj\_generator.ml  
-rule\_body.ml rule\_header.ml context\_rule.ml script\_rule.ml  
-file\_transform.ml sgen\_interactive.ml sgen\_config.ml sgen.ml  
+globals.ml ast\_tostring.ml detect_patch.ml
+meta\_variable.ml snapshot.ml user\_input.ml
+position\_generator.ml disj\_generator.ml
+rule\_body.ml rule\_header.ml context\_rule.ml script\_rule.ml
+file\_transform.ml sgen\_interactive.ml sgen\_config.ml sgen.ml
 main.ml
 
 
@@ -45,7 +45,7 @@ Workflow
 
      - use snapshot type to keep state during the traversal (snapshot.ml).
 
-     - generate metapositions at structurally suitable places in the rule, used for *org* and *report* printing modes (position\_generator.ml).  
+     - generate metapositions at structurally suitable places in the rule, used for *org* and *report* printing modes (position\_generator.ml).
        If the original rule was a plus rule (ie. no \*/-, only +), the positions dictate where the new \*'s are placed. Otherwise, the original \*/- dictate where the new \*'s are placed.
 
      - special disjunction cases that arise in converting a *patch* rule to a *context* rule are handled as well (disj\_generator.ml).

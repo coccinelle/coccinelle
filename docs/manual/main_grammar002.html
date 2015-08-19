@@ -199,7 +199,10 @@ expression metavariable binds <span style="font-family:monospace">E</span> to <s
 <span style="font-family:monospace">Ps@Es</span>, where <span style="font-family:monospace">Ps</span> is a parameter list and <span style="font-family:monospace">Es</span> is an
 expression list. This pattern matches a parameter list, and then matches
 <span style="font-family:monospace">Es</span> to the list of expressions, ie a possible argument list,
-represented by the names of the parameters.</p><p>Matching of various kinds of format strings within strings is supported.
+represented by the names of the parameters. Another particular case is
+<span style="font-family:monospace">E@S</span>, where <span style="font-family:monospace">E</span> is any expression and <span style="font-family:monospace">S</span> is a statement
+metavariable. <span style="font-family:monospace">S</span> matches the closest enclosing statement, which may
+be more than what is matches by the semantic match pattern itself.</p><p>Matching of various kinds of format strings within strings is supported.
 With the <span style="font-family:monospace">--ibm</span> option, matching of decimal format declarations is
 supported, but the length and precision arguments are not interpreted.
 Thus it is not possible to match metavariables in these fields. Instead,
@@ -258,7 +261,19 @@ defined on page <a href="main_grammar005.html#types">??</a>.</p><p>An identifie
 a value on the command line. For example, if a semantic patch contains a
 rule that declares an identifier metavariable with the name <span style="font-family:monospace">virtual.alloc</span>, then the command line could contain <span style="font-family:monospace">-D
 alloc=kmalloc</span>. There should not be space around the <span style="font-family:monospace">=</span>. An
-example is in <span style="font-family:monospace">demos/vm.cocci</span> and <span style="font-family:monospace">demos/vm.c</span>.</p><h4 id="sec3" class="paragraph">Warning:</h4>
+example is in <span style="font-family:monospace">demos/vm.cocci</span> and <span style="font-family:monospace">demos/vm.c</span>.</p><p>It is possible to give an identifier metavariable a list of constraints
+that it should or should not be equal to. If the constraint is a list of
+(unquoted) strings, then the value of the metavariable should be the same
+as one of the strings, in the case of an equality constraint, or different
+from all of the strings, in the case of an inequality constraint. It is
+also possible to include inherited identifier metavariables among the
+constraints. In the case of a positive constraint, things work in the same
+way, but not with respect to the inherited value of the metavariable. On
+the other hand, an inequality constraint does not work so well, because the
+only value available is the one available in the ciurrent environment. If
+the proposed value is different from the one in teh current environment,
+but perhaps the same as the one in some other environment, the match will
+still succeed.</p><h4 id="sec3" class="paragraph">Warning:</h4>
 <p> Each metavariable declaration causes the declared
 metavariables to be immediately usable, without any inheritance
 indication. Thus the following are correct:</p><blockquote class="quote">

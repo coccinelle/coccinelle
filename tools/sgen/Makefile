@@ -16,4 +16,3 @@ uninstall:
 
 docs:
 	cd documentation; make docs; cd ..
-

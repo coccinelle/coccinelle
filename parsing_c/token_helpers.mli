@@ -55,6 +55,7 @@ val col_of_tok     : Parser_c.token -> int
 val line_of_tok    : Parser_c.token -> int
 val pos_of_tok     : Parser_c.token -> int
 val str_of_tok     : Parser_c.token -> string
+val string_of_token: Parser_c.token -> string
 val file_of_tok    : Parser_c.token -> Common.filename
 val pinfo_of_tok   : Parser_c.token -> Ast_c.parse_info
 

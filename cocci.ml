@@ -447,17 +447,25 @@ let show_or_not_celem2 prelude celem =
   |  Ast_c.Definition ({Ast_c.f_name = namefuncs},_) ->
       let funcs = Ast_c.str_of_name namefuncs in
       Flag.current_element := funcs;
-      (" function: ",funcs)
+      (" function: ",Some (funcs,namefuncs))
   |  Ast_c.Declaration
       (Ast_c.DeclList ([{Ast_c.v_namei = Some (name,_)}, _], _)) ->
       let s = Ast_c.str_of_name name in
       Flag.current_element := s;
-      (" variable ",s);
+      (" variable ",Some(s,name));
   |  _ ->
       Flag.current_element := "something_else";
-      (" ","something else");
+      (" ",None);
   ) in
-  if !Flag.show_trying then pr2 (prelude ^ tag ^ trying)
+  if !Flag.show_trying
+  then
+    match trying with
+      Some(str,name) ->
+	let info = Ast_c.info_of_name name in
+	let file = Filename.basename(Ast_c.file_of_info info) in
+	let line = Ast_c.line_of_info info in
+	pr2 (Printf.sprintf "%s%s%s: %s:%d" prelude tag str file line)
+    | None -> pr2 (Printf.sprintf "%s%s something else" prelude tag)
 
 let show_or_not_celem a b  =
   Common.profile_code "show_xxx" (fun () -> show_or_not_celem2 a b)
@@ -1496,7 +1504,7 @@ let apply_script_rule r cache newes e rules_that_have_matched
     begin
       let (_, mv, script_vars, _) = r.scr_ast_rule in
       let ve =
-	(List.map (function (n,v) -> (("virtual",n),Ast_c.MetaIdVal (v,[])))
+	(List.map (function (n,v) -> (("virtual",n),Ast_c.MetaIdVal (v)))
 	   !Flag.defined_virtual_env) @ e in
       let not_bound x = not (contains_binding ve x) in
       (match List.filter not_bound mv with
@@ -1536,10 +1544,11 @@ let apply_script_rule r cache newes e rules_that_have_matched
 		  (* failure means we should drop e, no new bindings *)
 		  (((relevant_bindings,None) :: cache), newes)
 	      | Some script_vals ->
-		  let script_vals =
-		    List.map (function x -> Ast_c.MetaIdVal(x,[]))
-		      script_vals in
-		  let new_e = (List.combine script_vars script_vals) @ e in
+		  let script_var_env =
+		    List.filter
+		      (function (x,Ast_c.MetaNoVal) -> false | _ -> true)
+		      (List.combine script_vars script_vals) in
+		  let new_e = script_var_env @ e in
 		  let new_e =
 		    new_e +>
 		    List.filter
@@ -1590,7 +1599,7 @@ let consistent_positions binding reqopts =
       [] -> true
     | [_] -> true
     | l::ls ->
-	let desired_functions = 
+	let desired_functions =
 	  List.fold_left
             (fun prev (_,elem,_,_) ->
               if not (List.mem elem prev) then elem::prev else prev)
@@ -2316,4 +2325,3 @@ let check_duplicate_modif2 xs =
   )
 let check_duplicate_modif a =
   Common.profile_code "check_duplicate" (fun () -> check_duplicate_modif2 a)
-

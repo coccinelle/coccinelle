@@ -32,16 +32,16 @@ use diagnostics;
 #use Date::Calc qw(Delta_Days); #sudo apt-get install libdate-calc-perl
 
 #------------------------------------------------------------------------------
-# Helpers 
+# Helpers
 #------------------------------------------------------------------------------
 
-my $debug = 0; 
+my $debug = 0;
 
 sub pr2 { print STDERR "@_\n"; }
 sub pr { print "@_\n"; }
 sub mylog { print STDERR "@_\n" if $debug; }
 
-sub plural { 
+sub plural {
   my ($n) = @_;
   $n > 1 ? "s" : "";
 }
@@ -51,8 +51,8 @@ sub plural {
 #------------------------------------------------------------------------------
 
 my $ok = 0;
-my $so = 0; #spatch ok 
-my $fa = 0; #failed 
+my $so = 0; #spatch ok
+my $fa = 0; #failed
 my $gu = 0; #gave up
 
 my $nbfiles = 0;
@@ -76,7 +76,7 @@ my $sizeSP = 0;
 my $cedescr = "";
 
 my $numauthors = 0;
-my $duration = 0; # in days 
+my $duration = 0; # in days
 
 my @cfiles = ();
 
@@ -96,7 +96,7 @@ if($spfile =~ /(rule|mega|bt)(\d+)\.cocci/) { $ruleno = "$2"; }
 #chomp $cedescr;
 #print STDERR (Dumper($cedescr));
 open TMP, "Makefile" or die "no Makefile file ?";
-while(<TMP>) { 
+while(<TMP>) {
   if(/^(CE)?DESCRIPTION=["'](.*)["']/) {  $cedescr = $2; }
 }
 
@@ -107,7 +107,7 @@ while(<TMP>) {
 #$cedescr =~ s/\t/\\t/g;
 
 #------------------------------------------------------------------------------
-# List c files 
+# List c files
 #------------------------------------------------------------------------------
 my $files = `make source_files`;
 chomp $files;
@@ -118,8 +118,8 @@ $nbfiles = scalar(@cfiles);
 #------------------------------------------------------------------------------
 # Size files (lines)
 #------------------------------------------------------------------------------
-map { 
-  my ($linefile) = `wc -l $_`; 
+map {
+  my ($linefile) = `wc -l $_`;
   chomp $linefile;
   die "wierd wc output" unless $linefile =~ /^(\d+) /;
   $sumlinefiles += $1;
@@ -130,7 +130,7 @@ map {
 #------------------------------------------------------------------------------
 # Size SP
 #------------------------------------------------------------------------------
-$sizeSP = 
+$sizeSP =
   `cat $spfile | perl -p -e "s/\\/\\/.*//g;" | grep -v '^[ \t]*\$' | wc -l`;
 chomp $sizeSP;
 
@@ -141,14 +141,14 @@ chomp $sizeSP;
 if(!(-e "README")) { pr2 "no README file ?"; }
 else {
   open TMP, "README" or die "no README file ?";
-  while(<TMP>) { 
-    if (/\[bug\]/ || /status\]\s*bug/ ||  /status\]\s*BUG/ ) { 
+  while(<TMP>) {
+    if (/\[bug\]/ || /status\]\s*bug/ ||  /status\]\s*BUG/ ) {
 
       # can also look for [semibug] but it's often related to [corrected_c] kind of pbs
-      #|| /status\]\s*semi-bug/ 
+      #|| /status\]\s*semi-bug/
 
-      #pr2 "OLD BUG FORMAT: $_"; 
-      $errors++ 
+      #pr2 "OLD BUG FORMAT: $_";
+      $errors++
     }
   }
 }
@@ -159,7 +159,7 @@ else {
 # Size P (total)
 #------------------------------------------------------------------------------
 
-if(-e "gitinfo") { 
+if(-e "gitinfo") {
   ($sumlineP) = `cat gitinfo |wc -l`;
   chomp $sumlineP;
 } else {
@@ -171,8 +171,8 @@ if(-e "gitinfo") {
 #------------------------------------------------------------------------------
 
 
-if(-e "gitinfo") { 
-  
+if(-e "gitinfo") {
+
   open TMP, "gitinfo" or die "no gitinfo file ?";
 
   #for authors
@@ -183,7 +183,7 @@ if(-e "gitinfo") {
   my @maxdate = ();
   my $nodateyet = 1;
 
-  while(<TMP>) { 
+  while(<TMP>) {
     #can also do: egrep "^Author" gitinfo | sort | uniq | wc -l
     if (/^Author: (.*)/) {
       $h->{$1}++;
@@ -191,7 +191,7 @@ if(-e "gitinfo") {
 
 #    if(/^Date: (.*) ([-+]\d+)?/) {
 #      my $date = ParseDate($1);
-#      if (!$date) { die "bad date" } 
+#      if (!$date) { die "bad date" }
 #      else {
 #        my ($year, $month, $day) = UnixDate($date, "%Y", "%m", "%d");
 #        my @current = ($year, $month, $day);
@@ -209,7 +209,7 @@ if(-e "gitinfo") {
 #        }
 #      }
 #    }
- 
+
 
 
   }
@@ -219,17 +219,17 @@ if(-e "gitinfo") {
 #    $duration = "1 day";
 #  }
 #  elsif($diff < 31) {
-#    $duration = "$diff days"; 
+#    $duration = "$diff days";
 #  }
 #  elsif($diff > 365) {
 #    my $years = int($diff / 365);
 #    my $s = plural($years);
-#    $duration = "$years year$s"; 
+#    $duration = "$years year$s";
 #  }
 #  elsif($diff > 31) {
 #    my $months = int($diff / 31);
 #    my $s = plural($months);
-#    $duration = "$months month$s"; 
+#    $duration = "$months month$s";
 #  }
 #  else { die "impossible"; }
 
@@ -250,14 +250,14 @@ foreach my $c (@cfiles) {
   die "wierd: $c, with $spfile" unless ($c =~ /(.*)\.c$/);
   my $base = $1;
   my $bef = "$base.c";
-  my $aft = "$base.res"; 
-  if(-e "corrected_$base.res") { 
+  my $aft = "$base.res";
+  if(-e "corrected_$base.res") {
     $aft = "corrected_$base.res";
     mylog "found corrected";
   }
   my $onlychange = 0;
   open TMP, "diff -u -b -B $bef $aft |";
-  
+
   my $count = 0;
   while(<TMP>) {
     $count++;
@@ -275,7 +275,7 @@ foreach my $c (@cfiles) {
 foreach my $c (@cfiles) {
   die "" unless ($c =~ /(.*)\.c$/);
   my $base = $1;
-  
+
   my $diagnosefile = "";
   mylog "$base";
 
@@ -298,7 +298,7 @@ foreach my $c (@cfiles) {
 #
 #      pr2 (sprintf "%4.1fs\n", $time);
 #      printf "I: %15s  & %4.1fs\n", $c, $time;
-#      
+#
 #    }
     if (/time: (.*)/) {
       $found++;
@@ -307,7 +307,7 @@ foreach my $c (@cfiles) {
 
       mylog (sprintf "%4.1fs\n", $time);
       printf "I: %15s  & %4.1fs\n", $c, $time;
-      
+
     }
 
 
@@ -316,7 +316,7 @@ foreach my $c (@cfiles) {
 
   $sumtime += $time;
   $maxtime = $time if $time > $maxtime;
-  
+
 }
 
 #------------------------------------------------------------------------------
@@ -370,22 +370,20 @@ mylog "Sanity checks: nb files vs total status: $nbfiles =? $totalstatus";
 
 
 
-printf "L: %20s (r%3s) & %5.1f%% & %5dfi & %2de & %6.1fx & %6.1fs \n", 
+printf "L: %20s (r%3s) & %5.1f%% & %5dfi & %2de & %6.1fx & %6.1fs \n",
  $cedescr, $ruleno, $pourcentcorrect, $nbfiles, $errors, $ratioPvsSP, $sumtime;
 
 
 # Mega, Complex, Bluetooth
 
-printf "M: %60s & %5d & %6d (%d) & %2d & %s & %2d & %3d & %6.0fx & %6.1fs (%.1fs)  & %5.0f\\%% \\\\\\hline%% SP: %s  \n", 
+printf "M: %60s & %5d & %6d (%d) & %2d & %s & %2d & %3d & %6.0fx & %6.1fs (%.1fs)  & %5.0f\\%% \\\\\\hline%% SP: %s  \n",
  $cedescr, $nbfiles, $sumlineP, $sumlinePchange, $numauthors, $duration, $errors, $sizeSP, $ratioPvsSP,
  $avgtime, $maxtime, $pourcentcorrect, $spfile;
 
-printf "C: %60s & %5d & %6d (%d) & %2d & %3d & %6.0fx & %6.1fs (%.1fs)  & %5.0f\\%% \\\\\\hline%% SP: %s  \n", 
+printf "C: %60s & %5d & %6d (%d) & %2d & %3d & %6.0fx & %6.1fs (%.1fs)  & %5.0f\\%% \\\\\\hline%% SP: %s  \n",
  $cedescr, $nbfiles, $sumlineP, $sumlinePchange, $errors, $sizeSP, $ratioPvsSP,
  $avgtime, $maxtime, $pourcentcorrect, $spfile;
 
-printf "B: %60s & %5d & %5d (%d) & %3d & %6.0fx & %6.1fs (%.1fs) & %5.0f\\%% \\\\\\hline%% SP: %s  \n", 
+printf "B: %60s & %5d & %5d (%d) & %3d & %6.0fx & %6.1fs (%.1fs) & %5.0f\\%% \\\\\\hline%% SP: %s  \n",
  $cedescr, $nbfiles, $sumlineP, $sumlinePchange, $sizeSP, $ratioPvsSP,
  $avgtime, $maxtime, $pourcentcorrect, $spfile;
-
-

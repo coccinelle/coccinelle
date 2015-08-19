@@ -528,5 +528,3 @@ let rec function_pointer_type_opt x =
       function_pointer_type_opt ft
 
   | _ -> None
-
-

@@ -50,4 +50,3 @@ and dots_bef_aft =
     NoDots
   | AddingBetweenDots of term * int (*index of let var*)
   | DroppingBetweenDots of term * int (*index of let var*)
-

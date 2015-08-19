@@ -435,7 +435,7 @@ let get_clt (tok,_) =
   | PC.TBreak(clt) | PC.TContinue(clt) | PC.TGoto(clt) | PC.TIdent(_,clt)
   | PC.TTypeId(_,clt) | PC.TSymId(_,clt)
   | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
-  
+
   | PC.TSizeof(clt)
 
   | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
@@ -497,7 +497,7 @@ let get_clt (tok,_) =
   | PC.TType -> failwith "No clt attached to token TType"
   | PC.TSymbol -> failwith "No clt attached to token TSymbol"
   | PC.TStatement -> failwith "No clt attached to token TStatement"
-  | PC.TScriptData _ -> failwith "No clt attached to token TScriptData" 
+  | PC.TScriptData _ -> failwith "No clt attached to token TScriptData"
   | PC.TScript -> failwith "No clt attached to token TScript"
   | PC.TRuleName _ -> failwith "No clt attached to token TRuleName"
   | PC.TRightIso -> failwith "No clt attached to token TRightIso"
@@ -961,7 +961,7 @@ let split_token ((tok,_) as t) =
   | PC.TIsoToTestExpression ->
       failwith "unexpected tokens"
   | PC.TScriptData s -> ([t],[t])
-  | PC.TWhitespace _ -> ([t],[t]) 
+  | PC.TWhitespace _ -> ([t],[t])
 
 
 let split_token_stream tokens =
@@ -1098,7 +1098,8 @@ let detect_types in_meta_decls l =
   let is_choices_delim = function
       (PC.TOBrace(_),_) | (PC.TComma(_),_) -> true | _ -> false in
   let is_id = function
-      (PC.TIdent(_,_),_) | (PC.TMetaId(_,_,_,_,_),_) | (PC.TMetaFunc(_,_,_,_),_)
+      (PC.TIdent(_,_),_) | (PC.TMetaId(_,_,_,_,_),_)
+    | (PC.TMetaFunc(_,_,_,_),_)
     | (PC.TMetaLocalFunc(_,_,_,_),_) -> true
     | (PC.TMetaParam(_,_,_),_)
     | (PC.TMetaParamList(_,_,_,_),_)
@@ -1119,6 +1120,10 @@ let detect_types in_meta_decls l =
     | (PC.TMetaStmList(_,_,_),_)
     | (PC.TMetaPos(_,_,_,_),_) -> in_meta_decls
     | _ -> false in
+  let is_tyleft = function (* things that can start a var decl *)
+      (PC.TMul(_),_)
+    | (PC.TOPar(_),_) -> true
+    | _ -> false in
   let redo_id ident clt v =
     !Data.add_type_name ident;
     (PC.TTypeId(ident,clt),v) in
@@ -1128,8 +1133,8 @@ let detect_types in_meta_decls l =
       [] -> []
     | ((PC.TOBrace(clt),v)::_) as all when in_meta_decls ->
 	collect_choices type_names all (* never a function header *)
-    | delim::(PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::rest
-      when is_delim infn delim ->
+    | delim::(PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::((id::_) as rest)
+      when is_delim infn delim && (is_id id || is_tyleft id) ->
 	let newid = redo_id ident clt v in
 	delim::newid::x::(loop false infn (ident::type_names) rest)
     | delim::(PC.TIdent(ident,clt),v)::id::rest
@@ -1144,7 +1149,8 @@ let detect_types in_meta_decls l =
 	if infn - 1 = 1
 	then rp::(loop false 0 type_names rest) (* 0 means not in fn header *)
 	else rp::(loop false (infn - 1) type_names rest)
-    | (PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::rest when start ->
+    | (PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::((id::_) as rest)
+      when start && (is_id id || is_tyleft id) ->
 	let newid = redo_id ident clt v in
 	newid::x::(loop false infn (ident::type_names) rest)
     | (PC.TIdent(ident,clt),v)::id::rest when start && is_id id ->
@@ -1456,7 +1462,7 @@ let rec process_pragmas (bef : 'a option) (skips : 'a list) = function
 	  let (a,b,lline,llineend,d,e,strbef,straft,pos,ws) = get_clt next in
 	  (add_bef bef) @ List.rev skips @ pass @
 	  (process_pragmas
-	     (Some (update_clt next 
+	     (Some (update_clt next
                (a,b,prag_lline,llineend,d,e,pragmas,straft,pos,ws)))
 	     [] rest)
       |	_ ->
@@ -1467,7 +1473,7 @@ let rec process_pragmas (bef : 'a option) (skips : 'a list) = function
               List.rev skips@
 	      pass@process_pragmas None [] rest0
 	  | (_,_,Some next,PLUS) ->
-	      let (a,b,lline,llineend,d,e,strbef,straft,pos,ws) = 
+	      let (a,b,lline,llineend,d,e,strbef,straft,pos,ws) =
                 get_clt next in
 	      (add_bef bef) @ List.rev skips @ pass @
 	      (process_pragmas
@@ -1707,7 +1713,7 @@ let prepare_mv_tokens tokens =
 
 let unminus (d,x1,x2,x3,x4,x5,x6,x7,x8,x9) = (* for hidden variables *)
   match d with
-    D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> 
+    D.MINUS | D.OPTMINUS | D.UNIQUEMINUS ->
       (D.CONTEXT,x1,x2,x3,x4,x5,x6,x7,x8,x9)
   | D.PLUS -> failwith "unexpected plus code"
   | D.PLUSPLUS -> failwith "unexpected plus code"
@@ -1799,12 +1805,12 @@ let rec consume_minus_positions toks =
 		   (Ast0.MetaExpr(name,constraints,ty,Ast.ANY,pure)))) in
 	(loop_other (x::xs))
 
-    | x::((PC.TPArob _,_) as x')::x''::xs -> 
+    | x::((PC.TPArob _,_) as x')::x''::xs ->
 	x::loop_other (x'::x''::xs)
 
     | x::xs -> x::loop_other xs in
   loop_other(loop_pos toks)
-    
+
 let rec consume_plus_positions = function
     [] -> []
   | (PC.TPArob _,_)::x::xs -> consume_plus_positions xs
@@ -1847,9 +1853,9 @@ let partition_either l =
 
 let rec collect_script_tokens = function
     [(PC.EOF,_)] | [(PC.TArobArob,_)] | [(PC.TArob,_)] -> ""
-  | (PC.TScriptData(s),_)::[] -> 
+  | (PC.TScriptData(s),_)::[] ->
       s
-  | (PC.TScriptData(s),_)::xs -> 
+  | (PC.TScriptData(s),_)::xs ->
       s^(collect_script_tokens xs)
   | toks ->
       List.iter
@@ -1869,7 +1875,7 @@ let get_metavars parse_fn table file lexbuf =
     let tokens = prepare_mv_tokens tokens in
     match tokens with
       [(PC.TArobArob,_)] -> List.rev acc
-    | (PC.TAnalysis, _) :: tl -> 
+    | (PC.TAnalysis, _) :: tl ->
 	Lexer_script.file := file;
 	Lexer_script.language := "ocaml";
         let get_tokens = tokens_script_all table file false lexbuf in
@@ -1880,17 +1886,17 @@ let get_metavars parse_fn table file lexbuf =
 	  (* count open parens *)
 	  let count str toks =
 	    List.fold_left (fun n (t, _) ->
-	      if t = PC.TScriptData str 
+	      if t = PC.TScriptData str
 	      then n + 1
 	      else n) 0 toks in
 	  let n = n + count "(" newtoks in
 	  (* continue parsing *)
-	  if n = 0 
+	  if n = 0
 	  then toks @ newtoks
 	  else loop n (toks @ newtoks) in
 	begin
 	  match get_tokens (in_list [PC.TScriptData "("]) with
-	  | (_, ([(s, _)] as toks)) -> 
+	  | (_, ([(s, _)] as toks)) ->
 	      let data = collect_script_tokens (loop 1 toks) in
 	      let (_,tokens) =
 		Data.call_in_meta
@@ -2181,6 +2187,7 @@ let parse file =
 		match is_expression with
 		  Ast.AnyP -> PC.minus_main
 		| Ast.TyP -> PC.minus_ty_main
+		| Ast.IdP -> PC.minus_id_main
 		| Ast.ExpP -> PC.minus_exp_main in
 	      parse_one "minus" minus_parser file minus_tokens in
 	    (*
@@ -2202,6 +2209,7 @@ let parse file =
 		    match is_expression with
 		      Ast.AnyP -> PC.plus_main
 		    | Ast.TyP -> PC.plus_ty_main
+		    | Ast.IdP -> PC.plus_id_main
 		    | Ast.ExpP -> PC.plus_exp_main in
 		  parse_one "plus" plus_parser file plus_tokens
 		end in
@@ -2259,9 +2267,14 @@ let parse file =
 		([],[]) metavars in
 	    let metavars = List.rev metavars in
 	    let script_metavars = List.rev script_metavars in
+	    (* No idea whether any vars are position vars, but if there are
+	       any, they can be inherited. Probably provides a way of
+	       laundering positions over changes. *)
+            Data.inheritable_positions :=
+		name :: !Data.inheritable_positions;
 
 	    Hashtbl.add Data.all_metadecls name
-	      (List.map (function x -> Ast.MetaIdDecl(Ast.NONE,x))
+	      (List.map (function x -> Ast.MetaScriptDecl(ref None,x))
 		 script_metavars);
 	    Hashtbl.add Lexer_cocci.rule_names name ();
 	    (*TODOHashtbl.add Lexer_cocci.all_metavariables name script_metavars;*)

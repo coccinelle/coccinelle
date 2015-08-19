@@ -68,3 +68,5 @@ val type2c : typeC -> string
 val typeC : typeC -> unit
 
 val compatible : typeC -> typeC option -> bool
+
+val meta_names : typeC -> meta_name list
