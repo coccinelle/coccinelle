@@ -346,5 +346,3 @@ let patch3 xs =
     ) (min, [])
   in
   aux min_int (List.rev xs) +> snd
-
-

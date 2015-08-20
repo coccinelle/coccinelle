@@ -1,5 +1,5 @@
 (* create an index for each constructor *)
-(* current max is 185 *)
+(* current max is 186 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -97,7 +97,7 @@ let expression e =
   | Ast0.Estars(dots,whencode) -> [40]
   | Ast0.OptExp(exp) -> [41]
   | Ast0.UniqueExp(exp) -> [42]
-  | Ast0.AsExpr _ -> failwith "not possible"
+  | Ast0.AsExpr _  | Ast0.AsSExpr _ -> failwith "not possible"
 
 let assignOp op = match Ast0.unwrap op with
   | Ast0.SimpleAssign _ -> [180]
@@ -201,6 +201,7 @@ let statement s =
   | Ast0.Exp(exp) -> [83]
   | Ast0.TopExp(exp) -> [141]
   | Ast0.Ty(ty) -> [124]
+  | Ast0.TopId(ty) -> [186]
   | Ast0.TopInit(init) -> [146]
   | Ast0.Dots(d,whencode) -> [84]
   | Ast0.Circles(d,whencode) -> [85]

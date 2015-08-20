@@ -20,17 +20,17 @@ open Ast_c (* to factorise tokens, OpAssign, ... *)
 
 (*****************************************************************************)
 (*
- * subtil: ocamllex use side effect on lexbuf, so must take care.
- * For instance must do
+ * Warning: ocamllex uses side effects on lexbuf.
+ * For instance one must do
  *
  *  let info = tokinfo lexbuf in
  *  TComment (info +> tok_add_s (comment lexbuf))
  *
- * and not
+ * rather than
  *
  *   TComment (tokinfo lexbuf +> tok_add_s (comment lexbuf))
  *
- * because of the "wierd" order of evaluation of OCaml.
+ * because of the "weird" order of evaluation of OCaml.
  *
  *
  *
@@ -54,15 +54,20 @@ exception Lexical of string
 
 let tok     lexbuf  = Lexing.lexeme lexbuf
 
+let eoltok lexbuf =
+  let t = tok lexbuf in
+  Lexing.new_line lexbuf;
+  t
+
 let tokinfo lexbuf  =
+  let start_pos = Lexing.lexeme_start_p lexbuf in
   {
     pinfo = Ast_c.OriginTok {
-      Common.charpos = Lexing.lexeme_start lexbuf;
+      Common.charpos = start_pos.Lexing.pos_cnum;
       Common.str     = Lexing.lexeme lexbuf;
-      (* info filled in a post-lexing phase *)
-      Common.line = -1;
-      Common.column = -1;
-      Common.file = "";
+      Common.line = start_pos.Lexing.pos_lnum;
+      Common.column = start_pos.Lexing.pos_cnum - start_pos.Lexing.pos_bol;
+      Common.file = start_pos.Lexing.pos_fname;
     };
    (* must generate a new ref each time, otherwise share *)
     cocci_tag = ref Ast_c.emptyAnnot;
@@ -70,6 +75,29 @@ let tokinfo lexbuf  =
     comments_tag = ref Ast_c.emptyComments;
     danger = ref NoDanger;
   }
+
+let eoltokinfo lexbuf =
+  let t = tokinfo lexbuf in
+  Lexing.new_line lexbuf;
+  t
+
+let eoftokinfo lexbuf =
+  let start_pos = Lexing.lexeme_start_p lexbuf in
+  let t = {
+    pinfo = Ast_c.OriginTok {
+      Common.charpos = start_pos.Lexing.pos_cnum;
+      Common.str     = "";
+      Common.line = start_pos.Lexing.pos_lnum - 1;
+      Common.column = start_pos.Lexing.pos_cnum - start_pos.Lexing.pos_bol;
+      Common.file = start_pos.Lexing.pos_fname;
+    };
+   (* must generate a new ref each time, otherwise share *)
+    cocci_tag = ref Ast_c.emptyAnnot;
+    annots_tag = Token_annot.empty;
+    comments_tag = ref Ast_c.emptyComments;
+    danger = ref NoDanger;
+  } in
+  EOF t
 
 (* cppext: must generate a new ref each time, otherwise share *)
 let no_ifdef_mark () = ref (None: (int * int) option)
@@ -201,7 +229,7 @@ let cpp_keyword_table = Common.hash_of_list [
 let ibm_keyword_table = Common.hash_of_list [
   "decimal",   (fun ii -> Tdecimal ii);
   "EXEC",      (fun ii -> Texec ii);
-] 
+]
 
 let error_radix s =
   ("numeric " ^ s ^ " constant contains digits beyond the radix:")
@@ -271,7 +299,7 @@ let cplusplus_ident_ext = (letter | '~' | '$') (letter | digit | '~' | '$') *
 
 (* not used for the moment *)
 let punctuation = ['!' '\"' '#' '%' '&' '\'' '(' ')' '*' '+' ',' '-' '.' '/' ':'
-		   ';' '<' '=' '>' '?' '[' '\\' ']' '^' '{' '|' '}' '~']  
+		   ';' '<' '=' '>' '?' '[' '\\' ']' '^' '{' '|' '}' '~']
 let space = [' ' '\t' '\n' '\r' '\011' '\012' ]
 let additionnal = [ ' ' '\b' '\t' '\011' '\n' '\r' '\007' ]
 (* 7 = \a = bell in C. this is not the only char allowed !!
@@ -308,19 +336,28 @@ rule token = parse
   (* spacing/comments *)
   (* ----------------------------------------------------------------------- *)
 
-  (* note: this lexer generate tokens for comments!! so can not give
+  (* note: this lexer generates tokens for comments!! so can not give
    * this lexer as-is to the parsing function. The caller must preprocess
    * it, e.g. by using techniques like cur_tok ref in parse_c.ml.
    *
    * update: we now also generate a separate token for newlines, so now
    * the caller may also have to reagglomerate all those commentspace
-   * tokens if he was assuming that spaces were agglomerate in a single
+   * tokens if it was assuming that spaces were agglomerate in a single
    * token.
    *)
 
   | ['\n'] [' ' '\t' '\r' '\011' '\012' ]*
       (* starting a new line; the newline character followed by whitespace *)
-      { TCommentNewline (tokinfo lexbuf) }
+      { let s = Lexing.lexeme lexbuf in
+        let l = String.length s in
+        let t = TCommentNewline (tokinfo lexbuf) in
+        (* Adjust the position manually *)
+        let lcp = lexbuf.Lexing.lex_curr_p in
+        lexbuf.Lexing.lex_curr_p <- { lcp with
+          Lexing.pos_lnum = lcp.Lexing.pos_lnum + 1;
+          Lexing.pos_bol = lcp.Lexing.pos_cnum - (l-1)
+        };
+        t }
   | [' ' '\t' '\r' '\011' '\012' ]+
       { TCommentSpace (tokinfo lexbuf) }
   | "/*"
@@ -386,14 +423,14 @@ rule token = parse
   | "#" spopt "error"   sp  [^'\n' '\r']* ('\n' | "\r\n")
   | "#" spopt "warning" sp  [^'\n' '\r']* ('\n' | "\r\n")
   | "#" spopt "abort"   sp  [^'\n' '\r']* ('\n' | "\r\n")
-      { TCppDirectiveOther (tokinfo lexbuf) }
+      { TCppDirectiveOther (eoltokinfo lexbuf) }
 
   | "#" [' ' '\t']* ('\n' | "\r\n")
-      { TCppDirectiveOther (tokinfo lexbuf) }
+      { TCppDirectiveOther (eoltokinfo lexbuf) }
 
   (* only after cpp, ex: # 1 "include/linux/module.h" 1 *)
   | "#" sp pent sp  '\"' [^ '\"']* '\"' (spopt pent)*  spopt ('\n' | "\r\n")
-      { TCppDirectiveOther (tokinfo lexbuf) }
+      { TCppDirectiveOther (eoltokinfo lexbuf) }
 
 
 
@@ -424,7 +461,7 @@ rule token = parse
    * later in parser_c.mly. So redo a little bit of lexing there; ugly but
    * simpler to generate a single token here.  *)
   | (("#" [' ''\t']* "include" [' ' '\t']*) as includes)
-    (('\"' ([^ '\"']+) '\"' | 
+    (('\"' ([^ '\"']+) '\"' |
      '<' [^ '>']+ '>' |
       ['A'-'Z''_']+
     ) as filename)
@@ -433,7 +470,7 @@ rule token = parse
       }
   (* gccext: found in glibc *)
   | (("#" [' ''\t']* "include_next" [' ' '\t']*) as includes)
-    (('\"' ([^ '\"']+) '\"' | 
+    (('\"' ([^ '\"']+) '\"' |
      '<' [^ '>']+ '>' |
       ['A'-'Z''_']+
     ) as filename)
@@ -613,7 +650,7 @@ rule token = parse
   (* ---------------------- *)
 
   (* only in cpp directives normally *)
-  | "\\" ('\n' | "\r\n") { TCppEscapedNewline (tokinfo lexbuf) }
+  | "\\" ('\n' | "\r\n") { TCppEscapedNewline (eoltokinfo lexbuf) }
 
   (* We must generate separate tokens for #, ## and extend the grammar.
    * Note there can be "elaborated" idents in many different places, in
@@ -773,7 +810,7 @@ rule token = parse
    * thing a few time in linux and in glibc. No need look in keyword_table
    * here.
    *)
-  | (cplusplus_ident "::")+ "operator new" 
+  | (cplusplus_ident "::")+ "operator new"
       {
         let info = tokinfo lexbuf in
         let s = tok lexbuf in
@@ -788,10 +825,10 @@ rule token = parse
       }
 
   | cplusplus_ident
-      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* 
+      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'*
       (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>') ?
     ("::~" cplusplus_ident
-      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* 
+      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'*
       (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>') ?) +
 
       {
@@ -806,9 +843,9 @@ rule token = parse
 	  end
       }
   | cplusplus_ident
-      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* 
+      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'*
       (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>')
-  
+
       {
         let info = tokinfo lexbuf in
         let s = tok lexbuf in
@@ -823,13 +860,13 @@ rule token = parse
 
 
   | (cplusplus_ident as first)
-      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* 
+      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'*
       (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>') ?
     "::" (cplusplus_ident as second)
-      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* 
+      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'*
       (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>') ?
     ("::" cplusplus_ident
-      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* 
+      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'*
       (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>') ?) *
 
       {
@@ -850,10 +887,10 @@ rule token = parse
       }
 
    | "::" cplusplus_ident
-      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* 
+      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'*
       (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>') ?
     ("::" cplusplus_ident
-      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* 
+      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'*
       (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>') ?) *
 
       {
@@ -874,7 +911,7 @@ rule token = parse
         let s = char lexbuf   in
         TChar     ((s,   IsChar),  (info +> tok_add_s (s ^ "'")))
       }
-  | '\"' 
+  | '\"'
       { let info = tokinfo lexbuf in
         let s = string lexbuf in
         TString   ((s,   IsChar),  (info +> tok_add_s (s ^ "\"")))
@@ -885,7 +922,7 @@ rule token = parse
         let s = char lexbuf   in
         TChar     ((s,   IsWchar),  (info +> tok_add_s (s ^ "'")))
       }
-  | 'L' '\"' 
+  | 'L' '\"'
       { let info = tokinfo lexbuf in
         let s = string lexbuf in
         TString   ((s,   IsWchar),  (info +> tok_add_s (s ^ "\"")))
@@ -972,7 +1009,7 @@ rule token = parse
 
 
   (*------------------------------------------------------------------------ *)
-  | eof { EOF (tokinfo lexbuf +> Ast_c.rewrap_str "") }
+  | eof { eoftokinfo lexbuf }
 
   | _
       {
@@ -998,7 +1035,7 @@ and char = parse
           (match v with (* Machine specific ? *)
           | 'n' -> ()  | 't' -> ()   | 'v' -> ()  | 'b' -> () | 'r' -> ()
           | 'f' -> () | 'a' -> ()
-	  | '\\' -> () | '?'  -> () | '\'' -> ()  | '\"' -> () 
+	  | '\\' -> () | '?'  -> () | '\'' -> ()  | '\"' -> ()
           | 'e' -> () (* linuxext: ? *)
 	  | _ ->
               pr2 ("LEXER: unrecognised symbol in char:"^tok lexbuf);
@@ -1027,7 +1064,7 @@ and restchars = parse
           (match v with (* Machine specific ? *)
           | 'n' -> ()  | 't' -> ()   | 'v' -> ()  | 'b' -> () | 'r' -> ()
           | 'f' -> () | 'a' -> ()
-	  | '\\' -> () | '?'  -> () | '\'' -> ()  | '\"' -> () 
+	  | '\\' -> () | '?'  -> () | '\'' -> ()  | '\"' -> ()
           | 'e' -> () (* linuxext: ? *)
 	  | _ ->
               pr2 ("LEXER: unrecognised symbol in char:"^tok lexbuf);
@@ -1044,7 +1081,7 @@ and restchars = parse
 
 (* todo? factorise code with char ? but not same ending token so hard. *)
 and string  = parse
-  | '\"'                                       { "" } 
+  | '\"'                                       { "" }
   | (_ as x)                                  { string_of_char x^string lexbuf}
   | ("\\" (oct | oct oct | oct oct oct)) as x { x ^ string lexbuf }
   | ("\\x" (hex | hex hex)) as x              { x ^ string lexbuf }
@@ -1053,13 +1090,13 @@ and string  = parse
          (match v with (* Machine specific ? *)
          | 'n' -> ()  | 't' -> ()   | 'v' -> ()  | 'b' -> () | 'r' -> ()
          | 'f' -> () | 'a' -> ()
-	 | '\\' -> () | '?'  -> () | '\'' -> ()  | '\"' -> () 
+	 | '\\' -> () | '?'  -> () | '\'' -> ()  | '\"' -> ()
          | 'e' -> () (* linuxext: ? *)
 
          (* old: "x" -> 10 gccext ? todo ugly, I put a fake value *)
 
          (* cppext:  can have   \ for multiline in string too *)
-         | '\n' -> ()
+         | '\n' -> Lexing.new_line lexbuf
          | _ -> pr2 ("LEXER: unrecognised symbol in string:"^tok lexbuf);
 	 );
           x ^ string lexbuf
@@ -1084,8 +1121,9 @@ and string  = parse
 (* less: allow only char-'*' ? *)
 and comment = parse
   | "*/"     { tok lexbuf }
+  | ('\n' | "\r\n") { let s = eoltok lexbuf in s ^ comment lexbuf }
   (* noteopti: *)
-  | [^ '*']+ { let s = tok lexbuf in s ^ comment lexbuf }
+  | [^ '*' '\r' '\n']+ { let s = tok lexbuf in s ^ comment lexbuf }
   | [ '*']   { let s = tok lexbuf in s ^ comment lexbuf }
   | eof { pr2 "LEXER: end of file in comment"; "*/"}
   | _
@@ -1127,7 +1165,7 @@ and cpp_eat_until_nl = parse
 *)
 
 and parse_newline = parse
-  ('\n' | "\r\n") { tok lexbuf }
+  ('\n' | "\r\n") { eoltok lexbuf }
 
 and cpp_in_comment_eat_until_nl = parse
   [^ '\n']+

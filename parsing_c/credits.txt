@@ -10,4 +10,3 @@ Inspiration:
  - FrontC of hughes casse ?
  - CIL ?
  - EDG ?
-

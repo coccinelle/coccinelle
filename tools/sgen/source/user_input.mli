@@ -42,7 +42,7 @@ module Rule : sig
   val get_name : t -> string
   val get_org : t -> string * Meta_variable.t list
   val get_report : t -> string * Meta_variable.t list
-end 
+end
 
 
 (* ------------------------------------------------------------------------- *)

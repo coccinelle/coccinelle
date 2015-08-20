@@ -1,2 +1,1 @@
-val interpret : string -> string list -> string -> string list
-
+val interpret : string -> string list -> string -> string list option

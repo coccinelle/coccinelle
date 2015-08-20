@@ -189,6 +189,7 @@ let rec expression context old_metas table minus e =
   | Ast0.MetaExprList(name,_,_) ->
       check_table table minus name
   | Ast0.AsExpr(exp,asexp) -> failwith "not generated yet"
+  | Ast0.AsSExpr(exp,asstm) -> failwith "not generated yet"
   | Ast0.DisjExpr(_,exps,_,_) ->
       List.iter (expression context old_metas table minus) exps
   | Ast0.NestExpr(_,exp_dots,_,w,_) ->
@@ -432,6 +433,7 @@ and statement old_metas table minus s =
   | Ast0.Exp(exp) -> expression ID old_metas table minus exp
   | Ast0.TopExp(exp) -> expression ID old_metas table minus exp
   | Ast0.Ty(ty) -> typeC old_metas table minus ty
+  | Ast0.TopId(id) -> ident ID old_metas table minus id
   | Ast0.TopInit(init) -> initialiser old_metas table minus init
   | Ast0.Disj(_,rule_elem_dots_list,_,_) ->
       List.iter (dots (statement old_metas table minus)) rule_elem_dots_list
@@ -532,20 +534,30 @@ let rule old_metas table minus rules =
 
 (* --------------------------------------------------------------------- *)
 
-let positions table rules =
+let positions rname table rules =
+  let do_tynames var =
+    let tynames = Ast0.meta_pos_constraint_names var in
+    List.iter
+      (function name ->
+	(* only needed if the name is a local variable, not an inherited one *)
+	if fst name = rname
+	then (find_loop table name) := true)
+      tynames in
   let rec rmcode x = (* needed for type inference, nonpolymorphic *)
     List.iter
       (function var ->
 	let name = Ast0.meta_pos_name var in
 	(find_loop table (Ast0.unwrap_mcode name)) := true;
-	rmcode name)
+	rmcode name;
+	do_tynames var)
       (Ast0.get_pos x) in
   let rec mcode x =
     List.iter
       (function var ->
 	let name = Ast0.meta_pos_name var in
 	(find_loop table (Ast0.unwrap_mcode name)) := true;
-	rmcode name)
+	rmcode name;
+	do_tynames var)
       (Ast0.get_pos x) in
   let option_default = () in
   let bind x y = () in
@@ -672,7 +684,7 @@ let check_meta rname old_metas inherited_metavars metavars minus plus =
 
   add_to_fresh_table fresh;
   rule old_metas [iother_table;other_table;err_table] true minus;
-  positions [iother_table;other_table] minus;
+  positions rname [iother_table;other_table] minus;
   dup_positions minus;
   check_all_marked rname "metavariable" other_table "in the - or context code";
   rule old_metas [iother_table;fresh_table;err_table] false plus;

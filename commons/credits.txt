@@ -1,6 +1,6 @@
 
-Thanks to 
- - Richard Jones for his dumper module, 
+Thanks to
+ - Richard Jones for his dumper module,
  - Brian Hurt and Nicolas Cannasse for their dynArray module,
  - Christophe Troestler for his ANSITerminal module,
  - Sebastien ferre for his suffix tree module

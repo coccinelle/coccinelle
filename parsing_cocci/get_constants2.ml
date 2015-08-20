@@ -389,6 +389,14 @@ let do_get_constants constants keywords env neg_pos =
 	  (match Ast.unwrap_mcode name with
 	    "NULL" -> keywords "NULL"
 	  | nm -> constants nm)
+    | Ast.MetaId(name,Ast.IdPosIdSet(strs,mids),_,_)
+    | Ast.MetaFunc(name,Ast.IdPosIdSet(strs,mids),_,_)
+    | Ast.MetaLocalFunc(name,Ast.IdPosIdSet(strs,mids),_,_) ->
+	let cur =
+	  build_or
+	    (disj_union_all (List.map constants strs))
+	    (disj_union_all (List.map inherited mids)) in
+	bind (k i) (bind (minherited name) cur)
     | Ast.MetaId(name,_,_,_) | Ast.MetaFunc(name,_,_,_)
     | Ast.MetaLocalFunc(name,_,_,_) ->
 	bind (k i) (minherited name)
@@ -863,10 +871,10 @@ CNF as a list of git grep strings.  coccigrep uses 1 for basic scanning and
 then the CNF regexp for more refined scanning.  git grep uses the second
 CNF representation.
 4. An arbitrary formula, usable by the support for idutils *)
-    
+
 let get_constants rules neg_pos_vars =
   if !Flag.worth_trying_opt
-  then 
+  then
     begin
     let res = run rules neg_pos_vars in
     let grep = interpret_grep true res in (* useful because in string form *)

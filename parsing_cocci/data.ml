@@ -52,7 +52,7 @@ let all_metadecls =
 
 let uninitialized_add_meta = fun _ -> failwith "uninitialized add_meta"
 
-let clear_meta: (unit -> unit) ref = 
+let clear_meta: (unit -> unit) ref =
   ref uninitialized_add_meta
 
 let add_meta_meta: (Ast.meta_name -> Ast0.pure -> unit) ref =

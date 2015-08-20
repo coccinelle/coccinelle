@@ -3,7 +3,7 @@ dnl  run 'automake -acf' to update setup/{install-sh,missing}
 
 dnl  standard initialization (we only use autoconf not automake)
 AC_PREREQ([2.68])
-AC_INIT([coccinelle], m4_esyscmd([cat ./version | tr -d '\n']), [cocci@systeme.lip6.fr], [], [http://coccinelle.lip6.fr/])
+AC_INIT([coccinelle], m4_esyscmd([./version.sh]), [cocci@systeme.lip6.fr], [], [http://coccinelle.lip6.fr/])
 AC_CONFIG_MACRO_DIR([setup])
 AC_CONFIG_AUX_DIR([setup])
 AC_SUBST([CONFIGURE_FLAGS], ["$*"])
@@ -81,7 +81,6 @@ AC_SUBST([PKG_CONFIG],["$COCCI_SRCDIR/setup/fake-subst.sh $PKG_CONFIG_ORIG"])
 
 dnl  ocaml compiler configuration
 AC_PROG_OCAML
-AC_CHECK_OCAMLVERSION([OCAMLATLEAST310],[3.10])
 AC_CHECK_OCAMLVERSION([OCAMLATLEAST311],[3.11])
 AC_CHECK_OCAMLVERSION([OCAMLATLEAST4020],[4.02])
 AC_SUBST([OCAMLCORIG],["$OCAMLC"])
@@ -90,7 +89,7 @@ AS_IF([test "x$OCAMLC" = xno -o "x$OCAMLDEP" = xno -o "x$OCAMLDOC" = xno -o "x$O
 [dnl
   AC_MSG_ERROR([It seems a few components of the OCaml distribution could nt be found. Make sure the following tools are installed and in your path: ocamlc, ocamldep, ocamldoc, ocamlmklib.])
 ])
-AS_IF([test "x$OCAMLATLEAST310" = xno],[AC_MSG_NOTICE([a more recent OCaml installation may be required])])
+AS_IF([test "x$OCAMLATLEAST311" = xno],[AC_MSG_NOTICE([a more recent OCaml installation may be required])])
 
 dnl  ocaml tools
 AC_PROG_CAMLP4

@@ -1150,7 +1150,7 @@ let satAU dir ((cfg,_,states) as m) s1 s2 reqst print_graph =
 		  if not !something_dropped
 		  then first
 		  else setdiff res y in
-		f res new_info in      
+		f res new_info in
 	  try
 	    (if !Flag_ctl.loop_in_src_code
 	    then
@@ -2412,7 +2412,7 @@ let sat m phi reqopt =
     Hashtbl.clear memo_label;
     let (x,label,preproc,states) = m in
     if (!Flag_ctl.bench > 0) || preprocess m reqopt
-    then    
+    then
       ((* to drop when Yoann initialized this flag *)
       if List.exists (G.extract_is_loop x) states
       then Flag_ctl.loop_in_src_code := true;

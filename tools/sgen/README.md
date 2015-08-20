@@ -5,7 +5,7 @@ Description
 -----------
 This is a tool to harden Coccinelle scripts by generating context and printing modes.
 
-Example:  
+Example:
 Given a semantic patch (examples/addvoid.cocci)
 
 	@@
@@ -87,8 +87,8 @@ This script can then be run on C files in the same manner as the original, by sp
 
 Installation
 ------------
-You need to have Coccinelle and all of Coccinelle's dependencies installed. 
-Installation relies on the project being in the tools/sgen folder of the 
+You need to have Coccinelle and all of Coccinelle's dependencies installed.
+Installation relies on the project being in the tools/sgen folder of the
 Coccinelle source code (if not, change the COCCIDIR path in the makefile).
 
 1.  Run the command
@@ -145,10 +145,10 @@ For all options, see
 Contents
 --------
 The home directory contains this file, a Makefile, and the directories
-mentioned below.  
-The documentation directory contains the documentation tex files.  
+mentioned below.
+The documentation directory contains the documentation tex files.
 The examples directory contains examples of Coccinelle scripts and
-corresponding sgen config files as well as C files to test on.  
-The scripts directory contains the script used for installation.  
-The source directory contains the OCaml source code for sgen.  
+corresponding sgen config files as well as C files to test on.
+The scripts directory contains the script used for installation.
+The source directory contains the OCaml source code for sgen.
 The tests directory contains test files.

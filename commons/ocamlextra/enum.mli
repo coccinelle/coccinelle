@@ -1,7 +1,7 @@
-(* 
+(*
  * Enum - enumeration over abstract collection of elements.
  * Copyright (C) 2003 Nicolas Cannasse
- * 
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -47,7 +47,7 @@ val iter2 : ('a -> 'b -> unit) -> 'a t -> 'b t -> unit
 val fold : ('a -> 'b -> 'b) -> 'b -> 'a t -> 'b
 (** [fold f v e] returns v if e is empty,
   otherwise [f (... (f (f v a1) a2) ...) aN] where a1..N are
-  the elements of [e]. 
+  the elements of [e].
 *)
 
 val fold2 : ('a -> 'b -> 'c -> 'c) -> 'c -> 'a t -> 'b t -> 'c
@@ -74,7 +74,7 @@ val find : ('a -> bool) -> 'a t -> 'a
  found element, or, raises [Not_found] if no such element exists
  in the enumeration, consuming the whole enumeration in the search.
 
- Since [find] consumes a prefix of the enumeration, it can be used several 
+ Since [find] consumes a prefix of the enumeration, it can be used several
  times on the same enumeration to find the next element. *)
 
 val is_empty : 'a t -> bool
@@ -100,8 +100,8 @@ val clone : 'a t -> 'a t
 
 val force : 'a t -> unit
 (** [force e] forces the application of all lazy functions and the
- enumeration of all elements, exhausting the enumeration. 
- 
+ enumeration of all elements, exhausting the enumeration.
+
   An efficient intermediate data structure
   of enumerated elements is constructed and [e] will now enumerate over
   that data structure. *)
@@ -111,7 +111,7 @@ val force : 'a t -> unit
  These functions are lazy which means that they will create a new modified
  enumeration without actually enumerating any element until they are asked
  to do so by the programmer (using one of the functions above).
- 
+
  When the resulting enumerations of these functions are consumed, the
  underlying enumerations they were created from are also consumed. *)
 
@@ -139,7 +139,7 @@ val concat : 'a t t -> 'a t
 (** [concat e] returns an enumeration over all elements of all enumerations
  of [e]. *)
 
-(** {6 Constructors} 
+(** {6 Constructors}
 
  In this section the word {i shall} denotes a semantic
  requirement. The correct operation
@@ -148,7 +148,7 @@ val concat : 'a t t -> 'a t
 *)
 
 exception No_more_elements
-(** This exception {i shall} be raised by the [next] function of [make] 
+(** This exception {i shall} be raised by the [next] function of [make]
   or [from] when no more elements can be enumerated, it {i shall not}
   be raised by any function which is an argument to any
   other function specified in the interface.
@@ -167,9 +167,9 @@ val make : next:(unit -> 'a) -> count:(unit -> int) -> clone:(unit -> 'a t) -> '
 	{li the [clone] function {i shall} create a clone of the enumeration
 	such as operations on the original enumeration will not affect the
 	clone. }}
- 
+
 	For some samples on how to correctly use [make], you can have a look
-		at implementation of [ExtList.enum]. 
+		at implementation of [ExtList.enum].
 *)
 
 val from : (unit -> 'a) -> 'a t

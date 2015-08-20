@@ -43,7 +43,7 @@
 (*
   Since this module is only here as a compatibility layer to let the
   code compile with versions of OCaml < 4.02, we simply define the
-  bytes type to be string. 
+  bytes type to be string.
 *)
 
 type bytes = string

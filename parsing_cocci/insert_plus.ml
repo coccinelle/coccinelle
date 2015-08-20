@@ -546,6 +546,7 @@ let collect_plus_nodes root =
       Ast0.Exp(exp) -> r.VT0.combiner_rec_expression exp
     | Ast0.TopExp(exp) -> r.VT0.combiner_rec_expression exp
     | Ast0.Ty(ty) -> r.VT0.combiner_rec_typeC ty
+    | Ast0.TopId(id) -> r.VT0.combiner_rec_ident id
     | Ast0.TopInit(init) -> r.VT0.combiner_rec_initialiser init
     | Ast0.Decl(bef,decl) ->
 	 do_nothing_extra (pre_info bef) [] mk_statement r k e

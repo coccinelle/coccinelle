@@ -47,4 +47,3 @@ let ($==$) xs ys = xs#is_equal ys
  *)
 let (mapo: ('a -> 'b) -> 'b oset -> 'a oset -> 'b oset) = fun f seed xs ->
   xs#fold (fun acc x -> acc#add (f x)) seed
-

@@ -126,11 +126,12 @@ and base_expression =
   | MetaExprList   of Ast_cocci.meta_name mcode (* only in arglists *) *
 	              listlen * pure
   | AsExpr         of expression * expression (* as expr, always metavar *)
+  | AsSExpr        of expression * statement (* as expr, always metavar *)
   | EComma         of string mcode (* only in arglists *)
   | DisjExpr       of string mcode * expression list * string mcode list *
 	              string mcode
   | NestExpr       of string mcode * expression dots * string mcode *
-                      (string mcode * string mcode * expression) option 
+                      (string mcode * string mcode * expression) option
                       (* whencode *) * Ast_cocci.multi
   | Edots          of string mcode (* ... *) * (string mcode * string mcode *
                       expression) option (* whencode *)
@@ -170,7 +171,7 @@ and string_format = base_string_format wrap
 
 (* --------------------------------------------------------------------- *)
 (* First class operators *)
-and  base_assignOp = 
+and  base_assignOp =
     SimpleAssign of simpleAssignOp mcode
   | OpAssign of Ast_cocci.arithOp mcode
   | MetaAssign of Ast_cocci.meta_name mcode * assignOpconstraint * pure
@@ -380,6 +381,7 @@ and base_statement =
   | Exp           of expression  (* only in dotted statement lists *)
   | TopExp        of expression (* for macros body *)
   | Ty            of typeC (* only at top level *)
+  | TopId         of ident (* only at top level *)
   | TopInit       of initialiser (* only at top level *)
   | Disj          of string mcode * statement dots list * string mcode list *
 	             string mcode
@@ -610,6 +612,7 @@ val make_minus_mcode : 'a -> 'a mcode
 val get_rule_name : parsed_rule -> string
 
 val meta_pos_name : anything -> Ast_cocci.meta_name mcode
+val meta_pos_constraint_names : anything -> Ast_cocci.meta_name list
 
 val ast0_type_to_type : bool -> typeC -> Type_cocci.typeC
 val reverse_type : Type_cocci.typeC -> base_typeC

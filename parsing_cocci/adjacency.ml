@@ -71,4 +71,3 @@ let compute_adjacency p =
 	VT0.rebuilder_inc_mcode = mcode;
 	VT0.rebuilder_stmtfn = statement;} in
   List.map fn.VT0.rebuilder_rec_top_level p
-

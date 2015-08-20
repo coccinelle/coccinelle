@@ -249,7 +249,11 @@ let visitor mode bind option_default
 	| Ast0.AsExpr(exp,asexp) ->
 	    let (exp_n,exp) = expression exp in
 	    let (asexp_n,asexp) = expression asexp in
-	    (bind exp_n asexp_n, Ast0.AsExpr(exp,asexp))) in
+	    (bind exp_n asexp_n, Ast0.AsExpr(exp,asexp))
+	| Ast0.AsSExpr(exp,asstm) ->
+	    let (exp_n,exp) = expression exp in
+	    let (asstm_n,asstm) = statement asstm in
+	    (bind exp_n asstm_n, Ast0.AsSExpr(exp,asstm))) in
     exprfn all_functions k e
 
   and string_fragment e =
@@ -295,7 +299,7 @@ let visitor mode bind option_default
             let (o_n,o) = opAssign_mcode o in
             (o_n, Ast0.OpAssign o)
         | Ast0.MetaAssign (name, c, pure) ->
-          let (name_n,name) = meta_mcode name in 
+          let (name_n,name) = meta_mcode name in
           (name_n,Ast0.MetaAssign(name,c, pure))) in
     assignOpfn all_functions k e
 
@@ -310,9 +314,9 @@ let visitor mode bind option_default
             let (o_n, o) = logicalOp_mcode o in
             (o_n, Ast0.Logical o)
         | Ast0.MetaBinary (name, c, pure) ->
-          let (name_n,name) = meta_mcode name in 
+          let (name_n,name) = meta_mcode name in
           (name_n,Ast0.MetaBinary(name, c, pure))) in
-    binaryOpfn all_functions k e  
+    binaryOpfn all_functions k e
 
   and typeC t =
     let k t =
@@ -339,9 +343,9 @@ let visitor mode bind option_default
 	    let (star_n,star) = string_mcode star in
 	    (bind ty_n star_n, Ast0.Pointer(ty,star))
 	| Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
-	    let (t,id) = 
+	    let (t,id) =
               function_pointer (ty,lp1,star,None,rp1,lp2,params,rp2) in t
-	| Ast0.Array(ty,lb,size,rb) -> 
+	| Ast0.Array(ty,lb,size,rb) ->
             let (t,id) = array_type (ty,None,lb,size,rb) in t
 	| Ast0.Decimal(dec,lp,length,comma,precision_opt,rp) ->
 	    let (dec_n,dec) = string_mcode dec in
@@ -400,7 +404,7 @@ let visitor mode bind option_default
     let (ty_n,ty) = typeC ty in
     let (lp1_n,lp1) = string_mcode lp1 in
     let (star_n,star) = string_mcode star in
-    let (idl,idu) = (match id with 
+    let (idl,idu) = (match id with
       | Some a -> let (b,c) = ident a in ([b],Some c)
       | None -> ([],None)) in
     let (rp1_n,rp1) = string_mcode rp1 in
@@ -414,7 +418,7 @@ let visitor mode bind option_default
   (* returns ((bind value,original value),id) since id may have been updated*)
   and array_type (ty,(id : Ast0.ident option),lb,size,rb) =
     let (ty_n,ty) = typeC ty in
-    let (idl,idu) = (match id with 
+    let (idl,idu) = (match id with
       | Some a -> let (b,c) = ident a in ([b],Some c)
       | None -> ([],None)) in
     let (lb_n,lb) = string_mcode lb in
@@ -426,7 +430,7 @@ let visitor mode bind option_default
   and named_type ty id =
     match Ast0.unwrap ty with
       Ast0.FunctionPointer(rty,lp1,star,rp1,lp2,params,rp2) ->
-	let (tyres, idn) = 
+	let (tyres, idn) =
           function_pointer (rty,lp1,star,Some id,rp1,lp2,params,rp2) in
         let idn = match idn with Some i -> i | None -> failwith "Impossible" in
 	(rewrap ty tyres, idn)
@@ -516,7 +520,7 @@ let visitor mode bind option_default
 	| Ast0.Ddots(dots,whencode) ->
 	    let (dots_n,dots) = string_mcode dots in
 	    let (whencode_n, whencode) = match whencode with
-              | Some (a,b,c) -> 
+              | Some (a,b,c) ->
                   let (_,a2) = string_mcode a in
                   let (_,b2) = string_mcode b in
                   let (c1,c2) = declaration c in (c1, Some (a2,b2,c2))
@@ -566,7 +570,7 @@ let visitor mode bind option_default
 	| Ast0.Idots(d,whencode) ->
 	    let (d_n,d) = string_mcode d in
 	    let (whencode_n, whencode) = match whencode with
-	      | Some (a,b,c) -> 
+	      | Some (a,b,c) ->
 		  let (_,a2) = string_mcode a in
 		  let (_,b2) = string_mcode b in
 		  let (c1,c2) = initialiser c in (c1, Some (a2,b2,c2))
@@ -811,6 +815,9 @@ let visitor mode bind option_default
 	| Ast0.Ty(ty) ->
 	    let (ty_n,ty) = typeC ty in
 	    (ty_n,Ast0.Ty(ty))
+	| Ast0.TopId(id) ->
+	    let (id_n,id) = ident id in
+	    (id_n,Ast0.TopId(id))
 	| Ast0.TopInit(init) ->
 	    let (init_n,init) = initialiser init in
 	    (init_n,Ast0.TopInit(init))
@@ -949,7 +956,7 @@ let visitor mode bind option_default
 	let (_,w) = string_mcode w in
 	let (_,e) = string_mcode e in
 	let (n,a) = notfn a in (n,Ast0.WhenNot(w,e,a))
-    | Ast0.WhenAlways (w,e,a) -> 
+    | Ast0.WhenAlways (w,e,a) ->
 	let (_,w) = string_mcode w in
 	let (_,e) = string_mcode e in
 	let (n,a) = alwaysfn a in (n,Ast0.WhenAlways(w,e,a))
@@ -968,7 +975,7 @@ let visitor mode bind option_default
   (* for whencodes that do not have any of the above modifiers
    * returns (the new whencode expression, the updated whencode) *)
   and whencode_option cfn = function
-    | Some (a,b,c) -> 
+    | Some (a,b,c) ->
 	let (_,a2) = string_mcode a in
 	let (_,b2) = string_mcode b in
 	let (c1,c2) = cfn c in (c1, Some (a2,b2,c2))
@@ -1546,4 +1553,3 @@ let combiner_rebuilder bind option_default functions =
     functions.VT0.combiner_rebuilder_casefn
     functions.VT0.combiner_rebuilder_string_fragmentfn
     functions.VT0.combiner_rebuilder_topfn
-

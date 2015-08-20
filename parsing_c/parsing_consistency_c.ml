@@ -193,6 +193,3 @@ let consistency_checking2 xs =
 
 let consistency_checking a  =
   Common.profile_code "C consistencycheck" (fun () -> consistency_checking2 a)
-
-
-

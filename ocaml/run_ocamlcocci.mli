@@ -5,5 +5,4 @@ val run :
     Ast_cocci.meta_name list (*fresh vars*) ->
     string (*rule name*) ->
     string (*code*) ->
-    string list (* final values of script vars *)
-
+    Ast_c.metavar_binding_kind list (* final values of script vars *)

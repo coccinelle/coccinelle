@@ -215,7 +215,7 @@ let list_len ~rn = function
 let types ~rn = function
   | Some typecs ->
       (* TODO: are the keep_bindings used for anything ? *)
-      let bin = function 
+      let bin = function
         | TC.Unitary -> ""
         | TC.Nonunitary -> ""
         | TC.Saved -> "" in
@@ -407,6 +407,7 @@ let metavar_combiner rn =
     | Ast0.MetaExprList (mc, listlen, _) ->
         lst_format ~mc ~typ:"expression list" ~listlen
     | Ast0.AsExpr (e1, e2) -> as_format e1 e2 exprfn exprfn
+    | Ast0.AsSExpr (e1, s2) -> as_format e1 s2 exprfn stmtfn
     | _ -> fn v in
 
   let assignOpfn c fn v =
@@ -479,7 +480,7 @@ let metavar_combiner rn =
     | _ -> fn v in
 
   let string_fragmentfn c fn v =
-    match Ast0.unwrap v with 
+    match Ast0.unwrap v with
     | Ast0.MetaFormatList(_, mc, listlen) ->
         lst_format ~mc ~typ:"format list" ~listlen
     | Ast0.FormatFragment(_, format) ->

@@ -880,7 +880,7 @@ let rec ends_in_return_bis preok stmt_list =
       | _ -> false)
   | Ast.CIRCLES(x) -> failwith "not supported"
   | Ast.STARS(x) -> failwith "not supported"
-	    
+
 let ends_in_return stmt_list = ends_in_return_bis false stmt_list
 
 (* --------------------------------------------------------------------- *)
@@ -939,8 +939,11 @@ and within dots
       [] -> failwith "unexpected empty disj"
     | Ast.Exp(e)::rest -> exptymatch res make_match make_guard_match
     | Ast.Ty(t)::rest  -> exptymatch res make_match make_guard_match
+    | Ast.TopId(i)::rest  -> exptymatch res make_match make_guard_match
     | all ->
-	if List.exists (function Ast.Exp(_) | Ast.Ty(_) -> true | _ -> false)
+	if List.exists
+	    (function
+		Ast.Exp(_) | Ast.Ty(_)  | Ast.TopId(_) -> true | _ -> false)
 	    all
 	then failwith "unexpected exp or ty";
 	List.fold_left ctl_seqor CTL.False (List.map make_match res))
@@ -1740,7 +1743,7 @@ and statement stmt top after quantified minus_quantified
 	    match Ast.unwrap ast with
 	      Ast.DisjRuleElem(res) ->
 		do_re_matches label guard res quantified minus_quantified
-	    | Ast.Exp(_) | Ast.Ty(_) ->
+	    | Ast.Exp(_) | Ast.Ty(_) | Ast.TopId(_) ->
 		let stmt_fvs = Ast.get_fvs stmt in
 		let fvs = get_unquantified quantified stmt_fvs in
 		CTL.InnerAnd(quantify guard fvs (make_match ast))

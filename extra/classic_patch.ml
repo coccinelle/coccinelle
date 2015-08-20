@@ -26,5 +26,3 @@ let unparse_patch xs outfile =
       body +> List.iter pr;
     )
   )
-
-

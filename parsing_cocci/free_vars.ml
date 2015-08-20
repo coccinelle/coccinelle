@@ -71,6 +71,7 @@ let collect_refs include_constraints =
 	    then
 	      match idconstraint with
 		Ast.IdNegIdSet (_,metas) -> metas
+	      | Ast.IdPosIdSet (_,metas) -> metas
 	      | _ -> []
 	    else [] in
 	  bind (List.rev metas) [metaid name]
@@ -433,7 +434,7 @@ let collect_saved =
     mcode mcode
     donothing donothing donothing donothing donothing
     astfvident astfvexpr astfvfrag astfvfmt astfvassign astfvbinary donothing
-    astfvtypeC astfvinit astfvparam astfvdecls donothing astfvrule_elem 
+    astfvtypeC astfvinit astfvparam astfvdecls donothing astfvrule_elem
     donothing donothing donothing donothing
 
 (* ---------------------------------------------------------------- *)
@@ -861,6 +862,7 @@ let astfvs metavars bound =
     | Ast.Exp _ -> "Exp"
     | Ast.TopExp _ -> "TopExp"
     | Ast.Ty _ -> "Ty"
+    | Ast.TopId _ -> "TopId"
     | Ast.TopInit _ -> "TopInit"
     | Ast.Include _ -> "Include"
     | Ast.Undef _ -> "Undef"
@@ -974,7 +976,7 @@ let astfvs metavars bound =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
     donothing donothing astfvstatement_dots donothing donothing
-    donothing donothing donothing 
+    donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing
     astfvrule_elem astfvstatement astfvcase_line astfvtoplevel donothing

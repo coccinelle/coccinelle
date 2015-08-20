@@ -47,4 +47,3 @@ val pop_context: unit -> unit
 val default_hint : unit -> lexer_hint
 
 val is_top_or_struct : context -> bool
-

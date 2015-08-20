@@ -240,27 +240,20 @@ let print_commentized xs =
 
 (* called by parse_print_error_heuristic *)
 let tokens2 file =
- let table     = Common.full_charpos_to_pos_large file in
-
+  let is_abstract_line_tok tok =
+    let ii = TH.info_of_tok tok in
+    match ii.Ast_c.pinfo with
+      | Ast_c.AbstractLineTok _ -> true
+      | _ -> false
+  in
  Common.with_open_infile file (fun chan ->
   let lexbuf = Lexing.from_channel chan in
+  let curp = { lexbuf.Lexing.lex_curr_p with Lexing.pos_fname = file } in
+  let lexbuf = { lexbuf with Lexing.lex_curr_p = curp } in
   try
     let rec tokens_aux acc =
       let tok = Lexer_c.token lexbuf in
-      (* fill in the line and col information *)
-      let tok = tok +> TH.visitor_info_of_tok (fun ii ->
-        { ii with Ast_c.pinfo=
-          (* could assert pinfo.filename = file ? *)
-	  match Ast_c.pinfo_of_info ii with
-	    Ast_c.OriginTok pi ->
-              Ast_c.OriginTok (Common.complete_parse_info_large file table pi)
-	  | Ast_c.ExpandedTok (pi,vpi) ->
-              Ast_c.ExpandedTok((Common.complete_parse_info_large file table pi),vpi)
-	  | Ast_c.FakeTok (s,vpi) -> Ast_c.FakeTok (s,vpi)
-	  | Ast_c.AbstractLineTok pi -> failwith "should not occur"
-      })
-      in
-
+      if is_abstract_line_tok tok then failwith "should not occur";
       if TH.is_eof tok
       then List.rev (tok::acc)
       else tokens_aux (tok::acc)
@@ -373,7 +366,7 @@ let fix_cpp_defined_operator =
  *     result
  *)
 
-let parse_gen ~cpp parsefunc s =
+let parse_gen ~cpp ~tos parsefunc s =
   let toks = tokens_of_string s +> List.filter TH.is_not_comment in
   let toks' =
     if cpp
@@ -396,12 +389,23 @@ let parse_gen ~cpp parsefunc s =
   let all_tokens = ref toks' in
   let cur_tok    = ref (List.hd !all_tokens) in
 
+  let type_start = ref tos in
+
   let lexer_function =
     (fun _ ->
       if TH.is_eof !cur_tok
       then (pr2_err "LEXER: ALREADY AT END"; !cur_tok)
       else
         let v = Common.pop2 all_tokens in
+        let v = match v with
+        | Parser_c.TIdent (s, ii) ->
+            if (* an id at the start of a type must be a type name *)
+              (LP.is_typedef s || !type_start) &&
+              not (!Flag_parsing_c.disable_add_typedef)
+	    then Parser_c.TypedefIdent (s, ii)
+            else Parser_c.TIdent (s, ii)
+        | x -> x in
+	type_start := false;
         cur_tok := v;
         !cur_tok
     )
@@ -410,11 +414,11 @@ let parse_gen ~cpp parsefunc s =
   let result = parsefunc lexer_function lexbuf_fake in
   result
 
-
-let type_of_string       = parse_gen ~cpp:false Parser_c.type_name
-let statement_of_string  = parse_gen ~cpp:false Parser_c.statement
-let expression_of_string = parse_gen ~cpp:false Parser_c.expr
-let cpp_expression_of_string = parse_gen ~cpp:true Parser_c.expr
+(* Please DO NOT remove this code, even though most of it is not used *)
+let type_of_string       = parse_gen ~cpp:false ~tos:true Parser_c.type_name
+let statement_of_string  = parse_gen ~cpp:false ~tos:false Parser_c.statement
+let expression_of_string = parse_gen ~cpp:false ~tos:false Parser_c.expr
+let cpp_expression_of_string = parse_gen ~cpp:true ~tos:false Parser_c.expr
 
 (* ex: statement_of_string "(struct us_data* )psh->hostdata = NULL;" *)
 
@@ -1272,6 +1276,7 @@ let parse_cache parse_strings file =
 (* Some special cases *)
 (*****************************************************************************)
 
+(* Please DO NOT remove this code, even though it is not used *)
 let no_format s =
   try let _ = Str.search_forward (Str.regexp_string "%") s 0 in false
   with Not_found -> true

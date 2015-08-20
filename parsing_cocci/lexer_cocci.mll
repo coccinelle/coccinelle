@@ -63,7 +63,7 @@ let opt_reverse_token token =
   if !FC.interpret_inverted
   then match token with
          D.MINUS        -> D.PLUSPLUS  (* maybe too liberal *)
-       | D.OPTMINUS     -> lexerr "cannot invert token ?- (an optional minus line), which is needed for reversing the patch" ""  
+       | D.OPTMINUS     -> lexerr "cannot invert token ?- (an optional minus line), which is needed for reversing the patch" ""
        | D.UNIQUEMINUS  -> D.PLUS
        | D.PLUS         -> D.MINUS
        | D.PLUSPLUS     -> D.MINUS (* may not be sufficient *)
@@ -203,7 +203,8 @@ let id_tokens lexbuf =
   then Common.pr2 "Warning: should identifer be identifier?");
   match s with
     "metavariable" when in_meta -> check_arity_context_linetype s; TMetavariable
-  | "identifier" when in_meta -> check_arity_context_linetype s; TIdentifier
+  | "identifier" when in_meta || in_rule_name ->
+      check_arity_context_linetype s; TIdentifier
   | "type" when in_meta ->       check_arity_context_linetype s; TType
   | "parameter" when in_meta ->  check_arity_context_linetype s; TParameter
   | "operator" when in_meta ->   check_arity_context_linetype s; TOperator
@@ -862,24 +863,24 @@ rule token = parse
     ("::~" (letter | '$') (letter | digit | '$') *
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) +
 
-      { 
-	start_line true; 
+      {
+	start_line true;
 	if not !Flag.c_plus_plus
 	then
 	  Common.pr2_once
 	    "< and > not allowed in C identifiers, try -c++ option";
-	id_tokens lexbuf 
+	id_tokens lexbuf
       }
   | ((letter | '$') (letter | digit | '$') * )
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>')
 
-      { 
-	start_line true; 
+      {
+	start_line true;
 	if not !Flag.c_plus_plus
 	then
 	  Common.pr2_once
 	    "< and > not allowed in C identifiers, try -c++ option";
-	id_tokens lexbuf 
+	id_tokens lexbuf
       }
 
   | (((letter | '$') (letter | digit | '$') * ))
@@ -889,26 +890,26 @@ rule token = parse
     ("::" ((letter | '$') (letter | digit | '$') * )
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) *
 
-      { 
-	start_line true; 
+      {
+	start_line true;
 	if not !Flag.c_plus_plus
 	then
 	  Common.pr2_once
 	    "~ and :: not allowed in C identifiers, try -c++ option";
-	id_tokens lexbuf 
+	id_tokens lexbuf
       }
 
    | "::" ((letter | '$') (letter | digit | '$') * )
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?
     ("::" ((letter | '$') (letter | digit | '$') * )
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) *
-      { 
-	start_line true; 
+      {
+	start_line true;
 	if not !Flag.c_plus_plus
 	then
 	  Common.pr2_once
 	    "~ and :: not allowed in C identifiers, try -c++ option";
-	id_tokens lexbuf 
+	id_tokens lexbuf
       }
        (* christia: end *)
 
@@ -994,7 +995,7 @@ and metavariable_decl_token = parse
   | "-" { (start_line true; TMinus (get_current_line_type lexbuf)) }
   | "/" { start_line true; TDmOp (Ast.Div,get_current_line_type lexbuf) }
   | "%" { start_line true; TDmOp (Ast.Mod,get_current_line_type lexbuf) }
-  | ">>" { start_line true; TShROp(Ast.DecRight,get_current_line_type lexbuf) }  
+  | ">>" { start_line true; TShROp(Ast.DecRight,get_current_line_type lexbuf) }
   | "&" { start_line true; TAnd (get_current_line_type lexbuf) }
   | "|" {  (start_line true; TOr(get_current_line_type lexbuf)) }
   | "^" { start_line true; TXor(get_current_line_type lexbuf) }
@@ -1039,22 +1040,22 @@ and metavariable_decl_token = parse
     ("::~" (letter | '$') (letter | digit | '$') *
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) +
 
-      { start_line true; 
+      { start_line true;
 	if not !Flag.c_plus_plus
 	then
 	  Common.pr2_once
 	    "< and > not allowed in C identifiers, try -c++ option";
-	id_tokens lexbuf 
+	id_tokens lexbuf
       }
   | ((letter | '$') (letter | digit | '$') * )
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>')
 
-      { start_line true; 
+      { start_line true;
 	if not !Flag.c_plus_plus
 	then
 	  Common.pr2_once
 	    "< and > not allowed in C identifiers, try -c++ option";
-	id_tokens lexbuf 
+	id_tokens lexbuf
       }
 
   | (((letter | '$') (letter | digit | '$') * ))
@@ -1064,24 +1065,24 @@ and metavariable_decl_token = parse
     ("::" ((letter | '$') (letter | digit | '$') * )
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) *
 
-      { start_line true; 
+      { start_line true;
 	if not !Flag.c_plus_plus
 	then
 	  Common.pr2_once
 	    "~ and :: not allowed in C identifiers, try -c++ option";
-	id_tokens lexbuf 
+	id_tokens lexbuf
       }
 
    | "::" ((letter | '$') (letter | digit | '$') * )
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?
     ("::" ((letter | '$') (letter | digit | '$') * )
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) *
-      { start_line true; 
+      { start_line true;
 	if not !Flag.c_plus_plus
 	then
 	  Common.pr2_once
 	    "~ and :: not allowed in C identifiers, try -c++ option";
-	id_tokens lexbuf 
+	id_tokens lexbuf
       }
        (* christia: end *)
 
@@ -1213,4 +1214,3 @@ and comment check_comment = parse
         Common.pr2 ("LEXER: unrecognised symbol in comment:"^s);
         s ^ comment check_comment lexbuf
       }
-

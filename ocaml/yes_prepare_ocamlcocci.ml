@@ -114,6 +114,7 @@ let ast_rep_binding ctr = function
   | (Some nm,Ast.MetaLocalFuncDecl _) -> print_match ctr nm "Str"
   | (Some nm,Ast.MetaDeclarerDecl _) -> print_match ctr nm "Str"
   | (Some nm,Ast.MetaIteratorDecl _) -> print_match ctr nm "Str"
+  | (Some nm,Ast.MetaScriptDecl _) -> failwith "script metavariable"
   | (None,_) -> ""
 
 let manage_script_vars script_vars =

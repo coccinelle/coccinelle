@@ -183,7 +183,7 @@ let generate_declaration ~strfn ~declfn ~decl ~at_top s =
   (* inserts one position if in generation mode *)
   let decposfn d snp =
     if Snap.no_gen snp then
-      declfn d snp 
+      declfn d snp
     else
       match PG.declaration_pos d snp with
       | Some (dd, snp) -> declfn dd snp

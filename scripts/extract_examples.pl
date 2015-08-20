@@ -3,17 +3,17 @@
 
 my $ex = 0;
 my $are_in = 0;
-while(<>) { 
+while(<>) {
 
-    if(/\\section{/) { 
+    if(/\\section{/) {
         $ex++;
         open TMP, ">$ex.cocci" or die "$!";
     }
 
-    if(/begin{verbatim}/) { 
+    if(/begin{verbatim}/) {
         $are_in = 1;
         #old: open TMP, ">$ex.cocci" or die "$!";
-    } elsif(/end{verbatim}/) { 
+    } elsif(/end{verbatim}/) {
         $are_in = 0;
         #old: $ex++;
     } else {

@@ -157,7 +157,7 @@ type rebuilder_functions =
    rebuilder_exprfn : Ast0.expression rcode;
    rebuilder_assignOpfn : Ast0.assignOp rcode;
    rebuilder_binaryOpfn : Ast0.binaryOp rcode;
-  
+
    rebuilder_tyfn : Ast0.typeC rcode;
    rebuilder_initfn : Ast0.initialiser rcode;
    rebuilder_paramfn : Ast0.parameterTypeDef rcode;

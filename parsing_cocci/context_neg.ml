@@ -773,7 +773,7 @@ let rec equal_statement s1 s2 =
      Ast0.For(fr2,lp2,first2,_,sem22,_,rp2,_,_)) ->
        let first =
 	 match (Ast0.unwrap first1,Ast0.unwrap first2) with
-	   (Ast0.ForExp(_,sem1),Ast0.ForExp(_,sem2)) -> 
+	   (Ast0.ForExp(_,sem1),Ast0.ForExp(_,sem2)) ->
 	     equal_mcode sem1 sem2
 	 | (Ast0.ForDecl _,Ast0.ForDecl _) -> true
 	 | _ -> false in
@@ -814,6 +814,7 @@ let rec equal_statement s1 s2 =
   | (Ast0.Exp(_),Ast0.Exp(_)) -> true
   | (Ast0.TopExp(_),Ast0.TopExp(_)) -> true
   | (Ast0.Ty(_),Ast0.Ty(_)) -> true
+  | (Ast0.TopId(_),Ast0.TopId(_)) -> true
   | (Ast0.TopInit(_),Ast0.TopInit(_)) -> true
   | (Ast0.Dots(d1,_),Ast0.Dots(d2,_))
   | (Ast0.Circles(d1,_),Ast0.Circles(d2,_))

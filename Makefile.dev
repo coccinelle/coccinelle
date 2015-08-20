@@ -54,4 +54,3 @@ ubuntu:
 	fi
 	@echo "\nYou can now build the Ubuntu source package with\n"
 	@echo "\tmake packsrc\n"
-

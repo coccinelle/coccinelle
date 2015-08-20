@@ -227,9 +227,9 @@ let rec propagate_types env =
 		   (match strip_cv (Some t) with
 		      | Some (T.Unknown) -> None
 		      | Some (T.MetaType(_,_,_)) -> None
-		      | Some (T.TypeName(s)) -> 
+		      | Some (T.TypeName(s)) ->
 			  None
-		      | Some (T.StructUnionName(s,t)) -> 
+		      | Some (T.StructUnionName(s,t)) ->
 			  None
 		      | Some x ->
 			  err exp (T.Pointer(t))
@@ -269,7 +269,7 @@ let rec propagate_types env =
 	    let _ = r.VT0.combiner_rec_expression e in None
 	| Ast0.OptExp(exp) -> Ast0.get_type exp
 	| Ast0.UniqueExp(exp) -> Ast0.get_type exp
-	| Ast0.AsExpr _ -> failwith "not possible" in
+	| Ast0.AsExpr _ | Ast0.AsSExpr _ -> failwith "not possible" in
       Ast0.set_type e ty;
       ty in
 
@@ -337,7 +337,7 @@ let rec propagate_types env =
 	[]
     | Ast0.TyDecl(ty,_) -> []
               (* pad: should handle typedef one day and add a binding *)
-    | Ast0.Typedef((a,_,_,_,_,_),b,c,(d,_,_,_,_,_)) -> 
+    | Ast0.Typedef((a,_,_,_,_,_),b,c,(d,_,_,_,_,_)) ->
 	[]
     | Ast0.DisjDecl(_,disjs,_,_) ->
 	List.concat(List.map (process_decl env) disjs)

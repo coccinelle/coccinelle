@@ -223,7 +223,3 @@ let files_in_dirs dirs kbuild_info =
         []
     )
   ) +> List.concat
-
-
-
-

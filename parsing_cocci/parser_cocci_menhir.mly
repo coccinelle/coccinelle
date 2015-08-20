@@ -43,7 +43,7 @@ let is_vaellipsis = function
 
 let rec adjacent_ellipsis = function
   | [] -> false
-  | [_] -> false 
+  | [_] -> false
   | (Ellipsis _) :: (Ellipsis _) :: _ -> true
   | x::xs -> adjacent_ellipsis xs
 
@@ -306,6 +306,9 @@ let mklogop (op,clt) =
 %start minus_ty_main
 %type <Ast0_cocci.rule> minus_ty_main
 
+%start minus_id_main
+%type <Ast0_cocci.rule> minus_id_main
+
 %start plus_main
 %type <Ast0_cocci.rule> plus_main
 
@@ -314,6 +317,9 @@ let mklogop (op,clt) =
 
 %start plus_ty_main
 %type <Ast0_cocci.rule> plus_ty_main
+
+%start plus_id_main
+%type <Ast0_cocci.rule> plus_id_main
 
 %start include_main
 %type <Data.incl_iso list> include_main
@@ -349,12 +355,16 @@ plus_main: plus_body EOF { $1 } | p=plus_body TArobArob { p }
 | p=plus_body TArob { p }
 minus_exp_main: minus_exp_body EOF { $1 } | m=minus_exp_body TArobArob { m }
 | m=minus_exp_body TArob { m }
-minus_ty_main: minus_exp_body EOF { $1 } | m=minus_ty_body TArobArob { m }
+minus_ty_main: minus_ty_body EOF { $1 } | m=minus_ty_body TArobArob { m }
 | m=minus_ty_body TArob { m }
+minus_id_main: minus_id_body EOF { $1 } | m=minus_id_body TArobArob { m }
+| m=minus_id_body TArob { m }
 plus_exp_main: plus_exp_body EOF { $1 } | p=plus_exp_body TArobArob { p }
 | p=plus_exp_body TArob { p }
-plus_ty_main: plus_exp_body EOF { $1 } | p=plus_ty_body TArobArob { p }
+plus_ty_main: plus_ty_body EOF { $1 } | p=plus_ty_body TArobArob { p }
 | p=plus_ty_body TArob { p }
+plus_id_main: plus_id_body EOF { $1 } | p=plus_id_body TArobArob { p }
+| p=plus_id_body TArob { p }
 meta_main: m=metadec   { m (!Ast0.rule_name) }
 iso_meta_main: m=metadec { m "" }
 
@@ -423,6 +433,7 @@ exists:
 is_expression: // for more flexible parsing of top level expressions
               { Ast.AnyP }
 | TExpression { Ast.ExpP }
+| TIdentifier { Ast.IdP }
 | TType       { Ast.TyP }
 
 include_main:
@@ -569,7 +580,7 @@ pure_ident_or_meta_ident_with_binop_constraint:
 
 binaryopconstraint:
   { Ast0.BinaryOpNoConstraint }
-| TEq TOBrace ops=comma_list(binary_operator) TCBrace 
+| TEq TOBrace ops=comma_list(binary_operator) TCBrace
   { Ast0.BinaryOpInSet ops }
 | TEq op=binary_operator
   { Ast0.BinaryOpInSet [op] }
@@ -579,7 +590,7 @@ pure_ident_or_meta_ident_with_assignop_constraint:
 
 assignopconstraint:
   { Ast0.AssignOpNoConstraint }
-| TEq TOBrace ops=comma_list(assignment_operator) TCBrace 
+| TEq TOBrace ops=comma_list(assignment_operator) TCBrace
   { Ast0.AssignOpInSet ops }
 | TEq op=assignment_operator
   { Ast0.AssignOpInSet [op] }
@@ -597,12 +608,12 @@ binary_operator:
 | TAnd { mkarithop (Ast.And,$1) }
 | TOr { mkarithop (Ast.Or,$1) }
 | TXor { mkarithop (Ast.Xor,$1) }
-| TLogOp { mklogop $1 } 
+| TLogOp { mklogop $1 }
 | TAndLog { mklogop (Ast.AndLog,$1) }
 | TOrLog { mklogop (Ast.OrLog,$1) }
 
 assignment_operator:
-| TEq 
+| TEq
   { let clt = $1 in
   let op' = P.clt2mcode "=" clt in
   Ast0.wrap (Ast0.SimpleAssign op') }
@@ -1117,6 +1128,20 @@ plus_ty_body:
     /*ew=loption(error_words)*/
     { f@[b](*@ew*) }
 
+minus_id_body:
+    f=loption(filespec)
+    b=top_ident
+    /*ew=loption(error_words)*/
+    { match f@[b](*@ew*) with
+      [] -> raise (Semantic_cocci.Semantic "minus slice can't be empty")
+    | code -> code }
+
+plus_id_body:
+    f=loption(filespec)
+    b=top_ident
+    /*ew=loption(error_words)*/
+    { f@[b](*@ew*) }
+
 filespec:
   TMinusFile TPlusFile
     { [Ast0.wrap
@@ -1267,7 +1292,7 @@ arg_list(arg):
 argorellipsis(arg):
   arg=arg { Arg arg }
 | x=TVAEllipsis { VAEllipsis (x) }
-| y=TEllipsis { Ellipsis (y) } 
+| y=TEllipsis { Ellipsis (y) }
 
 one_arg(arg):
   arg=arg  { arg }
@@ -2411,6 +2436,9 @@ disj_ident:
 	 Ast0.wrap
 	   (Ast0.DisjId(P.id2mcode lp,code,mids, P.id2mcode rp)) }
 
+top_ident:
+  disj_ident { Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.TopId($1)))) }
+
 type_ident: disj_ident { $1 }
      | TTypeId
          { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
@@ -2809,7 +2837,7 @@ whens(when_grammar,simple_when_grammar,any_strict):
       { List.map (function x -> Ast0.WhenModifier(P.clt2mcode "when" t,x)) l }
   | t=TWhenTrue ee=TNotEq e = eexpr TLineEnd
       { [Ast0.WhenNotTrue (P.clt2mcode "when" t, P.clt2mcode "!=" ee, e)] }
-  | t=TWhenFalse ee=TNotEq e = eexpr TLineEnd 
+  | t=TWhenFalse ee=TNotEq e = eexpr TLineEnd
       { [Ast0.WhenNotFalse (P.clt2mcode "when" t, P.clt2mcode "!=" ee, e)] }
 
 any_strict:

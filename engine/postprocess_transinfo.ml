@@ -33,7 +33,7 @@ let get_vars = function
     Lib_engine.Match(re) -> (Ast.get_fvs re, Ast.get_fresh re)
   | _ -> ([],[])
 
-let string2val str = Lib_engine.NormalMetaVal(Ast_c.MetaIdVal(str,[]))
+let string2val str = Lib_engine.NormalMetaVal(Ast_c.MetaIdVal str)
 
 (* ----------------------------------------------------------------------- *)
 (* Get values for fresh variables *)
@@ -70,7 +70,7 @@ let process_tree inherited_env l =
 		     | Ast.SeedId id ->
 			 try
 			   (match List.assoc id env with
-			     Lib_engine.NormalMetaVal(Ast_c.MetaIdVal(str,_)) ->
+			     Lib_engine.NormalMetaVal(Ast_c.MetaIdVal str) ->
 			       str
 			   | _ -> failwith "bad id value")
 			 with

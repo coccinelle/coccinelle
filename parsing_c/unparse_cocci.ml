@@ -275,7 +275,7 @@ let rec ident i =
       Ast.Id(name) -> mcode print_string name
     | Ast.MetaId(name,_,_,_) ->
 	handle_metavar name (function
-			       | (Ast_c.MetaIdVal (id,_)) -> print_text id
+			       | (Ast_c.MetaIdVal id) -> print_text id
 			       | _ -> raise (Impossible 142)
 			    )
     | Ast.MetaFunc(name,_,_,_) ->
@@ -304,7 +304,7 @@ in
 (* Expression *)
 
 let rec expression e =
-  let top = 0 in 
+  let top = 0 in
   let assign = 1 in
   let cond = 2 in
   let log_or = 3 in
@@ -371,14 +371,14 @@ let rec expression e =
       | Ast.Or -> bit_or
       | Ast.Xor -> bit_xor in
     let left_prec_of_logical op =
-      match Ast.unwrap_mcode op with	  
+      match Ast.unwrap_mcode op with
 	Ast.Inf | Ast.Sup | Ast.InfEq | Ast.SupEq -> relat
       | Ast.Eq | Ast.NotEq -> equal
       | Ast.AndLog -> log_and
       | Ast.OrLog -> log_or in
     match Ast.unwrap op with
       Ast.Arith op' -> left_prec_of_arith op'
-    | Ast.Logical op' -> left_prec_of_logical op' 
+    | Ast.Logical op' -> left_prec_of_logical op'
     | Ast.MetaBinary (mv,_,_,_) ->
 	let (res,name_string,line,lcol,rcol) = lookup_metavar mv in
 	(match res with
@@ -397,7 +397,7 @@ let rec expression e =
       | Ast.Or -> bit_xor
       | Ast.Xor -> bit_and in
     let right_prec_of_logical op =
-      match Ast.unwrap_mcode op with	  
+      match Ast.unwrap_mcode op with
 	Ast.Inf -> shift
       | Ast.Sup -> shift
       | Ast.InfEq -> shift
@@ -408,7 +408,7 @@ let rec expression e =
       | Ast.OrLog -> log_and in
     match Ast.unwrap op with
       Ast.Arith op' -> right_prec_of_arith op'
-    | Ast.Logical op' -> right_prec_of_logical op'    
+    | Ast.Logical op' -> right_prec_of_logical op'
     | Ast.MetaBinary (mv,_,_,_) ->
 	let (res,name_string,line,lcol,rcol) = lookup_metavar mv in
 	(match res with
@@ -461,7 +461,7 @@ let rec expression e =
     | Ast_c.Defined _ -> primary
   in
 
-  let rec loop e prec = 
+  let rec loop e prec =
   match Ast.unwrap e with
     Ast.Ident(id) -> ident id
   | Ast.Constant(const) -> mcode constant const
@@ -541,6 +541,7 @@ let rec expression e =
       )
 
   | Ast.AsExpr(expr,asexpr) -> loop expr prec
+  | Ast.AsSExpr(expr,asstm) -> loop expr prec
 
   | Ast.EComma(cm) ->
       mcode (print_string_with_hint (SpaceOrNewline (ref " ")))  cm
@@ -638,7 +639,7 @@ and binaryOp op =
   | Ast.Logical(lop) -> mcode logicalOp lop
   | Ast.MetaBinary(name,_,_,_) ->
       handle_metavar name (function
-	  Ast_c.MetaBinaryOpVal bop -> 
+	  Ast_c.MetaBinaryOpVal bop ->
 	    pretty_print_c.Pretty_print_c.binaryOp bop
 	| _ -> raise (Impossible 160))
 
@@ -686,7 +687,7 @@ and fullType ft =
 	Ast.Pointer(_,_) ->
 	  typeC ty; print_option_prespace (mcode const_vol) cv
       |	_ -> print_option_space (mcode const_vol) cv; typeC ty)
-      
+
   | Ast.AsType(ty, asty) -> fullType ty
   | Ast.DisjType _ -> failwith "can't be in plus"
   | Ast.OptType(_) | Ast.UniqueType(_) ->
@@ -842,7 +843,7 @@ and ft_space ty =
 	| _ -> false in
       if isptr then () else pr_space()
   | _ -> pr_space()
-	
+
 and declaration d =
   match Ast.unwrap d with
     Ast.MetaDecl(name,_,_) ->
@@ -1117,6 +1118,7 @@ and rule_elem arity re =
   | Ast.Exp(exp) -> pr_arity arity; expression exp
   | Ast.TopExp(exp) -> pr_arity arity; expression exp
   | Ast.Ty(ty) -> pr_arity arity; fullType ty
+  | Ast.TopId(id) -> pr_arity arity; ident id
   | Ast.TopInit(init) -> initialiser false init
   | Ast.Include(inc,s) ->
       mcode print_string inc; print_text " "; mcode inc_file s

@@ -527,4 +527,3 @@ let set_context_tag xs =
     set_in_function_tag xs;
     set_in_other xs;
   end
-

@@ -273,7 +273,7 @@ let rec (cpp_engine:
      * the job right and already replaced the macro parameter with a TIdent.
      *)
     match tok with
-    | TIdent (s,i1) when List.mem_assoc s env -> 
+    | TIdent (s,i1) when List.mem_assoc s env ->
 	Common.assoc s env
     | x -> [x]
   )
@@ -376,7 +376,7 @@ let rec apply_macro_defs
                   pr2_once
 		    ("WEIRD: macro with wrong number of arguments: " ^ s);
                   (* old: id.new_tokens_before <- bodymacro; *)
-		  
+
                   (* update: if wrong number, then I just pass this macro *)
                   [Parenthised (xxs, info_parens)] +>
                   iter_token_paren (set_as_comment Token_c.CppMacro);
@@ -400,7 +400,7 @@ let rec apply_macro_defs
                   [Parenthised (xxs, info_parens)] +>
                   iter_token_paren (set_as_comment Token_c.CppMacro);
                   set_as_comment Token_c.CppMacro id)
-		
+
           | DefineHint (HintMacroStatement as hint) ->
                 (* important to do that after have apply the macro, otherwise
                    * will pass as argument to the macro some tokens that
@@ -587,5 +587,3 @@ let extract_macros xs =
     not (TH.is_comment x)
   ) in
   define_parse cleaner
-
-

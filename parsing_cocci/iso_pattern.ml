@@ -773,7 +773,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	      conjunct_bindings (check_mcode ed ed1)
 		(let (edots_whencode_allowed,_,_) = whencode_allowed in
 		if edots_whencode_allowed
-		then add_dot_binding ed 
+		then add_dot_binding ed
 		  (Ast0.WhenTag(wh,Some e,Ast0.ExprTag wc))
 		else
 		  (Printf.printf
@@ -817,7 +817,7 @@ let match_maker checks_needed context_required whencode_allowed =
    from applying, which doesn't seem very relevant, but it also avoids a
    mysterious bug that is obtained with eg int attach(...); *)
   and varargs_equal (comma1, ellipsis1) (comma2, ellipsis2) =
-    let c1 = Ast0_cocci.unwrap_mcode comma1  
+    let c1 = Ast0_cocci.unwrap_mcode comma1
     and e1 = Ast0_cocci.unwrap_mcode ellipsis1
     and c2 = Ast0_cocci.unwrap_mcode comma2
     and e2 = Ast0_cocci.unwrap_mcode ellipsis2
@@ -993,7 +993,7 @@ let match_maker checks_needed context_required whencode_allowed =
 		   return false))
 	  | (Ast0.Ddots(_,Some _),_) ->
 	      failwith "whencode not allowed in a pattern1"
-		
+
 	  | (Ast0.OptDecl(decla),Ast0.OptDecl(declb))
 	  | (Ast0.UniqueDecl(decla),Ast0.UniqueDecl(declb)) ->
 	      match_decl decla declb
@@ -1642,8 +1642,8 @@ let lookup name bindings mv_bindings =
       Common.Right (List.assoc (term name) mv_bindings)
 
 (* mv_bindings is for the fresh metavariables that are introduced by the
-   isomorphism *)
-let instantiate bindings mv_bindings =
+   isomorphism.  Model to know whether new code will be -. *)
+let instantiate bindings mv_bindings model =
   let mcode x =
     let (hidden,others) =
       List.partition
@@ -1786,7 +1786,7 @@ let instantiate bindings mv_bindings =
 			  Type_cocci.Array(renamer ty)
 		      | t -> t in
 		    Some(List.map renamer types) in
-	      Ast0.clear_test_exp 
+	      Ast0.clear_test_exp
 		(Ast0.rewrap e
 		   (Ast0.MetaExpr
 		      (Ast0.set_mcode_data new_mv name,constraints,
@@ -1821,11 +1821,18 @@ let instantiate bindings mv_bindings =
 		    (Ast.NOTHING,_,_) -> true
 		  | _ -> false)
 	      |	_ -> failwith "plus not possible" in
-	    let same_modif newop oldop =
-	      (* only propagate ! is they have the same modification
+	    let same_modif oldop =
+	      (* only propagate ! if they, ie model and oldop, have the
+		 same modification
 		 and no + code on the old one (the new one from the iso
 		 surely has no + code) *)
-	      match (newop,oldop) with
+	      (* This is not ideal, because the model is the top level
+		 term, and this is a subterm, so minus minus is only detected
+		 when the whole matched term is minus.  Not sure what to do
+		 in general, because not clear where the ! comes from.
+		 Be more flexible for !, because it doesn't really matter *)
+	      !Flag.sgrep_mode2 ||
+	      match (Ast0.get_mcodekind model,oldop) with
 		(Ast0.MINUS(x1),Ast0.MINUS(x2)) -> nomodif oldop
 	      | (Ast0.CONTEXT(x1),Ast0.CONTEXT(x2)) -> nomodif oldop
 	      | (Ast0.MIXED(x1),Ast0.MIXED(x2)) -> nomodif oldop
@@ -1838,16 +1845,15 @@ let instantiate bindings mv_bindings =
                   Ast0.Logical o -> Ast0.get_mcode_mcodekind o
                 | Ast0.Arith o -> Ast0.get_mcode_mcodekind o
                 | Ast0.MetaBinary(mv,_,_) -> Ast0.get_mcode_mcodekind mv in
+	      let get_op op = Ast0.unwrap_mcode op in
 	      let rec negate e (*for rewrapping*) res (*code to process*) k =
 		(* k accumulates parens, to keep negation outside if no
 		   propagation is possible *)
 		if nomodif (Ast0.get_mcodekind e)
 		then
 		  match Ast0.unwrap res with
-		    Ast0.Unary(e1,op) when Ast0.unwrap_mcode op = Ast.Not &&
-		      same_modif
-			(Ast0.get_mcode_mcodekind unop)
-			(Ast0.get_mcode_mcodekind op) ->
+		    Ast0.Unary(e1,op) when get_op op = Ast.Not &&
+		      same_modif (Ast0.get_mcode_mcodekind op) ->
 			  k e1
 		  | Ast0.Edots(_,_) -> k (Ast0.rewrap e (Ast0.unwrap res))
 		  | Ast0.Paren(lp,e1,rp) ->
@@ -1855,39 +1861,40 @@ let instantiate bindings mv_bindings =
 			(function x ->
 			  k (Ast0.rewrap res (Ast0.Paren(lp,x,rp))))
 		  | Ast0.Binary(e1,op,e2) when
-		      same_modif
-			(Ast0.get_mcode_mcodekind unop)
-			(get_binaryOp_mcodekind op) ->
-			  let reb nop =
-			    Ast0.rewrap op (Ast0.Logical(nop)) in
+		      let v = same_modif (get_binaryOp_mcodekind op) in
+		      v ->
+			  let reb model nop =
+			    let nop = Ast0.rewrap_mcode model nop in
+			    Ast0.rewrap op (Ast0.Logical nop) in
 			  let k1 x = k (Ast0.rewrap e x) in
 			  (match Ast0.unwrap op with
-			    Ast0.Logical op' when (Ast0.unwrap_mcode op')=Ast.Inf ->
-			      k1 (Ast0.Binary(e1,reb (Ast0.rewrap_mcode op' Ast.SupEq),e2))
-			  | Ast0.Logical op' when (Ast0.unwrap_mcode op')=Ast.Sup ->
-			      k1 (Ast0.Binary(e1,reb (Ast0.rewrap_mcode op' Ast.InfEq),e2))
-			  | Ast0.Logical op' when (Ast0.unwrap_mcode op')=Ast.InfEq ->
-			      k1 (Ast0.Binary(e1,reb (Ast0.rewrap_mcode op' Ast.Sup),e2))
-			  | Ast0.Logical op' when (Ast0.unwrap_mcode op')=Ast.SupEq ->
-			      k1 (Ast0.Binary(e1,reb (Ast0.rewrap_mcode op' Ast.Inf),e2))
-			  | Ast0.Logical op' when (Ast0.unwrap_mcode op')=Ast.Eq ->
-			      k1 (Ast0.Binary(e1,reb (Ast0.rewrap_mcode op' Ast.NotEq),e2))
-			  | Ast0.Logical op' when (Ast0.unwrap_mcode op')=Ast.NotEq ->
-			      k1 (Ast0.Binary(e1,reb (Ast0.rewrap_mcode op' Ast.Eq),e2))
-			  | Ast0.Logical op' when (Ast0.unwrap_mcode op')=Ast.AndLog ->
+			    Ast0.Logical op' when get_op op' = Ast.Inf ->
+			      k1 (Ast0.Binary(e1,reb op' Ast.SupEq,e2))
+			  | Ast0.Logical op' when get_op op' = Ast.Sup ->
+			      k1 (Ast0.Binary(e1,reb op' Ast.InfEq,e2))
+			  | Ast0.Logical op' when get_op op' = Ast.InfEq ->
+			      k1 (Ast0.Binary(e1,reb op' Ast.Sup,e2))
+			  | Ast0.Logical op' when get_op op' = Ast.SupEq ->
+			      k1 (Ast0.Binary(e1,reb op' Ast.Inf,e2))
+			  | Ast0.Logical op' when get_op op' = Ast.Eq ->
+			      k1 (Ast0.Binary(e1,reb op' Ast.NotEq,e2))
+			  | Ast0.Logical op' when get_op op' = Ast.NotEq ->
+			      k1 (Ast0.Binary(e1,reb op' Ast.Eq,e2))
+			  | Ast0.Logical op' when get_op op' = Ast.AndLog ->
 			      k1 (Ast0.Binary(negate_reb e e1 idcont,
-					      reb (Ast0.rewrap_mcode op' Ast.OrLog),
+					      reb op' Ast.OrLog,
 					      negate_reb e e2 idcont))
-			  | Ast0.Logical op' when (Ast0.unwrap_mcode op')=Ast.OrLog ->
+			  | Ast0.Logical op' when get_op op' = Ast.OrLog ->
 			      k1 (Ast0.Binary(negate_reb e e1 idcont,
-					      reb (Ast0.rewrap_mcode op' Ast.AndLog),
+					      reb op' Ast.AndLog,
 					      negate_reb e e2 idcont))
 			  | _ ->
                              let rewrap_binaryOp_mcode op x =
                                match Ast0.unwrap op with
                                  Ast0.Arith o -> Ast0.rewrap_mcode o x
                                | Ast0.Logical o -> Ast0.rewrap_mcode o x
-                               | Ast0.MetaBinary (mv,_,_) -> Ast0.rewrap_mcode mv x in
+                               | Ast0.MetaBinary (mv,_,_) ->
+				   Ast0.rewrap_mcode mv x in
 			      Ast0.rewrap e
 				(Ast0.Unary(k res,
 					    rewrap_binaryOp_mcode op Ast.Not)))
@@ -2216,7 +2223,7 @@ let extra_copy_stmt_plus model e =
 	(match Ast0.unwrap e with
 	  Ast0.FunDecl((info,bef1),_,_,_,_,_,_,_,_,_,(aftinfo,aft1)) ->
 	    merge_plus_before bef bef1; merge_plus_after aft aft1
-	| _ -> 
+	| _ ->
 	    let mc = Ast0.get_mcodekind e in
 	    merge_plus_before bef mc;
 	    merge_plus_after aft mc)
@@ -2314,6 +2321,7 @@ let get_name = function
       (nm,function nm -> Ast.MetaDeclarerDecl(ar,nm))
   | Ast.MetaIteratorDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaIteratorDecl(ar,nm))
+  | Ast.MetaScriptDecl(cell,nm) -> failwith "not relevant to isos"
 
 let make_new_metavars metavars bindings =
   let new_metavars =
@@ -2345,7 +2353,7 @@ let mkdisj matcher metavars alts e instantiater mkiso disj_maker minusify
 	     (List.map
 		(function bindings ->
 		  let instantiated =
-		    instantiater bindings mv_bindings (rebuild_mcodes a) in
+		    instantiater bindings mv_bindings e (rebuild_mcodes a) in
 		  let plus_added =
 		    if has_context (* ie if pat is not just a metavara *)
 		    then
@@ -2500,8 +2508,8 @@ let transform_type (metavars,alts,name) e =
 	       | _ -> failwith "invalid alt"))
 	  alts in
       mkdisj match_typeC metavars alts e
-	(function b -> function mv_b ->
-	  (instantiate b mv_b).VT0.rebuilder_rec_typeC)
+	(fun b mv_b model ->
+	  (instantiate b mv_b model).VT0.rebuilder_rec_typeC)
 	(function t -> Ast0.TypeCTag t)
 	make_disj_type make_minus.VT0.rebuilder_rec_typeC
 	(rebuild_mcode start_line).VT0.rebuilder_rec_typeC
@@ -2527,8 +2535,8 @@ let transform_expr (metavars,alts,name) e =
 	     | _ -> failwith "invalid alt"))
 	alts in
     mkdisj match_expr metavars alts e
-      (function b -> function mv_b ->
-	(instantiate b mv_b).VT0.rebuilder_rec_expression)
+      (fun b mv_b model ->
+	(instantiate b mv_b model).VT0.rebuilder_rec_expression)
       (function e -> Ast0.ExprTag e)
       (make_disj_expr e)
       make_minus.VT0.rebuilder_rec_expression
@@ -2570,8 +2578,8 @@ let transform_decl (metavars,alts,name) e =
 	       | _ -> failwith "invalid alt"))
 	  alts in
       mkdisj match_decl metavars alts e
-	(function b -> function mv_b ->
-	  (instantiate b mv_b).VT0.rebuilder_rec_declaration)
+	(fun b mv_b model ->
+	  (instantiate b mv_b model).VT0.rebuilder_rec_declaration)
 	(function d -> Ast0.DeclTag d)
 	make_disj_decl
 	make_minus.VT0.rebuilder_rec_declaration
@@ -2597,8 +2605,8 @@ let transform_stmt (metavars,alts,name) e =
 	       | _ -> failwith "invalid alt"))
 	  alts in
       mkdisj match_statement metavars alts e
-	(function b -> function mv_b ->
-	  (instantiate b mv_b).VT0.rebuilder_rec_statement)
+	(fun b mv_b model ->
+	  (instantiate b mv_b model).VT0.rebuilder_rec_statement)
 	(function s -> Ast0.StmtTag s)
 	make_disj_stmt make_minus.VT0.rebuilder_rec_statement
 	(rebuild_mcode start_line).VT0.rebuilder_rec_statement
@@ -2645,8 +2653,8 @@ let transform_top (metavars,alts,name) e =
 		     | _ -> failwith "invalid alt"))
 		alts in
 	    mkdisj match_statement_dots metavars alts stmts
-	      (function b -> function mv_b ->
-		(instantiate b mv_b).VT0.rebuilder_rec_statement_dots)
+	      (fun b mv_b model ->
+		(instantiate b mv_b model).VT0.rebuilder_rec_statement_dots)
 	      (function s -> Ast0.DotsStmtTag s)
 	      (function x ->
 		Ast0.rewrap e (Ast0.DOTS([make_disj_stmt_list x])))
@@ -2746,7 +2754,8 @@ let rewrap =
   let mcode (x,a,i,mc,pos,adj) = (x,a,i,Ast0.context_befaft(),pos,adj) in
   let donothing r k e = Ast0.context_wrap(Ast0.unwrap(k e)) in
   V0.flat_rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing
@@ -2766,8 +2775,10 @@ let rec rewrap_anything = function
       Ast0.DotsCaseTag(rewrap.VT0.rebuilder_rec_case_line_dots d)
   | Ast0.IdentTag(d) -> Ast0.IdentTag(rewrap.VT0.rebuilder_rec_ident d)
   | Ast0.ExprTag(d) -> Ast0.ExprTag(rewrap.VT0.rebuilder_rec_expression d)
-  | Ast0.AssignOpTag(d) -> Ast0.AssignOpTag(rewrap.VT0.rebuilder_rec_assignOp d)
-  | Ast0.BinaryOpTag(d) -> Ast0.BinaryOpTag(rewrap.VT0.rebuilder_rec_binaryOp d)
+  | Ast0.AssignOpTag(d) ->
+      Ast0.AssignOpTag(rewrap.VT0.rebuilder_rec_assignOp d)
+  | Ast0.BinaryOpTag(d) ->
+      Ast0.BinaryOpTag(rewrap.VT0.rebuilder_rec_binaryOp d)
   | Ast0.ArgExprTag(d) ->
       Ast0.ArgExprTag(rewrap.VT0.rebuilder_rec_expression d)
   | Ast0.TestExprTag(d) ->

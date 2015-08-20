@@ -370,7 +370,7 @@ let rec top_expression opt_allowed tgt expr =
       let init = initialiser arity init in
       make_exp expr tgt arity (Ast0.Constructor(lp,ty,rp,init))
   (* why does optexp exist???? *)
-  | Ast0.OptExp(_) | Ast0.UniqueExp(_) | Ast0.AsExpr _ ->
+  | Ast0.OptExp(_) | Ast0.UniqueExp(_) | Ast0.AsExpr _ | Ast0.AsSExpr _ ->
       failwith "unexpected code"
 
 and expression tgt exp = top_expression false tgt exp
@@ -596,7 +596,7 @@ and declaration tgt decl =
       let params = parameter_list tgt params in
       let va = match va with
         | None -> None
-        | Some (c1, e1) -> Some (mcode c1, mcode e1) in 
+        | Some (c1, e1) -> Some (mcode c1, mcode e1) in
       let rp1 = mcode rp1 in
       let sem = mcode sem in
       make_decl decl tgt arity (Ast0.FunProto(fi,name,lp1,params,va,rp1,sem))
@@ -997,6 +997,16 @@ and statement tgt stm =
 	| Ast0.UniqueType(ty) ->
 	    Ast0.UniqueStm(Ast0.rewrap stm (Ast0.Ty(ty)))
 	| _ -> Ast0.Ty(new_ty))
+  | Ast0.TopId(id) ->
+      (* opt makes no sense alone at top level *)
+      let new_id = ident false tgt id in
+      Ast0.rewrap stm
+	(match Ast0.unwrap new_id with
+	  Ast0.OptIdent(id) ->
+	    Ast0.OptStm(Ast0.rewrap stm (Ast0.TopId(id)))
+	| Ast0.UniqueIdent(id) ->
+	    Ast0.UniqueStm(Ast0.rewrap stm (Ast0.TopId(id)))
+	| _ -> Ast0.TopId(new_id))
   | Ast0.TopInit(init) ->
       let new_init = initialiser tgt init in
       Ast0.rewrap stm

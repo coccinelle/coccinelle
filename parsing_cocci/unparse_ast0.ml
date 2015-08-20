@@ -146,14 +146,14 @@ let rec ident i =
 let print_string_box s = print_string s; open_box 0
 
 let assignOp op =
-  print_context op 
+  print_context op
     (function _ -> match Ast0.unwrap op with
       | Ast0.SimpleAssign op' -> mcode U.simpleAssignOp op'
       | Ast0.OpAssign op' -> mcode U.opAssignOp op'
       | Ast0.MetaAssign(name,_,_) -> mcode print_meta name)
 
 let binaryOp op =
-  print_context op 
+  print_context op
     (function _ -> match Ast0.unwrap op with
       | Ast0.Arith op' -> mcode U.arithOp op'
       | Ast0.Logical op' -> mcode U.logicalOp op'
@@ -261,7 +261,9 @@ let rec expression e =
       | Ast0.OptExp(exp) -> print_string "?"; expression exp
       | Ast0.UniqueExp(exp) -> print_string "!"; expression exp
       |	Ast0.AsExpr(exp,asexp) -> expression exp; print_string "@";
-	  expression asexp)
+	  expression asexp
+      |	Ast0.AsSExpr(exp,asstm) -> expression exp; print_string "@";
+	  statement "" asstm)
 
 and expression_dots x = dots (function _ -> ()) expression x
 
@@ -607,6 +609,7 @@ and statement arity s =
       | Ast0.Exp(exp) -> print_string arity; expression exp
       | Ast0.TopExp(exp) -> print_string arity; expression exp
       | Ast0.Ty(ty) -> print_string arity; typeC ty
+      | Ast0.TopId(id) -> print_string arity; ident id
       |	Ast0.TopInit(init) -> initialiser init
       | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) ->
 	  print_string arity; mcode print_string d;

@@ -514,7 +514,7 @@ let cluster_by_dir diffs =
 	 (function (file,diff) ->
 	   (Filename.dirname file, file, diff))
 	 diffs) in
-  let rec loop = function 
+  let rec loop = function
       [] -> []
     | (dir,file,diffs)::rest ->
 	match loop rest with

@@ -308,7 +308,7 @@ let is_str_dots e =
 
 let assignOp op =
   let (newop, promoted) = match Ast0.unwrap op with
-    | Ast0.SimpleAssign op0 -> 
+    | Ast0.SimpleAssign op0 ->
       let op1 = normal_mcode op0 in
       let op2 = promote_mcode op1 in
       ( (Ast0.SimpleAssign op1), op2)
@@ -324,7 +324,7 @@ let assignOp op =
 
 let binaryOp op =
   let (newop, promoted) = match Ast0.unwrap op with
-    | Ast0.Arith op0 -> 
+    | Ast0.Arith op0 ->
       let op1 = normal_mcode op0 in
       let op2 = promote_mcode op1 in
       ( (Ast0.Arith op1), op2)
@@ -497,7 +497,7 @@ let rec expression e =
   | Ast0.UniqueExp(exp) ->
       let exp = expression exp in
       mkres e (Ast0.UniqueExp(exp)) exp exp
-  | Ast0.AsExpr _ -> failwith "not possible"
+  | Ast0.AsExpr _ | Ast0.AsSExpr _ -> failwith "not possible"
 
 and expression_dots x = dots is_exp_dots None expression x
 
@@ -694,7 +694,7 @@ and declaration d =
       let params = parameter_list (Some(promote_mcode lp1)) params in
       let va1 = match va1 with
         | None -> None
-        | Some (c1,e1) -> Some (normal_mcode c1, normal_mcode e1) in 
+        | Some (c1,e1) -> Some (normal_mcode c1, normal_mcode e1) in
       let rp1 = normal_mcode rp1 in
       let sem = normal_mcode sem in
       let res = Ast0.FunProto(fninfo,name,lp1,params,va1,rp1,sem) in
@@ -1118,6 +1118,9 @@ let rec statement s =
     | Ast0.Ty(ty) ->
 	let ty = typeC ty in
 	mkres s (Ast0.Ty(ty)) ty ty
+    | Ast0.TopId(id) ->
+	let id = ident id in
+	mkres s (Ast0.TopId(id)) id id
     | Ast0.TopInit(init) ->
 	let init = initialiser init in
 	mkres s (Ast0.TopInit(init)) init init
@@ -1354,4 +1357,3 @@ let compute_statement_dots_lines attachable_or x =
   in_nest_count := 0;
   inherit_attachable := attachable_or;
   statement_dots x
-
