@@ -171,13 +171,11 @@ and disjexp e =
 	(function exp1 -> function exp2 ->
 	  Ast.rewrap e (Ast.ArrayAccess(exp1,lb,exp2,rb)))
   | Ast.RecordAccess(exp,pt,field) ->
-      let exp = disjexp exp in
-      List.map
-	(function exp -> Ast.rewrap e (Ast.RecordAccess(exp,pt,field))) exp
+      disjmult2 (disjexp exp) (disjident field)
+	(fun exp field -> Ast.rewrap e (Ast.RecordAccess(exp,pt,field)))
   | Ast.RecordPtAccess(exp,ar,field) ->
-      let exp = disjexp exp in
-      List.map
-	(function exp -> Ast.rewrap e (Ast.RecordPtAccess(exp,ar,field))) exp
+      disjmult2 (disjexp exp) (disjident field)
+	(fun exp field -> Ast.rewrap e (Ast.RecordPtAccess(exp,ar,field)))
   | Ast.Cast(lp,ty,rp,exp) ->
       disjmult2 (disjty ty) (disjexp exp)
 	(function ty -> function exp -> Ast.rewrap e (Ast.Cast(lp,ty,rp,exp)))
