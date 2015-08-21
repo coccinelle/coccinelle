@@ -1,4 +1,5 @@
 @initialize:ocaml@
+@@
 open Postgresql
 
 (*
@@ -25,6 +26,7 @@ then Printf.eprintf "Fct '%s' matchs \"^foo\"\n" f
 else Printf.eprintf "Fct '%s' does not match \"^foo\"\n" f
 
 @finalize:ocaml@
+@@
 ()
 
 (*
