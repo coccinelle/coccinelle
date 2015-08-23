@@ -338,13 +338,13 @@ let rec top_expression opt_allowed tgt expr =
 	  then fail expr "opt only allowed in the last disjunct"
       |	_ -> ());
       Ast0.rewrap expr (Ast0.DisjExpr(starter,exps,mids,ender))
-  |  Ast0.NestExpr(starter,exp_dots,ender,whencode,multi) ->
+  | Ast0.NestExpr(starter,exp_dots,ender,whencode,multi) ->
       let res =
         Ast0.NestExpr(starter,
                       dots (top_expression true Ast0.NONE) exp_dots,
                       ender,whencode,multi) in
       Ast0.rewrap expr res
-  |  Ast0.Edots(dots,whencode) ->
+  | Ast0.Edots(dots,whencode) ->
       let arity = exp_same (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in
       let whencode =
