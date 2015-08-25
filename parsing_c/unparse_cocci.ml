@@ -262,9 +262,9 @@ let nest_dots starter ender fn f d =
   mcode print_string ender
 in
 
-let print_disj_list fn l =
+let print_disj_list fn l sep =
   print_text "\n(\n";
-  print_between (function _ -> print_text "\n|\n") fn l;
+  print_between (function _ -> print_text ("\n"^sep^"\n")) fn l;
   print_text "\n)\n" in
 
 (* --------------------------------------------------------------------- *)
@@ -293,7 +293,7 @@ let rec ident i =
 
     | Ast.DisjId(id_list) ->
 	if generating
-	then print_disj_list ident id_list
+	then print_disj_list ident id_list "|"
 	else raise CantBeInPlus
     | Ast.OptIdent(_) | Ast.UniqueIdent(_) ->
 	raise CantBeInPlus
@@ -548,7 +548,11 @@ let rec expression e =
 
   | Ast.DisjExpr(exp_list) ->
       if generating
-      then print_disj_list expression exp_list
+      then print_disj_list expression exp_list "|"
+      else raise CantBeInPlus
+  | Ast.ConjExpr(exp_list) ->
+      if generating
+      then print_disj_list expression exp_list "&"
       else raise CantBeInPlus
   | Ast.NestExpr(starter,expr_dots,ender,Some whencode,multi)
     when generating ->
@@ -1273,7 +1277,7 @@ let rec statement arity s =
 
   | Ast.AsStmt(stmt,asstmt) -> statement arity stmt
 
-  | Ast.Disj([stmt_dots]) ->
+  | Ast.Disj([stmt_dots]) | Ast.Conj([stmt_dots]) ->
       if generating
       then
 	(pr_arity arity;
@@ -1284,6 +1288,15 @@ let rec statement arity s =
       then
 	(pr_arity arity; print_text "\n(\n";
 	 print_between (function _ -> print_text "\n|\n")
+	   (dots force_newline (statement arity))
+	   stmt_dots_list;
+	 print_text "\n)")
+      else raise CantBeInPlus
+  | Ast.Conj(stmt_dots_list) -> (* ignores newline directive for readability *)
+      if generating
+      then
+	(pr_arity arity; print_text "\n(\n";
+	 print_between (function _ -> print_text "\n&\n")
 	   (dots force_newline (statement arity))
 	   stmt_dots_list;
 	 print_text "\n)")

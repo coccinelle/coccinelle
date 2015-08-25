@@ -130,6 +130,8 @@ and base_expression =
   | EComma         of string mcode (* only in arglists *)
   | DisjExpr       of string mcode * expression list * string mcode list *
 	              string mcode
+  | ConjExpr       of string mcode * expression list * string mcode list *
+	              string mcode
   | NestExpr       of string mcode * expression dots * string mcode *
                       (string mcode * string mcode * expression) option
                       (* whencode *) * Ast_cocci.multi
@@ -384,6 +386,8 @@ and base_statement =
   | TopId         of ident (* only at top level *)
   | TopInit       of initialiser (* only at top level *)
   | Disj          of string mcode * statement dots list * string mcode list *
+	             string mcode
+  | Conj          of string mcode * statement dots list * string mcode list *
 	             string mcode
   | Nest          of string mcode * statement dots * string mcode *
 	             (statement dots,statement) whencode list * Ast_cocci.multi

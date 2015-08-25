@@ -275,7 +275,7 @@ let is_context e =
 let rec is_pure_context s =
   !Flag.sgrep_mode2 || (* everything is context for sgrep *)
   (match Ast0.unwrap s with
-    Ast0.Disj(starter,statement_dots_list,mids,ender) ->
+    Ast0.Disj(starter,statement_dots_list,mids,ender) -> (* need for conj? *)
       List.for_all
 	(function x ->
 	  match Ast0.undots x with
@@ -759,7 +759,8 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (Ast0.TypeExp(tya),Ast0.TypeExp(tyb)) ->
 	      match_typeC tya tyb
 	  | (Ast0.EComma(cm1),Ast0.EComma(cm)) -> check_mcode cm1 cm
-	  | (Ast0.DisjExpr(_,expsa,_,_),_) ->
+	  | (Ast0.DisjExpr(_,expsa,_,_),_)
+	  | (Ast0.ConjExpr(_,expsa,_,_),_) ->
 	      failwith "not allowed in the pattern of an isomorphism"
 	  | (Ast0.NestExpr(_,exp_dotsa,_,_,_),_) ->
 	      failwith "not allowed in the pattern of an isomorphism"
@@ -1234,7 +1235,8 @@ let match_maker checks_needed context_required whencode_allowed =
 		[check_mcode r1 r; check_mcode sc1 sc; match_expr expa expb]
 	  | (Ast0.Exec(e1,l1,codea,sc1),Ast0.Exec(e2,l2,codeb,sc2)) ->
 	      failwith "exec not supported in patterns"
-	  | (Ast0.Disj(_,statement_dots_lista,_,_),_) ->
+	  | (Ast0.Disj(_,statement_dots_lista,_,_),_)
+	  | (Ast0.Conj(_,statement_dots_lista,_,_),_) ->
 	      failwith "disj not supported in patterns"
 	  | (Ast0.Nest(_,stmt_dotsa,_,[],multia),
 	     Ast0.Nest(_,stmt_dotsb,_,wc,multib)) ->
@@ -1903,6 +1905,11 @@ let instantiate bindings mv_bindings model =
 		      let exps =
 			List.map (function e1 -> negate_reb e e1 k) exps in
 		      Ast0.rewrap res (Ast0.DisjExpr(lp,exps,mids,rp))
+		  | Ast0.ConjExpr(lp,exps,mids,rp) ->
+		      (* use res because it is the transformed argument *)
+		      let exps =
+			List.map (function e1 -> negate_reb e e1 k) exps in
+		      Ast0.rewrap res (Ast0.ConjExpr(lp,exps,mids,rp))
 		  | _ ->
 		      (*use e, because this might be the toplevel expression*)
 		      Ast0.rewrap e

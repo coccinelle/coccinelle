@@ -1391,6 +1391,7 @@ val union_set : 'a set -> 'a set -> 'a set
 val minus_set : 'a set -> 'a set -> 'a set
 
 val union_all : ('a set) list -> 'a set
+val inter_all : ('a set) list -> 'a set
 
 val big_union_set : ('a -> 'b set) -> 'a set -> 'b set
 val card_set : 'a set -> int

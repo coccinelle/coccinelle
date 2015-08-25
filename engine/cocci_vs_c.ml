@@ -1542,6 +1542,14 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
       (* remains inside nests, not sure if this is necessary *)
       eas +> List.fold_left (fun acc ea -> acc >|+|> (expression ea eb)) fail
 
+  | A.ConjExpr eas, eb ->
+      let rec loop acc_exp eb = function
+	  [] -> return (A.ConjExpr (List.rev acc_exp) +> wa, eb)
+	| e::es ->
+	    expression e eb >>= (fun exp eb ->
+	      loop (exp::acc_exp) eb es) in
+      loop [] eb eas
+
   | A.UniqueExp e,_ | A.OptExp e,_ ->
       Pretty_print_cocci.expression e;
       Format.print_newline();

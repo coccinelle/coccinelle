@@ -647,6 +647,10 @@ and get_before_e s a =
       let (dsl,dsla) =
 	List.split (List.map (function e -> get_before e a) stmt_dots_list) in
       (Ast.rewrap s (Ast.Disj(dsl)),List.fold_left Common.union_set [] dsla)
+  | Ast.Conj(stmt_dots_list) ->
+      let (dsl,dsla) =
+	List.split (List.map (function e -> get_before e a) stmt_dots_list) in
+      (Ast.rewrap s (Ast.Conj(dsl)),List.fold_left Common.union_set [] dsla)
   | Ast.Atomic(ast) ->
       (match Ast.unwrap ast with
 	Ast.MetaStmt(_,_,_,_) -> (s,[])
@@ -758,6 +762,10 @@ and get_after_e s a =
       let (dsl,dsla) =
 	List.split (List.map (function e -> get_after e a) stmt_dots_list) in
       (Ast.rewrap s (Ast.Disj(dsl)),List.fold_left Common.union_set [] dsla)
+  | Ast.Conj(stmt_dots_list) ->
+      let (dsl,dsla) =
+	List.split (List.map (function e -> get_after e a) stmt_dots_list) in
+      (Ast.rewrap s (Ast.Conj(dsl)),List.fold_left Common.union_set [] dsla)
   | Ast.Atomic(ast) ->
       (match Ast.unwrap ast with
 	Ast.MetaStmt(nm,keep,Ast.SequencibleAfterDots _,i) ->
@@ -876,6 +884,7 @@ let rec ends_in_return_bis preok stmt_list =
 		| _ -> false in
 	      preok && loop x
 	  | Ast.Disj(disjs) -> List.for_all (ends_in_return_bis preok) disjs
+	  | Ast.Conj(disjs) -> List.exists (ends_in_return_bis preok) disjs
 	  | _ -> false)
       | _ -> false)
   | Ast.CIRCLES(x) -> failwith "not supported"
@@ -1653,7 +1662,7 @@ let rec statement_list stmt_list top after quantified minus_quantified
   let isdots x =
     (* include Disj to be on the safe side *)
     match Ast.unwrap x with
-      Ast.Dots _ | Ast.Nest _ | Ast.Disj _ -> true | _ -> false in
+      Ast.Dots _ | Ast.Nest _ | Ast.Disj _ | Ast.Conj _ -> true | _ -> false in
   let compute_label l e db = if db || isdots e then l else None in
   match Ast.unwrap stmt_list with
     Ast.DOTS(x) ->
@@ -1982,6 +1991,21 @@ and statement stmt top after quantified minus_quantified
 	  Top -> List.map2 protect_top_level stmt_dots_list subformulas
 	| NotTop -> subformulas in
       List.fold_left ctl_seqor CTL.False safe_subformulas
+
+  | Ast.Conj(stmt_dots_list) -> (* list shouldn't be empty *)
+      (*ctl_and        seems pointless, disjuncts see label too
+	(label_pred_maker label)*)
+      let subformulas =
+	List.map
+	  (function sl ->
+	    statement_list sl top after quantified minus_quantified label
+	      llabel slabel true guard)
+	  stmt_dots_list in
+      let safe_subformulas =
+	match top with
+	  Top -> List.map2 protect_top_level stmt_dots_list subformulas
+	| NotTop -> subformulas in
+      List.fold_left ctl_and CTL.True safe_subformulas
 
   | Ast.Nest(starter,stmt_dots,ender,whencode,multi,bef,aft) ->
       (* label in recursive call is None because label check is already

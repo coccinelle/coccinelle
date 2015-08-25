@@ -365,7 +365,8 @@ let classify is_minus all_marked table code =
 	  k (Ast0.rewrap e (Ast0.Ecircles(dots,None)))
       | Ast0.Estars(dots,whencode) ->
 	  k (Ast0.rewrap e (Ast0.Estars(dots,None)))
-      | Ast0.DisjExpr(starter,expr_list,_,ender) ->
+      | Ast0.DisjExpr(starter,expr_list,_,ender)
+      | Ast0.ConjExpr(starter,expr_list,_,ender) ->
 	  disj_cases e starter expr_list r.VT0.combiner_rec_expression ender
       |	_ -> k e) in
 
@@ -440,7 +441,8 @@ let classify is_minus all_marked table code =
 	  k (Ast0.rewrap s (Ast0.Circles(dots,[])))
       | Ast0.Stars(dots,whencode) ->
 	  k (Ast0.rewrap s (Ast0.Stars(dots,[])))
-      | Ast0.Disj(starter,statement_dots_list,_,ender) ->
+      | Ast0.Disj(starter,statement_dots_list,_,ender)
+      | Ast0.Conj(starter,statement_dots_list,_,ender) ->
 	  disj_cases s starter statement_dots_list
 	    r.VT0.combiner_rec_statement_dots
 	    ender
@@ -583,6 +585,11 @@ let rec equal_expression e1 e2 =
   | (Ast0.EComma(cm1),Ast0.EComma(cm2)) -> equal_mcode cm1 cm2
   | (Ast0.DisjExpr(starter1,_,mids1,ender1),
      Ast0.DisjExpr(starter2,_,mids2,ender2)) ->
+       equal_mcode starter1 starter2 &&
+       List.for_all2 equal_mcode mids1 mids2 &&
+       equal_mcode ender1 ender2
+  | (Ast0.ConjExpr(starter1,_,mids1,ender1),
+     Ast0.ConjExpr(starter2,_,mids2,ender2)) ->
        equal_mcode starter1 starter2 &&
        List.for_all2 equal_mcode mids1 mids2 &&
        equal_mcode ender1 ender2
@@ -809,6 +816,10 @@ let rec equal_statement s1 s2 =
       equal_mcode starter1 starter2 &&
       List.for_all2 equal_mcode mids1 mids2 &&
       equal_mcode ender1 ender2
+  | (Ast0.Conj(starter1,_,mids1,ender1),Ast0.Conj(starter2,_,mids2,ender2)) ->
+      equal_mcode starter1 starter2 &&
+      List.for_all2 equal_mcode mids1 mids2 &&
+      equal_mcode ender1 ender2
   | (Ast0.Nest(starter1,_,ender1,_,m1),Ast0.Nest(starter2,_,ender2,_,m2)) ->
       equal_mcode starter1 starter2 && equal_mcode ender1 ender2 && m1 = m2
   | (Ast0.Exp(_),Ast0.Exp(_)) -> true
@@ -1032,23 +1043,27 @@ code between ...s. *)
 let isonly f l = match Ast0.undots l with [s] -> f s | _ -> false
 
 let isall f l = List.for_all (isonly f) l
+let isany f l = List.exists (isonly f) l
 
 let rec is_exp s =
   match Ast0.unwrap s with
     Ast0.Exp(e) -> true
   | Ast0.Disj(_,stmts,_,_) -> isall is_exp stmts
+  | Ast0.Conj(_,stmts,_,_) -> isany is_exp stmts
   | _ -> false
 
 let rec is_ty s =
   match Ast0.unwrap s with
     Ast0.Ty(e) -> true
   | Ast0.Disj(_,stmts,_,_) -> isall is_ty stmts
+  | Ast0.Conj(_,stmts,_,_) -> isany is_ty stmts
   | _ -> false
 
 let rec is_init s =
   match Ast0.unwrap s with
     Ast0.TopInit(e) -> true
   | Ast0.Disj(_,stmts,_,_) -> isall is_init stmts
+  | Ast0.Conj(_,stmts,_,_) -> isany is_init stmts
   | _ -> false
 
 let rec is_decl s =
@@ -1056,12 +1071,14 @@ let rec is_decl s =
     Ast0.Decl(_,e) -> true
   | Ast0.FunDecl(_,_,_,_,_,_,_,_,_,_,_) -> true
   | Ast0.Disj(_,stmts,_,_) -> isall is_decl stmts
+  | Ast0.Conj(_,stmts,_,_) -> isany is_decl stmts
   | _ -> false
 
 let rec is_fndecl s =
   match Ast0.unwrap s with
     Ast0.FunDecl(_,_,_,_,_,_,_,_,_,_,_) -> true
   | Ast0.Disj(_,stmts,_,_) -> isall is_fndecl stmts
+  | Ast0.Conj(_,stmts,_,_) -> isany is_fndecl stmts
   | _ -> false
 
 let rec is_toplevel s =
@@ -1069,6 +1086,7 @@ let rec is_toplevel s =
     Ast0.Decl(_,e) -> true
   | Ast0.FunDecl(_,_,_,_,_,_,_,_,_,_,_) -> true
   | Ast0.Disj(_,stmts,_,_) -> isall is_toplevel stmts
+  | Ast0.Conj(_,stmts,_,_) -> isany is_toplevel stmts
   | Ast0.ExprStatement(Some fc,_) ->
       (match Ast0.unwrap fc with
 	Ast0.FunCall(_,_,_,_) -> true

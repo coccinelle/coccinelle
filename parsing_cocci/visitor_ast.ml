@@ -219,7 +219,8 @@ let combiner bind option_default
 	  let lasstm = rule_elem asstm in
 	  bind lexp lasstm
       | Ast.EComma(cm) -> string_mcode cm
-      | Ast.DisjExpr(exp_list) -> multibind (List.map expression exp_list)
+      | Ast.DisjExpr(exp_list) | Ast.ConjExpr(exp_list) ->
+	  multibind (List.map expression exp_list)
       | Ast.NestExpr(starter,expr_dots,ender,whncode,multi) ->
 	  let lstarter = string_mcode starter in
 	  let lexpr_dots = expression_dots expr_dots in
@@ -654,7 +655,8 @@ let combiner bind option_default
 	  let lexp = expression exp in
 	  let lcolon = string_mcode colon in
 	  multibind [lcase; lexp; lcolon]
-      |	Ast.DisjRuleElem(res) -> multibind (List.map rule_elem res) in
+      |	Ast.DisjRuleElem(res) ->
+	  multibind (List.map rule_elem res) in
     rulefn all_functions k re
 
   (* not parameterisable, for now *)
@@ -762,7 +764,7 @@ let combiner bind option_default
 	  let lrb = rule_elem rb in
 	  multibind [lheader; llb; ldecls; lcases; lrb]
       | Ast.Atomic(re) ->rule_elem re
-      | Ast.Disj(stmt_dots_list) ->
+      | Ast.Disj(stmt_dots_list) | Ast.Conj(stmt_dots_list) ->
 	  multibind (List.map statement_dots stmt_dots_list)
       | Ast.Nest(starter,stmt_dots,ender,whn,_,_,_) ->
 	  let lstarter = string_mcode starter in
@@ -1103,6 +1105,7 @@ let rebuilder
 	    Ast.AsSExpr(lexp, lasstm)
 	| Ast.EComma(cm) -> Ast.EComma(string_mcode cm)
 	| Ast.DisjExpr(exp_list) -> Ast.DisjExpr(List.map expression exp_list)
+	| Ast.ConjExpr(exp_list) -> Ast.ConjExpr(List.map expression exp_list)
 	| Ast.NestExpr(starter,expr_dots,ender,whncode,multi) ->
 	    let lstarter = string_mcode starter in
 	    let lexpr_dots = expression_dots expr_dots in
@@ -1666,6 +1669,8 @@ let rebuilder
 	| Ast.Atomic(re) -> Ast.Atomic(rule_elem re)
 	| Ast.Disj(stmt_dots_list) ->
 	    Ast.Disj (List.map statement_dots stmt_dots_list)
+	| Ast.Conj(stmt_dots_list) ->
+	    Ast.Conj (List.map statement_dots stmt_dots_list)
 	| Ast.Nest(starter,stmt_dots,ender,whn,multi,bef,aft) ->
 	    let lstarter = string_mcode starter in
 	    let lstmt_dots = statement_dots stmt_dots in

@@ -258,6 +258,7 @@ let token2c (tok,_) =
   | PC.TOPar(clt)  -> add_clt "(" clt
   | PC.TOPar0(s,clt) -> add_clt s clt
   | PC.TMid0(s,clt)  -> add_clt s clt
+  | PC.TAnd0(s,clt)  -> add_clt s clt
   | PC.TCPar(clt)  -> add_clt ")" clt
   | PC.TCPar0(s,clt) -> add_clt s clt
 
@@ -377,7 +378,8 @@ let plus_attachable only_plus (tok,_) =
       else if only_plus then NOTPLUS
       else if line_type clt = D.CONTEXT then PLUS else NOTPLUS
 
-  | PC.TOPar0(s,clt) | PC.TMid0(s,clt) | PC.TCPar0(s,clt) -> NOTPLUS
+  | PC.TOPar0(s,clt) | PC.TMid0(s,clt) | PC.TAnd0(s,clt)
+  | PC.TCPar0(s,clt) -> NOTPLUS
   | PC.TMetaPos(nm,_,_,_) -> NOTPLUS
   | PC.TSub(clt) -> NOTPLUS
   | PC.TDirective(_,clt) -> NOTPLUS
@@ -452,7 +454,7 @@ let get_clt (tok,_) =
   | PC.TEq(clt) | PC.TOpAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
   | PC.TPArob(clt) | PC.TPtVirg(clt)
 
-  | PC.TOPar0(_,clt) | PC.TMid0(_,clt) | PC.TCPar0(_,clt)
+  | PC.TOPar0(_,clt) | PC.TMid0(_,clt) | PC.TAnd0(_,clt) | PC.TCPar0(_,clt)
   | PC.TOEllipsis(clt) | PC.TCEllipsis(clt)
   | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) (* | PC.TOCircles(clt)
   | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *)
@@ -672,6 +674,7 @@ let update_clt (tok,x) clt =
   | PC.TOPar(_)  -> (PC.TOPar(clt),x)
   | PC.TOPar0(s,_) -> (PC.TOPar0(s,clt),x)
   | PC.TMid0(s,_)  -> (PC.TMid0(s,clt),x)
+  | PC.TAnd0(s,_)  -> (PC.TAnd0(s,clt),x)
   | PC.TCPar(_)  -> (PC.TCPar(clt),x)
   | PC.TCPar0(s,_) -> (PC.TCPar0(s,clt),x)
 
@@ -903,7 +906,8 @@ let split_token ((tok,_) as t) =
 
   | PC.TWhy(clt)  | PC.TDotDot(clt)
   | PC.TBang(clt) | PC.TOPar(clt) | PC.TOPar0(_,clt)
-  | PC.TMid0(_,clt) | PC.TCPar(clt) | PC.TCPar0(_,clt) -> split t clt
+  | PC.TMid0(_,clt) | PC.TAnd0(_,clt) | PC.TCPar(clt) | PC.TCPar0(_,clt) ->
+      split t clt
 
   | PC.TInc(clt) | PC.TDec(clt) -> split t clt
 
@@ -964,7 +968,7 @@ let rec find_function_names l =
     | (PC.TMetaLocalFunc(_,_,_,clt),info) -> true
     | _ -> false in
   let is_mid = function
-      (PC.TMid0(_),info) -> true
+      (PC.TMid0(_),info) | (PC.TAnd0(_),info) -> true
     | _ -> false in
   let is_par = function
       (PC.TOPar0(_),info) -> true

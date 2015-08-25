@@ -26,6 +26,12 @@
 
 * 1.0.2
 ** Language:
+- Conjunction (analogous to disjunction)
+** Features:
+** Bugfix:
+
+* 1.0.2
+** Language:
 ** Features:
 - Positions of C tokens are now computed while lexing rather than
   during a distinct pass. This makes use of the Lexing.new_line function

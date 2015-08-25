@@ -1,5 +1,5 @@
 (* create an index for each constructor *)
-(* current max is 186 *)
+(* current max is 188 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -91,6 +91,7 @@ let expression e =
   | Ast0.MetaExprList(name,_,_) -> [34]
   | Ast0.EComma(cm) -> [35]
   | Ast0.DisjExpr(_,expr_list,_,_) -> [36]
+  | Ast0.ConjExpr(_,expr_list,_,_) -> [187]
   | Ast0.NestExpr(_,expr_dots,_,_,_) -> [37]
   | Ast0.Edots(dots,whencode) -> [38]
   | Ast0.Ecircles(dots,whencode) -> [39]
@@ -197,6 +198,7 @@ let statement s =
   | Ast0.MetaStmt(name,_) -> [79]
   | Ast0.MetaStmtList(name,_) -> [80]
   | Ast0.Disj(_,statement_dots_list,_,_) -> [81]
+  | Ast0.Conj(_,statement_dots_list,_,_) -> [188]
   | Ast0.Nest(_,stmt_dots,_,_,_) -> [82]
   | Ast0.Exp(exp) -> [83]
   | Ast0.TopExp(exp) -> [141]
