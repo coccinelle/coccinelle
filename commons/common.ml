@@ -4476,6 +4476,10 @@ let (minus_set: 'a set -> 'a set -> 'a set) = fun s1 s2 ->
 
 let union_all l = List.fold_left union_set [] l
 
+let inter_all = function
+    [] -> []
+  | x::xs -> List.fold_left inter_set x xs
+
 let big_union_set f xs = xs +> map_set f +> fold_set union_set empty_set
 
 let (card_set: 'a set -> int) = List.length

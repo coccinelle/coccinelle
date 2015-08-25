@@ -245,6 +245,11 @@ and statement testfn mcode tail stmt : 'a list list =
       then []
       else Common.union_all processed
 
+  | Ast.Conj(stmt_dots_list) ->
+      let processed =
+	List.map (statement_list testfn mcode tail) stmt_dots_list in
+      Common.inter_all processed
+
   | Ast.Nest(starter,stmt_dots,ender,whencode,true,_,_) ->
       statement_list testfn mcode false stmt_dots
 

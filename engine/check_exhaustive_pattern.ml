@@ -118,6 +118,7 @@ let dumb_astcocci_expr = function
  | A.Ecircles _ -> ()
  | A.Estars _ -> ()
  | A.DisjExpr eas -> ()
+ | A.ConjExpr eas -> ()
  | A.UniqueExp _ -> ()
  | A.OptExp _ -> ()
 

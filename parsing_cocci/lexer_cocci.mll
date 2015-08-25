@@ -754,7 +754,14 @@ rule token = parse
   | "<<"           { start_line true;
 		     TShLOp(Ast.DecLeft,get_current_line_type lexbuf) }
 
-  | "&"            { start_line true; TAnd    (get_current_line_type lexbuf) }
+  | "&"            { if not (!col_zero)
+                     then (start_line true; TAnd(get_current_line_type lexbuf))
+                     else (start_line true;
+	                   check_context_linetype (tok lexbuf);
+		           TAnd0 ("&",get_current_line_type lexbuf))}
+  | "\\&"          { start_line true;
+	             TAnd0 ("\\&",contextify(get_current_line_type lexbuf)) }
+
   | "^"            { start_line true; TXor(get_current_line_type lexbuf) }
 
   | "##"            { start_line true; TCppConcatOp }

@@ -57,7 +57,7 @@ let disjunct_bindings b1 b2 =
   match b1 with MAYBE -> b1 | NO -> b2
 
 let disjunct_all_bindings = List.fold_left disjunct_bindings NO
-let conjunct_all_bindings = List.fold_left conjunct_bindings NO
+let conjunct_all_bindings = List.fold_left conjunct_bindings MAYBE
 
 (* --------------------------------------------------------------------- *)
 

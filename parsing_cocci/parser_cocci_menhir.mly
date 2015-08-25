@@ -235,7 +235,7 @@ let mklogop (op,clt) =
 %token <Data.clt> TWhen TWhenTrue TWhenFalse TAny TStrict TLineEnd
 
 %token <Data.clt> TWhy TDotDot TBang TOPar TCPar
-%token <string * Data.clt> TOPar0 TMid0 TCPar0
+%token <string * Data.clt> TOPar0 TMid0 TAnd0 TCPar0
 
 %token <string>  TPathIsoFile
 %token <string * Data.clt> TIncludeL TIncludeNL
@@ -1520,6 +1520,12 @@ rule_elem_statement:
       (Ast0.Disj(P.id2mcode $1,
 		 List.map (function x -> Ast0.wrap(Ast0.DOTS([x]))) code,
 		 mids, P.id2mcode $3)) }
+| TOPar0 andzero_list(rule_elem_statement,rule_elem_statement) TCPar0
+    { let (mids,code) = $2 in
+    Ast0.wrap
+      (Ast0.Conj(P.id2mcode $1,
+		 List.map (function x -> Ast0.wrap(Ast0.DOTS([x]))) code,
+		 mids, P.id2mcode $3)) }
 
 /* a statement on its own */
 single_statement:
@@ -1530,6 +1536,14 @@ single_statement:
       { let (mids,code) = $2 in
         Ast0.wrap
 	  (Ast0.Disj(P.id2mcode $1,
+		     List.map (function x -> Ast0.wrap(Ast0.DOTS([x]))) code,
+		     mids, P.id2mcode $3)) }
+  | TOPar0 andzero_list(statement,statement) TCPar0
+      /* degenerate case, elements are single statements and thus don't
+	contain dots */
+      { let (mids,code) = $2 in
+        Ast0.wrap
+	  (Ast0.Conj(P.id2mcode $1,
 		     List.map (function x -> Ast0.wrap(Ast0.DOTS([x]))) code,
 		     mids, P.id2mcode $3)) }
 
@@ -1781,6 +1795,16 @@ decl_statement:
       else
 	  [Ast0.wrap(Ast0.Disj(P.id2mcode $1, code, mids,
 			       P.id2mcode $3))] }
+  | TOPar0 t=andzero_list(fun_start,fun_start) TCPar0
+      { let (mids,code) = t in
+	if List.for_all
+	    (function x ->
+	      match Ast0.unwrap x with Ast0.DOTS([]) -> true | _ -> false)
+	    code
+      then []
+      else
+	  [Ast0.wrap(Ast0.Conj(P.id2mcode $1, code, mids,
+			       P.id2mcode $3))] }
 
 /* a statement that is part of a list */
 decl_statement_expr:
@@ -1809,6 +1833,15 @@ decl_statement_expr:
 	  let dot_code =
 	    List.map (function x -> Ast0.wrap(Ast0.DOTS x)) code in
 	  [Ast0.wrap(Ast0.Disj(P.id2mcode $1, dot_code, mids,
+			       P.id2mcode $3))] }
+  | TOPar0 t=andzero_list(fun_after_stm,fun_after_dots_or) TCPar0
+      { let (mids,code) = t in
+	if List.for_all (function [] -> true | _ -> false) code
+      then []
+      else
+	  let dot_code =
+	    List.map (function x -> Ast0.wrap(Ast0.DOTS x)) code in
+	  [Ast0.wrap(Ast0.Conj(P.id2mcode $1, dot_code, mids,
 			       P.id2mcode $3))] }
 
 /*****************************************************************************/
@@ -2112,6 +2145,11 @@ primary_expr(recurser,primary_extra):
  | TOPar0 midzero_list(recurser,eexpr) TCPar0
      { let (mids,code) = $2 in
        Ast0.wrap(Ast0.DisjExpr(P.id2mcode $1,
+			       code, mids,
+			       P.id2mcode $3)) }
+ | TOPar0 andzero_list(recurser,eexpr) TCPar0
+     { let (mids,code) = $2 in
+       Ast0.wrap(Ast0.ConjExpr(P.id2mcode $1,
 			       code, mids,
 			       P.id2mcode $3)) }
  | primary_extra { $1 }
@@ -2822,6 +2860,13 @@ midzero_list(elem,aft):
 
 mzl(elem):
   a=TMid0 b=elem { (P.id2mcode a, b) }
+
+andzero_list(elem,aft):
+  a=elem b=nonempty_list(azl(aft))
+     { let (mids,code) = List.split b in (mids,(a::code)) }
+
+azl(elem):
+  a=TAnd0 b=elem { (P.id2mcode a, b) }
 
 edots_when(dotter,when_grammar):
     d=dotter                                      { (d,None) }
