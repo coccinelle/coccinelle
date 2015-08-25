@@ -202,6 +202,10 @@ and disjexp e =
       let exp = disjexp exp in
       List.map (function exp -> Ast.rewrap e (Ast.AsSExpr(exp,asstm))) exp
   | Ast.DisjExpr(exp_list) -> List.concat (List.map disjexp exp_list)
+  | Ast.ConjExpr(exp_list) ->
+      let exp_list = disjmult disjexp exp_list in
+      List.map (function exp_list -> Ast.rewrap e (Ast.ConjExpr(exp_list)))
+	exp_list
   | Ast.NestExpr(starter,expr_dots,ender,whencode,multi) ->
       (* not sure what to do here, so ambiguities still possible *)
       [e]
@@ -430,7 +434,7 @@ let rec disj_rule_elem r k re =
 	(function exp -> Ast.rewrap re (Ast.Case(case,exp,colon)))
   | Ast.DisjRuleElem(l) ->
       (* only case lines *)
-      Ast.rewrap re(Ast.DisjRuleElem(List.map (disj_rule_elem r k) l))
+      Ast.rewrap re (Ast.DisjRuleElem(List.map (disj_rule_elem r k) l))
 
 let disj_all =
   let mcode x = x in

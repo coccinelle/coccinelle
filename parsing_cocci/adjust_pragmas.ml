@@ -124,7 +124,8 @@ let rec right_statement s =
       call_right right_mcode name s
 	(function name -> Ast0.MetaStmtList(name,pure))
   | Ast0.AsStmt(stm,asstm) -> failwith "not possible"
-  | Ast0.Disj(starter,statement_dots_list,mids,ender) -> None
+  | Ast0.Disj(starter,statement_dots_list,mids,ender)
+  | Ast0.Conj(starter,statement_dots_list,mids,ender) -> None
   | Ast0.Nest(starter,stmt_dots,ender,whn,multi) -> None
   (* the following are None, because they can't be adjacent to an aft node *)
   | Ast0.Exp(exp) -> None

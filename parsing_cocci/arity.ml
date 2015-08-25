@@ -338,6 +338,18 @@ let rec top_expression opt_allowed tgt expr =
 	  then fail expr "opt only allowed in the last disjunct"
       |	_ -> ());
       Ast0.rewrap expr (Ast0.DisjExpr(starter,exps,mids,ender))
+  | Ast0.ConjExpr(starter,exps,mids,ender) ->
+      (match exps with
+	e::es ->
+	  let e = top_expression opt_allowed tgt e in
+	  let arity =
+	    match Ast0.unwrap e with
+	      Ast0.OptExp _ -> Ast0.OPT
+	    | Ast0.UniqueExp _ -> Ast0.UNIQUE
+	    | _ -> Ast0.NONE in
+	  let es = List.map (expression arity) es in
+	  make_exp expr tgt arity (Ast0.ConjExpr(starter,e::es,mids,ender))
+      |	_ -> expr)
   | Ast0.NestExpr(starter,exp_dots,ender,whencode,multi) ->
       let res =
         Ast0.NestExpr(starter,
@@ -1055,6 +1067,45 @@ and statement tgt stm =
       then
 	make_rule_elem stm tgt Ast0.OPT (Ast0.Disj(starter,unopt,mids,ender))
       else Ast0.rewrap stm (Ast0.Disj(starter,stms,mids,ender))
+  | Ast0.Conj(starter,rule_elem_dots_list,mids,ender) ->
+      let stms =
+	List.map (function x -> concat_dots (statement tgt) x)
+	  rule_elem_dots_list in
+      let (found_opt,unopt) =
+	List.fold_left
+	  (function (found_opt,lines) ->
+	    function x ->
+	      let rebuild l =
+		(* previously just checked the last thing in the list,
+		   but everything should be optional for the whole thing to
+		   be optional *)
+		let is_opt x =
+		  match Ast0.unwrap x with
+		    Ast0.OptStm(x) -> true
+		  | _ -> false in
+		let unopt x =
+		  match Ast0.unwrap x with
+		    Ast0.OptStm(x) -> x
+		  | _ -> x in
+		if List.for_all is_opt l
+		then (true,List.map unopt l)
+		else (false, l) in
+	      let (l,k) =
+		match Ast0.unwrap x with
+		  Ast0.DOTS(l) ->
+		    (l,function l -> Ast0.rewrap x (Ast0.DOTS l))
+		| Ast0.CIRCLES(l) ->
+		    (l,function l -> Ast0.rewrap x (Ast0.CIRCLES l))
+		| Ast0.STARS(l) ->
+		    (l,function l -> Ast0.rewrap x (Ast0.STARS l)) in
+	      let (fo,l) = rebuild l in
+	      (found_opt && fo,(k l)::lines))
+	  (true,[]) stms in
+      let unopt = List.rev unopt in
+      if found_opt
+      then
+	make_rule_elem stm tgt Ast0.OPT (Ast0.Disj(starter,unopt,mids,ender))
+      else Ast0.rewrap stm (Ast0.Conj(starter,stms,mids,ender))
   | Ast0.Nest(starter,rule_elem_dots,ender,whn,multi) ->
       let new_rule_elem_dots =
 	concat_dots (statement Ast0.NONE) rule_elem_dots in

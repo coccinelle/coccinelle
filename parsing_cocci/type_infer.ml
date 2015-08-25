@@ -249,7 +249,8 @@ let rec propagate_types env =
 	| Ast0.MetaExpr(name,_,ty,_,_) -> None
 	| Ast0.MetaExprList(name,_,_) -> None
 	| Ast0.EComma(cm) -> None
-	| Ast0.DisjExpr(_,exp_list,_,_) ->
+	| Ast0.DisjExpr(_,exp_list,_,_)
+	| Ast0.ConjExpr(_,exp_list,_,_) ->
 	    let types = List.map Ast0.get_type exp_list in
 	    let combined = List.fold_left lub_type None types in
 	      (match combined with
@@ -308,7 +309,8 @@ let rec propagate_types env =
 		 r.VT0.combiner_rec_statement r.VT0.combiner_rec_expression)
 	      wc;
 	    process_statement_list r acc ss
-	| Ast0.Disj(_,statement_dots_list,_,_) ->
+	| Ast0.Disj(_,statement_dots_list,_,_)
+	| Ast0.Conj(_,statement_dots_list,_,_) ->
 	    let new_acc =
 	      lub_envs
 		(List.map

@@ -197,7 +197,8 @@ let check_allminus =
 
   let expression r k e =
     match Ast0.unwrap e with
-      Ast0.DisjExpr(starter,expr_list,mids,ender) ->
+      Ast0.DisjExpr(starter,expr_list,mids,ender) (* ignore starter, etc *)
+    | Ast0.ConjExpr(starter,expr_list,mids,ender) ->
 	List.for_all r.VT0.combiner_rec_expression expr_list
     | Ast0.AsExpr(exp,asexp) -> k exp
     | Ast0.AsSExpr(exp,asstm) -> k exp
@@ -224,7 +225,8 @@ let check_allminus =
 
   let statement r k e =
     match Ast0.unwrap e with
-      Ast0.Disj(starter,statement_dots_list,mids,ender) ->
+      Ast0.Disj(starter,statement_dots_list,mids,ender)
+    | Ast0.Conj(starter,statement_dots_list,mids,ender) ->
 	List.for_all r.VT0.combiner_rec_statement_dots statement_dots_list
     | Ast0.AsStmt(stmt,asstmt) -> k stmt
     | _ -> k e in
@@ -429,6 +431,8 @@ and expression e =
     | Ast0.EComma(cm)         -> Ast.EComma(mcode cm)
     | Ast0.DisjExpr(_,exps,_,_)     ->
 	Ast.DisjExpr(List.map expression exps)
+    | Ast0.ConjExpr(_,exps,_,_)     ->
+	Ast.ConjExpr(List.map expression exps)
     | Ast0.NestExpr(starter,exp_dots,ender,whencode,multi) ->
 	let starter = mcode starter in
 	let whencode = get_option (fun (_,_,b) -> expression b) whencode in
@@ -911,10 +915,12 @@ and statement s =
 	  let allminus = check_allminus.VT0.combiner_rec_statement s in
 	  Ast.Atomic(rewrap_rule_elem s (Ast.Ty(typeC allminus ty)))
       | Ast0.TopId(id) ->
-	  let allminus = check_allminus.VT0.combiner_rec_statement s in
 	  Ast.Atomic(rewrap_rule_elem s (Ast.TopId(ident id)))
       | Ast0.Disj(_,rule_elem_dots_list,_,_) ->
 	  Ast.Disj(List.map (function x -> statement_dots seqible x)
+		     rule_elem_dots_list)
+      | Ast0.Conj(_,rule_elem_dots_list,_,_) ->
+	  Ast.Conj(List.map (function x -> statement_dots seqible x)
 		     rule_elem_dots_list)
       | Ast0.Nest(starter,rule_elem_dots,ender,whn,multi) ->
 	  Ast.Nest
@@ -1080,7 +1086,8 @@ and statement s =
 	      (match decls with
 		[] -> ([],x::other)
 	      | _ -> (x :: decls,other))
-	  | Ast0.Disj(starter,stmt_dots_list,mids,ender) ->
+	  | Ast0.Disj(starter,stmt_dots_list,mids,ender)
+	  | Ast0.Conj(starter,stmt_dots_list,mids,ender) ->
 	      let disjs = List.map collect_dot_decls stmt_dots_list in
 	      let all_decls = List.for_all (function (_,s) -> s=[]) disjs in
 	      if all_decls

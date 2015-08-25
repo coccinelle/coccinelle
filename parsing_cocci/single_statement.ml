@@ -142,6 +142,7 @@ let rec left_expression e =
   | Ast0.MetaExprList(name,_,_) -> modif_before_mcode name
   | Ast0.EComma(cm) -> modif_before_mcode cm
   | Ast0.DisjExpr(_,exp_list,_,_) -> List.exists left_expression exp_list
+  | Ast0.ConjExpr(_,exp_list,_,_) -> List.exists left_expression exp_list
   | Ast0.NestExpr(starter,expr_dots,ender,_,multi) ->
       left_dots left_expression expr_dots
   | Ast0.Edots(dots,_) | Ast0.Ecircles(dots,_) | Ast0.Estars(dots,_) -> false
@@ -375,7 +376,8 @@ and contains_only_minus =
   let expression r k e =
     mcodekind (Ast0.get_mcodekind e) &&
     match Ast0.unwrap e with
-      Ast0.DisjExpr(starter,expr_list,mids,ender) ->
+      Ast0.DisjExpr(starter,expr_list,mids,ender)
+    | Ast0.ConjExpr(starter,expr_list,mids,ender) ->
 	List.for_all r.VT0.combiner_rec_expression expr_list
     | _ -> k e in
 
@@ -606,6 +608,15 @@ let rec statement dots_before dots_after s =
 		   List.map (statement_dots dots_before dots_after)
 		     statement_dots_list,
 		   mids,ender))
+  | Ast0.Conj(starter,statement_dots_list,mids,ender) ->
+      (match statement_dots_list with
+	s1::ss ->
+	  Ast0.rewrap s
+	    (Ast0.Conj(starter,
+		       (statement_dots dots_before dots_after s1) ::
+		       (List.map (statement_dots false false) ss),
+		       mids,ender))
+      |	_ -> s)
   | Ast0.Nest(starter,stmt_dots,ender,whencode,multi) ->
       (match Ast0.get_mcode_mcodekind starter with
 	Ast0.MINUS _ -> (* everything removed, like -... *) s

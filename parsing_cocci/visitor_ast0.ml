@@ -29,7 +29,7 @@ let visitor mode bind option_default
   let get_option f = function
       Some x -> let (n,e) = f x in (n,Some e)
     | None -> (option_default,None) in
-  let do_disj starter lst mids ender processor rebuilder =
+  let do_disj starter lst mids ender processor rebuilder = (* disj and conj *)
     let (starter_n,starter) = string_mcode starter in
     (* slightly ugly but ensures correct evaluation order. *)
     let (first_n, first) = processor (List.hd lst) in
@@ -221,6 +221,10 @@ let visitor mode bind option_default
 	    do_disj starter expr_list mids ender expression
 	      (fun starter expr_list mids ender ->
 		Ast0.DisjExpr(starter,expr_list,mids,ender))
+	| Ast0.ConjExpr(starter,expr_list,mids,ender) ->
+	    do_disj starter expr_list mids ender expression
+	      (fun starter expr_list mids ender ->
+		Ast0.ConjExpr(starter,expr_list,mids,ender))
 	| Ast0.NestExpr(starter,expr_dots,ender,whencode,multi) ->
 	    let (starter_n,starter) = string_mcode starter in
 	    let (whencode_n, whencode) = whencode_option expression whencode in
@@ -798,6 +802,10 @@ let visitor mode bind option_default
 	    do_disj starter statement_dots_list mids ender statement_dots
 	      (fun starter statement_dots_list mids ender ->
 		Ast0.Disj(starter,statement_dots_list,mids,ender))
+	| Ast0.Conj(starter,statement_dots_list,mids,ender) ->
+	    do_disj starter statement_dots_list mids ender statement_dots
+	      (fun starter statement_dots_list mids ender ->
+		Ast0.Conj(starter,statement_dots_list,mids,ender))
 	| Ast0.Nest(starter,stmt_dots,ender,whn,multi) ->
 	    let (starter_n,starter) = string_mcode starter in
 	    let (stmt_dots_n,stmt_dots) = statement_dots stmt_dots in

@@ -127,15 +127,15 @@ let nest_dots starter ender fn f d =
 (* --------------------------------------------------------------------- *)
 (* Disjunctions *)
 
-let print_disj_list fn l =
+let print_disj_list fn l sep =
   if !print_newlines_disj
   then (force_newline(); print_string "("; force_newline())
   else print_string "(";
   print_between
     (function _ ->
       if !print_newlines_disj
-      then (force_newline(); print_string "|"; force_newline())
-      else print_string " | ")
+      then (force_newline(); print_string sep; force_newline())
+      else print_string (" "^sep^" "))
     fn l;
   if !print_newlines_disj
   then (force_newline(); print_string ")"; force_newline())
@@ -189,7 +189,7 @@ let rec ident i =
   | Ast.MetaFunc(name,_,_,_) -> mcode print_meta name
   | Ast.MetaLocalFunc(name,_,_,_) -> mcode print_meta name
   | Ast.AsIdent(id,asid) -> ident id; print_string "@"; ident asid
-  | Ast.DisjId(id_list) -> print_disj_list ident id_list
+  | Ast.DisjId(id_list) -> print_disj_list ident id_list "|"
   | Ast.OptIdent(id) -> print_string "?"; ident id
   | Ast.UniqueIdent(id) -> print_string "!"; ident id
 
@@ -264,7 +264,8 @@ let rec expression e =
   | Ast.AsSExpr(exp,asstm) ->
       expression exp; print_string "@"; rule_elem "" asstm
   | Ast.EComma(cm) -> mcode print_string cm; print_space()
-  | Ast.DisjExpr(exp_list) -> print_disj_list expression exp_list
+  | Ast.DisjExpr(exp_list) -> print_disj_list expression exp_list "|"
+  | Ast.ConjExpr(exp_list) -> print_disj_list expression exp_list "&"
   | Ast.NestExpr(starter,expr_dots,ender,Some whencode,multi) ->
       nest_dots starter ender expression
 	(function _ -> print_string "   when != "; expression whencode)
@@ -380,7 +381,7 @@ and fullType ft =
 	  print_option (function x -> mcode const_vol x; print_string " ") cv;
 	  typeC ty)
   | Ast.AsType(ty,asty) -> fullType ty; print_string "@"; fullType asty
-  | Ast.DisjType(decls) -> print_disj_list fullType decls
+  | Ast.DisjType(decls) -> print_disj_list fullType decls "|"
   | Ast.OptType(ty) -> print_string "?"; fullType ty
   | Ast.UniqueType(ty) -> print_string "!"; fullType ty
 
@@ -534,7 +535,7 @@ and declaration d =
   | Ast.Typedef(stg,ty,id,sem) ->
       mcode print_string stg; print_string " "; fullType ty; typeC id;
       mcode print_string sem
-  | Ast.DisjDecl(decls) -> print_disj_list declaration decls
+  | Ast.DisjDecl(decls) -> print_disj_list declaration decls "|"
   | Ast.OptDecl(decl) -> print_string "?"; declaration decl
   | Ast.UniqueDecl(decl) -> print_string "!"; declaration decl
 
@@ -790,7 +791,8 @@ and statement arity s =
       dots force_newline (statement arity) body;
       rule_elem arity rbrace;
       mcode (function _ -> ()) ((),Ast.no_info,aft,[])
-  | Ast.Disj([stmt_dots]) ->
+  | Ast.Disj([stmt_dots]) (* useful why? *)
+  | Ast.Conj([stmt_dots]) ->
       print_string arity;
       dots (function _ -> if !print_newlines_disj then force_newline())
 	(statement arity) stmt_dots
@@ -799,6 +801,14 @@ and statement arity s =
       force_newline(); print_string "("; force_newline();
       print_between
 	(function _ -> force_newline();print_string "|"; force_newline())
+	(dots force_newline (statement arity))
+	stmt_dots_list;
+      force_newline(); print_string ")"
+  | Ast.Conj(stmt_dots_list) -> (* ignores newline directive for readability *)
+      print_string arity;
+      force_newline(); print_string "("; force_newline();
+      print_between
+	(function _ -> force_newline();print_string "&"; force_newline())
 	(dots force_newline (statement arity))
 	stmt_dots_list;
       force_newline(); print_string ")"

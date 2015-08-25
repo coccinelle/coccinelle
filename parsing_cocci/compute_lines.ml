@@ -463,6 +463,9 @@ let rec expression e =
   | Ast0.DisjExpr(starter,exps,mids,ender) ->
       do_disj e starter exps mids ender expression
 	(fun starter exps mids ender -> Ast0.DisjExpr(starter,exps,mids,ender))
+  | Ast0.ConjExpr(starter,exps,mids,ender) ->
+      do_disj e starter exps mids ender expression
+	(fun starter exps mids ender -> Ast0.ConjExpr(starter,exps,mids,ender))
   | Ast0.NestExpr(starter,exp_dots,ender,whencode,multi) ->
       (* See explanation on Nest *)
 	let wrapper f =
@@ -1136,6 +1139,20 @@ let rec statement s =
 	      (loop (List.tl prevs) stms) in
 	let elems = loop (starter::mids) rule_elem_dots_list in
 	mkmultires s (Ast0.Disj(starter,elems,mids,ender))
+	  (promote_mcode starter) (promote_mcode ender)
+	  (get_all_start_info elems) (get_all_end_info elems)
+    | Ast0.Conj(starter,rule_elem_dots_list,mids,ender) ->
+	let starter = bad_mcode starter in
+	let mids = List.map bad_mcode mids in
+	let ender = bad_mcode ender in
+	let rec loop prevs = function
+	    [] -> []
+	  | stm::stms ->
+	      (dots is_stm_dots (Some(promote_mcode_plus_one(List.hd prevs)))
+		 statement stm)::
+	      (loop (List.tl prevs) stms) in
+	let elems = loop (starter::mids) rule_elem_dots_list in
+	mkmultires s (Ast0.Conj(starter,elems,mids,ender))
 	  (promote_mcode starter) (promote_mcode ender)
 	  (get_all_start_info elems) (get_all_end_info elems)
     | Ast0.Nest(starter,rule_elem_dots,ender,whencode,multi) ->

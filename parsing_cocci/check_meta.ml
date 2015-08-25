@@ -190,7 +190,8 @@ let rec expression context old_metas table minus e =
       check_table table minus name
   | Ast0.AsExpr(exp,asexp) -> failwith "not generated yet"
   | Ast0.AsSExpr(exp,asstm) -> failwith "not generated yet"
-  | Ast0.DisjExpr(_,exps,_,_) ->
+  | Ast0.DisjExpr(_,exps,_,_)
+  | Ast0.ConjExpr(_,exps,_,_) ->
       List.iter (expression context old_metas table minus) exps
   | Ast0.NestExpr(_,exp_dots,_,w,_) ->
       dots (expression ID old_metas table minus) exp_dots;
@@ -435,7 +436,8 @@ and statement old_metas table minus s =
   | Ast0.Ty(ty) -> typeC old_metas table minus ty
   | Ast0.TopId(id) -> ident ID old_metas table minus id
   | Ast0.TopInit(init) -> initialiser old_metas table minus init
-  | Ast0.Disj(_,rule_elem_dots_list,_,_) ->
+  | Ast0.Disj(_,rule_elem_dots_list,_,_)
+  | Ast0.Conj(_,rule_elem_dots_list,_,_) ->
       List.iter (dots (statement old_metas table minus)) rule_elem_dots_list
   | Ast0.Nest(_,rule_elem_dots,_,w,_) ->
       dots (statement old_metas table minus) rule_elem_dots;
@@ -590,7 +592,8 @@ let dup_positions rules =
 
   let expression r k e =
     match Ast0.unwrap e with
-      Ast0.DisjExpr(_,explist,_,_) ->
+      Ast0.DisjExpr(_,explist,_,_)
+    | Ast0.ConjExpr(_,explist,_,_) ->
 	List.fold_left Common.union_set option_default
 	  (List.map r.VT0.combiner_rec_expression explist)
     | _ -> k e in
@@ -611,7 +614,8 @@ let dup_positions rules =
 
   let statement r k e =
     match Ast0.unwrap e with
-      Ast0.Disj(_,stmts,_,_) ->
+      Ast0.Disj(_,stmts,_,_)
+    | Ast0.Conj(_,stmts,_,_) ->
 	List.fold_left Common.union_set option_default
 	  (List.map r.VT0.combiner_rec_statement_dots stmts)
     | _ -> k e in

@@ -184,6 +184,7 @@ and base_expression =
   | EComma         of string mcode (* only in arg lists *)
 
   | DisjExpr       of expression list
+  | ConjExpr       of expression list
   | NestExpr       of string mcode (* <.../<+... *) *
 	              expression dots *
 	              string mcode (* ...>/...+> *) *
@@ -551,6 +552,7 @@ and base_statement =
 	             statement (*decl*) dots * case_line list * rule_elem(*}*)
   | Atomic        of rule_elem
   | Disj          of statement dots list
+  | Conj          of statement dots list
   | Nest          of string mcode (* <.../<+... *) * statement dots *
 	             string mcode (* ...>/...+> *) *
 	             (statement dots,statement) whencode list * multi *

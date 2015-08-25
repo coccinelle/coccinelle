@@ -57,6 +57,7 @@ let disjunct_bindings b1 b2 =
   match b1 with MAYBE -> b1 | NO -> b2
 
 let disjunct_all_bindings = List.fold_left disjunct_bindings NO
+let conjunct_all_bindings = List.fold_left conjunct_bindings NO
 
 (* --------------------------------------------------------------------- *)
 
@@ -225,6 +226,10 @@ and unify_expression e1 e2 =
       disjunct_all_bindings (List.map (function x -> unify_expression x e2) e1)
   | (_,Ast.DisjExpr(e2)) ->
       disjunct_all_bindings (List.map (function x -> unify_expression e1 x) e2)
+  | (Ast.ConjExpr(e1),_) ->
+      conjunct_all_bindings (List.map (function x -> unify_expression x e2) e1)
+  | (_,Ast.ConjExpr(e2)) ->
+      conjunct_all_bindings (List.map (function x -> unify_expression e1 x) e2)
   | (Ast.NestExpr(_,e1,_,_,_),Ast.NestExpr(_,e2,_,_,_)) ->
       unify_dots unify_expression edots e1 e2
 
@@ -695,6 +700,18 @@ let rec unify_statement s1 s2 =
   | (_,Ast.Disj(s2)) ->
       let s1 = Ast.rewrap s1 (Ast.DOTS[s1]) in
       disjunct_all_bindings
+	(List.map
+	   (function x -> unify_dots unify_statement sdots s1 x)
+	   s2)
+  | (Ast.Conj(s1),_) ->
+      let s2 = Ast.rewrap s2 (Ast.DOTS[s2]) in
+      conjunct_all_bindings
+	(List.map
+	   (function x -> unify_dots unify_statement sdots x s2)
+	   s1)
+  | (_,Ast.Conj(s2)) ->
+      let s1 = Ast.rewrap s1 (Ast.DOTS[s1]) in
+      conjunct_all_bindings
 	(List.map
 	   (function x -> unify_dots unify_statement sdots s1 x)
 	   s2)

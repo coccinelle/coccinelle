@@ -40,7 +40,7 @@ let get_option f = function
     Some x -> let (n,e) = f x in (n,Some e)
   | None -> (option_default,None)
 
-let do_disj starter lst mids ender processor rebuilder =
+let do_disj starter lst mids ender processor rebuilder = (* conj too *)
   let (starter_n,starter) = mcode starter in
   let (lst_n,lst) = map_split processor lst in
   let (mids_n,mids) = map_split mcode mids in
@@ -216,6 +216,10 @@ and expression e =
 	  do_disj starter expr_list mids ender expression
 	    (fun starter expr_list mids ender ->
 	      Ast0.DisjExpr(starter,expr_list,mids,ender))
+      | Ast0.ConjExpr(starter,expr_list,mids,ender) ->
+	  do_disj starter expr_list mids ender expression
+	    (fun starter expr_list mids ender ->
+	      Ast0.ConjExpr(starter,expr_list,mids,ender))
       | Ast0.NestExpr(starter,expr_dots,ender,whencode,multi) ->
 	  let (starter_n,starter) = mcode starter in
 	  let (whencode_n, whencode) = whencode_option expression whencode in
@@ -784,6 +788,10 @@ and statement s =
 	  do_disj starter statement_dots_list mids ender (dots statement)
 	    (fun starter statement_dots_list mids ender ->
 	      Ast0.Disj(starter,statement_dots_list,mids,ender))
+      | Ast0.Conj(starter,statement_dots_list,mids,ender) ->
+	  do_disj starter statement_dots_list mids ender (dots statement)
+	    (fun starter statement_dots_list mids ender ->
+	      Ast0.Conj(starter,statement_dots_list,mids,ender))
       | Ast0.Nest(starter,stmt_dots,ender,whn,multi) ->
 	  let (starter_n,starter) = mcode starter in
 	  let (stmt_dots_n,stmt_dots) = dots statement stmt_dots in

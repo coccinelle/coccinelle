@@ -110,6 +110,10 @@ let get_free checker t =
     | Ast0.MetaExprList(name,_,_) -> checker name
     | Ast0.DisjExpr(starter,expr_list,mids,ender) ->
 	detect_unitary_frees(List.map r.VT0.combiner_rec_expression expr_list)
+    | Ast0.ConjExpr(starter,expr_list,mids,ender) ->
+	List.fold_left
+	  (fun prev cur -> bind (r.VT0.combiner_rec_expression  cur) prev)
+	  option_default expr_list
     | _ -> k e in
 
   let typeC r k t =
@@ -144,6 +148,10 @@ let get_free checker t =
     | Ast0.Disj(starter,stmt_list,mids,ender) ->
 	detect_unitary_frees
 	  (List.map r.VT0.combiner_rec_statement_dots stmt_list)
+    | Ast0.Conj(starter,stmt_list,mids,ender) ->
+	List.fold_left
+	  (fun prev cur -> bind (r.VT0.combiner_rec_statement_dots  cur) prev)
+	  option_default stmt_list
     | Ast0.Nest(starter,stmt_dots,ender,whn,multi) ->
 	bind (r.VT0.combiner_rec_statement_dots stmt_dots)
 	  (detect_unitary_frees

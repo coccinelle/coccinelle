@@ -140,6 +140,8 @@ and base_expression =
   | EComma         of string mcode (* only in arg lists *)
   | DisjExpr       of string mcode * expression list *
 	              string mcode list (* the |s *) * string mcode
+  | ConjExpr       of string mcode * expression list *
+	              string mcode list (* the &s *) * string mcode
   | NestExpr       of string mcode * expression dots * string mcode *
 	              (string mcode * string mcode * expression) option
 	              (* whencode *) * Ast.multi
@@ -399,6 +401,8 @@ and base_statement =
   | TopInit       of initialiser (* only at top level *)
   | Disj          of string mcode * statement dots list *
 	             string mcode list (* the |s *)  * string mcode
+  | Conj          of string mcode * statement dots list *
+	             string mcode list (* the &s *)  * string mcode
   | Nest          of string mcode * statement dots * string mcode *
 	             (statement dots,statement) whencode list * Ast.multi
   | Dots          of string mcode (* ... *) *
