@@ -1,5 +1,6 @@
 (* create an index for each constructor *)
-(* current max is 188 *)
+(* current max is 188, also unused: 7-9, 39, 40, 65, 85-86, 113-115,
+134-136, 138-140 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -10,47 +11,17 @@ module Ast0 = Ast0_cocci
 (* if a dot list is empty, add the starting line of the dot list to the
 address.  Otherwise add 0.  An empty dot list should only match with another
 empty one. *)
-let expression_dots d =
-  let ln = (Ast0.get_info d).Ast0.pos_info.Ast0.line_start in
+let dots d =
   match Ast0.unwrap d with
-    Ast0.DOTS(l) -> 1::(if l = [] then [ln] else [0])
-  | Ast0.CIRCLES(l) -> 2::(if l = [] then [ln] else [0])
-  | Ast0.STARS(l) -> 3::(if l = [] then [ln] else [0])
+    [] -> [(Ast0.get_info d).Ast0.pos_info.Ast0.line_start]
+  | _ -> [0]
 
-let initialiser_dots d =
-  let ln = (Ast0.get_info d).Ast0.pos_info.Ast0.line_start in
-  match Ast0.unwrap d with
-    Ast0.DOTS(l) -> 113::(if l = [] then [ln] else [0])
-  | Ast0.CIRCLES(l) -> 114::(if l = [] then [ln] else [0])
-  | Ast0.STARS(l) -> 115::(if l = [] then [ln] else [0])
-
-let parameter_dots d =
-  let ln = (Ast0.get_info d).Ast0.pos_info.Ast0.line_start in
-  match Ast0.unwrap d with
-    Ast0.DOTS(l) -> 4::(if l = [] then [ln] else [0])
-  | Ast0.CIRCLES(l) -> 5::(if l = [] then [ln] else [0])
-  | Ast0.STARS(l) -> 6::(if l = [] then [ln] else [0])
-
-let statement_dots d =
-  let ln = (Ast0.get_info d).Ast0.pos_info.Ast0.line_start in
-  match Ast0.unwrap d with
-    Ast0.DOTS(l) -> 7::(if l = [] then [ln] else [0])
-  | Ast0.CIRCLES(l) -> 8::(if l = [] then [ln] else [0])
-  | Ast0.STARS(l) -> 9::(if l = [] then [ln] else [0])
-
-let declaration_dots d =
-  let ln = (Ast0.get_info d).Ast0.pos_info.Ast0.line_start in
-  match Ast0.unwrap d with
-    Ast0.DOTS(l) -> 134::(if l = [] then [ln] else [0])
-  | Ast0.CIRCLES(l) -> 135::(if l = [] then [ln] else [0])
-  | Ast0.STARS(l) -> 136::(if l = [] then [ln] else [0])
-
-let case_line_dots d =
-  let ln = (Ast0.get_info d).Ast0.pos_info.Ast0.line_start in
-  match Ast0.unwrap d with
-    Ast0.DOTS(l) -> 138::(if l = [] then [ln] else [0])
-  | Ast0.CIRCLES(l) -> 139::(if l = [] then [ln] else [0])
-  | Ast0.STARS(l) -> 140::(if l = [] then [ln] else [0])
+let expression_dots x  = 1 :: dots x
+let initialiser_dots x = 2 :: dots x
+let parameter_dots x =   3 :: dots x
+let statement_dots x =   4 :: dots x
+let declaration_dots x = 5 :: dots x
+let case_line_dots x =   6 :: dots x
 
 let ident i =
   match Ast0.unwrap i with
@@ -94,8 +65,6 @@ let expression e =
   | Ast0.ConjExpr(_,expr_list,_,_) -> [187]
   | Ast0.NestExpr(_,expr_dots,_,_,_) -> [37]
   | Ast0.Edots(dots,whencode) -> [38]
-  | Ast0.Ecircles(dots,whencode) -> [39]
-  | Ast0.Estars(dots,whencode) -> [40]
   | Ast0.OptExp(exp) -> [41]
   | Ast0.UniqueExp(exp) -> [42]
   | Ast0.AsExpr _  | Ast0.AsSExpr _ -> failwith "not possible"
@@ -170,7 +139,6 @@ let parameterTypeDef p =
   | Ast0.MetaParamList(name,_,_) -> [62]
   | Ast0.PComma(cm) -> [63]
   | Ast0.Pdots(dots) -> [64]
-  | Ast0.Pcircles(dots) -> [65]
   | Ast0.OptParam(param) -> [66]
   | Ast0.UniqueParam(param) -> [67]
   | Ast0.AsParam _ -> failwith "not possible"
@@ -206,8 +174,6 @@ let statement s =
   | Ast0.TopId(ty) -> [186]
   | Ast0.TopInit(init) -> [146]
   | Ast0.Dots(d,whencode) -> [84]
-  | Ast0.Circles(d,whencode) -> [85]
-  | Ast0.Stars(d,whencode) -> [86]
   | Ast0.Include(inc,name) -> [118]
   | Ast0.Undef(def,id) -> [151]
   | Ast0.Define(def,id,params,body) -> [119]

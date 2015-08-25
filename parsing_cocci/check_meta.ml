@@ -44,11 +44,7 @@ let get_opt fn = Common.do_option fn
 (* --------------------------------------------------------------------- *)
 (* Dots *)
 
-let dots fn d =
-  match Ast0.unwrap d with
-    Ast0.DOTS(x) -> List.iter fn x
-  | Ast0.CIRCLES(x) -> List.iter fn x
-  | Ast0.STARS(x) -> List.iter fn x
+let dots fn d = List.iter fn (Ast0.unwrap d)
 
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
@@ -196,8 +192,7 @@ let rec expression context old_metas table minus e =
   | Ast0.NestExpr(_,exp_dots,_,w,_) ->
       dots (expression ID old_metas table minus) exp_dots;
       get_opt (function (_,_,x) -> expression ID old_metas table minus x) w
-  | Ast0.Edots(_,Some (_,_,x)) | Ast0.Ecircles(_,Some (_,_,x))
-  | Ast0.Estars(_,Some (_,_,x)) ->
+  | Ast0.Edots(_,Some (_,_,x)) ->
       expression ID old_metas table minus x
   | Ast0.OptExp(x) | Ast0.UniqueExp(x) ->
       expression ID old_metas table minus x
@@ -445,7 +440,7 @@ and statement old_metas table minus s =
 		   (statement old_metas table minus)
 		   (expression ID old_metas table minus))
 	w
-  | Ast0.Dots(_,x) | Ast0.Circles(_,x) | Ast0.Stars(_,x) ->
+  | Ast0.Dots(_,x) ->
       List.iter
 	(whencode (dots (statement old_metas table minus))
 	   (statement old_metas table minus)
@@ -479,7 +474,7 @@ and pragmainfo old_metas table minus pi =
 and define_param old_metas table minus p =
   match Ast0.unwrap p with
     Ast0.DParam(id) -> ident GLOBAL old_metas table minus id
-  | Ast0.DPComma(_) | Ast0.DPdots(_) | Ast0.DPcircles(_) ->
+  | Ast0.DPComma(_) | Ast0.DPdots(_) ->
       () (* no metavariable subterms *)
   | Ast0.OptDParam(dp)    -> define_param old_metas table minus dp
   | Ast0.UniqueDParam(dp) -> define_param old_metas table minus dp

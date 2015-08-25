@@ -263,10 +263,8 @@ let rec propagate_types env =
 	| Ast0.NestExpr(starter,expr_dots,ender,Some (_,_,e),multi) ->
 	    let _ = r.VT0.combiner_rec_expression_dots expr_dots in
 	    let _ = r.VT0.combiner_rec_expression e in None
-	| Ast0.Edots(_,None) | Ast0.Ecircles(_,None) | Ast0.Estars(_,None) ->
-	    None
-	| Ast0.Edots(_,Some (_,_,e)) | Ast0.Ecircles(_,Some (_,_,e))
-	| Ast0.Estars(_,Some (_,_,e)) ->
+	| Ast0.Edots(_,None) -> None
+	| Ast0.Edots(_,Some (_,_,e)) ->
 	    let _ = r.VT0.combiner_rec_expression e in None
 	| Ast0.OptExp(exp) -> Ast0.get_type exp
 	| Ast0.UniqueExp(exp) -> Ast0.get_type exp
@@ -314,7 +312,7 @@ let rec propagate_types env =
 	    let new_acc =
 	      lub_envs
 		(List.map
-		   (function x -> process_statement_list r acc (Ast0.undots x))
+		   (function x -> process_statement_list r acc (Ast0.unwrap x))
 		   statement_dots_list) in
 	    process_statement_list r new_acc ss
 	| _ ->
@@ -349,9 +347,7 @@ let rec propagate_types env =
     | Ast0.AsDecl _ -> failwith "not possible" in
 
   let statement_dots r k d =
-    match Ast0.unwrap d with
-      Ast0.DOTS(l) | Ast0.CIRCLES(l) | Ast0.STARS(l) ->
-	let _ = process_statement_list r env l in option_default in
+    let _ = process_statement_list r env (Ast0.unwrap d) in option_default in
 
   let post_bool exp =
     let rec process_test exp =
@@ -382,7 +378,7 @@ let rec propagate_types env =
 	  | Ast0.OptParam(param) -> get_binding param
 	  | Ast0.AsParam(param,e) -> get_binding param
 	  | _ -> [] in
-	let fenv = List.concat (List.map get_binding (Ast0.undots params)) in
+	let fenv = List.concat (List.map get_binding (Ast0.unwrap params)) in
 	(propagate_types (fenv@env)).VT0.combiner_rec_statement_dots body
     | Ast0.IfThen(_,_,exp,_,_,_) | Ast0.IfThenElse(_,_,exp,_,_,_,_,_)
     | Ast0.While(_,_,exp,_,_,_) | Ast0.Do(_,_,_,_,exp,_,_) ->
@@ -405,7 +401,7 @@ let rec propagate_types env =
 	    (propagate_types newenv).VT0.combiner_rec_statement
 	      (Ast0.rewrap s (Ast0.For(a,b,dummy,exp,c,d,e,f,g))))
     | Ast0.Switch(_,_,exp,_,_,decls,cases,_) ->
-	let senv = process_statement_list r env (Ast0.undots decls) in
+	let senv = process_statement_list r env (Ast0.unwrap decls) in
 	let res =
 	  (propagate_types (senv@env)).VT0.combiner_rec_case_line_dots cases in
 	post_bool exp;

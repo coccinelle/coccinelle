@@ -161,7 +161,7 @@ let get_free checker t =
 		   r.VT0.combiner_rec_statement
 		    r.VT0.combiner_rec_expression)
 		whn))
-    | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) ->
+    | Ast0.Dots(d,whn) ->
 	detect_unitary_frees
 	  (List.map
 	     (whencode

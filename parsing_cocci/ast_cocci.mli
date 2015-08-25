@@ -113,12 +113,7 @@ and seed_elem = SeedString of string | SeedId of meta_name
 (* --------------------------------------------------------------------- *)
 (* Dots *)
 
-and 'a base_dots =
-    DOTS of 'a list
-  | CIRCLES of 'a list
-  | STARS of 'a list
-
-and 'a dots = 'a base_dots wrap
+and 'a dots = 'a list wrap
 
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
@@ -194,8 +189,6 @@ and base_expression =
    if(< ... X ... Y ...>)
    In the following, the expression option is the WHEN  *)
   | Edots          of string mcode (* ... *) * expression option
-  | Ecircles       of string mcode (* ooo *) * expression option
-  | Estars         of string mcode (* *** *) * expression option
 
   | OptExp         of expression
   | UniqueExp      of expression
@@ -411,7 +404,6 @@ and base_parameterTypeDef =
   | PComma        of string mcode
 
   | Pdots         of string mcode (* ... *)
-  | Pcircles      of string mcode (* ooo *)
 
   | OptParam      of parameterTypeDef
   | UniqueParam   of parameterTypeDef
@@ -427,7 +419,6 @@ and base_define_param =
     DParam        of ident
   | DPComma       of string mcode
   | DPdots        of string mcode (* ... *)
-  | DPcircles     of string mcode (* ooo *)
   | OptDParam     of define_param
   | UniqueDParam  of define_param
 
@@ -562,12 +553,6 @@ and base_statement =
   | Define        of rule_elem (* header *) * statement dots
   | AsStmt        of statement * statement (* as statement, always metavar *)
   | Dots          of string mcode (* ... *) *
-	             (statement dots,statement) whencode list *
-	             dots_whencode list * dots_whencode list
-  | Circles       of string mcode (* ooo *) *
-	             (statement dots,statement) whencode list *
-	             dots_whencode list * dots_whencode list
-  | Stars         of string mcode (* *** *) *
 	             (statement dots,statement) whencode list *
 	             dots_whencode list * dots_whencode list
   | OptStm        of statement
@@ -711,8 +696,6 @@ and exists = Exists | Forall | Undetermined
 (* --------------------------------------------------------------------- *)
 
 val mkToken : string -> anything
-
-val undots : 'a dots -> 'a list
 
 val lub_count : count -> count -> count
 

@@ -239,26 +239,16 @@ let handle_metavar name fn =
       pr_barrier line rcol
 in
 (* --------------------------------------------------------------------- *)
-let dots between fn d =
-  match Ast.unwrap d with
-    Ast.DOTS(l) -> param_print_between between fn l
-  | Ast.CIRCLES(l) -> param_print_between between fn l
-  | Ast.STARS(l) -> param_print_between between fn l
-in
+let dots between fn d = param_print_between between fn (Ast.unwrap d) in
 
 let dots_before_and_after before fn d =
-  match Ast.unwrap d with
-    Ast.DOTS(l) -> param_print_before_and_after before fn l
-  | Ast.CIRCLES(l) -> param_print_before_and_after before fn l
-  | Ast.STARS(l) -> param_print_before_and_after before fn l
-in
+  param_print_before_and_after before fn (Ast.unwrap d) in
 
 let nest_dots starter ender fn f d =
   mcode print_string starter;
   f(); start_block();
-  (match Ast.unwrap d with
-    Ast.DOTS(l) | Ast.CIRCLES(l) | Ast.STARS(l) ->
-      print_between force_newline fn l; end_block l);
+  let l = Ast.unwrap d in
+  print_between force_newline fn l; end_block l;
   mcode print_string ender
 in
 
@@ -562,18 +552,14 @@ let rec expression e =
   | Ast.NestExpr(starter,expr_dots,ender,None,multi) when generating ->
       nest_dots starter ender expression (function _ -> ()) expr_dots
   | Ast.NestExpr _ -> raise CantBeInPlus
-  | Ast.Edots(dots,Some whencode)
-  | Ast.Ecircles(dots,Some whencode)
-  | Ast.Estars(dots,Some whencode) ->
+  | Ast.Edots(dots,Some whencode) ->
       if generating
       then
 	(mcode print_string dots;
 	 print_text "   when != ";
 	 expression whencode)
       else raise CantBeInPlus
-  | Ast.Edots(dots,None)
-  | Ast.Ecircles(dots,None)
-  | Ast.Estars(dots,None) ->
+  | Ast.Edots(dots,None) ->
       if generating
       then mcode print_string dots
       else raise CantBeInPlus
@@ -941,7 +927,7 @@ and initialiser nlcomma i =
   | Ast.AsInit(init,asinit) -> initialiser nlcomma init
   | Ast.InitExpr(exp) -> expression exp
   | Ast.ArInitList(lb,initlist,rb) ->
-      (match Ast.undots initlist with
+      (match Ast.unwrap initlist with
 	[] -> mcode print_string lb; mcode print_string rb
       |	lst ->
 	  mcode print_string lb; start_block();
@@ -1017,9 +1003,9 @@ and parameterTypeDef p =
 
   | Ast.PComma(cm) ->
       mcode (print_string_with_hint (SpaceOrNewline (ref " ")))  cm
-  | Ast.Pdots(dots) | Ast.Pcircles(dots) when generating ->
+  | Ast.Pdots(dots) when generating ->
       mcode print_string dots
-  | Ast.Pdots(_) | Ast.Pcircles(_) -> raise CantBeInPlus
+  | Ast.Pdots(_) -> raise CantBeInPlus
   | Ast.OptParam(param) | Ast.UniqueParam(param) -> raise CantBeInPlus
 
 and parameter_list l = dots (function _ -> ()) parameterTypeDef l
@@ -1187,7 +1173,6 @@ and print_define_param param =
     Ast.DParam(id) -> ident id
   | Ast.DPComma(comma) -> mcode print_string comma
   | Ast.DPdots(dots) -> mcode print_string dots
-  | Ast.DPcircles(circles) -> mcode print_string circles
   | Ast.OptDParam(dp) -> print_text "?"; print_define_param dp
   | Ast.UniqueDParam(dp) -> print_text "!"; print_define_param dp
 
@@ -1230,7 +1215,7 @@ let rec statement arity s =
     Ast.Seq(lbrace,body,rbrace) ->
       rule_elem arity lbrace;
       dots force_newline (statement arity) body;
-      end_block (Ast.undots body);
+      end_block (Ast.unwrap body);
       rule_elem arity rbrace
 
   | Ast.IfThen(header,branch,_) ->
@@ -1268,7 +1253,7 @@ let rec statement arity s =
   | Ast.FunDecl(header,lbrace,body,rbrace,_) ->
       rule_elem arity header; rule_elem arity lbrace;
       dots force_newline (statement arity) body;
-      end_block (Ast.undots body);
+      end_block (Ast.unwrap body);
       rule_elem arity rbrace
 
   | Ast.Define(header,body) ->
@@ -1310,7 +1295,7 @@ let rec statement arity s =
 	  force_newline())
 	stmt_dots
   | Ast.Nest(_) -> raise CantBeInPlus
-  | Ast.Dots(d,whn,_,_) | Ast.Circles(d,whn,_,_) | Ast.Stars(d,whn,_,_) ->
+  | Ast.Dots(d,whn,_,_) ->
       if generating
       then
 	(pr_arity arity; mcode print_string d;

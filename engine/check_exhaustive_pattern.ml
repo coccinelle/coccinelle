@@ -115,8 +115,6 @@ let dumb_astcocci_expr = function
  | A.NestExpr _ -> ()
  | A.MetaExprList _ -> ()
  | A.EComma _ -> ()
- | A.Ecircles _ -> ()
- | A.Estars _ -> ()
  | A.DisjExpr eas -> ()
  | A.ConjExpr eas -> ()
  | A.UniqueExp _ -> ()

@@ -324,12 +324,7 @@ let no_isos = []
 let tokenwrap (_,info,_,_) s ast = wrap ast info.Ast.line no_isos
 let iso_tokenwrap (_,info,_,_) s ast iso = wrap ast info.Ast.line iso
 
-let dots fn d =
-  rewrap d no_isos
-    (match Ast0.unwrap d with
-      Ast0.DOTS(x) -> Ast.DOTS(List.map fn x)
-    | Ast0.CIRCLES(x) -> Ast.CIRCLES(List.map fn x)
-    | Ast0.STARS(x) -> Ast.STARS(List.map fn x))
+let dots fn d = rewrap d no_isos (List.map fn (Ast0.unwrap d))
 
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
@@ -442,14 +437,6 @@ and expression e =
 	let dots = mcode dots in
 	let whencode = get_option (fun (_,_,b) -> expression b) whencode in
 	Ast.Edots(dots,whencode)
-    | Ast0.Ecircles(dots,whencode) ->
-	let dots = mcode dots in
-	let whencode = get_option (fun (_,_,b) -> expression b) whencode in
-	Ast.Ecircles(dots,whencode)
-    | Ast0.Estars(dots,whencode) ->
-	let dots = mcode dots in
-	let whencode = get_option (fun (_,_,b) -> expression b) whencode in
-	Ast.Estars(dots,whencode)
     | Ast0.OptExp(exp) -> Ast.OptExp(expression exp)
     | Ast0.UniqueExp(exp) -> Ast.UniqueExp(expression exp)) in
   if Ast0.get_test_exp e then Ast.set_test_exp e1 else e1
@@ -686,43 +673,41 @@ and strip_idots initlist =
     match Ast0.get_mcode_mcodekind mc with
       Ast0.MINUS _ -> true
     | _ -> false in
-  match Ast0.unwrap initlist with
-    Ast0.DOTS(l) ->
-      let l =
-	match List.rev l with
-	  [] | [_] -> l
-	| x::y::xs ->
-	    (match (Ast0.unwrap x,Ast0.unwrap y) with
-	      (Ast0.IComma _,Ast0.Idots _) ->
+  let l = Ast0.unwrap initlist in
+  let l =
+    match List.rev l with
+      [] | [_] -> l
+    | x::y::xs ->
+	(match (Ast0.unwrap x,Ast0.unwrap y) with
+	  (Ast0.IComma _,Ast0.Idots _) ->
 		(* drop comma that was added by add_comma *)
-		List.rev (y::xs)
-	    | _ -> l) in
-      let (whencode,init,dotinfo) =
-	let rec loop = function
-	    [] -> ([],[],[])
-	  | x::rest ->
-	      (match Ast0.unwrap x with
-		Ast0.Idots(dots,Some whencode) ->
-		  let (restwhen,restinit,dotinfo) = loop rest in
-		  (whencode :: restwhen, restinit,
-		    (isminus dots)::dotinfo)
-	      |	Ast0.Idots(dots,None) ->
-		  let (restwhen,restinit,dotinfo) = loop rest in
-		  (restwhen, restinit, (isminus dots)::dotinfo)
-	      |	_ ->
-		  let (restwhen,restinit,dotinfo) = loop rest in
-		  (restwhen,x::restinit,dotinfo)) in
-	loop l in
-      let allminus =
-	if List.for_all (function x -> not x) dotinfo
-	then false (* false if no dots *)
-	else
-	  if List.for_all (function x -> x) dotinfo
-	  then true
-	  else failwith "inconsistent annotations on initialiser list dots" in
-      (whencode, init, allminus)
-  | Ast0.CIRCLES(x) | Ast0.STARS(x) -> failwith "not possible for an initlist"
-
+	    List.rev (y::xs)
+	| _ -> l) in
+  let (whencode,init,dotinfo) =
+    let rec loop = function
+	[] -> ([],[],[])
+      | x::rest ->
+	  (match Ast0.unwrap x with
+	    Ast0.Idots(dots,Some whencode) ->
+	      let (restwhen,restinit,dotinfo) = loop rest in
+	      (whencode :: restwhen, restinit,
+		(isminus dots)::dotinfo)
+	  | Ast0.Idots(dots,None) ->
+	      let (restwhen,restinit,dotinfo) = loop rest in
+	      (restwhen, restinit, (isminus dots)::dotinfo)
+	  | _ ->
+	      let (restwhen,restinit,dotinfo) = loop rest in
+	      (restwhen,x::restinit,dotinfo)) in
+    loop l in
+  let allminus =
+    if List.for_all (function x -> not x) dotinfo
+    then false (* false if no dots *)
+    else
+      if List.for_all (function x -> x) dotinfo
+      then true
+      else failwith "inconsistent annotations on initialiser list dots" in
+  (whencode, init, allminus)
+    
 and initialiser i =
   rewrap i no_isos
     (match Ast0.unwrap i with
@@ -778,7 +763,6 @@ and parameterTypeDef p =
 	Ast.AsParam(parameterTypeDef p,expression asexpr)
     | Ast0.PComma(cm) -> Ast.PComma(mcode cm)
     | Ast0.Pdots(dots) -> Ast.Pdots(mcode dots)
-    | Ast0.Pcircles(dots) -> Ast.Pcircles(mcode dots)
     | Ast0.OptParam(param) -> Ast.OptParam(parameterTypeDef param)
     | Ast0.UniqueParam(param) -> Ast.UniqueParam(parameterTypeDef param))
 
@@ -872,7 +856,7 @@ and statement s =
 	  let rp = mcode rp in
 	  let lb = mcode lb in
 	  let decls = dots (statement seqible) decls in
-	  let cases = List.map case_line (Ast0.undots cases) in
+	  let cases = List.map case_line (Ast0.unwrap cases) in
 	  let rb = mcode rb in
 	  Ast.Switch(rewrap_rule_elem s (Ast.SwitchHeader(switch,lp,exp,rp)),
 		     tokenwrap lb s (Ast.SeqStart(lb)),
@@ -939,22 +923,6 @@ and statement s =
 		 (statement Ast.NotSequencible))
 	      whn in
 	  Ast.Dots(d,whn,[],[])
-      | Ast0.Circles(d,whn) ->
-	  let d = mcode d in
-	  let whn =
-	    List.map
-	      (whencode (statement_dots Ast.Sequencible)
-		 (statement Ast.NotSequencible))
-	      whn in
-	  Ast.Circles(d,whn,[],[])
-      | Ast0.Stars(d,whn) ->
-	  let d = mcode d in
-	  let whn =
-	    List.map
-	      (whencode (statement_dots Ast.Sequencible)
-		 (statement Ast.NotSequencible))
-	      whn in
-	  Ast.Stars(d,whn,[],[])
       | Ast0.FunDecl((_,bef),fi,name,lp,params,va,rp,lbrace,body,rbrace,
 		     (_,aft)) ->
 	  let fi = List.map fninfo fi in
@@ -1019,7 +987,6 @@ and statement s =
 	Ast0.DParam(id) -> Ast.DParam(ident id)
       | Ast0.DPComma(comma) -> Ast.DPComma(mcode comma)
       | Ast0.DPdots(d) -> Ast.DPdots(mcode d)
-      | Ast0.DPcircles(c) -> Ast.DPcircles(mcode c)
       | Ast0.OptDParam(dp) -> Ast.OptDParam(define_param dp)
       | Ast0.UniqueDParam(dp) -> Ast.UniqueDParam(define_param dp))
 
@@ -1053,11 +1020,7 @@ and statement s =
 
   and statement_dots seqible d =
     let isos = do_isos (Ast0.get_iso d) in
-    rewrap d no_isos
-      (match Ast0.unwrap d with
-	Ast0.DOTS(x) -> Ast.DOTS(process_list seqible isos x)
-      | Ast0.CIRCLES(x) -> Ast.CIRCLES(process_list seqible isos x)
-      | Ast0.STARS(x) -> Ast.STARS(process_list seqible isos x))
+    rewrap d no_isos (process_list seqible isos (Ast0.unwrap d))
 
   (* the following is no longer used.
    the goal was to let one put a statement at the very beginning of a function
@@ -1097,21 +1060,14 @@ and statement s =
 	      else ([],l)
 	  | _ -> ([],l))
 
-    and collect_dot_decls d =
-      match Ast0.unwrap d with
-	Ast0.DOTS(x) -> collect_decls x
-      | Ast0.CIRCLES(x) -> collect_decls x
-      | Ast0.STARS(x) -> collect_decls x in
+    and collect_dot_decls d = collect_decls (Ast0.unwrap d) in
 
-    let process l d fn =
+    let process l d =
       let (decls,other) = collect_decls l in
-      (rewrap d no_isos (fn (List.map (statement seqible) decls)),
+      (rewrap d no_isos (List.map (statement seqible) decls),
        rewrap d no_isos
-	 (fn (process_list seqible (do_isos (Ast0.get_iso d)) other))) in
-    match Ast0.unwrap d with
-      Ast0.DOTS(x) -> process x d (function x -> Ast.DOTS x)
-    | Ast0.CIRCLES(x) -> process x d (function x -> Ast.CIRCLES x)
-    | Ast0.STARS(x) -> process x d (function x -> Ast.STARS x) *) in
+	 (process_list seqible (do_isos (Ast0.get_iso d)) other)) in
+     process x (Ast0.unwrap d) *) in
 
   statement Ast.Sequencible s
 

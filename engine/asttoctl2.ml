@@ -217,14 +217,14 @@ let elim_opt =
 	 [d0;
 	   {(Ast.make_term
 	       (Ast.Disj
-		  [{(Ast.make_term(Ast.DOTS(new_rest1))) with
+		  [{(Ast.make_term new_rest1) with
 		     Ast.node_line = l;
 		     Ast.free_vars = fv_rest1;
 		     Ast.minus_free_vars = mfv_rest1;
 		     Ast.fresh_vars = fresh_rest1;
 		     Ast.inherited = inherited_rest1;
 		     Ast.saved_witness = s1};
-		    {(Ast.make_term(Ast.DOTS(new_rest2))) with
+		    {(Ast.make_term new_rest2) with
 		      Ast.node_line = l;
 		      Ast.free_vars = fv_rest2;
 		      Ast.minus_free_vars = mfv_rest2;
@@ -248,14 +248,14 @@ let elim_opt =
 	   varlists new_rest2 in
 	 [{(Ast.make_term
 	       (Ast.Disj
-		  [{(Ast.make_term(Ast.DOTS(new_rest2))) with
+		  [{(Ast.make_term new_rest2) with
 		      Ast.node_line = l;
 		      Ast.free_vars = fv_rest2;
 		      Ast.minus_free_vars = mfv_rest2;
 		      Ast.fresh_vars = fresh_rest2;
 		      Ast.inherited = inherited_rest2;
 		      Ast.saved_witness = s2};
-		    {(Ast.make_term(Ast.DOTS(new_rest1))) with
+		    {(Ast.make_term new_rest1) with
 		     Ast.node_line = l;
 		     Ast.free_vars = fv_rest1;
 		     Ast.minus_free_vars = mfv_rest1;
@@ -289,14 +289,14 @@ let elim_opt =
 	[d1;
 	  {(Ast.make_term
 	      (Ast.Disj
-		 [{(Ast.make_term(Ast.DOTS([stm]))) with
+		 [{(Ast.make_term [stm]) with
 		    Ast.node_line = l;
 		    Ast.free_vars = fv_stm;
 		    Ast.minus_free_vars = mfv_stm;
 		    Ast.fresh_vars = fresh_stm;
 		    Ast.inherited = inh_stm;
 		    Ast.saved_witness = saved_stm};
-		   {(Ast.make_term(Ast.DOTS([d1]))) with
+		   {(Ast.make_term [d1]) with
 		     Ast.node_line = l;
 		     Ast.free_vars = fv_d1;
 		     Ast.minus_free_vars = mfv_d1;
@@ -316,8 +316,8 @@ let elim_opt =
 	let rwd = Ast.rewrap stm in
 	let dots = Ast.Dots(Ast.make_mcode "...",w,[],[]) in
 	[d1;rw(Ast.Disj
-		 [rwd(Ast.DOTS([stm]));
-		   {(Ast.make_term(Ast.DOTS([rw dots])))
+		 [rwd [stm];
+		   {(Ast.make_term [rw dots])
 		   with Ast.node_line = l}])]
 
     | (_::urest,stm::rest) -> stm :: (dots_list urest rest)
@@ -325,11 +325,8 @@ let elim_opt =
 
   let stmtdotsfn r k d =
     let d = k d in
-    Ast.rewrap d
-      (match Ast.unwrap d with
-	Ast.DOTS(l) -> Ast.DOTS(dots_list (List.map Ast.unwrap l) l)
-      | Ast.CIRCLES(l) -> failwith "elimopt: not supported"
-      | Ast.STARS(l) -> failwith "elimopt: not supported") in
+    let l = Ast.unwrap d in
+    Ast.rewrap d (dots_list (List.map Ast.unwrap l) l) in
 
   V.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode
@@ -584,22 +581,19 @@ let print_bef_aft = function
 case, we want to use a, which accumulates all of the previous patterns in
 their entirety. *)
 let rec get_before_elem sl a =
-  match Ast.unwrap sl with
-    Ast.DOTS(x) ->
-      let rec loop sl a =
-	match sl with
-	  [] -> ([],Common.Right a)
-	| [e] ->
-	    let (e,ea) = get_before_e e a in
-	    ([e],Common.Left ea)
-	| e::sl ->
-	    let (e,ea) = get_before_e e a in
-	    let (sl,sla) = loop sl ea in
-	    (e::sl,sla) in
-      let (l,a) = loop x a in
-      (Ast.rewrap sl (Ast.DOTS(l)),a)
-  | Ast.CIRCLES(x) -> failwith "not supported"
-  | Ast.STARS(x) -> failwith "not supported"
+  let x = Ast.unwrap sl in
+  let rec loop sl a =
+    match sl with
+      [] -> ([],Common.Right a)
+    | [e] ->
+	let (e,ea) = get_before_e e a in
+	([e],Common.Left ea)
+    | e::sl ->
+	let (e,ea) = get_before_e e a in
+	let (sl,sla) = loop sl ea in
+	(e::sl,sla) in
+  let (l,a) = loop x a in
+  (Ast.rewrap sl l,a)
 
 and get_before sl a =
   match get_before_elem sl a with
@@ -630,7 +624,7 @@ and get_before_e s a =
 	      Ast.Other a ->
 		let unifies =
 		  Unify_ast.unify_statement_dots
-		    (Ast.rewrap s (Ast.DOTS([a]))) stmt_dots in
+		    (Ast.rewrap s [a]) stmt_dots in
 		(match unifies with
 		  Unify_ast.MAYBE -> false
 		| _ -> true)
@@ -707,19 +701,16 @@ and get_before_e s a =
       failwith "get_before_e: not supported"
 
 let rec get_after sl a =
-  match Ast.unwrap sl with
-    Ast.DOTS(x) ->
-      let rec loop sl =
-	match sl with
-	  [] -> ([],a)
-	| e::sl ->
-	    let (sl,sla) = loop sl in
-	    let (e,ea) = get_after_e e sla in
-	    (e::sl,ea) in
-      let (l,a) = loop x in
-      (Ast.rewrap sl (Ast.DOTS(l)),a)
-  | Ast.CIRCLES(x) -> failwith "not supported"
-  | Ast.STARS(x) -> failwith "not supported"
+  let x = Ast.unwrap sl in
+  let rec loop sl =
+    match sl with
+      [] -> ([],a)
+    | e::sl ->
+	let (sl,sla) = loop sl in
+	let (e,ea) = get_after_e e sla in
+	(e::sl,ea) in
+  let (l,a) = loop x in
+  (Ast.rewrap sl l,a)
 
 and get_after_whencode a wc =
   List.map
@@ -745,7 +736,7 @@ and get_after_e s a =
 	      Ast.Other a ->
 		let unifies =
 		  Unify_ast.unify_statement_dots
-		    (Ast.rewrap s (Ast.DOTS([a]))) stmt_dots in
+		    (Ast.rewrap s [a]) stmt_dots in
 		(match unifies with
 		  Unify_ast.MAYBE -> false
 		| _ -> true)
@@ -781,7 +772,7 @@ and get_after_e s a =
 			"dots/nest not allowed before and after stmt metavar"
 		  | _ -> ())
 	      |	Ast.Other_dots x ->
-		  (match Ast.undots x with
+		  (match Ast.unwrap x with
 		    x::_ ->
 		      (match Ast.unwrap x with
 			Ast.Dots(_,_,_,_) | Ast.Nest(_,_,_,_,_,_,_) ->
@@ -861,34 +852,30 @@ let preprocess_dots_e sl =
 (* various return_related things *)
 
 let rec ends_in_return_bis preok stmt_list =
-  match Ast.unwrap stmt_list with
-    Ast.DOTS(l) ->
-      let contains_dots l =
-	List.exists
-	  (function s ->
-	    (* doesn't do anything for dots in disj; not sure that makes
-	       sense *)
-	    match Ast.unwrap s with
-	      Ast.Nest _ | Ast.Dots _ | Ast.Circles _ | Ast.Stars _ -> true
-	    | _ -> false)
-	  l in
-      let preok = preok || contains_dots l in
-      (match List.rev l with
-	x::_ ->
-	  (match Ast.unwrap x with
-	    Ast.Atomic(x) ->
-	      let rec loop x =
-		match Ast.unwrap x with
-		  Ast.Return(_,_) | Ast.ReturnExpr(_,_,_) -> true
-		| Ast.DisjRuleElem((_::_) as l) -> List.for_all loop l
-		| _ -> false in
-	      preok && loop x
-	  | Ast.Disj(disjs) -> List.for_all (ends_in_return_bis preok) disjs
-	  | Ast.Conj(disjs) -> List.exists (ends_in_return_bis preok) disjs
-	  | _ -> false)
+  let l = Ast.unwrap stmt_list in
+  let contains_dots l =
+    List.exists
+      (function s ->
+	(* doesn't do anything for dots in disj; not sure that makes sense *)
+	match Ast.unwrap s with
+	  Ast.Nest _ | Ast.Dots _ -> true
+	| _ -> false)
+      l in
+  let preok = preok || contains_dots l in
+  match List.rev l with
+    x::_ ->
+      (match Ast.unwrap x with
+	Ast.Atomic(x) ->
+	  let rec loop x =
+	    match Ast.unwrap x with
+	      Ast.Return(_,_) | Ast.ReturnExpr(_,_,_) -> true
+	    | Ast.DisjRuleElem((_::_) as l) -> List.for_all loop l
+	    | _ -> false in
+	  preok && loop x
+      | Ast.Disj(disjs) -> List.for_all (ends_in_return_bis preok) disjs
+      | Ast.Conj(disjs) -> List.exists (ends_in_return_bis preok) disjs
       | _ -> false)
-  | Ast.CIRCLES(x) -> failwith "not supported"
-  | Ast.STARS(x) -> failwith "not supported"
+  | _ -> false
 
 let ends_in_return stmt_list = ends_in_return_bis false stmt_list
 
@@ -1664,46 +1651,42 @@ let rec statement_list stmt_list top after quantified minus_quantified
     match Ast.unwrap x with
       Ast.Dots _ | Ast.Nest _ | Ast.Disj _ | Ast.Conj _ -> true | _ -> false in
   let compute_label l e db = if db || isdots e then l else None in
-  match Ast.unwrap stmt_list with
-    Ast.DOTS(x) ->
-      let rec loop top quantified minus_quantified dots_before
-	  label llabel slabel
-	  = function
-	  ([],_,_) -> (match after with After f -> f | _ -> CTL.True)
-	| ([e],_,_) ->
-	    statement e top after quantified minus_quantified
-	      (compute_label label e dots_before)
-	      llabel slabel guard
-	| (e::sl,fv::fvs,mfv::mfvs) ->
-	    let shared = intersectll fv fvs in
-	    let unqshared = get_unquantified quantified shared in
-	    let new_quantified = Common.union_set unqshared quantified in
-	    let minus_shared = intersectll mfv mfvs in
-	    let munqshared =
-	      get_unquantified minus_quantified minus_shared in
-	    let new_mquantified =
-	      Common.union_set munqshared minus_quantified in
-	    quantify guard unqshared
-	      (statement e top
-		 (After
-		    (let (label1,llabel1,slabel1) =
-		      match Ast.unwrap e with
-			Ast.Atomic(re) ->
-			  (match Ast.unwrap re with
-			    Ast.Goto _ -> (None,None,None)
-			  | _ -> (label,llabel,slabel))
-		      |	_ -> (label,llabel,slabel) in
-		    loop NotTop new_quantified new_mquantified (isdots e)
-		      label1 llabel1 slabel1
-		      (sl,fvs,mfvs)))
-		 new_quantified new_mquantified
-		 (compute_label label e dots_before) llabel slabel guard)
-	| _ -> failwith "not possible" in
-      loop top quantified minus_quantified dots_before
-	label llabel slabel
-	(x,List.map Ast.get_fvs x,List.map Ast.get_mfvs x)
-  | Ast.CIRCLES(x) -> failwith "not supported"
-  | Ast.STARS(x) -> failwith "not supported"
+  let x = Ast.unwrap stmt_list in
+  let rec loop top quantified minus_quantified dots_before label llabel slabel
+    = function
+	([],_,_) -> (match after with After f -> f | _ -> CTL.True)
+      | ([e],_,_) ->
+	  statement e top after quantified minus_quantified
+	    (compute_label label e dots_before)
+	    llabel slabel guard
+      | (e::sl,fv::fvs,mfv::mfvs) ->
+	  let shared = intersectll fv fvs in
+	  let unqshared = get_unquantified quantified shared in
+	  let new_quantified = Common.union_set unqshared quantified in
+	  let minus_shared = intersectll mfv mfvs in
+	  let munqshared =
+	    get_unquantified minus_quantified minus_shared in
+	  let new_mquantified =
+	    Common.union_set munqshared minus_quantified in
+	  quantify guard unqshared
+	    (statement e top
+	       (After
+		  (let (label1,llabel1,slabel1) =
+		    match Ast.unwrap e with
+		      Ast.Atomic(re) ->
+			(match Ast.unwrap re with
+			  Ast.Goto _ -> (None,None,None)
+			| _ -> (label,llabel,slabel))
+		    |	_ -> (label,llabel,slabel) in
+		  loop NotTop new_quantified new_mquantified (isdots e)
+		    label1 llabel1 slabel1
+		    (sl,fvs,mfvs)))
+	       new_quantified new_mquantified
+	       (compute_label label e dots_before) llabel slabel guard)
+      | _ -> failwith "not possible" in
+  loop top quantified minus_quantified dots_before
+    label llabel slabel
+    (x,List.map Ast.get_fvs x,List.map Ast.get_mfvs x)
 
 (* llabel is the label of the enclosing loop and slabel is the label of the
    enclosing switch *)
@@ -1904,7 +1887,7 @@ and statement stmt top after quantified minus_quantified
 			   (Some (lv,ref true))
 			   llabel slabel false guard)))])) in
       let empty_body =
-	match Ast.undots body with
+	match Ast.unwrap body with
 	  [body] ->
 	    (match Ast.unwrap body with
 	      Ast.Dots
@@ -2087,7 +2070,7 @@ and statement stmt top after quantified minus_quantified
       (* start normal variables *)
       let header_fvs = Ast.get_fvs header in
       let lb_fvs = Ast.get_fvs lb in
-      let decl_fvs = union_all (List.map Ast.get_fvs (Ast.undots decls)) in
+      let decl_fvs = union_all (List.map Ast.get_fvs (Ast.unwrap decls)) in
       let case_fvs = List.map Ast.get_fvs cases in
       let rb_fvs = Ast.get_fvs rb in
       let (all_efvs,all_b1fvs,all_lbfvs,all_b2fvs,
@@ -2121,7 +2104,7 @@ and statement stmt top after quantified minus_quantified
       (* ------------------- start minus free variables *)
       let header_mfvs = Ast.get_mfvs header in
       let lb_mfvs = Ast.get_mfvs lb in
-      let decl_mfvs = union_all (List.map Ast.get_mfvs (Ast.undots decls)) in
+      let decl_mfvs = union_all (List.map Ast.get_mfvs (Ast.unwrap decls)) in
       let case_mfvs = List.map Ast.get_mfvs cases in
       let rb_mfvs = Ast.get_mfvs rb in
       let (all_mefvs,all_mb1fvs,all_mlbfvs,all_mb2fvs,
@@ -2175,7 +2158,7 @@ and statement stmt top after quantified minus_quantified
       let used = ref false in
       let (decls_exists_code,decls_all_code) =
 	(*don't really understand this*)
-	if (Ast.undots decls) = []
+	if (Ast.unwrap decls) = []
 	then (CTL.True,CTL.False)
 	else
 	let res =
@@ -2303,7 +2286,7 @@ and statement stmt top after quantified minus_quantified
 	     (Common.union_set mb3fvs minus_quantified)) in
       let not_minus = function Ast.MINUS(_,_,_,_) -> false | _ -> true in
       let optim1 =
-	match (Ast.undots body,
+	match (Ast.unwrap body,
 	       contains_modif rbrace || contains_pos rbrace) with
 	  ([body],false) ->
 	    (match Ast.unwrap body with
@@ -2404,7 +2387,7 @@ and statement stmt top after quantified minus_quantified
 	| _ -> None in
       let optim2 =
 	(* function body is all minus, no whencode *)
-	match Ast.undots body with
+	match Ast.unwrap body with
 	  [body] ->
 	    (match Ast.unwrap body with
 	      Ast.Dots
@@ -2524,18 +2507,17 @@ and process_bef_aft quantified minus_quantified label llabel slabel guard =
 
 and protect_top_level stmt_dots formula =
   let starts_with_dots =
-    match Ast.undots stmt_dots with
+    match Ast.unwrap stmt_dots with
       d::ds ->
 	(match Ast.unwrap d with
-	  Ast.Dots(_,_,_,_) | Ast.Circles(_,_,_,_)
-	| Ast.Stars(_,_,_,_) -> true
+	  Ast.Dots(_,_,_,_) -> true
 	| _ -> false)
     | _ -> false in
   let starts_with_non_context_brace =
     (* None = No danger
        Some false = OK except on function braces
        Some true = Never OK *)
-    match Ast.undots stmt_dots with
+    match Ast.unwrap stmt_dots with
       d::ds ->
 	(match Ast.unwrap d with
 	  Ast.Seq(before,body,after) ->
@@ -2553,7 +2535,7 @@ and protect_top_level stmt_dots formula =
 	       Ast.CONTEXT(_,(Ast.NOTHING|Ast.BEFORE _))) -> None
 	    | (Ast.MINUS(_,_,_,Ast.NOREPLACEMENT),
 	       Ast.MINUS(_,_,_,Ast.NOREPLACEMENT))
-	      when List.length (Ast.undots body) = 1 -> Some false (*ok on if*)
+	      when List.length (Ast.unwrap body) = 1 -> Some false (*ok on if*)
 	      (* unsafe, can't be allowed to match fn top *)
 	    | _ -> Some true)
 	| _ -> None)

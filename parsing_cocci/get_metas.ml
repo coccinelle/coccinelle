@@ -50,15 +50,7 @@ let do_disj starter lst mids ender processor rebuilder = (* conj too *)
        multibind (List.map2 bind mids_n (List.tl lst_n));ender_n],
    rebuilder starter lst mids ender)
 
-let dots fn d =
-  rewrap d
-    (match Ast0.unwrap d with
-      Ast0.DOTS(l) ->
-	let (n,l) = map_split_bind fn l in (n, Ast0.DOTS(l))
-    | Ast0.CIRCLES(l) ->
-	let (n,l) = map_split_bind fn l in (n, Ast0.CIRCLES(l))
-    | Ast0.STARS(l) ->
-	let (n,l) = map_split_bind fn l in (n, Ast0.STARS(l)))
+let dots fn d = rewrap d (map_split_bind fn (Ast0.unwrap d))
 
 let rec ident i =
   let (metas,i) =
@@ -231,14 +223,6 @@ and expression e =
 	  let (dots_n,dots) = mcode dots in
 	  let (whencode_n, whencode) = whencode_option expression whencode in
 	  (bind dots_n whencode_n,Ast0.Edots(dots,whencode))
-      | Ast0.Ecircles(dots,whencode) ->
-	  let (dots_n,dots) = mcode dots in
-	  let (whencode_n, whencode) = whencode_option expression whencode in
-	  (bind dots_n whencode_n,Ast0.Ecircles(dots,whencode))
-      | Ast0.Estars(dots,whencode) ->
-	  let (dots_n,dots) = mcode dots in
-	  let (whencode_n, whencode) = whencode_option expression whencode in
-	  (bind dots_n whencode_n,Ast0.Estars(dots,whencode))
       | Ast0.OptExp(exp) ->
 	  let (exp_n,exp) = expression exp in
 	  (exp_n,Ast0.OptExp(exp))
@@ -627,8 +611,6 @@ and parameterTypeDef p =
 	    let (n,cm) = mcode cm in (n,Ast0.PComma(cm))
 	| Ast0.Pdots(dots) ->
 	    let (n,dots) = mcode dots in (n,Ast0.Pdots(dots))
-	| Ast0.Pcircles(dots) ->
-	    let (n,dots) = mcode dots in (n,Ast0.Pcircles(dots))
 	| Ast0.OptParam(param) ->
 	    let (n,param) = parameterTypeDef param in (n,Ast0.OptParam(param))
 	| Ast0.UniqueParam(param) ->
@@ -820,16 +802,6 @@ and statement s =
 	  let (whn_n,whn) =
 	    map_split_bind (whencode (dots statement) statement) whn in
 	  (bind d_n whn_n, Ast0.Dots(d,whn))
-      | Ast0.Circles(d,whn) ->
-	  let (d_n,d) = mcode d in
-	  let (whn_n,whn) =
-	    map_split_bind (whencode (dots statement) statement) whn in
-	  (bind d_n whn_n, Ast0.Circles(d,whn))
-      | Ast0.Stars(d,whn) ->
-	  let (d_n,d) = mcode d in
-	  let (whn_n,whn) =
-	    map_split_bind (whencode (dots statement) statement) whn in
-	  (bind d_n whn_n, Ast0.Stars(d,whn))
       | Ast0.Include(inc,name) ->
 	  let (inc_n,inc) = mcode inc in
 	  let (name_n,name) = mcode name in
@@ -896,8 +868,6 @@ and define_param p =
 	let (n,comma) = mcode comma in (n,Ast0.DPComma(comma))
     | Ast0.DPdots(d) ->
 	let (n,d) = mcode d in (n,Ast0.DPdots(d))
-    | Ast0.DPcircles(c) ->
-	let (n,c) = mcode c in (n,Ast0.DPcircles(c))
     | Ast0.OptDParam(dp) ->
 	let (n,dp) = define_param dp in (n,Ast0.OptDParam(dp))
     | Ast0.UniqueDParam(dp) ->

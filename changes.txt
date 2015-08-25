@@ -24,9 +24,10 @@
 - typedefs from C code should not be used before their point of inference
   (saved_typedefs in cprogram_of_file)
 
-* 1.0.2
+* 1.0.3
 ** Language:
 - Conjunction (analogous to disjunction)
+- Drop Circles, Stars
 ** Features:
 ** Bugfix:
 

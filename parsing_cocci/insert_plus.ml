@@ -42,8 +42,6 @@ it *)
 	   Ast0.NestExpr(starter,exp,ender,whencode,multi) ->
 	     Ast0.NestExpr(starter,exp,ender,None,multi)
 	 | Ast0.Edots(dots,whencode) -> Ast0.Edots(dots,None)
-	 | Ast0.Ecircles(dots,whencode) -> Ast0.Ecircles(dots,None)
-	 | Ast0.Estars(dots,whencode) -> Ast0.Estars(dots,None)
 	 | e -> e)) in
 
   let initialiser r k i =
@@ -60,8 +58,6 @@ it *)
 	   Ast0.Nest(started,stm_dots,ender,whencode,multi) ->
 	     Ast0.Nest(started,stm_dots,ender,[],multi)
 	 | Ast0.Dots(dots,whencode) -> Ast0.Dots(dots,[])
-	 | Ast0.Circles(dots,whencode) -> Ast0.Circles(dots,[])
-	 | Ast0.Stars(dots,whencode) -> Ast0.Stars(dots,[])
 	 | s -> s)) in
 
   let topfn r k e = Ast0.TopTag(e) :: (k e) in
@@ -175,7 +171,7 @@ bind to that; not good for isomorphisms *)
 	| x::xs -> bind x (loop xs) in
       loop l in
 
-    let l = Ast0.undots d in
+    let l = Ast0.unwrap d in
     match checklast with
       None -> multibind (List.map f l)
     | Some checklast ->
@@ -256,8 +252,7 @@ bind to that; not good for isomorphisms *)
     | Ast0.Nest(starter,stmt_dots,ender,whencode,multi) ->
 	mcode starter @ r.VT0.combiner_rec_statement_dots stmt_dots @
 	mcode ender
-    | Ast0.Dots(d,whencode) | Ast0.Circles(d,whencode)
-    | Ast0.Stars(d,whencode) -> mcode d (* ignore whencode *)
+    | Ast0.Dots(d,whencode) -> mcode d (* ignore whencode *)
     | Ast0.OptStm s | Ast0.UniqueStm s ->
 	(* put the + code on the thing, not on the opt *)
 	r.VT0.combiner_rec_statement s
@@ -274,8 +269,7 @@ bind to that; not good for isomorphisms *)
       Ast0.NestExpr(starter,expr_dots,ender,whencode,multi) ->
 	mcode starter @
 	r.VT0.combiner_rec_expression_dots expr_dots @ mcode ender
-    | Ast0.Edots(d,whencode) | Ast0.Ecircles(d,whencode)
-    | Ast0.Estars(d,whencode) -> mcode d (* ignore whencode *)
+    | Ast0.Edots(d,whencode) -> mcode d (* ignore whencode *)
     | Ast0.OptExp e | Ast0.UniqueExp e ->
 	(* put the + code on the thing, not on the opt *)
 	r.VT0.combiner_rec_expression e
@@ -568,8 +562,7 @@ let collect_plus_nodes root =
   replaced by one statement, in single_statement *)
   let stmt_dots r k e =
     match Ast0.unwrap e with
-      Ast0.DOTS([s]) | Ast0.CIRCLES([s]) | Ast0.STARS([s]) ->
-	r.VT0.combiner_rec_statement s
+      [s] -> r.VT0.combiner_rec_statement s
     | _ -> do_nothing mk_stmtdots r k e in
 
   let toplevel r k e =

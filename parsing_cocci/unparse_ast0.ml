@@ -98,11 +98,7 @@ let print_meta (ctx,name) =
 
 let dots between fn d =
   print_context d
-    (function _ ->
-      match Ast0.unwrap d with
-	Ast0.DOTS(l) -> print_between between fn l
-      | Ast0.CIRCLES(l) -> print_between between fn l
-      | Ast0.STARS(l) -> print_between between fn l)
+    (function _ -> print_between between fn (Ast0.unwrap d))
 
 (* --------------------------------------------------------------------- *)
 (* Disjunctions *)
@@ -251,14 +247,10 @@ let rec expression e =
 	  expression whencode;
 	  start_block(); dots force_newline expression expr_dots; end_block();
 	  mcode print_string ender
-      | Ast0.Edots(dots,Some (_,_,whencode))
-      | Ast0.Ecircles(dots,Some (_,_,whencode))
-      | Ast0.Estars(dots,Some (_,_,whencode)) ->
+      | Ast0.Edots(dots,Some (_,_,whencode)) ->
 	  mcode print_string dots; print_string "   WHEN != ";
 	  expression whencode
-      | Ast0.Edots(dots,None)
-      | Ast0.Ecircles(dots,None)
-      | Ast0.Estars(dots,None) -> mcode print_string dots
+      | Ast0.Edots(dots,None) -> mcode print_string dots
       | Ast0.OptExp(exp) -> print_string "?"; expression exp
       | Ast0.UniqueExp(exp) -> print_string "!"; expression exp
       |	Ast0.AsExpr(exp,asexp) -> expression exp; print_string "@";
@@ -467,7 +459,6 @@ and parameterTypeDef p =
       | Ast0.MetaParamList(name,_,_) -> mcode print_meta name
       | Ast0.PComma(cm) -> mcode print_string cm; print_space()
       | Ast0.Pdots(dots) -> mcode print_string dots
-      | Ast0.Pcircles(dots) -> mcode print_string dots
       | Ast0.OptParam(param) -> print_string "?"; parameterTypeDef param
       | Ast0.UniqueParam(param) -> print_string "!"; parameterTypeDef param
       |	Ast0.AsParam(p,asexp) -> parameterTypeDef p; print_string "@";
@@ -616,7 +607,7 @@ and statement arity s =
       | Ast0.Ty(ty) -> print_string arity; typeC ty
       | Ast0.TopId(id) -> print_string arity; ident id
       |	Ast0.TopInit(init) -> initialiser init
-      | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) ->
+      | Ast0.Dots(d,whn) ->
 	  print_string arity; mcode print_string d;
 	  List.iter
 	    (whencode (dots force_newline (statement "")) (statement ""))
@@ -659,7 +650,6 @@ and print_define_param param =
     Ast0.DParam(id) -> ident id
   | Ast0.DPComma(comma) -> mcode print_string comma
   | Ast0.DPdots(dots) -> mcode print_string dots
-  | Ast0.DPcircles(circles) -> mcode print_string circles
   | Ast0.OptDParam(dp) -> print_string "?"; print_define_param dp
   | Ast0.UniqueDParam(dp) -> print_string "!"; print_define_param dp
 

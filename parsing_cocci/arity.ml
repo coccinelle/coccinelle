@@ -85,62 +85,7 @@ let mcode x = x (* nothing to do ... *)
 (* --------------------------------------------------------------------- *)
 (* Dots *)
 
-let dots fn d =
-  Ast0.rewrap d
-    (match Ast0.unwrap d with
-      Ast0.DOTS(x) -> Ast0.DOTS(List.map fn x)
-    | Ast0.CIRCLES(x) -> Ast0.CIRCLES(List.map fn x)
-    | Ast0.STARS(x) -> Ast0.STARS(List.map fn x))
-
-let only_dots l =
-  not
-    (List.exists
-       (function x ->
-	  match Ast0.unwrap x with
-	   Ast0.Circles(_,_) | Ast0.Stars(_,_) -> true
-	 | _ -> false)
-       l)
-
-let only_circles l =
-  not (List.exists
-	(function x ->
-	  match Ast0.unwrap x with
-	    Ast0.Dots(_,_) | Ast0.Stars(_,_) -> true
-	  | _ -> false)
-	 l)
-
-let only_stars l =
-  not (List.exists
-	(function x ->
-	  match Ast0.unwrap x with
-	    Ast0.Dots(_,_) | Ast0.Circles(_,_) -> true
-	  | _ -> false)
-	 l)
-
-let concat_dots fn d =
-  Ast0.rewrap d
-    (match Ast0.unwrap d with
-      Ast0.DOTS(x) ->
-	let l = List.map fn x in
-	if only_dots l
-	then Ast0.DOTS(l)
-	else fail d "inconsistent dots usage"
-    | Ast0.CIRCLES(x) ->
-	let l = List.map fn x in
-	if only_circles l
-	then Ast0.CIRCLES(l)
-	else fail d "inconsistent dots usage"
-    | Ast0.STARS(x) ->
-	let l = List.map fn x in
-	if only_stars l
-	then Ast0.STARS(l)
-	else fail d "inconsistent dots usage")
-
-let flat_concat_dots fn d =
-  match Ast0.unwrap d with
-    Ast0.DOTS(x) -> List.map fn x
-  | Ast0.CIRCLES(x) -> List.map fn x
-  | Ast0.STARS(x) -> List.map fn x
+let dots fn d = Ast0.rewrap d (List.map fn (Ast0.unwrap d))
 
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
@@ -362,18 +307,6 @@ let rec top_expression opt_allowed tgt expr =
       let whencode =
         get_option (fun (a,e,b) -> (a,e,expression Ast0.NONE b)) whencode in
       make_exp expr tgt arity (Ast0.Edots(dots,whencode))
-  | Ast0.Ecircles(dots,whencode) ->
-      let arity = exp_same (mcode2line dots) [mcode2arity dots] in
-      let dots = mcode dots in
-      let whencode =
-        get_option (fun (a,e,b) -> (a,e,expression Ast0.NONE b)) whencode in
-      make_exp expr tgt arity (Ast0.Ecircles(dots,whencode))
-  | Ast0.Estars(dots,whencode) ->
-      let arity = exp_same (mcode2line dots) [mcode2arity dots] in
-      let dots = mcode dots in
-      let whencode =
-        get_option (fun (a,e,b) -> (a,e,expression Ast0.NONE b)) whencode in
-      make_exp expr tgt arity (Ast0.Estars(dots,whencode))
   | Ast0.Constructor(lp,ty,rp,init) ->
       let arity = exp_same (mcode2line lp) [mcode2arity lp;mcode2arity rp] in
       let lp = mcode lp in
@@ -799,10 +732,6 @@ and parameterTypeDef tgt param =
       let arity = param_same (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in
       make_param param tgt arity (Ast0.Pdots(dots))
-  | Ast0.Pcircles(dots) ->
-      let arity = param_same (mcode2line dots) [mcode2arity dots] in
-      let dots = mcode dots in
-      make_param param tgt arity (Ast0.Pcircles(dots))
   | Ast0.OptParam(_) | Ast0.UniqueParam(_) | Ast0.AsParam _ ->
       failwith "unexpected code"
 
@@ -1030,7 +959,7 @@ and statement tgt stm =
 	| _ -> Ast0.TopInit(new_init))
   | Ast0.Disj(starter,rule_elem_dots_list,mids,ender) ->
       let stms =
-	List.map (function x -> concat_dots (statement tgt) x)
+	List.map (function x -> dots (statement tgt) x)
 	  rule_elem_dots_list in
       let (found_opt,unopt) =
 	List.fold_left
@@ -1051,14 +980,7 @@ and statement tgt stm =
 		if List.for_all is_opt l
 		then (true,List.map unopt l)
 		else (false, l) in
-	      let (l,k) =
-		match Ast0.unwrap x with
-		  Ast0.DOTS(l) ->
-		    (l,function l -> Ast0.rewrap x (Ast0.DOTS l))
-		| Ast0.CIRCLES(l) ->
-		    (l,function l -> Ast0.rewrap x (Ast0.CIRCLES l))
-		| Ast0.STARS(l) ->
-		    (l,function l -> Ast0.rewrap x (Ast0.STARS l)) in
+	      let (l,k) = (Ast0.unwrap x, function l -> Ast0.rewrap x l) in
 	      let (found_opt,l) = rebuild l in
 	      (found_opt,(k l)::lines))
 	  (false,[]) stms in
@@ -1069,7 +991,7 @@ and statement tgt stm =
       else Ast0.rewrap stm (Ast0.Disj(starter,stms,mids,ender))
   | Ast0.Conj(starter,rule_elem_dots_list,mids,ender) ->
       let stms =
-	List.map (function x -> concat_dots (statement tgt) x)
+	List.map (function x -> dots (statement tgt) x)
 	  rule_elem_dots_list in
       let (found_opt,unopt) =
 	List.fold_left
@@ -1090,14 +1012,7 @@ and statement tgt stm =
 		if List.for_all is_opt l
 		then (true,List.map unopt l)
 		else (false, l) in
-	      let (l,k) =
-		match Ast0.unwrap x with
-		  Ast0.DOTS(l) ->
-		    (l,function l -> Ast0.rewrap x (Ast0.DOTS l))
-		| Ast0.CIRCLES(l) ->
-		    (l,function l -> Ast0.rewrap x (Ast0.CIRCLES l))
-		| Ast0.STARS(l) ->
-		    (l,function l -> Ast0.rewrap x (Ast0.STARS l)) in
+	      let (l,k) = (Ast0.unwrap x, function l -> Ast0.rewrap x l) in
 	      let (fo,l) = rebuild l in
 	      (found_opt && fo,(k l)::lines))
 	  (true,[]) stms in
@@ -1108,41 +1023,23 @@ and statement tgt stm =
       else Ast0.rewrap stm (Ast0.Conj(starter,stms,mids,ender))
   | Ast0.Nest(starter,rule_elem_dots,ender,whn,multi) ->
       let new_rule_elem_dots =
-	concat_dots (statement Ast0.NONE) rule_elem_dots in
+	dots (statement Ast0.NONE) rule_elem_dots in
       let whn =
 	List.map
-	  (whencode (concat_dots (statement Ast0.NONE)) (statement Ast0.NONE)
+	  (whencode (dots (statement Ast0.NONE)) (statement Ast0.NONE)
 	     (expression Ast0.NONE))
 	  whn in
       Ast0.rewrap stm
 	(Ast0.Nest(starter,new_rule_elem_dots,ender,whn,multi))
-  | Ast0.Dots(dots,whn)    ->
-      let arity = stm_same (mcode2line dots) [mcode2arity dots] in
-      let dots = mcode dots in
+  | Ast0.Dots(d,whn)    ->
+      let arity = stm_same (mcode2line d) [mcode2arity d] in
+      let d = mcode d in
       let whn =
 	List.map
-	  (whencode (concat_dots (statement Ast0.NONE)) (statement Ast0.NONE)
+	  (whencode (dots (statement Ast0.NONE)) (statement Ast0.NONE)
 	     (expression Ast0.NONE))
 	  whn in
-      make_rule_elem stm tgt arity (Ast0.Dots(dots,whn))
-  | Ast0.Circles(dots,whn) ->
-      let arity = stm_same (mcode2line dots) [mcode2arity dots] in
-      let dots = mcode dots in
-      let whn =
-	List.map
-	  (whencode (concat_dots (statement Ast0.NONE)) (statement Ast0.NONE)
-	     (expression Ast0.NONE))
-	  whn in
-      make_rule_elem stm tgt arity (Ast0.Circles(dots,whn))
-  | Ast0.Stars(dots,whn)   ->
-      let arity = stm_same (mcode2line dots) [mcode2arity dots] in
-      let dots = mcode dots in
-      let whn =
-	List.map
-	  (whencode (concat_dots (statement Ast0.NONE)) (statement Ast0.NONE)
-	     (expression Ast0.NONE))
-	  whn in
-      make_rule_elem stm tgt arity (Ast0.Stars(dots,whn))
+      make_rule_elem stm tgt arity (Ast0.Dots(d,whn))
   | Ast0.FunDecl(bef,fi,name,lp,params,va,rp,lbrace,body,rbrace,aft) ->
       let arity =
 	all_same true tgt (mcode2line lp)
@@ -1247,11 +1144,6 @@ and define_param tgt param =
 	all_same true tgt (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in
       make_define_param param tgt arity (Ast0.DPdots(dots))
-  | Ast0.DPcircles(circles) ->
-      let arity =
-	all_same true tgt (mcode2line circles) [mcode2arity circles] in
-      let circles = mcode circles in
-      make_define_param param tgt arity (Ast0.DPcircles(circles))
   | Ast0.OptDParam(dp) | Ast0.UniqueDParam(dp) ->
       failwith "unexpected code"
 
@@ -1347,7 +1239,7 @@ let top_level tgt t =
     | Ast0.NONDECL(stmt) ->
 	Ast0.NONDECL(statement tgt stmt)
     | Ast0.CODE(rule_elem_dots) ->
-	Ast0.CODE(concat_dots (statement tgt) rule_elem_dots)
+	Ast0.CODE(dots (statement tgt) rule_elem_dots)
     | Ast0.TOPCODE(rule_elem_dots) ->  fail t "eliminated by top_level"
     | Ast0.ERRORWORDS(exps) ->
 	Ast0.ERRORWORDS(List.map (top_expression false Ast0.NONE) exps)

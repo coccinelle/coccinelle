@@ -62,12 +62,7 @@ and pure = Impure | Pure | Context | PureContext (* pure and only context *)
 (* --------------------------------------------------------------------- *)
 (* Dots *)
 
-and 'a base_dots =
-    DOTS of 'a list
-  | CIRCLES of 'a list
-  | STARS of 'a list
-
-and 'a dots = 'a base_dots wrap
+and 'a dots = 'a list wrap
 
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
@@ -136,10 +131,6 @@ and base_expression =
                       (string mcode * string mcode * expression) option
                       (* whencode *) * Ast_cocci.multi
   | Edots          of string mcode (* ... *) * (string mcode * string mcode *
-                      expression) option (* whencode *)
-  | Ecircles       of string mcode (* ooo *) * (string mcode * string mcode *
-                      expression) option (* whencode *)
-  | Estars         of string mcode (* *** *) * (string mcode * string mcode *
                       expression) option (* whencode *)
   | OptExp         of expression
   | UniqueExp      of expression
@@ -307,7 +298,6 @@ and base_parameterTypeDef =
   | AsParam       of parameterTypeDef * expression (* expr, always metavar *)
   | PComma        of string mcode
   | Pdots         of string mcode (* ... *)
-  | Pcircles      of string mcode (* ooo *)
   | OptParam      of parameterTypeDef
   | UniqueParam   of parameterTypeDef
 
@@ -322,7 +312,6 @@ and base_define_param =
     DParam        of ident
   | DPComma       of string mcode
   | DPdots        of string mcode (* ... *)
-  | DPcircles     of string mcode (* ooo *)
   | OptDParam     of define_param
   | UniqueDParam  of define_param
 
@@ -393,10 +382,6 @@ and base_statement =
 	             (statement dots,statement) whencode list * Ast_cocci.multi
   | Dots          of string mcode (* ... *) *
                      (statement dots,statement) whencode list
-  | Circles       of string mcode (* ooo *) *
-	             (statement dots,statement) whencode list
-  | Stars         of string mcode (* *** *) *
-	             (statement dots,statement) whencode list
   | FunDecl of (info * mcodekind) (* before the function decl *) *
 	fninfo list * ident (* name *) *
 	string mcode (* ( *) * parameter_list *
@@ -563,10 +548,6 @@ val forinfo : forinfo -> anything
 val case_line : case_line -> anything
 val string_fragment : string_fragment -> anything
 val top : top_level -> anything
-
-(* --------------------------------------------------------------------- *)
-
-val undots : 'a dots -> 'a list
 
 (* --------------------------------------------------------------------- *)
 (* Avoid cluttering the parser.  Calculated in compute_lines.ml. *)

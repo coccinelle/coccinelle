@@ -539,17 +539,14 @@ let collect_in_plus_term =
 	       fi) in
 	let nm_metas = collect_all_refs.V.combiner_ident nm in
 	let param_metas =
-	  match Ast.unwrap params with
-	    Ast.DOTS(params) | Ast.CIRCLES(params) ->
-	      List.concat
-		(List.map
-		   (function p ->
-		     match Ast.unwrap p with
-		       Ast.VoidParam(t) | Ast.Param(t,_) ->
-			 collect_all_refs.V.combiner_fullType t
-		     | _ -> [])
-		   params)
-	  | _ -> failwith "not allowed for params" in
+	  List.concat
+	    (List.map
+	       (function p ->
+	          match Ast.unwrap p with
+	            Ast.VoidParam(t) | Ast.Param(t,_) ->
+	              collect_all_refs.V.combiner_fullType t
+		  | _ -> [])
+	       (Ast.unwrap params)) in
 	bind fi_metas
 	  (bind nm_metas
 	     (bind param_metas

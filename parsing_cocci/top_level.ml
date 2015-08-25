@@ -10,23 +10,14 @@ complex term is assumed to be Ast0.default_info *)
 
 module Ast0 = Ast0_cocci
 
-let top_dots l =
-  let circle x =
-    match Ast0.unwrap x with Ast0.Circles(_) -> true | _ -> false in
-  let star x =
-    match Ast0.unwrap x with Ast0.Stars(_) -> true | _ -> false in
-  if List.exists circle l
-  then Ast0.wrap (Ast0.CIRCLES(l))
-  else if List.exists star l
-  then Ast0.wrap (Ast0.STARS(l))
-  else Ast0.wrap (Ast0.DOTS(l))
+let top_dots l = Ast0.wrap l
 
 let rec is_decl s =
   match Ast0.unwrap s with
     Ast0.Decl(_,e) -> true
   | _ -> false
 
-let isonly f l = match Ast0.undots l with [s] -> f s | _ -> false
+let isonly f l = match Ast0.unwrap l with [s] -> f s | _ -> false
 let isall f l = List.for_all (isonly f) l
 
 let rec is_toplevel s =

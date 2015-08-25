@@ -28,20 +28,7 @@ let error ii str =
 
 type sequence = Ordered | Unordered
 
-let seqstyle eas =
-   match A.unwrap eas with
-   | A.DOTS _ -> Ordered
-   | A.CIRCLES _ -> Unordered
-   | A.STARS _ -> failwith "not handling stars"
-
-let (redots : 'a A.dots -> 'a list -> 'a A.dots)=fun eas easundots ->
-  A.rewrap eas (
-    match A.unwrap eas with
-    | A.DOTS _ -> A.DOTS easundots
-    | A.CIRCLES _ -> A.CIRCLES easundots
-    | A.STARS _ -> A.STARS easundots
-  )
-
+let seqstyle eas = Ordered
 
 let (need_unordered_initialisers : B.initialiser B.wrap2 list -> bool) =
  fun ibs ->
@@ -1248,9 +1235,9 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
       let (ib1, ib2) = tuple_of_list2 ii in
       tokenf lq ib1 >>= (fun lq ib1 ->
       tokenf rq ib2 >>= (fun rq ib2 ->
-      string_fragments (A.undots frags1) (B.split_nocomma frags2) >>=
-	(fun frags1undots frags2splitted ->
-        let frags1 = redots frags1 frags1undots in
+      string_fragments (A.unwrap frags1) (B.split_nocomma frags2) >>=
+	(fun frags1unwrap frags2splitted ->
+        let frags1 = A.rewrap frags1 frags1unwrap in
 	let frags2 = Ast_c.unsplit_nocomma frags2splitted in
 	return (
 	  ((A.StringConstant (lq,frags1,rq)) +> wa,
@@ -1271,8 +1258,8 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
       expression ea eb >>= (fun ea eb ->
       tokenf ia1 ib1 >>= (fun ia1 ib1 ->
       tokenf ia2 ib2 >>= (fun ia2 ib2 ->
-      arguments (seqstyle eas) (A.undots eas) ebs >>= (fun easundots ebs ->
-        let eas = redots eas easundots in
+      arguments (seqstyle eas) (A.unwrap eas) ebs >>= (fun easunwrap ebs ->
+        let eas = A.rewrap eas easunwrap in
         return (
           ((A.FunCall (ea, ia1, eas, ia2)) +> wa,
           ((B.FunCall (eb, ebs),typ), [ib1;ib2])
@@ -1496,7 +1483,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 
   | A.NestExpr(starter,exps,ender,None,true), eb ->
       (match A.unwrap exps with
-	A.DOTS [exp] ->
+	[exp] ->
 	  (* if minus and trafo do nothing *)
 	  X.cocciExpExp (A.get_mcodekind starter)
 	    expression exp eb >>= (fun exp eb ->
@@ -1505,7 +1492,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
             return (
             (A.NestExpr
 	       (metavar2ndots mcode,
-		A.rewrap exps (A.DOTS [exp]),ender,None,true)) +> wa,
+		A.rewrap exps [exp],ender,None,true)) +> wa,
             eb
             )
 	  ))
@@ -1533,8 +1520,6 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
   (* only in arg lists *)
   | A.MetaExprList _,    _
   | A.EComma _,    _
-  | A.Ecircles _,    _
-  | A.Estars _,    _
       ->
 	raise (Impossible 24)
 
@@ -2154,7 +2139,6 @@ and parameter = fun parama paramb ->
 	| None, Some _ -> fail)
   | (A.OptParam _ | A.UniqueParam _), _ ->
       failwith "not handling Opt/Unique for Param"
-  | A.Pcircles (_), ys -> raise (Impossible 25) (* in Ordered mode *)
   | _ -> fail
 
 (* ------------------------------------------------------------------------- *)
@@ -2285,8 +2269,8 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
         tokenf lpa lpb >>= (fun lpa lpb ->
         tokenf rpa rpb >>= (fun rpa rpb ->
         tokenf enda iiendb >>= (fun enda iiendb ->
-        arguments (seqstyle eas) (A.undots eas) ebs >>= (fun easundots ebs ->
-        let eas = redots eas easundots in
+        arguments (seqstyle eas) (A.unwrap eas) ebs >>= (fun easunwrap ebs ->
+        let eas = A.rewrap eas easunwrap in
 
           return (
             (mckstart, allminus,
@@ -2315,9 +2299,9 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 	      ident DontKnow sa (sb, iisb) >>= (fun sa (sb, iisb) ->
 	      tokenf lpa lpb >>= (fun lpa lpb ->
 	      tokenf rpa rpb >>= (fun rpa rpb ->
-	      arguments (seqstyle eas) (A.undots eas) ebs >>=
-		(fun easundots ebs ->
-		  let eas = redots eas easundots in
+	      arguments (seqstyle eas) (A.unwrap eas) ebs >>=
+		(fun easunwrap ebs ->
+		  let eas = A.rewrap eas easunwrap in
 
 		  return (
 		  (mckstart, allminus,
@@ -2343,9 +2327,9 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
         tokenf rpa rpb >>= (fun rpa rpb ->
         tokenf weqa weqb >>= (fun weqa weqb ->
         tokenf enda iiendb >>= (fun enda iiendb ->
-        arguments (seqstyle eas) (A.undots eas) ebs >>= (fun easundots ebs ->
+        arguments (seqstyle eas) (A.unwrap eas) ebs >>= (fun easunwrap ebs ->
 	initialiser inia inib >>= (fun inia inib ->
-        let eas = redots eas easundots in
+        let eas = A.rewrap eas easunwrap in
 
           return (
             (mckstart, allminus,
@@ -2422,8 +2406,8 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
        tokenf lba lbb >>= (fun lba lbb ->
        tokenf rba rbb >>= (fun rba rbb ->
-       struct_fields (A.undots declsa) declsb >>= (fun undeclsa declsb ->
-         let declsa = redots declsa undeclsa in
+       struct_fields (A.unwrap declsa) declsb >>= (fun undeclsa declsb ->
+         let declsa = A.rewrap declsa undeclsa in
 
          (match A.unwrap tya2 with
          | A.Type(allminus, cv3, tya3) -> (* again allminus not used *)
@@ -2601,9 +2585,9 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
         attribute_list attras attrs >>= (fun attras attrs ->
         fullType_optional_allminus allminus tya tyb >>= (fun tya tyb ->
 	let fninfoa = put_fninfo stoa tya inla attras in
-        parameters (seqstyle paramsa) (A.undots paramsa) paramsb >>=
-          (fun paramsaundots paramsb ->
-            let paramsa = redots paramsa paramsaundots in
+        parameters (seqstyle paramsa) (A.unwrap paramsa) paramsb >>=
+          (fun paramsaunwrap paramsb ->
+            let paramsa = A.rewrap paramsa paramsaunwrap in
             return (
               (A.FunProto(fninfoa,ida,lpa,paramsa,va,rpa,sema) +> A.rewrap decla,
 	       (({B.v_namei = Some (idb, B.NoInit);
@@ -2820,10 +2804,10 @@ and (initialiser: (A.initialiser, Ast_c.initialiser) matcher) =  fun ia ib ->
 	| ib1::ib2::iicommaopt ->
             tokenf ia1 ib1 >>= (fun ia1 ib1 ->
             tokenf ia2 ib2 >>= (fun ia2 ib2 ->
-            ar_initialisers (A.undots ias) (ibs, iicommaopt) >>=
-	      (fun iasundots (ibs,iicommaopt) ->
+            ar_initialisers (A.unwrap ias) (ibs, iicommaopt) >>=
+	      (fun iasunwrap (ibs,iicommaopt) ->
               return (
-                (A.ArInitList (ia1, redots ias iasundots, ia2)) +> A.rewrap ia,
+                (A.ArInitList (ia1, A.rewrap ias iasunwrap, ia2)) +> A.rewrap ia,
                 (B.InitList ibs, ib1::ib2::iicommaopt)
               ))))
 
@@ -3654,9 +3638,9 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
                 tokenf lp2a lp2b >>= (fun lp2a lp2b ->
                 tokenf rp2a rp2b >>= (fun rp2a rp2b ->
                 tokenf stara starb >>= (fun stara starb ->
-                parameters (seqstyle paramsa) (A.undots paramsa) paramsb >>=
-                (fun paramsaundots paramsb ->
-                  let paramsa = redots paramsa paramsaundots in
+                parameters (seqstyle paramsa) (A.unwrap paramsa) paramsb >>=
+                (fun paramsaunwrap paramsb ->
+                  let paramsa = A.rewrap paramsa paramsaunwrap in
 
                   let t2 =
                     (qu2b,
@@ -3799,8 +3783,8 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 
             tokenf lba lbb >>= (fun lba lbb ->
             tokenf rba rbb >>= (fun rba rbb ->
-            struct_fields (A.undots declsa) declsb >>=(fun undeclsa declsb ->
-              let declsa = redots declsa undeclsa in
+            struct_fields (A.unwrap declsa) declsb >>=(fun undeclsa declsb ->
+              let declsa = A.rewrap declsa undeclsa in
 
               return (
                 (A.StructUnionDef(ty, lba, declsa, rba)) +> A.rewrap ta,
@@ -3904,8 +3888,8 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 		  (List.map
 		     (function (elem,comma) -> [Left elem; Right [comma]])
 		     idsb) in
-            enum_fields (A.undots idsa) idsb >>= (fun unidsa idsb ->
-              let idsa = redots idsa unidsa in
+            enum_fields (A.unwrap idsa) idsb >>= (fun unidsa idsb ->
+              let idsa = A.rewrap idsa unidsa in
 	      let idsb,iicomma =
 		match List.rev idsb with
 		  (Right comma)::rest ->
@@ -4420,7 +4404,6 @@ and define_parameter = fun parama paramb ->
         return ((A.DParam ida)+> A.rewrap parama,(idb, [ib1])))
   | (A.OptDParam _ | A.UniqueDParam _), _ ->
       failwith "handling Opt/Unique for define parameters"
-  | A.DPcircles (_), ys -> raise (Impossible 48) (* in Ordered mode *)
   | _ -> fail in
 
 (*****************************************************************************)
@@ -4666,9 +4649,9 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
           tokenf oparen ioparenb >>= (fun oparen ioparenb ->
           tokenf cparen icparenb >>= (fun cparen icparenb ->
           parameters (seqstyle paramsa)
-            (A.undots paramsa) paramsb >>=
-            (fun paramsaundots paramsb ->
-              let paramsa = redots paramsa paramsaundots in
+            (A.unwrap paramsa) paramsb >>=
+            (fun paramsaunwrap paramsb ->
+              let paramsa = A.rewrap paramsa paramsaunwrap in
           inline_optional_allminus allminus
             inla (stob, iistob) >>= (fun inla (stob, iistob) ->
           storage_optional_allminus allminus
@@ -4804,8 +4787,8 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
       ident DontKnow ia1 (s, ib1) >>= (fun ia1 (s, ib1) ->
       tokenf ia2 ib2 >>= (fun ia2 ib2 ->
       tokenf ia3 ib3 >>= (fun ia3 ib3 ->
-      arguments (seqstyle eas) (A.undots eas) ebs >>= (fun easundots ebs ->
-       let eas = redots eas easundots in
+      arguments (seqstyle eas) (A.unwrap eas) ebs >>= (fun easunwrap ebs ->
+       let eas = A.rewrap eas easunwrap in
        return (
          A.IteratorHeader (ia1, ia2, eas, ia3),
          F.MacroIterHeader (st, ((s,ebs), [ib1;ib2;ib3]))
@@ -4956,9 +4939,9 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
           tokenf lpa lpb >>= (fun lpa lpb ->
           tokenf rpa rpb >>= (fun rpa rpb ->
 
-          define_params (seqstyle eas) (A.undots eas) ebs >>=
-            (fun easundots ebs ->
-              let eas = redots eas easundots in
+          define_params (seqstyle eas) (A.unwrap eas) ebs >>=
+            (fun easunwrap ebs ->
+              let eas = A.rewrap eas easunwrap in
               return (
                 A.DParams (lpa,eas,rpa) +> A.rewrap params,
                 B.DefineFunc (ebs,[lpb;rpb])
@@ -4982,15 +4965,15 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
 	  let (ib1, ib2) = tuple_of_list2 iib in
 	  tokenf lp ib1 >>= (fun lp ib1 ->
 	  tokenf rp ib2 >>= (fun rp ib2 ->
-	  arguments (seqstyle eas) (A.undots eas) ebs >>= (fun easundots ebs ->
-          let eas = redots eas easundots in
+	  arguments (seqstyle eas) (A.unwrap eas) ebs >>= (fun easunwrap ebs ->
+          let eas = A.rewrap eas easunwrap in
 	  return (
 	    A.PragmaTuple(lp,eas,rp) +> wp,
 	    B.PragmaTuple(ebs,[ib1; ib2])
 	  ))))
       | A.PragmaIdList(idsa), B.PragmaIdList(idsb) ->
-	  ident_list (A.undots idsa) idsb >>= (fun idsaundots idsb ->
-          let idsa = redots idsa idsaundots in
+	  ident_list (A.unwrap idsa) idsb >>= (fun idsaunwrap idsb ->
+          let idsa = A.rewrap idsa idsaunwrap in
 	  return(
 	    A.PragmaIdList(idsa) +> wp,
 	    B.PragmaIdList(idsb)
@@ -5063,9 +5046,9 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
       tokenf exec exec2 >>= (fun exec exec2 ->
       tokenf lang lang2 >>= (fun lang lang2 ->
       tokenf sem sem2 >>= (fun sem sem2 ->
-      exec_code_list (A.undots code) (B.split_nocomma code2) >>=
-	(fun code_undots code2_splitted ->
-	  let code = redots code code_undots in
+      exec_code_list (A.unwrap code) (B.split_nocomma code2) >>=
+	(fun code_unwrap code2_splitted ->
+	  let code = A.rewrap code code_unwrap in
 	  let code2 = Ast_c.unsplit_nocomma code2_splitted in
 	  return(
 	    A.Exec(exec,lang,code,sem),

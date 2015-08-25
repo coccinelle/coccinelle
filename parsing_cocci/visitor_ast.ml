@@ -56,10 +56,7 @@ let combiner bind option_default
     | None -> option_default in
 
   let dotsfn param default all_functions arg =
-    let k d =
-      match Ast.unwrap d with
-	Ast.DOTS(l) | Ast.CIRCLES(l) | Ast.STARS(l) ->
-          multibind (List.map default l) in
+    let k d = multibind (List.map default (Ast.unwrap d)) in
     param all_functions k arg in
 
   let rec meta_mcode x = meta_mcodefn all_functions x
@@ -227,8 +224,7 @@ let combiner bind option_default
 	  let lender = string_mcode ender in
 	  let lwhncode = get_option expression whncode in
 	  multibind [lstarter; lexpr_dots; lender; lwhncode]
-      | Ast.Edots(dots,whncode) | Ast.Ecircles(dots,whncode)
-      | Ast.Estars(dots,whncode) ->
+      | Ast.Edots(dots,whncode) ->
 	  let ldots = string_mcode dots in
 	  let lwhncode = get_option expression whncode in
 	  bind ldots lwhncode
@@ -521,7 +517,6 @@ let combiner bind option_default
 	  bind lp lasexp
       | Ast.PComma(cm) -> string_mcode cm
       | Ast.Pdots(dots) -> string_mcode dots
-      | Ast.Pcircles(dots) -> string_mcode dots
       | Ast.OptParam(param) -> parameterTypeDef param
       | Ast.UniqueParam(param) -> parameterTypeDef param in
     paramfn all_functions k p
@@ -694,12 +689,7 @@ let combiner bind option_default
 	  multibind [llp; lparams; lrp] in
     k p
 
-  and define_param_dots d =
-    let k d =
-      match Ast.unwrap d with
-	Ast.DOTS(l) | Ast.CIRCLES(l) | Ast.STARS(l) ->
-	  multibind (List.map define_param l) in
-    k d
+  and define_param_dots d = multibind (List.map define_param (Ast.unwrap d))
 
   and define_param p =
     let k p =
@@ -707,7 +697,6 @@ let combiner bind option_default
 	Ast.DParam(id) -> ident id
       | Ast.DPComma(comma) -> string_mcode comma
       | Ast.DPdots(d) -> string_mcode d
-      | Ast.DPcircles(c) -> string_mcode c
       | Ast.OptDParam(dp) -> define_param dp
       | Ast.UniqueDParam(dp) -> define_param dp in
     k p
@@ -787,7 +776,7 @@ let combiner bind option_default
 	  let lstm = statement stm in
 	  let lasstm = statement asstm in
 	  bind lstm lasstm
-      | Ast.Dots(d,whn,_,_) | Ast.Circles(d,whn,_,_) | Ast.Stars(d,whn,_,_) ->
+      | Ast.Dots(d,whn,_,_) ->
 	  let ld = string_mcode d in
 	  let lwhn = multibind
 	    (List.map (whencode statement_dots statement) whn) in
@@ -950,12 +939,7 @@ let rebuilder
     | None -> None in
 
   let dotsfn param default all_functions arg =
-    let k d =
-      Ast.rewrap d
-	(match Ast.unwrap d with
-	  Ast.DOTS(l) -> Ast.DOTS(List.map default l)
-	| Ast.CIRCLES(l) -> Ast.CIRCLES(List.map default l)
-	| Ast.STARS(l) -> Ast.STARS(List.map default l)) in
+    let k d = Ast.rewrap d (List.map default (Ast.unwrap d)) in
     param all_functions k arg in
 
   let iddotsfn all_functions k arg = k arg in
@@ -1116,14 +1100,6 @@ let rebuilder
 	    let ldots = string_mcode dots in
 	    let lwhncode = get_option expression whncode in
 	    Ast.Edots(ldots, lwhncode)
-	| Ast.Ecircles(dots,whncode) ->
-	    let ldots = string_mcode dots in
-	    let lwhncode = get_option expression whncode in
-	    Ast.Ecircles(ldots, lwhncode)
-	| Ast.Estars(dots,whncode) ->
-	    let ldots = string_mcode dots in
-	    let lwhncode = get_option expression whncode in
-	    Ast.Estars(ldots, lwhncode)
 	| Ast.OptExp(exp) -> Ast.OptExp(expression exp)
 	| Ast.UniqueExp(exp) -> Ast.UniqueExp(expression exp)) in
     exprfn all_functions k e
@@ -1414,7 +1390,6 @@ let rebuilder
 	    Ast.AsParam(lp, lasexp)
 	| Ast.PComma(cm) -> Ast.PComma(string_mcode cm)
 	| Ast.Pdots(dots) -> Ast.Pdots(string_mcode dots)
-	| Ast.Pcircles(dots) -> Ast.Pcircles(string_mcode dots)
 	| Ast.OptParam(param) -> Ast.OptParam(parameterTypeDef param)
 	| Ast.UniqueParam(param) -> Ast.UniqueParam(parameterTypeDef param)) in
     paramfn all_functions k p
@@ -1593,13 +1568,7 @@ let rebuilder
     k p
 
   and define_param_dots d =
-    let k d =
-      Ast.rewrap d
-	(match Ast.unwrap d with
-	  Ast.DOTS(l) -> Ast.DOTS(List.map define_param l)
-	| Ast.CIRCLES(l) -> Ast.CIRCLES(List.map define_param l)
-	| Ast.STARS(l) -> Ast.STARS(List.map define_param l)) in
-    k d
+    Ast.rewrap d (List.map define_param (Ast.unwrap d))
 
   and define_param p =
     let k p =
@@ -1608,7 +1577,6 @@ let rebuilder
 	  Ast.DParam(id) -> Ast.DParam(ident id)
 	| Ast.DPComma(comma) -> Ast.DPComma(string_mcode comma)
 	| Ast.DPdots(d) -> Ast.DPdots(string_mcode d)
-	| Ast.DPcircles(c) -> Ast.DPcircles(string_mcode c)
 	| Ast.OptDParam(dp) -> Ast.OptDParam(define_param dp)
 	| Ast.UniqueDParam(dp) -> Ast.UniqueDParam(define_param dp)) in
     k p
@@ -1695,14 +1663,6 @@ let rebuilder
 	    let ld = string_mcode d in
 	    let lwhn = List.map (whencode statement_dots statement) whn in
 	    Ast.Dots(ld, lwhn, bef, aft)
-	| Ast.Circles(d,whn,bef,aft) ->
-	    let ld = string_mcode d in
-	    let lwhn = List.map (whencode statement_dots statement) whn in
-	    Ast.Circles(ld, lwhn, bef, aft)
-	| Ast.Stars(d,whn,bef,aft) ->
-	    let ld = string_mcode d in
-	    let lwhn = List.map (whencode statement_dots statement) whn in
-	    Ast.Stars(ld, lwhn, bef, aft)
 	| Ast.OptStm(stmt) -> Ast.OptStm(statement stmt)
 	| Ast.UniqueStm(stmt) -> Ast.UniqueStm(statement stmt)) in
     let s = stmtfn all_functions k s in

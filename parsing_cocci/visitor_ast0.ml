@@ -45,15 +45,7 @@ let visitor mode bind option_default
     (multibind [starter_n; multibind bind_value;ender_n],
      rebuilder starter lst mids ender) in
   let dotsfn param default all_functions arg =
-    let k d =
-      rewrap d
-	(match Ast0.unwrap d with
-	  Ast0.DOTS(l) ->
-	    let (n,l) = map_split_bind default l in (n,Ast0.DOTS(l))
-	| Ast0.CIRCLES(l) ->
-	    let (n,l) = map_split_bind default l in (n,Ast0.CIRCLES(l))
-	| Ast0.STARS(l) ->
-	    let (n,l) = map_split_bind default l in (n,Ast0.STARS(l))) in
+    let k d = rewrap d (map_split_bind default (Ast0.unwrap d)) in
     param all_functions k arg in
   let iddotsfn all_functions k arg = k arg in
   let strdotsfn all_functions k arg = k arg in
@@ -236,14 +228,6 @@ let visitor mode bind option_default
 	    let (dots_n,dots) = string_mcode dots in
 	    let (whencode_n, whencode) = whencode_option expression whencode in
 	    (bind dots_n whencode_n,Ast0.Edots(dots,whencode))
-	| Ast0.Ecircles(dots,whencode) ->
-	    let (dots_n,dots) = string_mcode dots in
-	    let (whencode_n, whencode) = whencode_option expression whencode in
-	    (bind dots_n whencode_n,Ast0.Ecircles(dots,whencode))
-	| Ast0.Estars(dots,whencode) ->
-	    let (dots_n,dots) = string_mcode dots in
-	    let (whencode_n, whencode) = whencode_option expression whencode in
-	    (bind dots_n whencode_n,Ast0.Estars(dots,whencode))
 	| Ast0.OptExp(exp) ->
 	    let (exp_n,exp) = expression exp in
 	    (exp_n,Ast0.OptExp(exp))
@@ -635,8 +619,6 @@ let visitor mode bind option_default
 	    let (n,cm) = string_mcode cm in (n,Ast0.PComma(cm))
 	| Ast0.Pdots(dots) ->
 	    let (n,dots) = string_mcode dots in (n,Ast0.Pdots(dots))
-	| Ast0.Pcircles(dots) ->
-	    let (n,dots) = string_mcode dots in (n,Ast0.Pcircles(dots))
 	| Ast0.OptParam(param) ->
 	    let (n,param) = parameterTypeDef param in (n,Ast0.OptParam(param))
 	| Ast0.UniqueParam(param) ->
@@ -834,16 +816,6 @@ let visitor mode bind option_default
 	    let (whn_n,whn) =
 	      map_split_bind (whencode statement_dots statement) whn in
 	    (bind d_n whn_n, Ast0.Dots(d,whn))
-	| Ast0.Circles(d,whn) ->
-	    let (d_n,d) = string_mcode d in
-	    let (whn_n,whn) =
-	      map_split_bind (whencode statement_dots statement) whn in
-	    (bind d_n whn_n, Ast0.Circles(d,whn))
-	| Ast0.Stars(d,whn) ->
-	    let (d_n,d) = string_mcode d in
-	    let (whn_n,whn) =
-	      map_split_bind (whencode statement_dots statement) whn in
-	    (bind d_n whn_n, Ast0.Stars(d,whn))
 	| Ast0.Include(inc,name) ->
 	    let (inc_n,inc) = string_mcode inc in
 	    let (name_n,name) = inc_mcode name in
@@ -920,16 +892,7 @@ let visitor mode bind option_default
     k p
 
   and define_param_dots d =
-    let k d =
-      rewrap d
-	(match Ast0.unwrap d with
-	  Ast0.DOTS(l) ->
-	    let (n,l) = map_split_bind define_param l in (n,Ast0.DOTS(l))
-	| Ast0.CIRCLES(l) ->
-	    let (n,l) = map_split_bind define_param l in (n,Ast0.CIRCLES(l))
-	| Ast0.STARS(l) ->
-	    let (n,l) = map_split_bind define_param l in (n,Ast0.STARS(l))) in
-    k d
+    rewrap d (map_split_bind define_param (Ast0.unwrap d))
 
   and define_param p =
     let k p =
@@ -940,8 +903,6 @@ let visitor mode bind option_default
 	    let (n,comma) = string_mcode comma in (n,Ast0.DPComma(comma))
 	| Ast0.DPdots(d) ->
 	    let (n,d) = string_mcode d in (n,Ast0.DPdots(d))
-	| Ast0.DPcircles(c) ->
-	    let (n,c) = string_mcode c in (n,Ast0.DPcircles(c))
 	| Ast0.OptDParam(dp) ->
 	    let (n,dp) = define_param dp in (n,Ast0.OptDParam(dp))
 	| Ast0.UniqueDParam(dp) ->

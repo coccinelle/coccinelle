@@ -37,13 +37,7 @@ let disjoption f = function
   | Some x -> List.map (function x -> Some x) (f x)
 
 let disjdots f d =
-  match Ast.unwrap d with
-    Ast.DOTS(l) ->
-      List.map (function l -> Ast.rewrap d (Ast.DOTS(l))) (disjmult f l)
-  | Ast.CIRCLES(l) ->
-      List.map (function l -> Ast.rewrap d (Ast.CIRCLES(l))) (disjmult f l)
-  | Ast.STARS(l) ->
-      List.map (function l -> Ast.rewrap d (Ast.STARS(l))) (disjmult f l)
+  List.map (function l -> Ast.rewrap d l) (disjmult f (Ast.unwrap d))
 
 let rec disjty ft =
   match Ast.unwrap ft with
@@ -209,7 +203,7 @@ and disjexp e =
   | Ast.NestExpr(starter,expr_dots,ender,whencode,multi) ->
       (* not sure what to do here, so ambiguities still possible *)
       [e]
-  | Ast.Edots(dots,_) | Ast.Ecircles(dots,_) | Ast.Estars(dots,_) -> [e]
+  | Ast.Edots(dots,_) -> [e]
   | Ast.OptExp(exp) ->
       let exp = disjexp exp in
       List.map (function exp -> Ast.rewrap e (Ast.OptExp(exp))) exp
@@ -227,7 +221,7 @@ and disjparam p =
       let pm = disjparam pm in
       List.map (function pm -> Ast.rewrap p (Ast.AsParam(pm,asexp))) pm
   | Ast.MetaParam(_,_,_) | Ast.MetaParamList(_,_,_,_) | Ast.PComma(_) -> [p]
-  | Ast.Pdots(dots) | Ast.Pcircles(dots) -> [p]
+  | Ast.Pdots(dots) -> [p]
   | Ast.OptParam(param) ->
       let param = disjparam param in
       List.map (function param -> Ast.rewrap p (Ast.OptParam(param))) param

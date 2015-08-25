@@ -105,21 +105,16 @@ let sym2mcode (name, clt) = clt2mcode_ext name true clt
 let mkdots str (dot,whencode) =
   match str with
     "..." -> Ast0.wrap(Ast0.Dots(clt2mcode str dot, whencode))
-  | "ooo" -> Ast0.wrap(Ast0.Circles(clt2mcode str dot, whencode))
-  | "***" -> Ast0.wrap(Ast0.Stars(clt2mcode str dot, whencode))
   | _ -> failwith "cannot happen"
 
 let mkedots str (dot,whencode) =
   match str with
     "..." -> Ast0.wrap(Ast0.Edots(clt2mcode str dot, whencode))
-  | "ooo" -> Ast0.wrap(Ast0.Ecircles(clt2mcode str dot, whencode))
-  | "***" -> Ast0.wrap(Ast0.Estars(clt2mcode str dot, whencode))
   | _ -> failwith "cannot happen"
 
 let mkdpdots str dot =
   match str with
     "..." -> Ast0.wrap(Ast0.DPdots(clt2mcode str dot))
-  | "ooo" -> Ast0.wrap(Ast0.DPcircles(clt2mcode str dot))
   | _ -> failwith "cannot happen"
 
 let mkidots str (dot,whencode) =
@@ -141,7 +136,6 @@ let mkddots_one str (dot,whencode) =
 let mkpdots str dot =
   match str with
     "..." -> Ast0.wrap(Ast0.Pdots(clt2mcode str dot))
-  | "ooo" -> Ast0.wrap(Ast0.Pcircles(clt2mcode str dot))
   | _ -> failwith "cannot happen"
 
 let arith_op ast_op left op right =
@@ -155,17 +149,7 @@ let logic_op ast_op left op right =
 let make_cv cv ty =
   match cv with None -> ty | Some x -> Ast0.wrap (Ast0.ConstVol(x,ty))
 
-let top_dots l =
-  let circle x =
-    match Ast0.unwrap x with Ast0.Circles(_) -> true | _ -> false in
-  let star x =
-    match Ast0.unwrap x with Ast0.Stars(_) -> true | _ -> false in
-  if List.exists circle l
-  then Ast0.wrap(Ast0.CIRCLES(l))
-  else
-    if List.exists star l
-    then Ast0.wrap(Ast0.STARS(l))
-    else Ast0.wrap(Ast0.DOTS(l))
+let top_dots l = Ast0.wrap l
 
 (* here the offset is that of the first in the sequence of *s, not that of
 each * individually *)
@@ -520,8 +504,7 @@ let switch s lp e rp lb d c rb =
       d in
   Ast0.wrap(Ast0.Switch(clt2mcode "switch" s,clt2mcode "(" lp,e,
 			clt2mcode ")" rp,clt2mcode "{" lb,
-			Ast0.wrap(Ast0.DOTS(d)),
-			Ast0.wrap(Ast0.DOTS(c)),clt2mcode "}" rb))
+			Ast0.wrap d,Ast0.wrap c,clt2mcode "}" rb))
 
 let ret_exp r e pv =
   Ast0.wrap(Ast0.ReturnExpr(clt2mcode "return" r,e,clt2mcode ";" pv))
@@ -611,21 +594,18 @@ let struct_initializer initlist =
     | Ast0.OptIni i | Ast0.UniqueIni i -> loop i
     | Ast0.MetaInit _ | Ast0.MetaInitList _ -> false (* ambiguous... *)
     | _ -> false in
-  let l = Ast0.undots initlist in
+  let l = Ast0.unwrap initlist in
   (l = []) || (List.exists loop l)
 
 let drop_dot_commas initlist =
-  match Ast0.unwrap initlist with
-    Ast0.DOTS(l) ->
-      let rec loop after_comma = function
-	  [] -> []
-	| x::xs ->
-	    (match Ast0.unwrap x with
-	      Ast0.Idots(dots,whencode) -> x :: (loop true xs)
-	    | Ast0.IComma(comma) when after_comma -> (*drop*) loop false xs
-	    | _ -> x :: (loop false xs)) in
-      Ast0.rewrap initlist (Ast0.DOTS(loop false l))
-  | _ -> failwith "not supported"
+  let rec loop after_comma = function
+      [] -> []
+    | x::xs ->
+	(match Ast0.unwrap x with
+	  Ast0.Idots(dots,whencode) -> x :: (loop true xs)
+	| Ast0.IComma(comma) when after_comma -> (*drop*) loop false xs
+	| _ -> x :: (loop false xs)) in
+  Ast0.rewrap initlist (loop false (Ast0.unwrap initlist))
 
 (* ----------------------------------------------------------------------- *)
 (* strings *)
@@ -814,7 +794,7 @@ let parse_string str ((mc,b,c,d,e,f,g,h,i,_) as clt) =
 		from first*)
 	     let clt = (mc,b,c,d,e,f,g,h,i,"") in
 	     let (line,middle) = drop_minus_plus str clt in
-	     let middle = Ast0.wrap (Ast0.DOTS middle) in
+	     let middle = Ast0.wrap middle in
 	     let last = clt2mcode "\"" (update_line clt (line-1)) in
 	     contains_string_constant := true;
 	     Ast0.wrap(Ast0.StringConstant(first,middle,last))

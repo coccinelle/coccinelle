@@ -110,7 +110,7 @@ let get_function_name rule env =
     bind (k e)
     (match Ast.unwrap e with
       Ast.FunCall(fn,lp,args,rp) ->
-	(match Ast.undots args with
+	(match Ast.unwrap args with
 	  [e] ->
 	    (match Ast.unwrap e with
 	      Ast.MetaExprList(nm,_,_,_) ->

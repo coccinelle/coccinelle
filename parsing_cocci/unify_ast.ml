@@ -74,15 +74,11 @@ let unify_lists fn dfn la lb =
   loop (la,lb)
 
 let unify_dots fn dfn d1 d2 =
-  match (Ast.unwrap d1,Ast.unwrap d2) with
-    (Ast.DOTS(l1),Ast.DOTS(l2))
-  | (Ast.CIRCLES(l1),Ast.CIRCLES(l2))
-  | (Ast.STARS(l1),Ast.STARS(l2)) -> unify_lists fn dfn l1 l2
-  | _ -> return false
+  unify_lists fn dfn (Ast.unwrap d1) (Ast.unwrap d2)
 
 let edots e =
   match Ast.unwrap e with
-    Ast.Edots(_,_) | Ast.Ecircles(_,_) | Ast.Estars(_,_) -> true
+    Ast.Edots(_,_) -> true
   | _ -> false
 
 let ddots e =
@@ -92,17 +88,17 @@ let ddots e =
 
 let pdots p =
   match Ast.unwrap p with
-    Ast.Pdots(_) | Ast.Pcircles(_) -> true
+    Ast.Pdots(_) -> true
   | _ -> false
 
 let dpdots e =
   match Ast.unwrap e with
-    Ast.DPdots(_) | Ast.DPcircles(_) -> true
+    Ast.DPdots(_) -> true
   | _ -> false
 
 let sdots s =
   match Ast.unwrap s with
-    Ast.Dots(_,_,_,_) | Ast.Circles(_,_,_,_) | Ast.Stars(_,_,_,_) -> true
+    Ast.Dots(_,_,_,_) -> true
   | _ -> false
 
 let idots e =
@@ -234,9 +230,7 @@ and unify_expression e1 e2 =
       unify_dots unify_expression edots e1 e2
 
   (* dots can match against anything.  return true to be safe. *)
-  | (Ast.Edots(_,_),_) | (_,Ast.Edots(_,_))
-  | (Ast.Ecircles(_,_),_) | (_,Ast.Ecircles(_,_))
-  | (Ast.Estars(_,_),_) | (_,Ast.Estars(_,_)) -> return true
+  | (Ast.Edots(_,_),_) | (_,Ast.Edots(_,_)) -> return true
 
   | (Ast.OptExp(_),_)
   | (Ast.UniqueExp(_),_)
@@ -475,8 +469,7 @@ and unify_parameterTypeDef p1 p2 =
   | (Ast.PComma(_),Ast.PComma(_)) -> return true
 
   (* dots can match against anything.  return true to be safe. *)
-  | (Ast.Pdots(_),_) | (_,Ast.Pdots(_))
-  | (Ast.Pcircles(_),_) | (_,Ast.Pcircles(_)) -> return true
+  | (Ast.Pdots(_),_) | (_,Ast.Pdots(_)) -> return true
 
   (* not sure what to do with the asexp.... *)
   | (Ast.AsParam(param1,asexp1),_) -> unify_parameterTypeDef param1 p2
@@ -505,8 +498,7 @@ and unify_define_param p1 p2 =
   | (Ast.DPComma(_),Ast.DPComma(_)) -> return true
 
   (* dots can match against anything.  return true to be safe. *)
-  | (Ast.DPdots(_),_) | (_,Ast.DPdots(_))
-  | (Ast.DPcircles(_),_) | (_,Ast.DPcircles(_)) -> return true
+  | (Ast.DPdots(_),_) | (_,Ast.DPdots(_)) -> return true
 
   | (Ast.OptDParam(_),_)
   | (Ast.UniqueDParam(_),_)
@@ -692,25 +684,25 @@ let rec unify_statement s1 s2 =
       conjunct_bindings (unify_rule_elem h1 h2) (unify_statement s1 s2)
   | (Ast.Atomic(re1),Ast.Atomic(re2)) -> unify_rule_elem re1 re2
   | (Ast.Disj(s1),_) ->
-      let s2 = Ast.rewrap s2 (Ast.DOTS[s2]) in
+      let s2 = Ast.rewrap s2 [s2] in
       disjunct_all_bindings
 	(List.map
 	   (function x -> unify_dots unify_statement sdots x s2)
 	   s1)
   | (_,Ast.Disj(s2)) ->
-      let s1 = Ast.rewrap s1 (Ast.DOTS[s1]) in
+      let s1 = Ast.rewrap s1 [s1] in
       disjunct_all_bindings
 	(List.map
 	   (function x -> unify_dots unify_statement sdots s1 x)
 	   s2)
   | (Ast.Conj(s1),_) ->
-      let s2 = Ast.rewrap s2 (Ast.DOTS[s2]) in
+      let s2 = Ast.rewrap s2 [s2] in
       conjunct_all_bindings
 	(List.map
 	   (function x -> unify_dots unify_statement sdots x s2)
 	   s1)
   | (_,Ast.Conj(s2)) ->
-      let s1 = Ast.rewrap s1 (Ast.DOTS[s1]) in
+      let s1 = Ast.rewrap s1 [s1] in
       conjunct_all_bindings
 	(List.map
 	   (function x -> unify_dots unify_statement sdots s1 x)
@@ -726,9 +718,7 @@ let rec unify_statement s1 s2 =
       conjunct_bindings (unify_rule_elem h1 h2)
 	(unify_dots unify_statement sdots s1 s2)
   (* dots can match against anything.  return true to be safe. *)
-  | (Ast.Dots(_,_,_,_),_) | (_,Ast.Dots(_,_,_,_))
-  | (Ast.Circles(_,_,_,_),_) | (_,Ast.Circles(_,_,_,_))
-  | (Ast.Stars(_,_,_,_),_) | (_,Ast.Stars(_,_,_,_)) -> return true
+  | (Ast.Dots(_,_,_,_),_) | (_,Ast.Dots(_,_,_,_)) -> return true
   | (Ast.OptStm(_),_)
   | (Ast.UniqueStm(_),_)
   | (_,Ast.OptStm(_))

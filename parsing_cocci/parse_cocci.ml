@@ -233,21 +233,11 @@ let token2c (tok,_) =
   | PC.TStrict(clt) -> add_clt "STRICT" clt
   | PC.TEllipsis(clt) -> add_clt "..." clt
   | PC.TVAEllipsis(clt) -> add_clt "......" clt
-(*
-  | PC.TCircles(clt)  -> add_clt "ooo" clt
-  | PC.TStars(clt)    -> add_clt "***" clt
-*)
 
   | PC.TOEllipsis(clt) -> add_clt "<..." clt
   | PC.TCEllipsis(clt) -> add_clt "...>" clt
   | PC.TPOEllipsis(clt) -> add_clt "<+..." clt
   | PC.TPCEllipsis(clt) -> add_clt "...+>" clt
-(*
-  | PC.TOCircles(clt)  -> add_clt "<ooo" clt
-  | PC.TCCircles(clt)  -> add_clt "ooo>" clt
-  | PC.TOStars(clt)    -> add_clt "<***" clt
-  | PC.TCStars(clt)    -> add_clt "***>" clt
-*)
   | PC.TBang0 -> "!"
   | PC.TPlus0 -> "+"
   | PC.TWhy0  -> "?"
@@ -357,10 +347,8 @@ let plus_attachable only_plus (tok,_) =
 (* it would seem that this should all be skips
   | PC.TWhen(clt) |  PC.TWhenTrue(clt) |  PC.TWhenFalse(clt)
   | PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
-  (* | PC.TCircles(clt) | PC.TStars(clt) *)
   | PC.TOEllipsis(clt) | PC.TCEllipsis(clt)
-  | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) (* | PC.TOCircles(clt)
-  | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *)
+  | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt)
 *)
 
   | PC.TWhy(clt) | PC.TDotDot(clt) | PC.TBang(clt) | PC.TOPar(clt)
@@ -439,9 +427,8 @@ let get_clt (tok,_) =
   | PC.TMetaPos(_,_,_,clt)
   | PC.TMetaDeclarer(_,_,_,clt) | PC.TMetaIterator(_,_,_,clt)
 
-  | PC.TWhen(clt) | PC.TWhenTrue(clt) | PC.TWhenFalse(clt) |
-    PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
-  (* | PC.TCircles(clt) | PC.TStars(clt) *)
+  | PC.TWhen(clt) | PC.TWhenTrue(clt) | PC.TWhenFalse(clt)
+  | PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
 
   | PC.TWhy(clt) | PC.TDotDot(clt) | PC.TBang(clt) | PC.TOPar(clt)
   | PC.TCPar(clt)
@@ -456,8 +443,7 @@ let get_clt (tok,_) =
 
   | PC.TOPar0(_,clt) | PC.TMid0(_,clt) | PC.TAnd0(_,clt) | PC.TCPar0(_,clt)
   | PC.TOEllipsis(clt) | PC.TCEllipsis(clt)
-  | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) (* | PC.TOCircles(clt)
-  | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *)
+  | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt)
   | PC.TFunDecl(clt) | PC.TDirective(_,clt) | PC.TLineEnd(clt) -> clt
   | PC.TVAEllipsis(clt) -> clt
 
@@ -652,21 +638,11 @@ let update_clt (tok,x) clt =
   | PC.TAny(_) -> (PC.TAny(clt),x)
   | PC.TStrict(_) -> (PC.TStrict(clt),x)
   | PC.TEllipsis(_) -> (PC.TEllipsis(clt),x)
-(*
-  | PC.TCircles(_)  -> (PC.TCircles(clt),x)
-  | PC.TStars(_)    -> (PC.TStars(clt),x)
-*)
 
   | PC.TOEllipsis(_) -> (PC.TOEllipsis(clt),x)
   | PC.TCEllipsis(_) -> (PC.TCEllipsis(clt),x)
   | PC.TPOEllipsis(_) -> (PC.TPOEllipsis(clt),x)
   | PC.TPCEllipsis(_) -> (PC.TPCEllipsis(clt),x)
-(*
-  | PC.TOCircles(_)  -> (PC.TOCircles(clt),x)
-  | PC.TCCircles(_)  -> (PC.TCCircles(clt),x)
-  | PC.TOStars(_)    -> (PC.TOStars(clt),x)
-  | PC.TCStars(_)    -> (PC.TCStars(clt),x)
-*)
 
   | PC.TWhy(_)   -> (PC.TWhy(clt),x)
   | PC.TDotDot(_)   -> (PC.TDotDot(clt),x)
@@ -892,14 +868,9 @@ let split_token ((tok,_) as t) =
   | PC.TFunDecl(clt)
   | PC.TWhen(clt) | PC.TWhenTrue(clt) | PC.TWhenFalse(clt)
   | PC.TAny(clt) | PC.TStrict(clt) | PC.TLineEnd(clt)
-  | PC.TEllipsis(clt) (* | PC.TCircles(clt) | PC.TStars(clt) *)
+  | PC.TEllipsis(clt)
   | PC.TOEllipsis(clt) | PC.TCEllipsis(clt)
   | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) -> split t clt
-
-(*
-  | PC.TOCircles(_) | PC.TCCircles(_)   (* clt must be context *)
-  | PC.TOStars(_) | PC.TCStars(_)       (* clt must be context *)
-*)
 
   | PC.TBang0 | PC.TPlus0 | PC.TWhy0 ->
       ([t],[t])
@@ -1061,9 +1032,9 @@ statement. *)
    to be used as a real identifier *)
 let detect_types in_meta_decls l =
   let is_delim infn = function
-      (PC.TOEllipsis(_),_) (* | (PC.TOCircles(_),_) | (PC.TOStars(_),_) *)
-    | (PC.TPOEllipsis(_),_) (* | (PC.TOCircles(_),_) | (PC.TOStars(_),_) *)
-    | (PC.TEllipsis(_),_) (* | (PC.TCircles(_),_) | (PC.TStars(_),_) *)
+      (PC.TOEllipsis(_),_)
+    | (PC.TPOEllipsis(_),_)
+    | (PC.TEllipsis(_),_)
     | (PC.TPtVirg(_),_) | (PC.TOBrace(_),_) | (PC.TOInit(_),_)
     | (PC.TCBrace(_),_)
     | (PC.TPure,_) | (PC.TContext,_)
@@ -1203,11 +1174,9 @@ let token2line (tok,_) =
   | PC.TFunDecl(clt)
   | PC.TWhen(clt) | PC.TWhenTrue(clt) | PC.TWhenFalse(clt)
   | PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
-  (* | PC.TCircles(clt) | PC.TStars(clt) *)
 
   | PC.TOEllipsis(clt) | PC.TCEllipsis(clt)
-  | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) (*| PC.TOCircles(clt)
-  | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *)
+  | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt)
 
   | PC.TWhy(clt) | PC.TDotDot(clt) | PC.TBang(clt) | PC.TOPar(clt)
   | PC.TOPar0(_,clt) | PC.TMid0(_,clt) | PC.TCPar(clt)
@@ -1540,21 +1509,17 @@ let minus_to_nothing l =
 
 let rec drop_double_dots l =
   let start = function
-      (PC.TOEllipsis(_),_) | (PC.TPOEllipsis(_),_)
- (* | (PC.TOCircles(_),_) | (PC.TOStars(_),_) *) ->
-	true
+      (PC.TOEllipsis(_),_) | (PC.TPOEllipsis(_),_) -> true
     | _ -> false in
   let middle = function
-      (PC.TEllipsis(_),_) (* | (PC.TCircles(_),_) | (PC.TStars(_),_) *) -> true
+      (PC.TEllipsis(_),_) -> true
     | _ -> false in
   let whenline = function
       (PC.TLineEnd(_),_) -> true
     (*| (PC.TMid0(_),_) -> true*)
     | _ -> false in
   let final = function
-      (PC.TCEllipsis(_),_) | (PC.TPCEllipsis(_),_)
- (* | (PC.TCCircles(_),_) | (PC.TCStars(_),_) *) ->
-	true
+      (PC.TCEllipsis(_),_) | (PC.TPCEllipsis(_),_) -> true
     | _ -> false in
   let any_before x = start x || middle x || final x || whenline x in
   let any_after x = start x || middle x || final x in
@@ -2475,7 +2440,7 @@ let process file isofile verbose =
 		 | p::_ ->
 		     [match Ast0.unwrap p with
 		       Ast0.CODE c ->
-			 (match List.map Ast0.unwrap (Ast0.undots c) with
+			 (match List.map Ast0.unwrap (Ast0.unwrap c) with
 			   [Ast0.Exp e] -> true | _ -> false)
 		     | _ -> false] in
 	       let minus = Arity.minus_arity minus in

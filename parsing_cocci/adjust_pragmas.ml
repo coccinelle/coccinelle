@@ -134,8 +134,6 @@ let rec right_statement s =
   | Ast0.TopId(id) -> None
   | Ast0.TopInit(init) -> None
   | Ast0.Dots(d,whn) -> None
-  | Ast0.Circles(d,whn) -> None
-  | Ast0.Stars(d,whn) -> None
   | Ast0.Include(inc,name) ->
       call_right right_mcode name s
 	(function name -> Ast0.Include(inc,name))
@@ -156,11 +154,8 @@ let rec right_statement s =
 
 and right_statement_dots sd =
   match Ast0.unwrap sd with
-    Ast0.DOTS([]) -> failwith "empty statement dots"
-  | Ast0.DOTS(s::r) ->
-      call_right right_statement s sd
-	(function s -> Ast0.DOTS(List.rev(s::r)))
-  | _ -> failwith "circles and stars not supported"
+    [] -> failwith "empty statement dots"
+  | s::r -> call_right right_statement s sd (function s -> List.rev(s::r))
 
 let rec left_ty t =
   match Ast0.unwrap t with

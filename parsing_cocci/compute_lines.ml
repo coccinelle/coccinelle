@@ -226,23 +226,16 @@ let dot_list is_dots fn = function
 
 let dots is_dots prev fn d =
   match (prev,Ast0.unwrap d) with
-    (Some prev,Ast0.DOTS([])) ->
-      mkres d (Ast0.DOTS []) prev prev
-  | (None,Ast0.DOTS([])) ->
+    (Some prev,[]) -> mkres d [] prev prev
+  | (None,[]) ->
       Ast0.set_info d
 	{(Ast0.get_info d)
 	with
 	  Ast0.attachable_start = check_attachable false;
 	  Ast0.attachable_end = check_attachable false}
-  | (_,Ast0.DOTS(x)) ->
+  | (_,x) ->
       let (l,lstart,lend) = dot_list is_dots fn x in
-      mkres d (Ast0.DOTS l) lstart lend
-  | (_,Ast0.CIRCLES(x)) ->
-      let (l,lstart,lend) = dot_list is_dots fn x in
-      mkres d (Ast0.CIRCLES l) lstart lend
-  | (_,Ast0.STARS(x)) ->
-      let (l,lstart,lend) = dot_list is_dots fn x in
-      mkres d (Ast0.STARS l) lstart lend
+      mkres d l lstart lend
 
 (* --------------------------------------------------------------------- *)
 (* Disjunctions *)
@@ -298,7 +291,7 @@ and ident i = let (id,_) = full_ident i in id
 
 let is_exp_dots e =
   match Ast0.unwrap e with
-    Ast0.Edots(_,_) | Ast0.Ecircles(_,_) | Ast0.Estars(_,_) -> true
+    Ast0.Edots(_,_) -> true
   | _ -> false
 
 let is_str_dots e =
@@ -486,14 +479,6 @@ let rec expression e =
       let dots = bad_mcode dots in
       let ln = promote_mcode dots in
       mkres e (Ast0.Edots(dots,whencode)) ln ln
-  | Ast0.Ecircles(dots,whencode) ->
-      let dots = bad_mcode dots in
-      let ln = promote_mcode dots in
-      mkres e (Ast0.Ecircles(dots,whencode)) ln ln
-  | Ast0.Estars(dots,whencode) ->
-      let dots = bad_mcode dots in
-      let ln = promote_mcode dots in
-      mkres e (Ast0.Estars(dots,whencode)) ln ln
   | Ast0.OptExp(exp) ->
       let exp = expression exp in
       mkres e (Ast0.OptExp(exp)) exp exp
@@ -845,7 +830,7 @@ and initialiser_dots x = dots is_init_dots None initialiser x
 
 and is_param_dots p =
   match Ast0.unwrap p with
-    Ast0.Pdots(_) | Ast0.Pcircles(_) -> true
+    Ast0.Pdots(_) -> true
   | _ -> false
 
 and parameterTypeDef p =
@@ -874,10 +859,6 @@ and parameterTypeDef p =
       let dots = bad_mcode dots in
       let ln = promote_mcode dots in
       mkres p (Ast0.Pdots(dots)) ln ln
-  | Ast0.Pcircles(dots) ->
-      let dots = bad_mcode dots in
-      let ln = promote_mcode dots in
-      mkres p (Ast0.Pcircles(dots)) ln ln
   | Ast0.OptParam(param) ->
       let res = parameterTypeDef param in
       mkres p (Ast0.OptParam(res)) res res
@@ -895,7 +876,7 @@ let parameter_dots x = dots is_param_dots None parameterTypeDef x
 
 let is_define_param_dots s =
   match Ast0.unwrap s with
-    Ast0.DPdots(_) | Ast0.DPcircles(_) -> true
+    Ast0.DPdots(_) -> true
   | _ -> false
 
 let rec define_param p =
@@ -911,10 +892,6 @@ let rec define_param p =
       let dots = bad_mcode dots in
       let ln = promote_mcode dots in
       mkres p (Ast0.DPdots(dots)) ln ln
-  | Ast0.DPcircles(dots) ->
-      let dots = bad_mcode dots in
-      let ln = promote_mcode dots in
-      mkres p (Ast0.DPcircles(dots)) ln ln
   | Ast0.OptDParam(dp) ->
       let res = define_param dp in
       mkres p (Ast0.OptDParam(res)) res res
@@ -938,7 +915,7 @@ let define_parameters x id =
 
 let is_stm_dots s =
   match Ast0.unwrap s with
-    Ast0.Dots(_,_) | Ast0.Circles(_,_) | Ast0.Stars(_,_) -> true
+    Ast0.Dots(_,_) -> true
   | _ -> false
 
 let is_ec_dots e =
@@ -1061,7 +1038,7 @@ let rec statement s =
 	    statement decls in
 	let cases =
 	  dots (function _ -> false)
-	    (if Ast0.undots decls = []
+	    (if Ast0.unwrap decls = []
 	    then (Some(promote_mcode lb))
 	    else None (* not sure this is right, but not sure the case can
 			 arise either *))
@@ -1185,14 +1162,6 @@ let rec statement s =
 	let dots = bad_mcode dots in
 	let ln = promote_mcode dots in
 	mkres s (Ast0.Dots(dots,whencode)) ln ln
-    | Ast0.Circles(dots,whencode) ->
-	let dots = bad_mcode dots in
-	let ln = promote_mcode dots in
-	mkres s (Ast0.Circles(dots,whencode)) ln ln
-    | Ast0.Stars(dots,whencode) ->
-	let dots = bad_mcode dots in
-	let ln = promote_mcode dots in
-	mkres s (Ast0.Stars(dots,whencode)) ln ln
     | Ast0.FunDecl((_,bef),fninfo,name,lp,params,va,rp,lbrace,body,rbrace,
 		   (_,aft)) ->
 	let fninfo =

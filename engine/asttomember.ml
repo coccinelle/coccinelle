@@ -187,16 +187,14 @@ let conj_one testfn x l =
   else l
 
 let rec statement_list testfn mcode tail stmt_list : 'a list list =
-  match Ast.unwrap stmt_list with
-    Ast.DOTS(x) | Ast.CIRCLES(x) | Ast.STARS(x) ->
-      (match List.rev x with
-	[] -> []
-      |	last::rest ->
-	  List.fold_right
-	    (function cur ->
-	      function rest ->
-		conj (statement testfn mcode false cur) rest)
-	    rest (statement testfn mcode tail last))
+  match List.rev (Ast.unwrap stmt_list) with
+    [] -> []
+  | last::rest ->
+      List.fold_right
+	(function cur ->
+	  function rest ->
+	    conj (statement testfn mcode false cur) rest)
+	rest (statement testfn mcode tail last)
 
 and statement testfn mcode tail stmt : 'a list list =
   match Ast.unwrap stmt with
