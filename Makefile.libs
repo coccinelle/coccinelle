@@ -33,14 +33,6 @@ GLOBALOPT_pycaml = $(PYCAMLDIR)/pycaml.cmxa
 FLAGS_pycaml     = $(CFLAGS_pycaml:%=-ccopt %) -dllib -lpycaml_stubs -cclib -lpycaml_stubs $(PYTHON_LIBS:%=-cclib %)
 OPTFLAGS_pycaml  = $(CFLAGS_pycaml:%=-ccopt %) -cclib -lpycaml_stubs $(PYTHON_LIBS:%=-cclib %)
 
-# sexplib library
-LOCAL_sexplib     = $(SEXPDIR)/sexplib.cmo
-LOCALOPT_sexplib  = $(SEXPDIR)/sexplib.cmx
-GLOBAL_sexplib    = $(SEXPDIR)/sexplib.cma
-GLOBALOPT_sexplib = $(SEXPDIR)/sexplib.cmxa
-FLAGS_sexplib     =
-OPTFLAGS_sexplib  =
-
 # pcre library
 # Note: see the comment of the pycaml library about the double appearance of the stubs library.
 LOCAL_pcre     = $(PCREDIR)/pcre.cmo
