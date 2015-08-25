@@ -183,7 +183,6 @@ let rec ident i =
   | Ast.AsIdent(id,asid) -> ident id; print_string "@"; ident asid
   | Ast.DisjId(id_list) -> print_disj_list ident id_list "|"
   | Ast.OptIdent(id) -> print_string "?"; ident id
-  | Ast.UniqueIdent(id) -> print_string "!"; ident id
 
 and print_unitary = function
     Type_cocci.Unitary -> print_string "unitary"
@@ -268,7 +267,6 @@ let rec expression e =
       mcode print_string dots; print_string "   when != "; expression whencode
   | Ast.Edots(dots,None) -> mcode print_string dots
   | Ast.OptExp(exp) -> print_string "?"; expression exp
-  | Ast.UniqueExp(exp) -> print_string "!"; expression exp
 
 and string_fragment e =
   match Ast.unwrap e with
@@ -371,7 +369,6 @@ and fullType ft =
   | Ast.AsType(ty,asty) -> fullType ty; print_string "@"; fullType asty
   | Ast.DisjType(decls) -> print_disj_list fullType decls "|"
   | Ast.OptType(ty) -> print_string "?"; fullType ty
-  | Ast.UniqueType(ty) -> print_string "!"; fullType ty
 
 and print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2) fn =
   fullType ty; mcode print_string lp1; mcode print_string star; fn();
@@ -525,7 +522,6 @@ and declaration d =
       mcode print_string sem
   | Ast.DisjDecl(decls) -> print_disj_list declaration decls "|"
   | Ast.OptDecl(decl) -> print_string "?"; declaration decl
-  | Ast.UniqueDecl(decl) -> print_string "!"; declaration decl
 
 and annotated_decl arity d =
   match Ast.unwrap d with
@@ -573,7 +569,6 @@ and initialiser i =
       mcode print_string dots; print_string "   when != "; initialiser whencode
   | Ast.Idots(dots,None) -> mcode print_string dots
   | Ast.OptIni(ini) -> print_string "?"; initialiser ini
-  | Ast.UniqueIni(ini) -> print_string "!"; initialiser ini
 
 and designator = function
     Ast.DesignatorField(dot,id) -> mcode print_string dot; ident id
@@ -596,7 +591,6 @@ and parameterTypeDef p =
   | Ast.PComma(cm) -> mcode print_string cm; print_space()
   | Ast.Pdots(dots) -> mcode print_string dots
   | Ast.OptParam(param) -> print_string "?"; parameterTypeDef param
-  | Ast.UniqueParam(param) -> print_string "!"; parameterTypeDef param
   | Ast.AsParam(p,asexp) ->
       parameterTypeDef p; print_string "@"; expression asexp
 
@@ -739,7 +733,6 @@ and print_define_param param =
   | Ast.DPComma(comma) -> mcode print_string comma
   | Ast.DPdots(dots) -> mcode print_string dots
   | Ast.OptDParam(dp) -> print_string "?"; print_define_param dp
-  | Ast.UniqueDParam(dp) -> print_string "!"; print_define_param dp
 
 and statement arity s =
   match Ast.unwrap s with
@@ -819,7 +812,6 @@ and statement arity s =
 	(whencode (dots force_newline (statement "")) (statement "")) whn;
       close_box(); force_newline()
   | Ast.OptStm(s) -> statement "?" s
-  | Ast.UniqueStm(s) -> statement "!" s
 
 and print_statement_when whencode =
   print_string "   WHEN != ";

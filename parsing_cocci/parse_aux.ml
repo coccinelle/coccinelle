@@ -65,10 +65,6 @@ let clt2mcode_ext str isSymbol = function
       (str,Ast0.OPT,
        make_info line lline llineend offset col strbef straft isSymbol ws,
        Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,-1)
-  | (Data.UNIQUEMINUS,line,lline,llineend,offset,col,strbef,straft,pos,ws) ->
-      (str,Ast0.UNIQUE,
-       make_info line lline llineend offset col strbef straft isSymbol ws,
-       Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,-1)
   | (Data.PLUS,line,lline,llineend,offset,col,strbef,straft,pos,ws)        ->
       (str,Ast0.NONE,
        make_info line lline llineend offset col strbef straft isSymbol ws,
@@ -85,12 +81,6 @@ let clt2mcode_ext str isSymbol = function
        ref pos,-1)
   | (Data.OPT,line,lline,llineend,offset,col,strbef,straft,pos,ws)         ->
       (str,Ast0.OPT,
-       make_info line lline llineend offset col strbef straft isSymbol ws,
-       Ast0.CONTEXT(ref(Ast.NOTHING,
-			Ast0.default_token_info,Ast0.default_token_info)),
-       ref pos,-1)
-  | (Data.UNIQUE,line,lline,llineend,offset,col,strbef,straft,pos, ws)     ->
-      (str,Ast0.UNIQUE,
        make_info line lline llineend offset col strbef straft isSymbol ws,
        Ast0.CONTEXT(ref(Ast.NOTHING,
 			Ast0.default_token_info,Ast0.default_token_info)),
@@ -591,7 +581,7 @@ let struct_initializer initlist =
     match Ast0.unwrap i with
       Ast0.InitGccExt _ -> true
     | Ast0.InitGccName _ -> true
-    | Ast0.OptIni i | Ast0.UniqueIni i -> loop i
+    | Ast0.OptIni i -> loop i
     | Ast0.MetaInit _ | Ast0.MetaInitList _ -> false (* ambiguous... *)
     | _ -> false in
   let l = Ast0.unwrap initlist in

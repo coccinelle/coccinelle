@@ -88,7 +88,7 @@ let rec ident context old_metas table minus i =
   | Ast0.AsIdent(id,asid) -> failwith "not generated yet"
   | Ast0.DisjId(_,id_list,_,_) ->
       List.iter (ident context old_metas table minus) id_list
-  | Ast0.OptIdent(_) | Ast0.UniqueIdent(_) ->
+  | Ast0.OptIdent(_) ->
       failwith "unexpected code"
 
 and seed table minus = function
@@ -194,7 +194,7 @@ let rec expression context old_metas table minus e =
       get_opt (function (_,_,x) -> expression ID old_metas table minus x) w
   | Ast0.Edots(_,Some (_,_,x)) ->
       expression ID old_metas table minus x
-  | Ast0.OptExp(x) | Ast0.UniqueExp(x) ->
+  | Ast0.OptExp(x) ->
       expression ID old_metas table minus x
   | _ -> () (* no metavariable subterms *)
 
@@ -243,7 +243,7 @@ and typeC old_metas table minus t =
   | Ast0.StructUnionDef(ty,lb,decls,rb) ->
       typeC old_metas table minus ty;
       dots (declaration GLOBAL old_metas table minus) decls
-  | Ast0.OptType(ty) | Ast0.UniqueType(ty) ->
+  | Ast0.OptType(ty) ->
       failwith "unexpected code"
   | _ -> () (* no metavariable subterms *)
 
@@ -298,7 +298,7 @@ and declaration context old_metas table minus d =
       List.iter (declaration ID old_metas table minus) decls
   | Ast0.Ddots(_,Some (_,_,x)) -> declaration ID old_metas table minus x
   | Ast0.Ddots(_,None) -> ()
-  | Ast0.OptDecl(_) | Ast0.UniqueDecl(_) ->
+  | Ast0.OptDecl(_) ->
       failwith "unexpected code"
 
 (* --------------------------------------------------------------------- *)
@@ -324,7 +324,7 @@ and initialiser old_metas table minus ini =
       ident FIELD old_metas table minus name;
       initialiser old_metas table minus ini
   | Ast0.Idots(_,Some (_,_,x)) -> initialiser old_metas table minus x
-  | Ast0.OptIni(_) | Ast0.UniqueIni(_) ->
+  | Ast0.OptIni(_) ->
       failwith "unexpected code"
   | _ -> () (* no metavariable subterms *)
 
@@ -477,7 +477,6 @@ and define_param old_metas table minus p =
   | Ast0.DPComma(_) | Ast0.DPdots(_) ->
       () (* no metavariable subterms *)
   | Ast0.OptDParam(dp)    -> define_param old_metas table minus dp
-  | Ast0.UniqueDParam(dp) -> define_param old_metas table minus dp
 
 and define_parameters old_metas table minus x =
   match Ast0.unwrap x with

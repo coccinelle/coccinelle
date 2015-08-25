@@ -1535,11 +1535,11 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	      loop (exp::acc_exp) eb es) in
       loop [] eb eas
 
-  | A.UniqueExp e,_ | A.OptExp e,_ ->
+  | A.OptExp e,_ ->
       Pretty_print_cocci.expression e;
       Format.print_newline();
       failwith
-        (Printf.sprintf "not handling Opt/Unique/Multi on expr on line %d"
+        (Printf.sprintf "not handling Opt/Multi on expr on line %d"
            (A.get_line e))
 
  (* Because of Exp cant put a raise Impossible; have to put a fail *)
@@ -1876,8 +1876,7 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
       ias +> List.fold_left (fun acc ia -> acc >|+|> (ident infoidb ia ib)) fail
 *)
 
-  | A.OptIdent _ | A.UniqueIdent _ ->
-      failwith "not handling Opt/Unique for ident"
+  | A.OptIdent _ -> failwith "not handling Opt for ident"
 
 (* ------------------------------------------------------------------------- *)
 and (arguments: sequence ->
@@ -2137,8 +2136,8 @@ and parameter = fun parama paramb ->
 
 	| Some _, None -> fail
 	| None, Some _ -> fail)
-  | (A.OptParam _ | A.UniqueParam _), _ ->
-      failwith "not handling Opt/Unique for Param"
+  | A.OptParam _, _ ->
+      failwith "not handling Opt for Param"
   | _ -> fail
 
 (* ------------------------------------------------------------------------- *)
@@ -2710,8 +2709,8 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
       ) fail
 *)
 
-   | A.OptDecl _,    _ | A.UniqueDecl _,     _ ->
-       failwith "not handling Opt/Unique Decl"
+   | A.OptDecl _,    _ ->
+       failwith "not handling Opt Decl"
 
    | _, ({B.v_namei=Some _}, _) ->
        fail
@@ -2869,8 +2868,8 @@ and (initialiser: (A.initialiser, Ast_c.initialiser) matcher) =  fun ia ib ->
     | A.IComma(comma), _ ->
         raise (Impossible 37)
 
-    | A.UniqueIni _,_ | A.OptIni _,_ ->
-      failwith "not handling Opt/Unique on initialisers"
+    | A.OptIni _,_ ->
+      failwith "not handling Opt on initialisers"
 
     | _, (B.InitIndexOld (_, _), _) -> fail
     | _, (B.InitFieldOld (_, _), _) -> fail
@@ -3351,8 +3350,7 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
       typas +>
       List.fold_left (fun acc typa -> acc >|+|> (fullType typa typb)) fail
 
-   | A.OptType(_), _  | A.UniqueType(_), _
-       -> failwith "not handling Opt/Unique on type"
+   | A.OptType(_), _ -> failwith "not handling Opt on type"
    )
 
 
@@ -4402,8 +4400,7 @@ and define_parameter = fun parama paramb ->
       let ib1 = tuple_of_list1 ii in
       ident DontKnow ida (idb, ib1) >>= (fun ida (idb, ib1) ->
         return ((A.DParam ida)+> A.rewrap parama,(idb, [ib1])))
-  | (A.OptDParam _ | A.UniqueDParam _), _ ->
-      failwith "handling Opt/Unique for define parameters"
+  | A.OptDParam _, _ -> failwith "handling Opt for define parameters"
   | _ -> fail in
 
 (*****************************************************************************)

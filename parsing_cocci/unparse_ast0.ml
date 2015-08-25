@@ -133,7 +133,6 @@ let rec ident i =
       | Ast0.MetaLocalFunc(name,_,_) -> mcode print_meta name
       | Ast0.DisjId(_,id_list,_,_) -> do_disj id_list ident "|"
       | Ast0.OptIdent(id) -> print_string "?"; ident id
-      | Ast0.UniqueIdent(id) -> print_string "!"; ident id
       | Ast0.AsIdent(id,asid) -> ident id; print_string "@"; ident asid)
 
 (* --------------------------------------------------------------------- *)
@@ -252,7 +251,6 @@ let rec expression e =
 	  expression whencode
       | Ast0.Edots(dots,None) -> mcode print_string dots
       | Ast0.OptExp(exp) -> print_string "?"; expression exp
-      | Ast0.UniqueExp(exp) -> print_string "!"; expression exp
       |	Ast0.AsExpr(exp,asexp) -> expression exp; print_string "@";
 	  expression asexp
       |	Ast0.AsSExpr(exp,asstm) -> expression exp; print_string "@";
@@ -326,7 +324,6 @@ and typeC t =
       | Ast0.MetaType(name,_)-> mcode print_meta name; print_string " "
       | Ast0.DisjType(_,types,_,_) -> do_disj types typeC "|"
       | Ast0.OptType(ty) -> print_string "?"; typeC ty
-      | Ast0.UniqueType(ty) -> print_string "!"; typeC ty
       | Ast0.AsType(ty,asty) -> typeC ty; print_string "@"; typeC asty)
 
 (* --------------------------------------------------------------------- *)
@@ -399,7 +396,6 @@ and declaration d =
 	  declaration whencode
       | Ast0.Ddots(dots,None) -> mcode print_string dots
       | Ast0.OptDecl(decl) -> print_string "?"; declaration decl
-      | Ast0.UniqueDecl(decl) -> print_string "!"; declaration decl
       | Ast0.AsDecl(decl,asdecl) ->
 	  declaration decl; print_string "@"; declaration asdecl)
 
@@ -431,7 +427,6 @@ and initialiser i =
 	  initialiser whencode
       | Ast0.Idots(d,None) -> mcode print_string d
       | Ast0.OptIni(ini) -> print_string "?"; initialiser ini
-      | Ast0.UniqueIni(ini) -> print_string "!"; initialiser ini
       | Ast0.AsInit(ini,asini) -> initialiser ini; print_string "@";
 	  initialiser asini)
 
@@ -460,7 +455,6 @@ and parameterTypeDef p =
       | Ast0.PComma(cm) -> mcode print_string cm; print_space()
       | Ast0.Pdots(dots) -> mcode print_string dots
       | Ast0.OptParam(param) -> print_string "?"; parameterTypeDef param
-      | Ast0.UniqueParam(param) -> print_string "!"; parameterTypeDef param
       |	Ast0.AsParam(p,asexp) -> parameterTypeDef p; print_string "@";
 	  expression asexp)
 
@@ -625,7 +619,6 @@ and statement arity s =
 	  mcode print_string prg; print_string " "; ident id;
 	  print_string " "; pragmainfo body
       | Ast0.OptStm(re) -> statement "?" re
-      | Ast0.UniqueStm(re) -> statement "!" re
       | Ast0.AsStmt(stm,asstm) -> statement arity stm; print_string "@";
 	  statement arity asstm)
 
@@ -651,7 +644,6 @@ and print_define_param param =
   | Ast0.DPComma(comma) -> mcode print_string comma
   | Ast0.DPdots(dots) -> mcode print_string dots
   | Ast0.OptDParam(dp) -> print_string "?"; print_define_param dp
-  | Ast0.UniqueDParam(dp) -> print_string "!"; print_define_param dp
 
 and print_fninfo = function
     Ast0.FStorage(stg) -> mcode U.storage stg

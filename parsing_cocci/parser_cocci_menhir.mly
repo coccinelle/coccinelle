@@ -190,7 +190,7 @@ let mklogop (op,clt) =
 %token TIdentifier TExpression TStatement TFunction TType TParameter
 %token TIdExpression TInitialiser TDeclaration TField TMetavariable TSymbol
 %token TOperator TBinary TAssignment
-%token Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
+%token Tlist TFresh TConstant TError TWords TWhy0 TPlus0
 %token TPure TContext TGenerated TFormat TLocal TGlobal
 %token TTypedef TAttribute TDeclarer TIterator TName TPosition TAnalysis
 %token TPosAny
@@ -855,8 +855,7 @@ meta_exp_type:
 	(function x -> P.ty_pointerify (Ast0_cocci.ast0_type_to_type true x) m)
 	t }
 
-arity: TBang0 { Ast.UNIQUE }
-     | TWhy0  { Ast.OPT }
+arity: TWhy0  { Ast.OPT }
      | TPlus0 { Ast.MULTI }
      | /* empty */ { Ast.NONE }
 

@@ -82,8 +82,6 @@ let visitor mode bind option_default
 		Ast0.DisjId(starter,id_list,mids,ender))
 	| Ast0.OptIdent(id) ->
 	    let (n,id) = ident id in (n,Ast0.OptIdent(id))
-	| Ast0.UniqueIdent(id) ->
-	    let (n,id) = ident id in (n,Ast0.UniqueIdent(id))
 	| Ast0.AsIdent(id,asid) ->
 	    let (id_n,id) = ident id in
 	    let (asid_n,asid) = ident asid in
@@ -231,9 +229,6 @@ let visitor mode bind option_default
 	| Ast0.OptExp(exp) ->
 	    let (exp_n,exp) = expression exp in
 	    (exp_n,Ast0.OptExp(exp))
-	| Ast0.UniqueExp(exp) ->
-	    let (exp_n,exp) = expression exp in
-	    (exp_n,Ast0.UniqueExp(exp))
 	| Ast0.AsExpr(exp,asexp) ->
 	    let (exp_n,exp) = expression exp in
 	    let (asexp_n,asexp) = expression asexp in
@@ -378,8 +373,6 @@ let visitor mode bind option_default
 		Ast0.DisjType(starter,types,mids,ender))
 	| Ast0.OptType(ty) ->
 	    let (ty_n,ty) = typeC ty in (ty_n, Ast0.OptType(ty))
-	| Ast0.UniqueType(ty) ->
-	    let (ty_n,ty) = typeC ty in (ty_n, Ast0.UniqueType(ty))
 	| Ast0.AsType(ty,asty) ->
 	    let (ty_n,ty) = typeC ty in
 	    let (asty_n,asty) = typeC asty in
@@ -516,8 +509,6 @@ let visitor mode bind option_default
 	    (bind dots_n whencode_n, Ast0.Ddots(dots,whencode))
 	| Ast0.OptDecl(decl) ->
 	    let (n,decl) = declaration decl in (n,Ast0.OptDecl(decl))
-	| Ast0.UniqueDecl(decl) ->
-	    let (n,decl) = declaration decl in (n,Ast0.UniqueDecl(decl))
 	| Ast0.AsDecl(decl,asdecl) ->
 	    let (decl_n,decl) = declaration decl in
 	    let (asdecl_n,asdecl) = declaration asdecl in
@@ -566,8 +557,6 @@ let visitor mode bind option_default
 	    (bind d_n whencode_n, Ast0.Idots(d,whencode))
 	| Ast0.OptIni(i) ->
 	    let (n,i) = initialiser i in (n,Ast0.OptIni(i))
-	| Ast0.UniqueIni(i) ->
-	    let (n,i) = initialiser i in (n,Ast0.UniqueIni(i))
 	| Ast0.AsInit(ini,asini) ->
 	    let (ini_n,ini) = initialiser ini in
 	    let (asini_n,asini) = initialiser asini in
@@ -620,10 +609,8 @@ let visitor mode bind option_default
 	| Ast0.Pdots(dots) ->
 	    let (n,dots) = string_mcode dots in (n,Ast0.Pdots(dots))
 	| Ast0.OptParam(param) ->
-	    let (n,param) = parameterTypeDef param in (n,Ast0.OptParam(param))
-	| Ast0.UniqueParam(param) ->
 	    let (n,param) = parameterTypeDef param in
-	    (n,Ast0.UniqueParam(param))) in
+	    (n,Ast0.OptParam(param))) in
     paramfn all_functions k p
 
   (* not done for combiner, because the statement is assumed to be already
@@ -838,8 +825,6 @@ let visitor mode bind option_default
 	    (multibind [prg_n;id_n;body_n],Ast0.Pragma(prg,id,body))
 	| Ast0.OptStm(re) ->
 	    let (re_n,re) = statement re in (re_n,Ast0.OptStm(re))
-	| Ast0.UniqueStm(re) ->
-	    let (re_n,re) = statement re in (re_n,Ast0.UniqueStm(re))
 	| Ast0.AsStmt(stm,asstm) ->
 	    let (stm_n,stm) = statement stm in
 	    let (asstm_n,asstm) = statement asstm in
@@ -904,9 +889,7 @@ let visitor mode bind option_default
 	| Ast0.DPdots(d) ->
 	    let (n,d) = string_mcode d in (n,Ast0.DPdots(d))
 	| Ast0.OptDParam(dp) ->
-	    let (n,dp) = define_param dp in (n,Ast0.OptDParam(dp))
-	| Ast0.UniqueDParam(dp) ->
-	    let (n,dp) = define_param dp in (n,Ast0.UniqueDParam(dp))) in
+	    let (n,dp) = define_param dp in (n,Ast0.OptDParam(dp))) in
     k p
 
   and fninfo = function

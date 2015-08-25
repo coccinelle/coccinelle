@@ -4,7 +4,7 @@ module TC = Type_cocci
 (* --------------------------------------------------------------------- *)
 (* Modified code *)
 
-type arity = OPT | UNIQUE | NONE
+type arity = OPT | NONE
 
 type token_info =
     { tline_start : int; tline_end : int;
@@ -87,7 +87,6 @@ and base_ident =
   | DisjId        of string mcode * ident list *
                      string mcode list (* the |s *) * string mcode
   | OptIdent      of ident
-  | UniqueIdent   of ident
 
 and ident = base_ident wrap
 
@@ -143,7 +142,6 @@ and base_expression =
   | Edots          of string mcode (* ... *) * (string mcode * string mcode *
                       expression) option (* whencode *)
   | OptExp         of expression
-  | UniqueExp      of expression
 
 and expression = base_expression wrap
 
@@ -223,7 +221,6 @@ and base_typeC =
   | DisjType        of string mcode * typeC list * (* only after iso *)
                        string mcode list (* the |s *)  * string mcode
   | OptType         of typeC
-  | UniqueType      of typeC
 
 and typeC = base_typeC wrap
 
@@ -264,7 +261,6 @@ and base_declaration =
   | Ddots      of string mcode (* ... *) * (string mcode * string mcode *
 	          declaration) option (* whencode *)
   | OptDecl    of declaration
-  | UniqueDecl of declaration
 
 and declaration = base_declaration wrap
 
@@ -288,7 +284,6 @@ and base_initialiser =
   | Idots  of string mcode (* ... *) *
               (string mcode * string mcode * initialiser) option (* whencode *)
   | OptIni    of initialiser
-  | UniqueIni of initialiser
 
 and designator =
     DesignatorField of string mcode (* . *) * ident
@@ -313,7 +308,6 @@ and base_parameterTypeDef =
   | PComma        of string mcode
   | Pdots         of string mcode (* ... *)
   | OptParam      of parameterTypeDef
-  | UniqueParam   of parameterTypeDef
 
 and parameterTypeDef = base_parameterTypeDef wrap
 
@@ -327,7 +321,6 @@ and base_define_param =
   | DPComma       of string mcode
   | DPdots        of string mcode (* ... *)
   | OptDParam     of define_param
-  | UniqueDParam  of define_param
 
 and define_param = base_define_param wrap
 
@@ -410,7 +403,6 @@ and base_statement =
 	define_parameters (*params*) * statement dots
   | Pragma of string mcode (* #pragma *) * ident * pragmainfo
   | OptStm   of statement
-  | UniqueStm of statement
 
 and base_pragmainfo =
     PragmaTuple of string mcode(* ( *) * expression dots * string mcode(* ) *)
@@ -769,8 +761,7 @@ let rec ast0_type_to_type inmeta ty =
       Common.pr2_once
 	"disjtype not supported in smpl type inference, assuming unknown";
       TC.Unknown
-  | OptType(ty) | UniqueType(ty) ->
-      ast0_type_to_type inmeta ty
+  | OptType(ty) -> ast0_type_to_type inmeta ty
 
 and baseType = function
     Ast.VoidType -> TC.VoidType

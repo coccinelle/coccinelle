@@ -28,6 +28,7 @@
 ** Language:
 - Conjunction (analogous to disjunction)
 - Drop Circles, Stars
+- Drop Unique
 ** Features:
 ** Bugfix:
 

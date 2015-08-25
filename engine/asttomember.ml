@@ -272,8 +272,6 @@ and statement testfn mcode tail stmt : 'a list list =
 
   | Ast.OptStm(stm) -> []
 
-  | Ast.UniqueStm(stm) -> statement testfn mcode tail stm
-
   | _ -> failwith "not supported"
 
 and case_lines testfn mcode tail cases =

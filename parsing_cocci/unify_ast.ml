@@ -143,9 +143,7 @@ let rec unify_ident i1 i2 =
       disjunct_all_bindings (List.map (function x -> unify_ident i1 x) i2)
 
   | (Ast.OptIdent(_),_)
-  | (Ast.UniqueIdent(_),_)
-  | (_,Ast.OptIdent(_))
-  | (_,Ast.UniqueIdent(_)) -> failwith "unsupported ident"
+  | (_,Ast.OptIdent(_)) -> failwith "unsupported ident"
 
 (* --------------------------------------------------------------------- *)
 (* Expression *)
@@ -233,9 +231,7 @@ and unify_expression e1 e2 =
   | (Ast.Edots(_,_),_) | (_,Ast.Edots(_,_)) -> return true
 
   | (Ast.OptExp(_),_)
-  | (Ast.UniqueExp(_),_)
-  | (_,Ast.OptExp(_))
-  | (_,Ast.UniqueExp(_)) -> failwith "unsupported expression"
+  | (_,Ast.OptExp(_)) -> failwith "unsupported expression"
   | _ -> return false
 
 (* --------------------------------------------------------------------- *)
@@ -280,9 +276,7 @@ and unify_fullType ft1 ft2 =
       disjunct_all_bindings (List.map (function x -> unify_fullType ft1 x) ft2)
 
   | (Ast.OptType(_),_)
-  | (Ast.UniqueType(_),_)
-  | (_,Ast.OptType(_))
-  | (_,Ast.UniqueType(_)) -> failwith "unsupported type"
+  | (_,Ast.OptType(_)) -> failwith "unsupported type"
 
 and unify_typeC t1 t2 =
   match (Ast.unwrap t1,Ast.unwrap t2) with
@@ -395,9 +389,7 @@ and unify_declaration d1 d2 =
 	(List.map (function x -> unify_declaration d1 x) d2)
 
   | (Ast.OptDecl(_),_)
-  | (Ast.UniqueDecl(_),_)
-  | (_,Ast.OptDecl(_))
-  | (_,Ast.UniqueDecl(_)) -> failwith "unsupported decl"
+  | (_,Ast.OptDecl(_)) -> failwith "unsupported decl"
   | _ -> return false
 
 and unify_annotated_decl d1 d2 =
@@ -434,9 +426,7 @@ and unify_initialiser i1 i2 =
       conjunct_bindings (unify_ident namea nameb) (unify_initialiser inia inib)
 
   | (Ast.OptIni(_),_)
-  | (Ast.UniqueIni(_),_)
-  | (_,Ast.OptIni(_))
-  | (_,Ast.UniqueIni(_)) -> failwith "unsupported decl"
+  | (_,Ast.OptIni(_)) -> failwith "unsupported decl"
   | _ -> return false
 
 and unify_designator d1 d2 =
@@ -476,9 +466,7 @@ and unify_parameterTypeDef p1 p2 =
   | (_,Ast.AsParam(param2,asexp2)) -> unify_parameterTypeDef p1 param2
 
   | (Ast.OptParam(_),_)
-  | (Ast.UniqueParam(_),_)
-  | (_,Ast.OptParam(_))
-  | (_,Ast.UniqueParam(_)) -> failwith "unsupported parameter"
+  | (_,Ast.OptParam(_)) -> failwith "unsupported parameter"
   | _ -> return false
 
 (* --------------------------------------------------------------------- *)
@@ -501,9 +489,7 @@ and unify_define_param p1 p2 =
   | (Ast.DPdots(_),_) | (_,Ast.DPdots(_)) -> return true
 
   | (Ast.OptDParam(_),_)
-  | (Ast.UniqueDParam(_),_)
-  | (_,Ast.OptDParam(_))
-  | (_,Ast.UniqueDParam(_)) -> failwith "unsupported parameter"
+  | (_,Ast.OptDParam(_)) -> failwith "unsupported parameter"
   | _ -> return false
 
 (* --------------------------------------------------------------------- *)
@@ -720,9 +706,7 @@ let rec unify_statement s1 s2 =
   (* dots can match against anything.  return true to be safe. *)
   | (Ast.Dots(_,_,_,_),_) | (_,Ast.Dots(_,_,_,_)) -> return true
   | (Ast.OptStm(_),_)
-  | (Ast.UniqueStm(_),_)
-  | (_,Ast.OptStm(_))
-  | (_,Ast.UniqueStm(_)) -> failwith "unsupported statement"
+  | (_,Ast.OptStm(_)) -> failwith "unsupported statement"
   | _ -> return false
 
 let unify_statement_dots = unify_dots unify_statement sdots

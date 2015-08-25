@@ -103,8 +103,6 @@ let rec exp mc e1 =
 	    mids,rp))
   | Ast0.OptExp(e) ->
       Ast0.rewrap e1 (Ast0.OptExp(exp (Ast0.get_mcodekind e) e))
-  | Ast0.UniqueExp(e) ->
-      Ast0.rewrap e1 (Ast0.UniqueExp(exp (Ast0.get_mcodekind e) e))
   | _ -> e1
 
 let simple_assignments l =

@@ -253,7 +253,7 @@ bind to that; not good for isomorphisms *)
 	mcode starter @ r.VT0.combiner_rec_statement_dots stmt_dots @
 	mcode ender
     | Ast0.Dots(d,whencode) -> mcode d (* ignore whencode *)
-    | Ast0.OptStm s | Ast0.UniqueStm s ->
+    | Ast0.OptStm s ->
 	(* put the + code on the thing, not on the opt *)
 	r.VT0.combiner_rec_statement s
     | _ -> do_nothing r k s in
@@ -270,28 +270,28 @@ bind to that; not good for isomorphisms *)
 	mcode starter @
 	r.VT0.combiner_rec_expression_dots expr_dots @ mcode ender
     | Ast0.Edots(d,whencode) -> mcode d (* ignore whencode *)
-    | Ast0.OptExp e | Ast0.UniqueExp e ->
+    | Ast0.OptExp e ->
 	(* put the + code on the thing, not on the opt *)
 	r.VT0.combiner_rec_expression e
     | _ -> do_nothing r k e in
 
   let ident r k e =
     match Ast0.unwrap e with
-      Ast0.OptIdent i | Ast0.UniqueIdent i ->
+      Ast0.OptIdent i ->
 	(* put the + code on the thing, not on the opt *)
 	r.VT0.combiner_rec_ident i
     | _ -> do_nothing r k e in
 
   let typeC r k e =
     match Ast0.unwrap e with
-      Ast0.OptType t | Ast0.UniqueType t ->
+      Ast0.OptType t ->
 	(* put the + code on the thing, not on the opt *)
 	r.VT0.combiner_rec_typeC t
     | _ -> do_nothing r k e in
 
   let decl r k e =
     match Ast0.unwrap e with
-      Ast0.OptDecl d | Ast0.UniqueDecl d ->
+      Ast0.OptDecl d ->
 	(* put the + code on the thing, not on the opt *)
 	r.VT0.combiner_rec_declaration d
     | _ -> do_nothing r k e in
@@ -299,14 +299,14 @@ bind to that; not good for isomorphisms *)
   let initialiser r k e =
     match Ast0.unwrap e with
       Ast0.Idots(d,whencode) -> mcode d (* ignore whencode *)
-    | Ast0.OptIni i | Ast0.UniqueIni i ->
+    | Ast0.OptIni i ->
 	(* put the + code on the thing, not on the opt *)
 	r.VT0.combiner_rec_initialiser i
     | _ -> do_nothing r k e in
 
   let param r k e =
     match Ast0.unwrap e with
-      Ast0.OptParam p | Ast0.UniqueParam p ->
+      Ast0.OptParam p ->
 	(* put the + code on the thing, not on the opt *)
 	r.VT0.combiner_rec_parameter p
     | _ -> do_nothing r k e in

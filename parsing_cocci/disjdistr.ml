@@ -51,9 +51,6 @@ let rec disjty ft =
   | Ast.OptType(ty) ->
       let ty = disjty ty in
       List.map (function ty -> Ast.rewrap ft (Ast.OptType(ty))) ty
-  | Ast.UniqueType(ty) ->
-      let ty = disjty ty in
-      List.map (function ty -> Ast.rewrap ft (Ast.UniqueType(ty))) ty
 
 and disjtypeC bty =
   match Ast.unwrap bty with
@@ -107,9 +104,6 @@ and disjident e =
   | Ast.OptIdent(id) ->
       let id = disjident id in
       List.map (function id -> Ast.rewrap e (Ast.OptIdent(id))) id
-  | Ast.UniqueIdent(id) ->
-      let id = disjident id in
-      List.map (function id -> Ast.rewrap e (Ast.UniqueIdent(id))) id
   | _ -> [e]
 
 and disjexp e =
@@ -207,9 +201,6 @@ and disjexp e =
   | Ast.OptExp(exp) ->
       let exp = disjexp exp in
       List.map (function exp -> Ast.rewrap e (Ast.OptExp(exp))) exp
-  | Ast.UniqueExp(exp) ->
-      let exp = disjexp exp in
-      List.map (function exp -> Ast.rewrap e (Ast.UniqueExp(exp))) exp
 
 and disjparam p =
   match Ast.unwrap p with
@@ -225,9 +216,6 @@ and disjparam p =
   | Ast.OptParam(param) ->
       let param = disjparam param in
       List.map (function param -> Ast.rewrap p (Ast.OptParam(param))) param
-  | Ast.UniqueParam(param) ->
-      let param = disjparam param in
-      List.map (function param -> Ast.rewrap p (Ast.UniqueParam(param))) param
 
 and disjini i =
   match Ast.unwrap i with
@@ -264,9 +252,6 @@ and disjini i =
   | Ast.OptIni(ini) ->
       let ini = disjini ini in
       List.map (function ini -> Ast.rewrap i (Ast.OptIni(ini))) ini
-  | Ast.UniqueIni(ini) ->
-      let ini = disjini ini in
-      List.map (function ini -> Ast.rewrap i (Ast.UniqueIni(ini))) ini
 
 and designator = function
     Ast.DesignatorField(dot,id) -> [Ast.DesignatorField(dot,id)]
@@ -321,9 +306,6 @@ and disjdecl d =
   | Ast.OptDecl(decl) ->
       let decl = disjdecl decl in
       List.map (function decl -> Ast.rewrap d (Ast.OptDecl(decl))) decl
-  | Ast.UniqueDecl(decl) ->
-      let decl = disjdecl decl in
-      List.map (function decl -> Ast.rewrap d (Ast.UniqueDecl(decl))) decl
 
 let generic_orify_rule_elem f re exp rebuild =
   match f exp with

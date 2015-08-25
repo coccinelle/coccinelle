@@ -529,11 +529,9 @@ let match_maker checks_needed context_required whencode_allowed =
 	      else return false
 	  | (Ast0.DisjId(_,ids,_,_),_) ->
 	      failwith "not allowed in the pattern of an isomorphism"
-	  | (Ast0.OptIdent(ida),Ast0.OptIdent(idb))
-	  | (Ast0.UniqueIdent(ida),Ast0.UniqueIdent(idb)) ->
+	  | (Ast0.OptIdent(ida),Ast0.OptIdent(idb)) ->
 	      match_ident ida idb
-	  | (_,Ast0.OptIdent(idb))
-	  | (_,Ast0.UniqueIdent(idb)) -> match_ident pattern idb
+	  | (_,Ast0.OptIdent(idb)) -> match_ident pattern idb
 	  | _ -> return false
 	else return_false (ContextRequired (Ast0.IdentTag id)) in
 
@@ -772,11 +770,9 @@ let match_maker checks_needed context_required whencode_allowed =
 		   return false))
 	  | (Ast0.Edots(_,Some _),_) ->
 	      failwith "whencode not allowed in a pattern1"
-	  | (Ast0.OptExp(expa),Ast0.OptExp(expb))
-	  | (Ast0.UniqueExp(expa),Ast0.UniqueExp(expb)) ->
+	  | (Ast0.OptExp(expa),Ast0.OptExp(expb)) ->
 	      match_expr expa expb
-	  | (_,Ast0.OptExp(expb))
-	  | (_,Ast0.UniqueExp(expb)) -> match_expr pattern expb
+	  | (_,Ast0.OptExp(expb)) -> match_expr pattern expb
 	  | _ -> return false
 	else return_false (ContextRequired (Ast0.ExprTag expr))
 
@@ -891,10 +887,8 @@ let match_maker checks_needed context_required whencode_allowed =
 	      else return false
 	  | (Ast0.DisjType(_,typesa,_,_),_) ->
 	      failwith "not allowed in the pattern of an isomorphism"
-	  | (Ast0.OptType(tya),Ast0.OptType(tyb))
-	  | (Ast0.UniqueType(tya),Ast0.UniqueType(tyb)) -> match_typeC tya tyb
-	  | (_,Ast0.OptType(tyb))
-	  | (_,Ast0.UniqueType(tyb)) -> match_typeC pattern tyb
+	  | (Ast0.OptType(tya),Ast0.OptType(tyb)) -> match_typeC tya tyb
+	  | (_,Ast0.OptType(tyb)) -> match_typeC pattern tyb
 	  | _ -> return false
 	else return_false (ContextRequired (Ast0.TypeCTag t))
 
@@ -984,11 +978,9 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (Ast0.Ddots(_,Some _),_) ->
 	      failwith "whencode not allowed in a pattern1"
 
-	  | (Ast0.OptDecl(decla),Ast0.OptDecl(declb))
-	  | (Ast0.UniqueDecl(decla),Ast0.UniqueDecl(declb)) ->
+	  | (Ast0.OptDecl(decla),Ast0.OptDecl(declb)) ->
 	      match_decl decla declb
-	  | (_,Ast0.OptDecl(declb))
-	  | (_,Ast0.UniqueDecl(declb)) ->
+	  | (_,Ast0.OptDecl(declb)) ->
 	      match_decl pattern declb
 	  | _ -> return false
 	else return_false (ContextRequired (Ast0.DeclTag d))
@@ -1039,10 +1031,8 @@ let match_maker checks_needed context_required whencode_allowed =
 		   return false))
 	  | (Ast0.Idots(_,Some _),_) ->
 	      failwith "whencode not allowed in a pattern2"
-	  | (Ast0.OptIni(ia),Ast0.OptIni(ib))
-	  | (Ast0.UniqueIni(ia),Ast0.UniqueIni(ib)) -> match_init ia ib
-	  | (_,Ast0.OptIni(ib))
-	  | (_,Ast0.UniqueIni(ib)) -> match_init pattern ib
+	  | (Ast0.OptIni(ia),Ast0.OptIni(ib)) -> match_init ia ib
+	  | (_,Ast0.OptIni(ib)) -> match_init pattern ib
 	  | _ -> return false
 	else return_false (ContextRequired (Ast0.InitTag i))
 
@@ -1080,11 +1070,9 @@ let match_maker checks_needed context_required whencode_allowed =
 		(match_option match_ident ida idb)
 	  | (Ast0.PComma(c1),Ast0.PComma(c)) -> check_mcode c1 c
 	  | (Ast0.Pdots(d1),Ast0.Pdots(d)) -> check_mcode d1 d
-	  | (Ast0.OptParam(parama),Ast0.OptParam(paramb))
-	  | (Ast0.UniqueParam(parama),Ast0.UniqueParam(paramb)) ->
+	  | (Ast0.OptParam(parama),Ast0.OptParam(paramb)) ->
 	      match_param parama paramb
-	  | (_,Ast0.OptParam(paramb))
-	  | (_,Ast0.UniqueParam(paramb)) -> match_param pattern paramb
+	  | (_,Ast0.OptParam(paramb)) -> match_param pattern paramb
 	  | _ -> return false
 	else return_false (ContextRequired (Ast0.ParamTag p))
 
@@ -1288,11 +1276,9 @@ let match_maker checks_needed context_required whencode_allowed =
 		     return false))
 	  | (Ast0.Dots(_,_::_),_) ->
 	      failwith "whencode not allowed in a pattern3"
-	  | (Ast0.OptStm(rea),Ast0.OptStm(reb))
-	  | (Ast0.UniqueStm(rea),Ast0.UniqueStm(reb)) ->
+	  | (Ast0.OptStm(rea),Ast0.OptStm(reb)) ->
 	      match_statement rea reb
-	  | (_,Ast0.OptStm(reb))
-	  | (_,Ast0.UniqueStm(reb)) -> match_statement pattern reb
+	  | (_,Ast0.OptStm(reb)) -> match_statement pattern reb
 	  |	_ -> return false
 	else return_false (ContextRequired (Ast0.StmtTag s))
 

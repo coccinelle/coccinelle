@@ -95,7 +95,6 @@ let rec left_ident i =
   | Ast0.MetaLocalFunc(name,_,_) -> modif_before_mcode name
   | Ast0.DisjId(_,id_list,_,_) -> List.exists left_ident id_list
   | Ast0.OptIdent(id) -> left_ident id
-  | Ast0.UniqueIdent(id) -> left_ident id
   | Ast0.AsIdent _ -> failwith "not possible"
 
 let rec right_ident i =
@@ -107,7 +106,6 @@ let rec right_ident i =
   | Ast0.MetaLocalFunc(name,_,_) -> modif_after_mcode name
   | Ast0.DisjId(_,id_list,_,_) -> List.exists right_ident id_list
   | Ast0.OptIdent(id) -> right_ident id
-  | Ast0.UniqueIdent(id) -> right_ident id
   | Ast0.AsIdent _ -> failwith "not possible"
 
 (* --------------------------------------------------------------------- *)
@@ -147,7 +145,6 @@ let rec left_expression e =
       left_dots left_expression expr_dots
   | Ast0.Edots(dots,_) -> false
   | Ast0.OptExp(exp) -> left_expression exp
-  | Ast0.UniqueExp(exp) -> left_expression exp
   | Ast0.AsExpr _ | Ast0.AsSExpr _ -> failwith "not possible"
 
 (* --------------------------------------------------------------------- *)
@@ -172,7 +169,6 @@ and left_typeC t =
   | Ast0.MetaType(name,_) -> modif_before_mcode name
   | Ast0.DisjType(lp,types,mids,rp) -> List.exists left_typeC types
   | Ast0.OptType(ty) -> left_typeC ty
-  | Ast0.UniqueType(ty) -> left_typeC ty
   | Ast0.AsType _ -> failwith "not possible"
 
 (* --------------------------------------------------------------------- *)
@@ -203,7 +199,6 @@ and left_declaration d =
   | Ast0.DisjDecl(_,decls,_,_) -> List.exists left_declaration decls
   | Ast0.Ddots(dots,_) -> false
   | Ast0.OptDecl(decl) -> left_declaration decl
-  | Ast0.UniqueDecl(decl) -> left_declaration decl
   | Ast0.AsDecl _ -> failwith "not possible"
 
 and right_declaration d =
@@ -222,7 +217,6 @@ and right_declaration d =
   | Ast0.DisjDecl(_,decls,_,_) -> List.exists right_declaration decls
   | Ast0.Ddots(dots,_) -> false
   | Ast0.OptDecl(decl) -> right_declaration decl
-  | Ast0.UniqueDecl(decl) -> right_declaration decl
   | Ast0.AsDecl _ -> failwith "not possible"
 
 (* --------------------------------------------------------------------- *)
@@ -271,7 +265,6 @@ and left_statement s =
   | Ast0.Define(def,id,params,body) -> modif_before_mcode def
   | Ast0.Pragma(prg,id,body) -> modif_before_mcode prg
   | Ast0.OptStm(re) -> left_statement re
-  | Ast0.UniqueStm(re) -> left_statement re
   | Ast0.AsStmt _ -> failwith "not possible"
 
 and right_statement s =
@@ -316,7 +309,6 @@ and right_statement s =
   | Ast0.Define(def,id,params,body) -> right_dots right_statement body
   | Ast0.Pragma(prg,id,body) -> right_pragma body -- not defined, b/c not used
   | Ast0.OptStm(re) -> right_statement re
-  | Ast0.UniqueStm(re) -> right_statement re
   | Ast0.AsStmt _ -> failwith "not possible"
 *)
 
@@ -634,9 +626,6 @@ let rec statement dots_before dots_after s =
   | Ast0.OptStm(re) ->
       Ast0.rewrap s
 	(Ast0.OptStm(statement dots_before dots_after re))
-  | Ast0.UniqueStm(re) ->
-      Ast0.rewrap s
-	(Ast0.UniqueStm(statement dots_before dots_after re))
   | Ast0.AsStmt _ -> failwith "not possible"
 
 and case_line c =

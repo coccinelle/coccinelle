@@ -2462,7 +2462,6 @@ and statement stmt top after quantified minus_quantified
 	   label llabel slabel guard)
   | Ast.OptStm(stm) ->
       failwith "OptStm should have been compiled away\n"
-  | Ast.UniqueStm(stm) -> failwith "arities not yet supported"
   | _ -> failwith "not supported" in
   if guard || !dots_done
   then term

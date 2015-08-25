@@ -528,7 +528,6 @@ let rec equal_ident i1 i2 =
       List.for_all2 equal_mcode mids1 mids2 &&
       equal_mcode ender1 ender2
   | (Ast0.OptIdent(_),Ast0.OptIdent(_)) -> true
-  | (Ast0.UniqueIdent(_),Ast0.UniqueIdent(_)) -> true
   | _ -> false
 
 let rec equal_expression e1 e2 =
@@ -586,7 +585,6 @@ let rec equal_expression e1 e2 =
       equal_mcode starter1 starter2 && equal_mcode ender1 ender2 && m1 = m2
   | (Ast0.Edots(dots1,_),Ast0.Edots(dots2,_)) -> equal_mcode dots1 dots2
   | (Ast0.OptExp(_),Ast0.OptExp(_)) -> true
-  | (Ast0.UniqueExp(_),Ast0.UniqueExp(_)) -> true
   | _ -> false
 
 and assignOp_equal op1 op2 =
@@ -637,7 +635,6 @@ let rec equal_typeC t1 t2 =
        List.for_all2 equal_mcode mids1 mids2 &&
        equal_mcode ender1 ender2
   | (Ast0.OptType(_),Ast0.OptType(_)) -> true
-  | (Ast0.UniqueType(_),Ast0.UniqueType(_)) -> true
   | _ -> false
 
 let equal_fninfo x y =
@@ -681,7 +678,6 @@ let equal_declaration d1 d2 =
   | (Ast0.TyDecl(_,sem1),Ast0.TyDecl(_,sem2)) -> equal_mcode sem1 sem2
   | (Ast0.Ddots(dots1,_),Ast0.Ddots(dots2,_)) -> equal_mcode dots1 dots2
   | (Ast0.OptDecl(_),Ast0.OptDecl(_)) -> true
-  | (Ast0.UniqueDecl(_),Ast0.UniqueDecl(_)) -> true
   | (Ast0.DisjDecl(starter1,_,mids1,ender1),
      Ast0.DisjDecl(starter2,_,mids2,ender2)) ->
        equal_mcode starter1 starter2 &&
@@ -721,7 +717,6 @@ let equal_initialiser i1 i2 =
   | (Ast0.IComma(cm1),Ast0.IComma(cm2)) -> equal_mcode cm1 cm2
   | (Ast0.Idots(d1,_),Ast0.Idots(d2,_)) -> equal_mcode d1 d2
   | (Ast0.OptIni(_),Ast0.OptIni(_)) -> true
-  | (Ast0.UniqueIni(_),Ast0.UniqueIni(_)) -> true
   | _ -> false
 
 let equal_parameterTypeDef p1 p2 =
@@ -734,7 +729,6 @@ let equal_parameterTypeDef p1 p2 =
   | (Ast0.PComma(cm1),Ast0.PComma(cm2)) -> equal_mcode cm1 cm2
   | (Ast0.Pdots(dots1),Ast0.Pdots(dots2)) -> equal_mcode dots1 dots2
   | (Ast0.OptParam(_),Ast0.OptParam(_)) -> true
-  | (Ast0.UniqueParam(_),Ast0.UniqueParam(_)) -> true
   | _ -> false
 
 let rec equal_statement s1 s2 =
@@ -822,7 +816,6 @@ let rec equal_statement s1 s2 =
   | (Ast0.Pragma(prg1,_,_),Ast0.Pragma(prg2,_,_)) ->
       equal_mcode prg1 prg2
   | (Ast0.OptStm(_),Ast0.OptStm(_)) -> true
-  | (Ast0.UniqueStm(_),Ast0.UniqueStm(_)) -> true
   | _ -> false
 
 let equal_case_line c1 c2 =

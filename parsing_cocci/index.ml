@@ -1,6 +1,6 @@
 (* create an index for each constructor *)
-(* current max is 188, also unused: 7-9, 39, 40, 65, 85-86, 113-115,
-134-136, 138-140 *)
+(* current max is 188, also unused: 7-9, 15, 39, 40, 42, 46, 57, 65, 67, 85-86,
+ 88, 111, 113-115, 134-136, 138-140 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -31,7 +31,6 @@ let ident i =
     | Ast0.MetaLocalFunc(name,_,_) -> [13]
     | Ast0.DisjId(_,id_list,_,_) -> [152]
     | Ast0.OptIdent(id) -> [14]
-    | Ast0.UniqueIdent(id) -> [15]
     | Ast0.AsIdent _ -> failwith "not possible"
 
 let expression e =
@@ -66,7 +65,6 @@ let expression e =
   | Ast0.NestExpr(_,expr_dots,_,_,_) -> [37]
   | Ast0.Edots(dots,whencode) -> [38]
   | Ast0.OptExp(exp) -> [41]
-  | Ast0.UniqueExp(exp) -> [42]
   | Ast0.AsExpr _  | Ast0.AsSExpr _ -> failwith "not possible"
 
 let assignOp op = match Ast0.unwrap op with
@@ -96,7 +94,6 @@ let typeC t =
   | Ast0.MetaType(name,_) -> [53]
   | Ast0.DisjType(_,type_list,_,_) -> [130]
   | Ast0.OptType(ty) -> [45]
-  | Ast0.UniqueType(ty) -> [46]
   | Ast0.AsType _ -> failwith "not possible"
 
 let declaration d =
@@ -114,7 +111,6 @@ let declaration d =
   | Ast0.DisjDecl(_,decls,_,_) -> [97] (* added after *)
   | Ast0.Ddots(dots,whencode) -> [133]
   | Ast0.OptDecl(decl) -> [56]
-  | Ast0.UniqueDecl(decl) -> [57]
   | Ast0.AsDecl _ -> failwith "not possible"
 
 let initialiser i =
@@ -128,7 +124,6 @@ let initialiser i =
   | Ast0.IComma(cm) -> [108]
   | Ast0.Idots(d,whencode) -> [109]
   | Ast0.OptIni(id) -> [110]
-  | Ast0.UniqueIni(id) -> [111]
   | Ast0.AsInit _ -> failwith "not possible"
 
 let parameterTypeDef p =
@@ -140,7 +135,6 @@ let parameterTypeDef p =
   | Ast0.PComma(cm) -> [63]
   | Ast0.Pdots(dots) -> [64]
   | Ast0.OptParam(param) -> [66]
-  | Ast0.UniqueParam(param) -> [67]
   | Ast0.AsParam _ -> failwith "not possible"
 
 let statement s =
@@ -179,7 +173,6 @@ let statement s =
   | Ast0.Define(def,id,params,body) -> [119]
   | Ast0.Pragma(prg,id,body) -> [161]
   | Ast0.OptStm(re) -> [87]
-  | Ast0.UniqueStm(re) -> [88]
   | Ast0.AsStmt _ -> failwith "not possible"
 
 let forinfo fi =

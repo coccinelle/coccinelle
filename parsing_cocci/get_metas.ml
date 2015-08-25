@@ -73,9 +73,7 @@ let rec ident i =
 	  (fun starter id_list mids ender ->
 	    Ast0.DisjId(starter,id_list,mids,ender))
     | Ast0.OptIdent(id) ->
-	let (n,id) = ident id in (n,Ast0.OptIdent(id))
-    | Ast0.UniqueIdent(id) ->
-	let (n,id) = ident id in (n,Ast0.UniqueIdent(id))) in
+	let (n,id) = ident id in (n,Ast0.OptIdent(id))) in
     List.fold_left
       (function (other_metas,id) ->
 	function
@@ -225,10 +223,7 @@ and expression e =
 	  (bind dots_n whencode_n,Ast0.Edots(dots,whencode))
       | Ast0.OptExp(exp) ->
 	  let (exp_n,exp) = expression exp in
-	  (exp_n,Ast0.OptExp(exp))
-      | Ast0.UniqueExp(exp) ->
-	  let (exp_n,exp) = expression exp in
-	  (exp_n,Ast0.UniqueExp(exp))) in
+	  (exp_n,Ast0.OptExp(exp))) in
     List.fold_left
       (function (other_metas,exp) ->
 	function
@@ -362,9 +357,7 @@ and typeC t =
 	    (fun starter types mids ender ->
 	      Ast0.DisjType(starter,types,mids,ender))
       | Ast0.OptType(ty) ->
-	  let (ty_n,ty) = typeC ty in (ty_n, Ast0.OptType(ty))
-      | Ast0.UniqueType(ty) ->
-	  let (ty_n,ty) = typeC ty in (ty_n, Ast0.UniqueType(ty))) in
+	  let (ty_n,ty) = typeC ty in (ty_n, Ast0.OptType(ty))) in
   List.fold_left
     (function (other_metas,ty) ->
       function
@@ -490,9 +483,7 @@ and declaration d =
             | None -> (option_default, None) in
 	  (bind dots_n whencode_n, Ast0.Ddots(dots,whencode))
       | Ast0.OptDecl(decl) ->
-	  let (n,decl) = declaration decl in (n,Ast0.OptDecl(decl))
-      | Ast0.UniqueDecl(decl) ->
-	  let (n,decl) = declaration decl in (n,Ast0.UniqueDecl(decl))) in
+	  let (n,decl) = declaration decl in (n,Ast0.OptDecl(decl))) in
   List.fold_left
     (function (other_metas,decl) ->
       function
@@ -543,9 +534,7 @@ and initialiser i =
 	    | None -> (option_default, None) in
 	  (bind d_n whencode_n, Ast0.Idots(d,whencode))
       | Ast0.OptIni(i) ->
-	  let (n,i) = initialiser i in (n,Ast0.OptIni(i))
-      | Ast0.UniqueIni(i) ->
-	  let (n,i) = initialiser i in (n,Ast0.UniqueIni(i))) in
+	  let (n,i) = initialiser i in (n,Ast0.OptIni(i))) in
   List.fold_left
     (function (other_metas,init) ->
       function
@@ -612,10 +601,7 @@ and parameterTypeDef p =
 	| Ast0.Pdots(dots) ->
 	    let (n,dots) = mcode dots in (n,Ast0.Pdots(dots))
 	| Ast0.OptParam(param) ->
-	    let (n,param) = parameterTypeDef param in (n,Ast0.OptParam(param))
-	| Ast0.UniqueParam(param) ->
-	    let (n,param) = parameterTypeDef param in
-	    (n,Ast0.UniqueParam(param)))
+	    let (n,param) = parameterTypeDef param in (n,Ast0.OptParam(param)))
 
 and statement s =
   let (metas,s) =
@@ -823,9 +809,7 @@ and statement s =
 	  let (body_n,body) = pragmainfo body in
 	  (multibind [prg_n;id_n;body_n],Ast0.Pragma(prg,id,body))
       | Ast0.OptStm(re) ->
-	  let (re_n,re) = statement re in (re_n,Ast0.OptStm(re))
-      | Ast0.UniqueStm(re) ->
-	  let (re_n,re) = statement re in (re_n,Ast0.UniqueStm(re))) in
+	  let (re_n,re) = statement re in (re_n,Ast0.OptStm(re))) in
   List.fold_left
     (function (other_metas,stmt) ->
       function
@@ -869,9 +853,7 @@ and define_param p =
     | Ast0.DPdots(d) ->
 	let (n,d) = mcode d in (n,Ast0.DPdots(d))
     | Ast0.OptDParam(dp) ->
-	let (n,dp) = define_param dp in (n,Ast0.OptDParam(dp))
-    | Ast0.UniqueDParam(dp) ->
-	let (n,dp) = define_param dp in (n,Ast0.UniqueDParam(dp)))
+	let (n,dp) = define_param dp in (n,Ast0.OptDParam(dp)))
 
 and fninfo = function
     Ast0.FStorage(stg) ->

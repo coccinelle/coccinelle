@@ -26,10 +26,10 @@ let line_type (d,_,_,_,_,_,_,_,_,_) = d
 
 let line_type2c tok =
   match line_type tok with
-    D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> ":-"
+    D.MINUS | D.OPTMINUS -> ":-"
   | D.PLUS -> ":+"
   | D.PLUSPLUS -> ":++"
-  | D.CONTEXT | D.UNIQUE | D.OPT -> ""
+  | D.CONTEXT | D.OPT -> ""
 
 let real_line (_,d,_,_,_,_,_,_,_,_) = d
 let log_line  (_,_,d,_,_,_,_,_,_,_) = d
@@ -238,7 +238,6 @@ let token2c (tok,_) =
   | PC.TCEllipsis(clt) -> add_clt "...>" clt
   | PC.TPOEllipsis(clt) -> add_clt "<+..." clt
   | PC.TPCEllipsis(clt) -> add_clt "...+>" clt
-  | PC.TBang0 -> "!"
   | PC.TPlus0 -> "+"
   | PC.TWhy0  -> "?"
 
@@ -512,7 +511,6 @@ let get_clt (tok,_) =
   | PC.TContext -> failwith "No clt attached to token TContext"
   | PC.TConstant -> failwith "No clt attached to token TConstant"
   | PC.TBinary -> failwith "No clt attached to token TBinary"
-  | PC.TBang0 -> failwith "No clt attached to token TBang0"
   | PC.TAttribute -> failwith "No clt attached to token TAttribute"
   | PC.TAssignment -> failwith "No clt attached to token TAssignment"
   | PC.TArobArob -> failwith "No clt attached to token TArobArob"
@@ -741,7 +739,6 @@ let update_clt (tok,x) clt =
   | PC.TContext -> assert false
   | PC.TConstant -> assert false
   | PC.TBinary -> assert false
-  | PC.TBang0 -> assert false
   | PC.TAttribute -> assert false
   | PC.TAssignment -> assert false
   | PC.TArobArob -> assert false
@@ -803,9 +800,9 @@ let tokens_script_all table file get_ats lexbuf end_markers :
 let split t clt =
   let (d,_,_,_,_,_,_,_,_,_) = clt in
   match d with
-    D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> ([t],[])
+    D.MINUS | D.OPTMINUS -> ([t],[])
   | D.PLUS | D.PLUSPLUS -> ([],[t])
-  | D.CONTEXT | D.UNIQUE | D.OPT -> ([t],[t])
+  | D.CONTEXT | D.OPT -> ([t],[t])
 
 let split_token ((tok,_) as t) =
   match tok with
@@ -872,7 +869,7 @@ let split_token ((tok,_) as t) =
   | PC.TOEllipsis(clt) | PC.TCEllipsis(clt)
   | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) -> split t clt
 
-  | PC.TBang0 | PC.TPlus0 | PC.TWhy0 ->
+  | PC.TPlus0 | PC.TWhy0 ->
       ([t],[t])
 
   | PC.TWhy(clt)  | PC.TDotDot(clt)
@@ -1245,7 +1242,7 @@ let rec translate_when_true_false = function
 let check_nests tokens =
   let is_minus t =
     let (line_type,a,b,c,d,e,f,g,h,i) = get_clt t in
-    List.mem line_type [D.MINUS;D.OPTMINUS;D.UNIQUEMINUS] in
+    List.mem line_type [D.MINUS;D.OPTMINUS] in
   let check_minus t =
     match fst t with
       PC.TOPar0(_,clt) | PC.TMid0(_,clt) | PC.TCPar0(_,clt) -> t
@@ -1254,7 +1251,7 @@ let check_nests tokens =
 	match clt with
 	  Some (line_type,l,ll,c,d,e,f,g,h,i) ->
 	    (match line_type with
-	      D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> t
+	      D.MINUS | D.OPTMINUS -> t
 	    | _ ->
 		failwith
 		  (Printf.sprintf "minus expected, on %s, line %d"
@@ -1490,9 +1487,9 @@ let minus_to_nothing l =
     try
       let (d,_,_,_,_,_,_,_,_,_) = get_clt tok in
       (match d with
-	D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> true
+	D.MINUS | D.OPTMINUS -> true
       | D.PLUS | D.PLUSPLUS -> false
-      | D.CONTEXT | D.UNIQUE | D.OPT -> false)
+      | D.CONTEXT | D.OPT -> false)
     with _ -> false in
   let rec minus_loop = function
       [] -> []
@@ -1655,11 +1652,11 @@ let prepare_mv_tokens tokens =
 
 let unminus (d,x1,x2,x3,x4,x5,x6,x7,x8,x9) = (* for hidden variables *)
   match d with
-    D.MINUS | D.OPTMINUS | D.UNIQUEMINUS ->
+    D.MINUS | D.OPTMINUS ->
       (D.CONTEXT,x1,x2,x3,x4,x5,x6,x7,x8,x9)
   | D.PLUS -> failwith "unexpected plus code"
   | D.PLUSPLUS -> failwith "unexpected plus code"
-  | D.CONTEXT | D.UNIQUE | D.OPT -> (D.CONTEXT,x1,x2,x3,x4,x5,x6,x7,x8,x9)
+  | D.CONTEXT | D.OPT -> (D.CONTEXT,x1,x2,x3,x4,x5,x6,x7,x8,x9)
 
 let process_minus_positions x name clt meta =
   let (arity,ln,lln,llne,offset,col,strbef,straft,pos,ws) = get_clt x in

@@ -285,9 +285,7 @@ let rec ident i =
 	if generating
 	then print_disj_list ident id_list "|"
 	else raise CantBeInPlus
-    | Ast.OptIdent(_) | Ast.UniqueIdent(_) ->
-	raise CantBeInPlus
-in
+    | Ast.OptIdent(_) -> raise CantBeInPlus in
 
 
 (* --------------------------------------------------------------------- *)
@@ -564,9 +562,7 @@ let rec expression e =
       then mcode print_string dots
       else raise CantBeInPlus
 
-  | Ast.OptExp(exp) | Ast.UniqueExp(exp) ->
-      raise CantBeInPlus
-  in
+  | Ast.OptExp(exp) -> raise CantBeInPlus in
   loop e top
 
 and arg_expression e =
@@ -680,8 +676,7 @@ and fullType ft =
 
   | Ast.AsType(ty, asty) -> fullType ty
   | Ast.DisjType _ -> failwith "can't be in plus"
-  | Ast.OptType(_) | Ast.UniqueType(_) ->
-      raise CantBeInPlus
+  | Ast.OptType(_) -> raise CantBeInPlus
 
 and print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2) fn =
   fullType ty; mcode print_string lp1; mcode print_string star; fn();
@@ -901,8 +896,7 @@ and declaration d =
       fullType ty; pr_space(); typeC id;
       mcode print_string sem
   | Ast.DisjDecl(_) -> raise CantBeInPlus
-  | Ast.OptDecl(decl)  | Ast.UniqueDecl(decl) ->
-      raise CantBeInPlus
+  | Ast.OptDecl(decl) -> raise CantBeInPlus
 
 and annotated_decl d =
   match Ast.unwrap d with
@@ -960,8 +954,7 @@ and initialiser nlcomma i =
       if generating
       then mcode print_string dots
       else raise CantBeInPlus
-  | Ast.OptIni(ini) | Ast.UniqueIni(ini) ->
-      raise CantBeInPlus
+  | Ast.OptIni(ini) -> raise CantBeInPlus
 
 and initialiser_list nlcomma = function
   (* awkward, because the comma is separate from the initialiser *)
@@ -1006,7 +999,7 @@ and parameterTypeDef p =
   | Ast.Pdots(dots) when generating ->
       mcode print_string dots
   | Ast.Pdots(_) -> raise CantBeInPlus
-  | Ast.OptParam(param) | Ast.UniqueParam(param) -> raise CantBeInPlus
+  | Ast.OptParam(param) -> raise CantBeInPlus
 
 and parameter_list l = dots (function _ -> ()) parameterTypeDef l
 in
@@ -1174,7 +1167,6 @@ and print_define_param param =
   | Ast.DPComma(comma) -> mcode print_string comma
   | Ast.DPdots(dots) -> mcode print_string dots
   | Ast.OptDParam(dp) -> print_text "?"; print_define_param dp
-  | Ast.UniqueDParam(dp) -> print_text "!"; print_define_param dp
 
 and exec_code (e : Ast_cocci.exec_code) =
   match Ast.unwrap e with
@@ -1304,8 +1296,7 @@ let rec statement arity s =
 	 force_newline())
       else raise CantBeInPlus
 
-  | Ast.OptStm(s) | Ast.UniqueStm(s) ->
-      raise CantBeInPlus
+  | Ast.OptStm(s) -> raise CantBeInPlus
 
 and whencode notfn alwaysfn = function
     Ast.WhenNot a ->

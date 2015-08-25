@@ -17,9 +17,9 @@ type clt =
 (* ---------------------------------------------------------------------- *)
 
 and line_type =
-    MINUS | OPTMINUS | UNIQUEMINUS
+    MINUS | OPTMINUS
   | PLUS | PLUSPLUS
-  | CONTEXT | UNIQUE | OPT
+  | CONTEXT | OPT
 
 type iconstraints = Ast_cocci.idconstraint
 type econstraints = Ast0_cocci.constraints

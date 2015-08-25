@@ -101,8 +101,7 @@ let combiner bind option_default
 	  let lasid = ident asid in
 	  bind lid lasid
       | Ast.DisjId(id_list) -> multibind (List.map ident id_list)
-      | Ast.OptIdent(id) -> ident id
-      | Ast.UniqueIdent(id) -> ident id in
+      | Ast.OptIdent(id) -> ident id in
     identfn all_functions k i
 
   and expression e =
@@ -228,8 +227,7 @@ let combiner bind option_default
 	  let ldots = string_mcode dots in
 	  let lwhncode = get_option expression whncode in
 	  bind ldots lwhncode
-      | Ast.OptExp(exp) | Ast.UniqueExp(exp) ->
-	  expression exp in
+      | Ast.OptExp(exp) -> expression exp in
     exprfn all_functions k e
 
   and assignOp op =
@@ -282,8 +280,7 @@ let combiner bind option_default
 	  let lasty = fullType asty in
 	  bind lty lasty
       | Ast.DisjType(types) -> multibind (List.map fullType types)
-      | Ast.OptType(ty) -> fullType ty
-      | Ast.UniqueType(ty) -> fullType ty in
+      | Ast.OptType(ty) -> fullType ty in
     ftfn all_functions k ft
 
   and function_pointer
@@ -431,8 +428,7 @@ let combiner bind option_default
 	  let lsem = string_mcode sem in
 	  multibind [lstg; lty; lid; lsem]
       | Ast.DisjDecl(decls) -> multibind (List.map declaration decls)
-      | Ast.OptDecl(decl) -> declaration decl
-      | Ast.UniqueDecl(decl) -> declaration decl in
+      | Ast.OptDecl(decl) -> declaration decl in
     declfn all_functions k d
 
   and annotated_decl d =
@@ -481,8 +477,7 @@ let combiner bind option_default
 	  let ldots = string_mcode dots in
 	  let lwhncode = get_option initialiser whncode in
 	  bind ldots lwhncode
-      | Ast.OptIni(i) -> initialiser i
-      | Ast.UniqueIni(i) -> initialiser i in
+      | Ast.OptIni(i) -> initialiser i in
     initfn all_functions k i
 
   and designator = function
@@ -517,8 +512,7 @@ let combiner bind option_default
 	  bind lp lasexp
       | Ast.PComma(cm) -> string_mcode cm
       | Ast.Pdots(dots) -> string_mcode dots
-      | Ast.OptParam(param) -> parameterTypeDef param
-      | Ast.UniqueParam(param) -> parameterTypeDef param in
+      | Ast.OptParam(param) -> parameterTypeDef param in
     paramfn all_functions k p
 
   and rule_elem re =
@@ -697,8 +691,7 @@ let combiner bind option_default
 	Ast.DParam(id) -> ident id
       | Ast.DPComma(comma) -> string_mcode comma
       | Ast.DPdots(d) -> string_mcode d
-      | Ast.OptDParam(dp) -> define_param dp
-      | Ast.UniqueDParam(dp) -> define_param dp in
+      | Ast.OptDParam(dp) -> define_param dp in
     k p
 
   (* discard the result, because the statement is assumed to be already
@@ -781,8 +774,7 @@ let combiner bind option_default
 	  let lwhn = multibind
 	    (List.map (whencode statement_dots statement) whn) in
 	  bind ld lwhn
-      | Ast.OptStm(stmt) | Ast.UniqueStm(stmt) ->
-	  statement stmt in
+      | Ast.OptStm(stmt) -> statement stmt in
     stmtfn all_functions k s
 
   and fninfo = function
@@ -969,8 +961,7 @@ let rebuilder
 	    Ast.MetaLocalFunc(meta_mcode name,constraints,keep,inherited)
 	| Ast.AsIdent(id,asid) -> Ast.AsIdent(ident id,ident asid)
 	| Ast.DisjId(id_list) -> Ast.DisjId(List.map ident id_list)
-	| Ast.OptIdent(id) -> Ast.OptIdent(ident id)
-	| Ast.UniqueIdent(id) -> Ast.UniqueIdent(ident id)) in
+	| Ast.OptIdent(id) -> Ast.OptIdent(ident id)) in
     identfn all_functions k i
 
   and expression e =
@@ -1100,8 +1091,7 @@ let rebuilder
 	    let ldots = string_mcode dots in
 	    let lwhncode = get_option expression whncode in
 	    Ast.Edots(ldots, lwhncode)
-	| Ast.OptExp(exp) -> Ast.OptExp(expression exp)
-	| Ast.UniqueExp(exp) -> Ast.UniqueExp(expression exp)) in
+	| Ast.OptExp(exp) -> Ast.OptExp(expression exp)) in
     exprfn all_functions k e
 
   and string_fragment e =
@@ -1162,8 +1152,7 @@ let rebuilder
 	    let lasty = fullType asty in
 	    Ast.AsType(lty, lasty)
 	| Ast.DisjType(types) -> Ast.DisjType(List.map fullType types)
-	| Ast.OptType(ty) -> Ast.OptType(fullType ty)
-	| Ast.UniqueType(ty) -> Ast.UniqueType(fullType ty)) in
+	| Ast.OptType(ty) -> Ast.OptType(fullType ty)) in
     ftfn all_functions k ft
 
   and typeC ty =
@@ -1297,8 +1286,7 @@ let rebuilder
 	    let lsem = string_mcode sem in
 	    Ast.Typedef(lstg, lty, lid, lsem)
 	| Ast.DisjDecl(decls) -> Ast.DisjDecl(List.map declaration decls)
-	| Ast.OptDecl(decl) -> Ast.OptDecl(declaration decl)
-	| Ast.UniqueDecl(decl) -> Ast.UniqueDecl(declaration decl)) in
+	| Ast.OptDecl(decl) -> Ast.OptDecl(declaration decl)) in
     declfn all_functions k d
 
   and annotated_decl d =
@@ -1352,8 +1340,7 @@ let rebuilder
 	    let ldots = string_mcode dots in
 	    let lwhncode = get_option initialiser whncode in
 	    Ast.Idots(ldots, lwhncode)
-	| Ast.OptIni(i) -> Ast.OptIni(initialiser i)
-	| Ast.UniqueIni(i) -> Ast.UniqueIni(initialiser i)) in
+	| Ast.OptIni(i) -> Ast.OptIni(initialiser i)) in
     initfn all_functions k i
 
   and designator = function
@@ -1390,8 +1377,7 @@ let rebuilder
 	    Ast.AsParam(lp, lasexp)
 	| Ast.PComma(cm) -> Ast.PComma(string_mcode cm)
 	| Ast.Pdots(dots) -> Ast.Pdots(string_mcode dots)
-	| Ast.OptParam(param) -> Ast.OptParam(parameterTypeDef param)
-	| Ast.UniqueParam(param) -> Ast.UniqueParam(parameterTypeDef param)) in
+	| Ast.OptParam(param) -> Ast.OptParam(parameterTypeDef param)) in
     paramfn all_functions k p
 
   and rule_elem re =
@@ -1577,8 +1563,7 @@ let rebuilder
 	  Ast.DParam(id) -> Ast.DParam(ident id)
 	| Ast.DPComma(comma) -> Ast.DPComma(string_mcode comma)
 	| Ast.DPdots(d) -> Ast.DPdots(string_mcode d)
-	| Ast.OptDParam(dp) -> Ast.OptDParam(define_param dp)
-	| Ast.UniqueDParam(dp) -> Ast.UniqueDParam(define_param dp)) in
+	| Ast.OptDParam(dp) -> Ast.OptDParam(define_param dp)) in
     k p
 
   and process_bef_aft s =
@@ -1663,8 +1648,7 @@ let rebuilder
 	    let ld = string_mcode d in
 	    let lwhn = List.map (whencode statement_dots statement) whn in
 	    Ast.Dots(ld, lwhn, bef, aft)
-	| Ast.OptStm(stmt) -> Ast.OptStm(statement stmt)
-	| Ast.UniqueStm(stmt) -> Ast.UniqueStm(statement stmt)) in
+	| Ast.OptStm(stmt) -> Ast.OptStm(statement stmt)) in
     let s = stmtfn all_functions k s in
     (* better to do this after, in case there is an equality test on the whole
        statement, eg in free_vars.  equality test would require that this

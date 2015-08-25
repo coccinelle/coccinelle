@@ -267,7 +267,6 @@ let rec propagate_types env =
 	| Ast0.Edots(_,Some (_,_,e)) ->
 	    let _ = r.VT0.combiner_rec_expression e in None
 	| Ast0.OptExp(exp) -> Ast0.get_type exp
-	| Ast0.UniqueExp(exp) -> Ast0.get_type exp
 	| Ast0.AsExpr _ | Ast0.AsSExpr _ -> failwith "not possible" in
       Ast0.set_type e ty;
       ty in
@@ -280,7 +279,6 @@ let rec propagate_types env =
     | Ast0.MetaLocalFunc(name,_,_) -> [Meta(Ast0.unwrap_mcode name)]
     | Ast0.DisjId(_,id_list,_,_)   -> List.concat (List.map strip id_list)
     | Ast0.OptIdent(id)            -> strip id
-    | Ast0.UniqueIdent(id)         -> strip id
     | Ast0.AsIdent _ -> failwith "not possible" in
 
   let process_whencode notfn allfn exp = function
@@ -343,7 +341,6 @@ let rec propagate_types env =
 	List.concat(List.map (process_decl env) disjs)
     | Ast0.Ddots(_,_) -> [] (* not in a statement list anyway *)
     | Ast0.OptDecl(decl) -> process_decl env decl
-    | Ast0.UniqueDecl(decl) -> process_decl env decl
     | Ast0.AsDecl _ -> failwith "not possible" in
 
   let statement_dots r k d =

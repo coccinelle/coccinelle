@@ -142,7 +142,6 @@ and base_ident =
 
   | DisjId        of ident list
   | OptIdent      of ident
-  | UniqueIdent   of ident
 
 and ident = base_ident wrap
 
@@ -207,7 +206,6 @@ and base_expression =
   | Edots          of string mcode (* ... *) * expression option
 
   | OptExp         of expression
-  | UniqueExp      of expression
 
 and constraints =
     NoConstraint
@@ -296,7 +294,6 @@ and base_fullType =
   | AsType          of fullType * fullType (* as type, always metavar *)
   | DisjType        of fullType list (* only after iso *)
   | OptType         of fullType
-  | UniqueType      of fullType
 
 and base_typeC =
     BaseType        of baseType * string mcode list (* Yoann style *)
@@ -366,7 +363,6 @@ and base_declaration =
   | AsDecl        of declaration * declaration
 
   | OptDecl    of declaration
-  | UniqueDecl of declaration
 
 and declaration = base_declaration wrap
 
@@ -399,7 +395,6 @@ and base_initialiser =
   | Idots  of string mcode (* ... *) * initialiser option (* whencode *)
 
   | OptIni    of initialiser
-  | UniqueIni of initialiser
 
 and designator =
     DesignatorField of string mcode (* . *) * ident
@@ -427,7 +422,6 @@ and base_parameterTypeDef =
   | Pdots         of string mcode (* ... *)
 
   | OptParam      of parameterTypeDef
-  | UniqueParam   of parameterTypeDef
 
 and parameterTypeDef = base_parameterTypeDef wrap
 
@@ -441,7 +435,6 @@ and base_define_param =
   | DPComma       of string mcode
   | DPdots        of string mcode (* ... *)
   | OptDParam     of define_param
-  | UniqueDParam  of define_param
 
 and define_param = base_define_param wrap
 
@@ -578,7 +571,6 @@ and base_statement =
 	             (statement dots,statement) whencode list *
 	             dots_whencode list * dots_whencode list
   | OptStm        of statement
-  | UniqueStm     of statement
 
 and ('a,'b) whencode =
     WhenNot of 'a

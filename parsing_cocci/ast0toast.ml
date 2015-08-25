@@ -345,8 +345,7 @@ and ident i =
 	Ast.MetaLocalFunc(mcode name,constraints,unitary,false)
     | Ast0.AsIdent(id,asid) ->
 	Ast.AsIdent(ident id,ident asid)
-    | Ast0.OptIdent(id) -> Ast.OptIdent(ident id)
-    | Ast0.UniqueIdent(id) -> Ast.UniqueIdent(ident id))
+    | Ast0.OptIdent(id) -> Ast.OptIdent(ident id))
 
 (* --------------------------------------------------------------------- *)
 (* Expression *)
@@ -437,8 +436,7 @@ and expression e =
 	let dots = mcode dots in
 	let whencode = get_option (fun (_,_,b) -> expression b) whencode in
 	Ast.Edots(dots,whencode)
-    | Ast0.OptExp(exp) -> Ast.OptExp(expression exp)
-    | Ast0.UniqueExp(exp) -> Ast.UniqueExp(expression exp)) in
+    | Ast0.OptExp(exp) -> Ast.OptExp(expression exp)) in
   if Ast0.get_test_exp e then Ast.set_test_exp e1 else e1
 
 and assignOp op =
@@ -535,8 +533,7 @@ and typeC allminus t =
 	Ast.DisjType(List.map (typeC allminus) types)
     | Ast0.AsType(ty,asty) ->
 	Ast.AsType(typeC allminus ty,typeC allminus asty)
-    | Ast0.OptType(ty) -> Ast.OptType(typeC allminus ty)
-    | Ast0.UniqueType(ty) -> Ast.UniqueType(typeC allminus ty))
+    | Ast0.OptType(ty) -> Ast.OptType(typeC allminus ty))
 
 and base_typeC allminus t =
   match Ast0.unwrap t with
@@ -641,8 +638,7 @@ and declaration d =
 	| _ -> failwith "bad typedef")
     | Ast0.Ddots(dots,whencode) -> failwith "should not be possible"
     | Ast0.DisjDecl(_,decls,_,_) -> Ast.DisjDecl(List.map declaration decls)
-    | Ast0.OptDecl(decl) -> Ast.OptDecl(declaration decl)
-    | Ast0.UniqueDecl(decl) -> Ast.UniqueDecl(declaration decl))
+    | Ast0.OptDecl(decl) -> Ast.OptDecl(declaration decl))
 
 and annotated_decl bef d =
   rewrap d (do_isos (Ast0.get_iso d))
@@ -734,8 +730,7 @@ and initialiser i =
 	let dots = mcode dots in
 	let whencode = get_option (fun (_,_,b) -> initialiser b) whencode in
 	Ast.Idots(dots,whencode)
-    | Ast0.OptIni(ini) -> Ast.OptIni(initialiser ini)
-    | Ast0.UniqueIni(ini) -> Ast.UniqueIni(initialiser ini))
+    | Ast0.OptIni(ini) -> Ast.OptIni(initialiser ini))
 
 and designator = function
     Ast0.DesignatorField(dot,id) -> Ast.DesignatorField(mcode dot,ident id)
@@ -763,8 +758,7 @@ and parameterTypeDef p =
 	Ast.AsParam(parameterTypeDef p,expression asexpr)
     | Ast0.PComma(cm) -> Ast.PComma(mcode cm)
     | Ast0.Pdots(dots) -> Ast.Pdots(mcode dots)
-    | Ast0.OptParam(param) -> Ast.OptParam(parameterTypeDef param)
-    | Ast0.UniqueParam(param) -> Ast.UniqueParam(parameterTypeDef param))
+    | Ast0.OptParam(param) -> Ast.OptParam(parameterTypeDef param))
 
 and parameter_list l = dots parameterTypeDef l
 
@@ -958,8 +952,7 @@ and statement s =
       |	Ast0.Pragma(prg,id,body) ->
 	  Ast.Atomic(rewrap_rule_elem s
 		       (Ast.Pragma(mcode prg,ident id,pragmainfo body)))
-      | Ast0.OptStm(stm) -> Ast.OptStm(statement seqible stm)
-      | Ast0.UniqueStm(stm) -> Ast.UniqueStm(statement seqible stm))
+      | Ast0.OptStm(stm) -> Ast.OptStm(statement seqible stm))
 
   and pragmainfo pi =
     rewrap pi no_isos
@@ -987,8 +980,7 @@ and statement s =
 	Ast0.DParam(id) -> Ast.DParam(ident id)
       | Ast0.DPComma(comma) -> Ast.DPComma(mcode comma)
       | Ast0.DPdots(d) -> Ast.DPdots(mcode d)
-      | Ast0.OptDParam(dp) -> Ast.OptDParam(define_param dp)
-      | Ast0.UniqueDParam(dp) -> Ast.UniqueDParam(define_param dp))
+      | Ast0.OptDParam(dp) -> Ast.OptDParam(define_param dp))
 
   and whencode notfn alwaysfn = function
       Ast0.WhenNot (_,_,a) -> Ast.WhenNot (notfn a)

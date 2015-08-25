@@ -12,7 +12,7 @@ let rec get_name name =
   | Ast0.MetaLocalFunc(nm,_,_) -> [Meta(Ast0.unwrap_mcode nm)]
   | Ast0.AsIdent(id1,id2) -> failwith "not supported"
   | Ast0.DisjId(_,id_list,_,_) -> List.concat (List.map get_name id_list)
-  | Ast0.OptIdent(id) | Ast0.UniqueIdent(id) ->
+  | Ast0.OptIdent(id) ->
       get_name id
 
 (* --------------------------------------------------------------------- *)
@@ -203,7 +203,7 @@ let rec right_attach_ident strings id =
     | Ast0.MetaId(name,x,y,z) ->
 	Ast0.MetaId(right_attach_mcode strings name,x,y,z)
     | Ast0.AsIdent(id,asid) -> Ast0.AsIdent(right_attach_ident strings id,asid)
-    | _ -> failwith "disj, opt, unique, and funcs not supported")
+    | _ -> failwith "disj, opt, and funcs not supported")
 
 let rec attach_right strings ty =
   Ast0.rewrap ty
@@ -239,7 +239,7 @@ let rec attach_right strings ty =
     | Ast0.MetaType(nm,pure) ->
 	Ast0.MetaType(right_attach_mcode strings nm,pure)
     | Ast0.AsType(ty,asty) -> Ast0.AsType(attach_right strings ty,asty)
-    | _ -> failwith "disj, opt and unique type not supported")
+    | _ -> failwith "disj and opt type not supported")
 
 let rec drop_param_name p =
   Ast0.rewrap p
@@ -249,7 +249,6 @@ let rec drop_param_name p =
 	let p = attach_right strings p in
 	Ast0.Param(p,None)
     | Ast0.OptParam(p) -> Ast0.OptParam(drop_param_name p)
-    | Ast0.UniqueParam(p) -> Ast0.UniqueParam(p)
     | p -> p)
 
 let drop_names dec =
@@ -313,9 +312,6 @@ let rec rename_param old_name all param index =
   | Ast0.OptParam(p) ->
       let (metavars,p) = rename_param old_name all p index in
       (metavars,Ast0.rewrap param (Ast0.OptParam(p)))
-  | Ast0.UniqueParam(p) ->
-      let (metavars,p) = rename_param old_name all p index in
-      (metavars,Ast0.rewrap param (Ast0.UniqueParam(p)))
   | _ -> ([],param)
 
 let iota l =
