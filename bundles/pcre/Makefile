@@ -1,5 +1,5 @@
 # This Makefile serves as a wrapper to bundle the
-# extlib module without modifications.
+# pcre module without modifications.
 
 ifneq ($(MAKECMDGOALS),distclean)
 include ../../Makefile.config
