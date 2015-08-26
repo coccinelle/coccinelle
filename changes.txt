@@ -29,7 +29,7 @@
 - Conjunction (analogous to disjunction)
 ** Features:
 ** Bugfix:
-
+- Removed the extlib and sexp bundles which were not used any more.
 * 1.0.2
 ** Language:
 ** Features:
