@@ -21,7 +21,7 @@ let stringrep = function
 | Ast_c.MetaBinaryOpVal op -> call_pretty Pretty_print_c.pp_binaryOp_gen op
 | Ast_c.MetaFuncVal      s -> s
 | Ast_c.MetaLocalFuncVal s -> s
-| Ast_c.MetaExprVal      (expr,_) -> exprrep expr
+| Ast_c.MetaExprVal      (expr,_,_) -> exprrep expr
 | Ast_c.MetaExprListVal  expr_list ->
     call_pretty Pretty_print_c.pp_arg_list_gen expr_list
 | Ast_c.MetaTypeVal      typ -> call_pretty Pretty_print_c.pp_type_gen typ
@@ -33,7 +33,7 @@ let stringrep = function
     call_pretty Pretty_print_c.pp_field_gen field
 | Ast_c.MetaFieldListVal field ->
     call_pretty Pretty_print_c.pp_field_list_gen field
-| Ast_c.MetaStmtVal      statement ->
+| Ast_c.MetaStmtVal      (statement,_) ->
     call_pretty Pretty_print_c.pp_statement_gen statement
 | Ast_c.MetaParamVal     param ->
     call_pretty Pretty_print_c.pp_param_gen param

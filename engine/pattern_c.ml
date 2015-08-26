@@ -380,7 +380,7 @@ module XMATCH = struct
 	      success(Ast_c.MetaFuncVal a)
           | Ast_c.MetaLocalFuncVal a ->
 	      success(Ast_c.MetaLocalFuncVal a) (*more?*)
-          | Ast_c.MetaExprVal (a,c) ->
+          | Ast_c.MetaExprVal (a,c,ty) ->
 	      (* c in the value is only to prepare for the future in which
 		 we figure out how to have subterm constraints on unbound
 		 variables.  Now an environment will only contain expression
@@ -392,13 +392,13 @@ module XMATCH = struct
 		else Lib_parsing_c.semi_al_expr a in
 	      let inh_stripped = Lib_parsing_c.al_inh_expr a in
 	      let rec loop = function
-		  [] -> success(Ast_c.MetaExprVal(stripped,[]))
+		  [] -> success(Ast_c.MetaExprVal(stripped,[],ty))
 		| c::cs ->
 		    let tmp =
 		      Common.optionise
 			(fun () -> tin.binding0 +> List.assoc c) in
 		    (match tmp with
-		      Some (Ast_c.MetaExprVal(v,_)) ->
+		      Some (Ast_c.MetaExprVal(v,_,_)) ->
 			if C_vs_c.subexpression_of_expression inh_stripped v
 			then loop cs (* forget satisfied constraints *)
 			else None (* failure *)
@@ -432,12 +432,12 @@ module XMATCH = struct
 		   (if strip
 		   then Lib_parsing_c.al_fields a
 		   else Lib_parsing_c.semi_al_fields a))
-          | Ast_c.MetaStmtVal a ->
-	      success
-		(Ast_c.MetaStmtVal
-		   (if strip
-		   then Lib_parsing_c.al_statement a
-		   else Lib_parsing_c.semi_al_statement a))
+          | Ast_c.MetaStmtVal(a,ty) ->
+	      let stripped =
+		if strip
+		then Lib_parsing_c.al_statement a
+		else Lib_parsing_c.semi_al_statement a in
+	      success(Ast_c.MetaStmtVal(stripped,ty))
           | Ast_c.MetaTypeVal a ->
 	      success
 		(Ast_c.MetaTypeVal

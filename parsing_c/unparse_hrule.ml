@@ -234,7 +234,7 @@ let print_extra_typedefs pr env =
 	Ast_c.MetaIdVal(_) | Ast_c.MetaFuncVal(_)
       | Ast_c.MetaAssignOpVal(_) | Ast_c.MetaBinaryOpVal(_)
       | Ast_c.MetaLocalFuncVal(_) -> ()
-      | Ast_c.MetaExprVal(exp,_) -> Visitor_c.vk_expr bigf exp
+      | Ast_c.MetaExprVal(exp,_,_) -> Visitor_c.vk_expr bigf exp
       | Ast_c.MetaExprListVal(args) -> Visitor_c.vk_argument_list bigf args
       | Ast_c.MetaParamVal(param) -> Visitor_c.vk_param bigf param
       | Ast_c.MetaParamListVal(params) -> Visitor_c.vk_param_list bigf params
@@ -249,7 +249,7 @@ let print_extra_typedefs pr env =
       | Ast_c.MetaFmtVal(fmt) -> Visitor_c.vk_string_format bigf fmt
       | Ast_c.MetaFragListVal(frags) ->
 	  Visitor_c.vk_string_fragments bigf frags
-      | Ast_c.MetaStmtVal(stm) -> Visitor_c.vk_statement bigf stm
+      | Ast_c.MetaStmtVal(stm,_) -> Visitor_c.vk_statement bigf stm
       | Ast_c.MetaPosVal _ | Ast_c.MetaPosValList _
       | Ast_c.MetaListlenVal _ -> ()
       | Ast_c.MetaNoVal -> failwith "referencing a metavar with no value")
@@ -281,8 +281,8 @@ let rename argids env =
 	 Ast_c.MetaIdVal(_) | Ast_c.MetaFuncVal(_)
        | Ast_c.MetaAssignOpVal(_) | Ast_c.MetaBinaryOpVal(_)
        | Ast_c.MetaLocalFuncVal(_) -> vl
-       | Ast_c.MetaExprVal(exp,c) ->
-	   Ast_c.MetaExprVal(Visitor_c.vk_expr_s bigf exp,c)
+       | Ast_c.MetaExprVal(exp,c,ty) ->
+	   Ast_c.MetaExprVal(Visitor_c.vk_expr_s bigf exp,c,ty)
        | Ast_c.MetaExprListVal(args) ->
 	   Ast_c.MetaExprListVal(Visitor_c.vk_arguments_s bigf args)
        | Ast_c.MetaParamVal(param) ->
@@ -306,8 +306,8 @@ let rename argids env =
 	   Ast_c.MetaFmtVal(Visitor_c.vk_string_format_s bigf fmt)
        | Ast_c.MetaFragListVal(frags) ->
 	   Ast_c.MetaFragListVal(Visitor_c.vk_string_fragments_s bigf frags)
-       | Ast_c.MetaStmtVal(stm) ->
-	   Ast_c.MetaStmtVal(Visitor_c.vk_statement_s bigf stm)
+       | Ast_c.MetaStmtVal(stm,ty) ->
+	   Ast_c.MetaStmtVal(Visitor_c.vk_statement_s bigf stm,ty)
        | Ast_c.MetaPosVal _ | Ast_c.MetaPosValList _
        | Ast_c.MetaListlenVal _ -> vl
        | Ast_c.MetaNoVal -> failwith "referencing a metavar with no value"))

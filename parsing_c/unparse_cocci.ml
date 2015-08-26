@@ -507,7 +507,7 @@ let rec expression e =
 
   | Ast.MetaExpr (name,_,_,_typedontcare,_formdontcare,_) ->
       handle_metavar name (function
-        | Ast_c.MetaExprVal ((((e, _), _) as exp),_) ->
+        | Ast_c.MetaExprVal ((((e, _), _) as exp),_,_) ->
 	    if prec_of_c e < prec then
 	      begin
 		print_text "(";
@@ -1132,7 +1132,7 @@ and rule_elem arity re =
 
   | Ast.MetaStmt(name,_,_,_) ->
       handle_metavar name  (function
-        | Ast_c.MetaStmtVal stm ->
+        | Ast_c.MetaStmtVal(stm,_) ->
             pretty_print_c.Pretty_print_c.statement stm
         | _ -> raise (Impossible 156)
                            )
@@ -1187,7 +1187,7 @@ let indent_if_needed s f =
 		failwith
 		  (Printf.sprintf "variable %s not known on SP line %d\n"
 		     name_string line)
-	    | Some (Ast_c.MetaStmtVal stm) ->
+	    | Some (Ast_c.MetaStmtVal(stm,_)) ->
 		(match Ast_c.unwrap stm with
 		  Ast_c.Compound _ -> true
 		| _ -> false)

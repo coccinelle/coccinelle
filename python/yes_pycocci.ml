@@ -258,7 +258,7 @@ let construct_variables mv e =
   List.iter (function (py,(r,m),_) ->
     match find_binding (r,m) with
       None -> ()
-(*    | Some (_, Ast_c.MetaExprVal (expr,_)) ->
+(*    | Some (_, Ast_c.MetaExprVal (expr,_,_)) ->
        let expr_repr = instantiate_Expression(expr) in
        let _ = build_variable py expr_repr in
        () *)

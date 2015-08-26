@@ -28,7 +28,7 @@ let ast_binding vl = function
 	  Coccilib.Str id
       | Ast_c.MetaAssignOpVal op -> Coccilib.AssignOp op
       | Ast_c.MetaBinaryOpVal op -> Coccilib.BinaryOp op
-      | Ast_c.MetaExprVal(expr,_) -> Coccilib.Expr expr
+      | Ast_c.MetaExprVal(expr,_,_) -> Coccilib.Expr expr
       | Ast_c.MetaExprListVal arglist -> Coccilib.ExprList arglist
       | Ast_c.MetaParamVal param -> Coccilib.Param param
       | Ast_c.MetaParamListVal paramlist -> Coccilib.ParamList paramlist
@@ -39,7 +39,7 @@ let ast_binding vl = function
       | Ast_c.MetaDeclVal decl -> Coccilib.Decl decl
       | Ast_c.MetaFieldVal field -> Coccilib.Field field
       | Ast_c.MetaFieldListVal field -> Coccilib.FieldList field
-      | Ast_c.MetaStmtVal stm -> Coccilib.Stmt stm
+      | Ast_c.MetaStmtVal(stm,_) -> Coccilib.Stmt stm
       | Ast_c.MetaFragListVal frags -> Coccilib.FragList frags
       | Ast_c.MetaFmtVal fmt -> Coccilib.Fmt fmt
       | Ast_c.MetaNoVal -> failwith "no value for script metavariable"

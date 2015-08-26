@@ -40,6 +40,7 @@ let set_defined_virtual_rules s =
   | name::vl ->
       let vl = String.concat "=" vl in
       defined_virtual_env := (name,vl) :: !defined_virtual_env
+  | _ -> failwith "nothing defined"
 
 let c_plus_plus = ref false
 let ibm = ref false

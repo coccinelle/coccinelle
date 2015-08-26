@@ -553,12 +553,12 @@ let strip env =
     (function (v,vl) ->
       let vl =
 	match vl with
-	  Ast_c.MetaExprVal (a,c) ->
-	    Ast_c.MetaExprVal(Lib_parsing_c.al_inh_expr a,c)
+	  Ast_c.MetaExprVal (a,c,ty) ->
+	    Ast_c.MetaExprVal(Lib_parsing_c.al_inh_expr a,c,ty)
 	| Ast_c.MetaExprListVal a ->
 	    Ast_c.MetaExprListVal(Lib_parsing_c.al_inh_arguments a)
-	| Ast_c.MetaStmtVal a ->
-	    Ast_c.MetaStmtVal(Lib_parsing_c.al_inh_statement a)
+	| Ast_c.MetaStmtVal(a,ty) ->
+	    Ast_c.MetaStmtVal(Lib_parsing_c.al_inh_statement a,ty)
 	| Ast_c.MetaInitVal a ->
 	    Ast_c.MetaInitVal(Lib_parsing_c.al_inh_init a)
 	| Ast_c.MetaInitListVal a ->

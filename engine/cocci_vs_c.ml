@@ -216,7 +216,7 @@ let equal_metavarval valu valu' =
    * just isomorphisms). => TODO call isomorphism_c_c instead of
    * =. Maybe would be easier to transform ast_c in ast_cocci
    * and call the iso engine of julia. *)
-  | Ast_c.MetaExprVal (a,_), Ast_c.MetaExprVal (b,_) ->
+  | Ast_c.MetaExprVal (a,_,_), Ast_c.MetaExprVal (b,_,_) ->
       Lib_parsing_c.al_expr a = Lib_parsing_c.al_expr b
   | Ast_c.MetaExprListVal a, Ast_c.MetaExprListVal b ->
       Lib_parsing_c.al_arguments a = Lib_parsing_c.al_arguments b
@@ -233,7 +233,7 @@ let equal_metavarval valu valu' =
       Lib_parsing_c.al_field a = Lib_parsing_c.al_field b
   | Ast_c.MetaFieldListVal a, Ast_c.MetaFieldListVal b ->
       Lib_parsing_c.al_fields a = Lib_parsing_c.al_fields b
-  | Ast_c.MetaStmtVal a, Ast_c.MetaStmtVal b ->
+  | Ast_c.MetaStmtVal(a,_), Ast_c.MetaStmtVal(b,_) ->
       Lib_parsing_c.al_statement a = Lib_parsing_c.al_statement b
   | Ast_c.MetaInitVal a, Ast_c.MetaInitVal b ->
       Lib_parsing_c.al_init a = Lib_parsing_c.al_init b
@@ -294,8 +294,10 @@ let equal_inh_metavarval valu valu'=
    * just isomorphisms). => TODO call isomorphism_c_c instead of
    * =. Maybe would be easier to transform ast_c in ast_cocci
    * and call the iso engine of julia. *)
-  | Ast_c.MetaExprVal (a,_), Ast_c.MetaExprVal (b,_) ->
-      Lib_parsing_c.al_inh_expr a = Lib_parsing_c.al_inh_expr b
+  | Ast_c.MetaExprVal (a,_,ty1), Ast_c.MetaExprVal (b,_,ty2) ->
+      if ty1 = Ast_c.WITHOUT_TYPES || ty2 = Ast_c.WITHOUT_TYPES
+      then Lib_parsing_c.real_al_expr a = Lib_parsing_c.real_al_expr b
+      else Lib_parsing_c.al_inh_expr a = Lib_parsing_c.al_inh_expr b
   | Ast_c.MetaExprListVal a, Ast_c.MetaExprListVal b ->
       Lib_parsing_c.al_inh_arguments a = Lib_parsing_c.al_inh_arguments b
 
@@ -312,8 +314,11 @@ let equal_inh_metavarval valu valu'=
       Lib_parsing_c.al_inh_field a = Lib_parsing_c.al_inh_field b
   | Ast_c.MetaFieldListVal a, Ast_c.MetaFieldListVal b ->
       Lib_parsing_c.al_inh_field_list a = Lib_parsing_c.al_inh_field_list b
-  | Ast_c.MetaStmtVal a, Ast_c.MetaStmtVal b ->
-      Lib_parsing_c.al_inh_statement a = Lib_parsing_c.al_inh_statement b
+  | Ast_c.MetaStmtVal(a,ty1), Ast_c.MetaStmtVal(b,ty2) ->
+      if ty1 = Ast_c.WITHOUT_TYPES || ty2 = Ast_c.WITHOUT_TYPES
+      then
+	Lib_parsing_c.real_al_statement a = Lib_parsing_c.real_al_statement b
+      else Lib_parsing_c.al_inh_statement a = Lib_parsing_c.al_inh_statement b
   | Ast_c.MetaInitVal a, Ast_c.MetaInitVal b ->
       Lib_parsing_c.al_inh_init a = Lib_parsing_c.al_inh_init b
   | Ast_c.MetaInitListVal a, Ast_c.MetaInitListVal b ->
@@ -1099,7 +1104,8 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
               acc >|+|> compatible_type ta tb) fail
 	) >>=
 	(fun () () ->
-	  let meta_expr_val l x = Ast_c.MetaExprVal(x,l) in
+	  (* wraps on C code, so has types *)
+	  let meta_expr_val l x = Ast_c.MetaExprVal(x,l,Ast_c.WITH_TYPES) in
 	  match constraints with
 	    Ast_cocci.NoConstraint -> return (meta_expr_val [],())
 	  | Ast_cocci.NotIdCstrt cstrt ->
@@ -4508,7 +4514,8 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
       | Some stb ->
 	    let max_min _ =
 	      Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_stmt stb) in
-            X.envf keep inherited (ida, Ast_c.MetaStmtVal stb, max_min)
+            X.envf keep inherited
+	      (ida, Ast_c.MetaStmtVal(stb,Ast_c.WITH_TYPES), max_min)
 	      (fun () ->
               (* no need tag ida, we can't be called in transform-mode *)
 		return (
