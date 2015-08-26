@@ -35,9 +35,11 @@ let defined_virtual_rules = ref ([] : string list)
 let defined_virtual_env = ref ([] : (string*string) list)
 
 let set_defined_virtual_rules s =
-  match Str.split (Str.regexp "=") s with
-    [name;vl] -> defined_virtual_env := (name,vl) :: !defined_virtual_env
-  | _ -> defined_virtual_rules := s :: !defined_virtual_rules
+  match Str.split_delim (Str.regexp "=") s with
+    [_] -> defined_virtual_rules := s :: !defined_virtual_rules
+  | name::vl ->
+      let vl = String.concat "=" vl in
+      defined_virtual_env := (name,vl) :: !defined_virtual_env
 
 let c_plus_plus = ref false
 let ibm = ref false

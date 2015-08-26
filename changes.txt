@@ -30,8 +30,9 @@
 - Drop Circles, Stars
 - Drop Unique
 ** Features:
-** Bugfix:
 - Removed the extlib and sexp bundles which were not used any more.
+** Bugfix:
+- Allow virtual variable definition to contain an =.
 * 1.0.2
 ** Language:
 ** Features:
