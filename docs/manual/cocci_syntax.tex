@@ -941,13 +941,13 @@ parameter, and may not contain varargs.
 
 \begin{grammar}
   \RULE{\rt{decl\_var}}
-%  \CASE{\NT{type} \opt{\NT{id} \opt{[\opt{\NT{dot\_expr}}]}
-%      \ANY{, \NT{id} \opt{[ \opt{\NT{dot\_expr}}]}}};}
   \CASE{\NT{common\_decl}}
   \CASE{\opt{\NT{storage}} \NT{ctype} \NT{COMMA\_LIST}\mth{(}\NT{d\_ident}\mth{)} ;}
   \CASE{\opt{\NT{storage}} \opt{\NT{const\_vol}} \T{id} \NT{COMMA\_LIST}\mth{(}\NT{d\_ident}\mth{)} ;}
   \CASE{\opt{\NT{storage}} \NT{fn\_ctype} ( * \NT{d\_ident} ) ( \NT{PARAMSEQ}\mth{(}\NT{name\_opt\_decl}, \mth{\varepsilon)} ) = \NT{initialize} ;}
   \CASE{typedef \NT{ctype} \NT{typedef\_ident} ;}
+%  \CASE{\NT{type} \opt{\NT{id} \opt{[\opt{\NT{dot\_expr}}]}
+%      \ANY{, \NT{id} \opt{[ \opt{\NT{dot\_expr}}]}}};}
 
   \RULE{\rt{one\_decl}}
   \CASE{\NT{common\_decl}}
