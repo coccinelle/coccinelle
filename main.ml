@@ -745,7 +745,8 @@ let arg_parse2 l f msg argv =
 	begin
 	  let xs = Common.lines emsg in
 	    (* take only head, it's where the error msg is *)
-	    pr2 (List.hd xs);
+	    (* was pr2, but that doesn't always get generated *)
+	    Printf.eprintf "%s\n" (List.hd xs); flush stderr;
 	    !short_usage_func();
 	    raise (Common.UnixExit (2))
 	end
