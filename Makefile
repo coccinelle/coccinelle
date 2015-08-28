@@ -391,7 +391,7 @@ endif
 	@$(ECHO) "Finished building manuals"
 
 clean:: Makefile.config
-	$(MAKE) -C docs clean
+#	$(MAKE) -C docs clean
 	$(MAKE) -C ocaml cleandoc
 
 ##############################################################################
