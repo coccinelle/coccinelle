@@ -74,7 +74,7 @@ HTML=$(TEX:.tex=.html)
 html: $(HTML)
 
 clean::
-	rm -f *.aux *.dvi *.pdf *.haux *.htoc *.log *.out *~
+	rm -f *.aux *.dvi *.pdf *.html *.haux *.htoc *.log *.out *~
 
 distclean:: clean
 	@if test -z "${KEEP_GENERATED}"; then \
