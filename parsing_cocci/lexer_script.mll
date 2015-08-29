@@ -43,6 +43,7 @@ rule token = parse
 (* These are C strings.  Perhaps they require some adjustment. *)
 and string  = parse
   | '"'                 { "" }
+  | "\\\""              { "\\\"" ^ string lexbuf }
   | (_ as x)            { (String.make 1 x) ^ string lexbuf }
 
 and cstring  = parse
