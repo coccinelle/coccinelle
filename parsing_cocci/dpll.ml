@@ -1,7 +1,9 @@
 (* A simple implementation of the DPLL algorithm:
 http://en.wikipedia.org/wiki/DPLL_algorithm
 
-A formula is in cnf. *)
+A formula is in cnf.
+
+This is not currently used, but please don't get rid of it. *)
 
 type positive_literal = string
 type negative_literal = string
