@@ -487,12 +487,6 @@ AS_IF([test "x$OCAMLOPT" = xno -a "x$enable_opt" != xno],
   ])
 ])
 
-AS_IF([test "x$OCAMLVERSION" = x3.11.2 -a -z "$enable_opt"],
-[dnl  the optimized version may not be buildable with ocaml 3.11.2 (know bug), hence disable it by default
-  AC_MSG_NOTICE([the optimized version of coccinelle will not be build by default due to OCaml version $OCAMLVERSION])
-  AC_SUBST([enable_opt], [no])
-])
-
 dnl  disable the optimized target when dynlinking is enabled but the optimized version of dynlink is not available
 AS_IF([test "x$OPTIMIZED_dynlink" = xno -a "x$enable_ocaml" = xyes],
 [dnl
