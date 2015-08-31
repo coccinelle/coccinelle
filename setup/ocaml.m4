@@ -91,9 +91,6 @@ AC_DEFUN([AC_PROG_OCAML],
 
   # checking for ocamldoc
   AC_PATH_TOOL([OCAMLDOC],[ocamldoc],[no])
-
-  # checking for ocamlbuild
-  AC_PATH_TOOL([OCAMLBUILD],[ocamlbuild],[no])
 ])
 
 

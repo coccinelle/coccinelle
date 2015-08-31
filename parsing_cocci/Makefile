@@ -50,7 +50,6 @@ OBJS = $(SOURCES:.ml=.cmo)
 OPTOBJS = $(OBJS:.cmo=.cmx)
 
 
-ifneq ($(FEATURE_OCAMLBUILD),yes)
 all: $(LIB)
 local: $(EXEC)
 
@@ -67,21 +66,6 @@ $(OPTLIB): $(GENERATED) $(OPTOBJS)
 
 $(EXEC): $(OBJS) main.cmo $(LIBS)
 	$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES) -o $(EXEC) $(SYSLIBS) $(LIBS) $(OBJS) main.cmo
-else
-all:
-	cd .. && $(OCAMLBUILD) parsing_cocci/parsing_cocci.cma
-
-all.opt:
-	cd .. && $(OCAMLBUILD) parsing_cocci/parsing_cocci.cmxa
-
-$(EXEC):
-	cd .. && $(OCAMLBUILD) parsing_cocci/main.byte
-	cp ../_build/parsing_cocci/main.byte $(EXEC)
-
-clean::
-	cd .. && $(OCAMLBUILD) -clean
-	rm -f $(TARGET) $(TARGET).byte $(TARGET).native
-endif
 
 clean::
 	rm -f $(LIB)
@@ -104,14 +88,8 @@ clean::
 $(LEXER_SOURCES:.mll=.ml) :	$(LEXER_SOURCES)
 	$(OCAMLLEX) $(LEXER_SOURCES)
 
-ifneq ($(FEATURE_OCAMLBUILD),yes)
 $(PARSER_SOURCES:.mly=.ml) $(PARSER_SOURCES:.mly=.mli) : $(PARSER_SOURCES)
 	$(MENHIR) --ocamlc "${OCAMLC}" --ocamldep "${OCAMLDEP}" --table --base parser_cocci_menhir $(PARSER_SOURCES)
-else
-$(PARSER_SOURCES:.mly=.ml) $(PARSER_SOURCES:.mly=.mli) : $(PARSER_SOURCES)
-	cd .. && $(OCAMLBUILD) parsing_cocci/$@
-	cp ../_build/parsing_cocci/$@ $@
-endif
 
 $(CLI_LEXER_SOURCES:.mll=.ml): $(CLI_LEXER_SOURCES)
 	$(OCAMLLEX) $(CLI_LEXER_SOURCES)
@@ -144,9 +122,7 @@ parser_cocci_menhir.mli: parser_cocci_menhir.mly lexer_cocci.mll
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
-ifneq ($(FEATURE_OCAMLBUILD),yes)
 -include .depend
-endif
 endif
 endif
 

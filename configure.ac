@@ -507,23 +507,6 @@ AS_IF([test "x$enable_opt" = xyes],
   AC_SUBST([MAKETARGET_SPATCH], [byte-only])
 ])
 
-
-dnl  ocamlbuild handling
-AC_ARG_ENABLE([ocamlbuild], AS_HELP_STRING([--enable-ocamlbuild], [enable ocamlbuild support (default: no)]))
-AS_IF([test "x$enable_ocamlbuild" = xyes],
-[dnl  ocamlbuild support requested
-  AS_IF([test -z "$OCAMLBUILD" -o "x$OCAMLBUILD" = xno],
-  [dnl
-    AC_MSG_ERROR([Ocamlbuild is required but is not installed.])
-  ])
-
-  AC_SUBST([FEATURE_OCAMLBUILD], [yes])
-],
-[dnl  default: disable ocamlbuild support
-  AC_SUBST([FEATURE_OCAMLBUILD], [ ])
-])
-
-
 dnl
 dnl  generating configuration
 dnl
@@ -536,7 +519,6 @@ AC_CONFIG_FILES([
   ocaml/prepare_ocamlcocci.ml
   scripts/spatch.sh
   docs/spatch.1
-  myocamlbuild.ml
   setup/Makefile
 ])
 

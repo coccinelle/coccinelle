@@ -44,15 +44,8 @@ endif
 
 # the release process rewrites the Makefile.config, so we need
 # to save important configure flags.
-remember_ocamlbuild:=$(FEATURE_OCAMLBUILD)
 
-ifeq ($(remember_ocamlbuild),yes)
-	extra_configure_flags := --enable-ocamlbuild
-else
-	extra_configure_flags :=
-endif
-
-
+extra_configure_flags :=
 
 # Procedure to do first time:
 #  cd ~/release
