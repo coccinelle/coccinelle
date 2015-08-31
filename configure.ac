@@ -204,19 +204,6 @@ AS_IF([test "x$OCAML_PKG_dynlink" = xno],
   ])
 ])
 
-dnl  too old ocaml version, disable dynlink by default
-AS_IF([test "x$OCAMLATLEAST311" = xno],
-[dnl
-  AS_IF([test -z "$enable_ocaml"],
-  [dnl
-    AC_SUBST([enable_ocaml], [no])
-    AC_MSG_NOTICE([ocaml scripting has been disabled by default because your OCaml version may not support dynamic linking properly])
-  ], [test "x$enable_ocaml" = xyes],
-  [dnl
-    AC_MSG_NOTICE([warning: your ocaml version may be too old for dynamic linking, thus ocaml scripting may not work])
-  ])
-])
-
 dnl  no optimized version, disable dynlink by default
 AS_IF([test "x$OPTIMIZED_dynlink" = xno],
 [dnl
@@ -409,7 +396,7 @@ AS_IF([test "x$enable_ocaml" != xno],
 ])
 
 dnl  dynlink stuff depending on the OCaml version and whether it is enabled
-AS_IF([test "x$OCAMLATLEAST311" = xyes -a "x$enable_ocaml" = xyes -a "x$OCAMLOPT" != xno],
+AS_IF([test "x$enable_ocaml" = xyes -a "x$OCAMLOPT" != xno],
 [dnl
   AC_SUBST([DYNLINK_IS_NATIVE], [Dynlink.is_native])
 ],
