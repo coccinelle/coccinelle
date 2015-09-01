@@ -81,7 +81,8 @@ AC_SUBST([PKG_CONFIG],["$COCCI_SRCDIR/setup/fake-subst.sh $PKG_CONFIG_ORIG"])
 
 dnl  ocaml compiler configuration
 AC_PROG_OCAML
-AC_CHECK_OCAMLVERSION([OCAMLATLEAST311],[3.11])
+AC_CHECK_OCAMLVERSION([OCAMLATLEAST312],[3.12])
+AS_IF([test "x$OCAMLATLEAST312" = xno],[AC_MSG_ERROR([OCaml >= 3.12 is required to compile Coccinelle])])
 AC_CHECK_OCAMLVERSION([OCAMLATLEAST4020],[4.02])
 AC_SUBST([OCAMLCORIG],["$OCAMLC"])
 
@@ -89,7 +90,6 @@ AS_IF([test "x$OCAMLC" = xno -o "x$OCAMLDEP" = xno -o "x$OCAMLDOC" = xno -o "x$O
 [dnl
   AC_MSG_ERROR([It seems a few components of the OCaml distribution could nt be found. Make sure the following tools are installed and in your path: ocamlc, ocamldep, ocamldoc, ocamlmklib.])
 ])
-AS_IF([test "x$OCAMLATLEAST311" = xno],[AC_MSG_NOTICE([a more recent OCaml installation may be required])])
 
 dnl  ocaml tools
 AC_PROG_CAMLP4
@@ -201,19 +201,6 @@ AS_IF([test "x$OCAML_PKG_dynlink" = xno],
   ], [test "x$enable_ocaml" != xno],
   [dnl
     AC_MSG_ERROR([the OCaml package dynlink is required for ocaml scripting])
-  ])
-])
-
-dnl  too old ocaml version, disable dynlink by default
-AS_IF([test "x$OCAMLATLEAST311" = xno],
-[dnl
-  AS_IF([test -z "$enable_ocaml"],
-  [dnl
-    AC_SUBST([enable_ocaml], [no])
-    AC_MSG_NOTICE([ocaml scripting has been disabled by default because your OCaml version may not support dynamic linking properly])
-  ], [test "x$enable_ocaml" = xyes],
-  [dnl
-    AC_MSG_NOTICE([warning: your ocaml version may be too old for dynamic linking, thus ocaml scripting may not work])
   ])
 ])
 
@@ -409,7 +396,7 @@ AS_IF([test "x$enable_ocaml" != xno],
 ])
 
 dnl  dynlink stuff depending on the OCaml version and whether it is enabled
-AS_IF([test "x$OCAMLATLEAST311" = xyes -a "x$enable_ocaml" = xyes -a "x$OCAMLOPT" != xno],
+AS_IF([test "x$enable_ocaml" = xyes -a "x$OCAMLOPT" != xno],
 [dnl
   AC_SUBST([DYNLINK_IS_NATIVE], [Dynlink.is_native])
 ],
@@ -485,12 +472,6 @@ AS_IF([test "x$OCAMLOPT" = xno -a "x$enable_opt" != xno],
     AC_MSG_NOTICE([the optimized version of coccinelle will not be build because ocamlopt is not present])
     AC_SUBST([enable_opt], [no])
   ])
-])
-
-AS_IF([test "x$OCAMLVERSION" = x3.11.2 -a -z "$enable_opt"],
-[dnl  the optimized version may not be buildable with ocaml 3.11.2 (know bug), hence disable it by default
-  AC_MSG_NOTICE([the optimized version of coccinelle will not be build by default due to OCaml version $OCAMLVERSION])
-  AC_SUBST([enable_opt], [no])
 ])
 
 dnl  disable the optimized target when dynlinking is enabled but the optimized version of dynlink is not available

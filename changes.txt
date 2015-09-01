@@ -31,6 +31,8 @@
 - Drop Unique
 ** Features:
 - Removed the extlib and sexp bundles which were not used any more.
+- Drop support for OCaml 3.11 which did not allow to compile coccinelle in
+  native code
 ** Bugfix:
 - Allow virtual variable definition to contain an =.
 * 1.0.2
