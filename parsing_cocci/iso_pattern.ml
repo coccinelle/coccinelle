@@ -1701,7 +1701,8 @@ let instantiate bindings mv_bindings model =
       Ast0.MetaExpr(name,constraints,x,form,pure) ->
 	(rebuild_mcode None).VT0.rebuilder_rec_expression
 	  (match lookup name bindings mv_bindings with
-	    Common.Left(Ast0.ExprTag(exp)) -> Ast0.clear_test_exp exp
+	    Common.Left(Ast0.ExprTag(exp)) ->
+	      Ast0.clear_test_exp exp
 	  | Common.Left(_) -> failwith "not possible 1"
 	  | Common.Right(new_mv) ->
 	      let new_types =

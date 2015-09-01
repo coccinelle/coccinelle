@@ -1943,12 +1943,14 @@ let parse_iso file =
 	    let next_start = List.hd(List.rev tokens) in
 	    let dummy_info = ("",(-1,-1),(-1,-1)) in
 	    let tokens = drop_last [(PC.EOF,dummy_info)] tokens in
+	    let tokens = consume_minus_positions tokens in
 	    let tokens = prepare_tokens false (start@tokens) in
             (*
 	       print_tokens "iso tokens" tokens;
 	    *)
 	    let entry = parse_one "iso main" PC.iso_main file tokens in
 	    let entry = List.map (List.map Test_exps.process_anything) entry in
+	    let entry = List.map (List.map Get_metas.process_anything) entry in
 	    if more
 	    then (* The code below allows a header like Statement list,
 		    which is more than one word.  We don't have that any more,

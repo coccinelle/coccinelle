@@ -1377,12 +1377,13 @@ let rebuilder functions =
     (fun r k e -> ((),functions.VT0.rebuilder_topfn (dz r) (xk k) e)))
 
 let flat_rebuilder
-    meta_mcode string_mcode const_mcode simpleAssign_mcode opAssign_mcode fix_mcode unary_mcode
-    arithOp_mcode logicalOp_mcode cv_mcode sign_mcode struct_mcode storage_mcode
-    inc_mcode
+    meta_mcode string_mcode const_mcode simpleAssign_mcode opAssign_mcode
+    fix_mcode unary_mcode
+    arithOp_mcode logicalOp_mcode cv_mcode sign_mcode struct_mcode
+    storage_mcode inc_mcode
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotscasefn
-    identfn exprfn assignOpfn arithOpfn tyfn initfn paramfn declfn stmtfn forinfofn casefn
-    string_fragmentfn topfn =
+    identfn exprfn assignOpfn arithOpfn tyfn initfn paramfn declfn stmtfn
+    forinfofn casefn string_fragmentfn topfn =
   let dz = rebuilder_dz in
   let xk k e = let (_,e) = k e in e in
   rebuilder_dz
