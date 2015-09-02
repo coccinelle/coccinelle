@@ -22,9 +22,9 @@ type clt =
 (* Things that need to be seen by the lexer and parser. *)
 
 and line_type =
-    MINUS | OPTMINUS | UNIQUEMINUS
+    MINUS | OPTMINUS
   | PLUS | PLUSPLUS
-  | CONTEXT | UNIQUE | OPT
+  | CONTEXT | OPT
 
 type iconstraints = Ast.idconstraint
 type econstraints = Ast0.constraints

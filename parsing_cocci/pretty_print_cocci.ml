@@ -108,34 +108,26 @@ let print_mcodekind = function
 (* --------------------------------------------------------------------- *)
 (* Dots *)
 
-let dots between fn d =
-  match Ast.unwrap d with
-    Ast.DOTS(l) -> print_between between fn l
-  | Ast.CIRCLES(l) -> print_between between fn l
-  | Ast.STARS(l) -> print_between between fn l
+let dots between fn d = print_between between fn (Ast.unwrap d)
 
 let nest_dots starter ender fn f d =
   mcode print_string starter;
-  f(); start_block();
-  (match Ast.unwrap d with
-    Ast.DOTS(l)    -> print_between force_newline fn l
-  | Ast.CIRCLES(l) -> print_between force_newline fn l
-  | Ast.STARS(l)   -> print_between force_newline fn l);
+  f(); start_block(); print_between force_newline fn (Ast.unwrap d);
   end_block();
   mcode print_string ender
 
 (* --------------------------------------------------------------------- *)
 (* Disjunctions *)
 
-let print_disj_list fn l =
+let print_disj_list fn l sep =
   if !print_newlines_disj
   then (force_newline(); print_string "("; force_newline())
   else print_string "(";
   print_between
     (function _ ->
       if !print_newlines_disj
-      then (force_newline(); print_string "|"; force_newline())
-      else print_string " | ")
+      then (force_newline(); print_string sep; force_newline())
+      else print_string (" "^sep^" "))
     fn l;
   if !print_newlines_disj
   then (force_newline(); print_string ")"; force_newline())
@@ -189,9 +181,8 @@ let rec ident i =
   | Ast.MetaFunc(name,_,_,_) -> mcode print_meta name
   | Ast.MetaLocalFunc(name,_,_,_) -> mcode print_meta name
   | Ast.AsIdent(id,asid) -> ident id; print_string "@"; ident asid
-  | Ast.DisjId(id_list) -> print_disj_list ident id_list
+  | Ast.DisjId(id_list) -> print_disj_list ident id_list "|"
   | Ast.OptIdent(id) -> print_string "?"; ident id
-  | Ast.UniqueIdent(id) -> print_string "!"; ident id
 
 and print_unitary = function
     Type_cocci.Unitary -> print_string "unitary"
@@ -264,22 +255,18 @@ let rec expression e =
   | Ast.AsSExpr(exp,asstm) ->
       expression exp; print_string "@"; rule_elem "" asstm
   | Ast.EComma(cm) -> mcode print_string cm; print_space()
-  | Ast.DisjExpr(exp_list) -> print_disj_list expression exp_list
+  | Ast.DisjExpr(exp_list) -> print_disj_list expression exp_list "|"
+  | Ast.ConjExpr(exp_list) -> print_disj_list expression exp_list "&"
   | Ast.NestExpr(starter,expr_dots,ender,Some whencode,multi) ->
       nest_dots starter ender expression
 	(function _ -> print_string "   when != "; expression whencode)
 	expr_dots
   | Ast.NestExpr(starter,expr_dots,ender,None,multi) ->
       nest_dots starter ender expression (function _ -> ()) expr_dots
-  | Ast.Edots(dots,Some whencode)
-  | Ast.Ecircles(dots,Some whencode)
-  | Ast.Estars(dots,Some whencode) ->
+  | Ast.Edots(dots,Some whencode) ->
       mcode print_string dots; print_string "   when != "; expression whencode
-  | Ast.Edots(dots,None)
-  | Ast.Ecircles(dots,None)
-  | Ast.Estars(dots,None) -> mcode print_string dots
+  | Ast.Edots(dots,None) -> mcode print_string dots
   | Ast.OptExp(exp) -> print_string "?"; expression exp
-  | Ast.UniqueExp(exp) -> print_string "!"; expression exp
 
 and string_fragment e =
   match Ast.unwrap e with
@@ -380,9 +367,8 @@ and fullType ft =
 	  print_option (function x -> mcode const_vol x; print_string " ") cv;
 	  typeC ty)
   | Ast.AsType(ty,asty) -> fullType ty; print_string "@"; fullType asty
-  | Ast.DisjType(decls) -> print_disj_list fullType decls
+  | Ast.DisjType(decls) -> print_disj_list fullType decls "|"
   | Ast.OptType(ty) -> print_string "?"; fullType ty
-  | Ast.UniqueType(ty) -> print_string "!"; fullType ty
 
 and print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2) fn =
   fullType ty; mcode print_string lp1; mcode print_string star; fn();
@@ -534,9 +520,8 @@ and declaration d =
   | Ast.Typedef(stg,ty,id,sem) ->
       mcode print_string stg; print_string " "; fullType ty; typeC id;
       mcode print_string sem
-  | Ast.DisjDecl(decls) -> print_disj_list declaration decls
+  | Ast.DisjDecl(decls) -> print_disj_list declaration decls "|"
   | Ast.OptDecl(decl) -> print_string "?"; declaration decl
-  | Ast.UniqueDecl(decl) -> print_string "!"; declaration decl
 
 and annotated_decl arity d =
   match Ast.unwrap d with
@@ -584,7 +569,6 @@ and initialiser i =
       mcode print_string dots; print_string "   when != "; initialiser whencode
   | Ast.Idots(dots,None) -> mcode print_string dots
   | Ast.OptIni(ini) -> print_string "?"; initialiser ini
-  | Ast.UniqueIni(ini) -> print_string "!"; initialiser ini
 
 and designator = function
     Ast.DesignatorField(dot,id) -> mcode print_string dot; ident id
@@ -606,9 +590,7 @@ and parameterTypeDef p =
   | Ast.MetaParamList(name,_,_,_) -> mcode print_meta name
   | Ast.PComma(cm) -> mcode print_string cm; print_space()
   | Ast.Pdots(dots) -> mcode print_string dots
-  | Ast.Pcircles(dots) -> mcode print_string dots
   | Ast.OptParam(param) -> print_string "?"; parameterTypeDef param
-  | Ast.UniqueParam(param) -> print_string "!"; parameterTypeDef param
   | Ast.AsParam(p,asexp) ->
       parameterTypeDef p; print_string "@"; expression asexp
 
@@ -750,9 +732,7 @@ and print_define_param param =
     Ast.DParam(id) -> ident id
   | Ast.DPComma(comma) -> mcode print_string comma
   | Ast.DPdots(dots) -> mcode print_string dots
-  | Ast.DPcircles(circles) -> mcode print_string circles
   | Ast.OptDParam(dp) -> print_string "?"; print_define_param dp
-  | Ast.UniqueDParam(dp) -> print_string "!"; print_define_param dp
 
 and statement arity s =
   match Ast.unwrap s with
@@ -790,7 +770,8 @@ and statement arity s =
       dots force_newline (statement arity) body;
       rule_elem arity rbrace;
       mcode (function _ -> ()) ((),Ast.no_info,aft,[])
-  | Ast.Disj([stmt_dots]) ->
+  | Ast.Disj([stmt_dots]) (* useful why? *)
+  | Ast.Conj([stmt_dots]) ->
       print_string arity;
       dots (function _ -> if !print_newlines_disj then force_newline())
 	(statement arity) stmt_dots
@@ -799,6 +780,14 @@ and statement arity s =
       force_newline(); print_string "("; force_newline();
       print_between
 	(function _ -> force_newline();print_string "|"; force_newline())
+	(dots force_newline (statement arity))
+	stmt_dots_list;
+      force_newline(); print_string ")"
+  | Ast.Conj(stmt_dots_list) -> (* ignores newline directive for readability *)
+      print_string arity;
+      force_newline(); print_string "("; force_newline();
+      print_between
+	(function _ -> force_newline();print_string "&"; force_newline())
 	(dots force_newline (statement arity))
 	stmt_dots_list;
       force_newline(); print_string ")"
@@ -816,14 +805,13 @@ and statement arity s =
 	    (whencode (dots force_newline (statement "")) (statement "")) whn;
 	  close_box(); force_newline())
 	stmt_dots
-  | Ast.Dots(d,whn,_,_) | Ast.Circles(d,whn,_,_) | Ast.Stars(d,whn,_,_) ->
+  | Ast.Dots(d,whn,_,_) ->
       print_string arity; mcode print_string d;
       open_box 0;
       print_between force_newline
 	(whencode (dots force_newline (statement "")) (statement "")) whn;
       close_box(); force_newline()
   | Ast.OptStm(s) -> statement "?" s
-  | Ast.UniqueStm(s) -> statement "!" s
 
 and print_statement_when whencode =
   print_string "   WHEN != ";

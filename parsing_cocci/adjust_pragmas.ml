@@ -70,8 +70,6 @@ let rec right_decl d =
   | Ast0.Ddots(dots,whencode) -> None
   | Ast0.OptDecl(decl) ->
       call_right right_decl decl d (function decl -> Ast0.OptDecl(decl))
-  | Ast0.UniqueDecl(decl) ->
-      call_right right_decl decl d (function decl -> Ast0.UniqueDecl(decl))
 
 let rec right_statement s =
   match Ast0.unwrap s with
@@ -124,7 +122,8 @@ let rec right_statement s =
       call_right right_mcode name s
 	(function name -> Ast0.MetaStmtList(name,pure))
   | Ast0.AsStmt(stm,asstm) -> failwith "not possible"
-  | Ast0.Disj(starter,statement_dots_list,mids,ender) -> None
+  | Ast0.Disj(starter,statement_dots_list,mids,ender)
+  | Ast0.Conj(starter,statement_dots_list,mids,ender) -> None
   | Ast0.Nest(starter,stmt_dots,ender,whn,multi) -> None
   (* the following are None, because they can't be adjacent to an aft node *)
   | Ast0.Exp(exp) -> None
@@ -133,8 +132,6 @@ let rec right_statement s =
   | Ast0.TopId(id) -> None
   | Ast0.TopInit(init) -> None
   | Ast0.Dots(d,whn) -> None
-  | Ast0.Circles(d,whn) -> None
-  | Ast0.Stars(d,whn) -> None
   | Ast0.Include(inc,name) ->
       call_right right_mcode name s
 	(function name -> Ast0.Include(inc,name))
@@ -150,16 +147,11 @@ let rec right_statement s =
       None
   | Ast0.OptStm(re) ->
       call_right right_statement re s (function re -> Ast0.OptStm(re))
-  | Ast0.UniqueStm(re) ->
-      call_right right_statement re s (function re -> Ast0.UniqueStm(re))
 
 and right_statement_dots sd =
   match Ast0.unwrap sd with
-    Ast0.DOTS([]) -> failwith "empty statement dots"
-  | Ast0.DOTS(s::r) ->
-      call_right right_statement s sd
-	(function s -> Ast0.DOTS(List.rev(s::r)))
-  | _ -> failwith "circles and stars not supported"
+    [] -> failwith "empty statement dots"
+  | s::r -> call_right right_statement s sd (function s -> List.rev(s::r))
 
 let rec left_ty t =
   match Ast0.unwrap t with
@@ -201,8 +193,6 @@ let rec left_ty t =
   | Ast0.DisjType(starter,types,mids,ender) -> None
   | Ast0.OptType(ty) ->
       call_right left_ty ty t (function ty -> Ast0.OptType(ty))
-  | Ast0.UniqueType(ty) ->
-      call_right left_ty ty t (function ty -> Ast0.UniqueType(ty))
 
 let rec left_ident i =
   match Ast0.unwrap i with
@@ -218,8 +208,6 @@ let rec left_ident i =
   | Ast0.DisjId(starter,ids,mids,ender) -> None
   | Ast0.OptIdent(id) ->
       call_right left_ident id i (function id -> Ast0.OptIdent(id))
-  | Ast0.UniqueIdent(id) ->
-      call_right left_ident id i (function id -> Ast0.UniqueIdent(id))
   | Ast0.AsIdent(id,asid) -> failwith "not possible"
 
 let left_fundecl name fninfo =
@@ -308,8 +296,6 @@ let rec left_decl decl =
   | Ast0.Ddots(dots,whencode) -> None
   | Ast0.OptDecl(d) ->
       call_right left_decl d decl (function decl -> Ast0.OptDecl(decl))
-  | Ast0.UniqueDecl(d) ->
-      call_right left_decl d decl (function decl -> Ast0.UniqueDecl(decl))
 
 let process =
   let statement r k s =

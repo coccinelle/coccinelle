@@ -11,12 +11,12 @@ module VT0 = Visitor_ast0_types
 (* Helpers *)
 
 let left_dots f l =
-  match Ast0.undots l with
+  match Ast0.unwrap l with
     [] -> false
   | x::xs -> f x
 
 let right_dots f l =
-  match List.rev (Ast0.undots l) with
+  match List.rev (Ast0.unwrap l) with
     [] -> false
   | x::xs -> f x
 
@@ -95,7 +95,6 @@ let rec left_ident i =
   | Ast0.MetaLocalFunc(name,_,_) -> modif_before_mcode name
   | Ast0.DisjId(_,id_list,_,_) -> List.exists left_ident id_list
   | Ast0.OptIdent(id) -> left_ident id
-  | Ast0.UniqueIdent(id) -> left_ident id
   | Ast0.AsIdent _ -> failwith "not possible"
 
 let rec right_ident i =
@@ -107,7 +106,6 @@ let rec right_ident i =
   | Ast0.MetaLocalFunc(name,_,_) -> modif_after_mcode name
   | Ast0.DisjId(_,id_list,_,_) -> List.exists right_ident id_list
   | Ast0.OptIdent(id) -> right_ident id
-  | Ast0.UniqueIdent(id) -> right_ident id
   | Ast0.AsIdent _ -> failwith "not possible"
 
 (* --------------------------------------------------------------------- *)
@@ -142,11 +140,11 @@ let rec left_expression e =
   | Ast0.MetaExprList(name,_,_) -> modif_before_mcode name
   | Ast0.EComma(cm) -> modif_before_mcode cm
   | Ast0.DisjExpr(_,exp_list,_,_) -> List.exists left_expression exp_list
+  | Ast0.ConjExpr(_,exp_list,_,_) -> List.exists left_expression exp_list
   | Ast0.NestExpr(starter,expr_dots,ender,_,multi) ->
       left_dots left_expression expr_dots
-  | Ast0.Edots(dots,_) | Ast0.Ecircles(dots,_) | Ast0.Estars(dots,_) -> false
+  | Ast0.Edots(dots,_) -> false
   | Ast0.OptExp(exp) -> left_expression exp
-  | Ast0.UniqueExp(exp) -> left_expression exp
   | Ast0.AsExpr _ | Ast0.AsSExpr _ -> failwith "not possible"
 
 (* --------------------------------------------------------------------- *)
@@ -171,7 +169,6 @@ and left_typeC t =
   | Ast0.MetaType(name,_) -> modif_before_mcode name
   | Ast0.DisjType(lp,types,mids,rp) -> List.exists left_typeC types
   | Ast0.OptType(ty) -> left_typeC ty
-  | Ast0.UniqueType(ty) -> left_typeC ty
   | Ast0.AsType _ -> failwith "not possible"
 
 (* --------------------------------------------------------------------- *)
@@ -202,7 +199,6 @@ and left_declaration d =
   | Ast0.DisjDecl(_,decls,_,_) -> List.exists left_declaration decls
   | Ast0.Ddots(dots,_) -> false
   | Ast0.OptDecl(decl) -> left_declaration decl
-  | Ast0.UniqueDecl(decl) -> left_declaration decl
   | Ast0.AsDecl _ -> failwith "not possible"
 
 and right_declaration d =
@@ -221,7 +217,6 @@ and right_declaration d =
   | Ast0.DisjDecl(_,decls,_,_) -> List.exists right_declaration decls
   | Ast0.Ddots(dots,_) -> false
   | Ast0.OptDecl(decl) -> right_declaration decl
-  | Ast0.UniqueDecl(decl) -> right_declaration decl
   | Ast0.AsDecl _ -> failwith "not possible"
 
 (* --------------------------------------------------------------------- *)
@@ -264,13 +259,12 @@ and left_statement s =
   | Ast0.Ty(ty) -> false (* can only be replaced by a type *)
   | Ast0.TopId(id) -> false (* can only be replaced by an ident *)
   | Ast0.TopInit(init) -> false (* can only be replaced by an init *)
-  | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) -> false
+  | Ast0.Dots(d,whn) -> false
   | Ast0.Include(inc,s) -> modif_before_mcode inc
   | Ast0.Undef(def,id) -> modif_before_mcode def
   | Ast0.Define(def,id,params,body) -> modif_before_mcode def
   | Ast0.Pragma(prg,id,body) -> modif_before_mcode prg
   | Ast0.OptStm(re) -> left_statement re
-  | Ast0.UniqueStm(re) -> left_statement re
   | Ast0.AsStmt _ -> failwith "not possible"
 
 and right_statement s =
@@ -309,13 +303,12 @@ and right_statement s =
   | Ast0.Ty(ty) -> false (* can only be replaced by a type *)
   | Ast0.TopId(id) -> false (* can only be replaced by a type *)
   | Ast0.TopInit(init) -> false (* can only be replaced by an init *)
-  | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) -> false
+  | Ast0.Dots(d,whn) -> false
   | Ast0.Include(inc,s) -> modif_after_mcode s
   | Ast0.Undef(def,id) -> right_ident id
   | Ast0.Define(def,id,params,body) -> right_dots right_statement body
   | Ast0.Pragma(prg,id,body) -> right_pragma body -- not defined, b/c not used
   | Ast0.OptStm(re) -> right_statement re
-  | Ast0.UniqueStm(re) -> right_statement re
   | Ast0.AsStmt _ -> failwith "not possible"
 *)
 
@@ -362,7 +355,7 @@ and contains_only_minus =
 
   let dots r k e =
     match Ast0.unwrap e with
-      Ast0.DOTS([]) | Ast0.CIRCLES([]) | Ast0.STARS([]) -> true
+      [] -> true
     | _ -> k e in
 
   let identifier r k e =
@@ -375,7 +368,8 @@ and contains_only_minus =
   let expression r k e =
     mcodekind (Ast0.get_mcodekind e) &&
     match Ast0.unwrap e with
-      Ast0.DisjExpr(starter,expr_list,mids,ender) ->
+      Ast0.DisjExpr(starter,expr_list,mids,ender)
+    | Ast0.ConjExpr(starter,expr_list,mids,ender) ->
 	List.for_all r.VT0.combiner_rec_expression expr_list
     | _ -> k e in
 
@@ -492,8 +486,7 @@ let add_braces orig_s =
 
 let is_dots x =
   match Ast0.unwrap x with
-    Ast0.Dots(_,_) | Ast0.Circles(_,_) | Ast0.Stars(_,_)
-  | Ast0.Nest(_,_,_,_,_) -> true
+    Ast0.Dots(_,_) | Ast0.Nest(_,_,_,_,_) -> true
   | _ -> false
 
 let all_minus s =
@@ -518,10 +511,8 @@ let rec do_branch s =
 	  List.map
 	    (function s ->
 	      match Ast0.unwrap s with
-		Ast0.DOTS([s]) ->
-		  Ast0.rewrap s (Ast0.DOTS([do_branch s]))
-	      |	Ast0.DOTS(_) -> s
-	      |	_ -> failwith "not supported")
+		[s] -> Ast0.rewrap s [do_branch s]
+	      |	_ -> s)
 	    statement_dots_list in
 	Ast0.rewrap s (Ast0.Disj(starter,stmts,mids,ender))
     | _ -> s
@@ -588,8 +579,7 @@ let rec statement dots_before dots_after s =
 	(Ast0.rewrap s
 	   (Ast0.Switch(switch,lp,exp,rp,lb,decls,
 			Ast0.rewrap cases
-			  (Ast0.DOTS
-			     (List.map case_line (Ast0.undots cases))),
+			  (List.map case_line (Ast0.unwrap cases)),
 			rb)))
   | Ast0.Break(br,sem) -> do_one s
   | Ast0.Continue(cont,sem) -> do_one s
@@ -606,6 +596,15 @@ let rec statement dots_before dots_after s =
 		   List.map (statement_dots dots_before dots_after)
 		     statement_dots_list,
 		   mids,ender))
+  | Ast0.Conj(starter,statement_dots_list,mids,ender) ->
+      (match statement_dots_list with
+	s1::ss ->
+	  Ast0.rewrap s
+	    (Ast0.Conj(starter,
+		       (statement_dots dots_before dots_after s1) ::
+		       (List.map (statement_dots false false) ss),
+		       mids,ender))
+      |	_ -> s)
   | Ast0.Nest(starter,stmt_dots,ender,whencode,multi) ->
       (match Ast0.get_mcode_mcodekind starter with
 	Ast0.MINUS _ -> (* everything removed, like -... *) s
@@ -619,7 +618,7 @@ let rec statement dots_before dots_after s =
   | Ast0.Ty(ty) -> s
   | Ast0.TopId(id) -> s
   | Ast0.TopInit(init) -> s
-  | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) -> s
+  | Ast0.Dots(d,whn) -> s
   | Ast0.Include(inc,string) -> s (* doesn't affect the need for braces *)
   | Ast0.Undef(def,id) -> s (* same as include *)
   | Ast0.Define(def,id,params,body) -> s (* same as include *)
@@ -627,9 +626,6 @@ let rec statement dots_before dots_after s =
   | Ast0.OptStm(re) ->
       Ast0.rewrap s
 	(Ast0.OptStm(statement dots_before dots_after re))
-  | Ast0.UniqueStm(re) ->
-      Ast0.rewrap s
-	(Ast0.UniqueStm(statement dots_before dots_after re))
   | Ast0.AsStmt _ -> failwith "not possible"
 
 and case_line c =
@@ -656,14 +652,7 @@ and do_statement_dots dots_before dots_after = function
       do_statement_dots false dots_after rest
 
 and statement_dots dots_before dots_after d =
-  Ast0.rewrap d
-    (match Ast0.unwrap d with
-      Ast0.DOTS(l) ->
-	Ast0.DOTS(do_statement_dots dots_before dots_after l)
-    | Ast0.CIRCLES(l) ->
-	Ast0.CIRCLES(do_statement_dots dots_before dots_after l)
-    | Ast0.STARS(l) ->
-	Ast0.STARS(do_statement_dots dots_before dots_after l))
+  Ast0.rewrap d (do_statement_dots dots_before dots_after (Ast0.unwrap d))
 
 let top_level t =
   Ast0.rewrap t

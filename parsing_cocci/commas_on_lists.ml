@@ -9,25 +9,21 @@ adjacency numbers.  This is needed for correct formatting in unparse_c.ml *)
 (* commas in dotted lists, here due to polymorphism restrictions *)
 
 let add_comma is_comma is_dots make_comma itemlist =
-  match Ast0.unwrap itemlist with
-    Ast0.DOTS(x) ->
-      (match List.rev x with
-        [] -> itemlist
+  match List.rev (Ast0.unwrap itemlist) with
+    [] -> itemlist
 (* Not sure if comma is needed if the list is just ...; leave it there for
 now. See list_matcher in cocci_vs_c.ml in first try_matches case. *)
-(*      |       [e] when is_dots e -> itemlist*)
-      |	 e::es ->
-          if is_comma e
-          then itemlist
-          else
-            let comma =
-              match Ast0.get_mcodekind e with
-                Ast0.MINUS(_) -> (Ast0.make_minus_mcode ",")
-              |	 _ -> (Ast0.make_mcode ",") in
-	        Ast0.rewrap itemlist
-              (Ast0.DOTS
-                 (List.rev (Ast0.rewrap e (make_comma comma) :: (e::es)))))
-  |  _ -> failwith "not possible"
+(*      | [e] when is_dots e -> itemlist*)
+  |  e::es ->
+      if is_comma e
+      then itemlist
+      else
+        let comma =
+          match Ast0.get_mcodekind e with
+            Ast0.MINUS(_) -> (Ast0.make_minus_mcode ",")
+          |  _ -> (Ast0.make_mcode ",") in
+	Ast0.rewrap itemlist
+          (List.rev (Ast0.rewrap e (make_comma comma) :: (e::es)))
 
 let add_exp_comma =
   add_comma

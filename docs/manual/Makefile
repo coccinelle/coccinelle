@@ -5,6 +5,9 @@
 ifneq ($(MAKECMDGOALS),distclean)
 include ../../Makefile.config
 endif
+HEVEA = hevea
+HEVEA_XXDATE := $(shell ./find-xxdate)
+HEVEA_CMD := $(HEVEA) -exec $(HEVEA_XXDATE)
 
 MAINSRC=main.tex
 SRC=$(wildcard *.tex)
@@ -71,7 +74,7 @@ HTML=$(TEX:.tex=.html)
 html: $(HTML)
 
 clean::
-	rm -f *.aux *.dvi *.pdf *.haux *.htoc *.log *.out *~
+	rm -f *.aux *.dvi *.pdf *.html *.haux *.htoc *.log *.out *~
 
 distclean:: clean
 	@if test -z "${KEEP_GENERATED}"; then \
@@ -81,24 +84,8 @@ check: $(HTML)
 	checklink $<
 
 .tex.html:
-# For Gentoo: /usr/lib64/hevea
-# For Ubuntu family: /usr/share/hevea
-# For default installation
-	@if [ -f /usr/lib64/hevea/xxdate.exe ]; then \
-	hevea -exec /usr/lib64/hevea/xxdate.exe  $< ; \
-	hevea -exec /usr/lib64/hevea/xxdate.exe  $< ; \
-	elif [ -f /usr/share/hevea/xxdate.exe ]; then \
-	hevea -exec /usr/share/hevea/xxdate.exe $< ; \
-	hevea -exec /usr/share/hevea/xxdate.exe $< ; \
-	elif [ -f /usr/local/lib/hevea/xxdate.exe ]; then \
-	hevea -exec /usr/local/lib/hevea/xxdate.exe $< ; \
-	hevea -exec /usr/local/lib/hevea/xxdate.exe $< ; \
-	elif [ -f /opt/local/share/hevea/xxdate.exe ]; then \
-	hevea -exec /opt/local/share/hevea/xxdate.exe $< ; \
-	hevea -exec /opt/local/share/hevea/xxdate.exe $< ; \
-	else \
-	echo -e "\n\n *** Hevea: Unable to find xxdate.exe ***\n\n"; \
-	fi
+	$(HEVEA_CMD) $<
+	$(HEVEA_CMD) $<
 	hacha -o index.html main_grammar.html
 
 ##############################################################################

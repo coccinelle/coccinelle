@@ -11,7 +11,7 @@ let rec pp_binding_kind = function
   | Ast_c.MetaIdVal        s -> pp ("id " ^ s)
   | Ast_c.MetaFuncVal      s -> pp ("func " ^ s)
   | Ast_c.MetaLocalFuncVal s -> pp ("localfunc " ^ s)
-  | Ast_c.MetaExprVal      (expr,_) -> Pretty_print_c.pp_expression_simple expr
+  | Ast_c.MetaExprVal    (expr,_,_) -> Pretty_print_c.pp_expression_simple expr
   | Ast_c.MetaAssignOpVal op        ->
       pp "meta assign op ";
       Pretty_print_c.pp_assignOp_simple op
@@ -30,7 +30,7 @@ let rec pp_binding_kind = function
       Pretty_print_c.pp_field_simple decl
   | Ast_c.MetaFieldListVal      decls ->
       List.iter Pretty_print_c.pp_field_simple decls
-  | Ast_c.MetaStmtVal      statement ->
+  | Ast_c.MetaStmtVal      (statement,_) ->
       Pretty_print_c.pp_statement_simple statement
   | Ast_c.MetaFmtVal fmt -> Pretty_print_c.pp_string_format_simple fmt
   | Ast_c.MetaFragListVal frags ->

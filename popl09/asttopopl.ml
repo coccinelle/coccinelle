@@ -66,12 +66,9 @@ and dots_bef_aft s inif =
   | Ast.NoDots -> Past.NoDots
 
 and stm_list s =
-  match Ast.unwrap s with
-    Ast.DOTS(d) ->
-      List.fold_right
-	(function cur -> function rest -> Past.Seq(stm cur, rest))
-	d Past.Empty
-  | _ -> failwith "only DOTS handled"
+  List.fold_right
+    (function cur -> function rest -> Past.Seq(stm cur, rest))
+    (Ast.unwrap s) Past.Empty
 
 let top s =
   match Ast.unwrap s with

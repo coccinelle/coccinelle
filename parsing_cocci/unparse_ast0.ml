@@ -98,18 +98,14 @@ let print_meta (ctx,name) =
 
 let dots between fn d =
   print_context d
-    (function _ ->
-      match Ast0.unwrap d with
-	Ast0.DOTS(l) -> print_between between fn l
-      | Ast0.CIRCLES(l) -> print_between between fn l
-      | Ast0.STARS(l) -> print_between between fn l)
+    (function _ -> print_between between fn (Ast0.unwrap d))
 
 (* --------------------------------------------------------------------- *)
 (* Disjunctions *)
 
-let do_disj lst processor =
+let do_disj lst processor sep =
   print_string "\n("; force_newline();
-  print_between (function _ -> print_string "\n|"; force_newline())
+  print_between (function _ -> print_string ("\n"^sep); force_newline())
     processor lst;
   print_string "\n)"
 
@@ -135,9 +131,8 @@ let rec ident i =
       | Ast0.MetaId(name,_,_,_) -> mcode print_meta name
       | Ast0.MetaFunc(name,_,_) -> mcode print_meta name
       | Ast0.MetaLocalFunc(name,_,_) -> mcode print_meta name
-      | Ast0.DisjId(_,id_list,_,_) -> do_disj id_list ident
+      | Ast0.DisjId(_,id_list,_,_) -> do_disj id_list ident "|"
       | Ast0.OptIdent(id) -> print_string "?"; ident id
-      | Ast0.UniqueIdent(id) -> print_string "!"; ident id
       | Ast0.AsIdent(id,asid) -> ident id; print_string "@"; ident asid)
 
 (* --------------------------------------------------------------------- *)
@@ -240,7 +235,8 @@ let rec expression e =
 	  | Ast0.PureContext -> print_string "pure_context")*)
       | Ast0.MetaExprList(name,_,_) -> mcode print_meta name
       | Ast0.EComma(cm) -> mcode print_string cm; print_space()
-      | Ast0.DisjExpr(_,exp_list,_,_) -> do_disj exp_list expression
+      | Ast0.DisjExpr(_,exp_list,_,_) -> do_disj exp_list expression "|"
+      | Ast0.ConjExpr(_,exp_list,_,_) -> do_disj exp_list expression "&"
       | Ast0.NestExpr(starter,expr_dots,ender,None,multi) ->
 	  mcode print_string starter;
 	  start_block(); dots force_newline expression expr_dots; end_block();
@@ -250,16 +246,11 @@ let rec expression e =
 	  expression whencode;
 	  start_block(); dots force_newline expression expr_dots; end_block();
 	  mcode print_string ender
-      | Ast0.Edots(dots,Some (_,_,whencode))
-      | Ast0.Ecircles(dots,Some (_,_,whencode))
-      | Ast0.Estars(dots,Some (_,_,whencode)) ->
+      | Ast0.Edots(dots,Some (_,_,whencode)) ->
 	  mcode print_string dots; print_string "   WHEN != ";
 	  expression whencode
-      | Ast0.Edots(dots,None)
-      | Ast0.Ecircles(dots,None)
-      | Ast0.Estars(dots,None) -> mcode print_string dots
+      | Ast0.Edots(dots,None) -> mcode print_string dots
       | Ast0.OptExp(exp) -> print_string "?"; expression exp
-      | Ast0.UniqueExp(exp) -> print_string "!"; expression exp
       |	Ast0.AsExpr(exp,asexp) -> expression exp; print_string "@";
 	  expression asexp
       |	Ast0.AsSExpr(exp,asstm) -> expression exp; print_string "@";
@@ -331,9 +322,8 @@ and typeC t =
 	  mcode print_string rb
       | Ast0.TypeName(name)-> mcode print_string name; print_string " "
       | Ast0.MetaType(name,_)-> mcode print_meta name; print_string " "
-      | Ast0.DisjType(_,types,_,_) -> do_disj types typeC
+      | Ast0.DisjType(_,types,_,_) -> do_disj types typeC "|"
       | Ast0.OptType(ty) -> print_string "?"; typeC ty
-      | Ast0.UniqueType(ty) -> print_string "!"; typeC ty
       | Ast0.AsType(ty,asty) -> typeC ty; print_string "@"; typeC asty)
 
 (* --------------------------------------------------------------------- *)
@@ -400,17 +390,12 @@ and declaration d =
 	  mcode print_string stg; typeC ty; typeC id;
 	  mcode print_string sem
       | Ast0.DisjDecl(_,decls,_,_) ->
-	  print_string "\n("; force_newline();
-	  print_between
-	    (function _ -> print_string "\n|"; force_newline())
-	    declaration decls;
-	  print_string "\n)"
+	  do_disj decls declaration "|"
       | Ast0.Ddots(dots,Some (_,_,whencode)) ->
 	  mcode print_string dots; print_string "   when != ";
 	  declaration whencode
       | Ast0.Ddots(dots,None) -> mcode print_string dots
       | Ast0.OptDecl(decl) -> print_string "?"; declaration decl
-      | Ast0.UniqueDecl(decl) -> print_string "!"; declaration decl
       | Ast0.AsDecl(decl,asdecl) ->
 	  declaration decl; print_string "@"; declaration asdecl)
 
@@ -442,7 +427,6 @@ and initialiser i =
 	  initialiser whencode
       | Ast0.Idots(d,None) -> mcode print_string d
       | Ast0.OptIni(ini) -> print_string "?"; initialiser ini
-      | Ast0.UniqueIni(ini) -> print_string "!"; initialiser ini
       | Ast0.AsInit(ini,asini) -> initialiser ini; print_string "@";
 	  initialiser asini)
 
@@ -470,9 +454,7 @@ and parameterTypeDef p =
       | Ast0.MetaParamList(name,_,_) -> mcode print_meta name
       | Ast0.PComma(cm) -> mcode print_string cm; print_space()
       | Ast0.Pdots(dots) -> mcode print_string dots
-      | Ast0.Pcircles(dots) -> mcode print_string dots
       | Ast0.OptParam(param) -> print_string "?"; parameterTypeDef param
-      | Ast0.UniqueParam(param) -> print_string "!"; parameterTypeDef param
       |	Ast0.AsParam(p,asexp) -> parameterTypeDef p; print_string "@";
 	  expression asexp)
 
@@ -594,6 +576,14 @@ and statement arity s =
 	    (dots force_newline (statement arity))
 	    statement_dots_list;
 	  print_string "\n"; mcode print_string ender
+      | Ast0.Conj(starter,statement_dots_list,_,ender) ->
+	  print_string arity;
+	  print_string "\n"; mcode print_string starter; force_newline();
+	  print_between
+	    (function _ -> print_string "\n&"; force_newline())
+	    (dots force_newline (statement arity))
+	    statement_dots_list;
+	  print_string "\n"; mcode print_string ender
       | Ast0.Nest(starter,stmt_dots,ender,whn,multi) ->
 	  print_string arity;
 	  mcode print_string starter;
@@ -611,7 +601,7 @@ and statement arity s =
       | Ast0.Ty(ty) -> print_string arity; typeC ty
       | Ast0.TopId(id) -> print_string arity; ident id
       |	Ast0.TopInit(init) -> initialiser init
-      | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) ->
+      | Ast0.Dots(d,whn) ->
 	  print_string arity; mcode print_string d;
 	  List.iter
 	    (whencode (dots force_newline (statement "")) (statement ""))
@@ -629,7 +619,6 @@ and statement arity s =
 	  mcode print_string prg; print_string " "; ident id;
 	  print_string " "; pragmainfo body
       | Ast0.OptStm(re) -> statement "?" re
-      | Ast0.UniqueStm(re) -> statement "!" re
       | Ast0.AsStmt(stm,asstm) -> statement arity stm; print_string "@";
 	  statement arity asstm)
 
@@ -654,9 +643,7 @@ and print_define_param param =
     Ast0.DParam(id) -> ident id
   | Ast0.DPComma(comma) -> mcode print_string comma
   | Ast0.DPdots(dots) -> mcode print_string dots
-  | Ast0.DPcircles(circles) -> mcode print_string circles
   | Ast0.OptDParam(dp) -> print_string "?"; print_define_param dp
-  | Ast0.UniqueDParam(dp) -> print_string "!"; print_define_param dp
 
 and print_fninfo = function
     Ast0.FStorage(stg) -> mcode U.storage stg
@@ -689,11 +676,7 @@ and case_line arity c =
 	  mcode print_string colon; print_string " ";
 	  dots force_newline (statement arity) code
       | Ast0.DisjCase(starter,case_lines,mids,ender) ->
-	  print_string "\n("; force_newline();
-	  print_between
-	    (function _ -> print_string "\n|"; force_newline())
-	    (case_line arity) case_lines;
-	  print_string "\n)"
+	  do_disj case_lines (case_line arity) "|"
       | Ast0.OptCase(case) -> case_line "?" case)
 
 and statement_dots l = dots (function _ -> ()) (statement "") l

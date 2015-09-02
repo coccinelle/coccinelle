@@ -23,7 +23,6 @@ PROGS=spp gitgrep splitpatch extract_c_and_res \
 	process_isoprofile
 	#generate_dependencies
 
-ifneq ($(FEATURE_OCAMLBUILD),yes)
 all: $(PROGS)
 
 all.opt:
@@ -59,24 +58,6 @@ extract_c_and_res: extract_c_and_res.cmo
 
 generate_dependencies: generate_dependencies.cmo
 	$(OCAMLC_CMD) -o $@ $(SYSLIBS) $(INCLUDE) $(LIBS)  $+
-else
-.PHONY: $(PROGS) $(PROGS:%.opt) isoprof
-
-all: $(PROGS)
-all.opt: $(PROGS:%=%.opt)
-
-$(PROGS):
-	cd .. && $(OCAMLBUILD) tools/$@.byte
-	cp ../_build/tools/$@.byte $@
-
-$(PROGS:%=%.opt):
-	cd .. && $(OCAMLBUILD) tools/$(@:%.opt=%).native
-	cp ../_build/tools/$(@:%.opt=%).native $(@:%.opt=%)
-
-clean::
-	cd .. && $(OCAMLBUILD) -clean
-	rm -f $(PROGS)
-endif
 
 isoprof: process_isoprofile
 	cp process_isoprofile isoprof

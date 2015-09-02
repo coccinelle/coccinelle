@@ -8,7 +8,7 @@
  ** Compilation **
 
 You must first install a recent version of
- - OCaml (at least 3.10),
+ - OCaml (at least 3.11),
    see http://caml.inria.fr/download.en.html
    At least, OCaml 3.12 is required to use the OCaml scripting
    feature in the SmPL code.

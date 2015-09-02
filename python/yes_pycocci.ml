@@ -151,11 +151,6 @@ let pycocci_init () =
   (* initialize *)
   if not !initialised then (
   initialised := true;
-  (* use python_path_base as default (overridable) dir for coccilib *)
-  let python_path_base = Printf.sprintf "%s/coccinelle" (Unix.getenv "HOME") in
-  let python_path = try Unix.getenv "PYTHONPATH" ^ ":" ^ python_path_base
-                    with Not_found -> python_path_base in
-  Unix.putenv "PYTHONPATH" python_path;
   let _ = if not (py_isinitialized () != 0) then
   	(if !Flag.show_misc then Common.pr2 "Initializing python\n%!";
 	py_initialize()) in
@@ -263,7 +258,7 @@ let construct_variables mv e =
   List.iter (function (py,(r,m),_) ->
     match find_binding (r,m) with
       None -> ()
-(*    | Some (_, Ast_c.MetaExprVal (expr,_)) ->
+(*    | Some (_, Ast_c.MetaExprVal (expr,_,_)) ->
        let expr_repr = instantiate_Expression(expr) in
        let _ = build_variable py expr_repr in
        () *)

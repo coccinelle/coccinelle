@@ -37,13 +37,7 @@ let disjoption f = function
   | Some x -> List.map (function x -> Some x) (f x)
 
 let disjdots f d =
-  match Ast.unwrap d with
-    Ast.DOTS(l) ->
-      List.map (function l -> Ast.rewrap d (Ast.DOTS(l))) (disjmult f l)
-  | Ast.CIRCLES(l) ->
-      List.map (function l -> Ast.rewrap d (Ast.CIRCLES(l))) (disjmult f l)
-  | Ast.STARS(l) ->
-      List.map (function l -> Ast.rewrap d (Ast.STARS(l))) (disjmult f l)
+  List.map (function l -> Ast.rewrap d l) (disjmult f (Ast.unwrap d))
 
 let rec disjty ft =
   match Ast.unwrap ft with
@@ -57,9 +51,6 @@ let rec disjty ft =
   | Ast.OptType(ty) ->
       let ty = disjty ty in
       List.map (function ty -> Ast.rewrap ft (Ast.OptType(ty))) ty
-  | Ast.UniqueType(ty) ->
-      let ty = disjty ty in
-      List.map (function ty -> Ast.rewrap ft (Ast.UniqueType(ty))) ty
 
 and disjtypeC bty =
   match Ast.unwrap bty with
@@ -113,9 +104,6 @@ and disjident e =
   | Ast.OptIdent(id) ->
       let id = disjident id in
       List.map (function id -> Ast.rewrap e (Ast.OptIdent(id))) id
-  | Ast.UniqueIdent(id) ->
-      let id = disjident id in
-      List.map (function id -> Ast.rewrap e (Ast.UniqueIdent(id))) id
   | _ -> [e]
 
 and disjexp e =
@@ -202,16 +190,17 @@ and disjexp e =
       let exp = disjexp exp in
       List.map (function exp -> Ast.rewrap e (Ast.AsSExpr(exp,asstm))) exp
   | Ast.DisjExpr(exp_list) -> List.concat (List.map disjexp exp_list)
+  | Ast.ConjExpr(exp_list) ->
+      let exp_list = disjmult disjexp exp_list in
+      List.map (function exp_list -> Ast.rewrap e (Ast.ConjExpr(exp_list)))
+	exp_list
   | Ast.NestExpr(starter,expr_dots,ender,whencode,multi) ->
       (* not sure what to do here, so ambiguities still possible *)
       [e]
-  | Ast.Edots(dots,_) | Ast.Ecircles(dots,_) | Ast.Estars(dots,_) -> [e]
+  | Ast.Edots(dots,_) -> [e]
   | Ast.OptExp(exp) ->
       let exp = disjexp exp in
       List.map (function exp -> Ast.rewrap e (Ast.OptExp(exp))) exp
-  | Ast.UniqueExp(exp) ->
-      let exp = disjexp exp in
-      List.map (function exp -> Ast.rewrap e (Ast.UniqueExp(exp))) exp
 
 and disjparam p =
   match Ast.unwrap p with
@@ -223,13 +212,10 @@ and disjparam p =
       let pm = disjparam pm in
       List.map (function pm -> Ast.rewrap p (Ast.AsParam(pm,asexp))) pm
   | Ast.MetaParam(_,_,_) | Ast.MetaParamList(_,_,_,_) | Ast.PComma(_) -> [p]
-  | Ast.Pdots(dots) | Ast.Pcircles(dots) -> [p]
+  | Ast.Pdots(dots) -> [p]
   | Ast.OptParam(param) ->
       let param = disjparam param in
       List.map (function param -> Ast.rewrap p (Ast.OptParam(param))) param
-  | Ast.UniqueParam(param) ->
-      let param = disjparam param in
-      List.map (function param -> Ast.rewrap p (Ast.UniqueParam(param))) param
 
 and disjini i =
   match Ast.unwrap i with
@@ -266,9 +252,6 @@ and disjini i =
   | Ast.OptIni(ini) ->
       let ini = disjini ini in
       List.map (function ini -> Ast.rewrap i (Ast.OptIni(ini))) ini
-  | Ast.UniqueIni(ini) ->
-      let ini = disjini ini in
-      List.map (function ini -> Ast.rewrap i (Ast.UniqueIni(ini))) ini
 
 and designator = function
     Ast.DesignatorField(dot,id) -> [Ast.DesignatorField(dot,id)]
@@ -323,9 +306,6 @@ and disjdecl d =
   | Ast.OptDecl(decl) ->
       let decl = disjdecl decl in
       List.map (function decl -> Ast.rewrap d (Ast.OptDecl(decl))) decl
-  | Ast.UniqueDecl(decl) ->
-      let decl = disjdecl decl in
-      List.map (function decl -> Ast.rewrap d (Ast.UniqueDecl(decl))) decl
 
 let generic_orify_rule_elem f re exp rebuild =
   match f exp with
@@ -430,7 +410,7 @@ let rec disj_rule_elem r k re =
 	(function exp -> Ast.rewrap re (Ast.Case(case,exp,colon)))
   | Ast.DisjRuleElem(l) ->
       (* only case lines *)
-      Ast.rewrap re(Ast.DisjRuleElem(List.map (disj_rule_elem r k) l))
+      Ast.rewrap re (Ast.DisjRuleElem(List.map (disj_rule_elem r k) l))
 
 let disj_all =
   let mcode x = x in

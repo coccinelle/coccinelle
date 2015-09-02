@@ -24,7 +24,6 @@ OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDES)
 OBJS = $(SOURCES:.ml=.cmo)
 OPTOBJS = $(SOURCES:.ml=.cmx)
 
-ifneq ($(FEATURE_OCAMLBUILD),yes)
 all: $(TARGET).cma
 
 all.opt:
@@ -47,16 +46,6 @@ $(TARGET).top: $(OBJS) $(LIBS)
 
 clean::
 	rm -f $(TARGET).byte $(TARGET).opt rm -f $(TARGET).top
-else
-all:
-	cd .. && $(OCAMLBUILD) extra/extra.cma
-
-all.opt:
-	cd .. && $(OCAMLBUILD) extra/extra.cmxa
-
-clean::
-	cd .. && $(OCAMLBUILD) -clean
-endif
 
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
@@ -84,9 +73,7 @@ distclean: clean
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
-ifneq ($(FEATURE_OCAMLBUILD),yes)
 -include .depend
-endif
 endif
 endif
 

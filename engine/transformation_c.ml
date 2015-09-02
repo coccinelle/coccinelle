@@ -100,8 +100,8 @@ module XTRANS = struct
     List.map
       (function (v,vl) ->
 	match vl with
-	| Ast_c.MetaExprVal(e,ml) ->
-	    (v,Ast_c.MetaExprVal(Lib_parsing_c.real_al_expr e,ml))
+	| Ast_c.MetaExprVal(e,ml,ty) ->
+	    (v,Ast_c.MetaExprVal(Lib_parsing_c.real_al_expr e,ml,ty))
 	| Ast_c.MetaExprListVal(es) ->
 	    (v,Ast_c.MetaExprListVal(Lib_parsing_c.real_al_arguments es))
 	| Ast_c.MetaTypeVal(ty) ->
@@ -112,8 +112,8 @@ module XTRANS = struct
 	    (v,Ast_c.MetaInitListVal(Lib_parsing_c.real_al_inits is))
 	| Ast_c.MetaDeclVal(d) ->
 	    (v,Ast_c.MetaDeclVal(Lib_parsing_c.real_al_decl d))
-	| Ast_c.MetaStmtVal(s) ->
-	    (v,Ast_c.MetaStmtVal(Lib_parsing_c.real_al_statement s))
+	| Ast_c.MetaStmtVal(s,ty) ->
+	    (v,Ast_c.MetaStmtVal(Lib_parsing_c.real_al_statement s,ty))
 	(* These don't contain local variables, but the cocci_tag field
 	   causes problems too.  Why is this not needd for other metavars? *)
 	| Ast_c.MetaAssignOpVal(b) ->

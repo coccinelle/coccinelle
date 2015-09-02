@@ -29,7 +29,7 @@ let visitor mode bind option_default
   let get_option f = function
       Some x -> let (n,e) = f x in (n,Some e)
     | None -> (option_default,None) in
-  let do_disj starter lst mids ender processor rebuilder =
+  let do_disj starter lst mids ender processor rebuilder = (* disj and conj *)
     let (starter_n,starter) = string_mcode starter in
     (* slightly ugly but ensures correct evaluation order. *)
     let (first_n, first) = processor (List.hd lst) in
@@ -45,15 +45,7 @@ let visitor mode bind option_default
     (multibind [starter_n; multibind bind_value;ender_n],
      rebuilder starter lst mids ender) in
   let dotsfn param default all_functions arg =
-    let k d =
-      rewrap d
-	(match Ast0.unwrap d with
-	  Ast0.DOTS(l) ->
-	    let (n,l) = map_split_bind default l in (n,Ast0.DOTS(l))
-	| Ast0.CIRCLES(l) ->
-	    let (n,l) = map_split_bind default l in (n,Ast0.CIRCLES(l))
-	| Ast0.STARS(l) ->
-	    let (n,l) = map_split_bind default l in (n,Ast0.STARS(l))) in
+    let k d = rewrap d (map_split_bind default (Ast0.unwrap d)) in
     param all_functions k arg in
   let iddotsfn all_functions k arg = k arg in
   let strdotsfn all_functions k arg = k arg in
@@ -90,8 +82,6 @@ let visitor mode bind option_default
 		Ast0.DisjId(starter,id_list,mids,ender))
 	| Ast0.OptIdent(id) ->
 	    let (n,id) = ident id in (n,Ast0.OptIdent(id))
-	| Ast0.UniqueIdent(id) ->
-	    let (n,id) = ident id in (n,Ast0.UniqueIdent(id))
 	| Ast0.AsIdent(id,asid) ->
 	    let (id_n,id) = ident id in
 	    let (asid_n,asid) = ident asid in
@@ -221,6 +211,10 @@ let visitor mode bind option_default
 	    do_disj starter expr_list mids ender expression
 	      (fun starter expr_list mids ender ->
 		Ast0.DisjExpr(starter,expr_list,mids,ender))
+	| Ast0.ConjExpr(starter,expr_list,mids,ender) ->
+	    do_disj starter expr_list mids ender expression
+	      (fun starter expr_list mids ender ->
+		Ast0.ConjExpr(starter,expr_list,mids,ender))
 	| Ast0.NestExpr(starter,expr_dots,ender,whencode,multi) ->
 	    let (starter_n,starter) = string_mcode starter in
 	    let (whencode_n, whencode) = whencode_option expression whencode in
@@ -232,20 +226,9 @@ let visitor mode bind option_default
 	    let (dots_n,dots) = string_mcode dots in
 	    let (whencode_n, whencode) = whencode_option expression whencode in
 	    (bind dots_n whencode_n,Ast0.Edots(dots,whencode))
-	| Ast0.Ecircles(dots,whencode) ->
-	    let (dots_n,dots) = string_mcode dots in
-	    let (whencode_n, whencode) = whencode_option expression whencode in
-	    (bind dots_n whencode_n,Ast0.Ecircles(dots,whencode))
-	| Ast0.Estars(dots,whencode) ->
-	    let (dots_n,dots) = string_mcode dots in
-	    let (whencode_n, whencode) = whencode_option expression whencode in
-	    (bind dots_n whencode_n,Ast0.Estars(dots,whencode))
 	| Ast0.OptExp(exp) ->
 	    let (exp_n,exp) = expression exp in
 	    (exp_n,Ast0.OptExp(exp))
-	| Ast0.UniqueExp(exp) ->
-	    let (exp_n,exp) = expression exp in
-	    (exp_n,Ast0.UniqueExp(exp))
 	| Ast0.AsExpr(exp,asexp) ->
 	    let (exp_n,exp) = expression exp in
 	    let (asexp_n,asexp) = expression asexp in
@@ -390,8 +373,6 @@ let visitor mode bind option_default
 		Ast0.DisjType(starter,types,mids,ender))
 	| Ast0.OptType(ty) ->
 	    let (ty_n,ty) = typeC ty in (ty_n, Ast0.OptType(ty))
-	| Ast0.UniqueType(ty) ->
-	    let (ty_n,ty) = typeC ty in (ty_n, Ast0.UniqueType(ty))
 	| Ast0.AsType(ty,asty) ->
 	    let (ty_n,ty) = typeC ty in
 	    let (asty_n,asty) = typeC asty in
@@ -528,8 +509,6 @@ let visitor mode bind option_default
 	    (bind dots_n whencode_n, Ast0.Ddots(dots,whencode))
 	| Ast0.OptDecl(decl) ->
 	    let (n,decl) = declaration decl in (n,Ast0.OptDecl(decl))
-	| Ast0.UniqueDecl(decl) ->
-	    let (n,decl) = declaration decl in (n,Ast0.UniqueDecl(decl))
 	| Ast0.AsDecl(decl,asdecl) ->
 	    let (decl_n,decl) = declaration decl in
 	    let (asdecl_n,asdecl) = declaration asdecl in
@@ -578,8 +557,6 @@ let visitor mode bind option_default
 	    (bind d_n whencode_n, Ast0.Idots(d,whencode))
 	| Ast0.OptIni(i) ->
 	    let (n,i) = initialiser i in (n,Ast0.OptIni(i))
-	| Ast0.UniqueIni(i) ->
-	    let (n,i) = initialiser i in (n,Ast0.UniqueIni(i))
 	| Ast0.AsInit(ini,asini) ->
 	    let (ini_n,ini) = initialiser ini in
 	    let (asini_n,asini) = initialiser asini in
@@ -631,13 +608,9 @@ let visitor mode bind option_default
 	    let (n,cm) = string_mcode cm in (n,Ast0.PComma(cm))
 	| Ast0.Pdots(dots) ->
 	    let (n,dots) = string_mcode dots in (n,Ast0.Pdots(dots))
-	| Ast0.Pcircles(dots) ->
-	    let (n,dots) = string_mcode dots in (n,Ast0.Pcircles(dots))
 	| Ast0.OptParam(param) ->
-	    let (n,param) = parameterTypeDef param in (n,Ast0.OptParam(param))
-	| Ast0.UniqueParam(param) ->
 	    let (n,param) = parameterTypeDef param in
-	    (n,Ast0.UniqueParam(param))) in
+	    (n,Ast0.OptParam(param))) in
     paramfn all_functions k p
 
   (* not done for combiner, because the statement is assumed to be already
@@ -798,6 +771,10 @@ let visitor mode bind option_default
 	    do_disj starter statement_dots_list mids ender statement_dots
 	      (fun starter statement_dots_list mids ender ->
 		Ast0.Disj(starter,statement_dots_list,mids,ender))
+	| Ast0.Conj(starter,statement_dots_list,mids,ender) ->
+	    do_disj starter statement_dots_list mids ender statement_dots
+	      (fun starter statement_dots_list mids ender ->
+		Ast0.Conj(starter,statement_dots_list,mids,ender))
 	| Ast0.Nest(starter,stmt_dots,ender,whn,multi) ->
 	    let (starter_n,starter) = string_mcode starter in
 	    let (stmt_dots_n,stmt_dots) = statement_dots stmt_dots in
@@ -826,16 +803,6 @@ let visitor mode bind option_default
 	    let (whn_n,whn) =
 	      map_split_bind (whencode statement_dots statement) whn in
 	    (bind d_n whn_n, Ast0.Dots(d,whn))
-	| Ast0.Circles(d,whn) ->
-	    let (d_n,d) = string_mcode d in
-	    let (whn_n,whn) =
-	      map_split_bind (whencode statement_dots statement) whn in
-	    (bind d_n whn_n, Ast0.Circles(d,whn))
-	| Ast0.Stars(d,whn) ->
-	    let (d_n,d) = string_mcode d in
-	    let (whn_n,whn) =
-	      map_split_bind (whencode statement_dots statement) whn in
-	    (bind d_n whn_n, Ast0.Stars(d,whn))
 	| Ast0.Include(inc,name) ->
 	    let (inc_n,inc) = string_mcode inc in
 	    let (name_n,name) = inc_mcode name in
@@ -858,8 +825,6 @@ let visitor mode bind option_default
 	    (multibind [prg_n;id_n;body_n],Ast0.Pragma(prg,id,body))
 	| Ast0.OptStm(re) ->
 	    let (re_n,re) = statement re in (re_n,Ast0.OptStm(re))
-	| Ast0.UniqueStm(re) ->
-	    let (re_n,re) = statement re in (re_n,Ast0.UniqueStm(re))
 	| Ast0.AsStmt(stm,asstm) ->
 	    let (stm_n,stm) = statement stm in
 	    let (asstm_n,asstm) = statement asstm in
@@ -912,16 +877,7 @@ let visitor mode bind option_default
     k p
 
   and define_param_dots d =
-    let k d =
-      rewrap d
-	(match Ast0.unwrap d with
-	  Ast0.DOTS(l) ->
-	    let (n,l) = map_split_bind define_param l in (n,Ast0.DOTS(l))
-	| Ast0.CIRCLES(l) ->
-	    let (n,l) = map_split_bind define_param l in (n,Ast0.CIRCLES(l))
-	| Ast0.STARS(l) ->
-	    let (n,l) = map_split_bind define_param l in (n,Ast0.STARS(l))) in
-    k d
+    rewrap d (map_split_bind define_param (Ast0.unwrap d))
 
   and define_param p =
     let k p =
@@ -932,12 +888,8 @@ let visitor mode bind option_default
 	    let (n,comma) = string_mcode comma in (n,Ast0.DPComma(comma))
 	| Ast0.DPdots(d) ->
 	    let (n,d) = string_mcode d in (n,Ast0.DPdots(d))
-	| Ast0.DPcircles(c) ->
-	    let (n,c) = string_mcode c in (n,Ast0.DPcircles(c))
 	| Ast0.OptDParam(dp) ->
-	    let (n,dp) = define_param dp in (n,Ast0.OptDParam(dp))
-	| Ast0.UniqueDParam(dp) ->
-	    let (n,dp) = define_param dp in (n,Ast0.UniqueDParam(dp))) in
+	    let (n,dp) = define_param dp in (n,Ast0.OptDParam(dp))) in
     k p
 
   and fninfo = function
@@ -1425,12 +1377,13 @@ let rebuilder functions =
     (fun r k e -> ((),functions.VT0.rebuilder_topfn (dz r) (xk k) e)))
 
 let flat_rebuilder
-    meta_mcode string_mcode const_mcode simpleAssign_mcode opAssign_mcode fix_mcode unary_mcode
-    arithOp_mcode logicalOp_mcode cv_mcode sign_mcode struct_mcode storage_mcode
-    inc_mcode
+    meta_mcode string_mcode const_mcode simpleAssign_mcode opAssign_mcode
+    fix_mcode unary_mcode
+    arithOp_mcode logicalOp_mcode cv_mcode sign_mcode struct_mcode
+    storage_mcode inc_mcode
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotscasefn
-    identfn exprfn assignOpfn arithOpfn tyfn initfn paramfn declfn stmtfn forinfofn casefn
-    string_fragmentfn topfn =
+    identfn exprfn assignOpfn arithOpfn tyfn initfn paramfn declfn stmtfn
+    forinfofn casefn string_fragmentfn topfn =
   let dz = rebuilder_dz in
   let xk k e = let (_,e) = k e in e in
   rebuilder_dz

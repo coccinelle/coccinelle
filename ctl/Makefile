@@ -29,7 +29,6 @@ OBJS = $(SRC:.ml=.cmo)
 OPTOBJS = $(SRC:.ml=.cmx)
 
 
-ifneq ($(FEATURE_OCAMLBUILD),yes)
 all: $(LIB)
 all.opt:
 	@$(MAKE) $(OPTLIB) BUILD_OPT=yes
@@ -45,21 +44,6 @@ $(OPTLIB): $(OPTOBJS)
 
 clean::
 	rm -f $(LIB)  $(OPTLIB) $(LIB:.cma=.a) $(TARGET).top
-else
-all:
-	cd .. && $(OCAMLBUILD) ctl/ctl.cma
-
-all.opt:
-	cd .. && $(OCAMLBUILD) ctl/ctl.cmxa
-
-clean::
-	cd .. && $(OCAMLBUILD) -clean
-	rm -f test_ctl
-
-test_ctl:
-	cd .. && $(OCAMLBUILD) ctl/test_ctl.byte
-	cp ../_build/ctl/test_ctl.byte test_ctl
-endif
 
 
 .SUFFIXES:
@@ -89,9 +73,7 @@ distclean: clean
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
-ifneq ($(FEATURE_OCAMLBUILD),yes)
 -include .depend
-endif
 endif
 endif
 

@@ -12,7 +12,7 @@ let rec get_name name =
   | Ast0.MetaLocalFunc(nm,_,_) -> [Meta(Ast0.unwrap_mcode nm)]
   | Ast0.AsIdent(id1,id2) -> failwith "not supported"
   | Ast0.DisjId(_,id_list,_,_) -> List.concat (List.map get_name id_list)
-  | Ast0.OptIdent(id) | Ast0.UniqueIdent(id) ->
+  | Ast0.OptIdent(id) ->
       get_name id
 
 (* --------------------------------------------------------------------- *)
@@ -48,7 +48,7 @@ let collect_function (stm : Ast0.statement) =
   | _ -> []
 
 let collect_functions stmt_dots =
-  List.concat (List.map collect_function (Ast0.undots stmt_dots))
+  List.concat (List.map collect_function (Ast0.unwrap stmt_dots))
 
 let drop_positions =
   let mcode (term,arity,info,mc,_,adj) =
@@ -203,7 +203,7 @@ let rec right_attach_ident strings id =
     | Ast0.MetaId(name,x,y,z) ->
 	Ast0.MetaId(right_attach_mcode strings name,x,y,z)
     | Ast0.AsIdent(id,asid) -> Ast0.AsIdent(right_attach_ident strings id,asid)
-    | _ -> failwith "disj, opt, unique, and funcs not supported")
+    | _ -> failwith "disj, opt, and funcs not supported")
 
 let rec attach_right strings ty =
   Ast0.rewrap ty
@@ -239,7 +239,7 @@ let rec attach_right strings ty =
     | Ast0.MetaType(nm,pure) ->
 	Ast0.MetaType(right_attach_mcode strings nm,pure)
     | Ast0.AsType(ty,asty) -> Ast0.AsType(attach_right strings ty,asty)
-    | _ -> failwith "disj, opt and unique type not supported")
+    | _ -> failwith "disj and opt type not supported")
 
 let rec drop_param_name p =
   Ast0.rewrap p
@@ -249,7 +249,6 @@ let rec drop_param_name p =
 	let p = attach_right strings p in
 	Ast0.Param(p,None)
     | Ast0.OptParam(p) -> Ast0.OptParam(drop_param_name p)
-    | Ast0.UniqueParam(p) -> Ast0.UniqueParam(p)
     | p -> p)
 
 let drop_names dec =
@@ -259,12 +258,8 @@ let drop_names dec =
       (match Ast0.unwrap proto with
 	Ast0.FunProto(fninfo,name,lp,params,va,rp,sem) ->
 	  let params =
-	    match Ast0.unwrap params with
-	      Ast0.DOTS(l) ->
-		Ast0.rewrap params (Ast0.DOTS(List.map drop_param_name l))
-	    | Ast0.CIRCLES(l) ->
-		Ast0.rewrap params (Ast0.CIRCLES(List.map drop_param_name l))
-	    | Ast0.STARS(l) -> failwith "unexpected stars" in
+	    Ast0.rewrap params
+	      (List.map drop_param_name (Ast0.unwrap params)) in
 	  Ast0.rewrap dec
 	    (Ast0.Decl
 	       (info,
@@ -317,9 +312,6 @@ let rec rename_param old_name all param index =
   | Ast0.OptParam(p) ->
       let (metavars,p) = rename_param old_name all p index in
       (metavars,Ast0.rewrap param (Ast0.OptParam(p)))
-  | Ast0.UniqueParam(p) ->
-      let (metavars,p) = rename_param old_name all p index in
-      (metavars,Ast0.rewrap param (Ast0.UniqueParam(p)))
   | _ -> ([],param)
 
 let iota l =
@@ -338,7 +330,7 @@ let fresh_names old_name mdef dec =
 	Ast0.FunProto(fninfo,name,lp,params,va,rp,sem) ->
 	  let (metavars,newdec) =
 	    let (metavars,l) =
-	      let params = Ast0.undots params in
+	      let params = Ast0.unwrap params in
 	      List.split
 		(List.map2 (rename_param old_name true)
 		   params (iota params)) in
@@ -348,20 +340,18 @@ let fresh_names old_name mdef dec =
 		  (info,
 		   Ast0.rewrap proto
 		     (Ast0.FunProto
-			(fninfo,name,lp,Ast0.rewrap params (Ast0.DOTS(l)),va,
-			 rp,sem))))) in
+			(fninfo,name,lp,Ast0.rewrap params l,va,rp,sem))))) in
 	  let (def_metavars,newdef) =
 	    match Ast0.unwrap mdef with
 	      Ast0.FunDecl(x,fninfo,name,lp,params,va,rp,lb,body,rb,y) ->
 		let (def_metavars,def_l) =
-		  let params = Ast0.undots params in
+		  let params = Ast0.unwrap params in
 		  List.split
 		    (List.map2 (rename_param old_name false)
 		       params (iota params)) in
 		(List.concat def_metavars,
 		 Ast0.rewrap mdef
-		   (Ast0.FunDecl(x,fninfo,name,lp,
-				 Ast0.rewrap params (Ast0.DOTS(def_l)),va,
+		   (Ast0.FunDecl(x,fninfo,name,lp,Ast0.rewrap params def_l,va,
 				 rp,lb,body,rb,y)))
 	    | _ -> failwith "unexpected function definition" in
 	  (metavars,def_metavars,newdec,newdef)
@@ -393,13 +383,13 @@ let no_names dec =
 			  Ast0.get_mcode_mcodekind lp in
 			let pdots =
 			  ("...",Ast0.NONE,info,mcodekind,ref [],-1) in
-			Ast0.DOTS([Ast0.rewrap params (Ast0.Pdots(pdots))])),
+			[Ast0.rewrap params (Ast0.Pdots(pdots))]),
 		      va,rp,sem))))
       |	_ -> dec)
   | _ -> dec
 
 let mkcode proto =
-  Ast0.copywrap proto (Ast0.CODE(Ast0.copywrap proto (Ast0.DOTS [proto])))
+  Ast0.copywrap proto (Ast0.CODE(Ast0.copywrap proto [proto]))
 
 let merge mproto pproto =
   let mproto = Compute_lines.compute_lines true [mkcode mproto] in
@@ -411,7 +401,7 @@ let merge mproto pproto =
   let mproto = Ast0toast.ast0toast_toplevel (List.hd mproto) in
   (* clean up the wrapping added above *)
   match Ast.unwrap mproto with
-    Ast.CODE mproto -> List.hd (Ast.undots mproto)
+    Ast.CODE mproto -> List.hd (Ast.unwrap mproto)
   | _ -> failwith "not possible"
 
 let make_rule rule_name = function
@@ -446,15 +436,14 @@ let reinsert mdefs minus =
 	      with Not_found -> x)
 	  | _ -> x)
       | Ast0.CODE(rule_elem_dots) ->
-	  (match Ast0.undots rule_elem_dots with
+	  (match Ast0.unwrap rule_elem_dots with
 	    [f] ->
 	      (match Ast0.unwrap f with
 		Ast0.FunDecl(_,fninfo,name,lp,params,va,rp,lbrace,body,
 			     rbrace,_) ->
 		  (try
 		    Ast0.rewrap x
-		      (Ast0.CODE
-			 (Ast0.rewrap x (Ast0.DOTS [List.assoc name table])))
+		      (Ast0.CODE(Ast0.rewrap x [List.assoc name table]))
 		  with Not_found -> x)
 	      | _ ->
 	      (* let's hope there are no functions in here... *)
@@ -474,7 +463,7 @@ let rec split4 = function
       let (ax,bx,cx,dx) = split4 rest in (a::ax,b::bx,c::cx,d::dx)
 
 let mk_ast_code proto =
-  Ast.rewrap proto (Ast.CODE(Ast.rewrap proto (Ast.DOTS [proto])))
+  Ast.rewrap proto (Ast.CODE(Ast.rewrap proto [proto]))
 
 let process rule_name rule_metavars dropped_isos minus plus ruletype =
   if List.mem "prototypes" dropped_isos
@@ -506,9 +495,8 @@ let process rule_name rule_metavars dropped_isos minus plus ruletype =
 		   (Ast.Dep rule_name,dropped_isos,Ast.Forall),
 		   [mk_ast_code x],
 		   [false],ruletype)))
-	|	x::_ ->
-	    let drules =
-	      List.map (function x -> Ast.rewrap x (Ast.DOTS [x])) rules in
+	| x::_ ->
+	    let drules = List.map (function x -> Ast.rewrap x [x]) rules in
 	    let res =
               Ast.CocciRule
 		("proto for "^rule_name,

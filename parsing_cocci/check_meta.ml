@@ -44,11 +44,7 @@ let get_opt fn = Common.do_option fn
 (* --------------------------------------------------------------------- *)
 (* Dots *)
 
-let dots fn d =
-  match Ast0.unwrap d with
-    Ast0.DOTS(x) -> List.iter fn x
-  | Ast0.CIRCLES(x) -> List.iter fn x
-  | Ast0.STARS(x) -> List.iter fn x
+let dots fn d = List.iter fn (Ast0.unwrap d)
 
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
@@ -92,7 +88,7 @@ let rec ident context old_metas table minus i =
   | Ast0.AsIdent(id,asid) -> failwith "not generated yet"
   | Ast0.DisjId(_,id_list,_,_) ->
       List.iter (ident context old_metas table minus) id_list
-  | Ast0.OptIdent(_) | Ast0.UniqueIdent(_) ->
+  | Ast0.OptIdent(_) ->
       failwith "unexpected code"
 
 and seed table minus = function
@@ -190,15 +186,15 @@ let rec expression context old_metas table minus e =
       check_table table minus name
   | Ast0.AsExpr(exp,asexp) -> failwith "not generated yet"
   | Ast0.AsSExpr(exp,asstm) -> failwith "not generated yet"
-  | Ast0.DisjExpr(_,exps,_,_) ->
+  | Ast0.DisjExpr(_,exps,_,_)
+  | Ast0.ConjExpr(_,exps,_,_) ->
       List.iter (expression context old_metas table minus) exps
   | Ast0.NestExpr(_,exp_dots,_,w,_) ->
       dots (expression ID old_metas table minus) exp_dots;
       get_opt (function (_,_,x) -> expression ID old_metas table minus x) w
-  | Ast0.Edots(_,Some (_,_,x)) | Ast0.Ecircles(_,Some (_,_,x))
-  | Ast0.Estars(_,Some (_,_,x)) ->
+  | Ast0.Edots(_,Some (_,_,x)) ->
       expression ID old_metas table minus x
-  | Ast0.OptExp(x) | Ast0.UniqueExp(x) ->
+  | Ast0.OptExp(x) ->
       expression ID old_metas table minus x
   | _ -> () (* no metavariable subterms *)
 
@@ -247,7 +243,7 @@ and typeC old_metas table minus t =
   | Ast0.StructUnionDef(ty,lb,decls,rb) ->
       typeC old_metas table minus ty;
       dots (declaration GLOBAL old_metas table minus) decls
-  | Ast0.OptType(ty) | Ast0.UniqueType(ty) ->
+  | Ast0.OptType(ty) ->
       failwith "unexpected code"
   | _ -> () (* no metavariable subterms *)
 
@@ -302,7 +298,7 @@ and declaration context old_metas table minus d =
       List.iter (declaration ID old_metas table minus) decls
   | Ast0.Ddots(_,Some (_,_,x)) -> declaration ID old_metas table minus x
   | Ast0.Ddots(_,None) -> ()
-  | Ast0.OptDecl(_) | Ast0.UniqueDecl(_) ->
+  | Ast0.OptDecl(_) ->
       failwith "unexpected code"
 
 (* --------------------------------------------------------------------- *)
@@ -328,7 +324,7 @@ and initialiser old_metas table minus ini =
       ident FIELD old_metas table minus name;
       initialiser old_metas table minus ini
   | Ast0.Idots(_,Some (_,_,x)) -> initialiser old_metas table minus x
-  | Ast0.OptIni(_) | Ast0.UniqueIni(_) ->
+  | Ast0.OptIni(_) ->
       failwith "unexpected code"
   | _ -> () (* no metavariable subterms *)
 
@@ -435,7 +431,8 @@ and statement old_metas table minus s =
   | Ast0.Ty(ty) -> typeC old_metas table minus ty
   | Ast0.TopId(id) -> ident ID old_metas table minus id
   | Ast0.TopInit(init) -> initialiser old_metas table minus init
-  | Ast0.Disj(_,rule_elem_dots_list,_,_) ->
+  | Ast0.Disj(_,rule_elem_dots_list,_,_)
+  | Ast0.Conj(_,rule_elem_dots_list,_,_) ->
       List.iter (dots (statement old_metas table minus)) rule_elem_dots_list
   | Ast0.Nest(_,rule_elem_dots,_,w,_) ->
       dots (statement old_metas table minus) rule_elem_dots;
@@ -443,7 +440,7 @@ and statement old_metas table minus s =
 		   (statement old_metas table minus)
 		   (expression ID old_metas table minus))
 	w
-  | Ast0.Dots(_,x) | Ast0.Circles(_,x) | Ast0.Stars(_,x) ->
+  | Ast0.Dots(_,x) ->
       List.iter
 	(whencode (dots (statement old_metas table minus))
 	   (statement old_metas table minus)
@@ -477,10 +474,9 @@ and pragmainfo old_metas table minus pi =
 and define_param old_metas table minus p =
   match Ast0.unwrap p with
     Ast0.DParam(id) -> ident GLOBAL old_metas table minus id
-  | Ast0.DPComma(_) | Ast0.DPdots(_) | Ast0.DPcircles(_) ->
+  | Ast0.DPComma(_) | Ast0.DPdots(_) ->
       () (* no metavariable subterms *)
   | Ast0.OptDParam(dp)    -> define_param old_metas table minus dp
-  | Ast0.UniqueDParam(dp) -> define_param old_metas table minus dp
 
 and define_parameters old_metas table minus x =
   match Ast0.unwrap x with
@@ -590,7 +586,8 @@ let dup_positions rules =
 
   let expression r k e =
     match Ast0.unwrap e with
-      Ast0.DisjExpr(_,explist,_,_) ->
+      Ast0.DisjExpr(_,explist,_,_)
+    | Ast0.ConjExpr(_,explist,_,_) ->
 	List.fold_left Common.union_set option_default
 	  (List.map r.VT0.combiner_rec_expression explist)
     | _ -> k e in
@@ -611,7 +608,8 @@ let dup_positions rules =
 
   let statement r k e =
     match Ast0.unwrap e with
-      Ast0.Disj(_,stmts,_,_) ->
+      Ast0.Disj(_,stmts,_,_)
+    | Ast0.Conj(_,stmts,_,_) ->
 	List.fold_left Common.union_set option_default
 	  (List.map r.VT0.combiner_rec_statement_dots stmts)
     | _ -> k e in

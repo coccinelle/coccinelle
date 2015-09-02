@@ -119,13 +119,17 @@ let (cexpression_of_string: string -> string -> Ast_c.expression) =
 
 let make_ident s = Ast_c.MetaIdVal(s)
 let make_expr s =
-  Ast_c.MetaExprVal(Lib_parsing_c.al_expr(cexpression_of_string "" s), [])
+  Ast_c.MetaExprVal(Lib_parsing_c.al_expr(cexpression_of_string "" s), [],
+		    Ast_c.WITHOUT_TYPES)
 let make_expr_with_env env s =
-  Ast_c.MetaExprVal(Lib_parsing_c.al_expr(cexpression_of_string env s), [])
+  Ast_c.MetaExprVal(Lib_parsing_c.al_expr(cexpression_of_string env s), [],
+		    Ast_c.WITH_TYPES)
 let make_stmt s =
-  Ast_c.MetaStmtVal(Lib_parsing_c.al_statement(cstatement_of_string "" s))
+  Ast_c.MetaStmtVal(Lib_parsing_c.al_statement(cstatement_of_string "" s),
+		    Ast_c.WITHOUT_TYPES)
 let make_stmt_with_env env s =
-  Ast_c.MetaStmtVal(Lib_parsing_c.al_statement(cstatement_of_string env s))
+  Ast_c.MetaStmtVal(Lib_parsing_c.al_statement(cstatement_of_string env s),
+		    Ast_c.WITH_TYPES)
 let make_type s =
   Ast_c.MetaTypeVal(Lib_parsing_c.al_type(Parse_c.type_of_string s))
 let make_listlen i = Ast_c.MetaListlenVal i

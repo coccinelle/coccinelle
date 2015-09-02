@@ -22,6 +22,17 @@
 - typedefs from C code should not be used before their point of inference
   (saved_typedefs in cprogram_of_file)
 
+* 1.0.3
+** Language:
+- Conjunction (analogous to disjunction)
+- Drop Circles, Stars
+- Drop Unique
+** Features:
+- Removed the extlib and sexp bundles which were not used any more.
+- Drop support for OCaml 3.11 which did not allow to compile coccinelle in
+  native code
+** Bugfix:
+- Allow virtual variable definition to contain an =.
 * 1.0.2
 ** Language:
 ** Features:

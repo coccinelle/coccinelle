@@ -113,12 +113,7 @@ and seed_elem = SeedString of string | SeedId of meta_name
 (* --------------------------------------------------------------------- *)
 (* Dots *)
 
-and 'a base_dots =
-    DOTS of 'a list
-  | CIRCLES of 'a list
-  | STARS of 'a list
-
-and 'a dots = 'a base_dots wrap
+and 'a dots = 'a list wrap
 
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
@@ -132,7 +127,6 @@ and base_ident =
 
   | DisjId        of ident list
   | OptIdent      of ident
-  | UniqueIdent   of ident
 
 and ident = base_ident wrap
 
@@ -184,6 +178,7 @@ and base_expression =
   | EComma         of string mcode (* only in arg lists *)
 
   | DisjExpr       of expression list
+  | ConjExpr       of expression list
   | NestExpr       of string mcode (* <.../<+... *) *
 	              expression dots *
 	              string mcode (* ...>/...+> *) *
@@ -193,11 +188,8 @@ and base_expression =
    if(< ... X ... Y ...>)
    In the following, the expression option is the WHEN  *)
   | Edots          of string mcode (* ... *) * expression option
-  | Ecircles       of string mcode (* ooo *) * expression option
-  | Estars         of string mcode (* *** *) * expression option
 
   | OptExp         of expression
-  | UniqueExp      of expression
 
 and constraints =
     NoConstraint
@@ -282,7 +274,6 @@ and base_fullType =
   | AsType          of fullType * fullType (* as type, always metavar *)
   | DisjType        of fullType list (* only after iso *)
   | OptType         of fullType
-  | UniqueType      of fullType
 
 and base_typeC =
     BaseType        of baseType * string mcode list (* Yoann style *)
@@ -352,7 +343,6 @@ and base_declaration =
   | AsDecl        of declaration * declaration
 
   | OptDecl    of declaration
-  | UniqueDecl of declaration
 
 and declaration = base_declaration wrap
 
@@ -384,7 +374,6 @@ and base_initialiser =
   | IComma of string mcode (* , *)
   | Idots  of string mcode (* ... *) * initialiser option (* whencode *)
   | OptIni    of initialiser
-  | UniqueIni of initialiser
 
 and designator =
     DesignatorField of string mcode (* . *) * ident
@@ -410,10 +399,8 @@ and base_parameterTypeDef =
   | PComma        of string mcode
 
   | Pdots         of string mcode (* ... *)
-  | Pcircles      of string mcode (* ooo *)
 
   | OptParam      of parameterTypeDef
-  | UniqueParam   of parameterTypeDef
 
 and parameterTypeDef = base_parameterTypeDef wrap
 
@@ -426,9 +413,7 @@ and base_define_param =
     DParam        of ident
   | DPComma       of string mcode
   | DPdots        of string mcode (* ... *)
-  | DPcircles     of string mcode (* ooo *)
   | OptDParam     of define_param
-  | UniqueDParam  of define_param
 
 and define_param = base_define_param wrap
 
@@ -551,6 +536,7 @@ and base_statement =
 	             statement (*decl*) dots * case_line list * rule_elem(*}*)
   | Atomic        of rule_elem
   | Disj          of statement dots list
+  | Conj          of statement dots list
   | Nest          of string mcode (* <.../<+... *) * statement dots *
 	             string mcode (* ...>/...+> *) *
 	             (statement dots,statement) whencode list * multi *
@@ -562,14 +548,7 @@ and base_statement =
   | Dots          of string mcode (* ... *) *
 	             (statement dots,statement) whencode list *
 	             dots_whencode list * dots_whencode list
-  | Circles       of string mcode (* ooo *) *
-	             (statement dots,statement) whencode list *
-	             dots_whencode list * dots_whencode list
-  | Stars         of string mcode (* *** *) *
-	             (statement dots,statement) whencode list *
-	             dots_whencode list * dots_whencode list
   | OptStm        of statement
-  | UniqueStm     of statement
 
 and ('a,'b) whencode =
     WhenNot of 'a
@@ -709,8 +688,6 @@ and exists = Exists | Forall | Undetermined
 (* --------------------------------------------------------------------- *)
 
 val mkToken : string -> anything
-
-val undots : 'a dots -> 'a list
 
 val lub_count : count -> count -> count
 

@@ -221,8 +221,8 @@ the same, but for structure fields.
   \CASE{\NT{id} \OPT{ = \NT{binop\_contraint}}}
 
   \RULE{\rt{binop\_contraint}}
-  \CASE{\mth{\{}\NT{COMMA\_LIST}\mth{(}\NT{binary\_op}\mth{)}\mth{\}}}
-  \CASE{\NT{binary\_op}}
+  \CASE{\mth{\{}\NT{COMMA\_LIST}\mth{(}\NT{bin\_op}\mth{)}\mth{\}}}
+  \CASE{\NT{bin\_op}}
 \end{grammar}
 
 A metavariable declaration local idexpression v means that v is restricted
@@ -285,7 +285,7 @@ is found in demos/format.cocci.
 
 Assignment (resp. binary) operator metavariables match any assignment
 (resp. binary) operator. The list of operators that can be matched can
-be restrected by adding an operator constraint, i.e. a list of accepted
+be restricted by adding an operator constraint, i.e. a list of accepted
 operators.
 
 Other kinds of metavariables can also be attached using \texttt{@} to any
@@ -491,11 +491,11 @@ Python, the assignment of such a metavariable $x$ should refer to the
 metavariable as {\tt coccinelle.\(x\)}.  Examples are in the files
 \texttt{demos/pythontococci.cocci} and \texttt{demos/camltococci.cocci}.
 
-In an ocaml script, the following extended form of \textit{script\_metadecl}
+In an OCaml script, the following extended form of \textit{script\_metadecl}
 may be used:
 
 \begin{grammar}
-  \RULE{\rt{script\_metadecl}}
+  \RULE{\rt{script\_metadecl'}}
   \CASE{(\T{id},\T{id}) <{}< \T{rulename\_id}.\T{id} ;}
   \CASE{\T{id} <{}< \T{rulename\_id}.\T{id} ;}
   \CASE{\T{id} ;}
@@ -941,13 +941,13 @@ parameter, and may not contain varargs.
 
 \begin{grammar}
   \RULE{\rt{decl\_var}}
-%  \CASE{\NT{type} \opt{\NT{id} \opt{[\opt{\NT{dot\_expr}}]}
-%      \ANY{, \NT{id} \opt{[ \opt{\NT{dot\_expr}}]}}};}
   \CASE{\NT{common\_decl}}
   \CASE{\opt{\NT{storage}} \NT{ctype} \NT{COMMA\_LIST}\mth{(}\NT{d\_ident}\mth{)} ;}
   \CASE{\opt{\NT{storage}} \opt{\NT{const\_vol}} \T{id} \NT{COMMA\_LIST}\mth{(}\NT{d\_ident}\mth{)} ;}
   \CASE{\opt{\NT{storage}} \NT{fn\_ctype} ( * \NT{d\_ident} ) ( \NT{PARAMSEQ}\mth{(}\NT{name\_opt\_decl}, \mth{\varepsilon)} ) = \NT{initialize} ;}
   \CASE{typedef \NT{ctype} \NT{typedef\_ident} ;}
+%  \CASE{\NT{type} \opt{\NT{id} \opt{[\opt{\NT{dot\_expr}}]}
+%      \ANY{, \NT{id} \opt{[ \opt{\NT{dot\_expr}}]}}};}
 
   \RULE{\rt{one\_decl}}
   \CASE{\NT{common\_decl}}

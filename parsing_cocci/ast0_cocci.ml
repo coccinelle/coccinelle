@@ -4,7 +4,7 @@ module TC = Type_cocci
 (* --------------------------------------------------------------------- *)
 (* Modified code *)
 
-type arity = OPT | UNIQUE | NONE
+type arity = OPT | NONE
 
 type token_info =
     { tline_start : int; tline_end : int;
@@ -73,12 +73,7 @@ and pure = Impure | Pure | Context | PureContext (* pure and only context *)
 (* --------------------------------------------------------------------- *)
 (* Dots *)
 
-and 'a base_dots =
-    DOTS of 'a list
-  | CIRCLES of 'a list
-  | STARS of 'a list
-
-and 'a dots = 'a base_dots wrap
+and 'a dots = 'a list wrap
 
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
@@ -92,7 +87,6 @@ and base_ident =
   | DisjId        of string mcode * ident list *
                      string mcode list (* the |s *) * string mcode
   | OptIdent      of ident
-  | UniqueIdent   of ident
 
 and ident = base_ident wrap
 
@@ -140,17 +134,14 @@ and base_expression =
   | EComma         of string mcode (* only in arg lists *)
   | DisjExpr       of string mcode * expression list *
 	              string mcode list (* the |s *) * string mcode
+  | ConjExpr       of string mcode * expression list *
+	              string mcode list (* the &s *) * string mcode
   | NestExpr       of string mcode * expression dots * string mcode *
 	              (string mcode * string mcode * expression) option
 	              (* whencode *) * Ast.multi
   | Edots          of string mcode (* ... *) * (string mcode * string mcode *
                       expression) option (* whencode *)
-  | Ecircles       of string mcode (* ooo *) * (string mcode * string mcode *
-	              expression) option (* whencode *)
-  | Estars         of string mcode (* *** *) * (string mcode * string mcode *
-	              expression) option (* whencode *)
   | OptExp         of expression
-  | UniqueExp      of expression
 
 and expression = base_expression wrap
 
@@ -230,7 +221,6 @@ and base_typeC =
   | DisjType        of string mcode * typeC list * (* only after iso *)
                        string mcode list (* the |s *)  * string mcode
   | OptType         of typeC
-  | UniqueType      of typeC
 
 and typeC = base_typeC wrap
 
@@ -271,7 +261,6 @@ and base_declaration =
   | Ddots      of string mcode (* ... *) * (string mcode * string mcode *
 	          declaration) option (* whencode *)
   | OptDecl    of declaration
-  | UniqueDecl of declaration
 
 and declaration = base_declaration wrap
 
@@ -295,7 +284,6 @@ and base_initialiser =
   | Idots  of string mcode (* ... *) *
               (string mcode * string mcode * initialiser) option (* whencode *)
   | OptIni    of initialiser
-  | UniqueIni of initialiser
 
 and designator =
     DesignatorField of string mcode (* . *) * ident
@@ -319,9 +307,7 @@ and base_parameterTypeDef =
   | AsParam       of parameterTypeDef * expression (* expr, always metavar *)
   | PComma        of string mcode
   | Pdots         of string mcode (* ... *)
-  | Pcircles      of string mcode (* ooo *)
   | OptParam      of parameterTypeDef
-  | UniqueParam   of parameterTypeDef
 
 and parameterTypeDef = base_parameterTypeDef wrap
 
@@ -334,9 +320,7 @@ and base_define_param =
     DParam        of ident
   | DPComma       of string mcode
   | DPdots        of string mcode (* ... *)
-  | DPcircles     of string mcode (* ooo *)
   | OptDParam     of define_param
-  | UniqueDParam  of define_param
 
 and define_param = base_define_param wrap
 
@@ -399,14 +383,12 @@ and base_statement =
   | TopInit       of initialiser (* only at top level *)
   | Disj          of string mcode * statement dots list *
 	             string mcode list (* the |s *)  * string mcode
+  | Conj          of string mcode * statement dots list *
+	             string mcode list (* the &s *)  * string mcode
   | Nest          of string mcode * statement dots * string mcode *
 	             (statement dots,statement) whencode list * Ast.multi
   | Dots          of string mcode (* ... *) *
                      (statement dots,statement) whencode list
-  | Circles       of string mcode (* ooo *) *
-	             (statement dots,statement) whencode list
-  | Stars         of string mcode (* *** *) *
-	             (statement dots,statement) whencode list
   | FunDecl of (info * mcodekind) (* before the function decl *) *
 	fninfo list * ident (* name *) *
 	string mcode (* ( *) * parameter_list *
@@ -421,7 +403,6 @@ and base_statement =
 	define_parameters (*params*) * statement dots
   | Pragma of string mcode (* #pragma *) * ident * pragmainfo
   | OptStm   of statement
-  | UniqueStm of statement
 
 and base_pragmainfo =
     PragmaTuple of string mcode(* ( *) * expression dots * string mcode(* ) *)
@@ -706,14 +687,6 @@ let fresh_index _ = let cur = !index_counter in index_counter := cur + 1; cur
 
 (* --------------------------------------------------------------------- *)
 
-let undots d =
-  match unwrap d with
-  | DOTS    e -> e
-  | CIRCLES e -> e
-  | STARS   e -> e
-
-(* --------------------------------------------------------------------- *)
-
 let rec ast0_type_to_type inmeta ty =
   match unwrap ty with
     ConstVol(cv,ty) -> TC.ConstVol(const_vol cv,ast0_type_to_type inmeta ty)
@@ -788,8 +761,7 @@ let rec ast0_type_to_type inmeta ty =
       Common.pr2_once
 	"disjtype not supported in smpl type inference, assuming unknown";
       TC.Unknown
-  | OptType(ty) | UniqueType(ty) ->
-      ast0_type_to_type inmeta ty
+  | OptType(ty) -> ast0_type_to_type inmeta ty
 
 and baseType = function
     Ast.VoidType -> TC.VoidType

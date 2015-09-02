@@ -15,14 +15,13 @@ let fail w str =
        ((Ast0.get_info w).Ast0.pos_info.Ast0.line_start)
        str)
 
-let make_opt_unique optfn uniquefn info tgt arity term =
+let make_opt optfn info tgt arity term =
   let term = Ast0.rewrap info term in
   if tgt = arity
   then term
   else (* tgt must be NONE *)
     match arity with
       Ast0.OPT -> Ast0.copywrap info (optfn term)
-    | Ast0.UNIQUE -> Ast0.copywrap info (uniquefn term)
     | Ast0.NONE -> failwith "tgt must be NONE"
 
 let all_same opt_allowed tgt line arities =
@@ -85,70 +84,14 @@ let mcode x = x (* nothing to do ... *)
 (* --------------------------------------------------------------------- *)
 (* Dots *)
 
-let dots fn d =
-  Ast0.rewrap d
-    (match Ast0.unwrap d with
-      Ast0.DOTS(x) -> Ast0.DOTS(List.map fn x)
-    | Ast0.CIRCLES(x) -> Ast0.CIRCLES(List.map fn x)
-    | Ast0.STARS(x) -> Ast0.STARS(List.map fn x))
-
-let only_dots l =
-  not
-    (List.exists
-       (function x ->
-	  match Ast0.unwrap x with
-	   Ast0.Circles(_,_) | Ast0.Stars(_,_) -> true
-	 | _ -> false)
-       l)
-
-let only_circles l =
-  not (List.exists
-	(function x ->
-	  match Ast0.unwrap x with
-	    Ast0.Dots(_,_) | Ast0.Stars(_,_) -> true
-	  | _ -> false)
-	 l)
-
-let only_stars l =
-  not (List.exists
-	(function x ->
-	  match Ast0.unwrap x with
-	    Ast0.Dots(_,_) | Ast0.Circles(_,_) -> true
-	  | _ -> false)
-	 l)
-
-let concat_dots fn d =
-  Ast0.rewrap d
-    (match Ast0.unwrap d with
-      Ast0.DOTS(x) ->
-	let l = List.map fn x in
-	if only_dots l
-	then Ast0.DOTS(l)
-	else fail d "inconsistent dots usage"
-    | Ast0.CIRCLES(x) ->
-	let l = List.map fn x in
-	if only_circles l
-	then Ast0.CIRCLES(l)
-	else fail d "inconsistent dots usage"
-    | Ast0.STARS(x) ->
-	let l = List.map fn x in
-	if only_stars l
-	then Ast0.STARS(l)
-	else fail d "inconsistent dots usage")
-
-let flat_concat_dots fn d =
-  match Ast0.unwrap d with
-    Ast0.DOTS(x) -> List.map fn x
-  | Ast0.CIRCLES(x) -> List.map fn x
-  | Ast0.STARS(x) -> List.map fn x
+let dots fn d = Ast0.rewrap d (List.map fn (Ast0.unwrap d))
 
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
 
 let make_id =
-  make_opt_unique
+  make_opt
     (function x -> Ast0.OptIdent x)
-    (function x -> Ast0.UniqueIdent x)
 
 let rec ident opt_allowed tgt i =
   match Ast0.unwrap i with
@@ -184,16 +127,16 @@ let rec ident opt_allowed tgt i =
 	  then fail i "opt only allowed in the last disjunct"
       |	_ -> ());
       Ast0.rewrap i (Ast0.DisjId(starter,id_list,mids,ender))
-  | Ast0.OptIdent(_) | Ast0.UniqueIdent(_) | Ast0.AsIdent _ ->
+  | Ast0.OptIdent(_) | Ast0.AsIdent _ ->
       failwith "unexpected code"
 
 (* --------------------------------------------------------------------- *)
 (* Expression *)
 
 let make_exp =
-  make_opt_unique
+  make_opt
     (function x -> Ast0.OptExp x)
-    (function x -> Ast0.UniqueExp x)
+
 
 let rec top_expression opt_allowed tgt expr =
   let exp_same = all_same opt_allowed tgt in
@@ -204,8 +147,6 @@ let rec top_expression opt_allowed tgt expr =
 	(match Ast0.unwrap new_id with
 	  Ast0.OptIdent(id) ->
 	    Ast0.OptExp(Ast0.rewrap expr (Ast0.Ident(id)))
-	| Ast0.UniqueIdent(id) ->
-	    Ast0.UniqueExp(Ast0.rewrap expr (Ast0.Ident(id)))
 	| _ -> Ast0.Ident(new_id))
   | Ast0.Constant(const) ->
       let arity = exp_same (mcode2line const) [mcode2arity const] in
@@ -338,30 +279,29 @@ let rec top_expression opt_allowed tgt expr =
 	  then fail expr "opt only allowed in the last disjunct"
       |	_ -> ());
       Ast0.rewrap expr (Ast0.DisjExpr(starter,exps,mids,ender))
-  |  Ast0.NestExpr(starter,exp_dots,ender,whencode,multi) ->
+  | Ast0.ConjExpr(starter,exps,mids,ender) ->
+      (match exps with
+	e::es ->
+	  let e = top_expression opt_allowed tgt e in
+	  let arity =
+	    match Ast0.unwrap e with
+	      Ast0.OptExp _ -> Ast0.OPT
+	    | _ -> Ast0.NONE in
+	  let es = List.map (expression arity) es in
+	  make_exp expr tgt arity (Ast0.ConjExpr(starter,e::es,mids,ender))
+      |	_ -> expr)
+  | Ast0.NestExpr(starter,exp_dots,ender,whencode,multi) ->
       let res =
         Ast0.NestExpr(starter,
                       dots (top_expression true Ast0.NONE) exp_dots,
                       ender,whencode,multi) in
       Ast0.rewrap expr res
-  |  Ast0.Edots(dots,whencode) ->
+  | Ast0.Edots(dots,whencode) ->
       let arity = exp_same (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in
       let whencode =
         get_option (fun (a,e,b) -> (a,e,expression Ast0.NONE b)) whencode in
       make_exp expr tgt arity (Ast0.Edots(dots,whencode))
-  | Ast0.Ecircles(dots,whencode) ->
-      let arity = exp_same (mcode2line dots) [mcode2arity dots] in
-      let dots = mcode dots in
-      let whencode =
-        get_option (fun (a,e,b) -> (a,e,expression Ast0.NONE b)) whencode in
-      make_exp expr tgt arity (Ast0.Ecircles(dots,whencode))
-  | Ast0.Estars(dots,whencode) ->
-      let arity = exp_same (mcode2line dots) [mcode2arity dots] in
-      let dots = mcode dots in
-      let whencode =
-        get_option (fun (a,e,b) -> (a,e,expression Ast0.NONE b)) whencode in
-      make_exp expr tgt arity (Ast0.Estars(dots,whencode))
   | Ast0.Constructor(lp,ty,rp,init) ->
       let arity = exp_same (mcode2line lp) [mcode2arity lp;mcode2arity rp] in
       let lp = mcode lp in
@@ -370,15 +310,14 @@ let rec top_expression opt_allowed tgt expr =
       let init = initialiser arity init in
       make_exp expr tgt arity (Ast0.Constructor(lp,ty,rp,init))
   (* why does optexp exist???? *)
-  | Ast0.OptExp(_) | Ast0.UniqueExp(_) | Ast0.AsExpr _ | Ast0.AsSExpr _ ->
+  | Ast0.OptExp(_) | Ast0.AsExpr _ | Ast0.AsSExpr _ ->
       failwith "unexpected code"
 
 and expression tgt exp = top_expression false tgt exp
 
 and make_fragment =
-  make_opt_unique
+  make_opt
     (function x -> failwith "opt not allowed for string fragment")
-    (function x -> failwith "unique not allowed for string fragment")
 
 and string_fragment tgt e =
   match Ast0.unwrap e with
@@ -404,9 +343,8 @@ and string_fragment tgt e =
       make_fragment e tgt arity (Ast0.MetaFormatList(pct,name,lenname))
 
 and make_format =
-  make_opt_unique
+  make_opt
     (function x -> failwith "opt not allowed for string format")
-    (function x -> failwith "unique not allowed for string format")
 
 and string_format tgt e =
   match Ast0.unwrap e with
@@ -423,9 +361,8 @@ and string_format tgt e =
 (* Types *)
 
 and make_typeC =
-  make_opt_unique
+  make_opt
     (function x -> Ast0.OptType x)
-    (function x -> Ast0.UniqueType x)
 
 and top_typeC tgt opt_allowed typ =
   match Ast0.unwrap typ with
@@ -532,7 +469,7 @@ and top_typeC tgt opt_allowed typ =
       |	_ -> ());
       let res = Ast0.DisjType(starter,types,mids,ender) in
       Ast0.rewrap typ res
-  | Ast0.OptType(_) | Ast0.UniqueType(_) | Ast0.AsType _ ->
+  | Ast0.OptType(_) | Ast0.AsType _ ->
       failwith "unexpected code"
 
 and typeC tgt ty = top_typeC tgt false ty
@@ -543,9 +480,8 @@ and typeC tgt ty = top_typeC tgt false ty
    split out into multiple declarations of a single variable each. *)
 
 and make_decl =
-  make_opt_unique
+  make_opt
     (function x -> Ast0.OptDecl x)
-    (function x -> Ast0.UniqueDecl x)
 
 and declaration tgt decl =
   match Ast0.unwrap decl with
@@ -656,16 +592,15 @@ and declaration tgt decl =
       let whencode =
         get_option (fun (a,e,b) -> (a,e,declaration Ast0.NONE b)) whencode in
       make_decl decl tgt arity (Ast0.Ddots(dots,whencode))
-  | Ast0.OptDecl(_) | Ast0.UniqueDecl(_) | Ast0.AsDecl _ ->
+  | Ast0.OptDecl(_) | Ast0.AsDecl _ ->
       failwith "unexpected code"
 
 (* --------------------------------------------------------------------- *)
 (* Initializer *)
 
 and make_init =
-  make_opt_unique
+  make_opt
     (function x -> Ast0.OptIni x)
-    (function x -> Ast0.UniqueIni x)
 
 and initialiser tgt i =
   let init_same = all_same true tgt in
@@ -708,7 +643,7 @@ and initialiser tgt i =
       let whencode =
         get_option (fun (a,e,b) -> (a,e,initialiser Ast0.NONE b)) whencode in
       make_init i tgt arity (Ast0.Idots(dots,whencode))
-  | Ast0.OptIni(_) | Ast0.UniqueIni(_) | Ast0.AsInit _ ->
+  | Ast0.OptIni(_) | Ast0.AsInit _ ->
       failwith "unexpected code"
 
 and designator tgt d =
@@ -740,9 +675,8 @@ and designator tgt d =
 (* Parameter *)
 
 and make_param =
-  make_opt_unique
+  make_opt
     (function x -> Ast0.OptParam x)
-    (function x -> Ast0.UniqueParam x)
 
 and parameterTypeDef tgt param =
   let param_same = all_same true tgt in
@@ -755,8 +689,6 @@ and parameterTypeDef tgt param =
 	(match (Ast0.unwrap ty,Ast0.unwrap id) with
 	  (Ast0.OptType(ty),Ast0.OptIdent(id)) ->
 	    Ast0.OptParam(Ast0.rewrap param (Ast0.Param(ty,Some id)))
-	| (Ast0.UniqueType(ty),Ast0.UniqueIdent(id)) ->
-	    Ast0.UniqueParam(Ast0.rewrap param (Ast0.Param(ty,Some id)))
 	| (Ast0.OptType(ty),_) ->
 	    fail param "arity mismatch in param declaration"
 	| (_,Ast0.OptIdent(id)) ->
@@ -768,8 +700,6 @@ and parameterTypeDef tgt param =
 	(match Ast0.unwrap ty with
 	  Ast0.OptType(ty) ->
 	    Ast0.OptParam(Ast0.rewrap param (Ast0.Param(ty,None)))
-	| Ast0.UniqueType(ty) ->
-	    Ast0.UniqueParam(Ast0.rewrap param (Ast0.Param(ty,None)))
 	| _ -> Ast0.Param(ty,None))
   | Ast0.MetaParam(name,pure) ->
       let arity = param_same (mcode2line name) [mcode2arity name] in
@@ -787,11 +717,7 @@ and parameterTypeDef tgt param =
       let arity = param_same (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in
       make_param param tgt arity (Ast0.Pdots(dots))
-  | Ast0.Pcircles(dots) ->
-      let arity = param_same (mcode2line dots) [mcode2arity dots] in
-      let dots = mcode dots in
-      make_param param tgt arity (Ast0.Pcircles(dots))
-  | Ast0.OptParam(_) | Ast0.UniqueParam(_) | Ast0.AsParam _ ->
+  | Ast0.OptParam(_) | Ast0.AsParam _ ->
       failwith "unexpected code"
 
 and parameter_list tgt = dots (parameterTypeDef tgt)
@@ -800,9 +726,8 @@ and parameter_list tgt = dots (parameterTypeDef tgt)
 (* Top-level code *)
 
 and make_rule_elem x =
-  make_opt_unique
+  make_opt
     (function x -> Ast0.OptStm x)
-    (function x -> Ast0.UniqueStm x)
     x
 
 and statement tgt stm =
@@ -814,8 +739,6 @@ and statement tgt stm =
 	(match Ast0.unwrap new_decl with
 	  Ast0.OptDecl(decl) ->
 	    Ast0.OptStm(Ast0.rewrap stm (Ast0.Decl(bef,decl)))
-	| Ast0.UniqueDecl(decl) ->
-	    Ast0.UniqueStm(Ast0.rewrap stm (Ast0.Decl(bef,decl)))
 	| _ -> Ast0.Decl(bef,new_decl))
   | Ast0.Seq(lbrace,body,rbrace) ->
       let arity =
@@ -976,8 +899,6 @@ and statement tgt stm =
 	(match Ast0.unwrap new_exp with
 	  Ast0.OptExp(exp) ->
 	    Ast0.OptStm(Ast0.rewrap stm (Ast0.Exp(exp)))
-	| Ast0.UniqueExp(exp) ->
-	    Ast0.UniqueStm(Ast0.rewrap stm (Ast0.Exp(exp)))
 	| _ -> Ast0.Exp(new_exp))
   | Ast0.TopExp(exp) ->
       let new_exp = top_expression true tgt exp in
@@ -985,8 +906,6 @@ and statement tgt stm =
 	(match Ast0.unwrap new_exp with
 	  Ast0.OptExp(exp) ->
 	    Ast0.OptStm(Ast0.rewrap stm (Ast0.TopExp(exp)))
-	| Ast0.UniqueExp(exp) ->
-	    Ast0.UniqueStm(Ast0.rewrap stm (Ast0.TopExp(exp)))
 	| _ -> Ast0.TopExp(new_exp))
   | Ast0.Ty(ty) ->
       let new_ty = typeC tgt ty in (* opt makes no sense alone at top level *)
@@ -994,8 +913,6 @@ and statement tgt stm =
 	(match Ast0.unwrap new_ty with
 	  Ast0.OptType(ty) ->
 	    Ast0.OptStm(Ast0.rewrap stm (Ast0.Ty(ty)))
-	| Ast0.UniqueType(ty) ->
-	    Ast0.UniqueStm(Ast0.rewrap stm (Ast0.Ty(ty)))
 	| _ -> Ast0.Ty(new_ty))
   | Ast0.TopId(id) ->
       (* opt makes no sense alone at top level *)
@@ -1004,8 +921,6 @@ and statement tgt stm =
 	(match Ast0.unwrap new_id with
 	  Ast0.OptIdent(id) ->
 	    Ast0.OptStm(Ast0.rewrap stm (Ast0.TopId(id)))
-	| Ast0.UniqueIdent(id) ->
-	    Ast0.UniqueStm(Ast0.rewrap stm (Ast0.TopId(id)))
 	| _ -> Ast0.TopId(new_id))
   | Ast0.TopInit(init) ->
       let new_init = initialiser tgt init in
@@ -1013,12 +928,10 @@ and statement tgt stm =
 	(match Ast0.unwrap new_init with
 	  Ast0.OptIni(init) ->
 	    Ast0.OptStm(Ast0.rewrap stm (Ast0.TopInit(init)))
-	| Ast0.UniqueIni(init) ->
-	    Ast0.UniqueStm(Ast0.rewrap stm (Ast0.TopInit(init)))
 	| _ -> Ast0.TopInit(new_init))
   | Ast0.Disj(starter,rule_elem_dots_list,mids,ender) ->
       let stms =
-	List.map (function x -> concat_dots (statement tgt) x)
+	List.map (function x -> dots (statement tgt) x)
 	  rule_elem_dots_list in
       let (found_opt,unopt) =
 	List.fold_left
@@ -1039,14 +952,7 @@ and statement tgt stm =
 		if List.for_all is_opt l
 		then (true,List.map unopt l)
 		else (false, l) in
-	      let (l,k) =
-		match Ast0.unwrap x with
-		  Ast0.DOTS(l) ->
-		    (l,function l -> Ast0.rewrap x (Ast0.DOTS l))
-		| Ast0.CIRCLES(l) ->
-		    (l,function l -> Ast0.rewrap x (Ast0.CIRCLES l))
-		| Ast0.STARS(l) ->
-		    (l,function l -> Ast0.rewrap x (Ast0.STARS l)) in
+	      let (l,k) = (Ast0.unwrap x, function l -> Ast0.rewrap x l) in
 	      let (found_opt,l) = rebuild l in
 	      (found_opt,(k l)::lines))
 	  (false,[]) stms in
@@ -1055,43 +961,57 @@ and statement tgt stm =
       then
 	make_rule_elem stm tgt Ast0.OPT (Ast0.Disj(starter,unopt,mids,ender))
       else Ast0.rewrap stm (Ast0.Disj(starter,stms,mids,ender))
+  | Ast0.Conj(starter,rule_elem_dots_list,mids,ender) ->
+      let stms =
+	List.map (function x -> dots (statement tgt) x)
+	  rule_elem_dots_list in
+      let (found_opt,unopt) =
+	List.fold_left
+	  (function (found_opt,lines) ->
+	    function x ->
+	      let rebuild l =
+		(* previously just checked the last thing in the list,
+		   but everything should be optional for the whole thing to
+		   be optional *)
+		let is_opt x =
+		  match Ast0.unwrap x with
+		    Ast0.OptStm(x) -> true
+		  | _ -> false in
+		let unopt x =
+		  match Ast0.unwrap x with
+		    Ast0.OptStm(x) -> x
+		  | _ -> x in
+		if List.for_all is_opt l
+		then (true,List.map unopt l)
+		else (false, l) in
+	      let (l,k) = (Ast0.unwrap x, function l -> Ast0.rewrap x l) in
+	      let (fo,l) = rebuild l in
+	      (found_opt && fo,(k l)::lines))
+	  (true,[]) stms in
+      let unopt = List.rev unopt in
+      if found_opt
+      then
+	make_rule_elem stm tgt Ast0.OPT (Ast0.Disj(starter,unopt,mids,ender))
+      else Ast0.rewrap stm (Ast0.Conj(starter,stms,mids,ender))
   | Ast0.Nest(starter,rule_elem_dots,ender,whn,multi) ->
       let new_rule_elem_dots =
-	concat_dots (statement Ast0.NONE) rule_elem_dots in
+	dots (statement Ast0.NONE) rule_elem_dots in
       let whn =
 	List.map
-	  (whencode (concat_dots (statement Ast0.NONE)) (statement Ast0.NONE)
+	  (whencode (dots (statement Ast0.NONE)) (statement Ast0.NONE)
 	     (expression Ast0.NONE))
 	  whn in
       Ast0.rewrap stm
 	(Ast0.Nest(starter,new_rule_elem_dots,ender,whn,multi))
-  | Ast0.Dots(dots,whn)    ->
-      let arity = stm_same (mcode2line dots) [mcode2arity dots] in
-      let dots = mcode dots in
+  | Ast0.Dots(d,whn)    ->
+      let arity = stm_same (mcode2line d) [mcode2arity d] in
+      let d = mcode d in
       let whn =
 	List.map
-	  (whencode (concat_dots (statement Ast0.NONE)) (statement Ast0.NONE)
+	  (whencode (dots (statement Ast0.NONE)) (statement Ast0.NONE)
 	     (expression Ast0.NONE))
 	  whn in
-      make_rule_elem stm tgt arity (Ast0.Dots(dots,whn))
-  | Ast0.Circles(dots,whn) ->
-      let arity = stm_same (mcode2line dots) [mcode2arity dots] in
-      let dots = mcode dots in
-      let whn =
-	List.map
-	  (whencode (concat_dots (statement Ast0.NONE)) (statement Ast0.NONE)
-	     (expression Ast0.NONE))
-	  whn in
-      make_rule_elem stm tgt arity (Ast0.Circles(dots,whn))
-  | Ast0.Stars(dots,whn)   ->
-      let arity = stm_same (mcode2line dots) [mcode2arity dots] in
-      let dots = mcode dots in
-      let whn =
-	List.map
-	  (whencode (concat_dots (statement Ast0.NONE)) (statement Ast0.NONE)
-	     (expression Ast0.NONE))
-	  whn in
-      make_rule_elem stm tgt arity (Ast0.Stars(dots,whn))
+      make_rule_elem stm tgt arity (Ast0.Dots(d,whn))
   | Ast0.FunDecl(bef,fi,name,lp,params,va,rp,lbrace,body,rbrace,aft) ->
       let arity =
 	all_same true tgt (mcode2line lp)
@@ -1133,13 +1053,12 @@ and statement tgt stm =
       let id = ident false arity id in
       let body = pragmainfo arity body in
       make_rule_elem stm tgt arity (Ast0.Pragma(prg,id,body))
-  | Ast0.OptStm(_) | Ast0.UniqueStm(_) | Ast0.AsStmt _ ->
+  | Ast0.OptStm(_) | Ast0.AsStmt _ ->
       failwith "unexpected code"
 
 and make_pragma =
-  make_opt_unique
+  make_opt
     (function x -> failwith "opt not allowed for pragma")
-    (function x -> failwith "unique not allowed for pragma")
 
 and pragmainfo tgt pi =
   match Ast0.unwrap pi with
@@ -1170,9 +1089,8 @@ and define_parameters tgt params =
       Ast0.rewrap params (Ast0.DParams(lp,params,rp))
 
 and make_define_param x =
-  make_opt_unique
+  make_opt
     (function x -> Ast0.OptDParam x)
-    (function x -> Ast0.UniqueDParam x)
     x
 
 and define_param tgt param =
@@ -1183,8 +1101,6 @@ and define_param tgt param =
 	(match Ast0.unwrap new_id with
 	  Ast0.OptIdent(id) ->
 	    Ast0.OptDParam(Ast0.rewrap param (Ast0.DParam(id)))
-	| Ast0.UniqueIdent(decl) ->
-	    Ast0.UniqueDParam(Ast0.rewrap param (Ast0.DParam(id)))
 	| _ -> Ast0.DParam(new_id))
   | Ast0.DPComma(cm) ->
       let arity =
@@ -1196,12 +1112,7 @@ and define_param tgt param =
 	all_same true tgt (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in
       make_define_param param tgt arity (Ast0.DPdots(dots))
-  | Ast0.DPcircles(circles) ->
-      let arity =
-	all_same true tgt (mcode2line circles) [mcode2arity circles] in
-      let circles = mcode circles in
-      make_define_param param tgt arity (Ast0.DPcircles(circles))
-  | Ast0.OptDParam(dp) | Ast0.UniqueDParam(dp) ->
+  | Ast0.OptDParam(dp) ->
       failwith "unexpected code"
 
 and fninfo arity = function
@@ -1228,9 +1139,8 @@ and whencode notfn alwaysfn expression = function
   | Ast0.WhenNotFalse (w,e,a) -> Ast0.WhenNotFalse (w,e,expression a)
 
 and make_case_line =
-  make_opt_unique
+  make_opt
     (function x -> Ast0.OptCase x)
-    (function x -> failwith "unique not allowed for case_line")
 
 and case_line tgt c =
   match Ast0.unwrap c with
@@ -1262,9 +1172,8 @@ and case_line tgt c =
   | Ast0.OptCase(_) -> failwith "unexpected OptCase"
 
 and make_exec_code =
-  make_opt_unique
+  make_opt
     (function x -> failwith "opt not allowed for exec code")
-    (function x -> failwith "unique not allowed for exec code")
 
 and exec_code tgt e =
   match Ast0.unwrap e with
@@ -1296,7 +1205,7 @@ let top_level tgt t =
     | Ast0.NONDECL(stmt) ->
 	Ast0.NONDECL(statement tgt stmt)
     | Ast0.CODE(rule_elem_dots) ->
-	Ast0.CODE(concat_dots (statement tgt) rule_elem_dots)
+	Ast0.CODE(dots (statement tgt) rule_elem_dots)
     | Ast0.TOPCODE(rule_elem_dots) ->  fail t "eliminated by top_level"
     | Ast0.ERRORWORDS(exps) ->
 	Ast0.ERRORWORDS(List.map (top_expression false Ast0.NONE) exps)

@@ -187,16 +187,14 @@ let conj_one testfn x l =
   else l
 
 let rec statement_list testfn mcode tail stmt_list : 'a list list =
-  match Ast.unwrap stmt_list with
-    Ast.DOTS(x) | Ast.CIRCLES(x) | Ast.STARS(x) ->
-      (match List.rev x with
-	[] -> []
-      |	last::rest ->
-	  List.fold_right
-	    (function cur ->
-	      function rest ->
-		conj (statement testfn mcode false cur) rest)
-	    rest (statement testfn mcode tail last))
+  match List.rev (Ast.unwrap stmt_list) with
+    [] -> []
+  | last::rest ->
+      List.fold_right
+	(function cur ->
+	  function rest ->
+	    conj (statement testfn mcode false cur) rest)
+	rest (statement testfn mcode tail last)
 
 and statement testfn mcode tail stmt : 'a list list =
   match Ast.unwrap stmt with
@@ -245,6 +243,11 @@ and statement testfn mcode tail stmt : 'a list list =
       then []
       else Common.union_all processed
 
+  | Ast.Conj(stmt_dots_list) ->
+      let processed =
+	List.map (statement_list testfn mcode tail) stmt_dots_list in
+      Common.inter_all processed
+
   | Ast.Nest(starter,stmt_dots,ender,whencode,true,_,_) ->
       statement_list testfn mcode false stmt_dots
 
@@ -268,8 +271,6 @@ and statement testfn mcode tail stmt : 'a list list =
 	(statement testfn mcode tail asstm)
 
   | Ast.OptStm(stm) -> []
-
-  | Ast.UniqueStm(stm) -> statement testfn mcode tail stm
 
   | _ -> failwith "not supported"
 

@@ -57,8 +57,6 @@ LFLAGS = -lflags '$(SYSLIBS) $(LIBS)'
 # Top rules
 ##############################################################################
 
-ifneq ($(FEATURE_OCAMLBUILD),yes)
-
 all: $(TARGET)
 
 $(TARGET): $(CONFIG) $(LIBS) $(GENERATED) $(FULL_SRC)
@@ -72,21 +70,6 @@ clean:
 	rm -f *~ .*~ gmon.out #*#
 	rm -f .depend
 	rm -f $(GENERATED)
-
-else
-
-all: $(TARGET)
-
-$(TARGET): $(CONFIG) $(LIBS) $(FULL_SRC)
-	@$(ECHO) -e "\n\n\tCompiling sgen ...\n\n"
-	$(OCAMLBUILD) $(CFLAGS) $(LFLAGS) main.byte;
-	cp _build/main.byte $(TARGET);
-	@$(ECHO) -e "\n\n\tsgen can now be installed via 'make install'.\n\n"
-
-clean:
-	rm *~; rm $(TARGET); $(OCAMLBUILD) -clean
-
-endif
 
 $(CONFIG) $(LIBS):
 	@echo "\n\n\tYou need to compile Coccinelle first.\n\n"

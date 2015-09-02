@@ -31,7 +31,6 @@ OPTOBJS= $(SRC:.ml=.cmx)
 ##############################################################################
 # Top rules
 ##############################################################################
-ifneq ($(FEATURE_OCAMLBUILD),yes)
 all: $(TARGET).cma
 
 all.opt:
@@ -42,16 +41,6 @@ $(TARGET).cma: $(LIBS) $(OBJS)
 
 $(TARGET).cmxa: $(LIBS:.cma=.cmxa) $(OPTOBJS)
 	$(OCAMLOPT_CMD) -a -o $(TARGET).cmxa $(OPTOBJS)
-else
-all:
-	cd .. && $(OCAMLBUILD) globals/globals.cma
-
-all.opt:
-	cd .. && $(OCAMLBUILD) globals/globals.cmxa
-
-clean:
-	cd .. && $(OCAMLBUILD) -clean
-endif
 
 ##############################################################################
 # Developer rules
@@ -81,9 +70,7 @@ distclean: clean
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
-ifneq ($(FEATURE_OCAMLBUILD),yes)
 -include .depend
-endif
 endif
 endif
 

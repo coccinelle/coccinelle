@@ -143,7 +143,6 @@ OBJS = $(SRC:.ml=.cmo)
 OPTOBJS = $(SRC:.ml=.cmx)
 
 
-ifneq ($(FEATURE_OCAMLBUILD),yes)
 all: $(LIB)
 all.opt:
 	@$(MAKE) $(OPTLIB) BUILD_OPT=yes
@@ -161,14 +160,6 @@ $(TARGET).top: $(OBJS)
 
 clean::
 	rm -f $(TARGET).top
-else
-all:
-	cd .. && $(OCAMLBUILD) commons/commons.cma
-all.opt:
-	cd .. && $(OCAMLBUILD) commons/commons.cmxa
-clean::
-	cd .. && $(OCAMLBUILD) -clean
-endif
 
 ##############################################################################
 # Other commons libs target
@@ -352,9 +343,7 @@ endif
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
-ifneq ($(FEATURE_OCAMLBUILD),yes)
 -include .depend
-endif
 endif
 endif
 

@@ -105,9 +105,7 @@ $(MENHIRLIB)/tableFormat.mli: $(MENHIRLIB)/packedIntArray.cmi $(MENHIRLIB)/engin
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
 ifneq ($(MAKECMDGOALS),depend-build)
-ifneq ($(FEATURE_OCAMLBUILD),yes)
 -include .depend
-endif
 endif
 endif
 endif

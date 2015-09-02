@@ -475,7 +475,7 @@ let do_get_constants constants keywords env neg_pos =
     | Ast.DisjExpr(exps) ->
 	disj_union_all (List.map r.V.combiner_expression exps)
     | Ast.OptExp(exp) -> option_default
-    | Ast.Edots(_,_) | Ast.Ecircles(_,_) | Ast.Estars(_,_) -> option_default
+    | Ast.Edots(_,_) -> option_default
     | _ -> k e in
 
   (* cases for metavariabes *)
@@ -596,8 +596,7 @@ let do_get_constants constants keywords env neg_pos =
     | Ast.Nest(starter,stmt_dots,ender,whn,true,_,_) ->
 	r.V.combiner_statement_dots stmt_dots
     | Ast.OptStm(s) -> option_default
-    | Ast.Dots(d,whn,_,_) | Ast.Circles(d,whn,_,_) | Ast.Stars(d,whn,_,_) ->
-	option_default
+    | Ast.Dots(d,whn,_,_) -> option_default
     | _ -> k s in
 
   V.combiner bind option_default

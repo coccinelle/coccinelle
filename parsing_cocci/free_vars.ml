@@ -120,6 +120,9 @@ let collect_refs include_constraints =
 	  [metaid name;metaid lenname]
       | Ast.MetaExprList(name,_,_,_) -> [metaid name]
       | Ast.DisjExpr(exps) -> bind_disj (List.map k exps)
+      | Ast.ConjExpr(exps) ->
+	  List.fold_left (fun prev cur -> bind (k cur) prev)
+	    option_default exps
       | _ -> option_default) in
 
   let astfvfrag recursor k ft =
@@ -218,6 +221,10 @@ let collect_refs include_constraints =
       (match Ast.unwrap s with
 	Ast.Disj(stms) ->
 	  bind_disj (List.map recursor.V.combiner_statement_dots stms)
+      |	Ast.Conj(stms) ->
+	  let k = recursor.V.combiner_statement_dots in
+	  List.fold_left (fun prev cur -> bind (k cur) prev)
+	    option_default stms
       | _ -> option_default) in
 
   let mcode r mc = (*
@@ -275,6 +282,11 @@ let collect_pos_positions =
 	let subres =
 	  List.map recursor.V.combiner_statement_dots stmlist in
 	List.fold_left Common.inter_set (List.hd subres) (List.tl subres)
+    | Ast.Conj stmlist ->
+	(*take the union of the results*)
+	let subres =
+	  List.map recursor.V.combiner_statement_dots stmlist in
+	List.fold_left Common.union_set (List.hd subres) (List.tl subres)
     | _ -> k s in
 
   V.combiner bind option_default
@@ -527,17 +539,14 @@ let collect_in_plus_term =
 	       fi) in
 	let nm_metas = collect_all_refs.V.combiner_ident nm in
 	let param_metas =
-	  match Ast.unwrap params with
-	    Ast.DOTS(params) | Ast.CIRCLES(params) ->
-	      List.concat
-		(List.map
-		   (function p ->
-		     match Ast.unwrap p with
-		       Ast.VoidParam(t) | Ast.Param(t,_) ->
-			 collect_all_refs.V.combiner_fullType t
-		     | _ -> [])
-		   params)
-	  | _ -> failwith "not allowed for params" in
+	  List.concat
+	    (List.map
+	       (function p ->
+	          match Ast.unwrap p with
+	            Ast.VoidParam(t) | Ast.Param(t,_) ->
+	              collect_all_refs.V.combiner_fullType t
+		  | _ -> [])
+	       (Ast.unwrap params)) in
 	bind fi_metas
 	  (bind nm_metas
 	     (bind param_metas
