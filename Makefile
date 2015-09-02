@@ -97,7 +97,7 @@ BYTECODE_EXTRA=-custom $(EXTRA_OCAML_FLAGS)
 ##############################################################################
 .PHONY:: all all.opt byte opt top clean distclean configure opt-compil
 .PHONY:: $(MAKESUBDIRS:%=%.all) $(MAKESUBDIRS:%=%.opt) subdirs.all subdirs.opt
-.PHONY:: all-opt all-byte byte-only opt-only pure-byte
+.PHONY:: byte-only opt-only pure-byte
 .PHONY:: copy-stubs install-stubs install install-man install-python install-common
 
 # All make targets that are expected to be an entry point have a dependency on
