@@ -509,12 +509,6 @@ clean distclean::
 tags:
 	otags -no-mli-tags -r  .
 
-dependencygraph:
-	find . -name "*.ml" |grep -v "scripts"|grep -v "/._" |grep -v "bundles/pycaml/chemoelectric-pycaml-8614105/pycaml.ml" | xargs $(OCAMLDEP) -I commons -I globals -I ctl -I parsing_cocci -I parsing_c -I engine -I popl09 -I extra > /tmp/dependfull.depend
-	ocamldot -lr /tmp/dependfull.depend > /tmp/dependfull.dot
-	dot -Tps /tmp/dependfull.dot > /tmp/dependfull.ps
-	ps2pdf /tmp/dependfull.ps /tmp/dependfull.pdf
-
 ##############################################################################
 # Misc rules
 ##############################################################################
