@@ -18,8 +18,6 @@
 - interpret #if, as is done for #ifdef
 
 ** Bugfix:
-- Coccinelle's "make install" now copies files to /usr/local/lib instead of
-  /usr/local/share
 - Add more information in documentation, man pages and wiki
 - typedefs from C code should not be used before their point of inference
   (saved_typedefs in cprogram_of_file)
@@ -33,13 +31,17 @@
   Coccinelle can thus no longer be compiled with OCaml 3.10.
 - --use-gitgrep falls back to --use-coccigrep for a non-git repository.
 - ocaml coccilib allows propagating identifiers, expressions, statements,
-  listlens, and positions to subsequent matching rules
+  listlens, and positions to subsequent matching rules, via new ocaml code
+  constructors: make_ident, make_expr, make_expr_with_env etc.
 - Allow @S, for statement metavariable S on expressions
 - Exploit explicit positive constraints (no regexps) on identifiers in
   file filtering
 - Ability to declare a rule as matching an identifier.  Doesn't work
   properly for names of typedefs, enums, structures, or unions.
+- autogen creates a version number that corresponds to the most recent commit.
 ** Bugfix:
+- Coccinelle's "make install" now copies files to /usr/local/lib instead of
+  /usr/local/share
 - Iso: allow mixed for model for the case where the model is just a metavar
   Thanks to Kris Borer for reporting the problem
 - Allow ! to propagate into == or other ops in more cases.
