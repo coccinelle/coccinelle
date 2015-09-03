@@ -18,6 +18,16 @@ endif
 -include Makefile.override         # local customizations, if any
 -include /etc/Makefile.coccinelle  # local customizations, if any
 
+# We inherit the version information *after* the user has run
+# ./configure but in the absence of that the build system has
+# a few dependencies on the version information, we need a default
+# setting then prior to the user running ./configure, this provides
+# that, but will only be set if the user hasn't already run ./configure
+#
+# The only thing we can do is assume that the user relying on this
+# variable then was going to make a release, this means we don't
+# tell them that the tree is dirty.
+VERSION?=$(shell MAKE_COCCI_RELEASE="y" ./version.sh)
 
 CCVERSION=$(shell cat scripts/coccicheck/README | egrep -o '[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' | head -n1)
 PKGVERSION=$(shell dpkg-parsechangelog -ldebian/changelog.$(DISTRIB_CODENAME) 2> /dev/null \
