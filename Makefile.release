@@ -81,7 +81,7 @@ release-help:
 	@echo "2. Run 'make prerelease'. It will generate some files that are not"
 	@echo "   in the repository but part of the release tarballs."
 	@echo "3. Edit ./version. It must be a new version."
-	@echo "4. Run 'make release VERSION=x.y.z'. It makes changes to the git repository that"
+	@echo "4. Run 'make release'. It makes changes to the git repository that"
 	@echo "   are not idempotent. Running this step again is likely to result"
 	@echo "   in some git errors. These are not dramatic and are therefore"
 	@echo "   ignored."
