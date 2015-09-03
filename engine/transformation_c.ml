@@ -228,10 +228,10 @@ module XTRANS = struct
 	Ast_cocci.MetaId(name,constraints,u,i) ->
           Ast_cocci.rewrap e
 	    (Ast_cocci.MetaId(name,Ast_cocci.IdNoConstraint,u,i))
-      |  Ast_cocci.MetaFunc(name,constraints,u,i) ->
+      | Ast_cocci.MetaFunc(name,constraints,u,i) ->
           Ast_cocci.rewrap e
 	    (Ast_cocci.MetaFunc(name,Ast_cocci.IdNoConstraint,u,i))
-      |  Ast_cocci.MetaLocalFunc(name,constraints,u,i) ->
+      | Ast_cocci.MetaLocalFunc(name,constraints,u,i) ->
           Ast_cocci.rewrap e
 	    (Ast_cocci.MetaLocalFunc(name,Ast_cocci.IdNoConstraint,u,i))
       |  _ -> e in
