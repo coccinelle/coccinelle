@@ -281,7 +281,8 @@ let rec full_ident i =
       (res,None)
   | Ast0.OptIdent(id) ->
       let (id,r) = full_ident id in mkidres i (Ast0.OptIdent(id)) id id r
-  | Ast0.AsIdent _ -> failwith "not possible"
+  | Ast0.AsIdent(id,asid) ->
+      let (id,r) = full_ident id in mkidres i (Ast0.AsIdent(id,asid)) id id r
 and ident i = let (id,_) = full_ident i in id
 
 (* --------------------------------------------------------------------- *)
@@ -480,7 +481,12 @@ let rec expression e =
   | Ast0.OptExp(exp) ->
       let exp = expression exp in
       mkres e (Ast0.OptExp(exp)) exp exp
-  | Ast0.AsExpr _ | Ast0.AsSExpr _ -> failwith "not possible"
+  | Ast0.AsExpr(exp,asexp) ->
+      let exp = expression exp in
+      mkres e (Ast0.AsExpr(exp,asexp)) exp exp
+  | Ast0.AsSExpr(exp,asexp) ->
+      let exp = expression exp in
+      mkres e (Ast0.AsSExpr(exp,asexp)) exp exp
 
 and expression_dots x = dots is_exp_dots None expression x
 
@@ -1202,7 +1208,8 @@ let rec statement s =
 	mkres s (Ast0.Pragma(prg,id,body)) (promote_mcode prg) body
     | Ast0.OptStm(stm) ->
 	let stm = statement stm in mkres s (Ast0.OptStm(stm)) stm stm
-    | Ast0.AsStmt _ -> failwith "not possible" in
+    | Ast0.AsStmt(stm,asstm) ->
+	let stm = statement stm in mkres s (Ast0.AsStmt(stm,asstm)) stm stm in
   Ast0.set_dots_bef_aft res
     (match Ast0.get_dots_bef_aft res with
       Ast0.NoDots -> Ast0.NoDots
