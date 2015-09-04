@@ -120,9 +120,6 @@ let collect_refs include_constraints =
 	  [metaid name;metaid lenname]
       | Ast.MetaExprList(name,_,_,_) -> [metaid name]
       | Ast.DisjExpr(exps) -> bind_disj (List.map k exps)
-      | Ast.ConjExpr(exps) ->
-	  List.fold_left (fun prev cur -> bind (k cur) prev)
-	    option_default exps
       | _ -> option_default) in
 
   let astfvfrag recursor k ft =
@@ -221,10 +218,6 @@ let collect_refs include_constraints =
       (match Ast.unwrap s with
 	Ast.Disj(stms) ->
 	  bind_disj (List.map recursor.V.combiner_statement_dots stms)
-      |	Ast.Conj(stms) ->
-	  let k = recursor.V.combiner_statement_dots in
-	  List.fold_left (fun prev cur -> bind (k cur) prev)
-	    option_default stms
       | _ -> option_default) in
 
   let mcode r mc = (*
@@ -282,11 +275,6 @@ let collect_pos_positions =
 	let subres =
 	  List.map recursor.V.combiner_statement_dots stmlist in
 	List.fold_left Common.inter_set (List.hd subres) (List.tl subres)
-    | Ast.Conj stmlist ->
-	(*take the union of the results*)
-	let subres =
-	  List.map recursor.V.combiner_statement_dots stmlist in
-	List.fold_left Common.union_set (List.hd subres) (List.tl subres)
     | _ -> k s in
 
   V.combiner bind option_default
