@@ -41,48 +41,6 @@ let rec dep2c = function
   | False -> "false"
   | True -> "true"
 
-let sat f =
-  let subset l1 l2 = List.for_all (fun e1 -> List.mem e1 l2) l1 in
-  let opt_union_set (longer : (string list * string list) list)
-                    (shorter : (string list * string list) list) =
-    (* (A v B) & (A v B v C) = A v B *)
-    (* tries to be efficient by not updating prv, so optimize is still
-       needed *)
-    List.fold_left
-      (function prev ->
-	function ((p,n) as cur) ->
-	  if List.exists (function (p1,n1) -> subset p1 p && subset n1 n) prev
-	  then prev
-	  else cur :: prev)
-      longer shorter in
-  let double_union (p,n) (p1,n1) =
-    ((Common.union_set p p1), (Common.union_set n n1)) in
-  let rec cnf = function
-      Elem x -> [([x],[])]
-    | Not (Elem x) -> [([],[x])]
-    | Not (And l) -> cnf (Or (List.map (function x -> Not x) l))
-    | Not (Or l) -> cnf (And (List.map (function x -> Not x) l))
-    | Not (Not x) -> cnf x
-    | Not True -> [([],[])] (* false *)
-    | Not False -> []  (* true *)
-    | And l ->
-	List.fold_left opt_union_set [] (List.map cnf l)
-    | Or l ->
-	let l = List.map cnf l in
-	(match l with
-	  fst::rest ->
-	    List.fold_left
-	      (function prev ->
-		function cur ->
-		  List.fold_left opt_union_set
-		    []
-		    (List.map (fun x -> List.map (double_union x) prev) cur))
-	      fst rest
-	| [] -> [([],[])]) (* false *)
-    | True -> []
-    | False -> [([],[])] in
-  Dpll.dpll (cnf f)
-
 (* glimpse often fails on large queries.  We can safely remove arguments of
 && as long as we don't remove all of them (note that there is no negation).
 This tries just removing one of them and then orders the results by
@@ -609,81 +567,6 @@ let do_get_constants constants keywords env neg_pos =
 
 (* ------------------------------------------------------------------------ *)
 
-let get_all_constants minus_only =
-  let donothing r k e = k e in
-  let bind = Common.union_set in
-  let option_default = [] in
-  let mcode r (x,_,mcodekind,_) =
-    match mcodekind with
-      Ast.MINUS(_,_,_,_) -> [x]
-    | _ when minus_only -> []
-    | _ -> [x] in
-  let other r _ = [] in
-
-  V.combiner bind option_default
-    other mcode other other other other other other other other other other
-    other other
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing
-
-(* ------------------------------------------------------------------------ *)
-
-let get_plus_constants =
-  let donothing r k e = k e in
-  let bind = Common.union_set in
-  let option_default = [] in
-
-  let recurse l =
-    List.fold_left
-      (List.fold_left
-	 (function prev ->
-	   function cur ->
-	     bind ((get_all_constants false).V.combiner_anything cur) prev))
-      [] l in
-  let process_mcodekind = function
-      Ast.MINUS(_,_,_,Ast.REPLACEMENT(anythings,_)) -> recurse anythings
-    | Ast.CONTEXT(_,Ast.BEFORE(a,_)) -> recurse a
-    | Ast.CONTEXT(_,Ast.AFTER(a,_)) -> recurse a
-    | Ast.CONTEXT(_,Ast.BEFOREAFTER(a1,a2,_)) ->
-	Common.union_set (recurse a1) (recurse a2)
-    | _ -> [] in
-
-  let mcode r mc = process_mcodekind (Ast.get_mcodekind mc) in
-  let end_info (_,_,_,mc) = process_mcodekind mc in
-
-  let annotated_decl decl =
-    match Ast.unwrap decl with
-      Ast.DElem(bef,_,_) -> bef
-    | _ -> failwith "not possible" in
-
-  let rule_elem r k e =
-    match Ast.unwrap e with
-      Ast.FunHeader(bef,_,_,_,_,_,_,_) -> bind (process_mcodekind bef) (k e)
-    | Ast.Decl decl ->
-	bind (process_mcodekind (annotated_decl decl)) (k e)
-    | Ast.ForHeader(fr,lp,Ast.ForDecl(decl),e2,sem2,e3,rp) ->
-	bind (process_mcodekind (annotated_decl decl)) (k e)
-    | _ -> k e in
-
-  let statement r k e =
-    match Ast.unwrap e with
-      Ast.IfThen(_,_,ei) | Ast.IfThenElse(_,_,_,_,ei)
-    | Ast.While(_,_,ei)  | Ast.For(_,_,ei)
-    | Ast.Iterator(_,_,ei) -> bind (k e) (end_info ei)
-    | _ -> k e in
-
-  V.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing rule_elem statement donothing
-    donothing donothing
-
-(* ------------------------------------------------------------------------ *)
-
 (* true means the rule should be analyzed, false means it should be ignored *)
 let rec dependencies env = function
     Ast.Dep s -> (try List.assoc s env with Not_found -> False)
@@ -778,10 +661,6 @@ let rule_fn nm tls exact_dependencies env neg_pos =
 	let minuses =
 	  let getter = do_get_constants keep drop env neg_pos in
 	  getter.V.combiner_top_level cur in
-	let all_minuses =
-	  if !Flag.sgrep_mode2
-	  then [] (* nothing removed for sgrep *)
-	  else (get_all_constants true).V.combiner_top_level cur in
 	(* the following is for eg -foo(2) +foo(x) then in another rule
 	   -foo(10); don't want to consider that foo is guaranteed to be
 	   created by the rule.  not sure this works completely: what if foo is
