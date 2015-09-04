@@ -630,7 +630,8 @@ and parser_kind = ExpP | IdP | TyP | AnyP
 
 and rulename =
     CocciRulename of string option * dependency *
-	string list * string list * exists * parser_kind
+	string list (*isos to add*) * string list (*isos to drop*) *
+	exists * parser_kind
   | GeneratedRulename of string option * dependency *
 	string list * string list * exists * parser_kind
   | ScriptRulename of string option (* name *) * string (* language *) *
