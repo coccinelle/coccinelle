@@ -130,7 +130,7 @@ let generate_statement ~stmtdotsfn ~strfn ~stmtfn ~stmt ~at_top =
                 >> Snap.set_no_gen false) snp
            | None -> std' xs (stmtfn x snp)) in
     let add_pos_function = if Snap.no_gen snp then std_no_pos else std' in
-    add_pos_function (Ast0.undots sd) snp in
+    add_pos_function (Ast0.unwrap sd) snp in
 
   match Ast0.unwrap stmt with
   | Ast0.Disj(lp, sdlist, pipes, rp) ->

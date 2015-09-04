@@ -48,8 +48,6 @@ let tostring_arity = function
 let to_a = function
   | Ast0.OPT -> OPT
   | Ast0.NONE -> NONE
-  | Ast0.UNIQUE -> failwith "Unique not supported."
-
 
 (* ------------------------------------------------------------------------- *)
 (* MODE *)
