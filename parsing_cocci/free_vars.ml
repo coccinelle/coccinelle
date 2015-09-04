@@ -144,8 +144,11 @@ let collect_refs include_constraints =
       Ast.MetaAssign(name,Ast.AssignOpNoConstraint,_,_) ->
 	[metaid name]
     | Ast.MetaAssign(name,Ast.AssignOpInSet l,_,_) ->
-	List.fold_left (fun prev a -> bind (collect_assign_names a) prev)
-	  [metaid name] l
+	if include_constraints
+	then
+	  List.fold_left (fun prev a -> bind (collect_assign_names a) prev)
+	    [metaid name] l
+	else [metaid name]
     | _ -> option_default in
 
   let astfvassignop recursor k bop =
@@ -156,8 +159,11 @@ let collect_refs include_constraints =
       Ast.MetaBinary(name,Ast.BinaryOpNoConstraint,_,_) ->
 	[metaid name]
     | Ast.MetaBinary(name,Ast.BinaryOpInSet l,_,_) ->
-	List.fold_left (fun prev a -> bind (collect_binary_names a) prev)
-	  [metaid name] l
+	if include_constraints
+	then
+	  List.fold_left (fun prev a -> bind (collect_binary_names a) prev)
+	    [metaid name] l
+	else [metaid name]
     | _ -> option_default in
 
   let astfvbinaryop recursor k bop =
