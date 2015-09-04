@@ -38,7 +38,6 @@ let cfile_of_program program2_with_ppmethod outf =
 (* for memoization, contains only one entry, the one for the SP *)
 let _hparse = Hashtbl.create 101
 let _h_ocaml_init = Hashtbl.create 101
-let _hctl = Hashtbl.create 101
 
 (* --------------------------------------------------------------------- *)
 (* Cocci related *)
