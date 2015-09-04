@@ -1,0 +1,31 @@
+Notes from Peter:
+
+Python scripts inside .cocci files:
+   Recently I needed to extract the path from the .cocci from the python script
+   for including a Python file using import. I needed to do something like:
+
+   source_dir = abspath(dirname(cocci.cocci_file))
+
+   This returns the directory correctly, but the Python way of doing it would
+   be something like:
+
+   source_dir = abspath(dirname(__file__))
+
+   Similar issue, maybe related issue, happens when there is an error on the
+   Python script. On the example below File contains "<string>", instead of
+   the path to the .cocci file
+
+[peter@hp-peter linux]$ spatch /tmp/test777.cocci .
+init_defs_builtins: /usr/local/lib/coccinelle/standard.h
+HANDLING: ./net/mac802154/tx.c
+Traceback (most recent call last):
+  File "<string>", line 3, in <module>
+NameError: name '__file__' is not defined
+while running simple python string:
+from coccinelle import *
+
+print __file__
+:
+Failure in rule starting on line 6
+Fatal error: exception Yes_pycocci.Pycocciexception
+
