@@ -1,6 +1,7 @@
 Notes from Peter:
 
 Python scripts inside .cocci files:
+   ### Issue 1
    Recently I needed to extract the path from the .cocci from the python script
    for including a Python file using import. I needed to do something like:
 
@@ -29,3 +30,11 @@ print __file__
 Failure in rule starting on line 6
 Fatal error: exception Yes_pycocci.Pycocciexception
 
+   ### Issue 2
+   When using -j option python script errors are not displayed, instead,
+   spatch only reports:
+
+   [Parmap]: aborting due to exception on core 19: Yes_pycocci.Pycocciexception
+
+   This is a problem as using only one core can lead to a long time to reach
+   the corner case that is causing the error on the script
