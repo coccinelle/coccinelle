@@ -388,6 +388,21 @@ let metavar_combiner rn =
         meta_mc_format ~mc ~typ:"local function " ~constr
     | _ -> fn v in
 
+  let stmtfn c fn v =
+    match Ast0.unwrap v with
+    | Ast0.MetaStmt (mc, pure) ->
+        meta_mc_format ~mc ~typ:"statement " ~constr:""
+    | Ast0.MetaStmtList (mc, pure) ->
+        meta_mc_format ~mc ~typ:"statementlist[]" ~constr:""
+    | Ast0.AsStmt (s1, s2)->
+        let stmt = c.VT0.combiner_rec_statement in as_format s1 s2 stmt stmt
+    | Ast0.Iterator (id, _, expdots, _, stmt,_) ->
+        let expids = c.VT0.combiner_rec_expression_dots expdots in
+        let stmtid = MVSet.union expids (c.VT0.combiner_rec_statement stmt) in
+        let iteids = ids ~rn ~typ:"iterator" ~id in
+        MVSet.union iteids stmtid
+    | _ -> fn v in
+
   let exprfn c fn v =
     let exprfn = c.VT0.combiner_rec_expression in
     match Ast0.unwrap v with
@@ -469,10 +484,10 @@ let metavar_combiner rn =
         lst_format ~mc ~typ:"field list" ~listlen
     | Ast0.AsDecl(dc1, dc2) ->
         let dec = c.VT0.combiner_rec_declaration in as_format dc1 dc2 dec dec
-    | Ast0.MacroDecl(id, _, expdots, _, _) ->
+    | Ast0.MacroDecl(_, id, _, expdots, _, _) ->
         let expids = c.VT0.combiner_rec_expression_dots expdots in
         MVSet.union (ids ~rn ~typ:"declarer" ~id) expids
-    | Ast0.MacroDeclInit(id, _, expdots, _, _, ini, _) ->
+    | Ast0.MacroDeclInit(_, id, _, expdots, _, _, ini, _) ->
         let expids = c.VT0.combiner_rec_expression_dots expdots in
         let inid = MVSet.union expids (c.VT0.combiner_rec_initialiser ini) in
         let declids = ids ~rn ~typ:"declarer" ~id in
@@ -490,21 +505,6 @@ let metavar_combiner rn =
             meta_mc_format ~mc ~typ:"format " ~constr
         | _ -> fn v
        )
-    | _ -> fn v in
-
-  let stmtfn c fn v =
-    match Ast0.unwrap v with
-    | Ast0.MetaStmt (mc, pure) ->
-        meta_mc_format ~mc ~typ:"statement " ~constr:""
-    | Ast0.MetaStmtList (mc, pure) ->
-        meta_mc_format ~mc ~typ:"statementlist[]" ~constr:""
-    | Ast0.AsStmt (s1, s2)->
-        let stmt = c.VT0.combiner_rec_statement in as_format s1 s2 stmt stmt
-    | Ast0.Iterator (id, _, expdots, _, stmt,_) ->
-        let expids = c.VT0.combiner_rec_expression_dots expdots in
-        let stmtid = MVSet.union expids (c.VT0.combiner_rec_statement stmt) in
-        let iteids = ids ~rn ~typ:"iterator" ~id in
-        MVSet.union iteids stmtid
     | _ -> fn v in
 
   V0.flat_combiner bind option_default

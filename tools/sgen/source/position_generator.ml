@@ -98,9 +98,6 @@ let rec ident_pos i snp
   | Ast0.OptIdent (id) ->
       let (id, snp) = ident_pos id snp in
       (Ast0.wrap (Ast0.OptIdent (id)), snp)
-  | Ast0.UniqueIdent (id) ->
-      let (id, snp) = ident_pos id snp in
-      (Ast0.wrap (Ast0.UniqueIdent (id)), snp)
   | Ast0.AsIdent(id1, id2) ->
       failwith "pos_gen: <id1 as id2> should only be in metavars"
 
@@ -191,7 +188,7 @@ let case_line_pos c snp
 
 let case_line_dots_pos c snp
 : (Ast0.base_case_line Ast0.wrap * Snap.t) option list =
-  List.map (fun x -> case_line_pos x snp) (Ast0.undots c)
+  List.map (fun x -> case_line_pos x snp) (Ast0.unwrap c)
 
 let rec expression_pos exp snp
 : (Ast0.base_expression Ast0.wrap * Snap.t) option =
@@ -215,13 +212,12 @@ let rec expression_pos exp snp
   match Ast0.unwrap exp with
   | Ast0.NestExpr _
   | Ast0.Edots _
-  | Ast0.Ecircles _
-  | Ast0.Estars _
   | Ast0.AsExpr _
   | Ast0.AsSExpr _
   | Ast0.EComma _
   | Ast0.MetaExprList _
-  | Ast0.DisjExpr _ ->
+  | Ast0.DisjExpr _
+  | Ast0.ConjExpr _ ->
       None
   | Ast0.Ident(id) ->
       let constructor ~id = Ast0.Ident id in
@@ -315,9 +311,6 @@ let rec expression_pos exp snp
   | Ast0.MetaExpr(mc, co, ty, fo, pu) ->
       let constructor ~mc = Ast0.MetaExpr (mc, co, ty, fo, pu) in
       mcode_wrap ~mc ~constructor snp
-  | Ast0.UniqueExp exp ->
-      let constructor ~exp = Ast0.UniqueExp exp in
-      exp_wrap ~exp ~constructor snp
   | Ast0.OptExp exp ->
       let constructor ~exp = Ast0.OptExp exp in
       exp_wrap ~exp ~constructor snp
@@ -353,17 +346,14 @@ let rec declaration_pos decl snp
   | Ast0.Typedef (tm, tc, tc2, sem) ->
       let constructor ~mc = Ast0.Typedef (mc, tc, tc2, sem) in
       mcode_wrap ~mc:tm ~constructor snp
-  | Ast0.MacroDecl (id,lp,ed,rp,sem) ->
-      let constructor ~id = Ast0.MacroDecl (id, lp, ed, rp, sem) in
+  | Ast0.MacroDecl (st,id,lp,ed,rp,sem) ->
+      let constructor ~id = Ast0.MacroDecl (st, id, lp, ed, rp, sem) in
       id_wrap ~id ~constructor snp
-  | Ast0.MacroDeclInit (id,lp,ed,rp,eq,init,sem) ->
-      let constructor ~id = Ast0.MacroDeclInit (id,lp,ed,rp,eq,init,sem) in
+  | Ast0.MacroDeclInit (st,id,lp,ed,rp,eq,init,sem) ->
+      let constructor ~id = Ast0.MacroDeclInit (st,id,lp,ed,rp,eq,init,sem) in
       id_wrap ~id ~constructor snp
   | Ast0.OptDecl(dec) ->
       let constructor ~item = Ast0.OptDecl item in
-      item_wrap ~item:dec ~item_posfn:declaration_pos ~constructor snp
-  | Ast0.UniqueDecl(dec) ->
-      let constructor ~item = Ast0.UniqueDecl item in
       item_wrap ~item:dec ~item_posfn:declaration_pos ~constructor snp
   | Ast0.FunProto(fninfo,id,lp1,params,va,rp1,sem) ->
       let constructor ~id = Ast0.FunProto(fninfo,id,lp1,params,va,rp1,sem) in
@@ -390,9 +380,8 @@ let rec statement_pos s snp
   (* these cannot have positions (disjunctions are handled separately) *)
   | Ast0.Nest _
   | Ast0.Dots _
-  | Ast0.Circles _
-  | Ast0.Stars _
   | Ast0.Disj _
+  | Ast0.Conj _
   | Ast0.MetaStmtList _ -> None
   | Ast0.AsStmt _ -> None
   | Ast0.MetaStmt _ -> None
@@ -400,6 +389,7 @@ let rec statement_pos s snp
   (* uncertainty of whether these should be handled! *)
   | Ast0.Exec _ -> None
   | Ast0.TopExp _ -> None
+  | Ast0.TopId _ -> None
   | Ast0.Ty _ -> None
   | Ast0.TopInit _ -> None
 
@@ -417,9 +407,6 @@ let rec statement_pos s snp
       id_wrap ~id ~constructor snp
   | Ast0.OptStm stm ->
       let c ~item = Ast0.OptStm item in
-      item_wrap ~item:stm ~item_posfn:statement_pos ~constructor:c snp
-  | Ast0.UniqueStm stm ->
-      let c ~item = Ast0.UniqueStm item in
       item_wrap ~item:stm ~item_posfn:statement_pos ~constructor:c snp
   | Ast0.ExprStatement(None, sem) ->
       None

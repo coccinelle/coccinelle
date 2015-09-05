@@ -156,7 +156,7 @@ let star_dotsstmtfn ~context_mode combiner stmtdots =
    *)
   let do_not_star x =
     match Ast0.unwrap x with
-    | Ast0.Nest _ | Ast0.Dots _ | Ast0.Circles _ | Ast0.Stars _ | Ast0.Disj _
+    | Ast0.Nest _ | Ast0.Dots _ | Ast0.Disj _
     | Ast0.MetaStmt _ -> true | _ -> false in
 
   (* increase line number if not in context_mode (if context_mode, we don't
@@ -180,7 +180,7 @@ let star_dotsstmtfn ~context_mode combiner stmtdots =
           then insert_stars true (fn >> stmtfn x >> inc_line) xs
           else insert_stars false (fn >> starfn x) xs in
 
-  insert_stars true (fun x -> x) (Ast0.undots stmtdots)
+  insert_stars true (fun x -> x) (Ast0.unwrap stmtdots)
 
 
 (* ------------------------------------------------------------------------- *)
@@ -265,11 +265,11 @@ let rec gen_combiner ~context_mode =
 
     match Ast0.unwrap stmt with
 
-    (* nest, dots, circles, and stars are explicitly written out rather than
+    (* nest and dots are explicitly written out rather than
      * letting the visitor handle them. Otherwise whencodes would be ignored.
      * (whencodes are difficult to parameterise in the visitor due to typing).
      *
-     * nest, dots, cicles, stars, and metastatements can represent code slices
+     * nest, dots, and metastatements can represent code slices
      * of arbitrary length and should therefore not be starred, so if their
      * current line is starred, put them on a new line (inc_star).
      *)
@@ -280,9 +280,7 @@ let rec gen_combiner ~context_mode =
         >> c_dotsstmtfn stmt_dots
         >> string_mcode ender
 
-    | Ast0.Dots(dots,whn)
-    | Ast0.Circles(dots,whn)
-    | Ast0.Stars(dots,whn) ->
+    | Ast0.Dots(dots,whn) ->
         inc_star
         >> string_mcode dots
         >> whncodes whn
@@ -314,7 +312,7 @@ let rec gen_combiner ~context_mode =
   let topfn c c_topfn top =
     match Ast0.unwrap top with
     | Ast0.CODE stmtdots ->
-        (match Ast0.undots stmtdots with
+        (match Ast0.unwrap stmtdots with
          | [{Ast0.node = Ast0.Disj _; _} as x] ->
              DG.generate_statement
                ~stmtdotsfn:c.VT0.combiner_rec_statement_dots

@@ -40,7 +40,7 @@ let get_diff filename1 filename2 =
   let xs = Common.cmd_to_list com in
 
   (* get rid of the --- and +++ lines *)
-  if Common.null xs then xs else Common.drop 2 xs
+  if xs = [] then xs else Common.drop 2 xs
 
 (* Run sgen on <file>.cocci with <file>.config,
  * compare to <file>.expected,
