@@ -950,14 +950,25 @@ let rec dep in_and = function
   | Ast.NoDep   -> print_string "no_dep"
   | Ast.FailDep -> print_string "fail_dep"
 
-let script_header str lang deps code =
-  print_string "@@";
-  force_newline();
-  print_string (str ^ ":" ^ lang);
+let script_header str lang deps mv code =
+  print_string (Printf.sprintf "@%s:%s" str lang);
   (match deps with
     Ast.NoDep -> ()
   | _ -> print_string " depends on "; dep true deps);
+  print_string "@";
   force_newline();
+  List.iter
+    (function (script_name,inh_name,_ty) ->
+      (match script_name with
+	(None,None) -> print_string "(_,_)"
+      |	(Some x,None) -> print_string x
+      |	(None,Some a) -> print_string (Printf.sprintf "(_,%s)" a)
+      |	(Some x,Some a) -> print_string (Printf.sprintf "(%s,%s)" x a));
+      print_string " << ";
+      print_string (Printf.sprintf "%s.%s" (fst inh_name) (snd inh_name));
+      print_string ";";
+      force_newline())
+    mv;
   print_string "@@";
   force_newline();
   let code =
@@ -969,11 +980,11 @@ let script_header str lang deps code =
 let unparse z =
   match z with
     Ast.InitialScriptRule (name,lang,deps,mv,code) ->
-      script_header "initialize" lang deps code
+      script_header "initialize" lang deps mv code
   | Ast.FinalScriptRule (name,lang,deps,mv,code) ->
-      script_header "finalize" lang deps code
+      script_header "finalize" lang deps mv code
   | Ast.ScriptRule (name,lang,deps,bindings,script_vars,code) ->
-      script_header "script" lang deps code
+      script_header "script" lang deps bindings code
   | Ast.CocciRule (nm, (deps, drops, exists), x, _, _) ->
       print_string "@@";
       force_newline();
