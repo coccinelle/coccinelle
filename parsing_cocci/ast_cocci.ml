@@ -649,7 +649,7 @@ and rule =
 	* bool list * ruletype
   | ScriptRule of string (* name *) *
       (* metaname for python (untyped), metavar for ocaml (typed) *)
-      string * dependency *
+      string (*language*) * dependency *
 	(script_meta_name * meta_name * metavar) list (*inherited vars*) *
 	meta_name list (*script vars*) * string
   | InitialScriptRule of  string (* name *) *
