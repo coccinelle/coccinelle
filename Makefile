@@ -39,7 +39,7 @@ PKGVERSION=$(shell dpkg-parsechangelog -ldebian/changelog.$(DISTRIB_CODENAME) 2>
 
 TARGET=spatch
 PRJNAME=coccinelle
-ML_FILES=flag_cocci.ml cocci.ml testing.ml test.ml $(LEXER_SOURCES:.mll=.ml) main.ml
+ML_FILES=flag_cocci.ml cocci.ml testing.ml $(LEXER_SOURCES:.mll=.ml) main.ml
 MLI_FILES=cocci.mli testing.mli
 
 ifeq ($(FEATURE_PYTHON),1)
@@ -523,12 +523,6 @@ tags:
 # Misc rules
 ##############################################################################
 
-# each member of the project can have its own test.ml. this file is
-# not under CVS.
-test.ml:
-	$(ECHO) "let foo_ctl () = failwith \"there is no foo_ctl formula\"" \
-	  > test.ml
-
 ##############################################################################
 # Generic ocaml rules
 ##############################################################################
@@ -552,7 +546,6 @@ clean distclean::
 
 distclean::
 	set -e; for i in $(CLEANSUBDIRS); do $(MAKE) -C $$i $@; done
-	rm -f test.ml
 	rm -f TAGS *.native *.byte *.d.native *.p.byte
 	if test -z "${KEEP_GENERATED}"; then \
 		rm -f tests/SCORE_actual.sexp tests/SCORE_best_of_both.sexp; fi
@@ -562,11 +555,11 @@ distclean::
 
 # using 'touch' to prevent infinite recursion with 'make depend'
 .PHONY:: depend
-.depend: Makefile.config test.ml version
+.depend: Makefile.config version
 	@touch .depend
 	@$(MAKE) depend
 
-depend: Makefile.config test.ml version
+depend: Makefile.config version
 	@$(ECHO) "Constructing '.depend'"
 	@rm -f .depend
 	@set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i depend; done
