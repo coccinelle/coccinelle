@@ -2,6 +2,8 @@ Notes from Peter:
 
 Python scripts inside .cocci files:
    ### Issue 1
+   ### $ spatch file-path-error.cocci test1.c
+
    Recently I needed to extract the path from the .cocci from the python script
    for including a Python file using import. I needed to do something like:
 
@@ -16,21 +18,25 @@ Python scripts inside .cocci files:
    Python script. On the example below File contains "<string>", instead of
    the path to the .cocci file
 
-[peter@hp-peter linux]$ spatch /tmp/test777.cocci .
-init_defs_builtins: /usr/local/lib/coccinelle/standard.h
-HANDLING: ./net/mac802154/tx.c
-Traceback (most recent call last):
-  File "<string>", line 3, in <module>
-NameError: name '__file__' is not defined
-while running simple python string:
-from coccinelle import *
+   [peter@hp-peter linux]$ spatch /tmp/test777.cocci .
+   init_defs_builtins: /usr/local/lib/coccinelle/standard.h
+   HANDLING: ./net/mac802154/tx.c
+   Traceback (most recent call last):
+     File "<string>", line 3, in <module>
+   NameError: name '__file__' is not defined
+   while running simple python string:
+   from coccinelle import *
 
-print __file__
-:
-Failure in rule starting on line 6
-Fatal error: exception Yes_pycocci.Pycocciexception
+   print __file__
+   :
+   Failure in rule starting on line 6
+   Fatal error: exception Yes_pycocci.Pycocciexception
+
+
 
    ### Issue 2
+   ### $ spatch -j 2 file-path-error.cocci .
+
    When using -j option python script errors are not displayed, instead,
    spatch only reports:
 
