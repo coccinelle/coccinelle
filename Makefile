@@ -289,7 +289,7 @@ copy-stubs:
 ##############################################################################
 
 version.ml:
-	@$(ECHO) "version.ml is missing. Run ./configure to generate it."
+	@$(ECHO) "version.ml is missing. Run ./configure to generate it. Run ./autogen first if ./configure does not exist."
 	@false
 
 ##############################################################################
@@ -582,7 +582,8 @@ distclean::
 	rm -f scripts/spatch.sh
 	rm -f aclocal.m4
 	for i in `find . -name '*.in'`; do rm -f `echo $$i | sed "s/\.in$$//"`; done
-	@echo "Run 'configure' again prior to building coccinelle"
+	@echo "Run './configure' again prior to building coccinelle."
+	@echo "If ./configure does not exist, run ./autogen first."
 
 
 # don't include depend for those actions that either don't need
