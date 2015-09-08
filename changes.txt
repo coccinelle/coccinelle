@@ -32,6 +32,7 @@
 - Drop support for OCaml 3.11 which did not allow to compile coccinelle in
   native code
 - Print metavariables properly for script code.
+- Print metavariables properly for cocci code.
 ** Bugfix:
 - Allow virtual variable definition to contain an =.
 * 1.0.2

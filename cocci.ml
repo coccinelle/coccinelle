@@ -375,14 +375,14 @@ let show_or_not_scr_rule_name name =
       Common.pr_xxxxxxxxxxxxxxxxx ()
     end
 
-let show_or_not_ctl_text2 ctl ast rulenb =
+let show_or_not_ctl_text2 ctl mvs ast rulenb =
   if !Flag_cocci.show_ctl_text then begin
 
     adjust_pp_with_indent (fun () ->
       Format.force_newline();
       Pretty_print_cocci.print_plus_flag := true;
       Pretty_print_cocci.print_minus_flag := true;
-      Pretty_print_cocci.unparse ast;
+      Pretty_print_cocci.unparse mvs ast;
       );
 
     pr "CTL = ";
@@ -394,8 +394,8 @@ let show_or_not_ctl_text2 ctl ast rulenb =
       );
     pr "";
   end
-let show_or_not_ctl_text a b c =
-      Common.profile_code "show_xxx" (fun () -> show_or_not_ctl_text2 a b c)
+let show_or_not_ctl_text a b c d =
+      Common.profile_code "show_xxx" (fun () -> show_or_not_ctl_text2 a b c d)
 
 
 
@@ -1594,7 +1594,7 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
     (ccs:file_info list ref) =
   Common.profile_code r.rule_info.rulename (fun () ->
     show_or_not_rule_name r.ast_rule r.rule_info.ruleid;
-    show_or_not_ctl_text r.ctl r.ast_rule r.rule_info.ruleid;
+    show_or_not_ctl_text r.ctl r.metavars r.ast_rule r.rule_info.ruleid;
 
     let reorganized_env =
       reassociate_positions r.free_vars r.negated_pos_vars !es in
@@ -1949,7 +1949,7 @@ let rec bigloop2 rs (ccs: file_info list) parse_strings =
             let (l,mv,script_vars,code) = r.scr_ast_rule in
 	    let nm = r.scr_rule_info.rulename in
 	    let deps = r.scr_rule_info.dependencies in
-            Pretty_print_cocci.unparse
+            Pretty_print_cocci.unparse []
 	      (Ast_cocci.ScriptRule (nm,l,deps,mv,script_vars,code)));
 	end;
 
@@ -2021,7 +2021,7 @@ let initial_final_bigloop2 ty rebuild r =
 
       adjust_pp_with_indent (fun () ->
 	Format.force_newline();
-	Pretty_print_cocci.unparse
+	Pretty_print_cocci.unparse []
 	  (rebuild r.scr_ast_rule r.scr_rule_info.dependencies));
     end;
 

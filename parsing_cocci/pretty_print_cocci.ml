@@ -64,7 +64,7 @@ let print_string_befaft fn x info =
   fn x;
   List.iter (function (s,_,_) -> force_newline(); print s) info.Ast.straft
 
-let print_meta (r,x) = print_string r; print_string ":"; print_string x
+let print_meta (r,x) = print_string x
 
 let print_pos l =
   List.iter
@@ -871,6 +871,119 @@ and inc_elem = function
 (* for export only *)
 let statement_dots l = dots force_newline (statement "") l
 
+(* --------------------------------------------------------------------- *)
+(* metavars *)
+
+let print_name rule r n =
+  if rule = r
+  then print_string n
+  else print_string (Printf.sprintf "%s.%s" r n)
+
+let print_listlen rule = function
+    Ast.MetaLen(r,n) ->
+      print_string "["; print_name rule r n; print_string "] "
+  | Ast.CstLen(n) -> print_string "["; print_string (string_of_int n);
+      print_string "] "
+  | Ast.AnyLen -> print_string " "
+
+let print_types = function
+    None -> ()
+  | Some [ty] -> print_string (Type_cocci.type2c ty); print_string " "
+  | Some l ->
+      print_string "{";
+      print_between (fun _ -> print_string ",")
+	(fun ty -> print_string (Type_cocci.type2c ty))
+	l;
+      print_string "} "
+
+let print_seed_elem rule = function
+    Ast.SeedString(s) -> print_string (Printf.sprintf "\"%s\"" s)
+  | Ast.SeedId(r,n) -> print_name rule r n
+
+let print_seed rule = function
+    Ast.NoVal -> ()
+  | Ast.StringSeed(s) -> print_string " = "; print_string s
+  | Ast.ListSeed(ss) ->
+      print_string " = ";
+      print_between (fun _ -> print_string " ## ") (print_seed_elem rule) ss
+
+let rec unparse_cocci_mv rule = function
+    Ast.MetaMetaDecl _ -> failwith "should be removed"
+  | Ast.MetaIdDecl(_,(r,n)) ->
+      print_string "identifier "; print_name rule r n; print_string ";"
+  | Ast.MetaFreshIdDecl((r,n),seed) ->
+      print_string "fresh identifier "; print_name rule r n;
+      print_string " = "; print_seed rule seed; print_string ";"
+  | Ast.MetaTypeDecl(_,(r,n)) ->
+      print_string "type "; print_name rule r n; print_string ";"
+  | Ast.MetaInitDecl(_,(r,n)) ->
+      print_string "initializer "; print_name rule r n; print_string ";"
+  | Ast.MetaInitListDecl(_,(r,n),len) ->
+      print_string "initializer list"; print_listlen rule len;
+      print_name rule r n; print_string ";"
+  | Ast.MetaListlenDecl(r,n) -> print_name rule r n
+  | Ast.MetaParamDecl(_,(r,n)) ->
+      print_string "parameter "; print_name rule r n; print_string ";"
+  | Ast.MetaBinaryOperatorDecl(_,(r,n)) -> (* missing constraints *)
+      print_string "binary "; print_name rule r n; print_string ";"
+  | Ast.MetaAssignmentOperatorDecl(_,(r,n)) -> (* missing constraints *)
+      print_string "assignment "; print_name rule r n; print_string ";"
+  | Ast.MetaParamListDecl(_,(r,n),len) ->
+      print_string "parameter list"; print_listlen rule len;
+      print_name rule r n; print_string ";"
+  | Ast.MetaConstDecl(_,(r,n),ty) ->
+      print_string "constant "; print_types ty;
+      print_name rule r n; print_string ";"
+  | Ast.MetaErrDecl(_,(r,n)) ->
+      print_string "error "; print_name rule r n; print_string ";"
+  | Ast.MetaExpDecl(_,(r,n),None) ->
+      print_string "expression "; print_name rule r n; print_string ";"
+  | Ast.MetaExpDecl(_,(r,n),ty) ->
+      print_types ty; print_name rule r n; print_string ";"
+  | Ast.MetaIdExpDecl(_,(r,n),ty) ->
+      print_string "idexpression "; print_types ty;
+      print_name rule r n; print_string ";"
+  | Ast.MetaLocalIdExpDecl(_,(r,n),ty) ->
+      print_string "local idexpression "; print_types ty;
+      print_name rule r n; print_string ";"
+  | Ast.MetaGlobalIdExpDecl(_,(r,n),ty) ->
+      print_string "global idexpression "; print_types ty;
+      print_name rule r n; print_string ";"
+  | Ast.MetaExpListDecl(_,(r,n),len) ->
+      print_string "expression list"; print_listlen rule len;
+      print_name rule r n; print_string ";"
+  | Ast.MetaDeclDecl(_,(r,n)) ->
+      print_string "declaration "; print_name rule r n; print_string ";"
+  | Ast.MetaFieldDecl(_,(r,n)) ->
+      print_string "field "; print_name rule r n; print_string ";"
+  | Ast.MetaFieldListDecl(_,(r,n),len) ->
+      print_string "field list"; print_listlen rule len;
+      print_name rule r n; print_string ";"
+  | Ast.MetaStmDecl(_,(r,n)) ->
+      print_string "statement "; print_name rule r n; print_string ";"
+  | Ast.MetaStmListDecl(_,(r,n)) ->
+      print_string "statement list "; print_name rule r n; print_string ";"
+  | Ast.MetaFuncDecl(_,(r,n)) ->
+      print_string "function "; print_name rule r n; print_string ";"
+  | Ast.MetaLocalFuncDecl(_,(r,n)) ->
+      print_string "local function "; print_name rule r n; print_string ";"
+  | Ast.MetaPosDecl(_,(r,n)) -> (* constraints missing! *)
+      print_string "position "; print_name rule r n; print_string ";"
+  | Ast.MetaFmtDecl(_,(r,n)) ->
+      print_string "format "; print_name rule r n; print_string ";"
+  | Ast.MetaFragListDecl(_,(r,n),len) ->
+      print_string "fragment list"; print_listlen rule len;
+      print_name rule r n; print_string ";"
+  | Ast.MetaAnalysisDecl(analyzer,(r,n)) ->
+      failwith "analyzer not supported"
+  | Ast.MetaDeclarerDecl(_,(r,n)) ->
+      print_string "declarer "; print_name rule r n; print_string ";"
+  | Ast.MetaIteratorDecl(_,(r,n)) ->
+      print_string "iterator "; print_name rule r n; print_string ";"
+  | Ast.MetaScriptDecl _ -> failwith "not a cocci decl"
+
+(* --------------------------------------------------------------------- *)
+
 let top_level t =
   match Ast.unwrap t with
     Ast.FILEINFO(old_file,new_file) ->
@@ -977,7 +1090,7 @@ let script_header str lang deps mv code =
   print_string code;
   force_newline()
 
-let unparse z =
+let unparse mvs z =
   match z with
     Ast.InitialScriptRule (name,lang,deps,mv,code) ->
       script_header "initialize" lang deps mv code
@@ -986,17 +1099,21 @@ let unparse z =
   | Ast.ScriptRule (name,lang,deps,bindings,script_vars,code) ->
       script_header "script" lang deps bindings code
   | Ast.CocciRule (nm, (deps, drops, exists), x, _, _) ->
-      print_string "@@";
-      force_newline();
+      print_string "@";
       print_string nm;
       (match deps with
 	Ast.NoDep -> ()
       | _ -> print_string " depends on "; dep true deps);
-    (*
-    print_string "line ";
-    print_int (Ast.get_line (List.hd x));
-    *)
+      (match drops with
+	[] -> ()
+      |	_ -> print_string " disable "; print_string (String.concat "," drops));
+      (match exists with
+	Ast.Exists -> print_string " exists"
+      |	Ast.Forall -> print_string " forall"
+      |	Ast.Undetermined -> ());
+      print_string "@";
       force_newline();
+      List.iter (fun mv -> unparse_cocci_mv nm mv; force_newline()) mvs;
       print_string "@@";
       print_newlines_disj := true;
       force_newline();
@@ -1014,7 +1131,7 @@ let ident_to_string x =
 
 let unparse_to_string x =
   print_newlines_disj := true;
-  Common.format_to_string (function _ -> unparse x)
+  Common.format_to_string (function _ -> unparse [] x)
 
 let print_rule_elem re =
   let nl = !print_newlines_disj in

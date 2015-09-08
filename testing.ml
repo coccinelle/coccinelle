@@ -455,9 +455,9 @@ let test_parse_cocci file =
   if not (file =~ ".*\\.cocci")
   then pr2 "warning: seems not a .cocci file";
 
-  let (_,xs,_,_,_,_,(grep_tokens,query,_,_),_) =
+  let (mvs,xs,_,_,_,_,(grep_tokens,query,_,_),_) =
     Parse_cocci.process file (Some !Config.std_iso) false in
-  xs +> List.iter Pretty_print_cocci.unparse;
+  xs +> List.iter2 Pretty_print_cocci.unparse mvs;
   Format.print_newline();
   (* compile ocaml script code *)
   (match Prepare_ocamlcocci.prepare file xs with

@@ -1,4 +1,4 @@
-val unparse : Ast_cocci.rule -> unit
+val unparse : Ast_cocci.metavar list -> Ast_cocci.rule -> unit
 val unparse_to_string : Ast_cocci.rule -> string
 val expression : Ast_cocci.expression -> unit
 val ident : Ast_cocci.ident -> unit

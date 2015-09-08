@@ -2486,7 +2486,7 @@ let process file isofile verbose =
 
   let (metavars,code,fvs,neg_pos,ua,pos) = Free_vars.free_vars disjd in
   if !Flag_parsing_cocci.show_SP
-  then List.iter Pretty_print_cocci.unparse code;
+  then List.iter2 Pretty_print_cocci.unparse metavars code;
 
   let search_tokens = Get_constants2.get_constants code neg_pos in
 
