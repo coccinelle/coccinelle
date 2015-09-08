@@ -115,7 +115,6 @@ fix-expected:
 release:
 	@echo "Marking version: $(VERSION)"
 	$(GIT) add ./version
-	$(GIT) add ./configure
 	$(GIT) add setup/Makefile.in
 	$(GIT) commit -m "Release $(VERSION)"
 	$(GIT) tag -a -m "Release $(VERSION)" $(VERSION)
