@@ -15,6 +15,7 @@ scripts/spatch.byte
 .depend
 version.ml
 
+configure
 Makefile.config
 Makefile.override
 result
