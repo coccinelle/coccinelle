@@ -246,8 +246,12 @@ clean distclean::
 
 .PHONY:: tools configure
 
-configure:
+configure: ./configure
 	./configure $(CONFIGURE_FLAGS)
+
+./configure: ./configure.ac
+	@echo Please run ./autogen to update configure
+	@false
 
 # the dependencies on Makefile.config should give a hint to the programmer that
 # configure should be run again
