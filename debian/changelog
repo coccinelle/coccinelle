@@ -1,3 +1,9 @@
+coccinelle (1.0.2~14.04npalix1) trusty; urgency=medium
+
+  * New release 1.0.2
+
+ -- Nicolas Palix (LIG) <nicolas.palix@imag.fr>  Wed, 09 Sep 2015 21:54:52 +0000
+
 coccinelle (1.0.0-rc22~14.04npalix1) trusty; urgency=medium
 
   * New release 1.0.0-rc22
