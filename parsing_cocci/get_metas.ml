@@ -118,7 +118,7 @@ and param r k p =
                | _ -> (x::other_metas,id))
            | x -> (x::other_metas,id))
        ([],p) metas
-  | _ -> r k p
+  | _ -> k p
 
 and statement r k s =
   let (metas,s) = k s in
@@ -151,6 +151,7 @@ let res = V0.combiner_rebuilder bind option_default
       VT0.combiner_rebuilder_exprfn = expression;
       VT0.combiner_rebuilder_tyfn = typeC;
       VT0.combiner_rebuilder_initfn = initialiser;
+      VT0.combiner_rebuilder_paramfn = param;
       VT0.combiner_rebuilder_declfn = declaration;
       VT0.combiner_rebuilder_stmtfn = statement}
 
