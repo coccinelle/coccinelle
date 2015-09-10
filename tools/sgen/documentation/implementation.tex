@@ -1,13 +1,26 @@
-\\TODO ... 
+Much of the documentation of the implementation is contained in the interface files of the source code.\\\\
+TODO: make a graph illustrating the workflow.\\\\
+Some notes:
+\begin{itemize}
+\item See \texttt{sgen/source/README.md} for a broad overview of the workflow and dependencies, read \texttt{sgen/source/sgen.ml} for the driver of the program.
+%\item Terminology: patch rule, context rule, */+/- rule, context\_mode ...
+\item Several of the modules make extensive use of the AST0 visitor\footnote{\texttt{coccinelle/parsing\_cocci/visitor\_ast0.ml}}. It is used because it abstracts away a lot of the boilerplace code needed for accessing the components of the abstract syntax tree.
+\item An easy way to debug in \texttt{sgen/source/rule\_body.ml}: add
+\begin{verbatim}
+>> Snapshot.add "debug message" >>
+\end{verbatim}
+in some function sequence. Then "debug message" will appear in the exact same place it was called in the generated script.
+\item Absolutely not optimised for performance (in particular, memory).
+  \begin{itemize}
+  \item Snapshot need not be purely functional; rule map can be hashtable in mutable record field instead of map (needs to be sorted in get\_result however). However, a map might be beneficial later on if we want to keep various copies for e.g. rule splitting.
+  \item Rule map is converted to string list before printing; no need to do so, could just print directly from rule map. However, this makes for a better separation interface-wise.
+  \item Most importantly, the generally small size of Coccinelle scripts means that performance is not actually a problem in practice.
+  \end{itemize}
+\item sgen needs its own flag in the Coccinelle parser: \texttt{Flag\_parsing\_cocci.generating\_mode}. This ensures that dependencies are not optimised away in the parser, as we need that information for printing the rules properly. It cannot be substituted for the \texttt{ignore\_patch\_or\_match} option, because that option also affects other parts of the parser.
+\item Regression tests: run sgen with flag \texttt{-{}-test <path\_to\_test\_dir} to run the tests. They should be run once before changing anything in the code. The tests test diff equality with expected files (ie. a bit too strict) and that generated files are parsable.
+\end{itemize}
 %Some notes for later:
 %\begin{itemize}
-%\item Implementation overview (showing module dependencies and the program flow).
-%\item Extensive use of the AST0 visitor. Reason: abstracts away a lot of boilerplate code for accessing the components of the abstract syntax tree.
-%\item Easy way to debug in \texttt{rule\_body.ml}: add \texttt{>> GT.add "debug msg" >>} in some function sequence.
-%\item Generator types, in particular snapshot and the combiner type in rule body (which is probably the most complex part of the implementation).
-%\item The generating mode flag: cannot be substituted for ignore patch or match since that option means that the plus and minus tree are not processed in the same way.
+%\item Workflow graph (based on the workflow described in the source/README.md file
+%\item Dependency graph (based on the dependencies described in the source/README.md file) HASSE DIAGRAM! (overkill?)
 %\end{itemize}
-
-
-
-

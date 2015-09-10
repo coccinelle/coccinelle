@@ -95,16 +95,18 @@ let mk_token_extended x =
     new_tokens_before = [];
   }
 
-
 let rebuild_tokens_extented toks_ext =
-  let _tokens = ref [] in
-  toks_ext +> List.iter (fun tok ->
-    tok.new_tokens_before +> List.iter (fun x -> push2 x _tokens);
-    push2 tok.tok _tokens
-  );
-  (* use map_eff_rev because _tokens is already reversed *)
-  !_tokens +> map_eff_rev mk_token_extended
-
+  List.rev
+    (List.fold_left
+       (function prev ->
+	 function tok ->
+	   (mk_token_extended tok.tok) ::
+	   List.fold_left
+	     (function prev ->
+	       function bef ->
+		 (mk_token_extended bef)::prev)
+	     prev tok.new_tokens_before)
+       [] toks_ext)
 
 (* x list list, because x list separated by ',' *)
 type paren_grouped =
@@ -184,7 +186,7 @@ and mk_parameters extras acc_before_sep  xs =
   | x::xs ->
       (match x.tok with
       (* synchro *)
-      | TOBrace _ when x.col =|= 0 ->
+      | TOBrace _ when x.col = 0 ->
           pr2 "PB: found synchro point } in paren";
           [List.rev acc_before_sep], List.rev (extras), (x::xs)
 
@@ -263,7 +265,7 @@ let rec mk_ifdef xs =
 
       | _ ->
           (* todo? can have some Ifdef in the line ? *)
-          let line, xs' = Common.span (fun y -> y.line =|= x.line) (x::xs) in
+          let line, xs' = Common.span (fun y -> y.line = x.line) (x::xs) in
           NotIfdefLine line::mk_ifdef xs'
       )
 
@@ -308,7 +310,7 @@ and mk_ifdef_parameters extras acc_before_sep xs =
           let body, extras, xs = mk_ifdef_parameters (x::extras) [] xs in
           (List.rev acc_before_sep)::body, extras, xs
       | _ ->
-          let line, xs = Common.span (fun y -> y.line =|= x.line) (x::xs) in
+          let line, xs = Common.span (fun y -> y.line = x.line) (x::xs) in
           mk_ifdef_parameters extras (NotIfdefLine line::acc_before_sep) xs
       )
 
@@ -330,7 +332,7 @@ let rec span_line_paren line = function
       | PToken tok when TH.is_eof tok.tok ->
           [], x::xs
       | _ ->
-        if line_of_paren x =|= line
+        if line_of_paren x = line
         then
           let (l1, l2) = span_line_paren line xs in
           (x::l1, l2)
@@ -369,7 +371,7 @@ let rec mk_body_function_grouped xs =
           )
 
       | _ ->
-          let line, xs = Common.span (fun y -> y.line =|= x.line) (x::xs) in
+          let line, xs = Common.span (fun y -> y.line = x.line) (x::xs) in
           NotBodyLine line::mk_body_function_grouped xs
       )
 
@@ -464,7 +466,7 @@ let rec set_in_function_tag xs =
   | [] -> ()
   (* ) { and the closing } is in column zero, then certainly a function *)
   | BToken ({tok = TCPar _ })::(Braceised (body, tok1, Some tok2))::xs
-      when tok1.col <> 0 && tok2.col =|= 0 ->
+      when tok1.col <> 0 && tok2.col = 0 ->
       body +> List.iter (iter_token_brace (fun tok ->
         tok.where <- InFunction
       ));
@@ -473,7 +475,7 @@ let rec set_in_function_tag xs =
   | (BToken x)::xs -> set_in_function_tag xs
 
   | (Braceised (body, tok1, Some tok2))::xs
-      when tok1.col =|= 0 && tok2.col =|= 0 ->
+      when tok1.col = 0 && tok2.col = 0 ->
       body +> List.iter (iter_token_brace (fun tok ->
         tok.where <- InFunction
       ));
@@ -525,4 +527,3 @@ let set_context_tag xs =
     set_in_function_tag xs;
     set_in_other xs;
   end
-

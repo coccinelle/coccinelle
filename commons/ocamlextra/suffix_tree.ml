@@ -49,7 +49,7 @@ let subseq_extend (s,pos,len) = (s,pos,len+1)
    ------------------------------------------------------------------------------- *)
 
 let eq_char c1 c2 =
-  c1<>'\000' & c1=c2  (* ensures that 2 terminal symbols '\000' are pairwise different (for GST only, not necessary for ST) *)
+  c1<>'\000' && c1=c2  (* ensures that 2 terminal symbols '\000' are pairwise different (for GST only, not necessary for ST) *)
 
 (* returns the child node that recognizes [implicit] from the node [explicit] *)
 let get_child seqar (explicit,implicit) =
@@ -80,7 +80,7 @@ let rec canonical seqar (explicit,implicit,child) =
 
 (* test whether an implicit node is the root node *)
 let is_root root (explicit,implicit,_) =
-  explicit == root & subseq_is_empty implicit
+  explicit == root && subseq_is_empty implicit
 
 (* test whether the extension of an implicit node by [seqar.(k).[i]] is still recognized in the GST,
    and if yes, returns the implicit node extended by 1 position, otherwise returns [None]. *)
@@ -179,7 +179,7 @@ let rec update (seqar,root) (k,i) res pred_opt =
   match has_child seqar res.startnode (k,i) with
   | Some extended_startnode -> (* startnode can be extended by [c] *)
       let explicit, implicit, _ = res.startnode in
-      assert (pred_opt = None or subseq_is_empty implicit);
+      assert (pred_opt = None || subseq_is_empty implicit);
         (* if a link has been followed after node creation, then we are on an explicit node *)
       add_link root pred_opt explicit;
       res.startnode <- canonical seqar extended_startnode
@@ -252,7 +252,7 @@ and implicit_node_aux (seqar,node) implicit =
   let child = get_child seqar (node,implicit) in
   let l = !(child.final) - child.start + 1 in
   let a = ref 1 in
-  while !a < l & !a < w & eq_char seqar.(child.seqid).[child.start + !a] (subseq_get implicit !a) do
+  while !a < l && !a < w && eq_char seqar.(child.seqid).[child.start + !a] (subseq_get implicit !a) do
     incr a
   done; (* [!a] is the first mismatch position, or the length of [child] label *)
   if !a < w then
@@ -313,6 +313,3 @@ let exact_matches : t -> string -> (int * int) list =
 
 let contained_string gst word =
   List.map (fun (i,j) -> Array.get (fst gst) i)  (exact_matches gst word)
-
-
-

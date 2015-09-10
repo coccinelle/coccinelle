@@ -37,6 +37,8 @@ type 'a printer = 'a -> unit
 
 type pretty_printers = {
   expression      : Ast_c.expression printer;
+  assignOp        : Ast_c.assignOp printer;
+  binaryOp        : Ast_c.binaryOp printer;
   arg_list        : (Ast_c.argument Ast_c.wrap2 list) printer;
   arg             : Ast_c.argument printer;
   statement       : Ast_c.statement printer;
@@ -119,14 +121,14 @@ let mk_pretty_printers
         pr_space(); pp_expression e3
     | Sequence (e1, e2),          [i]  ->
         pp_expression e1; pr_elem i; pr_space(); pp_expression e2
-    | Assignment (e1, op, e2),    [i]  ->
-        pp_expression e1; pr_space(); pr_elem i; pr_space(); pp_expression e2
+    | Assignment (e1, op, e2),    []  ->
+        pp_expression e1; pr_space(); pr_assignOp op; pr_space(); pp_expression e2
 
     | Postfix  (e, op),    [i] -> pp_expression e; pr_elem i;
     | Infix    (e, op),    [i] -> pr_elem i; pp_expression e;
     | Unary    (e, op),    [i] -> pr_elem i; pp_expression e
-    | Binary   (e1, op, e2),    [i] ->
-        pp_expression e1; pr_space(); pr_elem i; pr_space(); pp_expression e2
+    | Binary   (e1, op, e2),    [] ->
+        pp_expression e1; pr_space(); pr_binaryOp op; pr_space(); pp_expression e2
 
     | ArrayAccess    (e1, e2),   [i1;i2] ->
         pp_expression e1; pr_elem i1; pp_expression e2; pr_elem i2
@@ -165,13 +167,23 @@ let mk_pretty_printers
 	pr_elem i1; pr_elem i2; pp_arg_list ts; pr_elem i3; pp_argument t
     | Delete(t),     [i1] -> pr_elem i1; pp_expression t
 
+    | Defined name, [i1] ->
+        pr_elem i1; (* defined *)
+        pp_name name;
+    | Defined name, [i1;i2;i3] ->
+        pr_elem i1; (* defined *)
+        pr_elem i2; (* ( *)
+        pp_name name;
+        pr_elem i3; (* ) *)
+
     | (Ident (_) | Constant _ | StringConstant _ | FunCall (_,_)
     | CondExpr (_,_,_) | Sequence (_,_) | Assignment (_,_,_)
     | Postfix (_,_) | Infix (_,_) | Unary (_,_) | Binary (_,_,_)
     | ArrayAccess (_,_) | RecordAccess (_,_) | RecordPtAccess (_,_)
     | SizeOfExpr (_) | SizeOfType (_) | Cast (_,_)
     | StatementExpr (_) | Constructor _
-    | ParenExpr (_) | New (_) | Delete (_)),_ -> raise (Impossible 95)
+    | ParenExpr (_) | New (_) | Delete (_)
+    | Defined (_)),_ -> raise (Impossible 95)
     );
 
     if !Flag_parsing_c.pretty_print_type_info
@@ -187,6 +199,14 @@ let mk_pretty_printers
 	    pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str s)));
       pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "*/");
     end
+
+  and pr_assignOp (_,ii) =
+    let i = Common.tuple_of_list1 ii in
+    pr_elem i
+
+  and pr_binaryOp (_,ii) =
+    let i = Common.tuple_of_list1 ii in
+    pr_elem i
 
   and pp_arg_list es = pp_list pp_argument es
 
@@ -312,7 +332,7 @@ and pp_string_format (e,ii) =
               pp_statement (Ast_c.mk_st (ExprStatement e1opt) il1)
 	  | ForDecl decl -> pp_decl decl);
           pp_statement (Ast_c.mk_st (ExprStatement e2opt) il2);
-          assert (null il3);
+          assert (il3 = []);
           pp_statement (Ast_c.mk_st (ExprStatement e3opt) il3);
           pr_elem i3;
           indent_if_needed st (function _ -> pp_statement st);
@@ -356,7 +376,7 @@ and pp_string_format (e,ii) =
         )
 
     | NestedFunc def, ii ->
-        assert (null ii);
+        assert (ii = []);
         pp_def def
     | MacroStmt, ii ->
         ii +> List.iter pr_elem ;
@@ -490,14 +510,14 @@ and pp_string_format (e,ii) =
         | None -> [] | Some (s, iis) -> (*assert (List.length iis = 1);*) iis
       in
       let print_sto_qu (sto, (qu, iiqu)) =
-        let all_ii = get_sto sto ++ iiqu in
+        let all_ii = get_sto sto @ iiqu in
         all_ii
           +> List.sort Ast_c.compare_pos
           +> Common.print_between pr_space pr_elem
 
       in
       let print_sto_qu_ty (sto, (qu, iiqu), iity) =
-        let all_ii = get_sto sto ++ iiqu ++ iity in
+        let all_ii = get_sto sto @ iiqu @ iity in
         let all_ii2 = all_ii +> List.sort Ast_c.compare_pos in
 
         if all_ii <> all_ii2
@@ -578,22 +598,22 @@ and pp_string_format (e,ii) =
           print_sto_qu_ty (sto, qu, iis);
 
       | (StructUnionName (s, structunion), iis) ->
-          assert (List.length iis =|= 2);
+          assert (List.length iis = 2);
           print_sto_qu_ty (sto, qu, iis);
 
       | (EnumName  s, iis) ->
-          assert (List.length iis =|= 2);
+          assert (List.length iis = 2);
           print_sto_qu_ty (sto, qu, iis);
 
       | (Decimal(l,p), [dec;lp;cm;rp]) ->
 	  (* hope that sto before qu is right... cf print_sto_qu_ty *)
-	  let stoqulp = get_sto sto ++ (snd qu) ++ [dec] in
+	  let stoqulp = get_sto sto @ (snd qu) @ [dec] in
 	  Common.print_between pr_space pr_elem stoqulp;
 	  pr_elem lp; pp_expression l; pr_elem cm;
 	  do_option pp_expression p; pr_elem rp
 
       | (TypeName (name,typ), noii) ->
-          assert (null noii);
+          assert (noii = []);
           let (_s, iis) = get_s_and_info_of_name name in
           print_sto_qu_ty (sto, qu, [iis]);
 
@@ -645,7 +665,7 @@ and pp_string_format (e,ii) =
 	    (match x with
 	      (Simple (nameopt, typ)), iivirg ->
               (* first var cannot have a preceding ',' *)
-		assert (List.length iivirg =|= 0);
+		assert (List.length iivirg = 0);
 		let identinfo =
                   match nameopt with
 		  | None -> None
@@ -655,7 +675,7 @@ and pp_string_format (e,ii) =
 
 	    | (BitField (nameopt, typ, iidot, expr)), iivirg ->
                       (* first var cannot have a preceding ',' *)
-		assert (List.length iivirg =|= 0);
+		assert (List.length iivirg = 0);
 		(match nameopt with
 		| None ->
 		    pp_type typ;
@@ -965,7 +985,7 @@ and pp_string_format (e,ii) =
 	  }, iivirg) ->
 
             let (s,iis) = get_s_and_info_of_name name in
-	    assert (storage2 =*= storage);
+	    assert (storage2 = storage);
 	    iivirg +> List.iter pr_elem;
 	    pp_type_with_ident_rest
 	      (Some (s, iis)) returnType attrs;
@@ -982,7 +1002,7 @@ and pp_string_format (e,ii) =
 
 	pr_elem iivirg;
 
-    | MacroDecl ((s, es, true), iis::lp::rp::iiend::ifakestart::iisto) ->
+    | MacroDecl ((sto, s, es, true), iis::lp::rp::iiend::ifakestart::iisto) ->
 	pr_elem ifakestart;
 	iisto +> List.iter pr_elem; (* static and const *)
 	pr_elem iis;
@@ -996,7 +1016,7 @@ and pp_string_format (e,ii) =
 	pr_elem rp;
 	pr_elem iiend;
 
-    | MacroDecl ((s, es, false), iis::lp::rp::ifakestart::iisto) ->
+    | MacroDecl ((sto, s, es, false), iis::lp::rp::ifakestart::iisto) ->
 	pr_elem ifakestart;
 	iisto +> List.iter pr_elem; (* static and const *)
 	pr_elem iis;
@@ -1010,7 +1030,7 @@ and pp_string_format (e,ii) =
 	pr_elem rp;
 
     | MacroDeclInit
-	((s, es, ini), iis::lp::rp::eq::iiend::ifakestart::iisto) ->
+	((sto, s, es, ini), iis::lp::rp::eq::iiend::ifakestart::iisto) ->
 	pr_elem ifakestart;
 	iisto +> List.iter pr_elem; (* static and const *)
 	pr_elem iis;
@@ -1114,8 +1134,8 @@ and pp_init (init, iinit) =
 		 | qu, (BaseType Void, ii) -> true
 		 | _ -> true
 	       );
-               assert (null iicomma);
-               assert (null ii_b_s);
+               assert (iicomma = []);
+               assert (ii_b_s = []);
                pp_type_with_ident None None t
 
            | paramst ->
@@ -1276,7 +1296,7 @@ and pp_init (init, iinit) =
                      f_body = body;
                      f_attr = attrs},ii) ->
 
-		       assert(null body);
+		       assert (body = []);
       (*
 	 iif ii;
 	 iif iidotsb;
@@ -1448,6 +1468,8 @@ and pp_init (init, iinit) =
 
 
   { expression = pp_expression;
+    assignOp   = pr_assignOp;
+    binaryOp   = pr_binaryOp;
     arg_list   = pp_arg_list;
     arg        = pp_argument;
     statement  = pp_statement;
@@ -1509,6 +1531,8 @@ let ppc =
     ~pr_elem ~pr_space ~pr_nl ~pr_outdent ~pr_indent ~pr_unindent
 
 let pp_expression_simple = ppc.expression
+let pp_assignOp_simple   = ppc.assignOp
+let pp_binaryOp_simple   = ppc.binaryOp
 let pp_decl_simple       = ppc.decl
 let pp_field_simple      = ppc.field
 let pp_statement_simple  = ppc.statement
@@ -1527,6 +1551,12 @@ let pp_elem_sp ~pr_elem ~pr_space =
 
 let pp_expression_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).expression
+
+let pp_assignOp_gen ~pr_elem ~pr_space =
+  (pp_elem_sp pr_elem pr_space).assignOp
+
+let pp_binaryOp_gen ~pr_elem ~pr_space =
+  (pp_elem_sp pr_elem pr_space).binaryOp
 
 let pp_arg_list_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).arg_list
@@ -1579,6 +1609,13 @@ let string_of_expression e =
     pp_expression_simple e
   )
 
+let string_of_ifdef_guard = function
+  | Gifdef s  -> "defined(" ^ s ^ ")"
+  | Gifndef s -> "!defined(" ^ s ^ ")"
+  | Gif_str s -> s
+  | Gif e     -> string_of_expression e
+  | Gnone     -> "0"
+
 let string_of_toplevel top =
   Common.format_to_string (fun () ->
     pp_toplevel_simple top
@@ -1593,4 +1630,3 @@ let (debug_info_of_node:
     ) in
     let pos = Lib_parsing_c.min_pinfo_of_node node in
     (spf "%s(n%d)--> %s" (Common.string_of_parse_info_bis pos) nodei s)
-

@@ -12,5 +12,5 @@ static int ppa_queuecommand(struct scsi_cmnd *cmd,
 		void (*done) (struct scsi_cmnd *))
 {
 	ppa_struct *dev = ppa_dev(cmd->device->host);
-	schedule_delayed_work(&dev->ppa_tq,0);
+	schedule_delayed_work(&dev->ppa_tq, 0);
 }

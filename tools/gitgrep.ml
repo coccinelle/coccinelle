@@ -11,6 +11,8 @@ usb_21_22
 maxlen is per file, regardless of whether the pattern is found in that file.
  *)
 
+(* Patterns can't use ^ and $ *)
+
 type dir = Minus | Plus | Context | ChangeLog
 type orientation = Pos | Neg
 
@@ -191,7 +193,13 @@ let open_git file =
 
 let version = ref None
 
-let make_pattern s = Str.regexp (Printf.sprintf "\\b%s\\b" s)
+let isword s =
+  Str.string_match (Str.regexp "^[[a-zA-Z][][a-zA-Z0-9_*+-]*$") s 0
+
+let make_pattern s =
+  if isword s
+  then (Printf.eprintf "word\n"; Str.regexp (Printf.sprintf "\\b%s\\b" s))
+  else (Printf.eprintf "not word\n"; Str.regexp s)
 
 let rec split_args = function
     [] -> []

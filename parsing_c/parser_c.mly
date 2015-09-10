@@ -63,7 +63,7 @@ let fake_pi = Common.fake_parse_info
 let addStorageD  = function
   | ((x,ii), ({storageD = (NoSto,[])} as v)) -> { v with storageD = (x, [ii]) }
   | ((x,ii), ({storageD = (y, ii2)} as v)) ->
-      if x =*= y then warning "duplicate storage classes" v
+      if x = y then warning "duplicate storage classes" v
       else raise (Semantic ("multiple storage classes", fake_pi))
 
 let addInlineD  = function
@@ -80,7 +80,7 @@ let addTypeD     = function
   | ((Left3 _,ii),        ({typeD = ((Some _,b,c),ii2)} as _v)) ->
       raise (Semantic ("both signed and unsigned specified", fake_pi))
   | ((Left3 x,ii),        ({typeD = ((None,b,c),ii2)} as v))   ->
-      {v with typeD = (Some x,b,c),ii ++ ii2}
+      {v with typeD = (Some x,b,c),ii @ ii2}
 
   | ((Middle3 Short,ii),  ({typeD = ((a,Some Short,c),ii2)} as v)) ->
       warning "duplicate 'short'" v
@@ -88,7 +88,7 @@ let addTypeD     = function
 
   (* gccext: long long allowed *)
   | ((Middle3 Long,ii),   ({typeD = ((a,Some Long ,c),ii2)} as v)) ->
-      { v with typeD = (a, Some LongLong, c),ii++ii2 }
+      { v with typeD = (a, Some LongLong, c),ii @ ii2 }
   | ((Middle3 Long,ii),   ({typeD = ((a,Some LongLong ,c),ii2)} as v)) ->
       warning "triplicate 'long'" v
 
@@ -96,12 +96,12 @@ let addTypeD     = function
   | ((Middle3 _,ii),      ({typeD = ((a,Some _,c),ii2)} as _v)) ->
       raise (Semantic ("both long and short specified", fake_pi))
   | ((Middle3 x,ii),      ({typeD = ((a,None,c),ii2)} as v))  ->
-      {v with typeD = (a, Some x,c),ii++ii2}
+      {v with typeD = (a, Some x,c),ii @ ii2}
 
   | ((Right3 t,ii),       ({typeD = ((a,b,Some x),ii2)} as _v)) ->
       raise (Semantic ((Printf.sprintf "two or more data types: t %s ii %s\ntypeD %s ii2 %s\n" (Dumper.dump t) (Dumper.dump ii) (Dumper.dump x) (Dumper.dump ii2)), fake_pi))
   | ((Right3 t,ii),       ({typeD = ((a,b,None),ii2)} as v))   ->
-      {v with typeD = (a,b, Some t),ii++ii2}
+      {v with typeD = (a,b, Some t),ii @ ii2}
 
 
 let addQualif = function
@@ -176,7 +176,7 @@ let (fixDeclSpecForDecl: decl -> (fullType * (storage wrap)))  = function
    in
    ((qu, iiq),
    (ty', iit'))
-     ,((st, inline),iist++iinl)
+     ,((st, inline),iist @ iinl)
 
 
 let fixDeclSpecForParam = function ({storageD = (st,iist)} as r) ->
@@ -265,7 +265,7 @@ let fixFunc (typ, compound, old_style_opt) =
       let iifunc = Ast_c.get_ii_typeC_take_care tybis in
 
       let iistart = Ast_c.fakeInfo () in
-      assert (qu =*= nullQualif);
+      assert (qu = nullQualif);
 
       (match params with
       | [{p_namei= None; p_type = ty2}, _] ->
@@ -311,11 +311,14 @@ let fixFunc (typ, compound, old_style_opt) =
       {f_name = name;
        f_type = (fullt, (params, abool));
        f_storage = st;
-       f_body = cp;
+       f_body =
+	if !Flag_parsing_c.parsing_header_for_types
+	then []
+	else cp;
        f_attr = attrs;
        f_old_c_style = old_style_opt;
       },
-      (iifunc++iicp++[iistart]++iist)
+      (iifunc @ iicp @ [iistart] @ iist)
   | _ ->
       raise
         (Semantic
@@ -427,7 +430,7 @@ let args_to_params l pb =
 
 %token <string * Ast_c.info> TIdent
 %token <string * Ast_c.info> TKRParam
-%token <string * Ast_c.info> Tconstructorname /* parsing_hack for c++ */
+%token <string * Ast_c.info> Tconstructorname /* parsing_hack for C++ */
 /*(* appears mostly after some fix_xxx in parsing_hack *)*/
 %token <string * Ast_c.info> TypedefIdent
 
@@ -441,7 +444,7 @@ let args_to_params l pb =
 %token <Ast_c.info> TOPar TCPar TOBrace TCBrace TOCro TCCro
 %token <Ast_c.info> TDot TComma TPtrOp
 %token <Ast_c.info> TInc TDec
-%token <Ast_c.assignOp * Ast_c.info> TAssign
+%token <Ast_c.assignOp> TAssign
 %token <Ast_c.info> TEq
 %token <Ast_c.info> TWhy  TTilde TBang
 %token <Ast_c.info> TEllipsis
@@ -462,7 +465,7 @@ let args_to_params l pb =
        Tstruct Tunion Tenum Tdecimal Texec
        Tbreak Telse Tswitch Tcase Tcontinue Tfor Tdo Tif  Twhile Treturn
        Tgoto Tdefault
-       Tsizeof Tnew Tdelete TOParCplusplusInit Tnamespace
+       Tsizeof Tnew Tdelete Tdefined TOParCplusplusInit Tnamespace
 
 /*(* C99 *)*/
 %token <Ast_c.info>
@@ -521,8 +524,10 @@ let args_to_params l pb =
 /*(*---------------*)*/
 
 /*(* coupling: Token_helpers.is_cpp_instruction *)*/
+%token <(Ast_c.ifdef_guard * (int * int) option ref * Ast_c.info)>
+  TIfdef TIfdefelif
 %token <((int * int) option ref * Ast_c.info)>
-  TIfdef TIfdefelse TIfdefelif TEndif
+  TIfdefelse TEndif
 %token <(bool * (int * int) option ref * Ast_c.info)>
   TIfdefBool TIfdefMisc TIfdefVersion
 
@@ -661,10 +666,10 @@ translation_unit:
  |
      { [] }
  | translation_unit external_declaration
-     { !LP._lexer_hint.context_stack <- [LP.InTopLevel]; $1 ++ [$2] }
+     { !LP._lexer_hint.context_stack <- [LP.InTopLevel]; $1 @ [$2] }
  | translation_unit Tnamespace TIdent TOBrace translation_unit TCBrace
      { !LP._lexer_hint.context_stack <- [LP.InTopLevel];
-       $1 ++ [Namespace ($5, [$2; snd $3; $4; $6])] }
+       $1 @ [Namespace ($5, [$2; snd $3; $4; $6])] }
 
 
 /*(*************************************************************************)*/
@@ -707,7 +712,7 @@ ident_extra_cpp:
          match $3 with
          | [] -> raise (Impossible 87)
          | (x,concatnull)::xs ->
-             assert(null concatnull);
+             assert (concatnull = []);
              (mk_string_wrap $1, [])::(x,[$2])::xs
        )
    }
@@ -718,7 +723,7 @@ ident_extra_cpp:
 
 identifier_cpp_list:
  | TIdent { [mk_string_wrap $1, []] }
- | identifier_cpp_list TCppConcatOp TIdent { $1 ++ [mk_string_wrap $3, [$2]] }
+ | identifier_cpp_list TCppConcatOp TIdent { $1 @ [mk_string_wrap $3, [$2]] }
 
 /*(*************************************************************************)*/
 /*(* expr *)*/
@@ -733,8 +738,8 @@ expr:
    *)*/
 assign_expr:
  | cond_expr                     { $1 }
- | cast_expr TAssign assign_expr { mk_e(Assignment ($1,fst $2,$3)) [snd $2]}
- | cast_expr TEq     assign_expr { mk_e(Assignment ($1,SimpleAssign,$3)) [$2]}
+ | cast_expr TAssign assign_expr { mk_e(Assignment ($1, $2, $3)) []}
+ | cast_expr TEq     assign_expr { mk_e (Assignment ($1, (SimpleAssign, [$2]),$3)) []}
 
 /*(* gccext: allow optional then part hence gcc_opt_expr
    * bugfix: in C grammar they put TDotDot cond_expr, but in fact it must be
@@ -749,26 +754,26 @@ cond_expr:
 
 arith_expr:
  | cast_expr                     { $1 }
- | arith_expr TMul    arith_expr { mk_e(Binary ($1, Arith Mul,      $3)) [$2] }
- | arith_expr TDiv    arith_expr { mk_e(Binary ($1, Arith Div,      $3)) [$2] }
- | arith_expr TMin    arith_expr { mk_e(Binary ($1, Arith Min,      $3)) [$2] }
- | arith_expr TMax    arith_expr { mk_e(Binary ($1, Arith Max,      $3)) [$2] }
- | arith_expr TMod    arith_expr { mk_e(Binary ($1, Arith Mod,      $3)) [$2] }
- | arith_expr TPlus   arith_expr { mk_e(Binary ($1, Arith Plus,     $3)) [$2] }
- | arith_expr TMinus  arith_expr { mk_e(Binary ($1, Arith Minus,    $3)) [$2] }
- | arith_expr TShl    arith_expr { mk_e(Binary ($1, Arith DecLeft,  $3)) [$2] }
- | arith_expr TShr    arith_expr { mk_e(Binary ($1, Arith DecRight, $3)) [$2] }
- | arith_expr TInf    arith_expr { mk_e(Binary ($1, Logical Inf,    $3)) [$2] }
- | arith_expr TSup    arith_expr { mk_e(Binary ($1, Logical Sup,    $3)) [$2] }
- | arith_expr TInfEq  arith_expr { mk_e(Binary ($1, Logical InfEq,  $3)) [$2] }
- | arith_expr TSupEq  arith_expr { mk_e(Binary ($1, Logical SupEq,  $3)) [$2] }
- | arith_expr TEqEq   arith_expr { mk_e(Binary ($1, Logical Eq,     $3)) [$2] }
- | arith_expr TNotEq  arith_expr { mk_e(Binary ($1, Logical NotEq,  $3)) [$2] }
- | arith_expr TAnd    arith_expr { mk_e(Binary ($1, Arith And,      $3)) [$2] }
- | arith_expr TOr     arith_expr { mk_e(Binary ($1, Arith Or,       $3)) [$2] }
- | arith_expr TXor    arith_expr { mk_e(Binary ($1, Arith Xor,      $3)) [$2] }
- | arith_expr TAndLog arith_expr { mk_e(Binary ($1, Logical AndLog, $3)) [$2] }
- | arith_expr TOrLog  arith_expr { mk_e(Binary ($1, Logical OrLog,  $3)) [$2] }
+ | arith_expr TMul    arith_expr { mk_e(Binary ($1, (Arith Mul,[$2]), $3)) [] }
+ | arith_expr TDiv    arith_expr { mk_e(Binary ($1, (Arith Div, [$2]), $3)) [] }
+ | arith_expr TMin    arith_expr { mk_e(Binary ($1, (Arith Min, [$2]), $3)) [] }
+ | arith_expr TMax    arith_expr { mk_e(Binary ($1, (Arith Max, [$2]), $3)) [] }
+ | arith_expr TMod    arith_expr { mk_e(Binary ($1, (Arith Mod, [$2]), $3)) [] }
+ | arith_expr TPlus   arith_expr { mk_e(Binary ($1, (Arith Plus, [$2]), $3)) [] }
+ | arith_expr TMinus  arith_expr { mk_e(Binary ($1, (Arith Minus, [$2]), $3)) [] }
+ | arith_expr TShl    arith_expr { mk_e(Binary ($1, (Arith DecLeft, [$2]), $3)) [] }
+ | arith_expr TShr    arith_expr { mk_e(Binary ($1, (Arith DecRight, [$2]), $3)) [] }
+ | arith_expr TInf    arith_expr { mk_e(Binary ($1, (Logical Inf, [$2]), $3)) [] }
+ | arith_expr TSup    arith_expr { mk_e(Binary ($1, (Logical Sup, [$2]), $3)) [] }
+ | arith_expr TInfEq  arith_expr { mk_e(Binary ($1, (Logical InfEq, [$2]), $3)) [] }
+ | arith_expr TSupEq  arith_expr { mk_e(Binary ($1, (Logical SupEq, [$2]), $3)) [] }
+ | arith_expr TEqEq   arith_expr { mk_e(Binary ($1, (Logical Eq, [$2]), $3)) [] }
+ | arith_expr TNotEq  arith_expr { mk_e(Binary ($1, (Logical NotEq, [$2]), $3)) [] }
+ | arith_expr TAnd    arith_expr { mk_e(Binary ($1, (Arith And, [$2]), $3)) [] }
+ | arith_expr TOr     arith_expr { mk_e(Binary ($1, (Arith Or, [$2]), $3)) [] }
+ | arith_expr TXor    arith_expr { mk_e(Binary ($1, (Arith Xor, [$2]), $3)) [] }
+ | arith_expr TAndLog arith_expr { mk_e(Binary ($1, (Logical AndLog, [$2]), $3)) [] }
+ | arith_expr TOrLog  arith_expr { mk_e(Binary ($1, (Logical OrLog, [$2]), $3)) [] }
 
 cast_expr:
  | unary_expr                        { $1 }
@@ -784,6 +789,9 @@ unary_expr:
  | Tnew new_argument               { mk_e(New (None, $2))     [$1] }
  | Tnew TOPar argument_list_ne TCPar new_argument { mk_e(New (Some $3, $5))             [$1; $2; $4] }
  | Tdelete cast_expr               { mk_e(Delete $2)          [$1] }
+ | Tdefined identifier_cpp         { mk_e(Defined $2)         [$1] }
+ | Tdefined TOPar identifier_cpp TCPar
+ { mk_e(Defined $3) [$1;$2;$4] }
 
 new_argument:
  | TIdent TOPar argument_list_ne TCPar
@@ -844,7 +852,7 @@ postfix_expr:
  | topar2 type_name tcpar2 TOBrace TCBrace
      { mk_e(Constructor ($2, (InitList [], [$4;$5]))) [$1;$3] }
  | topar2 type_name tcpar2 TOBrace initialize_list gcc_comma_opt_struct TCBrace
-     { mk_e(Constructor ($2, (InitList (List.rev $5),[$4;$7]++$6))) [$1;$3] }
+     { mk_e(Constructor ($2, (InitList (List.rev $5),[$4;$7] @ $6))) [$1;$3] }
 
 
 primary_expr:
@@ -866,7 +874,7 @@ primary_expr:
  /*(* gccext: cppext: TODO better ast ? *)*/
  | TMacroString { mk_e(Constant (MultiString [fst $1])) [snd $1] }
  | string_elem string_list
-     { mk_e(Constant (MultiString ["TODO: MultiString"])) ($1 ++ $2) }
+     { mk_e(Constant (MultiString ["TODO: MultiString"])) ($1 @ $2) }
 
  /*(* gccext: allow statement as expressions via ({ statement }) *)*/
  | TOPar compound TCPar  { mk_e(StatementExpr ($2)) [$1;$3] }
@@ -902,7 +910,7 @@ argument:
 
 action_higherordermacro_ne:
  | taction_list_ne
-     { if null $1
+     { if $1=[]
        then ActMisc [Ast_c.fakeInfo()]
        else ActMisc $1
      }
@@ -910,7 +918,7 @@ action_higherordermacro_ne:
 
 action_higherordermacro:
  | taction_list
-     { if null $1
+     { if $1=[]
        then ActMisc [Ast_c.fakeInfo()]
        else ActMisc $1
      }
@@ -939,9 +947,9 @@ statement2:
  | labeled         { Labeled      (fst $1), snd $1 }
  | compound        { Compound     (fst $1), snd $1 }
  | expr_statement  { ExprStatement(fst $1), snd $1 }
- | selection       { Selection    (fst $1), snd $1 ++ [fakeInfo()] }
- | iteration       { Iteration    (fst $1), snd $1 ++ [fakeInfo()] }
- | jump TPtVirg    { Jump         (fst $1), snd $1 ++ [$2] }
+ | selection       { Selection    (fst $1), snd $1 @ [fakeInfo()] }
+ | iteration       { Iteration    (fst $1), snd $1 @ [fakeInfo()] }
+ | jump TPtVirg    { Jump         (fst $1), snd $1 @ [$2] }
 
  /*(* gccext: *)*/
  | Tasm TOPar asmbody TCPar TPtVirg             { Asm $3, [$1;$2;$4;$5] }
@@ -1006,7 +1014,7 @@ stat_or_decl_list:
  | stat_or_decl                   { [$1] }
  /*(* gccext: to avoid conflicts, cf end_labeled above *)*/
  | end_labeled  { [StmtElem (mk_st (Labeled  (fst $1)) (snd $1))] }
- /*(* old: conflicts | stat_or_decl_list stat_or_decl { $1 ++ [$2] } *)*/
+ /*(* old: conflicts | stat_or_decl_list stat_or_decl { $1 @ [$2] } *)*/
  | stat_or_decl stat_or_decl_list { $1 :: $2 }
 
 stat_or_decl:
@@ -1050,7 +1058,7 @@ iteration:
      { For (ForExp $3,$4,(None, []),$6),    [$1;$2;$5]}
  | Tfor TOPar expr_statement expr_statement expr TCPar statement
      { For (ForExp $3,$4,(Some $5, []),$7), [$1;$2;$6] }
- /*(* c++ext: for(int i = 0; i < n; i++)*)*/
+ /*(* C++ext: for(int i = 0; i < n; i++)*)*/
  | Tfor TOPar decl expr_statement TCPar statement
      { For (ForDecl ($3 Ast_c.LocalDecl),$4,(None, []),$6),    [$1;$2;$5]}
  | Tfor TOPar decl expr_statement expr TCPar statement
@@ -1138,7 +1146,7 @@ token:
   | TInc    { $1 }
   | TDec    { $1 }
   | TEq     { $1 }
-  | TAssign { snd $1 }
+  | TAssign { List.hd (snd $1) }
 
   | TEqEq   { $1 }
   | TNotEq  { $1 }
@@ -1482,7 +1490,7 @@ decl2:
        DeclList (
          ($2 +> List.map (fun ((((name,f),attrs), ini), iivirg) ->
            let s = str_of_name name in
-	   if fst (unwrap storage) =*= StoTypedef
+	   if fst (unwrap storage) = StoTypedef
 	   then LP.add_typedef s;
            {v_namei = Some (name, ini);
             v_type = f returnType;
@@ -1497,29 +1505,32 @@ decl2:
      }
  /*(* cppext: *)*/
 
- | TMacroDecl TOPar argument_list TCPar TPtVirg
+ | storage_const_opt TMacroDecl TOPar argument_list TCPar TPtVirg
      { function _ ->
-       MacroDecl ((fst $1, $3, true), [snd $1;$2;$4;$5;fakeInfo()]) }
- | Tstatic TMacroDecl TOPar argument_list TCPar TPtVirg
-     { function _ ->
-       MacroDecl ((fst $2, $4, true), [snd $2;$3;$5;$6;fakeInfo();$1]) }
- | Tstatic TMacroDeclConst TMacroDecl TOPar argument_list TCPar TPtVirg
-     { function _ ->
-       MacroDecl ((fst $3, $5, true), [snd $3;$4;$6;$7;fakeInfo();$1;$2])}
+       match $1 with
+	 Some (sto,stoii) ->
+	   MacroDecl
+	     ((sto, fst $2, $4, true), (snd $2::$3::$5::$6::fakeInfo()::stoii))
+       | None ->
+	   MacroDecl
+	     ((NoSto, fst $2, $4, true), [snd $2;$3;$5;$6;fakeInfo()]) }
 
+ | storage_const_opt
+     TMacroDecl TOPar argument_list TCPar teq initialize TPtVirg
+     { function _ ->
+       match $1 with
+	 Some (sto,stoii) ->
+	   MacroDeclInit
+	     ((sto, fst $2, $4, $7),
+	      (snd $2::$3::$5::$6::$8::fakeInfo()::stoii))
+       | None ->
+	   MacroDeclInit
+	     ((NoSto, fst $2, $4, $7), [snd $2;$3;$5;$6;$8;fakeInfo()]) }
 
- | TMacroDecl TOPar argument_list TCPar teq initialize TPtVirg
-     { function _ ->
-       MacroDeclInit ((fst $1, $3, $6), [snd $1;$2;$4;$5;$7;fakeInfo()]) }
- | Tstatic TMacroDecl TOPar argument_list TCPar teq initialize TPtVirg
-     { function _ ->
-       MacroDeclInit ((fst $2, $4, $7),[snd $2;$3;$5;$6;$8;fakeInfo();$1]) }
- | Tstatic TMacroDeclConst TMacroDecl TOPar argument_list TCPar
-     teq initialize TPtVirg
-     { function _ ->
-       MacroDeclInit
-	 ((fst $3, $5, $8), [snd $3;$4;$6;$7;$9;fakeInfo();$1;$2])}
-
+storage_const_opt:
+   storage_class_spec_nt TMacroDeclConst { Some (fst $1,[snd $1; $2]) }
+ | storage_class_spec_nt { Some (fst $1,[snd $1]) }
+ |                       { None }
 
 /*(*-----------------------------------------------------------------------*)*/
 decl_spec2:
@@ -1537,11 +1548,14 @@ decl_spec2:
    *)*/
 
 
-storage_class_spec2:
+storage_class_spec_nt:
  | Tstatic      { Sto Static,  $1 }
  | Textern      { Sto Extern,  $1 }
  | Tauto        { Sto Auto,    $1 }
  | Tregister    { Sto Register,$1 }
+
+storage_class_spec2:
+ | storage_class_spec_nt { $1 }
  | Ttypedef     { StoTypedef,  $1 }
 
 storage_class_spec:
@@ -1601,7 +1615,7 @@ initialize:
  | assign_expr
      { InitExpr $1,                [] }
  | tobrace_ini initialize_list gcc_comma_opt_struct  tcbrace_ini
-     { InitList (List.rev $2),     [$1;$4]++$3 }
+     { InitList (List.rev $2),     [$1;$4] @ $3 }
  | tobrace_ini tcbrace_ini
      { InitList [],       [$1;$2] } /*(* gccext: *)*/
 
@@ -1623,7 +1637,7 @@ initialize2:
  | cond_expr
      { InitExpr $1,   [] }
  | tobrace_ini initialize_list gcc_comma_opt_struct tcbrace_ini
-     { InitList (List.rev $2),   [$1;$4]++$3 }
+     { InitList (List.rev $2),   [$1;$4] @ $3 }
  | tobrace_ini tcbrace_ini
      { InitList [],  [$1;$2]  }
 
@@ -1773,9 +1787,9 @@ struct_decl_list_gcc:
 /*(*************************************************************************)*/
 enum_spec:
  | Tenum        tobrace_enum enumerator_list gcc_comma_opt_struct tcbrace_enum
-     { Enum (None,    $3),           [$1;$2;$5] ++ $4 }
+     { Enum (None,    $3),           [$1;$2;$5] @ $4 }
  | Tenum ident  tobrace_enum enumerator_list gcc_comma_opt_struct tcbrace_enum
-     { Enum (Some (fst $2), $4),     [$1; snd $2; $3;$6] ++ $5 }
+     { Enum (Some (fst $2), $4),     [$1; snd $2; $3;$6] @ $5 }
  | Tenum ident
      { EnumName (fst $2),       [$1; snd $2] }
 
@@ -1799,7 +1813,7 @@ function_definition: function_def    { fixFunc $1 }
 
 decl_list:
  | decl           { [$1 Ast_c.LocalDecl]   }
- | decl_list decl { $1 ++ [$2 Ast_c.LocalDecl] }
+ | decl_list decl { $1 @ [$2 Ast_c.LocalDecl] }
 
 /* hack : to drop when a better solution is found */
 cpp_directive_list:
@@ -1967,7 +1981,7 @@ define_val:
  | function_definition { DefineFunction $1 }
 
  | TOBraceDefineInit initialize_list gcc_comma_opt_struct TCBrace comma_opt
-    { DefineInit (InitList (List.rev $2), [$1;$4]++$3++$5)  }
+    { DefineInit (InitList (List.rev $2), [$1;$4] @ $3 @ $5)  }
 
  /*(* note: had a conflict before when were putting TInt instead of expr *)*/
  | Tdo statement Twhile TOPar expr TCPar
@@ -2003,27 +2017,27 @@ param_define:
 
 cpp_ifdef_directive:
  | TIfdef
-     { let (tag,ii) = $1 in
-       IfdefDirective ((Ifdef, IfdefTag (Common.some !tag)),  [ii]) }
+     { let (cond,tag,ii) = $1 in
+       IfdefDirective ((Ifdef cond, IfdefTag (Common.some !tag)),  [ii]) }
  | TIfdefelse
      { let (tag,ii) = $1 in
        IfdefDirective ((IfdefElse, IfdefTag (Common.some !tag)), [ii]) }
  | TIfdefelif
-     { let (tag,ii) = $1 in
-       IfdefDirective ((IfdefElseif, IfdefTag (Common.some !tag)), [ii]) }
+     { let (cond,tag,ii) = $1 in
+       IfdefDirective ((IfdefElseif cond, IfdefTag (Common.some !tag)), [ii]) }
  | TEndif
      { let (tag,ii) = $1 in
        IfdefDirective ((IfdefEndif, IfdefTag (Common.some !tag)), [ii]) }
 
  | TIfdefBool
      { let (_b, tag,ii) = $1 in
-       IfdefDirective ((Ifdef, IfdefTag (Common.some !tag)), [ii]) }
+       IfdefDirective ((Ifdef Gnone, IfdefTag (Common.some !tag)), [ii]) }
  | TIfdefMisc
      { let (_b, tag,ii) = $1 in
-       IfdefDirective ((Ifdef, IfdefTag (Common.some !tag)), [ii]) }
+       IfdefDirective ((Ifdef Gnone, IfdefTag (Common.some !tag)), [ii]) }
  | TIfdefVersion
      { let (_b, tag,ii) = $1 in
-       IfdefDirective ((Ifdef, IfdefTag (Common.some !tag)), [ii]) }
+       IfdefDirective ((Ifdef Gnone, IfdefTag (Common.some !tag)), [ii]) }
 
 
 /*(* cppext: *)*/
@@ -2057,7 +2071,7 @@ cpp_other:
                    ($5::iistart::snd sto)))
        else
 	 Declaration
-	   (MacroDecl((fst $1, $3, true), [snd $1;$2;$4;$5;fakeInfo()]))
+	   (MacroDecl((NoSto, fst $1, $3, true), [snd $1;$2;$4;$5;fakeInfo()]))
            (* old: MacroTop (fst $1, $3,    [snd $1;$2;$4;$5])  *)
      }
 
@@ -2081,7 +2095,8 @@ cpp_other:
 
  /*(* TCParEOL to fix the end-of-stream bug of ocamlyacc *)*/
  | identifier TOPar argument_list TCParEOL
-     { Declaration (MacroDecl ((fst $1, $3, false), [snd $1;$2;$4;fakeInfo()])) }
+     { Declaration
+	 (MacroDecl ((NoSto, fst $1, $3, false), [snd $1;$2;$4;fakeInfo()])) }
 
   /*(* ex: EXPORT_NO_SYMBOLS; *)*/
  | identifier TPtVirg { EmptyDef [snd $1;$2] }
@@ -2180,11 +2195,11 @@ statement_list: stat_or_decl_list { $1 }
 /*(*
 decl_list:
  | decl           { [$1]   }
- | decl_list decl { $1 ++ [$2] }
+ | decl_list decl { $1 @ [$2] }
 
 statement_list:
  | statement { [$1] }
- | statement_list statement { $1 ++ [$2] }
+ | statement_list statement { $1 @ [$2] }
 *)*/
 
 
@@ -2193,61 +2208,61 @@ statement_list:
 
 string_list:
  | string_elem { $1 }
- | string_list string_elem { $1 ++ $2 }
+ | string_list string_elem { $1 @ $2 }
 
 colon_asm_list:
  | colon_asm { [$1] }
- | colon_asm_list colon_asm  { $1 ++ [$2] }
+ | colon_asm_list colon_asm  { $1 @ [$2] }
 
 colon_option_list:
  | colon_option { [$1, []] }
- | colon_option_list TComma colon_option { $1 ++ [$3, [$2]] }
+ | colon_option_list TComma colon_option { $1 @ [$3, [$2]] }
 
 
 argument_list_ne:
  | argument_ne                           { [$1, []] }
- | argument_list_ne TComma argument { $1 ++ [$3,    [$2]] }
+ | argument_list_ne TComma argument { $1 @ [$3,    [$2]] }
 
 argument_list:
  | argument                           { [$1, []] }
- | argument_list TComma argument { $1 ++ [$3,    [$2]] }
+ | argument_list TComma argument { $1 @ [$3,    [$2]] }
 
 /*(*
 expression_list:
  | assign_expr { [$1, []] }
- | expression_list TComma assign_expr { $1 ++ [$3,   [$2]] }
+ | expression_list TComma assign_expr { $1 @ [$3,   [$2]] }
 *)*/
 
 
 ident_define_list_ne:
  | TIdentDefine              { [RegularName (mk_string_wrap $1), []] }
  | ident_define_list_ne TIdentDefine
-     { $1 ++ [RegularName (mk_string_wrap $2), []] }
+     { $1 @ [RegularName (mk_string_wrap $2), []] }
 
 
 struct_decl_list:
  | struct_decl                   { [$1] }
- | struct_decl_list struct_decl  { $1 ++ [$2] }
+ | struct_decl_list struct_decl  { $1 @ [$2] }
 
 
 struct_declarator_list:
  | struct_declarator                               { [$1,           []] }
- | struct_declarator_list TComma struct_declarator { $1 ++ [$3,     [$2]] }
+ | struct_declarator_list TComma struct_declarator { $1 @ [$3,     [$2]] }
 
 
 enumerator_list:
  | enumerator                        { [$1,          []]   }
- | enumerator_list TComma enumerator { $1 ++ [$3,    [$2]] }
+ | enumerator_list TComma enumerator { $1 @ [$3,    [$2]] }
 
 
 init_declarator_list:
  | init_declarator                             { [$1,   []] }
- | init_declarator_list TComma init_declarator { $1 ++ [$3,     [$2]] }
+ | init_declarator_list TComma init_declarator { $1 @ [$3,     [$2]] }
 
 
 parameter_list:
  | parameter_decl                       { [$1, []] }
- | parameter_list TComma parameter_decl { $1 ++ [$3,  [$2]] }
+ | parameter_list TComma parameter_decl { $1 @ [$3,  [$2]] }
 
 taction_list_ne:
  | TAction                 { [$1] }
@@ -2257,7 +2272,7 @@ taction_list:
 /*old: was generating conflict, hence now taction_list_ne
     | (* empty *) { [] }
  | TAction { [$1] }
- | taction_list TAction { $1 ++ [$2] }
+ | taction_list TAction { $1 @ [$2] }
 */
  |                      { [] }
  | TAction taction_list { $1 :: $2 }
@@ -2265,19 +2280,19 @@ taction_list:
 param_define_list:
  | /*(* empty *)*/ { [] }
  | param_define                           { [$1, []] }
- | param_define_list TComma param_define  { $1 ++ [$3, [$2]] }
+ | param_define_list TComma param_define  { $1 @ [$3, [$2]] }
 
 designator_list:
  | designator { [$1] }
- | designator_list designator { $1 ++ [$2] }
+ | designator_list designator { $1 @ [$2] }
 
 attribute_list:
  | attribute { [$1] }
- | attribute_list attribute { $1 ++ [$2] }
+ | attribute_list attribute { $1 @ [$2] }
 
 attribute_storage_list:
  | attribute_storage { [$1] }
- | attribute_storage_list attribute_storage { $1 ++ [$2] }
+ | attribute_storage_list attribute_storage { $1 @ [$2] }
 
 
 attributes: attribute_list { $1 }
@@ -2301,5 +2316,3 @@ opt_ptvirg:
  | TPtVirg { [$1] }
  | { [] }
 *)*/
-
-

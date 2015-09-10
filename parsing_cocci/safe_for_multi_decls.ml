@@ -25,9 +25,10 @@ let all_removed =
     | Ast.CONTEXT(_,info) -> false in
   let recursor =
     V.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode
       do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing do_nothing do_nothing
+      do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_declaration
@@ -41,7 +42,7 @@ let mcode _ (_,_,kind,_) =
   | Ast.CONTEXT(_,info) -> not (info = Ast.NOTHING)
 
 let contains_modif =
-  let bind x y = x or y in
+  let bind x y = x || y in
   let option_default = false in
   let do_nothing r k e = k e in
   let annotated_decl decl =
@@ -53,7 +54,7 @@ let contains_modif =
        and the expression could contain a statement. *)
     let res = k re in
     match Ast.unwrap re with
-      Ast.FunHeader(bef,_,fninfo,name,lp,params,rp) ->
+      Ast.FunHeader(bef,_,fninfo,name,lp,params,va,rp) ->
 	bind (mcode r ((),(),bef,[])) res
     | Ast.Decl decl ->
 	bind (mcode r ((),(),annotated_decl decl,[])) res
@@ -63,13 +64,14 @@ let contains_modif =
   let init r k i =
     let res = k i in
     match Ast.unwrap i with
-      Ast.StrInitList(allminus,_,_,_,_) -> allminus or res
+      Ast.StrInitList(allminus,_,_,_,_) -> allminus || res
     | _ -> res in
   let recursor =
     V.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode
       do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing do_nothing
+      do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing init do_nothing do_nothing
       do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_fullType
@@ -88,7 +90,7 @@ let decl r k e =
 	  | None -> false in
 	let ft_modif = contains_modif ty in
 	let sem_modif = mcode () sem in
-	if not(stg_modif or ft_modif or sem_modif)
+	if not(stg_modif || ft_modif || sem_modif)
 	then {e with Ast.safe_for_multi_decls = true}
 	else e
     | _ -> e
@@ -97,9 +99,10 @@ let donothing r k e = k e
 
 let process =
   let fn = V.rebuilder
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing
       donothing donothing decl donothing donothing
       donothing donothing donothing donothing in
   List.map fn.V.rebuilder_top_level

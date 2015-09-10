@@ -1,6 +1,8 @@
 module UI = User_input
 module Lex = Sgen_lexer
 
+(* ------------------------------------------------------------------------- *)
+
 (* Read config files for user-specified options *)
 
 (* ------------------------------------------------------------------------- *)
@@ -31,36 +33,45 @@ let parse filename =
   let _ = Lex.table := Common.full_charpos_to_pos filename in
   Common.with_open_infile filename
     (fun channel ->
-      let lexbuf = Lexing.from_channel channel in
-      lex_config lexbuf)
+       let lexbuf = Lexing.from_channel channel in
+       lex_config lexbuf)
 
 
 (* ------------------------------------------------------------------------- *)
 (* PARSER FUNCTIONS *)
 
 (* parse org/report messages and associated metavars.
- * if several org/report messages defined, take the last one *)
+ * if several org/report messages defined, take the last one
+ *)
 let parse_msgs attributes =
   let read ((om,ov),(rm,rv)) = function
     | Lex.Org (om,ov) -> ((om,ov), (rm,rv))
     | Lex.Report (rm,rv) -> ((om,ov), (rm,rv)) in
   List.fold_left read (("",[]), ("",[])) attributes
 
-(* add the rule to the User_input.t
- * rule_exists is a function that checks whether a rule exists*)
-let add_rule rule_exists t ((oldnm,newnm),a) =
-  let oldrnm = rule_exists oldnm in
-  let newrnm = if newnm = None then Globals.generate_rule oldrnm else newnm in
-  let (org,rep) = match parse_msgs a with
+(* add the rule to the User_input.t. *)
+let add_rule rule_check t ((oldrnm,newnm),a) =
+  let oldrnm = rule_check oldrnm in
+  let (org,report) =
+    match parse_msgs a with
     | ("",_),("",_) ->
         failwith ("Config error: must specify at least org or report message.")
     | ("",_),mgv | mgv,("",_) ->
-        (try (UI.check_format_string mgv; (mgv,mgv))
-        with Failure msg -> failwith ("Config error: " ^ msg))
+        (try
+          UI.check_format_string mgv;
+          (mgv,mgv)
+        with Failure msg ->
+          failwith ("Config error: " ^ msg))
     | org, rep ->
-        try UI.check_format_string org; UI.check_format_string rep; (org, rep)
-        with Failure msg -> failwith ("Config error: " ^ msg) in
-  UI.add_rule ((oldrnm, newrnm),org,rep) t
+        try
+          UI.check_format_string org;
+          UI.check_format_string rep;
+          (org, rep)
+        with Failure msg ->
+          failwith ("Config error: " ^ msg) in
+  let rule_name = match newnm with | Some nm -> nm | None -> oldrnm in
+  let rule = UI.Rule.make ~rule_name ~org ~report in
+  UI.add_rule ~rule_name:oldrnm rule t
 
 (*rule list is a list of (rulename, attribute list) *)
 let add_rules rule_exists rule_list t =
@@ -69,40 +80,36 @@ let add_rules rule_exists rule_list t =
 (* expanded constructor for User_input.t *)
 let make desc limit keys conf comments options authors url =
   let t =
-    try UI.make ~description:desc ~confidence:(UI.conf_fromstring conf)
-    with Failure msg -> failwith ("Config error: " ^ msg) in
-  UI.set_limits limit
-    (UI.set_keys keys
-      (UI.set_comments comments
-        (UI.set_options options
-          (UI.set_authors authors
-            (UI.set_url url t)))))
-
+    try
+      UI.make ~description:desc ~confidence:(UI.Confidence.from_string conf)
+    with UI.Confidence.Not_confidence s ->
+      failwith
+        ("Config error: Confidence must be low, moderate, or high, not "^s) in
+  let t = UI.set_limits limit t in
+  let t = UI.set_keys keys t in
+  let t = UI.set_comments comments t in
+  let t = UI.set_options options t in
+  let t = UI.set_authors authors t in
+  UI.set_url url t
 
 (* ------------------------------------------------------------------------- *)
 (* ENTRY POINT *)
 
-let parse_local ~ordered_rules ~config_name =
-  let rule_exists x =
+let parse_local ~rule_names ~config_name =
+  let rule_check x =
     let x =
-      if Globals.starts_with_digit x then "rule starting on line "^ x
-      else x in
-    if (List.mem x ordered_rules) then x
+      if Globals.starts_with_digit x then "rule starting on line "^ x else x in
+    if (List.mem x rule_names) then x
     else failwith ("Config error: no */+/- rule called \"" ^ x ^ "\".") in
   let (d,l,k,c,m,o,a,u,r) = parse config_name in
   let t = make d l k c m o a u in
-  let t = add_rules rule_exists r t in
-  let preface = UI.get_preface t in
-  let rules = UI.get_rules ordered_rules t in
-  (preface, rules)
+  let t = add_rules rule_check r t in
+  t
 
-let parse_default ~ordered_rules =
-  let t = UI.make ~description:"No description."
-    ~confidence:(UI.conf_fromstring "moderate") in
-  let preface = UI.get_preface t in
-  let rules = UI.get_rules ordered_rules t in
-  (preface, rules)
+let parse_default = UI.make
+  ~description:"No description."
+  ~confidence:(UI.Confidence.from_string "moderate")
 
-(*TODO*)
+(* TODO: implement *)
 let parse_global ~config_name =
   (None, None, "rule_", "j", "found a match around here ...", 80)

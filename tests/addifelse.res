@@ -5,7 +5,7 @@ static void rfcomm_l2data_ready(struct sock *sk)
 	rfcomm_schedule();
 }
 #else
- static void backport_rfcomm_l2data_ready(struct sock *sk, int unused) {
+static void backport_rfcomm_l2data_ready(struct sock *sk, int unused) {
 	rfcomm_l2data_ready(sk);
 }
 #endif

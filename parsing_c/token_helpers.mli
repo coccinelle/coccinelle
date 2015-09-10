@@ -16,6 +16,7 @@ val is_not_in_ast          : Parser_c.token -> bool
 val is_cpp_instruction     : Parser_c.token -> bool
 val is_cpp_endif           : Parser_c.token -> bool
 val is_gcc_token           : Parser_c.token -> bool
+val is_escaped_newline     : Parser_c.token -> bool
 
 val is_eof                 : Parser_c.token -> bool
 val is_eom                 : Parser_c.token -> bool
@@ -54,6 +55,7 @@ val col_of_tok     : Parser_c.token -> int
 val line_of_tok    : Parser_c.token -> int
 val pos_of_tok     : Parser_c.token -> int
 val str_of_tok     : Parser_c.token -> string
+val string_of_token: Parser_c.token -> string
 val file_of_tok    : Parser_c.token -> Common.filename
 val pinfo_of_tok   : Parser_c.token -> Ast_c.parse_info
 
@@ -64,3 +66,5 @@ val is_fake : Parser_c.token -> bool
 val is_abstract : Parser_c.token -> bool
 
 val is_same_line_or_close: int -> Parser_c.token -> bool
+
+val filter_out_escaped_newline : token list -> token list

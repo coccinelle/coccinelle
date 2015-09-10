@@ -17,7 +17,7 @@ let pr2 s = Printf.printf "%s\n" s
 (* for isomorphisms.  all should be at the front!!! *)
 let reserved_names =
   ["all";"optional_storage";"optional_qualifier";"value_format";"comm_assoc";
-    "optional_attributes"]
+    "optional_attributes";"prototypes"]
 
 (* ----------------------------------------------------------------------- *)
 (* Debugging... *)
@@ -46,6 +46,9 @@ let token2c (tok,_) =
   | PC.TConstant -> "constant"
   | PC.TExpression -> "expression"
   | PC.TIdExpression -> "idexpression"
+  | PC.TOperator -> "operator"
+  | PC.TBinary -> "binary"
+  | PC.TAssignment -> "assignment"
   | PC.TInitialiser -> "initialiser"
   | PC.TSymbol -> "symbol"
   | PC.TDeclaration -> "declaration"
@@ -57,12 +60,14 @@ let token2c (tok,_) =
   | PC.TPosAny -> "any"
   | PC.TFunction -> "function"
   | PC.TLocal -> "local"
+  | PC.TGlobal -> "global"
   | PC.Tlist -> "list"
   | PC.TFresh -> "fresh"
   | PC.TCppConcatOp -> "##"
   | PC.TPure -> "pure"
   | PC.TContext -> "context"
   | PC.TTypedef -> "typedef"
+  | PC.TAttribute -> "attribute"
   | PC.TDeclarer -> "declarer"
   | PC.TIterator -> "iterator"
   | PC.TName -> "name"
@@ -190,6 +195,8 @@ let token2c (tok,_) =
   | PC.TTilde (clt) -> add_clt "~" clt
 
   | PC.TMeta(_,_,clt) -> add_clt "meta" clt
+  | PC.TMetaAssignOp(_,_,_,clt) -> add_clt "metaassignop" clt
+  | PC.TMetaBinaryOp(_,_,_,clt) -> add_clt "metabinaryop" clt
   | PC.TMetaParam(_,_,clt) -> add_clt "parammeta" clt
   | PC.TMetaParamList(_,_,_,clt) -> add_clt "paramlistmeta" clt
   | PC.TMetaConst(_,_,_,_,clt) -> add_clt "constmeta" clt
@@ -197,6 +204,7 @@ let token2c (tok,_) =
   | PC.TMetaExp(_,_,_,_,clt) -> add_clt "expmeta" clt
   | PC.TMetaIdExp(_,_,_,_,clt) -> add_clt "idexpmeta" clt
   | PC.TMetaLocalIdExp(_,_,_,_,clt) -> add_clt "localidexpmeta" clt
+  | PC.TMetaGlobalIdExp(_,_,_,_,clt) -> add_clt "globalidexpmeta" clt
   | PC.TMetaExpList(_,_,_,clt) -> add_clt "explistmeta" clt
   | PC.TMetaId(nm,_,_,_,clt)    -> "idmeta-"^add_clt (Dumper.dump nm) clt
   | PC.TMetaType(_,_,clt)    -> add_clt "typemeta" clt
@@ -224,6 +232,7 @@ let token2c (tok,_) =
   | PC.TAny(clt) -> add_clt "ANY" clt
   | PC.TStrict(clt) -> add_clt "STRICT" clt
   | PC.TEllipsis(clt) -> add_clt "..." clt
+  | PC.TVAEllipsis(clt) -> add_clt "......" clt
 (*
   | PC.TCircles(clt)  -> add_clt "ooo" clt
   | PC.TStars(clt)    -> add_clt "***" clt
@@ -261,7 +270,7 @@ let token2c (tok,_) =
   | PC.TPtrOp(clt) -> add_clt "->" clt
 
   | PC.TEq(clt) -> add_clt "=" clt
-  | PC.TAssign(_,clt) -> add_clt "=op" clt
+  | PC.TOpAssign(_,clt) -> add_clt "=op" clt
   | PC.TDot(clt) -> add_clt "." clt
   | PC.TComma(clt) -> add_clt "," clt
   | PC.TPtVirg(clt) -> add_clt ";" clt
@@ -292,6 +301,9 @@ let print_tokens s tokens =
   flush stdout
 
 type plus = PLUS | NOTPLUS | SKIP
+
+(* skip means ignore completely, notplus means keep in the recursion, but don't
+attach to it, plus means that it is possible to attach to the token *)
 
 let plus_attachable only_plus (tok,_) =
   match tok with
@@ -331,7 +343,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.TMeta(_,_,clt) | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
   | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaErr(_,_,_,clt)
   | PC.TMetaExp(_,_,_,_,clt) | PC.TMetaIdExp(_,_,_,_,clt)
-  | PC.TMetaLocalIdExp(_,_,_,_,clt)
+  | PC.TMetaLocalIdExp(_,_,_,_,clt) | PC.TMetaGlobalIdExp(_,_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
   | PC.TMetaId(_,_,_,_,clt)
   | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt) | PC.TMetaInitList(_,_,_,clt)
@@ -341,12 +353,14 @@ let plus_attachable only_plus (tok,_) =
   | PC.TMetaFieldList(_,_,_,clt)
   | PC.TMetaFunc(_,_,_,clt) | PC.TMetaLocalFunc(_,_,_,clt)
 
+(* it would seem that this should all be skips
   | PC.TWhen(clt) |  PC.TWhenTrue(clt) |  PC.TWhenFalse(clt)
   | PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
   (* | PC.TCircles(clt) | PC.TStars(clt) *)
   | PC.TOEllipsis(clt) | PC.TCEllipsis(clt)
   | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) (* | PC.TOCircles(clt)
   | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *)
+*)
 
   | PC.TWhy(clt) | PC.TDotDot(clt) | PC.TBang(clt) | PC.TOPar(clt)
   | PC.TCPar(clt)
@@ -356,7 +370,7 @@ let plus_attachable only_plus (tok,_) =
 
   | PC.TPtrOp(clt)
 
-  | PC.TEq(clt) | PC.TAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
+  | PC.TEq(clt) | PC.TOpAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
   | PC.TPtVirg(clt) ->
       if List.mem (line_type clt) [D.PLUS;D.PLUSPLUS]
       then PLUS
@@ -366,12 +380,13 @@ let plus_attachable only_plus (tok,_) =
   | PC.TOPar0(s,clt) | PC.TMid0(s,clt) | PC.TCPar0(s,clt) -> NOTPLUS
   | PC.TMetaPos(nm,_,_,_) -> NOTPLUS
   | PC.TSub(clt) -> NOTPLUS
+  | PC.TDirective(_,clt) -> NOTPLUS
 
   | _ -> SKIP
 
 exception NoClt of string
 
-let get_clt ((tok,_) as t) =
+let get_clt (tok,_) =
   match tok with
     PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
   | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt)
@@ -393,7 +408,7 @@ let get_clt ((tok,_) as t) =
   | PC.TBreak(clt) | PC.TContinue(clt) | PC.TGoto(clt) | PC.TIdent(_,clt)
   | PC.TTypeId(_,clt) | PC.TSymId(_,clt)
   | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
-  
+
   | PC.TSizeof(clt)
 
   | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
@@ -409,7 +424,7 @@ let get_clt ((tok,_) as t) =
   | PC.TMeta(_,_,clt) | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
   | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaErr(_,_,_,clt)
   | PC.TMetaExp(_,_,_,_,clt) | PC.TMetaIdExp(_,_,_,_,clt)
-  | PC.TMetaLocalIdExp(_,_,_,_,clt)
+  | PC.TMetaLocalIdExp(_,_,_,_,clt) | PC.TMetaGlobalIdExp(_,_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
   | PC.TMetaId(_,_,_,_,clt)
   | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt) | PC.TMetaInitList(_,_,_,clt)
@@ -418,6 +433,7 @@ let get_clt ((tok,_) as t) =
   | PC.TMetaDecl(_,_,clt) | PC.TMetaField(_,_,clt)
   | PC.TMetaFieldList(_,_,_,clt)
   | PC.TMetaFunc(_,_,_,clt) | PC.TMetaLocalFunc(_,_,_,clt)
+  | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt)
   | PC.TMetaPos(_,_,_,clt)
   | PC.TMetaDeclarer(_,_,_,clt) | PC.TMetaIterator(_,_,_,clt)
 
@@ -433,7 +449,7 @@ let get_clt ((tok,_) as t) =
 
   | PC.TPtrOp(clt)
 
-  | PC.TEq(clt) | PC.TAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
+  | PC.TEq(clt) | PC.TOpAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
   | PC.TPArob(clt) | PC.TPtVirg(clt)
 
   | PC.TOPar0(_,clt) | PC.TMid0(_,clt) | PC.TCPar0(_,clt)
@@ -441,9 +457,82 @@ let get_clt ((tok,_) as t) =
   | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) (* | PC.TOCircles(clt)
   | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *)
   | PC.TFunDecl(clt) | PC.TDirective(_,clt) | PC.TLineEnd(clt) -> clt
-  | _ -> raise (NoClt("get_clt: token " ^ (token2c t) ^ " has no clt"))
+  | PC.TVAEllipsis(clt) -> clt
 
-let update_clt ((tok,x) as t) clt =
+  | PC.Tlist -> failwith "No clt attached to token Tlist"
+  | PC.TWords -> failwith "No clt attached to token TWords"
+  | PC.TWhy0 -> failwith "No clt attached to token TWhy0"
+  | PC.TWhitespace _ -> failwith "No clt attached to token TWhitespace"
+  | PC.TVirtual -> failwith "No clt attached to token TVirtual"
+  | PC.TUsing -> failwith "No clt attached to token TUsing"
+  | PC.TUnderscore -> failwith "No clt attached to token TUnderscore"
+  | PC.TTypedef -> failwith "No clt attached to token TTypedef"
+  | PC.TType -> failwith "No clt attached to token TType"
+  | PC.TSymbol -> failwith "No clt attached to token TSymbol"
+  | PC.TStatement -> failwith "No clt attached to token TStatement"
+  | PC.TScriptData _ -> failwith "No clt attached to token TScriptData"
+  | PC.TScript -> failwith "No clt attached to token TScript"
+  | PC.TRuleName _ -> failwith "No clt attached to token TRuleName"
+  | PC.TRightIso -> failwith "No clt attached to token TRightIso"
+  | PC.TPure -> failwith "No clt attached to token TPure"
+  | PC.TPosition -> failwith "No clt attached to token TPosition"
+  | PC.TPosAny -> failwith "No clt attached to token TPosAny"
+  | PC.TPlus0 -> failwith "No clt attached to token TPlus0"
+  | PC.TPathIsoFile _ -> failwith "No clt attached to token TPathIsoFile"
+  | PC.TParameter -> failwith "No clt attached to token TParameter"
+  | PC.TOperator -> failwith "No clt attached to token TOperator"
+  | PC.TOn -> failwith "No clt attached to token TOn"
+  | PC.TNothing -> failwith "No clt attached to token TNothing"
+  | PC.TNever -> failwith "No clt attached to token TNever"
+  | PC.TName -> failwith "No clt attached to token TName"
+  | PC.TMetavariable -> failwith "No clt attached to token TMetavariable"
+  | PC.TMPtVirg -> failwith "No clt attached to token TMPtVirg"
+  | PC.TLocal -> failwith "No clt attached to token TLocal"
+  | PC.TIterator -> failwith "No clt attached to token TIterator"
+  | PC.TIsoType -> failwith "No clt attached to token TIsoType"
+  | PC.TIsoTopLevel -> failwith "No clt attached to token TIsoTopLevel"
+  | PC.TIsoToTestExpression -> failwith "No clt attached to token TIsoToTestExpression"
+  | PC.TIsoTestExpression -> failwith "No clt attached to token TIsoTestExpression"
+  | PC.TIsoStatement -> failwith "No clt attached to token TIsoStatement"
+  | PC.TIsoExpression -> failwith "No clt attached to token TIsoExpression"
+  | PC.TIsoDeclaration -> failwith "No clt attached to token TIsoDeclaration"
+  | PC.TIsoArgExpression -> failwith "No clt attached to token TIsoArgExpression"
+  | PC.TIso -> failwith "No clt attached to token TIso"
+  | PC.TInvalid -> failwith "No clt attached to token TInvalid"
+  | PC.TInitialize -> failwith "No clt attached to token TInitialize"
+  | PC.TInitialiser -> failwith "No clt attached to token TInitialiser"
+  | PC.TIdentifier -> failwith "No clt attached to token TIdentifier"
+  | PC.TIdExpression -> failwith "No clt attached to token TIdExpression"
+  | PC.TGlobal -> failwith "No clt attached to token TGlobal"
+  | PC.TGenerated -> failwith "No clt attached to token TGenerated"
+  | PC.TFunction -> failwith "No clt attached to token TFunction"
+  | PC.TFresh -> failwith "No clt attached to token TFresh"
+  | PC.TFormat -> failwith "No clt attached to token TFormat"
+  | PC.TForall -> failwith "No clt attached to token TForall"
+  | PC.TFinalize -> failwith "No clt attached to token TFinalize"
+  | PC.TField -> failwith "No clt attached to token TField"
+  | PC.TExtends -> failwith "No clt attached to token TExtends"
+  | PC.TExpression -> failwith "No clt attached to token TExpression"
+  | PC.TExists -> failwith "No clt attached to token TExists"
+  | PC.TEver -> failwith "No clt attached to token TEver"
+  | PC.TError -> failwith "No clt attached to token TError"
+  | PC.TDisable -> failwith "No clt attached to token TDisable"
+  | PC.TDepends -> failwith "No clt attached to token TDepends"
+  | PC.TDeclarer -> failwith "No clt attached to token TDeclarer"
+  | PC.TDeclaration -> failwith "No clt attached to token TDeclaration"
+  | PC.TCppConcatOp -> failwith "No clt attached to token TCppConcatOp"
+  | PC.TContext -> failwith "No clt attached to token TContext"
+  | PC.TConstant -> failwith "No clt attached to token TConstant"
+  | PC.TBinary -> failwith "No clt attached to token TBinary"
+  | PC.TBang0 -> failwith "No clt attached to token TBang0"
+  | PC.TAttribute -> failwith "No clt attached to token TAttribute"
+  | PC.TAssignment -> failwith "No clt attached to token TAssignment"
+  | PC.TArobArob -> failwith "No clt attached to token TArobArob"
+  | PC.TArob -> failwith "No clt attached to token TArob"
+  | PC.TAnalysis -> failwith "No clt attached to token TAnalysis"
+  | PC.EOF -> failwith "No clt attached to token EOF"
+
+let update_clt (tok,x) clt =
   match tok with
     PC.Tchar(_) -> (PC.Tchar(clt),x)
   | PC.Tshort(_) -> (PC.Tshort(clt),x)
@@ -536,8 +625,11 @@ let update_clt ((tok,x) as t) clt =
   | PC.TMetaExp(a,b,c,d,_) -> (PC.TMetaExp(a,b,c,d,clt),x)
   | PC.TMetaIdExp(a,b,c,d,_) -> (PC.TMetaIdExp(a,b,c,d,clt),x)
   | PC.TMetaLocalIdExp(a,b,c,d,_) -> (PC.TMetaLocalIdExp(a,b,c,d,clt),x)
+  | PC.TMetaGlobalIdExp(a,b,c,d,_) -> (PC.TMetaGlobalIdExp(a,b,c,d,clt),x)
   | PC.TMetaExpList(a,b,c,_) -> (PC.TMetaExpList(a,b,c,clt),x)
   | PC.TMetaId(a,b,c,d,_)    -> (PC.TMetaId(a,b,c,d,clt),x)
+  | PC.TMetaAssignOp(a,b,c,_)    -> (PC.TMetaAssignOp(a,b,c,clt),x)
+  | PC.TMetaBinaryOp(a,b,c,_)    -> (PC.TMetaBinaryOp(a,b,c,clt),x)
   | PC.TMetaType(a,b,_)    -> (PC.TMetaType(a,b,clt),x)
   | PC.TMetaInit(a,b,_)    -> (PC.TMetaInit(a,b,clt),x)
   | PC.TMetaInitList(a,b,c,_) -> (PC.TMetaInitList(a,b,c,clt),x)
@@ -592,7 +684,7 @@ let update_clt ((tok,x) as t) clt =
   | PC.TPtrOp(_) -> (PC.TPtrOp(clt),x)
 
   | PC.TEq(_) -> (PC.TEq(clt),x)
-  | PC.TAssign(s,_) -> (PC.TAssign(s,clt),x)
+  | PC.TOpAssign(s,_) -> (PC.TOpAssign(s,clt),x)
   | PC.TDot(_) -> (PC.TDot(clt),x)
   | PC.TComma(_) -> (PC.TComma(clt),x)
   | PC.TPArob(_) -> (PC.TPArob(clt),x)
@@ -602,9 +694,81 @@ let update_clt ((tok,x) as t) clt =
   | PC.TFunDecl(_) -> (PC.TFunDecl(clt),x)
   | PC.TTildeExclEq(_) -> (PC.TTildeExclEq(clt),x)
   | PC.TDirective(a,_) -> (PC.TDirective(a,clt),x)
+  | PC.TVAEllipsis(_) -> (PC.TVAEllipsis(clt),x)
 
-  | _ -> raise (NoClt ("update_clt: token " ^ (token2c t) ^ " has no clt"))
-
+  | PC.Tlist -> assert false
+  | PC.TWords -> assert false
+  | PC.TWhy0 -> assert false
+  | PC.TWhitespace _ -> assert false
+  | PC.TVirtual -> assert false
+  | PC.TUsing -> assert false
+  | PC.TUnderscore -> assert false
+  | PC.TTypedef -> assert false
+  | PC.TType -> assert false
+  | PC.TSymbol -> assert false
+  | PC.TStatement -> assert false
+  | PC.TScriptData _ -> assert false
+  | PC.TScript -> assert false
+  | PC.TRuleName _ -> assert false
+  | PC.TRightIso -> assert false
+  | PC.TPure -> assert false
+  | PC.TPosition -> assert false
+  | PC.TPosAny -> assert false
+  | PC.TPlus0 -> assert false
+  | PC.TPathIsoFile _ -> assert false
+  | PC.TParameter -> assert false
+  | PC.TOperator -> assert false
+  | PC.TOn -> assert false
+  | PC.TNothing -> assert false
+  | PC.TNever -> assert false
+  | PC.TName -> assert false
+  | PC.TMetavariable -> assert false
+  | PC.TMetaPos _ -> assert false
+  | PC.TMPtVirg -> assert false
+  | PC.TLocal -> assert false
+  | PC.TIterator -> assert false
+  | PC.TIsoType -> assert false
+  | PC.TIsoTopLevel -> assert false
+  | PC.TIsoToTestExpression -> assert false
+  | PC.TIsoTestExpression -> assert false
+  | PC.TIsoStatement -> assert false
+  | PC.TIsoExpression -> assert false
+  | PC.TIsoDeclaration -> assert false
+  | PC.TIsoArgExpression -> assert false
+  | PC.TIso -> assert false
+  | PC.TInvalid -> assert false
+  | PC.TInitialize -> assert false
+  | PC.TInitialiser -> assert false
+  | PC.TIdentifier -> assert false
+  | PC.TIdExpression -> assert false
+  | PC.TGlobal -> assert false
+  | PC.TGenerated -> assert false
+  | PC.TFunction -> assert false
+  | PC.TFresh -> assert false
+  | PC.TFormat -> assert false
+  | PC.TForall -> assert false
+  | PC.TFinalize -> assert false
+  | PC.TField -> assert false
+  | PC.TExtends -> assert false
+  | PC.TExpression -> assert false
+  | PC.TExists -> assert false
+  | PC.TEver -> assert false
+  | PC.TError -> assert false
+  | PC.TDisable -> assert false
+  | PC.TDepends -> assert false
+  | PC.TDeclarer -> assert false
+  | PC.TDeclaration -> assert false
+  | PC.TCppConcatOp -> assert false
+  | PC.TContext -> assert false
+  | PC.TConstant -> assert false
+  | PC.TBinary -> assert false
+  | PC.TBang0 -> assert false
+  | PC.TAttribute -> assert false
+  | PC.TAssignment -> assert false
+  | PC.TArobArob -> assert false
+  | PC.TArob -> assert false
+  | PC.TAnalysis -> assert false
+  | PC.EOF -> assert false
 
 (* ----------------------------------------------------------------------- *)
 
@@ -666,13 +830,14 @@ let split t clt =
 
 let split_token ((tok,_) as t) =
   match tok with
-    PC.TMetavariable | PC.TIdentifier
+    PC.TMetavariable | PC.TIdentifier | PC.TOperator | PC.TBinary | PC.TAssignment
   | PC.TConstant | PC.TExpression | PC.TIdExpression
   | PC.TDeclaration | PC.TField
   | PC.TStatement | PC.TPosition | PC.TFormat | PC.TAnalysis | PC.TPosAny
   | PC.TInitialiser | PC.TSymbol
   | PC.TFunction | PC.TTypedef | PC.TDeclarer | PC.TIterator | PC.TName
-  | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh
+  | PC.TAttribute
+  | PC.TType | PC.TParameter | PC.TLocal | PC.TGlobal | PC.Tlist | PC.TFresh
   | PC.TCppConcatOp | PC.TPure
   | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TVirtual | PC.TDisable
   | PC.TExtends | PC.TPathIsoFile(_)
@@ -687,7 +852,7 @@ let split_token ((tok,_) as t) =
   | PC.Tunsigned(clt) | PC.Tsigned(clt)
   | PC.Tstatic(clt) | PC.Tauto(clt) | PC.Tregister(clt) | PC.Textern(clt)
   | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt)
-  | PC.Tconst(clt) | PC.Tvolatile(clt) -> split t clt
+  | PC.TVAEllipsis(clt) | PC.Tconst(clt) | PC.Tvolatile(clt) -> split t clt
 
   | PC.TDirective(s,_) -> ([],[t]) (* only allowed in + *)
   | PC.TPlusFile(s,clt) | PC.TMinusFile(s,clt)
@@ -705,7 +870,9 @@ let split_token ((tok,_) as t) =
   | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
   | PC.TSymId(_,clt)
   | PC.TMeta(_,_,clt) | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaExp(_,_,_,_,clt)
-  | PC.TMetaIdExp(_,_,_,_,clt) | PC.TMetaLocalIdExp(_,_,_,_,clt)
+  | PC.TMetaIdExp(_,_,_,_,clt)
+  | PC.TMetaLocalIdExp(_,_,_,_,clt) | PC.TMetaGlobalIdExp(_,_,_,_,clt)
+  | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
   | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
   | PC.TMetaId(_,_,_,_,clt) | PC.TMetaType(_,_,clt)
@@ -756,7 +923,7 @@ let split_token ((tok,_) as t) =
 
   | PC.TPtrOp(clt) -> split t clt
 
-  | PC.TEq(clt) | PC.TAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
+  | PC.TEq(clt) | PC.TOpAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
   | PC.TPtVirg(clt) -> split t clt
 
   | PC.EOF | PC.TInvalid | PC.TUnderscore -> ([t],[t])
@@ -767,7 +934,7 @@ let split_token ((tok,_) as t) =
   | PC.TIsoToTestExpression ->
       failwith "unexpected tokens"
   | PC.TScriptData s -> ([t],[t])
-  | PC.TWhitespace _ -> ([t],[t]) 
+  | PC.TWhitespace _ -> ([t],[t])
 
 
 let split_token_stream tokens =
@@ -820,7 +987,7 @@ let rec find_function_names l =
     | (PC.TArobArob,_)::_ | (PC.TArob,_)::_ | (PC.EOF,_)::_ ->
 	raise Irrelevant
     | t::rest when is_ident t && level = 0 -> rest
-    | t::rest when is_ident t or is_mid t -> balanced_name level rest
+    | t::rest when is_ident t || is_mid t -> balanced_name level rest
     | _ -> raise Irrelevant in
   let rec balanced_args level = function
       [] -> raise Irrelevant
@@ -838,7 +1005,7 @@ let rec find_function_names l =
   let rec loop = function
       [] -> []
     | t :: rest ->
-	if is_par t or is_mid t or is_ident t
+	if is_par t || is_mid t || is_ident t
 	then
 	  let (t,rest) =
 	    try
@@ -898,13 +1065,14 @@ let detect_types in_meta_decls l =
     | (PC.TPure,_) | (PC.TContext,_)
     | (PC.Tstatic(_),_) | (PC.Textern(_),_)
     | (PC.Tinline(_),_) | (PC.Ttypedef(_),_) | (PC.Tattr(_),_) -> true
-    | (PC.TComma(_),_) when infn > 0 or in_meta_decls -> true
+    | (PC.TComma(_),_) when infn > 0 || in_meta_decls -> true
     | (PC.TDotDot(_),_) when in_meta_decls -> true
     | _ -> false in
   let is_choices_delim = function
       (PC.TOBrace(_),_) | (PC.TComma(_),_) -> true | _ -> false in
   let is_id = function
-      (PC.TIdent(_,_),_) | (PC.TMetaId(_,_,_,_,_),_) | (PC.TMetaFunc(_,_,_,_),_)
+      (PC.TIdent(_,_),_) | (PC.TMetaId(_,_,_,_,_),_)
+    | (PC.TMetaFunc(_,_,_,_),_)
     | (PC.TMetaLocalFunc(_,_,_,_),_) -> true
     | (PC.TMetaParam(_,_,_),_)
     | (PC.TMetaParamList(_,_,_,_),_)
@@ -913,6 +1081,7 @@ let detect_types in_meta_decls l =
     | (PC.TMetaExp(_,_,_,_,_),_)
     | (PC.TMetaIdExp(_,_,_,_,_),_)
     | (PC.TMetaLocalIdExp(_,_,_,_,_),_)
+    | (PC.TMetaGlobalIdExp(_,_,_,_,_),_)
     | (PC.TMetaExpList(_,_,_,_),_)
     | (PC.TMetaType(_,_,_),_)
     | (PC.TMetaInit(_,_,_),_)
@@ -924,6 +1093,10 @@ let detect_types in_meta_decls l =
     | (PC.TMetaStmList(_,_,_),_)
     | (PC.TMetaPos(_,_,_,_),_) -> in_meta_decls
     | _ -> false in
+  let is_tyleft = function (* things that can start a var decl *)
+      (PC.TMul(_),_)
+    | (PC.TOPar(_),_) -> true
+    | _ -> false in
   let redo_id ident clt v =
     !Data.add_type_name ident;
     (PC.TTypeId(ident,clt),v) in
@@ -933,8 +1106,8 @@ let detect_types in_meta_decls l =
       [] -> []
     | ((PC.TOBrace(clt),v)::_) as all when in_meta_decls ->
 	collect_choices type_names all (* never a function header *)
-    | delim::(PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::rest
-      when is_delim infn delim ->
+    | delim::(PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::((id::_) as rest)
+      when is_delim infn delim && (is_id id || is_tyleft id) ->
 	let newid = redo_id ident clt v in
 	delim::newid::x::(loop false infn (ident::type_names) rest)
     | delim::(PC.TIdent(ident,clt),v)::id::rest
@@ -949,7 +1122,8 @@ let detect_types in_meta_decls l =
 	if infn - 1 = 1
 	then rp::(loop false 0 type_names rest) (* 0 means not in fn header *)
 	else rp::(loop false (infn - 1) type_names rest)
-    | (PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::rest when start ->
+    | (PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::((id::_) as rest)
+      when start && (is_id id || is_tyleft id) ->
 	let newid = redo_id ident clt v in
 	newid::x::(loop false infn (ident::type_names) rest)
     | (PC.TIdent(ident,clt),v)::id::rest when start && is_id id ->
@@ -1012,7 +1186,8 @@ let token2line (tok,_) =
 
   | PC.TMeta(_,_,clt) | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
   | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaExp(_,_,_,_,clt)
-  | PC.TMetaIdExp(_,_,_,_,clt) | PC.TMetaLocalIdExp(_,_,_,_,clt)
+  | PC.TMetaIdExp(_,_,_,_,clt)
+  | PC.TMetaLocalIdExp(_,_,_,_,clt) | PC.TMetaGlobalIdExp(_,_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
   | PC.TMetaId(_,_,_,_,clt) | PC.TMetaType(_,_,clt)
   | PC.TMetaInit(_,_,clt) | PC.TMetaInitList(_,_,_,clt)
@@ -1043,7 +1218,7 @@ let token2line (tok,_) =
   | PC.TPragma(clt)
   | PC.TIncludeL(_,clt) | PC.TIncludeNL(_,clt)
 
-  | PC.TEq(clt) | PC.TAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
+  | PC.TEq(clt) | PC.TOpAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
   | PC.TPArob(clt) | PC.TPtVirg(clt) ->
       let (_,line,_,_,_,_,_,_,_,_) = clt in Some line
 
@@ -1260,7 +1435,7 @@ let rec process_pragmas (bef : 'a option) (skips : 'a list) = function
 	  let (a,b,lline,llineend,d,e,strbef,straft,pos,ws) = get_clt next in
 	  (add_bef bef) @ List.rev skips @ pass @
 	  (process_pragmas
-	     (Some (update_clt next 
+	     (Some (update_clt next
                (a,b,prag_lline,llineend,d,e,pragmas,straft,pos,ws)))
 	     [] rest)
       |	_ ->
@@ -1271,7 +1446,7 @@ let rec process_pragmas (bef : 'a option) (skips : 'a list) = function
               List.rev skips@
 	      pass@process_pragmas None [] rest0
 	  | (_,_,Some next,PLUS) ->
-	      let (a,b,lline,llineend,d,e,strbef,straft,pos,ws) = 
+	      let (a,b,lline,llineend,d,e,strbef,straft,pos,ws) =
                 get_clt next in
 	      (add_bef bef) @ List.rev skips @ pass @
 	      (process_pragmas
@@ -1377,8 +1552,8 @@ let rec drop_double_dots l =
  (* | (PC.TCCircles(_),_) | (PC.TCStars(_),_) *) ->
 	true
     | _ -> false in
-  let any_before x = start x or middle x or final x or whenline x in
-  let any_after x = start x or middle x or final x in
+  let any_before x = start x || middle x || final x || whenline x in
+  let any_after x = start x || middle x || final x in
   let rec loop ((_,i) as prev) = function
       [] -> []
     | x::rest when any_before prev && any_after x ->
@@ -1408,6 +1583,8 @@ let strip_for_fix l =
 	  (PC.TMetaIdExp(nm,Ast0.NoConstraint,pure,ty,clt),info)
       |	(PC.TMetaLocalIdExp(nm,_,pure,ty,clt),info) ->
 	  (PC.TMetaLocalIdExp(nm,Ast0.NoConstraint,pure,ty,clt),info)
+      |	(PC.TMetaGlobalIdExp(nm,_,pure,ty,clt),info) ->
+	  (PC.TMetaGlobalIdExp(nm,Ast0.NoConstraint,pure,ty,clt),info)
       |	(PC.TMetaConst(nm,_,pure,ty,clt),info) ->
 	  (PC.TMetaConst(nm,Ast0.NoConstraint,pure,ty,clt),info)
       |	t -> t)
@@ -1455,10 +1632,12 @@ let pop2 l =
   l := List.tl !l;
   v
 
+(*
 let reinit _ =
   PC.reinit (function _ -> PC.TArobArob (* a handy token *))
     (Lexing.from_function
        (function buf -> function n -> raise (Common.Impossible 157)))
+*)
 
 let parse_one str parsefn file toks =
   let all_tokens = ref toks in
@@ -1473,7 +1652,7 @@ let parse_one str parsefn file toks =
     Lexing.from_function
       (function buf -> function n -> raise (Common.Impossible 158))
   in
-  reinit();
+  (* reinit(); *)
 
   try parsefn lexer_function lexbuf_fake
   with
@@ -1507,7 +1686,7 @@ let prepare_mv_tokens tokens =
 
 let unminus (d,x1,x2,x3,x4,x5,x6,x7,x8,x9) = (* for hidden variables *)
   match d with
-    D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> 
+    D.MINUS | D.OPTMINUS | D.UNIQUEMINUS ->
       (D.CONTEXT,x1,x2,x3,x4,x5,x6,x7,x8,x9)
   | D.PLUS -> failwith "unexpected plus code"
   | D.PLUSPLUS -> failwith "unexpected plus code"
@@ -1599,12 +1778,12 @@ let rec consume_minus_positions toks =
 		   (Ast0.MetaExpr(name,constraints,ty,Ast.ANY,pure)))) in
 	(loop_other (x::xs))
 
-    | x::((PC.TPArob _,_) as x')::x''::xs -> 
+    | x::((PC.TPArob _,_) as x')::x''::xs ->
 	x::loop_other (x'::x''::xs)
 
     | x::xs -> x::loop_other xs in
   loop_other(loop_pos toks)
-    
+
 let rec consume_plus_positions = function
     [] -> []
   | (PC.TPArob _,_)::x::xs -> consume_plus_positions xs
@@ -1616,14 +1795,15 @@ let any_modif rule =
       Ast0.MINUS _ | Ast0.PLUS _ -> true
     | _ -> false in
   let donothing r k e = k e in
-  let bind x y = x or y in
+  let bind x y = x || y in
   let option_default = false in
   let fn =
     V0.flat_combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing in
+      donothing donothing donothing donothing donothing donothing in
   List.exists fn.VT0.combiner_rec_top_level rule
 
 let eval_virt virt =
@@ -1646,9 +1826,9 @@ let partition_either l =
 
 let rec collect_script_tokens = function
     [(PC.EOF,_)] | [(PC.TArobArob,_)] | [(PC.TArob,_)] -> ""
-  | (PC.TScriptData(s),_)::[] -> 
+  | (PC.TScriptData(s),_)::[] ->
       s
-  | (PC.TScriptData(s),_)::xs -> 
+  | (PC.TScriptData(s),_)::xs ->
       s^(collect_script_tokens xs)
   | toks ->
       List.iter
@@ -1668,7 +1848,7 @@ let get_metavars parse_fn table file lexbuf =
     let tokens = prepare_mv_tokens tokens in
     match tokens with
       [(PC.TArobArob,_)] -> List.rev acc
-    | (PC.TAnalysis _, _) :: tl -> 
+    | (PC.TAnalysis, _) :: tl ->
 	Lexer_script.file := file;
 	Lexer_script.language := "ocaml";
         let get_tokens = tokens_script_all table file false lexbuf in
@@ -1679,17 +1859,17 @@ let get_metavars parse_fn table file lexbuf =
 	  (* count open parens *)
 	  let count str toks =
 	    List.fold_left (fun n (t, _) ->
-	      if t = PC.TScriptData str 
+	      if t = PC.TScriptData str
 	      then n + 1
 	      else n) 0 toks in
 	  let n = n + count "(" newtoks in
 	  (* continue parsing *)
-	  if n = 0 
+	  if n = 0
 	  then toks @ newtoks
 	  else loop n (toks @ newtoks) in
 	begin
 	  match get_tokens (in_list [PC.TScriptData "("]) with
-	  | (_, ([(s, _)] as toks)) -> 
+	  | (_, ([(s, _)] as toks)) ->
 	      let data = collect_script_tokens (loop 1 toks) in
 	      let (_,tokens) =
 		Data.call_in_meta
@@ -1952,12 +2132,10 @@ let parse file =
             let (minus_tokens, _) = split_token_stream tokens in
             let (_, plus_tokens) =
 	      split_token_stream (minus_to_nothing tokens) in
-
-	    (*
+            (*
 	       print_tokens "minus tokens" minus_tokens;
 	       print_tokens "plus tokens" plus_tokens;
-	    *)
-
+            *)
 	    let minus_tokens = consume_minus_positions minus_tokens in
 	    let plus_tokens = consume_plus_positions plus_tokens in
 	    let minus_tokens = prepare_tokens false minus_tokens in
@@ -1982,6 +2160,7 @@ let parse file =
 		match is_expression with
 		  Ast.AnyP -> PC.minus_main
 		| Ast.TyP -> PC.minus_ty_main
+		| Ast.IdP -> PC.minus_id_main
 		| Ast.ExpP -> PC.minus_exp_main in
 	      parse_one "minus" minus_parser file minus_tokens in
 	    (*
@@ -1991,7 +2170,7 @@ let parse file =
 	    let plus_res =
 	      (* put ignore_patch_or_match with * case, which is less
 		 constraining *)
-	      if !Flag.sgrep_mode2 or !D.ignore_patch_or_match
+	      if !Flag.sgrep_mode2 || !D.ignore_patch_or_match
 	      then (* not actually used for anything, except context_neg *)
 		List.map
 		  (Iso_pattern.rebuild_mcode None).VT0.rebuilder_rec_top_level
@@ -2003,6 +2182,7 @@ let parse file =
 		    match is_expression with
 		      Ast.AnyP -> PC.plus_main
 		    | Ast.TyP -> PC.plus_ty_main
+		    | Ast.IdP -> PC.plus_id_main
 		    | Ast.ExpP -> PC.plus_exp_main in
 		  parse_one "plus" plus_parser file plus_tokens
 		end in
@@ -2026,7 +2206,7 @@ let parse file =
 	    *)
 
 	    (if not !Flag.sgrep_mode2 &&
-	      (any_modif minus_res or any_modif plus_res) &&
+	      (any_modif minus_res || any_modif plus_res) &&
 	      not(dependencies = Ast.FailDep)
 	    then Data.inheritable_positions := []);
 
@@ -2060,9 +2240,14 @@ let parse file =
 		([],[]) metavars in
 	    let metavars = List.rev metavars in
 	    let script_metavars = List.rev script_metavars in
+	    (* No idea whether any vars are position vars, but if there are
+	       any, they can be inherited. Probably provides a way of
+	       laundering positions over changes. *)
+            Data.inheritable_positions :=
+		name :: !Data.inheritable_positions;
 
 	    Hashtbl.add Data.all_metadecls name
-	      (List.map (function x -> Ast.MetaIdDecl(Ast.NONE,x))
+	      (List.map (function x -> Ast.MetaScriptDecl(ref None,x))
 		 script_metavars);
 	    Hashtbl.add Lexer_cocci.rule_names name ();
 	    (*TODOHashtbl.add Lexer_cocci.all_metavariables name script_metavars;*)
@@ -2204,7 +2389,10 @@ let parse file =
       |	_ -> failwith "unexpected code before the first rule\n")
   | (false,[(PC.TArobArob,_)]) | (false,[(PC.TArob,_)]) ->
       ([],([] : Ast0.parsed_rule list),[] (*virtual rules*), [] (*all metas*))
-  | _ -> failwith "unexpected code before the first rule\n" in
+  | _ ->
+      failwith
+	(Printf.sprintf "unexpected code before the first rule: %s\n"
+	   (Dumper.dump initial_tokens)) in
   res) in
   parse_loop file
 
@@ -2287,14 +2475,14 @@ let process file isofile verbose =
 			   [Ast0.Exp e] -> true | _ -> false)
 		     | _ -> false] in
 	       let minus = Arity.minus_arity minus in
+	       let plus = Adjust_pragmas.process plus in
 	       let ((metavars,minus),function_prototypes) =
 		 Function_prototypes.process
 		   rule_name metavars dropped_isos minus plus ruletype in
-	       let plus = Adjust_pragmas.process plus in
           (* warning! context_neg side-effects its arguments *)
 	       let (m,p) = List.split (Context_neg.context_neg minus plus) in
 	       Type_infer.type_infer p;
-	       (if not (!Flag.sgrep_mode2 or dependencies = Ast.FailDep)
+	       (if not (!Flag.sgrep_mode2 || dependencies = Ast.FailDep)
 	       then Insert_plus.insert_plus m p (chosen_isos = []));
 	       Type_infer.type_infer minus;
 	       let (extra_meta, minus) =
@@ -2332,9 +2520,7 @@ let process file isofile verbose =
   if !Flag_parsing_cocci.show_SP
   then List.iter Pretty_print_cocci.unparse code;
 
-  let search_tokens =
-    Common.profile_code "get_glimpse_constants" (* for glimpse *)
-      (fun () -> Get_constants2.get_constants code neg_pos) in
+  let search_tokens = Get_constants2.get_constants code neg_pos in
 
   (metavars,code,fvs,neg_pos,ua,pos,search_tokens,
    !Parse_aux.contains_string_constant)

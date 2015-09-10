@@ -85,6 +85,10 @@ val add_local_idexp_meta:
     (Type_cocci.typeC list option -> Ast_cocci.meta_name ->
       econstraints -> Ast0_cocci.pure -> unit) ref
 
+val add_global_idexp_meta:
+    (Type_cocci.typeC list option -> Ast_cocci.meta_name ->
+      econstraints -> Ast0_cocci.pure -> unit) ref
+
 val add_explist_meta:
     (Ast_cocci.meta_name -> Ast_cocci.list_len -> Ast0_cocci.pure ->
       unit) ref
@@ -121,7 +125,17 @@ val add_fmt_meta: (Ast_cocci.meta_name -> iconstraints -> unit) ref
 
 val add_fmtlist_meta: (Ast_cocci.meta_name -> Ast_cocci.list_len -> unit) ref
 
+val add_assignOp_meta:
+    (Ast_cocci.meta_name ->
+      Ast0_cocci.assignOpconstraint -> Ast0_cocci.pure -> unit) ref
+
+val add_binaryOp_meta:
+    (Ast_cocci.meta_name ->
+      Ast0_cocci.binaryOpconstraint -> Ast0_cocci.pure -> unit) ref
+
 val add_type_name: (string -> unit) ref
+
+val add_attribute: (string -> unit) ref
 
 val add_declarer_name: (string -> unit) ref
 

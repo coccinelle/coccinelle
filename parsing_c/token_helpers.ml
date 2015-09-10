@@ -77,7 +77,7 @@ let is_not_comment x =
 let is_cpp_instruction = function
   | TInclude _
   | TDefine _  | TPragma _
-  | TIfdef _   | TIfdefelse _ | TIfdefelif _ | TEndif _
+  | TIfdef _ | TIfdefelse _ | TIfdefelif _ | TEndif _
   | TIfdefBool _ | TIfdefMisc _ | TIfdefVersion _
   | TUndef _
   | TCppDirectiveOther _
@@ -100,7 +100,9 @@ let is_gcc_token = function
       -> true
   | _ -> false
 
-
+let is_escaped_newline = function
+  | TCppEscapedNewline _ -> true
+  | _                    -> false
 
 
 (* ---------------------------------------------------------------------- *)
@@ -237,7 +239,7 @@ let match_simple_if_else
     begin try
       let (body,tok_else,rest_else) = split_when is_else rest_if in
       if List.exists is_if_or_else body
-         or List.exists is_if_or_else rest_else
+         || List.exists is_if_or_else rest_else
          then None (* no nested if/else wanted *)
          else Some (tok_if,body,tok_else,rest_else)
     with Not_found -> None end
@@ -273,7 +275,7 @@ let match_cpp_simple_ifdef_else_endif (xs :token list)
     begin try
       let (body_if,tok_else,body_else) = split_when is_cpp_else body in
       if List.exists is_cpp_instruction body_if
-         or List.exists is_cpp_instruction body_else
+         || List.exists is_cpp_instruction body_else
          then None (* no nested CPP wanted *)
          else Some (tok_ifdef,body_if,tok_else,body_else,tok_endif,rest_endif)
     with Not_found -> None end
@@ -297,7 +299,7 @@ let info_of_tok = function
   | TFormat(str,i) -> i
   | TSubString(str,i) -> i
 
-  | TAssign  (assignOp, i) -> i
+  | TAssign  (assignOp, ii) -> Common.tuple_of_list1 ii
 
   | TIdent  (s, i) -> i
   | TKRParam  (s, i) -> i
@@ -350,9 +352,9 @@ let info_of_tok = function
   | TCommentSkipTagStart (i) -> i
   | TCommentSkipTagEnd (i) -> i
 
-  | TIfdef               (_, i) -> i
+  | TIfdef               (_, _, i) -> i
   | TIfdefelse           (_, i) -> i
-  | TIfdefelif           (_, i) -> i
+  | TIfdefelif           (_, _, i) -> i
   | TEndif               (_, i) -> i
   | TIfdefBool           (b, _, i) -> i
   | TIfdefMisc           (b, _, i) -> i
@@ -447,6 +449,7 @@ let info_of_tok = function
   | Ttypeof              (i) -> i
   | Tnew                 (i) -> i
   | Tdelete              (i) -> i
+  | Tdefined             (i) -> i
   | TOParCplusplusInit   (i) -> i
 
   | EOF                  (i) -> i
@@ -461,7 +464,7 @@ let visitor_info_of_tok f = function
   | TChar  ((s, isWchar), i)   -> TChar  ((s, isWchar), f i)
   | TFloat ((s, floatType), i) -> TFloat ((s, floatType), f i)
   | TDecimal ((s, n, p), i)    -> TDecimal ((s, n, p), f i)
-  | TAssign  (assignOp, i)     -> TAssign  (assignOp, f i)
+  | TAssign  (assignOp, ii)     -> TAssign  (assignOp, List.map f ii)
 
   | TQuote ((str,isW),i) -> TQuote ((str,isW),f i)
   | TPct i -> TPct (f i)
@@ -524,9 +527,9 @@ let visitor_info_of_tok f = function
   | TCommentSkipTagStart         (i) -> TCommentSkipTagStart         (f i)
   | TCommentSkipTagEnd         (i) -> TCommentSkipTagEnd         (f i)
 
-  | TIfdef               (t, i) -> TIfdef               (t, f i)
+  | TIfdef               (c, t, i) -> TIfdef            (c, t, f i)
   | TIfdefelse           (t, i) -> TIfdefelse           (t, f i)
-  | TIfdefelif           (t, i) -> TIfdefelif           (t, f i)
+  | TIfdefelif           (c, t, i) -> TIfdefelif        (c, t, f i)
   | TEndif               (t, i) -> TEndif               (t, f i)
   | TIfdefBool           (b, t, i) -> TIfdefBool        (b, t, f i)
   | TIfdefMisc           (b, t, i) -> TIfdefMisc        (b, t, f i)
@@ -621,6 +624,7 @@ let visitor_info_of_tok f = function
   | Ttypeof              (i) -> Ttypeof              (f i)
   | Tnew                 (i) -> Tnew                 (f i)
   | Tdelete              (i) -> Tdelete              (f i)
+  | Tdefined             (i) -> Tdefined             (f i)
   | TOParCplusplusInit   (i) -> TOParCplusplusInit   (f i)
   | EOF                  (i) -> EOF                  (f i)
   | Tnamespace           (i) -> Tnamespace           (f i)
@@ -638,6 +642,152 @@ let col_of_tok x = snd (linecol_of_tok x)
 let line_of_tok x = fst (linecol_of_tok x)
 let pos_of_tok x =  Ast_c.opos_of_info (info_of_tok x)
 let str_of_tok x =  Ast_c.str_of_info (info_of_tok x)
+
+let string_of_token = function
+  | TUnknown _ -> "TUnknown"
+  | TCommentSpace _ -> "TCommentSpace"
+  | TCommentNewline _ -> "TCommentNewline"
+  | TComment _ -> "TComment"
+  | TInt _ -> "TInt"
+  | TFloat _ -> "TFloat"
+  | TChar _ -> "TChar"
+  | TString _ -> "TString"
+  | TQuote _ -> "TQuote"
+  | TPct _ -> "TPct"
+  | TFormat _ -> "TFormat"
+  | TSubString _ -> "TSubString"
+  | TDecimal _ -> "TDecimal"
+  | TIdent _ -> "TIdent"
+  | TKRParam _ -> "TKRParam"
+  | Tconstructorname _ -> "Tconstructorname"
+  | TypedefIdent _ -> "TypedefIdent"
+  | TOPar _ -> "TOPar"
+  | TCPar _ -> "TCPar"
+  | TOBrace _ -> "TOBrace"
+  | TCBrace _ -> "TCBrace"
+  | TOCro _ -> "TOCro"
+  | TCCro _ -> "TCCro"
+  | TDot _ -> "TDot"
+  | TComma _ -> "TComma"
+  | TPtrOp _ -> "TPtrOp"
+  | TInc _ -> "TInc"
+  | TDec _ -> "TDec"
+  | TAssign _ -> "TAssign"
+  | TEq _ -> "TEq"
+  | TWhy _ -> "TWhy"
+  | TTilde _ -> "TTilde"
+  | TBang _ -> "TBang"
+  | TEllipsis _ -> "TEllipsis"
+  | TDotDot _ -> "TDotDot"
+  | TPtVirg _ -> "TPtVirg"
+  | TOrLog _ -> "TOrLog"
+  | TAndLog _ -> "TAndLog"
+  | TOr _ -> "TOr"
+  | TXor _ -> "TXor"
+  | TAnd _ -> "TAnd"
+  | TEqEq _ -> "TEqEq"
+  | TNotEq _ -> "TNotEq"
+  | TInf _ -> "TInf"
+  | TSup _ -> "TSup"
+  | TInfEq _ -> "TInfEq"
+  | TSupEq _ -> "TSupEq"
+  | TShl _ -> "TShl"
+  | TShr _ -> "TShr"
+  | TPlus _ -> "TPlus"
+  | TMinus _ -> "TMinus"
+  | TMul _ -> "TMul"
+  | TDiv _ -> "TDiv"
+  | TMod _ -> "TMod"
+  | TMax _ -> "TMax"
+  | TMin _ -> "TMin"
+  | Tchar _ -> "Tchar"
+  | Tshort _ -> "Tshort"
+  | Tint _ -> "Tint"
+  | Tdouble _ -> "Tdouble"
+  | Tfloat _ -> "Tfloat"
+  | Tlong _ -> "Tlong"
+  | Tunsigned _ -> "Tunsigned"
+  | Tsigned _ -> "Tsigned"
+  | Tvoid _ -> "Tvoid"
+  | Tsize_t _ -> "Tsize_t"
+  | Tssize_t _ -> "Tssize_t"
+  | Tptrdiff_t _ -> "Tptrdiff_t"
+  | Tauto _ -> "Tauto"
+  | Tregister _ -> "Tregister"
+  | Textern _ -> "Textern"
+  | Tstatic _ -> "Tstatic"
+  | Ttypedef _ -> "Ttypedef"
+  | Tconst _ -> "Tconst"
+  | Tvolatile _ -> "Tvolatile"
+  | Tstruct _ -> "Tstruct"
+  | Tunion _ -> "Tunion"
+  | Tenum _ -> "Tenum"
+  | Tdecimal _ -> "Tdecimal"
+  | Texec _ -> "Texec"
+  | Tbreak _ -> "Tbreak"
+  | Telse _ -> "Telse"
+  | Tswitch _ -> "Tswitch"
+  | Tcase _ -> "Tcase"
+  | Tcontinue _ -> "Tcontinue"
+  | Tfor _ -> "Tfor"
+  | Tdo _ -> "Tdo"
+  | Tif _ -> "Tif"
+  | Twhile _ -> "Twhile"
+  | Treturn _ -> "Treturn"
+  | Tgoto _ -> "Tgoto"
+  | Tdefault _ -> "Tdefault"
+  | Tsizeof _ -> "Tsizeof"
+  | Tnew _ -> "Tnew"
+  | Tdelete _ -> "Tdelete"
+  | Tdefined _ -> "Tdefined"
+  | TOParCplusplusInit _ -> "TOParCplusplusInit"
+  | Tnamespace _ -> "Tnamespace"
+  | Trestrict _ -> "Trestrict"
+  | Tasm _ -> "Tasm"
+  | Tattribute _ -> "Tattribute"
+  | TattributeNoarg _ -> "TattributeNoarg"
+  | Tinline _ -> "Tinline"
+  | Ttypeof _ -> "Ttypeof"
+  | TDefine _ -> "TDefine"
+  | TDefParamVariadic _ -> "TDefParamVariadic"
+  | TCppEscapedNewline _ -> "TCppEscapedNewline"
+  | TCppConcatOp _ -> "TCppConcatOp"
+  | TOParDefine _ -> "TOParDefine"
+  | TOBraceDefineInit _ -> "TOBraceDefineInit"
+  | TIdentDefine _ -> "TIdentDefine"
+  | TDefEOL _ -> "TDefEOL"
+  | TInclude _ -> "TInclude"
+  | TIncludeStart _ -> "TIncludeStart"
+  | TIncludeFilename _ -> "TIncludeFilename"
+  | TIfdef _ -> "TIfdef"
+  | TIfdefelif _ -> "TIfdefelif"
+  | TIfdefelse _ -> "TIfdefelse"
+  | TEndif _ -> "TEndif"
+  | TIfdefBool _ -> "TIfdefBool"
+  | TIfdefMisc _ -> "TIfdefMisc"
+  | TIfdefVersion _ -> "TIfdefVersion"
+  | TUifdef _ -> "TUifdef"
+  | TUelseif _ -> "TUelseif"
+  | TUendif _ -> "TUendif"
+  | TUndef _ -> "TUndef"
+  | TPragma _ -> "TPragma"
+  | TCppDirectiveOther _ -> "TCppDirectiveOther"
+  | TMacroAttr _ -> "TMacroAttr"
+  | TMacroStmt _ -> "TMacroStmt"
+  | TMacroIdentBuilder _ -> "TMacroIdentBuilder"
+  | TMacroString _ -> "TMacroString"
+  | TMacroDecl _ -> "TMacroDecl"
+  | TMacroDeclConst _ -> "TMacroDeclConst"
+  | TMacroIterator _ -> "TMacroIterator"
+  | TMacroAttrStorage _ -> "TMacroAttrStorage"
+  | TCommentSkipTagStart _ -> "TCommentSkipTagStart"
+  | TCommentSkipTagEnd _ -> "TCommentSkipTagEnd"
+  | TCParEOL _ -> "TCParEOL"
+  | TAction _ -> "TAction"
+  | TCommentMisc _ -> "TCommentMisc"
+  | TCommentCpp _ -> "TCommentCpp"
+  | EOF _ -> "EOF"
+
 let file_of_tok x = Ast_c.file_of_info (info_of_tok x)
 let pinfo_of_tok x = Ast_c.pinfo_of_info (info_of_tok x)
 
@@ -662,7 +812,20 @@ let is_abstract x =
 (* Helpers *)
 (*****************************************************************************)
 let is_same_line_or_close line tok =
-  line_of_tok tok =|= line ||
-  line_of_tok tok =|= line - 1 ||
-  line_of_tok tok =|= line - 2
+  line_of_tok tok = line ||
+  line_of_tok tok = line - 1 ||
+  line_of_tok tok = line - 2
 
+(** Filter out CPP backslash-newlines (i.e. "\\\n") from a token stream.
+ *
+ * This helps parsing expressions in CPP directives using
+ * [expression_of_string].
+ *
+ * E.g.
+ *          #if defined(A) || \
+ *                defined(B)
+ *
+ * @author Iago Abal
+ *)
+let filter_out_escaped_newline =
+  List.filter (fun tok -> not (is_escaped_newline tok))

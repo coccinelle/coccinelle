@@ -60,7 +60,7 @@ let mk_info_item a b =
 
 
 let info_same_line line xs =
-  xs +> List.filter (fun info -> Ast_c.line_of_info info =|= line)
+  xs +> List.filter (fun info -> Ast_c.line_of_info info = line)
 
 
 (* move in cpp_token_c ? *)
@@ -105,7 +105,7 @@ let default_parse_error_function : parse_error_function =
       for i = start_line to end_line do
 	let line = filelines.(i) in
 
-	if i =|= line_error
+	if i = line_error
 	then  pr2 ("BAD:!!!!!" ^ " " ^ line)
 	else  pr2 ("bad:" ^ " " ^      line)
       done
@@ -218,17 +218,17 @@ let print_commentized xs =
 	    let s = Str.global_substitute
 		(Str.regexp "\n") (fun s -> "") s
 	    in
-	    if newline =|= !line
+	    if newline = !line
 	    then pr2_no_nl (s ^ " ")
 	    else begin
-              if !line =|= -1
+              if !line = -1
               then pr2_no_nl "passed:"
               else pr2_no_nl "\npassed:";
               line := newline;
               pr2_no_nl (s ^ " ");
 	    end
 	| _ -> ());
-    if not (null ys) then pr2 "";
+    if ys<>[] then pr2 "";
   end
 
 
@@ -240,27 +240,20 @@ let print_commentized xs =
 
 (* called by parse_print_error_heuristic *)
 let tokens2 file =
- let table     = Common.full_charpos_to_pos_large file in
-
+  let is_abstract_line_tok tok =
+    let ii = TH.info_of_tok tok in
+    match ii.Ast_c.pinfo with
+      | Ast_c.AbstractLineTok _ -> true
+      | _ -> false
+  in
  Common.with_open_infile file (fun chan ->
   let lexbuf = Lexing.from_channel chan in
+  let curp = { lexbuf.Lexing.lex_curr_p with Lexing.pos_fname = file } in
+  let lexbuf = { lexbuf with Lexing.lex_curr_p = curp } in
   try
     let rec tokens_aux acc =
       let tok = Lexer_c.token lexbuf in
-      (* fill in the line and col information *)
-      let tok = tok +> TH.visitor_info_of_tok (fun ii ->
-        { ii with Ast_c.pinfo=
-          (* could assert pinfo.filename = file ? *)
-	  match Ast_c.pinfo_of_info ii with
-	    Ast_c.OriginTok pi ->
-              Ast_c.OriginTok (Common.complete_parse_info_large file table pi)
-	  | Ast_c.ExpandedTok (pi,vpi) ->
-              Ast_c.ExpandedTok((Common.complete_parse_info_large file table pi),vpi)
-	  | Ast_c.FakeTok (s,vpi) -> Ast_c.FakeTok (s,vpi)
-	  | Ast_c.AbstractLineTok pi -> failwith "should not occur"
-      })
-      in
-
+      if is_abstract_line_tok tok then failwith "should not occur";
       if TH.is_eof tok
       then List.rev (tok::acc)
       else tokens_aux (tok::acc)
@@ -289,9 +282,7 @@ let tokens ?profile a =
     begin
       most_recent_file := a;
       most_recent_res := [];
-      let res =
-	Common.profile_code "C parsing.tokens"
-	  (fun () -> time_lexing ?profile a) in
+      let res = time_lexing ?profile a in
       most_recent_res := res;
       res
     end
@@ -357,6 +348,16 @@ let parse_print_error file =
  * It use globals defined in Lexer_parser.
  *)
 
+(** Converts occurrences of the identifier ["defined"] in a token stream,
+ * into the CPP defined operator [Tdefined].
+ *
+ * @author Iago Abal
+ *)
+let fix_cpp_defined_operator =
+  List.map (function
+    | Parser_c.TIdent("defined",info) -> Parser_c.Tdefined(info)
+    | x                               -> x
+    )
 
 (* old:
  *   let parse_gen parsefunc s =
@@ -365,8 +366,19 @@ let parse_print_error file =
  *     result
  *)
 
-let parse_gen parsefunc s =
+let parse_gen ~cpp ~tos parsefunc s =
   let toks = tokens_of_string s +> List.filter TH.is_not_comment in
+  let toks' =
+    if cpp
+    (* We have fix_tokens_define that relaces \\\n by [TCommentSpace]
+     * within #define and other CPP directives, but
+     * a) it's not clear to me where [TCommentSpace] gets removed;
+     * b) TH.filter_out_escaped_newline is simple but enough.
+     * /Iago
+     *)
+    then fix_cpp_defined_operator (TH.filter_out_escaped_newline toks)
+    else toks
+  in
 
 
   (* Why use this lexing scheme ? Why not classically give lexer func
@@ -374,8 +386,10 @@ let parse_gen parsefunc s =
    * just do a simple wrapper that when comment ask again for a token,
    * but maybe simpler to use cur_tok technique.
    *)
-  let all_tokens = ref toks in
+  let all_tokens = ref toks' in
   let cur_tok    = ref (List.hd !all_tokens) in
+
+  let type_start = ref tos in
 
   let lexer_function =
     (fun _ ->
@@ -383,6 +397,15 @@ let parse_gen parsefunc s =
       then (pr2_err "LEXER: ALREADY AT END"; !cur_tok)
       else
         let v = Common.pop2 all_tokens in
+        let v = match v with
+        | Parser_c.TIdent (s, ii) ->
+            if (* an id at the start of a type must be a type name *)
+              (LP.is_typedef s || !type_start) &&
+              not (!Flag_parsing_c.disable_add_typedef)
+	    then Parser_c.TypedefIdent (s, ii)
+            else Parser_c.TIdent (s, ii)
+        | x -> x in
+	type_start := false;
         cur_tok := v;
         !cur_tok
     )
@@ -391,10 +414,11 @@ let parse_gen parsefunc s =
   let result = parsefunc lexer_function lexbuf_fake in
   result
 
-
-let type_of_string       = parse_gen Parser_c.type_name
-let statement_of_string  = parse_gen Parser_c.statement
-let expression_of_string = parse_gen Parser_c.expr
+(* Please DO NOT remove this code, even though most of it is not used *)
+let type_of_string       = parse_gen ~cpp:false ~tos:true Parser_c.type_name
+let statement_of_string  = parse_gen ~cpp:false ~tos:false Parser_c.statement
+let expression_of_string = parse_gen ~cpp:false ~tos:false Parser_c.expr
+let cpp_expression_of_string = parse_gen ~cpp:true ~tos:false Parser_c.expr
 
 (* ex: statement_of_string "(struct us_data* )psh->hostdata = NULL;" *)
 
@@ -549,7 +573,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
     else begin
       let x = List.hd tr.rest_clean  in
       tr.rest_clean <- List.tl tr.rest_clean;
-      assert (x =*= v);
+      assert (x = v);
 
       (* ignore exec code *)
       (match v with
@@ -567,7 +591,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
        * tr.passed, tr.rest, etc.
        *)
       | Parser_c.TDefine (tok) ->
-          if not (LP.current_context () =*= LP.InTopLevel) &&
+          if not (LP.current_context () = LP.InTopLevel) &&
             (!Flag_parsing_c.cpp_directive_passing || (pass >= 2))
           then begin
             incr Stat.nDefinePassing;
@@ -587,7 +611,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
           end
 
       | Parser_c.TUndef (tok) ->
-          if not (LP.current_context () =*= LP.InTopLevel) &&
+          if not (LP.current_context () = LP.InTopLevel) &&
             (!Flag_parsing_c.cpp_directive_passing || (pass >= 2))
           then begin
             incr Stat.nUndefPassing;
@@ -607,7 +631,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
           end
 
       | Parser_c.TInclude (includes, filename, inifdef, info) ->
-          if not (LP.current_context () =*= LP.InTopLevel)  &&
+          if not (LP.current_context () = LP.InTopLevel)  &&
             (!Flag_parsing_c.cpp_directive_passing || (pass >= 2))
           then begin
             incr Stat.nIncludePassing;
@@ -624,8 +648,8 @@ let rec lexer_function ~pass tr = fun lexbuf ->
 
             tr.passed <- v::tr.passed;
             tr.passed_clean <- extend_passed_clean v tr.passed_clean;
-            tr.rest <- new_tokens ++ tr.rest;
-            tr.rest_clean <- new_tokens_clean ++ tr.rest_clean;
+            tr.rest <- new_tokens @ tr.rest;
+            tr.rest_clean <- new_tokens_clean @ tr.rest_clean;
             v
           end
 
@@ -637,7 +661,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
                 if
                   LP.is_typedef s &&
                     not (!Flag_parsing_c.disable_add_typedef) &&
-                    pass =|= 1
+                    pass = 1
                 then Parser_c.TypedefIdent (s, ii)
                 else Parser_c.TIdent (s, ii)
             | x -> x
@@ -667,7 +691,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
 
 let max_pass = 4
 
-let get_one_elem ~pass tr (file, filelines) =
+let get_one_elem ~pass tr =
 
   if not (LP.is_enabled_typedef()) && !Flag_parsing_c.debug_typedef
   then pr2_err "TYPEDEF:_handle_typedef=false. Not normal if dont come from exn";
@@ -751,7 +775,7 @@ let candidate_macros_in_passed2 ~defs passed  =
 
   | _ -> ()
   );
-  if null !res
+  if !res = []
   then !res2
   else !res
 
@@ -809,7 +833,54 @@ let find_optional_macro_to_expand ~defs a =
     Common.profile_code "MACRO managment" (fun () ->
       find_optional_macro_to_expand2 ~defs a)
 
+(*****************************************************************************)
+(* Parsing #if guards *)
+(*****************************************************************************)
 
+(** Traverses the syntax tree parsing #if guard strings
+  * with a given parsing function.
+  *
+  * NOTE that whenever the parsing fails, we keep the ifdef_guard unchanged.
+  *
+  * @author Iago Abal
+  *)
+let parse_ifdef_guard_visitor (parse :string -> Ast_c.expression)
+    :Visitor_c.visitor_c_s =
+  let v_ifdef_guard = function
+      (* Gif_str <string> --parse--> Gif <expression> *)
+    | Ast_c.Gif_str input ->
+        begin
+          try Ast_c.Gif (parse input) with
+          | Parsing.Parse_error ->
+              pr2 ("Unable to parse #if condition: " ^ input);
+              Ast_c.Gif_str input
+        end
+    | x                   -> x
+  in
+  let v_ifdefkind = function
+    | Ast_c.Ifdef       ifguard -> Ast_c.Ifdef       (v_ifdef_guard ifguard)
+    | Ast_c.IfdefElseif ifguard -> Ast_c.IfdefElseif (v_ifdef_guard ifguard)
+    | x                         -> x
+  in
+  { Visitor_c.default_visitor_c_s with
+      Visitor_c.kifdefdirective_s = fun (k,bigf) d ->
+        match d with
+       | Ast_c.IfdefDirective ((ifkind,tag), ii) ->
+           let ifkind' = v_ifdefkind ifkind in
+           Ast_c.IfdefDirective ((ifkind',tag), ii)
+  }
+
+(** Traverses the syntax tree parsing #if guard strings with [Parse_c.expr].
+  *
+  * Known issue: [Parse_c.expr] is invoked through [expression_of_string],
+  * which does not handle backslash-newlines #if guards. Those guards will
+  * be kept unparsed. Possible solution would be to run [fix_tokens_define]
+  * on the token stream before parsing.
+  *
+  * @author Iago Abal
+  *)
+let parse_ifdef_guards : Ast_c.program -> Ast_c.program =
+  Visitor_c.vk_program_s (parse_ifdef_guard_visitor cpp_expression_of_string)
 
 
 
@@ -888,8 +959,6 @@ let with_program2_unit f program2 =
 let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
     file =
 
-  let filelines =
-    try Common.cat_array file with _ -> raise (Flag.UnreadableFile file) in
   let stat = Parsing_stat.default_stat file in
 
   (* -------------------------------------------------- *)
@@ -953,7 +1022,7 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
     let elem =
       let pass1 =
         Common.profile_code "Parsing: 1st pass" (fun () ->
-          get_one_elem ~pass:1 tr (file, filelines)
+          get_one_elem ~pass:1 tr
         ) in
       match pass1 with
       | Left e -> Left e
@@ -964,10 +1033,10 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
             Common.profile_code "Parsing: multi pass" (fun () ->
 
             pr2_err "parsing pass2: try again";
-            let toks = List.rev passed ++ tr.rest in
+            let toks = List.rev passed @ tr.rest in
             let new_tr = mk_tokens_state toks in
             copy_tokens_state ~src:new_tr ~dst:tr;
-            let passx = get_one_elem ~pass:2 tr (file, filelines) in
+            let passx = get_one_elem ~pass:2 tr in
 
             (match passx with
             | Left e -> passx
@@ -977,18 +1046,18 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
                 in
 
 
-                if is_define_passed passed || null candidates
+                if is_define_passed passed || candidates=[]
                 then passx
                 else begin
                   (* todo factorize code *)
 
                   pr2_err "parsing pass3: try again";
-                  let toks = List.rev passed ++ tr.rest in
+                  let toks = List.rev passed @ tr.rest in
                   let toks' =
                     find_optional_macro_to_expand ~defs:candidates toks in
                   let new_tr = mk_tokens_state toks' in
                   copy_tokens_state ~src:new_tr ~dst:tr;
-                  let passx = get_one_elem ~pass:3 tr (file, filelines) in
+                  let passx = get_one_elem ~pass:3 tr in
 
                   (match passx with
                   | Left e -> passx
@@ -1000,12 +1069,12 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
                           ~defs:macros passed
                       in
 
-                      let toks = List.rev passed ++ tr.rest in
+                      let toks = List.rev passed @ tr.rest in
                       let toks' =
                       find_optional_macro_to_expand ~defs:candidates toks in
                       let new_tr = mk_tokens_state toks' in
                       copy_tokens_state ~src:new_tr ~dst:tr;
-                      let passx = get_one_elem ~pass:4 tr (file, filelines) in
+                      let passx = get_one_elem ~pass:4 tr in
                       passx
                   )
                  end
@@ -1020,7 +1089,7 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
     let checkpoint2_file = TH.file_of_tok tr.current in
 
     let diffline =
-      if (checkpoint_file =$= checkpoint2_file) && (checkpoint_file =$= file)
+      if (checkpoint_file = checkpoint2_file) && (checkpoint_file = file)
       then (checkpoint2 - checkpoint)
       else 0
         (* TODO? so if error come in middle of something ? where the
@@ -1070,9 +1139,11 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
               | e -> raise (Impossible 82)
               );
               (* bugfix: *)
-              if (checkpoint_file =$= checkpoint2_file) &&
-                checkpoint_file =$= file
+              if (checkpoint_file = checkpoint2_file) &&
+                checkpoint_file = file
               then
+                let filelines =
+                  try Common.cat_array file with _ -> raise (Flag.UnreadableFile file) in
 		print_bad line_error passed_before_error
 		  (checkpoint, checkpoint2) filelines pass
               else pr2 "PB: bad: but on tokens not from original file"
@@ -1110,6 +1181,17 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
   let v =
     if !Flag_parsing_c.ifdef_to_if
        then with_program2 Parsing_hacks.cpp_ifdef_statementize v
+       else v
+  in
+  (* We parse #if guards when --ifdef-to-if is enabled, mostly because
+   * I don't see a need (yet) to have yet-another flag. Right now, there
+   * is also little interest in parsing #if guards without --ifdef-to-if.
+   * Review this decision in the future!
+   * / Iago
+   *)
+  let v =
+    if !Flag_parsing_c.ifdef_to_if
+       then with_program2 parse_ifdef_guards v
        else v
   in
   let v =
@@ -1194,6 +1276,7 @@ let parse_cache parse_strings file =
 (* Some special cases *)
 (*****************************************************************************)
 
+(* Please DO NOT remove this code, even though it is not used *)
 let no_format s =
   try let _ = Str.search_forward (Str.regexp_string "%") s 0 in false
   with Not_found -> true

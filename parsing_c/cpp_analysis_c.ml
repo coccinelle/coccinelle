@@ -251,7 +251,7 @@ let rec (recurse_expand_macro_topological_order:
   (* naive: *)
   if !no_inlining then
     g#nodes#tolist +> List.iter (fun (k, v) ->
-      if k =$= rootname then ()
+      if k = rootname then ()
       else
         let def = get_single_file_and_def_of_node k v +> snd in
         Hashtbl.add current_def k def
@@ -260,8 +260,8 @@ let rec (recurse_expand_macro_topological_order:
     let remaining = g#nodes#tolist in
     (match remaining with
     | [] -> () (* christia: commented this out: raise (Impossible 76)
-		* This seems to be the case when there are no 
-		* problematic macros. Which is possible. 
+		* This seems to be the case when there are no
+		* problematic macros. Which is possible.
 		*)
     | [(k,n)] ->
         assert (k = rootname);
@@ -277,7 +277,7 @@ let rec (recurse_expand_macro_topological_order:
           (spf "/tmp/graph-%d.dot" depth)
           g;
 
-        assert(not (null leafs)); 
+        assert (leafs <> []);
 
 
         (* little specialisation to avoid useless work *)
@@ -325,7 +325,7 @@ let is_dangerous_macro def =
   | Cpp_token_c.Params([s1]),
 	Cpp_token_c.DefineBody [TIdent (s2,i1)] ->
 	  (match s1 with
-	    Cpp_token_c.FixedArg s1 -> s1 =$= s2
+	    Cpp_token_c.FixedArg s1 -> s1 = s2
 	  | Cpp_token_c.VariadicArg _ -> false)
 
   (* keyword aliases. eg: APR_inline __inline__ *)
@@ -476,4 +476,3 @@ let extract_dangerous_macros xs =
 
   let grouped = Common.group_assoc_bykey_eff final_macros in
   grouped
-

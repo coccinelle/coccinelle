@@ -9,7 +9,7 @@
 
 
 let
-  
+
   # version information
   version = builtins.readFile ./version;
   versionSuffix = if officialRelease then "" else "pre${toString cocciSrc.revCount}-${cocciSrc.gitTag}";
@@ -42,7 +42,7 @@ let
         local PREVHOME=$HOME
         export HOME=$TMPDIR    # the latex installation needs to write to the $HOME directory, so rename it here
       '';
-      
+
       dontCopyDist = 1; # we'll copy the tarball to the tarballs folder ourselves (and rename it)
       postDist = ''
         export HOME=$PREVHOME  # restore the home directory
@@ -193,7 +193,7 @@ let
   # Several configurations testing different python versions.
   # We exlicitly pass the "--enable-python" flag so that the
   # build should fail if no suitable python can be detected.
-  pythonCfgs = 
+  pythonCfgs =
     map mkCfgPython [
       ( _ : { name = "no-python"; pythons = []; flags = []; })
 
@@ -323,7 +323,7 @@ let
       buildInputs = cfg.extras ++ [ ncurses ocamlPackages.ocaml ] ++ cfg.ocamls ++ cfg.pythons;
       configureFlags = pkgs.lib.concatStringsSep " " flags; # hmm, flags are now not allowed to contain spaces
       doCheck = true;
-      
+
       buildPhase = ''
         mkdir -p "$out/nix-support/"
         touch "$out/nix-support/make.log"
@@ -369,7 +369,7 @@ let
   # package builder for Debian-based OS'ses
   makeDeb =
     system: diskImageFun:
-    
+
     with import nixpkgs { inherit system; };
     releaseTools.debBuild {
       name = "coccinelle-deb";
@@ -481,11 +481,11 @@ let
 
 	# initialize essential environment variables
         # for the makefile
-	export COCCINELLE_HOME=${coccinelle}/share/coccinelle
+	export COCCINELLE_HOME=${coccinelle}/lib/coccinelle
         export COCCIDIR=$TMPDIR
         export SPATCH=${coccinelle}/bin/spatch.opt
-        export ISO=${coccinelle}/share/coccinelle/standard.iso
-        export DEFS=${coccinelle}/share/coccinelle/standard.h
+        export ISO=${coccinelle}/lib/coccinelle/standard.iso
+        export DEFS=${coccinelle}/lib/coccinelle/standard.h
 
 	# generate the test outcomes using a parallel build
         make -e all -j$NIX_BUILD_CORES -l$NIX_BUILD_CORES
@@ -585,7 +585,7 @@ let
       dontInstall = false;
       doCheck = false;
     };
-  
+
   #
   # collections of build tasks
   #

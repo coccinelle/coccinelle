@@ -130,5 +130,3 @@ object(o)
     o
 
 end
-
-

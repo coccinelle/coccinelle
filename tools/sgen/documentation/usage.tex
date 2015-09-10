@@ -3,11 +3,11 @@
 \begin{enumerate}
 \item Run \texttt{make} to compile the program.
 \item Run \texttt{make install}\footnote{If permission is denied, run it in superuser mode e.g. \texttt{sudo make install}, depending on your system.\label{sudo}} to install the program.
-\item (Optional) Try out the program by running \texttt{sgen examples/tiny.cocci} or \texttt{sgen <path\_to\_your\_script>.cocci}.
+\item (Optional) Try out the program by running \texttt{sgen examples/addvoid.cocci} or \texttt{sgen <path\_to\_your\_script>.cocci}.
 \end{enumerate}
 \textbf{To uninstall}: From the \texttt{sgen} directory, do:
 \begin{enumerate}
-\item Run \texttt{make uninstall}$^{\ref{sudo}}$. 
+\item Run \texttt{make uninstall}$^{\ref{sudo}}$.
 \end{enumerate}
 \bigskip
 
@@ -78,7 +78,7 @@ where \texttt{<attribute\_name>} can be either the attribute name or its shortha
   org:<message>
   report:<message>
 \end{verbatim}
-for \texttt{org} and \texttt{report} error messages, respectively. Here, \texttt{<rule\_name>} is either the actual rule name, or, if it is a nameless rule, \texttt{<line\_that\_rule\_starts\_on>.<new\_name>}.\newline
+for \texttt{org} and \texttt{report} error messages, respectively. Here, \texttt{<rule\_name>} is either the actual rule name, or, if it is a nameless rule, \texttt{<line\_that\_rule\_starts\_on>:<new\_name>}.\newline
 Meanwhile, \texttt{<message>} follow the syntax of \texttt{python} format strings, e.g.
 \begin{verbatim}
 "This is a message that references two metavariables %s and %s." % (x,y)
@@ -89,7 +89,13 @@ where \texttt{x} and \texttt{y} are metavariables in the rule. If using metavari
 \bigskip
 
 \subsection{Examples}
-Example files (\texttt{Coccinelle} scripts, corresponding \texttt{sgen} config files, and \texttt{C} files to test on) can be found in the \texttt{examples} directory.
+Example files can be found in the \texttt{examples} directory. For each example, there should be four files. The file extensions denote the following:
+\begin{itemize}
+\item \texttt{<name>.c}: \texttt{C} source file that returns matches/patches for the corresponding cocci file. Can be tested with \texttt{spatch --sp-file <name>.cocci <name>.c}.
+\item \texttt{<name>.cocci}: simple, unhardened Coccinelle script.
+\item \texttt{<name>.config}: \texttt{sgen} configuration file for specifying preface and rule information.
+\item \texttt{<name>\_.cocci}: expected output when running \texttt{sgen} on the unhardened Coccinelle script with the config file. Should be a valid, hardened Coccinelle script. Can be tested with e.g. \texttt{spatch --sp-file <name>\_.cocci <name>.c -D report --no-show-diff}.
+\end{itemize}
 
 %PSEUDOGRAMMAR:
 %\begin{center}

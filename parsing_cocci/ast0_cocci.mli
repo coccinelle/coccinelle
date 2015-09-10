@@ -96,7 +96,7 @@ and base_expression =
 		      string mcode (* quote *)
   | FunCall        of expression * string mcode (* ( *) *
                       expression dots * string mcode (* ) *)
-  | Assignment     of expression * Ast_cocci.assignOp mcode * expression *
+  | Assignment     of expression * assignOp * expression *
 	              bool (* true if it can match an initialization *)
   | Sequence       of expression * string mcode (* , *) * expression
   | CondExpr       of expression * string mcode (* ? *) * expression option *
@@ -104,8 +104,8 @@ and base_expression =
   | Postfix        of expression * Ast_cocci.fixOp mcode
   | Infix          of expression * Ast_cocci.fixOp mcode
   | Unary          of expression * Ast_cocci.unaryOp mcode
-  | Binary         of expression * Ast_cocci.binaryOp mcode * expression
-  | Nested         of expression * Ast_cocci.binaryOp mcode * expression
+  | Binary         of expression * binaryOp * expression
+  | Nested         of expression * binaryOp * expression
   | Paren          of string mcode (* ( *) * expression *
                       string mcode (* ) *)
   | ArrayAccess    of expression * string mcode (* [ *) * expression *
@@ -126,11 +126,12 @@ and base_expression =
   | MetaExprList   of Ast_cocci.meta_name mcode (* only in arglists *) *
 	              listlen * pure
   | AsExpr         of expression * expression (* as expr, always metavar *)
+  | AsSExpr        of expression * statement (* as expr, always metavar *)
   | EComma         of string mcode (* only in arglists *)
   | DisjExpr       of string mcode * expression list * string mcode list *
 	              string mcode
   | NestExpr       of string mcode * expression dots * string mcode *
-                      (string mcode * string mcode * expression) option 
+                      (string mcode * string mcode * expression) option
                       (* whencode *) * Ast_cocci.multi
   | Edots          of string mcode (* ... *) * (string mcode * string mcode *
                       expression) option (* whencode *)
@@ -169,6 +170,29 @@ and base_string_format =
 and string_format = base_string_format wrap
 
 (* --------------------------------------------------------------------- *)
+(* First class operators *)
+and  base_assignOp =
+    SimpleAssign of simpleAssignOp mcode
+  | OpAssign of Ast_cocci.arithOp mcode
+  | MetaAssign of Ast_cocci.meta_name mcode * assignOpconstraint * pure
+and simpleAssignOp = string
+and assignOp = base_assignOp wrap
+
+and  base_binaryOp =
+    Arith of Ast_cocci.arithOp mcode
+  | Logical of Ast_cocci.logicalOp mcode
+  | MetaBinary of Ast_cocci.meta_name mcode * binaryOpconstraint * pure
+and binaryOp = base_binaryOp wrap
+and assignOpconstraint =
+    AssignOpNoConstraint
+  | AssignOpInSet of assignOp list
+
+and binaryOpconstraint =
+    BinaryOpNoConstraint
+  | BinaryOpInSet of binaryOp list
+
+
+(* --------------------------------------------------------------------- *)
 (* Types *)
 
 and base_typeC =
@@ -179,9 +203,6 @@ and base_typeC =
   | FunctionPointer of typeC *
 	          string mcode(* ( *)*string mcode(* * *)*string mcode(* ) *)*
                   string mcode (* ( *)*parameter_list*string mcode(* ) *)
-  | FunctionType    of typeC option *
-	               string mcode (* ( *) * parameter_list *
-                       string mcode (* ) *)
   | Array           of typeC * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
   | Decimal         of string mcode (* decimal *) * string mcode (* ( *) *
@@ -218,10 +239,17 @@ and base_declaration =
 	string mcode (*=*) * initialiser * string mcode (*;*)
   | UnInit     of Ast_cocci.storage mcode option * typeC * ident *
 	string mcode (* ; *)
+  | FunProto of
+	fninfo list * ident (* name *) *
+	string mcode (* ( *) * parameter_list *
+        (string mcode (* , *) * string mcode (* ...... *) ) option *
+	string mcode (* ) *) * string mcode (* ; *)
   | TyDecl of typeC * string mcode (* ; *)
-  | MacroDecl of ident (* name *) * string mcode (* ( *) *
+  | MacroDecl of Ast_cocci.storage mcode option *
+	ident (* name *) * string mcode (* ( *) *
         expression dots * string mcode (* ) *) * string mcode (* ; *)
-  | MacroDeclInit of ident (* name *) * string mcode (* ( *) *
+  | MacroDeclInit of Ast_cocci.storage mcode option *
+	ident (* name *) * string mcode (* ( *) *
         expression dots * string mcode (* ) *) * string mcode (*=*) *
         initialiser * string mcode (* ; *)
   | Typedef of string mcode (* typedef *) * typeC * typeC * string mcode (*;*)
@@ -353,6 +381,7 @@ and base_statement =
   | Exp           of expression  (* only in dotted statement lists *)
   | TopExp        of expression (* for macros body *)
   | Ty            of typeC (* only at top level *)
+  | TopId         of ident (* only at top level *)
   | TopInit       of initialiser (* only at top level *)
   | Disj          of string mcode * statement dots list * string mcode list *
 	             string mcode
@@ -366,7 +395,9 @@ and base_statement =
 	             (statement dots,statement) whencode list
   | FunDecl of (info * mcodekind) (* before the function decl *) *
 	fninfo list * ident (* name *) *
-	string mcode (* ( *) * parameter_list * string mcode (* ) *) *
+	string mcode (* ( *) * parameter_list *
+	(string mcode (* , *) * string mcode (* ...... *) ) option *
+	string mcode (* ) *) *
 	string mcode (* { *) * statement dots *
 	string mcode (* } *) *
 	(info * mcodekind) (* after the function decl *)
@@ -488,6 +519,8 @@ and anything =
   | DotsCaseTag of case_line dots
   | IdentTag of ident
   | ExprTag of expression
+  | AssignOpTag of assignOp
+  | BinaryOpTag of binaryOp
   | ArgExprTag of expression  (* for isos *)
   | TestExprTag of expression (* for isos *)
   | TypeCTag of typeC
@@ -515,6 +548,8 @@ val dotsDecl : declaration dots -> anything
 val dotsCase : case_line dots -> anything
 val ident : ident -> anything
 val expr : expression -> anything
+val assignOp : assignOp -> anything
+val binaryOp : binaryOp -> anything
 val typeC : typeC -> anything
 val param : parameterTypeDef -> anything
 val ini : initialiser -> anything
@@ -577,8 +612,9 @@ val make_minus_mcode : 'a -> 'a mcode
 val get_rule_name : parsed_rule -> string
 
 val meta_pos_name : anything -> Ast_cocci.meta_name mcode
+val meta_pos_constraint_names : anything -> Ast_cocci.meta_name list
 
-val ast0_type_to_type : typeC -> Type_cocci.typeC
+val ast0_type_to_type : bool -> typeC -> Type_cocci.typeC
 val reverse_type : Type_cocci.typeC -> base_typeC
 exception TyConv
 
@@ -587,3 +623,6 @@ val lub_pure : pure -> pure -> pure
 (* --------------------------------------------------------------------- *)
 
 val rule_name : string ref (* for the convenience of the parser *)
+
+val string_of_assignOp : assignOp -> string
+val string_of_binaryOp : binaryOp -> string

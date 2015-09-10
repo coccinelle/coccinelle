@@ -15,13 +15,15 @@ type cocci_info
 type constant_info =
     string list option (*grep tokens*) *
       string list option (*glimpse tokens*) *
-      (Str.regexp * Str.regexp list) option (*coccigrep tokens*) *
+      (Str.regexp * Str.regexp list * string list)
+      option (*coccigrep/gitgrep tokens*) *
       Get_constants2.combine option
 val pre_engine : (filename * filename) -> cocci_info * constant_info
 val worth_trying : filename list -> constant_info -> bool
 val full_engine :
   cocci_info -> filename list -> (filename * filename option) list
 val post_engine : cocci_info -> unit
+val has_finalize : cocci_info -> bool
 
 (* because of the #include "toto.c" and also because we may associate the
  * same C file to multiple drivers because they share code, we can
@@ -43,11 +45,7 @@ val sp_of_file :
 	 Ast_cocci.meta_name list list list *
 	 (*fresh used after list seeds*)
 	 Ast_cocci.meta_name list list list) *
-      Ast_cocci.meta_name list list list *
-      (string list option (*grep tokens*) *
-	 string list option (*glimpse tokens*) *
-	 (Str.regexp * Str.regexp list) option (*coccigrep tokens*) *
-	 Get_constants2.combine option) *
+      Ast_cocci.meta_name list list list * constant_info *
       bool (* format information needed for strings? *)
 
 val normalize_path : string -> string

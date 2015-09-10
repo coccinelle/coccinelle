@@ -28,6 +28,13 @@ type ('pred,'state,'mvar,'value,'wit) wrapped_labelfunc =
        'wit
       ) list
 
+type 'pred preprocfunc =
+    'pred -> bool
+
+(* pad: what is 'wit ? *)
+type ('pred,'mvar) wrapped_preprocfunc =
+  ('pred * 'mvar Ast_ctl.modif) -> bool
+
 (* ********************************************************************** *)
 (* Module type: CTL_ENGINE_BIS (wrapper for CTL_ENGINE)                   *)
 (* ********************************************************************** *)
@@ -115,6 +122,13 @@ struct
         in
         List.map conv_trip (oldlabelfunc p)
 
+  (* Wrap a preproc function - selects interesting predicates *)
+  let (wrap_preproc: 'pred preprocfunc ->
+	('pred,'mvar) wrapped_preprocfunc) =
+    fun oldpreprocfunc ->
+      fun (p, predvar) ->
+	oldpreprocfunc p
+
   (* ---------------------------------------------------------------- *)
 
   (* FIX ME: what about negative witnesses and negative substitutions *)
@@ -129,7 +143,7 @@ struct
 	    [] -> [(st,acc,v)]
 	  | _ -> raise (NEVER_CTL "predvar tree should have no children"))
       | A.Wit(st,[A.Subst(x,PredVal(A.UnModif(v)))],anno,wit)
-	when not modifonly or !Flag.track_iso_usage ->
+	when not modifonly || !Flag.track_iso_usage ->
 	  (match wit with
 	    [] -> [(st,acc,v)]
 	  | _ -> raise (NEVER_CTL "predvar tree should have no children"))
@@ -197,14 +211,16 @@ struct
   (* ----------------------------------------------------- *)
 
   (* The wrapper for sat from the CTL_ENGINE *)
-  let satbis_noclean (grp,lab,states) (phi,reqopt) :
+  let satbis_noclean (grp,lab,preproc,states) (phi,reqopt) :
       ('pred,'anno) WRAPPER_ENGINE.triples =
-    WRAPPER_ENGINE.sat (grp,wrap_label lab,states) phi reqopt
+    WRAPPER_ENGINE.sat (grp,wrap_label lab,wrap_preproc preproc,states)
+      phi reqopt
 
   (* Returns the "cleaned up" result from satbis_noclean *)
   let (satbis :
          G.cfg *
 	 (predicate,G.node,SUB.mvar,SUB.value) labelfunc *
+	 predicate preprocfunc *
          G.node list ->
 	   ((predicate,SUB.mvar) wrapped_ctl *
 	      (WRAPPER_PRED.t list list)) ->

@@ -172,7 +172,7 @@ object(o)
     Cursor.dbc_close dbc (* minsky Cursor.close dbc *);
     ()
 
-end	
+end
 
 
 let create_bdb metapath dbname env  transact (fv, unv) size_buffer_oassoc_buffer =
@@ -184,4 +184,3 @@ let create_bdb metapath dbname env  transact (fv, unv) size_buffer_oassoc_buffer
   db,
   new Oassoc_buffer.oassoc_buffer size_buffer_oassoc_buffer
     (new oassoc_btree db dbname transact fv unv)
-

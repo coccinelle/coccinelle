@@ -10,8 +10,8 @@ y;
 z;
 @@
 
-y := x;
-z := "something"
+y := make_ident x;
+z := make_ident "something"
 
 @c@
 identifier b.y;

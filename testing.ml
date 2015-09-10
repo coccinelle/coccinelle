@@ -28,7 +28,7 @@ let testone prefix x compare_with_expected_flag =
           if List.length res > 1
           then pr2 ("note that not just " ^ cfile ^ " was involved");
           let tmpfile =
-	    sprintf "%s/%s" Filename.temp_dir_name (Common.basename cfile) in
+	    sprintf "%s/%s" Config.get_temp_dir_name (Common.basename cfile) in
           pr2 (sprintf "One file modified. Result is here: %s" tmpfile);
           Common.command2 ("mv "^outfile^" "^tmpfile);
           tmpfile
@@ -56,7 +56,10 @@ let testone prefix x compare_with_expected_flag =
  * (via -testall). Fortunately such bugs are rare.
  *
  *)
-let testall expected_score_file update_score_file =
+(* If extra test is provided, then all failing tests with the standard
+   comparison are considered ok, and only the correct result are subjected to
+   the extra test *)
+let testall_bis extra_test expected_score_file update_score_file =
 
   let score  = empty_score () in
 
@@ -70,7 +73,9 @@ let testall expected_score_file update_score_file =
   begin
     expected_result_files +> List.iter (fun res ->
       let x =
-        if res =~ "\\(.*\\).res" then matched1 res else raise (Impossible 164) in
+        if res =~ "\\(.*\\).res"
+	then matched1 res
+	else raise (Impossible 164) in
       let base = if x =~ "\\(.*\\)_ver[0-9]+" then matched1 x else x in
       let cfile      = "tests/" ^ x ^ ".c" in
       let cocci_file = "tests/" ^ base ^ ".cocci" in
@@ -94,8 +99,19 @@ let testall expected_score_file update_score_file =
             | None -> cfile
           in
 
-          let (correct, diffxs) = Compare_c.compare_default generated expected
-          in
+          let (correct, diffxs) =
+	    Compare_c.compare_default generated expected in
+
+	  let (correct, diffxs) =
+	    match extra_test with
+	      None -> (correct, diffxs)
+	    | Some extra_test ->
+		(match correct with
+		  Compare_c.Correct -> extra_test generated expected
+		| _ ->
+		    (* if there is an extra test, we don't care about the
+		       things that fail on the first test *)
+		    (Compare_c.Correct,[])) in
 
           (* I don't use Compare_c.compare_result_to_string because
            * I want to indent a little more the messages.
@@ -107,8 +123,10 @@ let testall expected_score_file update_score_file =
                 (Str.regexp "\"/tmp/cocci-output.*\"") "<COCCIOUTPUTFILE>" s
               in
               (* on macos the temporary files are stored elsewhere *)
-              let s = Str.global_replace
-                (Str.regexp "\"/var/folders/.*/cocci-output.*\"") "<COCCIOUTPUTFILE>" s
+              let s =
+		Str.global_replace
+                  (Str.regexp "\"/var/folders/.*/cocci-output.*\"")
+		  "<COCCIOUTPUTFILE>" s
               in
               let s =
                 "INCORRECT:" ^ s ^ "\n" ^
@@ -244,6 +262,9 @@ let testall expected_score_file update_score_file =
 
   end
 
+let testall = testall_bis None
+let test_spacing = testall_bis (Some Compare_c.exact_compare)
+
 (* ------------------------------------------------------------------------ *)
 
 type okfailed = Ok | SpatchOK | Failed
@@ -329,14 +350,14 @@ let test_okfailed cocci_file cfiles =
 
               let diff = Compare_c.compare_default outfile expected_res in
               let s1 = (Compare_c.compare_result_to_string diff) in
-              if fst diff =*= Compare_c.Correct
+              if fst diff = Compare_c.Correct
               then push2 (infile ^ (t_to_s Ok), [s1;time_str]) final_files
               else
                 if Common.lfile_exists expected_res2
                 then begin
                   let diff = Compare_c.compare_default outfile expected_res2 in
                   let s2 = Compare_c.compare_result_to_string diff in
-                  if fst diff =*= Compare_c.Correct
+                  if fst diff = Compare_c.Correct
                   then push2 (infile ^ (t_to_s SpatchOK),[s2;s1;time_str])
                       final_files
                   else push2 (infile ^ (t_to_s Failed), [s2;s1;time_str])
@@ -380,12 +401,12 @@ let test_regression_okfailed () =
   let newscore  = Common.empty_score () in
   let oks =
     Common.cmd_to_list ("find . -name \"*.ok\"")
-    ++
+    @
     Common.cmd_to_list ("find . -name \"*.spatch_ok\"")
   in
   let failed = Common.cmd_to_list ("find . -name \"*.failed\"") in
 
-  if null (oks ++ failed)
+  if (oks @ failed) = []
   then failwith "no ok/failed file, you certainly did a make clean"
   else begin
     oks +> List.iter (fun s ->
@@ -432,14 +453,14 @@ let compare_with_expected outfiles =
         in
         let diff = Compare_c.compare_default outfile expected_res in
         let s1 = (Compare_c.compare_result_to_string diff) in
-        if fst diff =*= Compare_c.Correct
+        if fst diff = Compare_c.Correct
         then pr2_no_nl (infile ^ " " ^ s1)
         else
           if Common.lfile_exists expected_res2
           then begin
             let diff = Compare_c.compare_default outfile expected_res2 in
             let s2 = Compare_c.compare_result_to_string diff in
-            if fst diff =*= Compare_c.Correct
+            if fst diff = Compare_c.Correct
             then pr2 (infile ^ " is spatchOK " ^ s2)
             else pr2 (infile ^ " is failed " ^ s2)
           end
@@ -480,6 +501,56 @@ let test_parse_cocci file =
       Printf.printf "glimpse tokens\n";
       pr (String.concat "\nor on glimpse failure\n" x))
 
+let print_link t a b =
+  if not (a = b)
+  then
+    (try Hashtbl.find t (a,b)
+    with Not_found ->
+      (Hashtbl.add t (a,b) ();
+       Printf.printf "  \"%s\" -> \"%s\";\n" b a))
+
+let print_dotted_link dst = function
+    "" -> ()
+  | src -> Printf.printf "  \"%s\" -> \"%s\" [style = dotted];\n" src dst
+
+let rec depto t from = function
+    Ast_cocci.Dep x | Ast_cocci.EverDep x | Ast_cocci.NeverDep x ->
+      print_link t from x
+  | Ast_cocci.AndDep(x,y) | Ast_cocci.OrDep(x,y) ->
+      depto t from x; depto t from y
+  | _ -> ()
+
+let test_rule_dependencies file =
+  let t = Hashtbl.create 101 in
+  if not (file =~ ".*\\.cocci")
+  then pr2 "warning: seems not a .cocci file";
+  Iso_pattern.verbose_iso := false;
+  let (_,xs,fvs,_,_,_,_,_) =
+    Parse_cocci.process file (Some !Config.std_iso) false in
+  Printf.printf "digraph {\n";
+  let prevrule = ref "" in
+  List.iter2
+    (fun def fvs ->
+      match def with
+	Ast_cocci.ScriptRule (nm,_,dep,script_vars,_,_) ->
+	  print_dotted_link nm !prevrule;
+	  prevrule := nm;
+	  depto t nm dep;
+	  List.iter (function (_,(parent,_),_) -> print_link t nm parent)
+	    script_vars
+      | Ast_cocci.InitialScriptRule (_,_,_,_,_)
+      | Ast_cocci.FinalScriptRule (_,_,_,_,_) -> ()
+      | Ast_cocci.CocciRule (nm,(dep,_,_),_,_,_) ->
+	  print_dotted_link nm !prevrule;
+	  prevrule := nm;
+	  depto t nm dep;
+	  List.iter (function (parent,_) -> print_link t nm parent)
+	    (List.concat fvs))
+    xs fvs;
+  Printf.printf "}\n";
+  Printf.printf
+    "// pipe to: ccomps -Cx | dot | gvpack -array_1 | neato -n2 -T pdf\n"
+
 (*****************************************************************************)
 (* to be called by ocaml toplevel, to test. *)
 (*****************************************************************************)
@@ -499,4 +570,3 @@ let one_flow flows =
 
 let one_ctl ctls = List.hd (List.hd ctls)
 *)
-

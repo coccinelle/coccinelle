@@ -2,7 +2,7 @@ int main () {
   char d;
   char c;
   char b;
-  char a; 
+  char a;
   int *d;
   int *c;
   int *b;

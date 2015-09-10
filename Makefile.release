@@ -99,12 +99,12 @@ release-help:
 	@echo "7. Updated some webpages and commit them to svn."
 
 prerelease:
-	@echo "pulling changes from the repository"
+	@echo "Pulling changes from the repository"
 	$(GIT) pull --rebase
 	$(MAKE) fix-expected
 	$(MAKE) distclean KEEP_CONFIG=1
 	@echo "\n\tEdit ./version"
-	@echo "\n\tRun aclocal -I setup, then autoconf"
+	@echo "\n\tRun ./autogen --ignore_localversion"
 	@echo "\tCommit with 'make release'\n"
 	@echo "\t* set the GIT env variable to 'echo' to skip performing any git commands"
 	@echo "\t* changes to files other than ./version will not be committed automatically."
@@ -120,13 +120,12 @@ fix-expected:
 
 release:
 	@echo "Marking version: $(VERSION)"
-	echo -n "$(VERSION)" > ./version
 	$(GIT) add ./version
 	$(GIT) add ./configure
 	$(GIT) add setup/Makefile.in
-	-$(GIT) commit -m "Release $(VERSION)"
-	-$(GIT) tag -a -m "Release $(VERSION)" $(VERSION)
-	$(GIT) push --mirror
+	$(GIT) commit -m "Release $(VERSION)"
+	$(GIT) tag -a -m "Release $(VERSION)" $(VERSION)
+	$(GIT) push origin $(VERSION)
 	$(MAKE) licensify
 	@echo "\n\tLicensify has run: do not commit any files from now on!"
 	@echo "\n\tRun 'make package'\n"

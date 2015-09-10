@@ -73,3 +73,12 @@ GLOBAL_type_conv    = pa_type_conv.cma
 GLOBALOPT_type_conv = pa_type_conv.cma
 FLAGS_type_conv     =
 OPTFLAGS_type_conv  =
+
+# parmap library
+PARMAPDIR        = bundles/parmap/parmap-1.0-rc5-patched/_build
+LOCAL_parmap     = $(PARMAPDIR)/parmap.cma
+LOCALOPT_parmap  = $(PARMAPDIR)/parmap.cmxa
+GLOBAL_parmap    = $(PARMAPDIR)/parmap.cma
+GLOBALOPT_parmap = $(PARMAPDIR)/parmap.cmxa
+FLAGS_parmap     = -cclib -lparmap_stubs
+OPTFLAGS_parmap  = -cclib -lparmap_stubs

@@ -91,8 +91,6 @@
  * reference. *)
 
 let (+>) o f = f o
-let (++) = (@)
-
 exception Timeout
 exception UnixExit of int
 
@@ -154,11 +152,6 @@ let (lines: string -> string list) = fun s ->
 
 let push2 v l =
   l := v :: !l
-
-let null xs = match xs with [] -> true | _ -> false
-
-
-
 
 let debugger = ref false
 
@@ -585,51 +578,6 @@ let debug f = if !_debug then f () else ()
 (* Profiling *)
 (*****************************************************************************)
 
-let get_mem() =
-  command2("grep VmData /proc/" ^ string_of_int (Unix.getpid()) ^ "/status")
-
-let memory_stat () =
-  let stat = Gc.stat() in
-  let conv_mo x = x * 4 / 1000000 in
-  Printf.sprintf "maximal = %d Mo\n" (conv_mo stat.Gc.top_heap_words) ^
-  Printf.sprintf "current = %d Mo\n" (conv_mo stat.Gc.heap_words) ^
-  Printf.sprintf "lives   = %d Mo\n" (conv_mo stat.Gc.live_words)
-  (* Printf.printf "fragments = %d Mo\n" (conv_mo stat.Gc.fragments); *)
-
-let timenow () =
-  "sys:" ^ (string_of_float (Sys.time ())) ^ " seconds" ^
-  ":real:" ^
-    (let tm = Unix.time () +> Unix.gmtime in
-     tm.Unix.tm_min +> string_of_int ^ " min:" ^
-     tm.Unix.tm_sec +> string_of_int ^ ".00 seconds")
-
-let _count1 = ref 0
-let _count2 = ref 0
-let _count3 = ref 0
-let _count4 = ref 0
-let _count5 = ref 0
-
-let count1 () = incr _count1
-let count2 () = incr _count2
-let count3 () = incr _count3
-let count4 () = incr _count4
-let count5 () = incr _count5
-
-let profile_diagnostic_basic () =
-  Printf.sprintf
-    "count1 = %d\ncount2 = %d\ncount3 = %d\ncount4 = %d\ncount5 = %d\n"
-    !_count1 !_count2 !_count3 !_count4 !_count5
-
-
-
-let time_func f =
-  (*   let _ = Timing () in *)
-  let x = f () in
-  (*   let _ = Timing () in *)
-  x
-
-(* ---------------------------------------------------------------------- *)
-
 type prof = PALL | PNONE | PSOME of string list
 let profile = ref PNONE
 let show_trace_profile = ref false
@@ -791,7 +739,7 @@ let (test: string -> unit) = fun s ->
   Printf.printf "%s: %s\n" s
     (if (List.assoc s (!_list_bool)) then "passed" else "failed")
 
-let _ex = example3 "++" ([1;2]++[3;4;5] = [1;2;3;4;5])
+let _ex = example3 "@" ([1;2]@[3;4;5] = [1;2;3;4;5])
 
 (*-------------------------------------------------------------------*)
 (* Regression testing *)
@@ -971,9 +919,9 @@ let (laws2:
 
 (*
 let b = laws "unit" (fun x       -> reverse [x]          = [x]                   )ig
-let b = laws "app " (fun (xs,ys) -> reverse (xs++ys)     = reverse ys++reverse xs)(pg (lg ig)(lg ig))
+let b = laws "app " (fun (xs,ys) -> reverse (xs @ ys)     = reverse ys @ reverse xs)(pg (lg ig)(lg ig))
 let b = laws "rev " (fun xs      -> reverse (reverse xs) = xs                    )(lg ig)
-let b = laws "appb" (fun (xs,ys) -> reverse (xs++ys)     = reverse xs++reverse ys)(pg (lg ig)(lg ig))
+let b = laws "appb" (fun (xs,ys) -> reverse (xs @ ys)     = reverse xs @ reverse ys)(pg (lg ig)(lg ig))
 let b = laws "max"  (fun (x,y)   -> x <= y ==> (max x y  = y)                       )(pg ig ig)
 
 let b = laws2 "max"  (fun (x,y)   -> ((x <= y ==> (max x y  = y)), x <= y))(pg ig ig)
@@ -993,7 +941,7 @@ let b = laws "funs" (fun (f,g,h) -> x <= y ==> (max x y  = y)       )(pg ig ig)
 (*
 let one_of xs = List.nth xs (Random.int (List.length xs))
 let take_one xs =
-  if empty xs then failwith "Take_one: empty list"
+  if xs=[] then failwith "Take_one: empty list"
   else
     let i = Random.int (List.length xs) in
     List.nth xs i, filter_index (fun j _ -> i <> j) xs
@@ -1196,7 +1144,7 @@ let (+!>) refo f = refo := f !refo
 
 let ($)     f g x = g (f x)
 let compose f g x = f (g x)
-(* dont work :( let ( ° ) f g x = f(g(x)) *)
+(* dont work :( let ( \B0 ) f g x = f(g(x)) *)
 
 (* trick to have something similar to the   1 `max` 4   haskell infix notation.
    by Keisuke Nakano on the caml mailing list.
@@ -1437,8 +1385,6 @@ let (|||) a b = try a with _ -> b
  * let unwind_protect f cleanup = ...
  * let finalize f cleanup =  ...
  *)
-
-type error = Error of string
 
 (* sometimes to get help from ocaml compiler to tell me places where
  * I should update, we sometimes need to change some type from pair
@@ -1687,7 +1633,7 @@ let arg_parse2 l msg short_usage_fun =
  * dispatch.
  *
  * Use like this at option place:
- *   (Common.options_of_actions actionref (Test_parsing_c.actions())) ++
+ *   (Common.options_of_actions actionref (Test_parsing_c.actions())) @
  * Use like this at dispatch action place:
  *   | xs when List.mem !action (Common.action_list all_actions) ->
  *        Common.do_action !action xs all_actions
@@ -1746,45 +1692,6 @@ let mk_action_3_arg f =
 
 let mk_action_n_arg f = f
 
-
-(*****************************************************************************)
-(* Equality *)
-(*****************************************************************************)
-
-(* Using the generic (=) is tempting, but it backfires, so better avoid it *)
-
-(* To infer all the code that use an equal, and that should be
- * transformed, is not that easy, because (=) is used by many
- * functions, such as List.find, List.mem, and so on. So the strategy
- * is to turn what you were previously using into a function, because
- * (=) return an exception when applied to a function. Then you simply
- * use ocamldebug to infer where the code has to be transformed.
- *)
-
-(* src: caml mailing list ? *)
-let (=|=) : int    -> int    -> bool = (=)
-let (=<=) : char   -> char   -> bool = (=)
-let (=$=) : string -> string -> bool = (=)
-let (=:=) : bool   -> bool   -> bool = (=)
-
-(* the evil generic (=). I define another symbol to more easily detect
- * it, cos the '=' sign is syntactically overloaded in caml. It is also
- * used to define function.
- *)
-let (=*=) = (=)
-
-(* if really want to forbid to use '='
-let (=) = (=|=)
-*)
-let (=) () () = false
-
-
-
-
-
-
-
-
 (*###########################################################################*)
 (* And now basic types *)
 (*###########################################################################*)
@@ -1797,10 +1704,10 @@ let (=) () () = false
 let (==>) b1 b2 = if b1 then b2 else true (* could use too => *)
 
 (* superseded by another <=> below
-let (<=>) a b = if a =*= b then 0 else if a < b then -1 else 1
+let (<=>) a b = if a = b then 0 else if a < b then -1 else 1
 *)
 
-let xor a b = not (a =*= b)
+let xor a b = not (a = b)
 
 
 (*****************************************************************************)
@@ -1829,7 +1736,7 @@ let string_of_chars cs = cs +> List.map (String.make 1) +> String.concat ""
 (*****************************************************************************)
 
 (* since 3.08, div by 0 raise Div_by_rezo, and not anymore a hardware trap :)*)
-let (/!) x y = if y =|= 0 then (log "common.ml: div by 0"; 0) else x / y
+let (/!) x y = if y = 0 then (log "common.ml: div by 0"; 0) else x / y
 
 (* now in prelude
  * let rec (do_n: int -> (unit -> unit) -> unit) = fun i f ->
@@ -1859,7 +1766,7 @@ let clampf = function
 
 let square x = x *. x
 
-let rec power x n = if n =|= 0 then 1 else x * power x (n-1)
+let rec power x n = if n = 0 then 1 else x * power x (n-1)
 
 let between i min max = i > min && i < max
 
@@ -1872,18 +1779,18 @@ let bitrange x p = let v = power 2 p in between x (-v) v
 (* descendant *)
 let (prime1: int -> int option)  = fun x ->
   let rec prime1_aux n =
-    if n =|= 1 then None
+    if n = 1 then None
     else
-      if (x / n) * n =|= x then Some n else prime1_aux (n-1)
-  in if x =|= 1 then None else if x < 0 then failwith "negative" else prime1_aux (x-1)
+      if (x / n) * n = x then Some n else prime1_aux (n-1)
+  in if x = 1 then None else if x < 0 then failwith "negative" else prime1_aux (x-1)
 
 (* montant, better *)
 let (prime: int -> int option)  = fun x ->
   let rec prime_aux n =
-    if n =|= x then None
+    if n = x then None
     else
-      if (x / n) * n =|= x then Some n else prime_aux (n+1)
-  in if x =|= 1 then None else if x < 0 then failwith "negative" else prime_aux 2
+      if (x / n) * n = x then Some n else prime_aux (n+1)
+  in if x = 1 then None else if x < 0 then failwith "negative" else prime_aux 2
 
 let sum xs = List.fold_left (+) 0 xs
 let product = List.fold_left ( * ) 1
@@ -1891,21 +1798,21 @@ let product = List.fold_left ( * ) 1
 
 let decompose x =
   let rec decompose x =
-  if x =|= 1 then []
+  if x = 1 then []
   else
     (match prime x with
     | None -> [x]
     | Some n -> n::decompose (x / n)
     )
-  in assert (product (decompose x) =|= x); decompose x
+  in assert (product (decompose x) = x); decompose x
 
 let mysquare x = x * x
 let sqr a = a *. a
 
 
 type compare = Equal | Inf | Sup
-let (<=>) a b = if a =*= b then Equal else if a < b then Inf else Sup
-let (<==>) a b = if a =*= b then 0 else if a < b then -1 else 1
+let (<=>) a b = if a = b then Equal else if a < b then Inf else Sup
+let (<==>) a b = if a = b then 0 else if a < b then -1 else 1
 
 type uint = int
 
@@ -1922,15 +1829,15 @@ let int_of_base s base =
     0  (List.rev (list_of_string s))
 
 let int_of_stringbits s = int_of_base s 2
-let _ = example (int_of_stringbits "1011" =|= 1*8 + 1*2 + 1*1)
+let _ = example (int_of_stringbits "1011" = 1*8 + 1*2 + 1*1)
 
 let int_of_octal s = int_of_base s 8
-let _ = example (int_of_octal "017" =|= 15)
+let _ = example (int_of_octal "017" = 15)
 
 (* let int_of_hex s = int_of_base s 16, NONONONO cos 'A' - '0' does not give 10 !! *)
 
 let int_of_all s =
-  if String.length s >= 2 && (String.get s 0 =<= '0') && is_digit (String.get s 1)
+  if String.length s >= 2 && (String.get s 0 = '0') && is_digit (String.get s 1)
   then int_of_octal s else int_of_string s
 
 
@@ -2231,9 +2138,9 @@ let (regexp_match: string -> string -> string) = fun s re ->
 
 
 let split sep s = Str.split (Str.regexp sep) s
-let _ = example (split "/" "" =*= [])
+let _ = example ((split "/" "") = [])
 let join  sep xs = String.concat sep xs
-let _ = example (join "/" ["toto"; "titi"; "tata"] =$= "toto/titi/tata")
+let _ = example (join "/" ["toto"; "titi"; "tata"] = "toto/titi/tata")
 (*
 let rec join str = function
   | [] -> ""
@@ -2252,7 +2159,7 @@ let (split_list_regexp: string -> string list -> (string * string list) list) =
         else split_lr_aux (heading, x::accu) xs
   in
   split_lr_aux ("__noheading__", []) xs
-  +> (fun xs -> if (List.hd xs) =*= ("__noheading__",[]) then List.tl xs else xs)
+  +> (fun xs -> if List.hd xs = ("__noheading__",[]) then List.tl xs else xs)
 
 
 
@@ -2273,7 +2180,7 @@ let all_match re s =
   List.rev !res
 
 let _ = example (all_match "\\(@[A-Za-z]+\\)" "ca va @Et toi @Comment"
-                  =*= ["@Et";"@Comment"])
+                  = ["@Et";"@Comment"])
 
 
 let global_replace_regexp re f_on_substr s =
@@ -2349,19 +2256,16 @@ let quote s = "\"" ^ s ^ "\""
 (* easier to have this to be passed as hof, because ocaml don't have
  * haskell "section" operators
  *)
-let null_string s =
-  s =$= ""
-
 let is_blank_string s =
   s =~ "^\\([ \t]\\)*$"
 
 (* src: lablgtk2/examples/entrycompletion.ml *)
 let is_string_prefix s1 s2 =
   (String.length s1 <= String.length s2) &&
-  (String.sub s2 0 (String.length s1) =$= s1)
+  (String.sub s2 0 (String.length s1) = s1)
 
 let plural i s =
-  if i =|= 1
+  if i = 1
   then Printf.sprintf "%d %s" i s
   else Printf.sprintf "%d %ss" i s
 
@@ -2423,7 +2327,7 @@ let matrix_distance s1 s2 =
   let m = (String.length s2) in
   let mat = Array.make_matrix (n+1) (m+1) 0 in
   let t i j =
-    if String.get s1 (i-1) =<= String.get s2 (j-1)
+    if String.get s1 (i-1) = String.get s2 (j-1)
     then 0
     else 1
   in
@@ -2449,8 +2353,8 @@ let edit_distance s1 s2 =
 
 
 let test = edit_distance "vintner" "writers"
-let _ = assert (edit_distance "winter" "winter" =|= 0)
-let _ = assert (edit_distance "vintner" "writers" =|= 5)
+let _ = assert (edit_distance "winter" "winter" = 0)
+let _ = assert (edit_distance "vintner" "writers" = 5)
 
 
 (*****************************************************************************)
@@ -2475,8 +2379,8 @@ let (filesuffix: filename -> string) = fun s ->
 let (fileprefix: filename -> string) = fun s ->
   (try regexp_match s "\\(.+\\)\\.\\([a-zA-Z0-9_]+\\)?$" with _ ->  s)
 
-let _ = example (filesuffix "toto.c" =$= "c")
-let _ = example (fileprefix "toto.c" =$= "toto")
+let _ = example (filesuffix "toto.c" = "c")
+let _ = example (fileprefix "toto.c" = "toto")
 
 (*
 assert (s = fileprefix s ^ filesuffix s)
@@ -2532,7 +2436,7 @@ let dbe_of_filename_safe file =
 
 let dbe_of_filename_nodot file =
   let (d,b,e) = dbe_of_filename file in
-  let d = if d =$= "." then "" else d in
+  let d = if d = "." then "" else d in
   d,b,e
 
 
@@ -2541,7 +2445,7 @@ let dbe_of_filename_nodot file =
 
 let replace_ext file oldext newext =
   let (d,b,e) = dbe_of_filename file in
-  assert(e =$= oldext);
+  assert(e = oldext);
   filename_of_dbe (d,b,newext)
 
 
@@ -2847,7 +2751,7 @@ let days_in_week_of_day day =
   let tm = Unix.localtime day in
 
   let wday = tm.Unix.tm_wday in
-  let wday = if wday =|= 0 then 6 else wday -1 in
+  let wday = if wday = 0 then 6 else wday -1 in
 
   let mday = tm.Unix.tm_mday in
 
@@ -2915,7 +2819,7 @@ let rough_days_between_dates d1 d2 =
 let _ = example
   (rough_days_between_dates
       (DMY (Day 7, Jan, Year 1977))
-      (DMY (Day 13, Jan, Year 1977)) =*= Days 6)
+      (DMY (Day 13, Jan, Year 1977)) = Days 6)
 
 (* because of rough days, it is a bit buggy, here it should return 1 *)
 (*
@@ -3049,7 +2953,9 @@ let month_before  : float_time -> float_time = fun d ->
 let week_after  : float_time -> float_time = fun d ->
   (d +. (7.0 *. day_secs))
 
-
+let this_year() =
+  let time = Unix.gmtime (Unix.time()) in
+  time.Unix.tm_year + 1900
 
 (*****************************************************************************)
 (* Lines/words/strings *)
@@ -3060,7 +2966,7 @@ let week_after  : float_time -> float_time = fun d ->
  * (enum 0 ((String.length s) - 1) +> List.map (String.get s))
  *)
 
-let _ = example (list_of_string "abcd" =*= ['a';'b';'c';'d'])
+let _ = example (list_of_string "abcd" = ['a';'b';'c';'d'])
 
 (*
 let rec (list_of_stream: ('a Stream.t) -> 'a list) =
@@ -3079,12 +2985,12 @@ let (list_of_string: string -> char list) =
 let (lines_with_nl: string -> string list) = fun s ->
   let rec lines_aux = function
     | [] -> []
-    | [x] -> if x =$= "" then [] else [x ^ "\n"] (* old: [x] *)
+    | [x] -> if x = "" then [] else [x ^ "\n"] (* old: [x] *)
     | x::xs ->
         let e = x ^ "\n" in
         e::lines_aux xs
   in
-  (time_func (fun () -> Str.split_delim (Str.regexp "\n") s)) +> lines_aux
+  (Str.split_delim (Str.regexp "\n") s) +> lines_aux
 
 (* in fact better make it return always complete lines, simplify *)
 (*  Str.split, but lines "\n1\n2\n" don't return the \n and forget the first \n => split_delim better than split *)
@@ -3115,11 +3021,11 @@ let (split_space: string -> string list)   = fun s ->
 (* todo opti ? *)
 let nblines s =
   lines s +> List.length
-let _ = example (nblines "" =|= 0)
-let _ = example (nblines "toto" =|= 1)
-let _ = example (nblines "toto\n" =|= 1)
-let _ = example (nblines "toto\ntata" =|= 2)
-let _ = example (nblines "toto\ntata\n" =|= 2)
+let _ = example (nblines "" = 0)
+let _ = example (nblines "toto" = 1)
+let _ = example (nblines "toto\n" = 1)
+let _ = example (nblines "toto\ntata" = 2)
+let _ = example (nblines "toto\ntata\n" = 2)
 
 (*****************************************************************************)
 (* Process/Files *)
@@ -3173,7 +3079,7 @@ let sleep_little () =
 
 let do_in_fork f =
   let pid = Unix.fork () in
-  if pid =|= 0
+  if pid = 0
   then
     begin
       (* Unix.setsid(); *)
@@ -3201,6 +3107,19 @@ let cmd_to_list command =
   let (l,_) = process_output_to_list2 command in l
 let process_output_to_list = cmd_to_list
 let cmd_to_list_and_status = process_output_to_list2
+
+let file_to_stdout file =
+  let i = open_in file in
+  let rec loop _ =
+    Printf.printf "%s\n" (input_line i); loop() in
+  try loop() with End_of_file -> close_in i
+
+let file_to_stderr file =
+  let i = open_in file in
+  let rec loop _ =
+    Printf.eprintf "%s\n" (input_line i); loop() in
+  try loop() with End_of_file -> close_in i
+
 
 (* now in prelude:
  * let command2 s = ignore(Sys.command s)
@@ -3235,7 +3154,7 @@ let read_file_orig file = cat file +> unlines
 let read_file file =
   let ic = open_in file  in
   let size = in_channel_length ic in
-  let buf = String.create size in
+  let buf = Bytes.create size in
   really_input ic buf 0 size;
   close_in ic;
   buf
@@ -3270,7 +3189,7 @@ let lfile_exists filename =
 	   (Unix.error_message error) fl)
 
 let is_directory file =
-  (Unix.stat file).Unix.st_kind =*= Unix.S_DIR
+  (Unix.stat file).Unix.st_kind = Unix.S_DIR
 
 
 (* src: from chailloux et al book *)
@@ -3287,7 +3206,7 @@ let (readdir_to_kind_list: string -> Unix.file_kind -> string list) =
   +> List.filter (fun s ->
     try
       let stat = Unix.lstat (path ^ "/" ^  s) in
-      stat.Unix.st_kind =*= kind
+      stat.Unix.st_kind = kind
     with e ->
       pr2 ("EXN pb stating file: " ^ s);
       false
@@ -3308,7 +3227,7 @@ let (readdir_to_dir_size_list: string -> (string * int) list) = fun path ->
   +> Array.to_list
   +> map_filter (fun s ->
     let stat = Unix.lstat (path ^ "/" ^  s) in
-    if stat.Unix.st_kind =*= Unix.S_DIR
+    if stat.Unix.st_kind = Unix.S_DIR
     then Some (s, stat.Unix.st_size)
     else None
     )
@@ -3358,12 +3277,12 @@ let cache_computation_robust2
     | Some dir ->
 	let file_cache =
 	  Filename.concat dir
-	    (if String.get file_cache 0 =*= '/'
+	    (if String.get file_cache 0 = '/'
 	    then String.sub file_cache 1 ((String.length file_cache) - 1)
 	    else file_cache) in
 	let dependencies_cache =
 	  Filename.concat dir
-	    (if String.get dependencies_cache 0 =*= '/'
+	    (if String.get dependencies_cache 0 = '/'
 	    then
 	      String.sub dependencies_cache 1
 		((String.length dependencies_cache) - 1)
@@ -3379,7 +3298,7 @@ let cache_computation_robust2
   in
 
   if Sys.file_exists dependencies_cache &&
-     get_value dependencies_cache =*= dependencies
+     get_value dependencies_cache = dependencies
   then
     (*begin
     pr2 ("cache computation reuse " ^ file);*)
@@ -3625,7 +3544,7 @@ let erase_temp_files () =
 let erase_this_temp_file f =
   if not !save_tmp_files then begin
     _temp_files_created :=
-      List.filter (function x -> not (x =$= f)) !_temp_files_created;
+      List.filter (function x -> not (x = f)) !_temp_files_created;
     remove_file f
   end
 
@@ -3712,7 +3631,7 @@ let take_while p = take_until (p $ not)
 
 
 (* now in prelude: let rec drop n xs = ... *)
-let _ = example (drop 3 [1;2;3;4] =*= [4])
+let _ = example (drop 3 [1;2;3;4] = [4])
 
 let rec drop_while p = function
   | [] -> []
@@ -3721,7 +3640,7 @@ let rec drop_while p = function
 
 let rec drop_until p xs =
   drop_while (fun x -> not (p x)) xs
-let _ = example (drop_until (fun x -> x =|= 3) [1;2;3;4;5] =*= [3;4;5])
+let _ = example (drop_until (fun x -> x = 3) [1;2;3;4;5] = [3;4;5])
 
 
 let span p xs = (take_while p xs, drop_while p xs)
@@ -3735,7 +3654,7 @@ let rec (span: ('a -> bool) -> 'a list -> 'a list * 'a list) =
 	let (l1, l2) = span p xs in
 	(x::l1, l2)
       else ([], x::xs)
-let _ = example ((span (fun x -> x <= 3) [1;2;3;4;1;2] =*= ([1;2;3],[4;1;2])))
+let _ = example ((span (fun x -> x <= 3) [1;2;3;4;1;2] = ([1;2;3],[4;1;2])))
 
 let rec groupBy eq l =
   match l with
@@ -3749,7 +3668,7 @@ let rec group_by_mapped_key fkey l =
   | [] -> []
   | x::xs ->
       let k = fkey x in
-      let (xs1,xs2) = List.partition (fun x' -> let k2 = fkey x' in k=*=k2) xs
+      let (xs1,xs2) = List.partition (fun x' -> let k2 = fkey x' in k=k2) xs
       in
       (k, (x::xs1))::(group_by_mapped_key fkey xs2)
 
@@ -3768,7 +3687,7 @@ let (exclude_but_keep_attached: ('a -> bool) -> 'a list -> ('a * 'a list) list)=
    in
    aux_filter [] [] xs
 let _ = example
-  (exclude_but_keep_attached (fun x -> x =|= 3) [3;3;1;3;2;3;3;3] =*=
+  (exclude_but_keep_attached (fun x -> x = 3) [3;3;1;3;2;3;3;3] =
       [(1,[3;3]);(2,[3])])
 
 let group_by_post: ('a -> bool) -> 'a list -> ('a list * 'a) list * 'a list =
@@ -3786,7 +3705,7 @@ let group_by_post: ('a -> bool) -> 'a list -> ('a list * 'a) list * 'a list =
    aux_filter [] [] xs
 
 let _ = example
-  (group_by_post (fun x -> x =|= 3) [1;1;3;2;3;4;5;3;6;6;6] =*=
+  (group_by_post (fun x -> x = 3) [1;1;3;2;3;4;5;3;6;6;6] =
       ([([1;1],3);([2],3);[4;5],3], [6;6;6]))
 
 let (group_by_pre: ('a -> bool) -> 'a list -> 'a list * ('a * 'a list) list)=
@@ -3797,7 +3716,7 @@ let (group_by_pre: ('a -> bool) -> 'a list -> 'a list * ('a * 'a list) list)=
     ys +> List.rev +> List.map (fun (xs, x) -> x, List.rev xs )
 
 let _ = example
-  (group_by_pre (fun x -> x =|= 3) [1;1;3;2;3;4;5;3;6;6;6] =*=
+  (group_by_pre (fun x -> x = 3) [1;1;3;2;3;4;5;3;6;6;6] =
       ([1;1], [(3,[2]); (3,[4;5]); (3,[6;6;6])]))
 
 
@@ -3810,15 +3729,15 @@ let split_when: ('a -> bool) -> 'a list -> 'a list * 'a * 'a list =
         List.rev acc, x, xs
       else loop (x :: acc) xs in
   loop [] l
-let _ = example (split_when (fun x -> x =|= 3)
-                    [1;2;3;4;1;2] =*= ([1;2],3,[4;1;2]))
+let _ = example (split_when (fun x -> x = 3)
+                    [1;2;3;4;1;2] = ([1;2],3,[4;1;2]))
 
 
 (* not so easy to come up with ... used in aComment for split_paragraph *)
 let rec split_gen_when_aux f acc xs =
   match xs with
   | [] ->
-      if null acc
+      if acc=[]
       then []
       else [List.rev acc]
   | (x::xs) ->
@@ -3827,7 +3746,7 @@ let rec split_gen_when_aux f acc xs =
           split_gen_when_aux f (x::acc) xs
       | Some (rest) ->
           let before = List.rev acc in
-          if null before
+          if before=[]
           then split_gen_when_aux f [] rest
           else before::split_gen_when_aux f [] rest
       )
@@ -3842,11 +3761,11 @@ let rec (skip_until: ('a list -> bool) -> 'a list -> 'a list) = fun p xs ->
   if p xs then xs else skip_until p (List.tl xs)
 let _ = example
   (skip_until (function 1::2::xs -> true | _ -> false)
-      [1;3;4;1;2;4;5] =*= [1;2;4;5])
+      [1;3;4;1;2;4;5] = [1;2;4;5])
 
 let rec skipfirst e = function
   | [] -> []
-  | e'::l when e =*= e' -> skipfirst e l
+  | e'::l when e = e' -> skipfirst e l
   | l -> l
 
 
@@ -3856,12 +3775,12 @@ let rec skipfirst e = function
 
 
 let index_list xs =
-  if null xs then [] (* enum 0 (-1) generate an exception *)
+  if xs=[] then [] (* enum 0 (-1) generate an exception *)
   else zip xs (enum 0 ((List.length xs) -1))
 
 let index_list_and_total xs =
   let total = List.length xs in
-  if null xs then [] (* enum 0 (-1) generate an exception *)
+  if xs=[] then [] (* enum 0 (-1) generate an exception *)
   else zip xs (enum 0 ((List.length xs) -1))
     +> List.map (fun (a,b) -> (a,b,total))
 
@@ -3891,16 +3810,11 @@ let head_middle_tail xs =
 let _ = assert_equal (head_middle_tail [1;2;3]) (1, [2], 3)
 let _ = assert_equal (head_middle_tail [1;3]) (1, [], 3)
 
-(* now in prelude
- * let (++) = (@)
- *)
-
-(* let (++) = (@), could do that, but if load many times the common, then pb *)
 (* let (++) l1 l2 = List.fold_right (fun x acc -> x::acc) l1 l2 *)
 
 let remove x xs =
   let newxs = List.filter (fun y -> y <> x) xs in
-  assert (List.length newxs =|= List.length xs - 1);
+  assert (List.length newxs = List.length xs - 1);
   newxs
 
 
@@ -4005,8 +3919,6 @@ let rec removelast = function
   | e::l -> e :: removelast l
 
 let remove x = List.filter (fun y -> y != x)
-let empty list = null list
-
 
 let rec inits = function
   | [] -> [[]]
@@ -4050,7 +3962,7 @@ let acc_map f l =
 
 
 let rec (generate: int -> 'a -> 'a list) = fun i el ->
-  if i =|= 0 then []
+  if i = 0 then []
   else el::(generate (i-1) el)
 
 let rec uniq = function
@@ -4058,7 +3970,7 @@ let rec uniq = function
   | e::l -> if List.mem e l then uniq l else e :: uniq l
 
 let has_no_duplicate xs =
-  List.length xs =|= List.length (uniq xs)
+  List.length xs = List.length (uniq xs)
 let is_set_as_list = has_no_duplicate
 
 
@@ -4072,13 +3984,13 @@ let rec get_duplicates xs =
 
 let rec all_assoc e = function
   | [] -> []
-  | (e',v) :: l when e=*=e' -> v :: all_assoc e l
+  | (e',v) :: l when e=e' -> v :: all_assoc e l
   | _ :: l -> all_assoc e l
 
 let prepare_want_all_assoc l =
   List.map (fun n -> n, uniq (all_assoc n l)) (uniq (List.map fst l))
 
-let rotate list = List.tl list ++ [(List.hd list)]
+let rotate list = List.tl list @ [(List.hd list)]
 
 let or_list  = List.fold_left (||) false
 let and_list = List.fold_left (&&) true
@@ -4088,7 +4000,7 @@ let rec (return_when: ('a -> 'b option) -> 'a list -> 'b) = fun p -> function
   | x::xs -> (match p x with None -> return_when p xs | Some b -> b)
 
 let rec splitAt n xs =
-  if n =|= 0 then ([],xs)
+  if n = 0 then ([],xs)
   else
     (match xs with
     | []      -> ([],[])
@@ -4098,11 +4010,11 @@ let rec splitAt n xs =
 let pack n xs =
   let rec pack_aux l i = function
     | [] -> failwith "not on a boundary"
-    | [x] -> if i =|= n then [l++[x]] else failwith "not on a boundary"
+    | [x] -> if i = n then [l @ [x]] else failwith "not on a boundary"
     | x::xs ->
-        if i =|= n
-        then (l++[x])::(pack_aux [] 1 xs)
-        else pack_aux (l++[x]) (i+1) xs
+        if i = n
+        then (l @ [x])::(pack_aux [] 1 xs)
+        else pack_aux (l @ [x]) (i+1) xs
   in
   pack_aux [] 1 xs
 
@@ -4168,14 +4080,14 @@ let iter_with_before_after f xs =
 (* kind of cartesian product of x*x  *)
 let rec (get_pair: ('a list) -> (('a * 'a) list)) = function
   | [] -> []
-  | x::xs -> (List.map (fun y -> (x,y)) xs) ++ (get_pair xs)
+  | x::xs -> (List.map (fun y -> (x,y)) xs) @ (get_pair xs)
 
 
 (* retourne le rang dans une liste d'un element *)
 let rang elem liste =
   let rec rang_rec elem accu = function
     | []   -> raise Not_found
-    | a::l -> if a =*= elem then accu
+    | a::l -> if a = elem then accu
     else rang_rec elem (accu+1) l in
   rang_rec elem 1 liste
 
@@ -4216,7 +4128,7 @@ let rec uncons_permut xs =
   indexed +> List.map (fun (x, pos) -> (x, pos),  remove_elem_pos pos xs)
 let _ =
   example
-    (uncons_permut ['a';'b';'c'] =*=
+    (uncons_permut ['a';'b';'c'] =
      [('a', 0),  ['b';'c'];
       ('b', 1),  ['a';'c'];
       ('c', 2),  ['a';'b']
@@ -4236,7 +4148,7 @@ let rec uncons_permut_lazy xs =
 let rec map_flatten f l =
   let rec map_flatten_aux accu = function
     | [] -> accu
-    | e :: l -> map_flatten_aux (List.rev (f e) ++ accu) l
+    | e :: l -> map_flatten_aux (List.rev (f e) @ accu) l
   in List.rev (map_flatten_aux [] l)
 
 
@@ -4272,7 +4184,7 @@ let pack_sorted same xs =
 	  if same (List.hd cur) y then pack_s_aux (y::cur, rest) ys
 	  else pack_s_aux ([y], cur::rest) ys
     in pack_s_aux ([List.hd xs],[]) (List.tl xs) +> List.rev
-let test = pack_sorted (=*=) [1;1;1;2;2;3;4]
+let test = pack_sorted (=) [1;1;1;2;2;3;4]
 
 
 let rec keep_best f =
@@ -4319,8 +4231,8 @@ let sort_by_key_highfirst xs =
 let sort_by_key_lowfirst xs =
   sort_prof (fun (k1,v1) (k2,v2) -> compare k1 k2) xs
 
-let _ = example (sort_by_key_lowfirst [4, (); 7,()] =*= [4,(); 7,()])
-let _ = example (sort_by_key_highfirst [4,(); 7,()] =*= [7,(); 4,()])
+let _ = example (sort_by_key_lowfirst [4, (); 7,()] = [4,(); 7,()])
+let _ = example (sort_by_key_highfirst [4,(); 7,()] = [7,(); 4,()])
 
 
 let sortgen_by_key_highfirst xs =
@@ -4350,7 +4262,7 @@ let rec realCombinaison = function
   | a::l  ->
       let res  = realCombinaison l in
       let res2 = List.map (function x -> a::x) res in
-      res2 ++ res ++ [[a]]
+      res2 @ res @ [[a]]
 
 (* genere toutes les combinaisons possible de paire      *)
 (* par example combinaison [1;2;4] -> [1, 2; 1, 4; 2, 4] *)
@@ -4358,7 +4270,7 @@ let rec combinaison = function
   | [] -> []
   | [a] -> []
   | [a;b] -> [(a, b)]
-  | a::b::l -> (List.map (function elem -> (a, elem)) (b::l)) ++
+  | a::b::l -> (List.map (function elem -> (a, elem)) (b::l)) @
      (combinaison (b::l))
 
 (*----------------------------------*)
@@ -4493,8 +4405,8 @@ let ex_columns1 =
     [1;4;7];
     [2;5;8];
   ]
-let _ = example (rows_of_matrix ex_matrix1 =*= ex_rows1)
-let _ = example (columns_of_matrix ex_matrix1 =*= ex_columns1)
+let _ = example (rows_of_matrix ex_matrix1 = ex_rows1)
+let _ = example (columns_of_matrix ex_matrix1 = ex_columns1)
 
 
 (*****************************************************************************)
@@ -4587,9 +4499,13 @@ let ($=$) = equal_set
 (* as $+$ but do not check for memberness, allow to have set of func *)
 let ($@$) = fun a b -> a @ b
 
-let rec nub = function
-    [] -> []
-  | x::xs -> if List.mem x xs then nub xs else x::(nub xs)
+let rec nub l =
+  let l = List.sort compare l in
+  let rec loop = function
+      [] -> []
+    | x::((y::_) as xs) when x = y -> loop xs
+    | x::xs -> x :: loop xs in
+  loop l
 
 (*****************************************************************************)
 (* Set as normal list *)
@@ -4662,7 +4578,7 @@ type ('a,'b) assoc  = ('a * 'b) list
 let (assoc_to_function: ('a, 'b) assoc -> ('a -> 'b)) = fun xs ->
   xs +> List.fold_left (fun acc (k, v) ->
     (fun k' ->
-      if k =*= k' then v else acc k'
+      if k = k' then v else acc k'
     )) (fun k -> failwith "no key in this assoc")
 (* simpler:
 let (assoc_to_function: ('a, 'b) assoc -> ('a -> 'b)) = fun xs ->
@@ -4714,7 +4630,7 @@ let (lookup_list2: 'a -> ('a , 'b) assoc list -> ('b * int)) = fun el xxs ->
   in lookup_l_aux 0 xxs
 
 let _ = example
-  (lookup_list2 "c" [["a",1;"b",2];["a",1;"b",3];["a",1;"c",7]] =*= (7,2))
+  (lookup_list2 "c" [["a",1;"b",2];["a",1;"b",3];["a",1;"c",7]] = (7,2))
 
 
 let assoc_option  k l =
@@ -4787,7 +4703,7 @@ let _  =
   let h = Hashtbl.create 101 in
   Hashtbl.add h "toto" 1;
   Hashtbl.add h "toto" 1;
-  assert(hash_to_list h =*= ["toto",1; "toto",1])
+  assert(hash_to_list h = ["toto",1; "toto",1])
 
 
 let hfind_default key value_if_not_found h =
@@ -4857,7 +4773,7 @@ let group_assoc_bykey_eff xs =
 let test_group_assoc () =
   let xs = enum 0 10000 +> List.map (fun i -> i_to_s i, i) in
   let xs = ("0", 2)::xs in
-(*    let _ys = xs +> Common.groupBy (fun (a,resa) (b,resb) -> a =$= b)  *)
+(*    let _ys = xs +> Common.groupBy (fun (a,resa) (b,resb) -> a = b)  *)
   let ys = xs +> group_assoc_bykey_eff
   in
   pr2_gen ys
@@ -5152,20 +5068,20 @@ let (add_node: 'a -> 'a graph -> 'a graph) = fun node (nodes, arcs) ->
 let (del_node: 'a -> 'a graph -> 'a graph) = fun node (nodes, arcs) ->
   (nodes $-$ set [node], arcs)
 (* could do more job:
-  let _ = assert (successors node (nodes, arcs) = empty) in
+  let _ = assert (successors node (nodes, arcs) = []) in
    +> List.filter (fun (src, dst) -> dst != node))
 *)
 let (add_arc: ('a * 'a) -> 'a graph -> 'a graph) = fun arc (nodes, arcs) ->
   (nodes, set [arc] $+$ arcs)
 
 let (del_arc: ('a * 'a) -> 'a graph -> 'a graph) = fun arc (nodes, arcs) ->
-  (nodes, arcs +> List.filter (fun a -> not (arc =*= a)))
+  (nodes, arcs +> List.filter (fun a -> not (arc = a)))
 
 let (successors: 'a -> 'a graph -> 'a set) = fun x (nodes, arcs) ->
-  arcs +> List.filter (fun (src, dst) -> src =*= x) +> List.map snd
+  arcs +> List.filter (fun (src, dst) -> src = x) +> List.map snd
 
 let (predecessors: 'a -> 'a graph -> 'a set) = fun x (nodes, arcs) ->
-  arcs +> List.filter (fun (src, dst) -> dst =*= x) +> List.map fst
+  arcs +> List.filter (fun (src, dst) -> dst = x) +> List.map fst
 
 let (nodes: 'a graph -> 'a set) = fun (nodes, arcs) -> nodes
 
@@ -5186,12 +5102,12 @@ let empty_graph = ([], [])
 (*
 let (add_arcs_toward: int -> (int list) -> 'a graph -> 'a graph) = fun i xs ->
   function
-    (nodes, arcs) -> (nodes, (List.map (fun j -> (j,i) ) xs)++arcs)
+    (nodes, arcs) -> (nodes, (List.map (fun j -> (j,i) ) xs) @ arcs)
 let (del_arcs_toward: int -> (int list) -> 'a graph -> 'a graph)= fun i xs g ->
     List.fold_left (fun acc el -> del_arc (el, i) acc) g xs
 let (add_arcs_from: int -> (int list) -> 'a graph -> 'a graph) = fun i xs ->
  function
-    (nodes, arcs) -> (nodes, (List.map (fun j -> (i,j) ) xs)++arcs)
+    (nodes, arcs) -> (nodes, (List.map (fun j -> (i,j) ) xs) @ arcs)
 
 
 let (del_node: (int * 'node) -> 'node graph -> 'node graph) = fun node ->
@@ -5299,14 +5215,11 @@ let find = List.find
 let exists = List.exists
 let forall = List.for_all
 let big_union f xs = xs +> map f +> fold union_set empty_set
-(* let empty = [] *)
-let empty_list = []
 let sort = List.sort
 let length = List.length
-(* in prelude now: let null xs = match xs with [] -> true | _ -> false *)
 let head = List.hd
 let tail = List.tl
-let is_singleton = fun xs -> List.length xs =|= 1
+let is_singleton = fun xs -> List.length xs = 1
 
 let tail_map f l = (* tail recursive map, using rev *)
   let rec loop acc = function
@@ -5366,7 +5279,7 @@ let (write_ppm: int -> int -> (pixel list) -> string -> unit) = fun
     end
 
 let test_ppm1 () = write_ppm 100 100
-    ((generate (50*100) (1,45,100)) ++ (generate (50*100) (1,1,100)))
+    ((generate (50*100) (1,45,100)) @ (generate (50*100) (1,1,100)))
     "img.ppm"
 
 (*****************************************************************************)
@@ -5516,7 +5429,7 @@ let (info_from_charpos2: int -> filename -> (int * int * string)) =
   let rec charpos_to_pos_aux last_valid =
     let s =
       try Some (input_line chan)
-      with End_of_file when charpos =|= last_valid -> None in
+      with End_of_file when charpos = last_valid -> None in
     incr linen;
     match s with
       Some s ->
@@ -5545,7 +5458,7 @@ let full_charpos_to_pos2 = fun filename ->
 
   let size = (filesize filename + 2) in
 
-    let arr = Array.create size  (0,0) in
+    let arr = Array.make size  (0,0) in
 
     let chan = open_in filename in
 
@@ -5588,63 +5501,6 @@ let complete_parse_info filename table x =
     file = filename;
     line   = fst (table.(x.charpos));
     column = snd (table.(x.charpos));
-  }
-
-
-
-let full_charpos_to_pos_large2 = fun filename ->
-
-  let size = (filesize filename + 2) in
-
-    (* old: let arr = Array.create size  (0,0) in *)
-    let arr1 = Bigarray.Array1.create
-      Bigarray.int Bigarray.c_layout size in
-    let arr2 = Bigarray.Array1.create
-      Bigarray.int Bigarray.c_layout size in
-    Bigarray.Array1.fill arr1 0;
-    Bigarray.Array1.fill arr2 0;
-
-    let chan = open_in filename in
-
-    let charpos   = ref 0 in
-    let line  = ref 0 in
-
-    let rec full_charpos_to_pos_aux () =
-       let s = (input_line chan) in
-       incr line;
-
-       (* '... +1 do'  cos input_line dont return the trailing \n *)
-       for i = 0 to (slength s - 1) + 1 do
-         (* old: arr.(!charpos + i) <- (!line, i); *)
-         arr1.{!charpos + i} <- (!line);
-         arr2.{!charpos + i} <- i;
-       done;
-       charpos := !charpos + slength s + 1;
-       full_charpos_to_pos_aux() in
-    begin
-      (try
-	full_charpos_to_pos_aux ();
-      with End_of_file ->
-	for i = !charpos to (* old: Array.length arr *)
-          Bigarray.Array1.dim arr1 - 1 do
-         (* old: arr.(i) <- (!line, 0); *)
-          arr1.{i} <- !line;
-          arr2.{i} <- 0;
-	done;
-	());
-      close_in chan;
-      (fun i -> arr1.{i}, arr2.{i})
-    end
-let full_charpos_to_pos_large a =
-  profile_code "Common.full_charpos_to_pos_large"
-    (fun () -> full_charpos_to_pos_large2 a)
-
-
-let complete_parse_info_large filename table x =
-  { x with
-    file = filename;
-    line   = fst (table (x.charpos));
-    column = snd (table (x.charpos));
   }
 
 (*---------------------------------------------------------------------------*)
@@ -5750,7 +5606,7 @@ let regression_testing_vs newscore bestscore =
               Hashtbl.add newbestscore res Ok
           | Pb x, Pb y ->
               Hashtbl.add newbestscore res (Pb x);
-              if not (x =$= y)
+              if not (x = y)
               then begin
                 Printf.printf
 		  "Semipb: still error but not same error : %s\n" res;
@@ -5787,7 +5643,7 @@ let string_of_score_result v =
 let total_scores score =
   let total = hash_to_list score +> List.length in
   let good  = hash_to_list score +> List.filter
-    (fun (s, v) -> v =*= Ok) +> List.length in
+    (fun (s, v) -> v = Ok) +> List.length in
   good, total
 
 
@@ -5839,7 +5695,7 @@ let rec lookup_env k env =
   | [] -> raise Not_found
   | []::zs -> lookup_env k zs
   | ((k',v)::xs)::zs ->
-      if k =*= k'
+      if k = k'
       then v
       else lookup_env k (xs::zs)
 
@@ -5886,7 +5742,7 @@ let clone_scoped_h_env x =
     scoped_list = x.scoped_list;
   }
 
-let rec lookup_h_env k env =
+let lookup_h_env k env =
   Hashtbl.find env.scoped_h k
 
 let member_h_env_key k env =
@@ -5922,12 +5778,6 @@ let do_in_new_scope_h scoped_env f =
     del_scope_h scoped_env;
     res
   end
-
-(*
-let add_in_scope scoped_env def =
-  let (current, older) = uncons !scoped_env in
-  scoped_env := (def::current)::older
-*)
 
 let add_in_scope_h x (k,v) =
   begin
@@ -6133,7 +5983,7 @@ let main_boilerplate f =
        * Common.debugger will be set in main(), so too late, so
        * have to be quicker
        *)
-      if Sys.argv +> Array.to_list +> List.exists (fun x -> x =$= "-debugger")
+      if Sys.argv +> Array.to_list +> List.exists (fun x -> x = "-debugger")
       then debugger := true;
 
       finalize          (fun ()->
@@ -6227,6 +6077,3 @@ let typing_sux_test () =
 
 (* let (test: 'a osetb -> 'a ocollection) = fun o -> (o :> 'a ocollection) *)
 (* let _ = test (new osetb (Setb.empty)) *)
-
-
-

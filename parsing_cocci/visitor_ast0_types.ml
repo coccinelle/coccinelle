@@ -6,6 +6,8 @@ type ('a,'n) inout = 'a -> ('n * 'a)
 type 'n all_functions =
     {ident : (Ast0.ident,'n) inout;
       expression : (Ast0.expression,'n) inout;
+      assignOp : (Ast0.assignOp,'n) inout;
+      binaryOp : (Ast0.binaryOp,'n) inout;
       typeC : (Ast0.typeC,'n) inout;
       declaration : (Ast0.declaration,'n) inout;
       initialiser : (Ast0.initialiser,'n) inout;
@@ -31,6 +33,8 @@ type ('a,'n) combiner_inout = 'a -> 'n
 type 'n combiner_rec_functions =
     {combiner_rec_ident : (Ast0.ident,'n) combiner_inout;
       combiner_rec_expression : (Ast0.expression,'n) combiner_inout;
+      combiner_rec_assignOp : (Ast0.assignOp,'n) combiner_inout;
+      combiner_rec_binaryOp : (Ast0.binaryOp,'n) combiner_inout;
       combiner_rec_typeC : (Ast0.typeC,'n) combiner_inout;
       combiner_rec_declaration : (Ast0.declaration,'n) combiner_inout;
       combiner_rec_initialiser : (Ast0.initialiser,'n) combiner_inout;
@@ -61,10 +65,12 @@ type 'n combiner_functions =
   {combiner_meta_mcode : (Ast.meta_name,'n) cmcode;
    combiner_string_mcode : (string,'n) cmcode;
    combiner_const_mcode : (Ast.constant,'n) cmcode;
-   combiner_assign_mcode : (Ast.assignOp,'n) cmcode;
+   combiner_simpleAssign_mcode : (Ast0.simpleAssignOp,'n) cmcode;
+   combiner_opAssign_mcode : (Ast.arithOp,'n) cmcode;
    combiner_fix_mcode : (Ast.fixOp,'n) cmcode;
    combiner_unary_mcode : (Ast.unaryOp,'n) cmcode;
-   combiner_binary_mcode : (Ast.binaryOp,'n) cmcode;
+   combiner_arithOp_mcode : (Ast.arithOp,'n) cmcode;
+   combiner_logicalOp_mcode : (Ast.logicalOp,'n) cmcode;
    combiner_cv_mcode : (Ast.const_vol,'n) cmcode;
    combiner_sign_mcode : (Ast.sign,'n) cmcode;
    combiner_struct_mcode : (Ast.structUnion,'n) cmcode;
@@ -78,6 +84,8 @@ type 'n combiner_functions =
    combiner_dotscasefn : (Ast0.case_line Ast0.dots,'n) ccode;
    combiner_identfn : (Ast0.ident,'n) ccode;
    combiner_exprfn : (Ast0.expression,'n) ccode;
+   combiner_assignOpfn : (Ast0.assignOp,'n) ccode;
+   combiner_binaryOpfn : (Ast0.binaryOp,'n) ccode;
    combiner_tyfn : (Ast0.typeC,'n) ccode;
    combiner_initfn : (Ast0.initialiser,'n) ccode;
    combiner_paramfn : (Ast0.parameterTypeDef,'n) ccode;
@@ -96,6 +104,8 @@ type 'a rebuilder_inout = 'a -> 'a
 type rebuilder_rec_functions =
     {rebuilder_rec_ident : Ast0.ident rebuilder_inout;
       rebuilder_rec_expression : Ast0.expression rebuilder_inout;
+      rebuilder_rec_assignOp : Ast0.assignOp rebuilder_inout;
+      rebuilder_rec_binaryOp : Ast0.binaryOp rebuilder_inout;
       rebuilder_rec_typeC : Ast0.typeC rebuilder_inout;
       rebuilder_rec_declaration : Ast0.declaration rebuilder_inout;
       rebuilder_rec_initialiser : Ast0.initialiser rebuilder_inout;
@@ -126,10 +136,12 @@ type rebuilder_functions =
   {rebuilder_meta_mcode : Ast_cocci.meta_name rmcode;
    rebuilder_string_mcode : string rmcode;
    rebuilder_const_mcode : Ast.constant rmcode;
-   rebuilder_assign_mcode : Ast.assignOp rmcode;
+   rebuilder_simpleAssign_mcode : Ast0.simpleAssignOp rmcode;
+   rebuilder_opAssign_mcode : Ast.arithOp rmcode;
    rebuilder_fix_mcode : Ast.fixOp rmcode;
    rebuilder_unary_mcode : Ast.unaryOp rmcode;
-   rebuilder_binary_mcode : Ast.binaryOp rmcode;
+   rebuilder_arithOp_mcode : Ast.arithOp rmcode;
+   rebuilder_logicalOp_mcode : Ast.logicalOp rmcode;
    rebuilder_cv_mcode : Ast.const_vol rmcode;
    rebuilder_sign_mcode : Ast.sign rmcode;
    rebuilder_struct_mcode : Ast.structUnion rmcode;
@@ -143,6 +155,9 @@ type rebuilder_functions =
    rebuilder_dotscasefn : Ast0.case_line Ast0.dots rcode;
    rebuilder_identfn : Ast0.ident rcode;
    rebuilder_exprfn : Ast0.expression rcode;
+   rebuilder_assignOpfn : Ast0.assignOp rcode;
+   rebuilder_binaryOpfn : Ast0.binaryOp rcode;
+
    rebuilder_tyfn : Ast0.typeC rcode;
    rebuilder_initfn : Ast0.initialiser rcode;
    rebuilder_paramfn : Ast0.parameterTypeDef rcode;
@@ -164,10 +179,12 @@ type 'n combiner_rebuilder_functions =
   {combiner_rebuilder_meta_mcode : (Ast_cocci.meta_name,'n) rcmcode;
    combiner_rebuilder_string_mcode : (string,'n) rcmcode;
    combiner_rebuilder_const_mcode : (Ast.constant,'n) rcmcode;
-   combiner_rebuilder_assign_mcode : (Ast.assignOp,'n) rcmcode;
+   combiner_rebuilder_simpleAssign_mcode : (Ast0.simpleAssignOp,'n) rcmcode;
+   combiner_rebuilder_opAssign_mcode : (Ast.arithOp,'n) rcmcode;
    combiner_rebuilder_fix_mcode : (Ast.fixOp,'n) rcmcode;
    combiner_rebuilder_unary_mcode : (Ast.unaryOp,'n) rcmcode;
-   combiner_rebuilder_binary_mcode : (Ast.binaryOp,'n) rcmcode;
+   combiner_rebuilder_arithOp_mcode : (Ast.arithOp,'n) rcmcode;
+   combiner_rebuilder_logicalOp_mcode : (Ast.logicalOp,'n) rcmcode;
    combiner_rebuilder_cv_mcode : (Ast.const_vol,'n) rcmcode;
    combiner_rebuilder_sign_mcode : (Ast.sign,'n) rcmcode;
    combiner_rebuilder_struct_mcode : (Ast.structUnion,'n) rcmcode;
@@ -182,6 +199,8 @@ type 'n combiner_rebuilder_functions =
    combiner_rebuilder_dotscasefn : (Ast0.case_line Ast0.dots,'n) rccode;
    combiner_rebuilder_identfn : (Ast0.ident,'n) rccode;
    combiner_rebuilder_exprfn : (Ast0.expression,'n) rccode;
+   combiner_rebuilder_assignOpfn : (Ast0.assignOp,'n) rccode;
+   combiner_rebuilder_binaryOpfn : (Ast0.binaryOp,'n) rccode;
    combiner_rebuilder_tyfn : (Ast0.typeC,'n) rccode;
    combiner_rebuilder_initfn : (Ast0.initialiser,'n) rccode;
    combiner_rebuilder_paramfn : (Ast0.parameterTypeDef,'n) rccode;

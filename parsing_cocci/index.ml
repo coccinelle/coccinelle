@@ -1,5 +1,5 @@
 (* create an index for each constructor *)
-(* current max is 170 *)
+(* current max is 186 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -97,7 +97,17 @@ let expression e =
   | Ast0.Estars(dots,whencode) -> [40]
   | Ast0.OptExp(exp) -> [41]
   | Ast0.UniqueExp(exp) -> [42]
-  | Ast0.AsExpr _ -> failwith "not possible"
+  | Ast0.AsExpr _  | Ast0.AsSExpr _ -> failwith "not possible"
+
+let assignOp op = match Ast0.unwrap op with
+  | Ast0.SimpleAssign _ -> [180]
+  | Ast0.OpAssign _ -> [181]
+  | Ast0.MetaAssign(_,_,_) -> [182]
+
+let binaryOp op = match Ast0.unwrap op with
+  | Ast0.Arith _ -> [183]
+  | Ast0.Logical _ -> [184]
+  | Ast0.MetaBinary(_,_,_) -> [185]
 
 let typeC t =
   match Ast0.unwrap t with
@@ -106,7 +116,6 @@ let typeC t =
   | Ast0.Signed(sign,ty) -> [129]
   | Ast0.Pointer(ty,star) -> [49]
   | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) -> [131]
-  | Ast0.FunctionType(ty,lp1,params,rp1) -> [132]
   | Ast0.Array(ty,lb,size,rb) -> [50]
   | Ast0.Decimal(dec,lp,length,comma,precision_opt,rp) -> [160]
   | Ast0.EnumName(kind,name) -> [146]
@@ -127,8 +136,9 @@ let declaration d =
   | Ast0.MetaFieldList(name,_,_) -> [152]
   | Ast0.Init(stg,ty,id,eq,exp,sem) -> [54]
   | Ast0.UnInit(stg,ty,id,sem) -> [55]
-  | Ast0.MacroDecl(name,lp,args,rp,sem) -> [137]
-  | Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem) -> [157]
+  | Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) -> [132]
+  | Ast0.MacroDecl(stg,name,lp,args,rp,sem) -> [137]
+  | Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) -> [157]
   | Ast0.TyDecl(ty,sem) -> [116]
   | Ast0.Typedef(stg,ty,id,sem) -> [143]
   | Ast0.DisjDecl(_,decls,_,_) -> [97] (* added after *)
@@ -166,7 +176,7 @@ let parameterTypeDef p =
 
 let statement s =
   match Ast0.unwrap s with
-    Ast0.FunDecl(bef,fninfo,name,lp,params,rp,lbrace,body,rbrace,aft) -> [68]
+    Ast0.FunDecl(bef,fninfo,name,lp,params,va,rp,lbrace,body,rbrace,aft) -> [68]
   | Ast0.Decl(bef,decl) -> [69]
   | Ast0.Seq(lbrace,body,rbrace) -> [70]
   | Ast0.ExprStatement(exp,sem) -> [71]
@@ -191,6 +201,7 @@ let statement s =
   | Ast0.Exp(exp) -> [83]
   | Ast0.TopExp(exp) -> [141]
   | Ast0.Ty(ty) -> [124]
+  | Ast0.TopId(ty) -> [186]
   | Ast0.TopInit(init) -> [146]
   | Ast0.Dots(d,whencode) -> [84]
   | Ast0.Circles(d,whencode) -> [85]

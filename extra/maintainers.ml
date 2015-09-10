@@ -75,10 +75,10 @@ let generate_naive_subsystem_info dirs =
           if List.length dir_elems >= 2 then
             let base = Common.take 2 dir_elems in
             (fun dir_elems' ->
-              List.length dir_elems' >= 2 && Common.take 2 dir_elems' =*= base),
+              List.length dir_elems' >= 2 && Common.take 2 dir_elems' = base),
             base
           else
-            (fun dir_elems' -> dir_elems' =*= dir_elems),
+            (fun dir_elems' -> dir_elems' = dir_elems),
             dir_elems
         in
 
@@ -103,4 +103,3 @@ let check_up_to_date a b  =
   (set2 $-$ set1) +> List.iter (fun s ->
     pr2 ("new directory appeared: " ^ s)
   )
-

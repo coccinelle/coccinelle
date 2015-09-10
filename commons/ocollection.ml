@@ -115,4 +115,3 @@ object(o: 'o)
     match o#view with Cons (e,tl) -> tl | Empty -> failwith "no tail"
 
 end
-

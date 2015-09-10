@@ -57,6 +57,7 @@ let colon = (sp* ":" sp*)
 let percent = (sp* "%" sp*)
 let letter = ['A'-'Z' 'a'-'z' '_']
 let number  = ['0'-'9']*
+let cname = letter (letter | number)*
 
 rule token = parse
   | ("description"|"d") equal (notnl as d) { Description d }
@@ -67,15 +68,20 @@ rule token = parse
   | ("url"        |"u") equal (notnl as u) { Url u }
   | ("limitations"|"l") equal (notnl as l) { Limitations (split_list "|" l) }
   | ("author"|"authors"|"a") equal (notnl as a) { Authors (split_list "|" a) }
+
   (* for naming unnamed rules. e.g. 8:name = ... for the rule on line 8. *)
-  | (number as oldrule) colon (notws as newrule) equal {
+  | (number as oldrule) colon (cname as newrule) equal {
       Rule ((oldrule, Some newrule), cocci_rule lexbuf)
     }
-  | (notws as rulenm) equal {
+
+  (* standard rules with org and report messages *)
+  | (cname as rulenm) equal {
       Rule ((rulenm, None), cocci_rule lexbuf)
     }
+
+  (* comments and whitespace are skipped *)
   | ws | "//" [^ '\n']* { token lexbuf }
-  | "/*"  { comment lexbuf }
+  | "/*" { comment lexbuf }
   | eof { raise Eof}
   | _ { illegal lexbuf }
 

@@ -3,7 +3,7 @@ dnl  run 'automake -acf' to update setup/{install-sh,missing}
 
 dnl  standard initialization (we only use autoconf not automake)
 AC_PREREQ([2.68])
-AC_INIT([coccinelle], m4_esyscmd([cat ./version | tr -d '\n']), [cocci@systeme.lip6.fr], [], [http://coccinelle.lip6.fr/])
+AC_INIT([coccinelle], m4_esyscmd([./version.sh]), [cocci@systeme.lip6.fr], [], [http://coccinelle.lip6.fr/])
 AC_CONFIG_MACRO_DIR([setup])
 AC_CONFIG_AUX_DIR([setup])
 AC_SUBST([CONFIGURE_FLAGS], ["$*"])
@@ -81,15 +81,15 @@ AC_SUBST([PKG_CONFIG],["$COCCI_SRCDIR/setup/fake-subst.sh $PKG_CONFIG_ORIG"])
 
 dnl  ocaml compiler configuration
 AC_PROG_OCAML
-AC_CHECK_OCAMLVERSION([OCAMLATLEAST310],[3.10])
 AC_CHECK_OCAMLVERSION([OCAMLATLEAST311],[3.11])
+AC_CHECK_OCAMLVERSION([OCAMLATLEAST4020],[4.02])
 AC_SUBST([OCAMLCORIG],["$OCAMLC"])
 
 AS_IF([test "x$OCAMLC" = xno -o "x$OCAMLDEP" = xno -o "x$OCAMLDOC" = xno -o "x$OCAMLMKLIB" = xno],
 [dnl
-  AC_MSG_ERROR([You must install the OCaml compiler])
+  AC_MSG_ERROR([It seems a few components of the OCaml distribution could nt be found. Make sure the following tools are installed and in your path: ocamlc, ocamldep, ocamldoc, ocamlmklib.])
 ])
-AS_IF([test "x$OCAMLATLEAST310" = xno],[AC_MSG_NOTICE([a more recent OCaml installation may be required])])
+AS_IF([test "x$OCAMLATLEAST311" = xno],[AC_MSG_NOTICE([a more recent OCaml installation may be required])])
 
 dnl  ocaml tools
 AC_PROG_CAMLP4
@@ -143,6 +143,7 @@ AC_COCCI_INIT_PKG_EMPTY([dynlink])
 AC_COCCI_INIT_PKG_EMPTY([pcre])
 AC_COCCI_INIT_PKG_EMPTY([pycaml])
 AC_COCCI_INIT_PKG_EMPTY([camlp4])
+AC_COCCI_INIT_PKG_EMPTY([parmap])
 
 dnl  required ocaml packages
 AC_MSG_NOTICE([the following OCaml packages should be provided by your ocaml installation])
@@ -155,6 +156,7 @@ dnl  required modules (Some are available locally too)
 AC_REQ_COCCI_EXTPKG([dynlink])
 AC_REQ_COCCI_EXTPKG([camlp4])
 AC_REQ_COCCI_EXTPKG([menhirLib])
+AC_REQ_COCCI_EXTPKG([parmap])
 
 
 dnl  AC_CACHE_SAVE
@@ -388,7 +390,7 @@ dnl  backwards compatibility
 dnl
 
 dnl  defines some variables needed by the Make infrastructure
-AC_SUBST(SHAREDIR,["${prefix}/share/coccinelle"])
+AC_SUBST(LIBDIR,["${libdir}/coccinelle"])
 
 AS_IF([test "x$enable_python" != xno],
 [dnl
@@ -414,6 +416,23 @@ AS_IF([test "x$OCAMLATLEAST311" = xyes -a "x$enable_ocaml" = xyes -a "x$OCAMLOPT
 [dnl
   AC_SUBST([DYNLINK_IS_NATIVE], [false])
 ])
+
+AS_IF([test "x$OCAMLATLEAST4020" = xno  ],
+[dnl
+  AC_SUBST([COMPILE_EMBEDDED_BYTES_MODULE], [yes])
+],
+[dnl
+  AC_SUBST([COMPILE_EMBEDDED_BYTES_MODULE], [no])
+])
+
+AS_IF([test "x$OCAMLATLEAST4020" = xno  ],
+[dnl
+  AC_SUBST([GET_TEMP_DIR_NAME_EXPR], ["Filename.temp_dir_name"])
+],
+[dnl
+  AC_SUBST([GET_TEMP_DIR_NAME_EXPR], ["(Filename.get_temp_dir_name ())"])
+])
+
 
 dnl  in case of the compilation of the manual
 AC_COCCI_TOOL([PDFLATEX],[pdflatex],[$COCCI_SRCDIR/setup/fake-pdflatex.sh pdflatex])
@@ -537,7 +556,6 @@ AC_CONFIG_FILES([
   scripts/spatch.sh
   docs/spatch.1
   myocamlbuild.ml
-
   setup/Makefile
 ])
 
@@ -593,7 +611,7 @@ You may need to set some environment variables so that the python
 libraries are found. The frontend 'spatch' sets the following variables:
 
   \$ export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$prefix/lib
-  \$ export PYTHONPATH=\$PYTHONPATH:$prefix/share/coccinelle/python
+  \$ export PYTHONPATH=\$PYTHONPATH:$libdir/coccinelle/python
 
 EOF
 fi

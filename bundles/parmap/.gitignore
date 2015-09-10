@@ -1,0 +1,13 @@
+parmap-1.0-rc5-patched
+*.a
+*.o
+*.ml*
+*.c
+*.h
+*.so
+_*
+*.cm*
+*.annot
+*.clib
+*build
+ocamlc.where

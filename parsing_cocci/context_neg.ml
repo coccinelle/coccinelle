@@ -23,6 +23,8 @@ let set_mcodekind x mcodekind =
   | Ast0.DotsCaseTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.IdentTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.ExprTag(d) -> Ast0.set_mcodekind d mcodekind
+  | Ast0.AssignOpTag(d) -> Ast0.set_mcodekind d mcodekind
+  | Ast0.BinaryOpTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.ArgExprTag(d) | Ast0.TestExprTag(d) ->
       failwith "not possible - iso only"
   | Ast0.TypeCTag(d) -> Ast0.set_mcodekind d mcodekind
@@ -51,6 +53,8 @@ let set_index x index =
   | Ast0.DotsCaseTag(d) -> Ast0.set_index d index
   | Ast0.IdentTag(d) -> Ast0.set_index d index
   | Ast0.ExprTag(d) -> Ast0.set_index d index
+  | Ast0.AssignOpTag(d) -> Ast0.set_index d index
+  | Ast0.BinaryOpTag(d) -> Ast0.set_index d index
   | Ast0.ArgExprTag(d) | Ast0.TestExprTag(d) ->
       failwith "not possible - iso only"
   | Ast0.TypeCTag(d) -> Ast0.set_index d index
@@ -78,6 +82,8 @@ let get_index = function
   | Ast0.DotsCaseTag(d) -> Index.case_line_dots d
   | Ast0.IdentTag(d) -> Index.ident d
   | Ast0.ExprTag(d) -> Index.expression d
+  | Ast0.AssignOpTag(d) -> Index.assignOp d
+  | Ast0.BinaryOpTag(d) -> Index.binaryOp d
   | Ast0.ArgExprTag(d) | Ast0.TestExprTag(d) ->
       failwith "not possible - iso only"
   | Ast0.TypeCTag(d) -> Index.typeC d
@@ -139,7 +145,7 @@ let collect_plus_lines top =
 	(* cases for everything with extra mcode *)
       | Ast0.Decl((info,bef),_) ->
 	  bind (mcode info bef) (k s)
-      |	Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_,(ainfo,aft)) ->
+      |	Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_,_,(ainfo,aft)) ->
 	  bind (mcode info bef) (bind (k s) (mcode ainfo aft))
       | Ast0.IfThen(_,_,_,_,_,(info,aft,adj))
       | Ast0.IfThenElse(_,_,_,_,_,_,_,(info,aft,adj))
@@ -151,8 +157,9 @@ let collect_plus_lines top =
   let fn =
     V0.flat_combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing
+      mcode mcode
+      donothing donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing donothing
       statement donothing donothing donothing donothing in
   fn.VT0.combiner_rec_top_level top
 
@@ -235,7 +242,7 @@ let option_default = (*Bind(Neutral,[],[],[],[],[])*)
   Recursor(Neutral,[],[],[])
 
 let contains_added_strings info =
-  not (info.Ast0.strings_before = []) or not (info.Ast0.strings_after = [])
+  not (info.Ast0.strings_before = []) || not (info.Ast0.strings_after = [])
 
 let mcode (_,_,info,mcodekind,pos,_) =
   let offset = info.Ast0.pos_info.Ast0.offset in
@@ -440,7 +447,7 @@ let classify is_minus all_marked table code =
 	(* cases for everything with extra mcode *)
       | Ast0.Decl((info,bef),_) ->
 	  bind (nc_mcode ((),(),info,bef,(),-1)) (k s)
-      | Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_,(ainfo,aft)) ->
+      | Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_,_,(ainfo,aft)) ->
 	  (* not sure that the use of start is relevant here *)
 	  let a1 = nc_mcode ((),(),info,bef,(),-1) in
 	  let a2 = nc_mcode ((),(),ainfo,aft,(),-1) in
@@ -470,11 +477,12 @@ let classify is_minus all_marked table code =
 
   let combiner =
     V0.flat_combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode
       (do_nothing Ast0.dotsExpr) (do_nothing Ast0.dotsInit)
       (do_nothing Ast0.dotsParam) (do_nothing Ast0.dotsStmt)
       (do_nothing Ast0.dotsDecl) (do_nothing Ast0.dotsCase)
-      ident expression typeC initialiser param declaration
+      ident expression (do_nothing Ast0.assignOp) (do_nothing Ast0.binaryOp) typeC initialiser param declaration
       statement (do_nothing Ast0.forinfo) case_line string_fragment
       (do_top Ast0.top) in
   combiner.VT0.combiner_rec_top_level code
@@ -487,6 +495,20 @@ the same context children *)
    structure *)
 let equal_mcode (_,_,info1,_,_,_) (_,_,info2,_,_,_) =
   info1.Ast0.pos_info.Ast0.offset = info2.Ast0.pos_info.Ast0.offset
+
+let assignOp_equal_mcode op1 op2 =
+  match (Ast0.unwrap op1, Ast0.unwrap op2) with
+    Ast0.SimpleAssign op1', Ast0.SimpleAssign op2' -> equal_mcode op1' op2'
+  | Ast0.OpAssign op1', Ast0.OpAssign op2' -> equal_mcode op1' op2'
+  | Ast0.MetaAssign(mv1,_,_), Ast0.MetaAssign(mv2,_,_) -> equal_mcode mv1 mv2
+  | _ -> false
+
+let binaryOp_equal_mcode op1 op2 =
+  match (Ast0.unwrap op1, Ast0.unwrap op2) with
+    Ast0.Arith op1', Ast0.Arith op2' -> equal_mcode op1' op2'
+  | Ast0.Logical op1', Ast0.Logical op2' -> equal_mcode op1' op2'
+  | Ast0.MetaBinary(mv1,_,_), Ast0.MetaBinary(mv2,_,_) -> equal_mcode mv1 mv2
+  | _ -> false
 
 let equal_option e1 e2 =
   match (e1,e2) with
@@ -528,7 +550,7 @@ let rec equal_expression e1 e2 =
   | (Ast0.FunCall(_,lp1,_,rp1),Ast0.FunCall(_,lp2,_,rp2)) ->
       equal_mcode lp1 lp2 && equal_mcode rp1 rp2
   | (Ast0.Assignment(_,op1,_,_),Ast0.Assignment(_,op2,_,_)) ->
-      equal_mcode op1 op2
+      assignOp_equal op1 op2
   | (Ast0.Sequence(_,op1,_),Ast0.Sequence(_,op2,_)) ->
       equal_mcode op1 op2
   | (Ast0.CondExpr(_,why1,_,colon1,_),Ast0.CondExpr(_,why2,_,colon2,_)) ->
@@ -536,7 +558,7 @@ let rec equal_expression e1 e2 =
   | (Ast0.Postfix(_,op1),Ast0.Postfix(_,op2)) -> equal_mcode op1 op2
   | (Ast0.Infix(_,op1),Ast0.Infix(_,op2)) -> equal_mcode op1 op2
   | (Ast0.Unary(_,op1),Ast0.Unary(_,op2)) -> equal_mcode op1 op2
-  | (Ast0.Binary(_,op1,_),Ast0.Binary(_,op2,_)) -> equal_mcode op1 op2
+  | (Ast0.Binary(_,op1,_),Ast0.Binary(_,op2,_)) -> binaryOp_equal op1 op2
   | (Ast0.Paren(lp1,_,rp1),Ast0.Paren(lp2,_,rp2)) ->
       equal_mcode lp1 lp2 && equal_mcode rp1 rp2
   | (Ast0.ArrayAccess(_,lb1,_,rb1),Ast0.ArrayAccess(_,lb2,_,rb2)) ->
@@ -574,6 +596,21 @@ let rec equal_expression e1 e2 =
   | (Ast0.UniqueExp(_),Ast0.UniqueExp(_)) -> true
   | _ -> false
 
+and assignOp_equal op1 op2 =
+  match (Ast0.unwrap op1, Ast0.unwrap op2) with
+    | Ast0.SimpleAssign o1, Ast0.SimpleAssign o2 -> equal_mcode o1 o2
+    | Ast0.OpAssign o1, Ast0.OpAssign o2 -> equal_mcode o1 o2
+    | Ast0.MetaAssign(mv1,_,_), Ast0.MetaAssign(mv2,_,_) ->
+      equal_mcode mv1 mv2
+    | _ -> false
+and binaryOp_equal op1 op2 =
+  match (Ast0.unwrap op1, Ast0.unwrap op2) with
+    | Ast0.Arith o1, Ast0.Arith o2 -> equal_mcode o1 o2
+    | Ast0.Logical o1, Ast0.Logical o2 -> equal_mcode o1 o2
+    | Ast0.MetaBinary(mv1,_,_), Ast0.MetaBinary(mv2,_,_) ->
+      equal_mcode mv1 mv2
+    | _ -> false
+
 let rec equal_typeC t1 t2 =
   match (Ast0.unwrap t1,Ast0.unwrap t2) with
     (Ast0.ConstVol(cv1,_),Ast0.ConstVol(cv2,_)) -> equal_mcode cv1 cv2
@@ -595,8 +632,6 @@ let rec equal_typeC t1 t2 =
        equal_mcode lb1 lb2 && equal_mcode rb1 rb2
   | (Ast0.StructUnionName(kind1,_),Ast0.StructUnionName(kind2,_)) ->
       equal_mcode kind1 kind2
-  | (Ast0.FunctionType(ty1,lp1,p1,rp1),Ast0.FunctionType(ty2,lp2,p2,rp2)) ->
-      equal_mcode lp1 lp2 && equal_mcode rp1 rp2
   | (Ast0.StructUnionDef(_,lb1,_,rb1),
      Ast0.StructUnionDef(_,lb2,_,rb2)) ->
        equal_mcode lb1 lb2 && equal_mcode rb1 rb2
@@ -612,6 +647,14 @@ let rec equal_typeC t1 t2 =
   | (Ast0.UniqueType(_),Ast0.UniqueType(_)) -> true
   | _ -> false
 
+let equal_fninfo x y =
+  match (x,y) with
+    (Ast0.FStorage(s1),Ast0.FStorage(s2)) -> equal_mcode s1 s2
+  | (Ast0.FType(_),Ast0.FType(_)) -> true
+  | (Ast0.FInline(i1),Ast0.FInline(i2)) -> equal_mcode i1 i2
+  | (Ast0.FAttr(i1),Ast0.FAttr(i2)) -> equal_mcode i1 i2
+  | _ -> false
+
 let equal_declaration d1 d2 =
   match (Ast0.unwrap d1,Ast0.unwrap d2) with
     (Ast0.MetaDecl(name1,_),Ast0.MetaDecl(name2,_))
@@ -622,11 +665,25 @@ let equal_declaration d1 d2 =
       equal_option stg1 stg2 && equal_mcode eq1 eq2 && equal_mcode sem1 sem2
   | (Ast0.UnInit(stg1,_,_,sem1),Ast0.UnInit(stg2,_,_,sem2)) ->
       equal_option stg1 stg2 && equal_mcode sem1 sem2
-  | (Ast0.MacroDecl(nm1,lp1,_,rp1,sem1),Ast0.MacroDecl(nm2,lp2,_,rp2,sem2))->
+  | (Ast0.FunProto(fninfo1,name1,lp1,p1,va1,rp1,sem1),
+     Ast0.FunProto(fninfo2,name2,lp2,p2,va2,rp2,sem2)) ->
+       let equal_varargs va1 va2 = match (va1,va2) with
+         | None, None -> true
+         | Some (c1, e1), Some (c2, e2) ->
+           equal_mcode c1 c2 && equal_mcode e1 e2
+         | _ -> false in
+       (List.length fninfo1) = (List.length fninfo2) &&
+       List.for_all2 equal_fninfo fninfo1 fninfo2 &&
+       equal_mcode lp1 lp2 && equal_varargs va1 va2 &&
+       equal_mcode rp1 rp2 && equal_mcode sem1 sem2
+  | (Ast0.MacroDecl(stg1,nm1,lp1,_,rp1,sem1),
+     Ast0.MacroDecl(stg2,nm2,lp2,_,rp2,sem2)) ->
+      equal_option stg1 stg2 &&
       equal_mcode lp1 lp2 && equal_mcode rp1 rp2 && equal_mcode sem1 sem2
-  | (Ast0.MacroDeclInit(nm1,lp1,_,rp1,eq1,_,sem1),
-     Ast0.MacroDeclInit(nm2,lp2,_,rp2,eq2,_,sem2))->
-      equal_mcode lp1 lp2 && equal_mcode rp1 rp2 && equal_mcode eq1 eq2
+  | (Ast0.MacroDeclInit(stg1,nm1,lp1,_,rp1,eq1,_,sem1),
+     Ast0.MacroDeclInit(stg2,nm2,lp2,_,rp2,eq2,_,sem2)) ->
+       equal_option stg1 stg2 &&
+       equal_mcode lp1 lp2 && equal_mcode rp1 rp2 && equal_mcode eq1 eq2
 	 && equal_mcode sem1 sem2
   | (Ast0.TyDecl(_,sem1),Ast0.TyDecl(_,sem2)) -> equal_mcode sem1 sem2
   | (Ast0.Ddots(dots1,_),Ast0.Ddots(dots2,_)) -> equal_mcode dots1 dots2
@@ -690,8 +747,8 @@ let equal_parameterTypeDef p1 p2 =
 
 let rec equal_statement s1 s2 =
   match (Ast0.unwrap s1,Ast0.unwrap s2) with
-    (Ast0.FunDecl(_,fninfo1,_,lp1,_,rp1,lbrace1,_,rbrace1,_),
-     Ast0.FunDecl(_,fninfo2,_,lp2,_,rp2,lbrace2,_,rbrace2,_)) ->
+    (Ast0.FunDecl(_,fninfo1,_,lp1,_,_,rp1,lbrace1,_,rbrace1,_),
+     Ast0.FunDecl(_,fninfo2,_,lp2,_,_,rp2,lbrace2,_,rbrace2,_)) ->
        (List.length fninfo1) = (List.length fninfo2) &&
        List.for_all2 equal_fninfo fninfo1 fninfo2 &&
        equal_mcode lp1 lp2 && equal_mcode rp1 rp2 &&
@@ -716,7 +773,7 @@ let rec equal_statement s1 s2 =
      Ast0.For(fr2,lp2,first2,_,sem22,_,rp2,_,_)) ->
        let first =
 	 match (Ast0.unwrap first1,Ast0.unwrap first2) with
-	   (Ast0.ForExp(_,sem1),Ast0.ForExp(_,sem2)) -> 
+	   (Ast0.ForExp(_,sem1),Ast0.ForExp(_,sem2)) ->
 	     equal_mcode sem1 sem2
 	 | (Ast0.ForDecl _,Ast0.ForDecl _) -> true
 	 | _ -> false in
@@ -757,6 +814,7 @@ let rec equal_statement s1 s2 =
   | (Ast0.Exp(_),Ast0.Exp(_)) -> true
   | (Ast0.TopExp(_),Ast0.TopExp(_)) -> true
   | (Ast0.Ty(_),Ast0.Ty(_)) -> true
+  | (Ast0.TopId(_),Ast0.TopId(_)) -> true
   | (Ast0.TopInit(_),Ast0.TopInit(_)) -> true
   | (Ast0.Dots(d1,_),Ast0.Dots(d2,_))
   | (Ast0.Circles(d1,_),Ast0.Circles(d2,_))
@@ -771,14 +829,6 @@ let rec equal_statement s1 s2 =
       equal_mcode prg1 prg2
   | (Ast0.OptStm(_),Ast0.OptStm(_)) -> true
   | (Ast0.UniqueStm(_),Ast0.UniqueStm(_)) -> true
-  | _ -> false
-
-and equal_fninfo x y =
-  match (x,y) with
-    (Ast0.FStorage(s1),Ast0.FStorage(s2)) -> equal_mcode s1 s2
-  | (Ast0.FType(_),Ast0.FType(_)) -> true
-  | (Ast0.FInline(i1),Ast0.FInline(i2)) -> equal_mcode i1 i2
-  | (Ast0.FAttr(i1),Ast0.FAttr(i2)) -> equal_mcode i1 i2
   | _ -> false
 
 let equal_case_line c1 c2 =
@@ -859,8 +909,9 @@ let contextify_all =
 
   V0.flat_combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+    mcode mcode
+    do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+    do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing
 
 let contextify_whencode =
@@ -1003,20 +1054,20 @@ let rec is_init s =
 let rec is_decl s =
   match Ast0.unwrap s with
     Ast0.Decl(_,e) -> true
-  | Ast0.FunDecl(_,_,_,_,_,_,_,_,_,_) -> true
+  | Ast0.FunDecl(_,_,_,_,_,_,_,_,_,_,_) -> true
   | Ast0.Disj(_,stmts,_,_) -> isall is_decl stmts
   | _ -> false
 
 let rec is_fndecl s =
   match Ast0.unwrap s with
-    Ast0.FunDecl(_,_,_,_,_,_,_,_,_,_) -> true
+    Ast0.FunDecl(_,_,_,_,_,_,_,_,_,_,_) -> true
   | Ast0.Disj(_,stmts,_,_) -> isall is_fndecl stmts
   | _ -> false
 
 let rec is_toplevel s =
   match Ast0.unwrap s with
     Ast0.Decl(_,e) -> true
-  | Ast0.FunDecl(_,_,_,_,_,_,_,_,_,_) -> true
+  | Ast0.FunDecl(_,_,_,_,_,_,_,_,_,_,_) -> true
   | Ast0.Disj(_,stmts,_,_) -> isall is_toplevel stmts
   | Ast0.ExprStatement(Some fc,_) ->
       (match Ast0.unwrap fc with
@@ -1064,7 +1115,7 @@ let check_compatible m p =
 	  (function tester ->
 	    let v1 = isonly tester code1 in
 	    let v2 = isonly tester code2 in
-	    if (v1 && not v2) or (!Flag.make_hrule = None && v2 && not v1)
+	    if (v1 && not v2) || (!Flag.make_hrule = None && v2 && not v1)
 	    then fail())
 	  testers;
 	let v1 = isonly is_fndecl code1 in
@@ -1079,13 +1130,13 @@ let check_compatible m p =
 let check_complete m =
    match Ast0.unwrap m with
      Ast0.NONDECL(code) ->
-       if is_exp code or is_ty code
+       if is_exp code || is_ty code
        then
 	 failwith
 	   (Printf.sprintf "invalid minus starting on line %d"
 	      (Ast0.get_line m))
    | Ast0.CODE(code) ->
-       if isonly is_exp code or isonly is_ty code
+       if isonly is_exp code || isonly is_ty code
        then
 	 failwith
            (Printf.sprintf "invalid minus starting on line %d"
@@ -1123,9 +1174,9 @@ let context_neg minus plus =
 	let mend = minfo.Ast0.pos_info.Ast0.logical_end in
 	let pstart = pinfo.Ast0.pos_info.Ast0.logical_start in
 	let pend = pinfo.Ast0.pos_info.Ast0.logical_end in
-	if (iscode m or iscode p) &&
-	  (mend + 1 = pstart or pend + 1 = mstart or (* adjacent *)
-	   (mstart <= pstart && mend >= pstart) or
+	if (iscode m || iscode p) &&
+	  (mend + 1 = pstart || pend + 1 = mstart || (* adjacent *)
+	   (mstart <= pstart && mend >= pstart) ||
 	   (pstart <= mstart && pend >= mstart)) (* overlapping or nested *)
 	then
 	  begin
@@ -1146,7 +1197,7 @@ let context_neg minus plus =
 	    (m,p)::loop(minus,plus)
 	  end
 	else
-	  if not(iscode m or iscode p)
+	  if not(iscode m || iscode p)
 	  then loop(minus,plus)
 	  else
 	    if mstart < pstart

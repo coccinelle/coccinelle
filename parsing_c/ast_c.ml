@@ -351,6 +351,9 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
   | New of (argument wrap2 (* , *) list) option * argument
   | Delete of expression
 
+  (* CPP [defined] operator, e.g. #if defined(A) *)
+  | Defined of name
+
   (* cppext: IfdefExpr TODO *)
 
   (* cppext: normally just expression *)
@@ -384,10 +387,12 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
 
   and unaryOp  = GetRef | DeRef | UnPlus |  UnMinus | Tilde | Not
                  | GetRefLabel (* gccext: GetRefLabel, via &&label notation *)
-  and assignOp = SimpleAssign | OpAssign of arithOp
+  and assignOpbis = SimpleAssign | OpAssign of arithOp
+  and assignOp = assignOpbis wrap
   and fixOp    = Dec | Inc
 
-  and binaryOp = Arith of arithOp | Logical of logicalOp
+  and binaryOpbis = Arith of arithOp | Logical of logicalOp
+  and binaryOp = binaryOpbis wrap
 
        and arithOp   =
          | Plus | Minus | Mul | Div | Mod
@@ -549,9 +554,11 @@ and declaration =
   | DeclList of onedecl wrap2 (* , *) list wrap (* ; fakestart sto *)
   (* cppext: *)
     (* bool is true if there is a ; at the end *)
-  | MacroDecl of (string * argument wrap2 list * bool) wrap (* fakestart *)
+  | MacroDecl of
+      (storagebis * string * argument wrap2 list * bool) wrap (* fakestart *)
   | MacroDeclInit of
-      (string * argument wrap2 list * initialiser) wrap (* fakestart *)
+      (storagebis * string * argument wrap2 list * initialiser)
+	wrap (* fakestart *)
 
      and onedecl =
        { v_namei: (name * v_init) option;
@@ -686,10 +693,35 @@ and pragmainfo =
 and ifdef_directive = (* or and 'a ifdefed = 'a list wrap *)
   | IfdefDirective of (ifdefkind * matching_tag) wrap
   and ifdefkind =
-    | Ifdef (* todo? of string ? of formula_cpp ? *)
-    | IfdefElseif (* same *)
-    | IfdefElse (* same *)
+    | Ifdef of ifdef_guard
+    | IfdefElseif of ifdef_guard
+    | IfdefElse
     | IfdefEndif
+    (** Guards for #if conditionals
+     *
+     * Having #if guards in the AST is useful for cpp-aware analyses, or to
+     * later add support for matching against #ifS.
+     *
+     * General #if guards are stored as a string in a [Gif_str] constructor.
+     * A traversal of the syntax tree with a parsing function would transform
+     * these into the parsed [Gif] form.
+     *
+     * NOTE that there is no actually guaranteee that a traversal will
+     * eliminate all [Gif_str] constructors, since the parsing function may
+     * fail.
+     *
+     * See [Parsing #if guards] to know why this design choice.
+     *
+     * @author Iago Abal
+     *)
+  and ifdef_guard = Gifdef  of macro_symbol (* #ifdef *)
+                  | Gifndef of macro_symbol (* #ifndef *)
+                  | Gif_str of string       (* #if <string to be parsed> *)
+                  | Gif     of expression   (* #if *)
+                  | Gnone   (* ignored #if condition: TIfdefBool,
+                             * TIfdefMisc, and TIfdefVersion
+                             *)
+  and macro_symbol = string
   (* set in Parsing_hacks.set_ifdef_parenthize_info. It internally use
    * a global so it means if you parse the same file twice you may get
    * different id. I try now to avoid this pb by resetting it each
@@ -699,7 +731,33 @@ and ifdef_directive = (* or and 'a ifdefed = 'a list wrap *)
     IfdefTag of (int (* tag *) * int (* total with this tag *))
 
 
-
+(* Note [Parsing #if guards]
+ *
+ * What I wanted to do:
+ * The lexer should tokenize the #if guard, we use the TDefEOL-trick to
+ * mark the end of the guard, and finally we add a rule to the ocamlyacc
+ * parser.
+ *
+ * Problem:
+ * The [lookahead] pass in [Parsing_hacks] assumes that an #if header is
+ * a single token. The above solution breaks that assumption. So, when an
+ * #if appears in some weird position, [lookahead] will comment out the #if
+ * token, but not any subsequent token of the guard. It seems doable to
+ * modify [lookahead] to handle this new situation, but this seems a complex
+ * and delicate function to touch, and (who knows) we may break something
+ * else. Also note that [TCommentCpp] only takes one [info], so we would
+ * need to combine all the [info]s of an #if into one.
+ *
+ * What I finally did:
+ * The safest way I found is to save the #if guard in the [TIfdef] token as
+ * a (yet-to-be-parsed) string. This is enough to reason about, or match
+ * against, simple and most-common #ifdef and #ifndef conditionals. (Rough
+ * estimate: 80% of #if conditionals in Linux are #if[n]def.) But the
+ * AST for #if guards can still be easily obtained by traversing the syntax
+ * tree with a parsing function.
+ *
+ * @author Iago Abal
+ *)
 
 
 (* ------------------------------------------------------------------------- *)
@@ -736,8 +794,7 @@ and program = toplevel list
  *)
 and metavars_binding = (Ast_cocci.meta_name, metavar_binding_kind) assoc
   and metavar_binding_kind =
-  | MetaIdVal        of string *
-	                Ast_cocci.meta_name list (* negative constraints *)
+  | MetaIdVal        of string
   | MetaFuncVal      of string
   | MetaLocalFuncVal of string
 
@@ -757,7 +814,8 @@ and metavars_binding = (Ast_cocci.meta_name, metavar_binding_kind) assoc
   | MetaStmtVal      of statement
   | MetaFmtVal       of string_format
   | MetaFragListVal  of string_fragment list
-
+  | MetaAssignOpVal  of assignOp
+  | MetaBinaryOpVal  of binaryOp
   (* Could also be in Lib_engine.metavars_binding2 with the ParenVal,
    * because don't need to have the value for a position in the env of
    * a '+'. But ParenVal or LabelVal are used only by CTL, they are not
@@ -767,7 +825,7 @@ and metavars_binding = (Ast_cocci.meta_name, metavar_binding_kind) assoc
   | MetaPosValList   of
       (Common.filename * string (*element*) * posl * posl) list (* min, max *)
   | MetaListlenVal   of int
-
+  | MetaNoVal
 
 (*****************************************************************************)
 (* C comments *)
@@ -1014,9 +1072,9 @@ let compare_pos ii1 ii2 =
     (Real p1, Real p2) ->
       compare p1.Common.charpos p2.Common.charpos
   | (Virt (p1,_), Real p2) ->
-      if (compare p1.Common.charpos p2.Common.charpos) =|= (-1) then (-1) else 1
+      if (compare p1.Common.charpos p2.Common.charpos) = (-1) then (-1) else 1
   | (Real p1, Virt (p2,_)) ->
-      if (compare p1.Common.charpos p2.Common.charpos) =|= 1 then 1 else (-1)
+      if (compare p1.Common.charpos p2.Common.charpos) = 1 then 1 else (-1)
   | (Virt (p1,o1), Virt (p2,o2)) ->
       let poi1 = p1.Common.charpos in
       let poi2 = p2.Common.charpos in
@@ -1026,7 +1084,7 @@ let compare_pos ii1 ii2 =
       |	x -> x
 
 let equal_posl (l1,c1) (l2,c2) =
-  (l1 =|= l2) && (c1 =|= c2)
+  (l1 = l2) && (c1 = c2)
 
 let compare_posl (l1,c1) (l2,c2) =
   match l2 - l1 with
@@ -1046,7 +1104,7 @@ let info_to_fixpos ii =
 let is_test (e : expression) =
   let (_,info), _ = e in
   let (_,test) = !info in
-  test =*= Test
+  test = Test
 
 (*****************************************************************************)
 (* Abstract line *)
@@ -1166,7 +1224,7 @@ let rec (split_comma: 'a wrap2 list -> ('a, il) either list) =
   function
   | [] -> []
   | (e, ii)::xs ->
-      if null ii
+      if ii=[]
       then (Left e)::split_comma xs
       else Right ii::Left e::split_comma xs
 
@@ -1261,7 +1319,7 @@ let get_local_ii_of_expr_inlining_ii_of_name e =
   let (ebis,_),ii = e in
   match ebis, ii with
   | Ident name, noii ->
-      assert(null noii);
+      assert (noii = []);
       ii_of_name name
   | RecordAccess   (e, name), ii ->
       ii @ ii_of_name name

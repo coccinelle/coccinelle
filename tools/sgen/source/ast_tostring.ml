@@ -4,7 +4,8 @@ module Ast = Ast_cocci
 (* TOSTRING FUNCTIONS FOR AST_COCCI BASE TYPES *)
 
 (* takes a list of 'a and concatenates it using fn ('a -> string),
- * delimitering with between (string) *)
+ * delimitering with between (string)
+ *)
 let between_tostring between tostring_fn =
   let rec between_tostring' acc between fn = function
     | [] -> acc
@@ -53,29 +54,9 @@ let fix_tostring = function
   | Ast.Dec -> "--"
   | Ast.Inc -> "++"
 
-let arith_tostring = function
-  | Ast.Plus -> "+"
-  | Ast.Minus -> "-"
-  | Ast.Mul -> "*"
-  | Ast.Div -> "/"
-  | Ast.Min -> "<?"
-  | Ast.Max -> ">?"
-  | Ast.Mod -> "%"
-  | Ast.DecLeft -> "<<"
-  | Ast.DecRight -> ">>"
-  | Ast.And -> "&"
-  | Ast.Or -> "|"
-  | Ast.Xor -> "^"
+let arith_tostring = Ast.string_of_arithOp
 
-let logic_tostring = function
-  | Ast.Inf -> "<"
-  | Ast.Sup -> ">"
-  | Ast.InfEq -> "<="
-  | Ast.SupEq -> ">="
-  | Ast.Eq -> "=="
-  | Ast.NotEq -> "!="
-  | Ast.AndLog -> "&&"
-  | Ast.OrLog -> "||"
+let logic_tostring = Ast.string_of_logicalOp
 
 let unary_tostring = function
   | Ast.GetRef -> "&"
@@ -86,13 +67,9 @@ let unary_tostring = function
   | Ast.Tilde -> "~"
   | Ast.Not -> "!"
 
-let binary_tostring = function
-  | Ast.Arith(aop) -> arith_tostring aop
-  | Ast.Logical(lop) -> logic_tostring lop
+let binary_tostring = Ast.string_of_binaryOp
 
-let assign_tostring = function
-  | Ast.SimpleAssign -> "="
-  | Ast.OpAssign(aop) -> arith_tostring aop ^ "="
+let assign_tostring = Ast.string_of_assignOp
 
 let type_tostring = function
   | Ast.VoidType -> "void"

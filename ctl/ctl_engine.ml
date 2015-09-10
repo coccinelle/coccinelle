@@ -205,20 +205,13 @@ let rec nubBy eq ls =
   | (x::xs) -> x::(nubBy eq xs)
 ;;
 
-let rec nub ls =
-  match ls with
-    [] -> []
-  | (x::xs) when (List.mem x xs) -> nub xs
-  | (x::xs) -> x::(nub xs)
-;;
-
 let state_compare (s1,_,_) (s2,_,_) = compare s1 s2
 
 let setifyBy eq xs = nubBy eq xs;;
 
-let setify xs = nub xs;;
+let setify xs = Common.nub xs;;
 
-let inner_setify xs = List.sort compare (nub xs);;
+let inner_setify xs = List.sort compare (Common.nub xs);;
 
 let unionBy compare eq xs = function
     [] -> xs
@@ -238,9 +231,9 @@ let subseteqBy eq xs ys = List.for_all (fun x -> memBy eq x ys) xs;;
 let subseteq xs ys = List.for_all (fun x -> List.mem x ys) xs;;
 let supseteq xs ys = subseteq ys xs
 
-let setequalBy eq xs ys = (subseteqBy eq xs ys) & (subseteqBy eq ys xs);;
+let setequalBy eq xs ys = (subseteqBy eq xs ys) && (subseteqBy eq ys xs);;
 
-let setequal xs ys = (subseteq xs ys) & (subseteq ys xs);;
+let setequal xs ys = (subseteq xs ys) && (subseteq ys xs);;
 
 (* Fix point calculation *)
 let rec fix eq f x =
@@ -251,7 +244,7 @@ let rec fix eq f x =
 let setfix f x = (fix subseteq f x) (*if new is a subset of old, stop*)
 let setgfix f x = (fix supseteq f x) (*if new is a supset of old, stop*)
 
-let get_states l = nub (List.map (function (s,_,_) -> s) l)
+let get_states l = Common.nub (List.map (function (s,_,_) -> s) l)
 
 (* ********************************************************************** *)
 (* Module: CTL_ENGINE                                                     *)
@@ -947,7 +940,7 @@ let triples_witness x unchecked not_keep trips =
 		failwith"unexpected negative binding with positive witnesses")*)
 	  | _ ->
 	      let new_triple =
-		if unchecked or not_keep
+		if unchecked || not_keep
 		then (s,newth,wit)
 		else
 		  if anynegwit wit && allnegwit wit
@@ -1027,44 +1020,6 @@ let pre_forall dir (grp,_,states) y all reqst =
       (*normalize*)
         (foldl1 (@) (List.map (foldl1 triples_conj) neighbor_triples))
 
-let pre_forall_AW dir (grp,_,states) y all reqst =
-  let check s =
-    match reqst with
-      None -> true | Some reqst -> List.mem s reqst in
-  let pred =
-    match dir with
-      A.FORWARD -> G.predecessors | A.BACKWARD -> G.successors in
-  let succ =
-    match dir with
-      A.FORWARD -> G.successors | A.BACKWARD -> G.predecessors in
-  let neighbors =
-    List.map
-      (function p -> (p,succ grp p))
-      (setify
-	 (concatmap
-	    (function (s,_,_) -> List.filter check (pred grp s)) y)) in
-  (* would a hash table be more efficient? *)
-  let all = List.sort state_compare all in
-  let rec up_nodes child s = function
-      [] -> []
-    | (s1,th,wit)::xs ->
-	(match compare s1 child with
-	  -1 -> up_nodes child s xs
-	| 0 -> (s,th,wit)::(up_nodes child s xs)
-	| _ -> []) in
-  let neighbor_triples =
-    List.fold_left
-      (function rest ->
-	function (s,children) ->
-	  (List.map
-	     (function child ->
-	       match up_nodes child s all with [] -> raise AW | l -> l)
-	     children) :: rest)
-      [] neighbors in
-  match neighbor_triples with
-    [] -> []
-  | _ -> foldl1 (@) (List.map (foldl1 triples_conj_AW) neighbor_triples)
-
 (* drop_negwits will call setify *)
 let satEX dir m s reqst = pre_exist dir m s reqst;;
 
@@ -1109,6 +1064,31 @@ let satEU dir ((_,_,states) as m) s1 s2 reqst print_graph =
       setfix f s2
 ;;
 
+let satEU_forAW dir ((cfg,_,states) as m) s1 s2 reqst print_graph =
+  if s1 = []
+  then s2
+  else
+    if !pNEW_INFO_OPT
+    then
+      let rec f y new_info =
+	if List.exists (G.extract_is_loop cfg) (get_states new_info)
+	then raise AW
+	else
+	  match new_info with
+	    [] -> y
+	  | new_info ->
+	      let first = triples_conj s1 (pre_exist dir m new_info reqst) in
+	      let res = triples_union first y in
+	      let new_info = setdiff res y in
+	      f res new_info in
+      f s2 s2
+    else
+      let f y =
+	let pre = pre_exist dir m y reqst in
+	triples_union s2 (triples_conj s1 pre) in
+      setfix f s2
+;;
+
 (* EF phi == E[true U phi] *)
 let satEF dir m s2 reqst =
   inc satEF_calls;
@@ -1145,16 +1125,13 @@ type ('pred,'anno) auok =
 
 (* A[phi1 U phi2] == phi2 \/ (phi1 /\ AXA[phi1 U phi2]) *)
 let satAU dir ((cfg,_,states) as m) s1 s2 reqst print_graph =
+  let strip s = List.map (function s -> (s,[],[])) (get_states s) in
   let ctr = ref 0 in
   inc satAU_calls;
   if s1 = []
   then AUok s2
   else
     (*let ctr = ref 0 in*)
-    let pre_forall =
-      if !Flag_ctl.loop_in_src_code
-      then pre_forall_AW
-      else pre_forall in
     if !pNEW_INFO_OPT
     then
       let rec f y newinfo =
@@ -1163,41 +1140,34 @@ let satAU dir ((cfg,_,states) as m) s1 s2 reqst print_graph =
 	  [] -> AUok y
 	| new_info ->
 	    ctr := !ctr + 1;
-	    (*print_state (Printf.sprintf "iteration %d\n" !ctr) y;
-	    flush stdout;*)
 	    print_graph y ctr;
-	    let pre =
-	      try Some (pre_forall dir m new_info y reqst)
-	      with AW -> None in
-	    match pre with
-	      None -> AUfailed y
-	    | Some pre ->
-		match triples_conj s1 pre with
-		  [] -> AUok y
-		| first ->
-		    (*print_state "s1" s1;
-		    print_state "pre" pre;
-		    print_state "first" first;*)
-		    let res = triples_union first y in
-		    let new_info =
-		      if not !something_dropped
-		      then first
-		      else setdiff res y in
-		  (*Printf.printf
-		     "iter %d res %d new_info %d\n"
-		     !ctr (List.length res) (List.length new_info);
-		     flush stdout;*)
-		    f res new_info in
-      f s2 s2
+	    let pre = pre_forall dir m new_info y reqst in
+	    match triples_conj s1 pre with
+	      [] -> AUok y
+	    | first ->
+		let res = triples_union first y in
+		let new_info =
+		  if not !something_dropped
+		  then first
+		  else setdiff res y in
+		f res new_info in
+	  try
+	    (if !Flag_ctl.loop_in_src_code
+	    then
+	      let _ =
+		satEU_forAW dir m (strip s1) (strip s2) reqst print_graph in
+	      ());
+	    f s2 s2
+	  with AW -> AUfailed s2
     else
       if !Flag_ctl.loop_in_src_code
       then AUfailed s2
       else
 	(*let setfix =
-	  fix (function s1 -> function s2 ->
-	    let s1 = List.map (function (s,th,w) -> (s,th,nub w)) s1 in
-	    let s2 = List.map (function (s,th,w) -> (s,th,nub w)) s2 in
-	    subseteq s1 s2) in for popl *)
+	   fix (function s1 -> function s2 ->
+	   let s1 = List.map (function (s,th,w) -> (s,th,nub w)) s1 in
+	   let s2 = List.map (function (s,th,w) -> (s,th,nub w)) s2 in
+	   subseteq s1 s2) in for popl *)
 	let f y =
 	  inc_step();
 	  ctr := !ctr + 1;
@@ -1266,7 +1236,7 @@ let satAW dir ((grp,_,states) as m) s1 s2 reqst =
 	 out of the loop. s1 is like a guard. To see the problem, consider
 	 an example where both s1 and s2 match some code after the loop.
 	 we only want the witness from s2. *)
-      setgfix f (triples_union (nub(drop_wits s1)) s2)
+      setgfix f (triples_union (Common.nub(drop_wits s1)) s2)
 ;;
 
 let satAF dir m s reqst =
@@ -1482,7 +1452,7 @@ let drop_required v required =
 
 (* no idea how to write this function ... *)
 let memo_label =
-  (Hashtbl.create(50) : (P.t, (G.node * substitution) list) Hashtbl.t)
+  (Hashtbl.create(101) : (P.t, (G.node * substitution) list) Hashtbl.t)
 
 let satLabel label required p =
     let triples =
@@ -2388,30 +2358,22 @@ let print_bench _ =
 (* ---------------------------------------------------------------------- *)
 (* preprocessing: ignore irrelevant functions *)
 
-let preprocess (cfg,_,_) label = function
+let preprocess (cfg,label,preproc,_) = function
     [] -> true (* no information, try everything *)
   | l ->
       let sz = G.size cfg in
       let verbose_output pred = function
-	  [] ->
+	  false ->
 	    Printf.printf "did not find:\n";
 	    P.print_predicate pred; Format.print_newline()
-	| _ ->
+	| true ->
 	    Printf.printf "found:\n";
 	    P.print_predicate pred; Format.print_newline();
 	    Printf.printf "but it was not enough\n" in
       let get_any verbose x =
-	let res =
-	  try Hashtbl.find memo_label x
-	  with
-	    Not_found ->
-	      (let triples = label x in
-	      let filtered =
-		List.map (function (st,th,_) -> (st,th)) triples in
-	      Hashtbl.add memo_label x filtered;
-	      filtered) in
-	if verbose then verbose_output x res;
-	not([] = res) in
+	let res = preproc x in
+	(if verbose then verbose_output x res);
+	res in
       let get_all l =
 	(* don't bother testing when there are more patterns than nodes *)
 	if List.length l > sz-2
@@ -2448,8 +2410,8 @@ let sat m phi reqopt =
     | Some x -> step_count := x);
     Hashtbl.clear reachable_table;
     Hashtbl.clear memo_label;
-    let (x,label,states) = m in
-    if (!Flag_ctl.bench > 0) or (preprocess m label reqopt)
+    let (x,label,preproc,states) = m in
+    if (!Flag_ctl.bench > 0) || preprocess m reqopt
     then
       ((* to drop when Yoann initialized this flag *)
       if List.exists (G.extract_is_loop x) states

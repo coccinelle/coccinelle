@@ -442,7 +442,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
                     Ast_c.str_of_name namef ^ "(...)"
                 | _ -> "statement"
                 )
-            | Assignment (e1, SimpleAssign, e2) ->
+            | Assignment (e1, (SimpleAssign,_), e2) ->
                 (match Ast_c.unwrap_expr e1 with
                 | Ident namevar ->
                     Ast_c.str_of_name namevar ^ " = ... ;"
@@ -486,6 +486,14 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
 
       !g +> add_arc_opt (starti, newswitchi);
 
+      (* allows multiple case labels to stack up *)
+      let rec contains_default s =
+	match Ast_c.unwrap_st s with
+	  Labeled (Ast_c.Default _) -> true
+	| Labeled (Ast_c.Case(e,s)) -> contains_default s
+	| Labeled (Ast_c.CaseRange(e1,e2,s)) -> contains_default s
+	| _ -> false in
+
        (* call compound case. Need special info to pass to compound case
         * because we need to build a context_info that need some of the
         * information build inside the compound case: the nodei of {
@@ -512,11 +520,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
                 * between start to end.
                 * todo? except if the case[range] coverthe whole spectrum
                 *)
-               if not (statxs +> List.exists (fun x ->
-                 match Ast_c.unwrap_st x with
-                 | Labeled (Ast_c.Default _) -> true
-                 | _ -> false
-               ))
+               if not (statxs +> List.exists contains_default)
                then begin
                  (* when there is no default, then a valid path is
                   * from the switchheader to the end. In between we
@@ -823,7 +827,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
       let context_info =
 	match xi.ctx with
 	  SwitchInfo (startbrace, loopendi, braces, parent_lbl) ->
-            if x =*= Ast_c.Break
+            if x = Ast_c.Break
 	    then xi.ctx
 	    else
 	      (try
@@ -888,7 +892,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
           None
 
       | SwitchInfo (startbrace, loopendi, braces, parent_lbl) ->
-	  assert (x =*= Ast_c.Break);
+	  assert (x = Ast_c.Break);
           let difference = List.length xi.braces - List.length braces in
           assert (difference >= 0);
           let toend = take difference xi.braces in
@@ -971,7 +975,7 @@ and mk_If (starti :nodei option) (labels :int list) (xi_lbl :xinfo)
   | Selection (Ast_c.If (e, st1, st2)) ->
     let iist2 = Ast_c.get_ii_st_take_care st2 in begin
     match Ast_c.unwrap_st st2 with
-    | Ast_c.ExprStatement None when null iist2 ->
+    | Ast_c.ExprStatement None when iist2=[] ->
       (* We could have 'ExprStatement None' as a result of something like
        * 'if() xx else ;', so we must force to have a [] in the ii associated
        * with ExprStatement.
@@ -1616,7 +1620,7 @@ let check_control_flow (g : cflow) : unit =
         (match unwrap (nodes#find nodei),  startbraces with
         | SeqStart (_,i,_), xs  -> i::xs
         | SeqEnd (i,_), j::xs ->
-            if i =|= j
+            if i = j
             then xs
             else
               begin
@@ -1633,7 +1637,7 @@ let check_control_flow (g : cflow) : unit =
       in
 
 
-      if null children#tolist
+      if (children#tolist) = []
       then
         if (* (depth = 0) *) startbraces <> []
         then print_trace_error trace2

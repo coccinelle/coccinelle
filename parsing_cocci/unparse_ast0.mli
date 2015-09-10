@@ -11,3 +11,5 @@ val top_level : Ast0_cocci.top_level -> unit
 
 val unparse : Ast0_cocci.rule -> unit
 val unparse_anything : Ast0_cocci.anything -> unit
+
+val show_cocci_parse_tree : string -> Ast0_cocci.top_level -> unit

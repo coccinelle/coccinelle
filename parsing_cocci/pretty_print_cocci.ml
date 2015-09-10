@@ -42,7 +42,7 @@ and print_anything_list = function
 	(match bef with
 	  Ast.Rule_elemTag(_) | Ast.AssignOpTag(_) | Ast.BinaryOpTag(_)
 	| Ast.ArithOpTag(_) | Ast.LogicalOpTag(_)
-	| Ast.Token("if",_) | Ast.Token("while",_) -> true | _ -> false) or
+	| Ast.Token("if",_) | Ast.Token("while",_) -> true | _ -> false) ||
 	(match aft with
 	  Ast.Rule_elemTag(_) | Ast.AssignOpTag(_) | Ast.BinaryOpTag(_)
 	| Ast.ArithOpTag(_) | Ast.LogicalOpTag(_) | Ast.Token("{",_) -> true
@@ -163,7 +163,12 @@ let print_type keep info = function
 
 let rec idconstraint = function
     Ast.IdNoConstraint  -> print_string "/* No constraint */"
+  | Ast.IdPosIdSet (str,meta)     ->
+      print_string " =";
+      List.iter (function s -> print_string (" "^s)) str;
+      List.iter (function (r,n) -> print_string " "; print_meta(r,n)) meta
   | Ast.IdNegIdSet (str,meta)     ->
+      print_string " !=";
       List.iter (function s -> print_string (" "^s)) str;
       List.iter (function (r,n) -> print_string " "; print_meta(r,n)) meta
   | Ast.IdRegExpConstraint re -> regconstraint re
@@ -209,7 +214,7 @@ let rec expression e =
       dots (function _ -> ()) expression args;
       close_box(); mcode print_string rp
   | Ast.Assignment(left,op,right,simple) ->
-      expression left; print_string " "; mcode assignOp op;
+      expression left; print_string " "; assignOp op;
       print_string " "; expression right
   | Ast.Sequence(left,op,right) ->
       expression left; mcode print_string op;
@@ -222,10 +227,10 @@ let rec expression e =
   | Ast.Infix(exp,op) -> mcode fixOp op; expression exp
   | Ast.Unary(exp,op) -> mcode unaryOp op; expression exp
   | Ast.Binary(left,op,right) ->
-      expression left; print_string " "; mcode binaryOp op; print_string " ";
+      expression left; print_string " "; binaryOp op; print_string " ";
       expression right
   | Ast.Nested(left,op,right) ->
-      expression left; print_string " "; mcode binaryOp op; print_string " ";
+      expression left; print_string " "; binaryOp op; print_string " ";
       expression right
   | Ast.Paren(lp,exp,rp) ->
       mcode print_string_box lp; expression exp; close_box();
@@ -256,6 +261,8 @@ let rec expression e =
       mcode print_meta name; print_type keep inherited ty
   | Ast.MetaExprList(name,_,_,_) -> mcode print_meta name
   | Ast.AsExpr(exp,asexp) -> expression exp; print_string "@"; expression asexp
+  | Ast.AsSExpr(exp,asstm) ->
+      expression exp; print_string "@"; rule_elem "" asstm
   | Ast.EComma(cm) -> mcode print_string cm; print_space()
   | Ast.DisjExpr(exp_list) -> print_disj_list expression exp_list
   | Ast.NestExpr(starter,expr_dots,ender,Some whencode,multi) ->
@@ -290,7 +297,7 @@ and string_format e =
     Ast.ConstantFormat(str) -> mcode print_string str
   | Ast.MetaFormat(name,_,_,_) -> mcode print_meta name
 
-and  unaryOp = function
+and unaryOp = function
     Ast.GetRef -> print_string "&"
   | Ast.GetRefLabel -> print_string "&&"
   | Ast.DeRef -> print_string "*"
@@ -299,19 +306,27 @@ and  unaryOp = function
   | Ast.Tilde -> print_string "~"
   | Ast.Not -> print_string "!"
 
-and  assignOp = function
-    Ast.SimpleAssign -> print_string "="
-  | Ast.OpAssign(aop) -> arithOp aop; print_string "="
+and assignOp op =
+  match Ast.unwrap op with
+    Ast.SimpleAssign op -> mcode print_string op
+  | Ast.OpAssign(aop) -> mcode arithOp aop; print_string "="
+  | Ast.MetaAssign(metavar,_,_,_) -> mcode print_meta metavar
 
-and  fixOp = function
+and simpleAssignOp op = print_string "="
+
+and opAssignOp aop = arithOp aop; print_string "="
+
+and fixOp = function
     Ast.Dec -> print_string "--"
   | Ast.Inc -> print_string "++"
 
-and  binaryOp = function
-    Ast.Arith(aop) -> arithOp aop
-  | Ast.Logical(lop) -> logicalOp lop
+and binaryOp op =
+  match Ast.unwrap op with
+    Ast.Arith(aop) -> mcode arithOp aop
+  | Ast.Logical(lop) -> mcode logicalOp lop
+  | Ast.MetaBinary(metavar,_,_,_) -> mcode print_meta metavar
 
-and  arithOp = function
+and arithOp = function
     Ast.Plus -> print_string "+"
   | Ast.Minus -> print_string "-"
   | Ast.Mul -> print_string "*"
@@ -374,9 +389,11 @@ and print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2) fn =
   mcode print_string rp1; mcode print_string lp1;
   parameter_list params; mcode print_string rp2
 
-and print_function_type (ty,lp1,params,rp1) fn =
-  print_option fullType ty; fn(); mcode print_string lp1;
-  parameter_list params; mcode print_string rp1
+and varargs = function
+  | None -> ()
+  | Some (comma, ellipsis) ->
+    mcode print_string comma;
+    mcode print_string ellipsis
 
 and print_fninfo = function
     Ast.FStorage(stg) -> mcode storage stg
@@ -393,8 +410,6 @@ and typeC ty =
   | Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
       print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
 	(function _ -> ())
-  | Ast.FunctionType (_,ty,lp1,params,rp1) ->
-      print_function_type (ty,lp1,params,rp1) (function _ -> ())
   | Ast.Array(ty,lb,size,rb) ->
       fullType ty; mcode print_string lb; print_option expression size;
       mcode print_string rb
@@ -464,9 +479,6 @@ and print_named_type ty id =
 	Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	  print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
 	    (function _ -> print_string " "; ident id)
-      | Ast.FunctionType(_,ty,lp1,params,rp1) ->
-	  print_function_type (ty,lp1,params,rp1)
-	    (function _ -> print_string " "; ident id)
       | Ast.Array(ty,lb,size,rb) ->
 	  let rec loop ty k =
 	    match Ast.unwrap ty with
@@ -502,12 +514,18 @@ and declaration d =
   | Ast.UnInit(stg,ty,id,sem) ->
       print_option (mcode storage) stg; print_named_type ty id;
       mcode print_string sem
-  | Ast.MacroDecl(name,lp,args,rp,sem) ->
-      ident name; mcode print_string_box lp;
+  | Ast.FunProto (fninfo,name,lp1,params,va,rp1,sem) ->
+      List.iter print_fninfo fninfo;
+      ident name; mcode print_string_box lp1;
+      parameter_list params; varargs va;
+      close_box(); mcode print_string rp1;
+      mcode print_string sem
+  | Ast.MacroDecl(stg,name,lp,args,rp,sem) ->
+      print_option (mcode storage) stg; ident name; mcode print_string_box lp;
       dots (function _ -> ()) expression args;
       close_box(); mcode print_string rp; mcode print_string sem
-  | Ast.MacroDeclInit(name,lp,args,rp,eq,ini,sem) ->
-      ident name; mcode print_string_box lp;
+  | Ast.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
+      print_option (mcode storage) stg; ident name; mcode print_string_box lp;
       dots (function _ -> ()) expression args;
       close_box(); mcode print_string rp;
       print_string " "; mcode print_string eq;
@@ -599,13 +617,19 @@ and parameter_list l = dots (function _ -> ()) parameterTypeDef l
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
-let rec rule_elem arity re =
+and rule_elem arity re =
   match Ast.unwrap re with
-    Ast.FunHeader(bef,allminus,fninfo,name,lp,params,rp) ->
+    Ast.FunHeader(bef,allminus,fninfo,name,lp,params,va,rp) ->
       mcode (function _ -> ()) ((),Ast.no_info,bef,[]);
       print_string arity; List.iter print_fninfo fninfo;
       ident name; mcode print_string_box lp;
-      parameter_list params; close_box(); mcode print_string rp;
+      parameter_list params;
+      begin match va with
+            | None -> ()
+            | Some (comma,ellipsis) ->
+               mcode print_string comma;
+              mcode print_string ellipsis
+      end; close_box(); mcode print_string rp;
       print_string " "
   | Ast.Decl(ann_decl) -> annotated_decl arity ann_decl
   | Ast.SeqStart(brace) ->
@@ -674,6 +698,7 @@ let rec rule_elem arity re =
   | Ast.Exp(exp) -> print_string arity; expression exp
   | Ast.TopExp(exp) -> print_string arity; expression exp
   | Ast.Ty(ty) -> print_string arity; fullType ty
+  | Ast.TopId(id) -> print_string arity; ident id
   | Ast.TopInit(init) -> initialiser init
   | Ast.Include(inc,s) ->
       mcode print_string inc; print_string " "; mcode inc_file s
@@ -887,6 +912,8 @@ let _ =
     | Ast.ConstantTag(x) -> constant x
     | Ast.UnaryOpTag(x) -> unaryOp x
     | Ast.AssignOpTag(x) -> assignOp x
+    | Ast.SimpleAssignOpTag(x) -> simpleAssignOp (Ast.make_mcode x)
+    | Ast.OpAssignOpTag(x) -> opAssignOp x
     | Ast.FixOpTag(x) -> fixOp x
     | Ast.BinaryOpTag(x) -> binaryOp x
     | Ast.ArithOpTag(x) -> arithOp x
@@ -995,4 +1022,3 @@ let print_rule_elem re =
   print_newlines_disj := false;
   rule_elem "" re;
   print_newlines_disj := nl
-

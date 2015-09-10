@@ -315,7 +315,7 @@ AC_DEFUN([AC_COCCI_RUNTIME_CMD],
 [dnl
   AC_ARG_VAR([RUNTIME_$1_CMD], [path to $2])
   AC_ARG_WITH([runtime-$2], [AS_HELP_STRING([--with-runtime-$2], [override the runtime cmd for $2])])
-  
+
   AS_IF([test -z "$RUNTIME_$1_CMD"],
   [dnl  variable not yet set
     AS_IF([test "x$with_runtime_[]AS_TR_SH([$2])" = xno],

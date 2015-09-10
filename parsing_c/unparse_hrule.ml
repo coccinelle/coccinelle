@@ -131,16 +131,17 @@ let get_function_name rule env =
     | _ -> []) in
   let names =
     (V.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing
       donothing expression donothing donothing donothing donothing donothing
-      donothing donothing donothing
+      donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing).V.combiner_top_level
       rule in
   match names with
     [name] ->
       (match env_lookup (function nm -> nm = name) env with
-	Ast_c.MetaIdVal(s,_) | Ast_c.MetaFuncVal(s)
+	Ast_c.MetaIdVal(s) | Ast_c.MetaFuncVal(s)
       | Ast_c.MetaLocalFuncVal(s) -> s
       |	_ -> error rule "not possible")
   | _ -> error rule "inconsistent rule generation"
@@ -231,6 +232,7 @@ let print_extra_typedefs pr env =
     (function (_,vl) ->
       match vl with
 	Ast_c.MetaIdVal(_) | Ast_c.MetaFuncVal(_)
+      | Ast_c.MetaAssignOpVal(_) | Ast_c.MetaBinaryOpVal(_)
       | Ast_c.MetaLocalFuncVal(_) -> ()
       | Ast_c.MetaExprVal(exp,_) -> Visitor_c.vk_expr bigf exp
       | Ast_c.MetaExprListVal(args) -> Visitor_c.vk_argument_list bigf args
@@ -249,7 +251,8 @@ let print_extra_typedefs pr env =
 	  Visitor_c.vk_string_fragments bigf frags
       | Ast_c.MetaStmtVal(stm) -> Visitor_c.vk_statement bigf stm
       | Ast_c.MetaPosVal _ | Ast_c.MetaPosValList _
-      | Ast_c.MetaListlenVal _ -> ())
+      | Ast_c.MetaListlenVal _ -> ()
+      | Ast_c.MetaNoVal -> failwith "referencing a metavar with no value")
     env
 
 let rename argids env =
@@ -276,6 +279,7 @@ let rename argids env =
       (x,
        match vl with
 	 Ast_c.MetaIdVal(_) | Ast_c.MetaFuncVal(_)
+       | Ast_c.MetaAssignOpVal(_) | Ast_c.MetaBinaryOpVal(_)
        | Ast_c.MetaLocalFuncVal(_) -> vl
        | Ast_c.MetaExprVal(exp,c) ->
 	   Ast_c.MetaExprVal(Visitor_c.vk_expr_s bigf exp,c)
@@ -305,7 +309,8 @@ let rename argids env =
        | Ast_c.MetaStmtVal(stm) ->
 	   Ast_c.MetaStmtVal(Visitor_c.vk_statement_s bigf stm)
        | Ast_c.MetaPosVal _ | Ast_c.MetaPosValList _
-       | Ast_c.MetaListlenVal _ -> vl))
+       | Ast_c.MetaListlenVal _ -> vl
+       | Ast_c.MetaNoVal -> failwith "referencing a metavar with no value"))
     env
 
 let print_one_type pr env = function
@@ -365,6 +370,10 @@ let pp_meta_decl pr env decl =
       no_arity ar; pr "parameter "; pp_name name; pr ";\n"
   | Ast.MetaParamListDecl(ar, name, len) ->
       no_arity ar; pr "parameter list "; pp_name name; pp_len pr len; pr ";\n"
+  | Ast.MetaBinaryOperatorDecl(ar, name) ->
+      no_arity ar; pr "binary operator "; pp_name name; pr ";\n"
+  | Ast.MetaAssignmentOperatorDecl(ar, name) ->
+      no_arity ar; pr "assignment operator "; pp_name name; pr ";\n"
   | Ast.MetaConstDecl(ar, name, types) ->
       no_arity ar; pr "constant "; print_types pr env types;
       pp_name name; pr ";\n"
@@ -379,6 +388,9 @@ let pp_meta_decl pr env decl =
       print_types pr env types; pp_name name; pr ";\n"
   | Ast.MetaLocalIdExpDecl(ar, name, types) ->
       no_arity ar; pr "local idexpression ";
+      print_types pr env types; pp_name name; pr ";\n"
+  | Ast.MetaGlobalIdExpDecl(ar, name, types) ->
+      no_arity ar; pr "global idexpression ";
       print_types pr env types; pp_name name; pr ";\n"
   | Ast.MetaExpListDecl(ar, name, len) ->
       no_arity ar; pr "parameter list "; pp_name name; pp_len pr len; pr ";\n"
@@ -408,6 +420,7 @@ let pp_meta_decl pr env decl =
       no_arity ar; pr "declarer "; pp_name name; pr ";\n"
   | Ast.MetaIteratorDecl(ar, name) ->
       no_arity ar; pr "iterator "; pp_name name; pr ";\n"
+  | Ast.MetaScriptDecl(_, name) -> failwith "script metavariable"
 
 let print_metavariables pr local_metas paramst env header_req function_name =
   (if header_req

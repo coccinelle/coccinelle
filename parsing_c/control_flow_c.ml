@@ -324,7 +324,7 @@ let find_node f g =
 let remove_one_node nodei g =
   let preds = (g#predecessors nodei)#tolist in
   let succs = (g#successors nodei)#tolist in
-  assert (not (null preds));
+  assert (preds <> []);
 
   preds +> List.iter (fun (predi, Direct) ->
     g#del_arc ((predi, nodei), Direct);

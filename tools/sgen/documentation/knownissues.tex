@@ -12,12 +12,12 @@ Fix: Keep track of the current nest and name the position accordingly.
 \end{itemize}
 \item \textbf{No format string metavariable check}: The user can specify metavariables to be used in the messages for \texttt{org} and \texttt{report} mode. The program currently does not check if the declared metavariables actually exist in the original rule.\newline
 Fix: Implement check of metavariables.
-\item \textbf{No special-character rulename check}: In \texttt{Coccinelle}, allowed rulenames are limited to allowed identifiers in the \texttt{C} language, ie. certain characters are not allowed. In \texttt{sgen} when naming nameless rules, any rulename that was not already used/does not contain whitespaces will be accepted.\newline
-Fix: Limit the allowed user-specified rulenames to \texttt{C} identifiers.
 \item \textbf{Dependencies between patch rules}: It is possible to make patch rules that depend on other patch rules modifying the code. E.g. if one patch rule transforms f(0) and one transforms f(e), then f(0) will only match the first, since it is transformed to something else when it reaches the f(e) rule. But in \texttt{context} mode, both rules will print the f(0) occurrence.\newline
 Fix: ??? Somehow detect that two rules will match the same case and insert constraints such that any match in subsequent rules does not match the first one.
 \item \textbf{Dependencies in context rules}: In a \texttt{context} script, if there are dependencies between rules, they might be mixed up. This happens if there are rules dependent on the generated rules since they will then be printed before the rules on which they are dependent!\newline
 Fix: ???
 \item \textbf{Type and switch case disjunctions}: Currently, the program fails if attempting to generate a \texttt{Coccinelle} script with type or switch case disjunctions. The failure happens in the position generator. The reason it is not implemented is that it requires quite a lot of code for a case that rarely appears.\newline
 Fix: Implement full position generation for types and switch cases.
+\item \textbf{File transformation not context-dependent}: When printing the transformed script, a somewhat primitive string replacement strategy is used to rename rules and inject dependencies (e.g. change \texttt{@rulename@} to \texttt{@rulename depends on patch@}). The transformation is not context-dependent which means that the script will get mangled if there is e.g. a \texttt{@@} \textit{inside comments} on a new line, since this will be mistaken for a SmPL-syntax \texttt{@@}.\newline
+Fix: Use simple parsing in the file transformation. Another solution is to not transform the original file at all, but to completely reconstruct it from the AST (this requires a pretty printer for AST that retains comments and plus slices!). In practice, however, this is only a problem in very specific cases that are unlikely to occur.
 \end{itemize}

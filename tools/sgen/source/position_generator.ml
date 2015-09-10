@@ -1,422 +1,489 @@
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
-module GT = Generator_types
+module Snap = Snapshot
 
 (* ------------------------------------------------------------------------- *)
 
-(* Given some Ast0 component, generates a position at an appropriate place
- * and returns the component with the inserted position (None, if it wasn't
- * possible to insert a statement).
- * The added position is always in an Ast0.PLUS context (using the fact
- * that a metaposition in the original script is NEVER in plus context).
+(* Given an Ast0 component, returns the same component with a generated
+ * metaposition added.
+ *
+ * This is all pretty messy and requires, for each component, individual
+ * assessment of where to put the position.
+ * The general heuristic is to add it either:
+ *  - recursively to a smaller subcomponent (e.g. first expression in e1 + e2)
+ *  - at an id (e.g. a function name) or
+ *  - at an mcode (e.g. an operator).
  *)
 
 (* ------------------------------------------------------------------------- *)
 (* POSITION HELPERS *)
 
-(* always make a new pos even if the mcode already has an associated position
- * - an existing pos might have undesirable constraints or inheritance
+(* always make a new pos even if the mcode already has an associated position,
+ * an existing pos might have undesirable constraints or inheritance.
  *)
-let make_pos (_, arity, info, mcodekind, _, adj) snp =
-  let (name, snp) = GT.add_position snp in
-  (Ast0.MetaPosTag(
-    Ast0.MetaPos(
-      (("",name), arity, info, Ast0.PLUS Ast.ONE, ref [], adj), (*mn mcode*)
-      [], (*metaname list constraints*)
-      Ast.PER)), (*meta collect*)
-   snp)
+let make_pos (_, arity, info, mcodekind, _, adj) snp
+: Ast0.anything * Snap.t =
+  let (name, snp) = Snap.add_position snp in
+  let meta_mcode = (("",name),arity,info,Ast0.PLUS Ast.ONE,ref [],adj) in
+  let list_constraints = [] in
+  let meta_collect = Ast.PER in
+  let new_pos = Ast0.MetaPos(meta_mcode, list_constraints, meta_collect) in
+  (Ast0.MetaPosTag(new_pos), snp)
 
 
 (* ------------------------------------------------------------------------- *)
-(* POSITION GENERATORS *)
+(* ALWAYS POSITION GENERATORS: always possible to generate pos *)
 
-let wrap a snp = Some (Ast0.wrap a, snp)
-let all_same = function [] -> true | x :: xs -> List.for_all (( = ) x) xs
+(* adds generated metaposition to mcode unless it is optional *)
+let mcode_pos ((x, a, info, mc, pos, q) as mco) snp
+: 'a Ast0.mcode * Snap.t =
+  if a = Ast0.OPT then
+    (mco, snp)
+  else
+    let (newpos, snp) = make_pos mco snp in
+    ((x, a, info, mc, ref (newpos :: !pos), q), snp)
 
-(* Auxiliary helpers for structures that largely follow the same format *)
-let rec exp_one exp fn snp =
-  match expression_pos exp snp with
-  | Some (a, snp) -> wrap (fn a) snp
-  | None -> None
+(* helper for adding mcode position, reconstructs component *)
+let mcode
+  ~mc           (* 'a Ast0.mcode *)
+  ~constructor  (* mc:'a Ast0.mcode -> 'b *)
+  snp           (* Snap.t *)
+: 'b Ast0.wrap * Snap.t =
+    let (mc, snp) = mcode_pos mc snp in
+    (Ast0.wrap (constructor ~mc), snp)
 
-and exp_two exp1 exp2 fn snp =
-  match expression_pos exp1 snp with
-  | Some (a, snp) -> wrap (fn a exp2) snp
-  | None ->
-      (match expression_pos exp2 snp with
-       | None -> None
-       | Some (a, snp) -> wrap (fn exp1 a) snp)
+let assignOp_pos a snp
+: Ast0.base_assignOp Ast0.wrap * Snap.t =
+  match Ast0.unwrap a with
+  | Ast0.SimpleAssign mc ->
+      let constructor ~mc = Ast0.SimpleAssign mc in
+      mcode ~mc ~constructor snp
+  | Ast0.OpAssign mc ->
+      let constructor ~mc = Ast0.OpAssign mc in
+      mcode ~mc ~constructor snp
+  | Ast0.MetaAssign (mc, v, w) ->
+      let constructor ~mc = Ast0.MetaAssign(mc,v,w) in
+      mcode ~mc ~constructor snp
 
-(* Mcode handlers *)
-(* TODO: Somehow convince the OCaml typing system that it does, in fact, not
- * matter which type the mcode has; the end result should be the same.
- *)
-and string_mcode_pos ((x, a, info, mc, pos, q) as mco) snp =
-  let (newpos, snp) = make_pos mco snp in
-  ((x, a, info, mc, ref (newpos :: !pos), q), snp)
+let binaryOp_pos a snp
+: Ast0.base_binaryOp Ast0.wrap * Snap.t =
+  match Ast0.unwrap a with
+  | Ast0.Arith mc ->
+      let constructor ~mc = Ast0.Arith mc in
+      mcode ~mc ~constructor snp
+  | Ast0.Logical mc ->
+      let constructor ~mc = Ast0.Logical mc in
+      mcode ~mc ~constructor snp
+  | Ast0.MetaBinary (mc,v,w) ->
+      let constructor ~mc = Ast0.MetaBinary(mc,v,w) in
+      mcode ~mc ~constructor snp
 
-and meta_mcode_pos ((x, a, info, mc, pos, q) as mco) snp =
-  let (newpos, snp) = make_pos mco snp in
-  ((x, a, info, mc, ref (newpos :: !pos), q), snp)
-
-and constant_pos ((x, a, info, mc, pos, q) as mco) snp =
-  let (newpos, snp) = make_pos mco snp in
-  ((x, a, info, mc, ref (newpos :: !pos), q), snp)
-
-and binary_pos ((x, a, info, mc, pos, q) as mco) snp =
-  let (newpos, snp) = make_pos mco snp in
-  ((x, a, info, mc, ref (newpos :: !pos), q), snp)
-
-and unary_pos ((x, a, info, mc, pos, q) as mco) snp =
-  let (newpos, snp) = make_pos mco snp in
-  ((x, a, info, mc, ref (newpos :: !pos), q), snp)
-
-and fix_pos ((x, a, info, mc, pos, q) as mco) snp =
-  let (newpos, snp) = make_pos mco snp in
-  ((x, a, info, mc, ref (newpos :: !pos), q), snp)
-
-and assign_pos ((x, a, info, mc, pos, q) as mco) snp =
-  let (newpos, snp) = make_pos mco snp in
-  ((x, a, info, mc, ref (newpos :: !pos), q), snp)
-
-(* generate a position for an identifier. Always possible! *)
-and ident_pos i snp = match Ast0.unwrap i with
+let rec ident_pos i snp
+: Ast0.base_ident Ast0.wrap * Snap.t =
+  match Ast0.unwrap i with
   | Ast0.Id mc ->
-      let (mc, snp) = string_mcode_pos mc snp in
-      (Ast0.wrap (Ast0.Id(mc)), snp)
-  | Ast0.MetaId(metamc, i, s, p) ->
-      let (metamc, snp) = meta_mcode_pos metamc snp in
-      (Ast0.wrap (Ast0.MetaId(metamc, i, s, p)), snp)
-  | Ast0.MetaFunc(metamc, i, p) ->
-      let (metamc, snp) = meta_mcode_pos metamc snp in
-      (Ast0.wrap (Ast0.MetaFunc(metamc, i, p)), snp)
-  | Ast0.MetaLocalFunc(metamc, i, p) ->
-      let (metamc, snp) = meta_mcode_pos metamc snp in
-      (Ast0.wrap (Ast0.MetaLocalFunc(metamc, i, p)), snp)
-  | Ast0.DisjId _ -> (i, snp)
+      let constructor ~mc = Ast0.Id mc in
+      mcode ~mc ~constructor snp
+  | Ast0.MetaId(mc, i, s, p) ->
+      let constructor ~mc = Ast0.MetaId(mc,i,s,p) in
+      mcode ~mc ~constructor snp
+  | Ast0.MetaFunc(mc, i, p) ->
+      let constructor ~mc = Ast0.MetaFunc(mc,i,p) in
+      mcode ~mc ~constructor snp
+  | Ast0.MetaLocalFunc(mc, i, p) ->
+      let constructor ~mc = Ast0.MetaLocalFunc(mc,i,p) in
+      mcode ~mc ~constructor snp
+  | Ast0.DisjId _ ->
+      (i, snp)
   | Ast0.OptIdent (id) ->
       let (id, snp) = ident_pos id snp in
       (Ast0.wrap (Ast0.OptIdent (id)), snp)
   | Ast0.UniqueIdent (id) ->
       let (id, snp) = ident_pos id snp in
       (Ast0.wrap (Ast0.UniqueIdent (id)), snp)
-  | Ast0.AsIdent(id1, id2) -> failwith "Should only be in metavars"
+  | Ast0.AsIdent(id1, id2) ->
+      failwith "pos_gen: <id1 as id2> should only be in metavars"
 
-(*TODO: fix the disjunction thing. Usually we don't want to put positions
- * at the types, but we can be forced to if there are disjunctions with
- * types that use SmPL pattern-matching.
+
+(* ------------------------------------------------------------------------- *)
+(* HELPERS FOR SOMETIMES POSITION GENERATORS *)
+
+let all_same = function [] -> true | x :: xs -> List.for_all (( = ) x) xs
+
+(* wraps Ast0 component and wraps it in Some *)
+let wrap (a : 'a) (snp : Snap.t)
+: ('a Ast0.wrap * Snap.t) option =
+  Some (Ast0.wrap a, snp)
+
+(* adds position to the mcode, reconstructs component, and wraps it in Some *)
+let mcode_wrap
+  ~mc           (* 'a Ast0.mcode *)
+  ~constructor  (* mc:'a Ast0.mcode -> b *)
+  snp           (* Snap.t *)
+: ('b Ast0.wrap * Snap.t) option =
+  Some (mcode ~mc ~constructor snp)
+
+(* adds position to the id, reconstructs component, and wraps it in Some *)
+let id_wrap
+  ~id           (* Ast0.base_ident Ast0.wrap *)
+  ~constructor  (* id:Ast0.base_ident Ast0.wrap -> 'a *)
+  snp           (* Snap.t *)
+: ('a Ast0.wrap * Snap.t) option =
+  let (id, snp) = ident_pos id snp in
+  wrap (constructor ~id) snp
+
+(* generic helper function.
+ * Arguments:
+ *  - item, an Ast0 component:           'a
+ *  - item_posfn, position generator:    'a -> Snap.t -> ('b * Snap.t) option
+ *  - constructor:                       item:'b -> 'c
+ *  - alt, alt function:                 unit -> ('c Ast0.wrap * Snap.t) option
+ *  - snp, snapshot:                     Snap.t
+ *
+ * Tries to generate position with item_posfn and reconstruct outer structure.
+ * If no position could be generated, call alt() as a backup.
  *)
-and type_pos t snp = match Ast0.unwrap t with
+let item_wrap ~item ~item_posfn ~constructor ?(alt = fun _ -> None) snp
+: ('c Ast0.wrap * Snap.t) option =
+  match item_posfn item snp with
+  | Some (item, snp) -> wrap (constructor ~item) snp
+  | None -> alt()
+
+
+(* ------------------------------------------------------------------------- *)
+(* SOMETIMES POSITION GENERATORS - not always possible to generate pos *)
+
+(* DISJUNCTION RELATED: type_pos and case_line_pos *)
+
+(* These functions are deliberately left unfinished for now.
+ * Implementing requires changes to disj_generator, but the cases are fairly
+ * rare, so for now just throw an exception if encountered.
+ * (to implement, disjunctions should return None here, and be added as special
+ * cases in rule_body.ml and disj_generator.ml. See DisjExpr for example.)
+ *)
+
+let type_pos t snp
+: (Ast0.base_typeC Ast0.wrap * Snap.t) option =
+  match Ast0.unwrap t with
   | Ast0.DisjType(lp,tlist,pipelist,rp) ->
-      let boollist = GT.get_disj (Ast0.get_mcode_line lp) snp in
+      let boollist = Snap.get_disj (Ast0.get_mcode_line lp) snp in
       if all_same boollist then None
-      else failwith ("Mixed match/patch type disjunctions not supported " ^
-                     "in position generator.")
+      else failwith (
+        "pos_gen: Mixed match/patch type disjunctions not supported " ^
+        "in position generator."
+      )
   | _ -> None
 
-(*TODO: fix the disjunction thing. Usually we don't want to put positions
- * at the cases, but we can be forced to if there are disjunctions with
- * cases that use SmPL pattern-matching.
- * NB: make sure that the statement dots in the case_line cases are generated
- * in no_gen mode...
+(* NB: if implementing disj generation, make sure that the statement dots in
+ * the clist are generated in no_gen mode...
  *)
-and case_line_pos c snp = match Ast0.unwrap c with
+let case_line_pos c snp
+: (Ast0.base_case_line Ast0.wrap * Snap.t) option =
+  match Ast0.unwrap c with
   | Ast0.DisjCase(lp, clist, pipelist, rp) ->
-      let boollist = GT.get_disj (Ast0.get_mcode_line lp) snp in
+      let boollist = Snap.get_disj (Ast0.get_mcode_line lp) snp in
       if all_same boollist then None
-      else failwith ("Mixed match/patch case disjunctions in switch cases " ^
-                     "not supported in position generator.")
+      else failwith (
+        "pos_gen: Mixed match/patch case disjunctions in switch cases " ^
+        "not supported in position generator."
+      )
   | _ -> None
 
-and case_line_dots_pos c snp =
+let case_line_dots_pos c snp
+: (Ast0.base_case_line Ast0.wrap * Snap.t) option list =
   List.map (fun x -> case_line_pos x snp) (Ast0.undots c)
 
-(* Returns Some Ast0.declaration with inserted pos if it was possible to insert
- * a pos or None if it was not possible. *)
-and declaration_pos d snp = match Ast0.unwrap d with
-  | Ast0.DisjDecl _ | Ast0.Ddots _ | Ast0.MetaDecl _ | Ast0.MetaField _
-  | Ast0.MetaFieldList _ | Ast0.AsDecl _ -> None
-  | Ast0.Init(st, ty, id, eq, ini, sem) ->
-      let _ = type_pos ty snp in (*sanity check*)
-      let (id, snp) = ident_pos id snp in
-      wrap (Ast0.Init(st, ty, id, eq, ini, sem)) snp
-  | Ast0.UnInit(st, ty, id, sem) ->
-      let _ = type_pos ty snp in (*sanity check*)
-      let (id, snp) = ident_pos id snp in
-      wrap (Ast0.UnInit(st, ty, id, sem)) snp
-  | Ast0.TyDecl _ -> failwith "tydecl"
-  | Ast0.Typedef (tm, tc, tc2, sem) ->
-      let (mc, snp) = string_mcode_pos tm snp in
-      wrap (Ast0.Typedef (mc,tc,tc2,sem)) snp
-  | Ast0.MacroDecl (id,lp,ed,rp,sem) ->
-      let (id, snp) = ident_pos id snp in
-      wrap (Ast0.MacroDecl (id,lp,ed,rp,sem)) snp
-  | Ast0.MacroDeclInit (id,lp,ed,rp,eq,init,sem) ->
-      let (id, snp) = ident_pos id snp in
-      wrap (Ast0.MacroDeclInit (id,lp,ed,rp,eq,init,sem)) snp
-  | Ast0.OptDecl(dec) ->
-      (match declaration_pos dec snp with
-       | Some (d, snp) -> wrap (Ast0.OptDecl d) snp
-       | None -> None)
-  | Ast0.UniqueDecl(dec) ->
-      (match declaration_pos dec snp with
-       | Some (d, snp) -> wrap (Ast0.UniqueDecl d) snp
-       | None -> None)
+let rec expression_pos exp snp
+: (Ast0.base_expression Ast0.wrap * Snap.t) option =
 
-(* Returns Some Ast0.forinfo with inserted pos if it was possible to insert
- * a pos or None if it was not possible. *)
-and forinfo_pos f snp = match Ast0.unwrap f with
-  | Ast0.ForExp (Some exp, sem) ->
-      (match expression_pos exp snp with
-       | Some (a, snp) -> wrap (Ast0.ForExp(Some a, sem)) snp
-       | None ->
-           let (m, snp) = string_mcode_pos sem snp in
-           wrap (Ast0.ForExp(Some exp, m)) snp)
-  | Ast0.ForExp (None, sem) ->
-      let (m,snp) = string_mcode_pos sem snp in
-      wrap (Ast0.ForExp (None, m)) snp
-  | Ast0.ForDecl (bef, decl) ->
-      (match declaration_pos decl snp with
-       | Some (d, snp) -> wrap (Ast0.ForDecl(bef, d)) snp
-       | None -> None)
+  (* try adding a position to the internal expression. If that failed, try
+   * the alt function (usually, we use mcodes or ids as fallbacks)
+   *)
+  let exp_wrap ~exp ~constructor ?(alt = fun _ -> None) snp =
+    let constructor ~item = constructor ~exp:item in
+    item_wrap ~item:exp ~item_posfn:expression_pos ~constructor ~alt snp in
 
-(* Returns Some Ast0.expression with inserted pos if it was possible to insert
- * a pos or None if it was not possible. *)
-and expression_pos e snp =
-  match Ast0.unwrap e with
+  (* try adding a position to internal expressions, first try exp1, then exp2.
+   * if both have failed then call alt function.
+   *)
+  let exp_wrap2 ~exp1 ~exp2 ~constructor ?(alt = fun _ -> None) snp =
+    let c1 ~exp = constructor ~exp1:exp ~exp2 in
+    let c2 ~exp = constructor ~exp1 ~exp2:exp in
+    let try_exp2() = exp_wrap ~exp:exp2 ~constructor:c2 ~alt snp in
+    exp_wrap ~exp:exp1 ~constructor:c1 ~alt:try_exp2 snp in
+
+  match Ast0.unwrap exp with
+  | Ast0.NestExpr _
+  | Ast0.Edots _
+  | Ast0.Ecircles _
+  | Ast0.Estars _
+  | Ast0.AsExpr _
+  | Ast0.AsSExpr _
+  | Ast0.EComma _
+  | Ast0.MetaExprList _
+  | Ast0.DisjExpr _ ->
+      None
   | Ast0.Ident(id) ->
-      let (id, snp) = ident_pos id snp in
-      wrap (Ast0.Ident(id)) snp
-  | Ast0.Constant(cmc) ->
-      let (cmc, snp) = constant_pos cmc snp in
-      wrap (Ast0.Constant(cmc)) snp
+      let constructor ~id = Ast0.Ident id in
+      id_wrap ~id ~constructor snp
+  | Ast0.Constant(mc) ->
+      let constructor ~mc = Ast0.Constant mc in
+      mcode_wrap ~mc ~constructor snp
   | Ast0.StringConstant(q1, sd, q2) ->
-      let (q2, snp) = string_mcode_pos q2 snp in
-      wrap (Ast0.StringConstant(q1, sd, q2)) snp
+      let constructor ~mc = Ast0.StringConstant (q1, sd, mc) in
+      mcode_wrap ~mc:q2 ~constructor snp
   | Ast0.FunCall(exp, lp, expdots, rp) ->
-      let fn x = Ast0.FunCall(x, lp, expdots, rp) in
-      (match exp_one exp fn snp with
-       | None ->
-           let (m,snp) = string_mcode_pos lp snp in
-           wrap (Ast0.FunCall(exp, m, expdots, rp)) snp
-       | a -> a)
-  | Ast0.Assignment(exp1, amc, exp2, st) ->
-      let fn x y =  Ast0.Assignment(x, amc, y, st) in
-      (match exp_two exp1 exp2 fn snp with
-       | None ->
-           let (m,snp) = assign_pos amc snp in
-           wrap (Ast0.Assignment(exp1, m, exp2, st)) snp
-       | a -> a)
+      let c ~exp ~mc = Ast0.FunCall(exp, mc, expdots, rp) in
+      let alt() = mcode_wrap ~mc:lp ~constructor:(c ~exp) snp in
+      exp_wrap ~exp ~constructor:(c ~mc:lp) ~alt snp
+  | Ast0.Assignment(exp1, asop, exp2, st) ->
+      let c ~exp1 ~exp2 ~mc = Ast0.Assignment(exp1, mc, exp2, st) in
+      let alt() =
+        let (mc, snp) = assignOp_pos asop snp in
+        wrap (c ~exp1 ~exp2 ~mc) snp in
+      exp_wrap2 ~exp1 ~exp2 ~constructor:(c ~mc:asop) ~alt snp
   | Ast0.Sequence(exp1, com, exp2) ->
-      let fn x y = Ast0.Sequence(x, com, y) in
-      (match exp_two exp1 exp2 fn snp with
-       | None ->
-           let (m,snp) = string_mcode_pos com snp in
-           wrap (Ast0.Sequence(exp1,m,exp2)) snp
-       | a -> a)
+      let c ~exp1 ~exp2 ~mc = Ast0.Sequence(exp1, mc, exp2) in
+      let alt() = mcode_wrap ~mc:com ~constructor:(c ~exp1 ~exp2) snp in
+      exp_wrap2 ~exp1 ~exp2 ~constructor:(c ~mc:com) ~alt snp
   | Ast0.CondExpr(exp1, why, expopt, colon, exp2) ->
-      let fn x y = Ast0.CondExpr(x, why, expopt, colon, y) in
-      (match exp_two exp1 exp2 fn snp with
-       | None ->
-           let (m,snp) = string_mcode_pos why snp in
-           wrap (Ast0.CondExpr(exp1, m, expopt, colon, exp2)) snp
-       | a -> a)
+      let c ~exp1 ~exp2 ~mc = Ast0.CondExpr(exp1, mc, expopt, colon, exp2) in
+      let alt() = mcode_wrap ~mc:why ~constructor:(c ~exp1 ~exp2) snp in
+      exp_wrap2 ~exp1 ~exp2 ~constructor:(c ~mc:why) ~alt snp
   | Ast0.Postfix(exp, fixmc) ->
-      let fn x = Ast0.Postfix(x, fixmc) in
-      (match exp_one exp fn snp with
-       | None ->
-           let (m,snp) = fix_pos fixmc snp in
-           wrap (Ast0.Postfix(exp,m)) snp
-       | a -> a)
+      let c ~exp ~mc = Ast0.Postfix (exp, mc) in
+      let alt() = mcode_wrap ~mc:fixmc ~constructor:(c ~exp) snp in
+      exp_wrap ~exp ~constructor:(c ~mc:fixmc) ~alt snp
   | Ast0.Infix(exp, fixmc) ->
-      let fn x = Ast0.Infix(x, fixmc) in
-      (match exp_one exp fn snp with
-       | None ->
-           let (m,snp) = fix_pos fixmc snp in
-           wrap (Ast0.Infix(exp,m)) snp
-       | a -> a)
+      let c ~exp ~mc = Ast0.Infix (exp, mc) in
+      let alt() = mcode_wrap ~mc:fixmc ~constructor:(c ~exp) snp in
+      exp_wrap ~exp ~constructor:(c ~mc:fixmc) ~alt snp
   | Ast0.Unary(exp, unmc) ->
-      let fn x = Ast0.Unary(x, unmc) in
-      (match exp_one exp fn snp with
-       | None ->
-           let (m,snp) = unary_pos unmc snp in
-           wrap (Ast0.Unary(exp,m)) snp
-       | a -> a)
+      let c ~exp ~mc = Ast0.Unary (exp, mc) in
+      let alt() = mcode_wrap ~mc:unmc ~constructor:(c ~exp) snp in
+      exp_wrap ~exp ~constructor:(c ~mc:unmc) ~alt snp
   | Ast0.Binary(exp1, bin, exp2) ->
-      let fn x y = Ast0.Binary(x, bin, y) in
-      (match exp_two exp1 exp2 fn snp with
-       | None ->
-           let (m,snp) = binary_pos bin snp in
-           wrap (Ast0.Binary(exp1, m, exp2)) snp
-       | a -> a)
+      let c ~exp1 ~exp2 ~mc = Ast0.Binary(exp1, mc, exp2) in
+      let alt() =
+        let (mc, snp) = binaryOp_pos bin snp in
+        wrap (c ~exp1 ~exp2 ~mc) snp in
+      exp_wrap2 ~exp1 ~exp2 ~constructor:(c ~mc:bin) ~alt snp
   | Ast0.Nested(exp1, bin, exp2) ->
-      let fn x y = Ast0.Nested(x, bin, y) in
-      (match exp_two exp1 exp2 fn snp with
-       | None ->
-           let (m,snp) = binary_pos bin snp in
-           wrap (Ast0.Nested(exp1, m, exp2)) snp
-       | a -> a)
+      let c ~exp1 ~exp2 ~mc = Ast0.Nested(exp1, mc, exp2) in
+      let alt() =
+        let (mc, snp) = binaryOp_pos bin snp in
+        wrap (c ~exp1 ~exp2 ~mc) snp in
+      exp_wrap2 ~exp1 ~exp2 ~constructor:(c ~mc:bin) ~alt snp
   | Ast0.Paren(lp, exp, rp) ->
-      let fn x = Ast0.Paren(lp, x, rp) in
-      (match exp_one exp fn snp with
-       | None ->
-           let (m,snp) = string_mcode_pos lp snp in
-           wrap (Ast0.Paren(m,exp,rp)) snp
-       | a -> a)
-  | Ast0.ArrayAccess(arrexp, lb, exp, rb) ->
-      let fn x y = Ast0.ArrayAccess(x, lb, y, rb) in
-      (match exp_two arrexp exp fn snp with
-       | None ->
-           let (m,snp) = string_mcode_pos lb snp in
-           wrap (Ast0.ArrayAccess(arrexp, m, exp,rb)) snp
-       | a -> a)
+      let c ~exp ~mc = Ast0.Paren (mc, exp, rp) in
+      let alt() = mcode_wrap ~mc:lp ~constructor:(c ~exp) snp in
+      exp_wrap ~exp ~constructor:(c ~mc:lp) ~alt snp
+  | Ast0.ArrayAccess(exp1, lb, exp2, rb) ->
+      let c ~exp1 ~exp2 ~mc = Ast0.ArrayAccess(exp1, mc, exp2, rb) in
+      let alt() = mcode_wrap ~mc:lb ~constructor:(c ~exp1 ~exp2) snp in
+      exp_wrap2 ~exp1 ~exp2 ~constructor:(c ~mc:lb) ~alt snp
   | Ast0.RecordAccess(exp, stop, id) ->
-      Some (match expression_pos exp snp with
-        | Some (a, snp) -> (Ast0.wrap (Ast0.RecordAccess(a, stop, id)), snp)
-        | None ->
-            let (id, snp) = ident_pos id snp in
-            (Ast0.wrap (Ast0.RecordAccess(exp, stop, id)), snp))
+      let c ~exp ~id = Ast0.RecordAccess(exp, stop, id) in
+      let alt() = id_wrap ~id ~constructor:(c ~exp) snp in
+      exp_wrap ~exp ~constructor:(c ~id) ~alt snp
   | Ast0.RecordPtAccess(exp, arrow, id) ->
-      Some (match expression_pos exp snp with
-        | Some (a,snp) -> (Ast0.wrap (Ast0.RecordPtAccess(a, arrow, id)), snp)
-        | None ->
-            let (id, snp) = ident_pos id snp in
-            (Ast0.wrap(Ast0.RecordPtAccess(exp, arrow, id)), snp))
+      let c ~exp ~id = Ast0.RecordPtAccess(exp, arrow, id) in
+      let alt() = id_wrap ~id ~constructor:(c ~exp) snp in
+      exp_wrap ~exp ~constructor:(c ~id) ~alt snp
   | Ast0.Cast(lp, typec, rp, exp) ->
-      let _ = type_pos typec snp in (*sanity check for disj*)
-      let fn x = Ast0.Cast(lp, typec, rp, exp) in
-      (match exp_one exp fn snp with
-       | None ->
-           let (m,snp) = string_mcode_pos rp snp in
-           wrap (Ast0.Cast(lp, typec, m,exp)) snp
-       | a -> a)
+      let _ = type_pos typec snp in (* sanity check for disj *)
+      let c ~exp ~mc = Ast0.Cast(lp, typec, mc, exp) in
+      let alt() = mcode_wrap ~mc:rp ~constructor:(c ~exp) snp in
+      exp_wrap ~exp ~constructor:(c ~mc:rp) ~alt snp
   | Ast0.SizeOfExpr(sizeofmc, exp) ->
-      let (sizeofmc, snp) = string_mcode_pos sizeofmc snp in
-      wrap (Ast0.SizeOfExpr (sizeofmc, exp)) snp
+      let constructor ~mc = Ast0.SizeOfExpr(mc, exp) in
+      mcode_wrap ~mc:sizeofmc ~constructor snp
   | Ast0.SizeOfType(sizeofmc, lp, typec, rp) ->
-      let _ = type_pos typec snp in (*sanity check for disj*)
-      let (sizeofmc, snp) = string_mcode_pos sizeofmc snp in
-      wrap (Ast0.SizeOfType (sizeofmc, lp, typec, rp)) snp
-  | Ast0.TypeExp(typec) -> type_pos typec snp (*sanity check, always None*)
+      let _ = type_pos typec snp in (* sanity check for disj *)
+      let constructor ~mc = Ast0.SizeOfType(mc, lp, typec, rp) in
+      mcode_wrap ~mc:sizeofmc ~constructor snp
+  | Ast0.TypeExp(typec) ->
+      let _ = type_pos typec snp in (* sanity check for disj *)
+      None
   | Ast0.Constructor(lp, typec, rp, init) ->
-      let _ = type_pos typec snp in (*sanity check for disj*)
-      let (lp, snp) = string_mcode_pos lp snp in
-      wrap (Ast0.Constructor (lp, typec, rp, init)) snp
-  | Ast0.MetaErr (mc, co, pu) -> (*is this ever within the rule cody?*)
-      let (mc, snp) = meta_mcode_pos mc snp in
-      wrap (Ast0.MetaErr (mc, co, pu)) snp
+      let _ = type_pos typec snp in (* sanity check for disj *)
+      let constructor ~mc = Ast0.Constructor (mc, typec, rp, init) in
+      mcode_wrap ~mc:lp ~constructor snp
+  | Ast0.MetaErr (mc, co, pu) -> (* is this ever within the rule body? *)
+      let constructor ~mc = Ast0.MetaErr (mc, co, pu) in
+      mcode_wrap ~mc ~constructor snp
   | Ast0.MetaExpr(mc, co, ty, fo, pu) ->
-      let (mc, snp) = meta_mcode_pos mc snp in
-      wrap (Ast0.MetaExpr(mc, co, ty, fo, pu)) snp
-  | Ast0.UniqueExp e -> exp_one e (fun x -> Ast0.UniqueExp x) snp
-  | Ast0.OptExp e -> exp_one e (fun x -> Ast0.OptExp x) snp
-  | Ast0.NestExpr _ | Ast0.Edots _ | Ast0.Ecircles _ | Ast0.Estars _
-  | Ast0.AsExpr _ | Ast0.EComma _ | Ast0.MetaExprList _ -> None
-  | Ast0.DisjExpr _ -> None
+      let constructor ~mc = Ast0.MetaExpr (mc, co, ty, fo, pu) in
+      mcode_wrap ~mc ~constructor snp
+  | Ast0.UniqueExp exp ->
+      let constructor ~exp = Ast0.UniqueExp exp in
+      exp_wrap ~exp ~constructor snp
+  | Ast0.OptExp exp ->
+      let constructor ~exp = Ast0.OptExp exp in
+      exp_wrap ~exp ~constructor snp
 
-(* returns Some statement with inserted position if it was possible to insert
- * a position or None if it was not possible. *)
-and statement_pos s snp = match Ast0.unwrap s with
-  | Ast0.Nest _ | Ast0.Dots _ | Ast0.Circles _ | Ast0.Stars _ | Ast0.Disj _
-  | Ast0.MetaStmt _ | Ast0.Seq _ -> None
-  | Ast0.Exec _ -> None
+(* redefine exp_wrap outside scope of expression_pos due to internal exp_wrap
+ * being typed to only work for expression constructors and not 'a constructors
+ *)
+let exp_wrap ~exp ~constructor ?(alt = fun _ -> None) snp
+: ('a Ast0.wrap * Snap.t) option =
+  let constructor ~item = constructor ~exp:item in
+  item_wrap ~item:exp ~item_posfn:expression_pos ~constructor ~alt snp
+
+let rec declaration_pos decl snp
+: (Ast0.base_declaration Ast0.wrap * Snap.t) option =
+  match Ast0.unwrap decl with
+  | Ast0.DisjDecl _
+  | Ast0.Ddots _
+  | Ast0.MetaDecl _
+  | Ast0.MetaField _
+  | Ast0.MetaFieldList _
+  | Ast0.AsDecl _ ->
+      None
+  | Ast0.Init(st, ty, id, eq, ini, sem) ->
+      let _ = type_pos ty snp in (* sanity check *)
+      let constructor ~id = Ast0.Init(st, ty, id, eq, ini, sem) in
+      id_wrap ~id ~constructor snp
+  | Ast0.UnInit(st, ty, id, sem) ->
+      let _ = type_pos ty snp in (* sanity check *)
+      let constructor ~id = Ast0.UnInit(st, ty, id, sem) in
+      id_wrap ~id ~constructor snp
+  | Ast0.TyDecl _ ->
+      failwith "pos_gen: tydecl"
+  | Ast0.Typedef (tm, tc, tc2, sem) ->
+      let constructor ~mc = Ast0.Typedef (mc, tc, tc2, sem) in
+      mcode_wrap ~mc:tm ~constructor snp
+  | Ast0.MacroDecl (id,lp,ed,rp,sem) ->
+      let constructor ~id = Ast0.MacroDecl (id, lp, ed, rp, sem) in
+      id_wrap ~id ~constructor snp
+  | Ast0.MacroDeclInit (id,lp,ed,rp,eq,init,sem) ->
+      let constructor ~id = Ast0.MacroDeclInit (id,lp,ed,rp,eq,init,sem) in
+      id_wrap ~id ~constructor snp
+  | Ast0.OptDecl(dec) ->
+      let constructor ~item = Ast0.OptDecl item in
+      item_wrap ~item:dec ~item_posfn:declaration_pos ~constructor snp
+  | Ast0.UniqueDecl(dec) ->
+      let constructor ~item = Ast0.UniqueDecl item in
+      item_wrap ~item:dec ~item_posfn:declaration_pos ~constructor snp
+  | Ast0.FunProto(fninfo,id,lp1,params,va,rp1,sem) ->
+      let constructor ~id = Ast0.FunProto(fninfo,id,lp1,params,va,rp1,sem) in
+      id_wrap ~id ~constructor snp
+
+let forinfo_pos f snp
+: (Ast0.base_forinfo Ast0.wrap * Snap.t) option =
+  match Ast0.unwrap f with
+  | Ast0.ForExp (Some exp, sem) ->
+      let c ~exp ~mc = Ast0.ForExp(Some exp, mc) in
+      let alt() = mcode_wrap ~mc:sem ~constructor:(c ~exp) snp in
+      exp_wrap ~exp ~constructor:(c ~mc:sem) ~alt snp
+  | Ast0.ForExp (None, sem) ->
+      let constructor ~mc = Ast0.ForExp (None, mc) in
+      mcode_wrap ~mc:sem ~constructor snp
+  | Ast0.ForDecl (bef, decl) ->
+      let constructor ~item = Ast0.ForDecl(bef, item) in
+      item_wrap ~item:decl ~item_posfn:declaration_pos ~constructor snp
+
+let rec statement_pos s snp
+: (Ast0.base_statement Ast0.wrap * Snap.t) option =
+  match Ast0.unwrap s with
+
+  (* these cannot have positions (disjunctions are handled separately) *)
+  | Ast0.Nest _
+  | Ast0.Dots _
+  | Ast0.Circles _
+  | Ast0.Stars _
+  | Ast0.Disj _
   | Ast0.MetaStmtList _ -> None
   | Ast0.AsStmt _ -> None
+  | Ast0.MetaStmt _ -> None
+
+  (* uncertainty of whether these should be handled! *)
+  | Ast0.Exec _ -> None
   | Ast0.TopExp _ -> None
   | Ast0.Ty _ -> None
   | Ast0.TopInit _ -> None
-  | Ast0.Include _ -> None
-  | Ast0.Undef _ -> None
-  | Ast0.Define _ -> None
-  | Ast0.Pragma _ -> None
+
+  | Ast0.Include (incmc,filemc) ->
+      let constructor ~mc = Ast0.Include(incmc, mc) in
+      mcode_wrap ~mc:filemc ~constructor snp
+  | Ast0.Undef (defmc, id) ->
+      let constructor ~id = Ast0.Undef(defmc, id) in
+      id_wrap ~id ~constructor snp
+  | Ast0.Define (defmc, id, defparam, stmtdots) ->
+      let constructor ~id = Ast0.Define(defmc, id, defparam, stmtdots) in
+      id_wrap ~id ~constructor snp
+  | Ast0.Pragma (pragmc, id, praginfo) ->
+      let constructor ~id = Ast0.Pragma(pragmc, id, praginfo) in
+      id_wrap ~id ~constructor snp
   | Ast0.OptStm stm ->
-      (match statement_pos stm snp with
-       | Some (v, sn) -> wrap (Ast0.OptStm v) sn
-       | None -> None)
+      let c ~item = Ast0.OptStm item in
+      item_wrap ~item:stm ~item_posfn:statement_pos ~constructor:c snp
   | Ast0.UniqueStm stm ->
-      (match statement_pos stm snp with
-       | Some (v, sn) -> wrap (Ast0.UniqueStm v) sn
-       | None -> None)
-  | Ast0.ExprStatement(None, sem) -> None
-  | Ast0.ExprStatement(Some e, sem) ->
-      (match expression_pos e snp with
-       | Some (v, sn) -> wrap (Ast0.ExprStatement(Some v, sem)) sn
-       | None ->
-           let (m,snp) = string_mcode_pos sem snp in
-           wrap (Ast0.ExprStatement(Some e, m)) snp)
-  | Ast0.Exp e ->
-      (match expression_pos e snp with
-       | Some (v, sn) -> wrap (Ast0.Exp v) sn
-       | None -> None)
+      let c ~item = Ast0.UniqueStm item in
+      item_wrap ~item:stm ~item_posfn:statement_pos ~constructor:c snp
+  | Ast0.ExprStatement(None, sem) ->
+      None
+  | Ast0.ExprStatement(Some exp, sem) ->
+      let c ~exp ~mc = Ast0.ExprStatement(Some exp, mc) in
+      let alt() = mcode_wrap ~mc:sem ~constructor:(c ~exp) snp in
+      exp_wrap ~exp ~constructor:(c ~mc:sem) ~alt snp
+  | Ast0.Exp exp ->
+      let constructor ~exp = Ast0.Exp exp in
+      exp_wrap ~exp ~constructor snp
   | Ast0.Decl (bef, decl) ->
-      (match declaration_pos decl snp with
-       | Some (d, sn) -> wrap (Ast0.Decl(bef, d)) sn
-       | None -> None)
+      let c ~item = Ast0.Decl (bef, item) in
+      item_wrap ~item:decl ~item_posfn:declaration_pos ~constructor:c snp
+  | Ast0.Seq (lb, stmtdots, rb) ->
+      let constructor ~mc = Ast0.Seq(mc, stmtdots, rb) in
+      mcode_wrap ~mc:lb ~constructor snp
   | Ast0.IfThen (ifm, l, exp, r, st, a) ->
-      (match expression_pos exp snp with
-       | Some (v, sn) -> wrap (Ast0.IfThen(ifm, l, v, r, st, a)) sn
-       | None ->
-           let (ifm, snp) = string_mcode_pos ifm snp in
-          wrap (Ast0.IfThen(ifm, l, exp, r, st, a)) snp)
+      let c ~exp ~mc = Ast0.IfThen(mc, l, exp, r, st, a) in
+      let alt() = mcode_wrap ~mc:ifm ~constructor:(c ~exp) snp in
+      exp_wrap ~exp ~constructor:(c ~mc:ifm) ~alt snp
   | Ast0.IfThenElse (ifm, l, exp, r, s1, e, s2, a) ->
-      (match expression_pos exp snp with
-       | Some (v, snp) ->
-           wrap (Ast0.IfThenElse(ifm,l,v,r,s1,e,s2,a)) snp
-       | None ->
-           let (ifm, snp) = string_mcode_pos ifm snp in
-           wrap (Ast0.IfThenElse(ifm,l,exp,r,s1,e,s2,a)) snp)
+      let c ~exp ~mc = Ast0.IfThenElse(mc, l, exp, r, s1, e, s2, a) in
+      let alt() = mcode_wrap ~mc:ifm ~constructor:(c ~exp) snp in
+      exp_wrap ~exp ~constructor:(c ~mc:ifm) ~alt snp
   | Ast0.While (whmc, l, exp, r, s, a) ->
-      (match expression_pos exp snp with
-       | Some (v, snp) -> wrap (Ast0.While(whmc, l, v, r, s, a)) snp
-       | None ->
-           let (whmc, snp) = string_mcode_pos whmc snp in
-           wrap (Ast0.While(whmc, l, exp, r, s, a)) snp)
+      let c ~exp ~mc = Ast0.While(mc, l, exp, r, s, a) in
+      let alt() = mcode_wrap ~mc:whmc ~constructor:(c ~exp) snp in
+      exp_wrap ~exp ~constructor:(c ~mc:whmc) ~alt snp
   | Ast0.Do (d, s, whmc, l, exp, r, sem) ->
-      (match expression_pos exp snp with
-       | Some (v,snp) -> wrap (Ast0.Do(d, s, whmc, l, v, r, sem)) snp
-       | None ->
-           let (d, snp) = string_mcode_pos d snp in
-           wrap (Ast0.Do(d, s, whmc, l, exp, r, sem)) snp)
+      let c ~exp ~mc = Ast0.Do(mc, s, whmc, l, exp, r, sem) in
+      let alt() = mcode_wrap ~mc:d ~constructor:(c ~exp) snp in
+      exp_wrap ~exp ~constructor:(c ~mc:d) ~alt snp
   | Ast0.For (fo,lp, fi,expo1,sem,expo2,rp,stmt,a) ->
-      (match forinfo_pos fi snp with
-       | Some (f,snp) ->
-           wrap (Ast0.For (fo,lp, f, expo1, sem, expo2, rp, stmt, a)) snp
-       | None ->
-           let (fo, snp) = string_mcode_pos fo snp in
-           wrap (Ast0.For(fo, lp,fi,expo1,sem,expo2,rp,stmt,a)) snp)
+      let c ~item ~mc = Ast0.For (mc,lp,item,expo1,sem,expo2,rp,stmt,a) in
+      let alt() = mcode_wrap ~mc:fo ~constructor:(c ~item:fi) snp in
+      item_wrap
+        ~item:fi ~item_posfn:forinfo_pos ~constructor:(c ~mc:fo) ~alt snp
   | Ast0.Iterator (id,lp,expdots,rp,stmt,a) ->
-      let (id, snp) = ident_pos id snp in
-      wrap (Ast0.Iterator(id, lp, expdots, rp, stmt, a)) snp
+      let constructor ~id = Ast0.Iterator(id, lp, expdots, rp, stmt, a) in
+      id_wrap ~id ~constructor snp
   | Ast0.Switch (sw, lp, exp, rp, lb, sd, cd, rb) ->
-      (*case_line_dots is currently only inserted as sanity check*)
-      let _ = case_line_dots_pos cd snp in
-      (match expression_pos exp snp with
-       | Some (v, snp) ->
-           wrap (Ast0.Switch(sw, lp, v, rp, lb, sd, cd, rb)) snp
-       | None ->
-           let (sw, snp) = string_mcode_pos sw snp in
-           wrap (Ast0.Switch(sw, lp, exp, rp, lb, sd, cd,rb)) snp)
+      let _ = case_line_dots_pos cd snp in (* sanity check for disj *)
+      let c ~exp ~mc = Ast0.Switch(mc, lp, exp, rp, lb, sd, cd, rb) in
+      let alt() = mcode_wrap ~mc:sw ~constructor:(c ~exp) snp in
+      exp_wrap ~exp ~constructor:(c ~mc:sw) ~alt snp
   | Ast0.Label (id,col) ->
-      let (id, snp) = ident_pos id snp in
-      wrap (Ast0.Label (id, col)) snp
+      let constructor ~id = Ast0.Label(id, col) in
+      id_wrap ~id ~constructor snp
   | Ast0.Goto (goto,id,sem) ->
-      let (id, snp) = ident_pos id snp in
-      wrap (Ast0.Goto (goto, id, sem)) snp
+      let constructor ~id = Ast0.Goto(goto, id, sem) in
+      id_wrap ~id ~constructor snp
   | Ast0.Break (bmc,sem) ->
-      let (bmc, snp) = string_mcode_pos bmc snp in
-      wrap (Ast0.Break(bmc,sem)) snp
+      let constructor ~mc = Ast0.Break(mc, sem) in
+      mcode_wrap ~mc:bmc ~constructor snp
   | Ast0.Continue (cmc,sem) ->
-      let (cmc, snp) = string_mcode_pos cmc snp in
-      wrap (Ast0.Continue(cmc,sem)) snp
+      let constructor ~mc = Ast0.Continue(mc, sem) in
+      mcode_wrap ~mc:cmc ~constructor snp
   | Ast0.ReturnExpr (retmc, exp, sem) ->
-      (match expression_pos exp snp with
-       | Some (v,snp) -> wrap (Ast0.ReturnExpr(retmc, v, sem)) snp
-       | None ->
-           let (retmc, snp) = string_mcode_pos retmc snp in
-           wrap (Ast0.ReturnExpr(retmc, exp, sem)) snp)
+      let c ~exp ~mc = Ast0.ReturnExpr(mc, exp, sem) in
+      let alt() = mcode_wrap ~mc:retmc ~constructor:(c ~exp) snp in
+      exp_wrap ~exp ~constructor:(c ~mc:retmc) ~alt snp
   | Ast0.Return (retmc,sem) ->
-      let (retmc, snp) = string_mcode_pos retmc snp in
-      wrap (Ast0.Return(retmc,sem)) snp
-  | Ast0.FunDecl (b, f, id, lp, ps, rp, lb, sd, rb, a) ->
-      let (id, snp) = ident_pos id snp in
-      wrap (Ast0.FunDecl(b,f,id, lp, ps, rp, lb, sd, rb, a)) snp
+      let constructor ~mc = Ast0.Return(mc, sem) in
+      mcode_wrap ~mc:retmc ~constructor snp
+  | Ast0.FunDecl (b, f, id, lp, ps, op, rp, lb, sd, rb, a) ->
+      let constructor ~id = Ast0.FunDecl(b,f,id,lp,ps,op,rp,lb,sd,rb,a) in
+      id_wrap ~id ~constructor snp

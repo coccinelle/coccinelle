@@ -443,7 +443,7 @@ let (type_field:
             match fieldkind with
             | Simple (Some name, t) | BitField (Some name, t, _, _) ->
                 let s = Ast_c.str_of_name name in
-                if s =$= fld
+                if s = fld
                 then Common.push2 t res
                 else ()
 
@@ -528,5 +528,3 @@ let rec function_pointer_type_opt x =
       function_pointer_type_opt ft
 
   | _ -> None
-
-

@@ -1,30 +1,30 @@
 // ****************************************************************************
-// Prelude 
+// Prelude
 // ****************************************************************************
 
 // Note: some isomorphisms are handled in the engine directly because they
-// require special support. They can not be easily described with a 
+// require special support. They can not be easily described with a
 // XX <=> YY. But some of them have names, so they can be disabled, as for
 // any other isomorphism rule. That also means that those names can not
 // be used for regular isomorphism rule. Those reserved rule names are:
 //  - optional_storage
 //  - optional_qualifier
-//  - value_format 
+//  - value_format
 // See parse_cocci.ml, pattern.ml, transformation.ml.
 
 
 // Note: the order of the rules has some importance. As we don't do a fixpoint,
 // changing the order may impact the result. For instance, if we have
 //
-//  iso1 = x+y <=> y+x   
-//  iso2 = i++ <=> i=i+1; 
+//  iso1 = x+y <=> y+x
+//  iso2 = i++ <=> i=i+1;
 //
-// and if 
-//   in SP we have i++; 
+// and if
+//   in SP we have i++;
 //   in C  we have i=1+i;
 //
-// Does the SP matches the C ? 
-//  - Yes if iso2 precedes iso1 in this file, 
+// Does the SP matches the C ?
+//  - Yes if iso2 precedes iso1 in this file,
 //  - No otherwise.
 
 
@@ -49,9 +49,9 @@
 // Some of them are handled in cocci_vs_c. Some of them handled here.
 
 
-// We would like that 
+// We would like that
 //      chip = (ak4117_t *)snd_magic_kcalloc(ak4117_t, 0, GFP_KERNEL);
-//  also matches 
+//  also matches
 //      X = snd_magic_kcalloc(T, 0, C)
 //
 // For the moment because the iso is (T) E => E and not <=>, it forces
@@ -67,17 +67,17 @@ pure type T;
  (T)E => E
 
 Type
-@ add_signed @ 
+@ add_signed @
 @@
 int => signed int
 
 Type
-@ add_int1 @ 
+@ add_int1 @
 @@
 unsigned => unsigned int
 
 Type
-@ add_int2 @ 
+@ add_int2 @
 @@
 signed => signed int
 
@@ -88,12 +88,12 @@ signed => signed int
 // Dereferences
 
 
-// Those iso were introduced for the 'generic program matching' paper, 
-// with sgrep. The idea is that when we want to detect bugs, 
-// we want to detect something like  free(X) ... *X  
-// meaning that you try to access something that have been freed. 
-// But *X is not the only way to deference X, there is also 
-// X->fld,  hence those iso. 
+// Those iso were introduced for the 'generic program matching' paper,
+// with sgrep. The idea is that when we want to detect bugs,
+// we want to detect something like  free(X) ... *X
+// meaning that you try to access something that have been freed.
+// But *X is not the only way to deference X, there is also
+// X->fld,  hence those iso.
 
 // The following don't see like a good idea, because eg fld could be
 // instantiated in different ways in different places, meaning that the
@@ -106,22 +106,22 @@ signed => signed int
 // expression E;
 // identifier fld;
 // @@
-// 
+//
 // *E => E->fld
-// 
+//
 // Expression
 // @@
 // expression E;
 // identifier fld;
 // @@
-// 
+//
 // *E => (E)->fld
-// 
+//
 // Expression
 // @@
 // expression E,E1;
 // @@
-// 
+//
 // *E => E[E1]
 
 // ---------------------------------------------------------------------------
@@ -137,20 +137,20 @@ signed => signed int
 // the space at the beginning of the line is very important!
 Expression
 @ not_int1 @
-int X; 
+int X;
 @@
  !X => X == 0
 
 TestExpression
 @ not_int2 @
-int X; 
+int X;
 @@
  X => X != 0
 
 // the space at the beginning of the line is very important!
 Expression
 @ not_ptr1 @
-expression *X; 
+expression *X;
 @@
  !X => X == NULL
 
@@ -181,8 +181,8 @@ constant C;
 E != C <=> C != E
 
 Expression
-@ is_zero @ 
-expression X; 
+@ is_zero @
+expression X;
 @@
 X == 0 => !X
 
@@ -190,20 +190,20 @@ X == 0 => !X
 // not nice at all...  ToTestExpression sets everything after the first
 // pattern in the iso rule to be TestExpression
 ToTestExpression
-@ isnt_zero @ 
-expression X; 
+@ isnt_zero @
+expression X;
 @@
 X != 0 => X
 
 Expression
-@ is_null @ 
-expression X; 
+@ is_null @
+expression X;
 @@
 X == NULL => !X
 
 ToTestExpression
-@ isnt_null1 @ 
-expression X; 
+@ isnt_null1 @
+expression X;
 @@
 X != NULL => X
 
@@ -212,27 +212,27 @@ X != NULL => X
 // ---------------------------------------------------------------------------
 
 Expression
-@ bitor_comm @ 
-expression X,Y; 
+@ bitor_comm @
+expression X,Y;
 @@
 X | Y => Y | X
 
 Expression
-@ bitand_comm @ 
-expression X,Y; 
+@ bitand_comm @
+expression X,Y;
 @@
 X & Y => Y & X
 
 // only if side effect free in theory, perhaps makes no sense
 // Expression
-// @ and_comm @ 
-// expression X,Y; 
+// @ and_comm @
+// expression X,Y;
 // @@
 // X && Y => Y && X
 
 // Expression
-// @ or_comm @ 
-// expression X,Y; 
+// @ or_comm @
+// expression X,Y;
 // @@
 // X || Y => Y || X
 
@@ -243,16 +243,16 @@ X & Y => Y & X
 //todo: require check side-effect free expression
 
 Expression
-@ plus_comm @ 
-expression X, Y; 
+@ plus_comm @
+expression X, Y;
 @@
 X + Y => Y + X
 
 
 // needed in kcalloc CE, where have a -kzalloc(c * sizeof(T), E)
 Expression
-@ mult_comm @ 
-expression X, Y; 
+@ mult_comm @
+expression X, Y;
 @@
 X * Y => Y * X
 
@@ -317,14 +317,14 @@ expression X, Y, Z;
 // ---------------------------------------------------------------------------
 
 Expression
-@ gtr_lss @ 
-expression X, Y; 
+@ gtr_lss @
+expression X, Y;
 @@
 X < Y <=> Y > X
 
 Expression
-@ gtr_lss_eq @ 
-expression X, Y; 
+@ gtr_lss_eq @
+expression X, Y;
 @@
 X <= Y <=> Y >= X
 
@@ -335,8 +335,8 @@ X <= Y <=> Y >= X
 // equivalences between i++, +=1, etc.
 // note: there is an addition in this SP.
 Statement
-@ inc @ 
-identifier i; 
+@ inc @
+identifier i;
 @@
 i++; <=> ++i; <=> i+=1; <=> i=i+1;
 
@@ -349,22 +349,22 @@ i++; <=> ++i; <=> i+=1; <=> i=i+1;
 // case.
 
 Statement
-@ for_inc @ 
-expression X, Y; 
-statement S; 
-identifier i; 
+@ for_inc @
+expression X, Y;
+statement S;
+identifier i;
 @@
 for(X;Y;i++) S <=> for(X;Y;++i) S
 
 // ****************************************************************************
-// gcc specific isomorphisms 
+// gcc specific isomorphisms
 // ****************************************************************************
 
 // likely and unlikely are used to give hints to gcc to improve performance.
 
 Expression
-@ unlikely @ 
-expression E; 
+@ unlikely @
+expression E;
 @@
 
 unlikely(E) <=> likely(E) => E
@@ -395,8 +395,8 @@ expression E;
 // Value isomorphisms
 // ---------------------------------------------------------------------------
 
-// There is also equal_c_int in cocci_vs_c to dealing with other 
-// integer decimal/hexadecimal isomorphisms. 
+// There is also equal_c_int in cocci_vs_c to dealing with other
+// integer decimal/hexadecimal isomorphisms.
 // an argexpression applies only at top level, in the argument of a
 // function call, or on the right-hand side of an assignment
 ArgExpression
@@ -409,7 +409,7 @@ ArgExpression
 // ----------------
 
 // ****************************************************************************
-// if structure isomorphisms 
+// if structure isomorphisms
 // ****************************************************************************
 
 // these are after the above so that the introduced negation will distribute
@@ -424,7 +424,7 @@ if (X) S1 else S2 => if (!X) S2 else S1
 
 Statement
 @ ne_if @
-expression E1, E2; 
+expression E1, E2;
 statement S1, S2;
 @@
 if (E1 != E2) S1 else S2 => if (E1 == E2) S2 else S1
@@ -468,10 +468,16 @@ T Z; => T Z = ...;
 Declaration
 @ const_decl_init @
 type T;
-identifier Z;
-constant C;
+context identifier Z;
 @@
 T Z; => T Z = C;
+
+Declaration
+@ const_decl_init_null @
+type T;
+identifier Z;
+@@
+T Z; => T Z = NULL;
 
 Declaration
 @ extern_decl_init @
@@ -512,31 +518,31 @@ static T Z; => static T Z = C;
 // could worry that this has to be a simple statement, but this should work
 // better as it allows + code on S
 Statement
-@ braces1 @ 
-statement S; 
+@ braces1 @
+statement S;
 @@
 { ... S } => S
 
 Statement
-@ braces2 @ 
-statement S; 
+@ braces2 @
+statement S;
 @@
 { ... S ... } => S
 
 Statement
-@ braces3 @ 
-statement S; 
+@ braces3 @
+statement S;
 @@
 { S ... } => S
 
 Statement
-@ braces4 @ 
-statement S; 
+@ braces4 @
+statement S;
 @@
 { S } => S
 
 Statement
-@ ret @ 
+@ ret @
 @@
 return ...; => return;
 
@@ -544,16 +550,16 @@ return ...; => return;
 // ---------------------------------------------------------------------------
 // Declaration isomorphisms
 // ---------------------------------------------------------------------------
-// They are handled in engine (TODO) 
+// They are handled in engine (TODO)
 
 // int i,j,k; <=> int i; int j; int k;
- 
+
 
 // ---------------------------------------------------------------------------
 // Affectation/initialisation isomorphism
 // ---------------------------------------------------------------------------
 // They are handled in engine.
-// 'X = Y'  should also match  'type X = Y'; 
+// 'X = Y'  should also match  'type X = Y';
 
 // ---------------------------------------------------------------------------
 // Pointer/Array isomorphisms
@@ -638,7 +644,7 @@ sizeof(T) => sizeof(E)
 
 
 // ****************************************************************************
-// Linux specific isomorphisms 
+// Linux specific isomorphisms
 // ****************************************************************************
 
 // Examples: many functions are equivalent/related, and one SP modifying
@@ -646,7 +652,7 @@ sizeof(T) => sizeof(E)
 
 
 // ---------------------------------------------------------------------------
-// in rule18, needed ? 
+// in rule18, needed ?
 // ---------------------------------------------------------------------------
 // (
 // -   test_and_set_bit(ev, &bcs->event);

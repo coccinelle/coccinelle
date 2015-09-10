@@ -45,4 +45,3 @@ object(o: 'o)
   *)
   (* method put: make more explicit the fact that array do side effect *)
 end
-

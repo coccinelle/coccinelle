@@ -476,7 +476,7 @@ let get_most_common_subject files default =
 let print_all o l =
   List.iter (function x -> Printf.fprintf o "%s\n" x) l
 
-let make_mail_header o date maintainers ctr number subject =
+let make_mail_header o date maintainers ctr number cover subject =
   Printf.fprintf o "From nobody %s\n" date;
   Printf.fprintf o "From: %s\n" !from;
   (match Str.split (Str.regexp_string ",") maintainers with
@@ -485,9 +485,14 @@ let make_mail_header o date maintainers ctr number subject =
       Printf.fprintf o "To: %s\n" x;
       Printf.fprintf o "Cc: %s\n" (String.concat "," xs)
   | _ -> failwith "no maintainers");
-  if number = 1
+  if number = 1 && not cover
   then Printf.fprintf o "Subject: [PATCH] %s\n\n" subject
-  else Printf.fprintf o "Subject: [PATCH %d/%d] %s\n\n" ctr number subject
+  else
+    if number >= 100
+    then Printf.fprintf o "Subject: [PATCH %03d/%d] %s\n\n" ctr number subject
+    else if number >= 10
+    then Printf.fprintf o "Subject: [PATCH %02d/%d] %s\n\n" ctr number subject
+    else Printf.fprintf o "Subject: [PATCH %d/%d] %s\n\n" ctr number subject
 
 let print_info o info_tbl files =
   let do_one prefix file =
@@ -502,8 +507,28 @@ let print_info o info_tbl files =
   | l ->
       List.iter (function file -> do_one (Printf.sprintf "%s:\n" file) file) l
 
+let cluster_by_dir diffs =
+  let info =
+    List.sort compare
+      (List.map
+	 (function (file,diff) ->
+	   (Filename.dirname file, file, diff))
+	 diffs) in
+  let rec loop = function
+      [] -> []
+    | (dir,file,diffs)::rest ->
+	match loop rest with
+	  ((dira,filea,diffsa)::r)::rest ->
+	    if dir = dira
+	    then ((dir,file,diffs)::(dira,filea,diffsa)::r)::rest
+	    else [(dir,file,diffs)]::((dira,filea,diffsa)::r)::rest
+	| [] -> [[(dir,file,diffs)]]
+	| []::_ -> failwith "not possible" in
+  List.map (List.map (function (dir,file,diffs) -> (file,diffs)))
+    (loop info)
+
 let make_message_files subject cover message nonmessage date maintainer_table
-    patch front add_ext nomerge info_tbl =
+    patch front add_ext nomerge dirmerge info_tbl =
   let ctr = ref 0 in
   let elements =
     Hashtbl.fold
@@ -524,22 +549,41 @@ let make_message_files subject cover message nonmessage date maintainer_table
 		 (List.rev diffs)) @
 	      rest
 	    else
-	      (List.map
-		 (function (common,diffs) ->
-		   ctr := !ctr + 1;
-		   let (files,diffs) = List.split (List.rev !diffs) in
-		   let subject = get_most_common_subject files !common in
-		   (subject,(!ctr,false,maintainers,files,diffs)))
-		 !diffs) @
-	      rest)
+	      if dirmerge
+	      then
+		let diffs =
+		  List.concat
+		    (List.map (function (common,diffs) -> !diffs) !diffs) in
+		let diffs = cluster_by_dir diffs in
+		List.map
+		  (function diffs ->
+		    ctr := !ctr + 1;
+		    let (files,diffs) = List.split (List.rev diffs) in
+		    let subject = get_most_common_subject files "???" in
+		    (subject,(!ctr,false,maintainers,files,diffs)))
+		  diffs @
+		rest
+	      else
+		(List.map
+		   (function (common,diffs) ->
+		     ctr := !ctr + 1;
+		     let (files,diffs) = List.split (List.rev !diffs) in
+		     let subject = get_most_common_subject files !common in
+		     (subject,(!ctr,false,maintainers,files,diffs)))
+		   !diffs) @
+		rest)
       maintainer_table [] in
   let number = List.length elements in
+  let elements =
+    List.sort
+      (fun (_,(ctr1,_,_,_,_)) (_,(ctr2,_,_,_,_)) -> compare ctr1 ctr2)
+      elements in
   let generated =
     List.map
       (function (common,(ctr,the_rest,maintainers,files,diffs)) ->
 	let output_file = add_ext(Printf.sprintf "%s%d" front ctr) in
 	let o = open_out output_file in
-	make_mail_header o date maintainers ctr number
+	make_mail_header o date maintainers ctr number (not (cover=None))
 	  (Printf.sprintf "%s %s" common subject);
 	print_info o info_tbl files;
 	print_all o message;
@@ -563,7 +607,7 @@ let make_message_files subject cover message nonmessage date maintainer_table
 	(if not(stat = Unix.WEXITED 0)
 	then (print_all stderr info; Printf.fprintf stderr "\n"));
 	output_file)
-      (List.rev elements) in
+      elements in
   let later = add_ext(Printf.sprintf "%s%d" front (number+1)) in
   if Sys.file_exists later
   then Printf.fprintf stderr "Warning: %s and other files may be left over from a previous run\n" later;
@@ -599,7 +643,7 @@ let make_cover_file n subject cover front date maintainer_table =
       let maintainers_and_lists = String.concat "," maintainers_and_lists in
       let output_file = Printf.sprintf "%s.cover" front in
       let o = open_out output_file in
-      make_mail_header o date maintainers_and_lists 0 n subject;
+      make_mail_header o date maintainers_and_lists 0 n true subject;
       print_all o cover;
       Printf.fprintf o "\n";
       close_out o
@@ -624,7 +668,7 @@ let generate_command front cover generated =
   close_out o
 
 let make_output_files subject cover message nonmessage
-    maintainer_table patch nomerge info_tbl =
+    maintainer_table patch nomerge dirmerge info_tbl =
   let date = List.hd (cmd_to_list "date") in
   let front = safe_chop_extension patch in
   let add_ext =
@@ -633,7 +677,7 @@ let make_output_files subject cover message nonmessage
     | None -> (function s -> s) in
   let generated =
     make_message_files subject cover message nonmessage date maintainer_table
-      patch front add_ext nomerge info_tbl in
+      patch front add_ext nomerge dirmerge info_tbl in
   make_cover_file (List.length generated) subject cover front date
     maintainer_table;
   generate_command front cover generated
@@ -641,6 +685,7 @@ let make_output_files subject cover message nonmessage
 (* ------------------------------------------------------------------------ *)
 
 let nomerge = ref false
+let dirmerge = ref false
 
 let parse_args l =
   let (other_args,files) =
@@ -649,6 +694,10 @@ let parse_args l =
   let (nomergep,other_args) =
     List.partition (function a -> a = "-nomerge") other_args in
   (if not(nomergep = []) then nomerge := true);
+  let (dirmergep,other_args) =
+    List.partition (function a -> a = "-dirmerge") other_args in
+  (* lazy solution: one directory up from the file level *)
+  (if not(dirmergep = []) then dirmerge := true);
   match files with
     [file] -> (file,String.concat " " other_args)
   | _ -> failwith "Only one file allowed"
@@ -672,4 +721,4 @@ let _ =
   (if !found_a_maintainer = false then git_options := !not_linux);
   (if not (git_args = "") then git_options := !git_options^" "^git_args);
   make_output_files subject cover message nonmessage
-    maintainer_table file !nomerge info_tbl
+    maintainer_table file !nomerge !dirmerge info_tbl

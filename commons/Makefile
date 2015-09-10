@@ -30,6 +30,24 @@ MYSRC=	commands.ml                              \
 	ograph_simple.ml ograph_extended.ml	 \
 	glimpse.ml parser_combinators.ml
 
+MLI_FILES=\
+  common.mli \
+  oarray.mli \
+  oassoc.mli \
+  objet.mli \
+  ocollection.mli \
+  ograph_extended.mli \
+  ograph.mli \
+  ograph_simple.mli \
+  osequence.mli \
+  oset.mli \
+  parser_combinators.mli
+
+ifeq ($(COMPILE_EMBEDDED_BYTES_MODULE),yes)
+	MYSRC+=bytes.ml
+	MLI_FILES+=bytes.mli
+endif
+
 # src from other authors, got from the web or caml hump
 SRC=ocamlextra/dumper.ml
 SRC+=ocamlextra/ANSITerminal.ml
@@ -325,7 +343,11 @@ distclean: clean
 
 .PHONY: depend
 .depend depend:
-	$(OCAMLDEP_CMD) *.mli *.ml  > .depend
+ifeq ($(COMPILE_EMBEDDED_BYTES_MODULE),yes)
+	$(OCAMLDEP_CMD) $(MLI_FILES) $(MYSRC)  > .depend
+else
+	$(OCAMLDEP_CMD) $(MLI_FILES) $(MYSRC) | sed 's/bytes\.cm[a-z]\{1,\}//g' > .depend
+endif
 	for i in $(SUBDIRS); do $(OCAMLDEP_CMD) $$i/*.ml $$i/*.mli >> .depend; done
 
 ifneq ($(MAKECMDGOALS),clean)

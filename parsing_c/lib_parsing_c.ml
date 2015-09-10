@@ -211,6 +211,8 @@ let real_al_expr      x = Visitor_c.vk_expr_s   (real_strip_info_visitor()) x
 let real_al_arguments x = Visitor_c.vk_arguments_s (real_strip_info_visitor()) x
 let real_al_node      x = Visitor_c.vk_node_s   (real_strip_info_visitor()) x
 let real_al_type      x = Visitor_c.vk_type_s   (real_strip_info_visitor()) x
+let real_al_binop     x = Visitor_c.vk_binaryOp_s (real_strip_info_visitor()) x
+let real_al_assignop  x = Visitor_c.vk_assignOp_s (real_strip_info_visitor()) x
 let real_al_decl      x = Visitor_c.vk_decl_s   (real_strip_info_visitor()) x
 let real_al_init      x = Visitor_c.vk_ini_s    (real_strip_info_visitor()) x
 let real_al_inits     x = Visitor_c.vk_inis_s   (real_strip_info_visitor()) x
@@ -238,6 +240,8 @@ let ii_of_decl = extract_info_visitor Visitor_c.vk_decl
 let ii_of_field = extract_info_visitor Visitor_c.vk_struct_field
 let ii_of_node = extract_info_visitor Visitor_c.vk_node
 let ii_of_expr = extract_info_visitor Visitor_c.vk_expr
+let ii_of_assignOp = extract_info_visitor Visitor_c.vk_assignOp
+let ii_of_binaryOp = extract_info_visitor Visitor_c.vk_binaryOp
 let ii_of_stmt = extract_info_visitor Visitor_c.vk_statement
 let ii_of_stmtseq = extract_info_visitor Visitor_c.vk_statement_sequencable
 let ii_of_args = extract_info_visitor Visitor_c.vk_args_splitted
@@ -272,7 +276,7 @@ let max_min_ii_by_pos xs =
   | [] -> failwith "empty list, max_min_ii_by_pos"
   | [x] -> (x, x)
   | x::xs ->
-      let pos_leq p1 p2 = (Ast_c.compare_pos p1 p2) =|= (-1) in
+      let pos_leq p1 p2 = (Ast_c.compare_pos p1 p2) = (-1) in
       xs +> List.fold_left (fun (maxii,minii) e ->
         let maxii' = if pos_leq maxii e then e else maxii in
         let minii' = if pos_leq e minii then e else minii in
@@ -367,6 +371,3 @@ let rec stmt_elems_of_sequencable xs =
           xs'
         ) +> List.flatten
   ) +> List.flatten
-
-
-

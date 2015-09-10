@@ -91,7 +91,7 @@ let new_test_parse_gen xs =
       sprintf "bad = %d, timeout = %B"
         stat.Parsing_stat.bad stat.Parsing_stat.have_timeout
     in
-    if stat.Parsing_stat.bad =|= 0 && not stat.Parsing_stat.have_timeout
+    if stat.Parsing_stat.bad = 0 && not stat.Parsing_stat.have_timeout
     then Hashtbl.add newscore file (Common.Ok)
     else Hashtbl.add newscore file (Common.Pb s)
   );
@@ -103,7 +103,7 @@ let new_test_parse_gen xs =
     pr2_xxxxxxxxxxxxxxxxx();
     let str = Str.global_replace (Str.regexp "/") "__" dirname in
     let def = if !Flag_parsing_c.filter_define_error then "_def_" else "" in
-    let ext = if ext =$= "c" then "" else ext in
+    let ext = if ext = "c" then "" else ext in
     let filename = "score_parsing__" ^str ^ def ^ ext ^ ".marshalled" in
     if Sys.file_exists filename
     then
@@ -113,7 +113,7 @@ let new_test_parse_gen xs =
   );
 *)
 
-  if not (null !stat_list)
+  if !stat_list <> []
   then begin
     Parsing_stat.print_recurring_problematic_tokens !stat_list;
     Parsing_stat.print_parsing_stat_list !stat_list;
@@ -164,7 +164,7 @@ let test_parse_gen xs ext =
       sprintf "bad = %d, timeout = %B"
         stat.Parsing_stat.bad stat.Parsing_stat.have_timeout
     in
-    if stat.Parsing_stat.bad =|= 0 && not stat.Parsing_stat.have_timeout
+    if stat.Parsing_stat.bad = 0 && not stat.Parsing_stat.have_timeout
     then Hashtbl.add newscore file (Common.Ok)
     else Hashtbl.add newscore file (Common.Pb s)
   );
@@ -176,7 +176,7 @@ let test_parse_gen xs ext =
     pr2_xxxxxxxxxxxxxxxxx();
     let str = Str.global_replace (Str.regexp "/") "__" dirname in
     let def = if !Flag_parsing_c.filter_define_error then "_def_" else "" in
-    let ext = if ext =$= "c" then "" else ext in
+    let ext = if ext = "c" then "" else ext in
     let filename = "score_parsing__" ^str ^ def ^ ext ^ ".marshalled" in
     if Sys.file_exists filename
     then
@@ -186,7 +186,7 @@ let test_parse_gen xs ext =
   );
 *)
 
-  if not (null !stat_list)
+  if !stat_list <> []
   then begin
     Parsing_stat.print_recurring_problematic_tokens !stat_list;
     Parsing_stat.print_parsing_stat_list !stat_list;
@@ -239,7 +239,7 @@ let local_test_cfg launchgv file =
 	  Some (Ast_c.str_of_name (defbis.Ast_c.f_name))
       | Some s, Ast_c.Definition (defbis,_)  ->
 	  let nm = Ast_c.str_of_name (defbis.Ast_c.f_name) in
-          if s =$= nm then Some nm else None
+          if s = nm then Some nm else None
       | _, _ -> None
     in
 
@@ -443,7 +443,7 @@ let test_attributes file =
 
 let cpp_options () = [
   Cpp_ast_c.I "/home/yyzhou/pad/linux/include";
-] ++
+] @
   Cpp_ast_c.cpp_option_of_cmdline
   (!Flag_parsing_c.cpp_i_opts,!Flag_parsing_c.cpp_d_opts)
 
@@ -550,7 +550,7 @@ let test_parse xs =
     Common.push2 stat stat_list;
   );
 
-  if not (null !stat_list)
+  if !stat_list <> []
   then begin
     Parsing_stat.print_recurring_problematic_tokens !stat_list;
     Parsing_stat.print_parsing_stat_list !stat_list;
@@ -639,4 +639,3 @@ let actions () = [
   "--xxx", "   <file1> <>",
   Common.mk_action_n_arg test_xxx;
 ]
-

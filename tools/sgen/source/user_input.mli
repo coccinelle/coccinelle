@@ -7,12 +7,42 @@
 (* CONFIDENCE *)
 
 (* The confidence level of the script. Low, Moderate, or High. *)
-type confidence
-val conf_tostring : confidence -> string
 
-(* fails if the string is not l, m, h, low, moderate, or high.
- * case insensitive. *)
-val conf_fromstring : string -> confidence
+module Confidence : sig
+  type t = Low | Moderate | High
+
+  exception Not_confidence of string
+
+  val to_string : t -> string
+
+  (* fails with Not_confidence if the string is not l, m, h, low, moderate, or
+   * high. Case insensitive.
+   *)
+  val from_string : string -> t
+end
+
+
+(* ------------------------------------------------------------------------- *)
+(* USER RULE *)
+
+(* user-specified data (new name + org and report messages) for one rule. *)
+
+module Rule : sig
+  type t
+
+  (* rule_name is the new rulename (or the original one if a new one is not
+   * needed). org and report are (error message, list of metavariables).
+   *)
+  val make :
+    rule_name:string ->
+    org:(string * string list) ->
+    report:(string * string list) ->
+    t
+
+  val get_name : t -> string
+  val get_org : t -> string * Meta_variable.t list
+  val get_report : t -> string * Meta_variable.t list
+end
 
 
 (* ------------------------------------------------------------------------- *)
@@ -22,11 +52,11 @@ val conf_fromstring : string -> confidence
 type t
 
 (* constructor; description and confidence level are required *)
-val make : description:string -> confidence:confidence -> t
+val make : description:string -> confidence:Confidence.t -> t
 
 (* setters *)
 val set_keys : string -> t -> t
-val set_conf : confidence -> t -> t
+val set_conf : Confidence.t -> t -> t
 val set_comments : string -> t -> t
 val set_options : string -> t -> t
 val set_url : string -> t -> t
@@ -34,26 +64,16 @@ val set_limits : string list -> t -> t
 val add_limit : string -> t -> t
 val set_authors : string list -> t -> t
 val add_author : string -> t -> t
-val add_rule :
-  ((string * string option) * (* original rule name, new rule name *)
-   (string * string list) * (* org message, org metavars *)
-   (string * string list)) -> (* rep message, rep metavars *)
-  t -> t
-
-(* getters *)
+val add_rule : rule_name:string -> Rule.t -> t -> t
 
 (* check if there's already a rule with that name *)
 val check_name : string -> t -> unit
+
+(* get string formatted version of preface *)
 val get_preface : t -> string
 
-(* ordered_rules are all the original */+/- rules from input script, ordered
- * by when they occur in the script. Returns the same rules mapped to the
- * specified user input messages - or generated messages if no user input. *)
-val get_rules :
-  ordered_rules:string list -> t ->
-  ((string * string option) *
-   (string * Meta_variable.t list) *
-   (string * Meta_variable.t list)) list
+(* returns rule with associated metadata, default generated if not found *)
+val get_rule : rule_name:string -> t -> Rule.t
 
 (* turns a user input into the config that generates it *)
 val unparse : t -> string

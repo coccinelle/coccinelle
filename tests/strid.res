@@ -1,4 +1,4 @@
 int main () {
   struct foo *a;
-  print(f(a,12));
+  print(f(a, 12));
 }

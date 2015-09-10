@@ -155,7 +155,11 @@ clean::
 distclean: clean
 
 .depend depend: lexer_c.ml parser_c.ml parser_c.mli
+ifeq ($(COMPILE_EMBEDDED_BYTES_MODULE),yes)
 	$(OCAMLDEP_CMD) *.mli *.ml > .depend
+else
+	$(OCAMLDEP_CMD) *.mli *.ml | sed "s%\.\./commons/bytes\.cm.%%g" > .depend
+endif
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)

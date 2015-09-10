@@ -145,6 +145,20 @@ let rec ident i =
 
 let print_string_box s = print_string s; open_box 0
 
+let assignOp op =
+  print_context op
+    (function _ -> match Ast0.unwrap op with
+      | Ast0.SimpleAssign op' -> mcode U.simpleAssignOp op'
+      | Ast0.OpAssign op' -> mcode U.opAssignOp op'
+      | Ast0.MetaAssign(name,_,_) -> mcode print_meta name)
+
+let binaryOp op =
+  print_context op
+    (function _ -> match Ast0.unwrap op with
+      | Ast0.Arith op' -> mcode U.arithOp op'
+      | Ast0.Logical op' -> mcode U.logicalOp op'
+      | Ast0.MetaBinary(name,_,_) -> mcode print_meta name)
+
 let rec expression e =
   print_option Type_cocci.typeC (Ast0.get_type e);
   print_context e
@@ -161,8 +175,11 @@ let rec expression e =
 	  let _ = dots (function _ -> ()) expression args in
 	  close_box(); mcode print_string rp
       | Ast0.Assignment(left,op,right,_) ->
-	  expression left; print_string " "; mcode U.assignOp op;
-	  print_string " "; expression right
+	expression left;
+        print_string " ";
+        assignOp op;
+	print_string " ";
+        expression right
       | Ast0.Sequence(left,op,right) ->
 	  expression left; mcode print_string op;
 	  print_string " "; expression right
@@ -175,13 +192,19 @@ let rec expression e =
       | Ast0.Unary(exp,op) -> mcode U.unaryOp op; expression exp
       | Ast0.Binary(left,op,right) ->
 	  print_string "(";
-	  expression left; print_string " "; mcode U.binaryOp op;
-	  print_string " "; expression right;
+	  expression left;
+          print_string " ";
+          binaryOp op;
+          print_string " ";
+          expression right;
 	  print_string ")"
       | Ast0.Nested(left,op,right) ->
 	  print_string "(";
-	  expression left; print_string " "; mcode U.binaryOp op;
-	  print_string " "; expression right;
+	  expression left;
+          print_string " ";
+          binaryOp op;
+	  print_string " ";
+          expression right;
 	  print_string ")"
       | Ast0.Paren(lp,exp,rp) ->
 	  mcode print_string_box lp; expression exp; close_box();
@@ -238,7 +261,9 @@ let rec expression e =
       | Ast0.OptExp(exp) -> print_string "?"; expression exp
       | Ast0.UniqueExp(exp) -> print_string "!"; expression exp
       |	Ast0.AsExpr(exp,asexp) -> expression exp; print_string "@";
-	  expression asexp)
+	  expression asexp
+      |	Ast0.AsSExpr(exp,asstm) -> expression exp; print_string "@";
+	  statement "" asstm)
 
 and expression_dots x = dots (function _ -> ()) expression x
 
@@ -266,10 +291,6 @@ and print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2) fn =
   mcode print_string rp1; mcode print_string lp2;
   parameter_list params; mcode print_string rp2
 
-and print_function_type (ty,lp1,params,rp1) fn =
-  print_option typeC ty; fn(); mcode print_string lp1;
-  parameter_list params; mcode print_string rp1
-
 and typeC t =
   print_context t
     (function _ ->
@@ -284,8 +305,6 @@ and typeC t =
       | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	  print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
 	    (function _ -> ())
-      | Ast0.FunctionType(ty,lp1,params,rp1) ->
-	  print_function_type (ty,lp1,params,rp1) (function _ -> ())
       | Ast0.Array(ty,lb,size,rb) ->
 	  typeC ty; mcode print_string lb; print_option expression size;
 	  mcode print_string rb
@@ -327,9 +346,6 @@ and print_named_type ty id =
     Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
       print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
 	(function _ -> print_string " "; ident id)
-  | Ast0.FunctionType(ty,lp1,params,rp1) ->
-      print_function_type (ty,lp1,params,rp1)
-	(function _ -> print_string " "; ident id)
   | Ast0.Array(ty,lb,size,rb) ->
       let rec loop ty k =
 	match Ast0.unwrap ty with
@@ -360,11 +376,19 @@ and declaration d =
       | Ast0.UnInit(stg,ty,id,sem) ->
 	  print_option (mcode U.storage) stg; print_named_type ty id;
 	  mcode print_string sem
-      | Ast0.MacroDecl(name,lp,args,rp,sem) ->
+      | Ast0.FunProto(fninfo,name,lp1,params,va,rp1,sem) ->
+	  List.iter print_fninfo fninfo;
+	  ident name; mcode print_string_box lp1;
+	  parameter_list params; varargs va;
+	  close_box(); mcode print_string rp1;
+	  mcode print_string sem
+      | Ast0.MacroDecl(stg,name,lp,args,rp,sem) ->
+	  print_option (mcode U.storage) stg;
 	  ident name; mcode print_string_box lp;
 	  let _ = dots (function _ -> ()) expression args in
 	  close_box(); mcode print_string rp; mcode print_string sem
-      | Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem) ->
+      | Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
+	  print_option (mcode U.storage) stg;
 	  ident name; mcode print_string_box lp;
 	  let _ = dots (function _ -> ()) expression args in
 	  close_box(); mcode print_string rp;
@@ -453,7 +477,10 @@ and parameterTypeDef p =
 	  expression asexp)
 
 and parameter_list l = dots (function _ -> ()) parameterTypeDef l
-
+and varargs va = match va with
+  | None -> ()
+  | Some (comma, ellipsis) ->
+    mcode print_string comma; mcode print_string ellipsis
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
@@ -461,11 +488,11 @@ and statement arity s =
   print_context s
     (function _ ->
       match Ast0.unwrap s with
-	Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace,_) ->
+	Ast0.FunDecl(_,fninfo,name,lp,params,va,rp,lbrace,body,rbrace,_) ->
 	  print_string arity;
 	  List.iter print_fninfo fninfo;
 	  ident name; mcode print_string_box lp;
-	  parameter_list params; close_box(); mcode print_string rp;
+	  parameter_list params; varargs va; close_box(); mcode print_string rp;
 	  print_string " ";
 	  print_string arity; mcode print_string lbrace; start_block();
 	  dots force_newline (statement arity) body;
@@ -582,6 +609,7 @@ and statement arity s =
       | Ast0.Exp(exp) -> print_string arity; expression exp
       | Ast0.TopExp(exp) -> print_string arity; expression exp
       | Ast0.Ty(ty) -> print_string arity; typeC ty
+      | Ast0.TopId(id) -> print_string arity; ident id
       |	Ast0.TopInit(init) -> initialiser init
       | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) ->
 	  print_string arity; mcode print_string d;
@@ -720,6 +748,10 @@ let rec unparse_anything x =
   | Ast0.ExprTag(d) | Ast0.ArgExprTag(d) | Ast0.TestExprTag(d) ->
       print_string "Exp:"; force_newline();
       expression d
+  | Ast0.AssignOpTag(d) ->
+      print_string ("AssignOp: " ^ (Ast0.string_of_assignOp d)); force_newline();
+  | Ast0.BinaryOpTag(d) ->
+      print_string ("BinaryOp: " ^ (Ast0.string_of_binaryOp d)); force_newline();
   | Ast0.TypeCTag(d) -> typeC d
   | Ast0.ParamTag(d) -> parameterTypeDef d
   | Ast0.InitTag(d)  -> initialiser d
@@ -753,3 +785,7 @@ let unparse x =
   print_newline()
 
 let unparse_to_string x = Common.format_to_string (function _ -> unparse x)
+
+let show_cocci_parse_tree comment parse_tree =
+  Printf.printf "%s\n" comment;
+  top_level parse_tree; Format.print_newline()

@@ -5,10 +5,10 @@ int main () {
   if(y) {
     foo();
     {
-    foo();
-    rrr();
+      foo();
+      rrr();
+    }
   }
-}
 }
 
 int main () {

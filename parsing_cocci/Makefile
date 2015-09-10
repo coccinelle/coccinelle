@@ -22,7 +22,7 @@ unify_ast.ml semantic_cocci.ml data.ml free_vars.ml safe_for_multi_decls.ml \
 parse_printf.ml parse_aux.ml disjdistr.ml \
 $(LEXER_SOURCES:.mll=.ml) $(PARSER_SOURCES:.mly=.ml) \
 $(CLI_LEXER_SOURCES:.mll=.ml) $(SCRIPT_LEXER_SOURCES:.mll=.ml) \
-cocci_grep.ml dpll.ml get_constants2.ml id_utils.ml adjacency.ml \
+cocci_grep.ml dpll.ml get_constants2.ml id_utils.ml git_grep.ml adjacency.ml \
 commas_on_lists.ml parse_cocci.ml command_line.ml
 
 LIBS=../commons/commons.cma ../globals/globals.cma

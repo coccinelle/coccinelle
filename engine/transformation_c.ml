@@ -114,6 +114,12 @@ module XTRANS = struct
 	    (v,Ast_c.MetaDeclVal(Lib_parsing_c.real_al_decl d))
 	| Ast_c.MetaStmtVal(s) ->
 	    (v,Ast_c.MetaStmtVal(Lib_parsing_c.real_al_statement s))
+	(* These don't contain local variables, but the cocci_tag field
+	   causes problems too.  Why is this not needd for other metavars? *)
+	| Ast_c.MetaAssignOpVal(b) ->
+	    (v,Ast_c.MetaAssignOpVal(Lib_parsing_c.real_al_assignop b))
+	| Ast_c.MetaBinaryOpVal(b) ->
+	    (v,Ast_c.MetaBinaryOpVal(Lib_parsing_c.real_al_binop b))
 	| _ -> (v,vl))
       env
 
@@ -157,6 +163,18 @@ module XTRANS = struct
     let bigf = {
       Visitor_c.default_visitor_c_s with
       Visitor_c.ktype_s = (fun (k, bigf) expb ->
+	match expf expa expb tin with
+	| None -> (* failed *) k expb
+	| Some (x, expb) -> expb);
+    }
+    in
+    Some (expa, Visitor_c.vk_node_s bigf node)
+
+  let cocciId = fun expf expa node -> fun tin ->
+
+    let bigf = {
+      Visitor_c.default_visitor_c_s with
+      Visitor_c.kname_s = (fun (k, bigf) expb ->
 	match expf expa expb tin with
 	| None -> (* failed *) k expb
 	| Some (x, expb) -> expb);
@@ -228,10 +246,11 @@ module XTRANS = struct
 	    (Ast_cocci.MetaExpr(name,Ast_cocci.NoConstraint,u,ty,form,i))
       | _ -> e in
     let fn = Visitor_ast.rebuilder
-	mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+	mcode mcode mcode mcode mcode mcode mcode mcode mcode
+	mcode mcode mcode mcode mcode
 	donothing donothing donothing donothing donothing
 	ident expression donothing donothing donothing donothing
-	donothing donothing donothing
+	donothing donothing donothing donothing donothing
 	donothing donothing donothing donothing donothing donothing in
 
   fn.Visitor_ast.rebuilder_anything anything
@@ -541,6 +560,12 @@ module XTRANS = struct
   let distribute_mck_expr (maxpos, minpos) = fun (lop,mop,rop,bop) -> fun x ->
     Visitor_c.vk_expr_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
 
+  let distribute_mck_assignOp (maxpos, minpos) = fun (lop,mop,rop,bop) -> fun x ->
+    Visitor_c.vk_assignOp_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
+
+  let distribute_mck_binaryOp (maxpos, minpos) = fun (lop,mop,rop,bop) -> fun x ->
+    Visitor_c.vk_binaryOp_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
+
   let distribute_mck_args (maxpos, minpos) = fun (lop,mop,rop,bop) -> fun x ->
     Visitor_c.vk_args_splitted_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
 
@@ -650,7 +675,7 @@ module XTRANS = struct
       (match get_pos mck with
       | Ast_cocci.DontCarePos -> true
       | Ast_cocci.FixPos (i1, i2) ->
-          i1 =*= min && i2 =*= max
+          i1 = min && i2 = max
       | _ -> raise (Impossible 55)
       )
 
@@ -663,6 +688,8 @@ module XTRANS = struct
 
 
   let distrf_e    = distrf (Lib_parsing_c.ii_of_expr,  distribute_mck_expr)
+  let distrf_assignOp = distrf (Lib_parsing_c.ii_of_assignOp, distribute_mck_assignOp)
+  let distrf_binaryOp = distrf (Lib_parsing_c.ii_of_binaryOp, distribute_mck_binaryOp)
   let distrf_args = distrf (Lib_parsing_c.ii_of_args,  distribute_mck_args)
   let distrf_type = distrf (Lib_parsing_c.ii_of_type,  distribute_mck_type)
   let distrf_param  = distrf (Lib_parsing_c.ii_of_param, distribute_mck_param)
@@ -701,7 +728,7 @@ module XTRANS = struct
   let envf keep inherited = fun (s, value, _) f tin ->
     let s = Ast_cocci.unwrap_mcode s in
     let v =
-      if keep =*= Type_cocci.Saved
+      if keep = Type_cocci.Saved
       then (
         try Some (List.assoc s tin.binding)
         with Not_found ->
@@ -738,7 +765,7 @@ module XTRANS = struct
         else fail tin
 
 
-  let check_idconstraint matcher c id = fun f tin -> f () tin
+  let check_constraints matcher c id = fun f tin -> f () tin
   let check_constraints_ne matcher constraints exp = fun f tin -> f () tin
 
   (* ------------------------------------------------------------------------*)
@@ -801,7 +828,7 @@ let (transform2: string (* rule name *) -> string list (* dropped_isos *) ->
       | F.Fake
       | F.TrueNode _ | F.FalseNode | F.AfterNode _ | F.FallThroughNode
           -> ()
-      | _ -> () (* assert (not (node =*= node')); *)
+      | _ -> () (* assert (not (node = node')); *)
       );
 
       (* useless, we don't go back from flow to ast now *)

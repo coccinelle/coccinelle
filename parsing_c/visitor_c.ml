@@ -189,12 +189,12 @@ let (iter_expr:((expression -> unit) -> expression -> unit) -> expression -> uni
     | FunCall  (e, es)         ->  f k e; List.iter (f k) es
     | CondExpr (e1, e2, e3)    -> f k e1; f k e2; f k e3
     | Sequence (e1, e2)        -> f k e1; f k e2;
-    | Assignment (e1, op, e2)  -> f k e1; f k e2;
+    | Assignment (e1, op, e2)  -> f k e1; vk_asignOp k op; f k e2;
 
     | Postfix  (e, op) -> f k e
     | Infix    (e, op) -> f k e
     | Unary    (e, op) -> f k e
-    | Binary   (e1, op, e2) -> f k e1; f k  e2;
+    | Binary   (e1, op, e2) -> f k e1; vk_binaryOp k op; f k  e2;
 
     | ArrayAccess    (e1, e2) -> f k e1; f k e2;
     | RecordAccess   (e, s) -> f k e
@@ -234,6 +234,8 @@ let test =
 type visitor_c =
  {
    kexpr:      (expression  -> unit) * visitor_c -> expression  -> unit;
+   kassignOp:  (assignOp    -> unit) * visitor_c -> assignOp    -> unit;
+   kbinaryOp:  (binaryOp    -> unit) * visitor_c -> binaryOp    -> unit;
    kstatement: (statement   -> unit) * visitor_c -> statement   -> unit;
    ktype:      (fullType    -> unit) * visitor_c -> fullType    -> unit;
 
@@ -247,6 +249,7 @@ type visitor_c =
    kfield: (field -> unit) * visitor_c -> field -> unit;
 
    kcppdirective: (cpp_directive -> unit) * visitor_c -> cpp_directive -> unit;
+   kifdefdirective : (ifdef_directive -> unit) * visitor_c -> ifdef_directive -> unit;
    kdefineval : (define_val -> unit) * visitor_c -> define_val -> unit;
    kstatementseq: (statement_sequencable   -> unit) * visitor_c -> statement_sequencable   -> unit;
 
@@ -262,24 +265,27 @@ type visitor_c =
  }
 
 let default_visitor_c =
-  { kexpr         = (fun (k,_) e  -> k e);
-    kstatement    = (fun (k,_) st -> k st);
-    ktype         = (fun (k,_) t  -> k t);
-    kdecl         = (fun (k,_) d  -> k d);
-    konedecl      = (fun (k,_) d  -> k d);
-    kparam        = (fun (k,_) d  -> k d);
-    kdef          = (fun (k,_) d  -> k d);
-    kini          = (fun (k,_) ie  -> k ie);
-    kname         = (fun (k,_) x -> k x);
-    kfragment     = (fun (k,_) f  -> k f);
-    kformat       = (fun (k,_) f  -> k f);
-    kinfo         = (fun (k,_) ii  -> k ii);
-    knode         = (fun (k,_) n  -> k n);
-    ktoplevel     = (fun (k,_) p  -> k p);
-    kcppdirective = (fun (k,_) p  -> k p);
-    kdefineval    = (fun (k,_) p  -> k p);
-    kstatementseq = (fun (k,_) p  -> k p);
-    kfield        = (fun (k,_) p  -> k p);
+  { kexpr           = (fun (k,_) e  -> k e);
+    kassignOp       = (fun (k,_) op -> k op);
+    kbinaryOp       = (fun (k,_) op -> k op);
+    kstatement      = (fun (k,_) st -> k st);
+    ktype           = (fun (k,_) t  -> k t);
+    kdecl           = (fun (k,_) d  -> k d);
+    konedecl        = (fun (k,_) d  -> k d);
+    kparam          = (fun (k,_) d  -> k d);
+    kdef            = (fun (k,_) d  -> k d);
+    kini            = (fun (k,_) ie  -> k ie);
+    kname           = (fun (k,_) x -> k x);
+    kfragment       = (fun (k,_) f  -> k f);
+    kformat         = (fun (k,_) f  -> k f);
+    kinfo           = (fun (k,_) ii  -> k ii);
+    knode           = (fun (k,_) n  -> k n);
+    ktoplevel       = (fun (k,_) p  -> k p);
+    kcppdirective   = (fun (k,_) p  -> k p);
+    kifdefdirective = (fun (k,_) p  -> k p);
+    kdefineval      = (fun (k,_) p  -> k p);
+    kstatementseq   = (fun (k,_) p  -> k p);
+    kfield          = (fun (k,_) p  -> k p);
   }
 
 
@@ -303,12 +309,12 @@ let rec vk_expr = fun bigf expr ->
     | CondExpr (e1, e2, e3)    ->
         exprf e1; do_option (exprf) e2; exprf e3
     | Sequence (e1, e2)        -> exprf e1; exprf e2;
-    | Assignment (e1, op, e2)  -> exprf e1; exprf e2;
+    | Assignment (e1, op, e2)  -> exprf e1; vk_assignOp bigf op; exprf e2;
 
     | Postfix  (e, op) -> exprf e
     | Infix    (e, op) -> exprf e
     | Unary    (e, op) -> exprf e
-    | Binary   (e1, op, e2) -> exprf e1; exprf  e2;
+    | Binary   (e1, op, e2) -> exprf e1; vk_binaryOp bigf op; exprf  e2;
 
     | ArrayAccess    (e1, e2) -> exprf e1; exprf e2;
     | RecordAccess   (e, name) -> exprf e; vk_name bigf name
@@ -336,10 +342,18 @@ let rec vk_expr = fun bigf expr ->
         vk_argument_list bigf ts;
 	vk_argument bigf t
     | Delete e -> vk_expr bigf e
+    | Defined name -> vk_name bigf name
 
 
   in exprf expr
 
+and vk_assignOp = fun bigf (_,ii) ->
+  let iif ii = vk_ii bigf ii in
+  iif ii
+
+and vk_binaryOp = fun bigf (_,ii) ->
+  let iif ii = vk_ii bigf ii in
+  iif ii
 
 (* ------------------------------------------------------------------------ *)
 and vk_name = fun bigf ident ->
@@ -524,10 +538,10 @@ and vk_decl = fun bigf d ->
         iif ii;
         vk_onedecl bigf x
       );
-    | MacroDecl ((s, args, ptvg),ii) ->
+    | MacroDecl ((_stob, s, args, ptvg),ii) ->
         iif ii;
         vk_argument_list bigf args
-    | MacroDeclInit ((s, args, ini),ii) ->
+    | MacroDeclInit ((_stob, s, args, ini),ii) ->
         iif ii;
         vk_argument_list bigf args;
 	vk_ini bigf ini
@@ -722,10 +736,23 @@ and vk_program = fun bigf xs ->
   xs +> List.iter (vk_toplevel bigf)
 
 and vk_ifdef_directive bigf directive =
-  let iif ii =  vk_ii bigf ii in
-  match directive with
-  | IfdefDirective (ifkind, ii) -> iif ii
+  let f = bigf.kifdefdirective in
+  let k d =
+    let iif ii =  vk_ii bigf ii in
+    match d with
+    | IfdefDirective ((ifkind,_tag), ii) ->
+        vk_ifdefkind bigf ifkind;
+        iif ii
+  in f (k, bigf) directive
 
+and vk_ifdefkind bigf = function
+  | Ifdef       ifguard
+  | IfdefElseif ifguard -> vk_ifdef_guard bigf ifguard
+  | x                   -> ()
+
+and vk_ifdef_guard bigf = function
+  | Gif e -> vk_expr bigf e
+  | x     -> ()
 
 and vk_cpp_directive bigf directive =
   let iif ii =  vk_ii bigf ii in
@@ -847,7 +874,7 @@ and vk_node = fun bigf node ->
     match F.unwrap n with
 
     | F.FunHeader (def) ->
-        assert(null (fst def).f_body);
+        assert( (fst def).f_body = []);
         vk_def bigf def;
 
     | F.Decl decl -> vk_decl bigf decl
@@ -1062,6 +1089,8 @@ type 'a inout = 'a -> 'a
  *)
 type visitor_c_s = {
   kexpr_s:      (expression inout * visitor_c_s) -> expression inout;
+  kassignOp_s:  (assignOp inout * visitor_c_s) -> assignOp inout;
+  kbinaryOp_s:  (binaryOp inout * visitor_c_s) -> binaryOp inout;
   kstatement_s: (statement  inout * visitor_c_s) -> statement  inout;
   ktype_s:      (fullType   inout * visitor_c_s) -> fullType   inout;
 
@@ -1072,6 +1101,7 @@ type visitor_c_s = {
   kini_s:  (initialiser  inout * visitor_c_s) -> initialiser inout;
 
   kcppdirective_s: (cpp_directive inout * visitor_c_s) -> cpp_directive inout;
+  kifdefdirective_s : (ifdef_directive inout * visitor_c_s) -> ifdef_directive inout;
   kdefineval_s: (define_val inout * visitor_c_s) -> define_val inout;
   kstatementseq_s: (statement_sequencable inout * visitor_c_s) -> statement_sequencable inout;
   kstatementseq_list_s: (statement_sequencable list inout * visitor_c_s) -> statement_sequencable list inout;
@@ -1086,7 +1116,9 @@ type visitor_c_s = {
  }
 
 let default_visitor_c_s =
-  { kexpr_s =      (fun (k,_) e  -> k e);
+  { kexpr_s      = (fun (k,_) e  -> k e);
+    kassignOp_s  = (fun (k,_) op -> k op);
+    kbinaryOp_s  = (fun (k,_) op -> k op);
     kstatement_s = (fun (k,_) st -> k st);
     ktype_s      = (fun (k,_) t  -> k t);
     kdecl_s      = (fun (k,_) d  -> k d);
@@ -1102,6 +1134,7 @@ let default_visitor_c_s =
     kstatementseq_s = (fun (k,_) x  -> k x);
     kstatementseq_list_s = (fun (k,_) x  -> k x);
     kcppdirective_s = (fun (k,_) x  -> k x);
+    kifdefdirective_s = (fun (k,_) x -> k x);
   }
 
 let rec vk_expr_s = fun bigf expr ->
@@ -1127,12 +1160,19 @@ let rec vk_expr_s = fun bigf expr ->
 
       | CondExpr (e1, e2, e3)   -> CondExpr (exprf e1, fmap exprf e2, exprf e3)
       | Sequence (e1, e2)        -> Sequence (exprf e1, exprf e2)
-      | Assignment (e1, op, e2)  -> Assignment (exprf e1, op, exprf e2)
-
+      | Assignment (e1, op, e2)  ->
+        let e1 = exprf e1 in
+        let op = vk_assignOp_s bigf op in
+        let e2 = exprf e2 in
+        Assignment (e1, op, e2)
       | Postfix  (e, op) -> Postfix (exprf e, op)
       | Infix    (e, op) -> Infix   (exprf e, op)
       | Unary    (e, op) -> Unary   (exprf e, op)
-      | Binary   (e1, op, e2) -> Binary (exprf e1, op, exprf e2)
+      | Binary   (e1, op, e2) ->
+        let e1 = exprf e1 in
+        let op = vk_binaryOp_s bigf op in
+        let e2 = exprf e2 in
+        Binary (e1, op, e2)
 
       | ArrayAccess    (e1, e2)  -> ArrayAccess (exprf e1, exprf e2)
       | RecordAccess   (e, name) -> RecordAccess (exprf e, vk_name_s bigf name)
@@ -1155,11 +1195,17 @@ let rec vk_expr_s = fun bigf expr ->
 	  New (Some (ts +> List.map (fun (e,ii) ->
 	    vk_argument_s bigf e, iif ii)), vk_argument_s bigf t)
       | Delete e      -> Delete (vk_expr_s bigf e)
+      | Defined name  -> Defined (vk_name_s bigf name)
 
     in
     (e', typ'), (iif ii)
   in exprf expr
 
+and vk_assignOp_s bigf (op,ii) =
+  let iif ii = vk_ii_s bigf ii in (op, iif ii)
+
+and vk_binaryOp_s bigf (op,ii) =
+  let iif ii = vk_ii_s bigf ii in (op, iif ii)
 
 and vk_argument_s bigf argument =
   let iif ii = vk_ii_s bigf ii in
@@ -1402,15 +1448,15 @@ and vk_decl_s = fun bigf d ->
     match decl with
     | DeclList (xs, ii) ->
         DeclList (List.map aux xs,   iif ii)
-    | MacroDecl ((s, args, ptvg),ii) ->
+    | MacroDecl ((stob, s, args, ptvg),ii) ->
         MacroDecl
-          ((s,
+          ((stob, s,
            args +> List.map (fun (e,ii) -> vk_argument_s bigf e, iif ii),
            ptvg),
           iif ii)
-    | MacroDeclInit ((s, args, ini),ii) ->
+    | MacroDeclInit ((stob, s, args, ini),ii) ->
         MacroDeclInit
-          ((s,
+          ((stob, s,
            args +> List.map (fun (e,ii) -> vk_argument_s bigf e, iif ii),
 	   vk_ini_s bigf ini),
           iif ii)
@@ -1629,12 +1675,25 @@ and vk_cpp_directive_s = fun bigf top ->
 
   in f (k, bigf) top
 
-and vk_ifdef_directive_s = fun bigf ifdef ->
-  let iif ii = vk_ii_s bigf ii in
-  match ifdef with
-  | IfdefDirective (ifkind, ii) -> IfdefDirective (ifkind, iif ii)
+and vk_ifdef_directive_s bigf ifdef =
+  let f = bigf.kifdefdirective_s in
+  let k d =
+    let iif ii = vk_ii_s bigf ii in
+    match d with
+    | IfdefDirective ((ifkind,tag), ii) ->
+        let ifkind' = vk_ifdefkind_s bigf ifkind in
+        IfdefDirective ((ifkind',tag), iif ii)
+  in f (k, bigf) ifdef
 
+and vk_ifdefkind_s bigf = function
+  | Ifdef       ifguard -> Ifdef       (vk_ifdef_guard_s bigf ifguard)
+  | IfdefElseif ifguard -> IfdefElseif (vk_ifdef_guard_s bigf ifguard)
+  | IfdefElse           -> IfdefElse
+  | IfdefEndif          -> IfdefEndif
 
+and vk_ifdef_guard_s bigf = function
+  | Gif e -> Gif (vk_expr_s bigf e)
+  | x     -> x
 
 and vk_define_kind_s  = fun bigf defkind ->
   match defkind with
@@ -1737,7 +1796,7 @@ and vk_node_s = fun bigf node ->
     F.rewrap node (
     match F.unwrap node with
     | F.FunHeader (def) ->
-        assert (null (fst def).f_body);
+        assert ( (fst def).f_body = []);
         F.FunHeader (vk_def_s bigf def)
 
     | F.Decl declb -> F.Decl (vk_decl_s bigf declb)
@@ -1800,7 +1859,7 @@ and vk_node_s = fun bigf node ->
                  i_content = copt;
                  }
       ->
-        assert (copt =*= None);
+        assert (copt = None);
         F.Include {i_include = (s, iif ii);
                     i_rel_pos = h_rel_pos;
                     i_is_in_ifdef = b;

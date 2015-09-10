@@ -106,7 +106,7 @@ and base_expression =
 		      string mcode (* quote *)
   | FunCall        of expression * string mcode (* ( *) *
                       expression dots * string mcode (* ) *)
-  | Assignment     of expression * Ast.assignOp mcode * expression *
+  | Assignment     of expression * assignOp * expression *
 	              bool (* true if it can match an initialization *)
   | Sequence       of expression * string mcode (* , *) * expression
   | CondExpr       of expression * string mcode (* ? *) * expression option *
@@ -114,8 +114,8 @@ and base_expression =
   | Postfix        of expression * Ast.fixOp mcode
   | Infix          of expression * Ast.fixOp mcode
   | Unary          of expression * Ast.unaryOp mcode
-  | Binary         of expression * Ast.binaryOp mcode * expression
-  | Nested         of expression * Ast.binaryOp mcode * expression
+  | Binary         of expression * binaryOp * expression
+  | Nested         of expression * binaryOp * expression
   | Paren          of string mcode (* ( *) * expression *
                       string mcode (* ) *)
   | ArrayAccess    of expression * string mcode (* [ *) * expression *
@@ -136,6 +136,7 @@ and base_expression =
   | MetaExprList   of Ast.meta_name mcode (* only in arg lists *) *
 	              listlen * pure
   | AsExpr         of expression * expression (* as expr, always metavar *)
+  | AsSExpr        of expression * statement (* as expr, always metavar *)
   | EComma         of string mcode (* only in arg lists *)
   | DisjExpr       of string mcode * expression list *
 	              string mcode list (* the |s *) * string mcode
@@ -179,6 +180,28 @@ and base_string_format =
 and string_format = base_string_format wrap
 
 (* --------------------------------------------------------------------- *)
+(* First class operators *)
+and base_assignOp =
+    SimpleAssign of simpleAssignOp mcode
+  | OpAssign of Ast_cocci.arithOp mcode
+  | MetaAssign of Ast_cocci.meta_name mcode * assignOpconstraint * pure
+and simpleAssignOp = string
+and assignOp = base_assignOp wrap
+
+and base_binaryOp =
+    Arith of Ast_cocci.arithOp mcode
+  | Logical of Ast_cocci.logicalOp mcode
+  | MetaBinary of Ast_cocci.meta_name mcode * binaryOpconstraint * pure
+and binaryOp = base_binaryOp wrap
+and assignOpconstraint =
+    AssignOpNoConstraint
+  | AssignOpInSet of assignOp list
+
+and binaryOpconstraint =
+    BinaryOpNoConstraint
+  | BinaryOpInSet of binaryOp list
+
+(* --------------------------------------------------------------------- *)
 (* Types *)
 
 and base_typeC =
@@ -189,9 +212,6 @@ and base_typeC =
   | FunctionPointer of typeC *
 	          string mcode(* ( *)*string mcode(* * *)*string mcode(* ) *)*
                   string mcode (* ( *)*parameter_list*string mcode(* ) *)
-  | FunctionType    of typeC option *
-	               string mcode (* ( *) * parameter_list *
-                       string mcode (* ) *)
   | Array           of typeC * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
   | Decimal         of string mcode (* decimal *) * string mcode (* ( *) *
@@ -230,10 +250,18 @@ and base_declaration =
   | Init of Ast.storage mcode option * typeC * ident * string mcode (*=*) *
 	initialiser * string mcode (*;*)
   | UnInit of Ast.storage mcode option * typeC * ident * string mcode (* ; *)
+  | FunProto of
+	fninfo list * ident (* name *) *
+	string mcode (* ( *) * parameter_list *
+        (string mcode (* , *) * string mcode (* ...... *) ) option *
+	string mcode (* ) *) *
+	string mcode (* ; *)
   | TyDecl of typeC * string mcode (* ; *)
-  | MacroDecl of ident (* name *) * string mcode (* ( *) *
+  | MacroDecl of Ast.storage mcode option *
+	ident (* name *) * string mcode (* ( *) *
         expression dots * string mcode (* ) *) * string mcode (* ; *)
-  | MacroDeclInit of ident (* name *) * string mcode (* ( *) *
+  | MacroDeclInit of Ast.storage mcode option *
+	ident (* name *) * string mcode (* ( *) *
         expression dots * string mcode (* ) *) * string mcode (*=*) *
 	initialiser * string mcode (* ; *)
   | Typedef of string mcode (* typedef *) * typeC * typeC * string mcode (*;*)
@@ -367,6 +395,7 @@ and base_statement =
   | Exp           of expression  (* only in dotted statement lists *)
   | TopExp        of expression (* for macros body *)
   | Ty            of typeC (* only at top level *)
+  | TopId         of ident (* only at top level *)
   | TopInit       of initialiser (* only at top level *)
   | Disj          of string mcode * statement dots list *
 	             string mcode list (* the |s *)  * string mcode
@@ -380,7 +409,9 @@ and base_statement =
 	             (statement dots,statement) whencode list
   | FunDecl of (info * mcodekind) (* before the function decl *) *
 	fninfo list * ident (* name *) *
-	string mcode (* ( *) * parameter_list * string mcode (* ) *) *
+	string mcode (* ( *) * parameter_list *
+	(string mcode (* , *) * string mcode (* ...... *) ) option *
+	string mcode (* ) *) *
 	string mcode (* { *) * statement dots *
 	string mcode (* } *) *
 	(info * mcodekind) (* after the function decl *)
@@ -461,7 +492,7 @@ and rule = top_level list
 and parsed_rule =
     CocciRule of
       (rule (*minus*) * Ast.metavar list (*minus metavars*) *
-	(string list (*isos*) * string list (*drop_isos*) * 
+	(string list (*isos*) * string list (*drop_isos*) *
          Ast.dependency (*dependencies*) * string (*rulename*) * Ast.exists)) *
       (rule (*plus*) * Ast.metavar list (*plus metavars*)) * Ast.ruletype
   | ScriptRule of string (* name *) * string * Ast.dependency *
@@ -497,6 +528,8 @@ and anything =
   | DotsCaseTag of case_line dots
   | IdentTag of ident
   | ExprTag of expression
+  | AssignOpTag of assignOp
+  | BinaryOpTag of binaryOp
   | ArgExprTag of expression  (* for isos *)
   | TestExprTag of expression (* for isos *)
   | TypeCTag of typeC
@@ -524,6 +557,8 @@ let dotsDecl x = DotsDeclTag x
 let dotsCase x = DotsCaseTag x
 let ident x = IdentTag x
 let expr x = ExprTag x
+let assignOp x = AssignOpTag x
+let binaryOp x = BinaryOpTag x
 let typeC x = TypeCTag x
 let param x = ParamTag x
 let ini x = InitTag x
@@ -651,6 +686,18 @@ let rec meta_pos_name = function
       | _ -> failwith "bad metavariable")
   | _ -> failwith "bad metavariable"
 
+let rec meta_pos_constraint_names = function
+    ExprTag(e) ->
+      (match unwrap e with
+	MetaExpr(name,constraints,ty,form,pure) ->
+	  (match ty with
+	    Some tylist ->
+	      List.fold_left (fun prev cur -> TC.meta_names cur @ prev)
+		[] tylist
+	  | None -> [])
+      |	_ -> [])
+  | _ -> []
+
 (* --------------------------------------------------------------------- *)
 
 (* unique indices, for mcode and tree nodes *)
@@ -667,21 +714,20 @@ let undots d =
 
 (* --------------------------------------------------------------------- *)
 
-let rec ast0_type_to_type ty =
+let rec ast0_type_to_type inmeta ty =
   match unwrap ty with
-    ConstVol(cv,ty) -> TC.ConstVol(const_vol cv,ast0_type_to_type ty)
+    ConstVol(cv,ty) -> TC.ConstVol(const_vol cv,ast0_type_to_type inmeta ty)
   | BaseType(bty,strings) ->
       TC.BaseType(baseType bty)
   | Signed(sgn,None) ->
       TC.SignedT(sign sgn,None)
   | Signed(sgn,Some ty) ->
-      let bty = ast0_type_to_type ty in
+      let bty = ast0_type_to_type inmeta ty in
       TC.SignedT(sign sgn,Some bty)
-  | Pointer(ty,_) -> TC.Pointer(ast0_type_to_type ty)
+  | Pointer(ty,_) -> TC.Pointer(ast0_type_to_type inmeta ty)
   | FunctionPointer(ty,_,_,_,_,params,_) ->
-      TC.FunctionPointer(ast0_type_to_type ty)
-  | FunctionType _ -> TC.Unknown (*failwith "not supported"*)
-  | Array(ety,_,_,_) -> TC.Array(ast0_type_to_type ety)
+      TC.FunctionPointer(ast0_type_to_type inmeta ty)
+  | Array(ety,_,_,_) -> TC.Array(ast0_type_to_type inmeta ety)
   | Decimal(_, _, e1, _, e2, _) ->
       let e2tc e =
 	match unwrap e with
@@ -705,33 +751,35 @@ let rec ast0_type_to_type ty =
       (match unwrap tag with
 	Id(tag) ->
 	  TC.EnumName(TC.Name(unwrap_mcode tag))
-      | MetaId(tag,_,_,_) ->
-	  (Common.pr2_once
-	     "warning: enum with a metavariable name detected.";
-	   Common.pr2_once
-	     "For type checking assuming the name of the metavariable is the name of the type\n";
-	   TC.EnumName(TC.MV(unwrap_mcode tag,TC.Unitary,false)))
-      | _ -> failwith "unexpected enum type name")
+      | MetaId(tag,Ast.IdNoConstraint,_,_) when inmeta ->
+	  TC.EnumName(TC.MV(unwrap_mcode tag,TC.Unitary,false))
+      | MetaId(tag,_,_,_) when inmeta ->
+	  (* would have to duplicate the type in type_cocci.ml?
+	     perhaps polymorphism would help? *)
+	  failwith "constraints not supported on enum type name"
+      | _ ->
+	  (* can't arise for metavariables and doesn't matter for type
+	     checking *)
+	  TC.EnumName(TC.NoName))
   | EnumName(su,None) -> TC.EnumName TC.NoName
-  | EnumDef(ty,_,_,_) -> ast0_type_to_type ty
+  | EnumDef(ty,_,_,_) -> ast0_type_to_type inmeta ty
   | StructUnionName(su,Some tag) ->
       (match unwrap tag with
 	Id(tag) ->
 	  TC.StructUnionName(structUnion su,TC.Name(unwrap_mcode tag))
-      | MetaId(tag,Ast.IdNoConstraint,_,_) ->
-	  (Common.pr2_once
-	     "warning: struct/union with a metavariable name detected.";
-	   Common.pr2_once
-	     "For type checking assuming the name of the metavariable is the name of the type\n";
-	   TC.StructUnionName(structUnion su,
-			      TC.MV(unwrap_mcode tag,TC.Unitary,false)))
-      | MetaId(tag,_,_,_) ->
+      | MetaId(tag,Ast.IdNoConstraint,_,_) when inmeta ->
+	  TC.StructUnionName(structUnion su,
+			     TC.MV(unwrap_mcode tag,TC.Unitary,false))
+      | MetaId(tag,_,_,_) when inmeta ->
 	  (* would have to duplicate the type in type_cocci.ml?
 	     perhaps polymorphism would help? *)
 	  failwith "constraints not supported on struct type name"
-      | _ -> failwith "unexpected struct/union type name")
+      | _ ->
+	  (* can't arise for metavariables and doesn't matter for type
+	     checking *)
+	  TC.StructUnionName(structUnion su,TC.NoName))
   | StructUnionName(su,None) -> TC.StructUnionName(structUnion su,TC.NoName)
-  | StructUnionDef(ty,_,_,_) -> ast0_type_to_type ty
+  | StructUnionDef(ty,_,_,_) -> ast0_type_to_type inmeta ty
   | TypeName(name) -> TC.TypeName(unwrap_mcode name)
   | MetaType(name,_) ->
       TC.MetaType(unwrap_mcode name,TC.Unitary,false)
@@ -741,7 +789,7 @@ let rec ast0_type_to_type ty =
 	"disjtype not supported in smpl type inference, assuming unknown";
       TC.Unknown
   | OptType(ty) | UniqueType(ty) ->
-      ast0_type_to_type ty
+      ast0_type_to_type inmeta ty
 
 and baseType = function
     Ast.VoidType -> TC.VoidType
@@ -869,3 +917,16 @@ let lub_pure x y =
 (* --------------------------------------------------------------------- *)
 
 let rule_name = ref "" (* for the convenience of the parser *)
+
+let string_of_binaryOp op = match (unwrap op) with
+  | Arith arithOp -> Ast.string_of_arithOp (unwrap_mcode arithOp)
+  | Logical logicalOp -> Ast.string_of_logicalOp (unwrap_mcode logicalOp)
+  | MetaBinary _ -> "MetaBinary"
+
+let string_of_assignOp op = match (unwrap op) with
+  | SimpleAssign _ -> "="
+  | OpAssign op' ->
+    let op'' = rewrap op (Arith op') in
+    let s = string_of_binaryOp op'' in
+    s ^ "="
+  | MetaAssign _ -> "MetaAssign"

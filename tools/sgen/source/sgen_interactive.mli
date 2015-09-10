@@ -7,15 +7,16 @@
 (* INTERACTION FUNCTIONS *)
 
 (* Launches interactive mode.
- * ordered_rules are the names of all */+/- rules, ordered by occurrence in
- * the script.
- * config_name is the suggested name for persisting the user input.
+ *
+ * Arguments:
+ *  - rule_names are the names of all */+/- rules
+ *  - config_name is the suggested name for persisting the user input.
+ *
+ * Returns:
+ *  - preface (description, comments, etc.) formatted for use in a string
+ *  - a list of user inputs, one per rule
  *)
 val interact :
-  ordered_rules:string list ->
+  rule_names:string list ->
   config_name:string ->
-  string *                           (* preface *)
-  ((string * string option) *        (* old rulename, new rulename *)
-   (string * Meta_variable.t list) * (* org *)
-   (string * Meta_variable.t list)   (* rep *)
-  ) list
+  User_input.t

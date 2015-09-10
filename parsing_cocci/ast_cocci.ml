@@ -19,6 +19,7 @@ type 'a wrap =
       minus_free_vars : meta_name list; (*minus free vars*)
       fresh_vars : (meta_name * seed) list; (*fresh vars*)
       inherited : meta_name list; (*inherited vars*)
+      positive_inherited_positions : meta_name list;
       saved_witness : meta_name list; (*witness vars*)
       bef_aft : dots_bef_aft;
       (* the following is for or expressions *)
@@ -88,6 +89,8 @@ and metavar =
   | MetaInitListDecl of arity * meta_name (* name *) * list_len (*len*)
   | MetaListlenDecl of meta_name (* name *)
   | MetaParamDecl of arity * meta_name (* name *)
+  | MetaBinaryOperatorDecl of arity * meta_name
+  | MetaAssignmentOperatorDecl of arity * meta_name
   | MetaParamListDecl of arity * meta_name (*name*) * list_len (*len*)
   | MetaConstDecl of
       arity * meta_name (* name *) * Type_cocci.typeC list option
@@ -97,6 +100,8 @@ and metavar =
   | MetaIdExpDecl of
       arity * meta_name (* name *) * Type_cocci.typeC list option
   | MetaLocalIdExpDecl of
+      arity * meta_name (* name *) * Type_cocci.typeC list option
+  | MetaGlobalIdExpDecl of
       arity * meta_name (* name *) * Type_cocci.typeC list option
   | MetaExpListDecl of arity * meta_name (*name*) * list_len (*len*)
   | MetaDeclDecl of arity * meta_name (* name *)
@@ -112,6 +117,7 @@ and metavar =
   | MetaAnalysisDecl of string * meta_name (* name *)
   | MetaDeclarerDecl of arity * meta_name (* name *)
   | MetaIteratorDecl of arity * meta_name (* name *)
+  | MetaScriptDecl of metavar option ref * meta_name (* name *)
 
 and list_len = AnyLen | MetaLen of meta_name | CstLen of int
 
@@ -155,7 +161,7 @@ and base_expression =
 		      string mcode (* quote *)
   | FunCall        of expression * string mcode (* ( *) *
                       expression dots * string mcode (* ) *)
-  | Assignment     of expression * assignOp mcode * expression *
+  | Assignment     of expression * assignOp * expression *
 	              bool (* true if it can match an initialization *)
   | Sequence       of expression * string mcode (* , *) * expression
   | CondExpr       of expression * string mcode (* ? *) * expression option *
@@ -163,8 +169,8 @@ and base_expression =
   | Postfix        of expression * fixOp mcode
   | Infix          of expression * fixOp mcode
   | Unary          of expression * unaryOp mcode
-  | Binary         of expression * binaryOp mcode * expression
-  | Nested         of expression * binaryOp mcode * expression
+  | Binary         of expression * binaryOp * expression
+  | Nested         of expression * binaryOp * expression
   | ArrayAccess    of expression * string mcode (* [ *) * expression *
 	              string mcode (* ] *)
   | RecordAccess   of expression * string mcode (* . *) * ident
@@ -189,6 +195,7 @@ and base_expression =
   | MetaExprList   of meta_name mcode * listlen * keep_binding *
                       inherited (* only in arg lists *)
   | AsExpr         of expression * expression (* as expr, always metavar *)
+  | AsSExpr        of expression * rule_elem (* as expr, always metavar *)
 
   | EComma         of string mcode (* only in arg lists *)
 
@@ -217,6 +224,7 @@ and constraints =
 (* Constraints on Meta-* Identifiers, Functions *)
 and idconstraint =
     IdNoConstraint
+  | IdPosIdSet         of string list * meta_name list
   | IdNegIdSet         of string list * meta_name list
   | IdRegExpConstraint of reconstraint
 
@@ -224,8 +232,16 @@ and reconstraint =
   | IdRegExp        of string * Regexp.regexp
   | IdNotRegExp     of string * Regexp.regexp
 
+and assignOpconstraint =
+    AssignOpNoConstraint
+  | AssignOpInSet of assignOp list
+
+and binaryOpconstraint =
+    BinaryOpNoConstraint
+  | BinaryOpInSet of binaryOp list
+
 (* ANY = int E; ID = idexpression int X; CONST = constant int X; *)
-and form = ANY | ID | LocalID | CONST (* form for MetaExp *)
+and form = ANY | ID | LocalID | GlobalID | CONST (* form for MetaExp *)
 
 and expression = base_expression wrap
 
@@ -249,13 +265,25 @@ and base_string_format =
 
 and string_format = base_string_format wrap
 
-and  unaryOp = GetRef | GetRefLabel | DeRef | UnPlus |  UnMinus | Tilde | Not
-and  assignOp = SimpleAssign | OpAssign of arithOp
-and  fixOp = Dec | Inc
+and unaryOp = GetRef | GetRefLabel | DeRef | UnPlus |  UnMinus | Tilde | Not
+and base_assignOp =
+    SimpleAssign of simpleAssignOp mcode
+  | OpAssign of arithOp mcode
+  | MetaAssign of
+      meta_name mcode * assignOpconstraint * keep_binding * inherited
+and simpleAssignOp = string
+and assignOp = base_assignOp wrap
+and fixOp = Dec | Inc
 
-and  binaryOp = Arith of arithOp | Logical of logicalOp
-and  arithOp =
-    Plus | Minus | Mul | Div | Mod | DecLeft | DecRight | And | Or | Xor | Min | Max
+and base_binaryOp =
+    Arith of arithOp mcode
+  | Logical of logicalOp mcode
+  | MetaBinary of
+      meta_name mcode * binaryOpconstraint * keep_binding * inherited
+and binaryOp = base_binaryOp wrap
+and arithOp =
+    Plus | Minus | Mul | Div | Mod | DecLeft | DecRight | And | Or | Xor
+  | Min | Max
 and  logicalOp = Inf | Sup | InfEq | SupEq | Eq | NotEq | AndLog | OrLog
 
 and constant =
@@ -283,13 +311,6 @@ and base_typeC =
   | FunctionPointer of fullType *
 	          string mcode(* ( *)*string mcode(* * *)*string mcode(* ) *)*
                   string mcode (* ( *)*parameter_list*string mcode(* ) *)
-
-  (* used for the automatic managment of prototypes *)
-  | FunctionType     of bool (* true if all minus for dropping return type *) *
-                   fullType option *
-	           string mcode (* ( *) * parameter_list *
-                   string mcode (* ) *)
-
   | Array           of fullType * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
   | Decimal         of string mcode (* decimal *) * string mcode (* ( *) *
@@ -329,10 +350,17 @@ and base_declaration =
     Init of storage mcode option * fullType * ident * string mcode (*=*) *
 	initialiser * string mcode (*;*)
   | UnInit of storage mcode option * fullType * ident * string mcode (* ; *)
+  | FunProto of
+	fninfo list * ident (* name *) *
+	string mcode (* ( *) * parameter_list *
+	(string mcode (* , *) * string mcode (* ...... *) ) option *
+	string mcode (* ) *) * string mcode (* ; *)
   | TyDecl of fullType * string mcode (* ; *)
-  | MacroDecl of ident (* name *) * string mcode (* ( *) *
+  | MacroDecl of storage mcode option *
+	ident (* name *) * string mcode (* ( *) *
         expression dots * string mcode (* ) *) * string mcode (* ; *)
-  | MacroDeclInit of ident (* name *) * string mcode (* ( *) *
+  | MacroDeclInit of storage mcode option *
+	ident (* name *) * string mcode (* ( *) *
         expression dots * string mcode (* ) *) * string mcode (*=*) *
         initialiser * string mcode (* ; *)
   | Typedef of string mcode (*typedef*) * fullType *
@@ -454,6 +482,7 @@ and base_rule_elem =
 	             bool (* true if all minus, for dropping static, etc *) *
 	             fninfo list * ident (* name *) *
 	             string mcode (* ( *) * parameter_list *
+                     (string mcode (* , *) * string mcode (* ...... *) ) option *
                      string mcode (* ) *)
   | Decl          of annotated_decl
 
@@ -497,6 +526,7 @@ and base_rule_elem =
   | TopExp        of expression (* for macros body, exp at top level,
 				   not subexp *)
   | Ty            of fullType (* only at SP top level, matches a subterm *)
+  | TopId         of ident (* only at top level *)
   | TopInit       of initialiser (* only at top level *)
   | Include       of string mcode (*#include*) * inc_file mcode (*file *)
   | Undef         of string mcode (* #define *) * ident (* name *)
@@ -617,7 +647,7 @@ and base_top_level =
 
 and top_level = base_top_level wrap
 
-and parser_kind = ExpP | TyP | AnyP
+and parser_kind = ExpP | IdP | TyP | AnyP
 
 and rulename =
     CocciRulename of string option * dependency *
@@ -674,6 +704,8 @@ and anything =
   | ConstantTag         of constant
   | UnaryOpTag          of unaryOp
   | AssignOpTag         of assignOp
+  | SimpleAssignOpTag   of simpleAssignOp
+  | OpAssignOpTag       of arithOp
   | FixOpTag            of fixOp
   | BinaryOpTag         of binaryOp
   | ArithOpTag          of arithOp
@@ -732,6 +764,7 @@ let get_mfvs x             = x.minus_free_vars
 let set_mfvs mfvs x        = {x with minus_free_vars = mfvs}
 let get_fresh x            = x.fresh_vars
 let get_inherited x        = x.inherited
+let get_inherited_pos x    = x.positive_inherited_positions
 let get_saved x            = x.saved_witness
 let get_dots_bef_aft x     = x.bef_aft
 let set_dots_bef_aft d x   = {x with bef_aft = d}
@@ -769,11 +802,14 @@ let get_meta_name = function
   | MetaListlenDecl(nm) -> nm
   | MetaParamDecl(ar,nm) -> nm
   | MetaParamListDecl(ar,nm,nm1) -> nm
+  | MetaBinaryOperatorDecl(_,name) -> name
+  | MetaAssignmentOperatorDecl(_,name) -> name
   | MetaConstDecl(ar,nm,ty) -> nm
   | MetaErrDecl(ar,nm) -> nm
   | MetaExpDecl(ar,nm,ty) -> nm
   | MetaIdExpDecl(ar,nm,ty) -> nm
   | MetaLocalIdExpDecl(ar,nm,ty) -> nm
+  | MetaGlobalIdExpDecl(ar,nm,ty) -> nm
   | MetaExpListDecl(ar,nm,nm1) -> nm
   | MetaDeclDecl(ar,nm) -> nm
   | MetaFieldDecl(ar,nm) -> nm
@@ -788,6 +824,7 @@ let get_meta_name = function
   | MetaAnalysisDecl(code,nm) -> nm
   | MetaDeclarerDecl(ar,nm) -> nm
   | MetaIteratorDecl(ar,nm) -> nm
+  | MetaScriptDecl(ar,nm) -> nm
 
 (* --------------------------------------------------------------------- *)
 
@@ -801,6 +838,8 @@ and tag2c = function
   | ConstantTag _  -> "ConstantTag"
   | UnaryOpTag _   -> "UnaryOpTag"
   | AssignOpTag _  -> "AssignOpTag"
+  | SimpleAssignOpTag _  -> "SimpleAssignOpTag"
+  | OpAssignOpTag _  -> "OpAssignOpTag"
   | FixOpTag _     -> "FixOpTag"
   | BinaryOpTag _  -> "BinaryOpTag"
   | ArithOpTag _   -> "ArithOpTag"
@@ -839,6 +878,7 @@ let make_term x =
     minus_free_vars = [];
     fresh_vars = [];
     inherited = [];
+    positive_inherited_positions = [];
     saved_witness = [];
     bef_aft = NoDots;
     pos_info = None;
@@ -846,13 +886,14 @@ let make_term x =
     safe_for_multi_decls = false;
     iso_info = [] }
 
-let make_inherited_term x inherited =
+let make_inherited_term x inherited inh_pos =
   {node = x;
     node_line = 0;
     free_vars = [];
     minus_free_vars = [];
     fresh_vars = [];
     inherited = inherited;
+    positive_inherited_positions = inh_pos;
     saved_witness = [];
     bef_aft = NoDots;
     pos_info = None;
@@ -885,3 +926,39 @@ let undots x =
     DOTS    e -> e
   | CIRCLES e -> e
   | STARS   e -> e
+
+let string_of_arithOp = function
+  | Plus -> "+"
+  | Minus -> "-"
+  | Mul -> "*"
+  | Div -> "/"
+  | Mod -> "%"
+  | DecLeft -> "<<"
+  | DecRight -> ">>"
+  | And -> "&"
+  | Or -> "|"
+  | Xor -> "^"
+  | Min -> "<?"
+  | Max -> ">?"
+
+let string_of_logicalOp = function
+  | Eq -> "=="
+  | NotEq -> "!="
+  | InfEq -> "<="
+  | SupEq -> ">="
+  | Sup -> ">"
+  | Inf -> "<"
+  | AndLog -> "&&"
+  | OrLog -> "||"
+
+let string_of_binaryOp op = match (unwrap op) with
+  | Arith arithOp -> string_of_arithOp (unwrap_mcode arithOp)
+  | Logical logicalOp -> string_of_logicalOp (unwrap_mcode logicalOp)
+  | MetaBinary _ -> "MetaBinary"
+
+let string_of_assignOp op = match (unwrap op) with
+  | SimpleAssign _ -> "="
+  | OpAssign op' ->
+    let s = string_of_arithOp (unwrap_mcode op') in
+    s ^ "="
+  | MetaAssign _ -> "MetaAssign"

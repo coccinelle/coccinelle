@@ -56,112 +56,220 @@ let show_isos rule_elem =
 (*****************************************************************************)
 let (-->) x v = Ast_ctl.Subst (x,v);;
 
+type vp = SUCCESS_POS | FAIL_POS | NOPOS
+
+let valid_positions binding = function
+  Lib_engine.Match re ->
+    let vars = re.Ast_cocci.positive_inherited_positions in
+    (match vars with
+      [] -> NOPOS
+    | _ ->
+	let res =
+	  List.for_all
+	    (function v ->
+	      try
+		let b = List.assoc v binding in
+		match b with
+		  Ast_c.MetaPosValList l ->
+		    List.exists
+		      (function (_,elem,_,_) -> !Flag.current_element = elem)
+		      l
+		| _ ->
+		    failwith "position variable should have a position binding"
+	      with Not_found -> false)
+	    vars in
+	if res then SUCCESS_POS else FAIL_POS)
+  | _ -> NOPOS
+
 (* Take list of predicate and for each predicate returns where in the
  * control flow it matches, and the set of substitutions for this match.
  *)
+
+let loop_nodes p check nodes =
+  List.fold_left
+    (fun prev (nodei,node) ->
+      if check node
+      then (nodei, (p,[])) :: prev
+      else prev)
+    [] nodes
+
 let labels_for_ctl (dropped_isos : string list)
-                   (nodes : (nodei * F.node) list)
-                   (binding : Lib_engine.metavars_binding)
-                   : Lib_engine.label_ctlcocci
-  = fun p ->
-     show_or_not_predicate p;
-
-     let nodes' = nodes +> List.map (fun (nodei, node) ->
-      (* todo? put part of this code in pattern ? *)
-      (match p, F.unwrap node with
-      | Lib_engine.Paren s,  (F.SeqStart (_, bracelevel, _)) ->
-	  let make_var x = ("",i_to_s x) in
-          [(nodei, (p,[(s --> (Lib_engine.ParenVal (make_var bracelevel)))]))]
-      | Lib_engine.Paren s,  (F.SeqEnd (bracelevel, _)) ->
-	  let make_var x = ("",i_to_s x) in
-          [(nodei, (p,[(s --> (Lib_engine.ParenVal (make_var bracelevel)))]))]
-      | Lib_engine.Paren _, _ -> []
-      | Lib_engine.Label s, _ ->
-          let labels = F.extract_labels node in
-          [(nodei,
-	    (p,[(s --> (Lib_engine.LabelVal (Lib_engine.Absolute labels)))]))]
-      | Lib_engine.BCLabel s, _ ->
-	  (match F.extract_bclabels node with
-	    [] -> [] (* null for all nodes that are not break or continue *)
-	  | labels ->
-              [(nodei,
-		(p,[(s -->
-		  (Lib_engine.LabelVal (Lib_engine.Absolute labels)))]))])
-      | Lib_engine.PrefixLabel s, _ ->
-          let labels = F.extract_labels node in
-          [(nodei,
-	    (p,[(s --> (Lib_engine.LabelVal (Lib_engine.Prefix labels)))]))]
-
-      | Lib_engine.Match (re), _unwrapnode ->
-          let substs =
-            Pattern_c.match_re_node dropped_isos re node binding
-            +> List.map (fun (re', subst) ->
-              Lib_engine.Match (re'), subst
-            )
-          in
-          substs +> List.map (fun (p', subst) ->
-            (nodei,
-              (p',
+                    (nodes : (nodei * F.node) list)
+                    (binding : Lib_engine.metavars_binding)
+                    p =
+  show_or_not_predicate p;
+  let nodes' =
+    nodes +>
+    match p with
+    | Lib_engine.Match (re) ->
+	List.fold_left
+	  (fun prev (nodei,node) ->
+	    Pattern_c.match_re_node dropped_isos re node binding +>
+            List.fold_left (fun prev (re', subst) ->
+	      let p' = Lib_engine.Match (re') in
+              (nodei,
+               (p',
                 subst +> List.map (fun (s, meta) ->
-                  s --> Lib_engine.NormalMetaVal meta
-                ))))
+                  s --> Lib_engine.NormalMetaVal meta)))
+	      :: prev)
+	      prev)
+	  []
 
-      | Lib_engine.InLoop,      F.InLoopNode ->  [nodei, (p,[])]
-      | Lib_engine.TrueBranch , F.TrueNode _ ->  [nodei, (p,[])]
-      | Lib_engine.EscTrueBranch , F.TrueNode esc when !esc ->  [nodei, (p,[])]
-      | Lib_engine.FalseBranch, F.FalseNode -> [nodei, (p,[])]
-      | Lib_engine.After,       F.AfterNode _ -> [nodei, (p,[])]
-      | Lib_engine.FallThrough, F.FallThroughNode -> [nodei,(p,[])]
-      | Lib_engine.LoopFallThrough, F.LoopFallThroughNode -> [nodei,(p,[])]
-      | Lib_engine.FunHeader,   F.FunHeader _ -> [nodei, (p,[])]
-      | Lib_engine.Top,         F.TopNode ->   [nodei, (p,[])]
-      | Lib_engine.Exit,        F.Exit ->      [nodei, (p,[])]
-      | Lib_engine.ErrorExit,   F.ErrorExit -> [nodei, (p,[])]
-      |	Lib_engine.Goto,        F.Goto(_,_,_) -> [nodei, (p,[])]
+    | Lib_engine.Paren s ->
+	List.fold_left
+	  (fun prev (nodei,node) ->
+	    match F.unwrap node with
+	      F.SeqStart (_, bracelevel, _) ->
+		let make_var x = ("",i_to_s x) in
+		let vl = Lib_engine.ParenVal (make_var bracelevel) in
+		(nodei, (p,[(s --> vl)])) :: prev
+	    | F.SeqEnd (bracelevel, _) ->
+		let make_var x = ("",i_to_s x) in
+		let vl = Lib_engine.ParenVal (make_var bracelevel) in
+		(nodei, (p,[(s --> vl)])) :: prev
+	    | _ -> prev)
+	  []
 
-      | Lib_engine.UnsafeBrace, node ->
+    | Lib_engine.Label s ->
+	List.map
+	  (function (nodei,node) ->
+	    let labels = F.extract_labels node in
+	    let vl = Lib_engine.LabelVal (Lib_engine.Absolute labels) in
+	    (nodei, (p,[(s --> vl)])))
+
+    | Lib_engine.BCLabel s ->
+	List.fold_left
+	  (fun prev (nodei,node) ->
+	    match F.extract_bclabels node with
+	      [] -> (* null for all nodes that are not break or continue *)
+		prev
+	    | labels ->
+		let vl = Lib_engine.LabelVal (Lib_engine.Absolute labels) in
+		(nodei, (p,[(s --> vl)]))::prev)
+	  []
+
+    | Lib_engine.PrefixLabel s ->
+	List.map
+	  (function (nodei,node) ->
+	    let labels = F.extract_labels node in
+	    let vl = Lib_engine.LabelVal (Lib_engine.Prefix labels) in
+	    (nodei, (p,[(s --> vl)])))
+
+    | Lib_engine.InLoop ->
+	loop_nodes p
+	  (function node ->
+	    match F.unwrap node with F.InLoopNode -> true | _ -> false)
+
+    | Lib_engine.TrueBranch ->
+	loop_nodes p
+	  (function node ->
+	    match F.unwrap node with F.TrueNode _ -> true | _ -> false)
+
+    | Lib_engine.EscTrueBranch ->
+	loop_nodes p
+	  (function node ->
+	    match F.unwrap node with
+	      F.TrueNode esc when !esc -> true
+	    | _ -> false)
+
+    | Lib_engine.FalseBranch ->
+	loop_nodes p
+	  (function node ->
+	    match F.unwrap node with F.FalseNode -> true | _ -> false)
+
+    | Lib_engine.After ->
+	loop_nodes p
+	  (function node ->
+	    match F.unwrap node with F.AfterNode _ -> true | _ -> false)
+
+    | Lib_engine.FallThrough ->
+	loop_nodes p
+	  (function node ->
+	    match F.unwrap node with F.FallThroughNode -> true | _ -> false)
+
+    | Lib_engine.LoopFallThrough ->
+	loop_nodes p
+	  (function node ->
+	    match F.unwrap node with
+	      F.LoopFallThroughNode -> true
+	    | _ -> false)
+
+    | Lib_engine.FunHeader ->
+	loop_nodes p
+	  (function node ->
+	    match F.unwrap node with F.FunHeader _ -> true | _ -> false)
+
+    | Lib_engine.Top ->
+	loop_nodes p
+	  (function node ->
+	    match F.unwrap node with F.TopNode -> true | _ -> false)
+
+    | Lib_engine.Exit ->
+	loop_nodes p
+	  (function node ->
+	    match F.unwrap node with F.Exit -> true | _ -> false)
+
+    | Lib_engine.ErrorExit ->
+	loop_nodes p
+	  (function node ->
+	    match F.unwrap node with F.ErrorExit -> true | _ -> false)
+
+    | Lib_engine.Goto ->
+	loop_nodes p
+	  (function node ->
+	    match F.unwrap node with F.Goto _ -> true | _ -> false)
+
+    | Lib_engine.Return ->
+	loop_nodes p
+	  (function node ->
+	      (* todo? should match the Exit code ?
+		 * todo: one day try also to match the special function
+		 * such as panic();
+              *)
+	    match F.unwrap node with
+            | F.Return _ -> true
+            | F.ReturnExpr _ -> true
+            | _ -> false)
+
+    | Lib_engine.FakeBrace ->
+	loop_nodes p F.extract_is_fake
+
+    | Lib_engine.BindGood s ->
+	List.map
+	  (function (nodei,_) -> (nodei, (p,[(s --> Lib_engine.GoodVal)])))
+
+    | Lib_engine.BindBad s ->
+	List.map
+	  (function (nodei,_) -> (nodei, (p,[(s --> Lib_engine.BadVal)])))
+
+    | Lib_engine.UnsafeBrace ->
 	  (* cases where it it not safe to put something on the outer side
 	     of braces *)
-	  (match node with
-	    F.FunHeader _ | F.DoHeader _ | F.TrueNode _ | F.Else _
-	  | F.InLoopNode (* while, for *) | F.SwitchHeader _ ->
-	      [nodei, (p,[])]
-	  | _ -> [])
-
-      | Lib_engine.InLoop , _ -> []
-      | Lib_engine.TrueBranch , _ -> []
-      | Lib_engine.EscTrueBranch , _ -> []
-      | Lib_engine.FalseBranch, _ -> []
-      | Lib_engine.After, _ -> []
-      | Lib_engine.FallThrough, _ -> []
-      | Lib_engine.LoopFallThrough, _ -> []
-      | Lib_engine.FunHeader, _  -> []
-      | Lib_engine.Top, _  -> []
-      | Lib_engine.Exit, _  -> []
-      | Lib_engine.ErrorExit, _  -> []
-      | Lib_engine.Goto, _  -> []
-
-      |	Lib_engine.BindGood s, _ -> [(nodei, (p,[(s --> Lib_engine.GoodVal)]))]
-      |	Lib_engine.BindBad s, _ ->  [(nodei, (p,[(s --> Lib_engine.BadVal)]))]
-      |	Lib_engine.FakeBrace, _ ->
-	  if F.extract_is_fake node then [nodei, (p,[])] else []
-
-      | Lib_engine.Return, node ->
-          (match node with
-            (* todo? should match the Exit code ?
-             * todo: one day try also to match the special function
-             * such as panic();
-             *)
-          | F.Return _ ->  [nodei, (p,[])]
-          | F.ReturnExpr _ -> [nodei, (p,[])]
-          | _ -> []
-          )
-      )
-     ) +> List.concat
-     in
+	List.fold_left
+	  (fun prev (nodei,node) ->
+	    match F.unwrap node with
+		F.FunHeader _ | F.DoHeader _ | F.TrueNode _ | F.Else _
+	      | F.InLoopNode (* while, for *) | F.SwitchHeader _ ->
+		  (nodei, (p,[])) :: prev
+	      | _ -> prev)
+	  [] in
 
      show_or_not_nodes nodes';
      nodes'
+
+let quick_labels_for_ctl dropped_isos nodes binding p =
+  show_or_not_predicate p;
+  match valid_positions binding p with
+    SUCCESS_POS -> true
+  | FAIL_POS -> false
+  | NOPOS ->
+      (match p with
+	Lib_engine.Match (re) ->
+	  List.exists
+	    (function (_,node) ->
+	      not (Pattern_c.match_re_node dropped_isos re node binding = []))
+	    nodes
+      |	_ -> true)
 
 (*****************************************************************************)
 (* Some fix flow, for CTL, for unparse *)
@@ -203,20 +311,20 @@ let fix_flow_ctl2 (flow : F.cflow) : F.cflow =
 
   (* for the #define CFG who have no Exit but have at least a EndNode *)
   (try
-      let endi  = F.find_node (fun x -> x =*= F.EndNode) !g in
+      let endi  = F.find_node (fun x -> x = F.EndNode) !g in
       !g#add_arc ((endi, endi), F.Direct);
     with Not_found -> ()
   );
 
   (* for the regular functions *)
   (try
-    let exitnodei  = F.find_node (fun x -> x =*= F.Exit) !g in
-    let errornodei = F.find_node (fun x -> x =*= F.ErrorExit) !g in
+    let exitnodei  = F.find_node (fun x -> x = F.Exit) !g in
+    let errornodei = F.find_node (fun x -> x = F.ErrorExit) !g in
 
     !g#add_arc ((exitnodei, exitnodei), F.Direct);
 
-    if null ((!g#successors   errornodei)#tolist) &&
-       null ((!g#predecessors errornodei)#tolist)
+    if ((!g#successors   errornodei)#tolist) = [] &&
+       ((!g#predecessors errornodei)#tolist) = []
     then !g#del_node errornodei
     else !g#add_arc ((errornodei, errornodei), F.Direct);
    with Not_found -> ()
@@ -264,8 +372,10 @@ let fix_flow_ctl a =
 let model_for_ctl dropped_isos cflow binding =
  let newflow = cflow (* old: fix_flow_ctl (control_flow_for_ctl cflow) *) in
  let labels = labels_for_ctl dropped_isos (newflow#nodes#tolist) binding  in
+ let quicklabels =
+   quick_labels_for_ctl dropped_isos (newflow#nodes#tolist) binding  in
  let states = List.map fst  newflow#nodes#tolist  in
- newflow, labels, states
+ newflow, labels, quicklabels, states
 
 
 (*****************************************************************************)
@@ -290,12 +400,12 @@ let prefix l1 l2 =
 
 let compatible_labels l1 l2 =
   match (l1,l2) with
-    (Lib_engine.Absolute(l1),Lib_engine.Absolute(l2)) -> l1 =*= l2
+    (Lib_engine.Absolute(l1),Lib_engine.Absolute(l2)) -> l1 = l2
   | (Lib_engine.Absolute(l1),Lib_engine.Prefix(l2))   -> prefix l1 l2
   | (Lib_engine.Prefix(l1),Lib_engine.Absolute(l2))   -> prefix l2 l1
   | (Lib_engine.Prefix(l1),Lib_engine.Prefix(l2))     ->
       not (l1 = []) && not (l2 = []) &&
-      List.hd l1 =*= List.hd l2 (* labels are never empty *)
+      List.hd l1 = List.hd l2 (* labels are never empty *)
 
 let merge_labels l1 l2 =
   match (l1,l2) with
@@ -313,20 +423,20 @@ module ENV =
   struct
     type value = Lib_engine.metavar_binding_kind2
     type mvar = Ast_cocci.meta_name
-    let eq_mvar x x' = x =*= x'
+    let eq_mvar x x' = x = x'
     let eq_val v v' =
       (* v = v' *)
       match (v,v') with
 	(Lib_engine.NormalMetaVal(Ast_c.MetaPosVal(min1,max1)),
 	 Lib_engine.NormalMetaVal(Ast_c.MetaPosVal(min2,max2))) ->
-	   ((min1 <= min2) && (max1 >= max2)) or
+	   ((min1 <= min2) && (max1 >= max2)) ||
 	   ((min2 <= min1) && (max2 >= max1))
       |	(Lib_engine.NormalMetaVal(Ast_c.MetaTypeVal a),
 	 Lib_engine.NormalMetaVal(Ast_c.MetaTypeVal b)) ->
           C_vs_c.eq_type a b
       |	(Lib_engine.LabelVal(l1),Lib_engine.LabelVal(l2)) ->
 	  compatible_labels l1 l2
-      |	_ -> v =*= v'
+      |	_ -> v = v'
     let merge_val v v' = (* values guaranteed to be compatible *)
       (* v *)
       match (v,v') with
@@ -426,14 +536,14 @@ let (satbis_to_trans_info:
 let rec coalesce_positions = function
     [] -> []
   | (x,Ast_c.MetaPosValList l)::rest ->
-      let (same,others) = List.partition (function (x1,_) -> x =*= x1) rest in
+      let (same,others) = List.partition (function (x1,_) -> x = x1) rest in
       let ls =
-	List.concat
-	  (List.map
-	     (function
-		 (_,Ast_c.MetaPosValList l) -> l
-	       | _ -> failwith "unexpected non-position")
-	     same) in
+	List.fold_left
+	  (function prev ->
+	    function
+		(_,Ast_c.MetaPosValList l) -> l@prev
+	      | _ -> failwith "unexpected non-position")
+	  [] same in
       let new_ls = List.sort compare (l@ls) in
       (x,Ast_c.MetaPosValList new_ls) :: coalesce_positions others
   | x::rest -> x :: coalesce_positions rest
@@ -457,12 +567,6 @@ let strip env =
       (v,vl))
     env
 
-let rec nub ls =
-  match ls with
-    [] -> []
-  | (x::xs) when (List.mem x xs) -> nub xs
-  | (x::xs) -> x::(nub xs)
-
 (*****************************************************************************)
 (* Call ctl engine *)
 (*****************************************************************************)
@@ -472,24 +576,23 @@ let (mysat2:
   (string (*rulename*) * Lib_engine.mvar list*Lib_engine.metavars_binding) ->
   (Lib_engine.numbered_transformation_info * bool *
      Lib_engine.metavars_binding * Lib_engine.metavars_binding list)) =
-  fun (flow, label, states) ctl (rulename, used_after, binding) ->
+  fun ((flow, label, preproc, states) as m)
+      ctl (rulename, used_after, binding) ->
     let binding2 = metavars_binding_to_binding2 binding in
     let (triples,(trans_info2, returned_any_states, used_after_envs)) =
-      WRAPPED_ENGINE.satbis (flow, label, states) ctl
-	(used_after, binding2)
-    in
+      WRAPPED_ENGINE.satbis m ctl (used_after, binding2) in
     if not (!Flag_parsing_cocci.sgrep_mode || !Flag.sgrep_mode2 ||
             !Flag_matcher.allow_inconsistent_paths)
     then Check_reachability.check_reachability rulename triples flow;
     let (trans_info2,used_after_fresh_envs) =
       Postprocess_transinfo.process used_after binding2 trans_info2 in
     let used_after_envs =
-      Common.uniq(List.map2 (@) used_after_fresh_envs used_after_envs) in
+      Common.nub (List.map2 (@) used_after_fresh_envs used_after_envs) in
     let trans_info = satbis_to_trans_info trans_info2 in
     let newbindings = List.map metavars_binding2_to_binding used_after_envs in
     let newbindings = List.map coalesce_positions newbindings in
     let newbindings = List.map strip newbindings in
-    let newbindings = nub newbindings in
+    let newbindings = Common.nub newbindings in
     (trans_info, returned_any_states, binding, newbindings)
 
 let mysat a b c =

@@ -106,6 +106,19 @@ and seed table minus = function
 	elems
 
 (* --------------------------------------------------------------------- *)
+(* Operators *)
+
+let assignOp context old_metas table minus op = match Ast0.unwrap op with
+  | Ast0.SimpleAssign _ -> ()
+  | Ast0.OpAssign _ -> ()
+  | Ast0.MetaAssign (name,_,_) -> check_table table minus name
+
+let binaryOp context old_metas table minus op = match Ast0.unwrap op with
+  | Ast0.Arith _ -> ()
+  | Ast0.Logical _ -> ()
+  | Ast0.MetaBinary (name,_,_) -> check_table table minus name
+
+(* --------------------------------------------------------------------- *)
 (* Expression *)
 
 let rec expression context old_metas table minus e =
@@ -119,6 +132,7 @@ let rec expression context old_metas table minus e =
       dots (expression ID old_metas table minus) args
   | Ast0.Assignment(left,op,right,_) ->
       expression context old_metas table minus left;
+      assignOp context old_metas table minus op;
       expression ID old_metas table minus right
   | Ast0.Sequence(left,op,right) ->
       expression context old_metas table minus left;
@@ -135,9 +149,11 @@ let rec expression context old_metas table minus e =
       expression ID old_metas table minus exp
   | Ast0.Binary(left,op,right) ->
       expression ID old_metas table minus left;
+      binaryOp context old_metas table minus op;
       expression ID old_metas table minus right
   | Ast0.Nested(left,op,right) ->
       expression ID old_metas table minus left;
+      binaryOp context old_metas table minus op;
       expression ID old_metas table minus right
   | Ast0.Paren(lp,exp,rp) ->
       expression ID old_metas table minus exp
@@ -173,6 +189,7 @@ let rec expression context old_metas table minus e =
   | Ast0.MetaExprList(name,_,_) ->
       check_table table minus name
   | Ast0.AsExpr(exp,asexp) -> failwith "not generated yet"
+  | Ast0.AsSExpr(exp,asstm) -> failwith "not generated yet"
   | Ast0.DisjExpr(_,exps,_,_) ->
       List.iter (expression context old_metas table minus) exps
   | Ast0.NestExpr(_,exp_dots,_,w,_) ->
@@ -210,9 +227,6 @@ and typeC old_metas table minus t =
   | Ast0.Pointer(ty,star) -> typeC old_metas table minus ty
   | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
       typeC old_metas table minus ty;
-      parameter_list old_metas table minus params
-  | Ast0.FunctionType(ty,lp1,params,rp1) ->
-      get_opt (typeC old_metas table minus) ty;
       parameter_list old_metas table minus params
   | Ast0.Array(ty,lb,size,rb) ->
       typeC old_metas table minus ty;
@@ -267,10 +281,14 @@ and declaration context old_metas table minus d =
 	    initialiser old_metas table minus ini)
   | Ast0.UnInit(stg,ty,id,sem) ->
       typeC old_metas table minus ty; ident context old_metas table minus id
-  | Ast0.MacroDecl(name,lp,args,rp,sem) ->
+  | Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) ->
+      ident FN old_metas table minus name;
+      List.iter (fninfo old_metas table minus) fi;
+      parameter_list old_metas table minus params
+  | Ast0.MacroDecl(stg,name,lp,args,rp,sem) ->
       ident GLOBAL old_metas table minus name;
       dots (expression ID old_metas table minus) args
-  | Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem) ->
+  | Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
       ident GLOBAL old_metas table minus name;
       dots (expression ID old_metas table minus) args;
       (match Ast0.unwrap ini with
@@ -415,6 +433,7 @@ and statement old_metas table minus s =
   | Ast0.Exp(exp) -> expression ID old_metas table minus exp
   | Ast0.TopExp(exp) -> expression ID old_metas table minus exp
   | Ast0.Ty(ty) -> typeC old_metas table minus ty
+  | Ast0.TopId(id) -> ident ID old_metas table minus id
   | Ast0.TopInit(init) -> initialiser old_metas table minus init
   | Ast0.Disj(_,rule_elem_dots_list,_,_) ->
       List.iter (dots (statement old_metas table minus)) rule_elem_dots_list
@@ -429,7 +448,7 @@ and statement old_metas table minus s =
 	(whencode (dots (statement old_metas table minus))
 	   (statement old_metas table minus)
 	   (expression ID old_metas table minus)) x
-  | Ast0.FunDecl(_,fi,name,lp,params,rp,lbrace,body,rbrace,_) ->
+  | Ast0.FunDecl(_,fi,name,lp,params,va,rp,lbrace,body,rbrace,_) ->
       ident FN old_metas table minus name;
       List.iter (fninfo old_metas table minus) fi;
       parameter_list old_metas table minus params;
@@ -515,30 +534,41 @@ let rule old_metas table minus rules =
 
 (* --------------------------------------------------------------------- *)
 
-let positions table rules =
+let positions rname table rules =
+  let do_tynames var =
+    let tynames = Ast0.meta_pos_constraint_names var in
+    List.iter
+      (function name ->
+	(* only needed if the name is a local variable, not an inherited one *)
+	if fst name = rname
+	then (find_loop table name) := true)
+      tynames in
   let rec rmcode x = (* needed for type inference, nonpolymorphic *)
     List.iter
       (function var ->
 	let name = Ast0.meta_pos_name var in
 	(find_loop table (Ast0.unwrap_mcode name)) := true;
-	rmcode name)
+	rmcode name;
+	do_tynames var)
       (Ast0.get_pos x) in
   let rec mcode x =
     List.iter
       (function var ->
 	let name = Ast0.meta_pos_name var in
 	(find_loop table (Ast0.unwrap_mcode name)) := true;
-	rmcode name)
+	rmcode name;
+	do_tynames var)
       (Ast0.get_pos x) in
   let option_default = () in
   let bind x y = () in
   let donothing r k e = k e in
   let fn =
     V0.flat_combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing in
+      donothing donothing donothing donothing donothing donothing in
 
   List.iter fn.VT0.combiner_rec_top_level rules
 
@@ -589,9 +619,11 @@ let dup_positions rules =
   let donothing r k e = k e in
   let fn =
     V0.flat_combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing
-      donothing expression typeC donothing donothing declaration statement
+      donothing expression donothing donothing typeC donothing
+      donothing declaration statement
       donothing donothing donothing donothing in
 
   let res =
@@ -652,7 +684,7 @@ let check_meta rname old_metas inherited_metavars metavars minus plus =
 
   add_to_fresh_table fresh;
   rule old_metas [iother_table;other_table;err_table] true minus;
-  positions [iother_table;other_table] minus;
+  positions rname [iother_table;other_table] minus;
   dup_positions minus;
   check_all_marked rname "metavariable" other_table "in the - or context code";
   rule old_metas [iother_table;fresh_table;err_table] false plus;

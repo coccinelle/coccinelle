@@ -12,6 +12,9 @@ val compare_default : (* compare to a res file *)
 val compare_to_original : (* compare to the source of the transformation *)
   Common.filename -> Common.filename -> compare_result * string list
 
+val exact_compare : (* compare to a res file using diff (check spacing) *)
+  Common.filename -> Common.filename -> compare_result * string list
+
 
 val compare_result_to_string : compare_result * string list -> string
 val compare_result_to_bool : compare_result -> bool

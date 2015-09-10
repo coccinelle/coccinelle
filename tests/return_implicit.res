@@ -1,5 +1,5 @@
 void main(void)
 {
 	foo();
-        return -ENODEV;
+	return -ENODEV;
 }

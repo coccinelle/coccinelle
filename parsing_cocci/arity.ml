@@ -60,6 +60,25 @@ let allopt l fn =
 
 let mcode2line (_,_,info,_,_,_) = info.Ast0.pos_info.Ast0.line_start
 let mcode2arity (_,arity,_,_,_,_) = arity
+let mcodeassignOp2line op = match Ast0.unwrap op with
+    Ast0.SimpleAssign op -> mcode2line op
+  | Ast0.OpAssign op -> mcode2line op
+  | Ast0.MetaAssign(mv,_,_) -> mcode2line mv
+
+let mcodeassignOp2arity op = match Ast0.unwrap op with
+    Ast0.SimpleAssign op -> mcode2arity op
+  | Ast0.OpAssign op -> mcode2arity op
+  | Ast0.MetaAssign(mv,_,_) -> mcode2arity mv
+
+let mcodebinaryOp2line op = match Ast0.unwrap op with
+    Ast0.Arith op -> mcode2line op
+  | Ast0.Logical op -> mcode2line op
+  | Ast0.MetaBinary(mv,_,_) -> mcode2line mv
+
+let mcodebinaryOp2arity op = match Ast0.unwrap op with
+    Ast0.Arith op -> mcode2arity op
+  | Ast0.Logical op -> mcode2arity op
+  | Ast0.MetaBinary(mv,_,_) -> mcode2arity mv
 
 let mcode x = x (* nothing to do ... *)
 
@@ -207,7 +226,7 @@ let rec top_expression opt_allowed tgt expr =
       let rp = mcode rp in
       make_exp expr tgt arity (Ast0.FunCall(fn,lp,args,rp))
   | Ast0.Assignment(left,op,right,simple) ->
-      let arity = exp_same (mcode2line op) [mcode2arity op] in
+      let arity = exp_same (mcodeassignOp2line op) [mcodeassignOp2arity op] in
       let left = expression arity left in
       let op = mcode op in
       let right = expression arity right in
@@ -243,7 +262,7 @@ let rec top_expression opt_allowed tgt expr =
       let op = mcode op in
       make_exp expr tgt arity (Ast0.Unary(exp,op))
   | Ast0.Binary(left,op,right) ->
-      let arity = exp_same (mcode2line op) [mcode2arity op] in
+      let arity = exp_same (mcodebinaryOp2line op) [mcodebinaryOp2arity op] in
       let left = expression arity left in
       let op = mcode op in
       let right = expression arity right in
@@ -351,7 +370,7 @@ let rec top_expression opt_allowed tgt expr =
       let init = initialiser arity init in
       make_exp expr tgt arity (Ast0.Constructor(lp,ty,rp,init))
   (* why does optexp exist???? *)
-  | Ast0.OptExp(_) | Ast0.UniqueExp(_) | Ast0.AsExpr _ ->
+  | Ast0.OptExp(_) | Ast0.UniqueExp(_) | Ast0.AsExpr _ | Ast0.AsSExpr _ ->
       failwith "unexpected code"
 
 and expression tgt exp = top_expression false tgt exp
@@ -442,13 +461,6 @@ and top_typeC tgt opt_allowed typ =
       let params = parameter_list tgt params in
       make_typeC typ tgt arity
 	(Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2))
-  | Ast0.FunctionType(ty,lp1,params,rp1) ->
-      let arity =
-	all_same opt_allowed tgt (mcode2line lp1)
-	  (List.map mcode2arity [lp1;rp1]) in
-      let ty = get_option (typeC arity) ty in
-      let params = parameter_list tgt params in
-      make_typeC typ tgt arity (Ast0.FunctionType(ty,lp1,params,rp1))
   | Ast0.Array(ty,lb,size,rb) ->
       let arity =
 	all_same opt_allowed tgt (mcode2line lb)
@@ -571,20 +583,41 @@ and declaration tgt decl =
       let id = ident false arity id in
       let sem = mcode sem in
       make_decl decl tgt arity (Ast0.UnInit(stg,ty,id,sem))
-  | Ast0.MacroDecl(name,lp,args,rp,sem) ->
+  | Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) ->
+    let tokens = match va with
+      | None -> [lp1;rp1;sem]
+      | Some (c1,e1) -> [lp1;c1;e1;rp1;sem] in
+      let arity =
+	all_same true tgt (mcode2line lp1)
+	  (List.map mcode2arity tokens) in
+      let fi = List.map (fninfo arity) fi in
+      let name = ident false arity name in
+      let lp1 = mcode lp1 in
+      let params = parameter_list tgt params in
+      let va = match va with
+        | None -> None
+        | Some (c1, e1) -> Some (mcode c1, mcode e1) in
+      let rp1 = mcode rp1 in
+      let sem = mcode sem in
+      make_decl decl tgt arity (Ast0.FunProto(fi,name,lp1,params,va,rp1,sem))
+  | Ast0.MacroDecl(stg,name,lp,args,rp,sem) ->
       let arity =
 	all_same true tgt (mcode2line lp)
-	  (List.map mcode2arity [lp;rp;sem]) in
+	  ((match stg with None -> [] | Some x -> [mcode2arity x]) @
+	   (List.map mcode2arity [lp;rp;sem])) in
+      let stg = get_option mcode stg in
       let name = ident false arity name in
       let lp = mcode lp in
       let args = dots (expression arity) args in
       let rp = mcode rp in
       let sem = mcode sem in
-      make_decl decl tgt arity (Ast0.MacroDecl(name,lp,args,rp,sem))
-  | Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem) ->
+      make_decl decl tgt arity (Ast0.MacroDecl(stg,name,lp,args,rp,sem))
+  | Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
       let arity =
 	all_same true tgt (mcode2line lp)
-	  (List.map mcode2arity [lp;rp;eq;sem]) in
+	  ((match stg with None -> [] | Some x -> [mcode2arity x]) @
+	   (List.map mcode2arity [lp;rp;eq;sem])) in
+      let stg = get_option mcode stg in
       let name = ident false arity name in
       let lp = mcode lp in
       let args = dots (expression arity) args in
@@ -592,7 +625,7 @@ and declaration tgt decl =
       let ini = initialiser arity ini in
       let sem = mcode sem in
       make_decl decl tgt arity
-	(Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem))
+	(Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem))
   | Ast0.TyDecl(ty,sem) ->
       let arity =
 	all_same true tgt (mcode2line sem) [mcode2arity sem] in
@@ -964,6 +997,16 @@ and statement tgt stm =
 	| Ast0.UniqueType(ty) ->
 	    Ast0.UniqueStm(Ast0.rewrap stm (Ast0.Ty(ty)))
 	| _ -> Ast0.Ty(new_ty))
+  | Ast0.TopId(id) ->
+      (* opt makes no sense alone at top level *)
+      let new_id = ident false tgt id in
+      Ast0.rewrap stm
+	(match Ast0.unwrap new_id with
+	  Ast0.OptIdent(id) ->
+	    Ast0.OptStm(Ast0.rewrap stm (Ast0.TopId(id)))
+	| Ast0.UniqueIdent(id) ->
+	    Ast0.UniqueStm(Ast0.rewrap stm (Ast0.TopId(id)))
+	| _ -> Ast0.TopId(new_id))
   | Ast0.TopInit(init) ->
       let new_init = initialiser tgt init in
       Ast0.rewrap stm
@@ -1049,7 +1092,7 @@ and statement tgt stm =
 	     (expression Ast0.NONE))
 	  whn in
       make_rule_elem stm tgt arity (Ast0.Stars(dots,whn))
-  | Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace,aft) ->
+  | Ast0.FunDecl(bef,fi,name,lp,params,va,rp,lbrace,body,rbrace,aft) ->
       let arity =
 	all_same true tgt (mcode2line lp)
 	  ((List.map mcode2arity [lp;rp;lbrace;rbrace]) @ (fninfo2arity fi)) in
@@ -1057,12 +1100,15 @@ and statement tgt stm =
       let name = ident false arity name in
       let lp = mcode lp in
       let params = parameter_list arity params in
+      let newva = match va with
+        | None -> None
+        | Some (comma, ellipsis) -> Some (mcode comma, mcode ellipsis) in
       let rp = mcode rp in
       let lbrace = mcode lbrace in
       let body = dots (statement arity) body in
       let rbrace = mcode rbrace in
       make_rule_elem stm tgt arity
-	(Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace,aft))
+	(Ast0.FunDecl(bef,fi,name,lp,params,newva,rp,lbrace,body,rbrace,aft))
   | Ast0.Include(inc,s) ->
       let arity =
 	all_same true tgt (mcode2line inc) [mcode2arity inc; mcode2arity s] in

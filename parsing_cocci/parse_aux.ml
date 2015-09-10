@@ -9,6 +9,8 @@ type info = Ast.meta_name * Ast0.pure * Data.clt
 type midinfo =
     Ast.meta_name * Data.iconstraints * Ast.seed * Ast0.pure * Data.clt
 type idinfo = Ast.meta_name * Data.iconstraints * Ast0.pure * Data.clt
+type assignOpinfo = Ast.meta_name * Ast0_cocci.assignOpconstraint * Ast0.pure * Data.clt
+type binaryOpinfo = Ast.meta_name * Ast0_cocci.binaryOpconstraint * Ast0.pure * Data.clt
 type expinfo = Ast.meta_name * Data.econstraints * Ast0.pure * Data.clt
 type tyinfo = Ast.meta_name * Ast0.typeC list * Ast0.pure * Data.clt
 type list_info = Ast.meta_name * Ast.list_len * Ast0.pure * Data.clt
@@ -55,13 +57,11 @@ let drop_pos
   (arity,line,lline,llineend,offset,col,strbef,straft,[],ws)
 
 let clt2mcode_ext str isSymbol = function
-(Data.MINUS,line,lline,llineend,offset,col,strbef,straft,pos,ws) ->
+    (Data.MINUS,line,lline,llineend,offset,col,strbef,straft,pos,ws) ->
       (str,Ast0.NONE,
        make_info line lline llineend offset col strbef straft isSymbol ws,
-       Ast0.MINUS(ref
-(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,-1)
- | (Data.OPTMINUS,line,lline,llineend,offset,col,strbef,
-straft,pos,ws)->
+       Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,-1)
+  | (Data.OPTMINUS,line,lline,llineend,offset,col,strbef,straft,pos,ws)->
       (str,Ast0.OPT,
        make_info line lline llineend offset col strbef straft isSymbol ws,
        Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,-1)
@@ -145,12 +145,12 @@ let mkpdots str dot =
   | _ -> failwith "cannot happen"
 
 let arith_op ast_op left op right =
-  Ast0.wrap
-    (Ast0.Binary(left, clt2mcode (Ast.Arith ast_op) op, right))
+  let op' = Ast0.wrap (Ast0.Arith (clt2mcode ast_op op)) in  
+  Ast0.wrap (Ast0.Binary(left, op', right))
 
 let logic_op ast_op left op right =
-  Ast0.wrap
-    (Ast0.Binary(left, clt2mcode (Ast.Logical ast_op) op, right))
+  let op' = Ast0.wrap (Ast0.Logical (clt2mcode ast_op op)) in  
+  Ast0.wrap (Ast0.Binary(left, op', right))
 
 let make_cv cv ty =
   match cv with None -> ty | Some x -> Ast0.wrap (Ast0.ConstVol(x,ty))
@@ -214,6 +214,14 @@ let lookup rule name =
       raise
 	(Semantic_cocci.Semantic("bad rule "^rule^" or bad variable "^name))
 
+let meta_lookup rule name v =
+  match lookup rule name with
+    Ast.MetaScriptDecl(cell,_) ->
+      (match !cell with
+	Some x -> x
+      | None -> cell := Some v; v)
+  | res -> res
+
 let check_meta_tyopt type_irrelevant v =
   let fail name =
     raise
@@ -221,11 +229,11 @@ let check_meta_tyopt type_irrelevant v =
 	 ("incompatible inheritance declaration "^name)) in
   match v with
     Ast.MetaMetaDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaMetaDecl(_,_) -> ()
       | _ -> fail name)
   | Ast.MetaIdDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaIdDecl(_,_) | Ast.MetaFreshIdDecl(_,_) -> ()
       | _ -> fail name)
   | Ast.MetaFreshIdDecl((rule,name),seed) ->
@@ -233,84 +241,84 @@ let check_meta_tyopt type_irrelevant v =
 	(Semantic_cocci.Semantic
 	   "can't inherit the freshness of an identifier")
   | Ast.MetaTypeDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaTypeDecl(_,_) -> ()
       | _ -> fail name)
   | Ast.MetaInitDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaInitDecl(_,_) -> ()
       | _ -> fail name)
   | Ast.MetaInitListDecl(Ast.NONE,(rule,name),len_name) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaInitListDecl(_,_,_) -> ()
       | _ -> fail name)
   | Ast.MetaListlenDecl((rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaListlenDecl(_) -> ()
       | _ -> fail name)
   | Ast.MetaParamDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaParamDecl(_,_) -> ()
       | _ -> fail name)
   | Ast.MetaParamListDecl(Ast.NONE,(rule,name),len_name) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaParamListDecl(_,_,_) -> ()
       | _ -> fail name)
   | Ast.MetaConstDecl(Ast.NONE,(rule,name),ty) ->
-      (match lookup rule name with
-	Ast.MetaConstDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
+      (match meta_lookup rule name v with
+	Ast.MetaConstDecl(_,_,ty1) when type_irrelevant || ty = ty1 -> ()
       | _ -> fail name)
   | Ast.MetaErrDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaErrDecl(_,_) -> ()
       | _ -> fail name)
   | Ast.MetaExpDecl(Ast.NONE,(rule,name),ty) ->
-      (match lookup rule name with
-	Ast.MetaExpDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
+      (match meta_lookup rule name v with
+	Ast.MetaExpDecl(_,_,ty1) when type_irrelevant || ty = ty1 -> ()
       | _ -> fail name)
   | Ast.MetaIdExpDecl(Ast.NONE,(rule,name),ty) ->
-      (match lookup rule name with
-	Ast.MetaIdExpDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
+      (match meta_lookup rule name v with
+	Ast.MetaIdExpDecl(_,_,ty1) when type_irrelevant || ty = ty1 -> ()
       | _ -> fail name)
   | Ast.MetaLocalIdExpDecl(Ast.NONE,(rule,name),ty) ->
-      (match lookup rule name with
-	Ast.MetaLocalIdExpDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
+      (match meta_lookup rule name v with
+	Ast.MetaLocalIdExpDecl(_,_,ty1) when type_irrelevant || ty = ty1 -> ()
       | _ -> fail name)
   | Ast.MetaExpListDecl(Ast.NONE,(rule,name),len_name) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaExpListDecl(_,_,_) -> ()
       | Ast.MetaParamListDecl(_,_,_) when not (!Flag.make_hrule = None) -> ()
       | _ -> fail name)
   | Ast.MetaDeclDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaDeclDecl(_,_) -> ()
       | _ -> fail name)
   | Ast.MetaFieldDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaFieldDecl(_,_) -> ()
       | _ -> fail name)
   | Ast.MetaFieldListDecl(Ast.NONE,(rule,name),len_name) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaFieldListDecl(_,_,_) -> ()
       | _ -> fail name)
   | Ast.MetaStmDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaStmDecl(_,_) -> ()
       | _ -> fail name)
   | Ast.MetaStmListDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaStmListDecl(_,_) -> ()
       | _ -> fail name)
   | Ast.MetaFuncDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaFuncDecl(_,_) -> ()
       | _ -> fail name)
   | Ast.MetaLocalFuncDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaLocalFuncDecl(_,_) -> ()
       | _ -> fail name)
   | Ast.MetaPosDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaPosDecl(_,_) ->
 	  if not (List.mem rule !Data.inheritable_positions) &&
 	    not !Data.ignore_patch_or_match
@@ -320,26 +328,26 @@ let check_meta_tyopt type_irrelevant v =
 		 ("position cannot be inherited over modifications: "^name))
       | _ -> fail name)
   | Ast.MetaFmtDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaFmtDecl(_,_) -> ()
       | _ -> fail name)
   | Ast.MetaFragListDecl(Ast.NONE,(rule,name),len) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaFragListDecl(_,_,_) -> ()
       | _ -> fail name)
   | Ast.MetaAnalysisDecl(analyzer,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaAnalysisDecl(analyzer1,_) ->
 	  if analyzer = analyzer1
 	  then ()
 	  else fail name
       | _ -> fail name)
   | Ast.MetaDeclarerDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaDeclarerDecl(Ast.NONE,(rule,name)) -> ()
       | _ -> fail name)
   | Ast.MetaIteratorDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
+      (match meta_lookup rule name v with
 	Ast.MetaIteratorDecl(Ast.NONE,(rule,name)) -> ()
       | _ -> fail name)
   | _ ->
@@ -604,7 +612,7 @@ let struct_initializer initlist =
     | Ast0.MetaInit _ | Ast0.MetaInitList _ -> false (* ambiguous... *)
     | _ -> false in
   let l = Ast0.undots initlist in
-  (l = []) or (List.exists loop l)
+  (l = []) || (List.exists loop l)
 
 let drop_dot_commas initlist =
   match Ast0.unwrap initlist with
@@ -637,7 +645,13 @@ let string_metavariables str clt =
 	match lenname with
 	  Ast.AnyLen -> Ast0.AnyListLen
 	| Ast.MetaLen nm -> Ast0.MetaListLen(clt2mcode nm clt)
-	| Ast.CstLen n -> Ast0.CstListLen n in
+	| Ast.CstLen n ->
+	    if n < 1
+	    then
+	      failwith
+		(Printf.sprintf "length of format list %s must be at least 1"
+		   str)
+	    else Ast0.CstListLen n in
       MFrag
 	(fun pct ->
 	  Ast0.wrap(Ast0.MetaFormatList(pct,clt2mcode name clt,lenname)))
@@ -779,19 +793,31 @@ let drop_minus_plus l clt =
 let not_format_string str clt =
   Ast0.wrap(Ast0.Constant (clt2mcode (Ast.String str) clt))
 
-let parse_string str ((a,b,c,d,e,f,g,h,i,_) as clt) =
-  if List.length(Str.split_delim (Str.regexp "%") str) > 1
-  then
-    try
-      begin
-	let first = clt2mcode "\"" clt in
-	(*do not want subsequent tokens to inherit whitespace from first*)
-	let clt = (a,b,c,d,e,f,g,h,i,"") in
-	let (line,middle) = drop_minus_plus str clt in
-	let middle = Ast0.wrap (Ast0.DOTS middle) in
-	let last = clt2mcode "\"" (update_line clt (line-1)) in
-	contains_string_constant := true;
-	Ast0.wrap(Ast0.StringConstant(first,middle,last))
-      end
-    with Parse_printf.Not_format_string -> not_format_string str clt
-  else not_format_string str clt
+let nometas str =
+  match Str.split (Str.regexp "@") str with
+    before::within::after::_ -> false (* need at least %@d@ *)
+  | _ -> true
+
+let parse_string str ((mc,b,c,d,e,f,g,h,i,_) as clt) =
+  match mc with
+    Data.PLUS when nometas str ->
+      (* not matched against, no internal changes possible, so no need to
+	 parse *)
+      not_format_string str clt
+   | _ ->
+       if List.length(Str.split_delim (Str.regexp "%") str) > 1
+       then
+	 try
+	   begin
+	     let first = clt2mcode "\"" clt in
+	     (*do not want subsequent tokens to inherit whitespace
+		from first*)
+	     let clt = (mc,b,c,d,e,f,g,h,i,"") in
+	     let (line,middle) = drop_minus_plus str clt in
+	     let middle = Ast0.wrap (Ast0.DOTS middle) in
+	     let last = clt2mcode "\"" (update_line clt (line-1)) in
+	     contains_string_constant := true;
+	     Ast0.wrap(Ast0.StringConstant(first,middle,last))
+	   end
+	 with Parse_printf.Not_format_string -> not_format_string str clt
+       else not_format_string str clt

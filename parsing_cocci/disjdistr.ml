@@ -27,6 +27,11 @@ let rec disjmult_two fstart frest (start,rest) =
   let rest = disjmult frest rest in
   disjmult2 cur rest (function cur -> function rest -> (cur,rest))
 
+let rec disjtwoelems fstart frest (start,rest) =
+  let cur = fstart start in
+  let rest = frest rest in
+  disjmult2 cur rest (function cur -> function rest -> (cur,rest))
+
 let disjoption f = function
     None -> [None]
   | Some x -> List.map (function x -> Some x) (f x)
@@ -68,12 +73,6 @@ and disjtypeC bty =
 	(function ty ->
 	  Ast.rewrap bty (Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2)))
 	ty
-  | Ast.FunctionType (s,ty,lp1,params,rp1) ->
-      let ty = disjoption disjty ty in
-      List.map
-	(function ty ->
-	  Ast.rewrap bty (Ast.FunctionType (s,ty,lp1,params,rp1)))
-	ty
   | Ast.Array(ty,lb,size,rb) ->
       disjmult2 (disjty ty) (disjoption disjexp size)
 	(function ty -> function size ->
@@ -82,7 +81,14 @@ and disjtypeC bty =
       disjmult2 (disjexp length) (disjoption disjexp precision_opt)
 	(function length -> function precision_opt ->
 	  Ast.rewrap bty (Ast.Decimal(dec,lp,length,comma,precision_opt,rp)))
-  | Ast.EnumName(_,_) | Ast.StructUnionName(_,_) -> [bty]
+  | Ast.EnumName(enum,name) ->
+      let name = disjoption disjident name in
+      List.map (function name -> Ast.rewrap bty (Ast.EnumName(enum,name))) name
+  | Ast.StructUnionName(su,name) ->
+      let name = disjoption disjident name in
+      List.map
+	(function name -> Ast.rewrap bty (Ast.StructUnionName(su,name)))
+	name
   | Ast.EnumDef(ty,lb,ids,rb) ->
       disjmult2 (disjty ty) (disjdots disjexp ids)
 	(function ty -> function ids ->
@@ -194,6 +200,9 @@ and disjexp e =
   | Ast.AsExpr(exp,asexp) -> (* as exp doesn't contain disj *)
       let exp = disjexp exp in
       List.map (function exp -> Ast.rewrap e (Ast.AsExpr(exp,asexp))) exp
+  | Ast.AsSExpr(exp,asstm) -> (* as exp doesn't contain disj *)
+      let exp = disjexp exp in
+      List.map (function exp -> Ast.rewrap e (Ast.AsSExpr(exp,asstm))) exp
   | Ast.DisjExpr(exp_list) -> List.concat (List.map disjexp exp_list)
   | Ast.NestExpr(starter,expr_dots,ender,whencode,multi) ->
       (* not sure what to do here, so ambiguities still possible *)
@@ -210,8 +219,8 @@ and disjparam p =
   match Ast.unwrap p with
     Ast.VoidParam(ty) -> [p] (* void is the only possible value *)
   | Ast.Param(ty,id) ->
-      let ty = disjty ty in
-      List.map (function ty -> Ast.rewrap p (Ast.Param(ty,id))) ty
+      disjmult2 (disjty ty) (disjoption disjident id)
+	(fun ty id -> Ast.rewrap p (Ast.Param(ty,id)))
   | Ast.AsParam(pm,asexp) -> (* as exp doesn't contain disj *)
       let pm = disjparam pm in
       List.map (function pm -> Ast.rewrap p (Ast.AsParam(pm,asexp))) pm
@@ -273,6 +282,10 @@ and designator = function
 	(function min -> function max ->
 	  Ast.DesignatorRange(lb,min,dots,max,rb))
 
+and disjfninfo = function
+  | Ast.FType(ty) -> List.map (function ty -> Ast.FType(ty)) (disjty ty)
+  | fi -> [fi]
+
 and disjdecl d =
   match Ast.unwrap d with
     Ast.MetaDecl(_,_,_) | Ast.MetaField(_,_,_)
@@ -287,14 +300,21 @@ and disjdecl d =
   | Ast.UnInit(stg,ty,id,sem) ->
       let ty = disjty ty in
       List.map (function ty -> Ast.rewrap d (Ast.UnInit(stg,ty,id,sem))) ty
-  | Ast.MacroDecl(name,lp,args,rp,sem) ->
+  | Ast.FunProto(fninfo,name,lp1,params,va,rp1,sem) ->
+      let fninfo = disjmult disjfninfo fninfo in
       List.map
-	(function args -> Ast.rewrap d (Ast.MacroDecl(name,lp,args,rp,sem)))
+	(function fninfo ->
+	  Ast.rewrap d (Ast.FunProto(fninfo,name,lp1,params,va,rp1,sem)))
+	fninfo
+  | Ast.MacroDecl(stg,name,lp,args,rp,sem) ->
+      List.map
+	(function args ->
+	  Ast.rewrap d (Ast.MacroDecl(stg,name,lp,args,rp,sem)))
 	(disjdots disjexp args)
-  | Ast.MacroDeclInit(name,lp,args,rp,eq,ini,sem) ->
+  | Ast.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
       disjmult2 (disjdots disjexp args) (disjini ini)
 	(function args -> function ini ->
-	  Ast.rewrap d (Ast.MacroDeclInit(name,lp,args,rp,eq,ini,sem)))
+	  Ast.rewrap d (Ast.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem)))
   | Ast.TyDecl(ty,sem) ->
       let ty = disjty ty in
       List.map (function ty -> Ast.rewrap d (Ast.TyDecl(ty,sem))) ty
@@ -318,6 +338,7 @@ let orify_rule_elem re exp rebuild =
   generic_orify_rule_elem disjexp re exp rebuild
 
 let orify_rule_elem_ty = generic_orify_rule_elem disjty
+let orify_rule_elem_id = generic_orify_rule_elem disjident
 let orify_rule_elem_param = generic_orify_rule_elem disjparam
 let orify_rule_elem_decl = generic_orify_rule_elem disjdecl
 let orify_rule_elem_anndecl = generic_orify_rule_elem anndisjdecl
@@ -325,11 +346,13 @@ let orify_rule_elem_ini = generic_orify_rule_elem disjini
 
 let rec disj_rule_elem r k re =
   match Ast.unwrap re with
-    Ast.FunHeader(bef,allminus,fninfo,name,lp,params,rp) ->
-      generic_orify_rule_elem (disjdots disjparam) re params
-	(function params ->
+    Ast.FunHeader(bef,allminus,fninfo,name,lp,params,va,rp) ->
+      generic_orify_rule_elem
+	(disjtwoelems disjident (disjdots disjparam)) re
+	(name,params)
+	(fun (name,params) ->
 	  Ast.rewrap re
-	    (Ast.FunHeader(bef,allminus,fninfo,name,lp,params,rp)))
+	    (Ast.FunHeader(bef,allminus,fninfo,name,lp,params,va,rp)))
   | Ast.Decl decl ->
       orify_rule_elem_anndecl re decl
 	(function decl -> Ast.rewrap re (Ast.Decl decl))
@@ -383,6 +406,8 @@ let rec disj_rule_elem r k re =
       orify_rule_elem re exp (function exp -> Ast.rewrap exp (Ast.TopExp(exp)))
   | Ast.Ty(ty) ->
       orify_rule_elem_ty re ty (function ty -> Ast.rewrap ty (Ast.Ty(ty)))
+  | Ast.TopId(id) ->
+      orify_rule_elem_id re id (function id -> Ast.rewrap id (Ast.TopId(id)))
   | Ast.TopInit(init) ->
       orify_rule_elem_ini re init
 	(function init -> Ast.rewrap init (Ast.TopInit(init)))
@@ -413,9 +438,11 @@ let disj_all =
   let mcode x = x in
   let donothing r k e = k e in
   V.rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing
     donothing disj_rule_elem donothing donothing donothing donothing
 
 (* ----------------------------------------------------------------------- *)
@@ -428,9 +455,11 @@ let collect_all_isos =
   let donothing r k e = Common.union_set (Ast.get_isos e) (k e) in
   let doanything r k e = k e in
   V.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing
     doanything donothing donothing donothing donothing doanything
 
 let collect_iso_info =
@@ -443,8 +472,10 @@ let collect_iso_info =
 	let isos = collect_all_isos.V.combiner_rule_elem e in
 	Ast.set_isos e isos in
   V.rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing
     donothing donothing donothing donothing
     donothing donothing donothing donothing rule_elem donothing donothing
     donothing donothing

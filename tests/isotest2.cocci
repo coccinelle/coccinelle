@@ -1,7 +1,8 @@
 @@
 identifier id;
+expression e;
 @@
 
   ...
-- int id;
+- int id = e;
   ...

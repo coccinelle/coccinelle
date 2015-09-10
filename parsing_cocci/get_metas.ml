@@ -113,7 +113,7 @@ and expression e =
 	  (multibind [fn_n;lp_n;args_n;rp_n], Ast0.FunCall(fn,lp,args,rp))
       | Ast0.Assignment(left,op,right,simple) ->
 	  let (left_n,left) = expression left in
-	  let (op_n,op) = mcode op in
+	  let (op_n,op) = assignOp op in
 	  let (right_n,right) = expression right in
 	  (multibind [left_n;op_n;right_n],
 	   Ast0.Assignment(left,op,right,simple))
@@ -145,12 +145,12 @@ and expression e =
 	  (bind op_n exp_n, Ast0.Unary(exp,op))
       | Ast0.Binary(left,op,right) ->
 	  let (left_n,left) = expression left in
-	  let (op_n,op) = mcode op in
+	  let (op_n,op) = binaryOp op in
 	  let (right_n,right) = expression right in
 	  (multibind [left_n;op_n;right_n], Ast0.Binary(left,op,right))
       | Ast0.Nested(left,op,right) ->
 	  let (left_n,left) = expression left in
-	  let (op_n,op) = mcode op in
+	  let (op_n,op) = binaryOp op in
 	  let (right_n,right) = expression right in
 	  (multibind [left_n;op_n;right_n], Ast0.Nested(left,op,right))
       | Ast0.Paren(lp,exp,rp) ->
@@ -209,7 +209,7 @@ and expression e =
       | Ast0.MetaExprList(name,lenname,pure) ->
 	  let (name_n,name) = mcode name in
 	  (name_n,Ast0.MetaExprList(name,lenname,pure))
-      |	Ast0.AsExpr _ -> failwith "not possible"
+      | Ast0.AsExpr _ | Ast0.AsSExpr _ -> failwith "not possible"
       | Ast0.EComma(cm) ->
 	  let (cm_n,cm) = mcode cm in (cm_n,Ast0.EComma(cm))
       | Ast0.DisjExpr(starter,expr_list,mids,ender) ->
@@ -250,8 +250,36 @@ and expression e =
 	      (other_metas,
 	       Ast0.rewrap exp
 		 (Ast0.AsExpr(exp,Ast0.rewrap exp (Ast0.Ident(id_meta)))))
+	  | Ast0.StmtTag(stm_meta) ->
+	      (other_metas, Ast0.rewrap exp (Ast0.AsSExpr(exp,stm_meta)))
 	  | x -> (x::other_metas,exp))
       ([],e) metas
+
+and assignOp op =
+  rewrap op
+    (match Ast0.unwrap op with
+      Ast0.SimpleAssign op' ->
+        let (n,op') = mcode op' in
+        (n, Ast0.SimpleAssign op')
+    | Ast0.OpAssign op' ->
+      let (n, op') = mcode op' in
+      (n, Ast0.OpAssign op')
+    | Ast0.MetaAssign(name, c, pure) ->
+      let (n,name) = mcode name in
+      (n, Ast0.MetaAssign(name, c, pure)))
+
+and binaryOp op =
+  rewrap op
+    (match Ast0.unwrap op with
+      Ast0.Arith op' ->
+      let (n, op') = mcode op' in
+      (n, Ast0.Arith op')
+    | Ast0.Logical op' ->
+      let (n, op') = mcode op' in
+      (n, Ast0.Logical op')
+    | Ast0.MetaBinary(name, c, pure) ->
+      let (n,name) = mcode name in
+      (n, Ast0.MetaBinary(name, c, pure)))
 
 and string_fragment e =
   rewrap e
@@ -302,8 +330,6 @@ and typeC t =
 	  (bind ty_n star_n, Ast0.Pointer(ty,star))
       | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	  function_pointer (ty,lp1,star,rp1,lp2,params,rp2) []
-      | Ast0.FunctionType(ty,lp1,params,rp1) ->
-	  function_type (ty,lp1,params,rp1) []
       | Ast0.Array(ty,lb,size,rb) -> array_type (ty,lb,size,rb) []
       |	Ast0.Decimal(dec,lp,length,comma,precision_opt,rp) ->
 	  let (dec_n,dec) = mcode dec in
@@ -370,14 +396,6 @@ and function_pointer (ty,lp1,star,rp1,lp2,params,rp2) extra =
     (* have to put the treatment of the identifier into the right position *)
   (multibind ([ty_n;lp1_n;star_n] @ extra @ [rp1_n;lp2_n;params_n;rp2_n]),
    Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2))
-and function_type (ty,lp1,params,rp1) extra =
-  let (ty_n,ty) = get_option typeC ty in
-  let (lp1_n,lp1) = mcode lp1 in
-  let (params_n,params) = dots parameterTypeDef params in
-  let (rp1_n,rp1) = mcode rp1 in
-    (* have to put the treatment of the identifier into the right position *)
-  (multibind (ty_n :: extra @ [lp1_n;params_n;rp1_n]),
-   Ast0.FunctionType(ty,lp1,params,rp1))
 and array_type (ty,lb,size,rb) extra =
   let (ty_n,ty) = typeC ty in
   let (lb_n,lb) = mcode lb in
@@ -392,9 +410,6 @@ and named_type ty id =
     Ast0.FunctionPointer(rty,lp1,star,rp1,lp2,params,rp2) ->
       let tyres =
 	function_pointer (rty,lp1,star,rp1,lp2,params,rp2) [id_n] in
-      (rewrap ty tyres, id)
-  | Ast0.FunctionType(rty,lp1,params,rp1) ->
-      let tyres = function_type (rty,lp1,params,rp1) [id_n] in
       (rewrap ty tyres, id)
   | Ast0.Array(rty,lb,size,rb) ->
       let tyres = array_type (rty,lb,size,rb) [id_n] in
@@ -428,15 +443,32 @@ and declaration d =
 	  let ((ty_id_n,ty),id) = named_type ty id in
 	  let (sem_n,sem) = mcode sem in
 	  (multibind [stg_n;ty_id_n;sem_n], Ast0.UnInit(stg,ty,id,sem))
-      | Ast0.MacroDecl(name,lp,args,rp,sem) ->
+      | Ast0.FunProto(fi,name,lp,params,va,rp,sem) ->
+	  let (fi_n,fi) = map_split_bind fninfo fi in
+	  let (name_n,name) = ident name in
+	  let (lp_n,lp) = mcode lp in
+	  let (params_n,params) = dots parameterTypeDef params in
+          let (va_n,va) = match va with
+            | None -> ([], None)
+            | Some (comma, ellipsis) ->
+              let (comma_n,comma) = mcode comma in
+              let (ellipsis_n,ellipsis) = mcode ellipsis in
+              (bind comma_n ellipsis_n, Some (comma, ellipsis)) in
+	  let (rp_n,rp) = mcode rp in
+	  let (sem_n,sem) = mcode sem in
+	  (multibind [fi_n;name_n;lp_n;params_n;va_n;rp_n;sem_n],
+	   Ast0.FunProto(fi,name,lp,params,va,rp,sem))
+      | Ast0.MacroDecl(stg,name,lp,args,rp,sem) ->
+	  let (stg_n,stg) = get_option mcode stg in
 	  let (name_n,name) = ident name in
 	  let (lp_n,lp) = mcode lp in
 	  let (args_n,args) = dots expression args in
 	  let (rp_n,rp) = mcode rp in
 	  let (sem_n,sem) = mcode sem in
-	  (multibind [name_n;lp_n;args_n;rp_n;sem_n],
-	   Ast0.MacroDecl(name,lp,args,rp,sem))
-      | Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem) ->
+	  (multibind [stg_n;name_n;lp_n;args_n;rp_n;sem_n],
+	   Ast0.MacroDecl(stg,name,lp,args,rp,sem))
+      | Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
+	  let (stg_n,stg) = get_option mcode stg in
           let (name_n,name) = ident name in
           let (lp_n,lp) = mcode lp in
           let (args_n,args) = dots expression args in
@@ -444,8 +476,8 @@ and declaration d =
           let (eq_n,eq) = mcode eq in
           let (ini_n,ini) = initialiser ini in
           let (sem_n,sem) = mcode sem in
-          (multibind [name_n;lp_n;args_n;rp_n;eq_n;ini_n;sem_n],
-           Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem))
+          (multibind [stg_n;name_n;lp_n;args_n;rp_n;eq_n;ini_n;sem_n],
+           Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem))
       | Ast0.TyDecl(ty,sem) ->
 	  let (ty_n,ty) = typeC ty in
 	  let (sem_n,sem) = mcode sem in
@@ -463,7 +495,7 @@ and declaration d =
       | Ast0.Ddots(dots,whencode) ->
 	  let (dots_n,dots) = mcode dots in
 	  let (whencode_n, whencode) = match whencode with
-	    | Some (a,e,b) -> 
+	    | Some (a,e,b) ->
 		let (_,a2) = mcode a in
 		let (_,e2) = mcode e in
 		let (b1,b2) = declaration b in (b1, Some (a2,e2,b2))
@@ -516,7 +548,7 @@ and initialiser i =
       | Ast0.Idots(d,whencode) ->
 	  let (d_n,d) = mcode d in
 	  let (whencode_n, whencode) = match whencode with
-	    | Some (a,e,b) -> 
+	    | Some (a,e,b) ->
 		let (_,a2) = mcode a in
 		let (_,e2) = mcode e in
 		let (b1,b2) = initialiser b in (b1, Some (a2,e2,b2))
@@ -603,18 +635,24 @@ and statement s =
   let (metas,s) =
     rewrap s
       (match Ast0.unwrap s with
-	Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace,aft) ->
+	Ast0.FunDecl(bef,fi,name,lp,params,va,rp,lbrace,body,rbrace,aft) ->
 	  let (fi_n,fi) = map_split_bind fninfo fi in
 	  let (name_n,name) = ident name in
 	  let (lp_n,lp) = mcode lp in
 	  let (params_n,params) = dots parameterTypeDef params in
+          let (va_n,va) = match va with
+            | None -> (option_default,None)
+            | Some (comma,ellipsis) ->
+              let (comma_n,comma) = mcode comma in
+              let (ellipsis_n,ellipsis) = mcode ellipsis in
+              (bind comma_n ellipsis_n,Some(comma,ellipsis)) in
 	  let (rp_n,rp) = mcode rp in
 	  let (lbrace_n,lbrace) = mcode lbrace in
 	  let (body_n,body) = dots statement body in
 	  let (rbrace_n,rbrace) = mcode rbrace in
 	  (multibind
-	     [fi_n;name_n;lp_n;params_n;rp_n;lbrace_n;body_n;rbrace_n],
-	   Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace,aft))
+	     [fi_n;name_n;lp_n;params_n;va_n;rp_n;lbrace_n;body_n;rbrace_n],
+	   Ast0.FunDecl(bef,fi,name,lp,params,va,rp,lbrace,body,rbrace,aft))
       | Ast0.Decl(bef,decl) ->
 	  let (decl_n,decl) = declaration decl in
 	  (decl_n,Ast0.Decl(bef,decl))
@@ -763,6 +801,9 @@ and statement s =
       | Ast0.Ty(ty) ->
 	  let (ty_n,ty) = typeC ty in
 	  (ty_n,Ast0.Ty(ty))
+      | Ast0.TopId(id) ->
+	  let (id_n,id) = ident id in
+	  (id_n,Ast0.TopId(id))
       | Ast0.TopInit(init) ->
 	  let (init_n,init) = initialiser init in
 	  (init_n,Ast0.TopInit(init))
@@ -870,11 +911,11 @@ and fninfo = function
 	let (_,w) = mcode w in
 	let (_,e) = mcode e in
 	let (n,a) = notfn a in (n,Ast0.WhenNot(w,e,a))
-    | Ast0.WhenAlways (w,e,a) -> 
+    | Ast0.WhenAlways (w,e,a) ->
 	let (_,w) = mcode w in
 	let (_,e) = mcode e in
 	let (n,a) = alwaysfn a in (n,Ast0.WhenAlways(w,e,a))
-    | Ast0.WhenModifier(w,x) -> 
+    | Ast0.WhenModifier(w,x) ->
 	let (_,w) = mcode w in
 	(option_default,Ast0.WhenModifier(w,x))
     | Ast0.WhenNotTrue(w,ee,e) ->
@@ -889,7 +930,7 @@ and fninfo = function
   (* for whencodes that do not have any of the above modifiers
    * returns (the new whencode expression, the updated whencode) *)
   and whencode_option bfn = function
-    | Some (a,e,b) -> 
+    | Some (a,e,b) ->
 	let (_,a2) = mcode a in
 	let (_,e2) = mcode e in
 	let (b1,b2) = bfn b in (b1, Some (a2,e2,b2))

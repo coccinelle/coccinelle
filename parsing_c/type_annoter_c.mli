@@ -11,4 +11,3 @@ val initial_env : environment ref
 val annotate_program :
   environment -> Ast_c.toplevel list ->
   (Ast_c.toplevel * environment Common.pair) list
-

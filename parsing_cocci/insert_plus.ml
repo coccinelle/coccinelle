@@ -69,10 +69,13 @@ it *)
   let res =
     V0.flat_combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode
       (donothing Ast0.dotsExpr) (donothing Ast0.dotsInit)
       (donothing Ast0.dotsParam) (donothing Ast0.dotsStmt)
       (donothing Ast0.dotsDecl) (donothing Ast0.dotsCase)
-      (donothing Ast0.ident) expression (donothing Ast0.typeC) initialiser
+      (donothing Ast0.ident) expression  (donothing Ast0.assignOp)
+      (donothing Ast0.binaryOp)
+      (donothing Ast0.typeC) initialiser
       (donothing Ast0.param) (donothing Ast0.decl) statement
       (donothing Ast0.forinfo) (donothing Ast0.case_line)
       (donothing Ast0.string_fragment) topfn in
@@ -108,6 +111,8 @@ let create_root_token_table minus =
 	  | Ast0.DotsCaseTag(d) -> Ast0.get_index d
 	  | Ast0.IdentTag(d) -> Ast0.get_index d
 	  | Ast0.ExprTag(d) -> Ast0.get_index d
+	  | Ast0.AssignOpTag d -> Ast0.get_index d
+	  | Ast0.BinaryOpTag d -> Ast0.get_index d
 	  | Ast0.ArgExprTag(d) | Ast0.TestExprTag(d) ->
 	      failwith "not possible - iso only"
 	  | Ast0.TypeCTag(d) -> Ast0.get_index d
@@ -155,14 +160,14 @@ let collect_minus_join_points root =
     match Ast0.get_mcodekind e with
       (Ast0.MINUS(_)) as mc -> [(Favored,info,mc)]
     | (Ast0.CONTEXT(_)) as mc when not(index = root_index) ->
-	(* This was unfavored at one point, but I don't remember why *)
+	(* was unfavored, not sure why *)
       [(Favored,info,mc)]
     | _ -> k e in
 
 (* don't want to attach to the outside of DOTS, because metavariables can't
 bind to that; not good for isomorphisms *)
 
-  let dots f k d =
+  let dots f k d checklast =
     let multibind l =
       let rec loop = function
 	  [] -> option_default
@@ -170,17 +175,40 @@ bind to that; not good for isomorphisms *)
 	| x::xs -> bind x (loop xs) in
       loop l in
 
-    match Ast0.unwrap d with
-      Ast0.DOTS(l) -> multibind (List.map f l)
-    | Ast0.CIRCLES(l) -> multibind (List.map f l)
-    | Ast0.STARS(l) -> multibind (List.map f l) in
+    let l = Ast0.undots d in
+    match checklast with
+      None -> multibind (List.map f l)
+    | Some checklast ->
+	match List.rev l with
+	  last::others ->
+	    multibind ((List.map f (List.rev others)) @ [checklast last])
+	| [] -> multibind [] in
 
-  let edots r k d = dots r.VT0.combiner_rec_expression k d in
-  let idots r k d = dots r.VT0.combiner_rec_initialiser k d in
-  let pdots r k d = dots r.VT0.combiner_rec_parameter k d in
-  let sdots r k d = dots r.VT0.combiner_rec_statement k d in
-  let ddots r k d = dots r.VT0.combiner_rec_declaration k d in
-  let cdots r k d = dots r.VT0.combiner_rec_case_line k d in
+  (* have to unfavor a trailing comme because it might not match anything *)
+  let edots r k d = dots r.VT0.combiner_rec_expression k d
+      (Some
+	 (function e ->
+	   match Ast0.unwrap e with
+	     Ast0.EComma(comma) -> unfavored_mcode comma
+	   | _ -> r.VT0.combiner_rec_expression e))
+  in
+  let idots r k d = dots r.VT0.combiner_rec_initialiser k d
+      (Some
+	 (function i ->
+	   match Ast0.unwrap i with
+	     Ast0.IComma(comma) -> unfavored_mcode comma
+	   | _ -> r.VT0.combiner_rec_initialiser i)) in
+
+  let pdots r k d = dots r.VT0.combiner_rec_parameter k d
+      (Some
+	 (function p ->
+	   match Ast0.unwrap p with
+	     Ast0.PComma(comma) -> unfavored_mcode comma
+	   | _ -> r.VT0.combiner_rec_parameter p)) in
+
+  let sdots r k d = dots r.VT0.combiner_rec_statement k d None in
+  let ddots r k d = dots r.VT0.combiner_rec_declaration k d None in
+  let cdots r k d = dots r.VT0.combiner_rec_case_line k d None in
 
   (* a case for everything that has a Opt *)
 
@@ -220,7 +248,7 @@ bind to that; not good for isomorphisms *)
     | Ast0.For(_,_,_,_,_,_,_,_,aft)
     | Ast0.Iterator(_,_,_,_,_,aft) ->
 	redo_branched (do_nothing r k s) aft*)
-    | Ast0.FunDecl((info,bef),fninfo,name,lp,params,rp,lbrace,body,rbrace,
+    | Ast0.FunDecl((info,bef),fninfo,name,lp,params,va,rp,lbrace,body,rbrace,
 		   (aftinfo,aft)) ->
 	(Toplevel,info,bef)::(k s)@[(Toplevel,aftinfo,aft)]
     | Ast0.Decl((info,bef),decl) ->
@@ -251,7 +279,6 @@ bind to that; not good for isomorphisms *)
     | Ast0.OptExp e | Ast0.UniqueExp e ->
 	(* put the + code on the thing, not on the opt *)
 	r.VT0.combiner_rec_expression e
-    | Ast0.EComma(comma) -> unfavored_mcode comma
     | _ -> do_nothing r k e in
 
   let ident r k e =
@@ -281,7 +308,6 @@ bind to that; not good for isomorphisms *)
     | Ast0.OptIni i | Ast0.UniqueIni i ->
 	(* put the + code on the thing, not on the opt *)
 	r.VT0.combiner_rec_initialiser i
-    | Ast0.IComma(comma) -> unfavored_mcode comma
     | _ -> do_nothing r k e in
 
   let param r k e =
@@ -289,7 +315,6 @@ bind to that; not good for isomorphisms *)
       Ast0.OptParam p | Ast0.UniqueParam p ->
 	(* put the + code on the thing, not on the opt *)
 	r.VT0.combiner_rec_parameter p
-    | Ast0.PComma(comma) -> unfavored_mcode comma
     | _ -> do_nothing r k e in
 
   let case_line r k e =
@@ -303,8 +328,10 @@ bind to that; not good for isomorphisms *)
 
   V0.flat_combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode
     edots idots pdots sdots ddots cdots
-    ident expression typeC initialiser param decl statement forinfo
+    ident expression do_nothing do_nothing
+    typeC initialiser param decl statement forinfo
     case_line do_nothing do_top
 
 
@@ -337,6 +364,12 @@ let call_collect_minus context_nodes :
       | Ast0.ExprTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).VT0.combiner_rec_expression e)
+      | Ast0.AssignOpTag op ->
+	  (Ast0.get_index op,
+	   (collect_minus_join_points op).VT0.combiner_rec_assignOp op)
+      | Ast0.BinaryOpTag op ->
+	  (Ast0.get_index op,
+	   (collect_minus_join_points op).VT0.combiner_rec_binaryOp op)
       | Ast0.ArgExprTag(e) | Ast0.TestExprTag(e) ->
 	  failwith "not possible - iso only"
       | Ast0.TypeCTag(e) ->
@@ -415,7 +448,6 @@ let process_minus minus =
 	 verify res;
 	 res)
        minus)
-
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
 (* collect the plus tokens *)
@@ -426,9 +458,13 @@ let mk_ident x            = Ast.IdentTag (Ast0toast.ident x)
 let mk_expression x       = Ast.ExpressionTag (Ast0toast.expression x)
 let mk_constant x         = Ast.ConstantTag x
 let mk_unaryOp x          = Ast.UnaryOpTag x
-let mk_assignOp x         = Ast.AssignOpTag x
+let mk_assignOp x         = Ast.AssignOpTag (Ast0toast.assignOp x)
+let mk_simpleAssignOp x   = Ast.SimpleAssignOpTag x
+let mk_opAssignOp x       = Ast.OpAssignOpTag x
 let mk_fixOp x            = Ast.FixOpTag x
-let mk_binaryOp x         = Ast.BinaryOpTag x
+let mk_binaryOp x         = Ast.BinaryOpTag (Ast0toast.binaryOp x)
+let mk_arithOp x          = Ast.ArithOpTag x
+let mk_logicalOp x        = Ast.LogicalOpTag x
 let mk_arithOp x          = Ast.ArithOpTag x
 let mk_logicalOp x        = Ast.LogicalOpTag x
 let mk_declaration x      = Ast.DeclarationTag (Ast0toast.declaration x)
@@ -510,10 +546,11 @@ let collect_plus_nodes root =
       Ast0.Exp(exp) -> r.VT0.combiner_rec_expression exp
     | Ast0.TopExp(exp) -> r.VT0.combiner_rec_expression exp
     | Ast0.Ty(ty) -> r.VT0.combiner_rec_typeC ty
+    | Ast0.TopId(id) -> r.VT0.combiner_rec_ident id
     | Ast0.TopInit(init) -> r.VT0.combiner_rec_initialiser init
     | Ast0.Decl(bef,decl) ->
 	 do_nothing_extra (pre_info bef) [] mk_statement r k e
-    | Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace,aft) ->
+    | Ast0.FunDecl(bef,fi,name,lp,params,va,rp,lbrace,body,rbrace,aft) ->
 	do_nothing_extra (pre_info bef) (pre_info aft) mk_statement r k e
     | Ast0.IfThen(iff,lp,exp,rp,branch1,aft) ->
 	do_nothing_extra [] (info aft) mk_statement r k e
@@ -544,15 +581,18 @@ let collect_plus_nodes root =
   let initdots r k e = k e in
 
   V0.flat_combiner bind option_default
-    (imcode mk_meta) (imcode mk_token) (mcode mk_constant) (mcode mk_assignOp)
+    (imcode mk_meta) (imcode mk_token) (mcode mk_constant)
+    (mcode mk_simpleAssignOp) (mcode mk_opAssignOp)
     (mcode mk_fixOp)
-    (mcode mk_unaryOp) (mcode mk_binaryOp) (mcode mk_const_vol)
+    (mcode mk_unaryOp) (mcode mk_arithOp)
+    (mcode mk_logicalOp) (mcode mk_const_vol)
     (mcode mk_sign) (mcode mk_structUnion)
     (mcode mk_storage) (mcode mk_inc_file)
     (do_nothing mk_exprdots) initdots
     (do_nothing mk_paramdots) stmt_dots (do_nothing mk_decldots)
     (do_nothing mk_casedots)
     (do_nothing mk_ident) (do_nothing mk_expression)
+    (do_nothing mk_assignOp) (do_nothing mk_binaryOp)
     (do_nothing mk_typeC) (do_nothing mk_init) (do_nothing mk_param)
     (do_nothing mk_declaration)
     stmt (do_nothing mk_forinfo) (do_nothing mk_case_line)
@@ -587,6 +627,12 @@ let call_collect_plus context_nodes :
       | Ast0.ExprTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).VT0.combiner_rec_expression e)
+      | Ast0.AssignOpTag(op) ->
+	  (Ast0.get_index op,
+	   (collect_plus_nodes op).VT0.combiner_rec_assignOp op)
+      | Ast0.BinaryOpTag(op) ->
+	  (Ast0.get_index op,
+	   (collect_plus_nodes op).VT0.combiner_rec_binaryOp op)
       | Ast0.ArgExprTag(_) | Ast0.TestExprTag(_) ->
 	  failwith "not possible - iso only"
       | Ast0.TypeCTag(e) ->
@@ -881,7 +927,7 @@ let allminus = function
 let rec before_m1 ((f1,infom1,m1) as x1) ((f2,infom2,m2) as x2) rest = function
     [] -> ()
   | (((infop,_,pcode) as p) :: ps) as all ->
-      if less_than_start infop infom1 or
+      if less_than_start infop infom1 ||
 	(allminus m1 && less_than_end infop infom1) (* account for trees *)
       then
 	if toplevel f1
@@ -909,7 +955,7 @@ and after_m1 ((f1,infom1,m1) as x1) ((f2,infom2,m2) as x2) rest = function
 	 what it can infer from something being CONTEXT with no top-level
 	 modifications.  for the moment, we thus give an error, asking the
 	 user to rewrite the semantic patch. *)
-      if greater_than_end infop infom1 or is_minus m1 or !empty_isos
+      if greater_than_end infop infom1 || is_minus m1 || !empty_isos
       then
 	if less_than_start infop infom2
 	then
@@ -1070,7 +1116,7 @@ let reevaluate_contextness =
      match Ast0.unwrap e with
        Ast0.Decl(bef,decl) ->
 	 donothing_extra (pre_info bef) r k e
-     | Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace,aft) ->
+     | Ast0.FunDecl(bef,fi,name,lp,params,va,rp,lbrace,body,rbrace,aft) ->
 	 donothing_extra ((pre_info bef) @ (pre_info aft)) r k e
      | Ast0.IfThen(iff,lp,exp,rp,branch1,aft) ->
 	 donothing_extra (info aft) r k e
@@ -1087,8 +1133,9 @@ let reevaluate_contextness =
   let res =
     V0.flat_combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing
+      donothing donothing donothing donothing
       donothing donothing donothing stmt donothing donothing donothing
       donothing in
   res.VT0.combiner_rec_top_level

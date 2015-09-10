@@ -118,7 +118,7 @@ let consistency_checking2 xs =
     then begin
       pr2_err ("TYPEDEF CONFLICT:" ^ k);
       let sorted = xs +> List.sort (fun (ka,va) (kb,vb) ->
-        if !va =|= !vb then
+        if !va = !vb then
           (match ka, kb with
           | CTypedef, _ -> 1 (* first is smaller *)
           | _, CTypedef -> -1
@@ -144,7 +144,7 @@ let consistency_checking2 xs =
    * sizeof(id) and even if id was for a long time an identifier, maybe
    * a few time, because of the scope it's actually really a type.
    *)
-  if (null !ident_to_type)
+  if (!ident_to_type = [])
   then xs
   else
     let bigf = { Visitor_c.default_visitor_c_s with
@@ -193,6 +193,3 @@ let consistency_checking2 xs =
 
 let consistency_checking a  =
   Common.profile_code "C consistencycheck" (fun () -> consistency_checking2 a)
-
-
-

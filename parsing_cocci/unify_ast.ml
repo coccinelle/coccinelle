@@ -14,6 +14,22 @@ let return b = if b then MAYBE else NO
 
 let unify_mcode (x,_,_,_) (y,_,_,_) = x = y
 
+let unify_assignOp_mcode op1 op2 =
+  match (Ast.unwrap op1, Ast.unwrap op2) with
+    | (Ast.SimpleAssign op1', Ast.SimpleAssign op2') -> unify_mcode op1' op2'
+    | (Ast.OpAssign op1', Ast.OpAssign op2') -> unify_mcode op1' op2'
+    | (Ast.MetaAssign(mv1,_,_,_), Ast.MetaAssign(mv2,_,_,_)) ->
+      unify_mcode mv1 mv2
+    | _ -> false
+
+let unify_binaryOp_mcode op1 op2 =
+  match (Ast.unwrap op1, Ast.unwrap op2) with
+    | (Ast.Arith op1', Ast.Arith op2') -> unify_mcode op1' op2'
+    | (Ast.Logical op1', Ast.Logical op2') -> unify_mcode op1' op2'
+    | (Ast.MetaBinary(mv1,_,_,_), Ast.MetaBinary(mv2,_,_,_)) ->
+      unify_mcode mv1 mv2
+    | _ -> false
+
 let ret_unify_mcode a b = return (unify_mcode a b)
 
 let unify_option f t1 t2 =
@@ -53,7 +69,7 @@ let unify_lists fn dfn la lb =
     | (cura::resta,curb::restb) ->
 	(match fn cura curb with
 	  MAYBE -> loop (resta,restb)
-	| NO -> if dfn cura or dfn curb then MAYBE else NO) in
+	| NO -> if dfn cura || dfn curb then MAYBE else NO) in
   loop (la,lb)
 
 let unify_dots fn dfn d1 d2 =
@@ -148,7 +164,7 @@ and unify_expression e1 e2 =
 	(unify_expression f1 f2)
 	(unify_dots unify_expression edots args1 args2)
   | (Ast.Assignment(l1,op1,r1,_),Ast.Assignment(l2,op2,r2,_)) ->
-      if unify_mcode op1 op2
+      if unify_assignOp_mcode op1 op2
       then conjunct_bindings (unify_expression l1 l2) (unify_expression r1 r2)
       else return false
   | (Ast.Sequence(l1,_,r1),Ast.Sequence(l2,_,r2)) ->
@@ -164,7 +180,7 @@ and unify_expression e1 e2 =
   | (Ast.Unary(e1,op1),Ast.Unary(e2,op2)) ->
       if unify_mcode op1 op2 then unify_expression e1 e2 else return false
   | (Ast.Binary(l1,op1,r1),Ast.Binary(l2,op2,r2)) ->
-      if unify_mcode op1 op2
+      if unify_binaryOp_mcode op1 op2
       then conjunct_bindings (unify_expression l1 l2) (unify_expression r1 r2)
       else return false
   | (Ast.ArrayAccess(ar1,lb1,e1,rb1),Ast.ArrayAccess(ar2,lb2,e2,rb2)) ->
@@ -198,6 +214,10 @@ and unify_expression e1 e2 =
   | (_,Ast.AsExpr(exp2,asexp2)) ->
       disjunct_all_bindings
 	(List.map (function x -> unify_expression x e1) [exp2;asexp2])
+
+  (* no idea what to do with the statement *)
+  | (Ast.AsSExpr(exp1,asstm1),_) -> unify_expression exp1 e2
+  | (_,Ast.AsSExpr(exp2,asstm2)) -> unify_expression exp2 e2
 
   | (Ast.EComma(cm1),Ast.EComma(cm2)) -> return true
 
@@ -286,14 +306,6 @@ and unify_typeC t1 t2 =
 	 conjunct_bindings (unify_fullType tya tyb)
 	   (unify_dots unify_parameterTypeDef pdots paramsa paramsb)
        else return false
-  | (Ast.FunctionType(_,tya,lp1a,paramsa,rp1a),
-     Ast.FunctionType(_,tyb,lp1b,paramsb,rp1b)) ->
-       if List.for_all2 unify_mcode [lp1a;rp1a] [lp1b;rp1b]
-       then
-	 conjunct_bindings (unify_option unify_fullType tya tyb)
-	   (unify_dots unify_parameterTypeDef pdots paramsa paramsb)
-       else return false
-  | (Ast.FunctionType _ , _) -> failwith "not supported"
   | (Ast.Array(ty1,lb1,e1,rb1),Ast.Array(ty2,lb2,e2,rb2)) ->
       conjunct_bindings
 	(unify_fullType ty1 ty2) (unify_option unify_expression e1 e2)
@@ -344,15 +356,35 @@ and unify_declaration d1 d2 =
       if bool_unify_option unify_mcode stg1 stg2
       then conjunct_bindings (unify_fullType ft1 ft2) (unify_ident id1 id2)
       else return false
-  | (Ast.MacroDecl(n1,lp1,args1,rp1,sem1),
-     Ast.MacroDecl(n2,lp2,args2,rp2,sem2)) ->
-       conjunct_bindings (unify_ident n1 n2)
-	 (unify_dots unify_expression edots args1 args2)
-  | (Ast.MacroDeclInit(n1,lp1,args1,rp1,eq1,ini1,sem1),
-     Ast.MacroDeclInit(n2,lp2,args2,rp2,eq2,ini2,sem2)) ->
-       conjunct_bindings (unify_ident n1 n2)
-	 (conjunct_bindings (unify_dots unify_expression edots args1 args2)
-	    (unify_initialiser ini1 ini2))
+  | (Ast.FunProto(fi1,nm1,lp1,params1,va1,rp1,sem1),
+     Ast.FunProto(fi2,nm2,lp2,params2,va2,rp2,sem2)) ->
+       let l1 = match va1 with
+         | None -> [lp1;rp1]
+         | Some (c1,e1) -> [lp1;c1;e1;rp1] in
+       let l2 = match va2 with
+         | None -> [lp2;rp2]
+         | Some (c2,e2) -> [lp2;c2;e2;rp2] in
+       if List.for_all2 unify_mcode l1 l2
+       then
+         conjunct_bindings (unify_fninfo fi1 fi2)
+	   (conjunct_bindings (unify_ident nm1 nm2)
+	      (unify_dots unify_parameterTypeDef pdots params1 params2))
+       else return false
+  | (Ast.MacroDecl(s1,n1,lp1,args1,rp1,sem1),
+     Ast.MacroDecl(s2,n2,lp2,args2,rp2,sem2)) ->
+       if bool_unify_option unify_mcode s1 s2
+       then
+	 conjunct_bindings (unify_ident n1 n2)
+	   (unify_dots unify_expression edots args1 args2)
+       else return false
+  | (Ast.MacroDeclInit(s1,n1,lp1,args1,rp1,eq1,ini1,sem1),
+     Ast.MacroDeclInit(s2,n2,lp2,args2,rp2,eq2,ini2,sem2)) ->
+       if bool_unify_option unify_mcode s1 s2
+       then
+	 conjunct_bindings (unify_ident n1 n2)
+	   (conjunct_bindings (unify_dots unify_expression edots args1 args2)
+	      (unify_initialiser ini1 ini2))
+       else return false
   | (Ast.TyDecl(ft1,s1),Ast.TyDecl(ft2,s2)) -> unify_fullType ft1 ft2
   | (Ast.Typedef(stg1,ft1,id1,s1),Ast.Typedef(stg2,ft2,id2,s2)) ->
       conjunct_bindings (unify_fullType ft1 ft2) (unify_typeC id1 id2)
@@ -482,8 +514,8 @@ and unify_define_param p1 p2 =
 
 and unify_rule_elem re1 re2 =
   match (Ast.unwrap re1,Ast.unwrap re2) with
-    (Ast.FunHeader(_,_,fi1,nm1,lp1,params1,rp1),
-     Ast.FunHeader(_,_,fi2,nm2,lp2,params2,rp2)) ->
+    (Ast.FunHeader(_,_,fi1,nm1,lp1,params1,va1,rp1),
+     Ast.FunHeader(_,_,fi2,nm2,lp2,params2,v2,rp2)) ->
        conjunct_bindings (unify_fninfo fi1 fi2)
 	 (conjunct_bindings (unify_ident nm1 nm2)
 	    (unify_dots unify_parameterTypeDef pdots params1 params2))
@@ -610,9 +642,11 @@ and subexp f =
   let donothing r k e = k e in
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing donothing donothing expr 
+      mcode mcode
+      donothing donothing donothing donothing donothing donothing expr
       donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing donothing in
+      donothing donothing donothing donothing donothing donothing donothing
+      donothing donothing in
   recursor.V.combiner_rule_elem
 
 and subtype f =
@@ -623,9 +657,11 @@ and subtype f =
   let donothing r k e = k e in
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode
       donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing fullType donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing donothing in
+      donothing donothing donothing donothing donothing fullType
+      donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing in
   recursor.V.combiner_rule_elem
 
 let rec unify_statement s1 s2 =

@@ -87,7 +87,7 @@ let modif_after x =
 
 (* Identifier *)
 let rec left_ident i =
-  modif_before i or
+  modif_before i ||
   match Ast0.unwrap i with
     Ast0.Id(name) -> modif_before_mcode name
   | Ast0.MetaId(name,_,_,_) -> modif_before_mcode name
@@ -99,7 +99,7 @@ let rec left_ident i =
   | Ast0.AsIdent _ -> failwith "not possible"
 
 let rec right_ident i =
-  modif_after i or
+  modif_after i ||
   match Ast0.unwrap i with
     Ast0.Id(name) -> modif_after_mcode name
   | Ast0.MetaId(name,_,_,_) -> modif_after_mcode name
@@ -114,7 +114,7 @@ let rec right_ident i =
 (* Expression *)
 
 let rec left_expression e =
-  modif_before e or
+  modif_before e ||
   match Ast0.unwrap e with
     Ast0.Ident(id) -> left_ident id
   | Ast0.Constant(const) -> modif_before_mcode const
@@ -147,21 +147,19 @@ let rec left_expression e =
   | Ast0.Edots(dots,_) | Ast0.Ecircles(dots,_) | Ast0.Estars(dots,_) -> false
   | Ast0.OptExp(exp) -> left_expression exp
   | Ast0.UniqueExp(exp) -> left_expression exp
-  | Ast0.AsExpr _ -> failwith "not possible"
+  | Ast0.AsExpr _ | Ast0.AsSExpr _ -> failwith "not possible"
 
 (* --------------------------------------------------------------------- *)
 (* Types *)
 
 and left_typeC t =
-  modif_before t or
+  modif_before t ||
   match Ast0.unwrap t with
     Ast0.ConstVol(cv,ty) -> modif_before_mcode cv
   | Ast0.BaseType(ty,strings) -> modif_before_mcode (List.hd strings)
   | Ast0.Signed(sgn,ty) -> modif_before_mcode sgn
   | Ast0.Pointer(ty,star) -> left_typeC ty
   | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) -> left_typeC ty
-  | Ast0.FunctionType(Some ty,lp1,params,rp1) -> left_typeC ty
-  | Ast0.FunctionType(None,lp1,params,rp1) -> modif_before_mcode lp1
   | Ast0.Array(ty,lb,size,rb) -> left_typeC ty
   | Ast0.Decimal(dec,lp,length,comma,precision_opt,rp) ->
       modif_before_mcode dec
@@ -182,7 +180,7 @@ and left_typeC t =
    split out into multiple declarations of a single variable each. *)
 
 and left_declaration d =
-  modif_before d or
+  modif_before d ||
   match Ast0.unwrap d with
     Ast0.MetaDecl(name,_) | Ast0.MetaField(name,_)
   | Ast0.MetaFieldList(name,_,_) ->
@@ -191,8 +189,14 @@ and left_declaration d =
   | Ast0.Init(None,ty,id,eq,ini,sem) -> left_typeC ty
   | Ast0.UnInit(Some stg,ty,id,sem) -> modif_before_mcode stg
   | Ast0.UnInit(None,ty,id,sem) -> left_typeC ty
-  | Ast0.MacroDecl(name,lp,args,rp,sem) -> left_ident name
-  | Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem) -> left_ident name
+  | Ast0.FunProto(fninfo,name,lp1,params,va,rp1,sem) ->
+      (* should not be nested in anything anyway *)
+      false
+  | Ast0.MacroDecl(Some stg,name,lp,args,rp,sem) -> modif_before_mcode stg
+  | Ast0.MacroDecl(None,name,lp,args,rp,sem) -> left_ident name
+  | Ast0.MacroDeclInit(Some stg,name,lp,args,rp,eq,ini,sem) ->
+      modif_before_mcode stg
+  | Ast0.MacroDeclInit(None,name,lp,args,rp,eq,ini,sem) -> left_ident name
   | Ast0.TyDecl(ty,sem) -> left_typeC ty
   | Ast0.Typedef(stg,ty,id,sem) -> modif_before_mcode stg
   | Ast0.DisjDecl(_,decls,_,_) -> List.exists left_declaration decls
@@ -202,15 +206,16 @@ and left_declaration d =
   | Ast0.AsDecl _ -> failwith "not possible"
 
 and right_declaration d =
-  modif_before d or
+  modif_before d ||
   match Ast0.unwrap d with
     Ast0.MetaDecl(name,_) | Ast0.MetaField(name,_)
   | Ast0.MetaFieldList(name,_,_) ->
       modif_before_mcode name
   | Ast0.Init(_,ty,id,eq,ini,sem) -> modif_after_mcode sem
   | Ast0.UnInit(_,ty,id,sem) -> modif_after_mcode sem
-  | Ast0.MacroDecl(name,lp,args,rp,sem) -> modif_after_mcode sem
-  | Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem) -> modif_after_mcode sem
+  | Ast0.FunProto(fninfo,name,lp1,params,va,rp1,sem) -> modif_after_mcode sem
+  | Ast0.MacroDecl(_,name,lp,args,rp,sem) -> modif_after_mcode sem
+  | Ast0.MacroDeclInit(_,name,lp,args,rp,eq,ini,sem) -> modif_after_mcode sem
   | Ast0.TyDecl(ty,sem) -> modif_after_mcode sem
   | Ast0.Typedef(stg,ty,id,sem) -> modif_after_mcode sem
   | Ast0.DisjDecl(_,decls,_,_) -> List.exists right_declaration decls
@@ -257,6 +262,7 @@ and left_statement s =
   | Ast0.Exp(exp) -> false (* can only be replaced by an expression *)
   | Ast0.TopExp(exp) -> false (* as above *)
   | Ast0.Ty(ty) -> false (* can only be replaced by a type *)
+  | Ast0.TopId(id) -> false (* can only be replaced by an ident *)
   | Ast0.TopInit(init) -> false (* can only be replaced by an init *)
   | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) -> false
   | Ast0.Include(inc,s) -> modif_before_mcode inc
@@ -301,6 +307,7 @@ and right_statement s =
   | Ast0.Exp(exp) -> false (* can only be replaced by an expression *)
   | Ast0.TopExp(exp) -> false (* as above *)
   | Ast0.Ty(ty) -> false (* can only be replaced by a type *)
+  | Ast0.TopId(id) -> false (* can only be replaced by a type *)
   | Ast0.TopInit(init) -> false (* can only be replaced by an init *)
   | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) -> false
   | Ast0.Include(inc,s) -> modif_after_mcode s
@@ -401,9 +408,9 @@ and contains_only_minus =
     | _ -> k e in
 
   V0.flat_combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     dots dots dots dots dots dots
-    identifier expression typeC donothing donothing declaration
+    identifier expression donothing donothing typeC donothing donothing declaration
     statement donothing case_line donothing donothing
 
 
@@ -535,12 +542,12 @@ let rec statement dots_before dots_after s =
     else s in
 
   match Ast0.unwrap s with
-    Ast0.FunDecl(x,fninfo,name,lp,params,rp,lbrace,body,rbrace,y) ->
+    Ast0.FunDecl(x,fninfo,name,lp,params,va,rp,lbrace,body,rbrace,y) ->
       (* true for close brace, because that represents any way we can
 	 exit the function, which is not necessarily followed by an explicit
 	 close brace. *)
       Ast0.rewrap s
-	(Ast0.FunDecl(x,fninfo,name,lp,params,rp,lbrace,
+	(Ast0.FunDecl(x,fninfo,name,lp,params,va,rp,lbrace,
 		      statement_dots false true body,
 		      rbrace,y))
   | Ast0.Decl(_,_) -> s
@@ -610,6 +617,7 @@ let rec statement dots_before dots_after s =
   | Ast0.Exp(exp) -> s
   | Ast0.TopExp(exp) -> s
   | Ast0.Ty(ty) -> s
+  | Ast0.TopId(id) -> s
   | Ast0.TopInit(init) -> s
   | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) -> s
   | Ast0.Include(inc,string) -> s (* doesn't affect the need for braces *)

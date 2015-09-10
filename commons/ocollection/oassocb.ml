@@ -16,7 +16,7 @@ class ['a,'b] oassocb xs =
 
     method del (k,v) = {< data = Mapb.remove k data >}
     method mem e = raise Todo
-    method null = (Mapb.height data =|= 0)
+    method null = (Mapb.height data = 0)
 
     method assoc k = Mapb.find k data
     method delkey k = {< data = Mapb.remove k data >}
@@ -24,4 +24,3 @@ class ['a,'b] oassocb xs =
     method keys =
       List.map fst (o#tolist)
 end
-

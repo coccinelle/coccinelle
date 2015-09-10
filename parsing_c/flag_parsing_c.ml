@@ -41,17 +41,6 @@ let cmdline_flags_cpp () = [
   ]
 
 (*****************************************************************************)
-(* types *)
-(*****************************************************************************)
-let std_envir = ref (Filename.concat !path "config/envos/environment_splint.h")
-
-let cmdline_flags_envfile () =
-  [
-    "--env-file", Arg.Set_string std_envir,
-    " <file> (default=" ^ !std_envir ^ ")";
-  ]
-
-(*****************************************************************************)
 (* show *)
 (*****************************************************************************)
 
@@ -268,3 +257,5 @@ let no_loops = ref false
 let no_gotos = ref false
 
 let keep_comments = ref false (* unparsing *)
+
+let parsing_header_for_types = ref false

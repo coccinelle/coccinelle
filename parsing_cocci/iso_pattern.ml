@@ -16,6 +16,7 @@ module V0 = Visitor_ast0
 module VT0 = Visitor_ast0_types
 
 let current_rule = ref ""
+let verbose_iso = ref true
 
 (* --------------------------------------------------------------------- *)
 
@@ -32,10 +33,10 @@ let strip_info =
       Ast0.mcodekind = ref (Ast0.PLUS Ast.ONE);
       Ast0.true_if_test = x.Ast0.true_if_test} in
   V0.flat_rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
 
 let anything_equal = function
     (Ast0.DotsExprTag(d1),Ast0.DotsExprTag(d2)) ->
@@ -108,6 +109,7 @@ type reason =
   | Position of Ast.meta_name
   | TypeMatch of reason list
 
+(* it would be nice if this would go to standard error *)
 let rec interpret_reason name line reason printer =
   Printf.printf
     "warning: iso %s does not match the code below on line %d\n" name line;
@@ -219,6 +221,20 @@ let rec conjunct_many_bindings = function
 
 let mcode_equal (x,_,_,_,_,_) (y,_,_,_,_,_) = x = y
 
+let assignOp_equal op1 op2 = match (Ast0.unwrap op1, Ast0.unwrap op2) with
+  | Ast0.SimpleAssign _, Ast0.SimpleAssign _ -> true
+  | Ast0.OpAssign o1, Ast0.OpAssign o2 -> mcode_equal o1 o2
+  | Ast0.MetaAssign (mv1, _, _), Ast0.MetaAssign (mv2, _, _) ->
+    mcode_equal mv1 mv2
+  | _, _ -> false
+
+let binaryOp_equal op1 op2 = match (Ast0.unwrap op1, Ast0.unwrap op2) with
+  | Ast0.Arith o1, Ast0.Arith o2 -> mcode_equal o1 o2
+  | Ast0.Logical o1, Ast0.Logical o2 -> mcode_equal o1 o2
+  | Ast0.MetaBinary (mv1, _, _), Ast0.MetaBinary (mv2, _, _) ->
+    mcode_equal mv1 mv2
+  | _, _ -> false
+
 let return b binding = if b then OK binding else Fail NonMatch
 let return_false reason binding = Fail reason
 
@@ -248,7 +264,7 @@ let bool_match_option f t1 t2 =
    The example seems strange.  Why isn't the cast attached to x?
  *)
 let is_context e =
-  !Flag.sgrep_mode2 or (* everything is context for sgrep *)
+  !Flag.sgrep_mode2 || (* everything is context for sgrep *)
   (match Ast0.get_mcodekind e with
     Ast0.CONTEXT(cell) -> true
   | _ -> false)
@@ -257,7 +273,7 @@ let is_context e =
    the following stops at the statement level, and gives true if one
    statement is replaced by another *)
 let rec is_pure_context s =
-  !Flag.sgrep_mode2 or (* everything is context for sgrep *)
+  !Flag.sgrep_mode2 || (* everything is context for sgrep *)
   (match Ast0.unwrap s with
     Ast0.Disj(starter,statement_dots_list,mids,ender) ->
       List.for_all
@@ -313,6 +329,21 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | _ -> failwith "badly compiled iso - multiple hidden variable")
     else OK binding in
 
+  let check_assignOp_mcode op1 op2 binding =
+    match (Ast0.unwrap op1, Ast0.unwrap op2) with
+      Ast0.SimpleAssign o1, Ast0.SimpleAssign o2 -> check_mcode o1 o2 binding
+    | Ast0.OpAssign o1, Ast0.OpAssign o2 -> check_mcode o1 o2 binding
+    | Ast0.MetaAssign(mv1,_,_), Ast0.MetaAssign(mv2,_,_) ->
+      check_mcode mv1 mv2 binding
+    | _ -> Fail(NonMatch) in
+
+  let check_binaryOp_mcode op1 op2 binding =
+    match (Ast0.unwrap op1, Ast0.unwrap op2) with
+      Ast0.Arith o1, Ast0.Arith o2 -> check_mcode o1 o2 binding
+    | Ast0.Logical o1, Ast0.Logical o2 -> check_mcode o1 o2 binding
+    | Ast0.MetaBinary(mv1,_,_), Ast0.MetaBinary(mv2,_,_) ->
+      check_mcode mv1 mv2 binding
+    | _ -> Fail(NonMatch) in
   let match_dots matcher is_list_matcher do_list_match d1 d2 =
     match (Ast0.unwrap d1, Ast0.unwrap d2) with
       (Ast0.DOTS(la),Ast0.DOTS(lb))
@@ -383,6 +414,18 @@ let match_maker checks_needed context_required whencode_allowed =
 	    pure
 	| _ -> Ast0.Impure) in
 
+    let assignOp r k e =
+      bind (bind (pure_mcodekind (Ast0.get_mcodekind e)) (k e))
+	   (match Ast0.unwrap e with
+              Ast0.MetaAssign(_, _, pure) -> pure
+            | _ -> Ast0.Impure) in
+
+    let binaryOp r k e =
+      bind (bind (pure_mcodekind (Ast0.get_mcodekind e)) (k e))
+	   (match Ast0.unwrap e with
+              Ast0.MetaBinary(_, _, pure) -> pure
+            | _ -> Ast0.Impure) in
+
     let typeC r k t =
       bind (bind (pure_mcodekind (Ast0.get_mcodekind t)) (k t))
 	(match Ast0.unwrap t with
@@ -416,9 +459,9 @@ let match_maker checks_needed context_required whencode_allowed =
 	| _ -> Ast0.Impure) in
 
     V0.flat_combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing
-      ident expression typeC init param decl stmt donothing donothing
+      ident expression assignOp binaryOp typeC init param decl stmt donothing donothing
       donothing donothing in
 
   let add_pure_list_binding name pure is_pure builder1 builder2 lst =
@@ -483,7 +526,7 @@ let match_maker checks_needed context_required whencode_allowed =
     | Ast0.MetaFunc(name,_,pure) -> failwith "metafunc not supported"
     | Ast0.MetaLocalFunc(name,_,pure) -> failwith "metalocalfunc not supported"
     | up ->
-	if not(checks_needed) or not(context_required) or is_context id
+	if not(checks_needed) || not(context_required) || is_context id
 	then
 	  match (up,Ast0.unwrap id) with
 	    (Ast0.Id(namea),Ast0.Id(nameb)) ->
@@ -525,7 +568,7 @@ let match_maker checks_needed context_required whencode_allowed =
 		    (Ast0.lub_pure p pure) = pure
 		| _ -> false in
 	      matches e
-	  | (Ast.ID,e) | (Ast.LocalID,e) ->
+	  | (Ast.ID,e) | (Ast.LocalID,e) | (Ast.GlobalID,e) ->
 	      let rec matches e =
 		match Ast0.unwrap e with
 		  Ast0.Ident(c) -> true
@@ -618,7 +661,7 @@ let match_maker checks_needed context_required whencode_allowed =
     | Ast0.MetaErr(namea,_,pure) -> failwith "metaerr not supported"
     | Ast0.MetaExprList(_,_,_) -> failwith "metaexprlist not supported"
     | up ->
-	if not(checks_needed) or not(context_required) or is_context expr
+	if not(checks_needed) || not(context_required) || is_context expr
 	then
 	  match (up,Ast0.unwrap expr) with
 	    (Ast0.Ident(ida),Ast0.Ident(idb)) ->
@@ -640,10 +683,10 @@ let match_maker checks_needed context_required whencode_allowed =
 		    argsa argsb]
 	  | (Ast0.Assignment(lefta,opa,righta,_),
 	     Ast0.Assignment(leftb,opb,rightb,_)) ->
-	       if mcode_equal opa opb
+	       if assignOp_equal opa opb
 	       then
 		 conjunct_many_bindings
-		   [check_mcode opa opb; match_expr lefta leftb;
+		   [check_assignOp_mcode opa opb; match_expr lefta leftb;
 		     match_expr righta rightb]
 	       else return false
 	  | (Ast0.Sequence(lefta,opa,righta),
@@ -676,10 +719,10 @@ let match_maker checks_needed context_required whencode_allowed =
 		conjunct_bindings (check_mcode opa opb) (match_expr expa expb)
 	      else return false
 	  | (Ast0.Binary(lefta,opa,righta),Ast0.Binary(leftb,opb,rightb)) ->
-	      if mcode_equal opa opb
+	      if binaryOp_equal opa opb
 	      then
 		conjunct_many_bindings
-		  [check_mcode opa opb; match_expr lefta leftb;
+		  [check_binaryOp_mcode opa opb; match_expr lefta leftb;
 		    match_expr righta rightb]
 	      else return false
 	  | (Ast0.Paren(lp1,expa,rp1),Ast0.Paren(lp,expb,rp)) ->
@@ -730,7 +773,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	      conjunct_bindings (check_mcode ed ed1)
 		(let (edots_whencode_allowed,_,_) = whencode_allowed in
 		if edots_whencode_allowed
-		then add_dot_binding ed 
+		then add_dot_binding ed
 		  (Ast0.WhenTag(wh,Some e,Ast0.ExprTag wc))
 		else
 		  (Printf.printf
@@ -773,17 +816,20 @@ let match_maker checks_needed context_required whencode_allowed =
 (* the special case for function types prevents the eg T X; -> T X = E; iso
    from applying, which doesn't seem very relevant, but it also avoids a
    mysterious bug that is obtained with eg int attach(...); *)
+  and varargs_equal (comma1, ellipsis1) (comma2, ellipsis2) =
+    let c1 = Ast0_cocci.unwrap_mcode comma1
+    and e1 = Ast0_cocci.unwrap_mcode ellipsis1
+    and c2 = Ast0_cocci.unwrap_mcode comma2
+    and e2 = Ast0_cocci.unwrap_mcode ellipsis2
+    in return (c1="," && e1="......" && c2=c1 && e2=e1)
   and match_typeC pattern t =
     match Ast0.unwrap pattern with
       Ast0.MetaType(name,pure) ->
-	(match Ast0.unwrap t with
-	  Ast0.FunctionType(tya,lp1a,paramsa,rp1a) -> return false
-	| _ ->
-	    add_pure_binding name pure pure_sp_code.VT0.combiner_rec_typeC
-	      (function ty -> Ast0.TypeCTag ty)
-	      t)
+	add_pure_binding name pure pure_sp_code.VT0.combiner_rec_typeC
+	  (function ty -> Ast0.TypeCTag ty)
+	  t
     | up ->
-	if not(checks_needed) or not(context_required) or is_context t
+	if not(checks_needed) || not(context_required) || is_context t
 	then
 	  match (up,Ast0.unwrap t) with
 	    (Ast0.ConstVol(cva,tya),Ast0.ConstVol(cvb,tyb)) ->
@@ -814,13 +860,6 @@ let match_maker checks_needed context_required whencode_allowed =
 		   check_mcode rp2a rp2b; match_typeC tya tyb;
 		   match_dots match_param is_plist_matcher
 		     do_plist_match paramsa paramsb]
-	  | (Ast0.FunctionType(tya,lp1a,paramsa,rp1a),
-	     Ast0.FunctionType(tyb,lp1b,paramsb,rp1b)) ->
-	       conjunct_many_bindings
-		 [check_mcode lp1a lp1b; check_mcode rp1a rp1b;
-		   match_option match_typeC tya tyb;
-		   match_dots match_param is_plist_matcher do_plist_match
-		     paramsa paramsb]
 	  | (Ast0.Array(tya,lb1,sizea,rb1),Ast0.Array(tyb,lb,sizeb,rb)) ->
 	      conjunct_many_bindings
 		[check_mcode lb1 lb; check_mcode rb1 rb;
@@ -881,7 +920,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	  d
     | Ast0.MetaFieldList(name,_,pure) -> failwith "metafieldlist not supporte"
     | up ->
-	if not(checks_needed) or not(context_required) or is_context d
+	if not(checks_needed) || not(context_required) || is_context d
 	then
 	  match (up,Ast0.unwrap d) with
 	    (Ast0.Init(stga,tya,ida,eq1,inia,sc1),
@@ -901,24 +940,39 @@ let match_maker checks_needed context_required whencode_allowed =
 		  [check_mcode sc1 sc; match_option check_mcode stga stgb;
 		    match_typeC tya tyb; match_ident ida idb]
 	      else return false
-	  | (Ast0.MacroDecl(namea,lp1,argsa,rp1,sc1),
-	     Ast0.MacroDecl(nameb,lp,argsb,rp,sc)) ->
+	  | (Ast0.FunProto(fninfo1,name1,lp1,params1,va1a,rp1,sem1),
+	     Ast0.FunProto(fninfo,name,lp,params,va1b,rp,sem)) ->
 	       conjunct_many_bindings
-		 [match_ident namea nameb;
-		   check_mcode lp1 lp; check_mcode rp1 rp;
-		   check_mcode sc1 sc;
-		   match_dots match_expr is_elist_matcher do_elist_match
-		     argsa argsb]
-	  | (Ast0.MacroDeclInit(namea,lp1,argsa,rp1,eq1,ini1,sc1),
-	     Ast0.MacroDeclInit(nameb,lp,argsb,rp,eq,ini,sc)) ->
-	       conjunct_many_bindings
-		 [match_ident namea nameb;
-		   check_mcode lp1 lp; check_mcode rp1 rp;
-		   check_mcode eq1 eq;
-		   check_mcode sc1 sc;
-		   match_dots match_expr is_elist_matcher do_elist_match
-		     argsa argsb;
-		   match_init ini1 ini]
+		 [check_mcode lp1 lp; check_mcode rp1 rp; check_mcode sem1 sem;
+		   match_fninfo fninfo1 fninfo; match_ident name1 name;
+		   match_dots match_param is_plist_matcher do_plist_match
+		     params1 params;
+                   match_option varargs_equal va1a va1b
+                 ]
+	  | (Ast0.MacroDecl(stga,namea,lp1,argsa,rp1,sc1),
+	     Ast0.MacroDecl(stgb,nameb,lp,argsb,rp,sc)) ->
+	       if bool_match_option mcode_equal stga stgb
+	       then
+		 conjunct_many_bindings
+		   [match_ident namea nameb;
+		     check_mcode lp1 lp; check_mcode rp1 rp;
+		     check_mcode sc1 sc;
+		     match_dots match_expr is_elist_matcher do_elist_match
+		       argsa argsb]
+	       else return false
+	  | (Ast0.MacroDeclInit(stga,namea,lp1,argsa,rp1,eq1,ini1,sc1),
+	     Ast0.MacroDeclInit(stgb,nameb,lp,argsb,rp,eq,ini,sc)) ->
+	       if bool_match_option mcode_equal stga stgb
+	       then
+		 conjunct_many_bindings
+		   [match_ident namea nameb;
+		     check_mcode lp1 lp; check_mcode rp1 rp;
+		     check_mcode eq1 eq;
+		     check_mcode sc1 sc;
+		     match_dots match_expr is_elist_matcher do_elist_match
+		       argsa argsb;
+		     match_init ini1 ini]
+	       else return false
 	  | (Ast0.TyDecl(tya,sc1),Ast0.TyDecl(tyb,sc)) ->
 	      conjunct_bindings (check_mcode sc1 sc) (match_typeC tya tyb)
 	  | (Ast0.Typedef(stga,tya,ida,sc1),Ast0.Typedef(stgb,tyb,idb,sc)) ->
@@ -939,7 +993,7 @@ let match_maker checks_needed context_required whencode_allowed =
 		   return false))
 	  | (Ast0.Ddots(_,Some _),_) ->
 	      failwith "whencode not allowed in a pattern1"
-		
+
 	  | (Ast0.OptDecl(decla),Ast0.OptDecl(declb))
 	  | (Ast0.UniqueDecl(decla),Ast0.UniqueDecl(declb)) ->
 	      match_decl decla declb
@@ -956,7 +1010,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	  (function ini -> Ast0.InitTag ini)
 	  i
     | up ->
-	if not(checks_needed) or not(context_required) or is_context i
+	if not(checks_needed) || not(context_required) || is_context i
 	then
 	  match (up,Ast0.unwrap i) with
 	    (Ast0.InitExpr(expa),Ast0.InitExpr(expb)) ->
@@ -1027,7 +1081,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	  p
     | Ast0.MetaParamList(name,_,pure) -> failwith "metaparamlist not supported"
     | up ->
-	if not(checks_needed) or not(context_required) or is_context p
+	if not(checks_needed) || not(context_required) || is_context p
 	then
 	  match (up,Ast0.unwrap p) with
 	    (Ast0.VoidParam(tya),Ast0.VoidParam(tyb)) -> match_typeC tya tyb
@@ -1057,13 +1111,14 @@ let match_maker checks_needed context_required whencode_allowed =
 	      s)
     | Ast0.MetaStmtList(name,pure) -> failwith "metastmtlist not supported"
     | up ->
-	if not(checks_needed) or not(context_required) or is_context s
+	if not(checks_needed) || not(context_required) || is_context s
 	then
 	  match (up,Ast0.unwrap s) with
-	    (Ast0.FunDecl(_,fninfoa,namea,lp1,paramsa,rp1,lb1,bodya,rb1,_),
-	     Ast0.FunDecl(_,fninfob,nameb,lp,paramsb,rp,lb,bodyb,rb,_)) ->
+	    (Ast0.FunDecl(_,fninfoa,namea,lp1,paramsa,vaa,rp1,lb1,bodya,rb1,_),
+	     Ast0.FunDecl(_,fninfob,nameb,lp,paramsb,vab,rp,lb,bodyb,rb,_)) ->
 	       conjunct_many_bindings
-		 [check_mcode lp1 lp; check_mcode rp1 rp;
+		 [check_mcode lp1 lp; match_option varargs_equal vaa vab;
+                   check_mcode rp1 rp;
 		   check_mcode lb1 lb; check_mcode rb1 rb;
 		   match_fninfo fninfoa fninfob; match_ident namea nameb;
 		   match_dots match_param is_plist_matcher do_plist_match
@@ -1092,7 +1147,7 @@ let match_maker checks_needed context_required whencode_allowed =
               *)
 	      conjunct_bindings (check_mcode lb1 lb)
 		(conjunct_bindings (check_mcode rb1 rb)
-		   (if not(checks_needed) or is_minus s or
+		   (if not(checks_needed) || is_minus s ||
 		     (is_context s &&
 		      List.for_all is_pure_context (Ast0.undots bodyb))
 		   then
@@ -1188,7 +1243,7 @@ let match_maker checks_needed context_required whencode_allowed =
 		 (match wc with
 		   [] ->
 		   (* not sure this is correct, perhaps too restrictive *)
-		     if not(checks_needed) or is_minus s or
+		     if not(checks_needed) || is_minus s ||
 		       (is_context s &&
 			List.for_all is_pure_context (Ast0.undots stmt_dotsb))
 		     then
@@ -1282,7 +1337,7 @@ let match_maker checks_needed context_required whencode_allowed =
     loop (patterninfo,cinfo)
 
   and match_case_line pattern c =
-    if not(checks_needed) or not(context_required) or is_context c
+    if not(checks_needed) || not(context_required) || is_context c
     then
       match (Ast0.unwrap pattern,Ast0.unwrap c) with
 	(Ast0.Default(d1,c1,codea),Ast0.Default(d,c,codeb)) ->
@@ -1445,9 +1500,9 @@ let make_minus =
     | _ -> donothing r k e in
 
   V0.flat_rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     dots dots dots dots dots dots
-    donothing expression donothing initialiser donothing declaration
+    donothing expression donothing donothing donothing initialiser donothing declaration
     statement donothing donothing donothing donothing
 
 (* --------------------------------------------------------------------- *)
@@ -1519,11 +1574,11 @@ let rebuild_mcode start_line =
 	   | Ast0.Iterator(nm,lp,args,rp,body,(info,mc,adj)) ->
 	       Ast0.Iterator(nm,lp,args,rp,body,(info,copy_mcodekind mc,adj))
 	   | Ast0.FunDecl
-	       ((info,mc),fninfo,name,lp,params,rp,lbrace,body,rbrace,
+	       ((info,mc),fninfo,name,lp,params,va,rp,lbrace,body,rbrace,
 		(aftinfo,aftmc)) ->
 		 Ast0.FunDecl
 		   ((info,copy_mcodekind mc),
-		    fninfo,name,lp,params,rp,lbrace,body,rbrace,
+		    fninfo,name,lp,params,va,rp,lbrace,body,rbrace,
 		    (aftinfo,copy_mcodekind aftmc))
 	   | s -> s)) in
     Ast0.set_dots_bef_aft res
@@ -1535,9 +1590,9 @@ let rebuild_mcode start_line =
 	  Ast0.DroppingBetweenDots(r.VT0.rebuilder_rec_statement s)) in
 
   V0.flat_rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
     donothing statement donothing donothing donothing donothing
 
 (* --------------------------------------------------------------------- *)
@@ -1587,8 +1642,8 @@ let lookup name bindings mv_bindings =
       Common.Right (List.assoc (term name) mv_bindings)
 
 (* mv_bindings is for the fresh metavariables that are introduced by the
-   isomorphism *)
-let instantiate bindings mv_bindings =
+   isomorphism.  Model to know whether new code will be -. *)
+let instantiate bindings mv_bindings model =
   let mcode x =
     let (hidden,others) =
       List.partition
@@ -1716,7 +1771,7 @@ let instantiate bindings mv_bindings =
 			      bindings mv_bindings
 			  with
 			    Common.Left(Ast0.TypeCTag(t)) ->
-			      Ast0.ast0_type_to_type t
+			      Ast0.ast0_type_to_type true t
 			  | Common.Left(_) ->
 			      failwith "iso pattern: unexpected type"
 			  | Common.Right(new_mv) ->
@@ -1731,7 +1786,7 @@ let instantiate bindings mv_bindings =
 			  Type_cocci.Array(renamer ty)
 		      | t -> t in
 		    Some(List.map renamer types) in
-	      Ast0.clear_test_exp 
+	      Ast0.clear_test_exp
 		(Ast0.rewrap e
 		   (Ast0.MetaExpr
 		      (Ast0.set_mcode_data new_mv name,constraints,
@@ -1766,11 +1821,18 @@ let instantiate bindings mv_bindings =
 		    (Ast.NOTHING,_,_) -> true
 		  | _ -> false)
 	      |	_ -> failwith "plus not possible" in
-	    let same_modif newop oldop =
-	      (* only propagate ! is they have the same modification
+	    let same_modif oldop =
+	      (* only propagate ! if they, ie model and oldop, have the
+		 same modification
 		 and no + code on the old one (the new one from the iso
 		 surely has no + code) *)
-	      match (newop,oldop) with
+	      (* This is not ideal, because the model is the top level
+		 term, and this is a subterm, so minus minus is only detected
+		 when the whole matched term is minus.  Not sure what to do
+		 in general, because not clear where the ! comes from.
+		 Be more flexible for !, because it doesn't really matter *)
+	      !Flag.sgrep_mode2 ||
+	      match (Ast0.get_mcodekind model,oldop) with
 		(Ast0.MINUS(x1),Ast0.MINUS(x2)) -> nomodif oldop
 	      | (Ast0.CONTEXT(x1),Ast0.CONTEXT(x2)) -> nomodif oldop
 	      | (Ast0.MIXED(x1),Ast0.MIXED(x2)) -> nomodif oldop
@@ -1778,16 +1840,20 @@ let instantiate bindings mv_bindings =
 	    if was_meta
 	    then
 	      let idcont x = x in
+              let get_binaryOp_mcodekind op =
+                match Ast0.unwrap op with
+                  Ast0.Logical o -> Ast0.get_mcode_mcodekind o
+                | Ast0.Arith o -> Ast0.get_mcode_mcodekind o
+                | Ast0.MetaBinary(mv,_,_) -> Ast0.get_mcode_mcodekind mv in
+	      let get_op op = Ast0.unwrap_mcode op in
 	      let rec negate e (*for rewrapping*) res (*code to process*) k =
 		(* k accumulates parens, to keep negation outside if no
 		   propagation is possible *)
 		if nomodif (Ast0.get_mcodekind e)
 		then
 		  match Ast0.unwrap res with
-		    Ast0.Unary(e1,op) when Ast0.unwrap_mcode op = Ast.Not &&
-		      same_modif
-			(Ast0.get_mcode_mcodekind unop)
-			(Ast0.get_mcode_mcodekind op) ->
+		    Ast0.Unary(e1,op) when get_op op = Ast.Not &&
+		      same_modif (Ast0.get_mcode_mcodekind op) ->
 			  k e1
 		  | Ast0.Edots(_,_) -> k (Ast0.rewrap e (Ast0.unwrap res))
 		  | Ast0.Paren(lp,e1,rp) ->
@@ -1795,37 +1861,43 @@ let instantiate bindings mv_bindings =
 			(function x ->
 			  k (Ast0.rewrap res (Ast0.Paren(lp,x,rp))))
 		  | Ast0.Binary(e1,op,e2) when
-		      same_modif
-			(Ast0.get_mcode_mcodekind unop)
-			(Ast0.get_mcode_mcodekind op) ->
-			  let reb nop =
-			    Ast0.rewrap_mcode op (Ast.Logical(nop)) in
+		      let v = same_modif (get_binaryOp_mcodekind op) in
+		      v ->
+			  let reb model nop =
+			    let nop = Ast0.rewrap_mcode model nop in
+			    Ast0.rewrap op (Ast0.Logical nop) in
 			  let k1 x = k (Ast0.rewrap e x) in
-			  (match Ast0.unwrap_mcode op with
-			    Ast.Logical(Ast.Inf) ->
-			      k1 (Ast0.Binary(e1,reb Ast.SupEq,e2))
-			  | Ast.Logical(Ast.Sup) ->
-			      k1 (Ast0.Binary(e1,reb Ast.InfEq,e2))
-			  | Ast.Logical(Ast.InfEq) ->
-			      k1 (Ast0.Binary(e1,reb Ast.Sup,e2))
-			  | Ast.Logical(Ast.SupEq) ->
-			      k1 (Ast0.Binary(e1,reb Ast.Inf,e2))
-			  | Ast.Logical(Ast.Eq) ->
-			      k1 (Ast0.Binary(e1,reb Ast.NotEq,e2))
-			  | Ast.Logical(Ast.NotEq) ->
-			      k1 (Ast0.Binary(e1,reb Ast.Eq,e2))
-			  | Ast.Logical(Ast.AndLog) ->
+			  (match Ast0.unwrap op with
+			    Ast0.Logical op' when get_op op' = Ast.Inf ->
+			      k1 (Ast0.Binary(e1,reb op' Ast.SupEq,e2))
+			  | Ast0.Logical op' when get_op op' = Ast.Sup ->
+			      k1 (Ast0.Binary(e1,reb op' Ast.InfEq,e2))
+			  | Ast0.Logical op' when get_op op' = Ast.InfEq ->
+			      k1 (Ast0.Binary(e1,reb op' Ast.Sup,e2))
+			  | Ast0.Logical op' when get_op op' = Ast.SupEq ->
+			      k1 (Ast0.Binary(e1,reb op' Ast.Inf,e2))
+			  | Ast0.Logical op' when get_op op' = Ast.Eq ->
+			      k1 (Ast0.Binary(e1,reb op' Ast.NotEq,e2))
+			  | Ast0.Logical op' when get_op op' = Ast.NotEq ->
+			      k1 (Ast0.Binary(e1,reb op' Ast.Eq,e2))
+			  | Ast0.Logical op' when get_op op' = Ast.AndLog ->
 			      k1 (Ast0.Binary(negate_reb e e1 idcont,
-					      reb Ast.OrLog,
+					      reb op' Ast.OrLog,
 					      negate_reb e e2 idcont))
-			  | Ast.Logical(Ast.OrLog) ->
+			  | Ast0.Logical op' when get_op op' = Ast.OrLog ->
 			      k1 (Ast0.Binary(negate_reb e e1 idcont,
-					      reb Ast.AndLog,
+					      reb op' Ast.AndLog,
 					      negate_reb e e2 idcont))
 			  | _ ->
+                             let rewrap_binaryOp_mcode op x =
+                               match Ast0.unwrap op with
+                                 Ast0.Arith o -> Ast0.rewrap_mcode o x
+                               | Ast0.Logical o -> Ast0.rewrap_mcode o x
+                               | Ast0.MetaBinary (mv,_,_) ->
+				   Ast0.rewrap_mcode mv x in
 			      Ast0.rewrap e
 				(Ast0.Unary(k res,
-					    Ast0.rewrap_mcode op Ast.Not)))
+					    rewrap_binaryOp_mcode op Ast.Not)))
 		  | Ast0.DisjExpr(lp,exps,mids,rp) ->
 		      (* use res because it is the transformed argument *)
 		      let exps =
@@ -1989,9 +2061,9 @@ let instantiate bindings mv_bindings =
     | _ -> e in
 
   V0.flat_rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     (dots elist) donothing (dots plist) (dots slist) donothing donothing
-    identfn exprfn tyfn initfn paramfn declfn stmtfn donothing donothing
+    identfn exprfn donothing donothing tyfn initfn paramfn declfn stmtfn donothing donothing
     donothing donothing
 
 (* --------------------------------------------------------------------- *)
@@ -2019,9 +2091,9 @@ let merge_plus model_mcode e_mcode =
             |  ((x,_),(Ast.NOREPLACEMENT,t)) -> (x,t)
             |  _ -> failwith "how can we combine minuses?")
       |	 _ -> failwith "not possible 6")
-  |  Ast0.CONTEXT(mc) ->
+  | Ast0.CONTEXT(mc) ->
       (match e_mcode with
-        Ast0.CONTEXT(emc) ->
+        Ast0.CONTEXT(emc) | Ast0.MIXED(emc) ->
           (* keep the logical line info as in the model *)
           let (mba,tb,ta) = !mc in
           let (eba,_,_) = !emc in
@@ -2029,48 +2101,49 @@ let merge_plus model_mcode e_mcode =
           let merged =
             match (mba,eba) with
               (x,Ast.NOTHING) | (Ast.NOTHING,x) -> x
-            |  (Ast.BEFORE(b1,it1),Ast.BEFORE(b2,it2)) ->
+            | (Ast.BEFORE(b1,it1),Ast.BEFORE(b2,it2)) ->
                 Ast.BEFORE(b1@b2,Ast.lub_count it1 it2)
-            |  (Ast.BEFORE(b,it1),Ast.AFTER(a,it2)) ->
+            | (Ast.BEFORE(b,it1),Ast.AFTER(a,it2)) ->
                 Ast.BEFOREAFTER(b,a,Ast.lub_count it1 it2)
-            |  (Ast.BEFORE(b1,it1),Ast.BEFOREAFTER(b2,a,it2)) ->
+            | (Ast.BEFORE(b1,it1),Ast.BEFOREAFTER(b2,a,it2)) ->
                 Ast.BEFOREAFTER(b1@b2,a,Ast.lub_count it1 it2)
-            |  (Ast.AFTER(a,it1),Ast.BEFORE(b,it2)) ->
+            | (Ast.AFTER(a,it1),Ast.BEFORE(b,it2)) ->
                 Ast.BEFOREAFTER(b,a,Ast.lub_count it1 it2)
-            |  (Ast.AFTER(a1,it1),Ast.AFTER(a2,it2)) ->
+            | (Ast.AFTER(a1,it1),Ast.AFTER(a2,it2)) ->
                 Ast.AFTER(a2@a1,Ast.lub_count it1 it2)
-            |  (Ast.AFTER(a1,it1),Ast.BEFOREAFTER(b,a2,it2)) ->
+            | (Ast.AFTER(a1,it1),Ast.BEFOREAFTER(b,a2,it2)) ->
                 Ast.BEFOREAFTER(b,a2@a1,Ast.lub_count it1 it2)
-            |  (Ast.BEFOREAFTER(b1,a,it1),Ast.BEFORE(b2,it2)) ->
+            | (Ast.BEFOREAFTER(b1,a,it1),Ast.BEFORE(b2,it2)) ->
                 Ast.BEFOREAFTER(b1@b2,a,Ast.lub_count it1 it2)
-            |  (Ast.BEFOREAFTER(b,a1,it1),Ast.AFTER(a2,it2)) ->
+            | (Ast.BEFOREAFTER(b,a1,it1),Ast.AFTER(a2,it2)) ->
                 Ast.BEFOREAFTER(b,a2@a1,Ast.lub_count it1 it2)
-            |  (Ast.BEFOREAFTER(b1,a1,it1),Ast.BEFOREAFTER(b2,a2,it2)) ->
+            | (Ast.BEFOREAFTER(b1,a1,it1),Ast.BEFOREAFTER(b2,a2,it2)) ->
                 Ast.BEFOREAFTER(b1@b2,a2@a1,Ast.lub_count it1 it2) in
           emc := (merged,tb,ta)
-      |	 Ast0.MINUS(emc) ->
+      |	Ast0.MINUS(emc) ->
           let (anything_bef_aft,_,_) = !mc in
           let (anythings,t) = !emc in
           (match (anything_bef_aft,anythings) with
             (Ast.BEFORE(b1,it1),Ast.NOREPLACEMENT) ->
               emc := (Ast.REPLACEMENT(b1,it1),t)
-          |  (Ast.AFTER(a1,it1),Ast.NOREPLACEMENT) ->
+          | (Ast.AFTER(a1,it1),Ast.NOREPLACEMENT) ->
               emc := (Ast.REPLACEMENT(a1,it1),t)
-          |  (Ast.BEFOREAFTER(b1,a1,it1),Ast.NOREPLACEMENT) ->
+          | (Ast.BEFOREAFTER(b1,a1,it1),Ast.NOREPLACEMENT) ->
               emc := (Ast.REPLACEMENT(b1@a1,it1),t)
-          |  (Ast.NOTHING,Ast.NOREPLACEMENT) ->
+          | (Ast.NOTHING,Ast.NOREPLACEMENT) ->
               emc := (Ast.NOREPLACEMENT,t)
-          |  (Ast.BEFORE(b1,it1),Ast.REPLACEMENT(a2,it2)) ->
+          | (Ast.BEFORE(b1,it1),Ast.REPLACEMENT(a2,it2)) ->
               emc := (Ast.REPLACEMENT(b1@a2,Ast.lub_count it1 it2),t)
-          |  (Ast.AFTER(a1,it1),Ast.REPLACEMENT(a2,it2)) ->
+          | (Ast.AFTER(a1,it1),Ast.REPLACEMENT(a2,it2)) ->
               emc := (Ast.REPLACEMENT(a2@a1,Ast.lub_count it1 it2),t)
-          |  (Ast.BEFOREAFTER(b1,a1,it1),Ast.REPLACEMENT(a2,it2)) ->
+          | (Ast.BEFOREAFTER(b1,a1,it1),Ast.REPLACEMENT(a2,it2)) ->
               emc := (Ast.REPLACEMENT(b1@a2@a1,Ast.lub_count it1 it2),t)
-          |  (Ast.NOTHING,Ast.REPLACEMENT(a2,it2)) -> ()) (* no change *)
-      |	 Ast0.MIXED(_) -> failwith "how did this become mixed?"
+          | (Ast.NOTHING,Ast.REPLACEMENT(a2,it2)) -> ()) (* no change *)
+      (* Allowed because of possibility of metavar as model of macro
+	 | Ast0.MIXED(_) -> failwith "how did this become mixed?" *)
       |	 _ -> failwith "not possible 7")
-  |  Ast0.MIXED(_) -> failwith "not possible 8"
-  |  Ast0.PLUS _ -> failwith "not possible 9"
+  | Ast0.MIXED(_) -> failwith "not possible 8"
+  | Ast0.PLUS _ -> failwith "not possible 9"
 
 let merge_plus_before model_mcode e_mcode =
   match model_mcode with
@@ -2119,9 +2192,10 @@ let copy_minus printer minusify model e =
     Ast0.MINUS(mc) -> minusify e
   | Ast0.CONTEXT(mc) -> e
   | Ast0.MIXED(_) ->
-      if !Flag.sgrep_mode2
-      then e
-      else failwith "not possible 8"
+      (* This is possible if the model of an isomorphism is a single
+	 metavariable, and this metavariable matches mixed code.
+	 Previously, this failed with impossible if not in sgrep mode. *)
+      e
   | Ast0.PLUS _ -> failwith "not possible 9"
 
 let whencode_allowed prev_ecount prev_icount prev_dcount
@@ -2137,19 +2211,19 @@ let whencode_allowed prev_ecount prev_icount prev_dcount
   let other_dcount = (* number of dots *)
     List.fold_left (function rest -> function (_,ec,ic,dc) -> dc + rest)
       prev_dcount rest in
-  (ecount = 0 or other_ecount = 0, icount = 0 or other_icount = 0,
-   dcount = 0 or other_dcount = 0)
+  (ecount = 0 || other_ecount = 0, icount = 0 || other_icount = 0,
+   dcount = 0 || other_dcount = 0)
 
 (* copy the befores and afters to the instantiated code *)
 let extra_copy_stmt_plus model e =
   (if not !Flag.sgrep_mode2 (* sgrep has no plus code, so nothing to do *)
   then
     (match Ast0.unwrap model with
-      Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_,(aftinfo,aft)) ->
+      Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_,_,(aftinfo,aft)) ->
 	(match Ast0.unwrap e with
-	  Ast0.FunDecl((info,bef1),_,_,_,_,_,_,_,_,(aftinfo,aft1)) ->
+	  Ast0.FunDecl((info,bef1),_,_,_,_,_,_,_,_,_,(aftinfo,aft1)) ->
 	    merge_plus_before bef bef1; merge_plus_after aft aft1
-	| _ -> 
+	| _ ->
 	    let mc = Ast0.get_mcodekind e in
 	    merge_plus_before bef mc;
 	    merge_plus_after aft mc)
@@ -2203,6 +2277,10 @@ let get_name = function
       (nm,function nm -> Ast.MetaParamDecl(ar,nm))
   | Ast.MetaParamListDecl(ar,nm,nm1) ->
       (nm,function nm -> Ast.MetaParamListDecl(ar,nm,nm1))
+  | Ast.MetaBinaryOperatorDecl(ar,nm) ->
+      (nm,function nm -> Ast.MetaBinaryOperatorDecl(ar,nm))
+  | Ast.MetaAssignmentOperatorDecl(ar,nm) ->
+      (nm,function nm -> Ast.MetaAssignmentOperatorDecl(ar,nm))
   | Ast.MetaConstDecl(ar,nm,ty) ->
       (nm,function nm -> Ast.MetaConstDecl(ar,nm,ty))
   | Ast.MetaErrDecl(ar,nm) ->
@@ -2213,6 +2291,8 @@ let get_name = function
       (nm,function nm -> Ast.MetaIdExpDecl(ar,nm,ty))
   | Ast.MetaLocalIdExpDecl(ar,nm,ty) ->
       (nm,function nm -> Ast.MetaLocalIdExpDecl(ar,nm,ty))
+  | Ast.MetaGlobalIdExpDecl(ar,nm,ty) ->
+      (nm,function nm -> Ast.MetaGlobalIdExpDecl(ar,nm,ty))
   | Ast.MetaExpListDecl(ar,nm,nm1) ->
       (nm,function nm -> Ast.MetaExpListDecl(ar,nm,nm1))
   | Ast.MetaDeclDecl(ar,nm) ->
@@ -2241,6 +2321,7 @@ let get_name = function
       (nm,function nm -> Ast.MetaDeclarerDecl(ar,nm))
   | Ast.MetaIteratorDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaIteratorDecl(ar,nm))
+  | Ast.MetaScriptDecl(cell,nm) -> failwith "not relevant to isos"
 
 let make_new_metavars metavars bindings =
   let new_metavars =
@@ -2272,7 +2353,7 @@ let mkdisj matcher metavars alts e instantiater mkiso disj_maker minusify
 	     (List.map
 		(function bindings ->
 		  let instantiated =
-		    instantiater bindings mv_bindings (rebuild_mcodes a) in
+		    instantiater bindings mv_bindings e (rebuild_mcodes a) in
 		  let plus_added =
 		    if has_context (* ie if pat is not just a metavara *)
 		    then
@@ -2297,7 +2378,7 @@ let mkdisj matcher metavars alts e instantiater mkiso disj_maker minusify
 	    then ()
 	    else
 	      (match matcher false false wc pattern e init_env with
-		OK _ ->
+		OK _ when !verbose_iso ->
 		  interpret_reason name (Ast0.get_line e) reason
 		    (function () -> printer e)
 	      | _ -> ());
@@ -2427,8 +2508,8 @@ let transform_type (metavars,alts,name) e =
 	       | _ -> failwith "invalid alt"))
 	  alts in
       mkdisj match_typeC metavars alts e
-	(function b -> function mv_b ->
-	  (instantiate b mv_b).VT0.rebuilder_rec_typeC)
+	(fun b mv_b model ->
+	  (instantiate b mv_b model).VT0.rebuilder_rec_typeC)
 	(function t -> Ast0.TypeCTag t)
 	make_disj_type make_minus.VT0.rebuilder_rec_typeC
 	(rebuild_mcode start_line).VT0.rebuilder_rec_typeC
@@ -2454,8 +2535,8 @@ let transform_expr (metavars,alts,name) e =
 	     | _ -> failwith "invalid alt"))
 	alts in
     mkdisj match_expr metavars alts e
-      (function b -> function mv_b ->
-	(instantiate b mv_b).VT0.rebuilder_rec_expression)
+      (fun b mv_b model ->
+	(instantiate b mv_b model).VT0.rebuilder_rec_expression)
       (function e -> Ast0.ExprTag e)
       (make_disj_expr e)
       make_minus.VT0.rebuilder_rec_expression
@@ -2497,8 +2578,8 @@ let transform_decl (metavars,alts,name) e =
 	       | _ -> failwith "invalid alt"))
 	  alts in
       mkdisj match_decl metavars alts e
-	(function b -> function mv_b ->
-	  (instantiate b mv_b).VT0.rebuilder_rec_declaration)
+	(fun b mv_b model ->
+	  (instantiate b mv_b model).VT0.rebuilder_rec_declaration)
 	(function d -> Ast0.DeclTag d)
 	make_disj_decl
 	make_minus.VT0.rebuilder_rec_declaration
@@ -2524,8 +2605,8 @@ let transform_stmt (metavars,alts,name) e =
 	       | _ -> failwith "invalid alt"))
 	  alts in
       mkdisj match_statement metavars alts e
-	(function b -> function mv_b ->
-	  (instantiate b mv_b).VT0.rebuilder_rec_statement)
+	(fun b mv_b model ->
+	  (instantiate b mv_b model).VT0.rebuilder_rec_statement)
 	(function s -> Ast0.StmtTag s)
 	make_disj_stmt make_minus.VT0.rebuilder_rec_statement
 	(rebuild_mcode start_line).VT0.rebuilder_rec_statement
@@ -2572,8 +2653,8 @@ let transform_top (metavars,alts,name) e =
 		     | _ -> failwith "invalid alt"))
 		alts in
 	    mkdisj match_statement_dots metavars alts stmts
-	      (function b -> function mv_b ->
-		(instantiate b mv_b).VT0.rebuilder_rec_statement_dots)
+	      (fun b mv_b model ->
+		(instantiate b mv_b model).VT0.rebuilder_rec_statement_dots)
 	      (function s -> Ast0.DotsStmtTag s)
 	      (function x ->
 		Ast0.rewrap e (Ast0.DOTS([make_disj_stmt_list x])))
@@ -2594,7 +2675,7 @@ let transform (alts : isomorphism) t =
   let in_limit n = function
       None -> true
     | Some n1 ->
-	n < n1 or
+	n < n1 ||
 	((if !Flag_parsing_cocci.show_iso_failures
 	then Common.pr2_once "execeeded iso threshold, see -iso_limit option");
 	 false) in
@@ -2673,10 +2754,11 @@ let rewrap =
   let mcode (x,a,i,mc,pos,adj) = (x,a,i,Ast0.context_befaft(),pos,adj) in
   let donothing r k e = Ast0.context_wrap(Ast0.unwrap(k e)) in
   V0.flat_rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
 
 let rec rewrap_anything = function
     Ast0.DotsExprTag(d) ->
@@ -2693,6 +2775,10 @@ let rec rewrap_anything = function
       Ast0.DotsCaseTag(rewrap.VT0.rebuilder_rec_case_line_dots d)
   | Ast0.IdentTag(d) -> Ast0.IdentTag(rewrap.VT0.rebuilder_rec_ident d)
   | Ast0.ExprTag(d) -> Ast0.ExprTag(rewrap.VT0.rebuilder_rec_expression d)
+  | Ast0.AssignOpTag(d) ->
+      Ast0.AssignOpTag(rewrap.VT0.rebuilder_rec_assignOp d)
+  | Ast0.BinaryOpTag(d) ->
+      Ast0.BinaryOpTag(rewrap.VT0.rebuilder_rec_binaryOp d)
   | Ast0.ArgExprTag(d) ->
       Ast0.ArgExprTag(rewrap.VT0.rebuilder_rec_expression d)
   | Ast0.TestExprTag(d) ->

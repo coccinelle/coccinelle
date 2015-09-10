@@ -1,35 +1,126 @@
 SGEN
 ====
 
-Description:
+Description
+-----------
+This is a tool to harden Coccinelle scripts by generating context and printing modes.
+
+Example:
+Given a semantic patch (examples/addvoid.cocci)
+
+	@@
+	identifier f;
+	@@
+
+	f(
+	+ void
+	) { ... }
+
+and metadata about the script through the commandline in interactive mode or a config file (examples/addvoid.config)
+
+	// Generated config from interactive mode.
+	description = Adds void to function headers with no arguments.
+	limitations = If a matched function has a prototype declaration, the script will not match the prototype.
+	confidence = High
+	options = --recursive-includes
+	url = http://coccinelle.lip6.fr
+	1:addvoid =
+	  org:"WARNING: Zero-argument function \"%s\" should have void declaration." % (f)
+
+the program outputs a hardened semantic patch with virtual rules patch, context, org, and report (examples/addvoid_.cocci)
+
+	/// Adds void to function headers with no arguments.
+	//# If a matched function has a prototype declaration, the script will not
+	//# match the prototype.
+	///
+	// Confidence: High
+	// URL: http://coccinelle.lip6.fr
+	// Options: --recursive-includes
+
+	virtual patch
+	virtual context
+	virtual org
+	virtual report
+
+	@addvoid depends on patch && !context && !org && !report@
+	identifier f;
+	@@
+
+	f(
+	+ void
+	 ) { ... }
+
+	// ----------------------------------------------------------------------------
+
+	@addvoid_context depends on !patch && (context || org || report)@
+	identifier f;
+	position j0;
+	@@
+
+	* f@j0(
+	 ) { ... }
+
+	// ----------------------------------------------------------------------------
+
+	@script:python addvoid_org depends on org@
+	f << addvoid_context.f;
+	j0 << addvoid_context.j0;
+	@@
+
+	msg = "WARNING: Zero-argument function \"%s\" should have void declaration. " % (f)
+	coccilib.org.print_safe_todo(j0[0], msg)
+
+	// ----------------------------------------------------------------------------
+
+	@script:python addvoid_report depends on report@
+	f << addvoid_context.f;
+	j0 << addvoid_context.j0;
+	@@
+
+	msg = "WARNING: Zero-argument function \"%s\" should have void declaration. " % (f)
+	coccilib.report.print_report(j0[0], msg)
+
+This script can then be run on C files in the same manner as the original, by specifying the virtual rule when running spatch, e.g. for context mode
+
+	spatch --sp-file addvoid_.cocci addvoid.c -D context
+
+
+Installation
 ------------
-This is a tool to generate context and printing modes for a Coccinelle script.
-
-
-Installation:
--------------
-You need to have Coccinelle and all of Coccinelle's dependencies installed. 
-Installation relies on the project being in the tools/sgen folder of the 
+You need to have Coccinelle and all of Coccinelle's dependencies installed.
+Installation relies on the project being in the tools/sgen folder of the
 Coccinelle source code (if not, change the COCCIDIR path in the makefile).
 
-1.  Run the command 'make'.
-2.  Run 'make install' (needs superuser permissions).
-2.  Test the program e.g. with
+1.  Run the command
 
-	sgen examples/tiny.cocci
+    	make all
+
+    to compile the code.
+2.  Run
+
+    	make install
+
+    to install the program.
+3.  Test the program e.g. with
+
+    	sgen examples/addvoid.cocci
 
     or
 
-	sgen &lt;your\_cocci\_script&gt;.cocci
+    	sgen <your_cocci_script>.cocci
+
+    The output should be a Coccinelle script with equivalent functionality to the original one, but with added virtual modes patch, context, org, and report.
 
 
-Uninstallation:
----------------
-To uninstall, just run 'make uninstall'.
+Uninstallation
+--------------
+To uninstall, just run
+
+	make uninstall
 
 
-Usage:
-------
+Usage
+-----
 After installation, run e.g.
 
 	sgen file.cocci --config file.config
@@ -51,12 +142,13 @@ For all options, see
 	sgen -help
 
 
-Contents:
----------
+Contents
+--------
 The home directory contains this file, a Makefile, and the directories
-mentioned below.  
-The documentation directory contains the documentation tex files.  
-The source directory contains the OCaml source code for sgen.  
-The scripts directory contains the script used for installation.  
+mentioned below.
+The documentation directory contains the documentation tex files.
 The examples directory contains examples of Coccinelle scripts and
 corresponding sgen config files as well as C files to test on.
+The scripts directory contains the script used for installation.
+The source directory contains the OCaml source code for sgen.
+The tests directory contains test files.

@@ -124,7 +124,7 @@ let parse_makefile file =
     | s when s =~ "obj-\\$(CONFIG_.*)[ \t]*[\\+:]=\\(.*\\)" ->
         let s = matched1 s in
         let objs = Common.split "[ \t]+" s in
-        assert(List.for_all (fun s -> thd3 (Common.dbe_of_filename s) =$= "o")
+        assert(List.for_all (fun s -> thd3 (Common.dbe_of_filename s) = "o")
                   objs);
 
         pr2 ("OBJS: " ^ (join "|" objs))
@@ -223,7 +223,3 @@ let files_in_dirs dirs kbuild_info =
         []
     )
   ) +> List.concat
-
-
-
-

@@ -19,3 +19,9 @@ _log
 *.out
 *.pdf
 *.toc
+*.fdb_latexmk
+
+tests/SCORE_actual.score
+tests/SCORE_best_of_both.score
+tests/SCORE_expected.score
+tests/SCORE_expected.score.save

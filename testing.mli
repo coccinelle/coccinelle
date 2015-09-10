@@ -5,6 +5,7 @@ open Common
 (*****************************************************************************)
 val testone : string (*prefix*) -> string (*test*) -> bool (*compare_expected*) -> unit
 val testall : string -> bool -> unit
+val test_spacing : string -> bool -> unit
 
 (*****************************************************************************)
 (* works with tests-big/. The .res, .ok, .spatch_ok, .failed, .var *)
@@ -30,6 +31,7 @@ val compare_with_expected : (filename * filename option) list -> unit
  *)
 
 val test_parse_cocci : filename -> unit
+val test_rule_dependencies : filename -> unit
 
 (*****************************************************************************)
 (* to be called by ocaml toplevel, to test. *)
@@ -48,7 +50,7 @@ val sp_of_file :
       Ast_cocci.meta_name list list list *
       (string list option *
 	 string list option *
-	 (Str.regexp * Str.regexp list) option *
+	 (Str.regexp * Str.regexp list * string list) option *
 	 Get_constants2.combine option) *
       bool (* format info needed for strings *)
 

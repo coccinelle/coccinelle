@@ -10,7 +10,7 @@ let parse_patch filename =
     if s =~ "^diff --git a/\\([^ ]*\\) b/\\([^ ]*\\)"
     then begin
       let (a,b) = matched2 s in
-      assert(a =$= b);
+      assert(a = b);
       File (a, s, body)
     end
     else failwith ("wrong line in git diff:" ^ s)
@@ -26,5 +26,3 @@ let unparse_patch xs outfile =
       body +> List.iter pr;
     )
   )
-
-

@@ -324,6 +324,8 @@ let rec is_really_foreach xs =
     | TCPar _::Tfor _::xs -> true, xs
     | TCPar _::Tswitch _::xs -> true, xs
     | TCPar _::Treturn _::xs -> true, xs
+    | TCPar _::TInc _::xs -> true, xs
+    | TCPar _::TDec _::xs -> true, xs
 
 
     | TCPar _::xs -> false, xs
@@ -338,9 +340,9 @@ let rec is_really_foreach xs =
 (* ------------------------------------------------------------------------- *)
 let set_ifdef_token_parenthize_info cnt x =
     match x with
-    | TIfdef (tag, _)
+    | TIfdef (_, tag, _)
     | TIfdefelse (tag, _)
-    | TIfdefelif (tag, _)
+    | TIfdefelif (_, tag, _)
     | TEndif (tag, _)
 
     | TIfdefBool (_, tag, _)
@@ -463,7 +465,7 @@ and define_line_2 acc line lastinfo xs =
 	  let acc = (TCommentSpace ii) :: acc in
           define_line_2 acc (line+1) info xs
       | x ->
-          if line' =|= line
+          if line' = line
           then define_line_2 (x::acc) (end_line_of_tok line' x) info xs
           else
 	    (* Put end of line token before the newline.  A newline at least
@@ -844,7 +846,7 @@ let rec find_ifdef_mid xs =
             let counts = xxs +> List.map count_open_close_stuff_ifdef_clause in
             let cnt1, cnt2 = List.hd counts in
             if cnt1 <> 0 || cnt2 <> 0 &&
-               counts +> List.for_all (fun x -> x =*= (cnt1, cnt2))
+               counts +> List.for_all (fun x -> x = (cnt1, cnt2))
               (*
                 if counts +> List.exists (fun (cnt1, cnt2) ->
                 cnt1 <> 0 || cnt2 <> 0
@@ -1083,7 +1085,7 @@ let fix_tokens_strings toks =
             (match a with
               TString(str_isW,info) ->
 		let str = Parse_string_c.parse_string str_isW info in
-		let new_acc = (List.rev str) @ (List.rev front) @ acc in
+		let new_acc = (List.rev front) @ (List.rev str) @ acc in
 		out_strings new_acc rest
             | _ ->
 		let new_acc = (List.rev front) @ (a :: acc) in
@@ -1400,13 +1402,13 @@ let rec find_macro_lineparen xs =
           Parenthised (xxs,info_parens);
         ] as _line1
         ))
-    ::xs when col1 =|= 0
+    ::xs when col1 = 0
     ->
       let condition =
         (* to reduce number of false positive *)
         (match xs with
         | (Line (PToken ({col = col2 } as other)::restline2))::_ ->
-            TH.is_eof other.tok || (col2 =|= 0 &&
+            TH.is_eof other.tok || (col2 = 0 &&
              (match other.tok with
              | TOBrace _ -> false (* otherwise would match funcdecl *)
              | TCBrace _ when ctx <> InFunction -> false
@@ -1455,7 +1457,7 @@ let rec find_macro_lineparen xs =
       (* This can give a false positive for K&R functions if the function
          name is in the same column as the first parameter declaration. *)
       let condition =
-        (col1 =|= col2 &&
+        (col1 = col2 &&
             (match other.tok with
             | TOBrace _ -> false (* otherwise would match funcdecl *)
             | TCBrace _ when ctx <> InFunction -> false
@@ -1470,7 +1472,7 @@ let rec find_macro_lineparen xs =
         ||
         (col2 <= col1 &&
               (match other.tok, restline2 with
-              | TCBrace _, _ when ctx =*= InFunction -> true
+              | TCBrace _, _ when ctx = InFunction -> true
               | Treturn _, _ -> true
               | Tif _, _ -> true
               | Telse _, _ -> true
@@ -1488,7 +1490,7 @@ let rec find_macro_lineparen xs =
 
       if condition
       then
-        if col1 =|= 0 then ()
+        if col1 = 0 then ()
         else begin
           msg_macro_noptvirg s;
           macro.tok <- TMacroStmt (s, TH.info_of_tok macro.tok);
@@ -1516,7 +1518,7 @@ let rec find_macro_lineparen xs =
     (* when s ==~ regexp_macro *)
 
       let condition =
-        (col1 =|= col2 &&
+        (col1 = col2 &&
             col1 <> 0 && (* otherwise can match typedef of fundecl*)
             (match other.tok with
             | TPtVirg _ -> false
@@ -1528,7 +1530,7 @@ let rec find_macro_lineparen xs =
             )) ||
           (col2 <= col1 &&
               (match other.tok with
-              | TCBrace _ when ctx =*= InFunction -> true
+              | TCBrace _ when ctx = InFunction -> true
               | Treturn _ -> true
               | Tif _ -> true
               | Telse _ -> true
@@ -1955,7 +1957,7 @@ let lookahead2 ~pass next before =
   (* typedef inference, parse_typedef_fix3 *)
   (*-------------------------------------------------------------*)
   (* xx xx *)
-  | (TIdent(s,i1)::TIdent(s2,i2)::_ , _) when not_struct_enum before && s =$= s2
+  | (TIdent(s,i1)::TIdent(s2,i2)::_ , _) when not_struct_enum before && s = s2
       && ok_typedef s
       (* (take_safe 1 !passed_tok <> [TOPar]) ->  *)
     ->
@@ -1994,6 +1996,14 @@ let lookahead2 ~pass next before =
   | (Tconst i1 :: TOBrace _ :: _ , TCPar _ :: _)
     when !Flag.c_plus_plus ->
 	  TCommentCpp (Token_c.CppDirective, i1)
+
+  (* const ident const: ident must be a type *)
+  | (TIdent (s, i1)::Tconst _::_,  Tconst _::_)
+      when not_struct_enum before
+      && ok_typedef s
+        ->
+      msg_typedef s i1 38; LP.add_typedef_root s;
+      TypedefIdent (s, i1)
 
 	(* xx const tt *)
   | (TIdent (s, i1)::(Tconst _|Tvolatile _|Trestrict _)::type_::_  , _)
@@ -2060,7 +2070,7 @@ let lookahead2 ~pass next before =
 
   (*  xx * yy      AND  in paramdecl *)
   | (TIdent (s, i1)::ptr , _)
-    when not_struct_enum before && (LP.current_context() =*= LP.InParameter)
+    when not_struct_enum before && (LP.current_context() = LP.InParameter)
 	&& pointer ~followed_by:(function TIdent _ -> true | _ -> false) ptr
 	&& ok_typedef s ->
       msg_typedef s i1 14; LP.add_typedef_root s;
@@ -2092,7 +2102,7 @@ let lookahead2 ~pass next before =
   (* [,(] xx [,)] AND param decl *)
   | (TIdent (s, i1)::(((TComma _|TCPar _)::_) as rest) ,
      ((TComma _ |TOPar _)::_ as bef))
-    when not_struct_enum before && (LP.current_context() =*= LP.InParameter)
+    when not_struct_enum before && (LP.current_context() = LP.InParameter)
       && k_and_r rest
       && not_has_type_before is_cparen rest
       && not_has_type_before is_oparen bef
@@ -2101,7 +2111,7 @@ let lookahead2 ~pass next before =
 	TKRParam(s,i1)
 
   | (TIdent (s, i1)::((TComma _|TCPar _)::_) , (TComma _ |TOPar _)::_ )
-    when not_struct_enum before && (LP.current_context() =*= LP.InParameter)
+    when not_struct_enum before && (LP.current_context() = LP.InParameter)
       && ok_typedef s
       ->
 
@@ -2188,7 +2198,7 @@ let lookahead2 ~pass next before =
 
   (* [(,] xx [   AND parameterdeclaration *)
   | (TIdent (s, i1)::TOCro _::_, (TComma _ |TOPar _)::_)
-      when (LP.current_context() =*= LP.InParameter)
+      when (LP.current_context() = LP.InParameter)
       && ok_typedef s
      ->
 
@@ -2215,7 +2225,7 @@ let lookahead2 ~pass next before =
 
   (*  xx * yy,      AND  in paramdecl *)
   | (TIdent (s, i1)::ptr , _)
-    when not_struct_enum before && (LP.current_context() =*= LP.InParameter)
+    when not_struct_enum before && (LP.current_context() = LP.InParameter)
 	&& pointer ~followed_by:(function TIdent _ -> true | _ -> false)
               ~followed_by_more:(function TComma _ :: _ -> true | _ -> false) ptr
 	&& ok_typedef s
@@ -2240,7 +2250,7 @@ let lookahead2 ~pass next before =
 
   (*  xx * yy ,     AND in Toplevel  *)
   | (TIdent (s, i1)::ptr , _)
-    when not_struct_enum before && (LP.current_context () =*= LP.InTopLevel)
+    when not_struct_enum before && (LP.current_context () = LP.InTopLevel)
 	&& ok_typedef s
 	&& pointer ~followed_by:(function TIdent _ -> true | _ -> false)
               ~followed_by_more:(function TComma _ :: _ -> true | _ -> false) ptr
@@ -2311,7 +2321,7 @@ let lookahead2 ~pass next before =
 
   (*  xx * yy)      AND in paramdecl *)
   | (TIdent (s, i1)::ptr , _)
-    when not_struct_enum before && (LP.current_context () =*= LP.InParameter)
+    when not_struct_enum before && (LP.current_context () = LP.InParameter)
 	&& ok_typedef s
 	&& pointer ~followed_by:(function TIdent _ -> true | _ -> false)
               ~followed_by_more:(function TCPar _ :: _ -> true | _ -> false) ptr
@@ -2360,7 +2370,7 @@ let lookahead2 ~pass next before =
   (*  xx ** yy *)  (* wrong ? *)
   | (TIdent (s, i1)::TMul _::TMul _::TIdent (s2, i2)::_ , _)
     when not_struct_enum before
-	&& (LP.current_context() =*= LP.InParameter)
+	&& (LP.current_context() = LP.InParameter)
 	&& ok_typedef s
     ->
 
@@ -2412,7 +2422,7 @@ let lookahead2 ~pass next before =
   | (TIdent (s, i1)::TCPar i2::(TIdent (_,i3)|TInt (_,i3))::_ ,
     (TOPar info)::x::_)
     when not (TH.is_stuff_taking_parenthized x) (* &&
-      Ast_c.line_of_info i2 =|= Ast_c.line_of_info i3 - why useful?
+      Ast_c.line_of_info i2 = Ast_c.line_of_info i3 - why useful?
       *)
       && ok_typedef s
       && not (ident x) (* possible K&R declaration *)
@@ -2494,11 +2504,32 @@ let lookahead2 ~pass next before =
       msg_typedef s i1 35; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
+  (* x ( *const y )(params),  function pointer *)
+  (* This means that the function pointer is constant *)
+  | (TIdent (s, i1)::TOPar _::TMul _::Tconst _::TIdent _::TCPar _::TOPar _::_,
+     _)
+      when not_struct_enum before
+      && ok_typedef s
+        ->
+
+      msg_typedef s i1 36; LP.add_typedef_root s;
+      TypedefIdent (s, i1)
+
+  (* x* ( *const y )(params),  function pointer 2 *)
+  | (TIdent (s, i1)::TMul _::TOPar _::TMul _::Tconst _::TIdent _::TCPar _::
+     TOPar _::_,  _)
+      when not_struct_enum before
+      && ok_typedef s
+        ->
+
+      msg_typedef s i1 37; LP.add_typedef_root s;
+      TypedefIdent (s, i1)
+
 
   (*-------------------------------------------------------------*)
   (* CPP *)
   (*-------------------------------------------------------------*)
-  | ((TIfdef (_,ii) |TIfdefelse (_,ii) |TIfdefelif (_,ii) |TEndif (_,ii) |
+  | ((TIfdef (_,_,ii) |TIfdefelse (_,ii) |TIfdefelif (_,_,ii) |TEndif (_,ii) |
       TIfdefBool (_,_,ii)|TIfdefMisc(_,_,ii)|TIfdefVersion(_,_,ii))
         as x)
     ::_, _
@@ -2514,7 +2545,7 @@ let lookahead2 ~pass next before =
         || (pass >= 2)
       then begin
 
-        if (LP.current_context () =*= LP.InInitializer)
+        if (LP.current_context () = LP.InInitializer)
         then begin
           pr2_cpp "In Initializer passing"; (* cheat: don't count in stat *)
           incr Stat.nIfdefInitializer;
@@ -2557,7 +2588,7 @@ let lookahead2 ~pass next before =
     * when the token contains "for_each".
     *)
   | (TIdent (s, i1)::TOPar _::rest, _)
-     when not (LP.current_context () =*= LP.InTopLevel)
+     when not (LP.current_context () = LP.InTopLevel)
       (* otherwise a function such as static void loopback_enable(int i) {
        * will be considered as a loop
        *)
@@ -2601,7 +2632,7 @@ let is_ifdef_and_same_tag (tag : Ast_c.matching_tag)
                           :bool
   = match x with
   | IfdefStmt (IfdefDirective ((_, tag2),_)) ->
-      tag =*= tag2
+      tag = tag2
   | StmtElem _ | CppDirectiveStmt _ -> false
   | IfdefStmt2 _ -> raise (Impossible 77)
 
@@ -2665,7 +2696,7 @@ let rec cpp_ifdef_statementize (ast :toplevel list) :toplevel list =
                 Visitor_c.vk_statement_sequencable_s bigf stseq::aux xs
             | IfdefStmt ifdef ->
                 (match ifdef with
-                | IfdefDirective ((Ast_c.Ifdef,tag),ii) ->
+                | IfdefDirective ((Ast_c.Ifdef _,tag),ii) ->
 
                     let (restifdefs, xxs, xs') = group_ifdef tag xs in
                     if should_ifdefize (tag,ii) (ifdef::restifdefs) xxs
@@ -2675,7 +2706,7 @@ let rec cpp_ifdef_statementize (ast :toplevel list) :toplevel list =
                     else
                       Visitor_c.vk_statement_sequencable_s bigf stseq::aux xs
 
-                | IfdefDirective (((IfdefElseif|IfdefElse|IfdefEndif),b),ii) ->
+                | IfdefDirective (((IfdefElseif _|IfdefElse|IfdefEndif),b),ii) ->
                     pr2 "weird: first directive is not a ifdef";
                     (* maybe not weird, just that should_ifdefize
                      * returned false *)

@@ -21,5 +21,3 @@ val parse_subsystem_info : filename -> subsystem_info
 
 val generate_naive_subsystem_info : string list -> subsystem_info
 val check_up_to_date : subsystem_info -> subsystem_info -> unit
-
-

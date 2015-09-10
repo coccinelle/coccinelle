@@ -127,7 +127,7 @@ behavior.  Using \NT{disable-iso} with the given name disables this behavior.
   register, or extern), matches a function declaration or variable
   declaration with any visibility or storage, respectively.
 \item \KW{optional\_qualifier}: This is similar to \KW{optional\_storage},
-  except that here is it the qualifier (i.e., const or volatile) that does
+  except that here it is the qualifier (i.e., const or volatile) that does
   not have to be specified in the SmPL code, but may be present in the C code.
 \item \KW{optional\_attributes}: This is similar to
   \KW{optional\_attributes}, except that here is it an attribute (e.g.,
@@ -146,6 +146,8 @@ behavior.  Using \NT{disable-iso} with the given name disables this behavior.
   \KW{...}, where \NT{bin\_op} is commutative and associative, is
   considered to match any top-level sequence of \NT{bin\_op} operators
   containing \NT{exp} as the top-level argument.
+\item \KW{prototypes}: A rule for transforming a function prototype is
+  generated when a function header changes.
 \end{itemize}
 
 The possible types of metavariable declarations are defined by the grammar
@@ -174,6 +176,7 @@ the same, but for structure fields.
   \CASE{declaration \NT{ids} ;}
   \CASE{field \opt{list} \NT{ids} ;}
   \CASE{typedef \NT{ids} ;}
+  \CASE{attribute \NT{ids} ;}
   \CASE{declarer name \NT{ids} ;}
 %  \CASE{\opt{local} function \NT{pmid\_with\_not\_eq\_list} ;}
   \CASE{declarer \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_regexp}\mth{)} ;}
@@ -182,9 +185,9 @@ the same, but for structure fields.
   \CASE{iterator \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_regexp}\mth{)} ;}
   \CASE{iterator \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
 %  \CASE{error \NT{pmid\_with\_not\_eq\_list} ; }
-  \CASE{\opt{local} idexpression \opt{\NT{ctype}} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
-  \CASE{\opt{local} idexpression \OPT{\ttlb \NT{ctypes}\ttrb~\any{*}} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
-  \CASE{\opt{local} idexpression \some{*} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+  \CASE{\opt{local \mth{\mid} global} idexpression \opt{\NT{ctype}} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+  \CASE{\opt{local \mth{\mid} global} idexpression \OPT{\ttlb \NT{ctypes}\ttrb~\any{*}} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+  \CASE{\opt{local \mth{\mid} global} idexpression \some{*} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
   \CASE{expression list \NT{ids} ;}
   \CASE{expression \some{*} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
   \CASE{expression enum \any{*} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
@@ -204,6 +207,22 @@ the same, but for structure fields.
   \CASE{format \NT{ids};}
   \CASE{format list [ \NT{id} ] \NT{ids} ;}
   \CASE{format list [ \NT{const} ] \NT{ids} ;}
+  \CASE{assignment operator \NT{COMMA\_LIST}\mth{(}\T{assignopdecl}\mth{)} ;}
+  \CASE{binary operator \NT{COMMA\_LIST}\mth{(}\T{binopdecl}\mth{)} ;}
+
+  \RULE{\rt{assignopdecl}}
+  \CASE{\NT{id} \OPT{ = \NT{assignop\_contraint}}}
+
+  \RULE{\rt{assignop\_contraint}}
+  \CASE{\mth{\{}\NT{COMMA\_LIST}\mth{(}\NT{assign\_op}\mth{)}\mth{\}}}
+  \CASE{\NT{assign\_op}}
+
+  \RULE{\rt{binopdecl}}
+  \CASE{\NT{id} \OPT{ = \NT{binop\_contraint}}}
+
+  \RULE{\rt{binop\_contraint}}
+  \CASE{\mth{\{}\NT{COMMA\_LIST}\mth{(}\NT{binary\_op}\mth{)}\mth{\}}}
+  \CASE{\NT{binary\_op}}
 \end{grammar}
 
 A metavariable declaration local idexpression v means that v is restricted
@@ -214,7 +233,7 @@ ideexpression.
 
 Constant is for constants, such as 27.  But it also considers an identifier
 that is all capital letters (possibly containing numbers) as a constant as
-well, because the names gives to macros in Linux usually have this form.
+well, because the names given to macros in Linux usually have this form.
 
 An identifier is the name of a structure field, a macro, a function, or a
 variable.  Is is the name of something rather than an expression that has a
@@ -231,6 +250,10 @@ A symbol declaration specifies that the provided identifiers should be
 considered C identifiers when encountered in the body of the rule.
 Identifiers in the body of the rule that are not declared explicitly are
 by default considered symbols, thus symbol declarations are optional.
+
+An attribute declaration indicates a name that should be considered to be
+an attribute.  It is not possible to match or remove an attribute, only to
+add one.
 
 A position metavariable is used by attaching it using \texttt{@} to any
 token, including another metavariable.  Its value is the position (file,
@@ -260,6 +283,11 @@ descriptors.  If that is needed, some processing with a scripting language
 would be required.  And example for the use of string format metavariables
 is found in demos/format.cocci.
 
+Assignment (resp. binary) operator metavariables match any assignment
+(resp. binary) operator. The list of operators that can be matched can
+be restrected by adding an operator constraint, i.e. a list of accepted
+operators.
+
 Other kinds of metavariables can also be attached using \texttt{@} to any
 token.  In this case, the metavariable floats up to the enclosing
 appropriate expression.  For example, {\tt 3 +@E 4}, where {\tt E} is an
@@ -267,7 +295,10 @@ expression metavariable binds {\tt E} to {\tt 3 + 4}.  A particular case is
 {\tt Ps@Es}, where {\tt Ps} is a parameter list and {\tt Es} is an
 expression list.  This pattern matches a parameter list, and then matches
 {\tt Es} to the list of expressions, ie a possible argument list,
-represented by the names of the parameters.
+represented by the names of the parameters.  Another particular case is
+{\tt E@S}, where {\tt E} is any expression and {\tt S} is a statement
+metavariable.  {\tt S} matches the closest enclosing statement, which may
+be more than what is matches by the semantic match pattern itself.
 
 Matching of various kinds of format strings within strings is supported.
 With the {\tt --ibm} option, matching of decimal format declarations is
@@ -347,6 +378,19 @@ rule that declares an identifier metavariable with the name {\tt
   alloc=kmalloc}.  There should not be space around the {\tt =}.  An
 example is in {\tt demos/vm.cocci} and {\tt demos/vm.c}.
 
+It is possible to give an identifier metavariable a list of constraints
+that it should or should not be equal to.  If the constraint is a list of
+(unquoted) strings, then the value of the metavariable should be the same
+as one of the strings, in the case of an equality constraint, or different
+from all of the strings, in the case of an inequality constraint.  It is
+also possible to include inherited identifier metavariables among the
+constraints.  In the case of a positive constraint, things work in the same
+way, but not with respect to the inherited value of the metavariable.  On
+the other hand, an inequality constraint does not work so well, because the
+only value available is the one available in the ciurrent environment.  If
+the proposed value is different from the one in teh current environment,
+but perhaps the same as the one in some other environment, the match will
+still succeed.
 
 \paragraph*{Warning:} Each metavariable declaration causes the declared
 metavariables to be immediately usable, without any inheritance
@@ -660,7 +704,7 @@ some constraints on the use of these annotations:
 \item Dots, {\em i.e.} \texttt{...}, cannot occur on a line marked
   \texttt{+}.
 \item Nested dots, {\em i.e.}, dots enclosed in {\tt <} and {\tt >}, cannot
-  occur on a line with any marking.
+  occur on a line marked \texttt{+}.
 \end{itemize}
 
 Each element of a disjunction must be a proper term like an
@@ -812,6 +856,7 @@ $^\dag$ The optional \texttt{when} construct ends at the end of the line.
   \CASE{\NT{type} \T{id}}
   \CASE{\mth{\T{metaid}^{\ssf{Param}}}}
   \CASE{\mth{\T{metaid}^{\ssf{ParamList}}}}
+  \CASE{......}
 
   \RULE{\rt{decl}}
   \CASE{\NT{ctype} \NT{id}}
@@ -880,6 +925,10 @@ It may be necessary to consider several cases to ensure that the added ode
 is placed in the right position.  For example, one may need one pattern
 that considers that the function is declared {\tt inline} and another that
 considers that it is not.
+
+Varargs are written in C using {\tt \ldots}.  Unfortunately, this notation
+is already used in the semantic patch language.  A pattern for a varargs
+parameter is written as a sequence of 6 dots.
 
 The C parser allows functions that have no return type, and assumes that
 the return type is \texttt{int}.  The support for parsing such functions is
@@ -1066,10 +1115,12 @@ in a concise way.
 
   \RULE{\rt{EXPR}\mth{(}\rt{exp}\mth{)}}
   \CASE{\NT{exp} \NT{assign\_op} \NT{exp}}
+  \CASE{\NT{exp} \mth{\T{metaid}^{\ssf{AssignOp}}} \NT{exp}}
   \CASE{\NT{exp}++}
   \CASE{\NT{exp}--}
   \CASE{\NT{unary\_op} \NT{exp}}
   \CASE{\NT{exp} \NT{bin\_op} \NT{exp}}
+  \CASE{\NT{exp} \mth{\T{metaid}^{\ssf{BinOp}}} \NT{exp}}
   \CASE{\NT{exp} ?~\NT{dot\_expr} :~\NT{exp}}
   \CASE{(\NT{type}) \NT{exp}}
   \CASE{\NT{exp} [\NT{dot\_expr}]}
@@ -1242,7 +1293,7 @@ the first letter of the rule name is capitalized, although this is not done
 elsewhere.  {\tt add\_virtual\_identifier X v} has the same effect as
 putting {\tt -D x=v} on the command line.  Note again the case change.
 {\tt extend\_virtual\_identifiers()} (not shown) preserves all virtual
-identifiers of the current iteration that are not overridden by calls to 
+identifiers of the current iteration that are not overridden by calls to
 {\tt add\_virtual\_identifier}.  Finally, the call to {\tt register} queues
 the collected information to trigger a new iteration at some time in the
 future.

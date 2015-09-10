@@ -63,7 +63,7 @@ let check_length s =
   | 'L' | 'z' | 'j' | 't' -> (Some (string_of_char c1), suffix s 1)
   | 'I' ->
       let s1 = suffix s 1 in
-      if Str.string_match (Str.regexp "32") s1 0 or
+      if Str.string_match (Str.regexp "32") s1 0 ||
 	Str.string_match (Str.regexp "64") s1 0
       then (Some ("I"^Str.matched_string s1), suffix s1 2)
       else (Some "I", suffix s 1)

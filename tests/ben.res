@@ -14,9 +14,7 @@ static const GTypeInfo this_info = {
 GType
 lasso_provider_get_type()
 {
-
   if (!this_type) {
-
     this_type = g_type_register_static(LASSO_TYPE_NODE,
 				       "LassoProvider", &this_info, 0);
   }

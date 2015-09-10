@@ -1,4 +1,4 @@
-(* input should be in CNF, ie an outer list, representing a conjunction, 
+(* input should be in CNF, ie an outer list, representing a conjunction,
 with inner lists of words, representing disjunctions.  There is no negation. *)
 
 let interpret_clause re l =

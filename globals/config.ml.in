@@ -2,9 +2,10 @@ let version = "@COCCI_VERSION@"
 
 let path =
   try (Sys.getenv "COCCINELLE_HOME")
-  with Not_found->"@prefix@/share/coccinelle"
+  with Not_found->"@libdir@/coccinelle"
 
 let std_iso = ref (Filename.concat path "standard.iso")
 let std_h   = ref (Filename.concat path "standard.h")
 
 let dynlink_is_native = @DYNLINK_IS_NATIVE@
+let get_temp_dir_name = @GET_TEMP_DIR_NAME_EXPR@

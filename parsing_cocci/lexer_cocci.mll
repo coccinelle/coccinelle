@@ -28,7 +28,7 @@ let get_current_line_type lexbuf =
   let preceeding_spaces =
     if !line_start < 0 then 0 else lex_start - !line_start in
   (*line_start := -1;*)
-  prev_plus := (c = D.PLUS) or (c = D.PLUSPLUS);
+  prev_plus := (c = D.PLUS) || (c = D.PLUSPLUS);
   (c,l,ll,ll,lex_start,preceeding_spaces,[],[],[],"")
 let current_line_started = ref false
 let col_zero = ref true
@@ -63,7 +63,7 @@ let opt_reverse_token token =
   if !FC.interpret_inverted
   then match token with
          D.MINUS        -> D.PLUSPLUS  (* maybe too liberal *)
-       | D.OPTMINUS     -> lexerr "cannot invert token ?- (an optional minus line), which is needed for reversing the patch" ""  
+       | D.OPTMINUS     -> lexerr "cannot invert token ?- (an optional minus line), which is needed for reversing the patch" ""
        | D.UNIQUEMINUS  -> D.PLUS
        | D.PLUS         -> D.MINUS
        | D.PLUSPLUS     -> D.MINUS (* may not be sufficient *)
@@ -156,6 +156,8 @@ let all_metavariables =
 
 let type_names = (Hashtbl.create(100) : (string, D.clt -> token) Hashtbl.t)
 
+let attr_names = (Hashtbl.create(100) : (string, D.clt -> token) Hashtbl.t)
+
 let declarer_names = (Hashtbl.create(100) : (string, D.clt -> token) Hashtbl.t)
 
 let iterator_names = (Hashtbl.create(100) : (string, D.clt -> token) Hashtbl.t)
@@ -174,14 +176,19 @@ let check_var s linetype =
       with Not_found ->
 	(try (Hashtbl.find type_names s) linetype
 	with Not_found ->
-	  (try (Hashtbl.find declarer_names s) linetype
+	  (try
+	    let x = (Hashtbl.find attr_names s) linetype in
+	    check_plus_linetype s;
+	    x
 	  with Not_found ->
-	    (try (Hashtbl.find iterator_names s) linetype
+	    (try (Hashtbl.find declarer_names s) linetype
 	    with Not_found ->
-	      (try (Hashtbl.find symbol_names s) linetype
+	      (try (Hashtbl.find iterator_names s) linetype
 	      with Not_found ->
-                TIdent (s,linetype))))) in
-  if !Data.in_meta or !Data.in_rule_name
+		(try (Hashtbl.find symbol_names s) linetype
+		with Not_found ->
+                  TIdent (s,linetype)))))) in
+  if !Data.in_meta || !Data.in_rule_name
   then (try Hashtbl.find rule_names s; TRuleName s with Not_found -> fail())
   else fail()
 
@@ -196,9 +203,13 @@ let id_tokens lexbuf =
   then Common.pr2 "Warning: should identifer be identifier?");
   match s with
     "metavariable" when in_meta -> check_arity_context_linetype s; TMetavariable
-  | "identifier" when in_meta -> check_arity_context_linetype s; TIdentifier
+  | "identifier" when in_meta || in_rule_name ->
+      check_arity_context_linetype s; TIdentifier
   | "type" when in_meta ->       check_arity_context_linetype s; TType
   | "parameter" when in_meta ->  check_arity_context_linetype s; TParameter
+  | "operator" when in_meta ->   check_arity_context_linetype s; TOperator
+  | "binary" when in_meta ->   check_arity_context_linetype s; TBinary
+  | "assignment" when in_meta ->   check_arity_context_linetype s; TAssignment
   | "constant"  when in_meta ->  check_arity_context_linetype s; TConstant
   | "generated" when in_rule_name && not (!Flag.make_hrule = None) ->
       check_arity_context_linetype s; TGenerated
@@ -217,9 +228,11 @@ let id_tokens lexbuf =
   | "statement" when in_meta ->  check_arity_context_linetype s; TStatement
   | "function"  when in_meta ->  check_arity_context_linetype s; TFunction
   | "local" when in_meta ->      check_arity_context_linetype s; TLocal
+  | "global" when in_meta ->     check_arity_context_linetype s; TGlobal
   | "list" when in_meta ->       check_arity_context_linetype s; Tlist
   | "fresh" when in_meta ->      check_arity_context_linetype s; TFresh
   | "typedef" when in_meta ->    check_arity_context_linetype s; TTypedef
+  | "attribute" when in_meta ->  check_arity_context_linetype s; TAttribute
   | "declarer" when in_meta ->   check_arity_context_linetype s; TDeclarer
   | "iterator" when in_meta ->   check_arity_context_linetype s; TIterator
   | "name" when in_meta ->       check_arity_context_linetype s; TName
@@ -236,7 +249,7 @@ let id_tokens lexbuf =
   | "symbol" when in_meta ->     check_arity_context_linetype s; TSymbol
 
   | "using" when in_rule_name || in_prolog ->  check_context_linetype s; TUsing
-  | "virtual" when in_prolog or in_rule_name or in_meta ->
+  | "virtual" when in_prolog || in_rule_name || in_meta ->
       (* don't want to allow virtual as a rule name *)
       check_context_linetype s; TVirtual
   | "disable" when in_rule_name ->  check_context_linetype s; TDisable
@@ -311,7 +324,7 @@ let id_tokens lexbuf =
   | s -> check_var s linetype
 
 let mkassign op lexbuf =
-  TAssign (Ast.OpAssign op, (get_current_line_type lexbuf))
+  TOpAssign (op, (get_current_line_type lexbuf))
 
 let init _ =
   line := 1;
@@ -396,6 +409,10 @@ let init _ =
     (fun tyopt name constraints pure ->
       let fn clt = TMetaLocalIdExp(name,constraints,pure,tyopt,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
+  Data.add_global_idexp_meta :=
+    (fun tyopt name constraints pure ->
+      let fn clt = TMetaGlobalIdExp(name,constraints,pure,tyopt,clt) in
+      Hashtbl.replace metavariables (get_name name) fn);
   Data.add_explist_meta :=
     (function name -> function lenname -> function pure ->
       let fn clt = TMetaExpList(name,lenname,pure,clt) in
@@ -458,10 +475,22 @@ let init _ =
 	    (Printf.sprintf "%d: positions only allowed in minus code" ln));
 	TMetaPos(name,constraints,any,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
+  Data.add_assignOp_meta :=
+    (fun name constraints pure ->
+      let fn clt = TMetaAssignOp (name, constraints, pure, clt) in
+      Hashtbl.replace metavariables (get_name name) fn);
+  Data.add_binaryOp_meta :=
+    (fun name constraints pure ->
+      let fn clt = TMetaBinaryOp (name, constraints, pure, clt) in
+      Hashtbl.replace metavariables (get_name name) fn);
   Data.add_type_name :=
     (function name ->
       let fn clt = TTypeId(name,clt) in
       Hashtbl.replace type_names name fn);
+  Data.add_attribute :=
+    (function name ->
+      let fn clt = TDirective (Ast.Space name, clt) in
+      Hashtbl.replace attr_names name fn);
   Data.add_declarer_name :=
     (function name ->
       let fn clt = TDeclarerId(name,clt) in
@@ -545,7 +574,7 @@ rule token = parse
 
   | ([' ' '\t'  ]+ as w) { (* collect whitespaces only when inside a rule *)
     start_line false;
-    if !Data.in_rule_name or !Data.in_prolog or !Data.in_iso
+    if !Data.in_rule_name || !Data.in_prolog || !Data.in_iso
     then token lexbuf
     else TWhitespace w }
 
@@ -569,7 +598,7 @@ rule token = parse
 
   | "@@" { start_line true; TArobArob }
   | "@"  { pass_zero();
-	   if !Data.in_rule_name or not !current_line_started
+	   if !Data.in_rule_name || not !current_line_started
 	   then (start_line true; TArob)
 	   else (check_minus_context_linetype "@";
 		 TPArob (get_current_line_type lexbuf)) }
@@ -657,6 +686,7 @@ rule token = parse
   | "->"           { start_line true; TPtrOp (get_current_line_type lexbuf)  }
   | '.'            { start_line true; TDot (get_current_line_type lexbuf)    }
   | ','            { start_line true; TComma (get_current_line_type lexbuf)  }
+  | "......"            { start_line true; TVAEllipsis (get_current_line_type lexbuf)  }
   | ";"            { start_line true; TPtVirg (get_current_line_type lexbuf) }
 
 
@@ -833,24 +863,24 @@ rule token = parse
     ("::~" (letter | '$') (letter | digit | '$') *
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) +
 
-      { 
-	start_line true; 
+      {
+	start_line true;
 	if not !Flag.c_plus_plus
 	then
 	  Common.pr2_once
 	    "< and > not allowed in C identifiers, try -c++ option";
-	id_tokens lexbuf 
+	id_tokens lexbuf
       }
   | ((letter | '$') (letter | digit | '$') * )
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>')
 
-      { 
-	start_line true; 
+      {
+	start_line true;
 	if not !Flag.c_plus_plus
 	then
 	  Common.pr2_once
 	    "< and > not allowed in C identifiers, try -c++ option";
-	id_tokens lexbuf 
+	id_tokens lexbuf
       }
 
   | (((letter | '$') (letter | digit | '$') * ))
@@ -860,26 +890,26 @@ rule token = parse
     ("::" ((letter | '$') (letter | digit | '$') * )
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) *
 
-      { 
-	start_line true; 
+      {
+	start_line true;
 	if not !Flag.c_plus_plus
 	then
 	  Common.pr2_once
 	    "~ and :: not allowed in C identifiers, try -c++ option";
-	id_tokens lexbuf 
+	id_tokens lexbuf
       }
 
    | "::" ((letter | '$') (letter | digit | '$') * )
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?
     ("::" ((letter | '$') (letter | digit | '$') * )
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) *
-      { 
-	start_line true; 
+      {
+	start_line true;
 	if not !Flag.c_plus_plus
 	then
 	  Common.pr2_once
 	    "~ and :: not allowed in C identifiers, try -c++ option";
-	id_tokens lexbuf 
+	id_tokens lexbuf
       }
        (* christia: end *)
 
@@ -933,9 +963,6 @@ and metavariable_decl_token = parse
   | "=~" { start_line true; TTildeEq (get_current_line_type lexbuf) }
   | "!~" { start_line true; TTildeExclEq (get_current_line_type lexbuf) }
   | "="  { start_line true; TEq (get_current_line_type lexbuf) }
-  | "+" { pass_zero(); TPlus0 }
-  | "?" { pass_zero(); TWhy0 }
-  | "!" { pass_zero(); TBang0 }
   | "(" { start_line true; TOPar (get_current_line_type lexbuf) }
   | ")" { start_line true; TCPar (get_current_line_type lexbuf) }
 
@@ -964,6 +991,29 @@ and metavariable_decl_token = parse
   | "=="           { start_line true; TEqEq    (get_current_line_type lexbuf) }
   | "!="           { start_line true; TNotEq   (get_current_line_type lexbuf) }
   | "<="           { start_line true; TSub     (get_current_line_type lexbuf) }
+  | "+" { (start_line true; TPlus (get_current_line_type lexbuf)) }
+  | "-" { (start_line true; TMinus (get_current_line_type lexbuf)) }
+  | "/" { start_line true; TDmOp (Ast.Div,get_current_line_type lexbuf) }
+  | "%" { start_line true; TDmOp (Ast.Mod,get_current_line_type lexbuf) }
+  | ">>" { start_line true; TShROp(Ast.DecRight,get_current_line_type lexbuf) }
+  | "&" { start_line true; TAnd (get_current_line_type lexbuf) }
+  | "|" {  (start_line true; TOr(get_current_line_type lexbuf)) }
+  | "^" { start_line true; TXor(get_current_line_type lexbuf) }
+  | ">=" { start_line true; TLogOp(Ast.SupEq,get_current_line_type lexbuf) }
+  | "<" { start_line true; TLogOp(Ast.Inf,get_current_line_type lexbuf) }
+  | ">" { start_line true; TLogOp(Ast.Sup,get_current_line_type lexbuf) }
+  | "&&" { start_line true; TAndLog (get_current_line_type lexbuf) }
+  | "||" { start_line true; TOrLog  (get_current_line_type lexbuf) }
+  | "-="           { start_line true; mkassign Ast.Minus lexbuf }
+  | "+="           { start_line true; mkassign Ast.Plus lexbuf }
+  | "*="           { start_line true; mkassign Ast.Mul lexbuf }
+  | "/="           { start_line true; mkassign Ast.Div lexbuf }
+  | "%="           { start_line true; mkassign Ast.Mod lexbuf }
+  | "&="           { start_line true; mkassign Ast.And lexbuf }
+  | "|="           { start_line true; mkassign Ast.Or lexbuf }
+  | "^="           { start_line true; mkassign Ast.Xor lexbuf }
+  | "<<="          { start_line true; mkassign Ast.DecLeft lexbuf }
+  | ">>="          { start_line true; mkassign Ast.DecRight lexbuf }
   | "/*"
       {match !current_line_type with
         (D.PLUS,_,_) | (D.PLUSPLUS,_,_) ->
@@ -990,22 +1040,22 @@ and metavariable_decl_token = parse
     ("::~" (letter | '$') (letter | digit | '$') *
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) +
 
-      { start_line true; 
+      { start_line true;
 	if not !Flag.c_plus_plus
 	then
 	  Common.pr2_once
 	    "< and > not allowed in C identifiers, try -c++ option";
-	id_tokens lexbuf 
+	id_tokens lexbuf
       }
   | ((letter | '$') (letter | digit | '$') * )
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>')
 
-      { start_line true; 
+      { start_line true;
 	if not !Flag.c_plus_plus
 	then
 	  Common.pr2_once
 	    "< and > not allowed in C identifiers, try -c++ option";
-	id_tokens lexbuf 
+	id_tokens lexbuf
       }
 
   | (((letter | '$') (letter | digit | '$') * ))
@@ -1015,24 +1065,24 @@ and metavariable_decl_token = parse
     ("::" ((letter | '$') (letter | digit | '$') * )
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) *
 
-      { start_line true; 
+      { start_line true;
 	if not !Flag.c_plus_plus
 	then
 	  Common.pr2_once
 	    "~ and :: not allowed in C identifiers, try -c++ option";
-	id_tokens lexbuf 
+	id_tokens lexbuf
       }
 
    | "::" ((letter | '$') (letter | digit | '$') * )
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?
     ("::" ((letter | '$') (letter | digit | '$') * )
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) *
-      { start_line true; 
+      { start_line true;
 	if not !Flag.c_plus_plus
 	then
 	  Common.pr2_once
 	    "~ and :: not allowed in C identifiers, try -c++ option";
-	id_tokens lexbuf 
+	id_tokens lexbuf
       }
        (* christia: end *)
 
@@ -1063,7 +1113,7 @@ and metavariable_decl_token = parse
 	end
       else failwith "unrecognized constant modifier d/D" }
 
-  | _ { lexerr "metavariables: unrecognised symbol, in token rule: "
+  | _ { lexerr "metavariables: unrecognised symbol in metavariable_decl_token rule: "
 	  (tok lexbuf) }
 
 
@@ -1164,4 +1214,3 @@ and comment check_comment = parse
         Common.pr2 ("LEXER: unrecognised symbol in comment:"^s);
         s ^ comment check_comment lexbuf
       }
-

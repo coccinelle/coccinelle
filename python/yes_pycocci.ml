@@ -31,13 +31,13 @@ let _pycocci_tuple6 (a,b,c,d,e,f) =
 (* ------------------------------------------------------------------- *)
 
 let check_return_value msg v =
-  if v =*= (pynull ()) then
+  if v = (pynull ()) then
 	  (pyerr_print ();
 	  Common.pr2 ("while " ^ msg ^ ":");
 	  raise Pycocciexception)
   else ()
 let check_int_return_value msg v =
-  if v =|= -1 then
+  if v = -1 then
 	  (pyerr_print ();
           Common.pr2 ("while " ^ msg ^ ":");
 	  raise Pycocciexception)
@@ -130,7 +130,7 @@ let has_environment_binding name =
   let (rule, name) = (Array.get a 1, Array.get a 2) in
   let orule = pystring_asstring rule in
   let oname = pystring_asstring name in
-  let e = List.exists (function (x,y) -> orule =*= x && oname =$= y)
+  let e = List.exists (function (x,y) -> orule = x && oname = y)
       !the_environment in
   if e then _pycocci_true () else _pycocci_false ()
 
@@ -221,14 +221,14 @@ let get_variable name =
 
 let contains_binding e (_,(r,m),_) =
   try
-    let _ = List.find (function ((re, rm), _) -> r =*= re && m =$= rm) e in
+    let _ = List.find (function ((re, rm), _) -> r = re && m = rm) e in
     true
   with Not_found -> false
 
 let construct_variables mv e =
   let find_binding (r,m) =
     try
-      let elem = List.find (function ((re,rm),_) -> r =*= re && m =$= rm) e in
+      let elem = List.find (function ((re,rm),_) -> r = re && m = rm) e in
       Some elem
     with Not_found -> None
   in
@@ -267,7 +267,7 @@ let construct_variables mv e =
        let expr_repr = instantiate_Expression(expr) in
        let _ = build_variable py expr_repr in
        () *)
-  (*  | Some (_, Ast_c.MetaIdVal (id,_)) ->
+  (*  | Some (_, Ast_c.MetaIdVal id) ->
        let id_repr = instantiate_Identifier(id) in
        let _ = build_variable py id_repr in
        () *)
@@ -313,7 +313,7 @@ let construct_script_variables mv =
     mv
 
 let retrieve_script_variables mv =
-  List.map (function (_,py) -> get_variable py) mv
+  List.map (function (_,py) -> Ast_c.MetaIdVal(get_variable py)) mv
 
 let set_coccifile cocci_file =
 	cocci_file_name := cocci_file;
@@ -321,7 +321,7 @@ let set_coccifile cocci_file =
 
 let pyrun_simplestring s =
   let res = Pycaml.pyrun_simplestring s in
-  check_int_return_value ("running simple python string: " ^ s) res;
+  check_int_return_value ("running simple python string:\n" ^ s) res;
   res
 
 let py_isinitialized () =

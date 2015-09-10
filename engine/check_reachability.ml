@@ -143,6 +143,7 @@ let test_formula state formula cfg =
 		   Control_flow_c.AfterNode _ -> [(nodei,[],[])]
 		 | _ -> [])
 	       cfg#nodes#tolist) in
+    let preproc _ = true in
     let verbose = !Flag_ctl.verbose_ctl_engine in
     let pm = !Flag_ctl.partial_match in
 (*     let gt = !Flag_ctl.graphical_trace in *)
@@ -151,7 +152,7 @@ let test_formula state formula cfg =
     Flag_ctl.checking_reachability := true;
 (*     Flag_ctl.graphical_trace := ""; *)
     let res =
-      ENGINE.sat (cfg,label,List.map fst cfg#nodes#tolist)
+      ENGINE.sat (cfg,label,preproc,List.map fst cfg#nodes#tolist)
 	(CTL.And(CTL.NONSTRICT,CTL.Pred(Node(state)),formula))
 	[[Node(state)]] in
     Flag_ctl.verbose_ctl_engine := verbose;

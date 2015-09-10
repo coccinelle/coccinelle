@@ -120,11 +120,11 @@ let print_parsing_stat_list ?(verbose=false) = fun statxs ->
   let total = gf +. badf +. passedf in
   pr (
   (sprintf "nb good = %d,  nb passed = %d " good passed) ^
-  (sprintf "=========> %0.2f"  (100.0 *. (passedf /. total)) ^ "% passed")
+  (sprintf "=========> %2.2f"  (100.0 *. (passedf /. total)) ^ "% passed")
    );
   pr (
   (sprintf "nb good = %d,  nb bad = %d " good bad) ^
-  (sprintf "=========> %0.2f"
+  (sprintf "=========> %2.2f"
      (100.0 *. ((gf +. passedf) /. total)) ^ "% good or passed"
    )
   )

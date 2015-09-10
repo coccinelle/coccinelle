@@ -306,6 +306,38 @@ let is_str_dots e =
     Ast0.Strdots(_) -> true
   | _ -> false
 
+let assignOp op =
+  let (newop, promoted) = match Ast0.unwrap op with
+    | Ast0.SimpleAssign op0 ->
+      let op1 = normal_mcode op0 in
+      let op2 = promote_mcode op1 in
+      ( (Ast0.SimpleAssign op1), op2)
+    | Ast0.OpAssign op0 ->
+      let op1 = normal_mcode op0 in
+      let op2 = promote_mcode op1 in
+      ( (Ast0.OpAssign op1), op2)
+    | Ast0.MetaAssign (mv0, c, pure) ->
+      let mv1 = normal_mcode mv0 in
+      let mv2 = promote_mcode mv1 in
+      ( Ast0.MetaAssign(mv1, c, pure), mv2) in
+  mkres op newop promoted promoted
+
+let binaryOp op =
+  let (newop, promoted) = match Ast0.unwrap op with
+    | Ast0.Arith op0 ->
+      let op1 = normal_mcode op0 in
+      let op2 = promote_mcode op1 in
+      ( (Ast0.Arith op1), op2)
+    | Ast0.Logical op0 ->
+      let op1 = normal_mcode op0 in
+      let op2 = promote_mcode op1 in
+      ( (Ast0.Logical op1), op2)
+    | Ast0.MetaBinary (mv0, c, pure) ->
+      let mv1 = normal_mcode mv0 in
+      let mv2 = promote_mcode mv1 in
+      ( Ast0.MetaBinary(mv1, c, pure), mv2) in
+  mkres op newop promoted promoted
+
 let rec expression e =
   match Ast0.unwrap e with
     Ast0.Ident(id) ->
@@ -330,7 +362,7 @@ let rec expression e =
       mkres e (Ast0.FunCall(fn,lp,args,rp)) fn (promote_mcode rp)
   | Ast0.Assignment(left,op,right,simple) ->
       let left = expression left in
-      let op = normal_mcode op in
+      let op = assignOp op in
       let right = expression right in
       mkres e (Ast0.Assignment(left,op,right,simple)) left right
   | Ast0.Sequence(left,op,right) ->
@@ -359,14 +391,15 @@ let rec expression e =
       mkres e (Ast0.Unary(exp,op)) (promote_mcode op) exp
   | Ast0.Binary(left,op,right) ->
       let left = expression left in
-      let op = normal_mcode op in
+      let op = binaryOp op in
       let right = expression right in
       mkres e (Ast0.Binary(left,op,right)) left right
   | Ast0.Nested(left,op,right) ->
       let left = expression left in
-      let op = normal_mcode op in
+      let op = binaryOp op in
       let right = expression right in
-      mkres e (Ast0.Nested(left,op,right)) left right
+      mkres e
+        (Ast0.Nested(left,op,right)) left right
   | Ast0.Paren(lp,exp,rp) ->
       let lp = normal_mcode lp in
       let rp = normal_mcode rp in
@@ -464,7 +497,7 @@ let rec expression e =
   | Ast0.UniqueExp(exp) ->
       let exp = expression exp in
       mkres e (Ast0.UniqueExp(exp)) exp exp
-  | Ast0.AsExpr _ -> failwith "not possible"
+  | Ast0.AsExpr _ | Ast0.AsSExpr _ -> failwith "not possible"
 
 and expression_dots x = dots is_exp_dots None expression x
 
@@ -541,19 +574,6 @@ and typeC t =
       let rp2 = normal_mcode rp2 in
       mkres t (Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2))
 	ty (promote_mcode rp2)
-  | Ast0.FunctionType(Some ty,lp1,params,rp1) ->
-      let ty = typeC ty in
-      let lp1 = normal_mcode lp1 in
-      let params = parameter_list (Some(promote_mcode lp1)) params in
-      let rp1 = normal_mcode rp1 in
-      let res = Ast0.FunctionType(Some ty,lp1,params,rp1) in
-      mkres t res ty (promote_mcode rp1)
-  | Ast0.FunctionType(None,lp1,params,rp1) ->
-      let lp1 = normal_mcode lp1 in
-      let params = parameter_list (Some(promote_mcode lp1)) params in
-      let rp1 = normal_mcode rp1 in
-      let res = Ast0.FunctionType(None,lp1,params,rp1) in
-      mkres t res (promote_mcode lp1) (promote_mcode rp1)
   | Ast0.Array(ty,lb,size,rb) ->
       let ty = typeC ty in
       let lb = normal_mcode lb in
@@ -664,14 +684,42 @@ and declaration d =
 	  let stg = Some (normal_mcode x) in
 	  mkres d (Ast0.UnInit(stg,ty,id,sem))
 	    (promote_mcode x) (promote_mcode sem))
-  | Ast0.MacroDecl(name,lp,args,rp,sem) ->
+  | Ast0.FunProto(fninfo,name,lp1,params,va1,rp1,sem) ->
+      let fninfo =
+	List.map
+	  (function Ast0.FType(ty) -> Ast0.FType(typeC ty) | x -> x)
+	  fninfo in
+      let name = ident name in
+      let lp1 = normal_mcode lp1 in
+      let params = parameter_list (Some(promote_mcode lp1)) params in
+      let va1 = match va1 with
+        | None -> None
+        | Some (c1,e1) -> Some (normal_mcode c1, normal_mcode e1) in
+      let rp1 = normal_mcode rp1 in
+      let sem = normal_mcode sem in
+      let res = Ast0.FunProto(fninfo,name,lp1,params,va1,rp1,sem) in
+      let right = promote_mcode sem in
+      (match fninfo with
+	  [] -> mkres d res name right
+	| Ast0.FStorage(stg)::_ -> mkres d res (promote_mcode stg) right
+	| Ast0.FType(ty)::_ -> mkres d res ty right
+	| Ast0.FInline(inline)::_ -> mkres d res (promote_mcode inline) right
+	| Ast0.FAttr(attr)::_ -> mkres d res (promote_mcode attr) right)
+  | Ast0.MacroDecl(stg,name,lp,args,rp,sem) ->
       let name = ident name in
       let lp = normal_mcode lp in
       let args = dots is_exp_dots (Some(promote_mcode lp)) expression args in
       let rp = normal_mcode rp in
       let sem = normal_mcode sem in
-      mkres d (Ast0.MacroDecl(name,lp,args,rp,sem)) name (promote_mcode sem)
-  | Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem) ->
+      (match stg with
+	None ->
+	  mkres d (Ast0.MacroDecl(None,name,lp,args,rp,sem))
+	    name (promote_mcode sem)
+      | Some x ->
+	  let stg = Some (normal_mcode x) in
+	  mkres d (Ast0.MacroDecl(stg,name,lp,args,rp,sem))
+	    (promote_mcode x) (promote_mcode sem))
+  | Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
       let name = ident name in
       let lp = normal_mcode lp in
       let args = dots is_exp_dots (Some(promote_mcode lp)) expression args in
@@ -679,8 +727,14 @@ and declaration d =
       let eq = normal_mcode eq in
       let ini = initialiser ini in
       let sem = normal_mcode sem in
-      mkres d (Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem))
-	name (promote_mcode sem)
+      (match stg with
+	None ->
+	  mkres d (Ast0.MacroDeclInit(None,name,lp,args,rp,eq,ini,sem))
+	    name (promote_mcode sem)
+      | Some x ->
+	  let stg = Some (normal_mcode x) in
+	  mkres d (Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem))
+	    (promote_mcode x) (promote_mcode sem))
   | Ast0.TyDecl(ty,sem) ->
       let ty = typeC ty in
       let sem = normal_mcode sem in
@@ -892,9 +946,13 @@ let is_ec_dots e =
 let rec statement s =
   let res =
     match Ast0.unwrap s with
-      Ast0.Decl((_,bef),decl) ->
+      Ast0.Decl((info,bef),decl) ->
 	let decl = declaration decl in
 	let (leftinfo,decl) = promote_to_statement_start decl bef in
+	let leftinfo =
+	  (* for function prototypes, which may have information placed here
+	     before calling Compute_lines *)
+	  {leftinfo with Ast0.strings_before = info.Ast0.strings_before} in
 	mkres s (Ast0.Decl((leftinfo,bef),decl)) decl decl
     | Ast0.Seq(lbrace,body,rbrace) ->
 	let lbrace = normal_mcode lbrace in
@@ -1060,6 +1118,9 @@ let rec statement s =
     | Ast0.Ty(ty) ->
 	let ty = typeC ty in
 	mkres s (Ast0.Ty(ty)) ty ty
+    | Ast0.TopId(id) ->
+	let id = ident id in
+	mkres s (Ast0.TopId(id)) id id
     | Ast0.TopInit(init) ->
 	let init = initialiser init in
 	mkres s (Ast0.TopInit(init)) init init
@@ -1115,7 +1176,7 @@ let rec statement s =
 	let dots = bad_mcode dots in
 	let ln = promote_mcode dots in
 	mkres s (Ast0.Stars(dots,whencode)) ln ln
-    | Ast0.FunDecl((_,bef),fninfo,name,lp,params,rp,lbrace,body,rbrace,
+    | Ast0.FunDecl((_,bef),fninfo,name,lp,params,va,rp,lbrace,body,rbrace,
 		   (_,aft)) ->
 	let fninfo =
 	  List.map
@@ -1129,34 +1190,7 @@ let rec statement s =
 	let body =
 	  dots is_stm_dots (Some(promote_mcode lbrace)) statement body in
 	let rbrace = normal_mcode rbrace in
-	let (leftinfo,fninfo,name) =
-	(* cases on what is leftmost *)
-	  match fninfo with
-	    [] ->
-	      let (leftinfo,name) = promote_to_statement_start name bef in
-	      (leftinfo,[],name)
-	  | Ast0.FStorage(stg)::rest ->
-	      let (leftinfo,stginfo) =
-		promote_to_statement_start (promote_mcode stg) bef in
-	      (leftinfo,
-	       Ast0.FStorage(set_mcode_info stg (Ast0.get_info stginfo))::rest,
-	       name)
-	  | Ast0.FType(ty)::rest ->
-	      let (leftinfo,ty) = promote_to_statement_start ty bef in
-	      (leftinfo,Ast0.FType(ty)::rest,name)
-	  | Ast0.FInline(inline)::rest ->
-	      let (leftinfo,inlinfo) =
-		promote_to_statement_start (promote_mcode inline) bef in
-	      (leftinfo,
-	       Ast0.FInline(set_mcode_info inline (Ast0.get_info inlinfo))::
-	       rest,
-	       name)
-	  | Ast0.FAttr(attr)::rest ->
-	      let (leftinfo,attrinfo) =
-		promote_to_statement_start (promote_mcode attr) bef in
-	      (leftinfo,
-	       Ast0.FAttr(set_mcode_info attr (Ast0.get_info attrinfo))::rest,
-	       name) in
+	let (leftinfo,fninfo,name) = leftfninfo fninfo name bef in
 	let (rightinfo,right,rbrace) =
 	  promote_to_statement_end_mcode rbrace aft in
       (* pretend it is one line before the start of the function, so that it
@@ -1166,7 +1200,7 @@ let rec statement s =
 	 and other things to the node after, but that would complicate
 	 insert_plus, which doesn't distinguish between different mcodekinds *)
 	let res =
-	  Ast0.FunDecl((leftinfo,bef),fninfo,name,lp,params,rp,lbrace,
+	  Ast0.FunDecl((leftinfo,bef),fninfo,name,lp,params,va,rp,lbrace,
 		       body,rbrace,(rightinfo,aft)) in
       (* have to do this test again, because of typing problems - can't save
 	 the result, only use it *)
@@ -1211,6 +1245,33 @@ let rec statement s =
 	Ast0.AddingBetweenDots(statement s)
     | Ast0.DroppingBetweenDots s ->
 	Ast0.DroppingBetweenDots(statement s))
+
+and leftfninfo fninfo name bef = (* cases on what is leftmost *)
+  match fninfo with
+    [] ->
+      let (leftinfo,name) = promote_to_statement_start name bef in
+      (leftinfo,[],name)
+  | Ast0.FStorage(stg)::rest ->
+      let (leftinfo,stginfo) =
+	promote_to_statement_start (promote_mcode stg) bef in
+      (leftinfo,
+       Ast0.FStorage(set_mcode_info stg (Ast0.get_info stginfo))::rest,
+       name)
+  | Ast0.FType(ty)::rest ->
+      let (leftinfo,ty) = promote_to_statement_start ty bef in
+      (leftinfo,Ast0.FType(ty)::rest,name)
+  | Ast0.FInline(inline)::rest ->
+      let (leftinfo,inlinfo) =
+	promote_to_statement_start (promote_mcode inline) bef in
+      (leftinfo,
+       Ast0.FInline(set_mcode_info inline (Ast0.get_info inlinfo))::rest,
+       name)
+  | Ast0.FAttr(attr)::rest ->
+      let (leftinfo,attrinfo) =
+	promote_to_statement_start (promote_mcode attr) bef in
+      (leftinfo,
+       Ast0.FAttr(set_mcode_info attr (Ast0.get_info attrinfo))::rest,
+       name)
 
 and pragmainfo pi =
   match Ast0.unwrap pi with
@@ -1296,4 +1357,3 @@ let compute_statement_dots_lines attachable_or x =
   in_nest_count := 0;
   inherit_attachable := attachable_or;
   statement_dots x
-

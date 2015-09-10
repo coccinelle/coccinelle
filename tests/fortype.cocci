@@ -7,9 +7,10 @@
 @@
 identifier x;
 statement S;
+expression e;
 @@
 
 for (
 - int x
 + char *p
-  ; ...; ...) S
+  = e; ...; ...) S

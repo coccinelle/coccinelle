@@ -5,7 +5,7 @@ Here are the authors and maintainers of the different parts of coccinelle:
 - parsing_cocci/ (parsing SmPL, isomorphism handling)
 - engine/ (ast_cocci to ctl, sgrep)
 - ctl/ (symbolic model checker)
-- tools/ 
+- tools/
 - standard.iso
 
 * Yoann Padioleau <yoann.padioleau@gmail.com>
@@ -13,7 +13,7 @@ Here are the authors and maintainers of the different parts of coccinelle:
 - parsing_c/ (parsing C, unparsing C, type checking, control flow, C diff)
 - engine/ (pattern matching and transforming, unparsing, ctl integration)
 - main.ml, cocci.ml (driver), testing.ml
-- configure, txt files, Makefiles 
+- configure, txt files, Makefiles
 - globals/
 - extra/, tools/, scripts/
 - commons/ (utility functions, e.g. for logging, profiling, regression testing)

@@ -47,6 +47,7 @@ all.opt:
 
 $(TARGET).cma: $(OBJS)
 	$(OCAMLC_CMD) -a -o $(TARGET).cma $(OBJS)
+	for i in `grep " (\*" exposed_modules.ml | sed "s/^.*(\* //" | sed "s/\..* \*)$$//"`; do cp ../$$i.cmi .; done
 
 $(TARGET).cmxa: $(OPTOBJS) $(LIBS:.cma=.cmxa)
 	$(OCAMLOPT_CMD) -a -o $(TARGET).cmxa $(OPTOBJS)
@@ -99,7 +100,11 @@ distclean: clean
 	rm -f coccilib/coccilib.cmi
 
 .depend depend:
+ifeq ($(COMPILE_EMBEDDED_BYTES_MODULE),yes)
 	$(OCAMLDEP_CMD) *.mli *.ml    > .depend
+else
+	$(OCAMLDEP_CMD) *.mli *.ml | sed 's/bytes\.cm[a-z]\{1,\}//g' > .depend
+endif
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)

@@ -13,7 +13,7 @@ type formula =
 (* --------------------------------------------------------------------- *)
 
 let contains_modif =
-  let bind x y = x or y in
+  let bind x y = x || y in
   let option_default = false in
   let mcode r (_,_,kind,_) =
     match kind with
@@ -28,7 +28,7 @@ let contains_modif =
   let rule_elem r k re =
     let res = k re in
     match Ast.unwrap re with
-      Ast.FunHeader(bef,_,fninfo,name,lp,params,rp) ->
+      Ast.FunHeader(bef,_,fninfo,name,lp,params,va,rp) ->
       bind (mcode r ((),(),bef,[])) res
     | Ast.Decl decl -> bind (mcode r ((),(),annotated_decl decl,[])) res
     | Ast.ForHeader(fr,lp,Ast.ForDecl(decl),e2,sem2,e3,rp) ->
@@ -36,19 +36,20 @@ let contains_modif =
     | _ -> res in
   let recursor =
     V.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing do_nothing
+      do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_rule_elem
 
 let ctl_exists keep_wit v x =
-  CTL.Exists(!Flag_popl.keep_all_wits or keep_wit,v,x)
+  CTL.Exists(!Flag_popl.keep_all_wits || keep_wit,v,x)
 
 let predmaker keep_wit term =
-  if (!Flag_popl.keep_all_wits or keep_wit) &&
-     (!Flag_popl.mark_all or contains_modif term)
+  if (!Flag_popl.keep_all_wits || keep_wit) &&
+     (!Flag_popl.mark_all || contains_modif term)
   then
     let v = ("","_v") in
     ctl_exists true v
@@ -214,7 +215,7 @@ and do_between_dots keep_wit ba term after =
 	  (v,ctl_or
 	     (ctl_back_ex truepred)
 	     (ctl_back_ex (ctl_back_ex falsepred)),
-	   ctl_or case1 case2)	
+	   ctl_or case1 case2)
     | Past.NoDots -> term
 
 (* --------------------------------------------------------------------- *)

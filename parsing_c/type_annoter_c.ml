@@ -442,11 +442,11 @@ let rec typedef_fix ty env =
 	(EnumName s) (* todo? *) +> Ast_c.rewrap_typeC ty
     | Decimal(l,p) ->
 	(Decimal(l,p)) (* todo? *) +> Ast_c.rewrap_typeC ty
-	  
+
   (* we prefer StructUnionName to StructUnion when it comes to typed metavar *)
     | StructUnionName (su, s) ->
 	ty
-	  
+
   (* keep the typename but complete with more information *)
     | TypeName (name, typ) ->
 	let s = Ast_c.str_of_name name in
@@ -458,7 +458,7 @@ let rec typedef_fix ty env =
             (try
               if !typedef_debug then pr2 "typedef_fix: lookup_typedef";
               let (t', env') = lookup_typedef s env in
-	      
+
           (* bugfix: termination bug if use env instead of env' below, because
              * can have some weird mutually recursive typedef which
              * each new type alias search for its mutual def.
@@ -580,7 +580,7 @@ let add_in_scope namedef =
 
 (* sort of hackish... *)
 let islocal info =
-  if List.length (!_scoped_env) =|= List.length !initial_env
+  if List.length (!_scoped_env) = List.length !initial_env
   then Ast_c.NotLocalVar
   else Ast_c.LocalVar info
 
@@ -952,12 +952,12 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
         k expr;
         Ast_c.get_type_expr e2
 
-    | Binary (e1, Logical _, e2) ->
+    | Binary (e1, ((Logical _),_), e2) ->
         k expr;
         make_info_def (type_of_s "int")
 
     (* todo: lub *)
-    | Binary (e1, Arith op, e2) ->
+    | Binary (e1, (Arith op, _), e2) ->
         k expr;
         Type_c.lub op (Type_c.get_opt_type e1) (Type_c.get_opt_type e2)
 
@@ -1023,6 +1023,9 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
 	k expr;
 	pr2_once "Type annotater:not handling Delete";
 	Type_c.noTypeHere (* TODO *)
+
+    | Defined _ ->
+	make_info_def (type_of_s "int")
 
   in
   Ast_c.set_type_expr expr ty
@@ -1180,7 +1183,7 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
 			       ("0",Ast_c.Si(Ast_c.Signed,Ast_c.CInt)))) in
 		    Ast_c.rewrap_typeC t (Ast_c.Decimal (len,Some newp))
 		| _ -> t in
-		
+
 
               match sto with
               | StoTypedef, _inline ->
@@ -1386,8 +1389,8 @@ let annotate_test_expressions prog =
     let (ty,_) = !info in
     info := (ty,Test);
     match e_term with
-      Binary(e1,Logical(AndLog),e2)
-    | Binary(e1,Logical(OrLog),e2) -> propagate_test e1; propagate_test e2
+      Binary(e1,(Logical AndLog,_),e2)
+    | Binary(e1,(Logical OrLog,_),e2) -> propagate_test e1; propagate_test e2
     | Unary(e1,Not) -> propagate_test e1
     | ParenExpr(e) -> propagate_test e
     | FunCall(e,args) -> (* not very nice, but so painful otherwise *)
@@ -1404,8 +1407,8 @@ let annotate_test_expressions prog =
     Visitor_c.kexpr = (fun (k,bigf) expr ->
       (match unwrap_expr expr with
 	CondExpr(e,_,_) -> propagate_test e
-      |	Binary(e1,Logical(AndLog),e2)
-      | Binary(e1,Logical(OrLog),e2) -> propagate_test e1; propagate_test e2
+      |	Binary(e1,(Logical AndLog,_),e2)
+      | Binary(e1,(Logical OrLog,_),e2) -> propagate_test e1; propagate_test e2
       | Unary(e1,Not) -> propagate_test e1
       | _ -> ()
       );
