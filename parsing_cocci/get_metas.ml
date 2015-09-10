@@ -101,6 +101,25 @@ and initialiser r k i =
 	| x -> (x::other_metas,init))
     ([],i) metas
 
+and param r k p =
+  match Ast0.unwrap p with
+    Ast0.MetaParamList(name,lenname,pure) ->
+      let (metas,p) =
+       rewrap p
+         (let (n,name) = mcode () name in
+         (n,Ast0.MetaParamList(name,lenname,pure))) in
+      List.fold_left
+       (function (other_metas,id) ->
+         function
+             ((Ast0.ExprTag(exp_meta)) as x) ->
+               (match Ast0.unwrap exp_meta with
+                 Ast0.MetaExprList _ ->
+                   (other_metas,Ast0.rewrap p (Ast0.AsParam(p,exp_meta)))
+               | _ -> (x::other_metas,id))
+           | x -> (x::other_metas,id))
+       ([],p) metas
+  | _ -> r k p
+
 and statement r k s =
   let (metas,s) = k s in
   List.fold_left
