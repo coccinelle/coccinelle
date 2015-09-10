@@ -33,6 +33,7 @@
   native code
 - Print metavariables properly for script code.
 - Print metavariables properly for cocci code.
+- SYSCALL_DEFINE macros, contributed by Jörn Engel
 ** Bugfix:
 - Allow virtual variable definition to contain an =.
 * 1.0.2
