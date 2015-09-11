@@ -107,7 +107,7 @@ BYTECODE_EXTRA=-custom $(EXTRA_OCAML_FLAGS)
 ##############################################################################
 .PHONY:: all all.opt byte opt top clean distclean opt-compil
 .PHONY:: $(MAKESUBDIRS:%=%.all) $(MAKESUBDIRS:%=%.opt) subdirs.all subdirs.opt
-.PHONY:: byte-only opt-only pure-byte
+.PHONY:: byte-only opt-only pure-byte tools
 .PHONY:: copy-stubs install-stubs install install-man install-python install-common
 
 # All make targets that are expected to be an entry point have a dependency on
@@ -243,8 +243,6 @@ $(EXEC).top: $(LNKLIBS) $(LIBS) $(OBJS)
 
 clean distclean::
 	rm -f $(TARGET) $(TARGET).opt $(TARGET).top
-
-.PHONY:: tools
 
 ./configure: ./configure.ac
 	@echo Please run ./autogen to update configure
