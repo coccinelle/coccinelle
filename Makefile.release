@@ -284,7 +284,6 @@ ocamlversion:
 
 EXCL_SYNC=--exclude ".git"          \
 	--exclude ".gitignore"      \
-	--exclude ".svn"	    \
 	--exclude "tests"           \
 	--exclude "TODO"            \
 	--cvs-exclude
