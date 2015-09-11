@@ -105,7 +105,7 @@ BYTECODE_EXTRA=-custom $(EXTRA_OCAML_FLAGS)
 ##############################################################################
 # Top rules
 ##############################################################################
-.PHONY:: all all.opt byte opt top clean distclean configure opt-compil
+.PHONY:: all all.opt byte opt top clean distclean opt-compil
 .PHONY:: $(MAKESUBDIRS:%=%.all) $(MAKESUBDIRS:%=%.opt) subdirs.all subdirs.opt
 .PHONY:: byte-only opt-only pure-byte
 .PHONY:: copy-stubs install-stubs install install-man install-python install-common
@@ -244,10 +244,7 @@ $(EXEC).top: $(LNKLIBS) $(LIBS) $(OBJS)
 clean distclean::
 	rm -f $(TARGET) $(TARGET).opt $(TARGET).top
 
-.PHONY:: tools configure
-
-configure: ./configure
-	./configure $(CONFIGURE_FLAGS)
+.PHONY:: tools
 
 ./configure: ./configure.ac
 	@echo Please run ./autogen to update configure
