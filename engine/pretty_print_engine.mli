@@ -1,3 +1,9 @@
+(*
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
+ *)
+
 (* could be in pretty_print_c because dependent of ast_c but metavars
  * are in ast_c for "bad" reason, so better put the pretty_print
  * of metavars here

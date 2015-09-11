@@ -1,3 +1,9 @@
+(*
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
+ *)
+
 val build_classes : Ast_cocci.meta_name list -> unit
 val construct_variables :
     (string * Ast_cocci.meta_name * Ast_cocci.metavar) list

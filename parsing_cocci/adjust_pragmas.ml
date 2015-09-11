@@ -1,3 +1,9 @@
+(*
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
+ *)
+
 (* Find a directive or comment at the end of a statement.  Things with aft
 given None, because they can accomodate their own directives or comments *)
 

@@ -1,3 +1,9 @@
+(*
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
+ *)
+
 val ast0toast :
     string -> Ast_cocci.dependency -> string list (* dropped isos *) ->
       Ast_cocci.exists -> Ast0_cocci.rule -> bool list -> Ast_cocci.ruletype ->

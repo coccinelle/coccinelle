@@ -1,3 +1,9 @@
+(*
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
+ *)
+
 val unparse : Ast_cocci.metavar list -> Ast_cocci.rule -> unit
 val unparse_to_string : Ast_cocci.rule -> string
 val expression : Ast_cocci.expression -> unit

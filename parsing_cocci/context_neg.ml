@@ -1,3 +1,9 @@
+(*
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
+ *)
+
 (* Detects subtrees that are all minus/plus and nodes that are "binding
 context nodes".  The latter is a node whose structure and immediate tokens
 are the same in the minus and plus trees, and such that for every child,

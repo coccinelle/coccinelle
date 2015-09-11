@@ -1,3 +1,9 @@
+(*
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
+ *)
+
 
 (* Just to warn me when there is some news in the types in
  * ast_cocci.ml or even ast_c.ml, so that I can then adjust my code in

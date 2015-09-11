@@ -1,3 +1,7 @@
+// This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+// See copyright.txt in the Coccinelle source code for more information.
+// The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
+
 /// A generated context rule! This is a Coccinelle script that tests the use of
 /// the local function metavariable type in SmPL. This comment is longer than
 /// 80 characters, so it will be split.

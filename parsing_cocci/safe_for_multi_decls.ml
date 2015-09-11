@@ -1,3 +1,9 @@
+(*
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
+ *)
+
 (* This phase sets the safe_for_multi_decls field, which is normally false,
 to true for transformations on declarations where the only change is on the
 declared variable.  This is the only kind of change on such a declaration

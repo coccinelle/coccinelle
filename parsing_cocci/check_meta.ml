@@ -1,3 +1,9 @@
+(*
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
+ *)
+
 (* For minus fragment, checks that all of the identifier metavariables that
 are used are not declared as fresh, and check that all declared variables
 are used.  For plus fragment, just check that the variables declared as

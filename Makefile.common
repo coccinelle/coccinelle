@@ -1,3 +1,7 @@
+# This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+# See copyright.txt in the Coccinelle source code for more information.
+# The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
+
 # Some common definitions that factored out many reoccurring patterns
 # in the Makefiles of the project. This file is included at the bottom
 # so that its implicit rules take precedence over implicit rules in
