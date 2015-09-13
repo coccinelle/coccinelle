@@ -1,3 +1,10 @@
+coccinelle (1.0.2~14.04npalix3) trusty; urgency=medium
+
+  * New release 1.0.2
+  * Fix Python dependency
+
+ -- Nicolas Palix (LIG) <nicolas.palix@imag.fr>  Sun, 13 Sep 2015 23:37:03 +0000
+
 coccinelle (1.0.2~14.04npalix2) trusty; urgency=medium
 
   * New release 1.0.2
