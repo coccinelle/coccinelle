@@ -1,9 +1,0 @@
-.depend
-test.ml
-cli_lexer.ml
-Makefile.config
-spatch
-spatch.opt
-.subdirs
-spp
-cpp_wrapper
