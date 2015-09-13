@@ -272,9 +272,9 @@ let get_fakeInfo_and_tokens celem toks =
 
 (* Fake nodes that have BEFORE code or are - should be moved over any
 subsequent whitespace and newlines, but not any comments starting in column
-0, to get as close to the affected code as possible.  Similarly, fake nodes
-that have AFTER code should be moved backwards.  No fake nodes should have
-both before and after code. *)
+0 or the last newline, to get as close to the affected code as possible.
+Similarly, fake nodes that have AFTER code should be moved backwards.  No
+fake nodes should have both before and after code. *)
 
 let displace_fake_nodes toks =
   let is_fake = function Fake1 _ -> true | _ -> false in
@@ -282,6 +282,13 @@ let displace_fake_nodes toks =
     | T1(Parser_c.TCommentSpace _)
   (* patch: cocci    *)
     | T1(Parser_c.TCommentNewline _) -> true
+    | T1(Parser_c.TComment i) ->
+	(* column 0 is the leftmost column. *)
+	Ast_c.col_of_info i > 0
+    | _ -> false in
+  let is_nonnl_whitespace_or_noncol0_comment = function
+    | T1(Parser_c.TCommentSpace _) -> true
+  (* patch: cocci    *)
     | T1(Parser_c.TComment i) ->
 	(* column 0 is the leftmost column. *)
 	Ast_c.col_of_info i > 0
@@ -315,6 +322,11 @@ let displace_fake_nodes toks =
         | (Ast_cocci.CONTEXT(_,Ast_cocci.BEFORE _),_) ->
           (* move the fake node forwards *)
           let (whitespace,rest) = span is_whitespace_or_noncol0_comment aft in
+          bef @ whitespace @ fake :: (loop rest)
+        | (Ast_cocci.MINUS(_,_,_,Ast_cocci.NOREPLACEMENT),_) ->
+          (* move the fake node forwards *)
+          let (whitespace,rest) =
+	    span is_nonnl_whitespace_or_noncol0_comment aft in
           bef @ whitespace @ fake :: (loop rest)
         | (Ast_cocci.CONTEXT(_,Ast_cocci.AFTER _),_) ->
           (* move the fake node backwards *)
