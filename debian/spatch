@@ -1,3 +1,0 @@
-#! /bin/sh -e
-
-PYTHONPATH=${PYTHONPATH:+$PYTHONPATH:}/usr/share/coccinelle/python exec /usr/lib/coccinelle/spatch "$@"
