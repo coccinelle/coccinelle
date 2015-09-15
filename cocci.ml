@@ -1289,7 +1289,7 @@ let prepare_c files choose_includes parse_strings : file_info list =
   Flag_parsing_c.parsing_header_for_types := false;
 
   let cfiles =
-    (zip files cprograms) +>
+    files_and_cprograms +>
     List.map
       (function (file, cprogram) ->
       (* todo?: don't update env ? *)
