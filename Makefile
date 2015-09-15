@@ -39,7 +39,7 @@ PKGVERSION=$(shell dpkg-parsechangelog -ldebian/changelog.$(DISTRIB_CODENAME) 2>
 
 TARGET=spatch
 PRJNAME=coccinelle
-ML_FILES=flag_cocci.ml cocci.ml testing.ml test.ml $(LEXER_SOURCES:.mll=.ml) main.ml
+ML_FILES=flag_cocci.ml cocci.ml testing.ml $(LEXER_SOURCES:.mll=.ml) main.ml
 MLI_FILES=cocci.mli testing.mli
 
 ifeq ($(FEATURE_PYTHON),1)
@@ -105,9 +105,9 @@ BYTECODE_EXTRA=-custom $(EXTRA_OCAML_FLAGS)
 ##############################################################################
 # Top rules
 ##############################################################################
-.PHONY:: all all.opt byte opt top clean distclean configure opt-compil
+.PHONY:: all all.opt byte opt top clean distclean opt-compil
 .PHONY:: $(MAKESUBDIRS:%=%.all) $(MAKESUBDIRS:%=%.opt) subdirs.all subdirs.opt
-.PHONY:: byte-only opt-only pure-byte
+.PHONY:: byte-only opt-only pure-byte tools
 .PHONY:: copy-stubs install-stubs install install-man install-python install-common
 
 # All make targets that are expected to be an entry point have a dependency on
@@ -244,10 +244,9 @@ $(EXEC).top: $(LNKLIBS) $(LIBS) $(OBJS)
 clean distclean::
 	rm -f $(TARGET) $(TARGET).opt $(TARGET).top
 
-.PHONY:: tools configure
-
-configure:
-	./configure $(CONFIGURE_FLAGS)
+./configure: ./configure.ac
+	@echo Please run ./autogen to update configure
+	@false
 
 # the dependencies on Makefile.config should give a hint to the programmer that
 # configure should be run again
@@ -289,7 +288,7 @@ copy-stubs:
 ##############################################################################
 
 version.ml:
-	@$(ECHO) "version.ml is missing. Run ./configure to generate it."
+	@$(ECHO) "version.ml is missing. Run ./configure to generate it. Run ./autogen first if ./configure does not exist."
 	@false
 
 ##############################################################################
@@ -523,12 +522,6 @@ tags:
 # Misc rules
 ##############################################################################
 
-# each member of the project can have its own test.ml. this file is
-# not under CVS.
-test.ml:
-	$(ECHO) "let foo_ctl () = failwith \"there is no foo_ctl formula\"" \
-	  > test.ml
-
 ##############################################################################
 # Generic ocaml rules
 ##############################################################################
@@ -552,7 +545,6 @@ clean distclean::
 
 distclean::
 	set -e; for i in $(CLEANSUBDIRS); do $(MAKE) -C $$i $@; done
-	rm -f test.ml
 	rm -f TAGS *.native *.byte *.d.native *.p.byte
 	if test -z "${KEEP_GENERATED}"; then \
 		rm -f tests/SCORE_actual.sexp tests/SCORE_best_of_both.sexp; fi
@@ -562,11 +554,11 @@ distclean::
 
 # using 'touch' to prevent infinite recursion with 'make depend'
 .PHONY:: depend
-.depend: Makefile.config test.ml version
+.depend: Makefile.config version
 	@touch .depend
 	@$(MAKE) depend
 
-depend: Makefile.config test.ml version
+depend: Makefile.config version
 	@$(ECHO) "Constructing '.depend'"
 	@rm -f .depend
 	@set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i depend; done
@@ -589,7 +581,8 @@ distclean::
 	rm -f scripts/spatch.sh
 	rm -f aclocal.m4
 	for i in `find . -name '*.in'`; do rm -f `echo $$i | sed "s/\.in$$//"`; done
-	@echo "Run 'configure' again prior to building coccinelle"
+	@echo "Run './configure' again prior to building coccinelle."
+	@echo "If ./configure does not exist, run ./autogen first."
 
 
 # don't include depend for those actions that either don't need

@@ -105,6 +105,7 @@ prerelease:
 fix-expected:
 	@echo "going to generate: tests/SCORE_expected_orig.sexp"
 	$(MAKE) distclean
+	./autogen
 	./configure --enable-release --disable-python $(extra_configure_flags)
 	$(MAKE) opt-only
 	yes | ./spatch.opt -testall --iso-file ./standard.iso --macro-file-builtins ./standard.h
@@ -114,7 +115,6 @@ fix-expected:
 release:
 	@echo "Marking version: $(VERSION)"
 	$(GIT) add ./version
-	$(GIT) add ./configure
 	$(GIT) add setup/Makefile.in
 	$(GIT) commit -m "Release $(VERSION)"
 	$(GIT) tag -a -m "Release $(VERSION)" $(VERSION)
@@ -131,6 +131,7 @@ package:
 	@echo "\tThe coccinelle SVN repository must be in $(WEBBASE)\n"
 
 package-src:
+	if [ ! -f ./configure ]; then ./autogen; fi
 	./configure --enable-release --disable-python --disable-pcre-syntax $(extra_configure_flags)
 	$(MAKE) srctar
 	$(MAKE) coccicheck
@@ -140,6 +141,7 @@ package-src:
 # on those libraries.
 package-nopython:
 	$(MAKE) distclean
+	./autogen
 	./configure --enable-release --disable-python --disable-pcre-syntax --disable-menhirLib --disable-pycaml  $(extra_configure_flags)
 	$(MAKE) bintar
 	$(MAKE) bytecodetar
@@ -149,6 +151,7 @@ package-nopython:
 # on those libraries.
 package-python:
 	$(MAKE) distclean
+	./autogen
 	./configure --enable-release --enable-python --disable-pcre-syntax --disable-menhirLib --disable-pycaml $(extra_configure_flags)
 	$(MAKE) bintar-python
 	$(MAKE) bytecodetar-python
@@ -281,8 +284,6 @@ ocamlversion:
 
 EXCL_SYNC=--exclude ".git"          \
 	--exclude ".gitignore"      \
-	--exclude ".cvsignore"      \
-	--exclude ".svn"	    \
 	--exclude "tests"           \
 	--exclude "TODO"            \
 	--cvs-exclude
