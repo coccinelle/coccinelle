@@ -71,7 +71,7 @@ let print_pos l =
     (function
 	Ast.MetaPos(name,_,_,_,_) ->
 	  let name = Ast.unwrap_mcode name in
-	  print_string "@"; print_meta name)
+	  print_string "@"; print_meta name; print_space())
     l
 
 let mcode fn = function
