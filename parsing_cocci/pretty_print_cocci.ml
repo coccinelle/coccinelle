@@ -1119,6 +1119,7 @@ let unparse mvs z =
       force_newline();
       force_newline();
       rule x;
+      force_newline();
       force_newline()
 
 let rule_elem_to_string x =
