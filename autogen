@@ -5,4 +5,4 @@ else
 	unset MAKE_COCCI_RELEASE
 fi
 aclocal -I setup
-autoconf
+autoconf -Wall
