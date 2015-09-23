@@ -422,28 +422,20 @@ let mark_end_define ii =
   in
   TDefEOL (ii')
 
-(* put the TDefEOL at the good place *)
-let rec define_line_1 acc xs =
-  match xs with
+(* put the TDefEOL at the right place *)
+let rec define_line_1 acc = function
   | [] -> List.rev acc
-  | TDefine ii::xs ->
-      let line = Ast_c.line_of_info ii in
-      let acc = (TDefine ii) :: acc in
-      define_line_2 acc line ii xs
-  | TUndef ii::xs ->
-      let line = Ast_c.line_of_info ii in
-      let acc = (TUndef ii) :: acc in
-      define_line_2 acc line ii xs
-  | TPragma ii::xs ->
-      let line = Ast_c.line_of_info ii in
-      let acc = (TPragma ii) :: acc in
-      define_line_2 acc line ii xs
-  | TCppEscapedNewline ii::xs ->
-      pr2 ("SUSPICIOUS: a \\ character appears outside of a #define at");
-      pr2 (Ast_c.strloc_of_info ii);
-      let acc = (TCommentSpace ii) :: acc in
-      define_line_1 acc xs
-  | x::xs -> define_line_1 (x::acc) xs
+  | token::tokens ->
+    begin match token with
+      | TDefine ii | TUndef ii | TPragma ii ->
+        let line = Ast_c.line_of_info ii in
+        define_line_2 (token::acc) line ii tokens
+      | TCppEscapedNewline ii ->
+        pr2 ("SUSPICIOUS: a \\ character appears outside of a #define at");
+        pr2 (Ast_c.strloc_of_info ii);
+        define_line_1 ((TCommentSpace ii) :: acc) tokens
+      | _ -> define_line_1 (token::acc) tokens
+    end
 
 and define_line_2 acc line lastinfo xs =
   match xs with
