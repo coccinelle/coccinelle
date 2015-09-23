@@ -437,35 +437,32 @@ let rec define_line_1 acc = function
       | _ -> define_line_1 (token::acc) tokens
     end
 
-and define_line_2 acc line lastinfo xs =
-  match xs with
+and define_line_2 acc line lastinfo = function
   | [] ->
       (* should not happened, should meet EOF before *)
       pr2 "PB: WEIRD";
-      List.rev (mark_end_define lastinfo::acc)
-  | x::xs ->
-      let line' = TH.line_of_tok x in
-      let info = TH.info_of_tok x in
-
-      (match x with
+      List.rev ((mark_end_define lastinfo)::acc)
+  | token::tokens as all_tokens ->
+      let line' = TH.line_of_tok token in
+      let info = TH.info_of_tok token in
+      (match token with
       | EOF ii ->
-	  let acc = (mark_end_define lastinfo) :: acc in
-	  let acc = (EOF ii) :: acc in
-          define_line_1 acc xs
+          define_line_1 (token::(mark_end_define lastinfo)::acc) tokens
       | TCppEscapedNewline ii ->
           if (line' <> line) then pr2 "PB: WEIRD: not same line number";
-	  let acc = (TCommentSpace ii) :: acc in
-          define_line_2 acc (line+1) info xs
-      | x ->
+          define_line_2 ((TCommentSpace ii)::acc) (line+1) info tokens
+      | _ ->
           if line' = line
-          then define_line_2 (x::acc) (end_line_of_tok line' x) info xs
+          then
+            define_line_2
+              (token::acc) (end_line_of_tok line' token) info tokens
           else
 	    (* Put end of line token before the newline.  A newline at least
 	       must be there because the line changed and because we saw a
 	       #define previously to get to this function at all *)
 	    define_line_1
 	      ((List.hd acc)::(mark_end_define lastinfo::(List.tl acc)))
-	      (x::xs)
+	      all_tokens
       )
 
 (* for a comment, the end line is not the same as line_of_tok *)
