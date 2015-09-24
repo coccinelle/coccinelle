@@ -255,7 +255,7 @@ clean distclean::
 # the dependencies on Makefile.config should give a hint to the programmer that
 # configure should be run again
 Makefile.config: Makefile.config.in configure.ac
-	@$(ECHO) "Makefile.config needs to be (re)build. Run  ./configure $(CONFIGURE_FLAGS) to generate it."
+	@$(ECHO) "Makefile.config needs to be (re)build. Run  ./autogen and ./configure $(CONFIGURE_FLAGS) to generate it."
 	@false
 
 tools: $(LIBS) $(LNKLIBS)
