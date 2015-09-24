@@ -477,23 +477,21 @@ and end_line_of_tok default = function
       |	_ -> failwith (Printf.sprintf "bad comment: %d" (TH.line_of_tok t)))
   |  t -> default
 
-let rec define_ident acc xs =
-  match xs with
+let rec define_ident acc = function
   | [] -> List.rev acc
-  | TUndef ii::xs ->
-      let acc = TUndef ii :: acc in
-      (match xs with
+  | token::tokens ->
+    let acc = token::acc in
+    (match token with
+    | TUndef ii ->
+      (match tokens with
 	TCommentSpace i1::TIdent (s,i2)::xs ->
-	  let acc = (TCommentSpace i1) :: acc in
-	  let acc = (TIdentDefine (s,i2)) :: acc in
-          define_ident acc xs
+          define_ident ((TIdentDefine (s,i2))::(TCommentSpace i1)::acc) xs
       | _ ->
-          pr2 "WEIRD: weird #define body";
-          define_ident acc xs
+          pr2 "WEIRD: weird #undef body";
+          define_ident acc tokens
       )
-  | TDefine ii::xs ->
-      let acc = TDefine ii :: acc in
-      (match xs with
+    | TDefine ii ->
+      (match tokens with
       | TCommentSpace i1::TIdent (s,i2)::TOPar (i3)::xs ->
           (* Change also the kind of TIdent to avoid bad interaction
            * with other parsing_hack tricks. For instant if keep TIdent then
@@ -536,8 +534,7 @@ let rec define_ident acc xs =
           pr2 "WEIRD: weird #define body";
           define_ident acc xs
       )
-  | TPragma ii::xs ->
-      let acc = TPragma ii :: acc in
+    | TPragma ii ->
       let rec loop acc = function
 	  ((TDefEOL i1) as x) :: xs -> define_ident (x::acc) xs
 	| TCommentSpace i1::TIdent (s,i2)::xs ->
@@ -565,10 +562,9 @@ let rec define_ident acc xs =
 	| xs ->
             pr2 "WEIRD: weird #pragma";
             define_ident acc xs in
-      loop acc xs
-  | x::xs ->
-      let acc = x :: acc in
-      define_ident acc xs
+      loop acc tokens
+    | _ -> define_ident acc tokens
+    )
 
 
 
