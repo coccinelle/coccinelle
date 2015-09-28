@@ -970,16 +970,6 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
 
   let toks_orig = tokens file in
   let toks = Parsing_hacks.fix_tokens_define toks_orig in
-  let toks = if !Flag_parsing_c.exts_ITU
-                then Parsing_hacks.fix_tokens_ifdef toks
-                else toks
-    in
-  let toks = Parsing_hacks.fix_tokens_cpp ~macro_defs:!_defs_builtins toks in
-  let toks =
-    if parse_strings
-    then Parsing_hacks.fix_tokens_strings toks
-    else toks in
-
   (* expand macros on demand trick, preparation phase *)
   let macros =
     Common.profile_code "MACRO mgmt prep 1" (fun () ->
@@ -995,11 +985,22 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
     )
   in
   Common.profile_code "MACRO mgmt prep 2" (fun () ->
-    let local_macros = extract_macros file in
+    let local_macros = Cpp_token_c.extract_macros toks in
     local_macros +> List.iter (fun (s, def) ->
       Hashtbl.replace macros   s def;
     );
   );
+
+  let toks = if !Flag_parsing_c.exts_ITU
+                then Parsing_hacks.fix_tokens_ifdef toks
+                else toks
+    in
+  let toks = Parsing_hacks.fix_tokens_cpp ~macro_defs:!_defs_builtins toks in
+  let toks =
+    if parse_strings
+    then Parsing_hacks.fix_tokens_strings toks
+    else toks in
+
 
   let tr = mk_tokens_state toks in
 
