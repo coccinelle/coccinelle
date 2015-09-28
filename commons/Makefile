@@ -11,7 +11,7 @@ TARGET=commons
 
 # note: if you add a file (a .mli or .ml), dont forget to redo a 'make depend'
 MYSRC=	commands.ml                              \
-	common.ml common_extra.ml                \
+	common.ml                                \
 	interfaces.ml objet.ml                   \
 	ocollection.ml                           \
 	seti.ml                                  \
@@ -50,7 +50,6 @@ endif
 
 # src from other authors, got from the web or caml hump
 SRC=ocamlextra/dumper.ml
-SRC+=ocamlextra/ANSITerminal.ml
 SRC+=ocamlextra/setb.ml ocamlextra/mapb.ml # defunctorized version of standard set/map
 SRC+=ocamlextra/setPt.ml
 SRC+=$(MYSRC)
