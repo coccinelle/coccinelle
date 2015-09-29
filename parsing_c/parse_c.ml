@@ -326,7 +326,7 @@ let parse_print_error file =
 
   let error_msg () = Common.error_message file (lexbuf_to_strpos lexbuf) in
   try
-    lexbuf +> Parser_c.main Lexer_c.token
+    Parser_c.main Lexer_c.token lexbuf
   with
   | Lexer_c.Lexical s ->
       failwith ("lexical error " ^s^ "\n =" ^  error_msg ())
