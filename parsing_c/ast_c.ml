@@ -1375,3 +1375,19 @@ let get_annot_info info key =
 
 let get_comments_before info = (!(info.comments_tag)).mbefore
 let get_comments_after info = (!(info.comments_tag)).mafter
+
+let string_of_toplevel = function
+  | Declaration _ -> "declaration"
+  | Definition _ -> "definition"
+  | CppTop _ -> "CppTop"
+  | IfdefTop _ -> "IfdefTop"
+  | MacroTop _ -> "MacroTop"
+  | EmptyDef _ -> "EmptyDef"
+  | NotParsedCorrectly _ -> "NotParsedCorrectly"
+  | FinalDef _ -> "FinalDef"
+  | Namespace _ -> "Namespace"
+
+let string_of_inc_file = function
+  | Local lst -> "local://" ^ (String.concat "/" lst)
+  | NonLocal lst -> "nonlocal://" ^ (String.concat "/" lst)
+  | Weird s -> "weird://" ^ s
