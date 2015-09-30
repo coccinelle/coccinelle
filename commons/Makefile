@@ -26,7 +26,6 @@ MYSRC=	commands.ml                              \
 	ocollection/oassoc_cache.ml		 \
 	ocollection/oassocid.ml			 \
 	oarray.ml				 \
-	ocollection/ograph2way.ml		 \
 	ograph_simple.ml ograph_extended.ml	 \
 	glimpse.ml parser_combinators.ml
 
