@@ -19,7 +19,6 @@ MYSRC=	commands.ml                              \
 	ocollection/oseti.ml                     \
 	ocollection/oseth.ml                     \
 	ocollection/osetb.ml                     \
-	ocollection/osetpt.ml                    \
 	ocollection/oassocb.ml			 \
 	ocollection/oassoch.ml			 \
 	ocollection/oassoc_buffer.ml		 \
