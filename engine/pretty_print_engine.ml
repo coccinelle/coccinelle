@@ -48,9 +48,9 @@ let rec pp_binding_kind = function
       let print_pos = function
 	  Ast_cocci.Real x -> string_of_int x
 	| Ast_cocci.Virt(x,off) -> Printf.sprintf "%d+%d" x off in
-      pp (Common.sprintf ("pos(%s,%s)") (print_pos pos1) (print_pos pos2))
+      pp (Printf.sprintf ("pos(%s,%s)") (print_pos pos1) (print_pos pos2))
   | Ast_c.MetaPosValList l ->
-      pp (Common.sprintf ("poss[%s]")
+      pp (Printf.sprintf ("poss[%s]")
 	    (String.concat ", "
 	       (List.map
 		  (function (fl,ce,(minl,minc),(maxl,maxc)) ->

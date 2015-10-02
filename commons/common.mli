@@ -154,11 +154,6 @@ val redirect_stdin_opt : filename option -> (unit -> 'a) -> 'a
 
 val with_pr2_to_string: (unit -> unit) -> string list
 
-val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
-val printf : ('a, out_channel, unit) format -> 'a
-val eprintf : ('a, out_channel, unit) format -> 'a
-val sprintf : ('a, unit, string) format -> 'a
-
 (* alias *)
 val spf : ('a, unit, string) format -> 'a
 

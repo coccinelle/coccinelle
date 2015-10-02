@@ -88,7 +88,7 @@ let new_test_parse_gen xs =
 
     Common.push2 stat stat_list;
     let s =
-      sprintf "bad = %d, timeout = %B"
+      Printf.sprintf "bad = %d, timeout = %B"
         stat.Parsing_stat.bad stat.Parsing_stat.have_timeout
     in
     if stat.Parsing_stat.bad = 0 && not stat.Parsing_stat.have_timeout
@@ -161,7 +161,7 @@ let test_parse_gen xs ext =
 
     Common.push2 stat stat_list;
     let s =
-      sprintf "bad = %d, timeout = %B"
+      Printf.sprintf "bad = %d, timeout = %B"
         stat.Parsing_stat.bad stat.Parsing_stat.have_timeout
     in
     if stat.Parsing_stat.bad = 0 && not stat.Parsing_stat.have_timeout

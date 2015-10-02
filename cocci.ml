@@ -524,7 +524,7 @@ let worth_trying2 cfiles (tokens,_,query,_) =
 
       ) in
       let com =
-	sprintf "egrep -q '(%s)' %s" (join "|" tokens) (join " " cfiles)
+	Printf.sprintf "egrep -q '(%s)' %s" (join "|" tokens) (join " " cfiles)
       in
       (match Sys.command com with
       | 0 (* success *) -> true
@@ -1712,7 +1712,7 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
 		  (*use the old bindings, specialized to the used_after_list*)
 		    if !Flag_ctl.partial_match
 		    then
-		      printf
+		      Printf.printf
 			"Empty list of bindings, I will restart from old env\n";
 		    [(old_bindings_to_keep,rules_that_have_matched)]
 		  end

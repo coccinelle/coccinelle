@@ -34,9 +34,9 @@ let unparse_subsystem_info xs filename =
     let pr s = pr_no_nl (s ^ "\n") in
 
     xs +> List.iter (function Subsystem ((s, emails), ys) ->
-      pr (sprintf "%-40s : %s" s (Common.join " ," emails));
+      pr (Printf.sprintf "%-40s : %s" s (Common.join " ," emails));
       ys +> List.iter (fun (s, emails) ->
-        pr (sprintf "    %-40s : %s" s (Common.join " ," emails));
+        pr (Printf.sprintf "    %-40s : %s" s (Common.join " ," emails));
       );
       pr "";
     )

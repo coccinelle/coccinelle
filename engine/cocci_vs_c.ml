@@ -2397,7 +2397,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
              let (iisub, lbb, rbb) = tuple_of_list3 ii in
              (iisub, [], lbb, rbb)
          | Some s ->
-             pr2 (sprintf
+             pr2 (Printf.sprintf
               "warning: both a typedef (%s) and struct name introduction (%s)"
               (Ast_c.str_of_name nameidb) s
              );

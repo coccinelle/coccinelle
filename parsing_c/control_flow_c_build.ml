@@ -1599,7 +1599,7 @@ let check_control_flow (g : cflow) : unit =
       if  (*(depth = depth2)*) startbraces <> startbraces2
       then
         begin
-          pr2 (sprintf "PB with flow: the node %d has not same braces count"
+          pr2 (Printf.sprintf "PB with flow: the node %d has not same braces count"
                  nodei);
           print_trace_error trace2
         end
@@ -1624,12 +1624,12 @@ let check_control_flow (g : cflow) : unit =
             then xs
             else
               begin
-                pr2 (sprintf ("PB with flow: not corresponding match between }%d and excpeted }%d at node %d") i j nodei);
+                pr2 (Printf.sprintf ("PB with flow: not corresponding match between }%d and excpeted }%d at node %d") i j nodei);
                 print_trace_error trace2;
                 xs
               end
         | SeqEnd (i,_), [] ->
-            pr2 (sprintf "PB with flow: too much } at }%d " i);
+            pr2 (Printf.sprintf "PB with flow: too much } at }%d " i);
             print_trace_error trace2;
             []
         | _, xs ->  xs

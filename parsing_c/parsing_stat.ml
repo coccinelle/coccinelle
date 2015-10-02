@@ -100,15 +100,15 @@ let print_parsing_stat_list ?(verbose=false) = fun statxs ->
   end;
 
   pr (
-  (sprintf "NB total files = %d; " total) ^
-  (sprintf "perfect = %d; " perfect) ^
-  (sprintf "pbs = %d; "     (statxs +> List.filter (function
+  (Printf.sprintf "NB total files = %d; " total) ^
+  (Printf.sprintf "perfect = %d; " perfect) ^
+  (Printf.sprintf "pbs = %d; "     (statxs +> List.filter (function
       {have_timeout = b; bad = n} when n > 0 -> true | _ -> false)
                                +> List.length)) ^
-  (sprintf "timeout = %d; " (statxs +> List.filter (function
+  (Printf.sprintf "timeout = %d; " (statxs +> List.filter (function
       {have_timeout = true; bad = n} -> true | _ -> false)
                                +> List.length)) ^
-  (sprintf "=========> %d" ((100 * perfect) / total)) ^ "%"
+  (Printf.sprintf "=========> %d" ((100 * perfect) / total)) ^ "%"
 
   );
   let good = statxs +> List.fold_left (fun acc {correct = x} -> acc+x) 0 in
@@ -119,12 +119,12 @@ let print_parsing_stat_list ?(verbose=false) = fun statxs ->
   let passedf = float_of_int passed in
   let total = gf +. badf +. passedf in
   pr (
-  (sprintf "nb good = %d,  nb passed = %d " good passed) ^
-  (sprintf "=========> %2.2f"  (100.0 *. (passedf /. total)) ^ "% passed")
+  (Printf.sprintf "nb good = %d,  nb passed = %d " good passed) ^
+  (Printf.sprintf "=========> %2.2f"  (100.0 *. (passedf /. total)) ^ "% passed")
    );
   pr (
-  (sprintf "nb good = %d,  nb bad = %d " good bad) ^
-  (sprintf "=========> %2.2f"
+  (Printf.sprintf "nb good = %d,  nb bad = %d " good bad) ^
+  (Printf.sprintf "=========> %2.2f"
      (100.0 *. ((gf +. passedf) /. total)) ^ "% good or passed"
    )
   )
