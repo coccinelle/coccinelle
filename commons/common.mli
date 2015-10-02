@@ -758,8 +758,6 @@ type bool3 = True3 | False3 | TrueFalsePb3 of string
 (* Strings *)
 (*****************************************************************************)
 
-val s_to_i : string -> int
-
 (* strings take space in memory. Better when can share the space used by
  * similar strings.
  *)

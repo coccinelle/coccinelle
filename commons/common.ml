@@ -2194,9 +2194,6 @@ let contain_regular_word s =
 (* Strings *)
 (*****************************************************************************)
 
-(* ruby *)
-let s_to_i = int_of_string
-
 (* strings take space in memory. Better when can share the space used by
    similar strings *)
 let _shareds = Hashtbl.create 100
@@ -2673,7 +2670,7 @@ let unix_time_of_string s =
   then
     let (sday, smonth, syear, _sday, shour, smin, ssec) = matched7 s in
 
-    let y = s_to_i syear - 1900 in
+    let y = int_of_string syear - 1900 in
     let mon =
       smonth +> month_of_string +> int_of_month +> (fun i -> i -1)
     in
@@ -2682,10 +2679,10 @@ let unix_time_of_string s =
     { tm with
       Unix.tm_year = y;
       Unix.tm_mon = mon;
-      Unix.tm_mday = s_to_i sday;
-      Unix.tm_hour = s_to_i shour;
-      Unix.tm_min = s_to_i smin;
-      Unix.tm_sec = s_to_i ssec;
+      Unix.tm_mday = int_of_string sday;
+      Unix.tm_hour = int_of_string shour;
+      Unix.tm_min = int_of_string smin;
+      Unix.tm_sec = int_of_string ssec;
     }
   else failwith ("unix_time_of_string: " ^ s)
 
