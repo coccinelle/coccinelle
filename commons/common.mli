@@ -758,8 +758,6 @@ type bool3 = True3 | False3 | TrueFalsePb3 of string
 (* Strings *)
 (*****************************************************************************)
 
-val slength : string -> int (* alias *)
-
 val i_to_s : int -> string
 val s_to_i : string -> int
 

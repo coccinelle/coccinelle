@@ -2194,12 +2194,9 @@ let contain_regular_word s =
 (* Strings *)
 (*****************************************************************************)
 
-let slength = String.length
-
 (* ruby *)
 let i_to_s = string_of_int
 let s_to_i = int_of_string
-
 
 (* strings take space in memory. Better when can share the space used by
    similar strings *)
@@ -5422,13 +5419,14 @@ let (info_from_charpos2: int -> filename -> (int * int * string)) =
     match s with
       Some s ->
 	let s = s ^ "\n" in
-	if (!posl + slength s > charpos)
+	let slength = String.length s in
+	if (!posl + slength > charpos)
 	then begin
 	  close_in chan;
 	  (!linen, charpos - !posl, s)
 	end
 	else begin
-	  posl := !posl + slength s;
+	  posl := !posl + slength;
 	  charpos_to_pos_aux !posl;
 	end
     | None -> (!linen, charpos - !posl, "\n")
@@ -5459,10 +5457,11 @@ let full_charpos_to_pos2 = fun filename ->
        incr line;
 
        (* '... +1 do'  cos input_line dont return the trailing \n *)
-       for i = 0 to (slength s - 1) + 1 do
+       let slength = String.length s in
+       for i = 0 to (slength - 1) + 1 do
          arr.(!charpos + i) <- (!line, i);
        done;
-       charpos := !charpos + slength s + 1;
+       charpos := !charpos + slength + 1;
        full_charpos_to_pos_aux();
 
      with End_of_file ->
