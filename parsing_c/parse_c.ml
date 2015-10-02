@@ -100,7 +100,7 @@ let set_parse_error_function f =
 let default_parse_error_function : parse_error_function =
   fun line_error _tokens (start_line, end_line) filelines pass ->
     begin
-      pr2 ("badcount: " ^ i_to_s (end_line - start_line));
+      pr2 ("badcount: " ^ string_of_int (end_line - start_line));
 
       for i = start_line to end_line do
 	let line = filelines.(i) in

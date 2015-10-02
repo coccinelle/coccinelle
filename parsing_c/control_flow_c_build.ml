@@ -315,8 +315,8 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
       incr counter_for_braces;
       let brace = !counter_for_braces in
 
-      let s1 = "{" ^ i_to_s brace in
-      let s2 = "}" ^ i_to_s brace in
+      let s1 = "{" ^ string_of_int brace in
+      let s2 = "}" ^ string_of_int brace in
 
       let lbl = match xi.compound_caller with
         | FunctionDef -> xi.labels (* share label with function header *)
@@ -624,7 +624,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
             then !g +> add_arc_opt (Some starti, newi);
             );
 
-          let s = ("[casenode] " ^ i_to_s switchrank) in
+          let s = ("[casenode] " ^ string_of_int switchrank) in
           let newcasenodei = !g +> add_node (CaseNode switchrank) lbl s in
           !g#add_arc ((startbrace, newcasenodei), Direct);
           !g#add_arc ((newcasenodei, newi), Direct);
@@ -642,7 +642,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
 
       (match xi.ctx with
       | SwitchInfo (startbrace, switchendi, _braces, _parent_lbl) ->
-          let s = ("[casenode] " ^ i_to_s switchrank) in
+          let s = ("[casenode] " ^ string_of_int switchrank) in
           let newcasenodei = !g +> add_node (CaseNode switchrank) lbl s in
           !g#add_arc ((startbrace, newcasenodei), Direct);
           !g#add_arc ((newcasenodei, newi), Direct);

@@ -2195,7 +2195,6 @@ let contain_regular_word s =
 (*****************************************************************************)
 
 (* ruby *)
-let i_to_s = string_of_int
 let s_to_i = int_of_string
 
 (* strings take space in memory. Better when can share the space used by
@@ -3506,7 +3505,7 @@ let _temp_files_created = ref ([] : filename list)
 
 (* ex: new_temp_file "cocci" ".c" will give "/tmp/cocci-3252-434465.c" *)
 let new_temp_file prefix suffix =
-  let processid = i_to_s (Unix.getpid ()) in
+  let processid = string_of_int (Unix.getpid ()) in
   let tmp_file = Filename.temp_file (prefix ^ "-" ^ processid ^ "-") suffix in
   push2 tmp_file _temp_files_created;
   tmp_file
@@ -4756,7 +4755,7 @@ let group_assoc_bykey_eff xs =
 
 
 let test_group_assoc () =
-  let xs = enum 0 10000 +> List.map (fun i -> i_to_s i, i) in
+  let xs = enum 0 10000 +> List.map (fun i -> string_of_int i, i) in
   let xs = ("0", 2)::xs in
 (*    let _ys = xs +> Common.groupBy (fun (a,resa) (b,resb) -> a = b)  *)
   let ys = xs +> group_assoc_bykey_eff
@@ -5508,7 +5507,7 @@ let error_message = fun filename (lexeme, lexstart) ->
   try error_messagebis filename (lexeme, lexstart) 0
   with
     End_of_file ->
-      ("PB in Common.error_message, position " ^ i_to_s lexstart ^
+      ("PB in Common.error_message, position " ^ string_of_int lexstart ^
        " given out of file:" ^ filename)
 
 
@@ -5521,7 +5520,7 @@ let error_message_short = fun filename (lexeme, lexstart) ->
 
   with End_of_file ->
     begin
-      ("PB in Common.error_message, position " ^ i_to_s lexstart ^
+      ("PB in Common.error_message, position " ^ string_of_int lexstart ^
           " given out of file:" ^ filename);
     end
 

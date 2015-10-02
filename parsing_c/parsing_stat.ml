@@ -81,7 +81,7 @@ let print_parsing_stat_list ?(verbose=false) = fun statxs ->
       | _ -> false)
     +> List.iter (function
         {filename = file; have_timeout = timeout; bad = n} ->
-          pr (file ^ "  " ^ (if timeout then "TIMEOUT" else i_to_s n));
+          pr (file ^ "  " ^ (if timeout then "TIMEOUT" else string_of_int n));
         );
 
   pr "\n\n\n";
@@ -93,7 +93,7 @@ let print_parsing_stat_list ?(verbose=false) = fun statxs ->
       | _ -> false)
     +> List.iter (function
         {filename = file; commentized = n} ->
-          pr (file ^ "  " ^ (i_to_s n));
+          pr (file ^ "  " ^ (string_of_int n));
         );
 
   pr "\n\n\n---------------------------------------------------------------";

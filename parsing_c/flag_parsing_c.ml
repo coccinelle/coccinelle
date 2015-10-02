@@ -194,7 +194,7 @@ let cache_limit = ref (None : int option)
 
 let cmdline_flags_other () =
   [
-    "-U", Arg.Int (fun n -> diff_lines := Some (Common.i_to_s n)),
+    "-U", Arg.Int (fun n -> diff_lines := Some (string_of_int n)),
     "  set number of diff context lines";
 
     "--use-cache", Arg.Set use_cache,

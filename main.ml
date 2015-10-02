@@ -268,7 +268,7 @@ let short_options = [
   "--reverse", Arg.Set Flag_parsing_cocci.interpret_inverted,
   "  invert the semantic patch before applying it";
 
-  "-U", Arg.Int (fun n -> Flag_parsing_c.diff_lines := Some (i_to_s n)),
+  "-U", Arg.Int (fun n -> Flag_parsing_c.diff_lines := Some (string_of_int n)),
   "  set number of diff context lines";
   "--partial-match",        Arg.Set Flag_ctl.partial_match,
   "    report partial matches of the SP on the C file";

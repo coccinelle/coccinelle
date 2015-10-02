@@ -126,11 +126,11 @@ let labels_for_ctl (dropped_isos : string list)
 	  (fun prev (nodei,node) ->
 	    match F.unwrap node with
 	      F.SeqStart (_, bracelevel, _) ->
-		let make_var x = ("",i_to_s x) in
+		let make_var x = ("",string_of_int x) in
 		let vl = Lib_engine.ParenVal (make_var bracelevel) in
 		(nodei, (p,[(s --> vl)])) :: prev
 	    | F.SeqEnd (bracelevel, _) ->
-		let make_var x = ("",i_to_s x) in
+		let make_var x = ("",string_of_int x) in
 		let vl = Lib_engine.ParenVal (make_var bracelevel) in
 		(nodei, (p,[(s --> vl)])) :: prev
 	    | _ -> prev)
@@ -473,7 +473,7 @@ module CFG =
     let successors   cfg n = List.map fst ((cfg#successors n)#tolist)
     let extract_is_loop cfg n =
       Control_flow_c.extract_is_loop (cfg#nodes#find n)
-    let print_node i = Format.print_string (i_to_s i)
+    let print_node i = Format.print_string (string_of_int i)
     let size cfg = cfg#nodes#length
 
     (* In ctl_engine, we use 'node' for the node but in the Ograph_extended

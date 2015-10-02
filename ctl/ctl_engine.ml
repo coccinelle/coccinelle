@@ -123,7 +123,7 @@ module OGRAPHEXT_GRAPH =
     type node = int;;
     type cfg = (string,unit) Ograph_extended.ograph_mutable;;
     let predecessors cfg n = List.map fst ((cfg#predecessors n)#tolist);;
-    let print_node i = Format.print_string (Common.i_to_s i)
+    let print_node i = Format.print_string (string_of_int i)
   end
 ;;
 

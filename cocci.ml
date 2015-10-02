@@ -365,7 +365,7 @@ let show_or_not_rule_name ast rulenb =
 	match ast with
 	  Ast_cocci.CocciRule (nm, (deps, drops, exists), x, _, _) -> nm
 	| Ast_cocci.ScriptRule (nm, _, _, _, _, _) -> nm
-	| _ -> i_to_s rulenb in
+	| _ -> string_of_int rulenb in
       Common.pr_xxxxxxxxxxxxxxxxx ();
       pr (name ^ " = ");
       Common.pr_xxxxxxxxxxxxxxxxx ()
@@ -463,7 +463,7 @@ let show_or_not_trans_info2 trans_info =
       in
       indent_do (fun () ->
         trans_info +> List.iter (fun (i, subst, re) ->
-          pr2 ("transform state: " ^ (Common.i_to_s i));
+          pr2 ("transform state: " ^ (string_of_int i));
           indent_do (fun () ->
             adjust_pp_with_indent_and_header "with rule_elem: " (fun () ->
               Pretty_print_cocci.print_plus_flag := true;
@@ -2270,7 +2270,7 @@ let has_finalize (cocci_infos,_) =
 let check_duplicate_modif2 xs =
   (* opti: let groups = Common.groupBy (fun (a,resa) (b,resb) -> a = b) xs *)
   if !Flag_cocci.verbose_cocci
-  then pr2 ("Check duplication for " ^ i_to_s (List.length xs) ^ " files");
+  then pr2 ("Check duplication for " ^ string_of_int (List.length xs) ^ " files");
 
   let groups = Common.group_assoc_bykey_eff xs in
   groups +> Common.map_filter (fun (file, xs) ->
