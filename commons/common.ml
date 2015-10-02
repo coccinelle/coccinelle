@@ -2210,7 +2210,6 @@ let contain_regular_word s =
 (*****************************************************************************)
 
 let slength = String.length
-let concat = String.concat
 
 (* ruby *)
 let i_to_s = string_of_int

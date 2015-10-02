@@ -764,7 +764,6 @@ type bool3 = True3 | False3 | TrueFalsePb3 of string
 (*****************************************************************************)
 
 val slength : string -> int (* alias *)
-val concat : string -> string list -> string (* alias *)
 
 val i_to_s : int -> string
 val s_to_i : string -> int

@@ -676,11 +676,11 @@ let interpret_include_path relpath =
 	| None -> search_include_path exists tail relpath) in
   let rec search_path exists searchlist = function
       [] ->
-	let res = Common.concat "/" relpath in
+	let res = String.concat "/" relpath in
 	cache_add include_table (searchlist,relpath) res;
 	Some res
     | (hd::tail) as relpath1 ->
-	let relpath1 = Common.concat "/" relpath1 in
+	let relpath1 = String.concat "/" relpath1 in
 	(match search_include_path exists searchlist relpath1 with
 	  None -> search_path unique_file_exists searchlist tail
 	| Some f ->
