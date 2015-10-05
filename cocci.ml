@@ -638,12 +638,12 @@ let cache_find (_,_,cache) k =
 
 let cache_add (nm,ct,cache) k v =
   ct := !ct + 1;
-  (if !ct > Flag_cocci.cache_threshold
+  (if !ct > Includes.cache_threshold
   then
     begin
       Hashtbl.iter
 	(fun k (vct,v) ->
-	  if !vct < Flag_cocci.elem_threshold
+	  if !vct < Includes.elem_threshold
 	  then
 	    begin
 	      Hashtbl.remove cache k;
@@ -693,7 +693,7 @@ let interpret_include_path relpath =
 	    cache_add include_table (searchlist,relpath) f;
 	    Some f) in
   let searchlist =
-    match !Flag_cocci.include_path with
+    match !Includes.include_path with
       [] -> ["include"]
     | x -> List.rev x in
   try Some(cache_find include_table (searchlist,relpath))
@@ -701,14 +701,14 @@ let interpret_include_path relpath =
 
 let (includes_to_parse:
        (Common.filename * Parse_c.extended_program2) list ->
-	 Flag_cocci.include_options -> 'a) = fun xs choose_includes ->
+	 Includes.include_options -> 'a) = fun xs choose_includes ->
   match choose_includes with
-    Flag_cocci.I_UNSPECIFIED -> failwith "not possible"
-  | Flag_cocci.I_NO_INCLUDES -> !Flag_cocci.extra_includes
+    Includes.I_UNSPECIFIED -> failwith "not possible"
+  | Includes.I_NO_INCLUDES -> !Includes.extra_includes
   | x ->
       let all_includes =
 	List.mem x
-	  [Flag_cocci.I_ALL_INCLUDES; Flag_cocci.I_REALLY_ALL_INCLUDES] in
+	  [Includes.I_ALL_INCLUDES; Includes.I_REALLY_ALL_INCLUDES] in
       let xs = List.map (function (file,(cs,_,_)) -> (file,cs)) xs in
       xs +> List.map (fun (file, cs) ->
 	let dir = Filename.dirname file in
@@ -725,7 +725,7 @@ let (includes_to_parse:
 		if (Sys.file_exists f)
 		then Some f
 		else
-		  if !Flag_cocci.relax_include_path
+		  if !Includes.relax_include_path
 	      (* for our tests, all the files are flat in the current dir *)
 		  then
 		    let attempt2 = Filename.concat dir (Common.last xs) in
@@ -748,7 +748,7 @@ let (includes_to_parse:
 	+> (fun x ->
 	  (List.rev
 	     (Common.uniq
-		(!Flag_cocci.extra_includes@(List.rev x)))))(*uniq keeps last*)
+		(!Includes.extra_includes@(List.rev x)))))(*uniq keeps last*)
 
 let rec interpret_dependencies local global = function
     Ast_cocci.Dep s      -> List.mem s local
@@ -1234,8 +1234,8 @@ let header_cache_table = Hashtbl.create 101 (* global *)
 
 let header_cache choose_includes f key1 key2 =
   if List.mem choose_includes
-      [Flag_cocci.I_ALL_INCLUDES;Flag_cocci.I_REALLY_ALL_INCLUDES]
-      && !Flag_cocci.include_headers_for_types
+      [Includes.I_ALL_INCLUDES;Includes.I_REALLY_ALL_INCLUDES]
+      && !Includes.include_headers_for_types
   then
     let k = (key1,key2) in
     try Hashtbl.find header_cache_table k
@@ -1268,7 +1268,7 @@ let rec prepare_h seen env (hpath : string) choose_includes parse_strings
     None -> []
   | Some h_cs ->
       let local_includes =
-	if choose_includes = Flag_cocci.I_REALLY_ALL_INCLUDES
+	if choose_includes = Includes.I_REALLY_ALL_INCLUDES
 	then
 	  List.filter
 	    (function x -> not (List.mem x !seen))
@@ -1319,11 +1319,10 @@ let prepare_c files choose_includes parse_strings : file_info list =
   let env = ref !TAC.initial_env in
 
   Flag_parsing_c.parsing_header_for_types :=
-    !Flag_cocci.include_headers_for_types;
+    !Includes.include_headers_for_types;
   let parse_header header_path =
     prepare_h seen env header_path choose_includes parse_strings in
   let includes = List.concat (List.map parse_header includes) in
-  Flag_parsing_c.parsing_header_for_types := false;
 
   let fileinfo_of_c (file, cprogram) =
     (* todo?: don't update env ? *)
@@ -1340,7 +1339,7 @@ let prepare_c files choose_includes parse_strings : file_info list =
     } in
   let cfiles = List.map fileinfo_of_c files_and_cprograms in
 
-  if !Flag_cocci.include_headers_for_types
+  if !Includes.include_headers_for_types
   then cfiles
   else includes @ cfiles
 
@@ -2225,11 +2224,11 @@ let full_engine2 (cocci_infos,parse_strings) cfiles =
 	end;
 
       let choose_includes =
-	match !Flag_cocci.include_options with
-	  Flag_cocci.I_UNSPECIFIED ->
+	match !Includes.include_options with
+	  Includes.I_UNSPECIFIED ->
 	    if !g_contain_typedmetavar
-	    then Flag_cocci.I_NORMAL_INCLUDES
-	    else Flag_cocci.I_NO_INCLUDES
+	    then Includes.I_NORMAL_INCLUDES
+	    else Includes.I_NO_INCLUDES
 	| x -> x in
       Flag.currentfiles := cfiles;
       let c_infos  = prepare_c cfiles choose_includes parse_strings in
