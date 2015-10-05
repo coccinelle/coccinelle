@@ -4,10 +4,6 @@
  * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-val cache_threshold : int
-
-val elem_threshold : int
-
 val include_headers_for_types : bool ref
 
 type include_options =
@@ -24,3 +20,5 @@ val relax_include_path : bool ref
  *)
 
 val extra_includes : string list ref
+
+val interpret_include_path : string list -> string option
