@@ -138,7 +138,7 @@ let testall_bis extra_test expected_score_file update_score_file =
               let s =
                 "INCORRECT:" ^ s ^ "\n" ^
                 "    diff (result(<) vs expected_result(>)) = \n" ^
-                (diffxs +> List.map(fun s -> "    "^s^"\n") +> Common.join "")
+                (diffxs +> List.map(fun s -> "    "^s^"\n") +> String.concat "")
               in
               Hashtbl.add score res (Common.Pb s)
           | Compare_c.PbOnlyInNotParsedCorrectly s ->

@@ -2124,8 +2124,6 @@ let (regexp_match: string -> string -> string) = fun s re ->
 
 let split sep s = Str.split (Str.regexp sep) s
 let _ = example ((split "/" "") = [])
-let join  sep xs = String.concat sep xs
-let _ = example (join "/" ["toto"; "titi"; "tata"] = "toto/titi/tata")
 (*
 let rec join str = function
   | [] -> ""
@@ -2436,7 +2434,7 @@ let normalize_path file =
         )
   in
   let xs' = aux [] xs in
-  Filename.concat (join "/" xs') filename
+  Filename.concat (String.concat "/" xs') filename
 
 
 

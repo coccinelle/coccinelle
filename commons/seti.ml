@@ -36,7 +36,7 @@ let invariant xs =
 
 let string_of_seti xs =
   "[" ^
-    join "," (xs +> List.rev +> map (function
+    String.concat "," (xs +> List.rev +> map (function
     | (Exact i) -> string_of_int i
     | (Interv (i,j)) -> Printf.sprintf "%d - %d" i j)) ^
     "]"

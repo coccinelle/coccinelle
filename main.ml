@@ -928,12 +928,12 @@ let rec main_action xs =
                   (* normal *)
 	      | true, "", _, _ ->
 		  Test_parsing_c.get_files
-		    (join " " (x::xs)) +> List.map (fun x -> [x])
+		    (String.concat " " (x::xs)) +> List.map (fun x -> [x])
 
             (* kbuild *)
 	      | true, kbuild_info_file,_,_ ->
 		  let dirs =
-                    Common.cmd_to_list ("find "^(join " " (x::xs))^" -type d")
+                    Common.cmd_to_list ("find "^(String.concat " " (x::xs))^" -type d")
                   in
 		  let info = Kbuild.parse_kbuild_info kbuild_info_file in
 		  let groups = Kbuild.files_in_dirs dirs info in
@@ -1041,12 +1041,12 @@ let rec main_action xs =
 		    Cocci.worth_trying cfiles constants
 		      then
 		    begin
-		  pr2 ("HANDLING: " ^ (join " " cfiles));
+		  pr2 ("HANDLING: " ^ (String.concat " " cfiles));
 		  (*pr2 (List.hd(Common.cmd_to_list "free -m | grep Mem"));*)
 		  flush stderr;
 
 		  Common.timeout_function_opt !FC.timeout (fun () ->
-  	            Common.report_if_take_time 10 (join " " cfiles) (fun () ->
+		    Common.report_if_take_time 10 (String.concat " " cfiles) (fun () ->
                       try
 			let optfile =
 			  if !output_file <> "" && !compat_mode then

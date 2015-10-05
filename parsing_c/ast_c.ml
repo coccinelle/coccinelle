@@ -1258,14 +1258,14 @@ let (unsplit_nocomma: ('a, il) either list -> 'a list) = function l ->
 
 let s_of_inc_file inc_file =
   match inc_file with
-  | Local xs -> xs +> Common.join "/"
-  | NonLocal xs -> xs +> Common.join "/"
+  | Local xs -> xs +> String.concat "/"
+  | NonLocal xs -> xs +> String.concat "/"
   | Weird s -> s
 
 let s_of_inc_file_bis inc_file =
   match inc_file with
-  | Local xs -> "\"" ^ xs +> Common.join "/" ^ "\""
-  | NonLocal xs -> "<" ^ xs +> Common.join "/" ^ ">"
+  | Local xs -> "\"" ^ xs +> String.concat "/" ^ "\""
+  | NonLocal xs -> "<" ^ xs +> String.concat "/" ^ ">"
   | Weird s -> s
 
 let fieldname_of_fieldkind fieldkind =
@@ -1277,7 +1277,7 @@ let fieldname_of_fieldkind fieldkind =
 let s_of_attr attr =
   attr
   +> List.map (fun (Attribute s, ii) -> s)
-  +> Common.join ","
+  +> String.concat ","
 
 
 (* ------------------------------------------------------------------------- *)
@@ -1285,11 +1285,11 @@ let str_of_name ident =
   match ident with
   | RegularName (s,ii) -> s
   | CppConcatenatedName xs ->
-      xs +> List.map (fun (x,iiop) -> unwrap x) +> Common.join "##"
+      xs +> List.map (fun (x,iiop) -> unwrap x) +> String.concat "##"
   | CppVariadicName (s, ii) -> "##" ^ s
   | CppIdentBuilder ((s,iis), xs) ->
       s ^ "(" ^
-        (xs +> List.map (fun ((x,iix), iicomma) -> x) +> Common.join ",") ^
+        (xs +> List.map (fun ((x,iix), iicomma) -> x) +> String.concat ",") ^
         ")"
 
 let get_s_and_ii_of_name name =

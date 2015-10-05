@@ -524,7 +524,7 @@ let worth_trying2 cfiles (tokens,_,query,_) =
 
       ) in
       let com =
-	Printf.sprintf "egrep -q '(%s)' %s" (join "|" tokens) (join " " cfiles)
+	Printf.sprintf "egrep -q '(%s)' %s" (String.concat "|" tokens) (String.concat " " cfiles)
       in
       (match Sys.command com with
       | 0 (* success *) -> true
@@ -534,8 +534,8 @@ let worth_trying2 cfiles (tokens,_,query,_) =
 	  false (* no match, so not worth trying *)) in
   (match (res,tokens) with
     (false,Some tokens) ->
-      pr2_once ("Expected tokens " ^ (Common.join " " tokens));
-      pr2 ("Skipping:" ^ (Common.join " " cfiles))
+      pr2_once ("Expected tokens " ^ (String.concat " " tokens));
+      pr2 ("Skipping:" ^ (String.concat " " cfiles))
   | _ -> ());
   res
 
@@ -714,7 +714,7 @@ let (includes_to_parse:
 		 {Ast_c.i_include = ((x,ii)); i_rel_pos = info_h_pos;})  ->
 	    (match x with
             | Ast_c.Local xs ->
-		let relpath = Common.join "/" xs in
+		let relpath = String.concat "/" xs in
 		let f = Filename.concat dir relpath in
 		if (Sys.file_exists f)
 		then Some f
@@ -2162,7 +2162,7 @@ let full_engine2 (cocci_infos,parse_strings) cfiles =
   if !Flag_cocci.selected_only
   then
     begin
-      pr2 ("selected " ^ (Common.join " " cfiles));
+      pr2 ("selected " ^ (String.concat " " cfiles));
       cfiles +> List.map (fun s -> s, None)
     end
   else

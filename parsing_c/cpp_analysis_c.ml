@@ -140,7 +140,7 @@ let check_no_loop_graph g =
       then begin
         Hashtbl.add already_error_msg xi true;
         pr2 (spf "PB: loop in macro %s of file %s" xi file);
-        pr2 (spf "path is: %s" (Common.join " -> " (List.rev (xi::path))));
+        pr2 (spf "path is: %s" (String.concat " -> " (List.rev (xi::path))));
         Common.push2 (xi, path) macros_in_loop_with_path;
       end
       else begin
@@ -269,7 +269,7 @@ let rec (recurse_expand_macro_topological_order:
         ()
     | (k, v)::y::xs ->
         let leafs = (g#leaf_nodes ())#tolist in
-        pr2 (spf "step: %d, %s" depth (leafs +> Common.join " "));
+        pr2 (spf "step: %d, %s" depth (leafs +> String.concat " "));
 
         Ograph_simple.print_ograph_generic
           ~str_of_key:(fun k -> k)

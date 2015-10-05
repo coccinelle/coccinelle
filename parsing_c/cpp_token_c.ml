@@ -121,14 +121,14 @@ let string_of_define_def (s, params, body) =
         spf "#define %s " s
     | Params xs ->
 	let xs = List.map (function FixedArg s -> s | VariadicArg s -> s) xs in
-        spf "#define %s(%s) " s (Common.join "," xs)
+        spf "#define %s(%s) " s (String.concat "," xs)
   in
   let s2 =
     match body with
     | DefineHint hint ->
         string_of_parsinghack_hint hint
     | DefineBody xs ->
-        Common.join " " (xs +> List.map Token_helpers.str_of_tok)
+        String.concat " " (xs +> List.map Token_helpers.str_of_tok)
   in
   s1 ^ s2
 

@@ -37,7 +37,7 @@ let check_have_glimpse () =
   )
 
 let s_of_glimpse_options xs =
-  xs +> List.map s_of_glimpse_search +> Common.join " "
+  xs +> List.map s_of_glimpse_search +> String.concat " "
 
 
 (*****************************************************************************)

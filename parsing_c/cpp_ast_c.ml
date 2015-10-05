@@ -113,7 +113,7 @@ let (show_cpp_d_opts: string list -> unit) = fun xs ->
 (* ---------------------------------------------------------------------- *)
 let trace_cpp_process depth mark inc_file =
   pr2_debug (spf "%s>%s %s"
-          (Common.repeat "-" depth +> Common.join "")
+          (Common.repeat "-" depth +> String.concat "")
           mark
           (s_of_inc_file_bis inc_file));
   ()

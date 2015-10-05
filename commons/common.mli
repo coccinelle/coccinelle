@@ -823,7 +823,6 @@ val matched7 : string -> string * string * string * string * string * string * s
 val string_match_substring : Str.regexp -> string -> bool
 
 val split : string (* sep regexp *) -> string -> string list
-val join : string (* sep *) -> string list -> string
 
 val split_list_regexp : string -> string list -> (string * string list) list
 

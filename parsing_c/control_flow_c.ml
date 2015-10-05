@@ -299,7 +299,7 @@ let extract_is_fake ((node, info), nodestr) = info.is_fake
 let mk_any_node is_fake node labels bclabels nodestr =
   let nodestr =
     if !Flag_parsing_c.show_flow_labels
-    then nodestr ^ ("[" ^ (labels +> List.map string_of_int +> join ",") ^ "]")
+    then nodestr ^ ("[" ^ (labels +> List.map string_of_int +> String.concat ",") ^ "]")
     else nodestr
   in
   ((node, {labels = labels;is_loop=false;bclabels=bclabels;is_fake=is_fake}),

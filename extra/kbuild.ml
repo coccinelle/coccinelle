@@ -36,7 +36,7 @@ let unparse_kbuild_info xs filename =
     xs +> List.iter (function Directory (s, ys) ->
       pr s;
       ys +> List.iter (function Group zs ->
-        pr ("  " ^ (join " " zs));
+        pr ("  " ^ (String.concat " " zs));
       );
       pr "";
     )
@@ -127,13 +127,13 @@ let parse_makefile file =
         assert(List.for_all (fun s -> thd3 (Common.dbe_of_filename s) = "o")
                   objs);
 
-        pr2 ("OBJS: " ^ (join "|" objs))
+        pr2 ("OBJS: " ^ (String.concat "|" objs))
 
     | s when s =~ "[a-zA-Z0-9_]+-objs[ \t]*[\\+:]=\\(.*\\)" ->
         let s = matched1 s in
         let objs = Common.split "[ \t]+" s in
 
-        pr2 ("OBJSMODULE: " ^ (join "|" objs))
+        pr2 ("OBJSMODULE: " ^ (String.concat "|" objs))
 
     | s  ->
         pr2_no_nl ("OTHER: " ^ s)
