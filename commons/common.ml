@@ -2338,9 +2338,6 @@ let _ = assert (edit_distance "vintner" "writers" = 5)
 (* Filenames *)
 (*****************************************************************************)
 
-let dirname = Filename.dirname
-let basename = Filename.basename
-
 type filename = string (* TODO could check that exist :) type sux *)
   (* with sexp *)
 type dirname = string (* TODO could check that exist :) type sux *)
@@ -2385,7 +2382,7 @@ let adjust_ext_if_needed filename ext =
 
 
 let db_of_filename file =
-  dirname file, basename file
+  Filename.dirname file, Filename.basename file
 
 let filename_of_db (basedir, file) =
   Filename.concat basedir file

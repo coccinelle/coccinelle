@@ -839,8 +839,6 @@ val contain_regular_word: string -> bool
 (*****************************************************************************)
 
 (* now at beginning of this file: type filename = string *)
-val dirname : string -> string
-val basename : string -> string
 
 val filesuffix : filename -> string
 val fileprefix : filename -> string

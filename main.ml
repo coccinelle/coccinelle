@@ -235,7 +235,7 @@ let run_profile p =
 (*****************************************************************************)
 
 let usage_msg =
-  "Usage: " ^ basename Sys.argv.(0) ^
+  "Usage: " ^ Filename.basename Sys.argv.(0) ^
     " --sp-file <SP> <infile> [-o <outfile>] [--iso-file <iso>] [options]" ^
     "\n" ^ "Options are:"
 
@@ -1147,7 +1147,7 @@ and generate_outfiles outfiles x (* front file *) xs (* other files *) =
               (*
 	         if !output_file = ""
 	         then begin
-                 let tmpfile = "/tmp/"^Common.basename infile in
+                 let tmpfile = "/tmp/"^Filename.basename infile in
                  pr2 (spf "One file modified. Result is here: %s" tmpfile);
                  Common.command2 ("cp "^outfile^" "^tmpfile);
 	         end

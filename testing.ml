@@ -35,7 +35,7 @@ let testone prefix x compare_with_expected_flag =
           then pr2 ("note that not just " ^ cfile ^ " was involved");
           let tmpfile =
 	    Printf.sprintf
-	      "%s/%s" Config.get_temp_dir_name (Common.basename cfile) in
+	      "%s/%s" Config.get_temp_dir_name (Filename.basename cfile) in
           pr2 (Printf.sprintf "One file modified. Result is here: %s" tmpfile);
           Common.command2 ("mv "^outfile^" "^tmpfile);
           tmpfile

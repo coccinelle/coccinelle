@@ -705,7 +705,7 @@ let (includes_to_parse:
 	  [Flag_cocci.I_ALL_INCLUDES; Flag_cocci.I_REALLY_ALL_INCLUDES] in
       let xs = List.map (function (file,(cs,_,_)) -> (file,cs)) xs in
       xs +> List.map (fun (file, cs) ->
-	let dir = Common.dirname file in
+	let dir = Filename.dirname file in
 
 	cs +> Common.map_filter (fun (c,_info_item) ->
 	  match c with
@@ -1258,7 +1258,7 @@ let rec prepare_h seen env (hpath : string) choose_includes parse_strings
 	else last_env_toplevel_c_info info_h_cs;
       others@
       [{
-	fname = Common.basename hpath;
+	fname = Filename.basename hpath;
 	full_fname = hpath;
 	asts = info_h_cs;
 	was_modified_once = ref false;
@@ -1302,7 +1302,7 @@ let prepare_c files choose_includes parse_strings : file_info list =
         (* we do that only for the c, not for the h *)
         ignore(update_include_rel_pos (cs +> List.map (fun x -> x.ast_c)));
         {
-        fname = Common.basename file;
+        fname = Filename.basename file;
         full_fname = file;
         asts = cs;
         was_modified_once = ref false;
