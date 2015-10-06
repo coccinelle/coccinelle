@@ -11,10 +11,18 @@ let elem_threshold = 10
 let include_headers_for_types = ref false
 
 type parsing_style =
-    I_UNSPECIFIED | I_NO_INCLUDES | I_NORMAL_INCLUDES
+    I_NO_INCLUDES | I_NORMAL_INCLUDES
   | I_ALL_INCLUDES | I_REALLY_ALL_INCLUDES
 
-let parsing_style = ref I_UNSPECIFIED
+let _parsing_style_set = ref false
+let _parsing_style = ref I_NORMAL_INCLUDES
+
+let get_parsing_style () = !_parsing_style
+let set_parsing_style ps =
+  _parsing_style := ps;
+  _parsing_style_set := true
+
+let is_parsing_style_set () = !_parsing_style_set
 
 let include_path = ref ([] : string list)
 (* if true then when have a #include "../../xx.h", we look also for xx.h in

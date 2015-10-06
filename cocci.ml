@@ -621,8 +621,7 @@ let sp_contain_typed_metavar rules =
 
 let includes_to_parse
   (xs : (Common.filename * Parse_c.extended_program2) list) = function
-    Includes.I_UNSPECIFIED -> failwith "not possible"
-  | Includes.I_NO_INCLUDES -> !Includes.extra_includes
+    Includes.I_NO_INCLUDES -> !Includes.extra_includes
   | include_style ->
       let xs = List.map (function (file,(cs,_,_)) -> (file,cs)) xs in
       xs +> List.map (fun (filename, cs) ->
@@ -2113,12 +2112,14 @@ let full_engine2 (cocci_infos,parse_strings) cfiles =
 	end;
 
       let choose_includes =
-	match !Includes.parsing_style with
-	  Includes.I_UNSPECIFIED ->
-	    if !g_contain_typedmetavar
-	    then Includes.I_NORMAL_INCLUDES
-	    else Includes.I_NO_INCLUDES
-	| x -> x in
+        if Includes.is_parsing_style_set ()
+        then Includes.get_parsing_style()
+        else begin
+          if !g_contain_typedmetavar
+	  then Includes.I_NORMAL_INCLUDES
+          else Includes.I_NO_INCLUDES
+	end in
+
       Flag.currentfiles := cfiles;
       let c_infos  = prepare_c cfiles choose_includes parse_strings in
 

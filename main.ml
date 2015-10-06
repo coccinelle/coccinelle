@@ -297,16 +297,16 @@ let short_options = [
   " <file> (default=" ^ !Config.std_h ^ ")";
 
   "--recursive-includes",
-  Arg.Unit (function _ -> Includes.include_options := Includes.I_REALLY_ALL_INCLUDES),
+  Arg.Unit (function _ -> Includes.set_parsing_style Includes.I_REALLY_ALL_INCLUDES),
   "  causes all available include files, both those included in the C file(s) and those included in header files, to be used";
   "--all-includes",
-  Arg.Unit (function _ -> Includes.include_options := Includes.I_ALL_INCLUDES),
+  Arg.Unit (function _ -> Includes.set_parsing_style Includes.I_ALL_INCLUDES),
   "  causes all available include files included in the C file(s) to be used";
   "--no-includes",
-  Arg.Unit (function _ -> Includes.include_options := Includes.I_NO_INCLUDES),
+  Arg.Unit (function _ -> Includes.set_parsing_style Includes.I_NO_INCLUDES),
   "  causes not even local include files to be used";
   "--local-includes",
-  Arg.Unit (function _ -> Includes.include_options := Includes.I_NORMAL_INCLUDES),
+  Arg.Unit (function _ -> Includes.set_parsing_style Includes.I_NORMAL_INCLUDES),
   "  causes local include files to be used";
   "--include-headers-for-types", Arg.Set Includes.include_headers_for_types,
   "    use only type information from header files";
