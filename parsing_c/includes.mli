@@ -22,3 +22,10 @@ val relax_include_path : bool ref
 val extra_includes : string list ref
 
 val interpret_include_path : string list -> string option
+
+val resolve : string -> include_options -> Ast_c.inc_file -> string option
+(**
+ * [reslove f opt inc] determines whether [inc] included by [f]
+ * exists and should be parsed according to [opt].
+ * If so, returns its name. Returns [None] otherwise.
+ *)

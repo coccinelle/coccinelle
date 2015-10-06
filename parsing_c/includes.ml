@@ -102,3 +102,30 @@ let interpret_include_path relpath =
     | x -> List.rev x in
   try Some(cache_find include_table (searchlist,relpath))
   with Not_found -> search_path native_file_exists searchlist relpath
+
+let resolve filename include_style x =
+  let all_includes =
+    List.mem include_style [I_ALL_INCLUDES; I_REALLY_ALL_INCLUDES] in
+  let dir = Filename.dirname filename in
+  match x with
+    | Ast_c.Local include_path ->
+      let relpath = String.concat "/" include_path in
+      let f = Filename.concat dir relpath in
+      if (Sys.file_exists f)
+      then Some f
+      else
+       if !relax_include_path
+      (* for our tests, all the files are flat in the current dir *)
+      then
+        let attempt2 = Filename.concat dir (Common.last include_path) in
+        if all_includes && not (Sys.file_exists attempt2)
+        then interpret_include_path include_path
+        else Some attempt2
+      else
+        if all_includes then interpret_include_path include_path
+        else None
+    | Ast_c.NonLocal include_path ->
+      if all_includes || Common.fileprefix (Common.last include_path) = Common.fileprefix filename
+      then interpret_include_path include_path
+      else None
+    | Ast_c.Weird _ -> None
