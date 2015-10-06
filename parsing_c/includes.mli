@@ -6,11 +6,11 @@
 
 val include_headers_for_types : bool ref
 
-type include_options =
+type parsing_style =
     I_UNSPECIFIED | I_NO_INCLUDES | I_NORMAL_INCLUDES
   | I_ALL_INCLUDES | I_REALLY_ALL_INCLUDES
 
-val include_options : include_options ref
+val parsing_style : parsing_style ref
 
 val include_path : string list ref
 
@@ -23,7 +23,7 @@ val extra_includes : string list ref
 
 val interpret_include_path : string list -> string option
 
-val resolve : string -> include_options -> Ast_c.inc_file -> string option
+val resolve : string -> parsing_style -> Ast_c.inc_file -> string option
 (**
  * [reslove f opt inc] determines whether [inc] included by [f]
  * exists and should be parsed according to [opt].

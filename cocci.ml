@@ -2113,7 +2113,7 @@ let full_engine2 (cocci_infos,parse_strings) cfiles =
 	end;
 
       let choose_includes =
-	match !Includes.include_options with
+	match !Includes.parsing_style with
 	  Includes.I_UNSPECIFIED ->
 	    if !g_contain_typedmetavar
 	    then Includes.I_NORMAL_INCLUDES

@@ -10,11 +10,11 @@ let elem_threshold = 10
 
 let include_headers_for_types = ref false
 
-type include_options =
+type parsing_style =
     I_UNSPECIFIED | I_NO_INCLUDES | I_NORMAL_INCLUDES
   | I_ALL_INCLUDES | I_REALLY_ALL_INCLUDES
 
-let include_options = ref I_UNSPECIFIED
+let parsing_style = ref I_UNSPECIFIED
 
 let include_path = ref ([] : string list)
 (* if true then when have a #include "../../xx.h", we look also for xx.h in
@@ -103,9 +103,9 @@ let interpret_include_path relpath =
   try Some(cache_find include_table (searchlist,relpath))
   with Not_found -> search_path native_file_exists searchlist relpath
 
-let resolve filename include_style x =
+let resolve filename parsingstyle x =
   let all_includes =
-    List.mem include_style [I_ALL_INCLUDES; I_REALLY_ALL_INCLUDES] in
+    List.mem parsingstyle [I_ALL_INCLUDES; I_REALLY_ALL_INCLUDES] in
   let dir = Filename.dirname filename in
   match x with
     | Ast_c.Local include_path ->
