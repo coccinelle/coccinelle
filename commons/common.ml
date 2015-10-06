@@ -1966,7 +1966,7 @@ let rec filter_some = function
   | None :: l -> filter_some l
   | Some e :: l -> e :: filter_some l
 
-let map_filter f xs = xs +> List.map f +> filter_some
+let map_filter f xs = filter_some (List.map f xs)
 
 (* avoid recursion *)
 let tail_map_filter f xs =
