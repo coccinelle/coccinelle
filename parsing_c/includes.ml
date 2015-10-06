@@ -11,11 +11,13 @@ let elem_threshold = 10
 let include_headers_for_types = ref false
 
 type parsing_style =
-    I_NO_INCLUDES | I_NORMAL_INCLUDES
-  | I_ALL_INCLUDES | I_REALLY_ALL_INCLUDES
+  | Parse_no_includes
+  | Parse_normal_includes
+  | Parse_all_includes
+  | Parse_really_all_includes
 
 let _parsing_style_set = ref false
-let _parsing_style = ref I_NORMAL_INCLUDES
+let _parsing_style = ref Parse_normal_includes
 
 let get_parsing_style () = !_parsing_style
 let set_parsing_style ps =
@@ -113,7 +115,7 @@ let interpret_include_path relpath =
 
 let resolve filename parsingstyle x =
   let all_includes =
-    List.mem parsingstyle [I_ALL_INCLUDES; I_REALLY_ALL_INCLUDES] in
+    List.mem parsingstyle [Parse_all_includes; Parse_really_all_includes] in
   let dir = Filename.dirname filename in
   match x with
     | Ast_c.Local include_path ->

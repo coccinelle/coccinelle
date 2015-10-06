@@ -7,8 +7,10 @@
 val include_headers_for_types : bool ref
 
 type parsing_style =
-    I_NO_INCLUDES | I_NORMAL_INCLUDES
-  | I_ALL_INCLUDES | I_REALLY_ALL_INCLUDES
+  | Parse_no_includes
+  | Parse_normal_includes
+  | Parse_all_includes
+  | Parse_really_all_includes
 
 val get_parsing_style : unit -> parsing_style
 val set_parsing_style : parsing_style -> unit

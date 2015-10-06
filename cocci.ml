@@ -621,7 +621,7 @@ let sp_contain_typed_metavar rules =
 
 let includes_to_parse
   (xs : (Common.filename * Parse_c.extended_program2) list) = function
-    Includes.I_NO_INCLUDES -> !Includes.extra_includes
+    Includes.Parse_no_includes -> !Includes.extra_includes
   | include_style ->
       let xs = List.map (function (file,(cs,_,_)) -> (file,cs)) xs in
       xs +> List.map (fun (filename, cs) ->
@@ -1122,7 +1122,7 @@ let header_cache_table = Hashtbl.create 101 (* global *)
 
 let header_cache choose_includes f key1 key2 =
   if List.mem choose_includes
-      [Includes.I_ALL_INCLUDES;Includes.I_REALLY_ALL_INCLUDES]
+      [Includes.Parse_all_includes;Includes.Parse_really_all_includes]
       && !Includes.include_headers_for_types
   then
     let k = (key1,key2) in
@@ -1156,7 +1156,7 @@ let rec prepare_h seen env (hpath : string) choose_includes parse_strings
     None -> []
   | Some h_cs ->
       let local_includes =
-	if choose_includes = Includes.I_REALLY_ALL_INCLUDES
+	if choose_includes = Includes.Parse_really_all_includes
 	then
 	  List.filter
 	    (function x -> not (List.mem x !seen))
@@ -2116,8 +2116,8 @@ let full_engine2 (cocci_infos,parse_strings) cfiles =
         then Includes.get_parsing_style()
         else begin
           if !g_contain_typedmetavar
-	  then Includes.I_NORMAL_INCLUDES
-          else Includes.I_NO_INCLUDES
+	  then Includes.Parse_normal_includes
+          else Includes.Parse_no_includes
 	end in
 
       Flag.currentfiles := cfiles;
