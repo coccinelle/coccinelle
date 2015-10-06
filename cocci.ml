@@ -619,48 +619,46 @@ let sp_contain_typed_metavar rules =
 	 | _ -> false)
        rules))
 
+let resolve filename include_style x =
+  let all_includes =
+    List.mem include_style [Includes.I_ALL_INCLUDES; Includes.I_REALLY_ALL_INCLUDES] in
+  let dir = Filename.dirname filename in
+  match x with
+    | Ast_c.Local include_path ->
+      let relpath = String.concat "/" include_path in
+      let f = Filename.concat dir relpath in
+      if (Sys.file_exists f)
+      then Some f
+      else
+       if !Includes.relax_include_path
+      (* for our tests, all the files are flat in the current dir *)
+      then
+        let attempt2 = Filename.concat dir (Common.last include_path) in
+        if all_includes && not (Sys.file_exists attempt2)
+        then Includes.interpret_include_path include_path
+        else Some attempt2
+      else
+        if all_includes then Includes.interpret_include_path include_path
+        else None
+    | Ast_c.NonLocal include_path ->
+      if all_includes || Common.fileprefix (Common.last include_path) = Common.fileprefix filename
+      then Includes.interpret_include_path include_path
+      else None
+    | Ast_c.Weird _ -> None
+
 let includes_to_parse
   (xs : (Common.filename * Parse_c.extended_program2) list) = function
     Includes.I_UNSPECIFIED -> failwith "not possible"
   | Includes.I_NO_INCLUDES -> !Includes.extra_includes
-  | x ->
-      let all_includes =
-	List.mem x
-	  [Includes.I_ALL_INCLUDES; Includes.I_REALLY_ALL_INCLUDES] in
+  | include_style ->
       let xs = List.map (function (file,(cs,_,_)) -> (file,cs)) xs in
-      xs +> List.map (fun (file, cs) ->
-	let dir = Filename.dirname file in
-
+      xs +> List.map (fun (filename, cs) ->
 	cs +> Common.map_filter (fun (c,_info_item) ->
 	  match c with
 	  | Ast_c.CppTop
 	      (Ast_c.Include
-		 {Ast_c.i_include = ((x,ii)); i_rel_pos = info_h_pos;})  ->
-	    (match x with
-            | Ast_c.Local xs ->
-		let relpath = String.concat "/" xs in
-		let f = Filename.concat dir relpath in
-		if (Sys.file_exists f)
-		then Some f
-		else
-		  if !Includes.relax_include_path
-	      (* for our tests, all the files are flat in the current dir *)
-		  then
-		    let attempt2 = Filename.concat dir (Common.last xs) in
-		    if all_includes && not (Sys.file_exists attempt2)
-		    then Includes.interpret_include_path xs
-		    else Some attempt2
-		  else
-		    if all_includes then Includes.interpret_include_path xs
-		    else None
-
-            | Ast_c.NonLocal xs ->
-		if all_includes ||
-	        Common.fileprefix (Common.last xs) = Common.fileprefix file
-		then Includes.interpret_include_path xs
-		else None
-            | Ast_c.Weird _ -> None
-		  )
+		 {Ast_c.i_include = (x,ii); i_rel_pos = info_h_pos;})  ->
+                   resolve filename include_style x
 	  | _ -> None))
 	+> List.concat
 	+> (fun x ->
