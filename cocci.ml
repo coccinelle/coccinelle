@@ -619,10 +619,8 @@ let sp_contain_typed_metavar rules =
 	 | _ -> false)
        rules))
 
-let (includes_to_parse:
-       (Common.filename * Parse_c.extended_program2) list ->
-	 Includes.include_options -> 'a) = fun xs choose_includes ->
-  match choose_includes with
+let includes_to_parse
+  (xs : (Common.filename * Parse_c.extended_program2) list) = function
     Includes.I_UNSPECIFIED -> failwith "not possible"
   | Includes.I_NO_INCLUDES -> !Includes.extra_includes
   | x ->
