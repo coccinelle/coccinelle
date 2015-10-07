@@ -956,7 +956,7 @@ let with_program2_unit f program2 =
  * tokens_stat record and parsing_stat record.
  *)
 
-let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
+let rec parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
     file =
 
   let stat = Parsing_stat.default_stat file in
@@ -1003,6 +1003,19 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
 
 
   let tr = mk_tokens_state toks in
+  let handle_include incl =
+    let should_parse filename parsing_style =
+      parsing_style = Includes.Parse_really_all_includes ||
+      (parsing_style = Includes.Parse_all_includes &&
+        not (Includes.is_header filename)) in
+    let header = Ast_c.unwrap incl.Ast_c.i_include in
+    let parsing_style = Includes.get_parsing_style () in
+    if should_parse file parsing_style
+    then begin match Includes.resolve file parsing_style header with
+      | Some header_filename when Common.lfile_exists header_filename ->
+        ignore (parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings header_filename)
+      | _ -> ()
+    end else () in
 
   let rec loop tr =
 
@@ -1026,7 +1039,12 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
           get_one_elem ~pass:1 tr
         ) in
       match pass1 with
-      | Left e -> Left e
+      | Left e ->
+        begin
+          match e with
+            | Ast_c.CppTop(Ast_c.Include incl) -> handle_include incl
+            | _ -> ()
+        end; Left e
       | Right (info,line_err, passed, passed_before_error, cur, exn, _) ->
           if !Flag_parsing_c.disable_multi_pass
           then pass1
