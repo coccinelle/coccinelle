@@ -34,6 +34,12 @@ val extra_includes : string list ref
 
 val interpret_include_path : string list -> string option
 
+val should_parse : parsing_style -> string -> Ast_c.inc_file -> bool
+(**
+ * [should_parse ps fn incl] returns [true] if the header reerred to
+ * by the [incl] directive contained in [fn] should be parsed.
+ *)
+
 val resolve : string -> parsing_style -> Ast_c.inc_file -> string option
 (**
  * [reslove f opt inc] determines whether [inc] included by [f]

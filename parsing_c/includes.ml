@@ -125,6 +125,24 @@ let interpret_include_path relpath =
   try Some(cache_find include_table (searchlist,relpath))
   with Not_found -> search_path native_file_exists searchlist relpath
 
+let should_parse parsing_style filename incl = match parsing_style with
+  | Parse_no_includes -> false
+  | Parse_normal_includes when is_header filename -> false
+  | Parse_normal_includes ->
+    (match incl with
+    | Ast_c.Weird _ -> false
+    | Ast_c.Local header_path
+    | Ast_c.NonLocal header_path ->
+      let header_name = Common.last header_path in
+      let header_base_name =
+        try Filename.chop_extension header_name
+        with Invalid_argument _ -> header_name in
+      let file_base_name = Filename.chop_extension filename in
+      header_base_name = file_base_name
+    )
+  | Parse_all_includes -> not (is_header filename)
+  | Parse_really_all_includes -> true
+
 let resolve filename parsingstyle x =
   let all_includes =
     List.mem parsingstyle [Parse_all_includes; Parse_really_all_includes] in

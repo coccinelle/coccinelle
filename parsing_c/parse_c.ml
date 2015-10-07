@@ -1003,15 +1003,11 @@ let rec parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
 
 
   let tr = mk_tokens_state toks in
-  let handle_include incl =
-    let should_parse filename parsing_style =
-      parsing_style = Includes.Parse_really_all_includes ||
-      (parsing_style = Includes.Parse_all_includes &&
-        not (Includes.is_header filename)) in
-    let header = Ast_c.unwrap incl.Ast_c.i_include in
+  let handle_include wrapped_incl =
+    let incl = Ast_c.unwrap wrapped_incl.Ast_c.i_include in
     let parsing_style = Includes.get_parsing_style () in
-    if should_parse file parsing_style
-    then begin match Includes.resolve file parsing_style header with
+    if Includes.should_parse parsing_style file incl
+    then begin match Includes.resolve file parsing_style incl with
       | Some header_filename when Common.lfile_exists header_filename ->
         ignore (parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings header_filename)
       | _ -> ()
