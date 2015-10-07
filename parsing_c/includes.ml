@@ -10,6 +10,8 @@ let elem_threshold = 10
 
 let include_headers_for_types = ref false
 
+let is_header filename = Filename.check_suffix filename "h"
+
 type parsing_style =
   | Parse_no_includes
   | Parse_normal_includes

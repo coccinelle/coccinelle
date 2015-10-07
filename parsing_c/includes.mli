@@ -6,6 +6,11 @@
 
 val include_headers_for_types : bool ref
 
+val is_header : string -> bool
+(**
+ * [is_header filename] returns (true] if filename ends with ".h"
+ *)
+
 type parsing_style =
   | Parse_no_includes
   | Parse_normal_includes
