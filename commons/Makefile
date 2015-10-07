@@ -67,12 +67,6 @@ SUBDIRS=ocamlextra ocollection
 MYGDBMSRC=ocollection/oassocdbm.ml
 GDBMSYSLIBS=dbm.cma
 
-#berkeley db (ocamlbdb)
-MYBDBSRC=ocollection/oassocbdb.ml ocollection/oassocbdb_string.ml
-BDBINCLUDES=-I ../ocamlbdb
-BDBSYSLIBS=bdb.cma
-
-
 #lablgtk (ocamlgtk)
 MYGUISRC=gui.ml
 GUIINCLUDES=-I +lablgtk2 -I +lablgtksourceview -I ../ocamlgtk/src
@@ -171,21 +165,6 @@ commons_gdbm.cma: $(MYGDBMSRC:.ml=.cmo)
 
 commons_gdbm.cmxa: $(MYGDBMSRC:.ml=.cmx)
 	$(OCAMLOPT_CMD) -a -o $@ $^
-
-
-#-----------------------------------------------------------------------------
-bdb:
-	$(MAKE) INCLUDESEXTRA="$(BDBINCLUDES)" commons_bdb.cma
-bdb.opt:
-	$(MAKE) INCLUDESEXTRA="$(BDBINCLUDES)" commons_bdb.cmxa
-
-commons_bdb.cma: $(MYBDBSRC:.ml=.cmo)
-	$(OCAMLC_CMD) -a -o $@ $^
-
-commons_bdb.cmxa: $(MYBDBSRC:.ml=.cmx)
-	$(OCAMLOPT_CMD) -a -o $@ $^
-
-
 
 #-----------------------------------------------------------------------------
 gui:
