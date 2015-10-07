@@ -1121,8 +1121,7 @@ let fixpath s =
 let header_cache_table = Hashtbl.create 101 (* global *)
 
 let header_cache choose_includes f key1 key2 =
-  if List.mem choose_includes
-      [Includes.Parse_all_includes;Includes.Parse_really_all_includes]
+  if Includes.parse_all_includes choose_includes
       && !Includes.include_headers_for_types
   then
     let k = (key1,key2) in
