@@ -18,6 +18,12 @@ type parsing_style =
   | Parse_all_includes
   | Parse_really_all_includes
 
+let string_of_parsing_style = function
+  | Parse_no_includes -> "Parse_no_includes"
+  | Parse_normal_includes -> "Parse_normal_includes"
+  | Parse_all_includes -> "Parse_all_includes"
+  | Parse_really_all_includes -> "Parse_really_all_includes"
+
 let _parsing_style_set = ref false
 let _parsing_style = ref Parse_normal_includes
 
@@ -27,6 +33,10 @@ let set_parsing_style ps =
   _parsing_style_set := true
 
 let is_parsing_style_set () = !_parsing_style_set
+
+let parse_all_includes parsing_style =
+  (parsing_style = Parse_all_includes) ||
+    (parsing_style = Parse_really_all_includes)
 
 let include_path = ref ([] : string list)
 (* if true then when have a #include "../../xx.h", we look also for xx.h in

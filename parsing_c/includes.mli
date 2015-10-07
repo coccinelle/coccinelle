@@ -17,9 +17,11 @@ type parsing_style =
   | Parse_all_includes
   | Parse_really_all_includes
 
+val string_of_parsing_style : parsing_style -> string
 val get_parsing_style : unit -> parsing_style
 val set_parsing_style : parsing_style -> unit
 val is_parsing_style_set : unit -> bool
+val parse_all_includes : parsing_style -> bool
 
 val include_path : string list ref
 
