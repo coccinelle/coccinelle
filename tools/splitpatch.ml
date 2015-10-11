@@ -646,10 +646,20 @@ let make_cover_file n file subject cover front date maintainer_table =
       make_mail_header o date maintainers_and_lists 0 n true subject;
       print_all o cover;
       Printf.fprintf o "\n---\n\n";
+      let l = cmd_to_list (Printf.sprintf "diffstat -p1 < %s" file) in
+      let adjust_after =
+	match !prefix_after with
+	  None -> l
+	| Some pb ->
+	    let pb = (String.concat "/" (Str.split (Str.regexp "/") pb))^"/" in
+	    Printf.eprintf "pb %s\n" pb;
+	    List.map
+	      (function l -> String.concat "" (Str.split (Str.regexp pb) l))
+	      l in
+      List.iter
+	(function line -> Printf.fprintf o "%s\n" line)
+	adjust_after;
       close_out o;
-      let _ =
-	Sys.command
-	  (Printf.sprintf "diffstat -p1 < %s >> %s" file output_file) in
       ()
 
 let mail_sender = "git send-email" (* use this when it works *)
