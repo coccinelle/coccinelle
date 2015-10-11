@@ -59,7 +59,7 @@ let run mv ve script_vars name code =
   let args =
     List.concat
       (List.map
-	 (function ((str_name,ast_name),(r,m),_) ->
+	 (function ((str_name,ast_name),(r,m),_,_) ->
 	   match find_binding (r,m) with
 	     None -> []
 	   | Some (_,vl) ->

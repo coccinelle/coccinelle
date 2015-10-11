@@ -2200,9 +2200,10 @@ let parse file =
 	      List.fold_left
 		(function (metavars,script_metavars) ->
 		  function
-		      (script_var,Some(parent,var)) ->
-			((script_var,parent,var) :: metavars, script_metavars)
-		    | ((Some script_var,None),None) ->
+		      (script_var,Some(parent,var),initval) ->
+			((script_var,parent,var,initval) :: metavars,
+			 script_metavars)
+		    | ((Some script_var,None),None,_initval) ->
 			(metavars, (name,script_var) :: script_metavars)
 		    | _ -> failwith "not possible")
 		([],[]) metavars in

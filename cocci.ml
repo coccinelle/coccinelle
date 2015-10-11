@@ -903,7 +903,7 @@ type toplevel_cocci_info_script_rule = {
   scr_ast_rule:
       string *
       (Ast_cocci.script_meta_name * Ast_cocci.meta_name *
-	 Ast_cocci.metavar) list *
+	 Ast_cocci.metavar * Ast_cocci.mvinit) list *
       Ast_cocci.meta_name list (*fresh vars*) *
       string;
   language: string;
@@ -1413,7 +1413,7 @@ let merge_env new_e old_e =
 
 let merge_env_list new_e old_e = new_e@old_e
 
-let contains_binding e (_,(r,m),_) =
+let contains_binding e (_,(r,m),_,_) =
   try
     let _ = List.find (function ((re, rm), _) -> r = re && m = rm) e in
     true
@@ -1425,7 +1425,7 @@ let python_application mv ve script_vars r =
   let mv =
     List.map
       (function
-	  ((Some x,None),y,z) -> (x,y,z)
+	  ((Some x,None),y,z,_) -> (x,y,z)
 	| _ ->
 	    failwith
 	      (Printf.sprintf "unexpected ast metavar in rule %s"
@@ -1484,7 +1484,7 @@ let apply_script_rule r cache newes e rules_that_have_matched
 	  let relevant_bindings =
 	    List.filter
 	      (function ((re,rm),_) ->
-		List.exists (function (_,(r,m),_) -> r = re && m = rm) mv)
+		List.exists (function (_,(r,m),_,_) -> r = re && m = rm) mv)
 	      e in
 	  (try
 	    match List.assoc relevant_bindings cache with
@@ -1533,7 +1533,7 @@ let apply_script_rule r cache newes e rules_that_have_matched
       |	unbound ->
 	  (if !Flag_cocci.show_dependencies
 	  then
-	    let m2c (_,(r,x),_) = r^"."^x in
+	    let m2c (_,(r,x),_,_) = r^"."^x in
 	    pr2 (Printf.sprintf "script not applied: %s not bound"
 		   (String.concat ", " (List.map m2c unbound))));
 	  let e =

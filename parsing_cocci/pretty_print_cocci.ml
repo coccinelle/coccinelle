@@ -1071,7 +1071,7 @@ let script_header str lang deps mv code =
   print_string "@";
   force_newline();
   List.iter
-    (function (script_name,inh_name,_ty) ->
+    (function (script_name,inh_name,_ty,init) ->
       (match script_name with
 	(None,None) -> print_string "(_,_)"
       |	(Some x,None) -> print_string x
@@ -1079,6 +1079,13 @@ let script_header str lang deps mv code =
       |	(Some x,Some a) -> print_string (Printf.sprintf "(%s,%s)" x a));
       print_string " << ";
       print_string (Printf.sprintf "%s.%s" (fst inh_name) (snd inh_name));
+      (match init with
+	Ast.NoMVInit -> ()
+      | Ast.MVInitString s ->
+	  print_space(); print_string "="; print_space();
+	  print_string "\""; print_string s; print_string "\""
+      | Ast.MVInitPosList ->
+	  print_space(); print_string "="; print_space(); print_string "[]");
       print_string ";";
       force_newline())
     mv;

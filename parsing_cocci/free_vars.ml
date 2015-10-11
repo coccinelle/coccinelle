@@ -1092,7 +1092,7 @@ let collect_top_level_used_after metavar_rule_list =
 	  let free_vars =
             match r with
               Ast.ScriptRule (_,_,_,mv,_,_) ->
-                drop_virt(List.map (function (_,(r,v),_) -> (r,v)) mv)
+                drop_virt(List.map (function (_,(r,v),_,_) -> (r,v)) mv)
             | Ast.InitialScriptRule (_,_,_,mv,_)
 	    | Ast.FinalScriptRule (_,_,_,mv,_) ->
 		(* only virtual identifiers *)
