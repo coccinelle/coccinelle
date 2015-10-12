@@ -59,9 +59,13 @@ let run mv ve script_vars name code =
   let args =
     List.concat
       (List.map
-	 (function ((str_name,ast_name),(r,m),_,_) ->
+	 (function ((str_name,ast_name),(r,m),_,init) ->
 	   match find_binding (r,m) with
-	     None -> []
+	     None ->
+	       (match init with
+		 Ast_cocci.NoMVInit -> failwith "no value for ocaml metavars"
+	       | Ast_cocci.MVInitString s -> [Coccilib.Str s]
+	       | Ast_cocci.MVInitPosList -> [Coccilib.Pos []])
 	   | Some (_,vl) ->
 	       (string_binding vl str_name) @ (ast_binding vl ast_name))
 	 mv) in

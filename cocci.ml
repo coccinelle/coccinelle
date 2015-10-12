@@ -1413,11 +1413,13 @@ let merge_env new_e old_e =
 
 let merge_env_list new_e old_e = new_e@old_e
 
-let contains_binding e (_,(r,m),_,_) =
-  try
-    let _ = List.find (function ((re, rm), _) -> r = re && m = rm) e in
-    true
-  with Not_found -> false
+let contains_binding e = function
+    (_,(r,m),_,Ast_cocci.NoMVInit) ->
+      (try
+	let _ = List.find (function ((re, rm), _) -> r = re && m = rm) e in
+	true
+      with Not_found -> false)
+  | _ -> true
 
 exception Exited
 
@@ -1425,7 +1427,7 @@ let python_application mv ve script_vars r =
   let mv =
     List.map
       (function
-	  ((Some x,None),y,z,_) -> (x,y,z)
+	  ((Some x,None),y,z,init) -> (x,y,z,init)
 	| _ ->
 	    failwith
 	      (Printf.sprintf "unexpected ast metavar in rule %s"

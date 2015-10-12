@@ -459,6 +459,8 @@ typing, metavariables for scripts do not include type declarations.
 
   \RULE{\rt{script\_metadecl}}
   \CASE{\T{id} <{}< \T{rulename\_id}.\T{id} ;}
+  \CASE{\T{id} <{}< \T{rulename\_id}.\T{id} = "..." ;}
+  \CASE{\T{id} <{}< \T{rulename\_id}.\T{id} = [] ;}
   \CASE{\T{id} ;}
 
   \RULE{\rt{script\_virt\_metadecl}}
@@ -514,6 +516,17 @@ wanted, respectively.
 
 The abstract syntax tree of a metavariable declared using {\tt
   metavariable} is not available.
+
+Script metavariables can have default values.  This is only allowed if the
+abstract syntax tree of the metavariable is not requested.  The default
+value of a position metavariable is written as {\tt []}.  The default value
+of any other kind of metavariable is a string.  There is no control that
+the string actually represents the kind of term represented by the
+metavariable.  Normally, a script rule is only applied if all of the
+metavariables have values.  If default values are provided, then the script
+rule is only applied if all of the metavariables for which there are no
+default values have values.  See demos/defaultscript.cocci for examples of
+the use of this feature.
 
 \section{Transformation}
 

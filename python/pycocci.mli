@@ -1,6 +1,6 @@
 val build_classes : Ast_cocci.meta_name list -> unit
 val construct_variables :
-    (string * Ast_cocci.meta_name * Ast_cocci.metavar) list
+    (string * Ast_cocci.meta_name * Ast_cocci.metavar * Ast_cocci.mvinit) list
   -> Ast_c.metavars_binding (*virts*) -> unit
 val construct_script_variables : Ast_cocci.meta_name list -> unit
 val pyrun_simplestring : string -> int
