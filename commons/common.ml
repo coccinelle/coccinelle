@@ -504,22 +504,7 @@ let with_pr2_to_string f =
 *)
 
 
-(* ---------------------------------------------------------------------- *)
-
-include Printf
-
-(* cf common.mli, fprintf, printf, eprintf, sprintf.
- * also what is this ?
- *  val bprintf : Buffer.t -> ('a, Buffer.t, unit) format -> 'a
- *  val kprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b
- *)
-
-(* ex of printf:
- *  printf "%02d" i
- * for padding
- *)
-
-let spf = sprintf
+let spf = Printf.sprintf
 
 (* ---------------------------------------------------------------------- *)
 
@@ -672,7 +657,7 @@ let profile_diagnostic () =
       pr "profiling result";
       pr "---------------------";
       xs +> List.iter (fun (k, (t,n)) ->
-        pr (sprintf "%-40s : %10.3f sec %10d count" k !t !n)
+        pr (Printf.sprintf "%-40s : %10.3f sec %10d count" k !t !n)
       )
     )
 
@@ -683,7 +668,7 @@ let report_if_take_time timethreshold s f =
   let res = f () in
   let t' = Unix.gettimeofday () in
   if (t' -. t  > float_of_int timethreshold)
-  then pr2 (sprintf "Note: processing took %7.1fs: %s" (t' -. t) s);
+  then pr2 (Printf.sprintf "Note: processing took %7.1fs: %s" (t' -. t) s);
   res
 
 let profile_code2 category f =
@@ -1541,8 +1526,8 @@ let parse_options options usage_msg argv =
     args := List.rev !args;
     !args
   with
-  | Arg.Bad msg -> eprintf "%s" msg; exit 2
-  | Arg.Help msg -> printf "%s" msg; exit 0
+  | Arg.Bad msg -> Printf.eprintf "%s" msg; exit 2
+  | Arg.Help msg -> Printf.printf "%s" msg; exit 0
   )
 
 
@@ -2139,8 +2124,6 @@ let (regexp_match: string -> string -> string) = fun s re ->
 
 let split sep s = Str.split (Str.regexp sep) s
 let _ = example ((split "/" "") = [])
-let join  sep xs = String.concat sep xs
-let _ = example (join "/" ["toto"; "titi"; "tata"] = "toto/titi/tata")
 (*
 let rec join str = function
   | [] -> ""
@@ -2209,14 +2192,6 @@ let contain_regular_word s =
 (* Strings *)
 (*****************************************************************************)
 
-let slength = String.length
-let concat = String.concat
-
-(* ruby *)
-let i_to_s = string_of_int
-let s_to_i = int_of_string
-
-
 (* strings take space in memory. Better when can share the space used by
    similar strings *)
 let _shareds = Hashtbl.create 100
@@ -2269,7 +2244,7 @@ let plural i s =
   then Printf.sprintf "%d %s" i s
   else Printf.sprintf "%d %ss" i s
 
-let showCodeHex xs = List.iter (fun i -> printf "%02x" i) xs
+let showCodeHex xs = List.iter (fun i -> Printf.printf "%02x" i) xs
 
 let take_string n s =
   String.sub s 0 (n-1)
@@ -2286,13 +2261,13 @@ let size_mo_ko i =
   let ko = (i / 1024) mod 1024 in
   let mo = (i / 1024) / 1024 in
   (if mo > 0
-  then sprintf "%dMo%dKo" mo ko
-  else sprintf "%dKo" ko
+  then Printf.sprintf "%dMo%dKo" mo ko
+  else Printf.sprintf "%dKo" ko
   )
 
 let size_ko i =
   let ko = i / 1024 in
-  sprintf "%dKo" ko
+  Printf.sprintf "%dKo" ko
 
 
 
@@ -2361,9 +2336,6 @@ let _ = assert (edit_distance "vintner" "writers" = 5)
 (* Filenames *)
 (*****************************************************************************)
 
-let dirname = Filename.dirname
-let basename = Filename.basename
-
 type filename = string (* TODO could check that exist :) type sux *)
   (* with sexp *)
 type dirname = string (* TODO could check that exist :) type sux *)
@@ -2408,7 +2380,7 @@ let adjust_ext_if_needed filename ext =
 
 
 let db_of_filename file =
-  dirname file, basename file
+  Filename.dirname file, Filename.basename file
 
 let filename_of_db (basedir, file) =
   Filename.concat basedir file
@@ -2462,7 +2434,7 @@ let normalize_path file =
         )
   in
   let xs' = aux [] xs in
-  Filename.concat (join "/" xs') filename
+  Filename.concat (String.concat "/" xs') filename
 
 
 
@@ -2693,7 +2665,7 @@ let unix_time_of_string s =
   then
     let (sday, smonth, syear, _sday, shour, smin, ssec) = matched7 s in
 
-    let y = s_to_i syear - 1900 in
+    let y = int_of_string syear - 1900 in
     let mon =
       smonth +> month_of_string +> int_of_month +> (fun i -> i -1)
     in
@@ -2702,10 +2674,10 @@ let unix_time_of_string s =
     { tm with
       Unix.tm_year = y;
       Unix.tm_mon = mon;
-      Unix.tm_mday = s_to_i sday;
-      Unix.tm_hour = s_to_i shour;
-      Unix.tm_min = s_to_i smin;
-      Unix.tm_sec = s_to_i ssec;
+      Unix.tm_mday = int_of_string sday;
+      Unix.tm_hour = int_of_string shour;
+      Unix.tm_min = int_of_string smin;
+      Unix.tm_sec = int_of_string ssec;
     }
   else failwith ("unix_time_of_string: " ^ s)
 
@@ -3063,7 +3035,7 @@ let interpolate str =
   end
 
 (* could do a print_string but printf don't like print_string *)
-let echo s = printf "%s" s; flush stdout; s
+let echo s = Printf.printf "%s" s; flush stdout; s
 
 let usleep s = for i = 1 to s do () done
 
@@ -3525,7 +3497,7 @@ let _temp_files_created = ref ([] : filename list)
 
 (* ex: new_temp_file "cocci" ".c" will give "/tmp/cocci-3252-434465.c" *)
 let new_temp_file prefix suffix =
-  let processid = i_to_s (Unix.getpid ()) in
+  let processid = string_of_int (Unix.getpid ()) in
   let tmp_file = Filename.temp_file (prefix ^ "-" ^ processid ^ "-") suffix in
   push2 tmp_file _temp_files_created;
   tmp_file
@@ -4775,7 +4747,7 @@ let group_assoc_bykey_eff xs =
 
 
 let test_group_assoc () =
-  let xs = enum 0 10000 +> List.map (fun i -> i_to_s i, i) in
+  let xs = enum 0 10000 +> List.map (fun i -> string_of_int i, i) in
   let xs = ("0", 2)::xs in
 (*    let _ys = xs +> Common.groupBy (fun (a,resa) (b,resb) -> a = b)  *)
   let ys = xs +> group_assoc_bykey_eff
@@ -5438,13 +5410,14 @@ let (info_from_charpos2: int -> filename -> (int * int * string)) =
     match s with
       Some s ->
 	let s = s ^ "\n" in
-	if (!posl + slength s > charpos)
+	let slength = String.length s in
+	if (!posl + slength > charpos)
 	then begin
 	  close_in chan;
 	  (!linen, charpos - !posl, s)
 	end
 	else begin
-	  posl := !posl + slength s;
+	  posl := !posl + slength;
 	  charpos_to_pos_aux !posl;
 	end
     | None -> (!linen, charpos - !posl, "\n")
@@ -5475,10 +5448,11 @@ let full_charpos_to_pos2 = fun filename ->
        incr line;
 
        (* '... +1 do'  cos input_line dont return the trailing \n *)
-       for i = 0 to (slength s - 1) + 1 do
+       let slength = String.length s in
+       for i = 0 to (slength - 1) + 1 do
          arr.(!charpos + i) <- (!line, i);
        done;
-       charpos := !charpos + slength s + 1;
+       charpos := !charpos + slength + 1;
        full_charpos_to_pos_aux();
 
      with End_of_file ->
@@ -5517,7 +5491,7 @@ let (error_messagebis: filename -> (string * int) -> int -> string)=
   let charpos = lexstart      + decalage in
   let tok = lexeme in
   let (line, pos, linecontent) =  info_from_charpos charpos filename in
-  sprintf "File \"%s\", line %d, column %d,  charpos = %d
+  Printf.sprintf "File \"%s\", line %d, column %d,  charpos = %d
     around = '%s', whole content = %s"
     filename line pos charpos tok (chop linecontent)
 
@@ -5525,7 +5499,7 @@ let error_message = fun filename (lexeme, lexstart) ->
   try error_messagebis filename (lexeme, lexstart) 0
   with
     End_of_file ->
-      ("PB in Common.error_message, position " ^ i_to_s lexstart ^
+      ("PB in Common.error_message, position " ^ string_of_int lexstart ^
        " given out of file:" ^ filename)
 
 
@@ -5534,11 +5508,11 @@ let error_message_short = fun filename (lexeme, lexstart) ->
   try
   let charpos = lexstart in
   let (line, pos, linecontent) =  info_from_charpos charpos filename in
-  sprintf "File \"%s\", line %d"  filename line
+  Printf.sprintf "File \"%s\", line %d"  filename line
 
   with End_of_file ->
     begin
-      ("PB in Common.error_message, position " ^ i_to_s lexstart ^
+      ("PB in Common.error_message, position " ^ string_of_int lexstart ^
           " given out of file:" ^ filename);
     end
 
@@ -5656,11 +5630,11 @@ let print_total_score score =
   pr2 "total score";
   pr2 "--------------------------------";
   let (good, total) = total_scores score in
-  pr2 (sprintf "good = %d/%d" good total)
+  pr2 (Printf.sprintf "good = %d/%d" good total)
 
 let print_score score =
   score +> hash_to_list +> List.iter (fun (k, v) ->
-    pr2 (sprintf "%s --> %s" k (string_of_score_result v))
+    pr2 (Printf.sprintf "%s --> %s" k (string_of_score_result v))
   );
   print_total_score score;
   ()

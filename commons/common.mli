@@ -154,11 +154,6 @@ val redirect_stdin_opt : filename option -> (unit -> 'a) -> 'a
 
 val with_pr2_to_string: (unit -> unit) -> string list
 
-val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
-val printf : ('a, out_channel, unit) format -> 'a
-val eprintf : ('a, out_channel, unit) format -> 'a
-val sprintf : ('a, unit, string) format -> 'a
-
 (* alias *)
 val spf : ('a, unit, string) format -> 'a
 
@@ -763,12 +758,6 @@ type bool3 = True3 | False3 | TrueFalsePb3 of string
 (* Strings *)
 (*****************************************************************************)
 
-val slength : string -> int (* alias *)
-val concat : string -> string list -> string (* alias *)
-
-val i_to_s : int -> string
-val s_to_i : string -> int
-
 (* strings take space in memory. Better when can share the space used by
  * similar strings.
  *)
@@ -834,7 +823,6 @@ val matched7 : string -> string * string * string * string * string * string * s
 val string_match_substring : Str.regexp -> string -> bool
 
 val split : string (* sep regexp *) -> string -> string list
-val join : string (* sep *) -> string list -> string
 
 val split_list_regexp : string -> string list -> (string * string list) list
 
@@ -850,8 +838,6 @@ val contain_regular_word: string -> bool
 (*****************************************************************************)
 
 (* now at beginning of this file: type filename = string *)
-val dirname : string -> string
-val basename : string -> string
 
 val filesuffix : filename -> string
 val fileprefix : filename -> string
@@ -1782,12 +1768,6 @@ val is_singleton : 'a list -> bool
 (*###########################################################################*)
 (* And now misc functions *)
 (*###########################################################################*)
-
-(*****************************************************************************)
-(* DB (LFS) *)
-(*****************************************************************************)
-
-(* cf oassocbdb.ml or oassocdbm.ml  *)
 
 (*****************************************************************************)
 (* GUI (LFS, CComment, otimetracker) *)

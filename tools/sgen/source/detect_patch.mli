@@ -1,3 +1,9 @@
+(*
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
+ *)
+
 (* Detects if a rule contains */+/- or not. Such a rule is here referred to as
  * a patch rule (includes also * rules).
  * Does not distinguish between whether it has *, +, or -, just returns true

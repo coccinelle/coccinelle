@@ -1,3 +1,6 @@
+# This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+# See copyright.txt in the Coccinelle source code for more information.
+# The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
 
 ##############################################################################
 # Release rules to generate website archives
@@ -61,8 +64,6 @@ extra_configure_flags :=
 #
 #  2) make release
 #
-#  The project is then automatically licensified.
-#
 #  3) make package
 #
 #  if WEBSITE is set properly, you can also run 'make website'
@@ -119,8 +120,7 @@ release:
 	$(GIT) commit -m "Release $(VERSION)"
 	$(GIT) tag -a -m "Release $(VERSION)" $(VERSION)
 	$(GIT) push origin $(VERSION) master:master
-	$(MAKE) licensify
-	@echo "\n\tLicensify has run: do not commit any files from now on!"
+	@echo "\n\tDo not commit any files from now on!"
 	@echo "\n\tRun 'make package'\n"
 
 package:
@@ -159,7 +159,6 @@ package-python:
 
 # I currently pre-generate the parser so the user does not have to
 # install menhir on his machine. We could also do a few cleanups.
-# You may have first to do a 'make licensify'.
 #
 # update: make docs generates pdf but also some ugly .log files, so
 # make clean is there to remove them while not removing the pdf
@@ -247,15 +246,6 @@ clean-packages::
 	rm -f $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz
 	rm -f $(TMP)/$(CCPACKAGE).tgz
 
-#
-# No need to licensify 'demos'. Because these are basic building blocks
-# to use SmPL.
-#
-TOLICENSIFY=ctl engine globals parsing_cocci popl popl09 python scripts tools
-licensify:
-	ocaml str.cma tools/licensify.ml
-	set -e; for i in $(TOLICENSIFY); do cd $$i; ocaml str.cma ../tools/licensify.ml; cd ..; done
-
 # When checking out the source from diku sometimes I have some "X in the future"
 # error messages.
 fixdates:
@@ -300,7 +290,6 @@ packbin: prepack
 
 prepack:
 	rsync -a $(EXCL_SYNC) . $(TMP)/$(PACKAGE)
-	$(MAKE) -C $(TMP)/$(PACKAGE) licensify
 	sed -i "s|^OCAMLCFLAGS=.*$$|OCAMLCFLAGS=|" $(TMP)/$(PACKAGE)/Makefile
 	rm -rf $(TMP)/$(PACKAGE)/tools
 
@@ -315,7 +304,6 @@ push:
 # Note: start from a fresh working directory
 # Note: configure first
 dist:
-	$(MAKE) licensify
 	$(MAKE) docs
 	$(MAKE) -C parsing_cocci parser_cocci_menhir.ml
 	$(MAKE) distclean KEEP_CONFIG=1 KEEP_GENERATED=1

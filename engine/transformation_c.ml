@@ -1,3 +1,9 @@
+(*
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
+ *)
+
 open Common
 
 module F = Control_flow_c
@@ -442,7 +448,7 @@ module XTRANS = struct
                failwith
 	         (match Ast_c.pinfo_of_info ib with
 		   Ast_c.FakeTok _ ->
-		     Common.sprintf "%s: already tagged fake token\n"
+		     Printf.sprintf "%s: already tagged fake token\n"
 		       tin.extra.current_rule_name
 		| _ ->
 		    Printf.sprintf
@@ -732,7 +738,7 @@ module XTRANS = struct
       then (
         try Some (List.assoc s tin.binding)
         with Not_found ->
-          pr2(sprintf
+          pr2 (Printf.sprintf
 		"Don't find value for metavariable %s in the environment"
                 (meta_name_to_str s));
           None)

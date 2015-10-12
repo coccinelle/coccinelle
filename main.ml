@@ -1,3 +1,9 @@
+(*
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
+ *)
+
 open Common
 module FC = Flag_cocci
 
@@ -229,7 +235,7 @@ let run_profile p =
 (*****************************************************************************)
 
 let usage_msg =
-  "Usage: " ^ basename Sys.argv.(0) ^
+  "Usage: " ^ Filename.basename Sys.argv.(0) ^
     " --sp-file <SP> <infile> [-o <outfile>] [--iso-file <iso>] [options]" ^
     "\n" ^ "Options are:"
 
@@ -262,7 +268,7 @@ let short_options = [
   "--reverse", Arg.Set Flag_parsing_cocci.interpret_inverted,
   "  invert the semantic patch before applying it";
 
-  "-U", Arg.Int (fun n -> Flag_parsing_c.diff_lines := Some (i_to_s n)),
+  "-U", Arg.Int (fun n -> Flag_parsing_c.diff_lines := Some (string_of_int n)),
   "  set number of diff context lines";
   "--partial-match",        Arg.Set Flag_ctl.partial_match,
   "    report partial matches of the SP on the C file";
@@ -924,12 +930,12 @@ let rec main_action xs =
                   (* normal *)
 	      | true, "", _, _ ->
 		  Test_parsing_c.get_files
-		    (join " " (x::xs)) +> List.map (fun x -> [x])
+		    (String.concat " " (x::xs)) +> List.map (fun x -> [x])
 
             (* kbuild *)
 	      | true, kbuild_info_file,_,_ ->
 		  let dirs =
-                    Common.cmd_to_list ("find "^(join " " (x::xs))^" -type d")
+                    Common.cmd_to_list ("find "^(String.concat " " (x::xs))^" -type d")
                   in
 		  let info = Kbuild.parse_kbuild_info kbuild_info_file in
 		  let groups = Kbuild.files_in_dirs dirs info in
@@ -1037,12 +1043,12 @@ let rec main_action xs =
 		    Cocci.worth_trying cfiles constants
 		      then
 		    begin
-		  pr2 ("HANDLING: " ^ (join " " cfiles));
+		  pr2 ("HANDLING: " ^ (String.concat " " cfiles));
 		  (*pr2 (List.hd(Common.cmd_to_list "free -m | grep Mem"));*)
 		  flush stderr;
 
 		  Common.timeout_function_opt !FC.timeout (fun () ->
-  	            Common.report_if_take_time 10 (join " " cfiles) (fun () ->
+		    Common.report_if_take_time 10 (String.concat " " cfiles) (fun () ->
                       try
 			let optfile =
 			  if !output_file <> "" && !compat_mode then
@@ -1143,7 +1149,7 @@ and generate_outfiles outfiles x (* front file *) xs (* other files *) =
               (*
 	         if !output_file = ""
 	         then begin
-                 let tmpfile = "/tmp/"^Common.basename infile in
+                 let tmpfile = "/tmp/"^Filename.basename infile in
                  pr2 (spf "One file modified. Result is here: %s" tmpfile);
                  Common.command2 ("cp "^outfile^" "^tmpfile);
 	         end

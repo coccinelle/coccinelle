@@ -422,58 +422,47 @@ let mark_end_define ii =
   in
   TDefEOL (ii')
 
-(* put the TDefEOL at the good place *)
-let rec define_line_1 acc xs =
-  match xs with
+(* put the TDefEOL at the right place *)
+let rec define_line_1 acc = function
   | [] -> List.rev acc
-  | TDefine ii::xs ->
-      let line = Ast_c.line_of_info ii in
-      let acc = (TDefine ii) :: acc in
-      define_line_2 acc line ii xs
-  | TUndef ii::xs ->
-      let line = Ast_c.line_of_info ii in
-      let acc = (TUndef ii) :: acc in
-      define_line_2 acc line ii xs
-  | TPragma ii::xs ->
-      let line = Ast_c.line_of_info ii in
-      let acc = (TPragma ii) :: acc in
-      define_line_2 acc line ii xs
-  | TCppEscapedNewline ii::xs ->
-      pr2 ("SUSPICIOUS: a \\ character appears outside of a #define at");
-      pr2 (Ast_c.strloc_of_info ii);
-      let acc = (TCommentSpace ii) :: acc in
-      define_line_1 acc xs
-  | x::xs -> define_line_1 (x::acc) xs
+  | token::tokens ->
+    begin match token with
+      | TDefine ii | TUndef ii | TPragma ii ->
+        let line = Ast_c.line_of_info ii in
+        define_line_2 (token::acc) line ii tokens
+      | TCppEscapedNewline ii ->
+        pr2 ("SUSPICIOUS: a \\ character appears outside of a #define at");
+        pr2 (Ast_c.strloc_of_info ii);
+        define_line_1 ((TCommentSpace ii) :: acc) tokens
+      | _ -> define_line_1 (token::acc) tokens
+    end
 
-and define_line_2 acc line lastinfo xs =
-  match xs with
+and define_line_2 acc line lastinfo = function
   | [] ->
       (* should not happened, should meet EOF before *)
       pr2 "PB: WEIRD";
-      List.rev (mark_end_define lastinfo::acc)
-  | x::xs ->
-      let line' = TH.line_of_tok x in
-      let info = TH.info_of_tok x in
-
-      (match x with
+      List.rev ((mark_end_define lastinfo)::acc)
+  | token::tokens as all_tokens ->
+      let line' = TH.line_of_tok token in
+      let info = TH.info_of_tok token in
+      (match token with
       | EOF ii ->
-	  let acc = (mark_end_define lastinfo) :: acc in
-	  let acc = (EOF ii) :: acc in
-          define_line_1 acc xs
+          define_line_1 (token::(mark_end_define lastinfo)::acc) tokens
       | TCppEscapedNewline ii ->
           if (line' <> line) then pr2 "PB: WEIRD: not same line number";
-	  let acc = (TCommentSpace ii) :: acc in
-          define_line_2 acc (line+1) info xs
-      | x ->
+          define_line_2 ((TCommentSpace ii)::acc) (line+1) info tokens
+      | _ ->
           if line' = line
-          then define_line_2 (x::acc) (end_line_of_tok line' x) info xs
+          then
+            define_line_2
+              (token::acc) (end_line_of_tok line' token) info tokens
           else
 	    (* Put end of line token before the newline.  A newline at least
 	       must be there because the line changed and because we saw a
 	       #define previously to get to this function at all *)
 	    define_line_1
 	      ((List.hd acc)::(mark_end_define lastinfo::(List.tl acc)))
-	      (x::xs)
+	      all_tokens
       )
 
 (* for a comment, the end line is not the same as line_of_tok *)
@@ -488,23 +477,21 @@ and end_line_of_tok default = function
       |	_ -> failwith (Printf.sprintf "bad comment: %d" (TH.line_of_tok t)))
   |  t -> default
 
-let rec define_ident acc xs =
-  match xs with
+let rec define_ident acc = function
   | [] -> List.rev acc
-  | TUndef ii::xs ->
-      let acc = TUndef ii :: acc in
-      (match xs with
+  | token::tokens ->
+    let acc = token::acc in
+    (match token with
+    | TUndef ii ->
+      (match tokens with
 	TCommentSpace i1::TIdent (s,i2)::xs ->
-	  let acc = (TCommentSpace i1) :: acc in
-	  let acc = (TIdentDefine (s,i2)) :: acc in
-          define_ident acc xs
+          define_ident ((TIdentDefine (s,i2))::(TCommentSpace i1)::acc) xs
       | _ ->
-          pr2 "WEIRD: weird #define body";
-          define_ident acc xs
+          pr2 "WEIRD: weird #undef body";
+          define_ident acc tokens
       )
-  | TDefine ii::xs ->
-      let acc = TDefine ii :: acc in
-      (match xs with
+    | TDefine ii ->
+      (match tokens with
       | TCommentSpace i1::TIdent (s,i2)::TOPar (i3)::xs ->
           (* Change also the kind of TIdent to avoid bad interaction
            * with other parsing_hack tricks. For instant if keep TIdent then
@@ -547,8 +534,7 @@ let rec define_ident acc xs =
           pr2 "WEIRD: weird #define body";
           define_ident acc xs
       )
-  | TPragma ii::xs ->
-      let acc = TPragma ii :: acc in
+    | TPragma ii ->
       let rec loop acc = function
 	  ((TDefEOL i1) as x) :: xs -> define_ident (x::acc) xs
 	| TCommentSpace i1::TIdent (s,i2)::xs ->
@@ -576,10 +562,9 @@ let rec define_ident acc xs =
 	| xs ->
             pr2 "WEIRD: weird #pragma";
             define_ident acc xs in
-      loop acc xs
-  | x::xs ->
-      let acc = x :: acc in
-      define_ident acc xs
+      loop acc tokens
+    | _ -> define_ident acc tokens
+    )
 
 
 

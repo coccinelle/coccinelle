@@ -1,3 +1,9 @@
+(*
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
+ *)
+
 (* Get user input from interactive (commandline) mode.
  * Returns the user input, formatted for use, and gives the user the
  * opportunity to save the input in a config file.

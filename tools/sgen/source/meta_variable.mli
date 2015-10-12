@@ -1,3 +1,9 @@
+(*
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
+ *)
+
 (* Extract all metavariables used in a rule. We can't really use the metavars
  * returned by the parser since a lot of them are missing.
  * This also means that metavariables declared in the header but unused in the

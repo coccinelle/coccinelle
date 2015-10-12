@@ -12,6 +12,12 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * file license.txt for more details.
  *)
+
+(**
+ * This grammar has been inspired by:
+ * http://www.lysator.liu.se/c/ANSI-C-grammar-y.html
+ *)
+
 open Common
 
 open Ast_c

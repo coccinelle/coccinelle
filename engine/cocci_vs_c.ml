@@ -1,3 +1,9 @@
+(*
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
+ *)
+
 open Common
 
 module A = Ast_cocci
@@ -2391,7 +2397,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
              let (iisub, lbb, rbb) = tuple_of_list3 ii in
              (iisub, [], lbb, rbb)
          | Some s ->
-             pr2 (sprintf
+             pr2 (Printf.sprintf
               "warning: both a typedef (%s) and struct name introduction (%s)"
               (Ast_c.str_of_name nameidb) s
              );

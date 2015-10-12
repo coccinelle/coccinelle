@@ -1,3 +1,9 @@
+(*
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
+ *)
+
 (* Arities matter for the minus slice, but not for the plus slice. *)
 
 (* + only allowed on code in a nest (in_nest = true).  ? only allowed on

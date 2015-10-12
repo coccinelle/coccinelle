@@ -1,3 +1,9 @@
+(*
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
+ *)
+
 open Ast_c
 open Common
 
@@ -76,6 +82,6 @@ let stringrep = function
     let print_pos = function
 	Ast_cocci.Real x -> string_of_int x
       | Ast_cocci.Virt(x,off) -> Printf.sprintf "%d+%d" x off in
-    Common.sprintf ("pos(%s,%s)") (print_pos pos1) (print_pos pos2)
+    Printf.sprintf ("pos(%s,%s)") (print_pos pos1) (print_pos pos2)
 | Ast_c.MetaPosValList positions -> "TODO: <<postvallist>>"
 | Ast_c.MetaNoVal -> failwith "no value, should not occur"

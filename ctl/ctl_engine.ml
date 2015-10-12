@@ -1,3 +1,9 @@
+(*
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
+ *)
+
 (*external c_counter : unit -> int = "c_counter"*)
 let timeout = 800
 (* Optimize triples_conj by first extracting the intersection of the two sets,
@@ -117,7 +123,7 @@ module OGRAPHEXT_GRAPH =
     type node = int;;
     type cfg = (string,unit) Ograph_extended.ograph_mutable;;
     let predecessors cfg n = List.map fst ((cfg#predecessors n)#tolist);;
-    let print_node i = Format.print_string (Common.i_to_s i)
+    let print_node i = Format.print_string (string_of_int i)
   end
 ;;
 

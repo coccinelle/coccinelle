@@ -21,7 +21,7 @@ let invariant xs =
     xs +> List.fold_left (fun min e ->
       match e with
       | Exact i ->
-          if i <= min then pr2 (sprintf "i = %d, min = %d" i min);
+          if i <= min then pr2 (Printf.sprintf "i = %d, min = %d" i min);
           (* todo: should be even stronger, should be i > min+1 *)
           assert (i > min);
           i
@@ -36,7 +36,7 @@ let invariant xs =
 
 let string_of_seti xs =
   "[" ^
-    join "," (xs +> List.rev +> map (function
+    String.concat "," (xs +> List.rev +> map (function
     | (Exact i) -> string_of_int i
     | (Interv (i,j)) -> Printf.sprintf "%d - %d" i j)) ^
     "]"
@@ -329,7 +329,7 @@ let patch1 xs = List.map exactize xs
 let patch2 xs = xs +> List.map (fun e ->
   match e with
   | Interv (i,j) when i > j && i = j+1 ->
-      let _ = pr2 (sprintf "i = %d, j = %d" i j) in
+      let _ = pr2 (Printf.sprintf "i = %d, j = %d" i j) in
       Exact i
   | e -> e
 )

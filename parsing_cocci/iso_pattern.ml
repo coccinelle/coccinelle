@@ -1,3 +1,9 @@
+(*
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
+ *)
+
 (* Potential problem: offset of mcode is not updated when an iso is
 instantiated, implying that a term may end up with many mcodes with the
 same offset.  On the other hand, at the moment offset only seems to be used

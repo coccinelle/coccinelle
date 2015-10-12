@@ -324,12 +324,12 @@ let compare_result_to_string (correct, diffxs) =
   | Pb s ->
       ("seems incorrect: " ^ s) ^ "\n" ^
         "diff (result(-) vs expected_result(+)) = " ^ "\n" ^
-        (diffxs +> Common.join "\n") ^ "\n"
+        (diffxs +> String.concat "\n") ^ "\n"
   | PbOnlyInNotParsedCorrectly s ->
       "seems incorrect, but only because of code that was not parsable" ^ "\n"^
         ("explanation:" ^ s) ^ "\n" ^
         "diff (result(-) vs expected_result(+)) = " ^ "\n" ^
-        (diffxs +> Common.join "\n") ^ "\n"
+        (diffxs +> String.concat "\n") ^ "\n"
 
 
 let compare_result_to_bool correct =

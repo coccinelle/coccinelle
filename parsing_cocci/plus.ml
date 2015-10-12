@@ -1,3 +1,9 @@
+(*
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
+ *)
+
 (* The plus fragments are converted to a list of lists of lists.
 Innermost list: Elements have type anything.  For any pair of successive
 elements, n and n+1, the ending line of n is the same as the starting line

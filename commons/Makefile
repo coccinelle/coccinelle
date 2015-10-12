@@ -11,22 +11,18 @@ TARGET=commons
 
 # note: if you add a file (a .mli or .ml), dont forget to redo a 'make depend'
 MYSRC=	commands.ml                              \
-	common.ml common_extra.ml                \
+	common.ml                                \
 	interfaces.ml objet.ml                   \
 	ocollection.ml                           \
 	seti.ml                                  \
 	oset.ml oassoc.ml osequence.ml ograph.ml \
-	ocollection/oseti.ml                     \
-	ocollection/oseth.ml                     \
 	ocollection/osetb.ml                     \
-	ocollection/osetpt.ml                    \
 	ocollection/oassocb.ml			 \
 	ocollection/oassoch.ml			 \
 	ocollection/oassoc_buffer.ml		 \
 	ocollection/oassoc_cache.ml		 \
 	ocollection/oassocid.ml			 \
 	oarray.ml				 \
-	ocollection/ograph2way.ml		 \
 	ograph_simple.ml ograph_extended.ml	 \
 	glimpse.ml parser_combinators.ml
 
@@ -50,7 +46,6 @@ endif
 
 # src from other authors, got from the web or caml hump
 SRC=ocamlextra/dumper.ml
-SRC+=ocamlextra/ANSITerminal.ml
 SRC+=ocamlextra/setb.ml ocamlextra/mapb.ml # defunctorized version of standard set/map
 SRC+=ocamlextra/setPt.ml
 SRC+=$(MYSRC)
@@ -71,12 +66,6 @@ SUBDIRS=ocamlextra ocollection
 #gdbm
 MYGDBMSRC=ocollection/oassocdbm.ml
 GDBMSYSLIBS=dbm.cma
-
-#berkeley db (ocamlbdb)
-MYBDBSRC=ocollection/oassocbdb.ml ocollection/oassocbdb_string.ml
-BDBINCLUDES=-I ../ocamlbdb
-BDBSYSLIBS=bdb.cma
-
 
 #lablgtk (ocamlgtk)
 MYGUISRC=gui.ml
@@ -176,21 +165,6 @@ commons_gdbm.cma: $(MYGDBMSRC:.ml=.cmo)
 
 commons_gdbm.cmxa: $(MYGDBMSRC:.ml=.cmx)
 	$(OCAMLOPT_CMD) -a -o $@ $^
-
-
-#-----------------------------------------------------------------------------
-bdb:
-	$(MAKE) INCLUDESEXTRA="$(BDBINCLUDES)" commons_bdb.cma
-bdb.opt:
-	$(MAKE) INCLUDESEXTRA="$(BDBINCLUDES)" commons_bdb.cmxa
-
-commons_bdb.cma: $(MYBDBSRC:.ml=.cmo)
-	$(OCAMLC_CMD) -a -o $@ $^
-
-commons_bdb.cmxa: $(MYBDBSRC:.ml=.cmx)
-	$(OCAMLOPT_CMD) -a -o $@ $^
-
-
 
 #-----------------------------------------------------------------------------
 gui:

@@ -1,3 +1,9 @@
+(*
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
+ *)
+
 (* create an index for each constructor *)
 (* current max is 188, also unused: 7-9, 15, 39, 40, 42, 46, 57, 65, 67, 85-86,
  88, 111, 113-115, 134-136, 138-140 *)
