@@ -706,7 +706,7 @@ let run rules neg_pos_vars =
 	      let extra_deps =
 		List.fold_left
 		  (function prev ->
-		    function (_,(rule,_),_) ->
+		    function (_,(rule,_),_,_) ->
 		      if rule = "virtual"
 		      then prev
 		      else Ast.AndDep (Ast.Dep rule,prev))

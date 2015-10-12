@@ -627,16 +627,23 @@ and rule =
 	top_level list * bool list (* true if generates an exp *) * ruletype
   | ScriptRule of string (* name *) *
       string * dependency *
-	(script_meta_name * meta_name * metavar) list *
+	(script_meta_name * meta_name * metavar * mvinit) list *
 	meta_name list (*script vars*) * string
   | InitialScriptRule of  string (* name *) * string * dependency *
-	(script_meta_name * meta_name * metavar) list (*virtual vars*) *
+	(script_meta_name * meta_name * metavar * mvinit)
+	  list (*virtual vars*) *
 	string
   | FinalScriptRule of  string (* name *) * string * dependency *
-	(script_meta_name * meta_name * metavar) list (*virtual vars*) *
+	(script_meta_name * meta_name * metavar * mvinit)
+	  list (*virtual vars*) *
 	string
 
 and script_meta_name = string option (*string*) * string option (*ast*)
+
+and mvinit =
+    NoMVInit
+  | MVInitString of string
+  | MVInitPosList
 
 and dependency =
     Dep of string (* rule applies for the current binding *)

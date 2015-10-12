@@ -24,7 +24,7 @@ module TH = Token_helpers
 but not comments and directives within deleted terms.  should use the
 labels found in the control-flow graph *)
 
-
+let default_indent = ref "\t"
 
 (*****************************************************************************)
 (* Wrappers *)
@@ -1352,10 +1352,12 @@ let add_newlines toks tabbing_unit =
     let (tu,tlen) =
       match tabbing_unit with
       | Some "\t" -> ("\t",8)
-      | Some "" -> ("\t",8) (* not sure why... *)
+	| None | Some "" ->
+	  if !Flag_parsing_c.indent = 0
+	  then ("\t",8) (* not sure why "" case... *)
+	  else (!default_indent,!Flag_parsing_c.indent)
       | Some s -> (* assuming only tabs or spaces *)
-	  (s,simple_string_length s 0)
-      | None -> ("\t",8) in
+	  (s,simple_string_length s 0) in
     let rec loop seen =
       if seen + tlen <= n
       then tu ^ loop (seen + tlen)
@@ -1948,7 +1950,8 @@ let update_map_min n spaces tabbing_unit past_minus_map depthmin dmin
 
 let times before n tabbing_unit ctr =
   (if n < 0 then failwith (Printf.sprintf "n is %d\n" n));
-  let tabbing_unit = match tabbing_unit with None -> "\t" | Some tu -> tu in
+  let tabbing_unit =
+    match tabbing_unit with None -> !default_indent | Some tu -> tu in
   let rec loop = function
       0 -> before
     | n -> (loop (n-1)) ^ tabbing_unit in
@@ -1957,7 +1960,8 @@ let times before n tabbing_unit ctr =
 (* adds to the front *)
 let times_before after n tabbing_unit ctr =
   (if n < 0 then failwith (Printf.sprintf "n is %d\n" n));
-  let tabbing_unit = match tabbing_unit with None -> "\t" | Some tu -> tu in
+  let tabbing_unit =
+    match tabbing_unit with None -> !default_indent | Some tu -> tu in
   let rec loop = function
       0 -> after
     | n -> tabbing_unit ^ (loop (n-1)) in
@@ -1966,7 +1970,8 @@ let times_before after n tabbing_unit ctr =
 (* drops from the front *)
 let untimes_before cur n tabbing_unit ctr =
   (if n < 0 then failwith (Printf.sprintf "n is %d\n" n));
-  let tabbing_unit = match tabbing_unit with None -> "\t" | Some tu -> tu in
+  let tabbing_unit =
+    match tabbing_unit with None -> !default_indent | Some tu -> tu in
   let len = String.length tabbing_unit in
   let tabbing_unit = Str.regexp_string tabbing_unit in
   let rec loop cur = function
@@ -2404,9 +2409,13 @@ let pp_program2 xs outfile  =
   )
 
 let pp_program a b =
+  (if !Flag_parsing_c.indent > 0
+  then default_indent := String.make !Flag_parsing_c.indent ' ');
   profile_code "C unparsing" (fun () -> pp_program2 a b)
 
 
 let pp_program_default xs outfile =
+  (if !Flag_parsing_c.indent > 0
+  then default_indent := String.make !Flag_parsing_c.indent ' ');
   let xs' = xs +> List.map (fun x -> x, PPnormal) in
   pp_program xs' outfile

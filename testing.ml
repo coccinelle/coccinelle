@@ -523,7 +523,7 @@ let test_rule_dependencies file =
 	  print_dotted_link nm !prevrule;
 	  prevrule := nm;
 	  depto t nm dep;
-	  List.iter (function (_,(parent,_),_) -> print_link t nm parent)
+	  List.iter (function (_,(parent,_),_,_) -> print_link t nm parent)
 	    script_vars
       | Ast_cocci.InitialScriptRule (_,_,_,_,_)
       | Ast_cocci.FinalScriptRule (_,_,_,_,_) -> ()

@@ -1,6 +1,6 @@
 val run :
     (Ast_cocci.script_meta_name * Ast_cocci.meta_name *
-       Ast_cocci.metavar) list ->
+       Ast_cocci.metavar * Ast_cocci.mvinit) list ->
     Ast_c.metavars_binding (*virts*) ->
     Ast_cocci.meta_name list (*fresh vars*) ->
     string (*rule name*) ->

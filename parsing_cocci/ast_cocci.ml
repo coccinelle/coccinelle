@@ -656,18 +656,26 @@ and rule =
   | ScriptRule of string (* name *) *
       (* metaname for python (untyped), metavar for ocaml (typed) *)
       string (*language*) * dependency *
-	(script_meta_name * meta_name * metavar) list (*inherited vars*) *
+	(script_meta_name * meta_name * metavar * mvinit)
+	  list (*inherited vars*) *
 	meta_name list (*script vars*) * string
   | InitialScriptRule of  string (* name *) *
 	string (*language*) * dependency *
-	(script_meta_name * meta_name * metavar) list (*virtual vars*) *
+	(script_meta_name * meta_name * metavar * mvinit)
+	  list (*virtual vars*) *
 	string (*code*)
   | FinalScriptRule of  string (* name *) *
 	string (*language*) * dependency *
-	(script_meta_name * meta_name * metavar) list (*virtual vars*) *
+	(script_meta_name * meta_name * metavar * mvinit)
+	  list (*virtual vars*) *
 	string (*code*)
 
 and script_meta_name = string option (*string*) * string option (*ast*)
+
+and mvinit =
+    NoMVInit
+  | MVInitString of string
+  | MVInitPosList
 
 and dependency =
     Dep of string (* rule applies for the current binding *)

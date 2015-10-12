@@ -261,9 +261,19 @@ let construct_variables mv e =
 	(pytuple_fromarray (Array.of_list [str;elements])) in
     let _ = build_variable py repr in () in
 
-  List.iter (function (py,(r,m),_) ->
+  List.iter (function (py,(r,m),_,init) ->
     match find_binding (r,m) with
-      None -> ()
+      None ->
+	(match init with
+	  Ast_cocci.MVInitString s ->
+            let _ = build_variable py (pystring_fromstring s) in
+	    ()
+	| Ast_cocci.MVInitPosList ->
+	    let pylocs = pytuple_fromarray (Array.of_list []) in
+	    let _ = build_variable py pylocs in
+	    ()
+	| Ast_cocci.NoMVInit ->
+	    failwith "python variables should be bound")
 (*    | Some (_, Ast_c.MetaExprVal (expr,_,_)) ->
        let expr_repr = instantiate_Expression(expr) in
        let _ = build_variable py expr_repr in

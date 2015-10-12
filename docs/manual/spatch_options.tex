@@ -576,6 +576,11 @@ stars are used in column 0 rather than {\tt -} and {\tt +}, then the {\tt
     -{}-smpl-spacing} causes spatch to follow the spacing given in the
   semantic patch, within individual lines.}
 
+\normal{-{}-indent $n$}{The number of spaces to indent, if no other
+  information is available.  If this information is not provided, then the
+  default indentation is a tab.  This option is thus particularly relevent
+  to projects that don't use tabs.}
+
 \rare{-o $\langle$file$\rangle$}{ This causes the transformed code to be
   placed in the file {\tt file}.  The difference between the original code
   and the transformed code is still printed to the standard output using

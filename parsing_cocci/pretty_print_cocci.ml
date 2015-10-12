@@ -77,7 +77,7 @@ let print_pos l =
     (function
 	Ast.MetaPos(name,_,_,_,_) ->
 	  let name = Ast.unwrap_mcode name in
-	  print_string "@"; print_meta name)
+	  print_string "@"; print_meta name; print_space())
     l
 
 let mcode fn = function
@@ -1077,7 +1077,7 @@ let script_header str lang deps mv code =
   print_string "@";
   force_newline();
   List.iter
-    (function (script_name,inh_name,_ty) ->
+    (function (script_name,inh_name,_ty,init) ->
       (match script_name with
 	(None,None) -> print_string "(_,_)"
       |	(Some x,None) -> print_string x
@@ -1085,6 +1085,13 @@ let script_header str lang deps mv code =
       |	(Some x,Some a) -> print_string (Printf.sprintf "(%s,%s)" x a));
       print_string " << ";
       print_string (Printf.sprintf "%s.%s" (fst inh_name) (snd inh_name));
+      (match init with
+	Ast.NoMVInit -> ()
+      | Ast.MVInitString s ->
+	  print_space(); print_string "="; print_space();
+	  print_string "\""; print_string s; print_string "\""
+      | Ast.MVInitPosList ->
+	  print_space(); print_string "="; print_space(); print_string "[]");
       print_string ";";
       force_newline())
     mv;
@@ -1125,6 +1132,7 @@ let unparse mvs z =
       force_newline();
       force_newline();
       rule x;
+      force_newline();
       force_newline()
 
 let rule_elem_to_string x =

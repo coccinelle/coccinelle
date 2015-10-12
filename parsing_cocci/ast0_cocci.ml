@@ -483,14 +483,17 @@ and parsed_rule =
          Ast.dependency (*dependencies*) * string (*rulename*) * Ast.exists)) *
       (rule (*plus*) * Ast.metavar list (*plus metavars*)) * Ast.ruletype
   | ScriptRule of string (* name *) * string * Ast.dependency *
-	(Ast.script_meta_name * Ast.meta_name * Ast.metavar) list *
+	(Ast.script_meta_name * Ast.meta_name * Ast.metavar * Ast.mvinit)
+	  list *
 	Ast.meta_name list (*script vars*) *
 	string
   | InitialScriptRule of string (* name *) * string * Ast.dependency *
-	(Ast.script_meta_name * Ast.meta_name * Ast.metavar) list *
+	(Ast.script_meta_name * Ast.meta_name * Ast.metavar * Ast.mvinit)
+	  list *
 	string
   | FinalScriptRule of string (* name *) * string * Ast.dependency *
-	(Ast.script_meta_name * Ast.meta_name * Ast.metavar) list *
+	(Ast.script_meta_name * Ast.meta_name * Ast.metavar * Ast.mvinit)
+	  list *
 	string (* no script vars possible here *)
 
 (* --------------------------------------------------------------------- *)

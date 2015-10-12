@@ -341,8 +341,8 @@ rule_name
 %start meta_main
 %type <(Ast_cocci.metavar,Ast_cocci.metavar) Common.either list> meta_main
 
-%start <(string option (*string*) * string option (*ast*)) * (Ast_cocci.meta_name * Ast_cocci.metavar) option> script_meta_main
-%start <(string option (*string*) * string option (*ast*)) * (Ast_cocci.meta_name * Ast_cocci.metavar) option> script_meta_virt_nofresh_main
+%start <(string option (*string*) * string option (*ast*)) * (Ast_cocci.meta_name * Ast_cocci.metavar) option * Ast_cocci.mvinit> script_meta_main
+%start <(string option (*string*) * string option (*ast*)) * (Ast_cocci.meta_name * Ast_cocci.metavar) option * Ast_cocci.mvinit> script_meta_virt_nofresh_main
 
 %start iso_main
 %type <Ast0_cocci.anything list list> iso_main
@@ -2946,15 +2946,15 @@ never_used: TDirective { () }
 
 script_meta_main:
     py=pure_ident TMPtVirg
-  { ((Some (P.id2name py), None), None) }
-  | py=pure_ident script_name_decl TMPtVirg
-  { ((Some (P.id2name py), None), Some $2) }
+  { ((Some (P.id2name py), None), None, Ast.NoMVInit) }
+  | py=pure_ident script_name_decl_ext TMPtVirg
+  { ((Some (P.id2name py), None), Some (fst $2), snd $2) }
   | TOPar TUnderscore TComma ast=pure_ident TCPar script_name_decl TMPtVirg
-  { ((None, Some (P.id2name ast)), Some $6) }
-  | TOPar str=pure_ident TComma TUnderscore TCPar script_name_decl TMPtVirg
-  { ((Some (P.id2name str), None), Some $6) }
+  { ((None, Some (P.id2name ast)), Some $6, Ast.NoMVInit) }
+  | TOPar str=pure_ident TComma TUnderscore TCPar script_name_decl_ext TMPtVirg
+  { ((Some (P.id2name str), None), Some (fst $6), snd $6) }
   | TOPar str=pure_ident TComma ast=pure_ident TCPar script_name_decl TMPtVirg
-  { ((Some (P.id2name str), Some (P.id2name ast)), Some $6) }
+  { ((Some (P.id2name str), Some (P.id2name ast)), Some $6, Ast.NoMVInit) }
 
 script_name_decl:
     TShLOp TRuleName TDot cocci=pure_ident
@@ -2970,9 +2970,31 @@ script_name_decl:
         let mv = Ast.MetaIdDecl(Ast.NONE,name) in
         (name,mv) }
 
+script_name_decl_ext:
+    script_name_decl { ($1,Ast.NoMVInit) }
+  | script_name_decl TEq TString
+    { let (nm,mv) = $1 in
+      match mv with
+	Ast.MetaPosDecl _ ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       "default value of position variable should be a list")
+      | _ ->
+	  let (s,clt) = $3 in
+	  ($1,Ast.MVInitString s) }
+  | script_name_decl TEq TOCro TCCro
+    { let (nm,mv) = $1 in
+      match mv with
+	Ast.MetaPosDecl _ ->
+	  ($1,Ast.MVInitPosList) (* just empty, so nothing to record *)
+      | _ ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       "default value of non-position variable should be a string") }
+
 script_meta_virt_nofresh_main:
     py=pure_ident script_virt_name_decl TMPtVirg
-  { ((Some (P.id2name py), None), Some $2) }
+  { ((Some (P.id2name py), None), Some $2, Ast.NoMVInit) }
 
 script_virt_name_decl:
     TShLOp TVirtual TDot cocci=pure_ident
