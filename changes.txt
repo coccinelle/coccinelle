@@ -27,6 +27,7 @@
 - Conjunction (analogous to disjunction)
 - Drop Circles, Stars
 - Drop Unique
+- Default values for script metavariables
 ** Features:
 - Removed the extlib and sexp bundles which were not used any more.
 - Drop support for OCaml 3.11 which did not allow to compile coccinelle in
@@ -34,6 +35,7 @@
 - Print metavariables properly for script code.
 - Print metavariables properly for cocci code.
 - SYSCALL_DEFINE macros, contributed by Jörn Engel
+- --indent option, giving default indent, for projects not using tabs
 ** Bugfix:
 - Allow virtual variable definition to contain an =.
 * 1.0.2

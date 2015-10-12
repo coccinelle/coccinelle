@@ -597,6 +597,8 @@ let other_options = [
     "  spacing of + code follows the conventions of Linux";
     "--smpl-spacing", Arg.Unit Flag_parsing_c.set_smpl_spacing,
     "  spacing of + code follows the semantic patch";
+    "--indent", Arg.Set_int Flag_parsing_c.indent,
+    "  default indent, in spaces (no tabs)";
     "-D", Arg.String Flag.set_defined_virtual_rules,
     "  indicate that a virtual rule should be considered to be matched";
     "--c++", Arg.Set Flag.c_plus_plus,
