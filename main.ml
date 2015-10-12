@@ -935,8 +935,8 @@ let rec main_action xs =
             (* kbuild *)
 	      | true, kbuild_info_file,_,_ ->
 		  let dirs =
-                    Common.cmd_to_list ("find "^(String.concat " " (x::xs))^" -type d")
-                  in
+                    Common.cmd_to_list
+		      ("find "^(String.concat " " (x::xs))^" -type d") in
 		  let info = Kbuild.parse_kbuild_info kbuild_info_file in
 		  let groups = Kbuild.files_in_dirs dirs info in
 
@@ -1048,7 +1048,8 @@ let rec main_action xs =
 		  flush stderr;
 
 		  Common.timeout_function_opt !FC.timeout (fun () ->
-		    Common.report_if_take_time 10 (String.concat " " cfiles) (fun () ->
+		    Common.report_if_take_time 10 (String.concat " " cfiles)
+		      (fun () ->
                       try
 			let optfile =
 			  if !output_file <> "" && !compat_mode then

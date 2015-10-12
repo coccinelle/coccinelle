@@ -120,7 +120,7 @@ let process_files iso_file noiso_file =
 		   (function (noiso_total,noiso_parse) ->
 		     let total_ovd = iso_total -. noiso_total in
 		     let parse_ovd = iso_parse -. noiso_parse in
-		     if total_ovd < 0.001 or parse_ovd > total_ovd or
+		     if total_ovd < 0.001 || parse_ovd > total_ovd ||
 		       parse_ovd < 0.0
 		     then acc
 		     else (parse_ovd /. total_ovd) :: acc)))
@@ -137,7 +137,7 @@ let process_files iso_file noiso_file =
 		   (function (noiso_total,noiso_mysat) ->
 		     let total_ovd = iso_total -. noiso_total in
 		     let mysat_ovd = iso_mysat -. noiso_mysat in
-		     if total_ovd < 0.001 or mysat_ovd > total_ovd or
+		     if total_ovd < 0.001 || mysat_ovd > total_ovd ||
 		       mysat_ovd < 0.0
 		     then acc
 		     else (mysat_ovd /. total_ovd) :: acc)))

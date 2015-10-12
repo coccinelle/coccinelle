@@ -524,8 +524,8 @@ let worth_trying2 cfiles (tokens,_,query,_) =
 
       ) in
       let com =
-	Printf.sprintf "egrep -q '(%s)' %s" (String.concat "|" tokens) (String.concat " " cfiles)
-      in
+	Printf.sprintf "egrep -q '(%s)' %s"
+	  (String.concat "|" tokens) (String.concat " " cfiles) in
       (match Sys.command com with
       | 0 (* success *) -> true
       | _ (* failure *) ->

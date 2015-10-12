@@ -36,7 +36,7 @@ let main () =
     let options = [
     ] in
     let usage_msg =
-      "Usage: " ^ basename Sys.argv.(0) ^
+      "Usage: " ^ Filename.basename Sys.argv.(0) ^
         " <file> [options]" ^ "\n" ^ "Options are:"
     in
 
