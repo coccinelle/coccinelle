@@ -931,9 +931,10 @@ let rec unparse_cocci_mv rule = function
   | Ast.MetaParamDecl(_,(r,n)) ->
       print_string "parameter "; print_name rule r n; print_string ";"
   | Ast.MetaBinaryOperatorDecl(_,(r,n)) -> (* missing constraints *)
-      print_string "binary "; print_name rule r n; print_string ";"
+      print_string "binary operator "; print_name rule r n; print_string ";"
   | Ast.MetaAssignmentOperatorDecl(_,(r,n)) -> (* missing constraints *)
-      print_string "assignment "; print_name rule r n; print_string ";"
+      print_string "assignment operator "; print_name rule r n;
+      print_string ";"
   | Ast.MetaParamListDecl(_,(r,n),len) ->
       print_string "parameter list"; print_listlen rule len;
       print_name rule r n; print_string ";"
