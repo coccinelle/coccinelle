@@ -65,7 +65,7 @@ let main () =
              let cpp_flags = cpp_flags_filter args in
              let cmd2 =
                (spf "cpp %s %s > %s.i"
-                  (Common.join " " cpp_flags)
+                  (String.concat " " cpp_flags)
                   file
                   file)
              in
@@ -73,7 +73,7 @@ let main () =
                let ret2 = Sys.command cmd2 in
 		 if ret2 > 0 then exit ret2;
 		 let sp_args = fix_args args file in
-		 let cmd = "spatch " ^ (Common.join " " sp_args) in
+		 let cmd = "spatch " ^ (String.concat " " sp_args) in
 		   pr2 cmd;
 		   let ret = Sys.command cmd in
 		     exit ret
@@ -87,7 +87,7 @@ let main () =
       let (nargs, outfile) = get_outputfile args in
       let cmd2 =
         (spf "cat %s > %s"
-                  (Common.join " " nargs)
+                  (String.concat " " nargs)
                   outfile)
       in
         pr2 cmd2;
