@@ -1079,36 +1079,6 @@ let format_to_string f =
  ...
 *)
 
-
-
-(*****************************************************************************)
-(* Macro *)
-(*****************************************************************************)
-
-(* put your macro in macro.ml4, and you can test it interactivly as in lisp *)
-let macro_expand s =
-  let c = open_out "/tmp/ttttt.ml" in
-  begin
-    output_string c s; close_out c;
-    command2 (Commands.ocamlc_cmd ^ " -c -pp '" ^ Commands.camlp4o_cmd ^" pa_extend.cmo q_MLast.cmo -impl' " ^
-             "-I +" ^ Commands.camlp4_cmd ^ " -impl macro.ml4");
-    command2 (Commands.camlp4o_cmd ^" ./macro.cmo pr_o.cmo /tmp/ttttt.ml");
-    Unix.unlink "/tmp/ttttt.ml";
-  end
-
-(*
-let t = macro_expand "{ x + y | (x,y) <- [(1,1);(2,2);(3,3)] and x>2 and y<3}"
-let x = { x + y | (x,y) <- [(1,1);(2,2);(3,3)] and x > 2 and y < 3}
-let t = macro_expand "{1 .. 10}"
-let x = {1 .. 10} +> List.map (fun i -> i)
-let t = macro_expand "[1;2] to append to [2;4]"
-let t = macro_expand "{x = 2; x = 3}"
-
-let t = macro_expand "type 'a bintree = Leaf of 'a | Branch of ('a bintree * 'a bintree)"
-*)
-
-
-
 (*****************************************************************************)
 (* Composition/Control *)
 (*****************************************************************************)
