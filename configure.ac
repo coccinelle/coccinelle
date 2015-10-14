@@ -230,19 +230,6 @@ AS_IF([test -n "$SUBSTITUTED_OCAMLFIND"],
   ])
 ])
 
-dnl  scripting requirement on camlp4
-AS_IF([test "x$CAMLP4" = xno],
-[dnl
-  AS_IF([test -z "$enable_ocaml"],
-  [dnl  this is perhaps a bit too strict
-    AC_SUBST([enable_ocaml],no)
-    AC_MSG_NOTICE([ocaml scripting is disabled because it requires camlp4 which is not available])
-  ], [test "x$enable_ocaml" != xno],
-  [dnl
-    AC_MSG_NOTICE([warning: camlp4 is not found but may be required when ocaml scripts are used])
-  ])
-])
-
 AS_IF([test "x$enable_ocaml" = xno],
 [dnl
   AC_COCCI_INIT_PKG_EMPTY([dynlink])    dnl  prevent linking with it
