@@ -1984,6 +1984,10 @@ and statement stmt top after quantified minus_quantified
   | Ast.Conj(stmt_dots_list) -> (* list shouldn't be empty *)
       (*ctl_and        seems pointless, disjuncts see label too
 	(label_pred_maker label)*)
+      let allfvs = List.map Ast.get_fvs stmt_dots_list in
+      let sharedfvs =
+	List.concat (List.map snd (seq_fvs quantified allfvs)) in
+      let quantified = Common.union_set sharedfvs quantified in
       let subformulas =
 	List.map
 	  (function sl ->
@@ -1994,7 +1998,8 @@ and statement stmt top after quantified minus_quantified
 	match top with
 	  Top -> List.map2 protect_top_level stmt_dots_list subformulas
 	| NotTop -> subformulas in
-      List.fold_left ctl_and CTL.True safe_subformulas
+      quantify guard sharedfvs
+	(List.fold_left ctl_and CTL.True safe_subformulas)
 
   | Ast.Nest(starter,stmt_dots,ender,whencode,multi,bef,aft) ->
       (* label in recursive call is None because label check is already
