@@ -34,9 +34,9 @@ let matches pattern line =
   with Not_found -> false
 
 let match_one start dir cl pattern line =
-  if ((start = '-' && dir = Minus) or
-      (start = '+' && dir = Plus) or
-      (cl && dir = ChangeLog) or
+  if ((start = '-' && dir = Minus) ||
+      (start = '+' && dir = Plus) ||
+      (cl && dir = ChangeLog) ||
       (not (start = '-') && not (start = '+') && dir = Context))
   then matches pattern line
   else false
@@ -87,7 +87,7 @@ let scan allpatterns i maxlen =
 	else
 	  begin
 	    let start = String.get line 0 in
-	    (if start = '-' or start = '+' then changed := !changed + 1);
+	    (if start = '-' || start = '+' then changed := !changed + 1);
 	    let fails =
 	      List.exists
 		(function (dir,ok,pattern) ->
@@ -147,7 +147,7 @@ let scan_grouped allpatterns i maxlen =
 	if String.length line > 0
 	then
 	    let first_char = String.get line 0 in
-	    (if first_char = '-' or first_char = '+'
+	    (if first_char = '-' || first_char = '+'
 	    then changed := !changed + 1);
 	    let new_mp =
 	      match first_char with
@@ -247,7 +247,7 @@ let _ =
     if List.exists
 	(function
 	    (_,Neg,_) -> true
-	  | (dir,_,_) -> not (dir = Minus or dir = Plus))
+	  | (dir,_,_) -> not (dir = Minus || dir = Plus))
 	requirements
     then
       failwith
