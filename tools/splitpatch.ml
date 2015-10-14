@@ -541,7 +541,7 @@ let make_message_files subject cover message nonmessage date maintainer_table
       (function (services,maintainers) ->
 	function diffs ->
 	  function rest ->
-	    if services=[default_string] or nomerge
+	    if services=[default_string] || nomerge
 	    then
 	      (* if no maintainer, then one file per diff *)
 	      let diffs =
@@ -656,11 +656,10 @@ let make_cover_file n file subject cover front date maintainer_table =
       let adjust_after =
 	match !prefix_after with
 	  None -> l
-	| Some pb ->
-	    let pb = (String.concat "/" (Str.split (Str.regexp "/") pb))^"/" in
-	    Printf.eprintf "pb %s\n" pb;
+	| Some pa ->
+	    let pa = (String.concat "/" (Str.split (Str.regexp "/") pa))^"/" in
 	    List.map
-	      (function l -> String.concat "" (Str.split (Str.regexp pb) l))
+	      (function l -> String.concat "" (Str.split (Str.regexp pa) l))
 	      l in
       List.iter
 	(function line -> Printf.fprintf o "%s\n" line)
