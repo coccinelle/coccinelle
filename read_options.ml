@@ -28,7 +28,7 @@ let split_at_spaces s = Str.split (Str.regexp "[ \t]+") s
 
 (* not very robust - may just skip some garbage lines *)
 let rec read_to_header i l =
-  if l = "" or String.get l 0 = '#' (* comment character *)
+  if l = "" || String.get l 0 = '#' (* comment character *)
   then read_to_header i (input_line i)
   else
     match Str.split_delim (Str.regexp_string "[") l with
@@ -47,7 +47,7 @@ let parse_file file =
       "spatch" ->
 	let rec iloop _ =
 	  let l = input_line i in
-	  if l = "" or String.get l 0 = '#' (* comment character *)
+	  if l = "" || String.get l 0 = '#' (* comment character *)
 	  then iloop()
 	  else
 	  (* bounded split doesn't split at = in value part *)
@@ -112,7 +112,7 @@ let read_options arglist =
   let (before,after,dir) = process_arglist arglist in
   let dir_options =
     let rec loop dir =
-      if dir = hd or dir = "." or dir = cwd
+      if dir = "/" || dir = "." || dir = hd || dir = cwd
       then None
       else
 	match check_one (Printf.sprintf "%s/.cocciconfig" dir) with
