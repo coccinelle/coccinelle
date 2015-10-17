@@ -63,10 +63,11 @@ LFLAGS = -lflags '$(SYSLIBS) $(LIBS)'
 
 all: $(TARGET)
 
+# currently no support for opt
+all.opt: $(TARGET)
+
 $(TARGET): $(CONFIG) $(LIBS) $(GENERATED) $(FULL_SRC)
-	@$(ECHO) -e "\n\n\tCompiling spgen ...\n\n"
 	$(OCAMLC_CMD) -custom -o $(TARGET) $(SYSLIBS) $(LIBS) $(GENERATED) $(FULL_SRC)
-	@$(ECHO) -e "\n\n\tspgen can now be installed via 'make install'.\n\n"
 
 clean:
 	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot
@@ -79,28 +80,29 @@ $(CONFIG) $(LIBS):
 	@echo "\n\n\tYou need to compile Coccinelle first.\n\n"
 	@false
 
-install: $(TARGET)
-	# this is a small hack to avoid having to reconfigure the installation
-	# directory path (and to avoid having the cocci config depend on spgen)
-	if !([ -e $(SCRIPTDIR)/spgen.sh ]); then \
-	  sed "\_^"PREFIX"=_ s_=.*_="$(prefix)"_" $(SCRIPTDIR)/spgen.sh.in > \
-	  $(SCRIPTDIR)/spgen.sh; \
-	fi;
+$(SCRIPTDIR)/spgen.sh:
+	@$(ECHO) -e "\n\n\tYou need to run ./configure from the Coccinelle directory first.\n\n"
+	@false
 
+install: $(TARGET) $(SCRIPTDIR)/spgen.sh uninstall-legacy
+	rm -f $(DESTDIR)$(BINDIR)/$(TARGET)
 	$(MKDIR_P) $(INSTALLDIR)
 	$(INSTALL_PROGRAM) $(TARGET) $(INSTALLDIR)/$(TARGET)
-	$(INSTALL_PROGRAM) $(SCRIPTDIR)/spgen.sh $(DESTDIR)$(BINDIR)/spgen
-	@$(ECHO) -e "\n\n\tspgen installed: DONE!!!\n\n"
+	$(INSTALL_PROGRAM) $(SCRIPTDIR)/spgen.sh $(DESTDIR)$(BINDIR)/$(TARGET)
 
-uninstall:
+uninstall-legacy:
+	# legacy cleanup, from when the tool was called sgen
+	rm -f $(DESTDIR)$(BINDIR)/sgen $(SCRIPTDIR)/sgen.sh
+	rm -rf $(DESTDIR)$(LIBDIR)/sgen
+
+uninstall: uninstall-legacy
 	rm -f $(DESTDIR)$(BINDIR)/$(TARGET)
 	rm -f $(INSTALLDIR)/$(TARGET)
-	rm -f $(SCRIPTDIR)/spgen.sh
 	rmdir $(INSTALLDIR)
-	@$(ECHO) -e "\n\n\tspgen uninstalled: DONE!!!\n\n"
 
 $(LEXER_SRC:.mll=.ml) :	$(LEXER_SRC)
 	$(OCAMLLEX) $(LEXER_SRC)
 
+.PHONY: depend
 .depend depend: $(GENERATED)
 	$(OCAMLDEP) *.mli *.ml > .depend

@@ -3,8 +3,8 @@
 # See copyright.txt in the Coccinelle source code for more information.
 # The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
 
-PREFIX=replace_me
 TARGET=spgen
-SHAREDIR=""${PREFIX}/lib/coccinelle/spgen""
+exec_prefix=@prefix@
+LIBDIR=@libdir@/coccinelle/spgen""
 
-exec ""${SHAREDIR}/${TARGET}"" "$@"
+exec ""${LIBDIR}/${TARGET}"" "$@"

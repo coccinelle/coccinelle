@@ -518,6 +518,7 @@ AC_CONFIG_FILES([
   globals/config.ml globals/regexp.ml python/pycocci.ml
   ocaml/prepare_ocamlcocci.ml
   scripts/spatch.sh
+  tools/spgen/scripts/spgen.sh
   docs/spatch.1
   setup/Makefile
 ])
