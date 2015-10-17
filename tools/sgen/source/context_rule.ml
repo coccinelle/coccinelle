@@ -31,15 +31,16 @@ let generate ~context_mode ~disj_map ~new_name ~rule =
 
   | Ast0.CocciRule ((minus_rule,_,(isos,drop_isos,deps,old_nm,exists)),_,_) ->
 
-      (* generated rule names *)
       let context_nm = Globals.get_context_name ~context_mode new_name in
       let disj_nm = Globals.get_disj_name new_name in
 
-      (* RULE BODY + ADDED METAPOSITIONS *)
+      let meta_vars = MV.extract ~minus_rule ~rule_name:old_nm in
+      let deps = Globals.add_context_dependency ~context_mode deps in
+      let rh_fn = Rule_header.generate ~isos ~drop_isos ~deps ~meta_vars in
+
       let (pos, (context_body, disj)) =
         Rule_body.generate ~context_mode ~disj_map ~minus_rule in
-
-      let _ = if List.length pos = 0 then failwith
+      let _ = if pos = [] then failwith
         ("MEGA ERROR: Congratulations! You managed to write a Coccinelle " ^
          "rule that sgen was unable to add a position to! The rule is \"" ^
          old_nm ^ "\".") in
@@ -50,13 +51,6 @@ let generate ~context_mode ~disj_map ~new_name ~rule =
       (* the added position metavariables in inherited scope (for scripts) *)
       let pos_inh = List.map (MV.inherit_rule ~new_rule:context_nm) pos_mv in
 
-      (* RULE HEADER *)
-      (* call MV.extract on original rulename to avoid rule inheritance. *)
-      let meta_vars = MV.extract ~minus_rule ~rule_name:old_nm in
-      let deps = Globals.add_context_dependency ~context_mode deps in
-      let rh_fn = Rule_header.generate ~isos ~drop_isos ~deps ~meta_vars in
-
-      (* check if any extra generated disj rule *)
       match disj with
       | None ->
 

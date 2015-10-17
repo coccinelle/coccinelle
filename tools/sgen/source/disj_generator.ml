@@ -154,7 +154,8 @@ let generate_expression ~strfn ~exprfn ~expr ~at_top s =
       exprfn e snp
     else
       match PG.expression_pos e snp with
-      | Some (ee, snp) -> exprfn ee snp | None -> failwith "no unpos cases" in
+      | Some (ee, snp) -> exprfn ee snp
+      | None -> failwith "no unpos cases" in
 
   match Ast0.unwrap expr with
   | Ast0.DisjExpr(lp, elist, pipes, rp) ->

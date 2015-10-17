@@ -40,7 +40,11 @@ let make_pos (_, arity, info, mcodekind, _, adj) snp
 (* ------------------------------------------------------------------------- *)
 (* ALWAYS POSITION GENERATORS: always possible to generate pos *)
 
-(* adds generated metaposition to mcode unless it is optional *)
+(* adds generated metaposition to mcode unless it is optional.
+ * yes, this contradicts the above statement. But it will never result in an
+ * error because it is not possible to write an SmPL script with only optional
+ * components.
+ *)
 let mcode_pos ((x, a, info, mc, pos, q) as mco) snp
 : 'a Ast0.mcode * Snap.t =
   if a = Ast0.OPT then

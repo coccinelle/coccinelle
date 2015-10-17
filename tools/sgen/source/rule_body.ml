@@ -162,8 +162,11 @@ let star_dotsstmtfn ~context_mode combiner stmtdots =
    *)
   let do_not_star x =
     match Ast0.unwrap x with
-    | Ast0.Nest _ | Ast0.Dots _ | Ast0.Disj _
-    | Ast0.MetaStmt _ -> true | _ -> false in
+    | Ast0.Nest _
+    | Ast0.Dots _
+    | Ast0.Disj _
+    | Ast0.MetaStmt _ -> true
+    | _ -> false in
 
   (* increase line number if not in context_mode (if context_mode, we don't
    * want to modify layout, only add positions).
