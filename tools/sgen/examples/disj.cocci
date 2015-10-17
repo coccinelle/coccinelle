@@ -3,11 +3,14 @@
 // The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
 
 @disj@
-expression E1, E2;
+expression E1, E2, E3;
 identifier x;
 @@
 
-if (E2 < ...) { ...
+if (E2 <
+- E3
++ E1
+ ) { ...
 (
 some_function(0);
 x = 30;

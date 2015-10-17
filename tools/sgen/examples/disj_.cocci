@@ -15,11 +15,14 @@ virtual org
 virtual report
 
 @disj depends on patch && !context && !org && !report@
-expression E1, E2;
+expression E1, E2, E3;
 identifier x;
 @@
 
-if (E2 < ...) { ...
+if (E2 <
+- E3
++ E1
+ ) { ...
 (
 some_function(0);
 x = 30;
@@ -41,11 +44,13 @@ x = 30;
 
 @disj_context depends on !patch && (context || org || report) exists@
 identifier x;
-expression E1, E2;
+expression E1, E2, E3;
 position j0, j1;
 @@
 
-if (E2@j0 < ...) { ...
+if (E2@j0 <
+ E3
+ ) { ...
 (
 some_function(0);
 x = 30;
@@ -63,11 +68,13 @@ x = 30;
 
 @disj_disj depends on !patch && (context || org || report)@
 identifier x;
-expression E1, E2;
+expression E1, E2, E3;
 position disj_context.j0, disj_context.j1;
 @@
 
-if (E2@j0 < ...) { ...
+if (E2@j0 <
+*  E3
+ ) { ...
 (
 *  this@j1(E1);
 |
@@ -97,6 +104,6 @@ j0 << disj_context.j0;
 j1 << disj_context.j1;
 @@
 
-msg = "Report message. Remove call to this(%s) and replace with call to that(%s). around line %s." % (E1,E2,j1[0].line)
+msg = "Report message. Remove call to this(%s) and replace with call to that(%s) around line %s." % (E1,E2,j1[0].line)
 coccilib.report.print_report(j0[0], msg)
 
