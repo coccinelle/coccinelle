@@ -202,7 +202,7 @@ let rec get_rule (rulename : string) (t : UI.t) =
 
 let interact ~rule_names ~config_name =
   name := config_name;
-  print_string ("\n~*~ WELCOME TO SGEN INTERACTIVE MODE ~*~\n\n" ^
+  print_string ("\n~*~ WELCOME TO SPGEN INTERACTIVE MODE ~*~\n\n" ^
   "At any time, write q() to quit the program.\n");
   let description = get_description() in
   let confidence = get_confidence() in

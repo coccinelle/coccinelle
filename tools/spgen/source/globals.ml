@@ -48,7 +48,7 @@ let init ~rule_name:r ~pos_name:p ~error_msg:e ~char_limit:cl =
 (* ------------------------------------------------------------------------- *)
 (* HARDCODED (PHOOEY!) *)
 
-(* list of things you can't call your rules, because it will mess with sgen *)
+(* list of things you can't call your rules, because it will mess with spgen *)
 let keywords =
   ["patch"; "context"; "org"; "report"; "description"; "limitations";
    "keywords"; "comments"; "options"; "confidence"; "authors"; "url";
@@ -121,7 +121,7 @@ let check_rule ~strict x =
 
   if List.mem x keywords
   then failwith
-    ("Error: A rule can't be called \""^ x ^"\"! That's a keyword in sgen ...")
+    ("Error: A rule can't be called \""^ x ^"\"! That's a keyword in spgen ...")
 
 (* for rules with no name; get the line they are starting on *)
 let extract_line str =

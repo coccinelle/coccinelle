@@ -1,24 +1,24 @@
 \subsection{Installation and uninstallation}
-\textbf{To install}: You need to have \texttt{Coccinelle} and all its dependencies installed. You also need to have the \texttt{Coccinelle} source code available. By default, the \texttt{sgen} directory lies within the \texttt{Coccinelle} directory in \texttt{coccinelle/tools/sgen}.\footnote{If you change this, you need to modify the \texttt{COCCIDIR} path in \texttt{source/Makefile} to point to the \texttt{Coccinelle} source code directory.} From the \texttt{sgen} directory, do:
+\textbf{To install}: You need to have \texttt{Coccinelle} and all its dependencies installed. You also need to have the \texttt{Coccinelle} source code available. By default, the \texttt{spgen} directory lies within the \texttt{Coccinelle} directory in \texttt{coccinelle/tools/spgen}.\footnote{If you change this, you need to modify the \texttt{COCCIDIR} path in \texttt{source/Makefile} to point to the \texttt{Coccinelle} source code directory.} From the \texttt{spgen} directory, do:
 \begin{enumerate}
 \item Run \texttt{make} to compile the program.
 \item Run \texttt{make install}\footnote{If permission is denied, run it in superuser mode e.g. \texttt{sudo make install}, depending on your system.\label{sudo}} to install the program.
-\item (Optional) Try out the program by running \texttt{sgen examples/addvoid.cocci} or \texttt{sgen <path\_to\_your\_script>.cocci}.
+\item (Optional) Try out the program by running \texttt{spgen examples/addvoid.cocci} or \texttt{spgen <path\_to\_your\_script>.cocci}.
 \end{enumerate}
-\textbf{To uninstall}: From the \texttt{sgen} directory, do:
+\textbf{To uninstall}: From the \texttt{spgen} directory, do:
 \begin{enumerate}
 \item Run \texttt{make uninstall}$^{\ref{sudo}}$.
 \end{enumerate}
 \bigskip
 
 \subsection{Running the program}
-The most common usages are as follows, for a semantic patch file \texttt{foo.cocci} and an sgen config file \texttt{foo.config}:
+The most common usages are as follows, for a semantic patch file \texttt{foo.cocci} and an spgen config file \texttt{foo.config}:
 \begin{itemize}
-\item \texttt{sgen foo.cocci}: Generate the file with the information found
+\item \texttt{spgen foo.cocci}: Generate the file with the information found
 d in \texttt{foo.config} if it exists. If not, the program is run in interactive mode.
-\item \texttt{sgen -{}-config foo.config foo.cocci}: Generate the file with
+\item \texttt{spgen -{}-config foo.config foo.cocci}: Generate the file with
   \texttt{foo.config} as the configuration file. The shorthand \texttt{-c} can be used instead of \texttt{-{}-config}.
-\item \texttt{sgen foo.cocci -{}-interactive}: Run the program in interactive mode. The shorthand \texttt{-i} can be used instead of \texttt{-{}-interactive}.
+\item \texttt{spgen foo.cocci -{}-interactive}: Run the program in interactive mode. The shorthand \texttt{-i} can be used instead of \texttt{-{}-interactive}.
 \end{itemize}
 Additional options:
 \begin{itemize}
@@ -30,7 +30,7 @@ Additional options:
 \bigskip
 
 \subsection{User input}
-When generating a script, \texttt{sgen} might need some extra information from the user. There are two kinds of information:
+When generating a script, \texttt{spgen} might need some extra information from the user. There are two kinds of information:
 \begin{itemize}
 \item \textbf{Preface}: information to go at the beginning of the script. Contains metainformation about the script such as description, author, etc. See the full list in Section \ref{config}.
 \item \textbf{Rule information}: rule-specific info, such as error messages that are output in \texttt{org} and \texttt{report} mode.
@@ -39,11 +39,11 @@ There are two ways of passing this information, interactive mode and configurati
 \bigskip
 
 \subsubsection{Interactive mode\label{interact}}
-In interactive mode, the program prompts the user for the information through the commandline. The user can then choose to save the information into an \texttt{sgen} config file, which can be further modified and reused in configuration mode.
+In interactive mode, the program prompts the user for the information through the commandline. The user can then choose to save the information into an \texttt{spgen} config file, which can be further modified and reused in configuration mode.
 \bigskip
 
 \subsubsection{Configuration mode\label{config}}
-In configuration mode, the program looks for an \texttt{sgen} config file to provide the needed information to generate the file. For \texttt{<file>}.cocci, the config file should be called \texttt{<file>}.config.\\\\
+In configuration mode, the program looks for an \texttt{spgen} config file to provide the needed information to generate the file. For \texttt{<file>}.cocci, the config file should be called \texttt{<file>}.config.\\\\
 The user-specified attributes in the \textbf{preface} are, in no specific order ((r) means required):
 \begin{center}
 \renewcommand{\arraystretch}{1.2}
@@ -61,7 +61,7 @@ The user-specified attributes in the \textbf{preface} are, in no specific order 
 \end{center}\vspace{0.5cm}
 The \textbf{rule information} contains error messages for \texttt{org} and \texttt{report}, and possibly rule names for rules that are unnamed in the original \texttt{Coccinelle script}.\\\\
 \clearpage
-\noindent The syntax for the \texttt{sgen} config files is rather simple, and the easiest way to learn it is to run \texttt{sgen} in interactive mode and study the resulting config. But for completeness ...:
+\noindent The syntax for the \texttt{spgen} config files is rather simple, and the easiest way to learn it is to run \texttt{spgen} in interactive mode and study the resulting config. But for completeness ...:
 \begin{itemize}
 \item The syntax for attributes is
 \begin{verbatim}
@@ -93,8 +93,8 @@ Example files can be found in the \texttt{examples} directory. For each example,
 \begin{itemize}
 \item \texttt{<name>.c}: \texttt{C} source file that returns matches/patches for the corresponding cocci file. Can be tested with \texttt{spatch --sp-file <name>.cocci <name>.c}.
 \item \texttt{<name>.cocci}: simple, unhardened Coccinelle script.
-\item \texttt{<name>.config}: \texttt{sgen} configuration file for specifying preface and rule information.
-\item \texttt{<name>\_.cocci}: expected output when running \texttt{sgen} on the unhardened Coccinelle script with the config file. Should be a valid, hardened Coccinelle script. Can be tested with e.g. \texttt{spatch --sp-file <name>\_.cocci <name>.c -D report --no-show-diff}.
+\item \texttt{<name>.config}: \texttt{spgen} configuration file for specifying preface and rule information.
+\item \texttt{<name>\_.cocci}: expected output when running \texttt{spgen} on the unhardened Coccinelle script with the config file. Should be a valid, hardened Coccinelle script. Can be tested with e.g. \texttt{spatch --sp-file <name>\_.cocci <name>.c -D report --no-show-diff}.
 \end{itemize}
 
 %PSEUDOGRAMMAR:

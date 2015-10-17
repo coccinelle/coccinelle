@@ -10,13 +10,13 @@ SCRIPTDIR=../scripts
 -include $(COCCIDIR)/Makefile.config
 
 # where to install the program
-INSTALLDIR=$(DESTDIR)$(LIBDIR)/sgen
+INSTALLDIR=$(DESTDIR)$(LIBDIR)/spgen
 
 ##############################################################################
 # Variables
 ##############################################################################
 
-TARGET=sgen
+TARGET=spgen
 
 CONFIG= $(COCCIDIR)/Makefile.config
 
@@ -34,7 +34,7 @@ INCLUDEDIRS= $(COCCIDIR)/commons $(COCCIDIR)/commons/ocamlextra \
 INCLUDES=$(INCLUDEDIRS:%=-I %)
 
 # lexer source
-LEXER_SRC= sgen_lexer.mll
+LEXER_SRC= spgen_lexer.mll
 
 # compiled lexers
 GENERATED= $(LEXER_SRC:.mll=.ml)
@@ -43,7 +43,7 @@ GENERATED= $(LEXER_SRC:.mll=.ml)
 SRC= globals.ml ast_tostring.ml detect_patch.ml meta_variable.ml \
  snapshot.ml user_input.ml position_generator.ml disj_generator.ml \
  rule_body.ml rule_header.ml context_rule.ml script_rule.ml \
- file_transform.ml sgen_interactive.ml sgen_config.ml sgen.ml sgen_test.ml
+ file_transform.ml spgen_interactive.ml spgen_config.ml spgen.ml spgen_test.ml
 
 # all source OCaml interface files (ocamlfind??)
 SRC_INTERFACE= $(SRC:.ml=.mli)
@@ -64,9 +64,9 @@ LFLAGS = -lflags '$(SYSLIBS) $(LIBS)'
 all: $(TARGET)
 
 $(TARGET): $(CONFIG) $(LIBS) $(GENERATED) $(FULL_SRC)
-	@$(ECHO) -e "\n\n\tCompiling sgen ...\n\n"
+	@$(ECHO) -e "\n\n\tCompiling spgen ...\n\n"
 	$(OCAMLC_CMD) -custom -o $(TARGET) $(SYSLIBS) $(LIBS) $(GENERATED) $(FULL_SRC)
-	@$(ECHO) -e "\n\n\tsgen can now be installed via 'make install'.\n\n"
+	@$(ECHO) -e "\n\n\tspgen can now be installed via 'make install'.\n\n"
 
 clean:
 	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot
@@ -81,23 +81,23 @@ $(CONFIG) $(LIBS):
 
 install: $(TARGET)
 	# this is a small hack to avoid having to reconfigure the installation
-	# directory path (and to avoid having the cocci config depend on sgen)
-	if !([ -e $(SCRIPTDIR)/sgen.sh ]); then \
-	  sed "\_^"PREFIX"=_ s_=.*_="$(prefix)"_" $(SCRIPTDIR)/sgen.sh.in > \
-	  $(SCRIPTDIR)/sgen.sh; \
+	# directory path (and to avoid having the cocci config depend on spgen)
+	if !([ -e $(SCRIPTDIR)/spgen.sh ]); then \
+	  sed "\_^"PREFIX"=_ s_=.*_="$(prefix)"_" $(SCRIPTDIR)/spgen.sh.in > \
+	  $(SCRIPTDIR)/spgen.sh; \
 	fi;
 
 	$(MKDIR_P) $(INSTALLDIR)
 	$(INSTALL_PROGRAM) $(TARGET) $(INSTALLDIR)/$(TARGET)
-	$(INSTALL_PROGRAM) $(SCRIPTDIR)/sgen.sh $(DESTDIR)$(BINDIR)/sgen
-	@$(ECHO) -e "\n\n\tsgen installed: DONE!!!\n\n"
+	$(INSTALL_PROGRAM) $(SCRIPTDIR)/spgen.sh $(DESTDIR)$(BINDIR)/spgen
+	@$(ECHO) -e "\n\n\tspgen installed: DONE!!!\n\n"
 
 uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/$(TARGET)
 	rm -f $(INSTALLDIR)/$(TARGET)
-	rm -f $(SCRIPTDIR)/sgen.sh
+	rm -f $(SCRIPTDIR)/spgen.sh
 	rmdir $(INSTALLDIR)
-	@$(ECHO) -e "\n\n\tsgen uninstalled: DONE!!!\n\n"
+	@$(ECHO) -e "\n\n\tspgen uninstalled: DONE!!!\n\n"
 
 $(LEXER_SRC:.mll=.ml) :	$(LEXER_SRC)
 	$(OCAMLLEX) $(LEXER_SRC)

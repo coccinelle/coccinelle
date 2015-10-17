@@ -1,4 +1,4 @@
-SGEN
+SPGEN
 ====
 
 Description
@@ -88,7 +88,7 @@ This script can then be run on C files in the same manner as the original, by sp
 Installation
 ------------
 You need to have Coccinelle and all of Coccinelle's dependencies installed.
-Installation relies on the project being in the tools/sgen folder of the
+Installation relies on the project being in the tools/spgen folder of the
 Coccinelle source code (if not, change the COCCIDIR path in the makefile).
 
 1.  Run the command
@@ -103,11 +103,11 @@ Coccinelle source code (if not, change the COCCIDIR path in the makefile).
     to install the program.
 3.  Test the program e.g. with
 
-    	sgen examples/addvoid.cocci
+    	spgen examples/addvoid.cocci
 
     or
 
-    	sgen <your_cocci_script>.cocci
+    	spgen <your_cocci_script>.cocci
 
     The output should be a Coccinelle script with equivalent functionality to the original one, but with added virtual modes patch, context, org, and report.
 
@@ -123,23 +123,23 @@ Usage
 -----
 After installation, run e.g.
 
-	sgen file.cocci --config file.config
+	spgen file.cocci --config file.config
 
-to generate the file named file.cocci with file.config (sgen config). Or
+to generate the file named file.cocci with file.config (spgen config). Or
 
-	sgen file.cocci --interactive
+	spgen file.cocci --interactive
 
 to run the program in interactive mode where the program will generate a config
 file for you. If running
 
-	sgen file.cocci
+	spgen file.cocci
 
 with no flags, the program will use file.config per default if it exists, or
 else start in interactive mode.
 
 For all options, see
 
-	sgen -help
+	spgen -help
 
 
 Contents
@@ -150,10 +150,10 @@ mentioned below.
 The documentation directory contains the documentation tex files.
 
 The examples directory contains examples of Coccinelle scripts and
-corresponding sgen config files as well as C files to test on.
+corresponding spgen config files as well as C files to test on.
 
 The scripts directory contains the script used for installation.
 
-The source directory contains the OCaml source code for sgen.
+The source directory contains the OCaml source code for spgen.
 
 The tests directory contains test files.

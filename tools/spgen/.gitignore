@@ -1,10 +1,10 @@
-sgen
-scripts/sgen.sh
+spgen
+scripts/spgen.sh
 
 *.cm[aiox]
 *.cmxa
 *.[ao]
-sgen_lexer.ml
+spgen_lexer.ml
 
 *~
 .depend

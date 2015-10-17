@@ -42,7 +42,7 @@ let generate ~context_mode ~disj_map ~new_name ~rule =
         Rule_body.generate ~context_mode ~disj_map ~minus_rule in
       let _ = if pos = [] then failwith
         ("MEGA ERROR: Congratulations! You managed to write a Coccinelle " ^
-         "rule that sgen was unable to add a position to! The rule is \"" ^
+         "rule that spgen was unable to add a position to! The rule is \"" ^
          old_nm ^ "\".") in
 
       (* the added position metavariables in local scope (for headers) *)

@@ -4,7 +4,7 @@
  * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-(* Driver module for sgen.
+(* Driver module for spgen.
  *
  * Options:
  *  - config: the name of the file to draw user input from

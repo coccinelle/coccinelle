@@ -10,7 +10,7 @@
  *
  * The high-level process is something like:
  * 1. Parse the cocci file using the main parser
- * 2. Parse the user-provided input for the sgenerated file
+ * 2. Parse the user-provided input for the spgenerated file
  * 3. Generate context rules (ie. rules with *'s and positions)
  * 4. Generate script rules (ie. rules for org and report modes)
  * 5. Print the preface (ie. metadata and virtuals)
@@ -95,7 +95,7 @@ let run { file; config; output; interactive; default; hide; } =
   (* these are settings that are usually the same regardless of rule *)
 
   let (_(*author*), _(*license*), rule_name, pos_name, error_msg, char_limit) =
-    Sgen_config.parse_global ~config_name:"" in
+    Spgen_config.parse_global ~config_name:"" in
   let _ = Globals.init ~rule_name ~pos_name ~error_msg ~char_limit in
   let virtuals = Globals.key_virtuals ~context_mode virtuals in
 
@@ -104,11 +104,11 @@ let run { file; config; output; interactive; default; hide; } =
 
   let user_input =
     if default then
-      Sgen_config.parse_default
+      Spgen_config.parse_default
     else if interactive then
-      Sgen_interactive.interact ~rule_names ~config_name:name
+      Spgen_interactive.interact ~rule_names ~config_name:name
     else
-      Sgen_config.parse_local ~rule_names ~config_name:config in
+      Spgen_config.parse_local ~rule_names ~config_name:config in
 
   let preface = User_input.get_preface user_input in
 

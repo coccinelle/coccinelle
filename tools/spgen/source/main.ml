@@ -25,7 +25,7 @@ let output = ref ""
 (* hide resulting generated file *)
 let hide = ref false
 
-(* path to directory with sgen tests *)
+(* path to directory with spgen tests *)
 let test_dir = ref ""
 
 let set_config x = config := x; interactive := false
@@ -35,7 +35,7 @@ let anonymous s = if !file = "" then file := s
 let usage =
   let msg =
     "Usage: %s [options] <filename>\n" ^^ (* format string concatenation *)
-    "Example: sgen --config file.config file.cocci.\n\n" ^^
+    "Example: spgen --config file.config file.cocci.\n\n" ^^
     "Options are:" in
   Printf.sprintf msg (Filename.basename Sys.argv.(0))
 
@@ -75,20 +75,20 @@ let main _ =
 
   if !test_dir <> "" then
 
-    Sgen_test.regression_test ~test_dir:(!test_dir)
+    Spgen_test.regression_test ~test_dir:(!test_dir)
 
   else begin
 
     if !file = "" then (Arg.usage (Arg.align speclist) usage; exit 1);
     let options =
-      Sgen.make_options
+      Spgen.make_options
         ~config:!config
         ~interactive:!interactive
         ~default:!default
         ~output:!output
         ~hide:!hide
         !file in
-    Sgen.run options
+    Spgen.run options
 
   end
 

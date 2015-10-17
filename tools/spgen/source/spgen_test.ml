@@ -7,12 +7,12 @@
 (* ------------------------------------------------------------------------- *)
 
 (* Regression tests.
- * Process for sgen:
+ * Process for spgen:
  *  - file.cocci      (original cocci file)
- *  - file.config     (config file for running sgen)
- *  - file.expected   (expected sgenerated file)
+ *  - file.config     (config file for running spgen)
+ *  - file.expected   (expected spgenerated file)
  *
- * Run <sgen file.cocci --config file.config -o file.actual.cocci>
+ * Run <spgen file.cocci --config file.config -o file.actual.cocci>
  * Compare file.actual.cocci with file.expected
  * Run <spatch --parse-cocci file.actual.cocci -D context>.
  *)
@@ -48,7 +48,7 @@ let get_diff filename1 filename2 =
   (* get rid of the --- and +++ lines *)
   if xs = [] then xs else Common.drop 2 xs
 
-(* Run sgen on <file>.cocci with <file>.config,
+(* Run spgen on <file>.cocci with <file>.config,
  * compare to <file>.expected,
  * add result to <score>.
  *)
@@ -71,12 +71,12 @@ let compare_one score expected =
 
         perr_nl cocci;
 
-        (* sgenerate the file *)
-        let options = Sgen.make_options ~output:actual cocci in
-        let _ = Sgen.run options in
+        (* spgenerate the file *)
+        let options = Spgen.make_options ~output:actual cocci in
+        let _ = Spgen.run options in
 
-        (* check that the sgenerated file is parsable. Note that the parsing
-         * flag generating_mode must be false (this should be done in sgen.ml).
+        (* check that the spgenerated file is parsable. Note that the parsing
+         * flag generating_mode must be false (this should be done in spgen.ml).
          *)
         Flag.set_defined_virtual_rules "context";
         let _ = Parse_cocci.process actual None false in

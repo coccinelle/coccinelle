@@ -17,7 +17,7 @@ module RuleMap = Map.Make (String)
  *  - Additional comments for the script.
  *  - Coccinelle options with which to call the script.
  *  - Authors of the script (copyright).
- *    Not yet globally configurable; see sgen_config.ml.
+ *    Not yet globally configurable; see spgen_config.ml.
  *  - Error messages for org and report mode for each rule.
  *)
 
@@ -98,7 +98,7 @@ end
 (* ------------------------------------------------------------------------- *)
 (* USER RULE TYPE *)
 
-(* user-specified data to put in sgenerated script.
+(* user-specified data to put in spgenerated script.
  * type is (rulename, (org message, org metavars), (rep message, rep metavars))
  * rulename can be original rulename or a new user-specified one.
  *)

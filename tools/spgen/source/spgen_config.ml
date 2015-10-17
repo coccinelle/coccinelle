@@ -5,7 +5,7 @@
  *)
 
 module UI = User_input
-module Lex = Sgen_lexer
+module Lex = Spgen_lexer
 
 (* ------------------------------------------------------------------------- *)
 

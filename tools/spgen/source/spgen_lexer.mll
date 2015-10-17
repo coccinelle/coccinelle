@@ -4,7 +4,7 @@
  * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-(* Lexer/parser for sgen config file *)
+(* Lexer/parser for spgen config file *)
 
 {
 
