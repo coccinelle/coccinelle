@@ -146,9 +146,14 @@ Contents
 --------
 The home directory contains this file, a Makefile, and the directories
 mentioned below.
+
 The documentation directory contains the documentation tex files.
+
 The examples directory contains examples of Coccinelle scripts and
 corresponding sgen config files as well as C files to test on.
+
 The scripts directory contains the script used for installation.
+
 The source directory contains the OCaml source code for sgen.
+
 The tests directory contains test files.
