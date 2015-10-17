@@ -10,7 +10,7 @@ SCRIPTDIR=../scripts
 -include $(COCCIDIR)/Makefile.config
 
 # where to install the program
-INSTALLDIR=$(DESTDIR)$(SHAREDIR)/sgen
+INSTALLDIR=$(DESTDIR)$(LIBDIR)/sgen
 
 ##############################################################################
 # Variables
