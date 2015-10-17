@@ -11,7 +11,7 @@ Each example has four corresponding files:
  - name.config: spgen configuration file for specifying preface and rule information.
  - name_.cocci: expected output when running spgen on the unhardened Coccinelle script with the config file. Should be a valid, hardened Coccinelle script. Can be tested on the C file with e.g.
 
-    	spatch --sp-file name\_.cocci name.c -D report --no-show-diff
+    	spatch --sp-file name_.cocci name.c -D report --no-show-diff
 
 Examples:
 
