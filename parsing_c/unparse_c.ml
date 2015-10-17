@@ -2029,11 +2029,16 @@ let plus_search_in_maps n depth inparens past_minmap minmap tu t =
     try Some(List.assoc (depth,inparens) minmap) with _ -> None in
   get_answer fail2 map1 map2
 
-let context_search_in_maps n depth inparens past_minmap minmap tu t =
+let context_search_in_maps n depth samedelta inparens past_minmap minmap tu t =
   let findn map =
-    try
-      Some(List.find (function ((_,ip),(n1,_)) -> ip = inparens && n = n1) map)
-    with Not_found -> None in
+    if not samedelta
+    then None
+    else
+      (* favor just shifing left *)
+      try
+	Some(List.find (function ((_,ip),(n1,_)) -> ip = inparens && n = n1)
+	       map)
+      with Not_found -> None in
   let before = findn past_minmap in
   let after = findn minmap in (* should be the same... *)
   (if not (before = after)
@@ -2120,7 +2125,9 @@ let adjust_indentation xs =
 	  let t =
 	    if not (depthmin = depthplus) (*&& is_cocci rest*)
 	    then
-	      context_search_in_maps n depthplus inparens past_minmap minmap
+	      context_search_in_maps n depthplus
+		((depthmin - depthplus) = (dmin - dplus))
+		inparens past_minmap minmap
 		tabbing_unit (C2("\n",None))
 	    else t in
 	  (out_tu,minmap,t::res)
