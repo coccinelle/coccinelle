@@ -1816,12 +1816,13 @@ let token_effect tok dmin dplus inparens inassn inbrace accumulator xs =
   let info = parse_token tok in
   match info with
     (Tok ")",op)
-    when getval inparens op <= 1 && inassn = 0 && inbrace > 0 ->
+    when getval inparens op <= 1 && getval inassn op = 0 &&
+      getval inbrace op > 0 ->
       let nopen_brace a b = not (open_brace a b) in
       let do_nothing a b = b in
       let accumulator =
 	adjust_by_function nopen_brace op accadd1 do_nothing accumulator xs in
-      (Other 1,dmin,dplus,(0,0),0,inbrace,accumulator)
+      (Other 1,dmin,dplus,(0,0),(0,0),inbrace,accumulator)
   | (Tok "else",op) ->
       (* is_nl is for the case where the next statement is on the same line
 	 as the else *)
@@ -1831,27 +1832,26 @@ let token_effect tok dmin dplus inparens inassn inbrace accumulator xs =
       let do_nothing a b = b in
       let accumulator =
 	adjust_by_function nopen_brace op accadd1 do_nothing accumulator xs in
-      (Other 1,dmin,dplus,(0,0),0,inbrace,accumulator)
+      (Other 1,dmin,dplus,(0,0),(0,0),inbrace,accumulator)
   | (Tok "{",op) ->
       let (dmin,dplus) = add1 op (dmin,dplus) in
       let accumulator = add1top op accumulator in
-      (Other 2,dmin,dplus,inparens,0,inbrace+1,accumulator)
+      (Other 2,dmin,dplus,inparens,(0,0),add1 op inbrace,accumulator)
   | (Tok "}",op) ->
       let (dmin,dplus) = sub1 op (dmin,dplus) in
       let accumulator = sub1top op accumulator in
-      (Other 3,dmin,dplus,inparens,0,inbrace-1,drop_zeroes op accumulator xs)
-  | (Tok(";"|","),op) when getval inparens op = 0 && inassn <= 1 ->
-      (Other 4,dmin,dplus,inparens,0,inbrace,drop_zeroes op accumulator xs)
+      (Other 3,dmin,dplus,inparens,(0,0),sub1 op inbrace,
+       drop_zeroes op accumulator xs)
+  | (Tok(";"|","),op) when getval inparens op = 0 && getval inassn op <= 1 ->
+      (Other 4,dmin,dplus,inparens,(0,0),inbrace,drop_zeroes op accumulator xs)
   | (Tok ";",op) ->
-      (Other 5,dmin,dplus,inparens,max 0 (inassn-1),inbrace,accumulator)
-  | (Tok "=",op) when getval inparens op + inassn = 0 ->
-      (Other 6,dmin,dplus,inparens,1,inbrace,accumulator)
+      (Other 5,dmin,dplus,inparens,sub1 op inassn,inbrace,accumulator)
+  | (Tok "=",op) when getval inparens op + getval inassn op = 0 ->
+      (Other 6,dmin,dplus,inparens,add1 op (0,0),inbrace,accumulator)
   | (Tok "(",op) ->
-      (Other 7,dmin,dplus,adjust_by_op (fun x -> x+1) inparens op,
-       inassn,inbrace,accumulator)
+      (Other 7,dmin,dplus,add1 op inparens,inassn,inbrace,accumulator)
   | (Tok ")",op) ->
-      (Other 8,dmin,dplus,adjust_by_op (fun x -> x-1) inparens op,
-       inassn,inbrace,accumulator)
+      (Other 8,dmin,dplus,sub1 op inparens,inassn,inbrace,accumulator)
   | (Ind Indent_cocci2,op) ->
       (Drop,dmin,dplus,inparens,inassn,inbrace,accumulator)
   | (Ind (Unindent_cocci2 true),op) ->
@@ -1866,11 +1866,12 @@ let token_effect tok dmin dplus inparens inassn inbrace accumulator xs =
 	(Label,dmin,dplus,inparens,inassn,inbrace,accumulator)
       else
 	let inp = getval inparens op in
+	let ina = getval inassn op in
 	let rebuilder min plus =
 	  match op with
-	    Both -> CtxNL(after,min,plus,inp+inassn)
-	  | MinusOnly -> MinNL(after,min,plus,inp+inassn)
-	  | PlusOnly -> PlusNL(plus,inp+inassn)
+	    Both -> CtxNL(after,min,plus,inp+ina)
+	  | MinusOnly -> MinNL(after,min,plus,inp+ina)
+	  | PlusOnly -> PlusNL(plus,inp+ina)
 	  | _ -> failwith "not possible" in
 	let numacc =
 	  (List.length (fst accumulator), List.length (snd accumulator)) in
@@ -1911,7 +1912,7 @@ let parse_indentation xs =
 	front @
 	((n+List.length front),res,x) ::
 	loop (n+1) dmin dplus inparens inassn inbrace accumulator xs in
-  loop 1 0 0 (0,0) 0 0 ([],[]) xs
+  loop 1 0 0 (0,0) (0,0) (0,0) ([],[]) xs
 
 exception NoInfo
 
