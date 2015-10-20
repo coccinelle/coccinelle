@@ -87,6 +87,7 @@ val pp_type_simple:       Ast_c.fullType printer
 val pp_decl_simple:       Ast_c.declaration printer
 val pp_field_simple:      Ast_c.field printer
 val pp_statement_simple:  Ast_c.statement printer
+val pp_statement_seq_list_simple: Ast_c.statement_sequencable list printer
 val pp_toplevel_simple:   Ast_c.toplevel printer
 val pp_string_fragment_simple:   Ast_c.string_fragment printer
 val pp_string_format_simple:     Ast_c.string_format printer
