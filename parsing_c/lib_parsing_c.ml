@@ -135,6 +135,8 @@ let al_inh_field    x = Visitor_c.vk_struct_field_s (strip_inh_info_visitor()) x
 let al_inh_field_list x =
   Visitor_c.vk_struct_fields_s (strip_inh_info_visitor()) x
 let al_inh_statement x = Visitor_c.vk_statement_s (strip_inh_info_visitor()) x
+let al_inh_statement_seq_list x =
+  Visitor_c.vk_statement_sequencable_list_s (strip_inh_info_visitor()) x
 let al_inh_type      x = Visitor_c.vk_type_s      (strip_inh_info_visitor()) x
 let al_inh_init      x = Visitor_c.vk_ini_s       (strip_inh_info_visitor()) x
 let al_inh_inits     x = Visitor_c.vk_inis_s      (strip_inh_info_visitor()) x
@@ -218,7 +220,10 @@ let real_al_assignop  x = Visitor_c.vk_assignOp_s (real_strip_info_visitor()) x
 let real_al_decl      x = Visitor_c.vk_decl_s   (real_strip_info_visitor()) x
 let real_al_init      x = Visitor_c.vk_ini_s    (real_strip_info_visitor()) x
 let real_al_inits     x = Visitor_c.vk_inis_s   (real_strip_info_visitor()) x
-let real_al_statement x = Visitor_c.vk_statement_s (real_strip_info_visitor()) x
+let real_al_statement x =
+  Visitor_c.vk_statement_s (real_strip_info_visitor()) x
+let real_al_statement_seq_list x =
+  Visitor_c.vk_statement_sequencable_list_s (real_strip_info_visitor()) x
 let real_al_def       x = Visitor_c.vk_toplevel_s (real_strip_info_visitor()) x
 
 (*****************************************************************************)
