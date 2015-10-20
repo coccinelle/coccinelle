@@ -1357,7 +1357,7 @@ funproto:
 fundecl:
   f=fninfo
   TFunDecl i=fn_ident lp=TOPar arglist=arg_list(decl) rp=TCPar
-  lb=TOBrace b=fun_start rb=TCBrace
+  lb=TOBrace b=fun_start_or_meta rb=TCBrace
       { let (args,vararg) = arglist in
         Ast0.wrap(Ast0.FunDecl((Ast0.default_info(),Ast0.context_befaft()),
 			       f, i,
@@ -1366,6 +1366,10 @@ fundecl:
 			       P.clt2mcode "{" lb, b,
 			       P.clt2mcode "}" rb,
 			       (Ast0.default_info(),Ast0.context_befaft()))) }
+
+fun_start_or_meta:
+  fun_start { $1 }
+| meta_stm_list { Ast0.wrap [$1] }
 
 fninfo:
     /* empty */ { [] }
@@ -1476,12 +1480,17 @@ statement:
 | TContinue TPtVirg { P.cont $1 $2 }
 | mident TDotDot { P.label $1 $2 }
 | TGoto disj_ident TPtVirg { P.goto $1 $2 $3 }
-| TOBrace fun_start TCBrace
+| TOBrace fun_start_or_meta TCBrace
     { P.seq $1 $2 $3 }
 | Texec TIdent exec_list TPtVirg
     { Ast0.wrap(
       Ast0.Exec(P.clt2mcode "EXEC" $1,P.clt2mcode (fst $2) (snd $2),
 		Ast0.wrap $3,P.clt2mcode ";" $4)) }
+
+meta_stm_list:
+    TMetaStmList
+      { let (nm,pure,clt) = $1 in
+      Ast0.wrap(Ast0.MetaStmtList(P.clt2mcode nm clt,pure)) }
 
 stm_dots:
   TEllipsis w=list(whenppdecs)
@@ -1772,9 +1781,6 @@ initialize_list:
 
 /* a statement that is part of a list */
 decl_statement:
-    TMetaStmList
-      { let (nm,pure,clt) = $1 in
-      [Ast0.wrap(Ast0.MetaStmtList(P.clt2mcode nm clt,pure))] }
   | decl_var
       { List.map
 	  (function x ->

@@ -886,7 +886,7 @@ and statement s =
 	  Ast.Atomic(rewrap_rule_elem s
 		       (Ast.MetaStmt(mcode name,unitary,seqible,false)))
       | Ast0.MetaStmtList(name,_) ->
-	  Ast.Atomic(rewrap_rule_elem s
+          Ast.Atomic(rewrap_rule_elem s
 		       (Ast.MetaStmtList(mcode name,unitary,false)))
       | Ast0.AsStmt(stmt,asstmt) ->
 	  Ast.AsStmt(statement seqible stmt,statement seqible asstmt)
