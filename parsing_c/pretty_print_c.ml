@@ -1574,6 +1574,9 @@ let pp_arg_gen ~pr_elem ~pr_space =
 let pp_statement_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).statement
 
+let pp_statement_seq_list_gen ~pr_elem ~pr_space =
+  (pp_elem_sp pr_elem pr_space).statement_seq_list
+
 let pp_decl_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).decl
 

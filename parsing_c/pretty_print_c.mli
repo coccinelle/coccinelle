@@ -58,6 +58,9 @@ val pp_field_list_gen: pr_elem:Ast_c.info printer -> pr_space: unit printer ->
   Ast_c.field list printer
 val pp_statement_gen: pr_elem:Ast_c.info printer -> pr_space: unit printer ->
   Ast_c.statement printer
+val pp_statement_seq_list_gen:
+    pr_elem:Ast_c.info printer -> pr_space: unit printer ->
+      Ast_c.statement_sequencable list printer
 val pp_param_gen:  pr_elem:Ast_c.info printer -> pr_space: unit printer ->
   Ast_c.parameterType printer
 val pp_param_list_gen:  pr_elem:Ast_c.info printer -> pr_space: unit printer ->
