@@ -5012,8 +5012,6 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
           F.Default (st, ((),[ib1;ib2]))
         )))
 
-
-
   | A.Case(case,ea,colon), F.Case (st, (eb,ii)) ->
       let (ib1, ib2) = tuple_of_list2 ii in
       tokenf case ib1 >>= (fun case ib1 ->
