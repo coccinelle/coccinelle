@@ -13,6 +13,7 @@ type pretty_printers = {
   arg_list        : (Ast_c.argument Ast_c.wrap2 list) printer;
   arg             : Ast_c.argument printer;
   statement       : Ast_c.statement printer;
+  statement_seq_list : Ast_c.statement_sequencable list printer;
   decl            : Ast_c.declaration printer;
   field           : Ast_c.field printer;
   field_list      : Ast_c.field list printer;

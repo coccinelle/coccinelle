@@ -42,6 +42,7 @@ type pretty_printers = {
   arg_list        : (Ast_c.argument Ast_c.wrap2 list) printer;
   arg             : Ast_c.argument printer;
   statement       : Ast_c.statement printer;
+  statement_seq_list : Ast_c.statement_sequencable list printer;
   decl            : Ast_c.declaration printer;
   field           : Ast_c.field printer;
   field_list      : Ast_c.field list printer;
@@ -260,6 +261,10 @@ and pp_string_format (e,ii) =
       pr_elem i
 
 (* ---------------------- *)
+
+  and pp_statement_seq_list statxs =
+    statxs +> List.iter pp_statement_seq
+
   and pp_statement = fun st ->
     match Ast_c.get_st_and_ii st with
     | Labeled (Label (name, st)), ii ->
@@ -1473,6 +1478,7 @@ and pp_init (init, iinit) =
     arg_list   = pp_arg_list;
     arg        = pp_argument;
     statement  = pp_statement;
+    statement_seq_list = pp_statement_seq_list;
     decl       = pp_decl;
     field      = pp_field;
     field_list = pp_field_list;
@@ -1536,6 +1542,7 @@ let pp_binaryOp_simple   = ppc.binaryOp
 let pp_decl_simple       = ppc.decl
 let pp_field_simple      = ppc.field
 let pp_statement_simple  = ppc.statement
+let pp_statement_seq_list_simple  = ppc.statement_seq_list
 let pp_type_simple       = ppc.ty
 let pp_init_simple       = ppc.init
 let pp_toplevel_simple   = ppc.toplevel
