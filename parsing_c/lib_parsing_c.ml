@@ -244,6 +244,8 @@ let ii_of_assignOp = extract_info_visitor Visitor_c.vk_assignOp
 let ii_of_binaryOp = extract_info_visitor Visitor_c.vk_binaryOp
 let ii_of_stmt = extract_info_visitor Visitor_c.vk_statement
 let ii_of_stmtseq = extract_info_visitor Visitor_c.vk_statement_sequencable
+let ii_of_stmtseqlist =
+  extract_info_visitor Visitor_c.vk_statement_sequencable_list
 let ii_of_args = extract_info_visitor Visitor_c.vk_args_splitted
 let ii_of_type = extract_info_visitor Visitor_c.vk_type
 let ii_of_ini  = extract_info_visitor Visitor_c.vk_ini
