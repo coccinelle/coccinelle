@@ -168,6 +168,8 @@ let semi_al_declaration = Visitor_c.vk_decl_s    semi_strip_info_visitor
 let semi_al_field = Visitor_c.vk_struct_field_s  semi_strip_info_visitor
 let semi_al_fields = Visitor_c.vk_struct_fields_s semi_strip_info_visitor
 let semi_al_statement = Visitor_c.vk_statement_s semi_strip_info_visitor
+let semi_al_statement_seq_list =
+  Visitor_c.vk_statement_sequencable_list_s semi_strip_info_visitor
 let semi_al_type      = Visitor_c.vk_type_s      semi_strip_info_visitor
 let semi_al_init      = Visitor_c.vk_ini_s       semi_strip_info_visitor
 let semi_al_inits     = Visitor_c.vk_inis_s      semi_strip_info_visitor
