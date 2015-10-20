@@ -1077,9 +1077,11 @@ let rec statement s =
 	mkres s (Ast0.Exec(exec,lang,code,sem))
 	  (promote_mcode exec) (promote_mcode sem)
     | Ast0.MetaStmt(name,a) ->
+	let name = normal_mcode name in
 	let ln = promote_mcode name in
 	mkres s (Ast0.MetaStmt(name,a)) ln ln
     | Ast0.MetaStmtList(name,a) ->
+	let name = bad_mcode name in
 	let ln = promote_mcode name in
 	mkres s (Ast0.MetaStmtList(name,a)) ln ln
     | Ast0.Exp(exp) ->
