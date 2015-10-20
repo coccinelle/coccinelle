@@ -71,6 +71,8 @@ let al_expr      x = Visitor_c.vk_expr_s      (strip_info_visitor()) x
 let al_declaration x = Visitor_c.vk_decl_s    (strip_info_visitor()) x
 let al_field     x = Visitor_c.vk_struct_field_s (strip_info_visitor()) x
 let al_statement x = Visitor_c.vk_statement_s (strip_info_visitor()) x
+let al_statement_seq_list x =
+  Visitor_c.vk_statement_sequencable_list_s (strip_info_visitor()) x
 let al_type      x = Visitor_c.vk_type_s      (strip_info_visitor()) x
 let al_init      x = Visitor_c.vk_ini_s       (strip_info_visitor()) x
 let al_inits     x = Visitor_c.vk_inis_s      (strip_info_visitor()) x
