@@ -504,6 +504,7 @@ and base_rule_elem =
   | Pragma        of string mcode (* #pragma *) * ident * pragmainfo
   | Case          of string mcode (* case *) * expression * string mcode (*:*)
   | Default       of string mcode (* default *) * string mcode (*:*)
+  | ReAsStmt      of rule_elem * statement (* always { and MetaStmtList *)
   | DisjRuleElem  of rule_elem list
 
 and base_pragmainfo =

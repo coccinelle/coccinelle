@@ -791,12 +791,38 @@ and statement s =
 		       (Ast.Decl(annotated_decl (Some bef) decl)))
       | Ast0.Seq(lbrace,body,rbrace) ->
 	  let lbrace = mcode lbrace in
-	  let body = dots (statement seqible) body in
 	  let rbrace = mcode rbrace in
-	  Ast.Seq(iso_tokenwrap lbrace s (Ast.SeqStart(lbrace))
-		    (do_isos (Ast0.get_iso s)),
-		  body,
-		  tokenwrap rbrace s (Ast.SeqEnd(rbrace)))
+	  let body_element =
+	    match Ast0.unwrap body with
+	      [x] ->
+		(match Ast0.unwrap x with
+		  Ast0.MetaStmtList(name,pure) -> Some(name,pure,body,x)
+		| _ -> None)
+	    | _ -> None in
+	  (match body_element with
+	    Some(name,pure,body,x) ->
+	      let newmeta =
+		Ast0.rewrap s
+		  (Ast0.MetaStmtList(Ast0.make_mcode(Ast0.unwrap_mcode(name)),
+				     pure)) in
+	      let newbody =
+		Ast0.rewrap x (Ast0.Dots(Ast0.rewrap_mcode name "...",[])) in
+	      let meta = statement seqible newmeta in
+	      let body =
+		dots (statement seqible) (Ast0.rewrap body [newbody]) in
+	      Ast.Seq(Ast.make_term
+			(Ast.ReAsStmt
+			   (iso_tokenwrap lbrace s (Ast.SeqStart(lbrace))
+			      (do_isos (Ast0.get_iso s)),
+			    meta)),
+		      body,
+		      tokenwrap rbrace s (Ast.SeqEnd(rbrace)))
+	  | None ->
+	      let body = dots (statement seqible) body in
+	      Ast.Seq(iso_tokenwrap lbrace s (Ast.SeqStart(lbrace))
+			(do_isos (Ast0.get_iso s)),
+		      body,
+		      tokenwrap rbrace s (Ast.SeqEnd(rbrace))))
       | Ast0.ExprStatement(exp,sem) ->
 	  Ast.Atomic(rewrap_rule_elem s
 		       (Ast.ExprStatement

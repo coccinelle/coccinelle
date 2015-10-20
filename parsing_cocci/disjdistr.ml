@@ -414,6 +414,9 @@ let rec disj_rule_elem r k re =
   | Ast.Case(case,exp,colon) ->
       orify_rule_elem re exp
 	(function exp -> Ast.rewrap re (Ast.Case(case,exp,colon)))
+  | Ast.ReAsStmt(rre,asre) -> (* as re doesn't contain disj *)
+      let rre = disj_rule_elem r k rre in
+      Ast.rewrap re (Ast.ReAsStmt(rre,asre))
   | Ast.DisjRuleElem(l) ->
       (* only case lines *)
       Ast.rewrap re (Ast.DisjRuleElem(List.map (disj_rule_elem r k) l))
