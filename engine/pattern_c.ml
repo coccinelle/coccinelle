@@ -444,6 +444,12 @@ module XMATCH = struct
 		then Lib_parsing_c.al_statement a
 		else Lib_parsing_c.semi_al_statement a in
 	      success(Ast_c.MetaStmtVal(stripped,ty))
+          | Ast_c.MetaStmtListVal(a,ty) ->
+	      let stripped =
+		if strip
+		then Lib_parsing_c.al_statement_seq_list a
+		else Lib_parsing_c.semi_al_statement_seq_list a in
+	      success(Ast_c.MetaStmtListVal(stripped,ty))
           | Ast_c.MetaTypeVal a ->
 	      success
 		(Ast_c.MetaTypeVal

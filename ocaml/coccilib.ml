@@ -55,6 +55,7 @@ type param_type =
   | FragList of Ast_c.string_fragment list
   | Fmt of Ast_c.string_format
   | Stmt of Ast_c.statement
+  | StmtList of Ast_c.statement_sequencable list
 
 
 (* Function table management *)

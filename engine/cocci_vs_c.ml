@@ -241,6 +241,9 @@ let equal_metavarval valu valu' =
       Lib_parsing_c.al_fields a = Lib_parsing_c.al_fields b
   | Ast_c.MetaStmtVal(a,_), Ast_c.MetaStmtVal(b,_) ->
       Lib_parsing_c.al_statement a = Lib_parsing_c.al_statement b
+  | Ast_c.MetaStmtListVal(a,_), Ast_c.MetaStmtListVal(b,_) ->
+      Lib_parsing_c.al_statement_seq_list a =
+      Lib_parsing_c.al_statement_seq_list b
   | Ast_c.MetaInitVal a, Ast_c.MetaInitVal b ->
       Lib_parsing_c.al_init a = Lib_parsing_c.al_init b
   | Ast_c.MetaInitListVal a, Ast_c.MetaInitListVal b ->
@@ -272,6 +275,7 @@ let equal_metavarval valu valu' =
   | (Ast_c.MetaNoVal, _) | (_, Ast_c.MetaNoVal) -> false
 
   | (B.MetaPosValList _|B.MetaListlenVal _|B.MetaPosVal _|B.MetaStmtVal _
+      |B.MetaStmtListVal _
       |B.MetaDeclVal _ |B.MetaFieldVal _ |B.MetaFieldListVal _
       |B.MetaTypeVal _ |B.MetaInitVal _ |B.MetaInitListVal _
       |B.MetaParamListVal _|B.MetaParamVal _|B.MetaExprListVal _
@@ -325,6 +329,14 @@ let equal_inh_metavarval valu valu'=
       then
 	Lib_parsing_c.real_al_statement a = Lib_parsing_c.real_al_statement b
       else Lib_parsing_c.al_inh_statement a = Lib_parsing_c.al_inh_statement b
+  | Ast_c.MetaStmtListVal(a,ty1), Ast_c.MetaStmtListVal(b,ty2) ->
+      if ty1 = Ast_c.WITHOUT_TYPES || ty2 = Ast_c.WITHOUT_TYPES
+      then
+	Lib_parsing_c.real_al_statement_seq_list a =
+	Lib_parsing_c.real_al_statement_seq_list b
+      else
+	Lib_parsing_c.al_inh_statement_seq_list a =
+	Lib_parsing_c.al_inh_statement_seq_list b
   | Ast_c.MetaInitVal a, Ast_c.MetaInitVal b ->
       Lib_parsing_c.al_inh_init a = Lib_parsing_c.al_inh_init b
   | Ast_c.MetaInitListVal a, Ast_c.MetaInitListVal b ->
@@ -356,6 +368,7 @@ let equal_inh_metavarval valu valu'=
   | (Ast_c.MetaNoVal, _) | (_, Ast_c.MetaNoVal) -> false
 
   | (B.MetaPosValList _|B.MetaListlenVal _|B.MetaPosVal _|B.MetaStmtVal _
+      |B.MetaStmtListVal _
       |B.MetaDeclVal _ |B.MetaFieldVal _ |B.MetaFieldListVal _
       |B.MetaTypeVal _ |B.MetaInitVal _ |B.MetaInitListVal _
       |B.MetaParamListVal _|B.MetaParamVal _|B.MetaExprListVal _
@@ -4532,9 +4545,25 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
       | None -> fail
       )
 
-  (* not me?: *)
-  | A.MetaStmtList _, _ ->
-      failwith "not handling MetaStmtList"
+  | A.MetaStmtList (ida,keep,inherited),  unwrap_node ->
+      (* todo: should not happen in transform mode *)
+
+      (match F.extract_fullstatement node with
+      | Some (B.Compound stb,_) ->
+	    let max_min _ =
+	      Lib_parsing_c.lin_col_by_pos
+		(Lib_parsing_c.ii_of_stmtseqlist stb) in
+            X.envf keep inherited
+	      (ida, Ast_c.MetaStmtListVal(stb,Ast_c.WITH_TYPES), max_min)
+	      (fun () ->
+              (* no need tag ida, we can't be called in transform-mode *)
+		return (
+		A.MetaStmtList (ida, keep, inherited),
+		unwrap_node
+	      )
+	    )
+      | _ -> fail
+      )
 
   | A.TopExp ea, F.DefineExpr eb  ->
       expression ea eb >>= (fun ea eb ->
@@ -5061,6 +5090,12 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
 	  return(
 	    A.Exec(exec,lang,code,sem),
 	    F.Exec(st,(code2,[exec2;lang2;sem2])))))))
+
+  | (A.AsRe(re,asre), b) ->
+      rule_elem_node re node >>= (fun re _node ->
+      rule_elem_node asre node >>= (fun asre _node ->
+	return(
+	  (A.AsRe(re,asre),b))))
 
   (* have not a counter part in coccinelle, for the moment *)
   (* todo?: print a warning at least ? *)

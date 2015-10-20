@@ -886,8 +886,7 @@ and statement s =
 	  Ast.Atomic(rewrap_rule_elem s
 		       (Ast.MetaStmt(mcode name,unitary,seqible,false)))
       | Ast0.MetaStmtList(name,_) ->
-          Ast.Atomic(rewrap_rule_elem s
-		       (Ast.MetaStmtList(mcode name,unitary,false)))
+	  failwith "MetaStmtList only allowed at top level in sequences"
       | Ast0.AsStmt(stmt,asstmt) ->
 	  Ast.AsStmt(statement seqible stmt,statement seqible asstmt)
       | Ast0.TopExp(exp) ->
@@ -978,9 +977,11 @@ and statement s =
 			       pure)) in
 	let newbody =
 	  Ast0.rewrap x (Ast0.Dots(Ast0.rewrap_mcode name "...",[])) in
-	let meta = statement seqible newmeta in
+	let meta =
+	  (* no isos, so just put [] *)
+	  rewrap newmeta [] (Ast.MetaStmtList(mcode name,unitary,false)) in
 	let body = dots (statement seqible) (Ast0.rewrap body [newbody]) in
-	(Ast.make_term(Ast.ReAsStmt(lbrace,meta)),body)
+	(Ast.make_term(Ast.AsRe(lbrace,meta)),body)
     | None -> (lbrace,dots (statement seqible) body)
 
   and pragmainfo pi =

@@ -650,10 +650,10 @@ let combiner bind option_default
 	  let lexp = expression exp in
 	  let lcolon = string_mcode colon in
 	  multibind [lcase; lexp; lcolon]
-      | Ast.ReAsStmt(re,asstm) ->
+      | Ast.AsRe(re,asre) ->
 	  let re = rule_elem re in
-	  let asstm = statement asstm in
-	  bind re asstm
+	  let asre = rule_elem asre in
+	  bind re asre
       |	Ast.DisjRuleElem(res) ->
 	  multibind (List.map rule_elem res) in
     rulefn all_functions k re
@@ -1523,10 +1523,10 @@ let rebuilder
 	    let lexp = expression exp in
 	    let lcolon = string_mcode colon in
 	    Ast.Case(lcase, lexp, lcolon)
-	| Ast.ReAsStmt(re,asstm) ->
+	| Ast.AsRe(re,asre) ->
 	    let re = rule_elem re in
-	    let asstm = statement asstm in
-	    Ast.ReAsStmt(re,asstm)
+	    let asre = rule_elem asre in
+	    Ast.AsRe(re,asre)
 	| Ast.DisjRuleElem(res) -> Ast.DisjRuleElem(List.map rule_elem res)) in
     rulefn all_functions k re
 

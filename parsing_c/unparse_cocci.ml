@@ -1139,7 +1139,7 @@ and rule_elem arity re =
   | Ast.MetaStmtList(name,_,_) ->
       failwith
 	"MetaStmtList not supported (not even in ast_c metavars binding)"
-  | Ast.ReAsStmt(re,asre) -> rule_elem arity re
+  | Ast.AsRe(re,asre) -> rule_elem arity re
 
 and pragmainfo pi =
   match Ast.unwrap pi with
