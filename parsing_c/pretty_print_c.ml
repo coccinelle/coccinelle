@@ -42,6 +42,7 @@ type pretty_printers = {
   arg_list        : (Ast_c.argument Ast_c.wrap2 list) printer;
   arg             : Ast_c.argument printer;
   statement       : Ast_c.statement printer;
+  statement_seq_list : Ast_c.statement_sequencable list printer;
   decl            : Ast_c.declaration printer;
   field           : Ast_c.field printer;
   field_list      : Ast_c.field list printer;
@@ -260,6 +261,10 @@ and pp_string_format (e,ii) =
       pr_elem i
 
 (* ---------------------- *)
+
+  and pp_statement_seq_list statxs =
+    statxs +> Common.print_between pr_nl pp_statement_seq
+
   and pp_statement = fun st ->
     match Ast_c.get_st_and_ii st with
     | Labeled (Label (name, st)), ii ->
@@ -278,8 +283,7 @@ and pp_string_format (e,ii) =
 	pr_unindent(); pr_elem i1; pr_elem i2; pr_nl(); pr_indent();
 	pp_statement st
     | Compound statxs, [i1;i2] ->
-        pr_elem i1; start_block();
-        statxs +> Common.print_between pr_nl pp_statement_seq;
+        pr_elem i1; start_block(); pp_statement_seq_list statxs;
         end_block(); pr_elem i2;
 
     | ExprStatement (None), [i] -> pr_elem i;
@@ -1168,7 +1172,7 @@ and pp_init (init, iinit) =
 
         pr_elem iifunc2; pr_space();
         pr_elem i1;
-        statxs +> List.iter pp_statement_seq;
+	pp_statement_seq_list statxs;
         pr_elem i2;
     | _ -> raise (Impossible 118)
 
@@ -1473,6 +1477,7 @@ and pp_init (init, iinit) =
     arg_list   = pp_arg_list;
     arg        = pp_argument;
     statement  = pp_statement;
+    statement_seq_list = pp_statement_seq_list;
     decl       = pp_decl;
     field      = pp_field;
     field_list = pp_field_list;
@@ -1536,6 +1541,7 @@ let pp_binaryOp_simple   = ppc.binaryOp
 let pp_decl_simple       = ppc.decl
 let pp_field_simple      = ppc.field
 let pp_statement_simple  = ppc.statement
+let pp_statement_seq_list_simple  = ppc.statement_seq_list
 let pp_type_simple       = ppc.ty
 let pp_init_simple       = ppc.init
 let pp_toplevel_simple   = ppc.toplevel
@@ -1566,6 +1572,9 @@ let pp_arg_gen ~pr_elem ~pr_space =
 
 let pp_statement_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).statement
+
+let pp_statement_seq_list_gen ~pr_elem ~pr_space =
+  (pp_elem_sp pr_elem pr_space).statement_seq_list
 
 let pp_decl_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).decl

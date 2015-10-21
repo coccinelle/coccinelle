@@ -790,13 +790,13 @@ and statement s =
 	  Ast.Atomic(rewrap_rule_elem s
 		       (Ast.Decl(annotated_decl (Some bef) decl)))
       | Ast0.Seq(lbrace,body,rbrace) ->
-	  let lbrace = mcode lbrace in
-	  let body = dots (statement seqible) body in
-	  let rbrace = mcode rbrace in
-	  Ast.Seq(iso_tokenwrap lbrace s (Ast.SeqStart(lbrace))
-		    (do_isos (Ast0.get_iso s)),
-		  body,
-		  tokenwrap rbrace s (Ast.SeqEnd(rbrace)))
+          let lbrace = mcode lbrace in
+          let body = dots (statement seqible) body in
+          let rbrace = mcode rbrace in
+          Ast.Seq(iso_tokenwrap lbrace s (Ast.SeqStart(lbrace))
+                    (do_isos (Ast0.get_iso s)),
+                  body,
+                  tokenwrap rbrace s (Ast.SeqEnd(rbrace)))
       | Ast0.ExprStatement(exp,sem) ->
 	  Ast.Atomic(rewrap_rule_elem s
 		       (Ast.ExprStatement
@@ -933,18 +933,18 @@ and statement s =
             | None -> None
             | Some (comma, ellipsis) -> Some (mcode comma, mcode ellipsis) in
 	  let rp = mcode rp in
-	  let lbrace = mcode lbrace in
-	  let body = dots (statement seqible) body in
-	  let rbrace = mcode rbrace in
-	  let allminus = check_allminus.VT0.combiner_rec_statement s in
-	  Ast.FunDecl(rewrap_rule_elem s
-			(Ast.FunHeader
-			   (convert_allminus_mcodekind allminus bef,
-			    allminus,fi,name,lp,params,newva,rp)),
-		      tokenwrap lbrace s (Ast.SeqStart(lbrace)),
-		      body,
-		      tokenwrap rbrace s (Ast.SeqEnd(rbrace)),
-		      ([],[],[],convert_allminus_mcodekind allminus aft))
+          let lbrace = mcode lbrace in
+          let body = dots (statement seqible) body in
+          let rbrace = mcode rbrace in
+          let allminus = check_allminus.VT0.combiner_rec_statement s in
+          Ast.FunDecl(rewrap_rule_elem s
+                        (Ast.FunHeader
+                           (convert_allminus_mcodekind allminus bef,
+                            allminus,fi,name,lp,params,newva,rp)),
+                      tokenwrap lbrace s (Ast.SeqStart(lbrace)),
+                      body,
+                      tokenwrap rbrace s (Ast.SeqEnd(rbrace)),
+                      ([],[],[],convert_allminus_mcodekind allminus aft))
       |	Ast0.Include(inc,str) ->
 	  Ast.Atomic(rewrap_rule_elem s (Ast.Include(mcode inc,mcode str)))
       |	Ast0.Undef(def,id) ->

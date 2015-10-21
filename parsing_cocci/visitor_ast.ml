@@ -650,6 +650,10 @@ let combiner bind option_default
 	  let lexp = expression exp in
 	  let lcolon = string_mcode colon in
 	  multibind [lcase; lexp; lcolon]
+      | Ast.AsRe(re,asre) ->
+	  let re = rule_elem re in
+	  let asre = rule_elem asre in
+	  bind re asre
       |	Ast.DisjRuleElem(res) ->
 	  multibind (List.map rule_elem res) in
     rulefn all_functions k re
@@ -926,12 +930,13 @@ type 'cd rcode = rebuilder -> ('cd inout) -> 'cd inout
 
 
 let rebuilder
-    meta_mcode string_mcode const_mcode simpleassign_mcode opassign_mcode fix_mcode unary_mcode
-    arithop_mcode logicalop_mcode cv_mcode sign_mcode struct_mcode storage_mcode
-    inc_file_mcode
+    meta_mcode string_mcode const_mcode simpleassign_mcode opassign_mcode
+    fix_mcode unary_mcode
+    arithop_mcode logicalop_mcode cv_mcode sign_mcode struct_mcode
+    storage_mcode inc_file_mcode
     expdotsfn paramdotsfn stmtdotsfn anndecldotsfn initdotsfn
-    identfn exprfn fragfn fmtfn assignOpfn binaryOpfn ftfn tyfn initfn paramfn declfn
-    annotated_declfn rulefn stmtfn casefn topfn anyfn =
+    identfn exprfn fragfn fmtfn assignOpfn binaryOpfn ftfn tyfn initfn
+    paramfn declfn annotated_declfn rulefn stmtfn casefn topfn anyfn =
   let get_option f = function
       Some x -> Some (f x)
     | None -> None in
@@ -1519,6 +1524,10 @@ let rebuilder
 	    let lexp = expression exp in
 	    let lcolon = string_mcode colon in
 	    Ast.Case(lcase, lexp, lcolon)
+	| Ast.AsRe(re,asre) ->
+	    let re = rule_elem re in
+	    let asre = rule_elem asre in
+	    Ast.AsRe(re,asre)
 	| Ast.DisjRuleElem(res) -> Ast.DisjRuleElem(List.map rule_elem res)) in
     rulefn all_functions k re
 

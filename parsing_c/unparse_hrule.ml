@@ -250,6 +250,8 @@ let print_extra_typedefs pr env =
       | Ast_c.MetaFragListVal(frags) ->
 	  Visitor_c.vk_string_fragments bigf frags
       | Ast_c.MetaStmtVal(stm,_) -> Visitor_c.vk_statement bigf stm
+      | Ast_c.MetaStmtListVal(stms,_) ->
+	  Visitor_c.vk_statement_sequencable_list bigf stms
       | Ast_c.MetaPosVal _ | Ast_c.MetaPosValList _
       | Ast_c.MetaListlenVal _ -> ()
       | Ast_c.MetaNoVal -> failwith "referencing a metavar with no value")
@@ -308,6 +310,9 @@ let rename argids env =
 	   Ast_c.MetaFragListVal(Visitor_c.vk_string_fragments_s bigf frags)
        | Ast_c.MetaStmtVal(stm,ty) ->
 	   Ast_c.MetaStmtVal(Visitor_c.vk_statement_s bigf stm,ty)
+       | Ast_c.MetaStmtListVal(stm,ty) ->
+	   Ast_c.MetaStmtListVal
+	     (Visitor_c.vk_statement_sequencable_list_s bigf stm,ty)
        | Ast_c.MetaPosVal _ | Ast_c.MetaPosValList _
        | Ast_c.MetaListlenVal _ -> vl
        | Ast_c.MetaNoVal -> failwith "referencing a metavar with no value"))

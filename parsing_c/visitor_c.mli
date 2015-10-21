@@ -38,6 +38,8 @@ val vk_assignOp  : visitor_c -> assignOp    -> unit
 val vk_binaryOp  : visitor_c -> binaryOp    -> unit
 val vk_statement : visitor_c -> statement   -> unit
 val vk_statement_sequencable : visitor_c -> statement_sequencable -> unit
+val vk_statement_sequencable_list :
+    visitor_c -> statement_sequencable list -> unit
 val vk_type      : visitor_c -> fullType    -> unit
 val vk_decl      : visitor_c -> declaration -> unit
 val vk_decl_list : visitor_c -> declaration list -> unit
@@ -124,7 +126,10 @@ val vk_assignOp_s : visitor_c_s -> assignOp -> assignOp
 val vk_binaryOp_s : visitor_c_s -> binaryOp -> binaryOp
 val vk_argument_s : visitor_c_s -> argument -> argument
 val vk_statement_s : visitor_c_s -> statement -> statement
-val vk_statement_sequencable_s : visitor_c_s -> statement_sequencable -> statement_sequencable
+val vk_statement_sequencable_s :
+    visitor_c_s -> statement_sequencable -> statement_sequencable
+val vk_statement_sequencable_list_s :
+    visitor_c_s -> statement_sequencable list -> statement_sequencable list
 val vk_type_s : visitor_c_s -> fullType -> fullType
 val vk_decl_s : visitor_c_s -> declaration -> declaration
 val vk_decl_list_s : visitor_c_s -> declaration list -> declaration list

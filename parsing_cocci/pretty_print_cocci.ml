@@ -699,7 +699,9 @@ and rule_elem arity re =
       mcode print_string prg; print_string " "; ident id; print_string " ";
       pragmainfo body
   | Ast.Default(def,colon) ->
-      mcode print_string def; mcode print_string colon; print_string " "
+      mcode print_string def; mcode print_string colon; print_string " " 
+  | Ast.AsRe(re,asre) ->
+      rule_elem arity re; print_string "@"; rule_elem arity asre
   | Ast.Case(case,exp,colon) ->
       mcode print_string case; print_string " "; expression exp;
       mcode print_string colon; print_string " "

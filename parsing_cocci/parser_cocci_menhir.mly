@@ -1774,7 +1774,7 @@ initialize_list:
 decl_statement:
     TMetaStmList
       { let (nm,pure,clt) = $1 in
-      [Ast0.wrap(Ast0.MetaStmt(P.clt2mcode nm clt,pure))] }
+      [Ast0.wrap(Ast0.MetaStmtList(P.clt2mcode nm clt,pure))] }
   | decl_var
       { List.map
 	  (function x ->
@@ -1814,7 +1814,7 @@ decl_statement:
 decl_statement_expr:
     TMetaStmList
       { let (nm,pure,clt) = $1 in
-      [Ast0.wrap(Ast0.MetaStmt(P.clt2mcode nm clt,pure))] }
+      [Ast0.wrap(Ast0.MetaStmtList(P.clt2mcode nm clt,pure))] }
   | decl_var
       { List.map
 	  (function x ->

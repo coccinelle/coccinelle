@@ -680,7 +680,10 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
     | [] -> []
     | (T2(Parser_c.TCommentNewline c,_b,_i,_h) as x)::
       ((T2(_,Min adj1,_,_)) as t1)::xs ->
+	(* don't want to drop newline if - and + code mixed, but do want to
+	   drop a trailing newline that is before + code *)
       let (minus_list,rest) = span_not_context (t1::xs) in
+      let (minus_list,rest) = drop_trailing_plus minus_list rest in
       let (pre_minus_list,_) = span not_context_newline minus_list in
       let contains_plus = List.exists is_plus pre_minus_list in
       let x =
@@ -746,6 +749,17 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
           @ rest)
       )
     | xs -> failwith "should always start with minus"
+  and drop_trailing_plus minus_list rest =
+    let rec loop acc = function
+	x::xs ->
+	  if is_plus x
+	  then loop (x::acc) xs
+	  else
+	    if is_newline x
+	    then (List.rev (x::xs), acc@rest)
+	    else (minus_list,rest) (*do nothing if the + code is not after nl*)
+      | _ -> failwith "not possible - always at least one - token" in
+    loop [] (List.rev minus_list)
   and span_not_context xs =
    (* like span not_context xs, but have to parse ifdefs *)
    let rec loop seen_ifdefs = function
@@ -1784,6 +1798,12 @@ let adjust_by_function getter op k q vl xs =
       fn PlusOnly vl1
   | _ -> vl
 
+let getval (am,ap) = function
+    PlusOnly -> ap
+  | MinusOnly -> am
+  | Both -> am (* no idea, pick - arbitrarily *)
+  | Neither -> am
+
 let adjust_by_op fn (am,ap) = function
     PlusOnly -> (am,fn ap)
   | MinusOnly -> (fn am,ap)
@@ -1810,12 +1830,13 @@ let token_effect tok dmin dplus inparens inassn inbrace accumulator xs =
   let info = parse_token tok in
   match info with
     (Tok ")",op)
-    when inparens <= 1 && inassn = 0 && inbrace > 0 ->
+    when getval inparens op <= 1 && getval inassn op = 0 &&
+      getval inbrace op > 0 ->
       let nopen_brace a b = not (open_brace a b) in
       let do_nothing a b = b in
       let accumulator =
 	adjust_by_function nopen_brace op accadd1 do_nothing accumulator xs in
-      (Other 1,dmin,dplus,0,0,inbrace,accumulator)
+      (Other 1,dmin,dplus,(0,0),(0,0),inbrace,accumulator)
   | (Tok "else",op) ->
       (* is_nl is for the case where the next statement is on the same line
 	 as the else *)
@@ -1825,23 +1846,26 @@ let token_effect tok dmin dplus inparens inassn inbrace accumulator xs =
       let do_nothing a b = b in
       let accumulator =
 	adjust_by_function nopen_brace op accadd1 do_nothing accumulator xs in
-      (Other 1,dmin,dplus,0,0,inbrace,accumulator)
+      (Other 1,dmin,dplus,(0,0),(0,0),inbrace,accumulator)
   | (Tok "{",op) ->
       let (dmin,dplus) = add1 op (dmin,dplus) in
       let accumulator = add1top op accumulator in
-      (Other 2,dmin,dplus,inparens,0,inbrace+1,accumulator)
+      (Other 2,dmin,dplus,inparens,(0,0),add1 op inbrace,accumulator)
   | (Tok "}",op) ->
       let (dmin,dplus) = sub1 op (dmin,dplus) in
       let accumulator = sub1top op accumulator in
-      (Other 3,dmin,dplus,inparens,0,inbrace-1,drop_zeroes op accumulator xs)
-  | (Tok(";"|","),op) when inparens = 0 && inassn <= 1 ->
-      (Other 4,dmin,dplus,inparens,0,inbrace,drop_zeroes op accumulator xs)
+      (Other 3,dmin,dplus,inparens,(0,0),sub1 op inbrace,
+       drop_zeroes op accumulator xs)
+  | (Tok(";"|","),op) when getval inparens op = 0 && getval inassn op <= 1 ->
+      (Other 4,dmin,dplus,inparens,(0,0),inbrace,drop_zeroes op accumulator xs)
   | (Tok ";",op) ->
-      (Other 5,dmin,dplus,inparens,max 0 (inassn-1),inbrace,accumulator)
-  | (Tok "=",op) when inparens+inassn = 0 ->
-      (Other 6,dmin,dplus,inparens,1,inbrace,accumulator)
-  | (Tok "(",op) -> (Other 7,dmin,dplus,inparens+1,inassn,inbrace,accumulator)
-  | (Tok ")",op) -> (Other 8,dmin,dplus,inparens-1,inassn,inbrace,accumulator)
+      (Other 5,dmin,dplus,inparens,sub1 op inassn,inbrace,accumulator)
+  | (Tok "=",op) when getval inparens op + getval inassn op = 0 ->
+      (Other 6,dmin,dplus,inparens,add1 op (0,0),inbrace,accumulator)
+  | (Tok "(",op) ->
+      (Other 7,dmin,dplus,add1 op inparens,inassn,inbrace,accumulator)
+  | (Tok ")",op) ->
+      (Other 8,dmin,dplus,sub1 op inparens,inassn,inbrace,accumulator)
   | (Ind Indent_cocci2,op) ->
       (Drop,dmin,dplus,inparens,inassn,inbrace,accumulator)
   | (Ind (Unindent_cocci2 true),op) ->
@@ -1855,11 +1879,13 @@ let token_effect tok dmin dplus inparens inassn inbrace accumulator xs =
       then (* ignore indentation *)
 	(Label,dmin,dplus,inparens,inassn,inbrace,accumulator)
       else
+	let inp = getval inparens op in
+	let ina = getval inassn op in
 	let rebuilder min plus =
 	  match op with
-	    Both -> CtxNL(after,min,plus,inparens+inassn)
-	  | MinusOnly -> MinNL(after,min,plus,inparens+inassn)
-	  | PlusOnly -> PlusNL(plus,inparens+inassn)
+	    Both -> CtxNL(after,min,plus,inp+ina)
+	  | MinusOnly -> MinNL(after,min,plus,inp+ina)
+	  | PlusOnly -> PlusNL(plus,inp+ina)
 	  | _ -> failwith "not possible" in
 	let numacc =
 	  (List.length (fst accumulator), List.length (snd accumulator)) in
@@ -1900,7 +1926,7 @@ let parse_indentation xs =
 	front @
 	((n+List.length front),res,x) ::
 	loop (n+1) dmin dplus inparens inassn inbrace accumulator xs in
-  loop 1 0 0 0 0 0 ([],[]) xs
+  loop 1 0 0 (0,0) (0,0) (0,0) ([],[]) xs
 
 exception NoInfo
 
@@ -2029,11 +2055,16 @@ let plus_search_in_maps n depth inparens past_minmap minmap tu t =
     try Some(List.assoc (depth,inparens) minmap) with _ -> None in
   get_answer fail2 map1 map2
 
-let context_search_in_maps n depth inparens past_minmap minmap tu t =
+let context_search_in_maps n depth samedelta inparens past_minmap minmap tu t =
   let findn map =
-    try
-      Some(List.find (function ((_,ip),(n1,_)) -> ip = inparens && n = n1) map)
-    with Not_found -> None in
+    if not samedelta
+    then None
+    else
+      (* favor just shifing left *)
+      try
+	Some(List.find (function ((_,ip),(n1,_)) -> ip = inparens && n = n1)
+	       map)
+      with Not_found -> None in
   let before = findn past_minmap in
   let after = findn minmap in (* should be the same... *)
   (if not (before = after)
@@ -2120,7 +2151,9 @@ let adjust_indentation xs =
 	  let t =
 	    if not (depthmin = depthplus) (*&& is_cocci rest*)
 	    then
-	      context_search_in_maps n depthplus inparens past_minmap minmap
+	      context_search_in_maps n depthplus
+		((depthmin - depthplus) = (dmin - dplus))
+		inparens past_minmap minmap
 		tabbing_unit (C2("\n",None))
 	    else t in
 	  (out_tu,minmap,t::res)

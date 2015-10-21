@@ -94,6 +94,7 @@ let process_arglist = function
 		else loop xs
 	| [] -> None in
       (before,after,loop rest)
+  | [] -> failwith "arglist should always contain the command"
 
 (* ------------------------------------------------------------------------ *)
 

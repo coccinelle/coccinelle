@@ -1193,6 +1193,7 @@ let main () =
     let arglist = Array.to_list Sys.argv in
     let arglist = Command_line.command_line arglist in
     let arglist = List.map fix_chars arglist in
+    let arglist = Read_options.read_options arglist in
     let arglist = fix_idutils arglist in
 
     let contains_cocci =

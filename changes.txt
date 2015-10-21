@@ -36,6 +36,8 @@
 - Print metavariables properly for cocci code.
 - SYSCALL_DEFINE macros, contributed by Jörn Engel
 - --indent option, giving default indent, for projects not using tabs
+- Introduce .cocciconfig configuration file
+- Add some support for MetaStmtList.  Allowed at top level of {}.
 ** Bugfix:
 - Allow virtual variable definition to contain an =.
 * 1.0.2

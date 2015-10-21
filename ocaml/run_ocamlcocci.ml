@@ -40,6 +40,7 @@ let ast_binding vl = function
       | Ast_c.MetaFieldVal field -> Coccilib.Field field
       | Ast_c.MetaFieldListVal field -> Coccilib.FieldList field
       | Ast_c.MetaStmtVal(stm,_) -> Coccilib.Stmt stm
+      | Ast_c.MetaStmtListVal(stm,_) -> Coccilib.StmtList stm
       | Ast_c.MetaFragListVal frags -> Coccilib.FragList frags
       | Ast_c.MetaFmtVal fmt -> Coccilib.Fmt fmt
       | Ast_c.MetaNoVal -> failwith "no value for script metavariable"

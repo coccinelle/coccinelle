@@ -329,8 +329,7 @@ let rec vk_expr = fun bigf expr ->
      *          List.iter (vk_statement bigf) statxs
      *)
     | StatementExpr ((statxs, is)) ->
-        iif is;
-        statxs +> List.iter (vk_statement_sequencable bigf);
+        iif is; vk_statement_sequencable_list bigf statxs
 
     | Constructor (t, init) ->
         vk_type bigf t; vk_ini bigf init
@@ -398,7 +397,7 @@ and vk_statement = fun bigf (st: Ast_c.statement) ->
     | Labeled (Default st) -> statf st;
 
     | Compound statxs ->
-        statxs +> List.iter (vk_statement_sequencable bigf)
+	vk_statement_sequencable_list bigf statxs
     | ExprStatement (eopt) -> do_option (vk_expr bigf) eopt;
 
     | Selection  (If (e, st1, st2)) ->
@@ -443,6 +442,9 @@ and vk_statement = fun bigf (st: Ast_c.statement) ->
 
   in statf st
 
+and vk_statement_sequencable_list = fun bigf stms ->
+  stms +> List.iter (vk_statement_sequencable bigf)
+
 and vk_statement_sequencable = fun bigf stseq ->
   let f = bigf.kstatementseq in
 
@@ -456,7 +458,7 @@ and vk_statement_sequencable = fun bigf stseq ->
     | IfdefStmt2 (ifdef, xxs) ->
         ifdef +> List.iter (vk_ifdef_directive bigf);
         xxs +> List.iter (fun xs ->
-          xs +> List.iter (vk_statement_sequencable bigf)
+	  vk_statement_sequencable_list bigf xs
         )
 
   in f (k, bigf) stseq
@@ -705,7 +707,7 @@ and vk_def = fun bigf d ->
           decls +> List.iter (vk_decl bigf);
         );
 
-        statxs +> List.iter (vk_statement_sequencable bigf)
+	vk_statement_sequencable_list bigf statxs
   in f (k, bigf) d
 
 

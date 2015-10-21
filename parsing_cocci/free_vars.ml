@@ -879,6 +879,7 @@ let astfvs metavars bound =
     | Ast.Pragma _ -> "Pragma"
     | Ast.Case _ -> "Case"
     | Ast.Default _ -> "Default"
+    | Ast.AsRe _ -> "AsRe"
     | Ast.DisjRuleElem _ -> "DisjRuleElem" in
 
   (* cases for the elements of anything *)

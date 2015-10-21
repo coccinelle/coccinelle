@@ -1131,14 +1131,17 @@ and rule_elem arity re =
       raise (Impossible 155)
 
   | Ast.MetaStmt(name,_,_,_) ->
-      handle_metavar name  (function
+      handle_metavar name (function
         | Ast_c.MetaStmtVal(stm,_) ->
             pretty_print_c.Pretty_print_c.statement stm
-        | _ -> raise (Impossible 156)
-                           )
+        | _ -> raise (Impossible 156))
+
   | Ast.MetaStmtList(name,_,_) ->
-      failwith
-	"MetaStmtList not supported (not even in ast_c metavars binding)"
+      handle_metavar name (function
+        | Ast_c.MetaStmtListVal(statxs,_) ->
+            pretty_print_c.Pretty_print_c.statement_seq_list statxs
+        | _ -> raise (Impossible 161))
+  | Ast.AsRe(re,asre) -> rule_elem arity re
 
 and pragmainfo pi =
   match Ast.unwrap pi with
@@ -1372,7 +1375,7 @@ let rec pp_any = function
   | Ast.CaseLineTag(x) -> case_line "" x; false
   | Ast.StringFragmentTag(x) -> string_fragment x; false
 
-  | Ast.ConstVolTag(x) ->  const_vol x unknown unknown; false
+  | Ast.ConstVolTag(x) -> const_vol x unknown unknown; false
   | Ast.Directive(xs) ->
       (match xs with (Ast.Space s)::_ -> pr_space() | _ -> ());
       let rec loop = function
@@ -1455,7 +1458,7 @@ in
 	    (Ast.StatementTag s::_) ->
 	      (if isfn s then force_newline());
 	      force_newline()
-	  | (Ast.Directive _::_)
+	  | (Ast.Directive _::_) | (Ast.StmtDotsTag _::_)
           | (Ast.Rule_elemTag _::_) | (Ast.InitTag _::_)
 	  | (Ast.DeclarationTag _::_) | (Ast.Token ("{",_)::_) ->
 	       force_newline()

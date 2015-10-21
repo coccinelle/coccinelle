@@ -69,6 +69,8 @@ let stringrep = function
     call_pretty Pretty_print_c.pp_field_list_gen field
 | Ast_c.MetaStmtVal      (statement,_) ->
     call_pretty Pretty_print_c.pp_statement_gen statement
+| Ast_c.MetaStmtListVal  (statxs,_) ->
+    call_pretty Pretty_print_c.pp_statement_seq_list_gen statxs
 | Ast_c.MetaParamVal     param ->
     call_pretty Pretty_print_c.pp_param_gen param
 | Ast_c.MetaParamListVal params ->
