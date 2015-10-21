@@ -263,7 +263,7 @@ and pp_string_format (e,ii) =
 (* ---------------------- *)
 
   and pp_statement_seq_list statxs =
-    statxs +> List.iter pp_statement_seq
+    statxs +> Common.print_between pr_nl pp_statement_seq
 
   and pp_statement = fun st ->
     match Ast_c.get_st_and_ii st with
@@ -283,8 +283,7 @@ and pp_string_format (e,ii) =
 	pr_unindent(); pr_elem i1; pr_elem i2; pr_nl(); pr_indent();
 	pp_statement st
     | Compound statxs, [i1;i2] ->
-        pr_elem i1; start_block();
-        statxs +> Common.print_between pr_nl pp_statement_seq;
+        pr_elem i1; start_block(); pp_statement_seq_list statxs;
         end_block(); pr_elem i2;
 
     | ExprStatement (None), [i] -> pr_elem i;
@@ -1173,7 +1172,7 @@ and pp_init (init, iinit) =
 
         pr_elem iifunc2; pr_space();
         pr_elem i1;
-        statxs +> List.iter pp_statement_seq;
+	pp_statement_seq_list statxs;
         pr_elem i2;
     | _ -> raise (Impossible 118)
 
