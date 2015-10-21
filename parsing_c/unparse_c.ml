@@ -680,7 +680,10 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
     | [] -> []
     | (T2(Parser_c.TCommentNewline c,_b,_i,_h) as x)::
       ((T2(_,Min adj1,_,_)) as t1)::xs ->
+	(* don't want to drop newline if - and + code mixed, but do want to
+	   drop a trailing newline that is before + code *)
       let (minus_list,rest) = span_not_context (t1::xs) in
+      let (minus_list,rest) = drop_trailing_plus minus_list rest in
       let (pre_minus_list,_) = span not_context_newline minus_list in
       let contains_plus = List.exists is_plus pre_minus_list in
       let x =
@@ -746,6 +749,17 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
           @ rest)
       )
     | xs -> failwith "should always start with minus"
+  and drop_trailing_plus minus_list rest =
+    let rec loop acc = function
+	x::xs ->
+	  if is_plus x
+	  then loop (x::acc) xs
+	  else
+	    if is_newline x
+	    then (List.rev (x::xs), acc@rest)
+	    else (minus_list,rest) (*do nothing if the + code is not after nl*)
+      | _ -> failwith "not possible - always at least one - token" in
+    loop [] (List.rev minus_list)
   and span_not_context xs =
    (* like span not_context xs, but have to parse ifdefs *)
    let rec loop seen_ifdefs = function
