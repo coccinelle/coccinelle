@@ -92,7 +92,6 @@ AS_IF([test "x$OCAMLC" = xno -o "x$OCAMLDEP" = xno -o "x$OCAMLDOC" = xno -o "x$O
 ])
 
 dnl  ocaml tools
-AC_PROG_CAMLP4
 AC_COCCI_TOOL([OCAMLLEX],[ocamllex],[])
 AC_COCCI_TOOL([OCAMLYACC],[ocamlyacc],[])
 AC_COCCI_TOOL([OCAMLFIND],[ocamlfind],[$COCCI_SRCDIR/setup/fake-subst.sh ocamlfind])
@@ -119,8 +118,6 @@ AC_COCCI_RUNTIME_CMD([OCAMLFIND],[ocamlfind])
 AC_COCCI_RUNTIME_CMD([OCAMLC],[ocamlc])
 AC_COCCI_RUNTIME_CMD([OCAMLOPT],[ocamlopt])
 AC_COCCI_RUNTIME_CMD([OCAMLDEP],[ocamldep])
-AC_COCCI_RUNTIME_CMD([CAMLP4],[camlp4])
-AC_COCCI_RUNTIME_CMD([CAMLP4O],[camlp4o])
 
 dnl  AC_CACHE_SAVE
 
@@ -154,7 +151,6 @@ AC_REQ_COCCI_STDPKG([str])
 
 dnl  required modules (Some are available locally too)
 AC_REQ_COCCI_EXTPKG([dynlink])
-AC_REQ_COCCI_EXTPKG([camlp4])
 AC_REQ_COCCI_EXTPKG([menhirLib])
 AC_REQ_COCCI_EXTPKG([parmap])
 
@@ -304,6 +300,19 @@ AS_IF([test "x$enable_python" != xno],
   ])
 
   AC_REQ_COCCI_EXTPKG([pycaml])
+
+  AS_IF([test "x$AS_TR_SH([enable_pycaml])" = xlocal],
+    [dnl
+      AC_PROG_CAMLP4
+      AS_IF([test "x$CAMLP4O" = xno],
+        [dnl
+          AC_MSG_ERROR([Camlp4 is required to compile the bundled version of pycaml.])
+        ]
+      )
+      AC_REQ_COCCI_EXTPKG([camlp4])
+    ]
+  )
+
   AC_SUBST([PYCOCCI_MODULE], [Yes_pycocci])
   AC_SUBST([PYCOCCI_FILE],[yes_pycocci.ml])
 ],
