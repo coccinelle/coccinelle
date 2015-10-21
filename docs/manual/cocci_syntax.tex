@@ -152,15 +152,19 @@ behavior.  Using \NT{disable-iso} with the given name disables this behavior.
 
 The possible types of metavariable declarations are defined by the grammar
 rule below.  Metavariables should occur at least once in the transformation
-immediately following their declaration.  Fresh identifier metavariables
-must only be used in {\tt +} code.  These properties are not expressed in
-the grammar, but are checked by a subsequent analysis.  The metavariables
-are designated according to the kind of terms they can match, such as a
-statement, an identifier, or an expression.  An expression metavariable can
-be further constrained by its type.  A declaration metavariable matches the
-declaration of one or more variables, all sharing the same type
-specification ({\em e.g.}, {\tt int a,b,c=3;}).  A field metavariable does
-the same, but for structure fields.
+code immediately following their declaration.  Fresh identifier
+metavariables must only be used in {\tt +} code.  These properties are not
+expressed in the grammar, but are checked by a subsequent analysis.  The
+metavariables are designated according to the kind of terms they can match,
+such as a statement, an identifier, or an expression.  An expression
+metavariable can be further constrained by its type.  A declaration
+metavariable matches the declaration of one or more variables, all sharing
+the same type specification ({\em e.g.}, {\tt int a,b,c=3;}).  A field
+metavariable does the same, but for structure fields.  In the minus code, a
+statement list metavariable can only appear as a complete function body or
+as the complete body of a sequence statement.  In the plus code, a
+statement list metavariable can occur anywhere a statement list is allowed,
+i.e., including as an element of another statement list.
 
 \begin{grammar}
   \RULE{\rt{metadecl}}
