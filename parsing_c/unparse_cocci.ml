@@ -1131,14 +1131,16 @@ and rule_elem arity re =
       raise (Impossible 155)
 
   | Ast.MetaStmt(name,_,_,_) ->
-      handle_metavar name  (function
+      handle_metavar name (function
         | Ast_c.MetaStmtVal(stm,_) ->
             pretty_print_c.Pretty_print_c.statement stm
-        | _ -> raise (Impossible 156)
-                           )
+        | _ -> raise (Impossible 156))
+
   | Ast.MetaStmtList(name,_,_) ->
-      failwith
-	"MetaStmtList not supported (not even in ast_c metavars binding)"
+      handle_metavar name (function
+        | Ast_c.MetaStmtListVal(statxs,_) ->
+            pretty_print_c.Pretty_print_c.statement_seq_list statxs
+        | _ -> raise (Impossible 161))
   | Ast.AsRe(re,asre) -> rule_elem arity re
 
 and pragmainfo pi =
