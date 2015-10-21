@@ -22,7 +22,7 @@ options found in the .cocci files on the command line.
 
 Newlines, even with \, are not tolerated in attribute values *)
 
-let get_home _ = List.hd(Common.cmd_to_list "ls -d ~")
+let get_home () = Sys.getenv "HOME"
 
 let split_at_spaces s = Str.split (Str.regexp "[ \t]+") s
 
