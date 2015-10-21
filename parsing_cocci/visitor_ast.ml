@@ -930,12 +930,13 @@ type 'cd rcode = rebuilder -> ('cd inout) -> 'cd inout
 
 
 let rebuilder
-    meta_mcode string_mcode const_mcode simpleassign_mcode opassign_mcode fix_mcode unary_mcode
-    arithop_mcode logicalop_mcode cv_mcode sign_mcode struct_mcode storage_mcode
-    inc_file_mcode
+    meta_mcode string_mcode const_mcode simpleassign_mcode opassign_mcode
+    fix_mcode unary_mcode
+    arithop_mcode logicalop_mcode cv_mcode sign_mcode struct_mcode
+    storage_mcode inc_file_mcode
     expdotsfn paramdotsfn stmtdotsfn anndecldotsfn initdotsfn
-    identfn exprfn fragfn fmtfn assignOpfn binaryOpfn ftfn tyfn initfn paramfn declfn
-    annotated_declfn rulefn stmtfn casefn topfn anyfn =
+    identfn exprfn fragfn fmtfn assignOpfn binaryOpfn ftfn tyfn initfn
+    paramfn declfn annotated_declfn rulefn stmtfn casefn topfn anyfn =
   let get_option f = function
       Some x -> Some (f x)
     | None -> None in
