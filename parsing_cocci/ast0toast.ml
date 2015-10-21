@@ -790,14 +790,13 @@ and statement s =
 	  Ast.Atomic(rewrap_rule_elem s
 		       (Ast.Decl(annotated_decl (Some bef) decl)))
       | Ast0.Seq(lbrace,body,rbrace) ->
-	  let lbrace = mcode lbrace in
-	  let rbrace = mcode rbrace in
-	  let lbrace =
-	    iso_tokenwrap lbrace s (Ast.SeqStart(lbrace))
-	      (do_isos (Ast0.get_iso s)) in
-	  let (lbrace,body) = adjust_brace_and_body lbrace body seqible in
-	  let rbrace = tokenwrap rbrace s (Ast.SeqEnd(rbrace)) in
-	  Ast.Seq(lbrace, body,rbrace)
+          let lbrace = mcode lbrace in
+          let body = dots (statement seqible) body in
+          let rbrace = mcode rbrace in
+          Ast.Seq(iso_tokenwrap lbrace s (Ast.SeqStart(lbrace))
+                    (do_isos (Ast0.get_iso s)),
+                  body,
+                  tokenwrap rbrace s (Ast.SeqEnd(rbrace)))
       | Ast0.ExprStatement(exp,sem) ->
 	  Ast.Atomic(rewrap_rule_elem s
 		       (Ast.ExprStatement
@@ -886,7 +885,8 @@ and statement s =
 	  Ast.Atomic(rewrap_rule_elem s
 		       (Ast.MetaStmt(mcode name,unitary,seqible,false)))
       | Ast0.MetaStmtList(name,_) ->
-	  failwith "MetaStmtList only allowed at top level in sequences"
+	  Ast.Atomic(rewrap_rule_elem s
+		       (Ast.MetaStmtList(mcode name,unitary,false)))
       | Ast0.AsStmt(stmt,asstmt) ->
 	  Ast.AsStmt(statement seqible stmt,statement seqible asstmt)
       | Ast0.TopExp(exp) ->
@@ -933,18 +933,18 @@ and statement s =
             | None -> None
             | Some (comma, ellipsis) -> Some (mcode comma, mcode ellipsis) in
 	  let rp = mcode rp in
-	  let lbrace = mcode lbrace in
-	  let rbrace = mcode rbrace in
-	  let lbrace = tokenwrap lbrace s (Ast.SeqStart(lbrace)) in
-	  let (lbrace,body) = adjust_brace_and_body lbrace body seqible in
-	  let rbrace = tokenwrap rbrace s (Ast.SeqEnd(rbrace)) in
-	  let allminus = check_allminus.VT0.combiner_rec_statement s in
-	  Ast.FunDecl(rewrap_rule_elem s
-			(Ast.FunHeader
-			   (convert_allminus_mcodekind allminus bef,
-			    allminus,fi,name,lp,params,newva,rp)),
-		      lbrace,body,rbrace,
-		      ([],[],[],convert_allminus_mcodekind allminus aft))
+          let lbrace = mcode lbrace in
+          let body = dots (statement seqible) body in
+          let rbrace = mcode rbrace in
+          let allminus = check_allminus.VT0.combiner_rec_statement s in
+          Ast.FunDecl(rewrap_rule_elem s
+                        (Ast.FunHeader
+                           (convert_allminus_mcodekind allminus bef,
+                            allminus,fi,name,lp,params,newva,rp)),
+                      tokenwrap lbrace s (Ast.SeqStart(lbrace)),
+                      body,
+                      tokenwrap rbrace s (Ast.SeqEnd(rbrace)),
+                      ([],[],[],convert_allminus_mcodekind allminus aft))
       |	Ast0.Include(inc,str) ->
 	  Ast.Atomic(rewrap_rule_elem s (Ast.Include(mcode inc,mcode str)))
       |	Ast0.Undef(def,id) ->
@@ -959,30 +959,6 @@ and statement s =
 	  Ast.Atomic(rewrap_rule_elem s
 		       (Ast.Pragma(mcode prg,ident id,pragmainfo body)))
       | Ast0.OptStm(stm) -> Ast.OptStm(statement seqible stm))
-
-  and adjust_brace_and_body lbrace body seqible =
-    (* Goal: Move a MetaStmtList, if any, up into { and replace by ... *)
-    let body_element =
-      match Ast0.unwrap body with
-	[x] ->
-	  (match Ast0.unwrap x with
-	    Ast0.MetaStmtList(name,pure) -> Some(name,pure,body,x)
-	  | _ -> None)
-      | _ -> None in
-    match body_element with
-      Some(name,pure,body,x) ->
-	let newmeta =
-	  Ast0.context_wrap
-	    (Ast0.MetaStmtList(Ast0.make_mcode(Ast0.unwrap_mcode(name)),
-			       pure)) in
-	let newbody =
-	  Ast0.rewrap x (Ast0.Dots(Ast0.rewrap_mcode name "...",[])) in
-	let meta =
-	  (* no isos, so just put [] *)
-	  rewrap newmeta [] (Ast.MetaStmtList(mcode name,unitary,false)) in
-	let body = dots (statement seqible) (Ast0.rewrap body [newbody]) in
-	(Ast.make_term(Ast.AsRe(lbrace,meta)),body)
-    | None -> (lbrace,dots (statement seqible) body)
 
   and pragmainfo pi =
     rewrap pi no_isos
