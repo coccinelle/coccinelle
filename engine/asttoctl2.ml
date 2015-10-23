@@ -1933,24 +1933,33 @@ and statement stmt top after quantified minus_quantified
 			 true guard)))] in
 	let pattern3 =
 	  let new_quantified2 = Common.union_set [pv] new_quantified2 in
+	  let real_code = (* takes into account whencode (A/E) *)
+	    (quantify guard b2fvs
+	       (statement_list body NotTop Tail
+		  new_quantified2 new_mquantified2
+		  None(*no label because past the goto*)
+		  llabel slabel false guard)) in
+	  let switch_needed =
+	    (* if real code starts with ... with eg when forall, will need
+	       to switch the quantifier chosen by make_seq *)
+	    match real_code with
+	      CTL.XX phi -> fun phi -> CTL.XX phi
+	    | _ -> fun phi -> phi in
 	  quantify true [pv;lv]
 	    (quantify guard b1fvs
 	       (make_seq
 		  [start_brace;
-		    ctl_and
-		      (CTL.AU (* want AF even for sgrep *)
-			 (CTL.FORWARD,CTL.STRICT,
-			  CTL.Pred(Lib_engine.PrefixLabel(lv),CTL.Control),
-			  ctl_or (aftpred None) (* jll new! *)
-			  (ctl_and (* brace must be eventually after goto *)
-			    (gotopred (Some (lv,ref true)))
-			    (* want AF even for sgrep *)
-			    (CTL.AF(CTL.FORWARD,CTL.STRICT,end_brace)))))
-		      (quantify guard b2fvs
-			 (statement_list body NotTop Tail
-			    new_quantified2 new_mquantified2
-			    None(*no label because past the goto*)
-			    llabel slabel false guard))])) in
+		    switch_needed
+		      (ctl_and
+			 (CTL.AU (* want AF even for sgrep *)
+			    (CTL.FORWARD,CTL.STRICT,
+			     CTL.Pred(Lib_engine.PrefixLabel(lv),CTL.Control),
+			     ctl_or (aftpred None) (* jll new! *)
+			       (ctl_and(*brace must be eventually after goto*)
+				  (gotopred (Some (lv,ref true)))
+				  (* want AF even for sgrep *)
+				  (CTL.AF(CTL.FORWARD,CTL.STRICT,end_brace)))))
+			 real_code)])) in
 	ctl_or pattern_as_given (ctl_or pattern2 pattern3)
       else pattern_as_given
   | Ast.IfThen(ifheader,branch,aft) ->
@@ -2622,6 +2631,14 @@ let rec cleanup c =
   | CTL.AX(dir,s,CTL.XX(phi)) -> CTL.EX(dir,cleanup phi)
   | CTL.EX(dir,CTL.XX((CTL.AU(_,s,_,_)) as phi)) ->
       CTL.AX(dir,s,cleanup phi)
+  | CTL.EX(dir,CTL.XX(CTL.And(s,phi1,phi2))) ->
+      let phi1 = cleanup phi1 in
+      let phi2 = cleanup phi2 in
+      (match (phi1,phi2) with
+	(CTL.AU(_,_,_,_),CTL.AU(_,_,_,_)) ->
+	  (* use strict from & for partial matches *)
+	  CTL.AX(dir,s,CTL.And(s,phi1,phi2))
+      | _ -> CTL.EX(dir,CTL.And(s,phi1,phi2)))
   | CTL.XX(phi)               -> failwith "bad XX"
   | CTL.AX(dir,s,phi1) -> CTL.AX(dir,s,cleanup phi1)
   | CTL.AG(dir,s,phi1) -> CTL.AG(dir,s,cleanup phi1)
