@@ -53,7 +53,6 @@ FULL_SRC= $(SRC_INTERFACE) $(SRC) main.ml
 
 OCAMLCFLAGS ?= -g
 OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES)
-OCAMLBUILD=/usr/bin/ocamlbuild
 CFLAGS = -cflags '$(INCLUDES)'
 LFLAGS = -lflags '$(SYSLIBS) $(LIBS)'
 
@@ -69,12 +68,16 @@ all.opt: $(TARGET)
 $(TARGET): $(CONFIG) $(LIBS) $(GENERATED) $(FULL_SRC)
 	$(OCAMLC_CMD) -custom -o $(TARGET) $(SYSLIBS) $(LIBS) $(GENERATED) $(FULL_SRC)
 
+.PHONY: clean distclean
+
 clean:
 	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot
-	rm -f $(TARGET)
 	rm -f *~ .*~ gmon.out #*#
 	rm -f .depend
 	rm -f $(GENERATED)
+
+distclean:
+	rm -f $(TARGET)
 
 $(CONFIG) $(LIBS):
 	@echo "\n\n\tYou need to compile Coccinelle first.\n\n"
