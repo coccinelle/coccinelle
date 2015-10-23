@@ -68,6 +68,8 @@ all.opt: $(TARGET)
 $(TARGET): $(CONFIG) $(LIBS) $(GENERATED) $(FULL_SRC)
 	$(OCAMLC_CMD) -custom -o $(TARGET) $(SYSLIBS) $(LIBS) $(GENERATED) $(FULL_SRC)
 
+.PHONY: clean distclean
+
 clean:
 	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot
 	rm -f *~ .*~ gmon.out #*#
