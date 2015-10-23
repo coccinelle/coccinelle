@@ -39,6 +39,7 @@
 - Introduce .cocciconfig configuration file
 - Add some support for MetaStmtList.  Allowed at top level of {}.
 - timeout of 0 is no timeout, to allow cancelling this option.
+- --print-options-only to see accumulated options.
 ** Bugfix:
 - Allow virtual variable definition to contain an =.
 - Improvement when exists rule contains when forall.

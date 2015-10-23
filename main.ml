@@ -338,6 +338,8 @@ let short_options = [
     Prepare_ocamlcocci.load_file f'),
   "    <file> Loads the file containing the OCaml code in charge of parse errors reporting";
 
+  "--print-options-only", Arg.Unit (fun () -> ()),
+  "   print selected options and exit";
 
   "--version",   Arg.Unit (fun () ->
     let withpython = if Pycocci.python_support then "with" else "without" in
@@ -1196,6 +1198,13 @@ let main () =
     let arglist = List.map fix_chars arglist in
     let arglist = Read_options.read_options arglist in
     let arglist = fix_idutils arglist in
+
+    (if List.mem "--print-options-only" arglist
+    then
+      begin
+	Printf.eprintf "options: %s\n" (String.concat " " arglist);
+	raise (UnixExit 0)
+      end);
 
     let contains_cocci =
       (* rather a hack... don't want to think about all possible options *)
