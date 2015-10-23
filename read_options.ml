@@ -53,7 +53,6 @@ let parse_file file =
 	  (* bounded split doesn't split at = in value part *)
 	    match Str.bounded_split (Str.regexp "[ \t]*=[ \t]*") l 2 with
 	      [opts;new_options] ->
-		Printf.eprintf "|%s|%s|\n" opts new_options;
 		(match split_at_spaces opts with
 		  ["options"] ->
 		    options := split_at_spaces new_options :: !options;
