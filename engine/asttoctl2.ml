@@ -1942,9 +1942,9 @@ and statement stmt top after quantified minus_quantified
 	  let switch_needed =
 	    (* if real code starts with ... with eg when forall, will need
 	       to switch the quantifier chosen by make_seq *)
-	    match real_code with
-	      CTL.XX phi -> fun phi -> CTL.XX phi
-	    | _ -> fun phi -> phi in
+	    match find_xx real_code with
+	      Some _ -> fun phi -> CTL.XX phi
+	    | None -> fun phi -> phi in
 	  quantify true [pv;lv]
 	    (quantify guard b1fvs
 	       (make_seq
@@ -2593,6 +2593,14 @@ and drop_minuses stmt_dots =
       donothing donothing donothing donothing donothing donothing in
   v.V.rebuilder_statement_dots stmt_dots
 
+and find_xx = function
+    CTL.Exists(keep,v,phi) ->
+      (match find_xx phi with
+	Some(k,phi1) -> Some((fun phi -> CTL.Exists(keep,v,k phi)),phi1)
+      | None -> None)
+  | CTL.XX(phi) -> Some((fun phi -> phi),phi)
+  | _ -> None
+
 (* --------------------------------------------------------------------- *)
 (* cleanup: convert AX to EX for pdots.
 Concretely: AX(A[...] & E[...]) becomes AX(A[...]) & EX(E[...])
@@ -2628,22 +2636,24 @@ let rec cleanup c =
 	    CTL.And(CTL.NONSTRICT,
 		    CTL.AX(CTL.FORWARD,s,CTL.AU(CTL.FORWARD,s2,e2,e3)),
 		    CTL.EX(CTL.FORWARD,CTL.EU(CTL.FORWARD,e4,e5))))
-  | CTL.AX(dir,s,CTL.XX(phi)) -> CTL.EX(dir,cleanup phi)
-  | CTL.EX(dir,CTL.XX((CTL.AU(_,s,_,_)) as phi)) ->
-      CTL.AX(dir,s,cleanup phi)
-  | CTL.EX(dir,CTL.XX(CTL.And(s,phi1,phi2))) ->
-      let phi1 = cleanup phi1 in
-      let phi2 = cleanup phi2 in
-      (match (phi1,phi2) with
-	(CTL.AU(_,_,_,_),CTL.AU(_,_,_,_)) ->
-	  (* use strict from & for partial matches *)
-	  CTL.AX(dir,s,CTL.And(s,phi1,phi2))
-      | _ -> CTL.EX(dir,CTL.And(s,phi1,phi2)))
+
+  | CTL.AX(dir,s,phi1) ->
+      (match find_xx phi1 with
+	Some _ -> CTL.EX(dir,cleanup phi1)
+      | None -> CTL.AX(dir,s,cleanup phi1))
+  | CTL.EX(dir,phi) ->
+      (match find_xx phi with
+	Some (k,phi) ->
+	  let phi = cleanup phi in
+	  (match phi with
+	    CTL.AU(_,s,_,_) -> CTL.AX(dir,s,k phi)
+	  | CTL.AF(_,s,_) -> CTL.AX(dir,s,k phi)
+	  | CTL.And(s,_,_) -> CTL.AX(dir,s,k phi) (* branches must be AU/AF *)
+	  | _ -> failwith "not possible")
+      | None -> CTL.EX(dir,cleanup phi))
   | CTL.XX(phi)               -> failwith "bad XX"
-  | CTL.AX(dir,s,phi1) -> CTL.AX(dir,s,cleanup phi1)
   | CTL.AG(dir,s,phi1) -> CTL.AG(dir,s,cleanup phi1)
   | CTL.EF(dir,phi1)   -> CTL.EF(dir,cleanup phi1)
-  | CTL.EX(dir,phi1)   -> CTL.EX(dir,cleanup phi1)
   | CTL.EG(dir,phi1)   -> CTL.EG(dir,cleanup phi1)
   | CTL.AW(dir,s,phi1,phi2) -> CTL.AW(dir,s,cleanup phi1,cleanup phi2)
   | CTL.AU(dir,s,phi1,phi2) -> CTL.AU(dir,s,cleanup phi1,cleanup phi2)
