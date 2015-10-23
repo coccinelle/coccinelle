@@ -70,10 +70,12 @@ $(TARGET): $(CONFIG) $(LIBS) $(GENERATED) $(FULL_SRC)
 
 clean:
 	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot
-	rm -f $(TARGET)
 	rm -f *~ .*~ gmon.out #*#
 	rm -f .depend
 	rm -f $(GENERATED)
+
+distclean:
+	rm -f $(TARGET)
 
 $(CONFIG) $(LIBS):
 	@echo "\n\n\tYou need to compile Coccinelle first.\n\n"
