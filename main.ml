@@ -497,8 +497,9 @@ let other_options = [
     "   gather timing information about the main coccinelle functions";
     "--bench", Arg.Int (function x -> Flag_ctl.bench := x),
     "   <level> for profiling the CTL engine";
-    "--timeout", Arg.Int (fun x -> FC.timeout := Some x),
-    "   <sec> timeout in seconds";
+    "--timeout",
+    Arg.Int (fun x -> FC.timeout := (if x = 0 then None else Some x)),
+    "   <sec> timeout in seconds, 0 for no timeout";
     "--steps", Arg.Int (fun x -> Flag_ctl.steps := Some x),
     "   max number of model checking steps per code unit";
     "--iso-limit", Arg.Int (fun x -> Flag_parsing_cocci.iso_limit := Some x),

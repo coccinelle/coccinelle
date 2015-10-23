@@ -38,6 +38,7 @@
 - --indent option, giving default indent, for projects not using tabs
 - Introduce .cocciconfig configuration file
 - Add some support for MetaStmtList.  Allowed at top level of {}.
+- timeout of 0 is no timeout, to allow cancelling this option.
 ** Bugfix:
 - Allow virtual variable definition to contain an =.
 - Improvement when exists rule contains when forall.
