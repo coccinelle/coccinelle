@@ -53,7 +53,6 @@ FULL_SRC= $(SRC_INTERFACE) $(SRC) main.ml
 
 OCAMLCFLAGS ?= -g
 OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES)
-OCAMLBUILD=/usr/bin/ocamlbuild
 CFLAGS = -cflags '$(INCLUDES)'
 LFLAGS = -lflags '$(SYSLIBS) $(LIBS)'
 
