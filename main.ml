@@ -716,6 +716,14 @@ let other_options = [
 let all_options =
   short_options @ List.concat (List.map Common.thd3 other_options)
 
+let all_string_option_names =
+  List.fold_left
+    (function prev ->
+      function
+	  (_,Arg.Unit _,_) -> prev
+	| (nm,_,_) -> nm :: prev)
+    [] all_options
+
 (* I don't want the -help and --help that are appended by Arg.align *)
 let arg_align2 xs =
   Arg.align xs +> List.rev +> Common.drop 2 +> List.rev
@@ -1196,7 +1204,7 @@ let main () =
     let arglist = Array.to_list Sys.argv in
     let arglist = Command_line.command_line arglist in
     let arglist = List.map fix_chars arglist in
-    let arglist = Read_options.read_options arglist in
+    let arglist = Read_options.read_options all_string_option_names arglist in
     let arglist = fix_idutils arglist in
 
     (if List.mem "--print-options-only" arglist

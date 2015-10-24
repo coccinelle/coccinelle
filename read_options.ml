@@ -71,15 +71,12 @@ let parse_file file =
 
 (* ------------------------------------------------------------------------ *)
 
-let process_arglist = function
+let process_arglist strings = function
     spatch::rest ->
       let before = [spatch] in
       let after = rest in
       let rec loop = function
-	  x::
-	  ("-I" | "--include" | "--use-idutils" | "--patch" |
-	  "--parse-handler" | "--external-analysis-file" |
-	  "--cache-prefix" | "--test")::xs -> loop xs
+	  x::opt::xs when List.mem opt strings -> loop xs
 	| ""::xs -> loop xs (* not sure why it would arise *)
 	| x::xs ->
 	    if String.get x 0 = '-'
@@ -92,7 +89,7 @@ let process_arglist = function
 		then Some x
 		else loop xs
 	| [] -> None in
-      (before,after,loop rest)
+      (before,after,loop (List.rev rest))
   | [] -> failwith "arglist should always contain the command"
 
 (* ------------------------------------------------------------------------ *)
@@ -104,12 +101,12 @@ let check_one file =
 
 let unoption = function None -> [] | Some l -> l
 
-let read_options arglist =
+let read_options strings arglist =
   let hd = get_home() in
   let cwd = Sys.getcwd() in
   let home_dir_options = check_one (Printf.sprintf "%s/.cocciconfig" hd) in
   let cwd_options = check_one ".cocciconfig" in
-  let (before,after,dir) = process_arglist arglist in
+  let (before,after,dir) = process_arglist strings arglist in
   let dir_options =
     let rec loop dir =
       if dir = "/" || dir = "." || dir = hd || dir = cwd
