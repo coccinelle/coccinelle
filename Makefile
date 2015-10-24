@@ -461,6 +461,7 @@ uninstall:
 	rmdir $(DESTDIR)$(LIBDIR)
 	rm -f $(DESTDIR)$(MANDIR)/man1/spatch.1
 	rm -f $(DESTDIR)$(MANDIR)/man3/Coccilib.3cocci
+	rm -f $(DESTDIR)$(MANDIR)/man1/spgen.1
 
 uninstall-bash:
 	rm -f $(DESTDIR)$(BASH_COMPLETION_DIR)/spatch
