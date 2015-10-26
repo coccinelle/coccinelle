@@ -7,6 +7,7 @@ COCCIDIR=../../..
 SCRIPTDIR=../scripts
 
 # do not raise error if config does not exist; handle in $(CONFIG) rule below
+include $(COCCIDIR)/Makefile.libs
 -include $(COCCIDIR)/Makefile.config
 
 # where to install the program
@@ -66,7 +67,7 @@ all: $(TARGET)
 all.opt: $(TARGET)
 
 $(TARGET): $(CONFIG) $(LIBS) $(GENERATED) $(FULL_SRC)
-	$(OCAMLC_CMD) -custom -o $(TARGET) $(SYSLIBS) $(LIBS) $(GENERATED) $(FULL_SRC)
+	$(OCAMLC_CMD) -custom -o $(TARGET) $(SYSLIBS) $(LIBS) $(FLAGS_pcre) $(GENERATED) $(FULL_SRC)
 
 .PHONY: clean distclean
 
