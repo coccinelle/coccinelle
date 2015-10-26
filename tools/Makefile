@@ -77,11 +77,11 @@ isoprof: process_isoprofile
 	$(OCAMLOPT_CMD) -c $<
 
 clean::
-	rm -f $(PROGS) isoprof
 	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot
-	rm -f .depend
 
 distclean: clean
+	rm -f $(PROGS) isoprof
+	rm -f .depend
 
 .PHONY: depend
 .depend depend: beforedepend

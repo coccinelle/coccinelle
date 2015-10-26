@@ -349,16 +349,10 @@ install-common: ocaml/coccilib/coccilib.cmi
 	$(MKDIR_P) $(DESTDIR)$(BINDIR)
 	$(MKDIR_P) $(DESTDIR)$(LIBDIR)
 	$(MKDIR_P) $(DESTDIR)$(LIBDIR)/ocaml
-#	$(MKDIR_P) $(DESTDIR)$(LIBDIR)/commons
-#	$(MKDIR_P) $(DESTDIR)$(LIBDIR)/globals
-#	$(MKDIR_P) $(DESTDIR)$(LIBDIR)/parsing_c
 	$(INSTALL_DATA) standard.h $(DESTDIR)$(LIBDIR)
 	$(INSTALL_DATA) standard.iso $(DESTDIR)$(LIBDIR)
 	$(INSTALL_DATA) ocaml/coccilib/coccilib.cmi $(DESTDIR)$(LIBDIR)/ocaml/
 	$(INSTALL_DATA) ocaml/*.cmi $(DESTDIR)$(LIBDIR)/ocaml/
-#	$(INSTALL_DATA) parsing_c/*.cmi $(DESTDIR)$(LIBDIR)/parsing_c/
-#	$(INSTALL_DATA) commons/*.cmi $(DESTDIR)$(LIBDIR)/commons/
-#	$(INSTALL_DATA) globals/iteration.cmi $(DESTDIR)$(LIBDIR)/globals/
 
 install-man:
 	@$(ECHO) "Installing manuals in: ${DESTDIR}${MANDIR}"
