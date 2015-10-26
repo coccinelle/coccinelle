@@ -43,8 +43,8 @@
 ** Bugfix:
 - Allow virtual variable definition to contain an =.
 - Improvement when exists rule contains when forall.
-- The presence of camlp4 is checked only when needed (to compile the pycaml
-  bundle)
+- The presence of camlp4 is no longer checked when not needed
+  (only required to compile the bundled OCaml bindings for Python)
 * 1.0.2
 ** Language:
 ** Features:
