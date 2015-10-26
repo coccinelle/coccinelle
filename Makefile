@@ -57,13 +57,12 @@ LIBS=commons/commons.cma \
 
 MAKESUBDIRS=$(MAKELIBS) commons \
  globals ctl parsing_cocci parsing_c \
- engine popl09 extra python ocaml \
- tools/spgen/source
+ engine popl09 extra python ocaml
+ #tools/spgen/source
 
 CLEANSUBDIRS=commons \
  globals ctl parsing_cocci parsing_c \
  engine popl09 extra python ocaml docs \
- tools/spgen/source \
  $(MAKELIBS)
 
 INCLUDEDIRSDEP=commons commons/ocamlextra \
