@@ -18,10 +18,6 @@ MYSRC=	commands.ml                              \
 	oset.ml oassoc.ml osequence.ml ograph.ml \
 	ocollection/osetb.ml                     \
 	ocollection/oassocb.ml			 \
-	ocollection/oassoch.ml			 \
-	ocollection/oassoc_buffer.ml		 \
-	ocollection/oassoc_cache.ml		 \
-	ocollection/oassocid.ml			 \
 	oarray.ml				 \
 	ograph_simple.ml ograph_extended.ml	 \
 	glimpse.ml parser_combinators.ml
@@ -62,10 +58,6 @@ SUBDIRS=ocamlextra ocollection
 #-----------------------------------------------------------------------------
 
 #format: XXXSRC, XXXINCLUDE, XXXSYSLIBS
-
-#gdbm
-MYGDBMSRC=ocollection/oassocdbm.ml
-GDBMSYSLIBS=dbm.cma
 
 #lablgtk (ocamlgtk)
 MYGUISRC=gui.ml
@@ -154,17 +146,7 @@ clean::
 # Other commons libs target
 ##############################################################################
 
-all_libs: gdbm bdb gui mpi backtrace
-
-#-----------------------------------------------------------------------------
-gdbm: commons_gdbm.cma
-gdbm.opt: commons_gdbm.cmxa
-
-commons_gdbm.cma: $(MYGDBMSRC:.ml=.cmo)
-	$(OCAMLC_CMD) -a -o $@ $^
-
-commons_gdbm.cmxa: $(MYGDBMSRC:.ml=.cmx)
-	$(OCAMLOPT_CMD) -a -o $@ $^
+all_libs: bdb gui mpi backtrace
 
 #-----------------------------------------------------------------------------
 gui:
