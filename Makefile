@@ -169,21 +169,9 @@ opt-compil: Makefile.config version.ml
 top: $(EXEC).top
 
 # the .cmi file of coccilib
-ocaml/coccilib/coccilib.cmi: ocaml/coccilib.cmi
-	@mkdir -p ocaml/coccilib/
-	cp ocaml/coccilib.cmi ocaml/coccilib/coccilib.cmi
-
 # aliases for "byte" and "opt-compil"
 opt opt-only: Makefile.config opt-compil
 byte-only: Makefile.config byte
-
-
-# ensures that coccilib.cmi gets build
-.PHONY:: coccilib-cmi
-coccilib-cmi: ocaml/coccilib/coccilib.cmi
-distclean::
-	rm -f ocaml/coccilib/coccilib.cmi
-
 
 subdirs.all:
 	@+for D in $(MAKESUBDIRS); do $(MAKE) $$D.all || exit 1 ; done
@@ -344,13 +332,12 @@ distclean::
 
 # don't remove DESTDIR, it can be set by package build system like ebuild
 # for staged installation.
-install-common: ocaml/coccilib/coccilib.cmi
+install-common: ocaml/coccilib.cmi
 	$(MKDIR_P) $(DESTDIR)$(BINDIR)
 	$(MKDIR_P) $(DESTDIR)$(LIBDIR)
 	$(MKDIR_P) $(DESTDIR)$(LIBDIR)/ocaml
 	$(INSTALL_DATA) standard.h $(DESTDIR)$(LIBDIR)
 	$(INSTALL_DATA) standard.iso $(DESTDIR)$(LIBDIR)
-	$(INSTALL_DATA) ocaml/coccilib/coccilib.cmi $(DESTDIR)$(LIBDIR)/ocaml/
 	$(INSTALL_DATA) ocaml/*.cmi $(DESTDIR)$(LIBDIR)/ocaml/
 
 install-man:
@@ -441,10 +428,7 @@ uninstall:
 	rm -f $(DESTDIR)$(LIBDIR)/spatch.opt
 	rm -f $(DESTDIR)$(LIBDIR)/standard.h
 	rm -f $(DESTDIR)$(LIBDIR)/standard.iso
-	rm -f $(DESTDIR)$(LIBDIR)/ocaml/coccilib.cmi
-	rm -f $(DESTDIR)$(LIBDIR)/parsing_c/*.cmi
-	rm -f $(DESTDIR)$(LIBDIR)/commons/*.cmi
-	rm -f $(DESTDIR)$(LIBDIR)/globals/*.cmi
+	rm -f $(DESTDIR)$(LIBDIR)/ocaml/*.cmi
 	rm -f $(DESTDIR)$(LIBDIR)/python/coccilib/coccigui/*
 	rm -f $(DESTDIR)$(LIBDIR)/python/coccilib/*.py
 #	@$(MAKE) uninstall -C tools/spgen/source
@@ -454,7 +438,7 @@ uninstall:
 	rmdir $(DESTDIR)$(LIBDIR)
 	rm -f $(DESTDIR)$(MANDIR)/man1/spatch.1
 	rm -f $(DESTDIR)$(MANDIR)/man3/Coccilib.3cocci
-	rm -f $(DESTDIR)$(MANDIR)/man1/spgen.1
+#	rm -f $(DESTDIR)$(MANDIR)/man1/spgen.1
 
 uninstall-bash:
 	rm -f $(DESTDIR)$(BASH_COMPLETION_DIR)/spatch
