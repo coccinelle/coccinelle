@@ -395,7 +395,7 @@ install-stubs:
 	@if test -f ./bundles/pcre/dllpcre_stubs.so; then \
 		cp -fv ./bundles/pcre/dllpcre_stubs.so $(DESTDIR)$(LIBDIR); fi
 
-install: install-man install-common install-stubs $(PYTHON_INSTALL_TARGET)
+install: install-common install-man install-stubs $(PYTHON_INSTALL_TARGET)
 	rm -f $(DESTDIR)$(LIBDIR)/spatch
 	rm -f $(DESTDIR)$(LIBDIR)/spatch.opt
 	rm -f $(DESTDIR)$(BINDIR)/pycocci
