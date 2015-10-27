@@ -362,7 +362,7 @@ let match_maker checks_needed context_required whencode_allowed =
     match Ast0.unwrap pl with Ast0.MetaParamList(_,_,_) -> true | _ -> false in
 
   let is_slist_matcher pl =
-    match Ast0.unwrap pl with Ast0.MetaStmtList(_,_) -> true | _ -> false in
+    match Ast0.unwrap pl with Ast0.MetaStmtList(_,_,_) -> true | _ -> false in
 
   let is_strlist_matcher sl = false in
 
@@ -454,7 +454,7 @@ let match_maker checks_needed context_required whencode_allowed =
     let stmt r k s =
       bind (bind (pure_mcodekind (Ast0.get_mcodekind s)) (k s))
 	(match Ast0.unwrap s with
-	  Ast0.MetaStmt(name,pure) | Ast0.MetaStmtList(name,pure) -> pure
+	  Ast0.MetaStmt(name,pure) | Ast0.MetaStmtList(name,_,pure) -> pure
 	| _ -> Ast0.Impure) in
 
     V0.flat_combiner bind option_default
@@ -508,7 +508,7 @@ let match_maker checks_needed context_required whencode_allowed =
 
   let do_slist_match builder sl lst =
     match Ast0.unwrap sl with
-      Ast0.MetaStmtList(name,pure) ->
+      Ast0.MetaStmtList(name,lenname,pure) ->
 	add_pure_list_binding name pure
 	  pure_sp_code.VT0.combiner_rec_statement
 	  (function lst -> Ast0.StmtTag(List.hd lst))
@@ -1088,11 +1088,13 @@ let match_maker checks_needed context_required whencode_allowed =
 	(match Ast0.unwrap s with
 	  Ast0.Dots(_,_) ->
 	    return false (* ... is not a single statement *)
+	| Ast0.MetaStmtList(_,_,_) ->
+	    return false (* ... is not a single statement, needs {} *)
 	| _ ->
 	    add_pure_binding name pure pure_sp_code.VT0.combiner_rec_statement
 	      (function ty -> Ast0.StmtTag ty)
 	      s)
-    | Ast0.MetaStmtList(name,pure) -> failwith "metastmtlist not supported"
+    | Ast0.MetaStmtList(name,_,pure) -> failwith "metastmtlist not supported"
     | up ->
 	if not(checks_needed) || not(context_required) || is_context s
 	then
@@ -1688,7 +1690,7 @@ let instantiate bindings mv_bindings model =
       [] -> []
     | [x] ->
 	(match Ast0.unwrap x with
-	  Ast0.MetaStmtList(name,pure) ->
+	  Ast0.MetaStmtList(name,lenname,pure) ->
 	    (match lookup name bindings mv_bindings with
 	      Common.Left(Ast0.DotsStmtTag(stm)) -> Ast0.unwrap stm
 	    | Common.Left(Ast0.StmtTag(stm)) -> [stm]
@@ -1981,7 +1983,7 @@ let instantiate bindings mv_bindings model =
 	  | Common.Right(new_mv) ->
 	      Ast0.rewrap e
 		(Ast0.MetaStmt(Ast0.set_mcode_data new_mv name,pure)))
-    | Ast0.MetaStmtList(name,pure) -> failwith "metastmtlist not supported"
+    | Ast0.MetaStmtList(name,_,pure) -> failwith "metastmtlist not supported"
     | Ast0.Dots(d,_) ->
 	Ast0.rewrap e
 	  (Ast0.Dots
@@ -2233,8 +2235,8 @@ let get_name = function
       (nm,function nm -> Ast.MetaFieldDecl(ar,nm))
   | Ast.MetaStmDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaStmDecl(ar,nm))
-  | Ast.MetaStmListDecl(ar,nm) ->
-      (nm,function nm -> Ast.MetaStmListDecl(ar,nm))
+  | Ast.MetaStmListDecl(ar,nm,nm1) ->
+      (nm,function nm -> Ast.MetaStmListDecl(ar,nm,nm1))
   | Ast.MetaFuncDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaFuncDecl(ar,nm))
   | Ast.MetaLocalFuncDecl(ar,nm) ->

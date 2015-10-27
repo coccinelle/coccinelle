@@ -884,9 +884,10 @@ and statement s =
       | Ast0.MetaStmt(name,_) ->
 	  Ast.Atomic(rewrap_rule_elem s
 		       (Ast.MetaStmt(mcode name,unitary,seqible,false)))
-      | Ast0.MetaStmtList(name,_) ->
+      | Ast0.MetaStmtList(name,lenname,_) ->
 	  Ast.Atomic(rewrap_rule_elem s
-		       (Ast.MetaStmtList(mcode name,unitary,false)))
+		       (Ast.MetaStmtList(mcode name,do_lenname lenname,
+					 unitary,false)))
       | Ast0.AsStmt(stmt,asstmt) ->
 	  Ast.AsStmt(statement seqible stmt,statement seqible asstmt)
       | Ast0.TopExp(exp) ->

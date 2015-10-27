@@ -430,7 +430,10 @@ and statement old_metas table minus s =
   | Ast0.Exec(exec,lang,code,sem) ->
       dots (exec_code ID old_metas table minus) code
   | Ast0.MetaStmt(name,_) ->     check_table table minus name
-  | Ast0.MetaStmtList(name,_) -> check_table table minus name
+  | Ast0.MetaStmtList(name,Ast0.MetaListLen lenname,_) ->
+      check_table table minus name;
+      check_table table minus lenname
+  | Ast0.MetaStmtList(name,_,_) -> check_table table minus name
   | Ast0.AsStmt(stm,asstm) -> failwith "not generated yet"
   | Ast0.Exp(exp) -> expression ID old_metas table minus exp
   | Ast0.TopExp(exp) -> expression ID old_metas table minus exp

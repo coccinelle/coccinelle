@@ -285,9 +285,9 @@ let check_meta_tyopt type_irrelevant v =
       (match meta_lookup rule name v with
 	Ast.MetaStmDecl(_,_) -> ()
       | _ -> fail name)
-  | Ast.MetaStmListDecl(Ast.NONE,(rule,name)) ->
+  | Ast.MetaStmListDecl(Ast.NONE,(rule,name),len_name) ->
       (match meta_lookup rule name v with
-	Ast.MetaStmListDecl(_,_) -> ()
+	Ast.MetaStmListDecl(_,_,_) -> ()
       | _ -> fail name)
   | Ast.MetaFuncDecl(Ast.NONE,(rule,name)) ->
       (match meta_lookup rule name v with
@@ -451,6 +451,15 @@ let meta_field_list name =
 let meta_stm name =
   let (nm,pure,clt) = name in
   Ast0.wrap(Ast0.MetaStmt(clt2mcode nm clt,pure))
+
+let meta_stm_list name =
+  let (nm,lenname,pure,clt) = name in
+  let lenname =
+    match lenname with
+      Ast.AnyLen -> Ast0.AnyListLen
+    | Ast.MetaLen nm -> Ast0.MetaListLen(clt2mcode nm clt)
+    | Ast.CstLen n -> Ast0.CstListLen n in
+  Ast0.wrap(Ast0.MetaStmtList(clt2mcode nm clt,lenname,pure))
 
 let exp_stm exp pv =
   Ast0.wrap(Ast0.ExprStatement (exp, clt2mcode ";" pv))

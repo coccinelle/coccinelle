@@ -149,7 +149,8 @@ let add_symbol_meta: (string -> unit) ref =
 let add_stm_meta: (Ast.meta_name -> Ast0.pure -> unit) ref =
   ref uninitialized_add_meta
 
-let add_stmlist_meta: (Ast.meta_name -> Ast0.pure -> unit) ref =
+let add_stmlist_meta:
+    (Ast.meta_name -> Ast.list_len -> Ast0.pure -> unit) ref =
   ref uninitialized_add_meta
 
 let add_func_meta:

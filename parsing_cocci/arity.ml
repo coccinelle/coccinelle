@@ -895,10 +895,10 @@ and statement tgt stm =
       let arity = stm_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
       make_rule_elem stm tgt arity (Ast0.MetaStmt(name,pure))
-  | Ast0.MetaStmtList(name,pure) ->
+  | Ast0.MetaStmtList(name,lenname,pure) ->
       let arity = stm_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      make_rule_elem stm tgt arity (Ast0.MetaStmtList(name,pure))
+      make_rule_elem stm tgt arity (Ast0.MetaStmtList(name,lenname,pure))
   | Ast0.Exp(exp) ->
       let new_exp = top_expression true tgt exp in
       Ast0.rewrap stm

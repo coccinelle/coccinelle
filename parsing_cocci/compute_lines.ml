@@ -1080,14 +1080,14 @@ let rec statement s =
 	let name = normal_mcode name in
 	let ln = promote_mcode name in
 	mkres s (Ast0.MetaStmt(name,a)) ln ln
-    | Ast0.MetaStmtList(name,a) ->
+    | Ast0.MetaStmtList(name,a,b) ->
 	(* This becomes ..., which becomes a metavar.  The metavar, with
 	   any attachments that this has, is then iterated over the code.
 	   If we attach anything here, then it will be duplicated for each
 	   statement in the list. *)
 	let name = bad_mcode name in
 	let ln = promote_mcode name in
-	mkres s (Ast0.MetaStmtList(name,a)) ln ln
+	mkres s (Ast0.MetaStmtList(name,a,b)) ln ln
     | Ast0.Exp(exp) ->
 	let exp = expression exp in
 	mkres s (Ast0.Exp(exp)) exp exp

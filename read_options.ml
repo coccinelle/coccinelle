@@ -17,14 +17,15 @@ Perhaps entries for other tools may be added later.  Multiple options lines
 are permitted only for readability.  Later lines extend and may override
 earlier ones.
 
-.cocci files can be placed in the user's home directory, the directory from
-which spatch is called, and the directory provided with the --dir option.
-The .cocci file in the user's home directory is processed first, the .cocci
-file in the directory from which spatch is called is processed next, and
-the .cocci file in the directory provided with the --dir option is
-processed last.  In each case, the read options extend/override the
-previously read ones.  In all cases, the user can extend/override the
-options found in the .cocci files on the command line.
+.cocciconfig files can be placed in the user's home directory, the
+directory from which spatch is called, and the directory provided with the
+--dir option.  The .cocciconfig file in the user's home directory is
+processed first, the .cocciconfig file in the directory from which spatch
+is called is processed next, and the .cocciconfig file in the directory
+provided with the --dir option is processed last.  In each case, the read
+options extend/override the previously read ones.  In all cases, the user
+can extend/override the options found in the .cocciconfig files on the
+command line.
 
 Newlines, even with \, are not tolerated in attribute values *)
 
@@ -71,7 +72,8 @@ let parse_file file =
 		      ("options is the only supported attribute: "^l))
 	    | _ -> loop l in
 	iloop()
-    | _ -> failwith "only spatch supported as a header in a .cocci file" in
+    | _ -> failwith
+	  "only spatch supported as a header in a .cocciconfig file" in
   try loop (input_line i)
   with End_of_file -> List.concat (List.rev !options)
 

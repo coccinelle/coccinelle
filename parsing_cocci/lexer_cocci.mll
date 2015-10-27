@@ -448,8 +448,8 @@ let init _ =
       let fn clt = TMetaStm(name,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_stmlist_meta :=
-    (function name -> function pure ->
-      let fn clt = TMetaStmList(name,pure,clt) in
+    (function name -> function lenname -> function pure ->
+      let fn clt = TMetaStmList(name,lenname,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_func_meta :=
     (fun name constraints pure ->

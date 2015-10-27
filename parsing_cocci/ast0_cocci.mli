@@ -366,7 +366,7 @@ and base_statement =
 	             exec_code dots * string mcode (* ; *)
   | MetaStmt      of Ast_cocci.meta_name mcode * pure
   | MetaStmtList  of Ast_cocci.meta_name mcode (*only in statement lists*) *
-	             pure
+	             listlen * pure
   | AsStmt        of statement * statement (* as statement, always metavar *)
   | Exp           of expression  (* only in dotted statement lists *)
   | TopExp        of expression (* for macros body *)

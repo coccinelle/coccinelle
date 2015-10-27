@@ -110,7 +110,8 @@ val add_field_list_meta:
 
 val add_stm_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
 
-val add_stmlist_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
+val add_stmlist_meta:
+    (Ast_cocci.meta_name -> Ast_cocci.list_len -> Ast0_cocci.pure -> unit) ref
 
 val add_func_meta:
     (Ast_cocci.meta_name -> iconstraints -> Ast0_cocci.pure -> unit) ref

@@ -164,7 +164,7 @@ let statement s =
   | Ast0.ReturnExpr(ret,exp,sem) -> [78]
   | Ast0.Exec(exec,lang,code,sem) -> [170]
   | Ast0.MetaStmt(name,_) -> [79]
-  | Ast0.MetaStmtList(name,_) -> [80]
+  | Ast0.MetaStmtList(name,_,_) -> [80]
   | Ast0.Disj(_,statement_dots_list,_,_) -> [81]
   | Ast0.Conj(_,statement_dots_list,_,_) -> [188]
   | Ast0.Nest(_,stmt_dots,_,_,_) -> [82]

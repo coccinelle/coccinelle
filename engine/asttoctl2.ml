@@ -2540,15 +2540,17 @@ and protect_top_level stmt_dots formula =
       d::ds ->
 	(match Ast.unwrap d with
 	  Ast.Seq(before,body,after) ->
-	    let beforemc =
+	    let rec beforemc before =
 	      match Ast.unwrap before with
 		Ast.SeqStart(obr) -> Ast.get_mcodekind obr
+	      | Ast.AsRe(before,_) -> beforemc before
 	      | _ -> failwith "bad seq" in
-	    let aftermc =
+	    let rec aftermc after =
 	      match Ast.unwrap after with
 		Ast.SeqEnd(cbr) -> Ast.get_mcodekind cbr
+	      | Ast.AsRe(after,_) -> aftermc after
 	      | _ -> failwith "bad seq"in
-	    (match (beforemc,aftermc) with
+	    (match (beforemc before,aftermc after) with
               (* safe cases *)
 	      (Ast.CONTEXT(_,(Ast.NOTHING|Ast.AFTER _)),
 	       Ast.CONTEXT(_,(Ast.NOTHING|Ast.BEFORE _))) -> None
