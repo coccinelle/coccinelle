@@ -1088,6 +1088,8 @@ let match_maker checks_needed context_required whencode_allowed =
 	(match Ast0.unwrap s with
 	  Ast0.Dots(_,_) ->
 	    return false (* ... is not a single statement *)
+	| Ast0.MetaStmtList(_,_,_) ->
+	    return false (* ... is not a single statement, needs {} *)
 	| _ ->
 	    add_pure_binding name pure pure_sp_code.VT0.combiner_rec_statement
 	      (function ty -> Ast0.StmtTag ty)
