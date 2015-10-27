@@ -181,6 +181,10 @@ AC_COCCI_TOOL([MENHIR],[menhir],[$COCCI_SRCDIR/setup/fake-menhir.sh menhir])
 AS_IF([test "x$SUBSTITUTED_MENHIR" = xyes],
 [dnl
   AC_MSG_NOTICE([pregenerated parsers will be required as substitute for Menhir])
+],
+[dnl
+  rm -f parsing_cocci/parser_cocci_menhir.ml parsing_cocci/parser_cocci_menhir.mli
+  AC_MSG_NOTICE([Deleted pre-generated parsers, will be re-built])
 ])
 
 
