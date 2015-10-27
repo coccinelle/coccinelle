@@ -221,8 +221,11 @@ let collect_refs include_constraints =
     bind (k re)
       (nub
 	 (match Ast.unwrap re with
-	   Ast.MetaRuleElem(name,_,_) | Ast.MetaStmt(name,_,_,_)
-	 | Ast.MetaStmtList(name,_,_) -> [metaid name]
+	   Ast.MetaRuleElem(name,_,_) | Ast.MetaStmt(name,_,_,_) ->
+	     [metaid name]
+	 | Ast.MetaStmtList(name,Ast.MetaListLen(lenname,_,_),_,_) ->
+	     [metaid name;metaid lenname]
+	 | Ast.MetaStmtList(name,_,_,_) -> [metaid name]
 	 | _ -> option_default)) in
 
   let astfvstatement recursor k s =
@@ -429,8 +432,15 @@ let collect_saved =
     bind (k re)
       (nub
 	 (match Ast.unwrap re with
-	   Ast.MetaRuleElem(name,TC.Saved,_) | Ast.MetaStmt(name,TC.Saved,_,_)
-	 | Ast.MetaStmtList(name,TC.Saved,_) -> [metaid name]
+	   Ast.MetaRuleElem(name,TC.Saved,_)
+	 | Ast.MetaStmt(name,TC.Saved,_,_) -> [metaid name]
+	 | Ast.MetaStmtList(name,Ast.MetaListLen (lenname,ls,_),ns,_) ->
+	     let namesaved =
+	       match ns with TC.Saved -> [metaid name] | _ -> [] in
+	     let lensaved =
+	       match ls with TC.Saved -> [metaid lenname] | _ -> [] in
+	     lensaved @ namesaved
+	 | Ast.MetaStmtList(name,_,TC.Saved,_) -> [metaid name]
 	 | _ -> option_default)) in
 
   let mcode r e =
@@ -793,9 +803,16 @@ let classify_variables metavar_decls minirules used_after =
       Ast.MetaStmt(name,_,msi,_) ->
 	let (unitary,inherited) = classify name in
 	Ast.rewrap e (Ast.MetaStmt(name,unitary,msi,inherited))
-    | Ast.MetaStmtList(name,_,_) ->
+    | Ast.MetaStmtList(name,Ast.MetaListLen (lenname,_,_),_,_) ->
 	let (unitary,inherited) = classify name in
-	Ast.rewrap e (Ast.MetaStmtList(name,unitary,inherited))
+	let (lenunitary,leninherited) = classify lenname in
+	Ast.rewrap e
+	  (Ast.MetaStmtList
+	     (name,Ast.MetaListLen(lenname,lenunitary,leninherited),
+	      unitary,inherited))
+    | Ast.MetaStmtList(name,lenname,_,_) ->
+	let (unitary,inherited) = classify name in
+	Ast.rewrap e (Ast.MetaStmtList(name,lenname,unitary,inherited))
     | _ -> e in
 
   let fn = V.rebuilder

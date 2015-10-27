@@ -114,7 +114,7 @@ and metavar =
   | MetaFieldDecl of arity * meta_name (* name *)
   | MetaFieldListDecl of arity * meta_name (* name *) * list_len (*len*)
   | MetaStmDecl of arity * meta_name (* name *)
-  | MetaStmListDecl of arity * meta_name (* name *)
+  | MetaStmListDecl of arity * meta_name (* name *) * list_len (*len*)
   | MetaFuncDecl of arity * meta_name (* name *)
   | MetaLocalFuncDecl of arity * meta_name (* name *)
   | MetaPosDecl of arity * meta_name (* name *)
@@ -511,7 +511,7 @@ and base_rule_elem =
   | MetaRuleElem  of meta_name mcode * keep_binding * inherited
   | MetaStmt      of meta_name mcode * keep_binding * metaStmtInfo *
 	             inherited
-  | MetaStmtList  of meta_name mcode * keep_binding * inherited
+  | MetaStmtList  of meta_name mcode * listlen * keep_binding * inherited
 
   | Exp           of expression (* matches a subterm *)
   | TopExp        of expression (* for macros body, exp at top level,
@@ -810,7 +810,7 @@ let get_meta_name = function
   | MetaFieldDecl(ar,nm) -> nm
   | MetaFieldListDecl(ar,nm,nm1) -> nm
   | MetaStmDecl(ar,nm) -> nm
-  | MetaStmListDecl(ar,nm) -> nm
+  | MetaStmListDecl(ar,nm,nm1) -> nm
   | MetaFuncDecl(ar,nm) -> nm
   | MetaLocalFuncDecl(ar,nm) -> nm
   | MetaPosDecl(ar,nm) -> nm

@@ -513,7 +513,7 @@ let do_get_constants constants keywords env neg_pos =
     bind (fresh_info re)
     (match Ast.unwrap re with
       Ast.MetaRuleElem(name,_,_) | Ast.MetaStmt(name,_,_,_)
-    | Ast.MetaStmtList(name,_,_) -> bind (minherited name) (k re)
+    | Ast.MetaStmtList(name,_,_,_) -> bind (minherited name) (k re)
     | Ast.WhileHeader(whl,lp,exp,rp) ->
 	bind (keywords "while") (k re)
     | Ast.WhileTail(whl,lp,exp,rp,sem) ->

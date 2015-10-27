@@ -616,7 +616,7 @@ let combiner bind option_default
 	  let lsem = string_mcode sem in
 	  multibind [lexec; lland; lcode; lsem]
       | Ast.MetaStmt(name,_,_,_) -> meta_mcode name
-      | Ast.MetaStmtList(name,_,_) -> meta_mcode name
+      | Ast.MetaStmtList(name,_,_,_) -> meta_mcode name
       | Ast.MetaRuleElem(name,_,_) -> meta_mcode name
       | Ast.Exp(exp) -> expression exp
       | Ast.TopExp(exp) -> expression exp
@@ -1488,8 +1488,8 @@ let rebuilder
 	    Ast.Exec(lexec, lland, lcode, lsem)
 	| Ast.MetaStmt(name,keep,seqible,inherited) ->
 	    Ast.MetaStmt(meta_mcode name,keep,seqible,inherited)
-	| Ast.MetaStmtList(name,keep,inherited) ->
-	    Ast.MetaStmtList(meta_mcode name,keep,inherited)
+	| Ast.MetaStmtList(name,lenname_inh,keep,inherited) ->
+	    Ast.MetaStmtList(meta_mcode name,lenname_inh,keep,inherited)
 	| Ast.MetaRuleElem(name,keep,inherited) ->
 	    Ast.MetaRuleElem(meta_mcode name,keep,inherited)
 	| Ast.Exp(exp) -> Ast.Exp(expression exp)

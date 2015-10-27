@@ -566,10 +566,10 @@ and unify_rule_elem re1 re2 =
 
   | (Ast.MetaRuleElem(_,_,_),_)
   | (Ast.MetaStmt(_,_,_,_),_)
-  | (Ast.MetaStmtList(_,_,_),_)
+  | (Ast.MetaStmtList(_,_,_,_),_)
   | (_,Ast.MetaRuleElem(_,_,_))
   | (_,Ast.MetaStmt(_,_,_,_))
-  | (_,Ast.MetaStmtList(_,_,_)) -> return true
+  | (_,Ast.MetaStmtList(_,_,_,_)) -> return true
 
     (* can match a rule_elem in different parts *)
   | (Ast.Exp(e1),Ast.Exp(e2)) -> return true

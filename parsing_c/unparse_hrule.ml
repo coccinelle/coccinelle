@@ -368,13 +368,13 @@ let pp_meta_decl pr env decl =
   | Ast.MetaInitDecl(ar, name) ->
       no_arity ar; pr "initialiser "; pp_name name; pr ";\n"
   | Ast.MetaInitListDecl(ar, name, len) ->
-      no_arity ar; pr "initialiser list "; pp_name name; pp_len pr len;
+      no_arity ar; pr "initialiser list "; pp_len pr len; pp_name name;
       pr ";\n"
   | Ast.MetaListlenDecl(name) -> ()
   | Ast.MetaParamDecl(ar, name) ->
       no_arity ar; pr "parameter "; pp_name name; pr ";\n"
   | Ast.MetaParamListDecl(ar, name, len) ->
-      no_arity ar; pr "parameter list "; pp_name name; pp_len pr len; pr ";\n"
+      no_arity ar; pr "parameter list "; pp_len pr len; pp_name name; pr ";\n"
   | Ast.MetaBinaryOperatorDecl(ar, name) ->
       no_arity ar; pr "binary operator "; pp_name name; pr ";\n"
   | Ast.MetaAssignmentOperatorDecl(ar, name) ->
@@ -398,17 +398,17 @@ let pp_meta_decl pr env decl =
       no_arity ar; pr "global idexpression ";
       print_types pr env types; pp_name name; pr ";\n"
   | Ast.MetaExpListDecl(ar, name, len) ->
-      no_arity ar; pr "parameter list "; pp_name name; pp_len pr len; pr ";\n"
+      no_arity ar; pr "parameter list "; pp_len pr len; pp_name name; pr ";\n"
   | Ast.MetaDeclDecl(ar, name) ->
       no_arity ar; pr "declaration "; pp_name name; pr ";\n"
   | Ast.MetaFieldDecl(ar, name) ->
       no_arity ar; pr "field "; pp_name name; pr ";\n"
   | Ast.MetaFieldListDecl(ar, name, len) ->
-      no_arity ar; pr "field list "; pp_name name; pp_len pr len; pr ";\n"
+      no_arity ar; pr "field list "; pp_len pr len; pp_name name; pr ";\n"
   | Ast.MetaStmDecl(ar, name) ->
       no_arity ar; pr "statement "; pp_name name; pr ";\n"
-  | Ast.MetaStmListDecl(ar, name) ->
-      no_arity ar; pr "statement list "; pp_name name; pr ";\n"
+  | Ast.MetaStmListDecl(ar, name, len) ->
+      no_arity ar; pr "statement list "; pp_len pr len; pp_name name; pr ";\n"
   | Ast.MetaFuncDecl(ar, name) ->
       no_arity ar; pr "function "; pp_name name; pr ";\n"
   | Ast.MetaLocalFuncDecl(ar, name) ->
@@ -418,7 +418,7 @@ let pp_meta_decl pr env decl =
   | Ast.MetaFmtDecl(ar, name) ->
       no_arity ar; pr "format "; pp_name name; pr ";\n"
   | Ast.MetaFragListDecl(ar, name, len) ->
-      no_arity ar; pr "format list "; pp_name name; pp_len pr len; pr ";\n"
+      no_arity ar; pr "format list "; pp_len pr len; pp_name name; pr ";\n"
   | Ast.MetaAnalysisDecl(code, name) ->
       pr "analysis"; pr code; pr " "; pp_name name; pr ";\n"
   | Ast.MetaDeclarerDecl(ar, name) ->

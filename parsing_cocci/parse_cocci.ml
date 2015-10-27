@@ -220,7 +220,7 @@ let token2c (tok,_) =
   | PC.TMetaField(_,_,clt)   -> add_clt "fieldmeta" clt
   | PC.TMetaFieldList(_,_,_,clt)   -> add_clt "fieldlistmeta" clt
   | PC.TMetaStm(_,_,clt)     -> add_clt "stmmeta" clt
-  | PC.TMetaStmList(_,_,clt) -> add_clt "stmlistmeta" clt
+  | PC.TMetaStmList(_,_,_,clt) -> add_clt "stmlistmeta" clt
   | PC.TMetaFunc(_,_,_,clt)  -> add_clt "funcmeta" clt
   | PC.TMetaLocalFunc(_,_,_,clt) -> add_clt "funcmeta" clt
   | PC.TMetaPos(_,_,_,clt)   -> "posmeta"
@@ -344,7 +344,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.TMetaId(_,_,_,_,clt)
   | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt) | PC.TMetaInitList(_,_,_,clt)
   | PC.TMetaStm(_,_,clt)
-  | PC.TMetaStmList(_,_,clt)
+  | PC.TMetaStmList(_,_,_,clt)
   | PC.TMetaDecl(_,_,clt) | PC.TMetaField(_,_,clt)
   | PC.TMetaFieldList(_,_,_,clt)
   | PC.TMetaFunc(_,_,_,clt) | PC.TMetaLocalFunc(_,_,_,clt)
@@ -424,7 +424,7 @@ let get_clt (tok,_) =
   | PC.TMetaId(_,_,_,_,clt)
   | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt) | PC.TMetaInitList(_,_,_,clt)
   | PC.TMetaStm(_,_,clt)
-  | PC.TMetaStmList(_,_,clt)
+  | PC.TMetaStmList(_,_,_,clt)
   | PC.TMetaDecl(_,_,clt) | PC.TMetaField(_,_,clt)
   | PC.TMetaFieldList(_,_,_,clt)
   | PC.TMetaFunc(_,_,_,clt) | PC.TMetaLocalFunc(_,_,_,clt)
@@ -629,7 +629,7 @@ let update_clt (tok,x) clt =
   | PC.TMetaField(a,b,_)   -> (PC.TMetaField(a,b,clt),x)
   | PC.TMetaFieldList(a,b,c,_)   -> (PC.TMetaFieldList(a,b,c,clt),x)
   | PC.TMetaStm(a,b,_)     -> (PC.TMetaStm(a,b,clt),x)
-  | PC.TMetaStmList(a,b,_) -> (PC.TMetaStmList(a,b,clt),x)
+  | PC.TMetaStmList(a,b,c,_) -> (PC.TMetaStmList(a,b,c,clt),x)
   | PC.TMetaFunc(a,b,c,_)  -> (PC.TMetaFunc(a,b,c,clt),x)
   | PC.TMetaLocalFunc(a,b,c,_) -> (PC.TMetaLocalFunc(a,b,c,clt),x)
 
@@ -861,7 +861,7 @@ let split_token ((tok,_) as t) =
   | PC.TMetaInit(_,_,clt) | PC.TMetaInitList(_,_,_,clt)
   | PC.TMetaDecl(_,_,clt) | PC.TMetaField(_,_,clt)
   | PC.TMetaFieldList(_,_,_,clt)
-  | PC.TMetaStm(_,_,clt) | PC.TMetaStmList(_,_,clt) | PC.TMetaErr(_,_,_,clt)
+  | PC.TMetaStm(_,_,clt) | PC.TMetaStmList(_,_,_,clt) | PC.TMetaErr(_,_,_,clt)
   | PC.TMetaFunc(_,_,_,clt) | PC.TMetaLocalFunc(_,_,_,clt)
   | PC.TMetaDeclarer(_,_,_,clt) | PC.TMetaIterator(_,_,_,clt) -> split t clt
   | PC.TMPtVirg | PC.TArob | PC.TArobArob | PC.TScript
@@ -1068,7 +1068,7 @@ let detect_types in_meta_decls l =
     | (PC.TMetaField(_,_,_),_)
     | (PC.TMetaFieldList(_,_,_,_),_)
     | (PC.TMetaStm(_,_,_),_)
-    | (PC.TMetaStmList(_,_,_),_)
+    | (PC.TMetaStmList(_,_,_,_),_)
     | (PC.TMetaPos(_,_,_,_),_) -> in_meta_decls
     | _ -> false in
   let is_tyleft = function (* things that can start a var decl *)
@@ -1171,7 +1171,7 @@ let token2line (tok,_) =
   | PC.TMetaInit(_,_,clt) | PC.TMetaInitList(_,_,_,clt)
   | PC.TMetaDecl(_,_,clt) | PC.TMetaField(_,_,clt)
   | PC.TMetaFieldList(_,_,_,clt)
-  | PC.TMetaStm(_,_,clt) | PC.TMetaStmList(_,_,clt) | PC.TMetaFunc(_,_,_,clt)
+  | PC.TMetaStm(_,_,clt) | PC.TMetaStmList(_,_,_,clt) | PC.TMetaFunc(_,_,_,clt)
   | PC.TMetaLocalFunc(_,_,_,clt) | PC.TMetaPos(_,_,_,clt)
 
   | PC.TFunDecl(clt)

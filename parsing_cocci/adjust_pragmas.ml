@@ -124,9 +124,9 @@ let rec right_statement s =
   | Ast0.MetaStmt(name,pure) ->
       call_right right_mcode name s
 	(function name -> Ast0.MetaStmt(name,pure))
-  | Ast0.MetaStmtList(name,pure) ->
+  | Ast0.MetaStmtList(name,lenname,pure) ->
       call_right right_mcode name s
-	(function name -> Ast0.MetaStmtList(name,pure))
+	(function name -> Ast0.MetaStmtList(name,lenname,pure))
   | Ast0.AsStmt(stm,asstm) -> failwith "not possible"
   | Ast0.Disj(starter,statement_dots_list,mids,ender)
   | Ast0.Conj(starter,statement_dots_list,mids,ender) -> None
