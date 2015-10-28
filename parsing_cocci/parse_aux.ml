@@ -15,8 +15,10 @@ type info = Ast.meta_name * Ast0.pure * Data.clt
 type midinfo =
     Ast.meta_name * Data.iconstraints * Ast.seed * Ast0.pure * Data.clt
 type idinfo = Ast.meta_name * Data.iconstraints * Ast0.pure * Data.clt
-type assignOpinfo = Ast.meta_name * Ast0_cocci.assignOpconstraint * Ast0.pure * Data.clt
-type binaryOpinfo = Ast.meta_name * Ast0_cocci.binaryOpconstraint * Ast0.pure * Data.clt
+type assignOpinfo =
+    Ast.meta_name * Ast0_cocci.assignOpconstraint * Ast0.pure * Data.clt
+type binaryOpinfo =
+    Ast.meta_name * Ast0_cocci.binaryOpconstraint * Ast0.pure * Data.clt
 type expinfo = Ast.meta_name * Data.econstraints * Ast0.pure * Data.clt
 type tyinfo = Ast.meta_name * Ast0.typeC list * Ast0.pure * Data.clt
 type list_info = Ast.meta_name * Ast.list_len * Ast0.pure * Data.clt
