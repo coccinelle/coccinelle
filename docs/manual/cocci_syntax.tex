@@ -269,7 +269,9 @@ is itself followed by a position metavariable, the position metavariable
 applies to the metavariable that it follows, and not to the attached token.
 This makes it possible to get eg the starting and ending position of {\tt
   f(...)}, by writing {\tt f(...)@E@p}, for expression metavariable {\tt E}
-and position metavariable {\tt p}.
+and position metavariable {\tt p}. This attachment notation for
+metavariables of type other than position can also be expressed with a
+conjunction, but the @ notation may be more concise.
 
 When used, a format or format list metavariable must be enclosed by a pair
 of \texttt{@}s.  A format metavariable matches the format descriptor part,
@@ -550,6 +552,11 @@ shortest path.  Finally, a transformation can specify a disjunction of
 patterns, of the form \mtt{( \mth{\mita{pat}_1} | \mita{\ldots} |
   \mth{\mita{pat}_n} )} where each \texttt{(}, \texttt{|} or \texttt{)} is
 in column 0 or preceded by \texttt{\textbackslash}.
+Similarly, a transformation can specify a conjunction of
+patterns, of the form \mtt{( \mth{\mita{pat}_1} \& \mita{\ldots} \&
+  \mth{\mita{pat}_n} )} where each \texttt{(}, \texttt{\&} or \texttt{)} is
+in column 0 or preceded by \texttt{\textbackslash}.  All of the patterns
+must be matched at the same place in the control-flow graph.
 
 The grammar that we present for the transformation is not actually the
 grammar of the SmPL code that can be written by the programmer, but is
@@ -724,10 +731,10 @@ some constraints on the use of these annotations:
   occur on a line marked \texttt{+}.
 \end{itemize}
 
-Each element of a disjunction must be a proper term like an
-expression, a statement, an identifier or a declaration. Thus, the
-rule on the left below is not a syntactically correct SmPL rule. One may
-use the rule on the right instead.
+Each element of a disjunction must be a proper term like an expression, a
+statement, an identifier or a declaration. The constraint on a conjunction
+is similiar.  Thus, the rule on the left below is not a syntactically
+correct SmPL rule. One may use the rule on the right instead.
 
 \begin{center}
   \begin{tabular}{l@{\hspace{5cm}}r}
