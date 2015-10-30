@@ -222,8 +222,8 @@ let mklogop (op,clt) =
 %token <Parse_aux.midinfo>       TMetaId
 %token <Parse_aux.idinfo>        TMetaFunc TMetaLocalFunc
 %token <Parse_aux.idinfo>        TMetaIterator TMetaDeclarer
-%token <Parse_aux.assignOpinfo> TMetaAssignOp
-%token <Parse_aux.binaryOpinfo> TMetaBinaryOp
+%token <Parse_aux.assignOpinfo>  TMetaAssignOp
+%token <Parse_aux.binaryOpinfo>  TMetaBinaryOp
 %token <Parse_aux.expinfo>       TMetaErr
 %token <Parse_aux.info>          TMetaParam TMetaStm TMetaType
 %token <Parse_aux.info>          TMetaInit TMetaDecl TMetaField TMeta
