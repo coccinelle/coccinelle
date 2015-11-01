@@ -58,116 +58,52 @@ let all_metadecls =
 
 let uninitialized_add_meta = fun _ -> failwith "uninitialized add_meta"
 
-let clear_meta: (unit -> unit) ref =
-  ref uninitialized_add_meta
+let clear_meta: (unit -> unit) ref = ref uninitialized_add_meta
 
-let add_meta_meta: (Ast.meta_name -> Ast0.pure -> unit) ref =
-  ref uninitialized_add_meta
+type meta_type = Ast.meta_name -> Ast0.pure -> unit
+type id_meta_type = Ast.meta_name -> iconstraints -> Ast0.pure -> unit
+type list_meta_type = Ast.meta_name -> Ast.list_len -> Ast0.pure -> unit
+type exp_meta_type =
+    Type_cocci.typeC list option -> Ast.meta_name -> econstraints ->
+      Ast0.pure -> unit
 
-let add_id_meta:
-    (Ast.meta_name -> iconstraints -> Ast0.pure -> unit) ref =
-  ref uninitialized_add_meta
+let add_meta_meta: meta_type ref = ref uninitialized_add_meta
+let add_id_meta: id_meta_type ref = ref uninitialized_add_meta
 
 let add_virt_id_meta_found: (string -> string -> unit) ref =
   ref uninitialized_add_meta
 
-let add_virt_id_meta_not_found:
-    (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref =
-  ref uninitialized_add_meta
+let add_virt_id_meta_not_found: meta_type ref = ref uninitialized_add_meta
 
 let add_fresh_id_meta: (Ast.meta_name -> Ast.seed -> unit) ref =
   ref uninitialized_add_meta
 
-let add_type_meta: (Ast.meta_name -> Ast0.pure -> unit) ref =
-  ref uninitialized_add_meta
-
-let add_init_meta: (Ast.meta_name -> Ast0.pure -> unit) ref =
-  ref uninitialized_add_meta
-
-let add_initlist_meta:
-    (Ast.meta_name -> Ast.list_len -> Ast0.pure -> unit) ref =
-  ref uninitialized_add_meta
-
-let add_param_meta: (Ast.meta_name -> Ast0.pure -> unit) ref =
-  ref uninitialized_add_meta
-
-let add_paramlist_meta:
-    (Ast.meta_name -> Ast.list_len -> Ast0.pure -> unit) ref =
-  ref uninitialized_add_meta
-
-let add_const_meta:
-    (Type_cocci.typeC list option -> Ast.meta_name -> econstraints ->
-      Ast0.pure -> unit)
-    ref =
-  ref uninitialized_add_meta
+let add_type_meta: meta_type ref = ref uninitialized_add_meta
+let add_init_meta: meta_type ref = ref uninitialized_add_meta
+let add_initlist_meta: list_meta_type ref = ref uninitialized_add_meta
+let add_param_meta: meta_type ref = ref uninitialized_add_meta
+let add_paramlist_meta: list_meta_type ref = ref uninitialized_add_meta
+let add_const_meta: exp_meta_type ref = ref uninitialized_add_meta
 
 let add_err_meta:
     (Ast.meta_name -> econstraints -> Ast0.pure -> unit) ref =
   ref uninitialized_add_meta
 
-let add_exp_meta:
-    (Type_cocci.typeC list option -> Ast.meta_name -> econstraints ->
-      Ast0.pure -> unit)
-    ref =
-  ref uninitialized_add_meta
-
-let add_idexp_meta:
-    (Type_cocci.typeC list option -> Ast.meta_name -> econstraints ->
-      Ast0.pure -> unit)
-    ref =
-  ref uninitialized_add_meta
-
-let add_local_idexp_meta:
-    (Type_cocci.typeC list option -> Ast.meta_name -> econstraints ->
-      Ast0.pure -> unit)
-    ref =
-  ref uninitialized_add_meta
-
-let add_global_idexp_meta:
-    (Type_cocci.typeC list option -> Ast.meta_name -> econstraints ->
-      Ast0.pure -> unit)
-    ref =
-  ref (fun _ -> failwith "uninitialized add_meta")
-
-let add_explist_meta:
-    (Ast.meta_name -> Ast.list_len -> Ast0.pure -> unit) ref =
-  ref uninitialized_add_meta
-
-let add_decl_meta: (Ast.meta_name -> Ast0.pure -> unit) ref =
-  ref uninitialized_add_meta
-
-let add_field_meta: (Ast.meta_name -> Ast0.pure -> unit) ref =
-  ref uninitialized_add_meta
-
-let add_field_list_meta:
-    (Ast.meta_name -> Ast.list_len -> Ast0.pure -> unit) ref =
-  ref uninitialized_add_meta
-
-let add_symbol_meta: (string -> unit) ref =
-  ref uninitialized_add_meta
-
-let add_stm_meta: (Ast.meta_name -> Ast0.pure -> unit) ref =
-  ref uninitialized_add_meta
-
-let add_stmlist_meta:
-    (Ast.meta_name -> Ast.list_len -> Ast0.pure -> unit) ref =
-  ref uninitialized_add_meta
-
-let add_func_meta:
-    (Ast.meta_name -> iconstraints -> Ast0.pure -> unit) ref =
-  ref uninitialized_add_meta
-
-let add_local_func_meta:
-    (Ast.meta_name -> iconstraints -> Ast0.pure -> unit) ref =
-  ref uninitialized_add_meta
-
-let add_declarer_meta:
-    (Ast.meta_name -> iconstraints -> Ast0.pure -> unit) ref =
-  ref (fun _ -> failwith "uninitialized add_decl")
-
-let add_iterator_meta:
-    (Ast.meta_name -> iconstraints -> Ast0.pure -> unit) ref =
-  ref (fun _ -> failwith "uninitialized add_iter")
+let add_exp_meta: exp_meta_type ref = ref uninitialized_add_meta
+let add_idexp_meta: exp_meta_type ref = ref uninitialized_add_meta
+let add_local_idexp_meta: exp_meta_type ref = ref uninitialized_add_meta
+let add_global_idexp_meta: exp_meta_type ref = ref uninitialized_add_meta
+let add_explist_meta: list_meta_type ref = ref uninitialized_add_meta
+let add_decl_meta: meta_type ref = ref uninitialized_add_meta
+let add_field_meta: meta_type ref = ref uninitialized_add_meta
+let add_field_list_meta: list_meta_type ref = ref uninitialized_add_meta
+let add_symbol_meta: (string -> unit) ref = ref uninitialized_add_meta
+let add_stm_meta: meta_type ref = ref uninitialized_add_meta
+let add_stmlist_meta: list_meta_type ref = ref uninitialized_add_meta
+let add_func_meta: id_meta_type ref = ref uninitialized_add_meta
+let add_local_func_meta: id_meta_type ref = ref uninitialized_add_meta
+let add_declarer_meta: id_meta_type ref = ref uninitialized_add_meta
+let add_iterator_meta: id_meta_type ref = ref uninitialized_add_meta
 
 let add_pos_meta:
     (Ast.meta_name -> pconstraints -> Ast.meta_collect -> unit) ref =
@@ -176,40 +112,27 @@ let add_pos_meta:
 let add_fmt_meta: (Ast.meta_name -> iconstraints -> unit) ref =
   ref uninitialized_add_meta
 
-let add_fmtlist_meta:
-    (Ast.meta_name -> Ast.list_len -> unit) ref =
+let add_fmtlist_meta: (Ast.meta_name -> Ast.list_len -> unit) ref =
   ref uninitialized_add_meta
 
 let add_assignOp_meta:
-    (Ast.meta_name ->
-      Ast0.assignOpconstraint -> Ast0.pure -> unit) ref =
+    (Ast.meta_name -> Ast0.assignOpconstraint -> Ast0.pure -> unit) ref =
   ref uninitialized_add_meta
 
 let add_binaryOp_meta:
-    (Ast.meta_name ->
-      Ast0.binaryOpconstraint -> Ast0.pure -> unit) ref =
+    (Ast.meta_name -> Ast0.binaryOpconstraint -> Ast0.pure -> unit) ref =
   ref uninitialized_add_meta
 
-let add_type_name: (string -> unit) ref =
-  ref (fun _ -> failwith "uninitialized add_type")
-
-let add_attribute: (string -> unit) ref =
-  ref (fun _ -> failwith "uninitialized add_attribute")
-
-let add_declarer_name: (string -> unit) ref =
-  ref (fun _ -> failwith "uninitialized add_decl")
-
-let add_iterator_name: (string -> unit) ref =
-  ref (fun _ -> failwith "uninitialized add_iter")
+let add_type_name: (string -> unit) ref = ref uninitialized_add_meta
+let add_attribute: (string -> unit) ref = ref uninitialized_add_meta
+let add_declarer_name: (string -> unit) ref = ref uninitialized_add_meta
+let add_iterator_name: (string -> unit) ref = ref uninitialized_add_meta
 
 let uninitialized_install_bindings =
   fun _ -> failwith "uninitialized install_bindings"
 
-let init_rule: (unit -> unit) ref =
-  ref uninitialized_install_bindings
-
-let install_bindings: (string -> unit) ref =
-  ref uninitialized_install_bindings
+let init_rule: (unit -> unit) ref = ref uninitialized_install_bindings
+let install_bindings: (string -> unit) ref = ref uninitialized_install_bindings
 
 (* ---------------------------------------------------------------------- *)
 (* String format things *)

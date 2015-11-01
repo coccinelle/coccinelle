@@ -46,84 +46,45 @@ val all_metadecls : (string, Ast_cocci.metavar list) Hashtbl.t
 
 val clear_meta: (unit -> unit) ref
 
-val add_meta_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
+type meta_type = Ast_cocci.meta_name -> Ast0_cocci.pure -> unit
+type id_meta_type =
+    Ast_cocci.meta_name -> iconstraints -> Ast0_cocci.pure -> unit
+type list_meta_type =
+    Ast_cocci.meta_name -> Ast_cocci.list_len -> Ast0_cocci.pure -> unit
+type exp_meta_type =
+    Type_cocci.typeC list option -> Ast_cocci.meta_name -> econstraints ->
+      Ast0_cocci.pure -> unit
 
-val add_id_meta:
-    (Ast_cocci.meta_name -> iconstraints -> Ast0_cocci.pure -> unit) ref
-
+val add_meta_meta: meta_type ref
+val add_id_meta: id_meta_type ref
 val add_virt_id_meta_found: (string -> string -> unit) ref
-
-val add_virt_id_meta_not_found:
-    (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
-
+val add_virt_id_meta_not_found: meta_type ref
 val add_fresh_id_meta: (Ast_cocci.meta_name -> Ast_cocci.seed -> unit) ref
-
-val add_type_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
-
-val add_init_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
-
-val add_initlist_meta:
-    (Ast_cocci.meta_name -> Ast_cocci.list_len -> Ast0_cocci.pure ->
-      unit) ref
-
-val add_param_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
-
-val add_paramlist_meta:
-    (Ast_cocci.meta_name -> Ast_cocci.list_len -> Ast0_cocci.pure ->
-      unit) ref
-
-val add_const_meta:
-    (Type_cocci.typeC list option -> Ast_cocci.meta_name -> econstraints ->
-      Ast0_cocci.pure -> unit) ref
+val add_type_meta: meta_type ref
+val add_init_meta: meta_type ref
+val add_initlist_meta: list_meta_type ref
+val add_param_meta: meta_type ref
+val add_paramlist_meta: list_meta_type ref
+val add_const_meta: exp_meta_type ref
 
 val add_err_meta:
     (Ast_cocci.meta_name -> econstraints -> Ast0_cocci.pure -> unit) ref
 
-val add_exp_meta:
-    (Type_cocci.typeC list option -> Ast_cocci.meta_name -> econstraints ->
-      Ast0_cocci.pure -> unit) ref
-
-val add_idexp_meta:
-    (Type_cocci.typeC list option -> Ast_cocci.meta_name ->
-      econstraints -> Ast0_cocci.pure -> unit) ref
-
-val add_local_idexp_meta:
-    (Type_cocci.typeC list option -> Ast_cocci.meta_name ->
-      econstraints -> Ast0_cocci.pure -> unit) ref
-
-val add_global_idexp_meta:
-    (Type_cocci.typeC list option -> Ast_cocci.meta_name ->
-      econstraints -> Ast0_cocci.pure -> unit) ref
-
-val add_explist_meta:
-    (Ast_cocci.meta_name -> Ast_cocci.list_len -> Ast0_cocci.pure ->
-      unit) ref
-
-val add_decl_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
-
-val add_field_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
-
+val add_exp_meta: exp_meta_type ref
+val add_idexp_meta: exp_meta_type ref
+val add_local_idexp_meta: exp_meta_type ref
+val add_global_idexp_meta: exp_meta_type ref
+val add_explist_meta: list_meta_type ref
+val add_decl_meta: meta_type ref
+val add_field_meta: meta_type ref
 val add_symbol_meta: (string -> unit) ref
-
-val add_field_list_meta:
-    (Ast_cocci.meta_name -> Ast_cocci.list_len -> Ast0_cocci.pure -> unit) ref
-
-val add_stm_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
-
-val add_stmlist_meta:
-    (Ast_cocci.meta_name -> Ast_cocci.list_len -> Ast0_cocci.pure -> unit) ref
-
-val add_func_meta:
-    (Ast_cocci.meta_name -> iconstraints -> Ast0_cocci.pure -> unit) ref
-
-val add_local_func_meta:
-    (Ast_cocci.meta_name -> iconstraints -> Ast0_cocci.pure -> unit) ref
-
-val add_declarer_meta:
-    (Ast_cocci.meta_name -> iconstraints -> Ast0_cocci.pure -> unit) ref
-
-val add_iterator_meta:
-    (Ast_cocci.meta_name -> iconstraints -> Ast0_cocci.pure -> unit) ref
+val add_field_list_meta: list_meta_type ref
+val add_stm_meta: meta_type ref
+val add_stmlist_meta: list_meta_type ref
+val add_func_meta: id_meta_type ref
+val add_local_func_meta: id_meta_type ref
+val add_declarer_meta: id_meta_type ref
+val add_iterator_meta: id_meta_type ref
 
 val add_pos_meta:
     (Ast_cocci.meta_name -> pconstraints -> Ast_cocci.meta_collect -> unit) ref
@@ -141,15 +102,10 @@ val add_binaryOp_meta:
       Ast0_cocci.binaryOpconstraint -> Ast0_cocci.pure -> unit) ref
 
 val add_type_name: (string -> unit) ref
-
 val add_attribute: (string -> unit) ref
-
 val add_declarer_name: (string -> unit) ref
-
 val add_iterator_name: (string -> unit) ref
-
 val init_rule: (unit -> unit) ref
-
 val install_bindings: (string -> unit) ref
 
 (* ---------------------------------------------------------------------- *)
