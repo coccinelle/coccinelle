@@ -2204,9 +2204,13 @@ let full_engine2 (cocci_infos,parse_strings) cfiles =
       (* ! the big loop ! *)
       let c_infos' = bigloop cocci_infos c_infos parse_strings in
 
-      if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx ();
-      if !Flag.show_misc then pr "Finished";
-      if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx ();
+      if !Flag.show_misc
+      then
+        begin
+          Common.pr_xxxxxxxxxxxxxxxxx ();
+          pr "Finished";
+          Common.pr_xxxxxxxxxxxxxxxxx ()
+        end;
       if !Flag_ctl.graphical_trace then gen_pdf_graph ();
 
       c_infos' +> List.map (fun c_or_h ->
