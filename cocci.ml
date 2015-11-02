@@ -2170,9 +2170,13 @@ let full_engine2 (cocci_infos,parse_strings) cfiles =
   else
     begin
 
-      if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx();
-      if !Flag.show_misc then pr "let's go";
-      if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx();
+      if !Flag.show_misc
+      then
+        begin
+          Common.pr_xxxxxxxxxxxxxxxxx();
+          pr "let's go";
+          Common.pr_xxxxxxxxxxxxxxxxx()
+        end;
 
       if !Flag_cocci.show_binding_in_out
       then
