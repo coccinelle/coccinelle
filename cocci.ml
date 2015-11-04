@@ -1266,17 +1266,22 @@ let rec prepare_h seen env (hpath : string) choose_includes parse_strings
 	fkind = Header;
       }]
 
+(* The following function is a generic library function. *)
+(* It may be moved to a better place. *)
+
+let opt_map f lst =
+  let aux acc x = match f x with
+    | Some item -> item :: acc
+    | None -> acc in
+  List.rev (List.fold_left aux [] lst)
+
 let prepare_c files choose_includes parse_strings : file_info list =
-  let files_and_cprograms =
-    List.rev
-      (List.fold_left
-	 (function prev ->
-	   function file ->
-	     try (file,cprogram_of_file_cached parse_strings file) :: prev
-	     with Flag.UnreadableFile file ->
-	       pr2_once ("C file " ^ file ^ " not readable");
-	       prev)
-	 [] files) in
+  let cprog_of_file file =
+    try Some (file,cprogram_of_file_cached parse_strings file) with
+    Flag.UnreadableFile file ->
+      pr2_once ("C file " ^ file ^ " not readable");
+      None in
+  let files_and_cprograms = opt_map cprog_of_file files in
   let includes = includes_to_parse files_and_cprograms choose_includes in
   let seen = ref includes in
 
