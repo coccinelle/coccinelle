@@ -1290,30 +1290,25 @@ let prepare_c files choose_includes parse_strings : file_info list =
 
   Flag_parsing_c.parsing_header_for_types :=
     !Flag_cocci.include_headers_for_types;
-  let includes =
-    includes +>
-    List.map
-      (function hpath ->
-	prepare_h seen env hpath choose_includes parse_strings) +>
-    List.concat in
+  let parse_header header_path =
+    prepare_h seen env header_path choose_includes parse_strings in
+  let includes = List.concat (List.map parse_header includes) in
   Flag_parsing_c.parsing_header_for_types := false;
 
-  let cfiles =
-    files_and_cprograms +>
-    List.map
-      (function (file, cprogram) ->
-      (* todo?: don't update env ? *)
-        let cs = build_info_program cprogram !env in
-        (* we do that only for the c, not for the h *)
-        ignore(update_include_rel_pos (cs +> List.map (fun x -> x.ast_c)));
-        {
-        fname = Filename.basename file;
-        full_fname = file;
-        asts = cs;
-        was_modified_once = ref false;
-        fpath = file;
-        fkind = Source
-      }) in
+  let fileinfo_of_c (file, cprogram) =
+    (* todo?: don't update env ? *)
+    let cs = build_info_program cprogram !env in
+    (* we do that only for the c, not for the h *)
+    ignore(update_include_rel_pos (cs +> List.map (fun x -> x.ast_c)));
+    {
+      fname = Filename.basename file;
+      full_fname = file;
+      asts = cs;
+      was_modified_once = ref false;
+      fpath = file;
+      fkind = Source
+    } in
+  let cfiles = List.map fileinfo_of_c files_and_cprograms in
 
   if !Flag_cocci.include_headers_for_types
   then cfiles
