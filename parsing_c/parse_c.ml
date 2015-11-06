@@ -956,9 +956,27 @@ let with_program2_unit f program2 =
  * tokens_stat record and parsing_stat record.
  *)
 
+let cache = ref false
+
+module StringSet : Set.S with type elt = string = Set.Make(String)
+
+module StringMap : Map.S with type key = string = Map.Make(String)
+
+let header_cache = Hashtbl.create 101
+
 let rec parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
     file =
 
+  try Hashtbl.find header_cache file with
+  Not_found ->
+    let result =
+      parse_print_error_heuristic2bis saved_typedefs saved_macros parse_strings
+        file in
+    if !cache then Hashtbl.add header_cache file result; 
+    result
+
+and parse_print_error_heuristic2bis saved_typedefs saved_macros parse_strings
+    file =
   let stat = Parsing_stat.default_stat file in
 
   (* -------------------------------------------------- *)
@@ -1009,7 +1027,15 @@ let rec parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
     if Includes.should_parse parsing_style file incl
     then begin match Includes.resolve file parsing_style incl with
       | Some header_filename when Common.lfile_exists header_filename ->
-        ignore (parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings header_filename)
+        if not (Hashtbl.mem header_cache header_filename) 
+        then begin
+          let backup_cache = !cache in
+          cache := true;
+          ignore
+            (parse_print_error_heuristic2
+              saved_typedefs saved_macros parse_strings header_filename);
+          cache := backup_cache
+        end
       | _ -> ()
     end else () in
 

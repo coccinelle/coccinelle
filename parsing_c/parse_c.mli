@@ -46,8 +46,7 @@ val extract_macros :
   Common.filename -> (string, Cpp_token_c.define_def) Common.assoc
 
 
-
-
+val cache : bool ref
 
 (* ---------------------------------------------------------------------- *)
 (* used also for the standard.h file *)
