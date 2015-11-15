@@ -568,6 +568,8 @@ let fix_dependencies d =
 	Ast.AndDep(loop inverted d1,loop inverted d2)
     | Ast0.OrDep(d1,d2) ->
 	Ast.OrDep(loop inverted d1,loop inverted d2)
+    | Ast0.FileIn s when inverted -> Ast.NotFileIn s
+    | Ast0.FileIn s -> Ast.FileIn s
     | Ast0.NoDep -> Ast.NoDep
     | Ast0.FailDep -> Ast.FailDep in
   loop false d

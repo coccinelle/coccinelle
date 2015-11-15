@@ -259,6 +259,8 @@ let id_tokens lexbuf =
   | "on" when in_rule_name      -> check_context_linetype s; TOn
   | "ever" when in_rule_name    -> check_context_linetype s; TEver
   | "never" when in_rule_name   -> check_context_linetype s; TNever
+  | "file" when in_rule_name    -> check_context_linetype s; TFile
+  | "in" when in_rule_name      -> check_context_linetype s; TIn
   (* exists and forall for when are reparsed in parse_cocci.ml *)
   | "exists" when in_rule_name  -> check_context_linetype s; TExists
   | "forall" when in_rule_name  -> check_context_linetype s; TForall

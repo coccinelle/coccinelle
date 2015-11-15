@@ -506,6 +506,7 @@ and dependency =
   | NeverDep of string (* rule never applies for any binding *)
   | AndDep of dependency * dependency
   | OrDep of dependency * dependency
+  | FileIn of string
   | NoDep | FailDep
 
 (* --------------------------------------------------------------------- *)

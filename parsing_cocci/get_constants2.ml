@@ -583,20 +583,7 @@ let rec dependencies env = function
   | Ast.NeverDep s -> True
   | Ast.AndDep (d1,d2) -> build_and (dependencies env d1) (dependencies env d2)
   | Ast.OrDep (d1,d2) -> build_or (dependencies env d1) (dependencies env d2)
-  | Ast.NoDep -> True
-  | Ast.FailDep -> False
-
-(* used with + items to find inconsistencies *)
-let rec exact_dependencies = function
-    Ast.Dep s -> Elem s
-  | Ast.AntiDep s -> Not (Elem s)
-  | Ast.EverDep s -> Elem s
-  | Ast.NeverDep s -> Not (Elem s)
-  | Ast.AndDep (d1,d2) ->
-      build_and (exact_dependencies d1) (exact_dependencies d2)
-  | Ast.OrDep (d1,d2) ->
-      build_or (exact_dependencies d1) (exact_dependencies d2)
-  | Ast.NoDep -> True
+  | Ast.FileIn _ | Ast.NotFileIn _ | Ast.NoDep -> True
   | Ast.FailDep -> False
 
 (* ------------------------------------------------------------------------ *)
@@ -659,7 +646,7 @@ the thing, so no point to keep track of what is added by earlier rules.
 The situation is something like a -> b v (b & c).  We don't actually need
 both b and c, but if we don't have b, then the only way that we can get it is
 fro the first rule matching, in which case the formula is already true. *)
-let rule_fn nm tls exact_dependencies env neg_pos =
+let rule_fn nm tls env neg_pos =
   (* tls seems like it is supposed to relate to multiple minirules.  If we
      were to actually allow that, then the following could be inefficient,
      because it could run sat on the same rule name (x) more than once. *)
@@ -728,9 +715,8 @@ let run rules neg_pos_vars =
 	      (rest_info, env, locals)
           | (Ast.CocciRule (nm,(dep,_,_),cur,_,_),neg_pos_vars) ->
 	      let dependencies = dependencies env dep in
-	      let exact_dependencies = exact_dependencies dep in
 	      let cur_info =
-		rule_fn nm cur exact_dependencies ((nm,True)::env)
+		rule_fn nm cur ((nm,True)::env)
 		  neg_pos_vars in
 	      debug_deps nm dep dependencies;
 	      (match dependencies with

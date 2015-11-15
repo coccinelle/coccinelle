@@ -761,8 +761,23 @@ let rec interpret_dependencies local global = function
   | Ast_cocci.OrDep(s1,s2)  ->
       (interpret_dependencies local global s1) ||
       (interpret_dependencies local global s2)
+  | Ast_cocci.FileIn _ | Ast_cocci.NotFileIn _ -> true
   | Ast_cocci.NoDep -> true
   | Ast_cocci.FailDep -> false
+
+let rec interpret_file file = function
+    Ast_cocci.Dep _ | Ast_cocci.AntiDep _
+  | Ast_cocci.EverDep _ | Ast_cocci.NeverDep _ -> true
+  | Ast_cocci.AndDep(s1,s2) ->
+      (interpret_file file s1) && (interpret_file file s2)
+  | Ast_cocci.OrDep(s1,s2)  ->
+      (interpret_file file s1) || (interpret_file file s2)
+  | Ast_cocci.FileIn s ->
+      s = file || Str.string_match (Str.regexp (s^"/")) file 0
+  | Ast_cocci.NotFileIn s ->
+      not (s = file || Str.string_match (Str.regexp (s^"/")) file 0)
+  | Ast_cocci.NoDep -> true
+  | Ast_cocci.FailDep -> failwith "not possible"
 
 let rec print_dependencies str local global dep =
   if !Flag_cocci.show_dependencies
@@ -795,7 +810,7 @@ let rec print_dependencies str local global dep =
 	| Ast_cocci.OrDep(s1,s2)  ->
 	    loop s1;
 	    loop s2
-	| Ast_cocci.NoDep -> ()
+	| Ast_cocci.FileIn _ | Ast_cocci.NotFileIn _ | Ast_cocci.NoDep -> ()
 	| Ast_cocci.FailDep -> pr2 "False not satisfied" in
       loop dep
     end
@@ -1668,7 +1683,8 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
 			  List.rev
 			    (concat_headers_and_c !ccs +>
 			     List.fold_left (fun children_e (c,f) ->
-			       if c.flow <> None
+			       if c.flow <> None &&
+				 interpret_file f r.rule_info.dependencies
 			       then
                              (* does also some side effects on c and r *)
 				 let processed =

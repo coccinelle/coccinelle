@@ -88,6 +88,8 @@ let token2c (tok,_) =
   | PC.TEver -> "ever"
   | PC.TNever -> "never"
   | PC.TExists -> "exists"
+  | PC.TFile -> "file"
+  | PC.TIn -> "in"
   | PC.TForall -> "forall"
   | PC.TError -> "error"
   | PC.TWords -> "words"
@@ -494,6 +496,7 @@ let get_clt (tok,_) =
   | PC.TInvalid -> failwith "No clt attached to token TInvalid"
   | PC.TInitialize -> failwith "No clt attached to token TInitialize"
   | PC.TInitialiser -> failwith "No clt attached to token TInitialiser"
+  | PC.TIn -> failwith "No clt attached to token TIn"
   | PC.TIdentifier -> failwith "No clt attached to token TIdentifier"
   | PC.TIdExpression -> failwith "No clt attached to token TIdExpression"
   | PC.TGlobal -> failwith "No clt attached to token TGlobal"
@@ -503,6 +506,7 @@ let get_clt (tok,_) =
   | PC.TFormat -> failwith "No clt attached to token TFormat"
   | PC.TForall -> failwith "No clt attached to token TForall"
   | PC.TFinalize -> failwith "No clt attached to token TFinalize"
+  | PC.TFile -> failwith "No clt attached to token TFile"
   | PC.TField -> failwith "No clt attached to token TField"
   | PC.TExtends -> failwith "No clt attached to token TExtends"
   | PC.TExpression -> failwith "No clt attached to token TExpression"
@@ -722,6 +726,7 @@ let update_clt (tok,x) clt =
   | PC.TInvalid -> assert false
   | PC.TInitialize -> assert false
   | PC.TInitialiser -> assert false
+  | PC.TIn -> assert false
   | PC.TIdentifier -> assert false
   | PC.TIdExpression -> assert false
   | PC.TGlobal -> assert false
@@ -731,6 +736,7 @@ let update_clt (tok,x) clt =
   | PC.TFormat -> assert false
   | PC.TForall -> assert false
   | PC.TFinalize -> assert false
+  | PC.TFile -> assert false
   | PC.TField -> assert false
   | PC.TExtends -> assert false
   | PC.TExpression -> assert false
@@ -823,7 +829,8 @@ let split_token ((tok,_) as t) =
   | PC.TCppConcatOp | PC.TPure
   | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TVirtual | PC.TDisable
   | PC.TExtends | PC.TPathIsoFile(_)
-  | PC.TDepends | PC.TOn | PC.TEver | PC.TNever | PC.TExists | PC.TForall
+  | PC.TDepends | PC.TOn | PC.TFile | PC.TIn
+  | PC.TEver | PC.TNever | PC.TExists | PC.TForall
   | PC.TError | PC.TWords | PC.TGenerated | PC.TNothing -> ([t],[t])
 
   | PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
@@ -1998,7 +2005,7 @@ let parse_iso_files existing_isos iso_files extra_path =
 (* None = dependency not satisfied
    Some dep = dependency satisfied or unknown and dep has virts optimized
    away *)
-let eval_depend dep virt =
+let eval_depend nofiles dep virt =
   let rec loop dep =
     match dep with
       Ast.Dep req | Ast.EverDep req ->
@@ -2025,6 +2032,10 @@ let eval_depend dep virt =
 	  (Ast.NoDep,x) | (x,Ast.NoDep) -> Ast.NoDep
 	| (Ast.FailDep,x) | (x,Ast.FailDep) -> x
 	| (x,y) -> Ast.OrDep(x,y))
+    | Ast.FileIn s | Ast.NotFileIn s ->
+	if nofiles
+	then failwith "file dependencies not allowed in script rules"
+	else dep
     | Ast.NoDep | Ast.FailDep -> dep
     in
   loop dep
@@ -2278,7 +2289,7 @@ let parse file =
 	  let do_parse_script_rule fn name l old_metas deps =
             (* in generating mode, we want to keep all the dependencies *)
 	    let depimage = if !Flag_parsing_cocci.generating_mode then deps
-                           else eval_depend deps virt in
+                           else eval_depend true deps virt in
 	    (if !Flag_parsing_cocci.debug_parse_cocci
 	    then print_dep_image name deps virt depimage);
 	    fn name l old_metas depimage in
@@ -2291,7 +2302,7 @@ let parse file =
               Ast.CocciRulename (Some s, dep, b, c, d, e) ->
                 (* in generating mode, keep all dependencies *)
 		let depimage = if !Flag_parsing_cocci.generating_mode then dep
-		  else eval_depend dep virt in
+		  else eval_depend false dep virt in
 		(if !Flag_parsing_cocci.debug_parse_cocci
 		then print_dep_image s dep virt depimage);
 		(match depimage with
@@ -2304,7 +2315,7 @@ let parse file =
 		    res
 		| dep -> parse_cocci_rule Ast.Normal old_metas (s,dep,b,c,d,e))
             | Ast.GeneratedRulename (Some s, dep, b, c, d, e) ->
-		(match eval_depend dep virt with
+		(match eval_depend true dep virt with
 		  Ast.FailDep ->
 		    D.ignore_patch_or_match := true;
 		    Data.in_generating := true;

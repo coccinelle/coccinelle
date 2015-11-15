@@ -1070,6 +1070,8 @@ let rec dep in_and = function
       if not in_and
       then print_or ()
       else (print_string "("; print_or(); print_string ")")
+  | Ast.FileIn s -> print_string "file in "; print_string s
+  | Ast.NotFileIn s -> print_string "not file in "; print_string s
   | Ast.NoDep   -> print_string "no_dep"
   | Ast.FailDep -> print_string "fail_dep"
 

@@ -201,6 +201,7 @@ let mklogop (op,clt) =
 %token TTypedef TAttribute TDeclarer TIterator TName TPosition TAnalysis
 %token TPosAny
 %token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall
+%token TFile TIn
 %token TScript TInitialize TFinalize TNothing TVirtual
 %token<string> TRuleName
 
@@ -424,6 +425,7 @@ dep:
 | dep TAndLog dep  { Ast0.AndDep($1, $3) }
 | dep TOrLog  dep  { Ast0.OrDep ($1, $3) }
 | TOPar dep TCPar  { $2 }
+| TFile TIn TString{ Ast0.FileIn(fst $3) }
 
 choose_iso:
   TUsing separated_nonempty_list(TComma,TString) { List.map P.id2name $2 }
