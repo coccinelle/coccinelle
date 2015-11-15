@@ -534,9 +534,31 @@ let cluster_by_dir diffs =
     (loop info)
 
 let make_message_files subject cover message nonmessage date maintainer_table
-    patch front add_ext nomerge dirmerge info_tbl =
+    patch front add_ext nomerge dirmerge merge info_tbl =
   let ctr = ref 0 in
   let elements =
+    if merge
+    then
+      begin
+	let maintainers =
+	  Hashtbl.fold
+	    (fun (services,maintainers) diffs rest ->
+	      union (Str.split (Str.regexp ",") maintainers) rest)
+	    maintainer_table [] in
+	let diffs =
+	  Hashtbl.fold
+	    (fun (services,maintainers) diffs rest ->
+	      let diffs =
+		List.concat
+		  (List.map (function (common,diffs) -> !diffs) !diffs) in
+	      diffs @ rest)
+	    maintainer_table [] in
+	ctr := !ctr + 1;
+	let (files,diffs) = List.split (List.rev diffs) in
+	let subject = get_most_common_subject files "???" in
+	[(subject,(!ctr,false,String.concat "," maintainers,files,diffs))]
+      end
+    else
     Hashtbl.fold
       (function (services,maintainers) ->
 	function diffs ->
@@ -687,7 +709,7 @@ let generate_command front cover generated =
   close_out o
 
 let make_output_files subject cover message nonmessage
-    maintainer_table patch nomerge dirmerge info_tbl =
+    maintainer_table patch nomerge dirmerge merge info_tbl =
   let date = List.hd (cmd_to_list "date") in
   let front = safe_chop_extension patch in
   let add_ext =
@@ -696,7 +718,7 @@ let make_output_files subject cover message nonmessage
     | None -> (function s -> s) in
   let generated =
     make_message_files subject cover message nonmessage date maintainer_table
-      patch front add_ext nomerge dirmerge info_tbl in
+      patch front add_ext nomerge dirmerge merge info_tbl in
   make_cover_file (List.length generated) patch subject cover front date
     maintainer_table;
   generate_command front cover generated
@@ -705,6 +727,7 @@ let make_output_files subject cover message nonmessage
 
 let nomerge = ref false
 let dirmerge = ref false
+let merge = ref false
 
 let parse_args l =
   let (other_args,files) =
@@ -717,6 +740,10 @@ let parse_args l =
     List.partition (function a -> a = "-dirmerge") other_args in
   (* lazy solution: one directory up from the file level *)
   (if not(dirmergep = []) then dirmerge := true);
+  let (mergep,other_args) =
+    List.partition (function a -> a = "-merge") other_args in
+  (* lazy solution: one directory up from the file level *)
+  (if not(mergep = []) then merge := true);
   match files with
     [file] -> (file,String.concat " " other_args)
   | _ -> failwith "Only one file allowed"
@@ -740,4 +767,4 @@ let _ =
   (if !found_a_maintainer = false then git_options := !not_linux);
   (if not (git_args = "") then git_options := !git_options^" "^git_args);
   make_output_files subject cover message nonmessage
-    maintainer_table file !nomerge !dirmerge info_tbl
+    maintainer_table file !nomerge !dirmerge !merge info_tbl
