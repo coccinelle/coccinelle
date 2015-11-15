@@ -984,10 +984,11 @@ let last_env_toplevel_c_info xs =
   (Common.last xs).env_typing_after
 
 let concat_headers_and_c (ccs: file_info list)
-    : (toplevel_c_info * string) list =
-  (List.concat (ccs +> List.map (fun x ->
-				   x.asts +> List.map (fun x' ->
-							 (x', x.fname)))))
+    : (toplevel_c_info * string * string) list =
+  (List.concat
+     (ccs +>
+      List.map
+	(fun x -> x.asts +> List.map (fun x' -> (x', x.fname, x.full_fname)))))
 
 let for_unparser xs =
   xs +> List.map (fun x ->
@@ -1682,9 +1683,9 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
 			 .c and .h *)
 			  List.rev
 			    (concat_headers_and_c !ccs +>
-			     List.fold_left (fun children_e (c,f) ->
+			     List.fold_left (fun children_e (c,f,ff) ->
 			       if c.flow <> None &&
-				 interpret_file f r.rule_info.dependencies
+				 interpret_file ff r.rule_info.dependencies
 			       then
                              (* does also some side effects on c and r *)
 				 let processed =
@@ -1991,7 +1992,7 @@ let rec bigloop2 rs (ccs: file_info list) parse_strings =
 		    apply_script_rule r cache newes e rules_that_have_matched
 		      rules_that_have_ever_matched ocaml_application
 		| "test" ->
-		    concat_headers_and_c !ccs +> List.iter (fun (c,_) ->
+		    concat_headers_and_c !ccs +> List.iter (fun (c,_,_) ->
 		      if c.flow <> None
 		      then
 			Printf.printf "Flow: %s\r\nFlow!\r\n%!" c.fullstring);

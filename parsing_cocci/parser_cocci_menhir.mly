@@ -425,7 +425,10 @@ dep:
 | dep TAndLog dep  { Ast0.AndDep($1, $3) }
 | dep TOrLog  dep  { Ast0.OrDep ($1, $3) }
 | TOPar dep TCPar  { $2 }
-| TFile TIn TString{ Ast0.FileIn(fst $3) }
+| TFile TIn TString
+    { if !Flag.dir = ""
+      then Ast0.FileIn(fst $3)
+      else Ast0.FileIn(Filename.concat !Flag.dir (fst $3)) }
 
 choose_iso:
   TUsing separated_nonempty_list(TComma,TString) { List.map P.id2name $2 }
