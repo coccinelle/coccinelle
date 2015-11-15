@@ -26,8 +26,9 @@
 ** Language:
 - Length for statement list metavariables
 ** Features:
+- file in declaration for depends on constraints
 ** Bugfix:
-- build system: delete pregenerated parsers if menhir is installed
+   - build system: delete pregenerated parsers if menhir is installed
 * 1.0.3
 ** Language:
 - Conjunction (analogous to disjunction)

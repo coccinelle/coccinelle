@@ -96,6 +96,7 @@ section.
   \CASE{never \T{id}}
   \CASE{\NT{dep} \&\& \NT{dep}}
   \CASE{\NT{dep} || \NT{dep}}
+  \CASE{file in \NT{string}}
   \CASE{(\NT{dep})}
 
   \RULE{\rt{iso}}
@@ -149,6 +150,22 @@ behavior.  Using \NT{disable-iso} with the given name disables this behavior.
 \item \KW{prototypes}: A rule for transforming a function prototype is
   generated when a function header changes.
 \end{itemize}
+
+The \texttt{depends on} clause indicates conditions under which a semantic
+patch rule should be applied.  Most of these conditions relate to the
+success or failure of other rules, which may be virtual rules.  Giving the
+name of a rule implies that the current rule is applied if the named rule
+has succeeded in matching in the current environment.  Giving \texttt{ever}
+followed by a rule name implies that the current rule is applied if the
+named rule has succeeded in matching in any environment.  Analogously,
+\texttt{never} means that the named rule should have succeeded in matching
+in no environment.  The boolean and, or and negation operators combine
+these declarations in the usual way.  The declaration {\tt file in} checks
+that the code being processed comes from the mentioned file, or from a
+subdirectory.  The declaration {\tt file in} is only allowed on SmPL
+code-matching rules.  Script rules are not applied to any code in
+particular, and thus it doesn't make sense to check on the file being
+considered.
 
 The possible types of metavariable declarations are defined by the grammar
 rule below.  Metavariables should occur at least once in the transformation
