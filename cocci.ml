@@ -707,7 +707,7 @@ let (includes_to_parse:
       xs +> List.map (fun (file, cs) ->
 	let dir = Filename.dirname file in
 
-	cs +> Common.map_filter (fun (c, _) ->
+	cs +> Common.map_filter (fun (c,_info_item) ->
 	  match c with
 	  | Ast_c.CppTop
 	      (Ast_c.Include
