@@ -3093,14 +3093,6 @@ let mkdir ?(mode=0o770) file =
   Unix.mkdir file mode
 
 let read_file_orig file = cat file +> unlines
-let read_file file =
-  let ic = open_in file  in
-  let size = in_channel_length ic in
-  let buf = Bytes.create size in
-  really_input ic buf 0 size;
-  close_in ic;
-  buf
-
 
 let write_file ~file s =
   let chan = open_out file in
