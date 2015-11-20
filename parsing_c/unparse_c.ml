@@ -2305,14 +2305,10 @@ let print_all_tokens2 pr xs =
     );
   else
     let to_whitespace s =
-      let r = Bytes.copy s in
-      for i = 1 to String.length r do
-        let c = String.get r (i-1) in
-        match c with
-        | ' ' | '\t' | '\r' | '\n' -> ()
-        | _ -> Bytes.set r (i-1) ' '
-      done;
-      r in
+      let translate = function
+        | ' ' | '\t' | '\r' | '\n' as c -> c
+        | _ -> ' ' in
+      String.map translate s in
     let hiding_level = ref 0 in
     let handle_token t =
       let s = str_of_token2 t in
