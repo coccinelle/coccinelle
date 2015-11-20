@@ -413,8 +413,7 @@ let filter_dep existing_deps (accld, accinc) dep =
     | "Tk"       -> ("tk"::accld, accinc)
 
     | _ ->
-	let l = Char.lowercase (String.get dep 0)in
-	  Bytes.set dep 0 l;
+        let dep = String.uncapitalize dep in
 	  (accld, dep::accinc)
 
 let get_dir p =
