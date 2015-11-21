@@ -1282,17 +1282,22 @@ let rec prepare_h seen env (hpath : string) choose_includes parse_strings
 	fkind = Header;
       }]
 
+(* The following function is a generic library function. *)
+(* It may be moved to a better place. *)
+
+let opt_map f lst =
+  let aux acc x = match f x with
+    | Some item -> item :: acc
+    | None -> acc in
+  List.rev (List.fold_left aux [] lst)
+
 let prepare_c files choose_includes parse_strings : file_info list =
-  let files_and_cprograms =
-    List.rev
-      (List.fold_left
-	 (function prev ->
-	   function file ->
-	     try (file,cprogram_of_file_cached parse_strings file) :: prev
-	     with Flag.UnreadableFile file ->
-	       pr2_once ("C file " ^ file ^ " not readable");
-	       prev)
-	 [] files) in
+  let cprog_of_file file =
+    try Some (file,cprogram_of_file_cached parse_strings file) with
+    Flag.UnreadableFile file ->
+      pr2_once ("C file " ^ file ^ " not readable");
+      None in
+  let files_and_cprograms = opt_map cprog_of_file files in
   let includes = includes_to_parse files_and_cprograms choose_includes in
   let seen = ref includes in
 
@@ -1301,30 +1306,25 @@ let prepare_c files choose_includes parse_strings : file_info list =
 
   Flag_parsing_c.parsing_header_for_types :=
     !Flag_cocci.include_headers_for_types;
-  let includes =
-    includes +>
-    List.map
-      (function hpath ->
-	prepare_h seen env hpath choose_includes parse_strings) +>
-    List.concat in
+  let parse_header header_path =
+    prepare_h seen env header_path choose_includes parse_strings in
+  let includes = List.concat (List.map parse_header includes) in
   Flag_parsing_c.parsing_header_for_types := false;
 
-  let cfiles =
-    files_and_cprograms +>
-    List.map
-      (function (file, cprogram) ->
-      (* todo?: don't update env ? *)
-        let cs = build_info_program cprogram !env in
-        (* we do that only for the c, not for the h *)
-        ignore(update_include_rel_pos (cs +> List.map (fun x -> x.ast_c)));
-        {
-        fname = Filename.basename file;
-        full_fname = file;
-        asts = cs;
-        was_modified_once = ref false;
-        fpath = file;
-        fkind = Source
-      }) in
+  let fileinfo_of_c (file, cprogram) =
+    (* todo?: don't update env ? *)
+    let cs = build_info_program cprogram !env in
+    (* we do that only for the c, not for the h *)
+    ignore(update_include_rel_pos (cs +> List.map (fun x -> x.ast_c)));
+    {
+      fname = Filename.basename file;
+      full_fname = file;
+      asts = cs;
+      was_modified_once = ref false;
+      fpath = file;
+      fkind = Source
+    } in
+  let cfiles = List.map fileinfo_of_c files_and_cprograms in
 
   if !Flag_cocci.include_headers_for_types
   then cfiles
@@ -2187,9 +2187,13 @@ let full_engine2 (cocci_infos,parse_strings) cfiles =
   else
     begin
 
-      if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx();
-      if !Flag.show_misc then pr "let's go";
-      if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx();
+      if !Flag.show_misc
+      then
+        begin
+          Common.pr_xxxxxxxxxxxxxxxxx();
+          pr "let's go";
+          Common.pr_xxxxxxxxxxxxxxxxx()
+        end;
 
       if !Flag_cocci.show_binding_in_out
       then
@@ -2217,9 +2221,13 @@ let full_engine2 (cocci_infos,parse_strings) cfiles =
       (* ! the big loop ! *)
       let c_infos' = bigloop cocci_infos c_infos parse_strings in
 
-      if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx ();
-      if !Flag.show_misc then pr "Finished";
-      if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx ();
+      if !Flag.show_misc
+      then
+        begin
+          Common.pr_xxxxxxxxxxxxxxxxx ();
+          pr "Finished";
+          Common.pr_xxxxxxxxxxxxxxxxx ()
+        end;
       if !Flag_ctl.graphical_trace then gen_pdf_graph ();
 
       c_infos' +> List.map (fun c_or_h ->

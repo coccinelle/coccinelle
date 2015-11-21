@@ -89,11 +89,7 @@ distclean: clean
 	rm -f coccilib/coccilib.cmi
 
 .depend depend:
-ifeq ($(COMPILE_EMBEDDED_BYTES_MODULE),yes)
 	$(OCAMLDEP_CMD) *.mli *.ml    > .depend
-else
-	$(OCAMLDEP_CMD) *.mli *.ml | sed 's/bytes\.cm[a-z]\{1,\}//g' > .depend
-endif
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)

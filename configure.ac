@@ -406,14 +406,6 @@ AS_IF([test "x$enable_ocaml" = xyes -a "x$OCAMLOPT" != xno],
 
 AS_IF([test "x$OCAMLATLEAST4020" = xno  ],
 [dnl
-  AC_SUBST([COMPILE_EMBEDDED_BYTES_MODULE], [yes])
-],
-[dnl
-  AC_SUBST([COMPILE_EMBEDDED_BYTES_MODULE], [no])
-])
-
-AS_IF([test "x$OCAMLATLEAST4020" = xno  ],
-[dnl
   AC_SUBST([GET_TEMP_DIR_NAME_EXPR], ["Filename.temp_dir_name"])
 ],
 [dnl

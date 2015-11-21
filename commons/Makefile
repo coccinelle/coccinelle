@@ -35,11 +35,6 @@ MLI_FILES=\
   oset.mli \
   parser_combinators.mli
 
-ifeq ($(COMPILE_EMBEDDED_BYTES_MODULE),yes)
-	MYSRC+=bytes.ml
-	MLI_FILES+=bytes.mli
-endif
-
 # src from other authors, got from the web or caml hump
 SRC=ocamlextra/dumper.ml
 SRC+=ocamlextra/setb.ml ocamlextra/mapb.ml # defunctorized version of standard set/map
@@ -253,11 +248,7 @@ distclean: clean
 
 .PHONY: depend
 .depend depend:
-ifeq ($(COMPILE_EMBEDDED_BYTES_MODULE),yes)
 	$(OCAMLDEP_CMD) $(MLI_FILES) $(MYSRC)  > .depend
-else
-	$(OCAMLDEP_CMD) $(MLI_FILES) $(MYSRC) | sed 's/bytes\.cm[a-z]\{1,\}//g' > .depend
-endif
 	for i in $(SUBDIRS); do $(OCAMLDEP_CMD) $$i/*.ml $$i/*.mli >> .depend; done
 
 ifneq ($(MAKECMDGOALS),clean)
