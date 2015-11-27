@@ -9,3 +9,6 @@ let std_h   = ref (Filename.concat path "standard.h")
 
 let dynlink_is_native = @DYNLINK_IS_NATIVE@
 let get_temp_dir_name = @GET_TEMP_DIR_NAME_EXPR@
+
+let configure_flags = "@CONFIGURE_FLAGS@"
+let ocaml_version = "@OCAMLVERSION@"

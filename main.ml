@@ -253,6 +253,23 @@ let long_usage_func  = ref (fun () -> ())
 (* will be printed when use only ./spatch. For the rest you have to
  * use -longhelp to see them.
  *)
+
+let print_version () =
+  let withpython = if Pycocci.python_support then "yes" else "no" in
+  let whichregexp =
+    if !Regexp.pcre_support then "PCRE"
+    else "Str" in
+  let flags =
+    if Config.configure_flags<>"" then Config.configure_flags
+    else "[none]" in
+  let mode = if Dynlink.is_native then "native" else "byte-code" in
+  Printf.printf "spatch %s version %s compiled with OCaml version %s\n"
+    mode Config.version Config.ocaml_version;
+  Printf.printf "Flags passed to the configure script: %s\n" flags;
+  Printf.printf "Python scripting support: %s\n" withpython;
+  Printf.printf "Synxax of regular expresssions: %s\n" whichregexp;
+  exit 0
+
 let short_options = [
   "--sp-file",  Arg.Set_string cocci_file,
   " <file> the semantic patch file";
@@ -341,17 +358,7 @@ let short_options = [
   "--print-options-only", Arg.Unit (fun () -> ()),
   "   print selected options and exit";
 
-  "--version",   Arg.Unit (fun () ->
-    let withpython = if Pycocci.python_support then "with" else "without" in
-    let whichregexp =
-      if !Regexp.pcre_support then "with PCRE support"
-      else "with Str regexp support "
-    in
-    Printf.printf "spatch version %s %s Python support and %s\n"
-      Config.version withpython whichregexp;
-    exit 0;
-  ),
-    "  guess what";
+  "--version",   Arg.Unit print_version, "  print version and build info";
 
   "--date",   Arg.Unit (fun () ->
     Printf.printf "version: $Date$";
