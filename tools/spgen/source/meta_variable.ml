@@ -398,8 +398,8 @@ let metavar_combiner rn =
     match Ast0.unwrap v with
     | Ast0.MetaStmt (mc, pure) ->
         meta_mc_format ~mc ~typ:"statement " ~constr:""
-    | Ast0.MetaStmtList (mc, pure) ->
-        meta_mc_format ~mc ~typ:"statementlist[]" ~constr:""
+    | Ast0.MetaStmtList (mc, listlen, _) ->
+        lst_format ~mc ~typ:"statement list" ~listlen
     | Ast0.AsStmt (s1, s2)->
         let stmt = c.VT0.combiner_rec_statement in as_format s1 s2 stmt stmt
     | Ast0.Iterator (id, _, expdots, _, stmt,_) ->

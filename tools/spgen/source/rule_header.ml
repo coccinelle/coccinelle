@@ -42,6 +42,8 @@ let tostring_dep = function
               dep false s2 (fun r ->
                 let s = l ^ " || " ^ r in
                 if in_and then k ("(" ^ s ^ ")") else k s))
+        | Ast.FileIn s -> k ("file in \"" ^ s ^ "\"")
+        | Ast.NotFileIn s -> k ("!(file in \"" ^ s ^ "\")")
         | Ast.NoDep -> k "no_dep"
         | Ast.FailDep -> k "fail_dep" in
       " depends on " ^ (dep false deps (fun x -> x))
