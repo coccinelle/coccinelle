@@ -681,7 +681,7 @@ and rule_elem arity re =
       print_string arity; mcode print_meta name
   | Ast.MetaStmt(name,_,_,_) ->
       print_string arity; mcode print_meta name
-  | Ast.MetaStmtList(name,_,_) ->
+  | Ast.MetaStmtList(name,_,_,_) ->
       print_string arity;  mcode print_meta name
   | Ast.Exp(exp) -> print_string arity; expression exp
   | Ast.TopExp(exp) -> print_string arity; expression exp
@@ -970,8 +970,9 @@ let rec unparse_cocci_mv rule = function
       print_name rule r n; print_string ";"
   | Ast.MetaStmDecl(_,(r,n)) ->
       print_string "statement "; print_name rule r n; print_string ";"
-  | Ast.MetaStmListDecl(_,(r,n)) ->
-      print_string "statement list "; print_name rule r n; print_string ";"
+  | Ast.MetaStmListDecl(_,(r,n),len) ->
+      print_string "statement list "; print_listlen rule len;
+      print_name rule r n; print_string ";"
   | Ast.MetaFuncDecl(_,(r,n)) ->
       print_string "function "; print_name rule r n; print_string ";"
   | Ast.MetaLocalFuncDecl(_,(r,n)) ->

@@ -98,7 +98,7 @@ type token =
   | TMid0 of (string * Data.clt)
   | TMetavariable
   | TMetaType of (Parse_aux.info)
-  | TMetaStmList of (Parse_aux.info)
+  | TMetaStmList of (Parse_aux.list_info)
   | TMetaStm of (Parse_aux.info)
   | TMetaPos of (Parse_aux.pos_info)
   | TMetaParamList of (Parse_aux.list_info)

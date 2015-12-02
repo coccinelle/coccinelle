@@ -1136,7 +1136,7 @@ and rule_elem arity re =
             pretty_print_c.Pretty_print_c.statement stm
         | _ -> raise (Impossible 156))
 
-  | Ast.MetaStmtList(name,_,_) ->
+  | Ast.MetaStmtList(name,_,_,_) ->
       handle_metavar name (function
         | Ast_c.MetaStmtListVal(statxs,_) ->
             pretty_print_c.Pretty_print_c.statement_seq_list statxs

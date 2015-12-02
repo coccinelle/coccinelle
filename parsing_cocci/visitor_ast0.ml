@@ -770,9 +770,9 @@ let visitor mode bind option_default
 	| Ast0.MetaStmt(name,pure) ->
 	    let (name_n,name) = meta_mcode name in
 	    (name_n,Ast0.MetaStmt(name,pure))
-	| Ast0.MetaStmtList(name,pure) ->
+	| Ast0.MetaStmtList(name,lenname,pure) ->
 	    let (name_n,name) = meta_mcode name in
-	    (name_n,Ast0.MetaStmtList(name,pure))
+	    (name_n,Ast0.MetaStmtList(name,lenname,pure))
 	| Ast0.Disj(starter,statement_dots_list,mids,ender) ->
 	    do_disj starter statement_dots_list mids ender statement_dots
 	      (fun starter statement_dots_list mids ender ->

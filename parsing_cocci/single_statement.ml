@@ -255,7 +255,7 @@ and left_statement s =
   | Ast0.ReturnExpr(ret,exp,sem) -> modif_before_mcode ret
   | Ast0.Exec(exec,lang,code,sem) -> modif_before_mcode exec
   | Ast0.MetaStmt(name,pure) -> modif_before_mcode name
-  | Ast0.MetaStmtList(name,_) -> modif_before_mcode name
+  | Ast0.MetaStmtList(name,_,_) -> modif_before_mcode name
   | Ast0.Disj(_,statement_dots_list,_,_) ->
       List.exists (left_dots left_statement) statement_dots_list
   | Ast0.Nest(starter,stmt_dots,ender,whencode,multi) ->
@@ -299,7 +299,7 @@ and right_statement s =
   | Ast0.ReturnExpr(ret,exp,sem) -> modif_after_mcode sem
   | Ast0.Exec(exec,lang,code,sem) -> modif_after_mcode sem
   | Ast0.MetaStmt(name,pure) -> modif_after_mcode name
-  | Ast0.MetaStmtList(name,_) -> modif_after_mcode name
+  | Ast0.MetaStmtList(name,_,_) -> modif_after_mcode name
   | Ast0.Disj(_,statement_dots_list,_,_) ->
       List.exists (right_dots right_statement) statement_dots_list
   | Ast0.Nest(starter,stmt_dots,ender,whencode,multi) ->
@@ -595,7 +595,7 @@ let rec statement dots_before dots_after s =
   | Ast0.ReturnExpr(ret,exp,sem) -> do_one s
   | Ast0.Exec(exec,lang,code,sem) -> do_one s
   | Ast0.MetaStmt(name,_) -> do_one s
-  | Ast0.MetaStmtList(name,_) -> do_one s
+  | Ast0.MetaStmtList(name,_,_) -> do_one s
   | Ast0.Disj(starter,statement_dots_list,mids,ender) ->
       Ast0.rewrap s
 	(Ast0.Disj(starter,

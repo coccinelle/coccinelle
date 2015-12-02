@@ -225,10 +225,10 @@ let mklogop (op,clt) =
 %token <Parse_aux.assignOpinfo> TMetaAssignOp
 %token <Parse_aux.binaryOpinfo> TMetaBinaryOp
 %token <Parse_aux.expinfo>       TMetaErr
-%token <Parse_aux.info>          TMetaParam TMetaStm TMetaStmList TMetaType
+%token <Parse_aux.info>          TMetaParam TMetaStm TMetaType
 %token <Parse_aux.info>          TMetaInit TMetaDecl TMetaField TMeta
 %token <Parse_aux.list_info>     TMetaParamList TMetaExpList TMetaInitList
-%token <Parse_aux.list_info>     TMetaFieldList
+%token <Parse_aux.list_info>     TMetaFieldList TMetaStmList
 %token <Parse_aux.typed_expinfo> TMetaExp TMetaIdExp TMetaLocalIdExp
 %token <Parse_aux.typed_expinfo> TMetaGlobalIdExp TMetaConst
 %token <Parse_aux.pos_info>      TMetaPos
@@ -536,6 +536,13 @@ metadec:
 	  let tok = check_meta(Ast.MetaInitListDecl(arity,name,lenname)) in
 	  !Data.add_initlist_meta name lenname pure; tok)
 	len ids }
+| ar=arity ispure=pure TStatement Tlist TOCro len=list_len TCCro
+    ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
+    { P.create_len_metadec ar ispure
+	(fun lenname arity name pure check_meta ->
+	  let tok = check_meta(Ast.MetaStmListDecl(arity,name,lenname)) in
+	  !Data.add_stmlist_meta name lenname pure; tok)
+	len ids }
 | TSymbol ids=comma_list(pure_ident) TMPtVirg
     { (fun _ ->
         let add_sym = fun (nm,_) -> !Data.add_symbol_meta nm in
@@ -704,8 +711,9 @@ list_len:
       !Data.add_field_list_meta name len pure; tok) }
 | TStatement Tlist
     { (fun arity name pure check_meta ->
-      let tok = check_meta(Ast.MetaStmListDecl(arity,name)) in
-      !Data.add_stmlist_meta name pure; tok) }
+      let len = Ast.AnyLen in
+      let tok = check_meta(Ast.MetaStmListDecl(arity,name,len)) in
+      !Data.add_stmlist_meta name len pure; tok) }
 | TTypedef
     { (fun arity (_,name) pure check_meta ->
       if arity = Ast.NONE && pure = Ast0.Impure
@@ -1772,9 +1780,7 @@ initialize_list:
 
 /* a statement that is part of a list */
 decl_statement:
-    TMetaStmList
-      { let (nm,pure,clt) = $1 in
-      [Ast0.wrap(Ast0.MetaStmtList(P.clt2mcode nm clt,pure))] }
+    TMetaStmList { [P.meta_stm_list $1] }
   | decl_var
       { List.map
 	  (function x ->
@@ -1812,9 +1818,7 @@ decl_statement:
 
 /* a statement that is part of a list */
 decl_statement_expr:
-    TMetaStmList
-      { let (nm,pure,clt) = $1 in
-      [Ast0.wrap(Ast0.MetaStmtList(P.clt2mcode nm clt,pure))] }
+    TMetaStmList { [P.meta_stm_list $1] }
   | decl_var
       { List.map
 	  (function x ->

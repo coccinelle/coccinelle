@@ -150,7 +150,7 @@ let get_free checker t =
 
   let statement r k s =
     match Ast0.unwrap s with
-      Ast0.MetaStmt(name,_) | Ast0.MetaStmtList(name,_) -> checker name
+      Ast0.MetaStmt(name,_) | Ast0.MetaStmtList(name,_,_) -> checker name
     | Ast0.Disj(starter,stmt_list,mids,ender) ->
 	detect_unitary_frees
 	  (List.map r.VT0.combiner_rec_statement_dots stmt_list)
@@ -239,8 +239,8 @@ let update_unitary unitary =
     match Ast0.unwrap s with
       Ast0.MetaStmt(name,_) ->
 	Ast0.rewrap s (Ast0.MetaStmt(name,is_unitary name))
-    | Ast0.MetaStmtList(name,_) ->
-	Ast0.rewrap s (Ast0.MetaStmtList(name,is_unitary name))
+    | Ast0.MetaStmtList(name,lenname,_) ->
+	Ast0.rewrap s (Ast0.MetaStmtList(name,lenname,is_unitary name))
     | _ -> k s in
 
   let res = V0.rebuilder

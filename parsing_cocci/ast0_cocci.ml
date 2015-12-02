@@ -380,7 +380,8 @@ and base_statement =
   | Exec          of string mcode (* EXEC *) * string mcode (* language *) *
 	             exec_code dots * string mcode (* ; *)
   | MetaStmt      of Ast.meta_name mcode * pure
-  | MetaStmtList  of Ast.meta_name mcode(*only in statement lists*) * pure
+  | MetaStmtList  of Ast.meta_name mcode(*only in statement lists*) * listlen *
+	             pure
   | AsStmt        of statement * statement (* as statement, always metavar *)
   | Exp           of expression  (* only in dotted statement lists *)
   | TopExp        of expression (* for macros body *)

@@ -82,11 +82,6 @@ BININCLUDES=-I ../ocamltarzan/lib-binprot -I ../../ocamltarzan/lib-binprot
 # Other stuff
 #-----------------------------------------------------------------------------
 
-#backtrace
-MYBACKTRACESRC=backtrace.ml
-BACKTRACEINCLUDES=-I $(shell $(OCAMLC) -where)
-
-
 ##############################################################################
 # Generic variables
 ##############################################################################
@@ -194,24 +189,6 @@ commons_python.cmxa: $(MYPYSRC:.ml=.cmx)
 	$(OCAMLOPT_CMD) -a -o $@ $^
 
 #-----------------------------------------------------------------------------
-backtrace: commons_backtrace.cma
-backtrace.opt: commons_backtrace.cmxa
-
-backtrace_c.o: backtrace_c.c
-	$(CC) $(BACKTRACEINCLUDES) -c $^
-
-commons_backtrace.cma: $(MYBACKTRACESRC:.ml=.cmo) backtrace_c.o
-	$(OCAMLMKLIB) -o commons_backtrace $^
-
-commons_backtrace.cmxa: $(MYBACKTRACESRC:.ml=.cmx) backtrace_c.o
-	$(OCAMLMKLIB) -o commons_backtrace  $^
-
-clean::
-	rm -f dllcommons_backtrace.so
-
-
-
-#-----------------------------------------------------------------------------
 binprot:
 	$(MAKE) INCLUDESEXTRA="$(BININCLUDES)" commons_bin.cma
 binprot.opt:
@@ -222,20 +199,6 @@ commons_bin.cma: $(MYBINSRC:.ml=.cmo)
 
 commons_bin.cmxa: $(MYBINSRC:.ml=.cmx)
 	$(OCAMLOPT_CMD) -a -o $@ $^
-
-##############################################################################
-# The global "features" lib wrapper
-##############################################################################
-
-features: commons_features.cma
-features.opt: commons_features.cmxa
-
-commons_features.cma: features.cmo
-	$(OCAMLC_CMD) -a -o $@ $^
-
-commons_features.cmxa: features.cmx
-	$(OCAMLOPT_CMD) -a -o $@ $^
-
 
 ##############################################################################
 # Developer rules

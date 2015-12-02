@@ -572,7 +572,7 @@ and statement arity s =
 	  | Ast0.Impure -> print_string "impure"
 	  | Ast0.Context -> print_string "context"
 	  | Ast0.PureContext -> print_string "pure_context")*)
-      | Ast0.MetaStmtList(name,_) ->
+      | Ast0.MetaStmtList(name,_,_) ->
 	  print_string arity;  mcode print_meta name
       | Ast0.Disj(starter,statement_dots_list,_,ender) ->
 	  print_string arity;

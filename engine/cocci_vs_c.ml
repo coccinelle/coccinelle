@@ -825,6 +825,20 @@ let satisfies_econstraint c exp env : bool =
 (* ------------------------------------------------------------------------- *)
 (* This has to be up here to allow adequate polymorphism *)
 
+let match_len infos leninfo =
+  let len = List.length infos in
+
+  (match leninfo with
+  | A.MetaListLen (lenname,lenkeep,leninherited) ->
+      let max_min _ = failwith "no pos" in
+      X.envf lenkeep leninherited
+	(lenname, Ast_c.MetaListlenVal (len), max_min)
+  | A.CstListLen n ->
+      if len = n
+      then (function f -> f())
+      else (function f -> fail)
+  | A.AnyListLen -> function f -> f())
+
 let list_matcher match_dots rebuild_dots match_comma rebuild_comma
     match_metalist rebuild_metalist mktermval special_cases
     element distrf split_comma unsplit_comma get_iis lenfilter = fun eas ebs ->
@@ -933,19 +947,7 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 		      let startxs' = unsplit_comma startxs in
 		      (match lenfilter startxs' with
 			None -> (function _ -> fail)
-		      | Some infos ->
-			  let len = List.length infos in
-
-			  (match leninfo with
-			  | A.MetaListLen (lenname,lenkeep,leninherited) ->
-			      let max_min _ = failwith "no pos" in
-			      X.envf lenkeep leninherited
-				(lenname, Ast_c.MetaListlenVal (len), max_min)
-			  | A.CstListLen n ->
-			      if len = n
-			      then (function f -> f())
-			      else (function f -> fail)
-			  | A.AnyListLen -> function f -> f()))
+		      | Some infos -> match_len infos leninfo)
 		      (fun () ->
 			let max_min _ =
 			  Lib_parsing_c.lin_col_by_pos (get_iis startxs) in
@@ -4545,23 +4547,24 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
       | None -> fail
       )
 
-  | A.MetaStmtList (ida,keep,inherited),  unwrap_node ->
+  | A.MetaStmtList (ida,leninfo,keep,inherited),  unwrap_node ->
       (* todo: should not happen in transform mode *)
 
       (match F.extract_fullstatement node with
       | Some (B.Compound stb,_) ->
-	    let max_min _ =
-	      Lib_parsing_c.lin_col_by_pos
-		(Lib_parsing_c.ii_of_stmtseqlist stb) in
-            X.envf keep inherited
-	      (ida, Ast_c.MetaStmtListVal(stb,Ast_c.WITH_TYPES), max_min)
-	      (fun () ->
+	  match_len stb leninfo
+	    (fun _ ->
+	      let max_min _ =
+		Lib_parsing_c.lin_col_by_pos
+		  (Lib_parsing_c.ii_of_stmtseqlist stb) in
+              X.envf keep inherited
+		(ida, Ast_c.MetaStmtListVal(stb,Ast_c.WITH_TYPES), max_min)
+		(fun () ->
               (* no need tag ida, we can't be called in transform-mode *)
-		return (
-		A.MetaStmtList (ida, keep, inherited),
-		unwrap_node
-	      )
-	    )
+		  return (
+		  A.MetaStmtList (ida, leninfo, keep, inherited),
+		  unwrap_node
+	    )))
       | _ -> fail
       )
 
