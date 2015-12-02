@@ -1,7 +1,0 @@
-#! /bin/sh -e
-
-PREFIX=replace_me
-TARGET=sgen
-SHAREDIR=""${PREFIX}/lib/coccinelle/sgen""
-
-exec ""${SHAREDIR}/${TARGET}"" "$@"

@@ -1,30 +1,9 @@
 (*
- * Copyright 2012-2015, Inria
- * Julia Lawall, Gilles Muller
- * Copyright 2010-2011, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-
-# 0 "./context_neg.ml"
 (* Detects subtrees that are all minus/plus and nodes that are "binding
 context nodes".  The latter is a node whose structure and immediate tokens
 are the same in the minus and plus trees, and such that for every child,
@@ -388,11 +367,8 @@ let classify is_minus all_marked table code =
 	  k (Ast0.rewrap e (Ast0.NestExpr(starter,exp,ender,None,multi)))
       | Ast0.Edots(dots,whencode) ->
 	  k (Ast0.rewrap e (Ast0.Edots(dots,None)))
-      | Ast0.Ecircles(dots,whencode) ->
-	  k (Ast0.rewrap e (Ast0.Ecircles(dots,None)))
-      | Ast0.Estars(dots,whencode) ->
-	  k (Ast0.rewrap e (Ast0.Estars(dots,None)))
-      | Ast0.DisjExpr(starter,expr_list,_,ender) ->
+      | Ast0.DisjExpr(starter,expr_list,_,ender)
+      | Ast0.ConjExpr(starter,expr_list,_,ender) ->
 	  disj_cases e starter expr_list r.VT0.combiner_rec_expression ender
       |	_ -> k e) in
 
@@ -463,11 +439,8 @@ let classify is_minus all_marked table code =
 	  k (Ast0.rewrap s (Ast0.Nest(started,stm_dots,ender,[],multi)))
       | Ast0.Dots(dots,whencode) ->
 	  k (Ast0.rewrap s (Ast0.Dots(dots,[])))
-      | Ast0.Circles(dots,whencode) ->
-	  k (Ast0.rewrap s (Ast0.Circles(dots,[])))
-      | Ast0.Stars(dots,whencode) ->
-	  k (Ast0.rewrap s (Ast0.Stars(dots,[])))
-      | Ast0.Disj(starter,statement_dots_list,_,ender) ->
+      | Ast0.Disj(starter,statement_dots_list,_,ender)
+      | Ast0.Conj(starter,statement_dots_list,_,ender) ->
 	  disj_cases s starter statement_dots_list
 	    r.VT0.combiner_rec_statement_dots
 	    ender
@@ -544,11 +517,7 @@ let equal_option e1 e2 =
   | _ -> false
 
 let dots fn d1 d2 =
-  match (Ast0.unwrap d1,Ast0.unwrap d2) with
-    (Ast0.DOTS(l1),Ast0.DOTS(l2)) -> List.length l1 = List.length l2
-  | (Ast0.CIRCLES(l1),Ast0.CIRCLES(l2)) -> List.length l1 = List.length l2
-  | (Ast0.STARS(l1),Ast0.STARS(l2)) -> List.length l1 = List.length l2
-  | _ -> false
+  List.length (Ast0.unwrap d1) = List.length (Ast0.unwrap d2)
 
 let rec equal_ident i1 i2 =
   match (Ast0.unwrap i1,Ast0.unwrap i2) with
@@ -565,7 +534,6 @@ let rec equal_ident i1 i2 =
       List.for_all2 equal_mcode mids1 mids2 &&
       equal_mcode ender1 ender2
   | (Ast0.OptIdent(_),Ast0.OptIdent(_)) -> true
-  | (Ast0.UniqueIdent(_),Ast0.UniqueIdent(_)) -> true
   | _ -> false
 
 let rec equal_expression e1 e2 =
@@ -613,14 +581,16 @@ let rec equal_expression e1 e2 =
        equal_mcode starter1 starter2 &&
        List.for_all2 equal_mcode mids1 mids2 &&
        equal_mcode ender1 ender2
+  | (Ast0.ConjExpr(starter1,_,mids1,ender1),
+     Ast0.ConjExpr(starter2,_,mids2,ender2)) ->
+       equal_mcode starter1 starter2 &&
+       List.for_all2 equal_mcode mids1 mids2 &&
+       equal_mcode ender1 ender2
   | (Ast0.NestExpr(starter1,_,ender1,_,m1),
      Ast0.NestExpr(starter2,_,ender2,_,m2)) ->
       equal_mcode starter1 starter2 && equal_mcode ender1 ender2 && m1 = m2
-  | (Ast0.Edots(dots1,_),Ast0.Edots(dots2,_))
-  | (Ast0.Ecircles(dots1,_),Ast0.Ecircles(dots2,_))
-  | (Ast0.Estars(dots1,_),Ast0.Estars(dots2,_)) -> equal_mcode dots1 dots2
+  | (Ast0.Edots(dots1,_),Ast0.Edots(dots2,_)) -> equal_mcode dots1 dots2
   | (Ast0.OptExp(_),Ast0.OptExp(_)) -> true
-  | (Ast0.UniqueExp(_),Ast0.UniqueExp(_)) -> true
   | _ -> false
 
 and assignOp_equal op1 op2 =
@@ -671,7 +641,6 @@ let rec equal_typeC t1 t2 =
        List.for_all2 equal_mcode mids1 mids2 &&
        equal_mcode ender1 ender2
   | (Ast0.OptType(_),Ast0.OptType(_)) -> true
-  | (Ast0.UniqueType(_),Ast0.UniqueType(_)) -> true
   | _ -> false
 
 let equal_fninfo x y =
@@ -715,7 +684,6 @@ let equal_declaration d1 d2 =
   | (Ast0.TyDecl(_,sem1),Ast0.TyDecl(_,sem2)) -> equal_mcode sem1 sem2
   | (Ast0.Ddots(dots1,_),Ast0.Ddots(dots2,_)) -> equal_mcode dots1 dots2
   | (Ast0.OptDecl(_),Ast0.OptDecl(_)) -> true
-  | (Ast0.UniqueDecl(_),Ast0.UniqueDecl(_)) -> true
   | (Ast0.DisjDecl(starter1,_,mids1,ender1),
      Ast0.DisjDecl(starter2,_,mids2,ender2)) ->
        equal_mcode starter1 starter2 &&
@@ -755,7 +723,6 @@ let equal_initialiser i1 i2 =
   | (Ast0.IComma(cm1),Ast0.IComma(cm2)) -> equal_mcode cm1 cm2
   | (Ast0.Idots(d1,_),Ast0.Idots(d2,_)) -> equal_mcode d1 d2
   | (Ast0.OptIni(_),Ast0.OptIni(_)) -> true
-  | (Ast0.UniqueIni(_),Ast0.UniqueIni(_)) -> true
   | _ -> false
 
 let equal_parameterTypeDef p1 p2 =
@@ -766,10 +733,8 @@ let equal_parameterTypeDef p1 p2 =
   | (Ast0.MetaParamList(name1,_,_),Ast0.MetaParamList(name2,_,_)) ->
       equal_mcode name1 name2
   | (Ast0.PComma(cm1),Ast0.PComma(cm2)) -> equal_mcode cm1 cm2
-  | (Ast0.Pdots(dots1),Ast0.Pdots(dots2))
-  | (Ast0.Pcircles(dots1),Ast0.Pcircles(dots2)) -> equal_mcode dots1 dots2
+  | (Ast0.Pdots(dots1),Ast0.Pdots(dots2)) -> equal_mcode dots1 dots2
   | (Ast0.OptParam(_),Ast0.OptParam(_)) -> true
-  | (Ast0.UniqueParam(_),Ast0.UniqueParam(_)) -> true
   | _ -> false
 
 let rec equal_statement s1 s2 =
@@ -836,6 +801,10 @@ let rec equal_statement s1 s2 =
       equal_mcode starter1 starter2 &&
       List.for_all2 equal_mcode mids1 mids2 &&
       equal_mcode ender1 ender2
+  | (Ast0.Conj(starter1,_,mids1,ender1),Ast0.Conj(starter2,_,mids2,ender2)) ->
+      equal_mcode starter1 starter2 &&
+      List.for_all2 equal_mcode mids1 mids2 &&
+      equal_mcode ender1 ender2
   | (Ast0.Nest(starter1,_,ender1,_,m1),Ast0.Nest(starter2,_,ender2,_,m2)) ->
       equal_mcode starter1 starter2 && equal_mcode ender1 ender2 && m1 = m2
   | (Ast0.Exp(_),Ast0.Exp(_)) -> true
@@ -843,9 +812,7 @@ let rec equal_statement s1 s2 =
   | (Ast0.Ty(_),Ast0.Ty(_)) -> true
   | (Ast0.TopId(_),Ast0.TopId(_)) -> true
   | (Ast0.TopInit(_),Ast0.TopInit(_)) -> true
-  | (Ast0.Dots(d1,_),Ast0.Dots(d2,_))
-  | (Ast0.Circles(d1,_),Ast0.Circles(d2,_))
-  | (Ast0.Stars(d1,_),Ast0.Stars(d2,_)) -> equal_mcode d1 d2
+  | (Ast0.Dots(d1,_),Ast0.Dots(d2,_)) -> equal_mcode d1 d2
   | (Ast0.Include(inc1,name1),Ast0.Include(inc2,name2)) ->
       equal_mcode inc1 inc2 && equal_mcode name1 name2
   | (Ast0.Undef(def1,_),Ast0.Undef(def2,_)) ->
@@ -855,7 +822,6 @@ let rec equal_statement s1 s2 =
   | (Ast0.Pragma(prg1,_,_),Ast0.Pragma(prg2,_,_)) ->
       equal_mcode prg1 prg2
   | (Ast0.OptStm(_),Ast0.OptStm(_)) -> true
-  | (Ast0.UniqueStm(_),Ast0.UniqueStm(_)) -> true
   | _ -> false
 
 let equal_case_line c1 c2 =
@@ -949,9 +915,7 @@ let contextify_whencode =
     k e;
     match Ast0.unwrap e with
       Ast0.NestExpr(_,_,_,Some (_,_,whencode),_)
-    | Ast0.Edots(_,Some (_,_,whencode))
-    | Ast0.Ecircles(_,Some (_,_,whencode))
-    | Ast0.Estars(_,Some (_,_,whencode)) ->
+    | Ast0.Edots(_,Some (_,_,whencode)) ->
 	contextify_all.VT0.combiner_rec_expression whencode
     | _ -> () in
 
@@ -974,8 +938,7 @@ let contextify_whencode =
     k s;
     match Ast0.unwrap s with
       Ast0.Nest(_,_,_,whn,_)
-    | Ast0.Dots(_,whn) | Ast0.Circles(_,whn) | Ast0.Stars(_,whn) ->
-	List.iter whencode whn
+    | Ast0.Dots(_,whn) -> List.iter whencode whn
     | _ -> () in
 
   let combiner =
@@ -1018,13 +981,11 @@ let concat = function
 	      Ast0.NONDECL(s) -> let stms = loop rest in s::stms
 	    | Ast0.CODE(ss) ->
 		let stms = loop rest in
-		(match Ast0.unwrap ss with
-		  Ast0.DOTS(d) -> d@stms
-		| _ -> failwith "no dots allowed in pure plus code")
+		(Ast0.unwrap ss)@stms
 	    | _ -> failwith "plus code is being discarded") in
       let res =
 	Compute_lines.compute_statement_dots_lines false
-	  (Ast0.rewrap (List.hd l) (Ast0.DOTS (loop l))) in
+	  (Ast0.rewrap (List.hd l) (loop l)) in
       [Ast0.rewrap res (Ast0.CODE res)]
 
 let collect_up_to m plus =
@@ -1056,26 +1017,30 @@ let realign minus plus =
 of the same kind.  Could go further and make the correspondence between the
 code between ...s. *)
 
-let isonly f l = match Ast0.undots l with [s] -> f s | _ -> false
+let isonly f l = match Ast0.unwrap l with [s] -> f s | _ -> false
 
 let isall f l = List.for_all (isonly f) l
+let isany f l = List.exists (isonly f) l
 
 let rec is_exp s =
   match Ast0.unwrap s with
     Ast0.Exp(e) -> true
   | Ast0.Disj(_,stmts,_,_) -> isall is_exp stmts
+  | Ast0.Conj(_,stmts,_,_) -> isany is_exp stmts
   | _ -> false
 
 let rec is_ty s =
   match Ast0.unwrap s with
     Ast0.Ty(e) -> true
   | Ast0.Disj(_,stmts,_,_) -> isall is_ty stmts
+  | Ast0.Conj(_,stmts,_,_) -> isany is_ty stmts
   | _ -> false
 
 let rec is_init s =
   match Ast0.unwrap s with
     Ast0.TopInit(e) -> true
   | Ast0.Disj(_,stmts,_,_) -> isall is_init stmts
+  | Ast0.Conj(_,stmts,_,_) -> isany is_init stmts
   | _ -> false
 
 let rec is_decl s =
@@ -1083,12 +1048,14 @@ let rec is_decl s =
     Ast0.Decl(_,e) -> true
   | Ast0.FunDecl(_,_,_,_,_,_,_,_,_,_,_) -> true
   | Ast0.Disj(_,stmts,_,_) -> isall is_decl stmts
+  | Ast0.Conj(_,stmts,_,_) -> isany is_decl stmts
   | _ -> false
 
 let rec is_fndecl s =
   match Ast0.unwrap s with
     Ast0.FunDecl(_,_,_,_,_,_,_,_,_,_,_) -> true
   | Ast0.Disj(_,stmts,_,_) -> isall is_fndecl stmts
+  | Ast0.Conj(_,stmts,_,_) -> isany is_fndecl stmts
   | _ -> false
 
 let rec is_toplevel s =
@@ -1096,6 +1063,7 @@ let rec is_toplevel s =
     Ast0.Decl(_,e) -> true
   | Ast0.FunDecl(_,_,_,_,_,_,_,_,_,_,_) -> true
   | Ast0.Disj(_,stmts,_,_) -> isall is_toplevel stmts
+  | Ast0.Conj(_,stmts,_,_) -> isany is_toplevel stmts
   | Ast0.ExprStatement(Some fc,_) ->
       (match Ast0.unwrap fc with
 	Ast0.FunCall(_,_,_,_) -> true
@@ -1122,11 +1090,11 @@ let check_compatible m p =
       (* This is probably the only important case.  We don't want to
 	 replace top-level declarations by arbitrary code. *)
       let v1 = is_decl decl1 in
-      let v2 = List.for_all is_toplevel (Ast0.undots code2) in
+      let v2 = List.for_all is_toplevel (Ast0.unwrap code2) in
       if !Flag.make_hrule = None && v1 && not v2
       then fail()
   | (Ast0.CODE(code1),Ast0.NONDECL(decl2)) ->
-      let v1 = List.for_all is_toplevel (Ast0.undots code1) in
+      let v1 = List.for_all is_toplevel (Ast0.unwrap code1) in
       let v2 = is_decl decl2 in
       if v1 && not v2
       then fail()
@@ -1146,7 +1114,7 @@ let check_compatible m p =
 	    then fail())
 	  testers;
 	let v1 = isonly is_fndecl code1 in
-	let v2 = List.for_all is_toplevel (Ast0.undots code2) in
+	let v2 = List.for_all is_toplevel (Ast0.unwrap code2) in
 	if !Flag.make_hrule = None && v1 && not v2
 	then fail()
   | (Ast0.FILEINFO(_,_),Ast0.FILEINFO(_,_)) -> ()

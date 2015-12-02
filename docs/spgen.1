@@ -1,0 +1,170 @@
+.\"  -*- nroff -*-
+.\" Please adjust this date whenever revising the manpage.
+.TH spgen 1 "October 17, 2015"
+
+.\" see http://www.fnal.gov/docs/products/ups/ReferenceManual/html/manpages.html
+.\" see http://www.linuxjournal.com/article/1158
+.\" see http://www.schweikhardt.net/man_page_howto.html
+.\" groff -Tascii -man ./spgen.1 | more
+.\"
+.\" Some roff macros, for reference:
+.\" .nh        disable hyphenation
+.\" .hy        enable hyphenation
+.\" .ad l      left justify
+.\" .ad b      justify to both left and right margins
+.\" .nf        disable filling
+.\" .fi        enable filling
+.\" .br        insert line break
+.\" .sp <n>    insert n+1 empty lines
+.\" for manpage-specific macros, see man(7)
+.\"
+.\" TeX users may be more comfortable with the \fB<whatever>\fP and
+.\" \fI<whatever>\fP escape sequences to invode bold face and italics,
+.\" respectively. Also \fR for roman.
+.\" pad: src: deputy man page
+.SH NAME
+spgen \- harden a Coccinelle semantic patch
+
+.B spgen
+.I <SmPL-patch.cocci>
+.B [\-c | \-\-config <spgen config>]
+.B [\-i | \-\-interactive]
+.B [\-\-default]
+.B [\-o <output file>]
+.B [\-\-no-output]
+.B [\-help | \-\-help]
+.\"
+
+.SH DESCRIPTION
+\fBspgen\fP is a source-to-source transformation tool for hardening Coccinelle
+semantic patch scripts.
+.br
+It takes a semantic patch and outputs the same patch with added metadata and
+more options in the form of virtual rules:
+
+.RS
+- \fBpatch\fP: used for + or - rules that transform matching C code.
+
+- \fBcontext\fP: used for * rules that find matching C code.
+
+- \fBorg\fP: used for script rules that output matches in emacs org format.
+
+- \fBreport\fP: used for script rules that output matches in pretty print
+format.
+.RE
+
+A semantic patch hardened with \fBspgen\fP thus preserves the functionality of
+the original patch, but allows the user to control the output mode.
+
+The user can also specify metadata to be included in the hardened script.
+
+.RS
+- Description of the patch's functionality.
+
+- Confidence level for the patch.
+
+- Authors of the patch.
+
+- URL for gaining more information about the patch.
+
+- Known limitations of the patch.
+
+- Keywords for the patch.
+
+- \fBspatch\fP options with which to run the patch.
+
+- Additional comments regarding the patch.
+
+- Rule messages to be output in script mode for each match.
+.RE
+
+The metadata can be specified in a configuration file or entered through the
+commandline in interactive mode. The syntax of the configuration file follows a
+simple newline-separated <attribute=value> pattern.
+Use interactive mode to get an automatically generated configuration file.
+
+.SH EXAMPLES
+
+Generate a hardened version of <foo.cocci> using the configuration in
+<foo.config>:
+
+  ./spgen <foo.cocci> --config <foo.config>
+
+Generate a hardened version of <foo.cocci> using interactive mode through the
+commandline. The user will be able to save their interactively specified
+configuration to a file:
+
+  ./spgen <foo.cocci> --interactive
+
+By default, \fBspgen\fP will look for a foo.config file in the same directory
+and use that as configuration. If not found, it will start in interactive mode:
+
+  ./spgen <foo.cocci>
+
+Output the hardened version to <newfoo.cocci> instead of stdout:
+
+  ./spgen <foo.cocci> -o <newfoo.cocci>
+
+Suppose that <foo.cocci> is the original patch and <newfoo.cocci> is the
+hardened version of <foo.cocci>. Then what could be achieved with
+
+  spatch --sp-file <foo.cocci> <foo.c>
+
+can now be achieved with
+
+  spatch --sp-file <newfoo.cocci> <foo.c> -D \fIpatch\fP
+
+Substitute \fIpatch\fP with \fIcontext\fP, \fIorg\fP, or \fIreport\fP for any
+of the other modes.
+
+.SH OPTIONS
+Here is a summary of the options available on \fBspgen\fP:
+
+.SH SYNOPSIS
+.B spgen
+.I <SmPL-patch.cocci>
+.B [\-c | \-\-config <spgen config>]
+.B [\-i | \-\-interactive]
+.B [\-\-default]
+.B [\-o <output file>]
+.B [\-\-no-output]
+.B [\-help | \-\-help]
+
+.TP
+.B \-help | \-\-help
+Print the help menu.
+.TP
+.B \-c | \-\-config <foo.config>
+Harden the <SmPL-patch.cocci> using the configuration specified in
+<foo.config>.
+.TP
+.B \-i | \-\-interactive
+Harden the <SmPL-patch.cocci> using configuration options specified through the
+commandline.
+.TP
+.B \-o <output.cocci>
+Output the hardened semantic patch to <output.cocci> instead of stdout.
+.TP
+.B \-\-default
+Harden the <SmPL-patch.cocci> without a configuration, instead using default
+values. This option mainly exists to see what the generated script would look
+like, as the default values are not specific to the input script.
+.TP
+.B \-\-no-output
+Run the program without outputting anything. This option mainly exists to check
+that the input script and configuration file are parsable.
+
+.SH AUTHOR
+\fBspgen\fP and this man page were written by Chi Pham <chidaph@gmail.com>
+
+.SH REPORTING BUGS
+Send an mail to <cocci@systeme.lip6.fr>
+
+.SH COPYRIGHT
+Copyright 2015, Chi Pham
+spgen is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, according to version 2 of the License.
+
+.SH SEE ALSO
+\fIspatch\fP(1), \fIpycocci\fP(1), \fIdiff\fP(1)

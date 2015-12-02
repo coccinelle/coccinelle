@@ -1,30 +1,9 @@
 (*
- * Copyright 2012-2015, Inria
- * Julia Lawall, Gilles Muller
- * Copyright 2010-2011, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-
-# 0 "./process_isoprofile.ml"
 (* This is for processing information created with the -profile_iso option.
 Runs are assumed separated with a line beginning with =.
 The first run is discarded *)
@@ -141,7 +120,7 @@ let process_files iso_file noiso_file =
 		   (function (noiso_total,noiso_parse) ->
 		     let total_ovd = iso_total -. noiso_total in
 		     let parse_ovd = iso_parse -. noiso_parse in
-		     if total_ovd < 0.001 or parse_ovd > total_ovd or
+		     if total_ovd < 0.001 || parse_ovd > total_ovd ||
 		       parse_ovd < 0.0
 		     then acc
 		     else (parse_ovd /. total_ovd) :: acc)))
@@ -158,7 +137,7 @@ let process_files iso_file noiso_file =
 		   (function (noiso_total,noiso_mysat) ->
 		     let total_ovd = iso_total -. noiso_total in
 		     let mysat_ovd = iso_mysat -. noiso_mysat in
-		     if total_ovd < 0.001 or mysat_ovd > total_ovd or
+		     if total_ovd < 0.001 || mysat_ovd > total_ovd ||
 		       mysat_ovd < 0.0
 		     then acc
 		     else (mysat_ovd /. total_ovd) :: acc)))

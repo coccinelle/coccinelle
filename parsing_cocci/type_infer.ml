@@ -1,30 +1,9 @@
 (*
- * Copyright 2012-2015, Inria
- * Julia Lawall, Gilles Muller
- * Copyright 2010-2011, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-
-# 0 "./type_infer.ml"
 module T = Type_cocci
 module Ast = Ast_cocci
 module Ast0 = Ast0_cocci
@@ -276,7 +255,8 @@ let rec propagate_types env =
 	| Ast0.MetaExpr(name,_,ty,_,_) -> None
 	| Ast0.MetaExprList(name,_,_) -> None
 	| Ast0.EComma(cm) -> None
-	| Ast0.DisjExpr(_,exp_list,_,_) ->
+	| Ast0.DisjExpr(_,exp_list,_,_)
+	| Ast0.ConjExpr(_,exp_list,_,_) ->
 	    let types = List.map Ast0.get_type exp_list in
 	    let combined = List.fold_left lub_type None types in
 	      (match combined with
@@ -289,13 +269,10 @@ let rec propagate_types env =
 	| Ast0.NestExpr(starter,expr_dots,ender,Some (_,_,e),multi) ->
 	    let _ = r.VT0.combiner_rec_expression_dots expr_dots in
 	    let _ = r.VT0.combiner_rec_expression e in None
-	| Ast0.Edots(_,None) | Ast0.Ecircles(_,None) | Ast0.Estars(_,None) ->
-	    None
-	| Ast0.Edots(_,Some (_,_,e)) | Ast0.Ecircles(_,Some (_,_,e))
-	| Ast0.Estars(_,Some (_,_,e)) ->
+	| Ast0.Edots(_,None) -> None
+	| Ast0.Edots(_,Some (_,_,e)) ->
 	    let _ = r.VT0.combiner_rec_expression e in None
 	| Ast0.OptExp(exp) -> Ast0.get_type exp
-	| Ast0.UniqueExp(exp) -> Ast0.get_type exp
 	| Ast0.AsExpr _ | Ast0.AsSExpr _ -> failwith "not possible" in
       Ast0.set_type e ty;
       ty in
@@ -308,7 +285,6 @@ let rec propagate_types env =
     | Ast0.MetaLocalFunc(name,_,_) -> [Meta(Ast0.unwrap_mcode name)]
     | Ast0.DisjId(_,id_list,_,_)   -> List.concat (List.map strip id_list)
     | Ast0.OptIdent(id)            -> strip id
-    | Ast0.UniqueIdent(id)         -> strip id
     | Ast0.AsIdent _ -> failwith "not possible" in
 
   let process_whencode notfn allfn exp = function
@@ -335,11 +311,12 @@ let rec propagate_types env =
 		 r.VT0.combiner_rec_statement r.VT0.combiner_rec_expression)
 	      wc;
 	    process_statement_list r acc ss
-	| Ast0.Disj(_,statement_dots_list,_,_) ->
+	| Ast0.Disj(_,statement_dots_list,_,_)
+	| Ast0.Conj(_,statement_dots_list,_,_) ->
 	    let new_acc =
 	      lub_envs
 		(List.map
-		   (function x -> process_statement_list r acc (Ast0.undots x))
+		   (function x -> process_statement_list r acc (Ast0.unwrap x))
 		   statement_dots_list) in
 	    process_statement_list r new_acc ss
 	| _ ->
@@ -370,13 +347,10 @@ let rec propagate_types env =
 	List.concat(List.map (process_decl env) disjs)
     | Ast0.Ddots(_,_) -> [] (* not in a statement list anyway *)
     | Ast0.OptDecl(decl) -> process_decl env decl
-    | Ast0.UniqueDecl(decl) -> process_decl env decl
     | Ast0.AsDecl _ -> failwith "not possible" in
 
   let statement_dots r k d =
-    match Ast0.unwrap d with
-      Ast0.DOTS(l) | Ast0.CIRCLES(l) | Ast0.STARS(l) ->
-	let _ = process_statement_list r env l in option_default in
+    let _ = process_statement_list r env (Ast0.unwrap d) in option_default in
 
   let post_bool exp =
     let rec process_test exp =
@@ -407,7 +381,7 @@ let rec propagate_types env =
 	  | Ast0.OptParam(param) -> get_binding param
 	  | Ast0.AsParam(param,e) -> get_binding param
 	  | _ -> [] in
-	let fenv = List.concat (List.map get_binding (Ast0.undots params)) in
+	let fenv = List.concat (List.map get_binding (Ast0.unwrap params)) in
 	(propagate_types (fenv@env)).VT0.combiner_rec_statement_dots body
     | Ast0.IfThen(_,_,exp,_,_,_) | Ast0.IfThenElse(_,_,exp,_,_,_,_,_)
     | Ast0.While(_,_,exp,_,_,_) | Ast0.Do(_,_,_,_,exp,_,_) ->
@@ -430,7 +404,7 @@ let rec propagate_types env =
 	    (propagate_types newenv).VT0.combiner_rec_statement
 	      (Ast0.rewrap s (Ast0.For(a,b,dummy,exp,c,d,e,f,g))))
     | Ast0.Switch(_,_,exp,_,_,decls,cases,_) ->
-	let senv = process_statement_list r env (Ast0.undots decls) in
+	let senv = process_statement_list r env (Ast0.unwrap decls) in
 	let res =
 	  (propagate_types (senv@env)).VT0.combiner_rec_case_line_dots cases in
 	post_bool exp;

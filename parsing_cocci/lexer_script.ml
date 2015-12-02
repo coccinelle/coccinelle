@@ -1,4 +1,4 @@
-# 0 "./lexer_script.mll"
+# 7 "lexer_script.mll"
  
 open Parser_cocci_menhir
 module D = Data
@@ -13,29 +13,29 @@ let inc_line _ = Lexer_cocci.line := !Lexer_cocci.line + 1
 let __ocaml_lex_tables = {
   Lexing.lex_base = 
    "\000\000\244\255\245\255\246\255\001\000\001\000\252\255\253\255\
-    \254\255\004\000\015\000\008\000\251\255\009\000\002\000\254\255\
-    \255\255\003\000\254\255\255\255";
+    \254\255\004\000\015\000\008\000\251\255\009\000\002\000\253\255\
+    \003\000\255\255\254\255\003\000\254\255\255\255";
   Lexing.lex_backtrk = 
    "\255\255\255\255\255\255\255\255\006\000\005\000\255\255\255\255\
     \255\255\000\000\000\000\008\000\255\255\007\000\255\255\255\255\
-    \255\255\255\255\255\255\255\255";
+    \002\000\255\255\255\255\255\255\255\255\255\255";
   Lexing.lex_default = 
    "\009\000\000\000\000\000\000\000\255\255\255\255\000\000\000\000\
     \000\000\009\000\010\000\011\000\000\000\013\000\015\000\000\000\
-    \000\000\018\000\000\000\000\000";
+    \255\255\000\000\000\000\020\000\000\000\000\000";
   Lexing.lex_trans = 
    "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\006\000\006\000\006\000\006\000\255\255\255\255\
     \255\255\255\255\255\255\255\255\000\000\000\000\000\000\000\000\
     \000\000\255\255\011\000\011\000\011\000\000\000\000\000\000\000\
-    \000\000\000\000\003\000\010\000\016\000\000\000\255\255\002\000\
-    \008\000\007\000\019\000\255\255\255\255\255\255\000\000\004\000\
+    \000\000\000\000\003\000\010\000\017\000\018\000\255\255\002\000\
+    \008\000\007\000\021\000\255\255\255\255\255\255\000\000\004\000\
     \013\000\011\000\000\000\255\255\000\000\000\000\011\000\011\000\
     \011\000\000\000\000\000\000\000\000\000\000\000\011\000\000\000\
     \005\000\012\000\000\000\000\000\255\255\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\011\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\016\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
@@ -64,13 +64,14 @@ let __ocaml_lex_tables = {
     \255\255\255\255\000\000\000\000\000\000\000\000\009\000\009\000\
     \009\000\009\000\011\000\013\000\255\255\255\255\255\255\255\255\
     \255\255\010\000\010\000\010\000\010\000\255\255\255\255\255\255\
-    \255\255\255\255\000\000\000\000\014\000\255\255\009\000\000\000\
-    \000\000\000\000\017\000\009\000\009\000\009\000\255\255\000\000\
+    \255\255\255\255\000\000\000\000\014\000\016\000\009\000\000\000\
+    \000\000\000\000\019\000\009\000\009\000\009\000\255\255\000\000\
     \004\000\010\000\255\255\009\000\255\255\255\255\010\000\010\000\
     \010\000\255\255\255\255\255\255\255\255\255\255\010\000\255\255\
     \000\000\005\000\255\255\255\255\009\000\255\255\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\010\000\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\014\000\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
@@ -91,8 +92,7 @@ let __ocaml_lex_tables = {
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \000\000\255\255\014\000\017\000\009\000\255\255\255\255\255\255\
+    \000\000\255\255\014\000\019\000\009\000\255\255\255\255\255\255\
     \011\000\013\000\255\255\255\255\255\255\255\255\255\255\010\000\
     ";
   Lexing.lex_base_code = 
@@ -114,22 +114,22 @@ let rec token lexbuf =
 and __ocaml_lex_token_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 19 "./lexer_script.mll"
+# 26 "lexer_script.mll"
            ( TScriptData (tok lexbuf) )
 # 120 "lexer_script.ml"
 
   | 1 ->
-# 20 "./lexer_script.mll"
+# 27 "lexer_script.mll"
         ( TScriptData (tok lexbuf) )
 # 125 "lexer_script.ml"
 
   | 2 ->
-# 21 "./lexer_script.mll"
+# 28 "lexer_script.mll"
         ( TScriptData (tok lexbuf) )
 # 130 "lexer_script.ml"
 
   | 3 ->
-# 23 "./lexer_script.mll"
+# 30 "lexer_script.mll"
       ( inc_line();
 	let text = tok lexbuf in
 	let text =
@@ -142,47 +142,47 @@ and __ocaml_lex_token_rec lexbuf __ocaml_lex_state =
 # 143 "lexer_script.ml"
 
   | 4 ->
-# 32 "./lexer_script.mll"
+# 39 "lexer_script.mll"
          ( TArobArob )
 # 148 "lexer_script.ml"
 
   | 5 ->
-# 33 "./lexer_script.mll"
+# 40 "lexer_script.mll"
          ( TArob )
 # 153 "lexer_script.ml"
 
   | 6 ->
-# 34 "./lexer_script.mll"
+# 41 "lexer_script.mll"
          ( TScriptData (tok lexbuf) )
 # 158 "lexer_script.ml"
 
   | 7 ->
-# 35 "./lexer_script.mll"
+# 42 "lexer_script.mll"
                    ( token lexbuf )
 # 163 "lexer_script.ml"
 
   | 8 ->
-# 36 "./lexer_script.mll"
+# 43 "lexer_script.mll"
                    ( token lexbuf )
 # 168 "lexer_script.ml"
 
   | 9 ->
-# 37 "./lexer_script.mll"
+# 44 "lexer_script.mll"
          ( TScriptData (Printf.sprintf "\"%s\"" (string lexbuf)) )
 # 173 "lexer_script.ml"
 
   | 10 ->
-# 38 "./lexer_script.mll"
+# 45 "lexer_script.mll"
          ( TScriptData (Printf.sprintf "'%s'" (cstring lexbuf)) )
 # 178 "lexer_script.ml"
 
   | 11 ->
-# 39 "./lexer_script.mll"
+# 46 "lexer_script.mll"
          ( EOF )
 # 183 "lexer_script.ml"
 
   | 12 ->
-# 40 "./lexer_script.mll"
+# 47 "lexer_script.mll"
       ( raise (Lexical ("unrecognised symbol, in token rule:"^tok lexbuf)) )
 # 188 "lexer_script.ml"
 
@@ -193,40 +193,45 @@ and string lexbuf =
 and __ocaml_lex_string_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 44 "./lexer_script.mll"
+# 51 "lexer_script.mll"
                         ( "" )
 # 199 "lexer_script.ml"
 
   | 1 ->
+# 52 "lexer_script.mll"
+                        ( "\\\"" ^ string lexbuf )
+# 204 "lexer_script.ml"
+
+  | 2 ->
 let
-# 45 "./lexer_script.mll"
+# 53 "lexer_script.mll"
           x
-# 205 "lexer_script.ml"
+# 210 "lexer_script.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 45 "./lexer_script.mll"
+# 53 "lexer_script.mll"
                         ( (String.make 1 x) ^ string lexbuf )
-# 209 "lexer_script.ml"
+# 214 "lexer_script.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; __ocaml_lex_string_rec lexbuf __ocaml_lex_state
 
 and cstring lexbuf =
-    __ocaml_lex_cstring_rec lexbuf 17
+    __ocaml_lex_cstring_rec lexbuf 19
 and __ocaml_lex_cstring_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 48 "./lexer_script.mll"
+# 56 "lexer_script.mll"
                         ( "" )
-# 220 "lexer_script.ml"
+# 225 "lexer_script.ml"
 
   | 1 ->
 let
-# 49 "./lexer_script.mll"
+# 57 "lexer_script.mll"
           x
-# 226 "lexer_script.ml"
+# 231 "lexer_script.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 49 "./lexer_script.mll"
+# 57 "lexer_script.mll"
                         ( (String.make 1 x) ^ cstring lexbuf )
-# 230 "lexer_script.ml"
+# 235 "lexer_script.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; __ocaml_lex_cstring_rec lexbuf __ocaml_lex_state
 

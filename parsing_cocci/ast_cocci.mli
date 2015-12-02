@@ -1,30 +1,9 @@
 (*
- * Copyright 2012-2015, Inria
- * Julia Lawall, Gilles Muller
- * Copyright 2010-2011, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-
-# 0 "./ast_cocci.mli"
 (* --------------------------------------------------------------------- *)
 (* Modified code *)
 
@@ -140,12 +119,7 @@ and seed_elem = SeedString of string | SeedId of meta_name
 (* --------------------------------------------------------------------- *)
 (* Dots *)
 
-and 'a base_dots =
-    DOTS of 'a list
-  | CIRCLES of 'a list
-  | STARS of 'a list
-
-and 'a dots = 'a base_dots wrap
+and 'a dots = 'a list wrap
 
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
@@ -159,7 +133,6 @@ and base_ident =
 
   | DisjId        of ident list
   | OptIdent      of ident
-  | UniqueIdent   of ident
 
 and ident = base_ident wrap
 
@@ -211,6 +184,7 @@ and base_expression =
   | EComma         of string mcode (* only in arg lists *)
 
   | DisjExpr       of expression list
+  | ConjExpr       of expression list
   | NestExpr       of string mcode (* <.../<+... *) *
 	              expression dots *
 	              string mcode (* ...>/...+> *) *
@@ -220,11 +194,8 @@ and base_expression =
    if(< ... X ... Y ...>)
    In the following, the expression option is the WHEN  *)
   | Edots          of string mcode (* ... *) * expression option
-  | Ecircles       of string mcode (* ooo *) * expression option
-  | Estars         of string mcode (* *** *) * expression option
 
   | OptExp         of expression
-  | UniqueExp      of expression
 
 and constraints =
     NoConstraint
@@ -309,7 +280,6 @@ and base_fullType =
   | AsType          of fullType * fullType (* as type, always metavar *)
   | DisjType        of fullType list (* only after iso *)
   | OptType         of fullType
-  | UniqueType      of fullType
 
 and base_typeC =
     BaseType        of baseType * string mcode list (* Yoann style *)
@@ -379,7 +349,6 @@ and base_declaration =
   | AsDecl        of declaration * declaration
 
   | OptDecl    of declaration
-  | UniqueDecl of declaration
 
 and declaration = base_declaration wrap
 
@@ -411,7 +380,6 @@ and base_initialiser =
   | IComma of string mcode (* , *)
   | Idots  of string mcode (* ... *) * initialiser option (* whencode *)
   | OptIni    of initialiser
-  | UniqueIni of initialiser
 
 and designator =
     DesignatorField of string mcode (* . *) * ident
@@ -437,10 +405,8 @@ and base_parameterTypeDef =
   | PComma        of string mcode
 
   | Pdots         of string mcode (* ... *)
-  | Pcircles      of string mcode (* ooo *)
 
   | OptParam      of parameterTypeDef
-  | UniqueParam   of parameterTypeDef
 
 and parameterTypeDef = base_parameterTypeDef wrap
 
@@ -453,9 +419,7 @@ and base_define_param =
     DParam        of ident
   | DPComma       of string mcode
   | DPdots        of string mcode (* ... *)
-  | DPcircles     of string mcode (* ooo *)
   | OptDParam     of define_param
-  | UniqueDParam  of define_param
 
 and define_param = base_define_param wrap
 
@@ -540,6 +504,7 @@ and base_rule_elem =
   | Pragma        of string mcode (* #pragma *) * ident * pragmainfo
   | Case          of string mcode (* case *) * expression * string mcode (*:*)
   | Default       of string mcode (* default *) * string mcode (*:*)
+  | AsRe          of rule_elem * rule_elem (* always { and MetaStmtList *)
   | DisjRuleElem  of rule_elem list
 
 and base_pragmainfo =
@@ -578,6 +543,7 @@ and base_statement =
 	             statement (*decl*) dots * case_line list * rule_elem(*}*)
   | Atomic        of rule_elem
   | Disj          of statement dots list
+  | Conj          of statement dots list
   | Nest          of string mcode (* <.../<+... *) * statement dots *
 	             string mcode (* ...>/...+> *) *
 	             (statement dots,statement) whencode list * multi *
@@ -589,14 +555,7 @@ and base_statement =
   | Dots          of string mcode (* ... *) *
 	             (statement dots,statement) whencode list *
 	             dots_whencode list * dots_whencode list
-  | Circles       of string mcode (* ooo *) *
-	             (statement dots,statement) whencode list *
-	             dots_whencode list * dots_whencode list
-  | Stars         of string mcode (* *** *) *
-	             (statement dots,statement) whencode list *
-	             dots_whencode list * dots_whencode list
   | OptStm        of statement
-  | UniqueStm     of statement
 
 and ('a,'b) whencode =
     WhenNot of 'a
@@ -669,16 +628,23 @@ and rule =
 	top_level list * bool list (* true if generates an exp *) * ruletype
   | ScriptRule of string (* name *) *
       string * dependency *
-	(script_meta_name * meta_name * metavar) list *
+	(script_meta_name * meta_name * metavar * mvinit) list *
 	meta_name list (*script vars*) * string
   | InitialScriptRule of  string (* name *) * string * dependency *
-	(script_meta_name * meta_name * metavar) list (*virtual vars*) *
+	(script_meta_name * meta_name * metavar * mvinit)
+	  list (*virtual vars*) *
 	string
   | FinalScriptRule of  string (* name *) * string * dependency *
-	(script_meta_name * meta_name * metavar) list (*virtual vars*) *
+	(script_meta_name * meta_name * metavar * mvinit)
+	  list (*virtual vars*) *
 	string
 
 and script_meta_name = string option (*string*) * string option (*ast*)
+
+and mvinit =
+    NoMVInit
+  | MVInitString of string
+  | MVInitPosList
 
 and dependency =
     Dep of string (* rule applies for the current binding *)
@@ -736,8 +702,6 @@ and exists = Exists | Forall | Undetermined
 (* --------------------------------------------------------------------- *)
 
 val mkToken : string -> anything
-
-val undots : 'a dots -> 'a list
 
 val lub_count : count -> count -> count
 

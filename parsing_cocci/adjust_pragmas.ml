@@ -1,30 +1,9 @@
 (*
- * Copyright 2012-2015, Inria
- * Julia Lawall, Gilles Muller
- * Copyright 2010-2011, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-
-# 0 "./adjust_pragmas.ml"
 (* Find a directive or comment at the end of a statement.  Things with aft
 given None, because they can accomodate their own directives or comments *)
 
@@ -97,8 +76,6 @@ let rec right_decl d =
   | Ast0.Ddots(dots,whencode) -> None
   | Ast0.OptDecl(decl) ->
       call_right right_decl decl d (function decl -> Ast0.OptDecl(decl))
-  | Ast0.UniqueDecl(decl) ->
-      call_right right_decl decl d (function decl -> Ast0.UniqueDecl(decl))
 
 let rec right_statement s =
   match Ast0.unwrap s with
@@ -151,7 +128,8 @@ let rec right_statement s =
       call_right right_mcode name s
 	(function name -> Ast0.MetaStmtList(name,pure))
   | Ast0.AsStmt(stm,asstm) -> failwith "not possible"
-  | Ast0.Disj(starter,statement_dots_list,mids,ender) -> None
+  | Ast0.Disj(starter,statement_dots_list,mids,ender)
+  | Ast0.Conj(starter,statement_dots_list,mids,ender) -> None
   | Ast0.Nest(starter,stmt_dots,ender,whn,multi) -> None
   (* the following are None, because they can't be adjacent to an aft node *)
   | Ast0.Exp(exp) -> None
@@ -160,8 +138,6 @@ let rec right_statement s =
   | Ast0.TopId(id) -> None
   | Ast0.TopInit(init) -> None
   | Ast0.Dots(d,whn) -> None
-  | Ast0.Circles(d,whn) -> None
-  | Ast0.Stars(d,whn) -> None
   | Ast0.Include(inc,name) ->
       call_right right_mcode name s
 	(function name -> Ast0.Include(inc,name))
@@ -177,16 +153,11 @@ let rec right_statement s =
       None
   | Ast0.OptStm(re) ->
       call_right right_statement re s (function re -> Ast0.OptStm(re))
-  | Ast0.UniqueStm(re) ->
-      call_right right_statement re s (function re -> Ast0.UniqueStm(re))
 
 and right_statement_dots sd =
   match Ast0.unwrap sd with
-    Ast0.DOTS([]) -> failwith "empty statement dots"
-  | Ast0.DOTS(s::r) ->
-      call_right right_statement s sd
-	(function s -> Ast0.DOTS(List.rev(s::r)))
-  | _ -> failwith "circles and stars not supported"
+    [] -> failwith "empty statement dots"
+  | s::r -> call_right right_statement s sd (function s -> List.rev(s::r))
 
 let rec left_ty t =
   match Ast0.unwrap t with
@@ -228,8 +199,6 @@ let rec left_ty t =
   | Ast0.DisjType(starter,types,mids,ender) -> None
   | Ast0.OptType(ty) ->
       call_right left_ty ty t (function ty -> Ast0.OptType(ty))
-  | Ast0.UniqueType(ty) ->
-      call_right left_ty ty t (function ty -> Ast0.UniqueType(ty))
 
 let rec left_ident i =
   match Ast0.unwrap i with
@@ -245,8 +214,6 @@ let rec left_ident i =
   | Ast0.DisjId(starter,ids,mids,ender) -> None
   | Ast0.OptIdent(id) ->
       call_right left_ident id i (function id -> Ast0.OptIdent(id))
-  | Ast0.UniqueIdent(id) ->
-      call_right left_ident id i (function id -> Ast0.UniqueIdent(id))
   | Ast0.AsIdent(id,asid) -> failwith "not possible"
 
 let left_fundecl name fninfo =
@@ -335,8 +302,6 @@ let rec left_decl decl =
   | Ast0.Ddots(dots,whencode) -> None
   | Ast0.OptDecl(d) ->
       call_right left_decl d decl (function decl -> Ast0.OptDecl(decl))
-  | Ast0.UniqueDecl(d) ->
-      call_right left_decl d decl (function decl -> Ast0.UniqueDecl(decl))
 
 let process =
   let statement r k s =

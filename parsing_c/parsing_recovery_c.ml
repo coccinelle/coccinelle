@@ -83,7 +83,7 @@ and find_next_synchro_define next already_passed =
       pr2_err "ERROR-RECOV: end of file while in recovery mode";
       already_passed, []
   | (Parser_c.TDefEOL i as v)::xs  ->
-      pr2_err ("ERROR-RECOV: found sync end of #define, line "^i_to_s(TH.line_of_tok v));
+      pr2_err ("ERROR-RECOV: found sync end of #define, line "^string_of_int(TH.line_of_tok v));
       v::already_passed, xs
   | v::xs ->
       find_next_synchro_define xs (v::already_passed)
@@ -98,7 +98,7 @@ and find_next_synchro_orig next already_passed =
       already_passed, []
 
   | (Parser_c.TCBrace i as v)::xs when TH.col_of_tok v = 0 ->
-      pr2_err ("ERROR-RECOV: found sync '}' at line "^i_to_s (TH.line_of_tok v));
+      pr2_err ("ERROR-RECOV: found sync '}' at line "^string_of_int (TH.line_of_tok v));
 
       (match xs with
       | [] -> raise (Impossible 94) (* there is a EOF token normally *)
@@ -137,7 +137,7 @@ and find_next_synchro_orig next already_passed =
           v::already_passed, xs
       )
   | v::xs when TH.col_of_tok v = 0 && TH.is_start_of_something v  ->
-      pr2_err ("ERROR-RECOV: found sync col 0 at line "^ i_to_s(TH.line_of_tok v));
+      pr2_err ("ERROR-RECOV: found sync col 0 at line "^ string_of_int(TH.line_of_tok v));
       already_passed, v::xs
 
   | v::xs ->

@@ -1,30 +1,9 @@
 (*
- * Copyright 2012-2015, Inria
- * Julia Lawall, Gilles Muller
- * Copyright 2010-2011, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-
-# 0 "./pretty_print_cocci.ml"
 open Format
 module Ast = Ast_cocci
 
@@ -91,14 +70,14 @@ let print_string_befaft fn x info =
   fn x;
   List.iter (function (s,_,_) -> force_newline(); print s) info.Ast.straft
 
-let print_meta (r,x) = print_string r; print_string ":"; print_string x
+let print_meta (r,x) = print_string x
 
 let print_pos l =
   List.iter
     (function
 	Ast.MetaPos(name,_,_,_,_) ->
 	  let name = Ast.unwrap_mcode name in
-	  print_string "@"; print_meta name)
+	  print_string "@"; print_meta name; print_space())
     l
 
 let mcode fn = function
@@ -135,34 +114,26 @@ let print_mcodekind = function
 (* --------------------------------------------------------------------- *)
 (* Dots *)
 
-let dots between fn d =
-  match Ast.unwrap d with
-    Ast.DOTS(l) -> print_between between fn l
-  | Ast.CIRCLES(l) -> print_between between fn l
-  | Ast.STARS(l) -> print_between between fn l
+let dots between fn d = print_between between fn (Ast.unwrap d)
 
 let nest_dots starter ender fn f d =
   mcode print_string starter;
-  f(); start_block();
-  (match Ast.unwrap d with
-    Ast.DOTS(l)    -> print_between force_newline fn l
-  | Ast.CIRCLES(l) -> print_between force_newline fn l
-  | Ast.STARS(l)   -> print_between force_newline fn l);
+  f(); start_block(); print_between force_newline fn (Ast.unwrap d);
   end_block();
   mcode print_string ender
 
 (* --------------------------------------------------------------------- *)
 (* Disjunctions *)
 
-let print_disj_list fn l =
+let print_disj_list fn l sep =
   if !print_newlines_disj
   then (force_newline(); print_string "("; force_newline())
   else print_string "(";
   print_between
     (function _ ->
       if !print_newlines_disj
-      then (force_newline(); print_string "|"; force_newline())
-      else print_string " | ")
+      then (force_newline(); print_string sep; force_newline())
+      else print_string (" "^sep^" "))
     fn l;
   if !print_newlines_disj
   then (force_newline(); print_string ")"; force_newline())
@@ -216,9 +187,8 @@ let rec ident i =
   | Ast.MetaFunc(name,_,_,_) -> mcode print_meta name
   | Ast.MetaLocalFunc(name,_,_,_) -> mcode print_meta name
   | Ast.AsIdent(id,asid) -> ident id; print_string "@"; ident asid
-  | Ast.DisjId(id_list) -> print_disj_list ident id_list
+  | Ast.DisjId(id_list) -> print_disj_list ident id_list "|"
   | Ast.OptIdent(id) -> print_string "?"; ident id
-  | Ast.UniqueIdent(id) -> print_string "!"; ident id
 
 and print_unitary = function
     Type_cocci.Unitary -> print_string "unitary"
@@ -291,22 +261,18 @@ let rec expression e =
   | Ast.AsSExpr(exp,asstm) ->
       expression exp; print_string "@"; rule_elem "" asstm
   | Ast.EComma(cm) -> mcode print_string cm; print_space()
-  | Ast.DisjExpr(exp_list) -> print_disj_list expression exp_list
+  | Ast.DisjExpr(exp_list) -> print_disj_list expression exp_list "|"
+  | Ast.ConjExpr(exp_list) -> print_disj_list expression exp_list "&"
   | Ast.NestExpr(starter,expr_dots,ender,Some whencode,multi) ->
       nest_dots starter ender expression
 	(function _ -> print_string "   when != "; expression whencode)
 	expr_dots
   | Ast.NestExpr(starter,expr_dots,ender,None,multi) ->
       nest_dots starter ender expression (function _ -> ()) expr_dots
-  | Ast.Edots(dots,Some whencode)
-  | Ast.Ecircles(dots,Some whencode)
-  | Ast.Estars(dots,Some whencode) ->
+  | Ast.Edots(dots,Some whencode) ->
       mcode print_string dots; print_string "   when != "; expression whencode
-  | Ast.Edots(dots,None)
-  | Ast.Ecircles(dots,None)
-  | Ast.Estars(dots,None) -> mcode print_string dots
+  | Ast.Edots(dots,None) -> mcode print_string dots
   | Ast.OptExp(exp) -> print_string "?"; expression exp
-  | Ast.UniqueExp(exp) -> print_string "!"; expression exp
 
 and string_fragment e =
   match Ast.unwrap e with
@@ -407,9 +373,8 @@ and fullType ft =
 	  print_option (function x -> mcode const_vol x; print_string " ") cv;
 	  typeC ty)
   | Ast.AsType(ty,asty) -> fullType ty; print_string "@"; fullType asty
-  | Ast.DisjType(decls) -> print_disj_list fullType decls
+  | Ast.DisjType(decls) -> print_disj_list fullType decls "|"
   | Ast.OptType(ty) -> print_string "?"; fullType ty
-  | Ast.UniqueType(ty) -> print_string "!"; fullType ty
 
 and print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2) fn =
   fullType ty; mcode print_string lp1; mcode print_string star; fn();
@@ -561,9 +526,8 @@ and declaration d =
   | Ast.Typedef(stg,ty,id,sem) ->
       mcode print_string stg; print_string " "; fullType ty; typeC id;
       mcode print_string sem
-  | Ast.DisjDecl(decls) -> print_disj_list declaration decls
+  | Ast.DisjDecl(decls) -> print_disj_list declaration decls "|"
   | Ast.OptDecl(decl) -> print_string "?"; declaration decl
-  | Ast.UniqueDecl(decl) -> print_string "!"; declaration decl
 
 and annotated_decl arity d =
   match Ast.unwrap d with
@@ -611,7 +575,6 @@ and initialiser i =
       mcode print_string dots; print_string "   when != "; initialiser whencode
   | Ast.Idots(dots,None) -> mcode print_string dots
   | Ast.OptIni(ini) -> print_string "?"; initialiser ini
-  | Ast.UniqueIni(ini) -> print_string "!"; initialiser ini
 
 and designator = function
     Ast.DesignatorField(dot,id) -> mcode print_string dot; ident id
@@ -633,9 +596,7 @@ and parameterTypeDef p =
   | Ast.MetaParamList(name,_,_,_) -> mcode print_meta name
   | Ast.PComma(cm) -> mcode print_string cm; print_space()
   | Ast.Pdots(dots) -> mcode print_string dots
-  | Ast.Pcircles(dots) -> mcode print_string dots
   | Ast.OptParam(param) -> print_string "?"; parameterTypeDef param
-  | Ast.UniqueParam(param) -> print_string "!"; parameterTypeDef param
   | Ast.AsParam(p,asexp) ->
       parameterTypeDef p; print_string "@"; expression asexp
 
@@ -738,7 +699,9 @@ and rule_elem arity re =
       mcode print_string prg; print_string " "; ident id; print_string " ";
       pragmainfo body
   | Ast.Default(def,colon) ->
-      mcode print_string def; mcode print_string colon; print_string " "
+      mcode print_string def; mcode print_string colon; print_string " " 
+  | Ast.AsRe(re,asre) ->
+      rule_elem arity re; print_string "@"; rule_elem arity asre
   | Ast.Case(case,exp,colon) ->
       mcode print_string case; print_string " "; expression exp;
       mcode print_string colon; print_string " "
@@ -777,9 +740,7 @@ and print_define_param param =
     Ast.DParam(id) -> ident id
   | Ast.DPComma(comma) -> mcode print_string comma
   | Ast.DPdots(dots) -> mcode print_string dots
-  | Ast.DPcircles(circles) -> mcode print_string circles
   | Ast.OptDParam(dp) -> print_string "?"; print_define_param dp
-  | Ast.UniqueDParam(dp) -> print_string "!"; print_define_param dp
 
 and statement arity s =
   match Ast.unwrap s with
@@ -817,7 +778,8 @@ and statement arity s =
       dots force_newline (statement arity) body;
       rule_elem arity rbrace;
       mcode (function _ -> ()) ((),Ast.no_info,aft,[])
-  | Ast.Disj([stmt_dots]) ->
+  | Ast.Disj([stmt_dots]) (* useful why? *)
+  | Ast.Conj([stmt_dots]) ->
       print_string arity;
       dots (function _ -> if !print_newlines_disj then force_newline())
 	(statement arity) stmt_dots
@@ -826,6 +788,14 @@ and statement arity s =
       force_newline(); print_string "("; force_newline();
       print_between
 	(function _ -> force_newline();print_string "|"; force_newline())
+	(dots force_newline (statement arity))
+	stmt_dots_list;
+      force_newline(); print_string ")"
+  | Ast.Conj(stmt_dots_list) -> (* ignores newline directive for readability *)
+      print_string arity;
+      force_newline(); print_string "("; force_newline();
+      print_between
+	(function _ -> force_newline();print_string "&"; force_newline())
 	(dots force_newline (statement arity))
 	stmt_dots_list;
       force_newline(); print_string ")"
@@ -843,14 +813,13 @@ and statement arity s =
 	    (whencode (dots force_newline (statement "")) (statement "")) whn;
 	  close_box(); force_newline())
 	stmt_dots
-  | Ast.Dots(d,whn,_,_) | Ast.Circles(d,whn,_,_) | Ast.Stars(d,whn,_,_) ->
+  | Ast.Dots(d,whn,_,_) ->
       print_string arity; mcode print_string d;
       open_box 0;
       print_between force_newline
 	(whencode (dots force_newline (statement "")) (statement "")) whn;
       close_box(); force_newline()
   | Ast.OptStm(s) -> statement "?" s
-  | Ast.UniqueStm(s) -> statement "!" s
 
 and print_statement_when whencode =
   print_string "   WHEN != ";
@@ -909,6 +878,120 @@ and inc_elem = function
 
 (* for export only *)
 let statement_dots l = dots force_newline (statement "") l
+
+(* --------------------------------------------------------------------- *)
+(* metavars *)
+
+let print_name rule r n =
+  if rule = r
+  then print_string n
+  else print_string (Printf.sprintf "%s.%s" r n)
+
+let print_listlen rule = function
+    Ast.MetaLen(r,n) ->
+      print_string "["; print_name rule r n; print_string "] "
+  | Ast.CstLen(n) -> print_string "["; print_string (string_of_int n);
+      print_string "] "
+  | Ast.AnyLen -> print_string " "
+
+let print_types = function
+    None -> ()
+  | Some [ty] -> print_string (Type_cocci.type2c ty); print_string " "
+  | Some l ->
+      print_string "{";
+      print_between (fun _ -> print_string ",")
+	(fun ty -> print_string (Type_cocci.type2c ty))
+	l;
+      print_string "} "
+
+let print_seed_elem rule = function
+    Ast.SeedString(s) -> print_string (Printf.sprintf "\"%s\"" s)
+  | Ast.SeedId(r,n) -> print_name rule r n
+
+let print_seed rule = function
+    Ast.NoVal -> ()
+  | Ast.StringSeed(s) -> print_string " = "; print_string s
+  | Ast.ListSeed(ss) ->
+      print_string " = ";
+      print_between (fun _ -> print_string " ## ") (print_seed_elem rule) ss
+
+let rec unparse_cocci_mv rule = function
+    Ast.MetaMetaDecl _ -> failwith "should be removed"
+  | Ast.MetaIdDecl(_,(r,n)) ->
+      print_string "identifier "; print_name rule r n; print_string ";"
+  | Ast.MetaFreshIdDecl((r,n),seed) ->
+      print_string "fresh identifier "; print_name rule r n;
+      print_string " = "; print_seed rule seed; print_string ";"
+  | Ast.MetaTypeDecl(_,(r,n)) ->
+      print_string "type "; print_name rule r n; print_string ";"
+  | Ast.MetaInitDecl(_,(r,n)) ->
+      print_string "initializer "; print_name rule r n; print_string ";"
+  | Ast.MetaInitListDecl(_,(r,n),len) ->
+      print_string "initializer list"; print_listlen rule len;
+      print_name rule r n; print_string ";"
+  | Ast.MetaListlenDecl(r,n) -> print_name rule r n
+  | Ast.MetaParamDecl(_,(r,n)) ->
+      print_string "parameter "; print_name rule r n; print_string ";"
+  | Ast.MetaBinaryOperatorDecl(_,(r,n)) -> (* missing constraints *)
+      print_string "binary operator "; print_name rule r n; print_string ";"
+  | Ast.MetaAssignmentOperatorDecl(_,(r,n)) -> (* missing constraints *)
+      print_string "assignment operator "; print_name rule r n;
+      print_string ";"
+  | Ast.MetaParamListDecl(_,(r,n),len) ->
+      print_string "parameter list"; print_listlen rule len;
+      print_name rule r n; print_string ";"
+  | Ast.MetaConstDecl(_,(r,n),ty) ->
+      print_string "constant "; print_types ty;
+      print_name rule r n; print_string ";"
+  | Ast.MetaErrDecl(_,(r,n)) ->
+      print_string "error "; print_name rule r n; print_string ";"
+  | Ast.MetaExpDecl(_,(r,n),None) ->
+      print_string "expression "; print_name rule r n; print_string ";"
+  | Ast.MetaExpDecl(_,(r,n),ty) ->
+      print_types ty; print_name rule r n; print_string ";"
+  | Ast.MetaIdExpDecl(_,(r,n),ty) ->
+      print_string "idexpression "; print_types ty;
+      print_name rule r n; print_string ";"
+  | Ast.MetaLocalIdExpDecl(_,(r,n),ty) ->
+      print_string "local idexpression "; print_types ty;
+      print_name rule r n; print_string ";"
+  | Ast.MetaGlobalIdExpDecl(_,(r,n),ty) ->
+      print_string "global idexpression "; print_types ty;
+      print_name rule r n; print_string ";"
+  | Ast.MetaExpListDecl(_,(r,n),len) ->
+      print_string "expression list"; print_listlen rule len;
+      print_name rule r n; print_string ";"
+  | Ast.MetaDeclDecl(_,(r,n)) ->
+      print_string "declaration "; print_name rule r n; print_string ";"
+  | Ast.MetaFieldDecl(_,(r,n)) ->
+      print_string "field "; print_name rule r n; print_string ";"
+  | Ast.MetaFieldListDecl(_,(r,n),len) ->
+      print_string "field list"; print_listlen rule len;
+      print_name rule r n; print_string ";"
+  | Ast.MetaStmDecl(_,(r,n)) ->
+      print_string "statement "; print_name rule r n; print_string ";"
+  | Ast.MetaStmListDecl(_,(r,n)) ->
+      print_string "statement list "; print_name rule r n; print_string ";"
+  | Ast.MetaFuncDecl(_,(r,n)) ->
+      print_string "function "; print_name rule r n; print_string ";"
+  | Ast.MetaLocalFuncDecl(_,(r,n)) ->
+      print_string "local function "; print_name rule r n; print_string ";"
+  | Ast.MetaPosDecl(_,(r,n)) -> (* constraints missing! *)
+      print_string "position "; print_name rule r n; print_string ";"
+  | Ast.MetaFmtDecl(_,(r,n)) ->
+      print_string "format "; print_name rule r n; print_string ";"
+  | Ast.MetaFragListDecl(_,(r,n),len) ->
+      print_string "fragment list"; print_listlen rule len;
+      print_name rule r n; print_string ";"
+  | Ast.MetaAnalysisDecl(analyzer,(r,n)) ->
+      failwith "analyzer not supported"
+  | Ast.MetaDeclarerDecl(_,(r,n)) ->
+      print_string "declarer "; print_name rule r n; print_string ";"
+  | Ast.MetaIteratorDecl(_,(r,n)) ->
+      print_string "iterator "; print_name rule r n; print_string ";"
+  | Ast.MetaScriptDecl _ -> failwith "not a cocci decl"
+
+(* --------------------------------------------------------------------- *)
 
 let top_level t =
   match Ast.unwrap t with
@@ -989,14 +1072,32 @@ let rec dep in_and = function
   | Ast.NoDep   -> print_string "no_dep"
   | Ast.FailDep -> print_string "fail_dep"
 
-let script_header str lang deps code =
-  print_string "@@";
-  force_newline();
-  print_string (str ^ ":" ^ lang);
+let script_header str lang deps mv code =
+  print_string (Printf.sprintf "@%s:%s" str lang);
   (match deps with
     Ast.NoDep -> ()
   | _ -> print_string " depends on "; dep true deps);
+  print_string "@";
   force_newline();
+  List.iter
+    (function (script_name,inh_name,_ty,init) ->
+      (match script_name with
+	(None,None) -> print_string "(_,_)"
+      |	(Some x,None) -> print_string x
+      |	(None,Some a) -> print_string (Printf.sprintf "(_,%s)" a)
+      |	(Some x,Some a) -> print_string (Printf.sprintf "(%s,%s)" x a));
+      print_string " << ";
+      print_string (Printf.sprintf "%s.%s" (fst inh_name) (snd inh_name));
+      (match init with
+	Ast.NoMVInit -> ()
+      | Ast.MVInitString s ->
+	  print_space(); print_string "="; print_space();
+	  print_string "\""; print_string s; print_string "\""
+      | Ast.MVInitPosList ->
+	  print_space(); print_string "="; print_space(); print_string "[]");
+      print_string ";";
+      force_newline())
+    mv;
   print_string "@@";
   force_newline();
   let code =
@@ -1005,31 +1106,36 @@ let script_header str lang deps code =
   print_string code;
   force_newline()
 
-let unparse z =
+let unparse mvs z =
   match z with
     Ast.InitialScriptRule (name,lang,deps,mv,code) ->
-      script_header "initialize" lang deps code
+      script_header "initialize" lang deps mv code
   | Ast.FinalScriptRule (name,lang,deps,mv,code) ->
-      script_header "finalize" lang deps code
+      script_header "finalize" lang deps mv code
   | Ast.ScriptRule (name,lang,deps,bindings,script_vars,code) ->
-      script_header "script" lang deps code
+      script_header "script" lang deps bindings code
   | Ast.CocciRule (nm, (deps, drops, exists), x, _, _) ->
-      print_string "@@";
-      force_newline();
+      print_string "@";
       print_string nm;
       (match deps with
 	Ast.NoDep -> ()
       | _ -> print_string " depends on "; dep true deps);
-    (*
-    print_string "line ";
-    print_int (Ast.get_line (List.hd x));
-    *)
+      (match drops with
+	[] -> ()
+      |	_ -> print_string " disable "; print_string (String.concat "," drops));
+      (match exists with
+	Ast.Exists -> print_string " exists"
+      |	Ast.Forall -> print_string " forall"
+      |	Ast.Undetermined -> ());
+      print_string "@";
       force_newline();
+      List.iter (fun mv -> unparse_cocci_mv nm mv; force_newline()) mvs;
       print_string "@@";
       print_newlines_disj := true;
       force_newline();
       force_newline();
       rule x;
+      force_newline();
       force_newline()
 
 let rule_elem_to_string x =
@@ -1042,7 +1148,7 @@ let ident_to_string x =
 
 let unparse_to_string x =
   print_newlines_disj := true;
-  Common.format_to_string (function _ -> unparse x)
+  Common.format_to_string (function _ -> unparse [] x)
 
 let print_rule_elem re =
   let nl = !print_newlines_disj in

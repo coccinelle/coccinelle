@@ -1,30 +1,9 @@
 (*
- * Copyright 2012-2015, Inria
- * Julia Lawall, Gilles Muller
- * Copyright 2010-2011, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-
-# 0 "./gitgrep.ml"
 (* adjust as convenient *)
 let prefix = "/tmp/"
 let prefix = ""
@@ -55,9 +34,9 @@ let matches pattern line =
   with Not_found -> false
 
 let match_one start dir cl pattern line =
-  if ((start = '-' && dir = Minus) or
-      (start = '+' && dir = Plus) or
-      (cl && dir = ChangeLog) or
+  if ((start = '-' && dir = Minus) ||
+      (start = '+' && dir = Plus) ||
+      (cl && dir = ChangeLog) ||
       (not (start = '-') && not (start = '+') && dir = Context))
   then matches pattern line
   else false
@@ -108,7 +87,7 @@ let scan allpatterns i maxlen =
 	else
 	  begin
 	    let start = String.get line 0 in
-	    (if start = '-' or start = '+' then changed := !changed + 1);
+	    (if start = '-' || start = '+' then changed := !changed + 1);
 	    let fails =
 	      List.exists
 		(function (dir,ok,pattern) ->
@@ -168,7 +147,7 @@ let scan_grouped allpatterns i maxlen =
 	if String.length line > 0
 	then
 	    let first_char = String.get line 0 in
-	    (if first_char = '-' or first_char = '+'
+	    (if first_char = '-' || first_char = '+'
 	    then changed := !changed + 1);
 	    let new_mp =
 	      match first_char with
@@ -268,7 +247,7 @@ let _ =
     if List.exists
 	(function
 	    (_,Neg,_) -> true
-	  | (dir,_,_) -> not (dir = Minus or dir = Plus))
+	  | (dir,_,_) -> not (dir = Minus || dir = Plus))
 	requirements
     then
       failwith

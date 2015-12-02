@@ -1,30 +1,9 @@
 (*
- * Copyright 2012-2015, Inria
- * Julia Lawall, Gilles Muller
- * Copyright 2010-2011, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-
-# 0 "./splitpatch.ml"
 (* split patch per file *)
 
 (* ------------------------------------------------------------------------ *)
@@ -562,7 +541,7 @@ let make_message_files subject cover message nonmessage date maintainer_table
       (function (services,maintainers) ->
 	function diffs ->
 	  function rest ->
-	    if services=[default_string] or nomerge
+	    if services=[default_string] || nomerge
 	    then
 	      (* if no maintainer, then one file per diff *)
 	      let diffs =
@@ -640,7 +619,7 @@ let make_message_files subject cover message nonmessage date maintainer_table
   then Printf.fprintf stderr "Warning: %s and other files may be left over from a previous run\n" later;
   generated
 
-let make_cover_file n subject cover front date maintainer_table =
+let make_cover_file n file subject cover front date maintainer_table =
   match cover with
     None -> ()
   | Some cover ->
@@ -672,8 +651,21 @@ let make_cover_file n subject cover front date maintainer_table =
       let o = open_out output_file in
       make_mail_header o date maintainers_and_lists 0 n true subject;
       print_all o cover;
-      Printf.fprintf o "\n";
-      close_out o
+      Printf.fprintf o "\n---\n\n";
+      let l = cmd_to_list (Printf.sprintf "diffstat -p1 < %s" file) in
+      let adjust_after =
+	match !prefix_after with
+	  None -> l
+	| Some pa ->
+	    let pa = (String.concat "/" (Str.split (Str.regexp "/") pa))^"/" in
+	    List.map
+	      (function l -> String.concat "" (Str.split (Str.regexp pa) l))
+	      l in
+      List.iter
+	(function line -> Printf.fprintf o "%s\n" line)
+	adjust_after;
+      close_out o;
+      ()
 
 let mail_sender = "git send-email" (* use this when it works *)
 let mail_sender = "cocci-send-email.perl"
@@ -705,7 +697,7 @@ let make_output_files subject cover message nonmessage
   let generated =
     make_message_files subject cover message nonmessage date maintainer_table
       patch front add_ext nomerge dirmerge info_tbl in
-  make_cover_file (List.length generated) subject cover front date
+  make_cover_file (List.length generated) patch subject cover front date
     maintainer_table;
   generate_command front cover generated
 

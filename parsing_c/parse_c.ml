@@ -100,7 +100,7 @@ let set_parse_error_function f =
 let default_parse_error_function : parse_error_function =
   fun line_error _tokens (start_line, end_line) filelines pass ->
     begin
-      pr2 ("badcount: " ^ i_to_s (end_line - start_line));
+      pr2 ("badcount: " ^ string_of_int (end_line - start_line));
 
       for i = start_line to end_line do
 	let line = filelines.(i) in
@@ -326,7 +326,7 @@ let parse_print_error file =
 
   let error_msg () = Common.error_message file (lexbuf_to_strpos lexbuf) in
   try
-    lexbuf +> Parser_c.main Lexer_c.token
+    Parser_c.main Lexer_c.token lexbuf
   with
   | Lexer_c.Lexical s ->
       failwith ("lexical error " ^s^ "\n =" ^  error_msg ())
@@ -970,16 +970,6 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
 
   let toks_orig = tokens file in
   let toks = Parsing_hacks.fix_tokens_define toks_orig in
-  let toks = if !Flag_parsing_c.exts_ITU
-                then Parsing_hacks.fix_tokens_ifdef toks
-                else toks
-    in
-  let toks = Parsing_hacks.fix_tokens_cpp ~macro_defs:!_defs_builtins toks in
-  let toks =
-    if parse_strings
-    then Parsing_hacks.fix_tokens_strings toks
-    else toks in
-
   (* expand macros on demand trick, preparation phase *)
   let macros =
     Common.profile_code "MACRO mgmt prep 1" (fun () ->
@@ -995,11 +985,22 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
     )
   in
   Common.profile_code "MACRO mgmt prep 2" (fun () ->
-    let local_macros = extract_macros file in
+    let local_macros = Cpp_token_c.extract_macros toks in
     local_macros +> List.iter (fun (s, def) ->
       Hashtbl.replace macros   s def;
     );
   );
+
+  let toks = if !Flag_parsing_c.exts_ITU
+                then Parsing_hacks.fix_tokens_ifdef toks
+                else toks
+    in
+  let toks = Parsing_hacks.fix_tokens_cpp ~macro_defs:!_defs_builtins toks in
+  let toks =
+    if parse_strings
+    then Parsing_hacks.fix_tokens_strings toks
+    else toks in
+
 
   let tr = mk_tokens_state toks in
 

@@ -1,30 +1,9 @@
 (*
- * Copyright 2012-2015, Inria
- * Julia Lawall, Gilles Muller
- * Copyright 2010-2011, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-
-# 0 "./flag.ml"
 let sgrep_mode2 = ref false
 
 let show_misc = ref true
@@ -62,9 +41,12 @@ let defined_virtual_rules = ref ([] : string list)
 let defined_virtual_env = ref ([] : (string*string) list)
 
 let set_defined_virtual_rules s =
-  match Str.split (Str.regexp "=") s with
-    [name;vl] -> defined_virtual_env := (name,vl) :: !defined_virtual_env
-  | _ -> defined_virtual_rules := s :: !defined_virtual_rules
+  match Str.split_delim (Str.regexp "=") s with
+    [_] -> defined_virtual_rules := s :: !defined_virtual_rules
+  | name::vl ->
+      let vl = String.concat "=" vl in
+      defined_virtual_env := (name,vl) :: !defined_virtual_env
+  | _ -> failwith "nothing defined"
 
 let c_plus_plus = ref false
 let ibm = ref false

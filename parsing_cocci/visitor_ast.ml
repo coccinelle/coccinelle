@@ -1,30 +1,9 @@
 (*
- * Copyright 2012-2015, Inria
- * Julia Lawall, Gilles Muller
- * Copyright 2010-2011, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-
-# 0 "./visitor_ast.ml"
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
 
@@ -83,10 +62,7 @@ let combiner bind option_default
     | None -> option_default in
 
   let dotsfn param default all_functions arg =
-    let k d =
-      match Ast.unwrap d with
-	Ast.DOTS(l) | Ast.CIRCLES(l) | Ast.STARS(l) ->
-          multibind (List.map default l) in
+    let k d = multibind (List.map default (Ast.unwrap d)) in
     param all_functions k arg in
 
   let rec meta_mcode x = meta_mcodefn all_functions x
@@ -131,8 +107,7 @@ let combiner bind option_default
 	  let lasid = ident asid in
 	  bind lid lasid
       | Ast.DisjId(id_list) -> multibind (List.map ident id_list)
-      | Ast.OptIdent(id) -> ident id
-      | Ast.UniqueIdent(id) -> ident id in
+      | Ast.OptIdent(id) -> ident id in
     identfn all_functions k i
 
   and expression e =
@@ -246,20 +221,19 @@ let combiner bind option_default
 	  let lasstm = rule_elem asstm in
 	  bind lexp lasstm
       | Ast.EComma(cm) -> string_mcode cm
-      | Ast.DisjExpr(exp_list) -> multibind (List.map expression exp_list)
+      | Ast.DisjExpr(exp_list) | Ast.ConjExpr(exp_list) ->
+	  multibind (List.map expression exp_list)
       | Ast.NestExpr(starter,expr_dots,ender,whncode,multi) ->
 	  let lstarter = string_mcode starter in
 	  let lexpr_dots = expression_dots expr_dots in
 	  let lender = string_mcode ender in
 	  let lwhncode = get_option expression whncode in
 	  multibind [lstarter; lexpr_dots; lender; lwhncode]
-      | Ast.Edots(dots,whncode) | Ast.Ecircles(dots,whncode)
-      | Ast.Estars(dots,whncode) ->
+      | Ast.Edots(dots,whncode) ->
 	  let ldots = string_mcode dots in
 	  let lwhncode = get_option expression whncode in
 	  bind ldots lwhncode
-      | Ast.OptExp(exp) | Ast.UniqueExp(exp) ->
-	  expression exp in
+      | Ast.OptExp(exp) -> expression exp in
     exprfn all_functions k e
 
   and assignOp op =
@@ -312,8 +286,7 @@ let combiner bind option_default
 	  let lasty = fullType asty in
 	  bind lty lasty
       | Ast.DisjType(types) -> multibind (List.map fullType types)
-      | Ast.OptType(ty) -> fullType ty
-      | Ast.UniqueType(ty) -> fullType ty in
+      | Ast.OptType(ty) -> fullType ty in
     ftfn all_functions k ft
 
   and function_pointer
@@ -461,8 +434,7 @@ let combiner bind option_default
 	  let lsem = string_mcode sem in
 	  multibind [lstg; lty; lid; lsem]
       | Ast.DisjDecl(decls) -> multibind (List.map declaration decls)
-      | Ast.OptDecl(decl) -> declaration decl
-      | Ast.UniqueDecl(decl) -> declaration decl in
+      | Ast.OptDecl(decl) -> declaration decl in
     declfn all_functions k d
 
   and annotated_decl d =
@@ -511,8 +483,7 @@ let combiner bind option_default
 	  let ldots = string_mcode dots in
 	  let lwhncode = get_option initialiser whncode in
 	  bind ldots lwhncode
-      | Ast.OptIni(i) -> initialiser i
-      | Ast.UniqueIni(i) -> initialiser i in
+      | Ast.OptIni(i) -> initialiser i in
     initfn all_functions k i
 
   and designator = function
@@ -547,9 +518,7 @@ let combiner bind option_default
 	  bind lp lasexp
       | Ast.PComma(cm) -> string_mcode cm
       | Ast.Pdots(dots) -> string_mcode dots
-      | Ast.Pcircles(dots) -> string_mcode dots
-      | Ast.OptParam(param) -> parameterTypeDef param
-      | Ast.UniqueParam(param) -> parameterTypeDef param in
+      | Ast.OptParam(param) -> parameterTypeDef param in
     paramfn all_functions k p
 
   and rule_elem re =
@@ -681,7 +650,12 @@ let combiner bind option_default
 	  let lexp = expression exp in
 	  let lcolon = string_mcode colon in
 	  multibind [lcase; lexp; lcolon]
-      |	Ast.DisjRuleElem(res) -> multibind (List.map rule_elem res) in
+      | Ast.AsRe(re,asre) ->
+	  let re = rule_elem re in
+	  let asre = rule_elem asre in
+	  bind re asre
+      |	Ast.DisjRuleElem(res) ->
+	  multibind (List.map rule_elem res) in
     rulefn all_functions k re
 
   (* not parameterisable, for now *)
@@ -719,12 +693,7 @@ let combiner bind option_default
 	  multibind [llp; lparams; lrp] in
     k p
 
-  and define_param_dots d =
-    let k d =
-      match Ast.unwrap d with
-	Ast.DOTS(l) | Ast.CIRCLES(l) | Ast.STARS(l) ->
-	  multibind (List.map define_param l) in
-    k d
+  and define_param_dots d = multibind (List.map define_param (Ast.unwrap d))
 
   and define_param p =
     let k p =
@@ -732,9 +701,7 @@ let combiner bind option_default
 	Ast.DParam(id) -> ident id
       | Ast.DPComma(comma) -> string_mcode comma
       | Ast.DPdots(d) -> string_mcode d
-      | Ast.DPcircles(c) -> string_mcode c
-      | Ast.OptDParam(dp) -> define_param dp
-      | Ast.UniqueDParam(dp) -> define_param dp in
+      | Ast.OptDParam(dp) -> define_param dp in
     k p
 
   (* discard the result, because the statement is assumed to be already
@@ -789,7 +756,7 @@ let combiner bind option_default
 	  let lrb = rule_elem rb in
 	  multibind [lheader; llb; ldecls; lcases; lrb]
       | Ast.Atomic(re) ->rule_elem re
-      | Ast.Disj(stmt_dots_list) ->
+      | Ast.Disj(stmt_dots_list) | Ast.Conj(stmt_dots_list) ->
 	  multibind (List.map statement_dots stmt_dots_list)
       | Ast.Nest(starter,stmt_dots,ender,whn,_,_,_) ->
 	  let lstarter = string_mcode starter in
@@ -812,13 +779,12 @@ let combiner bind option_default
 	  let lstm = statement stm in
 	  let lasstm = statement asstm in
 	  bind lstm lasstm
-      | Ast.Dots(d,whn,_,_) | Ast.Circles(d,whn,_,_) | Ast.Stars(d,whn,_,_) ->
+      | Ast.Dots(d,whn,_,_) ->
 	  let ld = string_mcode d in
 	  let lwhn = multibind
 	    (List.map (whencode statement_dots statement) whn) in
 	  bind ld lwhn
-      | Ast.OptStm(stmt) | Ast.UniqueStm(stmt) ->
-	  statement stmt in
+      | Ast.OptStm(stmt) -> statement stmt in
     stmtfn all_functions k s
 
   and fninfo = function
@@ -964,23 +930,19 @@ type 'cd rcode = rebuilder -> ('cd inout) -> 'cd inout
 
 
 let rebuilder
-    meta_mcode string_mcode const_mcode simpleassign_mcode opassign_mcode fix_mcode unary_mcode
-    arithop_mcode logicalop_mcode cv_mcode sign_mcode struct_mcode storage_mcode
-    inc_file_mcode
+    meta_mcode string_mcode const_mcode simpleassign_mcode opassign_mcode
+    fix_mcode unary_mcode
+    arithop_mcode logicalop_mcode cv_mcode sign_mcode struct_mcode
+    storage_mcode inc_file_mcode
     expdotsfn paramdotsfn stmtdotsfn anndecldotsfn initdotsfn
-    identfn exprfn fragfn fmtfn assignOpfn binaryOpfn ftfn tyfn initfn paramfn declfn
-    annotated_declfn rulefn stmtfn casefn topfn anyfn =
+    identfn exprfn fragfn fmtfn assignOpfn binaryOpfn ftfn tyfn initfn
+    paramfn declfn annotated_declfn rulefn stmtfn casefn topfn anyfn =
   let get_option f = function
       Some x -> Some (f x)
     | None -> None in
 
   let dotsfn param default all_functions arg =
-    let k d =
-      Ast.rewrap d
-	(match Ast.unwrap d with
-	  Ast.DOTS(l) -> Ast.DOTS(List.map default l)
-	| Ast.CIRCLES(l) -> Ast.CIRCLES(List.map default l)
-	| Ast.STARS(l) -> Ast.STARS(List.map default l)) in
+    let k d = Ast.rewrap d (List.map default (Ast.unwrap d)) in
     param all_functions k arg in
 
   let iddotsfn all_functions k arg = k arg in
@@ -1010,8 +972,7 @@ let rebuilder
 	    Ast.MetaLocalFunc(meta_mcode name,constraints,keep,inherited)
 	| Ast.AsIdent(id,asid) -> Ast.AsIdent(ident id,ident asid)
 	| Ast.DisjId(id_list) -> Ast.DisjId(List.map ident id_list)
-	| Ast.OptIdent(id) -> Ast.OptIdent(ident id)
-	| Ast.UniqueIdent(id) -> Ast.UniqueIdent(ident id)) in
+	| Ast.OptIdent(id) -> Ast.OptIdent(ident id)) in
     identfn all_functions k i
 
   and expression e =
@@ -1130,6 +1091,7 @@ let rebuilder
 	    Ast.AsSExpr(lexp, lasstm)
 	| Ast.EComma(cm) -> Ast.EComma(string_mcode cm)
 	| Ast.DisjExpr(exp_list) -> Ast.DisjExpr(List.map expression exp_list)
+	| Ast.ConjExpr(exp_list) -> Ast.ConjExpr(List.map expression exp_list)
 	| Ast.NestExpr(starter,expr_dots,ender,whncode,multi) ->
 	    let lstarter = string_mcode starter in
 	    let lexpr_dots = expression_dots expr_dots in
@@ -1140,16 +1102,7 @@ let rebuilder
 	    let ldots = string_mcode dots in
 	    let lwhncode = get_option expression whncode in
 	    Ast.Edots(ldots, lwhncode)
-	| Ast.Ecircles(dots,whncode) ->
-	    let ldots = string_mcode dots in
-	    let lwhncode = get_option expression whncode in
-	    Ast.Ecircles(ldots, lwhncode)
-	| Ast.Estars(dots,whncode) ->
-	    let ldots = string_mcode dots in
-	    let lwhncode = get_option expression whncode in
-	    Ast.Estars(ldots, lwhncode)
-	| Ast.OptExp(exp) -> Ast.OptExp(expression exp)
-	| Ast.UniqueExp(exp) -> Ast.UniqueExp(expression exp)) in
+	| Ast.OptExp(exp) -> Ast.OptExp(expression exp)) in
     exprfn all_functions k e
 
   and string_fragment e =
@@ -1210,8 +1163,7 @@ let rebuilder
 	    let lasty = fullType asty in
 	    Ast.AsType(lty, lasty)
 	| Ast.DisjType(types) -> Ast.DisjType(List.map fullType types)
-	| Ast.OptType(ty) -> Ast.OptType(fullType ty)
-	| Ast.UniqueType(ty) -> Ast.UniqueType(fullType ty)) in
+	| Ast.OptType(ty) -> Ast.OptType(fullType ty)) in
     ftfn all_functions k ft
 
   and typeC ty =
@@ -1345,8 +1297,7 @@ let rebuilder
 	    let lsem = string_mcode sem in
 	    Ast.Typedef(lstg, lty, lid, lsem)
 	| Ast.DisjDecl(decls) -> Ast.DisjDecl(List.map declaration decls)
-	| Ast.OptDecl(decl) -> Ast.OptDecl(declaration decl)
-	| Ast.UniqueDecl(decl) -> Ast.UniqueDecl(declaration decl)) in
+	| Ast.OptDecl(decl) -> Ast.OptDecl(declaration decl)) in
     declfn all_functions k d
 
   and annotated_decl d =
@@ -1400,8 +1351,7 @@ let rebuilder
 	    let ldots = string_mcode dots in
 	    let lwhncode = get_option initialiser whncode in
 	    Ast.Idots(ldots, lwhncode)
-	| Ast.OptIni(i) -> Ast.OptIni(initialiser i)
-	| Ast.UniqueIni(i) -> Ast.UniqueIni(initialiser i)) in
+	| Ast.OptIni(i) -> Ast.OptIni(initialiser i)) in
     initfn all_functions k i
 
   and designator = function
@@ -1438,9 +1388,7 @@ let rebuilder
 	    Ast.AsParam(lp, lasexp)
 	| Ast.PComma(cm) -> Ast.PComma(string_mcode cm)
 	| Ast.Pdots(dots) -> Ast.Pdots(string_mcode dots)
-	| Ast.Pcircles(dots) -> Ast.Pcircles(string_mcode dots)
-	| Ast.OptParam(param) -> Ast.OptParam(parameterTypeDef param)
-	| Ast.UniqueParam(param) -> Ast.UniqueParam(parameterTypeDef param)) in
+	| Ast.OptParam(param) -> Ast.OptParam(parameterTypeDef param)) in
     paramfn all_functions k p
 
   and rule_elem re =
@@ -1576,6 +1524,10 @@ let rebuilder
 	    let lexp = expression exp in
 	    let lcolon = string_mcode colon in
 	    Ast.Case(lcase, lexp, lcolon)
+	| Ast.AsRe(re,asre) ->
+	    let re = rule_elem re in
+	    let asre = rule_elem asre in
+	    Ast.AsRe(re,asre)
 	| Ast.DisjRuleElem(res) -> Ast.DisjRuleElem(List.map rule_elem res)) in
     rulefn all_functions k re
 
@@ -1617,13 +1569,7 @@ let rebuilder
     k p
 
   and define_param_dots d =
-    let k d =
-      Ast.rewrap d
-	(match Ast.unwrap d with
-	  Ast.DOTS(l) -> Ast.DOTS(List.map define_param l)
-	| Ast.CIRCLES(l) -> Ast.CIRCLES(List.map define_param l)
-	| Ast.STARS(l) -> Ast.STARS(List.map define_param l)) in
-    k d
+    Ast.rewrap d (List.map define_param (Ast.unwrap d))
 
   and define_param p =
     let k p =
@@ -1632,9 +1578,7 @@ let rebuilder
 	  Ast.DParam(id) -> Ast.DParam(ident id)
 	| Ast.DPComma(comma) -> Ast.DPComma(string_mcode comma)
 	| Ast.DPdots(d) -> Ast.DPdots(string_mcode d)
-	| Ast.DPcircles(c) -> Ast.DPcircles(string_mcode c)
-	| Ast.OptDParam(dp) -> Ast.OptDParam(define_param dp)
-	| Ast.UniqueDParam(dp) -> Ast.UniqueDParam(define_param dp)) in
+	| Ast.OptDParam(dp) -> Ast.OptDParam(define_param dp)) in
     k p
 
   and process_bef_aft s =
@@ -1693,6 +1637,8 @@ let rebuilder
 	| Ast.Atomic(re) -> Ast.Atomic(rule_elem re)
 	| Ast.Disj(stmt_dots_list) ->
 	    Ast.Disj (List.map statement_dots stmt_dots_list)
+	| Ast.Conj(stmt_dots_list) ->
+	    Ast.Conj (List.map statement_dots stmt_dots_list)
 	| Ast.Nest(starter,stmt_dots,ender,whn,multi,bef,aft) ->
 	    let lstarter = string_mcode starter in
 	    let lstmt_dots = statement_dots stmt_dots in
@@ -1717,16 +1663,7 @@ let rebuilder
 	    let ld = string_mcode d in
 	    let lwhn = List.map (whencode statement_dots statement) whn in
 	    Ast.Dots(ld, lwhn, bef, aft)
-	| Ast.Circles(d,whn,bef,aft) ->
-	    let ld = string_mcode d in
-	    let lwhn = List.map (whencode statement_dots statement) whn in
-	    Ast.Circles(ld, lwhn, bef, aft)
-	| Ast.Stars(d,whn,bef,aft) ->
-	    let ld = string_mcode d in
-	    let lwhn = List.map (whencode statement_dots statement) whn in
-	    Ast.Stars(ld, lwhn, bef, aft)
-	| Ast.OptStm(stmt) -> Ast.OptStm(statement stmt)
-	| Ast.UniqueStm(stmt) -> Ast.UniqueStm(statement stmt)) in
+	| Ast.OptStm(stmt) -> Ast.OptStm(statement stmt)) in
     let s = stmtfn all_functions k s in
     (* better to do this after, in case there is an equality test on the whole
        statement, eg in free_vars.  equality test would require that this

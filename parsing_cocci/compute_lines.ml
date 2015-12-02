@@ -1,30 +1,9 @@
 (*
- * Copyright 2012-2015, Inria
- * Julia Lawall, Gilles Muller
- * Copyright 2010-2011, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-
-# 0 "./compute_lines.ml"
 (* Computes starting and ending logical lines for statements and
 expressions.  every node gets an index as well. *)
 
@@ -253,23 +232,16 @@ let dot_list is_dots fn = function
 
 let dots is_dots prev fn d =
   match (prev,Ast0.unwrap d) with
-    (Some prev,Ast0.DOTS([])) ->
-      mkres d (Ast0.DOTS []) prev prev
-  | (None,Ast0.DOTS([])) ->
+    (Some prev,[]) -> mkres d [] prev prev
+  | (None,[]) ->
       Ast0.set_info d
 	{(Ast0.get_info d)
 	with
 	  Ast0.attachable_start = check_attachable false;
 	  Ast0.attachable_end = check_attachable false}
-  | (_,Ast0.DOTS(x)) ->
+  | (_,x) ->
       let (l,lstart,lend) = dot_list is_dots fn x in
-      mkres d (Ast0.DOTS l) lstart lend
-  | (_,Ast0.CIRCLES(x)) ->
-      let (l,lstart,lend) = dot_list is_dots fn x in
-      mkres d (Ast0.CIRCLES l) lstart lend
-  | (_,Ast0.STARS(x)) ->
-      let (l,lstart,lend) = dot_list is_dots fn x in
-      mkres d (Ast0.STARS l) lstart lend
+      mkres d l lstart lend
 
 (* --------------------------------------------------------------------- *)
 (* Disjunctions *)
@@ -315,9 +287,8 @@ let rec full_ident i =
       (res,None)
   | Ast0.OptIdent(id) ->
       let (id,r) = full_ident id in mkidres i (Ast0.OptIdent(id)) id id r
-  | Ast0.UniqueIdent(id) ->
-      let (id,r) = full_ident id in mkidres i (Ast0.UniqueIdent(id)) id id r
-  | Ast0.AsIdent _ -> failwith "not possible"
+  | Ast0.AsIdent(id,asid) ->
+      let (id,r) = full_ident id in mkidres i (Ast0.AsIdent(id,asid)) id id r
 and ident i = let (id,_) = full_ident i in id
 
 (* --------------------------------------------------------------------- *)
@@ -325,7 +296,7 @@ and ident i = let (id,_) = full_ident i in id
 
 let is_exp_dots e =
   match Ast0.unwrap e with
-    Ast0.Edots(_,_) | Ast0.Ecircles(_,_) | Ast0.Estars(_,_) -> true
+    Ast0.Edots(_,_) -> true
   | _ -> false
 
 let is_str_dots e =
@@ -490,6 +461,9 @@ let rec expression e =
   | Ast0.DisjExpr(starter,exps,mids,ender) ->
       do_disj e starter exps mids ender expression
 	(fun starter exps mids ender -> Ast0.DisjExpr(starter,exps,mids,ender))
+  | Ast0.ConjExpr(starter,exps,mids,ender) ->
+      do_disj e starter exps mids ender expression
+	(fun starter exps mids ender -> Ast0.ConjExpr(starter,exps,mids,ender))
   | Ast0.NestExpr(starter,exp_dots,ender,whencode,multi) ->
       (* See explanation on Nest *)
 	let wrapper f =
@@ -510,21 +484,15 @@ let rec expression e =
       let dots = bad_mcode dots in
       let ln = promote_mcode dots in
       mkres e (Ast0.Edots(dots,whencode)) ln ln
-  | Ast0.Ecircles(dots,whencode) ->
-      let dots = bad_mcode dots in
-      let ln = promote_mcode dots in
-      mkres e (Ast0.Ecircles(dots,whencode)) ln ln
-  | Ast0.Estars(dots,whencode) ->
-      let dots = bad_mcode dots in
-      let ln = promote_mcode dots in
-      mkres e (Ast0.Estars(dots,whencode)) ln ln
   | Ast0.OptExp(exp) ->
       let exp = expression exp in
       mkres e (Ast0.OptExp(exp)) exp exp
-  | Ast0.UniqueExp(exp) ->
+  | Ast0.AsExpr(exp,asexp) ->
       let exp = expression exp in
-      mkres e (Ast0.UniqueExp(exp)) exp exp
-  | Ast0.AsExpr _ | Ast0.AsSExpr _ -> failwith "not possible"
+      mkres e (Ast0.AsExpr(exp,asexp)) exp exp
+  | Ast0.AsSExpr(exp,asexp) ->
+      let exp = expression exp in
+      mkres e (Ast0.AsSExpr(exp,asexp)) exp exp
 
 and expression_dots x = dots is_exp_dots None expression x
 
@@ -659,8 +627,6 @@ and typeC t =
 	  Ast0.DisjType(starter,types,mids,ender))
   | Ast0.OptType(ty) ->
       let ty = typeC ty in mkres t (Ast0.OptType(ty)) ty ty
-  | Ast0.UniqueType(ty) ->
-      let ty = typeC ty in mkres t (Ast0.UniqueType(ty)) ty ty
   | Ast0.AsType _ -> failwith "not possible"
 
 (* --------------------------------------------------------------------- *)
@@ -784,9 +750,6 @@ and declaration d =
   | Ast0.OptDecl(decl) ->
       let decl = declaration decl in
       mkres d (Ast0.OptDecl(declaration decl)) decl decl
-  | Ast0.UniqueDecl(decl) ->
-      let decl = declaration decl in
-      mkres d (Ast0.UniqueDecl(declaration decl)) decl decl
   | Ast0.AsDecl _ -> failwith "not possible"
 
 (* --------------------------------------------------------------------- *)
@@ -840,9 +803,6 @@ and initialiser i =
   | Ast0.OptIni(ini) ->
       let ini = initialiser ini in
       mkres i (Ast0.OptIni(ini)) ini ini
-  | Ast0.UniqueIni(ini) ->
-      let ini = initialiser ini in
-      mkres i (Ast0.UniqueIni(ini)) ini ini
   | Ast0.AsInit _ -> failwith "not possible"
 
 and designator = function
@@ -869,7 +829,7 @@ and initialiser_dots x = dots is_init_dots None initialiser x
 
 and is_param_dots p =
   match Ast0.unwrap p with
-    Ast0.Pdots(_) | Ast0.Pcircles(_) -> true
+    Ast0.Pdots(_) -> true
   | _ -> false
 
 and parameterTypeDef p =
@@ -898,16 +858,9 @@ and parameterTypeDef p =
       let dots = bad_mcode dots in
       let ln = promote_mcode dots in
       mkres p (Ast0.Pdots(dots)) ln ln
-  | Ast0.Pcircles(dots) ->
-      let dots = bad_mcode dots in
-      let ln = promote_mcode dots in
-      mkres p (Ast0.Pcircles(dots)) ln ln
   | Ast0.OptParam(param) ->
       let res = parameterTypeDef param in
       mkres p (Ast0.OptParam(res)) res res
-  | Ast0.UniqueParam(param) ->
-      let res = parameterTypeDef param in
-      mkres p (Ast0.UniqueParam(res)) res res
   | Ast0.AsParam _ -> failwith "not possible"
 
 and parameter_list prev = dots is_param_dots prev parameterTypeDef
@@ -919,7 +872,7 @@ let parameter_dots x = dots is_param_dots None parameterTypeDef x
 
 let is_define_param_dots s =
   match Ast0.unwrap s with
-    Ast0.DPdots(_) | Ast0.DPcircles(_) -> true
+    Ast0.DPdots(_) -> true
   | _ -> false
 
 let rec define_param p =
@@ -935,16 +888,9 @@ let rec define_param p =
       let dots = bad_mcode dots in
       let ln = promote_mcode dots in
       mkres p (Ast0.DPdots(dots)) ln ln
-  | Ast0.DPcircles(dots) ->
-      let dots = bad_mcode dots in
-      let ln = promote_mcode dots in
-      mkres p (Ast0.DPcircles(dots)) ln ln
   | Ast0.OptDParam(dp) ->
       let res = define_param dp in
       mkres p (Ast0.OptDParam(res)) res res
-  | Ast0.UniqueDParam(dp) ->
-      let res = define_param dp in
-      mkres p (Ast0.UniqueDParam(res)) res res
 
 let define_parameters x id =
   match Ast0.unwrap x with
@@ -962,7 +908,7 @@ let define_parameters x id =
 
 let is_stm_dots s =
   match Ast0.unwrap s with
-    Ast0.Dots(_,_) | Ast0.Circles(_,_) | Ast0.Stars(_,_) -> true
+    Ast0.Dots(_,_) -> true
   | _ -> false
 
 let is_ec_dots e =
@@ -1085,7 +1031,7 @@ let rec statement s =
 	    statement decls in
 	let cases =
 	  dots (function _ -> false)
-	    (if Ast0.undots decls = []
+	    (if Ast0.unwrap decls = []
 	    then (Some(promote_mcode lb))
 	    else None (* not sure this is right, but not sure the case can
 			 arise either *))
@@ -1131,9 +1077,15 @@ let rec statement s =
 	mkres s (Ast0.Exec(exec,lang,code,sem))
 	  (promote_mcode exec) (promote_mcode sem)
     | Ast0.MetaStmt(name,a) ->
+	let name = normal_mcode name in
 	let ln = promote_mcode name in
 	mkres s (Ast0.MetaStmt(name,a)) ln ln
     | Ast0.MetaStmtList(name,a) ->
+	(* This becomes ..., which becomes a metavar.  The metavar, with
+	   any attachments that this has, is then iterated over the code.
+	   If we attach anything here, then it will be duplicated for each
+	   statement in the list. *)
+	let name = bad_mcode name in
 	let ln = promote_mcode name in
 	mkres s (Ast0.MetaStmtList(name,a)) ln ln
     | Ast0.Exp(exp) ->
@@ -1163,6 +1115,20 @@ let rec statement s =
 	      (loop (List.tl prevs) stms) in
 	let elems = loop (starter::mids) rule_elem_dots_list in
 	mkmultires s (Ast0.Disj(starter,elems,mids,ender))
+	  (promote_mcode starter) (promote_mcode ender)
+	  (get_all_start_info elems) (get_all_end_info elems)
+    | Ast0.Conj(starter,rule_elem_dots_list,mids,ender) ->
+	let starter = bad_mcode starter in
+	let mids = List.map bad_mcode mids in
+	let ender = bad_mcode ender in
+	let rec loop prevs = function
+	    [] -> []
+	  | stm::stms ->
+	      (dots is_stm_dots (Some(promote_mcode_plus_one(List.hd prevs)))
+		 statement stm)::
+	      (loop (List.tl prevs) stms) in
+	let elems = loop (starter::mids) rule_elem_dots_list in
+	mkmultires s (Ast0.Conj(starter,elems,mids,ender))
 	  (promote_mcode starter) (promote_mcode ender)
 	  (get_all_start_info elems) (get_all_end_info elems)
     | Ast0.Nest(starter,rule_elem_dots,ender,whencode,multi) ->
@@ -1195,14 +1161,6 @@ let rec statement s =
 	let dots = bad_mcode dots in
 	let ln = promote_mcode dots in
 	mkres s (Ast0.Dots(dots,whencode)) ln ln
-    | Ast0.Circles(dots,whencode) ->
-	let dots = bad_mcode dots in
-	let ln = promote_mcode dots in
-	mkres s (Ast0.Circles(dots,whencode)) ln ln
-    | Ast0.Stars(dots,whencode) ->
-	let dots = bad_mcode dots in
-	let ln = promote_mcode dots in
-	mkres s (Ast0.Stars(dots,whencode)) ln ln
     | Ast0.FunDecl((_,bef),fninfo,name,lp,params,va,rp,lbrace,body,rbrace,
 		   (_,aft)) ->
 	let fninfo =
@@ -1262,9 +1220,8 @@ let rec statement s =
 	mkres s (Ast0.Pragma(prg,id,body)) (promote_mcode prg) body
     | Ast0.OptStm(stm) ->
 	let stm = statement stm in mkres s (Ast0.OptStm(stm)) stm stm
-    | Ast0.UniqueStm(stm) ->
-	let stm = statement stm in mkres s (Ast0.UniqueStm(stm)) stm stm
-    | Ast0.AsStmt _ -> failwith "not possible" in
+    | Ast0.AsStmt(stm,asstm) ->
+	let stm = statement stm in mkres s (Ast0.AsStmt(stm,asstm)) stm stm in
   Ast0.set_dots_bef_aft res
     (match Ast0.get_dots_bef_aft res with
       Ast0.NoDots -> Ast0.NoDots

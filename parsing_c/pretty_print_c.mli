@@ -13,6 +13,7 @@ type pretty_printers = {
   arg_list        : (Ast_c.argument Ast_c.wrap2 list) printer;
   arg             : Ast_c.argument printer;
   statement       : Ast_c.statement printer;
+  statement_seq_list : Ast_c.statement_sequencable list printer;
   decl            : Ast_c.declaration printer;
   field           : Ast_c.field printer;
   field_list      : Ast_c.field list printer;
@@ -57,6 +58,9 @@ val pp_field_list_gen: pr_elem:Ast_c.info printer -> pr_space: unit printer ->
   Ast_c.field list printer
 val pp_statement_gen: pr_elem:Ast_c.info printer -> pr_space: unit printer ->
   Ast_c.statement printer
+val pp_statement_seq_list_gen:
+    pr_elem:Ast_c.info printer -> pr_space: unit printer ->
+      Ast_c.statement_sequencable list printer
 val pp_param_gen:  pr_elem:Ast_c.info printer -> pr_space: unit printer ->
   Ast_c.parameterType printer
 val pp_param_list_gen:  pr_elem:Ast_c.info printer -> pr_space: unit printer ->
@@ -86,6 +90,7 @@ val pp_type_simple:       Ast_c.fullType printer
 val pp_decl_simple:       Ast_c.declaration printer
 val pp_field_simple:      Ast_c.field printer
 val pp_statement_simple:  Ast_c.statement printer
+val pp_statement_seq_list_simple: Ast_c.statement_sequencable list printer
 val pp_toplevel_simple:   Ast_c.toplevel printer
 val pp_string_fragment_simple:   Ast_c.string_fragment printer
 val pp_string_format_simple:     Ast_c.string_format printer

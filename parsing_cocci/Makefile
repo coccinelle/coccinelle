@@ -1,26 +1,6 @@
-# Copyright 2012-2015, Inria
-# Julia Lawall, Gilles Muller
-# Copyright 2010-2011, INRIA, University of Copenhagen
-# Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
-# Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
-# Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
-# This file is part of Coccinelle.
-#
-# Coccinelle is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, according to version 2 of the License.
-#
-# Coccinelle is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
-#
-# The authors reserve the right to distribute this or future versions of
-# Coccinelle under other licenses.
-
+# This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+# See copyright.txt in the Coccinelle source code for more information.
+# The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
 
 ifneq ($(MAKECMDGOALS),distclean)
 include ../Makefile.config
@@ -39,8 +19,8 @@ SOURCES = flag_parsing_cocci.ml type_cocci.ml ast_cocci.ml ast0_cocci.ml \
 pretty_print_cocci.ml unparse_ast0.ml visitor_ast0_types.ml \
 visitor_ast.ml visitor_ast0.ml compute_lines.ml comm_assoc.ml \
 iso_pattern.ml iso_compile.ml single_statement.ml simple_assignments.ml \
-get_metas.ml ast0toast.ml check_meta.ml top_level.ml type_infer.ml \
-test_exps.ml unitary_ast0.ml arity.ml index.ml context_neg.ml \
+get_metas.ml stmtlist.ml ast0toast.ml check_meta.ml top_level.ml \
+type_infer.ml test_exps.ml unitary_ast0.ml arity.ml index.ml context_neg.ml \
 adjust_pragmas.ml insert_plus.ml function_prototypes.ml \
 unify_ast.ml semantic_cocci.ml data.ml free_vars.ml safe_for_multi_decls.ml \
 parse_printf.ml parse_aux.ml disjdistr.ml \
@@ -74,7 +54,6 @@ OBJS = $(SOURCES:.ml=.cmo)
 OPTOBJS = $(OBJS:.cmo=.cmx)
 
 
-ifneq ($(FEATURE_OCAMLBUILD),yes)
 all: $(LIB)
 local: $(EXEC)
 
@@ -91,21 +70,6 @@ $(OPTLIB): $(GENERATED) $(OPTOBJS)
 
 $(EXEC): $(OBJS) main.cmo $(LIBS)
 	$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES) -o $(EXEC) $(SYSLIBS) $(LIBS) $(OBJS) main.cmo
-else
-all:
-	cd .. && $(OCAMLBUILD) parsing_cocci/parsing_cocci.cma
-
-all.opt:
-	cd .. && $(OCAMLBUILD) parsing_cocci/parsing_cocci.cmxa
-
-$(EXEC):
-	cd .. && $(OCAMLBUILD) parsing_cocci/main.byte
-	cp ../_build/parsing_cocci/main.byte $(EXEC)
-
-clean::
-	cd .. && $(OCAMLBUILD) -clean
-	rm -f $(TARGET) $(TARGET).byte $(TARGET).native
-endif
 
 clean::
 	rm -f $(LIB)
@@ -128,14 +92,8 @@ clean::
 $(LEXER_SOURCES:.mll=.ml) :	$(LEXER_SOURCES)
 	$(OCAMLLEX) $(LEXER_SOURCES)
 
-ifneq ($(FEATURE_OCAMLBUILD),yes)
 $(PARSER_SOURCES:.mly=.ml) $(PARSER_SOURCES:.mly=.mli) : $(PARSER_SOURCES)
 	$(MENHIR) --ocamlc "${OCAMLC}" --ocamldep "${OCAMLDEP}" --table --base parser_cocci_menhir $(PARSER_SOURCES)
-else
-$(PARSER_SOURCES:.mly=.ml) $(PARSER_SOURCES:.mly=.mli) : $(PARSER_SOURCES)
-	cd .. && $(OCAMLBUILD) parsing_cocci/$@
-	cp ../_build/parsing_cocci/$@ $@
-endif
 
 $(CLI_LEXER_SOURCES:.mll=.ml): $(CLI_LEXER_SOURCES)
 	$(OCAMLLEX) $(CLI_LEXER_SOURCES)
@@ -168,9 +126,7 @@ parser_cocci_menhir.mli: parser_cocci_menhir.mly lexer_cocci.mll
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
-ifneq ($(FEATURE_OCAMLBUILD),yes)
 -include .depend
-endif
 endif
 endif
 

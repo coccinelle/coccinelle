@@ -759,3 +759,20 @@ do {									\
 
 // rule10
 //#define	 ACPI_MODULE_NAME(x)
+
+// ----------------------------------------------------------------------------
+// system calls
+// ----------------------------------------------------------------------------
+
+#define SYSCALL_DEFINE1(func, t1, a1) \
+    asmlinkage unsigned long func(t1 a1)
+#define SYSCALL_DEFINE2(func, t1, a1, t2, a2) \
+    asmlinkage unsigned long func(t1 a1, t2 a2)
+#define SYSCALL_DEFINE3(func, t1, a1, t2, a2, t3, a3) \
+    asmlinkage unsigned long func(t1 a1, t2 a2, t3 a3)
+#define SYSCALL_DEFINE4(func, t1, a1, t2, a2, t3, a3, t4, a4) \
+    asmlinkage unsigned long func(t1 a1, t2 a2, t3 a3, t4 a4)
+#define SYSCALL_DEFINE5(func, t1, a1, t2, a2, t3, a3, t4, a4, t5, a5) \
+    asmlinkage unsigned long func(t1 a1, t2 a2, t3 a3, t4 a4, t5 a5)
+#define SYSCALL_DEFINE6(func, t1, a1, t2, a2, t3, a3, t4, a4, t5, a5, t6, a6) \
+    asmlinkage unsigned long func(t1 a1, t2 a2, t3 a3, t4 a4, t5 a5, t6 a6)

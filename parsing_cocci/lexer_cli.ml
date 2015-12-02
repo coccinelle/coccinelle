@@ -1,4 +1,4 @@
-# 2 "./lexer_cli.mll"
+# 9 "lexer_cli.mll"
  
   exception Lexical of string
 
@@ -223,32 +223,32 @@ let rec token lexbuf =
 and __ocaml_lex_token_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 31 "./lexer_cli.mll"
+# 38 "lexer_cli.mll"
                                         ( NotEq )
 # 229 "lexer_cli.ml"
 
   | 1 ->
-# 32 "./lexer_cli.mll"
+# 39 "lexer_cli.mll"
                                         ( EqEq  )
 # 234 "lexer_cli.ml"
 
   | 2 ->
-# 33 "./lexer_cli.mll"
+# 40 "lexer_cli.mll"
                 ( Other(" ") )
 # 239 "lexer_cli.ml"
 
   | 3 ->
-# 34 "./lexer_cli.mll"
+# 41 "lexer_cli.mll"
          ( Id(tok lexbuf)    )
 # 244 "lexer_cli.ml"
 
   | 4 ->
-# 35 "./lexer_cli.mll"
+# 42 "lexer_cli.mll"
          ( EOF               )
 # 249 "lexer_cli.ml"
 
   | 5 ->
-# 36 "./lexer_cli.mll"
+# 43 "lexer_cli.mll"
          ( Other(tok lexbuf) )
 # 254 "lexer_cli.ml"
 

@@ -1,30 +1,9 @@
 (*
- * Copyright 2012-2015, Inria
- * Julia Lawall, Gilles Muller
- * Copyright 2010-2011, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-
-# 0 "./pattern_c.ml"
 open Common
 
 module Flag_engine = Flag_matcher
@@ -407,7 +386,7 @@ module XMATCH = struct
 	      success(Ast_c.MetaFuncVal a)
           | Ast_c.MetaLocalFuncVal a ->
 	      success(Ast_c.MetaLocalFuncVal a) (*more?*)
-          | Ast_c.MetaExprVal (a,c) ->
+          | Ast_c.MetaExprVal (a,c,ty) ->
 	      (* c in the value is only to prepare for the future in which
 		 we figure out how to have subterm constraints on unbound
 		 variables.  Now an environment will only contain expression
@@ -419,13 +398,13 @@ module XMATCH = struct
 		else Lib_parsing_c.semi_al_expr a in
 	      let inh_stripped = Lib_parsing_c.al_inh_expr a in
 	      let rec loop = function
-		  [] -> success(Ast_c.MetaExprVal(stripped,[]))
+		  [] -> success(Ast_c.MetaExprVal(stripped,[],ty))
 		| c::cs ->
 		    let tmp =
 		      Common.optionise
 			(fun () -> tin.binding0 +> List.assoc c) in
 		    (match tmp with
-		      Some (Ast_c.MetaExprVal(v,_)) ->
+		      Some (Ast_c.MetaExprVal(v,_,_)) ->
 			if C_vs_c.subexpression_of_expression inh_stripped v
 			then loop cs (* forget satisfied constraints *)
 			else None (* failure *)
@@ -459,12 +438,18 @@ module XMATCH = struct
 		   (if strip
 		   then Lib_parsing_c.al_fields a
 		   else Lib_parsing_c.semi_al_fields a))
-          | Ast_c.MetaStmtVal a ->
-	      success
-		(Ast_c.MetaStmtVal
-		   (if strip
-		   then Lib_parsing_c.al_statement a
-		   else Lib_parsing_c.semi_al_statement a))
+          | Ast_c.MetaStmtVal(a,ty) ->
+	      let stripped =
+		if strip
+		then Lib_parsing_c.al_statement a
+		else Lib_parsing_c.semi_al_statement a in
+	      success(Ast_c.MetaStmtVal(stripped,ty))
+          | Ast_c.MetaStmtListVal(a,ty) ->
+	      let stripped =
+		if strip
+		then Lib_parsing_c.al_statement_seq_list a
+		else Lib_parsing_c.semi_al_statement_seq_list a in
+	      success(Ast_c.MetaStmtListVal(stripped,ty))
           | Ast_c.MetaTypeVal a ->
 	      success
 		(Ast_c.MetaTypeVal

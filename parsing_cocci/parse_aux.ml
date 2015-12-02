@@ -1,30 +1,9 @@
 (*
- * Copyright 2012-2015, Inria
- * Julia Lawall, Gilles Muller
- * Copyright 2010-2011, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-
-# 0 "./parse_aux.ml"
 (* exports everything, used only by parser_cocci_menhir.mly *)
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
@@ -92,10 +71,6 @@ let clt2mcode_ext str isSymbol = function
       (str,Ast0.OPT,
        make_info line lline llineend offset col strbef straft isSymbol ws,
        Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,-1)
-  | (Data.UNIQUEMINUS,line,lline,llineend,offset,col,strbef,straft,pos,ws) ->
-      (str,Ast0.UNIQUE,
-       make_info line lline llineend offset col strbef straft isSymbol ws,
-       Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,-1)
   | (Data.PLUS,line,lline,llineend,offset,col,strbef,straft,pos,ws)        ->
       (str,Ast0.NONE,
        make_info line lline llineend offset col strbef straft isSymbol ws,
@@ -116,12 +91,6 @@ let clt2mcode_ext str isSymbol = function
        Ast0.CONTEXT(ref(Ast.NOTHING,
 			Ast0.default_token_info,Ast0.default_token_info)),
        ref pos,-1)
-  | (Data.UNIQUE,line,lline,llineend,offset,col,strbef,straft,pos, ws)     ->
-      (str,Ast0.UNIQUE,
-       make_info line lline llineend offset col strbef straft isSymbol ws,
-       Ast0.CONTEXT(ref(Ast.NOTHING,
-			Ast0.default_token_info,Ast0.default_token_info)),
-       ref pos,-1)
 
 let clt2mcode name clt = clt2mcode_ext name false clt
 let id2name   (name, clt) = name
@@ -132,21 +101,16 @@ let sym2mcode (name, clt) = clt2mcode_ext name true clt
 let mkdots str (dot,whencode) =
   match str with
     "..." -> Ast0.wrap(Ast0.Dots(clt2mcode str dot, whencode))
-  | "ooo" -> Ast0.wrap(Ast0.Circles(clt2mcode str dot, whencode))
-  | "***" -> Ast0.wrap(Ast0.Stars(clt2mcode str dot, whencode))
   | _ -> failwith "cannot happen"
 
 let mkedots str (dot,whencode) =
   match str with
     "..." -> Ast0.wrap(Ast0.Edots(clt2mcode str dot, whencode))
-  | "ooo" -> Ast0.wrap(Ast0.Ecircles(clt2mcode str dot, whencode))
-  | "***" -> Ast0.wrap(Ast0.Estars(clt2mcode str dot, whencode))
   | _ -> failwith "cannot happen"
 
 let mkdpdots str dot =
   match str with
     "..." -> Ast0.wrap(Ast0.DPdots(clt2mcode str dot))
-  | "ooo" -> Ast0.wrap(Ast0.DPcircles(clt2mcode str dot))
   | _ -> failwith "cannot happen"
 
 let mkidots str (dot,whencode) =
@@ -168,7 +132,6 @@ let mkddots_one str (dot,whencode) =
 let mkpdots str dot =
   match str with
     "..." -> Ast0.wrap(Ast0.Pdots(clt2mcode str dot))
-  | "ooo" -> Ast0.wrap(Ast0.Pcircles(clt2mcode str dot))
   | _ -> failwith "cannot happen"
 
 let arith_op ast_op left op right =
@@ -182,17 +145,7 @@ let logic_op ast_op left op right =
 let make_cv cv ty =
   match cv with None -> ty | Some x -> Ast0.wrap (Ast0.ConstVol(x,ty))
 
-let top_dots l =
-  let circle x =
-    match Ast0.unwrap x with Ast0.Circles(_) -> true | _ -> false in
-  let star x =
-    match Ast0.unwrap x with Ast0.Stars(_) -> true | _ -> false in
-  if List.exists circle l
-  then Ast0.wrap(Ast0.CIRCLES(l))
-  else
-    if List.exists star l
-    then Ast0.wrap(Ast0.STARS(l))
-    else Ast0.wrap(Ast0.DOTS(l))
+let top_dots l = Ast0.wrap l
 
 (* here the offset is that of the first in the sequence of *s, not that of
 each * individually *)
@@ -547,8 +500,7 @@ let switch s lp e rp lb d c rb =
       d in
   Ast0.wrap(Ast0.Switch(clt2mcode "switch" s,clt2mcode "(" lp,e,
 			clt2mcode ")" rp,clt2mcode "{" lb,
-			Ast0.wrap(Ast0.DOTS(d)),
-			Ast0.wrap(Ast0.DOTS(c)),clt2mcode "}" rb))
+			Ast0.wrap d,Ast0.wrap c,clt2mcode "}" rb))
 
 let ret_exp r e pv =
   Ast0.wrap(Ast0.ReturnExpr(clt2mcode "return" r,e,clt2mcode ";" pv))
@@ -635,24 +587,21 @@ let struct_initializer initlist =
     match Ast0.unwrap i with
       Ast0.InitGccExt _ -> true
     | Ast0.InitGccName _ -> true
-    | Ast0.OptIni i | Ast0.UniqueIni i -> loop i
+    | Ast0.OptIni i -> loop i
     | Ast0.MetaInit _ | Ast0.MetaInitList _ -> false (* ambiguous... *)
     | _ -> false in
-  let l = Ast0.undots initlist in
+  let l = Ast0.unwrap initlist in
   (l = []) || (List.exists loop l)
 
 let drop_dot_commas initlist =
-  match Ast0.unwrap initlist with
-    Ast0.DOTS(l) ->
-      let rec loop after_comma = function
-	  [] -> []
-	| x::xs ->
-	    (match Ast0.unwrap x with
-	      Ast0.Idots(dots,whencode) -> x :: (loop true xs)
-	    | Ast0.IComma(comma) when after_comma -> (*drop*) loop false xs
-	    | _ -> x :: (loop false xs)) in
-      Ast0.rewrap initlist (Ast0.DOTS(loop false l))
-  | _ -> failwith "not supported"
+  let rec loop after_comma = function
+      [] -> []
+    | x::xs ->
+	(match Ast0.unwrap x with
+	  Ast0.Idots(dots,whencode) -> x :: (loop true xs)
+	| Ast0.IComma(comma) when after_comma -> (*drop*) loop false xs
+	| _ -> x :: (loop false xs)) in
+  Ast0.rewrap initlist (loop false (Ast0.unwrap initlist))
 
 (* ----------------------------------------------------------------------- *)
 (* strings *)
@@ -841,7 +790,7 @@ let parse_string str ((mc,b,c,d,e,f,g,h,i,_) as clt) =
 		from first*)
 	     let clt = (mc,b,c,d,e,f,g,h,i,"") in
 	     let (line,middle) = drop_minus_plus str clt in
-	     let middle = Ast0.wrap (Ast0.DOTS middle) in
+	     let middle = Ast0.wrap middle in
 	     let last = clt2mcode "\"" (update_line clt (line-1)) in
 	     contains_string_constant := true;
 	     Ast0.wrap(Ast0.StringConstant(first,middle,last))

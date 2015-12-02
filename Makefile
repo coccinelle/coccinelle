@@ -1,26 +1,6 @@
-# Copyright 2012-2015, Inria
-# Julia Lawall, Gilles Muller
-# Copyright 2010-2011, INRIA, University of Copenhagen
-# Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
-# Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
-# Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
-# This file is part of Coccinelle.
-#
-# Coccinelle is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, according to version 2 of the License.
-#
-# Coccinelle is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
-#
-# The authors reserve the right to distribute this or future versions of
-# Coccinelle under other licenses.
-
+# This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+# See copyright.txt in the Coccinelle source code for more information.
+# The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
 
 #############################################################################
 # Configuration section
@@ -38,14 +18,18 @@ ifneq ($(MAKECMDGOALS),configure)
 endif
 endif
 
--include /etc/lsb-release
--include Makefile.override         # local customizations, if any
--include /etc/Makefile.coccinelle  # local customizations, if any
-
+# We inherit the version information *after* the user has run
+# ./configure but in the absence of that the build system has
+# a few dependencies on the version information, we need a default
+# setting then prior to the user running ./configure, this provides
+# that, but will only be set if the user hasn't already run ./configure
+#
+# The only thing we can do is assume that the user relying on this
+# variable then was going to make a release, this means we don't
+# tell them that the tree is dirty.
+VERSION?=$(shell MAKE_COCCI_RELEASE="y" ./version.sh)
 
 CCVERSION=$(shell cat scripts/coccicheck/README | egrep -o '[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' | head -n1)
-PKGVERSION=$(shell dpkg-parsechangelog -ldebian/changelog.$(DISTRIB_CODENAME) 2> /dev/null \
-	 | sed -n 's/^Version: \(.*\)/\1/p' )
 
 ##############################################################################
 # Variables
@@ -53,7 +37,8 @@ PKGVERSION=$(shell dpkg-parsechangelog -ldebian/changelog.$(DISTRIB_CODENAME) 2>
 
 TARGET=spatch
 PRJNAME=coccinelle
-ML_FILES=flag_cocci.ml cocci.ml testing.ml test.ml $(LEXER_SOURCES:.mll=.ml) main.ml
+ML_FILES=flag_cocci.ml cocci.ml testing.ml $(LEXER_SOURCES:.mll=.ml) \
+read_options.ml main.ml
 MLI_FILES=cocci.mli testing.mli
 
 ifeq ($(FEATURE_PYTHON),1)
@@ -73,6 +58,7 @@ LIBS=commons/commons.cma \
 MAKESUBDIRS=$(MAKELIBS) commons \
  globals ctl parsing_cocci parsing_c \
  engine popl09 extra python ocaml
+ #tools/spgen/source
 
 CLEANSUBDIRS=commons \
  globals ctl parsing_cocci parsing_c \
@@ -119,14 +105,10 @@ BYTECODE_EXTRA=-custom $(EXTRA_OCAML_FLAGS)
 ##############################################################################
 # Top rules
 ##############################################################################
-.PHONY:: all all.opt byte opt top clean distclean configure opt-compil
+.PHONY:: all all.opt byte opt top clean distclean opt-compil
 .PHONY:: $(MAKESUBDIRS:%=%.all) $(MAKESUBDIRS:%=%.opt) subdirs.all subdirs.opt
-.PHONY:: all-opt all-byte byte-only opt-only pure-byte
+.PHONY:: byte-only opt-only pure-byte tools
 .PHONY:: copy-stubs install-stubs install install-man install-python install-common
-
-
-# below follow the main make targets when ocamlbuild is not enabled
-ifneq ($(FEATURE_OCAMLBUILD),yes)
 
 # All make targets that are expected to be an entry point have a dependency on
 # 'Makefile.config' to ensure that if Makefile.config is not present, an error
@@ -190,62 +172,6 @@ top: $(EXEC).top
 ocaml/coccilib/coccilib.cmi: ocaml/coccilib.cmi
 	@mkdir -p ocaml/coccilib/
 	cp ocaml/coccilib.cmi ocaml/coccilib/coccilib.cmi
-
-# ocamlbuild version of the main make targets
-else
-
-all: Makefile.config
-	$(MAKE) $(TARGET_ALL)
-
-world: Makefile.config myocamlbuild.ml version.ml prepare-bundles
-	@$(ECHO) "Building both versions of spatch"
-	$(MAKE) byte
-	$(MAKE) opt-compil
-	@$(MAKE) coccilib-cmi
-	$(MAKE) preinstall
-	$(MAKE) docs
-	@$(ECHO) -e "\n\tcoccinelle can now be installed via 'make install'"
-
-# note: the 'all-dev' target excludes the documentation and is less noisy
-all-dev: Makefile.config myocamlbuild.ml version.ml prepare-bundles
-	@$(ECHO) "Building $(TARGET_SPATCH)"
-	$(MAKE) $(TARGET_SPATCH)
-	@$(MAKE) coccilib-cmi
-	@$(MAKE) preinstall
-
-all-release: Makefile.config myocamlbuild.ml version.ml prepare-bundles
-	@$(ECHO) "Building $(TARGET_SPATCH)"
-	$(MAKE) $(TARGET_SPATCH)
-	@$(MAKE) coccilib-cmi
-	$(MAKE) preinstall
-	$(MAKE) docs
-	@$(ECHO) -e "\n\tcoccinelle can now be installed via 'make install'"
-
-all.opt: Makefile.config myocamlbuild.ml version.ml prepare-bundles
-	$(MAKE) opt-only
-	@$(MAKE) coccilib-cmi
-	$(MAKE) preinstall
-
-byte: Makefile.config myocamlbuild.ml version.ml prepare-bundles
-	$(OCAMLBUILD) -j 0 main.byte
-	cp _build/main.byte $(EXEC)
-
-pure-byte: Makefile.config myocamlbuild.ml version.ml prepare-bundles
-	$(OCAMLBUILD) -j 0 -tag nocustom main.byte
-	cp _build/main.byte $(EXEC)
-
-opt-compil: Makefile.config myocamlbuild.ml version.ml prepare-bundles
-	$(OCAMLBUILD) -j 0 main.native
-	cp _build/main.native $(EXEC).opt
-
-# the .cmi file of coccilib
-_build/ocaml/coccilib.cmi:
-	$(OCAMLBUILD) -j 0 ocaml/coccilib.cmi
-ocaml/coccilib/coccilib.cmi: _build/ocaml/coccilib.cmi
-	cp _build/ocaml/coccilib.cmi ocaml/coccilib/coccilib.cmi
-
-# end of main build target distinction on ocamlbuild
-endif
 
 # aliases for "byte" and "opt-compil"
 opt opt-only: Makefile.config opt-compil
@@ -318,29 +244,15 @@ $(EXEC).top: $(LNKLIBS) $(LIBS) $(OBJS)
 clean distclean::
 	rm -f $(TARGET) $(TARGET).opt $(TARGET).top
 
-clean::
-	@if test -n "${OCAMLBUILD}" -d _build; then \
-		$(OCAMLBUILD) -clean; fi
-
-# distclean can run without ocamlbuild configured.
-distclean::
-	-@if test -d _build; then \
-		ocamlbuild -clean; fi
-	rm -rf _build _log
-
-.PHONY:: tools configure
-
-configure:
-	./configure $(CONFIGURE_FLAGS)
+./configure: ./configure.ac
+	@echo Please run ./autogen to update configure
+	@false
 
 # the dependencies on Makefile.config should give a hint to the programmer that
 # configure should be run again
 Makefile.config: Makefile.config.in configure.ac
-	@$(ECHO) "Makefile.config needs to be (re)build. Run  ./configure $(CONFIGURE_FLAGS) to generate it."
+	@$(ECHO) "Makefile.config needs to be (re)build. Run  ./autogen and ./configure $(CONFIGURE_FLAGS) to generate it."
 	@false
-
-# as above, also for the ocamlbuild plugin
-myocamlbuild.ml: myocamlbuild.ml.in configure.ac
 
 tools: $(LIBS) $(LNKLIBS)
 	$(MAKE) -C tools
@@ -361,34 +273,22 @@ static:
 # may need the stubs, see 'copy-stubs'.
 purebytecode:
 	rm -f spatch.opt spatch
-ifneq ($(FEATURE_OCAMLBUILD),yes)
 	$(MAKE) BYTECODE_EXTRA="" byte-only
-else
-	@$(MAKE) pure-byte
-endif
 	sed -i '1 s,^#!.*$$,#!/usr/bin/ocamlrun,g' spatch
 
 # copies the stubs libraries (if any) to the root directory
-ifneq ($(FEATURE_OCAMLBUILD),yes)
 copy-stubs:
 	@if test -f ./bundles/pycaml/dllpycaml_stubs.so; then \
 		cp -fv ./bundles/pycaml/dllpycaml_stubs.so .; fi
 	@if test -f ./bundles/pcre/dllpcre_stubs.so; then \
 		cp -fv ./bundles/pcre/dllpcre_stubs.so .; fi
-else
-copy-stubs:
-	@if test -f _build/bundles/pycaml/dllpycaml_stubs.so; then \
-		cp -fv _build/bundles/pycaml/dllpycaml_stubs.so .; fi
-	@if test -f _build/bundles/pcre/dllpcre_stubs.so; then \
-		cp -fv _build/bundles/pcre/dllpcre_stubs.so .; fi
-endif
 
 ##############################################################################
 # Build version information
 ##############################################################################
 
 version.ml:
-	@$(ECHO) "version.ml is missing. Run ./configure to generate it."
+	@$(ECHO) "version.ml is missing. Run ./configure to generate it. Run ./autogen first if ./configure does not exist."
 	@false
 
 ##############################################################################
@@ -396,27 +296,20 @@ version.ml:
 ##############################################################################
 .PHONY:: docs
 
-ifneq ($(FEATURE_OCAMLBUILD),yes)
 docs:
-else
-docs: prepare-bundles
-endif
 	@$(MAKE) -C docs || ($(ECHO) "Warning: ignored the failed construction of the manual" 1>&2)
-ifneq ($(FEATURE_OCAMLBUILD),yes)
+	@$(MAKE) docs -C tools/spgen/documentation
 	@if test "x$(FEATURE_OCAML)" = x1; then \
 		if test -f ./parsing_c/ast_c.cmo -o -f ./parsing_c/ast_c.cmx; then \
 			$(MAKE) -C ocaml doc; \
 		else $(ECHO) "Note: to obtain coccilib documenation, it is required to build 'spatch' first so that ./parsing_c/ast_c.cm* gets build."; \
 		fi fi
-else
-	@if test "x$(FEATURE_OCAML)" = x1; then \
-		$(MAKE) -C ocaml doc; fi
-endif
 	@$(ECHO) "Finished building manuals"
 
 clean:: Makefile.config
-	$(MAKE) -C docs clean
+#	$(MAKE) -C docs clean
 	$(MAKE) -C ocaml cleandoc
+	$(MAKE) clean -C tools/spgen/documentation
 
 ##############################################################################
 # Pre-Install (customization of spatch frontend script)
@@ -455,16 +348,10 @@ install-common: ocaml/coccilib/coccilib.cmi
 	$(MKDIR_P) $(DESTDIR)$(BINDIR)
 	$(MKDIR_P) $(DESTDIR)$(LIBDIR)
 	$(MKDIR_P) $(DESTDIR)$(LIBDIR)/ocaml
-#	$(MKDIR_P) $(DESTDIR)$(LIBDIR)/commons
-#	$(MKDIR_P) $(DESTDIR)$(LIBDIR)/globals
-#	$(MKDIR_P) $(DESTDIR)$(LIBDIR)/parsing_c
 	$(INSTALL_DATA) standard.h $(DESTDIR)$(LIBDIR)
 	$(INSTALL_DATA) standard.iso $(DESTDIR)$(LIBDIR)
 	$(INSTALL_DATA) ocaml/coccilib/coccilib.cmi $(DESTDIR)$(LIBDIR)/ocaml/
 	$(INSTALL_DATA) ocaml/*.cmi $(DESTDIR)$(LIBDIR)/ocaml/
-#	$(INSTALL_DATA) parsing_c/*.cmi $(DESTDIR)$(LIBDIR)/parsing_c/
-#	$(INSTALL_DATA) commons/*.cmi $(DESTDIR)$(LIBDIR)/commons/
-#	$(INSTALL_DATA) globals/iteration.cmi $(DESTDIR)$(LIBDIR)/globals/
 
 install-man:
 	@$(ECHO) "Installing manuals in: ${DESTDIR}${MANDIR}"
@@ -472,6 +359,7 @@ install-man:
 	$(MKDIR_P) $(DESTDIR)$(MANDIR)/man3
 	$(INSTALL_DATA) docs/spatch.1 $(DESTDIR)$(MANDIR)/man1/
 	$(INSTALL_DATA) docs/pycocci.1 $(DESTDIR)$(MANDIR)/man1/
+	$(INSTALL_DATA) docs/spgen.1 $(DESTDIR)$(MANDIR)/man1/
 	$(INSTALL_DATA) docs/Coccilib.3cocci $(DESTDIR)$(MANDIR)/man3/
 
 install-bash:
@@ -511,6 +399,7 @@ install: install-man install-common install-stubs $(PYTHON_INSTALL_TARGET)
 	rm -f $(DESTDIR)$(LIBDIR)/spatch
 	rm -f $(DESTDIR)$(LIBDIR)/spatch.opt
 	rm -f $(DESTDIR)$(BINDIR)/pycocci
+	@$(MAKE) install -s -C tools/spgen/source
 	$(INSTALL_PROGRAM) tools/pycocci $(DESTDIR)$(BINDIR)
 	@if test -x spatch -o -x spatch.opt; then \
 		$(MAKE) install-def;fi
@@ -558,12 +447,14 @@ uninstall:
 	rm -f $(DESTDIR)$(LIBDIR)/globals/*.cmi
 	rm -f $(DESTDIR)$(LIBDIR)/python/coccilib/coccigui/*
 	rm -f $(DESTDIR)$(LIBDIR)/python/coccilib/*.py
+	@$(MAKE) uninstall -C tools/spgen/source
 	rmdir --ignore-fail-on-non-empty -p \
 		$(DESTDIR)$(LIBDIR)/python/coccilib/coccigui
 	rmdir --ignore-fail-on-non-empty $(DESTDIR)$(LIBDIR)/ocaml
 	rmdir $(DESTDIR)$(LIBDIR)
 	rm -f $(DESTDIR)$(MANDIR)/man1/spatch.1
 	rm -f $(DESTDIR)$(MANDIR)/man3/Coccilib.3cocci
+	rm -f $(DESTDIR)$(MANDIR)/man1/spgen.1
 
 uninstall-bash:
 	rm -f $(DESTDIR)$(BASH_COMPLETION_DIR)/spatch
@@ -576,7 +467,6 @@ uninstall-tools:
 
 version:
 	@$(ECHO) "spatch     $(VERSION)"
-	@$(ECHO) "spatch     $(PKGVERSION) ($(DISTRIB_ID))"
 	@$(ECHO) "coccicheck $(CCVERSION)"
 
 
@@ -627,21 +517,9 @@ clean distclean::
 tags:
 	otags -no-mli-tags -r  .
 
-dependencygraph:
-	find . -name "*.ml" |grep -v "scripts" | xargs $(OCAMLDEP) -I commons -I globals -I ctl -I parsing_cocci -I parsing_c -I engine -I popl09 -I extra > /tmp/dependfull.depend
-	ocamldot -lr /tmp/dependfull.depend > /tmp/dependfull.dot
-	dot -Tps /tmp/dependfull.dot > /tmp/dependfull.ps
-	ps2pdf /tmp/dependfull.ps /tmp/dependfull.pdf
-
 ##############################################################################
 # Misc rules
 ##############################################################################
-
-# each member of the project can have its own test.ml. this file is
-# not under CVS.
-test.ml:
-	$(ECHO) "let foo_ctl () = failwith \"there is no foo_ctl formula\"" \
-	  > test.ml
 
 ##############################################################################
 # Generic ocaml rules
@@ -666,7 +544,6 @@ clean distclean::
 
 distclean::
 	set -e; for i in $(CLEANSUBDIRS); do $(MAKE) -C $$i $@; done
-	rm -f test.ml
 	rm -f TAGS *.native *.byte *.d.native *.p.byte
 	if test -z "${KEEP_GENERATED}"; then \
 		rm -f tests/SCORE_actual.sexp tests/SCORE_best_of_both.sexp; fi
@@ -676,11 +553,11 @@ distclean::
 
 # using 'touch' to prevent infinite recursion with 'make depend'
 .PHONY:: depend
-.depend: Makefile.config test.ml version
+.depend: Makefile.config version
 	@touch .depend
 	@$(MAKE) depend
 
-depend: Makefile.config test.ml version
+depend: Makefile.config version
 	@$(ECHO) "Constructing '.depend'"
 	@rm -f .depend
 	@set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i depend; done
@@ -703,7 +580,8 @@ distclean::
 	rm -f scripts/spatch.sh
 	rm -f aclocal.m4
 	for i in `find . -name '*.in'`; do rm -f `echo $$i | sed "s/\.in$$//"`; done
-	@echo "Run 'configure' again prior to building coccinelle"
+	@echo "Run './configure' again prior to building coccinelle."
+	@echo "If ./configure does not exist, run ./autogen first."
 
 
 # don't include depend for those actions that either don't need
@@ -720,9 +598,7 @@ ifneq ($(MAKECMDGOALS),all-dev)
 ifneq ($(MAKECMDGOALS),all)
 ifneq ($(MAKECMDGOALS),.depend)
 ifneq ($(MAKECMDGOALS),depend)
-ifneq ($(FEATURE_OCAMLBUILD),yes)
 -include .depend
-endif
 endif
 endif
 endif

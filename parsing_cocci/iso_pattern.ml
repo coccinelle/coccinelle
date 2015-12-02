@@ -1,30 +1,9 @@
 (*
- * Copyright 2012-2015, Inria
- * Julia Lawall, Gilles Muller
- * Copyright 2010-2011, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-
-# 0 "./iso_pattern.ml"
 (* Potential problem: offset of mcode is not updated when an iso is
 instantiated, implying that a term may end up with many mcodes with the
 same offset.  On the other hand, at the moment offset only seems to be used
@@ -60,7 +39,8 @@ let strip_info =
       Ast0.mcodekind = ref (Ast0.PLUS Ast.ONE);
       Ast0.true_if_test = x.Ast0.true_if_test} in
   V0.flat_rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing
@@ -302,10 +282,10 @@ let is_context e =
 let rec is_pure_context s =
   !Flag.sgrep_mode2 || (* everything is context for sgrep *)
   (match Ast0.unwrap s with
-    Ast0.Disj(starter,statement_dots_list,mids,ender) ->
+    Ast0.Disj(starter,statement_dots_list,mids,ender) -> (* need for conj? *)
       List.for_all
 	(function x ->
-	  match Ast0.undots x with
+	  match Ast0.unwrap x with
 	    [s] -> is_pure_context s
 	  | _ -> false (* could we do better? *))
 	statement_dots_list
@@ -372,12 +352,8 @@ let match_maker checks_needed context_required whencode_allowed =
       check_mcode mv1 mv2 binding
     | _ -> Fail(NonMatch) in
   let match_dots matcher is_list_matcher do_list_match d1 d2 =
-    match (Ast0.unwrap d1, Ast0.unwrap d2) with
-      (Ast0.DOTS(la),Ast0.DOTS(lb))
-    | (Ast0.CIRCLES(la),Ast0.CIRCLES(lb))
-    | (Ast0.STARS(la),Ast0.STARS(lb)) ->
-	match_list matcher is_list_matcher (do_list_match d2) la lb
-    | _ -> return false in
+    match_list matcher is_list_matcher (do_list_match d2)
+      (Ast0.unwrap d1) (Ast0.unwrap d2) in
 
   let is_elist_matcher el =
     match Ast0.unwrap el with Ast0.MetaExprList(_,_,_) -> true | _ -> false in
@@ -392,11 +368,7 @@ let match_maker checks_needed context_required whencode_allowed =
 
   let no_list _ = false in
 
-  let build_dots pattern data =
-    match Ast0.unwrap pattern with
-      Ast0.DOTS(_) -> Ast0.rewrap pattern (Ast0.DOTS(data))
-    | Ast0.CIRCLES(_) -> Ast0.rewrap pattern (Ast0.CIRCLES(data))
-    | Ast0.STARS(_) -> Ast0.rewrap pattern (Ast0.STARS(data)) in
+  let build_dots pattern data = Ast0.rewrap pattern data in
 
   let pure_sp_code =
     let bind = Ast0.lub_pure in
@@ -486,10 +458,11 @@ let match_maker checks_needed context_required whencode_allowed =
 	| _ -> Ast0.Impure) in
 
     V0.flat_combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode
       donothing donothing donothing donothing donothing donothing
-      ident expression assignOp binaryOp typeC init param decl stmt donothing donothing
-      donothing donothing in
+      ident expression assignOp binaryOp typeC init param decl stmt donothing
+      donothing donothing donothing in
 
   let add_pure_list_binding name pure is_pure builder1 builder2 lst =
     match (checks_needed,pure) with
@@ -562,11 +535,9 @@ let match_maker checks_needed context_required whencode_allowed =
 	      else return false
 	  | (Ast0.DisjId(_,ids,_,_),_) ->
 	      failwith "not allowed in the pattern of an isomorphism"
-	  | (Ast0.OptIdent(ida),Ast0.OptIdent(idb))
-	  | (Ast0.UniqueIdent(ida),Ast0.UniqueIdent(idb)) ->
+	  | (Ast0.OptIdent(ida),Ast0.OptIdent(idb)) ->
 	      match_ident ida idb
-	  | (_,Ast0.OptIdent(idb))
-	  | (_,Ast0.UniqueIdent(idb)) -> match_ident pattern idb
+	  | (_,Ast0.OptIdent(idb)) -> match_ident pattern idb
 	  | _ -> return false
 	else return_false (ContextRequired (Ast0.IdentTag id)) in
 
@@ -786,16 +757,13 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (Ast0.TypeExp(tya),Ast0.TypeExp(tyb)) ->
 	      match_typeC tya tyb
 	  | (Ast0.EComma(cm1),Ast0.EComma(cm)) -> check_mcode cm1 cm
-	  | (Ast0.DisjExpr(_,expsa,_,_),_) ->
+	  | (Ast0.DisjExpr(_,expsa,_,_),_)
+	  | (Ast0.ConjExpr(_,expsa,_,_),_) ->
 	      failwith "not allowed in the pattern of an isomorphism"
 	  | (Ast0.NestExpr(_,exp_dotsa,_,_,_),_) ->
 	      failwith "not allowed in the pattern of an isomorphism"
-	  | (Ast0.Edots(d,None),Ast0.Edots(d1,None))
-	  | (Ast0.Ecircles(d,None),Ast0.Ecircles(d1,None))
-	  | (Ast0.Estars(d,None),Ast0.Estars(d1,None)) -> check_mcode d d1
-	  | (Ast0.Edots(ed,None),Ast0.Edots(ed1,Some (wh,e,wc)))
-	  | (Ast0.Ecircles(ed,None),Ast0.Ecircles(ed1,Some (wh,e,wc)))
-	  | (Ast0.Estars(ed,None),Ast0.Estars(ed1,Some (wh,e,wc))) ->
+	  | (Ast0.Edots(d,None),Ast0.Edots(d1,None)) -> check_mcode d d1
+	  | (Ast0.Edots(ed,None),Ast0.Edots(ed1,Some (wh,e,wc))) ->
 	    (* hope that mcode of edots is unique somehow *)
 	      conjunct_bindings (check_mcode ed ed1)
 		(let (edots_whencode_allowed,_,_) = whencode_allowed in
@@ -806,14 +774,11 @@ let match_maker checks_needed context_required whencode_allowed =
 		  (Printf.printf
 		     "warning: not applying iso because of whencode";
 		   return false))
-	  | (Ast0.Edots(_,Some _),_) | (Ast0.Ecircles(_,Some _),_)
-	  | (Ast0.Estars(_,Some _),_) ->
+	  | (Ast0.Edots(_,Some _),_) ->
 	      failwith "whencode not allowed in a pattern1"
-	  | (Ast0.OptExp(expa),Ast0.OptExp(expb))
-	  | (Ast0.UniqueExp(expa),Ast0.UniqueExp(expb)) ->
+	  | (Ast0.OptExp(expa),Ast0.OptExp(expb)) ->
 	      match_expr expa expb
-	  | (_,Ast0.OptExp(expb))
-	  | (_,Ast0.UniqueExp(expb)) -> match_expr pattern expb
+	  | (_,Ast0.OptExp(expb)) -> match_expr pattern expb
 	  | _ -> return false
 	else return_false (ContextRequired (Ast0.ExprTag expr))
 
@@ -928,10 +893,8 @@ let match_maker checks_needed context_required whencode_allowed =
 	      else return false
 	  | (Ast0.DisjType(_,typesa,_,_),_) ->
 	      failwith "not allowed in the pattern of an isomorphism"
-	  | (Ast0.OptType(tya),Ast0.OptType(tyb))
-	  | (Ast0.UniqueType(tya),Ast0.UniqueType(tyb)) -> match_typeC tya tyb
-	  | (_,Ast0.OptType(tyb))
-	  | (_,Ast0.UniqueType(tyb)) -> match_typeC pattern tyb
+	  | (Ast0.OptType(tya),Ast0.OptType(tyb)) -> match_typeC tya tyb
+	  | (_,Ast0.OptType(tyb)) -> match_typeC pattern tyb
 	  | _ -> return false
 	else return_false (ContextRequired (Ast0.TypeCTag t))
 
@@ -1021,11 +984,9 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (Ast0.Ddots(_,Some _),_) ->
 	      failwith "whencode not allowed in a pattern1"
 
-	  | (Ast0.OptDecl(decla),Ast0.OptDecl(declb))
-	  | (Ast0.UniqueDecl(decla),Ast0.UniqueDecl(declb)) ->
+	  | (Ast0.OptDecl(decla),Ast0.OptDecl(declb)) ->
 	      match_decl decla declb
-	  | (_,Ast0.OptDecl(declb))
-	  | (_,Ast0.UniqueDecl(declb)) ->
+	  | (_,Ast0.OptDecl(declb)) ->
 	      match_decl pattern declb
 	  | _ -> return false
 	else return_false (ContextRequired (Ast0.DeclTag d))
@@ -1076,10 +1037,8 @@ let match_maker checks_needed context_required whencode_allowed =
 		   return false))
 	  | (Ast0.Idots(_,Some _),_) ->
 	      failwith "whencode not allowed in a pattern2"
-	  | (Ast0.OptIni(ia),Ast0.OptIni(ib))
-	  | (Ast0.UniqueIni(ia),Ast0.UniqueIni(ib)) -> match_init ia ib
-	  | (_,Ast0.OptIni(ib))
-	  | (_,Ast0.UniqueIni(ib)) -> match_init pattern ib
+	  | (Ast0.OptIni(ia),Ast0.OptIni(ib)) -> match_init ia ib
+	  | (_,Ast0.OptIni(ib)) -> match_init pattern ib
 	  | _ -> return false
 	else return_false (ContextRequired (Ast0.InitTag i))
 
@@ -1116,13 +1075,10 @@ let match_maker checks_needed context_required whencode_allowed =
 	      conjunct_bindings (match_typeC tya tyb)
 		(match_option match_ident ida idb)
 	  | (Ast0.PComma(c1),Ast0.PComma(c)) -> check_mcode c1 c
-	  | (Ast0.Pdots(d1),Ast0.Pdots(d))
-	  | (Ast0.Pcircles(d1),Ast0.Pcircles(d)) -> check_mcode d1 d
-	  | (Ast0.OptParam(parama),Ast0.OptParam(paramb))
-	  | (Ast0.UniqueParam(parama),Ast0.UniqueParam(paramb)) ->
+	  | (Ast0.Pdots(d1),Ast0.Pdots(d)) -> check_mcode d1 d
+	  | (Ast0.OptParam(parama),Ast0.OptParam(paramb)) ->
 	      match_param parama paramb
-	  | (_,Ast0.OptParam(paramb))
-	  | (_,Ast0.UniqueParam(paramb)) -> match_param pattern paramb
+	  | (_,Ast0.OptParam(paramb)) -> match_param pattern paramb
 	  | _ -> return false
 	else return_false (ContextRequired (Ast0.ParamTag p))
 
@@ -1130,7 +1086,7 @@ let match_maker checks_needed context_required whencode_allowed =
     match Ast0.unwrap pattern with
       Ast0.MetaStmt(name,pure) ->
 	(match Ast0.unwrap s with
-	  Ast0.Dots(_,_) | Ast0.Circles(_,_) | Ast0.Stars(_,_) ->
+	  Ast0.Dots(_,_) ->
 	    return false (* ... is not a single statement *)
 	| _ ->
 	    add_pure_binding name pure pure_sp_code.VT0.combiner_rec_statement
@@ -1176,7 +1132,7 @@ let match_maker checks_needed context_required whencode_allowed =
 		(conjunct_bindings (check_mcode rb1 rb)
 		   (if not(checks_needed) || is_minus s ||
 		     (is_context s &&
-		      List.for_all is_pure_context (Ast0.undots bodyb))
+		      List.for_all is_pure_context (Ast0.unwrap bodyb))
 		   then
 		     match_dots match_statement is_slist_matcher do_slist_match
 		       bodya bodyb
@@ -1261,7 +1217,8 @@ let match_maker checks_needed context_required whencode_allowed =
 		[check_mcode r1 r; check_mcode sc1 sc; match_expr expa expb]
 	  | (Ast0.Exec(e1,l1,codea,sc1),Ast0.Exec(e2,l2,codeb,sc2)) ->
 	      failwith "exec not supported in patterns"
-	  | (Ast0.Disj(_,statement_dots_lista,_,_),_) ->
+	  | (Ast0.Disj(_,statement_dots_lista,_,_),_)
+	  | (Ast0.Conj(_,statement_dots_lista,_,_),_) ->
 	      failwith "disj not supported in patterns"
 	  | (Ast0.Nest(_,stmt_dotsa,_,[],multia),
 	     Ast0.Nest(_,stmt_dotsb,_,wc,multib)) ->
@@ -1272,7 +1229,7 @@ let match_maker checks_needed context_required whencode_allowed =
 		   (* not sure this is correct, perhaps too restrictive *)
 		     if not(checks_needed) || is_minus s ||
 		       (is_context s &&
-			List.for_all is_pure_context (Ast0.undots stmt_dotsb))
+			List.for_all is_pure_context (Ast0.unwrap stmt_dotsb))
 		     then
 		       match_dots match_statement
 			 is_slist_matcher do_slist_match
@@ -1287,9 +1244,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (Ast0.Exp(expa),Ast0.TopExp(expb)) -> match_expr expa expb
 	  | (Ast0.TopInit(inita),Ast0.TopInit(initb)) -> match_init inita initb
 	  | (Ast0.Ty(tya),Ast0.Ty(tyb)) -> match_typeC tya tyb
-	  | (Ast0.Dots(d,[]),Ast0.Dots(d1,wc))
-	  | (Ast0.Circles(d,[]),Ast0.Circles(d1,wc))
-	  | (Ast0.Stars(d,[]),Ast0.Stars(d1,wc)) ->
+	  | (Ast0.Dots(d,[]),Ast0.Dots(d1,wc)) ->
 	      (match wc with
 		[] -> check_mcode d d1
 	      |	_ ->
@@ -1325,14 +1280,11 @@ let match_maker checks_needed context_required whencode_allowed =
 		    (Printf.printf
 		       "warning: not applying iso because of whencode";
 		     return false))
-	  | (Ast0.Dots(_,_::_),_) | (Ast0.Circles(_,_::_),_)
-	  | (Ast0.Stars(_,_::_),_) ->
+	  | (Ast0.Dots(_,_::_),_) ->
 	      failwith "whencode not allowed in a pattern3"
-	  | (Ast0.OptStm(rea),Ast0.OptStm(reb))
-	  | (Ast0.UniqueStm(rea),Ast0.UniqueStm(reb)) ->
+	  | (Ast0.OptStm(rea),Ast0.OptStm(reb)) ->
 	      match_statement rea reb
-	  | (_,Ast0.OptStm(reb))
-	  | (_,Ast0.UniqueStm(reb)) -> match_statement pattern reb
+	  | (_,Ast0.OptStm(reb)) -> match_statement pattern reb
 	  |	_ -> return false
 	else return_false (ContextRequired (Ast0.StmtTag s))
 
@@ -1451,12 +1403,6 @@ let make_minus =
       Ast0.Edots(d,whencode) ->
        (*don't recurse because whencode hasn't been processed by context_neg*)
 	update_mc mcodekind e; Ast0.rewrap e (Ast0.Edots(mcode d,whencode))
-    | Ast0.Ecircles(d,whencode) ->
-       (*don't recurse because whencode hasn't been processed by context_neg*)
-	update_mc mcodekind e; Ast0.rewrap e (Ast0.Ecircles(mcode d,whencode))
-    | Ast0.Estars(d,whencode) ->
-       (*don't recurse because whencode hasn't been processed by context_neg*)
-	update_mc mcodekind e; Ast0.rewrap e (Ast0.Estars(mcode d,whencode))
     | Ast0.NestExpr(starter,expr_dots,ender,whencode,multi) ->
 	update_mc mcodekind e;
 	Ast0.rewrap e
@@ -1479,10 +1425,6 @@ let make_minus =
       Ast0.Dots(d,whencode) ->
        (*don't recurse because whencode hasn't been processed by context_neg*)
 	update_mc mcodekind e; Ast0.rewrap e (Ast0.Dots(mcode d,whencode))
-    | Ast0.Circles(d,whencode) ->
-	update_mc mcodekind e; Ast0.rewrap e (Ast0.Circles(mcode d,whencode))
-    | Ast0.Stars(d,whencode) ->
-	update_mc mcodekind e; Ast0.rewrap e (Ast0.Stars(mcode d,whencode))
     | Ast0.Nest(starter,stmt_dots,ender,whencode,multi) ->
 	update_mc mcodekind e;
 	Ast0.rewrap e
@@ -1503,7 +1445,7 @@ let make_minus =
     let info = Ast0.get_info e in
     let mcodekind = Ast0.get_mcodekind_ref e in
     match Ast0.unwrap e with
-      Ast0.DOTS([]) ->
+      [] ->
 	(* if context is - this should be - as well.  There are no tokens
 	   here though, so the bottom-up minusifier in context_neg leaves it
 	   as mixed (or context for sgrep2).  It would be better to fix
@@ -1527,10 +1469,11 @@ let make_minus =
     | _ -> donothing r k e in
 
   V0.flat_rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode
     dots dots dots dots dots dots
-    donothing expression donothing donothing donothing initialiser donothing declaration
-    statement donothing donothing donothing donothing
+    donothing expression donothing donothing donothing initialiser donothing
+    declaration statement donothing donothing donothing donothing
 
 (* --------------------------------------------------------------------- *)
 (* rebuild mcode cells in an instantiated alt *)
@@ -1617,7 +1560,8 @@ let rebuild_mcode start_line =
 	  Ast0.DroppingBetweenDots(r.VT0.rebuilder_rec_statement s)) in
 
   V0.flat_rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing statement donothing donothing donothing donothing
@@ -1633,7 +1577,7 @@ let count_edots =
   let bind x y = x + y in
   let exprfn r k e =
     match Ast0.unwrap e with
-      Ast0.Edots(_,_) | Ast0.Ecircles(_,_) | Ast0.Estars(_,_) -> 1
+      Ast0.Edots(_,_) -> 1
     | _ -> 0 in
 
   V0.combiner bind option_default
@@ -1653,7 +1597,7 @@ let count_dots =
   let bind x y = x + y in
   let stmtfn r k e =
     match Ast0.unwrap e with
-      Ast0.Dots(_,_) | Ast0.Circles(_,_) | Ast0.Stars(_,_) -> 1
+      Ast0.Dots(_,_) -> 1
     | _ -> 0 in
 
   V0.combiner bind option_default
@@ -1710,72 +1654,51 @@ let instantiate bindings mv_bindings model =
     | _ -> e in
 
   (* case for list metavariables *)
-  let rec elist r same_dots = function
+  let rec elist r = function
       [] -> []
     | [x] ->
 	(match Ast0.unwrap x with
 	  Ast0.MetaExprList(name,lenname,pure) ->
 	    failwith "meta_expr_list in iso not supported"
 	    (*match lookup name bindings mv_bindings with
-	      Common.Left(Ast0.DotsExprTag(exp)) ->
-		(match same_dots exp with
-		  Some l -> l
-		| None -> failwith "dots put in incompatible context")
+	      Common.Left(Ast0.DotsExprTag(exp)) -> Ast0.unwrap exp
 	    | Common.Left(Ast0.ExprTag(exp)) -> [exp]
 	    | Common.Left(_) -> failwith "not possible 1"
 	    | Common.Right(new_mv) ->
 		failwith "MetaExprList in SP not supported"*)
 	| _ -> [r.VT0.rebuilder_rec_expression x])
-    | x::xs -> (r.VT0.rebuilder_rec_expression x)::(elist r same_dots xs) in
+    | x::xs -> (r.VT0.rebuilder_rec_expression x)::(elist r xs) in
 
-  let rec plist r same_dots = function
+  let rec plist r = function
       [] -> []
     | [x] ->
 	(match Ast0.unwrap x with
 	  Ast0.MetaParamList(name,lenname,pure) ->
 	    failwith "meta_param_list in iso not supported"
 	    (*match lookup name bindings mv_bindings with
-		Common.Left(Ast0.DotsParamTag(param)) ->
-		(match same_dots param with
-		Some l -> l
-		| None -> failwith "dots put in incompatible context")
+		Common.Left(Ast0.DotsParamTag(param)) -> Ast0.unwrap param
 		| Common.Left(Ast0.ParamTag(param)) -> [param]
 		| Common.Left(_) -> failwith "not possible 1"
 		| Common.Right(new_mv) ->
 		failwith "MetaExprList in SP not supported"*)
 	| _ -> [r.VT0.rebuilder_rec_parameter x])
-    | x::xs -> (r.VT0.rebuilder_rec_parameter x)::(plist r same_dots xs) in
+    | x::xs -> (r.VT0.rebuilder_rec_parameter x)::(plist r xs) in
 
-  let rec slist r same_dots = function
+  let rec slist r = function
       [] -> []
     | [x] ->
 	(match Ast0.unwrap x with
 	  Ast0.MetaStmtList(name,pure) ->
 	    (match lookup name bindings mv_bindings with
-	      Common.Left(Ast0.DotsStmtTag(stm)) ->
-		(match same_dots stm with
-		  Some l -> l
-		| None -> failwith "dots put in incompatible context")
+	      Common.Left(Ast0.DotsStmtTag(stm)) -> Ast0.unwrap stm
 	    | Common.Left(Ast0.StmtTag(stm)) -> [stm]
 	    | Common.Left(_) -> failwith "not possible 1"
 	    | Common.Right(new_mv) ->
 		failwith "MetaExprList in SP not supported")
 	| _ -> [r.VT0.rebuilder_rec_statement x])
-    | x::xs -> (r.VT0.rebuilder_rec_statement x)::(slist r same_dots xs) in
+    | x::xs -> (r.VT0.rebuilder_rec_statement x)::(slist r xs) in
 
-  let same_dots d =
-    match Ast0.unwrap d with Ast0.DOTS(l) -> Some l |_ -> None in
-  let same_circles d =
-    match Ast0.unwrap d with Ast0.CIRCLES(l) -> Some l |_ -> None in
-  let same_stars d =
-    match Ast0.unwrap d with Ast0.STARS(l) -> Some l |_ -> None in
-
-  let dots list_fn r k d =
-    Ast0.rewrap d
-      (match Ast0.unwrap d with
-	Ast0.DOTS(l) -> Ast0.DOTS(list_fn r same_dots l)
-      | Ast0.CIRCLES(l) -> Ast0.CIRCLES(list_fn r same_circles l)
-      | Ast0.STARS(l) -> Ast0.STARS(list_fn r same_stars l)) in
+  let dots list_fn r k d = Ast0.rewrap d (list_fn r (Ast0.unwrap d)) in
 
   let exprfn r k old_e = (* need to keep the original code for ! optim *)
     let e = k old_e in
@@ -1784,7 +1707,8 @@ let instantiate bindings mv_bindings model =
       Ast0.MetaExpr(name,constraints,x,form,pure) ->
 	(rebuild_mcode None).VT0.rebuilder_rec_expression
 	  (match lookup name bindings mv_bindings with
-	    Common.Left(Ast0.ExprTag(exp)) -> Ast0.clear_test_exp exp
+	    Common.Left(Ast0.ExprTag(exp)) ->
+	      Ast0.clear_test_exp exp
 	  | Common.Left(_) -> failwith "not possible 1"
 	  | Common.Right(new_mv) ->
 	      let new_types =
@@ -1930,6 +1854,11 @@ let instantiate bindings mv_bindings model =
 		      let exps =
 			List.map (function e1 -> negate_reb e e1 k) exps in
 		      Ast0.rewrap res (Ast0.DisjExpr(lp,exps,mids,rp))
+		  | Ast0.ConjExpr(lp,exps,mids,rp) ->
+		      (* use res because it is the transformed argument *)
+		      let exps =
+			List.map (function e1 -> negate_reb e e1 k) exps in
+		      Ast0.rewrap res (Ast0.ConjExpr(lp,exps,mids,rp))
 		  | _ ->
 		      (*use e, because this might be the toplevel expression*)
 		      Ast0.rewrap e
@@ -1952,20 +1881,6 @@ let instantiate bindings mv_bindings model =
 	  (match List.assoc (dot_term d) bindings with
 	    Ast0.WhenTag(wh,Some ee,Ast0.ExprTag exp) ->
               Ast0.rewrap e (Ast0.Edots(d,Some (wh,ee,exp)))
-	  | _ -> failwith "unexpected binding")
-	with Not_found -> e)
-    | Ast0.Ecircles(d,_) ->
-	(try
-	  (match List.assoc (dot_term d) bindings with
-	    Ast0.WhenTag(wh,Some ee,Ast0.ExprTag exp) ->
-              Ast0.rewrap e (Ast0.Ecircles(d,Some (wh,ee,exp)))
-	  | _ -> failwith "unexpected binding")
-	with Not_found -> e)
-    | Ast0.Estars(d,_) ->
-	(try
-	  (match List.assoc (dot_term d) bindings with
-	    Ast0.WhenTag(wh,Some ee,Ast0.ExprTag(exp)) ->
-              Ast0.rewrap e (Ast0.Estars(d,Some (wh,ee,exp)))
 	  | _ -> failwith "unexpected binding")
 	with Not_found -> e)
     | _ -> e in
@@ -2070,18 +1985,6 @@ let instantiate bindings mv_bindings model =
     | Ast0.Dots(d,_) ->
 	Ast0.rewrap e
 	  (Ast0.Dots
-	     (d,
-	      List.map whenfn
-		(List.filter (function (x,v) -> x = (dot_term d)) bindings)))
-    | Ast0.Circles(d,_) ->
-	Ast0.rewrap e
-	  (Ast0.Circles
-	     (d,
-	      List.map whenfn
-		(List.filter (function (x,v) -> x = (dot_term d)) bindings)))
-    | Ast0.Stars(d,_) ->
-	Ast0.rewrap e
-	  (Ast0.Stars
 	     (d,
 	      List.map whenfn
 		(List.filter (function (x,v) -> x = (dot_term d)) bindings)))
@@ -2510,7 +2413,7 @@ let make_disj_decl dl =
     | x::xs -> List.map disj_mid xs in
   Ast0.context_wrap (Ast0.DisjDecl(disj_starter dl,dl,mids,disj_ender dl))
 let make_disj_stmt sl =
-  let dotify x = Ast0.context_wrap (Ast0.DOTS[x]) in
+  let dotify x = Ast0.context_wrap [x] in
   let mids =
     match sl with
       [] -> failwith "bad disjunction"
@@ -2655,7 +2558,7 @@ let transform_top (metavars,alts,name) e =
 	       (function
 		   Ast0.DotsStmtTag(d) ->
 		     (match Ast0.unwrap d with
-		       Ast0.DOTS([s]) -> Ast0.StmtTag(s)
+		       [s] -> Ast0.StmtTag(s)
 		     | _ -> raise (Failure ""))
 		 | _ -> raise (Failure "")))
 	    alts in
@@ -2683,8 +2586,7 @@ let transform_top (metavars,alts,name) e =
 	      (fun b mv_b model ->
 		(instantiate b mv_b model).VT0.rebuilder_rec_statement_dots)
 	      (function s -> Ast0.DotsStmtTag s)
-	      (function x ->
-		Ast0.rewrap e (Ast0.DOTS([make_disj_stmt_list x])))
+	      (function x -> Ast0.rewrap e [make_disj_stmt_list x])
 	      (function x ->
 		make_minus.VT0.rebuilder_rec_statement_dots x)
 	      (rebuild_mcode start_line).VT0.rebuilder_rec_statement_dots

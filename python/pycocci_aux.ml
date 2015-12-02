@@ -1,30 +1,9 @@
 (*
- * Copyright 2012-2015, Inria
- * Julia Lawall, Gilles Muller
- * Copyright 2010-2011, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-
-# 0 "./pycocci_aux.ml"
 open Ast_c
 open Common
 
@@ -76,7 +55,7 @@ let stringrep = function
 | Ast_c.MetaBinaryOpVal op -> call_pretty Pretty_print_c.pp_binaryOp_gen op
 | Ast_c.MetaFuncVal      s -> s
 | Ast_c.MetaLocalFuncVal s -> s
-| Ast_c.MetaExprVal      (expr,_) -> exprrep expr
+| Ast_c.MetaExprVal      (expr,_,_) -> exprrep expr
 | Ast_c.MetaExprListVal  expr_list ->
     call_pretty Pretty_print_c.pp_arg_list_gen expr_list
 | Ast_c.MetaTypeVal      typ -> call_pretty Pretty_print_c.pp_type_gen typ
@@ -88,8 +67,10 @@ let stringrep = function
     call_pretty Pretty_print_c.pp_field_gen field
 | Ast_c.MetaFieldListVal      field ->
     call_pretty Pretty_print_c.pp_field_list_gen field
-| Ast_c.MetaStmtVal      statement ->
+| Ast_c.MetaStmtVal      (statement,_) ->
     call_pretty Pretty_print_c.pp_statement_gen statement
+| Ast_c.MetaStmtListVal  (statxs,_) ->
+    call_pretty Pretty_print_c.pp_statement_seq_list_gen statxs
 | Ast_c.MetaParamVal     param ->
     call_pretty Pretty_print_c.pp_param_gen param
 | Ast_c.MetaParamListVal params ->
@@ -103,6 +84,6 @@ let stringrep = function
     let print_pos = function
 	Ast_cocci.Real x -> string_of_int x
       | Ast_cocci.Virt(x,off) -> Printf.sprintf "%d+%d" x off in
-    Common.sprintf ("pos(%s,%s)") (print_pos pos1) (print_pos pos2)
+    Printf.sprintf ("pos(%s,%s)") (print_pos pos1) (print_pos pos2)
 | Ast_c.MetaPosValList positions -> "TODO: <<postvallist>>"
 | Ast_c.MetaNoVal -> failwith "no value, should not occur"

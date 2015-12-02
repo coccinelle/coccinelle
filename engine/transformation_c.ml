@@ -1,30 +1,9 @@
 (*
- * Copyright 2012-2015, Inria
- * Julia Lawall, Gilles Muller
- * Copyright 2010-2011, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-
-# 0 "./transformation_c.ml"
 open Common
 
 module F = Control_flow_c
@@ -127,8 +106,8 @@ module XTRANS = struct
     List.map
       (function (v,vl) ->
 	match vl with
-	| Ast_c.MetaExprVal(e,ml) ->
-	    (v,Ast_c.MetaExprVal(Lib_parsing_c.real_al_expr e,ml))
+	| Ast_c.MetaExprVal(e,ml,ty) ->
+	    (v,Ast_c.MetaExprVal(Lib_parsing_c.real_al_expr e,ml,ty))
 	| Ast_c.MetaExprListVal(es) ->
 	    (v,Ast_c.MetaExprListVal(Lib_parsing_c.real_al_arguments es))
 	| Ast_c.MetaTypeVal(ty) ->
@@ -139,8 +118,8 @@ module XTRANS = struct
 	    (v,Ast_c.MetaInitListVal(Lib_parsing_c.real_al_inits is))
 	| Ast_c.MetaDeclVal(d) ->
 	    (v,Ast_c.MetaDeclVal(Lib_parsing_c.real_al_decl d))
-	| Ast_c.MetaStmtVal(s) ->
-	    (v,Ast_c.MetaStmtVal(Lib_parsing_c.real_al_statement s))
+	| Ast_c.MetaStmtVal(s,ty) ->
+	    (v,Ast_c.MetaStmtVal(Lib_parsing_c.real_al_statement s,ty))
 	(* These don't contain local variables, but the cocci_tag field
 	   causes problems too.  Why is this not needd for other metavars? *)
 	| Ast_c.MetaAssignOpVal(b) ->
@@ -255,10 +234,10 @@ module XTRANS = struct
 	Ast_cocci.MetaId(name,constraints,u,i) ->
           Ast_cocci.rewrap e
 	    (Ast_cocci.MetaId(name,Ast_cocci.IdNoConstraint,u,i))
-      |  Ast_cocci.MetaFunc(name,constraints,u,i) ->
+      | Ast_cocci.MetaFunc(name,constraints,u,i) ->
           Ast_cocci.rewrap e
 	    (Ast_cocci.MetaFunc(name,Ast_cocci.IdNoConstraint,u,i))
-      |  Ast_cocci.MetaLocalFunc(name,constraints,u,i) ->
+      | Ast_cocci.MetaLocalFunc(name,constraints,u,i) ->
           Ast_cocci.rewrap e
 	    (Ast_cocci.MetaLocalFunc(name,Ast_cocci.IdNoConstraint,u,i))
       |  _ -> e in
@@ -469,7 +448,7 @@ module XTRANS = struct
                failwith
 	         (match Ast_c.pinfo_of_info ib with
 		   Ast_c.FakeTok _ ->
-		     Common.sprintf "%s: already tagged fake token\n"
+		     Printf.sprintf "%s: already tagged fake token\n"
 		       tin.extra.current_rule_name
 		| _ ->
 		    Printf.sprintf
@@ -759,7 +738,7 @@ module XTRANS = struct
       then (
         try Some (List.assoc s tin.binding)
         with Not_found ->
-          pr2(sprintf
+          pr2 (Printf.sprintf
 		"Don't find value for metavariable %s in the environment"
                 (meta_name_to_str s));
           None)

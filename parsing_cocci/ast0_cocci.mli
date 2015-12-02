@@ -1,34 +1,13 @@
 (*
- * Copyright 2012-2015, Inria
- * Julia Lawall, Gilles Muller
- * Copyright 2010-2011, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-
-# 0 "./ast0_cocci.mli"
 (* --------------------------------------------------------------------- *)
 (* Modified code *)
 
-type arity = OPT | UNIQUE | NONE
+type arity = OPT | NONE
 
 type token_info =
     { tline_start : int; tline_end : int;
@@ -89,12 +68,7 @@ and pure = Impure | Pure | Context | PureContext (* pure and only context *)
 (* --------------------------------------------------------------------- *)
 (* Dots *)
 
-and 'a base_dots =
-    DOTS of 'a list
-  | CIRCLES of 'a list
-  | STARS of 'a list
-
-and 'a dots = 'a base_dots wrap
+and 'a dots = 'a list wrap
 
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
@@ -109,7 +83,6 @@ and base_ident =
   | DisjId        of string mcode * ident list *
                      string mcode list (* the |s *) * string mcode
   | OptIdent      of ident
-  | UniqueIdent   of ident
 
 and ident = base_ident wrap
 
@@ -157,17 +130,14 @@ and base_expression =
   | EComma         of string mcode (* only in arglists *)
   | DisjExpr       of string mcode * expression list * string mcode list *
 	              string mcode
+  | ConjExpr       of string mcode * expression list * string mcode list *
+	              string mcode
   | NestExpr       of string mcode * expression dots * string mcode *
                       (string mcode * string mcode * expression) option
                       (* whencode *) * Ast_cocci.multi
   | Edots          of string mcode (* ... *) * (string mcode * string mcode *
                       expression) option (* whencode *)
-  | Ecircles       of string mcode (* ooo *) * (string mcode * string mcode *
-                      expression) option (* whencode *)
-  | Estars         of string mcode (* *** *) * (string mcode * string mcode *
-                      expression) option (* whencode *)
   | OptExp         of expression
-  | UniqueExp      of expression
 
 and expression = base_expression wrap
 
@@ -248,7 +218,6 @@ and base_typeC =
   | DisjType        of string mcode * typeC list * (* only after iso *)
                        string mcode list (* the |s *)  * string mcode
   | OptType         of typeC
-  | UniqueType      of typeC
 
 and typeC = base_typeC wrap
 
@@ -285,7 +254,6 @@ and base_declaration =
   | Ddots      of string mcode (* ... *) * (string mcode * string mcode *
                   declaration) option (* whencode *)
   | OptDecl    of declaration
-  | UniqueDecl of declaration
 
 and declaration = base_declaration wrap
 
@@ -308,7 +276,6 @@ and base_initialiser =
   | Idots  of string mcode (* ... *) *
               (string mcode * string mcode * initialiser) option (* whencode *)
   | OptIni    of initialiser
-  | UniqueIni of initialiser
 
 and designator =
     DesignatorField of string mcode (* . *) * ident
@@ -332,9 +299,7 @@ and base_parameterTypeDef =
   | AsParam       of parameterTypeDef * expression (* expr, always metavar *)
   | PComma        of string mcode
   | Pdots         of string mcode (* ... *)
-  | Pcircles      of string mcode (* ooo *)
   | OptParam      of parameterTypeDef
-  | UniqueParam   of parameterTypeDef
 
 and parameterTypeDef = base_parameterTypeDef wrap
 
@@ -347,9 +312,7 @@ and base_define_param =
     DParam        of ident
   | DPComma       of string mcode
   | DPdots        of string mcode (* ... *)
-  | DPcircles     of string mcode (* ooo *)
   | OptDParam     of define_param
-  | UniqueDParam  of define_param
 
 and define_param = base_define_param wrap
 
@@ -412,14 +375,12 @@ and base_statement =
   | TopInit       of initialiser (* only at top level *)
   | Disj          of string mcode * statement dots list * string mcode list *
 	             string mcode
+  | Conj          of string mcode * statement dots list * string mcode list *
+	             string mcode
   | Nest          of string mcode * statement dots * string mcode *
 	             (statement dots,statement) whencode list * Ast_cocci.multi
   | Dots          of string mcode (* ... *) *
                      (statement dots,statement) whencode list
-  | Circles       of string mcode (* ooo *) *
-	             (statement dots,statement) whencode list
-  | Stars         of string mcode (* *** *) *
-	             (statement dots,statement) whencode list
   | FunDecl of (info * mcodekind) (* before the function decl *) *
 	fninfo list * ident (* name *) *
 	string mcode (* ( *) * parameter_list *
@@ -434,7 +395,6 @@ and base_statement =
 	define_parameters (*params*) * statement dots
   | Pragma of string mcode (* #pragma *) * ident * pragmainfo
   | OptStm   of statement
-  | UniqueStm of statement
 
 and base_pragmainfo =
     PragmaTuple of string mcode(* ( *) * expression dots * string mcode(* ) *)
@@ -512,16 +472,19 @@ and parsed_rule =
   | ScriptRule of string (* name *) *
       string * Ast_cocci.dependency *
 	(Ast_cocci.script_meta_name *
-	   Ast_cocci.meta_name * Ast_cocci.metavar) list (*inherited vars*) *
+	   Ast_cocci.meta_name * Ast_cocci.metavar * Ast_cocci.mvinit)
+	    list (*inherited vars*) *
 	Ast_cocci.meta_name list (*script vars*) *
 	string
   | InitialScriptRule of string (* name *) * string * Ast_cocci.dependency *
 	(Ast_cocci.script_meta_name *
-	   Ast_cocci.meta_name * Ast_cocci.metavar) list (*virtual vars*) *
+	   Ast_cocci.meta_name * Ast_cocci.metavar * Ast_cocci.mvinit)
+	     list (*virtual vars*) *
 	string
   | FinalScriptRule of string (* name *) * string * Ast_cocci.dependency *
 	(Ast_cocci.script_meta_name *
-	   Ast_cocci.meta_name * Ast_cocci.metavar) list (*virtual vars*) *
+	   Ast_cocci.meta_name * Ast_cocci.metavar * Ast_cocci.mvinit)
+	     list (*virtual vars*) *
 	string
 
 (* --------------------------------------------------------------------- *)
@@ -586,10 +549,6 @@ val forinfo : forinfo -> anything
 val case_line : case_line -> anything
 val string_fragment : string_fragment -> anything
 val top : top_level -> anything
-
-(* --------------------------------------------------------------------- *)
-
-val undots : 'a dots -> 'a list
 
 (* --------------------------------------------------------------------- *)
 (* Avoid cluttering the parser.  Calculated in compute_lines.ml. *)

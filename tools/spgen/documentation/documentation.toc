@@ -1,0 +1,14 @@
+\select@language {english}
+\contentsline {section}{\numberline {1}About}{2}{section.1}
+\contentsline {subsection}{\numberline {1.1}What is \texttt {spgen}?}{2}{subsection.1.1}
+\contentsline {subsection}{\numberline {1.2}Features}{2}{subsection.1.2}
+\contentsline {section}{\numberline {2}Usage}{3}{section.2}
+\contentsline {subsection}{\numberline {2.1}Installation and uninstallation}{3}{subsection.2.1}
+\contentsline {subsection}{\numberline {2.2}Running the program}{3}{subsection.2.2}
+\contentsline {subsection}{\numberline {2.3}User input}{4}{subsection.2.3}
+\contentsline {subsubsection}{\numberline {2.3.1}Interactive mode}{4}{subsubsection.2.3.1}
+\contentsline {subsubsection}{\numberline {2.3.2}Configuration mode}{4}{subsubsection.2.3.2}
+\contentsline {subsection}{\numberline {2.4}Examples}{5}{subsection.2.4}
+\contentsline {section}{\numberline {3}Implementation}{6}{section.3}
+\contentsline {section}{\numberline {4}Known issues}{7}{section.4}
+\contentsline {section}{\numberline {5}Future work}{9}{section.5}

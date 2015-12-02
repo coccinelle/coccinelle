@@ -199,7 +199,6 @@ type token =
   | TCBrace of (Data.clt)
   | TBreak of (Data.clt)
   | TBinary
-  | TBang0
   | TBang of (Data.clt)
   | TAttribute
   | TAssignment
@@ -207,13 +206,14 @@ type token =
   | TArob
   | TAny of (Data.clt)
   | TAndLog of (Data.clt)
+  | TAnd0 of (string * Data.clt)
   | TAnd of (Data.clt)
   | TAnalysis
   | EOF
 
 
-val script_meta_virt_nofresh_main: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> ((string option (*string*) * string option (*ast*)) * (Ast_cocci.meta_name * Ast_cocci.metavar) option)
-val script_meta_main: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> ((string option (*string*) * string option (*ast*)) * (Ast_cocci.meta_name * Ast_cocci.metavar) option)
+val script_meta_virt_nofresh_main: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> ((string option (*string*) * string option (*ast*)) * (Ast_cocci.meta_name * Ast_cocci.metavar) option * Ast_cocci.mvinit)
+val script_meta_main: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> ((string option (*string*) * string option (*ast*)) * (Ast_cocci.meta_name * Ast_cocci.metavar) option * Ast_cocci.mvinit)
 val rule_name: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Ast_cocci.rulename)
 val plus_ty_main: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Ast0_cocci.rule)
 val plus_main: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Ast0_cocci.rule)

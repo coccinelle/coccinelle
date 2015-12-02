@@ -1,7 +1,0 @@
-@@
-identifier f;
-@@
-
-f(
-+ void
- ) { ... }

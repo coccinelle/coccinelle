@@ -1,30 +1,9 @@
 (*
- * Copyright 2012-2015, Inria
- * Julia Lawall, Gilles Muller
- * Copyright 2010-2011, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-
-# 0 "./asttomember.ml"
 (* on the first pass, onlyModif is true, so we don't see all matched nodes,
 only modified ones *)
 
@@ -214,16 +193,14 @@ let conj_one testfn x l =
   else l
 
 let rec statement_list testfn mcode tail stmt_list : 'a list list =
-  match Ast.unwrap stmt_list with
-    Ast.DOTS(x) | Ast.CIRCLES(x) | Ast.STARS(x) ->
-      (match List.rev x with
-	[] -> []
-      |	last::rest ->
-	  List.fold_right
-	    (function cur ->
-	      function rest ->
-		conj (statement testfn mcode false cur) rest)
-	    rest (statement testfn mcode tail last))
+  match List.rev (Ast.unwrap stmt_list) with
+    [] -> []
+  | last::rest ->
+      List.fold_right
+	(function cur ->
+	  function rest ->
+	    conj (statement testfn mcode false cur) rest)
+	rest (statement testfn mcode tail last)
 
 and statement testfn mcode tail stmt : 'a list list =
   match Ast.unwrap stmt with
@@ -272,6 +249,11 @@ and statement testfn mcode tail stmt : 'a list list =
       then []
       else Common.union_all processed
 
+  | Ast.Conj(stmt_dots_list) ->
+      let processed =
+	List.map (statement_list testfn mcode tail) stmt_dots_list in
+      Common.inter_all processed
+
   | Ast.Nest(starter,stmt_dots,ender,whencode,true,_,_) ->
       statement_list testfn mcode false stmt_dots
 
@@ -295,8 +277,6 @@ and statement testfn mcode tail stmt : 'a list list =
 	(statement testfn mcode tail asstm)
 
   | Ast.OptStm(stm) -> []
-
-  | Ast.UniqueStm(stm) -> statement testfn mcode tail stm
 
   | _ -> failwith "not supported"
 

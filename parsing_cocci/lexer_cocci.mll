@@ -1,30 +1,9 @@
 (*
- * Copyright 2012-2015, Inria
- * Julia Lawall, Gilles Muller
- * Copyright 2010-2011, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-
-# 0 "./lexer_cocci.mll"
 {
 open Parser_cocci_menhir
 module D = Data
@@ -42,7 +21,7 @@ let logical_line = ref 0
 (* control codes *)
 
 (* Defined in data.ml
-type line_type = MINUS | OPTMINUS | UNIQUEMINUS | PLUS | CONTEXT | UNIQUE | OPT
+type line_type = MINUS | OPTMINUS | PLUS | CONTEXT | OPT
 *)
 
 let current_line_type = ref (D.CONTEXT,!line,!logical_line)
@@ -91,7 +70,6 @@ let opt_reverse_token token =
   then match token with
          D.MINUS        -> D.PLUSPLUS  (* maybe too liberal *)
        | D.OPTMINUS     -> lexerr "cannot invert token ?- (an optional minus line), which is needed for reversing the patch" ""
-       | D.UNIQUEMINUS  -> D.PLUS
        | D.PLUS         -> D.MINUS
        | D.PLUSPLUS     -> D.MINUS (* may not be sufficient *)
        | _              -> token
@@ -101,16 +79,12 @@ let add_current_line_type x =
   match (opt_reverse_token x,!current_line_type) with
     (D.MINUS,(D.CONTEXT,ln,lln))  ->
       current_line_type := (D.MINUS,ln,lln)
-  | (D.MINUS,(D.UNIQUE,ln,lln))   ->
-      current_line_type := (D.UNIQUEMINUS,ln,lln)
   | (D.MINUS,(D.OPT,ln,lln))      ->
       current_line_type := (D.OPTMINUS,ln,lln)
   | (D.PLUS,(D.CONTEXT,ln,lln))   ->
       current_line_type := (D.PLUS,ln,lln)
   | (D.PLUSPLUS,(D.CONTEXT,ln,lln))   ->
       current_line_type := (D.PLUSPLUS,ln,lln)
-  | (D.UNIQUE,(D.CONTEXT,ln,lln)) ->
-      current_line_type := (D.UNIQUE,ln,lln)
   | (D.OPT,(D.CONTEXT,ln,lln))    ->
       current_line_type := (D.OPT,ln,lln)
   | _ -> lexerr "invalid control character combination" ""
@@ -133,7 +107,7 @@ let check_plus_linetype s =
 let check_arity_context_linetype s =
   match !current_line_type with
     (D.CONTEXT,_,_) | (D.PLUS,_,_) | (D.PLUSPLUS,_,_)
-  | (D.UNIQUE,_,_) | (D.OPT,_,_) -> ()
+  | (D.OPT,_,_) -> ()
   | _ -> lexerr "invalid in a nonempty context: " s
 
 let check_comment s =
@@ -637,15 +611,6 @@ rule token = parse
   | "..."
       { start_line true; check_minus_context_linetype (tok lexbuf);
 	TEllipsis (get_current_line_type lexbuf) }
-(*
-  | "ooo"
-      { start_line true; check_minus_context_linetype (tok lexbuf);
-	TCircles (get_current_line_type lexbuf) }
-
-  | "***"
-      { start_line true; check_minus_context_linetype (tok lexbuf);
-	TStars (get_current_line_type lexbuf) }
-*)
   | "<..." { start_line true; check_context_linetype (tok lexbuf);
 	     TOEllipsis (get_current_line_type lexbuf) }
   | "...>" { start_line true; check_context_linetype (tok lexbuf);
@@ -654,17 +619,6 @@ rule token = parse
 	     TPOEllipsis (get_current_line_type lexbuf) }
   | "...+>" { start_line true; check_minus_context_linetype (tok lexbuf);
 	     TPCEllipsis (get_current_line_type lexbuf) }
-(*
-  | "<ooo" { start_line true; check_context_linetype (tok lexbuf);
-	     TOCircles (get_current_line_type lexbuf) }
-  | "ooo>" { start_line true; check_context_linetype (tok lexbuf);
-	     TCCircles (get_current_line_type lexbuf) }
-
-  | "<***" { start_line true; check_context_linetype (tok lexbuf);
-	     TOStars (get_current_line_type lexbuf) }
-  | "***>" { start_line true; check_context_linetype (tok lexbuf);
-	     TCStars (get_current_line_type lexbuf) }
-*)
   | "-" { pass_zero();
 	  if !current_line_started
 	  then (start_line true; TMinus (get_current_line_type lexbuf))
@@ -679,10 +633,7 @@ rule token = parse
 	  if !current_line_started
 	  then (start_line true; TWhy (get_current_line_type lexbuf))
           else (add_current_line_type D.OPT; token lexbuf) }
-  | "!" { pass_zero();
-	  if !current_line_started
-	  then (start_line true; TBang (get_current_line_type lexbuf))
-          else (add_current_line_type D.UNIQUE; token lexbuf) }
+  | "!" { start_line true; TBang (get_current_line_type lexbuf) }
   | "(" { if not !col_zero
 	  then (start_line true; TOPar (get_current_line_type lexbuf))
           else
@@ -781,7 +732,14 @@ rule token = parse
   | "<<"           { start_line true;
 		     TShLOp(Ast.DecLeft,get_current_line_type lexbuf) }
 
-  | "&"            { start_line true; TAnd    (get_current_line_type lexbuf) }
+  | "&"            { if not (!col_zero)
+                     then (start_line true; TAnd(get_current_line_type lexbuf))
+                     else (start_line true;
+	                   check_context_linetype (tok lexbuf);
+		           TAnd0 ("&",get_current_line_type lexbuf))}
+  | "\\&"          { start_line true;
+	             TAnd0 ("\\&",contextify(get_current_line_type lexbuf)) }
+
   | "^"            { start_line true; TXor(get_current_line_type lexbuf) }
 
   | "##"            { start_line true; TCppConcatOp }

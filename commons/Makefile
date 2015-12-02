@@ -11,22 +11,14 @@ TARGET=commons
 
 # note: if you add a file (a .mli or .ml), dont forget to redo a 'make depend'
 MYSRC=	commands.ml                              \
-	common.ml common_extra.ml                \
+	common.ml                                \
 	interfaces.ml objet.ml                   \
 	ocollection.ml                           \
 	seti.ml                                  \
 	oset.ml oassoc.ml osequence.ml ograph.ml \
-	ocollection/oseti.ml                     \
-	ocollection/oseth.ml                     \
 	ocollection/osetb.ml                     \
-	ocollection/osetpt.ml                    \
 	ocollection/oassocb.ml			 \
-	ocollection/oassoch.ml			 \
-	ocollection/oassoc_buffer.ml		 \
-	ocollection/oassoc_cache.ml		 \
-	ocollection/oassocid.ml			 \
 	oarray.ml				 \
-	ocollection/ograph2way.ml		 \
 	ograph_simple.ml ograph_extended.ml	 \
 	glimpse.ml parser_combinators.ml
 
@@ -50,7 +42,6 @@ endif
 
 # src from other authors, got from the web or caml hump
 SRC=ocamlextra/dumper.ml
-SRC+=ocamlextra/ANSITerminal.ml
 SRC+=ocamlextra/setb.ml ocamlextra/mapb.ml # defunctorized version of standard set/map
 SRC+=ocamlextra/setPt.ml
 SRC+=$(MYSRC)
@@ -67,16 +58,6 @@ SUBDIRS=ocamlextra ocollection
 #-----------------------------------------------------------------------------
 
 #format: XXXSRC, XXXINCLUDE, XXXSYSLIBS
-
-#gdbm
-MYGDBMSRC=ocollection/oassocdbm.ml
-GDBMSYSLIBS=dbm.cma
-
-#berkeley db (ocamlbdb)
-MYBDBSRC=ocollection/oassocbdb.ml ocollection/oassocbdb_string.ml
-BDBINCLUDES=-I ../ocamlbdb
-BDBSYSLIBS=bdb.cma
-
 
 #lablgtk (ocamlgtk)
 MYGUISRC=gui.ml
@@ -143,7 +124,6 @@ OBJS = $(SRC:.ml=.cmo)
 OPTOBJS = $(SRC:.ml=.cmx)
 
 
-ifneq ($(FEATURE_OCAMLBUILD),yes)
 all: $(LIB)
 all.opt:
 	@$(MAKE) $(OPTLIB) BUILD_OPT=yes
@@ -161,45 +141,12 @@ $(TARGET).top: $(OBJS)
 
 clean::
 	rm -f $(TARGET).top
-else
-all:
-	cd .. && $(OCAMLBUILD) commons/commons.cma
-all.opt:
-	cd .. && $(OCAMLBUILD) commons/commons.cmxa
-clean::
-	cd .. && $(OCAMLBUILD) -clean
-endif
 
 ##############################################################################
 # Other commons libs target
 ##############################################################################
 
-all_libs: gdbm bdb gui mpi backtrace
-
-#-----------------------------------------------------------------------------
-gdbm: commons_gdbm.cma
-gdbm.opt: commons_gdbm.cmxa
-
-commons_gdbm.cma: $(MYGDBMSRC:.ml=.cmo)
-	$(OCAMLC_CMD) -a -o $@ $^
-
-commons_gdbm.cmxa: $(MYGDBMSRC:.ml=.cmx)
-	$(OCAMLOPT_CMD) -a -o $@ $^
-
-
-#-----------------------------------------------------------------------------
-bdb:
-	$(MAKE) INCLUDESEXTRA="$(BDBINCLUDES)" commons_bdb.cma
-bdb.opt:
-	$(MAKE) INCLUDESEXTRA="$(BDBINCLUDES)" commons_bdb.cmxa
-
-commons_bdb.cma: $(MYBDBSRC:.ml=.cmo)
-	$(OCAMLC_CMD) -a -o $@ $^
-
-commons_bdb.cmxa: $(MYBDBSRC:.ml=.cmx)
-	$(OCAMLOPT_CMD) -a -o $@ $^
-
-
+all_libs: bdb gui mpi backtrace
 
 #-----------------------------------------------------------------------------
 gui:
@@ -352,9 +299,7 @@ endif
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
-ifneq ($(FEATURE_OCAMLBUILD),yes)
 -include .depend
-endif
 endif
 endif
 

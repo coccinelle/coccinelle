@@ -1,32 +1,12 @@
 (*
- * Copyright 2012-2015, Inria
- * Julia Lawall, Gilles Muller
- * Copyright 2010-2011, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-
-# 0 "./index.ml"
 (* create an index for each constructor *)
-(* current max is 186 *)
+(* current max is 188, also unused: 7-9, 15, 39, 40, 42, 46, 57, 65, 67, 85-86,
+ 88, 111, 113-115, 134-136, 138-140 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -37,47 +17,17 @@ module Ast0 = Ast0_cocci
 (* if a dot list is empty, add the starting line of the dot list to the
 address.  Otherwise add 0.  An empty dot list should only match with another
 empty one. *)
-let expression_dots d =
-  let ln = (Ast0.get_info d).Ast0.pos_info.Ast0.line_start in
+let dots d =
   match Ast0.unwrap d with
-    Ast0.DOTS(l) -> 1::(if l = [] then [ln] else [0])
-  | Ast0.CIRCLES(l) -> 2::(if l = [] then [ln] else [0])
-  | Ast0.STARS(l) -> 3::(if l = [] then [ln] else [0])
+    [] -> [(Ast0.get_info d).Ast0.pos_info.Ast0.line_start]
+  | _ -> [0]
 
-let initialiser_dots d =
-  let ln = (Ast0.get_info d).Ast0.pos_info.Ast0.line_start in
-  match Ast0.unwrap d with
-    Ast0.DOTS(l) -> 113::(if l = [] then [ln] else [0])
-  | Ast0.CIRCLES(l) -> 114::(if l = [] then [ln] else [0])
-  | Ast0.STARS(l) -> 115::(if l = [] then [ln] else [0])
-
-let parameter_dots d =
-  let ln = (Ast0.get_info d).Ast0.pos_info.Ast0.line_start in
-  match Ast0.unwrap d with
-    Ast0.DOTS(l) -> 4::(if l = [] then [ln] else [0])
-  | Ast0.CIRCLES(l) -> 5::(if l = [] then [ln] else [0])
-  | Ast0.STARS(l) -> 6::(if l = [] then [ln] else [0])
-
-let statement_dots d =
-  let ln = (Ast0.get_info d).Ast0.pos_info.Ast0.line_start in
-  match Ast0.unwrap d with
-    Ast0.DOTS(l) -> 7::(if l = [] then [ln] else [0])
-  | Ast0.CIRCLES(l) -> 8::(if l = [] then [ln] else [0])
-  | Ast0.STARS(l) -> 9::(if l = [] then [ln] else [0])
-
-let declaration_dots d =
-  let ln = (Ast0.get_info d).Ast0.pos_info.Ast0.line_start in
-  match Ast0.unwrap d with
-    Ast0.DOTS(l) -> 134::(if l = [] then [ln] else [0])
-  | Ast0.CIRCLES(l) -> 135::(if l = [] then [ln] else [0])
-  | Ast0.STARS(l) -> 136::(if l = [] then [ln] else [0])
-
-let case_line_dots d =
-  let ln = (Ast0.get_info d).Ast0.pos_info.Ast0.line_start in
-  match Ast0.unwrap d with
-    Ast0.DOTS(l) -> 138::(if l = [] then [ln] else [0])
-  | Ast0.CIRCLES(l) -> 139::(if l = [] then [ln] else [0])
-  | Ast0.STARS(l) -> 140::(if l = [] then [ln] else [0])
+let expression_dots x  = 1 :: dots x
+let initialiser_dots x = 2 :: dots x
+let parameter_dots x =   3 :: dots x
+let statement_dots x =   4 :: dots x
+let declaration_dots x = 5 :: dots x
+let case_line_dots x =   6 :: dots x
 
 let ident i =
   match Ast0.unwrap i with
@@ -87,7 +37,6 @@ let ident i =
     | Ast0.MetaLocalFunc(name,_,_) -> [13]
     | Ast0.DisjId(_,id_list,_,_) -> [152]
     | Ast0.OptIdent(id) -> [14]
-    | Ast0.UniqueIdent(id) -> [15]
     | Ast0.AsIdent _ -> failwith "not possible"
 
 let expression e =
@@ -118,12 +67,10 @@ let expression e =
   | Ast0.MetaExprList(name,_,_) -> [34]
   | Ast0.EComma(cm) -> [35]
   | Ast0.DisjExpr(_,expr_list,_,_) -> [36]
+  | Ast0.ConjExpr(_,expr_list,_,_) -> [187]
   | Ast0.NestExpr(_,expr_dots,_,_,_) -> [37]
   | Ast0.Edots(dots,whencode) -> [38]
-  | Ast0.Ecircles(dots,whencode) -> [39]
-  | Ast0.Estars(dots,whencode) -> [40]
   | Ast0.OptExp(exp) -> [41]
-  | Ast0.UniqueExp(exp) -> [42]
   | Ast0.AsExpr _  | Ast0.AsSExpr _ -> failwith "not possible"
 
 let assignOp op = match Ast0.unwrap op with
@@ -153,7 +100,6 @@ let typeC t =
   | Ast0.MetaType(name,_) -> [53]
   | Ast0.DisjType(_,type_list,_,_) -> [130]
   | Ast0.OptType(ty) -> [45]
-  | Ast0.UniqueType(ty) -> [46]
   | Ast0.AsType _ -> failwith "not possible"
 
 let declaration d =
@@ -171,7 +117,6 @@ let declaration d =
   | Ast0.DisjDecl(_,decls,_,_) -> [97] (* added after *)
   | Ast0.Ddots(dots,whencode) -> [133]
   | Ast0.OptDecl(decl) -> [56]
-  | Ast0.UniqueDecl(decl) -> [57]
   | Ast0.AsDecl _ -> failwith "not possible"
 
 let initialiser i =
@@ -185,7 +130,6 @@ let initialiser i =
   | Ast0.IComma(cm) -> [108]
   | Ast0.Idots(d,whencode) -> [109]
   | Ast0.OptIni(id) -> [110]
-  | Ast0.UniqueIni(id) -> [111]
   | Ast0.AsInit _ -> failwith "not possible"
 
 let parameterTypeDef p =
@@ -196,9 +140,7 @@ let parameterTypeDef p =
   | Ast0.MetaParamList(name,_,_) -> [62]
   | Ast0.PComma(cm) -> [63]
   | Ast0.Pdots(dots) -> [64]
-  | Ast0.Pcircles(dots) -> [65]
   | Ast0.OptParam(param) -> [66]
-  | Ast0.UniqueParam(param) -> [67]
   | Ast0.AsParam _ -> failwith "not possible"
 
 let statement s =
@@ -224,6 +166,7 @@ let statement s =
   | Ast0.MetaStmt(name,_) -> [79]
   | Ast0.MetaStmtList(name,_) -> [80]
   | Ast0.Disj(_,statement_dots_list,_,_) -> [81]
+  | Ast0.Conj(_,statement_dots_list,_,_) -> [188]
   | Ast0.Nest(_,stmt_dots,_,_,_) -> [82]
   | Ast0.Exp(exp) -> [83]
   | Ast0.TopExp(exp) -> [141]
@@ -231,14 +174,11 @@ let statement s =
   | Ast0.TopId(ty) -> [186]
   | Ast0.TopInit(init) -> [146]
   | Ast0.Dots(d,whencode) -> [84]
-  | Ast0.Circles(d,whencode) -> [85]
-  | Ast0.Stars(d,whencode) -> [86]
   | Ast0.Include(inc,name) -> [118]
   | Ast0.Undef(def,id) -> [151]
   | Ast0.Define(def,id,params,body) -> [119]
   | Ast0.Pragma(prg,id,body) -> [161]
   | Ast0.OptStm(re) -> [87]
-  | Ast0.UniqueStm(re) -> [88]
   | Ast0.AsStmt _ -> failwith "not possible"
 
 let forinfo fi =

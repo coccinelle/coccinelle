@@ -1,30 +1,9 @@
 (*
- * Copyright 2012-2015, Inria
- * Julia Lawall, Gilles Muller
- * Copyright 2010-2011, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-
-# 0 "./cocci.ml"
 open Common
 
 module CCI = Ctlcocci_integration
@@ -65,7 +44,6 @@ let cfile_of_program program2_with_ppmethod outf =
 (* for memoization, contains only one entry, the one for the SP *)
 let _hparse = Hashtbl.create 101
 let _h_ocaml_init = Hashtbl.create 101
-let _hctl = Hashtbl.create 101
 
 (* --------------------------------------------------------------------- *)
 (* Cocci related *)
@@ -387,7 +365,7 @@ let show_or_not_rule_name ast rulenb =
 	match ast with
 	  Ast_cocci.CocciRule (nm, (deps, drops, exists), x, _, _) -> nm
 	| Ast_cocci.ScriptRule (nm, _, _, _, _, _) -> nm
-	| _ -> i_to_s rulenb in
+	| _ -> string_of_int rulenb in
       Common.pr_xxxxxxxxxxxxxxxxx ();
       pr (name ^ " = ");
       Common.pr_xxxxxxxxxxxxxxxxx ()
@@ -403,14 +381,14 @@ let show_or_not_scr_rule_name name =
       Common.pr_xxxxxxxxxxxxxxxxx ()
     end
 
-let show_or_not_ctl_text2 ctl ast rulenb =
+let show_or_not_ctl_text2 ctl mvs ast rulenb =
   if !Flag_cocci.show_ctl_text then begin
 
     adjust_pp_with_indent (fun () ->
       Format.force_newline();
       Pretty_print_cocci.print_plus_flag := true;
       Pretty_print_cocci.print_minus_flag := true;
-      Pretty_print_cocci.unparse ast;
+      Pretty_print_cocci.unparse mvs ast;
       );
 
     pr "CTL = ";
@@ -422,8 +400,8 @@ let show_or_not_ctl_text2 ctl ast rulenb =
       );
     pr "";
   end
-let show_or_not_ctl_text a b c =
-      Common.profile_code "show_xxx" (fun () -> show_or_not_ctl_text2 a b c)
+let show_or_not_ctl_text a b c d =
+      Common.profile_code "show_xxx" (fun () -> show_or_not_ctl_text2 a b c d)
 
 
 
@@ -485,7 +463,7 @@ let show_or_not_trans_info2 trans_info =
       in
       indent_do (fun () ->
         trans_info +> List.iter (fun (i, subst, re) ->
-          pr2 ("transform state: " ^ (Common.i_to_s i));
+          pr2 ("transform state: " ^ (string_of_int i));
           indent_do (fun () ->
             adjust_pp_with_indent_and_header "with rule_elem: " (fun () ->
               Pretty_print_cocci.print_plus_flag := true;
@@ -546,8 +524,8 @@ let worth_trying2 cfiles (tokens,_,query,_) =
 
       ) in
       let com =
-	sprintf "egrep -q '(%s)' %s" (join "|" tokens) (join " " cfiles)
-      in
+	Printf.sprintf "egrep -q '(%s)' %s"
+	  (String.concat "|" tokens) (String.concat " " cfiles) in
       (match Sys.command com with
       | 0 (* success *) -> true
       | _ (* failure *) ->
@@ -556,8 +534,8 @@ let worth_trying2 cfiles (tokens,_,query,_) =
 	  false (* no match, so not worth trying *)) in
   (match (res,tokens) with
     (false,Some tokens) ->
-      pr2_once ("Expected tokens " ^ (Common.join " " tokens));
-      pr2 ("Skipping:" ^ (Common.join " " cfiles))
+      pr2_once ("Expected tokens " ^ (String.concat " " tokens));
+      pr2 ("Skipping:" ^ (String.concat " " cfiles))
   | _ -> ());
   res
 
@@ -698,11 +676,11 @@ let interpret_include_path relpath =
 	| None -> search_include_path exists tail relpath) in
   let rec search_path exists searchlist = function
       [] ->
-	let res = Common.concat "/" relpath in
+	let res = String.concat "/" relpath in
 	cache_add include_table (searchlist,relpath) res;
 	Some res
     | (hd::tail) as relpath1 ->
-	let relpath1 = Common.concat "/" relpath1 in
+	let relpath1 = String.concat "/" relpath1 in
 	(match search_include_path exists searchlist relpath1 with
 	  None -> search_path unique_file_exists searchlist tail
 	| Some f ->
@@ -727,7 +705,7 @@ let (includes_to_parse:
 	  [Flag_cocci.I_ALL_INCLUDES; Flag_cocci.I_REALLY_ALL_INCLUDES] in
       let xs = List.map (function (file,(cs,_,_)) -> (file,cs)) xs in
       xs +> List.map (fun (file, cs) ->
-	let dir = Common.dirname file in
+	let dir = Filename.dirname file in
 
 	cs +> Common.map_filter (fun (c,_info_item) ->
 	  match c with
@@ -736,7 +714,7 @@ let (includes_to_parse:
 		 {Ast_c.i_include = ((x,ii)); i_rel_pos = info_h_pos;})  ->
 	    (match x with
             | Ast_c.Local xs ->
-		let relpath = Common.join "/" xs in
+		let relpath = String.concat "/" xs in
 		let f = Filename.concat dir relpath in
 		if (Sys.file_exists f)
 		then Some f
@@ -931,7 +909,7 @@ type toplevel_cocci_info_script_rule = {
   scr_ast_rule:
       string *
       (Ast_cocci.script_meta_name * Ast_cocci.meta_name *
-	 Ast_cocci.metavar) list *
+	 Ast_cocci.metavar * Ast_cocci.mvinit) list *
       Ast_cocci.meta_name list (*fresh vars*) *
       string;
   language: string;
@@ -1280,7 +1258,7 @@ let rec prepare_h seen env (hpath : string) choose_includes parse_strings
 	else last_env_toplevel_c_info info_h_cs;
       others@
       [{
-	fname = Common.basename hpath;
+	fname = Filename.basename hpath;
 	full_fname = hpath;
 	asts = info_h_cs;
 	was_modified_once = ref false;
@@ -1299,7 +1277,6 @@ let prepare_c files choose_includes parse_strings : file_info list =
 	       pr2_once ("C file " ^ file ^ " not readable");
 	       prev)
 	 [] files) in
-  let (files,cprograms) = List.split files_and_cprograms in
   let includes = includes_to_parse files_and_cprograms choose_includes in
   let seen = ref includes in
 
@@ -1317,7 +1294,7 @@ let prepare_c files choose_includes parse_strings : file_info list =
   Flag_parsing_c.parsing_header_for_types := false;
 
   let cfiles =
-    (zip files cprograms) +>
+    files_and_cprograms +>
     List.map
       (function (file, cprogram) ->
       (* todo?: don't update env ? *)
@@ -1325,7 +1302,7 @@ let prepare_c files choose_includes parse_strings : file_info list =
         (* we do that only for the c, not for the h *)
         ignore(update_include_rel_pos (cs +> List.map (fun x -> x.ast_c)));
         {
-        fname = Common.basename file;
+        fname = Filename.basename file;
         full_fname = file;
         asts = cs;
         was_modified_once = ref false;
@@ -1441,11 +1418,13 @@ let merge_env new_e old_e =
 
 let merge_env_list new_e old_e = new_e@old_e
 
-let contains_binding e (_,(r,m),_) =
-  try
-    let _ = List.find (function ((re, rm), _) -> r = re && m = rm) e in
-    true
-  with Not_found -> false
+let contains_binding e = function
+    (_,(r,m),_,Ast_cocci.NoMVInit) ->
+      (try
+	let _ = List.find (function ((re, rm), _) -> r = re && m = rm) e in
+	true
+      with Not_found -> false)
+  | _ -> true
 
 exception Exited
 
@@ -1453,7 +1432,7 @@ let python_application mv ve script_vars r =
   let mv =
     List.map
       (function
-	  ((Some x,None),y,z) -> (x,y,z)
+	  ((Some x,None),y,z,init) -> (x,y,z,init)
 	| _ ->
 	    failwith
 	      (Printf.sprintf "unexpected ast metavar in rule %s"
@@ -1512,7 +1491,7 @@ let apply_script_rule r cache newes e rules_that_have_matched
 	  let relevant_bindings =
 	    List.filter
 	      (function ((re,rm),_) ->
-		List.exists (function (_,(r,m),_) -> r = re && m = rm) mv)
+		List.exists (function (_,(r,m),_,_) -> r = re && m = rm) mv)
 	      e in
 	  (try
 	    match List.assoc relevant_bindings cache with
@@ -1561,7 +1540,7 @@ let apply_script_rule r cache newes e rules_that_have_matched
       |	unbound ->
 	  (if !Flag_cocci.show_dependencies
 	  then
-	    let m2c (_,(r,x),_) = r^"."^x in
+	    let m2c (_,(r,x),_,_) = r^"."^x in
 	    pr2 (Printf.sprintf "script not applied: %s not bound"
 		   (String.concat ", " (List.map m2c unbound))));
 	  let e =
@@ -1622,7 +1601,7 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
     (ccs:file_info list ref) =
   Common.profile_code r.rule_info.rulename (fun () ->
     show_or_not_rule_name r.ast_rule r.rule_info.ruleid;
-    show_or_not_ctl_text r.ctl r.ast_rule r.rule_info.ruleid;
+    show_or_not_ctl_text r.ctl r.metavars r.ast_rule r.rule_info.ruleid;
 
     let reorganized_env =
       reassociate_positions r.free_vars r.negated_pos_vars !es in
@@ -1735,7 +1714,7 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
 		  (*use the old bindings, specialized to the used_after_list*)
 		    if !Flag_ctl.partial_match
 		    then
-		      printf
+		      Printf.printf
 			"Empty list of bindings, I will restart from old env\n";
 		    [(old_bindings_to_keep,rules_that_have_matched)]
 		  end
@@ -1977,7 +1956,7 @@ let rec bigloop2 rs (ccs: file_info list) parse_strings =
             let (l,mv,script_vars,code) = r.scr_ast_rule in
 	    let nm = r.scr_rule_info.rulename in
 	    let deps = r.scr_rule_info.dependencies in
-            Pretty_print_cocci.unparse
+            Pretty_print_cocci.unparse []
 	      (Ast_cocci.ScriptRule (nm,l,deps,mv,script_vars,code)));
 	end;
 
@@ -2049,7 +2028,7 @@ let initial_final_bigloop2 ty rebuild r =
 
       adjust_pp_with_indent (fun () ->
 	Format.force_newline();
-	Pretty_print_cocci.unparse
+	Pretty_print_cocci.unparse []
 	  (rebuild r.scr_ast_rule r.scr_rule_info.dependencies));
     end;
 
@@ -2185,7 +2164,7 @@ let full_engine2 (cocci_infos,parse_strings) cfiles =
   if !Flag_cocci.selected_only
   then
     begin
-      pr2 ("selected " ^ (Common.join " " cfiles));
+      pr2 ("selected " ^ (String.concat " " cfiles));
       cfiles +> List.map (fun s -> s, None)
     end
   else
@@ -2293,7 +2272,7 @@ let has_finalize (cocci_infos,_) =
 let check_duplicate_modif2 xs =
   (* opti: let groups = Common.groupBy (fun (a,resa) (b,resb) -> a = b) xs *)
   if !Flag_cocci.verbose_cocci
-  then pr2 ("Check duplication for " ^ i_to_s (List.length xs) ^ " files");
+  then pr2 ("Check duplication for " ^ string_of_int (List.length xs) ^ " files");
 
   let groups = Common.group_assoc_bykey_eff xs in
   groups +> Common.map_filter (fun (file, xs) ->

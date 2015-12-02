@@ -1,30 +1,9 @@
 (*
- * Copyright 2012-2015, Inria
- * Julia Lawall, Gilles Muller
- * Copyright 2010-2011, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-
-# 0 "./free_vars.ml"
 (* For each rule return the list of variables that are used after it.
 Also augment various parts of each rule with unitary, inherited, and freshness
 informations *)
@@ -171,8 +150,11 @@ let collect_refs include_constraints =
       Ast.MetaAssign(name,Ast.AssignOpNoConstraint,_,_) ->
 	[metaid name]
     | Ast.MetaAssign(name,Ast.AssignOpInSet l,_,_) ->
-	List.fold_left (fun prev a -> bind (collect_assign_names a) prev)
-	  [metaid name] l
+	if include_constraints
+	then
+	  List.fold_left (fun prev a -> bind (collect_assign_names a) prev)
+	    [metaid name] l
+	else [metaid name]
     | _ -> option_default in
 
   let astfvassignop recursor k bop =
@@ -183,8 +165,11 @@ let collect_refs include_constraints =
       Ast.MetaBinary(name,Ast.BinaryOpNoConstraint,_,_) ->
 	[metaid name]
     | Ast.MetaBinary(name,Ast.BinaryOpInSet l,_,_) ->
-	List.fold_left (fun prev a -> bind (collect_binary_names a) prev)
-	  [metaid name] l
+	if include_constraints
+	then
+	  List.fold_left (fun prev a -> bind (collect_binary_names a) prev)
+	    [metaid name] l
+	else [metaid name]
     | _ -> option_default in
 
   let astfvbinaryop recursor k bop =
@@ -554,17 +539,14 @@ let collect_in_plus_term =
 	       fi) in
 	let nm_metas = collect_all_refs.V.combiner_ident nm in
 	let param_metas =
-	  match Ast.unwrap params with
-	    Ast.DOTS(params) | Ast.CIRCLES(params) ->
-	      List.concat
-		(List.map
-		   (function p ->
-		     match Ast.unwrap p with
-		       Ast.VoidParam(t) | Ast.Param(t,_) ->
-			 collect_all_refs.V.combiner_fullType t
-		     | _ -> [])
-		   params)
-	  | _ -> failwith "not allowed for params" in
+	  List.concat
+	    (List.map
+	       (function p ->
+	          match Ast.unwrap p with
+	            Ast.VoidParam(t) | Ast.Param(t,_) ->
+	              collect_all_refs.V.combiner_fullType t
+		  | _ -> [])
+	       (Ast.unwrap params)) in
 	bind fi_metas
 	  (bind nm_metas
 	     (bind param_metas
@@ -897,6 +879,7 @@ let astfvs metavars bound =
     | Ast.Pragma _ -> "Pragma"
     | Ast.Case _ -> "Case"
     | Ast.Default _ -> "Default"
+    | Ast.AsRe _ -> "AsRe"
     | Ast.DisjRuleElem _ -> "DisjRuleElem" in
 
   (* cases for the elements of anything *)
@@ -1116,7 +1099,7 @@ let collect_top_level_used_after metavar_rule_list =
 	  let free_vars =
             match r with
               Ast.ScriptRule (_,_,_,mv,_,_) ->
-                drop_virt(List.map (function (_,(r,v),_) -> (r,v)) mv)
+                drop_virt(List.map (function (_,(r,v),_,_) -> (r,v)) mv)
             | Ast.InitialScriptRule (_,_,_,mv,_)
 	    | Ast.FinalScriptRule (_,_,_,mv,_) ->
 		(* only virtual identifiers *)

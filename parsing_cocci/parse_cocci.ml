@@ -1,30 +1,9 @@
 (*
- * Copyright 2012-2015, Inria
- * Julia Lawall, Gilles Muller
- * Copyright 2010-2011, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-
-# 0 "./parse_cocci.ml"
 (* splits the entire file into minus and plus fragments, and parses each
 separately (thus duplicating work for the parsing of the context elements) *)
 
@@ -53,10 +32,10 @@ let line_type (d,_,_,_,_,_,_,_,_,_) = d
 
 let line_type2c tok =
   match line_type tok with
-    D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> ":-"
+    D.MINUS | D.OPTMINUS -> ":-"
   | D.PLUS -> ":+"
   | D.PLUSPLUS -> ":++"
-  | D.CONTEXT | D.UNIQUE | D.OPT -> ""
+  | D.CONTEXT | D.OPT -> ""
 
 let real_line (_,d,_,_,_,_,_,_,_,_) = d
 let log_line  (_,_,d,_,_,_,_,_,_,_) = d
@@ -260,22 +239,11 @@ let token2c (tok,_) =
   | PC.TStrict(clt) -> add_clt "STRICT" clt
   | PC.TEllipsis(clt) -> add_clt "..." clt
   | PC.TVAEllipsis(clt) -> add_clt "......" clt
-(*
-  | PC.TCircles(clt)  -> add_clt "ooo" clt
-  | PC.TStars(clt)    -> add_clt "***" clt
-*)
 
   | PC.TOEllipsis(clt) -> add_clt "<..." clt
   | PC.TCEllipsis(clt) -> add_clt "...>" clt
   | PC.TPOEllipsis(clt) -> add_clt "<+..." clt
   | PC.TPCEllipsis(clt) -> add_clt "...+>" clt
-(*
-  | PC.TOCircles(clt)  -> add_clt "<ooo" clt
-  | PC.TCCircles(clt)  -> add_clt "ooo>" clt
-  | PC.TOStars(clt)    -> add_clt "<***" clt
-  | PC.TCStars(clt)    -> add_clt "***>" clt
-*)
-  | PC.TBang0 -> "!"
   | PC.TPlus0 -> "+"
   | PC.TWhy0  -> "?"
 
@@ -285,6 +253,7 @@ let token2c (tok,_) =
   | PC.TOPar(clt)  -> add_clt "(" clt
   | PC.TOPar0(s,clt) -> add_clt s clt
   | PC.TMid0(s,clt)  -> add_clt s clt
+  | PC.TAnd0(s,clt)  -> add_clt s clt
   | PC.TCPar(clt)  -> add_clt ")" clt
   | PC.TCPar0(s,clt) -> add_clt s clt
 
@@ -383,10 +352,8 @@ let plus_attachable only_plus (tok,_) =
 (* it would seem that this should all be skips
   | PC.TWhen(clt) |  PC.TWhenTrue(clt) |  PC.TWhenFalse(clt)
   | PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
-  (* | PC.TCircles(clt) | PC.TStars(clt) *)
   | PC.TOEllipsis(clt) | PC.TCEllipsis(clt)
-  | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) (* | PC.TOCircles(clt)
-  | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *)
+  | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt)
 *)
 
   | PC.TWhy(clt) | PC.TDotDot(clt) | PC.TBang(clt) | PC.TOPar(clt)
@@ -404,7 +371,8 @@ let plus_attachable only_plus (tok,_) =
       else if only_plus then NOTPLUS
       else if line_type clt = D.CONTEXT then PLUS else NOTPLUS
 
-  | PC.TOPar0(s,clt) | PC.TMid0(s,clt) | PC.TCPar0(s,clt) -> NOTPLUS
+  | PC.TOPar0(s,clt) | PC.TMid0(s,clt) | PC.TAnd0(s,clt)
+  | PC.TCPar0(s,clt) -> NOTPLUS
   | PC.TMetaPos(nm,_,_,_) -> NOTPLUS
   | PC.TSub(clt) -> NOTPLUS
   | PC.TDirective(_,clt) -> NOTPLUS
@@ -464,9 +432,8 @@ let get_clt (tok,_) =
   | PC.TMetaPos(_,_,_,clt)
   | PC.TMetaDeclarer(_,_,_,clt) | PC.TMetaIterator(_,_,_,clt)
 
-  | PC.TWhen(clt) | PC.TWhenTrue(clt) | PC.TWhenFalse(clt) |
-    PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
-  (* | PC.TCircles(clt) | PC.TStars(clt) *)
+  | PC.TWhen(clt) | PC.TWhenTrue(clt) | PC.TWhenFalse(clt)
+  | PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
 
   | PC.TWhy(clt) | PC.TDotDot(clt) | PC.TBang(clt) | PC.TOPar(clt)
   | PC.TCPar(clt)
@@ -479,10 +446,9 @@ let get_clt (tok,_) =
   | PC.TEq(clt) | PC.TOpAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
   | PC.TPArob(clt) | PC.TPtVirg(clt)
 
-  | PC.TOPar0(_,clt) | PC.TMid0(_,clt) | PC.TCPar0(_,clt)
+  | PC.TOPar0(_,clt) | PC.TMid0(_,clt) | PC.TAnd0(_,clt) | PC.TCPar0(_,clt)
   | PC.TOEllipsis(clt) | PC.TCEllipsis(clt)
-  | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) (* | PC.TOCircles(clt)
-  | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *)
+  | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt)
   | PC.TFunDecl(clt) | PC.TDirective(_,clt) | PC.TLineEnd(clt) -> clt
   | PC.TVAEllipsis(clt) -> clt
 
@@ -551,7 +517,6 @@ let get_clt (tok,_) =
   | PC.TContext -> failwith "No clt attached to token TContext"
   | PC.TConstant -> failwith "No clt attached to token TConstant"
   | PC.TBinary -> failwith "No clt attached to token TBinary"
-  | PC.TBang0 -> failwith "No clt attached to token TBang0"
   | PC.TAttribute -> failwith "No clt attached to token TAttribute"
   | PC.TAssignment -> failwith "No clt attached to token TAssignment"
   | PC.TArobArob -> failwith "No clt attached to token TArobArob"
@@ -677,21 +642,11 @@ let update_clt (tok,x) clt =
   | PC.TAny(_) -> (PC.TAny(clt),x)
   | PC.TStrict(_) -> (PC.TStrict(clt),x)
   | PC.TEllipsis(_) -> (PC.TEllipsis(clt),x)
-(*
-  | PC.TCircles(_)  -> (PC.TCircles(clt),x)
-  | PC.TStars(_)    -> (PC.TStars(clt),x)
-*)
 
   | PC.TOEllipsis(_) -> (PC.TOEllipsis(clt),x)
   | PC.TCEllipsis(_) -> (PC.TCEllipsis(clt),x)
   | PC.TPOEllipsis(_) -> (PC.TPOEllipsis(clt),x)
   | PC.TPCEllipsis(_) -> (PC.TPCEllipsis(clt),x)
-(*
-  | PC.TOCircles(_)  -> (PC.TOCircles(clt),x)
-  | PC.TCCircles(_)  -> (PC.TCCircles(clt),x)
-  | PC.TOStars(_)    -> (PC.TOStars(clt),x)
-  | PC.TCStars(_)    -> (PC.TCStars(clt),x)
-*)
 
   | PC.TWhy(_)   -> (PC.TWhy(clt),x)
   | PC.TDotDot(_)   -> (PC.TDotDot(clt),x)
@@ -699,6 +654,7 @@ let update_clt (tok,x) clt =
   | PC.TOPar(_)  -> (PC.TOPar(clt),x)
   | PC.TOPar0(s,_) -> (PC.TOPar0(s,clt),x)
   | PC.TMid0(s,_)  -> (PC.TMid0(s,clt),x)
+  | PC.TAnd0(s,_)  -> (PC.TAnd0(s,clt),x)
   | PC.TCPar(_)  -> (PC.TCPar(clt),x)
   | PC.TCPar0(s,_) -> (PC.TCPar0(s,clt),x)
 
@@ -789,7 +745,6 @@ let update_clt (tok,x) clt =
   | PC.TContext -> assert false
   | PC.TConstant -> assert false
   | PC.TBinary -> assert false
-  | PC.TBang0 -> assert false
   | PC.TAttribute -> assert false
   | PC.TAssignment -> assert false
   | PC.TArobArob -> assert false
@@ -851,9 +806,9 @@ let tokens_script_all table file get_ats lexbuf end_markers :
 let split t clt =
   let (d,_,_,_,_,_,_,_,_,_) = clt in
   match d with
-    D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> ([t],[])
+    D.MINUS | D.OPTMINUS -> ([t],[])
   | D.PLUS | D.PLUSPLUS -> ([],[t])
-  | D.CONTEXT | D.UNIQUE | D.OPT -> ([t],[t])
+  | D.CONTEXT | D.OPT -> ([t],[t])
 
 let split_token ((tok,_) as t) =
   match tok with
@@ -916,21 +871,17 @@ let split_token ((tok,_) as t) =
   | PC.TFunDecl(clt)
   | PC.TWhen(clt) | PC.TWhenTrue(clt) | PC.TWhenFalse(clt)
   | PC.TAny(clt) | PC.TStrict(clt) | PC.TLineEnd(clt)
-  | PC.TEllipsis(clt) (* | PC.TCircles(clt) | PC.TStars(clt) *)
+  | PC.TEllipsis(clt)
   | PC.TOEllipsis(clt) | PC.TCEllipsis(clt)
   | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) -> split t clt
 
-(*
-  | PC.TOCircles(_) | PC.TCCircles(_)   (* clt must be context *)
-  | PC.TOStars(_) | PC.TCStars(_)       (* clt must be context *)
-*)
-
-  | PC.TBang0 | PC.TPlus0 | PC.TWhy0 ->
+  | PC.TPlus0 | PC.TWhy0 ->
       ([t],[t])
 
   | PC.TWhy(clt)  | PC.TDotDot(clt)
   | PC.TBang(clt) | PC.TOPar(clt) | PC.TOPar0(_,clt)
-  | PC.TMid0(_,clt) | PC.TCPar(clt) | PC.TCPar0(_,clt) -> split t clt
+  | PC.TMid0(_,clt) | PC.TAnd0(_,clt) | PC.TCPar(clt) | PC.TCPar0(_,clt) ->
+      split t clt
 
   | PC.TInc(clt) | PC.TDec(clt) -> split t clt
 
@@ -991,7 +942,7 @@ let rec find_function_names l =
     | (PC.TMetaLocalFunc(_,_,_,clt),info) -> true
     | _ -> false in
   let is_mid = function
-      (PC.TMid0(_),info) -> true
+      (PC.TMid0(_),info) | (PC.TAnd0(_),info) -> true
     | _ -> false in
   let is_par = function
       (PC.TOPar0(_),info) -> true
@@ -1084,9 +1035,9 @@ statement. *)
    to be used as a real identifier *)
 let detect_types in_meta_decls l =
   let is_delim infn = function
-      (PC.TOEllipsis(_),_) (* | (PC.TOCircles(_),_) | (PC.TOStars(_),_) *)
-    | (PC.TPOEllipsis(_),_) (* | (PC.TOCircles(_),_) | (PC.TOStars(_),_) *)
-    | (PC.TEllipsis(_),_) (* | (PC.TCircles(_),_) | (PC.TStars(_),_) *)
+      (PC.TOEllipsis(_),_)
+    | (PC.TPOEllipsis(_),_)
+    | (PC.TEllipsis(_),_)
     | (PC.TPtVirg(_),_) | (PC.TOBrace(_),_) | (PC.TOInit(_),_)
     | (PC.TCBrace(_),_)
     | (PC.TPure,_) | (PC.TContext,_)
@@ -1226,11 +1177,9 @@ let token2line (tok,_) =
   | PC.TFunDecl(clt)
   | PC.TWhen(clt) | PC.TWhenTrue(clt) | PC.TWhenFalse(clt)
   | PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
-  (* | PC.TCircles(clt) | PC.TStars(clt) *)
 
   | PC.TOEllipsis(clt) | PC.TCEllipsis(clt)
-  | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) (*| PC.TOCircles(clt)
-  | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *)
+  | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt)
 
   | PC.TWhy(clt) | PC.TDotDot(clt) | PC.TBang(clt) | PC.TOPar(clt)
   | PC.TOPar0(_,clt) | PC.TMid0(_,clt) | PC.TCPar(clt)
@@ -1299,7 +1248,7 @@ let rec translate_when_true_false = function
 let check_nests tokens =
   let is_minus t =
     let (line_type,a,b,c,d,e,f,g,h,i) = get_clt t in
-    List.mem line_type [D.MINUS;D.OPTMINUS;D.UNIQUEMINUS] in
+    List.mem line_type [D.MINUS;D.OPTMINUS] in
   let check_minus t =
     match fst t with
       PC.TOPar0(_,clt) | PC.TMid0(_,clt) | PC.TCPar0(_,clt) -> t
@@ -1308,7 +1257,7 @@ let check_nests tokens =
 	match clt with
 	  Some (line_type,l,ll,c,d,e,f,g,h,i) ->
 	    (match line_type with
-	      D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> t
+	      D.MINUS | D.OPTMINUS -> t
 	    | _ ->
 		failwith
 		  (Printf.sprintf "minus expected, on %s, line %d"
@@ -1544,9 +1493,9 @@ let minus_to_nothing l =
     try
       let (d,_,_,_,_,_,_,_,_,_) = get_clt tok in
       (match d with
-	D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> true
+	D.MINUS | D.OPTMINUS -> true
       | D.PLUS | D.PLUSPLUS -> false
-      | D.CONTEXT | D.UNIQUE | D.OPT -> false)
+      | D.CONTEXT | D.OPT -> false)
     with _ -> false in
   let rec minus_loop = function
       [] -> []
@@ -1563,21 +1512,17 @@ let minus_to_nothing l =
 
 let rec drop_double_dots l =
   let start = function
-      (PC.TOEllipsis(_),_) | (PC.TPOEllipsis(_),_)
- (* | (PC.TOCircles(_),_) | (PC.TOStars(_),_) *) ->
-	true
+      (PC.TOEllipsis(_),_) | (PC.TPOEllipsis(_),_) -> true
     | _ -> false in
   let middle = function
-      (PC.TEllipsis(_),_) (* | (PC.TCircles(_),_) | (PC.TStars(_),_) *) -> true
+      (PC.TEllipsis(_),_) -> true
     | _ -> false in
   let whenline = function
       (PC.TLineEnd(_),_) -> true
     (*| (PC.TMid0(_),_) -> true*)
     | _ -> false in
   let final = function
-      (PC.TCEllipsis(_),_) | (PC.TPCEllipsis(_),_)
- (* | (PC.TCCircles(_),_) | (PC.TCStars(_),_) *) ->
-	true
+      (PC.TCEllipsis(_),_) | (PC.TPCEllipsis(_),_) -> true
     | _ -> false in
   let any_before x = start x || middle x || final x || whenline x in
   let any_after x = start x || middle x || final x in
@@ -1713,11 +1658,11 @@ let prepare_mv_tokens tokens =
 
 let unminus (d,x1,x2,x3,x4,x5,x6,x7,x8,x9) = (* for hidden variables *)
   match d with
-    D.MINUS | D.OPTMINUS | D.UNIQUEMINUS ->
+    D.MINUS | D.OPTMINUS ->
       (D.CONTEXT,x1,x2,x3,x4,x5,x6,x7,x8,x9)
   | D.PLUS -> failwith "unexpected plus code"
   | D.PLUSPLUS -> failwith "unexpected plus code"
-  | D.CONTEXT | D.UNIQUE | D.OPT -> (D.CONTEXT,x1,x2,x3,x4,x5,x6,x7,x8,x9)
+  | D.CONTEXT | D.OPT -> (D.CONTEXT,x1,x2,x3,x4,x5,x6,x7,x8,x9)
 
 let process_minus_positions x name clt meta =
   let (arity,ln,lln,llne,offset,col,strbef,straft,pos,ws) = get_clt x in
@@ -2004,12 +1949,14 @@ let parse_iso file =
 	    let next_start = List.hd(List.rev tokens) in
 	    let dummy_info = ("",(-1,-1),(-1,-1)) in
 	    let tokens = drop_last [(PC.EOF,dummy_info)] tokens in
+	    let tokens = consume_minus_positions tokens in
 	    let tokens = prepare_tokens false (start@tokens) in
             (*
 	       print_tokens "iso tokens" tokens;
 	    *)
 	    let entry = parse_one "iso main" PC.iso_main file tokens in
 	    let entry = List.map (List.map Test_exps.process_anything) entry in
+	    let entry = List.map (List.map Get_metas.process_anything) entry in
 	    if more
 	    then (* The code below allows a header like Statement list,
 		    which is more than one word.  We don't have that any more,
@@ -2259,9 +2206,10 @@ let parse file =
 	      List.fold_left
 		(function (metavars,script_metavars) ->
 		  function
-		      (script_var,Some(parent,var)) ->
-			((script_var,parent,var) :: metavars, script_metavars)
-		    | ((Some script_var,None),None) ->
+		      (script_var,Some(parent,var),initval) ->
+			((script_var,parent,var,initval) :: metavars,
+			 script_metavars)
+		    | ((Some script_var,None),None,_initval) ->
 			(metavars, (name,script_var) :: script_metavars)
 		    | _ -> failwith "not possible")
 		([],[]) metavars in
@@ -2498,7 +2446,7 @@ let process file isofile verbose =
 		 | p::_ ->
 		     [match Ast0.unwrap p with
 		       Ast0.CODE c ->
-			 (match List.map Ast0.unwrap (Ast0.undots c) with
+			 (match List.map Ast0.unwrap (Ast0.unwrap c) with
 			   [Ast0.Exp e] -> true | _ -> false)
 		     | _ -> false] in
 	       let minus = Arity.minus_arity minus in
@@ -2532,6 +2480,7 @@ let process file isofile verbose =
 	       let minus_ast =
 		 Ast0toast.ast0toast rule_name dependencies dropped_isos
 		   exists minus is_exp ruletype in
+	       let minus_ast = Stmtlist.stmtlist minus_ast in
 
 	       match function_prototypes with
 		 None -> [(extra_meta @ metavars, minus_ast)]
@@ -2545,7 +2494,7 @@ let process file isofile verbose =
 
   let (metavars,code,fvs,neg_pos,ua,pos) = Free_vars.free_vars disjd in
   if !Flag_parsing_cocci.show_SP
-  then List.iter Pretty_print_cocci.unparse code;
+  then List.iter2 Pretty_print_cocci.unparse metavars code;
 
   let search_tokens = Get_constants2.get_constants code neg_pos in
 

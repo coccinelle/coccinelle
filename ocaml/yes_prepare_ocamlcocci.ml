@@ -182,16 +182,18 @@ let prepare_mvs o str = function
       let fn _ =
 	List.map
 	  (function
-	      ((Some nm,None),("virtual",vname),_) ->
+	      ((Some nm,None),("virtual",vname),_,init) ->
 		let vl =
 		  try List.assoc vname !Flag.defined_virtual_env
 		  with Not_found ->
-		    begin
-		      Common.pr2
-			(str^": required variable "^nm^" not found, "^
-			 str^" ignored");
-		      raise Not_found
-		    end in
+		    (match init with
+		      Ast.NoMVInit ->
+			Common.pr2
+			  (str^": required variable "^nm^" not found, "^
+			   str^" ignored");
+			raise Not_found
+		    | Ast.MVInitString s -> s
+		    | Ast.MVInitPosList -> failwith "no virt positions") in
 		(nm,vl)
 	    | _ -> failwith "invalid metavar in initialize or finalize")
 	  metavars in
@@ -216,7 +218,7 @@ let prepare_rule (name, metavars, script_vars, code) =
 	(List.rev
 	   (List.fold_left
 	      (function prev ->
-		function ((str_nm,ast_nm),_,mv) ->
+		function ((str_nm,ast_nm),_,mv,_) ->
 	          (* order important; ctr is incremented *)
 		  let string_rep = string_rep_binding ctr (str_nm,mv) in
 		  let ast_rep = ast_rep_binding ctr (ast_nm,mv) in

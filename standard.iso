@@ -632,7 +632,7 @@ pure type T; // pure because we drop a metavar
 T E;
 @@
 
-sizeof(T) => sizeof(E)
+sizeof(T) => sizeof E
 
 // Expression
 // @ fld_func_call @

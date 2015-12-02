@@ -1,30 +1,9 @@
 (*
- * Copyright 2012-2015, Inria
- * Julia Lawall, Gilles Muller
- * Copyright 2010-2011, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-
-# 0 "./main.ml"
 open Common
 module FC = Flag_cocci
 
@@ -256,7 +235,7 @@ let run_profile p =
 (*****************************************************************************)
 
 let usage_msg =
-  "Usage: " ^ basename Sys.argv.(0) ^
+  "Usage: " ^ Filename.basename Sys.argv.(0) ^
     " --sp-file <SP> <infile> [-o <outfile>] [--iso-file <iso>] [options]" ^
     "\n" ^ "Options are:"
 
@@ -289,7 +268,7 @@ let short_options = [
   "--reverse", Arg.Set Flag_parsing_cocci.interpret_inverted,
   "  invert the semantic patch before applying it";
 
-  "-U", Arg.Int (fun n -> Flag_parsing_c.diff_lines := Some (i_to_s n)),
+  "-U", Arg.Int (fun n -> Flag_parsing_c.diff_lines := Some (string_of_int n)),
   "  set number of diff context lines";
   "--partial-match",        Arg.Set Flag_ctl.partial_match,
   "    report partial matches of the SP on the C file";
@@ -359,6 +338,8 @@ let short_options = [
     Prepare_ocamlcocci.load_file f'),
   "    <file> Loads the file containing the OCaml code in charge of parse errors reporting";
 
+  "--print-options-only", Arg.Unit (fun () -> ()),
+  "   print selected options and exit";
 
   "--version",   Arg.Unit (fun () ->
     let withpython = if Pycocci.python_support then "with" else "without" in
@@ -518,8 +499,9 @@ let other_options = [
     "   gather timing information about the main coccinelle functions";
     "--bench", Arg.Int (function x -> Flag_ctl.bench := x),
     "   <level> for profiling the CTL engine";
-    "--timeout", Arg.Int (fun x -> FC.timeout := Some x),
-    "   <sec> timeout in seconds";
+    "--timeout",
+    Arg.Int (fun x -> FC.timeout := (if x = 0 then None else Some x)),
+    "   <sec> timeout in seconds, 0 for no timeout";
     "--steps", Arg.Int (fun x -> Flag_ctl.steps := Some x),
     "   max number of model checking steps per code unit";
     "--iso-limit", Arg.Int (fun x -> Flag_parsing_cocci.iso_limit := Some x),
@@ -624,6 +606,8 @@ let other_options = [
     "  spacing of + code follows the conventions of Linux";
     "--smpl-spacing", Arg.Unit Flag_parsing_c.set_smpl_spacing,
     "  spacing of + code follows the semantic patch";
+    "--indent", Arg.Set_int Flag_parsing_c.indent,
+    "  default indent, in spaces (no tabs)";
     "-D", Arg.String Flag.set_defined_virtual_rules,
     "  indicate that a virtual rule should be considered to be matched";
     "--c++", Arg.Set Flag.c_plus_plus,
@@ -732,6 +716,14 @@ let other_options = [
 let all_options =
   short_options @ List.concat (List.map Common.thd3 other_options)
 
+let all_string_option_names =
+  List.fold_left
+    (function prev ->
+      function
+	  (_,Arg.Unit _,_) -> prev
+	| (nm,_,_) -> nm :: prev)
+    [] all_options
+
 (* I don't want the -help and --help that are appended by Arg.align *)
 let arg_align2 xs =
   Arg.align xs +> List.rev +> Common.drop 2 +> List.rev
@@ -772,7 +764,8 @@ let arg_parse2 l f msg argv =
 	begin
 	  let xs = Common.lines emsg in
 	    (* take only head, it's where the error msg is *)
-	    pr2 (List.hd xs);
+	    (* was pr2, but that doesn't always get generated *)
+	    Printf.eprintf "%s\n%!" (List.hd xs);
 	    !short_usage_func();
 	    raise (Common.UnixExit (2))
 	end
@@ -948,13 +941,13 @@ let rec main_action xs =
                   (* normal *)
 	      | true, "", _, _ ->
 		  Test_parsing_c.get_files
-		    (join " " (x::xs)) +> List.map (fun x -> [x])
+		    (String.concat " " (x::xs)) +> List.map (fun x -> [x])
 
             (* kbuild *)
 	      | true, kbuild_info_file,_,_ ->
 		  let dirs =
-                    Common.cmd_to_list ("find "^(join " " (x::xs))^" -type d")
-                  in
+                    Common.cmd_to_list
+		      ("find "^(String.concat " " (x::xs))^" -type d") in
 		  let info = Kbuild.parse_kbuild_info kbuild_info_file in
 		  let groups = Kbuild.files_in_dirs dirs info in
 
@@ -1061,12 +1054,13 @@ let rec main_action xs =
 		    Cocci.worth_trying cfiles constants
 		      then
 		    begin
-		  pr2 ("HANDLING: " ^ (join " " cfiles));
+		  pr2 ("HANDLING: " ^ (String.concat " " cfiles));
 		  (*pr2 (List.hd(Common.cmd_to_list "free -m | grep Mem"));*)
 		  flush stderr;
 
 		  Common.timeout_function_opt !FC.timeout (fun () ->
-  	            Common.report_if_take_time 10 (join " " cfiles) (fun () ->
+		    Common.report_if_take_time 10 (String.concat " " cfiles)
+		      (fun () ->
                       try
 			let optfile =
 			  if !output_file <> "" && !compat_mode then
@@ -1167,7 +1161,7 @@ and generate_outfiles outfiles x (* front file *) xs (* other files *) =
               (*
 	         if !output_file = ""
 	         then begin
-                 let tmpfile = "/tmp/"^Common.basename infile in
+                 let tmpfile = "/tmp/"^Filename.basename infile in
                  pr2 (spf "One file modified. Result is here: %s" tmpfile);
                  Common.command2 ("cp "^outfile^" "^tmpfile);
 	         end
@@ -1210,7 +1204,15 @@ let main () =
     let arglist = Array.to_list Sys.argv in
     let arglist = Command_line.command_line arglist in
     let arglist = List.map fix_chars arglist in
+    let arglist = Read_options.read_options all_string_option_names arglist in
     let arglist = fix_idutils arglist in
+
+    (if List.mem "--print-options-only" arglist
+    then
+      begin
+	Printf.eprintf "options: %s\n" (String.concat " " arglist);
+	raise (UnixExit 0)
+      end);
 
     let contains_cocci =
       (* rather a hack... don't want to think about all possible options *)

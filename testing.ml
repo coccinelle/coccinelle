@@ -1,30 +1,9 @@
 (*
- * Copyright 2012-2015, Inria
- * Julia Lawall, Gilles Muller
- * Copyright 2010-2011, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-
-# 0 "./testing.ml"
 open Common
 
 (*****************************************************************************)
@@ -55,8 +34,9 @@ let testone prefix x compare_with_expected_flag =
           if List.length res > 1
           then pr2 ("note that not just " ^ cfile ^ " was involved");
           let tmpfile =
-	    sprintf "%s/%s" Config.get_temp_dir_name (Common.basename cfile) in
-          pr2 (sprintf "One file modified. Result is here: %s" tmpfile);
+	    Printf.sprintf
+	      "%s/%s" Config.get_temp_dir_name (Filename.basename cfile) in
+          pr2 (Printf.sprintf "One file modified. Result is here: %s" tmpfile);
           Common.command2 ("mv "^outfile^" "^tmpfile);
           tmpfile
       | Some None ->
@@ -158,7 +138,8 @@ let testall_bis extra_test expected_score_file update_score_file =
               let s =
                 "INCORRECT:" ^ s ^ "\n" ^
                 "    diff (result(<) vs expected_result(>)) = \n" ^
-                (diffxs +> List.map(fun s -> "    "^s^"\n") +> Common.join "")
+                (diffxs +>
+		 List.map(fun s -> "    "^s^"\n") +> String.concat "")
               in
               Hashtbl.add score res (Common.Pb s)
           | Compare_c.PbOnlyInNotParsedCorrectly s ->
@@ -204,20 +185,12 @@ let testall_bis extra_test expected_score_file update_score_file =
       if Sys.file_exists expected_score_file
       then
         Common.load_score expected_score_file ()
-        (*
-        let sexp = Sexp.load_sexp expected_score_file in
-        Sexp_common.score_of_sexp sexp
-        *)
       else
         if Sys.file_exists expected_score_file_orig
         then begin
           pr2 (spf "use expected orig file (%s)" expected_score_file_orig);
           Common.command2 (spf "cp %s %s" expected_score_file_orig
                                           expected_score_file);
-          (*
-	  let sexp = Sexp.load_sexp expected_score_file in
-          Sexp_common.score_of_sexp sexp
-	  *)
 	  Common.load_score expected_score_file ()
         end
        else
@@ -226,20 +199,8 @@ let testall_bis extra_test expected_score_file update_score_file =
 
     let new_bestscore = Common.regression_testing_vs score expected_score in
 
-    (*
-    let xs = Common.hash_to_list score in
-    let sexp = Sexp_common.sexp_of_score_list xs in
-    let s_score = Sexp.to_string_hum sexp in
-    Common.write_file ~file:(actual_score_file) s_score;
-    *)
     Common.save_score score actual_score_file;
 
-    (*
-    let xs2 = Common.hash_to_list new_bestscore in
-    let sexp2 = Sexp_common.sexp_of_score_list xs2 in
-    let s_score2 = Sexp.to_string_hum sexp2 in
-    Common.write_file ~file:(best_of_both_file) s_score2;
-    *)
     Common.save_score new_bestscore best_of_both_file;
 
     Common.print_total_score score;
@@ -502,9 +463,9 @@ let test_parse_cocci file =
   if not (file =~ ".*\\.cocci")
   then pr2 "warning: seems not a .cocci file";
 
-  let (_,xs,_,_,_,_,(grep_tokens,query,_,_),_) =
+  let (mvs,xs,_,_,_,_,(grep_tokens,query,_,_),_) =
     Parse_cocci.process file (Some !Config.std_iso) false in
-  xs +> List.iter Pretty_print_cocci.unparse;
+  xs +> List.iter2 Pretty_print_cocci.unparse mvs;
   Format.print_newline();
   (* compile ocaml script code *)
   (match Prepare_ocamlcocci.prepare file xs with
@@ -563,7 +524,7 @@ let test_rule_dependencies file =
 	  print_dotted_link nm !prevrule;
 	  prevrule := nm;
 	  depto t nm dep;
-	  List.iter (function (_,(parent,_),_) -> print_link t nm parent)
+	  List.iter (function (_,(parent,_),_,_) -> print_link t nm parent)
 	    script_vars
       | Ast_cocci.InitialScriptRule (_,_,_,_,_)
       | Ast_cocci.FinalScriptRule (_,_,_,_,_) -> ()

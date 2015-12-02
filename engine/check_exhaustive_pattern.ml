@@ -1,30 +1,9 @@
 (*
- * Copyright 2012-2015, Inria
- * Julia Lawall, Gilles Muller
- * Copyright 2010-2011, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-
-# 0 "./check_exhaustive_pattern.ml"
 
 (* Just to warn me when there is some news in the types in
  * ast_cocci.ml or even ast_c.ml, so that I can then adjust my code in
@@ -75,6 +54,7 @@ let dumb_astcocci_rule_elem = function
  | A.Include _ -> ()
  | A.Default _ -> ()
  | A.Case _ -> ()
+ | A.AsRe _ -> ()
  | A.DisjRuleElem _ -> failwith "not possible - compiled away in asttoctl"
 
 let dumb_astcocci_decl = function
@@ -90,7 +70,7 @@ let dumb_astcocci_decl = function
  | A.AsDecl _ -> ()
  | A.Typedef(d,ty1,ty2,pv) -> ()
  | A.DisjDecl xs -> ()
- | A.OptDecl _ | A.UniqueDecl _ -> ()
+ | A.OptDecl _ -> ()
 
 let dumb_astcocci_initialiser = function (* seems same as the above *)
     A.Init(stg,ty,id,eq,ini,sem) -> ()
@@ -106,7 +86,6 @@ let dumb_astcocci_initialiser = function (* seems same as the above *)
   | A.MetaFieldList(name,_,_,_) -> ()
   | A.AsDecl(_,_) -> ()
   | A.OptDecl(decl) -> ()
-  | A.UniqueDecl(decl) -> ()
 
 let dumb_astcocci_expr = function
  | A.MetaExpr (ida,_,_, opttypa, _, _) -> ()
@@ -142,10 +121,8 @@ let dumb_astcocci_expr = function
  | A.NestExpr _ -> ()
  | A.MetaExprList _ -> ()
  | A.EComma _ -> ()
- | A.Ecircles _ -> ()
- | A.Estars _ -> ()
  | A.DisjExpr eas -> ()
- | A.UniqueExp _ -> ()
+ | A.ConjExpr eas -> ()
  | A.OptExp _ -> ()
 
 let dumb_astcocci_fulltype = function
@@ -153,7 +130,6 @@ let dumb_astcocci_fulltype = function
   | A.AsType(_,_) -> ()
   | A.DisjType(types) -> ()
   | A.OptType(ty) -> ()
-  | A.UniqueType(ty) -> ()
 
 let dumb_astcocci_type = function
  | A.MetaType(ida,_,_) -> ()

@@ -1,3 +1,7 @@
+# This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+# See copyright.txt in the Coccinelle source code for more information.
+# The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
+
 VERSION=@PACKAGE_VERSION@
 
 # * for each library $1, add another entry in the same manner
@@ -83,7 +87,6 @@ PCRE_CFLAGS=@PCRE_CFLAGS@
 PCRE_LIBS=@PCRE_LIBS@
 
 export OCAMLFIND=@OCAMLFIND@
-export OCAMLBUILD=@OCAMLBUILD@
 export OCAMLC=@OCAMLC@
 export OCAMLDEP=@OCAMLDEP@
 export OCAMLDOC=@OCAMLDOC@
@@ -126,7 +129,6 @@ LOCALLIB_pycaml=@LOCALLIB_pycaml@
 FEATURE_PYTHON=@FEATURE_PYTHON@
 FEATURE_OCAML=@FEATURE_OCAML@
 NO_OCAMLFIND=@SUBSTITUTED_OCAMLFIND@
-FEATURE_OCAMLBUILD=@FEATURE_OCAMLBUILD@
 
 # Include paths
 PCREDIR=@PATH_pcre@

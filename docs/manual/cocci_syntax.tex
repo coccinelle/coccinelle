@@ -152,15 +152,19 @@ behavior.  Using \NT{disable-iso} with the given name disables this behavior.
 
 The possible types of metavariable declarations are defined by the grammar
 rule below.  Metavariables should occur at least once in the transformation
-immediately following their declaration.  Fresh identifier metavariables
-must only be used in {\tt +} code.  These properties are not expressed in
-the grammar, but are checked by a subsequent analysis.  The metavariables
-are designated according to the kind of terms they can match, such as a
-statement, an identifier, or an expression.  An expression metavariable can
-be further constrained by its type.  A declaration metavariable matches the
-declaration of one or more variables, all sharing the same type
-specification ({\em e.g.}, {\tt int a,b,c=3;}).  A field metavariable does
-the same, but for structure fields.
+code immediately following their declaration.  Fresh identifier
+metavariables must only be used in {\tt +} code.  These properties are not
+expressed in the grammar, but are checked by a subsequent analysis.  The
+metavariables are designated according to the kind of terms they can match,
+such as a statement, an identifier, or an expression.  An expression
+metavariable can be further constrained by its type.  A declaration
+metavariable matches the declaration of one or more variables, all sharing
+the same type specification ({\em e.g.}, {\tt int a,b,c=3;}).  A field
+metavariable does the same, but for structure fields.  In the minus code, a
+statement list metavariable can only appear as a complete function body or
+as the complete body of a sequence statement.  In the plus code, a
+statement list metavariable can occur anywhere a statement list is allowed,
+i.e., including as an element of another statement list.
 
 \begin{grammar}
   \RULE{\rt{metadecl}}
@@ -221,15 +225,15 @@ the same, but for structure fields.
   \CASE{\NT{id} \OPT{ = \NT{binop\_contraint}}}
 
   \RULE{\rt{binop\_contraint}}
-  \CASE{\mth{\{}\NT{COMMA\_LIST}\mth{(}\NT{binary\_op}\mth{)}\mth{\}}}
-  \CASE{\NT{binary\_op}}
+  \CASE{\mth{\{}\NT{COMMA\_LIST}\mth{(}\NT{bin\_op}\mth{)}\mth{\}}}
+  \CASE{\NT{bin\_op}}
 \end{grammar}
 
 A metavariable declaration local idexpression v means that v is restricted
 to be a local variable.  If it should just be a variable, but not
 necessarily a local one, then drop local.  A more complex description of a
 location, such as a->b is considered to be an expression, not an
-ideexpression.
+idexpression.
 
 Constant is for constants, such as 27.  But it also considers an identifier
 that is all capital letters (possibly containing numbers) as a constant as
@@ -285,7 +289,7 @@ is found in demos/format.cocci.
 
 Assignment (resp. binary) operator metavariables match any assignment
 (resp. binary) operator. The list of operators that can be matched can
-be restrected by adding an operator constraint, i.e. a list of accepted
+be restricted by adding an operator constraint, i.e. a list of accepted
 operators.
 
 Other kinds of metavariables can also be attached using \texttt{@} to any
@@ -387,8 +391,8 @@ also possible to include inherited identifier metavariables among the
 constraints.  In the case of a positive constraint, things work in the same
 way, but not with respect to the inherited value of the metavariable.  On
 the other hand, an inequality constraint does not work so well, because the
-only value available is the one available in the ciurrent environment.  If
-the proposed value is different from the one in teh current environment,
+only value available is the one available in the current environment.  If
+the proposed value is different from the one in the current environment,
 but perhaps the same as the one in some other environment, the match will
 still succeed.
 
@@ -459,6 +463,8 @@ typing, metavariables for scripts do not include type declarations.
 
   \RULE{\rt{script\_metadecl}}
   \CASE{\T{id} <{}< \T{rulename\_id}.\T{id} ;}
+  \CASE{\T{id} <{}< \T{rulename\_id}.\T{id} = "..." ;}
+  \CASE{\T{id} <{}< \T{rulename\_id}.\T{id} = [] ;}
   \CASE{\T{id} ;}
 
   \RULE{\rt{script\_virt\_metadecl}}
@@ -491,11 +497,11 @@ Python, the assignment of such a metavariable $x$ should refer to the
 metavariable as {\tt coccinelle.\(x\)}.  Examples are in the files
 \texttt{demos/pythontococci.cocci} and \texttt{demos/camltococci.cocci}.
 
-In an ocaml script, the following extended form of \textit{script\_metadecl}
+In an OCaml script, the following extended form of \textit{script\_metadecl}
 may be used:
 
 \begin{grammar}
-  \RULE{\rt{script\_metadecl}}
+  \RULE{\rt{script\_metadecl'}}
   \CASE{(\T{id},\T{id}) <{}< \T{rulename\_id}.\T{id} ;}
   \CASE{\T{id} <{}< \T{rulename\_id}.\T{id} ;}
   \CASE{\T{id} ;}
@@ -514,6 +520,17 @@ wanted, respectively.
 
 The abstract syntax tree of a metavariable declared using {\tt
   metavariable} is not available.
+
+Script metavariables can have default values.  This is only allowed if the
+abstract syntax tree of the metavariable is not requested.  The default
+value of a position metavariable is written as {\tt []}.  The default value
+of any other kind of metavariable is a string.  There is no control that
+the string actually represents the kind of term represented by the
+metavariable.  Normally, a script rule is only applied if all of the
+metavariables have values.  If default values are provided, then the script
+rule is only applied if all of the metavariables for which there are no
+default values have values.  See demos/defaultscript.cocci for examples of
+the use of this feature.
 
 \section{Transformation}
 
@@ -941,13 +958,13 @@ parameter, and may not contain varargs.
 
 \begin{grammar}
   \RULE{\rt{decl\_var}}
-%  \CASE{\NT{type} \opt{\NT{id} \opt{[\opt{\NT{dot\_expr}}]}
-%      \ANY{, \NT{id} \opt{[ \opt{\NT{dot\_expr}}]}}};}
   \CASE{\NT{common\_decl}}
   \CASE{\opt{\NT{storage}} \NT{ctype} \NT{COMMA\_LIST}\mth{(}\NT{d\_ident}\mth{)} ;}
   \CASE{\opt{\NT{storage}} \opt{\NT{const\_vol}} \T{id} \NT{COMMA\_LIST}\mth{(}\NT{d\_ident}\mth{)} ;}
   \CASE{\opt{\NT{storage}} \NT{fn\_ctype} ( * \NT{d\_ident} ) ( \NT{PARAMSEQ}\mth{(}\NT{name\_opt\_decl}, \mth{\varepsilon)} ) = \NT{initialize} ;}
   \CASE{typedef \NT{ctype} \NT{typedef\_ident} ;}
+%  \CASE{\NT{type} \opt{\NT{id} \opt{[\opt{\NT{dot\_expr}}]}
+%      \ANY{, \NT{id} \opt{[ \opt{\NT{dot\_expr}}]}}};}
 
   \RULE{\rt{one\_decl}}
   \CASE{\NT{common\_decl}}

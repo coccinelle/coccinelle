@@ -1,30 +1,9 @@
 (*
- * Copyright 2012-2015, Inria
- * Julia Lawall, Gilles Muller
- * Copyright 2010-2011, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-
-# 0 "./disjdistr.ml"
 module Ast = Ast_cocci
 module V = Visitor_ast
 
@@ -64,13 +43,7 @@ let disjoption f = function
   | Some x -> List.map (function x -> Some x) (f x)
 
 let disjdots f d =
-  match Ast.unwrap d with
-    Ast.DOTS(l) ->
-      List.map (function l -> Ast.rewrap d (Ast.DOTS(l))) (disjmult f l)
-  | Ast.CIRCLES(l) ->
-      List.map (function l -> Ast.rewrap d (Ast.CIRCLES(l))) (disjmult f l)
-  | Ast.STARS(l) ->
-      List.map (function l -> Ast.rewrap d (Ast.STARS(l))) (disjmult f l)
+  List.map (function l -> Ast.rewrap d l) (disjmult f (Ast.unwrap d))
 
 let rec disjty ft =
   match Ast.unwrap ft with
@@ -84,9 +57,6 @@ let rec disjty ft =
   | Ast.OptType(ty) ->
       let ty = disjty ty in
       List.map (function ty -> Ast.rewrap ft (Ast.OptType(ty))) ty
-  | Ast.UniqueType(ty) ->
-      let ty = disjty ty in
-      List.map (function ty -> Ast.rewrap ft (Ast.UniqueType(ty))) ty
 
 and disjtypeC bty =
   match Ast.unwrap bty with
@@ -140,9 +110,6 @@ and disjident e =
   | Ast.OptIdent(id) ->
       let id = disjident id in
       List.map (function id -> Ast.rewrap e (Ast.OptIdent(id))) id
-  | Ast.UniqueIdent(id) ->
-      let id = disjident id in
-      List.map (function id -> Ast.rewrap e (Ast.UniqueIdent(id))) id
   | _ -> [e]
 
 and disjexp e =
@@ -198,13 +165,11 @@ and disjexp e =
 	(function exp1 -> function exp2 ->
 	  Ast.rewrap e (Ast.ArrayAccess(exp1,lb,exp2,rb)))
   | Ast.RecordAccess(exp,pt,field) ->
-      let exp = disjexp exp in
-      List.map
-	(function exp -> Ast.rewrap e (Ast.RecordAccess(exp,pt,field))) exp
+      disjmult2 (disjexp exp) (disjident field)
+	(fun exp field -> Ast.rewrap e (Ast.RecordAccess(exp,pt,field)))
   | Ast.RecordPtAccess(exp,ar,field) ->
-      let exp = disjexp exp in
-      List.map
-	(function exp -> Ast.rewrap e (Ast.RecordPtAccess(exp,ar,field))) exp
+      disjmult2 (disjexp exp) (disjident field)
+	(fun exp field -> Ast.rewrap e (Ast.RecordPtAccess(exp,ar,field)))
   | Ast.Cast(lp,ty,rp,exp) ->
       disjmult2 (disjty ty) (disjexp exp)
 	(function ty -> function exp -> Ast.rewrap e (Ast.Cast(lp,ty,rp,exp)))
@@ -231,16 +196,17 @@ and disjexp e =
       let exp = disjexp exp in
       List.map (function exp -> Ast.rewrap e (Ast.AsSExpr(exp,asstm))) exp
   | Ast.DisjExpr(exp_list) -> List.concat (List.map disjexp exp_list)
+  | Ast.ConjExpr(exp_list) ->
+      let exp_list = disjmult disjexp exp_list in
+      List.map (function exp_list -> Ast.rewrap e (Ast.ConjExpr(exp_list)))
+	exp_list
   | Ast.NestExpr(starter,expr_dots,ender,whencode,multi) ->
       (* not sure what to do here, so ambiguities still possible *)
       [e]
-  | Ast.Edots(dots,_) | Ast.Ecircles(dots,_) | Ast.Estars(dots,_) -> [e]
+  | Ast.Edots(dots,_) -> [e]
   | Ast.OptExp(exp) ->
       let exp = disjexp exp in
       List.map (function exp -> Ast.rewrap e (Ast.OptExp(exp))) exp
-  | Ast.UniqueExp(exp) ->
-      let exp = disjexp exp in
-      List.map (function exp -> Ast.rewrap e (Ast.UniqueExp(exp))) exp
 
 and disjparam p =
   match Ast.unwrap p with
@@ -252,13 +218,10 @@ and disjparam p =
       let pm = disjparam pm in
       List.map (function pm -> Ast.rewrap p (Ast.AsParam(pm,asexp))) pm
   | Ast.MetaParam(_,_,_) | Ast.MetaParamList(_,_,_,_) | Ast.PComma(_) -> [p]
-  | Ast.Pdots(dots) | Ast.Pcircles(dots) -> [p]
+  | Ast.Pdots(dots) -> [p]
   | Ast.OptParam(param) ->
       let param = disjparam param in
       List.map (function param -> Ast.rewrap p (Ast.OptParam(param))) param
-  | Ast.UniqueParam(param) ->
-      let param = disjparam param in
-      List.map (function param -> Ast.rewrap p (Ast.UniqueParam(param))) param
 
 and disjini i =
   match Ast.unwrap i with
@@ -295,9 +258,6 @@ and disjini i =
   | Ast.OptIni(ini) ->
       let ini = disjini ini in
       List.map (function ini -> Ast.rewrap i (Ast.OptIni(ini))) ini
-  | Ast.UniqueIni(ini) ->
-      let ini = disjini ini in
-      List.map (function ini -> Ast.rewrap i (Ast.UniqueIni(ini))) ini
 
 and designator = function
     Ast.DesignatorField(dot,id) -> [Ast.DesignatorField(dot,id)]
@@ -352,9 +312,6 @@ and disjdecl d =
   | Ast.OptDecl(decl) ->
       let decl = disjdecl decl in
       List.map (function decl -> Ast.rewrap d (Ast.OptDecl(decl))) decl
-  | Ast.UniqueDecl(decl) ->
-      let decl = disjdecl decl in
-      List.map (function decl -> Ast.rewrap d (Ast.UniqueDecl(decl))) decl
 
 let generic_orify_rule_elem f re exp rebuild =
   match f exp with
@@ -457,9 +414,12 @@ let rec disj_rule_elem r k re =
   | Ast.Case(case,exp,colon) ->
       orify_rule_elem re exp
 	(function exp -> Ast.rewrap re (Ast.Case(case,exp,colon)))
+  | Ast.AsRe(rre,asre) -> (* as re doesn't contain disj *)
+      let rre = disj_rule_elem r k rre in
+      Ast.rewrap re (Ast.AsRe(rre,asre))
   | Ast.DisjRuleElem(l) ->
       (* only case lines *)
-      Ast.rewrap re(Ast.DisjRuleElem(List.map (disj_rule_elem r k) l))
+      Ast.rewrap re (Ast.DisjRuleElem(List.map (disj_rule_elem r k) l))
 
 let disj_all =
   let mcode x = x in

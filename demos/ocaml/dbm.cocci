@@ -1,4 +1,5 @@
 @initialize:ocaml@
+@@
 
 let filename = "/tmp/pgtest"
 let db = Dbm.opendbm
@@ -27,6 +28,7 @@ then Printf.eprintf "Fct '%s' matchs \"^foo\"\n" f
 else Printf.eprintf "Fct '%s' does not match \"^foo\"\n" f
 
 @finalize:ocaml@
+@@
 
 Dbm.iter (fun key data -> Printf.printf "'%s' goes with '%s'\n" key data) db;
 Dbm.close db;

@@ -28,7 +28,7 @@ let ast_binding vl = function
 	  Coccilib.Str id
       | Ast_c.MetaAssignOpVal op -> Coccilib.AssignOp op
       | Ast_c.MetaBinaryOpVal op -> Coccilib.BinaryOp op
-      | Ast_c.MetaExprVal(expr,_) -> Coccilib.Expr expr
+      | Ast_c.MetaExprVal(expr,_,_) -> Coccilib.Expr expr
       | Ast_c.MetaExprListVal arglist -> Coccilib.ExprList arglist
       | Ast_c.MetaParamVal param -> Coccilib.Param param
       | Ast_c.MetaParamListVal paramlist -> Coccilib.ParamList paramlist
@@ -39,7 +39,8 @@ let ast_binding vl = function
       | Ast_c.MetaDeclVal decl -> Coccilib.Decl decl
       | Ast_c.MetaFieldVal field -> Coccilib.Field field
       | Ast_c.MetaFieldListVal field -> Coccilib.FieldList field
-      | Ast_c.MetaStmtVal stm -> Coccilib.Stmt stm
+      | Ast_c.MetaStmtVal(stm,_) -> Coccilib.Stmt stm
+      | Ast_c.MetaStmtListVal(stm,_) -> Coccilib.StmtList stm
       | Ast_c.MetaFragListVal frags -> Coccilib.FragList frags
       | Ast_c.MetaFmtVal fmt -> Coccilib.Fmt fmt
       | Ast_c.MetaNoVal -> failwith "no value for script metavariable"
@@ -59,9 +60,13 @@ let run mv ve script_vars name code =
   let args =
     List.concat
       (List.map
-	 (function ((str_name,ast_name),(r,m),_) ->
+	 (function ((str_name,ast_name),(r,m),_,init) ->
 	   match find_binding (r,m) with
-	     None -> []
+	     None ->
+	       (match init with
+		 Ast_cocci.NoMVInit -> failwith "no value for ocaml metavars"
+	       | Ast_cocci.MVInitString s -> [Coccilib.Str s]
+	       | Ast_cocci.MVInitPosList -> [Coccilib.Pos []])
 	   | Some (_,vl) ->
 	       (string_binding vl str_name) @ (ast_binding vl ast_name))
 	 mv) in

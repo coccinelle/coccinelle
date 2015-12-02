@@ -1,30 +1,9 @@
 (*
- * Copyright 2012-2015, Inria
- * Julia Lawall, Gilles Muller
- * Copyright 2010-2011, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
+ * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * See copyright.txt in the Coccinelle source code for more information.
+ * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-
-# 0 "./pretty_print_engine.ml"
 open Common.Infix
 
 open Lib_engine
@@ -38,7 +17,7 @@ let rec pp_binding_kind = function
   | Ast_c.MetaIdVal        s -> pp ("id " ^ s)
   | Ast_c.MetaFuncVal      s -> pp ("func " ^ s)
   | Ast_c.MetaLocalFuncVal s -> pp ("localfunc " ^ s)
-  | Ast_c.MetaExprVal      (expr,_) -> Pretty_print_c.pp_expression_simple expr
+  | Ast_c.MetaExprVal    (expr,_,_) -> Pretty_print_c.pp_expression_simple expr
   | Ast_c.MetaAssignOpVal op        ->
       pp "meta assign op ";
       Pretty_print_c.pp_assignOp_simple op
@@ -57,8 +36,10 @@ let rec pp_binding_kind = function
       Pretty_print_c.pp_field_simple decl
   | Ast_c.MetaFieldListVal      decls ->
       List.iter Pretty_print_c.pp_field_simple decls
-  | Ast_c.MetaStmtVal      statement ->
+  | Ast_c.MetaStmtVal      (statement,_) ->
       Pretty_print_c.pp_statement_simple statement
+  | Ast_c.MetaStmtListVal      (statxs,_) ->
+      Pretty_print_c.pp_statement_seq_list_simple statxs
   | Ast_c.MetaFmtVal fmt -> Pretty_print_c.pp_string_format_simple fmt
   | Ast_c.MetaFragListVal frags ->
       frags +> (List.iter Pretty_print_c.pp_string_fragment_simple)
@@ -69,9 +50,9 @@ let rec pp_binding_kind = function
       let print_pos = function
 	  Ast_cocci.Real x -> string_of_int x
 	| Ast_cocci.Virt(x,off) -> Printf.sprintf "%d+%d" x off in
-      pp (Common.sprintf ("pos(%s,%s)") (print_pos pos1) (print_pos pos2))
+      pp (Printf.sprintf ("pos(%s,%s)") (print_pos pos1) (print_pos pos2))
   | Ast_c.MetaPosValList l ->
-      pp (Common.sprintf ("poss[%s]")
+      pp (Printf.sprintf ("poss[%s]")
 	    (String.concat ", "
 	       (List.map
 		  (function (fl,ce,(minl,minc),(maxl,maxc)) ->
