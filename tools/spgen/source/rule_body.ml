@@ -138,17 +138,7 @@ let whencodes ~strfn ~exprfn ~notfn ~alwaysfn l =
  * Only give positions and stars to statements if they are the first in a dots
  * or come immediately after a nest, dots, disjunction, or metastatement.
  *)
-let star_dotsstmtfn ~context_mode combiner stmtdots =
-
-  (* detects if any of the statements in here contain minuses in which case we
-   * put the stars where the minuses are.
-   * NOTE: uses only minus rule, so does not detect plus slices. This is
-   * exactly what we want to happen as plus slices are not in generated rule!
-   *)
-  let detect_patch = Detect_patch.make_statement_dots stmtdots in
-  let has_minuses = Detect_patch.is_patch detect_patch in
-  let c = combiner ~context_mode:(context_mode || has_minuses) in
-  let stmtfn = c.VT0.combiner_rec_statement in
+let star_dotsstmtfn ~context_mode stmtfn stmtdots =
 
   (* inserts position into statement where structurally appropriate *)
   let star_stmtfn stmt snp =
@@ -199,8 +189,6 @@ let star_dotsstmtfn ~context_mode combiner stmtdots =
  * pass states from token to token. We need the states to keep track of our
  * current context and for proper line formatting.
  * The state also contains the generated rule.
- * (not actually recursive, just needs to pass itself on to star_dotsstmtfn to
- *  allow context_mode toggling without making them mutually recursive)
  *)
 let rec gen_combiner ~context_mode =
   let bind x y = x >> y in (* do x then apply y to the result *)
@@ -305,11 +293,12 @@ let rec gen_combiner ~context_mode =
     | _ -> c_stmtfn stmt in
 
   (* positions and stars are added here!!! *)
-  let dotsstmtfn _ c_dotsstmtfn dotsstmt =
+  let dotsstmtfn c c_dotsstmtfn dotsstmt =
+    let stmtfn = c.VT0.combiner_rec_statement in
     (fun snp ->
        if Snap.no_gen snp (* add no positions; this is relevant in whencodes *)
        then c_dotsstmtfn dotsstmt snp
-       else star_dotsstmtfn ~context_mode gen_combiner dotsstmt snp) in
+       else star_dotsstmtfn ~context_mode stmtfn dotsstmt snp) in
 
   (* detect if disj is the only thing, in which case we don't want to split
    * the disjunction rule.
@@ -321,13 +310,25 @@ let rec gen_combiner ~context_mode =
   let topfn c c_topfn top =
     match Ast0.unwrap top with
     | Ast0.CODE stmtdots ->
+        (* detects if any of the statements in here contain minuses in which
+         * case we put the stars where the minuses are.
+         * NOTE: uses only minus rule, so does not detect plus slices. This is
+         * exactly what we want to happen as plus slices are not in generated
+         * rule!
+         *)
+        let detect_patch = Detect_patch.make_statement_dots stmtdots in
+        let has_minuses = Detect_patch.is_patch detect_patch in
+        let c =
+          if context_mode
+          then c
+          else gen_combiner ~context_mode:has_minuses in
         (match Ast0.unwrap stmtdots with
          | [{Ast0.node = Ast0.Disj _; _} as x] ->
              DG.generate_statement
                ~stmtdotsfn:c.VT0.combiner_rec_statement_dots
                ~stmtfn:c.VT0.combiner_rec_statement
                ~strfn:string_mcode ~stmt:x ~at_top:true
-         | _ -> c_topfn top
+         | _ -> c.VT0.combiner_rec_statement_dots stmtdots
         )
     | _ -> c_topfn top
   in
