@@ -169,9 +169,12 @@ let item_wrap ~item ~item_posfn ~constructor ?(alt = fun _ -> None) snp
  * cases in rule_body.ml and disj_generator.ml. See DisjExpr for example.)
  *)
 
-let type_pos t snp
+let rec type_pos t snp
 : (Ast0.base_typeC Ast0.wrap * Snap.t) option =
   match Ast0.unwrap t with
+  | Ast0.AsType _
+  | Ast0.BaseType _ ->
+      None
   | Ast0.DisjType(lp,tlist,pipelist,rp) ->
       let boollist = Snap.get_disj (Ast0.get_mcode_line lp) snp in
       if all_same boollist then None
@@ -179,7 +182,53 @@ let type_pos t snp
         "pos_gen: Mixed match/patch type disjunctions not supported " ^
         "in position generator."
       )
-  | _ -> None
+  | Ast0.ConstVol(const,t) ->
+      let constructor ~item = Ast0.ConstVol(const,item) in
+      item_wrap ~item:t ~item_posfn:type_pos ~constructor snp
+  | Ast0.Signed(sign,t) ->
+      let constructor ~mc = Ast0.Signed(mc,t) in
+      mcode_wrap ~mc:sign ~constructor snp
+  | Ast0.Pointer(t,star) ->
+      let constructor ~mc = Ast0.Pointer(t,mc) in
+      mcode_wrap ~mc:star ~constructor snp
+  | Ast0.FunctionPointer(t,lp,star,rp,lp2,params,rp2) ->
+      let constructor ~mc = Ast0.FunctionPointer(t,lp,star,rp,lp2,params,mc) in
+      mcode_wrap ~mc:rp2 ~constructor snp
+  | Ast0.Array(t,lb,expr,rb) ->
+      let constructor ~mc = Ast0.Array(t,lb,expr,mc) in
+      mcode_wrap ~mc:rb ~constructor snp
+  | Ast0.Decimal(dec,lp,expr,comma,expr2,rp) ->
+      let constructor ~mc = Ast0.Decimal(dec,lp,expr,comma,expr2,mc) in
+      mcode_wrap ~mc:rp ~constructor snp
+  | Ast0.EnumName(enum,Some nm) ->
+      let constructor ~id = Ast0.EnumName(enum,Some id) in
+      id_wrap ~id:nm ~constructor snp
+  | Ast0.EnumName(enum,None) ->
+      let constructor ~mc = Ast0.EnumName(mc,None) in
+      mcode_wrap ~mc:enum ~constructor snp
+  | Ast0.EnumDef(t,lcb,exprdots,rcb) ->
+      let c ~item ~mc = Ast0.EnumDef(item,lcb,exprdots,mc) in
+      let alt() = mcode_wrap ~mc:rcb ~constructor:(c ~item:t) snp in
+      item_wrap ~item:t ~item_posfn:type_pos ~constructor:(c ~mc:rcb) ~alt snp
+  | Ast0.StructUnionName(sumc,Some nm) ->
+      let constructor ~id = Ast0.StructUnionName(sumc,Some id) in
+      id_wrap ~id:nm ~constructor snp
+  | Ast0.StructUnionName(sumc,None) ->
+      let constructor ~mc = Ast0.StructUnionName(mc,None) in
+      mcode_wrap ~mc:sumc ~constructor snp
+  | Ast0.StructUnionDef(t,lcb,decldots,rcb) ->
+      let c ~item ~mc = Ast0.StructUnionDef(item,lcb,decldots,mc) in
+      let alt() = mcode_wrap ~mc:rcb ~constructor:(c ~item:t) snp in
+      item_wrap ~item:t ~item_posfn:type_pos ~constructor:(c ~mc:rcb) ~alt snp
+  | Ast0.TypeName(nm) ->
+      let constructor ~mc = Ast0.TypeName(mc) in
+      mcode_wrap ~mc:nm ~constructor snp
+  | Ast0.MetaType(mnmc,pure) ->
+      let constructor ~mc = Ast0.MetaType(mc,pure) in
+      mcode_wrap ~mc:mnmc ~constructor snp
+  | Ast0.OptType(t) ->
+      let constructor ~item = Ast0.OptType(item) in
+      item_wrap ~item:t ~item_posfn:type_pos ~constructor snp
 
 (* NB: if implementing disj generation, make sure that the statement dots in
  * the clist are generated in no_gen mode...
@@ -309,8 +358,8 @@ let rec expression_pos exp snp
       let constructor ~mc = Ast0.SizeOfType(mc, lp, typec, rp) in
       mcode_wrap ~mc:sizeofmc ~constructor snp
   | Ast0.TypeExp(typec) ->
-      let _ = type_pos typec snp in (* sanity check for disj *)
-      None
+      let constructor ~item = Ast0.TypeExp(item) in
+      item_wrap ~item:typec ~item_posfn:type_pos ~constructor snp
   | Ast0.Constructor(lp, typec, rp, init) ->
       let _ = type_pos typec snp in (* sanity check for disj *)
       let constructor ~mc = Ast0.Constructor (mc, typec, rp, init) in
@@ -351,8 +400,10 @@ let rec declaration_pos decl snp
       let _ = type_pos ty snp in (* sanity check *)
       let constructor ~id = Ast0.UnInit(st, ty, id, sem) in
       id_wrap ~id ~constructor snp
-  | Ast0.TyDecl _ ->
-      failwith "pos_gen: tydecl"
+  | Ast0.TyDecl (t, sem) ->
+      let c ~item ~mc = Ast0.TyDecl(item, mc) in
+      let alt() = mcode_wrap ~mc:sem ~constructor:(c ~item:t) snp in
+      item_wrap ~item:t ~item_posfn:type_pos ~constructor:(c ~mc:sem) ~alt snp
   | Ast0.Typedef (tm, tc, tc2, sem) ->
       let constructor ~mc = Ast0.Typedef (mc, tc, tc2, sem) in
       mcode_wrap ~mc:tm ~constructor snp
