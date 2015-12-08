@@ -89,7 +89,7 @@ let (cstatement_of_string: string -> string -> Ast_c.statement) =
   assert (no_format s);
   let tmpfile = Common.new_temp_file "cocci_stmt_of_s" "c" in
   Common.write_file tmpfile (Printf.sprintf "void main() {\n%s\n%s\n}" env s);
-  let program = Parse_c.parse_c_and_cpp false tmpfile +> fst in
+  let program = Parse_c.parse_c_and_cpp false false tmpfile +> fst in
   let _ =
     Type_annoter_c.annotate_program !Type_annoter_c.initial_env
       (List.map fst program) in
@@ -107,7 +107,7 @@ let (cexpression_of_string: string -> string -> Ast_c.expression) =
   assert (no_format s);
   let tmpfile = Common.new_temp_file "cocci_expr_of_s" "c" in
   Common.write_file tmpfile (Printf.sprintf "void main() {\n%s\n%s;\n}" env s);
-  let program = Parse_c.parse_c_and_cpp false tmpfile +> fst in
+  let program = Parse_c.parse_c_and_cpp false false tmpfile +> fst in
   let _ =
     Type_annoter_c.annotate_program !Type_annoter_c.initial_env
       (List.map fst program) in

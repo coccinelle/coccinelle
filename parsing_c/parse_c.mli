@@ -24,18 +24,21 @@ val init_defs_builtins : Common.filename -> unit
 (* This is the main function *)
 val parse_c_and_cpp :
     bool (* true if format characters need to be parsed *) ->
+    bool (* true if parsing results should be cached *) ->
       Common.filename (*cfile*) ->
 	(program2 * Parsing_stat.parsing_stat)
 val parse_c_and_cpp_keep_typedefs :
     (string, Lexer_parser.identkind) Common.scoped_h_env option (*typedefs*) ->
       (string, Cpp_token_c.define_def) Hashtbl.t option (* macro defs *) ->
       bool (* true if format characters need to be parsed *) ->
+      bool (* true if parsing results should be cached *) ->
 	Common.filename (*cfile*) ->
 	  (extended_program2 * Parsing_stat.parsing_stat)
 
 (* use some .ast_raw memoized version, and take care if obsolete *)
 val parse_cache:
     bool (* true if format characters need to be parsed *) ->
+    bool (* true if parsing results should be cached *) ->
     Common.filename (*cfile*) -> (extended_program2 * Parsing_stat.parsing_stat)
 
 
@@ -45,8 +48,6 @@ val parse_cache:
 val extract_macros :
   Common.filename -> (string, Cpp_token_c.define_def) Common.assoc
 
-
-val cache : bool ref
 
 (* ---------------------------------------------------------------------- *)
 (* used also for the standard.h file *)

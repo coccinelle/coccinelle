@@ -26,16 +26,16 @@ module Ast_to_flow = Control_flow_c_build
 (* --------------------------------------------------------------------- *)
 (* C related *)
 (* --------------------------------------------------------------------- *)
-let cprogram_of_file saved_typedefs saved_macros parse_strings file =
+let cprogram_of_file saved_typedefs saved_macros parse_strings cache file =
   let (program2, _stat) =
     Parse_c.parse_c_and_cpp_keep_typedefs
       (if !Flag_cocci.use_saved_typedefs then (Some saved_typedefs) else None)
-      (Some saved_macros) parse_strings file in
+      (Some saved_macros) parse_strings cache file in
   program2
 
-let cprogram_of_file_cached parse_strings file =
+let cprogram_of_file_cached parse_strings cache file =
   let ((program2,typedefs,macros), _stat) =
-    Parse_c.parse_cache parse_strings file in
+    Parse_c.parse_cache parse_strings cache file in
   (program2,typedefs,macros)
 
 let cfile_of_program program2_with_ppmethod outf =
@@ -1085,7 +1085,7 @@ let rebuild_info_program cs file isexp parse_strings =
 
       (* cat file; *)
       let cprogram =
-	cprogram_of_file c.all_typedefs c.all_macros parse_strings file in
+	cprogram_of_file c.all_typedefs c.all_macros parse_strings false file in
       let xs = build_info_program cprogram c.env_typing_before in
 
       (* TODO: assert env has not changed,
@@ -1129,11 +1129,11 @@ let rec prepare_h seen env (hpath : string) choose_includes parse_strings
       end
     else
       begin
-        Parse_c.cache := Includes.parse_all_includes choose_includes
-          && !Includes.include_headers_for_types;
+        let cache = Includes.parse_all_includes choose_includes
+          && !Includes.include_headers_for_types in
         try
 	Some
-	    (cprogram_of_file_cached parse_strings hpath)
+	    (cprogram_of_file_cached parse_strings cache hpath)
         with Flag.UnreadableFile file ->
 	  begin
 	    pr2_once ("TYPE: header " ^ hpath ^ " not readable");
@@ -1183,7 +1183,7 @@ let opt_map f lst =
 
 let prepare_c files choose_includes parse_strings : file_info list =
   let cprog_of_file file =
-    try Some (file,cprogram_of_file_cached parse_strings file) with
+    try Some (file,cprogram_of_file_cached parse_strings false file) with
     Flag.UnreadableFile file ->
       pr2_once ("C file " ^ file ^ " not readable");
       None in
