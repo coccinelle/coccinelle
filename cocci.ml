@@ -1252,7 +1252,6 @@ let rec prepare_h seen env (hpath : string) choose_includes parse_strings
   match h_cs with
     None -> []
   | Some h_cs ->
-      (*let h_cs = cprogram_of_file_cached parse_strings hpath in*)
       let local_includes =
 	if choose_includes = Flag_cocci.I_REALLY_ALL_INCLUDES
 	then
