@@ -962,16 +962,36 @@ module StringMap : Map.S with type key = string = Map.Make(String)
 
 let header_cache = Hashtbl.create 101
 
+
+let debug message =
+  if !Flag_parsing_c.verbose_parsing then
+    Printf.eprintf "[Parse_c] %s\n%!" message
+
 let rec parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
     cache file =
-
-  try Hashtbl.find header_cache file with
-  Not_found ->
-    let result =
-      parse_print_error_heuristic2bis saved_typedefs saved_macros parse_strings
-        file in
-    if cache then Hashtbl.add header_cache file result;
-    result
+  debug ("Requested to parse " ^ file);
+  let cached_result =
+    try Some (Hashtbl.find header_cache file) with
+    Not_found -> None in
+  match cached_result with
+    | None ->
+      debug "This file has not been parsed yet. Parsing it now.";
+      let result =
+        parse_print_error_heuristic2bis saved_typedefs saved_macros
+          parse_strings file in
+      if cache then
+      begin
+        debug ("Caching parsing results for file " ^ file);
+        Hashtbl.add header_cache file result
+      end else begin
+        debug ("Not caching parsing results for file " ^ file)
+      end;
+      result
+    | Some result ->
+      debug (
+        "File " ^ file ^ " had already been parsed. " ^
+        "Returning cached result.");
+      result
 
 and parse_print_error_heuristic2bis saved_typedefs saved_macros parse_strings
     file =
@@ -1019,8 +1039,10 @@ and parse_print_error_heuristic2bis saved_typedefs saved_macros parse_strings
 
 
   let tr = mk_tokens_state toks in
+  debug ("The tr structure for file " ^ file ^ " has been computed");
   let handle_include wrapped_incl =
     let incl = Ast_c.unwrap wrapped_incl.Ast_c.i_include in
+    debug ("handle_include " ^ (Ast_c.string_of_inc_file incl));
     let parsing_style = Includes.get_parsing_style () in
     if Includes.should_parse parsing_style file incl
     then begin match Includes.resolve file parsing_style incl with
