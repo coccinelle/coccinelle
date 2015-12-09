@@ -5612,24 +5612,6 @@ let print_score score =
 
 type ('a, 'b) scoped_env = ('a, 'b) assoc list
 
-(*
-let rec lookup_env f env =
-  match env with
-  | [] -> raise Not_found
-  | []::zs -> lookup_env f zs
-  | (x::xs)::zs ->
-      match f x with
-      | None -> lookup_env f (xs::zs)
-      | Some y -> y
-
-let member_env_key k env =
-  try
-    let _ = lookup_env (fun (k',v) -> if k = k' then Some v else None) env in
-    true
-  with Not_found -> false
-
-*)
-
 let rec lookup_env k env =
   match env with
   | [] -> raise Not_found
