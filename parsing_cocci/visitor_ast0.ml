@@ -1082,7 +1082,8 @@ let visitor mode bind option_default
      represented elsewhere in the code *)
 
   and all_functions =
-    {VT0.ident = ident;
+    {VT0.meta_mcode = meta_mcode;
+      VT0.ident = ident;
       VT0.expression = expression;
       VT0.assignOp = assignOp;
       VT0.binaryOp = binaryOp;
@@ -1140,7 +1141,9 @@ let combiner_functions =
    VT0.combiner_topfn = (fun r k e -> k e)}
 
 let combiner_dz r =
-    {VT0.combiner_rec_ident =
+    {VT0.combiner_rec_meta_mcode =
+      (function e -> let (n,_) = r.VT0.meta_mcode e in n);
+      VT0.combiner_rec_ident =
       (function e -> let (n,_) = r.VT0.ident e in n);
       VT0.combiner_rec_expression =
       (function e -> let (n,_) = r.VT0.expression e in n);
@@ -1301,7 +1304,9 @@ let rebuilder_functions =
    VT0.rebuilder_topfn = (fun r k e -> k e)}
 
 let rebuilder_dz r =
-  {VT0.rebuilder_rec_ident =
+  {VT0.rebuilder_rec_meta_mcode =
+      (function e -> let (_,e) = r.VT0.meta_mcode e in e);
+      VT0.rebuilder_rec_ident =
       (function e -> let (_,e) = r.VT0.ident e in e);
       VT0.rebuilder_rec_expression =
         (function e -> let (_,e) = r.VT0.expression e in e);

@@ -10,7 +10,8 @@ module Ast = Ast_cocci
 type ('a,'n) inout = 'a -> ('n * 'a)
 
 type 'n all_functions =
-    {ident : (Ast0.ident,'n) inout;
+    {meta_mcode : (Ast.meta_name Ast0.mcode,'n) inout;
+      ident : (Ast0.ident,'n) inout;
       expression : (Ast0.expression,'n) inout;
       assignOp : (Ast0.assignOp,'n) inout;
       binaryOp : (Ast0.binaryOp,'n) inout;
@@ -37,7 +38,8 @@ type 'n all_functions =
 type ('a,'n) combiner_inout = 'a -> 'n
 
 type 'n combiner_rec_functions =
-    {combiner_rec_ident : (Ast0.ident,'n) combiner_inout;
+    {combiner_rec_meta_mcode : (Ast.meta_name Ast0.mcode,'n) combiner_inout;
+      combiner_rec_ident : (Ast0.ident,'n) combiner_inout;
       combiner_rec_expression : (Ast0.expression,'n) combiner_inout;
       combiner_rec_assignOp : (Ast0.assignOp,'n) combiner_inout;
       combiner_rec_binaryOp : (Ast0.binaryOp,'n) combiner_inout;
@@ -108,7 +110,8 @@ type 'n combiner_functions =
 type 'a rebuilder_inout = 'a -> 'a
 
 type rebuilder_rec_functions =
-    {rebuilder_rec_ident : Ast0.ident rebuilder_inout;
+    {rebuilder_rec_meta_mcode : Ast.meta_name Ast0.mcode rebuilder_inout;
+      rebuilder_rec_ident : Ast0.ident rebuilder_inout;
       rebuilder_rec_expression : Ast0.expression rebuilder_inout;
       rebuilder_rec_assignOp : Ast0.assignOp rebuilder_inout;
       rebuilder_rec_binaryOp : Ast0.binaryOp rebuilder_inout;
