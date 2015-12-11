@@ -17,7 +17,7 @@ let prepare coccifile code =
       [] code in
   if ocamls_rules = []
   then None
-  else failwith "OCaml scripting is unsupported. Compile spatch with OCaml version >= 3.11"
+  else failwith "OCaml scripting is unsupported."
 
 let prepare_simple _ =
   failwith "OCaml scripting is unsupported. Compile spatch with OCaml version >= 3.11"
