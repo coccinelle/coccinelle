@@ -2195,8 +2195,10 @@ let parse file =
 	      not(dependencies = Ast.FailDep)
 	    then Data.inheritable_positions := []);
 
-	    Check_meta.check_meta rule_name old_metas inherited_metavars
-	      metavars minus_res plus_res;
+	    if not(dependencies = Ast.FailDep)
+	    then
+	      Check_meta.check_meta rule_name old_metas inherited_metavars
+		metavars minus_res plus_res;
 
             (more, Ast0.CocciRule ((minus_res, metavars,
               (iso, dropiso, dependencies, rule_name, exists)),
