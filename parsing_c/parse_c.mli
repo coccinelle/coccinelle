@@ -37,6 +37,7 @@ val parse_c_and_cpp_keep_typedefs :
 
 (* use some .ast_raw memoized version, and take care if obsolete *)
 val parse_cache:
+    (string, Lexer_parser.identkind) Common.scoped_h_env option (* typedefs *) ->
     bool (* true if format characters need to be parsed *) ->
     bool (* true if parsing results should be cached *) ->
     Common.filename (*cfile*) -> (extended_program2 * Parsing_stat.parsing_stat)

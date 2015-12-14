@@ -33,9 +33,12 @@ let cprogram_of_file saved_typedefs saved_macros parse_strings cache file =
       (Some saved_macros) parse_strings cache file in
   program2
 
-let cprogram_of_file_cached parse_strings cache file =
+let cprogram_of_file_cached saved_typedefs parse_strings cache file =
+  let tdefs =
+    if !Flag_cocci.use_saved_typedefs then Some saved_typedefs
+    else None in
   let ((program2,typedefs,macros), _stat) =
-    Parse_c.parse_cache parse_strings cache file in
+    Parse_c.parse_cache tdefs parse_strings cache file in
   (program2,typedefs,macros)
 
 let cfile_of_program program2_with_ppmethod outf =
@@ -1118,6 +1121,8 @@ let fixpath s =
     | [] -> [] in
   String.concat "/" (loop s)
 
+let current_typedefs = ref (Common.empty_scoped_h_env () )
+
 let rec prepare_h seen env (hpath : string) choose_includes parse_strings
     : file_info list =
   let h_cs =
@@ -1133,7 +1138,8 @@ let rec prepare_h seen env (hpath : string) choose_includes parse_strings
           && !Includes.include_headers_for_types in
         try
 	Some
-	    (cprogram_of_file_cached parse_strings cache hpath)
+	    (cprogram_of_file_cached
+	      !current_typedefs parse_strings cache hpath)
         with Flag.UnreadableFile file ->
 	  begin
 	    pr2_once ("TYPE: header " ^ hpath ^ " not readable");
@@ -1142,7 +1148,9 @@ let rec prepare_h seen env (hpath : string) choose_includes parse_strings
       end in
   match h_cs with
     None -> []
-  | Some h_cs ->
+  | Some (program, tdefs, macros) ->
+      current_typedefs := tdefs;
+      let h_cs = (program, tdefs, macros) in
       let local_includes =
 	if choose_includes = Includes.Parse_really_all_includes
 	then
@@ -1183,10 +1191,17 @@ let opt_map f lst =
 
 let prepare_c files choose_includes parse_strings : file_info list =
   let cprog_of_file file =
-    try Some (file,cprogram_of_file_cached parse_strings false file) with
-    Flag.UnreadableFile file ->
-      pr2_once ("C file " ^ file ^ " not readable");
-      None in
+    let result =
+      try Some (file,cprogram_of_file_cached
+        !current_typedefs parse_strings false file)
+      with Flag.UnreadableFile file ->
+        pr2_once ("C file " ^ file ^ " not readable");
+        None in
+    match result with
+      | None -> None
+      | Some (_, (_, tdefs, _)) ->
+        current_typedefs := tdefs;
+        result in
   let files_and_cprograms = opt_map cprog_of_file files in
   let includes = includes_to_parse files_and_cprograms choose_includes in
   let seen = ref includes in
