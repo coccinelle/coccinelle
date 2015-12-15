@@ -967,6 +967,13 @@ let debug message =
   if !Flag_parsing_c.verbose_parsing then
     Printf.eprintf "[Parse_c] %s\n%!" message
 
+let print_typedefs = function
+  | None -> debug "No typedefs available yet"
+  | Some typedefs ->
+    let f key value acc = key ^ " " ^ acc in
+    let ids = Hashtbl.fold f typedefs.scoped_h "" in
+    debug ("The following typedefs are available: " ^ ids)
+
 let rec parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
     cache file =
   debug ("Requested to parse " ^ file);
@@ -976,6 +983,7 @@ let rec parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
   match cached_result with
     | None ->
       debug "This file has not been parsed yet. Parsing it now.";
+      print_typedefs saved_typedefs;
       let result =
         parse_print_error_heuristic2bis saved_typedefs saved_macros
           parse_strings file in
