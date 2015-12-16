@@ -545,6 +545,7 @@ let make_message_files subject cover message nonmessage date maintainer_table
 	    (fun (services,maintainers) diffs rest ->
 	      union (Str.split (Str.regexp ",") maintainers) rest)
 	    maintainer_table [] in
+	let maintainers = List.rev maintainers in
 	let diffs =
 	  Hashtbl.fold
 	    (fun (services,maintainers) diffs rest ->
