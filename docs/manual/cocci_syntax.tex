@@ -415,6 +415,10 @@ the proposed value is different from the one in the current environment,
 but perhaps the same as the one in some other environment, the match will
 still succeed.
 
+A declaration of a name as a typedef extends through the rest of the
+semantic patch.  It is not required, and it will cause a parse error, to
+redeclare a name as a typedef.
+
 \paragraph*{Warning:} Each metavariable declaration causes the declared
 metavariables to be immediately usable, without any inheritance
 indication.  Thus the following are correct:
