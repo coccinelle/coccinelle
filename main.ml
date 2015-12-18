@@ -909,14 +909,16 @@ let rec main_action xs =
 
 	  if !dir && !Flag.patch = None
 	  then
-	    (match xs with
-	    | [] -> Flag.patch := Some (Cocci.normalize_path x)
-	    | _ ->
-		pr2
-		  ("warning: patch output can only be created when only one\n"^
-		   "directory is specified or when the -patch flag is used")
-		  );
-	  Flag.dir := x;
+	    begin
+	      (match xs with
+	      | [] -> Flag.patch := Some (Cocci.normalize_path x)
+	      | _ ->
+		  pr2
+		    ("warning: patch output can only be created when only one\n"
+		     ^"directory is specified or when the -patch flag is used")
+		    );
+	      Flag.dir := x
+	    end;
 
 	let (cocci_infos,constants) =
 	  Cocci.pre_engine (!cocci_file, !Config.std_iso) in
