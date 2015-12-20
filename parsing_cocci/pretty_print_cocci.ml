@@ -948,6 +948,18 @@ let rec unparse_cocci_mv rule = function
   | Ast.MetaExpDecl(_,(r,n),None) ->
       print_string "expression "; print_name rule r n; print_string ";"
   | Ast.MetaExpDecl(_,(r,n),ty) ->
+      let rec contains_unknown = function
+	  Type_cocci.ConstVol(cv,ty) -> contains_unknown ty
+	| Type_cocci.SignedT(sgn,Some ty) -> contains_unknown ty
+	| Type_cocci.Pointer(ty) -> contains_unknown ty
+	| Type_cocci.FunctionPointer(ty) -> contains_unknown ty
+	| Type_cocci.Array(ty) -> contains_unknown ty
+	| Type_cocci.Unknown -> true
+	| _ -> false in
+      (match ty with
+	None -> ()
+      | Some ty -> (* unknown only possible when there is only one type? *)
+	  if List.exists contains_unknown ty then print_string "expression ");
       print_types ty; print_name rule r n; print_string ";"
   | Ast.MetaIdExpDecl(_,(r,n),ty) ->
       print_string "idexpression "; print_types ty;

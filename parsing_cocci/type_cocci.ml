@@ -72,7 +72,7 @@ let rec type2c = function
       print_string " inherited:"; print_bool inherited;
       print_string " */"
       *)
-  | Unknown -> "unknown "
+  | Unknown -> "" (* only occurs in exp metavar decls *)
 
 and print_name = function
     NoName -> ""
