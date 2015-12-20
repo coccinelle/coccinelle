@@ -27,9 +27,8 @@ let preprocess = ref false     (* run the C preprocessor before cocci *)
 let compat_mode = ref false
 let ignore_unknown_opt = ref false
 
-(* somehow obsolete now *)
 let dir = ref false
-
+let file_groups = ref false
 let kbuild_info = ref ""
 
 let macro_file = ref ""
@@ -327,6 +326,8 @@ let short_options = [
 
   "--dir", Arg.Set dir,
   "    <dir> process all files in directory recursively";
+  "--file-groups", Arg.Set file_groups,
+  "    <file> process the file groups listed in the file";
 
   "--no-scanner", Arg.Unit (function _ -> Flag.scanner := Flag.NoScanner),
   "    no indexing";
@@ -834,14 +835,17 @@ let glimpse_filter2 (_,query,_,_) dir =
 		Some
 		  (let filelist = glimpse_res +>
 		   List.filter
-		     (fun file -> List.mem (Common.filesuffix file) suffixes) in
+		     (fun file ->
+		       List.mem (Common.filesuffix file) suffixes) in
 		   if filelist <> [] then
 		     begin
 		       let firstfile = List.hd filelist in
-		       if Filename.is_relative firstfile || Filename.is_implicit firstfile then
-			 List.map (fun file -> dir ^ Filename.dir_sep ^ file) filelist
-		       else
-			 filelist
+		       if Filename.is_relative firstfile ||
+		          Filename.is_implicit firstfile
+		       then
+			 List.map (fun file -> dir ^ Filename.dir_sep ^ file)
+			   filelist
+		       else filelist
 		     end
 		   else []
 		  )
@@ -881,6 +885,45 @@ let idutils_filter (_,_,_,query) dir =
       Some
 	(files +>
 	 List.filter (fun file -> List.mem (Common.filesuffix file) suffixes))
+
+let scanner_to_interpreter = function
+    Flag.Glimpse -> glimpse_filter
+  | Flag.IdUtils -> idutils_filter
+  | Flag.CocciGrep -> coccigrep_filter
+  | Flag.GitGrep -> gitgrep_filter
+  | _ -> failwith "impossible"
+
+(*****************************************************************************)
+(* File groups *)
+(*****************************************************************************)
+
+(* Groups are separated by blank lines. Single-line comments beginning
+with // are tolerated *)
+let read_file_groups x =
+  let i = open_in x in
+  let file_groups = ref [] in
+  let res = ref [] in
+  let dump _ =
+    match !res with
+      [] -> ()
+    | l -> file_groups := (List.rev l) :: !file_groups in
+  let empty_line = Str.regexp " *$" in
+  let com = Str.regexp " *//" in
+  let rec in_files _ =
+    let l = input_line i in
+    if Str.string_match empty_line l 0
+    then begin dump(); in_space() end
+    else if Str.string_match com l 0
+    then in_files()
+    else begin res := l :: !res; in_files() end
+  and in_space _ =
+    let l = input_line i in
+    if Str.string_match empty_line l 0
+    then in_space()
+    else if Str.string_match com l 0
+    then in_space()
+    else begin res := l :: !res; in_files() end in
+  try in_files() with End_of_file -> begin dump(); List.rev !file_groups end
 
 (*****************************************************************************)
 (* Main action *)
@@ -925,35 +968,48 @@ let rec main_action xs =
 
         let infiles =
             Common.profile_code "Main.infiles computation" (fun () ->
-	      match !dir, !kbuild_info, !Flag.scanner, xs with
+	      match !file_groups, !dir, !kbuild_info, !Flag.scanner, xs with
             (* glimpse *)
-              | false, _, _, _ -> [x::xs]
-	      |	true, "",
+	      | true, false, "", scanner, [] ->
+		  let fg = read_file_groups x in
+		  (match scanner with
+		    Flag.NoScanner -> fg
+		  | _ ->
+		      let interpreter = scanner_to_interpreter !Flag.scanner in
+		      List.filter
+			(function files ->
+			  List.exists
+			    (function fl ->
+			      match interpreter constants fl with
+				Some [] -> false (* no file matches *)
+			      | _ -> true)
+			    files)
+			fg)
+	      | true, _, _, _, _ ->
+		  failwith
+		    ("file groups not compatible with --dir, --kbuild-info,"^
+		     " or multiple files")
+              | _, false, _, _, _ -> [x::xs]
+	      |	_, true, "",
 		  (Flag.Glimpse|Flag.IdUtils|Flag.CocciGrep|Flag.GitGrep),
 		  [] ->
-		    let interpreter =
-		      match !Flag.scanner with
-			Flag.Glimpse -> glimpse_filter
-		      | Flag.IdUtils -> idutils_filter
-		      | Flag.CocciGrep -> coccigrep_filter
-		      | Flag.GitGrep -> gitgrep_filter
-		      |	_ -> failwith "impossible" in
+		    let interpreter = scanner_to_interpreter !Flag.scanner in
 		    let files =
 		      match interpreter constants x with
 			None -> Test_parsing_c.get_files x
 		      | Some files -> files in
                     files +> List.map (fun x -> [x])
-              | true, s,
+              | _, true, s,
 		  (Flag.Glimpse|Flag.IdUtils|Flag.CocciGrep|Flag.GitGrep), _
 		when s <> "" ->
                   failwith "--use-xxx filters do not work with --kbuild"
                   (* normal *)
-	      | true, "", _, _ ->
+	      | _, true, "", _, _ ->
 		  Test_parsing_c.get_files
 		    (String.concat " " (x::xs)) +> List.map (fun x -> [x])
 
             (* kbuild *)
-	      | true, kbuild_info_file,_,_ ->
+	      | _, true, kbuild_info_file,_,_ ->
 		  let dirs =
                     Common.cmd_to_list
 		      ("find "^(String.concat " " (x::xs))^" -type d") in
@@ -1018,7 +1074,10 @@ let rec main_action xs =
             let prefix =
 	      Filename.chop_extension (Filename.basename !cocci_file) in
 	    (if Sys.file_exists prefix
-	    then failwith (Printf.sprintf "Directory %s used for temporary files already exists and should be removed." prefix));
+	    then
+	      failwith
+		(Printf.sprintf
+		   "Directory %s used for temporary files already exists and should be removed." prefix));
 	    let clean _ =
 	      let files = Array.to_list(Sys.readdir prefix) in
 	      let (stdouts,stderrs) =
@@ -1262,18 +1321,28 @@ let main () =
     (if !dir
     then
       let chosen_dir =
-            if List.length !args > 1
-            then
-              begin
-                let chosen = List.hd !args in
-                Flag.dir := chosen;
-                pr2 ("ignoring all but the last specified directory: "^chosen);
-                args := [chosen];
-                chosen
-              end
-            else List.hd !args
-        in if !FC.include_path = []
-           then FC.include_path := [Filename.concat chosen_dir "include"]);
+        if List.length !args > 1
+        then
+          begin
+            let chosen = List.hd !args in
+            Flag.dir := chosen;
+            pr2 ("ignoring all but the last specified directory: "^chosen);
+            args := [chosen];
+            chosen
+          end
+        else List.hd !args
+      in if !FC.include_path = []
+      then FC.include_path := [Filename.concat chosen_dir "include"]);
+    (* The same thing for file groups *)
+    (if !file_groups
+    then
+      if List.length !args > 1
+      then
+        begin
+          let chosen = List.hd !args in
+          pr2 ("ignoring all but the last specified file: "^chosen);
+          args := [chosen]
+        end);
 
     args := List.rev !args;
 

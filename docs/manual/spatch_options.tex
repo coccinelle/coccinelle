@@ -221,7 +221,8 @@ is .id-utils.index.
 
 \rare{-{}-selected-only}{Just show what files will be selected for processing.}
 
-\normal{-{}-dir}{ Specify a directory containing C files to process.  A trailing
+\normal{-{}-dir}{ Specify a directory containing C files to process.
+  A trailing
   {\tt /} is permitted on the directory name and has no impact on the
   result.  By default, the include path will be set to the ``include''
   subdirectory of this directory.  A different include path can be
@@ -231,6 +232,15 @@ is .id-utils.index.
   the user of the script to override the provided directory with another
   one.  Spatch collects the files in the directory using {\tt find} and
   does not follow symbolic links.}
+
+\rare{-{}-file-groups}{Specify a file that contains the list of files to
+  process.  Files should be listed one per line.  Blank lines should be
+  used to separate the files into \textit{groups}.  All files within a
+  single group will be treated at once.  This is useful, for example, if
+  one wants to process a complete driver, that consists of more than one
+  file, and it is necessary to consider the interaction between code
+  fragments that are present in the different files.  Single-line comments
+  beginning with \texttt{//} can be used freely and are ignored.}
 
 \developer{-{}-kbuild-info $\langle$file$\rangle$}{ The specified file
   contains information about which sets of files should be considered in

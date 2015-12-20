@@ -25,6 +25,7 @@
 * 1.0.5
 ** Language:
 ** Features:
+- addition of --file-groups option
 ** Bugfix:
 - Don't complain about unreferenced variables in ungenerated rules
 * 1.0.4
