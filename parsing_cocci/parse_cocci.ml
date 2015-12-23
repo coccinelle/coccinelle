@@ -2200,9 +2200,11 @@ let parse file =
 	      Check_meta.check_meta rule_name old_metas inherited_metavars
 		metavars minus_res plus_res;
 
-            (more, Ast0.CocciRule ((minus_res, metavars,
-              (iso, dropiso, dependencies, rule_name, exists)),
-              (plus_res, metavars), ruletype), metavars, tokens) in
+            (more,
+	     Ast0.CocciRule((minus_res, metavars,
+			     (iso, dropiso, dependencies, rule_name, exists)),
+			    (plus_res, metavars), inherited_metavars, ruletype),
+	     metavars, tokens) in
 
           let parse_any_script_rule meta_parser builder
 	      name language old_metas deps =
@@ -2408,7 +2410,7 @@ let process file isofile verbose =
 	| Ast0.CocciRule
 	    ((minus, metavarsm,
 	      (iso, dropiso, dependencies, rule_name, exists)),
-	     (plus, metavars),ruletype) ->
+	     (plus, metavars),_inh,ruletype) ->
 	       let chosen_isos =
 		 parse_iso_files global_isos
 		   (List.map (function x -> Common.Left x) iso)

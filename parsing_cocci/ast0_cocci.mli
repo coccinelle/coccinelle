@@ -468,7 +468,8 @@ and parsed_rule =
       (rule * Ast_cocci.metavar list *
 	 (string list * string list * Ast_cocci.dependency * string *
 	    Ast_cocci.exists)) *
-	(rule * Ast_cocci.metavar list) * Ast_cocci.ruletype
+	(rule * Ast_cocci.metavar list) *
+	Ast_cocci.metavar list (* inhertited metavars *) * Ast_cocci.ruletype
   | ScriptRule of string (* name *) *
       string * Ast_cocci.dependency *
 	(Ast_cocci.script_meta_name *
