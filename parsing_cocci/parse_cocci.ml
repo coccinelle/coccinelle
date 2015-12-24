@@ -342,6 +342,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaErr(_,_,_,clt)
   | PC.TMetaExp(_,_,_,_,clt) | PC.TMetaIdExp(_,_,_,_,clt)
   | PC.TMetaLocalIdExp(_,_,_,_,clt) | PC.TMetaGlobalIdExp(_,_,_,_,clt)
+  | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
   | PC.TMetaId(_,_,_,_,clt)
   | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt) | PC.TMetaInitList(_,_,_,clt)
@@ -422,6 +423,7 @@ let get_clt (tok,_) =
   | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaErr(_,_,_,clt)
   | PC.TMetaExp(_,_,_,_,clt) | PC.TMetaIdExp(_,_,_,_,clt)
   | PC.TMetaLocalIdExp(_,_,_,_,clt) | PC.TMetaGlobalIdExp(_,_,_,_,clt)
+  | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
   | PC.TMetaId(_,_,_,_,clt)
   | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt) | PC.TMetaInitList(_,_,_,clt)
@@ -430,7 +432,6 @@ let get_clt (tok,_) =
   | PC.TMetaDecl(_,_,clt) | PC.TMetaField(_,_,clt)
   | PC.TMetaFieldList(_,_,_,clt)
   | PC.TMetaFunc(_,_,_,clt) | PC.TMetaLocalFunc(_,_,_,clt)
-  | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt)
   | PC.TMetaPos(_,_,_,clt)
   | PC.TMetaDeclarer(_,_,_,clt) | PC.TMetaIterator(_,_,_,clt)
 
@@ -818,7 +819,8 @@ let split t clt =
 
 let split_token ((tok,_) as t) =
   match tok with
-    PC.TMetavariable | PC.TIdentifier | PC.TOperator | PC.TBinary | PC.TAssignment
+    PC.TMetavariable | PC.TIdentifier | PC.TOperator
+  | PC.TBinary | PC.TAssignment
   | PC.TConstant | PC.TExpression | PC.TIdExpression
   | PC.TDeclaration | PC.TField
   | PC.TStatement | PC.TPosition | PC.TFormat | PC.TAnalysis | PC.TPosAny
@@ -1066,6 +1068,8 @@ let detect_types in_meta_decls l =
     | (PC.TMetaExp(_,_,_,_,_),_)
     | (PC.TMetaIdExp(_,_,_,_,_),_)
     | (PC.TMetaLocalIdExp(_,_,_,_,_),_)
+    | (PC.TMetaAssignOp(_,_,_,_),_)
+    | (PC.TMetaBinaryOp(_,_,_,_),_)
     | (PC.TMetaGlobalIdExp(_,_,_,_,_),_)
     | (PC.TMetaExpList(_,_,_,_),_)
     | (PC.TMetaType(_,_,_),_)
@@ -1173,6 +1177,7 @@ let token2line (tok,_) =
   | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaExp(_,_,_,_,clt)
   | PC.TMetaIdExp(_,_,_,_,clt)
   | PC.TMetaLocalIdExp(_,_,_,_,clt) | PC.TMetaGlobalIdExp(_,_,_,_,clt)
+  | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
   | PC.TMetaId(_,_,_,_,clt) | PC.TMetaType(_,_,clt)
   | PC.TMetaInit(_,_,clt) | PC.TMetaInitList(_,_,_,clt)
