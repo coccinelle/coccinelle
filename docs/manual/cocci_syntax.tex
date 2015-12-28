@@ -752,6 +752,16 @@ some constraints on the use of these annotations:
   occur on a line marked \texttt{+}.
 \end{itemize}
 
+An \#include may be followed by \texttt{"..."}, \texttt{<...>} or simply
+\texttt{...}.  With either quotes or angle brackets, it is possible to put
+a partial path, ending with ..., such as \texttt{<include/...>}, or to put a
+complete path.  A \#include with \texttt{...} matches any include, with
+either quotes or angle brackets.  Partial paths or complete are not allowed
+in the latter case.  Something that is added before an include will be put
+before the last matching include that is not under an ifdef in the file.
+Likewise, something that is added after an include will be put after the
+last matching include that is not under an ifdef in the file.
+
 Each element of a disjunction must be a proper term like an expression, a
 statement, an identifier or a declaration. The constraint on a conjunction
 is similiar.  Thus, the rule on the left below is not a syntactically
