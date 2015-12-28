@@ -533,6 +533,9 @@ let cluster_by_dir diffs =
   List.map (List.map (function (dir,file,diffs) -> (file,diffs)))
     (loop info)
 
+let is_name s =
+  List.length (Str.split (Str.regexp " ") s) > 1
+
 let make_message_files subject cover message nonmessage date maintainer_table
     patch front add_ext nomerge dirmerge merge info_tbl =
   let ctr = ref 0 in
@@ -545,7 +548,17 @@ let make_message_files subject cover message nonmessage date maintainer_table
 	    (fun (services,maintainers) diffs rest ->
 	      union (Str.split (Str.regexp ",") maintainers) rest)
 	    maintainer_table [] in
-	let maintainers = List.rev maintainers in
+	let maintainers =
+	  match maintainers with
+	    m1::_ ->
+	      if is_name m1
+	      then maintainers
+	      else
+		let m = List.rev maintainers in
+		if is_name (List.hd m)
+		then m
+		else maintainers
+	  | _ -> maintainers in
 	let diffs =
 	  Hashtbl.fold
 	    (fun (services,maintainers) diffs rest ->
