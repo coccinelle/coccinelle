@@ -535,7 +535,8 @@ let do_get_constants constants keywords env neg_pos =
     | Ast.Include(inc,s) ->
 	bind (k re)
 	  (match Ast.unwrap_mcode s with
-	    Ast.Local l | Ast.NonLocal l ->
+	    Ast.AnyInc -> True
+	  | Ast.Local l | Ast.NonLocal l ->
 	      let strings =
 		List.fold_left
 		  (function prev ->

@@ -245,7 +245,7 @@ let mklogop (op,clt) =
 %token <string * Data.clt> TOPar0 TMid0 TAnd0 TCPar0
 
 %token <string>  TPathIsoFile
-%token <string * Data.clt> TIncludeL TIncludeNL
+%token <string * Data.clt> TIncludeL TIncludeNL TIncludeAny
 %token <Data.clt * token> TDefine TUndef
 %token <Data.clt> TPragma
 %token <Data.clt * token * int * int> TDefineParam
@@ -1189,6 +1189,15 @@ includes:
 		      P.clt2mcode
 			(Ast.NonLocal (Parse_aux.str2inc (P.id2name $1)))
 			(P.drop_bef clt))) }
+| TIncludeAny
+    { Ast0.wrap
+	(Ast0.Include(P.clt2mcode "#include"
+			(P.drop_pos (P.drop_aft (P.id2clt $1))),
+		      let (arity,ln,lln,llne,offset,col,strbef,straft,pos,_) =
+			P.id2clt $1 in
+		      let clt = (* default to one space whitespace *)
+			(arity,ln,lln,llne,offset,0,strbef,straft,pos," ") in
+		      P.clt2mcode Ast.AnyInc (P.drop_bef clt))) }
 | TUndef TLineEnd
     { let (clt,ident) = $1 in
       let aft = P.get_aft clt in (* move stuff after the define to the ident *)

@@ -620,6 +620,7 @@ and exec_code = base_exec_code wrap
 and inc_file =
     Local of inc_elem list
   | NonLocal of inc_elem list
+  | AnyInc
 
 and inc_elem =
     IncPath of string

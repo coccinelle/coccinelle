@@ -658,8 +658,9 @@ and define = string wrap (* #define s eol *) * (define_kind * define_val)
 
 and includ =
   { i_include: inc_file wrap; (* #include s *)
-    (* cocci: computed in ? *)
-    i_rel_pos: include_rel_pos option ref;
+    (* cocci: computed in cocci.ml, in update_include_rel_pos *)
+    i_rel_pos: include_rel_pos option ref; (* rel to other "" or for <> *)
+    i_overall_rel_pos: include_rel_pos option ref; (* rel to all *)
     (* cocci: cf -test incl *)
     i_is_in_ifdef: bool;
     (* cf cpp_ast_c.ml. set to None at parsing time. *)

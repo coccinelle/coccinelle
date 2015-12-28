@@ -1658,11 +1658,13 @@ and vk_cpp_directive_s = fun bigf top ->
     (* go inside ? *)
     | Include {i_include = (s, ii);
                i_rel_pos = h_rel_pos;
+               i_overall_rel_pos = o_rel_pos;
                i_is_in_ifdef = b;
                i_content = copt;
                }
       -> Include {i_include = (s, iif ii);
                   i_rel_pos = h_rel_pos;
+		  i_overall_rel_pos = o_rel_pos;
                   i_is_in_ifdef = b;
                   i_content = copt +> Common.map_option (fun (file, asts) ->
                     file, vk_program_s bigf asts
@@ -1857,6 +1859,7 @@ and vk_node_s = fun bigf node ->
 
     | F.Include {i_include = (s, ii);
                  i_rel_pos = h_rel_pos;
+                 i_overall_rel_pos = o_rel_pos;
                  i_is_in_ifdef = b;
                  i_content = copt;
                  }
@@ -1864,6 +1867,7 @@ and vk_node_s = fun bigf node ->
         assert (copt = None);
         F.Include {i_include = (s, iif ii);
                     i_rel_pos = h_rel_pos;
+                    i_overall_rel_pos = o_rel_pos;
                     i_is_in_ifdef = b;
                     i_content = copt;
                    }

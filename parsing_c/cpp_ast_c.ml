@@ -245,6 +245,7 @@ let (cpp_expand_include2:
         match cpp with
         | Include {i_include = (inc_file, ii);
                    i_rel_pos = h_rel_pos;
+                   i_overall_rel_pos = o_rel_pos;
                    i_is_in_ifdef = b;
                    i_content = copt;
                    }
@@ -278,6 +279,7 @@ let (cpp_expand_include2:
 
                   Include {i_include = (inc_file, ii);
                            i_rel_pos = h_rel_pos;
+			   i_overall_rel_pos = o_rel_pos;
                            i_is_in_ifdef = b;
                            i_content = Some (file, ast');
                   }

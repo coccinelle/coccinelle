@@ -853,35 +853,44 @@ let rec update_include_rel_pos cs =
     match c with
     | Ast_c.CppTop (Ast_c.Include {Ast_c.i_include = ((x,_));
                      i_rel_pos = aref;
+                     i_overall_rel_pos = oref;
                      i_is_in_ifdef = inifdef}) ->
         (match x with
         | Ast_c.Weird _ -> None
         | _ ->
             if inifdef
             then None
-            else Some (x, aref)
+            else Some (x, (aref, oref))
         )
     | _ -> None
   )
   in
   let (locals, nonlocals) =
-    only_include +> Common.partition_either (fun (c, aref)  ->
+    only_include +> Common.partition_either (fun (c, refs)  ->
       match c with
-      | Ast_c.Local x -> Left (x, aref)
-      | Ast_c.NonLocal x -> Right (x, aref)
+      | Ast_c.Local x -> Left (x, refs)
+      | Ast_c.NonLocal x -> Right (x, refs)
+      | Ast_c.Weird x -> raise (Impossible 161)
+    ) in
+  let all =
+    only_include +> List.map (fun (c, refs)  ->
+      match c with
+      | Ast_c.Local x -> (x, refs)
+      | Ast_c.NonLocal x -> (x, refs)
       | Ast_c.Weird x -> raise (Impossible 161)
     ) in
 
-  update_rel_pos_bis locals;
-  update_rel_pos_bis nonlocals;
+  update_rel_pos_bis fst locals;
+  update_rel_pos_bis fst nonlocals;
+  update_rel_pos_bis snd all;
   cs
-and update_rel_pos_bis xs =
+and update_rel_pos_bis choose_ref xs =
   let xs' = List.map fst xs in
   let the_first = compute_new_prefixes xs' in
   let the_last  = List.rev (compute_new_prefixes (List.rev xs')) in
   let merged = Common.zip xs (Common.zip the_first the_last) in
-  merged +> List.iter (fun ((x, aref), (the_first, the_last)) ->
-    aref := Some
+  merged +> List.iter (fun ((x, refs), (the_first, the_last)) ->
+    (choose_ref refs) := Some
       {
         Ast_c.first_of = the_first;
         Ast_c.last_of = the_last;

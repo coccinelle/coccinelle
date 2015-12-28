@@ -1907,6 +1907,7 @@ cpp_directive:
        in
        Include { i_include = (inc_file, [i1;i2]);
                  i_rel_pos = Ast_c.noRelPos();
+                 i_overall_rel_pos = Ast_c.noRelPos();
                  i_is_in_ifdef = !in_ifdef;
                  i_content = Ast_c.noi_content;
        }

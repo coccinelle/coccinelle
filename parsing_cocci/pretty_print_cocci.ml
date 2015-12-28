@@ -871,6 +871,7 @@ and inc_file = function
       print_string "<";
       print_between (function _ -> print_string "/") inc_elem elems;
       print_string ">"
+  | Ast.AnyInc -> print_string "..."
 
 and inc_elem = function
     Ast.IncPath s -> print_string s

@@ -4351,18 +4351,18 @@ and equal_structUnion_type_cocci a b =
 
 
 (*---------------------------------------------------------------------------*)
-and inc_file (a, before_after) (b, h_rel_pos) =
+and inc_file (a, before_after) (b, h_rel_pos, o_rel_pos) =
 
-  let rec aux_inc (ass, bss) passed =
+  let rec aux_inc rel_pos (ass, bss) passed =
     match ass, bss with
     | [], [] -> true
     | [A.IncDots], _ ->
         let passed = List.rev passed in
 
-        (match before_after, !h_rel_pos with
+        (match before_after, !rel_pos with
         | IncludeNothing, _ -> true
         | IncludeMcodeBefore, Some x ->
-            List.mem passed (x.Ast_c.first_of)
+	    List.mem passed (x.Ast_c.first_of)
 
         | IncludeMcodeAfter, Some x ->
             List.mem passed (x.Ast_c.last_of)
@@ -4371,16 +4371,18 @@ and inc_file (a, before_after) (b, h_rel_pos) =
         | _, None -> false
         )
 
-    | (A.IncPath x)::xs, y::ys -> x = y && aux_inc (xs, ys) (x::passed)
+    | (A.IncPath x)::xs, y::ys -> x = y && aux_inc rel_pos (xs, ys) (x::passed)
     | _ -> failwith "IncDots not in last place or other pb"
 
   in
 
   match a, b with
   | A.Local ass, B.Local bss ->
-      aux_inc (ass, bss) []
+      aux_inc h_rel_pos (ass, bss) []
   | A.NonLocal ass, B.NonLocal bss ->
-      aux_inc (ass, bss) []
+      aux_inc h_rel_pos (ass, bss) []
+  | A.AnyInc, (B.Local bss | B.NonLocal bss) ->
+      aux_inc o_rel_pos ([A.IncDots], bss) []
   | _ -> false
 
 
@@ -4925,6 +4927,7 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
   | A.Include(incla,filea),
     F.Include {B.i_include = (fileb, ii);
                B.i_rel_pos = h_rel_pos;
+               B.i_overall_rel_pos = o_rel_pos;
                B.i_is_in_ifdef = inifdef;
                B.i_content = copt;
               } ->
@@ -4941,7 +4944,7 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
       in
 
       let (inclb, iifileb) = tuple_of_list2 ii in
-      if inc_file (term filea, include_requirment) (fileb, h_rel_pos)
+      if inc_file (term filea,include_requirment) (fileb,h_rel_pos,o_rel_pos)
       then
         tokenf incla inclb >>= (fun incla inclb ->
         tokenf filea iifileb >>= (fun filea iifileb ->
@@ -4949,6 +4952,7 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
             A.Include(incla, filea),
             F.Include {B.i_include = (fileb, [inclb;iifileb]);
                        B.i_rel_pos = h_rel_pos;
+		       B.i_overall_rel_pos = o_rel_pos;
                        B.i_is_in_ifdef = inifdef;
                        B.i_content = copt;
             }

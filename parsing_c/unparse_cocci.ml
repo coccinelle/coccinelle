@@ -1013,6 +1013,7 @@ let rec inc_file = function
       print_string ("\""^(String.concat "/" (List.map inc_elem elems))^"\"")
   | Ast.NonLocal(elems) ->
       print_string ("<"^(String.concat "/" (List.map inc_elem elems))^">")
+  | Ast.AnyInc -> failwith "should not be in generated code"
 
 and inc_elem = function
     Ast.IncPath s -> s

@@ -800,6 +800,10 @@ rule token = parse
 	  let finish = String.rindex str '>' in
 	  start_line true;
 	  (process_include start finish str,get_current_line_type lexbuf)) }
+  | "#" [' ' '\t']* "include" [' ' '\t']* "..."
+      { check_minus_context_linetype (tok lexbuf);
+	start_line true;
+	TIncludeAny("...",get_current_line_type lexbuf) }
   | "#" [' ' '\t']* "if" [^'\n']*
   | "#" [' ' '\t']* "ifdef" [^'\n']*
   | "#" [' ' '\t']* "ifndef" [^'\n']*
