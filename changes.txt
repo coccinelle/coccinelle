@@ -28,6 +28,8 @@
 - addition of --file-groups option
 ** Bugfix:
 - Don't complain about unreferenced variables in ungenerated rules
+- Be flexible about the matching of the first or last comma in a
+  ... parameter or expression list, also in the case of transformation.
 * 1.0.4
 ** Language:
 - Length for statement list metavariables
