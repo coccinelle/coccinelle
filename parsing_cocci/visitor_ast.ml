@@ -83,6 +83,7 @@ let combiner bind option_default
   and iddotsfn all_functions k arg = k arg
   and strdotsfn all_functions k arg = k arg
   and ecdotsfn all_functions k arg = k arg
+  and defpardotsfn all_functions k arg = k arg
 
   and expression_dots d = dotsfn expdotsfn expression all_functions d
   and identifier_dots d = dotsfn iddotsfn ident all_functions d
@@ -93,6 +94,7 @@ let combiner bind option_default
   and initialiser_dots d = dotsfn initdotsfn initialiser all_functions d
   and string_fragment_dots d = dotsfn strdotsfn string_fragment all_functions d
   and exec_code_dots d = dotsfn ecdotsfn exec_code all_functions d
+  and define_param_dots d = dotsfn defpardotsfn define_param all_functions d
 
   and ident i =
     let k i =
@@ -693,8 +695,6 @@ let combiner bind option_default
 	  multibind [llp; lparams; lrp] in
     k p
 
-  and define_param_dots d = multibind (List.map define_param (Ast.unwrap d))
-
   and define_param p =
     let k p =
       match Ast.unwrap p with
@@ -865,6 +865,7 @@ let combiner bind option_default
       | Ast.ParamDotsTag(pd) -> parameter_dots pd
       | Ast.StmtDotsTag(sd) -> statement_dots sd
       | Ast.AnnDeclDotsTag(sd) -> annotated_decl_dots sd
+      | Ast.DefParDotsTag(sd) -> define_param_dots sd
       | Ast.TypeCTag(ty) -> typeC ty
       | Ast.ParamTag(param) -> parameterTypeDef param
       | Ast.SgrepStartTag(tok) -> option_default
@@ -1752,6 +1753,7 @@ let rebuilder
       | Ast.ParamDotsTag(pd) -> Ast.ParamDotsTag(parameter_dots pd)
       | Ast.StmtDotsTag(sd) -> Ast.StmtDotsTag(statement_dots sd)
       | Ast.AnnDeclDotsTag(sd) -> Ast.AnnDeclDotsTag(annotated_decl_dots sd)
+      | Ast.DefParDotsTag(sd) -> Ast.DefParDotsTag(define_param_dots sd)
       | Ast.TypeCTag(ty) -> Ast.TypeCTag(typeC ty)
       | Ast.ParamTag(param) -> Ast.ParamTag(parameterTypeDef param)
       | Ast.SgrepStartTag(tok) as x -> x

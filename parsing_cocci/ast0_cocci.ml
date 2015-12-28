@@ -520,6 +520,7 @@ and anything =
   | DotsStmtTag of statement dots
   | DotsDeclTag of declaration dots
   | DotsCaseTag of case_line dots
+  | DotsDefParamTag of define_param dots
   | IdentTag of ident
   | ExprTag of expression
   | AssignOpTag of assignOp
@@ -549,6 +550,7 @@ let dotsInit x = DotsInitTag x
 let dotsStmt x = DotsStmtTag x
 let dotsDecl x = DotsDeclTag x
 let dotsCase x = DotsCaseTag x
+let dotsDefParam x = DotsDefParamTag x
 let ident x = IdentTag x
 let expr x = ExprTag x
 let assignOp x = AssignOpTag x

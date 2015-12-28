@@ -175,6 +175,7 @@ let inline_mcodes =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+    do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing
@@ -246,9 +247,9 @@ let check_allminus =
   V0.flat_combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing donothing
-    ident expression donothing donothing typeC initialiser donothing declaration
-    statement donothing case_line donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
+    ident expression donothing donothing typeC initialiser donothing
+    declaration statement donothing case_line donothing donothing
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -961,34 +962,6 @@ and statement s =
 		       (Ast.Pragma(mcode prg,ident id,pragmainfo body)))
       | Ast0.OptStm(stm) -> Ast.OptStm(statement seqible stm))
 
-  and pragmainfo pi =
-    rewrap pi no_isos
-      (match Ast0.unwrap pi with
-	Ast0.PragmaTuple(lp,args,rp) ->
-	  let lp = mcode lp in
-	  let args = dots expression args in
-	  let rp = mcode rp in
-	  Ast.PragmaTuple(lp,args,rp)
-      | Ast0.PragmaIdList(ids) -> Ast.PragmaIdList(dots ident ids)
-      | Ast0.PragmaDots (dots) -> Ast.PragmaDots (mcode dots))
-
-  and define_parameters p =
-    rewrap p no_isos
-      (match Ast0.unwrap p with
-	Ast0.NoParams -> Ast.NoParams
-      | Ast0.DParams(lp,params,rp) ->
-	  Ast.DParams(mcode lp,
-		      dots define_param params,
-		      mcode rp))
-
-  and define_param p =
-    rewrap p no_isos
-      (match Ast0.unwrap p with
-	Ast0.DParam(id) -> Ast.DParam(ident id)
-      | Ast0.DPComma(comma) -> Ast.DPComma(mcode comma)
-      | Ast0.DPdots(d) -> Ast.DPdots(mcode d)
-      | Ast0.OptDParam(dp) -> Ast.OptDParam(define_param dp))
-
   and whencode notfn alwaysfn = function
       Ast0.WhenNot (_,_,a) -> Ast.WhenNot (notfn a)
     | Ast0.WhenAlways (_,_,a) -> Ast.WhenAlways (alwaysfn a)
@@ -1070,6 +1043,34 @@ and statement s =
 
   statement Ast.Sequencible s
 
+and pragmainfo pi =
+  rewrap pi no_isos
+    (match Ast0.unwrap pi with
+      Ast0.PragmaTuple(lp,args,rp) ->
+	let lp = mcode lp in
+	let args = dots expression args in
+	let rp = mcode rp in
+	Ast.PragmaTuple(lp,args,rp)
+    | Ast0.PragmaIdList(ids) -> Ast.PragmaIdList(dots ident ids)
+    | Ast0.PragmaDots (dots) -> Ast.PragmaDots (mcode dots))
+
+and define_parameters p =
+  rewrap p no_isos
+    (match Ast0.unwrap p with
+      Ast0.NoParams -> Ast.NoParams
+    | Ast0.DParams(lp,params,rp) ->
+	Ast.DParams(mcode lp,define_param_dots params,mcode rp))
+
+and define_param p =
+  rewrap p no_isos
+    (match Ast0.unwrap p with
+      Ast0.DParam(id) -> Ast.DParam(ident id)
+    | Ast0.DPComma(comma) -> Ast.DPComma(mcode comma)
+    | Ast0.DPdots(d) -> Ast.DPdots(mcode d)
+    | Ast0.OptDParam(dp) -> Ast.OptDParam(define_param dp))
+
+and define_param_dots l = dots define_param l
+
 and forinfo fi =
   match Ast0.unwrap fi with
     Ast0.ForExp(exp1,sem1) ->
@@ -1127,6 +1128,7 @@ and anything = function
   | Ast0.DotsStmtTag(d) -> Ast.StmtDotsTag(statement_dots d)
   | Ast0.DotsDeclTag(d) -> Ast.AnnDeclDotsTag(declaration_dots d)
   | Ast0.DotsCaseTag(d) -> failwith "not possible"
+  | Ast0.DotsDefParamTag(d) -> Ast.DefParDotsTag(define_param_dots d)
   | Ast0.IdentTag(d) -> Ast.IdentTag(ident d)
   | Ast0.ExprTag(d) -> Ast.ExpressionTag(expression d)
   | Ast0.AssignOpTag d -> Ast.AssignOpTag(assignOp d)

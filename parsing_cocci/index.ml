@@ -5,7 +5,7 @@
  *)
 
 (* create an index for each constructor *)
-(* current max is 188, also unused: 7-9, 15, 39, 40, 42, 46, 57, 65, 67, 85-86,
+(* current max is 188, also unused: 8-9, 15, 39, 40, 42, 46, 57, 65, 67, 85-86,
  88, 111, 113-115, 134-136, 138-140 *)
 
 (* doesn't really work - requires that identical terms with no token
@@ -28,6 +28,7 @@ let parameter_dots x =   3 :: dots x
 let statement_dots x =   4 :: dots x
 let declaration_dots x = 5 :: dots x
 let case_line_dots x =   6 :: dots x
+let define_param_dots x =7 :: dots x
 
 let ident i =
   match Ast0.unwrap i with

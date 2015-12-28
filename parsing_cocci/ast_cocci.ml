@@ -724,6 +724,7 @@ and anything =
   | ParamDotsTag        of parameterTypeDef dots
   | StmtDotsTag         of statement dots
   | AnnDeclDotsTag      of annotated_decl dots
+  | DefParDotsTag       of define_param dots
   | TypeCTag            of typeC
   | ParamTag            of parameterTypeDef
   | SgrepStartTag       of string
@@ -858,6 +859,7 @@ and tag2c = function
   | ParamDotsTag _ -> "ParamDotsTag"
   | StmtDotsTag _ -> "StmtDotsTag"
   | AnnDeclDotsTag _ -> "AnnDeclDotsTag"
+  | DefParDotsTag _ -> "DefParDotsTag"
   | TypeCTag _ -> "TypeCTag"
   | ParamTag _ -> "ParamTag"
   | SgrepStartTag _ -> "SgrepStartTag"

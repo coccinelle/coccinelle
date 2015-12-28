@@ -41,7 +41,7 @@ let strip_info =
   V0.flat_rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
-    donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing
 
@@ -460,7 +460,7 @@ let match_maker checks_needed context_required whencode_allowed =
     V0.flat_combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode
-      donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing donothing
       ident expression assignOp binaryOp typeC init param decl stmt donothing
       donothing donothing donothing in
 
@@ -1473,7 +1473,7 @@ let make_minus =
   V0.flat_rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
-    dots dots dots dots dots dots
+    dots dots dots dots dots dots dots
     donothing expression donothing donothing donothing initialiser donothing
     declaration statement donothing donothing donothing donothing
 
@@ -1564,7 +1564,7 @@ let rebuild_mcode start_line =
   V0.flat_rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
-    donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing statement donothing donothing donothing donothing
 
@@ -1993,10 +1993,12 @@ let instantiate bindings mv_bindings model =
     | _ -> e in
 
   V0.flat_rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode
     (dots elist) donothing (dots plist) (dots slist) donothing donothing
-    identfn exprfn donothing donothing tyfn initfn paramfn declfn stmtfn donothing donothing
-    donothing donothing
+    donothing
+    identfn exprfn donothing donothing tyfn initfn paramfn declfn stmtfn
+    donothing donothing donothing donothing
 
 (* --------------------------------------------------------------------- *)
 
@@ -2687,7 +2689,7 @@ let rewrap =
   V0.flat_rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode mcode
-    donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing
 
@@ -2704,6 +2706,8 @@ let rec rewrap_anything = function
       Ast0.DotsDeclTag(rewrap.VT0.rebuilder_rec_declaration_dots d)
   | Ast0.DotsCaseTag(d) ->
       Ast0.DotsCaseTag(rewrap.VT0.rebuilder_rec_case_line_dots d)
+  | Ast0.DotsDefParamTag(d) ->
+      Ast0.DotsDefParamTag(rewrap.VT0.rebuilder_rec_define_param_dots d)
   | Ast0.IdentTag(d) -> Ast0.IdentTag(rewrap.VT0.rebuilder_rec_ident d)
   | Ast0.ExprTag(d) -> Ast0.ExprTag(rewrap.VT0.rebuilder_rec_expression d)
   | Ast0.AssignOpTag(d) ->

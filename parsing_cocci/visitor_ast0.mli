@@ -33,6 +33,7 @@ val flat_combiner :
     ((Ast0_cocci.statement Ast0_cocci.dots,'a) Visitor_ast0_types.ccode) ->
     ((Ast0_cocci.declaration Ast0_cocci.dots,'a) Visitor_ast0_types.ccode) ->
     ((Ast0_cocci.case_line Ast0_cocci.dots,'a) Visitor_ast0_types.ccode) ->
+    ((Ast0_cocci.define_param Ast0_cocci.dots,'a) Visitor_ast0_types.ccode) ->
     ((Ast0_cocci.ident,'a) Visitor_ast0_types.ccode) ->
     ((Ast0_cocci.expression,'a) Visitor_ast0_types.ccode) ->
     ((Ast0_cocci.assignOp,'a) Visitor_ast0_types.ccode) ->
@@ -73,6 +74,7 @@ val flat_rebuilder :
     (Ast0_cocci.statement Ast0_cocci.dots Visitor_ast0_types.rcode) ->
     (Ast0_cocci.declaration Ast0_cocci.dots Visitor_ast0_types.rcode) ->
     (Ast0_cocci.case_line Ast0_cocci.dots Visitor_ast0_types.rcode) ->
+    (Ast0_cocci.define_param Ast0_cocci.dots Visitor_ast0_types.rcode) ->
     (Ast0_cocci.ident Visitor_ast0_types.rcode) ->
     (Ast0_cocci.expression Visitor_ast0_types.rcode) ->
     (Ast0_cocci.assignOp Visitor_ast0_types.rcode) ->

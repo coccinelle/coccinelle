@@ -10,6 +10,7 @@ val parameter_dots : Ast0_cocci.parameterTypeDef Ast0_cocci.dots -> int list
 val statement_dots : Ast0_cocci.statement Ast0_cocci.dots -> int list
 val declaration_dots : Ast0_cocci.declaration Ast0_cocci.dots -> int list
 val case_line_dots : Ast0_cocci.case_line Ast0_cocci.dots -> int list
+val define_param_dots : Ast0_cocci.define_param Ast0_cocci.dots -> int list
 val ident : Ast0_cocci.ident -> int list
 val expression : Ast0_cocci.expression -> int list
 val assignOp : Ast0_cocci.assignOp -> int list

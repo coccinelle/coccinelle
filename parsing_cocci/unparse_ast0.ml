@@ -651,6 +651,8 @@ and print_define_param param =
   | Ast0.DPdots(dots) -> mcode print_string dots
   | Ast0.OptDParam(dp) -> print_string "?"; print_define_param dp
 
+and define_param_dots l = dots (function _ -> ()) print_define_param l
+
 and print_fninfo = function
     Ast0.FStorage(stg) -> mcode U.storage stg
   | Ast0.FType(ty) -> typeC ty
@@ -733,6 +735,7 @@ let rec unparse_anything x =
       statement_dots d
   | Ast0.DotsDeclTag(d) -> declaration_dots d
   | Ast0.DotsCaseTag(d) -> case_dots d
+  | Ast0.DotsDefParamTag(d) -> define_param_dots d
   | Ast0.IdentTag(d)    -> ident d
   | Ast0.ExprTag(d) | Ast0.ArgExprTag(d) | Ast0.TestExprTag(d) ->
       print_string "Exp:"; force_newline();

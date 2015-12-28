@@ -1417,6 +1417,7 @@ let rec pp_any = function
   | Ast.ParamDotsTag(x) -> parameter_list x; false
   | Ast.StmtDotsTag(x) -> dots force_newline (statement "") x; false
   | Ast.AnnDeclDotsTag(x) -> dots force_newline annotated_decl x; false
+  | Ast.DefParDotsTag(x) -> dots (fun _ -> ()) print_define_param x; false
 
   | Ast.TypeCTag(x) -> typeC x; false
   | Ast.ParamTag(x) -> parameterTypeDef x; false

@@ -508,6 +508,7 @@ and anything =
   | DotsStmtTag of statement dots
   | DotsDeclTag of declaration dots
   | DotsCaseTag of case_line dots
+  | DotsDefParamTag of define_param dots
   | IdentTag of ident
   | ExprTag of expression
   | AssignOpTag of assignOp
@@ -537,6 +538,7 @@ val dotsParam : parameterTypeDef dots -> anything
 val dotsStmt : statement dots -> anything
 val dotsDecl : declaration dots -> anything
 val dotsCase : case_line dots -> anything
+val dotsDefParam : define_param dots -> anything
 val ident : ident -> anything
 val expr : expression -> anything
 val assignOp : assignOp -> anything

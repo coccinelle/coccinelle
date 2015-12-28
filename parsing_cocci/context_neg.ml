@@ -27,6 +27,7 @@ let set_mcodekind x mcodekind =
   | Ast0.DotsStmtTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.DotsDeclTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.DotsCaseTag(d) -> Ast0.set_mcodekind d mcodekind
+  | Ast0.DotsDefParamTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.IdentTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.ExprTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.AssignOpTag(d) -> Ast0.set_mcodekind d mcodekind
@@ -57,6 +58,7 @@ let set_index x index =
   | Ast0.DotsStmtTag(d) -> Ast0.set_index d index
   | Ast0.DotsDeclTag(d) -> Ast0.set_index d index
   | Ast0.DotsCaseTag(d) -> Ast0.set_index d index
+  | Ast0.DotsDefParamTag(d) -> Ast0.set_index d index
   | Ast0.IdentTag(d) -> Ast0.set_index d index
   | Ast0.ExprTag(d) -> Ast0.set_index d index
   | Ast0.AssignOpTag(d) -> Ast0.set_index d index
@@ -86,6 +88,7 @@ let get_index = function
   | Ast0.DotsStmtTag(d) -> Index.statement_dots d
   | Ast0.DotsDeclTag(d) -> Index.declaration_dots d
   | Ast0.DotsCaseTag(d) -> Index.case_line_dots d
+  | Ast0.DotsDefParamTag(d) -> Index.define_param_dots d
   | Ast0.IdentTag(d) -> Index.ident d
   | Ast0.ExprTag(d) -> Index.expression d
   | Ast0.AssignOpTag(d) -> Index.assignOp d
@@ -165,6 +168,7 @@ let collect_plus_lines top =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
+      donothing
       donothing donothing donothing donothing donothing donothing donothing
       statement donothing donothing donothing donothing in
   fn.VT0.combiner_rec_top_level top
@@ -482,7 +486,9 @@ let classify is_minus all_marked table code =
       (do_nothing Ast0.dotsExpr) (do_nothing Ast0.dotsInit)
       (do_nothing Ast0.dotsParam) (do_nothing Ast0.dotsStmt)
       (do_nothing Ast0.dotsDecl) (do_nothing Ast0.dotsCase)
-      ident expression (do_nothing Ast0.assignOp) (do_nothing Ast0.binaryOp) typeC initialiser param declaration
+      (do_nothing Ast0.dotsDefParam)
+      ident expression (do_nothing Ast0.assignOp) (do_nothing Ast0.binaryOp)
+      typeC initialiser param declaration
       statement (do_nothing Ast0.forinfo) case_line string_fragment
       (do_top Ast0.top) in
   combiner.VT0.combiner_rec_top_level code
@@ -838,6 +844,14 @@ let equal_case_line c1 c2 =
   | (Ast0.OptCase(_),Ast0.OptCase(_)) -> true
   | _ -> false
 
+let equal_define_param d1 d2 =
+  match (Ast0.unwrap d1,Ast0.unwrap d2) with
+    (Ast0.DParam _,Ast0.DParam _) -> true
+  | (Ast0.DPComma cm1,Ast0.DPComma cm2) -> equal_mcode cm1 cm2
+  | (Ast0.DPdots d1,Ast0.DPdots d2) -> equal_mcode d1 d2
+  | (Ast0.OptDParam(_),Ast0.OptDParam(_)) -> true
+  | _ -> false
+
 let rec equal_top_level t1 t2 =
   match (Ast0.unwrap t1,Ast0.unwrap t2) with
     (Ast0.NONDECL(_),Ast0.NONDECL(_)) -> true
@@ -855,6 +869,8 @@ let root_equal e1 e2 =
   | (Ast0.DotsStmtTag(d1),Ast0.DotsStmtTag(d2)) -> dots equal_statement d1 d2
   | (Ast0.DotsDeclTag(d1),Ast0.DotsDeclTag(d2)) -> dots equal_declaration d1 d2
   | (Ast0.DotsCaseTag(d1),Ast0.DotsCaseTag(d2)) -> dots equal_case_line d1 d2
+  | (Ast0.DotsDefParamTag(d1),Ast0.DotsDefParamTag(d2)) ->
+      dots equal_define_param d1 d2
   | (Ast0.IdentTag(i1),Ast0.IdentTag(i2)) -> equal_ident i1 i2
   | (Ast0.ExprTag(e1),Ast0.ExprTag(e2)) -> equal_expression e1 e2
   | (Ast0.ArgExprTag(d),_) -> failwith "not possible - iso only"
@@ -898,14 +914,14 @@ let contextify_all =
   let bind x y = () in
   let option_default = () in
   let mcode x = () in
-  let do_nothing r k e = Ast0.set_mcodekind e (default_context()); k e in
+  let donothing r k e = Ast0.set_mcodekind e (default_context()); k e in
 
   V0.flat_combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
-    do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing do_nothing do_nothing do_nothing do_nothing
+    donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
 
 let contextify_whencode =
   let bind x y = () in

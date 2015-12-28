@@ -24,12 +24,14 @@ type 'n all_functions =
       statement : (Ast0.statement,'n) inout;
       forinfo : (Ast0.forinfo,'n) inout;
       case_line : (Ast0.case_line,'n) inout;
+      define_param : (Ast0.define_param,'n) inout;
       string_fragment : (Ast0.string_fragment,'n) inout;
       top_level : (Ast0.top_level,'n) inout;
       expression_dots : (Ast0.expression Ast0.dots,'n) inout;
       statement_dots : (Ast0.statement Ast0.dots,'n) inout;
       declaration_dots : (Ast0.declaration Ast0.dots,'n) inout;
       case_line_dots : (Ast0.case_line Ast0.dots,'n) inout;
+      define_param_dots : (Ast0.define_param Ast0.dots,'n) inout;
       anything : (Ast0.anything,'n) inout}
 
 (* ----------------------------------------------------------------------- *)
@@ -53,6 +55,7 @@ type 'n combiner_rec_functions =
       combiner_rec_statement : (Ast0.statement,'n) combiner_inout;
       combiner_rec_forinfo   : (Ast0.forinfo,'n) combiner_inout;
       combiner_rec_case_line : (Ast0.case_line,'n) combiner_inout;
+      combiner_rec_define_param : (Ast0.define_param,'n) combiner_inout;
       combiner_rec_string_fragment : (Ast0.string_fragment,'n) combiner_inout;
       combiner_rec_top_level : (Ast0.top_level,'n) combiner_inout;
       combiner_rec_expression_dots :
@@ -63,6 +66,8 @@ type 'n combiner_rec_functions =
 	(Ast0.declaration Ast0.dots,'n) combiner_inout;
       combiner_rec_case_line_dots :
 	(Ast0.case_line Ast0.dots,'n) combiner_inout;
+      combiner_rec_define_param_dots :
+	(Ast0.define_param Ast0.dots,'n) combiner_inout;
       combiner_rec_anything : (Ast0.anything,'n) combiner_inout}
 
 type ('mc,'n) cmcode = 'n -> 'mc Ast0.mcode -> 'n
@@ -90,6 +95,7 @@ type 'n combiner_functions =
    combiner_dotsstmtfn : (Ast0.statement Ast0.dots,'n) ccode;
    combiner_dotsdeclfn : (Ast0.declaration Ast0.dots,'n) ccode;
    combiner_dotscasefn : (Ast0.case_line Ast0.dots,'n) ccode;
+   combiner_dotsdefparfn : (Ast0.define_param Ast0.dots,'n) ccode;
    combiner_identfn : (Ast0.ident,'n) ccode;
    combiner_exprfn : (Ast0.expression,'n) ccode;
    combiner_assignOpfn : (Ast0.assignOp,'n) ccode;
@@ -135,6 +141,8 @@ type rebuilder_rec_functions =
 	Ast0.declaration Ast0.dots rebuilder_inout;
       rebuilder_rec_case_line_dots :
 	Ast0.case_line Ast0.dots rebuilder_inout;
+      rebuilder_rec_define_param_dots :
+	Ast0.define_param Ast0.dots rebuilder_inout;
       rebuilder_rec_anything : Ast0.anything rebuilder_inout}
 
 type 'mc rmcode = 'mc Ast0.mcode rebuilder_inout
@@ -162,6 +170,7 @@ type rebuilder_functions =
    rebuilder_dotsstmtfn : Ast0.statement Ast0.dots rcode;
    rebuilder_dotsdeclfn : Ast0.declaration Ast0.dots rcode;
    rebuilder_dotscasefn : Ast0.case_line Ast0.dots rcode;
+   rebuilder_dotsdefparfn : Ast0.define_param Ast0.dots rcode;
    rebuilder_identfn : Ast0.ident rcode;
    rebuilder_exprfn : Ast0.expression rcode;
    rebuilder_assignOpfn : Ast0.assignOp rcode;
@@ -206,6 +215,7 @@ type 'n combiner_rebuilder_functions =
    combiner_rebuilder_dotsstmtfn : (Ast0.statement Ast0.dots,'n) rccode;
    combiner_rebuilder_dotsdeclfn : (Ast0.declaration Ast0.dots,'n) rccode;
    combiner_rebuilder_dotscasefn : (Ast0.case_line Ast0.dots,'n) rccode;
+   combiner_rebuilder_dotsdefparfn : (Ast0.define_param Ast0.dots,'n) rccode;
    combiner_rebuilder_identfn : (Ast0.ident,'n) rccode;
    combiner_rebuilder_exprfn : (Ast0.expression,'n) rccode;
    combiner_rebuilder_assignOpfn : (Ast0.assignOp,'n) rccode;

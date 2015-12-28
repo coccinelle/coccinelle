@@ -1780,7 +1780,7 @@ let any_modif rule =
     V0.flat_combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing in
   List.exists fn.VT0.combiner_rec_top_level rule
