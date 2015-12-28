@@ -169,7 +169,7 @@ let collect_minus_join_points root =
 (* don't want to attach to the outside of DOTS, because metavariables can't
 bind to that; not good for isomorphisms *)
 
-  let dots f k d checklast =
+  let dots f k d =
     let multibind l =
       let rec loop = function
 	  [] -> option_default
@@ -178,39 +178,34 @@ bind to that; not good for isomorphisms *)
       loop l in
 
     let l = Ast0.unwrap d in
-    match checklast with
-      None -> multibind (List.map f l)
-    | Some checklast ->
-	match List.rev l with
-	  last::others ->
-	    multibind ((List.map f (List.rev others)) @ [checklast last])
-	| [] -> multibind [] in
+    multibind (List.map f l) in
 
-  (* have to unfavor a trailing comme because it might not match anything *)
-  let edots r k d = dots r.VT0.combiner_rec_expression k d
-      (Some
-	 (function e ->
-	   match Ast0.unwrap e with
-	     Ast0.EComma(comma) -> unfavored_mcode comma
-	   | _ -> r.VT0.combiner_rec_expression e))
-  in
-  let idots r k d = dots r.VT0.combiner_rec_initialiser k d
-      (Some
-	 (function i ->
-	   match Ast0.unwrap i with
-	     Ast0.IComma(comma) -> unfavored_mcode comma
-	   | _ -> r.VT0.combiner_rec_initialiser i)) in
+  (* just unfavor all commas *)
+  let edots r k d =
+    dots
+      (function e ->
+	match Ast0.unwrap e with
+	  Ast0.EComma(comma) -> unfavored_mcode comma
+	| _ -> r.VT0.combiner_rec_expression e)
+      k d in
+  let idots r k d =
+    dots
+      (function i ->
+	match Ast0.unwrap i with
+	  Ast0.IComma(comma) -> unfavored_mcode comma
+	| _ -> r.VT0.combiner_rec_initialiser i)
+      k d in
+  let pdots r k d =
+    dots
+      (function p ->
+	match Ast0.unwrap p with
+	  Ast0.PComma(comma) -> unfavored_mcode comma
+	| _ -> r.VT0.combiner_rec_parameter p)
+  k d in
 
-  let pdots r k d = dots r.VT0.combiner_rec_parameter k d
-      (Some
-	 (function p ->
-	   match Ast0.unwrap p with
-	     Ast0.PComma(comma) -> unfavored_mcode comma
-	   | _ -> r.VT0.combiner_rec_parameter p)) in
-
-  let sdots r k d = dots r.VT0.combiner_rec_statement k d None in
-  let ddots r k d = dots r.VT0.combiner_rec_declaration k d None in
-  let cdots r k d = dots r.VT0.combiner_rec_case_line k d None in
+  let sdots r k d = dots r.VT0.combiner_rec_statement k d in
+  let ddots r k d = dots r.VT0.combiner_rec_declaration k d in
+  let cdots r k d = dots r.VT0.combiner_rec_case_line k d in
 
   (* a case for everything that has a Opt *)
 

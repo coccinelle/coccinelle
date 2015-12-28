@@ -454,7 +454,6 @@ let rec expression e =
       let ln = promote_mcode name in
       mkres e (Ast0.MetaExprList(name,a,b)) ln ln
   | Ast0.EComma(cm) ->
-      (*let cm = bad_mcode cm in*) (* why was this bad??? *)
       let cm = normal_mcode cm in
       let ln = promote_mcode cm in
       mkres e (Ast0.EComma(cm)) ln ln
@@ -850,7 +849,6 @@ and parameterTypeDef p =
       let ln = promote_mcode name in
       mkres p (Ast0.MetaParamList(name,a,b)) ln ln
   | Ast0.PComma(cm) ->
-      (*let cm = bad_mcode cm in*) (* why was this bad??? *)
       let cm = normal_mcode cm in
       let ln = promote_mcode cm in
       mkres p (Ast0.PComma(cm)) ln ln
@@ -880,7 +878,6 @@ let rec define_param p =
     Ast0.DParam(id) ->
       let id = ident id in mkres p (Ast0.DParam(id)) id id
   | Ast0.DPComma(cm) ->
-      (*let cm = bad_mcode cm in*) (* why was this bad??? *)
       let cm = normal_mcode cm in
       let ln = promote_mcode cm in
       mkres p (Ast0.DPComma(cm)) ln ln
