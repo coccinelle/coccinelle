@@ -142,6 +142,8 @@ and base_expression =
 	              string mcode list (* the |s *) * string mcode
   | ConjExpr       of string mcode * expression list *
 	              string mcode list (* the &s *) * string mcode
+  (* not clear why NestExpr allows dots on the expression, nor why it has a
+     whencode field *)
   | NestExpr       of string mcode * expression dots * string mcode *
 	              (string mcode * string mcode * expression) option
 	              (* whencode *) * Ast.multi
