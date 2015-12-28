@@ -592,6 +592,10 @@ rule token = parse
 	TDirective (Ast.Indent str, get_current_line_type lexbuf)
     | _ -> start_line false; token lexbuf }
 
+  | [' ' '\t'  ]* (("#!" [^ '\n']*) as after) {
+     check_context_linetype after;
+     start_line false; token lexbuf }
+
   | "__attribute__" [' ' '\t']* "((" _* "))"
    { match !current_line_type with
       (D.PLUS,_,_) | (D.PLUSPLUS,_,_) ->
