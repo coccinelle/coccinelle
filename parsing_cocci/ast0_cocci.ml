@@ -484,7 +484,8 @@ and parsed_rule =
       (rule (*minus*) * Ast.metavar list (*minus metavars*) *
 	(string list (*isos*) * string list (*drop_isos*) *
          Ast.dependency (*dependencies*) * string (*rulename*) * Ast.exists)) *
-      (rule (*plus*) * Ast.metavar list (*plus metavars*)) * Ast.ruletype
+      (rule (*plus*) * Ast.metavar list (*plus metavars*)) *
+	Ast.metavar list (* inhertited metavars *) * Ast.ruletype
   | ScriptRule of string (* name *) * string * Ast.dependency *
 	(Ast.script_meta_name * Ast.meta_name * Ast.metavar * Ast.mvinit)
 	  list *
@@ -646,7 +647,7 @@ let get_iso x           = x.iso_info
 let set_iso x i = if !Flag.track_iso_usage then {x with iso_info = i} else x
 let set_mcode_data data (_,ar,info,mc,pos,adj) = (data,ar,info,mc,pos,adj)
 let get_rule_name = function
-  | CocciRule ((_,_,(_,_,_,nm,_)),_,_) | InitialScriptRule (nm,_,_,_,_)
+  | CocciRule ((_,_,(_,_,_,nm,_)),_,_,_) | InitialScriptRule (nm,_,_,_,_)
   | FinalScriptRule (nm,_,_,_,_) | ScriptRule (nm,_,_,_,_,_) -> nm
 
 (* --------------------------------------------------------------------- *)

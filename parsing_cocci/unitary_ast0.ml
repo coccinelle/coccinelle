@@ -277,7 +277,7 @@ let do_unitary rules =
       | Ast0.FinalScriptRule (_,_,_,_,_) ->
           let (x,rules) = loop rules in
           (x, r::rules)
-      | Ast0.CocciRule ((minus,metavars,chosen_isos),((plus,_) as plusz),rt) ->
+      | Ast0.CocciRule((minus,metavars,chosen_isos),((plus,_) as plusz),inh,rt) ->
           let mm1 = List.map Ast.get_meta_name metavars in
           let (used_after, rest) = loop rules in
           let (m_unitary, m_nonunitary) = get_free minus_checker minus in
@@ -296,7 +296,7 @@ let do_unitary rules =
           let rebuilt = update_unitary m_unitary minus in
           (set_minus (m_nonunitary @ used_after) mm1,
              (Ast0.CocciRule
-		((rebuilt, metavars, chosen_isos),plusz,rt))::rest) in
+		((rebuilt, metavars, chosen_isos),plusz,inh,rt))::rest) in
   let (_,rules) = loop rules in
   rules
 
