@@ -904,9 +904,10 @@ let read_file_groups x =
   let file_groups = ref [] in
   let res = ref [] in
   let dump _ =
-    match !res with
+    (match !res with
       [] -> ()
-    | l -> file_groups := (List.rev l) :: !file_groups in
+    | l -> file_groups := (List.rev l) :: !file_groups);
+    res := [] in
   let empty_line = Str.regexp " *$" in
   let com = Str.regexp " *//" in
   let rec in_files _ =
