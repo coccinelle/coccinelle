@@ -3395,7 +3395,7 @@ let interval_timer = ref (
     true
   with Unix.Unix_error(_, _, _) -> false)
 
-let timeout_function timeoutval = fun f ->
+let timeout_function s timeoutval = fun f ->
   try
     if !interval_timer
     then
@@ -3421,7 +3421,9 @@ let timeout_function timeoutval = fun f ->
       end
   with Timeout ->
     begin
-      log "timeout (we abort)";
+      (if !print_to_stderr
+      then log (Printf.sprintf "timeout (we abort)")
+      else log (Printf.sprintf "timeout (we abort): %s" s));
       (*pr2 (List.hd(cmd_to_list "free -m | grep Mem"));*)
       raise Timeout;
     end
@@ -3441,10 +3443,10 @@ let timeout_function timeoutval = fun f ->
         raise e
       end
 
-let timeout_function_opt timeoutvalopt f =
+let timeout_function_opt s timeoutvalopt f =
   match timeoutvalopt with
   | None -> f()
-  | Some x -> timeout_function x f
+  | Some x -> timeout_function s x f
 
 
 (* removes only if the file does not exists *)

@@ -91,7 +91,7 @@ let testall_bis extra_test expected_score_file update_score_file =
       let timeout_testall = 60 in
 
       try (
-        Common.timeout_function timeout_testall  (fun () ->
+        Common.timeout_function "testing" timeout_testall  (fun () ->
 
 	  pr2 res;
 
@@ -293,7 +293,7 @@ let test_okfailed cocci_file cfiles =
 
   Common.redirect_stdout_stderr newout (fun () ->
     try (
-      Common.timeout_function_opt !Flag_cocci.timeout (fun () ->
+      Common.timeout_function_opt "testing" !Flag_cocci.timeout (fun () ->
 
 	let (cocci_infos,_) = Cocci.pre_engine (cocci_file, !Config.std_iso) in
         let outfiles = Cocci.full_engine cocci_infos cfiles in

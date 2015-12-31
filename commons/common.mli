@@ -1070,9 +1070,9 @@ exception Timeout
  *
  * The same is true for UnixExit (see below).
  *)
-val timeout_function : int -> (unit -> 'a) -> 'a
+val timeout_function : string -> int -> (unit -> 'a) -> 'a
 
-val timeout_function_opt : int option -> (unit -> 'a) -> 'a
+val timeout_function_opt : string -> int option -> (unit -> 'a) -> 'a
 
 val remove_file : string -> unit
 

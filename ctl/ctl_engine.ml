@@ -2302,7 +2302,7 @@ let bench_sat (_,_,states) fn =
 	    let res =
 	      let bef = Sys.time() in
 	      try
-		Common.timeout_function timeout
+		Common.timeout_function "bench" timeout
 		  (fun () ->
 		    let bef = Sys.time() in
 		    let res = iter fn iterct in

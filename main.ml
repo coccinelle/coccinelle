@@ -1127,7 +1127,7 @@ let rec main_action xs =
 		  (*pr2 (List.hd(Common.cmd_to_list "free -m | grep Mem"));*)
 		  flush stderr;
 
-		  Common.timeout_function_opt !FC.timeout (fun () ->
+		  Common.timeout_function_opt (String.concat " " cfiles) !FC.timeout (fun () ->
 		    Common.report_if_take_time 10 (String.concat " " cfiles)
 		      (fun () ->
                       try
