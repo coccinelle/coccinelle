@@ -498,7 +498,7 @@ metadec:
     TMPtVirg
     { P.create_metadec_with_constraints ar ispure kindfn ids }
 | ar=arity TPosition a=option(TPosAny)
-    ids=comma_list(pure_ident_or_meta_ident_with_x_eq(not_pos)) TMPtVirg
+    ids=comma_list(pure_ident_or_meta_ident_with_x_eq(pos_constraint)) TMPtVirg
     (* pb: position variables can't be inherited from normal rules, and then
        there is no way to inherit from a generated rule, so there is no point
        to have a position variable *)
@@ -2423,7 +2423,7 @@ ident_or_const:
 	 { let (x,clt) = $1 in
 	 Ast0.wrap(Ast0.Constant (P.clt2mcode (Ast.Int x) clt)) }
 
-not_pos:
+pos_constraint:
        TNotEq i=meta_ident
          { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
