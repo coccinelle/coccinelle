@@ -31,6 +31,7 @@ let plus_checker (nm,_,_,mc,_,_) =
 let get_free checker t =
   let bind x y = x @ y in
   let option_default = [] in
+  let donothing r k e = k e in
 
   (* considers a single list *)
   let collect_unitary_nonunitary free_usage =
@@ -198,15 +199,13 @@ let get_free checker t =
 	     whn)
     | _ -> k s in
 
-  let res = V0.combiner bind option_default
-      {V0.combiner_functions with
-	VT0.combiner_identfn = ident;
-	VT0.combiner_exprfn = expression;
-	VT0.combiner_tyfn = typeC;
-	VT0.combiner_paramfn = parameter;
-	VT0.combiner_declfn = declaration;
-	VT0.combiner_stmtfn = statement;
-	VT0.combiner_casefn = case_line} in
+  let res =
+    V0.flat_combiner bind option_default
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode
+      donothing donothing donothing donothing donothing donothing donothing
+      ident expression donothing donothing typeC donothing parameter
+      declaration statement donothing case_line donothing donothing in
 
   collect_unitary_nonunitary
     (List.concat (List.map res.VT0.combiner_rec_top_level t))
