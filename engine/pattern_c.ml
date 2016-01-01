@@ -312,16 +312,16 @@ module XMATCH = struct
 
 
   (* ------------------------------------------------------------------------*)
-  (* Constraints on metavariable values *)
+  (* Constraints on position metavariables *)
   (* ------------------------------------------------------------------------*)
 
-  let check_constraints_ne matcher constraints exp = fun f tin ->
+ let check_constraints_ne matcher constraints exp = fun f tin ->
     let rec loop = function
-	[] -> f () tin (* success *)
-      |	c::cs ->
-	  match matcher c exp tin with
-	    [] (* failure *) -> loop cs
-	  | _ (* success *) -> fail tin in
+        [] -> f () tin (* success *)
+      | c::cs ->
+          match matcher c exp tin with
+            [] (* failure *) -> loop cs
+          | _ (* success *) -> fail tin in
     loop constraints
 
   let check_constraints matcher constraints term = fun f tin ->
@@ -330,21 +330,36 @@ module XMATCH = struct
     else fail tin (* failure *)
 
   let check_pos_constraints constraints pvalu f tin =
-    check_constraints_ne
-      (fun c exp tin ->
-	let success = [[]] in
-	let failure = [] in
-	(* relies on the fact that constraints on pos variables must refer to
-	   inherited variables *)
-	(match Common.optionise (fun () -> tin.binding0 +> List.assoc c) with
-	  Some valu' ->
-	    if Cocci_vs_c.equal_inh_metavarval exp valu'
-	    then success else failure
-	| None ->
-	    (* if the variable is not there, it puts no constraints *)
-	    (* not sure this is still useful *)
-	    failure))
-      constraints pvalu f tin
+    let res =
+      List.for_all
+	(function
+	    Ast_cocci.PosNegSet l ->
+	      List.for_all
+		(function othermeta ->
+		  let v =
+		    Common.optionise
+		      (fun () -> tin.binding0 +> List.assoc othermeta) in
+		  match v with
+		    Some valu' ->
+		      not (Cocci_vs_c.equal_inh_metavarval pvalu valu')
+		  | None ->
+		      (*if the variable is not there, it puts no constraints*)
+		      true)
+		l
+	  | Ast_cocci.PosScript(name,"ocaml",params,_) ->
+	      let values =
+		try
+		  Some(pvalu ::
+		       List.map (fun (p,_) -> tin.binding0 +> List.assoc p)
+			 params)
+		with Not_found -> None in
+	      (match values with
+		Some args -> Run_ocamlcocci.run_constraint name args
+	      | None -> false)
+	  | Ast_cocci.PosScript(name,_,params,_) ->
+	      failwith "languages other than ocaml not supported")
+	constraints in
+    if res then f () tin (* success *) else fail tin (* failure *)
 
   (* ------------------------------------------------------------------------*)
   (* Environment *)

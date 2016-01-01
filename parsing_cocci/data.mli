@@ -29,7 +29,7 @@ and line_type =
 
 type iconstraints = Ast_cocci.idconstraint
 type econstraints = Ast0_cocci.constraints
-type pconstraints = Ast_cocci.meta_name list
+type pconstraints = Ast_cocci.pos_constraints list
 
 val in_rule_name : bool ref (* true if parsing the rule name *)
 val in_meta : bool ref      (* true if parsing the metavariable decls *)

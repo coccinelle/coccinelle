@@ -91,6 +91,28 @@ let get_free checker t =
     | TC.SignedT(_,Some ty) -> type_collect res ty
     | ty -> res in
 
+  let mcode mc =
+    List.fold_left bind option_default
+      (List.map
+	 (function
+	     Ast0.MetaPosTag(Ast0.MetaPos(name,constraints,_)) ->
+	       List.fold_left bind option_default
+		 (List.map
+		    (function
+			Ast.PosNegSet l -> []
+		      | Ast.PosScript(name,lang,params,body) ->
+		       (* It seems that position variables are not relevant
+			  for unitaryness, so drop them *)
+			  List.map fst
+			    (List.filter
+			       (function
+				   (_,Ast.MetaPosDecl _) -> false
+				 | _ -> true)
+			       params))
+		    constraints)
+	   | _ -> option_default)
+	 (Ast0.get_pos mc)) in
+
   let constraints_collect r res = function
       Ast0.NotExpCstrt(el) ->
 	List.fold_left bind res

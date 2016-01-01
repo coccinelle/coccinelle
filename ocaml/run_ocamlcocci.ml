@@ -1,23 +1,24 @@
 open Common
 
+let string_value = function
+    Ast_c.MetaPosValList l ->
+      let locs =
+	List.map
+	  (function
+	      (fname,current_element,(line,col),(line_end,col_end)) ->
+		{ Coccilib.current_element = current_element;
+		  Coccilib.file = fname;
+		  Coccilib.line = line;
+		  Coccilib.col = col;
+		  Coccilib.line_end = line_end;
+		  Coccilib.col_end = col_end }) l in
+      Coccilib.Pos locs
+  | Ast_c.MetaListlenVal n -> Coccilib.Int n
+  | v -> Coccilib.Str (Ocamlcocci_aux.stringrep v)
+
 let string_binding vl = function
     None -> []
-  | Some _ ->
-      [match vl with
-	Ast_c.MetaPosValList l ->
-	       let locs =
-		 List.map
-		   (function
-		       (fname,current_element,(line,col),(line_end,col_end)) ->
-			 { Coccilib.current_element = current_element;
-			   Coccilib.file = fname;
-			   Coccilib.line = line;
-			   Coccilib.col = col;
-			   Coccilib.line_end = line_end;
-			   Coccilib.col_end = col_end }) l in
-	       Coccilib.Pos locs
-      |	Ast_c.MetaListlenVal n -> Coccilib.Int n
-      |	_ -> Coccilib.Str (Ocamlcocci_aux.stringrep vl)]
+  | Some _ -> [string_value vl]
 
 let ast_binding vl = function
     None -> []
@@ -81,3 +82,8 @@ let run mv ve script_vars name code =
     with Not_found -> failwith (Printf.sprintf "%s not found" name) in
   fn args script_args;
   List.map (function x -> !x) script_args
+
+let run_constraint ocamlname args =
+  let args = List.map string_value args in
+  let fn = Hashtbl.find Coccilib.bool_fcts ocamlname in
+  fn args

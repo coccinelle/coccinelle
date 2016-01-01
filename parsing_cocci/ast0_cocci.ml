@@ -240,10 +240,10 @@ and typeC = base_typeC wrap
 and base_declaration =
     MetaDecl of Ast.meta_name mcode * pure (* variables *)
     (* the following are kept separate from MetaDecls because ultimately
-       they don't match the same thin at all.  Consider whether there
+       they don't match the same thing at all.  Consider whether there
        should be a separate type for fields, as in the C AST *)
   | MetaField of Ast.meta_name mcode * pure (* structure fields *)
-  | MetaFieldList of Ast.meta_name mcode * listlen * pure (* structure fields *)
+  | MetaFieldList of Ast.meta_name mcode * listlen * pure (*structure fields*)
   | AsDecl        of declaration * declaration
   | Init of Ast.storage mcode option * typeC * ident * string mcode (*=*) *
 	initialiser * string mcode (*;*)
@@ -463,7 +463,8 @@ and exec_code = base_exec_code wrap
 (* Positions *)
 
 and meta_pos =
-    MetaPos of Ast.meta_name mcode * Ast.meta_name list * Ast.meta_collect
+    MetaPos of Ast.meta_name mcode * Ast.pos_constraints list *
+	Ast.meta_collect
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)

@@ -219,6 +219,12 @@ and constraints =
   | NotExpCstrt    of expression list
   | SubExpCstrt    of meta_name list
 
+and script_constraint =
+      string (* name of generated function *) *
+	string (* language *) *
+	(meta_name * metavar) list (* params *) *
+	string (* code *)
+
 (* Constraints on Meta-* Identifiers, Functions *)
 and idconstraint =
     IdNoConstraint
@@ -457,8 +463,12 @@ and define_parameters = base_define_parameters wrap
 and meta_collect = PER | ALL
 
 and meta_pos =
-    MetaPos of meta_name mcode * meta_name list *
+    MetaPos of meta_name mcode * pos_constraints list *
       meta_collect * keep_binding * inherited
+
+and pos_constraints =
+    PosNegSet of meta_name list
+  | PosScript of script_constraint
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)

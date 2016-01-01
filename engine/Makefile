@@ -13,8 +13,7 @@ endif
 TARGET=cocciengine
 CTLTARGET=engine
 
-SRC= externalanalysis.ml \
-	flag_matcher.ml lib_engine.ml pretty_print_engine.ml \
+SRC= flag_matcher.ml lib_engine.ml pretty_print_engine.ml \
       check_exhaustive_pattern.ml \
       check_reachability.ml \
       c_vs_c.ml isomorphisms_c_c.ml \
@@ -23,9 +22,11 @@ SRC= externalanalysis.ml \
       postprocess_transinfo.ml ctlcocci_integration.ml
 
 INCLUDES = -I ../commons -I ../commons/ocamlextra -I ../globals \
-	       -I ../ctl -I ../parsing_cocci -I ../parsing_c
+	       -I ../ctl -I ../parsing_cocci -I ../parsing_c -I ../ocaml
 LIBS=../commons/commons.cma ../globals/globals.cma \
-     ../ctl/ctl.cma ../parsing_c/parsing_c.cma ../parsing_cocci/cocci_parser.cma
+     ../ctl/ctl.cma ../parsing_c/parsing_c.cma \
+     ../parsing_cocci/cocci_parser.cma \
+     ../ocaml/cocciocaml.cma
 
 SYSLIBS= str.cma unix.cma
 

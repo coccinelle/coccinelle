@@ -36,5 +36,4 @@ val parameterTypeDef :
     Ast0_cocci.parameterTypeDef -> Ast_cocci.parameterTypeDef
 val parameter_list : Ast0_cocci.parameter_list -> Ast_cocci.parameter_list
 val top_level : Ast0_cocci.top_level -> Ast_cocci.top_level
-val mcode : 'a Ast0_cocci.mcode -> 'a Ast_cocci.mcode
 val convert_info : Ast0_cocci.info -> Ast_cocci.info

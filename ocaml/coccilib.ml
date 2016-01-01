@@ -68,6 +68,10 @@ let fcts :
  (string, param_type list -> Ast_c.metavar_binding_kind ref list -> unit)
     Hashtbl.t =
   Hashtbl.create 11 (* Use prime number *)
+
+let bool_fcts :
+ (string, param_type list -> bool) Hashtbl.t =
+  Hashtbl.create 11 (* Use prime number *)
 (**/**)
 
 (* This code needs to be here because we need to call the type annotater *)

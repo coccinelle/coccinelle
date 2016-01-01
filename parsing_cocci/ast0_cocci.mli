@@ -446,7 +446,7 @@ and exec_code = base_exec_code wrap
 (* Positions *)
 
 and meta_pos =
-    MetaPos of Ast_cocci.meta_name mcode * Ast_cocci.meta_name list *
+    MetaPos of Ast_cocci.meta_name mcode * Ast_cocci.pos_constraints list *
 	Ast_cocci.meta_collect
 
 (* --------------------------------------------------------------------- *)
