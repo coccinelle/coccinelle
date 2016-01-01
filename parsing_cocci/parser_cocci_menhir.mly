@@ -499,7 +499,9 @@ metadec:
     { P.create_metadec_with_constraints ar ispure kindfn ids }
 | ar=arity TPosition a=option(TPosAny)
     ids=
-    comma_list(pure_ident_or_meta_ident_with_x_eq(separated_list(TAndLog,pos_constraint)))
+    comma_list
+    (pure_ident_or_meta_ident_with_x_eq
+       (separated_list(TAndLog,pos_constraint)))
     TMPtVirg
     (* pb: position variables can't be inherited from normal rules, and then
        there is no way to inherit from a generated rule, so there is no point
