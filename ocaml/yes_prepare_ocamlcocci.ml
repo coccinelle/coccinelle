@@ -209,7 +209,7 @@ let prepare_generic_rule (name, metavars, script_vars, code) scriptargs fcts =
   let fname = String.concat "_" (Str.split (Str.regexp " ") name) in
   (* function header *)
   let function_header body =
-    Printf.sprintf "let %s __args__ %s =\n %s" fname body scriptargs in
+    Printf.sprintf "let %s __args__ %s =\n %s" fname scriptargs body in
   (* parameter list *)
   let build_parameter_list body =
     let ctr = ref 0 in

@@ -264,7 +264,8 @@ let id_tokens lexbuf =
   (* exists and forall for when are reparsed in parse_cocci.ml *)
   | "exists" when in_rule_name  -> check_context_linetype s; TExists
   | "forall" when in_rule_name  -> check_context_linetype s; TForall
-  | "script" when in_rule_name  -> check_context_linetype s; TScript
+  | "script" when (in_rule_name || in_meta) ->
+      check_context_linetype s; TScript
   | "initialize" when in_rule_name -> check_context_linetype s; TInitialize
   | "finalize" when in_rule_name   -> check_context_linetype s; TFinalize
 
@@ -998,7 +999,8 @@ and metavariable_decl_token = parse
   | "<" { start_line true; TLogOp(Ast.Inf,get_current_line_type lexbuf) }
   | ">" { start_line true; TLogOp(Ast.Sup,get_current_line_type lexbuf) }
   | "&&" { start_line true; TAndLog (get_current_line_type lexbuf) }
-  | "||" { start_line true; TOrLog  (get_current_line_type lexbuf) }
+  | "||" { start_line true; TOrLog (get_current_line_type lexbuf) }
+  | ":"  { start_line true; TDotDot (get_current_line_type lexbuf) }
   | "-="           { start_line true; mkassign Ast.Minus lexbuf }
   | "+="           { start_line true; mkassign Ast.Plus lexbuf }
   | "*="           { start_line true; mkassign Ast.Mul lexbuf }

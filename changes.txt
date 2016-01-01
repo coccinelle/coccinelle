@@ -26,6 +26,7 @@
 ** Language:
 ** Features:
 - addition of --file-groups option
+- ocaml code allowed as constraints on position variables
 ** Bugfix:
 - Don't complain about unreferenced variables in ungenerated rules
 - Be flexible about the matching of the first or last comma in a
