@@ -305,7 +305,7 @@ let pos_mcode(term,_,info,mcodekind,pos,adj) =
   (* avoids a recursion problem *)
   (term,convert_info info,convert_mcodekind adj mcodekind,[])
 
-let rec mcode (term,_,info,mcodekind,pos,adj) =
+let mcode (term,_,info,mcodekind,pos,adj) =
   let pos =
     List.fold_left
       (function prev ->
