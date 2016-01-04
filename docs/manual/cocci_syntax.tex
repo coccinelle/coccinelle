@@ -368,8 +368,18 @@ the entire format is matched as a single string.
   \CASE{\T{rulename\_id}.\T{id}}
 
   \RULE{\rt{pmid\_with\_not\_eq\_mid}}
-  \CASE{\NT{pmid} \OPT{!= \NT{mid}}}
-  \CASE{\NT{pmid} \OPT{!= \ttlb~\NT{COMMA\_LIST}\mth{(}\NT{mid}\mth{)} \ttrb}}
+  \CASE{\NT{pmid} \OPT{\NT{ANDAND\_LIST}\mth{(}\NT{pos\_constraint}\mth{)}}}
+
+  \RULE{\rt{pos\_constraint}}
+  \CASE{!= \NT{mid}}
+  \CASE{!= \ttlb~\NT{COMMA\_LIST}\mth{(}\NT{mid}\mth{)} \ttrb}
+  \CASE{: script:ocaml
+        (\NT{COMMA\_LIST}\mth{(} \NT{mid} \mth{)})
+        \ttlb \NT{expr} \ttrb}
+
+  \RULE{\rt{ANDAND\_LIST}\mth{(X)}}
+  \CASE{\mth{X}}
+  \CASE{\mth{X} \&\& \NT{ANDAND\_LIST}\mth{(X)}}
 \end{grammar}
 
 Subsequently, we refer to arbitrary metavariables as
@@ -414,6 +424,17 @@ only value available is the one available in the current environment.  If
 the proposed value is different from the one in the current environment,
 but perhaps the same as the one in some other environment, the match will
 still succeed.
+
+Position metavariables can be associated with constraints implemented as
+OCaml script code.  The code must have the form of a single C expression,
+typically a function call with a tuple of arguments.  This expression must
+have type bool.  The script code can be parameterized by any inherited
+metavariables.  It is implicitly parameterized by the metavariable being
+declared.  In the script, the inherited variable parameters are referred to
+by their variable names, without the associated rule name.  The variable
+being declared is also referenced by its name.  All parameters, except
+position variables, have their string representation.  An example is in
+demos/poscon.cocci.
 
 A declaration of a name as a typedef extends through the rest of the
 semantic patch.  It is not required, and it will cause a parse error, to

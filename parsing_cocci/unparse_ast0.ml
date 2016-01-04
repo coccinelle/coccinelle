@@ -777,6 +777,12 @@ let unparse x =
   print_newline()
 
 let unparse_to_string x = Common.format_to_string (function _ -> unparse x)
+let unparse_exp_to_string x =
+  let q = !quiet in
+  quiet := true;
+  let res = Common.format_to_string (function _ -> expression x) in
+  quiet := q;
+  res
 
 let show_cocci_parse_tree comment parse_tree =
   Printf.printf "%s\n" comment;

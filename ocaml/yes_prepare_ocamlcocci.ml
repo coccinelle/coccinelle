@@ -205,11 +205,11 @@ let prepare_mvs o str = function
 	true
       with Not_found -> false
 
-let prepare_rule (name, metavars, script_vars, code) =
+let prepare_generic_rule (name, metavars, script_vars, code) scriptargs fcts =
   let fname = String.concat "_" (Str.split (Str.regexp " ") name) in
   (* function header *)
   let function_header body =
-    Printf.sprintf "let %s __args__ __script_args__ =\n %s" fname body in
+    Printf.sprintf "let %s __args__ %s =\n %s" fname scriptargs body in
   (* parameter list *)
   let build_parameter_list body =
     let ctr = ref 0 in
@@ -228,8 +228,18 @@ let prepare_rule (name, metavars, script_vars, code) =
   (* add to hash table *)
   let hash_add body =
     Printf.sprintf
-      "%s\nlet _ = Hashtbl.add Coccilib.fcts \"%s\" %s\n" body name fname in
+      "%s\nlet _ = Hashtbl.add Coccilib.%s \"%s\" %s\n" body fcts name fname in
   hash_add (function_header (build_parameter_list code))
+
+let prepare_rule info =
+  prepare_generic_rule info " __script_args__" "fcts"
+
+let prepare_constraint (name, params, body) =
+  let params = (* like params of a normal script rule *)
+    List.map
+      (function (((r,n) as nm),mv) -> ((Some n,None), nm, mv, Ast.NoMVInit))
+      params in
+  prepare_generic_rule (name, params, [], body) "" "bool_fcts"
 
 let prepare coccifile code =
   let (init_mvs,sub_final_mvs,all_final_mvs) =
@@ -272,7 +282,45 @@ let prepare coccifile code =
 	  | _ -> prev)
       [] code in
   let other_rules = List.rev other_rules in
-  if init_rules = [] && other_rules = []
+  let do_constraint_rules =
+    (* A case for everything that can contain a constraint *)
+      let bind = (@) in
+      let option_default = [] in
+      let mcode r mc =
+	List.fold_left
+	  (function prev ->
+	    function Ast.MetaPos(name,constraints,_,_,_) ->
+	      Common.fold_left_with_index
+		(fun prev c i ->
+		  match c with
+		      Ast.PosNegSet l -> prev
+		    | Ast.PosScript(ocamlname,"ocaml",params,body) ->
+			let ((r,nm) as self) = Ast.unwrap_mcode name in
+			let self = (self,Ast.MetaPosDecl(Ast.NONE,self)) in
+			(ocamlname, self::params, body) ::
+			prev
+		    | Ast.PosScript(ocamlname,_,params,body) -> prev)
+		prev constraints)
+	  option_default (Ast.get_pos_var mc) in
+      let donothing r k e = k e in
+      let recursor = Visitor_ast.combiner bind option_default
+	  mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+	  mcode mcode mcode
+	  donothing donothing donothing donothing donothing donothing
+	  donothing donothing donothing donothing donothing donothing
+	  donothing donothing donothing donothing donothing donothing
+	  donothing donothing donothing donothing in
+      recursor.Visitor_ast.combiner_top_level in
+  let constraint_rules =
+    List.fold_left
+      (function prev ->
+	function
+	    Ast.CocciRule(_,_,code,_,_) ->
+	      (List.concat (List.map do_constraint_rules code)) :: prev
+	  | _ -> prev)
+      [] code in
+  let constraint_rules = List.fold_left (@) [] constraint_rules in
+  if init_rules = [] && other_rules = [] && constraint_rules = []
   then None
   else
     begin
@@ -304,7 +352,9 @@ let prepare coccifile code =
       then Printf.fprintf o "%s" (String.concat "\n\n" init_rules));
       (* Semantic patch rules *)
       let rule_code = List.map prepare_rule other_rules in
-      Printf.fprintf o "%s" (String.concat "\n\n" rule_code);
+      List.iter (function rc -> Printf.fprintf o "%s\n\n" rc) rule_code;
+      let constraint_code = List.map prepare_constraint constraint_rules in
+      List.iter (function rc -> Printf.fprintf o "%s\n\n" rc) constraint_code;
       (* finalizer *)
       (if generate_final
       then

@@ -238,10 +238,20 @@ let collect_refs include_constraints =
   let mcode r mc = (*
     if include_constraints
     then *)
-      List.concat
+      List.fold_left bind option_default
 	(List.map
 	   (function Ast.MetaPos(name,constraints,_,_,_) ->
-	     (metaid name)::(if include_constraints then constraints else []))
+	     bind [metaid name]
+	       (List.fold_left bind option_default
+		  (if include_constraints
+		  then
+		    List.map
+		      (function
+			  Ast.PosNegSet l -> l
+			| Ast.PosScript(name,lang,params,body) ->
+			    List.map fst params)
+		      constraints
+		  else [])))
 	   (Ast.get_pos_var mc))
     (* else option_default *) in
 
@@ -1057,14 +1067,23 @@ let get_neg_pos_list (_,rule) used_after_list =
     (Common.union_set p1 p2, Common.union_set np1 np2) in
   let option_default = ([],[]) in
   let metaid (x,_,_,_) = x in
+  let get_neg_pos_constraints constraints =
+    List.concat
+      (List.map
+	 (function
+	     Ast.PosNegSet l -> l
+	   | Ast.PosScript _ -> [])
+	 constraints) in
   let mcode r mc =
     List.fold_left
       (function (a,b) ->
 	(function
 	    Ast.MetaPos(name,constraints,Ast.PER,_,_) ->
-	      ((metaid name)::a,constraints@b)
+	      let constraint_vars = get_neg_pos_constraints constraints in
+	      ((metaid name)::a,constraint_vars@b)
 	  | Ast.MetaPos(name,constraints,Ast.ALL,_,_) ->
-	      (a,(metaid name)::constraints@b)))
+	      let constraint_vars = get_neg_pos_constraints constraints in
+	      (a,(metaid name)::constraint_vars@b)))
       option_default (Ast.get_pos_var mc) in
   let v =
     V.combiner bind option_default

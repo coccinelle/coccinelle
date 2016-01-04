@@ -498,13 +498,19 @@ metadec:
     TMPtVirg
     { P.create_metadec_with_constraints ar ispure kindfn ids }
 | ar=arity TPosition a=option(TPosAny)
-    ids=comma_list(pure_ident_or_meta_ident_with_x_eq(not_pos)) TMPtVirg
+    ids=
+    comma_list
+    (pure_ident_or_meta_ident_with_x_eq
+       (separated_list(TAndLog,pos_constraint)))
+    TMPtVirg
     (* pb: position variables can't be inherited from normal rules, and then
        there is no way to inherit from a generated rule, so there is no point
        to have a position variable *)
     { (if !Data.in_generating
       then failwith "position variables not allowed in a generated rule file");
       let kindfn arity name pure check_meta constraints =
+	let constraints =
+	  Common.map_index (fun c index -> c name index) constraints in
       let tok = check_meta(Ast.MetaPosDecl(arity,name)) in
       let any = match a with None -> Ast.PER | Some _ -> Ast.ALL in
       !Data.add_pos_meta name constraints any; tok in
@@ -2254,7 +2260,7 @@ seed_elem:
       Ast.SeedId nm }
 
 pure_ident_or_meta_ident_with_x_eq(x_eq):
-       i=pure_ident_or_meta_ident l=loption(x_eq)
+       i=pure_ident_or_meta_ident l=x_eq
     {
       (i, l)
     }
@@ -2423,26 +2429,43 @@ ident_or_const:
 	 { let (x,clt) = $1 in
 	 Ast0.wrap(Ast0.Constant (P.clt2mcode (Ast.Int x) clt)) }
 
-not_pos:
+pos_constraint:
        TNotEq i=meta_ident
          { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
 	   then failwith "constraints not allowed in a generated rule file");
-	   let i =
-	     P.check_inherited_constraint i
-	       (function mv -> Ast.MetaPosDecl(Ast.NONE,mv)) in
-	   [i] }
+	   fun _nm _index ->
+	     let i =
+	       P.check_inherited_constraint i
+		 (function mv -> Ast.MetaPosDecl(Ast.NONE,mv)) in
+	     Ast.PosNegSet [i] }
      | TNotEq TOBrace l=comma_list(meta_ident) TCBrace
 	 { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
 	   then failwith "constraints not allowed in a generated rule file");
-	   List.map
-	     (function i ->
-	       P.check_inherited_constraint i
-		 (function mv -> Ast.MetaPosDecl(Ast.NONE,mv)))
-	     l }
+	   fun _nm _index ->
+	     Ast.PosNegSet
+	       (List.map
+		  (function i ->
+		    P.check_inherited_constraint i
+		      (function mv -> Ast.MetaPosDecl(Ast.NONE,mv)))
+		  l) }
+     | script_constraint { (fun nm i -> Ast.PosScript ($1 nm i)) }
+
+script_constraint:
+  TDotDot TScript TDotDot lang=pure_ident
+	 TOPar params=loption(comma_list(checked_meta_name)) TCPar
+	 TOBrace c=expr TCBrace
+	 { (if !Data.in_iso
+	   then failwith "constraints not allowed in iso file");
+	   (if !Data.in_generating
+	   then failwith "constraints not allowed in a generated rule file");
+	   (fun (rule,name) index ->
+	     let key = Printf.sprintf "%s_%s_%d" rule name index in
+	     (key, P.id2name lang, params,
+	      Unparse_ast0.unparse_exp_to_string c)) }
 
 func_ident:
        ident { $1 }
@@ -2975,11 +2998,14 @@ script_meta_main:
   { ((Some (P.id2name str), Some (P.id2name ast)), Some $6, Ast.NoMVInit) }
 
 script_name_decl:
-    TShLOp TRuleName TDot cocci=pure_ident
+    TShLOp checked_meta_name { $2 }
+
+checked_meta_name:
+    TRuleName TDot cocci=pure_ident
       { let nm = P.id2name cocci in
-        let mv = Parse_aux.lookup $2 nm in
-        (($2, nm), mv) }
-  | TShLOp TVirtual TDot cocci=pure_ident
+        let mv = Parse_aux.lookup $1 nm in
+        (($1, nm), mv) }
+  | TVirtual TDot cocci=pure_ident
       { let nm = P.id2name cocci in
 	 Iteration.parsed_virtual_identifiers :=
 	   Common.union_set [nm]

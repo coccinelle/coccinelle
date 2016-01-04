@@ -31,6 +31,7 @@ let plus_checker (nm,_,_,mc,_,_) =
 let get_free checker t =
   let bind x y = x @ y in
   let option_default = [] in
+  let donothing r k e = k e in
 
   (* considers a single list *)
   let collect_unitary_nonunitary free_usage =
@@ -90,6 +91,28 @@ let get_free checker t =
 	bind (e2mv e1) (e2mv e2)
     | TC.SignedT(_,Some ty) -> type_collect res ty
     | ty -> res in
+
+  let mcode mc =
+    List.fold_left bind option_default
+      (List.map
+	 (function
+	     Ast0.MetaPosTag(Ast0.MetaPos(name,constraints,_)) ->
+	       List.fold_left bind option_default
+		 (List.map
+		    (function
+			Ast.PosNegSet l -> []
+		      | Ast.PosScript(name,lang,params,body) ->
+		       (* It seems that position variables are not relevant
+			  for unitaryness, so drop them *)
+			  List.map fst
+			    (List.filter
+			       (function
+				   (_,Ast.MetaPosDecl _) -> false
+				 | _ -> true)
+			       params))
+		    constraints)
+	   | _ -> option_default)
+	 (Ast0.get_pos mc)) in
 
   let constraints_collect r res = function
       Ast0.NotExpCstrt(el) ->
@@ -176,15 +199,13 @@ let get_free checker t =
 	     whn)
     | _ -> k s in
 
-  let res = V0.combiner bind option_default
-      {V0.combiner_functions with
-	VT0.combiner_identfn = ident;
-	VT0.combiner_exprfn = expression;
-	VT0.combiner_tyfn = typeC;
-	VT0.combiner_paramfn = parameter;
-	VT0.combiner_declfn = declaration;
-	VT0.combiner_stmtfn = statement;
-	VT0.combiner_casefn = case_line} in
+  let res =
+    V0.flat_combiner bind option_default
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode
+      donothing donothing donothing donothing donothing donothing donothing
+      ident expression donothing donothing typeC donothing parameter
+      declaration statement donothing case_line donothing donothing in
 
   collect_unitary_nonunitary
     (List.concat (List.map res.VT0.combiner_rec_top_level t))

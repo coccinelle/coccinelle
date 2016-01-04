@@ -6,3 +6,8 @@ val run :
     string (*rule name*) ->
     string (*code*) ->
     Ast_c.metavar_binding_kind list (* final values of script vars *)
+
+val run_constraint :
+    string (*rule name*) ->
+    Ast_c.metavar_binding_kind list ->
+    bool

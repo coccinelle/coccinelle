@@ -34,7 +34,7 @@ and line_type =
 
 type iconstraints = Ast.idconstraint
 type econstraints = Ast0.constraints
-type pconstraints = Ast.meta_name list
+type pconstraints = Ast.pos_constraints list
 
 let in_rule_name = ref false
 let in_meta = ref false
