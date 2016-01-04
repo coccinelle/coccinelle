@@ -1,0 +1,181 @@
+The coccinelle modules are linked in the following order:
+
+commons/commons.cma:
+  ocamlextra/dumper.cmo
+  ocamlextra/setb.cmo
+  ocamlextra/mapb.cmo
+  ocamlextra/setPt.cmo
+  commands.cmo
+  common.cmo
+  interfaces.cmo
+  objet.cmo
+  ocollection.cmo
+  seti.cmo
+  oset.cmo
+  oassoc.cmo
+  osequence.cmo
+  ograph.cmo
+  ocollection/osetb.cmo
+  ocollection/oassocb.cmo
+  oarray.cmo
+  ograph_simple.cmo
+  ograph_extended.cmo
+  glimpse.cmo
+  parser_combinators.cmo
+  ocamlextra/enum.cmo
+  ocamlextra/dynArray.cmo
+  ocamlextra/suffix_tree.cmo
+  ocamlextra/suffix_tree_ext.cmo
+
+globals/globals.cma:
+  config.cmo
+  flag.cmo
+  iteration.cmo
+  regexp_pcre.cmo
+  regexp.cmo
+
+ctl/ctl.cma:
+  flag_ctl.cmo
+  ast_ctl.cmo
+  pretty_print_ctl.cmo
+  ctl_engine.cmo
+  wrapper_ctl.cmo
+
+parsing_cocci/cocci_parser.cma:
+  menhirLib.cmo
+  flag_parsing_cocci.cmo
+  type_cocci.cmo
+  ast_cocci.cmo
+  ast0_cocci.cmo
+  pretty_print_cocci.cmo
+  unparse_ast0.cmo
+  visitor_ast0_types.cmo
+  visitor_ast.cmo
+  visitor_ast0.cmo
+  compute_lines.cmo
+  comm_assoc.cmo
+  iso_pattern.cmo
+  iso_compile.cmo
+  single_statement.cmo
+  simple_assignments.cmo
+  get_metas.cmo
+  stmtlist.cmo
+  ast0toast.cmo
+  check_meta.cmo
+  top_level.cmo
+  type_infer.cmo
+  test_exps.cmo
+  unitary_ast0.cmo
+  arity.cmo
+  index.cmo
+  context_neg.cmo
+  adjust_pragmas.cmo
+  insert_plus.cmo
+  function_prototypes.cmo
+  unify_ast.cmo
+  semantic_cocci.cmo
+  data.cmo
+  free_vars.cmo
+  safe_for_multi_decls.cmo
+  parse_printf.cmo
+  parse_aux.cmo
+  disjdistr.cmo
+  lexer_cocci.cmo
+  parser_cocci_menhir.cmo
+  lexer_cli.cmo
+  lexer_script.cmo
+  cocci_grep.cmo
+  dpll.cmo
+  get_constants2.cmo
+  id_utils.cmo
+  git_grep.cmo
+  adjacency.cmo
+  commas_on_lists.cmo
+  parse_cocci.cmo
+  command_line.cmo
+
+parsing_c/parsing_c.cma:
+  token_annot.cmo
+  flag_parsing_c.cmo
+  parsing_stat.cmo
+  token_c.cmo
+  ast_c.cmo
+  control_flow_c.cmo
+  visitor_c.cmo
+  lib_parsing_c.cmo
+  control_flow_c_build.cmo
+  pretty_print_c.cmo
+  semantic_c.cmo
+  lexer_parser.cmo
+  parser_c.cmo
+  lexer_c.cmo
+  parse_string_c.cmo
+  token_helpers.cmo
+  token_views_c.cmo
+  cpp_token_c.cmo
+  parsing_hacks.cmo
+  cpp_analysis_c.cmo
+  unparse_cocci.cmo
+  unparse_c.cmo
+  unparse_hrule.cmo
+  parsing_recovery_c.cmo
+  parsing_consistency_c.cmo
+  danger.cmo
+  parse_c.cmo
+  type_c.cmo
+  cpp_ast_c.cmo
+  type_annoter_c.cmo
+  comment_annotater_c.cmo
+  compare_c.cmo
+  test_parsing_c.cmo
+
+engine/cocciengine.cma:
+  flag_matcher.cmo
+  lib_engine.cmo
+  pretty_print_engine.cmo
+  check_exhaustive_pattern.cmo
+  check_reachability.cmo
+  c_vs_c.cmo
+  isomorphisms_c_c.cmo
+  cocci_vs_c.cmo
+  pattern_c.cmo
+  transformation_c.cmo
+  asttomember.cmo
+  asttoctl2.cmo
+  ctltotex.cmo
+  postprocess_transinfo.cmo
+  ctlcocci_integration.cmo
+
+popl09/popl.cma:
+  ast_popl.cmo
+  asttopopl.cmo
+  insert_quantifiers.cmo
+  pretty_print_popl.cmo
+  flag_popl.cmo
+  popltoctl.cmo
+  popl.cmo
+
+extra/extra.cma:
+  classic_patch.cmo
+  kbuild.cmo
+  maintainers.cmo
+
+python/coccipython.cma:
+  pycocci_aux.cmo
+  yes_pycocci.cmo # or no_pycocci.cmo
+  pycocci.cmo
+
+ocaml/cocciocaml.cma:
+  externalanalysis.cmo
+  exposed_modules.cmo
+  coccilib.cmo
+  ocamlcocci_aux.cmo
+  yes_prepare_ocamlcocci.cmo # or no_prepare_ocamlcocci.cmo
+  prepare_ocamlcocci.cmo
+  run_ocamlcocci.cmo
+
+flag_cocci.cmo
+cocci.cmo
+testing.cmo
+read_options.cmo
+main.cmo
