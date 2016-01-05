@@ -1983,6 +1983,7 @@ let initial_final_bigloop a b c =
 let pre_engine2 (coccifile, isofile) =
   show_or_not_cocci coccifile isofile;
   Pycocci.set_coccifile coccifile;
+  current_typedefs := ( Common.empty_scoped_h_env () );
 
   let isofile =
     if not (Common.lfile_exists isofile)
