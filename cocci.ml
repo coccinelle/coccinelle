@@ -627,14 +627,15 @@ let includes_to_parse
     Includes.Parse_no_includes -> !Includes.extra_includes
   | include_style ->
       let xs = List.map (function (file,(cs,_,_)) -> (file,cs)) xs in
-      xs +> List.map (fun (filename, cs) ->
+      let f =  (fun (filename, cs) ->
 	cs +> Common.map_filter (fun (c,_info_item) ->
 	  match c with
 	  | Ast_c.CppTop
 	      (Ast_c.Include
 		 {Ast_c.i_include = (x,ii); i_rel_pos = info_h_pos;})  ->
                    Includes.resolve filename include_style x
-	  | _ -> None))
+	  | _ -> None)) in
+      xs +> List.map f
 	+> List.concat
 	+> (fun x ->
 	  (List.rev
