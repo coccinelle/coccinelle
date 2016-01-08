@@ -627,20 +627,20 @@ let includes_to_parse
     Includes.Parse_no_includes -> !Includes.extra_includes
   | include_style ->
       let xs = List.map (function (file,(cs,_,_)) -> (file,cs)) xs in
-      let f =  (fun (filename, cs) ->
-	cs +> Common.map_filter (fun (c,_info_item) ->
+      let f (filename, cs) =
+        let g (c,_info_item) =
 	  match c with
 	  | Ast_c.CppTop
 	      (Ast_c.Include
 		 {Ast_c.i_include = (x,ii); i_rel_pos = info_h_pos;})  ->
                    Includes.resolve filename include_style x
-	  | _ -> None)) in
-      xs +> List.map f
-	+> List.concat
-	+> (fun x ->
+	  | _ -> None in
+	Common.map_filter g cs in
+      let h l =
 	  (List.rev
 	     (Common.uniq
-		(!Includes.extra_includes@(List.rev x)))))(*uniq keeps last*)
+	 (!Includes.extra_includes@(List.rev l)))) (*uniq keeps last*) in
+      h (List.concat (List.map f xs))
 
 let rec interpret_dependencies local global = function
     Ast_cocci.Dep s      -> List.mem s local
