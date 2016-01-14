@@ -25,7 +25,7 @@ val process :
 	     Ast_cocci.meta_name list list list) *
 	  Ast_cocci.meta_name list list list (*positions list*) *
 	  (string list option (*non metavars in - code, for grep*) *
-	     string list option (*non metavars in - code, for glimpse/google*)*
+	     string list option (*non metavars in - code, for glimpse*)*
 	     (Str.regexp * Str.regexp list * string list)
 	     option(*cocci-grep/git grep result, if any*)
 	     * (*non metavars in - code, for other tools*)

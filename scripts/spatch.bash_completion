@@ -45,7 +45,7 @@ _spatch()
     _spatch_options="--parse-cocci --sp-file -I --dir --patch
           --iso-file --macro-file --macro-file-builtins
           --in-place --out-place -h --help --shorthelp --longhelp -o --ignore-unknown-options
-          --use-glimpse --use-google --use-idutils
+          --use-glimpse --use-idutils
           --include-headers --no-includes --all-includes --local-includes --preprocess
           --quiet --very-quiet --debug --timeout --test"
 
