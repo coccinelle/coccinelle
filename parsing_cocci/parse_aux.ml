@@ -274,6 +274,10 @@ let check_meta_tyopt type_irrelevant v =
       (match meta_lookup rule name v with
 	Ast.MetaLocalIdExpDecl(_,_,ty1) when type_irrelevant || ty = ty1 -> ()
       | _ -> fail name)
+  | Ast.MetaGlobalIdExpDecl(Ast.NONE,(rule,name),ty) ->
+      (match meta_lookup rule name v with
+	Ast.MetaGlobalIdExpDecl(_,_,ty1) when type_irrelevant || ty = ty1 -> ()
+      | _ -> fail name)
   | Ast.MetaExpListDecl(Ast.NONE,(rule,name),len_name) ->
       (match meta_lookup rule name v with
 	Ast.MetaExpListDecl(_,_,_) -> ()
