@@ -1182,6 +1182,7 @@ let token2line (tok,_) =
   | PC.TMetaFieldList(_,_,_,clt)
   | PC.TMetaStm(_,_,clt) | PC.TMetaStmList(_,_,_,clt) | PC.TMetaFunc(_,_,_,clt)
   | PC.TMetaLocalFunc(_,_,_,clt) | PC.TMetaPos(_,_,_,clt)
+  | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt)
 
   | PC.TFunDecl(clt)
   | PC.TWhen(clt) | PC.TWhenTrue(clt) | PC.TWhenFalse(clt)
