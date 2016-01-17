@@ -31,6 +31,8 @@
 - Don't complain about unreferenced variables in ungenerated rules
 - Be flexible about the matching of the first or last comma in a
   ... parameter or expression list, also in the case of transformation.
+- Fix various omissions related to binary and assignment metavariables.
+- Add whitespace on C code/transformed code boundary.
 * 1.0.4
 ** Language:
 - Length for statement list metavariables
