@@ -974,8 +974,8 @@ let print_typedefs = function
     let ids = Hashtbl.fold f typedefs.scoped_h "" in
     debug ("The following typedefs are available: " ^ ids)
 
-let rec parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
-    cache file =
+let rec _parse_print_error_heuristic2 acc saved_typedefs saved_macros
+  parse_strings cache file =
   debug ("Requested to parse " ^ file);
   let cached_result =
     try Some (Hashtbl.find header_cache file) with
@@ -984,25 +984,26 @@ let rec parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
     | None ->
       debug "This file has not been parsed yet. Parsing it now.";
       print_typedefs saved_typedefs;
-      let result =
-        parse_print_error_heuristic2bis saved_typedefs saved_macros
+      let results =
+        _parse_print_error_heuristic2bis acc saved_typedefs saved_macros
           parse_strings file in
       if cache then
       begin
         debug ("Caching parsing results for file " ^ file);
-        Hashtbl.add header_cache file result
+        Hashtbl.add header_cache file (List.hd results)
       end else begin
         debug ("Not caching parsing results for file " ^ file)
       end;
-      result
+      results
     | Some result ->
       debug (
         "File " ^ file ^ " had already been parsed. " ^
         "Returning cached result.");
-      result
+      result::acc
 
-and parse_print_error_heuristic2bis saved_typedefs saved_macros parse_strings
-    file =
+and _parse_print_error_heuristic2bis acc saved_typedefs saved_macros
+  parse_strings file =
+  let newacc = ref acc in
   let stat = Parsing_stat.default_stat file in
 
   (* -------------------------------------------------- *)
@@ -1057,10 +1058,9 @@ and parse_print_error_heuristic2bis saved_typedefs saved_macros parse_strings
       | Some header_filename when Common.lfile_exists header_filename ->
         if not (Hashtbl.mem header_cache header_filename) 
         then begin
-          ignore
-            (parse_print_error_heuristic2
-              saved_typedefs saved_macros parse_strings
-              true header_filename);
+          newacc := (_parse_print_error_heuristic2 acc
+            saved_typedefs saved_macros parse_strings
+            true header_filename)
         end
       | _ -> ()
     end else () in
@@ -1265,8 +1265,16 @@ and parse_print_error_heuristic2bis saved_typedefs saved_macros parse_strings
     let new_td = ref (Common.clone_scoped_h_env !LP._typedef) in
     Common.clean_scope_h new_td;
     (v, !new_td, macros) in
-  (v, stat)
+  (v, stat) :: !newacc
 
+let parse_print_error_heuristic2 saved_typedefs saved_macros
+  parse_strings cache file =
+  let parse_trees =
+    _parse_print_error_heuristic2 [] saved_typedefs saved_macros
+      parse_strings cache file in
+  match parse_trees with
+    | [] -> assert false
+    | tree::trees -> (tree, List.rev trees)
 
 let time_total_parsing a b c d =
   let res =
@@ -1282,9 +1290,10 @@ let parse_print_error_heuristic a b c d =
 
 (* alias *)
 let parse_c_and_cpp parse_strings cache a =
-  let ((c,_,_),stat) = parse_print_error_heuristic None None parse_strings
-  cache a in
+  let ( ((c,_,_),stat), _) =
+    parse_print_error_heuristic None None parse_strings cache a in
   (c,stat)
+
 let parse_c_and_cpp_keep_typedefs td macs parse_strings cache a =
   parse_print_error_heuristic td macs parse_strings cache a
 

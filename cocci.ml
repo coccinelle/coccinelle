@@ -27,7 +27,7 @@ module Ast_to_flow = Control_flow_c_build
 (* C related *)
 (* --------------------------------------------------------------------- *)
 let cprogram_of_file saved_typedefs saved_macros parse_strings cache file =
-  let (program2, _stat) =
+  let ((program2, _stat), _) =
     Parse_c.parse_c_and_cpp_keep_typedefs
       (if !Flag_cocci.use_saved_typedefs then (Some saved_typedefs) else None)
       (Some saved_macros) parse_strings cache file in
@@ -37,7 +37,7 @@ let cprogram_of_file_cached saved_typedefs parse_strings cache file =
   let tdefs =
     if !Flag_cocci.use_saved_typedefs then Some saved_typedefs
     else None in
-  let ((program2,typedefs,macros), _stat) =
+  let (((program2,typedefs,macros), _stat), _) =
     Parse_c.parse_cache tdefs parse_strings cache file in
   (program2,typedefs,macros)
 
