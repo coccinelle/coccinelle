@@ -925,6 +925,16 @@ type program2 = toplevel2 list
       (string, Cpp_token_c.define_def) Hashtbl.t (* macro defs *)
    and toplevel2 = Ast_c.toplevel * info_item
 
+type 'a generic_parse_info = {
+  filename : string;
+  parse_trees : 'a; (* program2 or extended_program2 *)
+  statistics : Parsing_stat.parsing_stat;
+}
+
+type parse_info = program2 generic_parse_info
+
+type extended_parse_info = extended_program2 generic_parse_info
+
 let program_of_program2 xs =
   xs +> List.map fst
 
@@ -990,7 +1000,8 @@ let rec _parse_print_error_heuristic2 acc saved_typedefs saved_macros
       if cache then
       begin
         debug ("Caching parsing results for file " ^ file);
-        Hashtbl.add header_cache file (List.hd results)
+        let result = List.hd results in
+        Hashtbl.add header_cache file result
       end else begin
         debug ("Not caching parsing results for file " ^ file)
       end;
@@ -1056,12 +1067,9 @@ and _parse_print_error_heuristic2bis acc saved_typedefs saved_macros
     if Includes.should_parse parsing_style file incl
     then begin match Includes.resolve file parsing_style incl with
       | Some header_filename when Common.lfile_exists header_filename ->
-        if not (Hashtbl.mem header_cache header_filename) 
-        then begin
-          newacc := (_parse_print_error_heuristic2 acc
-            saved_typedefs saved_macros parse_strings
-            true header_filename)
-        end
+        newacc := (_parse_print_error_heuristic2 acc
+          saved_typedefs saved_macros parse_strings
+          true header_filename)
       | _ -> ()
     end else () in
 
@@ -1265,7 +1273,7 @@ and _parse_print_error_heuristic2bis acc saved_typedefs saved_macros
     let new_td = ref (Common.clone_scoped_h_env !LP._typedef) in
     Common.clean_scope_h new_td;
     (v, !new_td, macros) in
-  (v, stat) :: !newacc
+  { filename = file; parse_trees = v; statistics = stat } :: !newacc
 
 let parse_print_error_heuristic2 saved_typedefs saved_macros
   parse_strings cache file =
@@ -1290,9 +1298,9 @@ let parse_print_error_heuristic a b c d =
 
 (* alias *)
 let parse_c_and_cpp parse_strings cache a =
-  let ( ((c,_,_),stat), _) =
-    parse_print_error_heuristic None None parse_strings cache a in
-  (c,stat)
+  let v = fst (parse_print_error_heuristic None None parse_strings cache a) in
+  let (c, _, _) = v.parse_trees in
+  (c, v.statistics)
 
 let parse_c_and_cpp_keep_typedefs td macs parse_strings cache a =
   parse_print_error_heuristic td macs parse_strings cache a
@@ -1363,7 +1371,7 @@ let (cstatement_of_string: string -> Ast_c.statement) = fun s ->
   assert (no_format s);
   let tmpfile = Common.new_temp_file "cocci_stmt_of_s" "c" in
   Common.write_file tmpfile ("void main() { \n" ^ s ^ "\n}");
-  let program = parse_c_and_cpp false false tmpfile +> fst in
+  let program = fst (parse_c_and_cpp false false tmpfile) in
   program +> Common.find_some (fun (e,_) ->
     match e with
     | Ast_c.Definition ({Ast_c.f_body = [Ast_c.StmtElem st]},_) -> Some st
@@ -1374,7 +1382,7 @@ let (cexpression_of_string: string -> Ast_c.expression) = fun s ->
   assert (no_format s);
   let tmpfile = Common.new_temp_file "cocci_expr_of_s" "c" in
   Common.write_file tmpfile ("void main() { \n" ^ s ^ ";\n}");
-  let program = parse_c_and_cpp false false tmpfile +> fst in
+  let program = fst (parse_c_and_cpp false false tmpfile) in
   program +> Common.find_some (fun (e,_) ->
     match e with
     | Ast_c.Definition ({Ast_c.f_body = compound},_) ->

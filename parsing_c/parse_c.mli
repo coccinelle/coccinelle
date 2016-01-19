@@ -12,6 +12,16 @@ type program2 = toplevel2 list
      (* the token list contains now also the comment-tokens *)
        and info_item = (string * Parser_c.token list)
 
+type 'a generic_parse_info = {
+  filename : string;
+  parse_trees : 'a; (* program2 or extended_program2 *)
+  statistics : Parsing_stat.parsing_stat;
+}
+
+type parse_info = program2 generic_parse_info
+
+type extended_parse_info = extended_program2 generic_parse_info
+
 (* usually correspond to what is inside your macros.h *)
 val _defs : (string, Cpp_token_c.define_def) Hashtbl.t ref
 (* usually correspond to what is inside your standard.h *)
@@ -33,8 +43,7 @@ val parse_c_and_cpp_keep_typedefs :
       bool (* true if format characters need to be parsed *) ->
       bool (* true if parsing results should be cached *) ->
 	Common.filename (*cfile*) ->
-	  ((extended_program2 * Parsing_stat.parsing_stat)) *
-	  ((extended_program2 * Parsing_stat.parsing_stat)) list
+	  extended_parse_info * extended_parse_info list
 
 (* use some .ast_raw memoized version, and take care if obsolete *)
 val parse_cache:
@@ -42,8 +51,7 @@ val parse_cache:
     bool (* true if format characters need to be parsed *) ->
     bool (* true if parsing results should be cached *) ->
     Common.filename (*cfile*) ->
-    (extended_program2 * Parsing_stat.parsing_stat) *
-    ((extended_program2 * Parsing_stat.parsing_stat) list)
+    extended_parse_info * extended_parse_info list
 
 
 (* ---------------------------------------------------------------------- *)
