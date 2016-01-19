@@ -1309,7 +1309,7 @@ define_param_list_option:
     empty_list_start(dparam,TEllipsis)
       { Ast0.wrap
 	  ($1
-	     (fun _ d -> Ast0.wrap(Ast0.DPdots(P.clt2mcode "," d)))
+	     (fun _ d -> Ast0.wrap(Ast0.DPdots(P.clt2mcode "..." d)))
 	     (fun c -> Ast0.DPComma c)) }
 
 /*****************************************************************************/
