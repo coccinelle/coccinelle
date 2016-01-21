@@ -873,7 +873,12 @@ type constant_info =
        Get_constants2.combine option)
 
 type kind_file = Header | Source
-type file_info = {
+
+let string_of_kind_file = function
+  | Header -> "Header"
+  | Source -> "Source"
+
+type file_info   = {
   fname : string;
   full_fname : string;
   was_modified_once: bool ref;
@@ -881,6 +886,19 @@ type file_info = {
   fpath : string;
   fkind : kind_file;
 }
+
+let string_of_file_info fi =
+  let field name value = name ^ " = " ^ value in
+  let structure fields =
+    "{ " ^ (String.concat "; " fields  ) ^ " }" in
+  structure [
+    field "fname" fi.fname;
+    field "full_name" fi.full_fname;
+    field "was_modified_once" (string_of_bool !(fi.was_modified_once));
+    field "asts" (string_of_int (List.length fi.asts));
+    field "fpath" fi.fpath;
+    field "fkind" (string_of_kind_file fi.fkind)
+  ]
 
 let g_contain_typedmetavar = ref false
 
@@ -1240,10 +1258,18 @@ let prepare_c files choose_includes parse_strings : file_info list =
     } in
   let cfiles = List.map fileinfo_of_c files_and_cprograms in
 
-  if !Includes.include_headers_for_types
-  then cfiles
-  else includes @ cfiles
-
+  let result =
+    if !Flag_cocci.include_headers_for_types
+    then cfiles
+    else includes @ cfiles
+  in
+  Printf.eprintf "[cocci] prepare_c returns %d entries:\n%!"
+    (List.length result);
+  List.iteri
+    (fun i fi -> Printf.eprintf "Entry #%d: %s\n%!" (i+1) (string_of_file_info fi))
+    result;
+  result
+u
 (*****************************************************************************)
 (* Manage environments as they are being built up *)
 (*****************************************************************************)
