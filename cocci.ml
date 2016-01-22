@@ -37,10 +37,7 @@ let cprogram_of_file_cached saved_typedefs parse_strings cache file =
   let tdefs =
     if !Flag_cocci.use_saved_typedefs then Some saved_typedefs
     else None in
-  let (parse_info, _) =
-    Parse_c.parse_cache tdefs parse_strings cache file in
-  let (program2,typedefs,macros) = parse_info.Parse_c.parse_trees in
-  (program2,typedefs,macros)
+  Parse_c.parse_cache tdefs parse_strings cache file
 
 let cfile_of_program program2_with_ppmethod outf =
   Unparse_c.pp_program program2_with_ppmethod outf
@@ -1140,8 +1137,9 @@ let rec prepare_h seen env (hpath : string) choose_includes parse_strings
           && !Includes.include_headers_for_types in
         try
 	Some
-	    (cprogram_of_file_cached
-	      !current_typedefs parse_strings cache hpath)
+	    (let (res, _) = cprogram_of_file_cached
+	      !current_typedefs parse_strings cache hpath in
+	      res.Parse_c.parse_trees)
         with Flag.UnreadableFile file ->
 	  begin
 	    pr2_once ("TYPE: header " ^ hpath ^ " not readable");
@@ -1191,11 +1189,21 @@ let opt_map f lst =
     | None -> acc in
   List.rev (List.fold_left aux [] lst)
 
+let memf f x = function
+  | [] -> false
+  | y::ys -> if f x y then true else false
+
+let consf f x l = if memf f x l then l else x::l
+
 let prepare_c files choose_includes parse_strings : file_info list =
   let cprog_of_file file =
     let result =
-      try Some (file,cprogram_of_file_cached
-        !current_typedefs parse_strings false file)
+      try
+        (
+          let (res,_) = cprogram_of_file_cached !current_typedefs
+            parse_strings false file in
+          Some (file, res.Parse_c.parse_trees)
+        )
       with Flag.UnreadableFile file ->
         pr2_once ("C file " ^ file ^ " not readable");
         None in
