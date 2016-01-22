@@ -620,26 +620,6 @@ let sp_contain_typed_metavar rules =
 	 | _ -> false)
        rules))
 
-let includes_to_parse
-  (xs : (Common.filename * Parse_c.extended_program2) list) = function
-    Includes.Parse_no_includes -> !Includes.extra_includes
-  | include_style ->
-      let xs = List.map (function (file,(cs,_,_)) -> (file,cs)) xs in
-      let f (filename, cs) =
-        let g (c,_info_item) =
-	  match c with
-	  | Ast_c.CppTop
-	      (Ast_c.Include
-		 {Ast_c.i_include = (x,ii); i_rel_pos = info_h_pos;})  ->
-                   Includes.resolve filename include_style x
-	  | _ -> None in
-	Common.map_filter g cs in
-      let h l =
-	  (List.rev
-	     (Common.uniq
-	 (!Includes.extra_includes@(List.rev l)))) (*uniq keeps last*) in
-      h (List.concat (List.map f xs))
-
 let rec interpret_dependencies local global = function
     Ast_cocci.Dep s      -> List.mem s local
   | Ast_cocci.AntiDep s  ->
@@ -1040,7 +1020,7 @@ let flatten l =
 	     prev cur)
        [] l)
 
-let build_info_program (cprogram,typedefs,macros) env =
+let build_info_program env (cprogram,typedefs,macros) =
 
   let (cs, parseinfos) =
     Common.unzip cprogram in
@@ -1106,7 +1086,7 @@ let rebuild_info_program cs file isexp parse_strings =
       (* cat file; *)
       let cprogram =
 	cprogram_of_file c.all_typedefs c.all_macros parse_strings false file in
-      let xs = build_info_program cprogram c.env_typing_before in
+      let xs = build_info_program c.env_typing_before cprogram in
 
       (* TODO: assert env has not changed,
       * if yes then must also reparse what follows even if not modified.
@@ -1140,64 +1120,6 @@ let fixpath s =
 
 let current_typedefs = ref (Common.empty_scoped_h_env () )
 
-let rec prepare_h seen env (hpath : string) choose_includes parse_strings
-    : file_info list =
-  let h_cs =
-    if not (Common.lfile_exists hpath)
-    then
-      begin
-	pr2_once ("TYPE: header " ^ hpath ^ " not found");
-        None
-      end
-    else
-      begin
-        let cache = Includes.parse_all_includes choose_includes
-          && !Includes.include_headers_for_types in
-        try
-	Some
-	    (let (res, _) = cprogram_of_file_cached
-	      !current_typedefs parse_strings cache hpath in
-	      res.Parse_c.parse_trees)
-        with Flag.UnreadableFile file ->
-	  begin
-	    pr2_once ("TYPE: header " ^ hpath ^ " not readable");
-	    None
-	  end
-      end in
-  match h_cs with
-    None -> []
-  | Some (program, tdefs, macros) ->
-      current_typedefs := tdefs;
-      let h_cs = (program, tdefs, macros) in
-      let local_includes =
-	if choose_includes = Includes.Parse_really_all_includes
-	then
-	  List.filter
-	    (function x -> not (List.mem x !seen))
-	    (List.map fixpath
-	       (includes_to_parse [(hpath,h_cs)] choose_includes))
-	else [] in
-      seen := local_includes @ !seen;
-      let others =
-	List.concat
-	  (List.map
-	     (function x -> prepare_h seen env x choose_includes parse_strings)
-	     local_includes) in
-      let info_h_cs = build_info_program h_cs !env in
-      env :=
-	if info_h_cs = []
-	then !env
-	else last_env_toplevel_c_info info_h_cs;
-      others@
-      [{
-	fname = Filename.basename hpath;
-	full_fname = hpath;
-	asts = info_h_cs;
-	was_modified_once = ref false;
-	fpath = hpath;
-	fkind = Header;
-      }]
-
 (* The following function is a generic library function. *)
 (* It may be moved to a better place. *)
 
@@ -1207,61 +1129,83 @@ let opt_map f lst =
     | None -> acc in
   List.rev (List.fold_left aux [] lst)
 
-let memf f x = function
+let rec memf f x = function
   | [] -> false
-  | y::ys -> if f x y then true else false
+  | y::ys -> f x y || memf f x ys
 
 let consf f x l = if memf f x l then l else x::l
 
-let prepare_c files choose_includes parse_strings : file_info list =
-  let cprog_of_file file =
+let rec appendf f l1 l2 = match l1 with
+  | [] -> l2
+  | x::xs -> consf f x (appendf f xs l2)
+
+let same_file parse_info_1 parse_info_2 =
+  parse_info_1.Parse_c.filename = parse_info_2.Parse_c.filename
+
+let parse_info_of_files choose_includes parse_strings cache kind files =
+  let parse_info_of_file file =
     let result =
       try
-        (
-          let (res,_) = cprogram_of_file_cached !current_typedefs
-            parse_strings false file in
-          Some (file, res.Parse_c.parse_trees)
-        )
+        Some
+          (cprogram_of_file_cached !current_typedefs parse_strings
+            cache file)
       with Flag.UnreadableFile file ->
-        pr2_once ("C file " ^ file ^ " not readable");
+        pr2_once ((string_of_kind_file kind) ^ " file " ^ file ^ " not readable");
         None in
     match result with
       | None -> None
-      | Some (_, (_, tdefs, _)) ->
+      | Some (source_parse_info, _) ->
+        let (_, tdefs, _) = source_parse_info.Parse_c.parse_trees in
         current_typedefs := tdefs;
         result in
-  let files_and_cprograms = opt_map cprog_of_file files in
-  let includes = includes_to_parse files_and_cprograms choose_includes in
-  let seen = ref includes in
+  opt_map parse_info_of_file files
 
-  (* todo?: may not be good to first have all the headers and then all the c *)
+let prepare_c files choose_includes parse_strings : file_info list =
+  Includes.set_parsing_style Includes.Parse_no_includes;
+  let extra_includes_parse_infos =
+    List.map fst
+      (parse_info_of_files choose_includes parse_strings true Header
+        !Includes.extra_includes) in
+  Includes.set_parsing_style choose_includes;
+  let source_parse_infos =
+    parse_info_of_files choose_includes parse_strings false Source files in
+  let f (sourceacc, headeracc) (source, headers) =
+    (source::sourceacc, appendf same_file headers headeracc) in
+  let (sources, headers) = List.fold_left f
+    ([], extra_includes_parse_infos) source_parse_infos in
   let env = ref !TAC.initial_env in
+  let file_info_of_parse_info kind parse_info =
+    (* todo?: don't update env ? *)
+    let annotated_parse_trees =
+      build_info_program !env parse_info.Parse_c.parse_trees in
+    (match kind with
+      | Source ->
+        let f x = x.ast_c in
+        ignore(update_include_rel_pos (List.map f annotated_parse_trees))
+      | Header ->
+        env :=
+        if annotated_parse_trees = []
+        then !env
+        else last_env_toplevel_c_info annotated_parse_trees;
+    );
+    {
+      fname = Filename.basename parse_info.Parse_c.filename;
+      full_fname = parse_info.Parse_c.filename;
+      asts = annotated_parse_trees;
+      was_modified_once = ref false;
+      fpath = parse_info.Parse_c.filename;
+      fkind = kind
+    } in
 
   Flag_parsing_c.parsing_header_for_types :=
     !Includes.include_headers_for_types;
-  let parse_header header_path =
-    prepare_h seen env header_path choose_includes parse_strings in
-  let includes = List.concat (List.map parse_header includes) in
-
-  let fileinfo_of_c (file, cprogram) =
-    (* todo?: don't update env ? *)
-    let cs = build_info_program cprogram !env in
-    (* we do that only for the c, not for the h *)
-    ignore(update_include_rel_pos (cs +> List.map (fun x -> x.ast_c)));
-    {
-      fname = Filename.basename file;
-      full_fname = file;
-      asts = cs;
-      was_modified_once = ref false;
-      fpath = file;
-      fkind = Source
-    } in
-  let cfiles = List.map fileinfo_of_c files_and_cprograms in
+  let header_file_info = List.map (file_info_of_parse_info Header) headers in
+  let source_file_info = List.map (file_info_of_parse_info Source) sources in
 
   let result =
-    if !Flag_cocci.include_headers_for_types
-    then cfiles
-    else includes @ cfiles
+    if !Includes.include_headers_for_types
+    then source_file_info
+    else header_file_info @ source_file_info
   in
   Printf.eprintf "[cocci] prepare_c returns %d entries:\n%!"
     (List.length result);
@@ -1269,7 +1213,7 @@ let prepare_c files choose_includes parse_strings : file_info list =
     (fun i fi -> Printf.eprintf "Entry #%d: %s\n%!" (i+1) (string_of_file_info fi))
     result;
   result
-u
+
 (*****************************************************************************)
 (* Manage environments as they are being built up *)
 (*****************************************************************************)
