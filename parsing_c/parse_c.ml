@@ -989,30 +989,37 @@ let tree_stack = ref []
 let rec _parse_print_error_heuristic2 saved_typedefs saved_macros
   parse_strings cache file =
   debug ("Requested to parse " ^ file);
-  let cached_result =
-    try Some (Hashtbl.find header_cache file) with
-    Not_found -> None in
-  match cached_result with
-    | None ->
-      debug "This file has not been parsed yet. Parsing it now.";
-      print_typedefs saved_typedefs;
-      let result =
-        _parse_print_error_heuristic2bis saved_typedefs saved_macros
-          parse_strings file in
-      if cache then
-      begin
-        debug ("Caching parsing results for file " ^ file);
-        Hashtbl.add header_cache file result
-      end else begin
-        debug ("Not caching parsing results for file " ^ file)
-      end;
-      tree_stack := result :: !tree_stack; result
-    | Some result ->
-      debug (
-        "File " ^ file ^ " had already been parsed. " ^
-        "Returning cached result.");
-      tree_stack := result :: !tree_stack;
-      result
+  if List.mem file (List.map (fun x -> x.filename) !tree_stack)
+  then begin
+    debug "Inclusion loop detected. Not re-parsing.";
+    None
+  end else begin
+    let cached_result =
+      try Some (Hashtbl.find header_cache file) with
+      Not_found -> None in
+    match cached_result with
+      | None ->
+        debug "This file has not been parsed yet. Parsing it now.";
+        print_typedefs saved_typedefs;
+        let result =
+          _parse_print_error_heuristic2bis saved_typedefs saved_macros
+            parse_strings file in
+        if cache then
+        begin
+          debug ("Caching parsing results for file " ^ file);
+          Hashtbl.add header_cache file result
+        end else begin
+          debug ("Not caching parsing results for file " ^ file)
+        end;
+        tree_stack := result :: !tree_stack;
+        Some result
+      | Some result ->
+        debug (
+          "File " ^ file ^ " had already been parsed. " ^
+          "Returning cached result.");
+        tree_stack := result :: !tree_stack;
+        Some result
+  end
 
 and _parse_print_error_heuristic2bis saved_typedefs saved_macros
   parse_strings file =
