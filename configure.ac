@@ -548,7 +548,7 @@ configuration changes, you may need to run first:
   \$ make clean
 
 To compile coccinelle, run:
-  \$ make all
+  \$ make
 
 To install coccinelle, run:
   \$ make install
