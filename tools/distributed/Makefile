@@ -1,5 +1,5 @@
 spatch_linux: spatch_linux.c
-	gcc -D HOME="\"${COCCINELLE_HOME}/tools/distributed/\"" -o spatch_linux spatch_linux.c
+	gcc -Wall -D HOME="\"${COCCINELLE_HOME}/tools/distributed/\"" -o spatch_linux spatch_linux.c
 
 install: spatch_linux cleanup
 	cp spatch_linux /usr/local/bin
