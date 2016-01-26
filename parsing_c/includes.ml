@@ -131,14 +131,16 @@ let should_parse parsing_style filename incl = match parsing_style with
   | Parse_normal_includes ->
     (match incl with
     | Ast_c.Weird _ -> false
-    | Ast_c.Local header_path
-    | Ast_c.NonLocal header_path ->
+    | Ast_c.Local _ -> true
+      (* old heuristic
       let header_name = Common.last header_path in
       let header_base_name =
         try Filename.chop_extension header_name
         with Invalid_argument _ -> header_name in
       let file_base_name = Filename.chop_extension filename in
       header_base_name = file_base_name
+      *)
+    | Ast_c.NonLocal header_path -> false
     )
   | Parse_all_includes -> not (is_header filename)
   | Parse_really_all_includes -> true
