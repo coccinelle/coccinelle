@@ -246,6 +246,14 @@ let check_meta_tyopt type_irrelevant v =
       (match meta_lookup rule name v with
 	Ast.MetaParamListDecl(_,_,_) -> ()
       | _ -> fail name)
+  | Ast.MetaBinaryOperatorDecl(Ast.NONE,(rule,name)) ->
+      (match meta_lookup rule name v with
+	Ast.MetaBinaryOperatorDecl(_,_) -> ()
+      | _ -> fail name)
+  | Ast.MetaAssignmentOperatorDecl(Ast.NONE,(rule,name)) ->
+      (match meta_lookup rule name v with
+	Ast.MetaAssignmentOperatorDecl(_,_) -> ()
+      | _ -> fail name)
   | Ast.MetaConstDecl(Ast.NONE,(rule,name),ty) ->
       (match meta_lookup rule name v with
 	Ast.MetaConstDecl(_,_,ty1) when type_irrelevant || ty = ty1 -> ()
@@ -265,6 +273,10 @@ let check_meta_tyopt type_irrelevant v =
   | Ast.MetaLocalIdExpDecl(Ast.NONE,(rule,name),ty) ->
       (match meta_lookup rule name v with
 	Ast.MetaLocalIdExpDecl(_,_,ty1) when type_irrelevant || ty = ty1 -> ()
+      | _ -> fail name)
+  | Ast.MetaGlobalIdExpDecl(Ast.NONE,(rule,name),ty) ->
+      (match meta_lookup rule name v with
+	Ast.MetaGlobalIdExpDecl(_,_,ty1) when type_irrelevant || ty = ty1 -> ()
       | _ -> fail name)
   | Ast.MetaExpListDecl(Ast.NONE,(rule,name),len_name) ->
       (match meta_lookup rule name v with

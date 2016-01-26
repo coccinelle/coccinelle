@@ -95,9 +95,9 @@ and metavar =
   | MetaInitListDecl of arity * meta_name (* name *) * list_len (*len*)
   | MetaListlenDecl of meta_name (* name *)
   | MetaParamDecl of arity * meta_name (* name *)
+  | MetaParamListDecl of arity * meta_name (*name*) * list_len (*len*)
   | MetaBinaryOperatorDecl of arity * meta_name
   | MetaAssignmentOperatorDecl of arity * meta_name
-  | MetaParamListDecl of arity * meta_name (*name*) * list_len (*len*)
   | MetaConstDecl of
       arity * meta_name (* name *) * Type_cocci.typeC list option
   | MetaErrDecl of arity * meta_name (* name *)

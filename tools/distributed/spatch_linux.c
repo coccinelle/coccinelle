@@ -2,6 +2,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #define MAX 9
 
@@ -41,7 +43,7 @@ void cleanup(char **argv) {
   execvp(HOME "cleanup",new_args);
 }
 
-int main(unsigned int argc, char **argv) {
+int main(int argc, char **argv) {
   int i, start=0, max;
   char script[150];
   // interpret the arguments
