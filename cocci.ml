@@ -1207,11 +1207,13 @@ let prepare_c files choose_includes parse_strings : file_info list =
     then source_file_info
     else header_file_info @ source_file_info
   in
+(*
   Printf.eprintf "[cocci] prepare_c returns %d entries:\n%!"
     (List.length result);
   List.iteri
     (fun i fi -> Printf.eprintf "Entry #%d: %s\n%!" (i+1) (string_of_file_info fi))
     result;
+*)
   result
 
 (*****************************************************************************)
