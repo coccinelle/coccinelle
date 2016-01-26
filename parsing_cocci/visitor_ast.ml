@@ -841,11 +841,11 @@ let combiner bind option_default
       | Ast.ExpressionTag(exp) -> expression exp
       | Ast.ConstantTag(cst) -> option_default
       | Ast.UnaryOpTag(unop) -> option_default
-      | Ast.AssignOpTag(asgnop) -> option_default
+      | Ast.AssignOpTag(asgnop) -> assignOp asgnop
       | Ast.SimpleAssignOpTag _ -> option_default
       | Ast.OpAssignOpTag _ -> option_default
       | Ast.FixOpTag(fixop) -> option_default
-      | Ast.BinaryOpTag(binop) -> option_default
+      | Ast.BinaryOpTag(binop) -> binaryOp binop
       | Ast.ArithOpTag(arithop) -> option_default
       | Ast.LogicalOpTag(logop) -> option_default
       | Ast.DeclarationTag(decl) -> declaration decl

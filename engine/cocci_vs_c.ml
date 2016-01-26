@@ -1626,9 +1626,9 @@ and assignOp opa opb =
       let max_min _ =
         Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_assignOp opb) in
       X.envf keep inherited (mv,Ast_c.MetaAssignOpVal opb,max_min)
-        (fun () -> X.distrf_assignOp mv opb)
+        (fun () -> X.distrf_assignOp mv opb
       >>= (fun mv opb ->
-            return (A.MetaAssign(mv,c,keep,inherited)+> A.rewrap opa,opb))
+            return (A.MetaAssign(mv,c,keep,inherited)+> A.rewrap opa,opb)))
     end else fail
   | _ -> fail
 
@@ -1656,9 +1656,9 @@ and binaryOp opa opb =
       let max_min _ =
         Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_binaryOp opb) in
       X.envf keep inherited (mv,Ast_c.MetaBinaryOpVal opb,max_min)
-        (fun () -> X.distrf_binaryOp mv opb)
+        (fun () -> X.distrf_binaryOp mv opb
       >>= (fun mv opb ->
-            return (A.MetaBinary(mv,c,keep,inherited)+> A.rewrap opa,opb))
+            return (A.MetaBinary(mv,c,keep,inherited)+> A.rewrap opa,opb)))
     end else fail
   | _ -> fail
 

@@ -394,17 +394,20 @@ other \#ifdef.}
 \subsubsection*{Include files}
 
 \normal{-{}-recursive-includes, -{}-all-includes, -{}-local-includes,
-  -{}-no-includes}{ These options control which include files mentioned in a
-  C file are taken into account.  {\bf -{}-recursive-includes} indicates
+  -{}-no-includes}{ These options control which include files mentioned in
+  a C file are taken into account.  {\bf -{}-recursive-includes} indicates
   that all included files mentioned in the .c file(s) or any included files
   will be processed.  {\bf -{}-all-includes} indicates that all included
   files mentioned in the .c file(s) will be processed.  {\bf
-    -{}-local-includes} indicates that only included files in the current
-  directory will be processed.  {\bf -{}-no-includes} indicates that no
-  included files will be processed.  If the semantic patch contains type
-  specifications on expression metavariables, then the default is {\bf
-    -{}-local-includes}.  Otherwise the default is {\bf -{}-no-includes}.  At
-  most one of these options can be specified.}
+    -{}-local-includes} indicates that only included files reachable by the
+  specified path from the directory of the .c file.  In this case, for
+  non-local includes, specified with \texttt{<>}, Coccinelle will also
+  search from the directories specified with \texttt{-I} for \texttt{.h}
+  files with the same name as the \texttt{.c} file.  {\bf -{}-no-includes}
+  indicates that no included files will be processed.  If the semantic
+  patch contains type specifications on expression metavariables, then the
+  default is {\bf -{}-local-includes}.  Otherwise the default is {\bf
+    -{}-no-includes}.  At most one of these options can be specified.}
 
 \normal{-I $\langle$path$\rangle$}{ This option specifies a directory
   in which to find non-local include files.  This option can be used
