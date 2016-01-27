@@ -225,10 +225,10 @@ Returns the directory on which spatch was launched.
 
 .I val file
 :
-.B unit -> string
+.B unit -> string list
 .sp
-Returns the file on which spatch is currently working.  This raises a
-Failure exception if spatch is not currently working on any file (eg,
+Returns the list of files on which spatch is currently working.  The result
+is the empty list if spatch is not currently working on any file (eg,
 in an initialize or finalize rule).
 .sp
 

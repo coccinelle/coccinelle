@@ -32,7 +32,8 @@ let patch = ref (None : string option)
 let make_hrule = ref (None : string (*dir*) option)
 let hrule_per_file = ref true (* if false, then a rule per function *)
 
-let currentfile = ref (None : string option)
+let currentfile = ref (None : string option) (* file of current code *)
+let currentfiles = ref ([] : string list) (* starting files of this run *)
 
 let current_element = ref ""
 let dir = ref ""

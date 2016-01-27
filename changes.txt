@@ -24,6 +24,9 @@
 
 * 1.0.5
 ** Language:
+- In the Coccilib interface, the function file, giving the file being
+  currently processed, has become files, returning a list of file names,
+  because Coccinelle can work on more than one file at once.
 ** Features:
 - addition of --file-groups option
 - ocaml code allowed as constraints on position variables

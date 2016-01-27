@@ -2044,6 +2044,7 @@ let bigloop a b c =
 type init_final = Initial | Final
 
 let initial_final_bigloop2 ty rebuild r =
+  Flag.currentfiles := [];
   if !Flag_cocci.show_ctl_text then
     begin
       Common.pr_xxxxxxxxxxxxxxxxx ();
@@ -2224,6 +2225,7 @@ let full_engine2 (cocci_infos,parse_strings) cfiles =
 	    then Flag_cocci.I_NORMAL_INCLUDES
 	    else Flag_cocci.I_NO_INCLUDES
 	| x -> x in
+      Flag.currentfiles := cfiles;
       let c_infos  = prepare_c cfiles choose_includes parse_strings in
 
       (* ! the big loop ! *)

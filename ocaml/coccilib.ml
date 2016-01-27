@@ -168,8 +168,7 @@ let exit () = exited := true
 
 let dir () = !Flag.dir
 
-let file () =
-  match !Flag.currentfile with Some f -> f | None -> failwith "no file"
+let files () = !Flag.currentfiles
 
 (* ---------------------------------------------------------------------- *)
 (* org mode *)
