@@ -821,14 +821,6 @@ and statement arity s =
       close_box(); force_newline()
   | Ast.OptStm(s) -> statement "?" s
 
-and print_statement_when whencode =
-  print_string "   WHEN != ";
-  open_box 0;
-  print_between (function _ -> print_string " &"; force_newline())
-    (dots force_newline (statement "")) whencode;
-  close_box()
-
-
 and whencode notfn alwaysfn = function
     Ast.WhenNot a ->
       print_string "   WHEN != "; open_box 0; notfn a; close_box()
