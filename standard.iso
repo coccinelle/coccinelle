@@ -369,6 +369,15 @@ expression E;
 
 unlikely(E) <=> likely(E) => E
 
+// the BSDs use __predict_true and __predict_false instead
+
+Expression
+@ bsd_branch_pred @
+expression E;
+@@
+
+__predict_false(E) <=> __predict_true(E) => E
+
 // ---------------------------------------------------------------------------
 // Parenthesis isomorphisms
 // ---------------------------------------------------------------------------
