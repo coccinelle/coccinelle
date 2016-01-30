@@ -828,15 +828,15 @@ and whencode notfn alwaysfn = function
       print_string "   WHEN = "; open_box 0; alwaysfn a; close_box()
   | Ast.WhenModifier x -> print_string "   WHEN "; print_when_modif x
   | Ast.WhenNotTrue a ->
-      print_string "   WHEN != TRUE "; open_box 0; rule_elem "" a; close_box()
+      print_string "   WHEN != true "; open_box 0; rule_elem "" a; close_box()
   | Ast.WhenNotFalse a ->
-      print_string "   WHEN != FALSE "; open_box 0; rule_elem "" a; close_box()
+      print_string "   WHEN != false "; open_box 0; rule_elem "" a; close_box()
 
 and print_when_modif = function
-  | Ast.WhenAny    -> print_string "ANY"
-  | Ast.WhenStrict -> print_string "STRICT"
-  | Ast.WhenForall -> print_string "FORALL"
-  | Ast.WhenExists -> print_string "EXISTS"
+  | Ast.WhenAny    -> print_string "any"
+  | Ast.WhenStrict -> print_string "strict"
+  | Ast.WhenForall -> print_string "forall"
+  | Ast.WhenExists -> print_string "exists"
 
 and case_line arity c =
   match Ast.unwrap c with
