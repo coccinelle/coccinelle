@@ -131,11 +131,14 @@ let compatible t1 = function
 	| (_,_) -> t1=t2 in
       loop (t1,t2)
 
-let rec meta_names = function
-    ConstVol(_,ty) -> meta_names ty
+et rec meta_names = function
+    ConstVol(_,ty) | Pointer(ty) | FunctionPointer(ty) | Array(ty) ->
+      meta_names ty
+  | EnumName(MV(tyname,_,_)) -> [tyname]
+  | StructUnionName(_,MV(tyname,_,_)) -> [tyname]
+  | MetaType(tyname,_,_) -> [tyname]
+  | Decimal(e1,e2) ->
+      let e2mv = function MV(mv,_,_) -> [mv] | _ -> [] in
+      (e2mv e1) @ (e2mv e2)
   | SignedT(_,Some ty) -> meta_names ty
-  | Pointer(ty) -> meta_names ty
-  | FunctionPointer(ty) -> meta_names ty
-  | Array(ty) -> meta_names ty
-  | MetaType(nm,_,_) -> [nm]
-  | _ -> []
+  | ty -> []
