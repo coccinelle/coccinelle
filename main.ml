@@ -266,7 +266,7 @@ let print_version () =
     mode Config.version Config.ocaml_version;
   Printf.printf "Flags passed to the configure script: %s\n" flags;
   Printf.printf "Python scripting support: %s\n" withpython;
-  Printf.printf "Synxax of regular expresssions: %s\n" whichregexp;
+  Printf.printf "Syntax of regular expresssions: %s\n" whichregexp;
   exit 0
 
 let short_options = [
