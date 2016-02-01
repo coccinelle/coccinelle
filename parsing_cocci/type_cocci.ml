@@ -131,7 +131,7 @@ let compatible t1 = function
 	| (_,_) -> t1=t2 in
       loop (t1,t2)
 
-et rec meta_names = function
+let rec meta_names = function
     ConstVol(_,ty) | Pointer(ty) | FunctionPointer(ty) | Array(ty) ->
       meta_names ty
   | EnumName(MV(tyname,_,_)) -> [tyname]
