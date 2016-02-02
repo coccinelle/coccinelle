@@ -469,6 +469,9 @@ metadec:
   ar=arity ispure=pure
   kindfn=metakind ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
     { P.create_metadec ar ispure kindfn ids }
+| ar=arity ispure=pure
+  kindfn=metakindnosym ids=comma_list(pure_ident_or_meta_ident_nosym) TMPtVirg
+    { P.create_metadec ar ispure kindfn ids }
 | kindfn=metakind_fresh ids=comma_list(pure_ident_or_meta_ident_with_seed)
     TMPtVirg
     { P.create_fresh_metadec kindfn ids }
@@ -725,7 +728,9 @@ list_len:
       let len = Ast.AnyLen in
       let tok = check_meta(Ast.MetaStmListDecl(arity,name,len)) in
       !Data.add_stmlist_meta name len pure; tok) }
-| TTypedef
+
+%inline metakindnosym:
+  TTypedef
     { (fun arity (_,name) pure check_meta ->
       if arity = Ast.NONE && pure = Ast0.Impure
       then (!Data.add_type_name name; [])
@@ -2223,11 +2228,23 @@ pure_ident_kwd:
    | TPosition { "position" }
    | TSymbol { "symbol" }
 
+meta_ident_sym: /* these can only be redefined as metavars, not other syms */
+     TSymId { P.id2name $1 }
+   | TTypeId { P.id2name $1 }
+   | TIteratorId { P.id2name $1 }
+   | TDeclarerId { P.id2name $1 }
+
 meta_ident:
      TRuleName TDot pure_ident     { (Some $1,P.id2name $3) }
    | TRuleName TDot pure_ident_kwd { (Some $1,$3) }
 
 pure_ident_or_meta_ident:
+       pure_ident                { (None,P.id2name $1) }
+     | pure_ident_kwd            { (None,$1) }
+     | meta_ident                { $1 }
+     | meta_ident_sym            { (None,$1) }
+
+pure_ident_or_meta_ident_nosym:
        pure_ident                { (None,P.id2name $1) }
      | pure_ident_kwd            { (None,$1) }
      | meta_ident                { $1 }
