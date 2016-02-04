@@ -1,0 +1,36 @@
+\documentclass{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+\usepackage{ifthen}
+
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\usepackage{xspace}
+
+% fancy symbol, but require latex-extra-fonts (huge) package
+\usepackage[geometry]{ifsym}
+
+\input{macros_options}
+\input{macros}
+
+% Update version in macros.tex
+\title{Coccinelle Usage (version \cocciversion)}
+
+\begin{document}
+\maketitle
+
+\input{spatch_options}
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: LaTeX
+%%% TeX-master: t
+%%% coding: utf-8
+%%% TeX-PDF-mode: t
+%%% ispell-local-dictionary: "american"
+%%% End:

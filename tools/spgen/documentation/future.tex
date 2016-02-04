@@ -1,0 +1,20 @@
+\begin{itemize}
+\item \textbf{Global configuration file}: Some of the preface attributes remain more or less constant across generated scripts, such as author and url. Furthermore, there are some hardcoded values in the program that should be configurable, such as the default values for rulenames, position names, and error messages.\newline
+It could be useful to have some kind of configuration file that collects these values and reuses them each time a script is generated.
+\item \textbf{Generic rule splitting}: The disjunction rule generation implementation currently doesn't lend itself very well to possible expansion. For instance, if there was another case where we would like to expand a rule into several rules, how could we do this in a generalised way? How should this work with several split rules?\newline
+Example: any construct where the patch rule changes something other than itself, e.g. function declarations; if the declared function has a prototype, the prototype is changed as well in \texttt{patch} mode, but this has to be done explicitly with two rules in \texttt{context} mode.\newline
+Discussion: consider splitting generation of extra rules out into its own module, one for each type of split rule. Essentially using multiple passes over the AST0 to get the rules, one pass per rule type. This is however slightly complicated by the fact that context rule generation should be modified if there is a disjunction.\newline
+Note: could have following design (prolly not though):
+\begin{itemize}
+\item Given ast0 rule:
+\item Generate positions using rebuilder (rebuilder works like combiner except its functions are 'a -> 'a and all functions must be like "take an ast0 component and return an ast0 component of the same type". This is different from the combiner in that the combiner says "take an ast0 component and return a 'a", where ALL ast0 components are converted into a 'a, whereas for the rebuilder, the statement is turned into a statement, the expression is turned into an expression etc.). Only problem is that it modifies state: we need to know the name of the added metaposition ...
+
+\item turn to pretty-print strings (at this stage, stars and context mode + whencodes are handled as well)
+\item things to watch out for: no\_gen mode (in whencodes), disjunction handling, inc\_star, whencode handling, context\_mode star generation, 
+
+
+\end{itemize}
+\item \textbf{Stars and braces}: If a braced statement is starred, it would be nicer if the braces were not on the same lines as the stars.
+\item \textbf{Character limit}: Ensuring character limit in the generated rule. This is currently implemented for the preface, but not for rule headers and script rules.
+\item Perhaps rethink position generation at some point. If the script already contains minuses, we would rather put the positions there compared to the heuristic version.
+\end{itemize}

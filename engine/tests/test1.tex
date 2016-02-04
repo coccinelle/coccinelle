@@ -1,0 +1,667 @@
+\documentclass{article}
+\usepackage{fullpage}
+
+\newcommand{\U}{\,\mbox{\sf{U}}\,}
+\newcommand{\A}{\mbox{\sf{A}}}
+\newcommand{\E}{\mbox{\sf{E}}}
+\newcommand{\AX}{\mbox{\sf{AX}}}
+\newcommand{\EX}{\mbox{\sf{EX}}}
+\newcommand{\AF}{\mbox{\sf{AF}}}
+\newcommand{\EF}{\mbox{\sf{EF}}}
+\newcommand{\AG}{\mbox{\sf{AG}}}
+\newcommand{\EG}{\mbox{\sf{EG}}}
+
+\newcommand{\mita}[1]{\mbox{\it{{#1}}}}
+\newcommand{\mtt}[1]{\mbox{\tt{{#1}}}}
+\newcommand{\msf}[1]{\mbox{\sf{{#1}}}}
+\newcommand{\mrm}[1]{\mbox{\rm{{#1}}}}
+\newcommand{\mth}[1]{\({#1}\)}
+
+\newcommand{\ttlb}{\mbox{\tt \char'173}}
+\newcommand{\ttrb}{\mbox{\tt \char'175}}
+
+\begin{document}
+
+\begin{quote}\begin{verbatim}
+
+@@
+@@
+
+f();
+...
+?g();
+...
+h();
+\end{verbatim}\end{quote}
+
+\[\begin{array}{l}
+\mita{\sf{let}} \, \mita{l9} = \mita{f();} \, \mita{\sf{in}} \, \mita{l9} \wedge (\AX(\mita{\sf{let}} \, \mita{l0} = \mita{g();} \, \mita{\sf{in}} \, \A[\neg (\mita{l0} \vee \mita{l9}) \U (\mita{\sf{let}} \, \mita{l7} = \msf{After}\\\mbox{} \vee \msf{ErrorExit} \, \mita{\sf{in}} \, (\mita{\sf{let}} \, \mita{l10} = (\mita{\sf{let}} \, \mita{l5} = \mita{h();} \, \mita{\sf{in}} \, \A[\neg (\mita{l5} \vee \mita{l0}) \U (\mita{l5} \vee \mita{l7})]
+
+) \, \mita{\sf{in}} \, (\mita{\sf{let}} \, \mita{l3} = \mita{l0}\\\mbox{} \wedge (\AX\mita{l10}) \, \mita{\sf{in}} \, \mita{l3} \vee ((\neg \mita{l3}) \wedge \mita{l10})
+)
+) \vee \mita{l7}
+)]
+
+))
+
+\end{array}\]
+
+\begin{quote}\begin{verbatim}
+
+@@
+@@
+
+foo(...) {
+  
+(
+  -f-(-3-, -E-)-;
+    >>> f(3, 3, E);
+  
+|
+  -f-(-E-, -4-)-;
+    >>> f(E, 4, 4);
+  
+|
+  -E-;
+    >>> g(E);
+  
+)
+  
+(
+  -f-(-3-, -X-)-;
+    >>> f(3, 3, X);
+  
+|
+  -f-(-Y-, -4-)-;
+    >>> f(Y, 4, 4);
+  
+|
+  -Z-;
+    >>> g(Z);
+  
+)
+  
+(
+  -f-(-3-)-;
+    >>> f(3, 3);
+  
+|
+  -f-(-4-)-;
+    >>> f(4, 4);
+  
+)
+}
+\end{verbatim}\end{quote}
+
+\[\begin{array}{l}
+(\exists \mita{foo} . \mita{foo(...) }) \wedge (\AX(\exists \mita{p0} . (\mita{\sf{let}} \, \mita{l17} = \msf{Paren}(p0) \, \mita{\sf{in}} \, \mita{{\ttlb}
+  } \wedge \mita{l17} \wedge (\AX(\mita{\sf{let}} \, \mita{l32} = \AX(\mita{\sf{let}} \, \mita{l2} = \AX(\mita{\sf{let}} \, \mita{l12} = \AX(\mita{
+{\ttrb}}\\\mbox{} \wedge \mita{l17}) \, \mita{\sf{in}} \, ((\exists \mita{v0} . \mita{-f-(-3-)-;
+  \mth{>}\mth{>}\mth{>} f(3, 3);}_{\mita{v0}}) \wedge \mita{l12}) \vee ((\exists \mita{v0} . \mita{-f-(-4-)-;
+  \mth{>}\mth{>}\mth{>} f(4, 4);}_{\mita{v0}})\\\mbox{} \wedge \mita{l12})
+) \, \mita{\sf{in}} \, (\mita{\sf{let}} \, \mita{l7} = \exists \mita{X} . \exists \mita{v0} . \mita{-f-(-3-, -X-)-;
+  \mth{>}\mth{>}\mth{>} f(3, 3, X);}_{\mita{v0}} \, \mita{\sf{in}} \, (\mita{l7}\\\mbox{} \wedge \mita{l2}) \vee (\mita{\sf{let}} \, \mita{l21} = \neg \mita{l7} \, \mita{\sf{in}} \, (\mita{\sf{let}} \, \mita{l6} = \exists \mita{Y} . \exists \mita{v0} . \mita{-f-(-Y-, -4-)-;
+  \mth{>}\mth{>}\mth{>} f(Y, 4, 4);}_{\mita{v0}}\\\mbox{} \, \mita{\sf{in}} \, (\mita{l21} \wedge \mita{l6} \wedge \mita{l2}) \vee ((\neg \mita{l6}) \wedge \mita{l21} \wedge (\exists \mita{Z} . \exists \mita{v0} . \mita{-Z-;
+  \mth{>}\mth{>}\mth{>} g(Z);}_{\mita{v0}}) \wedge \mita{l2})
+)
+)
+)
+) \, \mita{\sf{in}} \, (\mita{\sf{let}} \, \mita{l8} = \exists \mita{E}\\\mbox{} . \exists \mita{v0} . \mita{-f-(-3-, -E-)-;
+  \mth{>}\mth{>}\mth{>} f(3, 3, E);}_{\mita{v0}} \, \mita{\sf{in}} \, (\mita{l8} \wedge \mita{l32}) \vee (\mita{\sf{let}} \, \mita{l19} = \neg \mita{l8}\\\mbox{} \, \mita{\sf{in}} \, (\mita{\sf{let}} \, \mita{l4} = \exists \mita{E} . \exists \mita{v0} . \mita{-f-(-E-, -4-)-;
+  \mth{>}\mth{>}\mth{>} f(E, 4, 4);}_{\mita{v0}} \, \mita{\sf{in}} \, (\mita{l19} \wedge \mita{l4}\\\mbox{} \wedge \mita{l32}) \vee ((\neg \mita{l4}) \wedge \mita{l19} \wedge (\exists \mita{E} . \exists \mita{v0} . \mita{-E-;
+  \mth{>}\mth{>}\mth{>} g(E);}_{\mita{v0}}) \wedge \mita{l32})
+)
+)
+)
+))
+)))
+\end{array}\]
+
+\begin{quote}\begin{verbatim}
+
+@@
+@@
+
+p(
+    <<< int hostptr, 
+  char buffer) {
+  -int -hostptr-;
+}
+\end{verbatim}\end{quote}
+
+\[\begin{array}{l}
+\exists \mita{hostptr} . ((\exists \mita{buffer} . \exists \mita{v0} . \mita{p(
+    <<< int hostptr, 
+  char buffer) }_{\mita{v0}})\\\mbox{} \wedge (\AX(\exists \mita{p0} . (\mita{\sf{let}} \, \mita{l0} = \msf{Paren}(p0) \, \mita{\sf{in}} \, \mita{{\ttlb}
+  } \wedge \mita{l0} \wedge (\AX((\exists \mita{v0} . \mita{-int -hostptr-;}_{\mita{v0}})\\\mbox{} \wedge (\AX(\mita{
+{\ttrb}} \wedge \mita{l0}))))
+))))
+\end{array}\]
+
+\begin{quote}\begin{verbatim}
+
+@@
+@@
+
+f(X);
+-...   WHEN != -h-(-X-)
+g(Y);
+\end{verbatim}\end{quote}
+
+\[\begin{array}{l}
+\exists \mita{X} . (\mita{\sf{let}} \, \mita{l1} = \mita{f(X);} \, \mita{\sf{in}} \, \mita{l1} \wedge (\AX(\mita{\sf{let}} \, \mita{l0} = \exists \mita{Y} . \mita{g(Y);} \, \mita{\sf{in}} \, \A[((\exists \mita{v0} . \mita{-\_S0}_{\mita{v0}}) \wedge (\neg (\exists \mita{v0}\\\mbox{} . \mita{-h-(-X-)}_{\mita{v0}})) \wedge (\neg (\mita{l0} \vee \mita{l1}))) \U (\mita{l0} \vee \msf{After} \vee \msf{ErrorExit})]
+
+))
+)
+\end{array}\]
+
+\begin{quote}\begin{verbatim}
+
+@@
+@@
+
+f(X);
+-...
+g(Y);
+\end{verbatim}\end{quote}
+
+\[\begin{array}{l}
+\mita{\sf{let}} \, \mita{l1} = \exists \mita{X} . \mita{f(X);} \, \mita{\sf{in}} \, \mita{l1} \wedge (\AX(\mita{\sf{let}} \, \mita{l2} = \exists \mita{Y} . \mita{g(Y);} \, \mita{\sf{in}} \, \A[((\exists \mita{v0} . \mita{-\_S0}_{\mita{v0}}) \wedge (\neg (\mita{l2}\\\mbox{} \vee \mita{l1}))) \U (\mita{l2} \vee \msf{After} \vee \msf{ErrorExit})]
+
+))
+
+\end{array}\]
+
+\begin{quote}\begin{verbatim}
+
+@@
+@@
+
+f(X);
+g(Y);
+h(X);
+f(Y);
+g(X);
+h(Y);
+\end{verbatim}\end{quote}
+
+\[\begin{array}{l}
+\exists \mita{X} . (\mita{f(X);} \wedge (\AX(\exists \mita{Y} . (\mita{g(Y);} \wedge (\AX(\mita{h(X);} \wedge (\AX(\mita{f(Y);} \wedge (\AX(\mita{g(X);} \wedge (\AX(\mita{h(Y);}))))))))))))
+\end{array}\]
+
+\begin{quote}\begin{verbatim}
+
+@@
+@@
+
+f(X);
+...
+g(X);
+h(X);
+\end{verbatim}\end{quote}
+
+\[\begin{array}{l}
+\exists \mita{X} . (\mita{\sf{let}} \, \mita{l0} = \mita{f(X);} \, \mita{\sf{in}} \, \mita{l0} \wedge (\AX(\mita{\sf{let}} \, \mita{l1} = \mita{g(X);} \, \mita{\sf{in}} \, \A[\neg (\mita{l1} \vee \mita{l0}) \U ((\mita{l1} \wedge (\AX(\mita{h(X);})))\\\mbox{} \vee \msf{After} \vee \msf{ErrorExit})]
+
+))
+)
+\end{array}\]
+
+\begin{quote}\begin{verbatim}
+
+@@
+@@
+
+if (X) {
+  ...
+} else {
+  ...
+}
+f(X);
+\end{verbatim}\end{quote}
+
+\[\begin{array}{l}
+\exists \mita{X} . (\mita{\sf{let}} \, \mita{l0} = \msf{FalseBranch} \, \mita{\sf{in}} \, (\mita{\sf{let}} \, \mita{l1} = \msf{After} \, \mita{\sf{in}} \, \mita{if (X) } \wedge (\AX(\mita{\sf{let}} \, \mita{l15} = \AX(\exists \mita{p0}\\\mbox{} . (\mita{\sf{let}} \, \mita{l7} = \msf{Paren}(p0) \, \mita{\sf{in}} \, (\mita{\sf{let}} \, \mita{l14} = \mita{{\ttlb}
+  } \wedge \mita{l7} \, \mita{\sf{in}} \, \mita{l14} \wedge (\AX(\mita{\sf{let}} \, \mita{l13} = \mita{
+{\ttrb}} \wedge \mita{l7}\\\mbox{} \, \mita{\sf{in}} \, \A[\neg (\mita{l13} \vee \mita{l14}) \U (\mita{l13} \vee \mita{l1} \vee \msf{ErrorExit})]
+
+))
+)
+)) \, \mita{\sf{in}} \, (\msf{TrueBranch} \wedge \mita{l15}) \vee (\mita{l0}\\\mbox{} \wedge \mita{l15}) \vee (\mita{l1} \wedge (\AX(\mita{f(X);})))
+)) \wedge (\EX\mita{l0}) \wedge (\EX\mita{l1})
+)
+)
+\end{array}\]
+
+\begin{quote}\begin{verbatim}
+
+@@
+@@
+
+if (X) {
+  ...
+}
+f(X);
+\end{verbatim}\end{quote}
+
+\[\begin{array}{l}
+\exists \mita{X} . (\mita{\sf{let}} \, \mita{l0} = \msf{After} \, \mita{\sf{in}} \, \mita{if (X) } \wedge (\AX((\msf{TrueBranch} \wedge (\AX(\exists \mita{p0} . (\mita{\sf{let}} \, \mita{l2} = \msf{Paren}(p0)\\\mbox{} \, \mita{\sf{in}} \, (\mita{\sf{let}} \, \mita{l4} = \mita{{\ttlb}
+  } \wedge \mita{l2} \, \mita{\sf{in}} \, \mita{l4} \wedge (\AX(\mita{\sf{let}} \, \mita{l3} = \mita{
+{\ttrb}} \wedge \mita{l2} \, \mita{\sf{in}} \, \A[\neg (\mita{l3} \vee \mita{l4}) \U (\mita{l3} \vee \mita{l0}\\\mbox{} \vee \msf{ErrorExit})]
+
+))
+)
+)))) \vee \msf{FallThrough} \vee (\mita{l0} \wedge (\AX(\mita{f(X);}))))) \wedge (\EX\mita{l0})
+)
+\end{array}\]
+
+\begin{quote}\begin{verbatim}
+
+@@
+@@
+
+while (X) {
+  ...
+}
+f(X);
+\end{verbatim}\end{quote}
+
+\[\begin{array}{l}
+\exists \mita{X} . (\mita{while (X) } \wedge (\mita{\sf{let}} \, \mita{l0} = \msf{After} \, \mita{\sf{in}} \, (\AX((\msf{TrueBranch} \rightarrow (\AX(\exists \mita{p0} . (\mita{\sf{let}} \, \mita{l3} = \msf{Paren}(p0)\\\mbox{} \, \mita{\sf{in}} \, (\mita{\sf{let}} \, \mita{l5} = \mita{{\ttlb}
+  } \wedge \mita{l3} \, \mita{\sf{in}} \, \mita{l5} \wedge (\AX(\mita{\sf{let}} \, \mita{l4} = \mita{
+{\ttrb}} \wedge \mita{l3} \, \mita{\sf{in}} \, \A[\neg (\mita{l4} \vee \mita{l5}) \U (\mita{l4} \vee \mita{l0}\\\mbox{} \vee \msf{ErrorExit})]
+
+))
+)
+)))) \wedge (\mita{l0} \rightarrow (\AX(\mita{f(X);}))))) \wedge (\EX\mita{l0})
+))
+\end{array}\]
+
+\begin{quote}\begin{verbatim}
+
+@@
+@@
+
+while (X) {
+  ...
+}
+\end{verbatim}\end{quote}
+
+\[\begin{array}{l}
+(\exists \mita{X} . \mita{while (X) }) \wedge (\AX(\msf{TrueBranch} \rightarrow (\AX(\exists \mita{p0} . (\mita{\sf{let}} \, \mita{l1} = \msf{Paren}(p0) \, \mita{\sf{in}} \, (\mita{\sf{let}} \, \mita{l4} = \mita{{\ttlb}
+  }\\\mbox{} \wedge \mita{l1} \, \mita{\sf{in}} \, \mita{l4} \wedge (\AX(\mita{\sf{let}} \, \mita{l3} = \mita{
+{\ttrb}} \wedge \mita{l1} \, \mita{\sf{in}} \, \A[\neg (\mita{l3} \vee \mita{l4}) \U (\mita{l3} \vee \msf{After} \vee \msf{ErrorExit})]
+\\\mbox{}
+))
+)
+)))))
+\end{array}\]
+
+\begin{quote}\begin{verbatim}
+
+@@
+@@
+
+{
+  ...   WHEN != g(Y)
+  f(X);
+  ...   WHEN != h(Y)
+}
+\end{verbatim}\end{quote}
+
+\[\begin{array}{l}
+\exists \mita{p0} . (\mita{\sf{let}} \, \mita{l6} = \msf{Paren}(p0) \, \mita{\sf{in}} \, (\mita{\sf{let}} \, \mita{l9} = \mita{{\ttlb}
+  } \wedge \mita{l6} \, \mita{\sf{in}} \, \mita{l9} \wedge (\AX(\exists \mita{Y} . (\mita{\sf{let}} \, \mita{l3} = \exists \mita{X} . \mita{f(X);}\\\mbox{} \, \mita{\sf{in}} \, \A[((\neg \mita{g(Y)}) \wedge (\neg (\mita{l3} \vee \mita{l9}))) \U (\mita{\sf{let}} \, \mita{l5} = \msf{After} \vee \msf{ErrorExit} \, \mita{\sf{in}} \, (\mita{l3} \wedge (\AX(\mita{\sf{let}} \, \mita{l8} = \mita{
+{\ttrb}}\\\mbox{} \wedge \mita{l6} \, \mita{\sf{in}} \, \A[((\neg \mita{h(Y)}) \wedge (\neg (\mita{l8} \vee \mita{l3}))) \U (\mita{l8} \vee \mita{l5})]
+
+))) \vee \mita{l5}
+)]
+
+)))
+)
+)
+\end{array}\]
+
+\begin{quote}\begin{verbatim}
+
+@@
+@@
+
+f(X);
+...
+-g-(-Y-)-;
+  >>> h(X, Y);
+
+\end{verbatim}\end{quote}
+
+\[\begin{array}{l}
+\exists \mita{X} . (\mita{\sf{let}} \, \mita{l0} = \mita{f(X);} \, \mita{\sf{in}} \, \mita{l0} \wedge (\AX\A[\neg ((\exists \mita{Y} . \mita{-g-(-Y-)-;
+  \mth{>}\mth{>}\mth{>} h(X, Y);}) \vee \mita{l0})\\\mbox{} \U ((\exists \mita{Y} . \exists \mita{v0} . \mita{-g-(-Y-)-;
+  \mth{>}\mth{>}\mth{>} h(X, Y);}_{\mita{v0}}) \vee \msf{After} \vee \msf{ErrorExit})]
+)
+)
+\end{array}\]
+
+\begin{quote}\begin{verbatim}
+
+@@
+@@
+
+-f-(-X-)-;
+  >>> f(Z);
+
+-...
+g(Y);
+h(Z);
+\end{verbatim}\end{quote}
+
+\[\begin{array}{l}
+\exists \mita{Z} . ((\exists \mita{X} . \exists \mita{v0} . \mita{-f-(-X-)-;
+  \mth{>}\mth{>}\mth{>} f(Z);}_{\mita{v0}}) \wedge (\AX(\mita{\sf{let}} \, \mita{l0} = \exists \mita{Y} . \mita{g(Y);} \, \mita{\sf{in}} \, \A[((\exists \mita{v0}\\\mbox{} . \mita{-\_S0}_{\mita{v0}}) \wedge (\neg (\mita{l0} \vee (\exists \mita{X} . \mita{-f-(-X-)-;
+  \mth{>}\mth{>}\mth{>} f(Z);})))) \U ((\mita{l0} \wedge (\AX(\mita{h(Z);})))\\\mbox{} \vee \msf{After} \vee \msf{ErrorExit})]
+
+)))
+\end{array}\]
+
+\begin{quote}\begin{verbatim}
+
+@@
+@@
+
+-f-(-X-)-;
+  >>> f(Z);
+
+...
+g(Y);
+h(Z);
+\end{verbatim}\end{quote}
+
+\[\begin{array}{l}
+\exists \mita{Z} . ((\exists \mita{X} . \exists \mita{v0} . \mita{-f-(-X-)-;
+  \mth{>}\mth{>}\mth{>} f(Z);}_{\mita{v0}}) \wedge (\AX(\mita{\sf{let}} \, \mita{l0} = \exists \mita{Y} . \mita{g(Y);} \, \mita{\sf{in}} \, \A[\neg (\mita{l0}\\\mbox{} \vee (\exists \mita{X} . \mita{-f-(-X-)-;
+  \mth{>}\mth{>}\mth{>} f(Z);})) \U ((\mita{l0} \wedge (\AX(\mita{h(Z);}))) \vee \msf{After} \vee \msf{ErrorExit})]
+\\\mbox{}
+)))
+\end{array}\]
+
+\begin{quote}\begin{verbatim}
+
+@@
+@@
+
+f(X);
+...
+g(Y);
+h(Z);
+\end{verbatim}\end{quote}
+
+\[\begin{array}{l}
+\mita{\sf{let}} \, \mita{l1} = \exists \mita{X} . \mita{f(X);} \, \mita{\sf{in}} \, \mita{l1} \wedge (\AX(\mita{\sf{let}} \, \mita{l2} = \exists \mita{Y} . \mita{g(Y);} \, \mita{\sf{in}} \, \A[\neg (\mita{l2} \vee \mita{l1}) \U ((\mita{l2} \wedge (\AX(\exists \mita{Z}\\\mbox{} . \mita{h(Z);}))) \vee \msf{After} \vee \msf{ErrorExit})]
+
+))
+
+\end{array}\]
+
+\begin{quote}\begin{verbatim}
+
+@@
+@@
+
+f(X);
+...   WHEN != h(Z)
+g(Y);
+h(Z);
+\end{verbatim}\end{quote}
+
+\[\begin{array}{l}
+\mita{\sf{let}} \, \mita{l1} = \exists \mita{X} . \mita{f(X);} \, \mita{\sf{in}} \, \mita{l1} \wedge (\AX(\exists \mita{Z} . (\mita{\sf{let}} \, \mita{l2} = \exists \mita{Y} . \mita{g(Y);} \, \mita{\sf{in}} \, \A[((\neg \mita{h(Z)}) \wedge (\neg (\mita{l2} \vee \mita{l1})))\\\mbox{} \U ((\mita{l2} \wedge (\AX(\mita{h(Z);}))) \vee \msf{After} \vee \msf{ErrorExit})]
+
+)))
+
+\end{array}\]
+
+\begin{quote}\begin{verbatim}
+
+@@
+@@
+
+f(X);
+...   WHEN != h(Q)
+g(Y);
+h(Z);
+\end{verbatim}\end{quote}
+
+\[\begin{array}{l}
+\mita{\sf{let}} \, \mita{l1} = \exists \mita{X} . \mita{f(X);} \, \mita{\sf{in}} \, \mita{l1} \wedge (\AX(\mita{\sf{let}} \, \mita{l2} = \exists \mita{Y} . \mita{g(Y);} \, \mita{\sf{in}} \, \A[((\neg (\exists \mita{Q} . \mita{h(Q)})) \wedge (\neg (\mita{l2}\\\mbox{} \vee \mita{l1}))) \U ((\mita{l2} \wedge (\AX(\exists \mita{Z} . \mita{h(Z);}))) \vee \msf{After} \vee \msf{ErrorExit})]
+
+))
+
+\end{array}\]
+
+\begin{quote}\begin{verbatim}
+
+@@
+@@
+
+if (X) {
+  ...
+} else {
+  g(X);
+}
+h(Z);
+\end{verbatim}\end{quote}
+
+\[\begin{array}{l}
+\exists \mita{X} . (\mita{\sf{let}} \, \mita{l0} = \msf{FalseBranch} \, \mita{\sf{in}} \, (\mita{\sf{let}} \, \mita{l1} = \msf{After} \, \mita{\sf{in}} \, \mita{if (X) } \wedge (\AX(\mita{\sf{let}} \, \mita{l2} = \msf{Paren}(p0)\\\mbox{} \, \mita{\sf{in}} \, (\msf{TrueBranch} \wedge (\AX(\exists \mita{p0} . (\mita{\sf{let}} \, \mita{l6} = \mita{{\ttlb}
+  } \wedge \mita{l2} \, \mita{\sf{in}} \, \mita{l6} \wedge (\AX(\mita{\sf{let}} \, \mita{l5} = \mita{
+{\ttrb}} \wedge \mita{l2} \, \mita{\sf{in}} \, \A[\neg (\mita{l5}\\\mbox{} \vee \mita{l6}) \U (\mita{l5} \vee \mita{l1} \vee \msf{ErrorExit})]
+
+))
+)))) \vee (\mita{l0} \wedge (\AX(\exists \mita{p0} . (\mita{{\ttlb}
+  } \wedge \mita{l2} \wedge (\AX(\mita{g(X);} \wedge (\AX(\mita{
+{\ttrb}}\\\mbox{} \wedge \mita{l2})))))))) \vee (\mita{l1} \wedge (\AX(\exists \mita{Z} . \mita{h(Z);})))
+)) \wedge (\EX\mita{l0}) \wedge (\EX\mita{l1})
+)
+)
+\end{array}\]
+
+\begin{quote}\begin{verbatim}
+
+@@
+@@
+
+<...
+  
+(
+  h(X)
+|
+  g(Y)
+)
+...>
+\end{verbatim}\end{quote}
+
+\[\begin{array}{l}
+\AG(\mita{\sf{let}} \, \mita{l2} = \exists \mita{Y} . \exists \mita{X} . \mita{
+(
+h(X)
+|
+g(Y)
+)} \, \mita{\sf{in}} \, \mita{l2} \vee (\neg \mita{l2})
+)
+\end{array}\]
+
+\begin{quote}\begin{verbatim}
+
+@@
+@@
+
+<...
+  
+(
+  h(X)
+|
+  g(Y)
+)
+...>
+r(X);
+\end{verbatim}\end{quote}
+
+\[\begin{array}{l}
+\exists \mita{X} . (\mita{\sf{let}} \, \mita{l1} = \mita{r(X);} \, \mita{\sf{in}} \, \A[((\neg \mita{l1}) \wedge (\mita{\sf{let}} \, \mita{l0} = \exists \mita{Y} . \mita{
+(
+h(X)
+|
+g(Y)
+)} \, \mita{\sf{in}} \, \mita{l0} \vee (\neg \mita{l0})\\\mbox{}
+)) \U (\mita{l1} \vee \msf{After} \vee \msf{ErrorExit})]
+
+)
+\end{array}\]
+
+\begin{quote}\begin{verbatim}
+
+@@
+@@
+
+
+(
+h(X)
+|
+g(Y)
+)
+\end{verbatim}\end{quote}
+
+\[\begin{array}{l}
+\exists \mita{Y} . \exists \mita{X} . \mita{
+(
+h(X)
+|
+g(Y)
+)}
+\end{array}\]
+
+\begin{quote}\begin{verbatim}
+
+@@
+@@
+
+m(Y);
+?h(X);
+g(Y);
+\end{verbatim}\end{quote}
+
+\[\begin{array}{l}
+\exists \mita{Y} . (\mita{m(Y);} \wedge (\AX(\mita{\sf{let}} \, \mita{l0} = \mita{g(Y);} \, \mita{\sf{in}} \, ((\exists \mita{X} . \mita{h(X);}) \wedge (\AX\mita{l0})) \vee \mita{l0}
+)))
+\end{array}\]
+
+\begin{quote}\begin{verbatim}
+
+@@
+@@
+
+sht/*struct Scsi_Host_Template */.proc_info = proc_info_func;
+\end{verbatim}\end{quote}
+
+\[\begin{array}{l}
+\exists \mita{proc\_info\_func} . \exists \mita{sht} . \mita{sht/*struct Scsi\_Host\_Template */.proc\_info = proc\_info\_func;}
+\end{array}\]
+
+\begin{quote}\begin{verbatim}
+
+@@
+@@
+
+proc_info_func(char *buffer, char **start, off_t offset, int length,
+               int hostno, int inout) {
+  ...
+  struct Scsi_Host *hostptr;
+  ...
+  hostptr = scsi_host_hn_get(hostno);
+  ...
+  ?if (hostptr == NULL) ?{
+    ?...
+  ?}
+  ...
+  ?scsi_host_put(hostptr);
+  ...
+}
+\end{verbatim}\end{quote}
+
+\[\begin{array}{l}
+\exists \mita{hostno} . ((\exists \mita{buffer} . \exists \mita{start} . \exists \mita{offset} . \exists \mita{length} . \exists \mita{inout} . \mita{proc\_info\_func(char *buffer, char **start, off\_t offset, int length,
+               int hostno, int inout) })\\\mbox{} \wedge (\AX(\exists \mita{p1} . (\mita{\sf{let}} \, \mita{l33} = \msf{Paren}(p1) \, \mita{\sf{in}} \, (\mita{\sf{let}} \, \mita{l5} = \mita{{\ttlb}
+  } \wedge \mita{l33} \, \mita{\sf{in}} \, \mita{l5} \wedge (\AX(\mita{\sf{let}} \, \mita{l53} = \mita{struct Scsi\_Host *hostptr;}\\\mbox{} \, \mita{\sf{in}} \, \A[\neg ((\exists \mita{hostptr} . \mita{l53}) \vee \mita{l5}) \U (\mita{\sf{let}} \, \mita{l1} = \msf{After} \, \mita{\sf{in}} \, (\mita{\sf{let}} \, \mita{l6} = \mita{l1} \vee \msf{ErrorExit}\\\mbox{} \, \mita{\sf{in}} \, (\exists \mita{hostptr} . (\mita{l53} \wedge (\AX(\mita{\sf{let}} \, \mita{l30} = \mita{hostptr = scsi\_host\_hn\_get(hostno);}\\\mbox{} \, \mita{\sf{in}} \, \A[\neg (\mita{l30} \vee \mita{l53}) \U ((\mita{l30} \wedge (\AX(\mita{\sf{let}} \, \mita{l32} = \msf{Paren}(p0) \, \mita{\sf{in}} \, (\mita{\sf{let}} \, \mita{l50} = \mita{
+{\ttrb}} \wedge \mita{l32}\\\mbox{} \, \mita{\sf{in}} \, (\mita{\sf{let}} \, \mita{l14} = \mita{l50} \vee \mita{l6} \, \mita{\sf{in}} \, (\mita{\sf{let}} \, \mita{l2} = \msf{FallThrough} \, \mita{\sf{in}} \, (\mita{\sf{let}} \, \mita{l29} = \mita{l2} \vee \mita{l1} \, \mita{\sf{in}} \, (\mita{\sf{let}} \, \mita{l51} = \mita{{\ttlb}
+  }\\\mbox{} \wedge \mita{l32} \, \mita{\sf{in}} \, (\mita{\sf{let}} \, \mita{l0} = \msf{TrueBranch} \, \mita{\sf{in}} \, (\mita{\sf{let}} \, \mita{l52} = \mita{if (hostptr == NULL) } \, \mita{\sf{in}} \, (\mita{\sf{let}} \, \mita{l20} = \mita{l52}\\\mbox{} \wedge (\AX((\mita{l0} \wedge (\AX(\exists \mita{p0} . (\mita{l51} \wedge (\AX\AF\mita{l14}))))) \vee \mita{l29})) \, \mita{\sf{in}} \, \A[\neg (\mita{l20} \vee \mita{l30}) \U ((\mita{\sf{let}} \, \mita{l8} = \mita{scsi\_host\_put(hostptr);}\\\mbox{} \, \mita{\sf{in}} \, (\mita{\sf{let}} \, \mita{l11} = \A[\neg \mita{l8} \U \mita{l6}]
+ \, \mita{\sf{in}} \, (\mita{\sf{let}} \, \mita{l25} = \mita{l8} \wedge (\AX\mita{l11}) \, \mita{\sf{in}} \, (\mita{\sf{let}} \, \mita{l39} = \neg \mita{l25} \, \mita{\sf{in}} \, (\mita{\sf{let}} \, \mita{l13} = (\mita{\sf{let}} \, \mita{l48} = (\mita{\sf{let}} \, \mita{l4} = \mita{
+{\ttrb}}\\\mbox{} \wedge \mita{l33} \, \mita{\sf{in}} \, \A[\neg (\mita{l4} \vee \mita{l8}) \U (\mita{l4} \vee \mita{l6})]
+
+) \, \mita{\sf{in}} \, (\mita{l8} \wedge (\AX\mita{l48})) \vee (\mita{l39} \wedge \mita{l48})
+) \vee \mita{l6} \, \mita{\sf{in}} \, (\mita{\sf{let}} \, \mita{l36} = \neg (\mita{l8}\\\mbox{} \vee \mita{l20}) \, \mita{\sf{in}} \, (\mita{\sf{let}} \, \mita{l34} = \mita{l0} \wedge (\AX(\exists \mita{p0} . (\mita{l51} \wedge (\AX\A[\neg (\mita{l50} \vee \mita{l51}) \U \mita{l14}]
+)))) \, \mita{\sf{in}} \, (\mita{\sf{let}} \, \mita{l16} = \EX\mita{l1}\\\mbox{} \, \mita{\sf{in}} \, (\mita{l52} \wedge (\AX(\mita{l34} \vee \mita{l2} \vee (\mita{l1} \wedge (\AX\A[\mita{l36} \U \mita{l13}]
+)))) \wedge \mita{l16}) \vee ((\neg (\mita{l52} \wedge (\AX(\mita{l34}\\\mbox{} \vee \mita{l2} \vee (\mita{l1} \wedge (\AX\A[\mita{l36} \U (\mita{l25} \vee (\mita{l39} \wedge \mita{l11}) \vee \mita{l6})]
+)))) \wedge \mita{l16})) \wedge (\A[\neg (\mita{l8} \vee (\mita{l52} \wedge (\AX(\mita{l34}\\\mbox{} \vee \mita{l29})))) \U \mita{l13}]
+))
+)
+)
+)
+)
+)
+)
+)
+) \vee \mita{l6})]
+
+)
+)
+)
+)
+)
+)
+)
+)
+))) \vee \mita{l6})]
+
+)))) \vee \mita{l6}
+)
+)]
+
+))
+)
+))))
+\end{array}\]
+
+\begin{quote}\begin{verbatim}
+
+@@
+@@
+
+proc_info_func(...) {
+  <...
+    
+(
+    E->host_no == hostno
+|
+    hostno
+)
+  ...>
+}
+\end{verbatim}\end{quote}
+
+\[\begin{array}{l}
+\mita{proc\_info\_func(...) } \wedge (\AX(\exists \mita{p0} . (\mita{\sf{let}} \, \mita{l3} = \msf{Paren}(p0) \, \mita{\sf{in}} \, (\mita{\sf{let}} \, \mita{l6} = \mita{{\ttlb}
+  } \wedge \mita{l3}\\\mbox{} \, \mita{\sf{in}} \, \mita{l6} \wedge (\AX(\mita{\sf{let}} \, \mita{l5} = \mita{
+{\ttrb}} \wedge \mita{l3} \, \mita{\sf{in}} \, \A[((\neg (\mita{l5} \vee \mita{l6})) \wedge (\mita{\sf{let}} \, \mita{l2} = \exists \mita{E} . \mita{
+(
+E-\mth{>}host\_no == hostno
+|
+hostno
+)}\\\mbox{} \, \mita{\sf{in}} \, \mita{l2} \vee (\neg \mita{l2})
+)) \U (\mita{l5} \vee \msf{After} \vee \msf{ErrorExit})]
+
+))
+)
+)))
+\end{array}\]
+
+\end{document}

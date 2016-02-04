@@ -1,0 +1,542 @@
+
+\section{Examples}
+%\label{sec:examples}
+
+This section presents a range of examples.  Each
+example is presented along with some C code to which it is
+applied. The description explains the rules and the matching process.
+
+\subsection{Function renaming}
+
+One of the primary goals of Coccinelle is to perform software
+evolution.  For instance, Coccinelle could be used to perform function
+renaming. In the following example, every occurrence of a call to the
+function \texttt{foo} is replaced by a call to the
+function \texttt{bar}.\\
+
+\begin{tabular}{ccc}
+Before & Semantic patch & After \\
+\begin{minipage}[t]{.3\linewidth}
+\begin{lstlisting}
+#DEFINE TEST "foo"
+
+printf("foo");
+
+int main(int i) {
+//Test
+  int k = foo();
+
+  if(1) {
+    foo();
+  } else {
+    foo();
+  }
+
+  foo();
+}
+\end{lstlisting}
+\end{minipage}
+&
+\begin{minipage}[t]{.3\linewidth}
+\begin{lstlisting}[language=Cocci]
+@M@@
+
+@@@M
+
+
+@-- foo()
+@++ bar()
+\end{lstlisting}
+\end{minipage}
+&
+\begin{minipage}[t]{.3\linewidth}
+\begin{lstlisting}
+#DEFINE TEST "foo"
+
+printf("foo");
+
+int main(int i) {
+//Test
+  int k = bar();
+
+  if(1) {
+    bar();
+  } else {
+    bar();
+  }
+
+  bar();
+}
+\end{lstlisting}
+\end{minipage}\\
+\end{tabular}
+
+\newpage
+\subsection{Removing a function argument}
+
+Another important kind of evolution is the introduction or deletion of a
+function argument. In the following example, the rule \texttt{rule1} looks
+for definitions of functions having return type \texttt{irqreturn\_t} and
+two parameters. A second \emph{anonymous} rule then looks for calls to the
+previously matched functions that have three arguments. The third argument
+is then removed to correspond to the new function prototype.\\
+
+\begin{tabular}{c}
+\begin{lstlisting}[language=Cocci,name=arg]
+@M@ rule1 @
+identifier fn;
+identifier irq, dev_id;
+typedef irqreturn_t;
+@@@M
+
+static irqreturn_t fn (int irq, void *dev_id)
+{
+   ...
+}
+
+@M@@
+identifier rule1.fn;
+expression E1, E2, E3;
+@@@M
+
+ fn(E1, E2
+@--  ,E3
+   )
+\end{lstlisting}\\
+\end{tabular}
+
+\vspace{1cm}
+
+\begin{tabular}{c}
+  \texttt{drivers/atm/firestream.c} at line 1653 before transformation\\
+\begin{lstlisting}[language=PatchC]
+static void fs_poll (unsigned long data)
+{
+        struct fs_dev *dev = (struct fs_dev *) data;
+
+@-        fs_irq (0, dev, NULL);
+        dev->timer.expires = jiffies + FS_POLL_FREQ;
+        add_timer (&dev->timer);
+}
+\end{lstlisting}\\
+\vspace{1cm}
+\\
+
+
+  \texttt{drivers/atm/firestream.c} at line 1653 after transformation\\
+\begin{lstlisting}[language=PatchC]
+static void fs_poll (unsigned long data)
+{
+        struct fs_dev *dev = (struct fs_dev *) data;
+
+@+        fs_irq (0, dev);
+        dev->timer.expires = jiffies + FS_POLL_FREQ;
+        add_timer (&dev->timer);
+}
+\end{lstlisting}\\
+\end{tabular}
+
+\newpage
+\subsection{Introduction of a macro}
+
+To avoid code duplication or error prone code, the kernel provides
+macros such as \texttt{BUG\_ON}, \texttt{DIV\_ROUND\_UP} and
+\texttt{FIELD\_SIZE}. In these cases, the semantic patches look for
+the old code pattern and replace it by the new code.\\
+
+A semantic patch to introduce uses of the \texttt{DIV\_ROUND\_UP} macro
+looks for the corresponding expression, \emph{i.e.}, $(n + d - 1) /
+d$. When some code is matched, the metavariables \texttt{n} and \texttt{d}
+are bound to their corresponding expressions. Finally, Coccinelle rewrites
+the code with the \texttt{DIV\_ROUND\_UP} macro using the values bound to
+\texttt{n} and \texttt{d}, as illustrated in the patch that follows.\\
+
+\begin{tabular}{c}
+Semantic patch to introduce uses of the \texttt{DIV\_ROUND\_UP} macro\\
+\begin{lstlisting}[language=Cocci,name=divround]
+@M@ haskernel @
+@@@M
+
+#include <linux/kernel.h>
+
+@M@ depends on haskernel @
+expression n,d;
+@@@M
+
+(
+@-- (((n) + (d)) - 1) / (d))
+@++ DIV_ROUND_UP(n,d)
+|
+@-- (((n) + ((d) - 1)) / (d))
+@++ DIV_ROUND_UP(n,d)
+)
+\end{lstlisting}
+\end{tabular}\\
+
+\vspace{1cm}
+
+\begin{tabular}{c}
+Example of a generated patch hunk\\
+\begin{lstlisting}[language=PatchC]
+@---- a/drivers/atm/horizon.c
+@++++ b/drivers/atm/horizon.c
+@M@@ -698,7 +698,7 @@ got_it:
+                if (bits)
+                        *bits = (div<<CLOCK_SELECT_SHIFT) | (pre-1);
+                if (actual) {
+@--                       *actual = (br + (pre<<div) - 1) / (pre<<div);
+@++                       *actual = DIV_ROUND_UP(br, pre<<div);
+                        PRINTD (DBG_QOS, "actual rate: %u", *actual);
+                }
+                return 0;
+\end{lstlisting}
+\end{tabular}\\
+
+\newpage
+
+The \texttt{BUG\_ON} macro makes an assertion about the value of an
+expression. However, because some parts of the kernel define
+\texttt{BUG\_ON} to be the empty statement when debugging is not wanted,
+care must be taken when the asserted expression may have some side-effects,
+as is the case of a function call. Thus, we create a rule introducing
+\texttt{BUG\_ON} only in the case when the asserted expression does not
+perform a function call.
+
+One particular piece of code that has the form of a function call is a use
+of \texttt{unlikely}, which informs the compiler that a particular
+expression is unlikely to be true.  In this case, because \texttt{unlikely}
+does not perform any side effect, it is safe to use \texttt{BUG\_ON}.  The
+second rule takes care of this case.  It furthermore disables the
+isomorphism that allows a call to \texttt{unlikely} to be replaced with its
+argument, as then the second rule would be the same as the first one.\\
+
+\begin{tabular}{c}
+\begin{lstlisting}[language=Cocci,name=bugon]
+@M@@
+expression E,f;
+@@@M
+
+(
+  if (<+... f(...) ...+>) { BUG(); }
+|
+@-- if (E) { BUG(); }
+@++ BUG_ON(E);
+)
+
+@M@ disable unlikely @
+expression E,f;
+@@@M
+
+(
+  if (<+... f(...) ...+>) { BUG(); }
+|
+@-- if (unlikely(E)) { BUG(); }
+@++ BUG_ON(E);
+)
+\end{lstlisting}\\
+\end{tabular}\\
+
+For instance, using the semantic patch above, Coccinelle generates
+patches like the following one.
+
+\begin{tabular}{c}
+\begin{lstlisting}[language=PatchC]
+@---- a/fs/ext3/balloc.c
+@++++ b/fs/ext3/balloc.c
+@M@@ -232,8 +232,7 @@ restart:
+                prev = rsv;
+        }
+        printk("Window map complete.\n");
+@--       if (bad)
+@--               BUG();
+@++       BUG_ON(bad);
+ }
+ #define rsv_window_dump(root, verbose) \
+        __rsv_window_dump((root), (verbose), __FUNCTION__)
+\end{lstlisting}
+\end{tabular}
+
+\newpage
+\subsection{Look for \texttt{NULL} dereference}
+
+This SmPL match looks for \texttt{NULL} dereferences. Once an
+expression has been compared to \texttt{NULL}, a dereference to this
+expression is prohibited unless the pointer variable is reassigned.\\
+
+\begin{tabular}{c}
+    Original \\
+
+\begin{lstlisting}
+foo = kmalloc(1024);
+if (!foo) {
+  printk ("Error %s", foo->here);
+  return;
+}
+foo->ok = 1;
+return;
+\end{lstlisting}\\
+  \end{tabular}
+
+\vspace{1cm}
+
+\begin{tabular}{c}
+  Semantic match\\
+
+\begin{lstlisting}[language=Cocci]
+@M@@
+expression E, E1;
+identifier f;
+statement S1,S2,S3;
+@@@M
+
+@+* if (E == NULL)
+{
+  ... when != if (E == NULL) S1 else S2
+      when != E = E1
+@+* E->f
+  ... when any
+  return ...;
+}
+else S3
+\end{lstlisting}\\
+\end{tabular}
+
+\vspace{1cm}
+
+\begin{tabular}{c}
+  Matched lines\\
+
+\begin{lstlisting}[language=PatchC]
+foo = kmalloc(1024);
+@-if (!foo) {
+@-  printk ("Error %s", foo->here);
+  return;
+}
+foo->ok = 1;
+return;
+\end{lstlisting}\\
+\end{tabular}
+
+\newpage
+\subsection{Reference counter: the of\_xxx API}
+
+Coccinelle can embed Python code. Python code is used inside special
+SmPL rule annotated with \texttt{script:python}.  Python rules inherit
+metavariables, such as identifier or token positions, from other SmPL
+rules. The inherited metavariables can then be manipulated by Python
+code.
+
+The following semantic match looks for a call to the
+\texttt{of\_find\_node\_by\_name} function. This call increments a
+counter which must be decremented to release the resource. Then, when
+there is no call to \texttt{of\_node\_put}, no new assignment to the
+\texttt{device\_node} variable \texttt{n} and a \texttt{return}
+statement is reached, a bug is detected and the position \texttt{p1}
+and \texttt{p2} are initialized. As the Python only depends on the
+positions \texttt{p1} and \texttt{p2}, it is evaluated. In the
+following case, some emacs Org mode data are produced.  This example
+illustrates the various fields that can be accessed in the Python code from
+a position variable.
+
+\begin{tabular}{c}
+\begin{lstlisting}[language=Cocci,breaklines=true]
+@M@ r exists @
+local idexpression struct device_node *n;
+position p1, p2;
+statement S1,S2;
+expression E,E1;
+@@@M
+
+(
+if (!(n@p1 = of_find_node_by_name(...))) S1
+|
+n@p1 = of_find_node_by_name(...)
+)
+<... when != of_node_put(n)
+    when != if (...) { <+... of_node_put(n) ...+> }
+    when != true !n  || ...
+    when != n = E
+    when != E = n
+if (!n || ...) S2
+...>
+(
+  return <+...n...+>;
+|
+return@p2 ...;
+|
+n = E1
+|
+E1 = n
+)
+
+@M@ script:python @
+p1 << r.p1;
+p2 << r.p2;
+@@@M
+
+print "* TODO [[view:%s::face=ovl-face1::linb=%s::colb=%s::cole=%s][inc. counter:%s::%s]]" % (p1[0].file,p1[0].line,p1[0].column,p1[0].column_end,p1[0].file,p1[0].line)
+print "[[view:%s::face=ovl-face2::linb=%s::colb=%s::cole=%s][return]]" % (p2[0].file,p2[0].line,p2[0].column,p2[0].column_end)
+\end{lstlisting}
+\end{tabular}
+
+
+\newpage
+
+Lines 13 to 17 list a variety of constructs that should not appear
+between a call to \texttt{of\_find\_node\_by\_name} and a buggy return
+site. Examples are a call to \texttt{of\_node\_put} (line 13) and a
+transition into the then branch of a conditional testing whether
+\texttt{n} is \texttt{NULL} (line 15). Any number of conditionals
+testing whether \texttt{n} is \texttt{NULL} are allowed as indicated
+by the use of a nest \texttt{<...~~...>} to describe the path between
+the call to \texttt{of\_find\_node\_by\_name}, the return and the
+conditional in the pattern on line 18.\\
+
+The previous semantic match has been used to generate the following
+lines. They may be edited using the emacs Org mode to navigate in the code
+from a site to another.
+
+\begin{lstlisting}[language=,breaklines=true]
+* TODO [[view:/linux-next/arch/powerpc/platforms/pseries/setup.c::face=ovl-face1::linb=236::colb=18::cole=20][inc. counter:/linux-next/arch/powerpc/platforms/pseries/setup.c::236]]
+[[view:/linux-next/arch/powerpc/platforms/pseries/setup.c::face=ovl-face2::linb=250::colb=3::cole=9][return]]
+* TODO [[view:/linux-next/arch/powerpc/platforms/pseries/setup.c::face=ovl-face1::linb=236::colb=18::cole=20][inc. counter:/linux-next/arch/powerpc/platforms/pseries/setup.c::236]]
+[[view:/linux-next/arch/powerpc/platforms/pseries/setup.c::face=ovl-face2::linb=245::colb=3::cole=9][return]]
+\end{lstlisting}
+
+Note~: Coccinelle provides some predefined Python functions,
+\emph{i.e.}, \texttt{cocci.print\_main}, \texttt{cocci.print\_sec} and
+\texttt{cocci.print\_secs}. One could alternatively write the following
+SmPL rule instead of the previously presented one.
+
+\begin{tabular}{c}
+\begin{lstlisting}[language=Cocci]
+@M@ script:python @
+p1 << r.p1;
+p2 << r.p2;
+@@@M
+
+cocci.print_main(p1)
+cocci.print_sec(p2,"return")
+\end{lstlisting}
+\end{tabular}\\
+
+The function \texttt{cocci.print\_secs} is used when several
+positions are matched by a single position variable and
+every matched position should be printed.
+
+Any metavariable could be inherited in the Python code. However,
+accessible fields are not currently equally supported among them.
+
+\newpage
+\subsection{Filtering identifiers, declarers or iterators with regular expressions}
+
+If you consider the following SmPL file which uses the regexp functionality to
+filter the identifiers that contain, begin or end by \texttt{foo},
+
+\begin{tabular}{c@{\hspace{2cm}}c}
+\begin{lstlisting}[language=Cocci, name=Regexp]
+@M@anyid@
+type t;
+identifier id;
+@@@M
+t id () {...}
+
+@M@script:python@
+x << anyid.id;
+@@@M
+print "Identifier: %s" % x
+
+@M@contains@
+type t;
+identifier foo =~ ".*foo";
+@@@M
+t foo () {...}
+
+@M@script:python@
+x << contains.foo;
+@@@M
+print "Contains foo: %s" % x
+
+\end{lstlisting}
+&
+\begin{lstlisting}[language=Cocci,name=Regexp]
+@M@endsby@
+type t;
+identifier foo =~ ".*foo$";
+@@@M
+
+t foo () {...}
+
+@M@script:python@
+x << endsby.foo;
+@@@M
+print "Ends by foo: %s" % x
+
+@M@beginsby@
+type t;
+identifier foo =~ "^foo";
+@@@M
+t foo () {...}
+
+@M@script:python@
+x << beginsby.foo;
+@@@M
+print "Begins by foo: %s" % x
+\end{lstlisting}
+\end{tabular}\\
+
+and the following C program, on the left, which defines the functions
+\texttt{foo}, \texttt{bar}, \texttt{foobar}, \texttt{barfoobar} and
+\texttt{barfoo}, you will get the result on the right.
+
+\begin{tabular}{c@{\hspace{2cm}}c}
+\begin{lstlisting}
+int foo () { return 0; }
+int bar () { return 0; }
+int foobar () { return 0; }
+int barfoobar () { return 0; }
+int barfoo () { return 0; }
+\end{lstlisting}
+&
+\begin{lstlisting}
+Identifier: foo
+Identifier: bar
+Identifier: foobar
+Identifier: barfoobar
+Identifier: barfoo
+Contains foo: foo
+Contains foo: foobar
+Contains foo: barfoobar
+Contains foo: barfoo
+Ends by foo: foo
+Ends by foo: barfoo
+Begins by foo: foo
+Begins by foo: foobar
+\end{lstlisting}
+\end{tabular}
+
+% \begin{tabular}{ccc}
+% Before & Semantic patch & After \\
+% \begin{minipage}[t]{.3\linewidth}
+% \begin{lstlisting}
+% \end{lstlisting}
+% \end{minipage}
+% &
+% \begin{minipage}[t]{.3\linewidth}
+% \begin{lstlisting}[language=Cocci]
+% \end{lstlisting}
+% \end{minipage}
+% &
+% \begin{minipage}[t]{.3\linewidth}
+% \begin{lstlisting}
+% \end{lstlisting}
+% \end{minipage}\\
+% \end{tabular}
+
+%%% Local Variables:
+%%% mode: LaTeX
+%%% TeX-master: "main_grammar"
+%%% coding: utf-8
+%%% TeX-PDF-mode: t
+%%% ispell-local-dictionary: "american"
+%%% End:

@@ -1,0 +1,310 @@
+# This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+# See copyright.txt in the Coccinelle source code for more information.
+# The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
+
+##############################################################################
+# Release rules to generate website archives
+##############################################################################
+
+PACKAGE=$(PRJNAME)-$(VERSION)
+CCPACKAGE=coccicheck-$(CCVERSION)
+
+EXCLUDE=$(PACKAGE)/debian .depend
+
+DOC=docs/manual/manual.pdf       \
+    docs/manual/options.pdf      \
+    docs/manual/main_grammar.pdf \
+    docs/html                    \
+    docs/man                     \
+    docs/spatch.1                \
+    docs/manual/cocci-python.txt
+BINSRC=spatch* env.sh env.csh standard.h standard.iso \
+       *.txt $(DOC) demos/* scripts/spatch*
+BINSRC-PY=$(BINSRC) $(PYLIB) python/coccilib/
+
+EXCL=$(EXCLUDE:%=--exclude=%)
+BINSRC2=$(BINSRC:%=$(PACKAGE)/%)
+BINSRC2-PY=$(BINSRC-PY:%=$(PACKAGE)/%)
+
+# TMP should point to a folder that is private to the release
+# process. In addition, it should not be the direct parent of
+# the directory in which the release is performed, because it
+# creates temporary directories that in this case could have
+# a name clash with the current directory.
+ifndef TMP
+TMP=/var/tmp
+endif
+
+# should be defined by Makefile.config
+ifndef OCAMLVERSION
+OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
+endif
+
+# can be overriden in the environment
+ifndef GIT
+GIT=git
+endif
+
+# the release process rewrites the Makefile.config, so we need
+# to save important configure flags.
+
+extra_configure_flags :=
+
+# Procedure to do first time:
+#  cd ~/release
+#  git clone ... coccinelle
+#  cd coccinelle
+#
+# Procedure to do each time:
+#
+#  1) make prerelease # WARN: These will clean your local rep. of pending modifications
+#
+#  UPDATE VERSION number in ./version
+#  and commit it with
+#
+#  2) make release
+#
+#  3) make package
+#
+#  if WEBSITE is set properly, you can also run 'make website'
+# Check that run an ocaml in /usr/bin
+
+# The 'git rebase' is in there just in case you started with
+# unpushed changes. However, that is probably something you should
+# not do in the first place.
+
+release-help:
+	@echo "To make a release, perform the following steps:"
+	@echo ""
+	@echo "1. Make sure that all changes are committed and pushed."
+	@echo "   (making a release will destroy any uncommitted changes)"
+	@echo "   Preferably, start from a fresh clone of the coccinelle repo."
+	@echo "2. Run 'make prerelease'. It will generate some files that are not"
+	@echo "   in the repository but part of the release tarballs."
+	@echo "3. Edit ./version. It must be a new version."
+	@echo "4. Run 'make release'. It makes changes to the git repository that"
+	@echo "   are not idempotent. Running this step again is likely to result"
+	@echo "   in some git errors. These are not dramatic and are therefore"
+	@echo "   ignored."
+	@echo "5. Run 'make package'. It will build many tarballs."
+	@echo "6. Run 'make website'. Make sure that $(WEBBASE) exists beforehand."
+	@echo "   Hint: run step 5 and 6 directly after each other. The tarballs"
+	@echo "         are stored temporarily in $(TMP)."
+	@echo "7. Updated some webpages and commit them to svn."
+
+prerelease:
+	@echo "Pulling changes from the repository"
+	$(GIT) pull --rebase
+	$(MAKE) fix-expected
+	$(MAKE) distclean KEEP_CONFIG=1
+	@echo "\n\tEdit ./version"
+	@echo "\n\tRun ./autogen --ignore_localversion"
+	@echo "\tCommit with 'make release'\n"
+	@echo "\t* set the GIT env variable to 'echo' to skip performing any git commands"
+	@echo "\t* changes to files other than ./version will not be committed automatically."
+
+fix-expected:
+	@echo "going to generate: tests/SCORE_expected_orig.sexp"
+	$(MAKE) distclean
+	./autogen
+	./configure --enable-release --disable-python $(extra_configure_flags)
+	$(MAKE) opt-only
+	yes | ./spatch.opt -testall --iso-file ./standard.iso --macro-file-builtins ./standard.h
+	cp tests/SCORE_actual.sexp tests/SCORE_expected_orig.sexp
+	@echo "generated: test/SCORE_expected_orig.sexp"
+
+release:
+	@echo "Marking version: $(VERSION)"
+	$(GIT) add ./version
+	$(GIT) add setup/Makefile.in
+	$(GIT) commit -m "Release $(VERSION)"
+	$(GIT) tag -a -m "Release $(VERSION)" $(VERSION)
+	$(GIT) push origin $(VERSION) master:master
+	@echo "\n\tDo not commit any files from now on!"
+	@echo "\n\tRun 'make package'\n"
+
+package:
+	$(MAKE) package-src
+	$(MAKE) package-nopython
+	$(MAKE) package-python
+	@echo "\tPut online with 'make website'"
+	@echo "\tThe coccinelle SVN repository must be in $(WEBBASE)\n"
+
+package-src:
+	if [ ! -f ./configure ]; then ./autogen; fi
+	./configure --enable-release --disable-python --disable-pcre-syntax $(extra_configure_flags)
+	$(MAKE) srctar
+	$(MAKE) coccicheck
+
+# Reconfigures the project without Python support
+# Note: we disable pcre syntax as well to eliminate the dependency
+# on those libraries.
+package-nopython:
+	$(MAKE) distclean
+	./autogen
+	./configure --enable-release --disable-python --disable-pcre-syntax --disable-menhirLib --disable-pycaml  $(extra_configure_flags)
+	$(MAKE) bintar
+	$(MAKE) bytecodetar
+
+# Reconfigure project with Python support
+# Note: we disable pcre syntax as well to eliminate the dependency
+# on those libraries.
+package-python:
+	$(MAKE) distclean
+	./autogen
+	./configure --enable-release --enable-python --disable-pcre-syntax --disable-menhirLib --disable-pycaml $(extra_configure_flags)
+	$(MAKE) bintar-python
+	$(MAKE) bytecodetar-python
+
+
+# I currently pre-generate the parser so the user does not have to
+# install menhir on his machine. We could also do a few cleanups.
+#
+# update: make docs generates pdf but also some ugly .log files, so
+# make clean is there to remove them while not removing the pdf
+# (only distclean remove the pdfs).
+srctar: Makefile.config
+	$(MAKE) docs
+	$(MAKE) -C parsing_cocci parser_cocci_menhir.ml
+	$(MAKE) -C parsing_cocci parser_cocci_menhir.mli
+	$(MAKE) distclean KEEP_GENERATED=1 KEEP_CONFIG=1
+	if test -f "$(TMP)/$(PACKAGE)/"; then rm -f "$(TMP)/$(PACKAGE)/"; fi # remove it if it is a symlink
+	$(MKDIR_P) "$(TMP)/$(PACKAGE)/"
+	cp -fa ./*  "$(TMP)/$(PACKAGE)/"
+	rm -f $(TMP)/$(PACKAGE)/Makefile.config
+	cd $(TMP); tar cvfz $(PACKAGE).tgz --exclude-vcs $(EXCL) $(PACKAGE)
+	rm -rf  $(TMP)/$(PACKAGE)
+
+bintar: all-dev
+	$(MAKE) docs
+	rm -f $(TMP)/$(PACKAGE)
+	ln -s `pwd` $(TMP)/$(PACKAGE)
+	@if test -n "${PATCHELF}" -a -f spatch; then \
+	   $(PATCHELF) --set-interpreter "/lib/ld-linux.so.2" --set-rpath "" spatch; fi
+	@if test -n "${PATCHELF}" -a -f spatch.opt; then \
+	   $(PATCHELF) --set-interpreter "/lib/ld-linux.so.2" --set-rpath "" spatch.opt; fi
+	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86.tgz --exclude-vcs $(BINSRC2)
+	rm -f $(TMP)/$(PACKAGE)
+
+staticbintar: all-release
+	$(MAKE) docs
+	rm -f $(TMP)/$(PACKAGE)
+	ln -s `pwd` $(TMP)/$(PACKAGE)
+	$(MAKE) static
+	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86-static.tgz --exclude-vcs $(BINSRC2)
+	rm -f $(TMP)/$(PACKAGE)
+
+bytecodetar: all-dev
+	$(MAKE) docs
+	rm -f $(TMP)/$(PACKAGE)
+	ln -s `pwd` $(TMP)/$(PACKAGE)
+	$(MAKE) purebytecode
+	$(MAKE) copy-stubs
+	@if test -n "${PATCHELF}" -a -f dllpycaml_stubs.so; then \
+	  $(PATCHELF) --set-rpath "" dllpycaml_stubs.so; fi
+	@if test -n "${PATHCELF}" -a -f dllpcre_stubs.so; then \
+	  $(PATCHELF) --set-rpath "" dllpcre_stubs.so; fi
+	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz --exclude-vcs $(BINSRC2) $$(find -L $(PACKAGE) -maxdepth 1 -name 'dll*.so')
+	rm -f $(TMP)/$(PACKAGE)
+	rm -f dllpycaml_stubs.so dllpcre_stubs.so
+
+bintar-python: all
+	$(MAKE) docs
+	@if test -n "${PATCHELF}" -a -f spatch; then \
+	   $(PATCHELF) --set-interpreter "/lib/ld-linux.so.2" --set-rpath "" spatch; fi
+	@if test -n "${PATCHELF}" -a -f spatch.opt; then \
+	   $(PATCHELF) --set-interpreter "/lib/ld-linux.so.2" --set-rpath "" spatch.opt; fi
+	rm -f $(TMP)/$(PACKAGE)
+	ln -s `pwd` $(TMP)/$(PACKAGE)
+	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86-python.tgz --exclude-vcs $(BINSRC2-PY)
+	rm -f $(TMP)/$(PACKAGE)
+
+bytecodetar-python: all-dev
+	$(MAKE) docs
+	rm -f $(TMP)/$(PACKAGE)
+	ln -s `pwd` $(TMP)/$(PACKAGE)
+	$(MAKE) purebytecode
+	$(MAKE) copy-stubs
+	@if test -n "${PATCHELF}" -a -f dllpycaml_stubs.so; then \
+	   $(PATCHELF) --set-rpath "" dllpycaml_stubs.so; fi
+	@if test -n "${PATHCELF}" -a -f dllpcre_stubs.so; then \
+	   $(PATCHELF) --set-rpath "" dllpcre_stubs.so; fi
+	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz --exclude-vcs $(BINSRC2-PY) $$(find -L $(PACKAGE) -maxdepth 1 -name 'dll*.so')
+	rm -f $(TMP)/$(PACKAGE)
+	rm -f dllpycaml_stubs.so dllpcre_stubs.so
+
+coccicheck:
+	cp -a ./scripts/coccicheck $(TMP)/$(CCPACKAGE)
+	tar cvfz $(TMP)/$(CCPACKAGE).tgz -C $(TMP) --exclude-vcs $(CCPACKAGE)
+	rm -rf $(TMP)/$(CCPACKAGE)
+
+clean-packages::
+	rm -f $(TMP)/$(PACKAGE).tgz
+	rm -f $(TMP)/$(PACKAGE)-bin-x86.tgz
+	rm -f $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz
+	rm -f $(TMP)/$(PACKAGE)-bin-x86-python.tgz
+	rm -f $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz
+	rm -f $(TMP)/$(CCPACKAGE).tgz
+
+# When checking out the source from diku sometimes I have some "X in the future"
+# error messages.
+fixdates:
+	echo do 'touch **/*.*'
+
+ocamlversion:
+	@echo $(OCAMLVERSION)
+
+
+##############################################################################
+# Packaging rules -- To build deb packages
+##############################################################################
+#
+# Run 'make packsrc' to build a Deb source package
+#
+# The package is prepared in $(TMP), usually /tmp
+# Once the package has been build, it is uploaded
+# to a PPA on launchpad.
+#
+# You should have a "coccinelle" project configured
+# for dput in your ~/.dput.cf file.
+#
+# The 'packbin' target is to build a deb package
+# locally. It is only for testing purpose.
+#
+
+EXCL_SYNC=--exclude ".git"          \
+	--exclude ".gitignore"      \
+	--exclude "tests"           \
+	--exclude "TODO"            \
+	--cvs-exclude
+
+packsrc: prepack
+	$(MAKE) -C $(TMP)/$(PACKAGE)/debian
+	$(MAKE) push
+	rm -rf  $(TMP)/$(PACKAGE)/
+
+packbin: prepack
+	$(MAKE) -C $(TMP)/$(PACKAGE)/debian binary
+	rm -rf  $(TMP)/$(PACKAGE)/
+	rm -rf $(TMP)/$(PACKAGE)_$(VERSION)*_source.build
+
+prepack:
+	rsync -a $(EXCL_SYNC) . $(TMP)/$(PACKAGE)
+	sed -i "s|^OCAMLCFLAGS=.*$$|OCAMLCFLAGS=|" $(TMP)/$(PACKAGE)/Makefile
+	rm -rf $(TMP)/$(PACKAGE)/tools
+
+push:
+	cd $(TMP)/ && for p in `ls $(PRJNAME)_$(VERSION)*_source.changes`; do dput $(PRJNAME) $$p ; done
+	rm -rf $(TMP)/$(PRJNAME)_$(VERSION)*_source.changes
+	rm -rf $(TMP)/$(PRJNAME)_$(VERSION)*_source.$(PRJNAME).upload
+	rm -rf $(TMP)/$(PRJNAME)_$(VERSION)*.dsc
+	rm -rf $(TMP)/$(PRJNAME)_$(VERSION)*.tar.gz
+
+# Produces a source tarball
+# Note: start from a fresh working directory
+# Note: configure first
+dist:
+	$(MAKE) docs
+	$(MAKE) -C parsing_cocci parser_cocci_menhir.ml
+	$(MAKE) distclean KEEP_CONFIG=1 KEEP_GENERATED=1
+	tar cvfz $(PACKAGE).tar.gz --transform="s,^,$(PACKAGE)/,S" --exclude=$(PACKAGE).tar.gz --exclude-backups --exclude-vcs *

@@ -1,0 +1,29 @@
+ifneq ($(MAKECMDGOALS),distclean)
+include ../Makefile.config
+endif
+
+DEST=../docs
+FLAGS=$(INCLUDES) -hide Pervasives
+HTMLFLAGS=-all-params -colorize-code
+MANFLAGS=-man-mini
+
+.PHONY: doc
+
+doc: html man
+
+html: $(DEST)/html/index.html
+man: $(DEST)/man/Coccilib.3o
+
+$(DEST)/man/Coccilib.3o: coccilib.cmi ../parsing_c/ast_c.cmi
+	$(MKDIR_P) $(DEST)/man
+	$(OCAMLDOC) $(FLAGS) -hide Exposed_modules \
+		    -man $(MANFLAGS) -d $(DEST)/man ../parsing_c/ast_c.ml coccilib.ml
+
+$(DEST)/html/index.html: coccilib.cmi ../parsing_c/ast_c.cmi
+	$(MKDIR_P) $(DEST)/html
+	$(OCAMLDOC) $(FLAGS) -hide Exposed_modules \
+		    -html $(HTMLFLAGS) -d $(DEST)/html ../parsing_c/ast_c.ml coccilib.ml
+
+cleandoc:
+	@if test -z "${KEEP_GENERATED}"; then \
+		rm -rf $(DEST)/html $(DEST)/man; fi

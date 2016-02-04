@@ -1,0 +1,20 @@
+@@
+expression X;
+@@
+
+ void main(...) {
+ <...
+- f(X)
+  ...>
+ }
+
+
+@@
+expression X;
+@@
+
+ void main(...) {
+ <...
+- g(X)
+  ...>
+ }

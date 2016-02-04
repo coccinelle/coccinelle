@@ -1,0 +1,100 @@
+# Copyright: (C) 2010 Nicolas Palix, DIKU.  GPLv2.
+# Copyright: (C) 2010 Julia Lawall, DIKU.  GPLv2.
+# Copyright: (C) 2010 Gilles Muller, INRIA/LiP6.  GPLv2.
+# This file is part of Coccinelle.
+#
+# Coccinelle is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, according to version 2 of the License.
+#
+# Coccinelle is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+#
+# The authors reserve the right to distribute this or future versions of
+# Coccinelle under other licenses.
+#
+# http://coccinelle.lip6.fr/
+
+
+# From bash completion of git: __gitcomp_1
+__spatchcomp_1 ()
+{
+        local c IFS=' '$'\t'$'\n'
+        for c in $1; do
+                case "$c" in
+                -*) printf %s$'\n' "$c " ;;
+                */) printf %s$'\n' "$c" ;;
+                *)  printf %s$'\n' "$c " ;;
+                esac
+        done
+}
+
+have spatch &&
+_spatch()
+{
+    local cur prev xspec
+
+    COMPREPLY=()
+    cur=${COMP_WORDS[COMP_CWORD]}
+    prev=${COMP_WORDS[COMP_CWORD-1]}
+    _spatch_options="--parse-cocci --sp-file -I --dir --patch
+          --iso-file --macro-file --macro-file-builtins
+          --in-place --out-place -h --help --shorthelp --longhelp -o --ignore-unknown-options
+          --use-glimpse --use-idutils
+          --include-headers --no-includes --all-includes --local-includes --preprocess
+          --quiet --very-quiet --debug --timeout --test"
+
+    if [[ $COMP_CWORD -eq 1 ]]; then
+        local IFS=$'\n'
+        COMPREPLY=( $(compgen -W "$(__spatchcomp_1 "${_spatch_options}")" -- $cur) )
+        return 0
+    fi
+    case "$prev" in
+        --parse-cocci|--sp-file)
+            xspec="!*.cocci"
+	    ;;
+        --iso-file)
+            xspec="!*.iso"
+	    ;;
+        --macro-file|--macro-file-builtins)
+            xspec="!*.h"
+	    ;;
+        -I|--dir|--patch)
+            xspec=""
+	    ;;
+        *)
+            xspec="!*.c"
+            ;;
+    esac
+    if [[ "$xspec" == "" ]]; then
+        COMPREPLY=( $( compgen -d -o nospace -S '/' -- "$cur" ) )
+    elif [[ "$cur" == -* ]]; then
+        local IFS=$'\n'
+        COMPREPLY=( $(compgen -W "$(__spatchcomp_1 "${_spatch_options}")" -- $cur) )
+    elif [[ "$xspec" == "!*.c" ]]; then
+        COMPREPLY=( $( compgen -f -X "$xspec" -- "$cur" ) \
+            $( compgen -d -o nospace -S '/' -- "$cur" ) )
+    else
+        COMPREPLY=( $( compgen -f -X "$xspec" -- "$cur" ) \
+            $( compgen -d -o nospace -S '/' -- "$cur" ) )
+    fi
+    return 0
+}
+
+complete -F _spatch -o bashdefault -o default -o nospace spatch \
+ || complete -F _spatch -o default -o nospace spatch
+
+complete -F _spatch -o bashdefault -o default -o nospace spatch.opt \
+ || complete -F _spatch -o default -o nospace spatch.opt
+
+# Local variables:
+# mode: shell-script
+# sh-basic-offset: 4
+# indent-tabs-mode: nil
+# End:
+# ex: ts=4 sw=4 et filetype=sh

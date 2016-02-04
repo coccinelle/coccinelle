@@ -1,0 +1,53 @@
+\documentclass{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+\usepackage{listings}
+
+\begin{document}
+\section{Python API from SmPL}
+\label{sec:python-api}
+
+\subsection{Output mode}
+\label{sec:output}
+
+\begin{tabular}{lp{8cm}}
+\texttt{-pyoutput coccilib.output.Console}& To output on the console \\
+\texttt{-pyoutput coccilib.output.Gtk}    & To output on a Gtk frame \\
+\end{tabular}
+
+\subsection{Org mode}
+\label{sec:orgmode}
+
+\begin{tabular}{lp{8cm}}
+\texttt{cocci.print\_main}& For the main position            \\
+\texttt{cocci.print\_sec} & For the secondary position       \\
+\texttt{cocci.print\_secs}& For a set of secondary positions \\
+\end{tabular}
+
+\begin{lstlisting}
+def print_main(p, msg="", color="ovl-face1") :
+	print "* TODO [[view:%s::face=%s::linb=%s::colb=%s::cole=%s][%s %s::%s]]" % (p[0].file,color,p[0].line,p[0].column,p[0].column_end,msg,p[0].file,p[0].line)
+
+def print_sec(p, msg="", color="ovl-face2") :
+	print "[[view:%s::face=%s::linb=%s::colb=%s::cole=%s][%s]]" % (p[0].file,color,p[0].line,p[0].column,p[0].column_end,msg)
+
+def print_secs(ps, msg="", color="ovl-face2") :
+	for i in ps:
+		print "[[view:%s::face=%s::linb=%s::colb=%s::cole=%s][%s]]" % (i.file,color,i.line,i.column,i.column_end,msg)
+\end{lstlisting}
+
+%\subsection{Trac}
+%\label{sec:trac}
+
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: LaTeX
+%%% TeX-master: t
+%%% coding: utf-8
+%%% TeX-PDF-mode: t
+%%% ispell-local-dictionary: "american"
+%%% End:

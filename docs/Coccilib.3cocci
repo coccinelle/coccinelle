@@ -1,0 +1,267 @@
+.\"  -*- nroff -*-
+.\" Please adjust this date whenever revising the manpage.
+.TH COCCILIB 3COCCI "Jul 26, 2015"
+
+.\" see http://www.fnal.gov/docs/products/ups/ReferenceManual/html/manpages.html
+.\" see http://www.linuxjournal.com/article/1158
+.\" see http://www.schweikhardt.net/man_page_howto.html
+.\" groff -Tascii -man ./Coccilib.3cocci | more
+.\"
+.\" Some roff macros, for reference:
+.\" .nh        disable hyphenation
+.\" .hy        enable hyphenation
+.\" .ad l      left justify
+.\" .ad b      justify to both left and right margins
+.\" .nf        disable filling
+.\" .fi        enable filling
+.\" .br        insert line break
+.\" .sp <n>    insert n+1 empty lines
+.\" for manpage-specific macros, see man(7)
+.\"
+.\" TeX users may be more comfortable with the \fB<whatever>\fP and
+.\" \fI<whatever>\fP escape sequences to invode bold face and italics,
+.\" respectively. Also \fR for roman.
+.\" pad: src: deputy man page
+.SH NAME
+Coccilib \- Library of functions for use with Coccinelle OCaml script code
+.SH MODULE
+Module   Coccilib
+.SH DOCUMENTATION
+.sp
+Module
+.BI "Coccilib"
+ :
+.B sig  end
+
+.B ===
+.B Positions
+.B ===
+.PP
+.I type pos
+= {
+ current_element :
+.B string
+;
+ file :
+.B string
+;
+ line :
+.B int
+;
+ col :
+.B int
+;
+ line_end :
+.B int
+;
+ col_end :
+.B int
+;
+ }
+
+.sp
+A value of type
+.B pos
+describes a position in a source file\&.
+.B current_element
+is the name of the function containing the matched position;
+.B file
+is the name of the file containing the matched position;
+.B line
+is the number of the line containing the first character of the matched
+position;
+.B col
+is the (0-based) column containing the first character of the matched position;
+.B line_end
+is the number of the line containing the last character of the matched
+position;
+.B col_end
+is the (0-based) column containing the last character of the matched position\&.
+.sp
+
+.B ===
+.B Abstract Syntax Tree
+.B ===
+.PP
+.I type param_type
+ =
+ | Pos
+.B of
+.B pos list
+ | Str
+.B of
+.B string
+ | Type
+.B of
+.B Ast_c.fullType
+ | Init
+.B of
+.B Ast_c.initialiser
+ | InitList
+.B of
+.B Ast_c.initialiser Ast_c.wrap2 list
+ | Int
+.B of
+.B int
+ | Param
+.B of
+.B Ast_c.parameterType
+ | ParamList
+.B of
+.B Ast_c.parameterType Ast_c.wrap2 list
+ | Expr
+.B of
+.B Ast_c.expression
+ | ExprList
+.B of
+.B Ast_c.argument Ast_c.wrap2 list
+ | Decl
+.B of
+.B Ast_c.declaration
+ | Field
+.B of
+.B Ast_c.field
+ | FieldList
+.B of
+.B Ast_c.field list
+ | Stmt
+.B of
+.B Ast_c.statement
+.sp
+
+.I val make_ident
+:
+.B string -> Ast_c.metavar_binding_kind
+.sp
+Make an identifier
+.sp
+
+.I val make_expr
+:
+.B string -> Ast_c.metavar_binding_kind
+.sp
+Make an expression
+.sp
+
+.I val make_expr_with_env
+:
+.B string -> string -> Ast_c.metavar_binding_kind
+.sp
+Make an expression in a type environment.  The first argument is a string
+containing any C variable declarations needed to make the environment and
+the second argument is a string containing the expression.
+.sp
+
+.I val make_stmt
+:
+.B string -> Ast_c.metavar_binding_kind
+.sp
+Make a single statement
+.sp
+
+.I val make_stmt_in_env
+:
+.B string -> Ast_c.metavar_binding_kind
+.sp
+Make a single statement in a type environment.  The first argument is a
+string containing any C variable declarations needed to make the
+environment and the second argument is a string containing the statement.
+.sp
+
+.I val make_type
+:
+.B string -> Ast_c.metavar_binding_kind
+.sp
+Make a type
+.sp
+
+.I val make_listlen
+:
+.B int -> Ast_c.metavar_binding_kind
+.sp
+Make a list length, for parameter lists, expression lists, etc.
+.sp
+
+.I val make_position
+:
+.B string -> string -> int -> int -> int -> int -> Ast_c.metavar_binding_kind
+.sp
+Make a position.  The arguments are the file name, the function or other
+toplevel element containing the position, the starting line, the starting
+column, the ending line, and the ending column.  Lines start at 1.  Columns
+start at 0.  The ending line is the one that contains the last character of
+what is to be matched.  The ending character is one past the last character
+of the thing to be matched.
+.sp
+
+.B ===
+.B Match management functions
+.B ===
+
+.I val include_match
+:
+.B bool -> unit
+.sp
+If the argument is true, retain the environment with respect to which the
+ocaml script code is being executed for use in subsequent rules.  If
+the argument is false, discard this environment.  By default, the
+environment is retained.
+.sp
+
+.I val exit
+:
+.B unit -> unit
+.sp
+If called, aborts the treatment of the current file.  All previous changes
+take effect.
+.sp
+
+.I val dir
+:
+.B unit -> string
+.sp
+Returns the directory on which spatch was launched.
+.sp
+
+.I val file
+:
+.B unit -> string
+.sp
+Returns the file on which spatch is currently working.  This raises a
+Failure exception if spatch is not currently working on any file (eg,
+in an initialize or finalize rule).
+.sp
+
+.I val print_main
+:
+.B ?color:string -> string -> pos list -> unit
+.sp
+Print information about a main position using org mode.
+.sp
+
+.I val print_sec
+:
+.B ?color:string -> string -> pos list -> unit
+.sp
+Print information about a single secondary position using org mode.
+.sp
+
+.I val print_secs
+:
+.B ?color:string -> string -> pos list -> unit
+.sp
+Print information about a list of secondary positions using org mode.
+.sp
+
+.SH REFERENCES
+Y. Padioleau, J.L. Lawall, R.R Hansen, G. Muller
+"Documenting and Automating Collateral Evolutions in Linux Device Driver"
+.I EuroSys 2008,
+Glasgow, Scotland (April 2008) pp. 247-260.
+.SH AUTHOR
+This manual page was written by Julia Lawall <Julia.Lawall@lip6.fr>.
+.SH REPORTING BUGS
+Send a mail to <cocci@systeme.lip6.fr>
+.SH COPYRIGHT
+Copyright 2011, DIKU, University of Copenhagen and INRIA.
+Copyright 2012-2015, INRIA.

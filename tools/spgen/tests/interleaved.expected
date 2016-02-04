@@ -1,0 +1,112 @@
+/// Removes field and name struct fields from module_ calls.
+///
+// Confidence: Low
+// Keywords: MACRO, .name, .field.
+
+virtual patch
+virtual context
+virtual org
+virtual report
+
+/* This file has interleaving of patch and non-patch rules. */
+
+@match1@
+declarer name module1;
+declarer name module2;
+identifier d;
+@@
+
+(
+  module1(d);
+|
+  module2(d, ...);
+)
+
+
+
+@fix1 depends on match1 && patch && !context && !org && !report@
+identifier match1.d;
+@@
+
+  static struct struct_name d = {
+-   .field = MACRO,
+  };
+
+
+@match2@
+identifier d;
+@@
+
+(
+  module3(&d)
+|
+  module4(&d, ...)
+|
+  module5(&d, ...)
+)
+
+
+@fix2 depends on match2 && patch && !context && !org && !report@
+identifier match2.d;
+@@
+
+  static struct struct_name d = {
+-   .name = MACRO,
+  };
+
+// ----------------------------------------------------------------------------
+
+@fix1_context depends on match1 && !patch && (context || org || report)@
+identifier match1.d;
+position j0;
+@@
+
+  static struct struct_name d@j0 = {
+*    .field = MACRO,
+  };
+
+@fix2_context depends on match2 && !patch && (context || org || report)@
+identifier match2.d;
+position j0;
+@@
+
+  static struct struct_name d@j0 = {
+*    .name = MACRO,
+  };
+
+// ----------------------------------------------------------------------------
+
+@script:python fix1_org depends on org@
+d << match1.d;
+j0 << fix1_context.j0;
+@@
+
+msg = "Found .field = MACRO for identifier %s " % (d)
+coccilib.org.print_safe_todo(j0[0], msg)
+
+@script:python fix2_org depends on org@
+d << match2.d;
+j0 << fix2_context.j0;
+@@
+
+msg = "Found .name = MACRO for identifier %s " % (d)
+coccilib.org.print_safe_todo(j0[0], msg)
+
+// ----------------------------------------------------------------------------
+
+@script:python fix1_report depends on report@
+d << match1.d;
+j0 << fix1_context.j0;
+@@
+
+msg = "Found .field = MACRO for identifier %s " % (d)
+coccilib.report.print_report(j0[0], msg)
+
+@script:python fix2_report depends on report@
+d << match2.d;
+j0 << fix2_context.j0;
+@@
+
+msg = "Found .name = MACRO for identifier %s " % (d)
+coccilib.report.print_report(j0[0], msg)
+

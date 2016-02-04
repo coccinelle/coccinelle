@@ -1,0 +1,20 @@
+#!/bin/sh
+# This script is used to find the xxdate.exe file needed by Hevea.
+# It is needed because different distributions store it in different places:
+# For Gentoo: /usr/lib64/hevea
+# For Ubuntu family: /usr/share/hevea
+# Etc.
+
+# If the file is found, its absolute path is printed to stdout.
+# Otherwise, a warning is printed on stderr and the script returns 1
+
+file=xxdate.exe
+directories="/usr/lib64/hevea /usr/share/hevea /usr/local/lib/hevea /opt/local/share/hevea"
+
+for dir in ${directories}; do
+  fullpath=${dir}/${file};
+  if [ -f ${fullpath} ]; then echo ${fullpath}; exit; fi
+done
+
+echo "*** Hevea: Unable to find xxdate.exe ***" >&2
+exit 1

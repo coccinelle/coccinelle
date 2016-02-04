@@ -1,0 +1,31 @@
+
+% Very convenient to add comments on the paper. Just set the boolean
+% to false before sending the paper:
+\newboolean{showcomments}
+\setboolean{showcomments}{true}
+\ifthenelse{\boolean{showcomments}}
+{ \newcommand{\mynote}[2]{
+    \fbox{\bfseries\sffamily\scriptsize#1}
+    {\small$\blacktriangleright$\textsf{\emph{#2}}$\blacktriangleleft$}}}
+{ \newcommand{\mynote}[2]{}}
+
+\newcommand\jl[1]{\mynote{Julia}{#1}}
+\newcommand\np[1]{\mynote{Nicolas}{#1}}
+
+\newcommand{\sizecodebis}[0]{\scriptsize}
+
+\newcommand{\mita}[1]{\mbox{\it{{#1}}}}
+\newcommand{\mtt}[1]{\mbox{\tt{{#1}}}}
+\newcommand{\msf}[1]{\mbox{\sf{{#1}}}}
+\newcommand{\stt}[1]{\mbox{\scriptsize\tt{{#1}}}}
+\newcommand{\ssf}[1]{\mbox{\scriptsize\sf{{#1}}}}
+\newcommand{\sita}[1]{\mbox{\scriptsize\it{{#1}}}}
+\newcommand{\mrm}[1]{\mbox{\rm{{#1}}}}
+\newcommand{\mth}[1]{\({#1}\)}
+\newcommand{\entails}[2]{\begin{array}{@{}c@{}}{#1}\\\hline{#2}\end{array}}
+\newcommand{\ttlb}{\mbox{\tt \char'173}}
+\newcommand{\ttrb}{\mbox{\tt \char'175}}
+\newcommand{\ttmid}{\mbox{\tt \char'174}}
+\newcommand{\tttld}{\mbox{\tt \char'176}}
+
+\newcommand{\fixme}[1]{{\color{red} #1}}
