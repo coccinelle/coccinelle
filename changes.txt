@@ -1,0 +1,1025 @@
+-*- org -*-
+
+* upcoming/planned/todo
+** Language:
+- Semantic patch for other languages
+- Support metavariables, virtual rules and virtual identifiers
+  in initialize and finalize rules
+- Support for matching #ifdef, etc.
+- function-typed metavariables
+- virtual typedef, declarer name, iterator name
+- regexps for type metavariables
+- 'symbol' metadeclaration for C identifiers that are guaranteed not intended as meta variables. 
+- allow mixing isomorpisms with normal rules
+
+** Features:
+- New scripting languages
+- more than one SP on the command line
+- interpret #if, as is done for #ifdef
+
+** Bugfix:
+- Add more information in documentation, man pages and wiki
+- typedefs from C code should not be used before their point of inference
+  (saved_typedefs in cprogram_of_file)
+
+* 1.0.0
+** Language:
+- Addition of initializer list metavariables.  Thanks to Michael Stefaniuc
+  for noticing the need for them.
+- Allow multiple position variables per token
+- ++ can now be associated with - code
+- Allow /* */ comments as smpl comments, not only as + code
+- Add support for && (label addresses)
+- local idexpression metavariable no longer matches static local x
+- Consider using to be a comment in C++ code.  Patch submitted by Jani Monoses.
+- Command line cocci
+- print_main etc for ocaml Coccilib
+- =~ not ~= is used to indicate a regular expression constraint on an
+  identifier.  And !~ for a nonmatch.
+- allow long double, short int, long int, and long long int in SmPL code.
+- gcc constructors allowed in SmPL.  Thanks to Uwe Kleine-Koenig for
+  pointing out the problem.
+- Allow ! to appear before () in depends.  Thanks to SF Markus Elfring for
+  noticing the problem.
+- Can add code containing #pragma or #line.
+- Multicharacter command-line options now begin with -- and contain -
+  rather than _.
+- Allow multiple types of hidden metavariables, each preceded by @.
+  Position variables can be attached to these.
+- Python code now receives a structure containing a list of matched
+  elements for list metavariables.  Thanks to Michael Stefaniuc for
+  suggesting this features.
+- Python code now receives expressions and identifiers as ordinary strings,
+  not as elements of specific structures.
+- Allow size_t as the type of an array index in smpl code.  Reported by
+  Mansour Moufid.
+- Allow renaming an expression as an identifier (@i)
+- Support const/volatile after *.  Thanks to Lars-Peter Clausen for
+  pointing out the problem.
+- Support variable declarations in the first element of a for loop header.
+- Support decimal type with the --ibm option
+- Support some matching on pragmas
+- Initialize and finalize rules contain a metavariable declaration region.
+- Added documentation about iteration.
+- Allow changes within strings.
+- EXEC, for use with the --ibm option.
+- Limited matching of decimal format strings, with the --ibm option
+
+** Features:
+- Preserve spacing before // comments when not at the beginning of a line
+- Adjusted parsing of endif to put it after jump code
+- Improve warning message when using -use_cache
+- More helpful initial value for exported variables in python
+- Support - on expression nests
+- Better handling of the case of a matched declaration that should only
+  be replaced by other top level things.
+- Allow a semantic patch beginning and ending with braces to match the
+  complete body of a function if the braces are not removed and if nothing
+  is added before the first brace or after the last one.
+- Add -cache_prefix option, to specify where to put cached files.
+- Allow module_init(foo); to match module_init(foo) (or likewise for any
+  declarer), when no transformation is specified on the semicolon.
+- Add Coccilib.exit() for ocaml code and cocci.exit() for python code,
+  to abort the treatment of the current file.
+- Don't multiply print the same patch for the same file
+- Drop date in diff
+- Don't repeat smpl type warnings
+- -sp_file/-cocci_file are now optional.  If not present an argument that
+  ends in .cocci is assumed to be the name of the file containing the
+  semantic patch.
+- Allow limiting the size of a named cache using -cache_limit
+- Cache name specified with -cache_prefix is extended according to the
+  index (parallelism), if any.
+- Allow multi-character constants in C code and SmPL code.  Thanks to Kamil
+  Pilch for pointing out the problem.
+- Better parsing of K&R C functions.  No longer convert all parameters to
+  typedefs.
+- Implement newes as a hash table, for more efficiency on big sets of
+  environments.
+- A local variable that is declared without a type is not considered to be
+  a local variable.  Actually, such a variable is probably really a macro
+  that expends to a declaration, and this macro is not the variable name.
+- Allow iteration to make modifications when the modifications are done
+  inplace.
+- -debug gives information about defined virtual rules and about virtual
+  identifier bindings.
+- no more crashing on c++-like code without the c++ argument.
+- dependencies can have ! on ()
+- Give ocaml code access to Flag and thus the current file name.
+- Slightly more efficient handling of lists.
+- Slightly better error message in the case of inconsistent paths
+- Improve limited size caching
+- Remove zero #ifdefs when everything else is removed
+- Mac OSX compatibility (tested on OSX Lion)
+- 'Make depend' is called automatically when starting from a cleaned source
+- Configure flag --enable-release makes 'make' build the optimized version of
+  coccinelle if possible.
+- The installed 'bin/spatch' calls spatch.opt or spatch with default parameters
+  for iso/headers/python. 'bin/spatch.opt' and 'bin/spatch.byte'
+- The bundled packages are now in the 'bundles' subdirectory and in the
+  form of their original tarballs. These are extracted and used on-demand.
+- Compatibility with python 2 and python 3. Also, a small bug is fixed in the order
+  of library includes that caused sometimes trouble when building the pycaml library.
+- Dropped the dependency on Perl in the Makefiles
+- The configure script uses pkg-config and ocaml findlib and provides many
+  flags for tuning/overriding the build process (including the ocaml
+  compiler and the C compiler and preprocessor).
+- Add line number directives to the .ml file generated from a .cocci file
+- Added 'make check' as an alternative to 'make test'. It can run after
+  building spatch, checks whether some features work (python and ocaml scripts,
+  regexes) if these features are enabled, and then launches the test suite
+  with a 75% success rate requirement. It also does not ask for user input
+  and can be used in autonomous builds.
+- Added an experimental --reverse flag to invert the semantic patch before application.
+  Note that not all patches can be inverted, nor is it guaranteed that applying
+  a patch followed by applying its inverse is an identity operation.
+- Cache prefix takes distribution index into account.
+- Add --defined and --undefined options allowing some code not to be
+  touched.  Suggested by Eric Leblond.
+- Dropped the need for the ocaml-extlib and ocaml-sexplib packages.
+- Changed the file format of the regression test results. Files in the old format
+  are no longer readable by spatch.
+- Added a crude mechanism for integrating the results of external analyses with
+  coccinelle, using positions to connect them together. This is an experimental
+  feature. See demos/external_ana.{c,cocci,data}.
+- Try to do better pretty printing when array elements are individually
+  replaced
+- Just fail quietly on attempt to remove a multi-variable declaration,
+  allowing the semantic patch to continue.  A warning message is printed.
+- Ignore unknown identifiers around known types.
+- Ignore --use-glimpse if multiple directories given
+- Added support for c++ namespace syntax in cocci files.
+- Improved c++ parsing
+- Addition of gcc min and max operators.  Thanks to Holden Karau
+- Allow --use-idutils to take the name of the database as an optional
+  argument.  Thank to Wolfram Sang for the suggestion.
+- Allow some parameters of a function not to have names.
+- Improve indentation and newline introduction in pretty printer.  Thanks
+  to Nic Volanschi for the bug report.
+- Eliminate the reliance on grep in most cases for worth trying, to improve
+  performance.  Thanks to Johannes Berg for the suggestion.
+- Allow multidecls when removing variable names or when modifying type.
+- Take fresh declarations into account when computing get_constants to
+  create dependencies
+- Leave ifdefs-like directives in unparsed code, if they don't have
+  beginning or ending counterparts.
+- Improved interpret_cocci_grep to try to avoid no accumulating lots of
+  anded data.
+- Improve type inference performance when many files included by using
+  maps.
+- Extend file names only if the mentioned file does not exist.
+- Better support for functions that have no specified return type.
+- Added --include-headers-for-types option. 
+- Cope with unreadable C files.  Thanks to Akos PASZTORY for the
+  suggestion.
+- Add the ability to add, but not match or remove, attributes.  Thanks to
+  Johannes Berg for the suggestion.
+
+** Bugfix:
+- Corrected parsing of script strings delimited by a single quote.  Thanks
+  to Eugeniy Meshcheryakov for reporting the problem.
+- Improved indentation of added ifdefs.
+- Allow added comments and #ifdefs to precede other added code.  Thanks to
+  Jani Monoses for noticing the problem.
+- Corrected failure to due missing ocamlfind. Thanks to Derek M. Jones for
+  reporting the problem.
+- Allow fake nodes to be - in the allminus case, to drop tokens related to
+  a function definition or forward declaration but before the first code
+  mentioned in the semantic patch.
+- Drop __init etc when deleting a whole function.
+- Cause appropriate newlines to be preserved when multiple matches (trees)
+  contain adjacent modifications derived from the same SmPL code.
+- check_meta takes into account fresh identifier seed information.
+- Types for worth-trying optimization should not be followed by space
+- Improved filtering of result of matching atomic patterns
+- Drop positions before creating function prototype rules
+- Adjust position of { introduced by adding multiple statements in a
+  single-statement position
+- Drop newline after function call ( when all arguments on that line are
+  eliminated
+- Accept removal of a single declaration, replaced by arbitrary,
+  non-declaration code
+- smpl_spacing takes into account newlines, indentation
+- Improved prevention of transformations on toplevel { ... } from causing
+  changes outside function boundaries; also outside ifs, whiles, etc.
+  Changes are still allowed on { ... } present for other reasons.
+- Fix bug in include_match that caused everything to halt when all matches
+  were discarded
+- Don't call Insert_plus on rules that cannot be evaluated due to failed
+  dependencies.
+- Allow variable declaration right after a case in switch.
+- The top of a loop is also after the body of a loop, for ... in loop body
+- Do not anchor Str regexp at the beginning of the string to check
+- Type annotation for C code uses most recent env for typedefs when
+  possible.  Thanks to Andrea Canciani for pointing out the problem.
+- Pretty print pointer types without a trailing space.  Thanks to Michael
+  Stefaniuc for pointing out the problem.
+- Propagate dependencies further in get_constants2
+- Make lexer more dos friendly
+- slightly better handling of long long
+- Strip constraints from metavariables in function prototype treatment
+  before comparison, due to incomparability of pcre regexps.
+- Fixed obsolete regexp doc, thanks to Dmitry Osmakov
+- Improved x || ... || y to avoid double modification
+- Transparently allow \( \| and \) to be on lines beginning with -.  The -
+  has no effect.
+- Remove memory leak related to pr2_once management.  Thanks to Robert
+  Gomulka for helping to solve the problem.  Don't use once hashtable if
+  messages won't be printed anyway.
+- Change the type of subtraction mixing pointer and array to have int result.
+  Thanks to Robert Gomulka for noticing the problem.
+- Fix interpretation of dependencies in the presence of virtual rules.
+  Ignore constraints on inherited position metavariables in a rule that
+  will be ignored.
+- Better support meta iterator and meta declarer tokens, and symid tokens.
+- Better indentation after added noindent.
+- Fixed length bug in the treatment of structures.
+- Allow inheriting declaration/field metavariables.
+- Don't drop spaces after parentheses in when no minus code present.
+  Thanks to Terry Wilson for reporting the problem.
+- Keep inherited metavariables in asttomember (preprocessing for matching)
+- allminus for types, to allow removing const, not just matching it
+- improved pretty printing when something is added before a closed brace
+- Allow matching on nameless structs.  Thanks to Ron Minnich for reporting
+  the problem.
+- Pretty printing of const/volatile arrays in smpl code.
+- Don't allow just dropping an exp or type
+- Avoid removing #endif when surrounded by - code
+- Print some important error messages even with the --very-quiet flag.
+- Fixed parallel building in the Makefiles
+- Fixed the compilation of the "pure bytecode" version. If you use the
+  bundled pycaml or ocaml-pcre, you'll need their stub libraries in
+  your LD_LIBRARY_PATH.
+- For get_constants, virtuals should be false, not true
+- C parsing of top-level declarers with initializations.
+- Remove constraints in predicates in match result, to avoid PCRE equality
+  problems
+- Enum assignment matching an enum value shouldn't cause a
+  crash. Likewise, an identifier matching an initialized enum field
+  shouldn't cause a crash.
+- Make when forall in an exists rule behave (more) like forall
+- Ocaml 4.00.0 compatibility fixes
+- Drop inlines, reduce parser code size
+- Bind const_vol in the right order in Ast0 visitor
+- use arg_expression for printing iterator arguments instead of expression,
+  to get the right spacing.  Thanks to Lars-Peter Clausen for the fix.
+- Better spacing for generated argument lists.  Thanks to Lars-Peter Clausen
+  for reporting the problem.
+- Collect all module interfaces for ocaml scripting in a single
+  coccilib.cmi file, with the list of exposed internal modules in
+  ocaml/exposed_modules.ml. This simplifies the installation of the
+  ocaml version of coccilib, and allows us to specify which modules
+  can be accessed by an ocaml script. The coccilib.cmi must either
+  reside in $COCCI_DIR/ocaml/ or $COCCI_DIR/ocaml/coccilib/.
+- Ocamlbuild-based compilation of coccinelle (experimental). In a
+  cleaned repository, use the configure option --enable-ocamlbuild to
+  enable it. The Makefiles will then use ocamlbuild.
+- Ocamlscripts can access more of coccinelle: the file
+  ocaml/exposed_modules.ml specifies which modules are accessible.
+- Use arg_expression to print macro arguments.  Thanks to Lars-Peter
+  Clausen for the fix.
+- Remove some trailing whitespace due to unindent or added if braces.
+  Thanks to Eric LeBlond for reporting one of the problems.
+- Remove undesired newline after if header when body is a metavariable.
+  Thanks to Eric LeBlond for reporting the problem.
+- Improve macro expansion to take into account variable numbers of
+  arguments
+- Don't count macros or ifdefs in counting fields
+- Better counting of indent size when indent contains multiple tabs
+- Get the right annotation on trailing , that is after a nest.  Requires
+  avoiding double processing in transformation_c.ml
+- Fixed an issue where an 'Impossible' exception could be raised.
+- Fixed an issue where some identifiers were incorrectly interpreted as typedef.
+- allow __ at the beginning of a struct or union name
+- unparsing with precedence
+- Type metavariable should not match a case where there is no type in the
+  C code.  Thanks to SF Markus Elfring for pointing out the problem.
+- Allow an expression list metavariable to be attached to a parameter list
+  metavariable, to allow using the parameter names as an argument list.
+  Thanks to Michael Stefaniuc for pointing out the need for this feature.
+- register x; in C is considered to implicitly declare an int typed
+  variable.  A type metavariable that is part of a match of this
+  declaration will get bound to int.  But if the type metavariable
+  furthermore is associated with a position metavariable, the match will
+  fail, because the implicit int has no position.  Thanks to Nic Volanschi
+  for pointing out the problem.
+- Propagate parameter list variables from rules for function definitions
+  to the generated rules for function prototypes.  Thanks to Nic Volanschi
+  for pointing out the problem.
+- Avoid introducing extra space when pretty printing.  Thanks to Daniel
+  Wagner for pointing out the problem.
+- Don't add extra space before semicolon, comma, or right paren when adding
+  an __attribute__
+- Identifiers promoted to typedefs should have positions
+- Allow disjunctions in removed nests
+- Only print a warning about multidecls if the pattern actually matches.
+- fixed --cache-limit to set --use-cache.  Thanks to Tegawende Bissyande
+  for finding the problem.
+- Drop matched pattern in idutils output.  Thanks to Wolfram Sang for
+  pointing out the problem.
+- Improve parsing of #defines that contain multiline comments.  Thanks to
+  Tegawende Bissyande for finding the problem.
+- Collect all types in get_constants when types mentioned on
+  metavariables. Thanks to Michael Stefaniuc for the report.
+- Try to fix pretty printing of directives.
+- Allow renaming types in multidecls, including renames in initializers.
+- Save virtual identifiers from the command line for use in finalize code.
+- Make ocaml file prefix name be just a constant string rather than being
+  determined by the semantic patch file name, to avoid
+  incompatabilities between the semantic patch file name and what is
+  allowed for the names of ocaml modules.  Thanks to Markus Elfring for
+  noticing the problem.
+- Improved use of parsing_hacks when an item of interest is preceded by
+  a #define or #undef.  Thanks to Nic Volanschi for finding the problem.
+- Improved handling of commas in multidecls.  Thanks to Nic Volanschi for
+  finding the problem.
+- Try to improve column offsets in complex strings.
+- Improve performance of error handling code detection by only doing it
+  when there is an escaping then branch.  Thanks to Ning Jiang for
+  motivating investigation of the problem.
+- Don't consider a break for a switch a indicating error handling code.
+  Thanks to Ning Jiang for motivating investigation of the problem.
+- Allow adding things after an escaping compound.  Thanks to Nic Volanschi
+  for finding the problem.
+- split apart added strings when moving mcode information to bef of for
+  loop, function definition, etc.  Thanks to Luis R. Rodriguez for reporting
+  the problem.
+- Take into account dependencies when considering plus information in
+  get_constants.  Also removing constraints based on plus information
+  results in True, regardless on whether & or v is being considered.
+  Thanks to Luis R. Rodriguez for reporting the problem.
+- Move pcre regular expressions to a hashtable, and out of parsed smpl
+  terms to avoid problems with comparing rule_elems in ctl matching.
+  Note that this hash table is global and is never cleared, since we
+  work on only one semantic patch per execution of Coccinelle.  Thanks to
+  SF Markus Elfring for pointing out the problem.
+- Leave constraints in function prototypes, now that they are comparable.
+- Make it possible to add something after the last brace of a function.
+  Thanks to Benoit Taine for motivating this change.
+- Avoiding attaching # directives to , after ... as this comma may get
+  dropped or not match any code.  Thanks to Stefan Assmann for reporting
+  the problem.
+- Manage trailing comma in Constructor code.  Thanks to Viresh Kumar for
+  noting the problem.
+- For multidecls, take into account that type may comprise multiple tokens.
+  Thanks to Nic Volanschi for noticing the problem.
+- don't add newlines in #defines, even if lines get long
+- consider # as a comment character in script code
+- Don't take into account string constants in get_constants, as these are
+  not likely to be indexed.  Thanks to Benoit Taine for noting the problem.
+- Better pretty printing indentation for ifs.
+- Don't multiply propagate positions to the same token in isos that use the
+  same token more than once.  Problem reported by Riccardo Lucchese.
+- Don't require balanced parentheses in + code for stars.  Problem reported
+  by Chi Pham.
+- Unfavor commas for attaching plus code; commas can disappear.
+- In pretty printing added if branch braces, allow minus code as well as
+  spaces and newlines between the ) and the {.
+- Make the --keep-comments flag work.
+- Make the --force-diff flag work.
+- Improve newlines around added else tokens.
+- Improve parsing of multi strings.
+- Improve pretty printing of expression list metavariable values.  Problem
+  reported by Cyril Hrubis.
+- Improve pretty printing of long parameter lists, improve added newlines
+  for things in parentheses.  Problem reported by Luis Rodriguez.
+- Lex comment at end of #if.  Problem reported by Markus Elfring.
+- Allow ''
+- Make fix_tokens_strings, List.flatten tail recursive to avoid stack
+  overflow
+- Make nothing match against empty statements.
+- Improved propagation of #ifdef additions to function prototypes.
+  Reported by Stefan Assman.
+- Allow adding directives before and after ..., see ifif.cocci
+
+* 0.2.5
+** Language:
+- Make a very small attempt to parse C++ code, amounting to accepting
+  identifiers containing ::, tilde, and template invocations.  Use the
+  option -c++.  This is not likely to be very useful in practice.
+- Added metavariable metavariable type.
+- Add disjunctions on identifiers in some contexts
+- Pretend that & indicates a pointer in -c++ mode
+- Support for new and delete
+- Allow arrays in smpl parameter declarations.  Thanks to Jesper Louis
+  Andersen for pointing out the problem.
+- Field list metavariables
+- Add the ability to add __attributes__ (NB, no matching on attributes)
+- Slightly improved the error message for transformation on multiple
+  variable declaration.  Thanks to Jonathan Nieder for pointing out the
+  problem.
+
+** Features:
+- support transformations on variables (only) in declarations that declare
+  multiple variables
+- allow #endif XXX in C code
+- relax_include_path now applied to non local includes too, in which case
+  it tries to find a unique file with a suffix of the provided name.
+  this is useful for directories that are intended to be symbolic links.
+- support matching and removing #undef
+- support for iteration in ocaml, requires use of -no_show_diff
+- calls to likely and unlikely propagate test expression status to their
+  arguments
+- reuse typedefs and macros from complete parsing when reparsing the
+  transformed code
+- better explanation when presenting glimpse tokens
+- optimization for an if branch that is just { ... }
+- spatch -control_flow_to_file file.c generates a file file.dot
+- include files with names ending in .cpp if -c++ option is given
+- removed use of the no longer supported sexplib function Conv.hashtbl_of_sexp
+- add information about which Fedora packages are needed
+
+** Bugfix:
+- improved parsing of expressions to allow ... to the right of operators in
+  more places
+- Fix check_config for Python 2.7 on Fedora 14 (Reported-by: Michael Stefaniuc)
+- Check for ocamlfind in configure (Reported-by: Paul E. McKenney)
+- Postpone use of ocamlfind at runtime to report fewer errors
+- Add support for Python 2.4 binding with the provided pycaml library
+- Allow '@' in script code.  Thanks to Laurent Reveillere for noticing the
+  problem.
+- Remove an optimization of x or true to true in asttoctl2 for the case
+  where x may make a modification, eg the case of -thing ?-thing
+- Allow adding comments before a function.
+- Introduction of newlines in function arguments needs to take into account
+  that the code added by SmPL can include newlines.  Thanks to Thomas
+  Gleixner for finding the problem.
+
+* 0.2.4
+** Language:
+- scripts now have names and can declare metavariables that are seen by
+  SmPL as identifier metavariables, see demos/{python,ocaml}tococci.cocci
+- declaration (match variable declarations) and field (match structure
+  field declarations) metavariables
+- matching of array initializations and of enum declarations
+
+** Features:
+- compatibility with Python 2.7.  Thanks to Richard W.M. Jones for pointing
+  out the problem
+- python and ocaml string representations of parameter lists and expression
+  lists
+- try simpler patterns on glimpse failure
+- graceful and immediate failure when a virtual rule is defined on the
+  command line, but not in the rule
+- spatch returns -1 when a virtual rule is requested that is not supported
+- no transformation when using * with the option -no_show_diff
+- expanded +++ file name for match output
+- struct *^* and enum *^* metavariable types
+- allow an assignment to match a variable initialization, even if multiple
+  variables are declared at the same time.
+- add the option -recursive_includes
+- added the option -use_idutils.  The requires the previous use of the
+  script idutils_index.sh
+
+** Bugfix:
+- detect used after metavariables in simple statement metavariable match
+- allow inheriting position variables over rules that make transformations
+  but depend on virtual rules that are not defined on the command line
+- treat top-level tokens in decl visitor.  Thanks to Peter Tummeltshammer
+  for noticing a resulting problem.
+- improve typing of the result of an assignment expression
+- eliminate some recursive calls in C code parsing to avoid stack overflows
+- better pretty printing of #define when the whole line is removed
+- better pretty printing of asm code containing
+  "::[input]"r"(&coherence_data[i])"
+- allow pretty printing of C code with nameless bit fields
+- avoid adding an error message to standard output if ocamlfind is not
+  found
+- struct/union/enum-typed metavariables with a metavariable type name
+- better management of whitespace between deleted lines.  Thanks to
+  Andriy Gapon for noticing the problem.
+- improved parsing recovery for badly parsed struct/enum typedefs
+- drop expanded tokens in sgrep output.  Thanks to Andriy Gapon for
+  noticing the problem.
+- constant strings have array type, not pointer type.  Thanks to Vasiliy
+  Kulikov for noticing the problem.
+- improve indentation when adding code after a function call with indented
+  arguments.
+- return type of sizeof converted to unsigned long.  Thanks to Vasiliy
+  Kulikov for noticing the problem.
+- improve spacing when adding structure initializers.  Thanks to Vasiliy
+  Kulikov for noticing the problem.
+
+* 0.2.3
+** Language:
+- <= constraints relating an expression metavariable to one or more
+  inherited expression metavariables that it should be a subexpression of
+- the -inplace and -outplace options have been renamed -in_place and
+  -out_place.  -in_place no longer makes a backup.  A backup can be
+  requested using the option -backup_suffix, eg -backup_suffix .bk
+- identifiers can be constrained to be different from an inherited
+  identifier metavariable, or from a set containing both concrete
+  identifiers and inherited identifier metavariables.
+- support for ocaml scripting
+- ast available in ocaml scripts
+
+** Features:
+- drop inconsistent paths check when only one node was matched
+- allow #define id with no definition
+- attempt to add newlines in the generated code when function calls in the
+  smpl cause passing column 80
+- allow - in front of statement level nests, if everything inside the nest
+  is also -
+- 'configure' looks for some system libraries: menhirLib, sexplib, pycaml.
+  Not available libraries are replaced by a copy provided with the sources.
+- added static for a function goes just before what is specified in the
+  semantic patch, not before any comments etc.
+- Add a new option, -ignore_unknown_options, to ease the integration
+  of Coccinelle as a checker in a toolchain.
+- error in python code causes immediate abort of spatch
+- use the same algorithm for collecting grep tokens as for collecting
+  glimpse tokens
+- Add scripts/spatch.bash_completion for automatic completion of common
+  options under the bash shell.
+- Print rule name when a script rule crashes
+- Allow the declaration of an expression list or parameter list
+  metavariable to specify the number of expressions or parameters,
+  respectively.
+
+** Bugfix:
+- drop inconsistent paths check when only one node was matched
+- better take into account virtual rules when selecting glimpse tokens
+- print diff when only a comment is added
+- the type of the C code !x should be int regardless of the type of x
+- allow python code at the beginning of an included file
+- better adjustment of whitespace when deleting adjacent lines.  Thanks to
+  Wolfram Sang for pointing out the problem.
+- allow metavariables to be inherited from included files
+- allow ? on goto
+- more graceful failure on finding a strange character in a macro parameter
+  list
+- support Parameter metavariables
+- add space after the last comma in an added portion of an argument list
+- SmPL nameless struct should only match a nameless struct, not a nameless
+  union.  Thanks to Peter Tummeltshammer for pointing out the problem.
+- adjustments to storage don't modify inline as well
+- matching and transformation allowed on inline
+- allow removed field between two ... in structure initialization
+- allow removing an entire structure initialization
+- manage labels within do while 0 macros
+- added space after : in printing a conditional expression.  Thanks to Josh
+  Triplett for noticing the problem.
+- dropped trailing whitespace when code at the end of a line is deleted.
+  Thanks to Josh Triplett for noticing the problem.
+- Fixed environment management when script rule uses cache.  Thanks to
+  Bissyande for finding the problem.
+- when false matches if with no else
+- ensure { ... } with whencode checks to the end of the function.  Thanks to
+  Rene Rydhof Hansen for finding the problem.
+
+* 0.2.2
+** Language:
+- Added ToTestExpression to iso language, see standard.iso for an
+  explanation
+- Added depends on to initialize and finalize script code
+
+** Features:
+- Update Emacs mode (cocci.el) to support 'virtual' rules and fix other
+  keywords sush as 'depends on', 'using', 'disable'
+- better treatment of != 0 in isos, communtativity for ==/!= for all
+  constants
+- allow adding // comments and blank lines (even after cocci + code)
+- Add support for multiple -I options
+
+** Bugfix:
+- correct interaction between virtual rules and included .cocci files
+- improvement in treatment of ! in isos, to avoid duplicating + code
+- improvement in treatment of metavars as isos, to avoid duplicating + code
+  between toplevel and variable instantiation
+- test expression of smpl conditional, etc no longer assumed to have type
+  int
+- correct + line numbers in the patch produced when using *
+- iso constant metavariable matches an identifier whose name is all capital
+  letters, eg NULL
+- allow / at the end of the name of a directory (-dir) or patch prefix
+  (-patch)
+- dropped space in + code after the binding of a type metavariable that is
+  a pointer type
+- better handling of . or .. in -dir name
+- allow keywords and metavariable names in identifier constraints (not sure
+  keywords is very useful, though)
+- no lubtype on arguments of && and || in SmPL
+- allow unknown as type for array indices in SmPL
+- support matching of static annotation on functions that are both static
+  and inline
+- support ENOTDIR error in Common.lfile_exists, to allow for the case where
+  an include file is in a subdirectory that exists but is an ordinary file,
+  not a directory.
+- better management of unbound position variables that appear in
+  constraints
+- cause python parser to skip over // comments, hoping that // is not
+  meaningful inside python
+- require + on every line of a multiline comment
+- correct calculation of line numbers when there is script code
+- always annotate arguments of && || and ! as test expressions in C code.
+
+* 0.2.1
+** Language:
+- Add virtual identifiers
+- Add coccilib.report and coccilib.trac Python modules
+- coccilib.org and coccilib.report are imported by default but not loaded
+  in the current scope.
+
+** Features:
+- Parse_error_msg now more helpful.  New option -verbose_parsing for even
+  more information.
+- Improve Python import handling. They are imported once during script
+  initialization.
+
+** Bugfix:
+- correct treatment of depends on with || for virtual rules
+
+* 0.2.0
+** Language:
+
+** Features:
+- Remove duplicated code in disjunctions
+- Better error message when grep finds nothing relevant.  Thanks to Joe
+  Perches for the suggestion.
+- added -keep_comments option for the unparsing of the transformed code
+- Option "-version" now also gives information about built-in
+  Python binding support.
+- slightly faster environment manipulation in pathological cases
+- hack added to accept well-formed #define after function header
+
+** Bugfix:
+- Proper consideration of #define macro arguments in checking for the use
+  of metavariables and in computing the line numbers of complex terms
+- Better parsing of included .cocci files
+- Put included .cocci files in the right order
+- Bind position variables only once for #include
+- Fix bug in include_match that caused everything to halt when all matches
+  were discarded
+- Merge unlikely/likely iso rules under a iso rule named unlikely
+- Some fixes to coccicheck rules, thanks to Andrew Lunn
+- Support groups in regular expression, thanks to Michael Stefaniuc
+
+* 0.1.11
+
+** Language:
+- Meta-identifier/function and constant could be filtered from SmPL by
+  regular expressions using the "~=" and "!~=" operators followed by
+  an OCaml regular expression (see man Str) in double quote.
+- Virtual rules, which can be referenced in depends, and set and unset
+  using the command-line options -D
+- ++ for multiple additions
+
+** Features:
+- coccicheck: a framework to check a series of SmPL files on a project
+  see scripts/coccicheck for more information
+
+** Bugfix:
+- bind position variables to the correct starting position in the case of a
+  complex statement such as an if or while.  Thanks to Derek Jones for
+  pointing out the problem.
+- checking for non mentioned case lines in switch should be unchecked.
+- space should be printed after sizeof when there are no parentheses around
+  the argument.  Thanks to Daniel Walker for pointing out the problem.
+- avoid introducing sharing in propagating ! over () in treatment of isos
+- save_excursion has to handle and rethrow exceptions
+- eliminate unnecessary consideration of CVS strings.  Thanks to David
+  Young for pointing out the problem.
+- completely new treatment of statement metavariables
+- better type checking for macro definitions
+- drop regression testing in -parse_c
+
+* 0.1.10
+
+** Language:
+- declarations allowed in switch, suggested by Derek M. Jones
+
+** Features:
+- use interval timer for timeouts.  Thanks to Derek M. Jones for the
+  implementation.
+- more flexible env.sh, thanks to Derek Jones.
+- faster Python invocation
+- simplify unparsing in the sgrep case
+
+** Bugfix:
+- for glimpse there is no point to create a pattern containing a numeric
+  constant because glimpse doesn't index them
+- add spaces after commas in function calls and function headers
+- made python integration more like the ubuntu version
+  http://patches.ubuntu.com/by-release/extracted/debian/c/coccinelle/0.1.5dbs-2/01-system-pycaml
+  this fixes some memory management problems with None, True, and False
+- correct labels associated with a switch in the CFG so that a statement
+  metavariable can match a switch.  Thanks to Derek Jones for pointing out
+  the problem.
+- keep switch pattern within switch body.  Thanks to Derek Jones for
+  pointing out the problem.
+- Allow expanded tokens to be stored in metavariables, as long as they are
+  not removed.  But this does currently allow them in + code, which will
+  produce the expansion.  Thanks to Ali-Erdem Ozcan for pointing out the
+  problem.
+- improved adjustment of spacing when code removed at the beginning of a line
+
+* 0.1.9
+
+** Language:
+- allow fresh identifiers to be declared using ## such that the value mixes
+  both strings and previously declared metavariables
+
+** Features:
+- better handling of expanded code containing ##. Now compute the 
+  result.
+- more precise warning message for the "'\' outside define".
+  Thanks to Nicholas Mc Guire for pointing out the problem.
+- more precise warning message related to ifdefization.
+  Thanks to Derek Jones for pointing out the problem.
+- we don't create any more certain files in /tmp (they may be a cause
+  of security problems).
+  Thanks to Eugeniy Meshcheryakov for pointing out the problem.
+- More optimization for the case of just deleting a complete function.
+  Allows this to happen without tracing through all the control-flow
+  paths.  Thanks to Francois Bissyande for pointing out the problem.
+- prevent code from being added to the beginning or end of a disjunction
+- more information about why a script is not applied when using -debug option
+- added -no_safe_expressions option
+- added -no_loops option.  Ignores back edges derived from looping
+  constructs.  This is unsafe, but perhaps useful for bug finding, as it can
+  be more efficient.
+- for semantic matches, allow "minus" on same code with multiple
+  environments
+- better error message for mismatch of parenthesis in column 0 with normal
+  parenthesis.  Thanks to Derek Jones for pointing out the problem.
+- allow disjunctions on function return types.  Thanks to Pierre Habouzit
+  for pointing this out.
+
+** Bugfix:
+- keep disjunction in the proper order for structure initialization fields
+- variables declared in different places should not seem to match each
+  other
+- drop complaints about label metavariables not being used
+- drop test information from the type of an expression when the expression
+  is bound to a metavariable
+- nests should not extend beyond the before and after code, even if the
+  before and after code matches the nest code
+- nests should extend into conditionals that end in error exit
+- take into account metavariables on "else".  Thanks to Derek Jones for
+  pointing out the problem.
+- print single quotes on generated character constants
+- better typedef handling in the initialisation/affectation builtin
+  isomorphism, cf -test init_affect_typedef
+- support disjunction of types on variable declaration
+- allow @ within strings in script code.  ignore // comment lines in script
+  code.
+- don't drop + code placed after the transformed code
+- drop spaces produced by removing code before semicolons
+- adjusted spacing within generated code
+- less verbose -sp.  Thanks to Derek Jones for pointing out the problem.
+- accept multiple type names in a SmPL typedef declaration.
+
+* 0.1.8
+
+** Language:
+
+** Features:
+- Metavariables now capture the cpp code contained within their definitions
+- When - fragments are separated by ... or nest boundaries in the semantic
+  patch, but end up matching adjacent source code, the comments, cpp code
+  and whitespace that are between them are not deleted.
+- better parsing of C: do expansion of macros only when needed when
+  have actually a parse error and also leverage the definition of macros
+  in the parsed file (or in a optional_standard.h file passed as a parameter).
+  This should reduce the need for many hardcoded definitions in standard.h
+- new semantics for the -macro_file option, by default now expand macros
+  only when necessary. To force use the -macro_file_builtins option instead.
+- a new -extract_macros command line action to help the parser. Works with
+  the -macro_file option. e.g. 
+    $ ./spatch -extract_macros ~/linux > /tmp/alldefs.h
+    $ ./spatch -macro_file /tmp/alldefs.h -sp_file foo.cocci -dir ~/linux
+- removed -D macro_file option, not consistent with what -D usually means
+- reattempt to be more efficient for statement metavariables that are just
+  placeholders (ie, no modification, no reuse)
+- triples now returned from ctl in sorted order.  The main key is the
+  state.  On the other hand, the state order does not always agree with the
+  order of appearance in the code.
+- spatch is now less verbose on the things it does yet handle. Less confusing
+  for new users.
+- slightly better error report. Thanks to Derek Jones for the suggestion.
+- added the options -linux_spacing and -smpl_spacing.  -linux_spacing
+  causes spatch to follow the spacing conventions of Linux, while
+  -smpl_spacing causes spatch to follow the spacing in the semantic patch.
+  -linux_spacing is the default.
+- more informative error reporting for the already tagged token case.
+  Thanks to Erik Hovland for the suggestion.
+
+** Bugfix:
+- better parsing of declare macro at toplevel and in structure. 
+  cf -text xfield
+- allowing back typedef names for fieldname
+- better printing of else in generated code
+- slightly better type inference for binary operators.
+- clear out declarer names and iterator names between SmPL files (for
+  -testall)
+- better parsing and type checking of macro type aliases. Cf -test macro_int16.
+  Thanks to Li Yingtong for pointing out the problem.
+- make insert_virtual_positions tail rec, avoid stack overflow pb.
+  Thanks to Diego Liziero <diegoliz@gmail.com> for pointing out the
+  problem.
+- Better type inference for arithmetic binary operators
+  Thanks to Li Yingtong for pointing out the problem.
+- Better type inference for constants
+  Thanks to Li Yingtong for pointing out the problem.
+- move computing of adjacency information for semantic patches to after
+  application of isomorphisms, because isomorphisms can introduce "..."
+- compute adjacency information for negated ...
+- record with each transformation site the set of indices of the witness
+  trees that caused the transformation site to come about.  Whitespace and
+  comments between remove tokens associated with disjoint witness trees is
+  not removed.
+- correct treatment of function pointer typed parameters in the SmPL ast0
+  visitor.
+- better parsing error message and error recovery when comments are not ended, 
+  when some macros have a weird body, and when some switch have a weird
+  Body. 
+  Thanks to Derek Jones for pointing out the problem.
+- better detection and passing of "dangerous" ifdefs, cf -test
+  double_switch.
+- dropped the separation of decls and body in Seq.  This gives better
+  positioning of the bindings of metavariables shared between them.
+  Thanks to Erik Hovland for an example that shows the problem.
+
+** Internals:
+- suppress warning in compiling ocamlsexp (warning caused by a new behavior
+  of cpp used internally in processing files in ocamlsexp/)
+
+* 0.1.7
+
+** Language: 
+- initialize and finalize script code, cf demos/initial_final.cocci
+
+** Features:
+- -iso_limit option to limit the depth of isomorphism application
+- with the dir option, the include path is implicitly set to the "include"
+  subdirectory of the specified directory, if the option -I is not used.
+- give a seed for the name of a fresh identifier
+- better handling of cpp "constructed" identifiers as in a##b, that in
+  the futur will make it easier to match over those idents. 
+  cf tests/pb_parsing_macro.c. Thanks to Ali-Erdem Ozcan for pointing
+  out the problem. A new "parsing hack hint" is also available:
+  YACFE_IDENT_BUILDER, cf standard.h.
+
+** Bugfix:
+- drop excessive "optimization" in ctl generation for while and for loops
+- allow . as the name of the directory
+- for type inference for an assignment, take the type of the right-hand
+  side expression, not the type of the assigned variable
+- allow for with a declaration in the first header element, as in C++
+  (partial support)
+- allow for matching against variable declarations that include only
+  storage, eg static, but no type at all.
+- allow for matching against types that contain both short/long and int
+- allow the type metavariable in the SmPL code "unsigned T" to match a T
+  that is a type consisting of more than one word, eg long int.
+- -ifdef_to_if option made to process nested ifdefs
+  (partial support)
+
+** Internals: 
+- improve and fix installation process (usable on BSD)
+- improve and fix testing process
+- apply patches from Eugeniy Meshcheryakov
+- reorganize the way we parse C identifiers, especially concatenated cpp 
+  identifiers as in a##b. This may lead to some regressions as we may
+  not parse as much code as before.
+- removed popl/ and popl09/ and popl related stuff from official distrib.
+
+* 0.1.6
+
+** Language:
+- the ability to add comments
+
+** Features: 
+- grouping of generated rules with -hrule option
+- handling of special coccinelle comments 
+  /* {{coccinelle:skip_start}} */ and
+  /* {{coccinelle:skip_end}} */
+  allowing to give more hints to the C parser.
+  Thanks to Flavien@lebarbe.net for the idea.
+- the ability to print the values of more (but not all) kinds of
+  metavariables from python
+- new vim SmPL mode.
+  Thanks to Alexander Faroy.
+
+** Bugfix:
+- consider the ident tokens also in the 2 lines before the error line for the 
+  10-most-problematic-parsing-errors diagnostic.
+- SmPL parser allows cast as the argument of a pointer
+- SmPL type checker allows enum as an array index
+- Better generation of fresh metavariables names in hrule
+- no more warnings about things that should be metavariables when there is
+  a disjunction in a function position
+- bugfix in parser, better error message.
+  Thanks to Ali-Erdem OZCAN <ali-erdem.ozcan@st.com> for the bug report.
+
+** Internals: 
+
+* 0.1.5
+
+** Language: 
+- added initialiser metavariable
+- added sequences of designators in structures
+
+** Features: 
+- improved printing of the C code corresponding to metavariables
+- improved printing when code (eg declarations) is removed at the beginning
+  of a block, and then is followed by a blank line
+- slightly less verbose error reporting in parsing_hacks
+
+** Bugfix:
+- fixed some problems with parsing SmPL code where a nest appears after a |
+- better treatment of { }, form in macros wrt unparse_c
+- less quiet for -parse_c
+- improve parsing heuristics regarding macro statement
+
+** Internals: 
+
+* 0.1.4
+
+** Language: 
+- long long added to SmPL
+
+** Documentation:
+- add grammar reference and spatch command line options reference
+
+** Features: 
+- can match patterns of the form unsigned T or signed T, where T is a
+  metavariable
+- dropped the sizeof_parens isomorphism, which was made redundant by the
+  paren isomorphism
+- simple rule generation
+
+** Bugfix:
+- trailing , ; and ) no longer left on a line by themselves
+- better treatment of error exit when the searched for code matches the
+  error exit condition.
+- fix incorrect treatment of parentheses in test_exps that could allow +
+  code to be added twice
+- don't ask whether iterator names and declarer names should be declared as
+  metavariables.
+- slightly better support for expression list metavariables.
+- short and long allowed for array index types in SmPL
+- more restrictions on type inference for pointer arithmetic in SmPL
+- allow isomorphisms to apply when + code is anywhere within all - terms
+- changed order of printing const and volatile
+- allow  eg ... <... in plus code
+- better formatting of generated if/while/etc. code
+- better parse error reporting when the problem is at the end of the file
+
+** Internals: 
+- isomorphisms don't apply under signed/unsigned, to prevent the creation
+  of things like unsigned signed int.  Need a better solution for this.
+
+* 0.1.3
+
+** Features: 
+- help in building the configuration macro file. The -parse_c action
+  now returns the 10 most frequent parsing errors. This give useful
+  hints to extend standard.h.
+
+** Bugfix:
+- positions no longer allowed on \(, \|, and \)
+- improved propagation of negation for isos in the presence of parens
+- convert Todos in flow graph construction to recoverable errors
+- fixed bug in treatment of when != true and when != false, to allow more
+  than one of them per ...
+- improve parsing of typedef of function pointer. 
+- improve typing.
+- parsing and typing support for old style C function declaration.
+- consider position variables as modifications when optimizing the
+  translation into CTL of function definitions
+
+** Internals: 
+
+* 0.1.2
+
+** Bugfix:
+- better handling of ifdef on statements in control flow graph.
+- transform files even if they do not end in .c (thanks to Vegard Nossum)
+
+** Internals: 
+- merge code of yacfe
+
+* 0.1.1
+
+** Language: 
+ - support for initializer at toplevel, cf -test substruct
+
+* 0.1
+
+** first public release of the source code:
+
+** Language: 
+ - embeded python scripting
+ - position
+
+** Features
+
+* beta 
+
+** first public release of the binary
+
+* alpha
+
+** Features
+ - lots of features ... look at coccinelle research papers and tutorials.

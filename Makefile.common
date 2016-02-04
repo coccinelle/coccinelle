@@ -1,0 +1,22 @@
+# Some common definitions that factored out many reoccurring patterns
+# in the Makefiles of the project. This file is included at the bottom
+# so that its implicit rules take precedence over implicit rules in
+# the file  that includes this one.
+
+# this is a "hack" so that we do not have to pass --native to ocamldep
+# and rebuild .depend when building the native version. Since we have
+# .ml files without .mli files, building the .cmo *and .cmx file could
+# cause the .cmi file to be build twice, which could cause trouble when
+# the .cmi file is read by other compilation steps (especially when
+# building in parallel).
+export BUILD_OPT
+ifeq ($(BUILD_OPT),yes)
+%.cmo: %.ml
+%.cmo: %.cmx
+	@echo "skipped building $@ in optimizing mode: $< will be built instead."
+endif
+
+
+# If this variable is set, then 'make distclean' should not remove certain
+# generated files like the generated parsers, and documentation.
+export KEEP_GENERATED

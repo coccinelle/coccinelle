@@ -1,0 +1,57 @@
+
+##############################################################################
+# Website targets
+##############################################################################
+
+WEBBASE=~/website
+WEBSITE=$(WEBBASE)/distrib
+
+website:
+	cp $(TMP)/$(PACKAGE).tgz                $(WEBSITE)
+	cp $(TMP)/$(PACKAGE)-bin-x86.tgz        $(WEBSITE)
+#	cp $(TMP)/$(PACKAGE)-bin-x86-static.tgz $(WEBSITE)
+	cp $(TMP)/$(PACKAGE)-bin-x86-python.tgz $(WEBSITE)
+	cp $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz          $(WEBSITE)
+	cp $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz   $(WEBSITE)
+	cd $(WEBSITE); svn add $(PACKAGE).tgz               \
+		$(PACKAGE)-bin-x86.tgz                      \
+		$(PACKAGE)-bin-x86-python.tgz               \
+		$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz \
+		$(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz
+#		$(PACKAGE)-bin-x86-static.tgz
+	$(MAKE) -C docs/manual WEBBASE=$(WEBBASE) install
+	@echo "\nYou need to manually update those files:\n"
+	@echo "\t$(WEBBASE)/download.php"
+	@echo "\t$(WEBSITE)/change.html\n"
+	@echo "Then commit the changes.\n"
+#	rm -f $(WEBSITE)/LATEST* $(WEBSITE)/coccinelle-latest.tgz
+#	cp changes.txt $(WEBSITE)/changes-$(VERSION).txt
+#	cd $(WEBSITE); touch LATEST_IS_$(VERSION); ln -s $(PACKAGE).tgz coccinelle-latest.tgz
+#	cp readme.txt $(WEBSITE)
+
+##############################################################################
+# Targets to update PPA
+##############################################################################
+
+# precise - 12.04
+# saucy - 13.10
+# trusty - 14.04
+BRANCH=$(shell git symbolic-ref --short -q HEAD | sed 's|ubuntu/||')
+RELEASE=$(shell echo $(BRANCH) | cut -f1 -d'-')
+CODENAME=$(shell echo $(BRANCH) | cut -f2 -d'-')
+IDX?=1
+
+.PHONY:: ubuntu
+
+ubuntu:
+	@echo "Preparing package for Ubuntu $(CODENAME) - $(RELEASE)"
+	if [ ! -f debian/changelog ] ; then \
+		debchange --create -c debian/changelog -D $(CODENAME) --package $(PRJNAME) \
+			-v $(VERSION)~$(RELEASE)npalix$(IDX) "New release $(VERSION)"; \
+	else \
+		debchange -c debian/changelog -D $(CODENAME) \
+			-v $(VERSION)~$(RELEASE)npalix$(IDX) "New release $(VERSION)"; \
+	fi
+	@echo "\nYou can now build the Ubuntu source package with\n"
+	@echo "\tmake packsrc\n"
+

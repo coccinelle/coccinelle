@@ -1,0 +1,114 @@
+\subsection{Installation and uninstallation}
+\textbf{To install}: You need to have \texttt{Coccinelle} and all its dependencies installed. You also need to have the \texttt{Coccinelle} source code available. By default, the \texttt{sgen} directory lies within the \texttt{Coccinelle} directory in \texttt{coccinelle/tools/sgen}.\footnote{If you change this, you need to modify the \texttt{COCCIDIR} path in \texttt{source/Makefile} to point to the \texttt{Coccinelle} source code directory.} From the \texttt{sgen} directory, do:
+\begin{enumerate}
+\item Run \texttt{make} to compile the program.
+\item Run \texttt{make install}\footnote{If permission is denied, run it in superuser mode e.g. \texttt{sudo make install}, depending on your system.\label{sudo}} to install the program.
+\item (Optional) Try out the program by running \texttt{sgen examples/tiny.cocci} or \texttt{sgen <path\_to\_your\_script>.cocci}.
+\end{enumerate}
+\textbf{To uninstall}: From the \texttt{sgen} directory, do:
+\begin{enumerate}
+\item Run \texttt{make uninstall}$^{\ref{sudo}}$. 
+\end{enumerate}
+\bigskip
+
+\subsection{Running the program}
+The most common usages are as follows, for a semantic patch file \texttt{foo.cocci} and an sgen config file \texttt{foo.config}:
+\begin{itemize}
+\item \texttt{sgen foo.cocci}: Generate the file with the information found
+d in \texttt{foo.config} if it exists. If not, the program is run in interactive mode.
+\item \texttt{sgen -{}-config foo.config foo.cocci}: Generate the file with
+  \texttt{foo.config} as the configuration file. The shorthand \texttt{-c} can be used instead of \texttt{-{}-config}.
+\item \texttt{sgen foo.cocci -{}-interactive}: Run the program in interactive mode. The shorthand \texttt{-i} can be used instead of \texttt{-{}-interactive}.
+\end{itemize}
+Additional options:
+\begin{itemize}
+\item \texttt{-{}-default}: Generates the file, entirely using default values, such as generic error messages, instead of user input. Can, e.g., be used to quickly check the generated context rule(s).
+\item \texttt{-o <filename>}: Saves the generated file to \texttt{<filename>} instead of printing it to standard output.
+\item \texttt{-{}-no-output}: Generates the file, but doesn't output the result.
+\item \texttt{-help, -{}-help}: Displays the list of options.
+\end{itemize}
+\bigskip
+
+\subsection{User input}
+When generating a script, \texttt{sgen} might need some extra information from the user. There are two kinds of information:
+\begin{itemize}
+\item \textbf{Preface}: information to go at the beginning of the script. Contains metainformation about the script such as description, author, etc. See the full list in Section \ref{config}.
+\item \textbf{Rule information}: rule-specific info, such as error messages that are output in \texttt{org} and \texttt{report} mode.
+\end{itemize}
+There are two ways of passing this information, interactive mode and configuration mode.
+\bigskip
+
+\subsubsection{Interactive mode\label{interact}}
+In interactive mode, the program prompts the user for the information through the commandline. The user can then choose to save the information into an \texttt{sgen} config file, which can be further modified and reused in configuration mode.
+\bigskip
+
+\subsubsection{Configuration mode\label{config}}
+In configuration mode, the program looks for an \texttt{sgen} config file to provide the needed information to generate the file. For \texttt{<file>}.cocci, the config file should be called \texttt{<file>}.config.\\\\
+The user-specified attributes in the \textbf{preface} are, in no specific order ((r) means required):
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{p{3cm}p{2.1cm}p{3.6cm}p{5.5cm}}
+\textbf{Attribute name} & \textbf{Shorthand} & \textbf{Value} & \textbf{Description}\\
+\texttt{description} (r) & \texttt{d} & Single-value text & Describes what the Coccinelle script does.\\
+\texttt{confidence} (r) & \texttt{c} & Low, Moderate, High & Confidence level for the script.\\
+\texttt{authors} & \texttt{a} & Multi-value text & Authors of the script, including affiliation and license.\\
+\texttt{url} & \texttt{u} & Single-value text & URL for the script.\\
+\texttt{limitations} & \texttt{l} & Multi-value text & Limitations for the script.\\
+\texttt{keywords} & \texttt{k} & Single-value text & Keywords for the script.\\
+\texttt{options} & \texttt{o} & Single-value text &\texttt{spatch} options with which to run the script.\\
+\texttt{comments} & \texttt{m} & Single-value text & Additional comments.\\
+\end{tabular}
+\end{center}\vspace{0.5cm}
+The \textbf{rule information} contains error messages for \texttt{org} and \texttt{report}, and possibly rule names for rules that are unnamed in the original \texttt{Coccinelle script}.\\\\
+\clearpage
+\noindent The syntax for the \texttt{sgen} config files is rather simple, and the easiest way to learn it is to run \texttt{sgen} in interactive mode and study the resulting config. But for completeness ...:
+\begin{itemize}
+\item The syntax for attributes is
+\begin{verbatim}
+ <attribute_name> = <value>
+\end{verbatim}
+where \texttt{<attribute\_name>} can be either the attribute name or its shorthand. The end of \texttt{<value>} is marked by a newline. It is therefore not possible to insert newlines in any of the values.
+\item For multi-valued attributes, values are delimited by pipes, \texttt{|}, ie.
+\begin{verbatim}
+<attribute_name> = <value_1>|<value_2>|...|<value_n>
+\end{verbatim}
+\item Error messages for rules follow the syntax
+\begin{verbatim}
+<rule_name> =
+  org:<message>
+  report:<message>
+\end{verbatim}
+for \texttt{org} and \texttt{report} error messages, respectively. Here, \texttt{<rule\_name>} is either the actual rule name, or, if it is a nameless rule, \texttt{<line\_that\_rule\_starts\_on>.<new\_name>}.\newline
+Meanwhile, \texttt{<message>} follow the syntax of \texttt{python} format strings, e.g.
+\begin{verbatim}
+"This is a message that references two metavariables %s and %s." % (x,y)
+\end{verbatim}
+where \texttt{x} and \texttt{y} are metavariables in the rule. If using metavariables from another rule, write \texttt{<other\_rule\_name>.<metavar\_name>}. If using no metavariables, just write the error message surrounded by quotes.
+\item Comments can be written in \texttt{C}-style, ie. \texttt{//} and \texttt{/**/}.
+\end{itemize}
+\bigskip
+
+\subsection{Examples}
+Example files (\texttt{Coccinelle} scripts, corresponding \texttt{sgen} config files, and \texttt{C} files to test on) can be found in the \texttt{examples} directory.
+
+%PSEUDOGRAMMAR:
+%\begin{center}
+%\renewcommand{\arraystretch}{1.2}
+%\begin{tabular}{p{3cm}p{11cm}}
+%config : & (declaration) NL (config) \newline EOF \\
+%declaration: & (attribute) = (value) \newline
+%               (attribute) = (multivalue) \newline
+%               (rulename) = (messages) \\
+%attribute : & description \newline
+%              comments ... \\
+%value : & string (no newline) \\
+%multivalue : & value | multivalue \newline
+%               value \\
+%rulename : & string (rulename) \newline
+%             int : string (line, new rule) \\
+%messages : & org : (message) NL report : (message) \newline
+%             org : (message) \newline
+%             report : (message) \\
+%message : & "string" \newline "string" \% metavariables
+%\end{tabular}
+%\end{center}

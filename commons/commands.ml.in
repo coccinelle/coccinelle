@@ -1,0 +1,8 @@
+(* configured default commands *)
+
+let ocamlfind_cmd = "@RUNTIME_OCAMLFIND_CMD@"
+let ocamlc_cmd = "@RUNTIME_OCAMLC_CMD@"
+let ocamlopt_cmd = "@RUNTIME_OCAMLOPT_CMD@"
+let ocamldep_cmd = "@RUNTIME_OCAMLDEP_CMD@"
+let camlp4_cmd = "@RUNTIME_CAMLP4_CMD@"
+let camlp4o_cmd = "@RUNTIME_CAMLP4O_CMD@"
