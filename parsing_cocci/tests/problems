@@ -1,0 +1,61 @@
+1.cocci: ok
+
+2.cocci: ok
+
+3.cocci: ok
+
+4.cocci: ok
+
+5.cocci: ok
+
+6.cocci: how to specify that there is no while loop around some code?
+
+7.cocci: ok
+
+8.cocci: don't allow a metavariable to be declared as filename, don't
+  support filename - and + syntax
+
+9.cocci: ok
+
+10.cocci: ok
+
+11.cocci: don't allow structure declarations; don't allow mixing top-level
+   declarations and statement nests
+
+12.cocci: ok
+
+13.cocci: ok
+
+14.cocci: don't allow ( | ) on a function header (up to { )
+
+15.cocci: ok
+
+16.cocci: ok
+
+17.cocci: don't allow ( | ) with only + fragments
+
+18.cocci: ok
+
+19.cocci: ok
+
+20.cocci: ok
+
+21.cocci: ok
+
+22.cocci: ok
+
+23.cocci: rule not yet written
+
+24.cocci: rule not yet written
+
+25.cocci: ok
+
+26.cocci: ok
+
+27.cocci: ok
+
+28.cocci: ok
+
+29.cocci: ok
+
+30.cocci: ok

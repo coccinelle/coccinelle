@@ -1,0 +1,89 @@
+The semantic patch that does transformation first checks that
+linux/interrupt.h is included.  This header file specifies the type of
+request_irq.  There are multiple definitions of request_irq and the
+ones in the following two files still expect a parameter with a
+pt_regs-typed parameter.  Nevertheless, these files also include 
+linux/interrupt.h, and so it seems that the definitions should be changed
+accordingly.
+
+arch/h8300/platform/h8s/ints.c
+arch/arm26/kernel/irq.c
+
+The semantic patch then identifies an interrupt handler function as
+one that is passed to request_irq, checks that the definition of this
+function is static (so we don't have to worry about calls to it from other
+files), updates its parameter list if there are no references to its regs
+parameter, updates any calls to it where the last argument is NULL, and
+inserts a warning message in any calls that have a non-NULL argument.  The
+purpose of the warning, rather than just dropping the argument, is that
+dropping the argument may cause some variables to no longer be used, and
+thus other changes might be useful.  However, in the files that trigger the
+collateral evolution there is never a direct call to the interrupt handling
+function, either with NULL or some other value as the final argument.
+
+
+The sgrep semantic patch detects the negation of the above: cases where
+either linux/interrupt.h is not included, or the interrupt handling
+function is not static, or the interrupt handling function uses its
+pt_regs-typed parameter.
+
+
+Files that are transformed:
+--- /home/julia/linux-2.6/arch/cris/arch-v10/drivers/gpio.c
+--- /home/julia/linux-2.6/arch/cris/arch-v10/kernel/fasttimer.c
+--- /home/julia/linux-2.6/arch/cris/arch-v32/drivers/cryptocop.c
+--- /home/julia/linux-2.6/arch/cris/arch-v32/drivers/gpio.c
+--- /home/julia/linux-2.6/arch/cris/arch-v32/drivers/sync_serial.c
+--- /home/julia/linux-2.6/arch/cris/arch-v32/kernel/fasttimer.c
+    In all of the above, the transformation applies straightforwardly.  The
+    interrupt handling function is static and it does not use its
+    pt_regs-typed parameter.
+
+--- /home/julia/linux-2.6/arch/cris/kernel/irq.c
+    In this file the change is to remove the pt_regs-typed argument from
+    __do_IRQ.  The enclosing function now has no need for the pt_regs-typed
+    parameter, but we have not constructed the semantic patch to transform
+    it and its callers.  Indeed, its callers appear never to be called
+    themselves.
+
+--- /home/julia/linux-2.6/arch/v850/kernel/gbus_int.c
+    In this file the interrupt handling function calls handle_irq with its
+    pt_regs-typed argument.  But handle_irq doesn't need this argument, as
+    noted below.
+
+--- /home/julia/linux-2.6/arch/v850/kernel/irq.c
+    This file contains the definition of handle_irq.  It passes its
+    pt_regs-typed argument to the function __do_IRQ.  But __do_IRQ no
+    longer wants a pt_regs-typed argument either.  And so we can remove it
+    from both the call and the parameter list, enabling the transformation
+    in gbus_int.c and rte_me2_cb.c.
+    PROBLEM: The .h file should have been updated as well, but this does
+    not seem to have been done.
+
+--- /home/julia/linux-2.6/arch/v850/kernel/rte_me2_cb.c
+    In this file the interrupt handling function calls handle_irq with its
+    pt_regs-typed argument.  But handle_irq doesn't need this argument, as
+    noted above.
+
+--- /home/julia/linux-2.6/drivers/spi/au1550_spi.c
+    This file was added to the Linux kernel source tree quite recently:
+    commit 63bd23591e6c3891d34e4c6dba7c6aa41b05caad
+    Author: Jan Nikitenko <jan.nikitenko@gmail.com>
+    Date:   Tue May 8 00:32:25 2007 -0700
+
+
+
+Other cases, noted by sgrep:
+--- /home/julia/linux-2.6/arch/cris/arch-v32/kernel/arbiter.c
+    In this case, the transformation should apply, but the pt_regs-typed
+    parameter is used in what appears to be debugging code, which has to be
+    changed by hand.
+
+--- /home/julia/linux-2.6/arch/m68knommu/kernel/comempci.c
+    In this case, the interrupt handler has the wrong signature, as it
+    returns void rather than irqreturn_t.  Perhaps this file is dead code.
+
+--- /home/julia/linux-2.6/arch/blackfin/oprofile/timer_int.c
+    In this case, the file doesn't (directly) include linux/interrupt.h.
+    It is not clear what definition of request_irq is being used and thus
+    what type is expected for the interrupt handling function

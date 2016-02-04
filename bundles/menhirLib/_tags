@@ -1,0 +1,5 @@
+# Includes the sources of the
+# bundles' source directory if
+# this directory is included.
+
+<menhir-20120123/src>: include

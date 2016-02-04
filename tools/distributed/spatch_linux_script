@@ -1,0 +1,10 @@
+#!/bin/tcsh
+
+setenv PYTHONPATH ${COCCINELLE_HOME}/python
+setenv LD_LIBRARY_PATH ${COCCINELLE_HOME}/pycaml
+
+#  -allow_inconsistent_paths
+
+(spatch.opt -quiet -timeout 120 \
+-dir /var/linuxes/linux-next -use_glimpse -cocci_file $* > ${1:r}.${3}.out) \
+>& tmp.${1:r}.${3}.out

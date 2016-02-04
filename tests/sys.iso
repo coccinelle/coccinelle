@@ -1,0 +1,10 @@
+TopLevel
+@ mkinit @
+type T;
+pure context T E;
+identifier I;
+identifier fld;
+expression E1;
+@@
+
+E.fld = E1; => T I = { .fld = E1, };

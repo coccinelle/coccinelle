@@ -1,0 +1,1332 @@
+
+%\section{The SmPL Grammar}
+
+% This section presents the SmPL grammar.  This definition follows closely
+% our implementation using the Menhir parser generator \cite{menhir}.
+
+This document presents the grammar of the SmPL language used by the
+\href{http://coccinelle.lip6.fr/}{Coccinelle tool}.  For the most
+part, the grammar is written using standard notation.  In some rules,
+however, the left-hand side is in all uppercase letters.  These are
+macros, which take one or more grammar rule right-hand-sides as
+arguments.  The grammar also uses some unspecified nonterminals, such
+as \T{id}, \T{const}, etc.  These refer to the sets suggested by
+the name, {\em i.e.}, \T{id} refers to the set of possible
+C-language identifiers, while \T{const} refers to the set of
+possible C-language constants.
+
+A square bracket that is surrounded by spaces in the description of a term
+should appear explicitly in the term, as in an array reference.  On the
+other hand, square brackets that surround some other term indicat that the
+presence of that term is optional.
+
+%
+\ifhevea
+A PDF version of this documentation is available at
+\url{http://coccinelle.lip6.fr/docs/main_grammar.pdf}.
+\else
+A HTML version of this documentation is available online at
+\url{http://coccinelle.lip6.fr/docs/main_grammar.html}.
+\fi
+
+\section{Program}
+
+\begin{grammar}
+  \RULE{\rt{program}}
+  \CASE{\any{\NT{include\_cocci}} \some{\NT{changeset}}}
+
+  \RULE{\rt{include\_cocci}}
+  \CASE{include \NT{string}}
+  \CASE{using \NT{string}}
+  \CASE{using \NT{pathToIsoFile}}
+  \CASE{virtual \T{id} \ANY{, \T{id}}}
+
+  \RULE{\rt{changeset}}
+  \CASE{\NT{metavariables} \NT{transformation}}
+  \CASE{\NT{script\_metavariables} \T{script\_code}}
+%  \CASE{\NT{metavariables} \ANY{--- filename +++ filename} \NT{transformation}}
+\end{grammar}
+
+\noindent
+\T{script\_code} is any code in the chosen scripting language.  Parsing of
+the semantic patch does not check the validity of this code; any errors are
+first detected when the code is executed.  Furthermore, \texttt{@} should
+not be use in this code.  Spatch scans the script code for the next
+\texttt{@} and considers that to be the beginning of the next rule, even if
+\texttt{@} occurs within e.g., a comment.
+
+\texttt{virtual} keyword is used to declare virtual rules. Virtual
+rules may be subsequently used as a dependency for the rules in the
+SmPL file. Whether a virtual rule is defined or not is controlled by
+the \texttt{-D} option on the command line.
+
+% Between the metavariables and the transformation rule, there can be a
+% specification of constraints on the names of the old and new files,
+% analogous to the filename specifications in the standard patch syntax.
+% (see Figure \ref{scsiglue_patch}).
+
+\section{Metavariables for transformations}
+
+The \NT{rulename} portion of the metavariable declaration can specify
+properties of a rule such as its name, the names of the rules that it
+depends on, the isomorphisms to be used in processing the rule, and whether
+quantification over paths should be universal or existential.  The optional
+annotation {\tt expression} indicates that the pattern is to be considered
+as matching an expression, and thus can be used to avoid some parsing
+problems.
+
+The \NT{metadecl} portion of the metavariable declaration defines various
+types of metavariables that will be used for matching in the transformation
+section.
+
+\begin{grammar}
+  \RULE{\rt{metavariables}}
+  \CASE{@@ \any{\NT{metadecl}} @@}
+  \CASE{@ \NT{rulename} @ \any{\NT{metadecl}} @@}
+
+  \RULE{\rt{rulename}}
+  \CASE{\T{id} \OPT{extends \T{id}} \OPT{depends on \NT{dep}} \opt{\NT{iso}}
+    \opt{\NT{disable-iso}} \opt{\NT{exists}} \opt{expression}}
+
+  \RULE{\rt{dep}}
+  \CASE{\T{id}}
+  \CASE{!\T{id}}
+  \CASE{!(\NT{dep})}
+  \CASE{ever \T{id}}
+  \CASE{never \T{id}}
+  \CASE{\NT{dep} \&\& \NT{dep}}
+  \CASE{\NT{dep} || \NT{dep}}
+  \CASE{(\NT{dep})}
+
+  \RULE{\rt{iso}}
+  \CASE{using \NT{string} \ANY{, \NT{string}}}
+
+  \RULE{\rt{disable-iso}}
+  \CASE{disable \NT{COMMA\_LIST}\mth{(}\T{id}\mth{)}}
+
+  \RULE{\rt{exists}}
+  \CASE{exists}
+  \CASE{forall}
+%  \CASE{\opt{reverse} forall}
+
+  \RULE{\rt{COMMA\_LIST}\mth{(}\rt{elem}\mth{)}}
+  \CASE{\NT{elem} \ANY{, \NT{elem}}}
+\end{grammar}
+
+The keyword \KW{disable} is normally used with the names of
+isomorphisms defined in standard.iso or whatever isomorphism file has been
+included.  There are, however, some other isomorphisms that are built into
+the implementation of Coccinelle and that can be disabled as well.  Their
+names are given below.  In each case, the text describes the standard
+behavior.  Using \NT{disable-iso} with the given name disables this behavior.
+
+\begin{itemize}
+\item \KW{optional\_storage}: A SmPL function definition that does not
+  specify any visibility (i.e., static or extern), or a SmPL variable
+  declaration that does not specify any storage (i.e., auto, static,
+  register, or extern), matches a function declaration or variable
+  declaration with any visibility or storage, respectively.
+\item \KW{optional\_qualifier}: This is similar to \KW{optional\_storage},
+  except that here it is the qualifier (i.e., const or volatile) that does
+  not have to be specified in the SmPL code, but may be present in the C code.
+\item \KW{optional\_attributes}: This is similar to
+  \KW{optional\_attributes}, except that here is it an attribute (e.g.,
+  \_\_init) that does not have to be specified in the SmPL code, but may be
+  present in the C code.  \textbf{Note that this isomorphism is currently
+    useless, because matching of attributes is not supported, due to the
+    difficulty of parsing attributes in C code.}
+\item \KW{value\_format}: Integers in various formats, e.g., 1 and 0x1, are
+  considered to be equivalent in the matching process.
+\item \KW{optional\_declarer\_semicolon}: Some declarers (top-level terms
+  that look like function calls but serve to declare some variable) don't
+  require a semicolon.  This isomorphism allows a SmPL declarer with a semicolon
+  to match such a C declarer, if no transformation is specified on the SmPL
+  semicolon.
+\item \KW{comm\_assoc}: An expression of the form \NT{exp} \NT{bin\_op}
+  \KW{...}, where \NT{bin\_op} is commutative and associative, is
+  considered to match any top-level sequence of \NT{bin\_op} operators
+  containing \NT{exp} as the top-level argument.
+\item \KW{prototypes}: A rule for transforming a function prototype is
+  generated when a function header changes.
+\end{itemize}
+
+The possible types of metavariable declarations are defined by the grammar
+rule below.  Metavariables should occur at least once in the transformation
+code immediately following their declaration.  Fresh identifier
+metavariables must only be used in {\tt +} code.  These properties are not
+expressed in the grammar, but are checked by a subsequent analysis.  The
+metavariables are designated according to the kind of terms they can match,
+such as a statement, an identifier, or an expression.  An expression
+metavariable can be further constrained by its type.  A declaration
+metavariable matches the declaration of one or more variables, all sharing
+the same type specification ({\em e.g.}, {\tt int a,b,c=3;}).  A field
+metavariable does the same, but for structure fields.  In the minus code, a
+statement list metavariable can only appear as a complete function body or
+as the complete body of a sequence statement.  In the plus code, a
+statement list metavariable can occur anywhere a statement list is allowed,
+i.e., including as an element of another statement list.
+
+\begin{grammar}
+  \RULE{\rt{metadecl}}
+  \CASE{metavariable \NT{ids} ;}
+  \CASE{fresh identifier \NT{ids} ;}
+  \CASE{identifier \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_regexp}\mth{)} ;}
+  \CASE{identifier \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_virt\_or\_not\_eq}\mth{)} ;}
+  \CASE{parameter \opt{list} \NT{ids} ;}
+  \CASE{parameter list [ \NT{id} ] \NT{ids} ;}
+  \CASE{parameter list [ \NT{const} ] \NT{ids} ;}
+  \CASE{type \NT{ids} ;}
+  \CASE{statement \opt{list} \NT{ids} ;}
+  \CASE{declaration \NT{ids} ;}
+  \CASE{field \opt{list} \NT{ids} ;}
+  \CASE{typedef \NT{ids} ;}
+  \CASE{attribute \NT{ids} ;}
+  \CASE{declarer name \NT{ids} ;}
+%  \CASE{\opt{local} function \NT{pmid\_with\_not\_eq\_list} ;}
+  \CASE{declarer \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_regexp}\mth{)} ;}
+  \CASE{declarer \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+  \CASE{iterator name \NT{ids} ;}
+  \CASE{iterator \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_regexp}\mth{)} ;}
+  \CASE{iterator \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+%  \CASE{error \NT{pmid\_with\_not\_eq\_list} ; }
+  \CASE{\opt{local \mth{\mid} global} idexpression \opt{\NT{ctype}} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+  \CASE{\opt{local \mth{\mid} global} idexpression \OPT{\ttlb \NT{ctypes}\ttrb~\any{*}} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+  \CASE{\opt{local \mth{\mid} global} idexpression \some{*} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+  \CASE{expression list \NT{ids} ;}
+  \CASE{expression \some{*} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+  \CASE{expression enum \any{*} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+  \CASE{expression struct \any{*} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+  \CASE{expression union \any{*} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+  \CASE{expression \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_ceq}\mth{)} ;}
+  \CASE{expression list [ \NT{id} ] \NT{ids} ;}
+  \CASE{expression list [ \NT{const} ] \NT{ids} ;}
+  \CASE{\NT{ctype} [ ] \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+  \CASE{\NT{ctype} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_ceq}\mth{)} ;}
+  \CASE{\ttlb \NT{ctypes}\ttrb~\any{*} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_ceq}\mth{)} ;}
+  \CASE{\ttlb \NT{ctypes}\ttrb~\any{*} [ ] \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+  \CASE{constant \opt{\NT{ctype}} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+  \CASE{constant \OPT{\ttlb \NT{ctypes}\ttrb~\any{*}} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+  \CASE{position \opt{any} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq\_mid}\mth{)} ;}
+  \CASE{symbol \NT{ids};}
+  \CASE{format \NT{ids};}
+  \CASE{format list [ \NT{id} ] \NT{ids} ;}
+  \CASE{format list [ \NT{const} ] \NT{ids} ;}
+  \CASE{assignment operator \NT{COMMA\_LIST}\mth{(}\T{assignopdecl}\mth{)} ;}
+  \CASE{binary operator \NT{COMMA\_LIST}\mth{(}\T{binopdecl}\mth{)} ;}
+
+  \RULE{\rt{assignopdecl}}
+  \CASE{\NT{id} \OPT{ = \NT{assignop\_contraint}}}
+
+  \RULE{\rt{assignop\_contraint}}
+  \CASE{\mth{\{}\NT{COMMA\_LIST}\mth{(}\NT{assign\_op}\mth{)}\mth{\}}}
+  \CASE{\NT{assign\_op}}
+
+  \RULE{\rt{binopdecl}}
+  \CASE{\NT{id} \OPT{ = \NT{binop\_contraint}}}
+
+  \RULE{\rt{binop\_contraint}}
+  \CASE{\mth{\{}\NT{COMMA\_LIST}\mth{(}\NT{bin\_op}\mth{)}\mth{\}}}
+  \CASE{\NT{bin\_op}}
+\end{grammar}
+
+A metavariable declaration local idexpression v means that v is restricted
+to be a local variable.  If it should just be a variable, but not
+necessarily a local one, then drop local.  A more complex description of a
+location, such as a->b is considered to be an expression, not an
+idexpression.
+
+Constant is for constants, such as 27.  But it also considers an identifier
+that is all capital letters (possibly containing numbers) as a constant as
+well, because the names given to macros in Linux usually have this form.
+
+An identifier is the name of a structure field, a macro, a function, or a
+variable.  Is is the name of something rather than an expression that has a
+value.  But an identifier can be used in the position of an expression as
+well, where it represents a variable.
+
+It is possible to specify that an expression list or a parameter list
+metavariable should match a specific number of expressions or parameters.
+
+It is possible to specify some information about the definition of a fresh
+identifier.  See the wiki.
+
+A symbol declaration specifies that the provided identifiers should be
+considered C identifiers when encountered in the body of the rule.
+Identifiers in the body of the rule that are not declared explicitly are
+by default considered symbols, thus symbol declarations are optional.
+
+An attribute declaration indicates a name that should be considered to be
+an attribute.  It is not possible to match or remove an attribute, only to
+add one.
+
+A position metavariable is used by attaching it using \texttt{@} to any
+token, including another metavariable.  Its value is the position (file,
+line number, etc.) of the code matched by the token.  It is also possible
+to attach expression, declaration, type, initialiser, and statement
+metavariables in this manner.  In that case, the metavariable is bound to
+the closest enclosing expression, declaration, etc.  If such a metavariable
+is itself followed by a position metavariable, the position metavariable
+applies to the metavariable that it follows, and not to the attached token.
+This makes it possible to get eg the starting and ending position of {\tt
+  f(...)}, by writing {\tt f(...)@E@p}, for expression metavariable {\tt E}
+and position metavariable {\tt p}.
+
+When used, a format or format list metavariable must be enclosed by a pair
+of \texttt{@}s.  A format metavariable matches the format descriptor part,
+i.e., \texttt{2x} in \texttt{\%2x}.  A format list metavariable matches a
+sequence of format descriptors as well as the text between them.  Any text
+around them is matched as well, if it is not matched by the surrounding
+text in the semantic patch.  Such text is not partially matched.  If the
+length of the format list is specified, that indicates the number of
+matched format descriptors.  It is also possible to use \texttt{\ldots} in
+a format string, to match a sequence of text fragments and format
+descriptors.  This only takes effect if the format string contains format
+descriptors.  Note that this makes it impossible to require \texttt{\ldots}
+to match exactly in a string, if the semantic patch string contains format
+descriptors.  If that is needed, some processing with a scripting language
+would be required.  And example for the use of string format metavariables
+is found in demos/format.cocci.
+
+Assignment (resp. binary) operator metavariables match any assignment
+(resp. binary) operator. The list of operators that can be matched can
+be restricted by adding an operator constraint, i.e. a list of accepted
+operators.
+
+Other kinds of metavariables can also be attached using \texttt{@} to any
+token.  In this case, the metavariable floats up to the enclosing
+appropriate expression.  For example, {\tt 3 +@E 4}, where {\tt E} is an
+expression metavariable binds {\tt E} to {\tt 3 + 4}.  A particular case is
+{\tt Ps@Es}, where {\tt Ps} is a parameter list and {\tt Es} is an
+expression list.  This pattern matches a parameter list, and then matches
+{\tt Es} to the list of expressions, ie a possible argument list,
+represented by the names of the parameters.  Another particular case is
+{\tt E@S}, where {\tt E} is any expression and {\tt S} is a statement
+metavariable.  {\tt S} matches the closest enclosing statement, which may
+be more than what is matches by the semantic match pattern itself.
+
+Matching of various kinds of format strings within strings is supported.
+With the {\tt --ibm} option, matching of decimal format declarations is
+supported, but the length and precision arguments are not interpreted.
+Thus it is not possible to match metavariables in these fields.  Instead,
+the entire format is matched as a single string.
+
+\begin{grammar}
+  \RULE{\rt{ids}}
+  \CASE{\NT{COMMA\_LIST}\mth{(}\NT{pmid}\mth{)}}
+
+  \RULE{\rt{pmid}}
+  \CASE{\T{id}}
+  \CASE{\NT{mid}}
+%   \CASE{list}
+%   \CASE{error}
+%   \CASE{type}
+
+  \RULE{\rt{mid}}  \CASE{\T{rulename\_id}.\T{id}}
+
+  \RULE{\rt{pmid\_with\_regexp}}
+  \CASE{\NT{pmid} =\~{} \NT{regexp}}
+  \CASE{\NT{pmid} !\~{} \NT{regexp}}
+
+  \RULE{\rt{pmid\_with\_not\_eq}}
+  \CASE{\NT{pmid} \OPT{!= \NT{id\_or\_meta}}}
+  \CASE{\NT{pmid}
+     \OPT{!= \ttlb~\NT{COMMA\_LIST}\mth{(}\NT{id\_or\_meta}\mth{)} \ttrb}}
+
+  \RULE{\rt{pmid\_with\_virt\_or\_not\_eq}}
+  \CASE{virtual.\T{id}}
+  \CASE{\NT{pmid\_with\_not\_eq}}
+
+  \RULE{\rt{pmid\_with\_not\_ceq}}
+  \CASE{\NT{pmid} \OPT{!= \NT{id\_or\_cst}}}
+  \CASE{\NT{pmid} \OPT{!= \ttlb~\NT{COMMA\_LIST}\mth{(}\NT{id\_or\_cst}\mth{)} \ttrb}}
+
+  \RULE{\rt{id\_or\_cst}}
+  \CASE{\T{id}}
+  \CASE{\T{integer}}
+
+  \RULE{\rt{id\_or\_meta}}
+  \CASE{\T{id}}
+  \CASE{\T{rulename\_id}.\T{id}}
+
+  \RULE{\rt{pmid\_with\_not\_eq\_mid}}
+  \CASE{\NT{pmid} \OPT{!= \NT{mid}}}
+  \CASE{\NT{pmid} \OPT{!= \ttlb~\NT{COMMA\_LIST}\mth{(}\NT{mid}\mth{)} \ttrb}}
+\end{grammar}
+
+Subsequently, we refer to arbitrary metavariables as
+\mth{\msf{metaid}^{\mbox{\scriptsize{\it{ty}}}}}, where {\it{ty}}
+indicates the {\it metakind} used in the declaration of the variable.
+For example, \mth{\msf{metaid}^{\ssf{Type}}} refers to a metavariable
+that was declared using \texttt{type} and stands for any type.
+
+{\tt metavariable} declares a metavariable for which the parser tried to
+figure out the metavariable type based on the usage context.  Such a
+metavariable must be used consistently.  These metavariables cannot be used
+in all contexts; specifically, they cannot be used in context that would
+make the parsing ambiguous.  Some examples are the leftmost term of an
+expression, such as the left-hand side of an assignment, or the type in a
+variable declaration.  These restrictions may seems somewhat arbitrary from
+the user's point of view.  Thus, it is better to use metavariables with
+metavariable types.  If Coccinelle is given the argument {\tt
+  -parse\_cocci}, it will print information about the type that is inferred
+for each metavariable.
+
+The \NT{ctype} and \NT{ctypes} nonterminals are used by both the grammar of
+metavariable declarations and the grammar of transformations, and are
+defined on page~\pageref{types}.
+
+An identifier metavariable with {\tt virtual} as its ``rule name'' is given
+a value on the command line.  For example, if a semantic patch contains a
+rule that declares an identifier metavariable with the name {\tt
+  virtual.alloc}, then the command line could contain {\tt -D
+  alloc=kmalloc}.  There should not be space around the {\tt =}.  An
+example is in {\tt demos/vm.cocci} and {\tt demos/vm.c}.
+
+It is possible to give an identifier metavariable a list of constraints
+that it should or should not be equal to.  If the constraint is a list of
+(unquoted) strings, then the value of the metavariable should be the same
+as one of the strings, in the case of an equality constraint, or different
+from all of the strings, in the case of an inequality constraint.  It is
+also possible to include inherited identifier metavariables among the
+constraints.  In the case of a positive constraint, things work in the same
+way, but not with respect to the inherited value of the metavariable.  On
+the other hand, an inequality constraint does not work so well, because the
+only value available is the one available in the current environment.  If
+the proposed value is different from the one in the current environment,
+but perhaps the same as the one in some other environment, the match will
+still succeed.
+
+\paragraph*{Warning:} Each metavariable declaration causes the declared
+metavariables to be immediately usable, without any inheritance
+indication.  Thus the following are correct:
+
+\begin{quote}
+\begin{verbatim}
+@@
+type r.T;
+T x;
+@@
+
+[...] // some semantic patch code
+\end{verbatim}
+\end{quote}
+
+\begin{quote}
+\begin{verbatim}
+@@
+r.T x;
+type r.T;
+@@
+
+[...] // some semantic patch code
+\end{verbatim}
+\end{quote}
+
+\noindent
+But the following is not correct:
+
+\begin{quote}
+\begin{verbatim}
+@@
+type r.T;
+r.T x;
+@@
+
+[...] // some semantic patch code
+\end{verbatim}
+\end{quote}
+
+This applies to position variables, type metavariables, identifier
+metavariables that may be used in specifying a structure type, and
+metavariables used in the initialization of a fresh identifier.  In the
+case of a structure type, any identifier metavariable indeed has to be
+declared as an identifier metavariable in advance.  The syntax does not
+permit {\tt r.n} as the name of a structure or union type in such a
+declaration.
+
+\section{Metavariables for scripts}
+
+Metavariables for scripts can only be inherited from transformation rules.
+In the spirit of scripting languages such as Python that use dynamic
+typing, metavariables for scripts do not include type declarations.
+
+\begin{grammar}
+  \RULE{\rt{script\_metavariables}}
+  \CASE{@ script:\NT{language} \OPT{\NT{rulename}} \OPT{depends on \NT{dep}} @
+        \any{\NT{script\_metadecl}} @@}
+  \CASE{@ initialize:\NT{language} \OPT{depends on \NT{dep}} @
+        \any{\NT{script\_virt\_metadecl}} @@}
+  \CASE{@ finalize:\NT{language} \OPT{depends on \NT{dep}} @
+        \any{\NT{script\_virt\_metadecl}} @@}
+
+  \RULE{\rt{language}} \CASE{python} \CASE{ocaml}
+
+  \RULE{\rt{script\_metadecl}}
+  \CASE{\T{id} <{}< \T{rulename\_id}.\T{id} ;}
+  \CASE{\T{id} <{}< \T{rulename\_id}.\T{id} = "..." ;}
+  \CASE{\T{id} <{}< \T{rulename\_id}.\T{id} = [] ;}
+  \CASE{\T{id} ;}
+
+  \RULE{\rt{script\_virt\_metadecl}}
+  \CASE{\T{id} <{}< virtual.\T{id} ;}
+\end{grammar}
+
+Currently, the only scripting languages that are supported are Python and
+OCaml, indicated using {\tt python} and {\tt ocaml}, respectively.  The
+set of available scripting languages may be extended at some point.
+
+Script rules declared with \KW{initialize} are run before the treatment of
+any file.  Script rules declared with \KW{finalize} are run when the
+treatment of all of the files has completed.  There can be at most one of
+each per scripting language (thus currently at most one of each).
+Initialize and finalize script rules do not have access to SmPL
+metavariables.  Nevertheless, a finalize script rule can access any
+variables initialized by the other script rules, allowing information to be
+transmitted from the matching process to the finalize rule.
+
+Initialize and finalize rules do have access to virtual metavariables,
+using the usual syntax.  As for other scripting language rules, the rule
+is not run (and essentially does not exist) if some of the required virtual
+metavariables are not bound.  In ocaml, a warning is printed in this case.
+An example is found in demos/initvirt.cocci.
+
+A script metavariable that does not specify an origin, using \texttt{<<},
+is newly declared by the script.  This metavariable should be assigned to a
+string and can be inherited by subsequent rules as an identifier.  In
+Python, the assignment of such a metavariable $x$ should refer to the
+metavariable as {\tt coccinelle.\(x\)}.  Examples are in the files
+\texttt{demos/pythontococci.cocci} and \texttt{demos/camltococci.cocci}.
+
+In an OCaml script, the following extended form of \textit{script\_metadecl}
+may be used:
+
+\begin{grammar}
+  \RULE{\rt{script\_metadecl'}}
+  \CASE{(\T{id},\T{id}) <{}< \T{rulename\_id}.\T{id} ;}
+  \CASE{\T{id} <{}< \T{rulename\_id}.\T{id} ;}
+  \CASE{\T{id} ;}
+\end{grammar}
+
+\noindent
+In a declaration of the form \texttt{(\T{id},\T{id}) <{}<
+  \T{rulename\_id}.\T{id} ;}, the left component of \texttt{(\T{id},\T{id})}
+receives a string representation of the value of the inherited metavariable
+while the right component receives its abstract syntax tree.  The file
+\texttt{parsing\_c/ast\_c.ml} in the Coccinelle implementation gives some
+information about the structure of the abstract syntax tree.  Either the
+left or right component may be replaced by \verb+_+, indicating that the
+string representation or abstract syntax trees representation is not
+wanted, respectively.
+
+The abstract syntax tree of a metavariable declared using {\tt
+  metavariable} is not available.
+
+Script metavariables can have default values.  This is only allowed if the
+abstract syntax tree of the metavariable is not requested.  The default
+value of a position metavariable is written as {\tt []}.  The default value
+of any other kind of metavariable is a string.  There is no control that
+the string actually represents the kind of term represented by the
+metavariable.  Normally, a script rule is only applied if all of the
+metavariables have values.  If default values are provided, then the script
+rule is only applied if all of the metavariables for which there are no
+default values have values.  See demos/defaultscript.cocci for examples of
+the use of this feature.
+
+\section{Transformation}
+
+The transformation specification essentially has the form of C code, except
+that lines to remove are annotated with \verb+-+ in the first column, and
+lines to add are annotated with \verb-+-.  A transformation specification
+can also use {\em dots}, ``\verb-...-'', describing an arbitrary sequence
+of function arguments or instructions within a control-flow path.
+Implicitly, ``\verb-...-'' matches the shortest path between something that
+matches the pattern before the dots (or the beginning of the function, if
+there is nothing before the dots) and something that matches the pattern
+after the dots (or the end of the function, if there is nothing after the
+dots).  Dots may be modified with a {\tt when} clause, indicating a pattern
+that should not occur anywhere within the matched sequence.  {\tt when any}
+removes the aforementioned constraint that ``\verb-...-'' matches the
+shortest path.  Finally, a transformation can specify a disjunction of
+patterns, of the form \mtt{( \mth{\mita{pat}_1} | \mita{\ldots} |
+  \mth{\mita{pat}_n} )} where each \texttt{(}, \texttt{|} or \texttt{)} is
+in column 0 or preceded by \texttt{\textbackslash}.
+
+The grammar that we present for the transformation is not actually the
+grammar of the SmPL code that can be written by the programmer, but is
+instead the grammar of the slice of this consisting of the {\tt -}
+annotated and the unannotated code (the context of the transformed lines),
+or the {\tt +} annotated code and the unannotated code.  For example, for
+parsing purposes, the following transformation
+%presented in Section \ref{sec:seq2}
+is split into the two variants shown below and each is parsed
+separately.
+
+\begin{center}
+\begin{tabular}{c}
+\begin{lstlisting}[language=Cocci]
+  proc_info_func(...) {
+    <...
+@--    hostno
+@++    hostptr->host_no
+    ...>
+ }
+\end{lstlisting}\\
+\end{tabular}
+\end{center}
+
+{%\sizecodebis
+\begin{center}
+\begin{tabular}{p{5cm}p{3cm}p{5cm}}
+\begin{lstlisting}[language=Cocci]
+  proc_info_func(...) {
+    <...
+@--    hostno
+    ...>
+ }
+\end{lstlisting}
+&&
+\begin{lstlisting}[language=Cocci]
+  proc_info_func(...) {
+    <...
+@++    hostptr->host_no
+    ...>
+ }
+\end{lstlisting}
+\end{tabular}
+\end{center}
+}
+
+\noindent
+Requiring that both slices parse correctly ensures that the rule matches
+syntactically valid C code and that it produces syntactically valid C code.
+The generated parse trees are then merged for use in the subsequent
+matching and transformation process.
+
+The grammar for the minus or plus slice of a transformation is as follows:
+
+\begin{grammar}
+
+  \RULE{\rt{transformation}}
+  \CASE{\some{\NT{include}}}
+  \CASE{\NT{OPTDOTSEQ}\mth{(}\NT{top}, \NT{when}\mth{)}}
+
+  \RULE{\rt{include}}
+  \CASE{\#include \T{include\_string}}
+
+  \RULE{\rt{top}}
+  \CASE{\NT{expr}}
+  \CASE{\some{\NT{decl\_stmt}}}
+  \CASE{\NT{fundecl}}
+
+%  \RULE{\rt{fun\_decl\_stmt}}
+%  \CASE{\NT{decl\_stmt}}
+%  \CASE{\NT{fundecl}}
+
+%  \CASE{\NT{ctype}}
+%  \CASE{\ttlb \NT{initialize\_list} \ttrb}
+%  \CASE{\NT{toplevel\_seq\_start\_after\_dots\_init}}
+%
+%  \RULE{\rt{toplevel\_seq\_start\_after\_dots\_init}}
+%  \CASE{\NT{stmt\_dots} \NT{toplevel\_after\_dots}}
+%  \CASE{\NT{expr} \opt{\NT{toplevel\_after\_exp}}}
+%  \CASE{\NT{decl\_stmt\_expr} \opt{\NT{toplevel\_after\_stmt}}}
+%
+%  \RULE{\rt{stmt\_dots}}
+%  \CASE{... \any{\NT{when}}}
+%  \CASE{<... \any{\NT{when}} \NT{nest\_after\_dots} ...>}
+%  \CASE{<+... \any{\NT{when}} \NT{nest\_after\_dots} ...+>}
+
+  \RULE{\rt{when}}
+  \CASE{when != \NT{when\_code}}
+  \CASE{when = \NT{rule\_elem\_stmt}}
+  \CASE{when \NT{COMMA\_LIST}\mth{(}\NT{any\_strict}\mth{)}}
+  \CASE{when true != \NT{expr}}
+  \CASE{when false != \NT{expr}}
+
+  \RULE{\rt{when\_code}}
+  \CASE{\NT{OPTDOTSEQ}\mth{(}\some{\NT{decl\_stmt}}, \NT{when}\mth{)}}
+  \CASE{\NT{OPTDOTSEQ}\mth{(}\NT{expr}, \NT{when}\mth{)}}
+
+  \RULE{\rt{rule\_elem\_stmt}}
+  \CASE{\NT{one\_decl}}
+  \CASE{\NT{expr};}
+  \CASE{return \opt{\NT{expr}};}
+  \CASE{break;}
+  \CASE{continue;}
+  \CASE{\bs(\NT{rule\_elem\_stmt} \SOME{\bs| \NT{rule\_elem\_stmt}}\bs)}
+
+  \RULE{\rt{any\_strict}}
+  \CASE{any}
+  \CASE{strict}
+  \CASE{forall}
+  \CASE{exists}
+
+%  \RULE{\rt{nest\_after\_dots}}
+%  \CASE{\NT{decl\_stmt\_exp} \opt{\NT{nest\_after\_stmt}}}
+%  \CASE{\opt{\NT{exp}} \opt{\NT{nest\_after\_exp}}}
+%
+%  \RULE{\rt{nest\_after\_stmt}}
+%  \CASE{\NT{stmt\_dots} \NT{nest\_after\_dots}}
+%  \CASE{\NT{decl\_stmt} \opt{\NT{nest\_after\_stmt}}}
+%
+%  \RULE{\rt{nest\_after\_exp}}
+%  \CASE{\NT{stmt\_dots} \NT{nest\_after\_dots}}
+%
+%  \RULE{\rt{toplevel\_after\_dots}}
+%  \CASE{\opt{\NT{toplevel\_after\_exp}}}
+%  \CASE{\NT{exp} \opt{\NT{toplevel\_after\_exp}}}
+%  \CASE{\NT{decl\_stmt\_expr} \NT{toplevel\_after\_stmt}}
+%
+%  \RULE{\rt{toplevel\_after\_exp}}
+%  \CASE{\NT{stmt\_dots} \opt{\NT{toplevel\_after\_dots}}}
+%
+%  \RULE{\rt{decl\_stmt\_expr}}
+%  \CASE{TMetaStmList$^\ddag$}
+%  \CASE{\NT{decl\_var}}
+%  \CASE{\NT{stmt}}
+%  \CASE{(\NT{stmt\_seq} \ANY{| \NT{stmt\_seq}})}
+%
+%  \RULE{\rt{toplevel\_after\_stmt}}
+%  \CASE{\NT{stmt\_dots} \opt{\NT{toplevel\_after\_dots}}}
+%  \CASE{\NT{decl\_stmt} \NT{toplevel\_after\_stmt}}
+
+\end{grammar}
+
+\begin{grammar}
+  \RULE{\rt{OPTDOTSEQ}\mth{(}\rt{grammar\_ds}, \rt{when\_ds}\mth{)}}
+  \CASE{}\multicolumn{3}{r}{\hspace{1cm}
+  \KW{\opt{... \ANY{\NT{when\_ds}}} \NT{grammar\_ds}
+    \ANY{... \ANY{\NT{when\_ds}} \NT{grammar\_ds}}
+    \opt{... \ANY{\NT{when\_ds}}}}
+  }
+
+%  \CASE{\opt{... \opt{\NT{when\_ds}}} \NT{grammar}
+%    \ANY{... \opt{\NT{when\_ds}} \NT{grammar}}
+%    \opt{... \opt{\NT{when\_ds}}}}
+%  \CASE{<... \any{\NT{when\_ds}} \NT{grammar} ...>}
+%  \CASE{<+... \any{\NT{when\_ds}} \NT{grammar} ...+>}
+
+\end{grammar}
+
+\noindent
+Lines may be annotated with an element of the set $\{\mtt{-}, \mtt{+},
+\mtt{*}\}$ or the singleton $\mtt{?}$, or one of each set. \mtt{?}
+represents at most one match of the given pattern, ie a match of the
+pattern is optional. \mtt{*} is used for
+semantic match, \emph{i.e.}, a pattern that highlights the fragments
+annotated with \mtt{*}, but does not perform any modification of the
+matched code. \mtt{*} cannot be mixed with \mtt{-} and \mtt{+}.  There are
+some constraints on the use of these annotations:
+\begin{itemize}
+\item Dots, {\em i.e.} \texttt{...}, cannot occur on a line marked
+  \texttt{+}.
+\item Nested dots, {\em i.e.}, dots enclosed in {\tt <} and {\tt >}, cannot
+  occur on a line marked \texttt{+}.
+\end{itemize}
+
+Each element of a disjunction must be a proper term like an
+expression, a statement, an identifier or a declaration. Thus, the
+rule on the left below is not a syntactically correct SmPL rule. One may
+use the rule on the right instead.
+
+\begin{center}
+  \begin{tabular}{l@{\hspace{5cm}}r}
+\begin{lstlisting}[language=Cocci]
+@@
+type T;
+T b;
+@@
+
+(
+ writeb(...,
+|
+ readb(...,
+)
+@--(T)
+ b)
+\end{lstlisting}
+    &
+\begin{lstlisting}[language=Cocci]
+@@
+type T;
+T b;
+@@
+
+(
+read
+|
+write
+)
+ (...,
+@-- (T)
+  b)
+\end{lstlisting}
+    \\
+  \end{tabular}
+\end{center}
+
+Some kinds of terms can only appear in + code.  These include comments,
+ifdefs, and attributes (\texttt{\_\_attribute\_\_((...))}).
+
+\section{Types}
+\label{types}
+
+\begin{grammar}
+
+  \RULE{\rt{ctypes}}
+  \CASE{\NT{COMMA\_LIST}\mth{(}\NT{ctype}\mth{)}}
+
+  \RULE{\rt{ctype}}
+  \CASE{\opt{\NT{const\_vol}} \NT{generic\_ctype} \any{*}}
+  \CASE{\opt{\NT{const\_vol}} void \some{*}}
+  \CASE{(\NT{ctype} \ANY{| \NT{ctype}})}
+
+  \RULE{\rt{const\_vol}}
+  \CASE{const}
+  \CASE{volatile}
+
+  \RULE{\rt{generic\_ctype}}
+  \CASE{\NT{ctype\_qualif}}
+  \CASE{\opt{\NT{ctype\_qualif}} char}
+  \CASE{\opt{\NT{ctype\_qualif}} short}
+  \CASE{\opt{\NT{ctype\_qualif}} short int}
+  \CASE{\opt{\NT{ctype\_qualif}} int}
+  \CASE{\opt{\NT{ctype\_qualif}} long}
+  \CASE{\opt{\NT{ctype\_qualif}} long int}
+  \CASE{\opt{\NT{ctype\_qualif}} long long}
+  \CASE{\opt{\NT{ctype\_qualif}} long long int}
+  \CASE{double}
+  \CASE{long double}
+  \CASE{float}
+  \CASE{size\_t} \CASE{ssize\_t} \CASE{ptrdiff\_t}
+  \CASE{enum \NT{id} \{ \NT{PARAMSEQ}\mth{(}\NT{dot\_expr}, \NT{exp\_whencode}\mth{)} \OPT{,} \}}
+  \CASE{\OPT{struct\OR union} \T{id} \OPT{\{ \any{\NT{struct\_decl\_list}} \}}}
+
+  \RULE{\rt{ctype\_qualif}}
+  \CASE{unsigned}
+  \CASE{signed}
+
+  \RULE{\rt{struct\_decl\_list}}
+  \CASE{\NT{struct\_decl\_list\_start}}
+
+  \RULE{\rt{struct\_decl\_list\_start}}
+  \CASE{\NT{struct\_decl}}
+  \CASE{\NT{struct\_decl} \NT{struct\_decl\_list\_start}}
+  \CASE{... \opt{when != \NT{struct\_decl}}$^\dag$ \opt{\NT{continue\_struct\_decl\_list}}}
+
+  \RULE{\rt{continue\_struct\_decl\_list}}
+  \CASE{\NT{struct\_decl} \NT{struct\_decl\_list\_start}}
+  \CASE{\NT{struct\_decl}}
+
+  \RULE{\rt{struct\_decl}}
+  \CASE{\NT{ctype} \NT{d\_ident};}
+  \CASE{\NT{fn\_ctype} (* \NT{d\_ident}) (\NT{PARAMSEQ}\mth{(}\NT{name\_opt\_decl}, \mth{\varepsilon)});)}
+  \CASE{\opt{\NT{const\_vol}} \T{id} \NT{d\_ident};}
+
+  \RULE{\rt{d\_ident}}
+  \CASE{\T{id} \any{[\opt{\NT{expr}}]}}
+
+  \RULE{\rt{fn\_ctype}}
+  \CASE{\NT{generic\_ctype} \any{*}}
+  \CASE{void \any{*}}
+
+  \RULE{\rt{name\_opt\_decl}}
+  \CASE{\NT{decl}}
+  \CASE{\NT{ctype}}
+  \CASE{\NT{fn\_ctype}}
+\end{grammar}
+
+$^\dag$ The optional \texttt{when} construct ends at the end of the line.
+
+\section{Function declarations}
+
+\begin{grammar}
+
+  \RULE{\rt{fundecl}}
+  \CASE{\opt{\NT{fn\_ctype}} \any{\NT{funinfo}} \NT{funid}
+    (\opt{\NT{PARAMSEQ}\mth{(}\NT{param}, \mth{\varepsilon)}})
+    \ttlb~\opt{\NT{stmt\_seq}} \ttrb}
+
+  \RULE{\rt{funproto}}
+  \CASE{\opt{\NT{fn\_ctype}} \any{\NT{funinfo}} \NT{funid}
+    (\opt{\NT{PARAMSEQ}\mth{(}\NT{param}, \mth{\varepsilon)}});}
+
+  \RULE{\rt{funinfo}}
+  \CASE{inline}
+  \CASE{\NT{storage}}
+%   \CASE{\NT{attr}}
+
+  \RULE{\rt{storage}}
+  \CASE{static}
+  \CASE{auto}
+  \CASE{register}
+  \CASE{extern}
+
+  \RULE{\rt{funid}}
+  \CASE{\T{id}}
+  \CASE{\mth{\T{metaid}^{\ssf{Id}}}}
+  \CASE{\NT{OR}\mth{(}\NT{stmt}\mth{)}}
+%   \CASE{\mth{\T{metaid}^{\ssf{Func}}}}
+%   \CASE{\mth{\T{metaid}^{\ssf{LocalFunc}}}}
+
+  \RULE{\rt{param}}
+  \CASE{\NT{type} \T{id}}
+  \CASE{\mth{\T{metaid}^{\ssf{Param}}}}
+  \CASE{\mth{\T{metaid}^{\ssf{ParamList}}}}
+  \CASE{......}
+
+  \RULE{\rt{decl}}
+  \CASE{\NT{ctype} \NT{id}}
+  \CASE{\NT{fn\_ctype} (* \NT{id}) (\NT{PARAMSEQ}\mth{(}\NT{name\_opt\_decl}, \mth{\varepsilon)})}
+  \CASE{void}
+  \CASE{\mth{\T{metaid}^{\ssf{Param}}}}
+\end{grammar}
+
+\begin{grammar}
+  \RULE{\rt{PARAMSEQ}\mth{(}\rt{gram\_p}, \rt{when\_p}\mth{)}}
+  \CASE{\NT{COMMA\_LIST}\mth{(}\NT{gram\_p} \OR \ldots \opt{\NT{when\_p}}\mth{)}}
+\end{grammar}
+
+To match a function it is not necessary to provide all of the annotations
+that appear before the function name.  For example, the following semantic
+patch:
+
+\begin{lstlisting}[language=Cocci]
+@@
+@@
+
+foo() { ... }
+\end{lstlisting}
+
+\noindent
+matches a function declared as follows:
+
+\begin{lstlisting}[language=C]
+static int foo() { return 12; }
+\end{lstlisting}
+
+\noindent
+This behavior can be turned off by disabling the \KW{optional\_storage}
+isomorphism.  If one adds code before a function declaration, then the
+effect depends on the kind of code that is added.  If the added code is a
+function definition or CPP code, then the new code is placed before
+all information associated with the function definition, including any
+comments preceding the function definition.  On the other hand, if the new
+code is associated with the function, such as the addition of the keyword
+{\tt static}, the new code is placed exactly where it appears with respect
+to the rest of the function definition in the semantic patch.  For example,
+
+\begin{lstlisting}[language=Cocci]
+@@
+@@
+
++ static
+foo() { ... }
+\end{lstlisting}
+
+\noindent
+causes static to be placed just before the function name.  The following
+causes it to be placed just before the type
+
+\begin{lstlisting}[language=Cocci]
+@@
+type T;
+@@
+
++ static
+T foo() { ... }
+\end{lstlisting}
+
+\noindent
+It may be necessary to consider several cases to ensure that the added ode
+is placed in the right position.  For example, one may need one pattern
+that considers that the function is declared {\tt inline} and another that
+considers that it is not.
+
+Varargs are written in C using {\tt \ldots}.  Unfortunately, this notation
+is already used in the semantic patch language.  A pattern for a varargs
+parameter is written as a sequence of 6 dots.
+
+The C parser allows functions that have no return type, and assumes that
+the return type is \texttt{int}.  The support for parsing such functions is
+limited.  In particular, the parameter list must contain a type for each
+parameter, and may not contain varargs.
+
+%\newpage
+
+\section{Declarations}
+
+\begin{grammar}
+  \RULE{\rt{decl\_var}}
+  \CASE{\NT{common\_decl}}
+  \CASE{\opt{\NT{storage}} \NT{ctype} \NT{COMMA\_LIST}\mth{(}\NT{d\_ident}\mth{)} ;}
+  \CASE{\opt{\NT{storage}} \opt{\NT{const\_vol}} \T{id} \NT{COMMA\_LIST}\mth{(}\NT{d\_ident}\mth{)} ;}
+  \CASE{\opt{\NT{storage}} \NT{fn\_ctype} ( * \NT{d\_ident} ) ( \NT{PARAMSEQ}\mth{(}\NT{name\_opt\_decl}, \mth{\varepsilon)} ) = \NT{initialize} ;}
+  \CASE{typedef \NT{ctype} \NT{typedef\_ident} ;}
+%  \CASE{\NT{type} \opt{\NT{id} \opt{[\opt{\NT{dot\_expr}}]}
+%      \ANY{, \NT{id} \opt{[ \opt{\NT{dot\_expr}}]}}};}
+
+  \RULE{\rt{one\_decl}}
+  \CASE{\NT{common\_decl}}
+  \CASE{\opt{\NT{storage}} \NT{ctype} \NT{id};}
+%  \CASE{\NT{storage} \NT{ctype} \NT{id} \opt{[\opt{\NT{dot\\_expr}}]} = \NT{nest\\_expr};}
+  \CASE{\opt{\NT{storage}} \opt{\NT{const\_vol}} \T{id} \NT{d\_ident} ;}
+
+  \RULE{\rt{common\_decl}}
+  \CASE{\NT{ctype};}
+  \CASE{\NT{funproto}}
+  \CASE{\opt{\NT{storage}} \NT{ctype} \NT{d\_ident} = \NT{initialize} ;}
+  \CASE{\opt{\NT{storage}} \opt{\NT{const\_vol}} \T{id} \NT{d\_ident} = \NT{initialize} ;}
+  \CASE{\opt{\NT{storage}} \NT{fn\_ctype} ( * \NT{d\_ident} ) ( \NT{PARAMSEQ}\mth{(}\NT{name\_opt\_decl}, \mth{\varepsilon)} ) ;}
+  \CASE{\NT{decl\_ident} ( \OPT{\NT{COMMA\_LIST}\mth{(}\NT{expr}\mth{)}} ) ;}
+
+  \RULE{\rt{initialize}}
+  \CASE{\NT{dot\_expr}}
+  \CASE{\mth{\T{metaid}^{\ssf{Initialiser}}}}
+  \CASE{\ttlb~\opt{\NT{COMMA\_LIST}\mth{(}\NT{init\_list\_elem}\mth{)}}~\ttrb}
+
+  \RULE{\rt{init\_list\_elem}}
+  \CASE{\NT{dot\_expr}}
+  \CASE{\NT{designator} = \NT{initialize}}
+  \CASE{\mth{\T{metaid}^{\ssf{Initialiser}}}}
+  \CASE{\mth{\T{metaid}^{\ssf{InitialiserList}}}}
+  \CASE{\NT{id} : \NT{dot\_expr}}
+
+  \RULE{\rt{designator}}
+  \CASE{. \NT{id}}
+  \CASE{[ \NT{dot\_expr} ]}
+  \CASE{[ \NT{dot\_expr} ... \NT{dot\_expr} ]}
+
+  \RULE{\rt{decl\_ident}}
+  \CASE{\T{DeclarerId}}
+  \CASE{\mth{\T{metaid}^{\ssf{Declarer}}}}
+\end{grammar}
+
+An initializer for a structure can be ordered or unordered.  It is
+considered to be unordered if there is at least one key-value pair
+initializer, e.g., \texttt{.x = e}.
+
+A declaration can have \textit{e.g.} the form \texttt{register x;}.  In
+this case, the variable implicitly has type int, and SmPL code
+that declares an int variable will match such a declaration.  On the other
+hand, the implicit int type has no position.  If the SmPL code tries to
+record the position of the type, the match will fail.
+
+\section{Statements}
+
+The first rule {\em statement} describes the various forms of a statement.
+The remaining rules implement the constraints that are sensitive to the
+context in which the statement occurs: {\em single\_statement} for a
+context in which only one statement is allowed, and {\em decl\_statement}
+for a context in which a declaration, statement, or sequence thereof is
+allowed.
+
+\begin{grammar}
+  \RULE{\rt{stmt}}
+  \CASE{\NT{directive}}
+  \CASE{\mth{\T{metaid}^{\ssf{Stmt}}}}
+  \CASE{\NT{expr};}
+  \CASE{if (\NT{dot\_expr}) \NT{single\_stmt} \opt{else \NT{single\_stmt}}}
+  \CASE{for (\opt{\NT{dot\_expr}}; \opt{\NT{dot\_expr}}; \opt{\NT{dot\_expr}})
+    \NT{single\_stmt}}
+  \CASE{while (\NT{dot\_expr}) \NT{single\_stmt}}
+  \CASE{do \NT{single\_stmt} while (\NT{dot\_expr});}
+  \CASE{\NT{iter\_ident} (\any{\NT{dot\_expr}}) \NT{single\_stmt}}
+  \CASE{switch (\opt{\NT{dot\_expr}}) \ttlb \any{\NT{case\_line}} \ttrb}
+  \CASE{return \opt{\NT{dot\_expr}};}
+  \CASE{\ttlb~\opt{\NT{stmt\_seq}} \ttrb}
+  \CASE{\NT{NEST}\mth{(}\some{\NT{decl\_stmt}}, \NT{when}\mth{)}}
+  \CASE{\NT{NEST}\mth{(}\NT{expr}, \NT{when}\mth{)}}
+  \CASE{break;}
+  \CASE{continue;}
+  \CASE{\NT{id}:}
+  \CASE{goto \NT{id};}
+  \CASE{\ttlb \NT{stmt\_seq} \ttrb}
+
+  \RULE{\rt{directive}}
+  \CASE{\NT{include}}
+  \CASE{\#define \NT{id} \opt{\NT{top}}}
+  \CASE{\#define \NT{id} (\NT{PARAMSEQ}\mth{(}\NT{id}, \mth{\varepsilon)})
+        \opt{\NT{top}}}
+  \CASE{\#undef \NT{id}}
+  \CASE{\#pragma \NT{id} \some{\NT{id}}}
+  \CASE{\#pragma \NT{id} (\NT{PARAMSEQ}\mth{(}\NT{expr}, \mth{\varepsilon)})}
+  \CASE{\#pragma \NT{id} ...}
+
+  \RULE{\rt{single\_stmt}}
+  \CASE{\NT{stmt}}
+  \CASE{\NT{OR}\mth{(}\NT{stmt}\mth{)}}
+
+  \RULE{\rt{decl\_stmt}}
+  \CASE{\mth{\T{metaid}^{\ssf{StmtList}}}}
+  \CASE{\NT{decl\_var}}
+  \CASE{\NT{stmt}}
+  \CASE{\NT{OR}\mth{(}\NT{stmt\_seq}\mth{)}}
+
+  \RULE{\rt{stmt\_seq}}
+  \CASE{\any{\NT{decl\_stmt}}
+    \opt{\NT{DOTSEQ}\mth{(}\some{\NT{decl\_stmt}},
+      \NT{when}\mth{)} \any{\NT{decl\_stmt}}}}
+  \CASE{\any{\NT{decl\_stmt}}
+    \opt{\NT{DOTSEQ}\mth{(}\NT{expr},
+      \NT{when}\mth{)} \any{\NT{decl\_stmt}}}}
+
+  \RULE{\rt{case\_line}}
+  \CASE{default :~\NT{stmt\_seq}}
+  \CASE{case \NT{dot\_expr} :~\NT{stmt\_seq}}
+
+  \RULE{\rt{iter\_ident}}
+  \CASE{\T{IteratorId}}
+  \CASE{\mth{\T{metaid}^{\ssf{Iterator}}}}
+\end{grammar}
+
+\begin{grammar}
+  \RULE{\rt{OR}\mth{(}\rt{gram\_o}\mth{)}}
+  \CASE{( \NT{gram\_o} \ANY{\ttmid \NT{gram\_o}})}
+
+  \RULE{\rt{DOTSEQ}\mth{(}\rt{gram\_d}, \rt{when\_d}\mth{)}}
+  \CASE{\ldots \opt{\NT{when\_d}} \ANY{\NT{gram\_d} \ldots \opt{\NT{when\_d}}}}
+
+  \RULE{\rt{NEST}\mth{(}\rt{gram\_n}, \rt{when\_n}\mth{)}}
+  \CASE{<\ldots \opt{\NT{when\_n}} \NT{gram\_n} \ANY{\ldots \opt{\NT{when\_n}} \NT{gram\_n}} \ldots>}
+  \CASE{<+\ldots \opt{\NT{when\_n}} \NT{gram\_n} \ANY{\ldots \opt{\NT{when\_n}} \NT{gram\_n}} \ldots+>}
+\end{grammar}
+
+\noindent
+OR is a macro that generates a disjunction of patterns.  The three
+tokens \T{(}, \T{\ttmid}, and \T{)} must appear in the leftmost
+column, to differentiate them from the parentheses and bit-or tokens
+that can appear within expressions (and cannot appear in the leftmost
+column). These token may also be preceded by \texttt{\bs}
+when they are used in an other column.  These tokens are furthermore
+different from (, \(\mid\), and ), which are part of the grammar
+metalanguage.
+
+\section{Expressions}
+
+A nest or a single ellipsis is allowed in some expression contexts, and
+causes ambiguity in others.  For example, in a sequence \mtt{\ldots
+\mita{expr} \ldots}, the nonterminal \mita{expr} must be instantiated as an
+explicit C-language expression, while in an array reference,
+\mtt{\mth{\mita{expr}_1} \mtt{[} \mth{\mita{expr}_2} \mtt{]}}, the
+nonterminal \mth{\mita{expr}_2}, because it is delimited by brackets, can
+be also instantiated as \mtt{\ldots}, representing an arbitrary expression.  To
+distinguish between the various possibilities, we define three nonterminals
+for expressions: {\em expr} does not allow either top-level nests or
+ellipses, {\em nest\_expr} allows a nest but not an ellipsis, and {\em
+dot\_expr} allows both.  The EXPR macro is used to express these variants
+in a concise way.
+
+\begin{grammar}
+  \RULE{\rt{expr}}
+  \CASE{\NT{EXPR}\mth{(}\NT{expr}\mth{)}}
+
+  \RULE{\rt{nest\_expr}}
+  \CASE{\NT{EXPR}\mth{(}\NT{nest\_expr}\mth{)}}
+  \CASE{\NT{NEST}\mth{(}\NT{nest\_expr}, \NT{exp\_whencode}\mth{)}}
+
+  \RULE{\rt{dot\_expr}}
+  \CASE{\NT{EXPR}\mth{(}\NT{dot\_expr}\mth{)}}
+  \CASE{\NT{NEST}\mth{(}\NT{dot\_expr}, \NT{exp\_whencode}\mth{)}}
+  \CASE{...~\opt{\NT{exp\_whencode}}}
+
+  \RULE{\rt{EXPR}\mth{(}\rt{exp}\mth{)}}
+  \CASE{\NT{exp} \NT{assign\_op} \NT{exp}}
+  \CASE{\NT{exp} \mth{\T{metaid}^{\ssf{AssignOp}}} \NT{exp}}
+  \CASE{\NT{exp}++}
+  \CASE{\NT{exp}--}
+  \CASE{\NT{unary\_op} \NT{exp}}
+  \CASE{\NT{exp} \NT{bin\_op} \NT{exp}}
+  \CASE{\NT{exp} \mth{\T{metaid}^{\ssf{BinOp}}} \NT{exp}}
+  \CASE{\NT{exp} ?~\NT{dot\_expr} :~\NT{exp}}
+  \CASE{(\NT{type}) \NT{exp}}
+  \CASE{\NT{exp} [\NT{dot\_expr}]}
+  \CASE{\NT{exp} .~\NT{id}}
+  \CASE{\NT{exp} -> \NT{id}}
+  \CASE{\NT{exp}(\opt{\NT{PARAMSEQ}\mth{(}\NT{arg}, \NT{exp\_whencode}\mth{)}})}
+  \CASE{\NT{id}}
+  \CASE{(\NT{type}) \ttlb~{\NT{COMMA\_LIST}\mth{(}\NT{init\_list\_elem}\mth{)}}~\ttrb}
+%   \CASE{\mth{\T{metaid}^{\ssf{Func}}}}
+%   \CASE{\mth{\T{metaid}^{\ssf{LocalFunc}}}}
+  \CASE{\mth{\T{metaid}^{\ssf{Exp}}}}
+%   \CASE{\mth{\T{metaid}^{\ssf{Err}}}}
+  \CASE{\mth{\T{metaid}^{\ssf{Const}}}}
+  \CASE{\NT{const}}
+  \CASE{(\NT{dot\_expr})}
+  \CASE{\NT{OR}\mth{(}\NT{exp}\mth{)}}
+
+  \RULE{\rt{arg}}
+  \CASE{\NT{nest\_expr}}
+  \CASE{\mth{\T{metaid}^{\ssf{ExpList}}}}
+
+  \RULE{\rt{exp\_whencode}}
+  \CASE{when != \NT{expr}}
+
+  \RULE{\rt{assign\_op}}
+  \CASE{= \OR -= \OR += \OR *= \OR /= \OR \%=}
+  \CASE{\&= \OR |= \OR \caret= \OR \lt\lt= \OR \gt\gt=}
+
+  \RULE{\rt{bin\_op}}
+  \CASE{* \OR / \OR \% \OR + \OR -}
+  \CASE{\lt\lt \OR \gt\gt \OR \caret\xspace \OR \& \OR \ttmid}
+  \CASE{< \OR > \OR <= \OR >= \OR == \OR != \OR \&\& \OR \ttmid\ttmid}
+
+  \RULE{\rt{unary\_op}}
+  \CASE{++ \OR -- \OR \& \OR * \OR + \OR - \OR !}
+
+\end{grammar}
+
+\section{Constants, Identifiers and Types for Transformations}
+
+\begin{grammar}
+  \RULE{\rt{const}}
+  \CASE{\NT{string}}
+  \CASE{[0-9]+}
+  \CASE{\mth{\cdots}}
+
+  \RULE{\rt{string}}
+  \CASE{"\any{[\^{}"]}"}
+
+  \RULE{\rt{id}}
+  \CASE{\T{id} \OR \mth{\T{metaid}^{\ssf{Id}}}
+        \OR {\NT{OR}\mth{(}\NT{stmt}\mth{)}}}
+
+  \RULE{\rt{typedef\_ident}}
+  \CASE{\T{id} \OR \mth{\T{metaid}^{\ssf{Type}}}}
+
+  \RULE{\rt{type}}
+  \CASE{\NT{ctype} \OR \mth{\T{metaid}^{\ssf{Type}}}}
+
+  \RULE{\rt{pathToIsoFile}}
+  \CASE{<.*>}
+
+  \RULE{\rt{regexp}}
+  \CASE{"\any{[\^{}"]}"}
+\end{grammar}
+
+\section{Comments and preprocessor directives}
+
+A \verb+//+ or \verb+/* */+ comment that is annotated with + in the
+leftmost column is considered to be added code.  A \verb+//+ or
+\verb+/* */+ comment without such an annotation is considered to be a
+comment about the SmPL code, and thus is not matched in the C code.
+
+The following preprocessor directives can likewise be added.  They cannot
+be matched against.  The entire line is added, but it is not parsed.
+
+\begin{itemize}
+\item \verb+if+
+\item \verb+ifdef+
+\item \verb+ifndef+
+\item \verb+else+
+\item \verb+elif+
+\item \verb+endif+
+\item \verb+error+
+%\item \verb+pragma+
+\item \verb+line+
+\end{itemize}
+
+\section{Command-line semantic match}
+
+It is possible to specify a semantic match on the spatch command line,
+using the argument {\tt -sp}.  In such a semantic match, any token
+beginning with a capital letter is assumed to be a metavariable of type
+{\tt metavariable}.  In this case, the parser must be able to figure out what
+kind of metavariable it is.  It is also possible to specify the type of a
+metavariable by enclosing the type in :'s, concatenated directly to the
+metavariable name.
+
+Some examples of semantic matches that can be given as an argument to {\tt
+  -sp} are as follows:
+
+\begin{itemize}
+\item \texttt{f(e)}: This only matches the expression \texttt{f(e)}.
+\item \texttt{f(E)}: This matches a call to f with any argument.
+\item \texttt{F(E)}: This gives a parse error; the semantic patch parser
+  cannot figure out what kind of metavariable \texttt{F} is.
+\item \texttt{F:identifier:(E)}: This matches any one argument function
+  call.
+\item \texttt{f:identifier:(e:struct foo *:)}: This matches any one
+  argument function call where the argument has type \texttt{struct foo
+    *}.  Since the types of the metavariables are specified, it is not
+  necessary for the metavariable names to begin with a capital letter.
+\item \texttt{F:identifier:(F)}: This matches any one argument function call
+  where the argument is the name of the function itself.  This example
+  shows that it is not necessary to repeat the metavariable type name.
+\item \texttt{F:identifier:(F:identifier:)}: This matches any one argument
+  function call
+  where the argument is the name of the function itself.  This example
+  shows that it is possible to repeat the metavariable type name.
+\end{itemize}
+
+\texttt{When} constraints, \textit{e.g.} \texttt{when != e}, are allowed
+but the expression \texttt{e} must be represented as a single token.
+
+The generated semantic match behaves as though there were a \texttt{*} in front
+of every token.
+
+\section{Iteration}
+
+It is possible to iterate Coccinelle, giving the subsequent iterations a
+different set of virtual rules or virtual identifier bindings.  And example
+is found in {\tt demos/iteration.cocci}.  The example shown there is as
+follows:
+
+\begin{quote}
+\begin{verbatim}
+virtual after_start
+
+@initialize:ocaml@
+
+let tbl = Hashtbl.create(100)
+
+let add_if_not_present from f file =
+try let _ = Hashtbl.find tbl (f,file) in ()
+with Not_found ->
+   Hashtbl.add tbl (f,file) file;
+   let it = new iteration() in
+   (match file with
+     Some fl -> it#set_files [fl]
+   | None -> ());
+   it#add_virtual_rule After_start;
+   it#add_virtual_identifier Err_ptr_function f;
+   it#register()
+\end{verbatim}
+\end{quote}
+
+The virtual rule {\tt after\_start} is used to distinguish between the
+first iteration (in which it is not considered to have matched) and all
+others.  This is done by not mentioning {\tt after\_start} in the command
+line, but adding it on each iteration.
+
+The main code for performing the iteration is found in the function {\tt
+  add\_if\_not\_present}, between the lines calling {\tt new iteration} and
+{\tt register}.  {\tt New iteration} creates a structure representing the
+new iteration.  {\tt set\_files} sets the list of files to be considered on
+the new iteration.  If this function is not called, the new iteration
+treats the same files as the current iteration.  {\tt add\_virtual\_rule A}
+has the same effect as putting {\tt -D a} on the command line.  Note that
+the first letter of the rule name is capitalized, although this is not done
+elsewhere.  {\tt add\_virtual\_identifier X v} has the same effect as
+putting {\tt -D x=v} on the command line.  Note again the case change.
+{\tt extend\_virtual\_identifiers()} (not shown) preserves all virtual
+identifiers of the current iteration that are not overridden by calls to
+{\tt add\_virtual\_identifier}.  Finally, the call to {\tt register} queues
+the collected information to trigger a new iteration at some time in the
+future.
+
+Modification is not allowed when using iteration.  Thus, it is required to
+use the {\tt --no-show-diff}, unless the semantic patch contains {\tt *}s
+(a semantic match rather than a semantic patch).
+
+The remainder of the code above uses a hash table to ensure that the same
+information is not enqueued more than once.  Coccinelle itself provides no
+support for this.
+
+%%% Local Variables:
+%%% mode: LaTeX
+%%% TeX-master: "main_grammar"
+%%% coding: utf-8
+%%% TeX-PDF-mode: t
+%%% ispell-local-dictionary: "american"
+%%% End:

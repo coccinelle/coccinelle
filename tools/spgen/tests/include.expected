@@ -1,0 +1,164 @@
+/// include script
+///
+// Confidence: Low
+
+virtual patch
+virtual context
+virtual org
+virtual report
+
+@header@
+@@
+
+#include <linux/etherdevice.h>
+
+@eth_zero_addr depends on patch && !context && !org && !report@
+expression e;
+@@
+
+-memset(e,0,ETH_ALEN);
++eth_zero_addr(e);
+
+@eth_broadcast_addr depends on patch && !context && !org && !report@
+identifier e;
+@@
+
+-memset(e,\(0xff\|0xFF\|255\),ETH_ALEN);
++eth_broadcast_addr(e);
+
+
+@linux_header depends on !header && (eth_zero_addr || eth_broadcast_addr) && patch && !context && !org && !report@
+@@
+
+#include <linux/...>
++ #include <linux/etherdevice.h>
++
+
+
+@special_header depends on !header && !linux_header && (eth_zero_addr || eth_broadcast_addr) && patch && !context && !org && !report@
+@@
+
+
+#include <.../...>
++
++ #include <linux/etherdevice.h>
++
+
+@custom_header depends on !header && !linux_header && !special_header && (eth_zero_addr || eth_broadcast_addr) && patch && !context && !org && !report@
+@@
+
+#include "..."
++
++ #include <linux/etherdevice.h>
+
+// ----------------------------------------------------------------------------
+
+@eth_zero_addr_context depends on !patch && (context || org || report)@
+expression e;
+position j0;
+@@
+
+* memset@j0(e,0,ETH_ALEN);
+
+@eth_broadcast_addr_context depends on !patch && (context || org || report)@
+identifier e;
+position j0, j1;
+@@
+
+* memset@j0(e,\(0xff@j1\|0xFF@j1\|255@j1\),ETH_ALEN);
+
+@linux_header_context depends on !header && (eth_zero_addr || eth_broadcast_addr) && !patch && (context || org || report)@
+position j0;
+@@
+
+* #include <linux/...>@j0
+
+@special_header_context depends on !header && !linux_header && (eth_zero_addr || eth_broadcast_addr) && !patch && (context || org || report)@
+position j0;
+@@
+
+* #include <.../...>@j0
+
+@custom_header_context depends on !header && !linux_header && !special_header && (eth_zero_addr || eth_broadcast_addr) && !patch && (context || org || report)@
+position j0;
+@@
+
+* #include "..."@j0
+
+// ----------------------------------------------------------------------------
+
+@script:python eth_zero_addr_org depends on org@
+j0 << eth_zero_addr_context.j0;
+@@
+
+msg = "this is a rule."
+coccilib.org.print_todo(j0[0], msg)
+
+@script:python eth_broadcast_addr_org depends on org@
+j0 << eth_broadcast_addr_context.j0;
+j1 << eth_broadcast_addr_context.j1;
+@@
+
+msg = "this is antoher rule."
+coccilib.org.print_todo(j0[0], msg)
+coccilib.org.print_link(j1[0], "")
+
+@script:python linux_header_org depends on org@
+j0 << linux_header_context.j0;
+@@
+
+msg = "this is a third rule."
+coccilib.org.print_todo(j0[0], msg)
+
+@script:python special_header_org depends on org@
+j0 << special_header_context.j0;
+@@
+
+msg = "this is a special rule."
+coccilib.org.print_todo(j0[0], msg)
+
+@script:python custom_header_org depends on org@
+j0 << custom_header_context.j0;
+@@
+
+msg = "this is a custom rule."
+coccilib.org.print_todo(j0[0], msg)
+
+// ----------------------------------------------------------------------------
+
+@script:python eth_zero_addr_report depends on report@
+j0 << eth_zero_addr_context.j0;
+@@
+
+msg = "this is a rule."
+coccilib.report.print_report(j0[0], msg)
+
+@script:python eth_broadcast_addr_report depends on report@
+j0 << eth_broadcast_addr_context.j0;
+j1 << eth_broadcast_addr_context.j1;
+@@
+
+msg = "this is antoher rule around line %s." % (j1[0].line)
+coccilib.report.print_report(j0[0], msg)
+
+@script:python linux_header_report depends on report@
+j0 << linux_header_context.j0;
+@@
+
+msg = "this is a third rule."
+coccilib.report.print_report(j0[0], msg)
+
+@script:python special_header_report depends on report@
+j0 << special_header_context.j0;
+@@
+
+msg = "this is a special rule."
+coccilib.report.print_report(j0[0], msg)
+
+@script:python custom_header_report depends on report@
+j0 << custom_header_context.j0;
+@@
+
+msg = "this is a custom rule."
+coccilib.report.print_report(j0[0], msg)
+

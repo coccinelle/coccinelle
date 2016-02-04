@@ -1,0 +1,8 @@
+#!/bin/sh
+if [ "$1" = "--ignore_localversion" ]; then
+	export MAKE_COCCI_RELEASE="y"
+else
+	unset MAKE_COCCI_RELEASE
+fi
+aclocal -I setup
+autoconf -Wall
