@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="generator" content="hevea 2.06">
+<title>The SmPL Grammar (version 1.0.0-rc21)
+</title>
+<link rel="stylesheet" type="text/css" href="main_grammar.css">
+</head>
+<body >
+<!--HEVEA command line is: /usr/bin/hevea -exec /usr/share/hevea/xxdate.exe main_grammar.tex -->
+<!--HACHA command line is: /usr/bin/hacha -o index.html main_grammar.html -->
+<table class="title"><tr><td style="padding:1ex"><h1 class="titlemain">The SmPL Grammar (version 1.0.0-rc21)</h1><h3 class="titlerest">Research group on Coccinelle</h3><h3 class="titlerest">April 13, 2014</h3></td></tr>
+</table><p>This document presents the grammar of the SmPL language used by the
+<a href="http://coccinelle.lip6.fr/">Coccinelle tool</a>. For the most
+part, the grammar is written using standard notation. In some rules,
+however, the left-hand side is in all uppercase letters. These are
+macros, which take one or more grammar rule right-hand-sides as
+arguments. The grammar also uses some unspecified nonterminals, such
+as <span style="font-family:sans-serif">id</span>, <span style="font-family:sans-serif">const</span>, etc. These refer to the sets suggested by
+the name, <em>i.e.</em>, <span style="font-family:sans-serif">id</span> refers to the set of possible
+C-language identifiers, while <span style="font-family:sans-serif">const</span> refers to the set of
+possible C-language constants.
+A PDF version of this documentation is available at
+<a href="http://coccinelle.lip6.fr/docs/main_grammar.pdf"><span style="font-family:monospace">http://coccinelle.lip6.fr/docs/main_grammar.pdf</span></a>.
+</p>
+<ul>
+<li><a href="main_grammar001.html">Program</a>
+</li><li><a href="main_grammar002.html">Metavariables for transformations</a>
+</li><li><a href="main_grammar003.html">Metavariables for scripts</a>
+</li><li><a href="main_grammar004.html">Transformation</a>
+</li><li><a href="main_grammar005.html">Types</a>
+</li><li><a href="main_grammar006.html">Function declarations</a>
+</li><li><a href="main_grammar007.html">Declarations</a>
+</li><li><a href="main_grammar008.html">Statements</a>
+</li><li><a href="main_grammar009.html">Expressions</a>
+</li><li><a href="main_grammar010.html">Constants, Identifiers and Types for Transformations</a>
+</li><li><a href="main_grammar011.html">Comments and preprocessor directives</a>
+</li><li><a href="main_grammar012.html">Command-line semantic match</a>
+</li><li><a href="main_grammar013.html">Iteration</a>
+</li><li><a href="main_grammar014.html">Examples</a>
+<ul>
+<li><a href="main_grammar014.html#sec16">Function renaming</a>
+</li><li><a href="main_grammar014.html#sec17">Removing a function argument</a>
+</li><li><a href="main_grammar014.html#sec18">Introduction of a macro</a>
+</li><li><a href="main_grammar014.html#sec19">Look for <span style="font-family:monospace">NULL</span> dereference</a>
+</li><li><a href="main_grammar014.html#sec20">Reference counter: the of_xxx API</a>
+</li><li><a href="main_grammar014.html#sec21">Filtering identifiers, declarers or iterators with regular expression</a>
+</li></ul>
+</li><li><a href="main_grammar015.html">Tips and Tricks</a>
+<ul>
+<li><a href="main_grammar015.html#sec23">How to remove useless parentheses?</a>
+</li></ul>
+</li></ul>
+<!--FOOTER-->
+<hr style="height:2"><blockquote class="quote"><em>This document was translated from L<sup>A</sup>T<sub>E</sub>X by
+</em><a href="http://hevea.inria.fr/index.html"><em>H</em><em><span style="font-size:small"><sup>E</sup></span></em><em>V</em><em><span style="font-size:small"><sup>E</sup></span></em><em>A</em></a><em>.</em></blockquote></body>
+</html>

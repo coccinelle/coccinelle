@@ -1,0 +1,47 @@
+
+\section{Tips and Tricks}
+
+\subsection{How to remove useless parentheses?}
+
+If you want to rewrite any access to a pointer value by a function
+call, you may use the following semantic patch.
+
+\begin{lstlisting}[language=Cocci]
+@-- a = *b
+@++ a = readb(b)
+\end{lstlisting}
+
+However, if for some reason your code looks like \verb|bar = *(foo)|,
+you will end up with \verb|bar = readb((foo))| as the extra
+parentheses around \texttt{foo} are capture by the metavariable
+\texttt{b}.
+
+In order to generate better output code, you can use the following
+semantic patch instead.
+\begin{lstlisting}[language=Cocci]
+@-- a = *(b)
+@++ a = readb(b)
+\end{lstlisting}
+
+\noindent
+And rely on your standard.iso isomorphism file which should contain:
+\begin{lstlisting}[language=Cocci]
+Expression
+@ paren @
+expression E;
+@@
+
+ (E) => E
+\end{lstlisting}
+
+Coccinelle will then consider \verb|bar = *(foo)| as equivalent to
+\verb|bar = *foo| (but not the other way around) and capture both.
+Finally, it will generate \verb|bar = readb(foo)| as expected.
+
+%%% Local Variables:
+%%% mode: LaTeX
+%%% TeX-master: "main_grammar"
+%%% coding: utf-8
+%%% TeX-PDF-mode: t
+%%% ispell-local-dictionary: "american"
+%%% End:

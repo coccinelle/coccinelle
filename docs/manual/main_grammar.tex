@@ -1,0 +1,54 @@
+\documentclass{article}
+
+\usepackage{times}
+\usepackage{fullpage}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+\usepackage{ifthen}
+\usepackage{hevea}
+
+\usepackage{alltt}
+\usepackage{xspace}
+\usepackage[pdfborder={0 0 0}]{hyperref}
+\usepackage{listings}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{multirow}
+
+\input{macros_listing_cocci}
+\input{macros_grammar}
+\input{macros_common}
+
+\input{macros}
+
+\ifhevea
+\newcommand{\phantom}{}
+\newcommand{\air}{   }
+\else
+\newcommand{\air}{\phantom{xxx}}
+\fi
+
+% Update version in macros.tex
+\title{The SmPL Grammar (version \cocciversion)}
+\author{Research group on Coccinelle}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+
+\input{cocci_syntax}
+
+\include{examples}
+\include{tips}
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: LaTeX
+%%% TeX-master: t
+%%% coding: utf-8
+%%% TeX-PDF-mode: t
+%%% ispell-local-dictionary: "american"
+%%% End:

@@ -1,0 +1,278 @@
+@@
+@@
+   f();
+   ...
+?  g();
+   ...
+   h();
+
+@@
+expression E,X,Y,Z;
+local function foo;
+@@
+
+  foo(...) {
+(
+-   f(3,E);
++   f(3,3,E);
+|
+-   f(E,4);
++   f(E,4,4);
+|
+-   E;
++   g(E);
+)
+(
+-   f(3,X);
++   f(3,3,X);
+|
+-   f(Y,4);
++   f(Y,4,4);
+|
+-   Z;
++   g(Z);
+)
+(
+-   f(3);
++   f(3,3);
+|
+-   f(4);
++   f(4,4);
+)
+  }
+
+@@
+identifier buffer;
+identifier hostptr;
+@@
+  p(
++      int hostptr,
+       char buffer) {
+-   int hostptr;
+  }
+
+@@
+expression X,Y;
+@@
+
+  f(X);
+- ... WHEN != h(X)
+  g(Y);
+
+@@
+expression X,Y;
+@@
+
+  f(X);
+- ...
+  g(Y);
+
+@@
+expression X,Y;
+@@
+
+f(X);
+g(Y);
+h(X);
+f(Y);
+g(X);
+h(Y);
+
+@@
+expression X;
+@@
+
+f(X);
+...
+g(X);
+h(X);
+
+@@
+expression X;
+@@
+
+  if (X) { ... } else { ... }
+  f(X);
+
+@@
+expression X;
+@@
+
+  if (X) { ... }
+  f(X);
+
+@@
+expression X;
+@@
+
+  while (X) { ... }
+  f(X);
+
+@@
+expression X;
+@@
+
+  while (X) { ... }
+
+@@
+expression X,Y;
+@@
+
+  {
+  ... WHEN != g(Y)
+  f(X);
+  ... WHEN != h(Y)
+  }
+
+@@
+expression X,Y;
+@@
+
+  f(X);
+  ...
+- g(Y);
++ h(X,Y);
+
+@@
+expression X,Y,Z;
+@@
+
+- f(X);
++ f(Z);
+- ...
+  g(Y);
+  h(Z);
+
+@@
+expression X,Y,Z;
+@@
+
+- f(X);
++ f(Z);
+  ...
+  g(Y);
+  h(Z);
+
+
+@@
+expression X,Y,Z;
+@@
+
+f(X);
+...
+g(Y);
+h(Z);
+
+@@
+expression X,Y,Z;
+@@
+
+f(X);
+... WHEN != h(Z)
+g(Y);
+h(Z);
+
+@@
+expression X,Y,Z,Q;
+@@
+
+f(X);
+... WHEN != h(Q)
+g(Y);
+h(Z);
+
+@@
+expression X,Z;
+@@
+
+if (X) {
+  ...
+}
+else {
+  g(X);
+}
+h(Z);
+
+@@
+expression X,Y;
+@@
+
+<...
+(
+ h(X)
+|
+ g(Y)
+)
+...>
+
+@@
+expression X,Y;
+@@
+
+<...
+(
+ h(X)
+|
+ g(Y)
+)
+...>
+r(X);
+
+@@
+expression X,Y;
+@@
+
+(
+ h(X)
+|
+ g(Y)
+)
+
+@@
+expression X,Y;
+@@
+
+  m(Y);
+? h(X);
+  g(Y);
+
+@@
+struct Scsi_Host_Template sht;
+!local function proc_info_func;
+@@
+
+sht.proc_info = proc_info_func;
+
+@@
+identifier buffer, start, offset, length, inout, hostptr, hostno;
+@@
+
+  proc_info_func(
+       char *buffer, char **start, off_t offset,
+       int length, 
+       int hostno, 
+       int inout) {
+    ...
+    struct Scsi_Host *hostptr;
+    ...
+    hostptr = scsi_host_hn_get(hostno);
+    ...
+?   if (hostptr == NULL) { ... }
+    ...
+?   scsi_host_put(hostptr);
+    ...
+  }
+
+@@
+expression E;
+@@
+
+proc_info_func(...) {
+    <...
+(
+   E->host_no == hostno
+|
+   hostno
+)
+    ...>
+  }

@@ -1,0 +1,75 @@
+#
+# Static configuration of Ocaml libraries
+# Add these libraries to the library list in configure in order to use them.
+#
+# Template:
+# LOCAL_$lib     = modules to include when compiling $lib locally with bytecode ocaml
+# LOCALOPT_$lib  = moduels to include when compiling $lib locally with optimizing ocaml
+# GLOBAL_$lib    = modules to include when using $lib globally with bytecode ocaml
+# GLOBALOPT_$lib = modules to include when using $lib globally with optimizing ocaml
+# FLAGS_$lib     = extra flags to pass to optimizing ocaml when using $lib at link time
+#
+# This file is included in the Makefile where these variables may be used depending
+# on your actual configuration.
+#
+
+
+# *Note*
+# Pay attention to the difference between -cclib and -ccopt: although the documentation
+# of -ccopt suggest that it subsumes -cclib, be sure to use -cclib for library includes.
+#
+# *Note*
+# the order in which library includes are specified matters!
+
+
+# pycaml library
+# Note: we added the pycaml_stubs wrapper twice: once for dynamic and once for
+# static linking. The ocaml compiler should use the static linking with the
+# stubs if possible.
+LOCAL_pycaml     = $(PYCAMLDIR)/pycaml.cma
+LOCALOPT_pycaml  = $(PYCAMLDIR)/pycaml.cmxa
+GLOBAL_pycaml    = $(PYCAMLDIR)/pycaml.cma
+GLOBALOPT_pycaml = $(PYCAMLDIR)/pycaml.cmxa
+FLAGS_pycaml     = $(CFLAGS_pycaml:%=-ccopt %) -dllib -lpycaml_stubs -cclib -lpycaml_stubs $(PYTHON_LIBS:%=-cclib %)
+OPTFLAGS_pycaml  = $(CFLAGS_pycaml:%=-ccopt %) -cclib -lpycaml_stubs $(PYTHON_LIBS:%=-cclib %)
+
+# sexplib library
+LOCAL_sexplib     = $(SEXPDIR)/sexplib.cmo
+LOCALOPT_sexplib  = $(SEXPDIR)/sexplib.cmx
+GLOBAL_sexplib    = $(SEXPDIR)/sexplib.cma
+GLOBALOPT_sexplib = $(SEXPDIR)/sexplib.cmxa
+FLAGS_sexplib     =
+OPTFLAGS_sexplib  =
+
+# pcre library
+# Note: see the comment of the pycaml library about the double appearance of the stubs library.
+LOCAL_pcre     = $(PCREDIR)/pcre.cmo
+LOCALOPT_pcre  = $(PCREDIR)/pcre.cmx
+GLOBAL_pcre    = $(PCREDIR)/pcre.cma
+GLOBALOPT_pcre = $(PCREDIR)/pcre.cmxa
+FLAGS_pcre     = $(PCRE_LIBS:%=-ccopt %) -dllib -lpcre_stubs -cclib -lpcre_stubs
+OPTFLAGS_pcre  = $(PCRE_LIBS:%=-ccopt %) -cclib -lpcre_stubs
+
+# dynlink library
+LOCAL_dynlink     =
+LOCALOPT_dynlink  =
+GLOBAL_dynlink    = $(DYNLINKDIR)/dynlink.cma
+GLOBALOPT_dynlink = $(DYNLINKDIR)/dynlink.cmxa
+FLAGS_dynlink     =
+OPTFLAGS_dynlink  =
+
+# extlib library
+LOCAL_extlib     = $(EXTLIBDIR)/extLib.cma
+LOCALOPT_extlib  = $(EXTLIBDIR)/extLib.cmxa
+GLOBAL_extlib    = $(EXTLIBDIR)/extLib.cma
+GLOBALOPT_extlib = $(EXTLIBDIR)/extLib.cmxa
+FLAGS_extlib     =
+OPTFLAGS_extlib  =
+
+# type conv library
+LOCAL_type_conv     = pa_type_conv.cma
+LOCALOPT_type_conv  = pa_type_conv.cmxa
+GLOBAL_type_conv    = pa_type_conv.cma
+GLOBALOPT_type_conv = pa_type_conv.cma
+FLAGS_type_conv     =
+OPTFLAGS_type_conv  =

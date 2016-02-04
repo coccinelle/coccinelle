@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="generator" content="hevea 2.06">
+<link rel="stylesheet" type="text/css" href="main_grammar.css">
+<title>Function declarations</title>
+</head>
+<body >
+<a href="main_grammar005.html"><img src="previous_motif.gif" alt="Previous"></a>
+<a href="index.html"><img src="contents_motif.gif" alt="Up"></a>
+<a href="main_grammar007.html"><img src="next_motif.gif" alt="Next"></a>
+<hr>
+<h2 id="sec7" class="section">6  Function declarations</h2>
+<div class="center"><table style="border-spacing:6px;border-collapse:separate;" class="cellpading0"><tr><td style="text-align:left;white-space:nowrap" >
+<a id="fundecl"><span style="color:maroon">fundecl</span></a><span style="color:maroon">
+</span></td><td style="text-align:center;white-space:nowrap" ><span style="color:black">  ::=  </span></td><td style="text-align:left;white-space:nowrap" ><span style="color:black">[</span><a href="main_grammar005.html#fn_ctype"><span style="color:maroon">fn_ctype</span></a><span style="color:black">]</span><span style="color:blue"> </span><a href="#funinfo"><span style="color:maroon">funinfo</span></a><sup><span style="color:black"> *</span></sup><span style="color:blue"> </span><a href="#funid"><span style="color:maroon">funid</span></a><span style="color:blue">
+(</span><span style="color:black">[</span><a href="#PARAMSEQ"><span style="color:maroon">PARAMSEQ</span></a><span style="color:blue">(</span><a href="#param"><span style="color:maroon">param</span></a><span style="color:blue">, </span><span style="color:blue">ε)</span><span style="color:black">]</span><span style="color:blue">)
+</span><span style="color:blue"><span style="font-family:monospace">{</span></span><span style="color:blue"> </span><span style="color:black">[</span><a href="main_grammar008.html#stmt_seq"><span style="color:maroon">stmt_seq</span></a><span style="color:black">]</span><span style="color:blue"> </span><span style="color:blue"><span style="font-family:monospace">}</span></span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" >
+<a id="funproto"><span style="color:maroon">funproto</span></a><span style="color:maroon">
+</span></td><td style="text-align:center;white-space:nowrap" ><span style="color:black">  ::=  </span></td><td style="text-align:left;white-space:nowrap" ><span style="color:black">[</span><a href="main_grammar005.html#fn_ctype"><span style="color:maroon">fn_ctype</span></a><span style="color:black">]</span><span style="color:blue"> </span><a href="#funinfo"><span style="color:maroon">funinfo</span></a><sup><span style="color:black"> *</span></sup><span style="color:blue"> </span><a href="#funid"><span style="color:maroon">funid</span></a><span style="color:blue">
+(</span><span style="color:black">[</span><a href="#PARAMSEQ"><span style="color:maroon">PARAMSEQ</span></a><span style="color:blue">(</span><a href="#param"><span style="color:maroon">param</span></a><span style="color:blue">, </span><span style="color:blue">ε)</span><span style="color:black">]</span><span style="color:blue">);</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" >
+<a id="funinfo"><span style="color:maroon">funinfo</span></a><span style="color:maroon">
+</span></td><td style="text-align:center;white-space:nowrap" ><span style="color:black">  ::=  </span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">inline</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><a href="#storage"><span style="color:maroon">storage</span></a> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > <a id="storage"><span style="color:maroon">storage</span></a><span style="color:maroon">
+</span></td><td style="text-align:center;white-space:nowrap" ><span style="color:black">  ::=  </span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">static</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">auto</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">register</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">extern</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" >
+<a id="funid"><span style="color:maroon">funid</span></a><span style="color:maroon">
+</span></td><td style="text-align:center;white-space:nowrap" ><span style="color:black">  ::=  </span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue"><span style="font-family:sans-serif">id</span></span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue"><span style="font-family:sans-serif"><span style="font-style:italic">metaid</span></span></span><sup><span style="color:blue"><span style="font-size:small"><span style="font-family:sans-serif">Id</span></span></span></sup> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><a href="main_grammar008.html#OR"><span style="color:maroon">OR</span></a><span style="color:blue">(</span><a href="main_grammar008.html#stmt"><span style="color:maroon">stmt</span></a><span style="color:blue">)</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > <a id="param"><span style="color:maroon">param</span></a><span style="color:maroon">
+</span></td><td style="text-align:center;white-space:nowrap" ><span style="color:black">  ::=  </span></td><td style="text-align:left;white-space:nowrap" ><a href="main_grammar010.html#type"><span style="color:maroon">type</span></a><span style="color:blue"> </span><span style="color:blue"><span style="font-family:sans-serif">id</span></span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue"><span style="font-family:sans-serif"><span style="font-style:italic">metaid</span></span></span><sup><span style="color:blue"><span style="font-size:small"><span style="font-family:sans-serif">Param</span></span></span></sup> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue"><span style="font-family:sans-serif"><span style="font-style:italic">metaid</span></span></span><sup><span style="color:blue"><span style="font-size:small"><span style="font-family:sans-serif">ParamList</span></span></span></sup> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" >
+<a id="decl"><span style="color:maroon">decl</span></a><span style="color:maroon">
+</span></td><td style="text-align:center;white-space:nowrap" ><span style="color:black">  ::=  </span></td><td style="text-align:left;white-space:nowrap" ><a href="main_grammar005.html#ctype"><span style="color:maroon">ctype</span></a><span style="color:blue"> </span><a href="main_grammar010.html#id"><span style="color:maroon">id</span></a> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><a href="main_grammar005.html#fn_ctype"><span style="color:maroon">fn_ctype</span></a><span style="color:blue"> (* </span><a href="main_grammar010.html#id"><span style="color:maroon">id</span></a><span style="color:blue">) (</span><a href="#PARAMSEQ"><span style="color:maroon">PARAMSEQ</span></a><span style="color:blue">(</span><a href="main_grammar005.html#name_opt_decl"><span style="color:maroon">name_opt_decl</span></a><span style="color:blue">, </span><span style="color:blue">ε)</span><span style="color:blue">)</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue">void</span> </td></tr>
+<tr><td style="text-align:left;white-space:nowrap" > </td><td style="text-align:center;white-space:nowrap" ><span style="color:black">|</span></td><td style="text-align:left;white-space:nowrap" ><span style="color:blue"><span style="font-family:sans-serif"><span style="font-style:italic">metaid</span></span></span><sup><span style="color:blue"><span style="font-size:small"><span style="font-family:sans-serif">Param</span></span></span></sup> </td></tr>
+</table></div><div class="center"><table style="border-spacing:6px;border-collapse:separate;" class="cellpading0"><tr><td style="text-align:left;white-space:nowrap" > <a id="PARAMSEQ"><span style="color:maroon">PARAMSEQ</span></a><span style="color:maroon">(</span><a id="gram_p"><span style="color:maroon">gram_p</span></a><span style="color:maroon">, </span><a id="when_p"><span style="color:maroon">when_p</span></a><span style="color:maroon">)</span><span style="color:maroon">
+</span></td><td style="text-align:center;white-space:nowrap" ><span style="color:black">  ::=  </span></td><td style="text-align:left;white-space:nowrap" ><a href="main_grammar002.html#COMMA_LIST"><span style="color:maroon">COMMA_LIST</span></a><span style="color:blue">(</span><a href="#gram_p"><span style="color:maroon">gram_p</span></a><span style="color:blue"> </span><span style="color:black">|</span><span style="color:blue"> …</span><span style="color:black">[</span><a href="#when_p"><span style="color:maroon">when_p</span></a><span style="color:black">]</span><span style="color:blue">)</span> </td></tr>
+</table></div><p>To match a function it is not necessary to provide all of the annotations
+that appear before the function name. For example, the following semantic
+patch:</p><div class="lstlisting"><span style="font-size:xx-small">   1</span> @@
+<span style="font-size:xx-small">   2</span> @@
+<span style="font-size:xx-small">   3</span> 
+<span style="font-size:xx-small">   4</span> foo() { ... }</div><p>matches a function declared as follows:</p><div class="lstlisting"><span style="font-size:xx-small">   1</span> <span style="color:blue">static</span> <span style="color:blue">int</span> foo() { <span style="color:blue">return</span> 12; }</div><p>This behavior can be turned off by disabling the <span style="color:blue">optional_storage</span>
+isomorphism. If one adds code before a function declaration, then the
+effect depends on the kind of code that is added. If the added code is a
+function definition or CPP code, then the new code is placed before
+all information associated with the function definition, including any
+comments preceding the function definition. On the other hand, if the new
+code is associated with the function, such as the addition of the keyword
+<span style="font-family:monospace">static</span>, the new code is placed exactly where it appears with respect
+to the rest of the function definition in the semantic patch. For example,</p><div class="lstlisting"><span style="font-size:xx-small">   1</span> @@
+<span style="font-size:xx-small">   2</span> @@
+<span style="font-size:xx-small">   3</span> 
+<span style="font-size:xx-small">   4</span> + static
+<span style="font-size:xx-small">   5</span> foo() { ... }</div><p>causes static to be placed just before the function name. The following
+causes it to be placed just before the type</p><div class="lstlisting"><span style="font-size:xx-small">   1</span> @@
+<span style="font-size:xx-small">   2</span> <span style="color:#379907"><span style="font-weight:bold">type</span></span> T;
+<span style="font-size:xx-small">   3</span> @@
+<span style="font-size:xx-small">   4</span> 
+<span style="font-size:xx-small">   5</span> + static
+<span style="font-size:xx-small">   6</span> T foo() { ... }</div><p>It may be necessary to consider several cases to ensure that the added ode
+is placed in the right position. For example, one may need one pattern
+that considers that the function is declared <span style="font-family:monospace">inline</span> and another that
+considers that it is not.</p>
+<hr>
+<a href="main_grammar005.html"><img src="previous_motif.gif" alt="Previous"></a>
+<a href="index.html"><img src="contents_motif.gif" alt="Up"></a>
+<a href="main_grammar007.html"><img src="next_motif.gif" alt="Next"></a>
+</body>
+</html>

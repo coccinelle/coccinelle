@@ -1,0 +1,64 @@
+% Definition of a grammar (BNF style) package for Latex and Hevea
+
+
+\ifhevea
+% Definition for Hevea (HTML generation)
+\def\T#1{{\sf{#1}}}
+\def\NTS#1{{\maroon #1\/}}
+\def\KW#1{{\blue #1}}
+\def\gramor{{\black $|$}}
+\def\grameq{{\black \quad::=\quad}}
+\def\lparen{{\black (}}
+\def\rparen{{\black )}}
+\def\lbracket{{\black [}}
+\def\rbracket{{\black ]}}
+\def\plus{{\black +}}
+\def\questionmark{{\black ?}}
+\def\etoile{{\black *}}
+\else
+% Definition for LaTeX
+\def\T#1{{\textsf{\small{#1}}}}
+\def\NTS#1{{\it #1\/}}
+\def\KW#1{{\mtt{#1}}}
+%\def\gramor{$\vert$}
+\def\gramor{$\mid$}
+\def\grameq{\,\,\,::=\,\,\,\,\,}
+\def\lparen{(}
+\def\rparen{)}
+\def\lbracket{$[$}
+\def\rbracket{$]$}
+\def\plus{+}
+\def\questionmark{?}
+\def\etoile{*}
+\fi
+
+\def\NT#1{\hyperlink{#1}{\NTS{#1}}}
+\def\group#1{{\rm\lparen}#1{\rm\rparen}}
+\def\range#1#2{#1{..}#2}
+\def\any#1{#1$^{\etoile}$}
+\def\some#1{#1$^{\plus}$}
+\def\ANY#1{\any{{\rm\lparen}#1{\rm\rparen}}}
+\def\SOME#1{\some{{\rm\lparen}#1{\rm\rparen}}}
+\def\OR{\gramor\ }
+
+\iflanguagestyle
+% Option notation : [ xxx ] versus (xxx)^?
+\def\opt#1{#1$^{\questionmark}$}
+\def\OPT#1{\opt{{\rm\lparen}#1{\rm\rparen}}}
+\else
+\def\opt#1{{\lbracket}#1{\rbracket}}
+\def\OPT#1{\opt{#1}}
+\fi
+
+\newenvironment{grammar}{\begin{center}\begin{tabular}{l@{}c@{}l}}{\end{tabular}\end{center}}
+\def\RULE#1\CASE#2{\NTS{#1} & \grameq & \KW{#2} \\}
+\def\CASE#1{& \gramor & \KW{#1} \\}
+
+\newcommand{\rt}[1]{\hypertarget{#1}{#1}}
+\newcommand{\bs}{\textbackslash}
+
+\def\lb{\char123}
+\def\rb{\char125}
+\def\lt{\tt\char60}
+\def\gt{\tt\char62}
+\def\caret{\tt\^{}}
