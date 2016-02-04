@@ -1,0 +1,9 @@
+GENERATED       = tokens.ml tokens.mli algebraic.ml algebraic.mli reverse.ml reverse.mli lexer.ml
+MODULES         = algebraic reverse lexer calc
+EXECUTABLE      = calc
+OCAMLDEPWRAPPER = ../ocamldep.wrapper
+include ../OMakefile.shared
+MenhirMono(tokens,--only-tokens)
+MenhirMulti(algebraic,tokens.mly algebraic.mly,--external-tokens Tokens)
+MenhirMulti(reverse,tokens.mly reverse.mly,--external-tokens Tokens)
+.DEFAULT: $(EXECUTABLE)$(OSUFFIX)

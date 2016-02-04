@@ -1,0 +1,10 @@
+# If ocaml reports that Sys.os_type is Unix, we assume Unix, otherwise
+# we assume Windows.
+
+ifeq "$(shell rm -f ./o.ml && echo print_endline Sys.os_type > ./o.ml && ocaml ./o.ml && rm -f ./o.ml)" "Unix"
+MENHIREXE    := menhir
+OBJ          := o
+else
+MENHIREXE    := menhir.exe
+OBJ          := obj
+endif

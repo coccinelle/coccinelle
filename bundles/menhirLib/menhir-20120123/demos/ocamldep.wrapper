@@ -1,0 +1,99 @@
+#!/usr/bin/env ocaml
+
+(* ocamldep.wrapper <filename> ... <filename> - <ocamldep command>
+   runs the <ocamldep command> in an environment where all of the
+   <filenames> listed appear to exist. The files are created, if
+   required, before the command is run, and destroyed afterwards. *)
+
+(* An earlier version of this script acquired a lock, so as to prevent
+   multiple instances of this script from interfering with one another.
+   However, this did not prevent interference between this script and
+   some other process (e.g., the ocaml compiler) which creates files.
+   So, the lock has been removed. My suggestion is to never use this
+   script in a concurrent setting. If you wish to use parallel make,
+   then you might be able to use a two-level Makefile approach: first,
+   compute all dependencies in a sequential manner; then, construct all
+   targets in a parallel manner. *)
+
+#load "unix.cma"
+open Printf
+
+(* Parse the command line. The arguments that precede "-" are understood
+   as file names and stored in the list [xs]. The arguments that follow
+   "-" are understood as a command and stored in [command]. *)
+
+let xs =
+  ref []
+
+let command =
+  ref ""
+
+let verbose =
+  ref false
+
+let rec loop accumulating i =
+  if i = Array.length Sys.argv then
+    ()
+  else if accumulating then
+    (* [accumulating] is [true] as long as we have not found the "-" marker *)
+    match Sys.argv.(i) with
+    | "-v" ->
+	verbose := true;
+	loop true (i+1)
+    | "-" ->
+        (* We have found the marker. The next parameter should be the name of
+	   the raw [ocamldep] command. Copy it to the command (unquoted --
+	   apparently some shells do not permit quoting a command name). *)
+	let i = i + 1 in
+	assert (i < Array.length Sys.argv);
+	command := Sys.argv.(i);
+	(* Stop accumulating file names. Copy the remaining arguments into
+	   the command. *)
+	loop false (i+1)
+    | _ ->
+        (* Continue accumulating file names in [xs]. *)
+	xs := Sys.argv.(i) :: !xs;
+	loop true (i+1)
+  else begin
+    (* After we have found the "-" marker, the remaining arguments are
+       copied (quoted) into the command. *)
+    command := sprintf "%s %s" !command (Filename.quote Sys.argv.(i));
+    loop false (i+1)
+  end
+
+let () =
+  loop true 1
+
+(* Create the required files if they don't exist, run the command,
+   then destroy any files that we have created. *)
+
+let rec loop = function
+  | [] ->
+      if !verbose then
+	fprintf stderr "ocamldep.wrapper: running %s\n" !command;
+      Sys.command !command
+  | x :: xs ->
+      if Sys.file_exists x then
+	loop xs
+      else begin
+	if !verbose then
+	  fprintf stderr "ocamldep.wrapper: creating fake %s\n" x;
+	let c = open_out x in
+	close_out c;
+	let exitcode = loop xs in
+	if Sys.file_exists x then begin
+	  try
+	    if !verbose then
+	      fprintf stderr "ocamldep.wrapper: removing fake %s..." x;
+	    Sys.remove x;
+	    if !verbose then
+	      fprintf stderr " ok\n"
+	  with Sys_error _ ->
+	    if !verbose then
+	      fprintf stderr " failed\n"
+	end;
+	exitcode
+      end
+
+let () =
+  exit (loop !xs)

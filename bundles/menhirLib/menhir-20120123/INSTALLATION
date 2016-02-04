@@ -1,0 +1,34 @@
+REQUIREMENTS
+
+You need Objective Caml 3.09 or later and GNU make.
+
+HOW TO INSTALL
+
+If you wish to install via ocamlfind, make sure that ocamlfind is in
+your PATH. (Remember that prefixing a command with sudo affects its
+PATH.)
+
+Run the following command:
+
+  make PREFIX=/usr/local install
+
+If your machine does not have the native code Objective Caml compiler
+(ocamlopt), but does have the bytecode compiler (ocamlc), then instead
+of the above command, use:
+
+  make PREFIX=/usr/local TARGET=byte all install
+
+The value of the PREFIX variable can be changed to control where
+the software, the standard library, and the documentation should
+be stored. These files are copied to the following places:
+
+  $PREFIX/bin/
+  $PREFIX/share/menhir/
+  $PREFIX/doc/menhir/
+
+The support library, MenhirLib, is either installed via ocamlfind, if
+available, or placed within $PREFIX/share/menhir. Menhir's --suggest
+options help determine where and how it was installed.
+
+The documentation includes a reference manual and a number of demos.
+

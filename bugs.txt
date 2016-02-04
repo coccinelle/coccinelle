@@ -1,0 +1,2 @@
+Send a mail to cocci@diku.dk, or julia@diku.dk or yoann.padioleau@gmail.com
+with [Bug-Cocci] as a prefix in the subject of your mail.

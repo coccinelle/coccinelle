@@ -1,0 +1,637 @@
+\section{Introduction}
+
+This document describes the options provided by Coccinelle.  The options
+have an impact on various phases of the semantic patch application
+process.  These are:
+
+\begin{enumerate}
+\item Selecting and parsing the semantic patch.
+\item Selecting and parsing the C code.
+\item Application of the semantic patch to the C code.
+\item Transformation.
+\item Generation of the result.
+\end{enumerate}
+
+\noindent
+One can either initiate the complete process from step 1, or
+to perform step 1 or step 2 individually.
+
+Coccinelle has quite a lot of options.  The most common usages are as
+follows, for a semantic match {\tt foo.cocci}, a C file {\tt foo.c}, and a
+directory {\tt foodir}:
+
+\begin{itemize}
+\item {\tt spatch --parse-cocci foo.cocci}: Check that the semantic patch
+  is syntactically correct.
+\item {\tt spatch --parse-c foo.c}: Check that the C file
+  is syntactically correct.  The Coccinelle C parser tries to recover
+  during the parsing process, so if one function does not parse, it will
+  start up again with the next one.  Thus, a parse error is often not a
+  cause for concern, unless it occurs in a function that is relevant to the
+  semantic patch.
+\item {\tt spatch --sp-file foo.cocci foo.c}: Apply the semantic patch {\tt
+    foo.cocci} to the file {\tt foo.c} and print out any transformations as
+  the changes between the original and transformed code, using the program
+  {\tt diff}.  {\tt --sp-file} is optional in this and the following cases.
+\item {\tt spatch --sp-file foo.cocci foo.c --debug}:  The same as the
+  previous case, but print out some information about the matching process.
+\item {\tt spatch --sp-file foo.cocci --dir foodir}:  Apply the semantic
+  patch {\tt foo.cocci} to all of the C files in the directory {\tt foodir}.
+\item {\tt spatch --sp-file foo.cocci --dir foodir --include-headers}:  Apply
+  the semantic patch {\tt foo.cocci} to all of the C files and header files
+  in the directory {\tt foodir}. 
+\end{itemize}
+
+In the rest of this document, the options are annotated as follows:
+\begin{itemize}
+\item \FilledBigDiamondshape: a basic option, that is most likely of
+  interest to all users.
+\item \BigLowerDiamond: an option that is frequently used, often for better
+understanding the effect of a semantic patch.
+\item \BigDiamondshape: an option that is likely to be rarely used, but
+  whose effect is still comprehensible to a user.
+\item An option with no annotation is likely of interest only to
+  developers.
+\end{itemize}
+
+\section{Selecting and parsing the semantic patch}
+
+\subsection{Standalone options}
+
+\normal{--parse-cocci $\langle$file$\rangle$}{ Parse a semantic
+patch file and print out some information about it.}
+
+\subsection{The semantic patch}
+
+\minimum{--sp-file $\langle$file$\rangle$, -c $\langle$file$\rangle$, 
+-cocci-file $\langle$file$\rangle$}{ Specify the name of the file
+  containing the semantic patch.  The file name should end in {\tt .cocci}.
+All three options do the same thing.  These options are optional.  If they
+are not used, the single file whose name ends in \texttt{.cocci} is
+assoumed to be the name of the file containing the semantic patch.}
+
+\rare{--sp ``semantic patch string''}{Specify a semantic match as a
+  command-line argument.  See the section ``Command-line semantic match''
+  in the manual.}
+
+\subsection{Isomorphisms}
+
+\rare{--iso, --iso-file}{ Specify a file containing isomorphisms to be used in
+place of the standard one.  Normally one should use the {\tt using}
+construct within a semantic patch to specify isomorphisms to be used {\em
+  in addition to} the standard ones.}
+
+\rare{--iso-limit $\langle$int$\rangle$} Limit the depth of application of
+isomorphisms to the specified integer.
+
+\rare{--no-iso-limit} Put no limit on the number of times that
+isomorphisms can be applied. This is the default.
+
+\rare{--disable-iso}{Disable a specific isomorphism from the command line.
+  This option can be specified multiple times.}
+
+\developer{--track-iso}{ Gather information about isomorphism usage.}
+
+\developer{--profile-iso}{ Gather information about the time required for
+isomorphism expansion.}
+
+\subsection{Display options}
+
+\rare{--show-cocci}{Show the semantic patch that is being processed before
+  expanding isomorphisms.}
+
+\rare{--show-SP}{Show the semantic patch that is being processed after
+  expanding isomorphisms.}
+
+\rare{--show-ctl-text}{ Show the representation
+of the semantic patch in CTL.}
+
+\rare{--ctl-inline-let}{ Sometimes {\tt let} is used to name
+intermediate terms CTL representation.  This option causes the let-bound
+terms to be inlined at the point of their reference.
+This option implicitly sets {\bf --show-ctl-text}.}
+
+\rare{--ctl-show-mcodekind}{ Show
+transformation information within the CTL representation
+of the semantic patch. This option implicitly sets {\bf --show-ctl-text}.}
+
+\rare{--show-ctl-tex}{ Create a LaTeX files showing the representation
+of the semantic patch in CTL.}
+
+\section{Selecting and parsing the C files}
+
+\subsection{Standalone options}
+
+\normal{--parse-c $\langle$file/dir$\rangle$}{ Parse a {\tt .c} file or all
+  of the {\tt .c} files in a directory.  This generates information about
+  any parse errors encountered.}
+
+\normal{--parse-h $\langle$file/dir$\rangle$}{ Parse a {\tt .h} file or all
+  of the {\tt .h} files in a directory.  This generates information about
+  any parse errors encountered.}
+
+\normal{--parse-ch $\langle$file/dir$\rangle$}{ Parse a {\tt .c} or {\tt
+    .h} file or all of the {\tt .c} or {\tt .h} files in a directory.  This
+  generates information about any parse errors encountered.}
+
+\normal{--control-flow $\langle$file$\rangle$, --control-flow
+$\langle$file$\rangle$:$\langle$function$\rangle$}{ Print a control-flow
+graph for all of the functions in a file or for a specific function in a
+file.  This requires {\tt dot} (http://www.graphviz.org/) and {\tt gv}.}
+
+\rare{--control-flow-to-file $\langle$file$\rangle$,
+  --control-flow-to-file
+  $\langle$file$\rangle$:$\langle$function$\rangle$}{ Like --control-flow
+  but just puts the dot output in a file in the {\em current} directory.
+  For PATH/file.c, this produces file:xxx.dot for each (selected) function
+  xxx in PATH/file.c.}
+
+\rare{--type-c $\langle$file$\rangle$}{ Parse a C file and pretty-print a
+version including type information.}
+
+\developer{--tokens-c $\langle$file$\rangle$}{Prints the tokens in a C
+  file.}
+
+\developer{--parse-unparse $\langle$file$\rangle$}{Parse and then reconstruct
+  a C file.}
+
+\developer{--compare-c $\langle$file$\rangle$ $\langle$file$\rangle$,
+  --compare-c-hardcoded}{Compares one C file to another, or compare the
+file tests/compare1.c to the file tests/compare2.c.}
+
+\developer{--test-cfg-ifdef $\langle$file$\rangle$}{Do some special
+processing of \#ifdef and display the resulting control-flow graph.  This
+requires {\tt dot} and {\tt gv}.}
+
+\developer{--test-attributes $\langle$file$\rangle$,
+           --test-cpp $\langle$file$\rangle$}{
+Test the parsing of cpp code and attributes, respectively.}
+
+\subsection{Selecting C files}
+
+An argument that ends in {\tt .c} is assumed to be a C file to process.
+Normally, only one C file or one directory is specified.  If multiple C
+files are specified, they are treated in parallel, {\em i.e.}, the first
+semantic patch rule is applied to all functions in all files, then the
+second semantic patch rule is applied to all functions in all files, etc.
+If a directory is specified then no files may be specified and only the
+rightmost directory specified is used.
+
+\normal{--include-headers}{ This option causes header files to be processed
+independently.  This option only makes sense if a directory is specified
+using {\bf --dir}.}
+
+\normal{--use-glimpse}{ Use a glimpse index to select the files to which
+a semantic patch may be relevant.  This option requires that a directory is
+specified.  The index may be created using the script {\tt
+  coccinelle/scripts/ glimpseindex-cocci.sh}.  Glimpse is available at
+http://webglimpse.net/.  In conjunction with the option {\bf --patch-cocci}
+this option prints the regular expression that will be passed to glimpse.}
+
+\normal{--use-idutils}{ Use an id-utils index created using lid to select
+  the files to which a semantic patch may be relevant.  This option
+  requires that a directory is specified.  The index may be created using
+  the script {\tt coccinelle/scripts/ idindex-cocci.sh}.  In conjunction
+  with the option {\bf --patch-cocci} this option prints the regular
+  expression that will be passed to glimpse.}
+
+\rare{--dir}{ Specify a directory containing C files to process.  A trailing
+  {\tt /} is permitted on the directory name and has no impact on the
+  result.  By default, the include path will be set to the ``include''
+  subdirectory of this directory.  A different include path can be
+  specified using the option {\bf -I}.  {\bf --dir} only considers the
+  rightmost directory in the argument list.  This behavior is convenient
+  for creating a script that always works on a single directory, but allows
+  the user of the script to override the provided directory with another
+  one.  Spatch collects the files in the directory using {\tt find} and
+  does not follow symbolic links.}
+
+\developer{--kbuild-info $\langle$file$\rangle$}{ The specified file
+  contains information about which sets of files should be considered in
+  parallel.}
+
+\developer{--disable-worth-trying-opt}{Normally, a C file is only
+  processed if it contains some keywords that have been determined to be
+  essential for the semantic patch to match somewhere in the file.  This
+  option disables this optimization and tries the semantic patch on all files.}
+
+\developer{--test $\langle$file$\rangle$}{ A shortcut for running Coccinelle
+on the semantic patch ``file{\tt{.cocci}}'' and the C file
+``file{\tt{.c}}''.  The result is put in the file {\tt
+  /tmp/file{\tt{.res}}}.  If writing a file in /tmp with a non-fresh name
+is a concern, then do not use this option.
+}
+
+\developer{--testall}{A shortcut for running Coccinelle on all files in a
+  subdirectory {\tt tests} such that there are all of a {\tt .cocci} file, a {\tt
+    .c} file, and a {\tt .res} file, where the {\tt .res} contains the
+  expected result.}
+
+\developer{--test-okfailed, --test-regression-okfailed} Other options for
+keeping track of tests that have succeeded and failed.
+
+\developer{--compare-with-expected}{Compare the result of applying
+  Coccinelle to file{\tt{.c}} to the file file{\tt{.res}} representing the
+  expected result.}
+
+\developer{--expected-score-file $\langle$file$\rangle$}{
+which score file to compare with in the testall run}
+
+\subsection{Parsing C files}
+
+\rare{--show-c}{Show the C code that is being processed.}
+
+\rare{--parse-error-msg}{Show parsing errors in the C file.}
+
+\rare{--verbose-parsing}{Show parsing errors in the C file, as well as
+  information about attempts to accomodate such errors.  This implicitly
+  sets --parse-error-msg.}
+
+\rare{--type-error-msg}{Show information about where the C type checker
+  was not able to determine the type of an expression.}
+
+\rare{--int-bits $\langle$n$\rangle$, --long-bits
+$\langle$n$\rangle$}{Provide integer size information. n is the number of
+bits in an unsigned integer or unsigned long, respectively.  If only the
+option {\bf --int-bits} is used, unsigned longs will be assumed to have
+twice as many bits as unsigned integers.  If only the option {\bf
+-long-bits} is used, unsigned ints will be assumed to have half as many
+bits as unsigned integers.  This information is only used in determining
+the types of integer constants, according to the ANSI C standard (C89).  If
+neither is provided, the type of an integer constant is determined by the
+sequence of ``u'' and ``l'' annotations following the constant.  If there
+is none, the constant is assumed to be a signed integer.  If there is only
+``u'', the constant is assumed to be an unsigned integer, etc.}
+
+\rare{--no-loops}{Drop back edges for loops.  This may make a semantic
+  patch/match run faster, at the cost of not finding matches that wrap
+  around loops.}
+
+\developer{--use-cache}{Use preparsed versions of the C files that are
+stored in a cache.}
+
+\developer{--cache-prefix}{Specify the directory in which to store 
+preparsed versions of the C files.  This sets {--use-cache}}
+
+\developer{--cache-limit}{Specify the maximum number of
+preparsed C files to store.  The cache is cleared of all files with names
+ending in .ast-raw and .depend-raw on reaching this limit.  Only
+effective if --cache-prefix is used as well.  This is most useful when
+iteration is used to process a file multiple times within a single run of
+Coccinelle.}
+
+\developer{--debug-cpp, --debug-lexer, --debug-etdt,
+  --debug-typedef}{Various options for debugging the C parser.}
+
+\developer{--filter-msg, --filter-define-error,
+  --filter-passed-level}{Various options for debugging the C parser.}
+
+\developer{--only-return-is-error-exit}{In matching ``{\tt{\ldots}}'' in
+  a semantic patch or when forall is specified, a rule must match all
+  control-flow paths starting from a node matching the beginning of the
+  rule.  This is relaxed, however, for error handling code.  Normally, error
+  handling code is considered to be a conditional with only a then branch
+  that ends in goto, break, continue, or return.  If this option is set,
+  then only a then branch ending in a return is considered to be error
+  handling code.  Usually a better strategy is to use {\tt when strict} in
+  the semantic patch, and then match explicitly the case where there is a
+  conditional whose then branch ends in a return.}
+
+\subsubsection*{Macros and other preprocessor code}
+
+\normal{--macro-file $\langle$file$\rangle$}{
+  Extra macro definitions to be taken into account when parsing the C
+  files.  This uses the provided macro definitions in addition to those in
+  the default macro file.}
+
+\normal{--macro-file-builtins $\langle$file$\rangle$}{
+  Builtin macro definitions to be taken into account when parsing the C
+  files.  This causes the macro definitions provided in the default macro
+  file to be ignored and the ones in the specified file to be used instead.}
+
+\rare{--ifdef-to-if,-no-ifdef-to-if}{
+The option {\bf --ifdef-to-if}
+represents an {\tt \#ifdef} in the source code as a conditional in the
+control-flow graph when doing so represents valid code.  {\bf
+-no-ifdef-to-if} disables this feature.  {\bf --ifdef-to-if} is the
+default.
+}
+
+\rare{--noif0-passing}{ Normally code under \#if 0 is ignored.  If this
+option is set then the code is considered, just like the code under any
+other \#ifdef.}
+
+\rare{--defined $s$}{The string $s$ is a comma-separated list of constants
+  that should be considered to be defined, with respect to uses of {\tt
+    \#ifdef} and {\tt \#ifndef} in C code.  No spaces should appear in $s$.
+  Multiple {\bf --defined} arguments can be provided and the list of
+  strings accumulates.  For the provided strings any {\tt \#else}s of {\tt
+    \#ifdef}s are ignored and any {\tt \#ifndef}s are ignored, unless the
+  argument {\bf --noif0-passing} is also given, in which case {\bf
+    --defined} has no effect.  Note that occurrences of {\tt \#define} in
+  the C code have no effect on the list of defined constants.}
+
+\rare{--undefined $s$}{Analogous to {\bf --defined} except that the strings
+  represent constants that should be considered to be undefined.}
+
+\developer{--noadd-typedef-root}{This seems to reduce the scope of a
+  typedef declaration found in the C code.}
+
+\subsubsection*{Include files}
+
+\normal{--recursive-includes, --all-includes, --local-includes,
+  --no-includes}{ These options control which include files mentioned in a
+  C file are taken into account.  {\bf --recursive-includes} indicates
+  that all included files mentioned in the .c file(s) or any included files
+  will be processed.  {\bf --all-includes} indicates that all included
+  files mentioned in the .c file(s) will be processed.  {\bf
+    --local-includes} indicates that only included files in the current
+  directory will be processed.  {\bf --no-includes} indicates that no
+  included files will be processed.  If the semantic patch contains type
+  specifications on expression metavariables, then the default is {\bf
+    --local-includes}.  Otherwise the default is {\bf --no-includes}.  At
+  most one of these options can be specified.}
+
+\normal{-I $\langle$path$\rangle$}{ This option specifies a directory
+  in which to find non-local include files.  This option can be used
+  several times.}
+
+\rare{--relax-include-path}{This option when combined with --all-includes
+  causes the search for local
+  include files to consider the current directory, even if the include
+  patch specifies a subdirectory.  This is really only useful for testing,
+  eg with the option {\bf --testall}}
+
+\rare{--c++}{Make an extremely minimal effort to parse C++ code.  Currently,
+  this is limited to allowing identifiers to contain ``::'', tilde, and
+  template invocations.  Consider testing your code first with spatch
+  --type-c to see if there are any type annotations in the code you are
+  interested in processing.  If not, then it was probably not parsed.}
+
+\section{Application of the semantic patch to the C code}
+
+\subsection{Feedback at the rule level during the application of the
+  semantic patch}
+
+\normal{--show-bindings}{
+Show the environments with respect to which each rule is applied and the
+bindings that result from each such application.}
+
+\normal{--show-dependencies}{ Show the status (matched or unmatched) of the
+rules on which a given rule depends.  {\bf --show-dependencies} implicitly
+sets {\bf --show-bindings}, as the values of the dependencies are
+environment-specific.}
+
+\normal{--show-trying}{
+Show the name of each program element to which each rule is applied.}
+
+\normal{--show-transinfo}{
+Show information about each transformation that is performed.
+The node numbers that are referenced are the number of the nodes in the
+control-flow graph, which can be seen using the option {\bf --control-flow}
+(the initial control-flow graph only) or the option {\bf --show-flow} (the
+control-flow graph before and after each rule application).}
+
+\normal{--show-misc}{Show some miscellaneous information.}
+
+\rare{--show-flow $\langle$file$\rangle$, --show-flow
+  $\langle$file$\rangle$:$\langle$function$\rangle$} Show the control-flow
+graph before and after the application of each rule.
+
+\developer{--show-before-fixed-flow}{This is similar to {\bf
+    --show-flow}, but shows a preliminary version of the control-flow graph.}
+
+\subsection{Feedback at the CTL level during the application of the
+  semantic patch}
+
+\normal{--verbose-engine}{Show a trace of the matching of atomic terms to C
+  code.}
+
+\rare{--verbose-ctl-engine}{Show a trace of the CTL matching process.
+  This is unfortunately rather voluminous and not so helpful for someone
+  who is not familiar with CTL in general and the translation of SmPL into
+  CTL specifically.  This option implicitly sets the option {\bf
+    --show-ctl-text}.}
+
+\rare{--graphical-trace}{Create a pdf file containing the control flow
+  graph annotated with the various nodes matched during the CTL matching
+  process.  Unfortunately, except for the most simple examples, the output
+  is voluminous, and so the option is not really practical for most
+  examples.  This requires {\tt dot} (http://www.graphviz.org/) and {\tt
+  pdftk}.}
+
+\rare{--gt-without-label}{The same as {\bf --graphical-trace}, but the PDF
+  file does not contain the CTL code.}
+
+\rare{--partial-match}{
+Report partial matches of the semantic patch on the C file.  This can
+  be substantially slower than normal matching.}
+
+\rare{--verbose-match}{
+Report on when CTL matching is not applied to a function or other program
+unit because it does not contain some required atomic pattern.
+This can be viewed as a simpler, more efficient, but less informative
+version of {\bf --partial-match}.}
+
+\subsection{Actions during the application of the semantic patch}
+
+\normal{-D rulename}{Run the patch considering that the virtual rule
+  ``rulename'' is satisfied.  Virtual rules should be declared at the
+  beginning of the semantic patch in a comma separated list following the
+  keyword virtual.  Other rules can depend on the satisfaction or non
+  satifaction of these rules using the keyword {\tt depends on} in the
+  usual way.}
+
+\normal{-D variable=value}{Run the patch considering that the virtual
+  identifier metavariable ``variable'' is bound to ``value''.  Any
+  identifier metavariable can be designated as being virtual by giving it
+  the rule name {\tt virtual}.  An example is in demos/vm.coci}
+
+\rare{--allow-inconsistent-paths}{Normally, a term that is transformed
+  should only be accessible from other terms that are matched by the
+  semantic patch.  This option removes this constraint.  Doing so, is
+  unsafe, however, because the properties that hold along the matched path
+  might not hold at all along the unmatched path.}
+
+\rare{--disallow-nested-exps}{In an expression that contains repeated
+  nested subterms, {\em e.g.} of the form {\tt f(f(x))}, a pattern can
+  match a single expression in multiple ways, some nested inside others.
+  This option causes the matching process to stop immediately at the
+  outermost match.  Thus, in the example {\tt f(f(x))}, the possibility
+  that the pattern {\tt f(E)}, with metavariable {\tt E}, matches with {\tt
+    E} as {\tt x} will not be considered.}
+
+\rare{--no-safe-expressions}{normally, we check that an expression does
+       not match something earlier in the disjunction.  But for large
+       disjunctions, this can result in a very big CTL formula.  So this
+       option give the user the option to say he doesn't want this feature,
+       if that is the case.}
+
+\rare{--pyoutput coccilib.output.Gtk, --pyoutput coccilib.output.Console}{
+This controls whether Python output is sent to Gtk or to the console.  {\bf
+  --pyoutput coccilib.output.Console} is the default.  The Gtk option is
+currently not well supported.}
+
+\developer{--loop}{When there is ``{\tt{\ldots}}'' in the semantic patch,
+  the CTL operator {\sf AU} is used if the current function does not
+  contain a loop, and {\sf AW} may be used if it does.  This option causes
+  {\sf AW} always to be used.}
+
+\rare{--ocaml-regexps}{Use the regular expressions provided by the OCaml
+  \texttt{Str} library.  This is the default if the PCRE library is not
+  available.  Otherwise PCRE regular expressions are used by default.}
+
+\developer{--steps $\langle$int$\rangle$}{
+This limits the number of steps performed by the CTL engine to the
+specified number.  This option is unsafe as it might cause a rule to fail
+due to running out of steps rather than due to not matching.}
+
+\developer{--bench $\langle$int$\rangle$}{This collects various information
+  about the operations performed during the CTL matching process.}
+
+% \developer{--popl, --popl-mark-all, --popl-keep-all-wits}{
+% These options use a simplified version of the SmPL language.  {\bf
+%   --popl-mark-all} and {\bf --popl-keep-all-wits} implicitly set {\bf
+%   --popl}.}
+
+\rare{--reverse}{Inverts the semantic patch before applying it.
+A potential use case is backporting changes to previous versions. If a
+semantic patch represents an API change, then the reverse undoes the
+API change. Note that inverting a semantic patch is not always possible.
+In particular, the composition of a
+semantic patch with its inverse is not guaranteed to be an empty patch.}
+
+\section{Generation of the result}
+
+Normally, the only output is the differences between the original code and
+the transformed code obtained using the program {\tt diff} with the unified
+format option.  If
+stars are used in column 0 rather than {\tt -} and {\tt +}, then the {\tt
+  -} lines in the output are the lines that matched the stars.
+
+\normal{--keep-comments}{Don't remove comments adjacent to removed code.}
+
+\normal{--linux-spacing, --smpl-spacing}{Control the spacing within the code
+  added by the semantic patch.  The option {\bf --linux-spacing} causes
+  spatch to follow the conventions of Linux, regardless of the spacing in
+  the semantic patch.  This is the default.  The option {\bf
+  --smpl-spacing} causes spatch to follow the spacing given in the semantic
+  patch, within individual lines.}
+
+\rare{-o $\langle$file$\rangle$}{ This causes the transformed code to be
+  placed in the file {\tt file}.  The difference between the original code
+  and the transformed code is still printed to the standard output using
+  {\tt diff} with the unified format option.  This option only makes sense
+  when {\tt -} and {\tt +} are used.}
+
+\rare{--in-place}{ Modify the input file to contain the transformed code.
+  The difference between the original code and the transformed code is
+  still printed to the standard output using {\tt diff} with the unified
+  format option.  By default, the input file is overwritten when using this
+  option, with no backup.  This option only makes sense when {\tt -} and
+  {\tt +} are used.}
+
+\rare{--backup-suffix $s$}{The suffix $s$ of the file to use in making a
+  backup of the original file(s).  This suffix should include the leading
+  ``.'', if one is desired.  This option only has an effect when the option
+  {\tt --in-place} is also used.}
+
+\rare{--out-place}{ Store the result of modifying the code in a .cocci-res
+  file.  The difference between the original code
+  and the transformed code is still printed to the standard output using
+  {\tt diff} with the unified format option.  This option only
+  makes sense when {\tt -} and {\tt +} are used.}
+
+\rare{--no-show-diff}{ Normally, the difference between the original and
+  transformed code is printed on the standard output.  This option causes
+  this not to be done.}
+
+\rare{-U}{ Set number of context lines to be provided by {\tt diff}.}
+
+\rare{--patch $\langle$path$\rangle$}{The prefix of the pathname of the
+  directory or file name that should dropped from the {\tt diff} line in the
+  generated patch.  This is useful if you want to apply a patch only to a
+  subdirectory of a source code tree but want to create a patch that can be
+  applied at the root of the source code tree.  An example could be {\tt
+  spatch --sp-file foo.cocci --dir /var/linuxes/linux-next/drivers --patch
+  /var/linuxes/linux-next}.  A trailing {\tt /} is permitted on the
+  directory name and has no impact on the result.}
+
+\rare{--save-tmp-files}{Coccinelle creates some temporary
+  files in {\tt /tmp} that it deletes after use.  This option causes these
+  files to be saved.}
+
+\developer{--debug-unparsing}{Show some debugging information about the
+  generation of the transformed code.  This has the side-effect of
+  deleting the transformed code.}
+
+
+\section{Other options}
+
+\subsection{Version information}
+
+\normal{--version}{ The version of Coccinelle.  No other options are
+allowed.}
+
+\normal{--date}{ The date of the current version of Coccinelle. No other
+options are allowed.}
+
+\subsection{Help}
+
+\minimum{--h, --shorthelp}{ The most useful commands.}
+
+\minimum{--help, --help, --longhelp}{ A complete listing of the available
+commands.}
+
+\subsection{Controlling the execution of Coccinelle}
+
+\normal{--timeout $\langle$int$\rangle$}{ The maximum time in seconds for
+  processing a single file.}
+
+\rare{--max $\langle$int$\rangle$}{This option informs Coccinelle of the
+  number of instances of Coccinelle that will be run concurrently.  This
+  option requires {\bf --index}.  It is usually used with {\bf --dir}.}
+
+\rare{--index $\langle$int$\rangle$}{This option informs Coccinelle of
+  which of the concurrent instances is the current one.  This option
+  requires {\bf --max}.}
+
+\rare{--mod-distrib}{When multiple instances of Coccinelle are run in
+  parallel, normally the first instance processes the first $n$ files, the
+  second instance the second $n$ files, etc.  With this option, the files
+  are distributed among the instances in a round-robin fashion.}
+
+\developer{--debugger}{Option for running Coccinelle from within the OCaml
+  debugger.}
+
+\developer{--profile}{ Gather timing information about the main Coccinelle
+functions.}
+
+\developer{--disable-once}{Print various warning messages every time some
+condition occurs, rather than only once.}
+
+\subsection{External analyses}
+
+\developer{--external-analysis-file}{Loads in the contents of a database
+produced by some external analysis tool. Each entry contains the analysis
+result of a particular source location. Currently, such a database is a
+.csv file providing integer bounds or an integer set for some subset of
+the source locations that references an integer memory location.
+This database can be inspected with coccilib functions, e.g. to
+control the pattern match process.}
+
+\subsection{Miscellaneous}
+
+\rare{--quiet}{Suppress most output.  This is the default.}
+
+%\developer{--pad, -hrule $\langle$dir$\rangle$, -xxx, -l1}{}
+\developer{--pad, --xxx, --l1}{}
+
+
+%%% Local Variables:
+%%% mode: LaTeX
+%%% TeX-master: "main_options"
+%%% coding: utf-8
+%%% TeX-PDF-mode: t
+%%% ispell-local-dictionary: "american"
+%%% End:

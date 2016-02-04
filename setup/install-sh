@@ -1,0 +1,4 @@
+#! /bin/sh -e
+
+echo "error: no suitable install program found, therefore refusing to install $@" 1>&2
+exit 1

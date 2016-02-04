@@ -1,0 +1,7 @@
+GENERATED       = parser.ml parser.mli lexer.ml
+MODULES         = parser lexer calc
+EXECUTABLE      = calc
+OCAMLDEPWRAPPER = ../ocamldep.wrapper
+include ../OMakefile.shared
+MenhirAuto()
+.DEFAULT: $(EXECUTABLE)$(OSUFFIX)
