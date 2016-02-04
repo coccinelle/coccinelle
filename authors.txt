@@ -1,0 +1,41 @@
+Here are the authors and maintainers of the different parts of coccinelle:
+
+* Julia Lawall <julia@diku.dk>
+
+- parsing_cocci/ (parsing SmPL, isomorphism handling)
+- engine/ (ast_cocci to ctl, sgrep)
+- ctl/ (symbolic model checker)
+- tools/ 
+- standard.iso
+
+* Yoann Padioleau <yoann.padioleau@gmail.com>
+
+- parsing_c/ (parsing C, unparsing C, type checking, control flow, C diff)
+- engine/ (pattern matching and transforming, unparsing, ctl integration)
+- main.ml, cocci.ml (driver), testing.ml
+- configure, txt files, Makefiles 
+- globals/
+- extra/, tools/, scripts/
+- commons/ (utility functions, e.g. for logging, profiling, regression testing)
+- editors/emacs/cocci.el
+- standard.h
+
+
+* Rene Rydhof Hansen <rrhansen@diku.dk>
+
+- Original version of the model checker in ctl/
+- editors/emacs/cocci-ediff.el
+- scripts/extractor.awk
+
+* Henrik stuart <henrik@hstuart.dk>
+
+- python/ (python SmPL extension and a coccinelle GUI)
+
+* Nicolas Palix <npalix@diku.dk>
+
+- ocaml/ (OCaml SmPL extension)
+- scripts/spatch.bash_completion
+
+* All
+
+- tests/ demos/

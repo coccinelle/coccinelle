@@ -1,0 +1,7 @@
+@@
+identifier id;
+@@
+
+  ...
+- int id;
+  ...

@@ -1,0 +1,104 @@
+#!/bin/bash
+
+MODE=$1
+PROJECT=$2
+
+if [ "$MODE" == "" -o "$PROJECT" == "" ]; then
+	echo -e "\n\tUsage: $0 mode path\n"
+	echo -e "\tmode\torg or diff according to your needs"
+	echo -e "\tpath\tyour project path\n"
+	exit 1
+fi
+
+SPATCHVER=`spatch -version 2>&1 | sed "s|spatch version \([^ ]*\) .*|\1|"`
+WITHPYTHON=`spatch -version 2>&1 | sed "s|spatch version \([^ ]*\) with Python support|yes|"`
+WITHPYTHON=`echo $WITHPYTHON | sed "s|spatch version \([^ ]*\) without Python support||"`
+
+echo "Using spatch version $SPATCHVER"
+#TODO: Add version check
+
+if [ "$WITHPYTHON" ] ; then
+    echo "Your version has been build with Python support"
+else
+    echo "Your version has no Python support"
+    if [ "org" == "$MODE" ] ; then
+	echo "org mode requires Python support."
+	exit 1
+    fi
+fi
+echo
+
+echo "Using PREFIX="${PREFIX:=`pwd`}
+echo "Using PROJECT="${PROJECT:=$PREFIX/project}
+echo "Using COCCI="${COCCI:=$PREFIX/cocci}
+echo "Using RESULTS="${RESULTS:=$PREFIX/results}
+
+if [ "`which glimpse`" ]; then
+    FLAGS=${SPFLAGS:="-timeout 60 -use_glimpse"}
+else
+    FLAGS=${SPFLAGS:="-timeout 60"}
+fi
+SPFLAGS="$FLAGS -D $MODE"
+echo "Using SPFLAGS="$SPFLAGS
+
+echo -e "\nFor efficiency, run \`<coccinelle dir>/scripts/glimpseindex_cocci.sh\`"
+echo -e "in $PROJECT"
+echo -e "NB: glimpse is available at http://webglimpse.net/ but it is not under the GPL.\n"
+
+cat > Makefile <<EOF
+PREFIX?=${PREFIX}
+PROJECT?=${PROJECT}
+SPFLAGS?="${SPFLAGS}"
+
+COCCI?=${COCCI}
+RESULTS?=${RESULTS}
+
+.PHONY:: update viewlog viewfilteredlog viewres checkcocci
+.PHONY:: all clean distclean depend
+
+all:
+	\$(MAKE) -C \$(RESULTS)
+
+update:
+	./bin/update_result_tree \$(PREFIX) \$(PROJECT) \$(COCCI) \$(RESULTS) \$(SPFLAGS)
+
+viewlog:
+	find \$(RESULTS) -name "*.log" | xargs cat | pager
+
+viewfilteredlog:
+	find \$(RESULTS) -name "*.log" | xargs cat | \\
+		grep -ve "^\$\$" | \\
+		grep -v "HANDLING" | \\
+		grep -v "NOTE" | \\
+		grep -v "Unsupported form of #define" | \\
+		grep -v "no glimpse keyword inferred from snippet" | \\
+		grep -v "EXN:Common.Timeout" | \\
+		grep -v "FLOW: can't find exit or error exit:" | \\
+		grep -v "FLOW: deadcode detected:" | \\
+		grep -v "LEXER: identifier with dollar:" | \\
+		grep -v "LEXER: unrecognised symbol in char:" | \\
+		grep -v "LEXER: ZARB" | \\
+		grep -v "CFG: orphelin nodes, maybe something weird happened" | \\
+		grep -v "not worth trying" | \\
+		grep -v "MultiFound field:" | \\
+		grep -ve "(ONCE) warning: I consider .* as a constant" | \\
+		grep -ve "TYPE: header .* not found"
+
+viewres:
+	find \$(RESULTS) -name "*.out" | xargs pager
+
+checkcocci:
+	for c in \`find \$(COCCI) -name "*.cocci"\`; do spatch -parse_cocci \$\$c > /dev/null ; done
+
+clean:
+	find \$(RESULTS) -name "*.out" -delete
+	find \$(RESULTS) -name "*.log" -delete
+
+distclean:
+	rm -rf \$(RESULTS)
+
+maintclean: distclean
+	rm Makefile
+
+depend: update
+EOF

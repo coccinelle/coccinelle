@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="generator" content="hevea 2.09">
+<link rel="stylesheet" type="text/css" href="main_grammar.css">
+<title>Iteration</title>
+</head>
+<body >
+<a href="main_grammar012.html"><img src="previous_motif.gif" alt="Previous"></a>
+<a href="index.html"><img src="contents_motif.gif" alt="Up"></a>
+<a href="main_grammar014.html"><img src="next_motif.gif" alt="Next"></a>
+<hr>
+<h2 id="sec14" class="section">13  Iteration</h2>
+<p>It is possible to iterate Coccinelle, giving the subsequent iterations a
+different set of virtual rules or virtual identifier bindings. And example
+is found in <span style="font-family:monospace">demos/iteration.cocci</span>. The example shown there is as
+follows:</p><blockquote class="quote">
+<pre class="verbatim">virtual after_start
+
+@initialize:ocaml@
+
+let tbl = Hashtbl.create(100)
+
+let add_if_not_present from f file =
+try let _ = Hashtbl.find tbl (f,file) in ()
+with Not_found -&gt;
+   Hashtbl.add tbl (f,file) file;
+   let it = new iteration() in
+   (match file with
+     Some fl -&gt; it#set_files [fl]
+   | None -&gt; ());
+   it#add_virtual_rule After_start;
+   it#add_virtual_identifier Err_ptr_function f;
+   it#register()
+</pre></blockquote><p>The virtual rule <span style="font-family:monospace">after_start</span> is used to distinguish between the
+first iteration (in which it is not considered to have matched) and all
+others. This is done by not mentioning <span style="font-family:monospace">after_start</span> in the command
+line, but adding it on each iteration.</p><p>The main code for performing the iteration is found in the function <span style="font-family:monospace">add_if_not_present</span>, between the lines calling <span style="font-family:monospace">new iteration</span> and
+<span style="font-family:monospace">register</span>. <span style="font-family:monospace">New iteration</span> creates a structure representing the
+new iteration. <span style="font-family:monospace">set_files</span> sets the list of files to be considered on
+the new iteration. If this function is not called, the new iteration
+treats the same files as the current iteration. <span style="font-family:monospace">add_virtual_rule A</span>
+has the same effect as putting <span style="font-family:monospace">-D a</span> on the command line. Note that
+the first letter of the rule name is capitalized, although this is not done
+elsewhere. <span style="font-family:monospace">add_virtual_identifier X v</span> has the same effect as
+putting <span style="font-family:monospace">-D x=v</span> on the command line. Note again the case change.
+<span style="font-family:monospace">extend_virtual_identifiers()</span> (not shown) preserves all virtual
+identifiers of the current iteration that are not overridden by calls to 
+<span style="font-family:monospace">add_virtual_identifier</span>. Finally, the call to <span style="font-family:monospace">register</span> queues
+the collected information to trigger a new iteration at some time in the
+future.</p><p>Modification is not allowed when using iteration. Thus, it is required to
+use the <span style="font-family:monospace">--no-show-diff</span>, unless the semantic patch contains <span style="font-family:monospace">*</span>s
+(a semantic match rather than a semantic patch).</p><p>The remainder of the code above uses a hash table to ensure that the same
+information is not enqueued more than once. Coccinelle itself provides no
+support for this.</p>
+<hr>
+<a href="main_grammar012.html"><img src="previous_motif.gif" alt="Previous"></a>
+<a href="index.html"><img src="contents_motif.gif" alt="Up"></a>
+<a href="main_grammar014.html"><img src="next_motif.gif" alt="Next"></a>
+</body>
+</html>
