@@ -1,0 +1,75 @@
+#!/bin/bash
+
+echo "Using PREFIX="${PREFIX:=$1}
+echo "Using PROJECT="${PROJECT:=$2}
+echo "Using COCCI="${COCCI:=$3}
+echo "Using RESULTS="${RESULTS:=$4}
+echo "Using SPFLAGS="${SPFLAGS:=$5}
+
+if [ "`which spatch.opt`" ] ; then
+    SPATCH=spatch.opt
+else
+    SPATCH=spatch
+fi
+echo "Using $SPATCH"
+
+#echo "Using PREFIX="${PREFIX:=`pwd`}
+#echo "Using COCCI="${COCCI:=$PREFIX/cocci}
+#echo "Using PROJECT="${PROJECT:=$PREFIX/project}
+#echo "Using RESULTS="${RESULTS:=$PREFIX/results}
+
+SMPL=`find $COCCI -mindepth 1 -type f -name "*.cocci"| sed "s|$COCCI/||g"`
+
+PRJNAME=`basename $PROJECT`
+
+echo "Processing project \"$PRJNAME\""
+
+mkdir -p $RESULTS/
+
+for s in $SMPL;do
+
+    f=`basename $s .cocci`
+
+    # Produce bug report for a particular version and a particular bug pattern
+    echo "#!/bin/bash" > $RESULTS/$f.sh
+	echo "" >> $RESULTS/$f.sh
+	echo "FLAGS=\"`grep -E \"// +Options *:\" $COCCI/$s | cut -f2 -d\":\"`\"" >> $RESULTS/$f.sh
+	echo "INC?=$PROJECT/include" >> $RESULTS/$f.sh
+	echo "echo \"Applying $COCCI/$s with: '\$FLAGS'\"" >> $RESULTS/$f.sh
+	echo "nice -19 $SPATCH $SPFLAGS \$FLAGS -I \$INC -cocci_file $COCCI/$s -dir $PROJECT/ $FLAGS \\" >> $RESULTS/$f.sh
+	echo "> $f.out \\" >> $RESULTS/$f.sh
+	echo "2> $f.log" >> $RESULTS/$f.sh
+	echo "echo \"$f.out completed\"" >> $RESULTS/$f.sh
+	chmod u+x $RESULTS/$f.sh
+
+done # s in $SMPL
+
+
+#############################################
+# Fill the Makefile
+#############################################
+# Generation of a Makefile per project
+echo -e ".SUFFIXES: .out .sh\n" > $RESULTS/Makefile
+echo -e "all: out\n" >> $RESULTS/Makefile
+echo -e ".sh.out:" >> $RESULTS/Makefile
+echo -e "\t-@./\$<\n" >> $RESULTS/Makefile
+
+ALL_SMPL=`echo -n "out:"`
+
+for s in $SMPL;do
+    f=`basename $s .cocci`
+
+#    echo "$f.out:" >> $RESULTS/Makefile
+#    echo "	-./$f.sh" >> $RESULTS/Makefile
+    ALL_SMPL="$ALL_SMPL $f.out"
+
+done # s
+
+echo "$ALL_SMPL" >> $RESULTS/Makefile
+
+#############################################
+
+# Cleanup dead links
+find -L $RESULTS -type l -delete
+# Cleanup empty dir.
+find results/ -depth -type d -empty -delete

@@ -1,0 +1,196 @@
+@@
+identifier x;
+expression E,E1;
+expression f;
+identifier fld;
+@@
+
+(
+  free(x);
+|
+  kfree(x);
+|
+  kfree_skb(x);
+|
+  dev_kfree_skb(x);
+|
+  dev_kfree_skb_any(x);
+)
+  ... WHEN != x = E
+(
+  f(...,x,...)
+|
+  *x
+|
+  x[E1]
+|
+  x->fld
+)
+
+@@
+identifier x;
+expression E;
+@@
+
+(
+  free(x);
+|
+  kfree(x);
+|
+  kfree_skb(x);
+|
+  dev_kfree_skb(x);
+|
+  dev_kfree_skb_any(x);
+)
+  ... WHEN != x = E
+return x;
+
+//------------------------------------------------------------
+@@
+expression x;
+expression E,E1,E2;
+expression f;
+identifier fld;
+@@
+
+(
+  free(x[E2]);
+|
+  kfree(x[E2]);
+|
+  kfree_skb(x[E2]);
+|
+  dev_kfree_skb(x[E2]);
+|
+  dev_kfree_skb_any(x[E2]);
+)
+  ... WHEN != \(x = E \| E2 = E\)
+(
+  f(...,x[E2],...)
+|
+  *x[E2]
+|
+  x[E2][E1]
+|
+  x[E2]->fld
+)
+
+@@
+expression x;
+expression E;
+@@
+
+(
+  free(x[E2]);
+|
+  kfree(x[E2]);
+|
+  kfree_skb(x[E2]);
+|
+  dev_kfree_skb(x[E2]);
+|
+  dev_kfree_skb_any(x[E2]);
+)
+  ... WHEN != \(x = E \| E2 = E\)
+return x[E2];
+
+//------------------------------------------------------------
+@@
+expression x;
+expression E,E1;
+expression f;
+identifier fld,f1;
+@@
+
+(
+  free(x->f1);
+|
+  kfree(x->f1);
+|
+  kfree_skb(x->f1);
+|
+  dev_kfree_skb(x->f1);
+|
+  dev_kfree_skb_any(x->f1);
+)
+  ... WHEN != \(x = E\|x->f1 = E\)
+(
+  f(...,x->f1,...)
+|
+  *x->f1
+|
+  x->f1[E1]
+|
+  x->f1->fld
+)
+
+@@
+expression x;
+expression E;
+@@
+
+(
+  free(x->f1);
+|
+  kfree(x->f1);
+|
+  kfree_skb(x->f1);
+|
+  dev_kfree_skb(x->f1);
+|
+  dev_kfree_skb_any(x->f1);
+)
+  ... WHEN != \(x = E\|x->f1 = E\)
+return x->f1;
+
+//------------------------------------------------------------
+@@
+expression x;
+expression E,E1;
+expression f;
+identifier fld;
+@@
+
+(
+  free(*x);
+|
+  kfree(*x);
+|
+  kfree_skb(*x);
+|
+  dev_kfree_skb(*x);
+|
+  dev_kfree_skb_any(*x);
+)
+  ... WHEN != \(x = E\|*x = E\)
+(
+  f(...,*x,...)
+|
+  **x
+|
+  *x[E1]
+|
+  *x->fld
+)
+
+@@
+expression x;
+expression E;
+@@
+
+(
+  free(*x);
+|
+  kfree(*x);
+|
+  kfree_skb(*x);
+|
+  dev_kfree_skb(*x);
+|
+  dev_kfree_skb_any(*x);
+)
+  ... WHEN != \(x = E\|*x = E\)
+return *x;
+
+//------------------------------------------------------------

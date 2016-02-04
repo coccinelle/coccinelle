@@ -1,0 +1,66 @@
+ocamlfind query (unix|bigarray|num|dynlink|str|threads)
+
+$(ocamllibdir)
+
+
+
+ocamlfind query camlp4
+
+$(ocamllibdir)/camlp4
+
+
+
+pkg-config --atleast-pkgconfig-version
+
+
+
+
+pkg-config --exists --print-errors python(-([0-9\\.]+))?\$
+s,^pkg-config --exists --print-errors python(-([0-9\\.]+))?\$,\\2,
+$(pythonexists "${MATCH}")
+
+
+pkg-config --print-errors python(-([0-9\\.]+))?\$
+s,^pkg-config --print-errors python(-([0-9\\.]+))?\$,\\2,
+$(pythonexists "${MATCH}")
+
+
+
+pkg-config --cflags python(-([0-9\\.]+))?\$
+s,^pkg-config --cflags python(-([0-9\\.]+))?\$,\\2,
+$(pythoncflags "${MATCH}")
+
+
+
+pkg-config --libs python(-([0-9\\.]+))?\$
+s,^pkg-config --libs python(-([0-9\\.]+))?\$,\\2,
+$(pythonlibs "${MATCH}")
+
+
+
+pkg-config --exists --print-errors libpcre
+
+$(checkpcre)
+
+
+
+pkg-config --print-errors libpcre
+
+$(checkpcre)
+
+
+
+pkg-config --short-errors --print-errors --cflags --libs libpcre
+
+$(checkpcre)
+
+
+
+pkg-config --cflags libpcre
+
+
+
+
+pkg-config --libs libpcre
+
+-lpcre

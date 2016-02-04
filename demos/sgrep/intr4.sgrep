@@ -1,0 +1,21 @@
+@@ @@
+( 
+  cli(); 
+| 
+  spin_lock_irqsave(...);
+)
+  ... when != \( sti(); \| restore_flags(...); \| spin_unlock_irqrestore(...); \)
+? \( cli(); \| spin_lock_irqsave(...); \)
+
+@@ @@
+( 
+  sti(); 
+| 
+  restore_flags(...);
+)
+  ... when != cli();
+( 
+  sti(); 
+| 
+  restore_flags(...);
+)

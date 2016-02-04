@@ -1,0 +1,55 @@
+@ rule1 @
+type T;
+struct net_device *dev;
+expression E;
+@@
+
+ dev = 
+(
+        alloc_netdev
+| 
+        alloc_etherdev
+|
+        alloc_fcdev
+|
+        alloc_fddidev
+|
+        alloc_hippi_dev
+|
+        alloc_trdev
+|
+        alloc_ltalkdev
+|
+        alloc_irdadev
+| 
+        alloc_etherdev_mq
+)
+   (sizeof(T), ...)
+
+//sizeof(T) + E
+
+
+@ rule1bis @
+struct net_device *dev;
+expression E;
+@@
+
+ dev->priv = E
+//+ DANGERRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+
+
+@ rule2 depends on !rule1  @
+struct net_device *dev;
+@@
+
+- netdev_priv(dev)
++ no_alloc_xxx
+
+
+@ rule3 depends on rule1bis  @
+struct net_device *dev;
+@@
+
+- netdev_priv(dev)
++ with_danger
+

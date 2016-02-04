@@ -1,0 +1,2 @@
+Send a mail to cocci@systeme.lip6.fr, or julia.lawall@lip6.fr
+with [bug-cocci] as a prefix in the subject of your mail.

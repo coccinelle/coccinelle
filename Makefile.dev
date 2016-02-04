@@ -1,0 +1,96 @@
+
+##############################################################################
+# Pad specific rules
+##############################################################################
+
+#TOP=/home/pad/mobile/project-coccinelle
+WEBBASE=~/website
+WEBSITE=$(WEBBASE)/distrib
+
+website:
+	cp $(TMP)/$(PACKAGE).tgz                $(WEBSITE)
+	cp $(TMP)/$(PACKAGE)-bin-x86.tgz        $(WEBSITE)
+#	cp $(TMP)/$(PACKAGE)-bin-x86-static.tgz $(WEBSITE)
+	cp $(TMP)/$(PACKAGE)-bin-x86-python.tgz $(WEBSITE)
+	cp $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz          $(WEBSITE)
+	cp $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz   $(WEBSITE)
+	cd $(WEBSITE); svn add $(PACKAGE).tgz               \
+		$(PACKAGE)-bin-x86.tgz                      \
+		$(PACKAGE)-bin-x86-python.tgz               \
+		$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz \
+		$(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz
+#		$(PACKAGE)-bin-x86-static.tgz
+	@echo "\nYou need to manually update those files:\n"
+	@echo "\t$(WEBBASE)/download.php"
+	@echo "\t$(WEBSITE)/change.html\n"
+	@echo "Then commit the changes.\n"
+#	rm -f $(WEBSITE)/LATEST* $(WEBSITE)/coccinelle-latest.tgz
+#	cp changes.txt $(WEBSITE)/changes-$(VERSION).txt
+#	cd $(WEBSITE); touch LATEST_IS_$(VERSION); ln -s $(PACKAGE).tgz coccinelle-latest.tgz
+#	cp readme.txt $(WEBSITE)
+
+
+#TXT=$(wildcard *.txt)
+syncwiki:
+#	unison ~/public_html/wiki/wiki-LFS/data/pages/ docs/wiki/
+#	set -e; for i in $(TXT); do unison $$i docs/wiki/$$i; done
+
+darcsweb:
+#	@echo pull from ~/public_html/darcs/c-coccinelle and c-commons and lib-xxx
+
+DARCSFORESTS=commons ocamlsexp \
+ parsing_c parsing_cocci engine
+
+update_darcs:
+	darcs pull
+	set -e; for i in $(DARCSFORESTS); do cd $$i; darcs pull; cd ..; done
+
+#darcs diff -u
+diff_darcs:
+	set -e; for i in $(DARCSFORESTS); do cd $$i; darcs diff -u; cd ..; done
+
+##############################################################################
+# Git Developer rules
+##############################################################################
+gitupdate:
+	echo "you should pull from the git repository"
+#	git cvsimport -d :ext:topps:/var/cvs/cocci  coccinelle
+
+#UBUNTU=karmic lucid maverick natty
+UBUNTU=lucid maverick natty oneiric
+UBUNTURELEASE=$(UBUNTU:%=ubuntu-%)
+
+.PHONY:: ubuntu $(UBUNTURELEASE)
+
+ubuntu:
+	for r in $(UBUNTURELEASE); do $(MAKE) $$r ; done
+	@echo "\nYou can now build the Ubuntu source package with\n"
+	@echo "\tmake packsrc\n"
+
+#$(UBUNTURELEASE):
+#	debchange -c debian/changelog.karmic -D karmic -v $(VERSION)~$(@:ubuntu-%=%)~npalix1 "New release $(VERSION)"
+IDX?=1
+
+ubuntu-karmic:
+	debchange -c debian/changelog.karmic -D karmic -v $(VERSION)~910npalix$(IDX) "New release $(VERSION)"
+
+ubuntu-lucid:
+	debchange -c debian/changelog.lucid -D lucid -v $(VERSION)~1004npalix$(IDX) "New release $(VERSION)"
+
+ubuntu-maverick:
+	debchange -c debian/changelog.maverick -D maverick -v $(VERSION)~1010npalix$(IDX) "New release $(VERSION)"
+
+ubuntu-natty:
+	debchange -c debian/changelog.natty -D natty -v $(VERSION)~1104npalix$(IDX) "New release $(VERSION)"
+
+ubuntu-oneiric:
+	debchange -c debian/changelog.oneiric -D oneiric -v $(VERSION)~1110npalix$(IDX) "New release $(VERSION)"
+
+ubuntu-p:
+	if [ ! -f debian/changelog.$(@:ubuntu-%=%) ] ; then \
+		debchange --create -c debian/changelog.$(@:ubuntu-%=%) -D UNRELEASED \
+			-v $(VERSION)~npalix$(IDX) "New release $(VERSION)" --package $(PRJNAME) ; \
+	else \
+		debchange -c debian/changelog.$(@:ubuntu-%=%) -D UNRELEASED -v $(VERSION)~npalix$(IDX) "New release $(VERSION)" ; \
+	fi
+

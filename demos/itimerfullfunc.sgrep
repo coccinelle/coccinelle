@@ -1,0 +1,37 @@
+// ex 2.1
+@@
+@@
+
+int do_setitimer(int which, struct itimerval *value, 
+                 struct itimerval *ovalue)
+{
+   unsigned long expire;
+   cputime_t cputime;
+   int k;
+   if (ovalue && (k = do_getitimer(which, ovalue)) < 0)
+     return k;
+   switch (which) {
+     // work even when reversed case
+     case ITIMER_PROF:
+       cputime = timeval_to_cputime(&value->it_value);
+        if (cputime_eq(cputime, cputime_zero))
+	    cputime = jiffies_to_cputime(1);
+         current->it_prof_value = cputime;
+         cputime = timeval_to_cputime(&value->it_interval);
+-         current->it_prof_incr = cputime;
++         B;
+         break;
+     case ITIMER_VIRTUAL:
+       cputime = timeval_to_cputime(&value->it_value);
+      if (cputime_eq(cputime, cputime_zero))
+	  cputime = jiffies_to_cputime(1);
+       current->it_virt_value = cputime;
+-       cputime = timeval_to_cputime(&value->it_interval);
++      A;
+       current->it_virt_incr = cputime;
+       break;
+     default:
+         return -EINVAL;
+   }
+   return 0;
+}

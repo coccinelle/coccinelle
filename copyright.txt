@@ -1,0 +1,22 @@
+Coccinelle - Julia Lawall, Yoann Padioleau, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+
+Copyright (C) 2010 INRIA, University of Copenhagen DIKU
+Copyright (C) 2005-2009 University of Copenhagen DIKU, Ecole des Mines de Nantes
+
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of the GNU General Public License (GPL)
+  version 2 as published by the Free Software Foundation.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  file license.txt for more details.
+
+
+The contents of some files in this directory was derived from external
+sources with compatible licenses.  The original copyright and license
+notice was preserved in the affected files.
+
+This software can be distributed under another license (dual license) making
+it possible to use Coccinelle in a commercial software.
+Contact one of the authors for more information.
