@@ -1,0 +1,23 @@
+\begin{itemize}
+\item \textbf{Missing information in rule headers}: Rule headers will not be generated correctly if the original rules contain \texttt{extends} or \texttt{expression}. Those qualifiers will be missing in the generated rule since they are not included in the output of the parser.\newline
+Fix: Change the parser to include this information.
+\item \textbf{Typedefs in rule headers}: If there are meta typedefs in the original rule headers, they will be included in every generated rule that uses the type. This causes an error when using the generated script since meta typedefs can only be declared once.\newline
+Fix: Remove the error check in the parser since this should not cause an error.
+\item Disjunction generation has a number of issues:
+\begin{itemize}
+  \item \textbf{Selecting wrong position in statement dots cases}: There must be the same number of positions in each disjunction case, otherwise \texttt{org} and \texttt{report} will only match when all positions can be found. In statement dots disjunctions, this is currently solved by putting the position at the first possible statement. The issue here is that, if the case contains many statements, only the first surrounding statement will be highlighted instead of the important part.\newline
+Fix: Implement support for finding a single best statement in a statement dots (list of statements).
+  \item \textbf{Nested disjunctions}: The position counter is frozen within a disjunction. But if there is a nested disjunction inside it, the same position will be used in both disjunction levels, causing a nonsensical script.\newline
+Fix: Keep track of the current nest and name the position accordingly.
+\end{itemize}
+\item \textbf{No format string metavariable check}: The user can specify metavariables to be used in the messages for \texttt{org} and \texttt{report} mode. The program currently does not check if the declared metavariables actually exist in the original rule.\newline
+Fix: Implement check of metavariables.
+\item \textbf{Dependencies between patch rules}: It is possible to make patch rules that depend on other patch rules modifying the code. E.g. if one patch rule transforms f(0) and one transforms f(e), then f(0) will only match the first, since it is transformed to something else when it reaches the f(e) rule. But in \texttt{context} mode, both rules will print the f(0) occurrence.\newline
+Fix: ??? Somehow detect that two rules will match the same case and insert constraints such that any match in subsequent rules does not match the first one.
+\item \textbf{Dependencies in context rules}: In a \texttt{context} script, if there are dependencies between rules, they might be mixed up. This happens if there are rules dependent on the generated rules since they will then be printed before the rules on which they are dependent!\newline
+Fix: ???
+\item \textbf{Type and switch case disjunctions}: Currently, the program fails if attempting to generate a \texttt{Coccinelle} script with type or switch case disjunctions. The failure happens in the position generator. The reason it is not implemented is that it requires quite a lot of code for a case that rarely appears.\newline
+Fix: Implement full position generation for types and switch cases.
+\item \textbf{File transformation not context-dependent}: When printing the transformed script, a somewhat primitive string replacement strategy is used to rename rules and inject dependencies (e.g. change \texttt{@rulename@} to \texttt{@rulename depends on patch@}). The transformation is not context-dependent which means that the script will get mangled if there is e.g. a \texttt{@@} \textit{inside comments} on a new line, since this will be mistaken for a SmPL-syntax \texttt{@@}.\newline
+Fix: Use simple parsing in the file transformation. Another solution is to not transform the original file at all, but to completely reconstruct it from the AST (this requires a pretty printer for AST that retains comments and plus slices!). In practice, however, this is only a problem in very specific cases that are unlikely to occur.
+\end{itemize}

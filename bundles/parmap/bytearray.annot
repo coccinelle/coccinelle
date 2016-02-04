@@ -1,0 +1,2287 @@
+"bytearray.ml" 20 1060 1064 "bytearray.ml" 20 1060 1070
+type(
+  ('a, 'b, 'c) Bigarray.Array1.t -> int
+)
+ident(
+  def length "bytearray.ml" 22 1094 1094 "bytearray.ml" 1 0 -1
+)
+"bytearray.ml" 20 1060 1073 "bytearray.ml" 20 1060 1092
+type(
+  ('a, 'b, 'c) Bigarray.Array1.t -> int
+)
+ident(
+  ext_ref Bigarray.Array1.dim
+)
+"bytearray.ml" 22 1094 1098 "bytearray.ml" 22 1094 1104
+type(
+  int ->
+  (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+)
+ident(
+  def create "bytearray.ml" 24 1167 1167 "bytearray.ml" 1 0 -1
+)
+"bytearray.ml" 22 1094 1105 "bytearray.ml" 22 1094 1106
+type(
+  int
+)
+ident(
+  def l "bytearray.ml" 22 1094 1109 "bytearray.ml" 22 1094 1165
+)
+"bytearray.ml" 22 1094 1109 "bytearray.ml" 22 1094 1131
+type(
+  (char, Bigarray.int8_unsigned_elt) Bigarray.kind ->
+  Bigarray.c_layout Bigarray.layout ->
+  int ->
+  (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+)
+ident(
+  ext_ref Bigarray.Array1.create
+)
+"bytearray.ml" 22 1094 1132 "bytearray.ml" 22 1094 1145
+type(
+  (char, Bigarray.int8_unsigned_elt) Bigarray.kind
+)
+ident(
+  ext_ref Bigarray.char
+)
+"bytearray.ml" 22 1094 1146 "bytearray.ml" 22 1094 1163
+type(
+  Bigarray.c_layout Bigarray.layout
+)
+ident(
+  ext_ref Bigarray.c_layout
+)
+"bytearray.ml" 22 1094 1164 "bytearray.ml" 22 1094 1165
+type(
+  int
+)
+ident(
+  int_ref l "bytearray.ml" 22 1094 1105 "bytearray.ml" 22 1094 1106
+)
+"bytearray.ml" 22 1094 1109 "bytearray.ml" 22 1094 1165
+call(
+  tail
+)
+type(
+  (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+)
+"bytearray.ml" 24 1167 1171 "bytearray.ml" 24 1167 1178
+type(
+  int -> (float, Bigarray.float64_elt, Bigarray.c_layout) Bigarray.Array1.t
+)
+ident(
+  def createf "bytearray.ml" 38 1446 1446 "bytearray.ml" 1 0 -1
+)
+"bytearray.ml" 24 1167 1179 "bytearray.ml" 24 1167 1180
+type(
+  int
+)
+ident(
+  def l "bytearray.ml" 24 1167 1183 "bytearray.ml" 24 1167 1242
+)
+"bytearray.ml" 24 1167 1183 "bytearray.ml" 24 1167 1205
+type(
+  (float, Bigarray.float64_elt) Bigarray.kind ->
+  Bigarray.c_layout Bigarray.layout ->
+  int -> (float, Bigarray.float64_elt, Bigarray.c_layout) Bigarray.Array1.t
+)
+ident(
+  ext_ref Bigarray.Array1.create
+)
+"bytearray.ml" 24 1167 1206 "bytearray.ml" 24 1167 1222
+type(
+  (float, Bigarray.float64_elt) Bigarray.kind
+)
+ident(
+  ext_ref Bigarray.float64
+)
+"bytearray.ml" 24 1167 1223 "bytearray.ml" 24 1167 1240
+type(
+  Bigarray.c_layout Bigarray.layout
+)
+ident(
+  ext_ref Bigarray.c_layout
+)
+"bytearray.ml" 24 1167 1241 "bytearray.ml" 24 1167 1242
+type(
+  int
+)
+ident(
+  int_ref l "bytearray.ml" 24 1167 1179 "bytearray.ml" 24 1167 1180
+)
+"bytearray.ml" 24 1167 1183 "bytearray.ml" 24 1167 1242
+call(
+  tail
+)
+type(
+  (float, Bigarray.float64_elt, Bigarray.c_layout) Bigarray.Array1.t
+)
+"bytearray.ml" 44 1684 1688 "bytearray.ml" 44 1684 1697
+type(
+  t -> string
+)
+ident(
+  def to_string "bytearray.ml" 51 1868 1868 "bytearray.ml" 1 0 -1
+)
+"bytearray.ml" 44 1684 1698 "bytearray.ml" 44 1684 1699
+type(
+  t
+)
+ident(
+  def a "bytearray.ml" 45 1702 1704 "bytearray.ml" 49 1863 1866
+)
+"bytearray.ml" 45 1702 1708 "bytearray.ml" 45 1702 1709
+type(
+  int
+)
+ident(
+  def l "bytearray.ml" 46 1724 1726 "bytearray.ml" 49 1863 1866
+)
+"bytearray.ml" 45 1702 1712 "bytearray.ml" 45 1702 1718
+type(
+  t -> int
+)
+ident(
+  int_ref length "bytearray.ml" 20 1060 1064 "bytearray.ml" 20 1060 1070
+)
+"bytearray.ml" 45 1702 1719 "bytearray.ml" 45 1702 1720
+type(
+  t
+)
+ident(
+  int_ref a "bytearray.ml" 44 1684 1698 "bytearray.ml" 44 1684 1699
+)
+"bytearray.ml" 45 1702 1712 "bytearray.ml" 45 1702 1720
+call(
+  stack
+)
+type(
+  int
+)
+"bytearray.ml" 46 1724 1729 "bytearray.ml" 46 1724 1730
+type(
+  int
+)
+ident(
+  int_ref l "bytearray.ml" 45 1702 1708 "bytearray.ml" 45 1702 1709
+)
+"bytearray.ml" 46 1724 1731 "bytearray.ml" 46 1724 1732
+type(
+  int -> int -> bool
+)
+ident(
+  ext_ref Pervasives.( > )
+)
+"bytearray.ml" 46 1724 1733 "bytearray.ml" 46 1724 1754
+type(
+  int
+)
+ident(
+  ext_ref Sys.max_string_length
+)
+"bytearray.ml" 46 1724 1729 "bytearray.ml" 46 1724 1754
+type(
+  bool
+)
+"bytearray.ml" 46 1724 1760 "bytearray.ml" 46 1724 1771
+type(
+  string -> string
+)
+ident(
+  ext_ref Pervasives.invalid_arg
+)
+"bytearray.ml" 46 1724 1772 "bytearray.ml" 46 1724 1793
+type(
+  string
+)
+"bytearray.ml" 46 1724 1760 "bytearray.ml" 46 1724 1793
+call(
+  tail
+)
+type(
+  string
+)
+"bytearray.ml" 47 1799 1805 "bytearray.ml" 47 1799 1806
+type(
+  string
+)
+ident(
+  def s "bytearray.ml" 48 1828 1830 "bytearray.ml" 49 1863 1866
+)
+"bytearray.ml" 47 1799 1809 "bytearray.ml" 47 1799 1822
+type(
+  int -> string
+)
+ident(
+  ext_ref String.create
+)
+"bytearray.ml" 47 1799 1823 "bytearray.ml" 47 1799 1824
+type(
+  int
+)
+ident(
+  int_ref l "bytearray.ml" 45 1702 1708 "bytearray.ml" 45 1702 1709
+)
+"bytearray.ml" 47 1799 1809 "bytearray.ml" 47 1799 1824
+type(
+  string
+)
+"bytearray.ml" 48 1828 1830 "bytearray.ml" 48 1828 1851
+type(
+  t -> int -> string -> int -> int -> unit
+)
+ident(
+  int_ref unsafe_blit_to_string "bytearray.ml" 41 1566 1566 "bytearray.ml" 42 1640 1682
+)
+"bytearray.ml" 48 1828 1852 "bytearray.ml" 48 1828 1853
+type(
+  t
+)
+ident(
+  int_ref a "bytearray.ml" 44 1684 1698 "bytearray.ml" 44 1684 1699
+)
+"bytearray.ml" 48 1828 1854 "bytearray.ml" 48 1828 1855
+type(
+  int
+)
+"bytearray.ml" 48 1828 1856 "bytearray.ml" 48 1828 1857
+type(
+  string
+)
+ident(
+  int_ref s "bytearray.ml" 47 1799 1805 "bytearray.ml" 47 1799 1806
+)
+"bytearray.ml" 48 1828 1858 "bytearray.ml" 48 1828 1859
+type(
+  int
+)
+"bytearray.ml" 48 1828 1860 "bytearray.ml" 48 1828 1861
+type(
+  int
+)
+ident(
+  int_ref l "bytearray.ml" 45 1702 1708 "bytearray.ml" 45 1702 1709
+)
+"bytearray.ml" 48 1828 1830 "bytearray.ml" 48 1828 1861
+type(
+  unit
+)
+"bytearray.ml" 49 1863 1865 "bytearray.ml" 49 1863 1866
+type(
+  string
+)
+ident(
+  int_ref s "bytearray.ml" 47 1799 1805 "bytearray.ml" 47 1799 1806
+)
+"bytearray.ml" 48 1828 1830 "bytearray.ml" 49 1863 1866
+type(
+  string
+)
+"bytearray.ml" 47 1799 1801 "bytearray.ml" 49 1863 1866
+type(
+  string
+)
+"bytearray.ml" 46 1724 1726 "bytearray.ml" 49 1863 1866
+type(
+  string
+)
+"bytearray.ml" 45 1702 1704 "bytearray.ml" 49 1863 1866
+type(
+  string
+)
+"bytearray.ml" 51 1868 1872 "bytearray.ml" 51 1868 1881
+type(
+  string ->
+  (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+)
+ident(
+  def of_string "bytearray.ml" 57 1979 1979 "bytearray.ml" 1 0 -1
+)
+"bytearray.ml" 51 1868 1882 "bytearray.ml" 51 1868 1883
+type(
+  string
+)
+ident(
+  def s "bytearray.ml" 52 1886 1888 "bytearray.ml" 55 1974 1977
+)
+"bytearray.ml" 52 1886 1892 "bytearray.ml" 52 1886 1893
+type(
+  int
+)
+ident(
+  def l "bytearray.ml" 53 1915 1917 "bytearray.ml" 55 1974 1977
+)
+"bytearray.ml" 52 1886 1896 "bytearray.ml" 52 1886 1909
+type(
+  string -> int
+)
+ident(
+  ext_ref String.length
+)
+"bytearray.ml" 52 1886 1910 "bytearray.ml" 52 1886 1911
+type(
+  string
+)
+ident(
+  int_ref s "bytearray.ml" 51 1868 1882 "bytearray.ml" 51 1868 1883
+)
+"bytearray.ml" 52 1886 1896 "bytearray.ml" 52 1886 1911
+type(
+  int
+)
+"bytearray.ml" 53 1915 1921 "bytearray.ml" 53 1915 1922
+type(
+  (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+)
+ident(
+  def a "bytearray.ml" 54 1937 1939 "bytearray.ml" 55 1974 1977
+)
+"bytearray.ml" 53 1915 1925 "bytearray.ml" 53 1915 1931
+type(
+  int ->
+  (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+)
+ident(
+  int_ref create "bytearray.ml" 22 1094 1098 "bytearray.ml" 22 1094 1104
+)
+"bytearray.ml" 53 1915 1932 "bytearray.ml" 53 1915 1933
+type(
+  int
+)
+ident(
+  int_ref l "bytearray.ml" 52 1886 1892 "bytearray.ml" 52 1886 1893
+)
+"bytearray.ml" 53 1915 1925 "bytearray.ml" 53 1915 1933
+call(
+  stack
+)
+type(
+  (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+)
+"bytearray.ml" 54 1937 1939 "bytearray.ml" 54 1937 1962
+type(
+  string -> int -> t -> int -> int -> unit
+)
+ident(
+  int_ref unsafe_blit_from_string "bytearray.ml" 38 1446 1446 "bytearray.ml" 39 1522 1564
+)
+"bytearray.ml" 54 1937 1963 "bytearray.ml" 54 1937 1964
+type(
+  string
+)
+ident(
+  int_ref s "bytearray.ml" 51 1868 1882 "bytearray.ml" 51 1868 1883
+)
+"bytearray.ml" 54 1937 1965 "bytearray.ml" 54 1937 1966
+type(
+  int
+)
+"bytearray.ml" 54 1937 1967 "bytearray.ml" 54 1937 1968
+type(
+  t
+)
+ident(
+  int_ref a "bytearray.ml" 53 1915 1921 "bytearray.ml" 53 1915 1922
+)
+"bytearray.ml" 54 1937 1969 "bytearray.ml" 54 1937 1970
+type(
+  int
+)
+"bytearray.ml" 54 1937 1971 "bytearray.ml" 54 1937 1972
+type(
+  int
+)
+ident(
+  int_ref l "bytearray.ml" 52 1886 1892 "bytearray.ml" 52 1886 1893
+)
+"bytearray.ml" 54 1937 1939 "bytearray.ml" 54 1937 1972
+type(
+  unit
+)
+"bytearray.ml" 55 1974 1976 "bytearray.ml" 55 1974 1977
+type(
+  (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+)
+ident(
+  int_ref a "bytearray.ml" 53 1915 1921 "bytearray.ml" 53 1915 1922
+)
+"bytearray.ml" 54 1937 1939 "bytearray.ml" 55 1974 1977
+type(
+  (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+)
+"bytearray.ml" 53 1915 1917 "bytearray.ml" 55 1974 1977
+type(
+  (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+)
+"bytearray.ml" 52 1886 1888 "bytearray.ml" 55 1974 1977
+type(
+  (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+)
+"bytearray.ml" 57 1979 1983 "bytearray.ml" 57 1979 1997
+type(
+  Unix.file_descr ->
+  string ->
+  (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+)
+ident(
+  def mmap_of_string "bytearray.ml" 63 2159 2159 "bytearray.ml" 1 0 -1
+)
+"bytearray.ml" 57 1979 1998 "bytearray.ml" 57 1979 2000
+type(
+  Unix.file_descr
+)
+ident(
+  def fd "bytearray.ml" 57 1979 2001 "bytearray.ml" 61 2153 2157
+)
+"bytearray.ml" 57 1979 2001 "bytearray.ml" 57 1979 2002
+type(
+  string
+)
+ident(
+  def s "bytearray.ml" 58 2005 2007 "bytearray.ml" 61 2153 2157
+)
+"bytearray.ml" 58 2005 2011 "bytearray.ml" 58 2005 2012
+type(
+  int
+)
+ident(
+  def l "bytearray.ml" 59 2034 2036 "bytearray.ml" 61 2153 2157
+)
+"bytearray.ml" 58 2005 2015 "bytearray.ml" 58 2005 2028
+type(
+  string -> int
+)
+ident(
+  ext_ref String.length
+)
+"bytearray.ml" 58 2005 2029 "bytearray.ml" 58 2005 2030
+type(
+  string
+)
+ident(
+  int_ref s "bytearray.ml" 57 1979 2001 "bytearray.ml" 57 1979 2002
+)
+"bytearray.ml" 58 2005 2015 "bytearray.ml" 58 2005 2030
+type(
+  int
+)
+"bytearray.ml" 59 2034 2040 "bytearray.ml" 59 2034 2042
+type(
+  (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+)
+ident(
+  def ba "bytearray.ml" 60 2115 2117 "bytearray.ml" 61 2153 2157
+)
+"bytearray.ml" 59 2034 2045 "bytearray.ml" 59 2034 2069
+type(
+  Unix.file_descr ->
+  ?pos:int64 ->
+  (char, Bigarray.int8_unsigned_elt) Bigarray.kind ->
+  Bigarray.c_layout Bigarray.layout ->
+  bool ->
+  int ->
+  (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+)
+ident(
+  ext_ref Bigarray.Array1.map_file
+)
+"bytearray.ml" 59 2034 2070 "bytearray.ml" 59 2034 2072
+type(
+  Unix.file_descr
+)
+ident(
+  int_ref fd "bytearray.ml" 57 1979 1998 "bytearray.ml" 57 1979 2000
+)
+"bytearray.ml" 59 2034 2073 "bytearray.ml" 59 2034 2086
+type(
+  (char, Bigarray.int8_unsigned_elt) Bigarray.kind
+)
+ident(
+  ext_ref Bigarray.char
+)
+"bytearray.ml" 59 2034 2087 "bytearray.ml" 59 2034 2104
+type(
+  Bigarray.c_layout Bigarray.layout
+)
+ident(
+  ext_ref Bigarray.c_layout
+)
+"bytearray.ml" 59 2034 2105 "bytearray.ml" 59 2034 2109
+type(
+  bool
+)
+"bytearray.ml" 59 2034 2110 "bytearray.ml" 59 2034 2111
+type(
+  int
+)
+ident(
+  int_ref l "bytearray.ml" 58 2005 2011 "bytearray.ml" 58 2005 2012
+)
+"bytearray.ml" 59 2034 2045 "bytearray.ml" 59 2034 2111
+call(
+  stack
+)
+type(
+  (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+)
+"bytearray.ml" 60 2115 2117 "bytearray.ml" 60 2115 2140
+type(
+  string -> int -> t -> int -> int -> unit
+)
+ident(
+  int_ref unsafe_blit_from_string "bytearray.ml" 38 1446 1446 "bytearray.ml" 39 1522 1564
+)
+"bytearray.ml" 60 2115 2141 "bytearray.ml" 60 2115 2142
+type(
+  string
+)
+ident(
+  int_ref s "bytearray.ml" 57 1979 2001 "bytearray.ml" 57 1979 2002
+)
+"bytearray.ml" 60 2115 2143 "bytearray.ml" 60 2115 2144
+type(
+  int
+)
+"bytearray.ml" 60 2115 2145 "bytearray.ml" 60 2115 2147
+type(
+  t
+)
+ident(
+  int_ref ba "bytearray.ml" 59 2034 2040 "bytearray.ml" 59 2034 2042
+)
+"bytearray.ml" 60 2115 2148 "bytearray.ml" 60 2115 2149
+type(
+  int
+)
+"bytearray.ml" 60 2115 2150 "bytearray.ml" 60 2115 2151
+type(
+  int
+)
+ident(
+  int_ref l "bytearray.ml" 58 2005 2011 "bytearray.ml" 58 2005 2012
+)
+"bytearray.ml" 60 2115 2117 "bytearray.ml" 60 2115 2151
+type(
+  unit
+)
+"bytearray.ml" 61 2153 2155 "bytearray.ml" 61 2153 2157
+type(
+  (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+)
+ident(
+  int_ref ba "bytearray.ml" 59 2034 2040 "bytearray.ml" 59 2034 2042
+)
+"bytearray.ml" 60 2115 2117 "bytearray.ml" 61 2153 2157
+type(
+  (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+)
+"bytearray.ml" 59 2034 2036 "bytearray.ml" 61 2153 2157
+type(
+  (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+)
+"bytearray.ml" 58 2005 2007 "bytearray.ml" 61 2153 2157
+type(
+  (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+)
+"bytearray.ml" 63 2159 2163 "bytearray.ml" 63 2159 2166
+type(
+  t -> int -> int -> string
+)
+ident(
+  def sub "bytearray.ml" 74 2401 2401 "bytearray.ml" 1 0 -1
+)
+"bytearray.ml" 63 2159 2167 "bytearray.ml" 63 2159 2168
+type(
+  t
+)
+ident(
+  def a "bytearray.ml" 63 2159 2169 "bytearray.ml" 72 2394 2399
+)
+"bytearray.ml" 63 2159 2169 "bytearray.ml" 63 2159 2172
+type(
+  int
+)
+ident(
+  def ofs "bytearray.ml" 63 2159 2173 "bytearray.ml" 72 2394 2399
+)
+"bytearray.ml" 63 2159 2173 "bytearray.ml" 63 2159 2176
+type(
+  int
+)
+ident(
+  def len "bytearray.ml" 64 2179 2181 "bytearray.ml" 72 2394 2399
+)
+"bytearray.ml" 65 2184 2188 "bytearray.ml" 65 2184 2191
+type(
+  int
+)
+ident(
+  int_ref ofs "bytearray.ml" 63 2159 2169 "bytearray.ml" 63 2159 2172
+)
+"bytearray.ml" 65 2184 2192 "bytearray.ml" 65 2184 2193
+type(
+  int -> int -> bool
+)
+ident(
+  ext_ref Pervasives.( < )
+)
+"bytearray.ml" 65 2184 2194 "bytearray.ml" 65 2184 2195
+type(
+  int
+)
+"bytearray.ml" 65 2184 2188 "bytearray.ml" 65 2184 2195
+type(
+  bool
+)
+"bytearray.ml" 65 2184 2196 "bytearray.ml" 65 2184 2198
+type(
+  bool -> bool -> bool
+)
+ident(
+  ext_ref Pervasives.( || )
+)
+"bytearray.ml" 65 2184 2199 "bytearray.ml" 65 2184 2202
+type(
+  int
+)
+ident(
+  int_ref len "bytearray.ml" 63 2159 2173 "bytearray.ml" 63 2159 2176
+)
+"bytearray.ml" 65 2184 2203 "bytearray.ml" 65 2184 2204
+type(
+  int -> int -> bool
+)
+ident(
+  ext_ref Pervasives.( < )
+)
+"bytearray.ml" 65 2184 2205 "bytearray.ml" 65 2184 2206
+type(
+  int
+)
+"bytearray.ml" 65 2184 2199 "bytearray.ml" 65 2184 2206
+type(
+  bool
+)
+"bytearray.ml" 65 2184 2207 "bytearray.ml" 65 2184 2209
+type(
+  bool -> bool -> bool
+)
+ident(
+  ext_ref Pervasives.( || )
+)
+"bytearray.ml" 65 2184 2210 "bytearray.ml" 65 2184 2213
+type(
+  int
+)
+ident(
+  int_ref ofs "bytearray.ml" 63 2159 2169 "bytearray.ml" 63 2159 2172
+)
+"bytearray.ml" 65 2184 2214 "bytearray.ml" 65 2184 2215
+type(
+  int -> int -> bool
+)
+ident(
+  ext_ref Pervasives.( > )
+)
+"bytearray.ml" 65 2184 2216 "bytearray.ml" 65 2184 2222
+type(
+  t -> int
+)
+ident(
+  int_ref length "bytearray.ml" 20 1060 1064 "bytearray.ml" 20 1060 1070
+)
+"bytearray.ml" 65 2184 2223 "bytearray.ml" 65 2184 2224
+type(
+  t
+)
+ident(
+  int_ref a "bytearray.ml" 63 2159 2167 "bytearray.ml" 63 2159 2168
+)
+"bytearray.ml" 65 2184 2216 "bytearray.ml" 65 2184 2224
+call(
+  stack
+)
+type(
+  int
+)
+"bytearray.ml" 65 2184 2225 "bytearray.ml" 65 2184 2226
+type(
+  int -> int -> int
+)
+ident(
+  ext_ref Pervasives.( - )
+)
+"bytearray.ml" 65 2184 2227 "bytearray.ml" 65 2184 2230
+type(
+  int
+)
+ident(
+  int_ref len "bytearray.ml" 63 2159 2173 "bytearray.ml" 63 2159 2176
+)
+"bytearray.ml" 65 2184 2216 "bytearray.ml" 65 2184 2230
+type(
+  int
+)
+"bytearray.ml" 65 2184 2210 "bytearray.ml" 65 2184 2230
+type(
+  bool
+)
+"bytearray.ml" 65 2184 2231 "bytearray.ml" 65 2184 2233
+type(
+  bool -> bool -> bool
+)
+ident(
+  ext_ref Pervasives.( || )
+)
+"bytearray.ml" 65 2184 2234 "bytearray.ml" 65 2184 2237
+type(
+  int
+)
+ident(
+  int_ref len "bytearray.ml" 63 2159 2173 "bytearray.ml" 63 2159 2176
+)
+"bytearray.ml" 65 2184 2238 "bytearray.ml" 65 2184 2239
+type(
+  int -> int -> bool
+)
+ident(
+  ext_ref Pervasives.( > )
+)
+"bytearray.ml" 65 2184 2240 "bytearray.ml" 65 2184 2261
+type(
+  int
+)
+ident(
+  ext_ref Sys.max_string_length
+)
+"bytearray.ml" 65 2184 2234 "bytearray.ml" 65 2184 2261
+type(
+  bool
+)
+"bytearray.ml" 65 2184 2210 "bytearray.ml" 65 2184 2261
+type(
+  bool
+)
+"bytearray.ml" 65 2184 2199 "bytearray.ml" 65 2184 2261
+type(
+  bool
+)
+"bytearray.ml" 65 2184 2188 "bytearray.ml" 65 2184 2261
+type(
+  bool
+)
+"bytearray.ml" 67 2269 2273 "bytearray.ml" 67 2269 2284
+type(
+  string -> string
+)
+ident(
+  ext_ref Pervasives.invalid_arg
+)
+"bytearray.ml" 67 2269 2285 "bytearray.ml" 67 2269 2300
+type(
+  string
+)
+"bytearray.ml" 67 2269 2273 "bytearray.ml" 67 2269 2300
+call(
+  tail
+)
+type(
+  string
+)
+"bytearray.ml" 69 2314 2322 "bytearray.ml" 69 2314 2323
+type(
+  string
+)
+ident(
+  def s "bytearray.ml" 70 2347 2351 "bytearray.ml" 71 2388 2393
+)
+"bytearray.ml" 69 2314 2326 "bytearray.ml" 69 2314 2339
+type(
+  int -> string
+)
+ident(
+  ext_ref String.create
+)
+"bytearray.ml" 69 2314 2340 "bytearray.ml" 69 2314 2343
+type(
+  int
+)
+ident(
+  int_ref len "bytearray.ml" 63 2159 2173 "bytearray.ml" 63 2159 2176
+)
+"bytearray.ml" 69 2314 2326 "bytearray.ml" 69 2314 2343
+type(
+  string
+)
+"bytearray.ml" 70 2347 2351 "bytearray.ml" 70 2347 2372
+type(
+  t -> int -> string -> int -> int -> unit
+)
+ident(
+  int_ref unsafe_blit_to_string "bytearray.ml" 41 1566 1566 "bytearray.ml" 42 1640 1682
+)
+"bytearray.ml" 70 2347 2373 "bytearray.ml" 70 2347 2374
+type(
+  t
+)
+ident(
+  int_ref a "bytearray.ml" 63 2159 2167 "bytearray.ml" 63 2159 2168
+)
+"bytearray.ml" 70 2347 2375 "bytearray.ml" 70 2347 2378
+type(
+  int
+)
+ident(
+  int_ref ofs "bytearray.ml" 63 2159 2169 "bytearray.ml" 63 2159 2172
+)
+"bytearray.ml" 70 2347 2379 "bytearray.ml" 70 2347 2380
+type(
+  string
+)
+ident(
+  int_ref s "bytearray.ml" 69 2314 2322 "bytearray.ml" 69 2314 2323
+)
+"bytearray.ml" 70 2347 2381 "bytearray.ml" 70 2347 2382
+type(
+  int
+)
+"bytearray.ml" 70 2347 2383 "bytearray.ml" 70 2347 2386
+type(
+  int
+)
+ident(
+  int_ref len "bytearray.ml" 63 2159 2173 "bytearray.ml" 63 2159 2176
+)
+"bytearray.ml" 70 2347 2351 "bytearray.ml" 70 2347 2386
+type(
+  unit
+)
+"bytearray.ml" 71 2388 2392 "bytearray.ml" 71 2388 2393
+type(
+  string
+)
+ident(
+  int_ref s "bytearray.ml" 69 2314 2322 "bytearray.ml" 69 2314 2323
+)
+"bytearray.ml" 70 2347 2351 "bytearray.ml" 71 2388 2393
+type(
+  string
+)
+"bytearray.ml" 68 2301 2308 "bytearray.ml" 72 2394 2399
+type(
+  string
+)
+"bytearray.ml" 64 2179 2181 "bytearray.ml" 72 2394 2399
+type(
+  string
+)
+"bytearray.ml" 74 2401 2409 "bytearray.ml" 74 2401 2419
+type(
+  ('a, 'b, 'c) Bigarray.Array1.t ->
+  int -> ('a, 'd, 'e) Bigarray.Array1.t -> int -> int -> bool
+)
+ident(
+  def prefix_rec "bytearray.ml" 74 2401 2401 "bytearray.ml" 1 0 -1
+)
+"bytearray.ml" 74 2401 2420 "bytearray.ml" 74 2401 2421
+type(
+  ('a, 'b, 'c) Bigarray.Array1.t
+)
+ident(
+  def a "bytearray.ml" 74 2401 2422 "bytearray.ml" 76 2445 2508
+)
+"bytearray.ml" 74 2401 2422 "bytearray.ml" 74 2401 2423
+type(
+  int
+)
+ident(
+  def i "bytearray.ml" 74 2401 2424 "bytearray.ml" 76 2445 2508
+)
+"bytearray.ml" 74 2401 2424 "bytearray.ml" 74 2401 2426
+type(
+  ('a, 'd, 'e) Bigarray.Array1.t
+)
+ident(
+  def a' "bytearray.ml" 74 2401 2427 "bytearray.ml" 76 2445 2508
+)
+"bytearray.ml" 74 2401 2427 "bytearray.ml" 74 2401 2429
+type(
+  int
+)
+ident(
+  def i' "bytearray.ml" 74 2401 2430 "bytearray.ml" 76 2445 2508
+)
+"bytearray.ml" 74 2401 2430 "bytearray.ml" 74 2401 2431
+type(
+  int
+)
+ident(
+  def l "bytearray.ml" 75 2434 2436 "bytearray.ml" 76 2445 2508
+)
+"bytearray.ml" 75 2434 2436 "bytearray.ml" 75 2434 2437
+type(
+  int
+)
+ident(
+  int_ref l "bytearray.ml" 74 2401 2430 "bytearray.ml" 74 2401 2431
+)
+"bytearray.ml" 75 2434 2438 "bytearray.ml" 75 2434 2439
+type(
+  int -> int -> bool
+)
+ident(
+  ext_ref Pervasives.( = )
+)
+"bytearray.ml" 75 2434 2440 "bytearray.ml" 75 2434 2441
+type(
+  int
+)
+"bytearray.ml" 75 2434 2436 "bytearray.ml" 75 2434 2441
+type(
+  bool
+)
+"bytearray.ml" 75 2434 2442 "bytearray.ml" 75 2434 2444
+type(
+  bool -> bool -> bool
+)
+ident(
+  ext_ref Pervasives.( || )
+)
+"bytearray.ml" 76 2445 2448 "bytearray.ml" 76 2445 2449
+type(
+  ('a, 'b, 'c) Bigarray.Array1.t
+)
+ident(
+  int_ref a "bytearray.ml" 74 2401 2420 "bytearray.ml" 74 2401 2421
+)
+"bytearray.ml" 76 2445 2451 "bytearray.ml" 76 2445 2452
+type(
+  int
+)
+ident(
+  int_ref i "bytearray.ml" 74 2401 2422 "bytearray.ml" 74 2401 2423
+)
+"bytearray.ml" 76 2445 2448 "bytearray.ml" 76 2445 2453
+type(
+  'a
+)
+"bytearray.ml" 76 2445 2454 "bytearray.ml" 76 2445 2455
+type(
+  'a -> 'a -> bool
+)
+ident(
+  ext_ref Pervasives.( = )
+)
+"bytearray.ml" 76 2445 2456 "bytearray.ml" 76 2445 2458
+type(
+  ('a, 'd, 'e) Bigarray.Array1.t
+)
+ident(
+  int_ref a' "bytearray.ml" 74 2401 2424 "bytearray.ml" 74 2401 2426
+)
+"bytearray.ml" 76 2445 2460 "bytearray.ml" 76 2445 2462
+type(
+  int
+)
+ident(
+  int_ref i' "bytearray.ml" 74 2401 2427 "bytearray.ml" 74 2401 2429
+)
+"bytearray.ml" 76 2445 2456 "bytearray.ml" 76 2445 2463
+type(
+  'a
+)
+"bytearray.ml" 76 2445 2448 "bytearray.ml" 76 2445 2463
+type(
+  bool
+)
+"bytearray.ml" 76 2445 2464 "bytearray.ml" 76 2445 2466
+type(
+  bool -> bool -> bool
+)
+ident(
+  ext_ref Pervasives.( && )
+)
+"bytearray.ml" 76 2445 2467 "bytearray.ml" 76 2445 2477
+type(
+  ('a, 'b, 'c) Bigarray.Array1.t ->
+  int -> ('a, 'd, 'e) Bigarray.Array1.t -> int -> int -> bool
+)
+ident(
+  int_ref prefix_rec "bytearray.ml" 74 2401 2409 "bytearray.ml" 74 2401 2419
+)
+"bytearray.ml" 76 2445 2478 "bytearray.ml" 76 2445 2479
+type(
+  ('a, 'b, 'c) Bigarray.Array1.t
+)
+ident(
+  int_ref a "bytearray.ml" 74 2401 2420 "bytearray.ml" 74 2401 2421
+)
+"bytearray.ml" 76 2445 2481 "bytearray.ml" 76 2445 2482
+type(
+  int
+)
+ident(
+  int_ref i "bytearray.ml" 74 2401 2422 "bytearray.ml" 74 2401 2423
+)
+"bytearray.ml" 76 2445 2483 "bytearray.ml" 76 2445 2484
+type(
+  int -> int -> int
+)
+ident(
+  ext_ref Pervasives.( + )
+)
+"bytearray.ml" 76 2445 2485 "bytearray.ml" 76 2445 2486
+type(
+  int
+)
+"bytearray.ml" 76 2445 2480 "bytearray.ml" 76 2445 2487
+type(
+  int
+)
+"bytearray.ml" 76 2445 2488 "bytearray.ml" 76 2445 2490
+type(
+  ('a, 'd, 'e) Bigarray.Array1.t
+)
+ident(
+  int_ref a' "bytearray.ml" 74 2401 2424 "bytearray.ml" 74 2401 2426
+)
+"bytearray.ml" 76 2445 2492 "bytearray.ml" 76 2445 2494
+type(
+  int
+)
+ident(
+  int_ref i' "bytearray.ml" 74 2401 2427 "bytearray.ml" 74 2401 2429
+)
+"bytearray.ml" 76 2445 2495 "bytearray.ml" 76 2445 2496
+type(
+  int -> int -> int
+)
+ident(
+  ext_ref Pervasives.( + )
+)
+"bytearray.ml" 76 2445 2497 "bytearray.ml" 76 2445 2498
+type(
+  int
+)
+"bytearray.ml" 76 2445 2491 "bytearray.ml" 76 2445 2499
+type(
+  int
+)
+"bytearray.ml" 76 2445 2501 "bytearray.ml" 76 2445 2502
+type(
+  int
+)
+ident(
+  int_ref l "bytearray.ml" 74 2401 2430 "bytearray.ml" 74 2401 2431
+)
+"bytearray.ml" 76 2445 2503 "bytearray.ml" 76 2445 2504
+type(
+  int -> int -> int
+)
+ident(
+  ext_ref Pervasives.( - )
+)
+"bytearray.ml" 76 2445 2505 "bytearray.ml" 76 2445 2506
+type(
+  int
+)
+"bytearray.ml" 76 2445 2500 "bytearray.ml" 76 2445 2507
+type(
+  int
+)
+"bytearray.ml" 76 2445 2467 "bytearray.ml" 76 2445 2507
+call(
+  tail
+)
+type(
+  bool
+)
+"bytearray.ml" 76 2445 2447 "bytearray.ml" 76 2445 2508
+type(
+  bool
+)
+"bytearray.ml" 75 2434 2436 "bytearray.ml" 76 2445 2508
+type(
+  bool
+)
+"bytearray.ml" 78 2510 2514 "bytearray.ml" 78 2510 2520
+type(
+  ('a, 'b, 'c) Bigarray.Array1.t ->
+  ('a, 'd, 'e) Bigarray.Array1.t -> int -> bool
+)
+ident(
+  def prefix "bytearray.ml" 84 2618 2618 "bytearray.ml" 1 0 -1
+)
+"bytearray.ml" 78 2510 2521 "bytearray.ml" 78 2510 2522
+type(
+  ('a, 'b, 'c) Bigarray.Array1.t
+)
+ident(
+  def a "bytearray.ml" 78 2510 2523 "bytearray.ml" 82 2593 2616
+)
+"bytearray.ml" 78 2510 2523 "bytearray.ml" 78 2510 2525
+type(
+  ('a, 'd, 'e) Bigarray.Array1.t
+)
+ident(
+  def a' "bytearray.ml" 78 2510 2526 "bytearray.ml" 82 2593 2616
+)
+"bytearray.ml" 78 2510 2526 "bytearray.ml" 78 2510 2527
+type(
+  int
+)
+ident(
+  def i "bytearray.ml" 79 2530 2532 "bytearray.ml" 82 2593 2616
+)
+"bytearray.ml" 79 2530 2536 "bytearray.ml" 79 2530 2537
+type(
+  int
+)
+ident(
+  def l "bytearray.ml" 80 2552 2554 "bytearray.ml" 82 2593 2616
+)
+"bytearray.ml" 79 2530 2540 "bytearray.ml" 79 2530 2546
+type(
+  ('a, 'b, 'c) Bigarray.Array1.t -> int
+)
+ident(
+  int_ref length "bytearray.ml" 20 1060 1064 "bytearray.ml" 20 1060 1070
+)
+"bytearray.ml" 79 2530 2547 "bytearray.ml" 79 2530 2548
+type(
+  ('a, 'b, 'c) Bigarray.Array1.t
+)
+ident(
+  int_ref a "bytearray.ml" 78 2510 2521 "bytearray.ml" 78 2510 2522
+)
+"bytearray.ml" 79 2530 2540 "bytearray.ml" 79 2530 2548
+call(
+  stack
+)
+type(
+  int
+)
+"bytearray.ml" 80 2552 2558 "bytearray.ml" 80 2552 2560
+type(
+  int
+)
+ident(
+  def l' "bytearray.ml" 81 2576 2578 "bytearray.ml" 82 2593 2616
+)
+"bytearray.ml" 80 2552 2563 "bytearray.ml" 80 2552 2569
+type(
+  ('a, 'd, 'e) Bigarray.Array1.t -> int
+)
+ident(
+  int_ref length "bytearray.ml" 20 1060 1064 "bytearray.ml" 20 1060 1070
+)
+"bytearray.ml" 80 2552 2570 "bytearray.ml" 80 2552 2572
+type(
+  ('a, 'd, 'e) Bigarray.Array1.t
+)
+ident(
+  int_ref a' "bytearray.ml" 78 2510 2523 "bytearray.ml" 78 2510 2525
+)
+"bytearray.ml" 80 2552 2563 "bytearray.ml" 80 2552 2572
+call(
+  stack
+)
+type(
+  int
+)
+"bytearray.ml" 81 2576 2578 "bytearray.ml" 81 2576 2579
+type(
+  int
+)
+ident(
+  int_ref i "bytearray.ml" 78 2510 2526 "bytearray.ml" 78 2510 2527
+)
+"bytearray.ml" 81 2576 2580 "bytearray.ml" 81 2576 2582
+type(
+  int -> int -> bool
+)
+ident(
+  ext_ref Pervasives.( <= )
+)
+"bytearray.ml" 81 2576 2583 "bytearray.ml" 81 2576 2585
+type(
+  int
+)
+ident(
+  int_ref l' "bytearray.ml" 80 2552 2558 "bytearray.ml" 80 2552 2560
+)
+"bytearray.ml" 81 2576 2586 "bytearray.ml" 81 2576 2587
+type(
+  int -> int -> int
+)
+ident(
+  ext_ref Pervasives.( - )
+)
+"bytearray.ml" 81 2576 2588 "bytearray.ml" 81 2576 2589
+type(
+  int
+)
+ident(
+  int_ref l "bytearray.ml" 79 2530 2536 "bytearray.ml" 79 2530 2537
+)
+"bytearray.ml" 81 2576 2583 "bytearray.ml" 81 2576 2589
+type(
+  int
+)
+"bytearray.ml" 81 2576 2578 "bytearray.ml" 81 2576 2589
+type(
+  bool
+)
+"bytearray.ml" 81 2576 2590 "bytearray.ml" 81 2576 2592
+type(
+  bool -> bool -> bool
+)
+ident(
+  ext_ref Pervasives.( && )
+)
+"bytearray.ml" 82 2593 2595 "bytearray.ml" 82 2593 2605
+type(
+  ('a, 'b, 'c) Bigarray.Array1.t ->
+  int -> ('a, 'd, 'e) Bigarray.Array1.t -> int -> int -> bool
+)
+ident(
+  int_ref prefix_rec "bytearray.ml" 74 2401 2409 "bytearray.ml" 74 2401 2419
+)
+"bytearray.ml" 82 2593 2606 "bytearray.ml" 82 2593 2607
+type(
+  ('a, 'b, 'c) Bigarray.Array1.t
+)
+ident(
+  int_ref a "bytearray.ml" 78 2510 2521 "bytearray.ml" 78 2510 2522
+)
+"bytearray.ml" 82 2593 2608 "bytearray.ml" 82 2593 2609
+type(
+  int
+)
+"bytearray.ml" 82 2593 2610 "bytearray.ml" 82 2593 2612
+type(
+  ('a, 'd, 'e) Bigarray.Array1.t
+)
+ident(
+  int_ref a' "bytearray.ml" 78 2510 2523 "bytearray.ml" 78 2510 2525
+)
+"bytearray.ml" 82 2593 2613 "bytearray.ml" 82 2593 2614
+type(
+  int
+)
+ident(
+  int_ref i "bytearray.ml" 78 2510 2526 "bytearray.ml" 78 2510 2527
+)
+"bytearray.ml" 82 2593 2615 "bytearray.ml" 82 2593 2616
+type(
+  int
+)
+ident(
+  int_ref l "bytearray.ml" 79 2530 2536 "bytearray.ml" 79 2530 2537
+)
+"bytearray.ml" 82 2593 2595 "bytearray.ml" 82 2593 2616
+call(
+  tail
+)
+type(
+  bool
+)
+"bytearray.ml" 81 2576 2578 "bytearray.ml" 82 2593 2616
+type(
+  bool
+)
+"bytearray.ml" 80 2552 2554 "bytearray.ml" 82 2593 2616
+type(
+  bool
+)
+"bytearray.ml" 79 2530 2532 "bytearray.ml" 82 2593 2616
+type(
+  bool
+)
+"bytearray.ml" 84 2618 2622 "bytearray.ml" 84 2618 2638
+type(
+  string -> int -> t -> int -> int -> unit
+)
+ident(
+  def blit_from_string "bytearray.ml" 90 2828 2828 "bytearray.ml" 1 0 -1
+)
+"bytearray.ml" 84 2618 2639 "bytearray.ml" 84 2618 2640
+type(
+  string
+)
+ident(
+  def s "bytearray.ml" 84 2618 2641 "bytearray.ml" 88 2786 2826
+)
+"bytearray.ml" 84 2618 2641 "bytearray.ml" 84 2618 2642
+type(
+  int
+)
+ident(
+  def i "bytearray.ml" 84 2618 2643 "bytearray.ml" 88 2786 2826
+)
+"bytearray.ml" 84 2618 2643 "bytearray.ml" 84 2618 2644
+type(
+  t
+)
+ident(
+  def a "bytearray.ml" 84 2618 2645 "bytearray.ml" 88 2786 2826
+)
+"bytearray.ml" 84 2618 2645 "bytearray.ml" 84 2618 2646
+type(
+  int
+)
+ident(
+  def j "bytearray.ml" 84 2618 2647 "bytearray.ml" 88 2786 2826
+)
+"bytearray.ml" 84 2618 2647 "bytearray.ml" 84 2618 2648
+type(
+  int
+)
+ident(
+  def l "bytearray.ml" 85 2651 2653 "bytearray.ml" 88 2786 2826
+)
+"bytearray.ml" 85 2651 2656 "bytearray.ml" 85 2651 2657
+type(
+  int
+)
+ident(
+  int_ref l "bytearray.ml" 84 2618 2647 "bytearray.ml" 84 2618 2648
+)
+"bytearray.ml" 85 2651 2658 "bytearray.ml" 85 2651 2659
+type(
+  int -> int -> bool
+)
+ident(
+  ext_ref Pervasives.( < )
+)
+"bytearray.ml" 85 2651 2660 "bytearray.ml" 85 2651 2661
+type(
+  int
+)
+"bytearray.ml" 85 2651 2656 "bytearray.ml" 85 2651 2661
+type(
+  bool
+)
+"bytearray.ml" 85 2651 2662 "bytearray.ml" 85 2651 2664
+type(
+  bool -> bool -> bool
+)
+ident(
+  ext_ref Pervasives.( || )
+)
+"bytearray.ml" 85 2651 2665 "bytearray.ml" 85 2651 2666
+type(
+  int
+)
+ident(
+  int_ref i "bytearray.ml" 84 2618 2641 "bytearray.ml" 84 2618 2642
+)
+"bytearray.ml" 85 2651 2667 "bytearray.ml" 85 2651 2668
+type(
+  int -> int -> bool
+)
+ident(
+  ext_ref Pervasives.( < )
+)
+"bytearray.ml" 85 2651 2669 "bytearray.ml" 85 2651 2670
+type(
+  int
+)
+"bytearray.ml" 85 2651 2665 "bytearray.ml" 85 2651 2670
+type(
+  bool
+)
+"bytearray.ml" 85 2651 2671 "bytearray.ml" 85 2651 2673
+type(
+  bool -> bool -> bool
+)
+ident(
+  ext_ref Pervasives.( || )
+)
+"bytearray.ml" 85 2651 2674 "bytearray.ml" 85 2651 2675
+type(
+  int
+)
+ident(
+  int_ref i "bytearray.ml" 84 2618 2641 "bytearray.ml" 84 2618 2642
+)
+"bytearray.ml" 85 2651 2676 "bytearray.ml" 85 2651 2677
+type(
+  int -> int -> bool
+)
+ident(
+  ext_ref Pervasives.( > )
+)
+"bytearray.ml" 85 2651 2678 "bytearray.ml" 85 2651 2691
+type(
+  string -> int
+)
+ident(
+  ext_ref String.length
+)
+"bytearray.ml" 85 2651 2692 "bytearray.ml" 85 2651 2693
+type(
+  string
+)
+ident(
+  int_ref s "bytearray.ml" 84 2618 2639 "bytearray.ml" 84 2618 2640
+)
+"bytearray.ml" 85 2651 2678 "bytearray.ml" 85 2651 2693
+type(
+  int
+)
+"bytearray.ml" 85 2651 2694 "bytearray.ml" 85 2651 2695
+type(
+  int -> int -> int
+)
+ident(
+  ext_ref Pervasives.( - )
+)
+"bytearray.ml" 85 2651 2696 "bytearray.ml" 85 2651 2697
+type(
+  int
+)
+ident(
+  int_ref l "bytearray.ml" 84 2618 2647 "bytearray.ml" 84 2618 2648
+)
+"bytearray.ml" 85 2651 2678 "bytearray.ml" 85 2651 2697
+type(
+  int
+)
+"bytearray.ml" 85 2651 2674 "bytearray.ml" 85 2651 2697
+type(
+  bool
+)
+"bytearray.ml" 86 2698 2709 "bytearray.ml" 86 2698 2711
+type(
+  bool -> bool -> bool
+)
+ident(
+  ext_ref Pervasives.( || )
+)
+"bytearray.ml" 86 2698 2712 "bytearray.ml" 86 2698 2713
+type(
+  int
+)
+ident(
+  int_ref j "bytearray.ml" 84 2618 2645 "bytearray.ml" 84 2618 2646
+)
+"bytearray.ml" 86 2698 2714 "bytearray.ml" 86 2698 2715
+type(
+  int -> int -> bool
+)
+ident(
+  ext_ref Pervasives.( < )
+)
+"bytearray.ml" 86 2698 2716 "bytearray.ml" 86 2698 2717
+type(
+  int
+)
+"bytearray.ml" 86 2698 2712 "bytearray.ml" 86 2698 2717
+type(
+  bool
+)
+"bytearray.ml" 86 2698 2718 "bytearray.ml" 86 2698 2720
+type(
+  bool -> bool -> bool
+)
+ident(
+  ext_ref Pervasives.( || )
+)
+"bytearray.ml" 86 2698 2721 "bytearray.ml" 86 2698 2722
+type(
+  int
+)
+ident(
+  int_ref j "bytearray.ml" 84 2618 2645 "bytearray.ml" 84 2618 2646
+)
+"bytearray.ml" 86 2698 2723 "bytearray.ml" 86 2698 2724
+type(
+  int -> int -> bool
+)
+ident(
+  ext_ref Pervasives.( > )
+)
+"bytearray.ml" 86 2698 2725 "bytearray.ml" 86 2698 2731
+type(
+  t -> int
+)
+ident(
+  int_ref length "bytearray.ml" 20 1060 1064 "bytearray.ml" 20 1060 1070
+)
+"bytearray.ml" 86 2698 2732 "bytearray.ml" 86 2698 2733
+type(
+  t
+)
+ident(
+  int_ref a "bytearray.ml" 84 2618 2643 "bytearray.ml" 84 2618 2644
+)
+"bytearray.ml" 86 2698 2725 "bytearray.ml" 86 2698 2733
+call(
+  stack
+)
+type(
+  int
+)
+"bytearray.ml" 86 2698 2734 "bytearray.ml" 86 2698 2735
+type(
+  int -> int -> int
+)
+ident(
+  ext_ref Pervasives.( - )
+)
+"bytearray.ml" 86 2698 2736 "bytearray.ml" 86 2698 2737
+type(
+  int
+)
+ident(
+  int_ref l "bytearray.ml" 84 2618 2647 "bytearray.ml" 84 2618 2648
+)
+"bytearray.ml" 86 2698 2725 "bytearray.ml" 86 2698 2737
+type(
+  int
+)
+"bytearray.ml" 86 2698 2721 "bytearray.ml" 86 2698 2737
+type(
+  bool
+)
+"bytearray.ml" 86 2698 2712 "bytearray.ml" 86 2698 2737
+type(
+  bool
+)
+"bytearray.ml" 85 2651 2674 "bytearray.ml" 86 2698 2737
+type(
+  bool
+)
+"bytearray.ml" 85 2651 2665 "bytearray.ml" 86 2698 2737
+type(
+  bool
+)
+"bytearray.ml" 85 2651 2656 "bytearray.ml" 86 2698 2737
+type(
+  bool
+)
+"bytearray.ml" 87 2738 2745 "bytearray.ml" 87 2738 2756
+type(
+  string -> unit
+)
+ident(
+  ext_ref Pervasives.invalid_arg
+)
+"bytearray.ml" 87 2738 2757 "bytearray.ml" 87 2738 2785
+type(
+  string
+)
+"bytearray.ml" 87 2738 2745 "bytearray.ml" 87 2738 2785
+call(
+  tail
+)
+type(
+  unit
+)
+"bytearray.ml" 88 2786 2793 "bytearray.ml" 88 2786 2816
+type(
+  string -> int -> t -> int -> int -> unit
+)
+ident(
+  int_ref unsafe_blit_from_string "bytearray.ml" 38 1446 1446 "bytearray.ml" 39 1522 1564
+)
+"bytearray.ml" 88 2786 2817 "bytearray.ml" 88 2786 2818
+type(
+  string
+)
+ident(
+  int_ref s "bytearray.ml" 84 2618 2639 "bytearray.ml" 84 2618 2640
+)
+"bytearray.ml" 88 2786 2819 "bytearray.ml" 88 2786 2820
+type(
+  int
+)
+ident(
+  int_ref i "bytearray.ml" 84 2618 2641 "bytearray.ml" 84 2618 2642
+)
+"bytearray.ml" 88 2786 2821 "bytearray.ml" 88 2786 2822
+type(
+  t
+)
+ident(
+  int_ref a "bytearray.ml" 84 2618 2643 "bytearray.ml" 84 2618 2644
+)
+"bytearray.ml" 88 2786 2823 "bytearray.ml" 88 2786 2824
+type(
+  int
+)
+ident(
+  int_ref j "bytearray.ml" 84 2618 2645 "bytearray.ml" 84 2618 2646
+)
+"bytearray.ml" 88 2786 2825 "bytearray.ml" 88 2786 2826
+type(
+  int
+)
+ident(
+  int_ref l "bytearray.ml" 84 2618 2647 "bytearray.ml" 84 2618 2648
+)
+"bytearray.ml" 88 2786 2793 "bytearray.ml" 88 2786 2826
+type(
+  unit
+)
+"bytearray.ml" 85 2651 2653 "bytearray.ml" 88 2786 2826
+type(
+  unit
+)
+"bytearray.ml" 90 2828 2832 "bytearray.ml" 90 2828 2846
+type(
+  t -> int -> string -> int -> int -> unit
+)
+ident(
+  def blit_to_string "bytearray.ml" 96 3032 3032 "bytearray.ml" 1 0 -1
+)
+"bytearray.ml" 90 2828 2847 "bytearray.ml" 90 2828 2848
+type(
+  t
+)
+ident(
+  def a "bytearray.ml" 90 2828 2849 "bytearray.ml" 94 2992 3030
+)
+"bytearray.ml" 90 2828 2849 "bytearray.ml" 90 2828 2850
+type(
+  int
+)
+ident(
+  def i "bytearray.ml" 90 2828 2851 "bytearray.ml" 94 2992 3030
+)
+"bytearray.ml" 90 2828 2851 "bytearray.ml" 90 2828 2852
+type(
+  string
+)
+ident(
+  def s "bytearray.ml" 90 2828 2853 "bytearray.ml" 94 2992 3030
+)
+"bytearray.ml" 90 2828 2853 "bytearray.ml" 90 2828 2854
+type(
+  int
+)
+ident(
+  def j "bytearray.ml" 90 2828 2855 "bytearray.ml" 94 2992 3030
+)
+"bytearray.ml" 90 2828 2855 "bytearray.ml" 90 2828 2856
+type(
+  int
+)
+ident(
+  def l "bytearray.ml" 91 2859 2861 "bytearray.ml" 94 2992 3030
+)
+"bytearray.ml" 91 2859 2864 "bytearray.ml" 91 2859 2865
+type(
+  int
+)
+ident(
+  int_ref l "bytearray.ml" 90 2828 2855 "bytearray.ml" 90 2828 2856
+)
+"bytearray.ml" 91 2859 2866 "bytearray.ml" 91 2859 2867
+type(
+  int -> int -> bool
+)
+ident(
+  ext_ref Pervasives.( < )
+)
+"bytearray.ml" 91 2859 2868 "bytearray.ml" 91 2859 2869
+type(
+  int
+)
+"bytearray.ml" 91 2859 2864 "bytearray.ml" 91 2859 2869
+type(
+  bool
+)
+"bytearray.ml" 91 2859 2870 "bytearray.ml" 91 2859 2872
+type(
+  bool -> bool -> bool
+)
+ident(
+  ext_ref Pervasives.( || )
+)
+"bytearray.ml" 91 2859 2873 "bytearray.ml" 91 2859 2874
+type(
+  int
+)
+ident(
+  int_ref i "bytearray.ml" 90 2828 2849 "bytearray.ml" 90 2828 2850
+)
+"bytearray.ml" 91 2859 2875 "bytearray.ml" 91 2859 2876
+type(
+  int -> int -> bool
+)
+ident(
+  ext_ref Pervasives.( < )
+)
+"bytearray.ml" 91 2859 2877 "bytearray.ml" 91 2859 2878
+type(
+  int
+)
+"bytearray.ml" 91 2859 2873 "bytearray.ml" 91 2859 2878
+type(
+  bool
+)
+"bytearray.ml" 91 2859 2879 "bytearray.ml" 91 2859 2881
+type(
+  bool -> bool -> bool
+)
+ident(
+  ext_ref Pervasives.( || )
+)
+"bytearray.ml" 91 2859 2882 "bytearray.ml" 91 2859 2883
+type(
+  int
+)
+ident(
+  int_ref i "bytearray.ml" 90 2828 2849 "bytearray.ml" 90 2828 2850
+)
+"bytearray.ml" 91 2859 2884 "bytearray.ml" 91 2859 2885
+type(
+  int -> int -> bool
+)
+ident(
+  ext_ref Pervasives.( > )
+)
+"bytearray.ml" 91 2859 2886 "bytearray.ml" 91 2859 2892
+type(
+  t -> int
+)
+ident(
+  int_ref length "bytearray.ml" 20 1060 1064 "bytearray.ml" 20 1060 1070
+)
+"bytearray.ml" 91 2859 2893 "bytearray.ml" 91 2859 2894
+type(
+  t
+)
+ident(
+  int_ref a "bytearray.ml" 90 2828 2847 "bytearray.ml" 90 2828 2848
+)
+"bytearray.ml" 91 2859 2886 "bytearray.ml" 91 2859 2894
+call(
+  stack
+)
+type(
+  int
+)
+"bytearray.ml" 91 2859 2895 "bytearray.ml" 91 2859 2896
+type(
+  int -> int -> int
+)
+ident(
+  ext_ref Pervasives.( - )
+)
+"bytearray.ml" 91 2859 2897 "bytearray.ml" 91 2859 2898
+type(
+  int
+)
+ident(
+  int_ref l "bytearray.ml" 90 2828 2855 "bytearray.ml" 90 2828 2856
+)
+"bytearray.ml" 91 2859 2886 "bytearray.ml" 91 2859 2898
+type(
+  int
+)
+"bytearray.ml" 91 2859 2882 "bytearray.ml" 91 2859 2898
+type(
+  bool
+)
+"bytearray.ml" 92 2899 2910 "bytearray.ml" 92 2899 2912
+type(
+  bool -> bool -> bool
+)
+ident(
+  ext_ref Pervasives.( || )
+)
+"bytearray.ml" 92 2899 2913 "bytearray.ml" 92 2899 2914
+type(
+  int
+)
+ident(
+  int_ref j "bytearray.ml" 90 2828 2853 "bytearray.ml" 90 2828 2854
+)
+"bytearray.ml" 92 2899 2915 "bytearray.ml" 92 2899 2916
+type(
+  int -> int -> bool
+)
+ident(
+  ext_ref Pervasives.( < )
+)
+"bytearray.ml" 92 2899 2917 "bytearray.ml" 92 2899 2918
+type(
+  int
+)
+"bytearray.ml" 92 2899 2913 "bytearray.ml" 92 2899 2918
+type(
+  bool
+)
+"bytearray.ml" 92 2899 2919 "bytearray.ml" 92 2899 2921
+type(
+  bool -> bool -> bool
+)
+ident(
+  ext_ref Pervasives.( || )
+)
+"bytearray.ml" 92 2899 2922 "bytearray.ml" 92 2899 2923
+type(
+  int
+)
+ident(
+  int_ref j "bytearray.ml" 90 2828 2853 "bytearray.ml" 90 2828 2854
+)
+"bytearray.ml" 92 2899 2924 "bytearray.ml" 92 2899 2925
+type(
+  int -> int -> bool
+)
+ident(
+  ext_ref Pervasives.( > )
+)
+"bytearray.ml" 92 2899 2926 "bytearray.ml" 92 2899 2939
+type(
+  string -> int
+)
+ident(
+  ext_ref String.length
+)
+"bytearray.ml" 92 2899 2940 "bytearray.ml" 92 2899 2941
+type(
+  string
+)
+ident(
+  int_ref s "bytearray.ml" 90 2828 2851 "bytearray.ml" 90 2828 2852
+)
+"bytearray.ml" 92 2899 2926 "bytearray.ml" 92 2899 2941
+type(
+  int
+)
+"bytearray.ml" 92 2899 2942 "bytearray.ml" 92 2899 2943
+type(
+  int -> int -> int
+)
+ident(
+  ext_ref Pervasives.( - )
+)
+"bytearray.ml" 92 2899 2944 "bytearray.ml" 92 2899 2945
+type(
+  int
+)
+ident(
+  int_ref l "bytearray.ml" 90 2828 2855 "bytearray.ml" 90 2828 2856
+)
+"bytearray.ml" 92 2899 2926 "bytearray.ml" 92 2899 2945
+type(
+  int
+)
+"bytearray.ml" 92 2899 2922 "bytearray.ml" 92 2899 2945
+type(
+  bool
+)
+"bytearray.ml" 92 2899 2913 "bytearray.ml" 92 2899 2945
+type(
+  bool
+)
+"bytearray.ml" 91 2859 2882 "bytearray.ml" 92 2899 2945
+type(
+  bool
+)
+"bytearray.ml" 91 2859 2873 "bytearray.ml" 92 2899 2945
+type(
+  bool
+)
+"bytearray.ml" 91 2859 2864 "bytearray.ml" 92 2899 2945
+type(
+  bool
+)
+"bytearray.ml" 93 2946 2953 "bytearray.ml" 93 2946 2964
+type(
+  string -> unit
+)
+ident(
+  ext_ref Pervasives.invalid_arg
+)
+"bytearray.ml" 93 2946 2965 "bytearray.ml" 93 2946 2991
+type(
+  string
+)
+"bytearray.ml" 93 2946 2953 "bytearray.ml" 93 2946 2991
+call(
+  tail
+)
+type(
+  unit
+)
+"bytearray.ml" 94 2992 2999 "bytearray.ml" 94 2992 3020
+type(
+  t -> int -> string -> int -> int -> unit
+)
+ident(
+  int_ref unsafe_blit_to_string "bytearray.ml" 41 1566 1566 "bytearray.ml" 42 1640 1682
+)
+"bytearray.ml" 94 2992 3021 "bytearray.ml" 94 2992 3022
+type(
+  t
+)
+ident(
+  int_ref a "bytearray.ml" 90 2828 2847 "bytearray.ml" 90 2828 2848
+)
+"bytearray.ml" 94 2992 3023 "bytearray.ml" 94 2992 3024
+type(
+  int
+)
+ident(
+  int_ref i "bytearray.ml" 90 2828 2849 "bytearray.ml" 90 2828 2850
+)
+"bytearray.ml" 94 2992 3025 "bytearray.ml" 94 2992 3026
+type(
+  string
+)
+ident(
+  int_ref s "bytearray.ml" 90 2828 2851 "bytearray.ml" 90 2828 2852
+)
+"bytearray.ml" 94 2992 3027 "bytearray.ml" 94 2992 3028
+type(
+  int
+)
+ident(
+  int_ref j "bytearray.ml" 90 2828 2853 "bytearray.ml" 90 2828 2854
+)
+"bytearray.ml" 94 2992 3029 "bytearray.ml" 94 2992 3030
+type(
+  int
+)
+ident(
+  int_ref l "bytearray.ml" 90 2828 2855 "bytearray.ml" 90 2828 2856
+)
+"bytearray.ml" 94 2992 2999 "bytearray.ml" 94 2992 3030
+type(
+  unit
+)
+"bytearray.ml" 91 2859 2861 "bytearray.ml" 94 2992 3030
+type(
+  unit
+)
+"bytearray.ml" 111 3571 3575 "bytearray.ml" 111 3571 3588
+type(
+  tf -> int -> 'a
+)
+ident(
+  def to_floatarray "bytearray.ml" 116 3702 3702 "bytearray.ml" 1 0 -1
+)
+"bytearray.ml" 111 3571 3589 "bytearray.ml" 111 3571 3590
+type(
+  tf
+)
+ident(
+  def a "bytearray.ml" 111 3571 3591 "bytearray.ml" 114 3696 3700
+)
+"bytearray.ml" 111 3571 3591 "bytearray.ml" 111 3571 3592
+type(
+  int
+)
+ident(
+  def l "bytearray.ml" 112 3595 3597 "bytearray.ml" 114 3696 3700
+)
+"bytearray.ml" 112 3595 3601 "bytearray.ml" 112 3595 3603
+type(
+  'b
+)
+ident(
+  def fa "bytearray.ml" 113 3656 3658 "bytearray.ml" 114 3696 3700
+)
+"bytearray.ml" 112 3595 3606 "bytearray.ml" 112 3595 3613
+type(
+  Obj.t -> 'b
+)
+ident(
+  ext_ref Obj.obj
+)
+"bytearray.ml" 112 3595 3615 "bytearray.ml" 112 3595 3628
+type(
+  int -> int -> Obj.t
+)
+ident(
+  ext_ref Obj.new_block
+)
+"bytearray.ml" 112 3595 3629 "bytearray.ml" 112 3595 3649
+type(
+  int
+)
+ident(
+  ext_ref Obj.double_array_tag
+)
+"bytearray.ml" 112 3595 3650 "bytearray.ml" 112 3595 3651
+type(
+  int
+)
+ident(
+  int_ref l "bytearray.ml" 111 3571 3591 "bytearray.ml" 111 3571 3592
+)
+"bytearray.ml" 112 3595 3614 "bytearray.ml" 112 3595 3652
+type(
+  Obj.t
+)
+"bytearray.ml" 112 3595 3606 "bytearray.ml" 112 3595 3652
+type(
+  'b
+)
+"bytearray.ml" 113 3656 3658 "bytearray.ml" 113 3656 3683
+type(
+  tf -> int -> float array -> int -> int -> unit
+)
+ident(
+  int_ref unsafe_blit_to_floatarray "bytearray.ml" 108 3439 3439 "bytearray.ml" 109 3523 3569
+)
+"bytearray.ml" 113 3656 3684 "bytearray.ml" 113 3656 3685
+type(
+  tf
+)
+ident(
+  int_ref a "bytearray.ml" 111 3571 3589 "bytearray.ml" 111 3571 3590
+)
+"bytearray.ml" 113 3656 3686 "bytearray.ml" 113 3656 3687
+type(
+  int
+)
+"bytearray.ml" 113 3656 3688 "bytearray.ml" 113 3656 3690
+type(
+  float array
+)
+ident(
+  int_ref fa "bytearray.ml" 112 3595 3601 "bytearray.ml" 112 3595 3603
+)
+"bytearray.ml" 113 3656 3691 "bytearray.ml" 113 3656 3692
+type(
+  int
+)
+"bytearray.ml" 113 3656 3693 "bytearray.ml" 113 3656 3694
+type(
+  int
+)
+ident(
+  int_ref l "bytearray.ml" 111 3571 3591 "bytearray.ml" 111 3571 3592
+)
+"bytearray.ml" 113 3656 3658 "bytearray.ml" 113 3656 3694
+type(
+  unit
+)
+"bytearray.ml" 114 3696 3698 "bytearray.ml" 114 3696 3700
+type(
+  'a
+)
+ident(
+  int_ref fa "bytearray.ml" 112 3595 3601 "bytearray.ml" 112 3595 3603
+)
+"bytearray.ml" 113 3656 3658 "bytearray.ml" 114 3696 3700
+type(
+  'a
+)
+"bytearray.ml" 112 3595 3597 "bytearray.ml" 114 3696 3700
+type(
+  'a
+)
+"bytearray.ml" 116 3702 3706 "bytearray.ml" 116 3702 3724
+type(
+  float array -> tf -> int -> float array
+)
+ident(
+  def to_this_floatarray "bytearray.ml" 120 3780 3780 "bytearray.ml" 1 0 -1
+)
+"bytearray.ml" 116 3702 3725 "bytearray.ml" 116 3702 3727
+type(
+  float array
+)
+ident(
+  def fa "bytearray.ml" 116 3702 3728 "bytearray.ml" 118 3774 3778
+)
+"bytearray.ml" 116 3702 3728 "bytearray.ml" 116 3702 3729
+type(
+  tf
+)
+ident(
+  def a "bytearray.ml" 116 3702 3730 "bytearray.ml" 118 3774 3778
+)
+"bytearray.ml" 116 3702 3730 "bytearray.ml" 116 3702 3731
+type(
+  int
+)
+ident(
+  def l "bytearray.ml" 117 3734 3736 "bytearray.ml" 118 3774 3778
+)
+"bytearray.ml" 117 3734 3736 "bytearray.ml" 117 3734 3761
+type(
+  tf -> int -> float array -> int -> int -> unit
+)
+ident(
+  int_ref unsafe_blit_to_floatarray "bytearray.ml" 108 3439 3439 "bytearray.ml" 109 3523 3569
+)
+"bytearray.ml" 117 3734 3762 "bytearray.ml" 117 3734 3763
+type(
+  tf
+)
+ident(
+  int_ref a "bytearray.ml" 116 3702 3728 "bytearray.ml" 116 3702 3729
+)
+"bytearray.ml" 117 3734 3764 "bytearray.ml" 117 3734 3765
+type(
+  int
+)
+"bytearray.ml" 117 3734 3766 "bytearray.ml" 117 3734 3768
+type(
+  float array
+)
+ident(
+  int_ref fa "bytearray.ml" 116 3702 3725 "bytearray.ml" 116 3702 3727
+)
+"bytearray.ml" 117 3734 3769 "bytearray.ml" 117 3734 3770
+type(
+  int
+)
+"bytearray.ml" 117 3734 3771 "bytearray.ml" 117 3734 3772
+type(
+  int
+)
+ident(
+  int_ref l "bytearray.ml" 116 3702 3730 "bytearray.ml" 116 3702 3731
+)
+"bytearray.ml" 117 3734 3736 "bytearray.ml" 117 3734 3772
+type(
+  unit
+)
+"bytearray.ml" 118 3774 3776 "bytearray.ml" 118 3774 3778
+type(
+  float array
+)
+ident(
+  int_ref fa "bytearray.ml" 116 3702 3725 "bytearray.ml" 116 3702 3727
+)
+"bytearray.ml" 117 3734 3736 "bytearray.ml" 118 3774 3778
+type(
+  float array
+)
+"bytearray.ml" 120 3780 3784 "bytearray.ml" 120 3780 3797
+type(
+  float array ->
+  (float, Bigarray.float64_elt, Bigarray.c_layout) Bigarray.Array1.t
+)
+ident(
+  def of_floatarray "bytearray.ml" 124 3898 3901 "bytearray.ml" 1 0 -1
+)
+"bytearray.ml" 120 3780 3798 "bytearray.ml" 120 3780 3800
+type(
+  float array
+)
+ident(
+  def fa "bytearray.ml" 121 3803 3805 "bytearray.ml" 124 3898 3901
+)
+"bytearray.ml" 121 3803 3809 "bytearray.ml" 121 3803 3810
+type(
+  int
+)
+ident(
+  def l "bytearray.ml" 122 3832 3834 "bytearray.ml" 124 3898 3901
+)
+"bytearray.ml" 121 3803 3813 "bytearray.ml" 121 3803 3825
+type(
+  float array -> int
+)
+ident(
+  ext_ref Array.length
+)
+"bytearray.ml" 121 3803 3826 "bytearray.ml" 121 3803 3828
+type(
+  float array
+)
+ident(
+  int_ref fa "bytearray.ml" 120 3780 3798 "bytearray.ml" 120 3780 3800
+)
+"bytearray.ml" 121 3803 3813 "bytearray.ml" 121 3803 3828
+type(
+  int
+)
+"bytearray.ml" 122 3832 3838 "bytearray.ml" 122 3832 3839
+type(
+  (float, Bigarray.float64_elt, Bigarray.c_layout) Bigarray.Array1.t
+)
+ident(
+  def a "bytearray.ml" 123 3856 3858 "bytearray.ml" 124 3898 3901
+)
+"bytearray.ml" 122 3832 3842 "bytearray.ml" 122 3832 3849
+type(
+  int -> (float, Bigarray.float64_elt, Bigarray.c_layout) Bigarray.Array1.t
+)
+ident(
+  int_ref createf "bytearray.ml" 24 1167 1171 "bytearray.ml" 24 1167 1178
+)
+"bytearray.ml" 122 3832 3850 "bytearray.ml" 122 3832 3851
+type(
+  int
+)
+ident(
+  int_ref l "bytearray.ml" 121 3803 3809 "bytearray.ml" 121 3803 3810
+)
+"bytearray.ml" 122 3832 3842 "bytearray.ml" 122 3832 3851
+call(
+  stack
+)
+type(
+  (float, Bigarray.float64_elt, Bigarray.c_layout) Bigarray.Array1.t
+)
+"bytearray.ml" 123 3856 3858 "bytearray.ml" 123 3856 3885
+type(
+  float array -> int -> tf -> int -> int -> unit
+)
+ident(
+  int_ref unsafe_blit_from_floatarray "bytearray.ml" 105 3305 3305 "bytearray.ml" 106 3391 3437
+)
+"bytearray.ml" 123 3856 3886 "bytearray.ml" 123 3856 3888
+type(
+  float array
+)
+ident(
+  int_ref fa "bytearray.ml" 120 3780 3798 "bytearray.ml" 120 3780 3800
+)
+"bytearray.ml" 123 3856 3889 "bytearray.ml" 123 3856 3890
+type(
+  int
+)
+"bytearray.ml" 123 3856 3891 "bytearray.ml" 123 3856 3892
+type(
+  tf
+)
+ident(
+  int_ref a "bytearray.ml" 122 3832 3838 "bytearray.ml" 122 3832 3839
+)
+"bytearray.ml" 123 3856 3893 "bytearray.ml" 123 3856 3894
+type(
+  int
+)
+"bytearray.ml" 123 3856 3895 "bytearray.ml" 123 3856 3896
+type(
+  int
+)
+ident(
+  int_ref l "bytearray.ml" 121 3803 3809 "bytearray.ml" 121 3803 3810
+)
+"bytearray.ml" 123 3856 3858 "bytearray.ml" 123 3856 3896
+type(
+  unit
+)
+"bytearray.ml" 124 3898 3900 "bytearray.ml" 124 3898 3901
+type(
+  (float, Bigarray.float64_elt, Bigarray.c_layout) Bigarray.Array1.t
+)
+ident(
+  int_ref a "bytearray.ml" 122 3832 3838 "bytearray.ml" 122 3832 3839
+)
+"bytearray.ml" 123 3856 3858 "bytearray.ml" 124 3898 3901
+type(
+  (float, Bigarray.float64_elt, Bigarray.c_layout) Bigarray.Array1.t
+)
+"bytearray.ml" 122 3832 3834 "bytearray.ml" 124 3898 3901
+type(
+  (float, Bigarray.float64_elt, Bigarray.c_layout) Bigarray.Array1.t
+)
+"bytearray.ml" 121 3803 3805 "bytearray.ml" 124 3898 3901
+type(
+  (float, Bigarray.float64_elt, Bigarray.c_layout) Bigarray.Array1.t
+)

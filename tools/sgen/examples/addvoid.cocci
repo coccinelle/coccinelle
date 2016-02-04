@@ -1,0 +1,7 @@
+@@
+identifier f;
+@@
+
+f(
++ void
+ ) { ... }

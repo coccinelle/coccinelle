@@ -1,0 +1,5 @@
+@@
+typedef LPINT;
+@@
+- LPINT
++ int *

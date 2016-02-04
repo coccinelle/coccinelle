@@ -1,0 +1,49 @@
+Send to: thomas@winischhofer.net, linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+
+Subject: [PATCH 2/2]: drivers/video: remove unnecessary pci_dev_put
+
+---------------------------------------
+
+From: Julia Lawall <julia@diku.dk>
+
+pci_get_class implicitly does a pci_dev_put on its second argument, so
+pci_dev_put is only needed if there is a break out of the loop.
+
+The semantic match detecting this problem is as follows:
+
+// <smpl>
+@@
+expression dev;
+expression E;
+@@
+
+* pci_dev_put(dev)
+  ... when != dev = E
+(
+* pci_get_device(...,dev)
+|
+* pci_get_device_reverse(...,dev)
+|
+* pci_get_subsys(...,dev)
+|
+* pci_get_class(...,dev)
+)
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+---
+
+diff -up a/drivers/video/sis/sis_main.c b/drivers/video/sis/sis_main.c
+--- a/drivers/video/sis/sis_main.c	2007-11-15 07:33:31.000000000 +0100
++++ b/drivers/video/sis/sis_main.c	2007-11-15 07:38:48.000000000 +0100
+@@ -4620,9 +4620,9 @@ sisfb_find_host_bridge(struct sis_video_
+ 
+ 	while((pdev = pci_get_class(PCI_CLASS_BRIDGE_HOST, pdev))) {
+ 		temp = pdev->vendor;
+-		pci_dev_put(pdev);
+ 		if(temp == pcivendor) {
+ 			ret = 1;
++			pci_dev_put(pdev);
+ 			break;
+ 		}
+ 	}

@@ -1,0 +1,2 @@
+let version_date = "@CONFVERSION@"
+let configure_flags = "@CONFIGURE_FLAGS@"

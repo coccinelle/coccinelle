@@ -1,0 +1,667 @@
+// ****************************************************************************
+// Prelude 
+// ****************************************************************************
+
+// Note: some isomorphisms are handled in the engine directly because they
+// require special support. They can not be easily described with a 
+// XX <=> YY. But some of them have names, so they can be disabled, as for
+// any other isomorphism rule. That also means that those names can not
+// be used for regular isomorphism rule. Those reserved rule names are:
+//  - optional_storage
+//  - optional_qualifier
+//  - value_format 
+// See parse_cocci.ml, pattern.ml, transformation.ml.
+
+
+// Note: the order of the rules has some importance. As we don't do a fixpoint,
+// changing the order may impact the result. For instance, if we have
+//
+//  iso1 = x+y <=> y+x   
+//  iso2 = i++ <=> i=i+1; 
+//
+// and if 
+//   in SP we have i++; 
+//   in C  we have i=1+i;
+//
+// Does the SP matches the C ? 
+//  - Yes if iso2 precedes iso1 in this file, 
+//  - No otherwise.
+
+
+// ****************************************************************************
+// Standard C isomorphisms
+// ****************************************************************************
+
+// ---------------------------------------------------------------------------
+// Spacing (include comments) isomorphisms
+// ---------------------------------------------------------------------------
+// They are handled at lex time.
+
+// ---------------------------------------------------------------------------
+// Dataflow isomorphisms (copy propagation, assignments)
+// ---------------------------------------------------------------------------
+// They are handled in engine (TODO).
+
+
+// ---------------------------------------------------------------------------
+// Iso-by-absence (optional qualifier, storage, sign, cast) isomorphisms
+// ---------------------------------------------------------------------------
+// Some of them are handled in cocci_vs_c. Some of them handled here.
+
+
+// We would like that 
+//      chip = (ak4117_t *)snd_magic_kcalloc(ak4117_t, 0, GFP_KERNEL);
+//  also matches 
+//      X = snd_magic_kcalloc(T, 0, C)
+//
+// For the moment because the iso is (T) E => E and not <=>, it forces
+// us to rewrite the SP as  X = (T) snd_magic_kcalloc(T, 0, C)
+
+Expression
+@ drop_cast @
+expression E;
+pure type T;
+@@
+
+// in the following, the space at the beginning of the line is very important!
+ (T)E => E
+
+Type
+@ add_signed @ 
+@@
+int => signed int
+
+Type
+@ add_int1 @ 
+@@
+unsigned => unsigned int
+
+Type
+@ add_int2 @ 
+@@
+signed => signed int
+
+
+// ---------------------------------------------------------------------------
+// Field isomorphisms
+// ---------------------------------------------------------------------------
+// Dereferences
+
+
+// Those iso were introduced for the 'generic program matching' paper, 
+// with sgrep. The idea is that when we want to detect bugs, 
+// we want to detect something like  free(X) ... *X  
+// meaning that you try to access something that have been freed. 
+// But *X is not the only way to deference X, there is also 
+// X->fld,  hence those iso. 
+
+// The following don't see like a good idea, because eg fld could be
+// instantiated in different ways in different places, meaning that the
+// two occurrences of "*E" would not refer to the same thing at all.
+// This could be addressed by making E pure, but then I think it would
+// have no purpose.
+
+// Expression
+// @@
+// expression E;
+// identifier fld;
+// @@
+// 
+// *E => E->fld
+// 
+// Expression
+// @@
+// expression E;
+// identifier fld;
+// @@
+// 
+// *E => (E)->fld
+// 
+// Expression
+// @@
+// expression E,E1;
+// @@
+// 
+// *E => E[E1]
+
+// ---------------------------------------------------------------------------
+// Typedef isomorphisms
+// ---------------------------------------------------------------------------
+// They are handled in engine.
+
+
+// ---------------------------------------------------------------------------
+// Boolean isomorphisms for int and pointer types
+// ---------------------------------------------------------------------------
+
+// the space at the beginning of the line is very important!
+Expression
+@ not_int1 @
+int X; 
+@@
+ !X => X == 0
+
+TestExpression
+@ not_int2 @
+int X; 
+@@
+ X => X != 0
+
+// the space at the beginning of the line is very important!
+Expression
+@ not_ptr1 @
+expression *X; 
+@@
+ !X => X == NULL
+
+TestExpression
+@ not_ptr2 @
+expression *X;
+@@
+ X => X != NULL
+
+// ---------------------------------------------------------------------------
+// Boolean isomorphisms
+// ---------------------------------------------------------------------------
+
+Expression
+@commeq@
+expression E;
+constant C;
+@@
+
+E == C <=> C == E
+
+Expression
+@commneq@
+expression E;
+constant C;
+@@
+
+E != C <=> C != E
+
+Expression
+@ is_zero @ 
+expression X; 
+@@
+X == 0 => !X
+
+// X should be a test expression, but X!=0 doesn't have to be one
+// not nice at all...  ToTestExpression sets everything after the first
+// pattern in the iso rule to be TestExpression
+ToTestExpression
+@ isnt_zero @ 
+expression X; 
+@@
+X != 0 => X
+
+Expression
+@ is_null @ 
+expression X; 
+@@
+X == NULL => !X
+
+ToTestExpression
+@ isnt_null1 @ 
+expression X; 
+@@
+X != NULL => X
+
+// ---------------------------------------------------------------------------
+// Bit operations
+// ---------------------------------------------------------------------------
+
+Expression
+@ bitor_comm @ 
+expression X,Y; 
+@@
+X | Y => Y | X
+
+Expression
+@ bitand_comm @ 
+expression X,Y; 
+@@
+X & Y => Y & X
+
+// only if side effect free in theory, perhaps makes no sense
+// Expression
+// @ and_comm @ 
+// expression X,Y; 
+// @@
+// X && Y => Y && X
+
+// Expression
+// @ or_comm @ 
+// expression X,Y; 
+// @@
+// X || Y => Y || X
+
+
+// ---------------------------------------------------------------------------
+// Arithmetic isomorphisms
+// ---------------------------------------------------------------------------
+//todo: require check side-effect free expression
+
+Expression
+@ plus_comm @ 
+expression X, Y; 
+@@
+X + Y => Y + X
+
+
+// needed in kcalloc CE, where have a -kzalloc(c * sizeof(T), E)
+Expression
+@ mult_comm @ 
+expression X, Y; 
+@@
+X * Y => Y * X
+
+Expression
+@ plus_assoc @
+expression X, Y, Z;
+@@
+ // note space before (
+ (X + Y) + Z <=> X + Y + Z
+
+Expression
+@ minus_assoc @
+expression X, Y, Z;
+@@
+
+ (X - Y) - Z <=> X - Y - Z
+
+Expression
+@ plus_minus_assoc1 @
+expression X, Y, Z;
+@@
+
+ (X + Y) - Z <=> X + Y - Z
+
+Expression
+@ plus_minus_assoc2 @
+expression X, Y, Z;
+@@
+
+ (X - Y) + Z <=> X - Y + Z
+
+Expression
+@ times_assoc @
+expression X, Y, Z;
+@@
+
+ (X * Y) * Z <=> X * Y * Z
+
+Expression
+@ div_assoc @
+expression X, Y, Z;
+@@
+
+ (X / Y) / Z <=> X / Y / Z
+
+Expression
+@ times_div_assoc1 @
+expression X, Y, Z;
+@@
+
+ (X * Y) / Z <=> X * Y / Z
+
+Expression
+@ times_div_assoc2 @
+expression X, Y, Z;
+@@
+
+ (X / Y) * Z <=> X / Y * Z
+
+// ---------------------------------------------------------------------------
+// Relational isomorphisms
+// ---------------------------------------------------------------------------
+
+Expression
+@ gtr_lss @ 
+expression X, Y; 
+@@
+X < Y <=> Y > X
+
+Expression
+@ gtr_lss_eq @ 
+expression X, Y; 
+@@
+X <= Y <=> Y >= X
+
+// ---------------------------------------------------------------------------
+// Increment isomorphisms
+// ---------------------------------------------------------------------------
+
+// equivalences between i++, +=1, etc.
+// note: there is an addition in this SP.
+Statement
+@ inc @ 
+identifier i; 
+@@
+i++; <=> ++i; <=> i+=1; <=> i=i+1;
+
+// I would like to avoid the following rule, but we cant transform a ++i
+// in i++ everywhere. We can do it only when the instruction is alone,
+// such as when there is not stuff around it (not as in x = i++) That's why in
+// the previous iso, we have explicitely force the i++ do be alone with
+// the ';'. But unfortunately in the last expression of the for there is
+// no ';' so the previous rule cannot be applied, hence this special
+// case.
+
+Statement
+@ for_inc @ 
+expression X, Y; 
+statement S; 
+identifier i; 
+@@
+for(X;Y;i++) S <=> for(X;Y;++i) S
+
+// ****************************************************************************
+// gcc specific isomorphisms 
+// ****************************************************************************
+
+// likely and unlikely are used to give hints to gcc to improve performance.
+
+Expression
+@ unlikely @ 
+expression E; 
+@@
+
+unlikely(E) <=> likely(E) => E
+
+// ---------------------------------------------------------------------------
+// Parenthesis isomorphisms
+// ---------------------------------------------------------------------------
+//Expression
+//@@ expression E; @@
+// E => (E)
+//// E => ((E))
+
+// todo: isomorphism avec les () around ? cf sizeof 3.
+// (E) => E    with some conditions.
+
+Expression
+@ paren @
+expression E;
+@@
+
+ (E) => E
+
+// ---------------------------------------------------------------------------
+// Statement isomorphisms
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Value isomorphisms
+// ---------------------------------------------------------------------------
+
+// There is also equal_c_int in cocci_vs_c to dealing with other 
+// integer decimal/hexadecimal isomorphisms. 
+// an argexpression applies only at top level, in the argument of a
+// function call, or on the right-hand side of an assignment
+ArgExpression
+@ zero_multiple_format @
+@@
+ 0 => '\0'
+
+// ----------------
+// If
+// ----------------
+
+// ****************************************************************************
+// if structure isomorphisms 
+// ****************************************************************************
+
+// these are after the above so that the introduced negation will distribute
+// properly over the argument to likely/unlikely
+
+Statement
+@ neg_if @
+expression X;
+statement S1, S2;
+@@
+if (X) S1 else S2 => if (!X) S2 else S1
+
+Statement
+@ ne_if @
+expression E1, E2; 
+statement S1, S2;
+@@
+if (E1 != E2) S1 else S2 => if (E1 == E2) S2 else S1
+
+Statement
+@ drop_else @
+expression E;
+statement S1;
+pure statement S2;
+@@
+
+if (E) S1 else S2 => if (E) S1
+
+Expression
+@ neg_if_exp @
+expression E1, E2, E3;
+@@
+
+E1 ? E2 : E3 => !E1 ? E3 : E2
+
+
+// if (X) Y else Z <=> X ? Y : Z  sometimes.
+
+// ----------------
+// Loops
+// ----------------
+
+// ---------------------------------------------------------------------------
+// Optional initializers
+// ---------------------------------------------------------------------------
+// this is not safe when the declaration is replaced
+// attempt to indicate that by requiring that Z is context
+// no optional static/extern for isos
+Declaration
+@ decl_init @
+type T;
+context identifier Z;
+@@
+T Z; => T Z = ...;
+
+Declaration
+@ const_decl_init @
+type T;
+context identifier Z;
+@@
+T Z; => T Z = C;
+
+Declaration
+@ const_decl_init_null @
+type T;
+identifier Z;
+@@
+T Z; => T Z = NULL;
+
+Declaration
+@ extern_decl_init @
+type T;
+context identifier Z;
+@@
+extern T Z; => extern T Z = ...;
+
+Declaration
+@ const_extern_decl_init @
+type T;
+identifier Z;
+constant C;
+@@
+extern T Z; => extern T Z = C;
+
+Declaration
+@ static_decl_init @
+type T;
+context identifier Z;
+@@
+static T Z; => static T Z = ...;
+
+Declaration
+@ const_static_decl_init @
+type T;
+identifier Z;
+constant C;
+@@
+static T Z; => static T Z = C;
+
+// ---------------------------------------------------------------------------
+// Branch (or compound) isomorphisms
+// ---------------------------------------------------------------------------
+// maybe a cocci patch should require something that looks like what is on
+// the left above to occur in a if or while
+
+// could worry that this has to be a simple statement, but this should work
+// better as it allows + code on S
+Statement
+@ braces1 @ 
+statement S; 
+@@
+{ ... S } => S
+
+Statement
+@ braces2 @ 
+statement S; 
+@@
+{ ... S ... } => S
+
+Statement
+@ braces3 @ 
+statement S; 
+@@
+{ S ... } => S
+
+Statement
+@ braces4 @ 
+statement S; 
+@@
+{ S } => S
+
+Statement
+@ ret @ 
+@@
+return ...; => return;
+
+
+// ---------------------------------------------------------------------------
+// Declaration isomorphisms
+// ---------------------------------------------------------------------------
+// They are handled in engine (TODO) 
+
+// int i,j,k; <=> int i; int j; int k;
+ 
+
+// ---------------------------------------------------------------------------
+// Affectation/initialisation isomorphism
+// ---------------------------------------------------------------------------
+// They are handled in engine.
+// 'X = Y'  should also match  'type X = Y'; 
+
+// ---------------------------------------------------------------------------
+// Pointer/Array isomorphisms
+// ---------------------------------------------------------------------------
+
+// pointer arithmetic equivalences
+// a + x <=> a[x]
+
+// ---------------------------------------------------------------------------
+// Pointer/Field isomorphisms
+// ---------------------------------------------------------------------------
+
+Expression
+@ ptr_to_array @
+expression E1, E2; // was pure, not sure why that's needed, not good for rule27
+identifier fld;
+@@
+
+E1->fld => E1[E2].fld
+
+
+
+TopLevel
+@ mkinit @
+type T;
+pure context T E;
+identifier I;
+identifier fld;
+expression E1;
+@@
+
+E.fld = E1; => T I = { .fld = E1, };
+
+// ---------------------------------------------------------------------------
+// more pointer field iso
+// ---------------------------------------------------------------------------
+
+// pure means that either the whole field reference expression is dropped,
+// or E is context code and has no attached + code
+// not really... pure means matches a unitary unplussed metavariable
+// but this rule doesn't work anyway
+
+Expression
+@ fld_to_ptr @
+type T;
+pure T E;
+pure T *E1;
+identifier fld;
+@@
+
+E.fld => E1->fld
+
+
+// ---------------------------------------------------------------------------
+// sizeof isomorphisms
+// ---------------------------------------------------------------------------
+
+// The following is made redundant by the paren isomorphism
+// Expression
+// @ sizeof_parens @
+// expression E;
+// @@
+
+// sizeof(E) => sizeof E
+
+
+Expression
+@ sizeof_type_expr @
+pure type T; // pure because we drop a metavar
+T E;
+@@
+
+sizeof(T) => sizeof(E)
+
+// Expression
+// @ fld_func_call @
+// expression list ES;
+// identifier fld;
+// expression E;
+// @@
+//  E.fld(ES) <=> (*E.fld)(ES)
+
+
+// ****************************************************************************
+// Linux specific isomorphisms 
+// ****************************************************************************
+
+// Examples: many functions are equivalent/related, and one SP modifying
+// such a function should also modify the equivalent/related one.
+
+
+// ---------------------------------------------------------------------------
+// in rule18, needed ? 
+// ---------------------------------------------------------------------------
+// (
+// -   test_and_set_bit(ev, &bcs->event);
+// |
+// -   set_bit(ev, &bcs->event);
+// |
+// -   bcs->event |= 1 << ev; // the only case that is used
+
+
+// ****************************************************************************
+// Everything that is required to be in last position, for ugly reasons ...
+// ****************************************************************************

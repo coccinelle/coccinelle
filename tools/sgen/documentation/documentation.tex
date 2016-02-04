@@ -1,0 +1,58 @@
+\documentclass[a4paper,11pt]{article}
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{textcomp}
+\usepackage[T1]{fontenc}
+
+% slightly reduce ridiculous margins
+\addtolength{\oddsidemargin}{-.5in}
+\addtolength{\evensidemargin}{-.5in}
+\addtolength{\textwidth}{1in}
+
+%for images
+%\usepackage[pdftex]{graphicx}
+
+% header
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhead[L]{\texttt{sgen} documentation} 
+\fancyhead[R]{INRIA/LIP6 \today}
+
+% urls
+\usepackage{hyperref}
+\hypersetup{pdfborder = {0 0 0}} %remove link borders
+
+\title{\textbf{Documentation for \texttt{sgen}}}
+\date{\today}
+\author{Chi Pham}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+\section{About}
+We first provide information about the tool, its motivation, and its uses.
+\input{about.tex}
+\clearpage
+
+\section{Usage}
+This section contains information about how the tool is installed and used.
+\input{usage.tex}
+\clearpage
+
+\section{Implementation}
+This section contains information about the implementation details of the tool.
+\input{implementation.tex}
+\clearpage
+
+\section{Known issues}
+This section lists the known issues that might either cause the tool to fail or to generate an erroneous script.
+\input{knownissues.tex}
+\clearpage
+
+\section{Future work}
+This section lists the work to be done on the tool aside from fixing the known issues.
+\input{future.tex}
+
+\end{document}

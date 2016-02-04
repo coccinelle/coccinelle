@@ -1,0 +1,44 @@
+
+// note that need -sgrep options otherwise don't detect
+// every situation as for instance: 
+
+// static int start_command_port(struct usb_serial *serial)
+// {
+// 	spin_lock_irqsave(&command_info->lock, flags);
+// 	if (!command_info->port_running) {
+// 		retval = usb_submit_urb(command_port->read_urb, GFP_KERNEL);
+// 		if (retval) {
+// 			err("%s - failed submitting read urb, error %d", __FUNCTION__, retval);
+// 			goto exit;
+// 		}
+// 	}
+// 	command_info->port_running++;
+// 
+// exit:
+// 	spin_unlock_irqrestore(&command_info->lock, flags);
+// 	return retval;
+// }
+
+// note that better to send a .sgrep than a .cocci, that is 
+// to not do the fix because sometimes the correct fix is not to replace
+// the use of GFP_KERNEL but instead to move the function call outside
+// the spin_locked region.
+
+@@
+//expression E;
+identifier fn;
+@@
+
+(
+spin_lock_irqsave(...)
+|
+spin_lock(...)
+)
+... when != \(spin_unlock_irqrestore(...)\|spin_unlock(...)\)
+//- usb_submit_urb(E, GFP_KERNEL)
+fn(...,
+- GFP_KERNEL
+//+ GFP_ATOMIC
+  ,...
+  )
+ 

@@ -1,0 +1,76 @@
+\chapter{Introduction}
+%src: cocci website, LWN article
+
+Coccinelle is a tool to help automate repetitive 
+source-to-source style-preserving program transformations
+on C source code, like for instance to perform some refactorings.
+%coupling: readme.txt
+Coccinelle is presented as a command line tool called \spatch that takes
+as input the name of a file containing the specification of a program
+transformation, called a {\em semantic patch}, and a set of C files,
+and then performs the transformation on all those C files.
+%synopsis ?
+
+To make it easy to express those transformations,
+Coccinelle proposes a WYSISWYG approach where the C programmer 
+can leverage the things he already knows: the C syntax
+and the patch syntax. Indeed, with Coccinelle transformations
+are written in a specific language called SmPL, for 
+Semantic Patch Language, which as its name suggests is very
+close to the syntax of a patch, but does not 
+work at a line level, as traditional patches do,
+but rather at higher, semantic level.
+
+Here is an example of a simple program transformation.
+To replace every call to \verb+foo+ of any expression $x$ 
+by a call to \verb+bar+, create a semantic patch file \verb+ex1.cocci+
+(semantic patches usually end with the \verb+.cocci+  filename extension)
+containing:
+\begin{verbatim}
+@@ expression x; @@
+
+- foo(x)
++ bar(x)
+
+\end{verbatim}
+
+Then to ``apply'' the specified program transformation to a set of C files,
+simply do:
+\begin{verbatim}
+$ spatch -sp_file ex1.cocci *.c
+\end{verbatim}
+
+
+Coccinelle primarily targets ANSI C, and supports some GCC extensions.  It
+has only partial support for K\&R C.  K\&R function declarations are only
+recognized if the parameter declarations are indented.  Furthermore, the
+parameter names are subsequently considered to be type names, due to
+confusion with function prototypes, in which a name by itself is indeed the
+name of a type.
+
+
+%command line: 
+
+%can do inplace, or with git, cf chapter on developing ...
+
+%Other approaches 
+%instead of 
+%expressing the transformation on the internal representation
+%of a C frontend, for instance the abstract syntax tree 
+%used internally by gcc, which would require for the user
+%to learn how to use this internal data structure, 
+
+%if can find and transform, can also find, so semantic grep.
+
+%vs regexp
+%vs ast
+
+%features:
+%src: darcs manual
+
+%%% Local Variables:
+%%% mode: LaTeX
+%%% coding: utf-8
+%%% TeX-PDF-mode: t
+%%% ispell-local-dictionary: "american"
+%%% End:

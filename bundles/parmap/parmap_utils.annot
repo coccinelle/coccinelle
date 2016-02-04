@@ -1,0 +1,1134 @@
+"parmap_utils.ml" 2 1 5 "parmap_utils.ml" 2 1 14
+type(
+  ('a, unit, string, unit) format4 -> 'a
+)
+ident(
+  def log_error "parmap_utils.ml" 6 134 134 "parmap_utils.ml" 1 0 -1
+)
+"parmap_utils.ml" 2 1 15 "parmap_utils.ml" 2 1 18
+type(
+  ('a, unit, string, unit) format4
+)
+ident(
+  def fmt "parmap_utils.ml" 3 21 23 "parmap_utils.ml" 3 21 88
+)
+"parmap_utils.ml" 3 21 23 "parmap_utils.ml" 3 21 37
+type(
+  (string -> unit) -> ('a, unit, string, unit) format4 -> 'a
+)
+ident(
+  ext_ref Printf.kprintf
+)
+"parmap_utils.ml" 3 21 43 "parmap_utils.ml" 3 21 44
+type(
+  string
+)
+ident(
+  def s "parmap_utils.ml" 3 21 48 "parmap_utils.ml" 3 21 83
+)
+"parmap_utils.ml" 3 21 48 "parmap_utils.ml" 3 21 62
+type(
+  (string -> unit, Format.formatter, unit) format -> string -> unit
+)
+ident(
+  ext_ref Format.eprintf
+)
+"parmap_utils.ml" 3 21 63 "parmap_utils.ml" 3 21 81
+type(
+  (string -> unit, Format.formatter, unit) format
+)
+"parmap_utils.ml" 3 21 82 "parmap_utils.ml" 3 21 83
+type(
+  string
+)
+ident(
+  int_ref s "parmap_utils.ml" 3 21 43 "parmap_utils.ml" 3 21 44
+)
+"parmap_utils.ml" 3 21 48 "parmap_utils.ml" 3 21 83
+call(
+  tail
+)
+type(
+  unit
+)
+"parmap_utils.ml" 3 21 38 "parmap_utils.ml" 3 21 84
+type(
+  string -> unit
+)
+"parmap_utils.ml" 3 21 85 "parmap_utils.ml" 3 21 88
+type(
+  ('a, unit, string, unit) format4
+)
+ident(
+  int_ref fmt "parmap_utils.ml" 2 1 15 "parmap_utils.ml" 2 1 18
+)
+"parmap_utils.ml" 3 21 23 "parmap_utils.ml" 3 21 88
+call(
+  tail
+)
+type(
+  'a
+)
+"parmap_utils.ml" 6 134 138 "parmap_utils.ml" 6 134 147
+type(
+  'a list -> 'a list -> 'a list
+)
+ident(
+  def append_tr "parmap_utils.ml" 13 301 301 "parmap_utils.ml" 1 0 -1
+)
+"parmap_utils.ml" 6 134 148 "parmap_utils.ml" 6 134 150
+type(
+  'a list
+)
+ident(
+  def l1 "parmap_utils.ml" 6 134 151 "parmap_utils.ml" 10 230 255
+)
+"parmap_utils.ml" 6 134 151 "parmap_utils.ml" 6 134 153
+type(
+  'a list
+)
+ident(
+  def l2 "parmap_utils.ml" 7 156 158 "parmap_utils.ml" 10 230 255
+)
+"parmap_utils.ml" 7 156 166 "parmap_utils.ml" 7 156 169
+type(
+  'b list -> 'b list -> 'b list
+)
+ident(
+  def aux "parmap_utils.ml" 7 156 158 "parmap_utils.ml" 10 230 255
+)
+"parmap_utils.ml" 7 156 170 "parmap_utils.ml" 7 156 173
+type(
+  'b list
+)
+ident(
+  def acc "parmap_utils.ml" 7 156 176 "parmap_utils.ml" 9 201 229
+)
+"parmap_utils.ml" 8 185 191 "parmap_utils.ml" 8 185 193
+type(
+  'b list
+)
+"parmap_utils.ml" 8 185 197 "parmap_utils.ml" 8 185 200
+type(
+  'b list
+)
+ident(
+  int_ref acc "parmap_utils.ml" 7 156 170 "parmap_utils.ml" 7 156 173
+)
+"parmap_utils.ml" 9 201 207 "parmap_utils.ml" 9 201 208
+type(
+  'b
+)
+ident(
+  def a "parmap_utils.ml" 9 201 215 "parmap_utils.ml" 9 201 229
+)
+"parmap_utils.ml" 9 201 210 "parmap_utils.ml" 9 201 211
+type(
+  'b list
+)
+ident(
+  def r "parmap_utils.ml" 9 201 215 "parmap_utils.ml" 9 201 229
+)
+"parmap_utils.ml" 9 201 207 "parmap_utils.ml" 9 201 211
+type(
+  'b list
+)
+"parmap_utils.ml" 9 201 215 "parmap_utils.ml" 9 201 218
+type(
+  'b list -> 'b list -> 'b list
+)
+ident(
+  int_ref aux "parmap_utils.ml" 7 156 166 "parmap_utils.ml" 7 156 169
+)
+"parmap_utils.ml" 9 201 220 "parmap_utils.ml" 9 201 221
+type(
+  'b
+)
+ident(
+  int_ref a "parmap_utils.ml" 9 201 207 "parmap_utils.ml" 9 201 208
+)
+"parmap_utils.ml" 9 201 223 "parmap_utils.ml" 9 201 226
+type(
+  'b list
+)
+ident(
+  int_ref acc "parmap_utils.ml" 7 156 170 "parmap_utils.ml" 7 156 173
+)
+"parmap_utils.ml" 9 201 219 "parmap_utils.ml" 9 201 227
+type(
+  'b list
+)
+"parmap_utils.ml" 9 201 228 "parmap_utils.ml" 9 201 229
+type(
+  'b list
+)
+ident(
+  int_ref r "parmap_utils.ml" 9 201 210 "parmap_utils.ml" 9 201 211
+)
+"parmap_utils.ml" 9 201 215 "parmap_utils.ml" 9 201 229
+call(
+  tail
+)
+type(
+  'b list
+)
+"parmap_utils.ml" 7 156 176 "parmap_utils.ml" 9 201 229
+type(
+  'b list -> 'b list
+)
+"parmap_utils.ml" 10 230 235 "parmap_utils.ml" 10 230 238
+type(
+  'a list -> 'a list -> 'a list
+)
+ident(
+  int_ref aux "parmap_utils.ml" 7 156 166 "parmap_utils.ml" 7 156 169
+)
+"parmap_utils.ml" 10 230 239 "parmap_utils.ml" 10 230 241
+type(
+  'a list
+)
+ident(
+  int_ref l2 "parmap_utils.ml" 6 134 151 "parmap_utils.ml" 6 134 153
+)
+"parmap_utils.ml" 10 230 243 "parmap_utils.ml" 10 230 251
+type(
+  'a list -> 'a list
+)
+ident(
+  ext_ref List.rev
+)
+"parmap_utils.ml" 10 230 252 "parmap_utils.ml" 10 230 254
+type(
+  'a list
+)
+ident(
+  int_ref l1 "parmap_utils.ml" 6 134 148 "parmap_utils.ml" 6 134 150
+)
+"parmap_utils.ml" 10 230 242 "parmap_utils.ml" 10 230 255
+call(
+  stack
+)
+type(
+  'a list
+)
+"parmap_utils.ml" 10 230 235 "parmap_utils.ml" 10 230 255
+call(
+  tail
+)
+type(
+  'a list
+)
+"parmap_utils.ml" 7 156 158 "parmap_utils.ml" 10 230 255
+type(
+  'a list
+)
+"parmap_utils.ml" 13 301 305 "parmap_utils.ml" 13 301 314
+type(
+  'a list list -> 'a list
+)
+ident(
+  def concat_tr "parmap_utils.ml" 17 455 455 "parmap_utils.ml" 1 0 -1
+)
+"parmap_utils.ml" 13 301 316 "parmap_utils.ml" 13 301 317
+type(
+  'a list list
+)
+ident(
+  def l "parmap_utils.ml" 14 330 332 "parmap_utils.ml" 14 330 393
+)
+"parmap_utils.ml" 14 330 332 "parmap_utils.ml" 14 330 346
+type(
+  ('a list -> 'a list -> 'a list) -> 'a list -> 'a list list -> 'a list
+)
+ident(
+  ext_ref List.fold_left
+)
+"parmap_utils.ml" 14 330 352 "parmap_utils.ml" 14 330 355
+type(
+  'a list
+)
+ident(
+  def acc "parmap_utils.ml" 14 330 356 "parmap_utils.ml" 14 330 376
+)
+"parmap_utils.ml" 14 330 356 "parmap_utils.ml" 14 330 357
+type(
+  'a list
+)
+ident(
+  def l "parmap_utils.ml" 14 330 361 "parmap_utils.ml" 14 330 376
+)
+"parmap_utils.ml" 14 330 361 "parmap_utils.ml" 14 330 370
+type(
+  'a list -> 'a list -> 'a list
+)
+ident(
+  int_ref append_tr "parmap_utils.ml" 6 134 138 "parmap_utils.ml" 6 134 147
+)
+"parmap_utils.ml" 14 330 371 "parmap_utils.ml" 14 330 372
+type(
+  'a list
+)
+ident(
+  int_ref l "parmap_utils.ml" 14 330 356 "parmap_utils.ml" 14 330 357
+)
+"parmap_utils.ml" 14 330 373 "parmap_utils.ml" 14 330 376
+type(
+  'a list
+)
+ident(
+  int_ref acc "parmap_utils.ml" 14 330 352 "parmap_utils.ml" 14 330 355
+)
+"parmap_utils.ml" 14 330 361 "parmap_utils.ml" 14 330 376
+call(
+  tail
+)
+type(
+  'a list
+)
+"parmap_utils.ml" 14 330 347 "parmap_utils.ml" 14 330 377
+type(
+  'a list -> 'a list -> 'a list
+)
+"parmap_utils.ml" 14 330 378 "parmap_utils.ml" 14 330 380
+type(
+  'a list
+)
+"parmap_utils.ml" 14 330 382 "parmap_utils.ml" 14 330 390
+type(
+  'a list list -> 'a list list
+)
+ident(
+  ext_ref List.rev
+)
+"parmap_utils.ml" 14 330 391 "parmap_utils.ml" 14 330 392
+type(
+  'a list list
+)
+ident(
+  int_ref l "parmap_utils.ml" 13 301 316 "parmap_utils.ml" 13 301 317
+)
+"parmap_utils.ml" 14 330 381 "parmap_utils.ml" 14 330 393
+call(
+  stack
+)
+type(
+  'a list list
+)
+"parmap_utils.ml" 14 330 332 "parmap_utils.ml" 14 330 393
+call(
+  tail
+)
+type(
+  'a list
+)
+"parmap_utils.ml" 17 455 459 "parmap_utils.ml" 17 455 469
+type(
+  ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
+)
+ident(
+  def fold_right "parmap_utils.ml" 34 962 962 "parmap_utils.ml" 1 0 -1
+)
+"parmap_utils.ml" 17 455 470 "parmap_utils.ml" 17 455 471
+type(
+  'a -> 'b -> 'b
+)
+ident(
+  def f "parmap_utils.ml" 17 455 472 "parmap_utils.ml" 31 869 879
+)
+"parmap_utils.ml" 17 455 472 "parmap_utils.ml" 17 455 473
+type(
+  'a list
+)
+ident(
+  def l "parmap_utils.ml" 17 455 474 "parmap_utils.ml" 31 869 879
+)
+"parmap_utils.ml" 17 455 474 "parmap_utils.ml" 17 455 478
+type(
+  'b
+)
+ident(
+  def init "parmap_utils.ml" 18 481 483 "parmap_utils.ml" 31 869 879
+)
+"parmap_utils.ml" 18 481 487 "parmap_utils.ml" 18 481 501
+type(
+  int
+)
+ident(
+  def fold_right_max "parmap_utils.ml" 19 512 514 "parmap_utils.ml" 31 869 879
+)
+"parmap_utils.ml" 18 481 504 "parmap_utils.ml" 18 481 508
+type(
+  int
+)
+"parmap_utils.ml" 19 512 522 "parmap_utils.ml" 19 512 531
+type(
+  'b -> 'a list -> 'b
+)
+ident(
+  def tail_loop "parmap_utils.ml" 19 512 514 "parmap_utils.ml" 31 869 879
+)
+"parmap_utils.ml" 19 512 532 "parmap_utils.ml" 19 512 535
+type(
+  'b
+)
+ident(
+  def acc "parmap_utils.ml" 19 512 538 "parmap_utils.ml" 21 569 612
+)
+"parmap_utils.ml" 20 547 559 "parmap_utils.ml" 20 547 561
+type(
+  'a list
+)
+"parmap_utils.ml" 20 547 565 "parmap_utils.ml" 20 547 568
+type(
+  'b
+)
+ident(
+  int_ref acc "parmap_utils.ml" 19 512 532 "parmap_utils.ml" 19 512 535
+)
+"parmap_utils.ml" 21 569 581 "parmap_utils.ml" 21 569 582
+type(
+  'a
+)
+ident(
+  def h "parmap_utils.ml" 21 569 591 "parmap_utils.ml" 21 569 612
+)
+"parmap_utils.ml" 21 569 586 "parmap_utils.ml" 21 569 587
+type(
+  'a list
+)
+ident(
+  def t "parmap_utils.ml" 21 569 591 "parmap_utils.ml" 21 569 612
+)
+"parmap_utils.ml" 21 569 581 "parmap_utils.ml" 21 569 587
+type(
+  'a list
+)
+"parmap_utils.ml" 21 569 591 "parmap_utils.ml" 21 569 600
+type(
+  'b -> 'a list -> 'b
+)
+ident(
+  int_ref tail_loop "parmap_utils.ml" 19 512 522 "parmap_utils.ml" 19 512 531
+)
+"parmap_utils.ml" 21 569 602 "parmap_utils.ml" 21 569 603
+type(
+  'a -> 'b -> 'b
+)
+ident(
+  int_ref f "parmap_utils.ml" 17 455 470 "parmap_utils.ml" 17 455 471
+)
+"parmap_utils.ml" 21 569 604 "parmap_utils.ml" 21 569 605
+type(
+  'a
+)
+ident(
+  int_ref h "parmap_utils.ml" 21 569 581 "parmap_utils.ml" 21 569 582
+)
+"parmap_utils.ml" 21 569 606 "parmap_utils.ml" 21 569 609
+type(
+  'b
+)
+ident(
+  int_ref acc "parmap_utils.ml" 19 512 532 "parmap_utils.ml" 19 512 535
+)
+"parmap_utils.ml" 21 569 601 "parmap_utils.ml" 21 569 610
+call(
+  stack
+)
+type(
+  'b
+)
+"parmap_utils.ml" 21 569 611 "parmap_utils.ml" 21 569 612
+type(
+  'a list
+)
+ident(
+  int_ref t "parmap_utils.ml" 21 569 586 "parmap_utils.ml" 21 569 587
+)
+"parmap_utils.ml" 21 569 591 "parmap_utils.ml" 21 569 612
+call(
+  tail
+)
+type(
+  'b
+)
+"parmap_utils.ml" 19 512 538 "parmap_utils.ml" 21 569 612
+type(
+  'a list -> 'b
+)
+"parmap_utils.ml" 23 618 628 "parmap_utils.ml" 23 618 632
+type(
+  int -> 'a list -> 'b
+)
+ident(
+  def loop "parmap_utils.ml" 23 618 620 "parmap_utils.ml" 31 869 879
+)
+"parmap_utils.ml" 23 618 633 "parmap_utils.ml" 23 618 634
+type(
+  int
+)
+ident(
+  def n "parmap_utils.ml" 23 618 637 "parmap_utils.ml" 29 804 863
+)
+"parmap_utils.ml" 24 646 658 "parmap_utils.ml" 24 646 660
+type(
+  'a list
+)
+"parmap_utils.ml" 24 646 664 "parmap_utils.ml" 24 646 668
+type(
+  'b
+)
+ident(
+  int_ref init "parmap_utils.ml" 17 455 474 "parmap_utils.ml" 17 455 478
+)
+"parmap_utils.ml" 25 669 681 "parmap_utils.ml" 25 669 682
+type(
+  'a
+)
+ident(
+  def h "parmap_utils.ml" 26 691 709 "parmap_utils.ml" 29 804 863
+)
+"parmap_utils.ml" 25 669 686 "parmap_utils.ml" 25 669 687
+type(
+  'a list
+)
+ident(
+  def t "parmap_utils.ml" 26 691 709 "parmap_utils.ml" 29 804 863
+)
+"parmap_utils.ml" 25 669 681 "parmap_utils.ml" 25 669 687
+type(
+  'a list
+)
+"parmap_utils.ml" 26 691 712 "parmap_utils.ml" 26 691 713
+type(
+  int
+)
+ident(
+  int_ref n "parmap_utils.ml" 23 618 633 "parmap_utils.ml" 23 618 634
+)
+"parmap_utils.ml" 26 691 714 "parmap_utils.ml" 26 691 715
+type(
+  int -> int -> bool
+)
+ident(
+  ext_ref Pervasives.( < )
+)
+"parmap_utils.ml" 26 691 716 "parmap_utils.ml" 26 691 730
+type(
+  int
+)
+ident(
+  int_ref fold_right_max "parmap_utils.ml" 18 481 487 "parmap_utils.ml" 18 481 501
+)
+"parmap_utils.ml" 26 691 712 "parmap_utils.ml" 26 691 730
+type(
+  bool
+)
+"parmap_utils.ml" 27 736 762 "parmap_utils.ml" 27 736 763
+type(
+  'a -> 'b -> 'b
+)
+ident(
+  int_ref f "parmap_utils.ml" 17 455 470 "parmap_utils.ml" 17 455 471
+)
+"parmap_utils.ml" 27 736 764 "parmap_utils.ml" 27 736 765
+type(
+  'a
+)
+ident(
+  int_ref h "parmap_utils.ml" 25 669 681 "parmap_utils.ml" 25 669 682
+)
+"parmap_utils.ml" 27 736 767 "parmap_utils.ml" 27 736 771
+type(
+  int -> 'a list -> 'b
+)
+ident(
+  int_ref loop "parmap_utils.ml" 23 618 628 "parmap_utils.ml" 23 618 632
+)
+"parmap_utils.ml" 27 736 773 "parmap_utils.ml" 27 736 774
+type(
+  int
+)
+ident(
+  int_ref n "parmap_utils.ml" 23 618 633 "parmap_utils.ml" 23 618 634
+)
+"parmap_utils.ml" 27 736 774 "parmap_utils.ml" 27 736 775
+type(
+  int -> int -> int
+)
+ident(
+  ext_ref Pervasives.( + )
+)
+"parmap_utils.ml" 27 736 775 "parmap_utils.ml" 27 736 776
+type(
+  int
+)
+"parmap_utils.ml" 27 736 772 "parmap_utils.ml" 27 736 777
+type(
+  int
+)
+"parmap_utils.ml" 27 736 778 "parmap_utils.ml" 27 736 779
+type(
+  'a list
+)
+ident(
+  int_ref t "parmap_utils.ml" 25 669 686 "parmap_utils.ml" 25 669 687
+)
+"parmap_utils.ml" 27 736 766 "parmap_utils.ml" 27 736 780
+call(
+  stack
+)
+type(
+  'b
+)
+"parmap_utils.ml" 27 736 762 "parmap_utils.ml" 27 736 780
+call(
+  tail
+)
+type(
+  'b
+)
+"parmap_utils.ml" 29 804 830 "parmap_utils.ml" 29 804 831
+type(
+  'a -> 'b -> 'b
+)
+ident(
+  int_ref f "parmap_utils.ml" 17 455 470 "parmap_utils.ml" 17 455 471
+)
+"parmap_utils.ml" 29 804 832 "parmap_utils.ml" 29 804 833
+type(
+  'a
+)
+ident(
+  int_ref h "parmap_utils.ml" 25 669 681 "parmap_utils.ml" 25 669 682
+)
+"parmap_utils.ml" 29 804 835 "parmap_utils.ml" 29 804 844
+type(
+  'b -> 'a list -> 'b
+)
+ident(
+  int_ref tail_loop "parmap_utils.ml" 19 512 522 "parmap_utils.ml" 19 512 531
+)
+"parmap_utils.ml" 29 804 845 "parmap_utils.ml" 29 804 849
+type(
+  'b
+)
+ident(
+  int_ref init "parmap_utils.ml" 17 455 474 "parmap_utils.ml" 17 455 478
+)
+"parmap_utils.ml" 29 804 851 "parmap_utils.ml" 29 804 859
+type(
+  'a list -> 'a list
+)
+ident(
+  ext_ref List.rev
+)
+"parmap_utils.ml" 29 804 860 "parmap_utils.ml" 29 804 861
+type(
+  'a list
+)
+ident(
+  int_ref t "parmap_utils.ml" 25 669 686 "parmap_utils.ml" 25 669 687
+)
+"parmap_utils.ml" 29 804 850 "parmap_utils.ml" 29 804 862
+call(
+  stack
+)
+type(
+  'a list
+)
+"parmap_utils.ml" 29 804 834 "parmap_utils.ml" 29 804 863
+call(
+  stack
+)
+type(
+  'b
+)
+"parmap_utils.ml" 29 804 830 "parmap_utils.ml" 29 804 863
+call(
+  tail
+)
+type(
+  'b
+)
+"parmap_utils.ml" 26 691 709 "parmap_utils.ml" 29 804 863
+type(
+  'b
+)
+"parmap_utils.ml" 23 618 637 "parmap_utils.ml" 29 804 863
+type(
+  'a list -> 'b
+)
+"parmap_utils.ml" 31 869 871 "parmap_utils.ml" 31 869 875
+type(
+  int -> 'a list -> 'b
+)
+ident(
+  int_ref loop "parmap_utils.ml" 23 618 628 "parmap_utils.ml" 23 618 632
+)
+"parmap_utils.ml" 31 869 876 "parmap_utils.ml" 31 869 877
+type(
+  int
+)
+"parmap_utils.ml" 31 869 878 "parmap_utils.ml" 31 869 879
+type(
+  'a list
+)
+ident(
+  int_ref l "parmap_utils.ml" 17 455 472 "parmap_utils.ml" 17 455 473
+)
+"parmap_utils.ml" 31 869 871 "parmap_utils.ml" 31 869 879
+call(
+  tail
+)
+type(
+  'b
+)
+"parmap_utils.ml" 23 618 620 "parmap_utils.ml" 31 869 879
+type(
+  'b
+)
+"parmap_utils.ml" 19 512 514 "parmap_utils.ml" 31 869 879
+type(
+  'b
+)
+"parmap_utils.ml" 18 481 483 "parmap_utils.ml" 31 869 879
+type(
+  'b
+)
+"parmap_utils.ml" 34 962 966 "parmap_utils.ml" 34 962 971
+type(
+  int -> int -> int list
+)
+ident(
+  def range "parmap_utils.ml" 40 1167 1167 "parmap_utils.ml" 1 0 -1
+)
+"parmap_utils.ml" 34 962 972 "parmap_utils.ml" 34 962 978
+type(
+  int
+)
+ident(
+  def startv "parmap_utils.ml" 34 962 979 "parmap_utils.ml" 37 1114 1127
+)
+"parmap_utils.ml" 34 962 979 "parmap_utils.ml" 34 962 983
+type(
+  int
+)
+ident(
+  def endv "parmap_utils.ml" 35 986 988 "parmap_utils.ml" 37 1114 1127
+)
+"parmap_utils.ml" 35 986 992 "parmap_utils.ml" 35 986 993
+type(
+  int
+)
+ident(
+  def s "parmap_utils.ml" 36 1037 1039 "parmap_utils.ml" 37 1114 1127
+)
+"parmap_utils.ml" 35 986 994 "parmap_utils.ml" 35 986 995
+type(
+  int
+)
+ident(
+  def e "parmap_utils.ml" 36 1037 1039 "parmap_utils.ml" 37 1114 1127
+)
+"parmap_utils.ml" 35 986 992 "parmap_utils.ml" 35 986 995
+type(
+  int * int
+)
+"parmap_utils.ml" 35 986 999 "parmap_utils.ml" 35 986 1002
+type(
+  int -> int -> int
+)
+ident(
+  ext_ref Pervasives.min
+)
+"parmap_utils.ml" 35 986 1003 "parmap_utils.ml" 35 986 1009
+type(
+  int
+)
+ident(
+  int_ref startv "parmap_utils.ml" 34 962 972 "parmap_utils.ml" 34 962 978
+)
+"parmap_utils.ml" 35 986 1010 "parmap_utils.ml" 35 986 1014
+type(
+  int
+)
+ident(
+  int_ref endv "parmap_utils.ml" 34 962 979 "parmap_utils.ml" 34 962 983
+)
+"parmap_utils.ml" 35 986 998 "parmap_utils.ml" 35 986 1015
+call(
+  stack
+)
+type(
+  int
+)
+"parmap_utils.ml" 35 986 1017 "parmap_utils.ml" 35 986 1020
+type(
+  int -> int -> int
+)
+ident(
+  ext_ref Pervasives.max
+)
+"parmap_utils.ml" 35 986 1021 "parmap_utils.ml" 35 986 1027
+type(
+  int
+)
+ident(
+  int_ref startv "parmap_utils.ml" 34 962 972 "parmap_utils.ml" 34 962 978
+)
+"parmap_utils.ml" 35 986 1028 "parmap_utils.ml" 35 986 1032
+type(
+  int
+)
+ident(
+  int_ref endv "parmap_utils.ml" 34 962 979 "parmap_utils.ml" 34 962 983
+)
+"parmap_utils.ml" 35 986 1016 "parmap_utils.ml" 35 986 1033
+call(
+  stack
+)
+type(
+  int
+)
+"parmap_utils.ml" 35 986 998 "parmap_utils.ml" 35 986 1033
+type(
+  int * int
+)
+"parmap_utils.ml" 36 1037 1047 "parmap_utils.ml" 36 1037 1050
+type(
+  int list -> int -> int list
+)
+ident(
+  def aux "parmap_utils.ml" 36 1037 1039 "parmap_utils.ml" 37 1114 1127
+)
+"parmap_utils.ml" 36 1037 1051 "parmap_utils.ml" 36 1037 1054
+type(
+  int list
+)
+ident(
+  def acc "parmap_utils.ml" 36 1037 1057 "parmap_utils.ml" 36 1037 1113
+)
+"parmap_utils.ml" 36 1037 1066 "parmap_utils.ml" 36 1037 1067
+type(
+  int
+)
+ident(
+  def n "parmap_utils.ml" 36 1037 1071 "parmap_utils.ml" 36 1037 1113
+)
+"parmap_utils.ml" 36 1037 1074 "parmap_utils.ml" 36 1037 1075
+type(
+  int
+)
+ident(
+  int_ref n "parmap_utils.ml" 36 1037 1066 "parmap_utils.ml" 36 1037 1067
+)
+"parmap_utils.ml" 36 1037 1075 "parmap_utils.ml" 36 1037 1076
+type(
+  int -> int -> bool
+)
+ident(
+  ext_ref Pervasives.( = )
+)
+"parmap_utils.ml" 36 1037 1076 "parmap_utils.ml" 36 1037 1077
+type(
+  int
+)
+ident(
+  int_ref s "parmap_utils.ml" 35 986 992 "parmap_utils.ml" 35 986 993
+)
+"parmap_utils.ml" 36 1037 1074 "parmap_utils.ml" 36 1037 1077
+type(
+  bool
+)
+"parmap_utils.ml" 36 1037 1083 "parmap_utils.ml" 36 1037 1084
+type(
+  int
+)
+ident(
+  int_ref n "parmap_utils.ml" 36 1037 1066 "parmap_utils.ml" 36 1037 1067
+)
+"parmap_utils.ml" 36 1037 1086 "parmap_utils.ml" 36 1037 1089
+type(
+  int list
+)
+ident(
+  int_ref acc "parmap_utils.ml" 36 1037 1051 "parmap_utils.ml" 36 1037 1054
+)
+"parmap_utils.ml" 36 1037 1083 "parmap_utils.ml" 36 1037 1089
+type(
+  int list
+)
+"parmap_utils.ml" 36 1037 1095 "parmap_utils.ml" 36 1037 1098
+type(
+  int list -> int -> int list
+)
+ident(
+  int_ref aux "parmap_utils.ml" 36 1037 1047 "parmap_utils.ml" 36 1037 1050
+)
+"parmap_utils.ml" 36 1037 1100 "parmap_utils.ml" 36 1037 1101
+type(
+  int
+)
+ident(
+  int_ref n "parmap_utils.ml" 36 1037 1066 "parmap_utils.ml" 36 1037 1067
+)
+"parmap_utils.ml" 36 1037 1103 "parmap_utils.ml" 36 1037 1106
+type(
+  int list
+)
+ident(
+  int_ref acc "parmap_utils.ml" 36 1037 1051 "parmap_utils.ml" 36 1037 1054
+)
+"parmap_utils.ml" 36 1037 1099 "parmap_utils.ml" 36 1037 1107
+type(
+  int list
+)
+"parmap_utils.ml" 36 1037 1109 "parmap_utils.ml" 36 1037 1110
+type(
+  int
+)
+ident(
+  int_ref n "parmap_utils.ml" 36 1037 1066 "parmap_utils.ml" 36 1037 1067
+)
+"parmap_utils.ml" 36 1037 1110 "parmap_utils.ml" 36 1037 1111
+type(
+  int -> int -> int
+)
+ident(
+  ext_ref Pervasives.( - )
+)
+"parmap_utils.ml" 36 1037 1111 "parmap_utils.ml" 36 1037 1112
+type(
+  int
+)
+"parmap_utils.ml" 36 1037 1108 "parmap_utils.ml" 36 1037 1113
+type(
+  int
+)
+"parmap_utils.ml" 36 1037 1095 "parmap_utils.ml" 36 1037 1113
+call(
+  tail
+)
+type(
+  int list
+)
+"parmap_utils.ml" 36 1037 1071 "parmap_utils.ml" 36 1037 1113
+type(
+  int list
+)
+"parmap_utils.ml" 36 1037 1057 "parmap_utils.ml" 36 1037 1113
+type(
+  int -> int list
+)
+"parmap_utils.ml" 37 1114 1119 "parmap_utils.ml" 37 1114 1122
+type(
+  int list -> int -> int list
+)
+ident(
+  int_ref aux "parmap_utils.ml" 36 1037 1047 "parmap_utils.ml" 36 1037 1050
+)
+"parmap_utils.ml" 37 1114 1123 "parmap_utils.ml" 37 1114 1125
+type(
+  int list
+)
+"parmap_utils.ml" 37 1114 1126 "parmap_utils.ml" 37 1114 1127
+type(
+  int
+)
+ident(
+  int_ref e "parmap_utils.ml" 35 986 994 "parmap_utils.ml" 35 986 995
+)
+"parmap_utils.ml" 37 1114 1119 "parmap_utils.ml" 37 1114 1127
+call(
+  tail
+)
+type(
+  int list
+)
+"parmap_utils.ml" 36 1037 1039 "parmap_utils.ml" 37 1114 1127
+type(
+  int list
+)
+"parmap_utils.ml" 35 986 988 "parmap_utils.ml" 37 1114 1127
+type(
+  int list
+)
+"parmap_utils.ml" 40 1167 1171 "parmap_utils.ml" 40 1167 1177
+type(
+  unit -> Unix.file_descr
+)
+ident(
+  def tempfd "parmap_utils.ml" 46 1335 1372 "parmap_utils.ml" 1 0 -1
+)
+"parmap_utils.ml" 40 1167 1178 "parmap_utils.ml" 40 1167 1180
+type(
+  unit
+)
+"parmap_utils.ml" 41 1183 1189 "parmap_utils.ml" 41 1183 1193
+type(
+  string
+)
+ident(
+  def name "parmap_utils.ml" 42 1231 1233 "parmap_utils.ml" 46 1335 1372
+)
+"parmap_utils.ml" 41 1183 1196 "parmap_utils.ml" 41 1183 1214
+type(
+  ?temp_dir:string -> string -> string -> string
+)
+ident(
+  ext_ref Filename.temp_file
+)
+"parmap_utils.ml" 41 1183 1215 "parmap_utils.ml" 41 1183 1221
+type(
+  string
+)
+"parmap_utils.ml" 41 1183 1222 "parmap_utils.ml" 41 1183 1227
+type(
+  string
+)
+"parmap_utils.ml" 41 1183 1196 "parmap_utils.ml" 41 1183 1227
+call(
+  stack
+)
+type(
+  string
+)
+"parmap_utils.ml" 43 1237 1245 "parmap_utils.ml" 43 1237 1247
+type(
+  Unix.file_descr
+)
+ident(
+  def fd "parmap_utils.ml" 44 1306 1310 "parmap_utils.ml" 45 1328 1334
+)
+"parmap_utils.ml" 43 1237 1250 "parmap_utils.ml" 43 1237 1263
+type(
+  string -> Unix.open_flag list -> Unix.file_perm -> Unix.file_descr
+)
+ident(
+  ext_ref Unix.openfile
+)
+"parmap_utils.ml" 43 1237 1264 "parmap_utils.ml" 43 1237 1268
+type(
+  string
+)
+ident(
+  int_ref name "parmap_utils.ml" 41 1183 1189 "parmap_utils.ml" 41 1183 1193
+)
+"parmap_utils.ml" 43 1237 1270 "parmap_utils.ml" 43 1237 1281
+type(
+  Unix.open_flag
+)
+"parmap_utils.ml" 43 1237 1283 "parmap_utils.ml" 43 1237 1295
+type(
+  Unix.open_flag
+)
+"parmap_utils.ml" 43 1237 1269 "parmap_utils.ml" 43 1237 1296
+type(
+  Unix.open_flag list
+)
+"parmap_utils.ml" 43 1237 1297 "parmap_utils.ml" 43 1237 1302
+type(
+  Unix.file_perm
+)
+"parmap_utils.ml" 43 1237 1250 "parmap_utils.ml" 43 1237 1302
+call(
+  stack
+)
+type(
+  Unix.file_descr
+)
+"parmap_utils.ml" 44 1306 1310 "parmap_utils.ml" 44 1306 1321
+type(
+  string -> unit
+)
+ident(
+  ext_ref Unix.unlink
+)
+"parmap_utils.ml" 44 1306 1322 "parmap_utils.ml" 44 1306 1326
+type(
+  string
+)
+ident(
+  int_ref name "parmap_utils.ml" 41 1183 1189 "parmap_utils.ml" 41 1183 1193
+)
+"parmap_utils.ml" 44 1306 1310 "parmap_utils.ml" 44 1306 1326
+call(
+  stack
+)
+type(
+  unit
+)
+"parmap_utils.ml" 45 1328 1332 "parmap_utils.ml" 45 1328 1334
+type(
+  Unix.file_descr
+)
+ident(
+  int_ref fd "parmap_utils.ml" 43 1237 1245 "parmap_utils.ml" 43 1237 1247
+)
+"parmap_utils.ml" 44 1306 1310 "parmap_utils.ml" 45 1328 1334
+type(
+  Unix.file_descr
+)
+"parmap_utils.ml" 43 1237 1241 "parmap_utils.ml" 45 1328 1334
+type(
+  Unix.file_descr
+)
+"parmap_utils.ml" 46 1335 1342 "parmap_utils.ml" 46 1335 1343
+type(
+  exn
+)
+ident(
+  def e "parmap_utils.ml" 46 1335 1347 "parmap_utils.ml" 46 1335 1372
+)
+"parmap_utils.ml" 46 1335 1347 "parmap_utils.ml" 46 1335 1358
+type(
+  string -> unit
+)
+ident(
+  ext_ref Unix.unlink
+)
+"parmap_utils.ml" 46 1335 1359 "parmap_utils.ml" 46 1335 1363
+type(
+  string
+)
+ident(
+  int_ref name "parmap_utils.ml" 41 1183 1189 "parmap_utils.ml" 41 1183 1193
+)
+"parmap_utils.ml" 46 1335 1347 "parmap_utils.ml" 46 1335 1363
+call(
+  stack
+)
+type(
+  unit
+)
+"parmap_utils.ml" 46 1335 1365 "parmap_utils.ml" 46 1335 1370
+type(
+  exn -> Unix.file_descr
+)
+ident(
+  ext_ref Pervasives.raise
+)
+"parmap_utils.ml" 46 1335 1371 "parmap_utils.ml" 46 1335 1372
+type(
+  exn
+)
+ident(
+  int_ref e "parmap_utils.ml" 46 1335 1342 "parmap_utils.ml" 46 1335 1343
+)
+"parmap_utils.ml" 46 1335 1365 "parmap_utils.ml" 46 1335 1372
+type(
+  Unix.file_descr
+)
+"parmap_utils.ml" 46 1335 1347 "parmap_utils.ml" 46 1335 1372
+type(
+  Unix.file_descr
+)
+"parmap_utils.ml" 42 1231 1233 "parmap_utils.ml" 46 1335 1372
+type(
+  Unix.file_descr
+)
+"parmap_utils.ml" 41 1183 1185 "parmap_utils.ml" 46 1335 1372
+type(
+  Unix.file_descr
+)
