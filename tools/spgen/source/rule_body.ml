@@ -255,10 +255,11 @@ let rec gen_combiner ~context_mode =
 
   let stmtfn combiner c_stmtfn stmt =
     let c_dotsstmtfn = combiner.VT0.combiner_rec_statement_dots in
+    let c_substmtfn = combiner.VT0.combiner_rec_statement in
     let c_exprfn = combiner.VT0.combiner_rec_expression in
     let whncodes = whencodes
       ~strfn:string_mcode ~exprfn:c_exprfn ~notfn:c_dotsstmtfn
-      ~alwaysfn:c_stmtfn in
+      ~alwaysfn:c_substmtfn in
     let inc_star = if context_mode then (fun x -> x) else Snap.inc_star in
 
     match Ast0.unwrap stmt with
@@ -289,8 +290,8 @@ let rec gen_combiner ~context_mode =
 
     | Ast0.Disj _ ->
         DG.generate_statement
-          ~stmtdotsfn:c_dotsstmtfn ~strfn:string_mcode ~stmtfn:c_stmtfn ~stmt
-          ~at_top:false
+          ~stmtdotsfn:c_dotsstmtfn ~strfn:string_mcode ~stmtfn:c_substmtfn
+	  ~stmt ~at_top:false
     | _ -> c_stmtfn stmt in
 
   (* positions and stars are added here!!! *)
