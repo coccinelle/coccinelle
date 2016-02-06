@@ -27,10 +27,12 @@ LIBS= $(PCREDIR)/pcre.cma \
 	$(DYNLINKDIR)/dynlink.cma \
 	$(COCCIDIR)/commons/commons.cma \
 	$(COCCIDIR)/globals/globals.cma \
-	$(COCCIDIR)/parsing_cocci/cocci_parser.cma
+	$(COCCIDIR)/parsing_cocci/cocci_parser.cma \
+	$(COCCIDIR)/parsing_c/parsing_c.cma
 
 INCLUDEDIRS= $(COCCIDIR)/commons $(COCCIDIR)/commons/ocamlextra \
-     $(COCCIDIR)/globals $(COCCIDIR)/parsing_cocci $(PCREDIR)
+	$(COCCIDIR)/globals $(COCCIDIR)/parsing_cocci $(COCCIDIR)/parsing_c \
+	$(PCREDIR)
 
 INCLUDES=$(INCLUDEDIRS:%=-I %)
 

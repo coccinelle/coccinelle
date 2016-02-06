@@ -183,3 +183,18 @@ let pre_split ?(prefix = "") s =
 let pre_split_opt ?(prefix = "") = function
   | Some s -> pre_split ~prefix s
   | None -> ""
+
+(* Concatenate a list of strings, but first add newlines so that the
+concatenation will not result in a line of more than 80 characters. *)
+let concat_limit_width lst =
+  String.concat ""
+    (List.rev
+       (snd
+	  (List.fold_left
+	     (fun (sz,prev) cur ->
+	       let len = String.length cur in
+	       let newsz = sz + len in
+	       if newsz > Flag_parsing_c.max_width
+	       then (len,("\n"^cur)::prev)
+	       else (newsz,cur::prev))
+	     (0,[]) lst)))

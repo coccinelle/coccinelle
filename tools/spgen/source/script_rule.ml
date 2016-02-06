@@ -82,7 +82,8 @@ let gen_org_rule nm (firstpos, restpos) metavars err_msg =
   let zero p = (MV.get_name p) ^ "[0]" in
   [
    (*header*)
-   "@script:python " ^ new_rulenm ^ " depends on org@";
+   Globals.concat_limit_width
+    ["@script:python "; new_rulenm; " depends on org@"];
    String.concat "\n" headervars;
    "@@\n";
    (*body*)
@@ -100,7 +101,8 @@ let gen_report_rule nm (firstpos, restpos) metavars err_msg =
   let err_msg = format_err_msg err_msg restpos metavars in
   [
    (*header*)
-   "@script:python " ^ new_rulenm ^ " depends on report@";
+   Globals.concat_limit_width
+    ["@script:python "; new_rulenm; " depends on report@"];
    String.concat "\n" headervars;
    "@@\n";
    (*body*)

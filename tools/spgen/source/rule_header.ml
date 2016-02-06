@@ -65,9 +65,8 @@ let rule_declaration ~rule_name ~isos ~drop_isos ~deps ~exists =
   let exists = match exists with
     | Ast.Exists -> " exists" | Ast.Forall -> " forall"
     | Ast.Undetermined -> "" in
-  String.concat ""
+  Globals.concat_limit_width
     ["@"; rule_name; extends; deps; isos; drop_isos; exists; expression; "@"]
-
 
 (* ------------------------------------------------------------------------- *)
 (* ENTRY POINT *)
