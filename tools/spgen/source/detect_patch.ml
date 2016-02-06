@@ -101,6 +101,7 @@ let patch_combiner =
   let dotsparamfn = donothing in
   let dotsdeclfn = donothing in
   let dotscasefn = donothing in
+  let dotsdefparfn = donothing in
   let assignOpfn = donothing in
   let binaryOpfn = donothing in
   let initfn = donothing in
@@ -151,6 +152,7 @@ let patch_combiner =
     fix_mcode unary_mcode arithOp_mcode logicalOp_mcode cv_mcode sign_mcode
     struct_mcode storage_mcode inc_mcode
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotscasefn
+    dotsdefparfn
     identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn declfn stmtfn
     forinfofn casefn string_fragmentfn topfn
 
@@ -165,7 +167,7 @@ let make = function
   | Ast0.InitialScriptRule _
   | Ast0.FinalScriptRule _
   | Ast0.ScriptRule _ -> (false, IntMap.empty)
-  | Ast0.CocciRule ((minus,_,_),(plus,_),_) ->
+  | Ast0.CocciRule ((minus,_,_),(plus,_),_,_) ->
       let handle_toplvl (is_patch, disj) tpl =
         let (r1, r2) = patch_combiner.VT0.combiner_rec_top_level tpl in
         (is_patch || r1, merge disj r2) in

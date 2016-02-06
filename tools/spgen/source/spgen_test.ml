@@ -66,7 +66,7 @@ let compare_one score expected =
 
   try
 
-    Common.timeout_function timeout_per_file (
+    Common.timeout_function "spgen_test" timeout_per_file (
       fun () ->
 
         perr_nl cocci;

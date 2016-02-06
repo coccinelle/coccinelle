@@ -55,6 +55,7 @@ let inc_file_tostring = function
       "\"" ^ (between_tostring "/" inc_elem_tostring elems) ^ "\""
   | Ast.NonLocal(elems) ->
       "<" ^ (between_tostring "/" inc_elem_tostring elems) ^ ">"
+  | Ast.AnyInc -> "..."
 
 let fix_tostring = function
   | Ast.Dec -> "--"

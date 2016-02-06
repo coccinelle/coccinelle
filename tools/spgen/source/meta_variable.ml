@@ -279,8 +279,16 @@ let mcode ~rn ~mc:(_,_,_,_,pos,_) =
     | Ast0.TypeCTag {Ast0.node = Ast0.MetaType((mn,_,_,_,p,_),_); _} ->
         handle_metavar ~typ:"type " ~mn ~positions:!p ~set
     | Ast0.MetaPosTag(Ast0.MetaPos((mn,_,_,_,_,_), mns, colt)) ->
-        let constr =
-          list_constraints ~tostring_fn:(name_str ~rn) ~op:" != " mns in
+        let oneconstr constr =
+	  match constr with
+	    Ast.PosNegSet mns ->
+              list_constraints ~tostring_fn:(name_str ~rn) ~op:" != " mns
+	  | Ast.PosScript(_,lang,params,code) ->
+	      Printf.sprintf ": script:%s (%s) { %s }" lang
+		(String.concat ","
+		   (List.map (fun (nm,_) -> name_str ~rn nm) params))
+		code in
+	let constr = list_constraints ~tostring_fn:oneconstr ~op:"" mns in
         let collect = (match colt with Ast.PER -> "" | Ast.ALL -> " any") in
         let pos = make_mv "position " (name_tup ~rn mn) (constr ^ collect) in
         MVSet.add pos set
@@ -357,6 +365,7 @@ let metavar_combiner rn =
   let dotsstmtfn = donothing in
   let dotsdeclfn = donothing in
   let dotscasefn = donothing in
+  let dotsdefparfn = donothing in
   let forinfofn = donothing in
   let casefn = donothing in
   let topfn = donothing in
@@ -518,6 +527,7 @@ let metavar_combiner rn =
     fix_mcode unary_mcode arithOp_mcode logicalOp_mcode cv_mcode sign_mcode
     struct_mcode storage_mcode inc_mcode
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotscasefn
+    dotsdefparfn
     identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn declfn stmtfn
     forinfofn casefn string_fragmentfn topfn
 
