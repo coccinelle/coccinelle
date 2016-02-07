@@ -666,7 +666,7 @@ and rule_elem arity re =
       print_string arity; mcode print_string cont; mcode print_string sem
   | Ast.Label(l,dd) -> ident l; mcode print_string dd
   | Ast.Goto(goto,l,sem) ->
-      mcode print_string goto; ident l; mcode print_string sem
+      mcode print_string goto; print_space(); ident l; mcode print_string sem
   | Ast.Return(ret,sem) ->
       print_string arity; mcode print_string ret; mcode print_string sem
   | Ast.ReturnExpr(ret,exp,sem) ->
