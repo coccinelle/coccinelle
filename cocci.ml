@@ -132,6 +132,12 @@ let ctls_of_ast ast ua pl =
 (* Some  debugging functions *)
 (*****************************************************************************)
 
+let cat file =
+  let chan = open_in file in
+  let rec catline () =
+    print_endline (input_line chan); catline() in
+  try catline() with End_of_file -> close_in chan
+
 (* the inputs *)
 
 let show_or_not_cfile2 cfile =
@@ -139,7 +145,7 @@ let show_or_not_cfile2 cfile =
     Common.pr2_xxxxxxxxxxxxxxxxx ();
     pr2 ("processing C file: " ^ cfile);
     Common.pr2_xxxxxxxxxxxxxxxxx ();
-    Common.command2 ("cat " ^ cfile);
+    cat cfile;
   end
 let show_or_not_cfile a =
   Common.profile_code "show_xxx" (fun () -> show_or_not_cfile2 a)
@@ -153,7 +159,7 @@ let show_or_not_cocci2 coccifile isofile =
     pr2 ("processing semantic patch file: " ^ coccifile);
     isofile +> (fun s -> pr2 ("with isos from: " ^ s));
     Common.pr2_xxxxxxxxxxxxxxxxx ();
-    Common.command2 ("cat " ^ coccifile);
+    cat coccifile;
     pr2 "";
   end
 let show_or_not_cocci a b =
@@ -1189,7 +1195,7 @@ let rebuild_info_program cs file isexp parse_strings =
         [(c.ast_c, (c.fullstring, c.tokens_c)), Unparse_c.PPnormal]
         file;
 
-      (* Common.command2 ("cat " ^ file); *)
+      (* cat file; *)
       let cprogram =
 	cprogram_of_file c.all_typedefs c.all_macros parse_strings file in
       let xs = build_info_program cprogram c.env_typing_before in
