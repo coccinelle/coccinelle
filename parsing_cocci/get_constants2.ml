@@ -696,10 +696,13 @@ let run rules neg_pos_vars =
 	      let extra_deps =
 		List.fold_left
 		  (function prev ->
-		    function (_,(rule,_),_,_) ->
-		      if rule = "virtual"
-		      then prev
-		      else Ast.AndDep (Ast.Dep rule,prev))
+		    function
+			(_,("virtual",_),_,_) -> prev
+		      | (_,(rule,_),_,Ast.NoMVInit) ->
+			  Ast.AndDep (Ast.Dep rule,prev)
+		      | (_,(rule,_),_,_) ->
+			  (* default initializer, so no dependency *)
+			  prev)
 		  deps mv in
 	      let dependencies = dependencies env extra_deps in
 	      debug_deps nm extra_deps dependencies;
