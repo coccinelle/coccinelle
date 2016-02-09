@@ -719,13 +719,12 @@ let run rules neg_pos_vars =
 	      (rest_info, env, locals)
           | (Ast.CocciRule (nm,(dep,_,_),cur,_,_),neg_pos_vars) ->
 	      let dependencies = dependencies env dep in
-	      let cur_info =
-		rule_fn nm cur ((nm,True)::env)
-		  neg_pos_vars in
 	      debug_deps nm dep dependencies;
 	      (match dependencies with
 		False -> (rest_info,env,locals)
 	      | dependencies ->
+		  let cur_info =
+		    rule_fn nm cur ((nm,True)::env) neg_pos_vars in
 		  let re_cur_info = build_and dependencies cur_info in
 		  if List.for_all all_context.V.combiner_top_level cur
 		  then (rest_info,(nm,re_cur_info)::env,nm::locals)
