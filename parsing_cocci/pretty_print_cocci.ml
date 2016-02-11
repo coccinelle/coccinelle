@@ -922,7 +922,7 @@ let rec unparse_cocci_mv rule = function
   | Ast.MetaInitListDecl(_,(r,n),len) ->
       print_string "initializer list"; print_listlen rule len;
       print_name rule r n; print_string ";"
-  | Ast.MetaListlenDecl(r,n) -> print_name rule r n
+  | Ast.MetaListlenDecl(r,n) -> ()
   | Ast.MetaParamDecl(_,(r,n)) ->
       print_string "parameter "; print_name rule r n; print_string ";"
   | Ast.MetaBinaryOperatorDecl(_,(r,n)) -> (* missing constraints *)
