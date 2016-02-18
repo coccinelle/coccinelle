@@ -79,7 +79,7 @@ clean:
 	rm -f .depend
 	rm -f $(GENERATED)
 
-distclean:
+distclean: clean
 	rm -f $(TARGET)
 
 $(CONFIG) $(LIBS):
