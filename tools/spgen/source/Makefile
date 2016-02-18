@@ -21,14 +21,20 @@ TARGET=spgen
 
 CONFIG= $(COCCIDIR)/Makefile.config
 
-SYSLIBS= str.cma unix.cma bigarray.cma nums.cma
+SYSLIBS= str unix bigarray nums
+SYSLIBS_BC = $(SYSLIBS:=.cma)
+SYSLIBS_OPT = $(SYSLIBS:=.cmxa)
 
-LIBS= $(PCREDIR)/pcre.cma \
-	$(DYNLINKDIR)/dynlink.cma \
-	$(COCCIDIR)/commons/commons.cma \
-	$(COCCIDIR)/globals/globals.cma \
-	$(COCCIDIR)/parsing_cocci/cocci_parser.cma \
-	$(COCCIDIR)/parsing_c/parsing_c.cma
+LIBS=\
+  $(PCREDIR)/pcre \
+  $(DYNLINKDIR)/dynlink \
+  $(COCCIDIR)/commons/commons \
+  $(COCCIDIR)/globals/globals \
+  $(COCCIDIR)/parsing_cocci/cocci_parser \
+  $(COCCIDIR)/parsing_c/parsing_c
+
+LIBS_BC = $(LIBS:=.cma)
+LIBS_OPT = $(LIBS:=.cmxa)
 
 INCLUDEDIRS= $(COCCIDIR)/commons $(COCCIDIR)/commons/ocamlextra \
 	$(COCCIDIR)/globals $(COCCIDIR)/parsing_cocci $(COCCIDIR)/parsing_c \
@@ -56,8 +62,8 @@ FULL_SRC= $(SRC_INTERFACE) $(SRC) main.ml
 
 OCAMLCFLAGS ?= -g
 OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES)
-CFLAGS = -cflags '$(INCLUDES)'
-LFLAGS = -lflags '$(SYSLIBS) $(LIBS)'
+OCAMLOPTFLAGS ?= -g
+OCAMLOPT_CMD=$(OCAMLOPT) $(OCAMLOPTFLAGS) $(INCLUDES)
 
 ##############################################################################
 # Top rules
@@ -65,11 +71,13 @@ LFLAGS = -lflags '$(SYSLIBS) $(LIBS)'
 
 all: $(TARGET)
 
-# currently no support for opt
-all.opt: $(TARGET)
+all.opt: $(TARGET).opt
 
-$(TARGET): $(CONFIG) $(LIBS) $(GENERATED) $(FULL_SRC)
-	$(OCAMLC_CMD) -custom -o $(TARGET) $(SYSLIBS) $(LIBS) $(FLAGS_pcre) $(GENERATED) $(FULL_SRC)
+$(TARGET): $(CONFIG) $(LIBS_BC) $(GENERATED) $(FULL_SRC)
+	$(OCAMLC_CMD) -custom -o $(TARGET) $(SYSLIBS_BC) $(LIBS_BC) $(FLAGS_pcre) $(GENERATED) $(FULL_SRC)
+
+$(TARGET).opt: $(CONFIG) $(LIBS_OPT) $(GENERATED) $(FULL_SRC)
+	$(OCAMLOPT_CMD) -o $@ $(SYSLIBS_OPT) $(LIBS_OPT) $(GENERATED) $(FULL_SRC)
 
 .PHONY: clean distclean
 
@@ -80,9 +88,9 @@ clean:
 	rm -f $(GENERATED)
 
 distclean: clean
-	rm -f $(TARGET)
+	rm -f $(TARGET) $(TARGET).opt
 
-$(CONFIG) $(LIBS):
+$(CONFIG) $(LIBS_BC) $(LIBS_OPT):
 	@echo "\n\n\tYou need to compile Coccinelle first.\n\n"
 	@false
 
@@ -90,10 +98,11 @@ $(SCRIPTDIR)/spgen.sh:
 	@$(ECHO) -e "\n\n\tYou need to run ./configure from the Coccinelle directory first.\n\n"
 	@false
 
-install: $(TARGET) $(SCRIPTDIR)/spgen.sh uninstall-legacy
+install: $(SCRIPTDIR)/spgen.sh uninstall-legacy
 	rm -f $(DESTDIR)$(BINDIR)/$(TARGET)
 	$(MKDIR_P) $(INSTALLDIR)
-	$(INSTALL_PROGRAM) $(TARGET) $(INSTALLDIR)/$(TARGET)
+	if [ -x $(TARGET) ]; then $(INSTALL_PROGRAM) $(TARGET) $(INSTALLDIR)/$(TARGET); fi
+	if [ -x $(TARGET).opt ]; then $(INSTALL_PROGRAM) $(TARGET).opt $(INSTALLDIR)/$(TARGET).opt; fi
 	$(INSTALL_PROGRAM) $(SCRIPTDIR)/spgen.sh $(DESTDIR)$(BINDIR)/$(TARGET)
 
 uninstall-legacy:
@@ -103,7 +112,7 @@ uninstall-legacy:
 
 uninstall: uninstall-legacy
 	rm -f $(DESTDIR)$(BINDIR)/$(TARGET)
-	rm -f $(INSTALLDIR)/$(TARGET)
+	rm -f $(INSTALLDIR)/$(TARGET) $(INSTALLDIR)/$(TARGET).opt
 	rmdir $(INSTALLDIR)
 
 $(LEXER_SRC:.mll=.ml) :	$(LEXER_SRC)
