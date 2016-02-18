@@ -10,12 +10,20 @@ all:
 	make -C source all
 	@$(ECHO) -e "\n\n\tspgen can now be installed via 'make install'.\n\n"
 
+all.opt:
+	@$(ECHO) -e "\n\n\tCompiling spgen in native code...\n\n"
+	make -C source all.opt
+	@$(ECHO) -e "\n\n\tThe native code version of spgen can now be installed via 'make install'.\n\n"
+
 # also compile documentation; this is not done by default
 world: docs all
 
 clean:
 	make -C source clean
+
 	make -C documentation clean
+
+distclean: clean
 
 install:
 	make -C source install
