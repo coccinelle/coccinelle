@@ -90,7 +90,7 @@ clean:
 distclean: clean
 	rm -f $(TARGET) $(TARGET).opt
 
-$(CONFIG) $(LIBS_BC) $(LIBS_OPT):
+$(CONFIG):
 	@echo "\n\n\tYou need to compile Coccinelle first.\n\n"
 	@false
 
