@@ -35,3 +35,6 @@ uninstall:
 
 docs:
 	make -C documentation docs
+
+depend:
+	make -C source depend
