@@ -3007,8 +3007,6 @@ let interpolate str =
 (* could do a print_string but printf don't like print_string *)
 let echo s = Printf.printf "%s" s; flush stdout; s
 
-let usleep s = for i = 1 to s do () done
-
 let sleep_little () =
   (*old:  *)
   Unix.sleep 1
