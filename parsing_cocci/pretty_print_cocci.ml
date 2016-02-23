@@ -11,10 +11,10 @@ let print_plus_flag = ref true
 let print_minus_flag = ref true
 let print_newlines_disj = ref true
 
-let start_block str =
+let start_block _str =
   force_newline(); print_string "  "; open_box 0
 
-let end_block str =
+let end_block _str =
   close_box(); force_newline ()
 
 let print_string_box s = print_string s; open_box 0
@@ -70,7 +70,7 @@ let print_string_befaft fn x info =
   fn x;
   List.iter (function (s,_,_) -> force_newline(); print s) info.Ast.straft
 
-let print_meta (r,x) = print_string x
+let print_meta (_r,x) = print_string x
 
 let print_pos l =
   List.iter
@@ -81,7 +81,7 @@ let print_pos l =
     l
 
 let mcode fn = function
-    (x, _, Ast.MINUS(_,_,adj,plus_stream), pos) ->
+    (x, _, Ast.MINUS(_,_,_adj,plus_stream), pos) ->
       if !print_minus_flag
       then print_string (if !Flag.sgrep_mode2 then "*" else "-");
       fn x; print_pos pos;
@@ -141,13 +141,13 @@ let print_disj_list fn l sep =
 
 (* --------------------------------------------------------------------- *)
 
-let print_type keep info = function
+let print_type _keep _info = function
     None -> () (*
 	;print_string "/* notype ";(*
            print_string "keep:"; print_unitary keep;
            print_string " inherited:"; print_bool inherited;*)
            print_string " */" *)
-  | Some ty -> () (*
+  | Some _ty -> () (*
      ;
       print_string "/* ";
       print_between (function _ -> print_string ", ") Type_cocci.typeC ty;(*

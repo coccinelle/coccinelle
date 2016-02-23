@@ -61,7 +61,7 @@ let rec type2c = function
   | EnumName(name) -> "enum " ^ (print_name name)
   | StructUnionName(kind,name) -> (structUnion kind) ^ (print_name name)
   | TypeName(name) -> name ^ " "
-  | MetaType((rule,name),keep,inherited) -> name ^ " "
+  | MetaType((_rule,name),keep,_inherited) -> name ^ " "
       (*
       let print_unitary = function
 	  Unitary -> print_string "unitary"
@@ -125,8 +125,8 @@ let compatible t1 = function
 	| (ConstVol(cv1,ty1),ConstVol(cv2,ty2)) when cv1 = cv2 ->
 	    loop(ty1,ty2)
 	| (Pointer(ty1),Pointer(ty2)) -> loop(ty1,ty2)
-	| (FunctionPointer(ty1),_) -> false (* not enough info *)
-	| (_,FunctionPointer(ty2)) -> false (* not enough info *)
+	| (FunctionPointer(_ty1),_) -> false (* not enough info *)
+	| (_,FunctionPointer(_ty2)) -> false (* not enough info *)
 	| (Array(ty1),Array(ty2)) -> loop(ty1,ty2)
 	| (_,_) -> t1=t2 in
       loop (t1,t2)
@@ -141,4 +141,4 @@ let rec meta_names = function
       let e2mv = function MV(mv,_,_) -> [mv] | _ -> [] in
       (e2mv e1) @ (e2mv e2)
   | SignedT(_,Some ty) -> meta_names ty
-  | ty -> []
+  | _ty -> []
