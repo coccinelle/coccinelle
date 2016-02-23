@@ -3,7 +3,6 @@
  * dumper.ml 1.2 2005/02/06 12:38:21 rich Exp
  *)
 
-open Printf
 open Obj
 
 let rec dump r =
@@ -54,7 +53,7 @@ let rec dump r =
     else if t = closure_tag then opaque "closure"
     else if t = object_tag then (	(* Object. *)
       let fields = get_fields [] s in
-      let clasz, id, slots =
+      let _, id, slots =
 	match fields with h::h'::t -> h, h', t | _ -> assert false in
       (* No information on decoding the class (first field).  So just print
        * out the ID and the slots.
