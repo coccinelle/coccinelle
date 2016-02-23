@@ -13,10 +13,10 @@ let quiet = ref true (* true = no decoration on - context, etc *)
 
 let full_ids = ref false (* true = print rule name as well *)
 
-let start_block str =
+let start_block _str =
   force_newline(); print_string "  "; open_box 0
 
-let end_block str =
+let end_block _str =
   close_box(); force_newline ()
 
 let print_option = Common.do_option
@@ -66,7 +66,7 @@ let mcodekind brackets fn x info mc =
 	else
 	  match brackets with
 	    Some x -> ("[",("]^"^(string_of_int x))) | None -> ("","") in
-      let (plus_streams,t1,t2) = !plus_streams in
+      let (plus_streams,_t1,_t2) = !plus_streams in
       U.print_around
 	(function x ->
 	  print_string lb; fn x; print_string rb)
@@ -85,7 +85,7 @@ let mcodekind brackets fn x info mc =
 	x plus_streams);
   List.iter (function (s,_) -> print s) info.Ast0.strings_after
 
-let mcode fn (x,_,info,mc,pos,adj) =
+let mcode fn (x,_,info,mc,pos,_adj) =
   let fn x = fn x; meta_pos !pos in
   mcodekind (Some info.Ast0.pos_info.Ast0.line_start)(*None*) fn x info mc
 
@@ -231,7 +231,7 @@ let rec expression e =
 	  mcode print_string_box lp; typeC ty; close_box();
 	  mcode print_string rp; initialiser init
       | Ast0.MetaErr(name,_,_) -> mcode print_meta name
-      | Ast0.MetaExpr(name,_,ty,_,pure) ->
+      | Ast0.MetaExpr(name,_,ty,_,_pure) ->
 	  mcode print_meta name; print_types ty(*;
 	  print_string "^";
 	  (match pure with

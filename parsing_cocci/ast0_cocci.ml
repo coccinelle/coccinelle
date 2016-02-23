@@ -657,38 +657,38 @@ let rec meta_pos_name = function
     HiddenVarTag(vars) ->
 	(* totally fake, just drop the rest, only for isos *)
       meta_pos_name (List.hd vars)
-  | MetaPosTag(MetaPos(name,constraints,_)) -> name
+  | MetaPosTag(MetaPos(name,_constraints,_)) -> name
   | IdentTag(i) ->
       (match unwrap i with
-	MetaId(name,constraints,seed,pure) -> name
+	MetaId(name,_constraints,_seed,_pure) -> name
       | _ -> failwith "bad metavariable")
   | ExprTag(e) ->
       (match unwrap e with
-	MetaExpr(name,constraints,ty,form,pure) -> name
-      | MetaExprList(name,len,pure) -> name
+	MetaExpr(name,_constraints,_ty,_form,_pure) -> name
+      | MetaExprList(name,_len,_pure) -> name
       | _ -> failwith "bad metavariable")
   | TypeCTag(t) ->
       (match unwrap t with
-	MetaType(name,pure) -> name
+	MetaType(name,_pure) -> name
       | _ -> failwith "bad metavariable")
   | DeclTag(d) ->
       (match unwrap d with
-	MetaDecl(name,pure) -> name
+	MetaDecl(name,_pure) -> name
       | _ -> failwith "bad metavariable")
   | InitTag(i) ->
       (match unwrap i with
-	MetaInit(name,pure) -> name
+	MetaInit(name,_pure) -> name
       | _ -> failwith "bad metavariable")
   | StmtTag(s) ->
       (match unwrap s with
-	MetaStmt(name,pure) -> name
+	MetaStmt(name,_pure) -> name
       | _ -> failwith "bad metavariable")
   | _ -> failwith "bad metavariable"
 
 let rec meta_pos_constraint_names = function
     ExprTag(e) ->
       (match unwrap e with
-	MetaExpr(name,constraints,ty,form,pure) ->
+	MetaExpr(_name,_constraints,ty,_form,_pure) ->
 	  (match ty with
 	    Some tylist ->
 	      List.fold_left (fun prev cur -> TC.meta_names cur @ prev)
