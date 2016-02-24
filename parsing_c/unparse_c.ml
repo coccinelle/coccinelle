@@ -1132,7 +1132,7 @@ let check_danger toks =
     match (tok,get_danger tok) with
       (T2(tok,Min _,a,b),Some Ast_c.Danger) -> T2(tok,Ctx,a,b)
     | _ -> tok in
-  let rec unminus_initial_danger toks =
+  let unminus_initial_danger toks =
     let (front,rest) = span not_danger toks in
     let (dangers,rest) = span nonspace_danger rest in
     front @ (List.map unminus dangers) @ rest in
@@ -2092,7 +2092,7 @@ let context_search_in_maps n depth samedelta inparens past_minmap minmap tu t =
 
 (* Add newlines where needed around unindents.  Lets adjust_indentation
 adjust them if needed. *)
-let rec newlines_for_unindents xs =
+let newlines_for_unindents xs =
   let is_ctxnl =
     function T2(Parser_c.TCommentNewline _,_b,_i,_h) -> true | _ -> false in
   let is_plusnl =

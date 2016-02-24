@@ -685,7 +685,7 @@ let rec meta_pos_name = function
       | _ -> failwith "bad metavariable")
   | _ -> failwith "bad metavariable"
 
-let rec meta_pos_constraint_names = function
+let meta_pos_constraint_names = function
     ExprTag(e) ->
       (match unwrap e with
 	MetaExpr(_name,_constraints,ty,_form,_pure) ->

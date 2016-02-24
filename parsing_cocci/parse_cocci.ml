@@ -944,7 +944,7 @@ seem very convenient to refactor the grammar to get around the problem. *)
 
 exception Irrelevant
 
-let rec find_function_names l =
+let find_function_names l =
   let is_ident = function
       (PC.TIdent(_,clt),info)
     | (PC.TMeta(_,_,clt),info)
@@ -1018,7 +1018,7 @@ let rec find_function_names l =
 (* an attribute is an identifier that precedes another identifier and
    begins with __ *)
 
-let rec detect_attr l =
+let detect_attr l =
   let is_id = function
       (PC.TIdent(_,_),_) | (PC.TMetaId(_,_,_,_,_),_) | (PC.TMetaFunc(_,_,_,_),_)
     | (PC.TMetaLocalFunc(_,_,_,_),_) -> true
@@ -1524,7 +1524,7 @@ let minus_to_nothing l =
     | t::ts -> t::(loop ts) in
   loop l
 
-let rec drop_double_dots l =
+let drop_double_dots l =
   let start = function
       (PC.TOEllipsis(_),_) | (PC.TPOEllipsis(_),_) -> true
     | _ -> false in
@@ -1685,7 +1685,7 @@ let process_minus_positions x name clt meta =
 
 (* first attach positions, then the others, so that positions can refer to
 the larger term represented by the preceding metavariable *)
-let rec consume_minus_positions toks =
+let consume_minus_positions toks =
   let rec loop_pos = function
       [] -> []
     | ((PC.TOPar0(_),_) as x)::xs | ((PC.TCPar0(_),_) as x)::xs

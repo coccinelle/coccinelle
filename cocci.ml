@@ -785,7 +785,7 @@ let rec interpret_file file = function
   | Ast_cocci.NoDep -> true
   | Ast_cocci.FailDep -> failwith "not possible"
 
-let rec print_dependencies str local global dep =
+let print_dependencies str local global dep =
   if !Flag_cocci.show_dependencies
   then
     begin
@@ -1964,7 +1964,7 @@ and process_a_ctl_a_env_a_toplevel  a b c f=
     (fun () -> process_a_ctl_a_env_a_toplevel2 a b c f)
 
 
-let rec bigloop2 rs (ccs: file_info list) parse_strings =
+let bigloop2 rs (ccs: file_info list) parse_strings =
   let init_es = [(Ast_c.emptyMetavarsBinding,[])] in
   let es = ref init_es in
   let ccs = ref ccs in

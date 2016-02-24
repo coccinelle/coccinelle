@@ -3535,7 +3535,7 @@ let rec zip_safe xs ys =
   | (_,[]) -> []
   | (x::xs,y::ys) -> (x,y)::zip_safe xs ys
 
-let rec unzip zs =
+let unzip zs =
   List.fold_right (fun e (xs, ys)    ->
     (fst e::xs), (snd e::ys)) zs ([],[])
 
@@ -3572,7 +3572,7 @@ let rec drop_while p = function
   | x::xs -> if p x then drop_while p xs else x::xs
 
 
-let rec drop_until p xs =
+let drop_until p xs =
   drop_while (fun x -> not (p x)) xs
 let _ = example (drop_until (fun x -> x = 3) [1;2;3;4;5] = [3;4;5])
 
@@ -3836,7 +3836,7 @@ let collect f l = List.rev (collect_accu f [] l)
 
 (* cf also List.partition *)
 
-let rec fpartition p l =
+let fpartition p l =
   let rec part yes no = function
   | [] -> (List.rev yes, List.rev no)
   | x :: l ->
@@ -4057,7 +4057,7 @@ let rec insert_elem_pos (e, pos) xs =
   | n, x::xs -> x::(insert_elem_pos (e, (n-1)) xs)
   | n, [] -> failwith "insert_elem_pos"
 
-let rec uncons_permut xs =
+let uncons_permut xs =
   let indexed = index_list xs in
   indexed +> List.map (fun (x, pos) -> (x, pos),  remove_elem_pos pos xs)
 let _ =
@@ -4068,7 +4068,7 @@ let _ =
       ('c', 2),  ['a';'b']
      ])
 
-let rec uncons_permut_lazy xs =
+let uncons_permut_lazy xs =
   let indexed = index_list xs in
   indexed +> List.map (fun (x, pos) ->
     (x, pos),
@@ -4079,14 +4079,14 @@ let rec uncons_permut_lazy xs =
 
 
 (* pixel *)
-let rec map_flatten f l =
+let map_flatten f l =
   let rec map_flatten_aux accu = function
     | [] -> accu
     | e :: l -> map_flatten_aux (List.rev (f e) @ accu) l
   in List.rev (map_flatten_aux [] l)
 
 
-let rec repeat e n =
+let repeat e n =
     let rec repeat_aux acc = function
       | 0 -> acc
       | n when n < 0 -> failwith "repeat"
@@ -4097,7 +4097,7 @@ let rec map2 f = function
   | [] -> []
   | x::xs -> let r = f x in r::map2 f xs
 
-let rec map3 f l =
+let map3 f l =
   let rec map3_aux acc = function
     | [] -> acc
     | x::xs -> map3_aux (f x::acc) xs in
@@ -4437,7 +4437,7 @@ let ($=$) = equal_set
 (* as $+$ but do not check for memberness, allow to have set of func *)
 let ($@$) = fun a b -> a @ b
 
-let rec nub l =
+let nub l =
   let l = List.sort compare l in
   let rec loop = function
       [] -> []
@@ -4879,7 +4879,7 @@ let find_treeref f tree =
   | [] -> raise Not_found
   | x::y::zs -> raise Multi_found
 
-let rec (treeref_node_iter_with_parents:
+let (treeref_node_iter_with_parents:
  (*  (('a * ('a, 'b) treeref list ref) -> ('a list) -> unit) ->
    ('a, 'b) treeref -> unit)
  *) 'a)
@@ -4937,7 +4937,7 @@ let find_treeref2 f tree =
 
 
 
-let rec (treeref_node_iter_with_parents2:
+let (treeref_node_iter_with_parents2:
   (('a * ('a, 'b) treeref2 list ref) -> ('a list) -> unit) ->
    ('a, 'b) treeref2 -> unit) =
  fun f tree ->

@@ -309,7 +309,7 @@ let forLOOKAHEAD = 30
  *
  * todo: use indentation instead of premier(statement) ?
  *)
-let rec is_really_foreach xs =
+let is_really_foreach xs =
   let rec is_foreach_aux = function
     | [] -> false, []
     | TCPar _::TOBrace _::xs -> true, xs
@@ -936,7 +936,7 @@ let rec find_ifdef_funheaders = function
 
 
 (* ?? *)
-let rec adjust_inifdef_include xs =
+let adjust_inifdef_include xs =
   xs +> List.iter (function
   | NotIfdefLine _ -> ()
   | Ifdef (xxs, info_ifdef_stmt) | Ifdefbool (_, xxs, info_ifdef_stmt) ->
@@ -954,7 +954,7 @@ let rec adjust_inifdef_include xs =
 
 
 
-let rec find_ifdef_cparen_else xs =
+let find_ifdef_cparen_else xs =
   let rec aux xs =
   xs +> List.iter (function
   | NotIfdefLine _ -> ()
@@ -1539,7 +1539,7 @@ let rec find_macro_lineparen xs =
 (* define tobrace init *)
 (* ------------------------------------------------------------------------- *)
 
-let rec find_define_init_brace_paren xs =
+let find_define_init_brace_paren xs =
  let rec aux xs =
   match xs with
   | [] -> ()
@@ -2667,7 +2667,7 @@ let group_ifdef : Ast_c.matching_tag
   remaining
 
 
-let rec cpp_ifdef_statementize (ast :toplevel list) :toplevel list =
+let cpp_ifdef_statementize (ast :toplevel list) :toplevel list =
   Visitor_c.vk_program_s { Visitor_c.default_visitor_c_s with
     Visitor_c.kstatementseq_list_s = (fun (k, bigf) xs ->
       let rec aux : statement_sequencable list -> statement_sequencable list

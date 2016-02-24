@@ -258,7 +258,7 @@ let rec agglomerate_concat_op_ident xs =
  * for instance transform some of the back into some TypedefIdent
  * so cpp_engine may be fooled?
  *)
-let rec (cpp_engine:
+let (cpp_engine:
           ?evaluate_concatop:bool ->
           (string , Parser_c.token list) assoc ->
           Parser_c.token list -> Parser_c.token list) =
@@ -301,7 +301,7 @@ let rec (cpp_engine:
  * after fix_token_define a TDefineIdent, no more a TIdent.
  *)
 
-let rec apply_macro_defs
+let apply_macro_defs
  ~msg_apply_known_macro
  ~msg_apply_known_macro_hint
  ?evaluate_concatop

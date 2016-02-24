@@ -556,7 +556,7 @@ let positions rname table rules =
 	rmcode name;
 	do_tynames var)
       (Ast0.get_pos x) in
-  let rec mcode x =
+  let mcode x =
     List.iter
       (function var ->
 	let name = Ast0.meta_pos_name var in

@@ -180,7 +180,7 @@ let get_name r t =
   if String.contains r ' ' then get_name' r else r
 
 (* returns rule mapped to user-specified org and report messages + new name. *)
-let rec get_rule (rulename : string) (t : UI.t) =
+let get_rule (rulename : string) (t : UI.t) =
   let _ = print_string ("\nHandling rule \"" ^ rulename ^ "\" ...") in
   let nm = get_name rulename t in
   let _ = print_string ("\n~ Getting messages for org and report mode ~\n\n" ^

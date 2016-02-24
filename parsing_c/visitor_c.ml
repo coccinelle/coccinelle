@@ -448,7 +448,7 @@ and vk_statement_sequencable_list = fun bigf stms ->
 and vk_statement_sequencable = fun bigf stseq ->
   let f = bigf.kstatementseq in
 
-  let rec k stseq =
+  let k stseq =
     match stseq with
     | StmtElem st -> vk_statement bigf st
     | CppDirectiveStmt directive ->
@@ -532,7 +532,7 @@ and vk_decl = fun bigf d ->
   let iif ii = vk_ii bigf ii in
 
   let f = bigf.kdecl in
-  let rec k decl =
+  let k decl =
     match decl with
     | DeclList (xs,ii) ->
 	iif ii;
@@ -555,7 +555,7 @@ and vk_decl_list = fun bigf ts ->
 and vk_onedecl = fun bigf onedecl ->
   let iif ii = vk_ii bigf ii in
   let f = bigf.konedecl in
-  let rec k onedecl =
+  let k onedecl =
   match onedecl with
   | ({v_namei = var;
       v_type = t;
@@ -625,7 +625,7 @@ and vk_struct_field = fun bigf field ->
   let iif ii = vk_ii bigf ii in
 
   let f = bigf.kfield in
-  let rec k field =
+  let k field =
 
     match field with
     | DeclarationField
@@ -684,7 +684,7 @@ and vk_def = fun bigf d ->
   let iif ii = vk_ii bigf ii in
 
   let f = bigf.kdef in
-  let rec k d =
+  let k d =
     match d with
     | {f_name = name;
        f_type = (returnt, (paramst, (b, iib)));
@@ -716,7 +716,7 @@ and vk_def = fun bigf d ->
 and vk_toplevel = fun bigf p ->
   let f = bigf.ktoplevel in
   let iif ii =  vk_ii bigf ii in
-  let rec k p =
+  let k p =
     match p with
     | Declaration decl -> (vk_decl bigf decl)
     | Definition def -> (vk_def bigf def)
@@ -759,7 +759,7 @@ and vk_ifdef_guard bigf = function
 and vk_cpp_directive bigf directive =
   let iif ii =  vk_ii bigf ii in
   let f = bigf.kcppdirective in
-  let rec k directive =
+  let k directive =
     match directive with
     | Include {i_include = (s, ii);
                i_content = copt;
@@ -800,7 +800,7 @@ and vk_define_kind bigf defkind =
 and vk_define_val bigf defval =
   let f = bigf.kdefineval in
 
-  let rec k defval =
+  let k defval =
   match defval with
   | DefineExpr e ->
       vk_expr bigf e
@@ -872,7 +872,7 @@ and vk_node = fun bigf node ->
   let infof info = vk_info bigf info in
 
   let f = bigf.knode in
-  let rec k n =
+  let k n =
     match F.unwrap n with
 
     | F.FunHeader (def) ->
@@ -992,7 +992,7 @@ and vk_ii = fun bigf ii ->
 
 (* ------------------------------------------------------------------------ *)
 and vk_argument = fun bigf arg ->
-  let rec do_action = function
+  let do_action = function
     | (ActMisc ii) -> vk_ii bigf ii
   in
   match arg with
@@ -1012,7 +1012,7 @@ and vk_argument_list = fun bigf es ->
 and vk_param = fun bigf param  ->
   let iif ii = vk_ii bigf ii in
   let f = bigf.kparam in
-  let rec k param =
+  let k param =
     let {p_namei = swrapopt; p_register = (b, iib); p_type=ft} = param in
     swrapopt +> Common.do_option (vk_name bigf);
     iif iib;
@@ -1211,7 +1211,7 @@ and vk_binaryOp_s bigf (op,ii) =
 
 and vk_argument_s bigf argument =
   let iif ii = vk_ii_s bigf ii in
-  let rec do_action = function
+  let do_action = function
     | (ActMisc ii) -> ActMisc (iif ii)
   in
   (match argument with
@@ -1592,7 +1592,7 @@ and vk_oneEnum_s = fun bigf oneEnum ->
 and vk_def_s = fun bigf d ->
   let f = bigf.kdef_s in
   let iif ii = vk_ii_s bigf ii in
-  let rec k d =
+  let k d =
     match d with
     | {f_name = name;
        f_type = (returnt, (paramst, (b, iib)));
@@ -1625,7 +1625,7 @@ and vk_def_s = fun bigf d ->
 and vk_toplevel_s = fun bigf p ->
   let f = bigf.ktoplevel_s in
   let iif ii = vk_ii_s bigf ii in
-  let rec k p =
+  let k p =
     match p with
     | Declaration decl -> Declaration (vk_decl_s bigf decl)
     | Definition def -> Definition (vk_def_s bigf def)
@@ -1653,7 +1653,7 @@ and vk_program_s : visitor_c_s -> toplevel list -> toplevel list =
 and vk_cpp_directive_s = fun bigf top ->
   let iif ii = vk_ii_s bigf ii in
   let f = bigf.kcppdirective_s in
-  let rec k top =
+  let k top =
   match top with
     (* go inside ? *)
     | Include {i_include = (s, ii);
@@ -1715,7 +1715,7 @@ and vk_define_kind_s  = fun bigf defkind ->
 and vk_define_val_s = fun bigf x ->
   let f = bigf.kdefineval_s in
   let iif ii = vk_ii_s bigf ii in
-  let rec k x =
+  let k x =
     match x with
     | DefineExpr e  -> DefineExpr (vk_expr_s bigf e)
     | DefineStmt st -> DefineStmt (vk_statement_s bigf st)

@@ -16,7 +16,7 @@ open Common
 
 open Ast_c
 
-let rec (iso_e_e: expression -> expression -> bool) = fun a b ->
+let (iso_e_e: expression -> expression -> bool) = fun a b ->
   raise Todo
     (*
       let rec (=~=) a b =

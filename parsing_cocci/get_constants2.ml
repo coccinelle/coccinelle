@@ -238,7 +238,7 @@ let intersect l1 l2 = List.filter (function l1e -> List.mem l1e l2) l1
 
 let minus_set l1 l2 = List.filter (function l1e -> not (List.mem l1e l2)) l1
 
-let rec insert x l = merge [x] l
+let insert x l = merge [x] l
 
 let rec build_and x y =
   if x = y

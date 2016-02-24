@@ -525,7 +525,7 @@ let equal_option e1 e2 =
 let dots fn d1 d2 =
   List.length (Ast0.unwrap d1) = List.length (Ast0.unwrap d2)
 
-let rec equal_ident i1 i2 =
+let equal_ident i1 i2 =
   match (Ast0.unwrap i1,Ast0.unwrap i2) with
     (Ast0.Id(name1),Ast0.Id(name2)) -> equal_mcode name1 name2
   | (Ast0.MetaId(name1,_,_,_),Ast0.MetaId(name2,_,_,_)) ->
@@ -614,7 +614,7 @@ and binaryOp_equal op1 op2 =
       equal_mcode mv1 mv2
     | _ -> false
 
-let rec equal_typeC t1 t2 =
+let equal_typeC t1 t2 =
   match (Ast0.unwrap t1,Ast0.unwrap t2) with
     (Ast0.ConstVol(cv1,_),Ast0.ConstVol(cv2,_)) -> equal_mcode cv1 cv2
   | (Ast0.BaseType(ty1,stringsa),Ast0.BaseType(ty2,stringsb)) ->
@@ -743,7 +743,7 @@ let equal_parameterTypeDef p1 p2 =
   | (Ast0.OptParam(_),Ast0.OptParam(_)) -> true
   | _ -> false
 
-let rec equal_statement s1 s2 =
+let equal_statement s1 s2 =
   match (Ast0.unwrap s1,Ast0.unwrap s2) with
     (Ast0.FunDecl(_,fninfo1,_,lp1,_,_,rp1,lbrace1,_,rbrace1,_),
      Ast0.FunDecl(_,fninfo2,_,lp2,_,_,rp2,lbrace2,_,rbrace2,_)) ->
@@ -852,7 +852,7 @@ let equal_define_param d1 d2 =
   | (Ast0.OptDParam(_),Ast0.OptDParam(_)) -> true
   | _ -> false
 
-let rec equal_top_level t1 t2 =
+let equal_top_level t1 t2 =
   match (Ast0.unwrap t1,Ast0.unwrap t2) with
     (Ast0.NONDECL(_),Ast0.NONDECL(_)) -> true
   | (Ast0.FILEINFO(old_file1,new_file1),Ast0.FILEINFO(old_file2,new_file2)) ->

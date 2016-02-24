@@ -100,7 +100,7 @@ let rec find_match ~do_this ~until inch =
     find_match ~do_this ~until inch
   end
 
-let rec find_line ~do_this ~until_line inch =
+let find_line ~do_this ~until_line inch =
   find_match ~do_this ~until:(fun _ -> until_line = !line_number) inch
 
 (* upon a call to regex string matching, print what follows after the match *)

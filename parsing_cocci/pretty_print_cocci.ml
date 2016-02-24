@@ -908,7 +908,7 @@ let print_seed rule = function
       print_string " = ";
       print_between (fun _ -> print_string " ## ") (print_seed_elem rule) ss
 
-let rec unparse_cocci_mv rule = function
+let unparse_cocci_mv rule = function
     Ast.MetaMetaDecl _ -> failwith "should be removed"
   | Ast.MetaIdDecl(_,(r,n)) ->
       print_string "identifier "; print_name rule r n; print_string ";"

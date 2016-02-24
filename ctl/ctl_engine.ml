@@ -971,7 +971,7 @@ let triples_witness x unchecked not_keep trips =
 (* The SAT algorithm and special helpers *)
 (* ************************************* *)
 
-let rec pre_exist dir (grp,_,_) y reqst =
+let pre_exist dir (grp,_,_) y reqst =
   let check s =
     match reqst with None -> true | Some reqst -> List.mem s reqst in
   let exp (s,th,wit) =

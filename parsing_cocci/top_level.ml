@@ -18,7 +18,7 @@ module Ast0 = Ast0_cocci
 
 let top_dots l = Ast0.wrap l
 
-let rec is_decl s =
+let is_decl s =
   match Ast0.unwrap s with
     Ast0.Decl(_,e) -> true
   | _ -> false
