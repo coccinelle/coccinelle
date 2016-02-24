@@ -1610,8 +1610,7 @@ let drop_empty_nest = drop_empty_thing
 (* ----------------------------------------------------------------------- *)
 (* Read tokens *)
 
-let get_s_starts (_, (s,_,(starts, ends))) =
-  Printf.printf "%d %d\n" starts ends; (s, starts)
+let get_s_starts (_, (s,_,(starts, ends))) = (s, starts)
 
 let pop2 l =
   let v = List.hd !l in
