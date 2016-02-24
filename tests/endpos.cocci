@@ -1,7 +1,7 @@
 virtual lines
 
 @r@
-position p;
+posi tion p;
 identifier f;
 @@
 
