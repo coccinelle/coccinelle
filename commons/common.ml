@@ -5453,8 +5453,8 @@ let (error_messagebis: filename -> (string * int) -> int -> string)=
   let charpos = lexstart      + decalage in
   let tok = lexeme in
   let (line, pos, linecontent) =  info_from_charpos charpos filename in
-  Printf.sprintf "File \"%s\", line %d, column %d,  charpos = %d \
-    around = '%s', whole content = %s"
+  Printf.sprintf "File \"%s\", line %d, column %d, charpos = %d\
+    \n  around = '%s',\n  whole content = '%s'"
     filename line pos charpos tok (chop linecontent)
 
 let error_message = fun filename (lexeme, lexstart) ->

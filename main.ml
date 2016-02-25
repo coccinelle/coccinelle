@@ -1483,6 +1483,9 @@ let main_with_better_error_report () =
     | Parse_cocci.Bad_virt s ->
 	Printf.fprintf stderr "virtual rule %s not supported\n" s;
         raise (UnixExit (-1))
+    | Parse_cocci.SMPLParseError error_message ->
+	Printf.fprintf stderr "%s\n" error_message;
+        raise (UnixExit (-1))
 
 (*****************************************************************************)
 let start =
