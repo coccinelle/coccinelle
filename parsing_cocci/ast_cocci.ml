@@ -802,38 +802,38 @@ let get_wcfvs (whencode : ('a wrap, 'b wrap) whencode list) =
 (* --------------------------------------------------------------------- *)
 
 let get_meta_name = function
-    MetaMetaDecl(ar,nm) -> nm
-  | MetaIdDecl(ar,nm) -> nm
+    MetaMetaDecl(_ar,nm) -> nm
+  | MetaIdDecl(_ar,nm) -> nm
   | MetaFreshIdDecl(nm,seed) -> nm
-  | MetaTypeDecl(ar,nm) -> nm
-  | MetaInitDecl(ar,nm) -> nm
-  | MetaInitListDecl(ar,nm,nm1) -> nm
+  | MetaTypeDecl(_ar,nm) -> nm
+  | MetaInitDecl(_ar,nm) -> nm
+  | MetaInitListDecl(_ar,nm,nm1) -> nm
   | MetaListlenDecl(nm) -> nm
-  | MetaParamDecl(ar,nm) -> nm
-  | MetaParamListDecl(ar,nm,nm1) -> nm
+  | MetaParamDecl(_ar,nm) -> nm
+  | MetaParamListDecl(_ar,nm,nm1) -> nm
   | MetaBinaryOperatorDecl(_,name) -> name
   | MetaAssignmentOperatorDecl(_,name) -> name
-  | MetaConstDecl(ar,nm,ty) -> nm
-  | MetaErrDecl(ar,nm) -> nm
-  | MetaExpDecl(ar,nm,ty) -> nm
-  | MetaIdExpDecl(ar,nm,ty) -> nm
-  | MetaLocalIdExpDecl(ar,nm,ty) -> nm
-  | MetaGlobalIdExpDecl(ar,nm,ty) -> nm
-  | MetaExpListDecl(ar,nm,nm1) -> nm
-  | MetaDeclDecl(ar,nm) -> nm
-  | MetaFieldDecl(ar,nm) -> nm
-  | MetaFieldListDecl(ar,nm,nm1) -> nm
-  | MetaStmDecl(ar,nm) -> nm
-  | MetaStmListDecl(ar,nm,nm1) -> nm
-  | MetaFuncDecl(ar,nm) -> nm
-  | MetaLocalFuncDecl(ar,nm) -> nm
-  | MetaPosDecl(ar,nm) -> nm
-  | MetaFmtDecl(ar,nm) -> nm
-  | MetaFragListDecl(ar,nm,nm1) -> nm
-  | MetaAnalysisDecl(code,nm) -> nm
-  | MetaDeclarerDecl(ar,nm) -> nm
-  | MetaIteratorDecl(ar,nm) -> nm
-  | MetaScriptDecl(ar,nm) -> nm
+  | MetaConstDecl(_ar,nm,_ty) -> nm
+  | MetaErrDecl(_ar,nm) -> nm
+  | MetaExpDecl(_ar,nm,_ty) -> nm
+  | MetaIdExpDecl(_ar,nm,_ty) -> nm
+  | MetaLocalIdExpDecl(_ar,nm,_ty) -> nm
+  | MetaGlobalIdExpDecl(_ar,nm,_ty) -> nm
+  | MetaExpListDecl(_ar,nm,_nm1) -> nm
+  | MetaDeclDecl(_ar,nm) -> nm
+  | MetaFieldDecl(_ar,nm) -> nm
+  | MetaFieldListDecl(_ar,nm,_nm1) -> nm
+  | MetaStmDecl(_ar,nm) -> nm
+  | MetaStmListDecl(_ar,nm,nm1) -> nm
+  | MetaFuncDecl(_ar,nm) -> nm
+  | MetaLocalFuncDecl(_ar,nm) -> nm
+  | MetaPosDecl(_ar,nm) -> nm
+  | MetaFmtDecl(_ar,nm) -> nm
+  | MetaFragListDecl(_ar,nm,_nm1) -> nm
+  | MetaAnalysisDecl(_code,nm) -> nm
+  | MetaDeclarerDecl(_ar,nm) -> nm
+  | MetaIteratorDecl(_ar,nm) -> nm
+  | MetaScriptDecl(_ar,nm) -> nm
 
 (* --------------------------------------------------------------------- *)
 
