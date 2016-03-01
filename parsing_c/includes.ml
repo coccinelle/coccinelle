@@ -138,8 +138,7 @@ let should_parse parsing_style filename incl = match parsing_style with
   | Parse_really_all_includes -> true
 
 let resolve filename parsingstyle x =
-  let all_includes =
-    List.mem parsingstyle [Parse_all_includes; Parse_really_all_includes] in
+  let all_includes = parse_all_includes parsingstyle in
   let dir = Filename.dirname filename in
   match x with
     | Ast_c.Local include_path ->
