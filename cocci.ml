@@ -2091,7 +2091,7 @@ let full_engine2 (cocci_infos,parse_strings) cfiles =
         then Includes.get_parsing_style()
         else begin
           if !g_contain_typedmetavar
-	  then Includes.Parse_normal_includes
+	  then Includes.Parse_local_includes
           else Includes.Parse_no_includes
 	end in
 

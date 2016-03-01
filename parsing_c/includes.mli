@@ -13,7 +13,7 @@ val is_header : string -> bool
 
 type parsing_style =
   | Parse_no_includes
-  | Parse_normal_includes
+  | Parse_local_includes
   | Parse_all_includes
   | Parse_really_all_includes
 

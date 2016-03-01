@@ -14,18 +14,18 @@ let is_header filename = Filename.check_suffix filename "h"
 
 type parsing_style =
   | Parse_no_includes
-  | Parse_normal_includes
+  | Parse_local_includes
   | Parse_all_includes
   | Parse_really_all_includes
 
 let string_of_parsing_style = function
   | Parse_no_includes -> "Parse_no_includes"
-  | Parse_normal_includes -> "Parse_normal_includes"
+  | Parse_local_includes -> "Parse_local_includes"
   | Parse_all_includes -> "Parse_all_includes"
   | Parse_really_all_includes -> "Parse_really_all_includes"
 
 let _parsing_style_set = ref false
-let _parsing_style = ref Parse_normal_includes
+let _parsing_style = ref Parse_local_includes
 
 let get_parsing_style () = !_parsing_style
 let set_parsing_style ps =
@@ -127,8 +127,8 @@ let interpret_include_path relpath =
 
 let should_parse parsing_style filename incl = match parsing_style with
   | Parse_no_includes -> false
-  | Parse_normal_includes when is_header filename -> false
-  | Parse_normal_includes ->
+  | Parse_local_includes when is_header filename -> false
+  | Parse_local_includes ->
     (match incl with
     | Ast_c.Weird _ -> false
     | Ast_c.Local _ -> true

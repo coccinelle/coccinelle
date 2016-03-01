@@ -306,7 +306,7 @@ let short_options = [
   Arg.Unit (function _ -> Includes.set_parsing_style Includes.Parse_no_includes),
   "  causes not even local include files to be used";
   "--local-includes",
-  Arg.Unit (function _ -> Includes.set_parsing_style Includes.Parse_normal_includes),
+  Arg.Unit (function _ -> Includes.set_parsing_style Includes.Parse_local_includes),
   "  causes local include files to be used";
   "--include-headers-for-types", Arg.Set Includes.include_headers_for_types,
   "    use only type information from header files";
