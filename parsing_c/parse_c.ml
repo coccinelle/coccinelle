@@ -972,51 +972,25 @@ module StringMap : Map.S with type key = string = Map.Make(String)
 
 let header_cache = Hashtbl.create 101
 
-
-let debug message =
-  if !Flag_parsing_c.verbose_parsing then
-    Printf.eprintf "[Parse_c] %s\n%!" message
-
-let print_typedefs = function
-  | None -> debug "No typedefs available yet"
-  | Some typedefs ->
-    let f key value acc = key ^ " " ^ acc in
-    let ids = Hashtbl.fold f typedefs.scoped_h "" in
-    debug ("The following typedefs are available: " ^ ids)
-
 let tree_stack = ref []
 
 let rec _parse_print_error_heuristic2 saved_typedefs saved_macros
   parse_strings cache file =
-  debug ("Requested to parse " ^ file);
   if List.mem file (List.map (fun x -> x.filename) !tree_stack)
-  then begin
-    debug "Inclusion loop detected. Not re-parsing.";
-    None
-  end else begin
+  then None (* Inclusion loop, not re-parsing *)
+  else begin
     let cached_result =
       try Some (Hashtbl.find header_cache file) with
       Not_found -> None in
     match cached_result with
       | None ->
-        debug "This file has not been parsed yet. Parsing it now.";
-        print_typedefs saved_typedefs;
         let result =
           _parse_print_error_heuristic2bis saved_typedefs saved_macros
             parse_strings file in
-        if cache then
-        begin
-          debug ("Caching parsing results for file " ^ file);
-          Hashtbl.add header_cache file result
-        end else begin
-          debug ("Not caching parsing results for file " ^ file)
-        end;
+        if cache then Hashtbl.add header_cache file result else ();
         tree_stack := result :: !tree_stack;
         Some result
       | Some result ->
-        debug (
-          "File " ^ file ^ " had already been parsed. " ^
-          "Returning cached result.");
         tree_stack := result :: !tree_stack;
         Some result
   end
@@ -1067,10 +1041,9 @@ and _parse_print_error_heuristic2bis saved_typedefs saved_macros
 
 
   let tr = mk_tokens_state toks in
-  debug ("The tr structure for file " ^ file ^ " has been computed");
+
   let handle_include wrapped_incl =
     let incl = Ast_c.unwrap wrapped_incl.Ast_c.i_include in
-    debug ("handle_include " ^ (Ast_c.string_of_inc_file incl));
     let parsing_style = Includes.get_parsing_style () in
     if Includes.should_parse parsing_style file incl
     then begin match Includes.resolve file parsing_style incl with
