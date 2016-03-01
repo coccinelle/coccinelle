@@ -1201,20 +1201,9 @@ let prepare_c files choose_includes parse_strings : file_info list =
     !Includes.include_headers_for_types;
   let header_file_info = List.map (file_info_of_parse_info Header) headers in
   let source_file_info = List.map (file_info_of_parse_info Source) sources in
-
-  let result =
-    if !Includes.include_headers_for_types
-    then source_file_info
-    else header_file_info @ source_file_info
-  in
-(*
-  Printf.eprintf "[cocci] prepare_c returns %d entries:\n%!"
-    (List.length result);
-  List.iteri
-    (fun i fi -> Printf.eprintf "Entry #%d: %s\n%!" (i+1) (string_of_file_info fi))
-    result;
-*)
-  result
+  if !Includes.include_headers_for_types
+  then source_file_info
+  else header_file_info @ source_file_info
 
 (*****************************************************************************)
 (* Manage environments as they are being built up *)
