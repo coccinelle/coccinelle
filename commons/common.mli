@@ -743,9 +743,9 @@ val filter_some : 'a option list -> 'a list
 val map_filter : ('a -> 'b option) -> 'a list -> 'b list
 (**
  * [map_filter f [x1;...;xn]] returns the list of results obtained
- * by applying f to x1 ;;; xn, given that not all applications of f
+ * by applying f to x1 ... xn, given that not all applications of f
  * may lead to a result. So if [f xi] is None it does not appear in the
- * resulting list, but i it's [Some yi] then [yi] is in the returned list.
+ * resulting list, but if it's [Some yi] then [yi] is in the returned list.
  *)
 
 val tail_map_filter : ('a -> 'b option) -> 'a list -> 'b list
