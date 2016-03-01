@@ -39,11 +39,11 @@ let parse_all_includes parsing_style =
     (parsing_style = Parse_really_all_includes)
 
 let include_path = ref ([] : string list)
+
+let relax_include_path = ref false
 (* if true then when have a #include "../../xx.h", we look also for xx.h in
  * current directory. This is because of how works extract_c_and_res
  *)
-
-let relax_include_path = ref false
 
 let extra_includes = ref ([] : string list)
 
