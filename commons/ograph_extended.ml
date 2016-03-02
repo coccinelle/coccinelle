@@ -3,7 +3,6 @@ open Common
 open Ocollection
 open Oset
 open Oassoc
-(* open Ograph *)
 
 open Oassocb
 open Osetb
