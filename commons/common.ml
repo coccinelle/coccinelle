@@ -2812,15 +2812,15 @@ let mk_date_dmy day month year =
 
 let dmy_to_unixtime (DMY (Day n, month, Year year)) =
   let tm = {
-    Unix.tm_sec = 0;      (** Seconds 0..60 *)
-    tm_min = 0;           (** Minutes 0..59 *)
-    tm_hour = 12;           (** Hours 0..23 *)
-    tm_mday = n;              (** Day of month 1..31 *)
-    tm_mon = (int_of_month month -1);               (** Month of year 0..11 *)
-    tm_year = year - 1900;              (** Year - 1900 *)
-    tm_wday = 0;              (** Day of week (Sunday is 0) *)
-    tm_yday = 0;              (** Day of year 0..365 *)
-    tm_isdst = false;            (** Daylight time savings in effect *)
+    Unix.tm_sec = 0;      (* Seconds 0..60 *)
+    tm_min = 0;           (* Minutes 0..59 *)
+    tm_hour = 12;           (* Hours 0..23 *)
+    tm_mday = n;              (* Day of month 1..31 *)
+    tm_mon = (int_of_month month -1);               (* Month of year 0..11 *)
+    tm_year = year - 1900;              (* Year - 1900 *)
+    tm_wday = 0;              (* Day of week (Sunday is 0) *)
+    tm_yday = 0;              (* Day of year 0..365 *)
+    tm_isdst = false;            (* Daylight time savings in effect *)
   } in
   Unix.mktime tm
 

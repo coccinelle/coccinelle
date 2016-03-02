@@ -4,7 +4,6 @@ open Common
 *)
 
 
-(**/**)
 (** Coccinelle modules accessible from an ocaml script.
 *)
 include Exposed_modules
@@ -60,7 +59,6 @@ type param_type =
 
 (* Function table management *)
 
-(**/**)
 (**
    For internal use only.
 *)
