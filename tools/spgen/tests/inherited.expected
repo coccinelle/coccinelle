@@ -75,21 +75,21 @@ x << r.x;
 j0 << rule_h_context.j0;
 @@
 
-msg = "Replace call to h with call to hh on expression %s. " % (x)
+msg = "Replace call to h with call to hh on expression %s " % (x)
 coccilib.org.print_safe_todo(j0[0], msg)
 
 @script:python rule_h2_org depends on org@
 j0 << rule_h2_context.j0;
 @@
 
-msg = "This is a message for rule_h2 in org mode.."
+msg = "This is a message for rule_h2 in org mode."
 coccilib.org.print_todo(j0[0], msg)
 
 @script:python rule_0_org depends on org@
 j0 << rule_0_context.j0;
 @@
 
-msg = "found a match around here ...."
+msg = "found a match around here ..."
 coccilib.org.print_todo(j0[0], msg)
 
 // ----------------------------------------------------------------------------
@@ -99,20 +99,20 @@ x << r.x;
 j0 << rule_h_context.j0;
 @@
 
-msg = "Replace call to h with call to hh on expression %s. " % (x)
+msg = "Replace call to h with call to hh on expression %s " % (x)
 coccilib.report.print_report(j0[0], msg)
 
 @script:python rule_h2_report depends on report@
 j0 << rule_h2_context.j0;
 @@
 
-msg = "This is a message for rule_h2 in report mode.."
+msg = "This is a message for rule_h2 in report mode."
 coccilib.report.print_report(j0[0], msg)
 
 @script:python rule_0_report depends on report@
 j0 << rule_0_context.j0;
 @@
 
-msg = "found a match around here ...."
+msg = "found a match around here ..."
 coccilib.report.print_report(j0[0], msg)
 
