@@ -1,5 +1,5 @@
 \subsection{What is \texttt{spgen}?}
-\texttt{spgen} is a \texttt{Coccinelle}\footnote{\hyperref[http://coccinelle.lip6.fr/]{http://coccinelle.lip6.fr/}} metaprogramming tool that can generate hardened semantic patches for use in e.g. the Linux kernel.
+\texttt{spgen} is a \texttt{Coccinelle}\footnote{\url{http://coccinelle.lip6.fr/}} metaprogramming tool that can generate hardened semantic patches for use in e.g. the Linux kernel.
 
 Or, in less fancy words, \texttt{spgen} can take your simple \texttt{Coccinelle} script containing one or more rules with \texttt{*}, \texttt{+}, or \texttt{-}, and then output the same script with more options.
 
@@ -10,7 +10,7 @@ In particular, \texttt{spgen} generates the \texttt{patch}, \texttt{context}, \t
 \item \texttt{context}: Used for * rules that find the matched \texttt{C} code and output it in \texttt{diff}-like format.
 \item \texttt{org}: Used for script rules that output matches in
   \texttt{emacs} org mode
-  format\footnote{\hyperref[http://orgmode.org/]{http://orgmode.org/}} with
+  format\footnote{\url{http://orgmode.org/}} with
   an error message and line numbers.
 \item \texttt{report}: Used for script rules that output matches with an error message and line numbers.
 \end{itemize}
