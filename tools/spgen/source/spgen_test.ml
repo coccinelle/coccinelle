@@ -72,7 +72,7 @@ let compare_one score expected =
         perr_nl cocci;
 
         (* spgenerate the file *)
-        let options = Spgen.make_options ~output:actual cocci in
+        let options = Spgen.make_options ~year:2000 ~output:actual cocci in
         let _ = Spgen.run options in
 
         (* check that the spgenerated file is parsable. Note that the parsing
