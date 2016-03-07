@@ -41,11 +41,44 @@ open Parser_c
 (*****************************************************************************)
 
 (* callgraph of macros *)
-type key = string
-type node = (Common.filename * Cpp_token_c.define_def) list ref
+
+module Key : Set.OrderedType with type t = string = struct
+  type t = string
+  let compare = String.compare
+end
+
+module KeySet = Set.Make (Key)
+
+module KeyMap = Map.Make (Key)
+
+module Node :
+  Set.OrderedType with
+  type t = (Common.filename * Cpp_token_c.define_def) list ref =
+struct
+  type t = (Common.filename * Cpp_token_c.define_def) list ref
+  let compare = compare
+end
+
 type edge = Direct
 
-type callgraph_macros = (key, node, edge) Ograph_simple.ograph_mutable
+module Edge : Set.OrderedType with type t = edge =
+struct
+  type t = edge
+  let compare = compare
+end
+
+module KeyEdgePair : Set.OrderedType with type t = Key.t * Edge.t =
+struct
+  type t = Key.t * Edge.t
+  let compare = compare
+end
+
+module KeyEdgeSet = Set.Make (KeyEdgePair)
+
+module G = Ograph_simple.Make
+  (Key) (KeySet) (KeyMap) (Node) (Edge) (KeyEdgePair) (KeyEdgeSet)
+
+type callgraph_macros = G.ograph_mutable
 
 let rootname = "__ROOT__"
 
@@ -69,7 +102,7 @@ let build_empty_set () = new Osetb.osetb Setb.empty
 (*****************************************************************************)
 
 let build_callgraph_macros xs =
-  let (g: callgraph_macros) = new Ograph_simple.ograph_mutable in
+  let (g: callgraph_macros) = new G.ograph_mutable in
 
   g#add_node rootname (ref []);
 
@@ -80,7 +113,7 @@ let build_callgraph_macros xs =
     g#add_arc (rootname, x) Direct;
   );
   xs +> List.iter (fun (file, (x, def)) ->
-    let node = g#nodes#find x in
+    let node = KeyMap.find x g#nodes in
     Common.push2 (file, def) node;
   );
 
@@ -92,7 +125,7 @@ let build_callgraph_macros xs =
       match tok with
       | TIdent (x2,ii) ->
           (try
-            let _ = g#nodes#find x2 in
+            let _ = KeyMap.find (x2 : Key.t) g#nodes in
             g#add_arc (x, x2) Direct;
           with
            Not_found -> ()
@@ -118,7 +151,7 @@ let check_no_loop_graph g =
   let rec aux_dfs path xi =
     if Hashtbl.mem already xi && List.mem xi path
     then begin
-      let node = g#nodes#find xi in
+      let node = KeyMap.find xi g#nodes in
       let file =
         match !node with
         | (file, _)::xs -> file
@@ -149,11 +182,10 @@ let check_no_loop_graph g =
     end else begin
       Hashtbl.add already xi true;
       (* f xi path; *)
-      let succ = g#successors xi in
-      let succ' = succ#tolist +> List.map fst in
-      succ' +> List.iter (fun yi ->
-          aux_dfs (xi::path) yi
-      );
+      let aux (key, _) keyset = KeySet.add key keyset in
+      let succ = KeyEdgeSet.fold aux (g#successors xi) KeySet.empty in
+      let aux2 yi = aux_dfs (xi::path) yi in
+      KeySet.iter aux2 succ
     end
   in
   aux_dfs [] rootname;
@@ -162,20 +194,20 @@ let check_no_loop_graph g =
 (* ---------------------------------------------------------------------- *)
 let slice_of_callgraph_macros (g: callgraph_macros) goodnodes =
 
-  let (g': callgraph_macros) = new Ograph_simple.ograph_mutable in
+  let (g': callgraph_macros) = new G.ograph_mutable in
 
-  goodnodes#tolist +> List.iter (fun k ->
-    let v = g#nodes#find k in
-    g'#add_node k v;
-  );
-  goodnodes#tolist +> List.iter (fun k ->
-    let succ = g#successors k in
-    let succ = Oset.mapo (fun (k', edge) -> k') (build_empty_set()) succ in
-    let inter = succ $**$ goodnodes in
-    inter#tolist +> List.iter (fun k' ->
-      g'#add_arc (k, k') Direct;
-    )
-  );
+  let f k =
+    let v = KeyMap.find k g#nodes in
+    g'#add_node k v in
+  KeySet.iter f goodnodes;
+
+  let f' k =
+    let aux (key, _) keyset = KeySet.add key keyset in
+    let succ = KeyEdgeSet.fold aux (g#successors k) KeySet.empty in
+    let inter = KeySet.inter succ goodnodes in
+    let f'' k' = g'#add_arc (k, k') Direct in
+    KeySet.iter f'' inter in
+  KeySet.iter f' goodnodes;
   g'
 
 (*****************************************************************************)
@@ -250,14 +282,15 @@ let rec (recurse_expand_macro_topological_order:
 
   (* naive: *)
   if !no_inlining then
-    g#nodes#tolist +> List.iter (fun (k, v) ->
+    let f k v =
       if k = rootname then ()
       else
         let def = get_single_file_and_def_of_node k v +> snd in
-        Hashtbl.add current_def k def
-    )
+        Hashtbl.add current_def k def in
+    KeyMap.iter f g#nodes
+
   else
-    let remaining = g#nodes#tolist in
+    let remaining = KeyMap.bindings g#nodes in
     (match remaining with
     | [] -> () (* christia: commented this out: raise (Impossible 76)
 		* This seems to be the case when there are no
@@ -268,10 +301,10 @@ let rec (recurse_expand_macro_topological_order:
         (* end recursion *)
         ()
     | (k, v)::y::xs ->
-        let leafs = (g#leaf_nodes ())#tolist in
+        let leafs = KeySet.elements (g#leaf_nodes ()) in
         pr2 (spf "step: %d, %s" depth (leafs +> String.concat " "));
 
-        Ograph_simple.print_ograph_generic
+        G.print_ograph_generic
           ~str_of_key:(fun k -> k)
           ~str_of_node:(fun k node -> k)
           (spf "/tmp/graph-%d.dot" depth)
@@ -284,14 +317,14 @@ let rec (recurse_expand_macro_topological_order:
         if depth = 0
         then begin
           leafs +> List.iter (fun k ->
-            let node = g#nodes#find k in
+            let node = KeyMap.find k g#nodes in
             let def = get_single_file_and_def_of_node k node +> snd in
             Hashtbl.add current_def k def
           )
         end else begin
           let new_defs =
             leafs +> List.map (fun k ->
-              let node = g#nodes#find k in
+              let node = KeyMap.find k g#nodes in
               let def = get_single_file_and_def_of_node k node +> snd in
               let def' = macro_expand current_def def in
               k, def'
@@ -414,7 +447,7 @@ let extract_dangerous_macros xs =
   let self_referiential, macros_in_loop_with_path =
     check_no_loop_graph g in
 
-  Ograph_simple.print_ograph_generic
+  G.print_ograph_generic
     ~str_of_key:(fun k -> k)
     ~str_of_node:(fun k node -> k)
     "/tmp/graph.dot"
@@ -431,10 +464,10 @@ let extract_dangerous_macros xs =
         acc
         end
       else
-        let acc = acc#add x in
+        let acc = KeySet.add x acc in
         let ancestors = g#ancestors x in
-        acc $++$ ancestors
-    ) (build_empty_set ())
+        KeySet.union acc ancestors
+    ) KeySet.empty
   in
 
   (* Now prepare for fixpoint expansion of macros to avoid doing
@@ -443,7 +476,7 @@ let extract_dangerous_macros xs =
   let sliced_g =
     slice_of_callgraph_macros g finalset
   in
-  Ograph_simple.print_ograph_generic
+  G.print_ograph_generic
     ~str_of_key:(fun k -> k)
     ~str_of_node:(fun k node -> k)
     "/tmp/graph2.dot"
@@ -461,7 +494,7 @@ let extract_dangerous_macros xs =
   (* prepare final result *)
   let final_macros =
     binding +> Common.hash_to_list +> List.map (fun (x, def) ->
-      let node = g#nodes#find x in
+      let node = KeyMap.find x g#nodes in
       let file = get_single_file_and_def_of_node x node +> fst in
       (file, (x, def))
     )
