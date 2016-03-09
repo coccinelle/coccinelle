@@ -1,5 +1,3 @@
-open Common
-
 type nodei = int
 
 (* graph structure:
@@ -63,19 +61,19 @@ val print_ograph_mutable_generic :
   string option -> (* label for the entire graph *)
   (* what string to print for a node and how to color it *)
   ((nodei * 'node) -> (string * string option * string option)) ->
-  output_file:filename ->
+  output_file : Common.filename ->
   launch_gv:bool ->
   unit
 
 
 val print_ograph_extended :
   ('node * string, 'edge) ograph_extended ->
-  filename (* output file *) ->
+  Common.filename (* output file *) ->
   bool (* launch gv ? *) ->
   unit
 
 val print_ograph_mutable :
   ('node * string, 'edge) ograph_mutable ->
-  filename (* output file *) ->
+  Common.filename (* output file *) ->
   bool (* launch gv ? *) ->
   unit
