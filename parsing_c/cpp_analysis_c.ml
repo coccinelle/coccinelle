@@ -1,7 +1,5 @@
 open Common
 
-open Oset
-
 open Parser_c
 
 (*****************************************************************************)
@@ -92,9 +90,6 @@ let bodytoks_of_body body =
       []
   | Cpp_token_c.DefineBody xs ->
       xs
-
-
-let build_empty_set () = new Osetb.osetb Setb.empty
 
 
 (*****************************************************************************)

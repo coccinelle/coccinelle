@@ -266,7 +266,7 @@ let local_test_cfg launchgv file =
 	      else
 		let fl = Filename.chop_extension (Filename.basename file) in
 		fl^":"^fn^".dot" in
-            Ograph_extended.print_ograph_mutable flow' (filename) launchgv
+            Control_flow_c.G.print_ograph_mutable flow' (filename) launchgv
           )
         with Ast_to_flow.Error (x) -> Ast_to_flow.report_error x
       )
@@ -287,7 +287,7 @@ let test_cfg_ifdef file =
         flow +> do_option (fun flow ->
           Ast_to_flow.deadcode_detection flow;
           let flow = Ast_to_flow.annotate_loop_nodes flow in
-          Ograph_extended.print_ograph_mutable flow ("/tmp/output.dot") true
+          Control_flow_c.G.print_ograph_mutable flow ("/tmp/output.dot") true
         )
       with Ast_to_flow.Error (x) -> Ast_to_flow.report_error x
     )

@@ -5,13 +5,13 @@
  *)
 
 type witness =
-    (Ograph_extended.nodei, unit,
-     (Ograph_extended.nodei, unit, unit) Ast_ctl.generic_ctl list)
+    (Control_flow_c.G.key, unit,
+     (Control_flow_c.G.key, unit, unit) Ast_ctl.generic_ctl list)
       Ast_ctl.generic_witnesstree
 
 type ('a,'b,'c,'d,'e) triples =
-    (Ograph_extended.nodei * 'a *
-     (Ograph_extended.nodei,
+    (Control_flow_c.G.key * 'a *
+     (Control_flow_c.G.key,
       ('b, ('c,'d) Wrapper_ctl.wrapped_binding) Ast_ctl.generic_subst list, 'e)
      Ast_ctl.generic_witnesstree list) list
 

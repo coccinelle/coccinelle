@@ -18,10 +18,6 @@ open Common
 open Ast_c
 open Control_flow_c
 
-open Ograph_extended
-open Oassoc
-open Oassocb
-
 module Lib = Lib_parsing_c
 
 (*****************************************************************************)
@@ -96,6 +92,11 @@ let pinfo_of_ii ii = Ast_c.get_opi (List.hd ii).Ast_c.pinfo
  * the context point to close the good number of '}' . For instance
  * where there is a 'continue', we must close only until the for.
  *)
+
+type nodei = Control_flow_c.G.key 
+
+module StringMap = Map.Make (String)
+
 type braceinfo =
     (node * (after_type -> string -> nodei -> unit), node) Common.either
 
@@ -123,7 +124,7 @@ and xinfo =  {
   compound_caller: compound_caller;
 
   (* does not change recursively. Some kind of globals. *)
-  labels_assoc: (string, nodei) oassoc;
+  labels_assoc: nodei StringMap.t;
   exiti:      nodei option;
   errorexiti: nodei option;
 
@@ -147,7 +148,7 @@ let initial_info = {
   labels = [];
 
   (* don't change when recurse *)
-  labels_assoc = new oassocb [];
+  labels_assoc = StringMap.empty;
   exiti = None;
   errorexiti = None;
 }
@@ -157,7 +158,7 @@ let initial_info = {
 (* (Semi) Globals, Julia's style. *)
 (*****************************************************************************)
 (* global graph *)
-let g = ref (new ograph_mutable)
+let g = ref (new Control_flow_c.G.ograph_mutable)
 
 let counter_for_labels = ref 0
 let counter_for_braces = ref 0
@@ -180,7 +181,7 @@ let counter_for_switch = ref 0
 let compute_labels_and_create_them st =
 
   (* map C label to index number in graph *)
-  let (h: (string, nodei) oassoc ref) = ref (new oassocb []) in
+  let h = ref StringMap.empty in
 
   begin
     st +> Visitor_c.vk_statement { Visitor_c.default_visitor_c with
@@ -195,8 +196,8 @@ let compute_labels_and_create_them st =
             in
             begin
               (* the C label already exists ? *)
-              if (!h#haskey s) then raise (Error (DuplicatedLabel s));
-              h := !h#add (s, newi);
+              if (StringMap.mem s !h) then raise (Error (DuplicatedLabel s));
+              h := StringMap.add s newi !h;
               (* not k _st !!! otherwise in lbl1: lbl2: i++; we miss lbl2 *)
               k st;
             end
@@ -388,8 +389,8 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
    (* ------------------------- *)
   | Labeled (Ast_c.Label (name, st)) ->
       let s = Ast_c.str_of_name name in
-      let ilabel = xi.labels_assoc#find s in
-      let node = mk_node (unwrap (!g#nodes#find ilabel)) lbl [] (s ^ ":") in
+      let ilabel = StringMap.find s xi.labels_assoc in
+      let node = mk_node (unwrap (KeyMap.find ilabel !g#nodes)) lbl [] (s ^ ":") in
       !g#replace_node (ilabel, node);
       !g +> add_arc_opt (starti, ilabel);
       aux_statement (Some ilabel, xi_lbl) st
@@ -406,7 +407,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
      then Some newi
      else begin
        let ilabel =
-         try xi.labels_assoc#find s
+         try StringMap.find s xi.labels_assoc
          with Not_found ->
                   (* jump vers ErrorExit a la place ?
                    * pourquoi tant de "cant jump" ? pas detecté par gcc ?
@@ -572,9 +573,9 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
              !g#add_arc ((finalthen, newendswitch), Direct);
              Some newendswitch
          | None ->
-             if (!g#predecessors newendswitch)#null
+             if (KeyEdgeSet.is_empty (!g#predecessors newendswitch))
              then begin
-                 assert ((!g#successors newendswitch)#null);
+                 assert (KeyEdgeSet.is_empty (!g#successors newendswitch));
                  !g#del_node newendswitch;
                  None
              end
@@ -746,7 +747,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
       let finalthen = aux_statement (Some doi, newxi) st in
       (match finalthen with
       | None ->
-          if (!g#predecessors taili)#null
+          if (KeyEdgeSet.is_empty (!g#predecessors taili))
           then raise (Error (DeadCode (Some (pinfo_of_ii ii))))
           else Some newfakeelse
       | Some finali ->
@@ -1356,7 +1357,7 @@ let specialdeclmacro_to_stmt (s, args, ii) =
 let rec ast_to_control_flow e =
 
   (* globals (re)initialialisation *)
-  g := (new ograph_mutable);
+  g := (new Control_flow_c.G.ograph_mutable);
   counter_for_labels := 1;
   counter_for_braces := 0;
   counter_for_switch := 0;
@@ -1513,21 +1514,17 @@ let annotate_loop_nodes g =
   (* just for opti a little *)
   let already = Hashtbl.create 101 in
 
-  g +> Ograph_extended.dfs_iter_with_path firsti (fun xi path ->
+  g +> Control_flow_c.G.dfs_iter_with_path firsti (fun xi path ->
     Hashtbl.add already xi true;
-    let succ = g#successors xi in
-    let succ = succ#tolist in
-    succ +> List.iter (fun (yi,_edge) ->
+    let aux (yi, _) =
       if Hashtbl.mem already yi && List.mem yi (xi::path)
       then
-        let node = g#nodes#find yi in
+        let node = KeyMap.find yi g#nodes in
         let ((node2, nodeinfo), nodestr) = node in
         let node' = ((node2, {nodeinfo with is_loop = true}), (nodestr ^ "*"))
-        in g#replace_node (yi, node');
-    );
+        in g#replace_node (yi, node') in
+    KeyEdgeSet.iter aux (g#successors xi);
   );
-
-
   g
 
 
@@ -1546,16 +1543,11 @@ let annotate_loop_nodes g =
  * mais dans le corps d'une macro et donc on le voit pas :(
  *
  *)
-let deadcode_detection g =
+let deadcode_detection (g : Control_flow_c.cflow) =
 
-  g#nodes#iter (fun (k, node) ->
-    let pred = g#predecessors k in
-    if pred#null then
+  KeyMap.iter  (fun k node ->
+    if KeyEdgeSet.is_empty (g#predecessors k) then
       (match unwrap node with
-      (* old:
-       * | Enter -> ()
-       * | EndStatement _ -> pr2 "deadcode sur fake node, pas grave";
-       *)
       | TopNode -> ()
       | FunHeader _ -> ()
       | ErrorExit -> ()
@@ -1569,7 +1561,7 @@ let deadcode_detection g =
           | _ -> pr2 "CFG: orphan nodes, maybe something weird happened"
           )
       )
-  )
+  ) g#nodes
 
 (*------------------------------------------------------------------------*)
 (* special_cfg_braces: the check are really specific to the way we
@@ -1582,20 +1574,19 @@ let deadcode_detection g =
  *)
 
 let check_control_flow (g : cflow) : unit =
-
   let nodes = g#nodes  in
   let starti = first_node g in
-  let visited = ref (new oassocb []) in
+  let visited = ref KeyMap.empty in
 
   let print_trace_error xs =  pr2 "PB with flow:";  Common.pr2_gen xs; in
 
   let rec dfs (nodei, (* Depth depth,*) startbraces,  trace)  =
     let trace2 = nodei::trace in
-    if !visited#haskey nodei
+    if KeyMap.mem nodei !visited
     then
       (* if loop back, just check that go back to a state where have same depth
          number *)
-      let (*(Depth depth2)*) startbraces2 = !visited#find nodei in
+      let (*(Depth depth2)*) startbraces2 = KeyMap.find nodei !visited in
       if  (*(depth = depth2)*) startbraces <> startbraces2
       then
         begin
@@ -1605,19 +1596,9 @@ let check_control_flow (g : cflow) : unit =
         end
     else
       let children = g#successors nodei in
-      let _ = visited := !visited#add (nodei, (* Depth depth*) startbraces) in
-
-      (* old: good, but detect a missing } too late, only at the end
+      visited := KeyMap.add nodei startbraces !visited;
       let newdepth =
-        (match fst (nodes#find nodei) with
-        | StartBrace i -> Depth (depth + 1)
-        | EndBrace i   -> Depth (depth - 1)
-        | _ -> Depth depth
-        )
-      in
-      *)
-      let newdepth =
-        (match unwrap (nodes#find nodei),  startbraces with
+        (match unwrap (KeyMap.find nodei g#nodes),  startbraces with
         | SeqStart (_,i,_), xs  -> i::xs
         | SeqEnd (i,_), j::xs ->
             if i = j
@@ -1637,14 +1618,13 @@ let check_control_flow (g : cflow) : unit =
       in
 
 
-      if (children#tolist) = []
+      if KeyEdgeSet.is_empty children
       then
         if (* (depth = 0) *) startbraces <> []
         then print_trace_error trace2
       else
-        children#tolist +> List.iter (fun (nodei,_) ->
-          dfs (nodei, newdepth, trace2)
-        )
+        let aux (key,_) = dfs (key, newdepth, trace2) in
+        KeyEdgeSet.iter aux children
     in
 
   dfs (starti, (* Depth 0*) [], [])

@@ -1,12 +1,3 @@
-open Common
-
-open Ocollection
-open Oset
-open Oassoc
-
-open Oassocb
-open Osetb
-
 (*
  * graph structure:
  *  -  node: index -> nodevalue
@@ -35,39 +26,125 @@ open Osetb
  *
  *)
 
-type nodei = int
+module type S =
+  sig
+    type key
+    type edge
+    type keys (* set of keys *)
+    type edges (* sets of (key,edge) pairs *)
+    type 'node keymap
+    type keyedgesmap
 
-class ['a,'b] ograph_extended =
-  let build_assoc () = new oassocb [] in (* opti?: = oassoch *)
-  let build_set ()   = new osetb Setb.empty in
+    class ['node] ograph_extended :
+    object ('o)
+      method add_node : 'node -> 'o * key
+      method add_nodei : key -> 'node -> 'o * key
+      method replace_node : key * 'node -> 'o
+      method del_node : key -> 'o
 
+      method add_arc : (key * key) * edge -> 'o
+      method del_arc : (key * key) * edge -> 'o
+
+      method nodes : 'node keymap
+
+      method successors : key -> edges
+      method predecessors : key -> edges
+      method allsuccessors : keyedgesmap
+    end
+
+    class ['node] ograph_mutable :
+    object ('o)
+      method add_node : 'node -> key
+      method add_nodei : key -> 'node -> unit
+      method replace_node : key * 'node -> unit
+      method del_node : key -> unit
+
+      method add_arc : (key * key) * edge -> unit
+      method del_arc : (key * key) * edge -> unit
+
+      method nodes : 'node keymap
+
+      method successors : key -> edges
+      method predecessors : key -> edges
+      method allsuccessors : keyedgesmap
+    end
+
+    val dfs_iter : key -> (key -> unit) -> 'node ograph_mutable -> unit
+
+    val dfs_iter_with_path :
+      key -> (key -> key list -> unit) -> 'node ograph_mutable -> unit
+
+    val print_ograph_mutable_generic :
+      'node ograph_mutable ->
+      string option -> (* label for the entire graph *)
+      (* what string to print for a node and how to color it *)
+      ((key * 'node) -> (string * string option * string option)) ->
+      output_file : Common.filename ->
+      launch_gv:bool ->
+      unit
+
+    val print_ograph_extended :
+      ('node * string) ograph_extended ->
+      Common.filename (* output file *) ->
+      bool (* launch gv ? *) ->
+      unit
+
+    val print_ograph_mutable :
+      ('node * string) ograph_mutable ->
+      Common.filename (* output file *) ->
+      bool (* launch gv ? *) ->
+      unit
+end
+
+module Make
+  (Key : Set.OrderedType with type t = int)
+  (KeySet : Set.S with type elt = Key.t)
+  (KeyMap : Map.S with type key = Key.t)
+  (Edge : Set.OrderedType)
+  (KeyEdgePair : Set.OrderedType with type t = Key.t * Edge.t)
+  (KeyEdgeSet : Set.S with type elt = KeyEdgePair.t) : S with
+  type key = Key.t and
+  type edge = Edge.t and
+  type keys = KeySet.t and
+  type edges = KeyEdgeSet.t and
+  type 'node keymap = 'node KeyMap.t and
+  type keyedgesmap = KeyEdgeSet.t KeyMap.t =
+struct
+  type key = Key.t
+  type edge = Edge.t
+  type keys = KeySet.t
+  type edges = KeyEdgeSet.t
+  type 'a keymap = 'a KeyMap.t
+  type keyedgesmap = KeyEdgeSet.t KeyMap.t
+
+  class ['node] ograph_extended =
   object(o)
 
     val free_index = 0
 
-    val succ = build_assoc()
-    val pred = build_assoc()
-    val nods = build_assoc()
+    val succ = KeyMap.empty
+    val pred = KeyMap.empty
+    val nods = (KeyMap.empty : 'node KeyMap.t)
 
-    method add_node (e: 'a) =
+    method add_node n =
       let i = free_index in
       ({<
-        nods = nods#add (i, e);
-        pred = pred#add (i, build_set() );
-        succ = succ#add (i, build_set() );
+        nods = KeyMap.add i n nods;
+        pred = KeyMap.add i KeyEdgeSet.empty pred;
+        succ = KeyMap.add i KeyEdgeSet.empty succ;
         free_index = i + 1;
        >}, i)
 
-    method add_nodei i (e: 'a) =
+    method add_nodei i n =
       ({<
-        nods = nods#add (i, e);
-        pred = pred#add (i, build_set() );
-        succ = succ#add (i, build_set() );
+        nods = KeyMap.add i n nods;
+        pred = KeyMap.add i KeyEdgeSet.empty pred;
+        succ = KeyMap.add i KeyEdgeSet.empty succ;
         free_index = (max free_index i) + 1;
        >}, i)
 
 
-    method del_node (i) =
+    method del_node i =
       {<
         (* check: e is effectively the index associated with e,
            and check that already in *)
@@ -75,232 +152,206 @@ class ['a,'b] ograph_extended =
         (* todo: assert that have no pred and succ, otherwise
          * will have some dangling pointers
          *)
-        nods = nods#delkey i;
-        pred = pred#delkey i;
-        succ = succ#delkey i;
+        nods = KeyMap.remove i nods;
+        pred = KeyMap.remove i pred;
+        succ = KeyMap.remove i succ;
         >}
 
-    method replace_node (i, (e: 'a)) =
-      assert (nods#haskey i);
+
+    method replace_node (i, n) =
+      assert (KeyMap.mem i nods);
       {<
-        nods = nods#replkey (i, e);
+        nods = KeyMap.add i n nods;
        >}
 
-    method add_arc ((a,b),(v: 'b)) =
+    method add_arc ((a,b),(v: Edge.t)) =
+      let a_successors = KeyMap.find a succ in
+      let new_a_successors = KeyEdgeSet.add (b, v) a_successors in
+      let b_predecessors = KeyMap.find b pred in
+      let new_b_predecessors = KeyEdgeSet.add (a, v) b_predecessors in
       {<
-        succ = succ#replkey (a, (succ#find a)#add (b, v));
-        pred = pred#replkey (b, (pred#find b)#add (a, v));
+        succ = KeyMap.add a new_a_successors succ;
+        pred = KeyMap.add b new_b_predecessors pred;
         >}
     method del_arc ((a,b),v) =
+      let a_successors = KeyMap.find a succ in
+      let new_a_successors = KeyEdgeSet.remove (b, v) a_successors in
+      let b_predecessors = KeyMap.find b pred in
+      let new_b_predecessors = KeyEdgeSet.remove (a, v) b_predecessors in
       {<
-        succ = succ#replkey (a, (succ#find a)#del (b,v));
-        pred = pred#replkey (b, (pred#find b)#del (a,v));
+        succ = KeyMap.add a new_a_successors succ;
+        pred = KeyMap.add b new_b_predecessors pred;
         >}
 
-    method successors   e = succ#find e
-    method predecessors e = pred#find e
+    method successors e = KeyMap.find e succ
+    method predecessors e = KeyMap.find e pred
 
     method nodes = nods
     method allsuccessors = succ
-
-(*
-    method ancestors xs =
-      let rec aux xs acc =
-        match xs#view with (* could be done with an iter *)
-        | Empty -> acc
-        | Cons(x, xs) -> (acc#add x)
-              +> (fun newacc -> aux (o#predecessors x) newacc)
-              +> (fun newacc -> aux xs newacc)
-      in aux xs (f2()) (* (new osetb []) *)
-
-    method children  xs =
-      let rec aux xs acc =
-        match xs#view with (* could be done with an iter *)
-        | Empty -> acc
-        | Cons(x, xs) -> (acc#add x)
-              +> (fun newacc -> aux (o#successors x) newacc)
-              +> (fun newacc -> aux xs newacc)
-      in aux xs (f2()) (* (new osetb []) *)
-
-    method brothers  x =
-      let parents = o#predecessors x in
-      (parents#fold (fun acc e -> acc $++$ o#successors e) (f2()))#del x
-
-*)
-
   end
 
-
-
-
-class ['a,'b] ograph_mutable =
-  let build_assoc () = new oassocb [] in
-  let build_set ()   = new osetb Setb.empty in
-
+  class ['node] ograph_mutable =
   object(o)
-
     val mutable free_index = 0
+    val mutable succ = KeyMap.empty
+    val mutable pred = KeyMap.empty
+    val mutable nods = (KeyMap.empty : 'node KeyMap.t)
 
-    val mutable succ = build_assoc()
-    val mutable pred = build_assoc()
-    val mutable nods = build_assoc()
-
-    method add_node (e: 'a) =
+    method add_node (n : 'node) =
       let i = free_index in
-      nods <- nods#add (i, e);
-      pred <- pred#add (i, build_set() );
-      succ <- succ#add (i, build_set() );
+      nods <- KeyMap.add i n nods;
+      pred <- KeyMap.add i KeyEdgeSet.empty pred;
+      succ <- KeyMap.add i KeyEdgeSet.empty succ;
       free_index <- i + 1;
       i
 
-    method add_nodei i (e: 'a) =
-      nods <- nods#add (i, e);
-      pred <- pred#add (i, build_set() );
-      succ <- succ#add (i, build_set() );
+    method add_nodei i (n: 'node) =
+      nods <- KeyMap.add i n nods;
+      pred <- KeyMap.add i KeyEdgeSet.empty pred;
+      succ <- KeyMap.add i KeyEdgeSet.empty succ;
       free_index <- (max free_index i) + 1;
 
-
-    method del_node (i) =
+    method del_node i =
         (* check: e is effectively the index associated with e,
            and check that already in *)
 
         (* todo: assert that have no pred and succ, otherwise
          * will have some dangling pointers
          *)
-        nods <- nods#delkey i;
-        pred <- pred#delkey i;
-        succ <- succ#delkey i;
+        nods <- KeyMap.remove i nods;
+        pred <- KeyMap.remove i pred;
+        succ <- KeyMap.remove i succ;
 
-    method replace_node (i, (e: 'a)) =
-      assert (nods#haskey i);
-      nods <- nods#replkey (i, e);
+    method replace_node (i, (n: 'node)) =
+      assert (KeyMap.mem i nods);
+      nods <- KeyMap.add i n nods;
 
-    method add_arc ((a,b),(v: 'b)) =
-      succ <- succ#replkey (a, (succ#find a)#add (b, v));
-      pred <- pred#replkey (b, (pred#find b)#add (a, v));
+    method add_arc ((a,b),(v: Edge.t)) =
+      let a_successors = KeyMap.find a succ in
+      let new_a_successors = KeyEdgeSet.add (b, v) a_successors in
+      succ <- KeyMap.add a new_a_successors succ;
+      let b_predecessors = KeyMap.find b pred in
+      let new_b_predecessors = KeyEdgeSet.add (a, v) b_predecessors in
+      pred <- KeyMap.add b new_b_predecessors pred;
+
     method del_arc ((a,b),v) =
-      succ <- succ#replkey (a, (succ#find a)#del (b,v));
-      pred <- pred#replkey (b, (pred#find b)#del (a,v));
+      let a_successors = KeyMap.find a succ in
+      let new_a_successors = KeyEdgeSet.remove (b, v) a_successors in
+      succ <- KeyMap.add a new_a_successors succ;
+      let b_predecessors = KeyMap.find b pred in
+      let new_b_predecessors = KeyEdgeSet.remove (a, v) b_predecessors in
+      pred <- KeyMap.add b new_b_predecessors pred;
 
-    method successors   e = succ#find e
-    method predecessors e = pred#find e
+    method successors e = KeyMap.find e succ
+    method predecessors e = KeyMap.find e pred
 
     method nodes = nods
     method allsuccessors = succ
-
   end
 
+  (* depth first search *)
+  let dfs_iter xi f g =
+    let already = Hashtbl.create 101 in
+    let rec aux_dfs xs =
+      let g xi =
+        if not (Hashtbl.mem already xi)
+        then begin
+          Hashtbl.add already xi true;
+          f xi;
+          let f' (key, _) keyset = KeySet.add key keyset in
+          let newset = KeyEdgeSet.fold f' (g#successors xi) KeySet.empty in
+          aux_dfs newset
+        end in
+      KeySet.iter g xs in
+    aux_dfs (KeySet.singleton xi)
 
-(* depth first search *)
-let dfs_iter xi f g =
-  let already = Hashtbl.create 101 in
-  let rec aux_dfs xs =
-    xs +> List.iter (fun xi ->
+  let dfs_iter_with_path xi f g =
+    let already = Hashtbl.create 101 in
+    let rec aux_dfs path xi =
       if Hashtbl.mem already xi then ()
       else begin
         Hashtbl.add already xi true;
-        f xi;
-        let succ = g#successors xi in
-        aux_dfs (succ#tolist +> List.map fst);
+        f xi path;
+        let f' (key, _) keyset = KeySet.add key keyset in
+        let newset = KeyEdgeSet.fold f' (g#successors xi) KeySet.empty in
+        let g yi = aux_dfs (xi::path) yi in
+        KeySet.iter g newset
       end
-    ) in
-  aux_dfs [xi]
+    in
+    aux_dfs [] xi
 
+  let generate_ograph_generic g label fnode filename =
+    Common.with_open_outfile filename (fun (pr,_) ->
+      pr "digraph misc {\n" ;
+      pr "size = \"10,10\";\n" ;
+      (match label with
+        None -> ()
+      | Some x -> pr (Printf.sprintf "label = \"%s\";\n" x));
 
-let dfs_iter_with_path xi f g =
-  let already = Hashtbl.create 101 in
-  let rec aux_dfs path xi =
-    if Hashtbl.mem already xi then ()
-    else begin
-      Hashtbl.add already xi true;
-      f xi path;
-      let succ = g#successors xi in
-      let succ' = succ#tolist +> List.map fst in
-      succ' +> List.iter (fun yi ->
-          aux_dfs (xi::path) yi
+      let print_node k node =
+        let (str,border_color,inner_color) = fnode (k, node) in
+        let color =
+	  match inner_color with
+	    None ->
+	      (match border_color with
+	        None -> ""
+	      | Some x -> Printf.sprintf ", style=\"setlinewidth(3)\", color = %s" x)
+	  | Some x ->
+	      (match border_color with
+	        None -> Printf.sprintf ", style=\"setlinewidth(3),filled\", fillcolor = %s" x
+	      | Some x' -> Printf.sprintf ", style=\"setlinewidth(3),filled\", fillcolor = %s, color = %s" x x') in
+       (* so can see if nodes without arcs were created *)
+        pr (Printf.sprintf "%d [label=\"%s   [%d]\"%s];\n" k str k color) in
+      let nodes = g#nodes in
+      KeyMap.iter print_node nodes;
+
+      let print_edges k node =
+        let print_edge (j, _) = pr (Printf.sprintf "%d -> %d;\n" k j) in
+        KeyEdgeSet.iter print_edge (g#successors k) in
+
+      KeyMap.iter print_edges nodes;
+      pr "}\n" ;
       );
-      end
-  in
-  aux_dfs [] xi
+    ()
 
+  let generate_ograph_xxx g filename =
+    Common.with_open_outfile filename (fun (pr,_) ->
+      pr "digraph misc {\n" ;
+      pr "size = \"10,10\";\n" ;
 
+      let print_node k (node, s) =
+        (* so can see if nodes without arcs were created *)
+        pr (Printf.sprintf "%d [label=\"%s   [%d]\"];\n" k s k) in
+      let nodes = g#nodes in
+      KeyMap.iter print_node nodes;
 
-let generate_ograph_generic g label fnode filename =
-  Common.with_open_outfile filename (fun (pr,_) ->
-    pr "digraph misc {\n" ;
-    pr "size = \"10,10\";\n" ;
-    (match label with
-      None -> ()
-    | Some x -> pr (Printf.sprintf "label = \"%s\";\n" x));
-
-    let nodes = g#nodes in
-    nodes#iter (fun (k,node) ->
-      let (str,border_color,inner_color) = fnode (k, node) in
-      let color =
-	match inner_color with
-	  None ->
-	    (match border_color with
-	      None -> ""
-	    | Some x -> Printf.sprintf ", style=\"setlinewidth(3)\", color = %s" x)
-	| Some x ->
-	    (match border_color with
-	      None -> Printf.sprintf ", style=\"setlinewidth(3),filled\", fillcolor = %s" x
-	    | Some x' -> Printf.sprintf ", style=\"setlinewidth(3),filled\", fillcolor = %s, color = %s" x x') in
-     (* so can see if nodes without arcs were created *)
-      pr (Printf.sprintf "%d [label=\"%s   [%d]\"%s];\n" k str k color)
-    );
-
-    nodes#iter (fun (k,node) ->
-      let succ = g#successors k in
-      succ#iter (fun (j,edge) ->
-        pr (Printf.sprintf "%d -> %d;\n" k j);
+      let print_edges k _ =
+        let print_edge (j, _) = pr (Printf.sprintf "%d -> %d;\n" k j) in
+        KeyEdgeSet.iter print_edge (g#successors k) in
+      KeyMap.iter print_edges nodes;
+      pr "}\n" ;
       );
-    );
-    pr "}\n" ;
-    );
-  ()
+    ()
 
+  let launch_gv_cmd filename =
+    let _status =
+      Unix.system ("dot " ^ filename ^ " -Tps  -o " ^ filename ^ ".ps;") in
+    let _status = Unix.system ("gv " ^ filename ^ ".ps &")
+    in
+    (* zarb: I need this when I launch the program via eshell, otherwise gv
+       do not get the chance to be launched *)
+    Unix.sleep 1;
+    ()
 
-let generate_ograph_xxx g filename =
-  with_open_outfile filename (fun (pr,_) ->
-    pr "digraph misc {\n" ;
-    pr "size = \"10,10\";\n" ;
+  let print_ograph_extended g filename launchgv =
+    generate_ograph_xxx g filename;
+    if launchgv then launch_gv_cmd filename
 
-    let nodes = g#nodes in
-    nodes#iter (fun (k,(node, s)) ->
-     (* so can see if nodes without arcs were created *)
-      pr (Printf.sprintf "%d [label=\"%s   [%d]\"];\n" k s k)
-    );
+  let print_ograph_mutable g filename launchgv =
+     generate_ograph_xxx g filename;
+     if  launchgv then launch_gv_cmd filename
 
-    nodes#iter (fun (k,node) ->
-      let succ = g#successors k in
-      succ#iter (fun (j,edge) ->
-        pr (Printf.sprintf "%d -> %d;\n" k j);
-      );
-    );
-    pr "}\n" ;
-    );
-  ()
-
-
-let launch_gv_cmd filename =
-  let _status =
-    Unix.system ("dot " ^ filename ^ " -Tps  -o " ^ filename ^ ".ps;") in
-  let _status = Unix.system ("gv " ^ filename ^ ".ps &")
-  in
-  (* zarb: I need this when I launch the program via eshell, otherwise gv
-     do not get the chance to be launched *)
-  Unix.sleep 1;
-  ()
-
-let print_ograph_extended g filename launchgv =
-  generate_ograph_xxx g filename;
-  if launchgv then launch_gv_cmd filename
-
-let print_ograph_mutable g filename launchgv =
-  generate_ograph_xxx g filename;
-  if launchgv then launch_gv_cmd filename
-
-let print_ograph_mutable_generic g label fnode ~output_file ~launch_gv =
-  generate_ograph_generic g label fnode output_file;
-  if launch_gv then launch_gv_cmd output_file
+  let print_ograph_mutable_generic g label fnode ~output_file ~launch_gv =
+    generate_ograph_generic g label fnode output_file;
+    if launch_gv then launch_gv_cmd output_file
+end

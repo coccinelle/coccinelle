@@ -285,8 +285,32 @@ and after_type =
 
 type edge = Direct (* Normal | Shadow *)
 
-type cflow = (node, edge) Ograph_extended.ograph_mutable
+module Key : Set.OrderedType with type t = int = struct
+  type t = int
+  let compare = compare
+end
 
+module KeySet : Set.S with type elt = Key.t = Set.Make (Key)
+
+module KeyMap : Map.S with type key = Key.t = Map.Make (Key)
+
+module Edge : Set.OrderedType with type t = edge = struct
+  type t = edge
+  let compare = compare
+end
+
+module KeyEdgePair : Set.OrderedType with type t = Key.t * Edge.t = struct
+  type t = Key.t * Edge.t
+  let compare = compare
+end
+
+module KeyEdgeSet : Set.S with type elt = KeyEdgePair.t =
+  Set.Make (KeyEdgePair)
+
+module G = Ograph_extended.Make (Key) (KeySet) (KeyMap)
+  (Edge) (KeyEdgePair) (KeyEdgeSet)
+
+type cflow = node G.ograph_mutable
 
 (* ------------------------------------------------------------------------ *)
 let unwrap ((node, info), nodestr) = node
@@ -310,40 +334,38 @@ let mk_any_node is_fake node labels bclabels nodestr =
 let mk_node = mk_any_node false
 let mk_fake_node = mk_any_node true (* for duplicated braces *)
 
-(* ------------------------------------------------------------------------ *)
-let first_node g =
-  g#nodes#tolist +> List.find (fun (i, node) ->
-    match unwrap node with TopNode -> true | _ -> false
-    ) +> fst
+let is_first_node = function TopNode -> true | _ -> false
 
 let find_node f g =
-  g#nodes#tolist +> List.find (fun (nodei, node) ->
-    f (unwrap node))
-     +> fst
+  let f' (_,node) = f (unwrap node) in
+  let nodes = KeyMap.bindings g#nodes in
+  let node = List.find f' nodes in
+  fst node
 
+(* ------------------------------------------------------------------------ *)
+let first_node = find_node is_first_node
 
-(* remove an intermediate node and redirect the connexion  *)
+(* remove an intermediate node and redirect the connection *)
 let remove_one_node nodei g =
-  let preds = (g#predecessors nodei)#tolist in
-  let succs = (g#successors nodei)#tolist in
-  assert (preds <> []);
+  let preds = g#predecessors nodei in
+  let succs = g#successors nodei in
+  assert (not (KeyEdgeSet.is_empty preds));
 
-  preds +> List.iter (fun (predi, Direct) ->
+  KeyEdgeSet.iter (fun (predi, Direct) ->
     g#del_arc ((predi, nodei), Direct);
-  );
-  succs +> List.iter (fun (succi, Direct) ->
+  ) preds;
+  KeyEdgeSet.iter (fun (succi, Direct) ->
     g#del_arc ((nodei, succi), Direct);
-  );
+  ) succs;
 
   g#del_node nodei;
 
   (* connect in-nodes to out-nodes *)
-  preds +> List.iter (fun (pred, Direct) ->
-    succs +> List.iter (fun (succ, Direct) ->
+  KeyEdgeSet.iter (fun (pred, Direct) ->
+    KeyEdgeSet.iter (fun (succ, Direct) ->
       g#add_arc ((pred, succ), Direct);
-    );
-  )
-
+    ) succs;
+  ) preds
 
 
 (* ------------------------------------------------------------------------ *)

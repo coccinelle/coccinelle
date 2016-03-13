@@ -120,9 +120,37 @@ module type GRAPH =
 
 module OGRAPHEXT_GRAPH =
   struct
-    type node = int;;
-    type cfg = (string,unit) Ograph_extended.ograph_mutable;;
-    let predecessors cfg n = List.map fst ((cfg#predecessors n)#tolist);;
+    module Key : Set.OrderedType with type t = int = struct
+      type t = int
+      let compare = compare
+    end
+
+    module KeySet : Set.S with type elt = Key.t = Set.Make (Key)
+
+    module KeyMap : Map.S with type key = Key.t = Map.Make (Key)
+
+    module Edge : Set.OrderedType with type t = unit = struct
+      type t = unit
+      let compare = compare
+    end
+
+    module KeyEdgePair : Set.OrderedType with type t = Key.t * Edge.t = struct
+      type t = Key.t * Edge.t
+      let compare = compare
+    end
+
+    module KeyEdgeSet : Set.S with type elt = KeyEdgePair.t =
+      Set.Make (KeyEdgePair)
+
+    module G = Ograph_extended.Make (Key) (KeySet) (KeyMap)
+      (Edge) (KeyEdgePair) (KeyEdgeSet)
+
+    type cfg = string G.ograph_mutable;;
+    type node = Key.t
+
+    let predecessors cfg n =
+      List.map fst (KeyEdgeSet.elements (cfg#predecessors n));;
+
     let print_node i = Format.print_string (string_of_int i)
   end
 ;;

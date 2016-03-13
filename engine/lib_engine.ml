@@ -54,20 +54,20 @@ and metavars_binding2 = (mvar, metavar_binding_kind2) Common.assoc
 (* coccionly: *)
 type label_ctlcocci =
  predicate ->
- (nodei *
+ (Control_flow_c.G.key *
  (predicate * (mvar, metavar_binding_kind2) Ast_ctl.generic_substitution))
  list
 
 type quicklabel_ctlcocci = predicate -> bool
 
 type model = Control_flow_c.cflow * label_ctlcocci * quicklabel_ctlcocci *
-      nodei list
+      Control_flow_c.G.key list
 
 type transformation_info =
- (nodei * metavars_binding * Ast_cocci.rule_elem) list
+ (Control_flow_c.G.key * metavars_binding * Ast_cocci.rule_elem) list
 
 type numbered_transformation_info =
- (int list * (nodei * metavars_binding * Ast_cocci.rule_elem)) list
+ (int list * (Control_flow_c.G.key * metavars_binding * Ast_cocci.rule_elem)) list
 
 
 (*****************************************************************************)
