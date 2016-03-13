@@ -14,7 +14,6 @@ commons/commons.cma:
   oset.cmo
   oassoc.cmo
   osequence.cmo
-  ograph.cmo
   ocollection/osetb.cmo
   ocollection/oassocb.cmo
   oarray.cmo

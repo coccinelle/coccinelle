@@ -37,7 +37,7 @@ f << addvoid_context.f;
 j0 << addvoid_context.j0;
 @@
 
-msg = "WARNING: Zero-argument function \"%s\" should have void declaration. " % (f)
+msg = "WARNING: Zero-argument function \"%s\" should have void declaration " % (f)
 coccilib.org.print_safe_todo(j0[0], msg)
 
 // ----------------------------------------------------------------------------
@@ -47,6 +47,6 @@ f << addvoid_context.f;
 j0 << addvoid_context.j0;
 @@
 
-msg = "WARNING: Zero-argument function \"%s\" should have void declaration. " % (f)
+msg = "WARNING: Zero-argument function \"%s\" should have void declaration " % (f)
 coccilib.report.print_report(j0[0], msg)
 

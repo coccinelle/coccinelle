@@ -87,7 +87,7 @@ j0 << disj_context.j0;
 j1 << disj_context.j1;
 @@
 
-msg = "Org message. Found a match in disj rule.."
+msg = "Org message. Found a match in disj rule."
 coccilib.org.print_todo(j0[0], msg)
 coccilib.org.print_link(j1[0], "")
 

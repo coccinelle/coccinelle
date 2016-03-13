@@ -1966,7 +1966,7 @@ let rec filter_some = function
   | None :: l -> filter_some l
   | Some e :: l -> e :: filter_some l
 
-let map_filter f xs = xs +> List.map f +> filter_some
+let map_filter f xs = filter_some (List.map f xs)
 
 (* avoid recursion *)
 let tail_map_filter f xs =
@@ -2812,15 +2812,15 @@ let mk_date_dmy day month year =
 
 let dmy_to_unixtime (DMY (Day n, month, Year year)) =
   let tm = {
-    Unix.tm_sec = 0;      (** Seconds 0..60 *)
-    tm_min = 0;           (** Minutes 0..59 *)
-    tm_hour = 12;           (** Hours 0..23 *)
-    tm_mday = n;              (** Day of month 1..31 *)
-    tm_mon = (int_of_month month -1);               (** Month of year 0..11 *)
-    tm_year = year - 1900;              (** Year - 1900 *)
-    tm_wday = 0;              (** Day of week (Sunday is 0) *)
-    tm_yday = 0;              (** Day of year 0..365 *)
-    tm_isdst = false;            (** Daylight time savings in effect *)
+    Unix.tm_sec = 0;      (* Seconds 0..60 *)
+    tm_min = 0;           (* Minutes 0..59 *)
+    tm_hour = 12;           (* Hours 0..23 *)
+    tm_mday = n;              (* Day of month 1..31 *)
+    tm_mon = (int_of_month month -1);               (* Month of year 0..11 *)
+    tm_year = year - 1900;              (* Year - 1900 *)
+    tm_wday = 0;              (* Day of week (Sunday is 0) *)
+    tm_yday = 0;              (* Day of year 0..365 *)
+    tm_isdst = false;            (* Daylight time savings in effect *)
   } in
   Unix.mktime tm
 
@@ -5453,8 +5453,8 @@ let (error_messagebis: filename -> (string * int) -> int -> string)=
   let charpos = lexstart      + decalage in
   let tok = lexeme in
   let (line, pos, linecontent) =  info_from_charpos charpos filename in
-  Printf.sprintf "File \"%s\", line %d, column %d,  charpos = %d \
-    around = '%s', whole content = %s"
+  Printf.sprintf "File \"%s\", line %d, column %d, charpos = %d\
+    \n  around = '%s',\n  whole content = '%s'"
     filename line pos charpos tok (chop linecontent)
 
 let error_message = fun filename (lexeme, lexstart) ->

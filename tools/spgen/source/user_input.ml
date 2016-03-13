@@ -190,15 +190,15 @@ let add_rule ~rule_name rule t =
 
 (* GETTERS *)
 (* format the preface information and turn it into one big string *)
-let get_preface
+let get_preface ~year
   {
     description=d; limitations=l; keywords=k; confidence=c;
     comments=m; options=o; authors=a; url=u; _
   } =
 
   let author_format =
-    let year = string_of_int (Common.this_year()) in
-    Globals.pre_split ~prefix:("// Copyright: (C) "^year^" ") in
+    let year_string = string_of_int year in
+    Globals.pre_split ~prefix:("// Copyright: (C) "^year_string^" ") in
   let desc = Globals.pre_split ~prefix:"/// " d in
   let limits =
     String.concat "\n" (List.map (Globals.pre_split ~prefix:"//# ") l) in

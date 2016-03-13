@@ -55,7 +55,7 @@ LIBS=commons/commons.cma \
      ocaml/cocciocaml.cma engine/cocciengine.cma popl09/popl.cma \
      extra/extra.cma python/coccipython.cma
 
-MAKESUBDIRS=$(MAKELIBS) commons \
+MAKESUBDIRS=commons \
  globals ctl parsing_cocci parsing_c \
  ocaml engine popl09 extra python tools/spgen
 
@@ -105,7 +105,7 @@ BYTECODE_EXTRA=-custom $(EXTRA_OCAML_FLAGS)
 # Top rules
 ##############################################################################
 .PHONY:: all all.opt byte opt top clean distclean opt-compil
-.PHONY:: $(MAKESUBDIRS:%=%.all) $(MAKESUBDIRS:%=%.opt) subdirs.all subdirs.opt
+.PHONY:: $(MAKELIBS:%=%.all) $(MAKESUBDIRS:%=%.all) $(MAKELIBS:%=%.opt) $(MAKESUBDIRS:%=%.opt) subdirs.all subdirs.opt
 .PHONY:: byte-only opt-only pure-byte tools
 .PHONY:: copy-stubs install-stubs install install-man install-python install-common
 
@@ -173,15 +173,15 @@ opt opt-only: Makefile.config opt-compil
 byte-only: Makefile.config byte
 
 subdirs.all:
-	@+for D in $(MAKESUBDIRS); do $(MAKE) $$D.all || exit 1 ; done
+	@+for D in $(MAKELIBS) $(MAKESUBDIRS); do $(MAKE) $$D.all || exit 1 ; done
 
 subdirs.opt:
-	@+for D in $(MAKESUBDIRS); do $(MAKE) $$D.opt || exit 1 ; done
+	@+for D in $(MAKELIBS) $(MAKESUBDIRS); do $(MAKE) $$D.opt || exit 1 ; done
 
-$(MAKESUBDIRS:%=%.all):
+$(MAKELIBS:%=%.all) $(MAKESUBDIRS:%=%.all):
 	@$(MAKE) -C $(@:%.all=%) all
 
-$(MAKESUBDIRS:%=%.opt):
+$(MAKELIBS:%=%.opt) $(MAKESUBDIRS:%=%.opt):
 	@$(MAKE) -C $(@:%.opt=%) all.opt
 
 # This make target prepares the bundled software for building.
@@ -211,10 +211,10 @@ clean:: Makefile.config
 	@set -e; for i in $(CLEANSUBDIRS); do $(MAKE) -C $$i $@; done
 	@$(MAKE) -C demos/spp $@
 
-$(LIBS): $(MAKESUBDIRS:%=%.all)
-$(LIBS:.cma=.cmxa): $(MAKESUBDIRS:%=%.opt)
-$(LNKLIBS) : $(MAKESUBDIRS:%=%.all)
-$(LNKOPTLIBS) : $(MAKESUBDIRS:%=%.opt)
+$(LIBS): $(MAKELIBS:%=%.all) $(MAKESUBDIRS:%=%.all)
+$(LIBS:.cma=.cmxa): $(MAKELIBS:%=%.opt) $(MAKESUBDIRS:%=%.opt)
+$(LNKLIBS) : $(MAKELIBS:%=%.all) $(MAKESUBDIRS:%=%.all)
+$(LNKOPTLIBS) : $(MAKELIBS:%=%.opt) $(MAKESUBDIRS:%=%.opt)
 
 $(OBJS):$(LIBS)
 $(OPTOBJS):$(LIBS:.cma=.cmxa)
@@ -543,7 +543,7 @@ distclean::
 depend: Makefile.config version
 	@$(ECHO) "Constructing '.depend'"
 	@rm -f .depend
-	@set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i depend; done
+	@set -e; for i in $(MAKELIBS) $(MAKESUBDIRS); do $(MAKE) -C $$i depend; done
 	$(OCAMLDEP_CMD) $(MLI_FILES) $(ML_FILES) > .depend
 
 ##############################################################################

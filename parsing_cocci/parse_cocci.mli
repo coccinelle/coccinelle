@@ -6,6 +6,8 @@
 
 exception Bad_virt of string
 
+exception SMPLParseError of string
+
 val parse : string ->
     (string, string) Common.either Common.set (* iso files *) *
     Ast0_cocci.parsed_rule list (* rules *) *

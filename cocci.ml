@@ -26,17 +26,18 @@ module Ast_to_flow = Control_flow_c_build
 (* --------------------------------------------------------------------- *)
 (* C related *)
 (* --------------------------------------------------------------------- *)
-let cprogram_of_file saved_typedefs saved_macros parse_strings file =
-  let (program2, _stat) =
+let cprogram_of_file saved_typedefs saved_macros parse_strings cache file =
+  let (parse_info, _) =
     Parse_c.parse_c_and_cpp_keep_typedefs
       (if !Flag_cocci.use_saved_typedefs then (Some saved_typedefs) else None)
-      (Some saved_macros) parse_strings file in
-  program2
+      (Some saved_macros) parse_strings cache file in
+  parse_info.Parse_c.parse_trees
 
-let cprogram_of_file_cached parse_strings file =
-  let ((program2,typedefs,macros), _stat) =
-    Parse_c.parse_cache parse_strings file in
-  (program2,typedefs,macros)
+let cprogram_of_file_cached saved_typedefs parse_strings cache file =
+  let tdefs =
+    if !Flag_cocci.use_saved_typedefs then Some saved_typedefs
+    else None in
+  Parse_c.parse_cache tdefs parse_strings cache file
 
 let cfile_of_program program2_with_ppmethod outf =
   Unparse_c.pp_program program2_with_ppmethod outf
@@ -619,137 +620,6 @@ let sp_contain_typed_metavar rules =
 	 | _ -> false)
        rules))
 
-
-
-(* finding among the #include the one that we need to parse
- * because they may contain useful type definition or because
- * we may have to modify them
- *
- * For the moment we base in part our heuristic on the name of the file, e.g.
- * serio.c is related we think to #include <linux/serio.h>
- *)
-let include_table = ("include_table", ref 0, Hashtbl.create(101))
-let find_table = ("find_table", ref 0, Hashtbl.create(101))
-
-let cache_find (_,_,cache) k =
-  let (ct,res) = Hashtbl.find cache k in
-  ct := !ct + 1;
-  res
-
-let cache_add (nm,ct,cache) k v =
-  ct := !ct + 1;
-  (if !ct > Flag_cocci.cache_threshold
-  then
-    begin
-      Hashtbl.iter
-	(fun k (vct,v) ->
-	  if !vct < Flag_cocci.elem_threshold
-	  then
-	    begin
-	      Hashtbl.remove cache k;
-	      ct := !ct - 1
-	    end
-	  else vct := 0)
-	cache
-    end);
-  Hashtbl.add cache k (ref 1, v)
-
-let interpret_include_path relpath =
-  let maxdepth = List.length relpath in
-  let unique_file_exists dir f =
-    let cmd =
-      Printf.sprintf "find %s -maxdepth %d -mindepth %d -path \"*/%s\""
-	dir maxdepth maxdepth f in
-    try cache_find find_table cmd
-    with Not_found ->
-      let res =
-	match Common.cmd_to_list cmd with
-	  [x] -> Some x
-	| _ -> None in
-      cache_add find_table cmd res;
-      res in
-  let native_file_exists dir f =
-    let f = Filename.concat dir f in
-    if Sys.file_exists f
-    then Some f
-    else None in
-  let rec search_include_path exists searchlist relpath =
-    match searchlist with
-      []       -> None
-    | hd::tail ->
-	(match exists hd relpath with
-	  Some x -> Some x
-	| None -> search_include_path exists tail relpath) in
-  let rec search_path exists searchlist = function
-      [] ->
-	let res = String.concat "/" relpath in
-	cache_add include_table (searchlist,relpath) res;
-	Some res
-    | (hd::tail) as relpath1 ->
-	let relpath1 = String.concat "/" relpath1 in
-	(match search_include_path exists searchlist relpath1 with
-	  None -> search_path unique_file_exists searchlist tail
-	| Some f ->
-	    cache_add include_table (searchlist,relpath) f;
-	    Some f) in
-  let searchlist =
-    match !Flag_cocci.include_path with
-      [] -> ["include"]
-    | x -> List.rev x in
-  try Some(cache_find include_table (searchlist,relpath))
-  with Not_found -> search_path native_file_exists searchlist relpath
-
-let (includes_to_parse:
-       (Common.filename * Parse_c.extended_program2) list ->
-	 Flag_cocci.include_options -> 'a) = fun xs choose_includes ->
-  match choose_includes with
-    Flag_cocci.I_UNSPECIFIED -> failwith "not possible"
-  | Flag_cocci.I_NO_INCLUDES -> !Flag_cocci.extra_includes
-  | x ->
-      let all_includes =
-	List.mem x
-	  [Flag_cocci.I_ALL_INCLUDES; Flag_cocci.I_REALLY_ALL_INCLUDES] in
-      let xs = List.map (function (file,(cs,_,_)) -> (file,cs)) xs in
-      xs +> List.map (fun (file, cs) ->
-	let dir = Filename.dirname file in
-
-	cs +> Common.map_filter (fun (c,_info_item) ->
-	  match c with
-	  | Ast_c.CppTop
-	      (Ast_c.Include
-		 {Ast_c.i_include = ((x,ii)); i_rel_pos = info_h_pos;})  ->
-	    (match x with
-            | Ast_c.Local xs ->
-		let relpath = String.concat "/" xs in
-		let f = Filename.concat dir relpath in
-		if (Sys.file_exists f)
-		then Some f
-		else
-		  if !Flag_cocci.relax_include_path
-	      (* for our tests, all the files are flat in the current dir *)
-		  then
-		    let attempt2 = Filename.concat dir (Common.last xs) in
-		    if all_includes && not (Sys.file_exists attempt2)
-		    then interpret_include_path xs
-		    else Some attempt2
-		  else
-		    if all_includes then interpret_include_path xs
-		    else None
-
-            | Ast_c.NonLocal xs ->
-		if all_includes ||
-	        Common.fileprefix (Common.last xs) = Common.fileprefix file
-		then interpret_include_path xs
-		else None
-            | Ast_c.Weird _ -> None
-		  )
-	  | _ -> None))
-	+> List.concat
-	+> (fun x ->
-	  (List.rev
-	     (Common.uniq
-		(!Flag_cocci.extra_includes@(List.rev x)))))(*uniq keeps last*)
-
 let rec interpret_dependencies local global = function
     Ast_cocci.Dep s      -> List.mem s local
   | Ast_cocci.AntiDep s  ->
@@ -983,7 +853,12 @@ type constant_info =
        Get_constants2.combine option)
 
 type kind_file = Header | Source
-type file_info = {
+
+let string_of_kind_file = function
+  | Header -> "Header"
+  | Source -> "Source"
+
+type file_info   = {
   fname : string;
   full_fname : string;
   was_modified_once: bool ref;
@@ -991,6 +866,19 @@ type file_info = {
   fpath : string;
   fkind : kind_file;
 }
+
+let string_of_file_info fi =
+  let field name value = name ^ " = " ^ value in
+  let structure fields =
+    "{ " ^ (String.concat "; " fields  ) ^ " }" in
+  structure [
+    field "fname" fi.fname;
+    field "full_name" fi.full_fname;
+    field "was_modified_once" (string_of_bool !(fi.was_modified_once));
+    field "asts" (string_of_int (List.length fi.asts));
+    field "fpath" fi.fpath;
+    field "fkind" (string_of_kind_file fi.fkind)
+  ]
 
 let g_contain_typedmetavar = ref false
 
@@ -1132,7 +1020,7 @@ let flatten l =
 	     prev cur)
        [] l)
 
-let build_info_program (cprogram,typedefs,macros) env =
+let build_info_program env (cprogram,typedefs,macros) =
 
   let (cs, parseinfos) =
     Common.unzip cprogram in
@@ -1197,8 +1085,8 @@ let rebuild_info_program cs file isexp parse_strings =
 
       (* cat file; *)
       let cprogram =
-	cprogram_of_file c.all_typedefs c.all_macros parse_strings file in
-      let xs = build_info_program cprogram c.env_typing_before in
+	cprogram_of_file c.all_typedefs c.all_macros parse_strings false file in
+      let xs = build_info_program c.env_typing_before cprogram in
 
       (* TODO: assert env has not changed,
       * if yes then must also reparse what follows even if not modified.
@@ -1230,71 +1118,7 @@ let fixpath s =
     | [] -> [] in
   String.concat "/" (loop s)
 
-let header_cache_table = Hashtbl.create 101 (* global *)
-
-let header_cache choose_includes f key1 key2 =
-  if List.mem choose_includes
-      [Flag_cocci.I_ALL_INCLUDES;Flag_cocci.I_REALLY_ALL_INCLUDES]
-      && !Flag_cocci.include_headers_for_types
-  then
-    let k = (key1,key2) in
-    try Hashtbl.find header_cache_table k
-    with Not_found ->
-      let res = f key1 key2 in
-      Hashtbl.add header_cache_table k res;
-      res
-  else f key1 key2
-
-let rec prepare_h seen env (hpath : string) choose_includes parse_strings
-    : file_info list =
-  let h_cs =
-    if not (Common.lfile_exists hpath)
-    then
-      begin
-	pr2_once ("TYPE: header " ^ hpath ^ " not found");
-        None
-      end
-    else
-      try
-	Some
-	  (header_cache choose_includes cprogram_of_file_cached parse_strings
-	     hpath)
-      with Flag.UnreadableFile file ->
-	begin
-	  pr2_once ("TYPE: header " ^ hpath ^ " not readable");
-	  None
-	end in
-  match h_cs with
-    None -> []
-  | Some h_cs ->
-      let local_includes =
-	if choose_includes = Flag_cocci.I_REALLY_ALL_INCLUDES
-	then
-	  List.filter
-	    (function x -> not (List.mem x !seen))
-	    (List.map fixpath
-	       (includes_to_parse [(hpath,h_cs)] choose_includes))
-	else [] in
-      seen := local_includes @ !seen;
-      let others =
-	List.concat
-	  (List.map
-	     (function x -> prepare_h seen env x choose_includes parse_strings)
-	     local_includes) in
-      let info_h_cs = build_info_program h_cs !env in
-      env :=
-	if info_h_cs = []
-	then !env
-	else last_env_toplevel_c_info info_h_cs;
-      others@
-      [{
-	fname = Filename.basename hpath;
-	full_fname = hpath;
-	asts = info_h_cs;
-	was_modified_once = ref false;
-	fpath = hpath;
-	fkind = Header;
-      }]
+let current_typedefs = ref (Common.empty_scoped_h_env () )
 
 (* The following function is a generic library function. *)
 (* It may be moved to a better place. *)
@@ -1305,44 +1129,81 @@ let opt_map f lst =
     | None -> acc in
   List.rev (List.fold_left aux [] lst)
 
-let prepare_c files choose_includes parse_strings : file_info list =
-  let cprog_of_file file =
-    try Some (file,cprogram_of_file_cached parse_strings file) with
-    Flag.UnreadableFile file ->
-      pr2_once ("C file " ^ file ^ " not readable");
-      None in
-  let files_and_cprograms = opt_map cprog_of_file files in
-  let includes = includes_to_parse files_and_cprograms choose_includes in
-  let seen = ref includes in
+let rec memf f x = function
+  | [] -> false
+  | y::ys -> f x y || memf f x ys
 
-  (* todo?: may not be good to first have all the headers and then all the c *)
+let consf f x l = if memf f x l then l else x::l
+
+let rec appendf f l1 l2 = match l1 with
+  | [] -> l2
+  | x::xs -> consf f x (appendf f xs l2)
+
+let same_file parse_info_1 parse_info_2 =
+  parse_info_1.Parse_c.filename = parse_info_2.Parse_c.filename
+
+let parse_info_of_files choose_includes parse_strings cache kind files =
+  let parse_info_of_file file =
+    let result =
+      try
+        Some
+          (cprogram_of_file_cached !current_typedefs parse_strings
+            cache file)
+      with Flag.UnreadableFile file ->
+        pr2_once ((string_of_kind_file kind) ^ " file " ^ file ^ " not readable");
+        None in
+    match result with
+      | None -> None
+      | Some (source_parse_info, _) ->
+        let (_, tdefs, _) = source_parse_info.Parse_c.parse_trees in
+        current_typedefs := tdefs;
+        result in
+  opt_map parse_info_of_file files
+
+let prepare_c files choose_includes parse_strings : file_info list =
+  Includes.set_parsing_style Includes.Parse_no_includes;
+  let extra_includes_parse_infos =
+    List.map fst
+      (parse_info_of_files choose_includes parse_strings true Header
+        !Includes.extra_includes) in
+  Includes.set_parsing_style choose_includes;
+  let source_parse_infos =
+    parse_info_of_files choose_includes parse_strings false Source files in
+  let f (sourceacc, headeracc) (source, headers) =
+    (source::sourceacc, appendf same_file headers headeracc) in
+  let (sources, headers) = List.fold_left f
+    ([], extra_includes_parse_infos) source_parse_infos in
   let env = ref !TAC.initial_env in
+  let file_info_of_parse_info kind parse_info =
+    (* todo?: don't update env ? *)
+    let annotated_parse_trees =
+      build_info_program !env parse_info.Parse_c.parse_trees in
+    (match kind with
+      | Source ->
+        let f x = x.ast_c in
+        ignore(update_include_rel_pos (List.map f annotated_parse_trees))
+      | Header ->
+        env :=
+        if annotated_parse_trees = []
+        then !env
+        else last_env_toplevel_c_info annotated_parse_trees;
+    );
+    {
+      fname = Filename.basename parse_info.Parse_c.filename;
+      full_fname = parse_info.Parse_c.filename;
+      asts = annotated_parse_trees;
+      was_modified_once = ref false;
+      fpath = parse_info.Parse_c.filename;
+      fkind = kind
+    } in
 
   Flag_parsing_c.parsing_header_for_types :=
-    !Flag_cocci.include_headers_for_types;
-  let parse_header header_path =
-    prepare_h seen env header_path choose_includes parse_strings in
-  let includes = List.concat (List.map parse_header includes) in
-  Flag_parsing_c.parsing_header_for_types := false;
-
-  let fileinfo_of_c (file, cprogram) =
-    (* todo?: don't update env ? *)
-    let cs = build_info_program cprogram !env in
-    (* we do that only for the c, not for the h *)
-    ignore(update_include_rel_pos (cs +> List.map (fun x -> x.ast_c)));
-    {
-      fname = Filename.basename file;
-      full_fname = file;
-      asts = cs;
-      was_modified_once = ref false;
-      fpath = file;
-      fkind = Source
-    } in
-  let cfiles = List.map fileinfo_of_c files_and_cprograms in
-
-  if !Flag_cocci.include_headers_for_types
-  then cfiles
-  else includes @ cfiles
+    !Includes.include_headers_for_types;
+  let header_file_info = List.map (file_info_of_parse_info Header) headers in
+  let source_file_info = List.map (file_info_of_parse_info Source) sources in
+  if !Includes.include_headers_for_types
+  then source_file_info
+  else header_file_info @ source_file_info
 
 (*****************************************************************************)
 (* Manage environments as they are being built up *)
@@ -2093,6 +1954,7 @@ let initial_final_bigloop a b c =
 let pre_engine2 (coccifile, isofile) =
   show_or_not_cocci coccifile isofile;
   Pycocci.set_coccifile coccifile;
+  current_typedefs := ( Common.empty_scoped_h_env () );
 
   let isofile =
     if not (Common.lfile_exists isofile)
@@ -2225,12 +2087,14 @@ let full_engine2 (cocci_infos,parse_strings) cfiles =
 	end;
 
       let choose_includes =
-	match !Flag_cocci.include_options with
-	  Flag_cocci.I_UNSPECIFIED ->
-	    if !g_contain_typedmetavar
-	    then Flag_cocci.I_NORMAL_INCLUDES
-	    else Flag_cocci.I_NO_INCLUDES
-	| x -> x in
+        if Includes.is_parsing_style_set ()
+        then Includes.get_parsing_style()
+        else begin
+          if !g_contain_typedmetavar
+	  then Includes.Parse_local_includes
+          else Includes.Parse_no_includes
+	end in
+
       Flag.currentfiles := cfiles;
       let c_infos  = prepare_c cfiles choose_includes parse_strings in
 
