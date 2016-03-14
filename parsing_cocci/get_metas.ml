@@ -51,7 +51,7 @@ let get_option f = function
 
 let dots fn d = rewrap d (map_split_bind fn (Ast0.unwrap d))
 
-let rec ident r k i =
+let ident r k i =
   let (metas,i) = k i in
   List.fold_left
     (function (other_metas,id) ->

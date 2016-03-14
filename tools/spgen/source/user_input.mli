@@ -76,7 +76,7 @@ val add_rule : rule_name:string -> Rule.t -> t -> t
 val check_name : string -> t -> unit
 
 (* get string formatted version of preface *)
-val get_preface : t -> string
+val get_preface : year:int -> t -> string
 
 (* returns rule with associated metadata, default generated if not found *)
 val get_rule : rule_name:string -> t -> Rule.t

@@ -55,15 +55,14 @@ LIBS=commons/commons.cma \
      ocaml/cocciocaml.cma engine/cocciengine.cma popl09/popl.cma \
      extra/extra.cma python/coccipython.cma
 
-MAKESUBDIRS=$(MAKELIBS) commons \
+MAKESUBDIRS=commons \
  globals ctl parsing_cocci parsing_c \
- ocaml engine popl09 extra python
- #tools/spgen/source
+ ocaml engine popl09 extra python tools/spgen
 
 CLEANSUBDIRS=commons \
  globals ctl parsing_cocci parsing_c \
  ocaml engine popl09 extra python docs \
- $(MAKELIBS)
+ $(MAKELIBS) tools/spgen
 
 INCLUDEDIRSDEP=commons commons/ocamlextra \
  globals ctl \
@@ -106,7 +105,7 @@ BYTECODE_EXTRA=-custom $(EXTRA_OCAML_FLAGS)
 # Top rules
 ##############################################################################
 .PHONY:: all all.opt byte opt top clean distclean opt-compil
-.PHONY:: $(MAKESUBDIRS:%=%.all) $(MAKESUBDIRS:%=%.opt) subdirs.all subdirs.opt
+.PHONY:: $(MAKELIBS:%=%.all) $(MAKESUBDIRS:%=%.all) $(MAKELIBS:%=%.opt) $(MAKESUBDIRS:%=%.opt) subdirs.all subdirs.opt
 .PHONY:: byte-only opt-only pure-byte tools
 .PHONY:: copy-stubs install-stubs install install-man install-python install-common
 
@@ -174,15 +173,15 @@ opt opt-only: Makefile.config opt-compil
 byte-only: Makefile.config byte
 
 subdirs.all:
-	@+for D in $(MAKESUBDIRS); do $(MAKE) $$D.all || exit 1 ; done
+	@+for D in $(MAKELIBS) $(MAKESUBDIRS); do $(MAKE) $$D.all || exit 1 ; done
 
 subdirs.opt:
-	@+for D in $(MAKESUBDIRS); do $(MAKE) $$D.opt || exit 1 ; done
+	@+for D in $(MAKELIBS) $(MAKESUBDIRS); do $(MAKE) $$D.opt || exit 1 ; done
 
-$(MAKESUBDIRS:%=%.all):
+$(MAKELIBS:%=%.all) $(MAKESUBDIRS:%=%.all):
 	@$(MAKE) -C $(@:%.all=%) all
 
-$(MAKESUBDIRS:%=%.opt):
+$(MAKELIBS:%=%.opt) $(MAKESUBDIRS:%=%.opt):
 	@$(MAKE) -C $(@:%.opt=%) all.opt
 
 # This make target prepares the bundled software for building.
@@ -212,10 +211,10 @@ clean:: Makefile.config
 	@set -e; for i in $(CLEANSUBDIRS); do $(MAKE) -C $$i $@; done
 	@$(MAKE) -C demos/spp $@
 
-$(LIBS): $(MAKESUBDIRS:%=%.all)
-$(LIBS:.cma=.cmxa): $(MAKESUBDIRS:%=%.opt)
-$(LNKLIBS) : $(MAKESUBDIRS:%=%.all)
-$(LNKOPTLIBS) : $(MAKESUBDIRS:%=%.opt)
+$(LIBS): $(MAKELIBS:%=%.all) $(MAKESUBDIRS:%=%.all)
+$(LIBS:.cma=.cmxa): $(MAKELIBS:%=%.opt) $(MAKESUBDIRS:%=%.opt)
+$(LNKLIBS) : $(MAKELIBS:%=%.all) $(MAKESUBDIRS:%=%.all)
+$(LNKOPTLIBS) : $(MAKELIBS:%=%.opt) $(MAKESUBDIRS:%=%.opt)
 
 $(OBJS):$(LIBS)
 $(OPTOBJS):$(LIBS:.cma=.cmxa)
@@ -286,7 +285,7 @@ version.ml:
 
 docs:
 	@$(MAKE) -C docs || ($(ECHO) "Warning: ignored the failed construction of the manual" 1>&2)
-#	@$(MAKE) docs -C tools/spgen/documentation
+	@$(MAKE) docs -C tools/spgen/documentation
 	@if test "x$(FEATURE_OCAML)" = x1; then \
 		if test -f ./parsing_c/ast_c.cmo -o -f ./parsing_c/ast_c.cmx; then \
 			$(MAKE) -C ocaml doc; \
@@ -297,7 +296,7 @@ docs:
 clean:: Makefile.config
 #	$(MAKE) -C docs clean
 	$(MAKE) -C ocaml cleandoc
-#	$(MAKE) clean -C tools/spgen/documentation
+	$(MAKE) clean -C tools/spgen/documentation
 
 ##############################################################################
 # Pre-Install (customization of spatch frontend script)
@@ -346,7 +345,7 @@ install-man:
 	$(MKDIR_P) $(DESTDIR)$(MANDIR)/man3
 	$(INSTALL_DATA) docs/spatch.1 $(DESTDIR)$(MANDIR)/man1/
 	$(INSTALL_DATA) docs/pycocci.1 $(DESTDIR)$(MANDIR)/man1/
-#	$(INSTALL_DATA) docs/spgen.1 $(DESTDIR)$(MANDIR)/man1/
+	$(INSTALL_DATA) docs/spgen.1 $(DESTDIR)$(MANDIR)/man1/
 	$(INSTALL_DATA) docs/Coccilib.3cocci $(DESTDIR)$(MANDIR)/man3/
 
 install-bash:
@@ -386,7 +385,7 @@ install: install-common install-man install-stubs $(PYTHON_INSTALL_TARGET)
 	rm -f $(DESTDIR)$(LIBDIR)/spatch
 	rm -f $(DESTDIR)$(LIBDIR)/spatch.opt
 	rm -f $(DESTDIR)$(BINDIR)/pycocci
-#	@$(MAKE) install -s -C tools/spgen/source
+	@$(MAKE) install -C tools/spgen
 	$(INSTALL_PROGRAM) tools/pycocci $(DESTDIR)$(BINDIR)
 	@if test -x spatch -o -x spatch.opt; then \
 		$(MAKE) install-def;fi
@@ -431,14 +430,14 @@ uninstall:
 	rm -f $(DESTDIR)$(LIBDIR)/ocaml/*.cmi
 	rm -f $(DESTDIR)$(LIBDIR)/python/coccilib/coccigui/*
 	rm -f $(DESTDIR)$(LIBDIR)/python/coccilib/*.py
-#	@$(MAKE) uninstall -C tools/spgen/source
+	@$(MAKE) uninstall -C tools/spgen/source
 	rmdir --ignore-fail-on-non-empty -p \
 		$(DESTDIR)$(LIBDIR)/python/coccilib/coccigui
 	rmdir --ignore-fail-on-non-empty $(DESTDIR)$(LIBDIR)/ocaml
 	rmdir $(DESTDIR)$(LIBDIR)
 	rm -f $(DESTDIR)$(MANDIR)/man1/spatch.1
 	rm -f $(DESTDIR)$(MANDIR)/man3/Coccilib.3cocci
-#	rm -f $(DESTDIR)$(MANDIR)/man1/spgen.1
+	rm -f $(DESTDIR)$(MANDIR)/man1/spgen.1
 
 uninstall-bash:
 	rm -f $(DESTDIR)$(BASH_COMPLETION_DIR)/spatch
@@ -544,7 +543,7 @@ distclean::
 depend: Makefile.config version
 	@$(ECHO) "Constructing '.depend'"
 	@rm -f .depend
-	@set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i depend; done
+	@set -e; for i in $(MAKELIBS) $(MAKESUBDIRS); do $(MAKE) -C $$i depend; done
 	$(OCAMLDEP_CMD) $(MLI_FILES) $(ML_FILES) > .depend
 
 ##############################################################################

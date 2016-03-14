@@ -27,7 +27,9 @@ identifier e;
 +eth_broadcast_addr(e);
 
 
-@linux_header depends on !header && (eth_zero_addr || eth_broadcast_addr) && patch && !context && !org && !report@
+@linux_header
+ depends on !header && (eth_zero_addr || eth_broadcast_addr) && patch && !context && !org && !report
+@
 @@
 
 #include <linux/...>
@@ -35,7 +37,9 @@ identifier e;
 +
 
 
-@special_header depends on !header && !linux_header && (eth_zero_addr || eth_broadcast_addr) && patch && !context && !org && !report@
+@special_header
+ depends on !header && !linux_header && (eth_zero_addr || eth_broadcast_addr) && patch && !context && !org && !report
+@
 @@
 
 
@@ -44,7 +48,9 @@ identifier e;
 + #include <linux/etherdevice.h>
 +
 
-@custom_header depends on !header && !linux_header && !special_header && (eth_zero_addr || eth_broadcast_addr) && patch && !context && !org && !report@
+@custom_header
+ depends on !header && !linux_header && !special_header && (eth_zero_addr || eth_broadcast_addr) && patch && !context && !org && !report
+@
 @@
 
 #include "..."
@@ -67,19 +73,25 @@ position j0, j1;
 
 * memset@j0(e,\(0xff@j1\|0xFF@j1\|255@j1\),ETH_ALEN);
 
-@linux_header_context depends on !header && (eth_zero_addr || eth_broadcast_addr) && !patch && (context || org || report)@
+@linux_header_context
+ depends on !header && (eth_zero_addr || eth_broadcast_addr) && !patch && (context || org || report)
+@
 position j0;
 @@
 
 * #include <linux/...>@j0
 
-@special_header_context depends on !header && !linux_header && (eth_zero_addr || eth_broadcast_addr) && !patch && (context || org || report)@
+@special_header_context
+ depends on !header && !linux_header && (eth_zero_addr || eth_broadcast_addr) && !patch && (context || org || report)
+@
 position j0;
 @@
 
 * #include <.../...>@j0
 
-@custom_header_context depends on !header && !linux_header && !special_header && (eth_zero_addr || eth_broadcast_addr) && !patch && (context || org || report)@
+@custom_header_context
+ depends on !header && !linux_header && !special_header && (eth_zero_addr || eth_broadcast_addr) && !patch && (context || org || report)
+@
 position j0;
 @@
 

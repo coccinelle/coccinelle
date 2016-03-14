@@ -181,7 +181,7 @@ and changed_proto = function
 (* --------------------------------------------------------------------- *)
 (* make rules *)
 
-let rec collect_ident_strings id =
+let collect_ident_strings id =
   let bind x y = x @ y in
   let option_default = [] in
   let donothing r k e = k e in

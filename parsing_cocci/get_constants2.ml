@@ -238,7 +238,7 @@ let intersect l1 l2 = List.filter (function l1e -> List.mem l1e l2) l1
 
 let minus_set l1 l2 = List.filter (function l1e -> not (List.mem l1e l2)) l1
 
-let rec insert x l = merge [x] l
+let insert x l = merge [x] l
 
 let rec build_and x y =
   if x = y
@@ -696,10 +696,13 @@ let run rules neg_pos_vars =
 	      let extra_deps =
 		List.fold_left
 		  (function prev ->
-		    function (_,(rule,_),_,_) ->
-		      if rule = "virtual"
-		      then prev
-		      else Ast.AndDep (Ast.Dep rule,prev))
+		    function
+			(_,("virtual",_),_,_) -> prev
+		      | (_,(rule,_),_,Ast.NoMVInit) ->
+			  Ast.AndDep (Ast.Dep rule,prev)
+		      | (_,(rule,_),_,_) ->
+			  (* default initializer, so no dependency *)
+			  prev)
 		  deps mv in
 	      let dependencies = dependencies env extra_deps in
 	      debug_deps nm extra_deps dependencies;
@@ -716,13 +719,12 @@ let run rules neg_pos_vars =
 	      (rest_info, env, locals)
           | (Ast.CocciRule (nm,(dep,_,_),cur,_,_),neg_pos_vars) ->
 	      let dependencies = dependencies env dep in
-	      let cur_info =
-		rule_fn nm cur ((nm,True)::env)
-		  neg_pos_vars in
 	      debug_deps nm dep dependencies;
 	      (match dependencies with
 		False -> (rest_info,env,locals)
 	      | dependencies ->
+		  let cur_info =
+		    rule_fn nm cur ((nm,True)::env) neg_pos_vars in
 		  let re_cur_info = build_and dependencies cur_info in
 		  if List.for_all all_context.V.combiner_top_level cur
 		  then (rest_info,(nm,re_cur_info)::env,nm::locals)

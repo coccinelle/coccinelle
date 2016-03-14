@@ -1,4 +1,5 @@
 spgen
+spgen.opt
 scripts/spgen.sh
 
 *.cm[aiox]

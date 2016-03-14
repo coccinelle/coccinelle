@@ -88,3 +88,5 @@ val pre_split : ?prefix:string -> string -> string
 
 (* same as above, except for string options. If None, return "". *)
 val pre_split_opt : ?prefix:string -> string option -> string
+
+val concat_limit_width : string list -> string

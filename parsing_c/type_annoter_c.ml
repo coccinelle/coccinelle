@@ -1360,7 +1360,7 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
 (* catch all the decl to grow the environment *)
 
 
-let rec (annotate_program2 :
+let (annotate_program2 :
   environment -> toplevel list -> (toplevel * environment Common.pair) list) =
  fun env prog ->
 

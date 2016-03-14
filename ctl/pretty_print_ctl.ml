@@ -32,7 +32,7 @@ type ('a,'b,'c) environment = (string, ('a,'b,'c) binding_val) Common.assoc
 and ('a, 'b, 'c) binding_val =
     Val of ('a,'b,'c) generic_ctl * ('a,'b,'c) environment
 
-let rec (pp_ctl:
+let (pp_ctl:
    ('pred -> unit) * ('mvar -> unit) -> bool ->
    ('pred, 'mvar, 'info) generic_ctl ->
    unit) =

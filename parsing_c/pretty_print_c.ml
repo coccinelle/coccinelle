@@ -212,7 +212,7 @@ let mk_pretty_printers
   and pp_arg_list es = pp_list pp_argument es
 
   and pp_argument argument =
-    let rec pp_action (ActMisc ii) = ii +> List.iter pr_elem in
+    let pp_action (ActMisc ii) = ii +> List.iter pr_elem in
     match argument with
     | Left e -> pp_expression e
     | Right weird ->
@@ -1250,7 +1250,7 @@ and pp_init (init, iinit) =
 	pp_arg_list args;
         pr_elem irp
     | PragmaIdList(ids) ->
-	let rec loop = function
+	let loop = function
 	    [] -> ()
 	  | [id,_] -> pp_name id
 	  | (id,_)::rest -> pp_name id; pr_space() in

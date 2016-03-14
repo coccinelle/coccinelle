@@ -27,6 +27,11 @@ let printfn out x =
   List.iter (fun x -> output_string out x; print_newl out) x;
   print_newl out
 
+(* remove period at the end of the message if there is one (prevent doubles) *)
+let remove_period msg =
+  let len_but_one = String.length msg - 1 in
+  let last = msg.[len_but_one] in
+  if last = '.' then String.sub msg 0 len_but_one else msg
 
 (* ------------------------------------------------------------------------- *)
 (* CONSTANTS *)
@@ -82,7 +87,8 @@ let gen_org_rule nm (firstpos, restpos) metavars err_msg =
   let zero p = (MV.get_name p) ^ "[0]" in
   [
    (*header*)
-   "@script:python " ^ new_rulenm ^ " depends on org@";
+   Globals.concat_limit_width
+    ["@script:python "; new_rulenm; " depends on org@"];
    String.concat "\n" headervars;
    "@@\n";
    (*body*)
@@ -100,7 +106,8 @@ let gen_report_rule nm (firstpos, restpos) metavars err_msg =
   let err_msg = format_err_msg err_msg restpos metavars in
   [
    (*header*)
-   "@script:python " ^ new_rulenm ^ " depends on report@";
+   Globals.concat_limit_width
+    ["@script:python "; new_rulenm; " depends on report@"];
    String.concat "\n" headervars;
    "@@\n";
    (*body*)
@@ -119,11 +126,12 @@ let generate ~meta_pos ~user_rule =
 
   (* extract user-specified data from rule *)
   let nm = UI.Rule.get_name user_rule in
-  let (org_msg, omv) = UI.Rule.get_org user_rule in
-  let (report_msg, rmv) = UI.Rule.get_report user_rule in
+  let org_msg, omv = UI.Rule.get_org user_rule in
+  let report_msg, rmv = UI.Rule.get_report user_rule in
+  let org_msg, report_msg = remove_period org_msg, remove_period report_msg in
 
   (* find the first position, fails if the meta_pos list is empty *)
-  let (firstpos, restpos) = split_pos meta_pos in
+  let firstpos, restpos = split_pos meta_pos in
   let new_rule = MV.get_rule firstpos in
 
   (* make sure user-specified metavars are inherited from the context rule *)
@@ -133,7 +141,7 @@ let generate ~meta_pos ~user_rule =
   (* generate org and report script rules *)
   let org = gen_org_rule nm (firstpos, restpos) omv org_msg in
   let report = gen_report_rule nm (firstpos, restpos) rmv report_msg in
-  (org, report)
+  org, report
 
 let print_org out (org, _) = printfn out org
 

@@ -144,7 +144,7 @@ let strip x =
 
 let disj l1 l2 = l1 l2
 
-let rec conj xs ys =
+let conj xs ys =
   match (xs,ys) with
     ([],_) -> ys
   | (_,[]) -> xs
@@ -168,7 +168,7 @@ let conj_wrapped x l = conj [List.map (function x -> (1,strip x)) x] l
 (* --------------------------------------------------------------------- *)
 (* the main translation loop *)
 
-let rec rule_elem re =
+let rule_elem re =
   match Ast.unwrap re with
     Ast.DisjRuleElem(res) ->
       (* why was the following done?  ors have to be kept together for

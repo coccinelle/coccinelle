@@ -3,7 +3,6 @@ open Common
 open Ocollection
 open Oset
 open Oassoc
-(* open Ograph *)
 
 open Oassocb
 open Osetb
@@ -43,7 +42,6 @@ class ['a,'b] ograph_extended =
   let build_set ()   = new osetb Setb.empty in
 
   object(o)
-    (* inherit ['a] ograph *)
 
     val free_index = 0
 

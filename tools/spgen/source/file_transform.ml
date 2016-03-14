@@ -100,7 +100,7 @@ let rec find_match ~do_this ~until inch =
     find_match ~do_this ~until inch
   end
 
-let rec find_line ~do_this ~until_line inch =
+let find_line ~do_this ~until_line inch =
   find_match ~do_this ~until:(fun _ -> until_line = !line_number) inch
 
 (* upon a call to regex string matching, print what follows after the match *)
@@ -158,7 +158,7 @@ let print_patch_decl outch rule_name = function
   | Ast0.FinalScriptRule (nm,_,_,_,_)
   | Ast0.ScriptRule (nm,_,_,_,_,_) ->
       failwith ("Error: The rule " ^ nm ^ " is a script rule ...!")
-  | Ast0.CocciRule ((_,_,(isos,drop_isos,deps,_,exists)),_,_) ->
+  | Ast0.CocciRule ((_,_,(isos,drop_isos,deps,_,exists)),_,_,_) ->
       let deps = Globals.add_patch_dependency deps in
       let patch_header = Rule_header.generate
         ~isos ~drop_isos ~deps ~rule_name ~exists ~meta_vars:[] ~meta_pos:[] in

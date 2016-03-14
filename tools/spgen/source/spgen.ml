@@ -28,6 +28,7 @@ type options =
   interactive : bool;
   default : bool;
   hide : bool;
+  year : int;
 }
 
 (* if no options are set, it defaults to interactive mode *)
@@ -37,14 +38,15 @@ let make_options
   ?(interactive = false)
   ?(default = false)
   ?(hide = false)
+  ?(year = Common.this_year())
   file =
-    { file; config; output; interactive; default; hide }
+    { file; config; output; interactive; default; hide; year }
 
 
 (* ------------------------------------------------------------------------- *)
 (* ENTRY POINT *)
 
-let run { file; config; output; interactive; default; hide; } =
+let run { file; config; output; interactive; default; hide; year; } =
 
   (* ------------- CHECK ------------- *)
 
@@ -110,7 +112,7 @@ let run { file; config; output; interactive; default; hide; } =
     else
       Spgen_config.parse_local ~rule_names ~config_name:config in
 
-  let preface = User_input.get_preface user_input in
+  let preface = User_input.get_preface ~year user_input in
 
 
   (* ------------- GENERATE ------------- *)

@@ -2,10 +2,25 @@
 # See copyright.txt in the Coccinelle source code for more information.
 # The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
 
-# a fairly minimal-effort rule for compiling the documentation.
-# requires latexmk and a few packages (standard stuff).
-docs:
-	latexmk -pdf -pdflatex="pdflatex" -use-make documentation.tex
+# A fairly minimal-effort rule for compiling the documentation.
+# Requires a few standard LaTeX packages.
+
+ifneq ($(MAKECMDGOALS),distclean)
+include ../../../Makefile.config
+endif
+
+
+sources := $(wildcard *.tex)
+
+manual := documentation.pdf
+
+PDFLATEX_CMD=$(PDFLATEX) -halt-on-error
+
+docs: $(manual)
+
+$(manual): $(sources)
+	$(PDFLATEX_CMD) documentation.tex
+	$(PDFLATEX_CMD) documentation.tex
 
 clean:
-	rm -f *.aux *.fdb_latexmk *.log *.out *.toc *.pdf *~
+	rm -f *.aux *.log *.out *.toc *.pdf *.dvi *.ps *~

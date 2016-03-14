@@ -2086,7 +2086,7 @@ and statement stmt top after quantified minus_quantified
 		(function elem -> List.exists (List.mem elem) xs)
 		x in
 	    Common.union_set front (intersect_all2 xs) in
-      let rec union_all l = List.fold_left union [] l in
+      let union_all l = List.fold_left union [] l in
       (* start normal variables *)
       let header_fvs = Ast.get_fvs header in
       let lb_fvs = Ast.get_fvs lb in

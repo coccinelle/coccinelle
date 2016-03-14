@@ -29,7 +29,7 @@ let generate ~context_mode ~disj_map ~new_name ~rule =
         ("Internal error: Can't generate a context rule for a script rule! " ^
          "The rule is: " ^ nm)
 
-  | Ast0.CocciRule ((minus_rule,_,(isos,drop_isos,deps,old_nm,exists)),_,_) ->
+  | Ast0.CocciRule((minus_rule,_,(isos,drop_isos,deps,old_nm,exists)),_,_,_) ->
 
       let context_nm = Globals.get_context_name ~context_mode new_name in
       let disj_nm = Globals.get_disj_name new_name in

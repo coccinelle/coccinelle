@@ -469,6 +469,9 @@ metadec:
   ar=arity ispure=pure
   kindfn=metakind ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
     { P.create_metadec ar ispure kindfn ids }
+| ar=arity ispure=pure
+  kind_ids=metakindnosym TMPtVirg
+    { let (ids,kindfn) = kind_ids in P.create_metadec ar ispure kindfn ids }
 | kindfn=metakind_fresh ids=comma_list(pure_ident_or_meta_ident_with_seed)
     TMPtVirg
     { P.create_fresh_metadec kindfn ids }
@@ -554,7 +557,7 @@ metadec:
 	  let tok = check_meta(Ast.MetaStmListDecl(arity,name,lenname)) in
 	  !Data.add_stmlist_meta name lenname pure; tok)
 	len ids }
-| TSymbol ids=comma_list(pure_ident) TMPtVirg
+| TSymbol ids=comma_list(pure_ident_or_symbol) TMPtVirg
     { (fun _ ->
         let add_sym = fun (nm,_) -> !Data.add_symbol_meta nm in
           List.iter add_sym ids; [])
@@ -725,23 +728,25 @@ list_len:
       let len = Ast.AnyLen in
       let tok = check_meta(Ast.MetaStmListDecl(arity,name,len)) in
       !Data.add_stmlist_meta name len pure; tok) }
-| TTypedef
-    { (fun arity (_,name) pure check_meta ->
+
+%inline metakindnosym:
+  TTypedef ids=comma_list(pure_ident_or_meta_ident_nosym2(TTypeId))
+    { (ids,fun arity (_,name) pure check_meta ->
       if arity = Ast.NONE && pure = Ast0.Impure
       then (!Data.add_type_name name; [])
       else raise (Semantic_cocci.Semantic "bad typedef")) }
-| TAttribute
-    { (fun arity (_,name) pure check_meta ->
+| TAttribute ids=comma_list(pure_ident_or_meta_ident_nosym)
+    { (ids,fun arity (_,name) pure check_meta ->
       if arity = Ast.NONE && pure = Ast0.Impure
       then (!Data.add_attribute name; [])
       else raise (Semantic_cocci.Semantic "bad attribute")) }
-| TDeclarer TName
-    { (fun arity (_,name) pure check_meta ->
+| TDeclarer TName ids=comma_list(pure_ident_or_meta_ident_nosym2(TDeclarerId))
+    { (ids,fun arity (_,name) pure check_meta ->
       if arity = Ast.NONE && pure = Ast0.Impure
       then (!Data.add_declarer_name name; [])
       else raise (Semantic_cocci.Semantic "bad declarer")) }
-| TIterator TName
-    { (fun arity (_,name) pure check_meta ->
+| TIterator TName ids=comma_list(pure_ident_or_meta_ident_nosym2(TIteratorId))
+    { (ids,fun arity (_,name) pure check_meta ->
       if arity = Ast.NONE && pure = Ast0.Impure
       then (!Data.add_iterator_name name; [])
       else raise (Semantic_cocci.Semantic "bad iterator")) }
@@ -2223,6 +2228,12 @@ pure_ident_kwd:
    | TPosition { "position" }
    | TSymbol { "symbol" }
 
+meta_ident_sym: /* these can only be redefined as metavars, not other syms */
+     TSymId { P.id2name $1 }
+   | TTypeId { P.id2name $1 }
+   | TIteratorId { P.id2name $1 }
+   | TDeclarerId { P.id2name $1 }
+
 meta_ident:
      TRuleName TDot pure_ident     { (Some $1,P.id2name $3) }
    | TRuleName TDot pure_ident_kwd { (Some $1,$3) }
@@ -2231,6 +2242,16 @@ pure_ident_or_meta_ident:
        pure_ident                { (None,P.id2name $1) }
      | pure_ident_kwd            { (None,$1) }
      | meta_ident                { $1 }
+     | meta_ident_sym            { (None,$1) }
+
+pure_ident_or_meta_ident_nosym:
+       pure_ident                { (None,P.id2name $1) }
+     | pure_ident_kwd            { (None,$1) }
+     | meta_ident                { $1 }
+
+pure_ident_or_meta_ident_nosym2(extra):
+       pure_ident_or_meta_ident_nosym { $1 }
+     | extra                          { (None,P.id2name $1) }
 
 wrapped_sym_ident:
   TSymId { Ast0.wrap(Ast0.Id(P.sym2mcode $1)) }

@@ -269,8 +269,13 @@ identifier.  See the wiki.
 
 A symbol declaration specifies that the provided identifiers should be
 considered C identifiers when encountered in the body of the rule.
-Identifiers in the body of the rule that are not declared explicitly are
-by default considered symbols, thus symbol declarations are optional.
+Identifiers in the body of the rule that are not declared explicitly are by
+default considered symbols, thus symbol declarations are optional.  It is
+not required, but it will not cause a parse error, to redeclare a name as a
+symbol.  A name declared as a symbol can, however, be redeclared as another
+metavariable.  It will be considered to be a metavariable in such rules,
+and will revert to being a symbol in subsequent rules.  These conditions
+also apply to iterator names and declarer names.
 
 An attribute declaration indicates a name that should be considered to be
 an attribute.  It is not possible to match or remove an attribute, only to
@@ -437,8 +442,11 @@ position variables, have their string representation.  An example is in
 demos/poscon.cocci.
 
 A declaration of a name as a typedef extends through the rest of the
-semantic patch.  It is not required, and it will cause a parse error, to
-redeclare a name as a typedef.
+semantic patch.  It is not required, but it will not cause a parse error,
+to redeclare a name as a typedef.  A name declared as a typedef can,
+however, be redeclared as another metavariable.  It will be considered to
+be a metavariable in such rules, and will revert to being a typedef in
+subsequent rules.
 
 \paragraph*{Warning:} Each metavariable declaration causes the declared
 metavariables to be immediately usable, without any inheritance

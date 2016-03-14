@@ -7,6 +7,10 @@
 (* splits the entire file into minus and plus fragments, and parses each
 separately (thus duplicating work for the parsing of the context elements) *)
 
+exception SMPLParseError of string
+
+let smplparseerror s = raise (SMPLParseError s)
+
 module D = Data
 module PC = Parser_cocci_menhir
 module V0 = Visitor_ast0
@@ -782,7 +786,9 @@ let tokens_all_full token table file get_ats lexbuf end_predicate :
       if result = PC.EOF
       then
 	if get_ats
-	then failwith "unexpected end of file in a metavariable declaration"
+	then
+	  smplparseerror
+	    "unexpected end of file in a metavariable declaration"
 	else (false,[(result,info)])
       else if end_predicate result
       then (true,[(result,info)])
@@ -791,7 +797,7 @@ let tokens_all_full token table file get_ats lexbuf end_predicate :
 	(more,(result, info)::rest)
     in aux ()
   with
-    e -> pr2 (Common.error_message file (wrap_lexbuf_info lexbuf) ); raise e
+    e -> smplparseerror (Common.error_message file (wrap_lexbuf_info lexbuf) )
 
 let in_list list tok =
   List.mem tok list
@@ -944,7 +950,7 @@ seem very convenient to refactor the grammar to get around the problem. *)
 
 exception Irrelevant
 
-let rec find_function_names l =
+let find_function_names l =
   let is_ident = function
       (PC.TIdent(_,clt),info)
     | (PC.TMeta(_,_,clt),info)
@@ -1018,7 +1024,7 @@ let rec find_function_names l =
 (* an attribute is an identifier that precedes another identifier and
    begins with __ *)
 
-let rec detect_attr l =
+let detect_attr l =
   let is_id = function
       (PC.TIdent(_,_),_) | (PC.TMetaId(_,_,_,_,_),_) | (PC.TMetaFunc(_,_,_,_),_)
     | (PC.TMetaLocalFunc(_,_,_,_),_) -> true
@@ -1524,7 +1530,7 @@ let minus_to_nothing l =
     | t::ts -> t::(loop ts) in
   loop l
 
-let rec drop_double_dots l =
+let drop_double_dots l =
   let start = function
       (PC.TOEllipsis(_),_) | (PC.TPOEllipsis(_),_) -> true
     | _ -> false in
@@ -1610,8 +1616,7 @@ let drop_empty_nest = drop_empty_thing
 (* ----------------------------------------------------------------------- *)
 (* Read tokens *)
 
-let get_s_starts (_, (s,_,(starts, ends))) =
-  Printf.printf "%d %d\n" starts ends; (s, starts)
+let get_s_starts (_, (s,_,(starts, ends))) = (s, starts)
 
 let pop2 l =
   let v = List.hd !l in
@@ -1643,16 +1648,16 @@ let parse_one str parsefn file toks =
   try parsefn lexer_function lexbuf_fake
   with
     Lexer_cocci.Lexical s ->
-      failwith
-	(Printf.sprintf "%s: lexical error: %s\n =%s\n" str s
+      smplparseerror
+	(Printf.sprintf "%s: lexical error: %s\n  %s\n" str s
 	   (Common.error_message file (get_s_starts !cur_tok) ))
   | Parser_cocci_menhir.Error ->
-      failwith
-	(Printf.sprintf "%s: parse error: \n = %s\n" str
+      smplparseerror
+	(Printf.sprintf "%s: parse error: \n  %s\n" str
 	   (Common.error_message file (get_s_starts !cur_tok) ))
   | Semantic_cocci.Semantic s ->
-      failwith
-	(Printf.sprintf "%s: semantic error: %s\n =%s\n" str s
+      smplparseerror
+	(Printf.sprintf "%s: semantic error: %s\n  %s\n" str s
 	   (Common.error_message file (get_s_starts !cur_tok) ))
 
   | e -> raise e
@@ -1685,7 +1690,7 @@ let process_minus_positions x name clt meta =
 
 (* first attach positions, then the others, so that positions can refer to
 the larger term represented by the preceding metavariable *)
-let rec consume_minus_positions toks =
+let consume_minus_positions toks =
   let rec loop_pos = function
       [] -> []
     | ((PC.TOPar0(_),_) as x)::xs | ((PC.TCPar0(_),_) as x)::xs

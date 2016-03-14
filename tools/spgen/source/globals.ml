@@ -35,7 +35,7 @@ let get_org_name str = str ^ "_org"
 let get_report_name str = str ^ "_report"
 
 (* Page width limit for generated script (not always upheld ...) *)
-let char_limit = ref 80
+let char_limit = ref Flag_parsing_c.max_width
 
 let init ~rule_name:r ~pos_name:p ~error_msg:e ~char_limit:cl =
   rule_counter := 0;
@@ -183,3 +183,18 @@ let pre_split ?(prefix = "") s =
 let pre_split_opt ?(prefix = "") = function
   | Some s -> pre_split ~prefix s
   | None -> ""
+
+(* Concatenate a list of strings, but first add newlines so that the
+concatenation will not result in a line of more than 80 characters. *)
+let concat_limit_width lst =
+  String.concat ""
+    (List.rev
+       (snd
+	  (List.fold_left
+	     (fun (sz,prev) cur ->
+	       let len = String.length cur in
+	       let newsz = sz + len in
+	       if newsz > !char_limit
+	       then (len,("\n"^cur)::prev)
+	       else (newsz,cur::prev))
+	     (0,[]) lst)))

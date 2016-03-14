@@ -501,7 +501,7 @@ let all_minus s =
     Ast0.MINUS(_) -> true
   | _ -> false
 
-let rec unchanged_minus s =
+let unchanged_minus s =
   match Ast0.get_mcodekind s with
     Ast0.MINUS(mc) ->
       (match !mc with (Ast.NOREPLACEMENT,_) -> true | _ -> false)

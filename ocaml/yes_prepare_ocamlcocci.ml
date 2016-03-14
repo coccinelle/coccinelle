@@ -139,40 +139,40 @@ let print_iteration_code o =
     match !Iteration.parsed_virtual_rules with
       [] -> ""
     | l ->
-	Printf.sprintf "
-    method add_virtual_rule r =
-      let r = match r with %s in
-      virtual_rules <- Common.union_set [r] virtual_rules\n"
+	Printf.sprintf "\
+\n    method add_virtual_rule r =\
+\n      let r = match r with %s in\
+\n      virtual_rules <- Common.union_set [r] virtual_rules\n"
 	  (translator l) in
   let add_virt_ids_method =
     match !Iteration.parsed_virtual_identifiers with
       [] -> ""
     | l ->
-	Printf.sprintf "
-    method add_virtual_identifier i v =
-      let i = match i with %s in
-      try
-	let v1 = List.assoc i virtual_identifiers in
-	if not (v = v1)
-	then failwith (\"multiple values specified for \"^i)
-      with Not_found ->
-	virtual_identifiers <- (i,v) :: virtual_identifiers"
+	Printf.sprintf "\
+\n    method add_virtual_identifier i v =\
+\n      let i = match i with %s in\
+\n      try\
+\n	let v1 = List.assoc i virtual_identifiers in\
+\n	if not (v = v1)\
+\n	then failwith (\"multiple values specified for \"^i)\
+\n      with Not_found ->\
+\n	virtual_identifiers <- (i,v) :: virtual_identifiers"
 					 (translator l) in
-    Printf.fprintf o "
-class iteration () =
-  object
-    val mutable files = None
-    val mutable files_changed = false
-    val mutable virtual_rules = ([] : string list)
-    val mutable virtual_identifiers = ([] : (string * string) list)
-    val mutable extend_virtual_ids = false
-    method set_files f = files <- Some f
-    method extend_virtual_identifiers (x : unit) = extend_virtual_ids <- true
-    %s%s
-    method register () =
-      Iteration.add_pending_instance
-	(files,virtual_rules,virtual_identifiers,extend_virtual_ids)
-  end\n\n" add_virt_rules_method add_virt_ids_method
+    Printf.fprintf o "\
+\nclass iteration () =\
+\n  object\
+\n    val mutable files = None\
+\n    val mutable files_changed = false\
+\n    val mutable virtual_rules = ([] : string list)\
+\n    val mutable virtual_identifiers = ([] : (string * string) list)\
+\n    val mutable extend_virtual_ids = false\
+\n    method set_files f = files <- Some f\
+\n    method extend_virtual_identifiers (x : unit) = extend_virtual_ids <- true\
+\n    %s%s\
+\n    method register () =\
+\n      Iteration.add_pending_instance\
+\n	(files,virtual_rules,virtual_identifiers,extend_virtual_ids)\
+\n  end\n\n" add_virt_rules_method add_virt_ids_method
 
 (* ---------------------------------------------------------------------- *)
 

@@ -28,12 +28,12 @@ let rec disjmult f = function
       let rest = disjmult f xs in
       disjmult2 cur rest (function cur -> function rest -> cur :: rest)
 
-let rec disjmult_two fstart frest (start,rest) =
+let disjmult_two fstart frest (start,rest) =
   let cur = fstart start in
   let rest = disjmult frest rest in
   disjmult2 cur rest (function cur -> function rest -> (cur,rest))
 
-let rec disjtwoelems fstart frest (start,rest) =
+let disjtwoelems fstart frest (start,rest) =
   let cur = fstart start in
   let rest = frest rest in
   disjmult2 cur rest (function cur -> function rest -> (cur,rest))

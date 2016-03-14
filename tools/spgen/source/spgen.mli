@@ -12,6 +12,7 @@
  *  - interactive: if true, draw user input interactively
  *  - default: if true, generate without user input (using default values)
  *  - hide: if true, do not output the generated file
+ *  - year: current year (for copyright in generated header)
  *)
 
 type options
@@ -22,6 +23,7 @@ val make_options :
   ?interactive:bool ->
   ?default:bool ->
   ?hide:bool ->
+  ?year:int ->
   string -> (* filename of cocci file to generate *)
   options
 

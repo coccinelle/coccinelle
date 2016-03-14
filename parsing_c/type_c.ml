@@ -495,7 +495,7 @@ let (type_field:
 
 (* assume normalized/completed ? so no ParenType handling to do ?
 *)
-let rec is_function_type x =
+let is_function_type x =
   match Ast_c.unwrap_typeC x with
   | FunctionType _ -> true
   | _ -> false

@@ -17,7 +17,7 @@ type seti = elt list (* last elements is in first pos, ordered reverse *)
 (* invariant= ordered list, no incoherent interv (one elem or zero elem),
  * merged (intervalle are separated) *)
 let invariant xs =
-  let rec aux min xs =
+  let aux min xs =
     xs +> List.fold_left (fun min e ->
       match e with
       | Exact i ->
@@ -81,9 +81,9 @@ let rec tolist2 = function
   | [] -> []
   | (Exact i)::xs -> i::tolist2 xs
   | (Interv (i,j))::xs -> enum i j @ tolist2 xs
-let rec tolist xs = List.rev (tolist2 xs)
+let tolist xs = List.rev (tolist2 xs)
 
-let rec fromlist = function xs -> List.fold_left (fun a e -> add e a) empty xs
+let fromlist = function xs -> List.fold_left (fun a e -> add e a) empty xs
 
 let intervise = function
   | Exact x -> Interv (x,x)
@@ -160,7 +160,7 @@ let rec cardinal = function
 
 (*****************************************************************************)
 (*  TODO: could return corresponding osetb ? *)
-let rec inter xs ys =
+let inter xs ys =
   let rec aux = fun xs ys ->
     match (xs, ys) with
     | (_, []) -> []
@@ -334,7 +334,7 @@ let patch2 xs = xs +> List.map (fun e ->
   | e -> e
 )
 let patch3 xs =
-  let rec aux min xs =
+  let aux min xs =
     xs +> List.fold_left (fun (min,acc) e ->
       match e with
       | Exact i ->

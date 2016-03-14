@@ -12,6 +12,16 @@ type program2 = toplevel2 list
      (* the token list contains now also the comment-tokens *)
        and info_item = (string * Parser_c.token list)
 
+type 'a generic_parse_info = {
+  filename : string;
+  parse_trees : 'a; (* program2 or extended_program2 *)
+  statistics : Parsing_stat.parsing_stat;
+}
+
+type parse_info = program2 generic_parse_info
+
+type extended_parse_info = extended_program2 generic_parse_info
+
 (* usually correspond to what is inside your macros.h *)
 val _defs : (string, Cpp_token_c.define_def) Hashtbl.t ref
 (* usually correspond to what is inside your standard.h *)
@@ -24,19 +34,24 @@ val init_defs_builtins : Common.filename -> unit
 (* This is the main function *)
 val parse_c_and_cpp :
     bool (* true if format characters need to be parsed *) ->
+    bool (* true if parsing results should be cached *) ->
       Common.filename (*cfile*) ->
 	(program2 * Parsing_stat.parsing_stat)
 val parse_c_and_cpp_keep_typedefs :
     (string, Lexer_parser.identkind) Common.scoped_h_env option (*typedefs*) ->
       (string, Cpp_token_c.define_def) Hashtbl.t option (* macro defs *) ->
       bool (* true if format characters need to be parsed *) ->
+      bool (* true if parsing results should be cached *) ->
 	Common.filename (*cfile*) ->
-	  (extended_program2 * Parsing_stat.parsing_stat)
+	  extended_parse_info * extended_parse_info list
 
 (* use some .ast_raw memoized version, and take care if obsolete *)
 val parse_cache:
+    (string, Lexer_parser.identkind) Common.scoped_h_env option (* typedefs *) ->
     bool (* true if format characters need to be parsed *) ->
-    Common.filename (*cfile*) -> (extended_program2 * Parsing_stat.parsing_stat)
+    bool (* true if parsing results should be cached *) ->
+    Common.filename (*cfile*) ->
+    extended_parse_info * extended_parse_info list
 
 
 (* ---------------------------------------------------------------------- *)
@@ -44,9 +59,6 @@ val parse_cache:
  * in -extract_macros to later feed an automatically build standard.h *)
 val extract_macros :
   Common.filename -> (string, Cpp_token_c.define_def) Common.assoc
-
-
-
 
 
 (* ---------------------------------------------------------------------- *)

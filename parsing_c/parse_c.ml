@@ -925,6 +925,16 @@ type program2 = toplevel2 list
       (string, Cpp_token_c.define_def) Hashtbl.t (* macro defs *)
    and toplevel2 = Ast_c.toplevel * info_item
 
+type 'a generic_parse_info = {
+  filename : string;
+  parse_trees : 'a; (* program2 or extended_program2 *)
+  statistics : Parsing_stat.parsing_stat;
+}
+
+type parse_info = program2 generic_parse_info
+
+type extended_parse_info = extended_program2 generic_parse_info
+
 let program_of_program2 xs =
   xs +> List.map fst
 
@@ -956,9 +966,37 @@ let with_program2_unit f program2 =
  * tokens_stat record and parsing_stat record.
  *)
 
-let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
-    file =
+module StringSet : Set.S with type elt = string = Set.Make(String)
 
+module StringMap : Map.S with type key = string = Map.Make(String)
+
+let header_cache = Hashtbl.create 101
+
+let tree_stack = ref []
+
+let rec _parse_print_error_heuristic2 saved_typedefs saved_macros
+  parse_strings cache file =
+  if List.mem file (List.map (fun x -> x.filename) !tree_stack)
+  then None (* Inclusion loop, not re-parsing *)
+  else begin
+    let cached_result =
+      try Some (Hashtbl.find header_cache file) with
+      Not_found -> None in
+    match cached_result with
+      | None ->
+        let result =
+          _parse_print_error_heuristic2bis saved_typedefs saved_macros
+            parse_strings file in
+        if cache then Hashtbl.add header_cache file result else ();
+        tree_stack := result :: !tree_stack;
+        Some result
+      | Some result ->
+        tree_stack := result :: !tree_stack;
+        Some result
+  end
+
+and _parse_print_error_heuristic2bis saved_typedefs saved_macros
+  parse_strings file =
   let stat = Parsing_stat.default_stat file in
 
   (* -------------------------------------------------- *)
@@ -1004,6 +1042,19 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
 
   let tr = mk_tokens_state toks in
 
+  let handle_include wrapped_incl =
+    let incl = Ast_c.unwrap wrapped_incl.Ast_c.i_include in
+    let parsing_style = Includes.get_parsing_style () in
+    if Includes.should_parse parsing_style file incl
+    then begin match Includes.resolve file parsing_style incl with
+      | Some header_filename when Common.lfile_exists header_filename ->
+        ignore
+          (_parse_print_error_heuristic2
+            saved_typedefs saved_macros parse_strings
+            true header_filename)
+      | _ -> ()
+    end in
+
   let rec loop tr =
 
     (* todo?: I am not sure that it represents current_line, cos maybe
@@ -1026,7 +1077,12 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
           get_one_elem ~pass:1 tr
         ) in
       match pass1 with
-      | Left e -> Left e
+      | Left e ->
+        begin
+          match e with
+            | Ast_c.CppTop(Ast_c.Include incl) -> handle_include incl
+            | _ -> ()
+        end; Left e
       | Right (info,line_err, passed, passed_before_error, cur, exn, _) ->
           if !Flag_parsing_c.disable_multi_pass
           then pass1
@@ -1199,8 +1255,17 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros parse_strings
     let new_td = ref (Common.clone_scoped_h_env !LP._typedef) in
     Common.clean_scope_h new_td;
     (v, !new_td, macros) in
-  (v, stat)
+  { filename = file; parse_trees = v; statistics = stat }
 
+let parse_print_error_heuristic2 saved_typedefs saved_macros
+  parse_strings cache file =
+  tree_stack := [];
+  ignore
+    (_parse_print_error_heuristic2 saved_typedefs saved_macros
+      parse_strings cache file);
+  match !tree_stack with
+    | [] -> assert false
+    | tree::trees -> (tree, List.rev trees)
 
 let time_total_parsing a b c d =
   let res =
@@ -1215,18 +1280,20 @@ let parse_print_error_heuristic a b c d =
 
 
 (* alias *)
-let parse_c_and_cpp parse_strings a =
-  let ((c,_,_),stat) = parse_print_error_heuristic None None parse_strings a in
-  (c,stat)
-let parse_c_and_cpp_keep_typedefs td macs parse_strings a =
-  parse_print_error_heuristic td macs parse_strings a
+let parse_c_and_cpp parse_strings cache a =
+  let v = fst (parse_print_error_heuristic None None parse_strings cache a) in
+  let (c, _, _) = v.parse_trees in
+  (c, v.statistics)
+
+let parse_c_and_cpp_keep_typedefs td macs parse_strings cache a =
+  parse_print_error_heuristic td macs parse_strings cache a
 
 (*****************************************************************************)
 (* Same but faster cos memoize stuff *)
 (*****************************************************************************)
-let parse_cache parse_strings file =
+let parse_cache typedefs parse_strings cache file =
   if not !Flag_parsing_c.use_cache
-  then parse_print_error_heuristic None None parse_strings file
+  then parse_print_error_heuristic typedefs None parse_strings cache file
   else
   let _ = pr2_once "TOFIX: use_cache is not sensitive to changes in the considered macros, include files, etc" in
   let need_no_changed_files =
@@ -1269,7 +1336,7 @@ let parse_cache parse_strings file =
 		()
 	  | _ -> ());
       (* recompute *)
-      parse_print_error_heuristic None None true file)
+      parse_print_error_heuristic None None true cache file)
 
 
 
@@ -1287,7 +1354,7 @@ let (cstatement_of_string: string -> Ast_c.statement) = fun s ->
   assert (no_format s);
   let tmpfile = Common.new_temp_file "cocci_stmt_of_s" "c" in
   Common.write_file tmpfile ("void main() { \n" ^ s ^ "\n}");
-  let program = parse_c_and_cpp false tmpfile +> fst in
+  let program = fst (parse_c_and_cpp false false tmpfile) in
   program +> Common.find_some (fun (e,_) ->
     match e with
     | Ast_c.Definition ({Ast_c.f_body = [Ast_c.StmtElem st]},_) -> Some st
@@ -1298,7 +1365,7 @@ let (cexpression_of_string: string -> Ast_c.expression) = fun s ->
   assert (no_format s);
   let tmpfile = Common.new_temp_file "cocci_expr_of_s" "c" in
   Common.write_file tmpfile ("void main() { \n" ^ s ^ ";\n}");
-  let program = parse_c_and_cpp false tmpfile +> fst in
+  let program = fst (parse_c_and_cpp false false tmpfile) in
   program +> Common.find_some (fun (e,_) ->
     match e with
     | Ast_c.Definition ({Ast_c.f_body = compound},_) ->

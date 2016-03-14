@@ -27,6 +27,9 @@
 - In the Coccilib interface, the function file, giving the file being
   currently processed, has become files, returning a list of file names,
   because Coccinelle can work on more than one file at once.
+- For typedefs, symbols, iterator names, and declarer names, allow
+  redeclaration as either the same kind, or temporary redeclaration as a
+  metavariable.
 ** Features:
 - addition of --file-groups option
 - ocaml code allowed as constraints on position variables
@@ -36,6 +39,8 @@
   ... parameter or expression list, also in the case of transformation.
 - Fix various omissions related to binary and assignment metavariables.
 - Add whitespace on C code/transformed code boundary.
+- Types declared in header files are now taken into account while parsing
+  C files.
 * 1.0.4
 ** Language:
 - Length for statement list metavariables

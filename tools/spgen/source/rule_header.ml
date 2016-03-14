@@ -48,9 +48,7 @@ let tostring_dep = function
         | Ast.FailDep -> k "fail_dep" in
       " depends on " ^ (dep false deps (fun x -> x))
 
-(* gather data into a string rule header... may or may not be slightly buggy.
- * TODO: add newlines at 80-character limit
- *)
+(* gather data into a string rule header... may or may not be slightly buggy.*)
 let rule_declaration ~rule_name ~isos ~drop_isos ~deps ~exists =
   let _ = assert (not (String.contains rule_name ' ')) in
   let extends = "" in (* where is this information ?? *)
@@ -65,9 +63,8 @@ let rule_declaration ~rule_name ~isos ~drop_isos ~deps ~exists =
   let exists = match exists with
     | Ast.Exists -> " exists" | Ast.Forall -> " forall"
     | Ast.Undetermined -> "" in
-  String.concat ""
+  Globals.concat_limit_width
     ["@"; rule_name; extends; deps; isos; drop_isos; exists; expression; "@"]
-
 
 (* ------------------------------------------------------------------------- *)
 (* ENTRY POINT *)

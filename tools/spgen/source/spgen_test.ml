@@ -66,13 +66,13 @@ let compare_one score expected =
 
   try
 
-    Common.timeout_function timeout_per_file (
+    Common.timeout_function "spgen_test" timeout_per_file (
       fun () ->
 
         perr_nl cocci;
 
         (* spgenerate the file *)
-        let options = Spgen.make_options ~output:actual cocci in
+        let options = Spgen.make_options ~year:2000 ~output:actual cocci in
         let _ = Spgen.run options in
 
         (* check that the spgenerated file is parsable. Note that the parsing

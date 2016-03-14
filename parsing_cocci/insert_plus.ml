@@ -699,7 +699,7 @@ let redo info start finish =
       Ast0.logical_end = finish} in
   {info with Ast0.pos_info = new_pos_info}
 
-let rec find_neighbors (index,l) :
+let find_neighbors (index,l) :
     int * (Ast0.info * Ast.count * (Ast.anything list list)) list =
   let rec loop = function
       [] -> []

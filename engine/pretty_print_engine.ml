@@ -93,7 +93,7 @@ let pp_binding_kind2 = function
   | BadVal ->  pp "badval"
 
 
-let rec pp_predicate = function
+let pp_predicate = function
   | InLoop -> pp "InLoop"
   | TrueBranch -> pp "TrueBranch"
   | EscTrueBranch -> pp "EscTrueBranch"

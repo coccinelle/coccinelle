@@ -41,7 +41,7 @@ let get_string_info = function
 
 let unknown = -1
 
-let rec do_all
+let do_all
     (env, pr, pr_celem, pr_cspace, pr_space, pr_arity, pr_barrier,
      indent, unindent, eatspace)
     generating xxs before =
@@ -374,7 +374,7 @@ let rec expression e =
 	    if generating then minprio else failwith "unbound MetaBinary"
 	| Some (Ast_c.MetaBinaryOpVal bop) -> left_prec_of_c bop
 	| Some _ -> failwith "bad MetaBinary value") in
-  let rec right_prec_of op =
+  let right_prec_of op =
     let right_prec_of_arith op =
       match Ast.unwrap_mcode op with
 	Ast.Plus | Ast.Minus -> mulit
@@ -1343,7 +1343,7 @@ in
 let if_open_brace  = function "{" | "else" -> true | _ -> false in
 
 (* boolean result indicates whether an indent is needed *)
-let rec pp_any = function
+let pp_any = function
   (* assert: normally there is only CONTEXT NOTHING tokens in any *)
     Ast.FullTypeTag(x) -> fullType x; false
   | Ast.BaseTypeTag(x) -> baseType x unknown unknown; false
@@ -1527,7 +1527,7 @@ in
       (* print a newline at the end, if needed *)
       newline_after()
 
-let rec pp_list_list_any (envs, pr, pr_celem, pr_cspace, pr_space, pr_arity,
+let pp_list_list_any (envs, pr, pr_celem, pr_cspace, pr_space, pr_arity,
 			  pr_barrier, indent, unindent, eatspace)
     generating xxs before =
   List.iter

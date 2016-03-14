@@ -47,6 +47,5 @@ aclocal.m4
 *.byte
 *.d.native
 *.p.byte
-.merlin
 .mascotrc
 description-pak

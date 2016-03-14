@@ -735,7 +735,19 @@ val partition_either3 :
     ('a -> ('b, 'c, 'd) either3) -> 'a list -> 'b list * 'c list * 'd list
 
 val filter_some : 'a option list -> 'a list
+(**
+ * [filter_some [None;Some x1; None; Some X2; ... Some xn;None]]
+ * Returns [[x1;x2;...;xn]]
+ *)
+
 val map_filter : ('a -> 'b option) -> 'a list -> 'b list
+(**
+ * [map_filter f [x1;...;xn]] returns the list of results obtained
+ * by applying f to x1 ... xn, given that not all applications of f
+ * may lead to a result. So if [f xi] is None it does not appear in the
+ * resulting list, but if it's [Some yi] then [yi] is in the returned list.
+ *)
+
 val tail_map_filter : ('a -> 'b option) -> 'a list -> 'b list
 val find_some : ('a -> 'b option) -> 'a list -> 'b
 
@@ -994,8 +1006,6 @@ val uncat: string list -> filename -> unit
 val interpolate : string -> string list
 
 val echo : string -> string
-
-val usleep : int -> unit
 
 val process_output_to_list : string -> string list
 val cmd_to_list :            string -> string list (* alias *)

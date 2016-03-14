@@ -15,7 +15,7 @@ MYSRC=	commands.ml                              \
 	interfaces.ml objet.ml                   \
 	ocollection.ml                           \
 	seti.ml                                  \
-	oset.ml oassoc.ml osequence.ml ograph.ml \
+	oset.ml oassoc.ml osequence.ml \
 	ocollection/osetb.ml                     \
 	ocollection/oassocb.ml			 \
 	oarray.ml				 \
@@ -29,7 +29,6 @@ MLI_FILES=\
   objet.mli \
   ocollection.mli \
   ograph_extended.mli \
-  ograph.mli \
   ograph_simple.mli \
   osequence.mli \
   oset.mli \

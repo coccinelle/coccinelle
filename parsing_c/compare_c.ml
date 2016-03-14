@@ -265,8 +265,8 @@ let do_compare_token adjust_cvs to_expected filename1 filename2 =
     loop toks1 toks2 in
   *)
 
-  let (c1, _stat) = Parse_c.parse_c_and_cpp false filename1 in
-  let (c2, _stat) = Parse_c.parse_c_and_cpp false filename2 in
+  let (c1, _stat) = Parse_c.parse_c_and_cpp false false filename1 in
+  let (c2, _stat) = Parse_c.parse_c_and_cpp false false filename2 in
 
   let res =
     if List.length c1 <> List.length c2
