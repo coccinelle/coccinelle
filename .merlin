@@ -1,0 +1,26 @@
+#Source directories
+S commons
+S commons/ocamlextra
+S ctl
+S engine
+S extra
+S globals
+S ocaml
+S parsing_c
+S parsing_cocci
+S popl
+S popl09
+S python
+# Build directories
+B commons
+B commons/ocamlextra
+B ctl
+B engine
+B extra
+B globals
+B ocaml
+B parsing_c
+B parsing_cocci
+B popl
+B popl09
+B python
