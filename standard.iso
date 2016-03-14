@@ -475,20 +475,6 @@ context identifier Z;
 T Z; => T Z = ...;
 
 Declaration
-@ const_decl_init @
-type T;
-context identifier Z;
-@@
-T Z; => T Z = C;
-
-Declaration
-@ const_decl_init_null @
-type T;
-identifier Z;
-@@
-T Z; => T Z = NULL;
-
-Declaration
 @ extern_decl_init @
 type T;
 context identifier Z;
@@ -496,27 +482,11 @@ context identifier Z;
 extern T Z; => extern T Z = ...;
 
 Declaration
-@ const_extern_decl_init @
-type T;
-identifier Z;
-constant C;
-@@
-extern T Z; => extern T Z = C;
-
-Declaration
 @ static_decl_init @
 type T;
 context identifier Z;
 @@
 static T Z; => static T Z = ...;
-
-Declaration
-@ const_static_decl_init @
-type T;
-identifier Z;
-constant C;
-@@
-static T Z; => static T Z = C;
 
 // ---------------------------------------------------------------------------
 // Branch (or compound) isomorphisms
