@@ -18,6 +18,7 @@ version.ml
 configure
 Makefile.config
 Makefile.override
+Makefile.local
 result
 
 globals/config.ml

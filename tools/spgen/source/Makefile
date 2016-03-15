@@ -9,6 +9,7 @@ SCRIPTDIR=../scripts
 # do not raise error if config does not exist; handle in $(CONFIG) rule below
 include $(COCCIDIR)/Makefile.libs
 -include $(COCCIDIR)/Makefile.config
+-include $(COCCIDIR)/Makefile.local
 
 # where to install the program
 INSTALLDIR=$(DESTDIR)$(LIBDIR)/spgen

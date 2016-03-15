@@ -4,6 +4,7 @@
 
 ifneq ($(MAKECMDGOALS),distclean)
 include ../../Makefile.config
+-include ../../Makefile.local
 endif
 HEVEA = hevea
 HEVEA_XXDATE := $(shell ./find-xxdate)

@@ -14,6 +14,7 @@
 
 ifneq ($(MAKECMDGOALS),distclean)
 include ../../Makefile.config
+-include ../../Makefile.local
 endif
 
 PYCAMLFILE=pycaml_0.82.orig.tar.gz

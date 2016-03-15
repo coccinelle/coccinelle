@@ -417,46 +417,11 @@ dnl  in case of the compilation of the manual
 AC_COCCI_TOOL([PDFLATEX],[pdflatex],[$COCCI_SRCDIR/setup/fake-pdflatex.sh pdflatex])
 
 
-dnl  determine release configuration
-AC_ARG_ENABLE([release], [AS_HELP_STRING([--enable-release], [build with a release configuration (yes,no,profile default: no)])])
-AS_IF([test -z "$enable_release"],
-[dnl
-  AC_MSG_NOTICE([choosing the development Makefile configuration because the release configuration is not explicitly requested.])
-  AC_SUBST([enable_release], [no])
-])
-
-AC_SUBST([MODULES_profiling],[])
-AS_IF([test "x$enable_release" = xyes],
-[dnl  set the default target to 'release' when enable_release is given
-  AC_SUBST([MAKETARGET_ALL], [all-release])
-], [test "x$enable_release" = xno],
-[dnl  otherwise, set the default target to 'dev'
-  AC_SUBST([MAKETARGET_ALL], [all-dev])
-], [test "x$enable_release" = xprofile],
-[dnl  selected profiling
-  AS_IF([test -z "$OCAMLPROF" -o "x$OCAMLPROF" = xno],
-  [dnl
-    AC_MSG_ERROR([ocamlprof is required for profiling, but is absent.])
-  ])
-
-  dnl  configuration-time overrides for profiling
-  AC_SUBST([MAKETARGET_ALL], [all-dev])
-  AC_SUBST([OCAMLC], ["$COCCI_SRCDIR/setup/wrapper-ocamlcp.sh $OCAMLCORIG $OCAMLPROF"])
-  AC_SUBST([MODULES_profiling], [profiling.cmo])
-  AC_MSG_NOTICE([configured coccinelle for profiling])
-],
-[dnl  custom target given
-  AC_SUBST([MAKETARGET_ALL], ["$enable_release"])
-])
-
 dnl  determine whether to build the optimizing version
 AC_ARG_ENABLE([opt], [AS_HELP_STRING([--enable-opt], [build an optimized spatch (yes,no, default: auto)])])
 AS_IF([test "x$OCAMLOPT" = xno -a "x$enable_opt" != xno],
 [dnl
-  AS_IF([test -n "$enable_release" -a "x$enable_release" != xyes -a "x$enable_release" != xno],
-  [dnl
-    AC_MSG_NOTICE([warning: ensure that make target $enable_release does not depend on the unavailable ocamlopt])
-  ], [test "x$enable_opt" = xyes],
+  AS_IF([test "x$enable_opt" = xyes],
   [dnl
     AC_MSG_ERROR([the optimized version of coccinelle is requested explicitly, but ocamlopt is absent])
   ],
@@ -480,13 +445,7 @@ AS_IF([test "x$OPTIMIZED_dynlink" = xno -a "x$enable_ocaml" = xyes],
 ])
 
 dnl  set the default enable-opt setting
-AS_IF([test -z "$enable_opt"],
-[dnl
-  AS_IF([test "x$enable_release" = xyes -o "x$enable_release" = xno],
-  [dnl
-    AC_SUBST([enable_opt], ["$enable_release"])
-  ])
-])
+AC_SUBST([enable_opt], ["yes"])
 
 dnl  variables depending on whether we build the optimized spatch
 AS_IF([test "x$enable_opt" = xyes],
@@ -536,7 +495,6 @@ pcre regexes:     $enable_pcre_syntax	(overridable with --enable-pcre-syntax)
 pcre module:      $enable_pcre	(for local package use --disable-pcre)
 pcre library:     $HAVE_PCRE	(requires the dev version of libpcre)
 
-release config:   $enable_release	(strongly recommended to be 'yes', overridable with --enable-release)
 optimized spatch: $enable_opt	(overridable with --disable-opt)
 
 ------------------------------------------------------------------------------

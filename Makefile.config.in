@@ -8,7 +8,7 @@ VERSION=@PACKAGE_VERSION@
 MAKELIBS=@MAKE_dynlink@ @MAKE_menhirLib@ @MAKE_pycaml@ @MAKE_pcre@ \
   @MAKE_parmap@
 LNKLIBS=@MODULES_dynlink@ @MODULES_menhirLib@ @MODULES_pycaml@ @MODULES_pcre@ \
-  @MODULES_parmap@ @MODULES_profiling@
+  @MODULES_parmap@
 OPTLNKLIBS=@MODULESOPT_dynlink@ @MODULESOPT_menhirLib@ @MODULESOPT_pycaml@ \
   @MODULESOPT_pcre@ @MODULESOPT_parmap@
 INCLIBS=@PATH_dynlink@ @PATH_menhirLib@ @PATH_pycaml@ @PATH_pcre@ \
@@ -36,16 +36,6 @@ PATCHELF=@PATCHELF@
 
 # copy of the configure flags
 CONFIGURE_FLAGS=@CONFIGURE_FLAGS@
-
-# differentiate between release and development builds here
-# (typically for improved performance)
-ifneq (@enable_release@, no)
-EXTRA_OCAML_FLAGS=-unsafe
-else
-# -dtypes is depricated and can be replaced with -annot for newer
-# versions of ocaml.
-EXTRA_OCAML_FLAGS=-g # -dtypes
-endif
 
 # note that variables are exported and thus cannot be used in
 # definitions of other variables. Use $(EXTRA_OCAML_FLAGS) for that.
@@ -75,7 +65,9 @@ export CPPFLAGS=@CPPFLAGS@
 MKDIR_P=@MKDIR_P@
 
 # the default Make target
-TARGET_ALL=@MAKETARGET_ALL@
+# Can be overriden e.g. in Makefile.local
+TARGET_ALL=all-release
+EXTRA_OCAML_FLAGS=-unsafe
 TARGET_SPATCH=@MAKETARGET_SPATCH@
 
 PYTHON_CFLAGS=@PYTHON_CFLAGS@
