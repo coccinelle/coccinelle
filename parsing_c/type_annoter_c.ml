@@ -977,11 +977,15 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
     (* pad: julia wrote this ? *)
     | Unary (e, UnPlus) ->
         k expr; (* recurse to set the types-ref of sub expressions *)
-        make_info_def (type_of_s "int")
-          (* todo? can convert from unsigned to signed if UnMinus ? *)
+	(* No type inference.  If one cares about being int, one probably
+	   cares about what kind of int too *)
+        Ast_c.get_type_expr e
+
     | Unary (e, UnMinus) ->
         k expr; (* recurse to set the types-ref of sub expressions *)
-        make_info_def (type_of_s "int")
+	(* No type inference.  If one cares about being int, one probably
+	   cares about what kind of int too *)
+        Ast_c.get_type_expr e
 
     | SizeOfType _|SizeOfExpr _ ->
         k expr; (* recurse to set the types-ref of sub expressions *)
