@@ -1242,15 +1242,17 @@ let rec drop_space_at_endline = function
   | a :: rest ->
     a :: drop_space_at_endline rest
 
-(* if a removed ( is between two tokens, then add a space *)
+(* if a removed ( is between two tokens, but not just after (,
+   then add a space *)
 let rec paren_to_space = function
   | [] -> []
   | [x] -> [x]
   | [x;y] -> [x;y]
-  | ((T2(_,Ctx,_,_)) as a)::
-    ((T2(t,Min _,_,_)) as b)::
+  | ((T2(t1,Ctx,_,_)) as a)::
+    ((T2(t2,Min _,_,_)) as b)::
     ((T2(_,Ctx,_,_)) as c)::rest
-    when not (is_whitespace a) && TH.str_of_tok t = "(" ->
+    when not (is_whitespace a) && not(TH.str_of_tok t1 = "(") &&
+      TH.str_of_tok t2 = "(" ->
     a :: b :: (C2 (" ",None)) :: (paren_to_space (c :: rest))
   | a :: rest -> a :: (paren_to_space rest)
 
