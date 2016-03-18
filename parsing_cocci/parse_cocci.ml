@@ -257,12 +257,12 @@ let token2c (tok,_) =
   | PC.TWhy(clt)   -> add_clt "?" clt
   | PC.TDotDot(clt)-> add_clt ":" clt
   | PC.TBang(clt)  -> add_clt "!" clt
-  | PC.TOPar(clt)  -> add_clt "(" clt
-  | PC.TOPar0(s,clt) -> add_clt s clt
+  | PC.TOPar(clt)  -> add_clt "paren (" clt
+  | PC.TOPar0(s,clt) -> add_clt "paren0 (" clt
   | PC.TMid0(s,clt)  -> add_clt s clt
   | PC.TAnd0(s,clt)  -> add_clt s clt
-  | PC.TCPar(clt)  -> add_clt ")" clt
-  | PC.TCPar0(s,clt) -> add_clt s clt
+  | PC.TCPar(clt)  -> add_clt "paren )" clt
+  | PC.TCPar0(s,clt) -> add_clt "paren0 )" clt
 
   | PC.TOBrace(clt) -> add_clt "{" clt
   | PC.TCBrace(clt) -> add_clt "}" clt

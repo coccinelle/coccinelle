@@ -46,7 +46,7 @@ let reset_line lexbuf =
   line := !line + 1;
   current_line_type := (D.CONTEXT,!line,!logical_line);
   current_line_started := false;
-  col_zero := true;
+  (if not(!Data.in_meta || !Data.in_rule_name) then col_zero := true);
   line_start := Lexing.lexeme_start lexbuf + 1
 
 let started_line = ref (-1)
