@@ -1,32 +1,22 @@
 (* Modules accessible by the ocaml scripts.
  *)
 
-(*
- We use
- module Foo = struct include Bar end
- rather than
- module Foo = Bar
- Because of an incompatible change in the interpretation of
- module aliases introduced in OCaml 4.02.1.
- See http://caml.inria.fr/mantis/view.php?id=6661
-*)
+module Ast_c    = Ast_c      (* parsing_c/ast_c.ml *)
+module Parse_c  = Parse_c    (* parsing_c/parse_c.ml *)
+module Parser_c = Parser_c   (* parsing_c/parser_c.mly *)
+module Lexer_c  = Lexer_c    (* parsing_c/lexer_c.mll *)
+module Pretty_print_c = Pretty_print_c (* parsing_c/pretty_print_c.ml *)
+module Lib_parsing_c  = Lib_parsing_c  (* parsing_c/lib_parsing_c.ml *)
+module Visitor_c      = Visitor_c      (* parsing_c/visitor_c.ml *)
 
-module Ast_c    = struct include Ast_c end
-module Parse_c  = struct include Parse_c end
-module Parser_c = struct include Parser_c end
-module Lexer_c  = struct include Lexer_c end
-module Pretty_print_c = struct include Pretty_print_c end
-module Lib_parsing_c  = struct include Lib_parsing_c end
-module Visitor_c      = struct include Visitor_c end
+module Regexp     = Regexp     (* globals/regexp.ml *)
+module Config     = Config     (* globals/config.ml *)
+module Flag       = Flag       (* globals/flag.ml *)
+module Iteration  = Iteration  (* globals/iteration.ml *)
+module Common     = Common     (* commons/common.ml *)
 
-module Regexp     = struct include Regexp end
-module Config     = struct include Config end
-module Flag       = struct include Flag end
-module Iteration  = struct include Iteration end
-module Common     = struct include Common end
+module Ast_cocci  = Ast_cocci  (* parsing_cocci/ast_cocci.ml *)
+module Ast0_cocci = Ast0_cocci (* parsing_cocci/ast0_cocci.ml *)
+module Type_cocci = Type_cocci (* parsing_cocci/type_cocci.ml *)
 
-module Ast_cocci  = struct include Ast_cocci end
-module Ast0_cocci = struct include Ast0_cocci end
-module Type_cocci = struct include Type_cocci end
-
-module Dumper = struct include Dumper end
+module Dumper = Dumper
