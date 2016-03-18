@@ -41,6 +41,7 @@
 - Add whitespace on C code/transformed code boundary.
 - Types declared in header files are now taken into account while parsing
   C files.
+- ( and & now allowed at the start of a line in a SmPL rule header
 * 1.0.4
 ** Language:
 - Length for statement list metavariables
