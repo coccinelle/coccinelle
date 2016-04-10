@@ -5454,7 +5454,7 @@ let (error_messagebis: filename -> (string * int) -> int -> string)=
   let tok = lexeme in
   let (line, pos, linecontent) =  info_from_charpos charpos filename in
   Printf.sprintf "File \"%s\", line %d, column %d, charpos = %d\
-    \n  around = '%s',\n  whole content = '%s'"
+    \n  around = '%s',\n  whole content = %s"
     filename line pos charpos tok (chop linecontent)
 
 let error_message = fun filename (lexeme, lexstart) ->
@@ -5511,6 +5511,15 @@ let save_score score path =
 let load_score path () =
   read_value path
 
+(* be insensitive to newlines, to allow improvements in the error message
+formatting *)
+let close_enough s1 s2 =
+  let first = String.concat " " (Str.split (Str.regexp "\n") s1) in
+  let second = String.concat " " (Str.split (Str.regexp "\n") s2) in
+  let first = String.concat " " (Str.split (Str.regexp "  +") first) in
+  let second = String.concat " " (Str.split (Str.regexp "  +") second) in
+  first = second
+
 let regression_testing_vs newscore bestscore =
 
   let newbestscore = empty_score () in
@@ -5546,7 +5555,7 @@ let regression_testing_vs newscore bestscore =
               Hashtbl.add newbestscore res Ok
           | Pb x, Pb y ->
               Hashtbl.add newbestscore res (Pb x);
-              if not (x = y)
+              if not (close_enough x y)
               then begin
                 Printf.printf
 		  "Semipb: still error but not same error : %s\n" res;
