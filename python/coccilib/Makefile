@@ -2,6 +2,7 @@ MAKESUBDIRS=coccigui
 
 ifneq ($(MAKECMDGOALS),distclean)
 include ../../Makefile.config
+-include ../../Makefile.local
 endif
 
 all:

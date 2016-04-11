@@ -4,6 +4,7 @@ SUBDIR=manual
 
 ifneq ($(MAKECMDGOALS),distclean)
 include ../Makefile.config
+-include ../Makefile.local
 endif
 
 all: spatch.1

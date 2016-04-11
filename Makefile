@@ -15,6 +15,7 @@ MAKELIBS:=$(dir $(wildcard ./bundles/*/Makefile))
 else
 ifneq ($(MAKECMDGOALS),configure)
 -include Makefile.config
+-include Makefile.local
 endif
 endif
 

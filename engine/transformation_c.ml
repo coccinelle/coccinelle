@@ -813,7 +813,7 @@ let (transform2: string (* rule name *) -> string list (* dropped_isos *) ->
 
    xs +> List.fold_left (fun acc (index, (nodei, binding, rule_elem)) ->
       (* subtil: not cflow#nodes but acc#nodes *)
-      let node  = acc#nodes#assoc nodei in
+      let node  = F.KeyMap.find nodei acc#nodes in
 
       if !Flag.show_transinfo
       then pr2 (Printf.sprintf "transform one node: %d" nodei);

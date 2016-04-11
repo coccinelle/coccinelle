@@ -3,12 +3,13 @@
 
 ifneq ($(MAKECMDGOALS),distclean)
 include ../../Makefile.config
+-include ../../Makefile.local
 endif
 
 OCAMLCFLAGS ?= -g
 OPTFLAGS ?= -g
 
-PARMAP_VERSION=1.0-rc5-patched
+PARMAP_VERSION=1.0-rc7
 PARMAP_DIR=parmap-$(PARMAP_VERSION)
 PARMAP_ARCHIVE=parmap-$(PARMAP_VERSION).tar.gz
 PARMAP_MARKER=$(PARMAP_DIR)/.marker

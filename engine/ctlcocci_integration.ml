@@ -6,8 +6,6 @@
 
 open Common
 
-open Ograph_extended
-
 module F = Control_flow_c
 
 (*****************************************************************************)
@@ -100,7 +98,7 @@ let loop_nodes p check nodes =
     [] nodes
 
 let labels_for_ctl (dropped_isos : string list)
-                    (nodes : (nodei * F.node) list)
+                    (nodes : (F.G.key * F.node) list)
                     (binding : Lib_engine.metavars_binding)
                     p =
   show_or_not_predicate p;
@@ -281,10 +279,8 @@ let quick_labels_for_ctl dropped_isos nodes binding p =
 (* Some fix flow, for CTL, for unparse *)
 (*****************************************************************************)
 (* could erase info on nodes, and edge, because they are not used by rene *)
-let (control_flow_for_ctl: F.cflow -> ('a, 'b) ograph_mutable) =
+let (control_flow_for_ctl: F.cflow -> 'a F.G.ograph_mutable) =
  fun cflow -> cflow
-
-
 
 (* Just make the final node of the control flow loop over itself.
  * It seems that one hypothesis of the SAT algorithm is that each node has at
@@ -329,39 +325,37 @@ let fix_flow_ctl2 (flow : F.cflow) : F.cflow =
 
     !g#add_arc ((exitnodei, exitnodei), F.Direct);
 
-    if ((!g#successors   errornodei)#tolist) = [] &&
-       ((!g#predecessors errornodei)#tolist) = []
+    if (F.KeyEdgeSet.is_empty (!g#successors errornodei)) &&
+       (F.KeyEdgeSet.is_empty (!g#predecessors errornodei))
     then !g#del_node errornodei
     else !g#add_arc ((errornodei, errornodei), F.Direct);
    with Not_found -> ()
   );
 
-  let fake_nodes = !g#nodes#tolist +> List.filter (fun (nodei, node) ->
-    match F.unwrap node with
+  let pred nodei node = match F.unwrap node with
     | F.CaseNode _
     | F.Enter
     (*| F.Fake*) (* [endif], [endswitch], ... *)
       -> true
-    | _ -> false
-    ) in
+    | _ -> false in
 
-  fake_nodes +> List.iter (fun (nodei, node) -> F.remove_one_node nodei !g);
+  let fake_nodes = F.KeyMap.filter pred !g#nodes in
+
+  F.KeyMap.iter (fun nodei node -> F.remove_one_node nodei !g) fake_nodes;
 
   (* even when have deadcode, julia want loop over those nodes *)
-  !g#nodes#tolist +> List.iter (fun (nodei, node) ->
-    if (!g#predecessors nodei)#null
+  F.KeyMap.iter (fun nodei node ->
+    if (F.KeyEdgeSet.is_empty (!g#predecessors nodei))
     then begin
       let fakei = !g#add_node (F.mk_node F.Fake [] [] "DEADCODELOOP") in
       !g#add_arc ((fakei, nodei), F.Direct);
       !g#add_arc ((fakei, fakei), F.Direct);
     end
-  );
+  ) !g#nodes;
 
-  !g#nodes#tolist +> List.iter (fun (nodei, node) ->
-    assert (List.length ((!g#successors nodei)#tolist) >= 1);
-    (* no:  && List.length ((!g#predecessors nodei)#tolist) >= 1
-       because    the enter node at least have no predecessors *)
-    );
+  F.KeyMap.iter (fun nodei node ->
+    assert (F.KeyEdgeSet.cardinal (!g#successors nodei) >= 1);
+    ) !g#nodes;
 
   !g
 let fix_flow_ctl a =
@@ -377,10 +371,10 @@ let fix_flow_ctl a =
  *)
 let model_for_ctl dropped_isos cflow binding =
  let newflow = cflow (* old: fix_flow_ctl (control_flow_for_ctl cflow) *) in
- let labels = labels_for_ctl dropped_isos (newflow#nodes#tolist) binding  in
+ let labels = labels_for_ctl dropped_isos (F.KeyMap.bindings newflow#nodes) binding  in
  let quicklabels =
-   quick_labels_for_ctl dropped_isos (newflow#nodes#tolist) binding  in
- let states = List.map fst  newflow#nodes#tolist  in
+   quick_labels_for_ctl dropped_isos (F.KeyMap.bindings newflow#nodes) binding  in
+ let states = List.map fst  (F.KeyMap.bindings newflow#nodes) in
  newflow, labels, quicklabels, states
 
 
@@ -467,14 +461,14 @@ module ENV =
 
 module CFG =
   struct
-    type node = Ograph_extended.nodei
-    type cfg = (F.node, F.edge) Ograph_extended.ograph_mutable
-    let predecessors cfg n = List.map fst ((cfg#predecessors n)#tolist)
-    let successors   cfg n = List.map fst ((cfg#successors n)#tolist)
+    type node = F.G.key
+    type cfg = F.node F.G.ograph_mutable
+    let predecessors cfg n = List.map fst (F.KeyEdgeSet.elements (cfg#predecessors n))
+    let successors   cfg n = List.map fst (F.KeyEdgeSet.elements (cfg#successors n))
     let extract_is_loop cfg n =
-      Control_flow_c.extract_is_loop (cfg#nodes#find n)
+      Control_flow_c.extract_is_loop (F.KeyMap.find n cfg#nodes)
     let print_node i = Format.print_string (string_of_int i)
-    let size cfg = cfg#nodes#length
+    let size cfg = F.KeyMap.cardinal cfg#nodes
 
     (* In ctl_engine, we use 'node' for the node but in the Ograph_extended
      * terminology, this 'node' is in fact an index to access the real
@@ -482,7 +476,7 @@ module CFG =
      * the 'Ograph_extended.nodei'.
      *)
     let print_graph cfg label border_colors fill_colors filename =
-      Ograph_extended.print_ograph_mutable_generic cfg label
+      F.G.print_ograph_mutable_generic cfg label
         (fun (nodei, (node: F.node)) ->
           (* the string julia wants to put ? *)
           let bc = try Some(List.assoc nodei border_colors) with _ -> None in
@@ -521,9 +515,9 @@ let metavars_binding_to_binding2 binding =
 
 let (satbis_to_trans_info:
   (int list *
-     (nodei * Lib_engine.metavars_binding2 * Lib_engine.predicate)) list ->
+     (F.G.key * Lib_engine.metavars_binding2 * Lib_engine.predicate)) list ->
   (int list *
-     (nodei * Lib_engine.metavars_binding * Ast_cocci.rule_elem)) list) =
+     (F.G.key * Lib_engine.metavars_binding * Ast_cocci.rule_elem)) list) =
   fun xs ->
     xs +> List.fold_left (fun prev (index,(nodei, binding2, pred)) ->
       match pred with

@@ -4,11 +4,9 @@
  * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-open Ograph_extended
-
 val labels_for_ctl :
   string list (* dropped isos *) ->
-  (nodei * Control_flow_c.node) list -> Lib_engine.metavars_binding ->
+  (Control_flow_c.G.key * Control_flow_c.node) list -> Lib_engine.metavars_binding ->
   Lib_engine.label_ctlcocci
 
 

@@ -88,7 +88,7 @@ let sp_of_file file iso    =
 (* Flow related *)
 (* --------------------------------------------------------------------- *)
 let print_flow flow =
-  Ograph_extended.print_ograph_mutable flow "/tmp/test.dot" true
+  Control_flow_c.G.print_ograph_mutable flow "/tmp/test.dot" true
 
 
 let ast_to_flow_with_error_messages2 x =
@@ -572,9 +572,9 @@ let check_macro_in_sp_and_adjust = function
 let contain_loop gopt =
   match gopt with
   | Some g ->
-      g#nodes#tolist +> List.exists (fun (xi, node) ->
+      Control_flow_c.KeyMap.exists (fun xi node ->
         Control_flow_c.extract_is_loop node
-      )
+      ) g#nodes
   | None -> true (* means nothing, if no g then will not model check *)
 
 

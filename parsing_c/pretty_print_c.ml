@@ -1631,9 +1631,9 @@ let string_of_toplevel top =
   )
 
 let (debug_info_of_node:
-       Ograph_extended.nodei -> Control_flow_c.cflow -> string) =
+       Control_flow_c.G.key -> Control_flow_c.cflow -> string) =
   fun nodei flow ->
-    let node = flow#nodes#assoc nodei in
+    let node = Control_flow_c.KeyMap.find nodei flow#nodes in
     let s = Common.format_to_string (fun () ->
       pp_flow_simple node
     ) in

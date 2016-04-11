@@ -33,10 +33,9 @@ module type GRAPH =
 module OGRAPHEXT_GRAPH :
   sig
     type node = int
-    type cfg = (string, unit) Ograph_extended.ograph_mutable
-    val predecessors :
-      < predecessors : 'a -> < tolist : ('b * 'c) list; .. >; .. > ->
-      'a -> 'b list
+    module G : Ograph_extended.S
+    type cfg = string G.ograph_mutable
+    val predecessors : cfg -> node -> node list
     val print_node : node -> unit
   end
 

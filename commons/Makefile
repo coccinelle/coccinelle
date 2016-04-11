@@ -5,6 +5,7 @@
 # The main library
 ifneq ($(MAKECMDGOALS),distclean)
 include ../Makefile.config
+-include ../Makefile.local
 endif
 
 TARGET=commons
@@ -12,40 +13,23 @@ TARGET=commons
 # note: if you add a file (a .mli or .ml), dont forget to redo a 'make depend'
 MYSRC=	commands.ml                              \
 	common.ml                                \
-	interfaces.ml objet.ml                   \
-	ocollection.ml                           \
-	seti.ml                                  \
-	oset.ml oassoc.ml osequence.ml \
-	ocollection/osetb.ml                     \
-	ocollection/oassocb.ml			 \
-	oarray.ml				 \
-	ograph_simple.ml ograph_extended.ml	 \
-	glimpse.ml parser_combinators.ml
+	ograph_simple.ml ograph_extended.ml
 
 MLI_FILES=\
   common.mli \
-  oarray.mli \
-  oassoc.mli \
   objet.mli \
   ocollection.mli \
   ograph_extended.mli \
-  ograph_simple.mli \
-  osequence.mli \
-  oset.mli \
-  parser_combinators.mli
+  ograph_simple.mli
 
 # src from other authors, got from the web or caml hump
 SRC=ocamlextra/dumper.ml
-SRC+=ocamlextra/setb.ml ocamlextra/mapb.ml # defunctorized version of standard set/map
-SRC+=ocamlextra/setPt.ml
 SRC+=$(MYSRC)
-SRC+=ocamlextra/enum.ml ocamlextra/dynArray.ml
-SRC+=ocamlextra/suffix_tree.ml ocamlextra/suffix_tree_ext.ml
 
 SYSLIBS=str.cma bigarray.cma unix.cma
 
-INCLUDEDIRS=ocamlextra ocollection
-SUBDIRS=ocamlextra ocollection
+INCLUDEDIRS=ocamlextra
+SUBDIRS=ocamlextra
 
 #-----------------------------------------------------------------------------
 # Other common (thin wrapper) libraries

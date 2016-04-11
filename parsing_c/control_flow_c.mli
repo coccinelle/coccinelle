@@ -106,7 +106,19 @@ and after_type =
 
 type edge = Direct
 
-type cflow = (node, edge) Ograph_extended.ograph_mutable
+module Key : Set.OrderedType with type t = int
+module KeySet : Set.S with type elt = Key.t
+module KeyMap : Map.S with type key = Key.t
+module Edge : Set.OrderedType with type t = edge
+module KeyEdgePair : Set.OrderedType with type t = Key.t * Edge.t
+module KeyEdgeSet : Set.S with type elt = KeyEdgePair.t
+module G : Ograph_extended.S with
+  type key = Key.t and
+  type 'a keymap = 'a KeyMap.t and
+  type edge = edge and
+  type edges = KeyEdgeSet.t
+
+type cflow = node G.ograph_mutable
 
 val unwrap : node -> node2
 val rewrap : node -> node2 -> node
@@ -120,7 +132,7 @@ val extract_is_fake : node -> bool
 val mk_node: node2 -> int list -> int list -> string -> node
 val mk_fake_node: node2 -> int list -> int list -> string -> node
 
-val first_node : cflow -> Ograph_extended.nodei
-val find_node : (node2 -> bool) -> cflow -> Ograph_extended.nodei
-(* remove an intermediate node and redirect the connexion  *)
-val remove_one_node : Ograph_extended.nodei -> cflow -> unit
+val first_node : cflow -> G.key
+val find_node : (node2 -> bool) -> cflow -> G.key
+(* remove an intermediate node and redirect the connection  *)
+val remove_one_node : G.key -> cflow -> unit

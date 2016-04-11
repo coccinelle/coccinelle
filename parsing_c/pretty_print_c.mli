@@ -96,7 +96,7 @@ val pp_string_fragment_simple:   Ast_c.string_fragment printer
 val pp_string_format_simple:     Ast_c.string_format printer
 
 val debug_info_of_node:
-  Ograph_extended.nodei -> Control_flow_c.cflow -> string
+  Control_flow_c.G.key -> Control_flow_c.cflow -> string
 
 val string_of_expression: Ast_c.expression -> string
 (* Normalized string representation of an [Ifdef] guard.

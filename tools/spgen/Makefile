@@ -4,6 +4,7 @@
 
 COCCIDIR=../..
 -include $(COCCIDIR)/Makefile.config
+-include $(COCCIDIR)/Makefile.local
 
 all:
 	@$(ECHO) -e "\n\n\tCompiling spgen ...\n\n"

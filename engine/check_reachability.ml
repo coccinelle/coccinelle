@@ -36,13 +36,14 @@
   the path, but possible not transformed.
  *)
 
-module G = Ograph_extended
 module CTL = Ast_ctl
 
 (* Step 1: for each tree, make a mapping from the modified nodes to the root
 of the tree *)
 
-let modified = (Hashtbl.create(25) : (G.nodei, G.nodei list ref) Hashtbl.t)
+type nodei = Control_flow_c.G.key
+
+let modified = (Hashtbl.create(25) : (nodei, nodei list ref) Hashtbl.t)
 
 let build_modified (n,_,wits) =
   let rec loop = function
@@ -102,7 +103,7 @@ let create_formulas _ =
 
 module PRED =
   struct
-    type t = Ograph_extended.nodei nodes
+    type t = nodei nodes
     let print_predicate = function
 	After -> Format.print_string "after"
       |	Node x -> Format.print_string (string_of_int x)
@@ -123,16 +124,16 @@ module ENV =
 
 module CFG =
   struct
-    type node = Ograph_extended.nodei
-    type cfg =
-        (Control_flow_c.node, Control_flow_c.edge)
-          Ograph_extended.ograph_mutable
-    let predecessors cfg n = List.map fst ((cfg#predecessors n)#tolist)
-    let successors   cfg n = List.map fst ((cfg#successors n)#tolist)
+    type node = nodei
+    type cfg = Control_flow_c.node Control_flow_c.G.ograph_mutable
+    let predecessors cfg n =
+      List.map fst (Control_flow_c.KeyEdgeSet.elements (cfg#predecessors n))
+    let successors   cfg n =
+      List.map fst (Control_flow_c.KeyEdgeSet.elements (cfg#successors n))
     let extract_is_loop cfg n =
-      Control_flow_c.extract_is_loop (cfg#nodes#find n)
+      Control_flow_c.extract_is_loop (Control_flow_c.KeyMap.find n cfg#nodes)
     let print_node i = Format.print_string (string_of_int i)
-    let size cfg = cfg#nodes#length
+    let size cfg = Control_flow_c.KeyMap.cardinal cfg#nodes
     let print_graph cfg label border_nodes fill_nodes filename = ()
   end
 
@@ -148,7 +149,7 @@ let test_formula state formula cfg =
 		 match Control_flow_c.unwrap node with
 		   Control_flow_c.AfterNode _ -> [(nodei,[],[])]
 		 | _ -> [])
-	       cfg#nodes#tolist) in
+	       (Control_flow_c.KeyMap.bindings cfg#nodes)) in
     let preproc _ = true in
     let verbose = !Flag_ctl.verbose_ctl_engine in
     let pm = !Flag_ctl.partial_match in
@@ -158,7 +159,7 @@ let test_formula state formula cfg =
     Flag_ctl.checking_reachability := true;
 (*     Flag_ctl.graphical_trace := ""; *)
     let res =
-      ENGINE.sat (cfg,label,preproc,List.map fst cfg#nodes#tolist)
+      ENGINE.sat (cfg,label,preproc,List.map fst (Control_flow_c.KeyMap.bindings cfg#nodes))
 	(CTL.And(CTL.NONSTRICT,CTL.Pred(Node(state)),formula))
 	[[Node(state)]] in
     Flag_ctl.verbose_ctl_engine := verbose;
@@ -174,13 +175,13 @@ let test_formula state formula cfg =
 and a witness tree *)
 
 type witness =
-    (Ograph_extended.nodei, unit,
-     (Ograph_extended.nodei, unit, unit) Ast_ctl.generic_ctl list)
+    (nodei, unit,
+     (nodei, unit, unit) Ast_ctl.generic_ctl list)
       Ast_ctl.generic_witnesstree
 
 type ('a,'b,'c,'d,'e) triples =
-    (Ograph_extended.nodei * 'a *
-     (Ograph_extended.nodei,
+    (nodei * 'a *
+     (nodei,
       ('b, ('c, 'd) Wrapper_ctl.wrapped_binding) CTL.generic_subst list, 'e)
      CTL.generic_witnesstree list) list
 
@@ -194,13 +195,13 @@ let check_reachability rulename triples cfg =
       then
 	if test_formula node ef_formula cfg
 	then
-	  let n = cfg#nodes#find node in
+	  let n = Control_flow_c.KeyMap.find node cfg#nodes in
 	  Printf.printf
 	    "warning: %s, node %d: %s in %s may be inconsistently modified\n"
 	    rulename node (snd n) !Flag.current_element
 	else ()
       else
-	let n = cfg#nodes#find node in
+	let n = Control_flow_c.KeyMap.find node cfg#nodes in
 	failwith
 	  (Printf.sprintf
 	     "%s: node %d: %s in %s reachable by inconsistent control-flow paths"
