@@ -36,7 +36,10 @@ let all_same opt_allowed tgt line arities =
       Ast0.NONE ->
 	(match List.hd arities with
 	  Ast0.OPT when not opt_allowed ->
-	    failwith "opt only allowed for the elements of a statement list"
+	    failwith
+	      (Printf.sprintf
+		 "%d: opt only allowed for the elements of a statement list"
+		 line)
 	| x -> x)
     | _ -> tgt in
   if not(List.for_all (function x -> x = tgt) arities)
