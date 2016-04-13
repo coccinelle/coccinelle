@@ -1608,7 +1608,7 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
 		    then
 		      Printf.printf
 			"Empty list of bindings, I will restart from old env\n";
-		    [(old_bindings_to_keep,rules_that_have_matched)]
+		    [[(old_bindings_to_keep,rules_that_have_matched)]]
 		  end
 		else
 		(* combine the new bindings with the old ones, and
@@ -1627,16 +1627,22 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
 			 (List.filter
 			    (function (s,v) ->
 			      not (List.mem s old_variables)))) in
-		  List.map
-		    (function new_binding_to_add ->
-		      (List.sort compare
-			 (Common.union_set
-			    old_bindings_to_keep new_binding_to_add),
-		       r.rule_info.rulename::rules_that_have_matched))
-		    new_bindings_to_add
+		  let local_res =
+		    [List.map
+			(function new_binding_to_add ->
+			  (List.sort compare
+			     (Common.union_set
+				old_bindings_to_keep new_binding_to_add),
+			   r.rule_info.rulename::rules_that_have_matched))
+			new_bindings_to_add] in
+		  if relevant_bindings = [] && not (old_bindings_to_keep = [])
+		  then (* keep an unextended copy *)
+		    [(old_bindings_to_keep,rules_that_have_matched)]::local_res
+		  else local_res
 		  end in
 	      ((relevant_bindings,(new_bindings,new_bindings_ua))::cache,
-	       merge_env new_e newes))
+	       List.fold_left (fun newes new_e -> merge_env new_e newes)
+		 newes new_e))
 	([],init_env()) reorganized_env in (* end iter es *)
     if !(r.rule_info.was_matched)
     then Common.push2 r.rule_info.rulename rules_that_have_ever_matched;
