@@ -165,19 +165,19 @@ Here is a summary of the options available on \fBpycocci\fP:
 .B \-h | \-\-help
 print short help menu
 .TP
-.B\-p | \-\-profile\-cocci
+.B \-p | \-\-profile\-cocci
 Profile the <SmPL patch> when run against <target>
 .TP
-.B\-j | \-\-jobs <job-digit>
+.B \-j | \-\-jobs <job-digit>
 Override the default number of jobs to use with <job-digit>. You really
 only need this if the heuristics for the default number of jobs is
 determined to be incorrect.
 .TP
-.B\-v | \-\-verbose
+.B \-v | \-\-verbose
 Output all possible information when run. By default \fBpycocci\fP will
 provide no output unless an error is found.
 .TP
-.B\-s | \-\-show\-proof
+.B \-s | \-\-show\-proof
 Show that the <SmPL-patch.cocci> can replace a series of patches. The <SmPL-patch.cocci>
 must have a .cocci postfix. A series of patches are expected to exist in the
 directory named after the <SmPL-patch.cocci> with the .cocci postfix removed.
