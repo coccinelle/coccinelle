@@ -1038,7 +1038,11 @@ let detect_attr l =
 	t1::x::loop rest
     | ((PC.TIdent(nm,clt),info) as t1)::id::rest when is_id id ->
 	if String.length nm > 2 && String.sub nm 0 2 = "__"
-	then (PC.Tattr(nm,clt),info)::(loop (id::rest))
+	then
+	  begin
+	    Flag.add_cocci_attribute_names nm;
+	    (PC.Tattr(nm,clt),info)::(loop (id::rest))
+	  end
 	else t1::(loop (id::rest))
     | x::xs -> x::(loop xs) in
   loop l

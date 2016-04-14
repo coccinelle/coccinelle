@@ -56,3 +56,8 @@ let ibm = ref false
 let include_headers = ref false
 
 exception UnreadableFile of string
+
+let cocci_attribute_names = ref ([] : string list)
+let add_cocci_attribute_names s =
+  if not (List.mem s !cocci_attribute_names)
+  then cocci_attribute_names := s :: !cocci_attribute_names

@@ -738,7 +738,10 @@ list_len:
 | TAttribute ids=comma_list(pure_ident_or_meta_ident_nosym)
     { (ids,fun arity (_,name) pure check_meta ->
       if arity = Ast.NONE && pure = Ast0.Impure
-      then (!Data.add_attribute name; [])
+      then
+	(!Data.add_attribute name;
+	 Flag.add_cocci_attribute_names name;
+	 [])
       else raise (Semantic_cocci.Semantic "bad attribute")) }
 | TDeclarer TName ids=comma_list(pure_ident_or_meta_ident_nosym2(TDeclarerId))
     { (ids,fun arity (_,name) pure check_meta ->

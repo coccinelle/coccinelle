@@ -454,7 +454,7 @@ let info_of_tok = function
 
   | EOF                  (i) -> i
   | Tnamespace           (i) -> i
-
+  | TTODO _ -> failwith "fake token, should not occur"
 
 
 
@@ -628,7 +628,7 @@ let visitor_info_of_tok f = function
   | TOParCplusplusInit   (i) -> TOParCplusplusInit   (f i)
   | EOF                  (i) -> EOF                  (f i)
   | Tnamespace           (i) -> Tnamespace           (f i)
-
+  | TTODO _ -> failwith "fake token, should not occur"
 
 (*****************************************************************************)
 (* Accessors *)
@@ -787,6 +787,7 @@ let string_of_token = function
   | TCommentMisc _ -> "TCommentMisc"
   | TCommentCpp _ -> "TCommentCpp"
   | EOF _ -> "EOF"
+  | TTODO _ -> failwith "fake token, should not occur"
 
 let file_of_tok x = Ast_c.file_of_info (info_of_tok x)
 let pinfo_of_tok x = Ast_c.pinfo_of_info (info_of_tok x)
