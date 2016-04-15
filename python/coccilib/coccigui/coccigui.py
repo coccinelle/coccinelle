@@ -59,18 +59,18 @@ class pycocci(object):
     self.bugTreeView.connect('row-activated', self.row_activated)
 
   def row_activated(self, view, path, view_column):
-	  it = view.get_model().get_iter(path)
-	  obj, objtype, bugdesc, file, line, col = view.get_model().get(it, 0, 1, 2, 3, 4, 5)
+          it = view.get_model().get_iter(path)
+          obj, objtype, bugdesc, file, line, col = view.get_model().get(it, 0, 1, 2, 3, 4, 5)
 
-	  if file != '':
-		  server = self.vimsock.get_server_name()
+          if file != '':
+                  server = self.vimsock.get_server_name()
 
-		  self.vimcom.open_file(server, file)
-		  if line != '':
-			  self.vimcom.send_ex(server, line)
+                  self.vimcom.open_file(server, file)
+                  if line != '':
+                          self.vimcom.send_ex(server, line)
 
-			  if col != '':
-				  self.vimcom.send_keys(server, col + '|')
+                          if col != '':
+                                  self.vimcom.send_keys(server, col + '|')
 
   def setup_tree_columns(self):
     self.__tree_columns = [
@@ -108,7 +108,7 @@ class pycocci(object):
       c_cocci_file = self.bugTreeView.get_model().get(root, 2)[0]
       if c_cocci_file == cocci_file:
         it = root
-	break
+        break
 
       root = self.bugTreeView.get_model().iter_next(root)
 
