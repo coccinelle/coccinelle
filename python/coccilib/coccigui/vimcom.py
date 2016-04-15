@@ -556,7 +556,7 @@ class communication_window(gtk.Window):
         self.load_script(server, file_name)
 
     def escape_filename(self, name):
-        for s in ['\\', '?', '*', ' ', "'", '"', '[', '	', '$', '{', '}']:
+        for s in ['\\', '?', '*', ' ', "'", '"', '[', ' ', '$', '{', '}']:
             name = name.replace (s, '\\%s' % s)
         return name
 
