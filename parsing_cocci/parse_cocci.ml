@@ -1041,6 +1041,8 @@ let detect_attr l =
 	then
 	  begin
 	    Flag.add_cocci_attribute_names nm;
+	    (if not (Hashtbl.mem Lexer_cocci.attr_names nm)
+	    then !Data.add_attribute nm);
 	    (PC.Tattr(nm,clt),info)::(loop (id::rest))
 	  end
 	else t1::(loop (id::rest))
