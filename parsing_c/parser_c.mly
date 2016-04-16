@@ -579,9 +579,6 @@ let args_to_params l pb =
 %token <(string * Ast_c.info)> TMacroStructDecl
 *)*/
 
-%token <(string * Ast_c.info)>            TMacroAttrStorage
-
-
 /*(*---------------*)*/
 /*(* other         *)*/
 /*(*---------------*)*/
@@ -1271,14 +1268,6 @@ attribute:
  /*(* cppext: *)*/
  | TMacroAttr { Attribute (fst $1), [snd $1] }
 
-attribute_storage:
- | TMacroAttrStorage { $1 }
-
-type_qualif_attr:
- | type_qualif { $1 }
-/*(*TODO !!!!! *)*/
- | TMacroAttr { {const=true  ; volatile=false}, snd $1   }
-
 /*(*-----------------------------------------------------------------------*)*/
 /*(* Declarator, right part of a type + second part of decl (the ident)  *)*/
 /*(*-----------------------------------------------------------------------*)*/
@@ -1292,17 +1281,23 @@ type_qualif_attr:
  *)*/
 
 declarator:
- | pointer direct_d { (fst $2, fun x -> x +> $1 +> (snd $2)  ) }
- | direct_d         { $1  }
+ | pointer direct_d { let (attr,ptr) = $1 in
+                      (attr, (fst $2, fun x -> x +> ptr +> (snd $2))) }
+ | direct_d         { (Ast_c.noattr, $1)  }
 
 /*(* so must do  int * const p; if the pointer is constant, not the pointee *)*/
 pointer:
- | tmul                   { fun x -> mk_ty (Pointer x) [$1] }
- | tmul pointer           { fun x -> mk_ty (Pointer ($2 x)) [$1] }
+ | tmul                   { (Ast_c.noattr,fun x -> mk_ty (Pointer x) [$1]) }
+ | tmul pointer
+     { let (attr,ptr) = $2 in
+       (attr,fun x -> mk_ty (Pointer (ptr x)) [$1]) }
  | tmul type_qualif_list
-     { fun x -> ($2.qualifD, mk_tybis (Pointer x) [$1])}
+     { let (attr,tq) = $2 in
+       (attr,fun x -> (tq.qualifD, mk_tybis (Pointer x) [$1]))}
  | tmul type_qualif_list pointer
-     { fun x -> ($2.qualifD, mk_tybis (Pointer ($3 x)) [$1]) }
+     { let (attr1,tq) = $2 in
+       let (attr2,ptr) = $3 in
+       (attr1@attr2,fun x -> (tq.qualifD, mk_tybis (Pointer (ptr x)) [$1])) }
 
 tmul:
    TMul { $1 }
@@ -1318,7 +1313,8 @@ direct_d:
  | identifier_cpp
      { ($1, fun x -> x) }
  | TOPar declarator TCPar      /*(* forunparser: old: $2 *)*/
-     { (fst $2, fun x -> mk_ty (ParenType ((snd $2) x)) [$1;$3]) }
+     { let (attr,dec) = $2 in  (* attr gets ignored... *)
+       (fst dec, fun x -> mk_ty (ParenType ((snd dec) x)) [$1;$3]) }
  | direct_d tocro            tccro
      { (fst $1,fun x->(snd $1) (mk_ty (Array (None,x)) [$2;$3])) }
  | direct_d tocro const_expr tccro
@@ -1343,9 +1339,9 @@ tccro: TCCro { dt "tccro" ();$1 }
 
 /*(*-----------------------------------------------------------------------*)*/
 abstract_declarator:
- | pointer                            { $1 }
+ | pointer                            { snd $1 }
  |         direct_abstract_declarator { $1 }
- | pointer direct_abstract_declarator { fun x -> x +> $2 +> $1 }
+ | pointer direct_abstract_declarator { fun x -> x +> $2 +> (snd $1) }
 
 direct_abstract_declarator:
  | TOPar abstract_declarator TCPar /*(* forunparser: old: $2 *)*/
@@ -1425,9 +1421,12 @@ parameter_decl2:
 parameter_decl: parameter_decl2 { et "param" ();  $1 }
 
 declaratorp:
- | declarator  { LP.add_ident (str_of_name (fst $1)); $1 }
+ | declarator  { let (attr,dec) = $1 in (* attr gets ignored *)
+                 LP.add_ident (str_of_name (fst dec)); dec }
  /*(* gccext: *)*/
- | declarator attributes   { LP.add_ident (str_of_name (fst $1)); $1 }
+ | declarator attributes
+               { let (attr,dec) = $1 in (* attr gets ignored *)
+                 LP.add_ident (str_of_name (fst dec)); dec }
 
 abstract_declaratorp:
  | abstract_declarator { $1 }
@@ -1450,13 +1449,10 @@ spec_qualif_list: spec_qualif_list2            {  dt "spec_qualif" (); $1 }
 
 /*(* for pointers in direct_declarator and abstract_declarator *)*/
 type_qualif_list:
- | type_qualif_attr                  { {nullDecl with qualifD = (fst $1,[snd $1])} }
- | type_qualif_list type_qualif_attr { addQualifD ($2,$1) }
-
-
-
-
-
+ | type_qualif { (Ast_c.noattr,{nullDecl with qualifD = (fst $1,[snd $1])}) }
+ | attribute                    { ([$1],nullDecl) }
+ | type_qualif_list type_qualif { (fst $1,addQualifD ($2,snd $1)) }
+ | type_qualif_list attribute   { ((fst $1)@[$2],snd $1) }
 
 /*(*-----------------------------------------------------------------------*)*/
 /*(* xxx_type_id *)*/
@@ -1564,15 +1560,9 @@ storage_class_spec_nt:
  | Tauto        { Sto Auto,    $1 }
  | Tregister    { Sto Register,$1 }
 
-storage_class_spec2:
+storage_class_spec:
  | storage_class_spec_nt { $1 }
  | Ttypedef     { StoTypedef,  $1 }
-
-storage_class_spec:
- /*(* gccext: *)*/
- | storage_class_spec2 { $1 }
- | storage_class_spec2 attribute_storage_list { $1 (* TODO *) }
-
 
 
 /*(*----------------------------*)*/
@@ -1606,12 +1596,17 @@ init_declarator: init_declarator2  { dt "init" (); $1 }
 /*(*----------------------------*)*/
 
 declaratori:
- | declarator              { LP.add_ident (str_of_name (fst $1)); $1, Ast_c.noattr }
+ | declarator
+     { let (attr,dec) = $1 in
+       LP.add_ident (str_of_name (fst dec)); dec, attr }
  /*(* gccext: *)*/
- | declarator gcc_asm_decl { LP.add_ident (str_of_name (fst $1)); $1, Ast_c.noattr }
+ | declarator gcc_asm_decl
+     { let (attr,dec) = $1 in
+       LP.add_ident (str_of_name (fst dec)); dec, attr }
  /*(* gccext: *)*/
  | declarator end_attributes
-   { LP.add_ident (str_of_name (fst $1)); $1, Ast_c.noattr (* TODO *) }
+     { let (attr,dec) = $1 in
+       LP.add_ident (str_of_name (fst dec)); dec, attr (* TODO *) }
 
 
 gcc_asm_decl:
@@ -1771,9 +1766,11 @@ struct_declarator:
 /*(* workarounds *)*/
 /*(*----------------------------*)*/
 declaratorsd:
- | declarator { (*also ? LP.add_ident (fst (fst $1)); *) $1 }
+ | declarator
+     { let (attr,dec) = $1 in (* attr ignored *)
+       (*also ? LP.add_ident (fst (fst dec)); *) dec }
  /*(* gccext: *)*/
- | declarator attributes   { $1 }
+ | declarator attributes   { let (attr,dec) = $1 in dec }
 
 
 
@@ -1880,9 +1877,11 @@ as typedefs.  Unfortunately, doing something about this problem seems to
 introduce conflicts in the parser. */
 
 declaratorfd:
- | declarator { et "declaratorfd" (); $1, Ast_c.noattr }
+ | declarator
+   { et "declaratorfd" (); let (attr,dec) = $1 in dec, attr }
  /*(* gccext: *)*/
-| declarator end_attributes   { et "declaratorfd" (); $1, Ast_c.noattr }
+| declarator end_attributes
+   { et "declaratorfd" (); let (attr,dec) = $1 in dec, attr }
 
 
 /*(*************************************************************************)*/
@@ -2295,11 +2294,6 @@ designator_list:
 attribute_list:
  | attribute { [$1] }
  | attribute_list attribute { $1 @ [$2] }
-
-attribute_storage_list:
- | attribute_storage { [$1] }
- | attribute_storage_list attribute_storage { $1 @ [$2] }
-
 
 attributes: attribute_list { $1 }
 
