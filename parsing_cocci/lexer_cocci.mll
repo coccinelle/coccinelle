@@ -177,10 +177,7 @@ let check_var s linetype =
       with Not_found ->
 	(try (Hashtbl.find type_names s) linetype
 	with Not_found ->
-	  (try
-	    let x = (Hashtbl.find attr_names s) linetype in
-	    check_plus_linetype s;
-	    x
+	  (try (Hashtbl.find attr_names s) linetype
 	  with Not_found ->
 	    (try (Hashtbl.find declarer_names s) linetype
 	    with Not_found ->
@@ -493,7 +490,7 @@ let init _ =
       Hashtbl.replace type_names name fn);
   Data.add_attribute :=
     (function name ->
-      let fn clt = TDirective (Ast.Space name, clt) in
+      let fn clt = Tattr (name, clt) in
       Hashtbl.replace attr_names name fn);
   Data.add_declarer_name :=
     (function name ->
