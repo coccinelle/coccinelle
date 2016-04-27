@@ -73,8 +73,9 @@ and dots_bef_aft =
   | AddingBetweenDots of statement * int (*index of let var*)
   | DroppingBetweenDots of statement * int (*index of let var*)
 
-and inherited = Type_cocci.inherited
-and keep_binding = Type_cocci.keep_binding
+and inherited = bool (* true if inherited *)
+and keep_binding = Unitary (* need no info *)
+  | Nonunitary (* need an env entry *) | Saved (* need a witness *)
 and multi = bool (*true if a nest is one or more, false if it is zero or more*)
 
 and end_info =
@@ -99,16 +100,16 @@ and metavar =
   | MetaBinaryOperatorDecl of arity * meta_name
   | MetaAssignmentOperatorDecl of arity * meta_name
   | MetaConstDecl of
-      arity * meta_name (* name *) * Type_cocci.typeC list option
+      arity * meta_name (* name *) * fullType list option
   | MetaErrDecl of arity * meta_name (* name *)
   | MetaExpDecl of
-      arity * meta_name (* name *) * Type_cocci.typeC list option
+      arity * meta_name (* name *) * fullType list option
   | MetaIdExpDecl of
-      arity * meta_name (* name *) * Type_cocci.typeC list option
+      arity * meta_name (* name *) * fullType list option
   | MetaLocalIdExpDecl of
-      arity * meta_name (* name *) * Type_cocci.typeC list option
+      arity * meta_name (* name *) * fullType list option
   | MetaGlobalIdExpDecl of
-      arity * meta_name (* name *) * Type_cocci.typeC list option
+      arity * meta_name (* name *) * fullType list option
   | MetaExpListDecl of arity * meta_name (*name*) * list_len (*len*)
   | MetaDeclDecl of arity * meta_name (* name *)
   | MetaFieldDecl of arity * meta_name (* name *)
@@ -191,7 +192,7 @@ and base_expression =
   | MetaErr        of meta_name mcode * constraints * keep_binding *
 	              inherited
   | MetaExpr       of meta_name mcode * constraints * keep_binding *
-	              Type_cocci.typeC list option * form * inherited
+	              fullType list option * form * inherited
   | MetaExprList   of meta_name mcode * listlen * keep_binding *
                       inherited (* only in arg lists *)
   | AsExpr         of expression * expression (* as expr, always metavar *)
@@ -337,6 +338,7 @@ and baseType = VoidType | CharType | ShortType | ShortIntType | IntType
 | DoubleType | LongDoubleType | FloatType
 | LongType | LongIntType | LongLongType | LongLongIntType
 | SizeType | SSizeType | PtrDiffType
+| BoolType | Unknown
 
 and structUnion = Struct | Union
 
@@ -914,13 +916,13 @@ let make_inherited_term x inherited inh_pos =
 let make_meta_rule_elem s d (fvs,fresh,inh) =
   let rule = "" in
   {(make_term
-      (MetaRuleElem(((rule,s),no_info,d,[]),Type_cocci.Unitary,false)))
+      (MetaRuleElem(((rule,s),no_info,d,[]),Unitary,false)))
   with free_vars = fvs; fresh_vars = fresh; inherited = inh}
 
 let make_meta_decl s d (fvs,fresh,inh) =
   let rule = "" in
   {(make_term
-      (MetaDecl(((rule,s),no_info,d,[]),Type_cocci.Unitary,false))) with
+      (MetaDecl(((rule,s),no_info,d,[]),Unitary,false))) with
     free_vars = fvs; fresh_vars = fresh; inherited = inh}
 
 let make_mcode x = (x,no_info,CONTEXT(NoPos,NOTHING),[])
@@ -966,3 +968,246 @@ let string_of_assignOp op = match (unwrap op) with
     let s = string_of_arithOp (unwrap_mcode op') in
     s ^ "="
   | MetaAssign _ -> "MetaAssign"
+
+let string_of_sign = function
+    Signed -> "signed"
+  | Unsigned -> "unsigned"
+
+let string_of_baseType = function
+    VoidType -> "void"
+  | CharType -> "char"
+  | ShortType -> "short"
+  | ShortIntType -> "short int"
+  | IntType -> "int"
+  | DoubleType -> "double"
+  | LongDoubleType -> "long double"
+  | FloatType -> "float"
+  | LongType -> "long"
+  | LongIntType -> "long int"
+  | LongLongType -> "long long"
+  | LongLongIntType -> "long long int"
+  | SizeType -> "size_t"
+  | SSizeType -> "ssize_t"
+  | PtrDiffType -> "ptrdiff_t"
+  | BoolType -> "bool"
+  | Unknown -> "unknown"
+
+let string_of_const_vol = function
+    Const -> "const"
+  | Volatile -> "volatile"
+
+let rec string_of_typeC ty =
+  match unwrap ty with
+    BaseType (bt, _) -> string_of_baseType bt ^ " "
+  | SignedT (sign, ty') ->
+      let ssign = string_of_sign (unwrap_mcode sign) in
+      ssign ^ " " ^ Common.default "" string_of_typeC ty'
+  | Pointer (ty', _) ->
+      string_of_fullType ty' ^ "*"
+  | _ ->
+      failwith "string_of_typeC"
+and string_of_fullType ty =
+  match unwrap ty with
+    Type (_, None, ty') -> string_of_typeC ty'
+  | Type (_, Some const_vol, ty') ->
+      string_of_const_vol (unwrap_mcode const_vol) ^ " " ^ string_of_typeC ty'
+  | _ ->
+      failwith "string_of_fullType"
+
+let typeC_of_fullType_opt ty =
+  match unwrap ty with
+    Type (_, None, ty') -> Some ty'
+  | _ -> None
+
+let ident_of_expression_opt expression =
+  match unwrap expression with
+    Ident ident -> Some ident
+  | _ -> None
+
+type 'a transformer = {
+    baseType: (baseType -> string mcode list -> 'a) option;
+    decimal: (string mcode -> string mcode -> expression ->
+      string mcode option -> expression option -> string mcode -> 'a) option;
+    enumName: (string mcode -> ident option -> 'a) option;
+    structUnionName: (structUnion mcode -> ident option -> 'a) option;
+    typeName: (string mcode -> 'a) option;
+    metaType: (meta_name mcode -> keep_binding -> inherited -> 'a) option
+  }
+
+let empty_transformer = {
+  baseType = None;
+  decimal = None;
+  enumName = None;
+  structUnionName = None;
+  typeName = None;
+  metaType = None
+}
+
+let rec fullType_map tr ty =
+  rewrap ty begin
+    match unwrap ty with
+      Type (a, b, ty') -> Type (a, b, typeC_map tr ty')
+    | AsType (ty0, ty1) ->
+        AsType (fullType_map tr ty0, fullType_map tr ty1)
+    | DisjType l -> DisjType (List.map (fullType_map tr) l)
+    | OptType ty' -> OptType (fullType_map tr ty')
+  end
+and typeC_map tr ty =
+  match unwrap ty with
+    BaseType (ty', s) ->
+      begin
+        match tr.baseType with
+          None -> ty
+        | Some f -> rewrap ty (f ty' s)
+      end
+  | Pointer (ty', s) -> rewrap ty (Pointer (fullType_map tr ty', s))
+  | FunctionPointer (ty, s0, s1, s2, s3, s4, s5) ->
+      rewrap ty (FunctionPointer (fullType_map tr ty, s0, s1, s2, s3, s4, s5))
+  | Array (ty', s0, s1, s2) ->
+      rewrap ty (Array (fullType_map tr ty', s0, s1, s2))
+  | EnumName (s0, ident) ->
+      begin
+        match tr.enumName with
+          None -> ty
+        | Some f -> rewrap ty (f s0 ident)
+      end
+  | StructUnionName (su, ident) ->
+      begin
+        match tr.structUnionName with
+          None -> ty
+        | Some f -> rewrap ty (f su ident)
+      end
+  | TypeName name ->
+      begin
+        match tr.typeName with
+          None -> ty
+        | Some f -> rewrap ty (f name)
+      end
+  | MetaType (name, keep, inherited) ->
+      begin
+        match tr.metaType with
+          None -> ty
+        | Some f -> rewrap ty (f name keep inherited)
+      end
+  | Decimal (s0, s1, e0, s2, e1, s3) ->
+      begin
+        match tr.decimal with
+          None -> ty
+        | Some f -> rewrap ty (f s0 s1 e0 s2 e1 s3)
+      end
+  | SignedT (_, None) -> ty
+  | SignedT (sgn, Some ty') ->
+      rewrap ty (SignedT (sgn, Some (typeC_map tr ty')))
+  | EnumDef (ty', s0, e, s1) ->
+      rewrap ty (EnumDef (fullType_map tr ty', s0, e, s1))
+  | StructUnionDef (ty', s0, a, s1) ->
+      rewrap ty (StructUnionDef (fullType_map tr ty', s0, a, s1))
+
+let rec fullType_fold tr ty v =
+  match unwrap ty with
+    Type (_, _, ty') -> typeC_fold tr ty' v
+  | AsType (ty0, ty1) ->
+      let v' = fullType_fold tr ty0 v in
+      fullType_fold tr ty1 v'
+  | DisjType l -> List.fold_left (fun v' ty' -> fullType_fold tr ty' v') v l
+  | OptType ty' -> fullType_fold tr ty' v
+and typeC_fold tr ty v =
+  match unwrap ty with
+    BaseType (ty', s0) -> Common.default v (fun f -> f ty' s0 v) tr.baseType
+  | SignedT (_, None) -> v
+  | SignedT (_, Some ty') -> typeC_fold tr ty' v
+  | Pointer (ty', _)
+  | FunctionPointer (ty', _, _, _, _, _, _)
+  | Array (ty', _, _, _)
+  | EnumDef (ty', _, _, _)
+  | StructUnionDef (ty', _, _, _) -> fullType_fold tr ty' v
+  | Decimal (s0, s1, e0, s2, e1, s3) ->
+      Common.default v (fun f -> f s0 s1 e0 s2 e1 s3 v) tr.decimal
+  | EnumName (s0, ident) -> Common.default v (fun f -> f s0 ident v) tr.enumName
+  | StructUnionName (su, ident) ->
+      Common.default v (fun f -> f su ident v) tr.structUnionName
+  | TypeName name -> Common.default v (fun f -> f name v) tr.typeName
+  | MetaType (name, keep, inherited) ->
+      Common.default v (fun f -> f name keep inherited v) tr.metaType
+
+let fullType_iter tr ty =
+  fullType_fold {
+    baseType = Common.map_option (fun f ty' s0 () -> f ty' s0) tr.baseType;
+    decimal = Common.map_option
+      (fun f s0 s1 e0 s2 e1 s3 () -> f s0 s1 e0 s2 e1 s3) tr.decimal;
+    enumName = Common.map_option (fun f s0 ident () -> f s0 ident) tr.enumName;
+    structUnionName = Common.map_option
+      (fun f su ident () -> f su ident) tr.structUnionName;
+    typeName = Common.map_option (fun f name () -> f name) tr.typeName;
+    metaType = Common.map_option
+      (fun f name keep inherited () -> f name keep inherited) tr.metaType
+  } ty ()
+
+let rec ident_fold_meta_names f ident v =
+  match unwrap ident with
+    Id _ -> v
+  | MetaId (tyname, _, _, _)
+  | MetaFunc (tyname, _, _, _)
+  | MetaLocalFunc (tyname, _, _, _) -> f (unwrap_mcode tyname) v
+  | AsIdent (ident0, ident1) ->
+      let v' = ident_fold_meta_names f ident0 v in
+      ident_fold_meta_names f ident1 v'
+  | DisjId l ->
+      List.fold_left (fun v' ident' -> ident_fold_meta_names f ident' v') v l
+  | OptIdent ident' -> ident_fold_meta_names f ident' v
+
+let expression_fold_ident f e v = f (Common.just (ident_of_expression_opt e)) v
+
+let fullType_fold_meta_names f ty v =
+  let enumOrStructUnionName _ ident v =
+    Common.default v (fun ident' -> ident_fold_meta_names f ident' v) ident in
+  fullType_fold { empty_transformer with
+    decimal = Some (fun _ _ e1 _ e2 _ v ->
+      let v' = expression_fold_ident (ident_fold_meta_names f) e1 v in
+      Common.default v'
+	(fun e -> expression_fold_ident (ident_fold_meta_names f) e v) e2);
+    enumName = Some enumOrStructUnionName;
+    structUnionName = Some enumOrStructUnionName;
+    metaType = Some (fun tyname _ _ v -> f (unwrap_mcode tyname) v)
+  } ty v
+
+let meta_names_of_fullType ty =
+  fullType_fold_meta_names
+    (fun meta_name meta_names -> meta_name :: meta_names) ty []
+
+let rec fullType_compatible ty0 ty1 =
+  match unwrap ty0, unwrap ty1 with
+    Type (sgn0, cv0, ty0), Type (sgn1, cv1, ty1) ->
+      sgn0 = sgn1 &&
+      Common.equal_option
+        (fun cv0' cv1' -> unwrap_mcode cv0' = unwrap_mcode cv1') cv0 cv1 &&
+      typeC_compatible ty0 ty1
+  | _ ->
+      failwith "Ast_cocci.fullType_compatible: unimplemented"
+and typeC_compatible ty0 ty1 =
+  match unwrap ty0, unwrap ty1 with
+    BaseType (Unknown, _), _
+  | _, BaseType (Unknown, _) -> true
+  | BaseType (ty0', _), BaseType (ty1', _) -> ty0' = ty1'
+  | SignedT (sgn0, ty0'), SignedT (sgn1, ty1') ->
+      unwrap_mcode sgn0 = unwrap_mcode sgn1 &&
+      Common.equal_option typeC_compatible ty0' ty1'
+  | Pointer (ty0', _), Pointer (ty1', _)
+  | FunctionPointer (ty0', _, _, _, _, _, _),
+      FunctionPointer (ty1', _, _, _, _, _, _)
+  | Array (ty0', _, _, _), Array (ty1', _, _, _) ->
+      fullType_compatible ty0' ty1'
+  | TypeName ty0', TypeName ty1' -> unwrap_mcode ty0' = unwrap_mcode ty1'
+  | Decimal (_, _, _, _, _, _), Decimal (_, _, _, _, _, _) ->
+      failwith "Ast_cocci.typeC_compatible: unimplemented (Decimal)"
+  | EnumName (_, _), EnumName (_, _) ->
+      failwith "Ast_cocci.typeC_compatible: unimplemented (EnumName)"
+  | EnumDef (_, _, _, _), EnumDef (_, _, _, _) ->
+      failwith "Ast_cocci.typeC_compatible: unimplemented (EnumDef)"
+  | StructUnionName (_, _), StructUnionName (_, _) ->
+      failwith "Ast_cocci.typeC_compatible: unimplemented (StructUnionName)"
+  | StructUnionDef (_, _, _, _), StructUnionDef (_, _, _, _) ->
+      failwith "Ast_cocci.typeC_compatible: unimplemented (StructUnionDef)"
+  | MetaType (m0, k0, i0), MetaType (m1, k1, i1) ->
+      unwrap_mcode m0 = unwrap_mcode m1 && k0 = k1 && i0 = i1
+  | _, _ -> false

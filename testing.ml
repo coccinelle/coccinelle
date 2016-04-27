@@ -439,8 +439,8 @@ let test_okfailed cocci_file cfiles =
 	    None -> ()
 	  | Some current_out' ->
 	      let diff = Compare_c.exact_compare current_out' expected_out in
-              let s = Compare_c.compare_result_to_string diff in
-	    push2 (cocci_file ^ (t_to_s Failed), [s;time_str]) final_files
+	      let s = Compare_c.compare_result_to_string diff in
+	      push2 (cocci_file ^ (t_to_s Failed), [s;time_str]) final_files
 	end;
 	 );
       )

@@ -723,6 +723,19 @@ val some : 'a option -> 'a (* alias *)
 val fmap :       ('a -> 'b) -> 'a option -> 'b option
 val map_option : ('a -> 'b) -> 'a option -> 'b option (* alias *)
 
+val equal_option : ('a -> 'b -> bool) -> 'a option -> 'b option -> bool
+(**
+ * [equal_option eq x y] returns [true] iff
+ * either [x = None] and [y = None],
+ * or [x = Some x'] and [y = Some y'] and [eq x' y'].
+ *)
+
+val default : 'a -> ('b -> 'a) -> 'b option -> 'a
+(**
+ * [default d f None] returns [d]
+ * and [default d f (Some x)] returns [f x]
+ *)
+
 val do_option : ('a -> unit) -> 'a option -> unit
 
 val optionise : (unit -> 'a) -> 'a option
@@ -1291,6 +1304,12 @@ val sorted_keep_best : ('a -> 'a -> 'a option) -> 'a list -> 'a list
 
 
 val cartesian_product : 'a list -> 'b list -> ('a * 'b) list
+
+val equal_list : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
+(**
+ * [equal_list eq [x0; x1; ...; xm] [y0; y1; ...; yn]] returns [true] iff
+ * [m = n] and [eq x0 y0], [eq x1 y1], ..., and [eq xn yn].
+ *)
 
 (* old stuff *)
 val surEnsemble : 'a list -> 'a list list -> 'a list list

@@ -4,7 +4,6 @@
  * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-module T = Type_cocci
 module Ast = Ast_cocci
 module Ast0 = Ast0_cocci
 module V0 = Visitor_ast0
@@ -20,20 +19,24 @@ but perhaps other needs will become apparent. *)
 (* "functions" that return a boolean value *)
 let bool_functions = ["likely";"unlikely"]
 
+let print_type ty =
+  print_string (Ast.string_of_fullType (Ast0toast.typeC false ty))
+
 let err wrapped ty s =
-  T.typeC ty; Format.print_newline();
+  print_type ty; Format.print_newline();
   failwith (Printf.sprintf "line %d: %s" (Ast0.get_line wrapped) s)
 
 type id = Id of string | Meta of Ast.meta_name
 
-let int_type = T.BaseType(T.IntType)
-let void_type = T.BaseType(T.VoidType)
-let bool_type = T.BaseType(T.BoolType)
-let char_type = T.BaseType(T.CharType)
-let float_type = T.BaseType(T.FloatType)
-let size_type = T.BaseType(T.SizeType)
-let ssize_type = T.BaseType(T.SSizeType)
-let ptrdiff_type = T.BaseType(T.PtrDiffType)
+let int_type = Ast0.BaseType (Ast.IntType, [])
+let bool_type = Ast0.BaseType (Ast.BoolType, [])
+let unknown_type = (Ast0.BaseType (Ast.Unknown, []))
+let void_type = Ast0.BaseType (Ast.VoidType, [])
+let char_type = Ast0.BaseType (Ast.CharType, [])
+let float_type = Ast0.BaseType (Ast.FloatType, [])
+let size_type = Ast0.BaseType (Ast.SizeType, [])
+let ssize_type = Ast0.BaseType (Ast.SSizeType, [])
+let ptrdiff_type = Ast0.BaseType (Ast.PtrDiffType, [])
 
 let lub_type t1 t2 =
   match (t1,t2) with
@@ -41,23 +44,23 @@ let lub_type t1 t2 =
   | (None,Some t) -> t2
   | (Some t,None) -> t1
   | (Some t1,Some t2) ->
-      let rec loop = function
-	  (T.Unknown,t2) -> t2
-	| (t1,T.Unknown) -> t1
-	| (T.ConstVol(cv1,ty1),T.ConstVol(cv2,ty2)) when cv1 = cv2 ->
-	    T.ConstVol(cv1,loop(ty1,ty2))
-
+      let rec loop ty1 ty2 =
+        match Ast0.unwrap ty1, Ast0.unwrap ty2 with
+          (Ast0.BaseType (Ast.Unknown, _), ty)
+        | (ty, Ast0.BaseType (Ast.Unknown, _)) -> Ast0.rewrap ty1 ty
+	| (Ast0.ConstVol(cv1,ty1),Ast0.ConstVol(cv2,ty2)) when cv1 = cv2 ->
+	    Ast0.rewrap ty1 (Ast0.ConstVol(cv1,loop ty1 ty2))
         (* pad: in pointer arithmetic, as in ptr+1, the lub must be ptr *)
-	| (T.Pointer(ty1),T.Pointer(ty2)) ->
-	    T.Pointer(loop(ty1,ty2))
-	| (ty1,T.Pointer(ty2)) -> T.Pointer(ty2)
-	| (T.Pointer(ty1),ty2) -> T.Pointer(ty1)
-
-	| (T.Array(ty1),T.Array(ty2)) -> T.Array(loop(ty1,ty2))
-	| (T.TypeName(s1),t2) -> t2
-	| (t1,T.TypeName(s1)) -> t1
-	| (t1,_) -> t1 in (* arbitrarily pick the first, assume type correct *)
-      Some (loop (t1,t2))
+	| (Ast0.Pointer(ty1, s),Ast0.Pointer(ty2, _)) ->
+	    Ast0.rewrap ty1 (Ast0.Pointer(loop ty1 ty2, s))
+	| (_,Ast0.Pointer(_, _)) -> ty2
+	| (Ast0.Pointer(_, _),_) -> ty1
+	| (Ast0.Array(ty1, s0, e0, s1),Ast0.Array(ty2, _, _, _)) ->
+            Ast0.rewrap ty1 (Ast0.Array(loop ty1 ty2, s0, e0, s1))
+	| (Ast0.TypeName(_),_) -> ty2
+	| (_,Ast0.TypeName(_)) -> ty1
+	| _ -> ty1 in (* arbitrarily pick the first, assume type correct *)
+      Some (loop t1 t2)
 
 let lub_envs envs =
   List.fold_left
@@ -77,6 +80,30 @@ let lub_envs envs =
 	      |	_ -> failwith "bad type environment")
 	  acc env)
     [] envs
+
+let strip_cv =
+  Common.map_option (function ty ->
+    match Ast0.unwrap ty with
+    | Ast0.ConstVol(_,ty') -> ty'
+    | _ -> ty)
+
+(* types that might be integer types.  should char be allowed? *)
+let rec is_int_type_unwrap = function
+    Ast0.BaseType (Ast.IntType, _)
+  | Ast0.BaseType (Ast.LongType, _)
+  | Ast0.BaseType (Ast.ShortType, _)
+  | Ast0.BaseType (Ast.SizeType, _)
+  | Ast0.MetaType(_,_)
+  | Ast0.TypeName _
+  | Ast0.EnumName _
+  | Ast0.Signed(_,None) -> true
+  | Ast0.Signed(_,Some ty) -> is_int_type ty
+  | _ -> false
+and is_int_type ty = is_int_type_unwrap (Ast0.unwrap ty)
+
+let dummy = Ast0.make_mcode ""
+
+let num s = Ast0.Constant (Ast0.make_mcode (Ast.Int s))
 
 let rec propagate_types env =
   let option_default = None in
@@ -101,25 +128,6 @@ let rec propagate_types env =
     | Ast0.AsIdent _ -> failwith "not possible"
     | _ -> k i in
 
-  let strip_cv = function
-      Some (T.ConstVol(_,t)) -> Some t
-    | t -> t in
-
-  let ast0_type_to_type = Ast0.ast0_type_to_type false in
-
-  (* types that might be integer types.  should char be allowed? *)
-  let rec is_int_type = function
-      T.BaseType(T.IntType)
-    | T.BaseType(T.LongType)
-    | T.BaseType(T.ShortType)
-    | T.BaseType(T.SizeType)
-    | T.MetaType(_,_,_)
-    | T.TypeName _
-    | T.EnumName _
-    | T.SignedT(_,None) -> true
-    | T.SignedT(_,Some ty) -> is_int_type ty
-    | _ -> false in
-
   let expression r k e =
     let res = k e in
     let ty =
@@ -128,26 +136,38 @@ let rec propagate_types env =
 	  Ast0.Ident(id) -> Ast0.set_type e res; res
 	| Ast0.Constant(const) ->
 	    (match Ast0.unwrap_mcode const with
-	         Ast.String(_) -> Some (T.Pointer(char_type))
-	       | Ast.Char(_) -> Some (char_type)
-	       | Ast.Int(_) -> Some (int_type)
-	       | Ast.Float(_) ->  Some (float_type)
+	         Ast.String(_) ->
+                   Some (
+                     Ast0.rewrap e (
+                       Ast0.Pointer(
+                         Ast0.rewrap e char_type,
+                         dummy)))
+	       | Ast.Char(_) -> Some (Ast0.rewrap e char_type)
+	       | Ast.Int(_) -> Some (Ast0.rewrap e int_type)
+	       | Ast.Float(_) ->  Some (Ast0.rewrap e float_type)
 	       | Ast.DecimalConst(_,l,p) ->
-		   Some (T.Decimal(T.Num l, T.Num p)))
+		   Some (
+                     Ast0.rewrap e (
+                       Ast0.Decimal(
+                         dummy, dummy, Ast0.rewrap e (num l), None,
+                         Some (Ast0.rewrap e (num p)), dummy))))
         (* pad: note that in C can do either ptr(...) or ( *ptr)(...)
          * so I am not sure this code is enough.
          *)
-	| Ast0.StringConstant _ -> Some (T.Array(char_type))
+	| Ast0.StringConstant _ ->
+            Some (
+              Ast0.rewrap e (
+                Ast0.Array(Ast0.rewrap e char_type, dummy, None, dummy)))
 	| Ast0.FunCall(fn,lp,args,rp) ->
-	    (match Ast0.get_type fn with
-		 Some (T.FunctionPointer(ty)) -> Some ty
+	    (match Common.map_option Ast0.unwrap (Ast0.get_type fn) with
+		 Some (Ast0.FunctionPointer(ty, _, _, _, _, _, _)) -> Some ty
 	       |  _ ->
 		    (match Ast0.unwrap fn with
 			 Ast0.Ident(id) ->
 			   (match Ast0.unwrap id with
 				Ast0.Id(id) ->
 				  if List.mem (Ast0.unwrap_mcode id) bool_functions
-				  then Some(bool_type)
+				  then Some(Ast0.rewrap e bool_type)
 				  else None
 			      | _ -> None)
 		       |	_ -> None))
@@ -164,92 +184,113 @@ let rec propagate_types env =
 	| Ast0.Unary(exp,op) ->
 	    (match Ast0.unwrap_mcode op with
 		 Ast.GetRef ->
-		   (match Ast0.get_type exp with
-			None -> Some (T.Pointer(T.Unknown))
-		      |	Some t -> Some (T.Pointer(t)))
-	       | Ast.GetRefLabel -> Some (T.Pointer(void_type))
+                   Some (Ast0.rewrap e (Ast0.Pointer (
+                    (match Ast0.get_type exp with
+                       None -> Ast0.rewrap e unknown_type
+                     | Some t -> t),
+                     dummy)))
+	       | Ast.GetRefLabel ->
+                   Some (Ast0.rewrap e (Ast0.Pointer (
+                     Ast0.rewrap e void_type,
+                     dummy)))
 	       | Ast.DeRef ->
-		   (match Ast0.get_type exp with
-			Some (T.Pointer(t)) -> Some t
+                   (match Common.map_option Ast0.unwrap (Ast0.get_type exp) with
+                        Some (Ast0.Pointer(t, _)) -> Some t
 		      |	_ -> None)
 	       | Ast.UnPlus -> Ast0.get_type exp
 	       | Ast.UnMinus -> Ast0.get_type exp
 	       | Ast.Tilde -> Ast0.get_type exp
-	       | Ast.Not -> Some(bool_type))
+               | Ast.Not -> Some (Ast0.rewrap e bool_type))
 	| Ast0.Nested(exp1,op,exp2) -> failwith "nested in type inf not possible"
 	| Ast0.Binary(exp1,op,exp2) ->
 	    let ty1 = Ast0.get_type exp1 in
 	    let ty2 = Ast0.get_type exp2 in
-	    let same_type = function
-		(None,None) -> Some (int_type)
+	    let same_type t1 t2 =
+              match
+                Common.map_option Ast0.unwrap t1,
+                Common.map_option Ast0.unwrap t2
+              with
+                (None, None) -> Some (Ast0.wrap int_type)
 
               (* pad: pointer arithmetic handling as in ptr+1 *)
-	      | (Some (T.Pointer ty1),Some ty2) when is_int_type ty2 ->
-		  Some (T.Pointer ty1)
-	      | (Some ty1,Some (T.Pointer ty2)) when is_int_type ty1 ->
-		  Some (T.Pointer ty2)
+              | (Some (Ast0.Pointer (_, _)),Some ty2)
+                when is_int_type_unwrap ty2 ->
+                  t1
+              | (Some ty1,Some (Ast0.Pointer (_, _)))
+                when is_int_type_unwrap ty1 ->
+                  t2
 
-	      | (t1,t2) ->
+	      | _ ->
 		  let ty = lub_type t1 t2 in
 		    Ast0.set_type exp1 ty; Ast0.set_type exp2 ty; ty in
 	      (match Ast0.unwrap op with
-		 Ast0.Arith(op) -> same_type (ty1, ty2)
-                 | Ast0.MetaBinary _ -> same_type (ty1, ty2)
+                 Ast0.Arith _ -> same_type ty1 ty2
+               | Ast0.MetaBinary _ -> same_type ty1 ty2
 		 | Ast0.Logical(op') when (let op''=Ast0.unwrap_mcode op' in op''=Ast.AndLog || op''=Ast.OrLog) ->
-		     Some(bool_type)
+                     Some (Ast0.wrap bool_type)
 		 | Ast0.Logical(op) ->
 		     let ty = lub_type ty1 ty2 in
 		     Ast0.set_type exp1 ty; Ast0.set_type exp2 ty;
-		     Some(bool_type))
+                     Some (Ast0.wrap bool_type))
 	| Ast0.Paren(lp,exp,rp) -> Ast0.get_type exp
 	| Ast0.ArrayAccess(exp1,lb,exp2,rb) ->
 	    (match strip_cv (Ast0.get_type exp2) with
-		 None -> Ast0.set_type exp2 (Some(int_type))
+                 None -> Ast0.set_type exp2 (Some (Ast0.wrap int_type))
 	       | Some(ty) when is_int_type ty -> ()
-	       | Some(Type_cocci.Unknown) ->
+	       | Some(ty) when Ast0.is_unknown_type ty ->
 		   (* unknown comes from param types, not sure why this
 		      is not just None... *)
-		   Ast0.set_type exp2 (Some(int_type))
+                   Ast0.set_type exp2 (Some (Ast0.wrap int_type))
 	       | Some ty -> err exp2 ty "bad type for an array index");
-	    (match strip_cv (Ast0.get_type exp1) with
+            (match
+              Common.map_option Ast0.unwrap (strip_cv (Ast0.get_type exp1))
+             with
 		 None -> None
-	       | Some (T.Array(ty)) -> Some ty
-	       | Some (T.Pointer(ty)) -> Some ty
-	       | Some (T.MetaType(_,_,_)) -> None
-	       | Some x -> err exp1 x "ill-typed array reference")
+	       | Some (Ast0.Array(ty, _, _, _)) -> Some ty
+	       | Some (Ast0.Pointer(ty, _)) -> Some ty
+	       | Some (Ast0.MetaType(_,_)) -> None
+	       | Some x -> err exp1 (Ast0.wrap x) "ill-typed array reference")
 	      (* pad: should handle structure one day and look 'field' in environment *)
 	| Ast0.RecordAccess(exp,pt,field) ->
-	    (match strip_cv (Ast0.get_type exp) with
+            (match
+              Common.map_option Ast0.unwrap (strip_cv (Ast0.get_type exp))
+             with
 		 None -> None
-	       | Some (T.StructUnionName(_,_)) -> None
-	       | Some (T.TypeName(s)) ->
+	       | Some (Ast0.StructUnionName(_,_)) -> None
+	       | Some (Ast0.TypeName(s)) ->
 			  None
-	       | Some (T.MetaType(_,_,_)) -> None
-	       | Some x -> err exp x "non-structure type in field ref")
+	       | Some (Ast0.MetaType(_,_)) -> None
+	       | Some x ->
+                   err exp (Ast0.wrap x) "non-structure type in field ref")
 	| Ast0.RecordPtAccess(exp,ar,field) ->
-	    (match strip_cv (Ast0.get_type exp) with
+	    (match
+              Common.map_option Ast0.unwrap (strip_cv (Ast0.get_type exp))
+            with
 		 None -> None
-	       | Some (T.Pointer(t)) ->
-		   (match strip_cv (Some t) with
-		      | Some (T.Unknown) -> None
-		      | Some (T.MetaType(_,_,_)) -> None
-		      | Some (T.TypeName(s)) ->
-			  None
-		      | Some (T.StructUnionName(s,t)) ->
-			  None
+	       | Some (Ast0.Pointer(t, _)) ->
+		   (match
+                     Common.map_option Ast0.unwrap (strip_cv (Some t))
+                   with
+		      | Some (Ast0.BaseType(Ast.Unknown, _))
+		      | Some (Ast0.MetaType(_, _))
+		      | Some (Ast0.TypeName(_))
+		      | Some (Ast0.StructUnionName(_, _)) -> None
 		      | Some x ->
-			  err exp (T.Pointer(t))
+                          let ty =
+                            Ast0.wrap (Ast0.Pointer(t, Ast0.make_mcode "")) in
+                          err exp ty
 			    "non-structure pointer type in field ref"
 		      |	_ -> failwith "not possible")
-	       | Some (T.MetaType(_,_,_)) -> None
-	       | Some (T.TypeName(s)) ->
-		   None
-	       | Some x -> err exp x "non-structure pointer type in field ref")
-	| Ast0.Cast(lp,ty,rp,exp) -> Some(ast0_type_to_type ty)
-	| Ast0.SizeOfExpr(szf,exp) -> Some(int_type)
-	| Ast0.SizeOfType(szf,lp,ty,rp) -> Some(int_type)
+               | Some (Ast0.MetaType(_, _))
+               | Some (Ast0.TypeName(_)) -> None
+               | Some x ->
+                   let ty = Ast0.wrap x in
+                   err exp ty "non-structure pointer type in field ref")
+	| Ast0.Cast(lp,ty,rp,exp) -> Some ty
+	| Ast0.SizeOfExpr(szf,exp) -> Some (Ast0.wrap int_type)
+	| Ast0.SizeOfType(szf,lp,ty,rp) -> Some (Ast0.wrap int_type)
 	| Ast0.TypeExp(ty) -> None
-	| Ast0.Constructor(lp,ty,rp,init) -> Some(ast0_type_to_type ty)
+	| Ast0.Constructor(lp,ty,rp,init) -> Some ty
 	| Ast0.MetaErr(name,_,_) -> None
 	| Ast0.MetaExpr(name,_,Some [ty],_,_) -> Some ty
 	| Ast0.MetaExpr(name,_,ty,_,_) -> None
@@ -262,7 +303,8 @@ let rec propagate_types env =
 	      (match combined with
 		   None -> None
 		 | Some t ->
-		     List.iter (function e -> Ast0.set_type e (Some t)) exp_list;
+                     let f = function e -> Ast0.set_type e (Some t) in
+                     List.iter f exp_list;
 		     Some t)
 	| Ast0.NestExpr(starter,expr_dots,ender,None,multi) ->
 	    let _ = r.VT0.combiner_rec_expression_dots expr_dots in None
@@ -329,10 +371,8 @@ let rec propagate_types env =
     | Ast0.MetaFieldList(_,_,_) -> []
     | Ast0.Init(_,ty,id,_,exp,_) ->
 	let _ = (propagate_types env).VT0.combiner_rec_initialiser exp in
-	let ty = ast0_type_to_type ty in
 	List.map (function i -> (i,ty)) (strip id)
     | Ast0.UnInit(_,ty,id,_) ->
-	let ty = ast0_type_to_type ty in
 	List.map (function i -> (i,ty)) (strip id)
     | Ast0.FunProto(fi,nm,lp,params,va,rp,sem) -> []
     | Ast0.MacroDecl(_,_,_,_,_,_) -> []
@@ -376,7 +416,6 @@ let rec propagate_types env =
 	let rec get_binding p =
 	  match Ast0.unwrap p with
 	    Ast0.Param(ty,Some id) ->
-	      let ty = ast0_type_to_type ty in
 	      List.map (function i -> (i,ty)) (strip id)
 	  | Ast0.OptParam(param) -> get_binding param
 	  | Ast0.AsParam(param,e) -> get_binding param
@@ -416,7 +455,7 @@ let rec propagate_types env =
       Ast0.Case(case,exp,colon,code) ->
 	let _ = k c in
 	(match Ast0.get_type exp with
-	  None -> Ast0.set_type exp (Some (int_type))
+          None -> Ast0.set_type exp (Some (Ast0.wrap int_type))
 	| _ -> ());
 	None
     | _ -> k c in
@@ -430,7 +469,9 @@ let rec propagate_types env =
       VT0.combiner_casefn = case_line}
 
 let type_infer code =
-  let prop = propagate_types [(Id("NULL"),T.Pointer(T.Unknown))] in
+  let unknown = Ast0.wrap (Ast0.BaseType (Ast.Unknown, [])) in
+  let unknown_ptr = Ast0.wrap (Ast0.Pointer (unknown, dummy)) in
+  let prop = propagate_types [(Id("NULL"), unknown_ptr)] in
   let fn = prop.VT0.combiner_rec_top_level in
   let _ = List.map fn code in
   ()

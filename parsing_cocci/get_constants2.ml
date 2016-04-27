@@ -6,7 +6,6 @@
 
 module Ast = Ast_cocci
 module V = Visitor_ast
-module TC = Type_cocci
 
 (* Issues:
 
@@ -367,16 +366,22 @@ let do_get_constants constants keywords env (neg_pos,_) =
     | Ast.DisjId(ids) -> disj_union_all (List.map r.V.combiner_ident ids)
     | _ -> k i in
 
-  let rec type_collect res = function
-      TC.ConstVol(_,ty) | TC.Pointer(ty) | TC.FunctionPointer(ty)
-    | TC.Array(ty) -> type_collect res ty
-    | TC.Decimal _ -> build_or res (keywords "decimal")
-    | TC.MetaType(tyname,_,_) ->
-	build_or res (inherited tyname)
-    | TC.TypeName(s) -> build_or res (constants s)
-    | TC.EnumName(TC.Name s) -> build_or res (constants s)
-    | TC.StructUnionName(_,TC.Name s) -> build_or res (constants s)
-    | ty -> res in
+  let type_collect res ty =
+    let add x res = build_or res x in
+    let add_ident ident =
+      match Ast.unwrap ident with
+        Ast.Id name -> add (constants (Ast.unwrap_mcode name))
+      | _ -> Common.id in
+    let enumOrStructUnionName _ ident res =
+      Common.default res (fun ident' -> add_ident ident' res) ident in
+    Ast.fullType_fold { Ast.empty_transformer with
+      Ast.decimal = Some (fun _ _ _ _ _ _ -> add (keywords "decimal"));
+      metaType =
+	Some (fun tyname _ _ -> add (inherited (Ast.unwrap_mcode tyname)));
+      typeName = Some (fun tyname -> add (constants (Ast.unwrap_mcode tyname)));
+      enumName = Some enumOrStructUnionName;
+      structUnionName = Some enumOrStructUnionName
+    } ty res in
 
   (* no point to do anything special for records because glimpse is
      word-oriented *)
@@ -462,20 +467,7 @@ let do_get_constants constants keywords env (neg_pos,_) =
     | Ast.OptType(ty) -> option_default
     | _ -> k ft in
 
-  let baseType = function
-      Ast.VoidType -> keywords "void"
-    | Ast.CharType -> keywords "char"
-    | Ast.ShortType -> keywords "short"
-    | Ast.ShortIntType -> keywords "short"
-    | Ast.IntType -> keywords "int"
-    | Ast.DoubleType -> keywords "double"
-    | Ast.LongDoubleType -> keywords "double"
-    | Ast.FloatType -> keywords "float"
-    | Ast.LongType | Ast.LongLongType
-    | Ast.LongIntType | Ast.LongLongIntType -> keywords "long"
-    | Ast.SizeType -> keywords "size_t"
-    | Ast.SSizeType -> keywords "ssize_t"
-    | Ast.PtrDiffType -> keywords "ptrdiff_t" in
+  let baseType ty = keywords (Ast.string_of_baseType ty) in
 
   let typeC r k ty =
     match Ast.unwrap ty with

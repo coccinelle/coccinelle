@@ -6,7 +6,6 @@
 
 module Ast = Ast_cocci
 module Ast0 = Ast0_cocci
-module TC = Type_cocci
 module V0 = Visitor_ast0
 module VT0 = Visitor_ast0_types
 module S = Ast_tostring
@@ -114,7 +113,7 @@ let type_c ~form =
     | Ast.GlobalID -> ("global idexpression ", "global idexpression ")
     | Ast.CONST -> ("constant ", "constant ") in
   let type2c a =
-    match TC.type2c a with
+    match Ast.string_of_fullType a with
     | "unknown *" -> default ^ " *"
     | a -> prefix ^ a in
   function
@@ -222,34 +221,43 @@ let types ~rn = function
   | Some typecs ->
       (* TODO: are the keep_bindings used for anything ? *)
       let bin = function
-        | TC.Unitary -> ""
-        | TC.Nonunitary -> ""
-        | TC.Saved -> "" in
-      let get_meta_id acc = function
-        | TC.MV(mn, b, _) ->
-            let metavar = make_mv "identifier" (name_tup ~rn mn) (bin b) in
+          Ast.Unitary -> ""
+        | Ast.Nonunitary -> ""
+        | Ast.Saved -> "" in
+      let get_meta_id acc ty =
+        match Ast_cocci.unwrap ty with
+          Ast_cocci.MetaId(mn, _, b, _) ->
+            let mn' = Ast_cocci.unwrap_mcode mn in
+            let metavar = make_mv "identifier" (name_tup ~rn mn') (bin b) in
             MVSet.add metavar acc
         | _ -> acc in
-      let rec get_meta_type acc = function
-        | TC.MetaType(mn, b, _) ->
-            let metavar = make_mv "type " (name_tup ~rn mn) (bin b) in
+      let rec get_meta_type acc ty =
+        match Ast_cocci.unwrap ty with
+          Ast.MetaType(mn, b, _) ->
+            let mn' = Ast_cocci.unwrap_mcode mn in
+            let metavar = make_mv "type " (name_tup ~rn mn') (bin b) in
             MVSet.add metavar acc
-        | TC.TypeName s ->
-            let metavar = ("typedef ", str_tup s, "") in
+        | Ast.TypeName s ->
+            let metavar = ("typedef ", str_tup (Ast.unwrap_mcode s), "") in
             MVSet.add metavar acc
-        | TC.Decimal(nm1, nm2) ->
-            MVSet.union (get_meta_id acc nm1) (get_meta_id acc nm2)
-        | TC.EnumName n
-        | TC.StructUnionName(_, n) ->
-            get_meta_id acc n
-        | TC.ConstVol (_, t)
-        | TC.SignedT (_, Some t)
-        | TC.Pointer t
-        | TC.FunctionPointer t
-        | TC.Array t ->
-            get_meta_type acc t
-        | _ -> acc in
-      List.fold_left get_meta_type MVSet.empty typecs
+        | Ast.Decimal(_, _, nm1, _, nm2, _) ->
+            let get_meta_id_opt v o = Common.default v (get_meta_id v) o in
+            let acc =
+              get_meta_id_opt acc (Ast_cocci.ident_of_expression_opt nm1) in
+            let acc =
+              get_meta_id_opt acc
+                (Common.default None Ast_cocci.ident_of_expression_opt nm2) in
+            acc
+        | Ast.EnumName (_, Some n)
+        | Ast.StructUnionName(_, Some n) -> get_meta_id acc n
+        | Ast.SignedT (_, Some t) -> get_meta_type acc t
+        | Ast.Pointer (t, _)
+        | Ast.FunctionPointer (t, _, _, _, _, _, _)
+        | Ast.Array (t, _, _, _) -> get_meta_type_full acc t
+        | _ -> acc
+      and get_meta_type_full acc ty =
+        get_meta_type acc (Common.just (Ast_cocci.typeC_of_fullType_opt ty)) in
+      List.fold_left get_meta_type_full MVSet.empty typecs
   | None -> MVSet.empty
 
 (* Function to call on mcodes. We are only interested in the mcodes because of
@@ -425,13 +433,15 @@ let metavar_combiner rn =
         let constr = constraints ~rn constr in
         meta_mc_format ~mc ~typ:"error " ~constr
     | Ast0.MetaExpr (mc, constr, typeclist, form, _) ->
+        let typeclist' =
+          Common.map_option (List.map (Ast0toast.typeC false)) typeclist in
 
         (* types function finds metavariable types and identifiers that were
          * used in this expression and therefore need to be declared. *)
-        let types = types ~rn typeclist in
+        let types = types ~rn typeclist' in
 
         (* type_c function returns the types in pretty string format *)
-        let typ = type_c ~form typeclist in
+        let typ = type_c ~form typeclist' in
         let constr = constraints ~rn constr in
         MVSet.union (meta_mc_format ~mc ~typ ~constr) (types)
     | Ast0.MetaExprList (mc, listlen, _) ->

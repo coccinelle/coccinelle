@@ -1170,7 +1170,7 @@ let forwhile header body ((afvs,_,_,_) as aft) after
     (Ast.Atomic(re),(_,_,_,Ast.CONTEXT(_,Ast.NOTHING))) ->
       (match Ast.unwrap re with
 	Ast.MetaStmt((_,_,Ast.CONTEXT(_,Ast.NOTHING),_),
-		     Type_cocci.Unitary,_,false)
+	             Ast.Unitary,_,false)
 	when after = Tail || after = End || after = VeryEnd ->
 	  let (efvs) =
 	    match seq_fvs quantified [Ast.get_fvs header] with
@@ -1716,7 +1716,7 @@ and statement stmt top after quantified minus_quantified
 	   is alone, we would like it not to match a declaration.
 	   this makes more matching for things like when (...) S, but perhaps
 	   that matching is not so costly anyway *)
-	(*Ast.MetaStmt(_,Type_cocci.Unitary,_,false) when guard -> CTL.True*)
+        (*Ast.MetaStmt(_,Ast.Unitary,_,false) when guard -> CTL.True*)
       |	Ast.MetaStmt((s,_,(Ast.CONTEXT(_,Ast.BEFOREAFTER(_,_,_)) as d),_),
 		     keep,seqible,_)
       | Ast.MetaStmt((s,_,(Ast.CONTEXT(_,Ast.AFTER(_,_)) as d),_),

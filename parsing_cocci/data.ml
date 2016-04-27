@@ -64,7 +64,7 @@ type meta_type = Ast.meta_name -> Ast0.pure -> unit
 type id_meta_type = Ast.meta_name -> iconstraints -> Ast0.pure -> unit
 type list_meta_type = Ast.meta_name -> Ast.list_len -> Ast0.pure -> unit
 type exp_meta_type =
-    Type_cocci.typeC list option -> Ast.meta_name -> econstraints ->
+    Ast0.typeC list option -> Ast.meta_name -> econstraints ->
       Ast0.pure -> unit
 
 let add_meta_meta: meta_type ref = ref uninitialized_add_meta

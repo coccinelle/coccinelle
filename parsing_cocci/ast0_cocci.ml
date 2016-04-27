@@ -5,7 +5,6 @@
  *)
 
 module Ast = Ast_cocci
-module TC = Type_cocci
 
 (* --------------------------------------------------------------------- *)
 (* Modified code *)
@@ -56,7 +55,7 @@ and 'a wrap =
       info : info;
       index : int ref;
       mcodekind : mcodekind ref;
-      exp_ty : TC.typeC option ref; (* only for expressions *)
+      exp_ty : typeC option ref; (* only for expressions *)
       bef_aft : dots_bef_aft; (* only for statements *)
       true_if_arg : bool; (* true if "arg_exp", only for exprs *)
       true_if_test : bool; (* true if "test position", only for exprs *)
@@ -132,7 +131,7 @@ and base_expression =
 	              initialiser
   | MetaErr        of Ast.meta_name mcode * constraints * pure
   | MetaExpr       of Ast.meta_name mcode * constraints *
-	              TC.typeC list option * Ast.form * pure
+	              typeC list option * Ast.form * pure
   | MetaExprList   of Ast.meta_name mcode (* only in arg lists *) *
 	              listlen * pure
   | AsExpr         of expression * expression (* as expr, always metavar *)
@@ -685,13 +684,45 @@ let rec meta_pos_name = function
       | _ -> failwith "bad metavariable")
   | _ -> failwith "bad metavariable"
 
+let rec meta_names_of_ident ident =
+  match unwrap ident with
+    Id _ -> []
+  | MetaId (tyname, _, _, _)
+  | MetaFunc (tyname, _, _)
+  | MetaLocalFunc (tyname, _, _) -> [unwrap_mcode tyname]
+  | AsIdent (ident0, ident1) ->
+      meta_names_of_ident ident0 @ meta_names_of_ident ident1
+  | DisjId (_, l, _, _) -> List.flatten (List.map meta_names_of_ident l)
+  | OptIdent ident' -> meta_names_of_ident ident'
+
+let meta_names_of_expression expression =
+  match unwrap expression with
+    Ident ident -> meta_names_of_ident ident
+  | _ -> failwith "Ast0_cocci.meta_names_of_expression: unimplemented"
+
+let rec meta_names_of_typeC ty =
+  match unwrap ty with
+    ConstVol (_, ty)
+  | Signed (_, Some ty)
+  | Pointer (ty, _)
+  | FunctionPointer (ty, _, _, _, _, _, _)
+  | Array (ty, _, _, _) -> meta_names_of_typeC ty
+  | EnumName (_, Some ident)
+  | StructUnionName(_, Some ident) -> meta_names_of_ident ident
+  | MetaType (tyname, _) -> [unwrap_mcode tyname]
+  | Decimal (_, _, e1, _, e2, _) ->
+      let mn1 = meta_names_of_expression e1 in
+      let mn2 = Common.default [] meta_names_of_expression e2 in
+      mn1 @ mn2
+  | _ty -> []
+
 let meta_pos_constraint_names = function
     ExprTag(e) ->
       (match unwrap e with
 	MetaExpr(_name,_constraints,ty,_form,_pure) ->
 	  (match ty with
 	    Some tylist ->
-	      List.fold_left (fun prev cur -> TC.meta_names cur @ prev)
+              List.fold_left (fun prev cur -> meta_names_of_typeC cur @ prev)
 		[] tylist
 	  | None -> [])
       |	_ -> [])
@@ -704,195 +735,13 @@ let index_counter = ref 0
 let fresh_index _ = let cur = !index_counter in index_counter := cur + 1; cur
 
 (* --------------------------------------------------------------------- *)
-
-let rec ast0_type_to_type inmeta ty =
-  match unwrap ty with
-    ConstVol(cv,ty) -> TC.ConstVol(const_vol cv,ast0_type_to_type inmeta ty)
-  | BaseType(bty,strings) ->
-      TC.BaseType(baseType bty)
-  | Signed(sgn,None) ->
-      TC.SignedT(sign sgn,None)
-  | Signed(sgn,Some ty) ->
-      let bty = ast0_type_to_type inmeta ty in
-      TC.SignedT(sign sgn,Some bty)
-  | Pointer(ty,_) -> TC.Pointer(ast0_type_to_type inmeta ty)
-  | FunctionPointer(ty,_,_,_,_,params,_) ->
-      TC.FunctionPointer(ast0_type_to_type inmeta ty)
-  | Array(ety,_,_,_) -> TC.Array(ast0_type_to_type inmeta ety)
-  | Decimal(_, _, e1, _, e2, _) ->
-      let e2tc e =
-	match unwrap e with
-	  Constant(c) ->
-	    (match unwrap_mcode c with
-	      Ast.Int n -> TC.Num n
-	    | _ -> failwith "not possible")
-	| Ident(id) ->
-	    (match unwrap id with
-	      Id n -> TC.Name (unwrap_mcode n)
-	    | _ -> failwith "not possible")
-	| MetaExpr(name,NoConstraint,None,Ast.CONST,_) ->
-	    TC.MV(unwrap_mcode name,TC.Unitary,false)
-	| _ -> failwith "unexpected argument to decimal" in
-      let e2 =
-	match e2 with
-	  None -> TC.Num "0"
-	| Some e2 -> e2tc e2 in
-      TC.Decimal(e2tc e1,e2)
-  | EnumName(su,Some tag) ->
-      (match unwrap tag with
-	Id(tag) ->
-	  TC.EnumName(TC.Name(unwrap_mcode tag))
-      | MetaId(tag,Ast.IdNoConstraint,_,_) when inmeta ->
-	  TC.EnumName(TC.MV(unwrap_mcode tag,TC.Unitary,false))
-      | MetaId(tag,_,_,_) when inmeta ->
-	  (* would have to duplicate the type in type_cocci.ml?
-	     perhaps polymorphism would help? *)
-	  failwith "constraints not supported on enum type name"
-      | _ ->
-	  (* can't arise for metavariables and doesn't matter for type
-	     checking *)
-	  TC.EnumName(TC.NoName))
-  | EnumName(su,None) -> TC.EnumName TC.NoName
-  | EnumDef(ty,_,_,_) -> ast0_type_to_type inmeta ty
-  | StructUnionName(su,Some tag) ->
-      (match unwrap tag with
-	Id(tag) ->
-	  TC.StructUnionName(structUnion su,TC.Name(unwrap_mcode tag))
-      | MetaId(tag,Ast.IdNoConstraint,_,_) when inmeta ->
-	  TC.StructUnionName(structUnion su,
-			     TC.MV(unwrap_mcode tag,TC.Unitary,false))
-      | MetaId(tag,_,_,_) when inmeta ->
-	  (* would have to duplicate the type in type_cocci.ml?
-	     perhaps polymorphism would help? *)
-	  failwith "constraints not supported on struct type name"
-      | _ ->
-	  (* can't arise for metavariables and doesn't matter for type
-	     checking *)
-	  TC.StructUnionName(structUnion su,TC.NoName))
-  | StructUnionName(su,None) -> TC.StructUnionName(structUnion su,TC.NoName)
-  | StructUnionDef(ty,_,_,_) -> ast0_type_to_type inmeta ty
-  | TypeName(name) -> TC.TypeName(unwrap_mcode name)
-  | MetaType(name,_) ->
-      TC.MetaType(unwrap_mcode name,TC.Unitary,false)
-  | AsType(ty,asty) -> failwith "not created yet"
-  | DisjType(_,types,_,_) ->
-      Common.pr2_once
-	"disjtype not supported in smpl type inference, assuming unknown";
-      TC.Unknown
-  | OptType(ty) -> ast0_type_to_type inmeta ty
-
-and baseType = function
-    Ast.VoidType -> TC.VoidType
-  | Ast.CharType -> TC.CharType
-  | Ast.ShortType -> TC.ShortType
-  | Ast.ShortIntType -> TC.ShortIntType
-  | Ast.IntType -> TC.IntType
-  | Ast.DoubleType -> TC.DoubleType
-  | Ast.LongDoubleType -> TC.LongDoubleType
-  | Ast.FloatType -> TC.FloatType
-  | Ast.LongType -> TC.LongType
-  | Ast.LongIntType -> TC.LongIntType
-  | Ast.LongLongType -> TC.LongLongType
-  | Ast.LongLongIntType -> TC.LongLongIntType
-  | Ast.SizeType -> TC.SizeType
-  | Ast.SSizeType -> TC.SSizeType
-  | Ast.PtrDiffType -> TC.PtrDiffType
-
-and structUnion t =
-  match unwrap_mcode t with
-    Ast.Struct -> TC.Struct
-  | Ast.Union -> TC.Union
-
-and sign t =
-  match unwrap_mcode t with
-    Ast.Signed -> TC.Signed
-  | Ast.Unsigned -> TC.Unsigned
-
-and const_vol t =
-  match unwrap_mcode t with
-    Ast.Const -> TC.Const
-  | Ast.Volatile -> TC.Volatile
-
-(* --------------------------------------------------------------------- *)
 (* this function is a rather minimal attempt.  the problem is that information
 has been lost.  but since it is only used for metavariable types in the isos,
 perhaps it doesn't matter *)
-and make_mcode x = (x,NONE,default_info(),context_befaft(),ref [],-1)
+let make_mcode x = (x,NONE,default_info(),context_befaft(),ref [],-1)
 let make_mcode_info x info = (x,NONE,info,context_befaft(),ref [],-1)
 and make_minus_mcode x =
   (x,NONE,default_info(),minus_befaft(),ref [],-1)
-
-exception TyConv
-
-let rec reverse_type ty =
-  match ty with
-    TC.ConstVol(cv,ty) ->
-      ConstVol(reverse_const_vol cv,context_wrap(reverse_type ty))
-  | TC.BaseType(bty) ->
-      BaseType(reverse_baseType bty,[(* not used *)])
-  | TC.SignedT(sgn,None) -> Signed(reverse_sign sgn,None)
-  | TC.SignedT(sgn,Some bty) ->
-      Signed(reverse_sign sgn,Some (context_wrap(reverse_type ty)))
-  | TC.Pointer(ty) ->
-      Pointer(context_wrap(reverse_type ty),make_mcode "*")
-  | TC.EnumName(TC.MV(name,_,_)) ->
-      EnumName
-	(make_mcode "enum",
-	 Some (context_wrap(MetaId(make_mcode name,Ast.IdNoConstraint,Ast.NoVal,
-				   Impure))))
-  | TC.EnumName(TC.Name tag) ->
-      EnumName(make_mcode "enum",Some(context_wrap(Id(make_mcode tag))))
-  | TC.StructUnionName(su,TC.MV(name,_,_)) ->
-      (* not right?... *)
-      StructUnionName
-	(reverse_structUnion su,
-	 Some(context_wrap(MetaId(make_mcode name,Ast.IdNoConstraint,Ast.NoVal,
-				  Impure(*not really right*)))))
-  |  TC.StructUnionName(su,TC.Name tag) ->
-      StructUnionName
-	(reverse_structUnion su,
-	 Some (context_wrap(Id(make_mcode tag))))
-  | TC.TypeName(name) -> TypeName(make_mcode name)
-  | TC.MetaType(name,_,_) ->
-      MetaType(make_mcode name,Impure(*not really right*))
-  | _ -> raise TyConv
-
-and reverse_baseType = function
-    TC.VoidType -> Ast.VoidType
-  | TC.CharType -> Ast.CharType
-  | TC.BoolType -> Ast.IntType
-  | TC.ShortType -> Ast.ShortType
-  | TC.ShortIntType -> Ast.ShortIntType
-  | TC.IntType -> Ast.IntType
-  | TC.DoubleType -> Ast.DoubleType
-  | TC.LongDoubleType -> Ast.LongDoubleType
-  | TC.FloatType -> Ast.FloatType
-  | TC.LongType -> Ast.LongType
-  | TC.LongIntType -> Ast.LongIntType
-  | TC.LongLongType -> Ast.LongLongType
-  | TC.LongLongIntType -> Ast.LongLongIntType
-  | TC.SizeType -> Ast.SizeType
-  | TC.SSizeType -> Ast.SSizeType
-  | TC.PtrDiffType -> Ast.PtrDiffType
-
-
-and reverse_structUnion t =
-  make_mcode
-    (match t with
-      TC.Struct -> Ast.Struct
-    | TC.Union -> Ast.Union)
-
-and reverse_sign t =
-  make_mcode
-    (match t with
-      TC.Signed -> Ast.Signed
-    | TC.Unsigned -> Ast.Unsigned)
-
-and reverse_const_vol t =
-  make_mcode
-    (match t with
-      TC.Const -> Ast.Const
-    | TC.Volatile -> Ast.Volatile)
 
 (* --------------------------------------------------------------------- *)
 
@@ -920,3 +769,36 @@ let string_of_assignOp op = match (unwrap op) with
     let s = string_of_binaryOp op'' in
     s ^ "="
   | MetaAssign _ -> "MetaAssign"
+
+let is_unknown_type ty =
+  match unwrap ty with
+    BaseType (Ast.Unknown, _) -> true
+  | _ -> false
+
+let rec type_compatible ty0 ty1 =
+  match unwrap ty0, unwrap ty1 with
+    BaseType (Ast.Unknown, _), _
+  | _, BaseType (Ast.Unknown, _) -> true
+  | ConstVol (cv0, ty0'), ConstVol (cv1, ty1') ->
+      unwrap_mcode cv0 = unwrap_mcode cv1 &&
+      type_compatible ty0' ty1'
+  | BaseType (ty0', _), BaseType (ty1', _) -> ty0' = ty1'
+  | Signed (sgn0, ty0'), Signed (sgn1, ty1') ->
+      unwrap_mcode sgn0 = unwrap_mcode sgn1 &&
+      Common.equal_option type_compatible ty0' ty1'
+  | Pointer (ty0', _), Pointer (ty1', _)
+  | Array (ty0', _, _, _), Array (ty1', _, _, _)
+  | OptType ty0', OptType ty1' -> type_compatible ty0' ty1'
+  | FunctionPointer (_, _, _, _, _, _, _), _
+  | _, FunctionPointer (_, _, _, _, _, _, _) -> false
+  | TypeName ty0', TypeName ty1' -> unwrap_mcode ty0' = unwrap_mcode ty1'
+  | Decimal (_, _, _, _, _, _), Decimal (_, _, _, _, _, _)
+  | EnumName (_, _), EnumName (_, _)
+  | EnumDef (_, _, _, _), EnumDef (_, _, _, _)
+  | StructUnionName (_, _), StructUnionName (_, _)
+  | StructUnionDef (_, _, _, _), StructUnionDef (_, _, _, _)
+  | MetaType (_, _), MetaType (_, _)
+  | AsType (_, _), AsType (_, _)
+  | DisjType (_, _, _, _), DisjType (_, _, _, _) ->
+      failwith "Ast0_cocci.type_compatible: unimplemented"
+  | _, _ -> false

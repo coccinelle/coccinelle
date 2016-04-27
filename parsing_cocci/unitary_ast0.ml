@@ -9,7 +9,6 @@ module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
 module V0 = Visitor_ast0
 module VT0 = Visitor_ast0_types
-module TC = Type_cocci
 
 let set_minus s minus = List.filter (function n -> not (List.mem n minus)) s
 
@@ -77,20 +76,7 @@ let get_free checker t =
 	detect_unitary_frees(List.map r.VT0.combiner_rec_ident id_list)
     | _ -> k i in
 
-  let rec type_collect res = function
-      TC.ConstVol(_,ty) | TC.Pointer(ty) | TC.FunctionPointer(ty)
-    | TC.Array(ty) -> type_collect res ty
-    | TC.EnumName(TC.MV(tyname,_,_)) ->
-	bind [tyname] res
-    | TC.StructUnionName(_,TC.MV(tyname,_,_)) ->
-	bind [tyname] res
-    | TC.MetaType(tyname,_,_) ->
-	bind [tyname] res
-    | TC.Decimal(e1,e2) ->
-	let e2mv = function TC.MV(mv,_,_) -> [mv] | _ -> [] in
-	bind (e2mv e1) (e2mv e2)
-    | TC.SignedT(_,Some ty) -> type_collect res ty
-    | ty -> res in
+  let type_collect res ty = bind res (Ast0.meta_names_of_typeC ty) in
 
   let mcode mc =
     List.fold_left bind option_default

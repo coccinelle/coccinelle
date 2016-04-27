@@ -78,22 +78,7 @@ let binary_tostring = Ast.string_of_binaryOp
 
 let assign_tostring = Ast.string_of_assignOp
 
-let type_tostring = function
-  | Ast.VoidType -> "void"
-  | Ast.CharType -> "char"
-  | Ast.ShortType -> "short"
-  | Ast.ShortIntType -> "short int"
-  | Ast.IntType -> "int"
-  | Ast.DoubleType -> "double"
-  | Ast.LongDoubleType -> "long double"
-  | Ast.FloatType -> "float"
-  | Ast.LongType -> "long"
-  | Ast.LongIntType -> "long int"
-  | Ast.LongLongType -> "long long"
-  | Ast.LongLongIntType -> "long long int"
-  | Ast.SizeType -> "size_t"
-  | Ast.SSizeType -> "ssize_t"
-  | Ast.PtrDiffType -> "ptrdiff_t"
+let type_tostring = Ast.string_of_baseType
 
 let whenmodifier_tostring = function
   | Ast.WhenAny -> "any"
