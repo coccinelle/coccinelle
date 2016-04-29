@@ -140,6 +140,39 @@ let has_environment_binding name =
       !the_environment in
   if e then _pycocci_true () else _pycocci_false ()
 
+let py_eq = 2
+
+let pyoption pyobject =
+  match pyobject_richcomparebool (pyobject, pynone (), py_eq) with
+  | 1 -> None
+  | 0 -> Some pyobject
+  | _ -> raise (Invalid_argument "pyoption")
+
+let list_of_pylist pylist =
+  Array.to_list (pylist_toarray pylist)
+
+let string_list_of_pylist pylist =
+  List.map pystring_asstring (list_of_pylist pylist)
+
+let string_pair_of_pytuple pytuple =
+  let s0 = pytuple_getitem (pytuple, 0) in
+  let s1 = pytuple_getitem (pytuple, 1) in
+  (pystring_asstring s0, pystring_asstring s1)
+
+let add_pending_instance args =
+  let py_files = pytuple_getitem (args, 1) in
+  let py_virtual_rules = pytuple_getitem (args, 2) in
+  let py_virtual_identifiers = pytuple_getitem (args, 3) in
+  let py_extend_virtual_ids = pytuple_getitem (args, 4) in
+  let files = Common.map_option string_list_of_pylist (pyoption py_files) in
+  let virtual_rules = string_list_of_pylist py_virtual_rules in
+  let virtual_identifiers =
+    List.map string_pair_of_pytuple (list_of_pylist py_virtual_identifiers) in
+  let extend_virtual_ids = py_is_true py_extend_virtual_ids in
+  Iteration.add_pending_instance
+    (files, virtual_rules, virtual_identifiers, extend_virtual_ids);
+  pynone ()
+
 let pyoutputinstance = ref (_pycocci_none ())
 let pyoutputdict = ref (_pycocci_none ())
 
@@ -176,7 +209,8 @@ let pycocci_init () =
   let (cd, cx) = build_class "Cocci" (!Flag.pyoutput)
       [("exit", sp_exit, (pynull()));
 	("include_match", include_match, (pynull()));
-	("has_env_binding", has_environment_binding, (pynull()))] mx in
+	("has_env_binding", has_environment_binding, (pynull()));
+	("add_pending_instance", add_pending_instance, (pynull()))] mx in
   pyoutputinstance := cx;
   pyoutputdict := cd;
   let v1 = pydict_setitemstring(module_dictionary, "coccinelle", mx) in
@@ -190,7 +224,9 @@ let pycocci_init () =
 (*let _ = pycocci_init ()*)
 (* end initialisation routines *)
 
-let added_variables = ref []
+let default_hashtbl_size = 17
+
+let added_variables = Hashtbl.create default_hashtbl_size
 
 let build_classes env =
   let _ = pycocci_init () in
@@ -199,19 +235,19 @@ let build_classes env =
   the_environment := env;
   let mx = !coccinelle_module in
   let dict = pymodule_getdict mx in
-  List.iter
-    (function
+  Hashtbl.iter
+    (fun name () ->
+      match name with
 	"include_match" | "has_env_binding" | "exit" -> ()
       | name ->
 	  let v = pydict_delitemstring(dict,name) in
 	  check_int_return_value ("removing " ^ name ^ " from python coccinelle module") v)
-    !added_variables;
-  added_variables := [];
-  ()
+    added_variables;
+  Hashtbl.clear added_variables
 
 let build_variable name value =
   let mx = !coccinelle_module in
-  added_variables := name :: !added_variables;
+  Hashtbl.replace added_variables name ();
   check_int_return_value ("build python variable " ^ name)
     (pydict_setitemstring(pymodule_getdict mx, name, value))
 
@@ -311,7 +347,9 @@ let construct_variables mv e =
        ()
     ) mv;
 
-  ()
+  let add_string_literal s = build_variable s (pystring_fromstring s) in
+  List.iter add_string_literal !Iteration.parsed_virtual_rules;
+  List.iter add_string_literal !Iteration.parsed_virtual_identifiers
 
 let construct_script_variables mv =
   List.iter
