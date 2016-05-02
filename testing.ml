@@ -10,6 +10,46 @@ open Common
 (* Test framework *)
 (*****************************************************************************)
 
+type redirected_output = {
+    out_file: string;
+    out_channel: out_channel;
+    stdout_backup: Unix.file_descr;
+    stderr_backup: Unix.file_descr;
+  }
+
+let flush_scripts_output () =
+  flush stdout;
+  flush stderr;
+  let _ = Pycocci.pyrun_simplestring "\
+import sys
+sys.stdout.flush()
+sys.stderr.flush()
+" in
+  ()
+
+let begin_redirect_output expected_out =
+  let has_expected_out = Sys.file_exists expected_out in
+  if has_expected_out then
+    let out_file = Printf.sprintf "%s.current" expected_out in
+    let out_channel = open_out out_file in
+    let out_file_descr = Unix.descr_of_out_channel out_channel in
+    let stdout_backup = Unix.dup Unix.stdout in
+    let stderr_backup = Unix.dup Unix.stderr in
+    flush_scripts_output ();
+    Unix.dup2 out_file_descr Unix.stdout;
+    Unix.dup2 out_file_descr Unix.stderr;
+    Some { out_file; out_channel; stdout_backup; stderr_backup }
+  else
+    None
+
+let end_redirect_output = Common.map_option (
+  fun { out_file; out_channel; stdout_backup; stderr_backup } ->
+    flush_scripts_output ();
+    Unix.dup2 stdout_backup Unix.stdout;
+    Unix.dup2 stderr_backup Unix.stderr;
+    close_out out_channel;
+    out_file)
+
 (* There can be multiple .c for the same cocci file. The convention
  * is to have one base.cocci and a base.c and some optional
  * base_vernn.[c,res].
@@ -23,11 +63,15 @@ let testone prefix x compare_with_expected_flag =
   let cfile      = prefix ^ x ^ ".c" in
   let cocci_file = prefix ^ base ^ ".cocci" in
 
+  let expected_out = prefix ^ base ^ ".out" in
+
   let expected_res   = prefix ^ x ^ ".res" in
   begin
+    let redirected_output = begin_redirect_output expected_out in
     let (cocci_infos,_) = Cocci.pre_engine (cocci_file, !Config.std_iso) in
     let res = Cocci.full_engine cocci_infos [cfile] in
     Cocci.post_engine cocci_infos;
+    let current_out = end_redirect_output redirected_output in
     let generated =
       match Common.optionise (fun () -> List.assoc cfile res) with
       | Some (Some outfile) ->
@@ -46,11 +90,49 @@ let testone prefix x compare_with_expected_flag =
     in
     if compare_with_expected_flag
     then
-      Compare_c.compare_default generated expected_res
-      +> Compare_c.compare_result_to_string
-      +> pr2;
+      begin
+	Compare_c.compare_default generated expected_res
+	  +> Compare_c.compare_result_to_string
+	  +> pr2;
+	match current_out with
+	  None -> ()
+	| Some current_out' ->
+	    Compare_c.exact_compare current_out' expected_out
+	      +> Compare_c.compare_result_to_string
+	      +> pr2
+      end
   end
 
+
+let add_file score res correct diffxs =
+  (* I don't use Compare_c.compare_result_to_string because
+   * I want to indent a little more the messages.
+   *)
+  match correct with
+    Compare_c.Correct -> Hashtbl.add score res Common.Ok;
+  | Compare_c.Pb s ->
+      let s = Str.global_replace
+	  (Str.regexp "\"/tmp/cocci-output.*\"") "<COCCIOUTPUTFILE>" s
+      in
+      (* on macos the temporary files are stored elsewhere *)
+      let s =
+	Str.global_replace
+	  (Str.regexp "\"/var/folders/.*/cocci-output.*\"")
+	  "<COCCIOUTPUTFILE>" s
+      in
+      let s =
+	"INCORRECT:" ^ s ^ "\n" ^
+	"    diff (result(<) vs expected_result(>)) = \n" ^
+	(diffxs +>
+	 List.map(fun s -> "    "^s^"\n") +> String.concat "")
+      in
+      Hashtbl.add score res (Common.Pb s)
+  | Compare_c.PbOnlyInNotParsedCorrectly s ->
+      let s =
+	"seems incorrect, but only because of code that " ^
+	"was not parsable" ^ s
+      in
+      Hashtbl.add score res (Common.Pb s)
 
 (* ------------------------------------------------------------------------ *)
 (* note: if you get some weird results in -testall, and not in -test,
@@ -87,6 +169,8 @@ let testall_bis extra_test expected_score_file update_score_file =
       let cfile      = "tests/" ^ x ^ ".c" in
       let cocci_file = "tests/" ^ base ^ ".cocci" in
       let expected = "tests/" ^ res in
+      let out = base ^ ".out" in
+      let expected_out = "tests/" ^ out in
 
       let timeout_testall = 60 in
 
@@ -95,10 +179,12 @@ let testall_bis extra_test expected_score_file update_score_file =
 
 	  pr2 res;
 
+	  let redirected_output = begin_redirect_output expected_out in
 	  let (cocci_infos,_) =
 	    Cocci.pre_engine (cocci_file, !Config.std_iso) in
           let xs = Cocci.full_engine cocci_infos [cfile] in
 	  Cocci.post_engine cocci_infos;
+	  let current_out = end_redirect_output redirected_output in
 
           let generated =
             match List.assoc cfile xs with
@@ -120,35 +206,14 @@ let testall_bis extra_test expected_score_file update_score_file =
 		       things that fail on the first test *)
 		    (Compare_c.Correct,[])) in
 
-          (* I don't use Compare_c.compare_result_to_string because
-           * I want to indent a little more the messages.
-           *)
-          (match correct with
-          | Compare_c.Correct -> Hashtbl.add score res Common.Ok;
-          | Compare_c.Pb s ->
-              let s = Str.global_replace
-                (Str.regexp "\"/tmp/cocci-output.*\"") "<COCCIOUTPUTFILE>" s
-              in
-              (* on macos the temporary files are stored elsewhere *)
-              let s =
-		Str.global_replace
-                  (Str.regexp "\"/var/folders/.*/cocci-output.*\"")
-		  "<COCCIOUTPUTFILE>" s
-              in
-              let s =
-                "INCORRECT:" ^ s ^ "\n" ^
-                "    diff (result(<) vs expected_result(>)) = \n" ^
-                (diffxs +>
-		 List.map(fun s -> "    "^s^"\n") +> String.concat "")
-              in
-              Hashtbl.add score res (Common.Pb s)
-          | Compare_c.PbOnlyInNotParsedCorrectly s ->
-              let s =
-                "seems incorrect, but only because of code that " ^
-                "was not parsable" ^ s
-              in
-              Hashtbl.add score res (Common.Pb s)
-          )
+	  add_file score res correct diffxs;
+
+	  match current_out with
+	    None -> ()
+	  | Some current_out' ->
+	      let (correct, diffxs) =
+		Compare_c.exact_compare current_out' expected_out in
+	      add_file score out correct diffxs
         )
       )
       with exn ->
