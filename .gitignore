@@ -50,3 +50,4 @@ aclocal.m4
 *.p.byte
 .mascotrc
 description-pak
+*.current
