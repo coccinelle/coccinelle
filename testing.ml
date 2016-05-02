@@ -14,16 +14,13 @@ type redirected_output = {
     out_file: string;
     out_channel: out_channel;
     stdout_backup: Unix.file_descr;
-    stderr_backup: Unix.file_descr;
   }
 
 let flush_scripts_output () =
   flush stdout;
-  flush stderr;
   let _ = Pycocci.pyrun_simplestring "\
 import sys
 sys.stdout.flush()
-sys.stderr.flush()
 " in
   ()
 
@@ -34,21 +31,37 @@ let begin_redirect_output expected_out =
     let out_channel = open_out out_file in
     let out_file_descr = Unix.descr_of_out_channel out_channel in
     let stdout_backup = Unix.dup Unix.stdout in
-    let stderr_backup = Unix.dup Unix.stderr in
     flush_scripts_output ();
     Unix.dup2 out_file_descr Unix.stdout;
-    Unix.dup2 out_file_descr Unix.stderr;
-    Some { out_file; out_channel; stdout_backup; stderr_backup }
+    Some { out_file; out_channel; stdout_backup }
   else
     None
 
 let end_redirect_output = Common.map_option (
-  fun { out_file; out_channel; stdout_backup; stderr_backup } ->
+  fun { out_file; out_channel; stdout_backup } ->
     flush_scripts_output ();
     Unix.dup2 stdout_backup Unix.stdout;
-    Unix.dup2 stderr_backup Unix.stderr;
     close_out out_channel;
     out_file)
+
+let rec test_loop cocci_file cfiles =
+  let (cocci_infos,_) = Cocci.pre_engine (cocci_file, !Config.std_iso) in
+  let res = Cocci.full_engine cocci_infos cfiles in
+  Cocci.post_engine cocci_infos;
+  match Iteration.get_pending_instance () with
+    None -> res
+  | Some (cfiles', virt_rules, virt_ids) ->
+      Flag.defined_virtual_rules := virt_rules;
+      Flag.defined_virtual_env := virt_ids;
+      Common.erase_temp_files ();
+      Common.clear_pr2_once ();
+      test_loop cocci_file cfiles'
+
+let test_with_output_redirected cocci_file cfiles expected_out =
+  let redirected_output = begin_redirect_output expected_out in
+  let res = test_loop cocci_file cfiles in
+  let current_out = end_redirect_output redirected_output in
+  (res, current_out)
 
 (* There can be multiple .c for the same cocci file. The convention
  * is to have one base.cocci and a base.c and some optional
@@ -67,11 +80,8 @@ let testone prefix x compare_with_expected_flag =
 
   let expected_res   = prefix ^ x ^ ".res" in
   begin
-    let redirected_output = begin_redirect_output expected_out in
-    let (cocci_infos,_) = Cocci.pre_engine (cocci_file, !Config.std_iso) in
-    let res = Cocci.full_engine cocci_infos [cfile] in
-    Cocci.post_engine cocci_infos;
-    let current_out = end_redirect_output redirected_output in
+    let (res, current_out) =
+      test_with_output_redirected cocci_file [cfile] expected_out in
     let generated =
       match Common.optionise (fun () -> List.assoc cfile res) with
       | Some (Some outfile) ->
@@ -104,7 +114,7 @@ let testone prefix x compare_with_expected_flag =
   end
 
 
-let add_file score res correct diffxs =
+let add_file_to_score score res correct diffxs =
   (* I don't use Compare_c.compare_result_to_string because
    * I want to indent a little more the messages.
    *)
@@ -179,12 +189,8 @@ let testall_bis extra_test expected_score_file update_score_file =
 
 	  pr2 res;
 
-	  let redirected_output = begin_redirect_output expected_out in
-	  let (cocci_infos,_) =
-	    Cocci.pre_engine (cocci_file, !Config.std_iso) in
-          let xs = Cocci.full_engine cocci_infos [cfile] in
-	  Cocci.post_engine cocci_infos;
-	  let current_out = end_redirect_output redirected_output in
+	  let (xs, current_out) =
+	    test_with_output_redirected cocci_file [cfile] expected_out in
 
           let generated =
             match List.assoc cfile xs with
@@ -206,14 +212,14 @@ let testall_bis extra_test expected_score_file update_score_file =
 		       things that fail on the first test *)
 		    (Compare_c.Correct,[])) in
 
-	  add_file score res correct diffxs;
+	  add_file_to_score score res correct diffxs;
 
 	  match current_out with
 	    None -> ()
 	  | Some current_out' ->
 	      let (correct, diffxs) =
 		Compare_c.exact_compare current_out' expected_out in
-	      add_file score out correct diffxs
+	      add_file_to_score score out correct diffxs
         )
       )
       with exn ->
@@ -356,13 +362,14 @@ let test_okfailed cocci_file cfiles =
     spf "time: %f" tperfile
   in
 
+  let expected_out = Filename.chop_suffix cocci_file ".cocci" ^ ".out" in
+
   Common.redirect_stdout_stderr newout (fun () ->
     try (
       Common.timeout_function_opt "testing" !Flag_cocci.timeout (fun () ->
 
-	let (cocci_infos,_) = Cocci.pre_engine (cocci_file, !Config.std_iso) in
-        let outfiles = Cocci.full_engine cocci_infos cfiles in
-	Cocci.post_engine cocci_infos;
+	let (outfiles, current_out) =
+	  test_with_output_redirected cocci_file cfiles expected_out in
 
         let time_str = time_per_file_str () in
 
@@ -417,7 +424,13 @@ let test_okfailed cocci_file cfiles =
                       final_files
                 end
 		else push2 (infile ^ (t_to_s Failed), [s1;time_str]) final_files
-		    )
+		    );
+	match current_out with
+	  None -> ()
+	| Some current_out' ->
+	    let diff = Compare_c.exact_compare current_out' expected_out in
+            let s = Compare_c.compare_result_to_string diff in
+	    push2 (cocci_file ^ (t_to_s Failed), [s;time_str]) final_files
 	  );
       )
     with exn ->
