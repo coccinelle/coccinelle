@@ -608,7 +608,7 @@ def _main():
         cmd = [ '--stat', patch_branch_name + ".." + smpl_branch_name ]
         diff_stat = git_diff(tree=args.target_dir, extra_args = cmd)
         if len(diff_stat) == 0:
-            logwrite('\nSmPL patch fully replaces patch series!')
+            logwrite('\nSmPL patch fully replaces patch series!\n')
         else:
             logwrite('\nDifferences found:\n\n')
             logwrite('Change directory to %s and run:\n\n\tgit diff %s..%s\n\n' % (args.target_dir, patch_branch_name, smpl_branch_name))
