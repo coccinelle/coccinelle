@@ -1,0 +1,18 @@
+--- a/proto3.c
++++ b/proto3.c
+@@ -1,7 +1,6 @@
+ #include "proto3.h"
+ 
+-static void bch_sched_event(struct BCState *bcs, int event)
+-{
++static void bch_sched_event(int event) {
+ 	bcs->event |= 1 << event;
+ 	schedule_work(&bcs->work);
+ }
+--- a/proto3.h
++++ b/proto3.h
+@@ -1,3 +1,3 @@
+ void bch_l2l1(struct PStack *st, int pr, void *arg);
+-void bch_sched_event(struct BCState *bcs, int event);
++void bch_sched_event(int event);
+ void bch_empty_fifo(struct BCState *bcs, int count);
