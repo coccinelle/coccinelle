@@ -346,7 +346,8 @@ def apply_patches(args, patch_src, target_dir, logwrite=lambda x:None):
     for pfile in patches:
         print_name = pfile[prefix_len:]
 
-        logwrite("Applying patch %s\n" % pfile)
+        if args.show_proof or args.verbose:
+            logwrite("Applying patch %s\n" % pfile)
 
         process = subprocess.Popen(['patch', '-p1'], stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT, stdin=subprocess.PIPE,
@@ -401,7 +402,8 @@ class ExecutionErrorCocci(CoccinelleError):
         logwrite("Failed to apply changes from %s\n" % print_name)
         logwrite(output)
 
-def spatch(cocci_file, outdir, logwrite, num_jobs, print_name, extra_args=[]):
+def spatch(cocci_file, outdir, logwrite, num_jobs, print_name, extra_args=[],
+           verbose=False):
 
     req = Req(chatty=True)
     req.coccinelle('1.0.2')
@@ -428,7 +430,8 @@ def spatch(cocci_file, outdir, logwrite, num_jobs, print_name, extra_args=[]):
 
     cmd.extend(extra_args)
 
-    logwrite("%s\n" % " ".join(cmd))
+    if verbose:
+        logwrite("%s\n" % " ".join(cmd))
 
     sprocess = subprocess.Popen(cmd,
                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -440,7 +443,8 @@ def spatch(cocci_file, outdir, logwrite, num_jobs, print_name, extra_args=[]):
     return output
 
 def spatch_old(cocci_file, outdir,
-               max_threads, thread_id, temp_dir, ret_q, extra_args=[]):
+               max_threads, thread_id, temp_dir, ret_q, extra_args=[],
+               verbose=False):
     cmd = ['spatch',
             '--sp-file', cocci_file,
             '--in-place',
@@ -456,7 +460,8 @@ def spatch_old(cocci_file, outdir,
 
     fn = os.path.join(temp_dir, '.tmp_spatch_worker.' + str(thread_id))
     outfile = open(fn, 'w')
-    logwrite("%s\n" % " ".join(cmd))
+    if verbose:
+        logwrite("%s\n" % " ".join(cmd))
 
     sprocess = subprocess.Popen(cmd,
                                stdout=outfile, stderr=subprocess.STDOUT,
@@ -466,7 +471,7 @@ def spatch_old(cocci_file, outdir,
     ret_q.put((sprocess.returncode, fn))
 
 def threaded_spatch(cocci_file, outdir, logwrite, num_jobs,
-                    print_name, extra_args=[]):
+                    print_name, extra_args=[], verbose=True):
     num_cpus = cpu_count()
     if num_jobs:
         threads = int(num_jobs)
@@ -515,6 +520,11 @@ def _main():
                         help='Enable profile, this will pass --profile  to Coccinelle.')
     parser.add_argument('-s', '--show-proof', const=True, default=False, action="store_const",
                         help='Show proof that the provided SmPL patch can replace a respective patch series')
+    parser.add_argument('-c', '--clean-proof', const=True, default=False, action="store_const",
+                        help='Show proof that the provided SmPL patch can replace a respective patch series, and' +
+                        'if the proof shows equivalence, delete any temporary branches used to test the proof.' +
+                        'If any errors were encountered the branches used to test the proof will be kept to ' +
+                        'enable debugging')
     parser.add_argument('-j', '--jobs', metavar='<jobs>', type=str, default=None,
                         help='Only use the cocci file passed for Coccinelle, don\'t do anything else, ' +
                         'also creates a git repo on the target directory for easy inspection ' +
@@ -553,9 +563,9 @@ def _main():
     git_dir = None
 
     if git_reqs.reqs_match():
-        git_dir = gitname(args.target_dir)
+        git_dir = gitname(path=args.target_dir)
 
-    if args.show_proof:
+    if args.show_proof or args.clean_proof:
         # As an example if you use --show-proof patches/collateral-evolutions/network/09-threaded-irq.cocci
         # the patches under 09-threaded-irq will be used for the proof.
         patch_src = args.cocci_file.split('/')[-1].split('.cocci')[0]
@@ -586,11 +596,12 @@ def _main():
                 return -2
         cmd = [ '--abbrev-ref', 'HEAD' ]
         current_branch = git_rev_parse(tree=args.target_dir, extra_args = cmd)
-        logwrite("\n")
-        logwrite("Current branch: %s\n" % (current_branch))
-        logwrite("Patch   branch: %s\n" % (patch_branch_name))
-        logwrite("SmPL    branch: %s\n" % (smpl_branch_name))
-        logwrite("\n")
+        if args.show_proof or args.verbose:
+            logwrite("\n")
+            logwrite("Current branch: %s\n" % (current_branch))
+            logwrite("Patch   branch: %s\n" % (patch_branch_name))
+            logwrite("SmPL    branch: %s\n" % (smpl_branch_name))
+            logwrite("\n")
         git_checkout(tree=args.target_dir, extra_args = ['-b', smpl_branch_name])
         git_checkout(tree=args.target_dir, extra_args = ['-b', patch_branch_name])
 
@@ -608,31 +619,46 @@ def _main():
     else:
         extra_spatch_args.append('--use-coccigrep')
 
+    show_spatch_cmd = True
+    if args.clean_proof and not args.verbose:
+        show_spatch_cmd = False
     if has_spatch_1_0_2.reqs_match():
         output = spatch(args.cocci_file, args.target_dir, logwrite, jobs,
                         os.path.basename(args.cocci_file),
-                        extra_args=extra_spatch_args)
+                        extra_args=extra_spatch_args, verbose=show_spatch_cmd)
     else:
         output = threaded_spatch(args.cocci_file,
                                  args.target_dir,
                                  logwrite,
                                  jobs,
                                  os.path.basename(args.cocci_file),
-                                 extra_args=extra_spatch_args)
+                                 extra_args=extra_spatch_args,
+                                 verbose=show_spatch_cmd)
     if args.verbose:
         logwrite(output)
-    if args.show_proof:
+    if args.show_proof or args.clean_proof:
         git_commit_all(tree=args.target_dir, message="Initial commit")
         git_checkout(tree=args.target_dir, extra_args = [current_branch])
         cmd = [ '--stat', patch_branch_name + ".." + smpl_branch_name ]
         diff_stat = git_diff(tree=args.target_dir, extra_args = cmd)
         if len(diff_stat) == 0:
-            logwrite('\nSmPL patch fully replaces patch series!\n')
+            if args.show_proof or args.verbose:
+                logwrite('\nSmPL patch fully replaces patch series!\n')
+            else:
+                logwrite('%s\t:OK\n' % args.cocci_file)
+            if args.clean_proof:
+                if args.verbose:
+                    logwrite('\nRequested clean proof, so deleting work branches\n')
+                git_branch(tree=args.target_dir, extra_args = ['-D', patch_branch_name])
+                git_branch(tree=args.target_dir, extra_args = ['-D', smpl_branch_name])
         else:
-            logwrite('\nDifferences found:\n\n')
-            logwrite('Change directory to %s and run:\n\n\tgit diff %s..%s\n\n' % (args.target_dir, patch_branch_name, smpl_branch_name))
-            logwrite('diffstat of the changes:\n')
-            logwrite(diff_stat)
+            if args.show_proof or args.verbose:
+                logwrite('\nDifferences found:\n\n')
+                logwrite('Change directory to %s and run:\n\n\tgit diff %s..%s\n\n' % (args.target_dir, patch_branch_name, smpl_branch_name))
+                logwrite('diffstat of the changes:\n')
+                logwrite(diff_stat)
+            else:
+                logwrite('%s\t:FAIL\n' % args.cocci_file)
     return 0
 
 if __name__ == '__main__':

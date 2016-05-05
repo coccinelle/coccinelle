@@ -204,8 +204,27 @@ git branch created to avoid conflicts with previous runs.
 You must run this option with a clean git tree, if you have any pending changes
 you must commit them or discard them.
 
+.B\-c | \-\-clean\-proof
+This does what -\-show\-proof does but this is completely silent unless an
+error occurs. It will also remove the git branches used to test for the
+equivalence proof, unless an error is found. If an error is found you can
+inspect the two branches used to test for proof, refer to the documentation
+on \-\-show\-proof for details about these branches. This option is useful
+if you want to automate tests with proofs.
+
+Note that using this method will have created and subsequently if successful
+deleted two git branches on your git tree. As a consequence of using git
+branches your git reflog will show these branches, if you push your tree
+out these branches will not be pushed as they were deleted, your reflog
+however will keep these references locally until git expires them, by default
+this is 30 days. If this is too chatty for you, you can run:
+
+	git reflog expire \-\-all \-\-expire=now
+
+This will immediately clear old entries from your reflog.
+
 .SH AUTHOR
-\fBpycocci\fP and this man page was written by Luis R. Rodriguez <mcgrof@do-not-panic.com>
+\fBpycocci\fP and this man page was written by Luis R. Rodriguez <mcgrof@kernel.org>
 
 .SH REPORTING BUGS
 Send an mail to <cocci@systeme.lip6.fr>
