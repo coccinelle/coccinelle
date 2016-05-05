@@ -3,7 +3,7 @@
 
 @@ 
 type T; 
-identifier x, fld; 
+identifier x, fld, arg;
 function ioctl; // should be caracterised by another rule
 @@
 
