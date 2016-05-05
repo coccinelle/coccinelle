@@ -276,6 +276,15 @@ def git_checkout(tree=None, extra_args=None):
     process.wait()
     _check(process)
 
+def git_branch(tree=None, extra_args=None):
+    cmd = ['git', 'branch' ] + extra_args
+    process = subprocess.Popen(cmd,
+                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                               close_fds=True, universal_newlines=True, cwd=tree)
+    stdout = process.communicate()[0]
+    process.wait()
+    _check(process)
+
 def git_commit_all(message, tree=None):
     git_add('.', tree=tree)
     process = subprocess.Popen(['git', 'commit', '--allow-empty', '-a', '-m', message],
