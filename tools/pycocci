@@ -246,9 +246,10 @@ def git_rev_parse(tree=None, extra_args=None):
     return stdout.split('\n', 1)[0]
 
 def gitname(path=None):
+    path = os.path.abspath(path)
     work_dir = path
     if not os.path.isdir(path):
-        work_dir = os.path.dirname(path)
+        work_dir = os.path.abspath(os.path.dirname(path))
     process = subprocess.Popen(['git', 'rev-parse', '--show-toplevel', path],
                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                close_fds=True, universal_newlines=True, cwd=work_dir)
