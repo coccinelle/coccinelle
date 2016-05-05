@@ -575,6 +575,15 @@ def _main():
             logwrite("Path (%s) not part of a git tree, creating one for you...\n" % (args.target_dir))
             git_init(tree=args.target_dir)
             git_commit_all(tree=args.target_dir, message="Initial commit")
+        else:
+            diff_stat = git_diff(tree=args.target_dir, extra_args = [ '--stat' ] )
+            if len(diff_stat) != 0:
+                logwrite("SmPL <--> Patch proof equivalence requires a "
+                         "clean tree.\nYou have a dirty tree with "
+                         "uncommitted changes:\n\n")
+                logwrite(diff_stat)
+                logwrite("\nEither commit these changes, or stash them away somewhere\n")
+                return -2
         cmd = [ '--abbrev-ref', 'HEAD' ]
         current_branch = git_rev_parse(tree=args.target_dir, extra_args = cmd)
         logwrite("\n")

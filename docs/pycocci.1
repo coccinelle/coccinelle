@@ -201,6 +201,9 @@ will set the tree back to the master branch. Each run of \fBpycocci --show-proof
 will create two new git branches. 8 random characters are postixed to each new
 git branch created to avoid conflicts with previous runs.
 
+You must run this option with a clean git tree, if you have any pending changes
+you must commit them or discard them.
+
 .SH AUTHOR
 \fBpycocci\fP and this man page was written by Luis R. Rodriguez <mcgrof@do-not-panic.com>
 
