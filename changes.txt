@@ -35,7 +35,21 @@
 - addition of --file-groups option
 - ocaml code allowed as constraints on position variables
 - --enable-release configure option not accepted any longer.
+- Extend pycocci SmPL <=> Patch equivalence proof with [ -c | --clean-proof ]
+  support to enable support for a quiet and clean SmPL patch proof, this will
+  nuke any temporary branches used for the proof if everything went well.
+- Add support for SmPL <=> Patch equivalence using pycocci using patches,
+  for an example refer to:
+	o tests/pycocci/patches/0001-proto3*
+	o tests/pycocci/code/0001-proto3/
+  To test, use: ./scripts/pycocci-check.sh after building Coccinelle.
+  This will touch your reflog though, and as such is disabled by default,
+  to clean your reflog you can use: git reflog expire --all --expire=now
 ** Bugfix:
+- pycocci: skip proof when git dir is dirty
+- pycocci: fix gitname use, when using SmPL <=> patch equivalence proof
+  support and a relative path was used as target the git project base
+  directory was not being found, using absolute paths fixes this.
 - Don't complain about unreferenced variables in ungenerated rules
 - Be flexible about the matching of the first or last comma in a
   ... parameter or expression list, also in the case of transformation.
