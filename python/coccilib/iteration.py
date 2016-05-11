@@ -24,4 +24,4 @@ class Iteration:
     def register(self):
         Cocci().add_pending_instance(
             self.__files, list(self.__virtual_rules),
-            self.__virtual_identifiers.items(), self.__extend_virtual_ids)
+            list(self.__virtual_identifiers.items()), self.__extend_virtual_ids)

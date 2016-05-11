@@ -112,22 +112,13 @@ let sp_exit _ =
   exited := true;
   _pycocci_none ()
 
-let build_method (mname, camlfunc, args) pymodule classx classdict =
-  let cmx = pymethod_new(pywrap_closure camlfunc, args, classx) in
-  let v = pydict_setitemstring(classdict, mname, cmx) in
-  check_int_return_value ("building python method " ^ mname) v;
-  ()
-
-let build_class cname parent methods pymodule =
-  let cd = pydict_new() in
-  check_return_value "creating a new python dictionary" cd;
-  let cx = pyclass_new(pytuple_fromsingle (pycocci_get_class_type parent), cd,
-		       pystring_fromstring cname) in
-  check_return_value "creating a new python class" cx;
-  List.iter (function meth -> build_method meth pymodule cx cd) methods;
+let build_class cname parent fields methods pymodule =
+  let cx =
+    Pycaml.pyclass_init (pystring_fromstring cname)
+      (pytuple_fromsingle (pycocci_get_class_type parent)) fields methods in
   let v = pydict_setitemstring(pymodule_getdict pymodule, cname, cx) in
   check_int_return_value ("adding python class " ^ cname) v;
-  (cd, cx)
+  cx
 
 let the_environment = ref []
 
@@ -140,13 +131,11 @@ let has_environment_binding name =
       !the_environment in
   if e then _pycocci_true () else _pycocci_false ()
 
-let py_eq = 2
-
 let pyoption pyobject =
-  match pyobject_richcomparebool (pyobject, pynone (), py_eq) with
-  | 1 -> None
-  | 0 -> Some pyobject
-  | _ -> raise (Invalid_argument "pyoption")
+  if pyobject = pynone () then
+    None
+  else
+    Some pyobject
 
 let list_of_pylist pylist =
   Array.to_list (pylist_toarray pylist)
@@ -174,7 +163,6 @@ let add_pending_instance args =
   pynone ()
 
 let pyoutputinstance = ref (_pycocci_none ())
-let pyoutputdict = ref (_pycocci_none ())
 
 let get_cocci_file args =
   pystring_fromstring (!cocci_file_name)
@@ -206,18 +194,17 @@ let pycocci_init () =
   let module_dictionary = pyimport_getmoduledict() in
   coccinelle_module := pymodule_new "coccinelle";
   let mx = !coccinelle_module in
-  let (cd, cx) = build_class "Cocci" (!Flag.pyoutput)
-      [("exit", sp_exit, (pynull()));
-	("include_match", include_match, (pynull()));
-	("has_env_binding", has_environment_binding, (pynull()));
-	("add_pending_instance", add_pending_instance, (pynull()))] mx in
+  let mypystring = pystring_fromstring !cocci_file_name in
+  let cx = build_class "Cocci" (!Flag.pyoutput)
+      [("cocci_file", mypystring)]
+      [("exit", sp_exit);
+	("include_match", include_match);
+	("has_env_binding", has_environment_binding);
+	("add_pending_instance", add_pending_instance);
+     ] mx in
   pyoutputinstance := cx;
-  pyoutputdict := cd;
   let v1 = pydict_setitemstring(module_dictionary, "coccinelle", mx) in
   check_int_return_value "adding coccinelle python module" v1;
-  let mypystring = pystring_fromstring !cocci_file_name in
-  let v2 = pydict_setitemstring(cd, "cocci_file", mypystring) in
-  check_int_return_value "adding python field cocci_file" v2;
   ()) else
   ()
 

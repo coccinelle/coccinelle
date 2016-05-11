@@ -15,10 +15,10 @@ p << first_hdr.p;
 @@
 
 if first == 0:
-   print "keeping first hdr %s" % (p[0].line)
+   print("keeping first hdr %s" % (p[0].line))
    first = int(p[0].line)
 else:
-   print "dropping first hdr"
+   print("dropping first hdr")
    cocci.include_match(False)
 
 @second_hdr@
@@ -32,14 +32,14 @@ p << second_hdr.p;
 @@
 
 if int(p[0].line) > first and first != 0:
-   print "dropping second hdr"
+   print("dropping second hdr")
    cocci.include_match(False)
 else:
    if second == 0:
-      print "keeping second hdr %s because of %d" % (p[0].line,first)
+      print("keeping second hdr %s because of %d" % (p[0].line,first))
       second = int(p[0].line)
    else:
-      print "dropping second hdr"
+      print("dropping second hdr")
       cocci.include_match(False)
 
 @done@

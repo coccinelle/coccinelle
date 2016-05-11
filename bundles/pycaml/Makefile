@@ -77,13 +77,14 @@ distclean: clean
 # construct the directories
 depend: $(PYCAMLMARKER)
 
-$(PYCAMLMARKER): $(PYCAMLFILE)
+$(PYCAMLMARKER): $(PYCAMLFILE) python3-strings-classes.patch
 	$(TAR) xfvz $<
 #	$(PATCH) -d "${PYCAMLDIR}" -p1 < ./python3-compat-fix.patch
 #	$(PATCH) -d "${PYCAMLDIR}" -p1 < ./pyunicodeapichanges-fix.patch
 	$(PATCH) -d "${PYCAMLDIR}" -p2 < ./removeunicode.patch
 	$(PATCH) -d "${PYCAMLDIR}" -p1 < ./ignoreheader.patch
 	$(PATCH) -d "${PYCAMLDIR}" -p1 < ./elim-warnings.patch
+	$(PATCH) -d "${PYCAMLDIR}" -p1 < ./python3-strings-classes.patch
 	rm -f "${PYCAMLDIR}/pycaml.mli"
 	touch $@
 
