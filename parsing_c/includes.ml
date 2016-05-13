@@ -157,7 +157,8 @@ let resolve filename parsingstyle x =
         then interpret_include_path include_path
         else Some attempt2
       else
-        if all_includes then interpret_include_path include_path
+        if all_includes
+	then interpret_include_path include_path
         else None
     | Ast_c.NonLocal include_path ->
       if all_includes ||
