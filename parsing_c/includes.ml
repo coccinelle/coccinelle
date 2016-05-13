@@ -158,7 +158,9 @@ let resolve filename parsingstyle x =
         if all_includes then interpret_include_path include_path
         else None
     | Ast_c.NonLocal include_path ->
-      if all_includes || Common.fileprefix (Common.last include_path) = Common.fileprefix filename
+      if all_includes ||
+         Common.fileprefix (Common.last include_path) =
+           Common.fileprefix filename
       then interpret_include_path include_path
       else None
     | Ast_c.Weird _ -> None
