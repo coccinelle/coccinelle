@@ -975,18 +975,21 @@ let header_cache = Hashtbl.create 101
 let tree_stack = ref []
 
 let rec _parse_print_error_heuristic2 saved_typedefs saved_macros
-  parse_strings cache file =
+  parse_strings cache file use_header_cache =
   if List.mem file (List.map (fun x -> x.filename) !tree_stack)
   then None (* Inclusion loop, not re-parsing *)
   else begin
     let cached_result =
-      try Some (Hashtbl.find header_cache file) with
-      Not_found -> None in
+      if use_header_cache
+      then
+	try Some (Hashtbl.find header_cache file) with
+	  Not_found -> None
+      else None in
     match cached_result with
       | None ->
         let result =
           _parse_print_error_heuristic2bis saved_typedefs saved_macros
-            parse_strings file in
+            parse_strings file use_header_cache in
         if cache then Hashtbl.add header_cache file result else ();
         tree_stack := result :: !tree_stack;
         Some result
@@ -996,7 +999,7 @@ let rec _parse_print_error_heuristic2 saved_typedefs saved_macros
   end
 
 and _parse_print_error_heuristic2bis saved_typedefs saved_macros
-  parse_strings file =
+  parse_strings file use_header_cache =
   let stat = Parsing_stat.default_stat file in
 
   (* -------------------------------------------------- *)
@@ -1051,7 +1054,7 @@ and _parse_print_error_heuristic2bis saved_typedefs saved_macros
         ignore
           (_parse_print_error_heuristic2
             saved_typedefs saved_macros parse_strings
-            true header_filename)
+            true header_filename use_header_cache)
       | _ -> ()
     end in
 
@@ -1258,42 +1261,44 @@ and _parse_print_error_heuristic2bis saved_typedefs saved_macros
   { filename = file; parse_trees = v; statistics = stat }
 
 let parse_print_error_heuristic2 saved_typedefs saved_macros
-  parse_strings cache file =
+  parse_strings cache file use_header_cache =
   tree_stack := [];
   ignore
     (_parse_print_error_heuristic2 saved_typedefs saved_macros
-      parse_strings cache file);
+      parse_strings cache file use_header_cache);
   match !tree_stack with
     | [] -> assert false
     | tree::trees -> (tree, List.rev trees)
 
-let time_total_parsing a b c d =
+let time_total_parsing a b c d e =
   let res =
     Common.profile_code "TOTAL"
-      (fun () -> parse_print_error_heuristic2 a b c d) in
+      (fun () -> parse_print_error_heuristic2 a b c d e) in
   most_recent_file := ""; (* remove now useless lexer information *)
   most_recent_res := [];
   res
 
-let parse_print_error_heuristic a b c d =
-  Common.profile_code "C parsing" (fun () -> time_total_parsing a b c d)
+let parse_print_error_heuristic a b c d e =
+  Common.profile_code "C parsing" (fun () -> time_total_parsing a b c d e)
 
 
 (* alias *)
 let parse_c_and_cpp parse_strings cache a =
-  let v = fst (parse_print_error_heuristic None None parse_strings cache a) in
+  let v =
+    (* no saved typedefs or macros, so can't use header cache *)
+    fst (parse_print_error_heuristic None None parse_strings cache a false) in
   let (c, _, _) = v.parse_trees in
   (c, v.statistics)
 
 let parse_c_and_cpp_keep_typedefs td macs parse_strings cache a =
-  parse_print_error_heuristic td macs parse_strings cache a
+  parse_print_error_heuristic td macs parse_strings cache a true
 
 (*****************************************************************************)
 (* Same but faster cos memoize stuff *)
 (*****************************************************************************)
 let parse_cache typedefs parse_strings cache file =
   if not !Flag_parsing_c.use_cache
-  then parse_print_error_heuristic typedefs None parse_strings cache file
+  then parse_print_error_heuristic typedefs None parse_strings cache file false
   else
   let _ = pr2_once "TOFIX: use_cache is not sensitive to changes in the considered macros, include files, etc" in
   let need_no_changed_files =
@@ -1336,7 +1341,7 @@ let parse_cache typedefs parse_strings cache file =
 		()
 	  | _ -> ());
       (* recompute *)
-      parse_print_error_heuristic None None true cache file)
+      parse_print_error_heuristic None None true cache file false)
 
 
 
