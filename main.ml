@@ -6,6 +6,7 @@
 
 open Common
 module FC = Flag_cocci
+module Inc = Includes
 
 (*****************************************************************************)
 (* Flags *)
@@ -297,26 +298,28 @@ let short_options = [
   " <file> (default=" ^ !Config.std_h ^ ")";
 
   "--recursive-includes",
-  Arg.Unit (function _ -> Includes.set_parsing_style Includes.Parse_really_all_includes),
-  "  causes all available include files, both those included in the C file(s) and those included in header files, to be used";
+  Arg.Unit (function _ -> Inc.set_parsing_style Inc.Parse_really_all_includes),
+  ("  causes all available include files, both those included in the"^
+   " C file(s) and those included in header files, to be used");
   "--all-includes",
-  Arg.Unit (function _ -> Includes.set_parsing_style Includes.Parse_all_includes),
+  Arg.Unit (function _ -> Inc.set_parsing_style Inc.Parse_all_includes),
   "  causes all available include files included in the C file(s) to be used";
   "--no-includes",
-  Arg.Unit (function _ -> Includes.set_parsing_style Includes.Parse_no_includes),
+  Arg.Unit (function _ -> Inc.set_parsing_style Inc.Parse_no_includes),
   "  causes not even local include files to be used";
   "--local-includes",
-  Arg.Unit (function _ -> Includes.set_parsing_style Includes.Parse_local_includes),
+  Arg.Unit (function _ -> Inc.set_parsing_style Inc.Parse_local_includes),
   "  causes local include files to be used";
-  "--include-headers-for-types", Arg.Set Includes.include_headers_for_types,
+  "--include-headers-for-types", Arg.Set Inc.include_headers_for_types,
   "    use only type information from header files";
   "--ignore-unknown-options", Arg.Set ignore_unknown_opt,
-  "    For integration in a toolchain (must be set before the first unknown option)";
+  ("    For integration in a toolchain (must be set before the first unknown"^
+   " option)");
   "--include-headers", Arg.Set Flag.include_headers,
   "    process header files independently";
-  "-I",   Arg.String (fun x -> Includes.include_path:= x::!Includes.include_path),
+  "-I",   Arg.String (fun x -> Inc.include_path:= x::!Inc.include_path),
   "  <dir> containing the header files";
-  "--include", Arg.String (fun x -> Includes.extra_includes:=x::!Includes.extra_includes),
+  "--include", Arg.String (fun x -> Inc.extra_includes:=x::!Inc.extra_includes),
   "  file to consider as being included";
 
   "--preprocess", Arg.Set preprocess,
@@ -552,7 +555,7 @@ let other_options = [
 
     "--hrule", Arg.String
     (function s ->
-      Flag.make_hrule := Some s; Includes..include_options := Includes.Parse_no_includes),
+      Flag.make_hrule := Some s; Inc..include_options := Inc.Parse_no_includes),
     "    semantic patch generation";
 *)
     "--keep-comments", Arg.Set Flag_parsing_c.keep_comments,
@@ -699,7 +702,7 @@ let other_options = [
     "   which score file to compare with in --test-spacing";
     "--no-update-score-file", Arg.Clear allow_update_score_file,
     "   do not update the score file when -testall succeeds";
-    "--relax-include-path", Arg.Set Includes.relax_include_path,
+    "--relax-include-path", Arg.Set Inc.relax_include_path,
     " ";
   ];
 
@@ -749,7 +752,7 @@ let check_include_path () =
   let is_include_re = Str.regexp "-I\\(.*\\)" in
   if Str.string_match is_include_re opt 0 then
     let path = Str.matched_group 1 opt in
-	Includes.include_path:= path::!Includes.include_path
+	Inc.include_path:= path::!Inc.include_path
   else ()
 
 let rec arg_parse_no_fail l f msg =
@@ -1333,8 +1336,8 @@ let main () =
             chosen
           end
         else List.hd !args
-      in if !Includes.include_path = []
-      then Includes.include_path := [Filename.concat chosen_dir "include"]);
+      in if !Inc.include_path = []
+      then Inc.include_path := [Filename.concat chosen_dir "include"]);
     (* The same thing for file groups *)
     (if !file_groups
     then
@@ -1387,15 +1390,15 @@ let main () =
 	  let testfile = x ^ ".cocci" in
 	    if Sys.file_exists (prefix ^ testfile) then
 	      begin
-		(if !Includes.include_path = []
-		then Includes.include_path := [prefix^"include"]);
+		(if !Inc.include_path = []
+		then Inc.include_path := [prefix^"include"]);
 		Testing.testone prefix x !compare_with_expected
 	      end
 	    else
 	      if Sys.file_exists testfile then
 	      begin
-		(if !Includes.include_path = []
-		then Includes.include_path := ["include"]);
+		(if !Inc.include_path = []
+		then Inc.include_path := ["include"]);
 		Testing.testone "" x !compare_with_expected
 	      end
 	      else
@@ -1404,16 +1407,16 @@ let main () =
 		end
 
     | []  when !test_all ->
-        (if !Includes.include_path = []
-         then Includes.include_path := ["tests/include"]);
+        (if !Inc.include_path = []
+         then Inc.include_path := ["tests/include"]);
         let score_file = if !expected_score_file <> ""
                          then !expected_score_file
                          else "tests/SCORE_expected.sexp" in
         Testing.testall score_file !allow_update_score_file
 
     | []  when !test_spacing ->
-        (if !Includes.include_path = []
-         then Includes.include_path := ["tests/include"]);
+        (if !Inc.include_path = []
+         then Inc.include_path := ["tests/include"]);
         let score_file = if !expected_spacing_score_file <> ""
                          then !expected_spacing_score_file
                          else "tests/SCORE_spacing_expected.sexp" in
@@ -1424,7 +1427,7 @@ let main () =
 
     | ((x::xs) as cfiles) when !test_okfailed ->
         (* do its own timeout on FC.timeout internally *)
-        Includes.relax_include_path := true;
+        Inc.relax_include_path := true;
         adjust_stdin cfiles (fun () ->
           Testing.test_okfailed !cocci_file cfiles
           )
