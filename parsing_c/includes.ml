@@ -87,7 +87,7 @@ let interpret_include_path relpath =
   let maxdepth = List.length relpath in
   let unique_file_exists dir f =
     let cmd =
-      Printf.sprintf "find %s -mindepth %d -name \"%s\"" dir maxdepth f in
+      Printf.sprintf "find %s -mindepth %d -path \"*/%s\"" dir maxdepth f in
     try cache_find find_table cmd
     with Not_found ->
       let res =
