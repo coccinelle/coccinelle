@@ -51,7 +51,8 @@ let is_simple_ast_assign left op minus_left =
   is_simple_ast_assign_op op
 
 let warning e msg =
-  if not !Flag.sgrep_mode2
+  if !Flag_parsing_cocci.debug_parse_cocci ||
+     !Flag_parsing_cocci.show_iso_failures
   then
     Common.pr2
       ("the simple assignment expression on line "^
