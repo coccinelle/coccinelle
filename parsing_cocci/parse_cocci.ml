@@ -2310,8 +2310,10 @@ let parse file =
 
 	  let do_parse_script_rule fn name l old_metas deps =
             (* in generating mode, we want to keep all the dependencies *)
-	    let depimage = if !Flag_parsing_cocci.generating_mode then deps
-                           else eval_depend true deps virt in
+	    let depimage =
+	      if !Flag_parsing_cocci.generating_mode
+	      then deps
+              else eval_depend true deps virt in
 	    (if !Flag_parsing_cocci.debug_parse_cocci
 	    then print_dep_image name deps virt depimage);
 	    fn name l old_metas depimage in
@@ -2323,7 +2325,9 @@ let parse file =
             match rulename with
               Ast.CocciRulename (Some s, dep, b, c, d, e) ->
                 (* in generating mode, keep all dependencies *)
-		let depimage = if !Flag_parsing_cocci.generating_mode then dep
+		let depimage =
+		  if !Flag_parsing_cocci.generating_mode
+		  then dep
 		  else eval_depend false dep virt in
 		(if !Flag_parsing_cocci.debug_parse_cocci
 		then print_dep_image s dep virt depimage);
