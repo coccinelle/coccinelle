@@ -2333,6 +2333,7 @@ let parse file =
 		then print_dep_image s dep virt depimage);
 		(match depimage with
 		  Ast.FailDep ->
+		    (*parsing faildep code allows getting some warnings on it*)
 		    D.ignore_patch_or_match := true;
                     let res =
 		      parse_cocci_rule Ast.Normal old_metas
