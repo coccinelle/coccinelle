@@ -1427,7 +1427,7 @@ let main () =
 
     | ((x::xs) as cfiles) when !test_okfailed ->
         (* do its own timeout on FC.timeout internally *)
-        Inc.relax_include_path := true;
+        Inc.for_tests := true;
         adjust_stdin cfiles (fun () ->
           Testing.test_okfailed !cocci_file cfiles
           )

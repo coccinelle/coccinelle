@@ -155,6 +155,8 @@ let resolve filename parsingstyle x =
         if all_includes && not (Sys.file_exists attempt2)
         then interpret_include_path include_path
         else Some attempt2
+      else if !for_tests
+      then interpret_include_path [Common.last include_path]
       else if all_includes
       then interpret_include_path include_path
       else None
