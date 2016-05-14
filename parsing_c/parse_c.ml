@@ -990,7 +990,8 @@ let rec _parse_print_error_heuristic2 saved_typedefs saved_macros
         let result =
           _parse_print_error_heuristic2bis saved_typedefs saved_macros
             parse_strings file use_header_cache in
-        if cache then Hashtbl.add header_cache file result else ();
+        (if use_header_cache && cache
+	then Hashtbl.add header_cache file result);
         tree_stack := result :: !tree_stack;
         Some result
       | Some result ->
