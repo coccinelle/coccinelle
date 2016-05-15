@@ -19,6 +19,7 @@ type define_def = string * define_param * define_body
      | HintMacroString
      | HintMacroStatement
      | HintAttribute
+     | HintEndAttribute
      | HintMacroIdentBuilder
 
 val string_of_define_def: define_def -> string

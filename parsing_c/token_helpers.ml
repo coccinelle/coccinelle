@@ -215,7 +215,6 @@ let is_ident_like = function
   | TUnknown _
 
   | TMacroAttr _
-  | TMacroAttrStorage _
   | TMacroStmt _
   | TMacroString _
   | TMacroDecl _
@@ -332,7 +331,6 @@ let info_of_tok = function
 
   | TMacroIdentBuilder             (s, i) -> i
   | TMacroAttr             (s, i) -> i
-  | TMacroAttrStorage             (s, i) -> i
   | TMacroStmt             (s, i) -> i
   | TMacroString             (s, i) -> i
   | TMacroDecl             (s, i) -> i
@@ -454,7 +452,7 @@ let info_of_tok = function
 
   | EOF                  (i) -> i
   | Tnamespace           (i) -> i
-
+  | TTODO _ -> failwith "fake token, should not occur"
 
 
 
@@ -506,7 +504,6 @@ let visitor_info_of_tok f = function
 
   | TMacroIdentBuilder             (s, i) -> TMacroIdentBuilder (s, f i)
   | TMacroAttr           (s, i)   -> TMacroAttr            (s, f i)
-  | TMacroAttrStorage           (s, i)   -> TMacroAttrStorage         (s, f i)
   | TMacroStmt           (s, i)   -> TMacroStmt            (s, f i)
   | TMacroString         (s, i)   -> TMacroString          (s, f i)
   | TMacroDecl           (s, i) -> TMacroDecl            (s, f i)
@@ -628,7 +625,7 @@ let visitor_info_of_tok f = function
   | TOParCplusplusInit   (i) -> TOParCplusplusInit   (f i)
   | EOF                  (i) -> EOF                  (f i)
   | Tnamespace           (i) -> Tnamespace           (f i)
-
+  | TTODO _ -> failwith "fake token, should not occur"
 
 (*****************************************************************************)
 (* Accessors *)
@@ -779,7 +776,6 @@ let string_of_token = function
   | TMacroDecl _ -> "TMacroDecl"
   | TMacroDeclConst _ -> "TMacroDeclConst"
   | TMacroIterator _ -> "TMacroIterator"
-  | TMacroAttrStorage _ -> "TMacroAttrStorage"
   | TCommentSkipTagStart _ -> "TCommentSkipTagStart"
   | TCommentSkipTagEnd _ -> "TCommentSkipTagEnd"
   | TCParEOL _ -> "TCParEOL"
@@ -787,6 +783,7 @@ let string_of_token = function
   | TCommentMisc _ -> "TCommentMisc"
   | TCommentCpp _ -> "TCommentCpp"
   | EOF _ -> "EOF"
+  | TTODO _ -> failwith "fake token, should not occur"
 
 let file_of_tok x = Ast_c.file_of_info (info_of_tok x)
 let pinfo_of_tok x = Ast_c.pinfo_of_info (info_of_tok x)

@@ -915,7 +915,7 @@ $^\dag$ The optional \texttt{when} construct ends at the end of the line.
     \ttlb~\opt{\NT{stmt\_seq}} \ttrb}
 
   \RULE{\rt{funproto}}
-  \CASE{\opt{\NT{fn\_ctype}} \any{\NT{funinfo}} \NT{funid}
+  \CASE{\NT{fn\_ctype} \any{\NT{funinfo}} \NT{funid}
     (\opt{\NT{PARAMSEQ}\mth{(}\NT{param}, \mth{\varepsilon)}});}
 
   \RULE{\rt{funinfo}}
@@ -1005,7 +1005,7 @@ T foo() { ... }
 \end{lstlisting}
 
 \noindent
-It may be necessary to consider several cases to ensure that the added ode
+It may be necessary to consider several cases to ensure that the added code
 is placed in the right position.  For example, one may need one pattern
 that considers that the function is declared {\tt inline} and another that
 considers that it is not.
@@ -1018,6 +1018,9 @@ The C parser allows functions that have no return type, and assumes that
 the return type is \texttt{int}.  The support for parsing such functions is
 limited.  In particular, the parameter list must contain a type for each
 parameter, and may not contain varargs.
+
+For a function prototype, unlike a function definition, a specification of
+the return type is obligatory.
 
 %\newpage
 

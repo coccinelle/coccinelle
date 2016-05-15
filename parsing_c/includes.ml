@@ -10,7 +10,9 @@ let elem_threshold = 10
 
 let include_headers_for_types = ref false
 
-let is_header filename = Filename.check_suffix filename "h"
+let is_header filename =
+  Filename.check_suffix filename ".h" or
+  Filename.check_suffix filename ".h.res" (* for okfailed testing *)
 
 type parsing_style =
   | Parse_no_includes
@@ -41,6 +43,7 @@ let parse_all_includes parsing_style =
 let include_path = ref ([] : string list)
 
 let relax_include_path = ref false
+let for_tests = ref false
 (* if true then when have a #include "../../xx.h", we look also for xx.h in
  * current directory. This is because of how works extract_c_and_res
  *)
@@ -84,8 +87,7 @@ let interpret_include_path relpath =
   let maxdepth = List.length relpath in
   let unique_file_exists dir f =
     let cmd =
-      Printf.sprintf "find %s -maxdepth %d -mindepth %d -path \"*/%s\""
-	dir maxdepth maxdepth f in
+      Printf.sprintf "find %s -mindepth %d -path \"*/%s\"" dir maxdepth f in
     try cache_find find_table cmd
     with Not_found ->
       let res =
@@ -146,19 +148,22 @@ let resolve filename parsingstyle x =
       let f = Filename.concat dir relpath in
       if (Sys.file_exists f)
       then Some f
-      else
-       if !relax_include_path
+      else if !relax_include_path
       (* for our tests, all the files are flat in the current dir *)
       then
         let attempt2 = Filename.concat dir (Common.last include_path) in
         if all_includes && not (Sys.file_exists attempt2)
         then interpret_include_path include_path
         else Some attempt2
-      else
-        if all_includes then interpret_include_path include_path
-        else None
+      else if !for_tests
+      then interpret_include_path [Common.last include_path]
+      else if all_includes
+      then interpret_include_path include_path
+      else None
     | Ast_c.NonLocal include_path ->
-      if all_includes || Common.fileprefix (Common.last include_path) = Common.fileprefix filename
+      if all_includes ||
+         Common.fileprefix (Common.last include_path) =
+           Common.fileprefix filename
       then interpret_include_path include_path
       else None
     | Ast_c.Weird _ -> None

@@ -26,6 +26,7 @@ val parse_all_includes : parsing_style -> bool
 val include_path : string list ref
 
 val relax_include_path : bool ref
+val for_tests : bool ref
 (** if true then when have a #include "../../xx.h", we look also for xx.h in
  * current directory. This is because of how works extract_c_and_res
  *)

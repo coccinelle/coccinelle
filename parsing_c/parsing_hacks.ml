@@ -1135,16 +1135,6 @@ let rec find_macro_paren xs =
 
 *)
 
-  (* storage attribute *)
-  | PToken ({tok = (Tstatic _ | Textern _)} as tok1)
-    ::PToken ({tok = TMacroAttr (s,i1)} as attr)::xs
-    ->
-      pr2_cpp ("storage attribute: " ^ s);
-      attr.tok <- TMacroAttrStorage (s,i1);
-      (* recurse, may have other storage attributes *)
-      find_macro_paren (PToken (tok1)::xs)
-
-
   (* stringification
    *
    * the order of the matching clause is important

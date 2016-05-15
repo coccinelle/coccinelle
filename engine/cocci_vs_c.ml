@@ -2761,14 +2761,14 @@ and get_fninfo fninfoa =
   let attras =
     match List.filter (function A.FAttr(a) -> true | _ -> false) fninfoa
     with
-      [] -> None | _ -> failwith "matching of attributes not supported"
+      [] -> None |(* _ -> failwith "matching of attributes not supported"*)
 	(* The following provides matching of one attribute against one
 	   attribute.  But the problem is that in the C ast there are no
 	   attributes in the attr field.  The attributes are all comments.
 	   So there is nothing to match against. *)
-	(*  [A.FAttr(a)] -> Some [A.FAttr(a)]
-	| [] -> None
-	| _ -> failwith "only one attr match allowed" *) in
+	(**)  [A.FAttr(a)] -> Some [A.FAttr(a)]
+	(*| [] -> None*)
+	| _ -> failwith "only one attr match allowed" (**) in
   (stoa,tya,inla,attras)
 
 and put_fninfo stoa tya inla attras =
@@ -4103,7 +4103,9 @@ and attribute_list attras attrbs =
 and attribute_list attras attrbs =
   X.optional_attributes_flag (fun optional_attributes ->
   match attras,attrbs with
-    None, _ -> return (None, attrbs)
+    None, _ when optional_attributes || attrbs = [] ->
+      return (None, attrbs)
+  | None, _ -> fail
   | Some [attra], [attrb] ->
     attribute attra attrb >>= (fun attra attrb ->
       return (Some [attra], [attrb])

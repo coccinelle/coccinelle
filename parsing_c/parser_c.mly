@@ -579,9 +579,6 @@ let args_to_params l pb =
 %token <(string * Ast_c.info)> TMacroStructDecl
 *)*/
 
-%token <(string * Ast_c.info)>            TMacroAttrStorage
-
-
 /*(*---------------*)*/
 /*(* other         *)*/
 /*(*---------------*)*/
@@ -604,6 +601,7 @@ let args_to_params l pb =
 
 /*(*-----------------------------------------*)*/
 %token <Ast_c.info> EOF
+%token <Ast_c.info> TTODO
 
 /*(*-----------------------------------------*)*/
 
@@ -784,6 +782,11 @@ arith_expr:
 cast_expr:
  | unary_expr                        { $1 }
  | topar2 type_name tcpar2 cast_expr { mk_e(Cast ($2, $4)) [$1;$3] }
+/*
+It could be useful to have the following, but there is no place for the
+attribute in the AST.
+ | topar2 attributes type_name tcpar2 cast_expr { failwith "bad" }
+*/
 
 unary_expr:
  | postfix_expr                    { $1 }
@@ -1265,14 +1268,6 @@ attribute:
  /*(* cppext: *)*/
  | TMacroAttr { Attribute (fst $1), [snd $1] }
 
-attribute_storage:
- | TMacroAttrStorage { $1 }
-
-type_qualif_attr:
- | type_qualif { $1 }
-/*(*TODO !!!!! *)*/
- | TMacroAttr { {const=true  ; volatile=false}, snd $1   }
-
 /*(*-----------------------------------------------------------------------*)*/
 /*(* Declarator, right part of a type + second part of decl (the ident)  *)*/
 /*(*-----------------------------------------------------------------------*)*/
@@ -1286,17 +1281,23 @@ type_qualif_attr:
  *)*/
 
 declarator:
- | pointer direct_d { (fst $2, fun x -> x +> $1 +> (snd $2)  ) }
- | direct_d         { $1  }
+ | pointer direct_d { let (attr,ptr) = $1 in
+                      (attr, (fst $2, fun x -> x +> ptr +> (snd $2))) }
+ | direct_d         { (Ast_c.noattr, $1)  }
 
 /*(* so must do  int * const p; if the pointer is constant, not the pointee *)*/
 pointer:
- | tmul                   { fun x -> mk_ty (Pointer x) [$1] }
- | tmul pointer           { fun x -> mk_ty (Pointer ($2 x)) [$1] }
+ | tmul                   { (Ast_c.noattr,fun x -> mk_ty (Pointer x) [$1]) }
+ | tmul pointer
+     { let (attr,ptr) = $2 in
+       (attr,fun x -> mk_ty (Pointer (ptr x)) [$1]) }
  | tmul type_qualif_list
-     { fun x -> ($2.qualifD, mk_tybis (Pointer x) [$1])}
+     { let (attr,tq) = $2 in
+       (attr,fun x -> (tq.qualifD, mk_tybis (Pointer x) [$1]))}
  | tmul type_qualif_list pointer
-     { fun x -> ($2.qualifD, mk_tybis (Pointer ($3 x)) [$1]) }
+     { let (attr1,tq) = $2 in
+       let (attr2,ptr) = $3 in
+       (attr1@attr2,fun x -> (tq.qualifD, mk_tybis (Pointer (ptr x)) [$1])) }
 
 tmul:
    TMul { $1 }
@@ -1312,7 +1313,8 @@ direct_d:
  | identifier_cpp
      { ($1, fun x -> x) }
  | TOPar declarator TCPar      /*(* forunparser: old: $2 *)*/
-     { (fst $2, fun x -> mk_ty (ParenType ((snd $2) x)) [$1;$3]) }
+     { let (attr,dec) = $2 in  (* attr gets ignored... *)
+       (fst dec, fun x -> mk_ty (ParenType ((snd dec) x)) [$1;$3]) }
  | direct_d tocro            tccro
      { (fst $1,fun x->(snd $1) (mk_ty (Array (None,x)) [$2;$3])) }
  | direct_d tocro const_expr tccro
@@ -1337,9 +1339,9 @@ tccro: TCCro { dt "tccro" ();$1 }
 
 /*(*-----------------------------------------------------------------------*)*/
 abstract_declarator:
- | pointer                            { $1 }
+ | pointer                            { snd $1 }
  |         direct_abstract_declarator { $1 }
- | pointer direct_abstract_declarator { fun x -> x +> $2 +> $1 }
+ | pointer direct_abstract_declarator { fun x -> x +> $2 +> (snd $1) }
 
 direct_abstract_declarator:
  | TOPar abstract_declarator TCPar /*(* forunparser: old: $2 *)*/
@@ -1389,7 +1391,7 @@ parameter_decl2:
      }
    }
  | decl_spec declaratorp
-     { let ((returnType,hasreg),iihasreg) = fixDeclSpecForParam $1 in
+     { let ((returnType,hasreg),iihasreg) = fixDeclSpecForParam (snd $1) in
        let (name, ftyp) = $2 in
        { p_namei = Some (name);
          p_type = ftyp returnType;
@@ -1397,14 +1399,14 @@ parameter_decl2:
        }
      }
  | decl_spec abstract_declaratorp
-     { let ((returnType,hasreg), iihasreg) = fixDeclSpecForParam $1 in
+     { let ((returnType,hasreg), iihasreg) = fixDeclSpecForParam (snd $1) in
        { p_namei = None;
          p_type = $2 returnType;
          p_register = hasreg, iihasreg;
        }
      }
  | decl_spec
-     { let ((returnType,hasreg), iihasreg) = fixDeclSpecForParam $1 in
+     { let ((returnType,hasreg), iihasreg) = fixDeclSpecForParam (snd $1) in
        { p_namei = None;
          p_type = returnType;
          p_register = hasreg, iihasreg;
@@ -1417,18 +1419,18 @@ parameter_decl2:
 /*(*----------------------------*)*/
 
 parameter_decl: parameter_decl2 { et "param" ();  $1 }
- | attributes parameter_decl2 { et "param" (); $2 }
 
 declaratorp:
- | declarator  { LP.add_ident (str_of_name (fst $1)); $1 }
+ | declarator  { let (attr,dec) = $1 in (* attr gets ignored *)
+                 LP.add_ident (str_of_name (fst dec)); dec }
  /*(* gccext: *)*/
- | attributes declarator   { LP.add_ident (str_of_name (fst $2)); $2 }
- | declarator attributes   { LP.add_ident (str_of_name (fst $1)); $1 }
+ | declarator attributes
+               { let (attr,dec) = $1 in (* attr gets ignored *)
+                 LP.add_ident (str_of_name (fst dec)); dec }
 
 abstract_declaratorp:
  | abstract_declarator { $1 }
  /*(* gccext: *)*/
- | attributes abstract_declarator { $2 }
 
 /*(*-----------------------------------------------------------------------*)*/
 /*(* helper type rules *)*/
@@ -1447,13 +1449,10 @@ spec_qualif_list: spec_qualif_list2            {  dt "spec_qualif" (); $1 }
 
 /*(* for pointers in direct_declarator and abstract_declarator *)*/
 type_qualif_list:
- | type_qualif_attr                  { {nullDecl with qualifD = (fst $1,[snd $1])} }
- | type_qualif_list type_qualif_attr { addQualifD ($2,$1) }
-
-
-
-
-
+ | type_qualif { (Ast_c.noattr,{nullDecl with qualifD = (fst $1,[snd $1])}) }
+ | attribute                    { ([$1],nullDecl) }
+ | type_qualif_list type_qualif { (fst $1,addQualifD ($2,snd $1)) }
+ | type_qualif_list attribute   { ((fst $1)@[$2],snd $1) }
 
 /*(*-----------------------------------------------------------------------*)*/
 /*(* xxx_type_id *)*/
@@ -1470,7 +1469,6 @@ type_name:
 abstract_declaratort:
  | abstract_declarator { $1 }
  /*(* gccext: *)*/
- | attributes abstract_declarator { $2 }
 
 
 /*(*************************************************************************)*/
@@ -1480,18 +1478,18 @@ abstract_declaratort:
 decl2:
  | decl_spec TPtVirg
      { function local ->
-       let (returnType,storage) = fixDeclSpecForDecl $1 in
+       let (returnType,storage) = fixDeclSpecForDecl (snd $1) in
        let iistart = Ast_c.fakeInfo () in
        DeclList ([{v_namei = None; v_type = returnType;
                    v_storage = unwrap storage; v_local = local;
-                   v_attr = Ast_c.noattr;
+                   v_attr = fst $1;
                    v_type_bis = ref None;
                 },[]],
                 ($2::iistart::snd storage))
      }
  | decl_spec init_declarator_list TPtVirg
      { function local ->
-       let (returnType,storage) = fixDeclSpecForDecl $1 in
+       let (returnType,storage) = fixDeclSpecForDecl (snd $1) in
        let iistart = Ast_c.fakeInfo () in
        DeclList (
          ($2 +> List.map (fun ((((name,f),attrs), ini), iivirg) ->
@@ -1502,7 +1500,7 @@ decl2:
             v_type = f returnType;
             v_storage = unwrap storage;
             v_local = local;
-            v_attr = attrs;
+            v_attr = (fst $1)@attrs;
             v_type_bis = ref None;
            },
            iivirg
@@ -1540,14 +1538,16 @@ storage_const_opt:
 
 /*(*-----------------------------------------------------------------------*)*/
 decl_spec2:
- | storage_class_spec      { {nullDecl with storageD = (fst $1, [snd $1]) } }
- | type_spec               { addTypeD ($1,nullDecl) }
- | type_qualif             { {nullDecl with qualifD  = (fst $1, [snd $1]) } }
- | Tinline                 { {nullDecl with inlineD = (true, [$1]) } }
- | storage_class_spec decl_spec2 { addStorageD ($1, $2) }
- | type_spec          decl_spec2 { addTypeD    ($1, $2) }
- | type_qualif        decl_spec2 { addQualifD  ($1, $2) }
- | Tinline            decl_spec2 { addInlineD ((true, $1), $2) }
+ | storage_class_spec { ([], {nullDecl with storageD = (fst $1, [snd $1]) }) }
+ | type_spec          { ([], addTypeD ($1,nullDecl)) }
+ | type_qualif        { ([], {nullDecl with qualifD  = (fst $1, [snd $1]) }) }
+ | Tinline            { ([], {nullDecl with inlineD = (true, [$1]) }) }
+ | attribute          { ([$1], nullDecl) }
+ | storage_class_spec decl_spec2 { (fst $2, addStorageD ($1, snd $2)) }
+ | type_spec          decl_spec2 { (fst $2, addTypeD    ($1, snd $2)) }
+ | type_qualif        decl_spec2 { (fst $2, addQualifD  ($1, snd $2)) }
+ | Tinline            decl_spec2 { (fst $2, addInlineD ((true, $1), snd $2)) }
+ | attribute          decl_spec2 { ($1::(fst $2), snd $2) }
 
 /*(* can simplify by putting all in _opt ? must have at least one otherwise
    *  decl_list is ambiguous ? (no cos have ';' between decl)
@@ -1560,15 +1560,9 @@ storage_class_spec_nt:
  | Tauto        { Sto Auto,    $1 }
  | Tregister    { Sto Register,$1 }
 
-storage_class_spec2:
+storage_class_spec:
  | storage_class_spec_nt { $1 }
  | Ttypedef     { StoTypedef,  $1 }
-
-storage_class_spec:
- /*(* gccext: *)*/
- | storage_class_spec2 { $1 }
- | storage_class_spec2 attribute_storage_list { $1 (* TODO *) }
-
 
 
 /*(*----------------------------*)*/
@@ -1602,13 +1596,17 @@ init_declarator: init_declarator2  { dt "init" (); $1 }
 /*(*----------------------------*)*/
 
 declaratori:
- | declarator              { LP.add_ident (str_of_name (fst $1)); $1, Ast_c.noattr }
+ | declarator
+     { let (attr,dec) = $1 in
+       LP.add_ident (str_of_name (fst dec)); dec, attr }
  /*(* gccext: *)*/
- | declarator gcc_asm_decl { LP.add_ident (str_of_name (fst $1)); $1, Ast_c.noattr }
+ | declarator gcc_asm_decl
+     { let (attr,dec) = $1 in
+       LP.add_ident (str_of_name (fst dec)); dec, attr }
  /*(* gccext: *)*/
- | attributes declarator   { LP.add_ident (str_of_name (fst $2)); $2, $1 }
- | declarator attributes   { LP.add_ident (str_of_name (fst $1)); $1, Ast_c.noattr (* TODO *) }
-
+ | declarator end_attributes
+     { let (attr,dec) = $1 in
+       LP.add_ident (str_of_name (fst dec)); dec, attr (* TODO *) }
 
 
 gcc_asm_decl:
@@ -1768,10 +1766,11 @@ struct_declarator:
 /*(* workarounds *)*/
 /*(*----------------------------*)*/
 declaratorsd:
- | declarator { (*also ? LP.add_ident (fst (fst $1)); *) $1 }
+ | declarator
+     { let (attr,dec) = $1 in (* attr ignored *)
+       (*also ? LP.add_ident (fst (fst dec)); *) dec }
  /*(* gccext: *)*/
- | attributes declarator   { $2 }
- | declarator attributes   { $1 }
+ | declarator attributes   { let (attr,dec) = $1 in dec }
 
 
 
@@ -1843,9 +1842,9 @@ start_fun: start_fun2
   }
 
 start_fun2: decl_spec declaratorfd
-     { let (returnType,storage) = fixDeclSpecForFuncDef $1 in
+     { let (returnType,storage) = fixDeclSpecForFuncDef (snd $1) in
        let (id, attrs) = $2 in
-       (fst id, fixOldCDecl ((snd id) returnType) , storage, attrs)
+       (fst id, fixOldCDecl ((snd id) returnType) , storage, (fst $1)@attrs)
      }
    | ctor_dtor { $1 }
 
@@ -1878,11 +1877,11 @@ as typedefs.  Unfortunately, doing something about this problem seems to
 introduce conflicts in the parser. */
 
 declaratorfd:
- | declarator { et "declaratorfd" (); $1, Ast_c.noattr }
+ | declarator
+   { et "declaratorfd" (); let (attr,dec) = $1 in dec, attr }
  /*(* gccext: *)*/
- | attributes declarator   { et "declaratorfd" (); $2, $1 }
- | declarator attributes   { et "declaratorfd" (); $1, Ast_c.noattr }
-
+| declarator end_attributes
+   { et "declaratorfd" (); let (attr,dec) = $1 in dec, attr }
 
 
 /*(*************************************************************************)*/
@@ -1955,11 +1954,11 @@ define_val:
   *)
 */
  | decl_spec
-     { let returnType = fixDeclSpecForMacro $1 in
+     { let returnType = fixDeclSpecForMacro (snd $1) in
        DefineType returnType
      }
  | decl_spec abstract_declarator
-     { let returnType = fixDeclSpecForMacro $1 in
+     { let returnType = fixDeclSpecForMacro (snd $1) in
        let typ = $2 returnType in
        DefineType typ
      }
@@ -2004,7 +2003,6 @@ define_val:
  | Tasm Tvolatile TOPar asmbody TCPar    { DefineTodo }
 
  /*(* aliases macro *)*/
- | TMacroAttr { DefineTodo }
 
  | /*(* empty *)*/ { DefineEmpty }
 
@@ -2297,12 +2295,9 @@ attribute_list:
  | attribute { [$1] }
  | attribute_list attribute { $1 @ [$2] }
 
-attribute_storage_list:
- | attribute_storage { [$1] }
- | attribute_storage_list attribute_storage { $1 @ [$2] }
-
-
 attributes: attribute_list { $1 }
+
+end_attributes: TTODO { $1 }
 
 comma_opt:
  | TComma {  [$1] }

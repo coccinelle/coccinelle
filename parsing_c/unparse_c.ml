@@ -263,7 +263,34 @@ let get_fakeInfo_and_tokens celem toks =
 
   let pr_space _ = () in (* use the spacing that is there already *)
 
-  Pretty_print_c.pp_program_gen pr_elem pr_space celem;
+  let printed_toks = ref [] in
+  let pr_get_elem tok = push2 tok printed_toks in
+
+  Pretty_print_c.pp_program_gen pr_get_elem pr_space celem;
+
+  (* sort tokens when possible *)
+  let is_origin info =
+    match Ast_c.pinfo_of_info info with
+    | Ast_c.OriginTok _ -> true
+    | _ -> false in (* don't know if the others have proper positions *)
+  let rec tok_group = function
+      [] -> []
+    | tok::rest ->
+	let (nonorig,origrest) =
+	  Common.span (function tok -> not (is_origin tok)) rest in
+	(tok::nonorig)::(tok_group origrest) in
+  let (front,rest) =
+    match tok_group (List.rev !printed_toks) with
+      front::rest when not(is_origin (List.hd front)) (*might not be orig*)
+	  -> (front,rest)
+    | all -> ([],all) in
+  let tcompare l1 l2 =
+    match (l1,l2) with
+      (t1::_,t2::_) ->
+	compare (Ast_c.info_to_fixpos t1) (Ast_c.info_to_fixpos t2)
+    | _ -> failwith "not possible" in
+  let printed_toks = List.concat (front :: (List.sort tcompare rest)) in
+  List.iter pr_elem printed_toks;
 
   if  (!toks_in <> [])
   then failwith "WEIRD: unparsing not finished";
