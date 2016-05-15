@@ -619,7 +619,7 @@ let classify_variables metavar_decls minirules used_after =
 
   let donothing r k e = k e in
   let check_unitary name inherited =
-    if (*true (*Do not commit!*) ||*) List.mem name inplus || List.mem name used_after
+    if List.mem name inplus || List.mem name used_after
     then TC.Saved
     else if not inherited && List.mem name unitary
     then TC.Unitary
