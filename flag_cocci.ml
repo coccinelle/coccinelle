@@ -37,5 +37,3 @@ let timeout = ref (None : int option)
 let selected_only = ref false (* just print files that would be treated *)
 
 let use_saved_typedefs = ref true (* hack! *)
-
-let output_prefix = ref ""
