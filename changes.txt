@@ -45,6 +45,8 @@
   To test, use: ./scripts/pycocci-check.sh after building Coccinelle.
   This will touch your reflog though, and as such is disabled by default,
   to clean your reflog you can use: git reflog expire --all --expire=now
+- Added --tmp-dir option, to specify the name of the temporary directory
+  used to hold the results obtained on the different cores with the -j option.
 ** Bugfix:
 - pycocci: skip proof when git dir is dirty
 - pycocci: fix gitname use, when using SmPL <=> patch equivalence proof
