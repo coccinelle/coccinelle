@@ -917,8 +917,10 @@ let gen_pdf_graph () =
 	    ) filename_stack;
   Printf.printf " - Done\n")
 
-let local_python_code =
-    "from coccinelle import *\n"
+let local_python_code = "\
+from coccinelle import *
+from coccilib.iteration import Iteration
+"
 
 let python_code =
   "import coccinelle\n"^

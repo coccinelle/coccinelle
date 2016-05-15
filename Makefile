@@ -489,6 +489,9 @@ check: scripts/spatch
 	@$(ECHO) running the test suite
 	COCCINELLE_HOME="$$(pwd)" ./scripts/spatch --testall --no-update-score-file
 
+pycocci-check:
+	COCCINELLE_HOME="$$(pwd)" ./scripts/pycocci-check.sh
+
 # -inline 0  to see all the functions in the profile.
 # Can also use the profile framework in commons/ and run your program
 # with -profile.
