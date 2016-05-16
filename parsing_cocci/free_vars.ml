@@ -1083,7 +1083,7 @@ let get_neg_pos_list (_,rule) used_after_list =
 	      ((metaid name)::a,constraint_vars@b)
 	  | Ast.MetaPos(name,constraints,Ast.ALL,_,_) ->
 	      let constraint_vars = get_neg_pos_constraints constraints in
-	      (a,(metaid name)::constraint_vars@b)))
+	      ((metaid name)::a,constraint_vars@b)))
       option_default (Ast.get_pos_var mc) in
   let v =
     V.combiner bind option_default

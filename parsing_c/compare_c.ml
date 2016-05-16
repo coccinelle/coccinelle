@@ -245,8 +245,10 @@ let do_compare_token adjust_cvs to_expected filename1 filename2 =
             Token_helpers.str_of_tok x, Token_helpers.pos_of_tok x in
           let str2, pos2 =
             Token_helpers.str_of_tok y, Token_helpers.pos_of_tok y in
+	  (*
 	  let str1 = str1 ^ " - " ^ (Token_helpers.string_of_token x) in
 	  let str2 = str2 ^ " - " ^ (Token_helpers.string_of_token y) in
+	  *)
           Some ("diff token: " ^ str1 ^" VS " ^ str2 ^ "\n" ^
                    Common.error_message filename1 (str1, pos1) ^ "\n" ^
                    Common.error_message filename2 (str2, pos2) ^ "\n"

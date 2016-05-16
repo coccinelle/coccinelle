@@ -608,12 +608,22 @@ rule token = parse
   | "#" [' ''\t']* "if" [' ' '\t']+
       { let info = tokinfo lexbuf in
         let str_guard = cpp_eat_until_nl lexbuf in
-        TIfdef (Gif_str str_guard, no_ifdef_mark(), info +> tok_add_s str_guard)
+	let info = info +> tok_add_s str_guard in
+        if List.mem str_guard !Flag_parsing_c.undefined
+        then TIfdefBool (false, no_ifdef_mark(), info)
+        else if List.mem str_guard !Flag_parsing_c.defined
+        then TIfdefBool (true, no_ifdef_mark(), info)
+        else TIfdef (Gif_str str_guard, no_ifdef_mark(), info)
       }
   | "#" [' ' '\t']* "if" '('
       { let info = tokinfo lexbuf in
-        let str_guard = cpp_eat_until_nl lexbuf in
-        TIfdef (Gif_str str_guard, no_ifdef_mark(), info +> tok_add_s str_guard)
+        let str_guard = "(" ^ cpp_eat_until_nl lexbuf in
+	let info = info +> tok_add_s str_guard in
+        if List.mem str_guard !Flag_parsing_c.undefined
+        then TIfdefBool (false, no_ifdef_mark(), info)
+        else if List.mem str_guard !Flag_parsing_c.defined
+        then TIfdefBool (true, no_ifdef_mark(), info)
+        else TIfdef (Gif_str str_guard, no_ifdef_mark(), info)
       }
   | "#" [' ' '\t']* "elif" [' ' '\t']+
       { let info = tokinfo lexbuf in

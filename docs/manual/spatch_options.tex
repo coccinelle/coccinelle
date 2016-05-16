@@ -383,7 +383,12 @@ other \#ifdef.}
     \#ifdef}s are ignored and any {\tt \#ifndef}s are ignored, unless the
   argument {\bf -{}-noif0-passing} is also given, in which case {\bf
     -{}-defined} has no effect.  Note that occurrences of {\tt \#define} in
-  the C code have no effect on the list of defined constants.}
+  the C code have no effect on the list of defined constants.
+
+  This option now applies also to {\tt \#if} in which case the string has
+  be exactly as it appears in the code, minus any leading whitespace or
+  tabs, and minus any comments.  Not that there is currently no way to
+  provide information about the expressions used in {\tt \#elif}.}
 
 \rare{-{}-undefined $s$}{Analogous to {\bf -{}-defined} except that the strings
   represent constants that should be considered to be undefined.}
