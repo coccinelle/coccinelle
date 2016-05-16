@@ -301,7 +301,7 @@ and build_or x y =
 let keep x = Elem x
 let drop x = True
 
-let do_get_constants constants keywords env neg_pos =
+let do_get_constants constants keywords env (neg_pos,_) =
   let donothing r k e = k e in
   let option_default = True in
   let bad_default = False in
