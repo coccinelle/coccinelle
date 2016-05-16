@@ -828,7 +828,9 @@ type toplevel_cocci_info_cocci_rule = {
    *)
   dropped_isos: string list;
   free_vars:  Ast_cocci.meta_name list;
-  negated_pos_vars:  Ast_cocci.meta_name list;
+  special_pos_vars:
+      Ast_cocci.meta_name list (*negated*) *
+      Ast_cocci.meta_name list (*"all"*);
   positions: Ast_cocci.meta_name list;
 
   ruletype: Ast_cocci.ruletype;
@@ -1000,7 +1002,7 @@ let prepare_cocci ctls free_var_lists negated_pos_lists
 	      isexp = List.hd isexp;
               dropped_isos = dropped_isos;
               free_vars = List.hd free_var_list;
-              negated_pos_vars = List.hd negated_pos_list;
+              special_pos_vars = List.hd negated_pos_list;
               positions = List.hd positions_list;
 	      ruletype = ruletype;
 	      rule_info = build_rule_info rulename dependencies;
@@ -1496,8 +1498,10 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
     show_or_not_rule_name r.ast_rule r.rule_info.ruleid;
     show_or_not_ctl_text r.ctl r.metavars r.ast_rule r.rule_info.ruleid;
 
+    let (neg_pos,all_pos) = r.special_pos_vars in
     let reorganized_env =
-      reassociate_positions r.free_vars r.negated_pos_vars !es in
+      reassociate_positions r.free_vars (Common.union_set neg_pos all_pos)
+	!es in
 
     (* looping over the environments *)
     let (_,newes (* envs for next round/rule *)) =
@@ -1654,7 +1658,7 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
     if not !Flag.sgrep_mode2
     then ccs := rebuild_info_c_and_headers !ccs r.isexp parse_strings)
 
-and reassociate_positions free_vars negated_pos_vars envs =
+and reassociate_positions free_vars special_pos_vars envs =
   (* issues: isolate the bindings that are relevant to a given rule.
      separate out the position variables
      associate all of the position variables for a given set of relevant
@@ -1677,7 +1681,7 @@ and reassociate_positions free_vars negated_pos_vars envs =
 	 List.fold_left
 	   (function (non_pos,pos) ->
 	     function (v,_) as x ->
-	       if List.mem v negated_pos_vars
+	       if List.mem v special_pos_vars
 	       then (non_pos,x::pos)
 	       else (x::non_pos,pos))
 	   ([],[]) r)
@@ -1687,7 +1691,7 @@ and reassociate_positions free_vars negated_pos_vars envs =
        (function (non_pos,pos) ->
 	 (List.sort compare non_pos,List.sort compare pos))
        splitted_relevant in
-   match negated_pos_vars with
+   match special_pos_vars with
      [] ->
        List.combine envs
 	 (List.map (function (non_pos,_) -> List.sort compare non_pos)
@@ -1718,7 +1722,7 @@ and reassociate_positions free_vars negated_pos_vars envs =
 	   Hashtbl.add extended_relevant non_pos
 	     (List.sort compare
 		(non_pos @
-		 (combine_pos negated_pos_vars (List.map snd others)))))
+		 (combine_pos special_pos_vars (List.map snd others)))))
 	 non_poss;
        List.combine envs
 	 (List.map
@@ -1731,7 +1735,7 @@ matching of the term the position variable with the constraints will fail
 because some variables are unbound.  So we let the binding be [] and then
 we will have to clean these up afterwards.  This should be the only way
 that a position variable can have an empty binding. *)
-and combine_pos negated_pos_vars others =
+and combine_pos special_pos_vars others =
   List.map
     (function posvar ->
       let positions =
@@ -1747,7 +1751,7 @@ and combine_pos negated_pos_vars others =
 		 with Not_found -> positions)
 	     [] others) in
       (posvar,Ast_c.MetaPosValList positions))
-    negated_pos_vars
+    special_pos_vars
 
 and process_a_generated_a_env_a_toplevel2 r env = function
     [cfile] ->

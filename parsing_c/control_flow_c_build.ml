@@ -1574,7 +1574,6 @@ let deadcode_detection (g : Control_flow_c.cflow) =
  *)
 
 let check_control_flow (g : cflow) : unit =
-  let nodes = g#nodes  in
   let starti = first_node g in
   let visited = ref KeyMap.empty in
 
@@ -1590,8 +1589,11 @@ let check_control_flow (g : cflow) : unit =
       if  (*(depth = depth2)*) startbraces <> startbraces2
       then
         begin
-          pr2 (Printf.sprintf "PB with flow: the node %d has not same braces count"
-                 nodei);
+	  let msg =
+	    Printf.sprintf
+	      "PB with flow: the node %d has not same braces count"
+              nodei in
+          pr2 msg;
           print_trace_error trace2
         end
     else

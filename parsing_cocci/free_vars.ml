@@ -1063,9 +1063,10 @@ single rule. *)
 
 let get_neg_pos_list (_,rule) used_after_list =
   let donothing r k e = k e in
-  let bind (p1,np1) (p2,np2) =
-    (Common.union_set p1 p2, Common.union_set np1 np2) in
-  let option_default = ([],[]) in
+  let bind (p1,np1,ap1) (p2,np2,ap2) =
+    (Common.union_set p1 p2, Common.union_set np1 np2,
+     Common.union_set ap1 ap2) in
+  let option_default = ([],[],[]) in
   let metaid (x,_,_,_) = x in
   let get_neg_pos_constraints constraints =
     List.concat
@@ -1076,14 +1077,19 @@ let get_neg_pos_list (_,rule) used_after_list =
 	 constraints) in
   let mcode r mc =
     List.fold_left
-      (function (a,b) ->
+      (function (pos_vars,neg_vars,all_vars) ->
+	(* pos_vars are position variables that are used in a positive way
+	   neg_vars are position variables that are used in a negative way
+	   all_vars are position variables with the annotation ALL.
+	   These sets can overlap. *)
 	(function
 	    Ast.MetaPos(name,constraints,Ast.PER,_,_) ->
 	      let constraint_vars = get_neg_pos_constraints constraints in
-	      ((metaid name)::a,constraint_vars@b)
+	      ((metaid name)::pos_vars,constraint_vars@neg_vars,all_vars)
 	  | Ast.MetaPos(name,constraints,Ast.ALL,_,_) ->
 	      let constraint_vars = get_neg_pos_constraints constraints in
-	      ((metaid name)::a,constraint_vars@b)))
+	      let name = metaid name in
+	      (name::pos_vars,constraint_vars@neg_vars,name::all_vars)))
       option_default (Ast.get_pos_var mc) in
   let v =
     V.combiner bind option_default
@@ -1097,12 +1103,13 @@ let get_neg_pos_list (_,rule) used_after_list =
     Ast.CocciRule(_,_,minirules,_,_) ->
       List.map
 	(function toplevel ->
-	  let (positions,neg_positions) = v.V.combiner_top_level toplevel in
+	  let (positions,neg_positions,all_positions) =
+	    v.V.combiner_top_level toplevel in
 	  (if List.exists (function p -> List.mem p neg_positions) positions
 	  then
 	    failwith
 	      "a variable cannot be used both as a position and a constraint");
-	  neg_positions)
+	  (neg_positions, all_positions))
 	minirules
   | Ast.ScriptRule _ | Ast.InitialScriptRule _ | Ast.FinalScriptRule _ ->
       (*no negated positions*) []

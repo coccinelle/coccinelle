@@ -11,7 +11,7 @@ let elem_threshold = 10
 let include_headers_for_types = ref false
 
 let is_header filename =
-  Filename.check_suffix filename ".h" or
+  Filename.check_suffix filename ".h" ||
   Filename.check_suffix filename ".h.res" (* for okfailed testing *)
 
 type parsing_style =

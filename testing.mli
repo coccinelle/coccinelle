@@ -47,7 +47,7 @@ val sp_of_file :
   filename (* coccifile *)  -> filename option (* isofile *) ->
   Ast_cocci.metavar list list * Ast_cocci.rule list *
       Ast_cocci.meta_name list list list *
-      Ast_cocci.meta_name list list list *
+      (Ast_cocci.meta_name list * Ast_cocci.meta_name list) list list *
       (Ast_cocci.meta_name list list list (*used after list*) *
 	 (*fresh used after list*)
 	 Ast_cocci.meta_name list list list *
