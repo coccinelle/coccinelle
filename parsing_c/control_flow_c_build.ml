@@ -1574,7 +1574,6 @@ let deadcode_detection (g : Control_flow_c.cflow) =
  *)
 
 let check_control_flow (g : cflow) : unit =
-  let nodes = g#nodes  in
   let starti = first_node g in
   let visited = ref KeyMap.empty in
 
