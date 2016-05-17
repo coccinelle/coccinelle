@@ -272,12 +272,12 @@ and pp_string_format (e,ii) =
 	pr_outdent(); pp_name name; pr_elem i2; pr_nl(); pp_statement st
     | Labeled (Case  (e, st)), [i1;i2] ->
 	pr_unindent();
-        pr_elem i1; pp_expression e; pr_elem i2; pr_nl(); pr_indent();
-	pp_statement st
+        pr_elem i1; pr_space(); pp_expression e; pr_elem i2; pr_nl();
+	pr_indent(); pp_statement st
     | Labeled (CaseRange  (e, e2, st)), [i1;i2;i3] ->
 	pr_unindent();
-        pr_elem i1; pp_expression e; pr_elem i2; pp_expression e2; pr_elem i3;
-	pr_nl(); pr_indent();
+        pr_elem i1; pr_space(); pp_expression e; pr_elem i2;
+	pp_expression e2; pr_elem i3; pr_nl(); pr_indent();
         pp_statement st
     | Labeled (Default st), [i1;i2] ->
 	pr_unindent(); pr_elem i1; pr_elem i2; pr_nl(); pr_indent();
@@ -335,8 +335,10 @@ and pp_string_format (e,ii) =
 	    ForExp (e1opt,il1) ->
               pp_statement (Ast_c.mk_st (ExprStatement e1opt) il1)
 	  | ForDecl decl -> pp_decl decl);
+	  pr_space();
           pp_statement (Ast_c.mk_st (ExprStatement e2opt) il2);
           assert (il3 = []);
+	  pr_space();
           pp_statement (Ast_c.mk_st (ExprStatement e3opt) il3);
           pr_elem i3;
           indent_if_needed st (function _ -> pp_statement st);
@@ -549,13 +551,14 @@ and pp_string_format (e,ii) =
 
           (match sopt,iis with
           | Some s , [i1;i2;i3;i4] ->
-              pr_elem i1; pr_elem i2; pr_elem i3;
+              pr_elem i1; pr_space(); pr_elem i2; pr_space(); pr_elem i3;
           | None, [i1;i2;i3] ->
-              pr_elem i1; pr_elem i2;
+              pr_elem i1; pr_space(); pr_elem i2;
           | x -> raise (Impossible 101)
 	  );
 
-          fields +> List.iter pp_field;
+          fields +> List.iter (fun x -> pr_nl(); pr_indent(); pp_field x);
+	  pr_nl();
 
           (match sopt,iis with
           | Some s , [i1;i2;i3;i4] -> pr_elem i4
@@ -973,7 +976,8 @@ and pp_string_format (e,ii) =
 	      returnType attrs;
 	    (match iniopt with
 	      Ast_c.NoInit -> ()
-	    | Ast_c.ValInit(iini,init) -> pr_elem iini; pp_init init
+	    | Ast_c.ValInit(iini,init) ->
+		pr_space(); pr_elem iini; pr_space(); pp_init init
 	    | Ast_c.ConstrInit((init,[lp;rp])) ->
 		pr_elem lp; pp_arg_list init; pr_elem rp
 	    | Ast_c.ConstrInit _ -> raise (Impossible 112))
