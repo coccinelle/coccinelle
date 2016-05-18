@@ -19,7 +19,8 @@ module Inc = Includes
 
 let cocci_file = ref ""
 
-let output_file = ref ""
+let output_file = ref "" (* resulting code *)
+let tmp_dir = ref "" (* temporary files for parallelism *)
 let inplace_modif = ref false  (* but keeps nothing *)
 let backup_suffix =
   ref (None : string option) (* suffix for backup if one is desired *)
@@ -657,6 +658,8 @@ let other_options = [
     "   the number of cores to be used";
     "--chunksize", Arg.Int (function x -> parmap_chunk_size := Some x),
     "   the size of work chunks for parallelism";
+    "--tmp-dir", Arg.Set_string tmp_dir,
+    "   prefix of temporary directories for parallelism";
   ];
 
   "pad options",
@@ -1076,7 +1079,11 @@ let rec main_action xs =
 	    List.fold_left op z l in
 	  let par_fold merge op z l =
             let prefix =
-	      Filename.chop_extension (Filename.basename !cocci_file) in
+	      let prefix =
+		Filename.chop_extension (Filename.basename !cocci_file) in
+	      if !tmp_dir = ""
+	      then prefix
+	      else Printf.sprintf "%s_%s" !tmp_dir prefix in
 	    (if Sys.file_exists prefix
 	    then
 	      failwith

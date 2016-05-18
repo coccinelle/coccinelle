@@ -14,7 +14,10 @@ type redirected_output = {
     out_file: string;
     out_channel: out_channel;
     stdout_backup: Unix.file_descr;
+    show_diff_backup: bool;
   }
+
+let out_suffix = ".stdout"
 
 let flush_scripts_output () =
   flush stdout;
@@ -27,40 +30,42 @@ sys.stdout.flush()
 let begin_redirect_output expected_out =
   let has_expected_out = Sys.file_exists expected_out in
   if has_expected_out then
-    let out_file = Printf.sprintf "%s.current" expected_out in
+    let out_file = Common.new_temp_file "redirect" out_suffix in
     let out_channel = open_out out_file in
     let out_file_descr = Unix.descr_of_out_channel out_channel in
     let stdout_backup = Unix.dup Unix.stdout in
+    let show_diff_backup = !Flag_cocci.show_diff in
     flush_scripts_output ();
     Unix.dup2 out_file_descr Unix.stdout;
-    Some { out_file; out_channel; stdout_backup }
+    Flag_cocci.show_diff := false;
+    Some { out_file; out_channel; stdout_backup; show_diff_backup }
   else
     None
 
 let end_redirect_output = Common.map_option (
-  fun { out_file; out_channel; stdout_backup } ->
+  fun { out_file; out_channel; stdout_backup; show_diff_backup } ->
     flush_scripts_output ();
     Unix.dup2 stdout_backup Unix.stdout;
     close_out out_channel;
+    Flag_cocci.show_diff := show_diff_backup;
     out_file)
 
 let rec test_loop cocci_file cfiles =
   let (cocci_infos,_) = Cocci.pre_engine (cocci_file, !Config.std_iso) in
   let res = Cocci.full_engine cocci_infos cfiles in
-  Cocci.post_engine cocci_infos;
   match Iteration.get_pending_instance () with
-    None -> res
+    None -> (cocci_infos, res)
   | Some (cfiles', virt_rules, virt_ids) ->
       Flag.defined_virtual_rules := virt_rules;
       Flag.defined_virtual_env := virt_ids;
-      Common.erase_temp_files ();
       Common.clear_pr2_once ();
       test_loop cocci_file cfiles'
 
 let test_with_output_redirected cocci_file cfiles expected_out =
   let redirected_output = begin_redirect_output expected_out in
-  let res = test_loop cocci_file cfiles in
+  let (cocci_infos, res) = test_loop cocci_file cfiles in
   let current_out = end_redirect_output redirected_output in
+  Cocci.post_engine cocci_infos;
   (res, current_out)
 
 (* There can be multiple .c for the same cocci file. The convention
@@ -76,7 +81,7 @@ let testone prefix x compare_with_expected_flag =
   let cfile      = prefix ^ x ^ ".c" in
   let cocci_file = prefix ^ base ^ ".cocci" in
 
-  let expected_out = prefix ^ base ^ ".out" in
+  let expected_out = prefix ^ base ^ out_suffix in
 
   let expected_res   = prefix ^ x ^ ".res" in
   begin
@@ -111,7 +116,8 @@ let testone prefix x compare_with_expected_flag =
 	      +> Compare_c.compare_result_to_string
 	      +> pr2
       end
-  end
+  end;
+  Common.erase_temp_files ()
 
 
 let add_file_to_score score res correct diffxs =
@@ -179,7 +185,7 @@ let testall_bis extra_test expected_score_file update_score_file =
       let cfile      = "tests/" ^ x ^ ".c" in
       let cocci_file = "tests/" ^ base ^ ".cocci" in
       let expected = "tests/" ^ res in
-      let out = base ^ ".out" in
+      let out = base ^ out_suffix in
       let expected_out = "tests/" ^ out in
 
       let timeout_testall = 60 in
@@ -214,12 +220,15 @@ let testall_bis extra_test expected_score_file update_score_file =
 
 	  add_file_to_score score res correct diffxs;
 
-	  match current_out with
-	    None -> ()
-	  | Some current_out' ->
-	      let (correct, diffxs) =
-		Compare_c.exact_compare current_out' expected_out in
-	      add_file_to_score score out correct diffxs
+	  begin
+	    match current_out with
+	      None -> ()
+	    | Some current_out' ->
+		let (correct, diffxs) =
+		  Compare_c.exact_compare current_out' expected_out in
+		add_file_to_score score out correct diffxs
+	  end;
+	  Common.erase_temp_files ();
         )
       )
       with exn ->
@@ -362,7 +371,7 @@ let test_okfailed cocci_file cfiles =
     spf "time: %f" tperfile
   in
 
-  let expected_out = Filename.chop_suffix cocci_file ".cocci" ^ ".out" in
+  let expected_out = Filename.chop_suffix cocci_file ".cocci" ^ out_suffix in
 
   Common.redirect_stdout_stderr newout (fun () ->
     try (
@@ -425,13 +434,16 @@ let test_okfailed cocci_file cfiles =
                 end
 		else push2 (infile ^ (t_to_s Failed), [s1;time_str]) final_files
 		    );
-	match current_out with
-	  None -> ()
-	| Some current_out' ->
-	    let diff = Compare_c.exact_compare current_out' expected_out in
-            let s = Compare_c.compare_result_to_string diff in
+	begin
+	  match current_out with
+	    None -> ()
+	  | Some current_out' ->
+	      let diff = Compare_c.exact_compare current_out' expected_out in
+              let s = Compare_c.compare_result_to_string diff in
 	    push2 (cocci_file ^ (t_to_s Failed), [s;time_str]) final_files
-	  );
+	end;
+	Common.erase_temp_files ();
+	 );
       )
     with exn ->
       let clean s =
