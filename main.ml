@@ -1411,7 +1411,7 @@ let main () =
 	      else
 	        Printf.fprintf stderr
 		  "ERROR: File %s does not exist\n" testfile
-		end
+	end
 
     | []  when !test_all ->
         (if !Inc.include_path = []

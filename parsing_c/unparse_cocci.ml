@@ -796,6 +796,12 @@ and print_named_type ty id =
 		| _ -> failwith "complex array types not supported")
 	    | _ -> typeC ty; ty_space ty; ident id; k () in
 	  loop ty1 (function _ -> ())
+      | Ast.MetaType(name,_,_) ->
+	  handle_metavar name  (function
+              Ast_c.MetaTypeVal ty ->
+		pretty_print_c.Pretty_print_c.type_with_ident ty
+		  (function _ -> ident id)
+            | _ -> raise (Impossible 147))
     (*| should have a case here for pointer to array or function type
         that would put ( * ) around the variable.  This makes one wonder
         why we really need a special case for function pointer *)

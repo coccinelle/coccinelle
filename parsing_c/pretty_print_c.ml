@@ -27,11 +27,7 @@ let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_unparsing
 (* Types *)
 (*****************************************************************************)
 
-type type_with_ident =
-    (string * Ast_c.info) option ->
-    (Ast_c.storage * Ast_c.il) option ->
-    Ast_c.fullType ->
-    Ast_c.attribute list -> unit
+type type_with_ident = Ast_c.fullType -> (unit -> unit) -> unit
 
 type 'a printer = 'a -> unit
 
@@ -272,12 +268,12 @@ and pp_string_format (e,ii) =
 	pr_outdent(); pp_name name; pr_elem i2; pr_nl(); pp_statement st
     | Labeled (Case  (e, st)), [i1;i2] ->
 	pr_unindent();
-        pr_elem i1; pp_expression e; pr_elem i2; pr_nl(); pr_indent();
-	pp_statement st
+        pr_elem i1; pr_space(); pp_expression e; pr_elem i2; pr_nl();
+	pr_indent(); pp_statement st
     | Labeled (CaseRange  (e, e2, st)), [i1;i2;i3] ->
 	pr_unindent();
-        pr_elem i1; pp_expression e; pr_elem i2; pp_expression e2; pr_elem i3;
-	pr_nl(); pr_indent();
+        pr_elem i1; pr_space(); pp_expression e; pr_elem i2;
+	pp_expression e2; pr_elem i3; pr_nl(); pr_indent();
         pp_statement st
     | Labeled (Default st), [i1;i2] ->
 	pr_unindent(); pr_elem i1; pr_elem i2; pr_nl(); pr_indent();
@@ -335,8 +331,10 @@ and pp_string_format (e,ii) =
 	    ForExp (e1opt,il1) ->
               pp_statement (Ast_c.mk_st (ExprStatement e1opt) il1)
 	  | ForDecl decl -> pp_decl decl);
+	  pr_space();
           pp_statement (Ast_c.mk_st (ExprStatement e2opt) il2);
           assert (il3 = []);
+	  pr_space();
           pp_statement (Ast_c.mk_st (ExprStatement e3opt) il3);
           pr_elem i3;
           indent_if_needed st (function _ -> pp_statement st);
@@ -496,7 +494,7 @@ and pp_string_format (e,ii) =
    pp_decl
 *)
   and (pp_type_with_ident:
-	 (string * info) option -> (storage * il) option ->
+	 (unit -> unit) option -> (storage * il) option ->
 	   fullType -> attribute list ->
 	     unit) =
     fun ident sto ft attrs ->
@@ -549,13 +547,14 @@ and pp_string_format (e,ii) =
 
           (match sopt,iis with
           | Some s , [i1;i2;i3;i4] ->
-              pr_elem i1; pr_elem i2; pr_elem i3;
+              pr_elem i1; pr_space(); pr_elem i2; pr_space(); pr_elem i3;
           | None, [i1;i2;i3] ->
-              pr_elem i1; pr_elem i2;
+              pr_elem i1; pr_space(); pr_elem i2;
           | x -> raise (Impossible 101)
 	  );
 
-          fields +> List.iter pp_field;
+          fields +> List.iter (fun x -> pr_nl(); pr_indent(); pp_field x);
+	  pr_nl();
 
           (match sopt,iis with
           | Some s , [i1;i2;i3;i4] -> pr_elem i4
@@ -673,7 +672,7 @@ and pp_string_format (e,ii) =
 		let identinfo =
                   match nameopt with
 		  | None -> None
-                  | Some name -> Some (get_s_and_info_of_name name)
+                  | Some name -> Some (function _ -> pp_name name)
                 in
 		pp_type_with_ident identinfo None typ Ast_c.noattr;
 
@@ -684,9 +683,8 @@ and pp_string_format (e,ii) =
 		| None ->
 		    pp_type typ;
 		| Some name ->
-                    let (s, is) = get_s_and_info_of_name name in
-		    pp_type_with_ident
-		      (Some (s, is)) None typ Ast_c.noattr;
+		    pp_type_with_ident (Some (function _ -> pp_name name))
+		      None typ Ast_c.noattr;
 		    );
                 pr_elem iidot;
 		pp_expression expr
@@ -700,7 +698,7 @@ and pp_string_format (e,ii) =
 		  let identinfo =
 		    match nameopt with
 		    | None -> None
-		    | Some name -> Some (get_s_and_info_of_name name)
+		    | Some name -> Some (function _ -> pp_name name)
 		  in
 		  pp_type_with_ident_rest identinfo typ Ast_c.noattr
 
@@ -708,9 +706,9 @@ and pp_string_format (e,ii) =
 		  iivirg +> List.iter pr_elem;
 		  (match nameopt with
 		  | Some name ->
-                      let (s,is) = get_s_and_info_of_name name in
 		      pp_type_with_ident_rest
-			(Some (s, is)) typ Ast_c.noattr;
+			(Some (function _ -> pp_name name))
+			typ Ast_c.noattr;
 		      pr_elem iidot;
 		      pp_expression expr
 		  | None ->
@@ -756,14 +754,14 @@ and pp_string_format (e,ii) =
 
 (* used because of DeclList, in    int i,*j[23];  we don't print anymore the
    int before *j *)
-  and (pp_type_with_ident_rest: (string * info) option ->
+  and (pp_type_with_ident_rest: (unit -> unit) option ->
     fullType -> attribute list -> unit) =
 
     fun ident (((qu, iiqu), (ty, iity)) as fullt) attrs ->
 
-      let print_ident ident = Common.do_option (fun (s, iis) ->
+      let print_ident ident = Common.do_option (fun f ->
         (* XXX attrs +> pp_attributes pr_elem pr_space; *)
-        pr_elem iis
+        f()
 	) ident
       in
 
@@ -901,9 +899,8 @@ and pp_string_format (e,ii) =
     | None ->
         pp_type t
     | Some name ->
-        let (s,i1) = get_s_and_info_of_name name in
-	pp_type_with_ident
-          (Some (s, i1)) None t Ast_c.noattr
+	pp_type_with_ident (Some (function _ -> pp_name name))
+	  None t Ast_c.noattr
 
 
 
@@ -949,6 +946,8 @@ and pp_string_format (e,ii) =
 
   and pp_type t =
     pp_type_with_ident None None t Ast_c.noattr
+  and pp_type_ident t i =
+    pp_type_with_ident (Some i) None t Ast_c.noattr
 
 (* ---------------------- *)
   and pp_decl = function
@@ -967,13 +966,13 @@ and pp_string_format (e,ii) =
         (* handling the first var. Special case, we print the whole type *)
 	(match var with
 	| Some (name, iniopt) ->
-            let (s,iis) = get_s_and_info_of_name name in
 	    pp_type_with_ident
-	      (Some (s, iis)) (Some (storage, iisto))
+	      (Some (function _ -> pp_name name)) (Some (storage, iisto))
 	      returnType attrs;
 	    (match iniopt with
 	      Ast_c.NoInit -> ()
-	    | Ast_c.ValInit(iini,init) -> pr_elem iini; pp_init init
+	    | Ast_c.ValInit(iini,init) ->
+		pr_space(); pr_elem iini; pr_space(); pp_init init
 	    | Ast_c.ConstrInit((init,[lp;rp])) ->
 		pr_elem lp; pp_arg_list init; pr_elem rp
 	    | Ast_c.ConstrInit _ -> raise (Impossible 112))
@@ -988,11 +987,10 @@ and pp_string_format (e,ii) =
 	    v_attr = attrs;
 	  }, iivirg) ->
 
-            let (s,iis) = get_s_and_info_of_name name in
 	    assert (storage2 = storage);
 	    iivirg +> List.iter pr_elem;
-	    pp_type_with_ident_rest
-	      (Some (s, iis)) returnType attrs;
+	    pp_type_with_ident_rest (Some (function _ -> pp_name name))
+	      returnType attrs;
 	    (match iniopt with
 	      Ast_c.NoInit -> ()
 	    | Ast_c.ValInit(iini,init) -> pr_elem iini; pp_init init
@@ -1148,10 +1146,10 @@ and pp_init (init, iinit) =
 
 	       (match b, s, ii_b_s with
                | false, Some s, [i1] ->
-		   pp_type_with_ident (Some (s, i1)) None t;
+		   pp_type_with_ident (Some (function _ -> pr_elem i1)) None t;
                | true, Some s, [i1;i2] ->
 		   pr_elem i1;
-		   pp_type_with_ident (Some (s, i2)) None t;
+		   pp_type_with_ident (Some (function _ -> pr_elem i2)) None t;
 
             (* in definition we have name for params, except when f(void) *)
                | _, None, _ -> raise Impossible
@@ -1486,7 +1484,7 @@ and pp_init (init, iinit) =
     param      = pp_param;
     paramlist  = pp_param_list;
     ty         = pp_type;
-    type_with_ident = pp_type_with_ident;
+    type_with_ident = pp_type_ident;
     toplevel   = pp_toplevel;
     fragment   = pp_string_fragment;
     fragment_list = pp_string_fragment_list;

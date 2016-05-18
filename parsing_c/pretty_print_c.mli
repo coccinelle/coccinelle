@@ -1,8 +1,4 @@
-type type_with_ident =
-    (string * Ast_c.info) option ->
-    (Ast_c.storage * Ast_c.il) option ->
-    Ast_c.fullType ->
-    Ast_c.attribute list -> unit
+type type_with_ident = Ast_c.fullType -> (unit -> unit) -> unit
 
 type 'a printer = 'a -> unit
 
