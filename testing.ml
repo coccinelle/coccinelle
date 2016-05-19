@@ -442,7 +442,6 @@ let test_okfailed cocci_file cfiles =
               let s = Compare_c.compare_result_to_string diff in
 	    push2 (cocci_file ^ (t_to_s Failed), [s;time_str]) final_files
 	end;
-	Common.erase_temp_files ();
 	 );
       )
     with exn ->
