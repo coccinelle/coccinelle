@@ -32,6 +32,8 @@
   metavariable.
 - Support for Python 3
 - Support for iterations in Python scripts
+- Metavariable initialization in Python scripts to a number of kinds of
+  AST structures
 ** Features:
 - addition of --file-groups option
 - ocaml code allowed as constraints on position variables

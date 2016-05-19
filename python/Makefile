@@ -22,7 +22,7 @@ OPTFLAGS ?= -g
 SOURCES= pycocci_aux.ml $(PYCOCCI_FILE) pycocci.ml
 
 INCLUDEDIRS_LOCAL = ../commons ../commons/ocamlextra ../globals \
-		    ../parsing_c ../parsing_cocci
+		    ../parsing_c ../parsing_cocci ../ocaml
 
 INCLUDEDIRS = $(INCLUDEDIRS_LOCAL) $(PYCAMLDIR)
 

@@ -2,7 +2,7 @@
 p;
 @@
 
-p := make_position "mdeclp.c" "one" 1 4 1 7
+p := make_position "tests/mdeclp.c" "one" 1 4 1 7
 
 @@
 position r.p;
