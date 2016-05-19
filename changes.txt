@@ -30,7 +30,8 @@
 - For typedefs, symbols, iterator names, and declarer names, allow
   redeclaration as either the same kind, or temporary redeclaration as a
   metavariable.
-- Support for Python 3
+- Support for Python 3. Pycaml has been patched. The bundled version is
+  systematically used, even in Pycaml is already installed locally.
 - Support for iterations in Python scripts
 - Metavariable initialization in Python scripts to a number of kinds of
   AST structures
