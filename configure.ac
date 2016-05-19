@@ -293,6 +293,8 @@ AS_IF([test -z "$enable_python"],
   ])
 ])
 
+AC_SUBST([enable_pycaml], [no]])
+
 AS_IF([test "x$enable_python" != xno],
 [dnl
   AS_IF([test "x$HAVE_PYTHON" = xyes],
@@ -303,7 +305,6 @@ AS_IF([test "x$enable_python" != xno],
     AC_MSG_ERROR([the python scripts feature is enabled but the pkg-config python library is not found])
   ])
 
-  AC_SUBST(enable_pycaml, [no]])
   AC_REQ_COCCI_EXTPKG([pycaml])
 
   AS_IF([test "x$AS_TR_SH([enable_pycaml])" = xlocal],
