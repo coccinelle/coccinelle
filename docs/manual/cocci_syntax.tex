@@ -586,16 +586,17 @@ the use of this feature.
 
 \section{Control Flow}
 
-Rules describe a property which Coccinelle must match, when the property
-described is matched the rule is considered successful. Program control
-flows vary, a control flow describes a possible run time path taken by
-a program.
+Rules describe a property that Coccinelle must match, and when when the
+property described is matched the rule is considered successful. One aspect
+that is taken into account in determining a match is the program control
+flow. A control flow describes a possible run time path taken by a program.
 
-When using Coccinelle you often want to be able to express certain code
-within certain types of control flows. Typically you will use ellipses
-("...") to indicate to Coccinelle anything can be present between
-consecutive statements. For instance the following SmPL patch tells Coccinelle
-that rule r0 wishes to remove call calls to function c().
+\subsection{Basic dots}
+When using Coccinelle, it is possible to express matches of certain code
+within certain types of control flows. Ellipses ("...") can be used to
+indicate to Coccinelle that anything can be present between consecutive
+statements. For instance the following SmPL patch tells Coccinelle that
+rule r0 wishes to remove all calls to function c().
 
 \begin{center}
 \begin{tabular}{c}
@@ -604,16 +605,15 @@ that rule r0 wishes to remove call calls to function c().
 @@
 
 -c();
-
 \end{lstlisting}\\
 \end{tabular}
 \end{center}
 
-The context of the rule provides no other guidelines to Coccinelle to hint
+The context of the rule provides no other guidelines to Coccinelle
 about any possible control flow other than this is a statement, and that
 c() must be called. We can modify the required control flow required for
 this rule by providing additional requirements and using ellipses in between.
-For instance, if we only wanted to remove call calls to c() but which also
+For instance, if we only wanted to remove calls to c() that also
 had a prior call to foo() we'd use the following SmPL patch:
 
 \begin{center}
@@ -629,11 +629,15 @@ foo()
 \end{tabular}
 \end{center}
 
+\subsection{Dot variants}
 There are two possible modifiers to the control flow for ellipses, one
-is to annotate that statements in between ellipses are optional (<... ...>),
-or that the statements in between must be present at least once (<+... ...+).
-For instance the following SmPL patch tells Coccinelle to remove all
-calls to c() but foo() must be present at least once.
+(<... ...>) indicates that matching the pattern in between the ellipses is
+optional, and another (<+... ...+) indicates that the pattern in between
+the ellipses must be matched at least once, on some control-flow path.  In
+the latter, the \texttt{+} is intended to be reminiscent of the \texttt{+}
+used in regular expressions.  For instance, the following SmPL patch tells
+Coccinelle to remove all calls to c(). if foo() is present at least
+once since the beginning of the function.
 
 \begin{center}
 \begin{tabular}{c}
@@ -650,8 +654,9 @@ foo()
 \end{tabular}
 \end{center}
 
-Alternatively, if you wanted to be explicit that foo() was optional,
-you could use the following SmPL rule.
+Alternatively, the following inidcates that foo() is allowed but optional.
+This case is typically most useful when all occurrences, if any, of foo()
+prior to c() should be transformed.
 
 \begin{center}
 \begin{tabular}{c}
@@ -668,7 +673,8 @@ foo()
 \end{tabular}
 \end{center}
 
-Let's consider some sample code to review, this is flow1.c.
+\subsection{An example}
+Let's consider some sample code to review: flow1.c.
 
 \begin{center}
 \begin{tabular}{c}
@@ -695,10 +701,12 @@ succeed. If the foo() call is removed from flow1.c only rules r0 and r3 would
 succeed, as foo() would not be present and only rules r0 and r3 allow for
 foo() to not be present.
 
+One way to describe code control flow is in terms of McCabe cyclomatic
+complexity.
 The program flow1.1 has a linear control flow, it has no branches. The main
 routine has a McCabe cyclomatic complexity of 1. The McCabe cyclomatic
 complexity can be computed using
-{\tt pmccabe} (https://www.gnu.org/software/complexity/manual/html\_node/pmccabe-parsing.html).
+{\tt pmccabe} (https://www.gnu.org/\-software/\-complexity/\-manual/\-html\_node/\-pmccabe-parsing.html).
 
 \begin{center}
 \begin{tabular}{c}
@@ -824,14 +832,14 @@ foo()
 \end{tabular}
 \end{center}
 
-If the rule is followed by the "forall" keyword, then all control flow
-paths must match in order for the rule to succeed. By default when one
-has "-" and "+", or when one has no annotations at all and only script
-code, ellipses ("...") uses the forall semantics.  And when one uses
-context annotation ("*"), the ellipses ("...") uses the exists semantics.
-Using the keyword "forall" or "exists" in the rule header affects
-all ellipses ("...") uses in the rule. You can also annotate each
-ellipses ("...") with "when exists" or "when forall" individually.
+If the rule name is followed by the "forall" keyword, then all control flow
+paths must match in order for the rule to succeed. By default when a
+semantic patch has "-" and "+", or when it has no annotations at all and
+only script code, ellipses ("...") use the forall semantics.  And when the
+semantic patch uses the context annotation ("*"), the ellipses ("...") uses
+the exists semantics.  Using the keyword "forall" or "exists" in the rule
+header affects all ellipses ("...") uses in the rule. You can also annotate
+each ellipses ("...") with "when exists" or "when forall" individually.
 
 Rules can also be not be successful if requirements do not match
 when a rule name is followed by "depends on XXX". When "depends on is used
