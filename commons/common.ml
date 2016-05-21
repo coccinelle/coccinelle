@@ -1925,9 +1925,18 @@ let fmap f = function
   | Some x -> Some (f x)
 let map_option = fmap
 
-let do_option f = function
-  | None -> ()
+let equal_option sub_equal o o' =
+  match o, o' with
+    None, None -> true
+  | Some x, Some x' -> sub_equal x x'
+  | None, Some _
+  | Some _, None -> false
+
+let default d f = function
+    None -> d
   | Some x -> f x
+
+let do_option f = default () f
 
 let optionise f =
   try Some (f ()) with Not_found -> None
@@ -4151,6 +4160,15 @@ let (cartesian_product: 'a list -> 'b list -> ('a * 'b) list) = fun xs ys ->
 let _ = assert_equal
     (cartesian_product [1;2] ["3";"4";"5"])
     [1,"3";1,"4";1,"5";  2,"3";2,"4";2,"5"]
+
+
+let rec equal_list f l0 l1 =
+  match l0, l1 with
+    [], [] -> true
+  | h0 :: t0, h1 :: t1 -> f h0 h1 && equal_list f t0 t1
+  | [], _ :: _
+  | _ :: _, [] -> false
+
 
 let sort_prof a b =
   profile_code "Common.sort_by_xxx" (fun () -> List.sort a b)

@@ -318,8 +318,9 @@ let rename argids env =
        | Ast_c.MetaNoVal -> failwith "referencing a metavar with no value"))
     env
 
-let print_one_type pr env = function
-    (Type_cocci.MetaType(name,keep,inherited)) as ty ->
+let print_one_type pr env ty =
+  match Common.map_option Ast.unwrap (Ast.typeC_of_fullType_opt ty) with
+    Some (Ast_cocci.MetaType(name,keep,inherited)) ->
       (try
 	match List.assoc name env with
 	  Ast_c.MetaTypeVal ty ->
@@ -328,8 +329,8 @@ let print_one_type pr env = function
 	      (function _ -> pr " ")
 	      ty
         | _ -> failwith "impossible"
-      with Not_found -> pr (Type_cocci.type2c ty))
-  | ty -> pr (Type_cocci.type2c ty)
+      with Not_found -> pr (Ast_cocci.string_of_fullType ty))
+  | _ -> pr (Ast_cocci.string_of_fullType ty)
 
 let print_types pr env = function
     None -> ()
@@ -523,8 +524,9 @@ let pp_rule local_metas ast env srcfile =
 	  started_files := (outfile,res)::!started_files;
 	  res in
     print_check_rule pr function_name function_name_count header_req;
+    let env' = List.map (fun (a, b) -> (Ast_cocci.make_mcode a, b)) env in
     let args =
-      print_metavariables pr local_metas paramst env header_req
+      print_metavariables pr local_metas paramst env' header_req
 	function_name_count in
     let (argids,args) = List.split args in
     let env = rename argids env in

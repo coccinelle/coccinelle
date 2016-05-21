@@ -117,12 +117,15 @@ let do_disj lst processor sep =
 
 (* --------------------------------------------------------------------- *)
 
+let print_type ty =
+  print_string (Ast.string_of_fullType (Ast0toast.typeC false ty))
+
 let print_types = function
     None -> ()
   | Some ty ->
       print_string "/* ";
       Format.print_flush();
-      print_between (function _ -> print_string ", ") Type_cocci.typeC ty;
+      print_between (function _ -> print_string ", ") print_type ty;
       Format.print_flush();
       print_string " */"
 
@@ -161,7 +164,7 @@ let binaryOp op =
       | Ast0.MetaBinary(name,_,_) -> mcode print_meta name)
 
 let rec expression e =
-  print_option Type_cocci.typeC (Ast0.get_type e);
+  print_option print_type (Ast0.get_type e);
   print_context e
     (function _ ->
       match Ast0.unwrap e with

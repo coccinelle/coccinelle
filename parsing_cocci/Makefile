@@ -16,11 +16,12 @@ LEXER_SOURCES = lexer_cocci.mll
 CLI_LEXER_SOURCES = lexer_cli.mll
 SCRIPT_LEXER_SOURCES = lexer_script.mll
 PARSER_SOURCES = parser_cocci_menhir.mly
-SOURCES = flag_parsing_cocci.ml type_cocci.ml ast_cocci.ml ast0_cocci.ml \
-pretty_print_cocci.ml unparse_ast0.ml visitor_ast0_types.ml \
-visitor_ast.ml visitor_ast0.ml compute_lines.ml comm_assoc.ml \
+SOURCES = flag_parsing_cocci.ml ast_cocci.ml ast0_cocci.ml \
+pretty_print_cocci.ml visitor_ast0_types.ml \
+visitor_ast.ml visitor_ast0.ml ast0toast.ml unparse_ast0.ml \
+compute_lines.ml comm_assoc.ml \
 iso_pattern.ml iso_compile.ml single_statement.ml simple_assignments.ml \
-get_metas.ml stmtlist.ml ast0toast.ml check_meta.ml top_level.ml \
+get_metas.ml stmtlist.ml check_meta.ml top_level.ml \
 type_infer.ml test_exps.ml unitary_ast0.ml arity.ml index.ml context_neg.ml \
 adjust_pragmas.ml insert_plus.ml function_prototypes.ml \
 unify_ast.ml semantic_cocci.ml data.ml free_vars.ml safe_for_multi_decls.ml \

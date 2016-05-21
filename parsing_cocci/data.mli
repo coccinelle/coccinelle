@@ -52,7 +52,7 @@ type id_meta_type =
 type list_meta_type =
     Ast_cocci.meta_name -> Ast_cocci.list_len -> Ast0_cocci.pure -> unit
 type exp_meta_type =
-    Type_cocci.typeC list option -> Ast_cocci.meta_name -> econstraints ->
+    Ast0_cocci.typeC list option -> Ast_cocci.meta_name -> econstraints ->
       Ast0_cocci.pure -> unit
 
 val add_meta_meta: meta_type ref

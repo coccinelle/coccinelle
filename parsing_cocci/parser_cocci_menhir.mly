@@ -189,6 +189,7 @@ let mklogop (op,clt) =
   let op' = P.clt2mcode op clt in
   Ast0.wrap (Ast0.Logical op')
 
+let unknown_type = Ast0.wrap (Ast0.BaseType (Ast.Unknown, []))
 %}
 
 %token EOF
@@ -800,51 +801,60 @@ list_len:
 | l=option(TLocal) TIdExpression ty=ioption(meta_exp_type)
     { (fun arity name pure check_meta constraints ->
       match l with
-	None ->
-	  !Data.add_idexp_meta ty name constraints pure;
-	  check_meta(Ast.MetaIdExpDecl(arity,name,ty))
+        None ->
+          !Data.add_idexp_meta ty name constraints pure;
+          let ty' = Common.map_option (List.map (Ast0toast.typeC false)) ty in
+          check_meta(Ast.MetaIdExpDecl(arity,name,ty'))
       | Some _ ->
-	  !Data.add_local_idexp_meta ty name constraints pure;
-	  check_meta(Ast.MetaLocalIdExpDecl(arity,name,ty))) }
+          !Data.add_local_idexp_meta ty name constraints pure;
+          let ty' = Common.map_option (List.map (Ast0toast.typeC false)) ty in
+          check_meta(Ast.MetaLocalIdExpDecl(arity,name,ty'))) }
 | l=option(TLocal) TIdExpression m=nonempty_list(TMul)
     { (fun arity name pure check_meta constraints ->
-      let ty = Some [P.ty_pointerify Type_cocci.Unknown m] in
+      let ty = Some [P.ty_pointerify unknown_type m] in
       match l with
-	None ->
-	  !Data.add_idexp_meta ty name constraints pure;
-	  check_meta(Ast.MetaIdExpDecl(arity,name,ty))
+        None ->
+          !Data.add_idexp_meta ty name constraints pure;
+          let ty' = Common.map_option (List.map (Ast0toast.typeC false)) ty in
+          check_meta(Ast.MetaIdExpDecl(arity,name,ty'))
       | Some _ ->
-	  !Data.add_local_idexp_meta ty name constraints pure;
-	  check_meta(Ast.MetaLocalIdExpDecl(arity,name,ty))) }
+          !Data.add_local_idexp_meta ty name constraints pure;
+          let ty' = Common.map_option (List.map (Ast0toast.typeC false)) ty in
+          check_meta(Ast.MetaLocalIdExpDecl(arity,name,ty'))) }
 | TGlobal TIdExpression ty=ioption(meta_exp_type)
     { (fun arity name pure check_meta constraints ->
       !Data.add_global_idexp_meta ty name constraints pure;
-      check_meta(Ast.MetaGlobalIdExpDecl(arity,name,ty))) }
+      let ty' = Common.map_option (List.map (Ast0toast.typeC false)) ty in
+      check_meta(Ast.MetaGlobalIdExpDecl(arity,name,ty'))) }
 | TGlobal TIdExpression m=nonempty_list(TMul)
     { (fun arity name pure check_meta constraints ->
-      let ty = Some [P.ty_pointerify Type_cocci.Unknown m] in
-      !Data.add_global_idexp_meta ty name constraints pure;
-      check_meta(Ast.MetaGlobalIdExpDecl(arity,name,ty))) }
+      let ty = P.ty_pointerify unknown_type m in
+      !Data.add_global_idexp_meta (Some [ty]) name constraints pure;
+      let ty' = Some [Ast0toast.typeC false ty] in
+      check_meta(Ast.MetaGlobalIdExpDecl(arity,name,ty'))) }
 | TExpression ty=expression_type
     { (fun arity name pure check_meta constraints ->
-      let ty = Some [ty] in
-      let tok = check_meta(Ast.MetaExpDecl(arity,name,ty)) in
-      !Data.add_exp_meta ty name constraints pure; tok) }
+      !Data.add_exp_meta (Some [ty]) name constraints pure;
+      let ty' = Some [Ast0toast.typeC false ty] in
+      check_meta (Ast.MetaExpDecl (arity, name, ty'))) }
 | TConstant ty=ioption(meta_exp_type)
     { (fun arity name pure check_meta constraints ->
-      let tok = check_meta(Ast.MetaConstDecl(arity,name,ty)) in
-      !Data.add_const_meta ty name constraints pure; tok) }
+      !Data.add_const_meta ty name constraints pure;
+      let ty' = Common.map_option (List.map (Ast0toast.typeC false)) ty in
+      check_meta (Ast.MetaConstDecl(arity,name,ty'))) }
 
 expression_type:
-  m=nonempty_list(TMul) { P.ty_pointerify Type_cocci.Unknown m }
+  m=nonempty_list(TMul) { P.ty_pointerify unknown_type m }
 | Tenum m=list(TMul)
-    { P.ty_pointerify (Type_cocci.EnumName Type_cocci.NoName) m }
+    { P.ty_pointerify (Ast0.wrap (Ast0.EnumName (Ast0.make_mcode "", None))) m }
 | Tstruct m=list(TMul)
     { P.ty_pointerify
-	(Type_cocci.StructUnionName (Type_cocci.Struct,Type_cocci.NoName)) m }
+        (Ast0.wrap
+           (Ast0.StructUnionName (Ast0.make_mcode Ast.Struct, None))) m }
 | Tunion m=list(TMul)
     { P.ty_pointerify
-	(Type_cocci.StructUnionName (Type_cocci.Union,Type_cocci.NoName)) m }
+        (Ast0.wrap
+           (Ast0.StructUnionName (Ast0.make_mcode Ast.Union, None))) m }
 
 %inline
  metakind_atomic_expe:
@@ -863,10 +873,11 @@ expression_type:
 		Ast0.Constant(_) ->
 		  if not
 		      (List.exists
-			 (function
-			     Type_cocci.BaseType(Type_cocci.IntType) -> true
-			   | Type_cocci.BaseType(Type_cocci.ShortType) -> true
-			   | Type_cocci.BaseType(Type_cocci.LongType) -> true
+                         (fun ty ->
+                           match Ast0.unwrap ty with
+                             Ast0.BaseType (Ast.IntType, _) -> true
+                           | Ast0.BaseType (Ast.ShortType, _) -> true
+                           | Ast0.BaseType (Ast.LongType, _) -> true
 			   | _ -> false)
 			 vl)
 		  then
@@ -874,19 +885,22 @@ expression_type:
 	      | _ -> ())
 	    constraints
       |	_ -> ());
-      let tok = check_meta(Ast.MetaExpDecl(arity,name,ty)) in
-      !Data.add_exp_meta ty name constraints pure; tok)
+      !Data.add_exp_meta ty name constraints pure;
+      let ty' = Some (List.map (Ast0toast.typeC false) vl) in
+      let tok = check_meta (Ast.MetaExpDecl (arity,name,ty')) in
+      tok)
     }
 
 meta_exp_type:
   t=typedef_ctype
-    { [Ast0_cocci.ast0_type_to_type true t] }
+    { [t] }
 | t=typedef_ctype TOCro TCCro
-    { [Type_cocci.Array (Ast0_cocci.ast0_type_to_type true t)] }
+    { [Ast0.wrap
+         (Ast0.Array
+            (t,
+             Ast0.make_mcode "", None, Ast0.make_mcode ""))] }
 | TOBrace t=comma_list(ctype) TCBrace m=list(TMul)
-    { List.map
-	(function x -> P.ty_pointerify (Ast0_cocci.ast0_type_to_type true x) m)
-	t }
+    { List.map (fun x -> P.ty_pointerify x m) t }
 
 arity: TWhy0  { Ast.OPT }
      | TPlus0 { Ast.MULTI }

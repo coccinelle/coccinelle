@@ -579,12 +579,14 @@ let match_maker checks_needed context_required whencode_allowed =
 	then
 	  match ty with
 	    Some ts ->
-	      if List.exists
-		  (function Type_cocci.MetaType(_,_,_) -> true | _ -> false)
-		  ts
+              let has_metatype ty =
+                match Ast0.unwrap ty with
+                  Ast0.MetaType (_, _) -> true
+                | _ -> false in
+              if List.exists has_metatype ts
 	      then
-		(match ts with
-		  [Type_cocci.MetaType(tyname,_,_)] ->
+		(match List.map Ast0.unwrap ts with
+                  [Ast0.MetaType (tyname, _)] ->
 		    let expty =
 		      match (Ast0.unwrap expr,Ast0.get_type expr) with
 		  (* easier than updating type inferencer to manage multiple
@@ -594,7 +596,6 @@ let match_maker checks_needed context_required whencode_allowed =
 		      | _ -> None in
 		    (match expty with
 		      Some expty ->
-			let tyname = Ast0.rewrap_mcode name tyname in
 			conjunct_bindings
 			  (add_pure_binding name pure
 			     pure_sp_code.VT0.combiner_rec_expression
@@ -604,17 +605,11 @@ let match_maker checks_needed context_required whencode_allowed =
 			    let attempts =
 			      List.map
 				(function expty ->
-				  (try
-				    add_pure_binding tyname Ast0.Impure
-				      (function _ -> Ast0.Impure)
-				      (function ty -> Ast0.TypeCTag ty)
-				      (Ast0.rewrap expr
-					 (Ast0.reverse_type expty))
-				      bindings
-				  with Ast0.TyConv ->
-				    Printf.printf
-				      "warning: unconvertible type";
-				    return false bindings))
+				  add_pure_binding tyname Ast0.Impure
+				    (function _ -> Ast0.Impure)
+				    (function ty -> Ast0.TypeCTag ty)
+				    expty
+				    bindings)
 				expty in
 			    if List.exists
 				(function Fail _ -> false | OK x -> true)
@@ -643,7 +638,11 @@ let match_maker checks_needed context_required whencode_allowed =
 		      "mixture of metatype and other types not supported")
 	      else
 		let expty = Ast0.get_type expr in
-		if List.exists (function t -> Type_cocci.compatible t expty) ts
+                let type_compatible ty0 ty1 =
+                  match ty0 with
+                    None -> Ast0.is_unknown_type ty1
+                  | Some ty0' -> Ast0.type_compatible ty0' ty1 in
+		if List.exists (type_compatible expty) ts
 		then
 		  add_pure_binding name pure
 		    pure_sp_code.VT0.combiner_rec_expression
@@ -1717,27 +1716,52 @@ let instantiate bindings mv_bindings model =
 		match x with
 		  None -> None
 		| Some types ->
-		    let rec renamer = function
-			Type_cocci.MetaType(name,keep,inherited) ->
-			  (match
-			    lookup (name,(),(),(),None,-1)
-			      bindings mv_bindings
-			  with
-			    Common.Left(Ast0.TypeCTag(t)) ->
-			      Ast0.ast0_type_to_type true t
-			  | Common.Left(_) ->
-			      failwith "iso pattern: unexpected type"
-			  | Common.Right(new_mv) ->
-			      Type_cocci.MetaType(new_mv,keep,inherited))
-		      |	Type_cocci.ConstVol(cv,ty) ->
-			  Type_cocci.ConstVol(cv,renamer ty)
-		      | Type_cocci.Pointer(ty) ->
-			  Type_cocci.Pointer(renamer ty)
-		      | Type_cocci.FunctionPointer(ty) ->
-			  Type_cocci.FunctionPointer(renamer ty)
-		      | Type_cocci.Array(ty) ->
-			  Type_cocci.Array(renamer ty)
-		      | t -> t in
+		    let rec renamer ty =
+                      match Ast0.unwrap ty with
+                        Ast0.MetaType(name, pure) ->
+                          (match
+                            lookup (Ast0.unwrap_mcode name,(),(),(),None,-1)
+                              bindings mv_bindings
+                          with
+                            Common.Left(Ast0.TypeCTag(t)) -> t
+                          | Common.Left(_) ->
+                              failwith "iso pattern: unexpected type"
+                          | Common.Right(new_mv) ->
+                              let new_mv_wrapped =
+                                Ast0.rewrap_mcode name new_mv in
+                              Ast0.rewrap ty (
+                                Ast0.MetaType(new_mv_wrapped,pure)))
+                      | Ast0.ConstVol(cv,ty') ->
+                          Ast0.rewrap ty (Ast0.ConstVol(cv,renamer ty'))
+                      | Ast0.Pointer(ty', s) ->
+                          Ast0.rewrap ty (Ast0.Pointer(renamer ty', s))
+                      | Ast0.FunctionPointer(ty', s0, s1, s2, s3, p, s4) ->
+                          Ast0.rewrap ty (
+                            Ast0.FunctionPointer(
+                              renamer ty', s0, s1, s2, s3, p, s4))
+                      | Ast0.Array(ty', s0, e, s1) ->
+                          Ast0.rewrap ty (Ast0.Array(renamer ty', s0, e, s1))
+                      | Ast0.Signed(s, ty') ->
+                          let ty'' = Common.map_option renamer ty' in
+                          Ast0.rewrap ty (Ast0.Signed (s, ty''))
+                      | Ast0.EnumDef(ty', s0, e, s1) ->
+                          Ast0.rewrap ty (Ast0.EnumDef (renamer ty', s0, e, s1))
+                      | Ast0.StructUnionDef(ty', s0, d, s1) ->
+                          let ty'' = renamer ty' in
+                          Ast0.rewrap ty (Ast0.StructUnionDef (ty'', s0, d, s1))
+                      | Ast0.AsType (ty0, ty1) ->
+                          let ty0' = renamer ty0 and ty1' = renamer ty1 in
+                          Ast0.rewrap ty (Ast0.AsType (ty0', ty1'))
+                      | Ast0.DisjType (s0, ty', s1, s2) ->
+                          let ty'' = List.map renamer ty' in
+                          Ast0.rewrap ty (Ast0.DisjType (s0, ty'', s1, s2))
+                      | Ast0.OptType ty' ->
+                          Ast0.rewrap ty (Ast0.OptType (renamer ty'))
+                      | Ast0.BaseType(_, _)
+                      | Ast0.Decimal(_, _, _, _, _, _)
+                      | Ast0.EnumName(_, _)
+                      | Ast0.StructUnionName (_, _)
+                      | Ast0.TypeName _ -> ty in
 		    Some(List.map renamer types) in
 	      Ast0.clear_test_exp
 		(Ast0.rewrap e
