@@ -617,11 +617,13 @@ rule token = parse
       }
   | "#" [' ' '\t']* "if" '('
       { let info = tokinfo lexbuf in
-        let str_guard = "(" ^ cpp_eat_until_nl lexbuf in
+        let str_guard = cpp_eat_until_nl lexbuf in
+	(* paren is with if, so only need to add it for testing *)
+	let test_str_guard = "(" ^ str_guard in
 	let info = info +> tok_add_s str_guard in
-        if List.mem str_guard !Flag_parsing_c.undefined
+        if List.mem test_str_guard !Flag_parsing_c.undefined
         then TIfdefBool (false, no_ifdef_mark(), info)
-        else if List.mem str_guard !Flag_parsing_c.defined
+        else if List.mem test_str_guard !Flag_parsing_c.defined
         then TIfdefBool (true, no_ifdef_mark(), info)
         else TIfdef (Gif_str str_guard, no_ifdef_mark(), info)
       }
