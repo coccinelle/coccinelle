@@ -1894,7 +1894,8 @@ let token_effect tok dmin dplus inparens inassn inbrace accumulator xs =
       let accumulator = sub1top op accumulator in
       (Other 3,dmin,dplus,inparens,(0,0),sub1 op inbrace,
        drop_zeroes op accumulator xs)
-  | (Tok(";"|","),op) when getval inparens op = 0 && getval inassn op <= 1 ->
+  | (Tok(";"|"{}"|","),op) (* {} is generated when removing an if branch *)
+    when getval inparens op = 0 && getval inassn op <= 1 ->
       (Other 4,dmin,dplus,inparens,(0,0),inbrace,drop_zeroes op accumulator xs)
   | (Tok ";",op) ->
       (Other 5,dmin,dplus,inparens,sub1 op inassn,inbrace,accumulator)

@@ -584,6 +584,271 @@ rule is only applied if all of the metavariables for which there are no
 default values have values.  See demos/defaultscript.cocci for examples of
 the use of this feature.
 
+\section{Control Flow}
+
+Rules describe a property that Coccinelle must match, and when when the
+property described is matched the rule is considered successful. One aspect
+that is taken into account in determining a match is the program control
+flow. A control flow describes a possible run time path taken by a program.
+
+\subsection{Basic dots}
+When using Coccinelle, it is possible to express matches of certain code
+within certain types of control flows. Ellipses ("...") can be used to
+indicate to Coccinelle that anything can be present between consecutive
+statements. For instance the following SmPL patch tells Coccinelle that
+rule r0 wishes to remove all calls to function c().
+
+\begin{center}
+\begin{tabular}{c}
+\begin{lstlisting}[language=Cocci]
+@r0@
+@@
+
+-c();
+\end{lstlisting}\\
+\end{tabular}
+\end{center}
+
+The context of the rule provides no other guidelines to Coccinelle
+about any possible control flow other than this is a statement, and that
+c() must be called. We can modify the required control flow required for
+this rule by providing additional requirements and using ellipses in between.
+For instance, if we only wanted to remove calls to c() that also
+had a prior call to foo() we'd use the following SmPL patch:
+
+\begin{center}
+\begin{tabular}{c}
+\begin{lstlisting}[language=Cocci]
+@r1@
+@@
+
+foo()
+...
+-c();
+\end{lstlisting}\\
+\end{tabular}
+\end{center}
+
+\subsection{Dot variants}
+There are two possible modifiers to the control flow for ellipses, one
+(<... ...>) indicates that matching the pattern in between the ellipses is
+optional, and another (<+... ...+) indicates that the pattern in between
+the ellipses must be matched at least once, on some control-flow path.  In
+the latter, the \texttt{+} is intended to be reminiscent of the \texttt{+}
+used in regular expressions.  For instance, the following SmPL patch tells
+Coccinelle to remove all calls to c(). if foo() is present at least
+once since the beginning of the function.
+
+\begin{center}
+\begin{tabular}{c}
+\begin{lstlisting}[language=Cocci]
+@r2@
+@@
+
+<+...
+foo()
+...+>
+-c();
+
+\end{lstlisting}\\
+\end{tabular}
+\end{center}
+
+Alternatively, the following inidcates that foo() is allowed but optional.
+This case is typically most useful when all occurrences, if any, of foo()
+prior to c() should be transformed.
+
+\begin{center}
+\begin{tabular}{c}
+\begin{lstlisting}[language=Cocci]
+@r3@
+@@
+
+<...
+foo()
+...>
+-c();
+
+\end{lstlisting}\\
+\end{tabular}
+\end{center}
+
+\subsection{An example}
+Let's consider some sample code to review: flow1.c.
+
+\begin{center}
+\begin{tabular}{c}
+\begin{lstlisting}[language=C]
+
+int main(void)
+{
+	int ret, a = 2;
+
+	a = foo(a);
+	ret = bar(a);
+	c();
+
+	return ret;
+}
+\end{lstlisting}\\
+\end{tabular}
+\end{center}
+
+Applying the SmPL rule r0 to flow1.c would remove the c() line as the control
+flow provides no specific context requirements. Applying rule r1 would also
+succeed as the call to foo() is present. Likewise rules r2 and r3 would also
+succeed. If the foo() call is removed from flow1.c only rules r0 and r3 would
+succeed, as foo() would not be present and only rules r0 and r3 allow for
+foo() to not be present.
+
+One way to describe code control flow is in terms of McCabe cyclomatic
+complexity.
+The program flow1.1 has a linear control flow, it has no branches. The main
+routine has a McCabe cyclomatic complexity of 1. The McCabe cyclomatic
+complexity can be computed using
+{\tt pmccabe} (https://www.gnu.org/\-software/\-complexity/\-manual/\-html\_node/\-pmccabe-parsing.html).
+
+\begin{center}
+\begin{tabular}{c}
+\begin{lstlisting}[language=C]
+pmccabe /flow1.c
+1       1       5       1       10      flow1.c(1): main
+\end{lstlisting}\\
+\end{tabular}
+\end{center}
+
+Since programs can use branches, often times you may also wish to annotate
+requirements for control flows in consideration for branches, for when
+the McCabe cyclomatic complexity is > 1. The following program, flow2.c,
+enables the control flow to diverge on line 7 due to the branch, if (a) --
+one control flow possible is if (a) is true, another when if (a) is false.
+
+\begin{center}
+\begin{tabular}{c}
+\begin{lstlisting}[language=C]
+int main(void)
+{
+	int ret, a = 2;
+
+	a = foo(a);
+	ret = bar(a);
+	if (a)
+		c();
+
+	return ret;
+}
+\end{lstlisting}\\
+\end{tabular}
+\end{center}
+
+This program has a McCabe cyclomatic complexity of 2.
+
+\begin{center}
+\begin{tabular}{c}
+\begin{lstlisting}[language=C]
+pmccabe flow2.c
+2       2       6       1       11      flow2.c(1): main
+\end{lstlisting}\\
+\end{tabular}
+\end{center}
+
+Using the McCabe cyclomatic complexity is one way to get an idea of
+the complexity of the control graph for a function, another way is
+to visualize all possible paths. Coccinelle provides a way to visualize
+control flows of programs, this however requires {\tt dot}
+(http://www.graphviz.org/) and {\tt gv} to be installed (typically provided
+by a package called graphviz). To visualize control flow or a program
+using Coccinelle you use:
+
+\begin{center}
+\begin{tabular}{c}
+spatch --control-flow-to-file flow1.c
+spatch --control-flow-to-file flow2.c
+\end{tabular}
+\end{center}
+
+%Below are the two generated control flow graphs for flow1.c and flow2.c
+%respectively.
+
+%\begin{figure}
+%	\[\includegraphics[width=\linewidth]{flow1.pdf}\]
+%	\caption{Linear flow example}
+%	\label{devmodel}
+%\end{figure}
+
+%\begin{figure}
+%	\[\includegraphics[width=\linewidth]{flow2.pdf}\]
+%	\caption{Linear flow example}
+%	\label{devmodel}
+%\end{figure}
+
+Behind the scenes this generates a dot file and uses gv to generate
+a PDF file for viewing. To generate and inspect these manually you
+can use the following:
+
+\begin{center}
+\begin{tabular}{c}
+spatch --control-flow-to-file flow2.c
+dot -Tpdf flow1:main.dot > flow1.pdf
+\end{tabular}
+\end{center}
+
+By default properties described in a rule must match all control
+flows possible within a code section being inspected by Coccinelle.
+So for instance, in the following SmPL patch rule r1 would match all
+the control flow possible on flow1.c as its linear, however it would
+not match the control possible on flow2.c. The rule r1 would not
+be successful in flow2.c
+
+\begin{center}
+\begin{tabular}{c}
+\begin{lstlisting}[language=Cocci]
+@r1@
+@@
+
+foo()
+...
+-c();
+
+\end{lstlisting}\\
+\end{tabular}
+\end{center}
+
+The default control flow can be modified by using the keyword "exists"
+following the rule name. In the following SmPL patch the rule r2 would
+be successful on both flow1.c and flow2.c
+
+\begin{center}
+\begin{tabular}{c}
+\begin{lstlisting}[language=Cocci]
+@r2 exists@
+@@
+
+foo()
+...
+-c();
+
+\end{lstlisting}\\
+\end{tabular}
+\end{center}
+
+If the rule name is followed by the "forall" keyword, then all control flow
+paths must match in order for the rule to succeed. By default when a
+semantic patch has "-" and "+", or when it has no annotations at all and
+only script code, ellipses ("...") use the forall semantics.  And when the
+semantic patch uses the context annotation ("*"), the ellipses ("...") uses
+the exists semantics.  Using the keyword "forall" or "exists" in the rule
+header affects all ellipses ("...") uses in the rule. You can also annotate
+each ellipses ("...") with "when exists" or "when forall" individually.
+
+Rules can also be not be successful if requirements do not match
+when a rule name is followed by "depends on XXX". When "depends on is used
+it means the rule should only apply if rule XXX matched with the current
+metavariable environment. Alternatively, "depends on ever XXX" can be used
+as well, this means this rule should apply if rule XXX was ever matched at
+all. A counter to this use is "depends on never XXX", which means that this
+rule should apply if rule XXX was never matched at all.
+
 \section{Transformation}
 
 The transformation specification essentially has the form of C code, except

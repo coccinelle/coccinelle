@@ -36,7 +36,11 @@ manual.pdf: $(SRC)
 	$(PDFLATEX_CMD) manual.tex
 	$(PDFLATEX_CMD) manual.tex
 
-main_grammar.pdf: main_grammar.tex cocci_syntax.tex  macros_listing_cocci.tex macros_grammar.tex macros_common.tex examples.tex tips.tex
+main_grammar.pdf: main_grammar.tex cocci_syntax.tex flow1.c flow2.c macros_listing_cocci.tex macros_grammar.tex macros_common.tex examples.tex tips.tex
+	#spatch --control-flow-to-file flow1.c
+	#spatch --control-flow-to-file flow2.c
+	#dot -Gsize="0.5,0.5" -Tpdf flow1:main.dot > flow1.pdf
+	#dot -Gsize="0.5,0.5" -Tpdf flow2:main.dot > flow2.pdf
 	$(PDFLATEX_CMD) main_grammar.tex
 	$(PDFLATEX_CMD) main_grammar.tex
 
