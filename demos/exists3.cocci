@@ -1,4 +1,4 @@
-// this rule uses exists, with it, the rule is successful if at least
+// This rule uses exists, with it, the rule is successful if at least
 // one of the possible control flows possible match.
 // exists3.c has two possible control flows on main():
 // 1. b() --> a > 5 --> c();

@@ -1,4 +1,4 @@
-// this rule lacks exists, without exists, all control flows possible
+// This rule lacks exists, without exists, all control flows possible
 // must match the rule. In the case of exists2.c two possible control
 // flows exists on main():
 // 1. b() --> a > 5 --> c();

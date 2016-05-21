@@ -14,7 +14,6 @@ int main(void)
 	a = 10;
 	b();
 
-	c = 400;
 	if (a > 5)
 		c();
 

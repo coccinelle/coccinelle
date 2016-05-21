@@ -15,7 +15,5 @@ int main(void)
 	a = 10;
 	b();
 
-	c = 400;
-
 	return 0;
 }
