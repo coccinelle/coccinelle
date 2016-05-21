@@ -734,7 +734,7 @@ module XTRANS = struct
   let envf keep inherited = fun (s, value, _) f tin ->
     let s = Ast_cocci.unwrap_mcode s in
     let v =
-      if keep = Type_cocci.Saved
+      if keep = Ast_cocci.Saved
       then (
         try Some (List.assoc s tin.binding)
         with Not_found ->

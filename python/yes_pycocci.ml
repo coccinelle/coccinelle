@@ -112,22 +112,13 @@ let sp_exit _ =
   exited := true;
   _pycocci_none ()
 
-let build_method (mname, camlfunc, args) pymodule classx classdict =
-  let cmx = pymethod_new(pywrap_closure camlfunc, args, classx) in
-  let v = pydict_setitemstring(classdict, mname, cmx) in
-  check_int_return_value ("building python method " ^ mname) v;
-  ()
-
-let build_class cname parent methods pymodule =
-  let cd = pydict_new() in
-  check_return_value "creating a new python dictionary" cd;
-  let cx = pyclass_new(pytuple_fromsingle (pycocci_get_class_type parent), cd,
-		       pystring_fromstring cname) in
-  check_return_value "creating a new python class" cx;
-  List.iter (function meth -> build_method meth pymodule cx cd) methods;
+let build_class cname parent fields methods pymodule =
+  let cx =
+    Pycaml.pyclass_init (pystring_fromstring cname)
+      (pytuple_fromsingle (pycocci_get_class_type parent)) fields methods in
   let v = pydict_setitemstring(pymodule_getdict pymodule, cname, cx) in
   check_int_return_value ("adding python class " ^ cname) v;
-  (cd, cx)
+  cx
 
 let the_environment = ref []
 
@@ -140,13 +131,11 @@ let has_environment_binding name =
       !the_environment in
   if e then _pycocci_true () else _pycocci_false ()
 
-let py_eq = 2
-
 let pyoption pyobject =
-  match pyobject_richcomparebool (pyobject, pynone (), py_eq) with
-  | 1 -> None
-  | 0 -> Some pyobject
-  | _ -> raise (Invalid_argument "pyoption")
+  if pyobject = pynone () then
+    None
+  else
+    Some pyobject
 
 let list_of_pylist pylist =
   Array.to_list (pylist_toarray pylist)
@@ -173,8 +162,49 @@ let add_pending_instance args =
     (files, virtual_rules, virtual_identifiers, extend_virtual_ids);
   pynone ()
 
+let pycocci_init_not_called _ = failwith "pycocci_init() not called"
+
+let pywrap_ast = ref pycocci_init_not_called
+
+let pyunwrap_ast = ref pycocci_init_not_called
+
+let wrap_make metavar_of_pystring args =
+  let arg = pytuple_getitem (args, 1) in
+  let s = pystring_asstring arg in
+  let mv = metavar_of_pystring s in
+  !pywrap_ast mv
+
+let wrap_make_stmt_with_env args =
+  let arg_env = pytuple_getitem (args, 1) in
+  let arg_s = pytuple_getitem (args, 2) in
+  let env = pystring_asstring arg_env in
+  let s = pystring_asstring arg_s in
+  let mv = Coccilib.make_stmt_with_env env s in
+  !pywrap_ast mv
+
+let wrap_make_listlen args =
+  let arg = pytuple_getitem (args, 1) in
+  let i = Pycaml.pyint_asint arg in
+  let mv = Coccilib.make_listlen i in
+  !pywrap_ast mv
+
+let wrap_make_position args =
+  let arg_fl = pytuple_getitem (args, 1) in
+  let arg_fn = pytuple_getitem (args, 2) in
+  let arg_startl = pytuple_getitem (args, 3) in
+  let arg_startc = pytuple_getitem (args, 4) in
+  let arg_endl = pytuple_getitem (args, 5) in
+  let arg_endc = pytuple_getitem (args, 6) in
+  let fl = pystring_asstring arg_fl in
+  let fn = pystring_asstring arg_fn in
+  let startl = Pycaml.pyint_asint arg_startl in
+  let startc = Pycaml.pyint_asint arg_startc in
+  let endl = Pycaml.pyint_asint arg_endl in
+  let endc = Pycaml.pyint_asint arg_endc in
+  let mv = Coccilib.make_position fl fn startl startc endl endc in
+  !pywrap_ast mv
+
 let pyoutputinstance = ref (_pycocci_none ())
-let pyoutputdict = ref (_pycocci_none ())
 
 let get_cocci_file args =
   pystring_fromstring (!cocci_file_name)
@@ -206,18 +236,30 @@ let pycocci_init () =
   let module_dictionary = pyimport_getmoduledict() in
   coccinelle_module := pymodule_new "coccinelle";
   let mx = !coccinelle_module in
-  let (cd, cx) = build_class "Cocci" (!Flag.pyoutput)
-      [("exit", sp_exit, (pynull()));
-	("include_match", include_match, (pynull()));
-	("has_env_binding", has_environment_binding, (pynull()));
-	("add_pending_instance", add_pending_instance, (pynull()))] mx in
+  let mypystring = pystring_fromstring !cocci_file_name in
+  let cx = build_class "Cocci" (!Flag.pyoutput)
+      [("cocci_file", mypystring)]
+      [("exit", sp_exit);
+	("include_match", include_match);
+	("has_env_binding", has_environment_binding);
+	("add_pending_instance", add_pending_instance);
+	("make_ident", wrap_make Coccilib.make_ident);
+	("make_expr", wrap_make Coccilib.make_expr);
+	("make_stmt", wrap_make Coccilib.make_stmt);
+	("make_stmt_with_env", wrap_make_stmt_with_env);
+	("make_type", wrap_make Coccilib.make_type);
+	("make_listlen", wrap_make_listlen);
+	("make_position", wrap_make_position);
+     ] mx in
   pyoutputinstance := cx;
-  pyoutputdict := cd;
   let v1 = pydict_setitemstring(module_dictionary, "coccinelle", mx) in
   check_int_return_value "adding coccinelle python module" v1;
-  let mypystring = pystring_fromstring !cocci_file_name in
-  let v2 = pydict_setitemstring(cd, "cocci_file", mypystring) in
-  check_int_return_value "adding python field cocci_file" v2;
+
+  register_ocamlpill_types [|"metavar_binding_kind"|];
+  let (wrap_ast, unwrap_ast) =
+    make_pill_wrapping "metavar_binding_kind" Ast_c.MetaNoVal in
+  pywrap_ast := wrap_ast;
+  pyunwrap_ast := unwrap_ast;
   ()) else
   ()
 
@@ -362,7 +404,14 @@ let construct_script_variables mv =
     mv
 
 let retrieve_script_variables mv =
-  List.map (function (_,py) -> Ast_c.MetaIdVal(get_variable py)) mv
+  let unwrap (_, py) =
+    let mx = !coccinelle_module in
+    let v = pydict_getitemstring (pymodule_getdict mx, py) in
+    if pystring_check v then
+      Ast_c.MetaIdVal(pystring_asstring v)
+    else
+      !pyunwrap_ast v in
+  List.map unwrap mv
 
 let set_coccifile cocci_file =
 	cocci_file_name := cocci_file;

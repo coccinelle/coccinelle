@@ -14,7 +14,7 @@ module Ast = Ast_cocci
 module V0 = Visitor_ast0
 module VT0 = Visitor_ast0_types
 
-let unitary = Type_cocci.Unitary
+let unitary = Ast.Unitary
 
 let ctr = ref 0
 let get_ctr _ =
@@ -418,7 +418,8 @@ and expression e =
     | Ast0.MetaErr(name,cstrts,_)  ->
 	Ast.MetaErr(mcode name,constraints cstrts,unitary,false)
     | Ast0.MetaExpr(name,cstrts,ty,form,_)  ->
-	Ast.MetaExpr(mcode name,constraints cstrts,unitary,ty,form,false)
+        let ty' = Common.map_option (List.map (typeC false)) ty in
+        Ast.MetaExpr (mcode name, constraints cstrts, unitary, ty', form, false)
     | Ast0.MetaExprList(name,lenname,_) ->
 	Ast.MetaExprList(mcode name,do_lenname lenname,unitary,false)
     | Ast0.AsExpr(expr,asexpr) ->

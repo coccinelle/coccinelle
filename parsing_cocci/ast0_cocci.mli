@@ -47,7 +47,7 @@ and 'a wrap =
       info : info;
       index : int ref;
       mcodekind : mcodekind ref;
-      exp_ty : Type_cocci.typeC option ref; (* only for expressions *)
+      exp_ty : typeC option ref; (* only for expressions *)
       bef_aft : dots_bef_aft; (* only for statements *)
       true_if_arg : bool; (* true if "arg_exp", only for exprs *)
       true_if_test : bool; (* true if "test position", only for exprs *)
@@ -122,7 +122,7 @@ and base_expression =
  	              initialiser
   | MetaErr        of Ast_cocci.meta_name mcode * constraints * pure
   | MetaExpr       of Ast_cocci.meta_name mcode * constraints *
-	              Type_cocci.typeC list option * Ast_cocci.form * pure
+	              typeC list option * Ast_cocci.form * pure
   | MetaExprList   of Ast_cocci.meta_name mcode (* only in arglists *) *
 	              listlen * pure
   | AsExpr         of expression * expression (* as expr, always metavar *)
@@ -582,8 +582,8 @@ val get_mcodekind : 'a wrap -> mcodekind
 val get_mcode_mcodekind : 'a mcode -> mcodekind
 val get_mcodekind_ref : 'a wrap -> mcodekind ref
 val set_mcodekind : 'a wrap -> mcodekind -> unit
-val set_type : 'a wrap -> Type_cocci.typeC option -> unit
-val get_type : 'a wrap -> Type_cocci.typeC option
+val set_type : 'a wrap -> typeC option -> unit
+val get_type : 'a wrap -> typeC option
 val set_dots_bef_aft : statement -> dots_bef_aft -> statement
 val get_dots_bef_aft : 'a wrap -> dots_bef_aft
 val set_arg_exp : expression -> expression
@@ -603,11 +603,11 @@ val make_minus_mcode : 'a -> 'a mcode
 val get_rule_name : parsed_rule -> string
 
 val meta_pos_name : anything -> Ast_cocci.meta_name mcode
+val meta_names_of_typeC : typeC -> Ast_cocci.meta_name list
+(**
+ * [meta_names_of_typeC ty] enumerates all the meta names that occur in [ty].
+ *)
 val meta_pos_constraint_names : anything -> Ast_cocci.meta_name list
-
-val ast0_type_to_type : bool -> typeC -> Type_cocci.typeC
-val reverse_type : Type_cocci.typeC -> base_typeC
-exception TyConv
 
 val lub_pure : pure -> pure -> pure
 
@@ -617,3 +617,15 @@ val rule_name : string ref (* for the convenience of the parser *)
 
 val string_of_assignOp : assignOp -> string
 val string_of_binaryOp : binaryOp -> string
+
+val is_unknown_type : typeC -> bool
+(**
+ * [is_unknown_type ty] returns true iff [ty] is an unknown type
+ * (i.e., of the form [BaseType (Ast_cocci.Unknown, _)]).
+ *)
+
+val type_compatible : typeC -> typeC -> bool
+(**
+ * [type_compatible ty0 ty1] returns true iff [ty0] and [ty1] are structurally
+ * identical, modulo the unknown parts of the types.
+ *)

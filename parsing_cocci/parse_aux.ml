@@ -24,7 +24,7 @@ type tyinfo = Ast.meta_name * Ast0.typeC list * Ast0.pure * Data.clt
 type list_info = Ast.meta_name * Ast.list_len * Ast0.pure * Data.clt
 type typed_expinfo =
     Ast.meta_name * Data.econstraints * Ast0.pure *
-      Type_cocci.typeC list option * Data.clt
+      Ast0.typeC list option * Data.clt
 type pos_info = Ast.meta_name * Data.pconstraints * Ast.meta_collect * Data.clt
 
 let get_option fn = function
@@ -160,7 +160,7 @@ let pointerify ty m =
 
 let ty_pointerify ty m =
   List.fold_left
-    (function inner -> function cur -> Type_cocci.Pointer(inner))
+    (fun inner cur -> Ast0.wrap (Ast0.Pointer (inner, Ast0.make_mcode "")))
     ty m
 
 let arrayify ty ar =
@@ -209,6 +209,9 @@ let check_meta_tyopt type_irrelevant v =
     raise
       (Semantic_cocci.Semantic
 	 ("incompatible inheritance declaration "^name)) in
+  let type_equal ty0 ty1 =
+    type_irrelevant ||
+    Common.equal_option (Common.equal_list Ast.fullType_compatible) ty0 ty1 in
   match v with
     Ast.MetaMetaDecl(Ast.NONE,(rule,name)) ->
       (match meta_lookup rule name v with
@@ -256,7 +259,7 @@ let check_meta_tyopt type_irrelevant v =
       | _ -> fail name)
   | Ast.MetaConstDecl(Ast.NONE,(rule,name),ty) ->
       (match meta_lookup rule name v with
-	Ast.MetaConstDecl(_,_,ty1) when type_irrelevant || ty = ty1 -> ()
+	Ast.MetaConstDecl(_,_,ty1) when type_equal ty ty1 -> ()
       | _ -> fail name)
   | Ast.MetaErrDecl(Ast.NONE,(rule,name)) ->
       (match meta_lookup rule name v with
@@ -264,19 +267,19 @@ let check_meta_tyopt type_irrelevant v =
       | _ -> fail name)
   | Ast.MetaExpDecl(Ast.NONE,(rule,name),ty) ->
       (match meta_lookup rule name v with
-	Ast.MetaExpDecl(_,_,ty1) when type_irrelevant || ty = ty1 -> ()
+	Ast.MetaExpDecl(_,_,ty1) when type_equal ty ty1 -> ()
       | _ -> fail name)
   | Ast.MetaIdExpDecl(Ast.NONE,(rule,name),ty) ->
       (match meta_lookup rule name v with
-	Ast.MetaIdExpDecl(_,_,ty1) when type_irrelevant || ty = ty1 -> ()
+	Ast.MetaIdExpDecl(_,_,ty1) when type_equal ty ty1 -> ()
       | _ -> fail name)
   | Ast.MetaLocalIdExpDecl(Ast.NONE,(rule,name),ty) ->
       (match meta_lookup rule name v with
-	Ast.MetaLocalIdExpDecl(_,_,ty1) when type_irrelevant || ty = ty1 -> ()
+	Ast.MetaLocalIdExpDecl(_,_,ty1) when type_equal ty ty1 -> ()
       | _ -> fail name)
   | Ast.MetaGlobalIdExpDecl(Ast.NONE,(rule,name),ty) ->
       (match meta_lookup rule name v with
-	Ast.MetaGlobalIdExpDecl(_,_,ty1) when type_irrelevant || ty = ty1 -> ()
+	Ast.MetaGlobalIdExpDecl(_,_,ty1) when type_equal ty ty1 -> ()
       | _ -> fail name)
   | Ast.MetaExpListDecl(Ast.NONE,(rule,name),len_name) ->
       (match meta_lookup rule name v with

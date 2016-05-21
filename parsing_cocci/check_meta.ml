@@ -180,7 +180,7 @@ let rec expression context old_metas table minus e =
 	(function x ->
 	  List.iter
 	    (function ty -> check_table table minus (promote ty))
-	    (get_type_name x))
+	    (Ast0.meta_names_of_typeC x))
 	tys;
       check_table table minus name
   | Ast0.MetaExpr(name,_,_,_,_) | Ast0.MetaErr(name,_,_) ->
@@ -203,20 +203,6 @@ let rec expression context old_metas table minus e =
   | Ast0.OptExp(x) ->
       expression ID old_metas table minus x
   | _ -> () (* no metavariable subterms *)
-
-and get_type_name = function
-    Type_cocci.ConstVol(_,ty) | Type_cocci.SignedT(_,Some ty)
-  | Type_cocci.Pointer(ty)
-  | Type_cocci.FunctionPointer(ty) | Type_cocci.Array(ty) -> get_type_name ty
-  | Type_cocci.EnumName(Type_cocci.MV(nm,_,_)) -> [nm]
-  | Type_cocci.StructUnionName(_,Type_cocci.MV(nm,_,_)) -> [nm]
-  | Type_cocci.MetaType(nm,_,_) -> [nm]
-  | Type_cocci.Decimal(nm1,nm2) ->
-      let get_name = function
-	  Type_cocci.MV(nm,_,_) -> [nm]
-	| _ -> [] in
-      (get_name nm1) @ (get_name nm2)
-  | _ -> []
 
 (* --------------------------------------------------------------------- *)
 (* Types *)

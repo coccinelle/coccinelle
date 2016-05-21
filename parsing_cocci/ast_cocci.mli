@@ -58,8 +58,9 @@ and dots_bef_aft =
   | AddingBetweenDots of statement * int (*index of let var*)
   | DroppingBetweenDots of statement * int (*index of let var*)
 
-and inherited = Type_cocci.inherited
-and keep_binding = Type_cocci.keep_binding
+and inherited = bool (* true if inherited *)
+and keep_binding = Unitary (* need no info *)
+  | Nonunitary (* need an env entry *) | Saved (* need a witness *)
 and multi = bool (*true if a nest is one or more, false if it is zero or more*)
 
 and end_info =
@@ -84,16 +85,16 @@ and metavar =
   | MetaBinaryOperatorDecl of arity * meta_name
   | MetaAssignmentOperatorDecl of arity * meta_name
   | MetaConstDecl of
-      arity * meta_name (* name *) * Type_cocci.typeC list option
+      arity * meta_name (* name *) * fullType list option
   | MetaErrDecl of arity * meta_name (* name *)
   | MetaExpDecl of
-      arity * meta_name (* name *) * Type_cocci.typeC list option
+      arity * meta_name (* name *) * fullType list option
   | MetaIdExpDecl of
-      arity * meta_name (* name *) * Type_cocci.typeC list option
+      arity * meta_name (* name *) * fullType list option
   | MetaLocalIdExpDecl of
-      arity * meta_name (* name *) * Type_cocci.typeC list option
+      arity * meta_name (* name *) * fullType list option
   | MetaGlobalIdExpDecl of
-      arity * meta_name (* name *) * Type_cocci.typeC list option
+      arity * meta_name (* name *) * fullType list option
   | MetaExpListDecl of arity * meta_name (*name*) * list_len (*len*)
   | MetaDeclDecl of arity * meta_name (* name *)
   | MetaFieldDecl of arity * meta_name (* name *)
@@ -175,7 +176,7 @@ and base_expression =
   | MetaErr        of meta_name mcode * constraints * keep_binding *
 	              inherited
   | MetaExpr       of meta_name mcode * constraints * keep_binding *
-	              Type_cocci.typeC list option * form * inherited
+	              fullType list option * form * inherited
   | MetaExprList   of meta_name mcode * listlen *
 	              keep_binding * inherited (* only in arg lists *)
   | AsExpr         of expression * expression (* as expr, always metavar *)
@@ -317,6 +318,7 @@ and baseType = VoidType | CharType | ShortType | ShortIntType | IntType
 | DoubleType | LongDoubleType | FloatType
 | LongType | LongIntType | LongLongType | LongLongIntType
 | SizeType | SSizeType | PtrDiffType
+| BoolType | Unknown
 
 and structUnion = Struct | Union
 
@@ -778,3 +780,71 @@ val string_of_arithOp : arithOp -> string
 val string_of_logicalOp : logicalOp -> string
 val string_of_assignOp : assignOp -> string
 val string_of_binaryOp : binaryOp -> string
+
+val string_of_sign : sign -> string
+val string_of_baseType : baseType -> string
+val string_of_const_vol : const_vol -> string
+val string_of_typeC : typeC -> string
+val string_of_fullType : fullType -> string
+
+val typeC_of_fullType_opt : fullType -> typeC option
+(**
+ * [typeC_of_fullType_opt ty] returns [Some ty'] iff [ty] is of the form
+ * [Type (_, false, ty')].
+ *)
+
+val ident_of_expression_opt : expression -> ident option
+(**
+ * [ident_of_expression_opt e] returns [Some id] iff [e] is of the form
+ * [Ident e] *)
+
+type 'a transformer = {
+    baseType: (baseType -> string mcode list -> 'a) option;
+    decimal: (string mcode -> string mcode -> expression ->
+      string mcode option -> expression option -> string mcode -> 'a) option;
+    enumName: (string mcode -> ident option -> 'a) option;
+    structUnionName: (structUnion mcode -> ident option -> 'a) option;
+    typeName: (string mcode -> 'a) option;
+    metaType: (meta_name mcode -> keep_binding -> inherited -> 'a) option
+  }
+(** ['a transformer] is an auxiliary record type for the iterators fullType_map,
+ * fullType_fold and fullType_iter.
+ * Each field corresponds to a constructor for a leaf in the AST of types.
+ *)
+
+val empty_transformer: 'a transformer
+(** The transformer with no function defined. *)
+
+
+val fullType_map: base_typeC transformer -> fullType -> fullType
+(**
+ * [fullType_map tr ty] returns [ty] where every subparts that match one of the
+ * kinds, which a function has been given for in [tr], has been substituted by
+ * the result of the corresponding function.
+ * Other subparts, for the kind of which no function has been provided, are
+ * preserved as is.
+ *)
+
+val fullType_fold: ('a -> 'a) transformer -> fullType -> 'a -> 'a
+(**
+  * [fullType_fold tr ty v] iterates the given functions to every subparts of
+  * [ty] that match one of the kinds, which a function has been given for in
+  * [tr], computing the iterated result value from the initial seed v.
+  *)
+
+val fullType_iter: unit transformer -> fullType -> unit
+(**
+  * [fullType_iter tr ty] applies the given functions to every subparts of [ty]
+  * that match one of the kinds, which a function has been given for in [tr].
+  *)
+
+val meta_names_of_fullType: fullType -> meta_name list
+(**
+ * [meta_names_of_fullType ty] enumerates all the meta names that occur in [ty].
+ *)
+
+val fullType_compatible : fullType -> fullType -> bool
+(**
+ * [fullType_compatible ty0 ty1] returns true iff [ty0] and [ty1] are
+ * structurally identical, modulo the unknown parts of the types.
+ *)

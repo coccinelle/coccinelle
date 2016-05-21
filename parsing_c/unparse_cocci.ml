@@ -731,7 +731,9 @@ and typeC ty =
             pretty_print_c.Pretty_print_c.ty exp
         | _ -> raise (Impossible 147))
 
-and baseType = function
+and baseType ty = print_string (Ast.string_of_baseType ty ^ " ")
+
+(* function
     Ast.VoidType -> print_string "void"
   | Ast.CharType -> print_string "char"
   | Ast.ShortType -> print_string "short"
@@ -747,7 +749,7 @@ and baseType = function
   | Ast.SizeType -> print_string "size_t "
   | Ast.SSizeType -> print_string "ssize_t "
   | Ast.PtrDiffType -> print_string "ptrdiff_t "
-
+*)
 and structUnion = function
     Ast.Struct -> print_string "struct"
   | Ast.Union -> print_string "union"

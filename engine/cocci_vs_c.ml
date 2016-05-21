@@ -4131,50 +4131,50 @@ and compatible_base_type a signa b =
   let ok  = return ((),()) in
 
   match a, b with
-  | Type_cocci.VoidType,    B.Void
-  | Type_cocci.SizeType,    B.SizeType
-  | Type_cocci.SSizeType,   B.SSizeType
-  | Type_cocci.PtrDiffType, B.PtrDiffType ->
+    A.VoidType,    B.Void
+  | A.SizeType,    B.SizeType
+  | A.SSizeType,   B.SSizeType
+  | A.PtrDiffType, B.PtrDiffType ->
       assert (signa = None);
       ok
-  | Type_cocci.CharType, B.IntType B.CChar when signa = None ->
+  | A.CharType, B.IntType B.CChar when signa = None ->
       ok
-  | Type_cocci.CharType, B.IntType (B.Si (signb, B.CChar2)) ->
+  | A.CharType, B.IntType (B.Si (signb, B.CChar2)) ->
       compatible_sign signa signb
-  | Type_cocci.ShortType, B.IntType (B.Si (signb, B.CShort)) ->
+  | A.ShortType, B.IntType (B.Si (signb, B.CShort)) ->
       compatible_sign signa signb
-  | Type_cocci.IntType, B.IntType (B.Si (signb, B.CInt)) ->
+  | A.IntType, B.IntType (B.Si (signb, B.CInt)) ->
       compatible_sign signa signb
-  | Type_cocci.LongType, B.IntType (B.Si (signb, B.CLong)) ->
+  | A.LongType, B.IntType (B.Si (signb, B.CLong)) ->
       compatible_sign signa signb
-  | Type_cocci.LongLongType, B.IntType (B.Si (signb, B.CLongLong)) ->
+  | A.LongLongType, B.IntType (B.Si (signb, B.CLongLong)) ->
       compatible_sign signa signb
-  | Type_cocci.FloatType, B.FloatType B.CFloat ->
+  | A.FloatType, B.FloatType B.CFloat ->
       assert (signa = None);
       ok
-  | Type_cocci.DoubleType, B.FloatType B.CDouble ->
+  | A.DoubleType, B.FloatType B.CDouble ->
       assert (signa = None);
       ok
   | _, B.FloatType B.CLongDouble ->
       pr2_once "no longdouble in cocci";
       fail
-  | Type_cocci.BoolType, _ -> failwith "no booltype in C"
+  | A.BoolType, _ -> failwith "no booltype in C"
 
   | _, (B.Void|B.FloatType _|B.IntType _
         |B.SizeType|B.SSizeType|B.PtrDiffType) -> fail
 
 and compatible_base_type_meta a signa qua b ii local =
-  match a, b with
-  | Type_cocci.MetaType(ida,keep,inherited),
+  match A.unwrap a, b with
+    A.MetaType(ida,keep,inherited),
     B.IntType (B.Si (signb, B.CChar2)) ->
       compatible_sign signa signb >>= fun _ _ ->
 	let newb = ((qua, (B.BaseType (B.IntType B.CChar),ii)),local) in
-	compatible_type a newb
-  | Type_cocci.MetaType(ida,keep,inherited), B.IntType (B.Si (signb, ty)) ->
+	compatible_typeC a newb
+  | A.MetaType(ida,keep,inherited), B.IntType (B.Si (signb, ty)) ->
       compatible_sign signa signb >>= fun _ _ ->
 	let newb =
 	  ((qua, (B.BaseType (B.IntType (B.Si (B.Signed, ty))),ii)),local) in
-	compatible_type a newb
+	compatible_typeC a newb
   | _, B.FloatType B.CLongDouble ->
       pr2_once "no longdouble in cocci";
       fail
@@ -4182,102 +4182,100 @@ and compatible_base_type_meta a signa qua b ii local =
   | _, (B.Void|B.FloatType _|B.IntType _
         |B.SizeType|B.SSizeType|B.PtrDiffType) -> fail
 
-
 and compatible_type a (b,local) =
+  match A.unwrap a, b with
+    A.Type (false, None, a'), _ ->
+      compatible_typeC a' (b, local)
+  | A.Type (false, Some const_vol, a'), (qub, b') ->
+      if (fst qub).B.const && (fst qub).B.volatile
+      then
+        begin
+          pr2_once ("warning: the type is both const & volatile but cocci " ^
+                    "does not handle that");
+          fail
+        end
+      else if
+        (match A.unwrap_mcode const_vol with
+        | A.Const -> (fst qub).B.const
+        | A.Volatile -> (fst qub).B.volatile
+        )
+      then compatible_typeC a' ((Ast_c.nQ, b'), local)
+      else fail
+  | _ ->
+      failwith "Cocci_vs_c.compatible_type: unimplemented"
+and compatible_typeC a (b,local) =
   let ok  = return ((),()) in
 
-  let rec loop = function
+  let rec loop tya tyb =
+    match A.unwrap tya, tyb with
     | _, (qua, (B.NoType, _)) ->
 	failwith "compatible_type: matching with NoType"
-    | Type_cocci.BaseType a, (qua, (B.BaseType b,ii)) ->
+  (* for metavariables of type expression *^* *)
+  (* must be before the general BaseType case *)
+    | A.BaseType (A.Unknown, _) , _ -> ok
+    | A.BaseType (a, _), (qua, (B.BaseType b,ii)) ->
 	compatible_base_type a None b
 
-    | Type_cocci.SignedT (signa,None), (qua, (B.BaseType b,ii)) ->
-	compatible_base_type Type_cocci.IntType (Some signa) b
+    | A.SignedT (signa,None), (qua, (B.BaseType b,ii)) ->
+        compatible_base_type A.IntType (Some signa) b
 
-    | Type_cocci.SignedT (signa,Some ty), (qua, (B.BaseType b,ii)) ->
-	(match ty with
-	  Type_cocci.BaseType ty ->
+    | A.SignedT (signa,Some ty), (qua, (B.BaseType b,ii)) ->
+        (match A.unwrap ty with
+          A.BaseType (ty, _) ->
 	    compatible_base_type ty (Some signa) b
-	| Type_cocci.MetaType(ida,keep,inherited) ->
+        | A.MetaType(ida,keep,inherited) ->
 	    compatible_base_type_meta ty (Some signa) qua b ii local
 	| _ -> failwith "not possible")
 
-    | Type_cocci.Pointer  a, (qub, (B.Pointer b, ii)) ->
-	loop (a,b)
-    | Type_cocci.FunctionPointer a, _ ->
+    | A.Pointer (a, _), (qub, (B.Pointer b, ii)) ->
+	compatible_type a (b, local)
+    | A.FunctionPointer (a, _, _, _, _, _, _), _ ->
 	failwith
 	  "TODO: function pointer type doesn't store enough information to determine compatibility"
-    | Type_cocci.Array   a, (qub, (B.Array (eopt, b),ii)) ->
+    | A.Array (a, _, _, _), (qub, (B.Array (eopt, b),ii)) ->
       (* no size info for cocci *)
-	loop (a,b)
-    | Type_cocci.Decimal(e1,e2), (qub, (B.Decimal(l,p),ii)) ->
+	compatible_type a (b, local)
+    | A.Decimal(_, _, e1, _, e2, _), (qub, (B.Decimal(l,p),ii)) ->
 	(match X.mode with
 	  TransformMode -> ok (* nothing to do here *)
 	| PatternMode ->
-	    let tc2e = function
-		Type_cocci.Name n ->
-		  A.make_term(A.Ident(A.make_term(A.Id(A.make_mcode n))))
-	      | Type_cocci.Num n ->
-		  A.make_term(A.Constant(A.make_mcode(A.Int n)))
-	      | Type_cocci.MV(mv,keep,inh) ->
-		  A.make_term
-		    (A.MetaExpr
-		       (A.make_mcode mv,A.NoConstraint,keep,None,A.CONST,inh))
-	      | _ -> failwith "unexpected name in decimal" in
       (* no size info for cocci *)
-	    expression (tc2e e1) l >>=
+	    expression e1 l >>=
 	    (fun _ _ -> (* no transformation to record *)
 	      match p with
 		None -> failwith "not allowed in a type"
 	      | Some p ->
-		  expression (tc2e e2) p >>=
-		  (fun _ _ -> (* no transformation to record *)
-		    ok)))
-    | Type_cocci.StructUnionName (sua, name),
+                  match e2 with
+                  | None -> ok
+                  | Some e2 ->
+                      expression e2 p >>=
+                      (fun _ _ -> (* no transformation to record *)
+                        ok)))
+    | A.StructUnionName (sua, name),
 	(qub, (B.StructUnionName (sub, sb),ii)) ->
 	  if equal_structUnion_type_cocci sua sub
 	  then structure_type_name name sb ii
 	  else fail
-    | Type_cocci.EnumName (name),
+    | A.EnumName (_, name),
 	(qub, (B.EnumName (sb),ii)) -> structure_type_name name sb ii
-    | Type_cocci.TypeName sa, (qub, (B.TypeName (namesb, _typb),noii)) ->
+    | A.TypeName sa, (qub, (B.TypeName (namesb, _typb),noii)) ->
         let sb = Ast_c.str_of_name namesb in
-	if sa = sb
+	if A.unwrap_mcode sa = sb
 	then ok
 	else fail
 
-    | Type_cocci.ConstVol (qua, a),      (qub, b) ->
-	if (fst qub).B.const && (fst qub).B.volatile
-	then
-	  begin
-	    pr2_once ("warning: the type is both const & volatile but cocci " ^
-                      "does not handle that");
-            fail
-	  end
-	else
-          if
-            (match qua with
-            | Type_cocci.Const -> (fst qub).B.const
-            | Type_cocci.Volatile -> (fst qub).B.volatile
-  	    )
-          then loop (a,(Ast_c.nQ, b))
-          else fail
-
-    | Type_cocci.MetaType (ida,keep,inherited),     typb ->
+    | A.MetaType (ida,keep,inherited),     typb ->
 	let max_min _ =
 	  Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_type typb) in
-	X.envf keep inherited (A.make_mcode ida, B.MetaTypeVal typb, max_min)
+        let ida' = A.make_mcode (A.unwrap_mcode ida) in
+        X.envf keep inherited (ida', B.MetaTypeVal typb, max_min)
 	  (fun () -> ok
         )
 
   (* subtil: must be after the MetaType case *)
     | a, (qub, (B.TypeName (_namesb, Some b), noii)) ->
       (* kind of typedef iso *)
-	loop (a,b)
-
-  (* for metavariables of type expression *^* *)
-    | Type_cocci.Unknown , _ -> ok
+	loop tya b
 
     | (_,
       (_,
@@ -4299,15 +4297,15 @@ and compatible_type a (b,local) =
 (*
 and decimal_type_exp nm sb ii =
     match nm with
-      Type_cocci.NoName -> failwith "unexpected NoName in decimal type"
-    | Type_cocci.Name sa ->
+      A.NoName -> failwith "unexpected NoName in decimal type"
+    | A.Name sa ->
 	(match B.unwrap sb with
 	  B.Ident name ->
 	    let ida = A.make_term(A.Id(A.make_mcode n)) in
 	    ident_cpp DontKnow ida nameidb >>= (fun ida nameidb -> ok)
 	| _ -> fail)
-    | Type_cocci.Num sa ->
-    | Type_cocci.MV(ida,keep,inherited) ->
+    | A.Num sa ->
+    | A.MV(ida,keep,inherited) ->
 	(* degenerate version of MetaId, no transformation possible *)
         let (ib1, ib2) = tuple_of_list2 ii in
 	let max_min _ = Lib_parsing_c.lin_col_by_pos [ib2] in
@@ -4317,37 +4315,36 @@ and decimal_type_exp nm sb ii =
 *)
 and structure_type_name nm sb ii =
     match nm with
-      Type_cocci.NoName -> ok
-    | Type_cocci.Name sa ->
-	if sa = sb
-	then ok
-	else fail
-    | Type_cocci.Num sa -> failwith "unexpected Num in structure type"
-    | Type_cocci.MV(ida,keep,inherited) ->
-	(* degenerate version of MetaId, no transformation possible *)
-        let (ib1, ib2) = tuple_of_list2 ii in
-	let max_min _ = Lib_parsing_c.lin_col_by_pos [ib2] in
-	let mida = A.make_mcode ida in
-	X.envf keep inherited (mida, B.MetaIdVal sb, max_min)
-	  (fun () -> ok)
-
+      None -> ok
+    | Some nm' ->
+        match A.unwrap nm' with
+        | A.Id id ->
+            if A.unwrap_mcode id = sb
+            then ok
+            else fail
+        | A.MetaId (ida, _, keep, inherited) ->
+            (* degenerate version of MetaId, no transformation possible *)
+            let (ib1, ib2) = tuple_of_list2 ii in
+            let max_min _ = Lib_parsing_c.lin_col_by_pos [ib2] in
+            X.envf keep inherited (ida, B.MetaIdVal sb, max_min) (fun () -> ok)
+        | _ -> failwith "Cocci_vs_c.structure_type_name: unimplemented"
   in
-  loop (a,b)
+  loop a b
 
 and compatible_sign signa signb =
   let ok  = return ((),()) in
-  match signa, signb with
+  match Common.map_option A.unwrap_mcode signa, signb with
   | None, B.Signed
-  | Some Type_cocci.Signed, B.Signed
-  | Some Type_cocci.Unsigned, B.UnSigned
+  | Some A.Signed, B.Signed
+  | Some A.Unsigned, B.UnSigned
       -> ok
   | _ -> fail
 
 
 and equal_structUnion_type_cocci a b =
-  match a, b with
-  | Type_cocci.Struct, B.Struct -> true
-  | Type_cocci.Union,  B.Union -> true
+  match Ast_cocci.unwrap_mcode a, b with
+    A.Struct, B.Struct -> true
+  | A.Union,  B.Union -> true
   | _, (B.Struct | B.Union) -> false
 
 
@@ -4627,7 +4624,7 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
             (fun ea eb ->
               let (max,min) =
                 Lib_parsing_c.max_min_by_pos (Lib_parsing_c.ii_of_expr eb) in
-              let keep = Type_cocci.Unitary in
+              let keep = A.Unitary in
               let inherited = false in
 	      let max_min _ = failwith "no pos" in
               X.envf keep inherited (pos, B.MetaPosVal (min,max), max_min)

@@ -191,9 +191,9 @@ let rec ident i =
   | Ast.OptIdent(id) -> print_string "?"; ident id
 
 and print_unitary = function
-    Type_cocci.Unitary -> print_string "unitary"
-  | Type_cocci.Nonunitary -> print_string "nonunitary"
-  | Type_cocci.Saved -> print_string "saved"
+    Ast.Unitary -> print_string "unitary"
+  | Ast.Nonunitary -> print_string "nonunitary"
+  | Ast.Saved -> print_string "saved"
 
 (* --------------------------------------------------------------------- *)
 (* Expression *)
@@ -431,34 +431,15 @@ and typeC ty =
   | Ast.MetaType(name,_,_) ->
       mcode print_meta name; print_string " "
 
-and baseType = function
-    Ast.VoidType -> print_string "void "
-  | Ast.CharType -> print_string "char "
-  | Ast.ShortType -> print_string "short "
-  | Ast.ShortIntType -> print_string "short int "
-  | Ast.IntType -> print_string "int "
-  | Ast.DoubleType -> print_string "double "
-  | Ast.LongDoubleType -> print_string "long double "
-  | Ast.FloatType -> print_string "float "
-  | Ast.LongType -> print_string "long "
-  | Ast.LongIntType -> print_string "long int "
-  | Ast.LongLongType -> print_string "long long "
-  | Ast.LongLongIntType -> print_string "long long int "
-  | Ast.SizeType -> print_string "size_t "
-  | Ast.SSizeType -> print_string "ssize_t "
-  | Ast.PtrDiffType -> print_string "ptrdiff_t "
+and baseType ty = print_string (Ast.string_of_baseType ty ^ " ")
 
 and structUnion = function
     Ast.Struct -> print_string "struct "
   | Ast.Union -> print_string "union "
 
-and sign = function
-    Ast.Signed -> print_string "signed "
-  | Ast.Unsigned -> print_string "unsigned "
+and sign s = print_string (Ast.string_of_sign s ^ " ")
 
-and const_vol = function
-    Ast.Const -> print_string "const"
-  | Ast.Volatile -> print_string "volatile"
+and const_vol const_vol = print_string (Ast.string_of_const_vol const_vol ^ " ")
 
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)
@@ -890,11 +871,11 @@ let print_listlen rule = function
 
 let print_types = function
     None -> ()
-  | Some [ty] -> print_string (Type_cocci.type2c ty); print_string " "
+  | Some [ty] -> print_string (Ast.string_of_fullType ty); print_string " "
   | Some l ->
       print_string "{";
       print_between (fun _ -> print_string ",")
-	(fun ty -> print_string (Type_cocci.type2c ty))
+	(fun ty -> print_string (Ast.string_of_fullType ty))
 	l;
       print_string "} "
 
@@ -908,6 +889,15 @@ let print_seed rule = function
   | Ast.ListSeed(ss) ->
       print_string " = ";
       print_between (fun _ -> print_string " ## ") (print_seed_elem rule) ss
+
+let contains_unknown ty =
+  try
+    Ast.fullType_iter { Ast.empty_transformer with
+      Ast.baseType =
+	Some (fun ty _ -> match ty with Ast.Unknown -> raise Exit | _ -> ())
+    } ty;
+    false
+  with Exit -> true
 
 let unparse_cocci_mv rule = function
     Ast.MetaMetaDecl _ -> failwith "should be removed"
@@ -942,14 +932,6 @@ let unparse_cocci_mv rule = function
   | Ast.MetaExpDecl(_,(r,n),None) ->
       print_string "expression "; print_name rule r n; print_string ";"
   | Ast.MetaExpDecl(_,(r,n),ty) ->
-      let rec contains_unknown = function
-	  Type_cocci.ConstVol(cv,ty) -> contains_unknown ty
-	| Type_cocci.SignedT(sgn,Some ty) -> contains_unknown ty
-	| Type_cocci.Pointer(ty) -> contains_unknown ty
-	| Type_cocci.FunctionPointer(ty) -> contains_unknown ty
-	| Type_cocci.Array(ty) -> contains_unknown ty
-	| Type_cocci.Unknown -> true
-	| _ -> false in
       (match ty with
 	None -> ()
       | Some ty -> (* unknown only possible when there is only one type? *)
