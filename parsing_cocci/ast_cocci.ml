@@ -996,6 +996,27 @@ let string_of_const_vol = function
     Const -> "const"
   | Volatile -> "volatile"
 
+let string_of_meta_name (_, name) = name
+
+let rec string_of_ident id =
+  match unwrap id with
+    Id id -> unwrap_mcode id
+  | MetaId (m, _, _, _)
+  | MetaFunc (m, _, _, _)
+  | MetaLocalFunc (m, _, _, _) -> string_of_meta_name (unwrap_mcode m)
+  | AsIdent (id, _) -> string_of_ident id
+  | OptIdent id -> string_of_ident id ^ "?"
+  | DisjId l -> String.concat "|" (List.map string_of_ident l)
+
+let string_of_expression e =
+  match unwrap e with
+    Ident id -> string_of_ident id
+  | _ -> "?"
+
+let string_of_structUnion = function
+    Struct -> "struct"
+  | Union -> "union"
+
 let rec string_of_typeC ty =
   match unwrap ty with
     BaseType (bt, _) -> string_of_baseType bt ^ " "
@@ -1004,15 +1025,31 @@ let rec string_of_typeC ty =
       ssign ^ " " ^ Common.default "" string_of_typeC ty'
   | Pointer (ty', _) ->
       string_of_fullType ty' ^ "*"
-  | _ ->
-      failwith "string_of_typeC"
+  | FunctionPointer (ty', _, _, _, _, _, _) ->
+      string_of_fullType ty' ^ "(*)()"
+  | Array (ty', _, _, _) ->
+      string_of_fullType ty' ^ "[]"
+  | Decimal(_, _, e0, _, e1, _) ->
+      let s0 = string_of_expression e0
+      and s1 = Common.default "?" string_of_expression e1 in
+      Printf.sprintf "decimal(%s,%s) " s0 s1
+  | EnumName (_, name) -> "enum " ^ (Common.default "?" string_of_ident name)
+  | StructUnionName (kind, name) ->
+      Printf.sprintf "%s %s"
+	(string_of_structUnion (unwrap_mcode kind))
+	(Common.default "?" string_of_ident name)
+  | EnumDef (ty', _, _, _)
+  | StructUnionDef (ty', _, _, _) -> string_of_fullType ty'
+  | TypeName (name) -> unwrap_mcode name ^ " "
+  | MetaType (m, _, _) -> string_of_meta_name (unwrap_mcode m) ^ " "
 and string_of_fullType ty =
   match unwrap ty with
     Type (_, None, ty') -> string_of_typeC ty'
   | Type (_, Some const_vol, ty') ->
       string_of_const_vol (unwrap_mcode const_vol) ^ " " ^ string_of_typeC ty'
-  | _ ->
-      failwith "string_of_fullType"
+  | AsType (ty', _) -> string_of_fullType ty'
+  | DisjType l -> String.concat "|" (List.map string_of_fullType l)
+  | OptType ty -> string_of_fullType ty ^ "?"
 
 let typeC_of_fullType_opt ty =
   match unwrap ty with
