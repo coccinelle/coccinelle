@@ -784,6 +784,7 @@ val string_of_binaryOp : binaryOp -> string
 val string_of_sign : sign -> string
 val string_of_baseType : baseType -> string
 val string_of_const_vol : const_vol -> string
+val string_of_structUnion : structUnion -> string
 val string_of_typeC : typeC -> string
 val string_of_fullType : fullType -> string
 

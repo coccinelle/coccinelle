@@ -28,9 +28,7 @@ let constant_tostring = function
   | Ast.Float(s) -> s
   | Ast.DecimalConst(s,_,_) -> s
 
-let struct_union_tostring = function
-  | Ast.Struct -> "struct"
-  | Ast.Union -> "union"
+let struct_union_tostring = Ast.string_of_structUnion
 
 let sign_tostring = function
   | Ast.Signed -> "signed"

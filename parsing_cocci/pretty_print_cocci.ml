@@ -433,9 +433,7 @@ and typeC ty =
 
 and baseType ty = print_string (Ast.string_of_baseType ty ^ " ")
 
-and structUnion = function
-    Ast.Struct -> print_string "struct "
-  | Ast.Union -> print_string "union "
+and structUnion ty = print_string (Ast.string_of_structUnion ty ^ " ")
 
 and sign s = print_string (Ast.string_of_sign s ^ " ")
 
