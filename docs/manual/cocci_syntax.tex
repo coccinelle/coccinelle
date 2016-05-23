@@ -586,7 +586,7 @@ the use of this feature.
 
 \section{Control Flow}
 
-Rules describe a property that Coccinelle must match, and when when the
+Rules describe a property that Coccinelle must match, and when the
 property described is matched the rule is considered successful. One aspect
 that is taken into account in determining a match is the program control
 flow. A control flow describes a possible run time path taken by a program.
@@ -632,7 +632,7 @@ foo()
 \subsection{Dot variants}
 There are two possible modifiers to the control flow for ellipses, one
 (<... ...>) indicates that matching the pattern in between the ellipses is
-optional, and another (<+... ...+) indicates that the pattern in between
+optional, and another (<+... ...+>) indicates that the pattern in between
 the ellipses must be matched at least once, on some control-flow path.  In
 the latter, the \texttt{+} is intended to be reminiscent of the \texttt{+}
 used in regular expressions.  For instance, the following SmPL patch tells
