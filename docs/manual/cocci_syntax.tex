@@ -593,7 +593,7 @@ flow. A control flow describes a possible run time path taken by a program.
 
 \subsection{Basic dots}
 When using Coccinelle, it is possible to express matches of certain code
-within certain types of control flows. Ellipses ("...") can be used to
+within certain types of control flows. Ellipses (``...'') can be used to
 indicate to Coccinelle that anything can be present between consecutive
 statements. For instance the following SmPL patch tells Coccinelle that
 rule r0 wishes to remove all calls to function c().
@@ -814,7 +814,7 @@ foo()
 \end{tabular}
 \end{center}
 
-The default control flow can be modified by using the keyword "exists"
+The default control flow can be modified by using the keyword ``exists''
 following the rule name. In the following SmPL patch the rule r2 would
 be successful on both flow1.c and flow2.c
 
@@ -832,21 +832,21 @@ foo()
 \end{tabular}
 \end{center}
 
-If the rule name is followed by the "forall" keyword, then all control flow
+If the rule name is followed by the ``forall'' keyword, then all control flow
 paths must match in order for the rule to succeed. By default when a
-semantic patch has "-" and "+", or when it has no annotations at all and
-only script code, ellipses ("...") use the forall semantics.  And when the
-semantic patch uses the context annotation ("*"), the ellipses ("...") uses
-the exists semantics.  Using the keyword "forall" or "exists" in the rule
-header affects all ellipses ("...") uses in the rule. You can also annotate
-each ellipses ("...") with "when exists" or "when forall" individually.
+semantic patch has ``-'' and ``+'', or when it has no annotations at all and
+only script code, ellipses (``...'') use the forall semantics.  And when the
+semantic patch uses the context annotation (``*''), the ellipses (``...'') uses
+the exists semantics.  Using the keyword ``forall'' or ``exists'' in the rule
+header affects all ellipses (``...'') uses in the rule. You can also annotate
+each ellipses (``...'') with ``when exists'' or ``when forall'' individually.
 
 Rules can also be not be successful if requirements do not match
-when a rule name is followed by "depends on XXX". When "depends on is used
+when a rule name is followed by ``depends on XXX''. When ``depends on'' is used
 it means the rule should only apply if rule XXX matched with the current
-metavariable environment. Alternatively, "depends on ever XXX" can be used
+metavariable environment. Alternatively, ``depends on ever XXX'' can be used
 as well, this means this rule should apply if rule XXX was ever matched at
-all. A counter to this use is "depends on never XXX", which means that this
+all. A counter to this use is ``depends on never XXX'', which means that this
 rule should apply if rule XXX was never matched at all.
 
 \section{Transformation}
