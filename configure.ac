@@ -233,13 +233,13 @@ AS_IF([test -n "$SUBSTITUTED_OCAMLFIND"],
 AS_IF([test "x$enable_ocaml" = xno],
 [dnl
   AC_COCCI_INIT_PKG_EMPTY([dynlink])    dnl  prevent linking with it
-  AC_SUBST(OCAMLCOCCI_MODULE, [No_prepare_ocamlcocci])
-  AC_SUBST(OCAMLCOCCI_FILE, [no_prepare_ocamlcocci.ml])
+  AC_SUBST([OCAMLCOCCI_MODULE], [No_prepare_ocamlcocci])
+  AC_SUBST([OCAMLCOCCI_FILE], [no_prepare_ocamlcocci.ml])
 ],
 [dnl
   AC_SUBST([enable_ocaml], [yes])
-  AC_SUBST(OCAMLCOCCI_MODULE, [Yes_prepare_ocamlcocci])
-  AC_SUBST(OCAMLCOCCI_FILE, [yes_prepare_ocamlcocci.ml])
+  AC_SUBST([OCAMLCOCCI_MODULE], [Yes_prepare_ocamlcocci])
+  AC_SUBST([OCAMLCOCCI_FILE], [yes_prepare_ocamlcocci.ml])
 ])
 
 
@@ -272,12 +272,12 @@ AS_IF([test "x$enable_python" != xno],
   ],
   [dnl
     AC_MSG_NOTICE([looking for the corresponding python library])
-    PKG_CHECK_MODULES([PYTHON], [python-$PYVER],[AC_SUBST(HAVE_PYTHON,[yes])],[AC_SUBST(HAVE_PYTHON,[no])])
+    PKG_CHECK_MODULES([PYTHON], [python-$PYVER],[AC_SUBST([HAVE_PYTHON],[yes])],[AC_SUBST([HAVE_PYTHON],[no])])
 
     AS_IF([test "x$HAVE_PYTHON" != xyes -a "x$enable_python" != xyes],
     [dnl  fallback if the above failed
       AC_MSG_NOTICE([trying the default python library as fallback])
-      PKG_CHECK_MODULES([PYTHON], [python],[AC_SUBST(HAVE_PYTHON,[yes])],[AC_SUBST(HAVE_PYTHON,[no])])
+      PKG_CHECK_MODULES([PYTHON], [python],[AC_SUBST([HAVE_PYTHON],[yes])],[AC_SUBST([HAVE_PYTHON],[no])])
     ])
   ])
 ])
@@ -379,22 +379,22 @@ dnl  backwards compatibility
 dnl
 
 dnl  defines some variables needed by the Make infrastructure
-AC_SUBST(LIBDIR,["${libdir}/coccinelle"])
+AC_SUBST([LIBDIR],["${libdir}/coccinelle"])
 
 AS_IF([test "x$enable_python" != xno],
 [dnl
-  AC_SUBST(FEATURE_PYTHON, [1])
+  AC_SUBST([FEATURE_PYTHON], [1])
 ],
 [dnl
-  AC_SUBST(FEATURE_PYTHON, [0])
+  AC_SUBST([FEATURE_PYTHON], [0])
 ])
 
 AS_IF([test "x$enable_ocaml" != xno],
 [dnl
-  AC_SUBST(FEATURE_OCAML, [1])
+  AC_SUBST([FEATURE_OCAML], [1])
 ],
 [dnl
-  AC_SUBST(FEATURE_OCAML, [0])
+  AC_SUBST([FEATURE_OCAML], [0])
 ])
 
 dnl  dynlink stuff depending on the OCaml version and whether it is enabled
