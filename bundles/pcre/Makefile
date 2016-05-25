@@ -27,6 +27,7 @@ clean:
 	rm -f dllpcre_stubs.so libpcre_stubs.a pcre_stubs.o \
 		pcre.cma pcre.cmi pcre.cmo \
 		pcre.a pcre.cmx pcre.cmxa pcre.o pcre.annot
+	- make -C $(PCRE_DIR) clean
 
 distclean: clean
 	rm -rf $(PCRE_DIR)
@@ -47,7 +48,7 @@ $(PCRE_ARCHIVE):
 
 pcre.cma pcre.cmxa:
 	cd $(PCRE_DIR); ./configure
-	make -C $(PCRE_DIR)
+	unset OCAMLLIB && make -C $(PCRE_DIR)
 	cp $(PCRE_DIR)/_build/lib/* .
 
 include ../../Makefile.common

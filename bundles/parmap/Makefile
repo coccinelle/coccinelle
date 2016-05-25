@@ -9,19 +9,19 @@ endif
 OCAMLCFLAGS ?= -g
 OPTFLAGS ?= -g
 
-PARMAP_VERSION=1.0-rc7
-PARMAP_DIR=parmap-$(PARMAP_VERSION)
-PARMAP_ARCHIVE=parmap-$(PARMAP_VERSION).tar.gz
+PARMAP_VERSION=1.0-rc7.1
+PARMAP_DIR=parmap.$(PARMAP_VERSION)
+PARMAP_ARCHIVE=parmap.1.0-rc7.1+opam.tar.gz
 PARMAP_MARKER=$(PARMAP_DIR)/.marker
 
 all all.opt: $(PARMAP_MARKER)
-	cd $(PARMAP_DIR) && \
+	unset OCAMLLIB && cd $(PARMAP_DIR) && \
 	  $(MAKE) && \
 	  cd ..
 	mv $(PARMAP_DIR)/_build/* .
 
 clean:
-	cd $(PARMAP_DIR) && \
+	- cd $(PARMAP_DIR) && \
 	  $(MAKE) clean && \
 	  cd ..
 	rm -f *.a *.o *.ml* *.c *.h *.so _* *.cm* *.annot *.clib *build  ocamlc.where
@@ -36,7 +36,8 @@ depend: $(PARMAP_MARKER)
 
 $(PARMAP_MARKER): $(PARMAP_ARCHIVE)
 	$(TAR) xfz $<
-	cd $(PARMAP_DIR) && \
+	cp configure $(PARMAP_DIR)
+	unset OCAMLLIB && cd $(PARMAP_DIR) && \
 	  ./configure && \
 	  cd ..
 	touch $@

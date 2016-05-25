@@ -18,6 +18,7 @@ all all.opt: .prepare menhir
 
 clean:
 	rm -rf menhir menhirLib.* share
+	- make -C $(MENHIRDIR) clean
 
 distclean: clean
 	rm -rf $(MENHIRDIR)
@@ -36,7 +37,7 @@ $(MENHIRDIR).tar.gz:
 depend: $(MENHIRMARKER) menhir
 
 menhir:
-	make -C $(MENHIRDIR) PREFIX=$(CURDIR) all
+	unset OCAMLLIB && make -C $(MENHIRDIR) PREFIX=$(CURDIR) all
 	cp $(MENHIRDIR)/src/_stage2/menhir.native  menhir
 	cp $(MENHIRDIR)/src/_stage2/menhirLib.* .
 	mkdir -p share/menhir/
