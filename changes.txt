@@ -56,6 +56,7 @@
   leading whitespace and any comments (leading or nonleading).
 - Compare the standard output of scripts in test files with testfile.stdout
   if provided (with --compare-with-expected)
+- Compatible with OCaml 4.03.0
 ** Bugfix:
 - pycocci: skip proof when git dir is dirty
 - pycocci: fix gitname use, when using SmPL <=> patch equivalence proof
@@ -75,6 +76,8 @@
   where at least T is a metavariable.
 - Various improvements in the pretty printing of C code stored in
   metavariables.
+- Bundled Menhir can now be used to compile the mly grammar.
+- Bundled PCRE now links correctly.
 * 1.0.4
 ** Language:
 - Length for statement list metavariables
