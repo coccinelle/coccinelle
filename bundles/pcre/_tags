@@ -1,5 +1,0 @@
-# Includes the sources of the
-# bundles' source directory if
-# this directory is included.
-
-<pcre-ocaml-release-6.2.5/lib>: include
