@@ -177,14 +177,13 @@ AS_IF([test "x$OCAML_PKG_dynlink" != xno -a -f "$PATH_dynlink/dynlink.cmxa"],
 dnl  menhir handling
 dnl  variables:
 dnl    with_menhir: whether or not menhir must be used
-AC_COCCI_TOOL([MENHIR],[menhir],[$COCCI_SRCDIR/setup/fake-menhir.sh menhir])
+AC_COCCI_TOOL([MENHIR],[menhir],[$COCCI_SRCDIR/bundles/menhirLib/menhir])
 AS_IF([test "x$SUBSTITUTED_MENHIR" = xyes],
 [dnl
-  AC_MSG_NOTICE([pregenerated parsers will be required as substitute for Menhir])
+  AC_SUBST([MAKE_menhirLib], [$COCCI_SRCDIR/bundles/menhirLib/])
 ],
 [dnl
-  rm -f parsing_cocci/parser_cocci_menhir.ml parsing_cocci/parser_cocci_menhir.mli
-  AC_MSG_NOTICE([Deleted pre-generated parsers, will be re-built])
+  AC_MSG_NOTICE([system menhir will be used])
 ])
 
 
