@@ -36,7 +36,6 @@ depend: $(PARMAP_MARKER)
 
 $(PARMAP_MARKER): $(PARMAP_ARCHIVE)
 	$(TAR) xfz $<
-	cp configure $(PARMAP_DIR)
 	unset OCAMLLIB && cd $(PARMAP_DIR) && \
 	  ./configure && \
 	  cd ..
