@@ -285,7 +285,7 @@ AC_DEFUN([AC_COCCI_TOOL],
     AC_SUBST([$1], [no])
   ],
   [dnl  find the tool
-    AC_COCCI_FINDTOOL([$1],[[$]$1])
+    AC_COCCI_FINDTOOL([$1],[$2])
   ])
 
   AS_IF([test -z "[$]$1" -o "x[$]$1" = xno],
