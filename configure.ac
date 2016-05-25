@@ -293,7 +293,7 @@ AS_IF([test -z "$enable_python"],
   ])
 ])
 
-AC_SUBST([enable_pycaml], [no]])
+AC_SUBST([enable_pycaml], [no])
 
 AS_IF([test "x$enable_python" != xno],
 [dnl
