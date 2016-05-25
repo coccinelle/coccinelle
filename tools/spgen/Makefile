@@ -8,34 +8,34 @@ COCCIDIR=../..
 
 all:
 	@$(ECHO) -e "\n\n\tCompiling spgen ...\n\n"
-	make -C source all
+	$(MAKE) -C source all
 	@$(ECHO) -e "\n\n\tspgen can now be installed via 'make install'.\n\n"
 
 all.opt:
 	@$(ECHO) -e "\n\n\tCompiling spgen in native code...\n\n"
-	make -C source all.opt
+	$(MAKE) -C source all.opt
 	@$(ECHO) -e "\n\n\tThe native code version of spgen can now be installed via 'make install'.\n\n"
 
 # also compile documentation; this is not done by default
 world: docs all
 
 clean:
-	make -C source clean
+	$(MAKE) -C source clean
 
-	make -C documentation clean
+	$(MAKE) -C documentation clean
 
 distclean: clean
 
 install:
-	make -C source install
+	$(MAKE) -C source install
 	@$(ECHO) -e "\n\n\tspgen installed: DONE!!!\n\n"
 
 uninstall:
-	make -C source uninstall
+	$(MAKE) -C source uninstall
 	@$(ECHO) -e "\n\n\tspgen uninstalled: DONE!!!\n\n"
 
 docs:
-	make -C documentation docs
+	$(MAKE) -C documentation docs
 
 depend:
-	make -C source depend
+	$(MAKE) -C source depend
