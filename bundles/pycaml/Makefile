@@ -20,10 +20,10 @@ include ../Makefile.bundles
 .prepare: $(MARKER)
 #	$(PATCH) -d "$(SRC_DIR)" -p1 < ./python3-compat-fix.patch
 #	$(PATCH) -d "$(SRC_DIR)" -p1 < ./pyunicodeapichanges-fix.patch
-	$(PATCH) -d "$(SRC_DIR)" -p2 < ./removeunicode.patch
-	$(PATCH) -d "$(SRC_DIR)" -p1 < ./ignoreheader.patch
-	$(PATCH) -d "$(SRC_DIR)" -p1 < ./elim-warnings.patch
-	$(PATCH) -d "$(SRC_DIR)" -p1 < ./python3-strings-classes.patch
+	- $(PATCH) -d "$(SRC_DIR)" -p2 < ./removeunicode.patch
+	- $(PATCH) -d "$(SRC_DIR)" -p1 < ./ignoreheader.patch
+	- $(PATCH) -d "$(SRC_DIR)" -p1 < ./elim-warnings.patch
+	- $(PATCH) -d "$(SRC_DIR)" -p1 < ./python3-strings-classes.patch
 	rm -f "$(SRC_DIR)/pycaml.mli"
 	$(CC) -E -w -D PYMAJOR$(PYMAJOR) -xc pycaml.pp.ml >$(SRC_DIR)/pycaml.ml
 	touch $@

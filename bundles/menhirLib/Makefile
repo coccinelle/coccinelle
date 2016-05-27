@@ -19,6 +19,7 @@ MODULES= \
 PRODUCTS=lexer lexdep lexmli parser sentenceLexer sentenceParser
 SIDEPRODUCTS=menhir menhirLib.cmi menhirLib.cmx menhirLib.cmo menhirLib.o
 OTHERS=standard.mly
+CLEANOTHERS=menhirLib.ml menhirLib.mli
 SRC_DIR=$(PACKAGE_DIR)/src
 
 OCAMLLDFLAGS=unix.cmxa
