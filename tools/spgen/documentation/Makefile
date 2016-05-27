@@ -6,8 +6,10 @@
 # Requires a few standard LaTeX packages.
 
 ifneq ($(MAKECMDGOALS),distclean)
+ifneq ($(MAKECMDGOALS),clean)
 include ../../../Makefile.config
 -include ../../../Makefile.local
+endif
 endif
 
 
