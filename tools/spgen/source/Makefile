@@ -28,7 +28,7 @@ SYSLIBS_OPT = $(SYSLIBS:=.cmxa)
 
 LIBS=\
   $(PCREDIR)/pcre \
-  $(DYNLINKDIR)/dynlink \
+  $(patsubst %,%/dynlink,$(DYNLINKDIR)) \
   $(COCCIDIR)/commons/commons \
   $(COCCIDIR)/globals/globals \
   $(COCCIDIR)/parsing_cocci/cocci_parser \

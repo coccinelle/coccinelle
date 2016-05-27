@@ -1,0 +1,115 @@
+MARKER=$(PACKAGE_DIR)/.marker
+
+OCAMLFLAGS+=-I $(SRC_DIR)
+OCAMLC_CMD= \
+	$(OCAMLC) $(OCAMLFLAGS) \
+	$(patsubst %,-custom -cclib -l%_stubs,$(LIBRARY)) \
+	$(EXTRACFLAGS)
+OCAMLOPT_CMD= \
+	$(OCAMLOPT) $(OCAMLFLAGS) \
+	$(patsubst %,-cclib -l%_stubs,$(LIBRARY)) \
+	$(EXTRACFLAGS)
+OCAMLMKLIB_CMD=$(OCAMLMKLIB) -linkall $(EXTRALNKFLAGS)
+OCAMLDEP_CMD=$(OCAMLDEP) $(OCAMLFLAGS)
+
+SIDEPRODUCTS+= \
+	$(INTERFACES:=.cmi) \
+	$(patsubst %,lib%_stubs.a,$(LIBRARY))
+
+all: depend
+	@$(MAKE) all-build
+all-build: all-build-targets $(OTHERS)
+all-build-targets: \
+	$(patsubst %,$(SRC_DIR)/%.cma,$(ARCHIVE)) \
+	$(patsubst %,$(SRC_DIR)/%,$(SIDEPRODUCTS))
+	cp $^ .
+	- if [ -n "$(LIBRARY)" ]; then \
+	  cp $(patsubst %,$(SRC_DIR)/dll%_stubs.so,$(LIBRARY)) .; \
+	fi
+
+all.opt: depend
+	@$(MAKE) all-opt-build
+all-opt-build: all-opt-build-targets $(OTHERS)
+all-opt-build-targets: \
+	$(patsubst %,$(SRC_DIR)/%.cmxa,$(ARCHIVE)) \
+	$(patsubst %,$(SRC_DIR)/%.cmx,$(INTERFACES)) \
+	$(patsubst %,$(SRC_DIR)/%.a,$(LIBRARY)) \
+	$(patsubst %,$(SRC_DIR)/%,$(SIDEPRODUCTS))
+	cp $^ .
+	- if [ -n "$(LIBRARY)" ]; then \
+	  cp $(patsubst %,$(SRC_DIR)/dll%_stubs.so,$(LIBRARY)) .; \
+	fi
+
+clean:
+	rm -f .depend $(ARCHIVE:=.cma) $(ARCHIVE:=.cmxa) $(SIDEPRODUCTS)
+	rm -f $(INTERFACES:=.cmx) $(LIBRARY:=.a)
+	rm -f $(patsubst %,$(SRC_CIR)/%.ml,$(PRODUCTS)) $(OTHERS)
+	rm -f $(patsubst %,dll%_stubs.so,$(LIBRARY))
+	rm -f $(patsubst %,$(SRC_DIR)/%.cmi,$(MODULES))
+	rm -f $(patsubst %,$(SRC_DIR)/%.cmx,$(MODULES))
+	rm -f $(patsubst %,$(SRC_DIR)/%.cmo,$(MODULES))
+
+distclean: clean
+	rm -rf $(PACKAGE_DIR)
+	rm -f .prepare
+
+depend: .depend
+
+.depend: .prepare $(patsubst %,$(SRC_DIR)/%.ml,$(PRODUCTS))
+	$(OCAMLDEP_CMD) $(SRC_DIR)/*.ml >.depend
+
+.PHONY: \
+	all all-build all-build-targets all.opt all-opt-build \
+	all-opt-build-targets clean distclean depend
+
+$(MARKER): $(TARBALL)
+	$(TAR) xfz $<
+	touch $@
+
+$(TARBALL):
+	@echo \
+"$@ not found. Please download it and drop it in this directory ($(pwd))."
+	@false
+
+$(SRC_DIR)/$(ARCHIVE).cma: $(patsubst %,$(SRC_DIR)/%.cmo,$(OBJS))
+	$(OCAMLC_CMD) -a $^ -o $@
+
+$(SRC_DIR)/$(ARCHIVE).cmxa: $(patsubst %,$(SRC_DIR)/%.cmx,$(OBJS))
+	$(OCAMLOPT_CMD) -a $^ -o $@
+
+$(SRC_DIR)/lib$(LIBRARY)_stubs.a: \
+	$(patsubst %,$(SRC_DIR)/%_stubs.o,$(C_OBJS))
+	$(OCAMLMKLIB_CMD) -o $(SRC_DIR)/$(LIBRARY)_stubs $^
+
+%.ml: %.mll
+	$(OCAMLLEX) $< -o $@
+
+%.ml: %.mly
+	$(OCAMLYACC) $<
+
+%.cmi: %.mli
+	$(OCAMLC_CMD) -c $< -o $@
+
+%.cmo: %.ml
+	$(OCAMLC_CMD) -c $< -o $@
+
+%.cmx: %.ml
+	$(OCAMLOPT_CMD) -c $< -o $@
+
+%.o: %.c
+	$(OCAMLC_CMD) -ccopt -fPIC $< -o $@
+# Workaround for what looks like a bug with object compilation...
+	- mv $(notdir $@) $@
+
+ifneq ($(MAKECMDGOALS),distclean)
+include ../../Makefile.config
+-include ../../Makefile.local
+endif
+
+ifeq ($(MAKECMDGOALS),all-build)
+include .depend
+endif
+
+ifeq ($(MAKECMDGOALS),all-opt-build)
+include .depend
+endif

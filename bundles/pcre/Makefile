@@ -1,54 +1,34 @@
 # This Makefile serves as a wrapper to bundle the
 # pcre module without modifications.
 
-ifneq ($(MAKECMDGOALS),distclean)
-include ../../Makefile.config
--include ../../Makefile.local
-endif
-
 PCRE_VERSION=7.2.3
-PCRE_ARCHIVE=mmottl-pcre-ocaml-v7.2.3-0-g258b72c.tar.gz
-PCRE_DIR=mmottl-pcre-ocaml-258b72c
-PCRE_LIB=$(PCRE_DIR)/lib
-PCRE_MARKER=$(PCRE_DIR)/.marker
 
-all: $(PCRE_MARKER)
-	@$(MAKE) all-build
-all-build: $(PCRE_MARKER) pcre.cma
-all.opt: $(PCRE_MARKER)
-	@$(MAKE) all-opt-build
-all-opt-build: $(PCRE_MARKER) pcre.cmxa
+bytes=$(shell \
+	if [ "$$OCAMLVERSION" "<" 4.02.0 ]; then \
+	  echo bytes; \
+	fi \
+$)
 
-# prepares the source bundle for building.
-.prepare: $(PCRE_MARKER)
-	touch .prepare
+PACKAGE_DIR=mmottl-pcre-ocaml-258b72c
+TARBALL=mmottl-pcre-ocaml-v7.2.3-0-g258b72c.tar.gz
+MODULES=pcre_compat pcre bytes
+OBJS=$(bytes) pcre_compat pcre
+INTERFACES=pcre
+C_OBJS=pcre
+ARCHIVE=pcre
+LIBRARY=pcre
+SRC_DIR=$(PACKAGE_DIR)/lib
 
-clean:
-	rm -f dllpcre_stubs.so libpcre_stubs.a pcre_stubs.o \
-		pcre.cma pcre.cmi pcre.cmo \
-		pcre.a pcre.cmx pcre.cmxa pcre.o pcre.annot
-	- $(MAKE) -C $(PCRE_DIR) clean
+EXTRACFLAGS=$(PCRE_CFLAGS:%=-ccopt %) $(PCRE_LIBS:%=-cclib %)
+EXTRALNKFLAGS=$(PCRE_LIBS:%=-ldopt %)
 
-distclean: clean
-	rm -rf $(PCRE_DIR)
-	rm -f .prepare
+include ../Makefile.bundles
 
-depend: $(PCRE_MARKER)
-
-.PHONY: all all.opt clean distclean depend all-build all-opt-build
-
-# prepare the pcre directory
-$(PCRE_MARKER): $(PCRE_ARCHIVE)
-	$(TAR) xfvz $<
+.prepare: $(MARKER)
+	if [ "$$OCAMLVERSION" "<" 4.02.0 ]; then \
+	  cp $(SRC_DIR)/pcre_compat312.ml $(SRC_DIR)/pcre_compat.ml; \
+	  cp bytes_compat.ml $(SRC_DIR)/bytes.ml; \
+	else \
+	  cp $(SRC_DIR)/pcre_compat402.ml $(SRC_DIR)/pcre_compat.ml; \
+	fi
 	touch $@
-
-$(PCRE_ARCHIVE):
-	@echo "$@ not found. Please download it and drop it in this directory ($(pwd))."
-	@false
-
-pcre.cma pcre.cmxa:
-	cd $(PCRE_DIR); ./configure
-	unset OCAMLLIB && $(MAKE) -C $(PCRE_DIR)
-	cp $(PCRE_DIR)/_build/lib/* .
-
-include ../../Makefile.common

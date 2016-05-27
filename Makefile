@@ -547,7 +547,7 @@ distclean::
 depend: Makefile.config version
 	@$(ECHO) "Constructing '.depend'"
 	@rm -f .depend
-	@set -e; for i in $(MAKELIBS) $(MAKESUBDIRS); do $(MAKE) -C $$i depend; done
+	set -e; for i in $(MAKELIBS) $(MAKESUBDIRS); do echo $$i; $(MAKE) -C $$i depend; done
 	$(OCAMLDEP_CMD) $(MLI_FILES) $(ML_FILES) > .depend
 
 ##############################################################################

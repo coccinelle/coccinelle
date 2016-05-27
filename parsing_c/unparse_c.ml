@@ -2326,6 +2326,24 @@ let start_mark = function
   | KExpanded -> "!E!"
   | KOrigin -> ""
 
+(*
+  Provides subsidiary implementations for init (introduced in 4.02.0) and
+  map (introduced in 4.00.0).
+*)
+module String = struct
+  let init n f =
+    let s = String.make n ' ' in
+    for i = 0 to n - 1 do
+      s.[i] <- f i
+    done;
+    s
+
+  let map f s =
+    init (String.length s) (fun i -> f s.[i])
+
+  include String
+end
+
 let print_all_tokens2 pr xs =
   if !Flag_parsing_c.debug_unparsing
   then

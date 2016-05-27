@@ -263,9 +263,9 @@ let print_version () =
   let flags =
     if Config.configure_flags<>"" then Config.configure_flags
     else "[none]" in
-  let mode = if Dynlink.is_native then "native" else "byte-code" in
-  Printf.printf "spatch %s version %s compiled with OCaml version %s\n"
-    mode Config.version Config.ocaml_version;
+  (* let mode = if Dynlink.is_native then "native" else "byte-code" in *)
+  Printf.printf "spatch version %s compiled with OCaml version %s\n"
+    (* mode *) Config.version Config.ocaml_version;
   Printf.printf "Flags passed to the configure script: %s\n" flags;
   Printf.printf "Python scripting support: %s\n" withpython;
   Printf.printf "Syntax of regular expresssions: %s\n" whichregexp;
