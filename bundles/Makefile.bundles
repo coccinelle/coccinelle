@@ -42,7 +42,7 @@ all-opt-build-targets: \
 
 clean:
 	rm -f .depend $(ARCHIVE:=.cma) $(ARCHIVE:=.cmxa) $(SIDEPRODUCTS)
-	rm -f $(INTERFACES:=.cmx) $(LIBRARY:=.a)
+	rm -f $(INTERFACES:=.cmx) $(LIBRARY:=.a) $(CLEANOTHERS)
 	rm -f $(patsubst %,$(SRC_CIR)/%.ml,$(PRODUCTS)) $(OTHERS)
 	rm -f $(patsubst %,dll%_stubs.so,$(LIBRARY))
 	rm -f $(patsubst %,$(SRC_DIR)/%.cmi,$(MODULES))
