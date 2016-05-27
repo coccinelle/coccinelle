@@ -13,6 +13,8 @@ ARCHIVE=parmap
 LIBRARY=parmap
 SRC_DIR=$(PACKAGE_DIR)
 
+OCAMLCCFLAGS+=-ccopt -D_GNU_SOURCE
+
 include ../Makefile.bundles
 
 .prepare: $(MARKER)

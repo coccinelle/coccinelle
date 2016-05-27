@@ -12,6 +12,8 @@ OCAMLOPT_CMD= \
 OCAMLMKLIB_CMD=$(OCAMLMKLIB) -linkall $(EXTRALNKFLAGS)
 OCAMLDEP_CMD=$(OCAMLDEP) $(OCAMLFLAGS)
 
+OCAMLCCFLAGS+=-ccopt -fPIC
+
 SIDEPRODUCTS+= \
 	$(INTERFACES:=.cmi) \
 	$(patsubst %,lib%_stubs.a,$(LIBRARY))
@@ -97,7 +99,7 @@ $(SRC_DIR)/lib$(LIBRARY)_stubs.a: \
 	$(OCAMLOPT_CMD) -c $< -o $@
 
 %.o: %.c
-	$(OCAMLC_CMD) -ccopt -fPIC $< -o $@
+	$(OCAMLC_CMD) $(OCAMLCCFLAGS) $< -o $@
 # Workaround for what looks like a bug with object compilation...
 	- mv $(notdir $@) $@
 
