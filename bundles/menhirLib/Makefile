@@ -18,7 +18,7 @@ MODULES= \
 	sentenceLexer interpret tableBackend back menhir
 PRODUCTS=lexer lexdep lexmli parser sentenceLexer sentenceParser
 SIDEPRODUCTS=menhir menhirLib.cmi menhirLib.cmx menhirLib.cmo menhirLib.o
-OTHERS=share/menhir/standard.mly
+OTHERS=standard.mly
 SRC_DIR=$(PACKAGE_DIR)/src
 
 OCAMLLDFLAGS=unix.cmxa
@@ -54,8 +54,7 @@ depend: .depend
 $(SRC_DIR)/menhir: $(patsubst %,$(SRC_DIR)/%.cmx,$(MODULES))
 	$(OCAMLOPT_CMD) $(OCAMLLDFLAGS) $^ -o $@
 
-share/menhir/standard.mly: $(SRC_DIR)/standard.mly
-	mkdir -p share/menhir/
+standard.mly: $(SRC_DIR)/standard.mly
 	cp $< $@
 
 $(SRC_DIR)/menhirLib.cmx: \
