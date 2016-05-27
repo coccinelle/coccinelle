@@ -521,7 +521,7 @@ let pyclass_init classname parents fields methods =
 #ifdef PYMAJOR3
 let pystring_asstring obj =
   if pyunicode_check obj != 0 then
-    let bytes = pyunicode_asencodedstring (obj, "UTF8", "strict") in
+    let bytes = pyunicode_asutf8string obj in
     if bytes = pynull () then
       failwith "pystring_asstring: encoding failure";
     pybytes_asstring bytes
