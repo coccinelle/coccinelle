@@ -14,8 +14,8 @@ EXCLUDE=$(PACKAGE)/debian .depend
 DOC=docs/manual/manual.pdf       \
     docs/manual/options.pdf      \
     docs/manual/main_grammar.pdf \
-    docs/html                    \
-    docs/man                     \
+#    docs/html                    \
+#    docs/man                     \
     docs/spatch.1                \
     docs/manual/cocci-python.txt
 BINSRC=spatch* env.sh env.csh standard.h standard.iso \
@@ -168,7 +168,7 @@ srctar: Makefile.config
 	$(MAKE) -C parsing_cocci parser_cocci_menhir.ml
 	$(MAKE) -C parsing_cocci parser_cocci_menhir.mli
 	$(MAKE) distclean KEEP_GENERATED=1 KEEP_CONFIG=1
-	if test -f "$(TMP)/$(PACKAGE)/"; then rm -f "$(TMP)/$(PACKAGE)/"; fi # remove it if it is a symlink
+	if test -L "$(TMP)/$(PACKAGE)"; then rm -f "$(TMP)/$(PACKAGE)"; fi # remove it if it is a symlink
 	$(MKDIR_P) "$(TMP)/$(PACKAGE)/"
 	cp -fa ./*  "$(TMP)/$(PACKAGE)/"
 	rm -f $(TMP)/$(PACKAGE)/Makefile.config
