@@ -44,7 +44,7 @@ LOCALOPT_pcre  = $(PCREDIR)/pcre.cmxa
 GLOBAL_pcre    = $(PCREDIR)/pcre.cma
 GLOBALOPT_pcre = $(PCREDIR)/pcre.cmxa
 FLAGS_pcre     = \
-	$(PCRE_LIBS:%=-ccopt %) -cclib -L$(PCREDIR) -dllib -lpcre_stubs
+	$(PCRE_LIBS:%=-ccopt %) -cclib -L$(PCREDIR) -dllib -lpcre_stubs \
 	-cclib -lpcre_stubs
 OPTFLAGS_pcre  = \
 	$(PCRE_LIBS:%=-ccopt %) -cclib -L$(PCREDIR) -cclib -lpcre_stubs
