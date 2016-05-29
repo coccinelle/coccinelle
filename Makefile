@@ -262,7 +262,7 @@ static:
 purebytecode:
 	rm -f spatch.opt spatch
 	$(MAKE) BYTECODE_EXTRA="" byte-only
-	sed -i '1 s,^#!.*$$,#!/usr/bin/ocamlrun,g' spatch
+	LC_CTYPE=C sed -i -e '1 s,^#!.*$$,#!/usr/bin/ocamlrun,g' spatch
 
 # copies the stubs libraries (if any) to the root directory
 copy-stubs:
