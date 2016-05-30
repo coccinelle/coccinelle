@@ -1212,6 +1212,30 @@ let meta_names_of_fullType ty =
   fullType_fold_meta_names
     (fun meta_name meta_names -> meta_name :: meta_names) ty []
 
+let rec equal_ident i0 i1 =
+  match unwrap i0, unwrap i1 with
+    Id s0, Id s1 ->
+      unwrap_mcode s0 = unwrap_mcode s1
+  | MetaId (mn0, id0, k0, i0), MetaId (mn1, id1, k1, i1)
+  | MetaFunc (mn0, id0, k0, i0), MetaFunc (mn1, id1, k1, i1)
+  | MetaLocalFunc (mn0, id0, k0, i0), MetaLocalFunc (mn1, id1, k1, i1) ->
+      unwrap_mcode mn0 = unwrap_mcode mn1 &&
+      id0 = id1 && k0 = k1 && i0 = i1
+  | AsIdent (i0a, i0b), AsIdent (i1a, i1b) ->
+      equal_ident i0a i1a && equal_ident i0b i1b
+  | DisjId l0, DisjId l1 ->
+      List.for_all2 equal_ident l0 l1
+  | OptIdent i0, OptIdent i1 ->
+      equal_ident i0 i1
+  | _, _ -> false
+
+let rec equal_expression e0 e1 =
+  match unwrap e0, unwrap e1 with
+    Ident i0, Ident i1 -> equal_ident i0 i1
+  | Constant c0, Constant c1 -> unwrap_mcode c0 = unwrap_mcode c1
+  | OptExp e0', OptExp e1' -> equal_expression e0' e1'
+  | _, _ -> false
+
 let rec fullType_compatible ty0 ty1 =
   match unwrap ty0, unwrap ty1 with
     Type (sgn0, cv0, ty0), Type (sgn1, cv1, ty1) ->
@@ -1219,8 +1243,13 @@ let rec fullType_compatible ty0 ty1 =
       Common.equal_option
         (fun cv0' cv1' -> unwrap_mcode cv0' = unwrap_mcode cv1') cv0 cv1 &&
       typeC_compatible ty0 ty1
-  | _ ->
-      failwith "Ast_cocci.fullType_compatible: unimplemented"
+  | AsType (ty0a, ty0b), AsType (ty1a, ty1b) ->
+      fullType_compatible ty0a ty1a &&
+      fullType_compatible ty0b ty1b
+  | DisjType l0, DisjType l1 ->
+      List.for_all2 fullType_compatible l0 l1
+  | OptType ty0', OptType ty1' -> fullType_compatible ty0' ty1'
+  | _, _ -> false
 and typeC_compatible ty0 ty1 =
   match unwrap ty0, unwrap ty1 with
     BaseType (Unknown, _), _
@@ -1232,19 +1261,19 @@ and typeC_compatible ty0 ty1 =
   | Pointer (ty0', _), Pointer (ty1', _)
   | FunctionPointer (ty0', _, _, _, _, _, _),
       FunctionPointer (ty1', _, _, _, _, _, _)
-  | Array (ty0', _, _, _), Array (ty1', _, _, _) ->
+  | Array (ty0', _, _, _), Array (ty1', _, _, _)
+  | EnumDef (ty0', _, _, _), EnumDef (ty1', _, _, _)
+  | StructUnionDef (ty0', _, _, _), StructUnionDef (ty1', _, _, _) ->
       fullType_compatible ty0' ty1'
   | TypeName ty0', TypeName ty1' -> unwrap_mcode ty0' = unwrap_mcode ty1'
-  | Decimal (_, _, _, _, _, _), Decimal (_, _, _, _, _, _) ->
-      failwith "Ast_cocci.typeC_compatible: unimplemented (Decimal)"
-  | EnumName (_, _), EnumName (_, _) ->
-      failwith "Ast_cocci.typeC_compatible: unimplemented (EnumName)"
-  | EnumDef (_, _, _, _), EnumDef (_, _, _, _) ->
-      failwith "Ast_cocci.typeC_compatible: unimplemented (EnumDef)"
-  | StructUnionName (_, _), StructUnionName (_, _) ->
-      failwith "Ast_cocci.typeC_compatible: unimplemented (StructUnionName)"
-  | StructUnionDef (_, _, _, _), StructUnionDef (_, _, _, _) ->
-      failwith "Ast_cocci.typeC_compatible: unimplemented (StructUnionDef)"
+  | Decimal (_, _, e0, _, e0', _), Decimal (_, _, e1, _, e1', _) ->
+      equal_expression e0 e1 && Common.equal_option equal_expression e0' e1'
+  | EnumName (s0, i0), EnumName (s1, i1) ->
+      unwrap_mcode s0 = unwrap_mcode s1 &&
+      Common.equal_option equal_ident i0 i1
+  | StructUnionName (su0, i0), StructUnionName (su1, i1) ->
+      unwrap_mcode su0 = unwrap_mcode su1 &&
+      Common.equal_option equal_ident i0 i1
   | MetaType (m0, k0, i0), MetaType (m1, k1, i1) ->
       unwrap_mcode m0 = unwrap_mcode m1 && k0 = k1 && i0 = i1
   | _, _ -> false
