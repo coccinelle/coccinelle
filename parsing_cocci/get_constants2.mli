@@ -14,6 +14,7 @@ val get_constants :
     Ast_cocci.rule list ->
       (((Ast_cocci.meta_name list * Ast_cocci.meta_name list)
 	  list) list) (*negated pos vars and "all" pos vars (not used) *) ->
+      string list (* virtual rule names *) ->
 	  (string list option (* grep result *) *
 	     string list option (* non-grep result, if any *) *
 	     (Str.regexp * Str.regexp list * string list)

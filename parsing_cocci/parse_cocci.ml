@@ -2534,7 +2534,7 @@ let process file isofile verbose =
   if !Flag_parsing_cocci.show_SP
   then List.iter2 Pretty_print_cocci.unparse metavars code;
 
-  let search_tokens = Get_constants2.get_constants code neg_pos in
+  let search_tokens = Get_constants2.get_constants code neg_pos virt in
 
   (metavars,code,fvs,neg_pos,ua,pos,search_tokens,
    !Parse_aux.contains_string_constant)

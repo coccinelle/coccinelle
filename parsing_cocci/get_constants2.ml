@@ -36,7 +36,15 @@ type combine =
     And of combine list | Or of combine list | Not of combine
   | Elem of string | False | True
 
-let false_on_top_err = "False should not be in the final result.  Perhaps your rule doesn't contain any +/-/* code, or you have a failed dependency.  If the problem is not clear, try the option --debug-parse-cocci."
+let false_on_top_err virt =
+  Printf.sprintf
+    "No rules apply.  Perhaps your semantic patch doesn't contain any +/-/* code, or you have a failed dependency.  If the problem is not clear, try --debug-parse-cocci%s."
+    (match virt with
+      [] -> ""
+    | x::_ ->
+	Printf.sprintf
+	  " or check whether any virtual rules (e.g., %s) should be defined"
+	  x)
 
 let rec dep2c = function
     And l -> Printf.sprintf "(%s)" (String.concat "&" (List.map dep2c l))
@@ -93,7 +101,7 @@ let reduce_glimpse x =
   let res = List.sort compare res in
   List.map (function (_,x) -> x) res
 
-let interpret_glimpse strict x =
+let interpret_glimpse strict x virt =
   let rec loop = function
       Elem x -> x
     | Not x -> failwith "not unexpected in glimpse arg"
@@ -107,17 +115,17 @@ let interpret_glimpse strict x =
 	else "True"
     | False ->
 	if strict
-	then failwith false_on_top_err
+	then failwith (false_on_top_err virt)
 	else "False" in
   match x with
     True -> None
   | False when strict ->
-      failwith false_on_top_err
+      failwith (false_on_top_err virt)
   | _ ->
       Some (if strict then List.map loop (x::reduce_glimpse x) else [loop x])
 
 (* grep only does or *)
-let interpret_grep strict x =
+let interpret_grep strict x virt =
   let add x l = if List.mem x l then l else x :: l in
   let rec loop collected = function
       Elem x -> add x collected
@@ -133,15 +141,15 @@ let interpret_grep strict x =
 	else add "True" collected
     | False ->
 	if strict
-	then failwith false_on_top_err
+	then failwith (false_on_top_err virt)
 	else add "False" collected in
   match x with
     True -> None
   | False when strict ->
-      failwith false_on_top_err
+      failwith (false_on_top_err virt)
   | _ -> Some (loop [] x)
 
-let interpret_cocci_git_grep strict x =
+let interpret_cocci_git_grep strict x virt =
   (* convert to cnf *)
   let subset l1 l2 = List.for_all (fun e1 -> List.mem e1 l2) l1 in
   let opt_union_set longer shorter =
@@ -176,7 +184,7 @@ let interpret_cocci_git_grep strict x =
     | True -> []
     | False ->
 	if strict
-	then failwith false_on_top_err
+	then failwith (false_on_top_err virt)
 	else [[]] in
   let optimize (l : string list list) =
     let l = List.map (function clause -> (List.length clause, clause)) l in
@@ -195,7 +203,7 @@ let interpret_cocci_git_grep strict x =
   match x with
     True -> None
   | False when strict ->
-      failwith false_on_top_err
+      failwith (false_on_top_err virt)
   | _ ->
       let orify l = Str.regexp (String.concat "\\|" (List.map wordify l)) in
       let res1 = orify (atoms [] x) in (* all atoms *)
@@ -211,11 +219,6 @@ let interpret_cocci_git_grep strict x =
 	List.map (function x -> "\\( -e "^(String.concat " -e " x)^" \\)")
 	  res in
       Some (res1,res2,res3)
-
-let combine2c x =
-  match interpret_glimpse false x with
-    None -> "None"
-  | Some x -> String.concat " || " x
 
 let norm = function
     And l -> And (List.sort compare l)
@@ -739,18 +742,19 @@ then the CNF regexp for more refined scanning.  git grep uses the second
 CNF representation.
 4. An arbitrary formula, usable by the support for idutils *)
 
-let get_constants rules neg_pos_vars =
+let get_constants rules neg_pos_vars virt =
   if !Flag.worth_trying_opt
   then
     begin
     let res = run rules neg_pos_vars in
-    let grep = interpret_grep true res in (* useful because in string form *)
-    let coccigrep = interpret_cocci_git_grep true res in
+    let grep =
+      interpret_grep true res virt in (* useful because in string form *)
+    let coccigrep = interpret_cocci_git_grep true res virt in
     match !Flag.scanner with
       Flag.NoScanner ->
 	(grep,None,coccigrep,None)
     | Flag.Glimpse ->
-	(grep,interpret_glimpse true res,coccigrep,None)
+	(grep,interpret_glimpse true res virt,coccigrep,None)
     | Flag.IdUtils ->
 	(grep,None,coccigrep,Some res)
     | Flag.CocciGrep | Flag.GitGrep -> (grep,None,coccigrep,None)
