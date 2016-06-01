@@ -211,7 +211,8 @@ let check_meta_tyopt type_irrelevant v =
 	 ("incompatible inheritance declaration "^name)) in
   let type_equal ty0 ty1 =
     type_irrelevant ||
-    Common.equal_option (Common.equal_list Ast.fullType_compatible) ty0 ty1 in
+    Common.equal_option (Common.equal_list Unify_ast.fullType_compatible)
+      ty0 ty1 in
   match v with
     Ast.MetaMetaDecl(Ast.NONE,(rule,name)) ->
       (match meta_lookup rule name v with
