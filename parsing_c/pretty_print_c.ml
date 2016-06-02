@@ -162,13 +162,13 @@ let mk_pretty_printers
     | New   (None, t),     [i1] -> pr_elem i1; pp_argument t
     | New   (Some ts, t),     [i1; i2; i3] ->
 	pr_elem i1; pr_elem i2; pp_arg_list ts; pr_elem i3; pp_argument t
-    | Delete(t),     [i1] -> pr_elem i1; pp_expression t
+    | Delete(t),     [i1] -> pr_elem i1; pr_space(); pp_expression t
 
     | Defined name, [i1] ->
-        pr_elem i1; (* defined *)
+        pr_elem i1; (* defined *) pr_space();
         pp_name name;
     | Defined name, [i1;i2;i3] ->
-        pr_elem i1; (* defined *)
+        pr_elem i1; (* defined *) pr_space();
         pr_elem i2; (* ( *)
         pp_name name;
         pr_elem i3; (* ) *)
