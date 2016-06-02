@@ -1191,7 +1191,7 @@ and pp_init (init, iinit) =
     | Define ((s,ii), (defkind, defval)) ->
 	let (idefine,iident,ieol) = Common.tuple_of_list3 ii in
 	pr_elem idefine; pr_space();
-	pr_elem iident;
+	pr_elem iident; pr_space();
 
 	let define_val = function
           | DefineExpr e -> pp_expression e
@@ -1234,7 +1234,7 @@ and pp_init (init, iinit) =
     | Pragma ((s,ii), pragmainfo) ->
 	let (ipragma,iident,ieol) = Common.tuple_of_list3 ii in
 	pr_elem ipragma; pr_space();
-	pr_elem iident;
+	pr_elem iident; pr_space();
 	pp_pragmainfo pragmainfo;
 	pr_elem ieol
 
