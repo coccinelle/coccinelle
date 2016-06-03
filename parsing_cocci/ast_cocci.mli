@@ -843,9 +843,3 @@ val meta_names_of_fullType: fullType -> meta_name list
 (**
  * [meta_names_of_fullType ty] enumerates all the meta names that occur in [ty].
  *)
-
-val fullType_compatible : fullType -> fullType -> bool
-(**
- * [fullType_compatible ty0 ty1] returns true iff [ty0] and [ty1] are
- * structurally identical, modulo the unknown parts of the types.
- *)

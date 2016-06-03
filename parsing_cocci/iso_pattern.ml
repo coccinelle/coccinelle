@@ -641,7 +641,7 @@ let match_maker checks_needed context_required whencode_allowed =
                 let type_compatible ty0 ty1 =
                   match ty0 with
                     None -> Ast0.is_unknown_type ty1
-                  | Some ty0' -> Ast0.type_compatible ty0' ty1 in
+                  | Some ty0' -> Unify_ast.typeC0_compatible ty0' ty1 in
 		if List.exists (type_compatible expty) ts
 		then
 		  add_pure_binding name pure

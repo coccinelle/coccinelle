@@ -623,9 +623,3 @@ val is_unknown_type : typeC -> bool
  * [is_unknown_type ty] returns true iff [ty] is an unknown type
  * (i.e., of the form [BaseType (Ast_cocci.Unknown, _)]).
  *)
-
-val type_compatible : typeC -> typeC -> bool
-(**
- * [type_compatible ty0 ty1] returns true iff [ty0] and [ty1] are structurally
- * identical, modulo the unknown parts of the types.
- *)
