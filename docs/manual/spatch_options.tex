@@ -42,6 +42,11 @@ directory {\tt foodir}:
   in the directory {\tt foodir}.
 \end{itemize}
 
+The last four commands above produce a patch describing any changes.  This
+patch can typically be applied to the source code using the command {\tt
+  patch -p1}, like any other patch.  Alternatively, the option {\tt
+  -{}-in-place} both produces the patch and transforms the code in place.
+
 In the rest of this document, the options are annotated as follows:
 \begin{itemize}
 \item \FilledBigDiamondshape: a basic option, that is most likely of
