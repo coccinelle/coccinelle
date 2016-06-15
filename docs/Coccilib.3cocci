@@ -223,7 +223,7 @@ take effect.
 Returns the directory on which spatch was launched.
 .sp
 
-.I val file
+.I val files
 :
 .B unit -> string list
 .sp
