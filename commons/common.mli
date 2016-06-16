@@ -817,6 +817,7 @@ val md5sum_of_string : string -> string
 (*****************************************************************************)
 
 val regexp_alpha : Str.regexp
+val regexp_int : Str.regexp
 val regexp_word : Str.regexp
 
 val _memo_compiled_regexp : (string, Str.regexp) Hashtbl.t
