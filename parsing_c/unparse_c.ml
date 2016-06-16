@@ -1233,6 +1233,7 @@ let paren_then_brace toks =
   search_paren toks
 
 let is_ident_like s = s ==~ regexp_alpha
+let is_int_like s = s ==~ regexp_int
 
 let isop s =
   List.mem s
@@ -1303,12 +1304,13 @@ let rec add_space xs =
     x::C2 (String.make (lny-lnx) '\n', None)::
     C2 (String.make (lcoly-1) ' ', None):: (* -1 is for the + *)
     add_space (y::xs)
-  | ((T2(_,Ctx,_,_)) as x)::(((Cocci2 _) | C2 _) as y)::xs ->
+  | ((T2(_,Ctx,_,_)) as x)::(((Cocci2 _) | C2 _) as y)::xs
+  | (((Cocci2 _) | C2 _) as x)::((T2(_,Ctx,_,_)) as y)::xs ->
     (* add space on boundary *)
     let sx = str_of_token2 x in
     let sy = str_of_token2 y in
     if (is_ident_like sx || List.mem sx [")";"]"]) &&
-      (is_ident_like sy || isop sy)
+      (is_ident_like sy || isop sy || is_int_like sy)
     then x::C2(" ",None)::(add_space (y::xs))
     else x::(add_space (y::xs))
   | ((T2(_,Ctx,_,_)) as x)::((T2(_,Ctx,_,_)) as y)::xs -> (* don't touch *)

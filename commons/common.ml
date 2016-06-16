@@ -2128,6 +2128,8 @@ let (split_list_regexp: string -> string list -> (string * string list) list) =
 let regexp_alpha =  Str.regexp
   "^[a-zA-Z_][A-Za-z_0-9]*$"
 
+let regexp_int =  Str.regexp
+  "^[0-9]+$"
 
 let all_match re s =
   let regexp = Str.regexp re in
