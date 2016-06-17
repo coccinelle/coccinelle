@@ -1107,18 +1107,22 @@ let rec main_action xs =
 		 process *)
 	      Common._temp_files_created := [];
 	      let res = op x y in
-	      Common.erase_temp_files();
-	      res in
+	      (res, !Common._temp_files_created) in
 	    let res =
 	      try
-		Parmap.parfold
+		Parmap.parmap
 		  ~init:(fun id -> Parmap.redirect ~path:prefix ~id)
 		  ~ncores
 		  ~chunksize
-		  (fun x y -> op y x) (Parmap.L l) z merge
+		  (fun x -> op [] x) (Parmap.L l)
 	      with e ->
 		(Printf.eprintf "exception on %s: %s\n" prefix (Dumper.dump e);
 		 clean(); raise e) in
+	    let (res,tmps) = List.split res in
+	    let res = List.fold_left (fun p a -> a @ p) z res in
+	    Common._temp_files_created :=
+	      List.fold_left (fun p a -> a @ p)
+		!Common._temp_files_created tmps;
 	    clean();
 	    res
 	  in
