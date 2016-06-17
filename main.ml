@@ -1101,6 +1101,14 @@ let rec main_action xs =
 		stderrs;
 	      let _ = Sys.command (Printf.sprintf "rm -rf %s" prefix) in
 	      () in
+	    let op x y =
+	      (* The subprocess has a different address space, so its
+		 collected temporary files aren't seen by the main spatch
+		 process *)
+	      Common._temp_files_created := [];
+	      let res = op x y in
+	      Common.erase_temp_files();
+	      res in
 	    let res =
 	      try
 		Parmap.parfold
