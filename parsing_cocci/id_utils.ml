@@ -23,8 +23,15 @@ let rec interpret dir exp =
 	(match exp with
 	  GC.Elem oo ->
 	    let cmd =
-	      Printf.sprintf "lid -f %s/%s -l %s -S newline"
-		dir !Flag_parsing_cocci.id_utils_index oo in
+	      try
+		let index =
+		  if String.get !Flag_parsing_cocci.id_utils_index 0 = '/'
+		  then !Flag_parsing_cocci.id_utils_index
+		  else
+		    Printf.sprintf "%s/%s" dir
+		      !Flag_parsing_cocci.id_utils_index in
+		Printf.sprintf "lid -f %s -l %s -S newline" index oo
+	      with Invalid_argument _ -> failwith "empty idutils index name" in
 	    (* lid puts the matched word at the beginning of the first line of
 	       the output... *)
 	    (match Common.cmd_to_list cmd with
