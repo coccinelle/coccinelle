@@ -1783,6 +1783,29 @@ Coccinelle itself provides no support for obtaining information about what
 work has been queued and as such addressing
 this with scripting is necessary.
 
+\section{.cocciconfig support}
+
+Coccinelle supports enabling custom options to be preferred when running
+spatch.  This is supported through the search of .cocciconfig files in each of
+the following directories, later lines extend and may override earlier ones:
+
+\begin{itemize}
+	\item Your current user's home directory is processed first
+	\item Your directory from which spatch is called is processed next
+	\item The directory provided with the --dir option is processed last, if used
+\end{itemize}
+
+Newlines, even with \, are not tolerated in attribute values. An example
+follows:
+
+\begin{quote}
+\begin{verbatim}
+[spatch]
+	options = --jobs 4
+	options = --show-trying
+\end{verbatim}
+\end{quote}
+
 %%% Local Variables:
 %%% mode: LaTeX
 %%% TeX-master: "main_grammar"

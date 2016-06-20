@@ -55,7 +55,8 @@ and at the \fBscripts/coccinelle\fP directory of the Linux Kernel source
 code.
 
 .SH OPTIONS
-Here is a summary of the most commonly used options:
+Here is a summary of the most commonly used options (also
+see the "Configuration Mechanism" section below):
 
 .TP
 .B \-\-sp\-file \fI<file>\fP
@@ -566,6 +567,31 @@ It's for the other (internal) uses of the spatch program.
 \fB\-\-compare\-c\fR
 <file1> <file2>
 
+.SH CONFIGURATION MECHANISM
+
+Coccinelle uses a simple text format to store customizations into
+\.cocciconfig files, that can be per project, user, or target. The order
+in which the configuration file is processed is as follows, the
+later lines always extend and may override earlier ones:
+
+  o Your current user's home directory is processed first
+  o Your directory from which spatch is called is processed next
+  o The directory provided with the --dir option is processed last, if used
+
+Such a configuration file may look like this:
+
+.if n \{\
+.RS 4
+.\}
+.nf
+[spatch]
+	options = --jobs 4
+	options = --show-trying
+.fi
+.if n \{\
+.RE
+.\}
+
 .SH FILES
 .I @SHAREDIR@/standard.iso
 .RS
@@ -574,6 +600,10 @@ This file contains the default set of isomorphisms.
 .I @SHAREDIR@/standard.h
 .RS
 This file contains the default set of macro hints.
+.RE
+.I .cocciconfig
+.RS
+This file contains the custom set of spatch options.
 
 .SH ENVIRONMENT
 .IP COCCINELLE_HOME
