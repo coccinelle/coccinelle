@@ -973,12 +973,14 @@ module StringMap : Map.S with type key = string = Map.Make(String)
 let header_cache = Hashtbl.create 101
 
 let tree_stack = ref []
+let seen_files = ref []
 
 let rec _parse_print_error_heuristic2 saved_typedefs saved_macros
   parse_strings cache file use_header_cache =
-  if List.mem file (List.map (fun x -> x.filename) !tree_stack)
+  if List.mem file !seen_files
   then None (* Inclusion loop, not re-parsing *)
   else begin
+    seen_files := file :: !seen_files;
     let cached_result =
       if use_header_cache
       then
@@ -1264,6 +1266,7 @@ and _parse_print_error_heuristic2bis saved_typedefs saved_macros
 let parse_print_error_heuristic2 saved_typedefs saved_macros
   parse_strings cache file use_header_cache =
   tree_stack := [];
+  seen_files := [];
   ignore
     (_parse_print_error_heuristic2 saved_typedefs saved_macros
       parse_strings cache file use_header_cache);
