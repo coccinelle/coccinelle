@@ -1119,16 +1119,8 @@ let fixpath s =
     | [] -> [] in
   String.concat "/" (loop s)
 
-let current_typedefs = ref None
-
 (* The following function is a generic library function. *)
 (* It may be moved to a better place. *)
-
-let opt_map f lst =
-  let aux acc x = match f x with
-    | Some item -> item :: acc
-    | None -> acc in
-  List.rev (List.fold_left aux [] lst)
 
 let rec memf f x = function
   | [] -> false
@@ -1143,35 +1135,47 @@ let rec appendf f l1 l2 = match l1 with
 let same_file parse_info_1 parse_info_2 =
   parse_info_1.Parse_c.filename = parse_info_2.Parse_c.filename
 
-let parse_info_of_files choose_includes parse_strings cache kind files =
-  let parse_info_of_file file =
+let parse_info_of_files choose_includes parse_strings cache kind files
+    current_typedefs =
+  let parse_info_of_file file current_typedefs =
     let result =
       try
         Some
-          (cprogram_of_file_cached !current_typedefs parse_strings
+          (cprogram_of_file_cached current_typedefs parse_strings
             cache file)
       with Flag.UnreadableFile file ->
         pr2_once ((string_of_kind_file kind) ^ " file " ^ file ^ " not readable");
         None in
     match result with
-      | None -> None
+      | None -> (None,None)
       | Some (source_parse_info, _) ->
           let (_, tdefs, _) = source_parse_info.Parse_c.parse_trees in
-	  (if !Flag_cocci.use_saved_typedefs
-	  then current_typedefs := Some tdefs
-	  else current_typedefs := None);
-        result in
-  opt_map parse_info_of_file files
+	  let tdefs =
+	    if !Flag_cocci.use_saved_typedefs
+	    then Some tdefs
+	    else None in
+          (result,tdefs) in
+  let (res,current_typedefs) =
+    List.fold_left
+      (fun (res,current_typedefs) file ->
+	match parse_info_of_file file current_typedefs with
+	  (None,_) -> (res,current_typedefs)
+	| (Some fileres, current_typedefs) ->
+	    (fileres :: res, current_typedefs))
+      ([],current_typedefs) files in
+  (List.rev res,current_typedefs)
 
 let prepare_c files choose_includes parse_strings : file_info list =
   Includes.set_parsing_style Includes.Parse_no_includes;
-  let extra_includes_parse_infos =
-    List.map fst
-      (parse_info_of_files choose_includes parse_strings true Header
-        !Includes.extra_includes) in
+  let (extra_includes_parse_infos, current_typedefs) =
+    let (res,current_typedefs) =
+      parse_info_of_files choose_includes parse_strings true Header
+        !Includes.extra_includes None in
+    (List.map fst res, current_typedefs) in
   Includes.set_parsing_style choose_includes;
-  let source_parse_infos =
-    parse_info_of_files choose_includes parse_strings false Source files in
+  let (source_parse_infos,_) =
+    parse_info_of_files choose_includes parse_strings false Source files
+      current_typedefs in
   let f (sourceacc, headeracc) (source, headers) =
     (source::sourceacc, appendf same_file headers headeracc) in
   let (sources, headers) = List.fold_left f
@@ -1965,7 +1969,6 @@ let initial_final_bigloop a b c =
 let pre_engine2 (coccifile, isofile) =
   show_or_not_cocci coccifile isofile;
   Pycocci.set_coccifile coccifile;
-  current_typedefs := None;
 
   let isofile =
     if not (Common.lfile_exists isofile)
