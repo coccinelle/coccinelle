@@ -232,6 +232,15 @@ is the empty list if spatch is not currently working on any file (eg,
 in an initialize or finalize rule).
 .sp
 
+.I val cocci_version
+:
+.B unit -> string
+.sp
+Returns the a string indicating the current version.  Note that if
+Coccinelle has been modified since a release, the version number will be
+postfixed with "-dirty".
+.sp
+
 .I val print_main
 :
 .B ?color:string -> string -> pos list -> unit

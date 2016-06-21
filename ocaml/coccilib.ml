@@ -168,6 +168,8 @@ let dir () = !Flag.dir
 
 let files () = !Flag.currentfiles
 
+let cocci_version () = Config.version
+
 (* ---------------------------------------------------------------------- *)
 (* org mode *)
 
