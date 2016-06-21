@@ -22,6 +22,15 @@
 - typedefs from C code should not be used before their point of inference
   (saved_typedefs in cprogram_of_file)
 
+* 1.0.6
+** Language:
+** Features:
+** Bugfix:
+- Avoid parallel compilation of pycaml.  Fix contributed by Luis Rodriguez.
+- Allow the use of absolute path names with id-utils.  Issue identified by
+Luis Rodriguez.
+- Clean up temporary files when using parmap.  Issue identified by Luis
+Rodriguez.
 * 1.0.5
 ** Language:
 - In the Coccilib interface, the function file, giving the file being

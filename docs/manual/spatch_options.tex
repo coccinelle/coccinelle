@@ -209,7 +209,9 @@ this option prints the regular expression that will be passed to glimpse.}
 The optional file name option is the name of the file in which to find the
 index.  It has been reported that the viewer seascope can be used to
 generate an appropriate index.  If no file name is specified, the default
-is .id-utils.index.
+is .id-utils.index.  If the filename is a relative path name, that path is
+intereted relative to the target directory.  If the filename is an absolute
+path name, beginning with /, it is used as is.
 }
 
 \normal{-{}-use-coccigrep}{ Use a version of grep implemented in Coccinelle
