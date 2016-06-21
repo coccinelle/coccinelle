@@ -25,6 +25,8 @@
 * 1.0.6
 ** Language:
 ** Features:
+- Add Coccilib.version() allowing ocaml code to access the virsion of
+  spatch being used.
 ** Bugfix:
 - Avoid parallel compilation of pycaml.  Fix contributed by Luis Rodriguez.
 - Allow the use of absolute path names with id-utils.  Issue identified by
