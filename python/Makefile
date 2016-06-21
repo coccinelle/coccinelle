@@ -24,7 +24,7 @@ SOURCES= pycocci_aux.ml $(PYCOCCI_FILE) pycocci.ml
 INCLUDEDIRS_LOCAL = ../commons ../commons/ocamlextra ../globals \
 		    ../parsing_c ../parsing_cocci ../ocaml
 
-INCLUDEDIRS = $(INCLUDEDIRS_LOCAL) $(PYCAMLDIR)
+INCLUDEDIRS = $(INCLUDEDIRS_LOCAL) $(PYMLDIR)
 
 SYSLIBS = str.cma unix.cma pycaml.cma
 LIBS=../commons/commons.cma ../globals/globals.cma

@@ -138,7 +138,7 @@ dnl  or AC_REQ_COCCI_EXTPKG
 AC_COCCI_INIT_PKG_EMPTY([menhirLib])
 AC_COCCI_INIT_PKG_EMPTY([dynlink])
 AC_COCCI_INIT_PKG_EMPTY([pcre])
-AC_COCCI_INIT_PKG_EMPTY([pycaml])
+AC_COCCI_INIT_PKG_EMPTY([pyml])
 AC_COCCI_INIT_PKG_EMPTY([camlp4])
 AC_COCCI_INIT_PKG_EMPTY([parmap])
 
@@ -245,45 +245,12 @@ AS_IF([test "x$enable_ocaml" = xno],
 dnl  python handling
 dnl  variables:
 dnl    with_python: whether to enable the python feature (and what version)
-dnl    OCAML_PKG_pycaml: if "local" use local pycaml package
-AC_ARG_VAR([PYTHON], [path to python when the version is determined automatically])
 AC_ARG_ENABLE([python], [AS_HELP_STRING([--enable-python], [enable python scripting (yes/no) (default: auto)])])
-AS_IF([test "x$enable_python" != xno],
-[dnl
-  dnl  an explicitly set --with-python disables the global pycaml by default
-  dnl  set --enable-pycaml if it is clear that the installed pycaml library
-  dnl  is consistent with the chosen python version
-  AS_IF([test -n "$enable_python" -a -z "$enable_pycaml"],
-  [dnl  if explicit python given: 
-    AC_MSG_NOTICE([skipped the selection of a global pycaml module because --enable-python is given explicitly but --enable-pycaml is not.])
-    AC_SUBST([enable_pycaml], [no])
-  ])
-
-  dnl  sets "$PYVER" if python is available
-  AC_COCCI_PYVER
-
-  AS_IF([test -z "$PYVER"],
-  [dnl  PYVER undetermined
-    AS_IF([test "x$enable_python" = xyes],
-    [dnl
-      AC_MSG_ERROR([python scripting is enabled explicitly but the version of python could not be determined])
-    ])
-  ],
-  [dnl
-    AC_MSG_NOTICE([looking for the corresponding python library])
-    PKG_CHECK_MODULES([PYTHON], [python-$PYVER],[AC_SUBST([HAVE_PYTHON],[yes])],[AC_SUBST([HAVE_PYTHON],[no])])
-
-    AS_IF([test "x$HAVE_PYTHON" != xyes -a "x$enable_python" != xyes],
-    [dnl  fallback if the above failed
-      AC_MSG_NOTICE([trying the default python library as fallback])
-      PKG_CHECK_MODULES([PYTHON], [python],[AC_SUBST([HAVE_PYTHON],[yes])],[AC_SUBST([HAVE_PYTHON],[no])])
-    ])
-  ])
-])
 
 AS_IF([test -z "$enable_python"],
 [dnl
-  AS_IF([test "x$HAVE_PYTHON" = xyes],
+  AC_CHECK_COCCI_EXTPKG([pyml])  dnl  will set $enable_pyml to 'yes', 'no', or 'local'
+  AS_IF([test "x$enable_pyml" != xno],
   [dnl
     AC_SUBST([enable_python], [yes])
   ],
@@ -292,37 +259,13 @@ AS_IF([test -z "$enable_python"],
   ])
 ])
 
-AC_SUBST([enable_pycaml], [no])
-
 AS_IF([test "x$enable_python" != xno],
 [dnl
-  AS_IF([test "x$HAVE_PYTHON" = xyes],
-  [dnl
-    AC_MSG_NOTICE([support for python scripts is enabled])
-  ],
-  [dnl
-    AC_MSG_ERROR([the python scripts feature is enabled but the pkg-config python library is not found])
-  ])
-
-  AC_REQ_COCCI_EXTPKG([pycaml])
-
-  AS_IF([test "x$AS_TR_SH([enable_pycaml])" = xlocal],
-    [dnl
-      AC_PROG_CAMLP4
-      AS_IF([test "x$CAMLP4O" = xno],
-        [dnl
-          AC_MSG_ERROR([Camlp4 is required to compile the bundled version of pycaml.])
-        ]
-      )
-      AC_REQ_COCCI_EXTPKG([camlp4])
-    ]
-  )
-
+  AC_CHECK_COCCI_EXTPKG([pcre])
   AC_SUBST([PYCOCCI_MODULE], [Yes_pycocci])
   AC_SUBST([PYCOCCI_FILE],[yes_pycocci.ml])
 ],
 [dnl
-  AC_COCCI_INIT_PKG_EMPTY([pycaml])
   AC_SUBST([PYCOCCI_MODULE], [No_pycocci])
   AC_SUBST([PYCOCCI_FILE],[no_pycocci.ml])
 ])
@@ -490,7 +433,6 @@ menhirLib module: $enable_menhirLib	(for local package use --disable-menhirLib)
 
 ocaml scripting:  $enable_ocaml	(overridable with --enable-ocaml)
 python scripting: $enable_python	(overridable with --enable-python)
-pycaml module:    $enable_pycaml	(for local package use --disable-pycaml)
 
 pcre regexes:     $enable_pcre_syntax	(overridable with --enable-pcre-syntax)
 pcre module:      $enable_pcre	(for local package use --disable-pcre)

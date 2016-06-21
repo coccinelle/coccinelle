@@ -9,7 +9,7 @@ val construct_variables :
     (string * Ast_cocci.meta_name * Ast_cocci.metavar * Ast_cocci.mvinit) list
   -> Ast_c.metavars_binding (*virts*) -> unit
 val construct_script_variables : Ast_cocci.meta_name list -> unit
-val pyrun_simplestring : string -> int
+val pyrun_simplestring : string -> unit
 val inc_match : bool ref
 val exited : bool ref
 val retrieve_script_variables :
@@ -18,5 +18,5 @@ exception Pycocciexception
 val set_coccifile : string -> unit
 val python_support : bool
 val initialised : bool ref
-val py_isinitialized : unit -> int
+val py_isinitialized : unit -> bool
 val py_finalize : unit -> unit

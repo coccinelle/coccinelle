@@ -1481,8 +1481,8 @@ let main () =
     (* --------------------------------------------------------- *)
     | [] -> short_usage()
     ));
-    if !Pycocci.initialised && (Pycocci.py_isinitialized ()) != 0 then begin
-      ignore(Pycocci.pyrun_simplestring "cocci.finalise()");
+    if !Pycocci.initialised && Pycocci.py_isinitialized () then begin
+      Pycocci.pyrun_simplestring "cocci.finalise()";
       if !Flag.show_misc
       then Common.pr2 "Finalizing python\n";
       Pycocci.py_finalize ();

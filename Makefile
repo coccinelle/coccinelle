@@ -205,8 +205,7 @@ $(MAKELIBS:%=%/.prepare):
 # engine: parsing_cocci parsing_c ctl
 # popl09:engine
 # extra: parsing_cocci parsing_c ctl
-# pycaml:
-# python:pycaml parsing_cocci parsing_c
+# python:pyml parsing_cocci parsing_c
 
 clean:: Makefile.config
 	@set -e; for i in $(CLEANSUBDIRS); do $(MAKE) -C $$i $@; done
@@ -266,8 +265,8 @@ purebytecode:
 
 # copies the stubs libraries (if any) to the root directory
 copy-stubs:
-	@if test -f ./bundles/pycaml/dllpycaml_stubs.so; then \
-		cp -fv ./bundles/pycaml/dllpycaml_stubs.so .; fi
+	@if test -f ./bundles/pyml/dllpyml_stubs.so; then \
+		cp -fv ./bundles/pyml/dllpyml_stubs.so .; fi
 	@if test -f ./bundles/pcre/dllpcre_stubs.so; then \
 		cp -fv ./bundles/pcre/dllpcre_stubs.so .; fi
 
@@ -377,8 +376,8 @@ install-python:
 
 install-stubs:
 	$(MKDIR_P) $(DESTDIR)$(LIBDIR)
-	@if test -f ./bundles/pycaml/dllpycaml_stubs.so; then \
-		cp -fv ./bundles/pycaml/dllpycaml_stubs.so $(DESTDIR)$(LIBDIR); fi
+	@if test -f ./bundles/pyml/dllpyml_stubs.so; then \
+		cp -fv ./bundles/pyml/dllpyml_stubs.so $(DESTDIR)$(LIBDIR); fi
 	@if test -f ./bundles/pcre/dllpcre_stubs.so; then \
 		cp -fv ./bundles/pcre/dllpcre_stubs.so $(DESTDIR)$(LIBDIR); fi
 
@@ -422,7 +421,7 @@ uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/spatch
 	rm -f $(DESTDIR)$(BINDIR)/spatch.opt
 	rm -f $(DESTDIR)$(BINDIR)/spatch.byte
-	rm -f $(DESTDIR)$(LIBDIR)/dllpycaml_stubs.so
+	rm -f $(DESTDIR)$(LIBDIR)/dllpyml_stubs.so
 	rm -f $(DESTDIR)$(LIBDIR)/dllpcre_stubs.so
 	rm -f $(DESTDIR)$(LIBDIR)/spatch
 	rm -f $(DESTDIR)$(LIBDIR)/spatch.opt
