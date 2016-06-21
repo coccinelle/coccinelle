@@ -202,6 +202,7 @@ val debug : (unit -> unit) -> unit
 val _profile_table : (string, (float ref * int ref)) Hashtbl.t ref
 val profile_code : string -> (unit -> 'a) -> 'a
 val profile_diagnostic : unit -> string
+val reset_profile : unit -> unit
 
 val profile_code_exclusif : string -> (unit -> 'a) -> 'a
 val profile_code_inside_exclusif_ok : string -> (unit -> 'a) -> 'a

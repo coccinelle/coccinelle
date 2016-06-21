@@ -661,7 +661,10 @@ let profile_diagnostic () =
       )
     )
 
-
+let reset_profile _ =
+  (if !profile <> PNONE
+  then pr2 (profile_diagnostic ()));
+  Hashtbl.clear !_profile_table
 
 let report_if_take_time timethreshold s f =
   let t = Unix.gettimeofday () in
