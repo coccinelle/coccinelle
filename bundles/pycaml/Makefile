@@ -22,3 +22,6 @@ include ../Makefile.bundles
 	$(CC) -E -w -D PYMAJOR$(PYMAJOR) -xc pycaml.pp.ml >$(SRC_DIR)/pycaml.ml
 	cp pycaml_stubs.c $(SRC_DIR)/pycaml_stubs.c
 	touch $@
+
+$(PACKAGE_DIR)/pycaml.cmi $(PACKAGE_DIR)/pycaml.cmo: $(PACKAGE_DIR)/pycaml.ml
+	$(OCAMLC_CMD) -c $<
