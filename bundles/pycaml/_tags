@@ -1,5 +1,0 @@
-# Includes the sources of the
-# bundles' source directory if
-# this directory is included.
-
-<chemoelectric-pycaml-8614105>: include

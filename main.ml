@@ -1107,28 +1107,26 @@ let rec main_action xs =
 		stderrs;
 	      let _ = Sys.command (Printf.sprintf "rm -rf %s" prefix) in
 	      () in
-	    let op x y =
+	    let op y (x, temp_files) =
 	      (* The subprocess has a different address space, so its
 		 collected temporary files aren't seen by the main spatch
 		 process *)
-	      Common._temp_files_created := [];
+	      Common._temp_files_created := temp_files;
 	      let res = op x y in
 	      (res, !Common._temp_files_created) in
-	    let res =
+	    let merge (x, temp_files) (y, temp_files') =
+	      (merge x y, List.rev_append temp_files temp_files') in
+	    let (res, tmps) =
 	      try
-		Parmap.parmap
+		Parmap.parfold
 		  ~init:(fun id -> Parmap.redirect ~path:prefix ~id)
 		  ~ncores
 		  ~chunksize
-		  (fun x -> op [] x) (Parmap.L l)
+		  op (Parmap.L l) (z, !Common._temp_files_created) merge
 	      with e ->
 		(Printf.eprintf "exception on %s: %s\n" prefix (Dumper.dump e);
 		 clean(); raise e) in
-	    let (res,tmps) = List.split res in
-	    let res = List.fold_left (fun p a -> a @ p) z res in
-	    Common._temp_files_created :=
-	      List.fold_left (fun p a -> a @ p)
-		!Common._temp_files_created tmps;
+	    Common._temp_files_created := tmps;
 	    clean();
 	    res
 	  in
@@ -1493,8 +1491,8 @@ let main () =
     (* --------------------------------------------------------- *)
     | [] -> short_usage()
     ));
-    if !Pycocci.initialised && (Pycocci.py_isinitialized ()) != 0 then begin
-      ignore(Pycocci.pyrun_simplestring "cocci.finalise()");
+    if !Pycocci.initialised && Pycocci.py_isinitialized () then begin
+      Pycocci.pyrun_simplestring "cocci.finalise()";
       if !Flag.show_misc
       then Common.pr2 "Finalizing python\n";
       Pycocci.py_finalize ();

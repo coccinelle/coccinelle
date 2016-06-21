@@ -58,7 +58,7 @@ distclean: clean
 depend: .depend
 
 .depend: .prepare $(patsubst %,$(SRC_DIR)/%.ml,$(PRODUCTS))
-	$(OCAMLDEP_CMD) $(SRC_DIR)/*.ml >.depend
+	$(OCAMLDEP_CMD) $(SRC_DIR)/*.ml $(SRC_DIR)/*.mli >.depend
 
 .PHONY: \
 	all all-build all-build-targets all.opt all-opt-build \
@@ -79,11 +79,13 @@ $(SRC_DIR)/$(ARCHIVE).cma: $(patsubst %,$(SRC_DIR)/%.cmo,$(OBJS))
 $(SRC_DIR)/$(ARCHIVE).cmxa: $(patsubst %,$(SRC_DIR)/%.cmx,$(OBJS))
 	$(OCAMLOPT_CMD) -a $^ -o $@
 
-$(SRC_DIR)/lib$(LIBRARY)_stubs.a: \
+$(SRC_DIR)/$(LIBRARY).a \
+$(SRC_DIR)/lib$(LIBRARY)_stubs.a \
+$(SRC_DIR)/dll$(LIBRARY)_stubs.so: \
 	$(patsubst %,$(SRC_DIR)/%_stubs.o,$(C_OBJS))
 	$(OCAMLMKLIB_CMD) -o $(SRC_DIR)/$(LIBRARY)_stubs $^
 
-%.ml: %.mll
+%.ml: %.mll .prepare
 	$(OCAMLLEX) $< -o $@
 
 %.ml: %.mly

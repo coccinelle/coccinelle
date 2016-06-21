@@ -3,8 +3,18 @@
 # See copyright.txt in the Coccinelle source code for more information.
 # The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
 
-TARGET=spgen
-exec_prefix=@prefix@
-LIBDIR=@libdir@/coccinelle/spgen""
+exec_prefix="@prefix@"
+LIBDIR="@libdir@"/coccinelle/spgen
 
-exec ""${LIBDIR}/${TARGET}"" "$@"
+if [ -f "$LIBDIR"/spgen ]
+then
+    TARGET=spgen
+elif [ -f "$LIBDIR"/spgen.opt ]
+then
+    TARGET=spgen.opt
+else
+    echo Unable to find spgen executable. >/dev/fd/2
+    exit 1
+fi
+
+exec "$LIBDIR/$TARGET" "$@"

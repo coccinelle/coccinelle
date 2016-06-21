@@ -62,9 +62,12 @@ $(SRC_DIR)/menhirLib.cmx: \
 	$(patsubst %,$(SRC_DIR)/%.cmx,$(MENHIRLIB_MODULES))
 	$(OCAMLOPT_CMD) -pack $^ -o $@
 
-$(SRC_DIR)/menhirLib.cmo: \
+$(SRC_DIR)/menhirLib.cmi $(SRC_DIR)/menhirLib.cmo: \
 	$(patsubst %,$(SRC_DIR)/%.cmo,$(MENHIRLIB_MODULES))
 	$(OCAMLC_CMD) -pack $^ -o $@
+
+$(SRC_DIR)/gSet.cmi $(SRC_DIR)/gSet.cmx: $(SRC_DIR)/gSet.ml
+	$(OCAMLOPT_CMD) -c $<
 
 $(SRC_DIR)/parser.mly: $(SRC_DIR)/yacc-parser.mly
 	cp $< $@

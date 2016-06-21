@@ -26,16 +26,13 @@
 # the order in which library includes are specified matters!
 
 
-# pycaml library
-# Note: we added the pycaml_stubs wrapper twice: once for dynamic and once for
-# static linking. The ocaml compiler should use the static linking with the
-# stubs if possible.
-LOCAL_pycaml     = $(PYCAMLDIR)/pycaml.cma
-LOCALOPT_pycaml  = $(PYCAMLDIR)/pycaml.cmxa
-GLOBAL_pycaml    = $(PYCAMLDIR)/pycaml.cma
-GLOBALOPT_pycaml = $(PYCAMLDIR)/pycaml.cmxa
-FLAGS_pycaml     = $(CFLAGS_pycaml:%=-ccopt %) -dllib -lpycaml_stubs -cclib -lpycaml_stubs $(PYTHON_LIBS:%=-cclib %)
-OPTFLAGS_pycaml  = $(CFLAGS_pycaml:%=-ccopt %) -cclib -lpycaml_stubs $(PYTHON_LIBS:%=-cclib %)
+# pyml library
+LOCAL_pyml     = $(PYMLDIR)/pyml.cma
+LOCALOPT_pyml  = $(PYMLDIR)/pyml.cmxa
+GLOBAL_pyml    = $(PYMLDIR)/pyml.cma
+GLOBALOPT_pyml = $(PYMLDIR)/pyml.cmxa
+FLAGS_pyml     = $(CFLAGS_pyml:%=-ccopt %) -dllib -lpyml_stubs -cclib -lpyml_stubs
+OPTFLAGS_pyml  = $(CFLAGS_pyml:%=-ccopt %) -cclib -lpyml_stubs
 
 # pcre library
 # Note: see the comment of the pycaml library about the double appearance of the stubs library.

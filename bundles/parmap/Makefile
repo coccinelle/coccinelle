@@ -20,3 +20,6 @@ include ../Makefile.bundles
 .prepare: $(MARKER)
 	cd $(SRC_DIR) && ./configure
 	touch $@
+
+$(SRC_DIR)/setcore.cmi $(SRC_DIR)/setcore.cmo: $(SRC_DIR)/setcore.ml
+	$(OCAMLC_CMD) -c $<
