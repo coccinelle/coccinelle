@@ -26,7 +26,7 @@
 ** Language:
 ** Features:
 ** Bugfix:
-- Avoid parallel compilation of pycaml.  Fix contributed by Luis Rodriguez.
+- Allow parallel compilation for bundles.  Issue identified by Luis Rodriguez.
 - Allow the use of absolute path names with id-utils.  Issue identified by
 Luis Rodriguez.
 - Clean up temporary files when using parmap.  Issue identified by Luis
