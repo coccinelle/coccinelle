@@ -34,10 +34,7 @@ let cprogram_of_file saved_typedefs saved_macros parse_strings cache file =
   parse_info.Parse_c.parse_trees
 
 let cprogram_of_file_cached saved_typedefs parse_strings cache file =
-  let tdefs =
-    if !Flag_cocci.use_saved_typedefs then Some saved_typedefs
-    else None in
-  Parse_c.parse_cache tdefs parse_strings cache file
+  Parse_c.parse_cache saved_typedefs parse_strings cache file
 
 let cfile_of_program program2_with_ppmethod outf =
   Unparse_c.pp_program program2_with_ppmethod outf
@@ -1122,7 +1119,7 @@ let fixpath s =
     | [] -> [] in
   String.concat "/" (loop s)
 
-let current_typedefs = ref (Common.empty_scoped_h_env () )
+let current_typedefs = ref None
 
 (* The following function is a generic library function. *)
 (* It may be moved to a better place. *)
@@ -1159,8 +1156,10 @@ let parse_info_of_files choose_includes parse_strings cache kind files =
     match result with
       | None -> None
       | Some (source_parse_info, _) ->
-        let (_, tdefs, _) = source_parse_info.Parse_c.parse_trees in
-        current_typedefs := tdefs;
+          let (_, tdefs, _) = source_parse_info.Parse_c.parse_trees in
+	  (if !Flag_cocci.use_saved_typedefs
+	  then current_typedefs := Some tdefs
+	  else current_typedefs := None);
         result in
   opt_map parse_info_of_file files
 
@@ -1966,7 +1965,7 @@ let initial_final_bigloop a b c =
 let pre_engine2 (coccifile, isofile) =
   show_or_not_cocci coccifile isofile;
   Pycocci.set_coccifile coccifile;
-  current_typedefs := ( Common.empty_scoped_h_env () );
+  current_typedefs := None;
 
   let isofile =
     if not (Common.lfile_exists isofile)
