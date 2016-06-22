@@ -80,10 +80,13 @@ $(SRC_DIR)/$(ARCHIVE).cmxa: $(patsubst %,$(SRC_DIR)/%.cmx,$(OBJS))
 	$(OCAMLOPT_CMD) -a $^ -o $@
 
 $(SRC_DIR)/$(LIBRARY).a \
-$(SRC_DIR)/lib$(LIBRARY)_stubs.a \
-$(SRC_DIR)/dll$(LIBRARY)_stubs.so: \
+$(SRC_DIR)/dll$(LIBRARY)_stubs.so \
+$(SRC_DIR)/lib$(LIBRARY)_stubs.a: \
 	$(patsubst %,$(SRC_DIR)/%_stubs.o,$(C_OBJS))
 	$(OCAMLMKLIB_CMD) -o $(SRC_DIR)/$(LIBRARY)_stubs $^
+
+$(SRC_DIR)/$(LIBRARY).a \
+$(SRC_DIR)/dll$(LIBRARY)_stubs.so: $(SRC_DIR)/lib$(LIBRARY)_stubs.a
 
 %.ml: %.mll .prepare
 	$(OCAMLLEX) $< -o $@
