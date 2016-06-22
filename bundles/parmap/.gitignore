@@ -1,4 +1,4 @@
-parmap-1.0-rc7
+parmap.1.0-rc7.1
 *.a
 *.o
 *.ml*
@@ -11,3 +11,4 @@ _*
 *.clib
 *build
 ocamlc.where
+.prepare
