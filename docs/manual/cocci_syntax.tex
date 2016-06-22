@@ -1762,7 +1762,8 @@ the new iteration.  If this function is not called, the new iteration
 treats the same files as the current iteration.  {\tt add\_virtual\_rule a}
 has the same effect as putting {\tt -D a} on the command line.  If
 using OCaml scripting instead of Python scripting the first letter of the rule
-name is capitalized, although this is not done elsewhere.
+name is capitalized, although this is not done elsewhere (technically, the
+rule name is an OCaml constructor).
 {\tt add\_virtual\_identifier x v} has the same effect as putting {\tt -D x=v}
 on the command line.  Again, when using OCaml scripting there is a case change.
 {\tt extend\_virtual\_identifiers()} (not shown) preserves all virtual
@@ -1775,10 +1776,11 @@ Modification is not allowed when using iteration.  Thus, it is required to
 use the {\tt --no-show-diff}, unless the semantic patch contains {\tt *}s
 (a semantic match rather than a semantic patch).
 
-When using Python scripting a tuple is used throughout the rest of the
-code to ensure that the same information is not enqueued more than once.
-When using OCaml scripting a hash table is used for the same purposes.
-Coccinelle itself provides no support for this and as such addressing
+When using Python scripting a tuple may be used
+to ensure that the same information is not enqueued more than once.
+When using OCaml scripting a hash table may be used for the same purpose.
+Coccinelle itself provides no support for obtaining information about what
+work has been queued and as such addressing
 this with scripting is necessary.
 
 %%% Local Variables:
