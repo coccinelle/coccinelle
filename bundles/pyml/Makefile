@@ -23,9 +23,11 @@ PYML_COMPAT=$(shell \
 
 include ../Makefile.bundles
 
-.prepare $(SRC_DIR)/pywrappers.ml $(SRC_DIR)/pyml_wrappers.inc: \
+$(SRC_DIR)/pywrappers.ml $(SRC_DIR)/pyml_wrappers.inc: \
 		$(MARKER) $(SRC_DIR)/generate
 	cd $(SRC_DIR) && ./generate
+
+.prepare: $(SRC_DIR)/pywrappers.ml $(SRC_DIR)/pywrappers.mli
 	touch .prepare
 
 $(SRC_DIR)/pyml_stubs.o: $(SRC_DIR)/pyml_stubs.c $(SRC_DIR)/pyml_wrappers.inc
@@ -39,7 +41,10 @@ $(SRC_DIR)/$(PYML_COMPAT): $(MARKER)
 $(SRC_DIR)/generate.ml: $(MARKER)
 	touch $@
 
-$(SRC_DIR)/pywrappers.mli: $(SRC_DIR)/pywrappers.ml
+$(SRC_DIR)/pytypes.mli: $(MARKER)
+	touch $@
+
+$(SRC_DIR)/pywrappers.mli: $(SRC_DIR)/pywrappers.ml $(SRC_DIR)/pytypes.cmi
 	$(OCAMLC_CMD) -i $< >$@
 
 $(SRC_DIR)/pyml_compat.cmx: $(SRC_DIR)/pyml_compat.ml $(SRC_DIR)/pyml_compat.cmi
