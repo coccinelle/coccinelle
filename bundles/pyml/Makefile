@@ -23,14 +23,12 @@ PYML_COMPAT=$(shell \
 
 include ../Makefile.bundles
 
-.prepare: $(MARKER) $(SRC_DIR)/generate
-	if [ "$$OCAMLVERSION" "<" 4.03.0 ]; then \
-	  cp $(SRC_DIR)/pyml_compat312.ml $(SRC_DIR)/pyml_compat.ml; \
-	else \
-	  cp $(SRC_DIR)/pyml_compat403.ml $(SRC_DIR)/pyml_compat.ml; \
-	fi
+.prepare $(SRC_DIR)/pywrappers.ml $(SRC_DIR)/pyml_wrappers.inc: \
+		$(MARKER) $(SRC_DIR)/generate
 	cd $(SRC_DIR) && ./generate
-	touch $@
+	touch .prepare
+
+$(SRC_DIR)/pyml_stubs.o: $(SRC_DIR)/pyml_stubs.c $(SRC_DIR)/pyml_wrappers.inc
 
 $(SRC_DIR)/pyml_compat.mli: $(MARKER)
 	touch $@
@@ -40,6 +38,9 @@ $(SRC_DIR)/$(PYML_COMPAT): $(MARKER)
 
 $(SRC_DIR)/generate.ml: $(MARKER)
 	touch $@
+
+$(SRC_DIR)/pywrappers.mli: $(SRC_DIR)/pywrappers.ml
+	$(OCAMLC_CMD) -i $< >$@
 
 $(SRC_DIR)/pyml_compat.cmx: $(SRC_DIR)/pyml_compat.ml $(SRC_DIR)/pyml_compat.cmi
 	$(OCAMLOPT_CMD) -c $< -o $@
