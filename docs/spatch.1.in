@@ -571,7 +571,7 @@ It's for the other (internal) uses of the spatch program.
 
 Coccinelle uses a simple text format to store customizations into
 \.cocciconfig files, that can be per project, user, or target. The order
-in which the configuration file is processed is as follows, the
+in which the configuration file is processed is as follows, where the
 later lines always extend and may override earlier ones:
 
   o Your current user's home directory is processed first
