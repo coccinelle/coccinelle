@@ -851,8 +851,7 @@ rule should apply if rule XXX was never matched at all.
 
 \section{Transformation}
 
-Coccinelle allows for transformations to enable modifying C code using
-very precise grammar.
+Coccinelle semantic patches are able to transform C code.
 
 \subsection{Basic transformations}
 
@@ -1107,16 +1106,17 @@ ifdefs, and attributes (\texttt{\_\_attribute\_\_((...))}).
 
 \subsection{Advanced transformations}
 
-You may run into the situation where grammar you specify for
-transformations might associate itself with a few consecutive tokens
-in code, in such cases Coccinelle cannot guarantee order when making
-additions. If you are sure that order does not matter you can use the
-optional double addition token \texttt{++} to annotate that Coccinelle
-may add things out of order. This may be for instance rather safe in
-certain situations when extending a data structure with more members,
+You may run into the situation where a semantic patch needs to add several
+disjoint terms at the same place in the code.  Coccinelle does not know in
+which order these terms should appear, and thus gives an ``already tagged
+token'' error in this situation. If you are sure that order does not matter
+you can use the optional double addition token \texttt{++} to indicate to
+Coccinelle that it may add things in any order. This may be for instance
+safe in situations such as extending a data structure with more members,
 based on existing members of the data structure. The following rule helps
-to extend a data structure with a respective float for one present int.
-This works well with the simple \texttt{+}.
+to extend a data structure with a respective float for a present int.  If
+there is only one int field in the data structure, this semantic patch
+works well with the simple \texttt{+}.
 
 \begin{lstlisting}[language=Cocci]
 @simpleplus@
@@ -1132,8 +1132,8 @@ struct x {
 }
 \end{lstlisting}
 
-This simpleplus rule transformation works well when only one token is being
-modified in code. For instance if we had plusplus1.c:
+This semantic patch works fine, for example, on the following code
+(plusplus1.c):
 
 \begin{lstlisting}[language=C]
 struct x {
@@ -1142,7 +1142,7 @@ struct x {
 };
 \end{lstlisting}
 
-If however you have two consecutive tokens that Coccinelle
+If however there are multiple int fields tokens that Coccinelle
 can transform, order cannot be guaranteed for how Coccinelle
 makes additions. If you are sure order does not matter for
 the transformation you may use \texttt{++} instead, as follows:
@@ -1161,8 +1161,8 @@ struct x {
 }
 \end{lstlisting}
 
-This rule would work against say a plusplus2.c which had two
-more tokens added in comparison to plusplus1.c:
+This rule would work against a file plusplus2.c that has three
+int fields:
 
 \begin{lstlisting}[language=C]
 struct x {
@@ -1174,9 +1174,8 @@ struct x {
 };
 \end{lstlisting}
 
-You would end up with a C file which would look similar to this, the
-precise order of the where each float is placed is however not guaranteed
-with respect to each other:
+A possible result is as shown below. The precise order of the float fields
+is however not guaranteed with respect to each other:
 
 \begin{lstlisting}[language=C]
 struct x {
@@ -1192,7 +1191,7 @@ struct x {
 \end{lstlisting}
 
 If you used simpleplus rule on plusplus2.c you would end up with
-an "already tagged token" error due to the ordering considerations
+an ``already tagged token'' error due to the ordering considerations
 explained in this section.
 
 \section{Types}
