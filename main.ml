@@ -1294,7 +1294,21 @@ let rec fix_idutils = function
   | "--use-idutils"::second::rest
     when String.length second > 0 && String.get second 0 = '-' ->
        "--use-idutils"::".id-utils.index" :: (fix_idutils (second :: rest))
-  | x :: rest -> x :: (fix_idutils rest)
+  | x :: rest ->
+      let fail _ = x :: (fix_idutils rest) in
+      let len = String.length x in
+      if len > 3 && String.get x 0 = '-' && String.get x 1 = '-'
+      then
+	let c1 = String.get x 2 in
+	let s = String.sub x 3 (len-3) in
+	if c1 = 'j'
+	then
+	  try let _ = int_of_string s in "--j"::s::(fix_idutils rest)
+	  with _ -> fail()
+	else if c1 = 'I'
+	then "--I"::s::(fix_idutils rest)
+	else fail()
+      else fail()
 
 (*****************************************************************************)
 (* The coccinelle main entry point *)

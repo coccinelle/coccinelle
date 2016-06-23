@@ -28,6 +28,7 @@
 - Add Coccilib.version() allowing ocaml code to access the virsion of
   spatch being used.
 - Per file profiling with --profile-per-file for processing of directories.
+- allow -j9 and -Ifoo, as used in some other tools
 ** Bugfix:
 - Allow parallel compilation for bundles.  Issue identified by Luis Rodriguez.
 - Allow the use of absolute path names with id-utils.  Issue identified by
