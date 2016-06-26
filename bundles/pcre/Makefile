@@ -7,7 +7,7 @@ bytes=$(shell \
 	if [ "$$OCAMLVERSION" "<" 4.02.0 ]; then \
 	  echo bytes; \
 	fi \
-$)
+)
 
 PACKAGE_DIR=mmottl-pcre-ocaml-258b72c
 TARBALL=mmottl-pcre-ocaml-v7.2.3-0-g258b72c.tar.gz
