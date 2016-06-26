@@ -24,6 +24,10 @@ EXTRALNKFLAGS=$(PCRE_LIBS:%=-ldopt %)
 
 include ../Makefile.bundles
 
+distclean: clean
+	rm -rf $(PACKAGE_DIR)
+	rm -f .prepare
+
 .prepare: $(MARKER)
 	if [ "$$OCAMLVERSION" "<" 4.02.0 ]; then \
 	  cp $(SRC_DIR)/pcre_compat312.ml $(SRC_DIR)/pcre_compat.ml; \

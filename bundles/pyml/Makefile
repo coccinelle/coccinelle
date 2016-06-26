@@ -1,10 +1,10 @@
 # This Makefile serves as a wrapper to bundle the
 # pyml module without modifications.
 
-PYML_VERSION=20160621
+PYML_VERSION=current
 
-PACKAGE_DIR=pyml-20160621
-TARBALL=pyml-20160621.tar.gz
+PACKAGE_DIR=pyml-$(PYML_VERSION)
+TARBALL=
 MODULES=pyml_compat pytypes pywrappers py pycaml_compat
 OBJS=pytypes pywrappers py pycaml_compat
 INTERFACES=pywrappers py pycaml_compat
@@ -23,6 +23,9 @@ PYML_COMPAT=$(shell \
 
 include ../Makefile.bundles
 
+distclean: clean
+	rm -f .prepare
+
 $(SRC_DIR)/pywrappers.ml \
 $(SRC_DIR)/pyml_wrappers.inc: \
 		$(MARKER) $(SRC_DIR)/generate
@@ -39,7 +42,6 @@ $(SRC_DIR)/pyml_compat.mli \
 $(SRC_DIR)/$(PYML_COMPAT) \
 $(SRC_DIR)/generate.ml \
 $(SRC_DIR)/pytypes.mli: $(MARKER)
-	touch $@
 
 $(SRC_DIR)/pywrappers.mli: $(SRC_DIR)/pywrappers.ml $(SRC_DIR)/pytypes.cmi
 	$(OCAMLC_CMD) -i $< >$@

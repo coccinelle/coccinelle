@@ -51,10 +51,6 @@ clean:
 	rm -f $(patsubst %,$(SRC_DIR)/%.cmx,$(MODULES))
 	rm -f $(patsubst %,$(SRC_DIR)/%.cmo,$(MODULES))
 
-distclean: clean
-	rm -rf $(PACKAGE_DIR)
-	rm -f .prepare
-
 depend: .depend
 
 .depend: .prepare $(patsubst %,$(SRC_DIR)/%.ml,$(PRODUCTS))
@@ -100,7 +96,7 @@ $(SRC_DIR)/dll$(LIBRARY)_stubs.so: $(SRC_DIR)/lib$(LIBRARY)_stubs.a
 %.cmo: %.ml
 	$(OCAMLC_CMD) -c $< -o $@
 
-%.cmx: %.ml
+%.cmx: %.ml %.cmo
 	$(OCAMLOPT_CMD) -c $< -o $@
 
 %.o: %.c

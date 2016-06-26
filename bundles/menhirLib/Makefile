@@ -33,10 +33,21 @@ include ../Makefile.bundles
 depend: .depend
 	@$(MAKE) all-build
 
+distclean: clean
+	rm -rf $(PACKAGE_DIR)
+	rm -f .prepare
+
 .prepare: $(MARKER)
 	echo "let libdir = \"$(shell pwd\)\"" > $(SRC_DIR)/installation.ml
 	echo "let ocamlfind = false" >> $(SRC_DIR)/installation.ml
 	touch $@
+
+$(SRC_DIR)/lexdep.mll \
+$(SRC_DIR)/lexmli.mll \
+$(SRC_DIR)/lexer.mll \
+$(SRC_DIR)/sentenceLexer.mll \
+$(SRC_DIR)/sentenceParser.mly \
+$(SRC_DIR)/yacc-parser.mly: $(MARKER)
 
 %.cmo: %.ml
 	if echo $(MENHIRLIB_MODULES) | grep -w $(notdir $(basename $<)); then \
@@ -45,7 +56,7 @@ depend: .depend
 	  $(OCAMLC_CMD) -c $< -o $@; \
 	fi
 
-%.cmx: %.ml
+%.cmx: %.ml %.cmo
 	if echo $(MENHIRLIB_MODULES) | grep -w $(notdir $(basename $<)); then \
 	  $(OCAMLOPT_CMD) -for-pack MenhirLib -c $< -o $@; \
 	else \
@@ -58,13 +69,18 @@ $(SRC_DIR)/menhir: $(patsubst %,$(SRC_DIR)/%.cmx,$(MODULES))
 standard.mly: $(SRC_DIR)/standard.mly
 	cp $< $@
 
-$(SRC_DIR)/menhirLib.cmx: \
-	$(patsubst %,$(SRC_DIR)/%.cmx,$(MENHIRLIB_MODULES))
-	$(OCAMLOPT_CMD) -pack $^ -o $@
-
-$(SRC_DIR)/menhirLib.cmi $(SRC_DIR)/menhirLib.cmo: \
+$(SRC_DIR)/menhirLib.cmi \
+$(SRC_DIR)/menhirLib.cmo: \
 	$(patsubst %,$(SRC_DIR)/%.cmo,$(MENHIRLIB_MODULES))
-	$(OCAMLC_CMD) -pack $^ -o $@
+	$(OCAMLC_CMD) -pack $^ -o $(SRC_DIR)/menhirLib.cmo
+
+$(SRC_DIR)/menhirLib.cmx \
+$(SRC_DIR)/menhirLib.o: \
+	$(patsubst %,$(SRC_DIR)/%.cmx,$(MENHIRLIB_MODULES)) \
+	$(SRC_DIR)/menhirLib.cmo
+	$(OCAMLOPT_CMD) -pack \
+		$(patsubst %,$(SRC_DIR)/%.cmx,$(MENHIRLIB_MODULES)) \
+		-o $(SRC_DIR)/menhirLib.cmx
 
 $(SRC_DIR)/gSet.cmi $(SRC_DIR)/gSet.cmx: $(SRC_DIR)/gSet.ml
 	$(OCAMLOPT_CMD) -c $<

@@ -1,0 +1,5 @@
+description = "py.ml: OCaml bindings for Python"
+requires = "unix"
+version = "20160620"
+archive(byte) = "pyml.cma"
+archive(native) = "pyml.cmxa"

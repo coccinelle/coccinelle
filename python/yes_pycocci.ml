@@ -224,19 +224,22 @@ let default_hashtbl_size = 17
 let added_variables = Hashtbl.create default_hashtbl_size
 
 let build_classes env =
-  let _ = pycocci_init () in
-  inc_match := true;
-  exited := false;
-  the_environment := env;
-  let mx = !coccinelle_module in
-  let dict = Py.Module.get_dict mx in
-  Hashtbl.iter
-    (fun name () ->
-      match name with
-	"include_match" | "has_env_binding" | "exit" -> ()
-      | name -> Py.Dict.del_item_string dict name)
-    added_variables;
-  Hashtbl.clear added_variables
+  try
+    let _ = pycocci_init () in
+    inc_match := true;
+    exited := false;
+    the_environment := env;
+    let mx = !coccinelle_module in
+    let dict = Py.Module.get_dict mx in
+    Hashtbl.iter
+      (fun name () ->
+	match name with
+	  "include_match" | "has_env_binding" | "exit" -> ()
+	| name -> Py.Dict.del_item_string dict name)
+      added_variables;
+    Hashtbl.clear added_variables
+  with Py.E (_, error) ->
+    failwith (Printf.sprintf "Python error: %s" (Py.Object.to_string error))
 
 let build_variable name value =
   let mx = !coccinelle_module in
@@ -368,7 +371,10 @@ let set_coccifile cocci_file =
 	()
 
 let pyrun_simplestring s =
-  Py.Run.simple_string s
+  try
+    Py.Run.simple_string s
+  with Py.E (_, error) ->
+    failwith (Printf.sprintf "Python error: %s" (Py.Object.to_string error))
 
 let py_isinitialized () =
   Py.is_initialized ()
