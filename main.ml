@@ -888,15 +888,15 @@ let gitgrep_filter ((_,_,query,_) as x) dir =
       |	None -> coccigrep_filter x dir
 
 let idutils_filter (_,_,_,query) dir =
-  match query with
-    None -> pr2 "no inferred idutils keywords"; None
-  | Some query ->
+  match Id_utils.interpret dir query with
+    None -> None
+  | Some files ->
       let suffixes = if !Flag.include_headers then ["c";"h"] else ["c"] in
-      let files = Id_utils.interpret dir query in
       Printf.eprintf "%d files match\n" (List.length files);
       Some
 	(files +>
-	 List.filter (fun file -> List.mem (Common.filesuffix file) suffixes))
+	 List.filter
+	   (fun file -> List.mem (Common.filesuffix file) suffixes))
 
 let scanner_to_interpreter = function
     Flag.Glimpse -> glimpse_filter

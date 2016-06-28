@@ -4,4 +4,4 @@
  * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-val interpret : string -> Get_constants2.combine -> string list
+val interpret : string -> Get_constants2.combine option -> string list option

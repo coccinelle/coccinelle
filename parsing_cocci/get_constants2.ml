@@ -220,6 +220,10 @@ let interpret_cocci_git_grep strict x virt =
 	  res in
       Some (res1,res2,res3)
 
+let interpret_idutils = function
+    True -> None
+  | x -> Some x
+
 let norm = function
     And l -> And (List.sort compare l)
   | Or l  -> Or (List.sort compare l)
@@ -756,7 +760,7 @@ let get_constants rules neg_pos_vars virt =
     | Flag.Glimpse ->
 	(grep,interpret_glimpse true res virt,coccigrep,None)
     | Flag.IdUtils ->
-	(grep,None,coccigrep,Some res)
+	(grep,None,coccigrep,interpret_idutils res)
     | Flag.CocciGrep | Flag.GitGrep -> (grep,None,coccigrep,None)
     end
   else (None,None,None,None)
