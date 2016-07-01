@@ -106,9 +106,6 @@ MANDIR=${mandir}
 # Where to install the lib
 LIBDIR=@LIBDIR@
 
-# Where to install the configuration files
-SHAREDIR=@SHAREDIR@
-
 BASH_COMPLETION_DIR=${sysconfdir}/bash_completion.d
 
 # selected libraries
