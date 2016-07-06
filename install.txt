@@ -26,6 +26,7 @@ On Debian/Ubuntu, install the following packages
  - libpycaml-ocaml-dev
  - menhir and libmenhir-ocaml-dev
  - libpcre-ocaml-dev
+ - texlive-fonts-extra (for the documentation)
 
 On Fedora, install the following packages
  - pkgconfig (optional, but strongly recommended)
