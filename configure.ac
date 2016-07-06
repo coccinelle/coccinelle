@@ -428,15 +428,15 @@ Summary
 
 configure flags:  $CONFIGURE_FLAGS
 findlib:          $OCAMLFIND	(an actual version is strongly recommended)
-menhir:           $MENHIR	(should be an optional tool)
-menhirLib module: $enable_menhirLib	(for local package use --disable-menhirLib)
+menhir:           $MENHIR	(should be an optional tool, install the menhir package otherwise)
+menhirLib module: $enable_menhirLib	(for local package use --disable-menhirLib, install the libmenhir-ocaml-dev package otherwise)
 
 ocaml scripting:  $enable_ocaml	(overridable with --enable-ocaml)
 python scripting: $enable_python	(overridable with --enable-python)
 
 pcre regexes:     $enable_pcre_syntax	(overridable with --enable-pcre-syntax)
 pcre module:      $enable_pcre	(for local package use --disable-pcre)
-pcre library:     $HAVE_PCRE	(requires the dev version of libpcre)
+pcre library:     $HAVE_PCRE	(requires the libpcre-ocaml-dev package)
 
 optimized spatch: $enable_opt	(overridable with --disable-opt)
 
