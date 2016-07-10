@@ -63,6 +63,7 @@ let rec test_loop cocci_file cfiles =
       test_loop cocci_file cfiles'
 
 let test_with_output_redirected cocci_file cfiles expected_out =
+  Iteration.initialization_stack := [];
   let redirected_output = begin_redirect_output expected_out in
   let (cocci_infos, res) =
     try test_loop cocci_file cfiles
