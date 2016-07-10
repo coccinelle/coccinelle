@@ -145,7 +145,7 @@ all-release: Makefile.config version.ml
 	$(MAKE) .depend
 	$(MAKE) $(TARGET_SPATCH)
 	$(MAKE) preinstall
-	$(MAKE) docs
+#	$(MAKE) docs
 	@$(ECHO) -e "\n\tcoccinelle can now be installed via 'make install'"
 
 all.opt: Makefile.config
