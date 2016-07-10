@@ -2538,3 +2538,30 @@ let process file isofile verbose =
 
   (metavars,code,fvs,neg_pos,ua,pos,search_tokens,
    !Parse_aux.contains_string_constant)
+
+let enumerate_pos_script =
+  (* A case for everything that can contain a constraint *)
+  let bind = (@) in
+  let option_default = [] in
+  let mcode r mc =
+    List.fold_left
+      (function prev ->
+	function Ast_cocci.MetaPos(name,constraints,_,_,_) ->
+	  Common.fold_left_with_index
+	    (fun prev c i ->
+	      match c with
+		Ast_cocci.PosNegSet l -> prev
+	      | Ast_cocci.PosScript(script_name, lang, params, body) ->
+		  (name, script_name, lang, params, body) ::
+		  prev)
+	    prev constraints)
+      option_default (Ast_cocci.get_pos_var mc) in
+  let donothing r k e = k e in
+  let recursor = Visitor_ast.combiner bind option_default
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode
+      donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing in
+  recursor.Visitor_ast.combiner_top_level

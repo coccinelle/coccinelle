@@ -329,7 +329,7 @@ module XMATCH = struct
     then f () tin (* success *)
     else fail tin (* failure *)
 
-  let check_pos_constraints constraints pvalu f tin =
+  let check_pos_constraints pname constraints pvalu f tin =
     let res =
       List.for_all
 	(function
@@ -355,6 +355,17 @@ module XMATCH = struct
 		with Not_found -> None in
 	      (match values with
 		Some args -> Run_ocamlcocci.run_constraint name args
+	      | None -> false)
+	  | Ast_cocci.PosScript(_, "python", params, body) ->
+	      let values =
+		try
+		  Some((pname, pvalu) ::
+		       List.map
+			 (fun (p, _) -> (p, tin.binding0 +> List.assoc p))
+			 params)
+		with Not_found -> None in
+	      (match values with
+		Some args -> Pycocci.run_constraint args body
 	      | None -> false)
 	  | Ast_cocci.PosScript(name,_,params,_) ->
 	      failwith "languages other than ocaml not supported")
@@ -527,7 +538,8 @@ module XMATCH = struct
 	let rec loop tin = function
 	    [] -> finish tin
 	  | Ast_cocci.MetaPos(name,constraints,per,keep,inherited) :: rest ->
-	      check_pos_constraints constraints pvalu
+	      let name' = Ast_cocci.unwrap_mcode name in
+	      check_pos_constraints name' constraints pvalu
 		(function () ->
 	    (* constraints are satisfied, now see if we are compatible
 	       with existing bindings *)

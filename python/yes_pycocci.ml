@@ -217,8 +217,14 @@ let default_hashtbl_size = 17
 
 let added_variables = Hashtbl.create default_hashtbl_size
 
-let build_classes env =
+let catch_python_error f =
   try
+    f ()
+  with Py.E (_, error) ->
+    failwith (Printf.sprintf "Python error: %s" (Py.Object.to_string error))
+
+let build_classes env =
+  catch_python_error begin fun () ->
     let _ = pycocci_init () in
     inc_match := true;
     exited := false;
@@ -231,8 +237,7 @@ let build_classes env =
 	| name -> Py.Module.remove mx name)
       added_variables;
     Hashtbl.clear added_variables
-  with Py.E (_, error) ->
-    failwith (Printf.sprintf "Python error: %s" (Py.Object.to_string error))
+  end
 
 let build_variable name value =
   let mx = !coccinelle_module in
@@ -362,11 +367,10 @@ let set_coccifile cocci_file =
 	()
 
 let pyrun_simplestring s =
-  try
+  catch_python_error begin fun () ->
     if not (Py.Run.simple_string s) then
       failwith "Python failure"
-  with Py.E (_, error) ->
-    failwith (Printf.sprintf "Python error: %s" (Py.Object.to_string error))
+  end
 
 let py_isinitialized () =
   Py.is_initialized ()
@@ -374,3 +378,18 @@ let py_isinitialized () =
 
 let py_finalize () =
   Py.finalize ()
+
+let run_constraint args body =
+  catch_python_error begin fun () ->
+    build_classes [];
+    let make_arg (name, value) =
+      (snd name, name, value, Ast_cocci.NoMVInit) in
+    let mv = List.map make_arg args in
+    construct_variables mv args;
+    pyrun_simplestring (Printf.sprintf "
+from coccinelle import *
+from coccilib.iteration import Iteration
+
+coccinelle.result = (%s)" body);
+    Py.Bool.to_bool (get_variable "result")
+  end

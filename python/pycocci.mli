@@ -20,3 +20,12 @@ val python_support : bool
 val initialised : bool ref
 val py_isinitialized : unit -> bool
 val py_finalize : unit -> unit
+
+val run_constraint :
+    Ast_c.metavars_binding ->
+    string ->
+    bool
+(** [run_constraint args body] runs the constraint with
+    @param args the arguments
+    @param body the constraint code,
+    @return whether the constraint is satisfied or not. *)

@@ -23,7 +23,8 @@ SRC= flag_matcher.ml lib_engine.ml pretty_print_engine.ml \
       postprocess_transinfo.ml ctlcocci_integration.ml
 
 INCLUDES = -I ../commons -I ../commons/ocamlextra -I ../globals \
-	       -I ../ctl -I ../parsing_cocci -I ../parsing_c -I ../ocaml
+		-I ../ctl -I ../parsing_cocci -I ../parsing_c -I ../ocaml \
+		-I ../python
 LIBS=../commons/commons.cma ../globals/globals.cma \
      ../ctl/ctl.cma ../parsing_c/parsing_c.cma \
      ../parsing_cocci/cocci_parser.cma \

@@ -53,21 +53,22 @@ LIBS=commons/commons.cma \
      globals/globals.cma \
      ctl/ctl.cma \
      parsing_cocci/cocci_parser.cma parsing_c/parsing_c.cma \
-     ocaml/cocciocaml.cma engine/cocciengine.cma popl09/popl.cma \
-     extra/extra.cma python/coccipython.cma
+     ocaml/cocciocaml.cma python/coccipython.cma \
+     engine/cocciengine.cma popl09/popl.cma \
+     extra/extra.cma
 
 MAKESUBDIRS=commons \
  globals ctl parsing_cocci parsing_c \
- ocaml engine popl09 extra python tools/spgen
+ ocaml python engine popl09 extra tools/spgen
 
 CLEANSUBDIRS=commons \
  globals ctl parsing_cocci parsing_c \
- ocaml engine popl09 extra python docs \
+ ocaml python engine popl09 extra docs \
  $(MAKELIBS) tools/spgen
 
 INCLUDEDIRSDEP=commons commons/ocamlextra \
  globals ctl \
- parsing_cocci parsing_c ocaml engine popl09 extra python \
+ parsing_cocci parsing_c ocaml python engine popl09 extra \
  $(MAKELIBS)
 
 INCLUDEDIRS=$(INCLUDEDIRSDEP) $(PCREDIR) $(PARMAPDIR) $(INCLIBS)
