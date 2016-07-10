@@ -1,0 +1,17 @@
+opam-version: "1.2"
+name: "pyml"
+version: "20160620"
+maintainer: "Thierry Martinez <martinez@nsup.org>"
+authors: "Thierry Martinez <martinez@nsup.org>"
+homepage: "http://pyml.gforge.inria.fr"
+bug-reports: "http://pyml.gforge.inria.fr/tracker"
+license: "BSD"
+dev-repo: "https://scm.gforge.inria.fr/anonscm/git/pyml/pyml.git"
+build: [
+  [make]
+]
+install: [make "install"]
+remove: ["ocamlfind" "remove" "pyml"]
+depends: [
+  "ocamlfind" {build}
+]

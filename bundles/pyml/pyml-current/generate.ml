@@ -2,6 +2,7 @@ type ty =
     PyObject of bool
   | PyCompilerFlags | String | WideString | Int | Int64 | Long | Size | IntPtr
   | Compare | Input | Unit | File | Double | StringOption | NeverReturn
+  | UCS2 | UCS4 | UCS2Option | UCS4Option
 
 type arguments =
     Value
@@ -333,6 +334,9 @@ let wrappers =
      result = PyObject false; };
    { symbol = "PyList_SetItem";
      arguments = Fun [PyObject false; Int; PyObject true];
+     result = Int; };
+   { symbol = "PyList_Size";
+     arguments = Fun [PyObject false];
      result = Int; };
    { symbol = "PyLong_AsLong";
      arguments = Fun [PyObject false];
@@ -689,6 +693,9 @@ let wrappers_python2 =
    { symbol = "PyClass_New";
      arguments = Fun [PyObject false; PyObject false; PyObject false];
      result = PyObject true; };
+   { symbol = "PyExc_StandardError";
+     arguments = Deref;
+     result = PyObject false; };
    { symbol = "PyEval_GetRestricted";
      arguments = Fun [];
      result = Int; };
@@ -737,9 +744,48 @@ let wrappers_python2 =
    { symbol = "PyString_FromString";
      arguments = Fun [String];
      result = PyObject true; };
+   { symbol = "PyString_FromStringAndSize";
+     arguments = Fun [String; Size];
+     result = PyObject true; };
    { symbol = "PyString_Size";
      arguments = Fun [PyObject false];
-     result = Int; };]
+     result = Size; };
+   { symbol = "PyUnicodeUCS2_AsEncodedString";
+     arguments = Fun [PyObject false; String; String];
+     result = PyObject true; };
+   { symbol = "PyUnicodeUCS2_AsUTF8String";
+     arguments = Fun [PyObject false];
+     result = PyObject true; };
+   { symbol = "PyUnicodeUCS2_AsUTF16String";
+     arguments = Fun [PyObject false];
+     result = PyObject true; };
+   { symbol = "PyUnicodeUCS2_AsUTF32String";
+     arguments = Fun [PyObject false];
+     result = PyObject true; };
+   { symbol = "PyUnicodeUCS2_DecodeUTF8";
+     arguments = Fun [String; Size; StringOption];
+     result = PyObject true; };
+   { symbol = "PyUnicodeUCS2_DecodeUTF16";
+     arguments = Fun [String; Size; StringOption; IntPtr];
+     result = PyObject true; };
+   { symbol = "PyUnicodeUCS2_DecodeUTF32";
+     arguments = Fun [String; Size; StringOption; IntPtr];
+     result = PyObject true; };
+   { symbol = "PyUnicodeUCS2_Format";
+     arguments = Fun [PyObject false; PyObject false];
+     result = PyObject true; };
+   { symbol = "PyUnicodeUCS2_FromString";
+     arguments = Fun [String];
+     result = PyObject true; };
+   { symbol = "PyUnicodeUCS2_GetSize";
+     arguments = Fun [PyObject false];
+     result = Int; };
+   { symbol = "PyUnicodeUCS2_FromUnicode";
+     arguments = Fun [UCS2; Size];
+     result = PyObject false; };
+   { symbol = "PyUnicodeUCS2_AsUnicode";
+     arguments = Fun [PyObject false];
+     result = UCS2Option; };]
 
 let wrappers_python3 =
   [{ symbol = "Py_GetProgramName";
@@ -805,14 +851,35 @@ let wrappers_python3 =
      arguments = Fun [PyObject false];
      result = PyObject true; };
    { symbol = "PyUnicode_DecodeUTF8";
-     arguments = Fun [String; StringOption];
+     arguments = Fun [String; Size; StringOption];
+     result = PyObject true; };
+   { symbol = "PyUnicode_DecodeUTF16";
+     arguments = Fun [String; Size; StringOption; IntPtr];
+     result = PyObject true; };
+   { symbol = "PyUnicode_DecodeUTF32";
+     arguments = Fun [String; Size; StringOption; IntPtr];
+     result = PyObject true; };
+   { symbol = "PyUnicode_Format";
+     arguments = Fun [PyObject false; PyObject false];
      result = PyObject true; };
    { symbol = "PyUnicode_FromString";
      arguments = Fun [String];
      result = PyObject true; };
+   { symbol = "PyUnicode_FromStringAndSize";
+     arguments = Fun [String; Size];
+     result = PyObject true; };
+   { symbol = "PyUnicode_GetLength";
+     arguments = Fun [PyObject false];
+     result = Size; };
    { symbol = "PyUnicode_GetSize";
      arguments = Fun [PyObject false];
-     result = Int; };]
+     result = Int; };
+   { symbol = "PyUnicode_FromKindAndData";
+     arguments = Fun [Int; UCS4; Size];
+     result = PyObject false; };
+   { symbol = "PyUnicode_AsUCS4Copy";
+     arguments = Fun [PyObject false];
+     result = UCS4Option; };]
 
 let string_of_type_ml ty =
   match ty with
@@ -828,6 +895,8 @@ let string_of_type_ml ty =
   | Double -> "float"
   | StringOption -> "string option"
   | NeverReturn -> "'a"
+  | UCS2 | UCS4 -> "int array"
+  | UCS2Option | UCS4Option -> "int array option"
 
 let decapitalize prefix symbol =
   prefix ^ symbol
@@ -972,6 +1041,8 @@ let string_of_type_c ty =
   | Input -> "int"
   | File -> "FILE *"
   | Double -> "double"
+  | UCS2 | UCS2Option -> "int16_t *"
+  | UCS4 | UCS4Option -> "int32_t *"
 
 let print_declaration prefix channel wrapper =
   let symbol = wrapper.symbol in
@@ -1014,12 +1085,14 @@ let coercion_of_caml ty v =
   | IntPtr -> Printf.sprintf "pyunwrap_intref(%s)" v
   | PyCompilerFlags -> Printf.sprintf "pyunwrap_compilerflags(%s)" v
   | Compare -> Printf.sprintf "Int_val(%s)" v
-  | Unit | NeverReturn -> assert false
+  | Unit | NeverReturn | UCS2Option | UCS4Option -> assert false
   | Input -> Printf.sprintf "256 + Int_val(%s)" v
   | File -> Printf.sprintf "fdopen(dup(Int_val(%s)), \"r\")" v
   | Double -> Printf.sprintf "Double_val(%s)" v
   | StringOption ->
       Printf.sprintf "Is_block(%s) ? String_val(Field(%s, 0)) : NULL" v v
+  | UCS2 -> Printf.sprintf "pyunwrap_ucs2(%s)" v
+  | UCS4 -> Printf.sprintf "pyunwrap_ucs4(%s)" v
 
 let string_of_bool b =
   if b then "true"
@@ -1040,8 +1113,11 @@ let coercion_of_c ty =
   | PyCompilerFlags ->
       Printf.sprintf "    CAMLreturn(pywrap_compilerflags(result));"
   | Unit | NeverReturn -> Printf.sprintf "    CAMLreturn(Val_unit);"
-  | Input | File -> assert false
+  | Input | File | UCS2 | UCS4 -> assert false
   | Double -> Printf.sprintf "    CAMLreturn(caml_copy_double(result));"
+  | UCS2Option -> Printf.sprintf "    CAMLreturn(pywrap_ucs2_option(result));"
+  | UCS4Option ->
+      Printf.sprintf "    CAMLreturn(pywrap_ucs4_option_and_free(result));"
 
 let space_if_not_starred s =
   if s.[String.length s - 1] = '*' then
@@ -1058,7 +1134,7 @@ let rec seq a b =
   if a < b then a :: seq (succ a) b
   else []
 
-let print_stub prefix channel wrapper =
+let print_stub prefix assert_initialized channel wrapper =
   let symbol = wrapper.symbol in
   let arguments = wrapper.arguments in
   let need_bytecode =
@@ -1080,7 +1156,7 @@ let print_stub prefix channel wrapper =
   let arg_ocaml i = Printf.sprintf "arg%d_ocaml" i in
   let camlparam =
     match arguments with
-      Value | Deref | Fun [] -> "    CAMLparam1(unit);\n"
+      Value | Deref | Fun [] -> "    CAMLparam1(unit);"
     | Fun arguments' ->
         let result = Buffer.create 17 in
         let count = List.length arguments' in
@@ -1129,7 +1205,7 @@ let print_stub prefix channel wrapper =
           (space_if_not_starred result_type_c) callarg in
   let free_argument i ty =
     match ty with
-      PyCompilerFlags -> Printf.sprintf "\n    free(arg%d);" i
+      PyCompilerFlags | UCS2 | UCS4 -> Printf.sprintf "\n    free(arg%d);" i
     | File -> Printf.sprintf "\n    fclose(arg%d);" i
     | _ -> "" in
   let free =
@@ -1142,12 +1218,14 @@ let print_stub prefix channel wrapper =
 CAMLprim value
 %s(%s)
 {
-%s%s
+%s
+    %s
+%s
 %s%s
 %s
 }
-" symbol_wrapper stub_arguments camlparam destruct_arguments call free
-    return;
+" symbol_wrapper stub_arguments camlparam assert_initialized destruct_arguments
+    call free return;
   if need_bytecode then
     let arguments' =
       match arguments with
@@ -1163,15 +1241,15 @@ CAMLprim value
       (String.concat ", "
          (Pyml_compat.mapi (fun i _ -> Printf.sprintf "argv[%d]" i) arguments'))
 
-let print_stubs prefix channel wrappers =
-  List.iter (print_stub prefix channel) wrappers
+let print_stubs prefix assert_initialized channel wrappers =
+  List.iter (print_stub prefix assert_initialized channel) wrappers
 
 let print_all_stubs channel =
-  print_stubs "Python_" channel wrappers;
+  print_stubs "Python_" "assert_initialized();" channel wrappers;
   Printf.fprintf channel "\n/* Python 2 */\n";
-  print_stubs "Python2_" channel wrappers_python2;
+  print_stubs "Python2_" "assert_python2();" channel wrappers_python2;
   Printf.fprintf channel "\n/* Python 3 */\n";
-  print_stubs "Python3_" channel wrappers_python3
+  print_stubs "Python3_" "assert_python3();" channel wrappers_python3
 
 let write_file filename f =
   let channel = open_out filename in
