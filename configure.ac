@@ -174,7 +174,7 @@ AS_IF([test "x$OCAML_PKG_dynlink" != xno -a -f "$PATH_dynlink/dynlink.cmxa"],
 dnl  menhir handling
 dnl  variables:
 dnl    with_menhir: whether or not menhir must be used
-AC_SUBST([PATH_menhirLib_bundle], [$COCCI_SRCDIR/bundles/menhirLib/])
+AC_SUBST([PATH_menhirLib_bundle], [$COCCI_SRCDIR/bundles/menhirLib])
 AC_SUBST([PATH_menhir_bundle], [$PATH_menhirLib_bundle/menhir])
 
 AC_COCCI_TOOL([MENHIR],[menhir],[$PATH_menhir_bundle])
@@ -190,7 +190,10 @@ AS_IF([test "x$SUBSTITUTED_MENHIR" != xyes],
     ],
     [dnl
       AS_IF([test -n "$OCAMLFIND"],
-        AC_SUBST([PATH_menhirLib],[`$OCAMLFIND query menhirLib`])
+        [dnl
+          AC_MSG_NOTICE([system menhir will be used])
+          AC_SUBST([PATH_menhirLib],[`$OCAMLFIND query menhirLib`])
+        ],
         [dnl
           AC_MSG_NOTICE(
             [system menhirLib cannot be found: bundled menhir will be used instead])
@@ -204,7 +207,7 @@ AC_SUBST([FEATURE_menhirLib], [1])
 
 AS_IF([test "x$SUBSTITUTED_MENHIR" = xyes],
 [dnl
-  AC_SUBST([PATH_menhirLib], [$COCCI_SRCDIR/bundles/menhirLib/])
+  AC_SUBST([PATH_menhirLib], [$PATH_menhirLib_bundle])
   AC_SUBST([MAKE_menhirLib], [$PATH_menhirLib])
 ])
 
