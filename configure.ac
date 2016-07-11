@@ -139,7 +139,6 @@ AC_COCCI_INIT_PKG_EMPTY([menhirLib])
 AC_COCCI_INIT_PKG_EMPTY([dynlink])
 AC_COCCI_INIT_PKG_EMPTY([pcre])
 AC_COCCI_INIT_PKG_EMPTY([pyml])
-AC_COCCI_INIT_PKG_EMPTY([camlp4])
 AC_COCCI_INIT_PKG_EMPTY([parmap])
 
 dnl  required ocaml packages
