@@ -135,7 +135,6 @@ dnl  set some defaults
 dnl  add a line for each package that is
 dnl  configured via AC_CHECK_COCCI_EXTPKG
 dnl  or AC_REQ_COCCI_EXTPKG
-AC_COCCI_INIT_PKG_EMPTY([menhirLib])
 AC_COCCI_INIT_PKG_EMPTY([dynlink])
 AC_COCCI_INIT_PKG_EMPTY([pcre])
 AC_COCCI_INIT_PKG_EMPTY([pyml])
@@ -150,7 +149,6 @@ AC_REQ_COCCI_STDPKG([str])
 
 dnl  required modules (Some are available locally too)
 AC_REQ_COCCI_EXTPKG([dynlink])
-AC_REQ_COCCI_EXTPKG([menhirLib])
 AC_REQ_COCCI_EXTPKG([parmap])
 
 
@@ -176,15 +174,44 @@ AS_IF([test "x$OCAML_PKG_dynlink" != xno -a -f "$PATH_dynlink/dynlink.cmxa"],
 dnl  menhir handling
 dnl  variables:
 dnl    with_menhir: whether or not menhir must be used
-AC_COCCI_TOOL([MENHIR],[menhir],[$COCCI_SRCDIR/bundles/menhirLib/menhir])
-AS_IF([test "x$SUBSTITUTED_MENHIR" = xyes],
-[dnl
-  AC_SUBST([MAKE_menhirLib], [$COCCI_SRCDIR/bundles/menhirLib/])
-],
+AC_SUBST([PATH_menhirLib_bundle], [$COCCI_SRCDIR/bundles/menhirLib/])
+AC_SUBST([PATH_menhir_bundle], [$PATH_menhirLib_bundle/menhir])
+
+AC_COCCI_TOOL([MENHIR],[menhir],[$PATH_menhir_bundle])
+
+AS_IF([test "x$SUBSTITUTED_MENHIR" != xyes],
 [dnl
   AC_MSG_NOTICE([system menhir will be used])
+  AC_SUBST([MAKE_menhirLib],[])
+  AS_IF([$MENHIR --help | grep suggest-menhirLib >/dev/null],
+    [dnl
+      AC_MSG_NOTICE([system menhir will be used])
+      AC_SUBST([PATH_menhirLib],[`$MENHIR --suggest-menhirLib`])
+    ],
+    [dnl
+      AS_IF([test -n "$OCAMLFIND"],
+        AC_SUBST([PATH_menhirLib],[`$OCAMLFIND query menhirLib`])
+        [dnl
+          AC_MSG_NOTICE(
+            [system menhirLib cannot be found: bundled menhir will be used instead])
+          AC_SUBST([MENHIR], [$PATH_menhir_bundle])
+          AC_SUBST([SUBSTITUTED_MENHIR], [yes])
+        ])
+    ])
 ])
 
+AC_SUBST([FEATURE_menhirLib], [1])
+
+AS_IF([test "x$SUBSTITUTED_MENHIR" = xyes],
+[dnl
+  AC_SUBST([PATH_menhirLib], [$COCCI_SRCDIR/bundles/menhirLib/])
+  AC_SUBST([MAKE_menhirLib], [$PATH_menhirLib])
+])
+
+AC_SUBST([FLAGS_menhirLib], [])
+AC_SUBST([OPTFLAGS_menhirLib], [])
+AC_SUBST([MODULES_menhirLib], [])
+AC_SUBST([MODULESOPT_menhirLib], [])
 
 dnl  ocaml script handling
 dnl  variables:
@@ -427,8 +454,7 @@ Summary
 
 configure flags:  $CONFIGURE_FLAGS
 findlib:          $OCAMLFIND	(an actual version is strongly recommended)
-menhir:           $MENHIR	(should be an optional tool, install the menhir package otherwise)
-menhirLib module: $enable_menhirLib	(for local package use --disable-menhirLib, install the libmenhir-ocaml-dev package otherwise)
+menhir:           $MENHIR	(for local package use --without-menhir, install the menhir package otherwise)
 
 ocaml scripting:  $enable_ocaml	(overridable with --enable-ocaml)
 python scripting: $enable_python	(overridable with --enable-python)
