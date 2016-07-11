@@ -36,9 +36,9 @@ val process :
 	     (* true if string constants need to be parsed *)
 	  bool
 
-val enumerate_pos_script :  Ast_cocci.top_level ->
-  (Ast_cocci.meta_name Ast_cocci.mcode * string * string *
+val enumerate_constraint_scripts :  Ast_cocci.top_level ->
+  (Ast_cocci.metavar * Ast_cocci.meta_name Ast_cocci.mcode * string * string *
      (Ast_cocci.meta_name * Ast_cocci.metavar) list * string)
     list
-(** Returns the list of all position constraints as tuples
-    [(name, script_name, lang, params, body)]. *)
+(** Returns the list of all constraint scripts as tuples
+    [(kind, name, script_name, lang, params, body)]. *)

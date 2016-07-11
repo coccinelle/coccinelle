@@ -346,29 +346,9 @@ module XMATCH = struct
 		      (*if the variable is not there, it puts no constraints*)
 		      true)
 		l
-	  | Ast_cocci.PosScript(name,"ocaml",params,_) ->
-	      let values =
-		try
-		  Some(pvalu ::
-		       List.map (fun (p,_) -> tin.binding0 +> List.assoc p)
-			 params)
-		with Not_found -> None in
-	      (match values with
-		Some args -> Run_ocamlcocci.run_constraint name args
-	      | None -> false)
-	  | Ast_cocci.PosScript(_, "python", params, body) ->
-	      let values =
-		try
-		  Some((pname, pvalu) ::
-		       List.map
-			 (fun (p, _) -> (p, tin.binding0 +> List.assoc p))
-			 params)
-		with Not_found -> None in
-	      (match values with
-		Some args -> Pycocci.run_constraint args body
-	      | None -> false)
-	  | Ast_cocci.PosScript(name,_,params,_) ->
-	      failwith "languages other than ocaml not supported")
+	  | Ast_cocci.PosScript c ->
+	      Cocci_vs_c.satisfies_scriptconstraint c pname pvalu
+		(fun name -> List.assoc name tin.binding0))
 	constraints in
     if res then f () tin (* success *) else fail tin (* failure *)
 

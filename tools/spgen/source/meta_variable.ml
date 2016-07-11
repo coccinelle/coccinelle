@@ -132,9 +132,10 @@ let seed ~rn =
     | Ast.StringSeed s -> " = \"" ^ s ^ "\""
     | Ast.ListSeed s -> " = " ^ (String.concat " ## " (List.map se s))
 
-let regex_constraint = function
+let general_constraint = function
   | Ast.IdRegExp (s,r) -> " =~ \"" ^ s ^ "\""
   | Ast.IdNotRegExp (s,r) -> " !~ \"" ^ s ^"\""
+  | Ast.IdScriptConstraint c -> ": [script]"
 
 let list_constraints ~tostring_fn ~op = function
   | [] -> ""
@@ -151,7 +152,7 @@ let id_constraint ~rn =
   | Ast.IdNoConstraint -> ""
   | Ast.IdPosIdSet(slist,mnlist) -> list_constraints' slist mnlist " = "
   | Ast.IdNegIdSet(slist,mnlist) -> list_constraints' slist mnlist " != "
-  | Ast.IdRegExpConstraint(re) -> regex_constraint re
+  | Ast.IdGeneralConstraint(re) -> general_constraint re
 
 let id_constraint ~rn =
   let list_constraints' slist mnlist op =
@@ -163,11 +164,11 @@ let id_constraint ~rn =
   | Ast.IdNoConstraint -> ""
   | Ast.IdPosIdSet(slist,mnlist) -> list_constraints' slist mnlist " = "
   | Ast.IdNegIdSet(slist,mnlist) -> list_constraints' slist mnlist " != "
-  | Ast.IdRegExpConstraint(re) -> regex_constraint re
+  | Ast.IdGeneralConstraint(re) -> general_constraint re
 
 let constraints ~rn = function
     Ast0.NoConstraint -> ""
-  | Ast0.NotIdCstrt recstr -> regex_constraint recstr
+  | Ast0.NotIdCstrt recstr -> general_constraint recstr
   | Ast0.NotExpCstrt exps ->
 
     (* exps is a list of expressions, but it is limited to numbers and ids

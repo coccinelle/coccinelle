@@ -282,10 +282,10 @@ let prepare coccifile code =
 	  | _ -> prev)
       [] code in
   let other_rules = List.rev other_rules in
-  let add_constraint_rules prev (name, script_name, lang, params, body) =
+  let add_constraint_rules prev (kind, name, script_name, lang, params, body) =
     if lang = "ocaml" then
       let ((r,nm) as self) = Ast.unwrap_mcode name in
-      let self = (self,Ast.MetaPosDecl(Ast.NONE,self)) in
+      let self = (self, kind) in
       (script_name, self::params, body) :: prev
     else
       prev in
@@ -297,7 +297,7 @@ let prepare coccifile code =
 	      List.fold_left
 		(fun accu toplevel ->
 		  List.fold_left add_constraint_rules prev
-		    (Parse_cocci.enumerate_pos_script toplevel))
+		    (Parse_cocci.enumerate_constraint_scripts toplevel))
 		prev code
 	  | _ -> prev)
       [] code in

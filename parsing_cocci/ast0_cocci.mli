@@ -143,7 +143,7 @@ and expression = base_expression wrap
 
 and constraints =
     NoConstraint
-  | NotIdCstrt     of Ast_cocci.reconstraint
+  | NotIdCstrt     of Ast_cocci.general_constraint
   | NotExpCstrt    of expression list
   | SubExpCstrt    of Ast_cocci.meta_name list
 

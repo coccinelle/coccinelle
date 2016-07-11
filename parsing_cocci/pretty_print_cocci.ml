@@ -169,13 +169,15 @@ let rec idconstraint = function
       print_string " !=";
       List.iter (function s -> print_string (" "^s)) str;
       List.iter (function (r,n) -> print_string " "; print_meta(r,n)) meta
-  | Ast.IdRegExpConstraint re -> regconstraint re
+  | Ast.IdGeneralConstraint re -> general_constraint re
 
-and regconstraint = function
+and general_constraint = function
     Ast.IdRegExp (re,_) ->
       print_string "~= \""; print_string re; print_string "\""
   | Ast.IdNotRegExp (re,_) ->
       print_string "~!= \""; print_string re; print_string "\""
+  | Ast.IdScriptConstraint c ->
+      print_string ": [script]"
 
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
