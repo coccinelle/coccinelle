@@ -114,7 +114,7 @@ let parse_local ~rule_names ~config_name =
 
 let parse_default = UI.make
   ~description:"No description."
-  ~confidence:(UI.Confidence.from_string "moderate")
+  ~confidence:UI.Confidence.Moderate
 
 (* TODO: implement *)
 let parse_global ~config_name =

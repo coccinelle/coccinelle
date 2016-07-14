@@ -29,6 +29,7 @@
 
 (* read local config with information specific for the coccinelle script
  * currently being generated.
+ * rule_names are a list of the names of */+/- rules in the coccinelle script.
  *)
 val parse_local :
   rule_names:string list ->
