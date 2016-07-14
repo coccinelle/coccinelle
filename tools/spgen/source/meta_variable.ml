@@ -555,8 +555,8 @@ let get_rule (_,(r,_),_) = r
 let get_name (_,(_,nm),_) = nm
 
 (* forces rule inheritance (except if rule is already inherited). *)
-let inherit_rule ~new_rule ((a,(b,c),d) as mv) =
-  if b = "" then (a,(new_rule,c),d) else mv
+let inherit_rule ?(force = false) ~new_rule ((a,(b,c),d) as mv) =
+  if b = "" || force then (a,(new_rule,c),d) else mv
 
 let print out mv = output_string out (tostring_mv mv)
 

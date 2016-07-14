@@ -19,7 +19,7 @@ module MV = Meta_variable
 
 type t = (Rule_header.t * Rule_body.t) list
 
-let generate ~context_mode ~disj_map ~new_name ~rule =
+let generate ~context_mode ~disj_map ~new_name ~rule_names ~rule =
 
   match rule with
   | Ast0.InitialScriptRule (nm,_,_,_,_)
@@ -34,7 +34,27 @@ let generate ~context_mode ~disj_map ~new_name ~rule =
       let context_nm = Globals.get_context_name ~context_mode new_name in
       let disj_nm = Globals.get_disj_name new_name in
 
-      let meta_vars = MV.extract ~minus_rule ~rule_name:old_nm in
+      let meta_vars =
+        (* the mv is either local, inherited from a non-*/+/- rule, or
+         * inherited from a */+/- rule. In the last case, it should be inherited
+         * from the * version and not the +/- version of the rule.
+         * We can do it the following way, since we know that:
+         *   1) an inherited rule is always named
+         *   2) a named rule will have the same name in the generated script
+         *      (unlike number rules, which can have names set by config)
+         *   3) if the current local rule is in context_mode, so was the inherited
+         *      rule since context_mode is set on a per-script basis. Ie. we can
+         *      safely use get_context_name.
+         *)
+        let inherit_name mv =
+          let r = MV.get_rule mv in
+          if List.mem r rule_names
+          then MV.inherit_rule ~force:true ~new_rule:(Globals.get_context_name ~context_mode r) mv
+          else mv
+        in
+        MV.extract ~minus_rule ~rule_name:old_nm |> List.map inherit_name
+      in
+
       let deps = Globals.add_context_dependency ~context_mode deps in
       let rh_fn = Rule_header.generate ~isos ~drop_isos ~deps ~meta_vars in
 

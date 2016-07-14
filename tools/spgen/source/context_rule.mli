@@ -51,6 +51,7 @@ type t
  *  - context_mode: if true, input rule has *, else input rule has +/-.
  *  - disj_map: disjunction map, indicates */+/- slices in disjunctions.
  *  - new_name: new name if input rule is nameless, else same as name in rule.
+ *  - rule_names: list of names of the other */+/- rules in the full script.
  *  - rule: the input rule, must be a */+/- rule.
  *
  * Returns:
@@ -62,6 +63,7 @@ val generate :
   context_mode:bool ->
   disj_map:Detect_patch.t ->
   new_name:string ->
+  rule_names:string list ->
   rule:Ast0_cocci.parsed_rule ->
   t * Meta_variable.t list
 
