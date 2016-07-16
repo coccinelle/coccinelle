@@ -260,7 +260,9 @@ and disjini i =
       List.map (function ini -> Ast.rewrap i (Ast.OptIni(ini))) ini
 
 and designator = function
-    Ast.DesignatorField(dot,id) -> [Ast.DesignatorField(dot,id)]
+    Ast.DesignatorField(dot,id) ->
+      let id = disjident id in
+      List.map (function id -> Ast.DesignatorField(dot,id)) id
   | Ast.DesignatorIndex(lb,exp,rb) ->
       let exp = disjexp exp in
       List.map (function exp -> Ast.DesignatorIndex(lb,exp,rb)) exp
