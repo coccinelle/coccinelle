@@ -4,6 +4,8 @@ type input = Pytypes.input = Single | File | Eval
 
 type compare = Pytypes.compare = LT | LE | EQ | NE | GT | GE
 
+type ucs = UCSNone | UCS2 | UCS4
+
 external load_library: int -> string option -> unit = "py_load_library"
 external finalize_library: unit -> unit = "py_finalize_library"
 external pywrap_closure: string -> (pyobject -> pyobject) -> pyobject
@@ -25,6 +27,8 @@ external pyobject_asreadbuffer: pyobject -> string option
     = "PyObject_AsReadBuffer_wrapper"
 external pyobject_aswritebuffer: pyobject -> string option
     = "PyObject_AsWriteBuffer_wrapper"
+
+external ucs: unit -> ucs = "py_get_UCS"
 
 external fd_of_descr: Unix.file_descr -> int = "%identity"
 
@@ -433,10 +437,16 @@ end
 let object_repr obj = check_not_null (Pywrappers.pyobject_repr obj)
 
 let as_UTF8_string s =
-  if !version_major_value >= 3 then
-    check_not_null (Pywrappers.Python3.pyunicode_asutf8string s)
-  else
-    check_not_null (Pywrappers.Python2.pyunicodeucs2_asutf8string s)
+  let f =
+    match ucs () with
+      UCS2 -> Pywrappers.UCS2.pyunicodeucs2_asutf8string
+    | UCS4 -> Pywrappers.UCS4.pyunicodeucs4_asutf8string
+    | UCSNone ->
+        if !version_major_value >= 3 then
+          Pywrappers.Python3.pyunicode_asutf8string
+        else
+          failwith "Py.as_UTF8_string: unavailable" in
+  check_not_null (f s)
 
 module Type = struct
   type t =
@@ -738,14 +748,19 @@ module String = struct
       match size with
         None -> String.length s
       | Some size' -> size' in
-    let decoded_string =
-      if !version_major_value >= 3 then
-        Pywrappers.Python3.pyunicode_decodeutf8 s size' errors
-      else
-        Pywrappers.Python2.pyunicodeucs2_decodeutf8 s size' errors in
-    check_not_null decoded_string
+    let f =
+      match ucs () with
+        UCS2 -> Pywrappers.UCS2.pyunicodeucs2_decodeutf8
+      | UCS4 -> Pywrappers.UCS4.pyunicodeucs4_decodeutf8
+      | UCSNone ->
+          if !version_major_value >= 3 then
+            Pywrappers.Python3.pyunicode_decodeutf8
+          else
+            failwith "Py.String.decode_UTF8: unavailable" in
+    check_not_null (f s size' errors)
 
-  let decode_UTF16_32 decode_python2 decode_python3 errors size byteorder s =
+  let decode_UTF16_32 decode_ucs2 decode_ucs4 decode_python3 errors size
+      byteorder s =
     let size' =
       match size with
         None -> String.length s
@@ -756,25 +771,31 @@ module String = struct
       | Some LittleEndian -> -1
       | Some BigEndian -> 1 in
     let byteorder_ref = ref byteorder' in
-    let decoded_string =
-      if !version_major_value >= 3 then
-        decode_python3 s size' errors byteorder_ref
-      else
-        decode_python2 s size' errors byteorder_ref in
-    ignore (check_not_null decoded_string);
+    let f =
+      match ucs () with
+        UCS2 -> decode_ucs2
+      | UCS4 -> decode_ucs4
+      | UCSNone ->
+          if !version_major_value >= 3 then
+            decode_python3
+          else
+            failwith "Py.String.decode_UTF16/32: unavailable" in
+    let decoded_string = check_not_null (f s size' errors byteorder_ref) in
     let decoded_byteorder =
       match !byteorder_ref with
         -1 -> LittleEndian
       | 1 -> BigEndian
-      | _ -> failwith "Py.decode_UTF16/32: unknown endianess value" in
+      | _ -> failwith "Py.String.decode_UTF16/32: unknown endianess value" in
     (decoded_string, decoded_byteorder)
 
   let decode_UTF16 ?errors ?size ?byteorder s =
-    decode_UTF16_32 Pywrappers.Python2.pyunicodeucs2_decodeutf16
+    decode_UTF16_32 Pywrappers.UCS2.pyunicodeucs2_decodeutf16
+      Pywrappers.UCS4.pyunicodeucs4_decodeutf16
       Pywrappers.Python3.pyunicode_decodeutf16 errors size byteorder s
 
   let decode_UTF32 ?errors ?size ?byteorder s =
-    decode_UTF16_32 Pywrappers.Python2.pyunicodeucs2_decodeutf32
+    decode_UTF16_32 Pywrappers.UCS2.pyunicodeucs2_decodeutf32
+      Pywrappers.UCS4.pyunicodeucs4_decodeutf32
       Pywrappers.Python3.pyunicode_decodeutf32 errors size byteorder s
 
   let of_unicode ?size int_array =
@@ -782,28 +803,44 @@ module String = struct
       match size with
         None -> Array.length int_array
       | Some size' -> size' in
-    if !version_major_value >= 3 then
-      check_not_null
-        (Pywrappers.Python3.pyunicode_fromkindanddata 4 int_array size')
-    else
-      check_not_null
-        (Pywrappers.Python2.pyunicodeucs2_fromunicode int_array size')
+    let f =
+      match ucs () with
+        UCS2 -> Pywrappers.UCS2.pyunicodeucs2_fromunicode
+      | UCS4 -> Pywrappers.UCS4.pyunicodeucs4_fromunicode
+      | UCSNone ->
+          if !version_major_value >= 3 then
+            Pywrappers.Python3.pyunicode_fromkindanddata 4
+          else
+            failwith "Py.String.of_unicode: unavailable" in
+    check_not_null (f int_array size')
 
   let to_unicode s =
-    if !version_major_value >= 3 then
-      check_some (Pywrappers.Python3.pyunicode_asucs4copy s)
-    else
-      check_some (Pywrappers.Python2.pyunicodeucs2_asunicode s)
+    let f =
+      match ucs () with
+        UCS2 -> Pywrappers.UCS2.pyunicodeucs2_asunicode
+      | UCS4 -> Pywrappers.UCS4.pyunicodeucs4_asunicode
+      | UCSNone ->
+          if !version_major_value >= 3 then
+            Pywrappers.Python3.pyunicode_asucs4copy
+          else
+            failwith "Py.String.to_unicode: unavailable" in
+    check_some (f s)
 
   let string_type_mismatch obj = Type.mismatch "String or Unicode" obj
 
   let format fmt args =
     match Type.get fmt with
       Type.Unicode ->
-        if !version_major_value >= 3 then
-          check_not_null (Pywrappers.Python3.pyunicode_format fmt args)
-        else
-          check_not_null (Pywrappers.Python2.pyunicodeucs2_format fmt args)
+        let f =
+          match ucs () with
+            UCS2 -> Pywrappers.UCS2.pyunicodeucs2_format
+          | UCS4 -> Pywrappers.UCS4.pyunicodeucs4_format
+          | UCSNone ->
+              if !version_major_value >= 3 then
+                Pywrappers.Python3.pyunicode_format
+              else
+                failwith "Py.String.format: unavailable" in
+        check_not_null (f fmt args)
     | Type.Bytes ->
         if !version_major_value >= 3 then
           failwith "No format on Bytes in Python 3"
@@ -814,10 +851,16 @@ module String = struct
   let length s =
     match Type.get s with
       Type.Unicode ->
-        if !version_major_value >= 3 then
-          Pywrappers.Python3.pyunicode_getlength s
-        else
-          Pywrappers.Python2.pyunicodeucs2_getsize s
+        let f =
+          match ucs () with
+            UCS2 -> Pywrappers.UCS2.pyunicodeucs2_getsize
+          | UCS4 -> Pywrappers.UCS4.pyunicodeucs4_getsize
+          | UCSNone ->
+              if !version_major_value >= 3 then
+                Pywrappers.Python3.pyunicode_getlength
+              else
+                failwith "Py.String.length: unavailable" in
+        f s
     | Type.Bytes ->
         if !version_major_value >= 3 then
           Pywrappers.Python3.pybytes_size s

@@ -749,8 +749,10 @@ let wrappers_python2 =
      result = PyObject true; };
    { symbol = "PyString_Size";
      arguments = Fun [PyObject false];
-     result = Size; };
-   { symbol = "PyUnicodeUCS2_AsEncodedString";
+     result = Size; };]
+
+let wrappers_ucs2 =
+  [{ symbol = "PyUnicodeUCS2_AsEncodedString";
      arguments = Fun [PyObject false; String; String];
      result = PyObject true; };
    { symbol = "PyUnicodeUCS2_AsUTF8String";
@@ -786,6 +788,44 @@ let wrappers_python2 =
    { symbol = "PyUnicodeUCS2_AsUnicode";
      arguments = Fun [PyObject false];
      result = UCS2Option; };]
+
+let wrappers_ucs4 =
+  [{ symbol = "PyUnicodeUCS4_AsEncodedString";
+     arguments = Fun [PyObject false; String; String];
+     result = PyObject true; };
+   { symbol = "PyUnicodeUCS4_AsUTF8String";
+     arguments = Fun [PyObject false];
+     result = PyObject true; };
+   { symbol = "PyUnicodeUCS4_AsUTF16String";
+     arguments = Fun [PyObject false];
+     result = PyObject true; };
+   { symbol = "PyUnicodeUCS4_AsUTF32String";
+     arguments = Fun [PyObject false];
+     result = PyObject true; };
+   { symbol = "PyUnicodeUCS4_DecodeUTF8";
+     arguments = Fun [String; Size; StringOption];
+     result = PyObject true; };
+   { symbol = "PyUnicodeUCS4_DecodeUTF16";
+     arguments = Fun [String; Size; StringOption; IntPtr];
+     result = PyObject true; };
+   { symbol = "PyUnicodeUCS4_DecodeUTF32";
+     arguments = Fun [String; Size; StringOption; IntPtr];
+     result = PyObject true; };
+   { symbol = "PyUnicodeUCS4_Format";
+     arguments = Fun [PyObject false; PyObject false];
+     result = PyObject true; };
+   { symbol = "PyUnicodeUCS4_FromString";
+     arguments = Fun [String];
+     result = PyObject true; };
+   { symbol = "PyUnicodeUCS4_GetSize";
+     arguments = Fun [PyObject false];
+     result = Int; };
+   { symbol = "PyUnicodeUCS4_FromUnicode";
+     arguments = Fun [UCS4; Size];
+     result = PyObject false; };
+   { symbol = "PyUnicodeUCS4_AsUnicode";
+     arguments = Fun [PyObject false];
+     result = UCS4Option; };]
 
 let wrappers_python3 =
   [{ symbol = "Py_GetProgramName";
@@ -991,6 +1031,14 @@ let print_all_externals channel =
 module Python2 = struct\n";
   print_externals "  " "Python2_" channel wrappers_python2;
   Printf.fprintf channel "end
+(** UCS2 specific bindings. *)
+module UCS2 = struct\n";
+  print_externals "  " "UCS2_" channel wrappers_ucs2;
+  Printf.fprintf channel "end
+(** UCS4 specific bindings. *)
+module UCS4 = struct\n";
+  print_externals "  " "UCS4_" channel wrappers_ucs4;
+  Printf.fprintf channel "end
 (** Python 3 specific bindings. *)
 module Python3 = struct\n";
   print_externals "  " "Python3_" channel wrappers_python3;
@@ -1024,7 +1072,19 @@ let print_all_dlsyms channel =
   print_dlsyms "    " "Python2_" channel wrappers_python2;
   Printf.fprintf channel "}\nelse {\n";
   print_dlsyms "    " "Python3_" channel wrappers_python3;
-  Printf.fprintf channel "}\n"
+  Printf.fprintf channel "}
+switch (ucs) {
+case UCS2:
+";
+  print_dlsyms "    " "UCS2_" channel wrappers_ucs2;
+  Printf.fprintf channel "break;
+case UCS4:
+";
+  print_dlsyms "    " "UCS4_" channel wrappers_ucs4;
+  Printf.fprintf channel "break;
+case UCS_NONE:
+  break;
+}\n"
 
 let string_of_type_c ty =
   match ty with
@@ -1072,6 +1132,10 @@ let print_all_declarations channel =
   print_declarations "Python_" channel wrappers;
   Printf.fprintf channel "\n/* Python 2 */\n";
   print_declarations "Python2_" channel wrappers_python2;
+  Printf.fprintf channel "\n/* UCS 2 */\n";
+  print_declarations "UCS2_" channel wrappers_ucs2;
+  Printf.fprintf channel "\n/* UCS 4 */\n";
+  print_declarations "UCS4_" channel wrappers_ucs4;
   Printf.fprintf channel "\n/* Python 3 */\n";
   print_declarations "Python3_" channel wrappers_python3
 
@@ -1248,6 +1312,10 @@ let print_all_stubs channel =
   print_stubs "Python_" "assert_initialized();" channel wrappers;
   Printf.fprintf channel "\n/* Python 2 */\n";
   print_stubs "Python2_" "assert_python2();" channel wrappers_python2;
+  Printf.fprintf channel "\n/* UCS 2 */\n";
+  print_stubs "UCS2_" "assert_ucs2();" channel wrappers_ucs2;
+  Printf.fprintf channel "\n/* UCS 4 */\n";
+  print_stubs "UCS4_" "assert_ucs4();" channel wrappers_ucs4;
   Printf.fprintf channel "\n/* Python 3 */\n";
   print_stubs "Python3_" "assert_python3();" channel wrappers_python3
 

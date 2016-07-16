@@ -151,6 +151,8 @@ static int (*Python_PyObject_AsWriteBuffer)
 /* Internal use only */
 static void (*Python_PyMem_Free)(void *);
 
+static enum UCS { UCS_NONE, UCS2, UCS4 } ucs;
+
 #include "pyml.h"
 
 static void *getcustom( value v )
@@ -417,6 +419,20 @@ assert_python2() {
 }
 
 static void
+assert_ucs2() {
+    if (ucs != UCS2) {
+        failwith("Python with UCS2 needed");
+    }
+}
+
+static void
+assert_ucs4() {
+    if (ucs != UCS4) {
+        failwith("Python with UCS4 needed");
+    }
+}
+
+static void
 assert_python3() {
     if (version_major != 3) {
         failwith("Python 3 needed");
@@ -480,6 +496,15 @@ py_load_library(value version_major_ocaml, value filename_ocaml)
         Python_PyString_AsStringAndSize = resolve("PyString_AsStringAndSize");
     }
     Python_PyMem_Free = resolve("PyMem_Free");
+    if (dlsym(library, "PyUnicodeUCS2_AsEncodedString")) {
+        ucs = UCS2;
+    }
+    else if (dlsym(library, "PyUnicodeUCS4_AsEncodedString")) {
+        ucs = UCS4;
+    }
+    else {
+        ucs = UCS_NONE;
+    }
 #include "pyml_dlsyms.inc"
     Python_Py_Initialize();
     CAMLreturn(Val_unit);
@@ -496,6 +521,14 @@ py_finalize_library(value unit)
     library = NULL;
     version_major = 0;
     CAMLreturn(Val_unit);
+}
+
+CAMLprim value
+py_get_UCS(value unit)
+{
+    CAMLparam1(unit);
+    assert_initialized();
+    CAMLreturn(Val_int(ucs));
 }
 
 CAMLprim value
