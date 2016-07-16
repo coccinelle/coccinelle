@@ -49,13 +49,11 @@ let split_fqn fqn =
 let pycocci_get_class_type fqn =
   let (module_name, class_name) = split_fqn fqn in
   let m = get_module module_name in
-  let attr = Py.Object.get_attr_string m class_name in
-  attr
+  Py.Module.get m class_name
 
 let pycocci_instantiate_class fqn args =
   let class_type = pycocci_get_class_type fqn in
-  let obj = Py.Eval.call_object_with_keywords class_type args Py.null in
-  obj
+  Py.Eval.call_object class_type args
 
 (* end python interaction *)
 
@@ -73,15 +71,15 @@ let sp_exit _ =
 let build_class cname parent fields methods pymodule =
   let cx =
     Py.Class.init (Py.String.of_string cname)
-      (Py.Tuple.singleton (pycocci_get_class_type parent)) fields methods in
-  Py.Dict.set_item_string (Py.Module.get_dict pymodule) cname cx;
+      ~parents:(Py.Tuple.singleton (pycocci_get_class_type parent))
+      ~fields ~methods in
+  Py.Module.set pymodule cname cx;
   cx
 
 let the_environment = ref []
 
-let has_environment_binding name =
-  let a = Py.Tuple.to_array name in
-  let (rule, name) = (Array.get a 1, Array.get a 2) in
+let has_environment_binding args =
+  let (rule, name) = (Py.Tuple.get_item args 1, Py.Tuple.get_item args 2) in
   let orule = Py.String.to_string rule in
   let oname = Py.String.to_string name in
   let e = List.exists (function (x,y) -> orule = x && oname = y)
@@ -94,15 +92,8 @@ let pyoption pyobject =
   else
     Some pyobject
 
-let list_of_pylist pylist =
-  Array.to_list (Py.List.to_array pylist)
-
-let string_list_of_pylist pylist =
-  List.map Py.String.to_string (list_of_pylist pylist)
-
 let string_pair_of_pytuple pytuple =
-  let s0 = Py.Tuple.get_item pytuple 0 in
-  let s1 = Py.Tuple.get_item pytuple 1 in
+  let (s0, s1) = Py.Tuple.to_pair pytuple in
   (Py.String.to_string s0, Py.String.to_string s1)
 
 let add_pending_instance args =
@@ -110,10 +101,13 @@ let add_pending_instance args =
   let py_virtual_rules = Py.Tuple.get_item args 2 in
   let py_virtual_identifiers = Py.Tuple.get_item args 3 in
   let py_extend_virtual_ids = Py.Tuple.get_item args 4 in
-  let files = Common.map_option string_list_of_pylist (pyoption py_files) in
-  let virtual_rules = string_list_of_pylist py_virtual_rules in
+  let files =
+    Common.map_option (Py.List.to_list_map Py.String.to_string)
+      (pyoption py_files) in
+  let virtual_rules =
+    Py.List.to_list_map Py.String.to_string py_virtual_rules in
   let virtual_identifiers =
-    List.map string_pair_of_pytuple (list_of_pylist py_virtual_identifiers) in
+    Py.List.to_list_map string_pair_of_pytuple py_virtual_identifiers in
   let extend_virtual_ids = Py.Bool.to_bool py_extend_virtual_ids in
   Iteration.add_pending_instance
     (files, virtual_rules, virtual_identifiers, extend_virtual_ids);
@@ -170,7 +164,7 @@ let _pycocci_setargs argv0 =
   let argv =
     Py.Sequence.list (Py.Tuple.singleton (Py.String.of_string argv0)) in
   let sys_mod = load_module "sys" in
-  Py.Object.set_attr_string sys_mod "argv" argv
+  Py.Module.set sys_mod "argv" argv
 
 let pycocci_init () =
   (* initialize *)
@@ -223,32 +217,36 @@ let default_hashtbl_size = 17
 
 let added_variables = Hashtbl.create default_hashtbl_size
 
-let build_classes env =
+let catch_python_error f =
   try
+    f ()
+  with Py.E (_, error) ->
+    failwith (Printf.sprintf "Python error: %s" (Py.Object.to_string error))
+
+let build_classes env =
+  catch_python_error begin fun () ->
     let _ = pycocci_init () in
     inc_match := true;
     exited := false;
     the_environment := env;
     let mx = !coccinelle_module in
-    let dict = Py.Module.get_dict mx in
     Hashtbl.iter
       (fun name () ->
 	match name with
 	  "include_match" | "has_env_binding" | "exit" -> ()
-	| name -> Py.Dict.del_item_string dict name)
+	| name -> Py.Module.remove mx name)
       added_variables;
     Hashtbl.clear added_variables
-  with Py.E (_, error) ->
-    failwith (Printf.sprintf "Python error: %s" (Py.Object.to_string error))
+  end
 
 let build_variable name value =
   let mx = !coccinelle_module in
   Hashtbl.replace added_variables name ();
-  Py.Dict.set_item_string (Py.Module.get_dict mx) name value
+  Py.Module.set mx name value
 
 let get_variable name =
   let mx = !coccinelle_module in
-  Py.Object.to_string (Py.Dict.get_item_string (Py.Module.get_dict mx) name)
+  Py.Module.get mx name
 
 let contains_binding e (_,(r,m),_) =
   try
@@ -283,11 +281,10 @@ let construct_variables mv e =
   let instantiate_term_list py printer lst  =
     let (str,elements) = printer lst in
     let str = Py.String.of_string str in
-    let elements =
-      Py.Tuple.of_list (List.map Py.String.of_string elements) in
+    let elements = Py.Tuple.of_list_map Py.String.of_string elements in
     let repr =
       pycocci_instantiate_class "coccilib.elems.TermList"
-	(Py.Tuple.of_list [str; elements]) in
+	(Py.Tuple.of_pair (str, elements)) in
     let _ = build_variable py repr in () in
 
   List.iter (function (py,(r,m),_,init) ->
@@ -324,14 +321,13 @@ let construct_variables mv e =
 	 List.map
 	   (function (fname,current_element,(line,col),(line_end,col_end)) ->
 		pycocci_instantiate_class "coccilib.elems.Location"
-	       (Py.Tuple.of_list
-		  (List.map Py.String.of_string
-		     [fname;
-		      current_element;
-		      Printf.sprintf "%d" line;
-		      Printf.sprintf "%d" col;
-		      Printf.sprintf "%d" line_end;
-		      Printf.sprintf "%d" col_end]))) l in
+	       (Py.Tuple.of_list_map Py.String.of_string
+		  [fname;
+		   current_element;
+		   string_of_int line;
+		   string_of_int col;
+		   string_of_int line_end;
+		   string_of_int col_end])) l in
        let pylocs = Py.Tuple.of_list locs in
        let _ = build_variable py pylocs in
        ()
@@ -359,7 +355,7 @@ let construct_script_variables mv =
 let retrieve_script_variables mv =
   let unwrap (_, py) =
     let mx = !coccinelle_module in
-    let v = Py.Dict.get_item_string (Py.Module.get_dict mx) py in
+    let v = Py.Module.get mx py in
     if Py.String.check v then
       Ast_c.MetaIdVal(Py.String.to_string v)
     else
@@ -371,10 +367,10 @@ let set_coccifile cocci_file =
 	()
 
 let pyrun_simplestring s =
-  try
-    Py.Run.simple_string s
-  with Py.E (_, error) ->
-    failwith (Printf.sprintf "Python error: %s" (Py.Object.to_string error))
+  catch_python_error begin fun () ->
+    if not (Py.Run.simple_string s) then
+      failwith "Python failure"
+  end
 
 let py_isinitialized () =
   Py.is_initialized ()
@@ -382,3 +378,18 @@ let py_isinitialized () =
 
 let py_finalize () =
   Py.finalize ()
+
+let run_constraint args body =
+  catch_python_error begin fun () ->
+    build_classes [];
+    let make_arg (name, value) =
+      (snd name, name, value, Ast_cocci.NoMVInit) in
+    let mv = List.map make_arg args in
+    construct_variables mv args;
+    pyrun_simplestring (Printf.sprintf "
+from coccinelle import *
+from coccilib.iteration import Iteration
+
+coccinelle.result = (%s)" body);
+    Py.Bool.to_bool (get_variable "result")
+  end

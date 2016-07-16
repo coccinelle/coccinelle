@@ -149,6 +149,8 @@ let interpret_grep strict x virt =
       failwith (false_on_top_err virt)
   | _ -> Some (loop [] x)
 
+let max_cnf = 5
+
 let interpret_cocci_git_grep strict x virt =
   (* convert to cnf *)
   let subset l1 l2 = List.for_all (fun e1 -> List.mem e1 l2) l1 in
@@ -167,20 +169,28 @@ let interpret_cocci_git_grep strict x virt =
       Elem x -> [[x]]
     | Not x -> failwith "not unexpected in coccigrep arg"
     | And l ->
-	List.fold_left opt_union_set [] (List.map cnf l)
+	(match List.map cnf l with
+	  [] -> failwith "and should not be empty"
+	| x ::xs -> List.fold_left opt_union_set x xs)
     | Or l ->
 	let l = List.map cnf l in
-	(match l with
-	  fst::rest ->
-	    List.fold_left
-	      (function prev ->
-		function cur ->
-		  List.fold_left opt_union_set
-		    []
-		    (List.map (fun x -> List.map (Common.union_set x) prev)
-		       cur))
-	      fst rest
-	| [] -> [[]]) (* false *)
+	let icount =
+	  List.length
+	    (List.filter (function [] | [_] -> false | _ -> true) l) in
+	if icount > max_cnf
+	then [] (* true *)
+	else
+	  (match l with
+	    fst::rest ->
+	      List.fold_left
+		(function prev ->
+		  function cur ->
+		    List.fold_left opt_union_set
+		      []
+		      (List.map (fun x -> List.map (Common.union_set x) prev)
+			 cur))
+		fst rest
+	  | [] -> [[]]) (* false *)
     | True -> []
     | False ->
 	if strict

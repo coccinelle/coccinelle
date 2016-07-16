@@ -131,7 +131,7 @@ let run { file; config; output; interactive; default; hide; year; } =
           (* generate context and script rules *)
           let nrule = (rule, new_name) in
           let (ctxt, meta_pos) =
-            Context_rule.generate ~context_mode ~new_name ~disj_map ~rule in
+            Context_rule.generate ~context_mode ~new_name ~disj_map ~rule_names ~rule in
           let script =
             Script_rule.generate ~meta_pos ~user_rule in
 

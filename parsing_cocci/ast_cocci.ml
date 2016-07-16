@@ -216,7 +216,7 @@ and base_expression =
 
 and constraints =
     NoConstraint
-  | NotIdCstrt     of reconstraint
+  | NotIdCstrt     of general_constraint
   | NotExpCstrt    of expression list
   | SubExpCstrt    of meta_name list
 
@@ -231,11 +231,12 @@ and idconstraint =
     IdNoConstraint
   | IdPosIdSet         of string list * meta_name list
   | IdNegIdSet         of string list * meta_name list
-  | IdRegExpConstraint of reconstraint
+  | IdGeneralConstraint of general_constraint
 
-and reconstraint =
-  | IdRegExp        of string * Regexp.regexp
-  | IdNotRegExp     of string * Regexp.regexp
+and general_constraint =
+  | IdRegExp           of string * Regexp.regexp
+  | IdNotRegExp        of string * Regexp.regexp
+  | IdScriptConstraint of script_constraint
 
 and assignOpconstraint =
     AssignOpNoConstraint

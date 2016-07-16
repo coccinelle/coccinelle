@@ -833,6 +833,8 @@ type toplevel_cocci_info_cocci_rule = {
   ruletype: Ast_cocci.ruletype;
 
   rule_info: rule_info;
+
+  constraint_languages: Common.StringSet.t;
 }
 
 type toplevel_cocci_info =
@@ -991,6 +993,15 @@ let prepare_cocci ctls free_var_lists negated_pos_lists
           in FinalScriptRuleCocciInfo r
       | Ast_cocci.CocciRule
 	  (rulename,(dependencies,dropped_isos,z),restast,isexp,ruletype) ->
+	    let add_constraint_language languages rule =
+	      let (_, name, script_name, lang, params, body) = rule in
+	      Common.StringSet.add lang languages in
+	    let constraint_languages =
+	      List.fold_left
+	        (fun accu toplevel ->
+		  List.fold_left add_constraint_language accu
+		    (Parse_cocci.enumerate_constraint_scripts toplevel))
+		Common.StringSet.empty restast in
             CocciRuleCocciInfo (
             {
               ctl = List.hd ctl_toplevel_list;
@@ -1003,6 +1014,7 @@ let prepare_cocci ctls free_var_lists negated_pos_lists
               positions = List.hd positions_list;
 	      ruletype = ruletype;
 	      rule_info = build_rule_info rulename dependencies;
+	      constraint_languages;
             })
     )
 
@@ -2000,13 +2012,12 @@ let pre_engine2 (coccifile, isofile) =
     List.fold_left
       (function languages ->
 	 function
-	     ScriptRuleCocciInfo(r) ->
-	       if List.mem r.language languages then
-		 languages
-	       else
-		 r.language::languages
+	     ScriptRuleCocciInfo r ->
+	       Common.StringSet.add r.language languages
+	   | CocciRuleCocciInfo r ->
+	       Common.StringSet.union r.constraint_languages languages
 	   | _ -> languages)
-      [] cocci_infos in
+      Common.StringSet.empty cocci_infos in
 
   let runrule r =
     let rlang = r.language in
@@ -2035,21 +2046,19 @@ let pre_engine2 (coccifile, isofile) =
 	      if interpret_dependencies [] [] r.scr_rule_info.dependencies
 	      then
 		begin
-		  (if List.mem rlang languages
+		  (if Common.StringSet.mem rlang languages
 		  then failwith ("double initializer found for "^rlang));
 		  runrule r;
-		  rlang::languages
+		  Common.StringSet.add rlang languages
 		end
 	      else languages
 	  | _ -> languages)
-      [] cocci_infos in
+      Common.StringSet.empty cocci_infos in
 
   let uninitialized_languages =
-    List.filter
-      (fun used -> not (List.mem used initialized_languages))
-      used_languages in
+    Common.StringSet.diff used_languages initialized_languages in
 
-  List.iter
+  Common.StringSet.iter
     (fun lgg ->
       let rule_info =
       	{rulename = "";

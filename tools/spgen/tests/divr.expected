@@ -1,0 +1,104 @@
+/// Tests if inherited metavariables are inherited from the right rules.
+///
+// Confidence: Moderate
+
+virtual patch
+virtual context
+virtual org
+virtual report
+
+@r1@
+identifier round_down,x,y;
+@@
+#define round_down(x,y) rounddown(x,y)
+
+@r2 depends on patch && !context && !org && !report@
+identifier round_up,x,y;
+@@
+-#define round_up(x,y) roundup(x,y)
+
+@rule_0 depends on patch && !context && !org && !report@
+identifier r1.round_down;
+expression E1,E2;
+@@
+- round_down(E1, E2);
++ roundup(E1, E2);
+
+@rule_1 depends on patch && !context && !org && !report@
+identifier r2.round_up;
+expression E1,E2;
+@@
+- round_up(E1, E2);
++ roundup(E1, E2);
+
+// ----------------------------------------------------------------------------
+
+@r2_context depends on !patch && (context || org || report)@
+identifier round_up, x, y;
+position j0;
+@@
+
+* #define round_up(x,y)@j0 roundup(x,y)
+
+@rule_0_context depends on !patch && (context || org || report)@
+identifier r1.round_down;
+expression E1, E2;
+position j0;
+@@
+
+*  round_down@j0(E1, E2);
+
+@rule_1_context depends on !patch && (context || org || report)@
+identifier r2_context.round_up;
+expression E1, E2;
+position j0;
+@@
+
+*  round_up@j0(E1, E2);
+
+// ----------------------------------------------------------------------------
+
+@script:python r2_org depends on org@
+j0 << r2_context.j0;
+@@
+
+msg = "found a match around here ..."
+coccilib.org.print_todo(j0[0], msg)
+
+@script:python rule_0_org depends on org@
+j0 << rule_0_context.j0;
+@@
+
+msg = "found a match around here ..."
+coccilib.org.print_todo(j0[0], msg)
+
+@script:python rule_1_org depends on org@
+j0 << rule_1_context.j0;
+@@
+
+msg = "found a match around here ..."
+coccilib.org.print_todo(j0[0], msg)
+
+// ----------------------------------------------------------------------------
+
+@script:python r2_report depends on report@
+j0 << r2_context.j0;
+@@
+
+msg = "found a match around here ..."
+coccilib.report.print_report(j0[0], msg)
+
+@script:python rule_0_report depends on report@
+j0 << rule_0_context.j0;
+@@
+
+msg = "found a match around here ..."
+coccilib.report.print_report(j0[0], msg)
+
+@script:python rule_1_report depends on report@
+j0 << rule_1_context.j0;
+@@
+
+msg = "found a match around here ..."
+coccilib.report.print_report(j0[0], msg)
+

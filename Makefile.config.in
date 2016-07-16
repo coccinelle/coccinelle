@@ -22,9 +22,6 @@ OPTFLAGSLIBS=@OPTFLAGS_dynlink@ @OPTFLAGS_menhirLib@ @OPTFLAGS_pyml@ \
 # system packages inc libs
 SYSINCLIBS=@PATH_unix@ @PATH_bigarray@ @PATH_num@ @PATH_str@ @PATH_dynlink@
 
-# camlp4 library location
-PATH_camlp4=@PATH_camlp4@
-
 SHELL?=@SHELL@
 PKG_CONFIG=@PKG_CONFIG@
 INSTALL=@INSTALL@
@@ -88,8 +85,6 @@ export OCAMLLIB=@OCAMLLIB@
 export OCAMLMKLIB=@OCAMLMKLIB@
 export OCAMLMKTOP=@OCAMLMKTOP@
 export OCAMLOPT=@OCAMLOPT@
-export CAMLP4=@CAMLP4@
-export CAMLP4O=@CAMLP4O@
 export MENHIR=@MENHIR@
 export OCAMLVERSION=@OCAMLVERSION@
 
@@ -106,15 +101,11 @@ MANDIR=${mandir}
 # Where to install the lib
 LIBDIR=@LIBDIR@
 
-# Where to install the configuration files
-SHAREDIR=@SHAREDIR@
-
 BASH_COMPLETION_DIR=${sysconfdir}/bash_completion.d
 
 # selected libraries
 FEATURE_menhirLib=@FEATURE_menhirLib@
 FEATURE_pcre=@FEATURE_pcre@
-LOCALLIB_pycaml=@LOCALLIB_pycaml@
 
 # Features
 FEATURE_PYTHON=@FEATURE_PYTHON@

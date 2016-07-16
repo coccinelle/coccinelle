@@ -190,6 +190,8 @@ let mklogop (op,clt) =
   Ast0.wrap (Ast0.Logical op')
 
 let unknown_type = Ast0.wrap (Ast0.BaseType (Ast.Unknown, []))
+
+let constraint_code_counter = ref 0
 %}
 
 %token EOF
@@ -2337,14 +2339,14 @@ pure_ident_or_meta_ident_with_idconstraint(constraint_type):
     }
 
 re_or_not_eqid:
-   re=regexp_eqid   {Ast.IdRegExpConstraint re}
+   re=general_eqid   {Ast.IdGeneralConstraint re}
  | TEq ne=idcstr    {Ast.IdPosIdSet (fst ne,snd ne)}
  | TNotEq ne=idcstr {Ast.IdNegIdSet (fst ne,snd ne)}
 
 re_only:
-   re=regexp_eqid {Ast.IdRegExpConstraint re}
+   re=general_eqid {Ast.IdGeneralConstraint re}
 
-regexp_eqid:
+general_eqid:
      TTildeEq re=TString
          { (if !Data.in_iso
 	    then failwith "constraints not allowed in iso file");
@@ -2358,6 +2360,12 @@ regexp_eqid:
 	   (if !Data.in_generating
 	    then failwith "constraints not allowed in a generated rule file");
 	   let (s,_) = re in Ast.IdNotRegExp (s,Regexp.regexp s)
+	 }
+ | c = script_constraint
+	 {
+	   incr constraint_code_counter;
+	   Ast.IdScriptConstraint
+	     (c ("constraint", "code") !constraint_code_counter)
 	 }
 
 idcstr:
@@ -2395,9 +2403,9 @@ idcstr:
 	 }
 
 re_or_not_eqe_or_sub:
-   re=regexp_eqid {Ast0.NotIdCstrt  re}
- | ne=not_eqe     {Ast0.NotExpCstrt ne}
- | s=sub          {Ast0.SubExpCstrt s}
+   re=general_eqid {Ast0.NotIdCstrt  re}
+ | ne=not_eqe      {Ast0.NotExpCstrt ne}
+ | s=sub           {Ast0.SubExpCstrt s}
 
 not_ceq_or_sub:
    ceq=not_ceq    {Ast0.NotExpCstrt ceq}

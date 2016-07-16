@@ -1,2 +1,9 @@
-pyml-current
 .prepare
+pyml-current/generate
+pyml-current/pyml_compat.ml
+pyml-current/pyml.h
+pyml-current/pyml_dlsyms.inc
+pyml-current/pyml_wrappers.inc
+pyml-current/pyml_wrappers.inc
+pyml-current/pywrappers.ml
+pyml-current/pywrappers.mli

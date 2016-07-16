@@ -33,8 +33,11 @@ val get_rule : t -> string
 val get_name : t -> string
 val tostring_mv : t -> string
 
-(* forces inheritance if the metavar is not already inherited *)
-val inherit_rule : new_rule:string -> t -> t
+(* adds inheritance of new_rule to the metavar.
+ * if force is false (default), inheritance is only added if the metavar is not
+ * already inherited. Otherwise, forcibly overwrite inheritance.
+ *)
+val inherit_rule : ?force:bool -> new_rule:string -> t -> t
 
 (* prints the metavariable in the format used in rule headers to out_channel *)
 val print : out_channel -> t -> unit

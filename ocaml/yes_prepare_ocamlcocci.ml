@@ -282,44 +282,25 @@ let prepare coccifile code =
 	  | _ -> prev)
       [] code in
   let other_rules = List.rev other_rules in
-  let do_constraint_rules =
-    (* A case for everything that can contain a constraint *)
-      let bind = (@) in
-      let option_default = [] in
-      let mcode r mc =
-	List.fold_left
-	  (function prev ->
-	    function Ast.MetaPos(name,constraints,_,_,_) ->
-	      Common.fold_left_with_index
-		(fun prev c i ->
-		  match c with
-		      Ast.PosNegSet l -> prev
-		    | Ast.PosScript(ocamlname,"ocaml",params,body) ->
-			let ((r,nm) as self) = Ast.unwrap_mcode name in
-			let self = (self,Ast.MetaPosDecl(Ast.NONE,self)) in
-			(ocamlname, self::params, body) ::
-			prev
-		    | Ast.PosScript(ocamlname,_,params,body) -> prev)
-		prev constraints)
-	  option_default (Ast.get_pos_var mc) in
-      let donothing r k e = k e in
-      let recursor = Visitor_ast.combiner bind option_default
-	  mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-	  mcode mcode mcode
-	  donothing donothing donothing donothing donothing donothing
-	  donothing donothing donothing donothing donothing donothing
-	  donothing donothing donothing donothing donothing donothing
-	  donothing donothing donothing donothing in
-      recursor.Visitor_ast.combiner_top_level in
+  let add_constraint_rules prev (kind, name, script_name, lang, params, body) =
+    if lang = "ocaml" then
+      let ((r,nm) as self) = Ast.unwrap_mcode name in
+      let self = (self, kind) in
+      (script_name, self::params, body) :: prev
+    else
+      prev in
   let constraint_rules =
     List.fold_left
       (function prev ->
 	function
 	    Ast.CocciRule(_,_,code,_,_) ->
-	      (List.concat (List.map do_constraint_rules code)) :: prev
+	      List.fold_left
+		(fun accu toplevel ->
+		  List.fold_left add_constraint_rules prev
+		    (Parse_cocci.enumerate_constraint_scripts toplevel))
+		prev code
 	  | _ -> prev)
       [] code in
-  let constraint_rules = List.fold_left (@) [] constraint_rules in
   if init_rules = [] && other_rules = [] && constraint_rules = []
   then None
   else

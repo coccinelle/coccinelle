@@ -461,8 +461,19 @@ let rec statement_pos s snp
       let constructor ~id = Ast0.Undef(defmc, id) in
       id_wrap ~id ~constructor snp
   | Ast0.Define (defmc, id, defparam, stmtdots) ->
-      let constructor ~id = Ast0.Define(defmc, id, defparam, stmtdots) in
-      id_wrap ~id ~constructor snp
+    (* if the #define directive has parameters, we cannot put the position
+     * after the identifier as it will break up the token. Therefore we put
+     * it after the parenthesis.
+     *)
+    let c ~id ~defparam = Ast0.Define(defmc, id, defparam, stmtdots) in
+    (match Ast0.unwrap defparam with
+     | Ast0.NoParams ->
+       id_wrap ~id ~constructor:(c ~defparam) snp
+     | Ast0.DParams(lp, defp, rp) ->
+       let (newrp, snp) = mcode_pos rp snp in
+       let defparam = Ast0.wrap (Ast0.DParams(lp, defp, newrp)) in
+       wrap (c ~id ~defparam) snp
+    )
   | Ast0.Pragma (pragmc, id, praginfo) ->
       let constructor ~id = Ast0.Pragma(pragmc, id, praginfo) in
       id_wrap ~id ~constructor snp

@@ -2538,3 +2538,69 @@ let process file isofile verbose =
 
   (metavars,code,fvs,neg_pos,ua,pos,search_tokens,
    !Parse_aux.contains_string_constant)
+
+let enumerate_constraint_scripts =
+  let bind = List.rev_append in
+  let option_default = [] in
+  let script_constraint kind name (script_name, lang, params, body) =
+    [(kind, name, script_name, lang, params, body)] in
+  let mcode r mc =
+    List.fold_left
+      (function prev ->
+	function Ast_cocci.MetaPos(name,constraints,_,_,_) ->
+	  Common.fold_left_with_index
+	    (fun prev c i ->
+	      match c with
+		Ast_cocci.PosNegSet l -> prev
+	      | Ast_cocci.PosScript c ->
+		  let kind =
+		    Ast_cocci.MetaPosDecl
+		      (Ast_cocci.NONE, Ast_cocci.unwrap_mcode name) in
+		  bind (script_constraint kind name c) prev)
+	    prev constraints)
+      option_default (Ast_cocci.get_pos_var mc) in
+  let general_constraint name c =
+    match c with
+      Ast.IdScriptConstraint c ->
+	let kind =
+	  Ast_cocci.MetaIdDecl (Ast_cocci.NONE, Ast_cocci.unwrap_mcode name) in
+	script_constraint kind name c
+    | _ -> [] in
+  let constraints name c =
+    match c with
+      Ast.NotIdCstrt c' -> general_constraint name c'
+    | _ -> [] in
+  let idconstraint name c =
+    match c with
+      Ast.IdGeneralConstraint c' -> general_constraint name c'
+    | _ -> [] in
+  let expression r k e =
+    let result =
+      match Ast.unwrap e with
+	Ast.MetaErr (name, c, _, _) -> constraints name c
+      | Ast.MetaExpr (name, c, _, _, _, _) -> constraints name c
+      | _ -> [] in
+    bind result (k e) in
+  let ident r k e =
+    let result =
+      match Ast.unwrap e with
+	Ast.MetaId (name, c, _, _)
+      | Ast.MetaFunc (name, c, _, _)
+      | Ast.MetaLocalFunc (name, c, _, _) -> idconstraint name c
+      | _ -> [] in
+    bind result (k e) in
+  let string_format r k e =
+    let result =
+      match Ast.unwrap e with
+	Ast.MetaFormat (name, c, _, _) -> idconstraint name c
+      | _ -> [] in
+    bind result (k e) in
+  let donothing r k e = k e in
+  let recursor = Visitor_ast.combiner bind option_default
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode
+      donothing donothing donothing donothing donothing ident
+      expression donothing string_format donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing in
+  recursor.Visitor_ast.combiner_top_level

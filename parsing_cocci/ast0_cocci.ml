@@ -154,7 +154,7 @@ and expression = base_expression wrap
 
 and constraints =
     NoConstraint
-  | NotIdCstrt     of Ast.reconstraint
+  | NotIdCstrt     of Ast.general_constraint
   | NotExpCstrt    of expression list
   | SubExpCstrt    of Ast.meta_name list
 

@@ -95,8 +95,9 @@ $(LEXER_SOURCES:.mll=.ml) :	$(LEXER_SOURCES)
 	$(OCAMLLEX) $(LEXER_SOURCES)
 
 $(PARSER_SOURCES:.mly=.ml) $(PARSER_SOURCES:.mly=.mli) : \
-	$(PARSER_SOURCES) $(MENHIR)
+	$(PARSER_SOURCES) $(MENHIR) ../Makefile.config
 	$(MENHIR) --ocamlc "${OCAMLC}" --ocamldep "${OCAMLDEP}" --table --base parser_cocci_menhir $(PARSER_SOURCES)
+$(PARSER_SOURCES:.mly=.mli) : $(PARSER_SOURCES:.mly=.ml)
 
 $(CLI_LEXER_SOURCES:.mll=.ml): $(CLI_LEXER_SOURCES)
 	$(OCAMLLEX) $(CLI_LEXER_SOURCES)

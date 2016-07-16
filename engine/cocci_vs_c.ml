@@ -724,6 +724,20 @@ module type PARAM =
 
   end
 
+let satisfies_scriptconstraint (name, lang, params, body) ida idb env =
+  let values =
+    try Some ((ida, idb) :: List.map (fun (p,_) -> (p, env p)) params)
+    with Not_found -> None in
+  match values with
+    None -> false
+  | Some args ->
+      begin
+	match lang with
+	  "ocaml" -> Run_ocamlcocci.run_constraint name (List.map snd args)
+	| "python" -> Pycocci.run_constraint args body
+	| _ -> failwith "languages other than ocaml or python not supported"
+      end
+
 (*****************************************************************************)
 (* Functor code, "Cocci vs C" *)
 (*****************************************************************************)
@@ -769,10 +783,12 @@ let dots2metavar (_,info,mcodekind,pos) =
 let metavar2dots (_,info,mcodekind,pos) = ("...",info,mcodekind,pos)
 let metavar2ndots (_,info,mcodekind,pos) = ("<+...",info,mcodekind,pos)
 
-let satisfies_regexpconstraint c id _ : bool =
+let satisfies_generalconstraint c (ida, idb) env : bool =
   match c with
-    A.IdRegExp (_,recompiled)    -> Regexp.string_match recompiled id
-  | A.IdNotRegExp (_,recompiled) -> not (Regexp.string_match recompiled id)
+    A.IdRegExp (_,recompiled)    -> Regexp.string_match recompiled idb
+  | A.IdNotRegExp (_,recompiled) -> not (Regexp.string_match recompiled idb)
+  | A.IdScriptConstraint c ->
+      satisfies_scriptconstraint c ida (B.MetaIdVal idb) env
 
 let satisfies_iconstraint (strs,metas) id env : bool =
   List.mem id strs ||
@@ -792,13 +808,13 @@ let satisfies_niconstraint (strs,metas) id env : bool =
        | _ -> true)
      metas)
 
-let satisfies_econstraint c exp env : bool =
+let satisfies_econstraint c (ida, exp) env : bool =
   let warning s = pr2_once ("WARNING: "^s); false in
   match Ast_c.unwrap_expr exp with
     Ast_c.Ident (name) ->
       (match name with
 	Ast_c.RegularName     rname ->
-	  satisfies_regexpconstraint c (Ast_c.unwrap_st rname) env
+	  satisfies_generalconstraint c (ida, Ast_c.unwrap_st rname) env
       | Ast_c.CppConcatenatedName _ ->
 	  warning
 	    "Unable to apply a constraint on a CppConcatenatedName identifier!"
@@ -810,15 +826,16 @@ let satisfies_econstraint c exp env : bool =
 	    "Unable to apply a constraint on a CppIdentBuilder identifier!")
   | Ast_c.Constant cst ->
       (match cst with
-      |	Ast_c.String (str, _) -> satisfies_regexpconstraint c str env
+	Ast_c.String (str, _) -> satisfies_generalconstraint c (ida, str) env
       | Ast_c.MultiString strlist ->
 	  warning "Unable to apply a constraint on a multistring constant!"
-      | Ast_c.Char  (char , _) -> satisfies_regexpconstraint c char env
-      | Ast_c.Int   (int  , _) -> satisfies_regexpconstraint c int env
-      | Ast_c.Float (float, _) -> satisfies_regexpconstraint c float env
+      | Ast_c.Char  (char , _) -> satisfies_generalconstraint c (ida, char) env
+      | Ast_c.Int   (int  , _) -> satisfies_generalconstraint c (ida, int) env
+      | Ast_c.Float (float, _) -> satisfies_generalconstraint c (ida, float) env
       | Ast_c.DecimalConst (d, n, p) ->
 	  warning "Unable to apply a constraint on a decimal constant!")
-  | Ast_c.StringConstant (cst,orig,w) -> satisfies_regexpconstraint c orig env
+  | Ast_c.StringConstant (cst,orig,w) ->
+      satisfies_generalconstraint c (ida, orig) env
   | _ -> warning "Unable to apply a constraint on an expression!"
 
 
@@ -1130,7 +1147,8 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	  match constraints with
 	    Ast_cocci.NoConstraint -> return (meta_expr_val [],())
 	  | Ast_cocci.NotIdCstrt cstrt ->
-	      X.check_constraints satisfies_econstraint cstrt eb
+	      X.check_constraints satisfies_econstraint cstrt
+		(A.unwrap_mcode ida, eb)
 		(fun () -> return (meta_expr_val [],()))
 	  | Ast_cocci.NotExpCstrt cstrts ->
 	      X.check_constraints_ne expression cstrts eb
@@ -1718,11 +1736,11 @@ and string_fragment ea (eb,ii) =
   | _,_ -> fail
 
 and string_format ea eb =
-   let check_constraints constraints idb =
+   let check_constraints constraints ida idb =
      match constraints with
        A.IdNoConstraint -> return ((),())
-     | A.IdRegExpConstraint re ->
-	 X.check_constraints satisfies_regexpconstraint re idb
+     | A.IdGeneralConstraint re ->
+	 X.check_constraints satisfies_generalconstraint re (ida, idb)
 	   (fun () -> return ((),()))
      | _ -> failwith "no nonid constraint for string format" in
   X.all_bound (A.get_inherited ea) >&&>
@@ -1738,7 +1756,7 @@ and string_format ea eb =
 	     (B.ConstantFormat(str2),[ib1])))
       else fail
   | A.MetaFormat(ida,constraints,keep,inherited),(B.ConstantFormat(str2),ii) ->
-      check_constraints constraints str2 >>=
+      check_constraints constraints (A.unwrap_mcode ida) str2 >>=
       (fun () () ->
 	let max_min _ =
 	  Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_format eb) in
@@ -1808,7 +1826,7 @@ and (ident_cpp: info_ident -> (A.ident, B.name) matcher) =
 
 and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
  fun infoidb ida ((idb, iib) as ib) -> (* (idb, iib) as ib *)
-   let check_constraints constraints idb =
+   let check_constraints constraints mida idb =
      match constraints with
        A.IdNoConstraint -> return ((),())
      | A.IdPosIdSet (str,meta) ->
@@ -1817,9 +1835,9 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
      | A.IdNegIdSet (str,meta) ->
 	 X.check_constraints satisfies_niconstraint (str,meta) idb
 	   (fun () -> return ((),()))
-     | A.IdRegExpConstraint re ->
-	 X.check_constraints satisfies_regexpconstraint re idb
-	   (fun () -> return ((),())) in
+     | A.IdGeneralConstraint c ->
+	 X.check_constraints satisfies_generalconstraint c
+	   (A.unwrap_mcode mida, idb) (fun () -> return ((),())) in
   X.all_bound (A.get_inherited ida) >&&>
   match A.unwrap ida with
   | A.Id sa ->
@@ -1832,7 +1850,7 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
       else fail
 
   | A.MetaId(mida,constraints,keep,inherited) ->
-      check_constraints constraints idb >>=
+      check_constraints constraints mida idb >>=
       (fun () () ->
       let max_min _ = Lib_parsing_c.lin_col_by_pos [iib] in
       (* use drop_pos for ids so that the pos is not added a second time in
@@ -1848,7 +1866,7 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
 
   | A.MetaFunc(mida,constraints,keep,inherited) ->
       let is_function _ =
-	check_constraints constraints idb >>=
+	check_constraints constraints mida idb >>=
 	(fun wrapper () ->
           let max_min _ = Lib_parsing_c.lin_col_by_pos [iib] in
           X.envf keep inherited (A.drop_pos mida,Ast_c.MetaFuncVal idb,max_min)
@@ -1872,7 +1890,7 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
   | A.MetaLocalFunc(mida,constraints,keep,inherited) ->
       (match infoidb with
       | LocalFunction ->
-	  check_constraints constraints idb >>=
+	  check_constraints constraints mida idb >>=
 	  (fun wrapper () ->
           let max_min _ = Lib_parsing_c.lin_col_by_pos [iib] in
           X.envf keep inherited

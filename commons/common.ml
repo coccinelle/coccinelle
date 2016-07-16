@@ -6031,3 +6031,5 @@ let typing_sux_test () =
 
 (* let (test: 'a osetb -> 'a ocollection) = fun o -> (o :> 'a ocollection) *)
 (* let _ = test (new osetb (Setb.empty)) *)
+
+module StringSet = Set.Make (String)

@@ -1979,3 +1979,5 @@ class ['a] olist :
   end
 
 val typing_sux_test : unit -> unit
+
+module StringSet: Set.S with type elt = string
