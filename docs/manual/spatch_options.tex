@@ -78,7 +78,7 @@ patch file and print out some information about it.}
   containing the semantic patch.  The file name should end in {\tt .cocci}.
 All three options do the same thing.  These options are optional.  If they
 are not used, the single file whose name ends in \texttt{.cocci} is
-assoumed to be the name of the file containing the semantic patch.}
+assumed to be the name of the file containing the semantic patch.}
 
 \rare{-{}-sp ``semantic patch string''}{Specify a semantic match as a
   command-line argument.  See the section ``Command-line semantic match''
@@ -296,7 +296,7 @@ which score file to compare with in the testall run}
 \rare{-{}-parse-error-msg}{Show parsing errors in the C file.}
 
 \rare{-{}-verbose-parsing}{Show parsing errors in the C file, as well as
-  information about attempts to accomodate such errors.  This implicitly
+  information about attempts to accommodate such errors.  This implicitly
   sets {\bf -{}-parse-error-msg.}}
 
 \rare{-{}-parse-handler $\langle$file$\rangle$}{Loads the file containing
@@ -304,8 +304,8 @@ which score file to compare with in the testall run}
   have arguments 1) the line number containing the error, 2) the sequence
   of tokens, the starting and ending line of the function containing the
   error, and array containing the lines of the file containing the error,
-  and the pass of the parser on which the error occurs.  This functyion
-  should then be passed to the fuction {\tt
+  and the pass of the parser on which the error occurs.  This function
+  should then be passed to the function {\tt
     Parse\_c.set\_parse\_error\_function}.}
 
 \rare{-{}-type-error-msg}{Show information about where the C type checker
@@ -603,7 +603,7 @@ stars are used in column 0 rather than {\tt -} and {\tt +}, then the {\tt
 
 \normal{-{}-indent $n$}{The number of spaces to indent, if no other
   information is available.  If this information is not provided, then the
-  default indentation is a tab.  This option is thus particularly relevent
+  default indentation is a tab.  This option is thus particularly relevant
   to projects that don't use tabs.}
 
 \rare{-o $\langle$file$\rangle$}{ This causes the transformed code to be

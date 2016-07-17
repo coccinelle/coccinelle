@@ -118,43 +118,43 @@ type reason =
 
 (* it would be nice if this would go to standard error *)
 let rec interpret_reason name line reason printer =
-  Printf.printf
+  Printf.eprintf
     "warning: iso %s does not match the code below on line %d\n" name line;
   printer(); Format.print_newline();
   match reason with
     NotPure(Ast0.Pure,(_,var),nonpure) ->
-      Printf.printf
+      Printf.eprintf
 	"pure metavariable %s is matched against the following nonpure code:\n"
 	var;
       Unparse_ast0.unparse_anything nonpure
   | NotPure(Ast0.Context,(_,var),nonpure) ->
-      Printf.printf
+      Printf.eprintf
 	"context metavariable %s is matched against the following\nnoncontext code:\n"
 	var;
       Unparse_ast0.unparse_anything nonpure
   | NotPure(Ast0.PureContext,(_,var),nonpure) ->
-      Printf.printf
+      Printf.eprintf
 	"pure context metavariable %s is matched against the following\nnonpure or noncontext code:\n"
 	var;
       Unparse_ast0.unparse_anything nonpure
   | NotPureLength((_,var)) ->
-      Printf.printf
+      Printf.eprintf
 	"pure metavariable %s is matched against too much or too little code\n"
 	var;
   | ContextRequired(term) ->
-      Printf.printf
+      Printf.eprintf
 	"the following code matched is not uniformly minus or context,\nor contains a disjunction:\n";
       Unparse_ast0.unparse_anything term
   | Braces(s) ->
-      Printf.printf "braces must be all minus (plus code allowed) or all\ncontext (plus code not allowed in the body) to match:\n";
+      Printf.eprintf "braces must be all minus (plus code allowed) or all\ncontext (plus code not allowed in the body) to match:\n";
       Unparse_ast0.statement "" s;
       Format.print_newline()
   | Nest(s) ->
-      Printf.printf "iso with nest doesn't match whencode (TODO):\n";
+      Printf.eprintf "iso with nest doesn't match whencode (TODO):\n";
       Unparse_ast0.statement "" s;
       Format.print_newline()
   | Position(rule,name) ->
-      Printf.printf "position variable %s.%s conflicts with an isomorphism\n"
+      Printf.eprintf "position variable %s.%s conflicts with an isomorphism\n"
 	rule name
    | TypeMatch reason_list ->
       List.iter (function r -> interpret_reason name line r printer)
@@ -206,11 +206,11 @@ let init_env = [[]]
 let debug str m binding =
   let res = m binding in
   (match res with
-    None -> Printf.printf "%s: failed\n" str
+    None -> Printf.eprintf "%s: failed\n" str
   | Some binding ->
       List.iter
 	(function binding ->
-	  Printf.printf "%s: %s\n" str
+	  Printf.eprintf "%s: %s\n" str
 	    (String.concat " " (List.map (function (x,_) -> x) binding)))
 	binding);
   res
@@ -630,7 +630,7 @@ let match_maker checks_needed context_required whencode_allowed =
 					| OK x -> failwith "not possible")
 				      attempts)))
 		    | _ ->
-		  (*Printf.printf
+		  (*Printf.eprintf
 		     "warning: type metavar can only match one type";*)
 			return false)
 		| _ ->
@@ -770,7 +770,7 @@ let match_maker checks_needed context_required whencode_allowed =
 		then add_dot_binding ed
 		  (Ast0.WhenTag(wh,Some e,Ast0.ExprTag wc))
 		else
-		  (Printf.printf
+		  (Printf.eprintf
 		     "warning: not applying iso because of whencode";
 		   return false))
 	  | (Ast0.Edots(_,Some _),_) ->
@@ -978,7 +978,7 @@ let match_maker checks_needed context_required whencode_allowed =
 		then add_dot_binding dd
 		  (Ast0.WhenTag (wh,Some ee,Ast0.DeclTag wc))
 		else
-		  (Printf.printf "warning: not applying iso because of whencode";
+		  (Printf.eprintf "warning: not applying iso because of whencode";
 		   return false))
 	  | (Ast0.Ddots(_,Some _),_) ->
 	      failwith "whencode not allowed in a pattern1"
@@ -1031,7 +1031,7 @@ let match_maker checks_needed context_required whencode_allowed =
 		then add_dot_binding id
 		  (Ast0.WhenTag(wh,Some e,Ast0.InitTag wc))
 		else
-		  (Printf.printf
+		  (Printf.eprintf
 		     "warning: not applying iso because of whencode";
 		   return false))
 	  | (Ast0.Idots(_,Some _),_) ->
@@ -1278,7 +1278,7 @@ let match_maker checks_needed context_required whencode_allowed =
 				 (Ast0.WhenTag(wh,None,Ast0.IsoWhenTag x))))
 			 (return true) wc)
 		  else
-		    (Printf.printf
+		    (Printf.eprintf
 		       "warning: not applying iso because of whencode";
 		     return false))
 	  | (Ast0.Dots(_,_::_),_) ->
