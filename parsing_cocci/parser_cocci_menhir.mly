@@ -1792,7 +1792,8 @@ initialize2:
     else
       Ast0.wrap(Ast0.InitList(P.clt2mcode "{" $1,$2,P.clt2mcode "}" $3,true)) }
            /* gccext:, labeled elements */
-| list(designator) TEq initialize2 /*can we have another of these on the rhs?*/
+| nonempty_list(designator) TEq initialize2
+    /*can we have another of these on the rhs?*/
     { Ast0.wrap(Ast0.InitGccExt($1,P.clt2mcode "=" $2,$3)) }
 | mident TDotDot initialize2
     { Ast0.wrap(Ast0.InitGccName($1,P.clt2mcode ":" $2,$3)) } /* in old kernel */
