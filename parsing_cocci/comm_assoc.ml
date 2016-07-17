@@ -54,13 +54,13 @@ let process_binops rule_name =
 	    (* keep dots to record required modif *)
 	    then Ast0.rewrap e (Ast0.Nested(left,op,right))
 	    else
-	      (Printf.printf
+	      (Printf.eprintf
 		 "%s: position variables or mixed modifs interfere with comm_assoc iso" rule_name;
 	       Unparse_ast0.expression e1;
 	       Format.print_newline();
 	       e)
 	| Ast0.Edots(d,_) ->
-	    (Printf.printf
+	    (Printf.eprintf
 	       "%s: whencode interferes with comm_assoc iso" rule_name;
 	     Unparse_ast0.expression e1;
 	     Format.print_newline();

@@ -404,7 +404,7 @@ convert ifdef to if (experimental)
 \fB\-\-noadd\-typedef\-root\fR
 .TP
 \fB\-\-disallow\-nested\-exps\fR
-disallow an expresion pattern from matching a term and its subterm
+disallow an expression pattern from matching a term and its subterm
 .HP
 \fB\-\-disable\-worth\-trying\-opt\fR
 .HP
