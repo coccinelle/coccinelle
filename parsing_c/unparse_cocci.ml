@@ -1529,6 +1529,9 @@ in
 	      match List.hd(List.rev x) with
 		Ast.Token(t,_) when List.mem t [";";"{";"}"] -> true
 	      |	Ast.Token(t,_) -> false
+	      | Ast.ParamDotsTag _ | Ast.ExprDotsTag _ ->
+		  (* should never be followed by a newline *)
+		  false
 	      |	_ -> true in
 	    loop newline_needed indent_needed xs in
       loop false false (x::xs);
