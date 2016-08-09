@@ -290,7 +290,6 @@ AS_IF([test -z "$enable_python"],
 
 AS_IF([test "x$enable_python" != xno],
 [dnl
-  AC_CHECK_COCCI_EXTPKG([pcre])
   AC_SUBST([PYCOCCI_MODULE], [Yes_pycocci])
   AC_SUBST([PYCOCCI_FILE],[yes_pycocci.ml])
 ],
