@@ -1590,10 +1590,15 @@ let add_newlines toks tabbing_unit =
 	(String.get s1 0 = '\"') && (String.get s2 0 = '\"') ->
         let count =
 	  update_previous_space stack space_cell count s1 in
+	let count_after_space = count + 1 in
 	let sp = ref " " in
 	let a = C2(s1,Some(Unparse_cocci.SpaceOrNewline sp)) in
+	let space_cell =
+          match stack with
+            [_] -> Printf.eprintf "new\n"; Some(count_after_space,sp)
+          | _ -> Printf.eprintf "existing\n"; space_cell in
 	a ::
-	loop stack space_cell ((simple_string_length s1 count)+1) true false xs
+	loop stack space_cell count_after_space true false xs
     | Fake2 _ :: _ | Indent_cocci2 :: _
     | Unindent_cocci2 _::_ | EatSpace2::_ ->
       failwith "unexpected fake, indent, unindent, or eatspace"
