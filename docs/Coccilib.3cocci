@@ -236,7 +236,7 @@ in an initialize or finalize rule).
 :
 .B unit -> string
 .sp
-Returns the a string indicating the current version.  Note that if
+Returns the string indicating the current version.  Note that if
 Coccinelle has been modified since a release, the version number will be
 postfixed with "-dirty".
 .sp
