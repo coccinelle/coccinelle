@@ -1456,17 +1456,24 @@ and pp_init (init, iinit) =
 	pp_ifdef info
 
     | F.IfdefIteHeader _ii ->
-        pr2 "XXX"
+        pr2 "IfdefIteHeader"
 
     | F.DefineTodo ->
-	pr2 "XXX"
+	pr2 "DefineTodo"
 
 
-    | (F.TopNode|F.EndNode|
-      F.ErrorExit|F.Exit|F.Enter|F.LoopFallThroughNode|F.FallThroughNode|
-      F.AfterNode _|F.FalseNode|F.TrueNode _|F.InLoopNode|
-      F.Fake) ->
-        pr2 "YYY" in
+    | F.TopNode -> pr2 "TopNode"
+    | F.EndNode -> pr2 "EndNode"
+    | F.ErrorExit -> pr2 "ErrorExit"
+    | F.Exit -> pr2 "Exit"
+    | F.Enter -> pr2 "Enter"
+    | F.LoopFallThroughNode -> pr2 "LoopFallThroughNode"
+    | F.FallThroughNode -> pr2 "FallThroughNode"
+    | F.AfterNode _ -> pr2 "AfterNode"
+    | F.FalseNode -> pr2 "FalseNode"
+    | F.TrueNode _ -> pr2 "TrueNode"
+    | F.InLoopNode -> pr2 "InLoopNode"
+    | F.Fake -> pr2 "Fake" in
 
 
   { expression = pp_expression;
