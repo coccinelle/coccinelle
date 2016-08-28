@@ -1309,7 +1309,7 @@ and pp_init (init, iinit) =
          iif iicomma;
 	 );
       *)
-		       pr2 "Def";
+		       pr2 "FunHeader";
 
 
     | F.Decl decl ->
@@ -1319,15 +1319,15 @@ and pp_init (init, iinit) =
     | F.ExprStatement (st, (eopt, ii)) ->
 	pp_statement (Ast_c.mk_st (ExprStatement eopt) ii)
 
-    | F.IfHeader (_, (e,ii))
-    | F.SwitchHeader (_, (e,ii))
-    | F.WhileHeader (_, (e,ii))
+    | F.IfHeader (_, (e,ii)) -> pr2 "IfHeader"
+    | F.SwitchHeader (_, (e,ii)) -> pr2 "SwitchHeader"
+    | F.WhileHeader (_, (e,ii)) -> pr2 "WhileHeader"
     | F.DoWhileTail (e,ii) ->
         (*
            iif ii;
            vk_expr bigf e
         *)
-	pr2 "XXX";
+	pr2 "DoWhileTail"
 
 
     | F.ForHeader (_st, ((first, (e2opt,i2), (e3opt,i3)), ii)) ->
@@ -1338,28 +1338,28 @@ and pp_init (init, iinit) =
            e2opt +> do_option (vk_expr bigf);
            e3opt +> do_option (vk_expr bigf);
         *)
-	pr2 "XXX"
+	pr2 "ForHeader"
 
     | F.MacroIterHeader (_s, ((s,es), ii)) ->
         (*
            iif ii;
            vk_argument_list bigf es;
         *)
-	pr2 "XXX"
+	pr2 "MacroIterHeader"
 
 
     | F.ReturnExpr (_st, (e,ii)) ->
         (* iif ii; vk_expr bigf e*)
-	pr2 "XXX"
+	pr2 "ReturnExpr"
 
 
     | F.Case  (_st, (e,ii)) ->
       (* iif ii; vk_expr bigf e *)
-	pr2 "XXX"
+	pr2 "Case"
 
     | F.CaseRange (_st, ((e1, e2),ii)) ->
         (* iif ii; vk_expr bigf e1; vk_expr bigf e2 *)
-	pr2 "XXX"
+	pr2 "CaseRange"
 
 
 
@@ -1367,23 +1367,23 @@ and pp_init (init, iinit) =
 
     | F.DefineExpr e  ->
         (* vk_expr bigf e *)
-	pr2 "XXX"
+	pr2 "DefineExpr"
 
     | F.DefineType ft  ->
         (* vk_type bigf ft *)
-	pr2 "XXX"
+	pr2 "DefineType"
 
     | F.DefineHeader ((s,ii), (defkind))  ->
         (*
            iif ii;
            vk_define_kind bigf defkind;
         *)
-	pr2 "XXX"
+	pr2 "DefineHeader"
 
 
     | F.DefineDoWhileZeroHeader (((),ii)) ->
         (* iif ii *)
-	pr2 "XXX"
+	pr2 "DefineDoWhileZeroHeader"
 
     | F.PragmaHeader((s,ii), pragmainfo) ->
 	let (ipragma,iident,ieol) = Common.tuple_of_list3 ii in
@@ -1393,60 +1393,60 @@ and pp_init (init, iinit) =
 
     | F.Include {i_include = (s, ii);} ->
         (* iif ii; *)
-	pr2 "XXX"
+	pr2 "Include"
 
 
     | F.MacroTop (s, args, ii) ->
         (* iif ii;
            vk_argument_list bigf args *)
-	pr2 "XXX"
+	pr2 "MacroTop"
 
 
     | F.Break    (st,((),ii),fromswitch) ->
         (* iif ii *)
-	pr2 "XXX"
+	pr2 "Break"
     | F.Continue (st,((),ii)) ->
         (* iif ii *)
-	pr2 "XXX"
+	pr2 "Continue"
     | F.Default  (st,((),ii)) ->
         (* iif ii *)
-	pr2 "XXX"
+	pr2 "Default"
     | F.Return   (st,((),ii)) ->
         (* iif ii *)
-	pr2 "XXX"
+	pr2 "Return"
     | F.Goto  (st, name, ((),ii)) ->
         (* iif ii *)
-	pr2 "XXX"
+	pr2 "Goto"
     | F.Label (st, name, ((),ii)) ->
         (* iif ii *)
-	pr2 "XXX"
+	pr2 "Label"
     | F.EndStatement iopt ->
         (* do_option infof iopt *)
-	pr2 "XXX"
+	pr2 "EndStatement"
     | F.DoHeader (st, info) ->
         (* infof info *)
-	pr2 "XXX"
+	pr2 "DoHeader"
     | F.Else info ->
         (* infof info *)
-	pr2 "XXX"
+	pr2 "Else"
     | F.SeqEnd (i, info) ->
         (* infof info *)
-	pr2 "XXX"
+	pr2 "SeqEnd"
     | F.SeqStart (st, i, info) ->
         (* infof info *)
-	pr2 "XXX"
+	pr2 "SeqStart"
 
     | F.MacroStmt (st, ((),ii)) ->
         (* iif ii *)
-	pr2 "XXX"
+	pr2 "MacroStmt"
     | F.Asm (st, (asmbody,ii)) ->
         (*
            iif ii;
            vk_asmbody bigf asmbody
         *)
-	pr2 "XXX"
+	pr2 "Asm"
 
-    | F.Exec(st,(code,ii)) -> pr2 "XXX"
+    | F.Exec(st,(code,ii)) -> pr2 "Exec"
 
     | F.IfdefHeader (info) ->
 	pp_ifdef info
