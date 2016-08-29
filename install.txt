@@ -1,6 +1,7 @@
  ** News **
 
-- Coccinelle no longer needs ocaml-sexplib nor ocaml-extlib.
+- Coccinelle no longer needs ocaml-sexplib, nor ocaml-extlib, nor
+  libpycaml-ocaml-dev, nor ocaml-camlp4-devel.
 - Parallel building is possible when you do not build the bytecode
   and native version of spatch simultaneously.
 
@@ -16,16 +17,13 @@ You must first install a recent version of
    see http://cristal.inria.fr/~fpottier/menhir/
    (unless you got a version of the coccinelle source with
    the SmPL parser pre-generated)
- - Python and its development files (python-dev)
-   (unless you run configure with the --without-python option)
 
 On Debian/Ubuntu, install the following packages
  - pkg-config (optional, but strongly recommended)
  - ocaml-native-compilers (or alternatively ocaml)
  - ocaml-findlib
- - libpycaml-ocaml-dev
- - menhir and libmenhir-ocaml-dev
- - libpcre-ocaml-dev
+ - menhir and libmenhir-ocaml-dev (optional, bundled)
+ - libpcre-ocaml-dev (optional, bundled)
  - texlive-fonts-extra (for the documentation)
 
 On Fedora, install the following packages
@@ -33,16 +31,10 @@ On Fedora, install the following packages
  - chrpath
  - ocaml
  - ocaml-findlib
- - ocaml-camlp4-devel
  - ocaml-findlib-devel
  - ocaml-ocamldoc
- - ocaml-pcre-devel
-
-Note that on Fedora, there is currently not a
-package for menhir and pycaml. However, coccinelle
-bundles the sources of these packages and will use them
-when needed. The bundled pycaml package has support for
-python 3.
+ - ocaml-menhir (optional, bundled)
+ - ocaml-pcre-devel (optional, bundled)
 
 Then simply type
  ./configure
@@ -56,8 +48,6 @@ Other configuration flags of interest:
 --with-python=PATH      choose a specific python executable
 --without-python        no python scripting
 --disable-ocaml         no ocaml scripting
---disable-pycaml        uses the bundled pycaml package instead of
-                        a installed pycaml package.
 --disable-pcre-syntax   no pcre regexp syntax
                         version of spatch
 See ./configure --help for more options
