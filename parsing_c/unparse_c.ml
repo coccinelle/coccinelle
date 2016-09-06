@@ -2488,8 +2488,8 @@ let pp_program2 xs outfile  =
               let toks = adjust_after_paren toks in(*also before remove minus*)
               let toks = paren_to_space toks in
               let toks = drop_end_comma toks in
-              let toks = remove_minus_and_between_and_expanded_and_fake2 toks in
               let toks = drop_space_at_endline toks in
+              let toks = remove_minus_and_between_and_expanded_and_fake2 toks in
               (* assert Origin + Cocci + C and no minus *)
               let toks = add_space toks in
               let toks = fix_tokens toks in
