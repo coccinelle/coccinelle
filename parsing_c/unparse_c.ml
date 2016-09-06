@@ -1595,8 +1595,8 @@ let add_newlines toks tabbing_unit =
 	let a = C2(s1,Some(Unparse_cocci.SpaceOrNewline sp)) in
 	let space_cell =
           match stack with
-            [_] -> Printf.eprintf "new\n"; Some(count_after_space,sp)
-          | _ -> Printf.eprintf "existing\n"; space_cell in
+            [_] -> Some(count_after_space,sp)
+          | _ -> space_cell in
 	a ::
 	loop stack space_cell count_after_space true false xs
     | Fake2 _ :: _ | Indent_cocci2 :: _
