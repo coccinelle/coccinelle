@@ -1518,6 +1518,25 @@ let add_newlines toks tabbing_unit =
         let (newcount,newstack,newspacecell,newseencocci) =
           end_box stack space_cell count seen_cocci s in
         a :: loop newstack newspacecell newcount newseencocci false xs
+    | t1 :: t2 :: rest
+      when nonempty stack && iscomma t1 && isnewline t2 ->
+	let seen_cocci = seen_cocci || iscocci t1 || iscocci t2 in
+	let (stack,newcount,t2,newseencocci) =
+	  get_indent stack t2 seen_cocci rest in
+	let t1 =
+	  match t1 with
+	    Cocci2(s,line,lcol,rcol,Some(Unparse_cocci.SpaceOrNewline sp)) ->
+	      (* no need for extra space, because we have a newline *)
+	      Cocci2(s,line,lcol,rcol,None)
+	  | t1 -> t1 in
+	(match stack with
+	  [_] ->
+	    let _count =
+	      if seen_cocci
+	      then update_previous_space stack space_cell count ","
+	      else count+1 in
+	    t1::t2::loop stack None newcount newseencocci false rest
+	| _ -> t1::t2::loop stack None newcount newseencocci false rest)
     | ((Cocci2(s,line,lcol,rcol,Some(Unparse_cocci.SpaceOrNewline sp))) as a)::
       xs ->
 	let xs =
@@ -1546,19 +1565,6 @@ let add_newlines toks tabbing_unit =
 	| _ ->
 	    t1::t2::
 	    loop stack space_cell (count+space_sz+1) seen_cocci false rest)
-    | t1 :: t2 :: rest
-      when nonempty stack && iscomma t1 && isnewline t2 ->
-	let seen_cocci = seen_cocci || iscocci t1 || iscocci t2 in
-	let (stack,newcount,t2,newseencocci) =
-	  get_indent stack t2 seen_cocci rest in
-	(match stack with
-	  [_] ->
-	    let _count =
-	      if seen_cocci
-	      then update_previous_space stack space_cell count ","
-	      else count+1 in
-	    t1::t2::loop stack None newcount newseencocci false rest
-	| _ -> t1::t2::loop stack None newcount newseencocci false rest)
     | t1 :: rest
       when nonempty stack && iscomma t1 ->
 	let seen_cocci = seen_cocci || iscocci t1 in
