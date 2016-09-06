@@ -1253,9 +1253,9 @@ let rec drop_space_at_endline = function
   | ((T2(Parser_c.TCommentSpace _,Ctx,_i,_h)) as a)::rest ->
     let (outer_spaces,rest) = span is_space rest in
     let minus_or_comment_or_space_nocpp = function
+      | (T2(Parser_c.TCommentNewline _,_,_i,_)) -> false
       | T2(_,Min adj,_,_) -> true
       | (T2(Parser_c.TCommentSpace _,Ctx,_i,_)) -> true
-      | (T2(Parser_c.TCommentNewline _,Ctx,_i,_)) -> false
       | x -> false in
     let (minus,rest) = span minus_or_comment_or_space_nocpp rest in
     let fail _ = a :: outer_spaces @ minus @ (drop_space_at_endline rest) in
@@ -1518,6 +1518,38 @@ let add_newlines toks tabbing_unit =
         let (newcount,newstack,newspacecell,newseencocci) =
           end_box stack space_cell count seen_cocci s in
         a :: loop newstack newspacecell newcount newseencocci false xs
+    | t1 :: t2 :: rest
+      when nonempty stack && iscomma t1 && isnewline t2 ->
+	let seen_cocci = seen_cocci || iscocci t1 || iscocci t2 in
+	let (stack,newcount,t2,newseencocci) =
+	  get_indent stack t2 seen_cocci rest in
+	let t1 =
+	  match t1 with
+	    Cocci2(s,line,lcol,rcol,Some(Unparse_cocci.SpaceOrNewline sp)) ->
+	      (* no need for extra space, because we have a newline *)
+	      Cocci2(s,line,lcol,rcol,None)
+	  | t1 -> t1 in
+	(match stack with
+	  [_] ->
+	    let _count =
+	      if seen_cocci
+	      then update_previous_space stack space_cell count ","
+	      else count+1 in
+	    t1::t2::loop stack None newcount newseencocci false rest
+	| _ -> t1::t2::loop stack None newcount newseencocci false rest)
+    | t1 :: t2 :: rest
+      when iscomma t1 && isnewline t2 ->
+	(* nothing to do in this case *)
+	let t1 =
+	  match t1 with
+	    Cocci2(s,line,lcol,rcol,Some(Unparse_cocci.SpaceOrNewline sp)) ->
+	      (* no need for extra space, because we have a newline *)
+	      Cocci2(s,line,lcol,rcol,None)
+	  | t1 -> t1 in
+	(* 0 for second arg of string_length - because of nl, value doesn't
+	   matter *)
+	let (newcount,newseencocci) = string_length (str_of_token2 t2) 0 in
+	t1::t2::loop stack None newcount newseencocci false rest
     | ((Cocci2(s,line,lcol,rcol,Some(Unparse_cocci.SpaceOrNewline sp))) as a)::
       xs ->
 	let xs =
@@ -1546,19 +1578,6 @@ let add_newlines toks tabbing_unit =
 	| _ ->
 	    t1::t2::
 	    loop stack space_cell (count+space_sz+1) seen_cocci false rest)
-    | t1 :: t2 :: rest
-      when nonempty stack && iscomma t1 && isnewline t2 ->
-	let seen_cocci = seen_cocci || iscocci t1 || iscocci t2 in
-	let (stack,newcount,t2,newseencocci) =
-	  get_indent stack t2 seen_cocci rest in
-	(match stack with
-	  [_] ->
-	    let _count =
-	      if seen_cocci
-	      then update_previous_space stack space_cell count ","
-	      else count+1 in
-	    t1::t2::loop stack None newcount newseencocci false rest
-	| _ -> t1::t2::loop stack None newcount newseencocci false rest)
     | t1 :: rest
       when nonempty stack && iscomma t1 ->
 	let seen_cocci = seen_cocci || iscocci t1 in
@@ -1590,10 +1609,15 @@ let add_newlines toks tabbing_unit =
 	(String.get s1 0 = '\"') && (String.get s2 0 = '\"') ->
         let count =
 	  update_previous_space stack space_cell count s1 in
+	let count_after_space = count + 1 in
 	let sp = ref " " in
 	let a = C2(s1,Some(Unparse_cocci.SpaceOrNewline sp)) in
+	let space_cell =
+          match stack with
+            [_] -> Some(count_after_space,sp)
+          | _ -> space_cell in
 	a ::
-	loop stack space_cell ((simple_string_length s1 count)+1) true false xs
+	loop stack space_cell count_after_space true false xs
     | Fake2 _ :: _ | Indent_cocci2 :: _
     | Unindent_cocci2 _::_ | EatSpace2::_ ->
       failwith "unexpected fake, indent, unindent, or eatspace"
@@ -2466,7 +2490,6 @@ let pp_program2 xs outfile  =
               (* phase2: can now start to filter and adjust *)
 	      let toks = check_danger toks in
               let toks = paren_then_brace toks in
-              let toks = drop_space_at_endline toks in
 	      (* have to annotate droppable spaces early, so that can create
 		 the right minus and plus maps in adjust indentation.  For
 		 the same reason, cannot actually remove the minus tokens. *)
@@ -2478,6 +2501,7 @@ let pp_program2 xs outfile  =
               let toks = adjust_after_paren toks in(*also before remove minus*)
               let toks = paren_to_space toks in
               let toks = drop_end_comma toks in
+              let toks = drop_space_at_endline toks in
               let toks = remove_minus_and_between_and_expanded_and_fake2 toks in
               (* assert Origin + Cocci + C and no minus *)
               let toks = add_space toks in
