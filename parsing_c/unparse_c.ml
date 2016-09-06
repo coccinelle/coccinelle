@@ -1253,9 +1253,9 @@ let rec drop_space_at_endline = function
   | ((T2(Parser_c.TCommentSpace _,Ctx,_i,_h)) as a)::rest ->
     let (outer_spaces,rest) = span is_space rest in
     let minus_or_comment_or_space_nocpp = function
+      | (T2(Parser_c.TCommentNewline _,_,_i,_)) -> false
       | T2(_,Min adj,_,_) -> true
       | (T2(Parser_c.TCommentSpace _,Ctx,_i,_)) -> true
-      | (T2(Parser_c.TCommentNewline _,Ctx,_i,_)) -> false
       | x -> false in
     let (minus,rest) = span minus_or_comment_or_space_nocpp rest in
     let fail _ = a :: outer_spaces @ minus @ (drop_space_at_endline rest) in
