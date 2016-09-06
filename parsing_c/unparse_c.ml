@@ -1537,6 +1537,19 @@ let add_newlines toks tabbing_unit =
 	      else count+1 in
 	    t1::t2::loop stack None newcount newseencocci false rest
 	| _ -> t1::t2::loop stack None newcount newseencocci false rest)
+    | t1 :: t2 :: rest
+      when iscomma t1 && isnewline t2 ->
+	(* nothing to do in this case *)
+	let t1 =
+	  match t1 with
+	    Cocci2(s,line,lcol,rcol,Some(Unparse_cocci.SpaceOrNewline sp)) ->
+	      (* no need for extra space, because we have a newline *)
+	      Cocci2(s,line,lcol,rcol,None)
+	  | t1 -> t1 in
+	(* 0 for second arg of string_length - because of nl, value doesn't
+	   matter *)
+	let (newcount,newseencocci) = string_length (str_of_token2 t2) 0 in
+	t1::t2::loop stack None newcount newseencocci false rest
     | ((Cocci2(s,line,lcol,rcol,Some(Unparse_cocci.SpaceOrNewline sp))) as a)::
       xs ->
 	let xs =
