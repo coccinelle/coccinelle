@@ -1,4 +1,5 @@
 @@
+symbol x;
 @@
 
 struct foo x = {
