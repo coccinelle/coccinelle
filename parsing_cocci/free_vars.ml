@@ -74,11 +74,7 @@ let collect_refs include_constraints =
       | Ast.MetaLocalFunc(name,idconstraint,_,_) ->
 	  let metas =
 	    if include_constraints
-	    then
-	      match idconstraint with
-		Ast.IdNegIdSet (_,metas) -> metas
-	      | Ast.IdPosIdSet (_,metas) -> metas
-	      | _ -> []
+	    then Ast.cstr_meta_names idconstraint
 	    else [] in
 	  bind (List.rev metas) [metaid name]
       | Ast.DisjId(ids) -> bind_disj (List.map k ids)
@@ -134,13 +130,8 @@ let collect_refs include_constraints =
 
   let rec collect_assign_names aop =
     match Ast.unwrap aop with
-      Ast.MetaAssign(name,Ast.AssignOpNoConstraint,_,_) ->
-	[metaid name]
-    | Ast.MetaAssign(name,Ast.AssignOpInSet l,_,_) ->
-	if include_constraints
-	then
-	  List.fold_left (fun prev a -> bind (collect_assign_names a) prev)
-	    [metaid name] l
+      Ast.MetaAssign(name,c,_,_) ->
+	if include_constraints then metaid name :: Ast.cstr_meta_names c
 	else [metaid name]
     | _ -> option_default in
 
@@ -149,13 +140,8 @@ let collect_refs include_constraints =
 
   let rec collect_binary_names bop =
     match Ast.unwrap bop with
-      Ast.MetaBinary(name,Ast.BinaryOpNoConstraint,_,_) ->
-	[metaid name]
-    | Ast.MetaBinary(name,Ast.BinaryOpInSet l,_,_) ->
-	if include_constraints
-	then
-	  List.fold_left (fun prev a -> bind (collect_binary_names a) prev)
-	    [metaid name] l
+      Ast.MetaBinary(name,c,_,_) ->
+	if include_constraints then metaid name :: Ast.cstr_meta_names c
 	else [metaid name]
     | _ -> option_default in
 
@@ -232,12 +218,7 @@ let collect_refs include_constraints =
 	       (List.fold_left bind option_default
 		  (if include_constraints
 		  then
-		    List.map
-		      (function
-			  Ast.PosNegSet l -> l
-			| Ast.PosScript(name,lang,params,body) ->
-			    List.map fst params)
-		      constraints
+		    [Ast.cstr_meta_names constraints]
 		  else [])))
 	   (Ast.get_pos_var mc))
     (* else option_default *) in
@@ -637,15 +618,15 @@ let classify_variables metavar_decls minirules used_after =
       | Ast.MetaId (name, _, _, _) ->
           let (unitary, inherited) =
             classify (Ast.unwrap_mcode name, (), (), []) in
-          Ast.MetaId (name, Ast.IdNoConstraint, unitary, inherited)
+          Ast.MetaId (name, Ast.CstrTrue, unitary, inherited)
       | Ast.MetaFunc (name, _, _, _) ->
           let (unitary, inherited) =
             classify (Ast.unwrap_mcode name, (), (), []) in
-          Ast.MetaFunc (name, Ast.IdNoConstraint, unitary, inherited)
+          Ast.MetaFunc (name, Ast.CstrTrue, unitary, inherited)
       | Ast.MetaLocalFunc (name, _, _, _) ->
           let (unitary, inherited) =
             classify (Ast.unwrap_mcode name, (), (), []) in
-          Ast.MetaLocalFunc (name, Ast.IdNoConstraint, unitary, inherited)
+          Ast.MetaLocalFunc (name, Ast.CstrTrue, unitary, inherited)
       | Ast.AsIdent (ident0, ident1) ->
           Ast.AsIdent (classify_ident ident0, classify_ident ident1)
       | Ast.DisjId list -> Ast.DisjId (List.map classify_ident list)
@@ -1061,12 +1042,10 @@ let get_neg_pos_list (_,rule) used_after_list =
   let option_default = ([],[],[]) in
   let metaid (x,_,_,_) = x in
   let get_neg_pos_constraints constraints =
-    List.concat
-      (List.map
-	 (function
-	     Ast.PosNegSet l -> l
-	   | Ast.PosScript _ -> [])
-	 constraints) in
+    Ast.cstr_fold
+      { Ast.empty_cstr_transformer with
+	Ast.cstr_meta_name = Some (fun mn accu -> mn :: accu);
+	cstr_script = Some (fun _ accu -> accu) } constraints [] in
   let mcode r mc =
     List.fold_left
       (function (pos_vars,neg_vars,all_vars) ->

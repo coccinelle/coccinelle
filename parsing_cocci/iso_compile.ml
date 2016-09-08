@@ -76,7 +76,7 @@ let get_p _ =
   let name = ("",Printf.sprintf "p%d" c) in
   (* pos var just gives a name we can look up, used for historical reasons *)
   Ast0.HiddenVarTag
-    ([Ast0.MetaPosTag(Ast0.MetaPos(Ast0.make_mcode name,[],Ast.PER))])
+    ([Ast0.MetaPosTag(Ast0.MetaPos(Ast0.make_mcode name,Ast.CstrTrue,Ast.PER))])
 
 let process_info l =
    let rec loop previously_used = function

@@ -79,26 +79,24 @@ let get_free checker t =
   let type_collect res ty = bind res (Ast0.meta_names_of_typeC ty) in
 
   let mcode mc =
-    List.fold_left bind option_default
-      (List.map
-	 (function
-	     Ast0.MetaPosTag(Ast0.MetaPos(name,constraints,_)) ->
-	       List.fold_left bind option_default
-		 (List.map
-		    (function
-			Ast.PosNegSet l -> []
-		      | Ast.PosScript(name,lang,params,body) ->
-		       (* It seems that position variables are not relevant
-			  for unitaryness, so drop them *)
-			  List.map fst
-			    (List.filter
-			       (function
-				   (_,Ast.MetaPosDecl _) -> false
-				 | _ -> true)
-			       params))
-		    constraints)
-	   | _ -> option_default)
-	 (Ast0.get_pos mc)) in
+    List.fold_left
+      (fun accu e ->
+	match e with
+	  Ast0.MetaPosTag(Ast0.MetaPos(name,constraints,_)) ->
+	    Ast.cstr_fold
+	      { Ast.empty_cstr_transformer with
+		Ast.cstr_script =
+		Some (fun (name,lang,params,body) accu ->
+		  (* It seems that position variables are not relevant
+		     for unitaryness, so drop them *)
+		  bind (List.map fst
+		     (List.filter
+			(function
+			    (_,Ast.MetaPosDecl _) -> false
+			  | _ -> true)
+			params)) accu) } constraints accu
+	| _ -> accu)
+      option_default (Ast0.get_pos mc) in
 
   let constraints_collect r res = function
       Ast0.NotExpCstrt(el) ->

@@ -32,9 +32,9 @@ and line_type =
   | PLUS | PLUSPLUS
   | CONTEXT | OPT
 
-type iconstraints = Ast.idconstraint
+type iconstraints = Ast.general_constraint
 type econstraints = Ast0.constraints
-type pconstraints = Ast.pos_constraints list
+type pconstraints = Ast.general_constraint
 
 let in_rule_name = ref false
 let in_meta = ref false
@@ -116,11 +116,11 @@ let add_fmtlist_meta: (Ast.meta_name -> Ast.list_len -> unit) ref =
   ref uninitialized_add_meta
 
 let add_assignOp_meta:
-    (Ast.meta_name -> Ast0.assignOpconstraint -> Ast0.pure -> unit) ref =
+    (Ast.meta_name -> Ast.general_constraint -> Ast0.pure -> unit) ref =
   ref uninitialized_add_meta
 
 let add_binaryOp_meta:
-    (Ast.meta_name -> Ast0.binaryOpconstraint -> Ast0.pure -> unit) ref =
+    (Ast.meta_name -> Ast.general_constraint -> Ast0.pure -> unit) ref =
   ref uninitialized_add_meta
 
 let add_type_name: (string -> unit) ref = ref uninitialized_add_meta

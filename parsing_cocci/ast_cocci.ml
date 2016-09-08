@@ -142,9 +142,12 @@ and 'a dots = 'a list wrap
 
 and base_ident =
     Id            of string mcode
-  | MetaId        of meta_name mcode * idconstraint * keep_binding * inherited
-  | MetaFunc      of meta_name mcode * idconstraint * keep_binding * inherited
-  | MetaLocalFunc of meta_name mcode * idconstraint * keep_binding * inherited
+  | MetaId        of
+      meta_name mcode * general_constraint * keep_binding * inherited
+  | MetaFunc      of
+      meta_name mcode * general_constraint * keep_binding * inherited
+  | MetaLocalFunc of
+      meta_name mcode * general_constraint * keep_binding * inherited
   | AsIdent       of ident * ident (* as ident, always metavar *)
 
   | DisjId        of ident list
@@ -220,31 +223,22 @@ and constraints =
   | NotExpCstrt    of expression list
   | SubExpCstrt    of meta_name list
 
+and general_constraint =
+    CstrFalse
+  | CstrTrue
+  | CstrAnd of general_constraint list
+  | CstrOr of general_constraint list
+  | CstrNot of general_constraint
+  | CstrString of string
+  | CstrMeta_name of meta_name
+  | CstrRegexp of string * Regexp.regexp
+  | CstrScript of script_constraint
+
 and script_constraint =
       string (* name of generated function *) *
 	string (* language *) *
 	(meta_name * metavar) list (* params *) *
 	string (* code *)
-
-(* Constraints on Meta-* Identifiers, Functions *)
-and idconstraint =
-    IdNoConstraint
-  | IdPosIdSet         of string list * meta_name list
-  | IdNegIdSet         of string list * meta_name list
-  | IdGeneralConstraint of general_constraint
-
-and general_constraint =
-  | IdRegExp           of string * Regexp.regexp
-  | IdNotRegExp        of string * Regexp.regexp
-  | IdScriptConstraint of script_constraint
-
-and assignOpconstraint =
-    AssignOpNoConstraint
-  | AssignOpInSet of assignOp list
-
-and binaryOpconstraint =
-    BinaryOpNoConstraint
-  | BinaryOpInSet of binaryOp list
 
 (* ANY = int E; ID = idexpression int X; CONST = constant int X; *)
 and form = ANY | ID | LocalID | GlobalID | CONST (* form for MetaExp *)
@@ -267,7 +261,8 @@ and string_fragment = base_string_fragment wrap
 
 and base_string_format =
     ConstantFormat of string mcode
-  | MetaFormat of meta_name mcode * idconstraint * keep_binding * inherited
+  | MetaFormat of
+      meta_name mcode * general_constraint * keep_binding * inherited
 
 and string_format = base_string_format wrap
 
@@ -276,7 +271,7 @@ and base_assignOp =
     SimpleAssign of simpleAssignOp mcode
   | OpAssign of arithOp mcode
   | MetaAssign of
-      meta_name mcode * assignOpconstraint * keep_binding * inherited
+      meta_name mcode * general_constraint * keep_binding * inherited
 and simpleAssignOp = string
 and assignOp = base_assignOp wrap
 and fixOp = Dec | Inc
@@ -285,7 +280,7 @@ and base_binaryOp =
     Arith of arithOp mcode
   | Logical of logicalOp mcode
   | MetaBinary of
-      meta_name mcode * binaryOpconstraint * keep_binding * inherited
+      meta_name mcode * general_constraint * keep_binding * inherited
 and binaryOp = base_binaryOp wrap
 and arithOp =
     Plus | Minus | Mul | Div | Mod | DecLeft | DecRight | And | Or | Xor
@@ -466,12 +461,8 @@ and define_parameters = base_define_parameters wrap
 and meta_collect = PER | ALL
 
 and meta_pos =
-    MetaPos of meta_name mcode * pos_constraints list *
+    MetaPos of meta_name mcode * general_constraint *
       meta_collect * keep_binding * inherited
-
-and pos_constraints =
-    PosNegSet of meta_name list
-  | PosScript of script_constraint
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)
@@ -1212,3 +1203,94 @@ let fullType_fold_meta_names f ty v =
 let meta_names_of_fullType ty =
   fullType_fold_meta_names
     (fun meta_name meta_names -> meta_name :: meta_names) ty []
+
+type 'a cstr_transformer = {
+    cstr_string: (string -> 'a) option;
+    cstr_meta_name: (meta_name -> 'a) option;
+    cstr_regexp: (string -> Regexp.regexp -> 'a) option;
+    cstr_script: (script_constraint -> 'a) option;
+  }
+
+let empty_cstr_transformer = {
+  cstr_regexp = None;
+  cstr_string = None;
+  cstr_meta_name = None;
+  cstr_script = None;
+}
+
+let rec cstr_fold transformer c accu =
+  match c with
+    CstrFalse
+  | CstrTrue -> accu
+  | CstrAnd list | CstrOr list ->
+      List.fold_left (fun accu c' -> cstr_fold transformer c' accu) accu list
+  | CstrNot c' -> cstr_fold transformer c' accu
+  | CstrString s ->
+      Common.default accu (fun f -> f s accu) transformer.cstr_string
+  | CstrMeta_name mn ->
+      Common.default accu (fun f -> f mn accu) transformer.cstr_meta_name
+  | CstrRegexp (s, re) ->
+      Common.default accu (fun f -> f s re accu) transformer.cstr_regexp
+  | CstrScript ((_name, _lang, params, _code) as script_constraint) ->
+      begin
+	match transformer.cstr_script with
+	  None ->
+	    Common.default accu
+	      (fun f ->
+		List.fold_left (fun accu' (mv, _) -> f mv accu') accu params)
+	      transformer.cstr_meta_name
+	| Some f -> f script_constraint accu
+      end
+
+let cstr_iter transformer c =
+  cstr_fold
+    { cstr_string =
+      Common.map_option (fun f s () -> f s) transformer.cstr_string;
+      cstr_meta_name =
+      Common.map_option (fun f s () -> f s) transformer.cstr_meta_name;
+      cstr_regexp =
+      Common.map_option (fun f s re () -> f s re) transformer.cstr_regexp;
+      cstr_script =
+      Common.map_option (fun f s () -> f s) transformer.cstr_script; } c ()
+
+let rec cstr_map transformer c =
+  match c with
+    CstrFalse -> CstrFalse
+  | CstrTrue -> CstrTrue
+  | CstrAnd list -> CstrAnd (List.map (cstr_map transformer) list)
+  | CstrOr list -> CstrOr (List.map (cstr_map transformer) list)
+  | CstrNot c' -> CstrNot (cstr_map transformer c')
+  | CstrString s ->
+      Common.default (CstrString s) (fun f -> f s) transformer.cstr_string
+  | CstrMeta_name mn ->
+      Common.default (CstrMeta_name mn) (fun f -> f mn)
+	transformer.cstr_meta_name
+  | CstrRegexp (s, re) ->
+      Common.default (CstrRegexp (s, re)) (fun f -> f s re)
+	transformer.cstr_regexp
+  | CstrScript script_constraint ->
+      Common.default (CstrScript script_constraint)
+	(fun f -> f script_constraint)
+	transformer.cstr_script
+
+let rec cstr_eval transformer c =
+  match c with
+    CstrFalse -> false
+  | CstrTrue -> true
+  | CstrAnd list -> List.for_all (cstr_eval transformer) list
+  | CstrOr list -> List.exists (cstr_eval transformer) list
+  | CstrNot c' -> not (cstr_eval transformer c')
+  | CstrString s -> Common.default false (fun f -> f s) transformer.cstr_string
+  | CstrMeta_name mn ->
+      Common.default false (fun f -> f mn) transformer.cstr_meta_name
+  | CstrRegexp (s, re) ->
+      Common.default false (fun f -> f s re) transformer.cstr_regexp
+  | CstrScript script_constraint ->
+      Common.default false (fun f -> f script_constraint)
+	transformer.cstr_script
+
+let cstr_meta_names c =
+  cstr_fold
+    { empty_cstr_transformer with
+      cstr_meta_name = Some (fun mn accu -> mn :: accu)
+    } c []
