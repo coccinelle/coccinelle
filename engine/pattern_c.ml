@@ -331,25 +331,8 @@ module XMATCH = struct
 
   let check_pos_constraints pname constraints pvalu f tin =
     let res =
-      List.for_all
-	(function
-	    Ast_cocci.PosNegSet l ->
-	      List.for_all
-		(function othermeta ->
-		  let v =
-		    Common.optionise
-		      (fun () -> tin.binding0 +> List.assoc othermeta) in
-		  match v with
-		    Some valu' ->
-		      not (Cocci_vs_c.equal_inh_metavarval pvalu valu')
-		  | None ->
-		      (*if the variable is not there, it puts no constraints*)
-		      true)
-		l
-	  | Ast_cocci.PosScript c ->
-	      Cocci_vs_c.satisfies_scriptconstraint c pname pvalu
-		(fun name -> List.assoc name tin.binding0))
-	constraints in
+      Cocci_vs_c.satisfies_constraint constraints (pname, pvalu)
+	(fun name -> List.assoc name tin.binding0) in
     if res then f () tin (* success *) else fail tin (* failure *)
 
   (* ------------------------------------------------------------------------*)

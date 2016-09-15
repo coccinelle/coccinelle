@@ -31,7 +31,7 @@ let make_pos (_, arity, info, mcodekind, _, adj) snp
 : Ast0.anything * Snap.t =
   let (name, snp) = Snap.add_position snp in
   let meta_mcode = (("",name),arity,info,Ast0.PLUS Ast.ONE,ref [],adj) in
-  let list_constraints = [] in
+  let list_constraints = Ast.CstrTrue in
   let meta_collect = Ast.PER in
   let new_pos = Ast0.MetaPos(meta_mcode, list_constraints, meta_collect) in
   (Ast0.MetaPosTag(new_pos), snp)

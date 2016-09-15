@@ -724,7 +724,7 @@ module type PARAM =
 
   end
 
-let satisfies_scriptconstraint (name, lang, params, body) ida idb env =
+let satisfies_script_constraint (name, lang, params, body) ida idb env =
   let values =
     try Some ((ida, idb) :: List.map (fun (p,_) -> (p, env p)) params)
     with Not_found -> None in
@@ -737,6 +737,26 @@ let satisfies_scriptconstraint (name, lang, params, body) ida idb env =
 	| "python" -> Pycocci.run_constraint args body
 	| _ -> failwith "languages other than ocaml or python not supported"
       end
+
+let satisfies_constraint c (ida, idb) env =
+  let match_string f =
+    match idb with
+      B.MetaIdVal s -> f s
+    | _ -> false in
+  A.cstr_eval
+    { A.cstr_string = Some (fun s' -> match_string (( = ) s'));
+      A.cstr_regexp = Some begin fun _s regexp ->
+	match_string (Regexp.string_match regexp);
+      end;
+      A.cstr_meta_name = Some begin fun mn ->
+	match Common.optionise (fun () -> env mn) with
+	  Some mv -> equal_inh_metavarval mv idb
+	| _ -> false
+      end;
+      A.cstr_script = Some begin fun script_constraint ->
+	satisfies_script_constraint script_constraint ida idb env
+      end;
+    } c
 
 (*****************************************************************************)
 (* Functor code, "Cocci vs C" *)
@@ -784,11 +804,7 @@ let metavar2dots (_,info,mcodekind,pos) = ("...",info,mcodekind,pos)
 let metavar2ndots (_,info,mcodekind,pos) = ("<+...",info,mcodekind,pos)
 
 let satisfies_generalconstraint c (ida, idb) env : bool =
-  match c with
-    A.IdRegExp (_,recompiled)    -> Regexp.string_match recompiled idb
-  | A.IdNotRegExp (_,recompiled) -> not (Regexp.string_match recompiled idb)
-  | A.IdScriptConstraint c ->
-      satisfies_scriptconstraint c ida (B.MetaIdVal idb) env
+  satisfies_constraint c (ida, B.MetaIdVal idb) env
 
 let satisfies_iconstraint (strs,metas) id env : bool =
   List.mem id strs ||
@@ -1056,22 +1072,20 @@ let assignOp_eq op1 op2 = match (op1, op2) with
   | A.OpAssign o1, A.OpAssign o2 -> (A.unwrap_mcode o1) = (A.unwrap_mcode o2)
   | _ -> false
 
-let check_assignOp_constraint (opb',ii) = function
-  | A.AssignOpNoConstraint -> true
-  | A.AssignOpInSet ops ->
-    let opb'' = (assignOpA_of_assignOpB opb') in
-    List.exists (assignOp_eq opb'') (List.map A.unwrap ops)
+let check_assignOp_constraint c (opA, (opb',ii)) env =
+  let opb'' = assignOpA_of_assignOpB opb' in
+  satisfies_constraint c
+    (opA, B.MetaIdVal (A.string_of_assignOp (A.make_term opb''))) env
 
 let binaryOp_eq op1 op2 = match (op1, op2) with
   | A.Arith o1, A.Arith o2 -> (A.unwrap_mcode o1) = (A.unwrap_mcode o2)
   | A.Logical o1, A.Logical o2 -> (A.unwrap_mcode o1) = (A.unwrap_mcode o2)
   | _ -> false
 
-let check_binaryOp_constraint (opb',ii) = function
-  | A.BinaryOpNoConstraint -> true
-  | A.BinaryOpInSet ops ->
-    let opb'' = (binaryOpA_of_binaryOpB opb') in
-    List.exists (binaryOp_eq opb'') (List.map A.unwrap ops)
+let check_binaryOp_constraint c (opA, (opb',ii)) env =
+  let opb'' = binaryOpA_of_binaryOpB opb' in
+  satisfies_constraint c
+    (opA, B.MetaIdVal (A.string_of_binaryOp (A.make_term opb''))) env
 
 (*---------------------------------------------------------------------------*)
 let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
@@ -1639,15 +1653,15 @@ and assignOp opa opb =
           (A.rewrap opa (A.OpAssign oa), (B.OpAssign ob,[opbi])))
     else fail
   | A.MetaAssign (mv, c, keep, inherited), _ ->
-    if check_assignOp_constraint opb c
-    then begin
-      let max_min _ =
-        Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_assignOp opb) in
-      X.envf keep inherited (mv,Ast_c.MetaAssignOpVal opb,max_min)
-        (fun () -> X.distrf_assignOp mv opb
-      >>= (fun mv opb ->
-            return (A.MetaAssign(mv,c,keep,inherited)+> A.rewrap opa,opb)))
-    end else fail
+      X.check_constraints check_assignOp_constraint c (A.unwrap_mcode mv, opb)
+	(fun () ->
+	  let max_min _ =
+	    Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_assignOp opb) in
+	  X.envf keep inherited (mv,Ast_c.MetaAssignOpVal opb,max_min)
+	    (fun () -> X.distrf_assignOp mv opb
+		>>=
+	      (fun mv opb ->
+		return (A.MetaAssign(mv,c,keep,inherited)+> A.rewrap opa,opb))))
   | _ -> fail
 
 and binaryOp opa opb =
@@ -1669,15 +1683,15 @@ and binaryOp opa opb =
             (A.rewrap opa (A.Logical oa), (B.Logical ob,[opbi])))
       else fail
   | A.MetaBinary (mv, c, keep, inherited), _ ->
-    if check_binaryOp_constraint opb c
-    then begin
-      let max_min _ =
-        Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_binaryOp opb) in
-      X.envf keep inherited (mv,Ast_c.MetaBinaryOpVal opb,max_min)
-        (fun () -> X.distrf_binaryOp mv opb
-      >>= (fun mv opb ->
-            return (A.MetaBinary(mv,c,keep,inherited)+> A.rewrap opa,opb)))
-    end else fail
+      X.check_constraints check_binaryOp_constraint c (A.unwrap_mcode mv, opb)
+	(fun () ->
+	  let max_min _ =
+            Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_binaryOp opb) in
+	  X.envf keep inherited (mv,Ast_c.MetaBinaryOpVal opb,max_min)
+            (fun () -> X.distrf_binaryOp mv opb
+		>>=
+	      (fun mv opb ->
+		return (A.MetaBinary(mv,c,keep,inherited)+> A.rewrap opa,opb))))
   | _ -> fail
 
 and string_fragments eas ebs =
@@ -1737,12 +1751,8 @@ and string_fragment ea (eb,ii) =
 
 and string_format ea eb =
    let check_constraints constraints ida idb =
-     match constraints with
-       A.IdNoConstraint -> return ((),())
-     | A.IdGeneralConstraint re ->
-	 X.check_constraints satisfies_generalconstraint re (ida, idb)
-	   (fun () -> return ((),()))
-     | _ -> failwith "no nonid constraint for string format" in
+     X.check_constraints satisfies_generalconstraint constraints (ida, idb)
+       (fun () -> return ((),())) in
   X.all_bound (A.get_inherited ea) >&&>
   let wa x = A.rewrap ea x in
   match A.unwrap ea,eb with
@@ -1827,17 +1837,8 @@ and (ident_cpp: info_ident -> (A.ident, B.name) matcher) =
 and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
  fun infoidb ida ((idb, iib) as ib) -> (* (idb, iib) as ib *)
    let check_constraints constraints mida idb =
-     match constraints with
-       A.IdNoConstraint -> return ((),())
-     | A.IdPosIdSet (str,meta) ->
-	 X.check_constraints satisfies_iconstraint (str,meta) idb
-	   (fun () -> return ((),()))
-     | A.IdNegIdSet (str,meta) ->
-	 X.check_constraints satisfies_niconstraint (str,meta) idb
-	   (fun () -> return ((),()))
-     | A.IdGeneralConstraint c ->
-	 X.check_constraints satisfies_generalconstraint c
-	   (A.unwrap_mcode mida, idb) (fun () -> return ((),())) in
+     X.check_constraints satisfies_generalconstraint constraints
+       (A.unwrap_mcode mida, idb) (fun () -> return ((),())) in
   X.all_bound (A.get_inherited ida) >&&>
   match A.unwrap ida with
   | A.Id sa ->

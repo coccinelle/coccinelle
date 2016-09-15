@@ -369,17 +369,14 @@ let do_get_constants constants keywords env (neg_pos,_) =
 	  (match Ast.unwrap_mcode name with
 	    "NULL" -> keywords "NULL"
 	  | nm -> constants nm)
-    | Ast.MetaId(name,Ast.IdPosIdSet(strs,mids),_,_)
-    | Ast.MetaFunc(name,Ast.IdPosIdSet(strs,mids),_,_)
-    | Ast.MetaLocalFunc(name,Ast.IdPosIdSet(strs,mids),_,_) ->
-	let cur =
-	  build_or
-	    (disj_union_all (List.map constants strs))
-	    (disj_union_all (List.map inherited mids)) in
-	bind (k i) (bind (minherited name) cur)
-    | Ast.MetaId(name,_,_,_) | Ast.MetaFunc(name,_,_,_)
-    | Ast.MetaLocalFunc(name,_,_,_) ->
-	bind (k i) (minherited name)
+    | Ast.MetaId(name,c,_,_)
+    | Ast.MetaFunc(name,c,_,_)
+    | Ast.MetaLocalFunc(name,c,_,_) ->
+	Ast.cstr_fold
+	  { Ast.empty_cstr_transformer with
+	    Ast.cstr_string = Some (fun s accu -> bind (constants s) accu);
+	    cstr_meta_name = Some (fun mv accu -> bind (inherited mv) accu) }
+	  c (bind (k i) (minherited name))
     | Ast.DisjId(ids) -> disj_union_all (List.map r.V.combiner_ident ids)
     | _ -> k i in
 

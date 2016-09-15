@@ -128,17 +128,17 @@ let tmeta_to_param (name,pure,clt) =
 
 let tmeta_to_assignOp (name,pure,clt) =
   (coerce_tmeta "an assignment operator" name
-     (TMetaAssignOp(name,Ast0.AssignOpNoConstraint,pure,clt))
+     (TMetaAssignOp(name,Ast.CstrTrue,pure,clt))
      (function TMetaAssignOp(_,_,_,_) -> true | _ -> false));
   Ast0.wrap
-    (Ast0.MetaAssign(P.clt2mcode name clt,Ast0.AssignOpNoConstraint, pure))
+    (Ast0.MetaAssign(P.clt2mcode name clt,Ast.CstrTrue, pure))
 
 let tmeta_to_binaryOp (name,pure,clt) =
   (coerce_tmeta "a binary operator" name
-     (TMetaBinaryOp(name,Ast0.BinaryOpNoConstraint,pure,clt))
+     (TMetaBinaryOp(name,Ast.CstrTrue,pure,clt))
      (function TMetaBinaryOp(_,_,_,_) -> true | _ -> false));
   Ast0.wrap
-    (Ast0.MetaBinary(P.clt2mcode name clt,Ast0.BinaryOpNoConstraint, pure),clt)
+    (Ast0.MetaBinary(P.clt2mcode name clt,Ast.CstrTrue, pure),clt)
 
 let tmeta_to_statement (name,pure,clt) =
   (coerce_tmeta "a statement" name (TMetaType(name,pure,clt))
@@ -147,15 +147,15 @@ let tmeta_to_statement (name,pure,clt) =
 
 let tmeta_to_seed_id (name,pure,clt) =
   (coerce_tmeta "an identifier" name
-     (TMetaId(name,Ast.IdNoConstraint,Ast.NoVal,pure,clt))
+     (TMetaId(name,Ast.CstrTrue,Ast.NoVal,pure,clt))
      (function TMetaId(_,_,_,_,_) -> true | _ -> false));
   Ast.SeedId name
 
 let tmeta_to_ident (name,pure,clt) =
   (coerce_tmeta "an identifier" name
-     (TMetaId(name,Ast.IdNoConstraint,Ast.NoVal,pure,clt))
+     (TMetaId(name,Ast.CstrTrue,Ast.NoVal,pure,clt))
      (function TMetaId(_,_,_,_,_) -> true | _ -> false));
-  Ast0.wrap(Ast0.MetaId(P.clt2mcode name clt,Ast.IdNoConstraint,Ast.NoVal,pure))
+  Ast0.wrap(Ast0.MetaId(P.clt2mcode name clt,Ast.CstrTrue,Ast.NoVal,pure))
 
 and  arithOp = function
     Ast.Plus -> "+"
@@ -188,6 +188,15 @@ let mkarithop (op, clt) =
 let mklogop (op,clt) =
   let op' = P.clt2mcode op clt in
   Ast0.wrap (Ast0.Logical op')
+
+let constraint_of_binary_operator binary_operator =
+  match Ast0.unwrap binary_operator with
+    Ast0.Arith op ->
+      Ast.CstrString (Ast.string_of_arithOp (Ast0.unwrap_mcode op))
+  | Ast0.Logical op ->
+      Ast.CstrString (Ast.string_of_logicalOp (Ast0.unwrap_mcode op))
+  | Ast0.MetaBinary _ ->
+      failwith "constraint_of_binary_operator: not implemented"
 
 let unknown_type = Ast0.wrap (Ast0.BaseType (Ast.Unknown, []))
 
@@ -517,9 +526,9 @@ metadec:
       let kindfn arity name pure check_meta constraints =
 	let constraints =
 	  Common.map_index (fun c index -> c name index) constraints in
-      let tok = check_meta(Ast.MetaPosDecl(arity,name)) in
-      let any = match a with None -> Ast.PER | Some _ -> Ast.ALL in
-      !Data.add_pos_meta name constraints any; tok in
+	let tok = check_meta(Ast.MetaPosDecl(arity,name)) in
+	let any = match a with None -> Ast.PER | Some _ -> Ast.ALL in
+	!Data.add_pos_meta name (Ast.CstrAnd constraints) any; tok in
     P.create_metadec_with_constraints ar false kindfn ids }
 | ar=arity ispure=pure
     TParameter Tlist TOCro len=list_len TCCro
@@ -609,21 +618,21 @@ pure_ident_or_meta_ident_with_binop_constraint:
     i=pure_ident_or_meta_ident c=binaryopconstraint { (i,c) }
 
 binaryopconstraint:
-  { Ast0.BinaryOpNoConstraint }
+  { Ast.CstrTrue }
 | TEq TOBrace ops=comma_list(binary_operator) TCBrace
-  { Ast0.BinaryOpInSet ops }
+  { Ast.CstrOr (List.map constraint_of_binary_operator ops) }
 | TEq op=binary_operator
-  { Ast0.BinaryOpInSet [op] }
+  { constraint_of_binary_operator op }
 
 pure_ident_or_meta_ident_with_assignop_constraint:
     i=pure_ident_or_meta_ident c=assignopconstraint { (i,c) }
 
 assignopconstraint:
-  { Ast0.AssignOpNoConstraint }
+  { Ast.CstrTrue }
 | TEq TOBrace ops=comma_list(assignment_operator) TCBrace
-  { Ast0.AssignOpInSet ops }
+  { Ast.CstrOr ops }
 | TEq op=assignment_operator
-  { Ast0.AssignOpInSet [op] }
+  { op }
 
 binary_operator:
 | TShLOp { mkarithop $1 } (* Ast.Arith Ast.DecLeft *)
@@ -644,13 +653,9 @@ binary_operator:
 
 assignment_operator:
 | TEq
-  { let clt = $1 in
-  let op' = P.clt2mcode "=" clt in
-  Ast0.wrap (Ast0.SimpleAssign op') }
+  { Ast.CstrString "=" }
 | TOpAssign
-  { let (op,clt) = $1 in
-  let op' = P.clt2mcode op clt in
-  Ast0.wrap (Ast0.OpAssign op') }
+  { Ast.CstrString (Ast.string_of_arithOp (fst $1) ^ "=") }
 
 list_len:
   pure_ident_or_meta_ident { Common.Left $1 }
@@ -2319,7 +2324,7 @@ pure_ident_or_meta_ident_with_idconstraint_virt(constraint_type):
     {
       Common.Left
         (match c with
-	  None -> (i, Ast.IdNoConstraint)
+	  None -> (i, Ast.CstrTrue)
 	| Some constraint_ -> (i,constraint_))
     }
 | TVirtual TDot pure_ident
@@ -2335,17 +2340,17 @@ pure_ident_or_meta_ident_with_idconstraint(constraint_type):
        i=pure_ident_or_meta_ident c=option(constraint_type)
     {
       match c with
-	  None -> (i, Ast.IdNoConstraint)
+	  None -> (i, Ast.CstrTrue)
 	| Some constraint_ -> (i,constraint_)
     }
 
 re_or_not_eqid:
-   re=general_eqid   {Ast.IdGeneralConstraint re}
- | TEq ne=idcstr    {Ast.IdPosIdSet (fst ne,snd ne)}
- | TNotEq ne=idcstr {Ast.IdNegIdSet (fst ne,snd ne)}
+   re=general_eqid   {re}
+ | TEq ne=idcstr    {ne}
+ | TNotEq ne=idcstr {Ast.CstrNot ne}
 
 re_only:
-   re=general_eqid {Ast.IdGeneralConstraint re}
+   re=general_eqid {re}
 
 general_eqid:
      TTildeEq re=TString
@@ -2353,19 +2358,19 @@ general_eqid:
 	    then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
 	    then failwith "constraints not allowed in a generated rule file");
-	   let (s,_) = re in Ast.IdRegExp (s,Regexp.regexp s)
+	   let (s,_) = re in Ast.CstrRegexp (s,Regexp.regexp s)
 	 }
  | TTildeExclEq re=TString
          { (if !Data.in_iso
 	    then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
 	    then failwith "constraints not allowed in a generated rule file");
-	   let (s,_) = re in Ast.IdNotRegExp (s,Regexp.regexp s)
+	   let (s,_) = re in Ast.CstrNot (Ast.CstrRegexp (s,Regexp.regexp s))
 	 }
  | c = script_constraint
 	 {
 	   incr constraint_code_counter;
-	   Ast.IdScriptConstraint
+	   Ast.CstrScript
 	     (c ("constraint", "code") !constraint_code_counter)
 	 }
 
@@ -2382,25 +2387,25 @@ idcstr:
 	       let i =
 		 P.check_inherited_constraint i
 		   (function mv -> Ast.MetaIdDecl(Ast.NONE,mv)) in
-	       ([],[i])
-	   | (None,i) -> ([i],[])) }
+	       (Ast.CstrMeta_name i)
+	   | (None,i) -> Ast.CstrString i) }
      | TOBrace l=comma_list(pure_ident_or_meta_ident) TCBrace
 	 { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
 	   then failwith "constraints not allowed in a generated rule file");
-	   let (str,meta) =
+	   let list =
 	     List.fold_left
-	       (function (str,meta) ->
+	       (function list ->
 		 function
 		   (Some rn,id) as i ->
 		     let i =
 		       P.check_inherited_constraint i
 			 (function mv -> Ast.MetaIdDecl(Ast.NONE,mv)) in
-		     (str,i::meta)
-		 | (None,i) -> (i::str,meta))
-	       ([],[]) l in
-	   (str,meta)
+		     (Ast.CstrMeta_name i :: list)
+		 | (None,i) -> (Ast.CstrString i :: list))
+	       [] l in
+	   Ast.CstrOr list
 	 }
 
 re_or_not_eqe_or_sub:
@@ -2482,24 +2487,26 @@ pos_constraint:
 	   then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
 	   then failwith "constraints not allowed in a generated rule file");
-	   fun _nm _index ->
+	   fun _nm _i ->
 	     let i =
 	       P.check_inherited_constraint i
 		 (function mv -> Ast.MetaPosDecl(Ast.NONE,mv)) in
-	     Ast.PosNegSet [i] }
+	     Ast.CstrNot (Ast.CstrMeta_name i) }
      | TNotEq TOBrace l=comma_list(meta_ident) TCBrace
 	 { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
 	   then failwith "constraints not allowed in a generated rule file");
-	   fun _nm _index ->
-	     Ast.PosNegSet
-	       (List.map
-		  (function i ->
-		    P.check_inherited_constraint i
-		      (function mv -> Ast.MetaPosDecl(Ast.NONE,mv)))
-		  l) }
-     | script_constraint { (fun nm i -> Ast.PosScript ($1 nm i)) }
+	   fun _nm _i ->
+	     Ast.CstrNot
+	       (Ast.CstrOr
+		  (List.map
+		     (function i ->
+		       Ast.CstrMeta_name
+			 (P.check_inherited_constraint i
+			    (function mv -> Ast.MetaPosDecl(Ast.NONE,mv))))
+		     l)) }
+     | script_constraint { (fun nm i -> Ast.CstrScript ($1 nm i)) }
 
 script_constraint:
   TDotDot TScript TDotDot lang=pure_ident
