@@ -31,8 +31,7 @@ let process_output_to_list2 = fun command ->
   try process_otl_aux ()
   with End_of_file ->
     let stat = Unix.close_process_in chan in (List.rev !res,stat)
-let cmd_to_list command =
-  let (l,_) = process_output_to_list2 command in l
+let cmd_to_list command = let (l,_) = process_output_to_list2 command in l
 let process_output_to_list = cmd_to_list
 let cmd_to_list_and_status = process_output_to_list2
 
@@ -258,10 +257,19 @@ let fix_date l =
 
 (* ------------------------------------------------------------------------ *)
 
+let get_file diff_line =
+  match Str.split (Str.regexp " a/") diff_line with
+    [before;after] ->
+      (match Str.split spaces after with
+        file::_ -> file
+      | _ -> failwith "no file?")
+  | _ -> failwith "no file?"
+
 let is_diff = Str.regexp "diff "
 let split_patch i =
   let patches = ref [] in
   let cur = ref [] in
+  let file = ref "" in
   let get_size l =
     match Str.split_delim (Str.regexp ",") l with
       [_;size] -> int_of_string size
@@ -274,8 +282,9 @@ let split_patch i =
     match Str.split spaces l with
       "diff"::_ ->
 	(if List.length !cur > 0
-	then patches := List.rev !cur :: !patches);
+	then patches := (!file,List.rev !cur) :: !patches);
 	cur := [l];
+	file := get_file l;
 	read_diff()
     | "@@"::min::pl::"@@"::rest ->
 	let msize = get_size min in
@@ -306,7 +315,7 @@ let split_patch i =
       |	'+' -> read_hunk msize (psize - 1)
       |	_ -> read_hunk (msize - 1) (psize - 1) in
   try read_diff_or_atat()
-  with End_of_file -> List.rev ((List.rev !cur)::!patches)
+  with End_of_file -> List.rev ((!file,(List.rev !cur))::!patches)
 
 (* ------------------------------------------------------------------------ *)
 
@@ -339,40 +348,28 @@ let find_common_path file cell =
 let resolve_maintainers patches =
   let maintainer_table = Hashtbl.create (List.length patches) in
   List.iter
-    (function
-	diff_line::rest ->
-	  (match Str.split (Str.regexp " a/") diff_line with
-	    [before;after] ->
-	      (match Str.split spaces after with
-		file::_ ->
-		  let maintainers =
-		    match (cmd_to_list (maintainer_command file)) with
-		      m::_ -> found_a_maintainer := true; m
-		    | [] ->
-			(* maybe the file is new? *)
-			(match
-			  (cmd_to_list
-			     (maintainer_command (Filename.dirname file)))
-			with
-			  m::_ -> found_a_maintainer := true; m
-			| [] ->
-			    uctr := !uctr + 1;
-			    "unknown"^(string_of_int !uctr)) in
-		  let subsystems =
-		    cmd_to_list (subsystem_command file) in
-		  let info = (subsystems,maintainers) in
-		  let cell =
-		    try Hashtbl.find maintainer_table info
-		    with Not_found ->
-		      let cell = ref [] in
-		      Hashtbl.add maintainer_table info cell;
-		      cell in
-		  let cell1 = find_common_path file cell in
-		  cell1 := (file,(diff_line :: rest)) :: !cell1
-	      |	_ -> failwith "filename not found")
-	  | _ ->
-	      failwith (Printf.sprintf "prefix a/ not found in %s" diff_line))
-      |	_ -> failwith "bad diff line")
+    (function (file,rest) ->
+      let maintainers =
+	match (cmd_to_list (maintainer_command file)) with
+	  m::_ -> found_a_maintainer := true; m
+	| [] -> (* maybe the file is new? *)
+	    (match cmd_to_list (maintainer_command (Filename.dirname file))
+	    with
+	      m::_ -> found_a_maintainer := true; m
+	    | [] ->
+		uctr := !uctr + 1;
+		"unknown"^(string_of_int !uctr)) in
+      let subsystems =
+	cmd_to_list (subsystem_command file) in
+      let info = (subsystems,maintainers) in
+      let cell =
+	try Hashtbl.find maintainer_table info
+	with Not_found ->
+	  let cell = ref [] in
+	  Hashtbl.add maintainer_table info cell;
+	  cell in
+      let cell1 = find_common_path file cell in
+      cell1 := (file,rest) :: !cell1)
     patches;
   maintainer_table
 
@@ -433,6 +430,8 @@ let get_most_common_subject files default =
 	       | commit::rest ->
 		   let rec loop = function
 		       [] -> []
+		     | x::y::xs when last_char x = ']' && last_char y = ':' ->
+			 (x^" "^y) :: loop xs
 		     | x::xs ->
 			 if last_char x = ':'
 			 then x :: loop xs
@@ -536,85 +535,108 @@ let cluster_by_dir diffs =
 let is_name s =
   List.length (Str.split (Str.regexp " ") s) > 1
 
-let make_message_files subject cover message nonmessage date maintainer_table
+let make_message_files subject cover message nonmessage date maintainer_tables
     patch front add_ext nomerge dirmerge merge info_tbl =
   let ctr = ref 0 in
   let elements =
-    if merge
-    then
-      begin
-	let maintainers =
-	  Hashtbl.fold
-	    (fun (services,maintainers) diffs rest ->
-	      union (Str.split (Str.regexp ",") maintainers) rest)
-	    maintainer_table [] in
-	let maintainers =
-	  match maintainers with
-	    m1::_ ->
-	      if is_name m1
-	      then maintainers
-	      else
-		let m = List.rev maintainers in
-		if is_name (List.hd m)
-		then m
-		else maintainers
-	  | _ -> maintainers in
-	let diffs =
-	  Hashtbl.fold
-	    (fun (services,maintainers) diffs rest ->
-	      let diffs =
-		List.concat
-		  (List.map (function (common,diffs) -> !diffs) !diffs) in
-	      diffs @ rest)
-	    maintainer_table [] in
-	ctr := !ctr + 1;
-	let (files,diffs) = List.split (List.rev diffs) in
-	let subject = get_most_common_subject files "???" in
-	[(subject,(!ctr,false,String.concat "," maintainers,files,diffs))]
-      end
-    else
-    Hashtbl.fold
-      (function (services,maintainers) ->
-	function diffs ->
-	  function rest ->
-	    if services=[default_string] || nomerge
-	    then
-	      (* if no maintainer, then one file per diff *)
-	      let diffs =
-		List.concat
-		  (List.map (function (common,diffs) -> !diffs) !diffs) in
-	      (List.map
-		 (function (file,diff) ->
-		   ctr := !ctr + 1;
-		   let subject = get_most_common_subject [file] file in
-		   (subject,(!ctr,true,maintainers,[file],[diff])))
-		 (List.rev diffs)) @
-	      rest
-	    else
-	      if dirmerge
-	      then
-		let diffs =
-		  List.concat
-		    (List.map (function (common,diffs) -> !diffs) !diffs) in
-		let diffs = cluster_by_dir diffs in
-		List.map
-		  (function diffs ->
-		    ctr := !ctr + 1;
-		    let (files,diffs) = List.split (List.rev diffs) in
-		    let subject = get_most_common_subject files "???" in
-		    (subject,(!ctr,false,maintainers,files,diffs)))
-		  diffs @
-		rest
-	      else
-		(List.map
-		   (function (common,diffs) ->
-		     ctr := !ctr + 1;
-		     let (files,diffs) = List.split (List.rev !diffs) in
-		     let subject = get_most_common_subject files !common in
-		     (subject,(!ctr,false,maintainers,files,diffs)))
-		   !diffs) @
-		rest)
-      maintainer_table [] in
+    List.concat
+      (List.map
+	 (function maintainer_table ->
+	     if merge || dirmerge
+	     then
+	       begin
+		 let hist = Hashtbl.create 101 in
+		 let hashadd name =
+		   let cell =
+		     try Hashtbl.find hist name
+		     with Not_found ->
+		       let cell = ref 0 in
+		       Hashtbl.add hist name cell;
+		       cell in
+		   cell := !cell + 1 in
+		 let maintainers =
+		   Hashtbl.fold
+		     (fun (services,maintainers) diffs rest ->
+		       let maints = Str.split (Str.regexp ",") maintainers in
+		       List.iter hashadd maints;
+		       union maints rest)
+		     maintainer_table [] in
+		 let (_,common) =
+		   Hashtbl.fold
+		     (fun name ct (mx,mxnm) ->
+		       if is_name name && !ct > mx
+		       then (!ct,name)
+		       else (mx,mxnm))
+		     hist (0,"???") in
+		 let (m1,others) =
+		   List.partition (fun x -> x = common) maintainers in
+		 let maintainers = m1 @ others in
+		 let diffs =
+		   Hashtbl.fold
+		     (fun (services,maintainers) diffs rest ->
+		       let diffs =
+			 List.concat
+			   (List.map (function (common,diffs) -> !diffs)
+			      !diffs) in
+		       diffs @ rest)
+		     maintainer_table [] in
+		 ctr := !ctr + 1;
+		 let (files,diffs) = List.split (List.rev diffs) in
+		 let subject = get_most_common_subject files "???" in
+		 [(subject,
+		   (!ctr,false,String.concat "," maintainers,files,diffs))]
+	       end
+	     else
+	       Hashtbl.fold
+		 (function (services,maintainers) ->
+		   function diffs ->
+		     function rest ->
+		       if services=[default_string] || nomerge
+		       then
+	                 (* if no maintainer, then one file per diff *)
+			 let diffs =
+			   List.concat
+			     (List.map (function (common,diffs) -> !diffs)
+				!diffs) in
+			 (List.map
+			    (function (file,diff) ->
+			      ctr := !ctr + 1;
+			      let subject =
+				get_most_common_subject [file] file in
+			      (subject,(!ctr,true,maintainers,[file],[diff])))
+			    (List.rev diffs)) @
+			 rest
+		       else
+			 if dirmerge
+			 then
+			   let diffs =
+			     List.concat
+			       (List.map (function (common,diffs) -> !diffs)
+				  !diffs) in
+			   let diffs = cluster_by_dir diffs in
+			   List.map
+			     (function diffs ->
+			       ctr := !ctr + 1;
+			       let (files,diffs) =
+				 List.split (List.rev diffs) in
+			       let subject =
+				 get_most_common_subject files "???" in
+			       (subject,(!ctr,false,maintainers,files,diffs)))
+			     diffs @
+			   rest
+			 else
+			   (List.map
+			      (function (common,diffs) ->
+				ctr := !ctr + 1;
+				let (files,diffs) =
+				  List.split (List.rev !diffs) in
+				let subject =
+				  get_most_common_subject files !common in
+				(subject,(!ctr,false,maintainers,files,diffs)))
+			      !diffs) @
+			   rest)
+		 maintainer_table [])
+	 maintainer_tables) in
   let number = List.length elements in
   let elements =
     List.sort
@@ -655,33 +677,40 @@ let make_message_files subject cover message nonmessage date maintainer_table
   then Printf.fprintf stderr "Warning: %s and other files may be left over from a previous run\n" later;
   generated
 
-let make_cover_file n file subject cover front date maintainer_table =
+let make_cover_file n file subject cover front date maintainer_tables =
   match cover with
     None -> ()
   | Some cover ->
       let common_maintainers =
 	let start = ref true in
-	  (Hashtbl.fold
-	     (function (services,maintainers) ->
-	       function diffs ->
-		 function rest ->
-		   let cur = Str.split (Str.regexp_string ",") maintainers in
-		   if !start
-		   then begin start := false; cur end
-		   else intersect cur rest)
-	     maintainer_table []) in
+	List.fold_left
+	  (fun prev maintainer_table ->
+	    Hashtbl.fold
+	      (function (services,maintainers) ->
+		function diffs ->
+		  function rest ->
+		    let cur = Str.split (Str.regexp_string ",") maintainers in
+		    if !start
+		    then begin start := false; cur end
+		    else intersect cur rest)
+	      maintainer_table prev)
+	  [] maintainer_tables in
       let maintainers_and_lists =
-	Hashtbl.fold
-	  (function (services,maintainers) ->
-	    function diffs ->
-	      function rest ->
-		let files = List.map (function (file,_) -> !file) !diffs in
-		List.fold_left
-		  (function prev ->
-		    function file ->
-		      union (cmd_to_list (maintainer_list_command file)) prev)
-		  rest files)
-	  maintainer_table common_maintainers in
+	List.fold_left
+	  (fun prev maintainer_table ->
+	    Hashtbl.fold
+	      (function (services,maintainers) ->
+		function diffs ->
+		  function rest ->
+		    let files = List.map (function (file,_) -> !file) !diffs in
+		    List.fold_left
+		      (function prev ->
+			function file ->
+			  union (cmd_to_list (maintainer_list_command file))
+			    prev)
+		      rest files)
+	      maintainer_table prev)
+	  common_maintainers maintainer_tables in
       let maintainers_and_lists = String.concat "," maintainers_and_lists in
       let output_file = Printf.sprintf "%s.cover" front in
       let o = open_out output_file in
@@ -723,7 +752,7 @@ let generate_command front cover generated =
   close_out o
 
 let make_output_files subject cover message nonmessage
-    maintainer_table patch nomerge dirmerge merge info_tbl =
+    maintainer_tables patch nomerge dirmerge merge info_tbl =
   let date = List.hd (cmd_to_list "date") in
   let front = safe_chop_extension patch in
   let add_ext =
@@ -731,10 +760,10 @@ let make_output_files subject cover message nonmessage
       Some ext -> (function s -> s ^ "." ^ ext)
     | None -> (function s -> s) in
   let generated =
-    make_message_files subject cover message nonmessage date maintainer_table
+    make_message_files subject cover message nonmessage date maintainer_tables
       patch front add_ext nomerge dirmerge merge info_tbl in
   make_cover_file (List.length generated) patch subject cover front date
-    maintainer_table;
+    maintainer_tables;
   generate_command front cover generated
 
 (* ------------------------------------------------------------------------ *)
@@ -776,9 +805,13 @@ let _ =
   (* split patch *)
   let i = open_in file in
   let patches = split_patch i in
+  let patches =
+    if !dirmerge
+    then cluster_by_dir patches
+    else [patches] in
   close_in i;
-  let maintainer_table = resolve_maintainers patches in
+  let maintainer_tables = List.map resolve_maintainers patches in
   (if !found_a_maintainer = false then git_options := !not_linux);
   (if not (git_args = "") then git_options := !git_options^" "^git_args);
   make_output_files subject cover message nonmessage
-    maintainer_table file !nomerge !dirmerge !merge info_tbl
+    maintainer_tables file !nomerge !dirmerge !merge info_tbl
