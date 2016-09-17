@@ -2216,7 +2216,7 @@ let new_mv (_,s) =
   mv_count := !mv_count + 1;
   "_"^s^"_"^(string_of_int ct)
 
-let get_name = function
+let get_name bindings = function
     Ast.MetaMetaDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaMetaDecl(ar,nm))
   | Ast.MetaIdDecl(ar,nm) ->
@@ -2244,7 +2244,35 @@ let get_name = function
   | Ast.MetaErrDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaErrDecl(ar,nm))
   | Ast.MetaExpDecl(ar,nm,ty) ->
-      (nm,function nm -> Ast.MetaExpDecl(ar,nm,ty))
+      let newty =
+	match ty with
+	  Some types ->
+	    Some
+	      (List.map
+		 (function ty ->
+		   let rec loop ty =
+		     match Ast.unwrap ty with
+		       Ast.Type (m,cv,t) ->
+			 (match Ast.unwrap t with
+			   Ast.MetaType(nm,keep,inh) ->
+			     (try
+			       let term (nm,_,_,_) = nm in (* for Ast *)
+			       let newname = List.assoc (term nm) bindings in
+			       (match newname with
+				 Ast0.TypeCTag newt ->
+				   Ast0toast.typeC false newt
+			       | _ -> failwith "not possible")
+			     with Not_found -> ty)
+			 | Ast.Pointer(t2,star) ->
+			     let t =
+			       Ast.rewrap t (Ast.Pointer(loop t2,star)) in
+			     Ast.rewrap ty (Ast.Type (m,cv,t))
+			 | _ -> ty)
+		     | _ -> ty in
+		   loop ty)
+		 types)
+	| _-> ty in
+      (nm,function nm -> Ast.MetaExpDecl(ar,nm,newty))
   | Ast.MetaIdExpDecl(ar,nm,ty) ->
       (nm,function nm -> Ast.MetaIdExpDecl(ar,nm,ty))
   | Ast.MetaLocalIdExpDecl(ar,nm,ty) ->
@@ -2285,13 +2313,13 @@ let make_new_metavars metavars bindings =
   let new_metavars =
     List.filter
       (function mv ->
-	let (s,_) = get_name mv in
+	let (s,_) = get_name bindings mv in
 	try let _ = List.assoc s bindings in false with Not_found -> true)
       metavars in
   List.split
     (List.map
        (function mv ->
-	 let (s,rebuild) = get_name mv in
+	 let (s,rebuild) = get_name bindings mv in
 	 let new_s = (!current_rule,new_mv s) in
 	 (rebuild new_s, (s,new_s)))
        new_metavars)
