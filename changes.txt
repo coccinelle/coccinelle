@@ -24,6 +24,10 @@
 
 * 1.0.6
 ** Language:
+- Allow \ in #define in semantic patch rules, to allow body with multiple
+  lines, potentially including changes.  As a side effect, \ is also
+  allowed in when specifications, again to allow patterns to stretch over
+  multiple lines.
 ** Features:
 - Add Coccilib.version() allowing ocaml code to access the version of
   spatch being used.

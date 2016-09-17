@@ -250,7 +250,7 @@ let constraint_code_counter = ref 0
 %token <string>  TPathIsoFile
 %token <string * Data.clt> TIncludeL TIncludeNL TIncludeAny
 %token <Data.clt * token> TDefine TUndef
-%token <Data.clt> TPragma
+%token <Data.clt> TPragma TCppEscapedNewline
 %token <Data.clt * token * int * int> TDefineParam
 %token <string * Data.clt> TMinusFile TPlusFile
 
@@ -3027,10 +3027,11 @@ iso(term):
 *****************************************************************************/
 
 never_used: TDirective { () }
-  | TPArob TMetaPos { () }
-  | TScriptData     { () }
-  | TAnalysis     { () }
-  | TWhitespace { () }
+  | TPArob TMetaPos    { () }
+  | TScriptData        { () }
+  | TAnalysis          { () }
+  | TWhitespace        { () }
+  | TCppEscapedNewline { () }
 
 script_meta_main:
     py=pure_ident TMPtVirg

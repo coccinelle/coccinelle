@@ -816,6 +816,13 @@ rule token = parse
   | "#" [' ' '\t']* "line" [^'\n']*
       { start_line true; check_plus_linetype (tok lexbuf);
 	TDirective (Ast.Noindent(tok lexbuf), get_current_line_type lexbuf) }
+
+  | "\\" ('\n' | "\r\n")
+      { start_line true;
+	let res = TCppEscapedNewline (get_current_line_type lexbuf) in
+	reset_line lexbuf;
+	res }
+
   | "/*"
       {
        match !current_line_type with
