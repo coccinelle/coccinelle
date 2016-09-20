@@ -364,11 +364,11 @@ let init _ =
       Hashtbl.replace metavariables name fn);
   Data.add_virt_id_meta_not_found :=
     (fun name pure ->
-      let fn clt = TMetaId(name,Ast.IdNoConstraint,Ast.NoVal,pure,clt) in
+      let fn clt = TMetaId(name,Ast.CstrTrue,Ast.NoVal,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_fresh_id_meta :=
     (fun name seed ->
-      let fn clt = TMetaId(name,Ast.IdNoConstraint,seed,Ast0.Impure,clt) in
+      let fn clt = TMetaId(name,Ast.CstrTrue,seed,Ast0.Impure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_type_meta :=
     (fun name pure ->

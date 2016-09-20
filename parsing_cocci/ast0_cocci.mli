@@ -75,10 +75,10 @@ and 'a dots = 'a list wrap
 
 and base_ident =
     Id            of string mcode
-  | MetaId        of Ast_cocci.meta_name mcode * Ast_cocci.idconstraint *
+  | MetaId        of Ast_cocci.meta_name mcode * Ast_cocci.general_constraint *
 	Ast_cocci.seed * pure
-  | MetaFunc      of Ast_cocci.meta_name mcode * Ast_cocci.idconstraint * pure
-  | MetaLocalFunc of Ast_cocci.meta_name mcode * Ast_cocci.idconstraint * pure
+  | MetaFunc      of Ast_cocci.meta_name mcode * Ast_cocci.general_constraint * pure
+  | MetaLocalFunc of Ast_cocci.meta_name mcode * Ast_cocci.general_constraint * pure
   | AsIdent       of ident * ident (* as ident, always metavar *)
   | DisjId        of string mcode * ident list *
                      string mcode list (* the |s *) * string mcode
@@ -162,32 +162,26 @@ and string_fragment = base_string_fragment wrap
 
 and base_string_format =
     ConstantFormat of string mcode
-  | MetaFormat of Ast_cocci.meta_name mcode * Ast_cocci.idconstraint
+  | MetaFormat of Ast_cocci.meta_name mcode * Ast_cocci.general_constraint
 
 and string_format = base_string_format wrap
 
 (* --------------------------------------------------------------------- *)
 (* First class operators *)
-and  base_assignOp =
+and base_assignOp =
     SimpleAssign of simpleAssignOp mcode
   | OpAssign of Ast_cocci.arithOp mcode
-  | MetaAssign of Ast_cocci.meta_name mcode * assignOpconstraint * pure
+  | MetaAssign of
+      Ast_cocci.meta_name mcode * Ast_cocci.general_constraint * pure
 and simpleAssignOp = string
 and assignOp = base_assignOp wrap
 
-and  base_binaryOp =
+and base_binaryOp =
     Arith of Ast_cocci.arithOp mcode
   | Logical of Ast_cocci.logicalOp mcode
-  | MetaBinary of Ast_cocci.meta_name mcode * binaryOpconstraint * pure
+  | MetaBinary of
+      Ast_cocci.meta_name mcode * Ast_cocci.general_constraint * pure
 and binaryOp = base_binaryOp wrap
-and assignOpconstraint =
-    AssignOpNoConstraint
-  | AssignOpInSet of assignOp list
-
-and binaryOpconstraint =
-    BinaryOpNoConstraint
-  | BinaryOpInSet of binaryOp list
-
 
 (* --------------------------------------------------------------------- *)
 (* Types *)
@@ -447,7 +441,7 @@ and exec_code = base_exec_code wrap
 (* Positions *)
 
 and meta_pos =
-    MetaPos of Ast_cocci.meta_name mcode * Ast_cocci.pos_constraints list *
+    MetaPos of Ast_cocci.meta_name mcode * Ast_cocci.general_constraint *
 	Ast_cocci.meta_collect
 
 (* --------------------------------------------------------------------- *)

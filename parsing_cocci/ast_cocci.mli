@@ -128,9 +128,12 @@ and 'a dots = 'a list wrap
 
 and base_ident =
     Id            of string mcode
-  | MetaId        of meta_name mcode * idconstraint * keep_binding * inherited
-  | MetaFunc      of meta_name mcode * idconstraint * keep_binding * inherited
-  | MetaLocalFunc of meta_name mcode * idconstraint * keep_binding * inherited
+  | MetaId        of
+      meta_name mcode * general_constraint * keep_binding * inherited
+  | MetaFunc      of
+      meta_name mcode * general_constraint * keep_binding * inherited
+  | MetaLocalFunc of
+      meta_name mcode * general_constraint * keep_binding * inherited
   | AsIdent       of ident * ident (* as ident, always metavar *)
 
   | DisjId        of ident list
@@ -205,31 +208,22 @@ and constraints =
   | NotExpCstrt    of expression list
   | SubExpCstrt    of meta_name list
 
+and general_constraint =
+    CstrFalse
+  | CstrTrue
+  | CstrAnd of general_constraint list
+  | CstrOr of general_constraint list
+  | CstrNot of general_constraint
+  | CstrString of string
+  | CstrMeta_name of meta_name
+  | CstrRegexp of string * Regexp.regexp
+  | CstrScript of script_constraint
+
 and script_constraint =
       string (* name of generated function *) *
 	string (* language *) *
 	(meta_name * metavar) list (* params *) *
 	string (* code *)
-
-(* Constraints on Meta-* Identifiers, Functions *)
-and idconstraint =
-    IdNoConstraint
-  | IdPosIdSet         of string list * meta_name list
-  | IdNegIdSet         of string list * meta_name list
-  | IdGeneralConstraint of general_constraint
-
-and general_constraint =
-  | IdRegExp           of string * Regexp.regexp
-  | IdNotRegExp        of string * Regexp.regexp
-  | IdScriptConstraint of script_constraint
-
-and assignOpconstraint =
-    AssignOpNoConstraint
-  | AssignOpInSet of assignOp list
-
-and binaryOpconstraint =
-    BinaryOpNoConstraint
-  | BinaryOpInSet of binaryOp list
 
 and form = ANY | ID | LocalID| GlobalID | CONST (* form for MetaExp *)
 
@@ -251,7 +245,8 @@ and string_fragment = base_string_fragment wrap
 
 and base_string_format =
     ConstantFormat of string mcode
-  | MetaFormat of meta_name mcode * idconstraint * keep_binding * inherited
+  | MetaFormat of
+      meta_name mcode * general_constraint * keep_binding * inherited
 
 and string_format = base_string_format wrap
 
@@ -259,7 +254,8 @@ and  unaryOp = GetRef | GetRefLabel | DeRef | UnPlus |  UnMinus | Tilde | Not
 and  base_assignOp =
     SimpleAssign of simpleAssignOp mcode
   | OpAssign of arithOp mcode
-  | MetaAssign of meta_name mcode * assignOpconstraint * keep_binding * inherited
+  | MetaAssign of
+      meta_name mcode * general_constraint * keep_binding * inherited
 and simpleAssignOp = string
 and assignOp = base_assignOp wrap
 and  fixOp = Dec | Inc
@@ -267,7 +263,8 @@ and  fixOp = Dec | Inc
 and  base_binaryOp =
     Arith of arithOp mcode
   | Logical of logicalOp mcode
-  | MetaBinary of meta_name mcode * binaryOpconstraint * keep_binding * inherited
+  | MetaBinary of
+      meta_name mcode * general_constraint * keep_binding * inherited
 and binaryOp = base_binaryOp wrap
 and  arithOp =
     Plus | Minus | Mul | Div | Mod | DecLeft | DecRight | And | Or | Xor | Min | Max
@@ -447,12 +444,8 @@ and define_parameters = base_define_parameters wrap
 and meta_collect = PER | ALL
 
 and meta_pos =
-    MetaPos of meta_name mcode * pos_constraints list *
+    MetaPos of meta_name mcode * general_constraint *
 	meta_collect * keep_binding * inherited
-
-and pos_constraints =
-    PosNegSet of meta_name list
-  | PosScript of script_constraint
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)
@@ -846,3 +839,18 @@ val meta_names_of_fullType: fullType -> meta_name list
 (**
  * [meta_names_of_fullType ty] enumerates all the meta names that occur in [ty].
  *)
+
+type 'a cstr_transformer = {
+    cstr_string: (string -> 'a) option;
+    cstr_meta_name: (meta_name -> 'a) option;
+    cstr_regexp: (string -> Regexp.regexp -> 'a) option;
+    cstr_script: (script_constraint -> 'a) option;
+  }
+
+val empty_cstr_transformer: 'a cstr_transformer
+
+val cstr_fold: ('a -> 'a) cstr_transformer -> general_constraint -> 'a -> 'a
+
+val cstr_eval: bool cstr_transformer -> general_constraint -> bool
+
+val cstr_meta_names: general_constraint -> meta_name list

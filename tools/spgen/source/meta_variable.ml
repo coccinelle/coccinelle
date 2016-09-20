@@ -132,43 +132,43 @@ let seed ~rn =
     | Ast.StringSeed s -> " = \"" ^ s ^ "\""
     | Ast.ListSeed s -> " = " ^ (String.concat " ## " (List.map se s))
 
-let general_constraint = function
-  | Ast.IdRegExp (s,r) -> " =~ \"" ^ s ^ "\""
-  | Ast.IdNotRegExp (s,r) -> " !~ \"" ^ s ^"\""
-  | Ast.IdScriptConstraint c -> ": [script]"
-
 let list_constraints ~tostring_fn ~op = function
   | [] -> ""
   | [x] -> op ^ (tostring_fn x)
   | x -> op ^ "{" ^ (String.concat "," (List.map tostring_fn x)) ^ "}"
 
-let id_constraint ~rn =
-  let list_constraints' slist mnlist op =
-    let combined =
-      (List.map (fun x -> "\"" ^ x ^ "\"") slist) @
-      (List.map (name_str ~rn) mnlist) in
-    list_constraints ~tostring_fn:(fun x -> x) ~op combined in
+let general_constraint ~rn =
+  let list_constraints' list op =
+    list_constraints ~tostring_fn:(function
+	Ast.CstrString s -> "\"" ^ s ^ "\""
+      | Ast.CstrMeta_name mn -> name_str ~rn mn
+      | _ -> assert false) ~op list in
   function
-  | Ast.IdNoConstraint -> ""
-  | Ast.IdPosIdSet(slist,mnlist) -> list_constraints' slist mnlist " = "
-  | Ast.IdNegIdSet(slist,mnlist) -> list_constraints' slist mnlist " != "
-  | Ast.IdGeneralConstraint(re) -> general_constraint re
+    Ast.CstrTrue -> "/* No constraint */"
+  | Ast.CstrRegexp (s,r) -> " =~ \"" ^ s ^ "\""
+  | Ast.CstrNot (Ast.CstrRegexp (s,r)) -> " !~ \"" ^ s ^"\""
+  | Ast.CstrOr list when
+      List.for_all
+	(function Ast.CstrString _  | Ast.CstrMeta_name _  -> true | _ -> false)
+	list ->
+	  list_constraints' list " = "
+  | Ast.CstrNot (Ast.CstrOr list) when
+      List.for_all
+	(function Ast.CstrString _  | Ast.CstrMeta_name _  -> true | _ -> false)
+	list ->
+	  list_constraints' list " != "
+  | Ast.CstrScript (_, lang, params, code) ->
+      Printf.sprintf ": script:%s (%s) { %s }" lang
+	(String.concat ","
+	   (List.map (fun (nm,_) -> name_str ~rn nm) params))
+	code
+  | _ -> ": ??"
 
-let id_constraint ~rn =
-  let list_constraints' slist mnlist op =
-    let combined =
-      (List.map (fun x -> "\"" ^ x ^ "\"") slist) @
-      (List.map (name_str ~rn) mnlist) in
-    list_constraints ~tostring_fn:(fun x -> x) ~op combined in
-  function
-  | Ast.IdNoConstraint -> ""
-  | Ast.IdPosIdSet(slist,mnlist) -> list_constraints' slist mnlist " = "
-  | Ast.IdNegIdSet(slist,mnlist) -> list_constraints' slist mnlist " != "
-  | Ast.IdGeneralConstraint(re) -> general_constraint re
+let id_constraint = general_constraint
 
 let constraints ~rn = function
     Ast0.NoConstraint -> ""
-  | Ast0.NotIdCstrt recstr -> general_constraint recstr
+  | Ast0.NotIdCstrt recstr -> general_constraint ~rn recstr
   | Ast0.NotExpCstrt exps ->
 
     (* exps is a list of expressions, but it is limited to numbers and ids
@@ -191,14 +191,18 @@ let constraints ~rn = function
       list_constraints ~tostring_fn:(name_str ~rn) ~op:" <= " mns
 
 let assign_constraints = function
-  | Ast0.AssignOpNoConstraint -> ""
-  | Ast0.AssignOpInSet l ->
-      list_constraints ~tostring_fn:Ast0.string_of_assignOp ~op:" = " l
+    Ast.CstrTrue -> ""
+  | Ast.CstrString s ->
+      list_constraints ~tostring_fn:Common.id ~op:" = " [s]
+  | Ast.CstrOr l when
+      List.for_all (function Ast.CstrString _ -> true | _ -> false) l ->
+      let get_string =
+	function Ast.CstrString s -> s | _ -> assert false in
+      let l' = List.map get_string l in
+      list_constraints ~tostring_fn:Common.id ~op:" = " l'
+  | _ -> failwith "assign_constraints: not implemented"
 
-let binary_constraints = function
-  | Ast0.BinaryOpNoConstraint -> ""
-  | Ast0.BinaryOpInSet l ->
-      list_constraints ~tostring_fn:Ast0.string_of_binaryOp ~op:" = " l
+let binary_constraints = assign_constraints
 
 let list_len ~rn = function
   | Ast0.AnyListLen -> " "
@@ -288,16 +292,8 @@ let mcode ~rn ~mc:(_,_,_,_,pos,_) =
     | Ast0.TypeCTag {Ast0.node = Ast0.MetaType((mn,_,_,_,p,_),_); _} ->
         handle_metavar ~typ:"type " ~mn ~positions:!p ~set
     | Ast0.MetaPosTag(Ast0.MetaPos((mn,_,_,_,_,_), mns, colt)) ->
-        let oneconstr constr =
-	  match constr with
-	    Ast.PosNegSet mns ->
-              list_constraints ~tostring_fn:(name_str ~rn) ~op:" != " mns
-	  | Ast.PosScript(_,lang,params,code) ->
-	      Printf.sprintf ": script:%s (%s) { %s }" lang
-		(String.concat ","
-		   (List.map (fun (nm,_) -> name_str ~rn nm) params))
-		code in
-	let constr = list_constraints ~tostring_fn:oneconstr ~op:"" mns in
+        let oneconstr constr = general_constraint ~rn constr in
+	let constr = list_constraints ~tostring_fn:oneconstr ~op:"" [mns] in
         let collect = (match colt with Ast.PER -> "" | Ast.ALL -> " any") in
         let pos = make_mv "position " (name_tup ~rn mn) (constr ^ collect) in
         MVSet.add pos set

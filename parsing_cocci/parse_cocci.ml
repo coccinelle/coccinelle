@@ -1581,11 +1581,11 @@ let strip_for_fix l =
   List.map
     (function
 	(PC.TMetaId(nm,_,seed,pure,clt),info) ->
-	  (PC.TMetaId(nm,Ast.IdNoConstraint,seed,pure,clt),info)
+	  (PC.TMetaId(nm,Ast.CstrTrue,seed,pure,clt),info)
       |	(PC.TMetaFunc(nm,_,pure,clt),info) ->
-	  (PC.TMetaFunc(nm,Ast.IdNoConstraint,pure,clt),info)
+	  (PC.TMetaFunc(nm,Ast.CstrTrue,pure,clt),info)
       |	(PC.TMetaLocalFunc(nm,_,pure,clt),info) ->
-	  (PC.TMetaLocalFunc(nm,Ast.IdNoConstraint,pure,clt),info)
+	  (PC.TMetaLocalFunc(nm,Ast.CstrTrue,pure,clt),info)
       |	(PC.TMetaErr(nm,_,pure,clt),info) ->
 	  (PC.TMetaErr(nm,Ast0.NoConstraint,pure,clt),info)
       |	(PC.TMetaExp(nm,_,pure,ty,clt),info) ->
@@ -2561,32 +2561,26 @@ let enumerate_constraint_scripts =
     List.fold_left
       (function prev ->
 	function Ast_cocci.MetaPos(name,constraints,_,_,_) ->
-	  Common.fold_left_with_index
-	    (fun prev c i ->
-	      match c with
-		Ast_cocci.PosNegSet l -> prev
-	      | Ast_cocci.PosScript c ->
-		  let kind =
-		    Ast_cocci.MetaPosDecl
-		      (Ast_cocci.NONE, Ast_cocci.unwrap_mcode name) in
-		  bind (script_constraint kind name c) prev)
-	    prev constraints)
+	  Ast.cstr_fold
+	    { Ast.empty_cstr_transformer with
+	      Ast.cstr_script = Some (fun c prev ->
+		let kind =
+		  Ast_cocci.MetaPosDecl
+		    (Ast_cocci.NONE, Ast_cocci.unwrap_mcode name) in
+		bind (script_constraint kind name c) prev) } constraints prev)
       option_default (Ast_cocci.get_pos_var mc) in
   let general_constraint name c =
-    match c with
-      Ast.IdScriptConstraint c ->
-	let kind =
-	  Ast_cocci.MetaIdDecl (Ast_cocci.NONE, Ast_cocci.unwrap_mcode name) in
-	script_constraint kind name c
-    | _ -> [] in
+    let kind =
+      Ast_cocci.MetaIdDecl (Ast_cocci.NONE, Ast_cocci.unwrap_mcode name) in
+    Ast.cstr_fold
+      { Ast.empty_cstr_transformer with
+	Ast.cstr_script = Some (fun c accu ->
+	  bind (script_constraint kind name c) accu) } c [] in
   let constraints name c =
     match c with
       Ast.NotIdCstrt c' -> general_constraint name c'
     | _ -> [] in
-  let idconstraint name c =
-    match c with
-      Ast.IdGeneralConstraint c' -> general_constraint name c'
-    | _ -> [] in
+  let idconstraint name c = general_constraint name c in
   let expression r k e =
     let result =
       match Ast.unwrap e with

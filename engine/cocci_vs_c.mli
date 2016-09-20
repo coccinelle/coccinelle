@@ -220,10 +220,9 @@ module type PARAM =
 
   end
 
-val satisfies_scriptconstraint: Ast_cocci.script_constraint ->
-  Ast_cocci.meta_name -> Ast_c.metavar_binding_kind ->
-    (Ast_cocci.meta_name -> Ast_c.metavar_binding_kind) ->
-      bool
+val satisfies_constraint: Ast_cocci.general_constraint ->
+  Ast_cocci.meta_name * Ast_c.metavar_binding_kind ->
+    (Ast_cocci.meta_name -> Ast_c.metavar_binding_kind) -> bool
 
 (*****************************************************************************)
 (* The functor itself *)

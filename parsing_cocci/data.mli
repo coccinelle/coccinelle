@@ -27,9 +27,9 @@ and line_type =
   | PLUS | PLUSPLUS
   | CONTEXT | OPT
 
-type iconstraints = Ast_cocci.idconstraint
+type iconstraints = Ast_cocci.general_constraint
 type econstraints = Ast0_cocci.constraints
-type pconstraints = Ast_cocci.pos_constraints list
+type pconstraints = Ast_cocci.general_constraint
 
 val in_rule_name : bool ref (* true if parsing the rule name *)
 val in_meta : bool ref      (* true if parsing the metavariable decls *)
@@ -96,11 +96,11 @@ val add_fmtlist_meta: (Ast_cocci.meta_name -> Ast_cocci.list_len -> unit) ref
 
 val add_assignOp_meta:
     (Ast_cocci.meta_name ->
-      Ast0_cocci.assignOpconstraint -> Ast0_cocci.pure -> unit) ref
+      Ast_cocci.general_constraint -> Ast0_cocci.pure -> unit) ref
 
 val add_binaryOp_meta:
     (Ast_cocci.meta_name ->
-      Ast0_cocci.binaryOpconstraint -> Ast0_cocci.pure -> unit) ref
+      Ast_cocci.general_constraint -> Ast0_cocci.pure -> unit) ref
 
 val add_type_name: (string -> unit) ref
 val add_attribute: (string -> unit) ref

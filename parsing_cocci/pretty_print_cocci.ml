@@ -159,25 +159,32 @@ let print_type _keep _info = function
 (* Constraint on Identifier and Function *)
 (* FIXME: Not called at the moment *)
 
-let rec idconstraint = function
-    Ast.IdNoConstraint  -> print_string "/* No constraint */"
-  | Ast.IdPosIdSet (str,meta)     ->
+let general_constraint = function
+    Ast.CstrTrue -> print_string "/* No constraint */"
+  | Ast.CstrOr l when
+      List.for_all
+	(function Ast.CstrString _ | Ast.CstrMeta_name _ -> true | _ -> false)
+	l ->
       print_string " =";
-      List.iter (function s -> print_string (" "^s)) str;
-      List.iter (function (r,n) -> print_string " "; print_meta(r,n)) meta
-  | Ast.IdNegIdSet (str,meta)     ->
+      List.iter (function
+	  Ast.CstrString s -> Printf.printf " %s" s
+	| Ast.CstrMeta_name (r, n) -> print_string " "; print_meta (r, n)
+	| _ -> assert false) l
+  | Ast.CstrNot (Ast.CstrOr l) when
+      List.for_all
+	(function Ast.CstrString _ | Ast.CstrMeta_name _ -> true | _ -> false)
+	l ->
       print_string " !=";
-      List.iter (function s -> print_string (" "^s)) str;
-      List.iter (function (r,n) -> print_string " "; print_meta(r,n)) meta
-  | Ast.IdGeneralConstraint re -> general_constraint re
-
-and general_constraint = function
-    Ast.IdRegExp (re,_) ->
+      List.iter (function
+	  Ast.CstrString s -> Printf.printf " %s" s
+	| Ast.CstrMeta_name (r, n) -> print_string " "; print_meta (r, n)
+	| _ -> assert false) l
+  | Ast.CstrRegexp (re,_) ->
       print_string "~= \""; print_string re; print_string "\""
-  | Ast.IdNotRegExp (re,_) ->
+  | Ast.CstrNot (Ast.CstrRegexp (re,_)) ->
       print_string "~!= \""; print_string re; print_string "\""
-  | Ast.IdScriptConstraint c ->
-      print_string ": [script]"
+  | Ast.CstrScript _ -> print_string ": [script]"
+  | _ -> print_string ": ??"
 
 (* --------------------------------------------------------------------- *)
 (* Identifier *)

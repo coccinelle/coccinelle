@@ -233,13 +233,13 @@ module XTRANS = struct
       match Ast_cocci.unwrap e with
 	Ast_cocci.MetaId(name,constraints,u,i) ->
           Ast_cocci.rewrap e
-	    (Ast_cocci.MetaId(name,Ast_cocci.IdNoConstraint,u,i))
+	    (Ast_cocci.MetaId(name,Ast_cocci.CstrTrue,u,i))
       | Ast_cocci.MetaFunc(name,constraints,u,i) ->
           Ast_cocci.rewrap e
-	    (Ast_cocci.MetaFunc(name,Ast_cocci.IdNoConstraint,u,i))
+	    (Ast_cocci.MetaFunc(name,Ast_cocci.CstrTrue,u,i))
       | Ast_cocci.MetaLocalFunc(name,constraints,u,i) ->
           Ast_cocci.rewrap e
-	    (Ast_cocci.MetaLocalFunc(name,Ast_cocci.IdNoConstraint,u,i))
+	    (Ast_cocci.MetaLocalFunc(name,Ast_cocci.CstrTrue,u,i))
       |  _ -> e in
     let expression r k e =
       let e = k e in
