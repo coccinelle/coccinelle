@@ -116,6 +116,7 @@ and metavar =
   | MetaFieldListDecl of arity * meta_name (* name *) * list_len (*len*)
   | MetaStmDecl of arity * meta_name (* name *)
   | MetaStmListDecl of arity * meta_name (* name *) * list_len (*len*)
+  | MetaDParamListDecl of arity * meta_name (* name *) * list_len (*len*)
   | MetaFuncDecl of arity * meta_name (* name *)
   | MetaLocalFuncDecl of arity * meta_name (* name *)
   | MetaPosDecl of arity * meta_name (* name *)
@@ -447,6 +448,7 @@ and parameter_list = parameterTypeDef dots
 
 and base_define_param =
     DParam        of ident
+  | MetaDParamList of meta_name mcode * listlen * keep_binding * inherited
   | DPComma       of string mcode
   | DPdots        of string mcode (* ... *)
   | OptDParam     of define_param
@@ -828,6 +830,7 @@ let get_meta_name = function
   | MetaFieldListDecl(_ar,nm,_nm1) -> nm
   | MetaStmDecl(_ar,nm) -> nm
   | MetaStmListDecl(_ar,nm,nm1) -> nm
+  | MetaDParamListDecl(_ar,nm,nm1) -> nm
   | MetaFuncDecl(_ar,nm) -> nm
   | MetaLocalFuncDecl(_ar,nm) -> nm
   | MetaPosDecl(_ar,nm) -> nm

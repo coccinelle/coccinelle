@@ -45,6 +45,7 @@ let rec pp_binding_kind = function
       frags +> (List.iter Pretty_print_c.pp_string_fragment_simple)
   | Ast_c.MetaParamVal     params -> pp "<<param>>"
   | Ast_c.MetaParamListVal params -> pp "<<paramlist>>"
+  | Ast_c.MetaDParamListVal params -> pp "<<define_paramlist>>"
   | Ast_c.MetaListlenVal n -> pp (string_of_int n)
   | Ast_c.MetaPosVal (pos1, pos2) ->
       let print_pos = function

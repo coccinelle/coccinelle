@@ -232,7 +232,7 @@ let constraint_code_counter = ref 0
 %token <Parse_aux.info>          TMetaParam TMetaStm TMetaType
 %token <Parse_aux.info>          TMetaInit TMetaDecl TMetaField TMeta
 %token <Parse_aux.list_info>     TMetaParamList TMetaExpList TMetaInitList
-%token <Parse_aux.list_info>     TMetaFieldList TMetaStmList
+%token <Parse_aux.list_info>     TMetaFieldList TMetaStmList TMetaDParamList
 %token <Parse_aux.typed_expinfo> TMetaExp TMetaIdExp TMetaLocalIdExp
 %token <Parse_aux.typed_expinfo> TMetaGlobalIdExp TMetaConst
 %token <Parse_aux.pos_info>      TMetaPos
@@ -553,6 +553,14 @@ metadec:
 	  let tok = check_meta(Ast.MetaInitListDecl(arity,name,lenname)) in
 	  !Data.add_initlist_meta name lenname pure; tok)
 	len ids }
+| ar=arity ispure=pure
+    TIdentifier Tlist TOCro len=list_len TCCro
+    ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
+    { P.create_len_metadec ar ispure
+	(fun lenname arity name pure check_meta ->
+	  let tok = check_meta(Ast.MetaDParamListDecl(arity,name,lenname)) in
+	  !Data.add_dparamlist_meta name lenname pure; tok)
+	len ids }
 | ar=arity ispure=pure TStatement Tlist TOCro len=list_len TCCro
     ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
     { P.create_len_metadec ar ispure
@@ -731,6 +739,11 @@ list_len:
       let len = Ast.AnyLen in
       let tok = check_meta(Ast.MetaStmListDecl(arity,name,len)) in
       !Data.add_stmlist_meta name len pure; tok) }
+| TIdentifier Tlist
+    { (fun arity name pure check_meta ->
+      let len = Ast.AnyLen in
+      let tok = check_meta(Ast.MetaDParamListDecl(arity,name,len)) in
+      !Data.add_dparamlist_meta name len pure; tok) }
 
 %inline metakindnosym:
   TTypedef ids=comma_list(pure_ident_or_meta_ident_nosym2(TTypeId))
@@ -1328,6 +1341,7 @@ defineop:
 /* ---------------------------------------------------------------------- */
 
 dparam: mident { Ast0.wrap(Ast0.DParam $1) }
+| TMetaDParamList { P.meta_dparam_list $1 }
 
 define_param_list_option:
     empty_list_start(dparam,TEllipsis)

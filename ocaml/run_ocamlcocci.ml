@@ -33,6 +33,7 @@ let ast_binding vl = function
       | Ast_c.MetaExprListVal arglist -> Coccilib.ExprList arglist
       | Ast_c.MetaParamVal param -> Coccilib.Param param
       | Ast_c.MetaParamListVal paramlist -> Coccilib.ParamList paramlist
+      | Ast_c.MetaDParamListVal paramlist -> Coccilib.DParamList paramlist
 
       | Ast_c.MetaTypeVal ty -> Coccilib.Type ty
       | Ast_c.MetaInitVal init -> Coccilib.Init init

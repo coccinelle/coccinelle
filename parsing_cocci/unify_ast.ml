@@ -509,6 +509,7 @@ and unify_define_param p1 p2 =
   match (Ast.unwrap p1,Ast.unwrap p2) with
     (Ast.DParam(i1),Ast.DParam(i2)) ->
 	(unify_ident i1 i2)
+  | (Ast.MetaDParamList(_,_,_,_),_) | (_,Ast.MetaDParamList(_,_,_,_)) -> true
   | (Ast.DPComma(_),Ast.DPComma(_)) -> true
 
   (* dots can match against anything.  true to be safe. *)
@@ -654,7 +655,7 @@ and subexp f =
       donothing donothing donothing donothing donothing donothing expr
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing in
+      donothing donothing donothing in
   recursor.V.combiner_rule_elem
 
 and subtype f =
@@ -669,7 +670,7 @@ and subtype f =
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing fullType
       donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing in
+      donothing donothing donothing donothing donothing in
   recursor.V.combiner_rule_elem
 
 let rec unify_statement s1 s2 =

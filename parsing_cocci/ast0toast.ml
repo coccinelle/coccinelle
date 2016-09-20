@@ -1066,6 +1066,8 @@ and define_param p =
   rewrap p no_isos
     (match Ast0.unwrap p with
       Ast0.DParam(id) -> Ast.DParam(ident id)
+    | Ast0.MetaDParamList(name,lenname,_) ->
+	Ast.MetaDParamList(mcode name,do_lenname lenname,unitary,false)
     | Ast0.DPComma(comma) -> Ast.DPComma(mcode comma)
     | Ast0.DPdots(d) -> Ast.DPdots(mcode d)
     | Ast0.OptDParam(dp) -> Ast.OptDParam(define_param dp))

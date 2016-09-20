@@ -90,6 +90,7 @@ let ast_rep_binding ctr = function
 	(Printf.sprintf "%s: No AST representation for listlen variables" nm)
   | (Some nm,Ast.MetaParamDecl _) -> print_match ctr nm "Param"
   | (Some nm,Ast.MetaParamListDecl _) -> print_match ctr nm "ParamList"
+  | (Some nm,Ast.MetaDParamListDecl _) -> print_match ctr nm "IdentList"
   | (Some nm,Ast.MetaBinaryOperatorDecl _) ->
       failwith
 	(Printf.sprintf "%s: No AST representation for operator variables" nm)

@@ -28,6 +28,7 @@
   lines, potentially including changes.  As a side effect, \ is also
   allowed in when specifications, again to allow patterns to stretch over
   multiple lines.
+- Add identifier list metavariables for #define parameter lists
 ** Features:
 - Add Coccilib.version() allowing ocaml code to access the version of
   spatch being used.

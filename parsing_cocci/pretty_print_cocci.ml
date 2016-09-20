@@ -720,6 +720,7 @@ and print_define_parameters params =
 and print_define_param param =
   match Ast.unwrap param with
     Ast.DParam(id) -> ident id
+  | Ast.MetaDParamList(name,_,_,_) -> mcode print_meta name
   | Ast.DPComma(comma) -> mcode print_string comma
   | Ast.DPdots(dots) -> mcode print_string dots
   | Ast.OptDParam(dp) -> print_string "?"; print_define_param dp
@@ -960,6 +961,9 @@ let unparse_cocci_mv rule = function
       print_string "statement "; print_name rule r n; print_string ";"
   | Ast.MetaStmListDecl(_,(r,n),len) ->
       print_string "statement list "; print_listlen rule len;
+      print_name rule r n; print_string ";"
+  | Ast.MetaDParamListDecl(_,(r,n),len) ->
+      print_string "identifier list "; print_listlen rule len;
       print_name rule r n; print_string ";"
   | Ast.MetaFuncDecl(_,(r,n)) ->
       print_string "function "; print_name rule r n; print_string ";"

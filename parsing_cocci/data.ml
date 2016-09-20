@@ -100,6 +100,7 @@ let add_field_list_meta: list_meta_type ref = ref uninitialized_add_meta
 let add_symbol_meta: (string -> unit) ref = ref uninitialized_add_meta
 let add_stm_meta: meta_type ref = ref uninitialized_add_meta
 let add_stmlist_meta: list_meta_type ref = ref uninitialized_add_meta
+let add_dparamlist_meta: list_meta_type ref = ref uninitialized_add_meta
 let add_func_meta: id_meta_type ref = ref uninitialized_add_meta
 let add_local_func_meta: id_meta_type ref = ref uninitialized_add_meta
 let add_declarer_meta: id_meta_type ref = ref uninitialized_add_meta

@@ -518,6 +518,13 @@ let do_get_constants constants keywords env (neg_pos,_) =
     | Ast.MetaParamList(name,_,_,_) -> bind (k p) (minherited name)
     | _ -> k p in
 
+  let define_parameter r k p =
+    match Ast.unwrap p with
+      Ast.MetaDParamList(name,Ast.MetaListLen(lenname,_,_),_,_) ->
+	bind (minherited name) (bind (minherited lenname) (k p))
+    | Ast.MetaDParamList(name,_,_,_) -> bind (k p) (minherited name)
+    | _ -> k p in
+
   let rule_elem r k re =
     bind (fresh_info re)
     (match Ast.unwrap re with
@@ -580,7 +587,7 @@ let do_get_constants constants keywords env (neg_pos,_) =
     mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing
     ident expression string_fragment string_format donothing donothing
-    fullType typeC initialiser parameter declaration donothing
+    fullType typeC initialiser parameter define_parameter declaration donothing
     rule_elem statement donothing donothing donothing
 
 (* ------------------------------------------------------------------------ *)
@@ -645,7 +652,7 @@ let all_context =
     mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing
-    initialiser donothing donothing donothing rule_elem statement
+    initialiser donothing donothing donothing donothing rule_elem statement
     donothing donothing donothing
 
 (* ------------------------------------------------------------------------ *)

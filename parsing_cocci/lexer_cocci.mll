@@ -451,6 +451,10 @@ let init _ =
     (function name -> function lenname -> function pure ->
       let fn clt = TMetaStmList(name,lenname,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
+  Data.add_dparamlist_meta :=
+    (function name -> function lenname -> function pure ->
+      let fn clt = TMetaDParamList(name,lenname,pure,clt) in
+      Hashtbl.replace metavariables (get_name name) fn);
   Data.add_func_meta :=
     (fun name constraints pure ->
       let fn clt = TMetaFunc(name,constraints,pure,clt) in

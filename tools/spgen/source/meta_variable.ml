@@ -501,6 +501,15 @@ let metavar_combiner rn =
         as_format ptd ex par expr
     | _ -> fn v in
 
+(*
+  Not used for now, visiter not parameterized by this...
+  let define_paramfn c fn v =
+    match Ast0.unwrap v with
+    | Ast0.MetaDParamList(mc, listlen, pure) ->
+        lst_format ~mc ~typ:"identifier list" ~listlen
+    | _ -> fn v in
+*)
+
   let declfn c fn v =
     match Ast0.unwrap v with
     | Ast0.MetaDecl(mc, pure) ->

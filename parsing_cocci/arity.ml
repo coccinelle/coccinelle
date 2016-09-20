@@ -1111,6 +1111,11 @@ and define_param tgt param =
 	  Ast0.OptIdent(id) ->
 	    Ast0.OptDParam(Ast0.rewrap param (Ast0.DParam(id)))
 	| _ -> Ast0.DParam(new_id))
+  | Ast0.MetaDParamList(name,lenname,pure) ->
+      let arity = all_same true tgt (mcode2line name) [mcode2arity name] in
+      let name = mcode name in
+      make_define_param param tgt arity
+	(Ast0.MetaDParamList(name,lenname,pure))
   | Ast0.DPComma(cm) ->
       let arity =
 	all_same true tgt (mcode2line cm) [mcode2arity cm] in

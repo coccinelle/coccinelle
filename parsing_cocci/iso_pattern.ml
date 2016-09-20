@@ -2291,6 +2291,8 @@ let get_name bindings = function
       (nm,function nm -> Ast.MetaStmDecl(ar,nm))
   | Ast.MetaStmListDecl(ar,nm,nm1) ->
       (nm,function nm -> Ast.MetaStmListDecl(ar,nm,nm1))
+  | Ast.MetaDParamListDecl(ar,nm,nm1) ->
+      (nm,function nm -> Ast.MetaDParamListDecl(ar,nm,nm1))
   | Ast.MetaFuncDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaFuncDecl(ar,nm))
   | Ast.MetaLocalFuncDecl(ar,nm) ->

@@ -776,3 +776,5 @@ do {									\
     asmlinkage unsigned long func(t1 a1, t2 a2, t3 a3, t4 a4, t5 a5)
 #define SYSCALL_DEFINE6(func, t1, a1, t2, a2, t3, a3, t4, a4, t5, a5, t6, a6) \
     asmlinkage unsigned long func(t1 a1, t2 a2, t3 a3, t4 a4, t5 a5, t6 a6)
+
+#define KBUILD_MODNAME YACFE_STRING

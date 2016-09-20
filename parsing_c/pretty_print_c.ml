@@ -46,6 +46,7 @@ type pretty_printers = {
   init_list       : (Ast_c.initialiser wrap2 list) printer;
   param           : Ast_c.parameterType printer;
   paramlist       : (Ast_c.parameterType Ast_c.wrap2 list) printer;
+  dparamlist      : ((string Ast_c.wrap) Ast_c.wrap2 list) printer;
   ty              : Ast_c.fullType printer;
   type_with_ident : type_with_ident;
   toplevel        : Ast_c.toplevel printer;
@@ -1221,11 +1222,7 @@ and pp_init (init, iinit) =
 	| DefineFunc (params, ii) ->
             let (i1,i2) = tuple_of_list2 ii in
             pr_elem i1;
-            params +> List.iter (fun ((s,iis), iicomma) ->
-              assert (List.length iicomma <= 1);
-              iicomma +> List.iter pr_elem;
-              iis +> List.iter pr_elem;
-            );
+	    pp_define_param_list params;
             pr_elem i2;
 	);
 	define_val defval;
@@ -1252,7 +1249,10 @@ and pp_init (init, iinit) =
 	    [] -> ()
 	  | [id,_] -> pp_name id
 	  | (id,_)::rest -> pp_name id; pr_space() in
-	loop ids in
+	loop ids
+
+  and pp_define_param_list dparams =
+    pp_list (fun (s,iis) -> iis +> List.iter pr_elem) dparams in
 
   let rec pp_toplevel = function
     | Declaration decl -> pp_decl decl
@@ -1490,6 +1490,7 @@ and pp_init (init, iinit) =
     init_list  = pp_init_list;
     param      = pp_param;
     paramlist  = pp_param_list;
+    dparamlist = pp_define_param_list;
     ty         = pp_type;
     type_with_ident = pp_type_ident;
     toplevel   = pp_toplevel;
@@ -1601,6 +1602,9 @@ let pp_param_gen ~pr_elem ~pr_space =
 
 let pp_param_list_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).paramlist
+
+let pp_define_param_list_gen ~pr_elem ~pr_space =
+  (pp_elem_sp pr_elem pr_space).dparamlist
 
 let pp_type_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).ty

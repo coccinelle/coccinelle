@@ -469,6 +469,11 @@ and pragmainfo old_metas table minus pi =
 and define_param old_metas table minus p =
   match Ast0.unwrap p with
     Ast0.DParam(id) -> ident GLOBAL old_metas table minus id
+  | Ast0.MetaDParamList(name,Ast0.MetaListLen lenname,_) ->
+      check_table table minus name;
+      check_table table minus lenname
+  | Ast0.MetaDParamList(name,_,_) ->
+      check_table table minus name
   | Ast0.DPComma(_) | Ast0.DPdots(_) ->
       () (* no metavariable subterms *)
   | Ast0.OptDParam(dp)    -> define_param old_metas table minus dp

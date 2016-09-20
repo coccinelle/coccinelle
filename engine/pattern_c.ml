@@ -492,6 +492,13 @@ module XMATCH = struct
 		   then Lib_parsing_c.al_params a
 		   else Lib_parsing_c.semi_al_params a))
 
+          | Ast_c.MetaDParamListVal a ->
+	      success
+		(Ast_c.MetaDParamListVal
+		   (if strip
+		   then Lib_parsing_c.al_define_params a
+		   else Lib_parsing_c.semi_al_define_params a))
+
           | Ast_c.MetaFragListVal a ->
 	      success
 		(Ast_c.MetaFragListVal

@@ -41,6 +41,8 @@ let stringrep = function
     call_pretty Pretty_print_c.pp_param_gen param
 | Ast_c.MetaParamListVal params ->
     call_pretty Pretty_print_c.pp_param_list_gen params
+| Ast_c.MetaDParamListVal params ->
+    call_pretty Pretty_print_c.pp_define_param_list_gen params
 | Ast_c.MetaFragListVal frags ->
     call_pretty0 Pretty_print_c.pp_string_fragment_list_gen frags
 | Ast_c.MetaFmtVal fmt ->

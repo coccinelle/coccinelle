@@ -46,6 +46,7 @@ type param_type =
   | Int of int
   | Param of Ast_c.parameterType
   | ParamList of Ast_c.parameterType Ast_c.wrap2 list
+  | DParamList of (string Ast_c.wrap) Ast_c.wrap2 list
   | Expr of Ast_c.expression
   | ExprList of Ast_c.argument Ast_c.wrap2 list
   | Decl of Ast_c.declaration

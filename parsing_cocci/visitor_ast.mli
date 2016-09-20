@@ -61,6 +61,7 @@ val combiner :
       ((Ast_cocci.typeC,'a) ccode) ->
       ((Ast_cocci.initialiser,'a) ccode) ->
       ((Ast_cocci.parameterTypeDef,'a) ccode) ->
+      ((Ast_cocci.define_param,'a) ccode) ->
       ((Ast_cocci.declaration,'a) ccode) ->
       ((Ast_cocci.annotated_decl,'a) ccode) ->
       ((Ast_cocci.rule_elem,'a) ccode) ->
@@ -131,6 +132,7 @@ val rebuilder :
     (Ast_cocci.typeC rcode) ->
     (Ast_cocci.initialiser rcode) ->
     (Ast_cocci.parameterTypeDef rcode) ->
+    (Ast_cocci.define_param rcode) ->
     (Ast_cocci.declaration rcode) ->
     (Ast_cocci.annotated_decl rcode) ->
     (Ast_cocci.rule_elem rcode) ->

@@ -203,6 +203,14 @@ let collect_refs include_constraints =
       | Ast.MetaParamList(name,_,_,_) -> [metaid name]
       | _ -> option_default) in
 
+  let astfvdefine_param recursor k p =
+    bind (k p)
+      (match Ast.unwrap p with
+	Ast.MetaDParamList(name,Ast.MetaListLen(lenname,_,_),_,_) ->
+	  [metaid name;metaid lenname]
+      | Ast.MetaDParamList(name,_,_,_) -> [metaid name]
+      | _ -> option_default) in
+
   let astfvrule_elem recursor k re =
     (*within a rule_elem, pattern3 manages the coherence of the bindings*)
     bind (k re)
@@ -247,7 +255,8 @@ let collect_refs include_constraints =
     mcode mcode mcode mcode
     donothing donothing donothing donothing donothing
     astfvident astfvexpr astfvfrag astfvfmt astfvassignop astfvbinaryop
-    astfvfullType astfvtypeC astfvinit astfvparam astfvdecls donothing
+    astfvfullType astfvtypeC astfvinit astfvparam astfvdefine_param
+    astfvdecls donothing
     astfvrule_elem astfvstatement donothing donothing donothing_a
 
 let collect_all_refs = collect_refs true
@@ -292,10 +301,10 @@ let collect_pos_positions =
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode mcode mcode mcode
+    donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing cprule_elem cpstmt
-    donothing donothing donothing
+    cprule_elem cpstmt donothing donothing donothing
 
 (* ---------------------------------------------------------------- *)
 
@@ -398,6 +407,18 @@ let collect_saved =
       | Ast.MetaParamList(name,_,Ast.Saved,_) -> [metaid name]
       | _ -> option_default) in
 
+  let astfvdefine_param recursor k p =
+    bind (k p)
+      (match Ast.unwrap p with
+	Ast.MetaDParamList(name,Ast.MetaListLen (lenname,ls,_),ns,_) ->
+	  let namesaved =
+	    match ns with Ast.Saved -> [metaid name] | _ -> [] in
+	  let lensaved =
+	    match ls with Ast.Saved -> [metaid lenname] | _ -> [] in
+	  lensaved @ namesaved
+      | Ast.MetaDParamList(name,_,Ast.Saved,_) -> [metaid name]
+      | _ -> option_default) in
+
   let astfvdecls recursor k d =
     bind (k d)
       (match Ast.unwrap d with
@@ -441,8 +462,8 @@ let collect_saved =
     mcode mcode
     donothing donothing donothing donothing donothing
     astfvident astfvexpr astfvfrag astfvfmt astfvassign astfvbinary donothing
-    astfvtypeC astfvinit astfvparam astfvdecls donothing astfvrule_elem
-    donothing donothing donothing donothing
+    astfvtypeC astfvinit astfvparam astfvdefine_param astfvdecls donothing
+    astfvrule_elem donothing donothing donothing donothing
 
 (* ---------------------------------------------------------------- *)
 
@@ -565,7 +586,8 @@ let collect_in_plus_term =
     mcode mcode donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing astfvrule_elem astfvstatement donothing donothing donothing
+    donothing donothing astfvrule_elem astfvstatement donothing donothing
+    donothing
 
 let collect_in_plus metavars minirules =
   nub
@@ -778,6 +800,21 @@ let classify_variables metavar_decls minirules used_after =
 	Ast.rewrap e (Ast.MetaParamList(name,lenname,unitary,inherited))
     | _ -> e in
 
+  let define_param r k e =
+    let e = k e in
+    match Ast.unwrap e with
+      Ast.MetaDParamList(name,Ast.MetaListLen (lenname,_,_),_,_) ->
+	let (unitary,inherited) = classify name in
+	let (lenunitary,leninherited) = classify lenname in
+	Ast.rewrap e
+	  (Ast.MetaDParamList
+	     (name,Ast.MetaListLen(lenname,lenunitary,leninherited),
+	      unitary,inherited))
+    | Ast.MetaDParamList(name,lenname,_,_) ->
+	let (unitary,inherited) = classify name in
+	Ast.rewrap e (Ast.MetaDParamList(name,lenname,unitary,inherited))
+    | _ -> e in
+
   let decl r k e =
     let e = k e in
     match Ast.unwrap e with
@@ -823,7 +860,7 @@ let classify_variables metavar_decls minirules used_after =
       donothing donothing donothing donothing donothing
       ident expression string_fragment string_format assignop binaryop
       donothing typeC
-      init param decl donothing rule_elem
+      init param define_param decl donothing rule_elem
       donothing donothing donothing donothing in
 
   List.map fn.V.rebuilder_top_level minirules
@@ -1005,9 +1042,8 @@ let astfvs metavars bound =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
     donothing donothing astfvstatement_dots donothing donothing
-    donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing
+    donothing donothing donothing donothing donothing donothing
     astfvrule_elem astfvstatement astfvcase_line astfvtoplevel donothing
 
 (*
@@ -1090,7 +1126,7 @@ let get_neg_pos_list (_,rule) used_after_list =
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing
-    donothing donothing in
+    donothing donothing donothing in
   match rule with
     Ast.CocciRule(_,_,minirules,_,_) ->
       List.map

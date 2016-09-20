@@ -847,6 +847,8 @@ let equal_case_line c1 c2 =
 let equal_define_param d1 d2 =
   match (Ast0.unwrap d1,Ast0.unwrap d2) with
     (Ast0.DParam _,Ast0.DParam _) -> true
+  | (Ast0.MetaDParamList(name1,_,_),Ast0.MetaDParamList(name2,_,_)) ->
+      equal_mcode name1 name2
   | (Ast0.DPComma cm1,Ast0.DPComma cm2) -> equal_mcode cm1 cm2
   | (Ast0.DPdots d1,Ast0.DPdots d2) -> equal_mcode d1 d2
   | (Ast0.OptDParam(_),Ast0.OptDParam(_)) -> true
