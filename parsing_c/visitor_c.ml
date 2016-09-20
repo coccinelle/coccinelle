@@ -791,11 +791,13 @@ and vk_define_kind bigf defkind =
   | DefineVar -> ()
   | DefineFunc (params, ii) ->
       vk_ii bigf ii;
-      params +> List.iter (fun ((s,iis), iicomma) ->
-        vk_ii bigf iis;
-        vk_ii bigf iicomma;
-      )
+      vk_define_params bigf params
   | Undef -> ()
+
+and vk_define_params bigf params =
+  params +> List.iter (fun ((s,iis), iicomma) ->
+    vk_ii bigf iis;
+    vk_ii bigf iicomma)
 
 and vk_define_val bigf defval =
   let f = bigf.kdefineval in
@@ -1704,13 +1706,14 @@ and vk_define_kind_s  = fun bigf defkind ->
   | DefineVar -> DefineVar
   | DefineFunc (params, ii) ->
       DefineFunc
-        (params +> List.map (fun ((s,iis),iicomma) ->
-          ((s, vk_ii_s bigf iis), vk_ii_s bigf iicomma)
-        ),
-        vk_ii_s bigf ii
+        (vk_define_params_s bigf params,
+         vk_ii_s bigf ii
         )
   | Undef -> Undef
 
+and vk_define_params_s bigf params =
+  params +> List.map (fun ((s,iis),iicomma) ->
+    ((s, vk_ii_s bigf iis), vk_ii_s bigf iicomma))
 
 and vk_define_val_s = fun bigf x ->
   let f = bigf.kdefineval_s in

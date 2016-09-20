@@ -258,6 +258,8 @@ let equal_metavarval valu valu' =
       Lib_parsing_c.al_param a = Lib_parsing_c.al_param b
   | Ast_c.MetaParamListVal a, Ast_c.MetaParamListVal b ->
       Lib_parsing_c.al_params a = Lib_parsing_c.al_params b
+  | Ast_c.MetaDParamListVal a, Ast_c.MetaDParamListVal b ->
+      Lib_parsing_c.al_define_params a = Lib_parsing_c.al_define_params b
 
   | Ast_c.MetaPosVal (posa1,posa2), Ast_c.MetaPosVal (posb1,posb2) ->
       Ast_cocci.equal_pos posa1 posb1 && Ast_cocci.equal_pos posa2 posb2
@@ -278,7 +280,8 @@ let equal_metavarval valu valu' =
       |B.MetaStmtListVal _
       |B.MetaDeclVal _ |B.MetaFieldVal _ |B.MetaFieldListVal _
       |B.MetaTypeVal _ |B.MetaInitVal _ |B.MetaInitListVal _
-      |B.MetaParamListVal _|B.MetaParamVal _|B.MetaExprListVal _
+      |B.MetaDParamListVal _|B.MetaParamListVal _|B.MetaParamVal _
+      |B.MetaExprListVal _
       |B.MetaExprVal _|B.MetaLocalFuncVal _|B.MetaFuncVal _|B.MetaIdVal _
       |B.MetaAssignOpVal _ | B.MetaBinaryOpVal _
       |B.MetaFmtVal _|B.MetaFragListVal _
@@ -351,6 +354,8 @@ let equal_inh_metavarval valu valu'=
       Lib_parsing_c.al_param a = Lib_parsing_c.al_param b
   | Ast_c.MetaParamListVal a, Ast_c.MetaParamListVal b ->
       Lib_parsing_c.al_params a = Lib_parsing_c.al_params b
+  | Ast_c.MetaDParamListVal a, Ast_c.MetaDParamListVal b ->
+      Lib_parsing_c.al_define_params a = Lib_parsing_c.al_define_params b
 
   | Ast_c.MetaPosVal (posa1,posa2), Ast_c.MetaPosVal (posb1,posb2) ->
       Ast_cocci.equal_pos posa1 posb1 && Ast_cocci.equal_pos posa2 posb2
@@ -371,7 +376,8 @@ let equal_inh_metavarval valu valu'=
       |B.MetaStmtListVal _
       |B.MetaDeclVal _ |B.MetaFieldVal _ |B.MetaFieldListVal _
       |B.MetaTypeVal _ |B.MetaInitVal _ |B.MetaInitListVal _
-      |B.MetaParamListVal _|B.MetaParamVal _|B.MetaExprListVal _
+      |B.MetaDParamListVal _|B.MetaParamListVal _|B.MetaParamVal _
+      |B.MetaExprListVal _
       |B.MetaExprVal _|B.MetaLocalFuncVal _|B.MetaFuncVal _|B.MetaIdVal _
       |B.MetaAssignOpVal _ | B.MetaBinaryOpVal _
       |B.MetaFmtVal _|B.MetaFragListVal _
@@ -2280,7 +2286,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 	      Visitor_ast.rebuilder
 		mcode mcode mcode mcode mcode mcode mcode mcode mcode
 		mcode mcode mcode mcode mcode
-		donothing donothing donothing donothing donothing
+		donothing donothing donothing donothing donothing donothing
 		donothing donothing donothing donothing donothing donothing
 		donothing donothing donothing donothing donothing donothing
 		donothing donothing donothing donothing donothing in
@@ -4429,10 +4435,17 @@ and define_paramsbis = fun eas ebs ->
       A.DPComma ia1 -> Some ia1
     | _ -> None in
   let build_comma ia1 = A.DPComma ia1 in
-  let match_metalist ea = None in
-  let build_metalist _ (ida,leninfo,keep,inherited) =
-    failwith "not possible" in
-  let mktermval v = failwith "not possible" in
+  let match_metalist ea =
+    match A.unwrap ea with
+      A.MetaDParamList(ida,leninfo,keep,inherited) ->
+        Some(ida,leninfo,keep,inherited,None)
+    |  _ -> None in
+  let build_metalist ea (ida,leninfo,keep,inherited) =
+    match A.unwrap ea with
+      A.MetaDParamList(_,_,_,_) ->
+	A.MetaDParamList(ida,leninfo,keep,inherited)
+    | _ -> failwith "not possible" in
+  let mktermval v = Ast_c.MetaDParamListVal v in
   let special_cases ea eas ebs = None in
   let no_ii x = failwith "not possible" in
   list_matcher match_dots build_dots match_comma build_comma

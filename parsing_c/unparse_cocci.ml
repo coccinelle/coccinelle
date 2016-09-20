@@ -1176,6 +1176,12 @@ and print_define_parameters params =
 and print_define_param param =
   match Ast.unwrap param with
     Ast.DParam(id) -> ident id
+  | Ast.MetaDParamList(name,_,_,_) ->
+      handle_metavar name
+	(function
+	    Ast_c.MetaDParamListVal p ->
+              pretty_print_c.Pretty_print_c.dparamlist p
+          | _ -> raise (Impossible 162))
   | Ast.DPComma(comma) -> mcode print_string comma
   | Ast.DPdots(dots) -> mcode print_string dots
   | Ast.OptDParam(dp) -> print_text "?"; print_define_param dp
