@@ -781,10 +781,10 @@ let unparse x =
   print_newline()
 
 let unparse_to_string x = Common.format_to_string (function _ -> unparse x)
-let unparse_exp_to_string x =
+let unparse_x_to_string fn x =
   let q = !quiet in
   quiet := true;
-  let res = Common.format_to_string (function _ -> expression x) in
+  let res = Common.format_to_string (function _ -> fn x) in
   quiet := q;
   res
 

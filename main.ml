@@ -1481,6 +1481,7 @@ let main () =
         Common.do_action !action xs all_actions
 
     | [] when !action = "--parse-cocci" ->
+	Iso_pattern.verbose_iso := true;
         Testing.test_parse_cocci !cocci_file
 
     | [] when !action = "--rule-dependencies" ->

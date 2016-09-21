@@ -13,6 +13,7 @@ module Ast = Ast_cocci
 module Ast0 = Ast0_cocci
 module V0 = Visitor_ast0
 module VT0 = Visitor_ast0_types
+module U = Unparse_ast0
 
 let comm_assoc_arith =
   [Ast.Plus; Ast.Mul; Ast.And; Ast.Or]
@@ -56,16 +57,15 @@ let process_binops rule_name =
 	    else
 	      (Common.pr2
 		 (Printf.sprintf
-		    "%s: position variables or mixed modifs interfere with comm_assoc iso" rule_name);
-	       Unparse_ast0.expression e1;
-	       Format.print_newline();
+		    "%s: position variables or mixed modifs interfere with comm_assoc iso\n%s"
+		    rule_name
+		    (U.unparse_x_to_string U.expression e1));
 	       e)
 	| Ast0.Edots(d,_) ->
 	    (Common.pr2
 	       (Printf.sprintf
-		  "%s: whencode interferes with comm_assoc iso" rule_name);
-	     Unparse_ast0.expression e1;
-	     Format.print_newline();
+		  "%s: whencode interferes with comm_assoc iso\n%s" rule_name
+		  (U.unparse_x_to_string U.expression e1));
 	     e)
 	| _ -> e)
     | _ -> e in
