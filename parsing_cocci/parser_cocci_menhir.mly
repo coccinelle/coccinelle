@@ -17,6 +17,7 @@ parameter needs both a type and an identifier *)
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
 module P = Parse_aux
+module U = Unparse_ast0
 
 (* ---------------------------------------------------------------------- *)
 (* support for argument lists *)
@@ -2533,7 +2534,7 @@ script_constraint:
 	   (fun (rule,name) index ->
 	     let key = Printf.sprintf "%s_%s_%d" rule name index in
 	     (key, P.id2name lang, params,
-	      Unparse_ast0.unparse_exp_to_string c)) }
+	      U.unparse_x_to_string U.expression c)) }
 
 func_ident:
        ident { $1 }
