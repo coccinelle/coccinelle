@@ -77,6 +77,7 @@ val vk_enum_fields_splitted :
 
 val vk_cst : visitor_c -> ((constant, string) Common.either wrap) -> unit
 
+val vk_define_params : visitor_c -> (string wrap) wrap2 list -> unit
 val vk_define_params_splitted :
   visitor_c -> (string Ast_c.wrap, il) Common.either list -> unit
 val vk_pragmainfo : visitor_c -> pragmainfo -> unit
@@ -177,6 +178,9 @@ val vk_params_splitted_s :
 
 val vk_param_s : visitor_c_s -> parameterType -> parameterType
 
+val vk_define_params_s :
+  visitor_c_s ->
+  (string Ast_c.wrap) wrap2 list -> (string Ast_c.wrap) wrap2 list
 val vk_define_params_splitted_s :
   visitor_c_s ->
   (string Ast_c.wrap, il) Common.either list ->

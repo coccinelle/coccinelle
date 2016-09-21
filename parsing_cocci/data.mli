@@ -81,6 +81,7 @@ val add_symbol_meta: (string -> unit) ref
 val add_field_list_meta: list_meta_type ref
 val add_stm_meta: meta_type ref
 val add_stmlist_meta: list_meta_type ref
+val add_dparamlist_meta: list_meta_type ref
 val add_func_meta: id_meta_type ref
 val add_local_func_meta: id_meta_type ref
 val add_declarer_meta: id_meta_type ref

@@ -1242,6 +1242,10 @@ let isop s =
       "<?";">?";"<<";">>";"<?=";">?=";"<<=";">>=";
       "&&";"||";"&";"|"]
 
+let space_after = function
+    [] -> true
+  | x::xs -> is_newline x || is_space x || is_added_whitespace x      
+
 let rec drop_space_at_endline = function
   | [] -> []
   | [x] -> [x]
@@ -1310,7 +1314,7 @@ let rec add_space xs =
     let sx = str_of_token2 x in
     let sy = str_of_token2 y in
     if (is_ident_like sx || List.mem sx [")";"]"]) &&
-      (is_ident_like sy || isop sy || is_int_like sy)
+      (is_ident_like sy || (isop sy && space_after xs) || is_int_like sy)
     then x::C2(" ",None)::(add_space (y::xs))
     else x::(add_space (y::xs))
   | ((T2(_,Ctx,_,_)) as x)::((T2(_,Ctx,_,_)) as y)::xs -> (* don't touch *)

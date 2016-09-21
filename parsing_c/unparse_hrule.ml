@@ -135,7 +135,7 @@ let get_function_name rule env =
       mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing
       donothing expression donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing).V.combiner_top_level
       rule in
   match names with
@@ -238,6 +238,8 @@ let print_extra_typedefs pr env =
       | Ast_c.MetaExprListVal(args) -> Visitor_c.vk_argument_list bigf args
       | Ast_c.MetaParamVal(param) -> Visitor_c.vk_param bigf param
       | Ast_c.MetaParamListVal(params) -> Visitor_c.vk_param_list bigf params
+      | Ast_c.MetaDParamListVal(params) ->
+	  Visitor_c.vk_define_params bigf params
 
       | Ast_c.MetaTypeVal(ty) -> Visitor_c.vk_type bigf ty
       | Ast_c.MetaInitVal(ty) -> Visitor_c.vk_ini bigf ty
@@ -291,6 +293,8 @@ let rename argids env =
 	   Ast_c.MetaParamVal(Visitor_c.vk_param_s bigf param)
        | Ast_c.MetaParamListVal(params) ->
 	   Ast_c.MetaParamListVal(Visitor_c.vk_params_s bigf params)
+       | Ast_c.MetaDParamListVal(params) ->
+	   Ast_c.MetaDParamListVal(Visitor_c.vk_define_params_s bigf params)
 
        | Ast_c.MetaTypeVal(ty) ->
 	   Ast_c.MetaTypeVal(Visitor_c.vk_type_s bigf ty)
@@ -376,6 +380,8 @@ let pp_meta_decl pr env decl =
       no_arity ar; pr "parameter "; pp_name name; pr ";\n"
   | Ast.MetaParamListDecl(ar, name, len) ->
       no_arity ar; pr "parameter list "; pp_len pr len; pp_name name; pr ";\n"
+  | Ast.MetaDParamListDecl(ar, name, len) ->
+      no_arity ar; pr "identifier list "; pp_len pr len; pp_name name; pr ";\n"
   | Ast.MetaBinaryOperatorDecl(ar, name) ->
       no_arity ar; pr "binary operator "; pp_name name; pr ";\n"
   | Ast.MetaAssignmentOperatorDecl(ar, name) ->

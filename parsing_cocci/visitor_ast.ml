@@ -49,7 +49,7 @@ let combiner bind option_default
     inc_file_mcodefn
     expdotsfn paramdotsfn stmtdotsfn anndecldotsfn initdotsfn
     identfn exprfn fragfn fmtfn assignOpfn binaryOpfn ftfn tyfn initfn
-    paramfn declfn
+    paramfn define_paramfn declfn
     annotated_declfn rulefn stmtfn casefn topfn anyfn =
   let multibind l =
     let rec loop = function
@@ -699,10 +699,11 @@ let combiner bind option_default
     let k p =
       match Ast.unwrap p with
 	Ast.DParam(id) -> ident id
+      | Ast.MetaDParamList(name,_,_,_) -> meta_mcode name
       | Ast.DPComma(comma) -> string_mcode comma
       | Ast.DPdots(d) -> string_mcode d
       | Ast.OptDParam(dp) -> define_param dp in
-    k p
+    define_paramfn all_functions k p
 
   (* discard the result, because the statement is assumed to be already
      represented elsewhere in the code *)
@@ -937,7 +938,8 @@ let rebuilder
     storage_mcode inc_file_mcode
     expdotsfn paramdotsfn stmtdotsfn anndecldotsfn initdotsfn
     identfn exprfn fragfn fmtfn assignOpfn binaryOpfn ftfn tyfn initfn
-    paramfn declfn annotated_declfn rulefn stmtfn casefn topfn anyfn =
+    paramfn define_paramfn declfn annotated_declfn rulefn stmtfn casefn
+    topfn anyfn =
   let get_option f = function
       Some x -> Some (f x)
     | None -> None in
@@ -1577,10 +1579,12 @@ let rebuilder
       Ast.rewrap p
 	(match Ast.unwrap p with
 	  Ast.DParam(id) -> Ast.DParam(ident id)
+	| Ast.MetaDParamList(name,lenname_inh,keep,inherited) ->
+	    Ast.MetaDParamList(meta_mcode name,lenname_inh,keep,inherited)
 	| Ast.DPComma(comma) -> Ast.DPComma(string_mcode comma)
 	| Ast.DPdots(d) -> Ast.DPdots(string_mcode d)
 	| Ast.OptDParam(dp) -> Ast.OptDParam(define_param dp)) in
-    k p
+    define_paramfn all_functions k p
 
   and process_bef_aft s =
     Ast.set_dots_bef_aft

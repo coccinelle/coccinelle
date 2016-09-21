@@ -25,7 +25,7 @@ presence of that term is optional.
 A PDF version of this documentation is available at
 \url{http://coccinelle.lip6.fr/docs/main_grammar.pdf}.
 \else
-A HTML version of this documentation is available online at
+An HTML version of this documentation is available online at
 \url{http://coccinelle.lip6.fr/docs/main_grammar.html}.
 \fi
 
@@ -192,6 +192,9 @@ i.e., including as an element of another statement list.
   \CASE{parameter \opt{list} \NT{ids} ;}
   \CASE{parameter list [ \NT{id} ] \NT{ids} ;}
   \CASE{parameter list [ \NT{const} ] \NT{ids} ;}
+  \CASE{identifier \opt{list} \NT{ids} ;}
+  \CASE{identifier list [ \NT{id} ] \NT{ids} ;}
+  \CASE{identifier list [ \NT{const} ] \NT{ids} ;}
   \CASE{type \NT{ids} ;}
   \CASE{statement \opt{list} \NT{ids} ;}
   \CASE{declaration \NT{ids} ;}
@@ -257,12 +260,15 @@ that is all capital letters (possibly containing numbers) as a constant as
 well, because the names given to macros in Linux usually have this form.
 
 An identifier is the name of a structure field, a macro, a function, or a
-variable.  Is is the name of something rather than an expression that has a
+variable.  It is the name of something rather than an expression that has a
 value.  But an identifier can be used in the position of an expression as
 well, where it represents a variable.
 
 It is possible to specify that an expression list or a parameter list
 metavariable should match a specific number of expressions or parameters.
+
+An identifier list is only used for the parameter list of a macro.  It is
+possible to specify its length.
 
 It is possible to specify some information about the definition of a fresh
 identifier.  See the wiki.

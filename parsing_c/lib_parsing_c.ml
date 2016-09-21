@@ -78,6 +78,8 @@ let al_init      x = Visitor_c.vk_ini_s       (strip_info_visitor()) x
 let al_inits     x = Visitor_c.vk_inis_s      (strip_info_visitor()) x
 let al_param     x = Visitor_c.vk_param_s     (strip_info_visitor()) x
 let al_params    x = Visitor_c.vk_params_s    (strip_info_visitor()) x
+let al_define_params x =
+  Visitor_c.vk_define_params_s (strip_info_visitor()) x
 let al_arguments x = Visitor_c.vk_arguments_s (strip_info_visitor()) x
 let al_fields    x = Visitor_c.vk_struct_fields_s (strip_info_visitor()) x
 let al_name      x = Visitor_c.vk_name_s      (strip_info_visitor()) x
@@ -175,6 +177,8 @@ let semi_al_init      = Visitor_c.vk_ini_s       semi_strip_info_visitor
 let semi_al_inits     = Visitor_c.vk_inis_s      semi_strip_info_visitor
 let semi_al_param     = Visitor_c.vk_param_s     semi_strip_info_visitor
 let semi_al_params    = Visitor_c.vk_params_s    semi_strip_info_visitor
+let semi_al_define_params =
+  Visitor_c.vk_define_params_s semi_strip_info_visitor
 let semi_al_arguments = Visitor_c.vk_arguments_s semi_strip_info_visitor
 let semi_al_string_format =
   Visitor_c.vk_string_format_s semi_strip_info_visitor

@@ -46,6 +46,7 @@ type pretty_printers = {
   init_list       : (Ast_c.initialiser wrap2 list) printer;
   param           : Ast_c.parameterType printer;
   paramlist       : (Ast_c.parameterType Ast_c.wrap2 list) printer;
+  dparamlist      : ((string Ast_c.wrap) Ast_c.wrap2 list) printer;
   ty              : Ast_c.fullType printer;
   type_with_ident : type_with_ident;
   toplevel        : Ast_c.toplevel printer;
@@ -1221,11 +1222,7 @@ and pp_init (init, iinit) =
 	| DefineFunc (params, ii) ->
             let (i1,i2) = tuple_of_list2 ii in
             pr_elem i1;
-            params +> List.iter (fun ((s,iis), iicomma) ->
-              assert (List.length iicomma <= 1);
-              iicomma +> List.iter pr_elem;
-              iis +> List.iter pr_elem;
-            );
+	    pp_define_param_list params;
             pr_elem i2;
 	);
 	define_val defval;
@@ -1252,7 +1249,10 @@ and pp_init (init, iinit) =
 	    [] -> ()
 	  | [id,_] -> pp_name id
 	  | (id,_)::rest -> pp_name id; pr_space() in
-	loop ids in
+	loop ids
+
+  and pp_define_param_list dparams =
+    pp_list (fun (s,iis) -> iis +> List.iter pr_elem) dparams in
 
   let rec pp_toplevel = function
     | Declaration decl -> pp_decl decl
@@ -1309,7 +1309,7 @@ and pp_init (init, iinit) =
          iif iicomma;
 	 );
       *)
-		       pr2 "Def";
+		       pr2 "FunHeader";
 
 
     | F.Decl decl ->
@@ -1319,15 +1319,15 @@ and pp_init (init, iinit) =
     | F.ExprStatement (st, (eopt, ii)) ->
 	pp_statement (Ast_c.mk_st (ExprStatement eopt) ii)
 
-    | F.IfHeader (_, (e,ii))
-    | F.SwitchHeader (_, (e,ii))
-    | F.WhileHeader (_, (e,ii))
+    | F.IfHeader (_, (e,ii)) -> pr2 "IfHeader"
+    | F.SwitchHeader (_, (e,ii)) -> pr2 "SwitchHeader"
+    | F.WhileHeader (_, (e,ii)) -> pr2 "WhileHeader"
     | F.DoWhileTail (e,ii) ->
         (*
            iif ii;
            vk_expr bigf e
         *)
-	pr2 "XXX";
+	pr2 "DoWhileTail"
 
 
     | F.ForHeader (_st, ((first, (e2opt,i2), (e3opt,i3)), ii)) ->
@@ -1338,28 +1338,28 @@ and pp_init (init, iinit) =
            e2opt +> do_option (vk_expr bigf);
            e3opt +> do_option (vk_expr bigf);
         *)
-	pr2 "XXX"
+	pr2 "ForHeader"
 
     | F.MacroIterHeader (_s, ((s,es), ii)) ->
         (*
            iif ii;
            vk_argument_list bigf es;
         *)
-	pr2 "XXX"
+	pr2 "MacroIterHeader"
 
 
     | F.ReturnExpr (_st, (e,ii)) ->
         (* iif ii; vk_expr bigf e*)
-	pr2 "XXX"
+	pr2 "ReturnExpr"
 
 
     | F.Case  (_st, (e,ii)) ->
       (* iif ii; vk_expr bigf e *)
-	pr2 "XXX"
+	pr2 "Case"
 
     | F.CaseRange (_st, ((e1, e2),ii)) ->
         (* iif ii; vk_expr bigf e1; vk_expr bigf e2 *)
-	pr2 "XXX"
+	pr2 "CaseRange"
 
 
 
@@ -1367,23 +1367,23 @@ and pp_init (init, iinit) =
 
     | F.DefineExpr e  ->
         (* vk_expr bigf e *)
-	pr2 "XXX"
+	pr2 "DefineExpr"
 
     | F.DefineType ft  ->
         (* vk_type bigf ft *)
-	pr2 "XXX"
+	pr2 "DefineType"
 
     | F.DefineHeader ((s,ii), (defkind))  ->
         (*
            iif ii;
            vk_define_kind bigf defkind;
         *)
-	pr2 "XXX"
+	pr2 "DefineHeader"
 
 
     | F.DefineDoWhileZeroHeader (((),ii)) ->
         (* iif ii *)
-	pr2 "XXX"
+	pr2 "DefineDoWhileZeroHeader"
 
     | F.PragmaHeader((s,ii), pragmainfo) ->
 	let (ipragma,iident,ieol) = Common.tuple_of_list3 ii in
@@ -1393,60 +1393,60 @@ and pp_init (init, iinit) =
 
     | F.Include {i_include = (s, ii);} ->
         (* iif ii; *)
-	pr2 "XXX"
+	pr2 "Include"
 
 
     | F.MacroTop (s, args, ii) ->
         (* iif ii;
            vk_argument_list bigf args *)
-	pr2 "XXX"
+	pr2 "MacroTop"
 
 
     | F.Break    (st,((),ii),fromswitch) ->
         (* iif ii *)
-	pr2 "XXX"
+	pr2 "Break"
     | F.Continue (st,((),ii)) ->
         (* iif ii *)
-	pr2 "XXX"
+	pr2 "Continue"
     | F.Default  (st,((),ii)) ->
         (* iif ii *)
-	pr2 "XXX"
+	pr2 "Default"
     | F.Return   (st,((),ii)) ->
         (* iif ii *)
-	pr2 "XXX"
+	pr2 "Return"
     | F.Goto  (st, name, ((),ii)) ->
         (* iif ii *)
-	pr2 "XXX"
+	pr2 "Goto"
     | F.Label (st, name, ((),ii)) ->
         (* iif ii *)
-	pr2 "XXX"
+	pr2 "Label"
     | F.EndStatement iopt ->
         (* do_option infof iopt *)
-	pr2 "XXX"
+	pr2 "EndStatement"
     | F.DoHeader (st, info) ->
         (* infof info *)
-	pr2 "XXX"
+	pr2 "DoHeader"
     | F.Else info ->
         (* infof info *)
-	pr2 "XXX"
+	pr2 "Else"
     | F.SeqEnd (i, info) ->
         (* infof info *)
-	pr2 "XXX"
+	pr2 "SeqEnd"
     | F.SeqStart (st, i, info) ->
         (* infof info *)
-	pr2 "XXX"
+	pr2 "SeqStart"
 
     | F.MacroStmt (st, ((),ii)) ->
         (* iif ii *)
-	pr2 "XXX"
+	pr2 "MacroStmt"
     | F.Asm (st, (asmbody,ii)) ->
         (*
            iif ii;
            vk_asmbody bigf asmbody
         *)
-	pr2 "XXX"
+	pr2 "Asm"
 
-    | F.Exec(st,(code,ii)) -> pr2 "XXX"
+    | F.Exec(st,(code,ii)) -> pr2 "Exec"
 
     | F.IfdefHeader (info) ->
 	pp_ifdef info
@@ -1456,17 +1456,24 @@ and pp_init (init, iinit) =
 	pp_ifdef info
 
     | F.IfdefIteHeader _ii ->
-        pr2 "XXX"
+        pr2 "IfdefIteHeader"
 
     | F.DefineTodo ->
-	pr2 "XXX"
+	pr2 "DefineTodo"
 
 
-    | (F.TopNode|F.EndNode|
-      F.ErrorExit|F.Exit|F.Enter|F.LoopFallThroughNode|F.FallThroughNode|
-      F.AfterNode _|F.FalseNode|F.TrueNode _|F.InLoopNode|
-      F.Fake) ->
-        pr2 "YYY" in
+    | F.TopNode -> pr2 "TopNode"
+    | F.EndNode -> pr2 "EndNode"
+    | F.ErrorExit -> pr2 "ErrorExit"
+    | F.Exit -> pr2 "Exit"
+    | F.Enter -> pr2 "Enter"
+    | F.LoopFallThroughNode -> pr2 "LoopFallThroughNode"
+    | F.FallThroughNode -> pr2 "FallThroughNode"
+    | F.AfterNode _ -> pr2 "AfterNode"
+    | F.FalseNode -> pr2 "FalseNode"
+    | F.TrueNode _ -> pr2 "TrueNode"
+    | F.InLoopNode -> pr2 "InLoopNode"
+    | F.Fake -> pr2 "Fake" in
 
 
   { expression = pp_expression;
@@ -1483,6 +1490,7 @@ and pp_init (init, iinit) =
     init_list  = pp_init_list;
     param      = pp_param;
     paramlist  = pp_param_list;
+    dparamlist = pp_define_param_list;
     ty         = pp_type;
     type_with_ident = pp_type_ident;
     toplevel   = pp_toplevel;
@@ -1594,6 +1602,9 @@ let pp_param_gen ~pr_elem ~pr_space =
 
 let pp_param_list_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).paramlist
+
+let pp_define_param_list_gen ~pr_elem ~pr_space =
+  (pp_elem_sp pr_elem pr_space).dparamlist
 
 let pp_type_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).ty

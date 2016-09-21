@@ -595,7 +595,7 @@ let sp_contain_typed_metavar_z toplevel_list_list =
       mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing
       donothing expression donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing
   in
   toplevel_list_list +>
@@ -1219,6 +1219,7 @@ let prepare_c files choose_includes parse_strings : file_info list =
   Flag_parsing_c.parsing_header_for_types :=
     !Includes.include_headers_for_types;
   let header_file_info = List.map (file_info_of_parse_info Header) headers in
+  Flag_parsing_c.parsing_header_for_types := false;
   let source_file_info = List.map (file_info_of_parse_info Source) sources in
   if !Includes.include_headers_for_types
   then source_file_info

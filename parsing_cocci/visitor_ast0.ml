@@ -889,6 +889,9 @@ let visitor mode bind option_default
       rewrap p
 	(match Ast0.unwrap p with
 	  Ast0.DParam(id) -> let (n,id) = ident id in (n,Ast0.DParam(id))
+	| Ast0.MetaDParamList(name,lenname,pure) ->
+	    let (n,name) = meta_mcode name in
+	    (n,Ast0.MetaDParamList(name,lenname,pure))
 	| Ast0.DPComma(comma) ->
 	    let (n,comma) = string_mcode comma in (n,Ast0.DPComma(comma))
 	| Ast0.DPdots(d) ->

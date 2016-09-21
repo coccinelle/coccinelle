@@ -451,6 +451,10 @@ let init _ =
     (function name -> function lenname -> function pure ->
       let fn clt = TMetaStmList(name,lenname,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
+  Data.add_dparamlist_meta :=
+    (function name -> function lenname -> function pure ->
+      let fn clt = TMetaDParamList(name,lenname,pure,clt) in
+      Hashtbl.replace metavariables (get_name name) fn);
   Data.add_func_meta :=
     (fun name constraints pure ->
       let fn clt = TMetaFunc(name,constraints,pure,clt) in
@@ -816,6 +820,13 @@ rule token = parse
   | "#" [' ' '\t']* "line" [^'\n']*
       { start_line true; check_plus_linetype (tok lexbuf);
 	TDirective (Ast.Noindent(tok lexbuf), get_current_line_type lexbuf) }
+
+  | "\\" ('\n' | "\r\n")
+      { start_line true;
+	let res = TCppEscapedNewline (get_current_line_type lexbuf) in
+	reset_line lexbuf;
+	res }
+
   | "/*"
       {
        match !current_line_type with
