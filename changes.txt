@@ -40,6 +40,8 @@
 Luis Rodriguez.
 - Clean up temporary files when using parmap.  Issue identified by Luis
 Rodriguez.
+- Do nothing when there are no files to work on, avoiding parmap temporary
+  file creation issues.
 * 1.0.5
 ** Language:
 - In the Coccilib interface, the function file, giving the file being
