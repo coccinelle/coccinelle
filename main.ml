@@ -1144,50 +1144,57 @@ let rec main_action xs =
           let outfiles =
             Common.profile_code "Main.outfiles computation" (fun () ->
 	      let res =
-		infiles +> actual_fold (@) (fun prev cfiles ->
-		  if (not !Flag.worth_trying_opt) ||
-		    Cocci.worth_trying cfiles constants
-		  then
-		    begin
-		      pr2 ("HANDLING: " ^ (String.concat " " cfiles));
-		      flush stderr;
+		match infiles with
+		  [] ->
+		    (* parmap case does a lot of work that is not needed
+		       if there is nothing to do *)
+		    []
+		| _ ->
+		    infiles +> actual_fold (@) (fun prev cfiles ->
+		      if (not !Flag.worth_trying_opt) ||
+		      Cocci.worth_trying cfiles constants
+		      then
+			begin
+			  pr2 ("HANDLING: " ^ (String.concat " " cfiles));
+			  flush stderr;
 
-		      let all_cfiles = String.concat " " cfiles in
-		      Common.timeout_function_opt all_cfiles !FC.timeout
-			(fun () ->
-			  let res =
-			    Common.report_if_take_time 10 all_cfiles
-			      (fun () ->
-				try
-				  let optfile =
-				    if !output_file <> "" && !compat_mode then
-				      Some !output_file
-				    else None in
-				  List.rev
-				    (adjust_stdin cfiles (fun () ->
-				      Common.redirect_stdout_opt optfile
-					(fun () ->
-					  (* this is the main call *)
-					  Cocci.full_engine cocci_infos cfiles
-				    ))) @ prev
-				with
-				| Common.UnixExit x ->
-				    raise (Common.UnixExit x)
-				| Pycocci.Pycocciexception ->
-				    raise Pycocci.Pycocciexception
-				| e ->
-				    if !dir
-				    then begin
-				      pr2 ("EXN:" ^ Printexc.to_string e);
-				      prev (* *)
-				    end
-				    else raise e) in
-			  (if !dir && !profile_per_file
-			  then Common.reset_profile());
-			  res)
-		    end
-		  else prev)
-	      [] in res) in
+			  let all_cfiles = String.concat " " cfiles in
+			  Common.timeout_function_opt all_cfiles !FC.timeout
+			    (fun () ->
+			      let res =
+				Common.report_if_take_time 10 all_cfiles
+				  (fun () ->
+				    try
+				      let optfile =
+					if !output_file <> "" && !compat_mode
+					then Some !output_file
+					else None in
+				      List.rev
+					(adjust_stdin cfiles (fun () ->
+					  Common.redirect_stdout_opt optfile
+					    (fun () ->
+					      (* this is the main call *)
+					      Cocci.full_engine cocci_infos
+						cfiles
+					 ))) @ prev
+				    with
+				    | Common.UnixExit x ->
+					raise (Common.UnixExit x)
+				    | Pycocci.Pycocciexception ->
+					raise Pycocci.Pycocciexception
+				    | e ->
+					if !dir
+					then begin
+					  pr2 ("EXN:" ^ Printexc.to_string e);
+					  prev (* *)
+					end
+					else raise e) in
+			      (if !dir && !profile_per_file
+			      then Common.reset_profile());
+			      res)
+			end
+		      else prev)
+		      [] in res) in
 	  let outfiles = List.rev outfiles in
 	  (match Iteration.get_pending_instance() with
 	    None ->
