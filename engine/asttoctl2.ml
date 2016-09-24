@@ -2694,7 +2694,7 @@ let top_level name ((ua,pos),fua) (fuas,t) =
 	let formula =
 	  statement_list unopt Top VeryEnd quantified [] None None None
 	    false false in
-	let clean_formula = cleanup (protect_top_level stmt_dots formula) in
+	let clean_formula = protect_top_level stmt_dots (cleanup formula) in
 	((function x -> CODE x), clean_formula)
     | Ast.ERRORWORDS(exps) -> failwith "not supported errorwords" in
   wrap (quantify false quantified formula)
