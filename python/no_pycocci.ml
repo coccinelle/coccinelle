@@ -85,3 +85,6 @@ let py_isinitialized () =
 
 let py_finalize () =
   failwith errmsg
+
+let run_constraint args body =
+  failwith errmsg
