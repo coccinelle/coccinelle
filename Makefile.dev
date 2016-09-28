@@ -49,6 +49,8 @@ IDX?=1
 .PHONY:: ubuntu
 
 ubuntu:
+	./autogen
+	./configure
 	@echo "Preparing package for Ubuntu $(CODENAME) - $(RELEASE)"
 	if [ ! -f debian/changelog ] ; then \
 		debchange --create -c debian/changelog -D $(CODENAME) --package $(PRJNAME) \
