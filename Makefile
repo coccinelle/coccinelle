@@ -362,6 +362,7 @@ install-tools:
 		$(DESTDIR)$(BINDIR)/splitpatch
 	$(INSTALL_PROGRAM) tools/cocci-send-email.perl \
 		$(DESTDIR)$(BINDIR)/cocci-send-email.perl
+	$(INSTALL_PROGRAM) tools/pycocci $(DESTDIR)$(BINDIR)
 
 install-python:
 	@$(ECHO) "Installing python support in: ${DESTDIR}${LIBDIR}/python"
@@ -448,6 +449,7 @@ uninstall-bash:
 uninstall-tools:
 	rm -f $(DESTDIR)$(BINDIR)/splitpatch
 	rm -f $(DESTDIR)$(BINDIR)/cocci-send-email.perl
+	rm -f $(DESTDIR)$(BINDIR)/pycocci
 
 version:
 	@$(ECHO) "spatch     $(VERSION)"
