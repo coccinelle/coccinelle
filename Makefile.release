@@ -291,7 +291,6 @@ packbin: prepack
 prepack:
 	rsync -a $(EXCL_SYNC) . $(TMP)/$(PACKAGE)
 	sed -i "s|^OCAMLCFLAGS=.*$$|OCAMLCFLAGS=|" $(TMP)/$(PACKAGE)/Makefile
-	rm -rf $(TMP)/$(PACKAGE)/tools
 
 push:
 	cd $(TMP)/ && for p in `ls $(PRJNAME)_$(VERSION)*_source.changes`; do dput $(PRJNAME) $$p ; done
