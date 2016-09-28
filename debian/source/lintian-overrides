@@ -1,0 +1,4 @@
+#
+# Specify where to find spgen sources
+#
+coccinelle source: source-is-missing tools/spgen/source/spgen.opt
