@@ -2,7 +2,7 @@ type ty =
     PyObject of bool
   | PyCompilerFlags | String | WideString | Int | Int64 | Long | Size | IntPtr
   | Compare | Input | Unit | File | Double | StringOption | NeverReturn
-  | UCS2 | UCS4 | UCS2Option | UCS4Option
+  | UCS2 | UCS4 | UCS2Option | UCS4Option of bool
 
 type arguments =
     Value
@@ -825,7 +825,7 @@ let wrappers_ucs4 =
      result = PyObject false; };
    { symbol = "PyUnicodeUCS4_AsUnicode";
      arguments = Fun [PyObject false];
-     result = UCS4Option; };]
+     result = UCS4Option false; };]
 
 let wrappers_python3 =
   [{ symbol = "Py_GetProgramName";
@@ -919,7 +919,7 @@ let wrappers_python3 =
      result = PyObject false; };
    { symbol = "PyUnicode_AsUCS4Copy";
      arguments = Fun [PyObject false];
-     result = UCS4Option; };]
+     result = UCS4Option true; };]
 
 let string_of_type_ml ty =
   match ty with
@@ -936,7 +936,7 @@ let string_of_type_ml ty =
   | StringOption -> "string option"
   | NeverReturn -> "'a"
   | UCS2 | UCS4 -> "int array"
-  | UCS2Option | UCS4Option -> "int array option"
+  | UCS2Option | UCS4Option _ -> "int array option"
 
 let decapitalize prefix symbol =
   prefix ^ symbol
@@ -1102,7 +1102,7 @@ let string_of_type_c ty =
   | File -> "FILE *"
   | Double -> "double"
   | UCS2 | UCS2Option -> "int16_t *"
-  | UCS4 | UCS4Option -> "int32_t *"
+  | UCS4 | UCS4Option _ -> "int32_t *"
 
 let print_declaration prefix channel wrapper =
   let symbol = wrapper.symbol in
@@ -1149,7 +1149,7 @@ let coercion_of_caml ty v =
   | IntPtr -> Printf.sprintf "pyunwrap_intref(%s)" v
   | PyCompilerFlags -> Printf.sprintf "pyunwrap_compilerflags(%s)" v
   | Compare -> Printf.sprintf "Int_val(%s)" v
-  | Unit | NeverReturn | UCS2Option | UCS4Option -> assert false
+  | Unit | NeverReturn | UCS2Option | UCS4Option _ -> assert false
   | Input -> Printf.sprintf "256 + Int_val(%s)" v
   | File -> Printf.sprintf "fdopen(dup(Int_val(%s)), \"r\")" v
   | Double -> Printf.sprintf "Double_val(%s)" v
@@ -1180,8 +1180,9 @@ let coercion_of_c ty =
   | Input | File | UCS2 | UCS4 -> assert false
   | Double -> Printf.sprintf "    CAMLreturn(caml_copy_double(result));"
   | UCS2Option -> Printf.sprintf "    CAMLreturn(pywrap_ucs2_option(result));"
-  | UCS4Option ->
-      Printf.sprintf "    CAMLreturn(pywrap_ucs4_option_and_free(result));"
+  | UCS4Option free ->
+      Printf.sprintf "    CAMLreturn(pywrap_ucs4_option_and_free(result, %s));"
+        (string_of_bool free)
 
 let space_if_not_starred s =
   if s.[String.length s - 1] = '*' then

@@ -872,7 +872,7 @@ pywrap_ucs2_option(int16_t *buffer)
 }
 
 static value
-pywrap_ucs4_option_and_free(int32_t *buffer)
+pywrap_ucs4_option_and_free(int32_t *buffer, bool free)
 {
     CAMLparam0();
     CAMLlocal2(result, array);
@@ -891,7 +891,9 @@ pywrap_ucs4_option_and_free(int32_t *buffer)
     }
     result = caml_alloc(1, 0);
     Store_field(result, 0, array);
-    Python_PyMem_Free(buffer);
+    if (free) {
+        Python_PyMem_Free(buffer);
+    }
     CAMLreturn(result);
 }
 
