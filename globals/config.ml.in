@@ -12,3 +12,5 @@ let get_temp_dir_name = @GET_TEMP_DIR_NAME_EXPR@
 
 let configure_flags = "@CONFIGURE_FLAGS@"
 let ocaml_version = "@OCAMLVERSION@"
+
+let python_interpreter = ref "@PYTHON@"

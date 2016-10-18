@@ -16,6 +16,8 @@
 - New scripting languages
 - more than one SP on the command line
 - interpret #if, as is done for #ifdef
+- restored support for with-python in configure and support for --python option
+  in the command line to use a specific python interpreter
 
 ** Bugfix:
 - Add more information in documentation, man pages and wiki

@@ -353,6 +353,8 @@ let short_options = [
    "    \"\" for a file in the current directory");
   "--kbuild-info", Arg.Set_string kbuild_info,
   "    <file> improve -dir by grouping related c files";
+  "--python", Arg.Set_string Config.python_interpreter,
+  "    Sets the path to the python interpreter";
   "--pyoutput", Arg.Set_string Flag.pyoutput,
   "    Sets output routine: Standard values: <coccilib.output.Gtk|coccilib.output.Console>";
   "--parse-handler",
