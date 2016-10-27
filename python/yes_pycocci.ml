@@ -172,7 +172,7 @@ let pycocci_init () =
   initialised := true;
   let _ = if not (Py.is_initialized ()) then
   	(if !Flag.show_misc then Common.pr2 "Initializing python\n%!";
-	Py.initialize ()) in
+	Py.initialize ~interpreter:!Config.python_interpreter ()) in
 
   (* set argv *)
   let argv0 = Sys.executable_name in

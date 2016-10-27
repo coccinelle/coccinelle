@@ -6,7 +6,8 @@ type compare = Pytypes.compare = LT | LE | EQ | NE | GT | GE
 
 type ucs = UCSNone | UCS2 | UCS4
 
-external load_library: int -> string option -> unit = "py_load_library"
+external load_library: string option -> unit = "py_load_library"
+external unsetenv: string -> unit = "py_unsetenv"
 external finalize_library: unit -> unit = "py_finalize_library"
 external pywrap_closure: string -> (pyobject -> pyobject) -> pyobject
     = "pywrap_closure"
@@ -84,13 +85,13 @@ let extract_version version_line =
 
 let extract_version_major_minor version =
   try
-    let first_dot = String.index version '.' in
-    let second_dot = String.index_from version (succ first_dot) '.' in
-    let major = int_of_string (String.sub version 0 first_dot) in
-    let minor =
-      int_of_string (substring_between version first_dot second_dot) in
-    (major, minor)
-  with Not_found | Failure _ ->
+    if String.length version >= 3 && (String.sub version 1 1 = ".") then
+      let major = int_of_string (String.sub version 0 1) in
+      let minor = int_of_string (String.sub version 2 1) in
+      (major, minor)
+    else
+      raise Exit
+  with Exit | Failure _ ->
     let msg =
       Printf.sprintf
         "Py.extract_version_major: unable to parse the version number '%s'"
@@ -134,6 +135,19 @@ let rec split string ?(from=0) separator =
       let word = String.sub string from (position - from) in
       word :: split string ~from:(succ position) separator
 
+let parent_dir filename =
+  let dirname = Filename.dirname filename in
+  Filename.concat dirname Filename.parent_dir_name
+
+let has_putenv = ref false
+
+let init_pythonhome pythonhome =
+  try
+    ignore (Sys.getenv "PYTHONHOME")
+  with Not_found ->
+    Unix.putenv "PYTHONHOME" pythonhome;
+    has_putenv := true
+
 let find_library_path version_major version_minor =
   let command =
     Printf.sprintf "pkg-config --libs python-%d.%d" version_major
@@ -144,10 +158,16 @@ let find_library_path version_major version_minor =
   with
     None ->
       let library_paths =
-        try
-          [Filename.concat (Filename.dirname (run_command "which python" false))
-             "../lib"]
-        with Failure _ -> [] in
+        match
+          try Some (Sys.getenv "PYTHONHOME")
+          with Not_found -> None
+        with
+          None -> []
+        | Some pythonhome ->
+            let prefix =
+              try String.sub pythonhome 0 (String.index pythonhome ':')
+              with Not_found -> pythonhome in
+            [Filename.concat prefix "lib"] in
       let library_filenames =
         [Printf.sprintf "python%d.%dm" version_major version_minor;
          Printf.sprintf "python%d.%d" version_major version_minor] in
@@ -177,8 +197,20 @@ let find_library_path version_major version_minor =
         | Some library_filename -> library_filename in
       (library_paths, [library_filename])
 
-let initialize_version_value () =
-  let version_line = run_command "python --version" true in
+let initialize_version_value interpreter =
+  begin
+    let python_full_path =
+      if String.contains interpreter '/' then interpreter
+      else
+        let which_python = Printf.sprintf "which \"%s\"" interpreter in
+        run_command which_python false in
+    let pythonhome = parent_dir python_full_path in
+    init_pythonhome pythonhome
+  end;
+  let version_line =
+    let python_version_cmd = Printf.sprintf "\"%s\" --version" interpreter in
+    try run_command python_version_cmd false
+    with Failure _ -> run_command python_version_cmd true in
   let version = extract_version version_line in
   let (version_major, version_minor) = extract_version_major_minor version in
   version_value := version;
@@ -187,7 +219,7 @@ let initialize_version_value () =
 
 let find_library () =
   try
-    load_library !version_major_value None
+    load_library None
   with Failure _ ->
     let (library_paths, library_filenames) =
       find_library_path !version_major_value !version_minor_value in
@@ -206,7 +238,9 @@ let find_library () =
         [] -> failwith "Py.find_library: unable to find the Python library"
       | filename :: others ->
           begin
-            try load_library !version_major_value (Some filename)
+            try
+              init_pythonhome (parent_dir filename);
+              load_library (Some filename)
             with Failure _ -> try_load_library others
           end in
     try_load_library library_filenames
@@ -220,16 +254,38 @@ let initialize_library () =
     | Some s -> set_python_home s
   end
 
-let initialize () =
+let get_version = Pywrappers.py_getversion
+
+let initialize ?(interpreter = "python") ?version () =
   if !initialized then
     failwith "Py.initialize: already initialized";
-  initialize_version_value ();
+  begin
+    match version with
+      Some (version_major, version_minor) ->
+        version_major_value := version_major;
+        version_minor_value := version_minor
+    | _ ->
+        initialize_version_value interpreter;
+  end;
   initialize_library ();
+  let version = get_version () in
+  let (version_major, version_minor) = extract_version_major_minor version in
+  if version_major != !version_major_value ||
+    version_minor != !version_minor_value then
+    begin
+      finalize_library ();
+      failwith "Version mismatch"
+    end;
   initialized := true
 
 let finalize () =
   assert_initialized ();
   finalize_library ();
+  if !has_putenv then
+    begin
+      unsetenv "PYTHONHOME";
+      has_putenv := false
+    end;
   initialized := false
 
 let version () =
@@ -334,8 +390,6 @@ let get_path () =
     Pywrappers.Python2.py_getpath ()
   else
     Pywrappers.Python3.py_getpath ()
-
-let get_version = Pywrappers.py_getversion
 
 let get_platform = Pywrappers.py_getplatform
 
@@ -449,6 +503,8 @@ let as_UTF8_string s =
   check_not_null (f s)
 
 module Type = struct
+  let none = None
+
   type t =
       Unknown
     | Bool
@@ -497,12 +553,12 @@ module Type = struct
     match get s with
       Bytes -> Some (pystring_asstringandsize s)
     | Unicode -> Some (pystring_asstringandsize (as_UTF8_string s))
-    | _ -> None
+    | _ -> none
 
   let string_of_repr item =
     match to_string (object_repr item) with
-      None -> failwith "Py.Object.string_of_repr"
-    | Some repr -> check_some repr
+      Some repr -> check_some repr
+    | _ (* None *) -> failwith "Py.Object.string_of_repr"
 
   let mismatch t o =
     failwith
@@ -1371,6 +1427,7 @@ module Utils = struct
     with e ->
       close_in_noerr channel;
       raise e
+
   let write_and_close channel f arg =
     try
       let result = f arg in

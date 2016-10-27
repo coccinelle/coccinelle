@@ -110,7 +110,13 @@ let (cexpression_of_string: string -> string -> Ast_c.expression) =
   let _ =
     Type_annoter_c.annotate_program !Type_annoter_c.initial_env
       (List.map fst program) in
-  program +> Common.find_some (fun (e,_) ->
+  let rec find_some p = function
+    | [] -> failwith (Printf.sprintf "make_expr: no expression found in: %s" s)
+    | x :: l ->
+	match p x with
+	| Some v -> v
+	| None -> find_some p l in
+  program +> find_some (fun (e,_) ->
     match e with
     | Ast_c.Definition ({Ast_c.f_body = compound},_) ->
 	(match List.rev compound with

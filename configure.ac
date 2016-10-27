@@ -276,9 +276,23 @@ dnl  variables:
 dnl    with_python: whether to enable the python feature (and what version)
 AC_ARG_ENABLE([python], [AS_HELP_STRING([--enable-python], [enable python scripting (yes/no) (default: auto)])])
 
-AS_IF([test -z "$enable_python"],
+AC_ARG_WITH([python], [AS_HELP_STRING([--with-python], [which python interpreter to use (default: python)])])
+
+AS_IF([test -n "$with_python"],
+[dnl
+  AC_SUBST([PYTHON], ["$with_python"])
+],
+[dnl
+  AC_SUBST([PYTHON], ["python"])
+])
+
+AS_IF([test "x$enable_python" != xno],
 [dnl
   AC_CHECK_COCCI_EXTPKG([pyml])  dnl  will set $enable_pyml to 'yes', 'no', or 'local'
+])
+
+AS_IF([test -z "$enable_python"],
+[dnl
   AS_IF([test "x$enable_pyml" != xno],
   [dnl
     AC_SUBST([enable_python], [yes])

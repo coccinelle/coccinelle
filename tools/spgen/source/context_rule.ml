@@ -52,7 +52,7 @@ let generate ~context_mode ~disj_map ~new_name ~rule_names ~rule =
           then MV.inherit_rule ~force:true ~new_rule:(Globals.get_context_name ~context_mode r) mv
           else mv
         in
-        MV.extract ~minus_rule ~rule_name:old_nm |> List.map inherit_name
+        List.map inherit_name (MV.extract ~minus_rule ~rule_name:old_nm)
       in
 
       let deps = Globals.add_context_dependency ~context_mode deps in

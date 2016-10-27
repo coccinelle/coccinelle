@@ -7,3 +7,5 @@ let rec mapi_from f i l =
 
 let mapi f l =
   mapi_from f 0 l
+
+let lazy_from_fun = Lazy.lazy_from_fun

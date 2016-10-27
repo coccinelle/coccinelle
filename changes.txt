@@ -16,6 +16,8 @@
 - New scripting languages
 - more than one SP on the command line
 - interpret #if, as is done for #ifdef
+- restored support for with-python in configure and support for --python option
+  in the command line to use a specific python interpreter
 
 ** Bugfix:
 - Add more information in documentation, man pages and wiki
@@ -40,6 +42,8 @@
 Luis Rodriguez.
 - Clean up temporary files when using parmap.  Issue identified by Luis
 Rodriguez.
+- Do nothing when there are no files to work on, avoiding parmap temporary
+  file creation issues.
 * 1.0.5
 ** Language:
 - In the Coccilib interface, the function file, giving the file being

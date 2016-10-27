@@ -1,5 +1,5 @@
 (*
- * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * This file is part of Coccinelle, licensed under the terms of the GPL v2.
  * See copyright.txt in the Coccinelle source code for more information.
  * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
@@ -20,9 +20,10 @@ module Ast = Ast_cocci
 module Ast0 = Ast0_cocci
 module V0 = Visitor_ast0
 module VT0 = Visitor_ast0_types
+module U = Unparse_ast0
 
 let current_rule = ref ""
-let verbose_iso = ref true
+let verbose_iso = ref false
 
 (* --------------------------------------------------------------------- *)
 
@@ -119,40 +120,41 @@ type reason =
 (* it would be nice if this would go to standard error *)
 let rec interpret_reason name line reason printer =
   Printf.eprintf
-    "warning: iso %s does not match the code below on line %d\n" name line;
-  printer(); Format.print_newline();
+    "warning: iso %s does not match the code below on line %d\n%s\n" name line
+    (printer());
   match reason with
     NotPure(Ast0.Pure,(_,var),nonpure) ->
       Printf.eprintf
-	"pure metavariable %s is matched against the following nonpure code:\n"
-	var;
-      Unparse_ast0.unparse_anything nonpure
+	"pure metavariable %s is matched against the following nonpure code:\n%s\n"
+	var
+	(U.unparse_x_to_string U.unparse_anything
+	   nonpure)
   | NotPure(Ast0.Context,(_,var),nonpure) ->
       Printf.eprintf
-	"context metavariable %s is matched against the following\nnoncontext code:\n"
-	var;
-      Unparse_ast0.unparse_anything nonpure
+	"context metavariable %s is matched against the following\nnoncontext code:\n%s\n"
+	var
+	(U.unparse_x_to_string U.unparse_anything
+	   nonpure)
   | NotPure(Ast0.PureContext,(_,var),nonpure) ->
       Printf.eprintf
-	"pure context metavariable %s is matched against the following\nnonpure or noncontext code:\n"
-	var;
-      Unparse_ast0.unparse_anything nonpure
+	"pure context metavariable %s is matched against the following\nnonpure or noncontext code:\n%s\n"
+	var
+	(U.unparse_x_to_string U.unparse_anything
+	   nonpure)
   | NotPureLength((_,var)) ->
       Printf.eprintf
 	"pure metavariable %s is matched against too much or too little code\n"
 	var;
   | ContextRequired(term) ->
       Printf.eprintf
-	"the following code matched is not uniformly minus or context,\nor contains a disjunction:\n";
-      Unparse_ast0.unparse_anything term
+	"the following code matched is not uniformly minus or context,\nor contains a disjunction:\n%s\n"
+	(U.unparse_x_to_string U.unparse_anything term)
   | Braces(s) ->
-      Printf.eprintf "braces must be all minus (plus code allowed) or all\ncontext (plus code not allowed in the body) to match:\n";
-      Unparse_ast0.statement "" s;
-      Format.print_newline()
+      Printf.eprintf "braces must be all minus (plus code allowed) or all\ncontext (plus code not allowed in the body) to match:\n%s\n"
+	(U.unparse_x_to_string (U.statement "") s)
   | Nest(s) ->
-      Printf.eprintf "iso with nest doesn't match whencode (TODO):\n";
-      Unparse_ast0.statement "" s;
-      Format.print_newline()
+      Printf.eprintf "iso with nest doesn't match whencode (TODO):\n%s\n"
+	(U.unparse_x_to_string (U.statement "") s)
   | Position(rule,name) ->
       Printf.eprintf "position variable %s.%s conflicts with an isomorphism\n"
 	rule name
@@ -2501,7 +2503,7 @@ let transform_type (metavars,alts,name) e =
 	(function t -> Ast0.TypeCTag t)
 	make_disj_type make_minus.VT0.rebuilder_rec_typeC
 	(rebuild_mcode start_line).VT0.rebuilder_rec_typeC
-	name Unparse_ast0.typeC extra_copy_other_plus do_nothing
+	name (U.unparse_x_to_string U.typeC) extra_copy_other_plus do_nothing
 	(function x ->
 	  match Ast0.unwrap x with Ast0.MetaType _ -> false | _ -> true)
   | _ -> (0,[],e)
@@ -2529,7 +2531,8 @@ let transform_expr (metavars,alts,name) e =
       (make_disj_expr e)
       make_minus.VT0.rebuilder_rec_expression
       (rebuild_mcode start_line).VT0.rebuilder_rec_expression
-      name Unparse_ast0.expression extra_copy_other_plus update_others
+      name (U.unparse_x_to_string U.expression) extra_copy_other_plus
+      update_others
       (function x ->
 	 match Ast0.unwrap x with
 	   Ast0.MetaExpr _ | Ast0.MetaExprList _ | Ast0.MetaErr _ -> false
@@ -2572,7 +2575,8 @@ let transform_decl (metavars,alts,name) e =
 	make_disj_decl
 	make_minus.VT0.rebuilder_rec_declaration
 	(rebuild_mcode start_line).VT0.rebuilder_rec_declaration
-	name Unparse_ast0.declaration extra_copy_other_plus do_nothing
+	name (U.unparse_x_to_string U.declaration) extra_copy_other_plus
+	do_nothing
 	(function _ -> true (* no metavars *))
   | _ -> (0,[],e)
 
@@ -2598,7 +2602,8 @@ let transform_stmt (metavars,alts,name) e =
 	(function s -> Ast0.StmtTag s)
 	make_disj_stmt make_minus.VT0.rebuilder_rec_statement
 	(rebuild_mcode start_line).VT0.rebuilder_rec_statement
-	name (Unparse_ast0.statement "") extra_copy_stmt_plus do_nothing
+	name (U.unparse_x_to_string (U.statement "")) extra_copy_stmt_plus
+	do_nothing
 	(function x ->
 	  match Ast0.unwrap x with
 	    Ast0.MetaStmt _ | Ast0.MetaStmtList _ -> false
@@ -2648,7 +2653,8 @@ let transform_top (metavars,alts,name) e =
 	      (function x ->
 		make_minus.VT0.rebuilder_rec_statement_dots x)
 	      (rebuild_mcode start_line).VT0.rebuilder_rec_statement_dots
-	      name Unparse_ast0.statement_dots extra_copy_other_plus do_nothing
+	      name (U.unparse_x_to_string U.statement_dots)
+	      extra_copy_other_plus do_nothing
 	      (function _ -> true)
 	| _ -> (0,[],stmts) in
       (count,mv,Ast0.rewrap e (Ast0.CODE res))
