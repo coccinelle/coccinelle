@@ -798,7 +798,7 @@ let not_format_string str clt =
   Ast0.wrap(Ast0.Constant (clt2mcode (Ast.String str) clt))
 
 let nometas str =
-  match Str.split (Str.regexp "@") str with
+  match Str.split_delim (Str.regexp "@") str with
     before::within::after::_ -> false (* need at least %@d@ *)
   | _ -> true
 

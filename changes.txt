@@ -24,6 +24,14 @@
 - typedefs from C code should not be used before their point of inference
   (saved_typedefs in cprogram_of_file)
 
+* 1.0.7
+** Language:
+** Features:
+- Better error reporting for unparsable terms when using make_expr etc in
+  script code.  Problem reported by Markus Elfring.
+** Bugfix:
+- Improved detection of metavariables in strings.  Problem reported by
+  Wolfram Sang.
 * 1.0.6
 ** Language:
 - Allow \ in #define in semantic patch rules, to allow body with multiple
