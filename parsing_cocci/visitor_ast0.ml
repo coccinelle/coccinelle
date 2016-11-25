@@ -372,9 +372,9 @@ let visitor mode bind option_default
 	| Ast0.TypeName(name) ->
 	    let (name_n,name) = string_mcode name in
 	    (name_n,Ast0.TypeName(name))
-	| Ast0.MetaType(name,pure) ->
+	| Ast0.MetaType(name,cstr,pure) ->
 	    let (name_n,name) = meta_mcode name in
-	    (name_n,Ast0.MetaType(name,pure))
+	    (name_n,Ast0.MetaType(name,cstr,pure))
 	| Ast0.DisjType(starter,types,mids,ender) ->
 	    do_disj starter types mids ender typeC
 	      (fun starter types mids ender ->

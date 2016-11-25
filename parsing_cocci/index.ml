@@ -98,7 +98,7 @@ let typeC t =
   | Ast0.StructUnionName(kind,name) -> [51]
   | Ast0.StructUnionDef(ty,lb,decls,rb) -> [117]
   | Ast0.TypeName(name) -> [52]
-  | Ast0.MetaType(name,_) -> [53]
+  | Ast0.MetaType(name,_,_) -> [53]
   | Ast0.DisjType(_,type_list,_,_) -> [130]
   | Ast0.OptType(ty) -> [45]
   | Ast0.AsType _ -> failwith "not possible"

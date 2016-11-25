@@ -250,6 +250,8 @@ let id_tokens lexbuf =
   | "virtual" when in_prolog || in_rule_name || in_meta ->
       (* don't want to allow virtual as a rule name *)
       check_context_linetype s; TVirtual
+  | "merge" when in_prolog || in_rule_name || in_meta ->
+      check_context_linetype s; TMerge
   | "disable" when in_rule_name ->  check_context_linetype s; TDisable
   | "extends" when in_rule_name -> check_context_linetype s; TExtends
   | "depends" when in_rule_name -> check_context_linetype s; TDepends
@@ -371,8 +373,8 @@ let init _ =
       let fn clt = TMetaId(name,Ast.CstrTrue,seed,Ast0.Impure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_type_meta :=
-    (fun name pure ->
-      let fn clt = TMetaType(name,pure,clt) in
+    (fun name cstr pure ->
+      let fn clt = TMetaType(name,cstr,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_init_meta :=
     (fun name pure ->

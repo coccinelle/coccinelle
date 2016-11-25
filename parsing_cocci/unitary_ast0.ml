@@ -131,7 +131,7 @@ let get_free checker t =
 
   let typeC r k t =
     match Ast0.unwrap t with
-      Ast0.MetaType(name,_) -> checker name
+      Ast0.MetaType(name,_,_) -> checker name
     | Ast0.DisjType(starter,types,mids,ender) ->
 	detect_unitary_frees(List.map r.VT0.combiner_rec_typeC types)
     | _ -> k t in
@@ -228,8 +228,8 @@ let update_unitary unitary =
 
   let typeC r k t =
     match Ast0.unwrap t with
-      Ast0.MetaType(name,_) ->
-	Ast0.rewrap t (Ast0.MetaType(name,is_unitary name))
+      Ast0.MetaType(name,cstr,_) ->
+	Ast0.rewrap t (Ast0.MetaType(name,cstr,is_unitary name))
     | _ -> k t in
 
   let parameter r k p =

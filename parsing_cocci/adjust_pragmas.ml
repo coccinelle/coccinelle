@@ -193,8 +193,8 @@ let rec left_ty t =
 	(function ty -> Ast0.StructUnionDef(ty,lb,decls,rb))
   | Ast0.TypeName(name) ->
       call_right left_mcode name t (function name -> Ast0.TypeName(name))
-  | Ast0.MetaType(name,x) ->
-      call_right left_mcode name t (function name -> Ast0.MetaType(name,x))
+  | Ast0.MetaType(name,cstr,x) ->
+      call_right left_mcode name t (function name -> Ast0.MetaType(name,cstr,x))
   | Ast0.AsType(ty,asty) -> failwith "not possible"
   | Ast0.DisjType(starter,types,mids,ender) -> None
   | Ast0.OptType(ty) ->

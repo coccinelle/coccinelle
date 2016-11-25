@@ -350,8 +350,8 @@ and unify_typeC t1 t2 =
       unify_dots unify_annotated_decl ddots decls1 decls2
   | (Ast.TypeName(t1),Ast.TypeName(t2)) -> unify_mcode t1 t2
 
-  | (Ast.MetaType(_,_,_),_)
-  | (_,Ast.MetaType(_,_,_)) -> true
+  | (Ast.MetaType(_,_,_,_),_)
+  | (_,Ast.MetaType(_,_,_,_)) -> true
   | _ -> false
 
 (* --------------------------------------------------------------------- *)

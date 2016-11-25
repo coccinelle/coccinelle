@@ -172,7 +172,7 @@ and left_typeC t =
   | Ast0.StructUnionName(kind,name) -> modif_before_mcode kind
   | Ast0.StructUnionDef(ty,lb,decls,rb) -> left_typeC ty
   | Ast0.TypeName(name) -> modif_before_mcode name
-  | Ast0.MetaType(name,_) -> modif_before_mcode name
+  | Ast0.MetaType(name,_,_) -> modif_before_mcode name
   | Ast0.DisjType(lp,types,mids,rp) -> List.exists left_typeC types
   | Ast0.OptType(ty) -> left_typeC ty
   | Ast0.AsType _ -> failwith "not possible"

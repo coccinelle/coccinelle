@@ -529,7 +529,7 @@ and typeC allminus t =
     | Ast0.Array(_,_,_,_) | Ast0.Decimal(_,_,_,_,_,_)
     | Ast0.EnumName(_,_) | Ast0.StructUnionName(_,_)
     | Ast0.StructUnionDef(_,_,_,_) | Ast0.EnumDef(_,_,_,_)
-    | Ast0.TypeName(_) | Ast0.MetaType(_,_) ->
+    | Ast0.TypeName(_) | Ast0.MetaType(_,_,_) ->
 	Ast.Type(allminus,None,rewrap t no_isos (base_typeC allminus t))
     | Ast0.DisjType(_,types,_,_) ->
 	Ast.DisjType(List.map (typeC allminus) types)
@@ -566,8 +566,8 @@ and base_typeC allminus t =
       Ast.StructUnionDef(typeC allminus ty,mcode lb,
 			 declaration_dots decls, mcode rb)
   | Ast0.TypeName(name) -> Ast.TypeName(mcode name)
-  | Ast0.MetaType(name,_) ->
-      Ast.MetaType(mcode name,unitary,false)
+  | Ast0.MetaType(name,cstr,_) ->
+      Ast.MetaType(mcode name,cstr,unitary,false)
   | _ -> failwith "ast0toast: unexpected type"
 
 (* --------------------------------------------------------------------- *)

@@ -464,11 +464,11 @@ and top_typeC tgt opt_allowed typ =
 	all_same opt_allowed tgt (mcode2line name) [mcode2arity name] in
       let name = mcode name in
       make_typeC typ tgt arity (Ast0.TypeName(name))
-  | Ast0.MetaType(name,pure) ->
+  | Ast0.MetaType(name,cstr,pure) ->
       let arity =
 	all_same opt_allowed tgt (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      make_typeC typ tgt arity (Ast0.MetaType(name,pure))
+      make_typeC typ tgt arity (Ast0.MetaType(name,cstr,pure))
   | Ast0.DisjType(starter,types,mids,ender) ->
       let types = List.map (typeC tgt) types in
       (match List.rev types with

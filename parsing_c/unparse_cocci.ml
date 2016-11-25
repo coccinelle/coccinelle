@@ -725,7 +725,7 @@ and typeC ty =
       dots_before_and_after force_newline annotated_decl decls;
       mcode print_string rb
   | Ast.TypeName(name)-> mcode print_string name
-  | Ast.MetaType(name,_,_) ->
+  | Ast.MetaType(name,_,_,_) ->
       handle_metavar name  (function
           Ast_c.MetaTypeVal exp ->
             pretty_print_c.Pretty_print_c.ty exp
@@ -798,7 +798,7 @@ and print_named_type ty id =
 		| _ -> failwith "complex array types not supported")
 	    | _ -> typeC ty; ty_space ty; ident id; k () in
 	  loop ty1 (function _ -> ())
-      | Ast.MetaType(name,_,_) ->
+      | Ast.MetaType(name,_,_,_) ->
 	  handle_metavar name  (function
               Ast_c.MetaTypeVal ty ->
 		pretty_print_c.Pretty_print_c.type_with_ident ty
@@ -821,7 +821,7 @@ and ft_space ty =
       let isptr =
 	match Ast.unwrap ty with
 	  Ast.Pointer(_,_) -> true
-	| Ast.MetaType(name,_,_) ->
+	| Ast.MetaType(name,_,_,_) ->
 	    let (res,name_string,line,lcol,rcol) = lookup_metavar name in
 	    (match res with
 	      None ->

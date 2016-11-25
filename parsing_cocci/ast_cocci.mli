@@ -308,7 +308,8 @@ and base_typeC =
 	string mcode (* { *) * annotated_decl dots * string mcode (* } *)
   | TypeName        of string mcode
 
-  | MetaType        of meta_name mcode * keep_binding * inherited
+  | MetaType        of meta_name mcode * general_constraint * keep_binding *
+	inherited
 
 and fullType = base_fullType wrap
 and typeC = base_typeC wrap
@@ -802,7 +803,8 @@ type 'a transformer = {
     enumName: (string mcode -> ident option -> 'a) option;
     structUnionName: (structUnion mcode -> ident option -> 'a) option;
     typeName: (string mcode -> 'a) option;
-    metaType: (meta_name mcode -> keep_binding -> inherited -> 'a) option
+    metaType: (meta_name mcode -> general_constraint -> keep_binding ->
+      inherited -> 'a) option
   }
 (** ['a transformer] is an auxiliary record type for the iterators fullType_map,
  * fullType_fold and fullType_iter.

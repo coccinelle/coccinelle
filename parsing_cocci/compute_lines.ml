@@ -616,10 +616,10 @@ and typeC t =
       let name = normal_mcode name in
       let ln = promote_mcode name in
       mkres t (Ast0.TypeName(name)) ln ln
-  | Ast0.MetaType(name,a) ->
+  | Ast0.MetaType(name,cstr,a) ->
       let name = normal_mcode name in
       let ln = promote_mcode name in
-      mkres t (Ast0.MetaType(name,a)) ln ln
+      mkres t (Ast0.MetaType(name,cstr,a)) ln ln
   | Ast0.DisjType(starter,types,mids,ender) ->
       do_disj t starter types mids ender typeC
 	(fun starter types mids ender ->

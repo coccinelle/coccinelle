@@ -238,7 +238,7 @@ let types ~rn = function
         | _ -> acc in
       let rec get_meta_type acc ty =
         match Ast_cocci.unwrap ty with
-          Ast.MetaType(mn, b, _) ->
+          Ast.MetaType(mn, _, b, _) ->
             let mn' = Ast_cocci.unwrap_mcode mn in
             let metavar = make_mv "type " (name_tup ~rn mn') (bin b) in
             MVSet.add metavar acc
@@ -289,7 +289,7 @@ let mcode ~rn ~mc:(_,_,_,_,pos,_) =
         handle_metavar ~typ:"declaration " ~mn ~positions:!p ~set
     | Ast0.IdentTag {Ast0.node = Ast0.MetaId((mn,_,_,_,p,_),_,_,_); _} ->
         handle_metavar ~typ:"identifier " ~mn ~positions:!p ~set
-    | Ast0.TypeCTag {Ast0.node = Ast0.MetaType((mn,_,_,_,p,_),_); _} ->
+    | Ast0.TypeCTag {Ast0.node = Ast0.MetaType((mn,_,_,_,p,_),_,_); _} ->
         handle_metavar ~typ:"type " ~mn ~positions:!p ~set
     | Ast0.MetaPosTag(Ast0.MetaPos((mn,_,_,_,_,_), mns, colt)) ->
         let oneconstr constr = general_constraint ~rn constr in
@@ -463,7 +463,7 @@ let metavar_combiner rn =
 
   let tyfn c fn v =
     match Ast0.unwrap v with
-    | Ast0.MetaType (mc, pure) -> meta_mc_format ~mc ~typ:"type " ~constr:""
+    | Ast0.MetaType (mc, _, pure) -> meta_mc_format ~mc ~typ:"type " ~constr:""
     | Ast0.AsType (tc1, tc2) ->
         let ty = c.VT0.combiner_rec_typeC in as_format tc1 tc2 ty ty
 

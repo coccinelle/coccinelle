@@ -356,7 +356,7 @@ let combiner bind option_default
 	  let lrb = string_mcode rb in
 	  multibind [lty; llb; ldecls; lrb]
       | Ast.TypeName(name) -> string_mcode name
-      | Ast.MetaType(name,_,_) -> meta_mcode name in
+      | Ast.MetaType(name,_,_,_) -> meta_mcode name in
     tyfn all_functions k ty
 
   and named_type ty id =
@@ -1227,8 +1227,8 @@ let rebuilder
 	    let lrb = string_mcode rb in
 	    Ast.StructUnionDef (lty, llb, ldecls, lrb)
 	| Ast.TypeName(name) -> Ast.TypeName(string_mcode name)
-	| Ast.MetaType(name,keep,inherited) ->
-	    Ast.MetaType(meta_mcode name,keep,inherited)) in
+	| Ast.MetaType(name,cstr,keep,inherited) ->
+	    Ast.MetaType(meta_mcode name,cstr,keep,inherited)) in
     tyfn all_functions k ty
 
   and declaration d =

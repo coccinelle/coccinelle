@@ -391,7 +391,7 @@ let do_get_constants constants keywords env (neg_pos,_) =
     Ast.fullType_fold { Ast.empty_transformer with
       Ast.decimal = Some (fun _ _ _ _ _ _ -> add (keywords "decimal"));
       metaType =
-	Some (fun tyname _ _ -> add (inherited (Ast.unwrap_mcode tyname)));
+	Some (fun tyname _ _ _ -> add (inherited (Ast.unwrap_mcode tyname)));
       typeName = Some (fun tyname -> add (constants (Ast.unwrap_mcode tyname)));
       enumName = Some enumOrStructUnionName;
       structUnionName = Some enumOrStructUnionName
@@ -487,7 +487,7 @@ let do_get_constants constants keywords env (neg_pos,_) =
     match Ast.unwrap ty with
       Ast.BaseType(ty1,strings) -> bind (k ty) (baseType ty1)
     | Ast.TypeName(name) -> bind (k ty) (constants (Ast.unwrap_mcode name))
-    | Ast.MetaType(name,_,_) -> bind (minherited name) (k ty)
+    | Ast.MetaType(name,_,_,_) -> bind (minherited name) (k ty)
     | _ -> k ty in
 
   let declaration r k d =

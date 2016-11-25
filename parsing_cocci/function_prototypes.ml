@@ -152,7 +152,7 @@ and strip =
     donothing r k
       (Ast0.rewrap e
 	 (match Ast0.unwrap e with
-	   Ast0.MetaType(nm,pure) -> Ast0.MetaType(nm,Ast0.Pure)
+	   Ast0.MetaType(nm,cstr,pure) -> Ast0.MetaType(nm,cstr,Ast0.Pure)
 	 | e -> e)) in
 
   let param r k e =
@@ -242,8 +242,8 @@ let rec attach_right strings ty =
     | Ast0.StructUnionDef(ty,lb,decls,rb) ->
 	Ast0.StructUnionDef(ty,lb,decls,right_attach_mcode strings rb)
     | Ast0.TypeName(nm) -> Ast0.TypeName(right_attach_mcode strings nm)
-    | Ast0.MetaType(nm,pure) ->
-	Ast0.MetaType(right_attach_mcode strings nm,pure)
+    | Ast0.MetaType(nm,cstr,pure) ->
+	Ast0.MetaType(right_attach_mcode strings nm,cstr,pure)
     | Ast0.AsType(ty,asty) -> Ast0.AsType(attach_right strings ty,asty)
     | _ -> failwith "disj and opt type not supported")
 

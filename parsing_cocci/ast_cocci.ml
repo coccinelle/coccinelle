@@ -326,7 +326,8 @@ and base_typeC =
 	string mcode (* { *) * annotated_decl dots * string mcode (* } *)
   | TypeName        of string mcode (* pad: should be 'of ident' ? *)
 
-  | MetaType        of meta_name mcode * keep_binding * inherited
+  | MetaType        of meta_name mcode * general_constraint * keep_binding *
+	inherited
 
 and fullType = base_fullType wrap
 and typeC = base_typeC wrap
@@ -1036,7 +1037,7 @@ let rec string_of_typeC ty =
   | EnumDef (ty', _, _, _)
   | StructUnionDef (ty', _, _, _) -> string_of_fullType ty'
   | TypeName (name) -> unwrap_mcode name ^ " "
-  | MetaType (m, _, _) -> string_of_meta_name (unwrap_mcode m) ^ " "
+  | MetaType (m, _, _, _) -> string_of_meta_name (unwrap_mcode m) ^ " "
 and string_of_fullType ty =
   match unwrap ty with
     Type (_, None, ty') -> string_of_typeC ty'
@@ -1063,7 +1064,8 @@ type 'a transformer = {
     enumName: (string mcode -> ident option -> 'a) option;
     structUnionName: (structUnion mcode -> ident option -> 'a) option;
     typeName: (string mcode -> 'a) option;
-    metaType: (meta_name mcode -> keep_binding -> inherited -> 'a) option
+    metaType: (meta_name mcode -> general_constraint -> keep_binding ->
+      inherited -> 'a) option
   }
 
 let empty_transformer = {
@@ -1115,11 +1117,11 @@ and typeC_map tr ty =
           None -> ty
         | Some f -> rewrap ty (f name)
       end
-  | MetaType (name, keep, inherited) ->
+  | MetaType (name, cstr, keep, inherited) ->
       begin
         match tr.metaType with
           None -> ty
-        | Some f -> rewrap ty (f name keep inherited)
+        | Some f -> rewrap ty (f name cstr keep inherited)
       end
   | Decimal (s0, s1, e0, s2, e1, s3) ->
       begin
@@ -1159,8 +1161,8 @@ and typeC_fold tr ty v =
   | StructUnionName (su, ident) ->
       Common.default v (fun f -> f su ident v) tr.structUnionName
   | TypeName name -> Common.default v (fun f -> f name v) tr.typeName
-  | MetaType (name, keep, inherited) ->
-      Common.default v (fun f -> f name keep inherited v) tr.metaType
+  | MetaType (name, cstr, keep, inherited) ->
+      Common.default v (fun f -> f name cstr keep inherited v) tr.metaType
 
 let fullType_iter tr ty =
   fullType_fold {
@@ -1172,7 +1174,8 @@ let fullType_iter tr ty =
       (fun f su ident () -> f su ident) tr.structUnionName;
     typeName = Common.map_option (fun f name () -> f name) tr.typeName;
     metaType = Common.map_option
-      (fun f name keep inherited () -> f name keep inherited) tr.metaType
+      (fun f name cstr keep inherited () -> f name cstr keep inherited)
+    tr.metaType
   } ty ()
 
 let rec ident_fold_meta_names f ident v =
@@ -1200,7 +1203,7 @@ let fullType_fold_meta_names f ty v =
 	(fun e -> expression_fold_ident (ident_fold_meta_names f) e v) e2);
     enumName = Some enumOrStructUnionName;
     structUnionName = Some enumOrStructUnionName;
-    metaType = Some (fun tyname _ _ v -> f (unwrap_mcode tyname) v)
+    metaType = Some (fun tyname _ _ _ v -> f (unwrap_mcode tyname) v)
   } ty v
 
 let meta_names_of_fullType ty =

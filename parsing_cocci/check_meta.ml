@@ -222,7 +222,7 @@ and typeC old_metas table minus t =
   | Ast0.Decimal(dec,lp,length,comma,precision_opt,rp) ->
       expression ID old_metas table minus length;
       get_opt (expression ID old_metas table minus) precision_opt
-  | Ast0.MetaType(name,_) ->
+  | Ast0.MetaType(name,_,_) ->
       check_table table minus name
   | Ast0.AsType(ty,asty) -> failwith "not generated yet"
   | Ast0.DisjType(_,types,_,_) ->

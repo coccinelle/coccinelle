@@ -639,7 +639,7 @@ let equal_typeC t1 t2 =
      Ast0.StructUnionDef(_,lb2,_,rb2)) ->
        equal_mcode lb1 lb2 && equal_mcode rb1 rb2
   | (Ast0.TypeName(name1),Ast0.TypeName(name2)) -> equal_mcode name1 name2
-  | (Ast0.MetaType(name1,_),Ast0.MetaType(name2,_)) ->
+  | (Ast0.MetaType(name1,_,_),Ast0.MetaType(name2,_,_)) ->
       equal_mcode name1 name2
   | (Ast0.DisjType(starter1,_,mids1,ender1),
      Ast0.DisjType(starter2,_,mids2,ender2)) ->

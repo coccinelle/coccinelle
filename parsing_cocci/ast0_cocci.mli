@@ -207,7 +207,8 @@ and base_typeC =
   | StructUnionDef  of typeC (* either StructUnionName or metavar *) *
 	string mcode (* { *) * declaration dots * string mcode (* } *)
   | TypeName        of string mcode
-  | MetaType        of Ast_cocci.meta_name mcode * pure
+  | MetaType        of Ast_cocci.meta_name mcode * Ast_cocci.general_constraint
+	* pure
   | AsType          of typeC * typeC (* as type, always metavar *)
   | DisjType        of string mcode * typeC list * (* only after iso *)
                        string mcode list (* the |s *)  * string mcode

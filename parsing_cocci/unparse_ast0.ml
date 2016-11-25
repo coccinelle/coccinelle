@@ -330,7 +330,7 @@ and typeC t =
 	  dots force_newline declaration decls;
 	  mcode print_string rb
       | Ast0.TypeName(name)-> mcode print_string name; print_string " "
-      | Ast0.MetaType(name,_)-> mcode print_meta name; print_string " "
+      | Ast0.MetaType(name,_,_)-> mcode print_meta name; print_string " "
       | Ast0.DisjType(_,types,_,_) -> do_disj types typeC "|"
       | Ast0.OptType(ty) -> print_string "?"; typeC ty
       | Ast0.AsType(ty,asty) -> typeC ty; print_string "@"; typeC asty)

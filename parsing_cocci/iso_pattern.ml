@@ -430,7 +430,7 @@ let match_maker checks_needed context_required whencode_allowed =
     let typeC r k t =
       bind (bind (pure_mcodekind (Ast0.get_mcodekind t)) (k t))
 	(match Ast0.unwrap t with
-	  Ast0.MetaType(name,pure) -> pure
+	  Ast0.MetaType(name,_cstr,pure) -> pure
 	| _ -> Ast0.Impure) in
 
     let init r k t =
@@ -583,12 +583,12 @@ let match_maker checks_needed context_required whencode_allowed =
 	    Some ts ->
               let has_metatype ty =
                 match Ast0.unwrap ty with
-                  Ast0.MetaType (_, _) -> true
+                  Ast0.MetaType (_, _, _) -> true
                 | _ -> false in
               if List.exists has_metatype ts
 	      then
 		(match List.map Ast0.unwrap ts with
-                  [Ast0.MetaType (tyname, _)] ->
+                  [Ast0.MetaType (tyname, _, _)] ->
 		    let expty =
 		      match (Ast0.unwrap expr,Ast0.get_type expr) with
 		  (* easier than updating type inferencer to manage multiple
@@ -817,7 +817,7 @@ let match_maker checks_needed context_required whencode_allowed =
     in return (c1="," && e1="......" && c2=c1 && e2=e1)
   and match_typeC pattern t =
     match Ast0.unwrap pattern with
-      Ast0.MetaType(name,pure) ->
+      Ast0.MetaType(name,_,pure) ->
 	add_pure_binding name pure pure_sp_code.VT0.combiner_rec_typeC
 	  (function ty -> Ast0.TypeCTag ty)
 	  t
@@ -1720,7 +1720,7 @@ let instantiate bindings mv_bindings model =
 		| Some types ->
 		    let rec renamer ty =
                       match Ast0.unwrap ty with
-                        Ast0.MetaType(name, pure) ->
+                        Ast0.MetaType(name, cstr, pure) ->
                           (match
                             lookup (Ast0.unwrap_mcode name,(),(),(),None,-1)
                               bindings mv_bindings
@@ -1732,7 +1732,7 @@ let instantiate bindings mv_bindings model =
                               let new_mv_wrapped =
                                 Ast0.rewrap_mcode name new_mv in
                               Ast0.rewrap ty (
-                                Ast0.MetaType(new_mv_wrapped,pure)))
+                                Ast0.MetaType(new_mv_wrapped,cstr,pure)))
                       | Ast0.ConstVol(cv,ty') ->
                           Ast0.rewrap ty (Ast0.ConstVol(cv,renamer ty'))
                       | Ast0.Pointer(ty', s) ->
@@ -1917,14 +1917,14 @@ let instantiate bindings mv_bindings model =
   let tyfn r k e =
     let e = k e in
     match Ast0.unwrap e with
-      Ast0.MetaType(name,pure) ->
+      Ast0.MetaType(name,cstr,pure) ->
 	(rebuild_mcode None).VT0.rebuilder_rec_typeC
 	  (match lookup name bindings mv_bindings with
 	    Common.Left(Ast0.TypeCTag(ty)) -> ty
 	  | Common.Left(_) -> failwith "not possible 1"
 	  | Common.Right(new_mv) ->
 	      Ast0.rewrap e
-		(Ast0.MetaType(Ast0.set_mcode_data new_mv name,pure)))
+		(Ast0.MetaType(Ast0.set_mcode_data new_mv name,cstr,pure)))
     | _ -> e in
 
   let initfn r k e =
@@ -2256,7 +2256,7 @@ let get_name bindings = function
 		     match Ast.unwrap ty with
 		       Ast.Type (m,cv,t) ->
 			 (match Ast.unwrap t with
-			   Ast.MetaType(nm,keep,inh) ->
+			   Ast.MetaType(nm,cstr,keep,inh) ->
 			     (try
 			       let term (nm,_,_,_) = nm in (* for Ast *)
 			       let newname = List.assoc (term nm) bindings in

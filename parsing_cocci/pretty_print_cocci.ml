@@ -437,7 +437,7 @@ and typeC ty =
       dots force_newline (annotated_decl "") decls;
       mcode print_string rb
   | Ast.TypeName(name) -> mcode print_string name; print_string " "
-  | Ast.MetaType(name,_,_) ->
+  | Ast.MetaType(name,_,_,_) ->
       mcode print_meta name; print_string " "
 
 and baseType ty = print_string (Ast.string_of_baseType ty ^ " ")

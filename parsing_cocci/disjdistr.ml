@@ -94,7 +94,7 @@ and disjtypeC bty =
       disjmult2 (disjty ty) (disjdots anndisjdecl decls)
 	(function ty -> function decls ->
 	  Ast.rewrap bty (Ast.StructUnionDef(ty,lb,decls,rb)))
-  | Ast.TypeName(_) | Ast.MetaType(_,_,_) -> [bty]
+  | Ast.TypeName(_) | Ast.MetaType(_,_,_,_) -> [bty]
 
 and anndisjdecl d =
   match Ast.unwrap d with

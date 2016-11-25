@@ -216,7 +216,7 @@ and base_typeC =
   | StructUnionDef  of typeC (* either StructUnionName or metavar *) *
 	string mcode (* { *) * declaration dots * string mcode (* } *)
   | TypeName        of string mcode
-  | MetaType        of Ast.meta_name mcode * pure
+  | MetaType        of Ast.meta_name mcode * Ast.general_constraint * pure
   | AsType          of typeC * typeC (* as type, always metavar *)
   | DisjType        of string mcode * typeC list * (* only after iso *)
                        string mcode list (* the |s *)  * string mcode
@@ -662,7 +662,7 @@ let rec meta_pos_name = function
       | _ -> failwith "bad metavariable")
   | TypeCTag(t) ->
       (match unwrap t with
-	MetaType(name,_pure) -> name
+	MetaType(name,_cstr,_pure) -> name
       | _ -> failwith "bad metavariable")
   | DeclTag(d) ->
       (match unwrap d with
@@ -703,7 +703,7 @@ let rec meta_names_of_typeC ty =
   | Array (ty, _, _, _) -> meta_names_of_typeC ty
   | EnumName (_, Some ident)
   | StructUnionName(_, Some ident) -> meta_names_of_ident ident
-  | MetaType (tyname, _) -> [unwrap_mcode tyname]
+  | MetaType (tyname, _, _) -> [unwrap_mcode tyname]
   | Decimal (_, _, e1, _, e2, _) ->
       let mn1 = meta_names_of_expression e1 in
       let mn2 = Common.default [] meta_names_of_expression e2 in

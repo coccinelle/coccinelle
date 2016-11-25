@@ -84,6 +84,7 @@ let token2c (tok,_) =
   | PC.TRuleName str -> "rule_name-"^str
   | PC.TUsing -> "using"
   | PC.TVirtual -> "virtual"
+  | PC.TMerge -> "merge"
   | PC.TPathIsoFile str -> "path_iso_file-"^str
   | PC.TDisable -> "disable"
   | PC.TExtends -> "extends"
@@ -221,7 +222,7 @@ let token2c (tok,_) =
   | PC.TMetaGlobalIdExp(_,_,_,_,clt) -> add_clt "globalidexpmeta" clt
   | PC.TMetaExpList(_,_,_,clt) -> add_clt "explistmeta" clt
   | PC.TMetaId(nm,_,_,_,clt)    -> "idmeta-"^add_clt (Dumper.dump nm) clt
-  | PC.TMetaType(_,_,clt)    -> add_clt "typemeta" clt
+  | PC.TMetaType(_,_,_,clt)    -> add_clt "typemeta" clt
   | PC.TMetaInit(_,_,clt)    -> add_clt "initmeta" clt
   | PC.TMetaInitList(_,_,_,clt)    -> add_clt "initlistmeta" clt
   | PC.TMetaDecl(_,_,clt)    -> add_clt "declmeta" clt
@@ -353,7 +354,8 @@ let plus_attachable only_plus (tok,_) =
   | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
   | PC.TMetaId(_,_,_,_,clt)
-  | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt) | PC.TMetaInitList(_,_,_,clt)
+  | PC.TMetaType(_,_,_,clt) | PC.TMetaInit(_,_,clt)
+  | PC.TMetaInitList(_,_,_,clt)
   | PC.TMetaStm(_,_,clt) | PC.TMetaStmList(_,_,_,clt)
   | PC.TMetaDParamList(_,_,_,clt)
   | PC.TMetaDecl(_,_,clt) | PC.TMetaField(_,_,clt)
@@ -435,7 +437,8 @@ let get_clt (tok,_) =
   | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
   | PC.TMetaId(_,_,_,_,clt)
-  | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt) | PC.TMetaInitList(_,_,_,clt)
+  | PC.TMetaType(_,_,_,clt) | PC.TMetaInit(_,_,clt)
+  | PC.TMetaInitList(_,_,_,clt)
   | PC.TMetaStm(_,_,clt) | PC.TMetaStmList(_,_,_,clt)
   | PC.TMetaDParamList(_,_,_,clt)
   | PC.TMetaDecl(_,_,clt) | PC.TMetaField(_,_,clt)
@@ -469,6 +472,7 @@ let get_clt (tok,_) =
   | PC.TWhy0 -> failwith "No clt attached to token TWhy0"
   | PC.TWhitespace _ -> failwith "No clt attached to token TWhitespace"
   | PC.TVirtual -> failwith "No clt attached to token TVirtual"
+  | PC.TMerge -> failwith "No clt attached to token TMerge"
   | PC.TUsing -> failwith "No clt attached to token TUsing"
   | PC.TUnderscore -> failwith "No clt attached to token TUnderscore"
   | PC.TTypedef -> failwith "No clt attached to token TTypedef"
@@ -638,7 +642,7 @@ let update_clt (tok,x) clt =
   | PC.TMetaId(a,b,c,d,_)    -> (PC.TMetaId(a,b,c,d,clt),x)
   | PC.TMetaAssignOp(a,b,c,_)    -> (PC.TMetaAssignOp(a,b,c,clt),x)
   | PC.TMetaBinaryOp(a,b,c,_)    -> (PC.TMetaBinaryOp(a,b,c,clt),x)
-  | PC.TMetaType(a,b,_)    -> (PC.TMetaType(a,b,clt),x)
+  | PC.TMetaType(a,b,c,_)    -> (PC.TMetaType(a,b,c,clt),x)
   | PC.TMetaInit(a,b,_)    -> (PC.TMetaInit(a,b,clt),x)
   | PC.TMetaInitList(a,b,c,_) -> (PC.TMetaInitList(a,b,c,clt),x)
   | PC.TMetaDecl(a,b,_)    -> (PC.TMetaDecl(a,b,clt),x)
@@ -701,6 +705,7 @@ let update_clt (tok,x) clt =
   | PC.TWhy0 -> assert false
   | PC.TWhitespace _ -> assert false
   | PC.TVirtual -> assert false
+  | PC.TMerge -> assert false
   | PC.TUsing -> assert false
   | PC.TUnderscore -> assert false
   | PC.TTypedef -> assert false
@@ -843,7 +848,8 @@ let split_token ((tok,_) as t) =
   | PC.TAttribute
   | PC.TType | PC.TParameter | PC.TLocal | PC.TGlobal | PC.Tlist | PC.TFresh
   | PC.TCppConcatOp | PC.TPure
-  | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TVirtual | PC.TDisable
+  | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TVirtual | PC.TMerge
+  | PC.TDisable
   | PC.TExtends | PC.TPathIsoFile(_)
   | PC.TDepends | PC.TOn | PC.TFile | PC.TIn
   | PC.TEver | PC.TNever | PC.TExists | PC.TForall
@@ -880,7 +886,7 @@ let split_token ((tok,_) as t) =
   | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
   | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
-  | PC.TMetaId(_,_,_,_,clt) | PC.TMetaType(_,_,clt)
+  | PC.TMetaId(_,_,_,_,clt) | PC.TMetaType(_,_,_,clt)
   | PC.TMetaInit(_,_,clt) | PC.TMetaInitList(_,_,_,clt)
   | PC.TMetaDecl(_,_,clt) | PC.TMetaField(_,_,clt)
   | PC.TMetaFieldList(_,_,_,clt)
@@ -1093,7 +1099,7 @@ let detect_types in_meta_decls l =
     | (PC.TMetaBinaryOp(_,_,_,_),_)
     | (PC.TMetaGlobalIdExp(_,_,_,_,_),_)
     | (PC.TMetaExpList(_,_,_,_),_)
-    | (PC.TMetaType(_,_,_),_)
+    | (PC.TMetaType(_,_,_,_),_)
     | (PC.TMetaInit(_,_,_),_)
     | (PC.TMetaInitList(_,_,_,_),_)
     | (PC.TMetaDecl(_,_,_),_)
@@ -1201,7 +1207,7 @@ let token2line (tok,_) =
   | PC.TMetaLocalIdExp(_,_,_,_,clt) | PC.TMetaGlobalIdExp(_,_,_,_,clt)
   | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
-  | PC.TMetaId(_,_,_,_,clt) | PC.TMetaType(_,_,clt)
+  | PC.TMetaId(_,_,_,_,clt) | PC.TMetaType(_,_,_,clt)
   | PC.TMetaInit(_,_,clt) | PC.TMetaInitList(_,_,_,clt)
   | PC.TMetaDecl(_,_,clt) | PC.TMetaField(_,_,clt)
   | PC.TMetaFieldList(_,_,_,clt)
@@ -1761,11 +1767,11 @@ let consume_minus_positions toks =
 	    (function name ->
 	      Ast0.InitTag(Ast0.wrap(Ast0.MetaInit(name,pure)))) in
 	(loop_other (x::xs))
-    | x::(PC.TPArob _,_)::(PC.TMetaType(name,pure,clt),_)::xs ->
+    | x::(PC.TPArob _,_)::(PC.TMetaType(name,cstr,pure,clt),_)::xs ->
 	let x =
 	  process_minus_positions x name clt
 	    (function name ->
-	      Ast0.TypeCTag(Ast0.wrap(Ast0.MetaType(name,pure)))) in
+	      Ast0.TypeCTag(Ast0.wrap(Ast0.MetaType(name,cstr,pure)))) in
 	(loop_other (x::xs))
     | x::(PC.TPArob _,_)::(PC.TMetaDecl(name,pure,clt),_)::xs ->
 	let x =

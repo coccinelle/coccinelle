@@ -78,7 +78,7 @@ let add_virt_id_meta_not_found: meta_type ref = ref uninitialized_add_meta
 let add_fresh_id_meta: (Ast.meta_name -> Ast.seed -> unit) ref =
   ref uninitialized_add_meta
 
-let add_type_meta: meta_type ref = ref uninitialized_add_meta
+let add_type_meta: id_meta_type ref = ref uninitialized_add_meta
 let add_init_meta: meta_type ref = ref uninitialized_add_meta
 let add_initlist_meta: list_meta_type ref = ref uninitialized_add_meta
 let add_param_meta: meta_type ref = ref uninitialized_add_meta

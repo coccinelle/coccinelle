@@ -93,7 +93,7 @@ let rec is_int_type_unwrap = function
   | Ast0.BaseType (Ast.LongType, _)
   | Ast0.BaseType (Ast.ShortType, _)
   | Ast0.BaseType (Ast.SizeType, _)
-  | Ast0.MetaType(_,_)
+  | Ast0.MetaType(_,_,_)
   | Ast0.TypeName _
   | Ast0.EnumName _
   | Ast0.Signed(_,None) -> true
@@ -248,7 +248,7 @@ let rec propagate_types env =
 		 None -> None
 	       | Some (Ast0.Array(ty, _, _, _)) -> Some ty
 	       | Some (Ast0.Pointer(ty, _)) -> Some ty
-	       | Some (Ast0.MetaType(_,_)) -> None
+	       | Some (Ast0.MetaType(_,_,_)) -> None
 	       | Some x -> err exp1 (Ast0.wrap x) "ill-typed array reference")
 	      (* pad: should handle structure one day and look 'field' in environment *)
 	| Ast0.RecordAccess(exp,pt,field) ->
@@ -259,7 +259,7 @@ let rec propagate_types env =
 	       | Some (Ast0.StructUnionName(_,_)) -> None
 	       | Some (Ast0.TypeName(s)) ->
 			  None
-	       | Some (Ast0.MetaType(_,_)) -> None
+	       | Some (Ast0.MetaType(_,_,_)) -> None
 	       | Some x ->
                    err exp (Ast0.wrap x) "non-structure type in field ref")
 	| Ast0.RecordPtAccess(exp,ar,field) ->
@@ -272,7 +272,7 @@ let rec propagate_types env =
                      Common.map_option Ast0.unwrap (strip_cv (Some t))
                    with
 		      | Some (Ast0.BaseType(Ast.Unknown, _))
-		      | Some (Ast0.MetaType(_, _))
+		      | Some (Ast0.MetaType(_, _, _))
 		      | Some (Ast0.TypeName(_))
 		      | Some (Ast0.StructUnionName(_, _)) -> None
 		      | Some x ->
@@ -281,7 +281,7 @@ let rec propagate_types env =
                           err exp ty
 			    "non-structure pointer type in field ref"
 		      |	_ -> failwith "not possible")
-               | Some (Ast0.MetaType(_, _))
+               | Some (Ast0.MetaType(_, _, _))
                | Some (Ast0.TypeName(_)) -> None
                | Some x ->
                    let ty = Ast0.wrap x in

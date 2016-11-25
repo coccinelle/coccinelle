@@ -106,9 +106,9 @@ let coerce_tmeta newty name builder matcher =
     Hashtbl.add meta_metatable name builder
 
 let tmeta_to_type (name,pure,clt) =
-  (coerce_tmeta "a type" name (TMetaType(name,pure,clt))
-     (function TMetaType(_,_,_) -> true | _ -> false));
-  Ast0.wrap(Ast0.MetaType(P.clt2mcode name clt,pure))
+  (coerce_tmeta "a type" name (TMetaType(name,Ast.CstrTrue,pure,clt))
+     (function TMetaType(_,_,_,_) -> true | _ -> false));
+  Ast0.wrap(Ast0.MetaType(P.clt2mcode name clt,Ast.CstrTrue,pure))
 
 let tmeta_to_field (name,pure,clt) =
   (coerce_tmeta "a field" name (TMetaField(name,pure,clt))
@@ -142,8 +142,8 @@ let tmeta_to_binaryOp (name,pure,clt) =
     (Ast0.MetaBinary(P.clt2mcode name clt,Ast.CstrTrue, pure),clt)
 
 let tmeta_to_statement (name,pure,clt) =
-  (coerce_tmeta "a statement" name (TMetaType(name,pure,clt))
-     (function TMetaType(_,_,_) -> true | _ -> false));
+  (coerce_tmeta "a statement" name (TMetaType(name,Ast.CstrTrue,pure,clt))
+     (function TMetaType(_,_,_,_) -> true | _ -> false));
   P.meta_stm (name,pure,clt)
 
 let tmeta_to_seed_id (name,pure,clt) =
@@ -215,7 +215,7 @@ let constraint_code_counter = ref 0
 %token TPosAny
 %token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall
 %token TFile TIn
-%token TScript TInitialize TFinalize TNothing TVirtual
+%token TScript TInitialize TFinalize TNothing TVirtual TMerge
 %token<string> TRuleName
 
 %token<Data.clt> Tchar Tshort Tint Tdouble Tfloat Tlong
@@ -236,10 +236,10 @@ let constraint_code_counter = ref 0
 %token <Parse_aux.midinfo>       TMetaId
 %token <Parse_aux.idinfo>        TMetaFunc TMetaLocalFunc
 %token <Parse_aux.idinfo>        TMetaIterator TMetaDeclarer
-%token <Parse_aux.assignOpinfo>  TMetaAssignOp
+%token <Parse_aux.assignOpinfo>  TMetaAssignOp TMetaType
 %token <Parse_aux.binaryOpinfo>  TMetaBinaryOp
 %token <Parse_aux.expinfo>       TMetaErr
-%token <Parse_aux.info>          TMetaParam TMetaStm TMetaType
+%token <Parse_aux.info>          TMetaParam TMetaStm
 %token <Parse_aux.info>          TMetaInit TMetaDecl TMetaField TMeta
 %token <Parse_aux.list_info>     TMetaParamList TMetaExpList TMetaInitList
 %token <Parse_aux.list_info>     TMetaFieldList TMetaStmList TMetaDParamList
@@ -710,10 +710,10 @@ list_len:
       let len = Ast.AnyLen in
       let tok = check_meta(Ast.MetaExpListDecl(arity,name,len)) in
       !Data.add_explist_meta name len pure; tok) }
-| TType
+/* | TType
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaTypeDecl(arity,name)) in
-      !Data.add_type_meta name pure; tok) }
+      !Data.add_type_meta name pure; tok) } */
 | TInitialiser
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaInitDecl(arity,name)) in
@@ -813,6 +813,10 @@ list_len:
     { (fun arity name pure check_meta constraints ->
       let tok = check_meta(Ast.MetaIteratorDecl(arity,name)) in
       !Data.add_iterator_meta name constraints pure; tok) }
+| TType
+    { (fun arity name pure check_meta constraints ->
+      let tok = check_meta(Ast.MetaTypeDecl(arity,name)) in
+      !Data.add_type_meta name constraints pure; tok) }
 
 %inline metakind_atomic_expi:
   TError
@@ -929,7 +933,7 @@ arity: TWhy0  { Ast.OPT }
 
 /* ---------------------------------------------------------------------- */
 
-signable_types:
+signable_types_no_ident:
   ty=Tchar
     { Ast0.wrap(Ast0.BaseType(Ast.CharType,[P.clt2mcode "char" ty])) }
 | ty=Tshort
@@ -941,15 +945,8 @@ signable_types:
 | ty=Tint
     { Ast0.wrap(Ast0.BaseType(Ast.IntType,[P.clt2mcode "int" ty])) }
 | p=TMetaType
-    { let (nm,pure,clt) = p in
-      Ast0.wrap(Ast0.MetaType(P.clt2mcode nm clt,pure)) }
-| r=TRuleName TDot p=TIdent
-    { let nm = (r,P.id2name p) in
-    (* this is only possible when we are in a metavar decl.  Otherwise,
-       it will be represented already as a MetaType *)
-    let _ = P.check_meta(Ast.MetaTypeDecl(Ast.NONE,nm)) in
-    Ast0.wrap(Ast0.MetaType(P.clt2mcode nm (P.id2clt p),
-			    Ast0.Impure (*will be ignored*))) }
+    { let (nm,cstr,pure,clt) = p in
+      Ast0.wrap(Ast0.MetaType(P.clt2mcode nm clt,cstr,pure)) }
 | ty1=Tlong
     { Ast0.wrap(Ast0.BaseType(Ast.LongType,[P.clt2mcode "long" ty1])) }
 | ty1=Tlong ty2=Tint
@@ -968,7 +965,17 @@ signable_types:
 	    [P.clt2mcode "long" ty1;P.clt2mcode "long" ty2;
 	      P.clt2mcode "int" ty3])) }
 
-non_signable_types:
+signable_types:
+  ty=signable_types_no_ident { ty }
+| r=TRuleName TDot p=TIdent
+    { let nm = (r,P.id2name p) in
+    (* this is only possible when we are in a metavar decl.  Otherwise,
+       it will be represented already as a MetaType *)
+    let _ = P.check_meta(Ast.MetaTypeDecl(Ast.NONE,nm)) in
+    Ast0.wrap(Ast0.MetaType(P.clt2mcode nm (P.id2clt p),Ast.CstrTrue,
+			    Ast0.Impure (*will be ignored*))) }
+
+non_signable_types_no_ident:
   ty=Tvoid
     { Ast0.wrap(Ast0.BaseType(Ast.VoidType,[P.clt2mcode "void" ty])) }
 | ty1=Tlong ty2=Tdouble
@@ -1003,11 +1010,9 @@ non_signable_types:
 				    P.clt2mcode "{" l,
 				    d, P.clt2mcode "}" r)) }
 | s=TMetaType l=TOBrace d=struct_decl_list r=TCBrace
-    { let (nm,pure,clt) = s in
-    let ty = Ast0.wrap(Ast0.MetaType(P.clt2mcode nm clt,pure)) in
+    { let (nm,cstr,pure,clt) = s in
+    let ty = Ast0.wrap(Ast0.MetaType(P.clt2mcode nm clt,cstr,pure)) in
     Ast0.wrap(Ast0.StructUnionDef(ty,P.clt2mcode "{" l,d,P.clt2mcode "}" r)) }
-| p=TTypeId
-    { Ast0.wrap(Ast0.TypeName(P.id2mcode p)) }
 | Tdecimal TOPar enum_val TComma enum_val TCPar
     { Ast0.wrap(Ast0.Decimal(P.clt2mcode "decimal" $1,
 			     P.clt2mcode "(" $2,$3,
@@ -1018,13 +1023,26 @@ non_signable_types:
 			     P.clt2mcode "(" $2,$3,None,None,
 			     P.clt2mcode ")" $4)) }
 
-all_basic_types:
+non_signable_types:
+  ty=non_signable_types_no_ident { ty }
+| p=TTypeId
+    { Ast0.wrap(Ast0.TypeName(P.id2mcode p)) }
+
+signed_basic_types:
   r=Tsigned ty=signable_types
     { Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Signed r,Some ty)) }
 | r=Tunsigned ty=signable_types
     { Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Unsigned r,Some ty)) }
+
+all_basic_types:
+  ty=signed_basic_types { ty }
 | ty=signable_types { ty }
 | ty=non_signable_types { ty }
+
+all_basic_types_no_ident:
+  ty=signed_basic_types { ty }
+| ty=signable_types_no_ident { ty }
+| ty=non_signable_types_no_ident { ty }
 
 top_ctype:
   ctype { Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Ty($1)))) }
@@ -2284,6 +2302,12 @@ pure_ident_or_meta_ident:
      | meta_ident                { $1 }
      | meta_ident_sym            { (None,$1) }
 
+pure_ident_or_meta_ident_or_typename:
+       pure_ident_or_meta_ident  { $1 }
+     | all_basic_types_no_ident {
+       (None,
+	String.trim (Ast_cocci.string_of_fullType (Ast0toast.typeC false $1))) }
+
 pure_ident_or_meta_ident_nosym:
        pure_ident                { (None,P.id2name $1) }
      | pure_ident_kwd            { (None,$1) }
@@ -2390,7 +2414,7 @@ general_eqid:
 	 }
 
 idcstr:
-       i=pure_ident_or_meta_ident
+       i=pure_ident_or_meta_ident_or_typename
          { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
@@ -2404,7 +2428,7 @@ idcstr:
 		   (function mv -> Ast.MetaIdDecl(Ast.NONE,mv)) in
 	       (Ast.CstrMeta_name i)
 	   | (None,i) -> Ast.CstrString i) }
-     | TOBrace l=comma_list(pure_ident_or_meta_ident) TCBrace
+     | TOBrace l=comma_list(pure_ident_or_meta_ident_or_typename) TCBrace
 	 { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
@@ -2612,8 +2636,8 @@ typedef_ident:
          { Ast0.wrap(Ast0.TypeName(P.id2mcode $1)) }
      | TMeta { tmeta_to_type $1 }
      | TMetaType
-         { let (nm,pure,clt) = $1 in
-	 Ast0.wrap(Ast0.MetaType(P.clt2mcode nm clt,pure)) }
+         { let (nm,cstr,pure,clt) = $1 in
+	 Ast0.wrap(Ast0.MetaType(P.clt2mcode nm clt,cstr,pure)) }
 
 /*****************************************************************************/
 
@@ -3083,6 +3107,11 @@ checked_meta_name:
         let name = ("virtual", nm) in
         let mv = Ast.MetaIdDecl(Ast.NONE,name) in
         (name,mv) }
+  | TMerge TDot cocci=pure_ident
+      { let nm = P.id2name cocci in
+        let name = ("merge", nm) in
+        let mv = Ast.MetaIdDecl(Ast.NONE,name) in
+        (name, mv) }
 
 script_name_decl_ext:
     script_name_decl { ($1,Ast.NoMVInit) }
@@ -3117,5 +3146,10 @@ script_virt_name_decl:
 	   Common.union_set [nm]
 	     !Iteration.parsed_virtual_identifiers;
         let name = ("virtual", nm) in
+        let mv = Ast.MetaIdDecl(Ast.NONE,name) in
+        (name,mv) }
+  | TShLOp TMerge TDot cocci=pure_ident
+      { let nm = P.id2name cocci in
+        let name = ("merge", nm) in
         let mv = Ast.MetaIdDecl(Ast.NONE,name) in
         (name,mv) }

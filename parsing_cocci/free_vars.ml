@@ -168,7 +168,7 @@ let collect_refs include_constraints =
   let astfvtypeC recursor k ty =
     bind (k ty)
       (match Ast.unwrap ty with
-	Ast.MetaType(name,_,_) -> [metaid name]
+	Ast.MetaType(name,_,_,_) -> [metaid name]
       | _ -> option_default) in
 
   let astfvinit recursor k ty =
@@ -360,7 +360,7 @@ let collect_saved =
   let astfvtypeC recursor k ty =
     bind (k ty)
       (match Ast.unwrap ty with
-	Ast.MetaType(name,Ast.Saved,_) -> [metaid name]
+	Ast.MetaType(name,_,Ast.Saved,_) -> [metaid name]
       | _ -> option_default) in
 
   let astfvinit recursor k ty =
@@ -669,9 +669,9 @@ let classify_variables metavar_decls minirules used_after =
       structUnionName = Some (fun su ident ->
         let ident' = Common.map_option classify_ident ident in
         Ast.StructUnionName (su, ident'));
-      metaType = Some (fun name _ _ ->
+      metaType = Some (fun name cstr _ _ ->
         let (unitary,inherited) = classify (Ast.unwrap_mcode name,(),(),[]) in
-        Ast.MetaType (name,unitary,inherited))
+        Ast.MetaType (name,cstr,unitary,inherited))
     } ty in
 
   let expression r k e =
@@ -740,9 +740,9 @@ let classify_variables metavar_decls minirules used_after =
   let typeC r k e =
     let e = k e in
     match Ast.unwrap e with
-      Ast.MetaType(name,_,_) ->
+      Ast.MetaType(name,cstr,_,_) ->
 	let (unitary,inherited) = classify name in
-	Ast.rewrap e (Ast.MetaType(name,unitary,inherited))
+	Ast.rewrap e (Ast.MetaType(name,cstr,unitary,inherited))
     | _ -> e in
 
   let init r k e =

@@ -223,8 +223,8 @@ let rec type_pos t snp
   | Ast0.TypeName(nm) ->
       let constructor ~mc = Ast0.TypeName(mc) in
       mcode_wrap ~mc:nm ~constructor snp
-  | Ast0.MetaType(mnmc,pure) ->
-      let constructor ~mc = Ast0.MetaType(mc,pure) in
+  | Ast0.MetaType(mnmc,cstr,pure) ->
+      let constructor ~mc = Ast0.MetaType(mc,cstr,pure) in
       mcode_wrap ~mc:mnmc ~constructor snp
   | Ast0.OptType(t) ->
       let constructor ~item = Ast0.OptType(item) in

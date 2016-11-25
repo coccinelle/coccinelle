@@ -324,7 +324,7 @@ let rename argids env =
 
 let print_one_type pr env ty =
   match Common.map_option Ast.unwrap (Ast.typeC_of_fullType_opt ty) with
-    Some (Ast_cocci.MetaType(name,keep,inherited)) ->
+    Some (Ast_cocci.MetaType(name,cstr,keep,inherited)) ->
       (try
 	match List.assoc name env with
 	  Ast_c.MetaTypeVal ty ->

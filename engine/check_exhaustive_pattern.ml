@@ -132,7 +132,7 @@ let dumb_astcocci_fulltype = function
   | A.OptType(ty) -> ()
 
 let dumb_astcocci_type = function
- | A.MetaType(ida,_,_) -> ()
+ | A.MetaType(ida,_,_,_) -> ()
  | A.BaseType (basea,strings) -> ()
  | A.SignedT (signa,tya) -> ()
  | A.Pointer (typa, _) -> ()
