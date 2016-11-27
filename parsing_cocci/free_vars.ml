@@ -86,7 +86,12 @@ let collect_refs include_constraints =
     bind (k e)
       (match Ast.unwrap e with
 	Ast.MetaExpr(name,constraints,_,Some type_list,_,_) ->
-	  let types = List.fold_left type_collect option_default type_list in
+	  let types =
+	    (* problem: if there are multiple types, then none in particular
+	       is needed *)
+	    if include_constraints || List.length type_list = 1
+	    then List.fold_left type_collect option_default type_list
+	    else [] in
 	  let extra =
 	    if include_constraints
 	    then
