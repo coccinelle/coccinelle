@@ -26,6 +26,8 @@
 
 * 1.0.7
 ** Language:
+- Allow negative constraints on type metavariables.  See
+  tests/type_constraints.cocci
 ** Features:
 - Better error reporting for unparsable terms when using make_expr etc in
   script code.  Problem reported by Markus Elfring.
