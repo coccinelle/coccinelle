@@ -71,6 +71,10 @@ let fcts :
 let bool_fcts :
  (string, param_type list -> bool) Hashtbl.t =
   Hashtbl.create 11 (* Use prime number *)
+
+let variables_to_merge: (unit -> string array) ref = ref (fun () -> [| |])
+
+let merged_variables: string list array ref = ref [| |]
 (**/**)
 
 (* This code needs to be here because we need to call the type annotater *)

@@ -65,13 +65,13 @@ let rec test_loop cocci_file cfiles =
 let test_with_output_redirected cocci_file cfiles expected_out =
   Iteration.initialization_stack := [];
   let redirected_output = begin_redirect_output expected_out in
-  let (cocci_infos, res) =
+  let (cocci_infos, (res, merges)) =
     try test_loop cocci_file cfiles
     with e ->
       ignore (end_redirect_output redirected_output);
       raise e in
+  Cocci.post_engine cocci_infos merges;
   let current_out = end_redirect_output redirected_output in
-  Cocci.post_engine cocci_infos;
   (res, current_out)
 
 (* There can be multiple .c for the same cocci file. The convention

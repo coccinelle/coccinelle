@@ -24,11 +24,13 @@ type constant_info =
       (Str.regexp * Str.regexp list * string list)
       option (*coccigrep/gitgrep tokens*) *
       Get_constants2.combine option
+type merge_vars = string array list * string array list
+val union_merge_vars : merge_vars -> merge_vars -> merge_vars
 val pre_engine : (filename * filename) -> cocci_info * constant_info
 val worth_trying : filename list -> constant_info -> bool
 val full_engine :
-  cocci_info -> filename list -> (filename * filename option) list
-val post_engine : cocci_info -> unit
+  cocci_info -> filename list -> (filename * filename option) list * merge_vars
+val post_engine : cocci_info -> merge_vars -> unit
 val has_finalize : cocci_info -> bool
 
 (* because of the #include "toto.c" and also because we may associate the

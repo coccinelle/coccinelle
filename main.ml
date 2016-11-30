@@ -1132,27 +1132,33 @@ let rec main_action xs =
 	    clean();
 	    res
 	  in
-	  let (actual_fold, run_in_parallel) =
+	  let actual_fold =
 	    if ncores <= 1
-	    then (seq_fold, false)
-	    else if Cocci.has_finalize cocci_infos
+	    then seq_fold
+(*	    else if Cocci.has_finalize cocci_infos
 	    then
 	      begin
 		pr2 "warning: parallel mode is disabled due to a finalize";
 		(seq_fold, false)
-	      end
-	    else (par_fold, true) in
+	      end*)
+	    else par_fold in
 
-          let outfiles =
+          let (outfiles, merges) =
             Common.profile_code "Main.outfiles computation" (fun () ->
 	      let res =
 		match infiles with
 		  [] ->
 		    (* parmap case does a lot of work that is not needed
 		       if there is nothing to do *)
-		    []
+		    [], ([], [])
 		| _ ->
-		    infiles +> actual_fold (@) (fun prev cfiles ->
+		    let merge (outfiles, merge_vars) (outfiles', merge_vars') =
+		      let all_outfiles = List.rev_append outfiles outfiles' in
+		      let all_merge_vars =
+			Cocci.union_merge_vars merge_vars merge_vars' in
+		      all_outfiles, all_merge_vars in
+		    infiles +> actual_fold merge
+		      (fun prev cfiles ->
 		      if (not !Flag.worth_trying_opt) ||
 		      Cocci.worth_trying cfiles constants
 		      then
@@ -1171,14 +1177,14 @@ let rec main_action xs =
 					if !output_file <> "" && !compat_mode
 					then Some !output_file
 					else None in
-				      List.rev
+				      merge
 					(adjust_stdin cfiles (fun () ->
 					  Common.redirect_stdout_opt optfile
 					    (fun () ->
 					      (* this is the main call *)
 					      Cocci.full_engine cocci_infos
 						cfiles
-					 ))) @ prev
+					 ))) prev
 				    with
 				    | Common.UnixExit x ->
 					raise (Common.UnixExit x)
@@ -1196,11 +1202,11 @@ let rec main_action xs =
 			      res)
 			end
 		      else prev)
-		      [] in res) in
+		      ([], ([], [])) in res) in
 	  let outfiles = List.rev outfiles in
 	  (match Iteration.get_pending_instance() with
 	    None ->
-	      (x,xs,cocci_infos,outfiles)
+	      (x,xs,cocci_infos,outfiles,merges)
 	  | Some (files,virt_rules,virt_ids) ->
 	      if outfiles = [] || outfiles = [] || not !FC.show_diff
 		  || !inplace_modif
@@ -1220,11 +1226,10 @@ let rec main_action xs =
 		begin
 		  Common.pr2
 		    "Out of place transformation not compatible with iteration. Aborting.\n consider using -no_show_diff or -in_place";
-		  (x,xs,cocci_infos,outfiles)
+		  (x,xs,cocci_infos,outfiles,merges)
 		end) in
-      let (x,xs,cocci_infos,outfiles) = toploop xs in
-
-      Cocci.post_engine cocci_infos;
+      let (x,xs,cocci_infos,outfiles,merges) = toploop xs in
+      Cocci.post_engine cocci_infos merges;
       Common.profile_code "Main.result analysis" (fun () ->
 	Ctlcocci_integration.print_bench();
 	generate_outfiles outfiles x xs;

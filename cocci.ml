@@ -843,8 +843,17 @@ type toplevel_cocci_info =
   | FinalScriptRuleCocciInfo of toplevel_cocci_info_script_rule
   | CocciRuleCocciInfo of toplevel_cocci_info_cocci_rule
 
-type cocci_info = toplevel_cocci_info list *
-      bool (* parsing of format strings needed *)
+type merge_vars = string array list * string array list
+
+let union_merge_vars (ocaml_merges, python_merges)
+    (ocaml_merges', python_merges') =
+  let all_ocaml_merges = List.rev_append ocaml_merges ocaml_merges' in
+  let all_python_merges = List.rev_append python_merges python_merges' in
+  (all_ocaml_merges, all_python_merges)
+
+type cocci_info = toplevel_cocci_info list
+      * bool (* parsing of format strings needed *)
+      * (string array * string array) (* merge/local variables for Python *)
 
 type constant_info =
     (string list option (*grep tokens*) *
@@ -1393,6 +1402,9 @@ let apply_script_rule r cache newes e rules_that_have_matched
   else
     begin
       let (_, mv, script_vars, _) = r.scr_ast_rule in
+      let mv =
+	List.filter
+	  (function (_, ("merge", _), _, _) -> false | _ -> true) mv in
       let ve =
 	(List.map (function (n,v) -> (("virtual",n),Ast_c.MetaIdVal (v)))
 	   !Flag.defined_virtual_env) @ e in
@@ -1975,6 +1987,30 @@ let initial_final_bigloop a b c =
   Common.profile_code "initial_final_bigloop"
     (fun () -> initial_final_bigloop2 a b c)
 
+let find_python_merge_variables cocci_infos =
+  try
+    Common.find_some (function FinalScriptRuleCocciInfo r
+	when r.language = "python" ->
+	  let (_, mvs, _, _) = r.scr_ast_rule in
+	  let merge_vars = Ast_cocci.filter_merge_variables mvs in
+	  let merge_names = Array.of_list (List.map fst merge_vars) in
+	  let local_names = Array.of_list (List.map snd merge_vars) in
+	  Some (merge_names, local_names)
+      | _ -> None) cocci_infos
+  with Not_found -> ([| |], [| |])
+
+let variables_to_merge python_local_names =
+  let ocaml_merges = !Coccilib.variables_to_merge () in
+  let python_merges = Array.map (Pycocci.pickle_variable) python_local_names in
+  (ocaml_merges, python_merges)
+
+let list_array_of_array_list merges =
+  match merges with
+    [] -> [| |]
+  | hd :: _ ->
+      Array.init (Array.length hd)
+	(fun index -> List.map (fun array -> array.(index)) merges)
+
 (*****************************************************************************)
 (* The main functions *)
 (*****************************************************************************)
@@ -2070,12 +2106,16 @@ let pre_engine2 (coccifile, isofile) =
       runrule (make_init lgg "" rule_info []))
     uninitialized_languages;
 
-  ((cocci_infos,parse_strings),constants)
+  let (python_merge_names, python_local_names) =
+    find_python_merge_variables cocci_infos in
+
+  ((cocci_infos,parse_strings,(python_merge_names, python_local_names)),
+   constants)
 
 let pre_engine a =
   Common.profile_code "pre_engine" (fun () -> pre_engine2 a)
 
-let full_engine2 (cocci_infos,parse_strings) cfiles =
+let full_engine2 (cocci_infos, parse_strings, (_, python_local_names)) cfiles =
 
   show_or_not_cfiles cfiles;
 
@@ -2083,7 +2123,7 @@ let full_engine2 (cocci_infos,parse_strings) cfiles =
   then
     begin
       pr2 ("selected " ^ (String.concat " " cfiles));
-      cfiles +> List.map (fun s -> s, None)
+      (cfiles +> List.map (fun s -> s, None), ([], []))
     end
   else
     begin
@@ -2134,32 +2174,41 @@ let full_engine2 (cocci_infos,parse_strings) cfiles =
         end;
       if !Flag_ctl.graphical_trace then gen_pdf_graph ();
 
-      c_infos' +> List.map (fun c_or_h ->
-	if !(c_or_h.was_modified_once)
-	then
-	  begin
-            let outfile =
-	      Common.new_temp_file "cocci-output" ("-" ^ c_or_h.fname) in
+      let files =
+	c_infos' +> List.map (fun c_or_h ->
+	  if !(c_or_h.was_modified_once)
+	  then
+	    begin
+	      let outfile =
+		Common.new_temp_file "cocci-output" ("-" ^ c_or_h.fname) in
 
-            if c_or_h.fkind = Header
-            then pr2 ("a header file was modified: " ^ c_or_h.fname);
+	      if c_or_h.fkind = Header
+	      then pr2 ("a header file was modified: " ^ c_or_h.fname);
 
-            (* and now unparse everything *)
-            cfile_of_program (for_unparser c_or_h.asts) outfile;
+	      (* and now unparse everything *)
+	      cfile_of_program (for_unparser c_or_h.asts) outfile;
 
-            show_or_not_diff c_or_h.fpath outfile;
+	      show_or_not_diff c_or_h.fpath outfile;
 
-            (c_or_h.fpath,
-             if !Flag.sgrep_mode2 then None else Some outfile)
-	  end
-	else (c_or_h.fpath, None))
+	      (c_or_h.fpath,
+	       if !Flag.sgrep_mode2 then None else Some outfile)
+	    end
+	  else (c_or_h.fpath, None)) in
+      let (ocaml_merges, python_merges) =
+	variables_to_merge python_local_names in
+      (files, ([ocaml_merges], [python_merges]))
     end
 
 let full_engine a b =
   Common.profile_code "full_engine"
     (fun () -> let res = full_engine2 a b in (*Gc.print_stat stderr; *)res)
 
-let post_engine2 (cocci_infos,_) =
+let post_engine2 (cocci_infos, _, (python_merge_names, _)) merges =
+  let (ocaml_merges, python_merges) = merges in
+  Coccilib.merged_variables := list_array_of_array_list ocaml_merges;
+  Array.iteri (fun index variable ->
+    let list = List.map (fun array -> array.(index)) python_merges in
+    Pycocci.unpickle_variable variable list) python_merge_names;
   List.iter
     (function ((language,_),(virt_rules,virt_env)) ->
       Flag.defined_virtual_rules := virt_rules;
@@ -2182,10 +2231,10 @@ let post_engine2 (cocci_infos,_) =
       ())
     !Iteration.initialization_stack
 
-let post_engine a =
-  Common.profile_code "post_engine" (fun () -> post_engine2 a)
+let post_engine a b =
+  Common.profile_code "post_engine" (fun () -> post_engine2 a b)
 
-let has_finalize (cocci_infos,_) =
+let has_finalize (cocci_infos,_,_) =
   List.exists
     (function
       | FinalScriptRuleCocciInfo _ -> true

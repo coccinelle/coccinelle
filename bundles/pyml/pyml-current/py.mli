@@ -174,6 +174,18 @@ module Object: sig
   val reference_count: t -> int
   (** [reference_count o] returns the number of references to the Python
       object [o]. *)
+
+  val format: Format.formatter -> t -> unit
+  (** [Py.Object.format fmt v] is equivalent to
+      [Format.pp_print_string fmt (Py.Object.to_string v)].
+      Can be used as printer for the top-level:
+      [#install_printer Py.Object.format]. *)
+
+  val format_repr: Format.formatter -> t -> unit
+  (** [Py.Object.format_repr fmt v] is equivalent to
+      [Format.pp_print_string fmt (Py.Object.string_of_repr v)].
+      Can be used as printer for the top-level:
+      [#install_printer Py.Object.format_repr]. *)
 end
 
 exception E of Object.t * Object.t
@@ -702,7 +714,8 @@ module List: sig
   (** Equivalent to {!get_item}. *)
 
   val set_item: Object.t -> int -> Object.t -> unit
-  (** Equivalent to {!Sequence.set_item}. *)
+  (** Wrapper for
+      {{:https://docs.python.org/3/c-api/list.html#c.PyList_SetItem} PyList_SetItem} *)
 
   val set: Object.t -> int -> Object.t -> unit
   (** Equivalent to {!set_item}. *)
@@ -710,6 +723,9 @@ module List: sig
   val size: Object.t -> int
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/list.html#c.PyList_Size} PyList_Size} *)
+
+  val length: Object.t -> int
+  (** Equivalent to {!size}. *)
 
   val init: int -> (int -> Object.t) -> Object.t
   (** [init n f] returns the Python list [[f 0, f 1, ..., f (n - 1)]]. *)
@@ -1419,6 +1435,62 @@ module Type: sig
       an object of type [ty] was expected, but [obj] was found. *)
 end
 
+module Marshal: sig
+  val read_object_from_file: in_channel -> Object.t
+  (** [read_object_from_file f] reads one value from [f] and returns it.
+      Wrapper for
+      {{:https://docs.python.org/3/c-api/marshal.html#c.PyMarshal_ReadObjectFromFile} PyMarshal_ReadObjectFromFile} *)
+
+  val load: in_channel -> Object.t
+  (** Equivalent to {!read_object_from_file}. *)
+
+  val read_last_object_from_file: in_channel -> Object.t
+  (** [read_last_object_from_file f] reads a value from [f] and returns it.
+      That value should be the only value remaining to be read from [f] before
+      EOF.
+      Wrapper for
+      {{:https://docs.python.org/3/c-api/marshal.html#c.PyMarshal_ReadLastObjectFromFile} PyMarshal_ReadLastObjectFromFile} *)
+
+  val read_object_from_string: string -> int -> Object.t
+  (** [read_object_from_string s len] reads a value from the [len] first
+      bytes of [s].
+      Wrapper for
+      {{:https://docs.python.org/3/c-api/marshal.html#c.PyMarshal_ReadObjectFromString} PyMarshal_ReadObjectFromString} *)
+
+  val loads: string -> Object.t
+  (** [Py.Marshal.loads s] is equivalent to
+      [Py.Marshal.read_object_from_string s (String.length s)]. *)
+
+  val write_object_to_file: Object.t -> out_channel -> int -> unit
+  (** [write_object_to_file value file version] writes the object [value] to
+      [file].
+      [version] indicates the file format
+      (use {!version} to get the current version).
+      Wrapper for
+      {{:https://docs.python.org/3/c-api/marshal.html#c.PyMarshal_WriteObjectToFile} PyMarshal_WriteObjectToFile} *)
+
+  val dump: ?version:int -> Object.t -> out_channel -> unit
+  (** [Py.Marshal.dump ?version value file] is equivalent to
+      [Py.Marshal.write_object_to_file value file version].
+      By default, the version returned by {!version} is used. *)
+
+  val write_object_to_string: Object.t -> int -> Object.t
+  (** [write_object_to_file value file version] returns the Python string
+      representing the object [value].
+      [version] indicates the format
+      (use {!version} to get the current version).
+      Wrapper for
+      {{:https://docs.python.org/3/c-api/marshal.html#c.PyMarshal_WriteObjectToString} PyMarshal_WriteObjectToString} *)
+
+  val dumps: ?version:int -> Object.t -> string
+  (** [Py.Marshal.dumps ?version value] is equivalent to
+      [Py.String.to_string (Py.Marshal.write_object_to_string value version)].
+      By default, the version returned by {!version} is used. *)
+
+  val version: unit -> int
+  (** Returns the current file format version number. *)
+end
+
 val set_argv: string array -> unit
 (** [set_argv argv] set Python's [sys.argv]. *)
 
@@ -1427,27 +1499,31 @@ val last_value: unit -> Object.t
     toplevel.
     We have [Py.last_value = Py.Module.find (Py.Module.builtins ()) "_"]. *)
 
+val exception_printer: exn -> string option
+(** This printer pretty-prints [E (ty, value)] exceptions.
+    It is automatically registered to [Printexc.register_printer]. *)
+
 module Utils: sig
-    (** This module declares utility functions that does not require Python to
-        be initialized. *)
+  (** This module declares utility functions that does not require Python to
+      be initialized. *)
 
-val try_finally: ('a -> 'b) -> 'a -> ('c -> unit) -> 'c -> 'b
-(** [try_finally f arg finally finally_arg] calls [f arg], and returns the
-    result of [f].
-    [finally finally_arg] is always closed after [f] has been called, even if
-    [f] raises an exception. *)
+  val try_finally: ('a -> 'b) -> 'a -> ('c -> unit) -> 'c -> 'b
+  (** [try_finally f arg finally finally_arg] calls [f arg], and returns the
+      result of [f].
+      [finally finally_arg] is always closed after [f] has been called, even if
+      [f] raises an exception. *)
 
-val read_and_close: in_channel -> ('a -> 'b) -> 'a -> 'b
-(** [read_and_close channel f arg] calls [f arg], and returns the result of [f].
-    [channel] is always closed after [f] has been called, even if [f] raises an
-    exception.
-    This is an utility function that does not require Python to be
-    initialized. *)
+  val read_and_close: in_channel -> ('a -> 'b) -> 'a -> 'b
+  (** [read_and_close channel f arg] calls [f arg], and returns the result of
+      [f].
+      [channel] is always closed after [f] has been called, even if [f] raises
+      an exception.
+      This is an utility function that does not require Python to be
+      initialized. *)
 
-val write_and_close: out_channel -> ('a -> 'b) -> 'a -> 'b
-(** [write_and_close channel f arg] calls [f arg], and returns the result of
-    [f].
-    [channel] is always closed after [f] has been called, even if [f] raises an
-    exception.
- *)
+  val write_and_close: out_channel -> ('a -> 'b) -> 'a -> 'b
+  (** [write_and_close channel f arg] calls [f arg], and returns the result of
+      [f].
+      [channel] is always closed after [f] has been called, even if [f] raises
+      an exception. *)
 end

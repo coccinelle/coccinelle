@@ -1300,3 +1300,11 @@ let cstr_meta_names c =
     { empty_cstr_transformer with
       cstr_meta_name = Some (fun mn accu -> mn :: accu)
     } c []
+
+let filter_merge_variables metavars =
+  let filter_var accu metavar =
+    match metavar with
+      ((Some merge_name, None), ("merge", local_name), _, _) ->
+	(merge_name, local_name) :: accu
+    | _ -> accu in
+  List.fold_left filter_var [] metavars

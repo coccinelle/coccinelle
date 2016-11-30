@@ -856,3 +856,7 @@ val cstr_fold: ('a -> 'a) cstr_transformer -> general_constraint -> 'a -> 'a
 val cstr_eval: bool cstr_transformer -> general_constraint -> bool
 
 val cstr_meta_names: general_constraint -> meta_name list
+
+val filter_merge_variables:
+    (script_meta_name * meta_name * metavar * mvinit) list ->
+      (string * string) list

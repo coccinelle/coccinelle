@@ -335,6 +335,23 @@ let () =
         Py.Run.ipython ())
 
 let () =
+  add_test
+    ~title:"Marshal"
+    (fun () ->
+      let v = Py.Long.of_int 42 in
+      let m = Py.Marshal.dumps v in
+      let v' = Py.Marshal.loads m in
+      assert (Py.Long.to_int v' = 42))
+
+let () =
+  add_test
+    ~title:"Py.List.of_list"
+    (fun () ->
+      let v = Py.List.of_list [Py.Long.of_int 42] in
+      assert (Py.List.length v = 1);
+      assert (Py.Long.to_int (Py.List.get v 0) = 42))
+
+let () =
   prerr_endline "Initializing library...";
   Py.initialize ();
   prerr_endline "Starting tests...";

@@ -785,6 +785,8 @@ type byteorder =
     LittleEndian
   | BigEndian
 
+let string_length = String.length
+
 module String = struct
   let check_bytes s =
     Type.get s = Type.Bytes
@@ -1121,7 +1123,21 @@ module Object = struct
   let as_write_buffer obj = check_some (pyobject_aswritebuffer obj)
 
   external reference_count: pyobject -> int = "pyrefcount"
+
+  let format fmt v = Format.pp_print_string fmt (to_string v)
+
+  let format_repr fmt v = Format.pp_print_string fmt (string_of_repr v)
 end
+
+let exception_printer exn =
+  match exn with
+    E (ty, value) when !initialized ->
+      Some (
+      Printf.sprintf "E (%s, %s)" (Object.to_string ty)
+        (Object.to_string value))
+  | _ -> None
+
+let () = Printexc.register_printer exception_printer
 
 module Sequence = struct
   let check obj = bool_of_int (Pywrappers.pysequence_check obj)
@@ -1527,10 +1543,17 @@ module List = struct
 
   let size list = check_int (Pywrappers.pylist_size list)
 
+  let length = size
+
+  let set_item list index value =
+    assert_int_success (Pywrappers.pylist_setitem list index value)
+
+  let set = set_item
+
   let init size f =
     let result = create size in
     for index = 0 to size - 1 do
-      set_item result index (f index)
+      set result index (f index)
     done;
     result
 
@@ -1546,6 +1569,40 @@ module List = struct
   let of_sequence = Sequence.list
 
   let singleton v = init 1 (fun _ -> v)
+end
+
+module Marshal = struct
+  let version () =
+    let marshal_module = Import.import_module "marshal" in
+    Long.to_int (Module.get marshal_module "version")
+
+  let read_object_from_file file =
+    let fd = fd_of_descr (Unix.descr_of_in_channel file) in
+    check_not_null (Pywrappers.pymarshal_readobjectfromfile fd)
+
+  let load = read_object_from_file
+
+  let read_last_object_from_file file =
+    let fd = fd_of_descr (Unix.descr_of_in_channel file) in
+    check_not_null (Pywrappers.pymarshal_readlastobjectfromfile fd)
+
+  let read_object_from_string s len =
+    check_not_null (Pywrappers.pymarshal_readobjectfromstring s len)
+
+  let loads s = read_object_from_string s (string_length s)
+
+  let write_object_to_file v file version =
+    let fd = fd_of_descr (Unix.descr_of_out_channel file) in
+    assert_int_success (Pywrappers.pymarshal_writeobjecttofile v fd version)
+
+  let dump ?(version = version ()) v file =
+    write_object_to_file v file version
+
+  let write_object_to_string v version =
+    check_not_null (Pywrappers.pymarshal_writeobjecttostring v version)
+
+  let dumps ?(version = version ()) v =
+    String.to_string (write_object_to_string v version)
 end
 
 let set_argv argv =

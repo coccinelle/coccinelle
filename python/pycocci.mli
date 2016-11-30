@@ -21,6 +21,10 @@ val initialised : bool ref
 val py_isinitialized : unit -> bool
 val py_finalize : unit -> unit
 
+val pickle_variable : string -> string
+
+val unpickle_variable : string -> string list -> unit
+
 val run_constraint :
     Ast_c.metavars_binding ->
     string ->

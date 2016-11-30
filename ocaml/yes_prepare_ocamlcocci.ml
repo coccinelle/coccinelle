@@ -180,8 +180,8 @@ let print_iteration_code o =
 let prepare_mvs o str = function
     [] -> true
   | metavars ->
-      let fn _ =
-	List.map
+      try
+	List.iter
 	  (function
 	      ((Some nm,None),("virtual",vname),_,init) ->
 		let vl =
@@ -195,16 +195,25 @@ let prepare_mvs o str = function
 			raise Not_found
 		    | Ast.MVInitString s -> s
 		    | Ast.MVInitPosList -> failwith "no virt positions") in
-		(nm,vl)
-	    | _ -> failwith "invalid metavar in initialize or finalize")
-	  metavars in
-      try
-	List.iter
-	  (function (nm,vl) -> Printf.fprintf o "let %s = \"%s\"\n" nm vl)
-	  (fn());
+		Printf.fprintf o "let %s = \"%s\"\n" nm vl
+	    | ((Some _, None), ("merge", _), _, _) -> ()
+	    | _ -> failwith (Printf.sprintf "invalid metavar in %s" str))
+	  metavars;
 	Printf.fprintf o "\n";
 	true
       with Not_found -> false
+
+let prepare_merges o metavariables =
+  let merge_vars = Ast_cocci.filter_merge_variables metavariables in
+  let marshal_local_var (merge_name, local_name) =
+    Printf.sprintf "Marshal.to_string %s []" local_name in
+  let marshaled_local_vars = List.map marshal_local_var merge_vars in
+  let local_var_names = String.concat "; " marshaled_local_vars in
+  Printf.fprintf o "
+let () =
+    Coccilib.variables_to_merge := (fun () -> [| %s |])
+" local_var_names;
+  merge_vars
 
 let prepare_generic_rule (name, metavars, script_vars, code) scriptargs fcts =
   let fname = String.concat "_" (Str.split (Str.regexp " ") name) in
@@ -340,6 +349,19 @@ let prepare coccifile code =
       (* finalizer *)
       (if generate_final
       then
+	let merge_vars = prepare_merges o all_final_mvs in
+       let add_merge_vars (name, metavars, script_vars, code) =
+	 let let_merge_var index (merge_name, local_name) =
+	   Printf.sprintf "\
+let (%s : 'a list), (_ : 'a) =
+  (List.map (fun s -> Marshal.from_string s 0)
+     !(Coccilib.merged_variables).(%d),
+   %s) in\n"
+	     merge_name index local_name in
+	 let let_merge_vars = List.mapi let_merge_var merge_vars in
+	 let preambule = String.concat "" let_merge_vars in
+	 (name, metavars, script_vars, preambule ^ code) in
+       let final_rules = List.map add_merge_vars final_rules in
 	let rule_code = List.map prepare_rule final_rules in
 	Printf.fprintf o "%s" (String.concat "\n\n" rule_code));
       close_out o;

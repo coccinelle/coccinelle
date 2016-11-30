@@ -366,6 +366,13 @@ let set_coccifile cocci_file =
 	cocci_file_name := cocci_file;
 	()
 
+let pickle_variable var =
+  Py.Marshal.dumps (get_variable var)
+
+let unpickle_variable var value =
+  let py_list = Py.List.of_list (List.map Py.Marshal.loads value) in
+  Py.Module.set !coccinelle_module var py_list
+
 let pyrun_simplestring s =
   catch_python_error begin fun () ->
     if not (Py.Run.simple_string s) then
@@ -374,7 +381,6 @@ let pyrun_simplestring s =
 
 let py_isinitialized () =
   Py.is_initialized ()
-
 
 let py_finalize () =
   Py.finalize ()
