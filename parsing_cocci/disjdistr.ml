@@ -291,11 +291,9 @@ and disjdecl d =
 	(fun ty id ->
 	  Ast.rewrap d (Ast.UnInit(stg,ty,id,sem)))
   | Ast.FunProto(fninfo,name,lp1,params,va,rp1,sem) ->
-      let fninfo = disjmult disjfninfo fninfo in
-      List.map
-	(function fninfo ->
+      disjmult2 (disjmult disjfninfo fninfo) (disjident name)
+	(fun fninfo name ->
 	  Ast.rewrap d (Ast.FunProto(fninfo,name,lp1,params,va,rp1,sem)))
-	fninfo
   | Ast.MacroDecl(stg,name,lp,args,rp,sem) ->
       List.map
 	(function args ->
