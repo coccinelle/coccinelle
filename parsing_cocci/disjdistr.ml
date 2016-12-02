@@ -287,8 +287,9 @@ and disjdecl d =
 	(function ty -> function ini ->
 	  Ast.rewrap d (Ast.Init(stg,ty,id,eq,ini,sem)))
   | Ast.UnInit(stg,ty,id,sem) ->
-      let ty = disjty ty in
-      List.map (function ty -> Ast.rewrap d (Ast.UnInit(stg,ty,id,sem))) ty
+      disjmult2 (disjty ty) (disjident id)
+	(fun ty id ->
+	  Ast.rewrap d (Ast.UnInit(stg,ty,id,sem)))
   | Ast.FunProto(fninfo,name,lp1,params,va,rp1,sem) ->
       let fninfo = disjmult disjfninfo fninfo in
       List.map
