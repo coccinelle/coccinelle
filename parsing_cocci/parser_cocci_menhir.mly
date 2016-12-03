@@ -1446,12 +1446,7 @@ funproto:
 
 fundecl:
   f = single_fundecl { f }
-| lp = TOPar0 t = midzero_list(fundecl,fundecl) rp = TCPar0
-    { let (mids,code) = t in
-    Ast0.wrap
-      (Ast0.Disj(P.id2mcode lp,
-		 List.map (function x -> Ast0.wrap [x]) code,
-		 mids, P.id2mcode rp)) }
+| s = close_boolean_statement(fundecl) { s }
 
 single_fundecl:
   f=fninfo
@@ -1617,38 +1612,26 @@ rule_elem_statement:
 | TReturn TPtVirg { P.ret $1 $2 }
 | TBreak TPtVirg { P.break $1 $2 }
 | TContinue TPtVirg { P.cont $1 $2 }
-| TOPar0 midzero_list(rule_elem_statement,rule_elem_statement) TCPar0
-    { let (mids,code) = $2 in
+| s = close_boolean_statement(rule_elem_statement) { s }
+
+close_boolean_statement(item):
+  lp = TOPar0 t = midzero_list(item,item) rp = TCPar0
+    { let (mids,code) = t in
     Ast0.wrap
-      (Ast0.Disj(P.id2mcode $1,
+      (Ast0.Disj(P.id2mcode lp,
 		 List.map (function x -> Ast0.wrap [x]) code,
-		 mids, P.id2mcode $3)) }
-| TOPar0 andzero_list(rule_elem_statement,rule_elem_statement) TCPar0
-    { let (mids,code) = $2 in
+		 mids, P.id2mcode rp)) }
+| lp = TOPar0 t = andzero_list(item,item) rp = TCPar0
+    { let (mids,code) = t in
     Ast0.wrap
-      (Ast0.Conj(P.id2mcode $1,
+      (Ast0.Conj(P.id2mcode lp,
 		 List.map (function x -> Ast0.wrap [x]) code,
-		 mids, P.id2mcode $3)) }
+		 mids, P.id2mcode rp)) }
 
 /* a statement on its own */
 single_statement:
-    statement                         { $1 }
-  | TOPar0 midzero_list(statement,statement) TCPar0
-      /* degenerate case, elements are single statements and thus don't
-	contain dots */
-      { let (mids,code) = $2 in
-        Ast0.wrap
-	  (Ast0.Disj(P.id2mcode $1,
-		     List.map (function x -> Ast0.wrap [x]) code,
-		     mids, P.id2mcode $3)) }
-  | TOPar0 andzero_list(statement,statement) TCPar0
-      /* degenerate case, elements are single statements and thus don't
-	contain dots */
-      { let (mids,code) = $2 in
-        Ast0.wrap
-	  (Ast0.Conj(P.id2mcode $1,
-		     List.map (function x -> Ast0.wrap [x]) code,
-		     mids, P.id2mcode $3)) }
+  statement                         { $1 }
+| s = close_boolean_statement(statement) { s }
 
 iso_statement: /* statement or declaration used in statement context */
     statement                         { $1 }
