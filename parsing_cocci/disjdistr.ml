@@ -283,8 +283,8 @@ and disjdecl d =
       let decl = disjdecl decl in
       List.map (function decl -> Ast.rewrap d (Ast.AsDecl(decl,asdecl))) decl
   | Ast.Init(stg,ty,id,eq,ini,sem) ->
-      disjmult2 (disjty ty) (disjini ini)
-	(function ty -> function ini ->
+      disjmult3 (disjty ty) (disjident id) (disjini ini)
+	(fun ty id ini ->
 	  Ast.rewrap d (Ast.Init(stg,ty,id,eq,ini,sem)))
   | Ast.UnInit(stg,ty,id,sem) ->
       disjmult2 (disjty ty) (disjident id)

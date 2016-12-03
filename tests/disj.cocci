@@ -5,6 +5,11 @@
 
 @@
 @@
+- int \(disj_id1\|disj_id2\) = 0;
++ int disj_id3 = 0;
+
+@@
+@@
 - disj_expr(\(1\|2\))
 + disj_expr(3)
 

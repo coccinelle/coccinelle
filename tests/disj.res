@@ -2,6 +2,9 @@ void f() {
     int disj_id0;
     int disj_id3;
     int disj_id3;
+    int disj_id0 = 0;
+    int disj_id3 = 0;
+    int disj_id3 = 0;
     disj_expr(0);
     disj_expr(3);
     disj_expr(3);
