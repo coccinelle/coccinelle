@@ -1445,6 +1445,15 @@ funproto:
 	      P.clt2mcode ";" pt)) }
 
 fundecl:
+  f = single_fundecl { f }
+| lp = TOPar0 t = midzero_list(fundecl,fundecl) rp = TCPar0
+    { let (mids,code) = t in
+    Ast0.wrap
+      (Ast0.Disj(P.id2mcode lp,
+		 List.map (function x -> Ast0.wrap [x]) code,
+		 mids, P.id2mcode rp)) }
+
+single_fundecl:
   f=fninfo
   TFunDecl i=fn_ident lp=TOPar arglist=arg_list(decl) rp=TCPar
   lb=TOBrace b=fun_start rb=TCBrace

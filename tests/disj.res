@@ -8,6 +8,11 @@ void f() {
     float disj_type;
     bool disj_type;
     bool disj_type;
+    break;
+}
+
+void g() {
+    continue;
 }
 
 void disj_id0();

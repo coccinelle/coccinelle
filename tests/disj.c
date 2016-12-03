@@ -8,7 +8,13 @@ void f() {
     float disj_type;
     int disj_type;
     char disj_type;
+    return;
 }
+
+void g() {
+    return;
+}
+
 
 void disj_id0();
 void disj_id1();

@@ -24,3 +24,21 @@
 + void disj_id3() {
     ...
   }
+
+@@
+@@
+(
+  void f() {
+    ...
+- return;
++ break;
+    ...
+  }
+|
+  void g() {
+    ...
+- return;
++ continue;
+    ...
+  }
+)
