@@ -2597,7 +2597,10 @@ mident: pure_ident
 
 disj_ident:
        mident { $1 }
-     | lp=TOPar0 t=midzero_list(disj_ident,disj_ident) rp=TCPar0
+     | s = close_disj_ident(disj_ident) { s }
+
+close_disj_ident(sub_ident):
+     | lp=TOPar0 t=midzero_list(sub_ident,sub_ident) rp=TCPar0
 	 { let (mids,code) = t in
 	 Ast0.wrap
 	   (Ast0.DisjId(P.id2mcode lp,code,mids, P.id2mcode rp)) }
@@ -2615,6 +2618,7 @@ decl_ident:
      | TMetaDeclarer
          { let (nm,constraints,pure,clt) = $1 in
          Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,Ast.NoVal,pure)) }
+     | s = close_disj_ident(decl_ident) { s }
 
 iter_ident:
        TIteratorId

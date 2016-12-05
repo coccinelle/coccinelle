@@ -31,6 +31,14 @@
   }
 
 @@
+declarer name DISJ_DECLARER1;
+declarer name DISJ_DECLARER2;
+declarer name DISJ_DECLARER3;
+@@
+- \(DISJ_DECLARER1\|DISJ_DECLARER2\)(...);
++ DISJ_DECLARER3(0);
+
+@@
 @@
 (
   void f() {

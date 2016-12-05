@@ -11,6 +11,9 @@ void f() {
     float disj_type;
     int disj_type;
     char disj_type;
+    DISJ_DECLARER0(0);
+    DISJ_DECLARER1(0);
+    DISJ_DECLARER2(0);
     return;
 }
 

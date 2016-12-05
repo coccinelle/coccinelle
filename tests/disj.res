@@ -11,6 +11,9 @@ void f() {
     float disj_type;
     bool disj_type;
     bool disj_type;
+    DISJ_DECLARER0(0);
+    DISJ_DECLARER3(0);
+    DISJ_DECLARER3(0);
     break;
 }
 
