@@ -30,6 +30,8 @@
   tests/type_constraints.cocci
 - Allow script finalizers for parallel computation.  See
   tests/countcalls.cocci and tests/countcalls_python.cocci
+- Allow disjunctions on a wider range of syntactic constructions (function
+  definitions, variable declarations, ...). See tests/disj.cocci.
 ** Features:
 - Better error reporting for unparsable terms when using make_expr etc in
   script code.  Problem reported by Markus Elfring.
