@@ -1204,9 +1204,10 @@ let rec main_action xs =
 		      else prev)
 		      ([], ([], [])) in res) in
 	  let outfiles = List.rev outfiles in
+	  Cocci.post_engine cocci_infos merges;
 	  (match Iteration.get_pending_instance() with
 	    None ->
-	      (x,xs,cocci_infos,outfiles,merges)
+	      (x,xs,cocci_infos,outfiles)
 	  | Some (files,virt_rules,virt_ids) ->
 	      if outfiles = [] || outfiles = [] || not !FC.show_diff
 		  || !inplace_modif
@@ -1226,10 +1227,9 @@ let rec main_action xs =
 		begin
 		  Common.pr2
 		    "Out of place transformation not compatible with iteration. Aborting.\n consider using -no_show_diff or -in_place";
-		  (x,xs,cocci_infos,outfiles,merges)
+		  (x,xs,cocci_infos,outfiles)
 		end) in
-      let (x,xs,cocci_infos,outfiles,merges) = toploop xs in
-      Cocci.post_engine cocci_infos merges;
+      let (x,xs,cocci_infos,outfiles) = toploop xs in
       Common.profile_code "Main.result analysis" (fun () ->
 	Ctlcocci_integration.print_bench();
 	generate_outfiles outfiles x xs;
