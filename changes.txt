@@ -26,7 +26,7 @@
 
 * 1.0.7
 ** Language:
-- Allow negative constraints on type metavariables.  See
+- Allow constraints on type metavariables.  See
   tests/type_constraints.cocci
 - Allow script finalizers for parallel computation.  See
   tests/countcalls.cocci and tests/countcalls_python.cocci

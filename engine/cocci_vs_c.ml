@@ -294,6 +294,8 @@ know which one is which... *)
 let equal_inh_metavarval valu valu'=
   match valu, valu' with
   | Ast_c.MetaIdVal a, Ast_c.MetaIdVal b -> a = b
+  | Ast_c.MetaTypeVal a, Ast_c.MetaIdVal b ->
+      Pretty_print_c.string_of_fullType a = b
   | Ast_c.MetaAssignOpVal a, Ast_c.MetaAssignOpVal b -> a = b
   | Ast_c.MetaBinaryOpVal a, Ast_c.MetaBinaryOpVal b -> a = b
   | Ast_c.MetaFuncVal a, Ast_c.MetaFuncVal b -> a = b
@@ -1760,9 +1762,6 @@ and string_fragment ea (eb,ii) =
   | _,_ -> fail
 
 and string_format ea eb =
-   let check_constraints constraints ida idb =
-     X.check_constraints satisfies_generalconstraint constraints (ida, idb)
-       (fun () -> return ((),())) in
   X.all_bound (A.get_inherited ea) >&&>
   let wa x = A.rewrap ea x in
   match A.unwrap ea,eb with
@@ -1776,7 +1775,7 @@ and string_format ea eb =
 	     (B.ConstantFormat(str2),[ib1])))
       else fail
   | A.MetaFormat(ida,constraints,keep,inherited),(B.ConstantFormat(str2),ii) ->
-      check_constraints constraints (A.unwrap_mcode ida) str2 >>=
+      check_constraints constraints ida str2 >>=
       (fun () () ->
 	let max_min _ =
 	  Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_format eb) in
@@ -2482,10 +2481,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 		       match typ with
 			 Some typ' -> Pretty_print_c.string_of_fullType typ'
 		       | None -> Pretty_print_c.string_of_name nameidb in
-		     X.check_constraints
-		       satisfies_generalconstraint cstr
-		       (A.unwrap_mcode ida, typename)
-			 (fun () -> return ((),()))
+		     check_constraints cstr ida typename
 		     >>= (fun () () ->
 		       return (
 		       (A.TyDecl (tya0, ptvirga)) +> A.rewrap decla,

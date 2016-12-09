@@ -173,7 +173,12 @@ let collect_refs include_constraints =
   let astfvtypeC recursor k ty =
     bind (k ty)
       (match Ast.unwrap ty with
-	Ast.MetaType(name,_,_,_) -> [metaid name]
+	Ast.MetaType(name,constraints,_,_) ->
+	  let metas =
+	    if include_constraints
+	    then Ast.cstr_meta_names constraints
+	    else [] in
+	  bind (List.rev metas) [metaid name]
       | _ -> option_default) in
 
   let astfvinit recursor k ty =

@@ -220,8 +220,9 @@ let check_meta_tyopt type_irrelevant v =
       | _ -> fail name)
   | Ast.MetaIdDecl(Ast.NONE,(rule,name)) ->
       (match meta_lookup rule name v with
-	Ast.MetaIdDecl(_,_) | Ast.MetaFreshIdDecl(_,_) -> ()
-      | _ -> fail name)
+	Ast.MetaIdDecl(_,_) | Ast.MetaFreshIdDecl(_,_)
+      | Ast.MetaTypeDecl(_,_) -> ()
+      | x -> fail name)
   | Ast.MetaFreshIdDecl((rule,name),seed) ->
       raise
 	(Semantic_cocci.Semantic
