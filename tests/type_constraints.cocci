@@ -25,6 +25,7 @@ identifier x;
        ...
  }
 
+/*Rule given by Michael Stefaniuc*/
 @depends on r2@
 type T = {r1.T, r2.T};
 @@
