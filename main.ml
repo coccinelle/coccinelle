@@ -1204,8 +1204,13 @@ let rec main_action xs =
 		      else prev)
 		      ([], ([], [])) in res) in
 	  let outfiles = List.rev outfiles in
-	  Cocci.post_engine cocci_infos merges;
-	  (match Iteration.get_pending_instance() with
+	  let pending_instance =
+	    match Iteration.get_pending_instance() with
+	      None ->
+		Cocci.post_engine cocci_infos merges;
+		Iteration.get_pending_instance()
+	    | pending_instance -> pending_instance in
+	  (match pending_instance with
 	    None ->
 	      (x,xs,cocci_infos,outfiles)
 	  | Some (files,virt_rules,virt_ids) ->
