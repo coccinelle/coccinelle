@@ -353,11 +353,11 @@ let prepare coccifile code =
        let add_merge_vars (name, metavars, script_vars, code) =
 	 let let_merge_var index (merge_name, local_name) =
 	   Printf.sprintf "\
-let (%s : 'a list), (_ : 'a) =
+let (%s : 'a%d list), (_ : 'a%d) =
   (List.map (fun s -> Marshal.from_string s 0)
      !(Coccilib.merged_variables).(%d),
    %s) in\n"
-	     merge_name index local_name in
+	     merge_name index index index local_name in
 	 let let_merge_vars = List.mapi let_merge_var merge_vars in
 	 let preambule = String.concat "" let_merge_vars in
 	 (name, metavars, script_vars, preambule ^ code) in
