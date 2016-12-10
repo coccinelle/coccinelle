@@ -32,6 +32,8 @@
   tests/countcalls.cocci and tests/countcalls_python.cocci
 - Allow disjunctions on a wider range of syntactic constructions (function
   definitions, variable declarations, ...). See tests/disj.cocci.
+- Finalizers now occur before iteration loop and can register new
+  iterations.
 ** Features:
 - Better error reporting for unparsable terms when using make_expr etc in
   script code.  Problem reported by Markus Elfring.

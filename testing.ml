@@ -53,7 +53,8 @@ let end_redirect_output = Common.map_option (
 
 let rec test_loop cocci_file cfiles =
   let (cocci_infos,_) = Cocci.pre_engine (cocci_file, !Config.std_iso) in
-  let res = Cocci.full_engine cocci_infos cfiles in
+  let (res, merges) = Cocci.full_engine cocci_infos cfiles in
+  Cocci.post_engine cocci_infos merges;
   match Iteration.get_pending_instance () with
     None -> (cocci_infos, res)
   | Some (cfiles', virt_rules, virt_ids) ->
@@ -65,12 +66,11 @@ let rec test_loop cocci_file cfiles =
 let test_with_output_redirected cocci_file cfiles expected_out =
   Iteration.initialization_stack := [];
   let redirected_output = begin_redirect_output expected_out in
-  let (cocci_infos, (res, merges)) =
+  let (cocci_infos, res) =
     try test_loop cocci_file cfiles
     with e ->
       ignore (end_redirect_output redirected_output);
       raise e in
-  Cocci.post_engine cocci_infos merges;
   let current_out = end_redirect_output redirected_output in
   (res, current_out)
 
