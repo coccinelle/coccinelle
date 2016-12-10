@@ -1087,11 +1087,12 @@ let get_neg_pos_list (_,rule) used_after_list =
      Common.union_set ap1 ap2) in
   let option_default = ([],[],[]) in
   let metaid (x,_,_,_) = x in
-  let get_neg_pos_constraints constraints =
-    Ast.cstr_fold
+  let get_neg_pos_constraints =
+    Ast.cstr_fold_sign
       { Ast.empty_cstr_transformer with
-	Ast.cstr_meta_name = Some (fun mn accu -> mn :: accu);
-	cstr_script = Some (fun _ accu -> accu) } constraints [] in
+	Ast.cstr_meta_name = Some (fun mn (pos, neg) -> (mn :: pos, neg)) }
+      { Ast.empty_cstr_transformer with
+	Ast.cstr_meta_name = Some (fun mn (pos, neg) -> (pos, mn :: neg)) } in
   let mcode r mc =
     List.fold_left
       (function (pos_vars,neg_vars,all_vars) ->
@@ -1100,13 +1101,16 @@ let get_neg_pos_list (_,rule) used_after_list =
 	   all_vars are position variables with the annotation ALL.
 	   These sets can overlap. *)
 	(function
-	    Ast.MetaPos(name,constraints,Ast.PER,_,_) ->
-	      let constraint_vars = get_neg_pos_constraints constraints in
-	      ((metaid name)::pos_vars,constraint_vars@neg_vars,all_vars)
-	  | Ast.MetaPos(name,constraints,Ast.ALL,_,_) ->
-	      let constraint_vars = get_neg_pos_constraints constraints in
-	      let name = metaid name in
-	      (name::pos_vars,constraint_vars@neg_vars,name::all_vars)))
+	    Ast.MetaPos(name,constraints,collect,_,_) ->
+	      let name' = metaid name in
+	      let pos_vars', neg_vars' =
+		get_neg_pos_constraints constraints
+		  ((name' :: pos_vars), neg_vars) in
+	      let all_vars' =
+		match collect with
+		  Ast.PER -> all_vars
+		| Ast.ALL -> name' :: all_vars in
+	      (pos_vars', neg_vars',all_vars')))
       option_default (Ast.get_pos_var mc) in
   let v =
     V.combiner bind option_default

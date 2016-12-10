@@ -1224,29 +1224,32 @@ let empty_cstr_transformer = {
   cstr_script = None;
 }
 
-let rec cstr_fold transformer c accu =
+let rec cstr_fold_sign pos neg c accu =
   match c with
     CstrFalse
   | CstrTrue -> accu
   | CstrAnd list | CstrOr list ->
-      List.fold_left (fun accu c' -> cstr_fold transformer c' accu) accu list
-  | CstrNot c' -> cstr_fold transformer c' accu
+      List.fold_left (fun accu c' -> cstr_fold_sign pos neg c' accu) accu list
+  | CstrNot c' -> cstr_fold_sign neg pos c' accu
   | CstrString s ->
-      Common.default accu (fun f -> f s accu) transformer.cstr_string
+      Common.default accu (fun f -> f s accu) pos.cstr_string
   | CstrMeta_name mn ->
-      Common.default accu (fun f -> f mn accu) transformer.cstr_meta_name
+      Common.default accu (fun f -> f mn accu) pos.cstr_meta_name
   | CstrRegexp (s, re) ->
-      Common.default accu (fun f -> f s re accu) transformer.cstr_regexp
+      Common.default accu (fun f -> f s re accu) pos.cstr_regexp
   | CstrScript ((_name, _lang, params, _code) as script_constraint) ->
       begin
-	match transformer.cstr_script with
+	match pos.cstr_script with
 	  None ->
 	    Common.default accu
 	      (fun f ->
 		List.fold_left (fun accu' (mv, _) -> f mv accu') accu params)
-	      transformer.cstr_meta_name
+	      pos.cstr_meta_name
 	| Some f -> f script_constraint accu
       end
+
+let cstr_fold transformer c accu =
+  cstr_fold_sign transformer transformer c accu
 
 let cstr_iter transformer c =
   cstr_fold

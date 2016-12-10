@@ -851,6 +851,10 @@ type 'a cstr_transformer = {
 
 val empty_cstr_transformer: 'a cstr_transformer
 
+val cstr_fold_sign:
+    ('a -> 'a) cstr_transformer -> ('a -> 'a) cstr_transformer ->
+      general_constraint -> 'a -> 'a
+
 val cstr_fold: ('a -> 'a) cstr_transformer -> general_constraint -> 'a -> 'a
 
 val cstr_eval: bool cstr_transformer -> general_constraint -> bool
