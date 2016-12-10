@@ -5987,7 +5987,7 @@ let format_to_string f =
     loop() in
   (try loop() with End_of_file -> ());
   close_in i;
-  command2 ("rm -f " ^ nm);
+  Sys.remove nm;
   String.concat "\n" (List.rev !lines)
 
 
