@@ -1085,6 +1085,7 @@ let rec main_action xs =
 	    | Some _ | None -> 1 in
 	  let seq_fold merge op z l =
 	    List.fold_left op z l in
+	  let current_core = ref 0 in
 	  let par_fold merge op z l =
             let prefix =
 	      let prefix =
@@ -1121,7 +1122,9 @@ let rec main_action xs =
 	    let (res, tmps) =
 	      try
 		Parmap.parfold
-		  ~init:(fun id -> Parmap.redirect ~path:prefix ~id)
+		  ~init:(fun id ->
+		    current_core := id;
+		    Parmap.redirect ~path:prefix ~id)
 		  ~ncores
 		  ~chunksize
 		  op (Parmap.L l) (z, !Common._temp_files_created) merge
@@ -1150,15 +1153,19 @@ let rec main_action xs =
 		  [] ->
 		    (* parmap case does a lot of work that is not needed
 		       if there is nothing to do *)
-		    [], ([], [])
+		    [], Common.IntMap.empty
 		| _ ->
 		    let merge (outfiles, merge_vars) (outfiles', merge_vars') =
 		      let all_outfiles = List.rev_append outfiles outfiles' in
 		      let all_merge_vars =
-			Cocci.union_merge_vars merge_vars merge_vars' in
+			Common.IntMap.merge
+			  (fun _ left right -> match left, right with
+			    (Some v, _) | (_, Some v) -> Some v
+			  | _ -> assert false)
+			  merge_vars merge_vars' in
 		      all_outfiles, all_merge_vars in
 		    infiles +> actual_fold merge
-		      (fun prev cfiles ->
+		      (fun (prev_files, prev_merges as prev) cfiles ->
 		      if (not !Flag.worth_trying_opt) ||
 		      Cocci.worth_trying cfiles constants
 		      then
@@ -1177,14 +1184,17 @@ let rec main_action xs =
 					if !output_file <> "" && !compat_mode
 					then Some !output_file
 					else None in
-				      merge
-					(adjust_stdin cfiles (fun () ->
+				      let files, merges =
+					adjust_stdin cfiles (fun () ->
 					  Common.redirect_stdout_opt optfile
 					    (fun () ->
 					      (* this is the main call *)
 					      Cocci.full_engine cocci_infos
 						cfiles
-					 ))) prev
+					 )) in
+				      List.rev_append files prev_files,
+				      Common.IntMap.add !current_core merges
+					prev_merges
 				    with
 				    | Common.UnixExit x ->
 					raise (Common.UnixExit x)
@@ -1202,8 +1212,11 @@ let rec main_action xs =
 			      res)
 			end
 		      else prev)
-		      ([], ([], [])) in res) in
+		      ([], Common.IntMap.empty) in res) in
 	  let outfiles = List.rev outfiles in
+	  let add_merge _core merges all_merges =
+	    Cocci.union_merge_vars merges all_merges in
+	  let merges = Common.IntMap.fold add_merge merges ([], []) in
 	  let pending_instance =
 	    match Iteration.get_pending_instance() with
 	      None ->
