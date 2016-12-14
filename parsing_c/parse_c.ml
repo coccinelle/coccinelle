@@ -148,8 +148,6 @@ let commentized xs = xs +> Common.tail_map_filter (function
 	      [Token_c.CppAttr;Token_c.CppPassingNormal;Token_c.CppMacro]
             ||
             (s =~ "__.*")
-
-
         | 5 ->
 	    (match cppkind with
 	      Token_c.CppAttr | Token_c.CppPassingNormal
@@ -158,10 +156,6 @@ let commentized xs = xs +> Common.tail_map_filter (function
 	    | _ -> false)
             ||
             (s =~ "__.*")
-
-
-
-
         | _ -> failwith "not valid level passing number"
       in
       if legal_passing then None else Some (ii.Ast_c.pinfo)
@@ -175,7 +169,6 @@ let commentized xs = xs +> Common.tail_map_filter (function
                 Some (ii.Ast_c.pinfo)
             )
         *)
-
 
   | Parser_c.TCommentMisc ii
   | Parser_c.TAction ii
@@ -203,8 +196,6 @@ let count_lines_commentized xs =
     !count
   end
 
-
-
 let print_commentized xs =
   let line = ref (-1) in
   begin
@@ -230,9 +221,6 @@ let print_commentized xs =
 	| _ -> ());
     if ys<>[] then pr2 "";
   end
-
-
-
 
 (*****************************************************************************)
 (* Lexing only *)
