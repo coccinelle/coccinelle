@@ -1165,7 +1165,8 @@ let parse_info_of_files choose_includes parse_strings cache kind files
           (cprogram_of_file_cached current_typedefs parse_strings
             cache file)
       with Flag.UnreadableFile file ->
-        pr2_once ((string_of_kind_file kind) ^ " file " ^ file ^ " not readable");
+        pr2_once
+	  ((string_of_kind_file kind) ^ " file " ^ file ^ " not readable");
         None in
     match result with
       | None -> (None,None)
