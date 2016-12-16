@@ -58,7 +58,8 @@ val sp_of_file :
 	 string list option *
 	 (Str.regexp * Str.regexp list * string list) option *
 	 Get_constants2.combine option) *
-      bool (* format info needed for strings *)
+      bool (* format info needed for strings *) *
+      bool (* contains modif in any rule *)
 
 (* TODO: Remove
 val rule_elem_of_string : string -> filename option -> Ast_cocci.rule_elem

@@ -558,7 +558,7 @@ let test_parse_cocci file =
   if not (file =~ ".*\\.cocci")
   then pr2 "warning: seems not a .cocci file";
 
-  let (mvs,xs,_,_,_,_,(grep_tokens,query,_,_),_) =
+  let (mvs,xs,_,_,_,_,(grep_tokens,query,_,_),_,_) =
     Parse_cocci.process file (Some !Config.std_iso) false in
   xs +> List.iter2 Pretty_print_cocci.unparse mvs;
   Format.print_newline();
@@ -608,7 +608,7 @@ let test_rule_dependencies file =
   if not (file =~ ".*\\.cocci")
   then pr2 "warning: seems not a .cocci file";
   Iso_pattern.verbose_iso := false;
-  let (_,xs,fvs,_,_,_,_,_) =
+  let (_,xs,fvs,_,_,_,_,_,_) =
     Parse_cocci.process file (Some !Config.std_iso) false in
   Printf.printf "digraph {\n";
   let prevrule = ref "" in

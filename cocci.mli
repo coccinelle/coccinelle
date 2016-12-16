@@ -54,6 +54,7 @@ val sp_of_file :
 	 (*fresh used after list seeds*)
 	 Ast_cocci.meta_name list list list) *
       Ast_cocci.meta_name list list list * constant_info *
-      bool (* format information needed for strings? *)
+      bool (* format information needed for strings? *) *
+      bool (* contains modif in any rule *)
 
 val normalize_path : string -> string

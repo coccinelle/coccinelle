@@ -34,7 +34,7 @@ val process :
 	     * (*non metavars in - code, for other tools*)
 	     Get_constants2.combine option) *
 	     (* true if string constants need to be parsed *)
-	  bool
+	  bool * bool (* true if contains modifs *)
 
 val enumerate_constraint_scripts :  Ast_cocci.top_level ->
   (Ast_cocci.metavar * Ast_cocci.meta_name Ast_cocci.mcode * string * string *

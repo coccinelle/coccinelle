@@ -2428,6 +2428,28 @@ let parse file =
   res) in
   parse_loop file
 
+let contains_modifs ast =
+  let donothing r k e = k e in
+  let bind x y = x || y in
+  let option_default = false in
+  let mcode r mc =
+    match Ast.get_mcodekind mc with
+      Ast.CONTEXT _ -> false
+    | Ast.MINUS _ | Ast.PLUS _ -> true in
+  let recursor = Visitor_ast.combiner bind option_default
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode
+      donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing in
+  List.exists
+    (function
+	Ast.CocciRule(nm,infos,ast,_,_) ->
+	  List.exists recursor.Visitor_ast.combiner_top_level ast
+      | _ -> false)
+    ast
+
 (* parse to ast0 and then convert to ast *)
 let process file isofile verbose =
   Parse_aux.contains_string_constant := false;
@@ -2556,7 +2578,7 @@ let process file isofile verbose =
   let search_tokens = Get_constants2.get_constants code neg_pos virt in
 
   (metavars,code,fvs,neg_pos,ua,pos,search_tokens,
-   !Parse_aux.contains_string_constant)
+   !Parse_aux.contains_string_constant,contains_modifs code)
 
 let enumerate_constraint_scripts =
   let bind = List.rev_append in
