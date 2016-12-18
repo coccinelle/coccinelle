@@ -60,7 +60,7 @@ let extra_includes = ref ([] : string list)
 let include_table = ("include_table", ref 0, Hashtbl.create(101))
 let find_table = ("find_table", ref 0, Hashtbl.create(101))
 
-let cache_find (_,_,cache) k =
+let cache_find (nm,_,cache) k =
   let (ct,res) = Hashtbl.find cache k in
   ct := !ct + 1;
   res

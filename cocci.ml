@@ -33,8 +33,9 @@ let cprogram_of_file saved_typedefs saved_macros parse_strings cache file =
       (Some saved_macros) parse_strings cache file in
   parse_info.Parse_c.parse_trees
 
-let cprogram_of_file_cached saved_typedefs parse_strings cache file =
-  Parse_c.parse_cache saved_typedefs parse_strings cache file
+let cprogram_of_file_cached saved_typedefs parse_strings cache file
+    has_changes =
+  Parse_c.parse_cache saved_typedefs parse_strings cache file has_changes
 
 let cfile_of_program program2_with_ppmethod outf =
   Unparse_c.pp_program program2_with_ppmethod outf
@@ -851,7 +852,7 @@ let union_merge_vars (ocaml_merges, python_merges)
   let all_python_merges = List.rev_append python_merges python_merges' in
   (all_ocaml_merges, all_python_merges)
 
-type cocci_info = toplevel_cocci_info list
+type cocci_info = toplevel_cocci_info list * bool (* true if no changes *)
       * bool (* parsing of format strings needed *)
       * (string array * string array) (* merge/local variables for Python *)
 
@@ -1157,13 +1158,13 @@ let same_file parse_info_1 parse_info_2 =
   parse_info_1.Parse_c.filename = parse_info_2.Parse_c.filename
 
 let parse_info_of_files choose_includes parse_strings cache kind files
-    current_typedefs =
+    current_typedefs has_changes =
   let parse_info_of_file file current_typedefs =
     let result =
       try
         Some
           (cprogram_of_file_cached current_typedefs parse_strings
-            cache file)
+            cache file has_changes)
       with Flag.UnreadableFile file ->
         pr2_once
 	  ((string_of_kind_file kind) ^ " file " ^ file ^ " not readable");
@@ -1187,17 +1188,18 @@ let parse_info_of_files choose_includes parse_strings cache kind files
       ([],current_typedefs) files in
   (List.rev res,current_typedefs)
 
-let prepare_c files choose_includes parse_strings : file_info list =
+let prepare_c files choose_includes parse_strings has_changes
+    : file_info list =
   Includes.set_parsing_style Includes.Parse_no_includes;
   let (extra_includes_parse_infos, current_typedefs) =
     let (res,current_typedefs) =
       parse_info_of_files choose_includes parse_strings true Header
-        !Includes.extra_includes None in
+        !Includes.extra_includes None has_changes in
     (List.map fst res, current_typedefs) in
   Includes.set_parsing_style choose_includes;
   let (source_parse_infos,_) =
     parse_info_of_files choose_includes parse_strings false Source files
-      current_typedefs in
+      current_typedefs false in
   let f (sourceacc, headeracc) (source, headers) =
     (source::sourceacc, appendf same_file headers headeracc) in
   let (sources, headers) = List.fold_left f
@@ -2032,7 +2034,7 @@ let pre_engine2 (coccifile, isofile) =
   let (metavars,astcocci,
        free_var_lists,negated_pos_lists,used_after_lists,
        positions_lists,((toks,_,_,_) as constants),parse_strings,
-       contains_modif) =
+       contains_modifs) =
     sp_of_file coccifile isofile in
 
   let ctls = ctls_of_ast astcocci used_after_lists positions_lists in
@@ -2111,13 +2113,15 @@ let pre_engine2 (coccifile, isofile) =
   let (python_merge_names, python_local_names) =
     find_python_merge_variables cocci_infos in
 
-  ((cocci_infos,parse_strings,(python_merge_names, python_local_names)),
+  ((cocci_infos,contains_modifs,parse_strings,
+    (python_merge_names, python_local_names)),
    constants)
 
 let pre_engine a =
   Common.profile_code "pre_engine" (fun () -> pre_engine2 a)
 
-let full_engine2 (cocci_infos, parse_strings, (_, python_local_names)) cfiles =
+let full_engine2
+    (cocci_infos, has_changes, parse_strings, (_, python_local_names)) cfiles =
 
   show_or_not_cfiles cfiles;
 
@@ -2162,7 +2166,8 @@ let full_engine2 (cocci_infos, parse_strings, (_, python_local_names)) cfiles =
 	end in
 
       Flag.currentfiles := cfiles;
-      let c_infos  = prepare_c cfiles choose_includes parse_strings in
+      let c_infos =
+	prepare_c cfiles choose_includes parse_strings has_changes in
 
       (* ! the big loop ! *)
       let c_infos' = bigloop cocci_infos c_infos parse_strings in
@@ -2205,7 +2210,7 @@ let full_engine a b =
   Common.profile_code "full_engine"
     (fun () -> let res = full_engine2 a b in (*Gc.print_stat stderr; *)res)
 
-let post_engine2 (cocci_infos, _, (python_merge_names, _)) merges =
+let post_engine2 (cocci_infos, _, _, (python_merge_names, _)) merges =
   let (ocaml_merges, python_merges) = merges in
   Coccilib.merged_variables := list_array_of_array_list ocaml_merges;
   Array.iteri (fun index variable ->
@@ -2236,7 +2241,7 @@ let post_engine2 (cocci_infos, _, (python_merge_names, _)) merges =
 let post_engine a b =
   Common.profile_code "post_engine" (fun () -> post_engine2 a b)
 
-let has_finalize (cocci_infos,_,_) =
+let has_finalize (cocci_infos,_,_,_) =
   List.exists
     (function
       | FinalScriptRuleCocciInfo _ -> true

@@ -47,3 +47,7 @@ val resolve : string -> parsing_style -> Ast_c.inc_file -> string option
  * exists and should be parsed according to [opt].
  * If so, returns its name. Returns [None] otherwise.
  *)
+
+val cache_find : (string * int ref * ('a,(int ref * 'b)) Hashtbl.t) -> 'a -> 'b
+val cache_add : (string * int ref * ('a,(int ref * 'b)) Hashtbl.t) -> 'a -> 'b
+  -> unit

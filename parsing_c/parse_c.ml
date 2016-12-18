@@ -958,7 +958,7 @@ module StringSet : Set.S with type elt = string = Set.Make(String)
 
 module StringMap : Map.S with type key = string = Map.Make(String)
 
-let header_cache = Hashtbl.create 101
+let header_cache = ("header_cache", ref 0, Hashtbl.create(101))
 
 let tree_stack = ref []
 let seen_files = ref []
@@ -972,8 +972,8 @@ let rec _parse_print_error_heuristic2 saved_typedefs saved_macros
     let cached_result =
       if use_header_cache
       then
-	try Some (Hashtbl.find header_cache file) with
-	  Not_found -> None
+	try Some (Includes.cache_find header_cache file)
+	with Not_found -> None
       else None in
     match cached_result with
       | None ->
@@ -981,7 +981,7 @@ let rec _parse_print_error_heuristic2 saved_typedefs saved_macros
           _parse_print_error_heuristic2bis saved_typedefs saved_macros
             parse_strings file use_header_cache in
         (if use_header_cache && cache
-	then Hashtbl.add header_cache file result);
+	then Includes.cache_add header_cache file result);
         tree_stack := result :: !tree_stack;
         Some result
       | Some result ->
@@ -1288,9 +1288,11 @@ let parse_c_and_cpp_keep_typedefs td macs parse_strings cache a =
 (*****************************************************************************)
 (* Same but faster cos memoize stuff *)
 (*****************************************************************************)
-let parse_cache typedefs parse_strings cache file =
+let parse_cache typedefs parse_strings cache file has_changes =
   if not !Flag_parsing_c.use_cache
-  then parse_print_error_heuristic typedefs None parse_strings cache file false
+  then
+    parse_print_error_heuristic typedefs None parse_strings cache file
+      (not has_changes || !Includes.include_headers_for_types)
   else
   let _ = pr2_once "TOFIX: use_cache is not sensitive to changes in the considered macros, include files, etc" in
   let need_no_changed_files =

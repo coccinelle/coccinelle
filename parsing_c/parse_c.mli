@@ -50,7 +50,7 @@ val parse_cache:
     (string, Lexer_parser.identkind) Common.scoped_h_env option (* typedefs *) ->
     bool (* true if format characters need to be parsed *) ->
     bool (* true if parsing results should be cached *) ->
-    Common.filename (*cfile*) ->
+    Common.filename (*cfile*) -> bool (* true if no changes *) ->
     extended_parse_info * extended_parse_info list
 
 
