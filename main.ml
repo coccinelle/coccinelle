@@ -960,8 +960,6 @@ let rec main_action xs =
        * as some elements in xs may also be directories, or individual
        * files.
        *)
-	  dir := (Common.is_directory x);
-
           if !cocci_file = ""
           then failwith "I need a cocci file,  use --sp-file <file>";
 
@@ -1396,6 +1394,10 @@ let main () =
 
     (* julia hack so that one can override directories specified on
      * the command line. *)
+    dir :=
+      (if !args = [] || !test_mode
+      then false
+      else Common.is_directory (List.hd !args));
     (if !dir
     then
       let chosen_dir =
