@@ -31,6 +31,7 @@ let ignore_unknown_opt = ref false
 let profile_per_file = ref false
 
 let dir = ref false
+let ignore = ref []
 let file_groups = ref false
 let kbuild_info = ref ""
 
@@ -330,6 +331,8 @@ let short_options = [
   "-c", Arg.Set compat_mode, " gcc/cpp compatibility mode";
 
   "--dir", Arg.Set dir,
+  "    <dir> process all files in directory recursively";
+  "--ignore", Arg.String (fun s -> ignore := s :: !ignore),
   "    <dir> process all files in directory recursively";
   "--file-groups", Arg.Set file_groups,
   "    <file> process the file groups listed in the file";
@@ -1040,7 +1043,32 @@ let rec main_action xs =
 		Some (Printf.sprintf "%s/d%d" str index)
 	  | _ -> ());
 
-	  let infiles =
+	let ncores =
+	  match !parmap_cores with
+	  | Some x when x <= 0 -> succ (Parmap.get_default_ncores ())
+	  | Some x -> x
+	  | None -> 0 in
+	let chunksize =
+	  match !parmap_chunk_size with
+	  | Some x when x > 0 -> x
+	  | Some _ | None -> 1 in
+	let infiles =
+	  if !ignore = []
+	  then infiles
+	  else
+	    let regexps = List.map Str.regexp !ignore in
+	    let inacceptable x =
+	      List.for_all (* all files in a group must fail *)
+		(fun x ->
+		  List.exists (fun re -> Str.string_match re x 0) regexps)
+		x in
+	    if ncores = 0
+	    then List.filter (function x -> not (inacceptable x)) infiles
+	    else
+	      Parmap.parfold ~ncores
+		(fun x rest -> if inacceptable x then rest else x :: rest)
+		(Parmap.L infiles) [] (@) in
+	let infiles =
 	    match (!distrib_index,!distrib_max) with
 	      (None,None) -> infiles
 	    | (Some index,Some max) ->
@@ -1072,15 +1100,6 @@ let rec main_action xs =
 		  end
 	    | _ -> failwith "inconsistent distribution information" in
 
-	  let ncores =
-	    match !parmap_cores with
-	    | Some x when x <= 0 -> succ (Parmap.get_default_ncores ())
-	    | Some x -> x
-	    | None -> 0 in
-	  let chunksize =
-	    match !parmap_chunk_size with
-	    | Some x when x > 0 -> x
-	    | Some _ | None -> 1 in
 	  let seq_fold merge op z l =
 	    List.fold_left op z l in
 	  let current_core = ref 0 in

@@ -234,6 +234,7 @@ and general_constraint =
   | CstrMeta_name of meta_name
   | CstrRegexp of string * Regexp.regexp
   | CstrScript of script_constraint
+  | CstrType of fullType
 
 and script_constraint =
       string (* name of generated function *) *
@@ -1215,6 +1216,7 @@ type 'a cstr_transformer = {
     cstr_meta_name: (meta_name -> 'a) option;
     cstr_regexp: (string -> Regexp.regexp -> 'a) option;
     cstr_script: (script_constraint -> 'a) option;
+    cstr_type: (fullType -> 'a) option
   }
 
 let empty_cstr_transformer = {
@@ -1222,6 +1224,7 @@ let empty_cstr_transformer = {
   cstr_string = None;
   cstr_meta_name = None;
   cstr_script = None;
+  cstr_type = None;
 }
 
 let rec cstr_fold_sign pos neg c accu =
@@ -1247,6 +1250,8 @@ let rec cstr_fold_sign pos neg c accu =
 	      pos.cstr_meta_name
 	| Some f -> f script_constraint accu
       end
+  | CstrType ty ->
+      Common.default accu (fun f -> f ty accu) pos.cstr_type
 
 let cstr_fold transformer c accu =
   cstr_fold_sign transformer transformer c accu
@@ -1260,7 +1265,9 @@ let cstr_iter transformer c =
       cstr_regexp =
       Common.map_option (fun f s re () -> f s re) transformer.cstr_regexp;
       cstr_script =
-      Common.map_option (fun f s () -> f s) transformer.cstr_script; } c ()
+      Common.map_option (fun f s () -> f s) transformer.cstr_script;
+      cstr_type =
+      Common.map_option (fun f s () -> f s) transformer.cstr_type; } c ()
 
 let rec cstr_map transformer c =
   match c with
@@ -1281,6 +1288,10 @@ let rec cstr_map transformer c =
       Common.default (CstrScript script_constraint)
 	(fun f -> f script_constraint)
 	transformer.cstr_script
+  | CstrType ty ->
+      Common.default (CstrType ty)
+	(fun f -> f ty)
+	transformer.cstr_type
 
 let rec cstr_eval transformer c =
   match c with
@@ -1297,6 +1308,8 @@ let rec cstr_eval transformer c =
   | CstrScript script_constraint ->
       Common.default false (fun f -> f script_constraint)
 	transformer.cstr_script
+  | CstrType ty ->
+      Common.default false (fun f -> f ty) transformer.cstr_type
 
 let cstr_meta_names c =
   cstr_fold
