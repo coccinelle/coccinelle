@@ -2106,6 +2106,15 @@ cast_expr(r,pe):
   | lp=TOPar t=ctype rp=TCPar e=cast_expr(r,pe)
       { Ast0.wrap(Ast0.Cast (P.clt2mcode "(" lp, t,
 			     P.clt2mcode ")" rp, e)) }
+  | lp=TOPar t=ctype lp1=TOPar s=TMul rp1=TCPar
+      lp2=TOPar d=decl_list(name_opt_decl) rp2=TCPar rp=TCPar
+      e=cast_expr(r,pe)
+      { let fnptr =
+	  Ast0.wrap
+	    (Ast0.FunctionPointer
+	       (t,P.clt2mcode "(" lp1,P.clt2mcode "*" s,P.clt2mcode ")" rp1,
+		P.clt2mcode "(" lp2,d,P.clt2mcode ")" rp2)) in
+      Ast0.wrap(Ast0.Cast (P.clt2mcode "(" lp, fnptr, P.clt2mcode ")" rp, e)) }
 
 unary_expr(r,pe):
     postfix_expr(r,pe)                   { $1 }
