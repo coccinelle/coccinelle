@@ -2298,7 +2298,7 @@ pure_ident_or_meta_ident_or_typename:
        pure_ident_or_meta_ident  { $1 }
      | all_basic_types_no_ident {
        (None,
-	String.trim (Ast_cocci.string_of_fullType (Ast0toast.typeC false $1))) }
+	Common.trim (Ast_cocci.string_of_fullType (Ast0toast.typeC false $1))) }
 
 pure_ident_or_meta_ident_nosym:
        pure_ident                { (None,P.id2name $1) }

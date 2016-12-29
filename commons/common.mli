@@ -811,6 +811,10 @@ val size_ko : int -> string
 
 val edit_distance: string -> string -> int
 
+val trim_left: string -> string
+val trim_right: string -> string
+val trim: string -> string
+
 val md5sum_of_string : string -> string
 
 (*****************************************************************************)

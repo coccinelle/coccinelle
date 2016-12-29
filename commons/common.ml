@@ -2316,6 +2316,32 @@ let _ = assert (edit_distance "winter" "winter" = 0)
 let _ = assert (edit_distance "vintner" "writers" = 5)
 
 
+let is_blank char = char = ' '
+
+let trim_left s =
+  let length = String.length s in
+  let rec skip_blank index =
+    if index < length && is_blank (String.unsafe_get s index) then
+      skip_blank (succ index)
+    else
+      index in
+  let left_index = skip_blank 0 in
+  String.sub s left_index (length - left_index)
+
+let trim_right s =
+  let length = String.length s in
+  let rec skip_blank index =
+    if index >= 0 && is_blank (String.unsafe_get s index) then
+      skip_blank (pred index)
+    else
+      index in
+  let right_index = skip_blank (pred length) in
+  String.sub s 0 (succ right_index)
+
+let trim s =
+  trim_left (trim_right s)
+
+
 (*****************************************************************************)
 (* Filenames *)
 (*****************************************************************************)
