@@ -294,8 +294,6 @@ know which one is which... *)
 let equal_inh_metavarval valu valu'=
   match valu, valu' with
   | Ast_c.MetaIdVal a, Ast_c.MetaIdVal b -> a = b
-  | Ast_c.MetaTypeVal a, Ast_c.MetaIdVal b ->
-      Pretty_print_c.string_of_fullType a = b
   | Ast_c.MetaAssignOpVal a, Ast_c.MetaAssignOpVal b -> a = b
   | Ast_c.MetaBinaryOpVal a, Ast_c.MetaBinaryOpVal b -> a = b
   | Ast_c.MetaFuncVal a, Ast_c.MetaFuncVal b -> a = b
@@ -764,6 +762,13 @@ let satisfies_constraint c (ida, idb) env =
       A.cstr_script = Some begin fun script_constraint ->
 	satisfies_script_constraint script_constraint ida idb env
       end;
+      A.cstr_type = Some begin fun ty ->
+	match idb with
+	  B.MetaTypeVal ty' ->
+	    Common.trim (Ast_cocci.string_of_fullType ty) =
+	    Pretty_print_c.string_of_fullType ty'
+	| _ -> false
+      end;
     } c
 
 (*****************************************************************************)
@@ -1100,7 +1105,7 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
  fun re node ->
 
    let check_constraints constraints mida idb =
-     X.check_constraints satisfies_generalconstraint constraints
+     X.check_constraints satisfies_constraint constraints
        (A.unwrap_mcode mida, idb) (fun () -> return ((),())) in
 
 let rec (expression: (A.expression, Ast_c.expression) matcher) =
@@ -1775,7 +1780,7 @@ and string_format ea eb =
 	     (B.ConstantFormat(str2),[ib1])))
       else fail
   | A.MetaFormat(ida,constraints,keep,inherited),(B.ConstantFormat(str2),ii) ->
-      check_constraints constraints ida str2 >>=
+      check_constraints constraints ida (B.MetaIdVal str2) >>=
       (fun () () ->
 	let max_min _ =
 	  Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_format eb) in
@@ -1857,7 +1862,7 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
       else fail
 
   | A.MetaId(mida,constraints,keep,inherited) ->
-      check_constraints constraints mida idb >>=
+      check_constraints constraints mida (B.MetaIdVal idb) >>=
       (fun () () ->
       let max_min _ = Lib_parsing_c.lin_col_by_pos [iib] in
       (* use drop_pos for ids so that the pos is not added a second time in
@@ -1873,7 +1878,7 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
 
   | A.MetaFunc(mida,constraints,keep,inherited) ->
       let is_function _ =
-	check_constraints constraints mida idb >>=
+	check_constraints constraints mida (B.MetaIdVal idb) >>=
 	(fun wrapper () ->
           let max_min _ = Lib_parsing_c.lin_col_by_pos [iib] in
           X.envf keep inherited (A.drop_pos mida,Ast_c.MetaFuncVal idb,max_min)
@@ -1897,7 +1902,7 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
   | A.MetaLocalFunc(mida,constraints,keep,inherited) ->
       (match infoidb with
       | LocalFunction ->
-	  check_constraints constraints mida idb >>=
+	  check_constraints constraints mida (B.MetaIdVal idb) >>=
 	  (fun wrapper () ->
           let max_min _ = Lib_parsing_c.lin_col_by_pos [iib] in
           X.envf keep inherited
@@ -2477,23 +2482,24 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 
 		 match fake_typeb with
 		 | _nQ, ((B.TypeName (nameidb, typ)),[]) ->
-		     let typename =
+		     begin
 		       match typ with
-			 Some typ' -> Pretty_print_c.string_of_fullType typ'
-		       | None -> Pretty_print_c.string_of_name nameidb in
-		     check_constraints cstr ida typename
-		     >>= (fun () () ->
-		       return (
-		       (A.TyDecl (tya0, ptvirga)) +> A.rewrap decla,
-		       (({B.v_namei = Some (nameidb, B.NoInit);
-			  B.v_type = typb0;
-			  B.v_storage = (B.StoTypedef, inl);
-			  B.v_local = local;
-			  B.v_attr = attrs;
-			  B.v_type_bis = typb0bis;
-			},
-			 iivirg),iiptvirgb,iistob)
-		      ))
+			 Some typ' ->
+			   check_constraints cstr ida (B.MetaTypeVal typ')
+			     >>= (fun () () ->
+			       return (
+			       (A.TyDecl (tya0, ptvirga)) +> A.rewrap decla,
+			       (({B.v_namei = Some (nameidb, B.NoInit);
+				  B.v_type = typb0;
+				  B.v_storage = (B.StoTypedef, inl);
+				  B.v_local = local;
+				  B.v_attr = attrs;
+				  B.v_type_bis = typb0bis;
+				},
+				 iivirg),iiptvirgb,iistob)
+			      ))
+		       | None -> fail
+		     end
 		 | _ -> raise (Impossible 29)
              )
 
@@ -3447,7 +3453,7 @@ and (fullTypebis: (A.typeC, Ast_c.fullType) matcher) =
       then
 	let max_min _ =
 	  Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_type typb) in
-	check_constraints cstr ida (Pretty_print_c.string_of_fullType typb)
+	check_constraints cstr ida (B.MetaTypeVal typb)
 	  >>= (fun () () ->
 	    X.envf keep inherited (ida, B.MetaTypeVal typb, max_min) (fun () ->
 	      X.distrf_type ida typb >>= (fun ida typb ->
@@ -3639,8 +3645,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 		   Some (A.rewrap basea (A.BaseType (basea1,strings1))))
 		| _ -> failwith "not possible")
 	| A.MetaType(ida, cstr, keep, inherited) ->
-	    check_constraints cstr ida
-	      (Pretty_print_c.string_of_fullType (Ast_c.nQ, tb))
+	    check_constraints cstr ida (B.MetaTypeVal (Ast_c.nQ, tb))
 	      >>= (fun () () ->
 		simulate_signed_meta ta basea (Some signaopt) tb baseb ii
 		  (function (basea, Some signaopt) ->
@@ -4205,16 +4210,14 @@ and compatible_base_type_meta a signa qua b ii local =
   match A.unwrap a, b with
     A.MetaType(ida, cstr, keep, inherited),
     B.IntType (B.Si (signb, B.CChar2)) ->
-      check_constraints cstr ida
-	(Pretty_print_c.string_of_fullType (fullType_of_baseType b))
+      check_constraints cstr ida (B.MetaTypeVal (fullType_of_baseType b))
 	>>= (fun () () ->
 	  compatible_sign signa signb >>= fun _ _ ->
 	    let newb = ((qua, (B.BaseType (B.IntType B.CChar),ii)),local) in
 	    compatible_typeC a newb
 	    )
   | A.MetaType(ida, cstr, keep, inherited), B.IntType (B.Si (signb, ty)) ->
-      check_constraints cstr ida
-	(Pretty_print_c.string_of_fullType (fullType_of_baseType b))
+      check_constraints cstr ida (B.MetaTypeVal (fullType_of_baseType b))
 	>>= (fun () () ->
 	  compatible_sign signa signb >>= fun _ _ ->
 	    let newb =
@@ -4271,7 +4274,7 @@ and compatible_typeC a (b,local) =
           A.BaseType (ty, _) ->
 	    compatible_base_type ty (Some signa) b
         | A.MetaType(ida, cstr, keep, inherited) ->
-	    check_constraints cstr ida (Pretty_print_c.string_of_fullType tyb)
+	    check_constraints cstr ida (B.MetaTypeVal tyb)
 	      >>= (fun () () ->
 		compatible_base_type_meta ty (Some signa) qua b ii local
 		  )
@@ -4318,7 +4321,7 @@ and compatible_typeC a (b,local) =
 	let max_min _ =
 	  Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_type typb) in
         let ida' = A.make_mcode (A.unwrap_mcode ida) in
-      check_constraints cstr ida (Pretty_print_c.string_of_fullType typb)
+      check_constraints cstr ida (B.MetaTypeVal typb)
 	>>= (fun () () ->
           X.envf keep inherited (ida', B.MetaTypeVal typb, max_min)
 	    (fun () -> ok

@@ -2294,12 +2294,6 @@ pure_ident_or_meta_ident:
      | meta_ident                { $1 }
      | meta_ident_sym            { (None,$1) }
 
-pure_ident_or_meta_ident_or_typename:
-       pure_ident_or_meta_ident  { $1 }
-     | all_basic_types_no_ident {
-       (None,
-	Common.trim (Ast_cocci.string_of_fullType (Ast0toast.typeC false $1))) }
-
 pure_ident_or_meta_ident_nosym:
        pure_ident                { (None,P.id2name $1) }
      | pure_ident_kwd            { (None,$1) }
@@ -2406,38 +2400,31 @@ general_eqid:
 	 }
 
 idcstr:
-       i=pure_ident_or_meta_ident_or_typename
-         { (if !Data.in_iso
-	   then failwith "constraints not allowed in iso file");
-	   (if !Data.in_generating
-           (* pb: constraints not stored with metavars; too lazy to search for
-	      them in the pattern *)
-	   then failwith "constraints not allowed in a generated rule file");
-	   (match i with
-	     (Some rn,id) ->
-	       let i =
-		 P.check_inherited_constraint i
-		   (function mv -> Ast.MetaIdDecl(Ast.NONE,mv)) in
-	       (Ast.CstrMeta_name i)
-	   | (None,i) -> Ast.CstrString i) }
-     | TOBrace l=comma_list(pure_ident_or_meta_ident_or_typename) TCBrace
-	 { (if !Data.in_iso
-	   then failwith "constraints not allowed in iso file");
-	   (if !Data.in_generating
-	   then failwith "constraints not allowed in a generated rule file");
-	   let list =
-	     List.fold_left
-	       (function list ->
-		 function
-		   (Some rn,id) as i ->
-		     let i =
-		       P.check_inherited_constraint i
-			 (function mv -> Ast.MetaIdDecl(Ast.NONE,mv)) in
-		     (Ast.CstrMeta_name i :: list)
-		 | (None,i) -> (Ast.CstrString i :: list))
-	       [] l in
-	   Ast.CstrOr list
-	 }
+       c=cstr_pure_ident_or_meta_ident_or_typename { c }
+     | TOBrace l=comma_list(cstr_pure_ident_or_meta_ident_or_typename) TCBrace
+	 { Ast.CstrOr l }
+
+
+cstr_pure_ident_or_meta_ident_or_typename:
+       i = pure_ident_or_meta_ident {
+	  if !Data.in_iso
+	  then failwith "constraints not allowed in iso file";
+	  if !Data.in_generating
+	  (* pb: constraints not stored with metavars; too lazy to search for
+	     them in the pattern *)
+	  then failwith "constraints not allowed in a generated rule file";
+	  match i with
+	    (Some rn,id) ->
+	      let i =
+		P.check_inherited_constraint i
+		  (function mv -> Ast.MetaIdDecl(Ast.NONE,mv)) in
+	      (Ast.CstrMeta_name i)
+	  | (None,i) -> Ast.CstrString i
+	}
+     | ty = all_basic_types_no_ident {
+	  Ast.CstrType (Ast0toast.typeC false ty)
+	}
+
 
 re_or_not_eqe_or_sub:
    re=general_eqid {Ast0.NotIdCstrt  re}

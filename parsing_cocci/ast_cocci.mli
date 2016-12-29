@@ -218,6 +218,7 @@ and general_constraint =
   | CstrMeta_name of meta_name
   | CstrRegexp of string * Regexp.regexp
   | CstrScript of script_constraint
+  | CstrType of fullType
 
 and script_constraint =
       string (* name of generated function *) *
@@ -847,6 +848,7 @@ type 'a cstr_transformer = {
     cstr_meta_name: (meta_name -> 'a) option;
     cstr_regexp: (string -> Regexp.regexp -> 'a) option;
     cstr_script: (script_constraint -> 'a) option;
+    cstr_type: (fullType -> 'a) option;
   }
 
 val empty_cstr_transformer: 'a cstr_transformer
