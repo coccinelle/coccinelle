@@ -37,6 +37,8 @@
 ** Features:
 - Better error reporting for unparsable terms when using make_expr etc in
   script code.  Problem reported by Markus Elfring.
+- --ignore command line argument to specify a prefix of the names of files
+  that should be ignored.
 ** Bugfix:
 - Improved detection of metavariables in strings.  Problem reported by
   Wolfram Sang.
