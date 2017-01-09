@@ -2087,8 +2087,6 @@ let pre_engine2 (coccifile, isofile) =
 	      if interpret_dependencies [] [] r.scr_rule_info.dependencies
 	      then
 		begin
-		  (if Common.StringSet.mem rlang languages
-		  then failwith ("double initializer found for "^rlang));
 		  runrule r;
 		  Common.StringSet.add rlang languages
 		end
@@ -2221,20 +2219,16 @@ let post_engine2 (cocci_infos, _, _, (python_merge_names, _)) merges =
       Flag.defined_virtual_rules := virt_rules;
       Flag.defined_virtual_env := virt_env;
       let _ =
-	List.fold_left
-	  (function languages ->
-	    function
-		FinalScriptRuleCocciInfo(r) ->
-		  (if r.language = language && List.mem r.language languages
-		  then failwith ("double finalizer found for "^r.language));
-		  initial_final_bigloop Final
-		    (fun (x,mvs,_,y) -> fun deps ->
-		      Ast_cocci.FinalScriptRule(r.scr_rule_info.rulename,
-						x,deps,mvs,y))
-		    r;
-		  r.language::languages
-	      | _ -> languages)
-	  [] cocci_infos in
+	List.iter
+	  (function
+	      FinalScriptRuleCocciInfo(r) ->
+		initial_final_bigloop Final
+		  (fun (x,mvs,_,y) -> fun deps ->
+		    Ast_cocci.FinalScriptRule(r.scr_rule_info.rulename,
+					      x,deps,mvs,y))
+		  r
+	    | _ -> ())
+	  cocci_infos in
       ())
     !Iteration.initialization_stack
 

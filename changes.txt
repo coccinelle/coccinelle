@@ -34,6 +34,7 @@
   definitions, variable declarations, ...). See tests/disj.cocci.
 - Finalizers now occur before iteration loop and can register new
   iterations.
+- Multiple initializers and finalizers are allowed for the same language.
 - Support function pointer types in casts.
 ** Features:
 - Better error reporting for unparsable terms when using make_expr etc in
