@@ -98,12 +98,13 @@ let get_free checker t =
 	| _ -> accu)
       option_default (Ast0.get_pos mc) in
 
-  let constraints_collect r res = function
-      Ast0.NotExpCstrt(el) ->
-	List.fold_left bind res
-	  (List.map r.VT0.combiner_rec_expression el)
-    | Ast0.SubExpCstrt(names) -> bind names res
-    | _ -> res in
+  let constraints_collect r res c =
+    let cstr_expr =
+      Some (fun e res -> bind res (r.VT0.combiner_rec_expression e)) in
+    let cstr_meta_name = Some (fun mn res -> bind [mn] res) in
+    let transformer =
+      { Ast.empty_cstr_transformer with Ast.cstr_expr; Ast.cstr_meta_name } in
+    Ast.cstr_fold transformer c res in
 
   let expression r k e =
     match Ast0.unwrap e with

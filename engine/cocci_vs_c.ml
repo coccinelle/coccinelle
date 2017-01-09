@@ -607,6 +607,11 @@ module type PARAM =
 
     type ('a, 'b) matcher = 'a -> 'b  -> tin -> ('a * 'b) tout
 
+    val constraint_checker:
+	(A.meta_name -> B.metavar_binding_kind ->
+	  (A.meta_name -> B.metavar_binding_kind) -> A.constraints -> tin ->
+	    (unit * unit) tout) ref
+
     val mode : mode
 
     val (>>=):
@@ -628,6 +633,8 @@ module type PARAM =
       (tin -> 'x tout)
 
     val (>&&>) : (tin -> bool) -> (tin -> 'x tout) -> (tin -> 'x tout)
+
+    val mnot : (tin -> 'a tout) -> 'a -> tin -> 'a tout
 
     val tokenf : ('a A.mcode, B.info) matcher
     val tokenf_mck : (A.mcodekind, B.info) matcher
@@ -710,9 +717,8 @@ module type PARAM =
       (unit -> tin -> 'x tout) -> (tin -> 'x tout)
 
     val check_constraints :
-      ('a -> 'b -> (A.meta_name -> B.metavar_binding_kind) -> bool) ->
-	'a -> 'b ->
-	(unit -> tin -> 'x tout) -> (tin -> 'x tout)
+	A.meta_name -> B.metavar_binding_kind -> A.constraints ->
+	  (unit -> tin -> 'x tout) -> tin -> 'x tout
 
     val check_constraints_ne :
       ('a, 'b) matcher -> 'a list -> 'b ->
@@ -744,32 +750,43 @@ let satisfies_script_constraint (name, lang, params, body) ida idb env =
 	| _ -> failwith "languages other than ocaml or python not supported"
       end
 
-let satisfies_constraint c (ida, idb) env =
-  let match_string f =
-    match idb with
-      B.MetaIdVal s -> f s
-    | _ -> false in
-  A.cstr_eval
-    { A.cstr_string = Some (fun s' -> match_string (( = ) s'));
-      A.cstr_regexp = Some begin fun _s regexp ->
-	match_string (Regexp.string_match regexp);
-      end;
-      A.cstr_meta_name = Some begin fun mn ->
-	match Common.optionise (fun () -> env mn) with
-	  Some mv -> equal_inh_metavarval mv idb
-	| _ -> false
-      end;
-      A.cstr_script = Some begin fun script_constraint ->
-	satisfies_script_constraint script_constraint ida idb env
-      end;
-      A.cstr_type = Some begin fun ty ->
-	match idb with
-	  B.MetaTypeVal ty' ->
-	    Common.trim (Ast_cocci.string_of_fullType ty) =
-	    Pretty_print_c.string_of_fullType ty'
-	| _ -> false
-      end;
-    } c
+let rec extract_sub_constraints = function
+    A.CstrAnd l ->
+      let f (sub_acc, l_acc) c =
+	let (sub, l') = extract_sub_constraints c in
+	List.rev_append sub sub_acc, l' :: l_acc in
+      let (sub, l') = List.fold_left f ([], []) l in
+      sub, A.CstrAnd l'
+  | A.CstrSub l -> l, A.CstrTrue
+  | c -> [], c
+
+let string_of_expression exp =
+  let warning s = pr2_once ("WARNING: "^s); "" in
+  match Ast_c.unwrap_expr exp with
+    Ast_c.Ident (name) ->
+      (match name with
+	Ast_c.RegularName     rname -> Ast_c.unwrap_st rname
+      | Ast_c.CppConcatenatedName _ ->
+	  warning
+	    "Unable to apply a constraint on a CppConcatenatedName identifier!"
+      | Ast_c.CppVariadicName     _ ->
+	  warning
+	    "Unable to apply a constraint on a CppVariadicName identifier!"
+      | Ast_c.CppIdentBuilder     _ ->
+	  warning
+	    "Unable to apply a constraint on a CppIdentBuilder identifier!")
+  | Ast_c.Constant cst ->
+      (match cst with
+	Ast_c.String (str, _) -> str
+      | Ast_c.MultiString strlist ->
+	  warning "Unable to apply a constraint on a multistring constant!"
+      | Ast_c.Char  (char , _) -> char
+      | Ast_c.Int   (int  , _) -> int
+      | Ast_c.Float (float, _) -> float
+      | Ast_c.DecimalConst (d, n, p) ->
+	  warning "Unable to apply a constraint on a decimal constant!")
+  | Ast_c.StringConstant (cst,orig,w) -> orig
+  | _ -> warning "Unable to apply a constraint on an expression!"
 
 (*****************************************************************************)
 (* Functor code, "Cocci vs C" *)
@@ -815,57 +832,6 @@ let dots2metavar (_,info,mcodekind,pos) =
   (("","..."),info,mcodekind,pos)
 let metavar2dots (_,info,mcodekind,pos) = ("...",info,mcodekind,pos)
 let metavar2ndots (_,info,mcodekind,pos) = ("<+...",info,mcodekind,pos)
-
-let satisfies_generalconstraint c (ida, idb) env =
-  satisfies_constraint c (ida, B.MetaIdVal idb) env
-
-let satisfies_iconstraint (strs,metas) id env : bool =
-  List.mem id strs ||
-  (List.exists
-     (function meta ->
-       match Common.optionise (fun () -> env meta) with
-	 Some (Ast_c.MetaIdVal(valu)) -> id = valu
-       | _ -> false)
-     metas)
-
-let satisfies_niconstraint (strs,metas) id env : bool =
-  not (List.mem id strs) &&
-  (List.for_all
-     (function meta ->
-       match Common.optionise (fun () -> env meta) with
-	 Some (Ast_c.MetaIdVal(valu)) -> not(id = valu)
-       | _ -> true)
-     metas)
-
-let satisfies_econstraint c (ida, exp) env : bool =
-  let warning s = pr2_once ("WARNING: "^s); false in
-  match Ast_c.unwrap_expr exp with
-    Ast_c.Ident (name) ->
-      (match name with
-	Ast_c.RegularName     rname ->
-	  satisfies_generalconstraint c (ida, Ast_c.unwrap_st rname) env
-      | Ast_c.CppConcatenatedName _ ->
-	  warning
-	    "Unable to apply a constraint on a CppConcatenatedName identifier!"
-      | Ast_c.CppVariadicName     _ ->
-	  warning
-	    "Unable to apply a constraint on a CppVariadicName identifier!"
-      | Ast_c.CppIdentBuilder     _ ->
-	  warning
-	    "Unable to apply a constraint on a CppIdentBuilder identifier!")
-  | Ast_c.Constant cst ->
-      (match cst with
-	Ast_c.String (str, _) -> satisfies_generalconstraint c (ida, str) env
-      | Ast_c.MultiString strlist ->
-	  warning "Unable to apply a constraint on a multistring constant!"
-      | Ast_c.Char  (char , _) -> satisfies_generalconstraint c (ida, char) env
-      | Ast_c.Int   (int  , _) -> satisfies_generalconstraint c (ida, int) env
-      | Ast_c.Float (float, _) -> satisfies_generalconstraint c (ida, float) env
-      | Ast_c.DecimalConst (d, n, p) ->
-	  warning "Unable to apply a constraint on a decimal constant!")
-  | Ast_c.StringConstant (cst,orig,w) ->
-      satisfies_generalconstraint c (ida, orig) env
-  | _ -> warning "Unable to apply a constraint on an expression!"
 
 
 (* ------------------------------------------------------------------------- *)
@@ -1085,28 +1051,17 @@ let assignOp_eq op1 op2 = match (op1, op2) with
   | A.OpAssign o1, A.OpAssign o2 -> (A.unwrap_mcode o1) = (A.unwrap_mcode o2)
   | _ -> false
 
-let check_assignOp_constraint c (opA, (opb',ii)) env =
-  let opb'' = assignOpA_of_assignOpB opb' in
-  satisfies_constraint c
-    (opA, B.MetaIdVal (A.string_of_assignOp (A.make_term opb''))) env
-
 let binaryOp_eq op1 op2 = match (op1, op2) with
   | A.Arith o1, A.Arith o2 -> (A.unwrap_mcode o1) = (A.unwrap_mcode o2)
   | A.Logical o1, A.Logical o2 -> (A.unwrap_mcode o1) = (A.unwrap_mcode o2)
   | _ -> false
 
-let check_binaryOp_constraint c (opA, (opb',ii)) env =
-  let opb'' = binaryOpA_of_binaryOpB opb' in
-  satisfies_constraint c
-    (opA, B.MetaIdVal (A.string_of_binaryOp (A.make_term opb''))) env
-
 (*---------------------------------------------------------------------------*)
 let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
  fun re node ->
 
-   let check_constraints constraints mida idb =
-     X.check_constraints satisfies_constraint constraints
-       (A.unwrap_mcode mida, idb) (fun () -> return ((),())) in
+   let check_constraints cstr mida idb =
+     X.check_constraints (A.unwrap_mcode mida) idb cstr in
 
 let rec (expression: (A.expression, Ast_c.expression) matcher) =
  fun ea eb ->
@@ -1175,17 +1130,12 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	(fun () () ->
 	  (* wraps on C code, so has types *)
 	  let meta_expr_val l x = Ast_c.MetaExprVal(x,l,Ast_c.WITH_TYPES) in
-	  match constraints with
-	    Ast_cocci.NoConstraint -> return (meta_expr_val [],())
-	  | Ast_cocci.NotIdCstrt cstrt ->
-	      X.check_constraints satisfies_econstraint cstrt
-		(A.unwrap_mcode ida, eb)
-		(fun () -> return (meta_expr_val [],()))
-	  | Ast_cocci.NotExpCstrt cstrts ->
-	      X.check_constraints_ne expression cstrts eb
-		(fun () -> return (meta_expr_val [],()))
-	  | Ast_cocci.SubExpCstrt cstrts ->
-	      return (meta_expr_val cstrts,()))
+	  begin
+	    let l, constraints' = extract_sub_constraints constraints in
+	    check_constraints constraints' ida
+	      (B.MetaExprVal (eb, [], B.WITH_TYPES))
+	      (fun () -> return (meta_expr_val l,()))
+	  end)
 	  >>=
 	(fun wrapper () ->
 	  let max_min _ =
@@ -1670,11 +1620,12 @@ and assignOp opa opb =
           (A.rewrap opa (A.OpAssign oa), (B.OpAssign ob,[opbi])))
     else fail
   | A.MetaAssign (mv, c, keep, inherited), _ ->
-      X.check_constraints check_assignOp_constraint c (A.unwrap_mcode mv, opb)
+      let mv' = B.MetaAssignOpVal opb in
+      check_constraints c mv mv'
 	(fun () ->
 	  let max_min _ =
 	    Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_assignOp opb) in
-	  X.envf keep inherited (mv,Ast_c.MetaAssignOpVal opb,max_min)
+	  X.envf keep inherited (mv,mv',max_min)
 	    (fun () -> X.distrf_assignOp mv opb
 		>>=
 	      (fun mv opb ->
@@ -1700,11 +1651,12 @@ and binaryOp opa opb =
             (A.rewrap opa (A.Logical oa), (B.Logical ob,[opbi])))
       else fail
   | A.MetaBinary (mv, c, keep, inherited), _ ->
-      X.check_constraints check_binaryOp_constraint c (A.unwrap_mcode mv, opb)
+      let mv' = B.MetaBinaryOpVal opb in
+      check_constraints c mv mv'
 	(fun () ->
 	  let max_min _ =
             Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_binaryOp opb) in
-	  X.envf keep inherited (mv,Ast_c.MetaBinaryOpVal opb,max_min)
+	  X.envf keep inherited (mv,mv',max_min)
             (fun () -> X.distrf_binaryOp mv opb
 		>>=
 	      (fun mv opb ->
@@ -1780,8 +1732,8 @@ and string_format ea eb =
 	     (B.ConstantFormat(str2),[ib1])))
       else fail
   | A.MetaFormat(ida,constraints,keep,inherited),(B.ConstantFormat(str2),ii) ->
-      check_constraints constraints ida (B.MetaIdVal str2) >>=
-      (fun () () ->
+      check_constraints constraints ida (B.MetaIdVal str2)
+      (fun () ->
 	let max_min _ =
 	  Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_format eb) in
 	X.envf keep inherited (ida,Ast_c.MetaFmtVal eb,max_min) (fun () ->
@@ -1862,8 +1814,8 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
       else fail
 
   | A.MetaId(mida,constraints,keep,inherited) ->
-      check_constraints constraints mida (B.MetaIdVal idb) >>=
-      (fun () () ->
+      check_constraints constraints mida (B.MetaIdVal idb)
+      (fun () ->
       let max_min _ = Lib_parsing_c.lin_col_by_pos [iib] in
       (* use drop_pos for ids so that the pos is not added a second time in
 	 the call to tokenf *)
@@ -1878,8 +1830,8 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
 
   | A.MetaFunc(mida,constraints,keep,inherited) ->
       let is_function _ =
-	check_constraints constraints mida (B.MetaIdVal idb) >>=
-	(fun wrapper () ->
+	check_constraints constraints mida (B.MetaIdVal idb)
+	(fun () ->
           let max_min _ = Lib_parsing_c.lin_col_by_pos [iib] in
           X.envf keep inherited (A.drop_pos mida,Ast_c.MetaFuncVal idb,max_min)
 	    (fun () ->
@@ -1902,8 +1854,8 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
   | A.MetaLocalFunc(mida,constraints,keep,inherited) ->
       (match infoidb with
       | LocalFunction ->
-	  check_constraints constraints mida (B.MetaIdVal idb) >>=
-	  (fun wrapper () ->
+	  check_constraints constraints mida (B.MetaIdVal idb)
+	  (fun () ->
           let max_min _ = Lib_parsing_c.lin_col_by_pos [iib] in
           X.envf keep inherited
 	    (A.drop_pos mida,Ast_c.MetaLocalFuncVal idb, max_min)
@@ -2486,7 +2438,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 		       match typ with
 			 Some typ' ->
 			   check_constraints cstr ida (B.MetaTypeVal typ')
-			     >>= (fun () () ->
+			     (fun () ->
 			       return (
 			       (A.TyDecl (tya0, ptvirga)) +> A.rewrap decla,
 			       (({B.v_namei = Some (nameidb, B.NoInit);
@@ -3454,7 +3406,7 @@ and (fullTypebis: (A.typeC, Ast_c.fullType) matcher) =
 	let max_min _ =
 	  Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_type typb) in
 	check_constraints cstr ida (B.MetaTypeVal typb)
-	  >>= (fun () () ->
+	  (fun () ->
 	    X.envf keep inherited (ida, B.MetaTypeVal typb, max_min) (fun () ->
 	      X.distrf_type ida typb >>= (fun ida typb ->
 		return (
@@ -3646,7 +3598,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 		| _ -> failwith "not possible")
 	| A.MetaType(ida, cstr, keep, inherited) ->
 	    check_constraints cstr ida (B.MetaTypeVal (Ast_c.nQ, tb))
-	      >>= (fun () () ->
+	      (fun () ->
 		simulate_signed_meta ta basea (Some signaopt) tb baseb ii
 		  (function (basea, Some signaopt) ->
 		    A.SignedT(signaopt,Some basea)
@@ -4211,14 +4163,14 @@ and compatible_base_type_meta a signa qua b ii local =
     A.MetaType(ida, cstr, keep, inherited),
     B.IntType (B.Si (signb, B.CChar2)) ->
       check_constraints cstr ida (B.MetaTypeVal (fullType_of_baseType b))
-	>>= (fun () () ->
+	(fun () ->
 	  compatible_sign signa signb >>= fun _ _ ->
 	    let newb = ((qua, (B.BaseType (B.IntType B.CChar),ii)),local) in
 	    compatible_typeC a newb
 	    )
   | A.MetaType(ida, cstr, keep, inherited), B.IntType (B.Si (signb, ty)) ->
       check_constraints cstr ida (B.MetaTypeVal (fullType_of_baseType b))
-	>>= (fun () () ->
+	(fun () ->
 	  compatible_sign signa signb >>= fun _ _ ->
 	    let newb =
 	      ((qua, (B.BaseType (B.IntType (B.Si (B.Signed, ty))),ii)),
@@ -4275,7 +4227,7 @@ and compatible_typeC a (b,local) =
 	    compatible_base_type ty (Some signa) b
         | A.MetaType(ida, cstr, keep, inherited) ->
 	    check_constraints cstr ida (B.MetaTypeVal tyb)
-	      >>= (fun () () ->
+	      (fun () ->
 		compatible_base_type_meta ty (Some signa) qua b ii local
 		  )
 	| _ -> failwith "not possible")
@@ -4322,7 +4274,7 @@ and compatible_typeC a (b,local) =
 	  Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_type typb) in
         let ida' = A.make_mcode (A.unwrap_mcode ida) in
       check_constraints cstr ida (B.MetaTypeVal typb)
-	>>= (fun () () ->
+	(fun () ->
           X.envf keep inherited (ida', B.MetaTypeVal typb, max_min)
 	    (fun () -> ok
             )
@@ -4493,6 +4445,72 @@ and define_parameter = fun parama paramb ->
         return ((A.DParam ida)+> A.rewrap parama,(idb, [ib1])))
   | A.OptDParam _, _ -> failwith "handling Opt for define parameters"
   | _ -> fail in
+
+  let rec check_constraints ida idb env c =
+    let check_string f =
+      match idb with
+	B.MetaIdVal s -> f s
+      | B.MetaExprVal (e, _, _) -> f (string_of_expression e)
+      | _ -> fail in
+    let check_operator c =
+      match c, idb with
+	A.CstrAssignOp op, B.MetaAssignOpVal op' ->
+	  assignOp_eq (A.unwrap op) (assignOpA_of_assignOpB (fst op'))
+      | A.CstrBinaryOp op, B.MetaBinaryOpVal op' ->
+	  binaryOp_eq (A.unwrap op) (binaryOpA_of_binaryOpB (fst op'))
+      | _ -> false in
+    let bool b =
+      if b then return ((), ())
+      else fail in
+    match c with
+      A.CstrFalse -> fail
+    | A.CstrTrue -> return ((), ())
+    | A.CstrAnd list ->
+	let rec loop list =
+	  match list with
+	    [] -> return ((), ())
+	  | hd :: tl ->
+	      check_constraints ida idb env hd >>=
+	      (fun () () -> loop tl) in
+	loop list
+    | A.CstrOr list ->
+	let rec loop list =
+	  match list with
+	    [] -> fail
+	  | hd :: tl ->
+	      check_constraints ida idb env hd >||>
+	      loop tl in
+	loop list
+    | A.CstrNot c ->
+	X.mnot (check_constraints ida idb env c) ((), ())
+    | A.CstrString s -> check_string (fun s' -> bool (s = s'))
+    | A.CstrOperator c -> bool (check_operator c)
+    | A.CstrMeta_name mn ->
+	begin
+	  match Common.optionise (fun () -> env mn) with
+	    Some mv when equal_inh_metavarval mv idb -> return ((), ())
+	  | _ -> fail
+	end
+    | A.CstrRegexp (s, re) ->
+	check_string (fun s' -> bool (Regexp.string_match re s'))
+    | A.CstrScript script_constraint ->
+	bool (satisfies_script_constraint script_constraint ida idb env)
+    | A.CstrExpr e ->
+	begin
+	  match idb with
+	    B.MetaExprVal (e', _, _) ->
+	      expression e e' >>= (fun _ _ -> return ((), ()))
+	  | _ -> fail
+	end
+    | A.CstrSub _ -> failwith "Sub-expression constraint unallowed here"
+    | A.CstrType ty ->
+	begin
+	  match idb with
+	    B.MetaTypeVal ty' ->
+	      fullType ty ty' >>= (fun _ _ -> return ((), ()))
+	  | _ -> fail
+	end in
+  X.constraint_checker := check_constraints;
 
 (*****************************************************************************)
 (* Entry points *)
@@ -5198,4 +5216,5 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
 
 
   )
+
 end

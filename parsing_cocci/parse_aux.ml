@@ -13,19 +13,17 @@ let contains_string_constant = ref false
 (* types for metavariable tokens *)
 type info = Ast.meta_name * Ast0.pure * Data.clt
 type midinfo =
-    Ast.meta_name * Data.iconstraints * Ast.seed * Ast0.pure * Data.clt
-type idinfo = Ast.meta_name * Data.iconstraints * Ast0.pure * Data.clt
-type assignOpinfo =
-    Ast.meta_name * Ast_cocci.general_constraint * Ast0.pure * Data.clt
-type binaryOpinfo =
-    Ast.meta_name * Ast_cocci.general_constraint * Ast0.pure * Data.clt
-type expinfo = Ast.meta_name * Data.econstraints * Ast0.pure * Data.clt
+    Ast.meta_name * Ast0.constraints * Ast.seed * Ast0.pure * Data.clt
+type idinfo = Ast.meta_name * Ast0.constraints * Ast0.pure * Data.clt
+type assignOpinfo = Ast.meta_name * Ast0.constraints * Ast0.pure * Data.clt
+type binaryOpinfo = Ast.meta_name * Ast0.constraints * Ast0.pure * Data.clt
+type expinfo = Ast.meta_name * Ast0.constraints * Ast0.pure * Data.clt
 type tyinfo = Ast.meta_name * Ast0.typeC list * Ast0.pure * Data.clt
 type list_info = Ast.meta_name * Ast.list_len * Ast0.pure * Data.clt
 type typed_expinfo =
-    Ast.meta_name * Data.econstraints * Ast0.pure *
+    Ast.meta_name * Ast0.constraints * Ast0.pure *
       Ast0.typeC list option * Data.clt
-type pos_info = Ast.meta_name * Data.pconstraints * Ast.meta_collect * Data.clt
+type pos_info = Ast.meta_name * Ast0.constraints * Ast.meta_collect * Data.clt
 
 let get_option fn = function
     None -> None

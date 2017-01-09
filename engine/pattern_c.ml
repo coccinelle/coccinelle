@@ -75,6 +75,8 @@ module XMATCH = struct
 
   type ('a, 'b) matcher = 'a -> 'b  -> tin -> ('a * 'b) tout
 
+  let constraint_checker = ref (fun _ -> failwith "unbound constraint_checker")
+
   (* was >&&> *)
   let (>>=) m1 m2 = fun tin ->
     let xs = m1 tin in
@@ -134,6 +136,11 @@ module XMATCH = struct
     if f tin
     then m tin
     else fail tin
+
+  let mnot f res = fun tin ->
+    match f tin with
+      [] -> return res tin
+    | _ -> fail tin
 
 
   let mode = Cocci_vs_c.PatternMode
@@ -324,16 +331,17 @@ module XMATCH = struct
           | _ (* success *) -> fail tin in
     loop constraints
 
-  let check_constraints matcher constraints term = fun f tin ->
-    if matcher constraints term (function id -> tin.binding0 +> List.assoc id)
-    then f () tin (* success *)
-    else fail tin (* failure *)
+  let check_constraints ida idb constraints f =
+    (fun tin ->
+      !constraint_checker ida idb (function id -> tin.binding0 +> List.assoc id)
+	constraints tin)
+      >>= (fun _ _ -> f ())
 
-  let check_pos_constraints pname constraints pvalu f tin =
-    let res =
-      Cocci_vs_c.satisfies_constraint constraints (pname, pvalu)
-	(fun name -> List.assoc name tin.binding0) in
-    if res then f () tin (* success *) else fail tin (* failure *)
+  let check_pos_constraints pname pvalu constraints f =
+    (fun tin ->
+      !constraint_checker pname pvalu (fun name -> List.assoc name tin.binding0)
+	constraints tin)
+      >>= (fun _ _ -> f)
 
   (* ------------------------------------------------------------------------*)
   (* Environment *)
@@ -509,18 +517,17 @@ module XMATCH = struct
 	    [] -> finish tin
 	  | Ast_cocci.MetaPos(name,constraints,per,keep,inherited) :: rest ->
 	      let name' = Ast_cocci.unwrap_mcode name in
-	      check_pos_constraints name' constraints pvalu
-		(function () ->
+	      check_pos_constraints name' pvalu constraints
+		(fun new_tin ->
 	    (* constraints are satisfied, now see if we are compatible
 	       with existing bindings *)
-		  function new_tin ->
-		    let x = Ast_cocci.unwrap_mcode name in
-		    let new_binding =
-		      check_add_metavars_binding false keep inherited
-			(x, pvalu) tin in
-		    (match  new_binding with
-		      Some binding -> loop {tin with binding = binding} rest
-		    | None -> fail tin))
+		  let x = Ast_cocci.unwrap_mcode name in
+		  let new_binding =
+		    check_add_metavars_binding false keep inherited
+		      (x, pvalu) tin in
+		  (match  new_binding with
+		    Some binding -> loop {new_tin with binding = binding} rest
+		  | None -> fail tin))
 		tin in
 	loop tin positions
 

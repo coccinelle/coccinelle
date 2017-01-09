@@ -1593,17 +1593,17 @@ let strip_for_fix l =
       |	(PC.TMetaLocalFunc(nm,_,pure,clt),info) ->
 	  (PC.TMetaLocalFunc(nm,Ast.CstrTrue,pure,clt),info)
       |	(PC.TMetaErr(nm,_,pure,clt),info) ->
-	  (PC.TMetaErr(nm,Ast0.NoConstraint,pure,clt),info)
+	  (PC.TMetaErr(nm,Ast.CstrTrue,pure,clt),info)
       |	(PC.TMetaExp(nm,_,pure,ty,clt),info) ->
-	  (PC.TMetaExp(nm,Ast0.NoConstraint,pure,ty,clt),info)
+	  (PC.TMetaExp(nm,Ast.CstrTrue,pure,ty,clt),info)
       |	(PC.TMetaIdExp(nm,_,pure,ty,clt),info) ->
-	  (PC.TMetaIdExp(nm,Ast0.NoConstraint,pure,ty,clt),info)
+	  (PC.TMetaIdExp(nm,Ast.CstrTrue,pure,ty,clt),info)
       |	(PC.TMetaLocalIdExp(nm,_,pure,ty,clt),info) ->
-	  (PC.TMetaLocalIdExp(nm,Ast0.NoConstraint,pure,ty,clt),info)
+	  (PC.TMetaLocalIdExp(nm,Ast.CstrTrue,pure,ty,clt),info)
       |	(PC.TMetaGlobalIdExp(nm,_,pure,ty,clt),info) ->
-	  (PC.TMetaGlobalIdExp(nm,Ast0.NoConstraint,pure,ty,clt),info)
+	  (PC.TMetaGlobalIdExp(nm,Ast.CstrTrue,pure,ty,clt),info)
       |	(PC.TMetaConst(nm,_,pure,ty,clt),info) ->
-	  (PC.TMetaConst(nm,Ast0.NoConstraint,pure,ty,clt),info)
+	  (PC.TMetaConst(nm,Ast.CstrTrue,pure,ty,clt),info)
       |	t -> t)
     l
 
@@ -2597,18 +2597,13 @@ let enumerate_constraint_scripts =
 		    (Ast_cocci.NONE, Ast_cocci.unwrap_mcode name) in
 		bind (script_constraint kind name c) prev) } constraints prev)
       option_default (Ast_cocci.get_pos_var mc) in
-  let general_constraint name c =
+  let constraints name c =
     let kind =
       Ast_cocci.MetaIdDecl (Ast_cocci.NONE, Ast_cocci.unwrap_mcode name) in
     Ast.cstr_fold
       { Ast.empty_cstr_transformer with
 	Ast.cstr_script = Some (fun c accu ->
 	  bind (script_constraint kind name c) accu) } c [] in
-  let constraints name c =
-    match c with
-      Ast.NotIdCstrt c' -> general_constraint name c'
-    | _ -> [] in
-  let idconstraint name c = general_constraint name c in
   let expression r k e =
     let result =
       match Ast.unwrap e with
@@ -2621,13 +2616,13 @@ let enumerate_constraint_scripts =
       match Ast.unwrap e with
 	Ast.MetaId (name, c, _, _)
       | Ast.MetaFunc (name, c, _, _)
-      | Ast.MetaLocalFunc (name, c, _, _) -> idconstraint name c
+      | Ast.MetaLocalFunc (name, c, _, _) -> constraints name c
       | _ -> [] in
     bind result (k e) in
   let string_format r k e =
     let result =
       match Ast.unwrap e with
-	Ast.MetaFormat (name, c, _, _) -> idconstraint name c
+	Ast.MetaFormat (name, c, _, _) -> constraints name c
       | _ -> [] in
     bind result (k e) in
   let donothing r k e = k e in

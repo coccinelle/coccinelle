@@ -166,29 +166,7 @@ let general_constraint ~rn =
 
 let id_constraint = general_constraint
 
-let constraints ~rn = function
-    Ast0.NoConstraint -> ""
-  | Ast0.NotIdCstrt recstr -> general_constraint ~rn recstr
-  | Ast0.NotExpCstrt exps ->
-
-    (* exps is a list of expressions, but it is limited to numbers and ids
-     * (e.g. expression e != {0,1,n,4l}). See parser entry for NotExpCstrt.
-     *)
-    let stringify e =
-      (match Ast0.unwrap e with
-       | Ast0.Constant c ->
-           S.constant_tostring (Ast0.unwrap_mcode c)
-       | Ast0.Ident {Ast0.node = Ast0.Id m; _} ->
-           Ast0.unwrap_mcode m
-       | _ ->
-           failwith ("Error: Non-int/id exp constraints not supported. " ^
-                     "Should have failed in the parser.")
-      )
-    in
-    let res = List.map stringify exps in
-      list_constraints ~tostring_fn:(fun x -> x) ~op:" != " res
-  | Ast0.SubExpCstrt mns ->
-      list_constraints ~tostring_fn:(name_str ~rn) ~op:" <= " mns
+let constraints = general_constraint
 
 let assign_constraints = function
     Ast.CstrTrue -> ""

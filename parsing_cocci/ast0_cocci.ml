@@ -85,9 +85,9 @@ and 'a dots = 'a list wrap
 
 and base_ident =
     Id            of string mcode
-  | MetaId        of Ast.meta_name mcode * Ast.general_constraint * Ast.seed * pure
-  | MetaFunc      of Ast.meta_name mcode * Ast.general_constraint * pure
-  | MetaLocalFunc of Ast.meta_name mcode * Ast.general_constraint * pure
+  | MetaId        of Ast.meta_name mcode * constraints * Ast.seed * pure
+  | MetaFunc      of Ast.meta_name mcode * constraints * pure
+  | MetaLocalFunc of Ast.meta_name mcode * constraints * pure
   | AsIdent       of ident * ident (* as ident, always metavar *)
   | DisjId        of string mcode * ident list *
                      string mcode list (* the |s *) * string mcode
@@ -152,11 +152,7 @@ and base_expression =
 
 and expression = base_expression wrap
 
-and constraints =
-    NoConstraint
-  | NotIdCstrt     of Ast.general_constraint
-  | NotExpCstrt    of expression list
-  | SubExpCstrt    of Ast.meta_name list
+and constraints = expression Ast.generic_constraints
 
 and listlen =
     MetaListLen of Ast.meta_name mcode
@@ -173,7 +169,7 @@ and string_fragment = base_string_fragment wrap
 
 and base_string_format =
     ConstantFormat of string mcode
-  | MetaFormat of Ast.meta_name mcode * Ast.general_constraint
+  | MetaFormat of Ast.meta_name mcode * constraints
 
 and string_format = base_string_format wrap
 
@@ -182,14 +178,14 @@ and string_format = base_string_format wrap
 and base_assignOp =
     SimpleAssign of simpleAssignOp mcode
   | OpAssign of Ast_cocci.arithOp mcode
-  | MetaAssign of Ast_cocci.meta_name mcode * Ast.general_constraint * pure
+  | MetaAssign of Ast_cocci.meta_name mcode * constraints * pure
 and simpleAssignOp = string
 and assignOp = base_assignOp wrap
 
 and base_binaryOp =
     Arith of Ast_cocci.arithOp mcode
   | Logical of Ast_cocci.logicalOp mcode
-  | MetaBinary of Ast_cocci.meta_name mcode * Ast.general_constraint * pure
+  | MetaBinary of Ast_cocci.meta_name mcode * constraints * pure
 and binaryOp = base_binaryOp wrap
 
 (* --------------------------------------------------------------------- *)
@@ -216,7 +212,7 @@ and base_typeC =
   | StructUnionDef  of typeC (* either StructUnionName or metavar *) *
 	string mcode (* { *) * declaration dots * string mcode (* } *)
   | TypeName        of string mcode
-  | MetaType        of Ast.meta_name mcode * Ast.general_constraint * pure
+  | MetaType        of Ast.meta_name mcode * constraints * pure
   | AsType          of typeC * typeC (* as type, always metavar *)
   | DisjType        of string mcode * typeC list * (* only after iso *)
                        string mcode list (* the |s *)  * string mcode
@@ -456,7 +452,7 @@ and exec_code = base_exec_code wrap
 (* Positions *)
 
 and meta_pos =
-    MetaPos of Ast.meta_name mcode * Ast.general_constraint *
+    MetaPos of Ast.meta_name mcode * constraints *
 	Ast.meta_collect
 
 (* --------------------------------------------------------------------- *)

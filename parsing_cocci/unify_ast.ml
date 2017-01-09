@@ -17,9 +17,9 @@ let unify_mcode (x,_,_,_) (y,_,_,_) = x = y
 
 module type Behaviour = sig
   val unify_meta_ident:
-      Ast.meta_name Ast.mcode * Ast.general_constraint * Ast.keep_binding *
+      Ast.meta_name Ast.mcode * Ast.constraints * Ast.keep_binding *
       Ast.inherited ->
-      Ast.meta_name Ast.mcode * Ast.general_constraint * Ast.keep_binding *
+      Ast.meta_name Ast.mcode * Ast.constraints * Ast.keep_binding *
       Ast.inherited -> bool
 
   val meta_ident_unifier: bool

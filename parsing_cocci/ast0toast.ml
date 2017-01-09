@@ -305,13 +305,18 @@ let pos_mcode(term,_,info,mcodekind,pos,adj) =
   (* avoids a recursion problem *)
   (term,convert_info info,convert_mcodekind adj mcodekind,[])
 
+(* Postponed transformer declaration for constraints *)
+let constraints' = ref (fun _ -> failwith "unbound constraints")
+let constraints c = !constraints' c
+
 let mcode (term,_,info,mcodekind,pos,adj) =
   let pos =
     List.fold_left
       (function prev ->
 	function
-	    Ast0.MetaPosTag(Ast0.MetaPos(pos,constraints,per)) ->
-	      (Ast.MetaPos(pos_mcode pos,constraints,per,unitary,false))::prev
+	    Ast0.MetaPosTag(Ast0.MetaPos(pos,cstr,per)) ->
+	      let cstr' = constraints cstr in
+	      (Ast.MetaPos(pos_mcode pos,cstr',per,unitary,false))::prev
 	  | _ -> prev)
       [] !pos in
   (term,convert_info info,convert_mcodekind adj mcodekind,List.rev pos)
@@ -344,12 +349,15 @@ and ident i =
       Ast0.Id(name) -> Ast.Id(mcode name)
     | Ast0.DisjId(_,id_list,_,_) ->
 	Ast.DisjId(List.map ident id_list)
-    | Ast0.MetaId(name,constraints,_,_) ->
-	Ast.MetaId(mcode name,constraints,unitary,false)
-    | Ast0.MetaFunc(name,constraints,_) ->
-	Ast.MetaFunc(mcode name,constraints,unitary,false)
-    | Ast0.MetaLocalFunc(name,constraints,_) ->
-	Ast.MetaLocalFunc(mcode name,constraints,unitary,false)
+    | Ast0.MetaId(name,cstr,_,_) ->
+	let cstr' = constraints cstr in
+	Ast.MetaId(mcode name,cstr',unitary,false)
+    | Ast0.MetaFunc(name,cstr,_) ->
+	let cstr' = constraints cstr in
+	Ast.MetaFunc(mcode name,cstr',unitary,false)
+    | Ast0.MetaLocalFunc(name,cstr,_) ->
+	let cstr' = constraints cstr in
+	Ast.MetaLocalFunc(mcode name,cstr',unitary,false)
     | Ast0.AsIdent(id,asid) ->
 	Ast.AsIdent(ident id,ident asid)
     | Ast0.OptIdent(id) -> Ast.OptIdent(ident id))
@@ -452,16 +460,18 @@ and assignOp op =
     (match Ast0.unwrap op with
       Ast0.SimpleAssign op' -> Ast.SimpleAssign (mcode op')
     | Ast0.OpAssign op' -> Ast.OpAssign (mcode op')
-    | Ast0.MetaAssign(mv, c, _) ->
-      Ast.MetaAssign(mcode mv, c, unitary, false))
+    | Ast0.MetaAssign(mv, cstr, _) ->
+	let cstr' = constraints cstr in
+	Ast.MetaAssign(mcode mv, cstr', unitary, false))
 
 and binaryOp op =
   rewrap op no_isos
     (match Ast0.unwrap op with
       Ast0.Arith op' -> Ast.Arith (mcode op')
     | Ast0.Logical op' -> Ast.Logical (mcode op')
-    | Ast0.MetaBinary(mv, c, _) ->
-      Ast.MetaBinary(mcode mv, c, unitary, false))
+    | Ast0.MetaBinary(mv, cstr, _) ->
+	let cstr' = constraints cstr in
+	Ast.MetaBinary(mcode mv, cstr', unitary, false))
 
 and expression_dots ed = dots expression ed
 
@@ -480,15 +490,9 @@ and string_format e =
   rewrap e no_isos
     (match Ast0.unwrap e with
       Ast0.ConstantFormat(str) -> Ast.ConstantFormat(mcode str)
-    | Ast0.MetaFormat(name,constraints) ->
-	Ast.MetaFormat(mcode name,constraints,unitary,false))
-
-and constraints c =
-  match c with
-      Ast0.NoConstraint        -> Ast.NoConstraint
-    | Ast0.NotIdCstrt   idctrt -> Ast.NotIdCstrt idctrt
-    | Ast0.NotExpCstrt  exps   -> Ast.NotExpCstrt (List.map expression exps)
-    | Ast0.SubExpCstrt  ids    -> Ast.SubExpCstrt ids
+    | Ast0.MetaFormat(name,cstr) ->
+	let cstr' = constraints cstr in
+	Ast.MetaFormat(mcode name,cstr',unitary,false))
 
 and do_lenname = function
     Ast0.MetaListLen(nm) -> Ast.MetaListLen(mcode nm,unitary,false)
@@ -567,7 +571,8 @@ and base_typeC allminus t =
 			 declaration_dots decls, mcode rb)
   | Ast0.TypeName(name) -> Ast.TypeName(mcode name)
   | Ast0.MetaType(name,cstr,_) ->
-      Ast.MetaType(mcode name,cstr,unitary,false)
+      let cstr' = constraints cstr in
+      Ast.MetaType(mcode name,cstr',unitary,false)
   | _ -> failwith "ast0toast: unexpected type"
 
 (* --------------------------------------------------------------------- *)
@@ -1161,6 +1166,12 @@ and top_level t =
     | Ast0.CODE(rule_elem_dots) -> Ast.CODE(statement_dots rule_elem_dots)
     | Ast0.ERRORWORDS(exps) -> Ast.ERRORWORDS(List.map expression exps)
     | Ast0.OTHER(_) | Ast0.TOPCODE(_) -> failwith "eliminated by top_level")
+
+let constraints c =
+  let cstr_expr = Some (fun e -> Ast.CstrExpr (expression e)) in
+  Ast.cstr_map { Ast.empty_cstr_transformer with Ast.cstr_expr } c
+
+let () = constraints' := constraints
 
 (* --------------------------------------------------------------------- *)
 (* Entry point for minus code *)

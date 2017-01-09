@@ -144,11 +144,11 @@ and 'a dots = 'a list wrap
 and base_ident =
     Id            of string mcode
   | MetaId        of
-      meta_name mcode * general_constraint * keep_binding * inherited
+      meta_name mcode * constraints * keep_binding * inherited
   | MetaFunc      of
-      meta_name mcode * general_constraint * keep_binding * inherited
+      meta_name mcode * constraints * keep_binding * inherited
   | MetaLocalFunc of
-      meta_name mcode * general_constraint * keep_binding * inherited
+      meta_name mcode * constraints * keep_binding * inherited
   | AsIdent       of ident * ident (* as ident, always metavar *)
 
   | DisjId        of ident list
@@ -218,23 +218,26 @@ and base_expression =
 
   | OptExp         of expression
 
-and constraints =
-    NoConstraint
-  | NotIdCstrt     of general_constraint
-  | NotExpCstrt    of expression list
-  | SubExpCstrt    of meta_name list
-
-and general_constraint =
+and 'expression generic_constraints =
     CstrFalse
   | CstrTrue
-  | CstrAnd of general_constraint list
-  | CstrOr of general_constraint list
-  | CstrNot of general_constraint
+  | CstrAnd of 'expression generic_constraints list
+  | CstrOr of 'expression generic_constraints list
+  | CstrNot of 'expression generic_constraints
   | CstrString of string
+  | CstrOperator of operator_constraint
   | CstrMeta_name of meta_name
   | CstrRegexp of string * Regexp.regexp
   | CstrScript of script_constraint
+  | CstrExpr of 'expression
+  | CstrSub of meta_name list
   | CstrType of fullType
+
+and operator_constraint =
+    CstrAssignOp of assignOp
+  | CstrBinaryOp of binaryOp
+
+and constraints = expression generic_constraints
 
 and script_constraint =
       string (* name of generated function *) *
@@ -264,7 +267,7 @@ and string_fragment = base_string_fragment wrap
 and base_string_format =
     ConstantFormat of string mcode
   | MetaFormat of
-      meta_name mcode * general_constraint * keep_binding * inherited
+      meta_name mcode * constraints * keep_binding * inherited
 
 and string_format = base_string_format wrap
 
@@ -273,7 +276,7 @@ and base_assignOp =
     SimpleAssign of simpleAssignOp mcode
   | OpAssign of arithOp mcode
   | MetaAssign of
-      meta_name mcode * general_constraint * keep_binding * inherited
+      meta_name mcode * constraints * keep_binding * inherited
 and simpleAssignOp = string
 and assignOp = base_assignOp wrap
 and fixOp = Dec | Inc
@@ -282,7 +285,7 @@ and base_binaryOp =
     Arith of arithOp mcode
   | Logical of logicalOp mcode
   | MetaBinary of
-      meta_name mcode * general_constraint * keep_binding * inherited
+      meta_name mcode * constraints * keep_binding * inherited
 and binaryOp = base_binaryOp wrap
 and arithOp =
     Plus | Minus | Mul | Div | Mod | DecLeft | DecRight | And | Or | Xor
@@ -327,7 +330,7 @@ and base_typeC =
 	string mcode (* { *) * annotated_decl dots * string mcode (* } *)
   | TypeName        of string mcode (* pad: should be 'of ident' ? *)
 
-  | MetaType        of meta_name mcode * general_constraint * keep_binding *
+  | MetaType        of meta_name mcode * constraints * keep_binding *
 	inherited
 
 and fullType = base_fullType wrap
@@ -465,7 +468,7 @@ and define_parameters = base_define_parameters wrap
 and meta_collect = PER | ALL
 
 and meta_pos =
-    MetaPos of meta_name mcode * general_constraint *
+    MetaPos of meta_name mcode * constraints *
       meta_collect * keep_binding * inherited
 
 (* --------------------------------------------------------------------- *)
@@ -1065,7 +1068,7 @@ type 'a transformer = {
     enumName: (string mcode -> ident option -> 'a) option;
     structUnionName: (structUnion mcode -> ident option -> 'a) option;
     typeName: (string mcode -> 'a) option;
-    metaType: (meta_name mcode -> general_constraint -> keep_binding ->
+    metaType: (meta_name mcode -> constraints -> keep_binding ->
       inherited -> 'a) option
   }
 
@@ -1211,19 +1214,25 @@ let meta_names_of_fullType ty =
   fullType_fold_meta_names
     (fun meta_name meta_names -> meta_name :: meta_names) ty []
 
-type 'a cstr_transformer = {
+type ('expression, 'a) cstr_transformer = {
     cstr_string: (string -> 'a) option;
+    cstr_operator: (operator_constraint -> 'a) option;
     cstr_meta_name: (meta_name -> 'a) option;
     cstr_regexp: (string -> Regexp.regexp -> 'a) option;
     cstr_script: (script_constraint -> 'a) option;
-    cstr_type: (fullType -> 'a) option
+    cstr_expr: ('expression -> 'a) option;
+    cstr_sub: (meta_name list -> 'a) option;
+    cstr_type: (fullType -> 'a) option;
   }
 
 let empty_cstr_transformer = {
-  cstr_regexp = None;
   cstr_string = None;
+  cstr_operator = None;
   cstr_meta_name = None;
+  cstr_regexp = None;
   cstr_script = None;
+  cstr_expr = None;
+  cstr_sub = None;
   cstr_type = None;
 }
 
@@ -1236,6 +1245,8 @@ let rec cstr_fold_sign pos neg c accu =
   | CstrNot c' -> cstr_fold_sign neg pos c' accu
   | CstrString s ->
       Common.default accu (fun f -> f s accu) pos.cstr_string
+  | CstrOperator c' ->
+      Common.default accu (fun f -> f c' accu) pos.cstr_operator
   | CstrMeta_name mn ->
       Common.default accu (fun f -> f mn accu) pos.cstr_meta_name
   | CstrRegexp (s, re) ->
@@ -1250,8 +1261,18 @@ let rec cstr_fold_sign pos neg c accu =
 	      pos.cstr_meta_name
 	| Some f -> f script_constraint accu
       end
-  | CstrType ty ->
-      Common.default accu (fun f -> f ty accu) pos.cstr_type
+  | CstrExpr e -> Common.default accu (fun f -> f e accu) pos.cstr_expr
+  | CstrSub l ->
+      begin
+	match pos.cstr_sub with
+	  None ->
+	    Common.default accu
+	      (fun f ->
+		List.fold_left (fun accu' mv -> f mv accu') accu l)
+	      pos.cstr_meta_name
+	| Some f -> f l accu
+      end
+  | CstrType ty -> Common.default accu (fun f -> f ty accu) pos.cstr_type
 
 let cstr_fold transformer c accu =
   cstr_fold_sign transformer transformer c accu
@@ -1260,12 +1281,18 @@ let cstr_iter transformer c =
   cstr_fold
     { cstr_string =
       Common.map_option (fun f s () -> f s) transformer.cstr_string;
+      cstr_operator =
+      Common.map_option (fun f c' () -> f c') transformer.cstr_operator;
       cstr_meta_name =
       Common.map_option (fun f s () -> f s) transformer.cstr_meta_name;
       cstr_regexp =
       Common.map_option (fun f s re () -> f s re) transformer.cstr_regexp;
       cstr_script =
       Common.map_option (fun f s () -> f s) transformer.cstr_script;
+      cstr_expr =
+      Common.map_option (fun f s () -> f s) transformer.cstr_expr;
+      cstr_sub =
+      Common.map_option (fun f s () -> f s) transformer.cstr_sub;
       cstr_type =
       Common.map_option (fun f s () -> f s) transformer.cstr_type; } c ()
 
@@ -1278,6 +1305,8 @@ let rec cstr_map transformer c =
   | CstrNot c' -> CstrNot (cstr_map transformer c')
   | CstrString s ->
       Common.default (CstrString s) (fun f -> f s) transformer.cstr_string
+  | CstrOperator c' ->
+      Common.default (CstrOperator c') (fun f -> f c') transformer.cstr_operator
   | CstrMeta_name mn ->
       Common.default (CstrMeta_name mn) (fun f -> f mn)
 	transformer.cstr_meta_name
@@ -1288,34 +1317,28 @@ let rec cstr_map transformer c =
       Common.default (CstrScript script_constraint)
 	(fun f -> f script_constraint)
 	transformer.cstr_script
+  | CstrExpr e ->
+      (* Untransformed expressions are discarded! *)
+      Common.default CstrTrue (fun f -> f e)
+	transformer.cstr_expr
+  | CstrSub l ->
+      Common.default (CstrSub l) (fun f -> f l)
+	transformer.cstr_sub
   | CstrType ty ->
-      Common.default (CstrType ty)
-	(fun f -> f ty)
+      Common.default (CstrType ty) (fun f -> f ty)
 	transformer.cstr_type
-
-let rec cstr_eval transformer c =
-  match c with
-    CstrFalse -> false
-  | CstrTrue -> true
-  | CstrAnd list -> List.for_all (cstr_eval transformer) list
-  | CstrOr list -> List.exists (cstr_eval transformer) list
-  | CstrNot c' -> not (cstr_eval transformer c')
-  | CstrString s -> Common.default false (fun f -> f s) transformer.cstr_string
-  | CstrMeta_name mn ->
-      Common.default false (fun f -> f mn) transformer.cstr_meta_name
-  | CstrRegexp (s, re) ->
-      Common.default false (fun f -> f s re) transformer.cstr_regexp
-  | CstrScript script_constraint ->
-      Common.default false (fun f -> f script_constraint)
-	transformer.cstr_script
-  | CstrType ty ->
-      Common.default false (fun f -> f ty) transformer.cstr_type
 
 let cstr_meta_names c =
   cstr_fold
     { empty_cstr_transformer with
       cstr_meta_name = Some (fun mn accu -> mn :: accu)
     } c []
+
+let cstr_pos_meta_names c =
+  cstr_fold_sign
+    { empty_cstr_transformer with
+      cstr_meta_name = Some (fun mn accu -> mn :: accu)
+    } empty_cstr_transformer c []
 
 let filter_merge_variables metavars =
   let filter_var accu metavar =

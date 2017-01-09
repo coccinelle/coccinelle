@@ -117,10 +117,10 @@ let tmeta_to_field (name,pure,clt) =
 
 let tmeta_to_exp (name,pure,clt) =
   (coerce_tmeta "an expression" name
-     (TMetaExp(name,Ast0.NoConstraint,pure,None,clt))
+     (TMetaExp(name,Ast.CstrTrue,pure,None,clt))
      (function TMetaExp(_,_,_,_,_) -> true | _ -> false));
   Ast0.wrap
-    (Ast0.MetaExpr(P.clt2mcode name clt,Ast0.NoConstraint,None,Ast.ANY,pure))
+    (Ast0.MetaExpr(P.clt2mcode name clt,Ast.CstrTrue,None,Ast.ANY,pure))
 
 let tmeta_to_param (name,pure,clt) =
   (coerce_tmeta "a parameter" name (TMetaParam(name,pure,clt))
@@ -189,15 +189,6 @@ let mkarithop (op, clt) =
 let mklogop (op,clt) =
   let op' = P.clt2mcode op clt in
   Ast0.wrap (Ast0.Logical op')
-
-let constraint_of_binary_operator binary_operator =
-  match Ast0.unwrap binary_operator with
-    Ast0.Arith op ->
-      Ast.CstrString (Ast.string_of_arithOp (Ast0.unwrap_mcode op))
-  | Ast0.Logical op ->
-      Ast.CstrString (Ast.string_of_logicalOp (Ast0.unwrap_mcode op))
-  | Ast0.MetaBinary _ ->
-      failwith "constraint_of_binary_operator: not implemented"
 
 let unknown_type = Ast0.wrap (Ast0.BaseType (Ast.Unknown, []))
 
@@ -628,20 +619,18 @@ pure_ident_or_meta_ident_with_binop_constraint:
 
 binaryopconstraint:
   { Ast.CstrTrue }
-| TEq TOBrace ops=comma_list(binary_operator) TCBrace
-  { Ast.CstrOr (List.map constraint_of_binary_operator ops) }
-| TEq op=binary_operator
-  { constraint_of_binary_operator op }
+| TEq TOBrace ops=comma_list(binary_operator_constraint) TCBrace
+  { Ast.CstrOr ops }
+| TEq op=binary_operator_constraint { op }
 
 pure_ident_or_meta_ident_with_assignop_constraint:
     i=pure_ident_or_meta_ident c=assignopconstraint { (i,c) }
 
 assignopconstraint:
   { Ast.CstrTrue }
-| TEq TOBrace ops=comma_list(assignment_operator) TCBrace
+| TEq TOBrace ops=comma_list(assignment_operator_constraint) TCBrace
   { Ast.CstrOr ops }
-| TEq op=assignment_operator
-  { op }
+| TEq op=assignment_operator_constraint { op }
 
 binary_operator:
 | TShLOp { mkarithop $1 } (* Ast.Arith Ast.DecLeft *)
@@ -660,11 +649,25 @@ binary_operator:
 | TAndLog { mklogop (Ast.AndLog,$1) }
 | TOrLog { mklogop (Ast.OrLog,$1) }
 
+binary_operator_constraint:
+  op=binary_operator {
+    Ast.CstrOperator (Ast.CstrBinaryOp (Ast0toast.binaryOp op))
+  }
+
 assignment_operator:
-| TEq
-  { Ast.CstrString "=" }
+  TEq
+  { let clt = $1 in
+  let op' = P.clt2mcode "=" clt in
+  Ast0.wrap (Ast0.SimpleAssign op') }
 | TOpAssign
-  { Ast.CstrString (Ast.string_of_arithOp (fst $1) ^ "=") }
+  { let (op,clt) = $1 in
+  let op' = P.clt2mcode op clt in
+  Ast0.wrap (Ast0.OpAssign op') }
+
+assignment_operator_constraint:
+  op=assignment_operator {
+    Ast.CstrOperator (Ast.CstrAssignOp (Ast0toast.assignOp op))
+  }
 
 list_len:
   pure_ident_or_meta_ident { Common.Left $1 }
@@ -890,26 +893,24 @@ expression_type:
 | vl=meta_exp_type // no error if use $1 but doesn't type check
     { (fun arity name pure check_meta constraints ->
       let ty = Some vl in
-      (match constraints with
-	Ast0.NotExpCstrt constraints ->
-	  List.iter
-	    (function c ->
-	      match Ast0.unwrap c with
-		Ast0.Constant(_) ->
-		  if not
-		      (List.exists
-                         (fun ty ->
-                           match Ast0.unwrap ty with
-                             Ast0.BaseType (Ast.IntType, _) -> true
-                           | Ast0.BaseType (Ast.ShortType, _) -> true
-                           | Ast0.BaseType (Ast.LongType, _) -> true
+      let cstr_expr = Some begin function c ->
+	match Ast0.unwrap c with
+	  Ast0.Constant(_) ->
+	    if not
+		(List.exists
+		   (fun ty ->
+		     match Ast0.unwrap ty with
+		       Ast0.BaseType (Ast.IntType, _) -> true
+		     | Ast0.BaseType (Ast.ShortType, _) -> true
+		     | Ast0.BaseType (Ast.LongType, _) -> true
 			   | _ -> false)
 			 vl)
 		  then
 		    failwith "metavariable with int constraint must be an int"
-	      | _ -> ())
-	    constraints
-      |	_ -> ());
+	      | _ -> ()
+	end in
+      Ast.cstr_iter { Ast.empty_cstr_transformer with Ast.cstr_expr }
+	constraints;
       !Data.add_exp_meta ty name constraints pure;
       let ty' = Some (List.map (Ast0toast.typeC false) vl) in
       let tok = check_meta (Ast.MetaExpDecl (arity,name,ty')) in
@@ -2349,7 +2350,7 @@ pure_ident_or_meta_ident_with_econstraint(x_eq):
        i=pure_ident_or_meta_ident optc=option(x_eq)
     {
       match optc with
-	  None   -> (i, Ast0.NoConstraint)
+	  None   -> (i, Ast.CstrTrue)
 	| Some c -> (i, c)
     }
 
@@ -2436,13 +2437,17 @@ cstr_pure_ident_or_meta_ident_or_typename:
 
 
 re_or_not_eqe_or_sub:
-   re=general_eqid {Ast0.NotIdCstrt  re}
- | ne=not_eqe      {Ast0.NotExpCstrt ne}
- | s=sub           {Ast0.SubExpCstrt s}
+   re=general_eqid { re }
+ | ne=not_eq_or_sub(not_eqe) { ne }
 
 not_ceq_or_sub:
-   ceq=not_ceq    {Ast0.NotExpCstrt ceq}
- | s=sub          {Ast0.SubExpCstrt s}
+   ne=not_eq_or_sub(not_ceq) { ne }
+
+not_eq_or_sub(not_eq):
+   ne=not_eq {
+     Ast.CstrNot (Ast.CstrOr (List.map (fun e -> Ast.CstrExpr e) ne))
+   }
+ | s=sub { Ast.CstrSub s }
 
 not_eqe:
        TNotEq i=pure_ident

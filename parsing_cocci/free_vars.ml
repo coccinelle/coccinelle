@@ -94,20 +94,14 @@ let collect_refs include_constraints =
 	    else [] in
 	  let extra =
 	    if include_constraints
-	    then
-	      match constraints with
-		Ast.SubExpCstrt l -> l
-	      |	_ -> []
+	    then Ast.cstr_pos_meta_names constraints
 	    else [] in
 	  bind extra (bind [metaid name] types)
       | Ast.MetaErr(name,constraints,_,_)
       | Ast.MetaExpr(name,constraints,_,_,_,_) ->
 	  let extra =
 	    if include_constraints
-	    then
-	      match constraints with
-		Ast.SubExpCstrt l -> l
-	      |	_ -> []
+	    then Ast.cstr_pos_meta_names constraints
 	    else [] in
 	  bind extra [metaid name]
       | Ast.MetaExprList(name,Ast.MetaListLen (lenname,_,_),_,_) ->

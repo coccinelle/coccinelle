@@ -159,26 +159,23 @@ let print_type _keep _info = function
 (* Constraint on Identifier and Function *)
 (* FIXME: Not called at the moment *)
 
+let string_or_meta_name = function
+    Ast.CstrString _ | Ast.CstrMeta_name _ -> true
+  | _ -> false
+
+let print_string_or_meta_name = function
+    Ast.CstrString s -> Printf.printf " %s" s
+  | Ast.CstrMeta_name (r, n) -> print_string " "; print_meta (r, n)
+  | _ -> assert false
+
 let general_constraint = function
     Ast.CstrTrue -> print_string "/* No constraint */"
-  | Ast.CstrOr l when
-      List.for_all
-	(function Ast.CstrString _ | Ast.CstrMeta_name _ -> true | _ -> false)
-	l ->
+  | Ast.CstrOr l when List.for_all string_or_meta_name l ->
       print_string " =";
-      List.iter (function
-	  Ast.CstrString s -> Printf.printf " %s" s
-	| Ast.CstrMeta_name (r, n) -> print_string " "; print_meta (r, n)
-	| _ -> assert false) l
-  | Ast.CstrNot (Ast.CstrOr l) when
-      List.for_all
-	(function Ast.CstrString _ | Ast.CstrMeta_name _ -> true | _ -> false)
-	l ->
+      List.iter print_string_or_meta_name l
+  | Ast.CstrNot (Ast.CstrOr l) when List.for_all string_or_meta_name l ->
       print_string " !=";
-      List.iter (function
-	  Ast.CstrString s -> Printf.printf " %s" s
-	| Ast.CstrMeta_name (r, n) -> print_string " "; print_meta (r, n)
-	| _ -> assert false) l
+      List.iter print_string_or_meta_name l
   | Ast.CstrRegexp (re,_) ->
       print_string "~= \""; print_string re; print_string "\""
   | Ast.CstrNot (Ast.CstrRegexp (re,_)) ->

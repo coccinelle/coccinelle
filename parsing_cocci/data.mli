@@ -27,10 +27,6 @@ and line_type =
   | PLUS | PLUSPLUS
   | CONTEXT | OPT
 
-type iconstraints = Ast_cocci.general_constraint
-type econstraints = Ast0_cocci.constraints
-type pconstraints = Ast_cocci.general_constraint
-
 val in_rule_name : bool ref (* true if parsing the rule name *)
 val in_meta : bool ref      (* true if parsing the metavariable decls *)
 val in_iso : bool ref       (* true if parsing the isomorphisms *)
@@ -48,12 +44,12 @@ val clear_meta: (unit -> unit) ref
 
 type meta_type = Ast_cocci.meta_name -> Ast0_cocci.pure -> unit
 type id_meta_type =
-    Ast_cocci.meta_name -> iconstraints -> Ast0_cocci.pure -> unit
+    Ast_cocci.meta_name -> Ast0_cocci.constraints -> Ast0_cocci.pure -> unit
 type list_meta_type =
     Ast_cocci.meta_name -> Ast_cocci.list_len -> Ast0_cocci.pure -> unit
 type exp_meta_type =
-    Ast0_cocci.typeC list option -> Ast_cocci.meta_name -> econstraints ->
-      Ast0_cocci.pure -> unit
+    Ast0_cocci.typeC list option -> Ast_cocci.meta_name ->
+      Ast0_cocci.constraints -> Ast0_cocci.pure -> unit
 
 val add_meta_meta: meta_type ref
 val add_id_meta: id_meta_type ref
@@ -68,7 +64,8 @@ val add_paramlist_meta: list_meta_type ref
 val add_const_meta: exp_meta_type ref
 
 val add_err_meta:
-    (Ast_cocci.meta_name -> econstraints -> Ast0_cocci.pure -> unit) ref
+    (Ast_cocci.meta_name -> Ast0_cocci.constraints -> Ast0_cocci.pure ->
+      unit) ref
 
 val add_exp_meta: exp_meta_type ref
 val add_idexp_meta: exp_meta_type ref
@@ -88,19 +85,20 @@ val add_declarer_meta: id_meta_type ref
 val add_iterator_meta: id_meta_type ref
 
 val add_pos_meta:
-    (Ast_cocci.meta_name -> pconstraints -> Ast_cocci.meta_collect -> unit) ref
+    (Ast_cocci.meta_name -> Ast0_cocci.constraints -> Ast_cocci.meta_collect ->
+      unit) ref
 
-val add_fmt_meta: (Ast_cocci.meta_name -> iconstraints -> unit) ref
+val add_fmt_meta: (Ast_cocci.meta_name -> Ast0_cocci.constraints -> unit) ref
 
 val add_fmtlist_meta: (Ast_cocci.meta_name -> Ast_cocci.list_len -> unit) ref
 
 val add_assignOp_meta:
     (Ast_cocci.meta_name ->
-      Ast_cocci.general_constraint -> Ast0_cocci.pure -> unit) ref
+      Ast0_cocci.constraints -> Ast0_cocci.pure -> unit) ref
 
 val add_binaryOp_meta:
     (Ast_cocci.meta_name ->
-      Ast_cocci.general_constraint -> Ast0_cocci.pure -> unit) ref
+      Ast0_cocci.constraints -> Ast0_cocci.pure -> unit) ref
 
 val add_type_name: (string -> unit) ref
 val add_attribute: (string -> unit) ref
@@ -113,6 +111,6 @@ val install_bindings: (string -> unit) ref
 (* String format things *)
 
 val format_metavariables :
-    (string * (Ast_cocci.meta_name * iconstraints)) list ref
+    (string * (Ast_cocci.meta_name * Ast0_cocci.constraints)) list ref
 val format_list_metavariables :
     (string * (Ast_cocci.meta_name * Ast_cocci.list_len)) list ref

@@ -129,11 +129,11 @@ and 'a dots = 'a list wrap
 and base_ident =
     Id            of string mcode
   | MetaId        of
-      meta_name mcode * general_constraint * keep_binding * inherited
+      meta_name mcode * constraints * keep_binding * inherited
   | MetaFunc      of
-      meta_name mcode * general_constraint * keep_binding * inherited
+      meta_name mcode * constraints * keep_binding * inherited
   | MetaLocalFunc of
-      meta_name mcode * general_constraint * keep_binding * inherited
+      meta_name mcode * constraints * keep_binding * inherited
   | AsIdent       of ident * ident (* as ident, always metavar *)
 
   | DisjId        of ident list
@@ -202,23 +202,26 @@ and base_expression =
 
   | OptExp         of expression
 
-and constraints =
-    NoConstraint
-  | NotIdCstrt     of general_constraint
-  | NotExpCstrt    of expression list
-  | SubExpCstrt    of meta_name list
-
-and general_constraint =
+and 'expression generic_constraints =
     CstrFalse
   | CstrTrue
-  | CstrAnd of general_constraint list
-  | CstrOr of general_constraint list
-  | CstrNot of general_constraint
+  | CstrAnd of 'expression generic_constraints list
+  | CstrOr of 'expression generic_constraints list
+  | CstrNot of 'expression generic_constraints
   | CstrString of string
+  | CstrOperator of operator_constraint
   | CstrMeta_name of meta_name
   | CstrRegexp of string * Regexp.regexp
   | CstrScript of script_constraint
+  | CstrExpr of 'expression
+  | CstrSub of meta_name list
   | CstrType of fullType
+
+and operator_constraint =
+    CstrAssignOp of assignOp
+  | CstrBinaryOp of binaryOp
+
+and constraints = expression generic_constraints
 
 and script_constraint =
       string (* name of generated function *) *
@@ -247,7 +250,7 @@ and string_fragment = base_string_fragment wrap
 and base_string_format =
     ConstantFormat of string mcode
   | MetaFormat of
-      meta_name mcode * general_constraint * keep_binding * inherited
+      meta_name mcode * constraints * keep_binding * inherited
 
 and string_format = base_string_format wrap
 
@@ -256,7 +259,7 @@ and  base_assignOp =
     SimpleAssign of simpleAssignOp mcode
   | OpAssign of arithOp mcode
   | MetaAssign of
-      meta_name mcode * general_constraint * keep_binding * inherited
+      meta_name mcode * constraints * keep_binding * inherited
 and simpleAssignOp = string
 and assignOp = base_assignOp wrap
 and  fixOp = Dec | Inc
@@ -265,7 +268,7 @@ and  base_binaryOp =
     Arith of arithOp mcode
   | Logical of logicalOp mcode
   | MetaBinary of
-      meta_name mcode * general_constraint * keep_binding * inherited
+      meta_name mcode * constraints * keep_binding * inherited
 and binaryOp = base_binaryOp wrap
 and  arithOp =
     Plus | Minus | Mul | Div | Mod | DecLeft | DecRight | And | Or | Xor | Min | Max
@@ -309,7 +312,7 @@ and base_typeC =
 	string mcode (* { *) * annotated_decl dots * string mcode (* } *)
   | TypeName        of string mcode
 
-  | MetaType        of meta_name mcode * general_constraint * keep_binding *
+  | MetaType        of meta_name mcode * constraints * keep_binding *
 	inherited
 
 and fullType = base_fullType wrap
@@ -446,7 +449,7 @@ and define_parameters = base_define_parameters wrap
 and meta_collect = PER | ALL
 
 and meta_pos =
-    MetaPos of meta_name mcode * general_constraint *
+    MetaPos of meta_name mcode * constraints *
 	meta_collect * keep_binding * inherited
 
 (* --------------------------------------------------------------------- *)
@@ -804,7 +807,7 @@ type 'a transformer = {
     enumName: (string mcode -> ident option -> 'a) option;
     structUnionName: (structUnion mcode -> ident option -> 'a) option;
     typeName: (string mcode -> 'a) option;
-    metaType: (meta_name mcode -> general_constraint -> keep_binding ->
+    metaType: (meta_name mcode -> constraints -> keep_binding ->
       inherited -> 'a) option
   }
 (** ['a transformer] is an auxiliary record type for the iterators fullType_map,
@@ -843,25 +846,39 @@ val meta_names_of_fullType: fullType -> meta_name list
  * [meta_names_of_fullType ty] enumerates all the meta names that occur in [ty].
  *)
 
-type 'a cstr_transformer = {
+type ('expression, 'a) cstr_transformer = {
     cstr_string: (string -> 'a) option;
+    cstr_operator: (operator_constraint -> 'a) option;
     cstr_meta_name: (meta_name -> 'a) option;
     cstr_regexp: (string -> Regexp.regexp -> 'a) option;
     cstr_script: (script_constraint -> 'a) option;
+    cstr_expr: ('expression -> 'a) option;
+    cstr_sub: (meta_name list -> 'a) option;
     cstr_type: (fullType -> 'a) option;
   }
 
-val empty_cstr_transformer: 'a cstr_transformer
+val empty_cstr_transformer: ('expression, 'a) cstr_transformer
 
 val cstr_fold_sign:
-    ('a -> 'a) cstr_transformer -> ('a -> 'a) cstr_transformer ->
-      general_constraint -> 'a -> 'a
+    ('expression, 'a -> 'a) cstr_transformer ->
+      ('expression, 'a -> 'a) cstr_transformer ->
+      'expression generic_constraints -> 'a -> 'a
 
-val cstr_fold: ('a -> 'a) cstr_transformer -> general_constraint -> 'a -> 'a
+val cstr_fold: ('expression, 'a -> 'a) cstr_transformer ->
+  'expression generic_constraints -> 'a -> 'a
 
-val cstr_eval: bool cstr_transformer -> general_constraint -> bool
+val cstr_iter: ('expression, unit) cstr_transformer ->
+  'expression generic_constraints -> unit
 
-val cstr_meta_names: general_constraint -> meta_name list
+val cstr_map:
+    ('expression, 'expression' generic_constraints) cstr_transformer ->
+      'expression generic_constraints ->
+	'expression' generic_constraints
+(* Untransformed expressions are discarded! *)
+
+val cstr_meta_names: 'expression generic_constraints -> meta_name list
+
+val cstr_pos_meta_names: 'expression generic_constraints -> meta_name list
 
 val filter_merge_variables:
     (script_meta_name * meta_name * metavar * mvinit) list ->
