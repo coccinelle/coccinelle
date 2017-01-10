@@ -279,7 +279,7 @@ let prepare coccifile code =
       (function prev ->
 	function
 	    Ast_cocci.FinalScriptRule (name,"ocaml",deps,mvs,code) ->
-	      (name,[],[],code) :: prev
+	      (name,mvs,code) :: prev
 	  | _ -> prev)
       [] code in
   let final_rules = List.rev final_rules in
@@ -351,17 +351,23 @@ let prepare coccifile code =
       (if generate_final
       then
 	let merge_vars = prepare_merges o all_final_mvs in
-       let add_merge_vars (name, metavars, script_vars, code) =
+       let add_merge_vars (name, mvs, code) =
+	 let add_var set (var, _) = Common.StringSet.add var set in
+	 let local_merge_vars =
+	   List.fold_left add_var Common.StringSet.empty
+	     (Ast_cocci.filter_merge_variables mvs) in
 	 let let_merge_var index (merge_name, local_name) =
-	   Printf.sprintf "\
-let (%s : 'a%d list), (_ : 'a%d) =
-  (List.map (fun s -> Marshal.from_string s 0)
-     !(Coccilib.merged_variables).(%d),
-   %s) in\n"
-	     merge_name index index index local_name in
+	   if Common.StringSet.mem merge_name local_merge_vars then
+	     Printf.sprintf "\
+      let (%s : 'a%d list), (_ : 'a%d) =
+	(List.map (fun s -> Marshal.from_string s 0)
+	   !(Coccilib.merged_variables).(%d),
+	 %s) in\n"
+	       merge_name index index index local_name
+	   else "" in
 	 let let_merge_vars = List.mapi let_merge_var merge_vars in
 	 let preambule = String.concat "" let_merge_vars in
-	 (name, metavars, script_vars, preambule ^ code) in
+	 (name, [], [], preambule ^ code) in
        let final_rules = List.map add_merge_vars final_rules in
 	let rule_code = List.map prepare_rule final_rules in
 	Printf.fprintf o "%s" (String.concat "\n\n" rule_code));
