@@ -54,6 +54,7 @@ $(TARGET).cma: $(OBJS)
 $(TARGET).cmxa: $(OPTOBJS) $(LIBS:.cma=.cmxa)
 	$(OCAMLOPT_CMD) -a -o $(TARGET).cmxa $(OPTOBJS)
 	for i in `grep " (\*" exposed_modules.ml | sed "s/^.*(\* //" | sed "s/\..* \*)$$//"`; do cp ../$$i.cmi .; done
+	for i in `grep " (\*" exposed_modules.ml | sed "s/^.*(\* //" | sed "s/\..* \*)$$//"`; do cp ../$$i.cmx .; done
 
 $(TARGET).top: $(OBJS) $(LIBS)
 	$(OCAMLMKTOP_CMD) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS)
