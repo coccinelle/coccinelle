@@ -1214,6 +1214,16 @@ let meta_names_of_fullType ty =
   fullType_fold_meta_names
     (fun meta_name meta_names -> meta_name :: meta_names) ty []
 
+let string_of_expression e =
+  match unwrap e with
+    Ident id ->
+      begin
+	match unwrap id with
+	  Id m -> Some (unwrap_mcode m)
+	| _ -> None
+      end
+  | _ -> None
+
 type ('expression, 'a) cstr_transformer = {
     cstr_string: (string -> 'a) option;
     cstr_operator: (operator_constraint -> 'a) option;
@@ -1261,7 +1271,8 @@ let rec cstr_fold_sign pos neg c accu =
 	      pos.cstr_meta_name
 	| Some f -> f script_constraint accu
       end
-  | CstrExpr e -> Common.default accu (fun f -> f e accu) pos.cstr_expr
+  | CstrExpr e ->
+      Common.default accu (fun f -> f e accu) pos.cstr_expr
   | CstrSub l ->
       begin
 	match pos.cstr_sub with

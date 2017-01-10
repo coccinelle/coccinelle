@@ -288,14 +288,16 @@ let equal_metavarval valu valu' =
     ), _
       -> raise (Impossible 16)
 
+let equal_unwrap a b = B.unwrap a = B.unwrap b
+
 (* probably only one argument needs to be stripped, because inherited
 metavariables containing expressions are stripped in advance. But don't
 know which one is which... *)
 let equal_inh_metavarval valu valu'=
   match valu, valu' with
   | Ast_c.MetaIdVal a, Ast_c.MetaIdVal b -> a = b
-  | Ast_c.MetaAssignOpVal a, Ast_c.MetaAssignOpVal b -> a = b
-  | Ast_c.MetaBinaryOpVal a, Ast_c.MetaBinaryOpVal b -> a = b
+  | Ast_c.MetaAssignOpVal a, Ast_c.MetaAssignOpVal b -> equal_unwrap a b
+  | Ast_c.MetaBinaryOpVal a, Ast_c.MetaBinaryOpVal b -> equal_unwrap a b
   | Ast_c.MetaFuncVal a, Ast_c.MetaFuncVal b -> a = b
   | Ast_c.MetaLocalFuncVal a, Ast_c.MetaLocalFuncVal b ->
       (* do something more ? *)
@@ -4447,17 +4449,28 @@ and define_parameter = fun parama paramb ->
   | _ -> fail in
 
   let rec check_constraints ida idb env c =
+    let get_assignOp op = assignOpA_of_assignOpB (fst op) in
+    let get_binaryOp op = binaryOpA_of_binaryOpB (fst op) in
     let check_string f =
-      match idb with
-	B.MetaIdVal s -> f s
-      | B.MetaExprVal (e, _, _) -> f (string_of_expression e)
-      | _ -> fail in
+      let s =
+	match idb with
+	  B.MetaIdVal s -> Some s
+	| B.MetaExprVal (e, _, _) -> Some (string_of_expression e)
+	| B.MetaTypeVal t -> Some (Pretty_print_c.string_of_fullType t)
+	| B.MetaAssignOpVal op ->
+	    Some (A.string_of_assignOp (A.make_term (get_assignOp op)))
+	| B.MetaBinaryOpVal op ->
+	    Some (A.string_of_binaryOp (A.make_term (get_binaryOp op)))
+	| _ -> None in
+      match s with
+	Some s -> f s
+      | None -> fail in
     let check_operator c =
       match c, idb with
 	A.CstrAssignOp op, B.MetaAssignOpVal op' ->
-	  assignOp_eq (A.unwrap op) (assignOpA_of_assignOpB (fst op'))
+	  assignOp_eq (A.unwrap op) (get_assignOp op')
       | A.CstrBinaryOp op, B.MetaBinaryOpVal op' ->
-	  binaryOp_eq (A.unwrap op) (binaryOpA_of_binaryOpB (fst op'))
+	  binaryOp_eq (A.unwrap op) (get_binaryOp op')
       | _ -> false in
     let bool b =
       if b then return ((), ())
@@ -4500,7 +4513,10 @@ and define_parameter = fun parama paramb ->
 	  match idb with
 	    B.MetaExprVal (e', _, _) ->
 	      expression e e' >>= (fun _ _ -> return ((), ()))
-	  | _ -> fail
+	  | _ ->
+	      match A.string_of_expression e with
+		Some s -> check_string (fun s' -> bool (s = s'))
+	      | _ -> fail
 	end
     | A.CstrSub _ -> failwith "Sub-expression constraint unallowed here"
     | A.CstrType ty ->

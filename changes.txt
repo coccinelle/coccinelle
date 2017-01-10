@@ -28,6 +28,14 @@
 ** Language:
 - Allow constraints on type metavariables.  See
   tests/type_constraints.cocci
+- Constraint language is unified: constraints can be specified by comprehension
+  (= { ... } or != { ... }, with each item referring to a constant identifier or
+  an inherited meta-variable, curly-brackets can be omitted for a single item),
+  regular expression (=~ "..." or !~ "...") or scripts (:script:...). Constraints
+  can be used in conjunctions (&&), disjunctions (||) and can be negated (!).
+  Sub-expression constraints (<=) are still dealt separately and can only be
+  used individually or in conjunction with other constraints (not under a
+  disjunction or a negation). See tests/constraints.cocci.
 - Allow script finalizers for parallel computation.  See
   tests/countcalls.cocci and tests/countcalls_python.cocci
 - Allow disjunctions on a wider range of syntactic constructions (function

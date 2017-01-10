@@ -375,7 +375,11 @@ let do_get_constants constants keywords env (neg_pos,_) =
 	Ast.cstr_fold_sign
 	  { Ast.empty_cstr_transformer with
 	    Ast.cstr_string = Some (fun s accu -> bind (constants s) accu);
-	    cstr_meta_name = Some (fun mv accu -> bind (inherited mv) accu) }
+	    cstr_meta_name = Some (fun mv accu -> bind (inherited mv) accu);
+	    cstr_expr = Some (fun e accu ->
+	      match Ast.string_of_expression e with
+		None -> accu
+	      | Some s -> bind (constants s) accu) }
 	  Ast.empty_cstr_transformer
 	  c (bind (k i) (minherited name))
     | Ast.DisjId(ids) -> disj_union_all (List.map r.V.combiner_ident ids)

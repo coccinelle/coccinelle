@@ -846,6 +846,12 @@ val meta_names_of_fullType: fullType -> meta_name list
  * [meta_names_of_fullType ty] enumerates all the meta names that occur in [ty].
  *)
 
+val string_of_expression: expression -> string option
+(** [string_of_expression e] returns [Some id] if [e] is of the form
+    [Ident (Id id)], [None] otherwise.
+    Unquoted identifiers in constraints are represented as such expressions,
+    and associated strings are extracted when needed. *)
+
 type ('expression, 'a) cstr_transformer = {
     cstr_string: (string -> 'a) option;
     cstr_operator: (operator_constraint -> 'a) option;

@@ -218,8 +218,7 @@ let check_meta_tyopt type_irrelevant v =
       | _ -> fail name)
   | Ast.MetaIdDecl(Ast.NONE,(rule,name)) ->
       (match meta_lookup rule name v with
-	Ast.MetaIdDecl(_,_) | Ast.MetaFreshIdDecl(_,_)
-      | Ast.MetaTypeDecl(_,_) -> ()
+	Ast.MetaIdDecl(_,_) | Ast.MetaFreshIdDecl(_,_) -> ()
       | x -> fail name)
   | Ast.MetaFreshIdDecl((rule,name),seed) ->
       raise
@@ -352,6 +351,11 @@ let check_meta_tyopt type_irrelevant v =
 	(Semantic_cocci.Semantic ("arity not allowed on imported declaration"))
 
 let check_meta m = check_meta_tyopt false m
+
+let check_inherited_constraint_without_type meta_name =
+  match meta_name with
+    None, _ -> failwith "constraint must be an inherited variable"
+  | Some rule, name -> rule, name
 
 let check_inherited_constraint meta_name fn =
   match meta_name with
