@@ -54,6 +54,7 @@
   Wolfram Sang.
 - Don't require all metavars in type exp meta constraint to be bound,
   unless only one type is specified.  Problem reported by Michael Stefaniuc.
+- Finalization scripts are executed even in case there is no other script rules.
 * 1.0.6
 ** Language:
 - Allow \ in #define in semantic patch rules, to allow body with multiple

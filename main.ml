@@ -1155,12 +1155,6 @@ let rec main_action xs =
 	  let actual_fold =
 	    if ncores <= 1
 	    then seq_fold
-(*	    else if Cocci.has_finalize cocci_infos
-	    then
-	      begin
-		pr2 "warning: parallel mode is disabled due to a finalize";
-		(seq_fold, false)
-	      end*)
 	    else par_fold in
 
           let (outfiles, merges) =

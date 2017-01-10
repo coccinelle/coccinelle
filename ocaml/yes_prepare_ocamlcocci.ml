@@ -312,6 +312,7 @@ let prepare coccifile code =
 	  | _ -> prev)
       [] code in
   if init_rules = [] && other_rules = [] && constraint_rules = []
+      && final_rules = []
   then None
   else
     begin

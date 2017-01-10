@@ -31,7 +31,6 @@ val worth_trying : filename list -> constant_info -> bool
 val full_engine :
   cocci_info -> filename list -> (filename * filename option) list * merge_vars
 val post_engine : cocci_info -> merge_vars -> unit
-val has_finalize : cocci_info -> bool
 
 (* because of the #include "toto.c" and also because we may associate the
  * same C file to multiple drivers because they share code, we can
