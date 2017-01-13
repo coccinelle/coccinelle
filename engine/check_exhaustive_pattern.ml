@@ -21,7 +21,7 @@ module F = Control_flow_c
 
 let dumb_astcocci_rule_elem = function
  | A.MetaRuleElem _ -> ()
- | A.MetaStmt (ida,_,_,_) -> ()
+ | A.MetaStmt (ida,_,_,_,_) -> ()
  | A.MetaStmtList _ -> ()
  | A.Exp expr -> ()
  | A.TopExp expr -> ()
@@ -81,9 +81,9 @@ let dumb_astcocci_initialiser = function (* seems same as the above *)
   | A.TyDecl(ty,sem) -> ()
   | A.Typedef(d,ty1,ty2,pv) -> ()
   | A.DisjDecl(decls) -> ()
-  | A.MetaDecl(name,_,_) -> ()
-  | A.MetaField(name,_,_) -> ()
-  | A.MetaFieldList(name,_,_,_) -> ()
+  | A.MetaDecl(name,_,_,_) -> ()
+  | A.MetaField(name,_,_,_) -> ()
+  | A.MetaFieldList(name,_,_,_,_) -> ()
   | A.AsDecl(_,_) -> ()
   | A.OptDecl(decl) -> ()
 

@@ -16,3 +16,8 @@ f()
     h(1 != 2);
     h(1 <= 2);
 }
+
+void
+g(int a, int b, int c)
+{
+}

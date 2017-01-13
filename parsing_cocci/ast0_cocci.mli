@@ -124,7 +124,7 @@ and base_expression =
   | MetaExpr       of Ast_cocci.meta_name mcode * constraints *
 	              typeC list option * Ast_cocci.form * pure
   | MetaExprList   of Ast_cocci.meta_name mcode (* only in arglists *) *
-	              listlen * pure
+	              listlen * constraints * pure
   | AsExpr         of expression * expression (* as expr, always metavar *)
   | AsSExpr        of expression * statement (* as expr, always metavar *)
   | EComma         of string mcode (* only in arglists *)
@@ -144,7 +144,7 @@ and expression = base_expression wrap
 and constraints = expression Ast_cocci.generic_constraints
 
 and listlen =
-    MetaListLen of Ast_cocci.meta_name mcode
+    MetaListLen of Ast_cocci.meta_name mcode * constraints
   | CstListLen of int
   | AnyListLen
 
@@ -152,7 +152,8 @@ and base_string_fragment =
     ConstantFragment of string mcode
   | FormatFragment of string mcode (*%*) * string_format (* format *)
   | Strdots of string mcode
-  | MetaFormatList of string mcode (*%*) * Ast_cocci.meta_name mcode * listlen
+  | MetaFormatList of string mcode (*%*) * Ast_cocci.meta_name mcode *
+	constraints * listlen
 
 and string_fragment = base_string_fragment wrap
 
@@ -218,9 +219,10 @@ and typeC = base_typeC wrap
    split out into multiple declarations of a single variable each. *)
 
 and base_declaration =
-    MetaDecl   of Ast_cocci.meta_name mcode * pure (* variables *)
-  | MetaField  of Ast_cocci.meta_name mcode * pure (* structure fields *)
-  | MetaFieldList of Ast_cocci.meta_name mcode * listlen * pure
+    MetaDecl   of Ast_cocci.meta_name mcode * constraints * pure (* variables *)
+  | MetaField  of Ast_cocci.meta_name mcode * constraints *
+	pure (* structure fields *)
+  | MetaFieldList of Ast_cocci.meta_name mcode * listlen * constraints * pure
   | AsDecl        of declaration * declaration
   | Init       of Ast_cocci.storage mcode option * typeC * ident *
 	string mcode (*=*) * initialiser * string mcode (*;*)
@@ -252,8 +254,8 @@ and declaration = base_declaration wrap
 (* Initializers *)
 
 and base_initialiser =
-    MetaInit of Ast_cocci.meta_name mcode * pure
-  | MetaInitList of Ast_cocci.meta_name mcode * listlen * pure
+    MetaInit of Ast_cocci.meta_name mcode * constraints * pure
+  | MetaInitList of Ast_cocci.meta_name mcode * listlen * constraints * pure
   | AsInit of initialiser * initialiser (* as init, always metavar *)
   | InitExpr of expression
   | InitList of string mcode (*{*) * initialiser_list * string mcode (*}*) *
@@ -285,8 +287,8 @@ and initialiser_list = initialiser dots
 and base_parameterTypeDef =
     VoidParam     of typeC
   | Param         of typeC * ident option
-  | MetaParam     of Ast_cocci.meta_name mcode * pure
-  | MetaParamList of Ast_cocci.meta_name mcode * listlen * pure
+  | MetaParam     of Ast_cocci.meta_name mcode * constraints * pure
+  | MetaParamList of Ast_cocci.meta_name mcode * listlen * constraints * pure
   | AsParam       of parameterTypeDef * expression (* expr, always metavar *)
   | PComma        of string mcode
   | Pdots         of string mcode (* ... *)
@@ -301,7 +303,7 @@ and parameter_list = parameterTypeDef dots
 
 and base_define_param =
     DParam        of ident
-  | MetaDParamList of Ast_cocci.meta_name mcode * listlen * pure
+  | MetaDParamList of Ast_cocci.meta_name mcode * listlen * constraints * pure
   | DPComma       of string mcode
   | DPdots        of string mcode (* ... *)
   | OptDParam     of define_param
@@ -356,9 +358,9 @@ and base_statement =
 	             string mcode (* ; *)
   | Exec          of string mcode (* EXEC *) * string mcode (* language *) *
 	             exec_code dots * string mcode (* ; *)
-  | MetaStmt      of Ast_cocci.meta_name mcode * pure
+  | MetaStmt      of Ast_cocci.meta_name mcode * constraints * pure
   | MetaStmtList  of Ast_cocci.meta_name mcode (*only in statement lists*) *
-	             listlen * pure
+	             listlen * constraints * pure
   | AsStmt        of statement * statement (* as statement, always metavar *)
   | Exp           of expression  (* only in dotted statement lists *)
   | TopExp        of expression (* for macros body *)

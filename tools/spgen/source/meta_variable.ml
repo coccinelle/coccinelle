@@ -137,10 +137,10 @@ let list_constraints ~tostring_fn ~op = function
   | [x] -> op ^ (tostring_fn x)
   | x -> op ^ "{" ^ (String.concat "," (List.map tostring_fn x)) ^ "}"
 
-let general_constraint ~rn =
+let constraints ~rn =
   let list_constraints' list op =
     list_constraints ~tostring_fn:(function
-	Ast.CstrString s -> "\"" ^ s ^ "\""
+	Ast.CstrConstant (Ast.CstrString s) -> "\"" ^ s ^ "\""
       | Ast.CstrMeta_name mn -> name_str ~rn mn
       | _ -> assert false) ~op list in
   function
@@ -149,12 +149,14 @@ let general_constraint ~rn =
   | Ast.CstrNot (Ast.CstrRegexp (s,r)) -> " !~ \"" ^ s ^"\""
   | Ast.CstrOr list when
       List.for_all
-	(function Ast.CstrString _  | Ast.CstrMeta_name _  -> true | _ -> false)
+	(function Ast.CstrConstant (Ast.CstrString _)
+	  | Ast.CstrMeta_name _  -> true | _ -> false)
 	list ->
 	  list_constraints' list " = "
   | Ast.CstrNot (Ast.CstrOr list) when
       List.for_all
-	(function Ast.CstrString _  | Ast.CstrMeta_name _  -> true | _ -> false)
+	(function  Ast.CstrConstant (Ast.CstrString _)
+	  | Ast.CstrMeta_name _  -> true | _ -> false)
 	list ->
 	  list_constraints' list " != "
   | Ast.CstrScript (_, lang, params, code) ->
@@ -164,18 +166,15 @@ let general_constraint ~rn =
 	code
   | _ -> ": ??"
 
-let id_constraint = general_constraint
-
-let constraints = general_constraint
-
 let assign_constraints = function
     Ast.CstrTrue -> ""
-  | Ast.CstrString s ->
+  | Ast.CstrConstant (Ast.CstrString s) ->
       list_constraints ~tostring_fn:Common.id ~op:" = " [s]
   | Ast.CstrOr l when
-      List.for_all (function Ast.CstrString _ -> true | _ -> false) l ->
+      List.for_all (function Ast.CstrConstant (Ast.CstrString _ )-> true
+	| _ -> false) l ->
       let get_string =
-	function Ast.CstrString s -> s | _ -> assert false in
+	function Ast.CstrConstant (Ast.CstrString s) -> s | _ -> assert false in
       let l' = List.map get_string l in
       list_constraints ~tostring_fn:Common.id ~op:" = " l'
   | _ -> failwith "assign_constraints: not implemented"
@@ -184,7 +183,7 @@ let binary_constraints = assign_constraints
 
 let list_len ~rn = function
   | Ast0.AnyListLen -> " "
-  | Ast0.MetaListLen (mn,_,_,_,_,_) -> "[" ^ (name_str ~rn mn) ^ "] "
+  | Ast0.MetaListLen ((mn,_,_,_,_,_),_) -> "[" ^ (name_str ~rn mn) ^ "] "
   | Ast0.CstListLen i -> "[" ^ (string_of_int i) ^ "] "
 
 
@@ -261,16 +260,16 @@ let mcode ~rn ~mc:(_,_,_,_,pos,_) =
     function
     | Ast0.ExprTag {Ast0.node = Ast0.MetaExpr((mn,_,_,_,p,_),_,_,_,_); _} ->
         handle_metavar ~typ:"expression " ~mn ~positions:!p ~set
-    | Ast0.StmtTag {Ast0.node = Ast0.MetaStmt((mn,_,_,_,p,_),_); _} ->
+    | Ast0.StmtTag {Ast0.node = Ast0.MetaStmt((mn,_,_,_,p,_),_,_); _} ->
         handle_metavar ~typ:"statement " ~mn ~positions:!p ~set
-    | Ast0.DeclTag {Ast0.node = Ast0.MetaDecl((mn,_,_,_,p,_),_); _} ->
+    | Ast0.DeclTag {Ast0.node = Ast0.MetaDecl((mn,_,_,_,p,_),_,_); _} ->
         handle_metavar ~typ:"declaration " ~mn ~positions:!p ~set
     | Ast0.IdentTag {Ast0.node = Ast0.MetaId((mn,_,_,_,p,_),_,_,_); _} ->
         handle_metavar ~typ:"identifier " ~mn ~positions:!p ~set
     | Ast0.TypeCTag {Ast0.node = Ast0.MetaType((mn,_,_,_,p,_),_,_); _} ->
         handle_metavar ~typ:"type " ~mn ~positions:!p ~set
     | Ast0.MetaPosTag(Ast0.MetaPos((mn,_,_,_,_,_), mns, colt)) ->
-        let oneconstr constr = general_constraint ~rn constr in
+        let oneconstr constr = constraints ~rn constr in
 	let constr = list_constraints ~tostring_fn:oneconstr ~op:"" [mns] in
         let collect = (match colt with Ast.PER -> "" | Ast.ALL -> " any") in
         let pos = make_mv "position " (name_tup ~rn mn) (constr ^ collect) in
@@ -305,10 +304,10 @@ let ids ~rn ~typ ~id =
   match Ast0.unwrap id with
   | Ast0.Id mc ->
       mc_format ~rn ~mc ~totup_fn:str_tup ~before:(typ ^ " name ") ~after:""
-  | Ast0.MetaId (mc, idconstr, s, _) -> (* ever seed here? *)
-      let idconstr = id_constraint ~rn idconstr in
+  | Ast0.MetaId (mc, constr, s, _) -> (* ever seed here? *)
+      let constr' = constraints ~rn constr in
       let totup_fn = name_tup ~rn in
-      mc_format ~rn ~mc ~totup_fn ~before:(typ ^ " ") ~after:idconstr
+      mc_format ~rn ~mc ~totup_fn ~before:(typ ^ " ") ~after:constr'
   | _ -> failwith (typ ^ " with non-(Id/MetaId). dunno what this means")
 
 
@@ -371,26 +370,27 @@ let metavar_combiner rn =
 
   let identfn c fn v =
     match Ast0.unwrap v with
-    | Ast0.MetaId(mc, idconstr, s, _) ->
-        let constr = id_constraint ~rn idconstr in
+    | Ast0.MetaId(mc, constr, s, _) ->
+        let constr = constraints ~rn constr in
         let seed = seed ~rn s in
         if seed = "" then (* if it has a seed then it is fresh ... ? *)
           meta_mc_format ~mc ~typ:"identifier " ~constr
         else
           meta_mc_format ~mc ~typ:"fresh identifier " ~constr:(constr ^ seed)
-    | Ast0.MetaFunc(mc, idconstr, _) ->
-        let constr = id_constraint ~rn idconstr in
+    | Ast0.MetaFunc(mc, constr, _) ->
+        let constr = constraints ~rn constr in
         meta_mc_format ~mc ~typ:"function " ~constr
-    | Ast0.MetaLocalFunc(mc, idconstr, _) ->
-        let constr = id_constraint ~rn idconstr in
+    | Ast0.MetaLocalFunc(mc, constr, _) ->
+        let constr = constraints ~rn constr in
         meta_mc_format ~mc ~typ:"local function " ~constr
     | _ -> fn v in
 
   let stmtfn c fn v =
     match Ast0.unwrap v with
-    | Ast0.MetaStmt (mc, pure) ->
-        meta_mc_format ~mc ~typ:"statement " ~constr:""
-    | Ast0.MetaStmtList (mc, listlen, _) ->
+    | Ast0.MetaStmt (mc, constr, pure) ->
+        let constr = constraints ~rn constr in
+        meta_mc_format ~mc ~typ:"statement " ~constr
+    | Ast0.MetaStmtList (mc, listlen, constr, _) ->
         lst_format ~mc ~typ:"statement list" ~listlen
     | Ast0.AsStmt (s1, s2)->
         let stmt = c.VT0.combiner_rec_statement in as_format s1 s2 stmt stmt
@@ -419,7 +419,7 @@ let metavar_combiner rn =
         let typ = type_c ~form typeclist' in
         let constr = constraints ~rn constr in
         MVSet.union (meta_mc_format ~mc ~typ ~constr) (types)
-    | Ast0.MetaExprList (mc, listlen, _) ->
+    | Ast0.MetaExprList (mc, listlen, _, _) ->
         lst_format ~mc ~typ:"expression list" ~listlen
     | Ast0.AsExpr (e1, e2) -> as_format e1 e2 exprfn exprfn
     | Ast0.AsSExpr (e1, s2) -> as_format e1 s2 exprfn stmtfn
@@ -455,9 +455,10 @@ let metavar_combiner rn =
 
   let initfn c fn v =
     match Ast0.unwrap v with
-    | Ast0.MetaInit(mc, pure) ->
-        meta_mc_format ~mc ~typ:"initializer " ~constr:""
-    | Ast0.MetaInitList(mc, listlen, pure) ->
+    | Ast0.MetaInit(mc, idconstr, pure) ->
+        let constr = constraints ~rn idconstr in
+        meta_mc_format ~mc ~typ:"initializer " ~constr
+    | Ast0.MetaInitList(mc, listlen, _, pure) ->
         lst_format ~mc ~typ:"initializer list " ~listlen
     | Ast0.AsInit(i1,i2) ->
         let ini = c.VT0.combiner_rec_initialiser in as_format i1 i2 ini ini
@@ -465,9 +466,10 @@ let metavar_combiner rn =
 
   let paramfn c fn v =
     match Ast0.unwrap v with
-    | Ast0.MetaParam(mc, pure) ->
-        meta_mc_format ~mc ~typ:"parameter " ~constr:""
-    | Ast0.MetaParamList(mc, listlen, pure) ->
+    | Ast0.MetaParam(mc, idconstr, pure) ->
+        let constr = constraints ~rn idconstr in
+        meta_mc_format ~mc ~typ:"parameter " ~constr
+    | Ast0.MetaParamList(mc, listlen, _, pure) ->
         lst_format ~mc ~typ:"parameter list" ~listlen
     | Ast0.AsParam (ptd,ex) ->
         let par = c.VT0.combiner_rec_parameter in
@@ -486,10 +488,13 @@ let metavar_combiner rn =
 
   let declfn c fn v =
     match Ast0.unwrap v with
-    | Ast0.MetaDecl(mc, pure) ->
-        meta_mc_format ~mc ~typ:"declaration " ~constr:""
-    | Ast0.MetaField(mc, pure) -> meta_mc_format ~mc ~typ:"field " ~constr:""
-    | Ast0.MetaFieldList (mc, listlen, pure) ->
+    | Ast0.MetaDecl(mc, idconstr, pure) ->
+        let constr = constraints ~rn idconstr in
+        meta_mc_format ~mc ~typ:"declaration " ~constr
+    | Ast0.MetaField(mc, idconstr, pure) ->
+        let constr = constraints ~rn idconstr in
+	meta_mc_format ~mc ~typ:"field " ~constr
+    | Ast0.MetaFieldList (mc, listlen, _, pure) ->
         lst_format ~mc ~typ:"field list" ~listlen
     | Ast0.AsDecl(dc1, dc2) ->
         let dec = c.VT0.combiner_rec_declaration in as_format dc1 dc2 dec dec
@@ -505,12 +510,12 @@ let metavar_combiner rn =
 
   let string_fragmentfn c fn v =
     match Ast0.unwrap v with
-    | Ast0.MetaFormatList(_, mc, listlen) ->
+    | Ast0.MetaFormatList(_, mc, _, listlen) ->
         lst_format ~mc ~typ:"format list" ~listlen
     | Ast0.FormatFragment(_, format) ->
       (match Ast0.unwrap format with
         | Ast0.MetaFormat(mc, idconstr) ->
-            let constr = id_constraint rn idconstr in
+            let constr = constraints rn idconstr in
             meta_mc_format ~mc ~typ:"format " ~constr
         | _ -> fn v
        )

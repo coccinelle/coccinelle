@@ -115,9 +115,9 @@ let ctl_au x y = CTL.AU(CTL.FORWARD,CTL.STRICT,x,y)
 
 let ctl_uncheck x  = CTL.Uncheck(x)
 
-let make_meta_rule_elem d =
+let make_meta_rule_elem d cstr =
   let nm = "_S" in
-  Ast.make_meta_rule_elem nm d ([],[],[])
+  Ast.make_meta_rule_elem nm d cstr ([],[],[])
 
 (* --------------------------------------------------------------------- *)
 
@@ -196,7 +196,7 @@ and ifthen keep_wit a test thn aft =
     | (_,Some a) ->
 	ctl_ax
 	  (ctl_and
-	     (predmaker keep_wit (make_meta_rule_elem aft))
+	     (predmaker keep_wit (make_meta_rule_elem aft Ast.CstrTrue))
 	     (ctl_ax a)) in
   let body =
     ctl_or

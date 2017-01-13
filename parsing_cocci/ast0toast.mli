@@ -37,3 +37,4 @@ val parameterTypeDef :
 val parameter_list : Ast0_cocci.parameter_list -> Ast_cocci.parameter_list
 val top_level : Ast0_cocci.top_level -> Ast_cocci.top_level
 val convert_info : Ast0_cocci.info -> Ast_cocci.info
+val constraints : Ast0_cocci.constraints -> Ast_cocci.constraints

@@ -160,11 +160,11 @@ let print_type _keep _info = function
 (* FIXME: Not called at the moment *)
 
 let string_or_meta_name = function
-    Ast.CstrString _ | Ast.CstrMeta_name _ -> true
+    Ast.CstrConstant (Ast.CstrString _) | Ast.CstrMeta_name _ -> true
   | _ -> false
 
 let print_string_or_meta_name = function
-    Ast.CstrString s -> Printf.printf " %s" s
+    Ast.CstrConstant (Ast.CstrString s) -> Printf.printf " %s" s
   | Ast.CstrMeta_name (r, n) -> print_string " "; print_meta (r, n)
   | _ -> assert false
 
@@ -262,7 +262,7 @@ let rec expression e =
   | Ast.MetaErr(name,_,_,_) -> mcode print_meta name
   | Ast.MetaExpr(name,_,keep,ty,form,inherited) ->
       mcode print_meta name; print_type keep inherited ty
-  | Ast.MetaExprList(name,_,_,_) -> mcode print_meta name
+  | Ast.MetaExprList(name,_,_,_,_) -> mcode print_meta name
   | Ast.AsExpr(exp,asexp) -> expression exp; print_string "@"; expression asexp
   | Ast.AsSExpr(exp,asstm) ->
       expression exp; print_string "@"; rule_elem "" asstm
@@ -287,7 +287,7 @@ and string_fragment e =
       mcode print_string pct;
       string_format fmt
   | Ast.Strdots dots -> mcode print_string dots
-  | Ast.MetaFormatList(pct,name,lenname,_,_) ->
+  | Ast.MetaFormatList(pct,name,lenname,_,_,_) ->
       mcode print_string pct;
       mcode print_meta name
 
@@ -480,8 +480,8 @@ and print_named_type ty id =
 
 and declaration d =
   match Ast.unwrap d with
-    Ast.MetaDecl(name,_,_) | Ast.MetaField(name,_,_)
-  | Ast.MetaFieldList(name,_,_,_) ->
+    Ast.MetaDecl(name,_,_,_) | Ast.MetaField(name,_,_,_)
+  | Ast.MetaFieldList(name,_,_,_,_) ->
       mcode print_meta name
   | Ast.AsDecl(decl,asdecl) -> declaration decl; print_string "@";
       declaration asdecl
@@ -530,9 +530,9 @@ and annotated_decl arity d =
 
 and initialiser i =
   match Ast.unwrap i with
-    Ast.MetaInit(name,_,_) ->
+    Ast.MetaInit(name,_,_,_) ->
       mcode print_meta name; print_string " "
-  | Ast.MetaInitList(name,_,_,_) ->
+  | Ast.MetaInitList(name,_,_,_,_) ->
       mcode print_meta name; print_string " "
   | Ast.AsInit(ini,asini) -> initialiser ini; print_string "@";
       initialiser asini
@@ -578,8 +578,8 @@ and parameterTypeDef p =
     Ast.VoidParam(ty) -> fullType ty
   | Ast.Param(ty,Some id) -> print_named_type ty id
   | Ast.Param(ty,None) -> fullType ty
-  | Ast.MetaParam(name,_,_) -> mcode print_meta name
-  | Ast.MetaParamList(name,_,_,_) -> mcode print_meta name
+  | Ast.MetaParam(name,_,_,_) -> mcode print_meta name
+  | Ast.MetaParamList(name,_,_,_,_) -> mcode print_meta name
   | Ast.PComma(cm) -> mcode print_string cm; print_space()
   | Ast.Pdots(dots) -> mcode print_string dots
   | Ast.OptParam(param) -> print_string "?"; parameterTypeDef param
@@ -663,11 +663,11 @@ and rule_elem arity re =
       mcode print_string lang; print_string " ";
       dots (function _ -> print_string " ") exec_code code;
       mcode print_string sem
-  | Ast.MetaRuleElem(name,_,_) ->
+  | Ast.MetaRuleElem(name,_,_,_) ->
       print_string arity; mcode print_meta name
-  | Ast.MetaStmt(name,_,_,_) ->
+  | Ast.MetaStmt(name,_,_,_,_) ->
       print_string arity; mcode print_meta name
-  | Ast.MetaStmtList(name,_,_,_) ->
+  | Ast.MetaStmtList(name,_,_,_,_) ->
       print_string arity;  mcode print_meta name
   | Ast.Exp(exp) -> print_string arity; expression exp
   | Ast.TopExp(exp) -> print_string arity; expression exp
@@ -724,7 +724,7 @@ and print_define_parameters params =
 and print_define_param param =
   match Ast.unwrap param with
     Ast.DParam(id) -> ident id
-  | Ast.MetaDParamList(name,_,_,_) -> mcode print_meta name
+  | Ast.MetaDParamList(name,_,_,_,_) -> mcode print_meta name
   | Ast.DPComma(comma) -> mcode print_string comma
   | Ast.DPdots(dots) -> mcode print_string dots
   | Ast.OptDParam(dp) -> print_string "?"; print_define_param dp
@@ -868,7 +868,7 @@ let print_name rule r n =
   else print_string (Printf.sprintf "%s.%s" r n)
 
 let print_listlen rule = function
-    Ast.MetaLen(r,n) ->
+    Ast.MetaLen((r,n),_) ->
       print_string "["; print_name rule r n; print_string "] "
   | Ast.CstLen(n) -> print_string "["; print_string (string_of_int n);
       print_string "] "

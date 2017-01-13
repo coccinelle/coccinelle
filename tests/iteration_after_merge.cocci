@@ -61,7 +61,7 @@ if not !iteration_done then
       match tbls with
         [] -> failwith "Unexpected empty table list"
       | tbl :: others ->
-          List.iter (merge_hashtbls ( + ) tbl) tbls;
+          List.iter (merge_hashtbls ( + ) tbl) others;
           tbl in
     let (most_useds, _) =
       Hashtbl.fold (fun k v accu ->

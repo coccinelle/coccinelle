@@ -27,3 +27,12 @@ identifier x;
 @@
 - T *x[];
 + T x[];
+
+@@
+parameter list[n = {2 ... 6}] P;
+identifier f;
+@@
+
+-f
++h
+ (P) { ... }

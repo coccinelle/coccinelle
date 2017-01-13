@@ -519,7 +519,7 @@ let rec expression e =
         | _ -> raise (Impossible 145)
       )
 
-  | Ast.MetaExprList (name,_,_,_) ->
+  | Ast.MetaExprList (name,_,_,_,_) ->
       handle_metavar name (function
         | Ast_c.MetaExprListVal args ->
             pretty_print_c.Pretty_print_c.arg_list args
@@ -580,7 +580,7 @@ and string_fragment e =
       mcode print_string pct;
       string_format fmt
   | Ast.Strdots dots -> mcode print_string dots
-  | Ast.MetaFormatList(pct,name,lenname,_,_) ->
+  | Ast.MetaFormatList(pct,name,lenname,_,_,_) ->
       (*mcode print_string pct;*)
       handle_metavar name (function
 	  Ast_c.MetaFragListVal(frags) ->
@@ -839,20 +839,20 @@ and ft_space ty =
 
 and declaration d =
   match Ast.unwrap d with
-    Ast.MetaDecl(name,_,_) ->
+    Ast.MetaDecl(name,_,_,_) ->
       handle_metavar name
 	(function
 	    Ast_c.MetaDeclVal d ->
               pretty_print_c.Pretty_print_c.decl d
           | _ -> raise (Impossible 148))
-  | Ast.MetaField(name,_,_) ->
+  | Ast.MetaField(name,_,_,_) ->
       handle_metavar name
 	(function
 	    Ast_c.MetaFieldVal f ->
               pretty_print_c.Pretty_print_c.field f
           | _ -> raise (Impossible 149))
 
-  | Ast.MetaFieldList(name,_,_,_) ->
+  | Ast.MetaFieldList(name,_,_,_,_) ->
       handle_metavar name
 	(function
 	    Ast_c.MetaFieldListVal f ->
@@ -916,12 +916,12 @@ and annotated_decl d =
 
 and initialiser nlcomma i =
   match Ast.unwrap i with
-    Ast.MetaInit(name,_,_) ->
+    Ast.MetaInit(name,_,_,_) ->
       handle_metavar name  (function
           Ast_c.MetaInitVal ini ->
             pretty_print_c.Pretty_print_c.init ini
         | _ -> raise (Impossible 151))
-  | Ast.MetaInitList(name,_,_,_) ->
+  | Ast.MetaInitList(name,_,_,_,_) ->
       handle_metavar name  (function
           Ast_c.MetaInitListVal ini ->
 	    pretty_print_c.Pretty_print_c.init_list ini
@@ -987,13 +987,13 @@ and parameterTypeDef p =
   | Ast.Param(ty,Some id) -> print_named_type ty id
   | Ast.Param(ty,None) -> fullType ty
 
-  | Ast.MetaParam(name,_,_) ->
+  | Ast.MetaParam(name,_,_,_) ->
       handle_metavar name
 	(function
 	    Ast_c.MetaParamVal p ->
               pretty_print_c.Pretty_print_c.param p
           | _ -> raise (Impossible 153))
-  | Ast.MetaParamList(name,_,_,_) ->
+  | Ast.MetaParamList(name,_,_,_,_) ->
       handle_metavar name
 	(function
 	    Ast_c.MetaParamListVal p ->
@@ -1136,16 +1136,16 @@ and rule_elem arity re =
 	 print_text "\n)")
       else raise CantBeInPlus
 
-  | Ast.MetaRuleElem(name,_,_) ->
+  | Ast.MetaRuleElem(name,_,_,_) ->
       raise (Impossible 155)
 
-  | Ast.MetaStmt(name,_,_,_) ->
+  | Ast.MetaStmt(name,_,_,_,_) ->
       handle_metavar name (function
         | Ast_c.MetaStmtVal(stm,_) ->
             pretty_print_c.Pretty_print_c.statement stm
         | _ -> raise (Impossible 156))
 
-  | Ast.MetaStmtList(name,_,_,_) ->
+  | Ast.MetaStmtList(name,_,_,_,_) ->
       handle_metavar name (function
         | Ast_c.MetaStmtListVal(statxs,_) ->
             pretty_print_c.Pretty_print_c.statement_seq_list statxs
@@ -1176,7 +1176,7 @@ and print_define_parameters params =
 and print_define_param param =
   match Ast.unwrap param with
     Ast.DParam(id) -> ident id
-  | Ast.MetaDParamList(name,_,_,_) ->
+  | Ast.MetaDParamList(name,_,_,_,_) ->
       handle_metavar name
 	(function
 	    Ast_c.MetaDParamListVal p ->
@@ -1198,7 +1198,7 @@ let indent_if_needed s f =
       Ast.Seq(lbrace,body,rbrace) -> true
     | Ast.Atomic s ->
 	(match Ast.unwrap s with
-	| Ast.MetaStmt(name,_,_,_) ->
+	| Ast.MetaStmt(name,_,_,_,_) ->
 	    let (res,name_string,line,lcol,rcol) = lookup_metavar name in
 	    (match res with
 	      None ->

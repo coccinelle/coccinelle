@@ -428,8 +428,9 @@ and expression e =
     | Ast0.MetaExpr(name,cstrts,ty,form,_)  ->
         let ty' = Common.map_option (List.map (typeC false)) ty in
         Ast.MetaExpr (mcode name, constraints cstrts, unitary, ty', form, false)
-    | Ast0.MetaExprList(name,lenname,_) ->
-	Ast.MetaExprList(mcode name,do_lenname lenname,unitary,false)
+    | Ast0.MetaExprList(name,lenname,cstr,_) ->
+	let cstr' = constraints cstr in
+	Ast.MetaExprList (mcode name,do_lenname lenname,cstr',unitary,false)
     | Ast0.AsExpr(expr,asexpr) ->
 	Ast.AsExpr(expression expr,expression asexpr)
     | Ast0.AsSExpr(expr,asstm) ->
@@ -482,9 +483,9 @@ and string_fragment e =
     | Ast0.FormatFragment(pct,fmt) ->
 	Ast.FormatFragment(mcode pct, string_format fmt)
     | Ast0.Strdots dots -> Ast.Strdots (mcode dots)
-    | Ast0.MetaFormatList(pct,name,lenname) ->
+    | Ast0.MetaFormatList(pct,name,cstr,lenname) ->
 	Ast.MetaFormatList(mcode pct, mcode name, do_lenname lenname,
-			   unitary,false))
+			   constraints cstr,unitary,false))
 
 and string_format e =
   rewrap e no_isos
@@ -495,7 +496,8 @@ and string_format e =
 	Ast.MetaFormat(mcode name,cstr',unitary,false))
 
 and do_lenname = function
-    Ast0.MetaListLen(nm) -> Ast.MetaListLen(mcode nm,unitary,false)
+    Ast0.MetaListLen(nm,cstr) ->
+      Ast.MetaListLen(mcode nm,constraints cstr,unitary,false)
   | Ast0.CstListLen n -> Ast.CstListLen n
   | Ast0.AnyListLen -> Ast.AnyListLen
 
@@ -583,10 +585,13 @@ and base_typeC allminus t =
 and declaration d =
   rewrap d (do_isos (Ast0.get_iso d))
     (match Ast0.unwrap d with
-      Ast0.MetaDecl(name,_) -> Ast.MetaDecl(mcode name,unitary,false)
-    | Ast0.MetaField(name,_) -> Ast.MetaField(mcode name,unitary,false)
-    | Ast0.MetaFieldList(name,lenname,_) ->
-	Ast.MetaFieldList(mcode name,do_lenname lenname,unitary,false)
+      Ast0.MetaDecl(name,cstr,_) ->
+	Ast.MetaDecl(mcode name,constraints cstr,unitary,false)
+    | Ast0.MetaField(name,cstr,_) ->
+	Ast.MetaField(mcode name,constraints cstr,unitary,false)
+    | Ast0.MetaFieldList(name,lenname,cstr,_) ->
+	let cstr' = constraints cstr in
+	Ast.MetaFieldList(mcode name,do_lenname lenname,cstr',unitary,false)
     | Ast0.AsDecl(decl,asdecl) ->
 	Ast.AsDecl(declaration decl,declaration asdecl)
     | Ast0.Init(stg,ty,id,eq,ini,sem) ->
@@ -714,9 +719,11 @@ and strip_idots initlist =
 and initialiser i =
   rewrap i no_isos
     (match Ast0.unwrap i with
-      Ast0.MetaInit(name,_) -> Ast.MetaInit(mcode name,unitary,false)
-    | Ast0.MetaInitList(name,lenname,_) ->
-	Ast.MetaInitList(mcode name,do_lenname lenname,unitary,false)
+      Ast0.MetaInit(name,cstr,_) ->
+	Ast.MetaInit(mcode name,constraints cstr,unitary,false)
+    | Ast0.MetaInitList(name,lenname,cstr,_) ->
+	let cstr' = constraints cstr in
+	Ast.MetaInitList(mcode name,do_lenname lenname,cstr',unitary,false)
     | Ast0.AsInit(init,asinit) ->
 	Ast.AsInit(initialiser init,initialiser asinit)
     | Ast0.InitExpr(exp) -> Ast.InitExpr(expression exp)
@@ -757,10 +764,11 @@ and parameterTypeDef p =
     | Ast0.Param(ty,id) ->
 	let allminus = check_allminus.VT0.combiner_rec_parameter p in
 	Ast.Param(typeC allminus ty,get_option ident id)
-    | Ast0.MetaParam(name,_) ->
-	Ast.MetaParam(mcode name,unitary,false)
-    | Ast0.MetaParamList(name,lenname,_) ->
-	Ast.MetaParamList(mcode name,do_lenname lenname,unitary,false)
+    | Ast0.MetaParam(name,cstr,_) ->
+	Ast.MetaParam(mcode name,constraints cstr,unitary,false)
+    | Ast0.MetaParamList(name,lenname,cstr,_) ->
+	let cstr' = constraints cstr in
+	Ast.MetaParamList(mcode name,do_lenname lenname,cstr',unitary,false)
     | Ast0.AsParam(p,asexpr) ->
 	Ast.AsParam(parameterTypeDef p,expression asexpr)
     | Ast0.PComma(cm) -> Ast.PComma(mcode cm)
@@ -882,13 +890,15 @@ and statement s =
 	  Ast.Atomic
 	    (rewrap_rule_elem s
 	       (Ast.Exec(mcode exec,mcode lang,dots exec_code code,mcode sem)))
-      | Ast0.MetaStmt(name,_) ->
+      | Ast0.MetaStmt(name,cstr,_) ->
+	  let cstr' = constraints cstr in
 	  Ast.Atomic(rewrap_rule_elem s
-		       (Ast.MetaStmt(mcode name,unitary,seqible,false)))
-      | Ast0.MetaStmtList(name,lenname,_) ->
+		       (Ast.MetaStmt(mcode name,cstr',unitary,seqible,false)))
+      | Ast0.MetaStmtList(name,lenname,cstr,_) ->
+	  let cstr' = constraints cstr in
 	  Ast.Atomic(rewrap_rule_elem s
 		       (Ast.MetaStmtList(mcode name,do_lenname lenname,
-					 unitary,false)))
+					 cstr',unitary,false)))
       | Ast0.AsStmt(stmt,asstmt) ->
 	  Ast.AsStmt(statement seqible stmt,statement seqible asstmt)
       | Ast0.TopExp(exp) ->
@@ -1065,8 +1075,9 @@ and define_param p =
   rewrap p no_isos
     (match Ast0.unwrap p with
       Ast0.DParam(id) -> Ast.DParam(ident id)
-    | Ast0.MetaDParamList(name,lenname,_) ->
-	Ast.MetaDParamList(mcode name,do_lenname lenname,unitary,false)
+    | Ast0.MetaDParamList(name,lenname,cstr,_) ->
+	let cstr' = constraints cstr in
+	Ast.MetaDParamList(mcode name,do_lenname lenname,cstr',unitary,false)
     | Ast0.DPComma(comma) -> Ast.DPComma(mcode comma)
     | Ast0.DPdots(d) -> Ast.DPdots(mcode d)
     | Ast0.OptDParam(dp) -> Ast.OptDParam(define_param dp))

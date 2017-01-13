@@ -43,23 +43,24 @@ val all_metadecls : (string, Ast_cocci.metavar list) Hashtbl.t
 val clear_meta: (unit -> unit) ref
 
 type meta_type = Ast_cocci.meta_name -> Ast0_cocci.pure -> unit
-type id_meta_type =
+type cstr_meta_type =
     Ast_cocci.meta_name -> Ast0_cocci.constraints -> Ast0_cocci.pure -> unit
 type list_meta_type =
-    Ast_cocci.meta_name -> Ast_cocci.list_len -> Ast0_cocci.pure -> unit
+    Ast_cocci.meta_name -> Ast_cocci.list_len -> Ast0_cocci.constraints ->
+      Ast0_cocci.pure -> unit
 type exp_meta_type =
     Ast0_cocci.typeC list option -> Ast_cocci.meta_name ->
       Ast0_cocci.constraints -> Ast0_cocci.pure -> unit
 
-val add_meta_meta: meta_type ref
-val add_id_meta: id_meta_type ref
+val add_meta_meta: cstr_meta_type ref
+val add_id_meta: cstr_meta_type ref
 val add_virt_id_meta_found: (string -> string -> unit) ref
 val add_virt_id_meta_not_found: meta_type ref
 val add_fresh_id_meta: (Ast_cocci.meta_name -> Ast_cocci.seed -> unit) ref
-val add_type_meta: id_meta_type ref
-val add_init_meta: meta_type ref
+val add_type_meta: cstr_meta_type ref
+val add_init_meta: cstr_meta_type ref
 val add_initlist_meta: list_meta_type ref
-val add_param_meta: meta_type ref
+val add_param_meta: cstr_meta_type ref
 val add_paramlist_meta: list_meta_type ref
 val add_const_meta: exp_meta_type ref
 
@@ -72,17 +73,17 @@ val add_idexp_meta: exp_meta_type ref
 val add_local_idexp_meta: exp_meta_type ref
 val add_global_idexp_meta: exp_meta_type ref
 val add_explist_meta: list_meta_type ref
-val add_decl_meta: meta_type ref
-val add_field_meta: meta_type ref
+val add_decl_meta: cstr_meta_type ref
+val add_field_meta: cstr_meta_type ref
 val add_symbol_meta: (string -> unit) ref
 val add_field_list_meta: list_meta_type ref
-val add_stm_meta: meta_type ref
+val add_stm_meta: cstr_meta_type ref
 val add_stmlist_meta: list_meta_type ref
 val add_dparamlist_meta: list_meta_type ref
-val add_func_meta: id_meta_type ref
-val add_local_func_meta: id_meta_type ref
-val add_declarer_meta: id_meta_type ref
-val add_iterator_meta: id_meta_type ref
+val add_func_meta: cstr_meta_type ref
+val add_local_func_meta: cstr_meta_type ref
+val add_declarer_meta: cstr_meta_type ref
+val add_iterator_meta: cstr_meta_type ref
 
 val add_pos_meta:
     (Ast_cocci.meta_name -> Ast0_cocci.constraints -> Ast_cocci.meta_collect ->
@@ -90,7 +91,9 @@ val add_pos_meta:
 
 val add_fmt_meta: (Ast_cocci.meta_name -> Ast0_cocci.constraints -> unit) ref
 
-val add_fmtlist_meta: (Ast_cocci.meta_name -> Ast_cocci.list_len -> unit) ref
+val add_fmtlist_meta:
+    (Ast_cocci.meta_name -> Ast0_cocci.constraints -> Ast_cocci.list_len ->
+      unit) ref
 
 val add_assignOp_meta:
     (Ast_cocci.meta_name ->
@@ -113,4 +116,5 @@ val install_bindings: (string -> unit) ref
 val format_metavariables :
     (string * (Ast_cocci.meta_name * Ast0_cocci.constraints)) list ref
 val format_list_metavariables :
-    (string * (Ast_cocci.meta_name * Ast_cocci.list_len)) list ref
+    (string * (Ast_cocci.meta_name * Ast_cocci.list_len *
+		 Ast0_cocci.constraints)) list ref

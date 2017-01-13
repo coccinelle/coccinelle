@@ -213,7 +213,7 @@ let combiner bind option_default
 	  multibind [llp; lty; lrp; linit]
       | Ast.MetaErr(name,_,_,_)
       | Ast.MetaExpr(name,_,_,_,_,_)
-      | Ast.MetaExprList(name,_,_,_) -> meta_mcode name
+      | Ast.MetaExprList(name,_,_,_,_) -> meta_mcode name
       |	Ast.AsExpr(exp,asexp) ->
 	  let lexp = expression exp in
 	  let lasexp = expression asexp in
@@ -263,7 +263,7 @@ let combiner bind option_default
 	  let fmt = string_format fmt in
 	  bind pct fmt
       |	Ast.Strdots dots -> string_mcode dots
-      | Ast.MetaFormatList(pct,name,lenname,_,_) ->
+      | Ast.MetaFormatList(pct,name,lenname,_,_,_) ->
 	  let pct = string_mcode pct in
 	  let name = meta_mcode name in
 	  bind pct name in
@@ -376,8 +376,8 @@ let combiner bind option_default
   and declaration d =
     let k d =
       match Ast.unwrap d with
-	Ast.MetaDecl(name,_,_) | Ast.MetaField(name,_,_)
-      |	Ast.MetaFieldList(name,_,_,_) ->
+	Ast.MetaDecl(name,_,_,_) | Ast.MetaField(name,_,_,_)
+      |	Ast.MetaFieldList(name,_,_,_,_) ->
 	  meta_mcode name
       |	Ast.AsDecl(decl,asdecl) ->
 	  let ldecl = declaration decl in
@@ -452,8 +452,8 @@ let combiner bind option_default
   and initialiser i =
     let k i =
       match Ast.unwrap i with
-	Ast.MetaInit(name,_,_) -> meta_mcode name
-      |	Ast.MetaInitList(name,_,_,_) -> meta_mcode name
+	Ast.MetaInit(name,_,_,_) -> meta_mcode name
+      |	Ast.MetaInitList(name,_,_,_,_) -> meta_mcode name
       |	Ast.AsInit(init,asinit) ->
 	  let linit = initialiser init in
 	  let lasinit = initialiser asinit in
@@ -512,8 +512,8 @@ let combiner bind option_default
 	Ast.VoidParam(ty) -> fullType ty
       | Ast.Param(ty,Some id) -> named_type ty id
       | Ast.Param(ty,None) -> fullType ty
-      | Ast.MetaParam(name,_,_) -> meta_mcode name
-      | Ast.MetaParamList(name,_,_,_) -> meta_mcode name
+      | Ast.MetaParam(name,_,_,_) -> meta_mcode name
+      | Ast.MetaParamList(name,_,_,_,_) -> meta_mcode name
       |	Ast.AsParam(p,asexp) ->
 	  let lp = parameterTypeDef p in
 	  let lasexp = expression asexp in
@@ -617,9 +617,9 @@ let combiner bind option_default
 	  let lcode = exec_code_dots code in
 	  let lsem = string_mcode sem in
 	  multibind [lexec; lland; lcode; lsem]
-      | Ast.MetaStmt(name,_,_,_) -> meta_mcode name
-      | Ast.MetaStmtList(name,_,_,_) -> meta_mcode name
-      | Ast.MetaRuleElem(name,_,_) -> meta_mcode name
+      | Ast.MetaStmt(name,_,_,_,_) -> meta_mcode name
+      | Ast.MetaStmtList(name,_,_,_,_) -> meta_mcode name
+      | Ast.MetaRuleElem(name,_,_,_) -> meta_mcode name
       | Ast.Exp(exp) -> expression exp
       | Ast.TopExp(exp) -> expression exp
       | Ast.Ty(ty) -> fullType ty
@@ -699,7 +699,7 @@ let combiner bind option_default
     let k p =
       match Ast.unwrap p with
 	Ast.DParam(id) -> ident id
-      | Ast.MetaDParamList(name,_,_,_) -> meta_mcode name
+      | Ast.MetaDParamList(name,_,_,_,_) -> meta_mcode name
       | Ast.DPComma(comma) -> string_mcode comma
       | Ast.DPdots(d) -> string_mcode d
       | Ast.OptDParam(dp) -> define_param dp in
@@ -1082,8 +1082,9 @@ let rebuilder
 	    Ast.MetaErr(meta_mcode name,constraints,keep,inherited)
 	| Ast.MetaExpr(name,constraints,keep,ty,form,inherited) ->
 	    Ast.MetaExpr(meta_mcode name,constraints,keep,ty,form,inherited)
-	| Ast.MetaExprList(name,lenname_inh,keep,inherited) ->
-	    Ast.MetaExprList(meta_mcode name,lenname_inh,keep,inherited)
+	| Ast.MetaExprList(name,lenname_inh,constraints,keep,inherited) ->
+	    Ast.MetaExprList
+	      (meta_mcode name,lenname_inh,constraints,keep,inherited)
 	| Ast.AsExpr(exp,asexp) ->
 	    let lexp = expression exp in
 	    let lasexp = expression asexp in
@@ -1118,10 +1119,11 @@ let rebuilder
 	    let lfmt = string_format fmt in
 	    Ast.FormatFragment(lpct, lfmt)
 	| Ast.Strdots dots -> Ast.Strdots (string_mcode dots)
-	| Ast.MetaFormatList(pct,name,lenname,keep,inherited) ->
+	| Ast.MetaFormatList(pct,name,lenname,constraints,keep,inherited) ->
 	    let lpct = string_mcode pct in
 	    let lname = meta_mcode name in
-	    Ast.MetaFormatList(lpct, lname, lenname, keep, inherited)) in
+	    Ast.MetaFormatList
+	      (lpct, lname, lenname, constraints, keep, inherited)) in
     fragfn all_functions k e
 
   and string_format e =
@@ -1235,12 +1237,13 @@ let rebuilder
     let k d =
       Ast.rewrap d
 	(match Ast.unwrap d with
-	  Ast.MetaDecl(name,keep,inherited) ->
-	    Ast.MetaDecl(meta_mcode name,keep,inherited)
-	| Ast.MetaField(name,keep,inherited) ->
-	    Ast.MetaField(meta_mcode name,keep,inherited)
-	| Ast.MetaFieldList(name,lenname_inh,keep,inherited) ->
-	    Ast.MetaFieldList(meta_mcode name,lenname_inh,keep,inherited)
+	  Ast.MetaDecl(name,constraints,keep,inherited) ->
+	    Ast.MetaDecl(meta_mcode name,constraints,keep,inherited)
+	| Ast.MetaField(name,constraints,keep,inherited) ->
+	    Ast.MetaField(meta_mcode name,constraints,keep,inherited)
+	| Ast.MetaFieldList(name,lenname_inh,constraints,keep,inherited) ->
+	    Ast.MetaFieldList
+	      (meta_mcode name,lenname_inh,constraints,keep,inherited)
 	| Ast.AsDecl(decl,asdecl) ->
 	    let ldecl = declaration decl in
 	    let lasdecl = declaration asdecl in
@@ -1319,10 +1322,11 @@ let rebuilder
     let k i =
       Ast.rewrap i
 	(match Ast.unwrap i with
-	  Ast.MetaInit(name,keep,inherited) ->
-	    Ast.MetaInit(meta_mcode name,keep,inherited)
-	| Ast.MetaInitList(name,lenname_inh,keep,inherited) ->
-	    Ast.MetaInitList(meta_mcode name,lenname_inh,keep,inherited)
+	  Ast.MetaInit(name,constraints,keep,inherited) ->
+	    Ast.MetaInit(meta_mcode name,constraints,keep,inherited)
+	| Ast.MetaInitList(name,lenname_inh,constraints,keep,inherited) ->
+	    Ast.MetaInitList
+	      (meta_mcode name,lenname_inh,constraints,keep,inherited)
 	| Ast.AsInit(ini,asini) ->
 	    let lini = initialiser ini in
 	    let lasinit = initialiser asini in
@@ -1381,10 +1385,11 @@ let rebuilder
 	(match Ast.unwrap p with
 	  Ast.VoidParam(ty) -> Ast.VoidParam(fullType ty)
 	| Ast.Param(ty,id) -> Ast.Param(fullType ty, get_option ident id)
-	| Ast.MetaParam(name,keep,inherited) ->
-	    Ast.MetaParam(meta_mcode name,keep,inherited)
-	| Ast.MetaParamList(name,lenname_inh,keep,inherited) ->
-	    Ast.MetaParamList(meta_mcode name,lenname_inh,keep,inherited)
+	| Ast.MetaParam(name,constraints,keep,inherited) ->
+	    Ast.MetaParam(meta_mcode name,constraints,keep,inherited)
+	| Ast.MetaParamList(name,lenname_inh,constraints,keep,inherited) ->
+	    Ast.MetaParamList
+	      (meta_mcode name,lenname_inh,constraints,keep,inherited)
 	| Ast.AsParam(p,asexp) ->
 	    let lp = parameterTypeDef p in
 	    let lasexp = expression asexp in
@@ -1489,12 +1494,13 @@ let rebuilder
 	    let lcode = exec_code_dots code in
 	    let lsem = string_mcode sem in
 	    Ast.Exec(lexec, lland, lcode, lsem)
-	| Ast.MetaStmt(name,keep,seqible,inherited) ->
-	    Ast.MetaStmt(meta_mcode name,keep,seqible,inherited)
-	| Ast.MetaStmtList(name,lenname_inh,keep,inherited) ->
-	    Ast.MetaStmtList(meta_mcode name,lenname_inh,keep,inherited)
-	| Ast.MetaRuleElem(name,keep,inherited) ->
-	    Ast.MetaRuleElem(meta_mcode name,keep,inherited)
+	| Ast.MetaStmt(name,constraints,keep,seqible,inherited) ->
+	    Ast.MetaStmt(meta_mcode name,constraints,keep,seqible,inherited)
+	| Ast.MetaStmtList(name,lenname_inh,constraints,keep,inherited) ->
+	    Ast.MetaStmtList
+	      (meta_mcode name,lenname_inh,constraints,keep,inherited)
+	| Ast.MetaRuleElem(name,constraints,keep,inherited) ->
+	    Ast.MetaRuleElem(meta_mcode name,constraints,keep,inherited)
 	| Ast.Exp(exp) -> Ast.Exp(expression exp)
 	| Ast.TopExp(exp) -> Ast.TopExp(expression exp)
 	| Ast.Ty(ty) -> Ast.Ty(fullType ty)
@@ -1579,8 +1585,9 @@ let rebuilder
       Ast.rewrap p
 	(match Ast.unwrap p with
 	  Ast.DParam(id) -> Ast.DParam(ident id)
-	| Ast.MetaDParamList(name,lenname_inh,keep,inherited) ->
-	    Ast.MetaDParamList(meta_mcode name,lenname_inh,keep,inherited)
+	| Ast.MetaDParamList(name,lenname_inh,constraints,keep,inherited) ->
+	    Ast.MetaDParamList
+	      (meta_mcode name,lenname_inh,constraints,keep,inherited)
 	| Ast.DPComma(comma) -> Ast.DPComma(string_mcode comma)
 	| Ast.DPdots(d) -> Ast.DPdots(string_mcode d)
 	| Ast.OptDParam(dp) -> Ast.OptDParam(define_param dp)) in

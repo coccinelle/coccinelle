@@ -121,7 +121,7 @@ let get_free checker t =
 	let constraints =
 	  constraints_collect r types constraints in
 	bind (checker name) constraints
-    | Ast0.MetaExprList(name,_,_) -> checker name
+    | Ast0.MetaExprList(name,_,_,_) -> checker name
     | Ast0.DisjExpr(starter,expr_list,mids,ender) ->
 	detect_unitary_frees(List.map r.VT0.combiner_rec_expression expr_list)
     | Ast0.ConjExpr(starter,expr_list,mids,ender) ->
@@ -139,13 +139,13 @@ let get_free checker t =
 
   let parameter r k p =
     match Ast0.unwrap p with
-      Ast0.MetaParam(name,_) | Ast0.MetaParamList(name,_,_) -> checker name
+      Ast0.MetaParam(name,_,_) | Ast0.MetaParamList(name,_,_,_) -> checker name
     | _ -> k p in
 
   let declaration r k d =
     match Ast0.unwrap d with
-      Ast0.MetaDecl(name,_) | Ast0.MetaField(name,_)
-    | Ast0.MetaFieldList(name,_,_) -> checker name
+      Ast0.MetaDecl(name,_,_) | Ast0.MetaField(name,_,_)
+    | Ast0.MetaFieldList(name,_,_,_) -> checker name
     | Ast0.DisjDecl(starter,decls,mids,ender) ->
 	detect_unitary_frees(List.map r.VT0.combiner_rec_declaration decls)
     | _ -> k d in
@@ -158,7 +158,7 @@ let get_free checker t =
 
   let statement r k s =
     match Ast0.unwrap s with
-      Ast0.MetaStmt(name,_) | Ast0.MetaStmtList(name,_,_) -> checker name
+      Ast0.MetaStmt(name,_,_) | Ast0.MetaStmtList(name,_,_,_) -> checker name
     | Ast0.Disj(starter,stmt_list,mids,ender) ->
 	detect_unitary_frees
 	  (List.map r.VT0.combiner_rec_statement_dots stmt_list)
@@ -223,8 +223,8 @@ let update_unitary unitary =
 	Ast0.rewrap e (Ast0.MetaErr(name,constraints,is_unitary name))
     | Ast0.MetaExpr(name,constraints,ty,form,_) ->
 	Ast0.rewrap e (Ast0.MetaExpr(name,constraints,ty,form,is_unitary name))
-    | Ast0.MetaExprList(name,lenname,_) ->
-	Ast0.rewrap e (Ast0.MetaExprList(name,lenname,is_unitary name))
+    | Ast0.MetaExprList(name,lenname,cstr,_) ->
+	Ast0.rewrap e (Ast0.MetaExprList(name,lenname,cstr,is_unitary name))
     | _ -> k e in
 
   let typeC r k t =
@@ -235,18 +235,18 @@ let update_unitary unitary =
 
   let parameter r k p =
     match Ast0.unwrap p with
-      Ast0.MetaParam(name,_) ->
-	Ast0.rewrap p (Ast0.MetaParam(name,is_unitary name))
-    | Ast0.MetaParamList(name,lenname,_) ->
-	Ast0.rewrap p (Ast0.MetaParamList(name,lenname,is_unitary name))
+      Ast0.MetaParam(name,cstr,_) ->
+	Ast0.rewrap p (Ast0.MetaParam(name,cstr,is_unitary name))
+    | Ast0.MetaParamList(name,lenname,cstr,_) ->
+	Ast0.rewrap p (Ast0.MetaParamList(name,lenname,cstr,is_unitary name))
     | _ -> k p in
 
   let statement r k s =
     match Ast0.unwrap s with
-      Ast0.MetaStmt(name,_) ->
-	Ast0.rewrap s (Ast0.MetaStmt(name,is_unitary name))
-    | Ast0.MetaStmtList(name,lenname,_) ->
-	Ast0.rewrap s (Ast0.MetaStmtList(name,lenname,is_unitary name))
+      Ast0.MetaStmt(name,cstr,_) ->
+	Ast0.rewrap s (Ast0.MetaStmt(name,cstr,is_unitary name))
+    | Ast0.MetaStmtList(name,lenname,cstr,_) ->
+	Ast0.rewrap s (Ast0.MetaStmtList(name,lenname,cstr,is_unitary name))
     | _ -> k s in
 
   let res = V0.rebuilder

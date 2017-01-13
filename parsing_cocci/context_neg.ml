@@ -579,7 +579,7 @@ let rec equal_expression e1 e2 =
       equal_mcode lp1 lp2 && equal_mcode rp1 rp2
   | (Ast0.MetaErr(name1,_,_),Ast0.MetaErr(name2,_,_))
   | (Ast0.MetaExpr(name1,_,_,_,_),Ast0.MetaExpr(name2,_,_,_,_))
-  | (Ast0.MetaExprList(name1,_,_),Ast0.MetaExprList(name2,_,_)) ->
+  | (Ast0.MetaExprList(name1,_,_,_),Ast0.MetaExprList(name2,_,_,_)) ->
       equal_mcode name1 name2
   | (Ast0.EComma(cm1),Ast0.EComma(cm2)) -> equal_mcode cm1 cm2
   | (Ast0.DisjExpr(starter1,_,mids1,ender1),
@@ -659,9 +659,9 @@ let equal_fninfo x y =
 
 let equal_declaration d1 d2 =
   match (Ast0.unwrap d1,Ast0.unwrap d2) with
-    (Ast0.MetaDecl(name1,_),Ast0.MetaDecl(name2,_))
-  | (Ast0.MetaField(name1,_),Ast0.MetaField(name2,_))
-  | (Ast0.MetaFieldList(name1,_,_),Ast0.MetaFieldList(name2,_,_)) ->
+    (Ast0.MetaDecl(name1,_,_),Ast0.MetaDecl(name2,_,_))
+  | (Ast0.MetaField(name1,_,_),Ast0.MetaField(name2,_,_))
+  | (Ast0.MetaFieldList(name1,_,_,_),Ast0.MetaFieldList(name2,_,_,_)) ->
       equal_mcode name1 name2
   | (Ast0.Init(stg1,_,_,eq1,_,sem1),Ast0.Init(stg2,_,_,eq2,_,sem2)) ->
       equal_option stg1 stg2 && equal_mcode eq1 eq2 && equal_mcode sem1 sem2
@@ -711,9 +711,9 @@ let equal_designator d1 d2 =
 
 let equal_initialiser i1 i2 =
   match (Ast0.unwrap i1,Ast0.unwrap i2) with
-    (Ast0.MetaInit(name1,_),Ast0.MetaInit(name2,_)) ->
+    (Ast0.MetaInit(name1,_,_),Ast0.MetaInit(name2,_,_)) ->
       equal_mcode name1 name2
-  | (Ast0.MetaInitList(name1,_,_),Ast0.MetaInitList(name2,_,_)) ->
+  | (Ast0.MetaInitList(name1,_,_,_),Ast0.MetaInitList(name2,_,_,_)) ->
       equal_mcode name1 name2
   | (Ast0.InitExpr(_),Ast0.InitExpr(_)) -> true
   | (Ast0.InitList(lb1,_,rb1,o1),Ast0.InitList(lb2,_,rb2,o2)) ->
@@ -735,8 +735,8 @@ let equal_parameterTypeDef p1 p2 =
   match (Ast0.unwrap p1,Ast0.unwrap p2) with
     (Ast0.VoidParam(_),Ast0.VoidParam(_)) -> true
   | (Ast0.Param(_,_),Ast0.Param(_,_)) -> true
-  | (Ast0.MetaParam(name1,_),Ast0.MetaParam(name2,_))
-  | (Ast0.MetaParamList(name1,_,_),Ast0.MetaParamList(name2,_,_)) ->
+  | (Ast0.MetaParam(name1,_,_),Ast0.MetaParam(name2,_,_))
+  | (Ast0.MetaParamList(name1,_,_,_),Ast0.MetaParamList(name2,_,_,_)) ->
       equal_mcode name1 name2
   | (Ast0.PComma(cm1),Ast0.PComma(cm2)) -> equal_mcode cm1 cm2
   | (Ast0.Pdots(dots1),Ast0.Pdots(dots2)) -> equal_mcode dots1 dots2
@@ -800,8 +800,8 @@ let equal_statement s1 s2 =
   | (Ast0.Exec(exec1,lang1,_,sem1),Ast0.Exec(exec2,lang2,_,sem2)) ->
       equal_mcode exec1 exec2 && equal_mcode lang1 lang2 &&
       equal_mcode sem1 sem2
-  | (Ast0.MetaStmt(name1,_),Ast0.MetaStmt(name2,_))
-  | (Ast0.MetaStmtList(name1,_,_),Ast0.MetaStmtList(name2,_,_)) ->
+  | (Ast0.MetaStmt(name1,_,_),Ast0.MetaStmt(name2,_,_))
+  | (Ast0.MetaStmtList(name1,_,_,_),Ast0.MetaStmtList(name2,_,_,_)) ->
       equal_mcode name1 name2
   | (Ast0.Disj(starter1,_,mids1,ender1),Ast0.Disj(starter2,_,mids2,ender2)) ->
       equal_mcode starter1 starter2 &&
@@ -847,7 +847,7 @@ let equal_case_line c1 c2 =
 let equal_define_param d1 d2 =
   match (Ast0.unwrap d1,Ast0.unwrap d2) with
     (Ast0.DParam _,Ast0.DParam _) -> true
-  | (Ast0.MetaDParamList(name1,_,_),Ast0.MetaDParamList(name2,_,_)) ->
+  | (Ast0.MetaDParamList(name1,_,_,_),Ast0.MetaDParamList(name2,_,_,_)) ->
       equal_mcode name1 name2
   | (Ast0.DPComma cm1,Ast0.DPComma cm2) -> equal_mcode cm1 cm2
   | (Ast0.DPdots d1,Ast0.DPdots d2) -> equal_mcode d1 d2

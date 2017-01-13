@@ -12,18 +12,15 @@ let inc f =
     None -> Hashtbl.add tbl f 1
   | Some count -> Hashtbl.replace tbl f (succ count)
 
-let merge_hashtbls hashtbls op =
-  let result = Hashtbl.create 101 in
+let merge_hashtbls op target source =
   let add_item key value =
     match
-      try Some (Hashtbl.find result key)
+      try Some (Hashtbl.find target key)
       with Not_found -> None
     with
-      None -> Hashtbl.add result key value
-    | Some value' -> Hashtbl.replace result key (op value value') in
-  let add_hashtbl hashtbl = Hashtbl.iter add_item hashtbl in
-  List.iter add_hashtbl hashtbls;
-  result
+      None -> Hashtbl.add target key value
+    | Some value' -> Hashtbl.replace target key (op value value') in
+  Hashtbl.iter add_item source
 
 @script:ocaml@
 @@
@@ -68,7 +65,12 @@ if not (List.mem f !local) && String.lowercase f = f then inc f
 @finalize:ocaml@
 tbls << merge.tbl;
 @@
-let tbl = merge_hashtbls tbls ( + ) in
+let tbl =
+  match tbls with
+    [] -> failwith "Unexpected empty table list"
+  | tbl :: others ->
+      List.iter (merge_hashtbls ( + ) tbl) others;
+      tbl in
 List.iter
   (function (v,f) -> Printf.printf "%s: %d\n" f v)
   (List.rev

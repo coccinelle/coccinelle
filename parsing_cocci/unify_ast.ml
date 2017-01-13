@@ -224,10 +224,10 @@ and unify_expression e1 e2 =
 
   | (Ast.MetaErr(_,_,_,_),_)
   | (Ast.MetaExpr(_,_,_,_,_,_),_)
-  | (Ast.MetaExprList(_,_,_,_),_)
+  | (Ast.MetaExprList(_,_,_,_,_),_)
   | (_,Ast.MetaErr(_,_,_,_))
   | (_,Ast.MetaExpr(_,_,_,_,_,_))
-  | (_,Ast.MetaExprList(_,_,_,_)) -> true
+  | (_,Ast.MetaExprList(_,_,_,_,_)) -> true
 
   | (Ast.AsExpr(exp1,asexp1),_) ->
       disjunct_all_bindings
@@ -270,8 +270,8 @@ and unify_string_fragment e1 e2 =
   | (Ast.FormatFragment(pct1,fmt1),Ast.FormatFragment(pct2,fmt2)) ->
       unify_string_format fmt1 fmt2
   | (Ast.Strdots(dots1),Ast.Strdots(dots2)) -> true
-  | (Ast.MetaFormatList(pct,name,len,_,_),_)
-  | (_,Ast.MetaFormatList(pct,name,len,_,_)) -> true
+  | (Ast.MetaFormatList(pct,name,len,_,_,_),_)
+  | (_,Ast.MetaFormatList(pct,name,len,_,_,_)) -> true
   | _ -> false
 
 and unify_string_format e1 e2 =
@@ -361,9 +361,9 @@ and unify_typeC t1 t2 =
 
 and unify_declaration d1 d2 =
   match (Ast.unwrap d1,Ast.unwrap d2) with
-    (Ast.MetaDecl(_,_,_),_) | (_,Ast.MetaDecl(_,_,_)) -> true
-  | (Ast.MetaField(_,_,_),_) | (_,Ast.MetaField(_,_,_)) -> true
-  | (Ast.MetaFieldList(_,_,_,_),_) | (_,Ast.MetaFieldList(_,_,_,_)) ->
+    (Ast.MetaDecl(_,_,_,_),_) | (_,Ast.MetaDecl(_,_,_,_)) -> true
+  | (Ast.MetaField(_,_,_,_),_) | (_,Ast.MetaField(_,_,_,_)) -> true
+  | (Ast.MetaFieldList(_,_,_,_,_),_) | (_,Ast.MetaFieldList(_,_,_,_,_)) ->
       true
   | (Ast.Init(stg1,ft1,id1,eq1,i1,s1),Ast.Init(stg2,ft2,id2,eq2,i2,s2)) ->
       if bool_unify_option unify_mcode stg1 stg2
@@ -430,8 +430,8 @@ and unify_annotated_decl d1 d2 =
 
 and unify_initialiser i1 i2 =
   match (Ast.unwrap i1,Ast.unwrap i2) with
-    (Ast.MetaInit(_,_,_),_) | (_,Ast.MetaInit(_,_,_)) -> true
-  | (Ast.MetaInitList(_,_,_,_),_) | (_,Ast.MetaInitList(_,_,_,_)) ->
+    (Ast.MetaInit(_,_,_,_),_) | (_,Ast.MetaInit(_,_,_,_)) -> true
+  | (Ast.MetaInitList(_,_,_,_,_),_) | (_,Ast.MetaInitList(_,_,_,_,_)) ->
       true
   | (Ast.InitExpr(expa),Ast.InitExpr(expb)) ->
       unify_expression expa expb
@@ -477,10 +477,10 @@ and unify_parameterTypeDef p1 p2 =
       unify_fullType ft1 ft2 &&
       unify_option unify_ident i1 i2
 
-  | (Ast.MetaParam(_,_,_),_)
-  | (Ast.MetaParamList(_,_,_,_),_)
-  | (_,Ast.MetaParam(_,_,_))
-  | (_,Ast.MetaParamList(_,_,_,_)) -> true
+  | (Ast.MetaParam(_,_,_,_),_)
+  | (Ast.MetaParamList(_,_,_,_,_),_)
+  | (_,Ast.MetaParam(_,_,_,_))
+  | (_,Ast.MetaParamList(_,_,_,_,_)) -> true
 
   | (Ast.PComma(_),Ast.PComma(_)) -> true
 
@@ -509,7 +509,8 @@ and unify_define_param p1 p2 =
   match (Ast.unwrap p1,Ast.unwrap p2) with
     (Ast.DParam(i1),Ast.DParam(i2)) ->
 	(unify_ident i1 i2)
-  | (Ast.MetaDParamList(_,_,_,_),_) | (_,Ast.MetaDParamList(_,_,_,_)) -> true
+  | (Ast.MetaDParamList(_,_,_,_,_),_)
+  | (_,Ast.MetaDParamList(_,_,_,_,_)) -> true
   | (Ast.DPComma(_),Ast.DPComma(_)) -> true
 
   (* dots can match against anything.  true to be safe. *)
@@ -584,12 +585,12 @@ and unify_rule_elem re1 re2 =
       disjunct_all_bindings
 	(List.map (function x -> unify_rule_elem re1 x) res2)
 
-  | (Ast.MetaRuleElem(_,_,_),_)
-  | (Ast.MetaStmt(_,_,_,_),_)
-  | (Ast.MetaStmtList(_,_,_,_),_)
-  | (_,Ast.MetaRuleElem(_,_,_))
-  | (_,Ast.MetaStmt(_,_,_,_))
-  | (_,Ast.MetaStmtList(_,_,_,_)) -> true
+  | (Ast.MetaRuleElem(_,_,_,_),_)
+  | (Ast.MetaStmt(_,_,_,_,_),_)
+  | (Ast.MetaStmtList(_,_,_,_,_),_)
+  | (_,Ast.MetaRuleElem(_,_,_,_))
+  | (_,Ast.MetaStmt(_,_,_,_,_))
+  | (_,Ast.MetaStmtList(_,_,_,_,_)) -> true
 
     (* can match a rule_elem in different parts *)
   | (Ast.Exp(e1),Ast.Exp(e2)) -> true

@@ -41,15 +41,15 @@ let update_after pragmas (info,x) =
 
 let rec right_decl d =
   match Ast0.unwrap d with
-    Ast0.MetaDecl(name,pure) ->
+    Ast0.MetaDecl(name,cstr,pure) ->
       call_right right_mcode name d
-	(function name -> Ast0.MetaDecl(name,pure))
-  | Ast0.MetaField(name,pure) ->
+	(function name -> Ast0.MetaDecl(name,cstr,pure))
+  | Ast0.MetaField(name,cstr,pure) ->
       call_right right_mcode name d
-	(function name -> Ast0.MetaField(name,pure))
-  | Ast0.MetaFieldList(name,lenname,pure) ->
+	(function name -> Ast0.MetaField(name,cstr,pure))
+  | Ast0.MetaFieldList(name,lenname,cstr,pure) ->
       call_right right_mcode name d
-	(function name -> Ast0.MetaFieldList(name,lenname,pure))
+	(function name -> Ast0.MetaFieldList(name,lenname,cstr,pure))
   | Ast0.AsDecl(decl,asdecl) -> failwith "not possible"
   | Ast0.Init(stg,ty,id,eq,ini,sem) ->
       call_right right_mcode sem d
@@ -121,12 +121,12 @@ let rec right_statement s =
   | Ast0.Exec(exec,lang,exp,sem) ->
       call_right right_mcode sem s
 	(function sem -> Ast0.Exec(exec,lang,exp,sem))
-  | Ast0.MetaStmt(name,pure) ->
+  | Ast0.MetaStmt(name,cstr,pure) ->
       call_right right_mcode name s
-	(function name -> Ast0.MetaStmt(name,pure))
-  | Ast0.MetaStmtList(name,lenname,pure) ->
+	(function name -> Ast0.MetaStmt(name,cstr,pure))
+  | Ast0.MetaStmtList(name,lenname,cstr,pure) ->
       call_right right_mcode name s
-	(function name -> Ast0.MetaStmtList(name,lenname,pure))
+	(function name -> Ast0.MetaStmtList(name,lenname,cstr,pure))
   | Ast0.AsStmt(stm,asstm) -> failwith "not possible"
   | Ast0.Disj(starter,statement_dots_list,mids,ender)
   | Ast0.Conj(starter,statement_dots_list,mids,ender) -> None
@@ -237,15 +237,15 @@ let left_fundecl name fninfo =
 
 let rec left_decl decl =
   match Ast0.unwrap decl with
-    Ast0.MetaDecl(name,pure) ->
+    Ast0.MetaDecl(name,cstr,pure) ->
       call_right right_mcode name decl
-	(function name -> Ast0.MetaDecl(name,pure))
-  | Ast0.MetaField(name,pure) ->
+	(function name -> Ast0.MetaDecl(name,cstr,pure))
+  | Ast0.MetaField(name,cstr,pure) ->
       call_right right_mcode name decl
-	(function name -> Ast0.MetaField(name,pure))
-  | Ast0.MetaFieldList(name,lenname,pure) ->
+	(function name -> Ast0.MetaField(name,cstr,pure))
+  | Ast0.MetaFieldList(name,lenname,cstr,pure) ->
       call_right right_mcode name decl
-	(function name -> Ast0.MetaFieldList(name,lenname,pure))
+	(function name -> Ast0.MetaFieldList(name,lenname,cstr,pure))
   | Ast0.AsDecl(decl,asdecl) -> failwith "not possible"
   | Ast0.Init(Some stg,ty,id,eq,ini,sem) ->
       call_right left_mcode stg decl

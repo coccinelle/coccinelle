@@ -188,7 +188,7 @@ and disjexp e =
 	(function ty ->
 	  function exp -> Ast.rewrap e (Ast.Constructor(lp,ty,rp,init)))
   | Ast.MetaErr(_,_,_,_) | Ast.MetaExpr(_,_,_,_,_,_)
-  | Ast.MetaExprList(_,_,_,_) | Ast.EComma(_) -> [e]
+  | Ast.MetaExprList(_,_,_,_,_) | Ast.EComma(_) -> [e]
   | Ast.AsExpr(exp,asexp) -> (* as exp doesn't contain disj *)
       let exp = disjexp exp in
       List.map (function exp -> Ast.rewrap e (Ast.AsExpr(exp,asexp))) exp
@@ -217,7 +217,7 @@ and disjparam p =
   | Ast.AsParam(pm,asexp) -> (* as exp doesn't contain disj *)
       let pm = disjparam pm in
       List.map (function pm -> Ast.rewrap p (Ast.AsParam(pm,asexp))) pm
-  | Ast.MetaParam(_,_,_) | Ast.MetaParamList(_,_,_,_) | Ast.PComma(_) -> [p]
+  | Ast.MetaParam(_,_,_,_) | Ast.MetaParamList(_,_,_,_,_) | Ast.PComma(_) -> [p]
   | Ast.Pdots(dots) -> [p]
   | Ast.OptParam(param) ->
       let param = disjparam param in
@@ -225,7 +225,7 @@ and disjparam p =
 
 and disjini i =
   match Ast.unwrap i with
-    Ast.MetaInit(_,_,_) | Ast.MetaInitList(_,_,_,_) -> [i]
+    Ast.MetaInit(_,_,_,_) | Ast.MetaInitList(_,_,_,_,_) -> [i]
   | Ast.AsInit(ini,asini) ->
       let ini = disjini ini in
       List.map (function ini -> Ast.rewrap i (Ast.AsInit(ini,asini))) ini
@@ -277,8 +277,8 @@ and disjfninfo = function
 
 and disjdecl d =
   match Ast.unwrap d with
-    Ast.MetaDecl(_,_,_) | Ast.MetaField(_,_,_)
-  | Ast.MetaFieldList(_,_,_,_) -> [d]
+    Ast.MetaDecl(_,_,_,_) | Ast.MetaField(_,_,_,_)
+  | Ast.MetaFieldList(_,_,_,_,_) -> [d]
   | Ast.AsDecl(decl,asdecl) ->
       let decl = disjdecl decl in
       List.map (function decl -> Ast.rewrap d (Ast.AsDecl(decl,asdecl))) decl
@@ -382,8 +382,8 @@ let rec disj_rule_elem r k re =
       orify_rule_elem re exp
 	(function exp -> Ast.rewrap re (Ast.ReturnExpr(ret,exp,sem)))
   | Ast.Exec _ -> re (* no ors possible *)
-  | Ast.MetaRuleElem(_,_,_) | Ast.MetaStmt(_,_,_,_)
-  | Ast.MetaStmtList(_,_,_,_) -> re
+  | Ast.MetaRuleElem(_,_,_,_) | Ast.MetaStmt(_,_,_,_,_)
+  | Ast.MetaStmtList(_,_,_,_,_) -> re
   | Ast.Exp(exp) ->
       orify_rule_elem re exp (function exp -> Ast.rewrap exp (Ast.Exp(exp)))
   | Ast.TopExp(exp) ->

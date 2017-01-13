@@ -112,7 +112,7 @@ and metavar =
   | MetaIteratorDecl of arity * meta_name (* name *)
   | MetaScriptDecl of metavar option ref * meta_name (* name *)
 
-and list_len = AnyLen | MetaLen of meta_name | CstLen of int
+and list_len = AnyLen | MetaLen of meta_name * constraints | CstLen of int
 
 and seed = NoVal | StringSeed of string | ListSeed of seed_elem list
 and seed_elem = SeedString of string | SeedId of meta_name
@@ -181,7 +181,7 @@ and base_expression =
 	              inherited
   | MetaExpr       of meta_name mcode * constraints * keep_binding *
 	              fullType list option * form * inherited
-  | MetaExprList   of meta_name mcode * listlen *
+  | MetaExprList   of meta_name mcode * listlen * constraints *
 	              keep_binding * inherited (* only in arg lists *)
   | AsExpr         of expression * expression (* as expr, always metavar *)
   | AsSExpr        of expression * rule_elem (* as expr, always metavar *)
@@ -208,7 +208,7 @@ and 'expression generic_constraints =
   | CstrAnd of 'expression generic_constraints list
   | CstrOr of 'expression generic_constraints list
   | CstrNot of 'expression generic_constraints
-  | CstrString of string
+  | CstrConstant of constant_constraint
   | CstrOperator of operator_constraint
   | CstrMeta_name of meta_name
   | CstrRegexp of string * Regexp.regexp
@@ -216,6 +216,15 @@ and 'expression generic_constraints =
   | CstrExpr of 'expression
   | CstrSub of meta_name list
   | CstrType of fullType
+
+and constant_constraint =
+    CstrInt of int_constraint
+  | CstrString of string
+
+and int_constraint =
+    CstrIntEq of int
+  | CstrIntLeq of int
+  | CstrIntGeq of int
 
 and operator_constraint =
     CstrAssignOp of assignOp
@@ -234,7 +243,7 @@ and form = ANY | ID | LocalID| GlobalID | CONST (* form for MetaExp *)
 and expression = base_expression wrap
 
 and listlen =
-    MetaListLen of meta_name mcode * keep_binding * inherited
+    MetaListLen of meta_name mcode * constraints * keep_binding * inherited
   | CstListLen of int
   | AnyListLen
 
@@ -243,7 +252,7 @@ and base_string_fragment =
   | FormatFragment of string mcode (*%*) * string_format (* format *)
   | Strdots of string mcode
   | MetaFormatList of string mcode (*%*) * meta_name mcode * listlen *
-	keep_binding * inherited
+	constraints * keep_binding * inherited
 
 and string_fragment = base_string_fragment wrap
 
@@ -355,9 +364,10 @@ and base_declaration =
   | Typedef of string mcode (*typedef*) * fullType * typeC * string mcode (*;*)
   | DisjDecl   of declaration list
 
-  | MetaDecl of meta_name mcode * keep_binding * inherited
-  | MetaField of meta_name mcode * keep_binding * inherited
-  | MetaFieldList of meta_name mcode * listlen * keep_binding * inherited
+  | MetaDecl of meta_name mcode * constraints * keep_binding * inherited
+  | MetaField of meta_name mcode * constraints * keep_binding * inherited
+  | MetaFieldList of meta_name mcode * listlen * constraints * keep_binding *
+	inherited
   | AsDecl        of declaration * declaration
 
   | OptDecl    of declaration
@@ -376,8 +386,9 @@ and annotated_decl = base_annotated_decl wrap
 (* Initializers *)
 
 and base_initialiser =
-    MetaInit of meta_name mcode * keep_binding * inherited
-  | MetaInitList of meta_name mcode * listlen * keep_binding * inherited
+    MetaInit of meta_name mcode * constraints * keep_binding * inherited
+  | MetaInitList of meta_name mcode * listlen * constraints * keep_binding
+	* inherited
   | AsInit of initialiser * initialiser (* as init, always metavar *)
   | InitExpr of expression
   | ArInitList of string mcode (*{*) * initialiser dots * string mcode (*}*)
@@ -409,8 +420,9 @@ and base_parameterTypeDef =
     VoidParam     of fullType
   | Param         of fullType * ident option
 
-  | MetaParam     of meta_name mcode * keep_binding * inherited
-  | MetaParamList of meta_name mcode * listlen * keep_binding * inherited
+  | MetaParam     of meta_name mcode * constraints * keep_binding * inherited
+  | MetaParamList of meta_name mcode * listlen * constraints * keep_binding *
+	inherited
 
   | AsParam       of parameterTypeDef * expression (* expr, always metavar *)
 
@@ -429,7 +441,8 @@ and parameter_list = parameterTypeDef dots
 
 and base_define_param =
     DParam        of ident
-  | MetaDParamList of meta_name mcode * listlen * keep_binding * inherited
+  | MetaDParamList of meta_name mcode * listlen * constraints * keep_binding *
+	inherited
   | DPComma       of string mcode
   | DPdots        of string mcode (* ... *)
   | OptDParam     of define_param
@@ -500,10 +513,11 @@ and base_rule_elem =
   | Exec          of string mcode (* EXEC *) * string mcode (* language *) *
 	             exec_code dots * string mcode (* ; *)
 
-  | MetaRuleElem  of meta_name mcode * keep_binding * inherited
-  | MetaStmt      of meta_name mcode * keep_binding * metaStmtInfo *
-	             inherited
-  | MetaStmtList  of meta_name mcode * listlen * keep_binding * inherited
+  | MetaRuleElem  of meta_name mcode * constraints * keep_binding * inherited
+  | MetaStmt      of meta_name mcode * constraints * keep_binding *
+	metaStmtInfo * inherited
+  | MetaStmtList  of meta_name mcode * listlen * constraints * keep_binding *
+	inherited
 
   | Exp           of expression
   | TopExp        of expression (* for macros body *)
@@ -761,12 +775,12 @@ val tag2c : anything -> string
 val no_info : info
 
 val make_meta_rule_elem :
-    string -> mcodekind ->
+    string -> mcodekind -> constraints ->
       (meta_name list * (meta_name * seed) list * meta_name list) ->
       rule_elem
 
 val make_meta_decl :
-    string -> mcodekind ->
+    string -> mcodekind -> constraints ->
       (meta_name list * (meta_name * seed) list * meta_name list) ->
       declaration
 
@@ -853,7 +867,7 @@ val string_of_expression: expression -> string option
     and associated strings are extracted when needed. *)
 
 type ('expression, 'a) cstr_transformer = {
-    cstr_string: (string -> 'a) option;
+    cstr_constant: (constant_constraint -> 'a) option;
     cstr_operator: (operator_constraint -> 'a) option;
     cstr_meta_name: (meta_name -> 'a) option;
     cstr_regexp: (string -> Regexp.regexp -> 'a) option;

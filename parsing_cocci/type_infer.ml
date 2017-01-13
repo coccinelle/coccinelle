@@ -294,7 +294,7 @@ let rec propagate_types env =
 	| Ast0.MetaErr(name,_,_) -> None
 	| Ast0.MetaExpr(name,_,Some [ty],_,_) -> Some ty
 	| Ast0.MetaExpr(name,_,ty,_,_) -> None
-	| Ast0.MetaExprList(name,_,_) -> None
+	| Ast0.MetaExprList(name,_,_,_) -> None
 	| Ast0.EComma(cm) -> None
 	| Ast0.DisjExpr(_,exp_list,_,_)
 	| Ast0.ConjExpr(_,exp_list,_,_) ->
@@ -367,8 +367,8 @@ let rec propagate_types env =
 
   and process_decl env decl =
     match Ast0.unwrap decl with
-      Ast0.MetaDecl(_,_) | Ast0.MetaField(_,_)
-    | Ast0.MetaFieldList(_,_,_) -> []
+      Ast0.MetaDecl(_,_,_) | Ast0.MetaField(_,_,_)
+    | Ast0.MetaFieldList(_,_,_,_) -> []
     | Ast0.Init(_,ty,id,_,exp,_) ->
 	let _ = (propagate_types env).VT0.combiner_rec_initialiser exp in
 	List.map (function i -> (i,ty)) (strip id)
