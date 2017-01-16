@@ -21,12 +21,7 @@ let out_suffix = ".stdout"
 
 let flush_scripts_output () =
   flush stdout;
-  if Pycocci.py_isinitialized () then
-    let _ = Pycocci.pyrun_simplestring "\
-import sys
-sys.stdout.flush()
-" in
-    ()
+  Pycocci.flush_stdout_and_stderr ()
 
 let begin_redirect_output expected_out =
   let has_expected_out = Sys.file_exists expected_out in

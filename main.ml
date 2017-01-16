@@ -1136,6 +1136,7 @@ let rec main_action xs =
 	      (res, !Common._temp_files_created) in
 	    let merge (x, temp_files) (y, temp_files') =
 	      (merge x y, List.rev_append temp_files temp_files') in
+	    Pycocci.flush_stdout_and_stderr ();
 	    let (res, tmps) =
 	      try
 		Parmap.parfold

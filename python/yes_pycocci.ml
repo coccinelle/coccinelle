@@ -399,3 +399,12 @@ from coccilib.iteration import Iteration
 coccinelle.result = (%s)" body);
     Py.Bool.to_bool (get_variable "result")
   end
+
+let flush_stdout_and_stderr () =
+  if py_isinitialized () then
+    let _ = pyrun_simplestring "\
+import sys
+sys.stdout.flush()
+sys.stderr.flush()
+" in
+    ()
