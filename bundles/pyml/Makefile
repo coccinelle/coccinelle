@@ -6,6 +6,7 @@ PYML_VERSION=current
 PACKAGE_DIR=pyml-$(PYML_VERSION)
 TARBALL=
 MODULES=pyml_compat pytypes pywrappers py pycaml
+PRODUCTS=pyml_compat
 OBJS=pytypes pywrappers py pycaml
 INTERFACES=pywrappers py pycaml
 C_OBJS=pyml
