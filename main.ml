@@ -1102,7 +1102,6 @@ let rec main_action xs =
 
 	  let seq_fold merge op z l =
 	    List.fold_left op z l in
-	  let current_core = ref 0 in
 	  let par_fold merge op z l =
             let prefix =
 	      let prefix =
@@ -1140,9 +1139,7 @@ let rec main_action xs =
 	    let (res, tmps) =
 	      try
 		Parmap.parfold
-		  ~init:(fun id ->
-		    current_core := id;
-		    Parmap.redirect ~path:prefix ~id)
+		  ~init:(fun id -> Parmap.redirect ~path:prefix ~id)
 		  ~ncores
 		  ~chunksize
 		  op (Parmap.L l) (z, !Common._temp_files_created) merge
@@ -1165,19 +1162,21 @@ let rec main_action xs =
 		  [] ->
 		    (* parmap case does a lot of work that is not needed
 		       if there is nothing to do *)
-		    [], Common.IntMap.empty
+		    [], []
 		| _ ->
+(* merge_vars associates one merge variable assignment to each core.
+The following code relies on the fact that parfold never
+passes the accumulator from one core to another before merging the
+results. Therefore, the fold operator may just keep the last value in a
+singleton list (forgetting the former accumulator value) and these
+singleton lists are then just appended to each other during the merge. *)
 		    let merge (outfiles, merge_vars) (outfiles', merge_vars') =
 		      let all_outfiles = List.rev_append outfiles outfiles' in
 		      let all_merge_vars =
-			Common.IntMap.merge
-			  (fun _ left right -> match left, right with
-			    (Some v, _) | (_, Some v) -> Some v
-			  | _ -> assert false)
-			  merge_vars merge_vars' in
+			List.rev_append merge_vars merge_vars' in
 		      all_outfiles, all_merge_vars in
 		    infiles +> actual_fold merge
-		      (fun (prev_files, prev_merges as prev) cfiles ->
+		      (fun (prev_files, _prev_merges as prev) cfiles ->
 		      if (not !Flag.worth_trying_opt) ||
 		      Cocci.worth_trying cfiles constants
 		      then
@@ -1205,8 +1204,7 @@ let rec main_action xs =
 						cfiles
 					 )) in
 				      List.rev_append files prev_files,
-				      Common.IntMap.add !current_core merges
-					prev_merges
+				      [merges]
 				    with
 				    | Common.UnixExit x ->
 					raise (Common.UnixExit x)
@@ -1224,11 +1222,9 @@ let rec main_action xs =
 			      res)
 			end
 		      else prev)
-		      ([], Common.IntMap.empty) in res) in
+		      ([], []) in res) in
 	  let outfiles = List.rev outfiles in
-	  let add_merge _core merges all_merges =
-	    Cocci.union_merge_vars merges all_merges in
-	  let merges = Common.IntMap.fold add_merge merges ([], []) in
+	  let merges = List.fold_left Cocci.union_merge_vars ([], []) merges in
 	  let pending_instance =
 	    match Iteration.get_pending_instance() with
 	      None ->
