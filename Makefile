@@ -71,7 +71,7 @@ INCLUDEDIRSDEP=commons commons/ocamlextra \
  parsing_cocci parsing_c ocaml python engine popl09 extra \
  $(MAKELIBS)
 
-INCLUDEDIRS=$(INCLUDEDIRSDEP) $(PCREDIR) $(PARMAPDIR) $(INCLIBS)
+INCLUDEDIRS=$(INCLUDEDIRSDEP) $(PCREDIR) $(BYTESDIR) $(PARMAPDIR) $(INCLIBS)
 
 ##############################################################################
 # Generic variables

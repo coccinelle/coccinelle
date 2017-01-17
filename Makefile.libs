@@ -36,10 +36,10 @@ OPTFLAGS_pyml  = $(CFLAGS_pyml:%=-ccopt %) -cclib -lpyml_stubs
 
 # pcre library
 # Note: see the comment of the pycaml library about the double appearance of the stubs library.
-LOCAL_pcre     = $(PCREDIR)/pcre.cma
-LOCALOPT_pcre  = $(PCREDIR)/pcre.cmxa
-GLOBAL_pcre    = $(PCREDIR)/pcre.cma
-GLOBALOPT_pcre = $(PCREDIR)/pcre.cmxa
+LOCAL_pcre     = $(BYTESDIR:=/bytes.cma) $(PCREDIR)/pcre.cma
+LOCALOPT_pcre  = $(BYTESDIR:=/bytes.cmxa) $(PCREDIR)/pcre.cmxa
+GLOBAL_pcre    = $(BYTESDIR:=/bytes.cma) $(PCREDIR)/pcre.cma
+GLOBALOPT_pcre = $(BYTESDIR:=/bytes.cmxa) $(PCREDIR)/pcre.cmxa
 FLAGS_pcre     = \
 	$(PCRE_LIBS:%=-ccopt %) -cclib -L$(PCREDIR) -dllib -lpcre_stubs \
 	-cclib -lpcre_stubs
