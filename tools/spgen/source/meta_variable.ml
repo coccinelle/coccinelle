@@ -132,54 +132,88 @@ let seed ~rn =
     | Ast.StringSeed s -> " = \"" ^ s ^ "\""
     | Ast.ListSeed s -> " = " ^ (String.concat " ## " (List.map se s))
 
-let list_constraints ~tostring_fn ~op = function
-  | [] -> ""
-  | [x] -> op ^ (tostring_fn x)
-  | x -> op ^ "{" ^ (String.concat "," (List.map tostring_fn x)) ^ "}"
+let string_of_operator_constraint cstr =
+  match cstr with
+    Ast.CstrAssignOp op -> Ast.string_of_assignOp op
+  | Ast.CstrBinaryOp op -> Ast.string_of_binaryOp op
 
-let constraints ~rn =
-  let list_constraints' list op =
-    list_constraints ~tostring_fn:(function
-	Ast.CstrConstant (Ast.CstrString s) -> "\"" ^ s ^ "\""
-      | Ast.CstrMeta_name mn -> name_str ~rn mn
-      | _ -> assert false) ~op list in
-  function
-    Ast.CstrTrue -> "/* No constraint */"
-  | Ast.CstrRegexp (s,r) -> " =~ \"" ^ s ^ "\""
-  | Ast.CstrNot (Ast.CstrRegexp (s,r)) -> " !~ \"" ^ s ^"\""
-  | Ast.CstrOr list when
-      List.for_all
-	(function Ast.CstrConstant (Ast.CstrString _)
-	  | Ast.CstrMeta_name _  -> true | _ -> false)
-	list ->
-	  list_constraints' list " = "
-  | Ast.CstrNot (Ast.CstrOr list) when
-      List.for_all
-	(function  Ast.CstrConstant (Ast.CstrString _)
-	  | Ast.CstrMeta_name _  -> true | _ -> false)
-	list ->
-	  list_constraints' list " != "
+let rec constraints_to_buffer ~rn buffer cstr =
+  let string_of_expression e =
+    match Ast0.unwrap e with
+      Ast0.Ident id ->
+	begin
+	  match Ast0.unwrap id with
+	    Ast0.Id id -> Ast0.unwrap_mcode id
+	  | _ -> failwith "string_of_expression"
+	end
+    | _ -> failwith "string_of_expression" in
+  let print_sub op first item =
+    match item with
+      Ast.CstrTrue | Ast.CstrFalse -> first
+    | _ ->
+	if not first then
+	  Buffer.add_string buffer op;
+	Buffer.add_string buffer "(";
+	constraints_to_buffer ~rn buffer item;
+	Buffer.add_string buffer ")";
+	false in
+  let simple_item item =
+    match item with
+      Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntEq i)) ->  string_of_int i
+    | Ast.CstrConstant (Ast.CstrString s) -> s
+    | Ast.CstrOperator item -> string_of_operator_constraint item
+    | Ast.CstrMeta_name mn -> name_str ~rn mn
+    | Ast.CstrExpr e -> string_of_expression e
+    | _ -> raise Exit in
+  match cstr with
+    Ast.CstrTrue | Ast.CstrSub [] -> ()
+  | Ast.CstrFalse ->
+      failwith "Ast_cocci.string_of_constraints: no syntax for Ast.CstrFalse"
+  | Ast.CstrAnd list -> ignore (List.fold_left (print_sub " && ") true list)
+  | Ast.CstrOr list ->
+      begin
+	match try Some (List.map simple_item list) with Exit -> None with
+	  Some [singleton] ->
+	    Printf.bprintf buffer "= %s" singleton;
+	| Some (first :: others) ->
+	    Printf.bprintf buffer "= {%s" first;
+	    List.iter (fun s -> Printf.bprintf buffer ",%s" s) others;
+	    Buffer.add_string buffer "}"
+	| _ -> ignore (List.fold_left (print_sub " || ") true list)
+      end
+  | Ast.CstrNot item ->
+      Buffer.add_string buffer "!(";
+      constraints_to_buffer rn buffer item;
+      Buffer.add_string buffer ")"
+  | Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntEq i)) ->
+      Printf.bprintf buffer "= %d" i
+  | Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntLeq i)) ->
+      Printf.bprintf buffer "<= %d" i
+  | Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntGeq i)) ->
+      Printf.bprintf buffer ">= %d" i
+  | Ast.CstrConstant (Ast.CstrString s) -> Printf.bprintf buffer "= %s" s
+  | Ast.CstrOperator item ->
+      Printf.bprintf buffer "= %s" (string_of_operator_constraint item)
+  | Ast.CstrMeta_name mn -> Printf.bprintf buffer "= %s" (name_str ~rn mn)
+  | Ast.CstrRegexp (s, _) -> Printf.bprintf buffer "=~ \"%s\"" s
   | Ast.CstrScript (_, lang, params, code) ->
-      Printf.sprintf ": script:%s (%s) { %s }" lang
-	(String.concat ","
-	   (List.map (fun (nm,_) -> name_str ~rn nm) params))
+      Printf.bprintf buffer ": script:%s (%s) {%s}" lang
+	(String.concat "," (List.map (fun (nm,_) -> name_str ~rn nm) params))
 	code
-  | _ -> ": ??"
+  | Ast.CstrExpr e -> Buffer.add_string buffer (string_of_expression e)
+  | Ast.CstrSub (first :: others) ->
+      Printf.bprintf buffer "<= {%s" (name_str ~rn first);
+      List.iter (fun mn -> Printf.bprintf buffer ",%s" (name_str ~rn mn))
+	others;
+      Buffer.add_string buffer "}"
+  | Ast.CstrType ty -> failwith "string_of_constraints: type"
 
-let assign_constraints = function
-    Ast.CstrTrue -> ""
-  | Ast.CstrConstant (Ast.CstrString s) ->
-      list_constraints ~tostring_fn:Common.id ~op:" = " [s]
-  | Ast.CstrOr l when
-      List.for_all (function Ast.CstrConstant (Ast.CstrString _ )-> true
-	| _ -> false) l ->
-      let get_string =
-	function Ast.CstrConstant (Ast.CstrString s) -> s | _ -> assert false in
-      let l' = List.map get_string l in
-      list_constraints ~tostring_fn:Common.id ~op:" = " l'
-  | _ -> failwith "assign_constraints: not implemented"
-
-let binary_constraints = assign_constraints
+let constraints ~rn cstr =
+  let buffer = Buffer.create 17 in
+  constraints_to_buffer ~rn buffer cstr;
+  let result = Buffer.contents buffer in
+  if result = "" then ""
+  else " " ^ result
 
 let list_len ~rn = function
   | Ast0.AnyListLen -> " "
@@ -269,8 +303,7 @@ let mcode ~rn ~mc:(_,_,_,_,pos,_) =
     | Ast0.TypeCTag {Ast0.node = Ast0.MetaType((mn,_,_,_,p,_),_,_); _} ->
         handle_metavar ~typ:"type " ~mn ~positions:!p ~set
     | Ast0.MetaPosTag(Ast0.MetaPos((mn,_,_,_,_,_), mns, colt)) ->
-        let oneconstr constr = constraints ~rn constr in
-	let constr = list_constraints ~tostring_fn:oneconstr ~op:"" [mns] in
+        let constr = constraints ~rn mns in
         let collect = (match colt with Ast.PER -> "" | Ast.ALL -> " any") in
         let pos = make_mv "position " (name_tup ~rn mn) (constr ^ collect) in
         MVSet.add pos set
@@ -428,14 +461,14 @@ let metavar_combiner rn =
   let assignOpfn c fn v =
     match Ast0.unwrap v with
     | Ast0.MetaAssign (mc, constr, pure) ->
-        let constr = assign_constraints constr in
+        let constr = constraints ~rn constr in
         meta_mc_format ~mc ~typ:"assignment operator " ~constr
     | _ -> fn v in
 
   let binaryOpfn c fn v =
     match Ast0.unwrap v with
     | Ast0.MetaBinary (mc, constr, pure) ->
-        let constr  = binary_constraints constr in
+        let constr  = constraints ~rn constr in
         meta_mc_format ~mc ~typ:"binary operator " ~constr
     | _ -> fn v in
 
