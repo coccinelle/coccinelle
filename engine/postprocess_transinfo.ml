@@ -16,6 +16,9 @@ how we reached a particular match *)
 module Ast = Ast_cocci
 
 let extra_counter = ref 0
+
+let reset_fresh_counter () = extra_counter := 0
+
 let get_extra _ =
   let ctr = !extra_counter in
   extra_counter := !extra_counter + 1;

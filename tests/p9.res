@@ -1,3 +1,3 @@
-int f(int v2, int v3, int x) {
+int f(int v0, int v1, int x) {
   return x;
 }

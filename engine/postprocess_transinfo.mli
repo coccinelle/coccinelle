@@ -4,6 +4,8 @@
  * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
+val reset_fresh_counter : unit -> unit
+
 val process :
     Ast_cocci.meta_name list (* used after *) ->
       (Ast_cocci.meta_name * Lib_engine.metavar_binding_kind2) list
