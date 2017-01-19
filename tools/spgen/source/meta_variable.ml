@@ -183,7 +183,7 @@ let rec constraints_to_buffer ~rn buffer cstr =
       end
   | Ast.CstrNot item ->
       Buffer.add_string buffer "!(";
-      constraints_to_buffer rn buffer item;
+      constraints_to_buffer ~rn buffer item;
       Buffer.add_string buffer ")"
   | Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntEq i)) ->
       Printf.bprintf buffer "= %d" i
