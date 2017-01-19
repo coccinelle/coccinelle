@@ -356,7 +356,7 @@ let prepare coccifile code =
 	 let local_merge_vars =
 	   List.fold_left add_var Common.StringSet.empty
 	     (Ast_cocci.filter_merge_variables mvs) in
-	 let let_merge_var index (merge_name, local_name) =
+	 let let_merge_var (merge_name, local_name) index =
 	   if Common.StringSet.mem merge_name local_merge_vars then
 	     Printf.sprintf "\
       let (%s : 'a%d list), (_ : 'a%d) =
@@ -365,7 +365,7 @@ let prepare coccifile code =
 	 %s) in\n"
 	       merge_name index index index local_name
 	   else "" in
-	 let let_merge_vars = List.mapi let_merge_var merge_vars in
+	 let let_merge_vars = Common.map_index let_merge_var merge_vars in
 	 let preambule = String.concat "" let_merge_vars in
 	 (name, [], [], preambule ^ code) in
        let final_rules = List.map add_merge_vars final_rules in
