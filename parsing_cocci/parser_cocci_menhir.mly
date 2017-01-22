@@ -1754,15 +1754,15 @@ initialize2:
     /*can we have another of these on the rhs?*/
     { Ast0.wrap(Ast0.InitGccExt($1,P.clt2mcode "=" $2,$3)) }
 | mident TDotDot initialize2
-    { Ast0.wrap(Ast0.InitGccName($1,P.clt2mcode ":" $2,$3)) } /* in old kernel */
-  | TMetaInit
-      {let (nm,cstr,pure,clt) = $1 in
-      Ast0.wrap(Ast0.MetaInit(P.clt2mcode nm clt,cstr,pure)) }
-  | TMetaInitList
-      {let (nm,lenname,cstr,pure,clt) = $1 in
-      let nm = P.clt2mcode nm clt in
-      let lenname = P.dolen clt lenname in
-      Ast0.wrap(Ast0.MetaInitList(nm,lenname,cstr,pure)) }
+    { Ast0.wrap(Ast0.InitGccName($1,P.clt2mcode ":" $2,$3)) } /*in old kernel*/
+| TMetaInit
+    {let (nm,cstr,pure,clt) = $1 in
+    Ast0.wrap(Ast0.MetaInit(P.clt2mcode nm clt,cstr,pure)) }
+| TMetaInitList
+    {let (nm,lenname,cstr,pure,clt) = $1 in
+    let nm = P.clt2mcode nm clt in
+    let lenname = P.dolen clt lenname in
+    Ast0.wrap(Ast0.MetaInitList(nm,lenname,cstr,pure)) }
 
 designator:
  | TDot disj_ident
