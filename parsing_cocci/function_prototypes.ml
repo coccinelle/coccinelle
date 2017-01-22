@@ -159,10 +159,10 @@ and strip =
     donothing r k
       (Ast0.rewrap e
 	 (match Ast0.unwrap e with
-	   Ast0.MetaParam(nm,pure) ->
-	     Ast0.MetaParam(nm,Ast0.Pure)
-	 | Ast0.MetaParamList(nm,lenname,pure) ->
-	     Ast0.MetaParamList(nm,lenname,Ast0.Pure)
+	   Ast0.MetaParam(nm,cstr,pure) ->
+	     Ast0.MetaParam(nm,cstr,Ast0.Pure)
+	 | Ast0.MetaParamList(nm,lenname,cstr,pure) ->
+	     Ast0.MetaParamList(nm,lenname,cstr,Ast0.Pure)
 	 | e -> e)) in
 
   V0.flat_rebuilder
@@ -305,15 +305,17 @@ let rec rename_param old_name all param index =
       let new_id =
 	Ast0.rewrap param
 	  (Ast0.MetaParamList(Ast0.rewrap_mcode d nm,
-			      Ast0.MetaListLen (Ast0.rewrap_mcode d nml),
+			      Ast0.MetaListLen
+				(Ast0.rewrap_mcode d nml,Ast.CstrTrue),
+			      Ast.CstrTrue,
 			      Ast0.Pure)) in
       (* only add both new metavariable declarations for the function
 	 definition case.  For the prototype case the length
 	 should be inherited *)
       ((if not all
-      then [Ast.MetaParamListDecl(Ast.NONE,nm,Ast.MetaLen nml);
+      then [Ast.MetaParamListDecl(Ast.NONE,nm,Ast.MetaLen (nml,Ast.CstrTrue));
 	     Ast.MetaListlenDecl(nml)]
-      else [Ast.MetaParamListDecl(Ast.NONE,nm,Ast.MetaLen nml)]),
+      else [Ast.MetaParamListDecl(Ast.NONE,nm,Ast.MetaLen (nml,Ast.CstrTrue))]),
        new_id)
   | Ast0.OptParam(p) ->
       let (metavars,p) = rename_param old_name all p index in

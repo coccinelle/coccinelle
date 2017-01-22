@@ -21,12 +21,7 @@ let out_suffix = ".stdout"
 
 let flush_scripts_output () =
   flush stdout;
-  if Pycocci.py_isinitialized () then
-    let _ = Pycocci.pyrun_simplestring "\
-import sys
-sys.stdout.flush()
-" in
-    ()
+  Pycocci.flush_stdout_and_stderr ()
 
 let begin_redirect_output expected_out =
   let has_expected_out = Sys.file_exists expected_out in
@@ -65,6 +60,7 @@ let rec test_loop cocci_file cfiles =
 
 let test_with_output_redirected cocci_file cfiles expected_out =
   Iteration.initialization_stack := [];
+  Postprocess_transinfo.reset_fresh_counter ();
   let redirected_output = begin_redirect_output expected_out in
   let (cocci_infos, res) =
     try test_loop cocci_file cfiles

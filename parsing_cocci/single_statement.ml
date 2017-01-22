@@ -143,7 +143,7 @@ let rec left_expression e =
   | Ast0.Constructor(lp,ty,rp,init) -> modif_before_mcode lp
   | Ast0.MetaErr(name,_,_) -> modif_before_mcode name
   | Ast0.MetaExpr(name,_,ty,_,_) -> modif_before_mcode name
-  | Ast0.MetaExprList(name,_,_) -> modif_before_mcode name
+  | Ast0.MetaExprList(name,_,_,_) -> modif_before_mcode name
   | Ast0.EComma(cm) -> modif_before_mcode cm
   | Ast0.DisjExpr(_,exp_list,_,_) -> List.exists left_expression exp_list
   | Ast0.ConjExpr(_,exp_list,_,_) -> List.exists left_expression exp_list
@@ -185,8 +185,8 @@ and left_typeC t =
 and left_declaration d =
   modif_before d ||
   match Ast0.unwrap d with
-    Ast0.MetaDecl(name,_) | Ast0.MetaField(name,_)
-  | Ast0.MetaFieldList(name,_,_) ->
+    Ast0.MetaDecl(name,_,_) | Ast0.MetaField(name,_,_)
+  | Ast0.MetaFieldList(name,_,_,_) ->
       modif_before_mcode name
   | Ast0.Init(Some stg,ty,id,eq,ini,sem) -> modif_before_mcode stg
   | Ast0.Init(None,ty,id,eq,ini,sem) -> left_typeC ty
@@ -210,8 +210,8 @@ and left_declaration d =
 and right_declaration d =
   modif_before d ||
   match Ast0.unwrap d with
-    Ast0.MetaDecl(name,_) | Ast0.MetaField(name,_)
-  | Ast0.MetaFieldList(name,_,_) ->
+    Ast0.MetaDecl(name,_,_) | Ast0.MetaField(name,_,_)
+  | Ast0.MetaFieldList(name,_,_,_) ->
       modif_before_mcode name
   | Ast0.Init(_,ty,id,eq,ini,sem) -> modif_after_mcode sem
   | Ast0.UnInit(_,ty,id,sem) -> modif_after_mcode sem
@@ -595,8 +595,8 @@ let rec statement dots_before dots_after s =
   | Ast0.Return(ret,sem) -> do_one s
   | Ast0.ReturnExpr(ret,exp,sem) -> do_one s
   | Ast0.Exec(exec,lang,code,sem) -> do_one s
-  | Ast0.MetaStmt(name,_) -> do_one s
-  | Ast0.MetaStmtList(name,_,_) -> do_one s
+  | Ast0.MetaStmt(name,_,_) -> do_one s
+  | Ast0.MetaStmtList(name,_,_,_) -> do_one s
   | Ast0.Disj(starter,statement_dots_list,mids,ender) ->
       Ast0.rewrap s
 	(Ast0.Disj(starter,

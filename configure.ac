@@ -137,6 +137,7 @@ dnl  configured via AC_CHECK_COCCI_EXTPKG
 dnl  or AC_REQ_COCCI_EXTPKG
 AC_COCCI_INIT_PKG_EMPTY([dynlink])
 AC_COCCI_INIT_PKG_EMPTY([pcre])
+AC_COCCI_INIT_PKG_EMPTY([bytes]) dnl for recent versions of pcre on old OCaml
 AC_COCCI_INIT_PKG_EMPTY([pyml])
 AC_COCCI_INIT_PKG_EMPTY([parmap])
 
@@ -327,7 +328,26 @@ AS_IF([test "x$enable_pcre_syntax" != "xno"],
   ],
   [dnl
     AC_CHECK_COCCI_EXTPKG([pcre])  dnl  will set $enable_pcre to 'yes', 'no', or 'local'
-    enable_pcre_syntax=$enable_pcre
+    AS_IF([test "x$enable_pcre" == "xyes"],
+    [dnl
+      AC_MSG_CHECKING([if pcre depends on bytes])
+      AS_IF([test "x`$OCAMLFIND query -r -format '%p' pcre 2>/dev/null | grep bytes`" == "xbytes"],
+      [dnl
+        AC_MSG_RESULT([yes])
+        AC_MSG_CHECKING([if bytes is an actual module])
+        AS_IF([test -f "`$OCAMLFIND query bytes`/bytes.cma"],
+        [dnl
+          AC_MSG_RESULT([yes])
+          AC_CHECK_COCCI_EXTPKG([bytes])
+        ],
+        [dnl
+          AC_MSG_RESULT([no])
+        ])
+      ],
+      [dnl
+        AC_MSG_RESULT([no])
+      ])
+    ])
   ])
 ])
 

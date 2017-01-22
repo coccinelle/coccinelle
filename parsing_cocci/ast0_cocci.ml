@@ -85,9 +85,9 @@ and 'a dots = 'a list wrap
 
 and base_ident =
     Id            of string mcode
-  | MetaId        of Ast.meta_name mcode * Ast.general_constraint * Ast.seed * pure
-  | MetaFunc      of Ast.meta_name mcode * Ast.general_constraint * pure
-  | MetaLocalFunc of Ast.meta_name mcode * Ast.general_constraint * pure
+  | MetaId        of Ast.meta_name mcode * constraints * Ast.seed * pure
+  | MetaFunc      of Ast.meta_name mcode * constraints * pure
+  | MetaLocalFunc of Ast.meta_name mcode * constraints * pure
   | AsIdent       of ident * ident (* as ident, always metavar *)
   | DisjId        of string mcode * ident list *
                      string mcode list (* the |s *) * string mcode
@@ -133,7 +133,7 @@ and base_expression =
   | MetaExpr       of Ast.meta_name mcode * constraints *
 	              typeC list option * Ast.form * pure
   | MetaExprList   of Ast.meta_name mcode (* only in arg lists *) *
-	              listlen * pure
+	              listlen * constraints * pure
   | AsExpr         of expression * expression (* as expr, always metavar *)
   | AsSExpr        of expression * statement (* as expr, always metavar *)
   | EComma         of string mcode (* only in arg lists *)
@@ -152,14 +152,10 @@ and base_expression =
 
 and expression = base_expression wrap
 
-and constraints =
-    NoConstraint
-  | NotIdCstrt     of Ast.general_constraint
-  | NotExpCstrt    of expression list
-  | SubExpCstrt    of Ast.meta_name list
+and constraints = expression Ast.generic_constraints
 
 and listlen =
-    MetaListLen of Ast.meta_name mcode
+    MetaListLen of Ast.meta_name mcode * constraints
   | CstListLen of int
   | AnyListLen
 
@@ -167,13 +163,14 @@ and base_string_fragment =
     ConstantFragment of string mcode
   | FormatFragment of string mcode (*%*) * string_format (* format *)
   | Strdots of string mcode
-  | MetaFormatList of string mcode (*%*) * Ast.meta_name mcode * listlen
+  | MetaFormatList of string mcode (*%*) * Ast.meta_name mcode *
+	constraints * listlen
 
 and string_fragment = base_string_fragment wrap
 
 and base_string_format =
     ConstantFormat of string mcode
-  | MetaFormat of Ast.meta_name mcode * Ast.general_constraint
+  | MetaFormat of Ast.meta_name mcode * constraints
 
 and string_format = base_string_format wrap
 
@@ -182,14 +179,14 @@ and string_format = base_string_format wrap
 and base_assignOp =
     SimpleAssign of simpleAssignOp mcode
   | OpAssign of Ast_cocci.arithOp mcode
-  | MetaAssign of Ast_cocci.meta_name mcode * Ast.general_constraint * pure
+  | MetaAssign of Ast_cocci.meta_name mcode * constraints * pure
 and simpleAssignOp = string
 and assignOp = base_assignOp wrap
 
 and base_binaryOp =
     Arith of Ast_cocci.arithOp mcode
   | Logical of Ast_cocci.logicalOp mcode
-  | MetaBinary of Ast_cocci.meta_name mcode * Ast.general_constraint * pure
+  | MetaBinary of Ast_cocci.meta_name mcode * constraints * pure
 and binaryOp = base_binaryOp wrap
 
 (* --------------------------------------------------------------------- *)
@@ -216,7 +213,7 @@ and base_typeC =
   | StructUnionDef  of typeC (* either StructUnionName or metavar *) *
 	string mcode (* { *) * declaration dots * string mcode (* } *)
   | TypeName        of string mcode
-  | MetaType        of Ast.meta_name mcode * Ast.general_constraint * pure
+  | MetaType        of Ast.meta_name mcode * constraints * pure
   | AsType          of typeC * typeC (* as type, always metavar *)
   | DisjType        of string mcode * typeC list * (* only after iso *)
                        string mcode list (* the |s *)  * string mcode
@@ -230,12 +227,13 @@ and typeC = base_typeC wrap
    split out into multiple declarations of a single variable each. *)
 
 and base_declaration =
-    MetaDecl of Ast.meta_name mcode * pure (* variables *)
+    MetaDecl of Ast.meta_name mcode * constraints * pure (* variables *)
     (* the following are kept separate from MetaDecls because ultimately
        they don't match the same thing at all.  Consider whether there
        should be a separate type for fields, as in the C AST *)
-  | MetaField of Ast.meta_name mcode * pure (* structure fields *)
-  | MetaFieldList of Ast.meta_name mcode * listlen * pure (*structure fields*)
+  | MetaField of Ast.meta_name mcode * constraints * pure (* structure fields *)
+  | MetaFieldList of Ast.meta_name mcode * listlen * constraints *
+	pure (*structure fields*)
   | AsDecl        of declaration * declaration
   | Init of Ast.storage mcode option * typeC * ident * string mcode (*=*) *
 	initialiser * string mcode (*;*)
@@ -268,8 +266,8 @@ and declaration = base_declaration wrap
 (* Initializers *)
 
 and base_initialiser =
-    MetaInit of Ast.meta_name mcode * pure
-  | MetaInitList of Ast.meta_name mcode * listlen * pure
+    MetaInit of Ast.meta_name mcode * constraints * pure
+  | MetaInitList of Ast.meta_name mcode * listlen * constraints * pure
   | AsInit of initialiser * initialiser (* as init, always metavar *)
   | InitExpr of expression
   | InitList of string mcode (*{*) * initialiser_list * string mcode (*}*) *
@@ -302,8 +300,8 @@ and initialiser_list = initialiser dots
 and base_parameterTypeDef =
     VoidParam     of typeC
   | Param         of typeC * ident option
-  | MetaParam     of Ast.meta_name mcode * pure
-  | MetaParamList of Ast.meta_name mcode * listlen * pure
+  | MetaParam     of Ast.meta_name mcode * constraints * pure
+  | MetaParamList of Ast.meta_name mcode * listlen * constraints * pure
   | AsParam       of parameterTypeDef * expression (* expr, always metavar *)
   | PComma        of string mcode
   | Pdots         of string mcode (* ... *)
@@ -318,7 +316,7 @@ and parameter_list = parameterTypeDef dots
 
 and base_define_param =
     DParam        of ident
-  | MetaDParamList of Ast.meta_name mcode * listlen * pure
+  | MetaDParamList of Ast.meta_name mcode * listlen * constraints * pure
   | DPComma       of string mcode
   | DPdots        of string mcode (* ... *)
   | OptDParam     of define_param
@@ -374,9 +372,9 @@ and base_statement =
 	             string mcode (* ; *)
   | Exec          of string mcode (* EXEC *) * string mcode (* language *) *
 	             exec_code dots * string mcode (* ; *)
-  | MetaStmt      of Ast.meta_name mcode * pure
+  | MetaStmt      of Ast.meta_name mcode * constraints * pure
   | MetaStmtList  of Ast.meta_name mcode(*only in statement lists*) * listlen *
-	             pure
+	             constraints * pure
   | AsStmt        of statement * statement (* as statement, always metavar *)
   | Exp           of expression  (* only in dotted statement lists *)
   | TopExp        of expression (* for macros body *)
@@ -456,7 +454,7 @@ and exec_code = base_exec_code wrap
 (* Positions *)
 
 and meta_pos =
-    MetaPos of Ast.meta_name mcode * Ast.general_constraint *
+    MetaPos of Ast.meta_name mcode * constraints *
 	Ast.meta_collect
 
 (* --------------------------------------------------------------------- *)
@@ -658,7 +656,7 @@ let rec meta_pos_name = function
   | ExprTag(e) ->
       (match unwrap e with
 	MetaExpr(name,_constraints,_ty,_form,_pure) -> name
-      | MetaExprList(name,_len,_pure) -> name
+      | MetaExprList(name,_len,_constraints,_pure) -> name
       | _ -> failwith "bad metavariable")
   | TypeCTag(t) ->
       (match unwrap t with
@@ -666,15 +664,15 @@ let rec meta_pos_name = function
       | _ -> failwith "bad metavariable")
   | DeclTag(d) ->
       (match unwrap d with
-	MetaDecl(name,_pure) -> name
+	MetaDecl(name,_constraints,_pure) -> name
       | _ -> failwith "bad metavariable")
   | InitTag(i) ->
       (match unwrap i with
-	MetaInit(name,_pure) -> name
+	MetaInit(name,_constraints,_pure) -> name
       | _ -> failwith "bad metavariable")
   | StmtTag(s) ->
       (match unwrap s with
-	MetaStmt(name,_pure) -> name
+	MetaStmt(name,_constraints,_pure) -> name
       | _ -> failwith "bad metavariable")
   | _ -> failwith "bad metavariable"
 

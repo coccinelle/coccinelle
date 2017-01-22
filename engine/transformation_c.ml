@@ -56,6 +56,8 @@ module XTRANS = struct
 
   type ('a, 'b) matcher = 'a -> 'b  -> tin -> ('a * 'b) tout
 
+  let constraint_checker = ref (fun _ -> failwith "unbound constraint_checker")
+
   let (>>=) m f = fun tin ->
      match m tin with
      | None -> None
@@ -77,6 +79,11 @@ module XTRANS = struct
 
   let (>&&>) f m = fun tin ->
     if f tin then m tin else fail tin
+
+  let mnot f res = fun tin ->
+    match f tin with
+      None -> return res tin
+    | _ -> fail tin
 
   let optional_storage_flag f = fun tin ->
     f (tin.extra.optional_storage_iso) tin
@@ -246,10 +253,10 @@ module XTRANS = struct
       match Ast_cocci.unwrap e with
 	Ast_cocci.MetaErr(name,constraints,u,i) ->
 	  Ast_cocci.rewrap e
-	    (Ast_cocci.MetaErr(name,Ast_cocci.NoConstraint,u,i))
+	    (Ast_cocci.MetaErr(name,Ast_cocci.CstrTrue,u,i))
       | Ast_cocci.MetaExpr(name,constraints,u,ty,form,i) ->
           Ast_cocci.rewrap e
-	    (Ast_cocci.MetaExpr(name,Ast_cocci.NoConstraint,u,ty,form,i))
+	    (Ast_cocci.MetaExpr(name,Ast_cocci.CstrTrue,u,ty,form,i))
       | _ -> e in
     let fn = Visitor_ast.rebuilder
 	mcode mcode mcode mcode mcode mcode mcode mcode mcode

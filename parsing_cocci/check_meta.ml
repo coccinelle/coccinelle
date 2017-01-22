@@ -185,10 +185,10 @@ let rec expression context old_metas table minus e =
       check_table table minus name
   | Ast0.MetaExpr(name,_,_,_,_) | Ast0.MetaErr(name,_,_) ->
       check_table table minus name
-  | Ast0.MetaExprList(name,Ast0.MetaListLen lenname,_) ->
+  | Ast0.MetaExprList(name,Ast0.MetaListLen (lenname,_),_,_) ->
       check_table table minus name;
       check_table table minus lenname
-  | Ast0.MetaExprList(name,_,_) ->
+  | Ast0.MetaExprList(name,_,_,_) ->
       check_table table minus name
   | Ast0.AsExpr(exp,asexp) -> failwith "not generated yet"
   | Ast0.AsSExpr(exp,asstm) -> failwith "not generated yet"
@@ -246,12 +246,12 @@ and typeC old_metas table minus t =
 
 and declaration context old_metas table minus d =
   match Ast0.unwrap d with
-    Ast0.MetaDecl(name,_) | Ast0.MetaField(name,_) ->
+    Ast0.MetaDecl(name,_,_) | Ast0.MetaField(name,_,_) ->
       check_table table minus name
-  | Ast0.MetaFieldList(name,Ast0.MetaListLen lenname,_) ->
+  | Ast0.MetaFieldList(name,Ast0.MetaListLen (lenname,_),_,_) ->
       check_table table minus name;
       check_table table minus lenname
-  | Ast0.MetaFieldList(name,_,_) ->
+  | Ast0.MetaFieldList(name,_,_,_) ->
       check_table table minus name
   | Ast0.AsDecl(decl,asdecl) -> failwith "not generated yet"
   | Ast0.Init(stg,ty,id,eq,ini,sem) ->
@@ -298,12 +298,12 @@ and declaration context old_metas table minus d =
 
 and initialiser old_metas table minus ini =
   match Ast0.unwrap ini with
-    Ast0.MetaInit(name,_) ->
+    Ast0.MetaInit(name,_,_) ->
       check_table table minus name
-  | Ast0.MetaInitList(name,Ast0.MetaListLen lenname,_) ->
+  | Ast0.MetaInitList(name,Ast0.MetaListLen (lenname,_),_,_) ->
       check_table table minus name;
       check_table table minus lenname
-  | Ast0.MetaInitList(name,_,_) ->
+  | Ast0.MetaInitList(name,_,_,_) ->
       check_table table minus name
   | Ast0.AsInit(ini,asini) -> failwith "not generated yet"
   | Ast0.InitExpr(exp) -> expression ID old_metas table minus exp
@@ -340,12 +340,12 @@ and parameterTypeDef old_metas table minus param =
     Ast0.Param(ty,id) ->
       get_opt (ident ID old_metas table minus) id;
       typeC old_metas table minus ty
-  | Ast0.MetaParam(name,_) ->
+  | Ast0.MetaParam(name,_,_) ->
       check_table table minus name
-  | Ast0.MetaParamList(name,Ast0.MetaListLen lenname,_) ->
+  | Ast0.MetaParamList(name,Ast0.MetaListLen (lenname,_),_,_) ->
       check_table table minus name;
       check_table table minus lenname
-  | Ast0.MetaParamList(name,_,_) ->
+  | Ast0.MetaParamList(name,_,_,_) ->
       check_table table minus name
   | _ -> () (* no metavariable subterms *)
 
@@ -361,10 +361,10 @@ and string_fragment old_metas table minus e =
   | Ast0.FormatFragment(pct,fmt) ->
       string_format old_metas table minus fmt
   | Ast0.Strdots dots -> ()
-  | Ast0.MetaFormatList(pct,name,Ast0.MetaListLen lenname) ->
+  | Ast0.MetaFormatList(pct,name,_,Ast0.MetaListLen (lenname,_)) ->
       check_table table minus name;
       check_table table minus lenname
-  | Ast0.MetaFormatList(pct,name,lenname) ->
+  | Ast0.MetaFormatList(pct,name,_,lenname) ->
       check_table table minus name
 
 and string_format old_metas table minus e =
@@ -415,11 +415,11 @@ and statement old_metas table minus s =
   | Ast0.ReturnExpr(ret,exp,sem) -> expression ID old_metas table minus exp
   | Ast0.Exec(exec,lang,code,sem) ->
       dots (exec_code ID old_metas table minus) code
-  | Ast0.MetaStmt(name,_) ->     check_table table minus name
-  | Ast0.MetaStmtList(name,Ast0.MetaListLen lenname,_) ->
+  | Ast0.MetaStmt(name,_,_) ->     check_table table minus name
+  | Ast0.MetaStmtList(name,Ast0.MetaListLen (lenname,_),_,_) ->
       check_table table minus name;
       check_table table minus lenname
-  | Ast0.MetaStmtList(name,_,_) -> check_table table minus name
+  | Ast0.MetaStmtList(name,_,_,_) -> check_table table minus name
   | Ast0.AsStmt(stm,asstm) -> failwith "not generated yet"
   | Ast0.Exp(exp) -> expression ID old_metas table minus exp
   | Ast0.TopExp(exp) -> expression ID old_metas table minus exp
@@ -469,10 +469,10 @@ and pragmainfo old_metas table minus pi =
 and define_param old_metas table minus p =
   match Ast0.unwrap p with
     Ast0.DParam(id) -> ident GLOBAL old_metas table minus id
-  | Ast0.MetaDParamList(name,Ast0.MetaListLen lenname,_) ->
+  | Ast0.MetaDParamList(name,Ast0.MetaListLen (lenname,_),_,_) ->
       check_table table minus name;
       check_table table minus lenname
-  | Ast0.MetaDParamList(name,_,_) ->
+  | Ast0.MetaDParamList(name,_,_,_) ->
       check_table table minus name
   | Ast0.DPComma(_) | Ast0.DPdots(_) ->
       () (* no metavariable subterms *)

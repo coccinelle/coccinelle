@@ -2053,7 +2053,8 @@ let pre_engine2 (coccifile, isofile) =
     List.fold_left
       (function languages ->
 	 function
-	     ScriptRuleCocciInfo r ->
+	     ScriptRuleCocciInfo r
+	   | FinalScriptRuleCocciInfo r ->
 	       Common.StringSet.add r.language languages
 	   | CocciRuleCocciInfo r ->
 	       Common.StringSet.union r.constraint_languages languages
@@ -2087,8 +2088,6 @@ let pre_engine2 (coccifile, isofile) =
 	      if interpret_dependencies [] [] r.scr_rule_info.dependencies
 	      then
 		begin
-		  (if Common.StringSet.mem rlang languages
-		  then failwith ("double initializer found for "^rlang));
 		  runrule r;
 		  Common.StringSet.add rlang languages
 		end
@@ -2216,39 +2215,35 @@ let post_engine2 (cocci_infos, _, _, (python_merge_names, _)) merges =
   Array.iteri (fun index variable ->
     let list = List.map (fun array -> array.(index)) python_merges in
     Pycocci.unpickle_variable variable list) python_merge_names;
-  List.iter
-    (function ((language,_),(virt_rules,virt_env)) ->
-      Flag.defined_virtual_rules := virt_rules;
-      Flag.defined_virtual_env := virt_env;
-      let _ =
+  let _ =
+    List.fold_left
+      (fun executed_rules ((language,_),(virt_rules,virt_env)) ->
+	Flag.defined_virtual_rules := virt_rules;
+	Flag.defined_virtual_env := virt_env;
 	List.fold_left
-	  (function languages ->
-	    function
-		FinalScriptRuleCocciInfo(r) ->
-		  (if r.language = language && List.mem r.language languages
-		  then failwith ("double finalizer found for "^r.language));
-		  initial_final_bigloop Final
-		    (fun (x,mvs,_,y) -> fun deps ->
-		      Ast_cocci.FinalScriptRule(r.scr_rule_info.rulename,
-						x,deps,mvs,y))
-		    r;
-		  r.language::languages
-	      | _ -> languages)
-	  [] cocci_infos in
-      ())
-    !Iteration.initialization_stack
+	  (function executed_rules -> function
+	      FinalScriptRuleCocciInfo(r) ->
+		let rlang = r.language in
+		let rname = r.scr_rule_info.rulename in
+		if List.mem (rlang, rname) executed_rules then
+		  executed_rules
+		else
+		  begin
+		    initial_final_bigloop Final
+		      (fun (x,mvs,_,y) -> fun deps ->
+			Ast_cocci.FinalScriptRule(r.scr_rule_info.rulename,
+						  x,deps,mvs,y))
+		      r;
+		    (rlang, rname) :: executed_rules
+		  end
+	    | _ -> executed_rules)
+	  executed_rules cocci_infos)
+      []
+      !Iteration.initialization_stack in
+  ()
 
 let post_engine a b =
   Common.profile_code "post_engine" (fun () -> post_engine2 a b)
-
-let has_finalize (cocci_infos,_,_,_) =
-  List.exists
-    (function
-      | FinalScriptRuleCocciInfo _ -> true
-      | ScriptRuleCocciInfo _
-      | InitialScriptRuleCocciInfo _
-      | CocciRuleCocciInfo _ -> false)
-    cocci_infos
 
 (*****************************************************************************)
 (* check duplicate from result of full_engine *)

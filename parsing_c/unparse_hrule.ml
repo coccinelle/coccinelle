@@ -113,7 +113,7 @@ let get_function_name rule env =
 	(match Ast.unwrap args with
 	  [e] ->
 	    (match Ast.unwrap e with
-	      Ast.MetaExprList(nm,_,_,_) ->
+	      Ast.MetaExprList(nm,_,_,_,_) ->
 		(match (Ast.unwrap_mcode nm,Ast.get_mcodekind nm) with
 		  ((_,"ARGS"), Ast.PLUS _) ->
 		    (match Ast.unwrap fn with
@@ -349,7 +349,7 @@ let pp_len pr len =
   let pp_name (_,n) = pr n in
   match len with
     Ast.AnyLen -> ()
-  | Ast.MetaLen len -> pr "["; pp_name len; pr "]"
+  | Ast.MetaLen (len,_) -> pr "["; pp_name len; pr "]"
   | Ast.CstLen len -> pr "["; pr (string_of_int len); pr "]"
 
 let pp_meta_decl pr env decl =

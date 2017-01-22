@@ -105,46 +105,46 @@ let coerce_tmeta newty name builder matcher =
 	   (print_meta name) newty));
     Hashtbl.add meta_metatable name builder
 
-let tmeta_to_type (name,pure,clt) =
-  (coerce_tmeta "a type" name (TMetaType(name,Ast.CstrTrue,pure,clt))
+let tmeta_to_type (name,cstr,pure,clt) =
+  (coerce_tmeta "a type" name (TMetaType(name,cstr,pure,clt))
      (function TMetaType(_,_,_,_) -> true | _ -> false));
-  Ast0.wrap(Ast0.MetaType(P.clt2mcode name clt,Ast.CstrTrue,pure))
+  Ast0.wrap(Ast0.MetaType(P.clt2mcode name clt,cstr,pure))
 
-let tmeta_to_field (name,pure,clt) =
-  (coerce_tmeta "a field" name (TMetaField(name,pure,clt))
-     (function TMetaField(_,_,_) -> true | _ -> false));
-  P.meta_field (name,pure,clt)
+let tmeta_to_field (name,cstr,pure,clt) =
+  (coerce_tmeta "a field" name (TMetaField(name,cstr,pure,clt))
+     (function TMetaField(_,_,_,_) -> true | _ -> false));
+  P.meta_field (name,cstr,pure,clt)
 
-let tmeta_to_exp (name,pure,clt) =
+let tmeta_to_exp (name,cstr,pure,clt) =
   (coerce_tmeta "an expression" name
-     (TMetaExp(name,Ast0.NoConstraint,pure,None,clt))
+     (TMetaExp(name,cstr,pure,None,clt))
      (function TMetaExp(_,_,_,_,_) -> true | _ -> false));
   Ast0.wrap
-    (Ast0.MetaExpr(P.clt2mcode name clt,Ast0.NoConstraint,None,Ast.ANY,pure))
+    (Ast0.MetaExpr(P.clt2mcode name clt,cstr,None,Ast.ANY,pure))
 
-let tmeta_to_param (name,pure,clt) =
-  (coerce_tmeta "a parameter" name (TMetaParam(name,pure,clt))
-     (function TMetaParam(_,_,_) -> true | _ -> false));
-  Ast0.wrap(Ast0.MetaParam(P.clt2mcode name clt,pure))
+let tmeta_to_param (name,cstr,pure,clt) =
+  (coerce_tmeta "a parameter" name (TMetaParam(name,cstr,pure,clt))
+     (function TMetaParam(_,_,_,_) -> true | _ -> false));
+  Ast0.wrap(Ast0.MetaParam(P.clt2mcode name clt,cstr,pure))
 
-let tmeta_to_assignOp (name,pure,clt) =
+let tmeta_to_assignOp (name,cstr,pure,clt) =
   (coerce_tmeta "an assignment operator" name
-     (TMetaAssignOp(name,Ast.CstrTrue,pure,clt))
+     (TMetaAssignOp(name,cstr,pure,clt))
      (function TMetaAssignOp(_,_,_,_) -> true | _ -> false));
   Ast0.wrap
-    (Ast0.MetaAssign(P.clt2mcode name clt,Ast.CstrTrue, pure))
+    (Ast0.MetaAssign(P.clt2mcode name clt,cstr, pure))
 
-let tmeta_to_binaryOp (name,pure,clt) =
+let tmeta_to_binaryOp (name,cstr,pure,clt) =
   (coerce_tmeta "a binary operator" name
-     (TMetaBinaryOp(name,Ast.CstrTrue,pure,clt))
+     (TMetaBinaryOp(name,cstr,pure,clt))
      (function TMetaBinaryOp(_,_,_,_) -> true | _ -> false));
   Ast0.wrap
-    (Ast0.MetaBinary(P.clt2mcode name clt,Ast.CstrTrue, pure),clt)
+    (Ast0.MetaBinary(P.clt2mcode name clt,cstr, pure),clt)
 
-let tmeta_to_statement (name,pure,clt) =
-  (coerce_tmeta "a statement" name (TMetaType(name,Ast.CstrTrue,pure,clt))
+let tmeta_to_statement (name,cstr,pure,clt) =
+  (coerce_tmeta "a statement" name (TMetaType(name,cstr,pure,clt))
      (function TMetaType(_,_,_,_) -> true | _ -> false));
-  P.meta_stm (name,pure,clt)
+  P.meta_stm (name,cstr,pure,clt)
 
 let tmeta_to_seed_id (name,pure,clt) =
   (coerce_tmeta "an identifier" name
@@ -152,11 +152,11 @@ let tmeta_to_seed_id (name,pure,clt) =
      (function TMetaId(_,_,_,_,_) -> true | _ -> false));
   Ast.SeedId name
 
-let tmeta_to_ident (name,pure,clt) =
+let tmeta_to_ident (name,cstr,pure,clt) =
   (coerce_tmeta "an identifier" name
-     (TMetaId(name,Ast.CstrTrue,Ast.NoVal,pure,clt))
+     (TMetaId(name,cstr,Ast.NoVal,pure,clt))
      (function TMetaId(_,_,_,_,_) -> true | _ -> false));
-  Ast0.wrap(Ast0.MetaId(P.clt2mcode name clt,Ast.CstrTrue,Ast.NoVal,pure))
+  Ast0.wrap(Ast0.MetaId(P.clt2mcode name clt,cstr,Ast.NoVal,pure))
 
 and  arithOp = function
     Ast.Plus -> "+"
@@ -190,18 +190,15 @@ let mklogop (op,clt) =
   let op' = P.clt2mcode op clt in
   Ast0.wrap (Ast0.Logical op')
 
-let constraint_of_binary_operator binary_operator =
-  match Ast0.unwrap binary_operator with
-    Ast0.Arith op ->
-      Ast.CstrString (Ast.string_of_arithOp (Ast0.unwrap_mcode op))
-  | Ast0.Logical op ->
-      Ast.CstrString (Ast.string_of_logicalOp (Ast0.unwrap_mcode op))
-  | Ast0.MetaBinary _ ->
-      failwith "constraint_of_binary_operator: not implemented"
-
 let unknown_type = Ast0.wrap (Ast0.BaseType (Ast.Unknown, []))
 
 let constraint_code_counter = ref 0
+
+let check_constraint_allowed () =
+  if !Data.in_iso then
+    failwith "constraints not allowed in iso file";
+  if !Data.in_generating then
+    failwith "constraints not allowed in a generated rule file"
 %}
 
 %token EOF
@@ -234,13 +231,13 @@ let constraint_code_counter = ref 0
 %token <Ast_cocci.added_string * Data.clt> TDirective
 
 %token <Parse_aux.midinfo>       TMetaId
-%token <Parse_aux.idinfo>        TMetaFunc TMetaLocalFunc
-%token <Parse_aux.idinfo>        TMetaIterator TMetaDeclarer
+%token <Parse_aux.cstrinfo>        TMetaFunc TMetaLocalFunc
+%token <Parse_aux.cstrinfo>        TMetaIterator TMetaDeclarer
 %token <Parse_aux.assignOpinfo>  TMetaAssignOp TMetaType
 %token <Parse_aux.binaryOpinfo>  TMetaBinaryOp
 %token <Parse_aux.expinfo>       TMetaErr
-%token <Parse_aux.info>          TMetaParam TMetaStm
-%token <Parse_aux.info>          TMetaInit TMetaDecl TMetaField TMeta
+%token <Parse_aux.cstrinfo>          TMetaParam TMetaStm
+%token <Parse_aux.cstrinfo>          TMetaInit TMetaDecl TMetaField TMeta
 %token <Parse_aux.list_info>     TMetaParamList TMetaExpList TMetaInitList
 %token <Parse_aux.list_info>     TMetaFieldList TMetaStmList TMetaDParamList
 %token <Parse_aux.typed_expinfo> TMetaExp TMetaIdExp TMetaLocalIdExp
@@ -311,6 +308,7 @@ let constraint_code_counter = ref 0
 %left TShLOp TShROp /* TShl TShr */
 %left TPlus TMinus TMetaBinaryOp
 %left TMul TDmOp /* TDiv TMod TMin TMax */
+%nonassoc TBang
 
 /*
 %start reinit
@@ -366,6 +364,8 @@ rule_name
 
 %start never_used
 %type <unit> never_used
+
+%type <'a * Ast0.constraints> pure_ident_or_meta_ident_with_constraints
 
 %%
 
@@ -479,9 +479,9 @@ incl:
       Data.Virt(names) }
 
 metadec:
-  ar=arity ispure=pure
-  kindfn=metakind ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
-    { P.create_metadec ar ispure kindfn ids }
+  ar=arity ispure=pure kindfn=metakind
+  ids=comma_list(pure_ident_or_meta_ident_with_constraints) TMPtVirg
+    { P.create_metadec_with_constraints ar ispure kindfn ids }
 | ar=arity ispure=pure
   kind_ids=metakindnosym TMPtVirg
     { let (ids,kindfn) = kind_ids in P.create_metadec ar ispure kindfn ids }
@@ -491,33 +491,17 @@ metadec:
 | ar=arity ispure=pure
   kindfn=metakind_atomic_maybe_virt
   ids=
-  comma_list(pure_ident_or_meta_ident_with_idconstraint_virt(re_or_not_eqid))
+  comma_list(pure_ident_or_meta_ident_with_constraints_virt)
     TMPtVirg
     { let (normal,virt) = Common.partition_either (fun x -> x) ids in
     let (idfn,virtfn) = kindfn in
     function cr ->
       (P.create_metadec_with_constraints ar ispure idfn normal cr) @
       (P.create_metadec_virt ar ispure virtfn virt cr) }
-| ar=arity ispure=pure
-  kindfn=metakind_atomic
-  ids=comma_list(pure_ident_or_meta_ident_with_idconstraint(re_or_not_eqid))
-    TMPtVirg
-    { P.create_metadec_with_constraints ar ispure kindfn ids }
-| ar=arity ispure=pure
-  kindfn=metakind_atomic_expi
-  ids=comma_list(pure_ident_or_meta_ident_with_econstraint(re_or_not_eqe_or_sub))
-    TMPtVirg
-    { P.create_metadec_with_constraints ar ispure kindfn ids }
-| ar=arity ispure=pure
-  kindfn=metakind_atomic_expe
-  ids=comma_list(pure_ident_or_meta_ident_with_econstraint(not_ceq_or_sub))
-    TMPtVirg
-    { P.create_metadec_with_constraints ar ispure kindfn ids }
 | ar=arity TPosition a=option(TPosAny)
     ids=
     comma_list
-    (pure_ident_or_meta_ident_with_x_eq
-       (separated_list(TAndLog,pos_constraint)))
+    (pure_ident_or_meta_ident_with_constraints)
     TMPtVirg
     (* pb: position variables can't be inherited from normal rules, and then
        there is no way to inherit from a generated rule, so there is no point
@@ -525,58 +509,56 @@ metadec:
     { (if !Data.in_generating
       then failwith "position variables not allowed in a generated rule file");
       let kindfn arity name pure check_meta constraints =
-	let constraints =
-	  Common.map_index (fun c index -> c name index) constraints in
 	let tok = check_meta(Ast.MetaPosDecl(arity,name)) in
 	let any = match a with None -> Ast.PER | Some _ -> Ast.ALL in
-	!Data.add_pos_meta name (Ast.CstrAnd constraints) any; tok in
+	!Data.add_pos_meta name constraints any; tok in
     P.create_metadec_with_constraints ar false kindfn ids }
 | ar=arity ispure=pure
     TParameter Tlist TOCro len=list_len TCCro
-    ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
+    ids=comma_list(pure_ident_or_meta_ident_with_constraints) TMPtVirg
     { P.create_len_metadec ar ispure
-	(fun lenname arity name pure check_meta ->
+	(fun lenname arity name pure check_meta cstr ->
 	  let tok = check_meta(Ast.MetaParamListDecl(arity,name,lenname)) in
-	  !Data.add_paramlist_meta name lenname pure; tok)
+	  !Data.add_paramlist_meta name lenname cstr pure; tok)
 	len ids }
 | ar=arity ispure=pure
     TExpression Tlist TOCro len=list_len TCCro
-    ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
+    ids=comma_list(pure_ident_or_meta_ident_with_constraints) TMPtVirg
     { P.create_len_metadec ar ispure
-	(fun lenname arity name pure check_meta ->
+	(fun lenname arity name pure check_meta cstr ->
 	  let tok = check_meta(Ast.MetaExpListDecl(arity,name,lenname)) in
-	  !Data.add_explist_meta name lenname pure; tok)
+	  !Data.add_explist_meta name lenname cstr pure; tok)
 	len ids }
 | ar=arity ispure=pure
     TField Tlist TOCro len=list_len TCCro
-    ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
+    ids=comma_list(pure_ident_or_meta_ident_with_constraints) TMPtVirg
     { P.create_len_metadec ar ispure
-	(fun lenname arity name pure check_meta ->
+	(fun lenname arity name pure check_meta cstr ->
 	  let tok = check_meta(Ast.MetaFieldListDecl(arity,name,lenname)) in
-	  !Data.add_field_list_meta name lenname pure; tok)
+	  !Data.add_field_list_meta name lenname cstr pure; tok)
 	len ids }
 | ar=arity ispure=pure
     TInitialiser Tlist TOCro len=list_len TCCro
-    ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
+    ids=comma_list(pure_ident_or_meta_ident_with_constraints) TMPtVirg
     { P.create_len_metadec ar ispure
-	(fun lenname arity name pure check_meta ->
+	(fun lenname arity name pure check_meta cstr ->
 	  let tok = check_meta(Ast.MetaInitListDecl(arity,name,lenname)) in
-	  !Data.add_initlist_meta name lenname pure; tok)
+	  !Data.add_initlist_meta name lenname cstr pure; tok)
 	len ids }
 | ar=arity ispure=pure
     TIdentifier Tlist TOCro len=list_len TCCro
-    ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
+    ids=comma_list(pure_ident_or_meta_ident_with_constraints) TMPtVirg
     { P.create_len_metadec ar ispure
-	(fun lenname arity name pure check_meta ->
+	(fun lenname arity name pure check_meta cstr ->
 	  let tok = check_meta(Ast.MetaDParamListDecl(arity,name,lenname)) in
-	  !Data.add_dparamlist_meta name lenname pure; tok)
+	  !Data.add_dparamlist_meta name lenname cstr pure; tok)
 	len ids }
 | ar=arity ispure=pure TStatement Tlist TOCro len=list_len TCCro
-    ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
+    ids=comma_list(pure_ident_or_meta_ident_with_constraints) TMPtVirg
     { P.create_len_metadec ar ispure
-	(fun lenname arity name pure check_meta ->
+	(fun lenname arity name pure check_meta cstr ->
 	  let tok = check_meta(Ast.MetaStmListDecl(arity,name,lenname)) in
-	  !Data.add_stmlist_meta name lenname pure; tok)
+	  !Data.add_stmlist_meta name lenname cstr pure; tok)
 	len ids }
 | TSymbol ids=comma_list(pure_ident_or_symbol) TMPtVirg
     { (fun _ ->
@@ -584,7 +566,7 @@ metadec:
           List.iter add_sym ids; [])
     }
 | ar=arity TFormat
-    ids=comma_list(pure_ident_or_meta_ident_with_idconstraint(re_only))
+    ids=comma_list(pure_ident_or_meta_ident_with_constraints)
     TMPtVirg
     { P.create_metadec_with_constraints ar Ast0.Impure
 	(fun arity name pure check_meta constraints ->
@@ -592,30 +574,30 @@ metadec:
 	  !Data.add_fmt_meta name constraints; tok)
     ids }
 | ar=arity TFormat Tlist
-    ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
-    { P.create_metadec ar Ast0.Impure
-	(fun arity name pure check_meta ->
+    ids=comma_list(pure_ident_or_meta_ident_with_constraints) TMPtVirg
+    { P.create_metadec_with_constraints ar Ast0.Impure
+	(fun arity name pure check_meta cstr ->
 	  let len = Ast.AnyLen in
 	  let tok = check_meta(Ast.MetaFragListDecl(arity,name,len)) in
-	  !Data.add_fmtlist_meta name len; tok)
+	  !Data.add_fmtlist_meta name cstr len; tok)
 	ids }
 | ar=arity
     TFormat Tlist TOCro len=list_len TCCro
-    ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
+    ids=comma_list(pure_ident_or_meta_ident_with_constraints) TMPtVirg
     { P.create_len_metadec ar Ast0.Impure
-	(fun lenname arity name pure check_meta ->
+	(fun lenname arity name pure check_meta cstr ->
 	  let tok = check_meta(Ast.MetaFragListDecl(arity,name,lenname)) in
-	  !Data.add_fmtlist_meta name lenname; tok)
+	  !Data.add_fmtlist_meta name cstr lenname; tok)
 	len ids }
 | ar=arity TBinary TOperator
-    ids=comma_list(pure_ident_or_meta_ident_with_binop_constraint) TMPtVirg
+    ids=comma_list(pure_ident_or_meta_ident_with_constraints) TMPtVirg
     { P.create_metadec_with_constraints ar Ast0.Impure
 	(fun arity name pure check_meta constraints ->
 	  let tok = check_meta(Ast.MetaBinaryOperatorDecl(arity,name)) in
 	  !Data.add_binaryOp_meta name constraints pure; tok)
         ids }
 | ar=arity TAssignment TOperator
-    ids=comma_list(pure_ident_or_meta_ident_with_assignop_constraint)
+    ids=comma_list(pure_ident_or_meta_ident_with_constraints)
     TMPtVirg
     { P.create_metadec_with_constraints ar Ast0.Impure
 	(fun arity name pure check_meta constraints ->
@@ -623,51 +605,8 @@ metadec:
 	  !Data.add_assignOp_meta name constraints pure; tok)
         ids }
 
-pure_ident_or_meta_ident_with_binop_constraint:
-    i=pure_ident_or_meta_ident c=binaryopconstraint { (i,c) }
-
-binaryopconstraint:
-  { Ast.CstrTrue }
-| TEq TOBrace ops=comma_list(binary_operator) TCBrace
-  { Ast.CstrOr (List.map constraint_of_binary_operator ops) }
-| TEq op=binary_operator
-  { constraint_of_binary_operator op }
-
-pure_ident_or_meta_ident_with_assignop_constraint:
-    i=pure_ident_or_meta_ident c=assignopconstraint { (i,c) }
-
-assignopconstraint:
-  { Ast.CstrTrue }
-| TEq TOBrace ops=comma_list(assignment_operator) TCBrace
-  { Ast.CstrOr ops }
-| TEq op=assignment_operator
-  { op }
-
-binary_operator:
-| TShLOp { mkarithop $1 } (* Ast.Arith Ast.DecLeft *)
-| TMul { mkarithop (Ast.Mul,$1) }
-| TEqEq { mklogop (Ast.Eq,$1) }
-| TNotEq { mklogop (Ast.NotEq,$1) }
-| TSub { mklogop (Ast.InfEq,$1) }
-| TPlus { mkarithop (Ast.Plus,$1) }
-| TMinus { mkarithop (Ast.Minus,$1) }
-| TDmOp { mkarithop $1 }
-| TShROp { mkarithop $1 }
-| TAnd { mkarithop (Ast.And,$1) }
-| TOr { mkarithop (Ast.Or,$1) }
-| TXor { mkarithop (Ast.Xor,$1) }
-| TLogOp { mklogop $1 }
-| TAndLog { mklogop (Ast.AndLog,$1) }
-| TOrLog { mklogop (Ast.OrLog,$1) }
-
-assignment_operator:
-| TEq
-  { Ast.CstrString "=" }
-| TOpAssign
-  { Ast.CstrString (Ast.string_of_arithOp (fst $1) ^ "=") }
-
 list_len:
-  pure_ident_or_meta_ident { Common.Left $1 }
+  pure_ident_or_meta_ident_with_constraints { Common.Left $1 }
 | TInt { let (x,clt) = $1 in Common.Right (int_of_string x) }
 | TVirtual TDot pure_ident
     { let nm = ("virtual",P.id2name $3) in
@@ -677,9 +616,9 @@ list_len:
     try
     Common.Right (int_of_string
 		    (List.assoc (snd nm) !Flag.defined_virtual_env))
-    with Not_found | Failure "int_of_string" ->
+    with Not_found | Failure _ ->
       begin
-	Common.Left (Some "virtual",P.id2name $3)
+	Common.Left ((Some "virtual",P.id2name $3),Ast.CstrTrue)
       end
     }
 
@@ -693,110 +632,64 @@ list_len:
 /* metavariable kinds with no constraints, etc */
 %inline metakind:
   TMetavariable
-    { (fun arity name pure check_meta ->
+    { (fun arity name pure check_meta constraints ->
       let tok = check_meta(Ast.MetaMetaDecl(arity,name)) in
-      !Data.add_meta_meta name pure; tok) }
+      !Data.add_meta_meta name constraints pure; tok) }
 | TParameter
-    { (fun arity name pure check_meta ->
+    { (fun arity name pure check_meta constraints ->
       let tok = check_meta(Ast.MetaParamDecl(arity,name)) in
-      !Data.add_param_meta name pure; tok) }
+      !Data.add_param_meta name constraints pure; tok) }
 | TParameter Tlist
-    { (fun arity name pure check_meta ->
+    { (fun arity name pure check_meta constraints ->
       let len = Ast.AnyLen in
       let tok = check_meta(Ast.MetaParamListDecl(arity,name,len)) in
-      !Data.add_paramlist_meta name len pure; tok) }
+      !Data.add_paramlist_meta name len constraints pure; tok) }
 | TExpression Tlist
-    { (fun arity name pure check_meta ->
+    { (fun arity name pure check_meta constraints ->
       let len = Ast.AnyLen in
       let tok = check_meta(Ast.MetaExpListDecl(arity,name,len)) in
-      !Data.add_explist_meta name len pure; tok) }
+      !Data.add_explist_meta name len constraints pure; tok) }
 /* | TType
-    { (fun arity name pure check_meta ->
+    { (fun arity name pure check_meta constraints ->
       let tok = check_meta(Ast.MetaTypeDecl(arity,name)) in
-      !Data.add_type_meta name pure; tok) } */
+      !Data.add_type_meta name constraints pure; tok) } */
 | TInitialiser
-    { (fun arity name pure check_meta ->
+    { (fun arity name pure check_meta constraints ->
       let tok = check_meta(Ast.MetaInitDecl(arity,name)) in
-      !Data.add_init_meta name pure; tok) }
+      !Data.add_init_meta name constraints pure; tok) }
 | TInitialiser Tlist
-    { (fun arity name pure check_meta ->
+    { (fun arity name pure check_meta constraints ->
       let len = Ast.AnyLen in
       let tok = check_meta(Ast.MetaInitListDecl(arity,name,len)) in
-      !Data.add_initlist_meta name len pure; tok) }
+      !Data.add_initlist_meta name len constraints pure; tok) }
 | TStatement
-    { (fun arity name pure check_meta ->
+    { (fun arity name pure check_meta constraints ->
       let tok = check_meta(Ast.MetaStmDecl(arity,name)) in
-      !Data.add_stm_meta name pure; tok) }
+      !Data.add_stm_meta name constraints pure; tok) }
 | TDeclaration
-    { (fun arity name pure check_meta ->
+    { (fun arity name pure check_meta constraints ->
       let tok = check_meta(Ast.MetaDeclDecl(arity,name)) in
-      !Data.add_decl_meta name pure; tok) }
+      !Data.add_decl_meta name constraints pure; tok) }
 | TField
-    { (fun arity name pure check_meta ->
+    { (fun arity name pure check_meta constraints ->
       let tok = check_meta(Ast.MetaFieldDecl(arity,name)) in
-      !Data.add_field_meta name pure; tok) }
+      !Data.add_field_meta name constraints pure; tok) }
 | TField Tlist
-    { (fun arity name pure check_meta ->
+    { (fun arity name pure check_meta constraints ->
       let len = Ast.AnyLen in
       let tok = check_meta(Ast.MetaFieldListDecl(arity,name,len)) in
-      !Data.add_field_list_meta name len pure; tok) }
+      !Data.add_field_list_meta name len constraints pure; tok) }
 | TStatement Tlist
-    { (fun arity name pure check_meta ->
+    { (fun arity name pure check_meta constraints ->
       let len = Ast.AnyLen in
       let tok = check_meta(Ast.MetaStmListDecl(arity,name,len)) in
-      !Data.add_stmlist_meta name len pure; tok) }
+      !Data.add_stmlist_meta name len constraints pure; tok) }
 | TIdentifier Tlist
-    { (fun arity name pure check_meta ->
+    { (fun arity name pure check_meta constraints ->
       let len = Ast.AnyLen in
       let tok = check_meta(Ast.MetaDParamListDecl(arity,name,len)) in
-      !Data.add_dparamlist_meta name len pure; tok) }
-
-%inline metakindnosym:
-  TTypedef ids=comma_list(pure_ident_or_meta_ident_nosym2(TTypeId))
-    { (ids,fun arity (_,name) pure check_meta ->
-      if arity = Ast.NONE && pure = Ast0.Impure
-      then (!Data.add_type_name name; [])
-      else raise (Semantic_cocci.Semantic "bad typedef")) }
-| TAttribute ids=comma_list(pure_ident_or_meta_ident_nosym)
-    { (ids,fun arity (_,name) pure check_meta ->
-      if arity = Ast.NONE && pure = Ast0.Impure
-      then
-	(!Data.add_attribute name;
-	 Flag.add_cocci_attribute_names name;
-	 [])
-      else raise (Semantic_cocci.Semantic "bad attribute")) }
-| TDeclarer TName ids=comma_list(pure_ident_or_meta_ident_nosym2(TDeclarerId))
-    { (ids,fun arity (_,name) pure check_meta ->
-      if arity = Ast.NONE && pure = Ast0.Impure
-      then (!Data.add_declarer_name name; [])
-      else raise (Semantic_cocci.Semantic "bad declarer")) }
-| TIterator TName ids=comma_list(pure_ident_or_meta_ident_nosym2(TIteratorId))
-    { (ids,fun arity (_,name) pure check_meta ->
-      if arity = Ast.NONE && pure = Ast0.Impure
-      then (!Data.add_iterator_name name; [])
-      else raise (Semantic_cocci.Semantic "bad iterator")) }
-
-%inline metakind_atomic_maybe_virt:
-  TIdentifier
-    {
-     let idfn arity name pure check_meta constraints =
-       let tok = check_meta(Ast.MetaIdDecl(arity,name)) in
-       !Data.add_id_meta name constraints pure; tok in
-     let virtfn arity name pure check_meta virtual_env =
-       try
-	 let vl = List.assoc name virtual_env in
-	 !Data.add_virt_id_meta_found name vl; []
-       with Not_found ->
-	 Iteration.parsed_virtual_identifiers :=
-	   Common.union_set [name]
-	     !Iteration.parsed_virtual_identifiers;
-	 let name = ("virtual",name) in
-	 let tok = check_meta(Ast.MetaIdDecl(arity,name)) in
-	 !Data.add_virt_id_meta_not_found name pure; tok in
-     (idfn,virtfn) }
-
-%inline metakind_atomic:
-  TFunction
+      !Data.add_dparamlist_meta name len constraints pure; tok) }
+| TFunction
     { (fun arity name pure check_meta constraints ->
       let tok = check_meta(Ast.MetaFuncDecl(arity,name)) in
       !Data.add_func_meta name constraints pure; tok) }
@@ -817,9 +710,7 @@ list_len:
     { (fun arity name pure check_meta constraints ->
       let tok = check_meta(Ast.MetaTypeDecl(arity,name)) in
       !Data.add_type_meta name constraints pure; tok) }
-
-%inline metakind_atomic_expi:
-  TError
+| TError
     { (fun arity name pure check_meta constraints ->
       let tok = check_meta(Ast.MetaErrDecl(arity,name)) in
       !Data.add_err_meta name constraints pure; tok) }
@@ -867,6 +758,81 @@ list_len:
       !Data.add_const_meta ty name constraints pure;
       let ty' = Common.map_option (List.map (Ast0toast.typeC false)) ty in
       check_meta (Ast.MetaConstDecl(arity,name,ty'))) }
+| TExpression
+    { (fun arity name pure check_meta constraints ->
+      let tok = check_meta(Ast.MetaExpDecl(arity,name,None)) in
+      !Data.add_exp_meta None name constraints pure; tok) }
+| vl=meta_exp_type // no error if use $1 but doesn't type check
+    { (fun arity name pure check_meta constraints ->
+      let ty = Some vl in
+      let cstr_expr = Some begin function c ->
+	match Ast0.unwrap c with
+	  Ast0.Constant(_) ->
+	    if not
+		(List.exists
+		   (fun ty ->
+		     match Ast0.unwrap ty with
+		       Ast0.BaseType (Ast.IntType, _) -> true
+		     | Ast0.BaseType (Ast.ShortType, _) -> true
+		     | Ast0.BaseType (Ast.LongType, _) -> true
+			   | _ -> false)
+			 vl)
+		  then
+		    failwith "metavariable with int constraint must be an int"
+	      | _ -> ()
+	end in
+      Ast.cstr_iter { Ast.empty_cstr_transformer with Ast.cstr_expr }
+	constraints;
+      !Data.add_exp_meta ty name constraints pure;
+      let ty' = Some (List.map (Ast0toast.typeC false) vl) in
+      let tok = check_meta (Ast.MetaExpDecl (arity,name,ty')) in
+      tok)
+    }
+
+
+%inline metakindnosym:
+  TTypedef ids=comma_list(pure_ident_or_meta_ident_nosym2(TTypeId))
+    { (ids,fun arity (_,name) pure check_meta ->
+      if arity = Ast.NONE && pure = Ast0.Impure
+      then (!Data.add_type_name name; [])
+      else raise (Semantic_cocci.Semantic "bad typedef")) }
+| TAttribute ids=comma_list(pure_ident_or_meta_ident_nosym)
+    { (ids,fun arity (_,name) pure check_meta ->
+      if arity = Ast.NONE && pure = Ast0.Impure
+      then
+	(!Data.add_attribute name;
+	 Flag.add_cocci_attribute_names name;
+	 [])
+      else raise (Semantic_cocci.Semantic "bad attribute")) }
+| TDeclarer TName ids=comma_list(pure_ident_or_meta_ident_nosym2(TDeclarerId))
+    { (ids,fun arity (_,name) pure check_meta ->
+      if arity = Ast.NONE && pure = Ast0.Impure
+      then (!Data.add_declarer_name name; [])
+      else raise (Semantic_cocci.Semantic "bad declarer")) }
+| TIterator TName ids=comma_list(pure_ident_or_meta_ident_nosym2(TIteratorId))
+    { (ids,fun arity (_,name) pure check_meta ->
+      if arity = Ast.NONE && pure = Ast0.Impure
+      then (!Data.add_iterator_name name; [])
+      else raise (Semantic_cocci.Semantic "bad iterator")) }
+
+%inline metakind_atomic_maybe_virt:
+  TIdentifier
+    {
+     let idfn arity name pure check_meta constraints =
+       let tok = check_meta(Ast.MetaIdDecl(arity,name)) in
+       !Data.add_id_meta name constraints pure; tok in
+     let virtfn arity name pure check_meta virtual_env =
+       try
+	 let vl = List.assoc name virtual_env in
+	 !Data.add_virt_id_meta_found name vl; []
+       with Not_found ->
+	 Iteration.parsed_virtual_identifiers :=
+	   Common.union_set [name]
+	     !Iteration.parsed_virtual_identifiers;
+	 let name = ("virtual",name) in
+	 let tok = check_meta(Ast.MetaIdDecl(arity,name)) in
+	 !Data.add_virt_id_meta_not_found name pure; tok in
+     (idfn,virtfn) }
 
 expression_type:
   m=nonempty_list(TMul) { P.ty_pointerify unknown_type m }
@@ -880,41 +846,6 @@ expression_type:
     { P.ty_pointerify
         (Ast0.wrap
            (Ast0.StructUnionName (Ast0.make_mcode Ast.Union, None))) m }
-
-%inline
- metakind_atomic_expe:
-  TExpression
-    { (fun arity name pure check_meta constraints ->
-      let tok = check_meta(Ast.MetaExpDecl(arity,name,None)) in
-      !Data.add_exp_meta None name constraints pure; tok) }
-| vl=meta_exp_type // no error if use $1 but doesn't type check
-    { (fun arity name pure check_meta constraints ->
-      let ty = Some vl in
-      (match constraints with
-	Ast0.NotExpCstrt constraints ->
-	  List.iter
-	    (function c ->
-	      match Ast0.unwrap c with
-		Ast0.Constant(_) ->
-		  if not
-		      (List.exists
-                         (fun ty ->
-                           match Ast0.unwrap ty with
-                             Ast0.BaseType (Ast.IntType, _) -> true
-                           | Ast0.BaseType (Ast.ShortType, _) -> true
-                           | Ast0.BaseType (Ast.LongType, _) -> true
-			   | _ -> false)
-			 vl)
-		  then
-		    failwith "metavariable with int constraint must be an int"
-	      | _ -> ())
-	    constraints
-      |	_ -> ());
-      !Data.add_exp_meta ty name constraints pure;
-      let ty' = Some (List.map (Ast0toast.typeC false) vl) in
-      let tok = check_meta (Ast.MetaExpDecl (arity,name,ty')) in
-      tok)
-    }
 
 meta_exp_type:
   t=typedef_ctype
@@ -1044,6 +975,10 @@ all_basic_types_no_ident:
 | ty=signable_types_no_ident { ty }
 | ty=non_signable_types_no_ident { ty }
 
+signed_or_unsigned:
+| r=Tsigned { Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Signed r,None)) }
+| r=Tunsigned { Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Unsigned r,None)) }
+
 top_ctype:
   ctype { Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Ty($1)))) }
 
@@ -1054,10 +989,7 @@ ctype:
 	  function (star,cv) ->
 	    P.make_cv cv (P.pointerify prev [star]))
 	(P.make_cv cv ty) m }
-| r=Tsigned
-    { Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Signed r,None)) }
-| r=Tunsigned
-    { Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Unsigned r,None)) }
+| ty=signed_or_unsigned { ty }
 | lp=TOPar0 t=midzero_list(ctype,ctype) rp=TCPar0
     { let (mids,code) = t in
       Ast0.wrap
@@ -1391,14 +1323,10 @@ argorellipsis(arg):
 one_arg(arg):
   arg=arg  { arg }
 | metaparamlist=TMetaParamList
-    { let (nm,lenname,pure,clt) = metaparamlist in
+    { let (nm,lenname,cstr,pure,clt) = metaparamlist in
       let nm = P.clt2mcode nm clt in
-      let lenname =
-	match lenname with
-	  Ast.AnyLen -> Ast0.AnyListLen
-	| Ast.MetaLen nm -> Ast0.MetaListLen(P.clt2mcode nm clt)
-	| Ast.CstLen n -> Ast0.CstListLen n in
-      Ast0.wrap(Ast0.MetaParamList(nm,lenname,pure)) }
+      let lenname = P.dolen clt lenname in
+      Ast0.wrap(Ast0.MetaParamList(nm,lenname,cstr,pure)) }
 
 %inline separated_llist(separator, X):
   xs = reverse_separated_llist(separator, X)
@@ -1518,8 +1446,8 @@ decl: t=ctype i=disj_ident a=list(array_dec)
 		P.clt2mcode "(" lp1,d,P.clt2mcode ")" rp1)) in
 	Ast0.wrap(Ast0.Param(fnptr, Some i)) }
     | TMetaParam
-	{ let (nm,pure,clt) = $1 in
-	Ast0.wrap(Ast0.MetaParam(P.clt2mcode nm clt,pure)) }
+	{ let (nm,cstr,pure,clt) = $1 in
+	Ast0.wrap(Ast0.MetaParam(P.clt2mcode nm clt,cstr,pure)) }
     | TMeta { tmeta_to_param $1 }
 
 name_opt_decl:
@@ -1806,8 +1734,8 @@ initialize:
     else
       Ast0.wrap(Ast0.InitList(P.clt2mcode "{" $1,$2,P.clt2mcode "}" $3,true)) }
   | TMetaInit
-      {let (nm,pure,clt) = $1 in
-      Ast0.wrap(Ast0.MetaInit(P.clt2mcode nm clt,pure)) }
+      {let (nm,cstr,pure,clt) = $1 in
+      Ast0.wrap(Ast0.MetaInit(P.clt2mcode nm clt,cstr,pure)) }
 
 initialize2:
   /*arithexpr and not eexpr because can have ambiguity with comma*/
@@ -1828,17 +1756,13 @@ initialize2:
 | mident TDotDot initialize2
     { Ast0.wrap(Ast0.InitGccName($1,P.clt2mcode ":" $2,$3)) } /* in old kernel */
   | TMetaInit
-      {let (nm,pure,clt) = $1 in
-      Ast0.wrap(Ast0.MetaInit(P.clt2mcode nm clt,pure)) }
+      {let (nm,cstr,pure,clt) = $1 in
+      Ast0.wrap(Ast0.MetaInit(P.clt2mcode nm clt,cstr,pure)) }
   | TMetaInitList
-      {let (nm,lenname,pure,clt) = $1 in
+      {let (nm,lenname,cstr,pure,clt) = $1 in
       let nm = P.clt2mcode nm clt in
-      let lenname =
-	match lenname with
-	  Ast.AnyLen -> Ast0.AnyListLen
-	| Ast.MetaLen nm -> Ast0.MetaListLen(P.clt2mcode nm clt)
-	| Ast.CstLen n -> Ast0.CstListLen n in
-      Ast0.wrap(Ast0.MetaInitList(nm,lenname,pure)) }
+      let lenname = P.dolen clt lenname in
+      Ast0.wrap(Ast0.MetaInitList(nm,lenname,cstr,pure)) }
 
 designator:
  | TDot disj_ident
@@ -2339,214 +2263,139 @@ seed_elem:
       P.check_meta(Ast.MetaIdDecl(Ast.NONE,nm));
       Ast.SeedId nm }
 
-pure_ident_or_meta_ident_with_x_eq(x_eq):
-       i=pure_ident_or_meta_ident l=x_eq
-    {
-      (i, l)
-    }
+pure_ident_or_meta_ident_with_constraints:
+  i=pure_ident_or_meta_ident c=constraints { (i,c) }
 
-pure_ident_or_meta_ident_with_econstraint(x_eq):
-       i=pure_ident_or_meta_ident optc=option(x_eq)
-    {
-      match optc with
-	  None   -> (i, Ast0.NoConstraint)
-	| Some c -> (i, c)
-    }
-
-pure_ident_or_meta_ident_with_idconstraint_virt(constraint_type):
-  i=pure_ident_or_meta_ident c=option(constraint_type)
-    {
-      Common.Left
-        (match c with
-	  None -> (i, Ast.CstrTrue)
-	| Some constraint_ -> (i,constraint_))
-    }
+pure_ident_or_meta_ident_with_constraints_virt:
+  i=pure_ident_or_meta_ident c=constraints {  Common.Left (i,c) }
 | TVirtual TDot pure_ident
-    {
-     let nm = P.id2name $3 in
-     Iteration.parsed_virtual_identifiers :=
-       Common.union_set [nm]
-	 !Iteration.parsed_virtual_identifiers;
-     Common.Right nm
-    }
+    { let nm = P.id2name $3 in
+      Iteration.parsed_virtual_identifiers :=
+	Common.union_set [nm]
+	  !Iteration.parsed_virtual_identifiers;
+      Common.Right nm }
 
-pure_ident_or_meta_ident_with_idconstraint(constraint_type):
-       i=pure_ident_or_meta_ident c=option(constraint_type)
-    {
-      match c with
-	  None -> (i, Ast.CstrTrue)
-	| Some constraint_ -> (i,constraint_)
-    }
+constraints:
+    { Ast.CstrTrue }
+| c=nonempty_constraints
+    { check_constraint_allowed ();
+      c }
 
-re_or_not_eqid:
-   re=general_eqid   {re}
- | TEq ne=idcstr    {ne}
- | TNotEq ne=idcstr {Ast.CstrNot ne}
+nonempty_constraints:
+  TTildeEq re=TString { let (s,_) = re in Ast.CstrRegexp (s,Regexp.regexp s) }
+| TTildeExclEq re=TString
+    { let (s,_) = re in Ast.CstrNot (Ast.CstrRegexp (s,Regexp.regexp s)) }
+| TEq l=item_or_brace_list(cstr_ident) { Ast.CstrOr l }
+| TNotEq l=item_or_brace_list(cstr_ident) { Ast.CstrNot (Ast.CstrOr l) }
+| TSub i=TInt {
+  let i = int_of_string (fst i) in
+  Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntLeq i)) }
+| o=TLogOp i=TInt {
+  let i = int_of_string (fst i) in
+  match o with
+    Ast.SupEq, _ -> Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntGeq i))
+  | Ast.Inf, _ -> Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntLeq (pred i)))
+  | Ast.Sup, _ -> Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntGeq (succ i)))
+  | _ -> raise (Semantic_cocci.Semantic "unknown constraint operator") }
+| TSub l=item_or_brace_list(sub_meta_ident) { Ast.CstrSub l }
+| TDotDot TScript TDotDot lang=pure_ident
+    TOPar params=loption(comma_list(checked_meta_name)) TCPar
+    TOBrace c=expr TCBrace
+    { incr constraint_code_counter;
+      let key = Printf.sprintf "constraint_code_%d" !constraint_code_counter in
+      Ast.CstrScript
+	(key, P.id2name lang, params, U.unparse_x_to_string U.expression c) }
+| TBang c = nonempty_constraints { Ast.CstrNot c }
+| l=nonempty_constraints TAndLog r=nonempty_constraints { Ast.CstrAnd [l; r] }
+| l=nonempty_constraints TOrLog r=nonempty_constraints { Ast.CstrOr [l; r] }
+| TOPar c=nonempty_constraints TCPar { c }
 
-re_only:
-   re=general_eqid {re}
+item_or_brace_list(item):
+  i=item { [i] }
+| TOBrace l=comma_list(item) TCBrace { l }
 
-general_eqid:
-     TTildeEq re=TString
-         { (if !Data.in_iso
-	    then failwith "constraints not allowed in iso file");
-	   (if !Data.in_generating
-	    then failwith "constraints not allowed in a generated rule file");
-	   let (s,_) = re in Ast.CstrRegexp (s,Regexp.regexp s)
-	 }
- | TTildeExclEq re=TString
-         { (if !Data.in_iso
-	    then failwith "constraints not allowed in iso file");
-	   (if !Data.in_generating
-	    then failwith "constraints not allowed in a generated rule file");
-	   let (s,_) = re in Ast.CstrNot (Ast.CstrRegexp (s,Regexp.regexp s))
-	 }
- | c = script_constraint
-	 {
-	   incr constraint_code_counter;
-	   Ast.CstrScript
-	     (c ("constraint", "code") !constraint_code_counter)
-	 }
+cstr_ident:
+  c=ctype_or_ident
+  { match c with
+      Common.Left ty -> Ast.CstrType (Ast0toast.typeC false ty)
+    | Common.Right i ->
+	match i with
+	  (Some rn,id) ->
+	    let i = P.check_inherited_constraint_without_type i in
+	    (Ast.CstrMeta_name i)
+	| (None,s) -> Ast.CstrConstant (Ast.CstrString s) }
+| i=TInt {
+  let i = int_of_string (fst i) in
+  Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntEq i)) }
+| i=TInt TDot TDot TDot j=TInt {
+  let i = int_of_string (fst i) and j = int_of_string (fst j) in
+  Ast.CstrAnd [
+  Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntGeq i));
+  Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntLeq j))] }
+| op=operator_constraint { Ast.CstrOperator op }
 
-idcstr:
-       c=cstr_pure_ident_or_meta_ident_or_typename { c }
-     | TOBrace l=comma_list(cstr_pure_ident_or_meta_ident_or_typename) TCBrace
-	 { Ast.CstrOr l }
+ctype_or_ident:
+| cv=ioption(const_vol) c=all_basic_types_or_ident m=list(mul)
+    { match cv, c, m with
+	None, Common.Right ident, [] -> Common.Right ident
+      | _ ->
+	  let ty =
+	    match c with
+	      Common.Left ty -> ty
+	    | Common.Right (None, p) ->
+		Ast0.wrap(Ast0.TypeName(Ast0.make_mcode p))
+	    | Common.Right (Some r, p) ->
+		let nm = (r, p) in
+		let _ = P.check_meta(Ast.MetaTypeDecl(Ast.NONE,nm)) in
+		Ast0.wrap(
+		  Ast0.MetaType(Ast0.make_mcode nm,Ast.CstrTrue,
+				Ast0.Impure (*will be ignored*))) in
+	  let f prev (star,cv) = P.make_cv cv (P.pointerify prev [star]) in
+	  Common.Left (List.fold_left f (P.make_cv cv ty) m) }
+| ty=signed_or_unsigned { Common.Left ty }
 
+all_basic_types_or_ident:
+  ty=all_basic_types_no_ident { Common.Left ty }
+| i=pure_ident_or_meta_ident { Common.Right i }
 
-cstr_pure_ident_or_meta_ident_or_typename:
-       i = pure_ident_or_meta_ident {
-	  if !Data.in_iso
-	  then failwith "constraints not allowed in iso file";
-	  if !Data.in_generating
-	  (* pb: constraints not stored with metavars; too lazy to search for
-	     them in the pattern *)
-	  then failwith "constraints not allowed in a generated rule file";
-	  match i with
-	    (Some rn,id) ->
-	      let i =
-		P.check_inherited_constraint i
-		  (function mv -> Ast.MetaIdDecl(Ast.NONE,mv)) in
-	      (Ast.CstrMeta_name i)
-	  | (None,i) -> Ast.CstrString i
-	}
-     | ty = all_basic_types_no_ident {
-	  Ast.CstrType (Ast0toast.typeC false ty)
-	}
+operator_constraint:
+  op=binary_operator { Ast.CstrBinaryOp (Ast0toast.binaryOp op) }
+| op=assignment_operator { Ast.CstrAssignOp (Ast0toast.assignOp op) }
 
+binary_operator:
+  TShLOp { mkarithop $1 } (* Ast.Arith Ast.DecLeft *)
+| TMul { mkarithop (Ast.Mul,$1) }
+| TEqEq { mklogop (Ast.Eq,$1) }
+| TNotEq { mklogop (Ast.NotEq,$1) }
+| TSub { mklogop (Ast.InfEq,$1) }
+| TPlus { mkarithop (Ast.Plus,$1) }
+| TMinus { mkarithop (Ast.Minus,$1) }
+| TDmOp { mkarithop $1 }
+| TShROp { mkarithop $1 }
+| TAnd { mkarithop (Ast.And,$1) }
+| TOr { mkarithop (Ast.Or,$1) }
+| TXor { mkarithop (Ast.Xor,$1) }
+| TLogOp { mklogop $1 }
+| TAndLog { mklogop (Ast.AndLog,$1) }
+| TOrLog { mklogop (Ast.OrLog,$1) }
 
-re_or_not_eqe_or_sub:
-   re=general_eqid {Ast0.NotIdCstrt  re}
- | ne=not_eqe      {Ast0.NotExpCstrt ne}
- | s=sub           {Ast0.SubExpCstrt s}
+assignment_operator:
+  TEq
+    { let clt = $1 in
+      let op' = P.clt2mcode "=" clt in
+      Ast0.wrap (Ast0.SimpleAssign op') }
+| TOpAssign
+    { let (op,clt) = $1 in
+      let op' = P.clt2mcode op clt in
+      Ast0.wrap (Ast0.OpAssign op') }
 
-not_ceq_or_sub:
-   ceq=not_ceq    {Ast0.NotExpCstrt ceq}
- | s=sub          {Ast0.SubExpCstrt s}
-
-not_eqe:
-       TNotEq i=pure_ident
-         { (if !Data.in_iso
-	   then failwith "constraints not allowed in iso file");
-	   (if !Data.in_generating
-	   then failwith "constraints not allowed in a generated rule file");
-	   [Ast0.wrap(Ast0.Ident(Ast0.wrap(Ast0.Id(P.id2mcode i))))]
-	 }
-     | TNotEq TOBrace l=comma_list(pure_ident) TCBrace
-	 { (if !Data.in_iso
-	   then failwith "constraints not allowed in iso file");
-	   (if !Data.in_generating
-	   then failwith "constraints not allowed in a generated rule file");
-	   List.map
-	     (function i ->
-		Ast0.wrap(Ast0.Ident(Ast0.wrap(Ast0.Id(P.id2mcode i)))))
-	     l
-	 }
-
-not_ceq:
-       TNotEq i=ident_or_const
-         { (if !Data.in_iso
-	   then failwith "constraints not allowed in iso file");
-	   (if !Data.in_generating
-	   then failwith "constraints not allowed in a generated rule file");
-	   [i] }
-     | TNotEq TOBrace l=comma_list(ident_or_const) TCBrace
-	 { (if !Data.in_iso
-	   then failwith "constraints not allowed in iso file");
-	   (if !Data.in_generating
-	   then failwith "constraints not allowed in a generated rule file");
-	   l }
-
-sub:
+sub_meta_ident:
      (* has to be inherited because not clear how to check subterm constraints
 	in the functorized CTL engine, so need the variable to be bound
 	already when bind the subterm constrained metavariable *)
-       TSub i=meta_ident
-         { (if !Data.in_iso
-	   then failwith "constraints not allowed in iso file");
-	   (if !Data.in_generating
-	   then failwith "constraints not allowed in a generated rule file");
-	   let i =
-	     P.check_inherited_constraint i
-	       (function mv -> Ast.MetaExpDecl(Ast.NONE,mv,None)) in
-	   [i] }
-     | TSub TOBrace l=comma_list(meta_ident) TCBrace
-	 { (if !Data.in_iso
-	   then failwith "constraints not allowed in iso file");
-	   (if !Data.in_generating
-	   then failwith "constraints not allowed in a generated rule file");
-           List.map
-	     (function i ->
-	       P.check_inherited_constraint i
-		 (function mv -> Ast.MetaExpDecl(Ast.NONE,mv,None)))
-	     l}
-
-ident_or_const:
-       i=pure_ident { Ast0.wrap(Ast0.Ident(Ast0.wrap(Ast0.Id(P.id2mcode i)))) }
-     | wrapped_sym_ident { Ast0.wrap(Ast0.Ident($1)) }
-     | TInt
-	 { let (x,clt) = $1 in
-	 Ast0.wrap(Ast0.Constant (P.clt2mcode (Ast.Int x) clt)) }
-
-pos_constraint:
-       TNotEq i=meta_ident
-         { (if !Data.in_iso
-	   then failwith "constraints not allowed in iso file");
-	   (if !Data.in_generating
-	   then failwith "constraints not allowed in a generated rule file");
-	   fun _nm _i ->
-	     let i =
-	       P.check_inherited_constraint i
-		 (function mv -> Ast.MetaPosDecl(Ast.NONE,mv)) in
-	     Ast.CstrNot (Ast.CstrMeta_name i) }
-     | TNotEq TOBrace l=comma_list(meta_ident) TCBrace
-	 { (if !Data.in_iso
-	   then failwith "constraints not allowed in iso file");
-	   (if !Data.in_generating
-	   then failwith "constraints not allowed in a generated rule file");
-	   fun _nm _i ->
-	     Ast.CstrNot
-	       (Ast.CstrOr
-		  (List.map
-		     (function i ->
-		       Ast.CstrMeta_name
-			 (P.check_inherited_constraint i
-			    (function mv -> Ast.MetaPosDecl(Ast.NONE,mv))))
-		     l)) }
-     | script_constraint { (fun nm i -> Ast.CstrScript ($1 nm i)) }
-
-script_constraint:
-  TDotDot TScript TDotDot lang=pure_ident
-	 TOPar params=loption(comma_list(checked_meta_name)) TCPar
-	 TOBrace c=expr TCBrace
-	 { (if !Data.in_iso
-	   then failwith "constraints not allowed in iso file");
-	   (if !Data.in_generating
-	   then failwith "constraints not allowed in a generated rule file");
-	   (fun (rule,name) index ->
-	     let key = Printf.sprintf "%s_%s_%d" rule name index in
-	     (key, P.id2name lang, params,
-	      U.unparse_x_to_string U.expression c)) }
+  i=meta_ident
+    { P.check_inherited_constraint i
+	(function mv -> Ast.MetaExpDecl(Ast.NONE,mv,None)) }
 
 func_ident:
        ident { $1 }
@@ -2643,14 +2492,10 @@ decl_list(decl):
 one_dec(decl):
   decl  { $1 }
 | TMetaParamList
-    { let (nm,lenname,pure,clt) = $1 in
+    { let (nm,lenname,cstr,pure,clt) = $1 in
     let nm = P.clt2mcode nm clt in
-      let lenname =
-	match lenname with
-	  Ast.AnyLen -> Ast0.AnyListLen
-	| Ast.MetaLen nm -> Ast0.MetaListLen(P.clt2mcode nm clt)
-	| Ast.CstLen n -> Ast0.CstListLen n in
-    Ast0.wrap(Ast0.MetaParamList(nm,lenname,pure)) }
+      let lenname = P.dolen clt lenname in
+    Ast0.wrap(Ast0.MetaParamList(nm,lenname,cstr,pure)) }
 
 /* ---------------------------------------------------------------------- */
 /* comma list parser, used for fn params, fn args, enums, initlists,
@@ -2887,14 +2732,10 @@ when_start:
 aexpr:
     dargexpr { Ast0.set_arg_exp $1 }
   | TMetaExpList
-      { let (nm,lenname,pure,clt) = $1 in
+      { let (nm,lenname,constraints,pure,clt) = $1 in
       let nm = P.clt2mcode nm clt in
-      let lenname =
-	match lenname with
-	  Ast.AnyLen -> Ast0.AnyListLen
-	| Ast.MetaLen nm -> Ast0.MetaListLen(P.clt2mcode nm clt)
-	| Ast.CstLen n -> Ast0.CstListLen n in
-      Ast0.wrap(Ast0.MetaExprList(nm,lenname,pure)) }
+      let lenname = P.dolen clt lenname in
+      Ast0.wrap(Ast0.MetaExprList(nm,lenname,constraints,pure)) }
   | ctype
       { Ast0.set_arg_exp(Ast0.wrap(Ast0.TypeExp($1))) }
 

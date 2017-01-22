@@ -33,3 +33,6 @@ val run_constraint :
     @param args the arguments
     @param body the constraint code,
     @return whether the constraint is satisfied or not. *)
+
+val flush_stdout_and_stderr : unit -> unit
+(** [flush_stdout_and_stderr ()] flushes Python stdout and stderr. *)

@@ -71,7 +71,7 @@ INCLUDEDIRSDEP=commons commons/ocamlextra \
  parsing_cocci parsing_c ocaml python engine popl09 extra \
  $(MAKELIBS)
 
-INCLUDEDIRS=$(INCLUDEDIRSDEP) $(PCREDIR) $(PARMAPDIR) $(INCLIBS)
+INCLUDEDIRS=$(INCLUDEDIRSDEP) $(PCREDIR) $(BYTESDIR) $(PARMAPDIR) $(INCLIBS)
 
 ##############################################################################
 # Generic variables
@@ -339,6 +339,7 @@ install-common: ocaml/coccilib.cmi
 	$(INSTALL_DATA) standard.h $(DESTDIR)$(LIBDIR)
 	$(INSTALL_DATA) standard.iso $(DESTDIR)$(LIBDIR)
 	$(INSTALL_DATA) ocaml/*.cmi $(DESTDIR)$(LIBDIR)/ocaml/
+	- $(INSTALL_DATA) ocaml/*.cmx $(DESTDIR)$(LIBDIR)/ocaml/
 
 install-man:
 	@$(ECHO) "Installing manuals in: ${DESTDIR}${MANDIR}"

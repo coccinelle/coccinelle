@@ -449,10 +449,10 @@ let rec expression e =
       let name = normal_mcode name in
       let ln = promote_mcode name in
       mkres e (Ast0.MetaExpr(name,a,b,c,d)) ln ln
-  | Ast0.MetaExprList(name,a,b) ->
+  | Ast0.MetaExprList(name,a,b,c) ->
       let name = normal_mcode name in
       let ln = promote_mcode name in
-      mkres e (Ast0.MetaExprList(name,a,b)) ln ln
+      mkres e (Ast0.MetaExprList(name,a,b,c)) ln ln
   | Ast0.EComma(cm) ->
       let cm = normal_mcode cm in
       let ln = promote_mcode cm in
@@ -510,7 +510,7 @@ and string_fragment e =
       let dots = normal_mcode dots in
       let ln = promote_mcode dots in
       mkres e (Ast0.Strdots dots) ln ln
-  | Ast0.MetaFormatList(pct,name,lenname) ->
+  | Ast0.MetaFormatList(pct,name,cstr,lenname) ->
       (* not sure what to do about the following comment... *)
       (* pct is particularly bad in this case, because it is ignored in
 	 the matching process.  The metavariable matches the complete format
@@ -519,7 +519,7 @@ and string_fragment e =
       let ln1 = promote_mcode pct in
       let name = normal_mcode name in
       let ln2 = promote_mcode name in
-      mkres e (Ast0.MetaFormatList(pct,name,lenname)) ln1 ln2
+      mkres e (Ast0.MetaFormatList(pct,name,cstr,lenname)) ln1 ln2
 
 and string_format e =
   match Ast0.unwrap e with
@@ -640,18 +640,18 @@ and is_decl_dots s =
 
 and declaration d =
   match Ast0.unwrap d with
-    Ast0.MetaDecl(name,a) ->
+    Ast0.MetaDecl(name,a,b) ->
       let name = normal_mcode name in
       let ln = promote_mcode name in
-      mkres d (Ast0.MetaDecl(name,a)) ln ln
-  | Ast0.MetaField(name,a) ->
+      mkres d (Ast0.MetaDecl(name,a,b)) ln ln
+  | Ast0.MetaField(name,a,b) ->
       let name = normal_mcode name in
       let ln = promote_mcode name in
-      mkres d (Ast0.MetaField(name,a)) ln ln
-  | Ast0.MetaFieldList(name,a,b) ->
+      mkres d (Ast0.MetaField(name,a,b)) ln ln
+  | Ast0.MetaFieldList(name,a,b,c) ->
       let name = normal_mcode name in
       let ln = promote_mcode name in
-      mkres d (Ast0.MetaFieldList(name,a,b)) ln ln
+      mkres d (Ast0.MetaFieldList(name,a,b,c)) ln ln
   | Ast0.Init(stg,ty,id,eq,exp,sem) ->
       let ty = typeC ty in
       let id = ident id in
@@ -761,14 +761,14 @@ and is_init_dots i =
 
 and initialiser i =
   match Ast0.unwrap i with
-    Ast0.MetaInit(name,a) ->
+    Ast0.MetaInit(name,a,b) ->
       let name = normal_mcode name in
       let ln = promote_mcode name in
-      mkres i (Ast0.MetaInit(name,a)) ln ln
-  | Ast0.MetaInitList(name,a,b) ->
+      mkres i (Ast0.MetaInit(name,a,b)) ln ln
+  | Ast0.MetaInitList(name,a,b,c) ->
       let name = normal_mcode name in
       let ln = promote_mcode name in
-      mkres i (Ast0.MetaInitList(name,a,b)) ln ln
+      mkres i (Ast0.MetaInitList(name,a,b,c)) ln ln
   | Ast0.InitExpr(exp) ->
       let exp = expression exp in
       mkres i (Ast0.InitExpr(exp)) exp exp
@@ -840,14 +840,14 @@ and parameterTypeDef p =
       let ty = typeC ty in mkres p (Ast0.Param(ty,Some id)) ty id
   | Ast0.Param(ty,None) ->
       let ty = typeC ty in mkres p (Ast0.Param(ty,None)) ty ty
-  | Ast0.MetaParam(name,a) ->
+  | Ast0.MetaParam(name,a,b) ->
       let name = normal_mcode name in
       let ln = promote_mcode name in
-      mkres p (Ast0.MetaParam(name,a)) ln ln
-  | Ast0.MetaParamList(name,a,b) ->
+      mkres p (Ast0.MetaParam(name,a,b)) ln ln
+  | Ast0.MetaParamList(name,a,b,c) ->
       let name = normal_mcode name in
       let ln = promote_mcode name in
-      mkres p (Ast0.MetaParamList(name,a,b)) ln ln
+      mkres p (Ast0.MetaParamList(name,a,b,c)) ln ln
   | Ast0.PComma(cm) ->
       let cm = normal_mcode cm in
       let ln = promote_mcode cm in
@@ -877,10 +877,10 @@ let rec define_param p =
   match Ast0.unwrap p with
     Ast0.DParam(id) ->
       let id = ident id in mkres p (Ast0.DParam(id)) id id
-  | Ast0.MetaDParamList(name,a,b) ->
+  | Ast0.MetaDParamList(name,a,b,c) ->
       let name = normal_mcode name in
       let ln = promote_mcode name in
-      mkres p (Ast0.MetaDParamList(name,a,b)) ln ln
+      mkres p (Ast0.MetaDParamList(name,a,b,c)) ln ln
   | Ast0.DPComma(cm) ->
       let cm = normal_mcode cm in
       let ln = promote_mcode cm in
@@ -1077,18 +1077,18 @@ let rec statement s =
 	let sem = normal_mcode sem in
 	mkres s (Ast0.Exec(exec,lang,code,sem))
 	  (promote_mcode exec) (promote_mcode sem)
-    | Ast0.MetaStmt(name,a) ->
+    | Ast0.MetaStmt(name,a,b) ->
 	let name = normal_mcode name in
 	let ln = promote_mcode name in
-	mkres s (Ast0.MetaStmt(name,a)) ln ln
-    | Ast0.MetaStmtList(name,a,b) ->
+	mkres s (Ast0.MetaStmt(name,a,b)) ln ln
+    | Ast0.MetaStmtList(name,a,b,c) ->
 	(* This becomes ..., which becomes a metavar.  The metavar, with
 	   any attachments that this has, is then iterated over the code.
 	   If we attach anything here, then it will be duplicated for each
 	   statement in the list. *)
 	let name = bad_mcode name in
 	let ln = promote_mcode name in
-	mkres s (Ast0.MetaStmtList(name,a,b)) ln ln
+	mkres s (Ast0.MetaStmtList(name,a,b,c)) ln ln
     | Ast0.Exp(exp) ->
 	let exp = expression exp in
 	mkres s (Ast0.Exp(exp)) exp exp

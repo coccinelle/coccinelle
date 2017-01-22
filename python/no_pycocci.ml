@@ -91,3 +91,5 @@ let py_finalize () =
 
 let run_constraint args body =
   failwith errmsg
+
+let flush_stdout_and_stderr () = ()

@@ -27,6 +27,7 @@ SYSLIBS_BC = $(SYSLIBS:=.cma)
 SYSLIBS_OPT = $(SYSLIBS:=.cmxa)
 
 LIBS=\
+  $(BYTESDIR:=/bytes) \
   $(PCREDIR:=/pcre) \
   $(DYNLINKDIR:=/dynlink) \
   $(COCCIDIR)/commons/commons \

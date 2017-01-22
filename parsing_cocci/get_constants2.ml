@@ -374,7 +374,10 @@ let do_get_constants constants keywords env (neg_pos,_) =
     | Ast.MetaLocalFunc(name,c,_,_) ->
 	Ast.cstr_fold_sign
 	  { Ast.empty_cstr_transformer with
-	    Ast.cstr_string = Some (fun s accu -> bind (constants s) accu);
+	    Ast.cstr_constant = Some (fun c' accu ->
+	      match c' with
+		Ast.CstrString s -> bind (constants s) accu
+	      | Ast.CstrInt _ -> accu);
 	    cstr_meta_name = Some (fun mv accu -> bind (inherited mv) accu) }
 	  Ast.empty_cstr_transformer
 	  c (bind (k i) (minherited name))
@@ -448,9 +451,9 @@ let do_get_constants constants keywords env (neg_pos,_) =
 	bind (k e) (bind (minherited name) types)
     | Ast.MetaErr(name,_,_,_) | Ast.MetaExpr(name,_,_,_,_,_) ->
 	bind (k e) (minherited name)
-    | Ast.MetaExprList(name,Ast.MetaListLen (lenname,_,_),_,_) ->
+    | Ast.MetaExprList(name,Ast.MetaListLen (lenname,_,_,_),_,_,_) ->
 	bind (k e) (bind (minherited name) (minherited lenname))
-    | Ast.MetaExprList(name,_,_,_) -> minherited name
+    | Ast.MetaExprList(name,_,_,_,_) -> minherited name
     | Ast.SizeOfExpr(sizeof,exp) -> bind (keywords "sizeof") (k e)
     | Ast.SizeOfType(sizeof,lp,ty,rp) -> bind (keywords "sizeof") (k e)
     | Ast.NestExpr(starter,expr_dots,ender,wc,false) -> option_default
@@ -465,9 +468,9 @@ let do_get_constants constants keywords env (neg_pos,_) =
   (* cases for metavariabes *)
   let string_fragment r k ft =
     match Ast.unwrap ft with
-      Ast.MetaFormatList(pct,name,Ast.MetaListLen (lenname,_,_),_,_) ->
+      Ast.MetaFormatList(pct,name,Ast.MetaListLen (lenname,_,_,_),_,_,_) ->
 	bind (k ft) (bind (minherited name) (minherited lenname))
-    | Ast.MetaFormatList(pct,name,_,_,_) -> bind (k ft) (minherited name)
+    | Ast.MetaFormatList(pct,name,_,_,_,_) -> bind (k ft) (minherited name)
     | _ -> k ft in
 
   let string_format r k ft =
@@ -493,9 +496,9 @@ let do_get_constants constants keywords env (neg_pos,_) =
 
   let declaration r k d =
     match Ast.unwrap d with
-      Ast.MetaDecl(name,_,_) | Ast.MetaField(name,_,_) ->
+      Ast.MetaDecl(name,_,_,_) | Ast.MetaField(name,_,_,_) ->
 	bind (k d) (minherited name)
-    | Ast.MetaFieldList(name,Ast.MetaListLen(lenname,_,_),_,_) ->
+    | Ast.MetaFieldList(name,Ast.MetaListLen(lenname,_,_,_),_,_,_) ->
 	bind (minherited name) (bind (minherited lenname) (k d))
     | Ast.DisjDecl(decls) ->
 	disj_union_all (List.map r.V.combiner_declaration decls)
@@ -510,26 +513,26 @@ let do_get_constants constants keywords env (neg_pos,_) =
   let parameter r k p =
     match Ast.unwrap p with
       Ast.OptParam(param) -> option_default
-    | Ast.MetaParam(name,_,_) -> bind (k p) (minherited name)
-    | Ast.MetaParamList(name,Ast.MetaListLen(lenname,_,_),_,_) ->
+    | Ast.MetaParam(name,_,_,_) -> bind (k p) (minherited name)
+    | Ast.MetaParamList(name,Ast.MetaListLen(lenname,_,_,_),_,_,_) ->
 	bind (minherited name) (bind (minherited lenname) (k p))
-    | Ast.MetaParamList(name,_,_,_) -> bind (k p) (minherited name)
+    | Ast.MetaParamList(name,_,_,_,_) -> bind (k p) (minherited name)
     | _ -> k p in
 
   let define_parameter r k p =
     match Ast.unwrap p with
-      Ast.MetaDParamList(name,Ast.MetaListLen(lenname,_,_),_,_) ->
+      Ast.MetaDParamList(name,Ast.MetaListLen(lenname,_,_,_),_,_,_) ->
 	bind (minherited name) (bind (minherited lenname) (k p))
-    | Ast.MetaDParamList(name,_,_,_) -> bind (k p) (minherited name)
+    | Ast.MetaDParamList(name,_,_,_,_) -> bind (k p) (minherited name)
     | _ -> k p in
 
   let rule_elem r k re =
     bind (fresh_info re)
     (match Ast.unwrap re with
-      Ast.MetaStmtList(name,Ast.MetaListLen (lenname,_,_),_,_) ->
+      Ast.MetaStmtList(name,Ast.MetaListLen (lenname,_,_,_),_,_,_) ->
 	bind (minherited name) (bind (minherited lenname) (k re))
-    | Ast.MetaRuleElem(name,_,_) | Ast.MetaStmt(name,_,_,_)
-    | Ast.MetaStmtList(name,_,_,_) -> bind (minherited name) (k re)
+    | Ast.MetaRuleElem(name,_,_,_) | Ast.MetaStmt(name,_,_,_,_)
+    | Ast.MetaStmtList(name,_,_,_,_) -> bind (minherited name) (k re)
     | Ast.WhileHeader(whl,lp,exp,rp) ->
 	bind (keywords "while") (k re)
     | Ast.WhileTail(whl,lp,exp,rp,sem) ->

@@ -210,9 +210,9 @@ let visitor mode bind option_default
 	| Ast0.MetaExpr(name,constraints,ty,form,pure) ->
 	    let (name_n,name) = meta_mcode name in
 	    (name_n,Ast0.MetaExpr(name,constraints,ty,form,pure))
-	| Ast0.MetaExprList(name,lenname,pure) ->
+	| Ast0.MetaExprList(name,lenname,constraints,pure) ->
 	    let (name_n,name) = meta_mcode name in
-	    (name_n,Ast0.MetaExprList(name,lenname,pure))
+	    (name_n,Ast0.MetaExprList(name,lenname,constraints,pure))
 	| Ast0.EComma(cm) ->
 	    let (cm_n,cm) = string_mcode cm in (cm_n,Ast0.EComma(cm))
 	| Ast0.DisjExpr(starter,expr_list,mids,ender) ->
@@ -261,10 +261,10 @@ let visitor mode bind option_default
 	| Ast0.Strdots dots ->
 	    let (dots_n,dots) = string_mcode dots in
 	    (dots_n,Ast0.Strdots dots)
-	| Ast0.MetaFormatList(pct,name,lenname) ->
+	| Ast0.MetaFormatList(pct,name,cstr,lenname) ->
 	    let (pct_n,pct) = string_mcode pct in
 	    let (name_n,name) = meta_mcode name in
-	    (bind pct_n name_n,Ast0.MetaFormatList(pct,name,lenname))) in
+	    (bind pct_n name_n,Ast0.MetaFormatList(pct,name,cstr,lenname))) in
     string_fragmentfn all_functions k e
 
   and string_format e =
@@ -435,15 +435,15 @@ let visitor mode bind option_default
     let k d =
       rewrap d
 	(match Ast0.unwrap d with
-	  Ast0.MetaDecl(name,pure) ->
+	  Ast0.MetaDecl(name,constraints,pure) ->
 	    let (n,name) = meta_mcode name in
-	    (n,Ast0.MetaDecl(name,pure))
-	| Ast0.MetaField(name,pure) ->
+	    (n,Ast0.MetaDecl(name,constraints,pure))
+	| Ast0.MetaField(name,constraints,pure) ->
 	    let (n,name) = meta_mcode name in
-	    (n,Ast0.MetaField(name,pure))
-	| Ast0.MetaFieldList(name,lenname,pure) ->
+	    (n,Ast0.MetaField(name,constraints,pure))
+	| Ast0.MetaFieldList(name,lenname,constraints,pure) ->
 	    let (n,name) = meta_mcode name in
-	    (n,Ast0.MetaFieldList(name,lenname,pure))
+	    (n,Ast0.MetaFieldList(name,lenname,constraints,pure))
 	| Ast0.Init(stg,ty,id,eq,ini,sem) ->
 	    let (stg_n,stg) = get_option storage_mcode stg in
 	    let ((ty_id_n,ty),id) = named_type ty id in
@@ -527,12 +527,12 @@ let visitor mode bind option_default
     let k i =
       rewrap i
 	(match Ast0.unwrap i with
-	  Ast0.MetaInit(name,pure) ->
+	  Ast0.MetaInit(name,constraints,pure) ->
 	    let (name_n,name) = meta_mcode name in
-	    (name_n,Ast0.MetaInit(name,pure))
-	| Ast0.MetaInitList(name,lenname,pure) ->
+	    (name_n,Ast0.MetaInit(name,constraints,pure))
+	| Ast0.MetaInitList(name,lenname,constraints,pure) ->
 	    let (name_n,name) = meta_mcode name in
-	    (name_n,Ast0.MetaInitList(name,lenname,pure))
+	    (name_n,Ast0.MetaInitList(name,lenname,constraints,pure))
 	| Ast0.InitExpr(exp) ->
 	    let (exp_n,exp) = expression exp in
 	    (exp_n,Ast0.InitExpr(exp))
@@ -602,12 +602,12 @@ let visitor mode bind option_default
 	| Ast0.Param(ty,None) ->
 	    let (ty_n,ty) = typeC ty in
 	    (ty_n, Ast0.Param(ty,None))
-	| Ast0.MetaParam(name,pure) ->
+	| Ast0.MetaParam(name,constraints,pure) ->
 	    let (n,name) = meta_mcode name in
-	    (n,Ast0.MetaParam(name,pure))
-	| Ast0.MetaParamList(name,lenname,pure) ->
+	    (n,Ast0.MetaParam(name,constraints,pure))
+	| Ast0.MetaParamList(name,lenname,constraints,pure) ->
 	    let (n,name) = meta_mcode name in
-	    (n,Ast0.MetaParamList(name,lenname,pure))
+	    (n,Ast0.MetaParamList(name,lenname,constraints,pure))
 	| Ast0.AsParam(p,asexp) ->
 	    let (p_n,p) = parameterTypeDef p in
 	    let (asexp_n,asexp) = expression asexp in
@@ -769,12 +769,12 @@ let visitor mode bind option_default
 	    let (sem_n,sem) = string_mcode sem in
 	    (multibind [exec_n;lang_n;code_n;sem_n],
 	     Ast0.Exec(exec,lang,code,sem))
-	| Ast0.MetaStmt(name,pure) ->
+	| Ast0.MetaStmt(name,constraints,pure) ->
 	    let (name_n,name) = meta_mcode name in
-	    (name_n,Ast0.MetaStmt(name,pure))
-	| Ast0.MetaStmtList(name,lenname,pure) ->
+	    (name_n,Ast0.MetaStmt(name,constraints,pure))
+	| Ast0.MetaStmtList(name,lenname,constraints,pure) ->
 	    let (name_n,name) = meta_mcode name in
-	    (name_n,Ast0.MetaStmtList(name,lenname,pure))
+	    (name_n,Ast0.MetaStmtList(name,lenname,constraints,pure))
 	| Ast0.Disj(starter,statement_dots_list,mids,ender) ->
 	    do_disj starter statement_dots_list mids ender statement_dots
 	      (fun starter statement_dots_list mids ender ->
@@ -889,9 +889,9 @@ let visitor mode bind option_default
       rewrap p
 	(match Ast0.unwrap p with
 	  Ast0.DParam(id) -> let (n,id) = ident id in (n,Ast0.DParam(id))
-	| Ast0.MetaDParamList(name,lenname,pure) ->
+	| Ast0.MetaDParamList(name,lenname,constraints,pure) ->
 	    let (n,name) = meta_mcode name in
-	    (n,Ast0.MetaDParamList(name,lenname,pure))
+	    (n,Ast0.MetaDParamList(name,lenname,constraints,pure))
 	| Ast0.DPComma(comma) ->
 	    let (n,comma) = string_mcode comma in (n,Ast0.DPComma(comma))
 	| Ast0.DPdots(d) ->

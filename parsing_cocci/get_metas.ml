@@ -109,11 +109,11 @@ and initialiser r k i =
 
 and param r k p =
   match Ast0.unwrap p with
-    Ast0.MetaParamList(name,lenname,pure) ->
+    Ast0.MetaParamList(name,lenname,cstr,pure) ->
       let (metas,p) =
        rewrap p
          (let (n,name) = mcode () name in
-         (n,Ast0.MetaParamList(name,lenname,pure))) in
+         (n,Ast0.MetaParamList(name,lenname,cstr,pure))) in
       List.fold_left
        (function (other_metas,id) ->
          function
