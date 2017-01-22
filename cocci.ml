@@ -540,7 +540,7 @@ let worth_trying2 cfiles (tokens,_,query,_) =
   (match (res,tokens) with
     (false,Some tokens) ->
       pr2_once ("Expected tokens " ^ (String.concat " " tokens));
-      pr2 ("Skipping:" ^ (String.concat " " cfiles))
+      pr2 ("Skipping: " ^ (String.concat " " cfiles))
   | _ -> ());
   res
 
