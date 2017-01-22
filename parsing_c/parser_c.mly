@@ -1715,6 +1715,9 @@ struct_decl2:
  | identifier TOPar argument_list TCPar TPtVirg
      { MacroDeclField ((fst $1, $3), [snd $1;$2;$4;$5;fakeInfo()]) }
 
+ | TMacroDecl TOPar argument_list TCPar TPtVirg
+     { MacroDeclField ((fst $1, $3), [snd $1;$2;$4;$5;fakeInfo()]) }
+
  /*(* cppext: *)*/
  | cpp_directive
      { CppDirectiveStruct $1 }
