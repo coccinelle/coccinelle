@@ -17,7 +17,9 @@ MODULES= \
 	pprint cst traverse inliner referenceInterpreter sentenceParser \
 	sentenceLexer interpret tableBackend back menhir
 PRODUCTS=lexer lexdep lexmli parser sentenceLexer sentenceParser
-SIDEPRODUCTS=menhir menhirLib.cmi menhirLib.cmx menhirLib.cmo menhirLib.o
+SIDEPRODUCTS=menhir menhirLib.cmi
+SIDEPRODUCTS_BYTECODE=menhirLib.cmo
+SIDEPRODUCTS_NATIVE=menhirLib.cmx menhirLib.o
 OTHERS=standard.mly
 CLEANOTHERS=menhirLib.ml menhirLib.mli
 SRC_DIR=$(PACKAGE_DIR)/src
@@ -56,31 +58,36 @@ $(SRC_DIR)/yacc-parser.mly: $(MARKER)
 	  $(OCAMLC_CMD) -c $< -o $@; \
 	fi
 
-%.cmx: %.ml %.cmo
+%.cmx: %.ml
 	if echo $(MENHIRLIB_MODULES) | grep -w $(notdir $(basename $<)); then \
 	  $(OCAMLOPT_CMD) -for-pack MenhirLib -c $< -o $@; \
 	else \
 	  $(OCAMLOPT_CMD) -c $< -o $@; \
 	fi
 
+ifeq($(OCAMLOPT_CMD),)
+$(SRC_DIR)/menhir: $(patsubst %,$(SRC_DIR)/%.cmo,$(MODULES))
+	$(OCAMLC_CMD) $(OCAMLLDFLAGS) $^ -o $@
+else
 $(SRC_DIR)/menhir: $(patsubst %,$(SRC_DIR)/%.cmx,$(MODULES))
 	$(OCAMLOPT_CMD) $(OCAMLLDFLAGS) $^ -o $@
+endif
 
 standard.mly: $(SRC_DIR)/standard.mly
 	cp $< $@
 
-$(SRC_DIR)/menhirLib.cmi \
 $(SRC_DIR)/menhirLib.cmo: \
 	$(patsubst %,$(SRC_DIR)/%.cmo,$(MENHIRLIB_MODULES))
 	$(OCAMLC_CMD) -pack $^ -o $(SRC_DIR)/menhirLib.cmo
+$(SRC_DIR)/menhirLib.cmi: $(SRC_DIR)/menhirLib.cmo
 
-$(SRC_DIR)/menhirLib.cmx \
-$(SRC_DIR)/menhirLib.o: \
+$(SRC_DIR)/menhirLib.cmx: \
 	$(patsubst %,$(SRC_DIR)/%.cmx,$(MENHIRLIB_MODULES)) \
 	$(SRC_DIR)/menhirLib.cmo
 	$(OCAMLOPT_CMD) -pack \
 		$(patsubst %,$(SRC_DIR)/%.cmx,$(MENHIRLIB_MODULES)) \
 		-o $(SRC_DIR)/menhirLib.cmx
+$(SRC_DIR)/menhirLib.o: $(SRC_DIR)/menhirLib.cmx
 
 $(SRC_DIR)/gSet.cmi $(SRC_DIR)/gSet.cmx: $(SRC_DIR)/gSet.ml
 	$(OCAMLOPT_CMD) -c $<
