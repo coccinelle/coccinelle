@@ -180,7 +180,6 @@ let initialize_python_path () =
 let pycocci_init () =
   (* initialize *)
   if not !initialised then (
-    initialised := true;
     initialize_python_path ();
     let _ = if not (Py.is_initialized ()) then
       (if !Flag.show_misc then Common.pr2 "Initializing python\n%!";
@@ -219,6 +218,7 @@ let pycocci_init () =
   let (wrap_ast, unwrap_ast) = Py.Capsule.make "metavar_binding_kind" in
   pywrap_ast := wrap_ast;
   pyunwrap_ast := unwrap_ast;
+  initialised := true;
   ()) else
   ()
 
