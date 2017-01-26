@@ -65,7 +65,7 @@ $(SRC_DIR)/yacc-parser.mly: $(MARKER)
 	  $(OCAMLOPT_CMD) -c $< -o $@; \
 	fi
 
-ifeq($(OCAMLOPT_CMD),)
+ifeq ($(OCAMLOPT_CMD),)
 $(SRC_DIR)/menhir: $(patsubst %,$(SRC_DIR)/%.cmo,$(MODULES))
 	$(OCAMLC_CMD) $(OCAMLLDFLAGS) $^ -o $@
 else
