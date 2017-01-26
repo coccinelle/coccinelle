@@ -35,7 +35,7 @@ let get_org_name str = str ^ "_org"
 let get_report_name str = str ^ "_report"
 
 (* Page width limit for generated script (not always upheld ...) *)
-let char_limit = ref Flag_parsing_c.max_width
+let char_limit = ref !Flag_parsing_c.max_width
 
 let init ~rule_name:r ~pos_name:p ~error_msg:e ~char_limit:cl =
   rule_counter := 0;

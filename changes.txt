@@ -51,6 +51,8 @@
   script code.  Problem reported by Markus Elfring.
 - --ignore command line argument to specify a prefix of the names of files
   that should be ignored.
+- added --max-width to adjust the line width for generated code.  Requested
+  by Kumar Gala.
 ** Bugfix:
 - Improved detection of metavariables in strings.  Problem reported by
   Wolfram Sang.

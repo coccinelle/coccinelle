@@ -1425,7 +1425,7 @@ let add_newlines toks tabbing_unit =
     let count = count + String.length s in
     match (stack,space_cell) with
       ([(indent, tu)], Some (start,space_cell)) ->
-	if count > Flag_parsing_c.max_width
+	if count > !Flag_parsing_c.max_width
 	then
 	  let indent =
 	    match tu with

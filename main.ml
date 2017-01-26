@@ -630,6 +630,8 @@ let other_options = [
     "  spacing of + code follows the semantic patch";
     "--indent", Arg.Set_int Flag_parsing_c.indent,
     "  default indent, in spaces (no tabs)";
+    "--max-width", Arg.Set_int Flag_parsing_c.max_width,
+    "  column limit for generated code";
     "-D", Arg.String Flag.set_defined_virtual_rules,
     "  indicate that a virtual rule should be considered to be matched";
     "--c++", Arg.Set Flag.c_plus_plus,
