@@ -59,6 +59,10 @@
 - Don't require all metavars in type exp meta constraint to be bound,
   unless only one type is specified.  Problem reported by Michael Stefaniuc.
 - Finalization scripts are executed even in case there is no other script rules.
+- spatch should find standard.iso and Python modules even if COCCINELLE_HOME
+  and PYTHONPATH are not set (either in the directory where the executable is
+  if it contains standard.iso, or in ../lib/coccinelle relatively to where the
+  executable is).
 * 1.0.6
 ** Language:
 - Allow \ in #define in semantic patch rules, to allow body with multiple

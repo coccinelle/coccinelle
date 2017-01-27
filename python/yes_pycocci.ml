@@ -166,12 +166,23 @@ let _pycocci_setargs argv0 =
   let sys_mod = load_module "sys" in
   Py.Module.set sys_mod "argv" argv
 
+let initialize_python_path () =
+  let sep = ":" in
+  let python_libdir = Filename.concat Config.path "python" in
+  match Common.optionise (fun () -> Sys.getenv "PYTHONPATH") with
+    None -> Unix.putenv "PYTHONPATH" python_libdir
+  | Some paths ->
+      let path_list = Common.split sep paths in
+      if not (List.mem python_libdir path_list) then
+	Unix.putenv "PYTHONPATH"
+	  (Printf.sprintf "%s%s%s" paths sep python_libdir)
+
 let pycocci_init () =
   (* initialize *)
   if not !initialised then (
-  initialised := true;
-  let _ = if not (Py.is_initialized ()) then
-  	(if !Flag.show_misc then Common.pr2 "Initializing python\n%!";
+    initialize_python_path ();
+    let _ = if not (Py.is_initialized ()) then
+      (if !Flag.show_misc then Common.pr2 "Initializing python\n%!";
 	Py.initialize ~interpreter:!Config.python_interpreter ()) in
 
   (* set argv *)
@@ -207,6 +218,7 @@ let pycocci_init () =
   let (wrap_ast, unwrap_ast) = Py.Capsule.make "metavar_binding_kind" in
   pywrap_ast := wrap_ast;
   pyunwrap_ast := unwrap_ast;
+  initialised := true;
   ()) else
   ()
 
