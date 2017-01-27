@@ -1289,6 +1289,16 @@ let parse_c_and_cpp_keep_typedefs td macs parse_strings cache a =
 (* Same but faster cos memoize stuff *)
 (*****************************************************************************)
 let parse_cache typedefs parse_strings cache file has_changes =
+  (* Normally, if there are no changes to headers, we should not have to parse
+     then again.  The problem is that headers have effects, eg on inferred
+     typedefs, and we aren't storing and then reapplying those effects.
+     So we have to reparse the header files again, at great runtime cost, to
+     get those effects.  It also seems that when a header file is retrieved
+     from the cache, then there is no runtime processing, eg matching, of at
+     least the header files that it includes.  That is, for recursive includes,
+     need not only the AST of the header file itself, but also of what it
+     includes, and at least the latter is not coming in the cached case. *)
+  let has_changes = true in
   if not !Flag_parsing_c.use_cache
   then
     parse_print_error_heuristic typedefs None parse_strings cache file
