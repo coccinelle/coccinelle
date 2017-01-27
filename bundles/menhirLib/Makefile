@@ -30,6 +30,11 @@ MENHIRLIB_MODULES= \
 	infiniteArray packedIntArray rowDisplacement engineTypes engine \
 	tableFormat tableInterpreter convert
 
+OCAML_BUNDLES_FLAGS=$(shell \
+  if echo $(MENHIRLIB_MODULES) | grep -w $(notdir $(basename $<)) >/dev/null; then \
+    echo -for-pack MenhirLib; \
+  fi)
+
 include ../Makefile.bundles
 
 depend: .depend
@@ -50,20 +55,6 @@ $(SRC_DIR)/lexer.mll \
 $(SRC_DIR)/sentenceLexer.mll \
 $(SRC_DIR)/sentenceParser.mly \
 $(SRC_DIR)/yacc-parser.mly: $(MARKER)
-
-%.cmo: %.ml
-	if echo $(MENHIRLIB_MODULES) | grep -w $(notdir $(basename $<)); then \
-	  $(OCAMLC_CMD) -for-pack MenhirLib -c $< -o $@; \
-	else \
-	  $(OCAMLC_CMD) -c $< -o $@; \
-	fi
-
-%.cmx: %.ml
-	if echo $(MENHIRLIB_MODULES) | grep -w $(notdir $(basename $<)); then \
-	  $(OCAMLOPT_CMD) -for-pack MenhirLib -c $< -o $@; \
-	else \
-	  $(OCAMLOPT_CMD) -c $< -o $@; \
-	fi
 
 ifeq ($(OCAMLOPT_CMD),)
 $(SRC_DIR)/menhir: $(patsubst %,$(SRC_DIR)/%.cmo,$(MODULES))

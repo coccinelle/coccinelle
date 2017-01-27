@@ -100,10 +100,25 @@ $(SRC_DIR)/dll$(LIBRARY)_stubs.so: $(SRC_DIR)/lib$(LIBRARY)_stubs.a
 	$(OCAMLC_CMD) -c $< -o $@
 
 %.cmo: %.ml
-	$(OCAMLC_CMD) -c $< -o $@
+	$(OCAMLC_CMD) $(OCAML_BUNDLES_FLAGS) -c $< -o $@
 
-%.cmx: %.ml %.cmo
-	$(OCAMLOPT_CMD) -c $< -o $@
+%.cmx: %.ml
+	$(OCAMLOPT_CMD) $(OCAML_BUNDLES_FLAGS) -c $< -o $@
+
+define bundle_without_mli
+ifeq ($(wildcard $(SRC_DIR)/$(SOURCE).mli),)
+ifeq ($(OCAMLOPT),)
+$(SRC_DIR)/$(SOURCE).cmi: $(SRC_DIR)/$(SOURCE).cmo
+else
+$(SRC_DIR)/$(SOURCE).cmo: $(SRC_DIR)/$(SOURCE).cmx
+$(SRC_DIR)/$(SOURCE).cmi: $(SRC_DIR)/$(SOURCE).cmx
+endif
+endif
+endef
+
+$(foreach SOURCE,$(MODULES),$(eval $(bundle_without_mli)))
+$(foreach SOURCE,$(MENHIRLIB_MODULES),$(eval $(bundle_without_mli)))
+
 
 %.o: %.c
 	$(OCAMLC_CMD) $(OCAMLCCFLAGS) $< -o $@
