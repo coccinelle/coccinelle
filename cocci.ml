@@ -1242,9 +1242,9 @@ let prepare_c files choose_includes parse_strings has_changes
 (*****************************************************************************)
 
 module MyHashedType :
-    Hashtbl.HashedType with type t = Ast_c.metavars_binding =
+    Hashtbl.HashedType with type t = (Ast_c.metavars_binding * string list) =
   struct
-    type t = Ast_c.metavars_binding
+    type t = (Ast_c.metavars_binding * string list)
     let my_n = 5000
     let my_m = 10000
     let equal = (=)
@@ -1260,18 +1260,20 @@ let init_env_list _ = []
 
 let update_env env v i =
 (*  let v = (List.map Hashtbl.hash (List.map snd v), v) in*)
-  MyHashtbl.replace env v i; env
+  let entry = (v,i) in
+  (if not (MyHashtbl.mem env entry) then MyHashtbl.add env entry ()); env
+  (*MyHashtbl.replace env v i; env*)
 let update_env_list env v i = (v,i)::env
 
 (* know that there are no conflicts *)
 let safe_update_env env v i =
   (*let v = (List.map Hashtbl.hash (List.map snd v), v) in*)
-  MyHashtbl.add env v i; env
+  MyHashtbl.add env (v, i) (); env
 
 let end_env env =
   let res =
     List.sort compare
-      (MyHashtbl.fold (fun k v rest -> (k,v) :: rest) env []) in
+      (MyHashtbl.fold (fun info _ rest -> info :: rest) env []) in
   MyHashtbl.clear env;
   res
 
