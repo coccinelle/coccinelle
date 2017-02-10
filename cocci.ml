@@ -1263,7 +1263,6 @@ let update_env env v i =
   let entry = (v,i) in
   (if not (MyHashtbl.mem env entry) then MyHashtbl.add env entry ()); env
   (*MyHashtbl.replace env v i; env*)
-let update_env_list env v i = (v,i)::env
 
 (* know that there are no conflicts *)
 let safe_update_env env v i =
