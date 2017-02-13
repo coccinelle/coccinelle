@@ -2613,11 +2613,17 @@ let enumerate_constraint_scripts =
       { Ast.empty_cstr_transformer with
 	Ast.cstr_script = Some (fun c accu ->
 	  bind (script_constraint kind name c) accu) } c [] in
+  let listlen l =
+    match l with
+      Ast.MetaListLen (name, c, _, _) -> constraints name c
+    | _ -> [] in
   let expression r k e =
     let result =
       match Ast.unwrap e with
 	Ast.MetaErr (name, c, _, _) -> constraints name c
       | Ast.MetaExpr (name, c, _, _, _, _) -> constraints name c
+      | Ast.MetaExprList (name, len, c, _, _) ->
+	  bind (listlen len) (constraints name c)
       | _ -> [] in
     bind result (k e) in
   let ident r k e =
@@ -2628,18 +2634,76 @@ let enumerate_constraint_scripts =
       | Ast.MetaLocalFunc (name, c, _, _) -> constraints name c
       | _ -> [] in
     bind result (k e) in
+  let string_fragment r k e =
+    let result =
+      match Ast.unwrap e with
+	Ast.MetaFormatList (_, name, len, c, _, _) ->
+	  bind (listlen len) (constraints name c)
+      | _ -> [] in
+    bind result (k e) in
   let string_format r k e =
     let result =
       match Ast.unwrap e with
 	Ast.MetaFormat (name, c, _, _) -> constraints name c
       | _ -> [] in
     bind result (k e) in
+  let assign_op r k e =
+    let result =
+      match Ast.unwrap e with
+	Ast.MetaAssign (name, c, _, _) -> constraints name c
+      | _ -> [] in
+    bind result (k e) in
+  let binary_op r k e =
+    let result =
+      match Ast.unwrap e with
+	Ast.MetaBinary (name, c, _, _) -> constraints name c
+      | _ -> [] in
+    bind result (k e) in
+  let ty r k e =
+    let result =
+      match Ast.unwrap e with
+	Ast.MetaType (name, c, _, _) -> constraints name c
+      | _ -> [] in
+    bind result (k e) in
+  let init r k e =
+    let result =
+      match Ast.unwrap e with
+	Ast.MetaInit (name, c, _, _) -> constraints name c
+      | Ast.MetaInitList (name, len, c, _, _) ->
+	  bind (listlen len) (constraints name c)
+      | _ -> [] in
+    bind result (k e) in
+  let param r k e =
+    let result =
+      match Ast.unwrap e with
+	Ast.MetaParam (name, c, _, _) -> constraints name c
+      | Ast.MetaParamList (name, len, c, _, _) ->
+	  bind (listlen len) (constraints name c)
+      | _ -> [] in
+    bind result (k e) in
+  let define_param r k e =
+    let result =
+      match Ast.unwrap e with
+	Ast.MetaDParamList (name, len, c, _, _) ->
+	  bind (listlen len) (constraints name c)
+      | _ -> [] in
+    bind result (k e) in
   let decl r k e =
     let result =
       match Ast.unwrap e with
 	Ast.MetaDecl (name, c, _, _)
-      | Ast.MetaField (name, c, _, _)
-      | Ast.MetaFieldList (name, _, c, _, _) -> constraints name c
+      | Ast.MetaField (name, c, _, _) -> constraints name c
+      | Ast.MetaFieldList (name, len, c, _, _) ->
+	  bind (listlen len) (constraints name c)
+      | _ -> [] in
+    bind result (k e) in
+  let rule r k e =
+    let result =
+      match Ast.unwrap e with
+	Ast.MetaRuleElem (name, c, _, _)
+      | Ast.MetaStmt (name, c, _, _, _) -> constraints name c
+      | Ast.MetaStmtList (name, len, c, _, _) ->
+	  bind (listlen len) (constraints name c)
       | _ -> [] in
     bind result (k e) in
   let donothing r k e = k e in
@@ -2647,7 +2711,7 @@ let enumerate_constraint_scripts =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode mcode
       donothing donothing donothing donothing donothing ident
-      expression donothing string_format donothing donothing donothing
-      donothing donothing donothing donothing decl donothing
-      donothing donothing donothing donothing donothing in
+      expression string_fragment string_format assign_op binary_op donothing
+      ty init param define_param decl donothing
+      rule donothing donothing donothing donothing in
   recursor.Visitor_ast.combiner_top_level
