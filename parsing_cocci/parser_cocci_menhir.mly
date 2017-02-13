@@ -2306,7 +2306,9 @@ nonempty_constraints:
     TOPar params=loption(comma_list(checked_meta_name)) TCPar
     TOBrace c=expr TCBrace
     { fun nm ->
-      let key = Printf.sprintf "constraint_code_%s_%s" !Ast0.rule_name nm in
+      let rule =
+	String.concat "_" (Str.split (Str.regexp " ") !Ast0.rule_name) in
+      let key = Printf.sprintf "constraint_code_%s_0_%s" rule nm in
       Ast.CstrScript
 	(key, P.id2name lang, params, U.unparse_x_to_string U.expression c) }
 | TBang c = nonempty_constraints { fun nm -> Ast.CstrNot (c nm) }
