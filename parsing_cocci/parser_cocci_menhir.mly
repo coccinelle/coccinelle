@@ -192,8 +192,6 @@ let mklogop (op,clt) =
 
 let unknown_type = Ast0.wrap (Ast0.BaseType (Ast.Unknown, []))
 
-let constraint_code_counter = ref 0
-
 let check_constraint_allowed () =
   if !Data.in_iso then
     failwith "constraints not allowed in iso file";
@@ -608,7 +606,8 @@ metadec:
         ids }
 
 list_len:
-  pure_ident_or_meta_ident_with_constraints { Common.Left $1 }
+  pure_ident_or_meta_ident_with_constraints
+    { let (id,cstr) = $1 in Common.Left(id,cstr) }
 | TInt { let (x,clt) = $1 in Common.Right (int_of_string x) }
 | TVirtual TDot pure_ident
     { let nm = ("virtual",P.id2name $3) in
@@ -2266,10 +2265,10 @@ seed_elem:
       Ast.SeedId nm }
 
 pure_ident_or_meta_ident_with_constraints:
-  i=pure_ident_or_meta_ident c=constraints { (i,c) }
+  i=pure_ident_or_meta_ident c=constraints { (i,c (snd i)) }
 
 pure_ident_or_meta_ident_with_constraints_virt:
-  i=pure_ident_or_meta_ident c=constraints {  Common.Left (i,c) }
+  i=pure_ident_or_meta_ident c=constraints {  Common.Left (i,c (snd i)) }
 | TVirtual TDot pure_ident
     { let nm = P.id2name $3 in
       Iteration.parsed_virtual_identifiers :=
@@ -2278,38 +2277,43 @@ pure_ident_or_meta_ident_with_constraints_virt:
       Common.Right nm }
 
 constraints:
-    { Ast.CstrTrue }
+    { fun _ -> Ast.CstrTrue }
 | c=nonempty_constraints
     { check_constraint_allowed ();
       c }
 
 nonempty_constraints:
-  TTildeEq re=TString { let (s,_) = re in Ast.CstrRegexp (s,Regexp.regexp s) }
+  TTildeEq re=TString
+    { fun _ -> let (s,_) = re in Ast.CstrRegexp (s,Regexp.regexp s) }
 | TTildeExclEq re=TString
-    { let (s,_) = re in Ast.CstrNot (Ast.CstrRegexp (s,Regexp.regexp s)) }
-| TEq l=item_or_brace_list(cstr_ident) { Ast.CstrOr l }
-| TNotEq l=item_or_brace_list(cstr_ident) { Ast.CstrNot (Ast.CstrOr l) }
-| TSub i=TInt {
+    { fun _ ->
+      let (s,_) = re in Ast.CstrNot (Ast.CstrRegexp (s,Regexp.regexp s)) }
+| TEq l=item_or_brace_list(cstr_ident) { fun _ -> Ast.CstrOr l }
+| TNotEq l=item_or_brace_list(cstr_ident)
+    { fun _ -> Ast.CstrNot (Ast.CstrOr l) }
+| TSub i=TInt { fun _ ->
   let i = int_of_string (fst i) in
   Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntLeq i)) }
-| o=TLogOp i=TInt {
+| o=TLogOp i=TInt { fun _ ->
   let i = int_of_string (fst i) in
   match o with
     Ast.SupEq, _ -> Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntGeq i))
   | Ast.Inf, _ -> Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntLeq (pred i)))
   | Ast.Sup, _ -> Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntGeq (succ i)))
   | _ -> raise (Semantic_cocci.Semantic "unknown constraint operator") }
-| TSub l=item_or_brace_list(sub_meta_ident) { Ast.CstrSub l }
+| TSub l=item_or_brace_list(sub_meta_ident) { fun _ -> Ast.CstrSub l }
 | TDotDot TScript TDotDot lang=pure_ident
     TOPar params=loption(comma_list(checked_meta_name)) TCPar
     TOBrace c=expr TCBrace
-    { incr constraint_code_counter;
-      let key = Printf.sprintf "constraint_code_%d" !constraint_code_counter in
+    { fun nm ->
+      let key = Printf.sprintf "constraint_code_%s_%s" !Ast0.rule_name nm in
       Ast.CstrScript
 	(key, P.id2name lang, params, U.unparse_x_to_string U.expression c) }
-| TBang c = nonempty_constraints { Ast.CstrNot c }
-| l=nonempty_constraints TAndLog r=nonempty_constraints { Ast.CstrAnd [l; r] }
-| l=nonempty_constraints TOrLog r=nonempty_constraints { Ast.CstrOr [l; r] }
+| TBang c = nonempty_constraints { fun nm -> Ast.CstrNot (c nm) }
+| l=nonempty_constraints TAndLog r=nonempty_constraints
+    { fun nm -> Ast.CstrAnd [l nm; r nm] }
+| l=nonempty_constraints TOrLog r=nonempty_constraints
+    { fun nm -> Ast.CstrOr [l nm; r nm] }
 | TOPar c=nonempty_constraints TCPar { c }
 
 item_or_brace_list(item):
