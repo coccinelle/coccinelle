@@ -2634,12 +2634,20 @@ let enumerate_constraint_scripts =
 	Ast.MetaFormat (name, c, _, _) -> constraints name c
       | _ -> [] in
     bind result (k e) in
+  let decl r k e =
+    let result =
+      match Ast.unwrap e with
+	Ast.MetaDecl (name, c, _, _)
+      | Ast.MetaField (name, c, _, _)
+      | Ast.MetaFieldList (name, _, c, _, _) -> constraints name c
+      | _ -> [] in
+    bind result (k e) in
   let donothing r k e = k e in
   let recursor = Visitor_ast.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode mcode
       donothing donothing donothing donothing donothing ident
       expression donothing string_format donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing decl donothing
       donothing donothing donothing donothing donothing in
   recursor.Visitor_ast.combiner_top_level
