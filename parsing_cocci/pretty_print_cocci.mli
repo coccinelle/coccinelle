@@ -46,4 +46,4 @@ val print_minus_flag : bool ref
 val print_rule_elem : Ast_cocci.rule_elem -> unit
 val print_when_modif : Ast_cocci.when_modifier -> unit
 
-val dep : bool -> Ast_cocci.dependency -> unit
+val dependency : Ast_cocci.dependency -> unit

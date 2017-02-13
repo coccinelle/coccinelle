@@ -618,40 +618,49 @@ let sp_contain_typed_metavar rules =
 	 | _ -> false)
        rules))
 
-let rec interpret_dependencies local global = function
-    Ast_cocci.Dep s      -> List.mem s local
-  | Ast_cocci.AntiDep s  ->
-      (if !Flag_ctl.steps != None
-      then failwith "steps and ! dependency incompatible");
-      not (List.mem s local)
-  | Ast_cocci.EverDep s  -> List.mem s global
-  | Ast_cocci.NeverDep s ->
-      (if !Flag_ctl.steps != None
-      then failwith "steps and ! dependency incompatible");
-      not (List.mem s global)
-  | Ast_cocci.AndDep(s1,s2) ->
-      (interpret_dependencies local global s1) &&
-      (interpret_dependencies local global s2)
-  | Ast_cocci.OrDep(s1,s2)  ->
-      (interpret_dependencies local global s1) ||
-      (interpret_dependencies local global s2)
-  | Ast_cocci.FileIn _ | Ast_cocci.NotFileIn _ -> true
-  | Ast_cocci.NoDep -> true
+let rec interpret_dependencies local global d =
+  let rec loop local = function
+      Ast_cocci.Dep s      -> List.mem s local
+    | Ast_cocci.AntiDep s  ->
+	(if !Flag_ctl.steps != None
+	then failwith "steps and ! dependency incompatible");
+	not (List.mem s local)
+    | Ast_cocci.EverDep s  -> List.mem s global
+    | Ast_cocci.NeverDep s ->
+	(if !Flag_ctl.steps != None
+	then failwith "steps and ! dependency incompatible");
+	not (List.mem s global)
+    | Ast_cocci.AndDep(s1,s2) -> (loop local s1) && (loop local s2)
+    | Ast_cocci.OrDep(s1,s2)  -> (loop local s1) || (loop local s2)
+      | Ast_cocci.FileIn _ | Ast_cocci.NotFileIn _ -> true in
+  match d with
+    Ast_cocci.NoDep -> true
   | Ast_cocci.FailDep -> false
+  | Ast_cocci.ExistsDep d ->
+      if local = []
+      then loop [] d (* rely on globals *)
+      else List.exists (fun l -> loop l d) local
+  | Ast_cocci.ForallDep d ->
+      if local = []
+      then loop [] d (* rely on globals *)
+      else List.for_all (fun l -> loop l d) local
 
-let rec interpret_file file = function
-    Ast_cocci.Dep _ | Ast_cocci.AntiDep _
-  | Ast_cocci.EverDep _ | Ast_cocci.NeverDep _ -> true
-  | Ast_cocci.AndDep(s1,s2) ->
-      (interpret_file file s1) && (interpret_file file s2)
-  | Ast_cocci.OrDep(s1,s2)  ->
-      (interpret_file file s1) || (interpret_file file s2)
-  | Ast_cocci.FileIn s ->
-      s = file || Str.string_match (Str.regexp (s^"/")) file 0
-  | Ast_cocci.NotFileIn s ->
-      not (s = file || Str.string_match (Str.regexp (s^"/")) file 0)
-  | Ast_cocci.NoDep -> true
+let rec interpret_file file d =
+  let rec loop = function
+      Ast_cocci.Dep _ | Ast_cocci.AntiDep _
+    | Ast_cocci.EverDep _ | Ast_cocci.NeverDep _ -> true
+    | Ast_cocci.AndDep(s1,s2) ->
+	(loop s1) && (loop s2)
+    | Ast_cocci.OrDep(s1,s2)  -> (loop s1) || (loop s2)
+    | Ast_cocci.FileIn s ->
+	(s = file || Str.string_match (Str.regexp (s^"/")) file 0)
+    | Ast_cocci.NotFileIn s ->
+	not (s = file || Str.string_match (Str.regexp (s^"/")) file 0) in
+  match d with
+    Ast_cocci.NoDep -> true
   | Ast_cocci.FailDep -> failwith "not possible"
+  | Ast_cocci.ExistsDep d -> loop d
+  | Ast_cocci.ForallDep d -> loop d
 
 let print_dependencies str local global dep =
   if !Flag_cocci.show_dependencies
@@ -659,7 +668,7 @@ let print_dependencies str local global dep =
     begin
       pr2 str;
       let seen = ref [] in
-      let rec loop = function
+      let rec loop local = function
 	  Ast_cocci.Dep s | Ast_cocci.AntiDep s ->
 	      if not (List.mem s !seen)
 	      then
@@ -679,14 +688,19 @@ let print_dependencies str local global dep =
 		  seen := s :: !seen
 		end
 	| Ast_cocci.AndDep(s1,s2) ->
-	    loop s1;
-	    loop s2
+	    loop local s1;
+	    loop local s2
 	| Ast_cocci.OrDep(s1,s2)  ->
-	    loop s1;
-	    loop s2
-	| Ast_cocci.FileIn _ | Ast_cocci.NotFileIn _ | Ast_cocci.NoDep -> ()
-	| Ast_cocci.FailDep -> pr2 "False not satisfied" in
-      loop dep
+	    loop local s1;
+	    loop local s2
+	| Ast_cocci.FileIn _ | Ast_cocci.NotFileIn _ -> () in
+      match dep with
+	Ast_cocci.NoDep -> ()
+      | Ast_cocci.FailDep -> pr2 "False not satisfied"
+      | Ast_cocci.ExistsDep d | Ast_cocci.ForallDep d ->
+	  if local = []
+	  then loop [] d
+	  else List.iter (fun l -> loop l d) local
     end
 
 (* --------------------------------------------------------------------- *)
@@ -1242,9 +1256,9 @@ let prepare_c files choose_includes parse_strings has_changes
 (*****************************************************************************)
 
 module MyHashedType :
-    Hashtbl.HashedType with type t = (Ast_c.metavars_binding * string list) =
+    Hashtbl.HashedType with type t = Ast_c.metavars_binding =
   struct
-    type t = (Ast_c.metavars_binding * string list)
+    type t = Ast_c.metavars_binding
     let my_n = 5000
     let my_m = 10000
     let equal = (=)
@@ -1258,30 +1272,37 @@ let env_tbl = MyHashtbl.create !max_tbl
 let init_env _ = MyHashtbl.clear env_tbl; env_tbl
 let init_env_list _ = []
 
-let update_env env v i =
-(*  let v = (List.map Hashtbl.hash (List.map snd v), v) in*)
-  let entry = (v,i) in
-  (if not (MyHashtbl.mem env entry) then MyHashtbl.add env entry ()); env
-  (*MyHashtbl.replace env v i; env*)
+let update_env (env : string list list ref MyHashtbl.t) v i =
+  let cell =
+    try MyHashtbl.find env v
+    with Not_found ->
+      let cell = ref [] in
+      MyHashtbl.add env v cell;
+      cell in
+  (if not(List.mem i !cell) then cell := i :: !cell);
+  env
+
+let update_env_all (env : string list list ref MyHashtbl.t) v i =
+  let cell =
+    try MyHashtbl.find env v
+    with Not_found ->
+      let cell = ref [] in
+      MyHashtbl.add env v cell;
+      cell in
+  cell := Common.union_set i !cell;
+  env
 
 (* know that there are no conflicts *)
-let safe_update_env env v i =
+let safe_update_env_all env v i =
   (*let v = (List.map Hashtbl.hash (List.map snd v), v) in*)
-  MyHashtbl.add env (v, i) (); env
+  MyHashtbl.add env v (ref i); env
 
 let end_env env =
   let res =
     List.sort compare
-      (MyHashtbl.fold (fun info _ rest -> info :: rest) env []) in
+      (MyHashtbl.fold (fun k v rest -> (k,!v) :: rest) env []) in
   MyHashtbl.clear env;
   res
-
-let end_env_list env =
-  let env = List.sort compare env in
-  let rec loop = function
-      x::((y::_) as xs) -> if x = y then loop xs else x :: loop xs
-    | l -> l in
-  loop env
 
 (*****************************************************************************)
 (* Processing the ctls and toplevel C elements *)
@@ -1337,7 +1358,7 @@ let end_env_list env =
 let merge_env new_e old_e =
   List.iter
     (function (e,rules) ->
-      let _ = update_env old_e e rules in ()) new_e;
+      let _ = update_env_all old_e e rules in ()) new_e;
   old_e
 
 let merge_env_list new_e old_e = new_e@old_e
@@ -1388,6 +1409,8 @@ let ocaml_application mv ve script_vars r =
     else None
   with e -> (pr2 ("Failure in " ^ r.scr_rule_info.rulename); raise e)
 
+let map0 f = function [] -> [f []] | l -> List.map f l
+
 (* returns Left in case of dependency failure, Right otherwise *)
 let apply_script_rule r cache newes e rules_that_have_matched
     rules_that_have_ever_matched script_application =
@@ -1401,7 +1424,7 @@ let apply_script_rule r cache newes e rules_that_have_matched
 	rules_that_have_matched
 	!rules_that_have_ever_matched r.scr_rule_info.dependencies;
       show_or_not_binding "in environment" e;
-      (cache, safe_update_env newes e rules_that_have_matched)
+      (cache, safe_update_env_all newes e rules_that_have_matched)
     end
   else
     begin
@@ -1437,7 +1460,7 @@ let apply_script_rule r cache newes e rules_that_have_matched
 		  new_e +>
 		  List.filter
 		    (fun (s,v) -> List.mem s r.scr_rule_info.used_after) in
-		(cache,update_env newes new_e rules_that_have_matched)
+		(cache,update_env_all newes new_e rules_that_have_matched)
 	  with Not_found ->
 	    begin
 	      print_dependencies "dependencies for script satisfied:"
@@ -1461,8 +1484,9 @@ let apply_script_rule r cache newes e rules_that_have_matched
 		      (fun (s,v) -> List.mem s r.scr_rule_info.used_after) in
 		  r.scr_rule_info.was_matched := true;
 		  (((relevant_bindings,Some script_vals) :: cache),
-		   update_env newes new_e
-		     (r.scr_rule_info.rulename :: rules_that_have_matched))
+		   update_env_all newes new_e
+		     (map0 (fun rthm -> r.scr_rule_info.rulename :: rthm)
+			rules_that_have_matched))
 	    end)
       |	unbound ->
 	  (if !Flag_cocci.show_dependencies
@@ -1473,7 +1497,7 @@ let apply_script_rule r cache newes e rules_that_have_matched
 	  let e =
 	    e +>
 	    List.filter (fun (s,v) -> List.mem s r.scr_rule_info.used_after) in
-	  (cache, update_env newes e rules_that_have_matched))
+	  (cache, update_env_all newes e rules_that_have_matched))
     end)
 
 exception Missing_position
@@ -1551,7 +1575,7 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
 	    if not consistent
 	    then
 	      (cache,
-	       update_env newes
+	       update_env_all newes
 		 (e +>
 		  List.filter
 		    (fun (s,v) -> List.mem s r.rule_info.used_after))
@@ -1568,7 +1592,7 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
 		  !rules_that_have_ever_matched r.rule_info.dependencies;
 		show_or_not_binding "in environment" e;
 		(cache,
-		 update_env newes
+		 update_env_all newes
 		   (e +>
 		    List.filter
 		      (fun (s,v) -> List.mem s r.rule_info.used_after))
@@ -1671,7 +1695,9 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
 			  (List.sort compare
 			     (Common.union_set
 				old_bindings_to_keep new_binding_to_add),
-			   r.rule_info.rulename::rules_that_have_matched))
+			   map0
+			     (function rthm -> r.rule_info.rulename::rthm)
+			     rules_that_have_matched))
 			new_bindings_to_add] in
 		  if relevant_bindings = [] && not (old_bindings_to_keep = [])
 		  then (* keep an unextended copy *)

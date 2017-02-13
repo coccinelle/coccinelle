@@ -484,15 +484,17 @@ and parsed_rule =
 
 (* --------------------------------------------------------------------- *)
 
-and dependency =
+and dep =
     Dep of string (* rule applies for the current binding *)
-  | AntiDep of dependency (* rule doesn't apply for the current binding *)
+  | AntiDep of dep (* rule doesn't apply for the current binding *)
   | EverDep of string (* rule applies for some binding *)
   | NeverDep of string (* rule never applies for any binding *)
-  | AndDep of dependency * dependency
-  | OrDep of dependency * dependency
+  | AndDep of dep * dep
+  | OrDep of dep * dep
   | FileIn of string
-  | NoDep | FailDep
+
+and dependency =
+    NoDep | FailDep | ExistsDep of dep | ForallDep of dep
 
 (* --------------------------------------------------------------------- *)
 

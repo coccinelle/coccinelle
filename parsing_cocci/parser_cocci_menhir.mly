@@ -426,7 +426,9 @@ extends:
 
 depends:
   /* empty */              { Ast0.NoDep }
-| TDepends TOn parents=dep { parents }
+| TDepends TOn parents=dep { Ast0.ExistsDep parents }
+| TDepends TOn TExists parents=dep { Ast0.ExistsDep parents }
+| TDepends TOn TForall parents=dep { Ast0.ForallDep parents }
 
 dep:
   TRuleName        { Ast0.Dep $1 }

@@ -592,12 +592,16 @@ let print_dotted_link dst = function
     "" -> ()
   | src -> Printf.printf "  \"%s\" -> \"%s\" [style = dotted];\n" src dst
 
-let rec depto t from = function
-    Ast_cocci.Dep x | Ast_cocci.EverDep x | Ast_cocci.NeverDep x ->
-      print_link t from x
-  | Ast_cocci.AndDep(x,y) | Ast_cocci.OrDep(x,y) ->
-      depto t from x; depto t from y
-  | _ -> ()
+let depto t from d =
+  let rec loop = function
+      Ast_cocci.Dep x | Ast_cocci.EverDep x | Ast_cocci.NeverDep x ->
+	print_link t from x
+    | Ast_cocci.AndDep(x,y) | Ast_cocci.OrDep(x,y) ->
+	loop x; loop y
+    | _ -> () in
+  match d with
+    Ast_cocci.NoDep | Ast_cocci.FailDep -> ()
+  | Ast_cocci.ExistsDep d | Ast_cocci.ForallDep d -> loop d
 
 let test_rule_dependencies file =
   let t = Hashtbl.create 101 in

@@ -53,6 +53,8 @@
   that should be ignored.
 - added --max-width to adjust the line width for generated code.  Requested
   by Kumar Gala.
+- forall and exists for quantifying over the success of matching depends on
+  constraints.
 ** Bugfix:
 - Improved detection of metavariables in strings.  Problem reported by
   Wolfram Sang.

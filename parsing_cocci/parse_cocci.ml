@@ -2047,44 +2047,55 @@ let eval_depend nofiles dep virt =
 	if List.mem req virt
 	then
 	  if List.mem req !Flag.defined_virtual_rules
-	  then Ast.NoDep
-	  else Ast.FailDep
-	else dep
+	  then Common.Left (Ast.NoDep)
+	  else Common.Left (Ast.FailDep)
+	else Common.Right dep
     | Ast.AntiDep antireq | Ast.NeverDep antireq ->
 	if List.mem antireq virt
 	then
 	  if not(List.mem antireq !Flag.defined_virtual_rules)
-	  then Ast.NoDep
-	  else Ast.FailDep
-	else dep
+	  then Common.Left (Ast.NoDep)
+	  else Common.Left (Ast.FailDep)
+	else Common.Right dep
     | Ast.AndDep(d1,d2) ->
 	(match (loop d1, loop d2) with
-	  (Ast.NoDep,x) | (x,Ast.NoDep) -> x
-	| (Ast.FailDep,x) | (x,Ast.FailDep) -> Ast.FailDep
-	| (x,y) -> Ast.AndDep(x,y))
+	  (Common.Left Ast.NoDep,x) | (x,Common.Left Ast.NoDep) -> x
+	| (Common.Left Ast.FailDep,x) | (x,Common.Left Ast.FailDep) ->
+	    Common.Left Ast.FailDep
+	| (Common.Right x,Common.Right y) -> Common.Right (Ast.AndDep(x,y))
+	| _ -> failwith "not possible")
     | Ast.OrDep(d1,d2) ->
 	(match (loop d1, loop d2) with
-	  (Ast.NoDep,x) | (x,Ast.NoDep) -> Ast.NoDep
-	| (Ast.FailDep,x) | (x,Ast.FailDep) -> x
-	| (x,y) -> Ast.OrDep(x,y))
+	  (Common.Left Ast.NoDep,x) | (x,Common.Left Ast.NoDep) ->
+	    Common.Left Ast.NoDep
+	| (Common.Left Ast.FailDep,x) | (x,Common.Left Ast.FailDep) -> x
+	| (Common.Right x,Common.Right y) -> Common.Right (Ast.OrDep(x,y))
+	| _ -> failwith "not possible")
     | Ast.FileIn s | Ast.NotFileIn s ->
 	if nofiles
 	then failwith "file dependencies not allowed in script rules"
-	else dep
-    | Ast.NoDep | Ast.FailDep -> dep
-    in
-  loop dep
+	else Common.Right dep in
+  match dep with
+    Ast.NoDep | Ast.FailDep -> dep
+  | Ast.ExistsDep d ->
+      (match loop d with
+	Common.Left d -> d
+      | Common.Right d -> Ast.ExistsDep d)
+  | Ast.ForallDep d ->
+      (match loop d with
+	Common.Left d -> d
+      | Common.Right d -> Ast.ForallDep d)
 
 let print_dep_image name deps virt depimage =
   Printf.fprintf stderr "Rule: %s\n" name;
   Printf.fprintf stderr "Dependencies: %s\n"
     (Common.format_to_string
-       (function _ -> Pretty_print_cocci.dep true deps));
+       (function _ -> Pretty_print_cocci.dependency deps));
   Format.print_newline();
   Printf.fprintf stderr "Virtual rules: %s\n" (String.concat " " virt);
   Printf.fprintf stderr "Res: %s\n\n"
     (Common.format_to_string
-       (function _ -> Pretty_print_cocci.dep true depimage))
+       (function _ -> Pretty_print_cocci.dependency depimage))
 
 let parse file =
   Lexer_cocci.init ();
