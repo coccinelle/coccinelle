@@ -238,7 +238,7 @@ let token2c (tok,_) =
   | PC.TArobArob -> "@@"
   | PC.TArob -> "@"
   | PC.TPArob clt -> "P@"
-  | PC.TScript -> "script"
+  | PC.TScript _ -> "script"
   | PC.TInitialize -> "initialize"
   | PC.TFinalize -> "finalize"
 
@@ -482,7 +482,7 @@ let get_clt (tok,_) =
   | PC.TSymbol -> failwith "No clt attached to token TSymbol"
   | PC.TStatement -> failwith "No clt attached to token TStatement"
   | PC.TScriptData _ -> failwith "No clt attached to token TScriptData"
-  | PC.TScript -> failwith "No clt attached to token TScript"
+  | PC.TScript _ -> failwith "No clt attached to token TScript"
   | PC.TRuleName _ -> failwith "No clt attached to token TRuleName"
   | PC.TRightIso -> failwith "No clt attached to token TRightIso"
   | PC.TPure -> failwith "No clt attached to token TPure"
@@ -715,7 +715,7 @@ let update_clt (tok,x) clt =
   | PC.TSymbol -> assert false
   | PC.TStatement -> assert false
   | PC.TScriptData _ -> assert false
-  | PC.TScript -> assert false
+  | PC.TScript _ -> assert false
   | PC.TRuleName _ -> assert false
   | PC.TRightIso -> assert false
   | PC.TPure -> assert false
@@ -896,7 +896,7 @@ let split_token ((tok,_) as t) =
   | PC.TMetaDParamList(_,_,_,_,clt) | PC.TMetaErr(_,_,_,clt)
   | PC.TMetaFunc(_,_,_,clt) | PC.TMetaLocalFunc(_,_,_,clt)
   | PC.TMetaDeclarer(_,_,_,clt) | PC.TMetaIterator(_,_,_,clt) -> split t clt
-  | PC.TMPtVirg | PC.TArob | PC.TArobArob | PC.TScript
+  | PC.TMPtVirg | PC.TArob | PC.TArobArob | PC.TScript _
   | PC.TInitialize | PC.TFinalize -> ([t],[t])
   | PC.TPArob clt | PC.TMetaPos(_,_,_,clt) -> split t clt
 
@@ -1863,7 +1863,6 @@ let get_metavars parse_fn table file lexbuf =
     match tokens with
       [(PC.TArobArob,_)] -> List.rev acc
     | (PC.TAnalysis, _) :: tl ->
-	Lexer_script.file := file;
 	Lexer_script.language := "ocaml";
         let get_tokens = tokens_script_all table file false lexbuf in
 	let rec loop n toks =
@@ -1957,6 +1956,7 @@ let get_rule_name parse_fn starts_with_name get_tokens file prefix =
 let parse_iso file =
   let table = Common.full_charpos_to_pos file in
   Common.with_open_infile file (fun channel ->
+    Lexer_cocci.file := file;
     let lexbuf = Lexing.from_channel channel in
     let get_tokens = tokens_all table file false lexbuf in
     let res =
@@ -2103,6 +2103,7 @@ let parse file =
   Lexer_cocci.include_init ();
   let table = Common.full_charpos_to_pos file in
   Common.with_open_infile file (fun channel ->
+  Lexer_cocci.file := file;
   let lexbuf = Lexing.from_channel channel in
   let get_tokens = tokens_all table file false lexbuf in
   Data.in_prolog := true;
@@ -2254,7 +2255,6 @@ let parse file =
 
           let parse_any_script_rule meta_parser builder
 	      name language old_metas deps =
-	    Lexer_script.file := file;
 	    Lexer_script.language := language;
             let get_tokens = tokens_script_all table file false lexbuf in
 

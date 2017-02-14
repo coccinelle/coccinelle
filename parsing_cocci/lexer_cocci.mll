@@ -15,6 +15,7 @@ exception Lexical of string
 let tok = Lexing.lexeme
 
 let line = ref 1
+let file = ref ""
 let logical_line = ref 0
 
 (* ---------------------------------------------------------------------- *)
@@ -264,7 +265,7 @@ let id_tokens lexbuf =
   | "exists" when in_rule_name  -> check_context_linetype s; TExists
   | "forall" when in_rule_name  -> check_context_linetype s; TForall
   | "script" when (in_rule_name || in_meta) ->
-      check_context_linetype s; TScript
+      check_context_linetype s; TScript (!file, !line)
   | "initialize" when in_rule_name -> check_context_linetype s; TInitialize
   | "finalize" when in_rule_name   -> check_context_linetype s; TFinalize
 

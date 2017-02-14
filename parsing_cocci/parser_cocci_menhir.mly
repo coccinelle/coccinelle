@@ -210,8 +210,9 @@ let check_constraint_allowed () =
 %token TPosAny
 %token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall
 %token TFile TIn
-%token TScript TInitialize TFinalize TNothing TVirtual TMerge
+%token TInitialize TFinalize TNothing TVirtual TMerge
 %token<string> TRuleName
+%token<string * int> TScript
 
 %token<Data.clt> Tchar Tshort Tint Tdouble Tfloat Tlong
 %token<Data.clt> Tsize_t Tssize_t Tptrdiff_t
@@ -2306,15 +2307,21 @@ nonempty_constraints:
   | Ast.Sup, _ -> Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntGeq (succ i)))
   | _ -> raise (Semantic_cocci.Semantic "unknown constraint operator") }
 | TSub l=item_or_brace_list(sub_meta_ident) { fun _ -> Ast.CstrSub l }
-| TDotDot TScript TDotDot lang=pure_ident
+| TDotDot s=TScript TDotDot lang=pure_ident
     TOPar params=loption(comma_list(checked_meta_name)) TCPar
     TOBrace c=expr TCBrace
     { fun nm ->
       let rule =
 	String.concat "_" (Str.split (Str.regexp " ") !Ast0.rule_name) in
       let key = Printf.sprintf "constraint_code_%s_0_%s" rule nm in
-      Ast.CstrScript
-	(key, P.id2name lang, params, U.unparse_x_to_string U.expression c) }
+      let code = U.unparse_x_to_string U.expression c in
+      let lang' = P.id2name lang in
+      let code' =
+	if lang' = "ocaml" then
+	  let (file, line) = s in
+	  Printf.sprintf "\n# %d \"%s\"\n%s" line file code
+	else code in
+      Ast.CstrScript (key, lang', params, code') }
 | TBang c = nonempty_constraints { fun nm -> Ast.CstrNot (c nm) }
 | l=nonempty_constraints TAndLog r=nonempty_constraints
     { fun nm -> Ast.CstrAnd [l nm; r nm] }
