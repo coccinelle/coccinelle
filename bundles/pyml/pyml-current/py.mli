@@ -40,6 +40,13 @@ val version_minor: unit -> int
 
 type compare = Pytypes.compare = LT | LE | EQ | NE | GT | GE
 
+(** Either a filename or a channel.
+    Channels suppose that the same C runtime has been used to compile both the
+    Python library and the OCaml runtime.
+    Warning: using channels is unsafe if runtimes differ (can lead to
+    segmentation fault).*)
+type 'a file = 'a Pytypes.file = Filename of string | Channel of 'a
+
 (** General functions to handle Python values *)
 module Object: sig
   type t = Pytypes.pyobject
@@ -113,7 +120,7 @@ module Object: sig
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/object.html#c.PyObject_Not} PyObject_Not} *)
 
-  val print: t -> out_channel -> unit
+  val print: t -> out_channel file -> unit
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/object.html#c.PyObject_Print} PyObject_Print} *)
 
@@ -1025,7 +1032,7 @@ module Run: sig
    *)
 
   val load: ?start:input -> ?globals:Object.t -> ?locals:Object.t ->
-    in_channel -> string -> Object.t
+    in_channel file -> string -> Object.t
   (** [load ~start ~globals ~locals chan filename] loads the contents of the file
       opened in [chan].
       We have
@@ -1043,23 +1050,34 @@ module Run: sig
   val ipython: unit -> unit
   (** Runs the IPython interactive loop. *)
 
-  val any_file: in_channel -> string -> unit
+  val any_file: in_channel file -> string -> unit
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/veryhigh.html#c.PyRun_AnyFile} PyRun_AnyFile} *)
 
-  val file: in_channel -> string -> input -> Object.t -> Object.t -> Object.t
+  val file: in_channel file -> string -> input -> Object.t -> Object.t
+    -> Object.t
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/veryhigh.html#c.PyRun_File} PyRun_File} *)
 
   val interactive_one: in_channel -> string -> unit
-  (** Wrapper for
+  (**
+     Channels suppose that the same C runtime has been used to compile both the
+     Python library and the OCaml runtime.
+     Warning: using channels is unsafe if runtimes differ (can lead to
+     segmentation fault).
+      Wrapper for
       {{:https://docs.python.org/3/c-api/veryhigh.html#c.PyRun_InteractiveOne} PyRun_InteractiveOne} *)
 
   val interactive_loop: in_channel -> string -> unit
-  (** Wrapper for
+  (**
+     Channels suppose that the same C runtime has been used to compile both the
+     Python library and the OCaml runtime.
+     Warning: using channels is unsafe if runtimes differ (can lead to
+     segmentation fault).
+     Wrapper for
       {{:https://docs.python.org/3/c-api/veryhigh.html#c.PyRun_InteractiveLoop} PyRun_InteractiveLoop} *)
 
-  val simple_file: in_channel -> string -> unit
+  val simple_file: in_channel file -> string -> unit
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/veryhigh.html#c.PyRun_SimpleFile} PyRun_SimpleFile} *)
 
@@ -1436,15 +1454,15 @@ module Type: sig
 end
 
 module Marshal: sig
-  val read_object_from_file: in_channel -> Object.t
+  val read_object_from_file: in_channel file -> Object.t
   (** [read_object_from_file f] reads one value from [f] and returns it.
       Wrapper for
       {{:https://docs.python.org/3/c-api/marshal.html#c.PyMarshal_ReadObjectFromFile} PyMarshal_ReadObjectFromFile} *)
 
-  val load: in_channel -> Object.t
+  val load: in_channel file -> Object.t
   (** Equivalent to {!read_object_from_file}. *)
 
-  val read_last_object_from_file: in_channel -> Object.t
+  val read_last_object_from_file: in_channel file -> Object.t
   (** [read_last_object_from_file f] reads a value from [f] and returns it.
       That value should be the only value remaining to be read from [f] before
       EOF.
@@ -1461,7 +1479,7 @@ module Marshal: sig
   (** [Py.Marshal.loads s] is equivalent to
       [Py.Marshal.read_object_from_string s (String.length s)]. *)
 
-  val write_object_to_file: Object.t -> out_channel -> int -> unit
+  val write_object_to_file: Object.t -> out_channel file -> int -> unit
   (** [write_object_to_file value file version] writes the object [value] to
       [file].
       [version] indicates the file format
@@ -1469,7 +1487,7 @@ module Marshal: sig
       Wrapper for
       {{:https://docs.python.org/3/c-api/marshal.html#c.PyMarshal_WriteObjectToFile} PyMarshal_WriteObjectToFile} *)
 
-  val dump: ?version:int -> Object.t -> out_channel -> unit
+  val dump: ?version:int -> Object.t -> out_channel file -> unit
   (** [Py.Marshal.dump ?version value file] is equivalent to
       [Py.Marshal.write_object_to_file value file version].
       By default, the version returned by {!version} is used. *)
@@ -1526,4 +1544,23 @@ module Utils: sig
       [f].
       [channel] is always closed after [f] has been called, even if [f] raises
       an exception. *)
+
+  val with_temp_file: string -> (string -> in_channel -> 'a) -> 'a
+  (** [with_temp_file s f] creates a temporary file with [s] as contents and
+      calls [f filename in_channel] where [filename] is the name of the
+      temporary file and [in_channel] is an input channel opened to read the
+      file. The file is deleted after the execution of [f] (even if [f]
+      raised an exception. *)
+
+  val with_pipe: (in_channel -> out_channel -> 'a) -> 'a
+  (** [with_pipe f] creates a pipe and calls [f] with the two ends of the
+      pipe. *)
+
+  val with_stdin_from: in_channel -> ('a -> 'b) -> 'a -> 'b
+  (** [with_stdin_from chan f arg] calls [f arg] with the standard input
+      redirected for reading from [chan]. *)
+
+  val with_stdin_from_string: string -> ('a -> 'b) -> 'a -> 'b
+  (** [with_stdin_from_string s f arg] calls [f arg] with the standard input
+      redirected for reading from the contents of s. *)
 end

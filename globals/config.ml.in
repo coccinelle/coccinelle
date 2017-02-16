@@ -2,7 +2,17 @@ let version = "@COCCI_VERSION@"
 
 let path =
   try (Sys.getenv "COCCINELLE_HOME")
-  with Not_found->"@libdir@/coccinelle"
+  with Not_found->
+    (* was "@libdir@/coccinelle": incorrect, since "@libdir@" expands into
+       "${exec_prefix}/lib" (litteraly, without further expansion, that is
+       unlikely to be a valid path! *)
+    let exec_dir = Filename.dirname Sys.argv.(0) in
+    if Sys.file_exists (Filename.concat exec_dir "standard.iso") then
+      exec_dir
+    else
+      List.fold_left Filename.concat exec_dir
+	[Filename.parent_dir_name; "lib"; "coccinelle"]
+
 
 let std_iso = ref (Filename.concat path "standard.iso")
 let std_h   = ref (Filename.concat path "standard.h")

@@ -7,12 +7,106 @@
 #include <caml/alloc.h>
 #include <sys/param.h>
 #include <string.h>
-#include <dlfcn.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
+
+static FILE *(*Python__Py_fopen)(const char *pathname, const char *mode);
+
+#ifdef _WIN32
+#include <windows.h>
+
+typedef HINSTANCE library_t;
+
+static library_t
+open_library(const char *filename)
+{
+    return LoadLibrary(filename);
+}
+
+void
+close_library(library_t library)
+{
+    if (!FreeLibrary(library)) {
+        fprintf(stderr, "close_library.\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+static library_t
+get_default_library(void)
+{
+    return GetModuleHandle(0);
+}
+
+static void *
+find_symbol(library_t library, const char *name)
+{
+    return GetProcAddress(library, name);
+}
+
+int
+unsetenv(const char *name)
+{
+    size_t len = strlen(name);
+    char string[len + 2];
+    snprintf(string, len + 2, "%s=", name);
+    return _putenv(string);
+}
+
+extern int win_CRT_fd_of_filedescr(value handle);
+
+static FILE *
+file_of_file_descr(value file_descr, const char *mode)
+{
+    CAMLparam1(file_descr);
+    int fd = win_CRT_fd_of_filedescr(file_descr);
+    FILE *result = _fdopen(dup(fd), mode);
+    CAMLreturnT(FILE *, result);
+}
+#else
+#include <dlfcn.h>
+
+typedef void *library_t;
+
+static library_t
+open_library(const char *filename)
+{
+    return dlopen(filename, RTLD_LAZY);
+}
+
+void
+close_library(library_t filename)
+{
+    if (dlclose(filename)) {
+        fprintf(stderr, "close_library: %s.\n", dlerror());
+        exit(EXIT_FAILURE);
+    }
+}
+
+static library_t
+get_default_library(void)
+{
+    return RTLD_DEFAULT;
+}
+
+static void *
+find_symbol(library_t library, const char *name)
+{
+    return dlsym(library, name);
+}
+
+static FILE *
+file_of_file_descr(value file_descr, const char *mode)
+{
+    CAMLparam1(file_descr);
+    int fd = Int_val(file_descr);
+    FILE *result = fdopen(dup(fd), mode);
+    CAMLreturnT(FILE *, result);
+}
+#endif
 
 /* The following definitions are extracted and simplified from
 #include <Python.h>
@@ -113,9 +207,10 @@ static void *Python__PyObject_NextNotImplemented;
 
 /* Global variables for the library */
 
+/* version_major != 0 iff the library is initialized */
 static int version_major;
 
-static void *library;
+static library_t library;
 
 /* Functions that are special enough to deserved to be wrapped specifically */
 
@@ -194,7 +289,7 @@ static int pycompare(value v1, value v2)
     return result;
 }
 
-static long pyhash( value v )
+static intnat pyhash( value v )
 {
     if (getcustom(v))
         return Python_PyObject_Hash((PyObject *)getcustom(v));
@@ -202,7 +297,7 @@ static long pyhash( value v )
         return 0L;
 }
 
-static unsigned long
+static uintnat
 pydeserialize(void *dst)
 {
     return 0L;
@@ -229,7 +324,7 @@ enum code {
 static void *
 resolve(const char *symbol)
 {
-    void *result = dlsym(library, symbol);
+    void *result = find_symbol(library, symbol);
     if (!result) {
         fprintf(stderr, "Cannot resolve %s.\n", symbol);
         exit(EXIT_FAILURE);
@@ -407,7 +502,7 @@ caml_aux(PyObject *obj)
 
 static void
 assert_initialized() {
-    if (!library) {
+    if (!version_major) {
         failwith("Run 'Py.initialize ()' first");
     }
 }
@@ -415,6 +510,7 @@ assert_initialized() {
 static void
 assert_python2() {
     if (version_major != 2) {
+        assert_initialized();
         failwith("Python 2 needed");
     }
 }
@@ -422,6 +518,7 @@ assert_python2() {
 static void
 assert_ucs2() {
     if (ucs != UCS2) {
+        assert_initialized();
         failwith("Python with UCS2 needed");
     }
 }
@@ -429,6 +526,7 @@ assert_ucs2() {
 static void
 assert_ucs4() {
     if (ucs != UCS4) {
+        assert_initialized();
         failwith("Python with UCS4 needed");
     }
 }
@@ -436,6 +534,7 @@ assert_ucs4() {
 static void
 assert_python3() {
     if (version_major != 3) {
+        assert_initialized();
         failwith("Python 3 needed");
     }
 }
@@ -464,15 +563,15 @@ py_load_library(value filename_ocaml)
     CAMLparam1(filename_ocaml);
     if (Is_block(filename_ocaml)) {
         char *filename = String_val(Field(filename_ocaml, 0));
-        library = dlopen(filename, RTLD_LAZY);
+        library = open_library(filename);
         if (!library) {
             failwith("Library not found");
         }
     }
     else {
-        library = RTLD_DEFAULT;
+        library = get_default_library();
     }
-    Python_Py_GetVersion = dlsym(library, "Py_GetVersion");
+    Python_Py_GetVersion = find_symbol(library, "Py_GetVersion");
     if (!Python_Py_GetVersion) {
         failwith("No Python symbol");
     }
@@ -499,10 +598,13 @@ py_load_library(value filename_ocaml)
         Python_PyString_AsStringAndSize = resolve("PyString_AsStringAndSize");
     }
     Python_PyMem_Free = resolve("PyMem_Free");
-    if (dlsym(library, "PyUnicodeUCS2_AsEncodedString")) {
+    if (version_major >= 3) {
+        Python__Py_fopen = resolve("_Py_fopen");
+    }
+    if (find_symbol(library, "PyUnicodeUCS2_AsEncodedString")) {
         ucs = UCS2;
     }
-    else if (dlsym(library, "PyUnicodeUCS4_AsEncodedString")) {
+    else if (find_symbol(library, "PyUnicodeUCS4_AsEncodedString")) {
         ucs = UCS4;
     }
     else {
@@ -518,11 +620,11 @@ py_finalize_library(value unit)
 {
     CAMLparam1(unit);
     assert_initialized();
-    if (library != RTLD_DEFAULT) {
-        dlclose(library);
+    if (library != get_default_library()) {
+        close_library(library);
     }
-    library = NULL;
     version_major = 0;
+    ucs = UCS_NONE;
     CAMLreturn(Val_unit);
 }
 
@@ -581,7 +683,7 @@ PyTuple_Empty_wrapper(value unit)
 }
 
 enum pytype_labels {
-    Unknown,
+    PyUnknown,
     Bool,
     Bytes,
     Callable,
@@ -664,7 +766,7 @@ pytype(value object_ocaml)
         result = Iter;
     }
     else {
-        result = Unknown;
+        result = PyUnknown;
     }
     CAMLreturn(Val_int(result));
 }
@@ -789,9 +891,9 @@ pywrap_string_option(char *s)
 CAMLprim value
 pyrefcount(value pyobj)
 {
-  CAMLparam1(pyobj);
-  PyObject *obj = pyunwrap(pyobj);
-  CAMLreturn(Val_int(obj->ob_refcnt));
+    CAMLparam1(pyobj);
+    PyObject *obj = pyunwrap(pyobj);
+    CAMLreturn(Val_int(obj->ob_refcnt));
 }
 
 static void *xmalloc(size_t size)
@@ -936,5 +1038,43 @@ StringAndSize_wrapper(PyString_AsStringAndSize, char);
 StringAndSize_wrapper(PyObject_AsCharBuffer, const char);
 StringAndSize_wrapper(PyObject_AsReadBuffer, const void);
 StringAndSize_wrapper(PyObject_AsWriteBuffer, void);
+
+static FILE *
+open_file(value file, const char *mode)
+{
+    CAMLparam1(file);
+    FILE *result;
+    if (Tag_val(file) == 0) {
+        char *filename = String_val(Field(file, 0));
+        if (version_major >= 3) {
+            result = Python__Py_fopen(filename, mode);
+        }
+        else {
+            result = fopen(filename, mode);
+        }
+    }
+    else {
+        result = file_of_file_descr(Field(file, 0), mode);
+    }
+    CAMLreturnT(FILE *, result);
+}
+
+static void
+close_file(value file, FILE *file_struct)
+{
+    CAMLparam1(file);
+    if (Tag_val(file) == 0) {
+        if (version_major >= 3) {
+            /* No _Py_fclose :( */
+        }
+        else {
+            fclose(file_struct);
+        }
+    }
+    else if (Tag_val(file) == 1) {
+        fclose(file_struct);
+    }
+    CAMLreturn0;
+}
 
 #include "pyml_wrappers.inc"

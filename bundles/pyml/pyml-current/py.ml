@@ -2,6 +2,8 @@ type pyobject = Pytypes.pyobject
 
 type input = Pytypes.input = Single | File | Eval
 
+type 'a file = 'a Pytypes.file = Filename of string | Channel of 'a
+
 type compare = Pytypes.compare = LT | LE | EQ | NE | GT | GE
 
 type ucs = UCSNone | UCS2 | UCS4
@@ -30,8 +32,6 @@ external pyobject_aswritebuffer: pyobject -> string option
     = "PyObject_AsWriteBuffer_wrapper"
 
 external ucs: unit -> ucs = "py_get_UCS"
-
-external fd_of_descr: Unix.file_descr -> int = "%identity"
 
 let initialized = ref false
 
@@ -115,6 +115,12 @@ let run_command command read_stderr =
         Printf.sprintf "Py.run_command: unable to read the result of '%s'"
           command in
       failwith msg in
+  let result =
+    let length = String.length result in
+    if String.sub result (length - 1) 1 = "\r" then
+      String.sub result 0 (length - 1)
+    else
+      result in
   if Unix.close_process_full (input, output, error) <> Unix.WEXITED 0 then
     begin
       let msg = Printf.sprintf "Py.run_command: unable to run '%s'" command in
@@ -142,11 +148,12 @@ let parent_dir filename =
 let has_putenv = ref false
 
 let init_pythonhome pythonhome =
-  try
-    ignore (Sys.getenv "PYTHONHOME")
-  with Not_found ->
-    Unix.putenv "PYTHONHOME" pythonhome;
-    has_putenv := true
+  if pythonhome <> "" then
+    try
+      ignore (Sys.getenv "PYTHONHOME")
+    with Not_found ->
+      Unix.putenv "PYTHONHOME" pythonhome;
+      has_putenv := true
 
 let find_library_path version_major version_minor =
   let command =
@@ -169,8 +176,9 @@ let find_library_path version_major version_minor =
               with Not_found -> pythonhome in
             [Filename.concat prefix "lib"] in
       let library_filenames =
-        [Printf.sprintf "python%d.%dm" version_major version_minor;
-         Printf.sprintf "python%d.%d" version_major version_minor] in
+        List.map
+          (fun format -> Printf.sprintf format version_major version_minor)
+          Pyml_arch.library_patterns in
       (library_paths, library_filenames)
   | Some words ->
       let word_list = split words ' ' in
@@ -186,7 +194,10 @@ let find_library_path version_major version_minor =
           | "-l" ->
               if library_filename <> None then
                 unable_to_parse ();
-              (library_paths, Some (suffix word 2))
+              let library_filename =
+                Printf.sprintf "lib%s%s" (suffix word 2)
+                  Pyml_arch.library_suffix in
+              (library_paths, Some library_filename)
           | _ -> (library_paths, library_filename)
         else (library_paths, library_filename) in
       let (library_paths, library_filename) =
@@ -198,15 +209,6 @@ let find_library_path version_major version_minor =
       (library_paths, [library_filename])
 
 let initialize_version_value interpreter =
-  begin
-    let python_full_path =
-      if String.contains interpreter '/' then interpreter
-      else
-        let which_python = Printf.sprintf "which \"%s\"" interpreter in
-        run_command which_python false in
-    let pythonhome = parent_dir python_full_path in
-    init_pythonhome pythonhome
-  end;
   let version_line =
     let python_version_cmd = Printf.sprintf "\"%s\" --version" interpreter in
     try run_command python_version_cmd false
@@ -223,11 +225,6 @@ let find_library () =
   with Failure _ ->
     let (library_paths, library_filenames) =
       find_library_path !version_major_value !version_minor_value in
-    let expand_filenames filename =
-      [Printf.sprintf "lib%s.so" filename;
-       Printf.sprintf "lib%s.dylib" filename] in
-    let library_filenames =
-      List.concat (List.map expand_filenames library_filenames) in
     let expand_filepaths filename =
       filename ::
       List.map (fun path -> Filename.concat path filename) library_paths in
@@ -239,14 +236,31 @@ let find_library () =
       | filename :: others ->
           begin
             try
-              init_pythonhome (parent_dir filename);
-              load_library (Some filename)
+              load_library (Some filename);
+              init_pythonhome (parent_dir filename)
             with Failure _ -> try_load_library others
           end in
     try_load_library library_filenames
 
-let initialize_library () =
+let initialize_library python_full_path =
+  begin
+    match !python_home with
+      None -> ()
+    | Some s -> init_pythonhome s
+  end;
   find_library ();
+  begin
+    match python_full_path with
+      None -> ()
+    | Some python_full_path' ->
+        let pythonhome =
+          let dirname = Filename.dirname python_full_path' in
+          if Filename.basename dirname = "bin" then
+            Filename.concat dirname Filename.parent_dir_name
+          else
+            dirname in
+        init_pythonhome pythonhome;
+  end;
   set_program_name !program_name;
   begin
     match !python_home with
@@ -259,15 +273,26 @@ let get_version = Pywrappers.py_getversion
 let initialize ?(interpreter = "python") ?version () =
   if !initialized then
     failwith "Py.initialize: already initialized";
+  let python_full_path =
+    if String.contains interpreter '/' then Some interpreter
+    else
+      let interpreter_exe = Pyml_arch.ensure_executable_suffix interpreter in
+      let which_python =
+        Printf.sprintf "%s \"%s\"" Pyml_arch.which interpreter_exe in
+      try Some (run_command which_python false)
+      with Failure _ -> None in
   begin
     match version with
       Some (version_major, version_minor) ->
         version_major_value := version_major;
         version_minor_value := version_minor
     | _ ->
-        initialize_version_value interpreter;
+        match python_full_path with
+          None ->
+            failwith "No Python version given and no Python interpreter found"
+        | Some python_full_path' -> initialize_version_value python_full_path'
   end;
-  initialize_library ();
+  initialize_library python_full_path;
   let version = get_version () in
   let (version_major, version_minor) = extract_version_major_minor version in
   if version_major != !version_major_value ||
@@ -1085,7 +1110,7 @@ module Object = struct
   let print obj out_channel =
     assert_int_success
       (Pywrappers.pyobject_print obj
-         (fd_of_descr (Unix.descr_of_out_channel out_channel)) 1)
+         (Pytypes.file_map Unix.descr_of_out_channel out_channel) 1)
 
   let repr = object_repr
 
@@ -1452,30 +1477,62 @@ module Utils = struct
     with e ->
       close_out_noerr channel;
       raise e
+
+  let with_temp_file contents f =
+    let (file, channel) = Filename.open_temp_file "pyml_tests" ".py" in
+    try_finally begin fun () ->
+      write_and_close channel (output_string channel) contents;
+      let channel = open_in file in
+      read_and_close channel (f file) channel
+    end ()
+      Sys.remove file
+
+  let with_pipe f =
+    let (read, write) = Unix.pipe () in
+    let in_channel = Unix.in_channel_of_descr read
+    and out_channel = Unix.out_channel_of_descr write in
+    try_finally (f in_channel) out_channel
+      (fun () ->
+        close_in_noerr in_channel;
+        close_out_noerr out_channel) ()
+
+  let with_stdin_from channel f arg =
+    let stdin_backup = Unix.dup Unix.stdin in
+    Unix.dup2 (Unix.descr_of_in_channel channel) Unix.stdin;
+    try_finally
+      f arg
+      (Unix.dup2 stdin_backup) Unix.stdin
+
+  let with_stdin_from_string s f arg =
+    with_pipe begin fun in_channel out_channel ->
+      output_string out_channel s;
+      close_out out_channel;
+      with_stdin_from in_channel f arg
+    end
 end
 
 module Run = struct
   let any_file file filename =
     assert_int_success
       (Pywrappers.pyrun_anyfileexflags
-         (fd_of_descr (Unix.descr_of_in_channel file)) filename 0 None)
+         (Pytypes.file_map Unix.descr_of_in_channel file) filename 1 None)
 
   let file file filename start globals locals =
-    let fd = fd_of_descr (Unix.descr_of_in_channel file) in
+    let fd = Pytypes.file_map Unix.descr_of_in_channel file in
     check_not_null
-      (Pywrappers.pyrun_fileexflags fd filename start globals locals 0 None)
+      (Pywrappers.pyrun_fileexflags fd filename start globals locals 1 None)
 
   let interactive_one channel name =
-    let fd = fd_of_descr (Unix.descr_of_in_channel channel) in
+    let fd = Channel (Unix.descr_of_in_channel channel) in
     assert_int_success (Pywrappers.pyrun_interactiveoneflags fd name None)
 
   let interactive_loop channel name =
-    let fd = fd_of_descr (Unix.descr_of_in_channel channel) in
+    let fd = Channel (Unix.descr_of_in_channel channel) in
     assert_int_success (Pywrappers.pyrun_interactiveloopflags fd name None)
 
   let simple_file channel name =
-    let fd = fd_of_descr (Unix.descr_of_in_channel channel) in
-    assert_int_success (Pywrappers.pyrun_simplefileexflags fd name 0 None)
+    let fd = Pytypes.file_map Unix.descr_of_in_channel channel in
+    assert_int_success (Pywrappers.pyrun_simplefileexflags fd name 1 None)
 
   let simple_string string =
     Pywrappers.pyrun_simplestringflags string None = 0
@@ -1577,13 +1634,13 @@ module Marshal = struct
     Long.to_int (Module.get marshal_module "version")
 
   let read_object_from_file file =
-    let fd = fd_of_descr (Unix.descr_of_in_channel file) in
+    let fd = Pytypes.file_map Unix.descr_of_in_channel file in
     check_not_null (Pywrappers.pymarshal_readobjectfromfile fd)
 
   let load = read_object_from_file
 
   let read_last_object_from_file file =
-    let fd = fd_of_descr (Unix.descr_of_in_channel file) in
+    let fd = Pytypes.file_map Unix.descr_of_in_channel file in
     check_not_null (Pywrappers.pymarshal_readlastobjectfromfile fd)
 
   let read_object_from_string s len =
@@ -1592,7 +1649,7 @@ module Marshal = struct
   let loads s = read_object_from_string s (string_length s)
 
   let write_object_to_file v file version =
-    let fd = fd_of_descr (Unix.descr_of_out_channel file) in
+    let fd = Pytypes.file_map Unix.descr_of_out_channel file in
     assert_int_success (Pywrappers.pymarshal_writeobjecttofile v fd version)
 
   let dump ?(version = version ()) v file =

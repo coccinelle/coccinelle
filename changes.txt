@@ -52,12 +52,20 @@
   script code.  Problem reported by Markus Elfring.
 - --ignore command line argument to specify a prefix of the names of files
   that should be ignored.
+- added --max-width to adjust the line width for generated code.  Requested
+  by Kumar Gala.
+- forall and exists for quantifying over the success of matching depends on
+  constraints.
 ** Bugfix:
 - Improved detection of metavariables in strings.  Problem reported by
   Wolfram Sang.
 - Don't require all metavars in type exp meta constraint to be bound,
   unless only one type is specified.  Problem reported by Michael Stefaniuc.
 - Finalization scripts are executed even in case there is no other script rules.
+- spatch should find standard.iso and Python modules even if COCCINELLE_HOME
+  and PYTHONPATH are not set (either in the directory where the executable is
+  if it contains standard.iso, or in ../lib/coccinelle relatively to where the
+  executable is).
 * 1.0.6
 ** Language:
 - Allow \ in #define in semantic patch rules, to allow body with multiple

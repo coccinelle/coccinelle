@@ -594,15 +594,19 @@ let do_get_constants constants keywords env (neg_pos,_) =
 (* ------------------------------------------------------------------------ *)
 
 (* true means the rule should be analyzed, false means it should be ignored *)
-let rec dependencies env = function
-    Ast.Dep s -> (try List.assoc s env with Not_found -> False)
-  | Ast.AntiDep s -> True
-  | Ast.EverDep s -> (try List.assoc s env with Not_found -> False)
-  | Ast.NeverDep s -> True
-  | Ast.AndDep (d1,d2) -> build_and (dependencies env d1) (dependencies env d2)
-  | Ast.OrDep (d1,d2) -> build_or (dependencies env d1) (dependencies env d2)
-  | Ast.FileIn _ | Ast.NotFileIn _ | Ast.NoDep -> True
+let rec dependencies env d =
+  let rec loop = function
+      Ast.Dep s -> (try List.assoc s env with Not_found -> False)
+    | Ast.AntiDep s -> True
+    | Ast.EverDep s -> (try List.assoc s env with Not_found -> False)
+    | Ast.NeverDep s -> True
+    | Ast.AndDep (d1,d2) -> build_and (loop d1) (loop d2)
+    | Ast.OrDep (d1,d2) -> build_or (loop d1) (loop d2)
+    | Ast.FileIn _ | Ast.NotFileIn _ -> True in
+  match d with
+    Ast.NoDep -> True
   | Ast.FailDep -> False
+  | Ast.ExistsDep d | Ast.ForallDep d -> loop d
 
 (* ------------------------------------------------------------------------ *)
 
@@ -700,7 +704,7 @@ let debug_deps nm deps res =
       Printf.fprintf stderr "Rule: %s\n" nm;
       Printf.fprintf stderr "Dependecies: %s\n"
 	(Common.format_to_string
-	   (function _ -> Pretty_print_cocci.dep true deps));
+	   (function _ -> Pretty_print_cocci.dependency deps));
       Printf.fprintf stderr "Result: %s\n\n" (dep2c res)
     end
 
@@ -715,12 +719,24 @@ let run rules neg_pos_vars =
 		  (function prev ->
 		    function
 			(_,("virtual",_),_,_) -> prev
-		      | (_,(rule,_),_,Ast.NoMVInit) ->
-			  Ast.AndDep (Ast.Dep rule,prev)
+		      | (_,(rule,_),_,Ast.NoMVInit) -> Ast.Dep rule :: prev
 		      | (_,(rule,_),_,_) ->
 			  (* default initializer, so no dependency *)
 			  prev)
-		  deps mv in
+		  [] mv in
+	      let extra_deps =
+		match extra_deps with
+		  [] -> deps
+		| x::xs ->
+		    let extra_deps =
+		      List.fold_left (fun prev x -> Ast.AndDep(x,prev)) x xs in
+		    match deps with
+		      Ast.NoDep -> Ast.ExistsDep(extra_deps)
+		    | Ast.FailDep -> Ast.FailDep
+		    | Ast.ExistsDep d ->
+			Ast.ExistsDep(Ast.AndDep(d,extra_deps))
+		    | Ast.ForallDep d ->
+			Ast.ForallDep(Ast.AndDep(d,extra_deps)) in
 	      let dependencies = dependencies env extra_deps in
 	      debug_deps nm extra_deps dependencies;
 	      (match dependencies with

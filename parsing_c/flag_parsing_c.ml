@@ -248,7 +248,7 @@ let indent = ref 0
 let set_linux_spacing _ = spacing := LINUX (*follow the conventions of Linux*)
 let set_smpl_spacing _ = spacing := SMPL   (*use spacing from the SP*)
 
-let max_width = 78
+let max_width = ref 78
 
 (*****************************************************************************)
 

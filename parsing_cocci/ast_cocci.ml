@@ -705,16 +705,18 @@ and mvinit =
   | MVInitString of string
   | MVInitPosList
 
-and dependency =
+and dep =
     Dep of string (* rule applies for the current binding *)
   | AntiDep of string (* rule doesn't apply for the current binding *)
   | EverDep of string (* rule applies for some binding *)
   | NeverDep of string (* rule never applies for any binding *)
-  | AndDep of dependency * dependency
-  | OrDep of dependency * dependency
+  | AndDep of dep * dep
+  | OrDep of dep * dep
   | FileIn of string
   | NotFileIn of string
-  | NoDep | FailDep
+
+and dependency =
+    NoDep | FailDep | ExistsDep of dep | ForallDep of dep
 
 and rule_with_metavars = metavar list * rule
 

@@ -20,6 +20,19 @@ ifeq ($(BUILD_OPT),yes)
 	@echo "skipped building $@ in optimizing mode: $< will be built instead."
 endif
 
+define without_mli
+ifeq ($(wildcard $(SOURCE).mli),)
+ifeq ($(BUILD_OPT),yes)
+$(SOURCE).cmo: $(SOURCE).cmx
+$(SOURCE).cmi: $(SOURCE).cmx
+else
+$(SOURCE).cmi: $(SOURCE).cmo
+endif
+endif
+endef
+
+$(foreach SOURCE,$(SOURCES),$(eval $(without_mli)))
+$(foreach SOURCE,$(SRC),$(eval $(without_mli)))
 
 # If this variable is set, then 'make distclean' should not remove certain
 # generated files like the generated parsers, and documentation.

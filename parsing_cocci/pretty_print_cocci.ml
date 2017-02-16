@@ -1059,25 +1059,31 @@ let rec dep in_and = function
   | Ast.EverDep(s) -> print_string "ever "; print_string s
   | Ast.NeverDep(s) -> print_string "never "; print_string s
   | Ast.AndDep(s1,s2) ->
-      let print_and _ = dep true s1; print_string " && "; dep true s2 in
+      let print_and _ =
+	dep true s1; print_string " && "; dep true s2 in
       if in_and
       then print_and ()
       else (print_string "("; print_and(); print_string ")")
   | Ast.OrDep(s1,s2) ->
-      let print_or _ = dep false s1; print_string " || "; dep false s2 in
+      let print_or _ =
+	dep false s1; print_string " || "; dep false s2 in
       if not in_and
       then print_or ()
       else (print_string "("; print_or(); print_string ")")
   | Ast.FileIn s -> print_string "file in "; print_string s
   | Ast.NotFileIn s -> print_string "not file in "; print_string s
-  | Ast.NoDep   -> print_string "no_dep"
+
+let dependency = function
+    Ast.NoDep   -> print_string "no_dep"
   | Ast.FailDep -> print_string "fail_dep"
+  | Ast.ExistsDep d -> dep true d
+  | Ast.ForallDep d -> print_string "forall "; dep true d
 
 let script_header str lang deps mv code =
   print_string (Printf.sprintf "@%s:%s" str lang);
   (match deps with
     Ast.NoDep -> ()
-  | _ -> print_string " depends on "; dep true deps);
+  | _ -> print_string " depends on "; dependency deps);
   print_string "@";
   force_newline();
   List.iter
@@ -1120,7 +1126,7 @@ let unparse mvs z =
       print_string nm;
       (match deps with
 	Ast.NoDep -> ()
-      | _ -> print_string " depends on "; dep true deps);
+      | _ -> print_string " depends on "; dependency deps);
       (match drops with
 	[] -> ()
       |	_ -> print_string " disable "; print_string (String.concat "," drops));

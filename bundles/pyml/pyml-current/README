@@ -16,10 +16,7 @@ actively maintained.
 *Tracker for bug reports and feature requests:*
 http://pyml.gforge.inria.fr/tracker
 
-*OPAM:* ::
-
-  opam remote add pyml http://pyml.gforge.inria.fr
-  opam install pyml
+*OPAM:* ``opam install pyml``
 
 The Python library is linked at runtime and the same executable can be
 run in a Python 2 or a Python 3 environment. ``py.ml`` does not

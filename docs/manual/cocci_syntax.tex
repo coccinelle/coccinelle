@@ -84,8 +84,12 @@ section.
   \CASE{@ \NT{rulename} @ \any{\NT{metadecl}} @@}
 
   \RULE{\rt{rulename}}
-  \CASE{\T{id} \OPT{extends \T{id}} \OPT{depends on \NT{dep}} \opt{\NT{iso}}
+  \CASE{\T{id} \OPT{extends \T{id}} \OPT{depends on} \opt{\NT{scope}} \NT{dep} \opt{\NT{iso}}
     \opt{\NT{disable-iso}} \opt{\NT{exists}} \opt{expression}}
+
+  \RULE{\rt{scope}}
+  \CASE{\T{exists}}
+  \CASE{\T{forall}}
 
   \RULE{\rt{dep}}
   \CASE{\T{id}}
@@ -165,6 +169,26 @@ subdirectory.  The declaration {\tt file in} is only allowed on SmPL
 code-matching rules.  Script rules are not applied to any code in
 particular, and thus it doesn't make sense to check on the file being
 considered.
+
+As metavariables are bound an inherited across rules, a tree of
+environments is built up.  A rule is processed only once for all of the
+branches that have the same metavariable bindings for the set of variables
+that the rule depends on.  Different branches, however, may be derived from
+the success or failure of different sets of rules.  A \texttt{depends on}
+clause can further indicate whether the clause should be satisfied for all
+the branches (\texttt{forall}) or only for one (\texttt{exists}).
+\texttt{exists} is the default.  These annotations can for example be
+useful when one rule binds a metavariable \texttt{x}, subsequent rules have
+the effect of testing good and bad properties of \texttt{x}, and a final
+rule may want to ensure that all occurrences of \texttt{x} have the good
+property (\texttt{forall}) or none have the bad property
+(\texttt{exists}).  \texttt{forall} and \texttt{exists} are currently only
+supported at top level, not under conjunction and disjunction.
+
+% Once there are references to rule names, there should not be forall and
+% exists annotations, so one has to sort out where they are allowed and
+% where they are not.  The situation is perhaps like the case of path
+% operations in temporal logic.
 
 The possible types of metavariable declarations are defined by the grammar
 rule below.  Metavariables should occur at least once in the transformation

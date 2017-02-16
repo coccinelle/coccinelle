@@ -594,10 +594,12 @@ let fix_dependencies d =
     | Ast0.OrDep(d1,d2) ->
 	Ast.OrDep(loop inverted d1,loop inverted d2)
     | Ast0.FileIn s when inverted -> Ast.NotFileIn s
-    | Ast0.FileIn s -> Ast.FileIn s
-    | Ast0.NoDep -> Ast.NoDep
-    | Ast0.FailDep -> Ast.FailDep in
-  loop false d
+    | Ast0.FileIn s -> Ast.FileIn s in
+  match d with
+    Ast0.NoDep -> Ast.NoDep
+  | Ast0.FailDep -> Ast.FailDep
+  | Ast0.ExistsDep d -> Ast.ExistsDep (loop false d)
+  | Ast0.ForallDep d -> Ast.ForallDep (loop false d)
 
 let make_cocci_rule_name_result nm d i a e ee =
   Ast.CocciRulename (check_rule_name nm,fix_dependencies d,i,a,e,ee)

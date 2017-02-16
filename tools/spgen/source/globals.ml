@@ -35,7 +35,7 @@ let get_org_name str = str ^ "_org"
 let get_report_name str = str ^ "_report"
 
 (* Page width limit for generated script (not always upheld ...) *)
-let char_limit = ref Flag_parsing_c.max_width
+let char_limit = ref !Flag_parsing_c.max_width
 
 let init ~rule_name:r ~pos_name:p ~error_msg:e ~char_limit:cl =
   rule_counter := 0;
@@ -78,7 +78,11 @@ let add_patch_dependency deps =
       Ast.AndDep(
         Ast.AntiDep "context",
         Ast.AndDep(Ast.AntiDep "org", Ast.AntiDep "report"))) in
-  if deps = Ast.NoDep then patch_dep else Ast.AndDep(deps, patch_dep)
+  match deps with
+    Ast.NoDep -> Ast.ExistsDep patch_dep
+  | Ast.FailDep -> Ast.FailDep
+  | Ast.ExistsDep d -> Ast.ExistsDep(Ast.AndDep(d, patch_dep))
+  | Ast.ForallDep d -> Ast.ForallDep(Ast.AndDep(d, patch_dep))
 
 (* adds the hardcoded 'default' context rule dependency. *)
 let add_context_dependency ~context_mode deps =
@@ -88,8 +92,11 @@ let add_context_dependency ~context_mode deps =
     if context_mode
     then context_dep
     else Ast.AndDep(Ast.AntiDep "patch", context_dep) in
-  if deps = Ast.NoDep then context_dep else Ast.AndDep(deps, context_dep)
-
+  match deps with
+    Ast.NoDep -> Ast.ExistsDep context_dep
+  | Ast.FailDep -> Ast.FailDep
+  | Ast.ExistsDep d -> Ast.ExistsDep(Ast.AndDep(d, context_dep))
+  | Ast.ForallDep d -> Ast.ForallDep(Ast.AndDep(d, context_dep))
 
 (* ------------------------------------------------------------------------- *)
 (* SANITY CHECKS AND RULE HELPERS *)
