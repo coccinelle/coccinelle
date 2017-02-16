@@ -742,6 +742,10 @@ and declaration d =
       do_disj d starter decls mids ender declaration
 	(fun starter decls mids ender ->
 	  Ast0.DisjDecl(starter,decls,mids,ender))
+  | Ast0.ConjDecl(starter,decls,mids,ender) ->
+      do_disj d starter decls mids ender declaration
+	(fun starter decls mids ender ->
+	  Ast0.ConjDecl(starter,decls,mids,ender))
   | Ast0.Ddots(dots,whencode) ->
       let dots = bad_mcode dots in
       let ln = promote_mcode dots in

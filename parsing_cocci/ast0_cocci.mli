@@ -244,6 +244,8 @@ and base_declaration =
   | Typedef of string mcode (* typedef *) * typeC * typeC * string mcode (*;*)
   | DisjDecl   of string mcode * declaration list * string mcode list *
 	          string mcode
+  | ConjDecl   of string mcode * declaration list * string mcode list *
+	          string mcode
   | Ddots      of string mcode (* ... *) * (string mcode * string mcode *
                   declaration) option (* whencode *)
   | OptDecl    of declaration

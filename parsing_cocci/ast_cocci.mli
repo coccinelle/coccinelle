@@ -363,6 +363,7 @@ and base_declaration =
         initialiser * string mcode (* ; *)
   | Typedef of string mcode (*typedef*) * fullType * typeC * string mcode (*;*)
   | DisjDecl   of declaration list
+  | ConjDecl of declaration list
 
   | MetaDecl of meta_name mcode * constraints * keep_binding * inherited
   | MetaField of meta_name mcode * constraints * keep_binding * inherited

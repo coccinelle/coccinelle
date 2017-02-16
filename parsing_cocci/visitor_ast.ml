@@ -435,7 +435,8 @@ let combiner bind option_default
 	  let lid = typeC id in
 	  let lsem = string_mcode sem in
 	  multibind [lstg; lty; lid; lsem]
-      | Ast.DisjDecl(decls) -> multibind (List.map declaration decls)
+      | Ast.DisjDecl(decls)
+      | Ast.ConjDecl(decls) -> multibind (List.map declaration decls)
       | Ast.OptDecl(decl) -> declaration decl in
     declfn all_functions k d
 
@@ -1303,6 +1304,7 @@ let rebuilder
 	    let lsem = string_mcode sem in
 	    Ast.Typedef(lstg, lty, lid, lsem)
 	| Ast.DisjDecl(decls) -> Ast.DisjDecl(List.map declaration decls)
+	| Ast.ConjDecl(decls) -> Ast.ConjDecl(List.map declaration decls)
 	| Ast.OptDecl(decl) -> Ast.OptDecl(declaration decl)) in
     declfn all_functions k d
 

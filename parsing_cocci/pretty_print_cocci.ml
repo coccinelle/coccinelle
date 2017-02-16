@@ -513,6 +513,7 @@ and declaration d =
       mcode print_string stg; print_string " "; fullType ty; typeC id;
       mcode print_string sem
   | Ast.DisjDecl(decls) -> print_disj_list declaration decls "|"
+  | Ast.ConjDecl(decls) -> print_disj_list declaration decls "&"
   | Ast.OptDecl(decl) -> print_string "?"; declaration decl
 
 and annotated_decl arity d =

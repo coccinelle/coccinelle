@@ -973,7 +973,8 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (Ast0.Typedef(stga,tya,ida,sc1),Ast0.Typedef(stgb,tyb,idb,sc)) ->
 	      conjunct_bindings (check_mcode sc1 sc)
 		(conjunct_bindings (match_typeC tya tyb) (match_typeC ida idb))
-	  | (Ast0.DisjDecl(_,declsa,_,_),_) ->
+	  | (Ast0.DisjDecl(_,declsa,_,_),_)
+	  | (Ast0.ConjDecl(_,declsa,_,_),_) ->
 	      failwith "not allowed in the pattern of an isomorphism"
 	  | (Ast0.Ddots(d1,None),Ast0.Ddots(d,None)) -> check_mcode d1 d
 	  |	(Ast0.Ddots(dd,None),Ast0.Ddots(d,Some (wh,ee,wc))) ->

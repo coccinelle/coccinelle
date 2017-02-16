@@ -309,6 +309,10 @@ and disjdecl d =
       let ty = disjty ty in (* disj not allowed in id *)
       List.map (function ty -> Ast.rewrap d (Ast.Typedef(stg,ty,id,sem))) ty
   | Ast.DisjDecl(decls) -> List.concat (List.map disjdecl decls)
+  | Ast.ConjDecl(decl_list) ->
+      let decl_list = disjmult disjdecl decl_list in
+      List.map (function decl_list -> Ast.rewrap d (Ast.ConjDecl(decl_list)))
+	decl_list
   | Ast.OptDecl(decl) ->
       let decl = disjdecl decl in
       List.map (function decl -> Ast.rewrap d (Ast.OptDecl(decl))) decl

@@ -255,6 +255,8 @@ and base_declaration =
   | Typedef of string mcode (* typedef *) * typeC * typeC * string mcode (*;*)
   | DisjDecl   of string mcode * declaration list *
 	          string mcode list (* the |s *)  * string mcode
+  | ConjDecl   of string mcode * declaration list *
+	          string mcode list (* the &s *)  * string mcode
   (* Ddots is for a structure declaration *)
   | Ddots      of string mcode (* ... *) * (string mcode * string mcode *
 	          declaration) option (* whencode *)

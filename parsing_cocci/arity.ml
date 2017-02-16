@@ -595,6 +595,12 @@ and declaration tgt decl =
       |	_ -> ());
       let res = Ast0.DisjDecl(starter,decls,mids,ender) in
       Ast0.rewrap decl res
+  | Ast0.ConjDecl(starter,decls,mids,ender) ->
+      let decls = List.map (declaration tgt) decls in
+      (if anyopt decls (function Ast0.OptDecl(_) -> true | _ -> false)
+      then failwith "unexpected code");
+      let res = Ast0.ConjDecl(starter,decls,mids,ender) in
+      Ast0.rewrap decl res
   | Ast0.Ddots(dots,whencode) ->
       let arity = all_same true tgt (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in

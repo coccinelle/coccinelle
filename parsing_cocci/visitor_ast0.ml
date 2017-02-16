@@ -506,6 +506,10 @@ let visitor mode bind option_default
 	    do_disj starter decls mids ender declaration
 	      (fun starter decls mids ender ->
 		Ast0.DisjDecl(starter,decls,mids,ender))
+	| Ast0.ConjDecl(starter,decls,mids,ender) ->
+	    do_disj starter decls mids ender declaration
+	      (fun starter decls mids ender ->
+		Ast0.ConjDecl(starter,decls,mids,ender))
 	| Ast0.Ddots(dots,whencode) ->
 	    let (dots_n,dots) = string_mcode dots in
 	    let (whencode_n, whencode) = match whencode with

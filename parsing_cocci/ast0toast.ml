@@ -213,7 +213,8 @@ let check_allminus =
 
   let declaration r k e =
     match Ast0.unwrap e with
-      Ast0.DisjDecl(starter,decls,mids,ender) ->
+      Ast0.DisjDecl(starter,decls,mids,ender)
+    | Ast0.ConjDecl(starter,decls,mids,ender) ->
 	List.for_all r.VT0.combiner_rec_declaration decls
     | Ast0.AsDecl(decl,asdecl) -> k decl
     | _ -> k e in
@@ -650,6 +651,7 @@ and declaration d =
 	| _ -> failwith "bad typedef")
     | Ast0.Ddots(dots,whencode) -> failwith "should not be possible"
     | Ast0.DisjDecl(_,decls,_,_) -> Ast.DisjDecl(List.map declaration decls)
+    | Ast0.ConjDecl(_,decls,_,_) -> Ast.ConjDecl(List.map declaration decls)
     | Ast0.OptDecl(decl) -> Ast.OptDecl(declaration decl))
 
 and annotated_decl bef d =

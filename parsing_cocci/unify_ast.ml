@@ -414,6 +414,12 @@ and unify_declaration d1 d2 =
   | (_,Ast.DisjDecl(d2)) ->
       disjunct_all_bindings
 	(List.map (function x -> unify_declaration d1 x) d2)
+  | (Ast.ConjDecl(d1),_) ->
+      conjunct_all_bindings
+	(List.map (function x -> unify_declaration x d2) d1)
+  | (_,Ast.ConjDecl(d2)) ->
+      conjunct_all_bindings
+	(List.map (function x -> unify_declaration d1 x) d2)
 
   | (Ast.OptDecl(_),_)
   | (_,Ast.OptDecl(_)) -> failwith "unsupported decl"

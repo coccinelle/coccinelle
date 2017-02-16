@@ -286,7 +286,8 @@ and declaration context old_metas table minus d =
   | Ast0.Typedef(stg,ty,id,sem) ->
       typeC old_metas table minus ty;
       typeC old_metas table minus id
-  | Ast0.DisjDecl(_,decls,_,_) ->
+  | Ast0.DisjDecl(_,decls,_,_)
+  | Ast0.ConjDecl(_,decls,_,_) ->
       List.iter (declaration ID old_metas table minus) decls
   | Ast0.Ddots(_,Some (_,_,x)) -> declaration ID old_metas table minus x
   | Ast0.Ddots(_,None) -> ()
@@ -601,7 +602,8 @@ let dup_positions rules =
 
   let declaration r k e =
     match Ast0.unwrap e with
-      Ast0.DisjDecl(_,decls,_,_) ->
+      Ast0.DisjDecl(_,decls,_,_)
+    | Ast0.ConjDecl(_,decls,_,_) ->
 	List.fold_left Common.union_set option_default
 	  (List.map r.VT0.combiner_rec_declaration decls)
     | _ -> k e in

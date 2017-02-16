@@ -903,7 +903,7 @@ and declaration d =
       mcode print_string stg;
       fullType ty; pr_space(); typeC id;
       mcode print_string sem
-  | Ast.DisjDecl(_) -> raise CantBeInPlus
+  | Ast.DisjDecl(_) | Ast.ConjDecl(_) -> raise CantBeInPlus
   | Ast.OptDecl(decl) -> raise CantBeInPlus
 
 and annotated_decl d =

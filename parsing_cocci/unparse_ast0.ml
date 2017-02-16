@@ -400,6 +400,8 @@ and declaration d =
 	  mcode print_string sem
       | Ast0.DisjDecl(_,decls,_,_) ->
 	  do_disj decls declaration "|"
+      | Ast0.ConjDecl(_,decls,_,_) ->
+	  do_disj decls declaration "&"
       | Ast0.Ddots(dots,Some (_,_,whencode)) ->
 	  mcode print_string dots; print_string "   when != ";
 	  declaration whencode

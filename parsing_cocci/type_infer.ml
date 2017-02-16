@@ -383,7 +383,8 @@ let rec propagate_types env =
               (* pad: should handle typedef one day and add a binding *)
     | Ast0.Typedef((a,_,_,_,_,_),b,c,(d,_,_,_,_,_)) ->
 	[]
-    | Ast0.DisjDecl(_,disjs,_,_) ->
+    | Ast0.DisjDecl(_,disjs,_,_)
+    | Ast0.ConjDecl(_,disjs,_,_) ->
 	List.concat(List.map (process_decl env) disjs)
     | Ast0.Ddots(_,_) -> [] (* not in a statement list anyway *)
     | Ast0.OptDecl(decl) -> process_decl env decl

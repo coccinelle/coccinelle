@@ -2743,6 +2743,14 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
       ) fail
 *)
 
+  | A.ConjDecl declas, declb ->
+      let rec loop acc_decl db = function
+	  [] -> return (A.ConjDecl (List.rev acc_decl) +> A.rewrap decla, db)
+	| d::ds ->
+	    onedecl allminus d db >>= (fun decl db ->
+	      loop (decl::acc_decl) db ds) in
+      loop [] (declb, iiptvirgb, iistob) declas
+
    | A.OptDecl _,    _ ->
        failwith "not handling Opt Decl"
 

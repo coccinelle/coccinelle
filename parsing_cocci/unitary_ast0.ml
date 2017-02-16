@@ -148,6 +148,10 @@ let get_free checker t =
     | Ast0.MetaFieldList(name,_,_,_) -> checker name
     | Ast0.DisjDecl(starter,decls,mids,ender) ->
 	detect_unitary_frees(List.map r.VT0.combiner_rec_declaration decls)
+    | Ast0.ConjDecl(starter,decls,mids,ender) ->
+	List.fold_left
+	  (fun prev cur -> bind (r.VT0.combiner_rec_declaration cur) prev)
+	  option_default decls
     | _ -> k d in
 
   let case_line r k c =

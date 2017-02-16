@@ -1029,6 +1029,10 @@ struct_decl_one:
 	{ let (mids,code) = t in
 	Ast0.wrap
 	  (Ast0.DisjDecl(P.id2mcode lp,code,mids, P.id2mcode rp)) }
+    | lp=TOPar0 t=andzero_list(struct_decl_one,struct_decl_one) rp=TCPar0
+	{ let (mids,code) = t in
+	Ast0.wrap
+	  (Ast0.ConjDecl(P.id2mcode lp,code,mids, P.id2mcode rp)) }
     | t=ctype d=d_ident pv=TPtVirg
 	 { let (id,fn) = d in
 	 Ast0.wrap(Ast0.UnInit(None,fn t,id,P.clt2mcode ";" pv)) }

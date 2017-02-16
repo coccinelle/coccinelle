@@ -386,6 +386,7 @@ let rec declaration_pos decl snp
 : (Ast0.base_declaration Ast0.wrap * Snap.t) option =
   match Ast0.unwrap decl with
   | Ast0.DisjDecl _
+  | Ast0.ConjDecl _
   | Ast0.Ddots _
   | Ast0.MetaDecl _
   | Ast0.MetaField _
