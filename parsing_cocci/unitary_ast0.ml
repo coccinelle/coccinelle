@@ -86,7 +86,7 @@ let get_free checker t =
 	    Ast.cstr_fold
 	      { Ast.empty_cstr_transformer with
 		Ast.cstr_script =
-		Some (fun (name,lang,params,body) accu ->
+		Some (fun (name,lang,params,_pos,body) accu ->
 		  (* It seems that position variables are not relevant
 		     for unitaryness, so drop them *)
 		  bind (List.map fst
@@ -282,9 +282,9 @@ let do_unitary rules =
       [] -> ([],[])
     | (r::rules) ->
       match r with
-        Ast0.ScriptRule (_,_,_,_,_,_)
-      | Ast0.InitialScriptRule (_,_,_,_,_)
-      | Ast0.FinalScriptRule (_,_,_,_,_) ->
+        Ast0.ScriptRule (_,_,_,_,_,_,_)
+      | Ast0.InitialScriptRule (_,_,_,_,_,_)
+      | Ast0.FinalScriptRule (_,_,_,_,_,_) ->
           let (x,rules) = loop rules in
           (x, r::rules)
       | Ast0.CocciRule((minus,metavars,chosen_isos),((plus,_) as plusz),inh,rt) ->

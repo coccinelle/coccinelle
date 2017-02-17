@@ -22,9 +22,9 @@ type t = (Rule_header.t * Rule_body.t) list
 let generate ~context_mode ~disj_map ~new_name ~rule_names ~rule =
 
   match rule with
-  | Ast0.InitialScriptRule (nm,_,_,_,_)
-  | Ast0.FinalScriptRule (nm,_,_,_,_)
-  | Ast0.ScriptRule (nm,_,_,_,_,_) ->
+  | Ast0.InitialScriptRule (nm,_,_,_,_,_)
+  | Ast0.FinalScriptRule (nm,_,_,_,_,_)
+  | Ast0.ScriptRule (nm,_,_,_,_,_,_) ->
       failwith
         ("Internal error: Can't generate a context rule for a script rule! " ^
          "The rule is: " ^ nm)

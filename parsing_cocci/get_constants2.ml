@@ -713,7 +713,7 @@ let run rules neg_pos_vars =
     List.fold_left
       (function (rest_info,env,locals(*dom of env*)) ->
         function
-	    (Ast.ScriptRule (nm,_,deps,mv,_,_),_) ->
+	    (Ast.ScriptRule (nm,_,deps,mv,_,_,_),_) ->
 	      let extra_deps =
 		List.fold_left
 		  (function prev ->
@@ -744,8 +744,8 @@ let run rules neg_pos_vars =
 		  (rest_info, (nm,True)::env, nm::locals)
 	      | dependencies ->
 		  (build_or dependencies rest_info, env, locals))
-          | (Ast.InitialScriptRule (_,_,deps,_,_),_)
-	  | (Ast.FinalScriptRule (_,_,deps,_,_),_) ->
+          | (Ast.InitialScriptRule (_,_,deps,_,_,_),_)
+	  | (Ast.FinalScriptRule (_,_,deps,_,_,_),_) ->
 	      (* initialize and finalize dependencies are irrelevant to
 		 get_constants *)
 	      (* only possible metavariables are virtual *)

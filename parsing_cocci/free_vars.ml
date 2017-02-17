@@ -1044,12 +1044,12 @@ let collect_astfvs rules =
       [] -> []
     | (metavars, rule)::rules ->
         match rule with
-          Ast.ScriptRule (_,_,_,_,script_vars,_) ->
+          Ast.ScriptRule (_,_,_,_,script_vars,_,_) ->
 	    (* why are metavars in rule, but outside for cocci rule??? *)
             let bound = script_vars @ bound in
 	    rule::(loop bound rules)
-        | Ast.InitialScriptRule (_,_,_,_,_)
-	| Ast.FinalScriptRule (_,_,_,_,_) ->
+        | Ast.InitialScriptRule (_,_,_,_,_,_)
+	| Ast.FinalScriptRule (_,_,_,_,_,_) ->
 	    (* bound stays as is because init/finalize provides no names, so
 	       inheritance by others is not possible *)
 	    rule::(loop bound rules)
@@ -1144,17 +1144,17 @@ let collect_top_level_used_after metavar_rule_list =
 	function (used_after,used_after_lists) ->
 	  let locally_defined =
             match r with
-              Ast.ScriptRule (_,_,_,_,free_vars,_) -> free_vars
+              Ast.ScriptRule (_,_,_,_,free_vars,_,_) -> free_vars
 	    | _ -> List.map Ast.get_meta_name metavar_list in
 	  let continue_propagation =
 	    List.filter (function x -> not(List.mem x locally_defined))
 	      used_after in
 	  let free_vars =
             match r with
-              Ast.ScriptRule (_,_,_,mv,_,_) ->
+              Ast.ScriptRule (_,_,_,mv,_,_,_) ->
                 drop_virt(List.map (function (_,(r,v),_,_) -> (r,v)) mv)
-            | Ast.InitialScriptRule (_,_,_,mv,_)
-	    | Ast.FinalScriptRule (_,_,_,mv,_) ->
+            | Ast.InitialScriptRule (_,_,_,mv,_,_)
+	    | Ast.FinalScriptRule (_,_,_,mv,_,_) ->
 		(* only virtual identifiers *)
 		[]
             | Ast.CocciRule (_,_,rule,_,_) ->
@@ -1263,9 +1263,9 @@ let collect_used_after metavar_rule_list =
     (function (metavars,r) ->
       function used_after ->
         match r with
-          Ast.ScriptRule (_,_,_,_,_,_) (* no minirules, so nothing to do? *)
-	| Ast.InitialScriptRule (_,_,_,_,_)
-	| Ast.FinalScriptRule (_,_,_,_,_) ->
+          Ast.ScriptRule (_,_,_,_,_,_,_) (* no minirules, so nothing to do? *)
+	| Ast.InitialScriptRule (_,_,_,_,_,_)
+	| Ast.FinalScriptRule (_,_,_,_,_,_) ->
 	    ([], [used_after], [[]], [])
         | Ast.CocciRule (name, rule_info, minirules, _,_) ->
           collect_local_used_after metavars minirules used_after

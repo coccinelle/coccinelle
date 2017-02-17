@@ -196,7 +196,7 @@ let rec constraints_to_buffer ~rn buffer cstr =
       Printf.bprintf buffer "= %s" (string_of_operator_constraint item)
   | Ast.CstrMeta_name mn -> Printf.bprintf buffer "= %s" (name_str ~rn mn)
   | Ast.CstrRegexp (s, _) -> Printf.bprintf buffer "=~ \"%s\"" s
-  | Ast.CstrScript (_, lang, params, code) ->
+  | Ast.CstrScript (_, lang, params, _pos, code) ->
       Printf.bprintf buffer ": script:%s (%s) {%s}" lang
 	(String.concat "," (List.map (fun (nm,_) -> name_str ~rn nm) params))
 	code

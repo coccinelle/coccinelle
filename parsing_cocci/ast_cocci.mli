@@ -15,6 +15,7 @@ type info = { line : int; column : int;
               whitespace : string }
 type line = int
 type meta_name = string * string
+type script_position = string (* filename *) * line (* line *)
 type 'a wrap =
     {node : 'a;
       node_line : line;
@@ -236,6 +237,7 @@ and script_constraint =
       string (* name of generated function *) *
 	string (* language *) *
 	(meta_name * metavar) list (* params *) *
+	script_position *
 	string (* code *)
 
 and form = ANY | ID | LocalID| GlobalID | CONST (* form for MetaExp *)
@@ -658,14 +660,14 @@ and rule =
   | ScriptRule of string (* name *) *
       string * dependency *
 	(script_meta_name * meta_name * metavar * mvinit) list *
-	meta_name list (*script vars*) * string
+	meta_name list (*script vars*) * script_position * string
   | InitialScriptRule of  string (* name *) * string * dependency *
 	(script_meta_name * meta_name * metavar * mvinit)
-	  list (*virtual vars*) *
+	  list (*virtual vars*) * script_position *
 	string
   | FinalScriptRule of  string (* name *) * string * dependency *
 	(script_meta_name * meta_name * metavar * mvinit)
-	  list (*virtual vars*) *
+	  list (*virtual vars*) * script_position *
 	string
 
 and script_meta_name = string option (*string*) * string option (*ast*)

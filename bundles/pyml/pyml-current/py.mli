@@ -551,6 +551,18 @@ module Err: sig
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/exceptions.html#c.PyErr_Restore} PyErr_Restore} *)
 
+  val restore_tuple: Object.t * Object.t * Object.t -> unit
+  (** [restore_tuple (ptype, pvalue, ptraceback)] is equivalent to
+      [Py.Err.restore ptype pvalue ptraceback]. *)
+
+  val restore_fetch: unit -> unit
+  (** Restore the exception returned by [Py.Err.fetch ()] and raise
+      [Failure] if [None]. *)
+
+  val restore_fetched: unit -> unit
+  (** Restore the exception returned by [Py.Err.fetched ()] and raise
+      [Failure] if [None]. *)
+
   val set_error: t -> string -> unit
   (** [set_error e msg] calls [Py.Err.set_string e msg] with a predefined error type.
       In a closure/method/callback, it is recommended to raise a [Py.Err _] exception
@@ -1024,11 +1036,12 @@ module Run: sig
   (** [eval ~start ~globals ~locals e]
       evaluates the Python expression [e] and returns the computed value.
       We have
-[Py.Run.eval ~start ~globals ~locals e = Py.Run.String e start globals locals].
+[Py.Run.eval ~start ~globals ~locals e = Py.Run.string e start globals locals].
       @param start is the initial input mode (default: [Eval]).
       @param globals is the global symbol directory
-      (default: Module.get_dict (Module.main ())).
-      @param locals is the local symbol directory (default: [Dict.create ()]).
+      (default: [Py.Module.get_dict (Py.Module.main ())]).
+      @param locals is the local symbol directory
+      (default: [Py.Module.get_dict (Py.Module.main ())]).
    *)
 
   val load: ?start:input -> ?globals:Object.t -> ?locals:Object.t ->
@@ -1559,6 +1572,10 @@ module Utils: sig
   val with_stdin_from: in_channel -> ('a -> 'b) -> 'a -> 'b
   (** [with_stdin_from chan f arg] calls [f arg] with the standard input
       redirected for reading from [chan]. *)
+
+  val with_channel_from_string: string -> (in_channel -> 'a) -> 'a
+  (** [with_channel_from_string s f] calls [f in_channel] where [in_channel]
+      is an input channel returning the contents of s. *)
 
   val with_stdin_from_string: string -> ('a -> 'b) -> 'a -> 'b
   (** [with_stdin_from_string s f arg] calls [f arg] with the standard input

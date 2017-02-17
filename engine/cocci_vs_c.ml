@@ -738,7 +738,7 @@ module type PARAM =
 
   end
 
-let satisfies_script_constraint (name, lang, params, body) ida idb env =
+let satisfies_script_constraint (name, lang, params, pos, body) ida idb env =
   let values =
     try Some ((ida, idb) :: List.map (fun (p,_) -> (p, env p)) params)
     with Not_found -> None in
@@ -748,7 +748,7 @@ let satisfies_script_constraint (name, lang, params, body) ida idb env =
       begin
 	match lang with
 	  "ocaml" -> Run_ocamlcocci.run_constraint name (List.map snd args)
-	| "python" -> Pycocci.run_constraint args body
+	| "python" -> Pycocci.run_constraint args pos body
 	| _ -> failwith "languages other than ocaml or python not supported"
       end
 

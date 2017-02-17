@@ -391,20 +391,28 @@ let pyrun_simplestring s =
       failwith "Python failure"
   end
 
+let run (file, line) s =
+  try
+    pyrun_simplestring s
+  with Failure msg ->
+    failwith (
+    Printf.sprintf "Error in Python script, line %d, file \"%s\": %s"
+      line file msg)
+
 let py_isinitialized () =
   Py.is_initialized ()
 
 let py_finalize () =
   Py.finalize ()
 
-let run_constraint args body =
+let run_constraint args pos body =
   catch_python_error begin fun () ->
     build_classes [];
     let make_arg (name, value) =
       (snd name, name, value, Ast_cocci.NoMVInit) in
     let mv = List.map make_arg args in
     construct_variables mv args;
-    pyrun_simplestring (Printf.sprintf "
+    run pos (Printf.sprintf "
 from coccinelle import *
 from coccilib.iteration import Iteration
 

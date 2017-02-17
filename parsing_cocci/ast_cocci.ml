@@ -16,6 +16,7 @@ type info = { line : int; column : int;
 
 type line = int
 type meta_name = string * string
+type script_position = string (* filename *) * line (* line *)
 (* need to be careful about rewrapping, to avoid duplicating pos info
 currently, the pos info is always None until asttoctl2. *)
 type 'a wrap =
@@ -252,6 +253,7 @@ and script_constraint =
       string (* name of generated function *) *
 	string (* language *) *
 	(meta_name * metavar) list (* params *) *
+	script_position *
 	string (* code *)
 
 (* ANY = int E; ID = idexpression int X; CONST = constant int X; *)
@@ -686,16 +688,16 @@ and rule =
       string (*language*) * dependency *
 	(script_meta_name * meta_name * metavar * mvinit)
 	  list (*inherited vars*) *
-	meta_name list (*script vars*) * string
+	meta_name list (*script vars*) * script_position * string
   | InitialScriptRule of  string (* name *) *
 	string (*language*) * dependency *
 	(script_meta_name * meta_name * metavar * mvinit)
-	  list (*virtual vars*) *
+	  list (*virtual vars*) * script_position *
 	string (*code*)
   | FinalScriptRule of  string (* name *) *
 	string (*language*) * dependency *
 	(script_meta_name * meta_name * metavar * mvinit)
-	  list (*virtual vars*) *
+	  list (*virtual vars*) * script_position *
 	string (*code*)
 
 and script_meta_name = string option (*string*) * string option (*ast*)
@@ -1278,7 +1280,7 @@ let rec cstr_fold_sign pos neg c accu =
       Common.default accu (fun f -> f mn accu) pos.cstr_meta_name
   | CstrRegexp (s, re) ->
       Common.default accu (fun f -> f s re accu) pos.cstr_regexp
-  | CstrScript ((_name, _lang, params, _code) as script_constraint) ->
+  | CstrScript ((_name, _lang, params, _pos, _code) as script_constraint) ->
       begin
 	match pos.cstr_script with
 	  None ->

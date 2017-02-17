@@ -1115,11 +1115,11 @@ let script_header str lang deps mv code =
 
 let unparse mvs z =
   match z with
-    Ast.InitialScriptRule (name,lang,deps,mv,code) ->
+    Ast.InitialScriptRule (name,lang,deps,mv,_pos,code) ->
       script_header "initialize" lang deps mv code
-  | Ast.FinalScriptRule (name,lang,deps,mv,code) ->
+  | Ast.FinalScriptRule (name,lang,deps,mv,_pos,code) ->
       script_header "finalize" lang deps mv code
-  | Ast.ScriptRule (name,lang,deps,bindings,script_vars,code) ->
+  | Ast.ScriptRule (name,lang,deps,bindings,script_vars,_pos,code) ->
       script_header "script" lang deps bindings code
   | Ast.CocciRule (nm, (deps, drops, exists), x, _, _) ->
       print_string "@";

@@ -83,13 +83,16 @@ let unpickle_variable v v' = failwith errmsg
 let pyrun_simplestring s =
   failwith errmsg
 
+let run s =
+  failwith errmsg
+
 let py_isinitialized () =
   failwith errmsg
 
 let py_finalize () =
   failwith errmsg
 
-let run_constraint args body =
+let run_constraint args pos body =
   failwith errmsg
 
 let flush_stdout_and_stderr () = ()

@@ -2307,7 +2307,7 @@ nonempty_constraints:
   | Ast.Sup, _ -> Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntGeq (succ i)))
   | _ -> raise (Semantic_cocci.Semantic "unknown constraint operator") }
 | TSub l=item_or_brace_list(sub_meta_ident) { fun _ -> Ast.CstrSub l }
-| TDotDot s=TScript TDotDot lang=pure_ident
+| TDotDot pos=TScript TDotDot lang=pure_ident
     TOPar params=loption(comma_list(checked_meta_name)) TCPar
     TOBrace c=expr TCBrace
     { fun nm ->
@@ -2318,10 +2318,10 @@ nonempty_constraints:
       let lang' = P.id2name lang in
       let code' =
 	if lang' = "ocaml" then
-	  let (file, line) = s in
+	  let (file, line) = pos in
 	  Printf.sprintf "\n# %d \"%s\"\n%s" line file code
 	else code in
-      Ast.CstrScript (key, lang', params, code') }
+      Ast.CstrScript (key, lang', params, pos, code') }
 | TBang c = nonempty_constraints { fun nm -> Ast.CstrNot (c nm) }
 | l=nonempty_constraints TAndLog r=nonempty_constraints
     { fun nm -> Ast.CstrAnd [l nm; r nm] }
