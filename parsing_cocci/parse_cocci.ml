@@ -2604,7 +2604,10 @@ let enumerate_constraint_scripts =
 		let kind =
 		  Ast_cocci.MetaPosDecl
 		    (Ast_cocci.NONE, Ast_cocci.unwrap_mcode name) in
-		bind (script_constraint kind name c) prev) } constraints prev)
+		bind (script_constraint kind name c) prev);
+	      Ast.cstr_type = Some (fun c prev ->
+		bind (r.Visitor_ast.combiner_fullType c) prev)}
+	    constraints prev)
       option_default (Ast_cocci.get_pos_var mc) in
   let constraints name c =
     let kind =
