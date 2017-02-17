@@ -1022,13 +1022,13 @@ let prepare_cocci ctls free_var_lists negated_pos_lists
       | Ast_cocci.CocciRule
 	  (rulename,(dependencies,dropped_isos,z),restast,isexp,ruletype) ->
 	    let add_constraint_language languages rule =
-	      let (_, name, script_name, lang, params, body) = rule in
+	      let (_, _, (script_name, lang, params, _pos, body)) = rule in
 	      Common.StringSet.add lang languages in
 	    let constraint_languages =
 	      List.fold_left
 	        (fun accu toplevel ->
 		  List.fold_left add_constraint_language accu
-		    (Parse_cocci.enumerate_constraint_scripts toplevel))
+		    !Data.constraint_scripts)
 		Common.StringSet.empty restast in
             CocciRuleCocciInfo (
             {

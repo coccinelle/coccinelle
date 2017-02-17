@@ -26,10 +26,6 @@ type typed_expinfo =
       Ast0.typeC list option * Data.clt
 type pos_info = Ast.meta_name * Ast0.constraints * Ast.meta_collect * Data.clt
 
-let get_option fn = function
-    None -> None
-  | Some x -> Some (fn x)
-
 let make_info line logical_line logical_line_end offset col strbef straft 
     isSymbol ws =
   let new_pos_info =

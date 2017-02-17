@@ -502,7 +502,7 @@ metadec:
 | ar=arity TPosition a=option(TPosAny)
     ids=
     comma_list
-    (pure_ident_or_meta_ident_with_constraints)
+    (pure_ident_or_meta_ident_with_constraints_pos)
     TMPtVirg
     (* pb: position variables can't be inherited from normal rules, and then
        there is no way to inherit from a generated rule, so there is no point
@@ -2270,10 +2270,13 @@ seed_elem:
       Ast.SeedId nm }
 
 pure_ident_or_meta_ident_with_constraints:
-  i=pure_ident_or_meta_ident c=constraints { (i,c (snd i)) }
+  i=pure_ident_or_meta_ident c=constraints { (i,c false i) }
+
+pure_ident_or_meta_ident_with_constraints_pos:
+  i=pure_ident_or_meta_ident c=constraints { (i,c true i) }
 
 pure_ident_or_meta_ident_with_constraints_virt:
-  i=pure_ident_or_meta_ident c=constraints {  Common.Left (i,c (snd i)) }
+  i=pure_ident_or_meta_ident_with_constraints {  Common.Left i }
 | TVirtual TDot pure_ident
     { let nm = P.id2name $3 in
       Iteration.parsed_virtual_identifiers :=
@@ -2282,38 +2285,38 @@ pure_ident_or_meta_ident_with_constraints_virt:
       Common.Right nm }
 
 constraints:
-    { fun _ -> Ast.CstrTrue }
+    { fun _ _ -> Ast.CstrTrue }
 | c=nonempty_constraints
     { check_constraint_allowed ();
       c }
 
 nonempty_constraints:
   TTildeEq re=TString
-    { fun _ -> let (s,_) = re in Ast.CstrRegexp (s,Regexp.regexp s) }
+    { fun _ _ -> let (s,_) = re in Ast.CstrRegexp (s,Regexp.regexp s) }
 | TTildeExclEq re=TString
-    { fun _ ->
+    { fun _ _ ->
       let (s,_) = re in Ast.CstrNot (Ast.CstrRegexp (s,Regexp.regexp s)) }
-| TEq l=item_or_brace_list(cstr_ident) { fun _ -> Ast.CstrOr l }
+| TEq l=item_or_brace_list(cstr_ident) { fun _ _ -> Ast.CstrOr l }
 | TNotEq l=item_or_brace_list(cstr_ident)
-    { fun _ -> Ast.CstrNot (Ast.CstrOr l) }
-| TSub i=TInt { fun _ ->
+    { fun _ _ -> Ast.CstrNot (Ast.CstrOr l) }
+| TSub i=TInt { fun _ _ ->
   let i = int_of_string (fst i) in
   Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntLeq i)) }
-| o=TLogOp i=TInt { fun _ ->
+| o=TLogOp i=TInt { fun _ _ ->
   let i = int_of_string (fst i) in
   match o with
     Ast.SupEq, _ -> Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntGeq i))
   | Ast.Inf, _ -> Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntLeq (pred i)))
   | Ast.Sup, _ -> Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntGeq (succ i)))
   | _ -> raise (Semantic_cocci.Semantic "unknown constraint operator") }
-| TSub l=item_or_brace_list(sub_meta_ident) { fun _ -> Ast.CstrSub l }
+| TSub l=item_or_brace_list(sub_meta_ident) { fun _ _ -> Ast.CstrSub l }
 | TDotDot pos=TScript TDotDot lang=pure_ident
     TOPar params=loption(comma_list(checked_meta_name)) TCPar
     TOBrace c=expr TCBrace
-    { fun nm ->
+    { fun posvar nm ->
       let rule =
 	String.concat "_" (Str.split (Str.regexp " ") !Ast0.rule_name) in
-      let key = Printf.sprintf "constraint_code_%s_0_%s" rule nm in
+      let key = Printf.sprintf "constraint_code_%s_0_%s" rule (snd nm) in
       let code = U.unparse_x_to_string U.expression c in
       let lang' = P.id2name lang in
       let code' =
@@ -2321,12 +2324,19 @@ nonempty_constraints:
 	  let (file, line) = pos in
 	  Printf.sprintf "\n# %d \"%s\"\n%s" line file code
 	else code in
+      let nm' =
+	match nm with
+	  None, n -> "", n
+	| Some r, n -> r, n in
+      Data.constraint_scripts :=
+	(posvar, nm', (key, lang', params, pos, code'))
+	:: !Data.constraint_scripts;
       Ast.CstrScript (key, lang', params, pos, code') }
-| TBang c = nonempty_constraints { fun nm -> Ast.CstrNot (c nm) }
+| TBang c = nonempty_constraints { fun posvar nm -> Ast.CstrNot (c posvar nm) }
 | l=nonempty_constraints TAndLog r=nonempty_constraints
-    { fun nm -> Ast.CstrAnd [l nm; r nm] }
+    { fun posvar nm -> Ast.CstrAnd [l posvar nm; r posvar nm] }
 | l=nonempty_constraints TOrLog r=nonempty_constraints
-    { fun nm -> Ast.CstrOr [l nm; r nm] }
+    { fun posvar nm -> Ast.CstrOr [l posvar nm; r posvar nm] }
 | TOPar c=nonempty_constraints TCPar { c }
 
 item_or_brace_list(item):

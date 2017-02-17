@@ -140,3 +140,6 @@ let format_metavariables      =
   ref ([] : (string * (Ast.meta_name * Ast0.constraints)) list)
 let format_list_metavariables =
   ref ([] : (string * (Ast.meta_name * Ast.list_len * Ast0.constraints)) list)
+
+let constraint_scripts:
+    (bool * Ast_cocci.meta_name * Ast_cocci.script_constraint) list ref = ref []
