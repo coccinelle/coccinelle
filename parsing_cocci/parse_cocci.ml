@@ -1057,7 +1057,7 @@ let detect_attr l =
 	  begin
 	    Flag.add_cocci_attribute_names nm;
 	    (if not (Hashtbl.mem Lexer_cocci.attr_names nm)
-	    then !Data.add_attribute nm);
+	    then !D.add_attribute nm);
 	    (PC.Tattr(nm,clt),info)::(loop (id::rest))
 	  end
 	else t1::(loop (id::rest))
@@ -1117,7 +1117,7 @@ let detect_types in_meta_decls l =
     | (PC.TOPar(_),_) -> true
     | _ -> false in
   let redo_id ident clt v =
-    !Data.add_type_name ident;
+    !D.add_type_name ident;
     (PC.TTypeId(ident,clt),v) in
   let rec loop start infn type_names = function
       (* infn: 0 means not in a function header
@@ -1855,7 +1855,7 @@ let get_metavars parse_fn table file lexbuf =
   Lexer_cocci.reinit(); (* string metavariable initializations *)
   let rec meta_loop acc (* read one decl at a time *) =
     let (_,tokens) =
-      Data.call_in_meta
+      D.call_in_meta
 	(function _ ->
 	  metavariable_decl_tokens_all table file true lexbuf
 	    (in_list [PC.TArobArob;PC.TMPtVirg;PC.TAnalysis])) in
@@ -1885,7 +1885,7 @@ let get_metavars parse_fn table file lexbuf =
 	  | (_, ([(s, _)] as toks)) ->
 	      let data = collect_script_tokens (loop 1 toks) in
 	      let (_,tokens) =
-		Data.call_in_meta
+		D.call_in_meta
 		  (function _ ->
 		    metavariable_decl_tokens_all table file true lexbuf
 		      (in_list [PC.TArobArob;PC.TMPtVirg])) in
@@ -1924,7 +1924,7 @@ let get_script_metavars parse_fn table file lexbuf =
   meta_loop []
 
 let get_rule_name parse_fn starts_with_name get_tokens file prefix =
-  Data.in_rule_name := true;
+  D.in_rule_name := true;
   let mknm _ = make_name prefix (!Lexer_cocci.line) in
   let name_res =
     if starts_with_name
@@ -1950,7 +1950,7 @@ let get_rule_name parse_fn starts_with_name get_tokens file prefix =
     else
       Ast.CocciRulename(Some(mknm()),Ast.NoDep,[],[],Ast.Undetermined,
 			Ast.AnyP) in
-  Data.in_rule_name := false;
+  D.in_rule_name := false;
   name_res
 
 let parse_iso file =
@@ -1968,7 +1968,7 @@ let parse_iso file =
 	    (arob = PC.TArob,List.rev(List.tl rev)) in
 	  let (starts_with_name,start) = parse_start start in
 	  let rec loop starts_with_name start =
-	    (!Data.init_rule)();
+	    (!D.init_rule)();
 	    (* get metavariable declarations - have to be read before the
 	       rest *)
 	    let (rule_name,_,_,_,_,_) =
@@ -2018,7 +2018,7 @@ let parse_iso file =
 let parse_iso_files existing_isos iso_files extra_path =
   let get_names = List.map (function (_,_,nm) -> nm) in
   let old_names = get_names existing_isos in
-  Data.in_iso := true;
+  D.in_iso := true;
   let (res,_) =
     List.fold_left
       (function (prev,names) ->
@@ -2034,7 +2034,7 @@ let parse_iso_files existing_isos iso_files extra_path =
 	  then failwith (Printf.sprintf "repeated iso name found in %s" file);
 	  (current::prev,new_names @ names))
       ([],old_names) iso_files in
-  Data.in_iso := false;
+  D.in_iso := false;
   existing_isos@(List.concat (List.rev res))
 
 (* None = dependency not satisfied
@@ -2098,7 +2098,7 @@ let print_dep_image name deps virt depimage =
        (function _ -> Pretty_print_cocci.dependency depimage))
 
 let parse file =
-  Data.constraint_scripts := [];
+  D.constraint_scripts := [];
   Lexer_cocci.init ();
   let rec parse_loop file =
   Lexer_cocci.include_init ();
@@ -2107,9 +2107,9 @@ let parse file =
   Lexer_cocci.file := file;
   let lexbuf = Lexing.from_channel channel in
   let get_tokens = tokens_all table file false lexbuf in
-  Data.in_prolog := true;
+  D.in_prolog := true;
   let initial_tokens = get_tokens (in_list [PC.TArobArob;PC.TArob]) in
-  Data.in_prolog := false;
+  D.in_prolog := false;
   let res =
     match initial_tokens with
     (true,data) ->
@@ -2122,9 +2122,9 @@ let parse file =
 	    List.fold_left
 	      (function (include_files,iso_files,virt) ->
 		function
-		    Data.Include s -> (s::include_files,iso_files,virt)
-		  | Data.Iso s -> (include_files,s::iso_files,virt)
-		  | Data.Virt l -> (include_files,iso_files,l@virt))
+		    D.Include s -> (s::include_files,iso_files,virt)
+		  | D.Iso s -> (include_files,s::iso_files,virt)
+		  | D.Virt l -> (include_files,iso_files,l@virt))
 	      ([],[],[]) include_and_iso_files in
 
 	  List.iter (function x -> Hashtbl.add Lexer_cocci.rule_names x ())
@@ -2142,13 +2142,13 @@ let parse file =
 	      (rule_name, dependencies, iso, dropiso, exists, is_expression) =
 	    let dropiso = !Flag_parsing_cocci.disabled_isos @ dropiso in
             Ast0.rule_name := rule_name;
-            Data.inheritable_positions :=
-		rule_name :: !Data.inheritable_positions;
+            D.inheritable_positions :=
+		rule_name :: !D.inheritable_positions;
 
             (* get metavariable declarations *)
             let (metavars, inherited_metavars) =
 	      get_metavars PC.meta_main table file lexbuf in
-	    Hashtbl.add Data.all_metadecls rule_name metavars;
+	    Hashtbl.add D.all_metadecls rule_name metavars;
 	    Hashtbl.add Lexer_cocci.rule_names rule_name ();
 	    Hashtbl.add Lexer_cocci.all_metavariables rule_name
 	      (Hashtbl.fold
@@ -2241,7 +2241,7 @@ let parse file =
 	    (if not !Flag.sgrep_mode2 &&
 	      (any_modif minus_res || any_modif plus_res) &&
 	      not(dependencies = Ast.FailDep)
-	    then Data.inheritable_positions := []);
+	    then D.inheritable_positions := []);
 
 	    if not(dependencies = Ast.FailDep)
 	    then
@@ -2262,7 +2262,7 @@ let parse file =
 
               (* meta-variables *)
             let metavars =
-	      Data.call_in_meta
+	      D.call_in_meta
 		(function _ ->
 		  get_script_metavars meta_parser table file lexbuf) in
 	    let (metavars,script_metavars) =
@@ -2281,10 +2281,10 @@ let parse file =
 	    (* No idea whether any vars are position vars, but if there are
 	       any, they can be inherited. Probably provides a way of
 	       laundering positions over changes. *)
-            Data.inheritable_positions :=
-		name :: !Data.inheritable_positions;
+            D.inheritable_positions :=
+		name :: !D.inheritable_positions;
 
-	    Hashtbl.add Data.all_metadecls name
+	    Hashtbl.add D.all_metadecls name
 	      (List.map (function x -> Ast.MetaScriptDecl(ref None,x))
 		 script_metavars);
 	    Hashtbl.add Lexer_cocci.rule_names name ();
@@ -2376,19 +2376,19 @@ let parse file =
 		(match eval_depend true dep virt with
 		  Ast.FailDep ->
 		    D.ignore_patch_or_match := true;
-		    Data.in_generating := true;
+		    D.in_generating := true;
                     let res =
 		      parse_cocci_rule Ast.Generated old_metas
 			(s, Ast.FailDep, b, c, d, e) in
 		    D.ignore_patch_or_match := false;
-		    Data.in_generating := false;
+		    D.in_generating := false;
 		    res
 		| dep ->
-		    Data.in_generating := true;
+		    D.in_generating := true;
 		    let res =
 		      parse_cocci_rule Ast.Generated old_metas
 			(s,dep,b,c,d,e) in
-		    Data.in_generating := false;
+		    D.in_generating := false;
 		    res)
             | Ast.ScriptRulename(Some s,l,deps) ->
 		do_parse_script_rule parse_script_rule s l old_metas deps
@@ -2399,7 +2399,7 @@ let parse file =
             | _ -> failwith "Malformed rule name" in
 
 	  let rec loop old_metas starts_with_name =
-	    (!Data.init_rule)();
+	    (!D.init_rule)();
 
             let gen_starts_with_name more tokens =
               more &&
