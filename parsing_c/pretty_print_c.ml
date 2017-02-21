@@ -631,6 +631,9 @@ and pp_string_format (e,ii) =
             pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "*}");
           end;
 
+      | (FieldType (t, _, _), iis) ->
+	  pp_base_type t sto
+
       | (TypeOfExpr (e), iis) ->
           print_sto_qu (sto, qu);
           (match iis with
@@ -777,6 +780,7 @@ and pp_string_format (e,ii) =
       | (EnumName  s, iis)                      -> print_ident ident
       | (Decimal _, iis)                        -> print_ident ident
       | (TypeName (_name,_typ), iis)            -> print_ident ident
+      | (FieldType (_typ,_,_), iis)             -> print_ident ident
       | (TypeOfExpr (e), iis)                   -> print_ident ident
       | (TypeOfType (e), iis)                   -> print_ident ident
 
@@ -883,7 +887,7 @@ and pp_string_format (e,ii) =
       | (EnumName  s, iis) -> ()
       | (Decimal(l,p), iis) -> ()
       | (TypeName (_name,_typ), iis) -> ()
-
+      | FieldType (_, _, _), _ -> ()
       | TypeOfType _, _ -> ()
       | TypeOfExpr _, _ -> ()
 
@@ -940,6 +944,7 @@ and pp_string_format (e,ii) =
     | (EnumName  s, iis) -> ()
     | (Decimal(l,p), iis) -> ()
     | (TypeName (name,_typ), iis) -> ()
+    | (FieldType (_, _, _), _) -> ()
 
     | TypeOfType _, _ -> ()
     | TypeOfExpr _, _ -> ()

@@ -216,7 +216,7 @@ let token2c (tok,_) =
   | PC.TMetaParamList(_,_,_,_,clt) -> add_clt "paramlistmeta" clt
   | PC.TMetaConst(_,_,_,_,clt) -> add_clt "constmeta" clt
   | PC.TMetaErr(_,_,_,clt) -> add_clt "errmeta" clt
-  | PC.TMetaExp(_,_,_,_,clt) -> add_clt "expmeta" clt
+  | PC.TMetaExp(_,_,_,_,clt,_) -> add_clt "expmeta" clt
   | PC.TMetaIdExp(_,_,_,_,clt) -> add_clt "idexpmeta" clt
   | PC.TMetaLocalIdExp(_,_,_,_,clt) -> add_clt "localidexpmeta" clt
   | PC.TMetaGlobalIdExp(_,_,_,_,clt) -> add_clt "globalidexpmeta" clt
@@ -350,7 +350,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.TMeta(_,_,_,clt) | PC.TMetaParam(_,_,_,clt)
   | PC.TMetaParamList(_,_,_,_,clt)
   | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaErr(_,_,_,clt)
-  | PC.TMetaExp(_,_,_,_,clt) | PC.TMetaIdExp(_,_,_,_,clt)
+  | PC.TMetaExp(_,_,_,_,clt,_) | PC.TMetaIdExp(_,_,_,_,clt)
   | PC.TMetaLocalIdExp(_,_,_,_,clt) | PC.TMetaGlobalIdExp(_,_,_,_,clt)
   | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt)
   | PC.TMetaExpList(_,_,_,_,clt)
@@ -434,7 +434,7 @@ let get_clt (tok,_) =
   | PC.TMeta(_,_,_,clt) | PC.TMetaParam(_,_,_,clt)
   | PC.TMetaParamList(_,_,_,_,clt)
   | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaErr(_,_,_,clt)
-  | PC.TMetaExp(_,_,_,_,clt) | PC.TMetaIdExp(_,_,_,_,clt)
+  | PC.TMetaExp(_,_,_,_,clt,_) | PC.TMetaIdExp(_,_,_,_,clt)
   | PC.TMetaLocalIdExp(_,_,_,_,clt) | PC.TMetaGlobalIdExp(_,_,_,_,clt)
   | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt)
   | PC.TMetaExpList(_,_,_,_,clt)
@@ -636,7 +636,7 @@ let update_clt (tok,x) clt =
   | PC.TMetaParamList(a,b,c,d,_) -> (PC.TMetaParamList(a,b,c,d,clt),x)
   | PC.TMetaConst(a,b,c,d,_) -> (PC.TMetaConst(a,b,c,d,clt),x)
   | PC.TMetaErr(a,b,c,_) -> (PC.TMetaErr(a,b,c,clt),x)
-  | PC.TMetaExp(a,b,c,d,_) -> (PC.TMetaExp(a,b,c,d,clt),x)
+  | PC.TMetaExp(a,b,c,d,_,e) -> (PC.TMetaExp(a,b,c,d,clt,e),x)
   | PC.TMetaIdExp(a,b,c,d,_) -> (PC.TMetaIdExp(a,b,c,d,clt),x)
   | PC.TMetaLocalIdExp(a,b,c,d,_) -> (PC.TMetaLocalIdExp(a,b,c,d,clt),x)
   | PC.TMetaGlobalIdExp(a,b,c,d,_) -> (PC.TMetaGlobalIdExp(a,b,c,d,clt),x)
@@ -882,7 +882,8 @@ let split_token ((tok,_) as t) =
   | PC.TIdent(_,clt)
   | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
   | PC.TSymId(_,clt)
-  | PC.TMeta(_,_,_,clt) | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaExp(_,_,_,_,clt)
+  | PC.TMeta(_,_,_,clt) | PC.TMetaConst(_,_,_,_,clt)
+  | PC.TMetaExp(_,_,_,_,clt,_)
   | PC.TMetaIdExp(_,_,_,_,clt)
   | PC.TMetaLocalIdExp(_,_,_,_,clt) | PC.TMetaGlobalIdExp(_,_,_,_,clt)
   | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt)
@@ -1094,7 +1095,7 @@ let detect_types in_meta_decls l =
     | (PC.TMetaParamList(_,_,_,_,_),_)
     | (PC.TMetaConst(_,_,_,_,_),_)
     | (PC.TMetaErr(_,_,_,_),_)
-    | (PC.TMetaExp(_,_,_,_,_),_)
+    | (PC.TMetaExp(_,_,_,_,_,_),_)
     | (PC.TMetaIdExp(_,_,_,_,_),_)
     | (PC.TMetaLocalIdExp(_,_,_,_,_),_)
     | (PC.TMetaAssignOp(_,_,_,_),_)
@@ -1205,7 +1206,7 @@ let token2line (tok,_) =
 
   | PC.TMeta(_,_,_,clt) | PC.TMetaParam(_,_,_,clt)
   | PC.TMetaParamList(_,_,_,_,clt)
-  | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaExp(_,_,_,_,clt)
+  | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaExp(_,_,_,_,clt,_)
   | PC.TMetaIdExp(_,_,_,_,clt)
   | PC.TMetaLocalIdExp(_,_,_,_,clt) | PC.TMetaGlobalIdExp(_,_,_,_,clt)
   | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt)
@@ -1597,8 +1598,8 @@ let strip_for_fix l =
 	  (PC.TMetaLocalFunc(nm,Ast.CstrTrue,pure,clt),info)
       |	(PC.TMetaErr(nm,_,pure,clt),info) ->
 	  (PC.TMetaErr(nm,Ast.CstrTrue,pure,clt),info)
-      |	(PC.TMetaExp(nm,_,pure,ty,clt),info) ->
-	  (PC.TMetaExp(nm,Ast.CstrTrue,pure,ty,clt),info)
+      |	(PC.TMetaExp(nm,_,pure,ty,clt,bitfield),info) ->
+	  (PC.TMetaExp(nm,Ast.CstrTrue,pure,ty,clt,bitfield),info)
       |	(PC.TMetaIdExp(nm,_,pure,ty,clt),info) ->
 	  (PC.TMetaIdExp(nm,Ast.CstrTrue,pure,ty,clt),info)
       |	(PC.TMetaLocalIdExp(nm,_,pure,ty,clt),info) ->
@@ -1742,13 +1743,16 @@ let consume_minus_positions toks =
 		(Ast0.wrap
 		   (Ast0.MetaId(name,constraints,seed,pure)))) in
 	(loop_other (x::xs))
-    | x::(PC.TPArob _,_)::(PC.TMetaExp(name,constraints,pure,ty,clt),_)::xs ->
+    | x::(PC.TPArob _,_)
+      ::(PC.TMetaExp(name,constraints,pure,ty,clt,bitfield),_)::xs ->
 	let x =
 	  process_minus_positions x name clt
 	    (function name ->
 	      Ast0.ExprTag
 		(Ast0.wrap
-		   (Ast0.MetaExpr(name,constraints,ty,Ast.ANY,pure)))) in
+		   (Ast0.MetaExpr
+		      (name,constraints,ty,Ast.ANY,pure,
+		       Common.map_option (Parse_aux.dolen clt) bitfield)))) in
 	(loop_other (x::xs))
     | x::(PC.TPArob _,_)::(PC.TMetaExpList(name,len,cstr,pure,clt),_)::xs ->
 	let x =
@@ -1789,7 +1793,7 @@ let consume_minus_positions toks =
 	    (function name ->
 	      Ast0.ExprTag
 		(Ast0.wrap
-		   (Ast0.MetaExpr(name,constraints,ty,Ast.ANY,pure)))) in
+		   (Ast0.MetaExpr(name,constraints,ty,Ast.ANY,pure,None)))) in
 	(loop_other (x::xs))
 
     | x::((PC.TPArob _,_) as x')::x''::xs ->

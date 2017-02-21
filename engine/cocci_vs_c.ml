@@ -839,9 +839,7 @@ let metavar2ndots (_,info,mcodekind,pos) = ("<+...",info,mcodekind,pos)
 (* ------------------------------------------------------------------------- *)
 (* This has to be up here to allow adequate polymorphism *)
 
-let match_len infos leninfo =
-  let len = List.length infos in
-
+let match_len_value len leninfo =
   (match leninfo with
   | A.MetaListLen (lenname,constraints,lenkeep,leninherited) ->
       let max_min _ = failwith "no pos" in
@@ -855,6 +853,10 @@ let match_len infos leninfo =
       then (function f -> f())
       else (function f -> fail)
   | A.AnyListLen -> function f -> f())
+
+let match_len infos leninfo =
+  let len = List.length infos in
+  match_len_value len leninfo
 
 let list_matcher match_dots rebuild_dots match_comma rebuild_comma
     match_metalist rebuild_metalist mktermval special_cases
@@ -1078,7 +1080,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
   match A.unwrap ea, eb with
 
   (* general case: a MetaExpr can match everything *)
-  | A.MetaExpr (ida,constraints,keep,opttypa,form,inherited),
+  | A.MetaExpr (ida,constraints,keep,opttypa,form,inherited,bitfield),
     (((expr, opttypb), ii) as expb) ->
 
       (* old: before have a MetaConst. Now we factorize and use 'form' to
@@ -1132,6 +1134,25 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
             tas +> List.fold_left (fun acc ta ->
               acc >|+|> compatible_type ta tb) fail
 	) >>=
+	(fun () () -> match bitfield, fst !opttypb with
+	  None, _ -> return ((), ())
+	| Some _, None -> assert false
+	| Some bitfield', Some tb ->
+	    begin
+	      match fst tb with
+		(_, (Ast_c.FieldType (_, _, Some be), _)) ->
+		  begin
+		    match fst (fst be) with
+		      Ast_c.Constant (Ast_c.Int (value, _)) ->
+			match_len_value (int_of_string value) bitfield'
+			  (fun () -> return ((), ()))
+		    | _ ->
+			pr2_once "Unable to evaluate bitfield expression";
+			return ((), ())
+		  end
+	      | _ -> fail
+	    end
+	  ) >>=
 	(fun () () ->
 	  (* wraps on C code, so has types *)
 	  let meta_expr_val l x = Ast_c.MetaExprVal(x,l,Ast_c.WITH_TYPES) in
@@ -1150,7 +1171,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	      X.distrf_e ida expb >>=
 	      (fun ida expb ->
 		return (
-		A.MetaExpr (ida,constraints,keep,opttypa,form,inherited)+>
+		A.MetaExpr (ida,constraints,keep,opttypa,form,inherited,None)+>
 		A.rewrap ea,
 		expb
 		  ))
@@ -3869,7 +3890,8 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
            | B.CppConcatenatedName _ | B.CppVariadicName _ |B.CppIdentBuilder _
                -> raise Todo
         )
-
+    | _, (B.FieldType (tyb, _, _), _) ->
+	typeC ta (snd tyb)
 
     | _, (B.NoType, ii) -> fail
     | _, (B.TypeOfExpr e, ii) -> fail
@@ -4314,6 +4336,8 @@ and compatible_typeC a (b,local) =
 	    (fun () -> ok
             )
 	    )
+    | _, (_, (B.FieldType (typb, _, _), _)) ->
+	loop tya typb
 
   (* subtil: must be after the MetaType case *)
     | a, (qub, (B.TypeName (_namesb, Some b), noii)) ->

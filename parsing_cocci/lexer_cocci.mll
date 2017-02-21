@@ -402,8 +402,8 @@ let init _ =
       let fn clt = TMetaErr(name,constraints,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_exp_meta :=
-    (fun tyopt name constraints pure ->
-      let fn clt = TMetaExp(name,constraints,pure,tyopt,clt) in
+    (fun tyopt name constraints pure bitfield ->
+      let fn clt = TMetaExp(name,constraints,pure,tyopt,clt,bitfield) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_idexp_meta :=
     (fun tyopt name constraints pure ->

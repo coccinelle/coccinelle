@@ -131,7 +131,8 @@ and base_expression =
 	              initialiser
   | MetaErr        of Ast.meta_name mcode * constraints * pure
   | MetaExpr       of Ast.meta_name mcode * constraints *
-	              typeC list option * Ast.form * pure
+	typeC list option * Ast.form * pure *
+	listlen option (* bitfield *)
   | MetaExprList   of Ast.meta_name mcode (* only in arg lists *) *
 	              listlen * constraints * pure
   | AsExpr         of expression * expression (* as expr, always metavar *)
@@ -659,7 +660,7 @@ let rec meta_pos_name = function
       | _ -> failwith "bad metavariable")
   | ExprTag(e) ->
       (match unwrap e with
-	MetaExpr(name,_constraints,_ty,_form,_pure) -> name
+	MetaExpr(name,_constraints,_ty,_form,_pure,_bitfield) -> name
       | MetaExprList(name,_len,_constraints,_pure) -> name
       | _ -> failwith "bad metavariable")
   | TypeCTag(t) ->
@@ -715,7 +716,7 @@ let rec meta_names_of_typeC ty =
 let meta_pos_constraint_names = function
     ExprTag(e) ->
       (match unwrap e with
-	MetaExpr(_name,_constraints,ty,_form,_pure) ->
+	MetaExpr(_name,_constraints,ty,_form,_pure,_bitfield) ->
 	  (match ty with
 	    Some tylist ->
               List.fold_left (fun prev cur -> meta_names_of_typeC cur @ prev)

@@ -90,7 +90,7 @@ let dumb_astcocci_initialiser = function (* seems same as the above *)
   | A.OptDecl(decl) -> ()
 
 let dumb_astcocci_expr = function
- | A.MetaExpr (ida,_,_, opttypa, _, _) -> ()
+ | A.MetaExpr (ida,_,_, opttypa, _, _, _bitfield) -> ()
  | A.AsExpr (_,_) -> ()
  | A.AsSExpr (_,_) -> ()
  | A.Edots (_,_) -> ()

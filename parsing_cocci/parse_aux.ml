@@ -24,6 +24,9 @@ type list_info = Ast.meta_name * Ast.list_len * Ast0.constraints * Ast0.pure *
 type typed_expinfo =
     Ast.meta_name * Ast0.constraints * Ast0.pure *
       Ast0.typeC list option * Data.clt
+type typed_expinfo_bitfield =
+    Ast.meta_name * Ast0.constraints * Ast0.pure *
+      Ast0.typeC list option * Data.clt * Ast.list_len option
 type pos_info = Ast.meta_name * Ast0.constraints * Ast.meta_collect * Data.clt
 
 let make_info line logical_line logical_line_end offset col strbef straft 
@@ -261,9 +264,9 @@ let check_meta_tyopt type_irrelevant v =
       (match meta_lookup rule name v with
 	Ast.MetaErrDecl(_,_) -> ()
       | _ -> fail name)
-  | Ast.MetaExpDecl(Ast.NONE,(rule,name),ty) ->
+  | Ast.MetaExpDecl(Ast.NONE,(rule,name),ty,_) ->
       (match meta_lookup rule name v with
-	Ast.MetaExpDecl(_,_,ty1) when type_equal ty ty1 -> ()
+	Ast.MetaExpDecl(_,_,ty1,_) when type_equal ty ty1 -> ()
       | _ -> fail name)
   | Ast.MetaIdExpDecl(Ast.NONE,(rule,name),ty) ->
       (match meta_lookup rule name v with

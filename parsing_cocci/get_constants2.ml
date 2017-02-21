@@ -446,10 +446,10 @@ let do_get_constants constants keywords env (neg_pos,_) =
 	    Some strs -> constants (String.concat "" (List.rev strs))
 	  | None ->  option_default)
 	*)
-    | Ast.MetaExpr(name,_,_,Some type_list,_,_) ->
+    | Ast.MetaExpr(name,_,_,Some type_list,_,_,_) ->
 	let types = List.fold_left type_collect option_default type_list in
 	bind (k e) (bind (minherited name) types)
-    | Ast.MetaErr(name,_,_,_) | Ast.MetaExpr(name,_,_,_,_,_) ->
+    | Ast.MetaErr(name,_,_,_) | Ast.MetaExpr(name,_,_,_,_,_,_) ->
 	bind (k e) (minherited name)
     | Ast.MetaExprList(name,Ast.MetaListLen (lenname,_,_,_),_,_,_) ->
 	bind (k e) (bind (minherited name) (minherited lenname))

@@ -505,6 +505,7 @@ and vk_type = fun bigf t ->
     (* don't go in _typ *)
     | TypeName (name,_typ) ->
         vk_name bigf name
+    | FieldType (t, _, _) -> typef t
 
     | ParenType t -> typef t
     | TypeOfExpr e -> vk_expr bigf e
@@ -1420,6 +1421,7 @@ and vk_type_s = fun bigf t ->
       | StructUnionName (s, structunion) -> StructUnionName (s, structunion)
       | EnumName  s -> EnumName  s
       | TypeName (name, typ) -> TypeName (vk_name_s bigf name, typ)
+      | FieldType (t, a, b) -> FieldType (typef t, a, b)
 
       | ParenType t -> ParenType (typef t)
       | TypeOfExpr e -> TypeOfExpr (vk_expr_s bigf e)

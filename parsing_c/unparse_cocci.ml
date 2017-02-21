@@ -505,7 +505,7 @@ let rec expression e =
   | Ast.MetaErr(name,_,_,_) ->
       failwith "metaErr not handled"
 
-  | Ast.MetaExpr (name,_,_,_typedontcare,_formdontcare,_) ->
+  | Ast.MetaExpr (name,_,_,_typedontcare,_formdontcare,_,_bitfield) ->
       handle_metavar name (function
         | Ast_c.MetaExprVal ((((e, _), _) as exp),_,_) ->
 	    if prec_of_c e < prec then

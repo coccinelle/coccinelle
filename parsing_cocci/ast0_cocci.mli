@@ -122,7 +122,8 @@ and base_expression =
  	              initialiser
   | MetaErr        of Ast_cocci.meta_name mcode * constraints * pure
   | MetaExpr       of Ast_cocci.meta_name mcode * constraints *
-	              typeC list option * Ast_cocci.form * pure
+	typeC list option * Ast_cocci.form * pure *
+	listlen option (* bitfield *)
   | MetaExprList   of Ast_cocci.meta_name mcode (* only in arglists *) *
 	              listlen * constraints * pure
   | AsExpr         of expression * expression (* as expr, always metavar *)

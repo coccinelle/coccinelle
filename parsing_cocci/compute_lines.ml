@@ -445,10 +445,10 @@ let rec expression e =
       let name = normal_mcode name in
       let ln = promote_mcode name in
       mkres e (Ast0.MetaErr(name,a,b)) ln ln
-  | Ast0.MetaExpr(name,a,b,c,d) ->
+  | Ast0.MetaExpr(name,a,b,c,d,f) ->
       let name = normal_mcode name in
       let ln = promote_mcode name in
-      mkres e (Ast0.MetaExpr(name,a,b,c,d)) ln ln
+      mkres e (Ast0.MetaExpr(name,a,b,c,d,f)) ln ln
   | Ast0.MetaExprList(name,a,b,c) ->
       let name = normal_mcode name in
       let ln = promote_mcode name in

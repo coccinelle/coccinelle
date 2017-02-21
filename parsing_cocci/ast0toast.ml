@@ -426,9 +426,11 @@ and expression e =
 	Ast.Constructor(mcode lp,typeC allminus ty,mcode rp,initialiser init)
     | Ast0.MetaErr(name,cstrts,_)  ->
 	Ast.MetaErr(mcode name,constraints cstrts,unitary,false)
-    | Ast0.MetaExpr(name,cstrts,ty,form,_)  ->
+    | Ast0.MetaExpr(name,cstrts,ty,form,_,bitfield)  ->
         let ty' = Common.map_option (List.map (typeC false)) ty in
-        Ast.MetaExpr (mcode name, constraints cstrts, unitary, ty', form, false)
+	let bitfield' = Common.map_option do_lenname bitfield in
+        Ast.MetaExpr
+	  (mcode name, constraints cstrts, unitary, ty', form, false, bitfield')
     | Ast0.MetaExprList(name,lenname,cstr,_) ->
 	let cstr' = constraints cstr in
 	Ast.MetaExprList (mcode name,do_lenname lenname,cstr',unitary,false)

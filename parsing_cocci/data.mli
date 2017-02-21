@@ -51,6 +51,10 @@ type list_meta_type =
 type exp_meta_type =
     Ast0_cocci.typeC list option -> Ast_cocci.meta_name ->
       Ast0_cocci.constraints -> Ast0_cocci.pure -> unit
+type exp_bitfield_meta_type =
+    Ast0_cocci.typeC list option -> Ast_cocci.meta_name ->
+      Ast0_cocci.constraints -> Ast0_cocci.pure ->
+	Ast_cocci.list_len option -> unit
 
 val add_meta_meta: cstr_meta_type ref
 val add_id_meta: cstr_meta_type ref
@@ -68,7 +72,7 @@ val add_err_meta:
     (Ast_cocci.meta_name -> Ast0_cocci.constraints -> Ast0_cocci.pure ->
       unit) ref
 
-val add_exp_meta: exp_meta_type ref
+val add_exp_meta: exp_bitfield_meta_type ref
 val add_idexp_meta: exp_meta_type ref
 val add_local_idexp_meta: exp_meta_type ref
 val add_global_idexp_meta: exp_meta_type ref

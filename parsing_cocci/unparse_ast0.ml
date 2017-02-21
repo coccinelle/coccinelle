@@ -234,7 +234,7 @@ let rec expression e =
 	  mcode print_string_box lp; typeC ty; close_box();
 	  mcode print_string rp; initialiser init
       | Ast0.MetaErr(name,_,_) -> mcode print_meta name
-      | Ast0.MetaExpr(name,_,ty,_,_pure) ->
+      | Ast0.MetaExpr(name,_,ty,_,_pure,_bitfield) ->
 	  mcode print_meta name; print_types ty(*;
 	  print_string "^";
 	  (match pure with

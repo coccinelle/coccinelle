@@ -89,7 +89,8 @@ and metavar =
       arity * meta_name (* name *) * fullType list option
   | MetaErrDecl of arity * meta_name (* name *)
   | MetaExpDecl of
-      arity * meta_name (* name *) * fullType list option
+      arity * meta_name (* name *) * fullType list option *
+	list_len option (* bitfield *)
   | MetaIdExpDecl of
       arity * meta_name (* name *) * fullType list option
   | MetaLocalIdExpDecl of
@@ -181,7 +182,8 @@ and base_expression =
   | MetaErr        of meta_name mcode * constraints * keep_binding *
 	              inherited
   | MetaExpr       of meta_name mcode * constraints * keep_binding *
-	              fullType list option * form * inherited
+	fullType list option * form * inherited *
+	listlen option (* bitfield *)
   | MetaExprList   of meta_name mcode * listlen * constraints *
 	              keep_binding * inherited (* only in arg lists *)
   | AsExpr         of expression * expression (* as expr, always metavar *)
