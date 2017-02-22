@@ -277,6 +277,7 @@ module XMATCH = struct
   let is_abstract ii =
     match Ast_c.pinfo_of_info ii with
       Ast_c.AbstractLineTok pi -> true
+    | Ast_c.FakeTok _ -> true
     | _ -> false
 
   let distrf (ii_of_x_f) =
