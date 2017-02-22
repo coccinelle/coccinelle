@@ -279,6 +279,11 @@ module XMATCH = struct
       Ast_c.AbstractLineTok pi -> true
     | _ -> false
 
+  let is_fake ii = (* likely an invisible comma *)
+    match Ast_c.pinfo_of_info ii with
+      Ast_c.FakeTok _ -> true
+    | _ -> false
+
   let distrf (ii_of_x_f) =
     fun mcode x -> fun tin ->
       let iis = ii_of_x_f x in
@@ -512,24 +517,28 @@ module XMATCH = struct
     match Ast_cocci.get_pos_var ia with
       [] -> finish tin
     | positions ->
-	let pvalu = Ast_c.MetaPosValList(get_pvalu()) in
-	let rec loop tin = function
-	    [] -> finish tin
-	  | Ast_cocci.MetaPos(name,constraints,per,keep,inherited) :: rest ->
-	      let name' = Ast_cocci.unwrap_mcode name in
-	      check_pos_constraints name' pvalu constraints
-		(fun new_tin ->
-	    (* constraints are satisfied, now see if we are compatible
-	       with existing bindings *)
-		  let x = Ast_cocci.unwrap_mcode name in
-		  let new_binding =
-		    check_add_metavars_binding false keep inherited
-		      (x, pvalu) tin in
-		  (match  new_binding with
-		    Some binding -> loop {new_tin with binding = binding} rest
-		  | None -> fail tin))
-		tin in
-	loop tin positions
+	match get_pvalu() with
+	  None -> finish tin
+	| Some pvalu ->
+	    let pvalu = Ast_c.MetaPosValList(pvalu) in
+	    let rec loop tin = function
+		[] -> finish tin
+	      | Ast_cocci.MetaPos(name,constraints,per,keep,inherited)::rest ->
+		  let name' = Ast_cocci.unwrap_mcode name in
+		  check_pos_constraints name' pvalu constraints
+		    (fun new_tin ->
+		      (* constraints are satisfied, now see if we are
+			 compatible with existing bindings *)
+		      let x = Ast_cocci.unwrap_mcode name in
+		      let new_binding =
+			check_add_metavars_binding false keep inherited
+			  (x, pvalu) tin in
+		      (match  new_binding with
+			Some binding ->
+			  loop {new_tin with binding = binding} rest
+		      | None -> fail tin))
+		    tin in
+	    loop tin positions
 
   let envf keep inherited = fun (k, valu, get_max_min) f tin ->
     let x = Ast_cocci.unwrap_mcode k in
@@ -539,7 +548,7 @@ module XMATCH = struct
 	pos_variables new_tin k
 	  (function _ ->
 	    let (file,current_element,min,max) = get_max_min() in
-	    [(file,current_element,min,max)])
+	    Some [(file,current_element,min,max)])
 	  (f ())
     | None -> fail tin
 
@@ -590,7 +599,10 @@ module XMATCH = struct
       let posmck = Ast_cocci.FixPos (pos, pos) in
       let finish tin = tag_mck_pos_mcode ia posmck ib tin in
       pos_variables tin ia
-	(function _ -> [Lib_parsing_c.lin_col_by_pos [ib]])
+	(function _ ->
+	  if is_fake ib
+	  then None
+	  else Some [Lib_parsing_c.lin_col_by_pos [ib]])
 	finish
 
   let tokenf_mck mck ib = fun tin ->
