@@ -1021,6 +1021,19 @@ module Err = struct
 
   let restore = Pywrappers.pyerr_restore
 
+  let restore_tuple (ptype, pvalue, ptraceback) =
+    restore ptype pvalue ptraceback
+
+  let restore_fetch () =
+    match fetch () with
+      Some tuple -> restore_tuple tuple
+    | None -> failwith "restore_fetch"
+
+  let restore_fetched () =
+    match fetched () with
+      Some tuple -> restore_tuple tuple
+    | None -> failwith "restore_fetched"
+
   let set_none = Pywrappers.pyerr_setnone
 
   let set_string = Pywrappers.pyerr_setstring
@@ -1503,12 +1516,15 @@ module Utils = struct
       f arg
       (Unix.dup2 stdin_backup) Unix.stdin
 
-  let with_stdin_from_string s f arg =
+  let with_channel_from_string s f =
     with_pipe begin fun in_channel out_channel ->
       output_string out_channel s;
       close_out out_channel;
-      with_stdin_from in_channel f arg
+      f in_channel
     end
+
+  let with_stdin_from_string s =
+    with_channel_from_string s with_stdin_from
 end
 
 module Run = struct
@@ -1542,11 +1558,11 @@ module Run = struct
       (Pywrappers.pyrun_stringflags s start globals locals None)
 
   let eval ?(start = Eval) ?(globals = Module.get_dict (Module.main ()))
-      ?(locals = Dict.create ()) s =
+      ?(locals = Module.get_dict (Module.main ())) s =
     string s start globals locals
 
   let load ?(start = File) ?(globals = Module.get_dict (Module.main ()))
-      ?(locals = Dict.create ()) chan filename =
+      ?(locals = Module.get_dict (Module.main ())) chan filename =
     file chan filename start globals locals
 
   let interactive () = interactive_loop stdin "<stdin>"

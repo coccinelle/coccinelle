@@ -131,7 +131,8 @@ and base_expression =
 	              initialiser
   | MetaErr        of Ast.meta_name mcode * constraints * pure
   | MetaExpr       of Ast.meta_name mcode * constraints *
-	              typeC list option * Ast.form * pure
+	typeC list option * Ast.form * pure *
+	listlen option (* bitfield *)
   | MetaExprList   of Ast.meta_name mcode (* only in arg lists *) *
 	              listlen * constraints * pure
   | AsExpr         of expression * expression (* as expr, always metavar *)
@@ -483,15 +484,15 @@ and parsed_rule =
   | ScriptRule of string (* name *) * string * Ast.dependency *
 	(Ast.script_meta_name * Ast.meta_name * Ast.metavar * Ast.mvinit)
 	  list *
-	Ast.meta_name list (*script vars*) *
+	Ast.meta_name list (*script vars*) * Ast.script_position *
 	string
   | InitialScriptRule of string (* name *) * string * Ast.dependency *
 	(Ast.script_meta_name * Ast.meta_name * Ast.metavar * Ast.mvinit)
-	  list *
+	  list * Ast.script_position *
 	string
   | FinalScriptRule of string (* name *) * string * Ast.dependency *
 	(Ast.script_meta_name * Ast.meta_name * Ast.metavar * Ast.mvinit)
-	  list *
+	  list * Ast.script_position *
 	string (* no script vars possible here *)
 
 (* --------------------------------------------------------------------- *)
@@ -643,8 +644,8 @@ let get_iso x           = x.iso_info
 let set_iso x i = if !Flag.track_iso_usage then {x with iso_info = i} else x
 let set_mcode_data data (_,ar,info,mc,pos,adj) = (data,ar,info,mc,pos,adj)
 let get_rule_name = function
-  | CocciRule ((_,_,(_,_,_,nm,_)),_,_,_) | InitialScriptRule (nm,_,_,_,_)
-  | FinalScriptRule (nm,_,_,_,_) | ScriptRule (nm,_,_,_,_,_) -> nm
+  | CocciRule ((_,_,(_,_,_,nm,_)),_,_,_) | InitialScriptRule (nm,_,_,_,_,_)
+  | FinalScriptRule (nm,_,_,_,_,_) | ScriptRule (nm,_,_,_,_,_,_) -> nm
 
 (* --------------------------------------------------------------------- *)
 
@@ -659,7 +660,7 @@ let rec meta_pos_name = function
       | _ -> failwith "bad metavariable")
   | ExprTag(e) ->
       (match unwrap e with
-	MetaExpr(name,_constraints,_ty,_form,_pure) -> name
+	MetaExpr(name,_constraints,_ty,_form,_pure,_bitfield) -> name
       | MetaExprList(name,_len,_constraints,_pure) -> name
       | _ -> failwith "bad metavariable")
   | TypeCTag(t) ->
@@ -715,7 +716,7 @@ let rec meta_names_of_typeC ty =
 let meta_pos_constraint_names = function
     ExprTag(e) ->
       (match unwrap e with
-	MetaExpr(_name,_constraints,ty,_form,_pure) ->
+	MetaExpr(_name,_constraints,ty,_form,_pure,_bitfield) ->
 	  (match ty with
 	    Some tylist ->
               List.fold_left (fun prev cur -> meta_names_of_typeC cur @ prev)

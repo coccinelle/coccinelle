@@ -64,7 +64,7 @@ let expression e =
   | Ast0.TypeExp(ty) -> [123] (* added after *)
   | Ast0.Constructor(lp,ty,rp,init) -> [155]
   | Ast0.MetaErr(name,_,_) -> [32]
-  | Ast0.MetaExpr(name,_,ty,_,_) -> [33]
+  | Ast0.MetaExpr(name,_,ty,_,_,_bitfield) -> [33]
   | Ast0.MetaExprList(name,_,_,_) -> [34]
   | Ast0.EComma(cm) -> [35]
   | Ast0.DisjExpr(_,expr_list,_,_) -> [36]

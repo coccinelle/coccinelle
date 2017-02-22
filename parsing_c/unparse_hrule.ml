@@ -391,9 +391,9 @@ let pp_meta_decl pr env decl =
       pp_name name; pr ";\n"
   | Ast.MetaErrDecl(ar, name) ->
       no_arity ar; pr "error "; pp_name name; pr ";\n"
-  | Ast.MetaExpDecl(ar, name, None) ->
+  | Ast.MetaExpDecl(ar, name, None, _bitfield) ->
       no_arity ar; pr "expression "; pp_name name; pr ";\n"
-  | Ast.MetaExpDecl(ar, name, types) ->
+  | Ast.MetaExpDecl(ar, name, types, _bitfield) ->
       no_arity ar; print_types pr env types; pp_name name; pr ";\n"
   | Ast.MetaIdExpDecl(ar, name, types) ->
       no_arity ar; pr "idexpression ";

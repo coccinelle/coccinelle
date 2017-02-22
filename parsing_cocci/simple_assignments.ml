@@ -30,7 +30,7 @@ let is_simple_assign left op =
     | Ast0.OpAssign _ -> false
     | _ -> true in
   (match Ast0.unwrap left with
-    Ast0.Ident(_) | Ast0.MetaExpr(_,_,_,_,_) -> true
+    Ast0.Ident(_) | Ast0.MetaExpr(_,_,_,_,_,_) -> true
   | _ -> false)
     &&
   is_simple_assign_op op
@@ -41,9 +41,9 @@ let is_simple_ast_assign left op minus_left =
     | _ -> false in
   (match Ast.unwrap left with
     Ast.Ident(_) -> true
-  | Ast.MetaExpr(name,_,_,_,_,_) ->
+  | Ast.MetaExpr(name,_,_,_,_,_,_bitfield) ->
       (match Ast0.unwrap minus_left with
-	Ast0.MetaExpr(name1,_,_,_,_) ->
+	Ast0.MetaExpr(name1,_,_,_,_,_bitfield) ->
 	  Ast.unwrap_mcode name = Ast0.unwrap_mcode name1
       |	_ -> false)
   | _ -> false)

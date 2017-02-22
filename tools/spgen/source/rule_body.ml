@@ -78,7 +78,8 @@ and add_pos ~context_mode = function
   | Ast0.MetaPosTag(Ast0.MetaPos(((_,nm),arity,_,_,p,_),_,_))
 
   (* extracting the node is equivalent to calling Ast0.unwrap *)
-  | Ast0.ExprTag {Ast0.node = Ast0.MetaExpr(((_,nm),arity,_,_,p,_),_,_,_,_); _}
+  | Ast0.ExprTag
+      {Ast0.node = Ast0.MetaExpr(((_,nm),arity,_,_,p,_),_,_,_,_,_); _}
   | Ast0.StmtTag {Ast0.node = Ast0.MetaStmt(((_,nm),arity,_,_,p,_),_,_); _}
   | Ast0.DeclTag {Ast0.node = Ast0.MetaDecl(((_,nm),arity,_,_,p,_),_,_); _}
   | Ast0.IdentTag {Ast0.node = Ast0.MetaId(((_,nm),arity,_,_,p,_),_,_,_); _}

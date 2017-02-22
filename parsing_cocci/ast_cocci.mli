@@ -15,6 +15,7 @@ type info = { line : int; column : int;
               whitespace : string }
 type line = int
 type meta_name = string * string
+type script_position = string (* filename *) * line (* line *)
 type 'a wrap =
     {node : 'a;
       node_line : line;
@@ -88,7 +89,8 @@ and metavar =
       arity * meta_name (* name *) * fullType list option
   | MetaErrDecl of arity * meta_name (* name *)
   | MetaExpDecl of
-      arity * meta_name (* name *) * fullType list option
+      arity * meta_name (* name *) * fullType list option *
+	list_len option (* bitfield *)
   | MetaIdExpDecl of
       arity * meta_name (* name *) * fullType list option
   | MetaLocalIdExpDecl of
@@ -180,7 +182,8 @@ and base_expression =
   | MetaErr        of meta_name mcode * constraints * keep_binding *
 	              inherited
   | MetaExpr       of meta_name mcode * constraints * keep_binding *
-	              fullType list option * form * inherited
+	fullType list option * form * inherited *
+	listlen option (* bitfield *)
   | MetaExprList   of meta_name mcode * listlen * constraints *
 	              keep_binding * inherited (* only in arg lists *)
   | AsExpr         of expression * expression (* as expr, always metavar *)
@@ -236,6 +239,7 @@ and script_constraint =
       string (* name of generated function *) *
 	string (* language *) *
 	(meta_name * metavar) list (* params *) *
+	script_position *
 	string (* code *)
 
 and form = ANY | ID | LocalID| GlobalID | CONST (* form for MetaExp *)
@@ -658,14 +662,14 @@ and rule =
   | ScriptRule of string (* name *) *
       string * dependency *
 	(script_meta_name * meta_name * metavar * mvinit) list *
-	meta_name list (*script vars*) * string
+	meta_name list (*script vars*) * script_position * string
   | InitialScriptRule of  string (* name *) * string * dependency *
 	(script_meta_name * meta_name * metavar * mvinit)
-	  list (*virtual vars*) *
+	  list (*virtual vars*) * script_position *
 	string
   | FinalScriptRule of  string (* name *) * string * dependency *
 	(script_meta_name * meta_name * metavar * mvinit)
-	  list (*virtual vars*) *
+	  list (*virtual vars*) * script_position *
 	string
 
 and script_meta_name = string option (*string*) * string option (*ast*)

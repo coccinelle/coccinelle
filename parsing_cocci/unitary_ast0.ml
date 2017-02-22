@@ -86,7 +86,7 @@ let get_free checker t =
 	    Ast.cstr_fold
 	      { Ast.empty_cstr_transformer with
 		Ast.cstr_script =
-		Some (fun (name,lang,params,body) accu ->
+		Some (fun (name,lang,params,_pos,body) accu ->
 		  (* It seems that position variables are not relevant
 		     for unitaryness, so drop them *)
 		  bind (List.map fst
@@ -112,7 +112,7 @@ let get_free checker t =
 	let constraints =
 	  constraints_collect r option_default constraints in
 	bind (checker name) constraints
-    | Ast0.MetaExpr(name,constraints,type_list,_,_) ->
+    | Ast0.MetaExpr(name,constraints,type_list,_,_,_bitfield) ->
 	let types =
 	  match type_list with
 	    Some type_list ->
@@ -225,8 +225,9 @@ let update_unitary unitary =
     match Ast0.unwrap e with
       Ast0.MetaErr(name,constraints,_) ->
 	Ast0.rewrap e (Ast0.MetaErr(name,constraints,is_unitary name))
-    | Ast0.MetaExpr(name,constraints,ty,form,_) ->
-	Ast0.rewrap e (Ast0.MetaExpr(name,constraints,ty,form,is_unitary name))
+    | Ast0.MetaExpr(name,constraints,ty,form,_,bitfield) ->
+	Ast0.rewrap e
+	  (Ast0.MetaExpr(name,constraints,ty,form,is_unitary name,bitfield))
     | Ast0.MetaExprList(name,lenname,cstr,_) ->
 	Ast0.rewrap e (Ast0.MetaExprList(name,lenname,cstr,is_unitary name))
     | _ -> k e in
@@ -282,9 +283,9 @@ let do_unitary rules =
       [] -> ([],[])
     | (r::rules) ->
       match r with
-        Ast0.ScriptRule (_,_,_,_,_,_)
-      | Ast0.InitialScriptRule (_,_,_,_,_)
-      | Ast0.FinalScriptRule (_,_,_,_,_) ->
+        Ast0.ScriptRule (_,_,_,_,_,_,_)
+      | Ast0.InitialScriptRule (_,_,_,_,_,_)
+      | Ast0.FinalScriptRule (_,_,_,_,_,_) ->
           let (x,rules) = loop rules in
           (x, r::rules)
       | Ast0.CocciRule((minus,metavars,chosen_isos),((plus,_) as plusz),inh,rt) ->

@@ -369,7 +369,7 @@ let show_or_not_rule_name ast rulenb =
       let name =
 	match ast with
 	  Ast_cocci.CocciRule (nm, (deps, drops, exists), x, _, _) -> nm
-	| Ast_cocci.ScriptRule (nm, _, _, _, _, _) -> nm
+	| Ast_cocci.ScriptRule (nm, _, _, _, _, _,_) -> nm
 	| _ -> string_of_int rulenb in
       Common.pr_xxxxxxxxxxxxxxxxx ();
       pr (name ^ " = ");
@@ -585,8 +585,8 @@ let sp_contain_typed_metavar_z toplevel_list_list =
 
   let expression r k e =
     match Ast_cocci.unwrap e with
-    | Ast_cocci.MetaExpr (_,_,_,Some t,_,_) -> true
-    | Ast_cocci.MetaExpr (_,_,_,_,Ast_cocci.LocalID,_) -> true
+    | Ast_cocci.MetaExpr (_,_,_,Some t,_,_,_bitfield) -> true
+    | Ast_cocci.MetaExpr (_,_,_,_,Ast_cocci.LocalID,_,_bitfield) -> true
     | _ -> k e
   in
 
@@ -822,9 +822,10 @@ type toplevel_cocci_info_script_rule = {
       string *
       (Ast_cocci.script_meta_name * Ast_cocci.meta_name *
 	 Ast_cocci.metavar * Ast_cocci.mvinit) list *
-      Ast_cocci.meta_name list (*fresh vars*) *
+      Ast_cocci.meta_name list (*fresh vars*) * Ast_cocci.script_position *
       string;
   language: string;
+  scr_pos: Ast_cocci.script_position;
   script_code: string;
   scr_rule_info: rule_info;
 }
@@ -956,10 +957,11 @@ let python_code =
     local_python_code ^
     "cocci = Cocci()\n"
 
-let make_init lang code rule_info mv =
+let make_init lang pos code rule_info mv =
   {
-  scr_ast_rule = (lang, mv, [], code);
+  scr_ast_rule = (lang, mv, [], pos, code);
   language = lang;
+  scr_pos = pos;
   script_code = (if lang = "python" then python_code else "") ^code;
   scr_rule_info = rule_info;
 }
@@ -994,23 +996,25 @@ let prepare_cocci ctls free_var_lists negated_pos_lists
       then failwith "not handling multiple minirules";
 
       match ast with
-        Ast_cocci.ScriptRule (name,lang,deps,mv,script_vars,code) ->
+        Ast_cocci.ScriptRule (name,lang,deps,mv,script_vars,pos,code) ->
           let r =
             {
-	      scr_ast_rule = (lang, mv, script_vars, code);
+	      scr_ast_rule = (lang, mv, script_vars, pos, code);
               language = lang;
+	      scr_pos = pos;
               script_code = code;
               scr_rule_info = build_rule_info name deps;
 	    }
           in ScriptRuleCocciInfo r
-      | Ast_cocci.InitialScriptRule (name,lang,deps,mv,code) ->
-	  let r = make_init lang code (build_rule_info name deps) mv in
+      | Ast_cocci.InitialScriptRule (name,lang,deps,mv,pos,code) ->
+	  let r = make_init lang pos code (build_rule_info name deps) mv in
 	  InitialScriptRuleCocciInfo r
-      | Ast_cocci.FinalScriptRule (name,lang,deps,mv,code) ->
+      | Ast_cocci.FinalScriptRule (name,lang,deps,mv,pos,code) ->
           let r =
             {
-              scr_ast_rule = (lang, mv, [], code);
+              scr_ast_rule = (lang, mv, [], pos,code);
               language = lang;
+	      scr_pos = pos;
               script_code = code;
               scr_rule_info = build_rule_info name deps;
             }
@@ -1018,13 +1022,13 @@ let prepare_cocci ctls free_var_lists negated_pos_lists
       | Ast_cocci.CocciRule
 	  (rulename,(dependencies,dropped_isos,z),restast,isexp,ruletype) ->
 	    let add_constraint_language languages rule =
-	      let (_, name, script_name, lang, params, body) = rule in
+	      let (_, _, (script_name, lang, params, _pos, body)) = rule in
 	      Common.StringSet.add lang languages in
 	    let constraint_languages =
 	      List.fold_left
 	        (fun accu toplevel ->
 		  List.fold_left add_constraint_language accu
-		    (Parse_cocci.enumerate_constraint_scripts toplevel))
+		    !Data.constraint_scripts)
 		Common.StringSet.empty restast in
             CocciRuleCocciInfo (
             {
@@ -1387,7 +1391,7 @@ let python_application mv ve script_vars r =
     Pycocci.build_classes (List.map (function (x,y) -> x) ve);
     Pycocci.construct_variables mv ve;
     Pycocci.construct_script_variables script_vars;
-    let _ = Pycocci.pyrun_simplestring (local_python_code ^r.script_code) in
+    let _ = Pycocci.run r.scr_pos (local_python_code ^r.script_code) in
     if !Pycocci.exited
     then raise Exited
     else if !Pycocci.inc_match
@@ -1428,7 +1432,7 @@ let apply_script_rule r cache newes e rules_that_have_matched
     end
   else
     begin
-      let (_, mv, script_vars, _) = r.scr_ast_rule in
+      let (_, mv, script_vars, _, _) = r.scr_ast_rule in
       let mv =
 	List.filter
 	  (function (_, ("merge", _), _, _) -> false | _ -> true) mv in
@@ -1915,11 +1919,11 @@ let bigloop2 rs (ccs: file_info list) parse_strings =
 
           adjust_pp_with_indent (fun () ->
             Format.force_newline();
-            let (l,mv,script_vars,code) = r.scr_ast_rule in
+            let (l,mv,script_vars,pos,code) = r.scr_ast_rule in
 	    let nm = r.scr_rule_info.rulename in
 	    let deps = r.scr_rule_info.dependencies in
             Pretty_print_cocci.unparse []
-	      (Ast_cocci.ScriptRule (nm,l,deps,mv,script_vars,code)));
+	      (Ast_cocci.ScriptRule (nm,l,deps,mv,script_vars,pos,code)));
 	end;
 
       (*pr2 (List.hd(cmd_to_list "free -m | grep Mem"));*)
@@ -2021,7 +2025,7 @@ let find_python_merge_variables cocci_infos =
   try
     Common.find_some (function FinalScriptRuleCocciInfo r
 	when r.language = "python" ->
-	  let (_, mvs, _, _) = r.scr_ast_rule in
+	  let (_, mvs, _, _, _) = r.scr_ast_rule in
 	  let merge_vars = Ast_cocci.filter_merge_variables mvs in
 	  let merge_names = Array.of_list (List.map fst merge_vars) in
 	  let local_names = Array.of_list (List.map snd merge_vars) in
@@ -2101,8 +2105,8 @@ let pre_engine2 (coccifile, isofile) =
 	   (!Flag.defined_virtual_rules,!Flag.defined_virtual_env)) ::
 	  !Iteration.initialization_stack;
 	initial_final_bigloop Initial
-	  (fun (x,mvs,_,y) -> fun deps ->
-	    Ast_cocci.InitialScriptRule(rname,x,deps,mvs,y))
+	  (fun (x,mvs,_,pos,y) -> fun deps ->
+	    Ast_cocci.InitialScriptRule(rname,x,deps,mvs,pos,y))
 	  r
       end in
 
@@ -2133,7 +2137,7 @@ let pre_engine2 (coccifile, isofile) =
 	  used_after = [];
 	  ruleid = (-1);
 	  was_matched = ref false;} in
-      runrule (make_init lgg "" rule_info []))
+      runrule (make_init lgg ("", 0) "" rule_info []))
     uninitialized_languages;
 
   let (python_merge_names, python_local_names) =
@@ -2257,9 +2261,9 @@ let post_engine2 (cocci_infos, _, _, (python_merge_names, _)) merges =
 		else
 		  begin
 		    initial_final_bigloop Final
-		      (fun (x,mvs,_,y) -> fun deps ->
+		      (fun (x,mvs,_,pos,y) -> fun deps ->
 			Ast_cocci.FinalScriptRule(r.scr_rule_info.rulename,
-						  x,deps,mvs,y))
+						  x,deps,mvs,pos,y))
 		      r;
 		    (rlang, rname) :: executed_rules
 		  end

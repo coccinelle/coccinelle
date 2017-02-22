@@ -1142,6 +1142,7 @@ let rec main_action xs =
 	      try
 		Parmap.parfold
 		  ~init:(fun id -> Parmap.redirect ~path:prefix ~id)
+		  ~finalize:(fun () -> Pycocci.flush_stdout_and_stderr ())
 		  ~ncores
 		  ~chunksize
 		  op (Parmap.L l) (z, !Common._temp_files_created) merge

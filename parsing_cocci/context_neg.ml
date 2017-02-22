@@ -579,7 +579,7 @@ let rec equal_expression e1 e2 =
   | (Ast0.Constructor(lp1,_,rp1,_),Ast0.Constructor(lp2,_,rp2,_)) ->
       equal_mcode lp1 lp2 && equal_mcode rp1 rp2
   | (Ast0.MetaErr(name1,_,_),Ast0.MetaErr(name2,_,_))
-  | (Ast0.MetaExpr(name1,_,_,_,_),Ast0.MetaExpr(name2,_,_,_,_))
+  | (Ast0.MetaExpr(name1,_,_,_,_,_),Ast0.MetaExpr(name2,_,_,_,_,_))
   | (Ast0.MetaExprList(name1,_,_,_),Ast0.MetaExprList(name2,_,_,_)) ->
       equal_mcode name1 name2
   | (Ast0.EComma(cm1),Ast0.EComma(cm2)) -> equal_mcode cm1 cm2

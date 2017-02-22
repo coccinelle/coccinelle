@@ -122,7 +122,8 @@ and base_expression =
  	              initialiser
   | MetaErr        of Ast_cocci.meta_name mcode * constraints * pure
   | MetaExpr       of Ast_cocci.meta_name mcode * constraints *
-	              typeC list option * Ast_cocci.form * pure
+	typeC list option * Ast_cocci.form * pure *
+	listlen option (* bitfield *)
   | MetaExprList   of Ast_cocci.meta_name mcode (* only in arglists *) *
 	              listlen * constraints * pure
   | AsExpr         of expression * expression (* as expr, always metavar *)
@@ -471,17 +472,17 @@ and parsed_rule =
 	(Ast_cocci.script_meta_name *
 	   Ast_cocci.meta_name * Ast_cocci.metavar * Ast_cocci.mvinit)
 	    list (*inherited vars*) *
-	Ast_cocci.meta_name list (*script vars*) *
+	Ast_cocci.meta_name list (*script vars*) * Ast_cocci.script_position *
 	string
   | InitialScriptRule of string (* name *) * string * Ast_cocci.dependency *
 	(Ast_cocci.script_meta_name *
 	   Ast_cocci.meta_name * Ast_cocci.metavar * Ast_cocci.mvinit)
-	     list (*virtual vars*) *
+	     list (*virtual vars*) * Ast_cocci.script_position *
 	string
   | FinalScriptRule of string (* name *) * string * Ast_cocci.dependency *
 	(Ast_cocci.script_meta_name *
 	   Ast_cocci.meta_name * Ast_cocci.metavar * Ast_cocci.mvinit)
-	     list (*virtual vars*) *
+	     list (*virtual vars*) * Ast_cocci.script_position *
 	string
 
 (* --------------------------------------------------------------------- *)

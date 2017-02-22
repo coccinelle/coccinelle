@@ -223,10 +223,10 @@ and unify_expression e1 e2 =
       unify_expression e1 e2
 
   | (Ast.MetaErr(_,_,_,_),_)
-  | (Ast.MetaExpr(_,_,_,_,_,_),_)
+  | (Ast.MetaExpr(_,_,_,_,_,_,_),_)
   | (Ast.MetaExprList(_,_,_,_,_),_)
   | (_,Ast.MetaErr(_,_,_,_))
-  | (_,Ast.MetaExpr(_,_,_,_,_,_))
+  | (_,Ast.MetaExpr(_,_,_,_,_,_,_))
   | (_,Ast.MetaExprList(_,_,_,_,_)) -> true
 
   | (Ast.AsExpr(exp1,asexp1),_) ->

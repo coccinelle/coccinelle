@@ -142,7 +142,7 @@ let rec left_expression e =
   | Ast0.TypeExp(ty) -> left_typeC ty
   | Ast0.Constructor(lp,ty,rp,init) -> modif_before_mcode lp
   | Ast0.MetaErr(name,_,_) -> modif_before_mcode name
-  | Ast0.MetaExpr(name,_,ty,_,_) -> modif_before_mcode name
+  | Ast0.MetaExpr(name,_,ty,_,_,_bitfield) -> modif_before_mcode name
   | Ast0.MetaExprList(name,_,_,_) -> modif_before_mcode name
   | Ast0.EComma(cm) -> modif_before_mcode cm
   | Ast0.DisjExpr(_,exp_list,_,_) -> List.exists left_expression exp_list
