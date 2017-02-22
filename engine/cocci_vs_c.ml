@@ -584,7 +584,7 @@ let initialisation_to_affectation decl =
 	Some x -> F.DefineExpr x
       |	None -> F.Decl decl
 
-let lin_col_by_pos ii = Some(Lib_parsing_c.lin_col_by_pos 4 ii)
+let lin_col_by_pos ii = Some(Lib_parsing_c.lin_col_by_pos ii)
 
 (*****************************************************************************)
 (* Functor parameter combinators *)
