@@ -547,8 +547,9 @@ module XMATCH = struct
 	let new_tin = {tin with binding = binding} in
 	pos_variables new_tin k
 	  (function _ ->
-	    let (file,current_element,min,max) = get_max_min() in
-	    Some [(file,current_element,min,max)])
+	    match get_max_min() with
+	      Some pos -> Some [pos]
+	    | None -> None)
 	  (f ())
     | None -> fail tin
 
