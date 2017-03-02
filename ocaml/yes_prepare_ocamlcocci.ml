@@ -303,17 +303,7 @@ let prepare coccifile code =
     else
       prev in
   let constraint_rules =
-    List.fold_left
-      (function prev ->
-	function
-	    Ast.CocciRule(_,_,code,_,_) ->
-	      List.fold_left
-		(fun accu toplevel ->
-		  List.fold_left add_constraint_rules prev
-		    !Data.constraint_scripts)
-		prev code
-	  | _ -> prev)
-      [] code in
+    List.fold_left add_constraint_rules [] !Data.constraint_scripts in
   if init_rules = [] && other_rules = [] && constraint_rules = []
       && final_rules = []
   then None
