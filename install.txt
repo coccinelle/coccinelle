@@ -36,6 +36,15 @@ On Fedora, install the following packages
  - ocaml-menhir (optional, bundled)
  - ocaml-pcre-devel (optional, bundled)
 
+You can try to use the package manager of your distribution to install
+the build dependencies. This is not guaranteed to work, as the
+dependencies may change, but chances are it will help you. Some
+examples:
+
+$ apt-get build-dep coccinelle
+$ dnf builddep coccinelle
+$ yum builddep coccinelle
+
 Then simply type
  ./configure
  make
