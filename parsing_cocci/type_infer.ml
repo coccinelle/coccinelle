@@ -292,8 +292,8 @@ let rec propagate_types env =
 	| Ast0.TypeExp(ty) -> None
 	| Ast0.Constructor(lp,ty,rp,init) -> Some ty
 	| Ast0.MetaErr(name,_,_) -> None
-	| Ast0.MetaExpr(name,_,Some [ty],_,_) -> Some ty
-	| Ast0.MetaExpr(name,_,ty,_,_) -> None
+	| Ast0.MetaExpr(name,_,Some [ty],_,_,_bitfield) -> Some ty
+	| Ast0.MetaExpr(name,_,ty,_,_,_bitfield) -> None
 	| Ast0.MetaExprList(name,_,_,_) -> None
 	| Ast0.EComma(cm) -> None
 	| Ast0.DisjExpr(_,exp_list,_,_)
@@ -383,7 +383,8 @@ let rec propagate_types env =
               (* pad: should handle typedef one day and add a binding *)
     | Ast0.Typedef((a,_,_,_,_,_),b,c,(d,_,_,_,_,_)) ->
 	[]
-    | Ast0.DisjDecl(_,disjs,_,_) ->
+    | Ast0.DisjDecl(_,disjs,_,_)
+    | Ast0.ConjDecl(_,disjs,_,_) ->
 	List.concat(List.map (process_decl env) disjs)
     | Ast0.Ddots(_,_) -> [] (* not in a statement list anyway *)
     | Ast0.OptDecl(decl) -> process_decl env decl
@@ -397,7 +398,7 @@ let rec propagate_types env =
       match (Ast0.unwrap exp,Ast0.get_type exp) with
 	(Ast0.Edots(_,_),_) -> None
       | (Ast0.NestExpr(_,_,_,_,_),_) -> None
-      | (Ast0.MetaExpr(_,_,_,_,_),_) ->
+      | (Ast0.MetaExpr(_,_,_,_,_,_bitfield),_) ->
       (* if a type is known, it is specified in the decl *)
 	  None
       | (Ast0.Paren(lp,exp,rp),None) -> process_test exp

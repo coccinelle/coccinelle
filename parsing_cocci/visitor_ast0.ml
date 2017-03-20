@@ -207,9 +207,9 @@ let visitor mode bind option_default
 	| Ast0.MetaErr(name,constraints,pure) ->
 	    let (name_n,name) = meta_mcode name in
 	    (name_n,Ast0.MetaErr(name,constraints,pure))
-	| Ast0.MetaExpr(name,constraints,ty,form,pure) ->
+	| Ast0.MetaExpr(name,constraints,ty,form,pure,bitfield) ->
 	    let (name_n,name) = meta_mcode name in
-	    (name_n,Ast0.MetaExpr(name,constraints,ty,form,pure))
+	    (name_n,Ast0.MetaExpr(name,constraints,ty,form,pure,bitfield))
 	| Ast0.MetaExprList(name,lenname,constraints,pure) ->
 	    let (name_n,name) = meta_mcode name in
 	    (name_n,Ast0.MetaExprList(name,lenname,constraints,pure))
@@ -506,6 +506,10 @@ let visitor mode bind option_default
 	    do_disj starter decls mids ender declaration
 	      (fun starter decls mids ender ->
 		Ast0.DisjDecl(starter,decls,mids,ender))
+	| Ast0.ConjDecl(starter,decls,mids,ender) ->
+	    do_disj starter decls mids ender declaration
+	      (fun starter decls mids ender ->
+		Ast0.ConjDecl(starter,decls,mids,ender))
 	| Ast0.Ddots(dots,whencode) ->
 	    let (dots_n,dots) = string_mcode dots in
 	    let (whencode_n, whencode) = match whencode with

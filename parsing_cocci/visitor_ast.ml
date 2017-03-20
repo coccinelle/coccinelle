@@ -212,7 +212,7 @@ let combiner bind option_default
 	  let linit = initialiser init in
 	  multibind [llp; lty; lrp; linit]
       | Ast.MetaErr(name,_,_,_)
-      | Ast.MetaExpr(name,_,_,_,_,_)
+      | Ast.MetaExpr(name,_,_,_,_,_,_)
       | Ast.MetaExprList(name,_,_,_,_) -> meta_mcode name
       |	Ast.AsExpr(exp,asexp) ->
 	  let lexp = expression exp in
@@ -435,7 +435,8 @@ let combiner bind option_default
 	  let lid = typeC id in
 	  let lsem = string_mcode sem in
 	  multibind [lstg; lty; lid; lsem]
-      | Ast.DisjDecl(decls) -> multibind (List.map declaration decls)
+      | Ast.DisjDecl(decls)
+      | Ast.ConjDecl(decls) -> multibind (List.map declaration decls)
       | Ast.OptDecl(decl) -> declaration decl in
     declfn all_functions k d
 
@@ -1080,8 +1081,9 @@ let rebuilder
 	    Ast.Constructor(llp, lty, lrp, linit)
 	| Ast.MetaErr(name,constraints,keep,inherited) ->
 	    Ast.MetaErr(meta_mcode name,constraints,keep,inherited)
-	| Ast.MetaExpr(name,constraints,keep,ty,form,inherited) ->
-	    Ast.MetaExpr(meta_mcode name,constraints,keep,ty,form,inherited)
+	| Ast.MetaExpr(name,constraints,keep,ty,form,inherited,bitfield) ->
+	    Ast.MetaExpr
+	      (meta_mcode name,constraints,keep,ty,form,inherited,bitfield)
 	| Ast.MetaExprList(name,lenname_inh,constraints,keep,inherited) ->
 	    Ast.MetaExprList
 	      (meta_mcode name,lenname_inh,constraints,keep,inherited)
@@ -1303,6 +1305,7 @@ let rebuilder
 	    let lsem = string_mcode sem in
 	    Ast.Typedef(lstg, lty, lid, lsem)
 	| Ast.DisjDecl(decls) -> Ast.DisjDecl(List.map declaration decls)
+	| Ast.ConjDecl(decls) -> Ast.ConjDecl(List.map declaration decls)
 	| Ast.OptDecl(decl) -> Ast.OptDecl(declaration decl)) in
     declfn all_functions k d
 

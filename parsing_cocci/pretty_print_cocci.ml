@@ -260,7 +260,7 @@ let rec expression e =
       mcode print_string rp; initialiser init
 
   | Ast.MetaErr(name,_,_,_) -> mcode print_meta name
-  | Ast.MetaExpr(name,_,keep,ty,form,inherited) ->
+  | Ast.MetaExpr(name,_,keep,ty,form,inherited,_) ->
       mcode print_meta name; print_type keep inherited ty
   | Ast.MetaExprList(name,_,_,_,_) -> mcode print_meta name
   | Ast.AsExpr(exp,asexp) -> expression exp; print_string "@"; expression asexp
@@ -513,6 +513,7 @@ and declaration d =
       mcode print_string stg; print_string " "; fullType ty; typeC id;
       mcode print_string sem
   | Ast.DisjDecl(decls) -> print_disj_list declaration decls "|"
+  | Ast.ConjDecl(decls) -> print_disj_list declaration decls "&"
   | Ast.OptDecl(decl) -> print_string "?"; declaration decl
 
 and annotated_decl arity d =
@@ -934,9 +935,9 @@ let unparse_cocci_mv rule = function
       print_name rule r n; print_string ";"
   | Ast.MetaErrDecl(_,(r,n)) ->
       print_string "error "; print_name rule r n; print_string ";"
-  | Ast.MetaExpDecl(_,(r,n),None) ->
+  | Ast.MetaExpDecl(_,(r,n),None,_bitfield) ->
       print_string "expression "; print_name rule r n; print_string ";"
-  | Ast.MetaExpDecl(_,(r,n),ty) ->
+  | Ast.MetaExpDecl(_,(r,n),ty,_bitfield) ->
       (match ty with
 	None -> ()
       | Some ty -> (* unknown only possible when there is only one type? *)
@@ -1114,11 +1115,11 @@ let script_header str lang deps mv code =
 
 let unparse mvs z =
   match z with
-    Ast.InitialScriptRule (name,lang,deps,mv,code) ->
+    Ast.InitialScriptRule (name,lang,deps,mv,_pos,code) ->
       script_header "initialize" lang deps mv code
-  | Ast.FinalScriptRule (name,lang,deps,mv,code) ->
+  | Ast.FinalScriptRule (name,lang,deps,mv,_pos,code) ->
       script_header "finalize" lang deps mv code
-  | Ast.ScriptRule (name,lang,deps,bindings,script_vars,code) ->
+  | Ast.ScriptRule (name,lang,deps,bindings,script_vars,_pos,code) ->
       script_header "script" lang deps bindings code
   | Ast.CocciRule (nm, (deps, drops, exists), x, _, _) ->
       print_string "@";

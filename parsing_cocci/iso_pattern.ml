@@ -413,7 +413,7 @@ let match_maker checks_needed context_required whencode_allowed =
       bind (bind (pure_mcodekind (Ast0.get_mcodekind e)) (k e))
 	(match Ast0.unwrap e with
 	  Ast0.MetaErr(name,_,pure)
-	| Ast0.MetaExpr(name,_,_,_,pure) | Ast0.MetaExprList(name,_,_,pure) ->
+	| Ast0.MetaExpr(name,_,_,_,pure,_) | Ast0.MetaExprList(name,_,_,pure) ->
 	    pure
 	| _ -> Ast0.Impure) in
 
@@ -549,7 +549,7 @@ let match_maker checks_needed context_required whencode_allowed =
   (* should we do something about matching metavars against ...? *)
   let rec match_expr pattern expr =
     match Ast0.unwrap pattern with
-      Ast0.MetaExpr(name,_,ty,form,pure) ->
+      Ast0.MetaExpr(name,_,ty,form,pure,_bitfield) ->
 	let form_ok =
 	  match (form,expr) with
 	    (Ast.ANY,_) -> true
@@ -567,7 +567,7 @@ let match_maker checks_needed context_required whencode_allowed =
 		| Ast0.Cast(lp,ty,rp,e) -> matches e
 		| Ast0.SizeOfExpr(se,exp) -> true
 		| Ast0.SizeOfType(se,lp,ty,rp) -> true
-		| Ast0.MetaExpr(nm,_,_,Ast.CONST,p) ->
+		| Ast0.MetaExpr(nm,_,_,Ast.CONST,p,_bitfield) ->
 		    (Ast0.lub_pure p pure) = pure
 		| _ -> false in
 	      matches e
@@ -576,7 +576,7 @@ let match_maker checks_needed context_required whencode_allowed =
 		match Ast0.unwrap e with
 		  Ast0.Ident(c) -> true
 		| Ast0.Cast(lp,ty,rp,e) -> matches e
-		| Ast0.MetaExpr(nm,_,_,Ast.ID,p) ->
+		| Ast0.MetaExpr(nm,_,_,Ast.ID,p,_bitfield) ->
 		    (Ast0.lub_pure p pure) = pure
 		| _ -> false in
 	      matches e in
@@ -596,7 +596,8 @@ let match_maker checks_needed context_required whencode_allowed =
 		      match (Ast0.unwrap expr,Ast0.get_type expr) with
 		  (* easier than updating type inferencer to manage multiple
 		     types *)
-			(Ast0.MetaExpr(_,_,Some tts,_,_),_) -> Some tts
+			(Ast0.MetaExpr(_,_,Some tts,_,_,_bitfield),_) ->
+			  Some tts
 		      | (_,Some ty) -> Some [ty]
 		      | _ -> None in
 		    (match expty with
@@ -973,7 +974,8 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (Ast0.Typedef(stga,tya,ida,sc1),Ast0.Typedef(stgb,tyb,idb,sc)) ->
 	      conjunct_bindings (check_mcode sc1 sc)
 		(conjunct_bindings (match_typeC tya tyb) (match_typeC ida idb))
-	  | (Ast0.DisjDecl(_,declsa,_,_),_) ->
+	  | (Ast0.DisjDecl(_,declsa,_,_),_)
+	  | (Ast0.ConjDecl(_,declsa,_,_),_) ->
 	      failwith "not allowed in the pattern of an isomorphism"
 	  | (Ast0.Ddots(d1,None),Ast0.Ddots(d,None)) -> check_mcode d1 d
 	  |	(Ast0.Ddots(dd,None),Ast0.Ddots(d,Some (wh,ee,wc))) ->
@@ -1712,7 +1714,7 @@ let instantiate bindings mv_bindings model =
     let e = k old_e in
     let e1 =
     match Ast0.unwrap e with
-      Ast0.MetaExpr(name,constraints,x,form,pure) ->
+      Ast0.MetaExpr(name,constraints,x,form,pure,bitfield) ->
 	(rebuild_mcode None).VT0.rebuilder_rec_expression
 	  (match lookup name bindings mv_bindings with
 	    Common.Left(Ast0.ExprTag(exp)) ->
@@ -1774,7 +1776,7 @@ let instantiate bindings mv_bindings model =
 		(Ast0.rewrap e
 		   (Ast0.MetaExpr
 		      (Ast0.set_mcode_data new_mv name,constraints,
-		       new_types,form,pure))))
+		       new_types,form,pure,bitfield))))
     | Ast0.MetaErr(namea,_,pure) -> failwith "metaerr not supported"
     | Ast0.MetaExprList(namea,lenname,_,pure) ->
 	failwith "metaexprlist not supported"
@@ -1792,7 +1794,8 @@ let instantiate bindings mv_bindings model =
 	      match Ast0.unwrap old_e with
 		Ast0.Unary(exp,_) ->
 		  (match Ast0.unwrap exp with
-		    Ast0.MetaExpr(name,constraints,x,form,pure) -> true
+		    Ast0.MetaExpr(name,constraints,x,form,pure,_bitfield) ->
+		      true
 		  | _ -> false)
 	      |	_ -> failwith "not possible" in
 	    let nomodif = function
@@ -2250,7 +2253,7 @@ let get_name bindings = function
       (nm,function nm -> Ast.MetaConstDecl(ar,nm,ty))
   | Ast.MetaErrDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaErrDecl(ar,nm))
-  | Ast.MetaExpDecl(ar,nm,ty) ->
+  | Ast.MetaExpDecl(ar,nm,ty,bitfield) ->
       let newty =
 	match ty with
 	  Some types ->
@@ -2279,7 +2282,7 @@ let get_name bindings = function
 		   loop ty)
 		 types)
 	| _-> ty in
-      (nm,function nm -> Ast.MetaExpDecl(ar,nm,newty))
+      (nm,function nm -> Ast.MetaExpDecl(ar,nm,newty,bitfield))
   | Ast.MetaIdExpDecl(ar,nm,ty) ->
       (nm,function nm -> Ast.MetaIdExpDecl(ar,nm,ty))
   | Ast.MetaLocalIdExpDecl(ar,nm,ty) ->

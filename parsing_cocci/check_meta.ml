@@ -175,21 +175,20 @@ let rec expression context old_metas table minus e =
   | Ast0.TypeExp(ty) -> typeC old_metas table minus ty
   | Ast0.Constructor(lp,ty,rp,init) ->
       typeC old_metas table minus ty; initialiser old_metas table minus init
-  | Ast0.MetaExpr(name,_,Some tys,_,_) ->
+  | Ast0.MetaExpr(name,_,Some tys,_,_,bitfield) ->
       List.iter
 	(function x ->
 	  List.iter
 	    (function ty -> check_table table minus (promote ty))
 	    (Ast0.meta_names_of_typeC x))
 	tys;
-      check_table table minus name
-  | Ast0.MetaExpr(name,_,_,_,_) | Ast0.MetaErr(name,_,_) ->
-      check_table table minus name
-  | Ast0.MetaExprList(name,Ast0.MetaListLen (lenname,_),_,_) ->
       check_table table minus name;
-      check_table table minus lenname
-  | Ast0.MetaExprList(name,_,_,_) ->
+      Common.do_option (check_len table minus) bitfield
+  | Ast0.MetaExpr(name,_,_,_,_,_) | Ast0.MetaErr(name,_,_) ->
       check_table table minus name
+  | Ast0.MetaExprList(name,len,_,_) ->
+      check_table table minus name;
+      check_len table minus len
   | Ast0.AsExpr(exp,asexp) -> failwith "not generated yet"
   | Ast0.AsSExpr(exp,asstm) -> failwith "not generated yet"
   | Ast0.DisjExpr(_,exps,_,_)
@@ -203,6 +202,11 @@ let rec expression context old_metas table minus e =
   | Ast0.OptExp(x) ->
       expression ID old_metas table minus x
   | _ -> () (* no metavariable subterms *)
+
+and check_len table minus len =
+  match len with
+    Ast0.MetaListLen (lenname, _) -> check_table table minus lenname
+  | _ -> ()
 
 (* --------------------------------------------------------------------- *)
 (* Types *)
@@ -248,11 +252,9 @@ and declaration context old_metas table minus d =
   match Ast0.unwrap d with
     Ast0.MetaDecl(name,_,_) | Ast0.MetaField(name,_,_) ->
       check_table table minus name
-  | Ast0.MetaFieldList(name,Ast0.MetaListLen (lenname,_),_,_) ->
+  | Ast0.MetaFieldList(name,len,_,_) ->
       check_table table minus name;
-      check_table table minus lenname
-  | Ast0.MetaFieldList(name,_,_,_) ->
-      check_table table minus name
+      check_len table minus len
   | Ast0.AsDecl(decl,asdecl) -> failwith "not generated yet"
   | Ast0.Init(stg,ty,id,eq,ini,sem) ->
       typeC old_metas table minus ty;
@@ -286,7 +288,8 @@ and declaration context old_metas table minus d =
   | Ast0.Typedef(stg,ty,id,sem) ->
       typeC old_metas table minus ty;
       typeC old_metas table minus id
-  | Ast0.DisjDecl(_,decls,_,_) ->
+  | Ast0.DisjDecl(_,decls,_,_)
+  | Ast0.ConjDecl(_,decls,_,_) ->
       List.iter (declaration ID old_metas table minus) decls
   | Ast0.Ddots(_,Some (_,_,x)) -> declaration ID old_metas table minus x
   | Ast0.Ddots(_,None) -> ()
@@ -300,11 +303,9 @@ and initialiser old_metas table minus ini =
   match Ast0.unwrap ini with
     Ast0.MetaInit(name,_,_) ->
       check_table table minus name
-  | Ast0.MetaInitList(name,Ast0.MetaListLen (lenname,_),_,_) ->
+  | Ast0.MetaInitList(name,len,_,_) ->
       check_table table minus name;
-      check_table table minus lenname
-  | Ast0.MetaInitList(name,_,_,_) ->
-      check_table table minus name
+      check_len table minus len
   | Ast0.AsInit(ini,asini) -> failwith "not generated yet"
   | Ast0.InitExpr(exp) -> expression ID old_metas table minus exp
   | Ast0.InitList(lb,initlist,rb,ordered) ->
@@ -342,11 +343,9 @@ and parameterTypeDef old_metas table minus param =
       typeC old_metas table minus ty
   | Ast0.MetaParam(name,_,_) ->
       check_table table minus name
-  | Ast0.MetaParamList(name,Ast0.MetaListLen (lenname,_),_,_) ->
+  | Ast0.MetaParamList(name,len,_,_) ->
       check_table table minus name;
-      check_table table minus lenname
-  | Ast0.MetaParamList(name,_,_,_) ->
-      check_table table minus name
+      check_len table minus len
   | _ -> () (* no metavariable subterms *)
 
 and parameter_list old_metas table minus =
@@ -361,11 +360,9 @@ and string_fragment old_metas table minus e =
   | Ast0.FormatFragment(pct,fmt) ->
       string_format old_metas table minus fmt
   | Ast0.Strdots dots -> ()
-  | Ast0.MetaFormatList(pct,name,_,Ast0.MetaListLen (lenname,_)) ->
+  | Ast0.MetaFormatList(pct,name,_,len) ->
       check_table table minus name;
-      check_table table minus lenname
-  | Ast0.MetaFormatList(pct,name,_,lenname) ->
-      check_table table minus name
+      check_len table minus len
 
 and string_format old_metas table minus e =
   match Ast0.unwrap e with
@@ -416,10 +413,9 @@ and statement old_metas table minus s =
   | Ast0.Exec(exec,lang,code,sem) ->
       dots (exec_code ID old_metas table minus) code
   | Ast0.MetaStmt(name,_,_) ->     check_table table minus name
-  | Ast0.MetaStmtList(name,Ast0.MetaListLen (lenname,_),_,_) ->
+  | Ast0.MetaStmtList(name,len,_,_) ->
       check_table table minus name;
-      check_table table minus lenname
-  | Ast0.MetaStmtList(name,_,_,_) -> check_table table minus name
+      check_len table minus len
   | Ast0.AsStmt(stm,asstm) -> failwith "not generated yet"
   | Ast0.Exp(exp) -> expression ID old_metas table minus exp
   | Ast0.TopExp(exp) -> expression ID old_metas table minus exp
@@ -469,11 +465,9 @@ and pragmainfo old_metas table minus pi =
 and define_param old_metas table minus p =
   match Ast0.unwrap p with
     Ast0.DParam(id) -> ident GLOBAL old_metas table minus id
-  | Ast0.MetaDParamList(name,Ast0.MetaListLen (lenname,_),_,_) ->
+  | Ast0.MetaDParamList(name,len,_,_) ->
       check_table table minus name;
-      check_table table minus lenname
-  | Ast0.MetaDParamList(name,_,_,_) ->
-      check_table table minus name
+      check_len table minus len
   | Ast0.DPComma(_) | Ast0.DPdots(_) ->
       () (* no metavariable subterms *)
   | Ast0.OptDParam(dp)    -> define_param old_metas table minus dp
@@ -601,7 +595,8 @@ let dup_positions rules =
 
   let declaration r k e =
     match Ast0.unwrap e with
-      Ast0.DisjDecl(_,decls,_,_) ->
+      Ast0.DisjDecl(_,decls,_,_)
+    | Ast0.ConjDecl(_,decls,_,_) ->
 	List.fold_left Common.union_set option_default
 	  (List.map r.VT0.combiner_rec_declaration decls)
     | _ -> k e in

@@ -1,7 +1,7 @@
 OCAMLFIND=ocamlfind
 
 HAVE_OCAMLFIND:=$(shell \
-	if $(OCAMLFIND) query -help >/dev/null 2>&1; then \
+	if $(OCAMLFIND) query -help &>/dev/null; then \
 		echo yes; \
 	else \
 		echo no; \
@@ -18,9 +18,9 @@ ifneq ($(HAVE_OCAMLFIND),no)
 	OCAMLDOC=$(OCAMLFIND) ocamldoc
 else
 	OCAMLC:=$(shell \
-		if ocamlc.opt -version >/dev/null 2>&1; then \
+		if ocamlc.opt -version &>/dev/null; then \
 			echo ocamlc.opt; \
-		elif ocamlc -version >/dev/null 2>&1; then \
+		elif ocamlc -version &>/dev/null; then \
 			echo ocamlc; \
 		fi \
 	)
@@ -29,9 +29,9 @@ else
 	endif
 	ifneq ($(HAVE_OCAMLOPT),no)
 		OCAMLOPTEXE:=$(shell \
-			if ocamlopt.opt -version >/dev/null 2>&1; then \
+			if ocamlopt.opt -version &>/dev/null; then \
 				echo ocamlopt.opt; \
-			elif ocamlopt -version >/dev/null 2>&1; then \
+			elif ocamlopt -version &>/dev/null; then \
 				echo ocamlopt; \
 			fi \
 		)

@@ -615,14 +615,14 @@ let test_rule_dependencies file =
   List.iter2
     (fun def fvs ->
       match def with
-	Ast_cocci.ScriptRule (nm,_,dep,script_vars,_,_) ->
+	Ast_cocci.ScriptRule (nm,_,dep,script_vars,_,_,_) ->
 	  print_dotted_link nm !prevrule;
 	  prevrule := nm;
 	  depto t nm dep;
 	  List.iter (function (_,(parent,_),_,_) -> print_link t nm parent)
 	    script_vars
-      | Ast_cocci.InitialScriptRule (_,_,_,_,_)
-      | Ast_cocci.FinalScriptRule (_,_,_,_,_) -> ()
+      | Ast_cocci.InitialScriptRule (_,_,_,_,_,_)
+      | Ast_cocci.FinalScriptRule (_,_,_,_,_,_) -> ()
       | Ast_cocci.CocciRule (nm,(dep,_,_),_,_,_) ->
 	  print_dotted_link nm !prevrule;
 	  prevrule := nm;

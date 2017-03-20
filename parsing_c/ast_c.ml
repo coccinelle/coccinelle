@@ -197,6 +197,8 @@ and fullType = typeQualifier * typeC
 
   | TypeName   of name * fullType option (* semantic: filled later *)
 
+  | FieldType of fullType * name * constExpression option
+
   | ParenType of fullType (* for unparser: *)
 
   (* gccext: TypeOfType below may seems useless; Why declare a

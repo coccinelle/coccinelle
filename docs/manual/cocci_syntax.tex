@@ -1,4 +1,3 @@
-
 %\section{The SmPL Grammar}
 
 % This section presents the SmPL grammar.  This definition follows closely
@@ -1321,7 +1320,7 @@ $^\dag$ The optional \texttt{when} construct ends at the end of the line.
   \RULE{\rt{funid}}
   \CASE{\T{id}}
   \CASE{\mth{\T{metaid}^{\ssf{Id}}}}
-  \CASE{\NT{OR}\mth{(}\NT{stmt}\mth{)}}
+  \CASE{\NT{OR}\mth{(}\NT{funid}\mth{)}}
 %   \CASE{\mth{\T{metaid}^{\ssf{Func}}}}
 %   \CASE{\mth{\T{metaid}^{\ssf{LocalFunc}}}}
 
@@ -1422,12 +1421,16 @@ the return type is obligatory.
   \CASE{\opt{\NT{storage}} \opt{\NT{const\_vol}} \T{id} \NT{COMMA\_LIST}\mth{(}\NT{d\_ident}\mth{)} ;}
   \CASE{\opt{\NT{storage}} \NT{fn\_ctype} ( * \NT{d\_ident} ) ( \NT{PARAMSEQ}\mth{(}\NT{name\_opt\_decl}, \mth{\varepsilon)} ) = \NT{initialize} ;}
   \CASE{typedef \NT{ctype} \NT{typedef\_ident} ;}
+  \CASE{\NT{OR}\mth{(}\NT{decl\_var}\mth{)}}
+  \CASE{\NT{AND}\mth{(}\NT{decl\_var}\mth{)}}
 %  \CASE{\NT{type} \opt{\NT{id} \opt{[\opt{\NT{dot\_expr}}]}
 %      \ANY{, \NT{id} \opt{[ \opt{\NT{dot\_expr}}]}}};}
 
   \RULE{\rt{one\_decl}}
   \CASE{\NT{common\_decl}}
   \CASE{\opt{\NT{storage}} \NT{ctype} \NT{id};}
+  \CASE{\NT{OR}\mth{(}\NT{one\_decl}\mth{)}}
+  \CASE{\NT{AND}\mth{(}\NT{one\_decl}\mth{)}}
 %  \CASE{\NT{storage} \NT{ctype} \NT{id} \opt{[\opt{\NT{dot\\_expr}}]} = \NT{nest\\_expr};}
   \CASE{\opt{\NT{storage}} \opt{\NT{const\_vol}} \T{id} \NT{d\_ident} ;}
 
@@ -1515,12 +1518,14 @@ allowed.
   \RULE{\rt{single\_stmt}}
   \CASE{\NT{stmt}}
   \CASE{\NT{OR}\mth{(}\NT{stmt}\mth{)}}
+  \CASE{\NT{AND}\mth{(}\NT{stmt}\mth{)}}
 
   \RULE{\rt{decl\_stmt}}
   \CASE{\mth{\T{metaid}^{\ssf{StmtList}}}}
   \CASE{\NT{decl\_var}}
   \CASE{\NT{stmt}}
   \CASE{\NT{OR}\mth{(}\NT{stmt\_seq}\mth{)}}
+  \CASE{\NT{AND}\mth{(}\NT{stmt\_seq}\mth{)}}
 
   \RULE{\rt{stmt\_seq}}
   \CASE{\any{\NT{decl\_stmt}}
@@ -1542,6 +1547,9 @@ allowed.
 \begin{grammar}
   \RULE{\rt{OR}\mth{(}\rt{gram\_o}\mth{)}}
   \CASE{( \NT{gram\_o} \ANY{\ttmid \NT{gram\_o}})}
+
+  \RULE{\rt{AND}\mth{(}\rt{gram\_o}\mth{)}}
+  \CASE{( \NT{gram\_o} \ANY{\ttand \NT{gram\_o}})}
 
   \RULE{\rt{DOTSEQ}\mth{(}\rt{gram\_d}, \rt{when\_d}\mth{)}}
   \CASE{\ldots \opt{\NT{when\_d}} \ANY{\NT{gram\_d} \ldots \opt{\NT{when\_d}}}}
@@ -1613,6 +1621,7 @@ in a concise way.
   \CASE{\NT{const}}
   \CASE{(\NT{dot\_expr})}
   \CASE{\NT{OR}\mth{(}\NT{exp}\mth{)}}
+  \CASE{\NT{AND}\mth{(}\NT{exp}\mth{)}}
 
   \RULE{\rt{arg}}
   \CASE{\NT{nest\_expr}}

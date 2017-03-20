@@ -382,7 +382,8 @@ let classify is_minus all_marked table code =
   let declaration r k e =
     compute_result Ast0.decl e
       (match Ast0.unwrap e with
-	Ast0.DisjDecl(starter,decls,_,ender) ->
+	Ast0.DisjDecl(starter,decls,_,ender)
+      | Ast0.ConjDecl(starter,decls,_,ender) ->
 	  disj_cases e starter decls r.VT0.combiner_rec_declaration ender
       | Ast0.Ddots(dots,whencode) ->
 	  k (Ast0.rewrap e (Ast0.Ddots(dots,None)))
@@ -578,7 +579,7 @@ let rec equal_expression e1 e2 =
   | (Ast0.Constructor(lp1,_,rp1,_),Ast0.Constructor(lp2,_,rp2,_)) ->
       equal_mcode lp1 lp2 && equal_mcode rp1 rp2
   | (Ast0.MetaErr(name1,_,_),Ast0.MetaErr(name2,_,_))
-  | (Ast0.MetaExpr(name1,_,_,_,_),Ast0.MetaExpr(name2,_,_,_,_))
+  | (Ast0.MetaExpr(name1,_,_,_,_,_),Ast0.MetaExpr(name2,_,_,_,_,_))
   | (Ast0.MetaExprList(name1,_,_,_),Ast0.MetaExprList(name2,_,_,_)) ->
       equal_mcode name1 name2
   | (Ast0.EComma(cm1),Ast0.EComma(cm2)) -> equal_mcode cm1 cm2
@@ -691,7 +692,9 @@ let equal_declaration d1 d2 =
   | (Ast0.Ddots(dots1,_),Ast0.Ddots(dots2,_)) -> equal_mcode dots1 dots2
   | (Ast0.OptDecl(_),Ast0.OptDecl(_)) -> true
   | (Ast0.DisjDecl(starter1,_,mids1,ender1),
-     Ast0.DisjDecl(starter2,_,mids2,ender2)) ->
+     Ast0.DisjDecl(starter2,_,mids2,ender2))
+  | (Ast0.ConjDecl(starter1,_,mids1,ender1),
+     Ast0.ConjDecl(starter2,_,mids2,ender2)) ->
        equal_mcode starter1 starter2 &&
        List.for_all2 equal_mcode mids1 mids2 &&
        equal_mcode ender1 ender2
@@ -803,10 +806,7 @@ let equal_statement s1 s2 =
   | (Ast0.MetaStmt(name1,_,_),Ast0.MetaStmt(name2,_,_))
   | (Ast0.MetaStmtList(name1,_,_,_),Ast0.MetaStmtList(name2,_,_,_)) ->
       equal_mcode name1 name2
-  | (Ast0.Disj(starter1,_,mids1,ender1),Ast0.Disj(starter2,_,mids2,ender2)) ->
-      equal_mcode starter1 starter2 &&
-      List.for_all2 equal_mcode mids1 mids2 &&
-      equal_mcode ender1 ender2
+  | (Ast0.Disj(starter1,_,mids1,ender1),Ast0.Disj(starter2,_,mids2,ender2))
   | (Ast0.Conj(starter1,_,mids1,ender1),Ast0.Conj(starter2,_,mids2,ender2)) ->
       equal_mcode starter1 starter2 &&
       List.for_all2 equal_mcode mids1 mids2 &&

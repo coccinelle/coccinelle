@@ -72,7 +72,8 @@ let rec right_decl d =
   | Ast0.Typedef(stg,ty,id,sem) ->
       call_right right_mcode sem d
 	(function sem -> Ast0.Typedef(stg,ty,id,sem))
-  | Ast0.DisjDecl(starter,decls,mids,ender) -> None
+  | Ast0.DisjDecl(starter,decls,mids,ender)
+  | Ast0.ConjDecl(starter,decls,mids,ender) -> None
   | Ast0.Ddots(dots,whencode) -> None
   | Ast0.OptDecl(decl) ->
       call_right right_decl decl d (function decl -> Ast0.OptDecl(decl))
@@ -298,7 +299,8 @@ let rec left_decl decl =
   | Ast0.Typedef(stg,ty,id,sem) ->
       call_right left_mcode stg decl
 	(function stg -> Ast0.Typedef(stg,ty,id,sem))
-  | Ast0.DisjDecl(starter,decls,mids,ender) -> None
+  | Ast0.DisjDecl(starter,decls,mids,ender)
+  | Ast0.ConjDecl(starter,decls,mids,ender) -> None
   | Ast0.Ddots(dots,whencode) -> None
   | Ast0.OptDecl(d) ->
       call_right left_decl d decl (function decl -> Ast0.OptDecl(decl))

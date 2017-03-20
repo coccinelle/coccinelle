@@ -187,7 +187,7 @@ and disjexp e =
       disjmult2 (disjty ty) (disjini init)
 	(function ty ->
 	  function exp -> Ast.rewrap e (Ast.Constructor(lp,ty,rp,init)))
-  | Ast.MetaErr(_,_,_,_) | Ast.MetaExpr(_,_,_,_,_,_)
+  | Ast.MetaErr(_,_,_,_) | Ast.MetaExpr(_,_,_,_,_,_,_)
   | Ast.MetaExprList(_,_,_,_,_) | Ast.EComma(_) -> [e]
   | Ast.AsExpr(exp,asexp) -> (* as exp doesn't contain disj *)
       let exp = disjexp exp in
@@ -309,6 +309,10 @@ and disjdecl d =
       let ty = disjty ty in (* disj not allowed in id *)
       List.map (function ty -> Ast.rewrap d (Ast.Typedef(stg,ty,id,sem))) ty
   | Ast.DisjDecl(decls) -> List.concat (List.map disjdecl decls)
+  | Ast.ConjDecl(decl_list) ->
+      let decl_list = disjmult disjdecl decl_list in
+      List.map (function decl_list -> Ast.rewrap d (Ast.ConjDecl(decl_list)))
+	decl_list
   | Ast.OptDecl(decl) ->
       let decl = disjdecl decl in
       List.map (function decl -> Ast.rewrap d (Ast.OptDecl(decl))) decl

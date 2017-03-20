@@ -196,7 +196,7 @@ let rec constraints_to_buffer ~rn buffer cstr =
       Printf.bprintf buffer "= %s" (string_of_operator_constraint item)
   | Ast.CstrMeta_name mn -> Printf.bprintf buffer "= %s" (name_str ~rn mn)
   | Ast.CstrRegexp (s, _) -> Printf.bprintf buffer "=~ \"%s\"" s
-  | Ast.CstrScript (_, lang, params, code) ->
+  | Ast.CstrScript (_, lang, params, _pos, code) ->
       Printf.bprintf buffer ": script:%s (%s) {%s}" lang
 	(String.concat "," (List.map (fun (nm,_) -> name_str ~rn nm) params))
 	code
@@ -292,7 +292,7 @@ let mcode ~rn ~mc:(_,_,_,_,pos,_) =
 
     (* extracting the node is equivalent to calling Ast0.unwrap *)
     function
-    | Ast0.ExprTag {Ast0.node = Ast0.MetaExpr((mn,_,_,_,p,_),_,_,_,_); _} ->
+    | Ast0.ExprTag {Ast0.node = Ast0.MetaExpr((mn,_,_,_,p,_),_,_,_,_,_); _} ->
         handle_metavar ~typ:"expression " ~mn ~positions:!p ~set
     | Ast0.StmtTag {Ast0.node = Ast0.MetaStmt((mn,_,_,_,p,_),_,_); _} ->
         handle_metavar ~typ:"statement " ~mn ~positions:!p ~set
@@ -440,7 +440,7 @@ let metavar_combiner rn =
     | Ast0.MetaErr (mc, constr, _) ->
         let constr = constraints ~rn constr in
         meta_mc_format ~mc ~typ:"error " ~constr
-    | Ast0.MetaExpr (mc, constr, typeclist, form, _) ->
+    | Ast0.MetaExpr (mc, constr, typeclist, form, _, _bitfield) ->
         let typeclist' =
           Common.map_option (List.map (Ast0toast.typeC false)) typeclist in
 

@@ -6,7 +6,7 @@
 
 (* create an index for each constructor *)
 (* current max is 188, also unused: 8-9, 15, 39, 40, 42, 46, 57, 65, 67, 85-86,
- 88, 111, 113-115, 134-136, 138-140 *)
+ 111, 113-115, 134-136, 138-140 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -64,7 +64,7 @@ let expression e =
   | Ast0.TypeExp(ty) -> [123] (* added after *)
   | Ast0.Constructor(lp,ty,rp,init) -> [155]
   | Ast0.MetaErr(name,_,_) -> [32]
-  | Ast0.MetaExpr(name,_,ty,_,_) -> [33]
+  | Ast0.MetaExpr(name,_,ty,_,_,_bitfield) -> [33]
   | Ast0.MetaExprList(name,_,_,_) -> [34]
   | Ast0.EComma(cm) -> [35]
   | Ast0.DisjExpr(_,expr_list,_,_) -> [36]
@@ -116,6 +116,7 @@ let declaration d =
   | Ast0.TyDecl(ty,sem) -> [116]
   | Ast0.Typedef(stg,ty,id,sem) -> [143]
   | Ast0.DisjDecl(_,decls,_,_) -> [97] (* added after *)
+  | Ast0.ConjDecl(_,decls,_,_) -> [88] (* added after *)
   | Ast0.Ddots(dots,whencode) -> [133]
   | Ast0.OptDecl(decl) -> [56]
   | Ast0.AsDecl _ -> failwith "not possible"

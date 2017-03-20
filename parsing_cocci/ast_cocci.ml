@@ -16,6 +16,7 @@ type info = { line : int; column : int;
 
 type line = int
 type meta_name = string * string
+type script_position = string (* filename *) * line (* line *)
 (* need to be careful about rewrapping, to avoid duplicating pos info
 currently, the pos info is always None until asttoctl2. *)
 type 'a wrap =
@@ -103,7 +104,8 @@ and metavar =
       arity * meta_name (* name *) * fullType list option
   | MetaErrDecl of arity * meta_name (* name *)
   | MetaExpDecl of
-      arity * meta_name (* name *) * fullType list option
+      arity * meta_name (* name *) * fullType list option *
+	list_len option (* bitfield *)
   | MetaIdExpDecl of
       arity * meta_name (* name *) * fullType list option
   | MetaLocalIdExpDecl of
@@ -196,7 +198,8 @@ and base_expression =
   | MetaErr        of meta_name mcode * constraints * keep_binding *
 	              inherited
   | MetaExpr       of meta_name mcode * constraints * keep_binding *
-	              fullType list option * form * inherited
+	fullType list option * form * inherited *
+	listlen option (* bitfield *)
   | MetaExprList   of meta_name mcode * listlen * constraints * keep_binding *
                       inherited (* only in arg lists *)
   | AsExpr         of expression * expression (* as expr, always metavar *)
@@ -252,6 +255,7 @@ and script_constraint =
       string (* name of generated function *) *
 	string (* language *) *
 	(meta_name * metavar) list (* params *) *
+	script_position *
 	string (* code *)
 
 (* ANY = int E; ID = idexpression int X; CONST = constant int X; *)
@@ -382,6 +386,7 @@ and base_declaration =
   | Typedef of string mcode (*typedef*) * fullType *
                typeC (* either TypeName or metavar *) * string mcode (*;*)
   | DisjDecl of declaration list
+  | ConjDecl of declaration list
   | MetaDecl of meta_name mcode * constraints * keep_binding * inherited
   | MetaField of meta_name mcode * constraints * keep_binding * inherited
   | MetaFieldList of meta_name mcode * listlen * constraints * keep_binding *
@@ -685,16 +690,16 @@ and rule =
       string (*language*) * dependency *
 	(script_meta_name * meta_name * metavar * mvinit)
 	  list (*inherited vars*) *
-	meta_name list (*script vars*) * string
+	meta_name list (*script vars*) * script_position * string
   | InitialScriptRule of  string (* name *) *
 	string (*language*) * dependency *
 	(script_meta_name * meta_name * metavar * mvinit)
-	  list (*virtual vars*) *
+	  list (*virtual vars*) * script_position *
 	string (*code*)
   | FinalScriptRule of  string (* name *) *
 	string (*language*) * dependency *
 	(script_meta_name * meta_name * metavar * mvinit)
-	  list (*virtual vars*) *
+	  list (*virtual vars*) * script_position *
 	string (*code*)
 
 and script_meta_name = string option (*string*) * string option (*ast*)
@@ -832,7 +837,7 @@ let get_meta_name = function
   | MetaAssignmentOperatorDecl(_,name) -> name
   | MetaConstDecl(_ar,nm,_ty) -> nm
   | MetaErrDecl(_ar,nm) -> nm
-  | MetaExpDecl(_ar,nm,_ty) -> nm
+  | MetaExpDecl(_ar,nm,_ty,_bitfield) -> nm
   | MetaIdExpDecl(_ar,nm,_ty) -> nm
   | MetaLocalIdExpDecl(_ar,nm,_ty) -> nm
   | MetaGlobalIdExpDecl(_ar,nm,_ty) -> nm
@@ -1277,7 +1282,7 @@ let rec cstr_fold_sign pos neg c accu =
       Common.default accu (fun f -> f mn accu) pos.cstr_meta_name
   | CstrRegexp (s, re) ->
       Common.default accu (fun f -> f s re accu) pos.cstr_regexp
-  | CstrScript ((_name, _lang, params, _code) as script_constraint) ->
+  | CstrScript ((_name, _lang, params, _pos, _code) as script_constraint) ->
       begin
 	match pos.cstr_script with
 	  None ->

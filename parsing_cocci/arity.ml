@@ -268,10 +268,11 @@ let rec top_expression opt_allowed tgt expr =
       let arity = exp_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
       make_exp expr tgt arity (Ast0.MetaErr(name,constraints,pure))
-  | Ast0.MetaExpr(name,constraints,ty,form,pure)  ->
+  | Ast0.MetaExpr(name,constraints,ty,form,pure,bitfield)  ->
       let arity = exp_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      make_exp expr tgt arity (Ast0.MetaExpr(name,constraints,ty,form,pure))
+      make_exp expr tgt arity
+	(Ast0.MetaExpr(name,constraints,ty,form,pure,bitfield))
   | Ast0.MetaExprList(name,lenname,cstr,pure) ->
       let arity = exp_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
@@ -594,6 +595,12 @@ and declaration tgt decl =
 	  then fail decl "opt only allowed in the last disjunct"
       |	_ -> ());
       let res = Ast0.DisjDecl(starter,decls,mids,ender) in
+      Ast0.rewrap decl res
+  | Ast0.ConjDecl(starter,decls,mids,ender) ->
+      let decls = List.map (declaration tgt) decls in
+      (if anyopt decls (function Ast0.OptDecl(_) -> true | _ -> false)
+      then failwith "unexpected code");
+      let res = Ast0.ConjDecl(starter,decls,mids,ender) in
       Ast0.rewrap decl res
   | Ast0.Ddots(dots,whencode) ->
       let arity = all_same true tgt (mcode2line dots) [mcode2arity dots] in

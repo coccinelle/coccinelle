@@ -142,7 +142,7 @@ let rec left_expression e =
   | Ast0.TypeExp(ty) -> left_typeC ty
   | Ast0.Constructor(lp,ty,rp,init) -> modif_before_mcode lp
   | Ast0.MetaErr(name,_,_) -> modif_before_mcode name
-  | Ast0.MetaExpr(name,_,ty,_,_) -> modif_before_mcode name
+  | Ast0.MetaExpr(name,_,ty,_,_,_bitfield) -> modif_before_mcode name
   | Ast0.MetaExprList(name,_,_,_) -> modif_before_mcode name
   | Ast0.EComma(cm) -> modif_before_mcode cm
   | Ast0.DisjExpr(_,exp_list,_,_) -> List.exists left_expression exp_list
@@ -203,6 +203,7 @@ and left_declaration d =
   | Ast0.TyDecl(ty,sem) -> left_typeC ty
   | Ast0.Typedef(stg,ty,id,sem) -> modif_before_mcode stg
   | Ast0.DisjDecl(_,decls,_,_) -> List.exists left_declaration decls
+  | Ast0.ConjDecl(_,decls,_,_) -> List.exists left_declaration decls
   | Ast0.Ddots(dots,_) -> false
   | Ast0.OptDecl(decl) -> left_declaration decl
   | Ast0.AsDecl _ -> failwith "not possible"
@@ -221,6 +222,7 @@ and right_declaration d =
   | Ast0.TyDecl(ty,sem) -> modif_after_mcode sem
   | Ast0.Typedef(stg,ty,id,sem) -> modif_after_mcode sem
   | Ast0.DisjDecl(_,decls,_,_) -> List.exists right_declaration decls
+  | Ast0.ConjDecl(_,decls,_,_) -> List.exists right_declaration decls
   | Ast0.Ddots(dots,_) -> false
   | Ast0.OptDecl(decl) -> right_declaration decl
   | Ast0.AsDecl _ -> failwith "not possible"
@@ -374,9 +376,10 @@ and contains_only_minus =
   let expression r k e =
     mcodekind (Ast0.get_mcodekind e) &&
     match Ast0.unwrap e with
-      Ast0.DisjExpr(starter,expr_list,mids,ender)
-    | Ast0.ConjExpr(starter,expr_list,mids,ender) ->
+      Ast0.DisjExpr(starter,expr_list,mids,ender) ->
 	List.for_all r.VT0.combiner_rec_expression expr_list
+    | Ast0.ConjExpr(starter,expr_list,mids,ender) ->
+	List.exists r.VT0.combiner_rec_expression expr_list
     | _ -> k e in
 
   let declaration r k e =
@@ -384,6 +387,8 @@ and contains_only_minus =
     match Ast0.unwrap e with
       Ast0.DisjDecl(starter,decls,mids,ender) ->
 	List.for_all r.VT0.combiner_rec_declaration decls
+    | Ast0.ConjDecl(starter,decls,mids,ender) ->
+	List.exists r.VT0.combiner_rec_declaration decls
     | _ -> k e in
 
   let typeC r k e =
@@ -398,6 +403,8 @@ and contains_only_minus =
     match Ast0.unwrap e with
       Ast0.Disj(starter,statement_dots_list,mids,ender) ->
 	List.for_all r.VT0.combiner_rec_statement_dots statement_dots_list
+    | Ast0.Conj(starter,statement_dots_list,mids,ender) ->
+	List.exists r.VT0.combiner_rec_statement_dots statement_dots_list
     | _ -> k e in
 
   let case_line r k e =

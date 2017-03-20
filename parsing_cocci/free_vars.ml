@@ -92,10 +92,15 @@ let collect_refs include_constraints =
 	bind (constraints cstr) [metaid lenname]
     | _ -> [] in
 
+  let listlen_option l =
+    match l with
+      None -> option_default
+    | Some l -> listlen l in
+
   let astfvexpr recursor k e =
     bind (k e)
       (match Ast.unwrap e with
-	Ast.MetaExpr(name,constraints,_,Some type_list,_,_) ->
+	Ast.MetaExpr(name,constraints,_,Some type_list,_,_,bitfield) ->
 	  let types =
 	    (* problem: if there are multiple types, then none in particular
 	       is needed *)
@@ -106,10 +111,13 @@ let collect_refs include_constraints =
 	    if include_constraints
 	    then Ast.cstr_pos_meta_names constraints
 	    else [] in
-	  bind extra (bind [metaid name] types)
-      | Ast.MetaErr(name,cstr,_,_)
-      | Ast.MetaExpr(name,cstr,_,_,_,_) ->
+	  let bitfield' = listlen_option bitfield in
+	  bind bitfield' (bind extra (bind [metaid name] types))
+      | Ast.MetaErr(name,cstr,_,_) ->
 	  bind (constraints cstr) [metaid name]
+      | Ast.MetaExpr(name,cstr,_,_,_,_,bitfield) ->
+	  let bitfield' = listlen_option bitfield in
+	  bind bitfield' (bind (constraints cstr) [metaid name])
       | Ast.MetaExprList(name,len,cstr,_,_) ->
 	  bind (constraints cstr) (bind (listlen len) [metaid name])
       | Ast.DisjExpr(exps) -> bind_disj (List.map k exps)
@@ -306,17 +314,23 @@ let collect_saved =
   let type_collect res ty =
     bind res (Common.set (Ast.meta_names_of_fullType ty)) in
 
+  let fvbitfield bitfield =
+    match bitfield with
+      Some (Ast.MetaListLen (lenname,_,_,_)) -> [metaid lenname]
+    | _ -> option_default in
+
   let astfvexpr recursor k e =
     let tymetas =
       match Ast.unwrap e with
-	Ast.MetaExpr(name,_,_,Some type_list,_,_) ->
-	  List.fold_left type_collect option_default type_list
+	Ast.MetaExpr(name,_,_,Some type_list,_,_,bitfield) ->
+	  List.fold_left type_collect (fvbitfield bitfield) type_list
       |	_ -> [] in
     let vars =
       bind (k e)
 	(match Ast.unwrap e with
-	  Ast.MetaErr(name,_,Ast.Saved,_) | Ast.MetaExpr(name,_,Ast.Saved,_,_,_)
-	  -> [metaid name]
+	  Ast.MetaErr(name,_,Ast.Saved,_) -> [metaid name]
+	| Ast.MetaExpr(name,_,Ast.Saved,_,_,_,bitfield) ->
+	    bind [metaid name] (fvbitfield bitfield)
 	| Ast.MetaExprList(name,Ast.MetaListLen (lenname,_,ls,_),_,ns,_) ->
 	    let namesaved =
 	      match ns with Ast.Saved -> [metaid name] | _ -> [] in
@@ -677,10 +691,17 @@ let classify_variables metavar_decls minirules used_after =
       Ast.MetaErr(name,constraints,_,_) ->
 	let (unitary,inherited) = classify name in
 	Ast.rewrap e (Ast.MetaErr(name,constraints,unitary,inherited))
-    | Ast.MetaExpr(name,constraints,_,ty,form,_) ->
+    | Ast.MetaExpr(name,constraints,_,ty,form,_,bitfield) ->
 	let (unitary,inherited) = classify name in
 	let ty = get_option (List.map type_infos) ty in
-	Ast.rewrap e (Ast.MetaExpr(name,constraints,unitary,ty,form,inherited))
+	let bitfield' =
+	  match bitfield with
+	    Some (Ast.MetaListLen (lenname, cstr, _, _)) ->
+	      let (lenunitary,leninherited) = classify lenname in
+	      Some (Ast.MetaListLen (lenname, cstr, lenunitary, leninherited))
+	  | _ -> bitfield in
+	Ast.rewrap e
+	  (Ast.MetaExpr(name,constraints,unitary,ty,form,inherited,bitfield'))
     | Ast.MetaExprList(name,Ast.MetaListLen(lenname,cstr,_,_),cstr',_,_) ->
 	let (unitary,inherited) = classify name in
 	let (lenunitary,leninherited) = classify lenname in
@@ -1044,12 +1065,12 @@ let collect_astfvs rules =
       [] -> []
     | (metavars, rule)::rules ->
         match rule with
-          Ast.ScriptRule (_,_,_,_,script_vars,_) ->
+          Ast.ScriptRule (_,_,_,_,script_vars,_,_) ->
 	    (* why are metavars in rule, but outside for cocci rule??? *)
             let bound = script_vars @ bound in
 	    rule::(loop bound rules)
-        | Ast.InitialScriptRule (_,_,_,_,_)
-	| Ast.FinalScriptRule (_,_,_,_,_) ->
+        | Ast.InitialScriptRule (_,_,_,_,_,_)
+	| Ast.FinalScriptRule (_,_,_,_,_,_) ->
 	    (* bound stays as is because init/finalize provides no names, so
 	       inheritance by others is not possible *)
 	    rule::(loop bound rules)
@@ -1144,17 +1165,17 @@ let collect_top_level_used_after metavar_rule_list =
 	function (used_after,used_after_lists) ->
 	  let locally_defined =
             match r with
-              Ast.ScriptRule (_,_,_,_,free_vars,_) -> free_vars
+              Ast.ScriptRule (_,_,_,_,free_vars,_,_) -> free_vars
 	    | _ -> List.map Ast.get_meta_name metavar_list in
 	  let continue_propagation =
 	    List.filter (function x -> not(List.mem x locally_defined))
 	      used_after in
 	  let free_vars =
             match r with
-              Ast.ScriptRule (_,_,_,mv,_,_) ->
+              Ast.ScriptRule (_,_,_,mv,_,_,_) ->
                 drop_virt(List.map (function (_,(r,v),_,_) -> (r,v)) mv)
-            | Ast.InitialScriptRule (_,_,_,mv,_)
-	    | Ast.FinalScriptRule (_,_,_,mv,_) ->
+            | Ast.InitialScriptRule (_,_,_,mv,_,_)
+	    | Ast.FinalScriptRule (_,_,_,mv,_,_) ->
 		(* only virtual identifiers *)
 		[]
             | Ast.CocciRule (_,_,rule,_,_) ->
@@ -1263,9 +1284,9 @@ let collect_used_after metavar_rule_list =
     (function (metavars,r) ->
       function used_after ->
         match r with
-          Ast.ScriptRule (_,_,_,_,_,_) (* no minirules, so nothing to do? *)
-	| Ast.InitialScriptRule (_,_,_,_,_)
-	| Ast.FinalScriptRule (_,_,_,_,_) ->
+          Ast.ScriptRule (_,_,_,_,_,_,_) (* no minirules, so nothing to do? *)
+	| Ast.InitialScriptRule (_,_,_,_,_,_)
+	| Ast.FinalScriptRule (_,_,_,_,_,_) ->
 	    ([], [used_after], [[]], [])
         | Ast.CocciRule (name, rule_info, minirules, _,_) ->
           collect_local_used_after metavars minirules used_after

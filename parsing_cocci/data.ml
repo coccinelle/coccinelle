@@ -63,6 +63,10 @@ type list_meta_type =
 type exp_meta_type =
     Ast0.typeC list option -> Ast.meta_name -> Ast0.constraints ->
       Ast0.pure -> unit
+type exp_bitfield_meta_type =
+    Ast0_cocci.typeC list option -> Ast_cocci.meta_name ->
+      Ast0_cocci.constraints -> Ast0_cocci.pure ->
+	Ast_cocci.list_len option -> unit
 
 let add_meta_meta: cstr_meta_type ref = ref uninitialized_add_meta
 let add_id_meta: cstr_meta_type ref = ref uninitialized_add_meta
@@ -86,7 +90,7 @@ let add_err_meta:
     (Ast.meta_name -> Ast0.constraints -> Ast0.pure -> unit) ref =
   ref uninitialized_add_meta
 
-let add_exp_meta: exp_meta_type ref = ref uninitialized_add_meta
+let add_exp_meta: exp_bitfield_meta_type ref = ref uninitialized_add_meta
 let add_idexp_meta: exp_meta_type ref = ref uninitialized_add_meta
 let add_local_idexp_meta: exp_meta_type ref = ref uninitialized_add_meta
 let add_global_idexp_meta: exp_meta_type ref = ref uninitialized_add_meta
@@ -140,3 +144,6 @@ let format_metavariables      =
   ref ([] : (string * (Ast.meta_name * Ast0.constraints)) list)
 let format_list_metavariables =
   ref ([] : (string * (Ast.meta_name * Ast.list_len * Ast0.constraints)) list)
+
+let constraint_scripts:
+    (bool * Ast_cocci.meta_name * Ast_cocci.script_constraint) list ref = ref []

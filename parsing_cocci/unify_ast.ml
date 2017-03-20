@@ -223,10 +223,10 @@ and unify_expression e1 e2 =
       unify_expression e1 e2
 
   | (Ast.MetaErr(_,_,_,_),_)
-  | (Ast.MetaExpr(_,_,_,_,_,_),_)
+  | (Ast.MetaExpr(_,_,_,_,_,_,_),_)
   | (Ast.MetaExprList(_,_,_,_,_),_)
   | (_,Ast.MetaErr(_,_,_,_))
-  | (_,Ast.MetaExpr(_,_,_,_,_,_))
+  | (_,Ast.MetaExpr(_,_,_,_,_,_,_))
   | (_,Ast.MetaExprList(_,_,_,_,_)) -> true
 
   | (Ast.AsExpr(exp1,asexp1),_) ->
@@ -413,6 +413,12 @@ and unify_declaration d1 d2 =
 	(List.map (function x -> unify_declaration x d2) d1)
   | (_,Ast.DisjDecl(d2)) ->
       disjunct_all_bindings
+	(List.map (function x -> unify_declaration d1 x) d2)
+  | (Ast.ConjDecl(d1),_) ->
+      conjunct_all_bindings
+	(List.map (function x -> unify_declaration x d2) d1)
+  | (_,Ast.ConjDecl(d2)) ->
+      conjunct_all_bindings
 	(List.map (function x -> unify_declaration d1 x) d2)
 
   | (Ast.OptDecl(_),_)

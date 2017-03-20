@@ -367,8 +367,8 @@ let rec expression_pos exp snp
   | Ast0.MetaErr (mc, co, pu) -> (* is this ever within the rule body? *)
       let constructor ~mc = Ast0.MetaErr (mc, co, pu) in
       mcode_wrap ~mc ~constructor snp
-  | Ast0.MetaExpr(mc, co, ty, fo, pu) ->
-      let constructor ~mc = Ast0.MetaExpr (mc, co, ty, fo, pu) in
+  | Ast0.MetaExpr(mc, co, ty, fo, pu, bitfield) ->
+      let constructor ~mc = Ast0.MetaExpr (mc, co, ty, fo, pu, bitfield) in
       mcode_wrap ~mc ~constructor snp
   | Ast0.OptExp exp ->
       let constructor ~exp = Ast0.OptExp exp in
@@ -386,6 +386,7 @@ let rec declaration_pos decl snp
 : (Ast0.base_declaration Ast0.wrap * Snap.t) option =
   match Ast0.unwrap decl with
   | Ast0.DisjDecl _
+  | Ast0.ConjDecl _
   | Ast0.Ddots _
   | Ast0.MetaDecl _
   | Ast0.MetaField _
