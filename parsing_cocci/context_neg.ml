@@ -423,7 +423,7 @@ let classify is_minus all_marked table code =
       | Ast0.Field(ty,id,bf,sem) ->
 	  let bitfield (_c, e) = r.VT0.combiner_rec_expression e in
 	  bind (r.VT0.combiner_rec_typeC ty)
-	    (bind (r.VT0.combiner_rec_ident id)
+	    (bind (Common.default option_default r.VT0.combiner_rec_ident id)
 	       (bind (Common.default option_default bitfield bf) (mcode sem)))
       |	_ -> k e) in
 

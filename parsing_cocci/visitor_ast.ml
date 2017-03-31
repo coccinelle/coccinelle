@@ -456,7 +456,10 @@ let combiner bind option_default
 	Ast.MetaField(name,_,_,_) | Ast.MetaFieldList(name,_,_,_,_) ->
 	  meta_mcode name
       | Ast.Field(ty,id,bf,sem) ->
-	  let lid = named_type ty id in
+	  let lid =
+	    match id with
+	      None -> fullType ty
+	    | Some id -> named_type ty id in
 	  let bitfield (c, e) =
 	    let lc = string_mcode c in
 	    let le = expression e in
@@ -1360,7 +1363,7 @@ let rebuilder
 	      (meta_mcode name,lenname_inh,constraints,keep,inherited)
 	| Ast.Field(ty,id,bf,sem) ->
 	    let lty = fullType ty in
-	    let lid = ident id in
+	    let lid = Common.map_option ident id in
 	    let bitfield (c, e) =
 	      let lc = string_mcode c in
 	      let le = expression e in

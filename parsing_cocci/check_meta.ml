@@ -303,7 +303,7 @@ and field context old_metas table minus d =
       check_len table minus len
   | Ast0.Field(ty,id,bf,sem) ->
       typeC old_metas table minus ty;
-      ident context old_metas table minus id;
+      Common.do_option (ident context old_metas table minus) id;
       let bitfield (c, e) = expression context old_metas table minus e in
       Common.do_option bitfield bf
   | Ast0.DisjField(_,decls,_,_)

@@ -688,7 +688,7 @@ and field d =
 	let allminus = check_allminus.VT0.combiner_rec_field d in
 	let bitfield (c, e) = (mcode c, expression e) in
 	let bf = Common.map_option bitfield bf in
-	Ast.Field(typeC allminus ty,ident id, bf, mcode sem)
+	Ast.Field(typeC allminus ty,Common.map_option ident id, bf, mcode sem)
     | Ast0.Fdots(dots,whencode) -> failwith "should not be possible"
     | Ast0.DisjField(_,decls,_,_) -> Ast.DisjField(List.map field decls)
     | Ast0.ConjField(_,decls,_,_) -> Ast.ConjField(List.map field decls)

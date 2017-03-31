@@ -758,7 +758,7 @@ and field d =
       mkres d (Ast0.MetaFieldList(name,a,b,c)) ln ln
   | Ast0.Field(ty,id,bf,sem) ->
       let ty = typeC ty in
-      let id = ident id in
+      let id = Common.map_option ident id in
       let bitfield (c, e) = (normal_mcode c, expression e) in
       let bf = Common.map_option bitfield bf in
       let sem = normal_mcode sem in

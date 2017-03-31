@@ -531,7 +531,11 @@ and field d =
   | Ast.MetaFieldList(name,_,_,_,_) ->
       mcode print_meta name
   | Ast.Field(ty,id,bf,sem) ->
-      print_named_type ty id;
+      begin
+	match id with
+	  None -> fullType ty
+	| Some id -> print_named_type ty id
+      end;
       let bitfield (c, e) =
 	mcode print_string c;
 	expression e in

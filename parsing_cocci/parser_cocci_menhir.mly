@@ -1057,10 +1057,10 @@ struct_decl_one:
 	{ let (mids,code) = t in
 	Ast0.wrap
 	  (Ast0.ConjField(P.id2mcode lp,code,mids, P.id2mcode rp)) }
-    | t=ctype d=d_ident bf=struct_bitfield? pv=TPtVirg
+    | t=ctype d=d_ident_option bf=struct_bitfield? pv=TPtVirg
 	 { let (id,fn) = d in
 	 Ast0.wrap(Ast0.Field(fn t,id,bf,P.clt2mcode ";" pv)) }
-    | t=ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
+    | t=ctype lp1=TOPar st=TMul d=d_ident_option rp1=TCPar
 	lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar
 	bf=struct_bitfield? pv=TPtVirg
         { let (id,fn) = d in
@@ -1070,12 +1070,19 @@ struct_decl_one:
 	       (t,P.clt2mcode "(" lp1,P.clt2mcode "*" st,P.clt2mcode ")" rp1,
 		P.clt2mcode "(" lp2,p,P.clt2mcode ")" rp2)) in
         Ast0.wrap(Ast0.Field(fn t,id,bf,P.clt2mcode ";" pv)) }
-     | cv=ioption(const_vol) i=pure_ident_or_symbol d=d_ident
+     | cv=ioption(const_vol) i=pure_ident_or_symbol d=d_ident_option
 	 bf=struct_bitfield?
 	 pv=TPtVirg
 	 { let (id,fn) = d in
 	 let idtype = P.make_cv cv (Ast0.wrap (Ast0.TypeName(P.id2mcode i))) in
 	 Ast0.wrap(Ast0.Field(fn idtype,id,bf,P.clt2mcode ";" pv)) }
+
+d_ident_option:
+	 { None, (fun x -> x) }
+     | d=d_ident {
+       let (id, fn) = d in
+       (Some id, fn)
+    }
 
 struct_bitfield:
    c=TDotDot e=expr { (P.clt2mcode ":" c, e) }

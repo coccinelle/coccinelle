@@ -916,7 +916,11 @@ and field d =
 	      print_between force_newline pretty_print_c.Pretty_print_c.field f
 	  | _ -> raise (Impossible 150))
   | Ast.Field(ty,id,bf,sem) ->
-      print_named_type ty id;
+      begin
+	match id with
+	  None -> fullType ty
+	| Some id -> print_named_type ty id
+      end;
       let bitfield (c, e) =
 	mcode print_string c;
 	expression e in

@@ -404,7 +404,7 @@ and annotated_decl = base_annotated_decl wrap
 (* Field declaration *)
 
 and base_field =
-    Field of fullType * ident * bitfield option * string mcode (* ; *)
+    Field of fullType * ident option * bitfield option * string mcode (* ; *)
   | DisjField of field list
   | ConjField of field list
   | OptField of field

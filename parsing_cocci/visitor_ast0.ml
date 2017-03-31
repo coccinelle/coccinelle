@@ -524,7 +524,12 @@ let visitor mode bind option_default
 	    let (n,name) = meta_mcode name in
 	    (n,Ast0.MetaFieldList(name,lenname,constraints,pure))
 	| Ast0.Field(ty,id,bf,sem) ->
-	    let ((ty_id_n,ty),id) = named_type ty id in
+	    let ((ty_id_n,ty),id) =
+	      match id with
+		None -> (typeC ty, None)
+	      | Some id ->
+		  let (ty, id) = named_type ty id in
+		  (ty, Some id) in
 	    let bitfield (c, e) =
 	      let (c_n, c) = string_mcode c in
 	      let (e_n, e) = expression e in

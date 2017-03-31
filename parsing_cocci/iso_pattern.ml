@@ -1000,6 +1000,11 @@ let match_maker checks_needed context_required whencode_allowed =
 	then
 	  match (up,Ast0.unwrap d) with
 	    (Ast0.Field(tya,ida,bfa,sc1),Ast0.Field(tyb,idb,bfb,sc)) ->
+	      let match_option_ident ida idb =
+		match ida, idb with
+		  Some ida, Some idb -> [match_ident ida idb]
+		| Some _, None | None, Some _ -> [return false]
+		| None, None -> [] in
 	      let match_bitfield bfa bfb =
 		match bfa, bfb with
 		  Some (ca, ea), Some (cb, eb) ->
@@ -1008,7 +1013,8 @@ let match_maker checks_needed context_required whencode_allowed =
 		| None, None -> [] in
 	      conjunct_many_bindings
 		([check_mcode sc1 sc;
-		  match_typeC tya tyb; match_ident ida idb]
+		  match_typeC tya tyb]
+		 @ match_option_ident ida idb
 		 @ match_bitfield bfa bfb)
 	  | (Ast0.DisjField(_,declsa,_,_),_)
 	  | (Ast0.ConjField(_,declsa,_,_),_) ->

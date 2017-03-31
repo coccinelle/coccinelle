@@ -2778,30 +2778,31 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        fail
 
 and onefield = fun allminus decla (declb, iiptvirgb) ->
+  let match_option f a b =
+    match a, b with
+      None, None -> return (None, None)
+    | Some a, Some b -> f a b >>= (fun a b -> return (Some a, Some b))
+    | None, Some _ | Some _, None -> fail in
  X.all_bound (A.get_inherited decla) >&&>
  match A.unwrap decla, declb with
    A.Field (typa, ida, None, ptvirga),
-   (B.Simple (Some nameidb, typb), iivirg) ->
+   (B.Simple (nameidb, typb), iivirg) ->
      tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
      fullType typa typb >>= (fun typa typb ->
-     ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
+     match_option (ident_cpp DontKnow) ida nameidb >>= (fun ida nameidb ->
        return (
        (A.Field (typa, ida, None, ptvirga) +>  A.rewrap decla),
-       ((B.Simple (Some nameidb, typb),iivirg), iiptvirgb)))))
+       ((B.Simple (nameidb, typb),iivirg), iiptvirgb)))))
  | A.Field (typa, ida, Some (ca, ea), ptvirga),
-     (B.BitField (Some nameidb, typb, info, eb), iivirg) ->
+     (B.BitField (nameidb, typb, info, eb), iivirg) ->
      tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
      fullType typa typb >>= (fun typa typb ->
-     ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
+     match_option (ident_cpp DontKnow) ida nameidb >>= (fun ida nameidb ->
      tokenf ca info >>= (fun ca info ->
      expression ea eb >>= (fun ea eb ->
        return (
        (A.Field (typa, ida, Some (ca, ea), ptvirga) +>  A.rewrap decla),
-       ((B.BitField (Some nameidb, typb, info, eb),iivirg), iiptvirgb)))))))
- | _, (B.Simple (None, _), _)
- | _, (B.BitField (None, _, _, _), _) ->
-       pr2_once "warning: unnamed struct field not handled by ast_cocci";
-       fail
+       ((B.BitField (nameidb, typb, info, eb),iivirg), iiptvirgb)))))))
 
    | A.DisjField declas, declb -> failwith "DisjField should not arise"
 (*
