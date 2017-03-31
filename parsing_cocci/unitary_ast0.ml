@@ -144,13 +144,24 @@ let get_free checker t =
 
   let declaration r k d =
     match Ast0.unwrap d with
-      Ast0.MetaDecl(name,_,_) | Ast0.MetaField(name,_,_)
-    | Ast0.MetaFieldList(name,_,_,_) -> checker name
+      Ast0.MetaDecl(name,_,_) -> checker name
     | Ast0.DisjDecl(starter,decls,mids,ender) ->
 	detect_unitary_frees(List.map r.VT0.combiner_rec_declaration decls)
     | Ast0.ConjDecl(starter,decls,mids,ender) ->
 	List.fold_left
 	  (fun prev cur -> bind (r.VT0.combiner_rec_declaration cur) prev)
+	  option_default decls
+    | _ -> k d in
+
+  let field r k d =
+    match Ast0.unwrap d with
+      Ast0.MetaField(name,_,_)
+    | Ast0.MetaFieldList(name,_,_,_) -> checker name
+    | Ast0.DisjField(starter,decls,mids,ender) ->
+	detect_unitary_frees(List.map r.VT0.combiner_rec_field decls)
+    | Ast0.ConjField(starter,decls,mids,ender) ->
+	List.fold_left
+	  (fun prev cur -> bind (r.VT0.combiner_rec_field cur) prev)
 	  option_default decls
     | _ -> k d in
 
@@ -193,8 +204,9 @@ let get_free checker t =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
+      donothing
       ident expression donothing donothing typeC donothing parameter
-      declaration statement donothing case_line donothing donothing in
+      declaration field statement donothing case_line donothing donothing in
 
   collect_unitary_nonunitary
     (List.concat (List.map res.VT0.combiner_rec_top_level t))

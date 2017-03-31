@@ -29,8 +29,7 @@ let contains_modif =
   let do_nothing r k e = k e in
   let annotated_decl decl =
     match Ast.unwrap decl with
-      Ast.DElem(bef,_,_) -> bef
-    | _ -> failwith "not possible" in
+      Ast.DElem(bef,_,_) -> bef in
   let rule_elem r k re =
     let res = k re in
     match Ast.unwrap re with
@@ -45,8 +44,9 @@ let contains_modif =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode mcode mcode mcode
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+      do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+      do_nothing do_nothing
       do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_rule_elem
 

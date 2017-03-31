@@ -2285,7 +2285,8 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 		donothing donothing donothing donothing donothing donothing
 		donothing donothing donothing donothing donothing donothing
 		donothing donothing donothing donothing donothing donothing
-		donothing donothing donothing donothing donothing in
+		donothing donothing donothing donothing donothing donothing
+	        donothing donothing in
 	    v.Visitor_ast.rebuilder_declaration decla in
 
 	  xs +> List.fold_left (fun acc var ->
@@ -2394,8 +2395,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 
 and annotated_decl decla declb =
   match A.unwrap decla with
-    A.Ddots _ -> failwith "not possible"
-  | A.DElem(mckstart, allminus, decl) ->
+    A.DElem(mckstart, allminus, decl) ->
       declaration (mckstart, allminus, decl) declb >>=
       fun (mckstart, allminus, decl) declb ->
 	return
@@ -2777,6 +2777,47 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
    | _, ({B.v_namei=Some _}, _) ->
        fail
 
+and onefield = fun allminus decla (declb, iiptvirgb) ->
+ X.all_bound (A.get_inherited decla) >&&>
+ match A.unwrap decla, declb with
+   A.Field (typa, ida, ptvirga),
+   (B.Simple (Some nameidb, typb), iivirg) ->
+     tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
+     fullType typa typb >>= (fun typa typb ->
+     ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
+       return (
+       (A.Field (typa, ida, ptvirga) +>  A.rewrap decla),
+       ((B.Simple (Some nameidb, typb),iivirg), iiptvirgb)))))
+   | _, (B.BitField (_, _, _, _), _) ->
+       pr2_once "warning: bitfield not handled by ast_cocci";
+       fail
+   | _, (B.Simple (None, _), _) ->
+       pr2_once "warning: unnamed struct field not handled by ast_cocci";
+       fail
+
+   | A.DisjField declas, declb -> failwith "DisjField should not arise"
+(*
+      declas +> List.fold_left (fun acc decla ->
+        acc >|+|>
+            (* (declaration (mckstart, allminus, decla) declb) *)
+            (onedecl allminus decla (declb,iiptvirgb, iistob))
+      ) fail
+*)
+
+  | A.ConjField declas, declb ->
+      let rec loop acc_decl db = function
+	  [] -> return (A.ConjField (List.rev acc_decl) +> A.rewrap decla, db)
+	| d::ds ->
+	    onefield allminus d db >>= (fun decl db ->
+	      loop (decl::acc_decl) db ds) in
+      loop [] (declb, iiptvirgb) declas
+
+   | A.OptField _,    _ ->
+       failwith "not handling Opt Field"
+
+   | _, _ ->
+       fail
+
 and get_fninfo fninfoa =
       (* fninfoa records the order in which the SP specified the various
 	 information, but this isn't taken into account in the matching.
@@ -3086,18 +3127,18 @@ and initialiser_comma (x,xcomma) (y, commay) =
   | _ -> raise (Impossible 38) (* unsplit_iicomma wrong *)
 
 (* ------------------------------------------------------------------------- *)
-and (struct_fields: (A.annotated_decl list, B.field list) matcher) =
+and (struct_fields: (A.annotated_field list, B.field list) matcher) =
  fun eas ebs ->
   let match_dots ea =
     match A.unwrap ea with
-      A.Ddots(mcode, optexpr) -> Some (mcode, optexpr)
+      A.Fdots(mcode, optexpr) -> Some (mcode, optexpr)
     | _ -> None in
-  let build_dots (mcode, optexpr) = A.Ddots(mcode, optexpr) in
+  let build_dots (mcode, optexpr) = A.Fdots(mcode, optexpr) in
   let match_comma ea = None in
   let build_comma ia1 = failwith "not possible" in
   let match_metalist ea =
     match A.unwrap ea with
-      A.DElem(mckstart,allminus,d) ->
+      A.FElem(mckstart,allminus,d) ->
 	(match A.unwrap d with
 	  A.MetaFieldList(ida,leninfo,cstr,keep,inherited) ->
 	    Some(ida,leninfo,cstr,keep,inherited,None)
@@ -3105,8 +3146,8 @@ and (struct_fields: (A.annotated_decl list, B.field list) matcher) =
     | _ -> None in
   let build_metalist ea (ida,leninfo,cstr,keep,inherited) =
     match A.unwrap ea with
-      A.DElem(mckstart,allminus,d) ->
-	A.DElem(mckstart,allminus,
+      A.FElem(mckstart,allminus,d) ->
+	A.FElem(mckstart,allminus,
 		(A.rewrap ea
 		   (A.MetaFieldList(ida,leninfo,cstr,keep,inherited))))
     | _ -> failwith "not possible" in
@@ -3141,11 +3182,11 @@ and (struct_fields: (A.annotated_decl list, B.field list) matcher) =
     filter_fields eas (make_ebs ebs) >>=
   (fun eas ebs -> return (eas,unmake_ebs ebs))
 
-and (struct_field: (A.annotated_decl, B.field) matcher) =
+and (struct_field: (A.annotated_field, B.field) matcher) =
   fun fa fb ->
     match A.unwrap fa with
-      A.Ddots _ -> failwith "dots should be treated otherwise"
-    | A.DElem(mckstart,allminus,ifa) ->
+      A.Fdots _ -> failwith "dots should be treated otherwise"
+    | A.FElem(mckstart,allminus,ifa) ->
 
 	(match A.unwrap ifa,fb with
 	| A.MetaField (ida,cstr,keep,inherited), _ ->
@@ -3158,7 +3199,7 @@ and (struct_field: (A.annotated_decl, B.field) matcher) =
 		    X.distrf_field ida fb
 		  ) >>= (fun ida fb ->
 		    return
-		      (A.DElem
+		      (A.FElem
 			 (mckstart,allminus,
 			  (A.MetaField (ida, cstr, keep, inherited))
 			    +> A.rewrap ifa)
@@ -3171,28 +3212,16 @@ and (struct_field: (A.annotated_decl, B.field) matcher) =
 	    let (iiptvirgb,iifakestart) = tuple_of_list2 iiptvirg in
 
 	    assert (iivirg = []);
-	    (match onevar with
-	    | B.BitField (sopt, typb, _, expr) ->
-		pr2_once "warning: bitfield not handled by ast_cocci";
-		fail
-	    | B.Simple (None, typb) ->
-		pr2_once
-		  "warning: unnamed struct field not handled by ast_cocci";
-		fail
-	    | B.Simple (Some nameidb, typb) ->
-		X.tokenf_mck mckstart iifakestart >>=
-		(fun mckstart iifakestart ->
-		  (* build a declaration from a struct field *)
-		  let (fake_var,iisto) = build_decl nameidb typb iivirg in
-		  onedecl allminus ifa (fake_var,iiptvirgb,iisto) >>=
-		  (fun ifa (fake_var,iiptvirgb,iisto) ->
-		    let (onevar,iivirg) = unbuild_decl fake_var in
-
+	    X.tokenf_mck mckstart iifakestart >>=
+	    (fun mckstart iifakestart ->
+	      (* build a declaration from a struct field *)
+	      onefield allminus ifa ((onevar, iivirg),iiptvirgb) >>=
+		  (fun ifa (onevar,iiptvirgb) ->
 		    return (
-		    (A.DElem(mckstart,allminus,ifa) +> A.rewrap fa),
+		    (A.FElem(mckstart,allminus,ifa) +> A.rewrap fa),
 		    ((B.DeclarationField
-			(B.FieldDeclList([onevar, iivirg],
-					 [iiptvirgb;iifakestart]))))))))
+			(B.FieldDeclList([onevar],
+					 [iiptvirgb;iifakestart])))))))
 
 	| _,B.DeclarationField (B.FieldDeclList (xs,iiptvirg)) ->
 
@@ -3213,28 +3242,14 @@ and (struct_field: (A.annotated_decl, B.field) matcher) =
 		acc >||>
 		(X.tokenf_mck mckstart iifakestart >>=
 		 (fun mckstart iifakestart ->
-		   (match onevar with
-		   | B.BitField (sopt, typb, _, expr) ->
-		       pr2_once "warning: bitfield not handled by ast_cocci";
-		       fail
-		   | B.Simple (None, typb) ->
-		       pr2_once
-			 "warning: unnamed struct field not handled by ast_cocci";
-		       fail
-		   | B.Simple (Some nameidb, typb) ->
-
-		       (* build a declaration from a struct field *)
-		       let (fake_var,iisto) = build_decl nameidb typb iivirg in
-		       onedecl allminus ifa (fake_var,iiptvirgb,iisto) >>=
-		       (fun ifa (fake_var,iiptvirgb,iisto) ->
-			 let (onevar,iivirg) = unbuild_decl fake_var in
-
-			 return (
-			 (A.DElem(mckstart,allminus,ifa) +> A.rewrap fa),
-			 ((B.DeclarationField
-			     (B.FieldDeclList
-				(repln n (onevar,iivirg) 0 xs,
-				 [iiptvirgb;iifakestart]))))))))))
+		   onefield allminus ifa ((onevar,iivirg), iiptvirgb) >>=
+		     (fun ifa (one_var,iiptvirgb) ->
+		       return (
+		       (A.FElem(mckstart,allminus,ifa) +> A.rewrap fa),
+		       ((B.DeclarationField
+			   (B.FieldDeclList
+			      (repln n (onevar,iivirg) 0 xs,
+			       [iiptvirgb;iifakestart])))))))))
 		fail in
 	    if !Flag.sgrep_mode2(*X.mode = PatternMode *) ||
   	       A.get_safe_decl ifa
@@ -3249,39 +3264,10 @@ and (struct_field: (A.annotated_decl, B.field) matcher) =
 	| _,B.EmptyField _iifield ->
 	    fail
 
-	| A.MacroDecl (stoa,bsa,lpa,eas,rpa,enda),
-	    B.MacroDeclField ((sb,ebs),ii) ->
-	    raise Todo
 	| _,B.MacroDeclField ((sb,ebs),ii) -> fail
 
 	| _,B.CppDirectiveStruct directive -> fail
 	| _,B.IfdefStruct directive -> fail)
-
-and build_decl nameidb typb iivirg =
-  let iisto = [] in
-  let stob = B.NoSto, false in
-  let fake_var =
-    ({B.v_namei = Some (nameidb, B.NoInit);
-       B.v_type = typb;
-       B.v_storage = stob;
-       B.v_local = Ast_c.NotLocalDecl;
-       B.v_attr = Ast_c.noattr;
-       B.v_type_bis = ref None;
-              (* the struct field should also get expanded ? no it's not
-               * important here, we will rematch very soon *)
-     },
-     iivirg) in
-  (fake_var,iisto)
-
-and unbuild_decl = function
-    ({B.v_namei = Some (nameidb, B.NoInit);
-       B.v_type = typb;
-       B.v_storage = stob;
-     }, iivirg) ->
-
-       let onevar = B.Simple (Some nameidb, typb) in
-       (onevar,iivirg)
-  | _ -> raise (Impossible 40)
 
 (* ---------------------------------------------------------------------- *)
 

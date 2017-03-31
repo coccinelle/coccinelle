@@ -91,7 +91,7 @@ and disjtypeC bty =
 	(function ty -> function ids ->
 	  Ast.rewrap bty (Ast.EnumDef(ty,lb,ids,rb)))
   | Ast.StructUnionDef(ty,lb,decls,rb) ->
-      disjmult2 (disjty ty) (disjdots anndisjdecl decls)
+      disjmult2 (disjty ty) (disjdots anndisjfield decls)
 	(function ty -> function decls ->
 	  Ast.rewrap bty (Ast.StructUnionDef(ty,lb,decls,rb)))
   | Ast.TypeName(_) | Ast.MetaType(_,_,_,_) -> [bty]
@@ -102,7 +102,14 @@ and anndisjdecl d =
       List.map
 	(function decl -> Ast.rewrap d (Ast.DElem(bef,allminus,decl)))
 	(disjdecl decls)
-  | Ast.Ddots(_,_) -> [d]
+
+and anndisjfield d =
+  match Ast.unwrap d with
+    Ast.FElem(bef,allminus,decls) ->
+      List.map
+	(function decl -> Ast.rewrap d (Ast.FElem(bef,allminus,decl)))
+	(disjfield decls)
+  | Ast.Fdots(_,_) -> [d]
 
 and disjident e =
   match Ast.unwrap e with
@@ -277,8 +284,7 @@ and disjfninfo = function
 
 and disjdecl d =
   match Ast.unwrap d with
-    Ast.MetaDecl(_,_,_,_) | Ast.MetaField(_,_,_,_)
-  | Ast.MetaFieldList(_,_,_,_,_) -> [d]
+    Ast.MetaDecl(_,_,_,_) -> [d]
   | Ast.AsDecl(decl,asdecl) ->
       let decl = disjdecl decl in
       List.map (function decl -> Ast.rewrap d (Ast.AsDecl(decl,asdecl))) decl
@@ -316,6 +322,23 @@ and disjdecl d =
   | Ast.OptDecl(decl) ->
       let decl = disjdecl decl in
       List.map (function decl -> Ast.rewrap d (Ast.OptDecl(decl))) decl
+
+and disjfield d =
+  match Ast.unwrap d with
+    Ast.MetaField(_,_,_,_)
+  | Ast.MetaFieldList(_,_,_,_,_) -> [d]
+  | Ast.Field(ty,id,sem) ->
+      disjmult2 (disjty ty) (disjident id)
+	(fun ty id ->
+	  Ast.rewrap d (Ast.Field(ty,id,sem)))
+  | Ast.DisjField(decls) -> List.concat (List.map disjfield decls)
+  | Ast.ConjField(decl_list) ->
+      let decl_list = disjmult disjfield decl_list in
+      List.map (function decl_list -> Ast.rewrap d (Ast.ConjField(decl_list)))
+	decl_list
+  | Ast.OptField(decl) ->
+      let decl = disjfield decl in
+      List.map (function decl -> Ast.rewrap d (Ast.OptField(decl))) decl
 
 let generic_orify_rule_elem f re exp rebuild =
   match f exp with
@@ -433,7 +456,7 @@ let disj_all =
     mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
     donothing disj_rule_elem donothing donothing donothing donothing
 
 (* ----------------------------------------------------------------------- *)
@@ -450,8 +473,9 @@ let collect_all_isos =
     mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing
-    doanything donothing donothing donothing donothing doanything
+    donothing donothing donothing donothing
+    doanything donothing doanything donothing donothing donothing donothing
+    doanything
 
 let collect_iso_info =
   let mcode x = x in
@@ -466,7 +490,7 @@ let collect_iso_info =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing
+    donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
     donothing donothing donothing donothing rule_elem donothing donothing
     donothing donothing

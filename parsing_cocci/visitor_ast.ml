@@ -25,6 +25,7 @@ type 'a combiner =
      combiner_fullType : Ast.fullType -> 'a;
      combiner_typeC : Ast.typeC -> 'a;
      combiner_declaration : Ast.declaration -> 'a;
+     combiner_field : Ast.field -> 'a;
      combiner_initialiser : Ast.initialiser -> 'a;
      combiner_parameter : Ast.parameterTypeDef -> 'a;
      combiner_parameter_list : Ast.parameter_list -> 'a;
@@ -36,6 +37,7 @@ type 'a combiner =
      combiner_expression_dots : Ast.expression Ast.dots -> 'a;
      combiner_statement_dots : Ast.statement Ast.dots -> 'a;
      combiner_anndecl_dots : Ast.annotated_decl Ast.dots -> 'a;
+     combiner_annfield_dots : Ast.annotated_field Ast.dots -> 'a;
      combiner_initialiser_dots : Ast.initialiser Ast.dots -> 'a}
 
 type ('mc,'a) cmcode = 'a combiner -> 'mc Ast_cocci.mcode -> 'a
@@ -47,10 +49,11 @@ let combiner bind option_default
     unary_mcodefn arithop_mcodefn logicalop_mcodefn
     cv_mcodefn sign_mcodefn struct_mcodefn storage_mcodefn
     inc_file_mcodefn
-    expdotsfn paramdotsfn stmtdotsfn anndecldotsfn initdotsfn
+    expdotsfn paramdotsfn stmtdotsfn anndecldotsfn annfielddotsfn initdotsfn
     identfn exprfn fragfn fmtfn assignOpfn binaryOpfn ftfn tyfn initfn
     paramfn define_paramfn declfn
-    annotated_declfn rulefn stmtfn casefn topfn anyfn =
+    annotated_declfn fieldfn annotated_fieldfn rulefn stmtfn casefn topfn
+    anyfn =
   let multibind l =
     let rec loop = function
 	[] -> option_default
@@ -91,6 +94,8 @@ let combiner bind option_default
   and statement_dots d = dotsfn stmtdotsfn statement all_functions d
   and annotated_decl_dots d =
     dotsfn anndecldotsfn annotated_decl all_functions d
+  and annotated_field_dots d =
+    dotsfn annfielddotsfn annotated_field all_functions d
   and initialiser_dots d = dotsfn initdotsfn initialiser all_functions d
   and string_fragment_dots d = dotsfn strdotsfn string_fragment all_functions d
   and exec_code_dots d = dotsfn ecdotsfn exec_code all_functions d
@@ -352,7 +357,7 @@ let combiner bind option_default
       | Ast.StructUnionDef(ty,lb,decls,rb) ->
 	  let lty = fullType ty in
 	  let llb = string_mcode lb in
-	  let ldecls = annotated_decl_dots decls in
+	  let ldecls = annotated_field_dots decls in
 	  let lrb = string_mcode rb in
 	  multibind [lty; llb; ldecls; lrb]
       | Ast.TypeName(name) -> string_mcode name
@@ -376,8 +381,7 @@ let combiner bind option_default
   and declaration d =
     let k d =
       match Ast.unwrap d with
-	Ast.MetaDecl(name,_,_,_) | Ast.MetaField(name,_,_,_)
-      |	Ast.MetaFieldList(name,_,_,_,_) ->
+	Ast.MetaDecl(name,_,_,_) ->
 	  meta_mcode name
       |	Ast.AsDecl(decl,asdecl) ->
 	  let ldecl = declaration decl in
@@ -443,12 +447,32 @@ let combiner bind option_default
   and annotated_decl d =
     let k d =
       match Ast.unwrap d with
-	Ast.DElem(_,_,d) -> declaration d
-      | Ast.Ddots(dots,whncode) ->
-	  let ldots = string_mcode dots in
-	  let lwhncode = get_option declaration whncode in
-	  bind ldots lwhncode in
+	Ast.DElem(_,_,d) -> declaration d in
     annotated_declfn all_functions k d
+
+  and field d =
+    let k d =
+      match Ast.unwrap d with
+	Ast.MetaField(name,_,_,_) | Ast.MetaFieldList(name,_,_,_,_) ->
+	  meta_mcode name
+      | Ast.Field(ty,id,sem) ->
+	  let lid = named_type ty id in
+	  let lsem = string_mcode sem in
+	  multibind [lid; lsem]
+      | Ast.DisjField(decls)
+      | Ast.ConjField(decls) -> multibind (List.map field decls)
+      | Ast.OptField(decl) -> field decl in
+    fieldfn all_functions k d
+
+  and annotated_field d =
+    let k d =
+      match Ast.unwrap d with
+	Ast.FElem(_,_,d) -> field d
+      | Ast.Fdots(dots,whncode) ->
+	  let ldots = string_mcode dots in
+	  let lwhncode = get_option field whncode in
+	  bind ldots lwhncode in
+    annotated_fieldfn all_functions k d
 
   and initialiser i =
     let k i =
@@ -851,6 +875,7 @@ let combiner bind option_default
       | Ast.ArithOpTag(arithop) -> option_default
       | Ast.LogicalOpTag(logop) -> option_default
       | Ast.DeclarationTag(decl) -> declaration decl
+      | Ast.FieldTag(decl) -> field decl
       | Ast.InitTag(ini) -> initialiser ini
       | Ast.StorageTag(stg) -> option_default
       | Ast.IncFileTag(stg) -> option_default
@@ -867,6 +892,7 @@ let combiner bind option_default
       | Ast.ParamDotsTag(pd) -> parameter_dots pd
       | Ast.StmtDotsTag(sd) -> statement_dots sd
       | Ast.AnnDeclDotsTag(sd) -> annotated_decl_dots sd
+      | Ast.AnnFieldDotsTag(sd) -> annotated_field_dots sd
       | Ast.DefParDotsTag(sd) -> define_param_dots sd
       | Ast.TypeCTag(ty) -> typeC ty
       | Ast.ParamTag(param) -> parameterTypeDef param
@@ -884,6 +910,7 @@ let combiner bind option_default
       combiner_fullType = fullType;
       combiner_typeC = typeC;
       combiner_declaration = declaration;
+      combiner_field = field;
       combiner_initialiser = initialiser;
       combiner_parameter = parameterTypeDef;
       combiner_parameter_list = parameter_dots;
@@ -895,6 +922,7 @@ let combiner bind option_default
       combiner_expression_dots = expression_dots;
       combiner_statement_dots = statement_dots;
       combiner_anndecl_dots = annotated_decl_dots;
+      combiner_annfield_dots = annotated_field_dots;
       combiner_initialiser_dots = initialiser_dots} in
   all_functions
 
@@ -912,6 +940,7 @@ type rebuilder =
       rebuilder_fullType : Ast.fullType inout;
       rebuilder_typeC : Ast.typeC inout;
       rebuilder_declaration : Ast.declaration inout;
+      rebuilder_field : Ast.field inout;
       rebuilder_initialiser : Ast.initialiser inout;
       rebuilder_parameter : Ast.parameterTypeDef inout;
       rebuilder_parameter_list : Ast.parameter_list inout;
@@ -922,6 +951,7 @@ type rebuilder =
       rebuilder_expression_dots : Ast.expression Ast.dots inout;
       rebuilder_statement_dots : Ast.statement Ast.dots inout;
       rebuilder_anndecl_dots : Ast.annotated_decl Ast.dots inout;
+      rebuilder_annfield_dots : Ast.annotated_field Ast.dots inout;
       rebuilder_initialiser_dots : Ast.initialiser Ast.dots inout;
       rebuilder_define_param_dots : Ast.define_param Ast.dots inout;
       rebuilder_define_param : Ast.define_param inout;
@@ -937,10 +967,10 @@ let rebuilder
     fix_mcode unary_mcode
     arithop_mcode logicalop_mcode cv_mcode sign_mcode struct_mcode
     storage_mcode inc_file_mcode
-    expdotsfn paramdotsfn stmtdotsfn anndecldotsfn initdotsfn
+    expdotsfn paramdotsfn stmtdotsfn anndecldotsfn annfielddotsfn initdotsfn
     identfn exprfn fragfn fmtfn assignOpfn binaryOpfn ftfn tyfn initfn
-    paramfn define_paramfn declfn annotated_declfn rulefn stmtfn casefn
-    topfn anyfn =
+    paramfn define_paramfn declfn annotated_declfn fieldfn annotated_fieldfn
+    rulefn stmtfn casefn topfn anyfn =
   let get_option f = function
       Some x -> Some (f x)
     | None -> None in
@@ -959,6 +989,8 @@ let rebuilder
   and statement_dots d = dotsfn stmtdotsfn statement all_functions d
   and annotated_decl_dots d =
     dotsfn anndecldotsfn annotated_decl all_functions d
+  and annotated_field_dots d =
+    dotsfn annfielddotsfn annotated_field all_functions d
   and initialiser_dots d = dotsfn initdotsfn initialiser all_functions d
   and string_fragment_dots d = dotsfn strdotsfn string_fragment all_functions d
   and exec_code_dots d = dotsfn ecdotsfn exec_code all_functions d
@@ -1227,7 +1259,7 @@ let rebuilder
 	| Ast.StructUnionDef(ty,lb,decls,rb) ->
 	    let lty = fullType ty in
 	    let llb = string_mcode lb in
-	    let ldecls = annotated_decl_dots decls in
+	    let ldecls = annotated_field_dots decls in
 	    let lrb = string_mcode rb in
 	    Ast.StructUnionDef (lty, llb, ldecls, lrb)
 	| Ast.TypeName(name) -> Ast.TypeName(string_mcode name)
@@ -1241,11 +1273,6 @@ let rebuilder
 	(match Ast.unwrap d with
 	  Ast.MetaDecl(name,constraints,keep,inherited) ->
 	    Ast.MetaDecl(meta_mcode name,constraints,keep,inherited)
-	| Ast.MetaField(name,constraints,keep,inherited) ->
-	    Ast.MetaField(meta_mcode name,constraints,keep,inherited)
-	| Ast.MetaFieldList(name,lenname_inh,constraints,keep,inherited) ->
-	    Ast.MetaFieldList
-	      (meta_mcode name,lenname_inh,constraints,keep,inherited)
 	| Ast.AsDecl(decl,asdecl) ->
 	    let ldecl = declaration decl in
 	    let lasdecl = declaration asdecl in
@@ -1314,12 +1341,39 @@ let rebuilder
       Ast.rewrap d
 	(match Ast.unwrap d with
 	  Ast.DElem(bef,allminus,decl) ->
-	    Ast.DElem(bef,allminus,declaration decl)
-	| Ast.Ddots(dots,whncode) ->
-	    let ldots = string_mcode dots in
-	    let lwhncode = get_option declaration whncode in
-	    Ast.Ddots(ldots, lwhncode)) in
+	    Ast.DElem(bef,allminus,declaration decl)) in
     annotated_declfn all_functions k d
+
+  and field d =
+    let k d =
+      Ast.rewrap d
+	(match Ast.unwrap d with
+	  Ast.MetaField(name,constraints,keep,inherited) ->
+	    Ast.MetaField(meta_mcode name,constraints,keep,inherited)
+	| Ast.MetaFieldList(name,lenname_inh,constraints,keep,inherited) ->
+	    Ast.MetaFieldList
+	      (meta_mcode name,lenname_inh,constraints,keep,inherited)
+	| Ast.Field(ty,id,sem) ->
+	    let lty = fullType ty in
+	    let lid = ident id in
+	    let lsem = string_mcode sem in
+	    Ast.Field(lty, lid, lsem)
+	| Ast.DisjField(decls) -> Ast.DisjField(List.map field decls)
+	| Ast.ConjField(decls) -> Ast.ConjField(List.map field decls)
+	| Ast.OptField(decl) -> Ast.OptField(field decl)) in
+    fieldfn all_functions k d
+
+  and annotated_field d =
+    let k d =
+      Ast.rewrap d
+	(match Ast.unwrap d with
+	  Ast.FElem(bef, allminus, decl) ->
+	    Ast.FElem(bef, allminus, field decl)
+	| Ast.Fdots(dots,whncode) ->
+	    let ldots = string_mcode dots in
+	    let lwhncode = get_option field whncode in
+	    Ast.Fdots(ldots, lwhncode)) in
+    annotated_fieldfn all_functions k d
 
   and initialiser i =
     let k i =
@@ -1751,6 +1805,7 @@ let rebuilder
       | Ast.LogicalOpTag(logop) as x -> x
       | Ast.InitTag(decl) -> Ast.InitTag(initialiser decl)
       | Ast.DeclarationTag(decl) -> Ast.DeclarationTag(declaration decl)
+      | Ast.FieldTag(decl) -> Ast.FieldTag(field decl)
       | Ast.StorageTag(stg) as x -> x
       | Ast.IncFileTag(stg) as x -> x
       | Ast.Rule_elemTag(rule) -> Ast.Rule_elemTag(rule_elem rule)
@@ -1767,6 +1822,7 @@ let rebuilder
       | Ast.ParamDotsTag(pd) -> Ast.ParamDotsTag(parameter_dots pd)
       | Ast.StmtDotsTag(sd) -> Ast.StmtDotsTag(statement_dots sd)
       | Ast.AnnDeclDotsTag(sd) -> Ast.AnnDeclDotsTag(annotated_decl_dots sd)
+      | Ast.AnnFieldDotsTag(sd) -> Ast.AnnFieldDotsTag(annotated_field_dots sd)
       | Ast.DefParDotsTag(sd) -> Ast.DefParDotsTag(define_param_dots sd)
       | Ast.TypeCTag(ty) -> Ast.TypeCTag(typeC ty)
       | Ast.ParamTag(param) -> Ast.ParamTag(parameterTypeDef param)
@@ -1784,6 +1840,7 @@ let rebuilder
       rebuilder_fullType = fullType;
       rebuilder_typeC = typeC;
       rebuilder_declaration = declaration;
+      rebuilder_field = field;
       rebuilder_initialiser = initialiser;
       rebuilder_parameter = parameterTypeDef;
       rebuilder_parameter_list = parameter_dots;
@@ -1794,6 +1851,7 @@ let rebuilder
       rebuilder_expression_dots = expression_dots;
       rebuilder_statement_dots = statement_dots;
       rebuilder_anndecl_dots = annotated_decl_dots;
+      rebuilder_annfield_dots = annotated_field_dots;
       rebuilder_initialiser_dots = initialiser_dots;
       rebuilder_define_param_dots = define_param_dots;
       rebuilder_define_param = define_param;

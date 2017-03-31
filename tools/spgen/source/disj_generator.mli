@@ -89,6 +89,8 @@ type ident_fn = Ast0_cocci.ident -> Snapshot.t -> Snapshot.t
 
 type declaration_fn = Ast0_cocci.declaration -> Snapshot.t -> Snapshot.t
 
+type field_fn = Ast0_cocci.field -> Snapshot.t -> Snapshot.t
+
 (* These functions take a disjunction component (stmt, expr, ident, decl) and a
  * snapshot + some other things, and perform the disjunction rule generation.
  * Fails if the disjunction component is NOT a disjunction.
@@ -134,6 +136,14 @@ val generate_declaration :
   strfn:string_fn ->
   declfn:declaration_fn ->
   decl:Ast0_cocci.declaration ->
+  at_top:bool ->
+  Snapshot.t ->
+  Snapshot.t
+
+val generate_field :
+  strfn:string_fn ->
+  fieldfn:field_fn ->
+  field:Ast0_cocci.field ->
   at_top:bool ->
   Snapshot.t ->
   Snapshot.t

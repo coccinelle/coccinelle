@@ -385,12 +385,9 @@ let exp_wrap ~exp ~constructor ?(alt = fun _ -> None) snp
 let rec declaration_pos decl snp
 : (Ast0.base_declaration Ast0.wrap * Snap.t) option =
   match Ast0.unwrap decl with
-  | Ast0.DisjDecl _
+    Ast0.DisjDecl _
   | Ast0.ConjDecl _
-  | Ast0.Ddots _
   | Ast0.MetaDecl _
-  | Ast0.MetaField _
-  | Ast0.MetaFieldList _
   | Ast0.AsDecl _ ->
       None
   | Ast0.Init(st, ty, id, eq, ini, sem) ->
@@ -420,6 +417,22 @@ let rec declaration_pos decl snp
   | Ast0.FunProto(fninfo,id,lp1,params,va,rp1,sem) ->
       let constructor ~id = Ast0.FunProto(fninfo,id,lp1,params,va,rp1,sem) in
       id_wrap ~id ~constructor snp
+
+let rec field_pos decl snp
+: (Ast0.base_field Ast0.wrap * Snap.t) option =
+  match Ast0.unwrap decl with
+    Ast0.DisjField _
+  | Ast0.ConjField _
+  | Ast0.Fdots _
+  | Ast0.MetaField _
+  | Ast0.MetaFieldList _ -> None
+  | Ast0.Field(ty, id, sem) ->
+      let _ = type_pos ty snp in (* sanity check *)
+      let constructor ~id = Ast0.Field(ty, id, sem) in
+      id_wrap ~id ~constructor snp
+  | Ast0.OptField(dec) ->
+      let constructor ~item = Ast0.OptField item in
+      item_wrap ~item:dec ~item_posfn:field_pos ~constructor snp
 
 let forinfo_pos f snp
 : (Ast0.base_forinfo Ast0.wrap * Snap.t) option =

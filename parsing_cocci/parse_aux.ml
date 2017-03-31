@@ -118,15 +118,15 @@ let mkidots str (dot,whencode) =
     "..." -> Ast0.wrap(Ast0.Idots(clt2mcode str dot, whencode))
   | _ -> failwith "cannot happen"
 
-let mkddots str (dot,whencode) =
+let mkfdots str (dot,whencode) =
   match (str,whencode) with
-    ("...",None) -> Ast0.wrap(Ast0.Ddots(clt2mcode str dot, None))
-  | ("...",Some [w]) -> Ast0.wrap(Ast0.Ddots(clt2mcode str dot, Some w))
+    ("...",None) -> Ast0.wrap(Ast0.Fdots(clt2mcode str dot, None))
+  | ("...",Some [w]) -> Ast0.wrap(Ast0.Fdots(clt2mcode str dot, Some w))
   | _ -> failwith "cannot happen"
 
-let mkddots_one str (dot,whencode) =
+let mkfdots_one str (dot,whencode) =
   match str with
-    "..." -> Ast0.wrap(Ast0.Ddots(clt2mcode str dot, whencode))
+    "..." -> Ast0.wrap(Ast0.Fdots(clt2mcode str dot, whencode))
   | _ -> failwith "cannot happen"
 
 let mkpdots str dot =

@@ -178,7 +178,7 @@ let inline_mcodes =
     do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing do_nothing
+    do_nothing do_nothing do_nothing do_nothing
 
 (* --------------------------------------------------------------------- *)
 (* For function declarations.  Can't use the mcode at the root, because that
@@ -219,6 +219,13 @@ let check_allminus =
     | Ast0.AsDecl(decl,asdecl) -> k decl
     | _ -> k e in
 
+  let field r k e =
+    match Ast0.unwrap e with
+      Ast0.DisjField(starter,decls,mids,ender)
+    | Ast0.ConjField(starter,decls,mids,ender) ->
+	List.for_all r.VT0.combiner_rec_field decls
+    | _ -> k e in
+
   let typeC r k e =
     match Ast0.unwrap e with
       Ast0.DisjType(starter,decls,mids,ender) ->
@@ -249,8 +256,8 @@ let check_allminus =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
-    ident expression donothing donothing typeC initialiser donothing
-    declaration statement donothing case_line donothing donothing
+    donothing ident expression donothing donothing typeC initialiser donothing
+    declaration field statement donothing case_line donothing donothing
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -573,7 +580,7 @@ and base_typeC allminus t =
       Ast.StructUnionName(mcode kind,get_option ident name)
   | Ast0.StructUnionDef(ty,lb,decls,rb) ->
       Ast.StructUnionDef(typeC allminus ty,mcode lb,
-			 declaration_dots decls, mcode rb)
+			 field_dots decls, mcode rb)
   | Ast0.TypeName(name) -> Ast.TypeName(mcode name)
   | Ast0.MetaType(name,cstr,_) ->
       let cstr' = constraints cstr in
@@ -590,11 +597,6 @@ and declaration d =
     (match Ast0.unwrap d with
       Ast0.MetaDecl(name,cstr,_) ->
 	Ast.MetaDecl(mcode name,constraints cstr,unitary,false)
-    | Ast0.MetaField(name,cstr,_) ->
-	Ast.MetaField(mcode name,constraints cstr,unitary,false)
-    | Ast0.MetaFieldList(name,lenname,cstr,_) ->
-	let cstr' = constraints cstr in
-	Ast.MetaFieldList(mcode name,do_lenname lenname,cstr',unitary,false)
     | Ast0.AsDecl(decl,asdecl) ->
 	Ast.AsDecl(declaration decl,declaration asdecl)
     | Ast0.Init(stg,ty,id,eq,ini,sem) ->
@@ -651,7 +653,6 @@ and declaration d =
 	  Ast.Type(_,None,id) -> (* only MetaType or Id *)
 	    Ast.Typedef(mcode stg,typeC allminus ty,id,mcode sem)
 	| _ -> failwith "bad typedef")
-    | Ast0.Ddots(dots,whencode) -> failwith "should not be possible"
     | Ast0.DisjDecl(_,decls,_,_) -> Ast.DisjDecl(List.map declaration decls)
     | Ast0.ConjDecl(_,decls,_,_) -> Ast.ConjDecl(List.map declaration decls)
     | Ast0.OptDecl(decl) -> Ast.OptDecl(declaration decl))
@@ -659,12 +660,7 @@ and declaration d =
 and annotated_decl bef d =
   rewrap d (do_isos (Ast0.get_iso d))
     (match Ast0.unwrap d with
-      Ast0.Ddots(dots,whencode) ->
-	(* structure definitions only *)
-	let dots = mcode dots in
-	let whencode = get_option (fun (_,_,b) -> declaration b) whencode in
-	Ast.Ddots(dots,whencode)
-    | _ -> (* for decls where there is no bef information needed *)
+      _ -> (* for decls where there is no bef information needed *)
 	let bef =
 	  match bef with
 	    None -> (* fake, no change here *)
@@ -676,6 +672,46 @@ and annotated_decl bef d =
 		  declaration d))
 
 and declaration_dots l = dots (annotated_decl None) l
+
+(* --------------------------------------------------------------------- *)
+(* Field declaration *)
+
+and field d =
+  rewrap d (do_isos (Ast0.get_iso d))
+    (match Ast0.unwrap d with
+      Ast0.MetaField(name,cstr,_) ->
+	Ast.MetaField(mcode name,constraints cstr,unitary,false)
+    | Ast0.MetaFieldList(name,lenname,cstr,_) ->
+	let cstr' = constraints cstr in
+	Ast.MetaFieldList(mcode name,do_lenname lenname,cstr',unitary,false)
+    | Ast0.Field(ty,id,sem) ->
+	let allminus = check_allminus.VT0.combiner_rec_field d in
+	Ast.Field(typeC allminus ty,ident id, mcode sem)
+    | Ast0.Fdots(dots,whencode) -> failwith "should not be possible"
+    | Ast0.DisjField(_,decls,_,_) -> Ast.DisjField(List.map field decls)
+    | Ast0.ConjField(_,decls,_,_) -> Ast.ConjField(List.map field decls)
+    | Ast0.OptField(decl) -> Ast.OptField(field decl))
+
+and annotated_field bef d =
+  rewrap d (do_isos (Ast0.get_iso d))
+    (match Ast0.unwrap d with
+      Ast0.Fdots(dots,whencode) ->
+	(* structure definitions only *)
+	let dots = mcode dots in
+	let whencode = get_option (fun (_,_,b) -> field b) whencode in
+	Ast.Fdots(dots,whencode)
+    | _ -> (* for decls where there is no bef information needed *)
+	let bef =
+	  match bef with
+	    None -> (* fake, no change here *)
+	      let bot = Ast0.default_token_info in
+	      Ast0.CONTEXT (ref(Ast.NOTHING,bot,bot))
+	  | Some bef -> bef in
+	let allminus = check_allminus.VT0.combiner_rec_field d in
+	Ast.FElem(convert_allminus_mcodekind allminus bef,allminus,
+		  field d))
+
+and field_dots l = dots (annotated_field None) l
 
 (* --------------------------------------------------------------------- *)
 (* Initialiser *)
@@ -1144,6 +1180,7 @@ and anything = function
   | Ast0.DotsInitTag(d) -> failwith "not possible"
   | Ast0.DotsStmtTag(d) -> Ast.StmtDotsTag(statement_dots d)
   | Ast0.DotsDeclTag(d) -> Ast.AnnDeclDotsTag(declaration_dots d)
+  | Ast0.DotsFieldTag(d) -> Ast.AnnFieldDotsTag(field_dots d)
   | Ast0.DotsCaseTag(d) -> failwith "not possible"
   | Ast0.DotsDefParamTag(d) -> Ast.DefParDotsTag(define_param_dots d)
   | Ast0.IdentTag(d) -> Ast.IdentTag(ident d)
@@ -1156,6 +1193,7 @@ and anything = function
   | Ast0.ParamTag(d) -> Ast.ParamTag(parameterTypeDef d)
   | Ast0.InitTag(d) -> Ast.InitTag(initialiser d)
   | Ast0.DeclTag(d) -> Ast.DeclarationTag(declaration d)
+  | Ast0.FieldTag(d) -> Ast.FieldTag(field d)
   | Ast0.StmtTag(d) -> Ast.StatementTag(statement d)
   | Ast0.ForInfoTag(d) -> Ast.ForInfoTag(forinfo d)
   | Ast0.CaseLineTag(d) -> Ast.CaseLineTag(case_line d)

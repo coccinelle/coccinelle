@@ -322,7 +322,7 @@ and base_typeC =
 	string mcode (* { *) * expression dots * string mcode (* } *)
   | StructUnionName of structUnion mcode * ident option (* name *)
   | StructUnionDef  of fullType (* either StructUnionName or metavar *) *
-	string mcode (* { *) * annotated_decl dots * string mcode (* } *)
+	string mcode (* { *) * annotated_field dots * string mcode (* } *)
   | TypeName        of string mcode
 
   | MetaType        of meta_name mcode * constraints * keep_binding *
@@ -368,11 +368,7 @@ and base_declaration =
   | Typedef of string mcode (*typedef*) * fullType * typeC * string mcode (*;*)
   | DisjDecl   of declaration list
   | ConjDecl of declaration list
-
   | MetaDecl of meta_name mcode * constraints * keep_binding * inherited
-  | MetaField of meta_name mcode * constraints * keep_binding * inherited
-  | MetaFieldList of meta_name mcode * listlen * constraints * keep_binding *
-	inherited
   | AsDecl        of declaration * declaration
 
   | OptDecl    of declaration
@@ -382,10 +378,29 @@ and declaration = base_declaration wrap
 and base_annotated_decl =
     DElem of mcodekind (* before the decl *) * bool (* true if all minus *) *
       declaration
-  (* Ddots is for a structure declaration *)
-  | Ddots    of string mcode (* ... *) * declaration option (* whencode *)
 
 and annotated_decl = base_annotated_decl wrap
+
+(* --------------------------------------------------------------------- *)
+(* Field declaration *)
+
+and base_field =
+    Field of fullType * ident * string mcode (* ; *)
+  | DisjField of field list
+  | ConjField of field list
+  | OptField of field
+  | MetaField of meta_name mcode * constraints * keep_binding * inherited
+  | MetaFieldList of meta_name mcode * listlen * constraints * keep_binding *
+	inherited
+
+and field = base_field wrap
+
+and base_annotated_field =
+    FElem of mcodekind (* before the decl *) * bool (* true if all minus *) *
+      field
+  | Fdots    of string mcode (* ... *) * field option (* whencode *)
+
+and annotated_field = base_annotated_field wrap
 
 (* --------------------------------------------------------------------- *)
 (* Initializers *)
@@ -710,6 +725,7 @@ and anything =
   | ArithOpTag          of arithOp
   | LogicalOpTag        of logicalOp
   | DeclarationTag      of declaration
+  | FieldTag            of field
   | InitTag             of initialiser
   | StorageTag          of storage
   | IncFileTag          of inc_file
@@ -726,6 +742,7 @@ and anything =
   | ParamDotsTag        of parameterTypeDef dots
   | StmtDotsTag         of statement dots
   | AnnDeclDotsTag      of annotated_decl dots
+  | AnnFieldDotsTag     of annotated_field dots
   | DefParDotsTag       of define_param dots
   | TypeCTag            of typeC
   | ParamTag            of parameterTypeDef

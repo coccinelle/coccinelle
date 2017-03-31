@@ -261,10 +261,11 @@ module XTRANS = struct
     let fn = Visitor_ast.rebuilder
 	mcode mcode mcode mcode mcode mcode mcode mcode mcode
 	mcode mcode mcode mcode mcode
-	donothing donothing donothing donothing donothing
+	donothing donothing donothing donothing donothing donothing
 	ident expression donothing donothing donothing donothing
 	donothing donothing donothing donothing donothing donothing
-	donothing donothing donothing donothing donothing donothing in
+	donothing donothing donothing donothing donothing donothing
+	donothing donothing in
 
   fn.Visitor_ast.rebuilder_anything anything
 

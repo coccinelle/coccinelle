@@ -1052,14 +1052,14 @@ struct_decl_one:
     | lp=TOPar0 t=midzero_list(struct_decl_one,struct_decl_one) rp=TCPar0
 	{ let (mids,code) = t in
 	Ast0.wrap
-	  (Ast0.DisjDecl(P.id2mcode lp,code,mids, P.id2mcode rp)) }
+	  (Ast0.DisjField(P.id2mcode lp,code,mids, P.id2mcode rp)) }
     | lp=TOPar0 t=andzero_list(struct_decl_one,struct_decl_one) rp=TCPar0
 	{ let (mids,code) = t in
 	Ast0.wrap
-	  (Ast0.ConjDecl(P.id2mcode lp,code,mids, P.id2mcode rp)) }
+	  (Ast0.ConjField(P.id2mcode lp,code,mids, P.id2mcode rp)) }
     | t=ctype d=d_ident pv=TPtVirg
 	 { let (id,fn) = d in
-	 Ast0.wrap(Ast0.UnInit(None,fn t,id,P.clt2mcode ";" pv)) }
+	 Ast0.wrap(Ast0.Field(fn t,id,P.clt2mcode ";" pv)) }
     | t=ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
 	lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar pv=TPtVirg
         { let (id,fn) = d in
@@ -1068,11 +1068,11 @@ struct_decl_one:
 	    (Ast0.FunctionPointer
 	       (t,P.clt2mcode "(" lp1,P.clt2mcode "*" st,P.clt2mcode ")" rp1,
 		P.clt2mcode "(" lp2,p,P.clt2mcode ")" rp2)) in
-        Ast0.wrap(Ast0.UnInit(None,fn t,id,P.clt2mcode ";" pv)) }
+        Ast0.wrap(Ast0.Field(fn t,id,P.clt2mcode ";" pv)) }
      | cv=ioption(const_vol) i=pure_ident_or_symbol d=d_ident pv=TPtVirg
 	 { let (id,fn) = d in
 	 let idtype = P.make_cv cv (Ast0.wrap (Ast0.TypeName(P.id2mcode i))) in
-	 Ast0.wrap(Ast0.UnInit(None,fn idtype,id,P.clt2mcode ";" pv)) }
+	 Ast0.wrap(Ast0.Field(fn idtype,id,P.clt2mcode ";" pv)) }
 
 struct_decl_list:
    struct_decl_list_start { Ast0.wrap $1 }
@@ -1081,7 +1081,7 @@ struct_decl_list_start:
   struct_decl                        { $1 }
 | struct_decl struct_decl_list_start { $1@$2 }
 | d=edots_when(TEllipsis,struct_decl_one) r=continue_struct_decl_list
-    { (P.mkddots_one "..." d)::r }
+    { (P.mkfdots_one "..." d)::r }
 
 continue_struct_decl_list:
   /* empty */                        { [] }

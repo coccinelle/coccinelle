@@ -203,7 +203,7 @@ and base_typeC =
 	string mcode (* { *) * expression dots * string mcode (* } *)
   | StructUnionName of Ast_cocci.structUnion mcode * ident option (* name *)
   | StructUnionDef  of typeC (* either StructUnionName or metavar *) *
-	string mcode (* { *) * declaration dots * string mcode (* } *)
+	string mcode (* { *) * field dots * string mcode (* } *)
   | TypeName        of string mcode
   | MetaType        of Ast_cocci.meta_name mcode * constraints
 	* pure
@@ -221,9 +221,6 @@ and typeC = base_typeC wrap
 
 and base_declaration =
     MetaDecl   of Ast_cocci.meta_name mcode * constraints * pure (* variables *)
-  | MetaField  of Ast_cocci.meta_name mcode * constraints *
-	pure (* structure fields *)
-  | MetaFieldList of Ast_cocci.meta_name mcode * listlen * constraints * pure
   | AsDecl        of declaration * declaration
   | Init       of Ast_cocci.storage mcode option * typeC * ident *
 	string mcode (*=*) * initialiser * string mcode (*;*)
@@ -247,11 +244,27 @@ and base_declaration =
 	          string mcode
   | ConjDecl   of string mcode * declaration list * string mcode list *
 	          string mcode
-  | Ddots      of string mcode (* ... *) * (string mcode * string mcode *
-                  declaration) option (* whencode *)
   | OptDecl    of declaration
 
 and declaration = base_declaration wrap
+
+(* --------------------------------------------------------------------- *)
+(* Field declaration *)
+
+and base_field =
+  | MetaField  of Ast_cocci.meta_name mcode * constraints *
+	pure (* structure fields *)
+  | MetaFieldList of Ast_cocci.meta_name mcode * listlen * constraints * pure
+  | Field     of typeC * ident * string mcode (* ; *)
+  | DisjField   of string mcode * field list * string mcode list *
+	          string mcode
+  | ConjField   of string mcode * field list * string mcode list *
+	          string mcode
+  | Fdots      of string mcode (* ... *) * (string mcode * string mcode *
+                  field) option (* whencode *)
+  | OptField    of field
+
+and field = base_field wrap
 
 (* --------------------------------------------------------------------- *)
 (* Initializers *)
@@ -507,6 +520,7 @@ and anything =
   | DotsParamTag of parameterTypeDef dots
   | DotsStmtTag of statement dots
   | DotsDeclTag of declaration dots
+  | DotsFieldTag of field dots
   | DotsCaseTag of case_line dots
   | DotsDefParamTag of define_param dots
   | IdentTag of ident
@@ -519,6 +533,7 @@ and anything =
   | ParamTag of parameterTypeDef
   | InitTag of initialiser
   | DeclTag of declaration
+  | FieldTag of field
   | StmtTag of statement
   | ForInfoTag of forinfo
   | CaseLineTag of case_line
@@ -537,6 +552,7 @@ val dotsInit : initialiser dots -> anything
 val dotsParam : parameterTypeDef dots -> anything
 val dotsStmt : statement dots -> anything
 val dotsDecl : declaration dots -> anything
+val dotsField : field dots -> anything
 val dotsCase : case_line dots -> anything
 val dotsDefParam : define_param dots -> anything
 val ident : ident -> anything
@@ -547,6 +563,7 @@ val typeC : typeC -> anything
 val param : parameterTypeDef -> anything
 val ini : initialiser -> anything
 val decl : declaration -> anything
+val field : field -> anything
 val stmt : statement -> anything
 val forinfo : forinfo -> anything
 val case_line : case_line -> anything

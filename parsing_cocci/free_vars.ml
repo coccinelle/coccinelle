@@ -159,11 +159,19 @@ let collect_refs include_constraints =
   let astfvdecls recursor k d =
     bind (k d)
       (match Ast.unwrap d with
-	Ast.MetaDecl(name,cstr,_,_) | Ast.MetaField(name,cstr,_,_) ->
+	Ast.MetaDecl(name,cstr,_,_) ->
+	  bind (constraints cstr) [metaid name]
+      | Ast.DisjDecl(decls) -> bind_disj (List.map k decls)
+      | _ -> option_default) in
+
+  let astfvfields recursor k d =
+    bind (k d)
+      (match Ast.unwrap d with
+	Ast.MetaField(name,cstr,_,_) ->
 	  bind (constraints cstr) [metaid name]
       | Ast.MetaFieldList(name,len,cstr,_,_) ->
 	  bind (constraints cstr) (bind (listlen len) [metaid name])
-      | Ast.DisjDecl(decls) -> bind_disj (List.map k decls)
+      | Ast.DisjField(decls) -> bind_disj (List.map k decls)
       | _ -> option_default) in
 
   let astfvfullType recursor k ty =
@@ -239,10 +247,10 @@ let collect_refs include_constraints =
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
     astfvident astfvexpr astfvfrag astfvfmt astfvassignop astfvbinaryop
     astfvfullType astfvtypeC astfvinit astfvparam astfvdefine_param
-    astfvdecls donothing
+    astfvdecls donothing astfvfields donothing
     astfvrule_elem astfvstatement donothing donothing donothing_a
 
 let collect_all_refs = collect_refs true
@@ -290,6 +298,7 @@ let collect_pos_positions =
     donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing
     cprule_elem cpstmt donothing donothing donothing
 
 (* ---------------------------------------------------------------- *)
@@ -414,7 +423,14 @@ let collect_saved =
   let astfvdecls recursor k d =
     bind (k d)
       (match Ast.unwrap d with
-	Ast.MetaDecl(name,_,Ast.Saved,_) | Ast.MetaField(name,_,Ast.Saved,_) ->
+	Ast.MetaDecl(name,_,Ast.Saved,_) ->
+	  [metaid name]
+      | _ -> option_default) in
+
+  let astfvfields recursor k d =
+    bind (k d)
+      (match Ast.unwrap d with
+	Ast.MetaField(name,_,Ast.Saved,_) ->
 	  [metaid name]
       | Ast.MetaFieldList(name,Ast.MetaListLen (lenname,_,ls,_),_,ns,_) ->
 	  let namesaved =
@@ -452,10 +468,10 @@ let collect_saved =
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
     astfvident astfvexpr astfvfrag astfvfmt astfvassign astfvbinary donothing
     astfvtypeC astfvinit astfvparam astfvdefine_param astfvdecls donothing
-    astfvrule_elem donothing donothing donothing donothing
+    astfvfields donothing astfvrule_elem donothing donothing donothing donothing
 
 (* ---------------------------------------------------------------- *)
 
@@ -530,8 +546,7 @@ let collect_in_plus_term =
 
   let annotated_decl decl =
     match Ast.unwrap decl with
-      Ast.DElem(bef,_,_) -> bef
-    | _ -> failwith "not possible" in
+      Ast.DElem(bef,_,_) -> bef in
 
   let astfvrule_elem recursor k re =
     match Ast.unwrap re with
@@ -578,8 +593,8 @@ let collect_in_plus_term =
     mcode mcode donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing astfvrule_elem astfvstatement donothing donothing
-    donothing
+    donothing donothing donothing donothing donothing astfvrule_elem
+    astfvstatement donothing donothing donothing
 
 let collect_in_plus metavars minirules =
   nub
@@ -822,7 +837,12 @@ let classify_variables metavar_decls minirules used_after =
       Ast.MetaDecl(name,cstr,_,_) ->
 	let (unitary,inherited) = classify name in
 	Ast.rewrap e (Ast.MetaDecl(name,cstr,unitary,inherited))
-    | Ast.MetaField(name,cstr,_,_) ->
+    | _ -> e in
+
+  let field r k e =
+    let e = k e in
+    match Ast.unwrap e with
+      Ast.MetaField(name,cstr,_,_) ->
 	let (unitary,inherited) = classify name in
 	Ast.rewrap e (Ast.MetaField(name,cstr,unitary,inherited))
     | Ast.MetaFieldList(name,Ast.MetaListLen (lenname,cstr,_,_),cstr',_,_) ->
@@ -858,10 +878,10 @@ let classify_variables metavar_decls minirules used_after =
   let fn = V.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode
-      donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing
       ident expression string_fragment string_format assignop binaryop
       donothing typeC
-      init param define_param decl donothing rule_elem
+      init param define_param decl donothing field donothing rule_elem
       donothing donothing donothing donothing in
 
   List.map fn.V.rebuilder_top_level minirules
@@ -1042,9 +1062,10 @@ let astfvs metavars bound =
   V.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
-    donothing donothing astfvstatement_dots donothing donothing
+    donothing donothing astfvstatement_dots donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
+    donothing
     astfvrule_elem astfvstatement astfvcase_line astfvtoplevel donothing
 
 (*
@@ -1128,8 +1149,8 @@ let get_neg_pos_list (_,rule) used_after_list =
     mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing in
+    donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing in
   match rule with
     Ast.CocciRule(_,_,minirules,_,_) ->
       List.map

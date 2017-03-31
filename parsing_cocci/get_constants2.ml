@@ -496,13 +496,22 @@ let do_get_constants constants keywords env (neg_pos,_) =
 
   let declaration r k d =
     match Ast.unwrap d with
-      Ast.MetaDecl(name,_,_,_) | Ast.MetaField(name,_,_,_) ->
+      Ast.MetaDecl(name,_,_,_) ->
 	bind (k d) (minherited name)
-    | Ast.MetaFieldList(name,Ast.MetaListLen(lenname,_,_,_),_,_,_) ->
-	bind (minherited name) (bind (minherited lenname) (k d))
     | Ast.DisjDecl(decls) ->
 	disj_union_all (List.map r.V.combiner_declaration decls)
     | Ast.OptDecl(decl) -> option_default
+    | _ -> k d in
+
+  let field r k d =
+    match Ast.unwrap d with
+      Ast.MetaField(name,_,_,_) ->
+	bind (k d) (minherited name)
+    | Ast.MetaFieldList(name,Ast.MetaListLen(lenname,_,_,_),_,_,_) ->
+	bind (minherited name) (bind (minherited lenname) (k d))
+    | Ast.DisjField(decls) ->
+	disj_union_all (List.map r.V.combiner_field decls)
+    | Ast.OptField(decl) -> option_default
     | _ -> k d in
 
   let initialiser r k i =
@@ -586,10 +595,10 @@ let do_get_constants constants keywords env (neg_pos,_) =
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
     ident expression string_fragment string_format donothing donothing
     fullType typeC initialiser parameter define_parameter declaration donothing
-    rule_elem statement donothing donothing donothing
+    field donothing rule_elem statement donothing donothing donothing
 
 (* ------------------------------------------------------------------------ *)
 
@@ -632,8 +641,7 @@ let all_context =
 
   let annotated_decl decl =
     match Ast.unwrap decl with
-      Ast.DElem(bef,_,_) -> bef
-    | _ -> failwith "not possible" in
+      Ast.DElem(bef,_,_) -> bef in
 
   let rule_elem r k e =
     match Ast.unwrap e with
@@ -656,9 +664,9 @@ let all_context =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing
-    initialiser donothing donothing donothing donothing rule_elem statement
-    donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
+    initialiser donothing donothing donothing donothing donothing donothing
+    rule_elem statement donothing donothing donothing
 
 (* ------------------------------------------------------------------------ *)
 

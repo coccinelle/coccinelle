@@ -457,7 +457,7 @@ and top_typeC tgt opt_allowed typ =
 	  (List.map mcode2arity [lb;rb]) in
       let ty = typeC arity ty in
       let lb = mcode lb in
-      let decls = dots (declaration tgt) decls in
+      let decls = dots (field tgt) decls in
       let rb = mcode rb in
       make_typeC typ tgt arity (Ast0.StructUnionDef(ty,lb,decls,rb))
   | Ast0.TypeName(name) ->
@@ -499,14 +499,6 @@ and declaration tgt decl =
       let arity = all_same true tgt (mcode2line name) [mcode2arity name] in
       let name = mcode name in
       make_decl decl tgt arity (Ast0.MetaDecl(name,cstr,pure))
-  | Ast0.MetaField(name,cstr,pure) ->
-      let arity = all_same true tgt (mcode2line name) [mcode2arity name] in
-      let name = mcode name in
-      make_decl decl tgt arity (Ast0.MetaField(name,cstr,pure))
-  | Ast0.MetaFieldList(name,lenname,cstr,pure) ->
-      let arity = all_same true tgt (mcode2line name) [mcode2arity name] in
-      let name = mcode name in
-      make_decl decl tgt arity (Ast0.MetaFieldList(name,lenname,cstr,pure))
   | Ast0.Init(stg,ty,id,eq,exp,sem) ->
       let arity =
 	all_same true tgt (mcode2line eq)
@@ -602,13 +594,54 @@ and declaration tgt decl =
       then failwith "unexpected code");
       let res = Ast0.ConjDecl(starter,decls,mids,ender) in
       Ast0.rewrap decl res
-  | Ast0.Ddots(dots,whencode) ->
+  | Ast0.OptDecl(_) | Ast0.AsDecl _ ->
+      failwith "unexpected code"
+
+(* --------------------------------------------------------------------- *)
+(* Field declaration *)
+
+and make_field =
+  make_opt
+    (function x -> Ast0.OptField x)
+
+and field tgt decl =
+  match Ast0.unwrap decl with
+    Ast0.MetaField(name,cstr,pure) ->
+      let arity = all_same true tgt (mcode2line name) [mcode2arity name] in
+      let name = mcode name in
+      make_field decl tgt arity (Ast0.MetaField(name,cstr,pure))
+  | Ast0.MetaFieldList(name,lenname,cstr,pure) ->
+      let arity = all_same true tgt (mcode2line name) [mcode2arity name] in
+      let name = mcode name in
+      make_field decl tgt arity (Ast0.MetaFieldList(name,lenname,cstr,pure))
+  | Ast0.Field(ty,id,sem) ->
+      let arity = all_same true tgt (mcode2line sem) [mcode2arity sem] in
+      let ty = typeC arity ty in
+      let id = ident false arity id in
+      let sem = mcode sem in
+      make_field decl tgt arity (Ast0.Field(ty,id,sem))
+  | Ast0.DisjField(starter,decls,mids,ender) ->
+      let decls = List.map (field tgt) decls in
+      (match List.rev decls with
+	_::xs ->
+	  if anyopt xs (function Ast0.OptField(_) -> true | _ -> false)
+	  then fail decl "opt only allowed in the last disjunct"
+      |	_ -> ());
+      let res = Ast0.DisjField(starter,decls,mids,ender) in
+      Ast0.rewrap decl res
+  | Ast0.ConjField(starter,decls,mids,ender) ->
+      let decls = List.map (field tgt) decls in
+      (if anyopt decls (function Ast0.OptField(_) -> true | _ -> false)
+      then failwith "unexpected code");
+      let res = Ast0.ConjField(starter,decls,mids,ender) in
+      Ast0.rewrap decl res
+  | Ast0.Fdots(dots,whencode) ->
       let arity = all_same true tgt (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in
       let whencode =
-        get_option (fun (a,e,b) -> (a,e,declaration Ast0.NONE b)) whencode in
-      make_decl decl tgt arity (Ast0.Ddots(dots,whencode))
-  | Ast0.OptDecl(_) | Ast0.AsDecl _ ->
+        get_option (fun (a,e,b) -> (a,e,field Ast0.NONE b)) whencode in
+      make_field decl tgt arity (Ast0.Fdots(dots,whencode))
+  | Ast0.OptField(_) ->
       failwith "unexpected code"
 
 (* --------------------------------------------------------------------- *)

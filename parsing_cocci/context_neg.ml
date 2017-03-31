@@ -26,6 +26,7 @@ let set_mcodekind x mcodekind =
   | Ast0.DotsParamTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.DotsStmtTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.DotsDeclTag(d) -> Ast0.set_mcodekind d mcodekind
+  | Ast0.DotsFieldTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.DotsCaseTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.DotsDefParamTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.IdentTag(d) -> Ast0.set_mcodekind d mcodekind
@@ -37,6 +38,7 @@ let set_mcodekind x mcodekind =
   | Ast0.TypeCTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.ParamTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.DeclTag(d) -> Ast0.set_mcodekind d mcodekind
+  | Ast0.FieldTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.InitTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.StmtTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.ForInfoTag(d) -> Ast0.set_mcodekind d mcodekind
@@ -57,6 +59,7 @@ let set_index x index =
   | Ast0.DotsParamTag(d) -> Ast0.set_index d index
   | Ast0.DotsStmtTag(d) -> Ast0.set_index d index
   | Ast0.DotsDeclTag(d) -> Ast0.set_index d index
+  | Ast0.DotsFieldTag(d) -> Ast0.set_index d index
   | Ast0.DotsCaseTag(d) -> Ast0.set_index d index
   | Ast0.DotsDefParamTag(d) -> Ast0.set_index d index
   | Ast0.IdentTag(d) -> Ast0.set_index d index
@@ -69,6 +72,7 @@ let set_index x index =
   | Ast0.ParamTag(d) -> Ast0.set_index d index
   | Ast0.InitTag(d) -> Ast0.set_index d index
   | Ast0.DeclTag(d) -> Ast0.set_index d index
+  | Ast0.FieldTag(d) -> Ast0.set_index d index
   | Ast0.StmtTag(d) -> Ast0.set_index d index
   | Ast0.ForInfoTag(d) -> Ast0.set_index d index
   | Ast0.CaseLineTag(d) -> Ast0.set_index d index
@@ -87,6 +91,7 @@ let get_index = function
   | Ast0.DotsParamTag(d) -> Index.parameter_dots d
   | Ast0.DotsStmtTag(d) -> Index.statement_dots d
   | Ast0.DotsDeclTag(d) -> Index.declaration_dots d
+  | Ast0.DotsFieldTag(d) -> Index.field_dots d
   | Ast0.DotsCaseTag(d) -> Index.case_line_dots d
   | Ast0.DotsDefParamTag(d) -> Index.define_param_dots d
   | Ast0.IdentTag(d) -> Index.ident d
@@ -99,6 +104,7 @@ let get_index = function
   | Ast0.ParamTag(d) -> Index.parameterTypeDef d
   | Ast0.InitTag(d) -> Index.initialiser d
   | Ast0.DeclTag(d) -> Index.declaration d
+  | Ast0.FieldTag(d) -> Index.field d
   | Ast0.StmtTag(d) -> Index.statement d
   | Ast0.ForInfoTag(d) -> Index.forinfo d
   | Ast0.CaseLineTag(d) -> Index.case_line d
@@ -170,7 +176,7 @@ let collect_plus_lines top =
       donothing donothing donothing donothing donothing donothing donothing
       donothing
       donothing donothing donothing donothing donothing donothing donothing
-      statement donothing donothing donothing donothing in
+      donothing donothing statement donothing donothing donothing donothing in
   fn.VT0.combiner_rec_top_level top
 
 (* --------------------------------------------------------------------- *)
@@ -385,8 +391,6 @@ let classify is_minus all_marked table code =
 	Ast0.DisjDecl(starter,decls,_,ender)
       | Ast0.ConjDecl(starter,decls,_,ender) ->
 	  disj_cases e starter decls r.VT0.combiner_rec_declaration ender
-      | Ast0.Ddots(dots,whencode) ->
-	  k (Ast0.rewrap e (Ast0.Ddots(dots,None)))
 	(* Need special cases for the following so that the type will be
 	   considered as a unit, rather than distributed around the
 	   declared variable.  This needs to be done because of the call to
@@ -406,6 +410,19 @@ let classify is_minus all_marked table code =
 	  bind (match stg with Some stg -> mcode stg | _ -> option_default)
 	    (bind (r.VT0.combiner_rec_typeC ty)
 	       (bind (r.VT0.combiner_rec_ident id) (mcode sem)))
+      |	_ -> k e) in
+
+  let field r k e =
+    compute_result Ast0.field e
+      (match Ast0.unwrap e with
+	Ast0.DisjField(starter,decls,_,ender)
+      | Ast0.ConjField(starter,decls,_,ender) ->
+	  disj_cases e starter decls r.VT0.combiner_rec_field ender
+      | Ast0.Fdots(dots,whencode) ->
+	  k (Ast0.rewrap e (Ast0.Fdots(dots,None)))
+      | Ast0.Field(ty,id,sem) ->
+	  bind (r.VT0.combiner_rec_typeC ty)
+	    (bind (r.VT0.combiner_rec_ident id) (mcode sem))
       |	_ -> k e) in
 
   let param r k e =
@@ -486,10 +503,11 @@ let classify is_minus all_marked table code =
       mcode mcode mcode mcode mcode
       (do_nothing Ast0.dotsExpr) (do_nothing Ast0.dotsInit)
       (do_nothing Ast0.dotsParam) (do_nothing Ast0.dotsStmt)
-      (do_nothing Ast0.dotsDecl) (do_nothing Ast0.dotsCase)
+      (do_nothing Ast0.dotsDecl) (do_nothing Ast0.dotsField)
+      (do_nothing Ast0.dotsCase)
       (do_nothing Ast0.dotsDefParam)
       ident expression (do_nothing Ast0.assignOp) (do_nothing Ast0.binaryOp)
-      typeC initialiser param declaration
+      typeC initialiser param declaration field
       statement (do_nothing Ast0.forinfo) case_line string_fragment
       (do_top Ast0.top) in
   combiner.VT0.combiner_rec_top_level code
@@ -660,9 +678,7 @@ let equal_fninfo x y =
 
 let equal_declaration d1 d2 =
   match (Ast0.unwrap d1,Ast0.unwrap d2) with
-    (Ast0.MetaDecl(name1,_,_),Ast0.MetaDecl(name2,_,_))
-  | (Ast0.MetaField(name1,_,_),Ast0.MetaField(name2,_,_))
-  | (Ast0.MetaFieldList(name1,_,_,_),Ast0.MetaFieldList(name2,_,_,_)) ->
+    (Ast0.MetaDecl(name1,_,_),Ast0.MetaDecl(name2,_,_)) ->
       equal_mcode name1 name2
   | (Ast0.Init(stg1,_,_,eq1,_,sem1),Ast0.Init(stg2,_,_,eq2,_,sem2)) ->
       equal_option stg1 stg2 && equal_mcode eq1 eq2 && equal_mcode sem1 sem2
@@ -689,12 +705,29 @@ let equal_declaration d1 d2 =
        equal_mcode lp1 lp2 && equal_mcode rp1 rp2 && equal_mcode eq1 eq2
 	 && equal_mcode sem1 sem2
   | (Ast0.TyDecl(_,sem1),Ast0.TyDecl(_,sem2)) -> equal_mcode sem1 sem2
-  | (Ast0.Ddots(dots1,_),Ast0.Ddots(dots2,_)) -> equal_mcode dots1 dots2
   | (Ast0.OptDecl(_),Ast0.OptDecl(_)) -> true
   | (Ast0.DisjDecl(starter1,_,mids1,ender1),
      Ast0.DisjDecl(starter2,_,mids2,ender2))
   | (Ast0.ConjDecl(starter1,_,mids1,ender1),
      Ast0.ConjDecl(starter2,_,mids2,ender2)) ->
+       equal_mcode starter1 starter2 &&
+       List.for_all2 equal_mcode mids1 mids2 &&
+       equal_mcode ender1 ender2
+  | _ -> false
+
+let equal_field d1 d2 =
+  match (Ast0.unwrap d1,Ast0.unwrap d2) with
+     (Ast0.MetaField(name1,_,_),Ast0.MetaField(name2,_,_))
+  | (Ast0.MetaFieldList(name1,_,_,_),Ast0.MetaFieldList(name2,_,_,_)) ->
+      equal_mcode name1 name2
+  | (Ast0.Field(_,_,sem1),Ast0.Field(_,_,sem2)) ->
+      equal_mcode sem1 sem2
+  | (Ast0.Fdots(dots1,_),Ast0.Fdots(dots2,_)) -> equal_mcode dots1 dots2
+  | (Ast0.OptField(_),Ast0.OptField(_)) -> true
+  | (Ast0.DisjField(starter1,_,mids1,ender1),
+     Ast0.DisjField(starter2,_,mids2,ender2))
+  | (Ast0.ConjField(starter1,_,mids1,ender1),
+     Ast0.ConjField(starter2,_,mids2,ender2)) ->
        equal_mcode starter1 starter2 &&
        List.for_all2 equal_mcode mids1 mids2 &&
        equal_mcode ender1 ender2
@@ -870,6 +903,7 @@ let root_equal e1 e2 =
       dots equal_parameterTypeDef d1 d2
   | (Ast0.DotsStmtTag(d1),Ast0.DotsStmtTag(d2)) -> dots equal_statement d1 d2
   | (Ast0.DotsDeclTag(d1),Ast0.DotsDeclTag(d2)) -> dots equal_declaration d1 d2
+  | (Ast0.DotsFieldTag(d1),Ast0.DotsFieldTag(d2)) -> dots equal_field d1 d2
   | (Ast0.DotsCaseTag(d1),Ast0.DotsCaseTag(d2)) -> dots equal_case_line d1 d2
   | (Ast0.DotsDefParamTag(d1),Ast0.DotsDefParamTag(d2)) ->
       dots equal_define_param d1 d2
@@ -880,6 +914,7 @@ let root_equal e1 e2 =
   | (Ast0.ParamTag(p1),Ast0.ParamTag(p2)) -> equal_parameterTypeDef p1 p2
   | (Ast0.InitTag(d1),Ast0.InitTag(d2)) -> equal_initialiser d1 d2
   | (Ast0.DeclTag(d1),Ast0.DeclTag(d2)) -> equal_declaration d1 d2
+  | (Ast0.FieldTag(d1),Ast0.FieldTag(d2)) -> equal_field d1 d2
   | (Ast0.StmtTag(s1),Ast0.StmtTag(s2)) -> equal_statement s1 s2
   | (Ast0.TopTag(t1),Ast0.TopTag(t2)) -> equal_top_level t1 t2
   | (Ast0.IsoWhenTag(_),_) | (_,Ast0.IsoWhenTag(_))
@@ -923,7 +958,8 @@ let contextify_all =
     mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
+    donothing
 
 let contextify_whencode =
   let bind x y = () in

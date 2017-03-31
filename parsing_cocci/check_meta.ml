@@ -238,7 +238,7 @@ and typeC old_metas table minus t =
   | Ast0.StructUnionName(su,Some id) -> ident GLOBAL old_metas table minus id
   | Ast0.StructUnionDef(ty,lb,decls,rb) ->
       typeC old_metas table minus ty;
-      dots (declaration GLOBAL old_metas table minus) decls
+      dots (field GLOBAL old_metas table minus) decls
   | Ast0.OptType(ty) ->
       failwith "unexpected code"
   | _ -> () (* no metavariable subterms *)
@@ -250,11 +250,8 @@ and typeC old_metas table minus t =
 
 and declaration context old_metas table minus d =
   match Ast0.unwrap d with
-    Ast0.MetaDecl(name,_,_) | Ast0.MetaField(name,_,_) ->
+    Ast0.MetaDecl(name,_,_) ->
       check_table table minus name
-  | Ast0.MetaFieldList(name,len,_,_) ->
-      check_table table minus name;
-      check_len table minus len
   | Ast0.AsDecl(decl,asdecl) -> failwith "not generated yet"
   | Ast0.Init(stg,ty,id,eq,ini,sem) ->
       typeC old_metas table minus ty;
@@ -291,10 +288,28 @@ and declaration context old_metas table minus d =
   | Ast0.DisjDecl(_,decls,_,_)
   | Ast0.ConjDecl(_,decls,_,_) ->
       List.iter (declaration ID old_metas table minus) decls
-  | Ast0.Ddots(_,Some (_,_,x)) -> declaration ID old_metas table minus x
-  | Ast0.Ddots(_,None) -> ()
   | Ast0.OptDecl(_) ->
       failwith "unexpected code"
+
+(* --------------------------------------------------------------------- *)
+(* Field declaration *)
+
+and field context old_metas table minus d =
+  match Ast0.unwrap d with
+    Ast0.MetaField(name,_,_) ->
+      check_table table minus name
+  | Ast0.MetaFieldList(name,len,_,_) ->
+      check_table table minus name;
+      check_len table minus len
+  | Ast0.Field(ty,id,sem) ->
+      typeC old_metas table minus ty; ident context old_metas table minus id
+  | Ast0.DisjField(_,decls,_,_)
+  | Ast0.ConjField(_,decls,_,_) ->
+      List.iter (field ID old_metas table minus) decls
+  | Ast0.OptField(_) ->
+      failwith "unexpected code"
+  | Ast0.Fdots(_,Some (_,_,x)) -> field ID old_metas table minus x
+  | Ast0.Fdots(_,None) -> ()
 
 (* --------------------------------------------------------------------- *)
 (* Initialiser *)
@@ -558,7 +573,8 @@ let positions rname table rules =
       mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing in
+      donothing donothing donothing donothing donothing donothing donothing
+      donothing in
 
   List.iter fn.VT0.combiner_rec_top_level rules
 
@@ -601,6 +617,14 @@ let dup_positions rules =
 	  (List.map r.VT0.combiner_rec_declaration decls)
     | _ -> k e in
 
+  let field r k e =
+    match Ast0.unwrap e with
+      Ast0.DisjField(_,decls,_,_)
+    | Ast0.ConjField(_,decls,_,_) ->
+	List.fold_left Common.union_set option_default
+	  (List.map r.VT0.combiner_rec_field decls)
+    | _ -> k e in
+
   let statement r k e =
     match Ast0.unwrap e with
       Ast0.Disj(_,stmts,_,_)
@@ -615,8 +639,8 @@ let dup_positions rules =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
-      donothing expression donothing donothing typeC donothing
-      donothing declaration statement
+      donothing donothing expression donothing donothing typeC donothing
+      donothing declaration field statement
       donothing donothing donothing donothing in
 
   let res =

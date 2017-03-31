@@ -1821,7 +1821,8 @@ let any_modif rule =
       mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing in
+      donothing donothing donothing donothing donothing donothing donothing
+      donothing in
   List.exists fn.VT0.combiner_rec_top_level rule
 
 let eval_virt virt =
@@ -2458,7 +2459,8 @@ let contains_modifs ast =
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing in
+      donothing donothing donothing donothing donothing donothing
+      donothing donothing in
   List.exists
     (function
 	Ast.CocciRule(nm,infos,ast,_,_) ->

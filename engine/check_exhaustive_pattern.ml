@@ -58,15 +58,13 @@ let dumb_astcocci_rule_elem = function
  | A.DisjRuleElem _ -> failwith "not possible - compiled away in asttoctl"
 
 let dumb_astcocci_decl = function
- | A.UnInit (stg, typa, sa, _)     -> ()
+   A.UnInit (stg, typa, sa, _)     -> ()
  | A.Init (stg, typa, sa, _, expa, _) -> ()
  | A.FunProto _ -> ()
  | A.TyDecl (typa, _)     -> ()
  | A.MacroDecl(stg, fn, _, eas, _, _) -> ()
  | A.MacroDeclInit(stg, fn, _, eas, _, _, _, _) -> ()
  | A.MetaDecl _ -> ()
- | A.MetaField _ -> ()
- | A.MetaFieldList _ -> ()
  | A.AsDecl _ -> ()
  | A.Typedef(d,ty1,ty2,pv) -> ()
  | A.DisjDecl xs -> ()
@@ -84,10 +82,16 @@ let dumb_astcocci_initialiser = function (* seems same as the above *)
   | A.DisjDecl(decls) -> ()
   | A.ConjDecl(decls) -> ()
   | A.MetaDecl(name,_,_,_) -> ()
-  | A.MetaField(name,_,_,_) -> ()
-  | A.MetaFieldList(name,_,_,_,_) -> ()
   | A.AsDecl(_,_) -> ()
   | A.OptDecl(decl) -> ()
+
+let dumb_astcocci_field = function
+   A.Field (typa, sa, _)     -> ()
+ | A.MetaField _ -> ()
+ | A.MetaFieldList _ -> ()
+ | A.DisjField xs -> ()
+ | A.ConjField xs -> ()
+ | A.OptField _ -> ()
 
 let dumb_astcocci_expr = function
  | A.MetaExpr (ida,_,_, opttypa, _, _, _bitfield) -> ()

@@ -212,7 +212,7 @@ and base_typeC =
 	string mcode (* { *) * expression dots * string mcode (* } *)
   | StructUnionName of Ast.structUnion mcode * ident option (* name *)
   | StructUnionDef  of typeC (* either StructUnionName or metavar *) *
-	string mcode (* { *) * declaration dots * string mcode (* } *)
+	string mcode (* { *) * field dots * string mcode (* } *)
   | TypeName        of string mcode
   | MetaType        of Ast.meta_name mcode * constraints * pure
   | AsType          of typeC * typeC (* as type, always metavar *)
@@ -232,9 +232,6 @@ and base_declaration =
     (* the following are kept separate from MetaDecls because ultimately
        they don't match the same thing at all.  Consider whether there
        should be a separate type for fields, as in the C AST *)
-  | MetaField of Ast.meta_name mcode * constraints * pure (* structure fields *)
-  | MetaFieldList of Ast.meta_name mcode * listlen * constraints *
-	pure (*structure fields*)
   | AsDecl        of declaration * declaration
   | Init of Ast.storage mcode option * typeC * ident * string mcode (*=*) *
 	initialiser * string mcode (*;*)
@@ -258,12 +255,27 @@ and base_declaration =
 	          string mcode list (* the |s *)  * string mcode
   | ConjDecl   of string mcode * declaration list *
 	          string mcode list (* the &s *)  * string mcode
-  (* Ddots is for a structure declaration *)
-  | Ddots      of string mcode (* ... *) * (string mcode * string mcode *
-	          declaration) option (* whencode *)
   | OptDecl    of declaration
 
 and declaration = base_declaration wrap
+
+(* --------------------------------------------------------------------- *)
+(* Field declaration *)
+
+and base_field =
+  | MetaField  of Ast_cocci.meta_name mcode * constraints *
+	pure (* structure fields *)
+  | MetaFieldList of Ast_cocci.meta_name mcode * listlen * constraints * pure
+  | Field     of typeC * ident * string mcode (* ; *)
+  | DisjField   of string mcode * field list * string mcode list *
+	          string mcode
+  | ConjField   of string mcode * field list * string mcode list *
+	          string mcode
+  | Fdots      of string mcode (* ... *) * (string mcode * string mcode *
+                  field) option (* whencode *)
+  | OptField    of field
+
+and field = base_field wrap
 
 (* --------------------------------------------------------------------- *)
 (* Initializers *)
@@ -517,6 +529,7 @@ and anything =
   | DotsParamTag of parameterTypeDef dots
   | DotsStmtTag of statement dots
   | DotsDeclTag of declaration dots
+  | DotsFieldTag of field dots
   | DotsCaseTag of case_line dots
   | DotsDefParamTag of define_param dots
   | IdentTag of ident
@@ -529,6 +542,7 @@ and anything =
   | ParamTag of parameterTypeDef
   | InitTag of initialiser
   | DeclTag of declaration
+  | FieldTag of field
   | StmtTag of statement
   | ForInfoTag of forinfo
   | CaseLineTag of case_line
@@ -547,6 +561,7 @@ let dotsParam x = DotsParamTag x
 let dotsInit x = DotsInitTag x
 let dotsStmt x = DotsStmtTag x
 let dotsDecl x = DotsDeclTag x
+let dotsField x = DotsFieldTag x
 let dotsCase x = DotsCaseTag x
 let dotsDefParam x = DotsDefParamTag x
 let ident x = IdentTag x
@@ -557,6 +572,7 @@ let typeC x = TypeCTag x
 let param x = ParamTag x
 let ini x = InitTag x
 let decl x = DeclTag x
+let field x = FieldTag x
 let stmt x = StmtTag x
 let forinfo x = ForInfoTag x
 let case_line x = CaseLineTag x

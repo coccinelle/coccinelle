@@ -609,7 +609,7 @@ and typeC t =
       let ty = typeC ty in
       let lb = normal_mcode lb in
       let decls =
-	dots is_decl_dots (Some(promote_mcode lb)) declaration decls in
+	dots is_field_dots (Some(promote_mcode lb)) field decls in
       let rb = normal_mcode rb in
       mkres t (Ast0.StructUnionDef(ty,lb,decls,rb)) ty (promote_mcode rb)
   | Ast0.TypeName(name) ->
@@ -633,25 +633,12 @@ and typeC t =
 (* Even if the Cocci program specifies a list of declarations, they are
    split out into multiple declarations of a single variable each. *)
 
-and is_decl_dots s =
-  match Ast0.unwrap s with
-    Ast0.Ddots(_,_) -> true
-  | _ -> false
-
 and declaration d =
   match Ast0.unwrap d with
     Ast0.MetaDecl(name,a,b) ->
       let name = normal_mcode name in
       let ln = promote_mcode name in
       mkres d (Ast0.MetaDecl(name,a,b)) ln ln
-  | Ast0.MetaField(name,a,b) ->
-      let name = normal_mcode name in
-      let ln = promote_mcode name in
-      mkres d (Ast0.MetaField(name,a,b)) ln ln
-  | Ast0.MetaFieldList(name,a,b,c) ->
-      let name = normal_mcode name in
-      let ln = promote_mcode name in
-      mkres d (Ast0.MetaFieldList(name,a,b,c)) ln ln
   | Ast0.Init(stg,ty,id,eq,exp,sem) ->
       let ty = typeC ty in
       let id = ident id in
@@ -746,14 +733,49 @@ and declaration d =
       do_disj d starter decls mids ender declaration
 	(fun starter decls mids ender ->
 	  Ast0.ConjDecl(starter,decls,mids,ender))
-  | Ast0.Ddots(dots,whencode) ->
-      let dots = bad_mcode dots in
-      let ln = promote_mcode dots in
-      mkres d (Ast0.Ddots(dots,whencode)) ln ln
   | Ast0.OptDecl(decl) ->
       let decl = declaration decl in
       mkres d (Ast0.OptDecl(declaration decl)) decl decl
   | Ast0.AsDecl _ -> failwith "not possible"
+
+(* --------------------------------------------------------------------- *)
+(* Field declaration *)
+
+and is_field_dots s =
+  match Ast0.unwrap s with
+    Ast0.Fdots(_,_) -> true
+  | _ -> false
+
+and field d =
+  match Ast0.unwrap d with
+     Ast0.MetaField(name,a,b) ->
+      let name = normal_mcode name in
+      let ln = promote_mcode name in
+      mkres d (Ast0.MetaField(name,a,b)) ln ln
+  | Ast0.MetaFieldList(name,a,b,c) ->
+      let name = normal_mcode name in
+      let ln = promote_mcode name in
+      mkres d (Ast0.MetaFieldList(name,a,b,c)) ln ln
+  | Ast0.Field(ty,id,sem) ->
+      let ty = typeC ty in
+      let id = ident id in
+      let sem = normal_mcode sem in
+      mkres d (Ast0.Field(ty,id,sem)) ty (promote_mcode sem)
+  | Ast0.DisjField(starter,decls,mids,ender) ->
+      do_disj d starter decls mids ender field
+	(fun starter decls mids ender ->
+	  Ast0.DisjField(starter,decls,mids,ender))
+  | Ast0.ConjField(starter,decls,mids,ender) ->
+      do_disj d starter decls mids ender field
+	(fun starter decls mids ender ->
+	  Ast0.ConjField(starter,decls,mids,ender))
+  | Ast0.OptField(decl) ->
+      let decl = field decl in
+      mkres d (Ast0.OptField(field decl)) decl decl
+  | Ast0.Fdots(dots,whencode) ->
+      let dots = bad_mcode dots in
+      let ln = promote_mcode dots in
+      mkres d (Ast0.Fdots(dots,whencode)) ln ln
 
 (* --------------------------------------------------------------------- *)
 (* Initializer *)

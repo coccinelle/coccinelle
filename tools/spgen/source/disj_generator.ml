@@ -29,6 +29,8 @@ type ident_fn = Ast0.ident -> Snap.t -> Snap.t
 
 type declaration_fn = Ast0.declaration -> Snap.t -> Snap.t
 
+type field_fn = Ast0.field -> Snap.t -> Snap.t
+
 (* ------------------------------------------------------------------------- *)
 (* DISJUNCTION HANDLER *)
 
@@ -198,6 +200,25 @@ let generate_declaration ~strfn ~declfn ~decl ~at_top s =
 
   match Ast0.unwrap decl with
   | Ast0.DisjDecl(lp, dlist, pipes, rp) ->
+      handle_disj
+        ~lp ~rp ~pipes ~cases:dlist
+        ~casefn:decposfn ~singlefn:decposfn ~strfn ~at_top s
+  | _ -> failwith "only disj allowed in here"
+
+(* Returns snapshot that has added generated declaration disjunction rule *)
+let generate_field ~strfn ~fieldfn ~field ~at_top s =
+
+  (* inserts one position if in generation mode *)
+  let decposfn d snp =
+    if Snap.no_gen snp then
+      fieldfn d snp
+    else
+      match PG.field_pos d snp with
+      | Some (dd, snp) -> fieldfn dd snp
+      | None -> failwith "no unpos cases" in
+
+  match Ast0.unwrap field with
+  | Ast0.DisjField(lp, dlist, pipes, rp) ->
       handle_disj
         ~lp ~rp ~pipes ~cases:dlist
         ~casefn:decposfn ~singlefn:decposfn ~strfn ~at_top s

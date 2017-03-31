@@ -367,8 +367,7 @@ let rec propagate_types env =
 
   and process_decl env decl =
     match Ast0.unwrap decl with
-      Ast0.MetaDecl(_,_,_) | Ast0.MetaField(_,_,_)
-    | Ast0.MetaFieldList(_,_,_,_) -> []
+      Ast0.MetaDecl(_,_,_) -> []
     | Ast0.Init(_,ty,id,_,exp,_) ->
 	let _ = (propagate_types env).VT0.combiner_rec_initialiser exp in
 	List.map (function i -> (i,ty)) (strip id)
@@ -386,7 +385,6 @@ let rec propagate_types env =
     | Ast0.DisjDecl(_,disjs,_,_)
     | Ast0.ConjDecl(_,disjs,_,_) ->
 	List.concat(List.map (process_decl env) disjs)
-    | Ast0.Ddots(_,_) -> [] (* not in a statement list anyway *)
     | Ast0.OptDecl(decl) -> process_decl env decl
     | Ast0.AsDecl _ -> failwith "not possible" in
 

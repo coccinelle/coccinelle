@@ -185,9 +185,7 @@ and left_typeC t =
 and left_declaration d =
   modif_before d ||
   match Ast0.unwrap d with
-    Ast0.MetaDecl(name,_,_) | Ast0.MetaField(name,_,_)
-  | Ast0.MetaFieldList(name,_,_,_) ->
-      modif_before_mcode name
+    Ast0.MetaDecl(name,_,_) -> modif_before_mcode name
   | Ast0.Init(Some stg,ty,id,eq,ini,sem) -> modif_before_mcode stg
   | Ast0.Init(None,ty,id,eq,ini,sem) -> left_typeC ty
   | Ast0.UnInit(Some stg,ty,id,sem) -> modif_before_mcode stg
@@ -204,16 +202,13 @@ and left_declaration d =
   | Ast0.Typedef(stg,ty,id,sem) -> modif_before_mcode stg
   | Ast0.DisjDecl(_,decls,_,_) -> List.exists left_declaration decls
   | Ast0.ConjDecl(_,decls,_,_) -> List.exists left_declaration decls
-  | Ast0.Ddots(dots,_) -> false
   | Ast0.OptDecl(decl) -> left_declaration decl
   | Ast0.AsDecl _ -> failwith "not possible"
 
 and right_declaration d =
   modif_before d ||
   match Ast0.unwrap d with
-    Ast0.MetaDecl(name,_,_) | Ast0.MetaField(name,_,_)
-  | Ast0.MetaFieldList(name,_,_,_) ->
-      modif_before_mcode name
+    Ast0.MetaDecl(name,_,_) -> modif_before_mcode name
   | Ast0.Init(_,ty,id,eq,ini,sem) -> modif_after_mcode sem
   | Ast0.UnInit(_,ty,id,sem) -> modif_after_mcode sem
   | Ast0.FunProto(fninfo,name,lp1,params,va,rp1,sem) -> modif_after_mcode sem
@@ -223,9 +218,35 @@ and right_declaration d =
   | Ast0.Typedef(stg,ty,id,sem) -> modif_after_mcode sem
   | Ast0.DisjDecl(_,decls,_,_) -> List.exists right_declaration decls
   | Ast0.ConjDecl(_,decls,_,_) -> List.exists right_declaration decls
-  | Ast0.Ddots(dots,_) -> false
   | Ast0.OptDecl(decl) -> right_declaration decl
   | Ast0.AsDecl _ -> failwith "not possible"
+
+(* --------------------------------------------------------------------- *)
+(* Field declaration *)
+
+and left_field d =
+  modif_before d ||
+  match Ast0.unwrap d with
+    Ast0.MetaField(name,_,_)
+  | Ast0.MetaFieldList(name,_,_,_) ->
+      modif_before_mcode name
+  | Ast0.Field(ty,id,sem) -> left_typeC ty
+  | Ast0.DisjField(_,decls,_,_) -> List.exists left_field decls
+  | Ast0.ConjField(_,decls,_,_) -> List.exists left_field decls
+  | Ast0.OptField(decl) -> left_field decl
+  | Ast0.Fdots(dots,_) -> false
+
+and right_field d =
+  modif_before d ||
+  match Ast0.unwrap d with
+    Ast0.MetaField(name,_,_)
+  | Ast0.MetaFieldList(name,_,_,_) ->
+      modif_before_mcode name
+  | Ast0.Field(ty,id,sem) -> modif_after_mcode sem
+  | Ast0.DisjField(_,decls,_,_) -> List.exists right_field decls
+  | Ast0.ConjField(_,decls,_,_) -> List.exists right_field decls
+  | Ast0.OptField(decl) -> right_field decl
+  | Ast0.Fdots(dots,_) -> false
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
@@ -391,6 +412,15 @@ and contains_only_minus =
 	List.exists r.VT0.combiner_rec_declaration decls
     | _ -> k e in
 
+  let field r k e =
+    mcodekind (Ast0.get_mcodekind e) &&
+    match Ast0.unwrap e with
+      Ast0.DisjField(starter,decls,mids,ender) ->
+	List.for_all r.VT0.combiner_rec_field decls
+    | Ast0.ConjField(starter,decls,mids,ender) ->
+	List.exists r.VT0.combiner_rec_field decls
+    | _ -> k e in
+
   let typeC r k e =
     mcodekind (Ast0.get_mcodekind e) &&
     match Ast0.unwrap e with
@@ -417,9 +447,9 @@ and contains_only_minus =
   V0.flat_combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode mcode
-    dots dots dots dots dots dots dots
+    dots dots dots dots dots dots dots dots
     identifier expression donothing donothing typeC donothing donothing
-    declaration statement donothing case_line donothing donothing
+    declaration field statement donothing case_line donothing donothing
 
 
 (* needs a special case when there is a Disj or an empty DOTS *)

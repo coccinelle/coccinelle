@@ -431,7 +431,7 @@ and typeC ty =
       print_option (function x -> ident x; print_string " ") name
   | Ast.StructUnionDef(ty,lb,decls,rb) ->
       fullType ty; mcode print_string lb;
-      dots force_newline (annotated_decl "") decls;
+      dots force_newline (annotated_field "") decls;
       mcode print_string rb
   | Ast.TypeName(name) -> mcode print_string name; print_string " "
   | Ast.MetaType(name,_,_,_) ->
@@ -480,8 +480,7 @@ and print_named_type ty id =
 
 and declaration d =
   match Ast.unwrap d with
-    Ast.MetaDecl(name,_,_,_) | Ast.MetaField(name,_,_,_)
-  | Ast.MetaFieldList(name,_,_,_,_) ->
+    Ast.MetaDecl(name,_,_,_) ->
       mcode print_meta name
   | Ast.AsDecl(decl,asdecl) -> declaration decl; print_string "@";
       declaration asdecl
@@ -522,9 +521,31 @@ and annotated_decl arity d =
       mcode (function _ -> ()) ((),Ast.no_info,bef,[]);
       print_string arity;
       declaration decl
-  | Ast.Ddots(dots,Some whencode) ->
-      mcode print_string dots; print_string "   when != "; declaration whencode
-  | Ast.Ddots(dots,None) -> mcode print_string dots
+
+(* --------------------------------------------------------------------- *)
+(* Field declaration *)
+
+and field d =
+  match Ast.unwrap d with
+    Ast.MetaField(name,_,_,_)
+  | Ast.MetaFieldList(name,_,_,_,_) ->
+      mcode print_meta name
+  | Ast.Field(ty,id,sem) ->
+      print_named_type ty id;
+      mcode print_string sem
+  | Ast.DisjField(decls) -> print_disj_list field decls "|"
+  | Ast.ConjField(decls) -> print_disj_list field decls "&"
+  | Ast.OptField(decl) -> print_string "?"; field decl
+
+and annotated_field arity d =
+  match Ast.unwrap d with
+    Ast.FElem(bef,allminus,decl) ->
+      mcode (function _ -> ()) ((),Ast.no_info,bef,[]);
+      print_string arity;
+      field decl
+  | Ast.Fdots(dots,Some whencode) ->
+      mcode print_string dots; print_string "   when != "; field whencode
+  | Ast.Fdots(dots,None) -> mcode print_string dots
 
 (* --------------------------------------------------------------------- *)
 (* Initialiser *)
@@ -1028,6 +1049,7 @@ let _ =
     | Ast.LogicalOpTag(x) -> logicalOp x
     | Ast.InitTag(x) -> initialiser x
     | Ast.DeclarationTag(x) -> declaration x
+    | Ast.FieldTag(x) -> field x
     | Ast.StorageTag(x) -> storage x
     | Ast.IncFileTag(x) -> inc_file x
     | Ast.Rule_elemTag(x) -> rule_elem "" x
@@ -1047,6 +1069,7 @@ let _ =
     | Ast.ParamDotsTag(x) -> parameter_list x
     | Ast.StmtDotsTag(x) -> dots (function _ -> ()) (statement "") x
     | Ast.AnnDeclDotsTag(x) -> dots (function _ -> ()) (annotated_decl "") x
+    | Ast.AnnFieldDotsTag(x) -> dots (function _ -> ()) (annotated_field "") x
     | Ast.DefParDotsTag(x) -> dots (function _ -> ()) print_define_param x
     | Ast.TypeCTag(x) -> typeC x
     | Ast.ParamTag(x) -> parameterTypeDef x
