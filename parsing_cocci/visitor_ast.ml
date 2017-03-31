@@ -455,10 +455,15 @@ let combiner bind option_default
       match Ast.unwrap d with
 	Ast.MetaField(name,_,_,_) | Ast.MetaFieldList(name,_,_,_,_) ->
 	  meta_mcode name
-      | Ast.Field(ty,id,sem) ->
+      | Ast.Field(ty,id,bf,sem) ->
 	  let lid = named_type ty id in
+	  let bitfield (c, e) =
+	    let lc = string_mcode c in
+	    let le = expression e in
+	    [lc; le] in
+	  let lbf = Common.default [] bitfield bf in
 	  let lsem = string_mcode sem in
-	  multibind [lid; lsem]
+	  multibind ([lid] @ lbf @ [lsem])
       | Ast.DisjField(decls)
       | Ast.ConjField(decls) -> multibind (List.map field decls)
       | Ast.OptField(decl) -> field decl in
@@ -1353,11 +1358,16 @@ let rebuilder
 	| Ast.MetaFieldList(name,lenname_inh,constraints,keep,inherited) ->
 	    Ast.MetaFieldList
 	      (meta_mcode name,lenname_inh,constraints,keep,inherited)
-	| Ast.Field(ty,id,sem) ->
+	| Ast.Field(ty,id,bf,sem) ->
 	    let lty = fullType ty in
 	    let lid = ident id in
+	    let bitfield (c, e) =
+	      let lc = string_mcode c in
+	      let le = expression e in
+	      (lc, le) in
+	    let lbf = Common.map_option bitfield bf in
 	    let lsem = string_mcode sem in
-	    Ast.Field(lty, lid, lsem)
+	    Ast.Field(lty, lid, lbf, lsem)
 	| Ast.DisjField(decls) -> Ast.DisjField(List.map field decls)
 	| Ast.ConjField(decls) -> Ast.ConjField(List.map field decls)
 	| Ast.OptField(decl) -> Ast.OptField(field decl)) in

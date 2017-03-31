@@ -684,9 +684,11 @@ and field d =
     | Ast0.MetaFieldList(name,lenname,cstr,_) ->
 	let cstr' = constraints cstr in
 	Ast.MetaFieldList(mcode name,do_lenname lenname,cstr',unitary,false)
-    | Ast0.Field(ty,id,sem) ->
+    | Ast0.Field(ty,id,bf,sem) ->
 	let allminus = check_allminus.VT0.combiner_rec_field d in
-	Ast.Field(typeC allminus ty,ident id, mcode sem)
+	let bitfield (c, e) = (mcode c, expression e) in
+	let bf = Common.map_option bitfield bf in
+	Ast.Field(typeC allminus ty,ident id, bf, mcode sem)
     | Ast0.Fdots(dots,whencode) -> failwith "should not be possible"
     | Ast0.DisjField(_,decls,_,_) -> Ast.DisjField(List.map field decls)
     | Ast0.ConjField(_,decls,_,_) -> Ast.ConjField(List.map field decls)

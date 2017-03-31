@@ -530,8 +530,12 @@ and field d =
     Ast.MetaField(name,_,_,_)
   | Ast.MetaFieldList(name,_,_,_,_) ->
       mcode print_meta name
-  | Ast.Field(ty,id,sem) ->
+  | Ast.Field(ty,id,bf,sem) ->
       print_named_type ty id;
+      let bitfield (c, e) =
+	mcode print_string c;
+	expression e in
+      print_option bitfield bf;
       mcode print_string sem
   | Ast.DisjField(decls) -> print_disj_list field decls "|"
   | Ast.ConjField(decls) -> print_disj_list field decls "&"

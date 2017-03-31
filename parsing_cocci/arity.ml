@@ -614,12 +614,14 @@ and field tgt decl =
       let arity = all_same true tgt (mcode2line name) [mcode2arity name] in
       let name = mcode name in
       make_field decl tgt arity (Ast0.MetaFieldList(name,lenname,cstr,pure))
-  | Ast0.Field(ty,id,sem) ->
+  | Ast0.Field(ty,id,bf,sem) ->
       let arity = all_same true tgt (mcode2line sem) [mcode2arity sem] in
       let ty = typeC arity ty in
       let id = ident false arity id in
+      let bitfield (c, e) = (mcode c, expression arity e) in
+      let bf = Common.map_option bitfield bf in
       let sem = mcode sem in
-      make_field decl tgt arity (Ast0.Field(ty,id,sem))
+      make_field decl tgt arity (Ast0.Field(ty,id,bf,sem))
   | Ast0.DisjField(starter,decls,mids,ender) ->
       let decls = List.map (field tgt) decls in
       (match List.rev decls with

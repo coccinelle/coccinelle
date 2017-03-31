@@ -255,7 +255,7 @@ and base_field =
   | MetaField  of Ast_cocci.meta_name mcode * constraints *
 	pure (* structure fields *)
   | MetaFieldList of Ast_cocci.meta_name mcode * listlen * constraints * pure
-  | Field     of typeC * ident * string mcode (* ; *)
+  | Field     of typeC * ident * bitfield option * string mcode (* ; *)
   | DisjField   of string mcode * field list * string mcode list *
 	          string mcode
   | ConjField   of string mcode * field list * string mcode list *
@@ -263,6 +263,8 @@ and base_field =
   | Fdots      of string mcode (* ... *) * (string mcode * string mcode *
                   field) option (* whencode *)
   | OptField    of field
+
+and bitfield = string mcode (* : *) * expression
 
 and field = base_field wrap
 

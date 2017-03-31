@@ -999,10 +999,17 @@ let match_maker checks_needed context_required whencode_allowed =
 	if not(checks_needed) || not(context_required) || is_context d
 	then
 	  match (up,Ast0.unwrap d) with
-	    (Ast0.Field(tya,ida,sc1),Ast0.Field(tyb,idb,sc)) ->
+	    (Ast0.Field(tya,ida,bfa,sc1),Ast0.Field(tyb,idb,bfb,sc)) ->
+	      let match_bitfield bfa bfb =
+		match bfa, bfb with
+		  Some (ca, ea), Some (cb, eb) ->
+		    [check_mcode ca cb; match_expr ea eb]
+		| Some _, None | None, Some _ -> [return false]
+		| None, None -> [] in
 	      conjunct_many_bindings
-		[check_mcode sc1 sc;
-		 match_typeC tya tyb; match_ident ida idb]
+		([check_mcode sc1 sc;
+		  match_typeC tya tyb; match_ident ida idb]
+		 @ match_bitfield bfa bfb)
 	  | (Ast0.DisjField(_,declsa,_,_),_)
 	  | (Ast0.ConjField(_,declsa,_,_),_) ->
 	      failwith "not allowed in the pattern of an isomorphism"

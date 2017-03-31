@@ -301,8 +301,11 @@ and field context old_metas table minus d =
   | Ast0.MetaFieldList(name,len,_,_) ->
       check_table table minus name;
       check_len table minus len
-  | Ast0.Field(ty,id,sem) ->
-      typeC old_metas table minus ty; ident context old_metas table minus id
+  | Ast0.Field(ty,id,bf,sem) ->
+      typeC old_metas table minus ty;
+      ident context old_metas table minus id;
+      let bitfield (c, e) = expression context old_metas table minus e in
+      Common.do_option bitfield bf
   | Ast0.DisjField(_,decls,_,_)
   | Ast0.ConjField(_,decls,_,_) ->
       List.iter (field ID old_metas table minus) decls

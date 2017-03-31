@@ -915,8 +915,12 @@ and field d =
 	    Ast_c.MetaFieldListVal f ->
 	      print_between force_newline pretty_print_c.Pretty_print_c.field f
 	  | _ -> raise (Impossible 150))
-  | Ast.Field(ty,id,sem) ->
+  | Ast.Field(ty,id,bf,sem) ->
       print_named_type ty id;
+      let bitfield (c, e) =
+	mcode print_string c;
+	expression e in
+      Common.do_option bitfield bf;
       mcode print_string sem
   | Ast.DisjField(_) | Ast.ConjField(_) -> raise CantBeInPlus
   | Ast.OptField(decl) -> raise CantBeInPlus

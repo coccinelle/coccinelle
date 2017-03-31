@@ -230,7 +230,7 @@ and left_field d =
     Ast0.MetaField(name,_,_)
   | Ast0.MetaFieldList(name,_,_,_) ->
       modif_before_mcode name
-  | Ast0.Field(ty,id,sem) -> left_typeC ty
+  | Ast0.Field(ty,id,_bf,sem) -> left_typeC ty
   | Ast0.DisjField(_,decls,_,_) -> List.exists left_field decls
   | Ast0.ConjField(_,decls,_,_) -> List.exists left_field decls
   | Ast0.OptField(decl) -> left_field decl
@@ -242,7 +242,7 @@ and right_field d =
     Ast0.MetaField(name,_,_)
   | Ast0.MetaFieldList(name,_,_,_) ->
       modif_before_mcode name
-  | Ast0.Field(ty,id,sem) -> modif_after_mcode sem
+  | Ast0.Field(ty,id,_bf,sem) -> modif_after_mcode sem
   | Ast0.DisjField(_,decls,_,_) -> List.exists right_field decls
   | Ast0.ConjField(_,decls,_,_) -> List.exists right_field decls
   | Ast0.OptField(decl) -> right_field decl

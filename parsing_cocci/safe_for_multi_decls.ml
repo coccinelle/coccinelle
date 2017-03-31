@@ -112,7 +112,7 @@ let field r k e =
   then {e with Ast.safe_for_multi_decls = true}
   else
     match Ast.unwrap e with
-      Ast.Field(ty,_,sem) ->
+      Ast.Field(ty,_,_bf,sem) ->
 	let ft_modif = contains_modif ty in
 	let sem_modif = mcode () sem in
 	if not(ft_modif || sem_modif)

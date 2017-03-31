@@ -86,7 +86,7 @@ let dumb_astcocci_initialiser = function (* seems same as the above *)
   | A.OptDecl(decl) -> ()
 
 let dumb_astcocci_field = function
-   A.Field (typa, sa, _)     -> ()
+   A.Field (typa, sa, _bf, _)     -> ()
  | A.MetaField _ -> ()
  | A.MetaFieldList _ -> ()
  | A.DisjField xs -> ()

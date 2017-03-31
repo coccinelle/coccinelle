@@ -2780,18 +2780,26 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 and onefield = fun allminus decla (declb, iiptvirgb) ->
  X.all_bound (A.get_inherited decla) >&&>
  match A.unwrap decla, declb with
-   A.Field (typa, ida, ptvirga),
+   A.Field (typa, ida, None, ptvirga),
    (B.Simple (Some nameidb, typb), iivirg) ->
      tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
      fullType typa typb >>= (fun typa typb ->
      ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
        return (
-       (A.Field (typa, ida, ptvirga) +>  A.rewrap decla),
+       (A.Field (typa, ida, None, ptvirga) +>  A.rewrap decla),
        ((B.Simple (Some nameidb, typb),iivirg), iiptvirgb)))))
-   | _, (B.BitField (_, _, _, _), _) ->
-       pr2_once "warning: bitfield not handled by ast_cocci";
-       fail
-   | _, (B.Simple (None, _), _) ->
+ | A.Field (typa, ida, Some (ca, ea), ptvirga),
+     (B.BitField (Some nameidb, typb, info, eb), iivirg) ->
+     tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
+     fullType typa typb >>= (fun typa typb ->
+     ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
+     tokenf ca info >>= (fun ca info ->
+     expression ea eb >>= (fun ea eb ->
+       return (
+       (A.Field (typa, ida, Some (ca, ea), ptvirga) +>  A.rewrap decla),
+       ((B.BitField (Some nameidb, typb, info, eb),iivirg), iiptvirgb)))))))
+ | _, (B.Simple (None, _), _)
+ | _, (B.BitField (None, _, _, _), _) ->
        pr2_once "warning: unnamed struct field not handled by ast_cocci";
        fail
 

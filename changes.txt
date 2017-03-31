@@ -48,7 +48,8 @@
 - Allow something identified as a MacroDecl as a structure field.
 - Conjunctions, ie ( & ), for declarations.
 - Optional bitfield annotation on expression meta-variables. Requested by
-  Kumar Gala.
+  Kumar Gala. See tests/bitfield_matching.cocci
+- Bit-field matching, see tests/bitfield.cocci
 ** Features:
 - Better error reporting for unparsable terms when using make_expr etc in
   script code.  Problem reported by Markus Elfring.

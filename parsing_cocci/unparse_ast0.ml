@@ -417,8 +417,12 @@ and field d =
 	Ast0.MetaField(name,_,_)
       | Ast0.MetaFieldList(name,_,_,_) ->
 	  mcode print_meta name
-      | Ast0.Field(ty,id,sem) ->
+      | Ast0.Field(ty,id,bf,sem) ->
 	  print_named_type ty id;
+	  let bitfield (c, e) =
+	    mcode print_string c;
+	    expression e in
+	  Common.do_option bitfield bf;
 	  mcode print_string sem
       | Ast0.DisjField(_,fields,_,_) ->
 	  do_disj fields field "|"

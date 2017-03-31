@@ -420,9 +420,11 @@ let classify is_minus all_marked table code =
 	  disj_cases e starter decls r.VT0.combiner_rec_field ender
       | Ast0.Fdots(dots,whencode) ->
 	  k (Ast0.rewrap e (Ast0.Fdots(dots,None)))
-      | Ast0.Field(ty,id,sem) ->
+      | Ast0.Field(ty,id,bf,sem) ->
+	  let bitfield (_c, e) = r.VT0.combiner_rec_expression e in
 	  bind (r.VT0.combiner_rec_typeC ty)
-	    (bind (r.VT0.combiner_rec_ident id) (mcode sem))
+	    (bind (r.VT0.combiner_rec_ident id)
+	       (bind (Common.default option_default bitfield bf) (mcode sem)))
       |	_ -> k e) in
 
   let param r k e =
@@ -720,7 +722,7 @@ let equal_field d1 d2 =
      (Ast0.MetaField(name1,_,_),Ast0.MetaField(name2,_,_))
   | (Ast0.MetaFieldList(name1,_,_,_),Ast0.MetaFieldList(name2,_,_,_)) ->
       equal_mcode name1 name2
-  | (Ast0.Field(_,_,sem1),Ast0.Field(_,_,sem2)) ->
+  | (Ast0.Field(_,_,_bf1,sem1),Ast0.Field(_,_,_bf2,sem2)) ->
       equal_mcode sem1 sem2
   | (Ast0.Fdots(dots1,_),Ast0.Fdots(dots2,_)) -> equal_mcode dots1 dots2
   | (Ast0.OptField(_),Ast0.OptField(_)) -> true
