@@ -257,9 +257,9 @@ let prepare coccifile code =
       List.fold_left
 	(function ((init,final) as prev) ->
 	  function
-	      Ast_cocci.InitialScriptRule (name,"ocaml",deps,mvs,code) ->
+	      Ast_cocci.InitialScriptRule (name,"ocaml",deps,mvs,_pos,code) ->
 		(Common.union_set mvs init,final)
-	    | Ast_cocci.FinalScriptRule (name,"ocaml",deps,mvs,code) ->
+	    | Ast_cocci.FinalScriptRule (name,"ocaml",deps,mvs,_pos,code) ->
 		(init,Common.union_set mvs final)
 	    | _ -> prev)
 	([],[]) code in
@@ -269,7 +269,7 @@ let prepare coccifile code =
     List.fold_left
       (function prev ->
 	function
-	    Ast_cocci.InitialScriptRule (name,"ocaml",deps,mvs,code) ->
+	    Ast_cocci.InitialScriptRule (name,"ocaml",deps,mvs,_pos,code) ->
 	      code :: prev
 	  | _ -> prev)
       [] code in
@@ -278,7 +278,7 @@ let prepare coccifile code =
     List.fold_left
       (function prev ->
 	function
-	    Ast_cocci.FinalScriptRule (name,"ocaml",deps,mvs,code) ->
+	    Ast_cocci.FinalScriptRule (name,"ocaml",deps,mvs,_pos,code) ->
 	      (name,mvs,code) :: prev
 	  | _ -> prev)
       [] code in
@@ -287,30 +287,23 @@ let prepare coccifile code =
     List.fold_left
       (function prev ->
 	function
-	    Ast_cocci.ScriptRule (name,"ocaml",deps,mv,script_vars,code) ->
+	    Ast_cocci.ScriptRule (name,"ocaml",deps,mv,script_vars,_pos,code) ->
 	      (name,mv,script_vars,code) :: prev
 	  | _ -> prev)
       [] code in
   let other_rules = List.rev other_rules in
-  let add_constraint_rules prev (kind, name, script_name, lang, params, body) =
+  let add_constraint_rules prev
+      (posvar, self, (script_name, lang, params, pos, body)) =
     if lang = "ocaml" then
-      let ((r,nm) as self) = Ast.unwrap_mcode name in
+      let kind =
+	if posvar then Ast_cocci.MetaPosDecl (Ast_cocci.NONE, self)
+	else Ast_cocci.MetaIdDecl (Ast_cocci.NONE, self) in
       let self = (self, kind) in
       (script_name, self::params, body) :: prev
     else
       prev in
   let constraint_rules =
-    List.fold_left
-      (function prev ->
-	function
-	    Ast.CocciRule(_,_,code,_,_) ->
-	      List.fold_left
-		(fun accu toplevel ->
-		  List.fold_left add_constraint_rules prev
-		    (Parse_cocci.enumerate_constraint_scripts toplevel))
-		prev code
-	  | _ -> prev)
-      [] code in
+    List.fold_left add_constraint_rules [] !Data.constraint_scripts in
   if init_rules = [] && other_rules = [] && constraint_rules = []
       && final_rules = []
   then None

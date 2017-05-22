@@ -196,7 +196,7 @@ let rec constraints_to_buffer ~rn buffer cstr =
       Printf.bprintf buffer "= %s" (string_of_operator_constraint item)
   | Ast.CstrMeta_name mn -> Printf.bprintf buffer "= %s" (name_str ~rn mn)
   | Ast.CstrRegexp (s, _) -> Printf.bprintf buffer "=~ \"%s\"" s
-  | Ast.CstrScript (_, lang, params, code) ->
+  | Ast.CstrScript (_, lang, params, _pos, code) ->
       Printf.bprintf buffer ": script:%s (%s) {%s}" lang
 	(String.concat "," (List.map (fun (nm,_) -> name_str ~rn nm) params))
 	code
@@ -292,7 +292,7 @@ let mcode ~rn ~mc:(_,_,_,_,pos,_) =
 
     (* extracting the node is equivalent to calling Ast0.unwrap *)
     function
-    | Ast0.ExprTag {Ast0.node = Ast0.MetaExpr((mn,_,_,_,p,_),_,_,_,_); _} ->
+    | Ast0.ExprTag {Ast0.node = Ast0.MetaExpr((mn,_,_,_,p,_),_,_,_,_,_); _} ->
         handle_metavar ~typ:"expression " ~mn ~positions:!p ~set
     | Ast0.StmtTag {Ast0.node = Ast0.MetaStmt((mn,_,_,_,p,_),_,_); _} ->
         handle_metavar ~typ:"statement " ~mn ~positions:!p ~set
@@ -379,6 +379,7 @@ let metavar_combiner rn =
   let dotsparamfn = donothing in
   let dotsstmtfn = donothing in
   let dotsdeclfn = donothing in
+  let dotsfieldfn = donothing in
   let dotscasefn = donothing in
   let dotsdefparfn = donothing in
   let forinfofn = donothing in
@@ -440,7 +441,7 @@ let metavar_combiner rn =
     | Ast0.MetaErr (mc, constr, _) ->
         let constr = constraints ~rn constr in
         meta_mc_format ~mc ~typ:"error " ~constr
-    | Ast0.MetaExpr (mc, constr, typeclist, form, _) ->
+    | Ast0.MetaExpr (mc, constr, typeclist, form, _, _bitfield) ->
         let typeclist' =
           Common.map_option (List.map (Ast0toast.typeC false)) typeclist in
 
@@ -521,14 +522,9 @@ let metavar_combiner rn =
 
   let declfn c fn v =
     match Ast0.unwrap v with
-    | Ast0.MetaDecl(mc, idconstr, pure) ->
+      Ast0.MetaDecl(mc, idconstr, pure) ->
         let constr = constraints ~rn idconstr in
         meta_mc_format ~mc ~typ:"declaration " ~constr
-    | Ast0.MetaField(mc, idconstr, pure) ->
-        let constr = constraints ~rn idconstr in
-	meta_mc_format ~mc ~typ:"field " ~constr
-    | Ast0.MetaFieldList (mc, listlen, _, pure) ->
-        lst_format ~mc ~typ:"field list" ~listlen
     | Ast0.AsDecl(dc1, dc2) ->
         let dec = c.VT0.combiner_rec_declaration in as_format dc1 dc2 dec dec
     | Ast0.MacroDecl(_, id, _, expdots, _, _) ->
@@ -539,6 +535,15 @@ let metavar_combiner rn =
         let inid = MVSet.union expids (c.VT0.combiner_rec_initialiser ini) in
         let declids = ids ~rn ~typ:"declarer" ~id in
       MVSet.union declids inid
+    | _ -> fn v in
+
+  let fieldfn c fn v =
+    match Ast0.unwrap v with
+      Ast0.MetaField(mc, idconstr, pure) ->
+        let constr = constraints ~rn idconstr in
+	meta_mc_format ~mc ~typ:"field " ~constr
+    | Ast0.MetaFieldList (mc, listlen, _, pure) ->
+        lst_format ~mc ~typ:"field list" ~listlen
     | _ -> fn v in
 
   let string_fragmentfn c fn v =
@@ -558,10 +563,10 @@ let metavar_combiner rn =
     meta_mcode string_mcode const_mcode simpleAssign_mcode opAssign_mcode
     fix_mcode unary_mcode arithOp_mcode logicalOp_mcode cv_mcode sign_mcode
     struct_mcode storage_mcode inc_mcode
-    dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotscasefn
-    dotsdefparfn
-    identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn declfn stmtfn
-    forinfofn casefn string_fragmentfn topfn
+    dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotsfieldfn
+    dotscasefn dotsdefparfn
+    identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn declfn fieldfn
+    stmtfn forinfofn casefn string_fragmentfn topfn
 
 
 (* ------------------------------------------------------------------------- *)

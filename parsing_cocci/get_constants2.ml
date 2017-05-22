@@ -446,10 +446,10 @@ let do_get_constants constants keywords env (neg_pos,_) =
 	    Some strs -> constants (String.concat "" (List.rev strs))
 	  | None ->  option_default)
 	*)
-    | Ast.MetaExpr(name,_,_,Some type_list,_,_) ->
+    | Ast.MetaExpr(name,_,_,Some type_list,_,_,_) ->
 	let types = List.fold_left type_collect option_default type_list in
 	bind (k e) (bind (minherited name) types)
-    | Ast.MetaErr(name,_,_,_) | Ast.MetaExpr(name,_,_,_,_,_) ->
+    | Ast.MetaErr(name,_,_,_) | Ast.MetaExpr(name,_,_,_,_,_,_) ->
 	bind (k e) (minherited name)
     | Ast.MetaExprList(name,Ast.MetaListLen (lenname,_,_,_),_,_,_) ->
 	bind (k e) (bind (minherited name) (minherited lenname))
@@ -496,13 +496,22 @@ let do_get_constants constants keywords env (neg_pos,_) =
 
   let declaration r k d =
     match Ast.unwrap d with
-      Ast.MetaDecl(name,_,_,_) | Ast.MetaField(name,_,_,_) ->
+      Ast.MetaDecl(name,_,_,_) ->
 	bind (k d) (minherited name)
-    | Ast.MetaFieldList(name,Ast.MetaListLen(lenname,_,_,_),_,_,_) ->
-	bind (minherited name) (bind (minherited lenname) (k d))
     | Ast.DisjDecl(decls) ->
 	disj_union_all (List.map r.V.combiner_declaration decls)
     | Ast.OptDecl(decl) -> option_default
+    | _ -> k d in
+
+  let field r k d =
+    match Ast.unwrap d with
+      Ast.MetaField(name,_,_,_) ->
+	bind (k d) (minherited name)
+    | Ast.MetaFieldList(name,Ast.MetaListLen(lenname,_,_,_),_,_,_) ->
+	bind (minherited name) (bind (minherited lenname) (k d))
+    | Ast.DisjField(decls) ->
+	disj_union_all (List.map r.V.combiner_field decls)
+    | Ast.OptField(decl) -> option_default
     | _ -> k d in
 
   let initialiser r k i =
@@ -586,23 +595,27 @@ let do_get_constants constants keywords env (neg_pos,_) =
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
     ident expression string_fragment string_format donothing donothing
     fullType typeC initialiser parameter define_parameter declaration donothing
-    rule_elem statement donothing donothing donothing
+    field donothing rule_elem statement donothing donothing donothing
 
 (* ------------------------------------------------------------------------ *)
 
 (* true means the rule should be analyzed, false means it should be ignored *)
-let rec dependencies env = function
-    Ast.Dep s -> (try List.assoc s env with Not_found -> False)
-  | Ast.AntiDep s -> True
-  | Ast.EverDep s -> (try List.assoc s env with Not_found -> False)
-  | Ast.NeverDep s -> True
-  | Ast.AndDep (d1,d2) -> build_and (dependencies env d1) (dependencies env d2)
-  | Ast.OrDep (d1,d2) -> build_or (dependencies env d1) (dependencies env d2)
-  | Ast.FileIn _ | Ast.NotFileIn _ | Ast.NoDep -> True
+let rec dependencies env d =
+  let rec loop = function
+      Ast.Dep s -> (try List.assoc s env with Not_found -> False)
+    | Ast.AntiDep s -> True
+    | Ast.EverDep s -> (try List.assoc s env with Not_found -> False)
+    | Ast.NeverDep s -> True
+    | Ast.AndDep (d1,d2) -> build_and (loop d1) (loop d2)
+    | Ast.OrDep (d1,d2) -> build_or (loop d1) (loop d2)
+    | Ast.FileIn _ | Ast.NotFileIn _ -> True in
+  match d with
+    Ast.NoDep -> True
   | Ast.FailDep -> False
+  | Ast.ExistsDep d | Ast.ForallDep d -> loop d
 
 (* ------------------------------------------------------------------------ *)
 
@@ -628,8 +641,7 @@ let all_context =
 
   let annotated_decl decl =
     match Ast.unwrap decl with
-      Ast.DElem(bef,_,_) -> bef
-    | _ -> failwith "not possible" in
+      Ast.DElem(bef,_,_) -> bef in
 
   let rule_elem r k e =
     match Ast.unwrap e with
@@ -652,9 +664,9 @@ let all_context =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing
-    initialiser donothing donothing donothing donothing rule_elem statement
-    donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
+    initialiser donothing donothing donothing donothing donothing donothing
+    rule_elem statement donothing donothing donothing
 
 (* ------------------------------------------------------------------------ *)
 
@@ -700,7 +712,7 @@ let debug_deps nm deps res =
       Printf.fprintf stderr "Rule: %s\n" nm;
       Printf.fprintf stderr "Dependecies: %s\n"
 	(Common.format_to_string
-	   (function _ -> Pretty_print_cocci.dep true deps));
+	   (function _ -> Pretty_print_cocci.dependency deps));
       Printf.fprintf stderr "Result: %s\n\n" (dep2c res)
     end
 
@@ -709,18 +721,30 @@ let run rules neg_pos_vars =
     List.fold_left
       (function (rest_info,env,locals(*dom of env*)) ->
         function
-	    (Ast.ScriptRule (nm,_,deps,mv,_,_),_) ->
+	    (Ast.ScriptRule (nm,_,deps,mv,_,_,_),_) ->
 	      let extra_deps =
 		List.fold_left
 		  (function prev ->
 		    function
 			(_,("virtual",_),_,_) -> prev
-		      | (_,(rule,_),_,Ast.NoMVInit) ->
-			  Ast.AndDep (Ast.Dep rule,prev)
+		      | (_,(rule,_),_,Ast.NoMVInit) -> Ast.Dep rule :: prev
 		      | (_,(rule,_),_,_) ->
 			  (* default initializer, so no dependency *)
 			  prev)
-		  deps mv in
+		  [] mv in
+	      let extra_deps =
+		match extra_deps with
+		  [] -> deps
+		| x::xs ->
+		    let extra_deps =
+		      List.fold_left (fun prev x -> Ast.AndDep(x,prev)) x xs in
+		    match deps with
+		      Ast.NoDep -> Ast.ExistsDep(extra_deps)
+		    | Ast.FailDep -> Ast.FailDep
+		    | Ast.ExistsDep d ->
+			Ast.ExistsDep(Ast.AndDep(d,extra_deps))
+		    | Ast.ForallDep d ->
+			Ast.ForallDep(Ast.AndDep(d,extra_deps)) in
 	      let dependencies = dependencies env extra_deps in
 	      debug_deps nm extra_deps dependencies;
 	      (match dependencies with
@@ -728,8 +752,8 @@ let run rules neg_pos_vars =
 		  (rest_info, (nm,True)::env, nm::locals)
 	      | dependencies ->
 		  (build_or dependencies rest_info, env, locals))
-          | (Ast.InitialScriptRule (_,_,deps,_,_),_)
-	  | (Ast.FinalScriptRule (_,_,deps,_,_),_) ->
+          | (Ast.InitialScriptRule (_,_,deps,_,_,_),_)
+	  | (Ast.FinalScriptRule (_,_,deps,_,_,_),_) ->
 	      (* initialize and finalize dependencies are irrelevant to
 		 get_constants *)
 	      (* only possible metavariables are virtual *)

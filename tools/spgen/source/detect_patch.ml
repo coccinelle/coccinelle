@@ -100,6 +100,7 @@ let patch_combiner =
   let dotsinitfn = donothing in
   let dotsparamfn = donothing in
   let dotsdeclfn = donothing in
+  let dotsfieldfn = donothing in
   let dotscasefn = donothing in
   let dotsdefparfn = donothing in
   let assignOpfn = donothing in
@@ -135,6 +136,12 @@ let patch_combiner =
         handle_disj lp rp pipelist decllist c.VT0.combiner_rec_declaration
     | _ -> fn v in
 
+  let fieldfn c fn v =
+    match Ast0.unwrap v with
+    | Ast0.DisjField(lp, decllist, pipelist, rp) ->
+        handle_disj lp rp pipelist decllist c.VT0.combiner_rec_field
+    | _ -> fn v in
+
   let casefn c fn v =
     match Ast0.unwrap v with
     | Ast0.DisjCase(lp, caselist, pipelist, rp) ->
@@ -151,10 +158,10 @@ let patch_combiner =
     meta_mcode string_mcode const_mcode simpleAssign_mcode opAssign_mcode
     fix_mcode unary_mcode arithOp_mcode logicalOp_mcode cv_mcode sign_mcode
     struct_mcode storage_mcode inc_mcode
-    dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotscasefn
-    dotsdefparfn
-    identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn declfn stmtfn
-    forinfofn casefn string_fragmentfn topfn
+    dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotsfieldfn
+    dotscasefn dotsdefparfn
+    identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn declfn fieldfn
+    stmtfn forinfofn casefn string_fragmentfn topfn
 
 
 (* ------------------------------------------------------------------------- *)

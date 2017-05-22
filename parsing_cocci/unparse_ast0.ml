@@ -234,7 +234,7 @@ let rec expression e =
 	  mcode print_string_box lp; typeC ty; close_box();
 	  mcode print_string rp; initialiser init
       | Ast0.MetaErr(name,_,_) -> mcode print_meta name
-      | Ast0.MetaExpr(name,_,ty,_,_pure) ->
+      | Ast0.MetaExpr(name,_,ty,_,_pure,_bitfield) ->
 	  mcode print_meta name; print_types ty(*;
 	  print_string "^";
 	  (match pure with
@@ -327,7 +327,7 @@ and typeC t =
 	  print_option (function x -> ident x; print_string " ") name
       | Ast0.StructUnionDef(ty,lb,decls,rb) ->
 	  typeC ty; mcode print_string lb;
-	  dots force_newline declaration decls;
+	  dots force_newline field decls;
 	  mcode print_string rb
       | Ast0.TypeName(name)-> mcode print_string name; print_string " "
       | Ast0.MetaType(name,_,_)-> mcode print_meta name; print_string " "
@@ -363,8 +363,7 @@ and declaration d =
   print_context d
     (function _ ->
       match Ast0.unwrap d with
-	Ast0.MetaDecl(name,_,_) | Ast0.MetaField(name,_,_)
-      | Ast0.MetaFieldList(name,_,_,_) ->
+	Ast0.MetaDecl(name,_,_) ->
 	  mcode print_meta name
       |	Ast0.Init(stg,ty,id,eq,ini,sem) ->
 	  print_option (mcode U.storage) stg;
@@ -400,15 +399,46 @@ and declaration d =
 	  mcode print_string sem
       | Ast0.DisjDecl(_,decls,_,_) ->
 	  do_disj decls declaration "|"
-      | Ast0.Ddots(dots,Some (_,_,whencode)) ->
-	  mcode print_string dots; print_string "   when != ";
-	  declaration whencode
-      | Ast0.Ddots(dots,None) -> mcode print_string dots
+      | Ast0.ConjDecl(_,decls,_,_) ->
+	  do_disj decls declaration "&"
       | Ast0.OptDecl(decl) -> print_string "?"; declaration decl
       | Ast0.AsDecl(decl,asdecl) ->
 	  declaration decl; print_string "@"; declaration asdecl)
 
 and declaration_dots l = dots (function _ -> ()) declaration l
+
+(* --------------------------------------------------------------------- *)
+(* Field declaration *)
+
+and field d =
+  print_context d
+    (function _ ->
+      match Ast0.unwrap d with
+	Ast0.MetaField(name,_,_)
+      | Ast0.MetaFieldList(name,_,_,_) ->
+	  mcode print_meta name
+      | Ast0.Field(ty,id,bf,sem) ->
+	  begin
+	    match id with
+	      None -> typeC ty
+	    | Some id -> print_named_type ty id
+	  end;
+	  let bitfield (c, e) =
+	    mcode print_string c;
+	    expression e in
+	  Common.do_option bitfield bf;
+	  mcode print_string sem
+      | Ast0.DisjField(_,fields,_,_) ->
+	  do_disj fields field "|"
+      | Ast0.ConjField(_,fields,_,_) ->
+	  do_disj fields field "&"
+      | Ast0.OptField(decl) -> print_string "?"; field decl
+      | Ast0.Fdots(dots,Some (_,_,whencode)) ->
+	  mcode print_string dots; print_string "   when != ";
+	  field whencode
+      | Ast0.Fdots(dots,None) -> mcode print_string dots)
+
+and field_dots l = dots (function _ -> ()) field l
 
 (* --------------------------------------------------------------------- *)
 (* Initialiser *)
@@ -738,6 +768,7 @@ let rec unparse_anything x =
       print_string "StmDots:"; force_newline();
       statement_dots d
   | Ast0.DotsDeclTag(d) -> declaration_dots d
+  | Ast0.DotsFieldTag(d) -> field_dots d
   | Ast0.DotsCaseTag(d) -> case_dots d
   | Ast0.DotsDefParamTag(d) -> define_param_dots d
   | Ast0.IdentTag(d)    -> ident d
@@ -752,6 +783,7 @@ let rec unparse_anything x =
   | Ast0.ParamTag(d) -> parameterTypeDef d
   | Ast0.InitTag(d)  -> initialiser d
   | Ast0.DeclTag(d)  -> declaration d
+  | Ast0.FieldTag(d)  -> field d
   | Ast0.StmtTag(d)  ->
       print_string "Stm:"; force_newline();
       statement "" d

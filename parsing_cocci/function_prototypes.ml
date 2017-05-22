@@ -66,7 +66,8 @@ let drop_positions =
     mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing in
+    donothing donothing donothing donothing donothing donothing donothing
+    donothing in
   res.VT0.rebuilder_rec_statement
 
 let get_all_functions rule =
@@ -169,8 +170,9 @@ and strip =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
+    donothing
     ident donothing donothing donothing typeC donothing param
-    donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
 
 and changed_proto = function
     (mname,mdef,mproto,None) -> true
@@ -193,7 +195,8 @@ let collect_ident_strings id =
       mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing in
+      donothing donothing donothing donothing donothing donothing donothing
+      donothing in
       v.VT0.combiner_rec_ident id
 
 let right_attach_mcode strings (x,ar,info,mc,pos,adj) =
@@ -500,7 +503,7 @@ let process rule_name rule_metavars dropped_isos minus plus ruletype =
 	       (metavars,
 		Ast.CocciRule
 		  ("proto for "^rule_name,
-		   (Ast.Dep rule_name,dropped_isos,Ast.Forall),
+		   (Ast.ExistsDep(Ast.Dep rule_name),dropped_isos,Ast.Forall),
 		   [mk_ast_code x],
 		   [false],ruletype)))
 	| x::_ ->
@@ -508,7 +511,7 @@ let process rule_name rule_metavars dropped_isos minus plus ruletype =
 	    let res =
               Ast.CocciRule
 		("proto for "^rule_name,
-		 (Ast.Dep rule_name,dropped_isos,Ast.Forall),
+		 (Ast.ExistsDep(Ast.Dep rule_name),dropped_isos,Ast.Forall),
 		 [mk_ast_code (Ast.rewrap x (Ast.Disj drules))],
 		 [false],ruletype) in
 	    ((mdef_metavars,minus),Some(metavars,res))

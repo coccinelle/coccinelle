@@ -260,7 +260,7 @@ let rec expression e =
       mcode print_string rp; initialiser init
 
   | Ast.MetaErr(name,_,_,_) -> mcode print_meta name
-  | Ast.MetaExpr(name,_,keep,ty,form,inherited) ->
+  | Ast.MetaExpr(name,_,keep,ty,form,inherited,_) ->
       mcode print_meta name; print_type keep inherited ty
   | Ast.MetaExprList(name,_,_,_,_) -> mcode print_meta name
   | Ast.AsExpr(exp,asexp) -> expression exp; print_string "@"; expression asexp
@@ -431,7 +431,7 @@ and typeC ty =
       print_option (function x -> ident x; print_string " ") name
   | Ast.StructUnionDef(ty,lb,decls,rb) ->
       fullType ty; mcode print_string lb;
-      dots force_newline (annotated_decl "") decls;
+      dots force_newline (annotated_field "") decls;
       mcode print_string rb
   | Ast.TypeName(name) -> mcode print_string name; print_string " "
   | Ast.MetaType(name,_,_,_) ->
@@ -480,8 +480,7 @@ and print_named_type ty id =
 
 and declaration d =
   match Ast.unwrap d with
-    Ast.MetaDecl(name,_,_,_) | Ast.MetaField(name,_,_,_)
-  | Ast.MetaFieldList(name,_,_,_,_) ->
+    Ast.MetaDecl(name,_,_,_) ->
       mcode print_meta name
   | Ast.AsDecl(decl,asdecl) -> declaration decl; print_string "@";
       declaration asdecl
@@ -513,6 +512,7 @@ and declaration d =
       mcode print_string stg; print_string " "; fullType ty; typeC id;
       mcode print_string sem
   | Ast.DisjDecl(decls) -> print_disj_list declaration decls "|"
+  | Ast.ConjDecl(decls) -> print_disj_list declaration decls "&"
   | Ast.OptDecl(decl) -> print_string "?"; declaration decl
 
 and annotated_decl arity d =
@@ -521,9 +521,39 @@ and annotated_decl arity d =
       mcode (function _ -> ()) ((),Ast.no_info,bef,[]);
       print_string arity;
       declaration decl
-  | Ast.Ddots(dots,Some whencode) ->
-      mcode print_string dots; print_string "   when != "; declaration whencode
-  | Ast.Ddots(dots,None) -> mcode print_string dots
+
+(* --------------------------------------------------------------------- *)
+(* Field declaration *)
+
+and field d =
+  match Ast.unwrap d with
+    Ast.MetaField(name,_,_,_)
+  | Ast.MetaFieldList(name,_,_,_,_) ->
+      mcode print_meta name
+  | Ast.Field(ty,id,bf,sem) ->
+      begin
+	match id with
+	  None -> fullType ty
+	| Some id -> print_named_type ty id
+      end;
+      let bitfield (c, e) =
+	mcode print_string c;
+	expression e in
+      print_option bitfield bf;
+      mcode print_string sem
+  | Ast.DisjField(decls) -> print_disj_list field decls "|"
+  | Ast.ConjField(decls) -> print_disj_list field decls "&"
+  | Ast.OptField(decl) -> print_string "?"; field decl
+
+and annotated_field arity d =
+  match Ast.unwrap d with
+    Ast.FElem(bef,allminus,decl) ->
+      mcode (function _ -> ()) ((),Ast.no_info,bef,[]);
+      print_string arity;
+      field decl
+  | Ast.Fdots(dots,Some whencode) ->
+      mcode print_string dots; print_string "   when != "; field whencode
+  | Ast.Fdots(dots,None) -> mcode print_string dots
 
 (* --------------------------------------------------------------------- *)
 (* Initialiser *)
@@ -934,9 +964,9 @@ let unparse_cocci_mv rule = function
       print_name rule r n; print_string ";"
   | Ast.MetaErrDecl(_,(r,n)) ->
       print_string "error "; print_name rule r n; print_string ";"
-  | Ast.MetaExpDecl(_,(r,n),None) ->
+  | Ast.MetaExpDecl(_,(r,n),None,_bitfield) ->
       print_string "expression "; print_name rule r n; print_string ";"
-  | Ast.MetaExpDecl(_,(r,n),ty) ->
+  | Ast.MetaExpDecl(_,(r,n),ty,_bitfield) ->
       (match ty with
 	None -> ()
       | Some ty -> (* unknown only possible when there is only one type? *)
@@ -1027,6 +1057,7 @@ let _ =
     | Ast.LogicalOpTag(x) -> logicalOp x
     | Ast.InitTag(x) -> initialiser x
     | Ast.DeclarationTag(x) -> declaration x
+    | Ast.FieldTag(x) -> field x
     | Ast.StorageTag(x) -> storage x
     | Ast.IncFileTag(x) -> inc_file x
     | Ast.Rule_elemTag(x) -> rule_elem "" x
@@ -1046,6 +1077,7 @@ let _ =
     | Ast.ParamDotsTag(x) -> parameter_list x
     | Ast.StmtDotsTag(x) -> dots (function _ -> ()) (statement "") x
     | Ast.AnnDeclDotsTag(x) -> dots (function _ -> ()) (annotated_decl "") x
+    | Ast.AnnFieldDotsTag(x) -> dots (function _ -> ()) (annotated_field "") x
     | Ast.DefParDotsTag(x) -> dots (function _ -> ()) print_define_param x
     | Ast.TypeCTag(x) -> typeC x
     | Ast.ParamTag(x) -> parameterTypeDef x
@@ -1058,25 +1090,31 @@ let rec dep in_and = function
   | Ast.EverDep(s) -> print_string "ever "; print_string s
   | Ast.NeverDep(s) -> print_string "never "; print_string s
   | Ast.AndDep(s1,s2) ->
-      let print_and _ = dep true s1; print_string " && "; dep true s2 in
+      let print_and _ =
+	dep true s1; print_string " && "; dep true s2 in
       if in_and
       then print_and ()
       else (print_string "("; print_and(); print_string ")")
   | Ast.OrDep(s1,s2) ->
-      let print_or _ = dep false s1; print_string " || "; dep false s2 in
+      let print_or _ =
+	dep false s1; print_string " || "; dep false s2 in
       if not in_and
       then print_or ()
       else (print_string "("; print_or(); print_string ")")
   | Ast.FileIn s -> print_string "file in "; print_string s
   | Ast.NotFileIn s -> print_string "not file in "; print_string s
-  | Ast.NoDep   -> print_string "no_dep"
+
+let dependency = function
+    Ast.NoDep   -> print_string "no_dep"
   | Ast.FailDep -> print_string "fail_dep"
+  | Ast.ExistsDep d -> dep true d
+  | Ast.ForallDep d -> print_string "forall "; dep true d
 
 let script_header str lang deps mv code =
   print_string (Printf.sprintf "@%s:%s" str lang);
   (match deps with
     Ast.NoDep -> ()
-  | _ -> print_string " depends on "; dep true deps);
+  | _ -> print_string " depends on "; dependency deps);
   print_string "@";
   force_newline();
   List.iter
@@ -1108,18 +1146,18 @@ let script_header str lang deps mv code =
 
 let unparse mvs z =
   match z with
-    Ast.InitialScriptRule (name,lang,deps,mv,code) ->
+    Ast.InitialScriptRule (name,lang,deps,mv,_pos,code) ->
       script_header "initialize" lang deps mv code
-  | Ast.FinalScriptRule (name,lang,deps,mv,code) ->
+  | Ast.FinalScriptRule (name,lang,deps,mv,_pos,code) ->
       script_header "finalize" lang deps mv code
-  | Ast.ScriptRule (name,lang,deps,bindings,script_vars,code) ->
+  | Ast.ScriptRule (name,lang,deps,bindings,script_vars,_pos,code) ->
       script_header "script" lang deps bindings code
   | Ast.CocciRule (nm, (deps, drops, exists), x, _, _) ->
       print_string "@";
       print_string nm;
       (match deps with
 	Ast.NoDep -> ()
-      | _ -> print_string " depends on "; dep true deps);
+      | _ -> print_string " depends on "; dependency deps);
       (match drops with
 	[] -> ()
       |	_ -> print_string " disable "; print_string (String.concat "," drops));

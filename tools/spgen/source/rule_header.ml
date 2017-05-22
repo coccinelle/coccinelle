@@ -43,10 +43,13 @@ let tostring_dep = function
                 let s = l ^ " || " ^ r in
                 if in_and then k ("(" ^ s ^ ")") else k s))
         | Ast.FileIn s -> k ("file in \"" ^ s ^ "\"")
-        | Ast.NotFileIn s -> k ("!(file in \"" ^ s ^ "\")")
-        | Ast.NoDep -> k "no_dep"
-        | Ast.FailDep -> k "fail_dep" in
-      " depends on " ^ (dep false deps (fun x -> x))
+        | Ast.NotFileIn s -> k ("!(file in \"" ^ s ^ "\")") in
+      let topdep = function
+        | Ast.NoDep -> "no_dep"
+        | Ast.FailDep -> "fail_dep"
+	| Ast.ExistsDep d -> dep false d (fun x -> x)
+	| Ast.ForallDep d -> "forall " ^ (dep false d (fun x -> x)) in
+      " depends on " ^ (topdep deps)
 
 (* gather data into a string rule header... may or may not be slightly buggy.*)
 let rule_declaration ~rule_name ~isos ~drop_isos ~deps ~exists =

@@ -1144,6 +1144,7 @@ let rec main_action xs =
 	      try
 		Parmap.parfold
 		  ~init:(fun id -> Parmap.redirect ~path:prefix ~id)
+		  ~finalize:(fun () -> Pycocci.flush_stdout_and_stderr ())
 		  ~ncores
 		  ~chunksize
 		  op (Parmap.L l) (z, !Common._temp_files_created) merge
@@ -1217,7 +1218,10 @@ singleton lists are then just appended to each other during the merge. *)
 				    | e ->
 					if !dir
 					then begin
-					  pr2 ("EXN:" ^ Printexc.to_string e);
+					  (* not hidden by --very-quiet *)
+					  Printf.eprintf "EXN: %s"
+					    (Printexc.to_string e);
+					  flush stderr;
 					  prev (* *)
 					end
 					else raise e) in

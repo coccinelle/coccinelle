@@ -397,6 +397,8 @@ let rec type_unfold_one_step ty env =
           ty
       )
 
+  | FieldType (t, _, _) -> type_unfold_one_step t env
+
   | ParenType t -> type_unfold_one_step t env
   | TypeOfExpr e ->
       pr2_once ("Type_annoter: not handling typeof");
@@ -472,6 +474,9 @@ let rec typedef_fix ty env =
 	      Ast_c.rewrap_typeC ty
             with Not_found ->
               ty))
+
+    | FieldType (t, a, b) ->
+	FieldType (typedef_fix t env, a, b) +> Ast_c.rewrap_typeC ty
 
   (* remove paren for better matching with typed metavar. kind of iso again *)
     | ParenType t ->

@@ -131,7 +131,8 @@ and base_expression =
 	              initialiser
   | MetaErr        of Ast.meta_name mcode * constraints * pure
   | MetaExpr       of Ast.meta_name mcode * constraints *
-	              typeC list option * Ast.form * pure
+	typeC list option * Ast.form * pure *
+	listlen option (* bitfield *)
   | MetaExprList   of Ast.meta_name mcode (* only in arg lists *) *
 	              listlen * constraints * pure
   | AsExpr         of expression * expression (* as expr, always metavar *)
@@ -211,7 +212,7 @@ and base_typeC =
 	string mcode (* { *) * expression dots * string mcode (* } *)
   | StructUnionName of Ast.structUnion mcode * ident option (* name *)
   | StructUnionDef  of typeC (* either StructUnionName or metavar *) *
-	string mcode (* { *) * declaration dots * string mcode (* } *)
+	string mcode (* { *) * field dots * string mcode (* } *)
   | TypeName        of string mcode
   | MetaType        of Ast.meta_name mcode * constraints * pure
   | AsType          of typeC * typeC (* as type, always metavar *)
@@ -231,9 +232,6 @@ and base_declaration =
     (* the following are kept separate from MetaDecls because ultimately
        they don't match the same thing at all.  Consider whether there
        should be a separate type for fields, as in the C AST *)
-  | MetaField of Ast.meta_name mcode * constraints * pure (* structure fields *)
-  | MetaFieldList of Ast.meta_name mcode * listlen * constraints *
-	pure (*structure fields*)
   | AsDecl        of declaration * declaration
   | Init of Ast.storage mcode option * typeC * ident * string mcode (*=*) *
 	initialiser * string mcode (*;*)
@@ -255,12 +253,31 @@ and base_declaration =
   | Typedef of string mcode (* typedef *) * typeC * typeC * string mcode (*;*)
   | DisjDecl   of string mcode * declaration list *
 	          string mcode list (* the |s *)  * string mcode
-  (* Ddots is for a structure declaration *)
-  | Ddots      of string mcode (* ... *) * (string mcode * string mcode *
-	          declaration) option (* whencode *)
+  | ConjDecl   of string mcode * declaration list *
+	          string mcode list (* the &s *)  * string mcode
   | OptDecl    of declaration
 
 and declaration = base_declaration wrap
+
+(* --------------------------------------------------------------------- *)
+(* Field declaration *)
+
+and base_field =
+  | MetaField  of Ast_cocci.meta_name mcode * constraints *
+	pure (* structure fields *)
+  | MetaFieldList of Ast_cocci.meta_name mcode * listlen * constraints * pure
+  | Field     of typeC * ident option * bitfield option * string mcode (* ; *)
+  | DisjField   of string mcode * field list * string mcode list *
+	          string mcode
+  | ConjField   of string mcode * field list * string mcode list *
+	          string mcode
+  | Fdots      of string mcode (* ... *) * (string mcode * string mcode *
+                  field) option (* whencode *)
+  | OptField    of field
+
+and bitfield = string mcode (* : *) * expression
+
+and field = base_field wrap
 
 (* --------------------------------------------------------------------- *)
 (* Initializers *)
@@ -481,28 +498,30 @@ and parsed_rule =
   | ScriptRule of string (* name *) * string * Ast.dependency *
 	(Ast.script_meta_name * Ast.meta_name * Ast.metavar * Ast.mvinit)
 	  list *
-	Ast.meta_name list (*script vars*) *
+	Ast.meta_name list (*script vars*) * Ast.script_position *
 	string
   | InitialScriptRule of string (* name *) * string * Ast.dependency *
 	(Ast.script_meta_name * Ast.meta_name * Ast.metavar * Ast.mvinit)
-	  list *
+	  list * Ast.script_position *
 	string
   | FinalScriptRule of string (* name *) * string * Ast.dependency *
 	(Ast.script_meta_name * Ast.meta_name * Ast.metavar * Ast.mvinit)
-	  list *
+	  list * Ast.script_position *
 	string (* no script vars possible here *)
 
 (* --------------------------------------------------------------------- *)
 
-and dependency =
+and dep =
     Dep of string (* rule applies for the current binding *)
-  | AntiDep of dependency (* rule doesn't apply for the current binding *)
+  | AntiDep of dep (* rule doesn't apply for the current binding *)
   | EverDep of string (* rule applies for some binding *)
   | NeverDep of string (* rule never applies for any binding *)
-  | AndDep of dependency * dependency
-  | OrDep of dependency * dependency
+  | AndDep of dep * dep
+  | OrDep of dep * dep
   | FileIn of string
-  | NoDep | FailDep
+
+and dependency =
+    NoDep | FailDep | ExistsDep of dep | ForallDep of dep
 
 (* --------------------------------------------------------------------- *)
 
@@ -512,6 +531,7 @@ and anything =
   | DotsParamTag of parameterTypeDef dots
   | DotsStmtTag of statement dots
   | DotsDeclTag of declaration dots
+  | DotsFieldTag of field dots
   | DotsCaseTag of case_line dots
   | DotsDefParamTag of define_param dots
   | IdentTag of ident
@@ -524,6 +544,7 @@ and anything =
   | ParamTag of parameterTypeDef
   | InitTag of initialiser
   | DeclTag of declaration
+  | FieldTag of field
   | StmtTag of statement
   | ForInfoTag of forinfo
   | CaseLineTag of case_line
@@ -542,6 +563,7 @@ let dotsParam x = DotsParamTag x
 let dotsInit x = DotsInitTag x
 let dotsStmt x = DotsStmtTag x
 let dotsDecl x = DotsDeclTag x
+let dotsField x = DotsFieldTag x
 let dotsCase x = DotsCaseTag x
 let dotsDefParam x = DotsDefParamTag x
 let ident x = IdentTag x
@@ -552,6 +574,7 @@ let typeC x = TypeCTag x
 let param x = ParamTag x
 let ini x = InitTag x
 let decl x = DeclTag x
+let field x = FieldTag x
 let stmt x = StmtTag x
 let forinfo x = ForInfoTag x
 let case_line x = CaseLineTag x
@@ -639,8 +662,8 @@ let get_iso x           = x.iso_info
 let set_iso x i = if !Flag.track_iso_usage then {x with iso_info = i} else x
 let set_mcode_data data (_,ar,info,mc,pos,adj) = (data,ar,info,mc,pos,adj)
 let get_rule_name = function
-  | CocciRule ((_,_,(_,_,_,nm,_)),_,_,_) | InitialScriptRule (nm,_,_,_,_)
-  | FinalScriptRule (nm,_,_,_,_) | ScriptRule (nm,_,_,_,_,_) -> nm
+  | CocciRule ((_,_,(_,_,_,nm,_)),_,_,_) | InitialScriptRule (nm,_,_,_,_,_)
+  | FinalScriptRule (nm,_,_,_,_,_) | ScriptRule (nm,_,_,_,_,_,_) -> nm
 
 (* --------------------------------------------------------------------- *)
 
@@ -655,7 +678,7 @@ let rec meta_pos_name = function
       | _ -> failwith "bad metavariable")
   | ExprTag(e) ->
       (match unwrap e with
-	MetaExpr(name,_constraints,_ty,_form,_pure) -> name
+	MetaExpr(name,_constraints,_ty,_form,_pure,_bitfield) -> name
       | MetaExprList(name,_len,_constraints,_pure) -> name
       | _ -> failwith "bad metavariable")
   | TypeCTag(t) ->
@@ -711,7 +734,7 @@ let rec meta_names_of_typeC ty =
 let meta_pos_constraint_names = function
     ExprTag(e) ->
       (match unwrap e with
-	MetaExpr(_name,_constraints,ty,_form,_pure) ->
+	MetaExpr(_name,_constraints,ty,_form,_pure,_bitfield) ->
 	  (match ty with
 	    Some tylist ->
               List.fold_left (fun prev cur -> meta_names_of_typeC cur @ prev)

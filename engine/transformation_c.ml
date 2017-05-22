@@ -254,17 +254,18 @@ module XTRANS = struct
 	Ast_cocci.MetaErr(name,constraints,u,i) ->
 	  Ast_cocci.rewrap e
 	    (Ast_cocci.MetaErr(name,Ast_cocci.CstrTrue,u,i))
-      | Ast_cocci.MetaExpr(name,constraints,u,ty,form,i) ->
+      | Ast_cocci.MetaExpr(name,constraints,u,ty,form,i,bitfield) ->
           Ast_cocci.rewrap e
-	    (Ast_cocci.MetaExpr(name,Ast_cocci.CstrTrue,u,ty,form,i))
+	    (Ast_cocci.MetaExpr(name,Ast_cocci.CstrTrue,u,ty,form,i,bitfield))
       | _ -> e in
     let fn = Visitor_ast.rebuilder
 	mcode mcode mcode mcode mcode mcode mcode mcode mcode
 	mcode mcode mcode mcode mcode
-	donothing donothing donothing donothing donothing
+	donothing donothing donothing donothing donothing donothing
 	ident expression donothing donothing donothing donothing
 	donothing donothing donothing donothing donothing donothing
-	donothing donothing donothing donothing donothing donothing in
+	donothing donothing donothing donothing donothing donothing
+	donothing donothing in
 
   fn.Visitor_ast.rebuilder_anything anything
 

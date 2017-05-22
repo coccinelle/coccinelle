@@ -6,7 +6,7 @@
 
 (* create an index for each constructor *)
 (* current max is 188, also unused: 8-9, 15, 39, 40, 42, 46, 57, 65, 67, 85-86,
- 88, 111, 113-115, 134-136, 138-140 *)
+ 111, 113-115, 134-136, 138-140 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -27,6 +27,7 @@ let initialiser_dots x = 2 :: dots x
 let parameter_dots x =   3 :: dots x
 let statement_dots x =   4 :: dots x
 let declaration_dots x = 5 :: dots x
+let field_dots x = 8 :: dots x
 let case_line_dots x =   6 :: dots x
 let define_param_dots x =7 :: dots x
 
@@ -64,7 +65,7 @@ let expression e =
   | Ast0.TypeExp(ty) -> [123] (* added after *)
   | Ast0.Constructor(lp,ty,rp,init) -> [155]
   | Ast0.MetaErr(name,_,_) -> [32]
-  | Ast0.MetaExpr(name,_,ty,_,_) -> [33]
+  | Ast0.MetaExpr(name,_,ty,_,_,_bitfield) -> [33]
   | Ast0.MetaExprList(name,_,_,_) -> [34]
   | Ast0.EComma(cm) -> [35]
   | Ast0.DisjExpr(_,expr_list,_,_) -> [36]
@@ -106,8 +107,6 @@ let typeC t =
 let declaration d =
   match Ast0.unwrap d with
     Ast0.MetaDecl(name,_,_) -> [148]
-  | Ast0.MetaField(name,_,_) -> [149]
-  | Ast0.MetaFieldList(name,_,_,_) -> [152]
   | Ast0.Init(stg,ty,id,eq,exp,sem) -> [54]
   | Ast0.UnInit(stg,ty,id,sem) -> [55]
   | Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) -> [132]
@@ -116,9 +115,19 @@ let declaration d =
   | Ast0.TyDecl(ty,sem) -> [116]
   | Ast0.Typedef(stg,ty,id,sem) -> [143]
   | Ast0.DisjDecl(_,decls,_,_) -> [97] (* added after *)
-  | Ast0.Ddots(dots,whencode) -> [133]
+  | Ast0.ConjDecl(_,decls,_,_) -> [88] (* added after *)
   | Ast0.OptDecl(decl) -> [56]
   | Ast0.AsDecl _ -> failwith "not possible"
+
+let field d =
+  match Ast0.unwrap d with
+  | Ast0.MetaField(name,_,_) -> [149]
+  | Ast0.MetaFieldList(name,_,_,_) -> [152]
+  | Ast0.Field(ty,id,_bf,sem) -> [55]
+  | Ast0.DisjField(_,decls,_,_) -> [189] (* added after *)
+  | Ast0.ConjField(_,decls,_,_) -> [190] (* added after *)
+  | Ast0.Fdots(dots,whencode) -> [133]
+  | Ast0.OptField(decl) -> [191]
 
 let initialiser i =
   match Ast0.unwrap i with

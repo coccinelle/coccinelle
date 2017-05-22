@@ -78,7 +78,8 @@ and add_pos ~context_mode = function
   | Ast0.MetaPosTag(Ast0.MetaPos(((_,nm),arity,_,_,p,_),_,_))
 
   (* extracting the node is equivalent to calling Ast0.unwrap *)
-  | Ast0.ExprTag {Ast0.node = Ast0.MetaExpr(((_,nm),arity,_,_,p,_),_,_,_,_); _}
+  | Ast0.ExprTag
+      {Ast0.node = Ast0.MetaExpr(((_,nm),arity,_,_,p,_),_,_,_,_,_); _}
   | Ast0.StmtTag {Ast0.node = Ast0.MetaStmt(((_,nm),arity,_,_,p,_),_,_); _}
   | Ast0.DeclTag {Ast0.node = Ast0.MetaDecl(((_,nm),arity,_,_,p,_),_,_); _}
   | Ast0.IdentTag {Ast0.node = Ast0.MetaId(((_,nm),arity,_,_,p,_),_,_,_); _}
@@ -217,6 +218,7 @@ let rec gen_combiner ~context_mode =
   let dotsinitfn = donothing in
   let dotsparamfn = donothing in
   let dotsdeclfn = donothing in
+  let dotsfieldfn = donothing in
   let dotscasefn = donothing in
   let dotsdefparfn = donothing in
   let assignOpfn = donothing in
@@ -252,6 +254,13 @@ let rec gen_combiner ~context_mode =
         DG.generate_declaration
           ~strfn:string_mcode ~declfn:c_declfn ~decl ~at_top:false
     | _ -> c_declfn decl in
+
+  let fieldfn _ c_fieldfn field =
+    match Ast0.unwrap field with
+    | Ast0.DisjField _ ->
+        DG.generate_field
+          ~strfn:string_mcode ~fieldfn:c_fieldfn ~field ~at_top:false
+    | _ -> c_fieldfn field in
 
   let stmtfn combiner c_stmtfn stmt =
     let c_dotsstmtfn = combiner.VT0.combiner_rec_statement_dots in
@@ -339,10 +348,10 @@ let rec gen_combiner ~context_mode =
     meta_mcode string_mcode const_mcode simpleAssign_mcode opAssign_mcode
     fix_mcode unary_mcode arithOp_mcode logicalOp_mcode cv_mcode sign_mcode
     struct_mcode storage_mcode inc_mcode
-    dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotscasefn
-    dotsdefparfn
-    identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn declfn stmtfn
-    forinfofn casefn string_fragmentfn topfn
+    dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotsfieldfn
+    dotscasefn dotsdefparfn
+    identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn declfn fieldfn
+    stmtfn forinfofn casefn string_fragmentfn topfn
 
 
 (* ------------------------------------------------------------------------- *)

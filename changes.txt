@@ -46,6 +46,11 @@
 - Multiple initializers and finalizers are allowed for the same language.
 - Support function pointer types in casts.
 - Allow something identified as a MacroDecl as a structure field.
+- Conjunctions, ie ( & ), for declarations.
+- Optional bitfield annotation on expression meta-variables. Requested by
+  Kumar Gala. See tests/bitfield_matching.cocci
+- Bit-field matching, see tests/bitfield.cocci
+- Anonymous field matching, see tests/anonfield.cocci
 ** Features:
 - Better error reporting for unparsable terms when using make_expr etc in
   script code.  Problem reported by Markus Elfring.
@@ -53,6 +58,8 @@
   that should be ignored.
 - added --max-width to adjust the line width for generated code.  Requested
   by Kumar Gala.
+- forall and exists for quantifying over the success of matching depends on
+  constraints.
 ** Bugfix:
 - Improved detection of metavariables in strings.  Problem reported by
   Wolfram Sang.

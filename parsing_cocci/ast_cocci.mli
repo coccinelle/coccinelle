@@ -15,6 +15,7 @@ type info = { line : int; column : int;
               whitespace : string }
 type line = int
 type meta_name = string * string
+type script_position = string (* filename *) * line (* line *)
 type 'a wrap =
     {node : 'a;
       node_line : line;
@@ -88,7 +89,8 @@ and metavar =
       arity * meta_name (* name *) * fullType list option
   | MetaErrDecl of arity * meta_name (* name *)
   | MetaExpDecl of
-      arity * meta_name (* name *) * fullType list option
+      arity * meta_name (* name *) * fullType list option *
+	list_len option (* bitfield *)
   | MetaIdExpDecl of
       arity * meta_name (* name *) * fullType list option
   | MetaLocalIdExpDecl of
@@ -180,7 +182,8 @@ and base_expression =
   | MetaErr        of meta_name mcode * constraints * keep_binding *
 	              inherited
   | MetaExpr       of meta_name mcode * constraints * keep_binding *
-	              fullType list option * form * inherited
+	fullType list option * form * inherited *
+	listlen option (* bitfield *)
   | MetaExprList   of meta_name mcode * listlen * constraints *
 	              keep_binding * inherited (* only in arg lists *)
   | AsExpr         of expression * expression (* as expr, always metavar *)
@@ -236,6 +239,7 @@ and script_constraint =
       string (* name of generated function *) *
 	string (* language *) *
 	(meta_name * metavar) list (* params *) *
+	script_position *
 	string (* code *)
 
 and form = ANY | ID | LocalID| GlobalID | CONST (* form for MetaExp *)
@@ -318,7 +322,7 @@ and base_typeC =
 	string mcode (* { *) * expression dots * string mcode (* } *)
   | StructUnionName of structUnion mcode * ident option (* name *)
   | StructUnionDef  of fullType (* either StructUnionName or metavar *) *
-	string mcode (* { *) * annotated_decl dots * string mcode (* } *)
+	string mcode (* { *) * annotated_field dots * string mcode (* } *)
   | TypeName        of string mcode
 
   | MetaType        of meta_name mcode * constraints * keep_binding *
@@ -363,11 +367,8 @@ and base_declaration =
         initialiser * string mcode (* ; *)
   | Typedef of string mcode (*typedef*) * fullType * typeC * string mcode (*;*)
   | DisjDecl   of declaration list
-
+  | ConjDecl of declaration list
   | MetaDecl of meta_name mcode * constraints * keep_binding * inherited
-  | MetaField of meta_name mcode * constraints * keep_binding * inherited
-  | MetaFieldList of meta_name mcode * listlen * constraints * keep_binding *
-	inherited
   | AsDecl        of declaration * declaration
 
   | OptDecl    of declaration
@@ -377,10 +378,31 @@ and declaration = base_declaration wrap
 and base_annotated_decl =
     DElem of mcodekind (* before the decl *) * bool (* true if all minus *) *
       declaration
-  (* Ddots is for a structure declaration *)
-  | Ddots    of string mcode (* ... *) * declaration option (* whencode *)
 
 and annotated_decl = base_annotated_decl wrap
+
+(* --------------------------------------------------------------------- *)
+(* Field declaration *)
+
+and base_field =
+    Field of fullType * ident option * bitfield option * string mcode (* ; *)
+  | DisjField of field list
+  | ConjField of field list
+  | OptField of field
+  | MetaField of meta_name mcode * constraints * keep_binding * inherited
+  | MetaFieldList of meta_name mcode * listlen * constraints * keep_binding *
+	inherited
+
+and bitfield = string mcode (* : *) * expression
+
+and field = base_field wrap
+
+and base_annotated_field =
+    FElem of mcodekind (* before the decl *) * bool (* true if all minus *) *
+      field
+  | Fdots    of string mcode (* ... *) * field option (* whencode *)
+
+and annotated_field = base_annotated_field wrap
 
 (* --------------------------------------------------------------------- *)
 (* Initializers *)
@@ -657,14 +679,14 @@ and rule =
   | ScriptRule of string (* name *) *
       string * dependency *
 	(script_meta_name * meta_name * metavar * mvinit) list *
-	meta_name list (*script vars*) * string
+	meta_name list (*script vars*) * script_position * string
   | InitialScriptRule of  string (* name *) * string * dependency *
 	(script_meta_name * meta_name * metavar * mvinit)
-	  list (*virtual vars*) *
+	  list (*virtual vars*) * script_position *
 	string
   | FinalScriptRule of  string (* name *) * string * dependency *
 	(script_meta_name * meta_name * metavar * mvinit)
-	  list (*virtual vars*) *
+	  list (*virtual vars*) * script_position *
 	string
 
 and script_meta_name = string option (*string*) * string option (*ast*)
@@ -673,17 +695,18 @@ and mvinit =
     NoMVInit
   | MVInitString of string
   | MVInitPosList
-
-and dependency =
+and dep =
     Dep of string (* rule applies for the current binding *)
   | AntiDep of string (* rule doesn't apply for the current binding *)
   | EverDep of string (* rule applies for some binding *)
   | NeverDep of string (* rule never applies for any binding *)
-  | AndDep of dependency * dependency
-  | OrDep of dependency * dependency
+  | AndDep of dep * dep
+  | OrDep of dep * dep
   | FileIn of string
   | NotFileIn of string
-  | NoDep | FailDep
+
+and dependency =
+    NoDep | FailDep | ExistsDep of dep | ForallDep of dep
 
 and rule_with_metavars = metavar list * rule
 
@@ -704,6 +727,7 @@ and anything =
   | ArithOpTag          of arithOp
   | LogicalOpTag        of logicalOp
   | DeclarationTag      of declaration
+  | FieldTag            of field
   | InitTag             of initialiser
   | StorageTag          of storage
   | IncFileTag          of inc_file
@@ -720,6 +744,7 @@ and anything =
   | ParamDotsTag        of parameterTypeDef dots
   | StmtDotsTag         of statement dots
   | AnnDeclDotsTag      of annotated_decl dots
+  | AnnFieldDotsTag     of annotated_field dots
   | DefParDotsTag       of define_param dots
   | TypeCTag            of typeC
   | ParamTag            of parameterTypeDef

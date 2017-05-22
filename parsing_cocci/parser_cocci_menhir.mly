@@ -117,10 +117,10 @@ let tmeta_to_field (name,cstr,pure,clt) =
 
 let tmeta_to_exp (name,cstr,pure,clt) =
   (coerce_tmeta "an expression" name
-     (TMetaExp(name,cstr,pure,None,clt))
-     (function TMetaExp(_,_,_,_,_) -> true | _ -> false));
+     (TMetaExp(name,cstr,pure,None,clt,None))
+     (function TMetaExp(_,_,_,_,_,_) -> true | _ -> false));
   Ast0.wrap
-    (Ast0.MetaExpr(P.clt2mcode name clt,cstr,None,Ast.ANY,pure))
+    (Ast0.MetaExpr(P.clt2mcode name clt,cstr,None,Ast.ANY,pure,None))
 
 let tmeta_to_param (name,cstr,pure,clt) =
   (coerce_tmeta "a parameter" name (TMetaParam(name,cstr,pure,clt))
@@ -192,8 +192,6 @@ let mklogop (op,clt) =
 
 let unknown_type = Ast0.wrap (Ast0.BaseType (Ast.Unknown, []))
 
-let constraint_code_counter = ref 0
-
 let check_constraint_allowed () =
   if !Data.in_iso then
     failwith "constraints not allowed in iso file";
@@ -212,8 +210,9 @@ let check_constraint_allowed () =
 %token TPosAny
 %token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall
 %token TFile TIn
-%token TScript TInitialize TFinalize TNothing TVirtual TMerge
+%token TInitialize TFinalize TNothing TVirtual TMerge
 %token<string> TRuleName
+%token<string * int> TScript
 
 %token<Data.clt> Tchar Tshort Tint Tdouble Tfloat Tlong
 %token<Data.clt> Tsize_t Tssize_t Tptrdiff_t
@@ -240,7 +239,8 @@ let check_constraint_allowed () =
 %token <Parse_aux.cstrinfo>          TMetaInit TMetaDecl TMetaField TMeta
 %token <Parse_aux.list_info>     TMetaParamList TMetaExpList TMetaInitList
 %token <Parse_aux.list_info>     TMetaFieldList TMetaStmList TMetaDParamList
-%token <Parse_aux.typed_expinfo> TMetaExp TMetaIdExp TMetaLocalIdExp
+%token <Parse_aux.typed_expinfo_bitfield> TMetaExp
+%token <Parse_aux.typed_expinfo> TMetaIdExp TMetaLocalIdExp
 %token <Parse_aux.typed_expinfo> TMetaGlobalIdExp TMetaConst
 %token <Parse_aux.pos_info>      TMetaPos
 
@@ -426,7 +426,9 @@ extends:
 
 depends:
   /* empty */              { Ast0.NoDep }
-| TDepends TOn parents=dep { parents }
+| TDepends TOn parents=dep { Ast0.ExistsDep parents }
+| TDepends TOn TExists parents=dep { Ast0.ExistsDep parents }
+| TDepends TOn TForall parents=dep { Ast0.ForallDep parents }
 
 dep:
   TRuleName        { Ast0.Dep $1 }
@@ -482,6 +484,14 @@ metadec:
   ar=arity ispure=pure kindfn=metakind
   ids=comma_list(pure_ident_or_meta_ident_with_constraints) TMPtVirg
     { P.create_metadec_with_constraints ar ispure kindfn ids }
+| ar=arity ispure=pure kindfn=metakind_bitfield bf=ioption(bitfield)
+  ids=comma_list(pure_ident_or_meta_ident_with_constraints) TMPtVirg
+    { match bf with
+      None ->
+	P.create_metadec_with_constraints ar ispure (kindfn None) ids
+    | Some bf' ->
+    P.create_len_metadec ar ispure (fun lenname -> kindfn (Some lenname))
+    bf' ids }
 | ar=arity ispure=pure
   kind_ids=metakindnosym TMPtVirg
     { let (ids,kindfn) = kind_ids in P.create_metadec ar ispure kindfn ids }
@@ -501,7 +511,7 @@ metadec:
 | ar=arity TPosition a=option(TPosAny)
     ids=
     comma_list
-    (pure_ident_or_meta_ident_with_constraints)
+    (pure_ident_or_meta_ident_with_constraints_pos)
     TMPtVirg
     (* pb: position variables can't be inherited from normal rules, and then
        there is no way to inherit from a generated rule, so there is no point
@@ -605,9 +615,16 @@ metadec:
 	  !Data.add_assignOp_meta name constraints pure; tok)
         ids }
 
+%inline bitfield:
+  TDotDot l=delimited_list_len { l }
+
 list_len:
-  pure_ident_or_meta_ident_with_constraints { Common.Left $1 }
-| TInt { let (x,clt) = $1 in Common.Right (int_of_string x) }
+  pure_ident_or_meta_ident_with_constraints
+    { let (id,cstr) = $1 in Common.Left(id,cstr) }
+| l=list_len_pure { l }
+
+list_len_pure:
+  TInt { let (x,clt) = $1 in Common.Right (int_of_string x) }
 | TVirtual TDot pure_ident
     { let nm = ("virtual",P.id2name $3) in
     Iteration.parsed_virtual_identifiers :=
@@ -622,6 +639,11 @@ list_len:
       end
     }
 
+delimited_list_len:
+  id=pure_ident_or_meta_ident { Common.Left (id, Ast.CstrTrue) }
+| TOPar idcstr=pure_ident_or_meta_ident_with_constraints TCPar
+    { Common.Left idcstr }
+| l=list_len_pure { l }
 
 %inline metakind_fresh:
   TFresh TIdentifier
@@ -748,22 +770,24 @@ list_len:
       !Data.add_global_idexp_meta (Some [ty]) name constraints pure;
       let ty' = Some [Ast0toast.typeC false ty] in
       check_meta(Ast.MetaGlobalIdExpDecl(arity,name,ty'))) }
-| TExpression ty=expression_type
-    { (fun arity name pure check_meta constraints ->
-      !Data.add_exp_meta (Some [ty]) name constraints pure;
-      let ty' = Some [Ast0toast.typeC false ty] in
-      check_meta (Ast.MetaExpDecl (arity, name, ty'))) }
 | TConstant ty=ioption(meta_exp_type)
     { (fun arity name pure check_meta constraints ->
       !Data.add_const_meta ty name constraints pure;
       let ty' = Common.map_option (List.map (Ast0toast.typeC false)) ty in
       check_meta (Ast.MetaConstDecl(arity,name,ty'))) }
+
+%inline metakind_bitfield:
+| TExpression ty=expression_type
+    { (fun lenname arity name pure check_meta constraints ->
+      !Data.add_exp_meta (Some [ty]) name constraints pure lenname;
+      let ty' = Some [Ast0toast.typeC false ty] in
+      check_meta (Ast.MetaExpDecl (arity, name, ty', lenname))) }
 | TExpression
-    { (fun arity name pure check_meta constraints ->
-      let tok = check_meta(Ast.MetaExpDecl(arity,name,None)) in
-      !Data.add_exp_meta None name constraints pure; tok) }
+    { (fun lenname arity name pure check_meta constraints ->
+      let tok = check_meta(Ast.MetaExpDecl(arity,name,None,lenname)) in
+      !Data.add_exp_meta None name constraints pure lenname; tok) }
 | vl=meta_exp_type // no error if use $1 but doesn't type check
-    { (fun arity name pure check_meta constraints ->
+    { (fun lenname arity name pure check_meta constraints ->
       let ty = Some vl in
       let cstr_expr = Some begin function c ->
 	match Ast0.unwrap c with
@@ -783,9 +807,9 @@ list_len:
 	end in
       Ast.cstr_iter { Ast.empty_cstr_transformer with Ast.cstr_expr }
 	constraints;
-      !Data.add_exp_meta ty name constraints pure;
+      !Data.add_exp_meta ty name constraints pure lenname;
       let ty' = Some (List.map (Ast0toast.typeC false) vl) in
-      let tok = check_meta (Ast.MetaExpDecl (arity,name,ty')) in
+      let tok = check_meta (Ast.MetaExpDecl (arity,name,ty',lenname)) in
       tok)
     }
 
@@ -1028,23 +1052,40 @@ struct_decl_one:
     | lp=TOPar0 t=midzero_list(struct_decl_one,struct_decl_one) rp=TCPar0
 	{ let (mids,code) = t in
 	Ast0.wrap
-	  (Ast0.DisjDecl(P.id2mcode lp,code,mids, P.id2mcode rp)) }
-    | t=ctype d=d_ident pv=TPtVirg
+	  (Ast0.DisjField(P.id2mcode lp,code,mids, P.id2mcode rp)) }
+    | lp=TOPar0 t=andzero_list(struct_decl_one,struct_decl_one) rp=TCPar0
+	{ let (mids,code) = t in
+	Ast0.wrap
+	  (Ast0.ConjField(P.id2mcode lp,code,mids, P.id2mcode rp)) }
+    | t=ctype d=d_ident_option bf=struct_bitfield? pv=TPtVirg
 	 { let (id,fn) = d in
-	 Ast0.wrap(Ast0.UnInit(None,fn t,id,P.clt2mcode ";" pv)) }
-    | t=ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
-	lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar pv=TPtVirg
+	 Ast0.wrap(Ast0.Field(fn t,id,bf,P.clt2mcode ";" pv)) }
+    | t=ctype lp1=TOPar st=TMul d=d_ident_option rp1=TCPar
+	lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar
+	bf=struct_bitfield? pv=TPtVirg
         { let (id,fn) = d in
         let t =
 	  Ast0.wrap
 	    (Ast0.FunctionPointer
 	       (t,P.clt2mcode "(" lp1,P.clt2mcode "*" st,P.clt2mcode ")" rp1,
 		P.clt2mcode "(" lp2,p,P.clt2mcode ")" rp2)) in
-        Ast0.wrap(Ast0.UnInit(None,fn t,id,P.clt2mcode ";" pv)) }
-     | cv=ioption(const_vol) i=pure_ident_or_symbol d=d_ident pv=TPtVirg
+        Ast0.wrap(Ast0.Field(fn t,id,bf,P.clt2mcode ";" pv)) }
+     | cv=ioption(const_vol) i=pure_ident_or_symbol d=d_ident_option
+	 bf=struct_bitfield?
+	 pv=TPtVirg
 	 { let (id,fn) = d in
 	 let idtype = P.make_cv cv (Ast0.wrap (Ast0.TypeName(P.id2mcode i))) in
-	 Ast0.wrap(Ast0.UnInit(None,fn idtype,id,P.clt2mcode ";" pv)) }
+	 Ast0.wrap(Ast0.Field(fn idtype,id,bf,P.clt2mcode ";" pv)) }
+
+d_ident_option:
+	 { None, (fun x -> x) }
+     | d=d_ident {
+       let (id, fn) = d in
+       (Some id, fn)
+    }
+
+struct_bitfield:
+   c=TDotDot e=expr { (P.clt2mcode ":" c, e) }
 
 struct_decl_list:
    struct_decl_list_start { Ast0.wrap $1 }
@@ -1053,7 +1094,7 @@ struct_decl_list_start:
   struct_decl                        { $1 }
 | struct_decl struct_decl_list_start { $1@$2 }
 | d=edots_when(TEllipsis,struct_decl_one) r=continue_struct_decl_list
-    { (P.mkddots_one "..." d)::r }
+    { (P.mkfdots_one "..." d)::r }
 
 continue_struct_decl_list:
   /* empty */                        { [] }
@@ -1084,15 +1125,17 @@ enum_val:
  | TMetaConst
      { let (nm,constraints,pure,ty,clt) = $1 in
      Ast0.wrap
-       (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.CONST,pure)) }
+       (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.CONST,pure,None)) }
  | TMetaExp
-     { let (nm,constraints,pure,ty,clt) = $1 in
+     { let (nm,constraints,pure,ty,clt,bitfield) = $1 in
+     let bitfield' = Common.map_option (P.dolen clt) bitfield in
      Ast0.wrap
-       (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.ANY,pure)) }
+       (Ast0.MetaExpr
+	  (P.clt2mcode nm clt,constraints,ty,Ast.ANY,pure,bitfield')) }
  | TMetaIdExp
      { let (nm,constraints,pure,ty,clt) = $1 in
      Ast0.wrap
-       (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.ID,pure)) }
+       (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.ID,pure,None)) }
 
 enum_decl_list:
    nonempty_list_start(enum_decl_one,edots_when(TEllipsis,enum_decl_one))
@@ -2133,26 +2176,30 @@ primary_expr(recurser,primary_extra):
  | TMetaConst
      { let (nm,constraints,pure,ty,clt) = $1 in
      Ast0.wrap
-       (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.CONST,pure)) }
+       (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.CONST,pure,None)) }
  | TMetaErr
      { let (nm,constraints,pure,clt) = $1 in
      Ast0.wrap(Ast0.MetaErr(P.clt2mcode nm clt,constraints,pure)) }
  | TMetaExp
-     { let (nm,constraints,pure,ty,clt) = $1 in
+     { let (nm,constraints,pure,ty,clt,bitfield) = $1 in
+     let bitfield' = Common.map_option (P.dolen clt) bitfield in
      Ast0.wrap
-       (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.ANY,pure)) }
+       (Ast0.MetaExpr
+	  (P.clt2mcode nm clt,constraints,ty,Ast.ANY,pure,bitfield')) }
  | TMetaIdExp
      { let (nm,constraints,pure,ty,clt) = $1 in
      Ast0.wrap
-       (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.ID,pure)) }
+       (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.ID,pure,None)) }
  | TMetaLocalIdExp
      { let (nm,constraints,pure,ty,clt) = $1 in
      Ast0.wrap
-       (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.LocalID,pure)) }
+       (Ast0.MetaExpr
+	  (P.clt2mcode nm clt,constraints,ty,Ast.LocalID,pure,None)) }
  | TMetaGlobalIdExp
      { let (nm,constraints,pure,ty,clt) = $1 in
      Ast0.wrap
-       (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.GlobalID,pure)) }
+       (Ast0.MetaExpr
+	  (P.clt2mcode nm clt,constraints,ty,Ast.GlobalID,pure,None)) }
  | TOPar eexpr TCPar
      { Ast0.wrap(Ast0.Paren(P.clt2mcode "(" $1,$2,
 			    P.clt2mcode ")" $3)) }
@@ -2264,10 +2311,13 @@ seed_elem:
       Ast.SeedId nm }
 
 pure_ident_or_meta_ident_with_constraints:
-  i=pure_ident_or_meta_ident c=constraints { (i,c) }
+  i=pure_ident_or_meta_ident c=constraints { (i,c false i) }
+
+pure_ident_or_meta_ident_with_constraints_pos:
+  i=pure_ident_or_meta_ident c=constraints { (i,c true i) }
 
 pure_ident_or_meta_ident_with_constraints_virt:
-  i=pure_ident_or_meta_ident c=constraints {  Common.Left (i,c) }
+  i=pure_ident_or_meta_ident_with_constraints {  Common.Left i }
 | TVirtual TDot pure_ident
     { let nm = P.id2name $3 in
       Iteration.parsed_virtual_identifiers :=
@@ -2276,38 +2326,58 @@ pure_ident_or_meta_ident_with_constraints_virt:
       Common.Right nm }
 
 constraints:
-    { Ast.CstrTrue }
+    { fun _ _ -> Ast.CstrTrue }
 | c=nonempty_constraints
     { check_constraint_allowed ();
       c }
 
 nonempty_constraints:
-  TTildeEq re=TString { let (s,_) = re in Ast.CstrRegexp (s,Regexp.regexp s) }
+  TTildeEq re=TString
+    { fun _ _ -> let (s,_) = re in Ast.CstrRegexp (s,Regexp.regexp s) }
 | TTildeExclEq re=TString
-    { let (s,_) = re in Ast.CstrNot (Ast.CstrRegexp (s,Regexp.regexp s)) }
-| TEq l=item_or_brace_list(cstr_ident) { Ast.CstrOr l }
-| TNotEq l=item_or_brace_list(cstr_ident) { Ast.CstrNot (Ast.CstrOr l) }
-| TSub i=TInt {
+    { fun _ _ ->
+      let (s,_) = re in Ast.CstrNot (Ast.CstrRegexp (s,Regexp.regexp s)) }
+| TEq l=item_or_brace_list(cstr_ident) { fun _ _ -> Ast.CstrOr l }
+| TNotEq l=item_or_brace_list(cstr_ident)
+    { fun _ _ -> Ast.CstrNot (Ast.CstrOr l) }
+| TSub i=TInt { fun _ _ ->
   let i = int_of_string (fst i) in
   Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntLeq i)) }
-| o=TLogOp i=TInt {
+| o=TLogOp i=TInt { fun _ _ ->
   let i = int_of_string (fst i) in
   match o with
     Ast.SupEq, _ -> Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntGeq i))
   | Ast.Inf, _ -> Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntLeq (pred i)))
   | Ast.Sup, _ -> Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntGeq (succ i)))
   | _ -> raise (Semantic_cocci.Semantic "unknown constraint operator") }
-| TSub l=item_or_brace_list(sub_meta_ident) { Ast.CstrSub l }
-| TDotDot TScript TDotDot lang=pure_ident
+| TSub l=item_or_brace_list(sub_meta_ident) { fun _ _ -> Ast.CstrSub l }
+| TDotDot pos=TScript TDotDot lang=pure_ident
     TOPar params=loption(comma_list(checked_meta_name)) TCPar
     TOBrace c=expr TCBrace
-    { incr constraint_code_counter;
-      let key = Printf.sprintf "constraint_code_%d" !constraint_code_counter in
-      Ast.CstrScript
-	(key, P.id2name lang, params, U.unparse_x_to_string U.expression c) }
-| TBang c = nonempty_constraints { Ast.CstrNot c }
-| l=nonempty_constraints TAndLog r=nonempty_constraints { Ast.CstrAnd [l; r] }
-| l=nonempty_constraints TOrLog r=nonempty_constraints { Ast.CstrOr [l; r] }
+    { fun posvar nm ->
+      let rule =
+	String.concat "_" (Str.split (Str.regexp " ") !Ast0.rule_name) in
+      let key = Printf.sprintf "constraint_code_%s_0_%s" rule (snd nm) in
+      let code = U.unparse_x_to_string U.expression c in
+      let lang' = P.id2name lang in
+      let code' =
+	if lang' = "ocaml" then
+	  let (file, line) = pos in
+	  Printf.sprintf "\n# %d \"%s\"\n%s" line file code
+	else code in
+      let nm' =
+	match nm with
+	  None, n -> "", n
+	| Some r, n -> r, n in
+      Data.constraint_scripts :=
+	(posvar, nm', (key, lang', params, pos, code'))
+	:: !Data.constraint_scripts;
+      Ast.CstrScript (key, lang', params, pos, code') }
+| TBang c = nonempty_constraints { fun posvar nm -> Ast.CstrNot (c posvar nm) }
+| l=nonempty_constraints TAndLog r=nonempty_constraints
+    { fun posvar nm -> Ast.CstrAnd [l posvar nm; r posvar nm] }
+| l=nonempty_constraints TOrLog r=nonempty_constraints
+    { fun posvar nm -> Ast.CstrOr [l posvar nm; r posvar nm] }
 | TOPar c=nonempty_constraints TCPar { c }
 
 item_or_brace_list(item):
@@ -2395,7 +2465,7 @@ sub_meta_ident:
 	already when bind the subterm constrained metavariable *)
   i=meta_ident
     { P.check_inherited_constraint i
-	(function mv -> Ast.MetaExpDecl(Ast.NONE,mv,None)) }
+	(function mv -> Ast.MetaExpDecl(Ast.NONE,mv,None,None)) }
 
 func_ident:
        ident { $1 }
@@ -2765,11 +2835,13 @@ exec_front_ident:
   | TMetaIdExp
      { let (nm,constraints,pure,ty,clt) = $1 in
      Ast0.wrap
-       (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.ID,pure)) }
+       (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.ID,pure,None)) }
   | TMetaExp
-     { let (nm,constraints,pure,ty,clt) = $1 in
+     { let (nm,constraints,pure,ty,clt,bitfield) = $1 in
+     let bitfield' = Common.map_option (P.dolen clt) bitfield in
      Ast0.wrap
-       (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.ANY,pure)) }
+       (Ast0.MetaExpr
+	  (P.clt2mcode nm clt,constraints,ty,Ast.ANY,pure,bitfield')) }
 
 exec_ident:
      { function prev -> prev }

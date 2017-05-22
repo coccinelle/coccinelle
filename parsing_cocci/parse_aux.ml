@@ -24,11 +24,10 @@ type list_info = Ast.meta_name * Ast.list_len * Ast0.constraints * Ast0.pure *
 type typed_expinfo =
     Ast.meta_name * Ast0.constraints * Ast0.pure *
       Ast0.typeC list option * Data.clt
+type typed_expinfo_bitfield =
+    Ast.meta_name * Ast0.constraints * Ast0.pure *
+      Ast0.typeC list option * Data.clt * Ast.list_len option
 type pos_info = Ast.meta_name * Ast0.constraints * Ast.meta_collect * Data.clt
-
-let get_option fn = function
-    None -> None
-  | Some x -> Some (fn x)
 
 let make_info line logical_line logical_line_end offset col strbef straft 
     isSymbol ws =
@@ -119,15 +118,15 @@ let mkidots str (dot,whencode) =
     "..." -> Ast0.wrap(Ast0.Idots(clt2mcode str dot, whencode))
   | _ -> failwith "cannot happen"
 
-let mkddots str (dot,whencode) =
+let mkfdots str (dot,whencode) =
   match (str,whencode) with
-    ("...",None) -> Ast0.wrap(Ast0.Ddots(clt2mcode str dot, None))
-  | ("...",Some [w]) -> Ast0.wrap(Ast0.Ddots(clt2mcode str dot, Some w))
+    ("...",None) -> Ast0.wrap(Ast0.Fdots(clt2mcode str dot, None))
+  | ("...",Some [w]) -> Ast0.wrap(Ast0.Fdots(clt2mcode str dot, Some w))
   | _ -> failwith "cannot happen"
 
-let mkddots_one str (dot,whencode) =
+let mkfdots_one str (dot,whencode) =
   match str with
-    "..." -> Ast0.wrap(Ast0.Ddots(clt2mcode str dot, whencode))
+    "..." -> Ast0.wrap(Ast0.Fdots(clt2mcode str dot, whencode))
   | _ -> failwith "cannot happen"
 
 let mkpdots str dot =
@@ -265,9 +264,9 @@ let check_meta_tyopt type_irrelevant v =
       (match meta_lookup rule name v with
 	Ast.MetaErrDecl(_,_) -> ()
       | _ -> fail name)
-  | Ast.MetaExpDecl(Ast.NONE,(rule,name),ty) ->
+  | Ast.MetaExpDecl(Ast.NONE,(rule,name),ty,_) ->
       (match meta_lookup rule name v with
-	Ast.MetaExpDecl(_,_,ty1) when type_equal ty ty1 -> ()
+	Ast.MetaExpDecl(_,_,ty1,_) when type_equal ty ty1 -> ()
       | _ -> fail name)
   | Ast.MetaIdExpDecl(Ast.NONE,(rule,name),ty) ->
       (match meta_lookup rule name v with
@@ -594,10 +593,12 @@ let fix_dependencies d =
     | Ast0.OrDep(d1,d2) ->
 	Ast.OrDep(loop inverted d1,loop inverted d2)
     | Ast0.FileIn s when inverted -> Ast.NotFileIn s
-    | Ast0.FileIn s -> Ast.FileIn s
-    | Ast0.NoDep -> Ast.NoDep
-    | Ast0.FailDep -> Ast.FailDep in
-  loop false d
+    | Ast0.FileIn s -> Ast.FileIn s in
+  match d with
+    Ast0.NoDep -> Ast.NoDep
+  | Ast0.FailDep -> Ast.FailDep
+  | Ast0.ExistsDep d -> Ast.ExistsDep (loop false d)
+  | Ast0.ForallDep d -> Ast.ForallDep (loop false d)
 
 let make_cocci_rule_name_result nm d i a e ee =
   Ast.CocciRulename (check_rule_name nm,fix_dependencies d,i,a,e,ee)

@@ -28,8 +28,7 @@ let contains_modif used_after x =
     let do_nothing r k e = k e in
     let annotated_decl_bef decl =
       match Ast.unwrap decl with
-	Ast.DElem(bef,_,_) -> bef
-      | _ -> failwith "not possible" in
+	Ast.DElem(bef,_,_) -> bef in
     let rule_elem r k re =
       let res = k re in
       match Ast.unwrap re with
@@ -46,7 +45,8 @@ let contains_modif used_after x =
 	mcode mcode mcode
 	do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
 	do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-	do_nothing do_nothing do_nothing do_nothing do_nothing
+	do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+	do_nothing do_nothing
 	do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
     recursor.V.combiner_rule_elem x
 
@@ -70,10 +70,11 @@ let contains_constant x =
 	V.combiner bind option_default
 	  mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
 	  mcode mcode mcode
-	  do_nothing do_nothing do_nothing do_nothing do_nothing
-	  ident expr do_nothing do_nothing do_nothing do_nothing
 	  do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-	  do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing in
+	  ident expr do_nothing do_nothing do_nothing do_nothing do_nothing
+	  do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+	  do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+	  do_nothing in
       recursor.V.combiner_rule_elem x
   | _ -> true
 
@@ -106,7 +107,7 @@ let strip x =
     Ast.make_inherited_term (Ast.unwrap (k e)) inh inh_pos in
   let do_absolutely_nothing r k e = k e in
   let mcode m = Ast.make_mcode(Ast.unwrap_mcode m) in
-  let decl r k d =
+  let decl_or_field r k d =
     let res = do_nothing r k d in
     if Ast.get_safe_decl d
     then {res with Ast.safe_for_multi_decls = true}
@@ -114,8 +115,7 @@ let strip x =
   let annotated_decl no_mcode decl =
     match Ast.unwrap decl with
       Ast.DElem(bef,allminus,d) ->
-	Ast.rewrap decl (Ast.DElem(no_mcode,allminus,d))
-    | _ -> failwith "not possible" in
+	Ast.rewrap decl (Ast.DElem(no_mcode,allminus,d)) in
   let rule_elem r k re =
     let res = do_nothing r k re in
     let no_mcode = Ast.CONTEXT(Ast.NoPos,Ast.NOTHING) in
@@ -133,11 +133,12 @@ let strip x =
     V.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode mcode mcode mcode
-      do_nothing do_nothing do_nothing do_nothing do_nothing
+      do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing
-      decl do_absolutely_nothing rule_elem do_nothing do_nothing
-      do_nothing do_absolutely_nothing in
+      decl_or_field do_absolutely_nothing decl_or_field do_absolutely_nothing
+      rule_elem
+      do_nothing do_nothing do_nothing do_absolutely_nothing in
   recursor.V.rebuilder_rule_elem x
 
 (* --------------------------------------------------------------------- *)
