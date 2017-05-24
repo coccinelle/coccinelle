@@ -871,7 +871,11 @@ matches the pattern before the dots (or the beginning of the function, if
 there is nothing before the dots) and something that matches the pattern
 after the dots (or the end of the function, if there is nothing after the
 dots).  Dots may be modified with a {\tt when} clause, indicating a pattern
-that should not occur anywhere within the matched sequence.  {\tt when any}
+that should not occur anywhere within the matched sequence.  The shortest
+path constraint is implemented by requiring that the pattern (if any)
+appearing immediately before the dots and the pattern (if any) appearing
+immediately after the dots are not matched by the code matched by the dots.
+{\tt when any}
 removes the aforementioned constraint that ``\verb-...-'' matches the
 shortest path.  Finally, a transformation can specify a disjunction of
 patterns, of the form \mtt{( \mth{\mita{pat}_1} | \mita{\ldots} |
