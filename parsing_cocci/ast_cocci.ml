@@ -16,6 +16,7 @@ type info = { line : int; column : int;
 
 type line = int
 type meta_name = string * string
+type script_position = string (* filename *) * line (* line *)
 (* need to be careful about rewrapping, to avoid duplicating pos info
 currently, the pos info is always None until asttoctl2. *)
 type 'a wrap =
@@ -103,7 +104,8 @@ and metavar =
       arity * meta_name (* name *) * fullType list option
   | MetaErrDecl of arity * meta_name (* name *)
   | MetaExpDecl of
-      arity * meta_name (* name *) * fullType list option
+      arity * meta_name (* name *) * fullType list option *
+	list_len option (* bitfield *)
   | MetaIdExpDecl of
       arity * meta_name (* name *) * fullType list option
   | MetaLocalIdExpDecl of
@@ -127,7 +129,7 @@ and metavar =
   | MetaIteratorDecl of arity * meta_name (* name *)
   | MetaScriptDecl of metavar option ref * meta_name (* name *)
 
-and list_len = AnyLen | MetaLen of meta_name | CstLen of int
+and list_len = AnyLen | MetaLen of meta_name * constraints | CstLen of int
 
 and seed = NoVal | StringSeed of string | ListSeed of seed_elem list
 and seed_elem = SeedString of string | SeedId of meta_name
@@ -144,11 +146,11 @@ and 'a dots = 'a list wrap
 and base_ident =
     Id            of string mcode
   | MetaId        of
-      meta_name mcode * general_constraint * keep_binding * inherited
+      meta_name mcode * constraints * keep_binding * inherited
   | MetaFunc      of
-      meta_name mcode * general_constraint * keep_binding * inherited
+      meta_name mcode * constraints * keep_binding * inherited
   | MetaLocalFunc of
-      meta_name mcode * general_constraint * keep_binding * inherited
+      meta_name mcode * constraints * keep_binding * inherited
   | AsIdent       of ident * ident (* as ident, always metavar *)
 
   | DisjId        of ident list
@@ -196,8 +198,9 @@ and base_expression =
   | MetaErr        of meta_name mcode * constraints * keep_binding *
 	              inherited
   | MetaExpr       of meta_name mcode * constraints * keep_binding *
-	              fullType list option * form * inherited
-  | MetaExprList   of meta_name mcode * listlen * keep_binding *
+	fullType list option * form * inherited *
+	listlen option (* bitfield *)
+  | MetaExprList   of meta_name mcode * listlen * constraints * keep_binding *
                       inherited (* only in arg lists *)
   | AsExpr         of expression * expression (* as expr, always metavar *)
   | AsSExpr        of expression * rule_elem (* as expr, always metavar *)
@@ -218,27 +221,41 @@ and base_expression =
 
   | OptExp         of expression
 
-and constraints =
-    NoConstraint
-  | NotIdCstrt     of general_constraint
-  | NotExpCstrt    of expression list
-  | SubExpCstrt    of meta_name list
-
-and general_constraint =
+and 'expression generic_constraints =
     CstrFalse
   | CstrTrue
-  | CstrAnd of general_constraint list
-  | CstrOr of general_constraint list
-  | CstrNot of general_constraint
-  | CstrString of string
+  | CstrAnd of 'expression generic_constraints list
+  | CstrOr of 'expression generic_constraints list
+  | CstrNot of 'expression generic_constraints
+  | CstrConstant of constant_constraint
+  | CstrOperator of operator_constraint
   | CstrMeta_name of meta_name
   | CstrRegexp of string * Regexp.regexp
   | CstrScript of script_constraint
+  | CstrExpr of 'expression
+  | CstrSub of meta_name list
+  | CstrType of fullType
+
+and operator_constraint =
+    CstrAssignOp of assignOp
+  | CstrBinaryOp of binaryOp
+
+and constant_constraint =
+    CstrInt of int_constraint
+  | CstrString of string
+
+and int_constraint =
+    CstrIntEq of int
+  | CstrIntLeq of int
+  | CstrIntGeq of int
+
+and constraints = expression generic_constraints
 
 and script_constraint =
       string (* name of generated function *) *
 	string (* language *) *
 	(meta_name * metavar) list (* params *) *
+	script_position *
 	string (* code *)
 
 (* ANY = int E; ID = idexpression int X; CONST = constant int X; *)
@@ -247,7 +264,7 @@ and form = ANY | ID | LocalID | GlobalID | CONST (* form for MetaExp *)
 and expression = base_expression wrap
 
 and listlen =
-    MetaListLen of meta_name mcode * keep_binding * inherited
+    MetaListLen of meta_name mcode * constraints * keep_binding * inherited
   | CstListLen of int
   | AnyListLen
 
@@ -256,14 +273,14 @@ and base_string_fragment =
   | FormatFragment of string mcode (*%*) * string_format (* format *)
   | Strdots of string mcode
   | MetaFormatList of string mcode (*%*) * meta_name mcode * listlen *
-	keep_binding * inherited
+	constraints * keep_binding * inherited
 
 and string_fragment = base_string_fragment wrap
 
 and base_string_format =
     ConstantFormat of string mcode
   | MetaFormat of
-      meta_name mcode * general_constraint * keep_binding * inherited
+      meta_name mcode * constraints * keep_binding * inherited
 
 and string_format = base_string_format wrap
 
@@ -272,7 +289,7 @@ and base_assignOp =
     SimpleAssign of simpleAssignOp mcode
   | OpAssign of arithOp mcode
   | MetaAssign of
-      meta_name mcode * general_constraint * keep_binding * inherited
+      meta_name mcode * constraints * keep_binding * inherited
 and simpleAssignOp = string
 and assignOp = base_assignOp wrap
 and fixOp = Dec | Inc
@@ -281,7 +298,7 @@ and base_binaryOp =
     Arith of arithOp mcode
   | Logical of logicalOp mcode
   | MetaBinary of
-      meta_name mcode * general_constraint * keep_binding * inherited
+      meta_name mcode * constraints * keep_binding * inherited
 and binaryOp = base_binaryOp wrap
 and arithOp =
     Plus | Minus | Mul | Div | Mod | DecLeft | DecRight | And | Or | Xor
@@ -323,10 +340,11 @@ and base_typeC =
 	string mcode (* { *) * expression dots * string mcode (* } *)
   | StructUnionName of structUnion mcode * ident option (* name *)
   | StructUnionDef  of fullType (* either StructUnionName or metavar *) *
-	string mcode (* { *) * annotated_decl dots * string mcode (* } *)
+	string mcode (* { *) * annotated_field dots * string mcode (* } *)
   | TypeName        of string mcode (* pad: should be 'of ident' ? *)
 
-  | MetaType        of meta_name mcode * keep_binding * inherited
+  | MetaType        of meta_name mcode * constraints * keep_binding *
+	inherited
 
 and fullType = base_fullType wrap
 and typeC = base_typeC wrap
@@ -368,9 +386,8 @@ and base_declaration =
   | Typedef of string mcode (*typedef*) * fullType *
                typeC (* either TypeName or metavar *) * string mcode (*;*)
   | DisjDecl of declaration list
-  | MetaDecl of meta_name mcode * keep_binding * inherited
-  | MetaField of meta_name mcode * keep_binding * inherited
-  | MetaFieldList of meta_name mcode * listlen * keep_binding * inherited
+  | ConjDecl of declaration list
+  | MetaDecl of meta_name mcode * constraints * keep_binding * inherited
   | AsDecl        of declaration * declaration
 
   | OptDecl    of declaration
@@ -380,17 +397,39 @@ and declaration = base_declaration wrap
 and base_annotated_decl =
     DElem of mcodekind (* before the decl *) * bool (* true if all minus *) *
       declaration
-  (* Ddots is for a structure declaration *)
-  | Ddots    of string mcode (* ... *) * declaration option (* whencode *)
 
 and annotated_decl = base_annotated_decl wrap
+
+(* --------------------------------------------------------------------- *)
+(* Field declaration *)
+
+and base_field =
+    Field of fullType * ident option * bitfield option * string mcode (* ; *)
+  | DisjField of field list
+  | ConjField of field list
+  | OptField of field
+  | MetaField of meta_name mcode * constraints * keep_binding * inherited
+  | MetaFieldList of meta_name mcode * listlen * constraints * keep_binding *
+	inherited
+
+and bitfield = string mcode (* : *) * expression
+
+and field = base_field wrap
+
+and base_annotated_field =
+    FElem of mcodekind (* before the decl *) * bool (* true if all minus *) *
+      field
+  | Fdots    of string mcode (* ... *) * field option (* whencode *)
+
+and annotated_field = base_annotated_field wrap
 
 (* --------------------------------------------------------------------- *)
 (* Initializers *)
 
 and base_initialiser =
-    MetaInit of meta_name mcode * keep_binding * inherited
-  | MetaInitList of meta_name mcode * listlen * keep_binding * inherited
+    MetaInit of meta_name mcode * constraints * keep_binding * inherited
+  | MetaInitList of meta_name mcode * listlen * constraints * keep_binding *
+	inherited
   | AsInit of initialiser * initialiser (* as init, always metavar *)
   | InitExpr of expression
   | ArInitList of string mcode (*{*) * initialiser dots * string mcode (*}*)
@@ -423,8 +462,9 @@ and base_parameterTypeDef =
     VoidParam     of fullType
   | Param         of fullType * ident option
 
-  | MetaParam     of meta_name mcode * keep_binding * inherited
-  | MetaParamList of meta_name mcode * listlen * keep_binding * inherited
+  | MetaParam     of meta_name mcode * constraints * keep_binding * inherited
+  | MetaParamList of meta_name mcode * listlen * constraints * keep_binding *
+	inherited
 
   | AsParam       of parameterTypeDef * expression (* expr, always metavar *)
 
@@ -443,7 +483,8 @@ and parameter_list = parameterTypeDef dots
 
 and base_define_param =
     DParam        of ident
-  | MetaDParamList of meta_name mcode * listlen * keep_binding * inherited
+  | MetaDParamList of meta_name mcode * listlen * constraints * keep_binding *
+	inherited
   | DPComma       of string mcode
   | DPdots        of string mcode (* ... *)
   | OptDParam     of define_param
@@ -463,7 +504,7 @@ and define_parameters = base_define_parameters wrap
 and meta_collect = PER | ALL
 
 and meta_pos =
-    MetaPos of meta_name mcode * general_constraint *
+    MetaPos of meta_name mcode * constraints *
       meta_collect * keep_binding * inherited
 
 (* --------------------------------------------------------------------- *)
@@ -514,10 +555,11 @@ and base_rule_elem =
   | Exec          of string mcode (* EXEC *) * string mcode (* language *) *
 	             exec_code dots * string mcode (* ; *)
 
-  | MetaRuleElem  of meta_name mcode * keep_binding * inherited
-  | MetaStmt      of meta_name mcode * keep_binding * metaStmtInfo *
-	             inherited
-  | MetaStmtList  of meta_name mcode * listlen * keep_binding * inherited
+  | MetaRuleElem  of meta_name mcode * constraints * keep_binding * inherited
+  | MetaStmt      of meta_name mcode * constraints * keep_binding *
+	metaStmtInfo * inherited
+  | MetaStmtList  of meta_name mcode * listlen * constraints * keep_binding *
+	inherited
 
   | Exp           of expression (* matches a subterm *)
   | TopExp        of expression (* for macros body, exp at top level,
@@ -666,16 +708,16 @@ and rule =
       string (*language*) * dependency *
 	(script_meta_name * meta_name * metavar * mvinit)
 	  list (*inherited vars*) *
-	meta_name list (*script vars*) * string
+	meta_name list (*script vars*) * script_position * string
   | InitialScriptRule of  string (* name *) *
 	string (*language*) * dependency *
 	(script_meta_name * meta_name * metavar * mvinit)
-	  list (*virtual vars*) *
+	  list (*virtual vars*) * script_position *
 	string (*code*)
   | FinalScriptRule of  string (* name *) *
 	string (*language*) * dependency *
 	(script_meta_name * meta_name * metavar * mvinit)
-	  list (*virtual vars*) *
+	  list (*virtual vars*) * script_position *
 	string (*code*)
 
 and script_meta_name = string option (*string*) * string option (*ast*)
@@ -685,16 +727,18 @@ and mvinit =
   | MVInitString of string
   | MVInitPosList
 
-and dependency =
+and dep =
     Dep of string (* rule applies for the current binding *)
   | AntiDep of string (* rule doesn't apply for the current binding *)
   | EverDep of string (* rule applies for some binding *)
   | NeverDep of string (* rule never applies for any binding *)
-  | AndDep of dependency * dependency
-  | OrDep of dependency * dependency
+  | AndDep of dep * dep
+  | OrDep of dep * dep
   | FileIn of string
   | NotFileIn of string
-  | NoDep | FailDep
+
+and dependency =
+    NoDep | FailDep | ExistsDep of dep | ForallDep of dep
 
 and rule_with_metavars = metavar list * rule
 
@@ -715,6 +759,7 @@ and anything =
   | ArithOpTag          of arithOp
   | LogicalOpTag        of logicalOp
   | DeclarationTag      of declaration
+  | FieldTag            of field
   | InitTag             of initialiser
   | StorageTag          of storage
   | IncFileTag          of inc_file
@@ -731,6 +776,7 @@ and anything =
   | ParamDotsTag        of parameterTypeDef dots
   | StmtDotsTag         of statement dots
   | AnnDeclDotsTag      of annotated_decl dots
+  | AnnFieldDotsTag     of annotated_field dots
   | DefParDotsTag       of define_param dots
   | TypeCTag            of typeC
   | ParamTag            of parameterTypeDef
@@ -811,7 +857,7 @@ let get_meta_name = function
   | MetaAssignmentOperatorDecl(_,name) -> name
   | MetaConstDecl(_ar,nm,_ty) -> nm
   | MetaErrDecl(_ar,nm) -> nm
-  | MetaExpDecl(_ar,nm,_ty) -> nm
+  | MetaExpDecl(_ar,nm,_ty,_bitfield) -> nm
   | MetaIdExpDecl(_ar,nm,_ty) -> nm
   | MetaLocalIdExpDecl(_ar,nm,_ty) -> nm
   | MetaGlobalIdExpDecl(_ar,nm,_ty) -> nm
@@ -851,6 +897,7 @@ and tag2c = function
   | ArithOpTag _   -> "ArithOpTag"
   | LogicalOpTag _ -> "LogicalOpTag"
   | DeclarationTag _ -> "DeclarationTag"
+  | FieldTag _ -> "FieldTag"
   | InitTag _      -> "InitTag"
   | StorageTag _   -> "StorageTag"
   | IncFileTag _   -> "IncFileTag"
@@ -867,6 +914,7 @@ and tag2c = function
   | ParamDotsTag _ -> "ParamDotsTag"
   | StmtDotsTag _ -> "StmtDotsTag"
   | AnnDeclDotsTag _ -> "AnnDeclDotsTag"
+  | AnnFieldDotsTag _ -> "AnnFieldDotsTag"
   | DefParDotsTag _ -> "DefParDotsTag"
   | TypeCTag _ -> "TypeCTag"
   | ParamTag _ -> "ParamTag"
@@ -908,16 +956,16 @@ let make_inherited_term x inherited inh_pos =
     safe_for_multi_decls = false;
     iso_info = [] }
 
-let make_meta_rule_elem s d (fvs,fresh,inh) =
+let make_meta_rule_elem s d c (fvs,fresh,inh) =
   let rule = "" in
   {(make_term
-      (MetaRuleElem(((rule,s),no_info,d,[]),Unitary,false)))
+      (MetaRuleElem(((rule,s),no_info,d,[]),c,Unitary,false)))
   with free_vars = fvs; fresh_vars = fresh; inherited = inh}
 
-let make_meta_decl s d (fvs,fresh,inh) =
+let make_meta_decl s d c (fvs,fresh,inh) =
   let rule = "" in
   {(make_term
-      (MetaDecl(((rule,s),no_info,d,[]),Unitary,false))) with
+      (MetaDecl(((rule,s),no_info,d,[]),c,Unitary,false))) with
     free_vars = fvs; fresh_vars = fresh; inherited = inh}
 
 let make_mcode x = (x,no_info,CONTEXT(NoPos,NOTHING),[])
@@ -1036,7 +1084,7 @@ let rec string_of_typeC ty =
   | EnumDef (ty', _, _, _)
   | StructUnionDef (ty', _, _, _) -> string_of_fullType ty'
   | TypeName (name) -> unwrap_mcode name ^ " "
-  | MetaType (m, _, _) -> string_of_meta_name (unwrap_mcode m) ^ " "
+  | MetaType (m, _, _, _) -> string_of_meta_name (unwrap_mcode m) ^ " "
 and string_of_fullType ty =
   match unwrap ty with
     Type (_, None, ty') -> string_of_typeC ty'
@@ -1063,7 +1111,8 @@ type 'a transformer = {
     enumName: (string mcode -> ident option -> 'a) option;
     structUnionName: (structUnion mcode -> ident option -> 'a) option;
     typeName: (string mcode -> 'a) option;
-    metaType: (meta_name mcode -> keep_binding -> inherited -> 'a) option
+    metaType: (meta_name mcode -> constraints -> keep_binding ->
+      inherited -> 'a) option
   }
 
 let empty_transformer = {
@@ -1115,11 +1164,11 @@ and typeC_map tr ty =
           None -> ty
         | Some f -> rewrap ty (f name)
       end
-  | MetaType (name, keep, inherited) ->
+  | MetaType (name, cstr, keep, inherited) ->
       begin
         match tr.metaType with
           None -> ty
-        | Some f -> rewrap ty (f name keep inherited)
+        | Some f -> rewrap ty (f name cstr keep inherited)
       end
   | Decimal (s0, s1, e0, s2, e1, s3) ->
       begin
@@ -1159,8 +1208,8 @@ and typeC_fold tr ty v =
   | StructUnionName (su, ident) ->
       Common.default v (fun f -> f su ident v) tr.structUnionName
   | TypeName name -> Common.default v (fun f -> f name v) tr.typeName
-  | MetaType (name, keep, inherited) ->
-      Common.default v (fun f -> f name keep inherited v) tr.metaType
+  | MetaType (name, cstr, keep, inherited) ->
+      Common.default v (fun f -> f name cstr keep inherited v) tr.metaType
 
 let fullType_iter tr ty =
   fullType_fold {
@@ -1172,7 +1221,8 @@ let fullType_iter tr ty =
       (fun f su ident () -> f su ident) tr.structUnionName;
     typeName = Common.map_option (fun f name () -> f name) tr.typeName;
     metaType = Common.map_option
-      (fun f name keep inherited () -> f name keep inherited) tr.metaType
+      (fun f name cstr keep inherited () -> f name cstr keep inherited)
+    tr.metaType
   } ty ()
 
 let rec ident_fold_meta_names f ident v =
@@ -1200,61 +1250,105 @@ let fullType_fold_meta_names f ty v =
 	(fun e -> expression_fold_ident (ident_fold_meta_names f) e v) e2);
     enumName = Some enumOrStructUnionName;
     structUnionName = Some enumOrStructUnionName;
-    metaType = Some (fun tyname _ _ v -> f (unwrap_mcode tyname) v)
+    metaType = Some (fun tyname _ _ _ v -> f (unwrap_mcode tyname) v)
   } ty v
 
 let meta_names_of_fullType ty =
   fullType_fold_meta_names
     (fun meta_name meta_names -> meta_name :: meta_names) ty []
 
-type 'a cstr_transformer = {
-    cstr_string: (string -> 'a) option;
+let string_of_expression e =
+  match unwrap e with
+    Ident id ->
+      begin
+	match unwrap id with
+	  Id m -> Some (unwrap_mcode m)
+	| _ -> None
+      end
+  | _ -> None
+
+type ('expression, 'a) cstr_transformer = {
+    cstr_constant: (constant_constraint -> 'a) option;
+    cstr_operator: (operator_constraint -> 'a) option;
     cstr_meta_name: (meta_name -> 'a) option;
     cstr_regexp: (string -> Regexp.regexp -> 'a) option;
     cstr_script: (script_constraint -> 'a) option;
+    cstr_expr: ('expression -> 'a) option;
+    cstr_sub: (meta_name list -> 'a) option;
+    cstr_type: (fullType -> 'a) option;
   }
 
 let empty_cstr_transformer = {
-  cstr_regexp = None;
-  cstr_string = None;
+  cstr_constant = None;
+  cstr_operator = None;
   cstr_meta_name = None;
+  cstr_regexp = None;
   cstr_script = None;
+  cstr_expr = None;
+  cstr_sub = None;
+  cstr_type = None;
 }
 
-let rec cstr_fold transformer c accu =
+let rec cstr_fold_sign pos neg c accu =
   match c with
     CstrFalse
   | CstrTrue -> accu
   | CstrAnd list | CstrOr list ->
-      List.fold_left (fun accu c' -> cstr_fold transformer c' accu) accu list
-  | CstrNot c' -> cstr_fold transformer c' accu
-  | CstrString s ->
-      Common.default accu (fun f -> f s accu) transformer.cstr_string
+      List.fold_left (fun accu c' -> cstr_fold_sign pos neg c' accu) accu list
+  | CstrNot c' -> cstr_fold_sign neg pos c' accu
+  | CstrConstant c' ->
+      Common.default accu (fun f -> f c' accu) pos.cstr_constant
+  | CstrOperator c' ->
+      Common.default accu (fun f -> f c' accu) pos.cstr_operator
   | CstrMeta_name mn ->
-      Common.default accu (fun f -> f mn accu) transformer.cstr_meta_name
+      Common.default accu (fun f -> f mn accu) pos.cstr_meta_name
   | CstrRegexp (s, re) ->
-      Common.default accu (fun f -> f s re accu) transformer.cstr_regexp
-  | CstrScript ((_name, _lang, params, _code) as script_constraint) ->
+      Common.default accu (fun f -> f s re accu) pos.cstr_regexp
+  | CstrScript ((_name, _lang, params, _pos, _code) as script_constraint) ->
       begin
-	match transformer.cstr_script with
+	match pos.cstr_script with
 	  None ->
 	    Common.default accu
 	      (fun f ->
 		List.fold_left (fun accu' (mv, _) -> f mv accu') accu params)
-	      transformer.cstr_meta_name
+	      pos.cstr_meta_name
 	| Some f -> f script_constraint accu
       end
+  | CstrExpr e ->
+      Common.default accu (fun f -> f e accu) pos.cstr_expr
+  | CstrSub l ->
+      begin
+	match pos.cstr_sub with
+	  None ->
+	    Common.default accu
+	      (fun f ->
+		List.fold_left (fun accu' mv -> f mv accu') accu l)
+	      pos.cstr_meta_name
+	| Some f -> f l accu
+      end
+  | CstrType ty -> Common.default accu (fun f -> f ty accu) pos.cstr_type
+
+let cstr_fold transformer c accu =
+  cstr_fold_sign transformer transformer c accu
 
 let cstr_iter transformer c =
   cstr_fold
-    { cstr_string =
-      Common.map_option (fun f s () -> f s) transformer.cstr_string;
+    { cstr_constant =
+      Common.map_option (fun f c' () -> f c') transformer.cstr_constant;
+      cstr_operator =
+      Common.map_option (fun f c' () -> f c') transformer.cstr_operator;
       cstr_meta_name =
       Common.map_option (fun f s () -> f s) transformer.cstr_meta_name;
       cstr_regexp =
       Common.map_option (fun f s re () -> f s re) transformer.cstr_regexp;
       cstr_script =
-      Common.map_option (fun f s () -> f s) transformer.cstr_script; } c ()
+      Common.map_option (fun f s () -> f s) transformer.cstr_script;
+      cstr_expr =
+      Common.map_option (fun f s () -> f s) transformer.cstr_expr;
+      cstr_sub =
+      Common.map_option (fun f s () -> f s) transformer.cstr_sub;
+      cstr_type =
+      Common.map_option (fun f s () -> f s) transformer.cstr_type; } c ()
 
 let rec cstr_map transformer c =
   match c with
@@ -1263,8 +1357,10 @@ let rec cstr_map transformer c =
   | CstrAnd list -> CstrAnd (List.map (cstr_map transformer) list)
   | CstrOr list -> CstrOr (List.map (cstr_map transformer) list)
   | CstrNot c' -> CstrNot (cstr_map transformer c')
-  | CstrString s ->
-      Common.default (CstrString s) (fun f -> f s) transformer.cstr_string
+  | CstrConstant c' ->
+      Common.default (CstrConstant c') (fun f -> f c') transformer.cstr_constant
+  | CstrOperator c' ->
+      Common.default (CstrOperator c') (fun f -> f c') transformer.cstr_operator
   | CstrMeta_name mn ->
       Common.default (CstrMeta_name mn) (fun f -> f mn)
 	transformer.cstr_meta_name
@@ -1275,25 +1371,33 @@ let rec cstr_map transformer c =
       Common.default (CstrScript script_constraint)
 	(fun f -> f script_constraint)
 	transformer.cstr_script
-
-let rec cstr_eval transformer c =
-  match c with
-    CstrFalse -> false
-  | CstrTrue -> true
-  | CstrAnd list -> List.for_all (cstr_eval transformer) list
-  | CstrOr list -> List.exists (cstr_eval transformer) list
-  | CstrNot c' -> not (cstr_eval transformer c')
-  | CstrString s -> Common.default false (fun f -> f s) transformer.cstr_string
-  | CstrMeta_name mn ->
-      Common.default false (fun f -> f mn) transformer.cstr_meta_name
-  | CstrRegexp (s, re) ->
-      Common.default false (fun f -> f s re) transformer.cstr_regexp
-  | CstrScript script_constraint ->
-      Common.default false (fun f -> f script_constraint)
-	transformer.cstr_script
+  | CstrExpr e ->
+      (* Untransformed expressions are discarded! *)
+      Common.default CstrTrue (fun f -> f e)
+	transformer.cstr_expr
+  | CstrSub l ->
+      Common.default (CstrSub l) (fun f -> f l)
+	transformer.cstr_sub
+  | CstrType ty ->
+      Common.default (CstrType ty) (fun f -> f ty)
+	transformer.cstr_type
 
 let cstr_meta_names c =
   cstr_fold
     { empty_cstr_transformer with
       cstr_meta_name = Some (fun mn accu -> mn :: accu)
     } c []
+
+let cstr_pos_meta_names c =
+  cstr_fold_sign
+    { empty_cstr_transformer with
+      cstr_meta_name = Some (fun mn accu -> mn :: accu)
+    } empty_cstr_transformer c []
+
+let filter_merge_variables metavars =
+  let filter_var accu metavar =
+    match metavar with
+      ((Some merge_name, None), ("merge", local_name), _, _) ->
+	(merge_name, local_name) :: accu
+    | _ -> accu in
+  List.fold_left filter_var [] metavars

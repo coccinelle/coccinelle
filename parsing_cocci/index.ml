@@ -6,7 +6,7 @@
 
 (* create an index for each constructor *)
 (* current max is 188, also unused: 8-9, 15, 39, 40, 42, 46, 57, 65, 67, 85-86,
- 88, 111, 113-115, 134-136, 138-140 *)
+ 111, 113-115, 134-136, 138-140 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -27,6 +27,7 @@ let initialiser_dots x = 2 :: dots x
 let parameter_dots x =   3 :: dots x
 let statement_dots x =   4 :: dots x
 let declaration_dots x = 5 :: dots x
+let field_dots x = 8 :: dots x
 let case_line_dots x =   6 :: dots x
 let define_param_dots x =7 :: dots x
 
@@ -64,8 +65,8 @@ let expression e =
   | Ast0.TypeExp(ty) -> [123] (* added after *)
   | Ast0.Constructor(lp,ty,rp,init) -> [155]
   | Ast0.MetaErr(name,_,_) -> [32]
-  | Ast0.MetaExpr(name,_,ty,_,_) -> [33]
-  | Ast0.MetaExprList(name,_,_) -> [34]
+  | Ast0.MetaExpr(name,_,ty,_,_,_bitfield) -> [33]
+  | Ast0.MetaExprList(name,_,_,_) -> [34]
   | Ast0.EComma(cm) -> [35]
   | Ast0.DisjExpr(_,expr_list,_,_) -> [36]
   | Ast0.ConjExpr(_,expr_list,_,_) -> [187]
@@ -98,16 +99,14 @@ let typeC t =
   | Ast0.StructUnionName(kind,name) -> [51]
   | Ast0.StructUnionDef(ty,lb,decls,rb) -> [117]
   | Ast0.TypeName(name) -> [52]
-  | Ast0.MetaType(name,_) -> [53]
+  | Ast0.MetaType(name,_,_) -> [53]
   | Ast0.DisjType(_,type_list,_,_) -> [130]
   | Ast0.OptType(ty) -> [45]
   | Ast0.AsType _ -> failwith "not possible"
 
 let declaration d =
   match Ast0.unwrap d with
-    Ast0.MetaDecl(name,_) -> [148]
-  | Ast0.MetaField(name,_) -> [149]
-  | Ast0.MetaFieldList(name,_,_) -> [152]
+    Ast0.MetaDecl(name,_,_) -> [148]
   | Ast0.Init(stg,ty,id,eq,exp,sem) -> [54]
   | Ast0.UnInit(stg,ty,id,sem) -> [55]
   | Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) -> [132]
@@ -116,14 +115,24 @@ let declaration d =
   | Ast0.TyDecl(ty,sem) -> [116]
   | Ast0.Typedef(stg,ty,id,sem) -> [143]
   | Ast0.DisjDecl(_,decls,_,_) -> [97] (* added after *)
-  | Ast0.Ddots(dots,whencode) -> [133]
+  | Ast0.ConjDecl(_,decls,_,_) -> [88] (* added after *)
   | Ast0.OptDecl(decl) -> [56]
   | Ast0.AsDecl _ -> failwith "not possible"
 
+let field d =
+  match Ast0.unwrap d with
+  | Ast0.MetaField(name,_,_) -> [149]
+  | Ast0.MetaFieldList(name,_,_,_) -> [152]
+  | Ast0.Field(ty,id,_bf,sem) -> [55]
+  | Ast0.DisjField(_,decls,_,_) -> [189] (* added after *)
+  | Ast0.ConjField(_,decls,_,_) -> [190] (* added after *)
+  | Ast0.Fdots(dots,whencode) -> [133]
+  | Ast0.OptField(decl) -> [191]
+
 let initialiser i =
   match Ast0.unwrap i with
-    Ast0.MetaInit(nm,_) -> [106] (* added after *)
-  | Ast0.MetaInitList(nm,_,_) -> [153] (* added after *)
+    Ast0.MetaInit(nm,_,_) -> [106] (* added after *)
+  | Ast0.MetaInitList(nm,_,_,_) -> [153] (* added after *)
   | Ast0.InitExpr(exp) -> [102]
   | Ast0.InitList(lb,initlist,rb,ordered) -> [103]
   | Ast0.InitGccExt(designators,eq,ini) -> [104]
@@ -137,8 +146,8 @@ let parameterTypeDef p =
   match Ast0.unwrap p with
     Ast0.VoidParam(ty) -> [59]
   | Ast0.Param(ty,id) -> [60]
-  | Ast0.MetaParam(name,_) -> [61]
-  | Ast0.MetaParamList(name,_,_) -> [62]
+  | Ast0.MetaParam(name,_,_) -> [61]
+  | Ast0.MetaParamList(name,_,_,_) -> [62]
   | Ast0.PComma(cm) -> [63]
   | Ast0.Pdots(dots) -> [64]
   | Ast0.OptParam(param) -> [66]
@@ -164,8 +173,8 @@ let statement s =
   | Ast0.Return(ret,sem) -> [77]
   | Ast0.ReturnExpr(ret,exp,sem) -> [78]
   | Ast0.Exec(exec,lang,code,sem) -> [170]
-  | Ast0.MetaStmt(name,_) -> [79]
-  | Ast0.MetaStmtList(name,_,_) -> [80]
+  | Ast0.MetaStmt(name,_,_) -> [79]
+  | Ast0.MetaStmtList(name,_,_,_) -> [80]
   | Ast0.Disj(_,statement_dots_list,_,_) -> [81]
   | Ast0.Conj(_,statement_dots_list,_,_) -> [188]
   | Ast0.Nest(_,stmt_dots,_,_,_) -> [82]
@@ -205,7 +214,7 @@ let string_fragment f =
     Ast0.ConstantFragment(str) -> [166]
   | Ast0.FormatFragment(pct,fmt) -> [167]
   | Ast0.Strdots(dots) -> [168]
-  | Ast0.MetaFormatList(pct,name,lenname) -> [169]
+  | Ast0.MetaFormatList(pct,name,cstr,lenname) -> [169]
 
 let top_level t =
   match Ast0.unwrap t with

@@ -75,6 +75,8 @@ module XMATCH = struct
 
   type ('a, 'b) matcher = 'a -> 'b  -> tin -> ('a * 'b) tout
 
+  let constraint_checker = ref (fun _ -> failwith "unbound constraint_checker")
+
   (* was >&&> *)
   let (>>=) m1 m2 = fun tin ->
     let xs = m1 tin in
@@ -134,6 +136,11 @@ module XMATCH = struct
     if f tin
     then m tin
     else fail tin
+
+  let mnot f res = fun tin ->
+    match f tin with
+      [] -> return res tin
+    | _ -> fail tin
 
 
   let mode = Cocci_vs_c.PatternMode
@@ -272,6 +279,11 @@ module XMATCH = struct
       Ast_c.AbstractLineTok pi -> true
     | _ -> false
 
+  let is_fake ii = (* likely an invisible comma *)
+    match Ast_c.pinfo_of_info ii with
+      Ast_c.FakeTok _ -> true
+    | _ -> false
+
   let distrf (ii_of_x_f) =
     fun mcode x -> fun tin ->
       let iis = ii_of_x_f x in
@@ -324,16 +336,17 @@ module XMATCH = struct
           | _ (* success *) -> fail tin in
     loop constraints
 
-  let check_constraints matcher constraints term = fun f tin ->
-    if matcher constraints term (function id -> tin.binding0 +> List.assoc id)
-    then f () tin (* success *)
-    else fail tin (* failure *)
+  let check_constraints ida idb constraints f =
+    (fun tin ->
+      !constraint_checker ida idb (function id -> tin.binding0 +> List.assoc id)
+	constraints tin)
+      >>= (fun _ _ -> f ())
 
-  let check_pos_constraints pname constraints pvalu f tin =
-    let res =
-      Cocci_vs_c.satisfies_constraint constraints (pname, pvalu)
-	(fun name -> List.assoc name tin.binding0) in
-    if res then f () tin (* success *) else fail tin (* failure *)
+  let check_pos_constraints pname pvalu constraints f =
+    (fun tin ->
+      !constraint_checker pname pvalu (fun name -> List.assoc name tin.binding0)
+	constraints tin)
+      >>= (fun _ _ -> f)
 
   (* ------------------------------------------------------------------------*)
   (* Environment *)
@@ -504,25 +517,28 @@ module XMATCH = struct
     match Ast_cocci.get_pos_var ia with
       [] -> finish tin
     | positions ->
-	let pvalu = Ast_c.MetaPosValList(get_pvalu()) in
-	let rec loop tin = function
-	    [] -> finish tin
-	  | Ast_cocci.MetaPos(name,constraints,per,keep,inherited) :: rest ->
-	      let name' = Ast_cocci.unwrap_mcode name in
-	      check_pos_constraints name' constraints pvalu
-		(function () ->
-	    (* constraints are satisfied, now see if we are compatible
-	       with existing bindings *)
-		  function new_tin ->
-		    let x = Ast_cocci.unwrap_mcode name in
-		    let new_binding =
-		      check_add_metavars_binding false keep inherited
-			(x, pvalu) tin in
-		    (match  new_binding with
-		      Some binding -> loop {tin with binding = binding} rest
-		    | None -> fail tin))
-		tin in
-	loop tin positions
+	match get_pvalu() with
+	  None -> finish tin
+	| Some pvalu ->
+	    let pvalu = Ast_c.MetaPosValList(pvalu) in
+	    let rec loop tin = function
+		[] -> finish tin
+	      | Ast_cocci.MetaPos(name,constraints,per,keep,inherited)::rest ->
+		  let name' = Ast_cocci.unwrap_mcode name in
+		  check_pos_constraints name' pvalu constraints
+		    (fun new_tin ->
+		      (* constraints are satisfied, now see if we are
+			 compatible with existing bindings *)
+		      let x = Ast_cocci.unwrap_mcode name in
+		      let new_binding =
+			check_add_metavars_binding false keep inherited
+			  (x, pvalu) tin in
+		      (match  new_binding with
+			Some binding ->
+			  loop {new_tin with binding = binding} rest
+		      | None -> fail tin))
+		    tin in
+	    loop tin positions
 
   let envf keep inherited = fun (k, valu, get_max_min) f tin ->
     let x = Ast_cocci.unwrap_mcode k in
@@ -531,8 +547,9 @@ module XMATCH = struct
 	let new_tin = {tin with binding = binding} in
 	pos_variables new_tin k
 	  (function _ ->
-	    let (file,current_element,min,max) = get_max_min() in
-	    [(file,current_element,min,max)])
+	    match get_max_min() with
+	      Some pos -> Some [pos]
+	    | None -> None)
 	  (f ())
     | None -> fail tin
 
@@ -583,7 +600,10 @@ module XMATCH = struct
       let posmck = Ast_cocci.FixPos (pos, pos) in
       let finish tin = tag_mck_pos_mcode ia posmck ib tin in
       pos_variables tin ia
-	(function _ -> [Lib_parsing_c.lin_col_by_pos [ib]])
+	(function _ ->
+	  if is_fake ib
+	  then None
+	  else Some [Lib_parsing_c.lin_col_by_pos [ib]])
 	finish
 
   let tokenf_mck mck ib = fun tin ->

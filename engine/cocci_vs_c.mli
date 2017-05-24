@@ -58,6 +58,11 @@ module type PARAM =
      *)
     type ('a, 'b) matcher = 'a -> 'b -> tin -> ('a * 'b) tout
 
+    val constraint_checker:
+	(Ast_cocci.meta_name -> Ast_c.metavar_binding_kind ->
+	  (Ast_cocci.meta_name -> Ast_c.metavar_binding_kind) ->
+	    Ast_cocci.constraints -> tin -> (unit * unit) tout) ref
+
     val mode : mode
 
     (* -------------------------------------------------------------------- *)
@@ -78,6 +83,8 @@ module type PARAM =
     val ( >||> ) :  (tin -> 'a tout) -> (tin -> 'a tout) -> tin -> 'a tout
     val ( >|+|> ) : (tin -> 'a tout) -> (tin -> 'a tout) -> tin -> 'a tout
     val ( >&&> ) :  (tin -> bool) -> (tin -> 'a tout) -> tin -> 'a tout
+
+    val mnot : (tin -> 'a tout) -> 'a -> tin -> 'a tout
 
     (* -------------------------------------------------------------------- *)
     (* Tokens tagging *)
@@ -194,14 +201,13 @@ module type PARAM =
       Ast_cocci.inherited ->
       Ast_cocci.meta_name Ast_cocci.mcode * Ast_c.metavar_binding_kind *
 	  (* pos info, if needed *)
-	  (unit -> Common.filename * string * Ast_c.posl * Ast_c.posl) ->
+	  (unit ->
+	    (Common.filename * string * Ast_c.posl * Ast_c.posl) option) ->
       (unit -> tin -> 'x tout) -> (tin -> 'x tout)
 
     val check_constraints :
-      ('a -> 'b -> (Ast_cocci.meta_name -> Ast_c.metavar_binding_kind) ->
-	bool) ->
-	'a -> 'b ->
-	(unit -> tin -> 'x tout) -> (tin -> 'x tout)
+	Ast_cocci.meta_name -> Ast_c.metavar_binding_kind ->
+	  Ast_cocci.constraints -> (unit -> tin -> 'x tout) -> tin -> 'x tout
 
     val check_constraints_ne :
       ('a, 'b) matcher -> 'a list -> 'b ->
@@ -219,10 +225,6 @@ module type PARAM =
 	(bool -> tin -> 'x tout) -> (tin -> 'x tout)
 
   end
-
-val satisfies_constraint: Ast_cocci.general_constraint ->
-  Ast_cocci.meta_name * Ast_c.metavar_binding_kind ->
-    (Ast_cocci.meta_name -> Ast_c.metavar_binding_kind) -> bool
 
 (*****************************************************************************)
 (* The functor itself *)

@@ -22,3 +22,17 @@ let compare_of_int c =
   | 4 -> GT
   | 5 -> GE
   | _ -> failwith "Pytypes.compare_of_int"
+
+let input_of_int input =
+  match input with
+    256 -> Single
+  | 257 -> File
+  | 258 -> Eval
+  | _ -> failwith "Pytypes.input_of_int"
+
+type 'a file = Filename of string | Channel of 'a
+
+let file_map f x =
+  match x with
+    Filename filename -> Filename filename
+  | Channel channel -> Channel (f channel)

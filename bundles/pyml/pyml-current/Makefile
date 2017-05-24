@@ -1,7 +1,7 @@
 OCAMLFIND=ocamlfind
 
 HAVE_OCAMLFIND:=$(shell \
-	if $(OCAMLFIND) query -help >/dev/null 2>&1; then \
+	if $(OCAMLFIND) query -help &>/dev/null; then \
 		echo yes; \
 	else \
 		echo no; \
@@ -18,20 +18,20 @@ ifneq ($(HAVE_OCAMLFIND),no)
 	OCAMLDOC=$(OCAMLFIND) ocamldoc
 else
 	OCAMLC:=$(shell \
-		if ocamlc.opt -version >/dev/null 2>&1; then \
+		if ocamlc.opt -version &>/dev/null; then \
 			echo ocamlc.opt; \
-		elif ocamlc -version >/dev/null 2>&1; then \
+		elif ocamlc -version &>/dev/null; then \
 			echo ocamlc; \
 		fi \
 	)
 	ifeq ($(OCAMLC),)
-		$(error There is no OCaml compiler available in path)
+		ERROR:=$(error There is no OCaml compiler available in path)
 	endif
 	ifneq ($(HAVE_OCAMLOPT),no)
 		OCAMLOPTEXE:=$(shell \
-			if ocamlopt.opt -version >/dev/null 2>&1; then \
+			if ocamlopt.opt -version &>/dev/null; then \
 				echo ocamlopt.opt; \
-			elif ocamlopt -version >/dev/null 2>&1; then \
+			elif ocamlopt -version &>/dev/null; then \
 				echo ocamlopt; \
 			fi \
 		)
@@ -57,7 +57,7 @@ else
 	TESTSOPT=tests.native
 endif
 
-MODULES=pyml_compat pytypes pywrappers py pycaml
+MODULES=pyml_compat pyml_arch pytypes pywrappers py pycaml
 
 VERSION:=$(shell date "+%Y%m%d")
 
@@ -78,14 +78,27 @@ PYML_COMPAT:=$(shell \
 	fi \
 )
 
+ARCH:=$(shell uname)
+
+ifeq ($(ARCH),Linux)
+	PYML_ARCH=pyml_arch_linux.ml
+else ifeq ($(ARCH),Darwin)
+	PYML_ARCH=pyml_arch_darwin.ml
+else ifeq ($(findstring CYGWIN,$(ARCH)),CYGWIN)
+	PYML_ARCH=pyml_arch_cygwin.ml
+else
+	$(error Unsupported OS $(ARCH)
+endif
+
 .PHONY: all
 all: all.bytecode $(ALLOPT)
 	@echo The py.ml library is compiled.
 	@echo Run \`make doc\' to build the documentation.
 	@echo Run \`make tests\' to check the test suite.
 ifneq ($(HAVE_OCAMLFIND),no)
-	@echo Run \`make install\' to install the library via ocamlfind.;
+	@echo Run \`make install\' to install the library via ocamlfind.
 endif
+	@echo Run \`make pymltop\' to build the toplevel.
 
 .PHONY: help
 help:
@@ -93,11 +106,14 @@ help:
 	@echo make all.bytecode : build only the bytecode library
 	@echo make all.native : build only the native library
 	@echo make doc : build the documentation
+ifneq ($(HAVE_OCAMLFIND),no)
 	@echo make install : install the library via ocamlfind
+endif
 	@echo make clean : remove all the generated files
 	@echo make tests : compile and run the test suite
 	@echo make tests.bytecode : run only the bytecode version of the tests
 	@echo make tests.native : run only the native version of the tests
+	@echo make pymltop: build the toplevel
 	@echo make HAVE_OCAMLFIND=no : disable ocamlfind
 	@echo make HAVE_OCAMLOPT=no : disable ocamlopt
 	@echo "make OCAMLC|OCAMLOPT|OCAMLMKLIB|OCAMLDEP|OCAMLDOC=... :"
@@ -131,8 +147,7 @@ ifeq ($(HAVE_OCAMLFIND),no)
 endif
 	$(OCAMLFIND) install pyml \
 		py.mli \
-		py.cmi pytypes.cmi pywrappers.cmi pycaml.cmi \
-		py.cmx pytypes.cmx pywrappers.cmx pycaml.cmx \
+		$(MODULES:=.cmi) $(MODULES:=.cmx) \
 		pyml.cma pyml.cmxa pyml.cmxs pyml.a \
 		libpyml_stubs.a dllpyml_stubs.so \
 		META
@@ -147,7 +162,7 @@ clean:
 	rm -f pywrappers.mli pywrappers.ml pyml_dlsyms.inc pyml_wrappers.inc
 	rm -f pyml.h
 	rm -f pyml_stubs.o dllpyml_stubs.so libpyml_stubs.a
-	rm -f pyml_compat.ml
+	rm -f pyml_compat.ml pyml_arch.ml
 	rm -f generate pyml_tests pyml_tests.bytecode
 	rm -f .depend
 	rm -rf doc
@@ -183,7 +198,7 @@ pywrappers.ml pyml_wrappers.inc: generate
 
 pyml_wrappers.inc: pywrappers.ml
 
-pywrappers.mli: pywrappers.ml pytypes.cmi
+pywrappers.mli: pywrappers.ml pytypes.cmi pyml_arch.cmi
 	$(OCAMLC) -i $< >$@
 
 pyml_tests.native: py.cmi pyml.cmxa pyml_tests.cmx
@@ -197,6 +212,11 @@ pyml_compat.ml: $(PYML_COMPAT)
 	cp $< $@
 
 pyml_compat.cmx: pyml_compat.cmi
+
+pyml_arch.ml: $(PYML_ARCH)
+	cp $< $@
+
+pyml_arch.cmx: pyml_arch.cmi
 
 %.cmi: %.mli
 	$(OCAMLC) $(OCAMLCFLAGS) -c $< -o $@
@@ -221,3 +241,6 @@ pyml.cmxs: $(MODULES:=.cmx) libpyml_stubs.a
 
 libpyml_stubs.a: pyml_stubs.o
 	$(OCAMLMKLIB) -o pyml_stubs $<
+
+pymltop: pyml.cma
+	ocamlmktop -o $@ unix.cma $<

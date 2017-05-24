@@ -24,12 +24,13 @@ type constant_info =
       (Str.regexp * Str.regexp list * string list)
       option (*coccigrep/gitgrep tokens*) *
       Get_constants2.combine option
+type merge_vars = string array list * string array list
+val union_merge_vars : merge_vars -> merge_vars -> merge_vars
 val pre_engine : (filename * filename) -> cocci_info * constant_info
 val worth_trying : filename list -> constant_info -> bool
 val full_engine :
-  cocci_info -> filename list -> (filename * filename option) list
-val post_engine : cocci_info -> unit
-val has_finalize : cocci_info -> bool
+  cocci_info -> filename list -> (filename * filename option) list * merge_vars
+val post_engine : cocci_info -> merge_vars -> unit
 
 (* because of the #include "toto.c" and also because we may associate the
  * same C file to multiple drivers because they share code, we can
@@ -52,6 +53,7 @@ val sp_of_file :
 	 (*fresh used after list seeds*)
 	 Ast_cocci.meta_name list list list) *
       Ast_cocci.meta_name list list list * constant_info *
-      bool (* format information needed for strings? *)
+      bool (* format information needed for strings? *) *
+      bool (* contains modif in any rule *)
 
 val normalize_path : string -> string

@@ -17,9 +17,9 @@ let unify_mcode (x,_,_,_) (y,_,_,_) = x = y
 
 module type Behaviour = sig
   val unify_meta_ident:
-      Ast.meta_name Ast.mcode * Ast.general_constraint * Ast.keep_binding *
+      Ast.meta_name Ast.mcode * Ast.constraints * Ast.keep_binding *
       Ast.inherited ->
-      Ast.meta_name Ast.mcode * Ast.general_constraint * Ast.keep_binding *
+      Ast.meta_name Ast.mcode * Ast.constraints * Ast.keep_binding *
       Ast.inherited -> bool
 
   val meta_ident_unifier: bool
@@ -102,9 +102,9 @@ let edots e =
     Ast.Edots(_,_) -> true
   | _ -> false
 
-let ddots e =
+let fdots e =
   match Ast.unwrap e with
-    Ast.Ddots(_,_) -> true
+    Ast.Fdots(_,_) -> true
   | _ -> false
 
 let pdots p =
@@ -223,11 +223,11 @@ and unify_expression e1 e2 =
       unify_expression e1 e2
 
   | (Ast.MetaErr(_,_,_,_),_)
-  | (Ast.MetaExpr(_,_,_,_,_,_),_)
-  | (Ast.MetaExprList(_,_,_,_),_)
+  | (Ast.MetaExpr(_,_,_,_,_,_,_),_)
+  | (Ast.MetaExprList(_,_,_,_,_),_)
   | (_,Ast.MetaErr(_,_,_,_))
-  | (_,Ast.MetaExpr(_,_,_,_,_,_))
-  | (_,Ast.MetaExprList(_,_,_,_)) -> true
+  | (_,Ast.MetaExpr(_,_,_,_,_,_,_))
+  | (_,Ast.MetaExprList(_,_,_,_,_)) -> true
 
   | (Ast.AsExpr(exp1,asexp1),_) ->
       disjunct_all_bindings
@@ -270,8 +270,8 @@ and unify_string_fragment e1 e2 =
   | (Ast.FormatFragment(pct1,fmt1),Ast.FormatFragment(pct2,fmt2)) ->
       unify_string_format fmt1 fmt2
   | (Ast.Strdots(dots1),Ast.Strdots(dots2)) -> true
-  | (Ast.MetaFormatList(pct,name,len,_,_),_)
-  | (_,Ast.MetaFormatList(pct,name,len,_,_)) -> true
+  | (Ast.MetaFormatList(pct,name,len,_,_,_),_)
+  | (_,Ast.MetaFormatList(pct,name,len,_,_,_)) -> true
   | _ -> false
 
 and unify_string_format e1 e2 =
@@ -347,11 +347,11 @@ and unify_typeC t1 t2 =
   | (Ast.StructUnionDef(ty1,lb1,decls1,rb1),
      Ast.StructUnionDef(ty2,lb2,decls2,rb2)) ->
       unify_fullType ty1 ty2 &&
-      unify_dots unify_annotated_decl ddots decls1 decls2
+      unify_dots unify_annotated_field fdots decls1 decls2
   | (Ast.TypeName(t1),Ast.TypeName(t2)) -> unify_mcode t1 t2
 
-  | (Ast.MetaType(_,_,_),_)
-  | (_,Ast.MetaType(_,_,_)) -> true
+  | (Ast.MetaType(_,_,_,_),_)
+  | (_,Ast.MetaType(_,_,_,_)) -> true
   | _ -> false
 
 (* --------------------------------------------------------------------- *)
@@ -361,10 +361,7 @@ and unify_typeC t1 t2 =
 
 and unify_declaration d1 d2 =
   match (Ast.unwrap d1,Ast.unwrap d2) with
-    (Ast.MetaDecl(_,_,_),_) | (_,Ast.MetaDecl(_,_,_)) -> true
-  | (Ast.MetaField(_,_,_),_) | (_,Ast.MetaField(_,_,_)) -> true
-  | (Ast.MetaFieldList(_,_,_,_),_) | (_,Ast.MetaFieldList(_,_,_,_)) ->
-      true
+    (Ast.MetaDecl(_,_,_,_),_) | (_,Ast.MetaDecl(_,_,_,_)) -> true
   | (Ast.Init(stg1,ft1,id1,eq1,i1,s1),Ast.Init(stg2,ft2,id2,eq2,i2,s2)) ->
       if bool_unify_option unify_mcode stg1 stg2
       then
@@ -414,6 +411,12 @@ and unify_declaration d1 d2 =
   | (_,Ast.DisjDecl(d2)) ->
       disjunct_all_bindings
 	(List.map (function x -> unify_declaration d1 x) d2)
+  | (Ast.ConjDecl(d1),_) ->
+      conjunct_all_bindings
+	(List.map (function x -> unify_declaration x d2) d1)
+  | (_,Ast.ConjDecl(d2)) ->
+      conjunct_all_bindings
+	(List.map (function x -> unify_declaration d1 x) d2)
 
   | (Ast.OptDecl(_),_)
   | (_,Ast.OptDecl(_)) -> failwith "unsupported decl"
@@ -422,16 +425,48 @@ and unify_declaration d1 d2 =
 and unify_annotated_decl d1 d2 =
   match (Ast.unwrap d1,Ast.unwrap d2) with
     (Ast.DElem(_,_,d1),Ast.DElem(_,_,d2)) -> unify_declaration d1 d2
+
+(* --------------------------------------------------------------------- *)
+(* Field declaration *)
+
+and unify_field d1 d2 =
+  match (Ast.unwrap d1,Ast.unwrap d2) with
+    (Ast.MetaField(_,_,_,_),_) | (_,Ast.MetaField(_,_,_,_)) -> true
+  | (Ast.MetaFieldList(_,_,_,_,_),_) | (_,Ast.MetaFieldList(_,_,_,_,_)) ->
+      true
+  | (Ast.Field(ft1,id1,bf1,s1),Ast.Field(ft2,id2,bf2,s2)) ->
+      let unify_bitfield (c1, e1) (c2, e2) =
+	unify_mcode c1 c2 && unify_expression e1 e2 in
+      unify_fullType ft1 ft2 && unify_option unify_ident id1 id2 &&
+      unify_option unify_bitfield bf1 bf2
+  | (Ast.DisjField(d1),_) ->
+      disjunct_all_bindings
+	(List.map (function x -> unify_field x d2) d1)
+  | (_,Ast.DisjField(d2)) ->
+      disjunct_all_bindings
+	(List.map (function x -> unify_field d1 x) d2)
+  | (Ast.ConjField(d1),_) ->
+      conjunct_all_bindings
+	(List.map (function x -> unify_field x d2) d1)
+  | (_,Ast.ConjField(d2)) ->
+      conjunct_all_bindings
+	(List.map (function x -> unify_field d1 x) d2)
+  | (Ast.OptField(_),_)
+  | (_,Ast.OptField(_)) -> failwith "unsupported decl"
+
+and unify_annotated_field d1 d2 =
+  match (Ast.unwrap d1,Ast.unwrap d2) with
+    (Ast.FElem(_,_,d1),Ast.FElem(_,_,d2)) -> unify_field d1 d2
   (* dots can match against anything.  true to be safe. *)
-  | (Ast.Ddots(_,_),_) | (_,Ast.Ddots(_,_)) -> true
+  | (Ast.Fdots(_,_),_) | (_,Ast.Fdots(_,_)) -> true
 
 (* --------------------------------------------------------------------- *)
 (* Initializer *)
 
 and unify_initialiser i1 i2 =
   match (Ast.unwrap i1,Ast.unwrap i2) with
-    (Ast.MetaInit(_,_,_),_) | (_,Ast.MetaInit(_,_,_)) -> true
-  | (Ast.MetaInitList(_,_,_,_),_) | (_,Ast.MetaInitList(_,_,_,_)) ->
+    (Ast.MetaInit(_,_,_,_),_) | (_,Ast.MetaInit(_,_,_,_)) -> true
+  | (Ast.MetaInitList(_,_,_,_,_),_) | (_,Ast.MetaInitList(_,_,_,_,_)) ->
       true
   | (Ast.InitExpr(expa),Ast.InitExpr(expb)) ->
       unify_expression expa expb
@@ -477,10 +512,10 @@ and unify_parameterTypeDef p1 p2 =
       unify_fullType ft1 ft2 &&
       unify_option unify_ident i1 i2
 
-  | (Ast.MetaParam(_,_,_),_)
-  | (Ast.MetaParamList(_,_,_,_),_)
-  | (_,Ast.MetaParam(_,_,_))
-  | (_,Ast.MetaParamList(_,_,_,_)) -> true
+  | (Ast.MetaParam(_,_,_,_),_)
+  | (Ast.MetaParamList(_,_,_,_,_),_)
+  | (_,Ast.MetaParam(_,_,_,_))
+  | (_,Ast.MetaParamList(_,_,_,_,_)) -> true
 
   | (Ast.PComma(_),Ast.PComma(_)) -> true
 
@@ -509,7 +544,8 @@ and unify_define_param p1 p2 =
   match (Ast.unwrap p1,Ast.unwrap p2) with
     (Ast.DParam(i1),Ast.DParam(i2)) ->
 	(unify_ident i1 i2)
-  | (Ast.MetaDParamList(_,_,_,_),_) | (_,Ast.MetaDParamList(_,_,_,_)) -> true
+  | (Ast.MetaDParamList(_,_,_,_,_),_)
+  | (_,Ast.MetaDParamList(_,_,_,_,_)) -> true
   | (Ast.DPComma(_),Ast.DPComma(_)) -> true
 
   (* dots can match against anything.  true to be safe. *)
@@ -584,12 +620,12 @@ and unify_rule_elem re1 re2 =
       disjunct_all_bindings
 	(List.map (function x -> unify_rule_elem re1 x) res2)
 
-  | (Ast.MetaRuleElem(_,_,_),_)
-  | (Ast.MetaStmt(_,_,_,_),_)
-  | (Ast.MetaStmtList(_,_,_,_),_)
-  | (_,Ast.MetaRuleElem(_,_,_))
-  | (_,Ast.MetaStmt(_,_,_,_))
-  | (_,Ast.MetaStmtList(_,_,_,_)) -> true
+  | (Ast.MetaRuleElem(_,_,_,_),_)
+  | (Ast.MetaStmt(_,_,_,_,_),_)
+  | (Ast.MetaStmtList(_,_,_,_,_),_)
+  | (_,Ast.MetaRuleElem(_,_,_,_))
+  | (_,Ast.MetaStmt(_,_,_,_,_))
+  | (_,Ast.MetaStmtList(_,_,_,_,_)) -> true
 
     (* can match a rule_elem in different parts *)
   | (Ast.Exp(e1),Ast.Exp(e2)) -> true
@@ -652,10 +688,10 @@ and subexp f =
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode
-      donothing donothing donothing donothing donothing donothing expr
-      donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing donothing expr
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing in
+      donothing donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing in
   recursor.V.combiner_rule_elem
 
 and subtype f =
@@ -667,10 +703,11 @@ and subtype f =
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode
-      donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing fullType
       donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing in
+      donothing donothing donothing donothing donothing donothing
+      donothing in
   recursor.V.combiner_rule_elem
 
 let rec unify_statement s1 s2 =

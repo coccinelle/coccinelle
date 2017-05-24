@@ -66,7 +66,8 @@ let drop_positions =
     mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing in
+    donothing donothing donothing donothing donothing donothing donothing
+    donothing in
   res.VT0.rebuilder_rec_statement
 
 let get_all_functions rule =
@@ -152,25 +153,26 @@ and strip =
     donothing r k
       (Ast0.rewrap e
 	 (match Ast0.unwrap e with
-	   Ast0.MetaType(nm,pure) -> Ast0.MetaType(nm,Ast0.Pure)
+	   Ast0.MetaType(nm,cstr,pure) -> Ast0.MetaType(nm,cstr,Ast0.Pure)
 	 | e -> e)) in
 
   let param r k e =
     donothing r k
       (Ast0.rewrap e
 	 (match Ast0.unwrap e with
-	   Ast0.MetaParam(nm,pure) ->
-	     Ast0.MetaParam(nm,Ast0.Pure)
-	 | Ast0.MetaParamList(nm,lenname,pure) ->
-	     Ast0.MetaParamList(nm,lenname,Ast0.Pure)
+	   Ast0.MetaParam(nm,cstr,pure) ->
+	     Ast0.MetaParam(nm,cstr,Ast0.Pure)
+	 | Ast0.MetaParamList(nm,lenname,cstr,pure) ->
+	     Ast0.MetaParamList(nm,lenname,cstr,Ast0.Pure)
 	 | e -> e)) in
 
   V0.flat_rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
+    donothing
     ident donothing donothing donothing typeC donothing param
-    donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
 
 and changed_proto = function
     (mname,mdef,mproto,None) -> true
@@ -193,7 +195,8 @@ let collect_ident_strings id =
       mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing in
+      donothing donothing donothing donothing donothing donothing donothing
+      donothing in
       v.VT0.combiner_rec_ident id
 
 let right_attach_mcode strings (x,ar,info,mc,pos,adj) =
@@ -242,8 +245,8 @@ let rec attach_right strings ty =
     | Ast0.StructUnionDef(ty,lb,decls,rb) ->
 	Ast0.StructUnionDef(ty,lb,decls,right_attach_mcode strings rb)
     | Ast0.TypeName(nm) -> Ast0.TypeName(right_attach_mcode strings nm)
-    | Ast0.MetaType(nm,pure) ->
-	Ast0.MetaType(right_attach_mcode strings nm,pure)
+    | Ast0.MetaType(nm,cstr,pure) ->
+	Ast0.MetaType(right_attach_mcode strings nm,cstr,pure)
     | Ast0.AsType(ty,asty) -> Ast0.AsType(attach_right strings ty,asty)
     | _ -> failwith "disj and opt type not supported")
 
@@ -305,15 +308,17 @@ let rec rename_param old_name all param index =
       let new_id =
 	Ast0.rewrap param
 	  (Ast0.MetaParamList(Ast0.rewrap_mcode d nm,
-			      Ast0.MetaListLen (Ast0.rewrap_mcode d nml),
+			      Ast0.MetaListLen
+				(Ast0.rewrap_mcode d nml,Ast.CstrTrue),
+			      Ast.CstrTrue,
 			      Ast0.Pure)) in
       (* only add both new metavariable declarations for the function
 	 definition case.  For the prototype case the length
 	 should be inherited *)
       ((if not all
-      then [Ast.MetaParamListDecl(Ast.NONE,nm,Ast.MetaLen nml);
+      then [Ast.MetaParamListDecl(Ast.NONE,nm,Ast.MetaLen (nml,Ast.CstrTrue));
 	     Ast.MetaListlenDecl(nml)]
-      else [Ast.MetaParamListDecl(Ast.NONE,nm,Ast.MetaLen nml)]),
+      else [Ast.MetaParamListDecl(Ast.NONE,nm,Ast.MetaLen (nml,Ast.CstrTrue))]),
        new_id)
   | Ast0.OptParam(p) ->
       let (metavars,p) = rename_param old_name all p index in
@@ -498,7 +503,7 @@ let process rule_name rule_metavars dropped_isos minus plus ruletype =
 	       (metavars,
 		Ast.CocciRule
 		  ("proto for "^rule_name,
-		   (Ast.Dep rule_name,dropped_isos,Ast.Forall),
+		   (Ast.ExistsDep(Ast.Dep rule_name),dropped_isos,Ast.Forall),
 		   [mk_ast_code x],
 		   [false],ruletype)))
 	| x::_ ->
@@ -506,7 +511,7 @@ let process rule_name rule_metavars dropped_isos minus plus ruletype =
 	    let res =
               Ast.CocciRule
 		("proto for "^rule_name,
-		 (Ast.Dep rule_name,dropped_isos,Ast.Forall),
+		 (Ast.ExistsDep(Ast.Dep rule_name),dropped_isos,Ast.Forall),
 		 [mk_ast_code (Ast.rewrap x (Ast.Disj drules))],
 		 [false],ruletype) in
 	    ((mdef_metavars,minus),Some(metavars,res))

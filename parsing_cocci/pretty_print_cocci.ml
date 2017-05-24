@@ -159,26 +159,23 @@ let print_type _keep _info = function
 (* Constraint on Identifier and Function *)
 (* FIXME: Not called at the moment *)
 
+let string_or_meta_name = function
+    Ast.CstrConstant (Ast.CstrString _) | Ast.CstrMeta_name _ -> true
+  | _ -> false
+
+let print_string_or_meta_name = function
+    Ast.CstrConstant (Ast.CstrString s) -> Printf.printf " %s" s
+  | Ast.CstrMeta_name (r, n) -> print_string " "; print_meta (r, n)
+  | _ -> assert false
+
 let general_constraint = function
     Ast.CstrTrue -> print_string "/* No constraint */"
-  | Ast.CstrOr l when
-      List.for_all
-	(function Ast.CstrString _ | Ast.CstrMeta_name _ -> true | _ -> false)
-	l ->
+  | Ast.CstrOr l when List.for_all string_or_meta_name l ->
       print_string " =";
-      List.iter (function
-	  Ast.CstrString s -> Printf.printf " %s" s
-	| Ast.CstrMeta_name (r, n) -> print_string " "; print_meta (r, n)
-	| _ -> assert false) l
-  | Ast.CstrNot (Ast.CstrOr l) when
-      List.for_all
-	(function Ast.CstrString _ | Ast.CstrMeta_name _ -> true | _ -> false)
-	l ->
+      List.iter print_string_or_meta_name l
+  | Ast.CstrNot (Ast.CstrOr l) when List.for_all string_or_meta_name l ->
       print_string " !=";
-      List.iter (function
-	  Ast.CstrString s -> Printf.printf " %s" s
-	| Ast.CstrMeta_name (r, n) -> print_string " "; print_meta (r, n)
-	| _ -> assert false) l
+      List.iter print_string_or_meta_name l
   | Ast.CstrRegexp (re,_) ->
       print_string "~= \""; print_string re; print_string "\""
   | Ast.CstrNot (Ast.CstrRegexp (re,_)) ->
@@ -263,9 +260,9 @@ let rec expression e =
       mcode print_string rp; initialiser init
 
   | Ast.MetaErr(name,_,_,_) -> mcode print_meta name
-  | Ast.MetaExpr(name,_,keep,ty,form,inherited) ->
+  | Ast.MetaExpr(name,_,keep,ty,form,inherited,_) ->
       mcode print_meta name; print_type keep inherited ty
-  | Ast.MetaExprList(name,_,_,_) -> mcode print_meta name
+  | Ast.MetaExprList(name,_,_,_,_) -> mcode print_meta name
   | Ast.AsExpr(exp,asexp) -> expression exp; print_string "@"; expression asexp
   | Ast.AsSExpr(exp,asstm) ->
       expression exp; print_string "@"; rule_elem "" asstm
@@ -290,7 +287,7 @@ and string_fragment e =
       mcode print_string pct;
       string_format fmt
   | Ast.Strdots dots -> mcode print_string dots
-  | Ast.MetaFormatList(pct,name,lenname,_,_) ->
+  | Ast.MetaFormatList(pct,name,lenname,_,_,_) ->
       mcode print_string pct;
       mcode print_meta name
 
@@ -434,10 +431,10 @@ and typeC ty =
       print_option (function x -> ident x; print_string " ") name
   | Ast.StructUnionDef(ty,lb,decls,rb) ->
       fullType ty; mcode print_string lb;
-      dots force_newline (annotated_decl "") decls;
+      dots force_newline (annotated_field "") decls;
       mcode print_string rb
   | Ast.TypeName(name) -> mcode print_string name; print_string " "
-  | Ast.MetaType(name,_,_) ->
+  | Ast.MetaType(name,_,_,_) ->
       mcode print_meta name; print_string " "
 
 and baseType ty = print_string (Ast.string_of_baseType ty ^ " ")
@@ -483,8 +480,7 @@ and print_named_type ty id =
 
 and declaration d =
   match Ast.unwrap d with
-    Ast.MetaDecl(name,_,_) | Ast.MetaField(name,_,_)
-  | Ast.MetaFieldList(name,_,_,_) ->
+    Ast.MetaDecl(name,_,_,_) ->
       mcode print_meta name
   | Ast.AsDecl(decl,asdecl) -> declaration decl; print_string "@";
       declaration asdecl
@@ -516,6 +512,7 @@ and declaration d =
       mcode print_string stg; print_string " "; fullType ty; typeC id;
       mcode print_string sem
   | Ast.DisjDecl(decls) -> print_disj_list declaration decls "|"
+  | Ast.ConjDecl(decls) -> print_disj_list declaration decls "&"
   | Ast.OptDecl(decl) -> print_string "?"; declaration decl
 
 and annotated_decl arity d =
@@ -524,18 +521,48 @@ and annotated_decl arity d =
       mcode (function _ -> ()) ((),Ast.no_info,bef,[]);
       print_string arity;
       declaration decl
-  | Ast.Ddots(dots,Some whencode) ->
-      mcode print_string dots; print_string "   when != "; declaration whencode
-  | Ast.Ddots(dots,None) -> mcode print_string dots
+
+(* --------------------------------------------------------------------- *)
+(* Field declaration *)
+
+and field d =
+  match Ast.unwrap d with
+    Ast.MetaField(name,_,_,_)
+  | Ast.MetaFieldList(name,_,_,_,_) ->
+      mcode print_meta name
+  | Ast.Field(ty,id,bf,sem) ->
+      begin
+	match id with
+	  None -> fullType ty
+	| Some id -> print_named_type ty id
+      end;
+      let bitfield (c, e) =
+	mcode print_string c;
+	expression e in
+      print_option bitfield bf;
+      mcode print_string sem
+  | Ast.DisjField(decls) -> print_disj_list field decls "|"
+  | Ast.ConjField(decls) -> print_disj_list field decls "&"
+  | Ast.OptField(decl) -> print_string "?"; field decl
+
+and annotated_field arity d =
+  match Ast.unwrap d with
+    Ast.FElem(bef,allminus,decl) ->
+      mcode (function _ -> ()) ((),Ast.no_info,bef,[]);
+      print_string arity;
+      field decl
+  | Ast.Fdots(dots,Some whencode) ->
+      mcode print_string dots; print_string "   when != "; field whencode
+  | Ast.Fdots(dots,None) -> mcode print_string dots
 
 (* --------------------------------------------------------------------- *)
 (* Initialiser *)
 
 and initialiser i =
   match Ast.unwrap i with
-    Ast.MetaInit(name,_,_) ->
+    Ast.MetaInit(name,_,_,_) ->
       mcode print_meta name; print_string " "
-  | Ast.MetaInitList(name,_,_,_) ->
+  | Ast.MetaInitList(name,_,_,_,_) ->
       mcode print_meta name; print_string " "
   | Ast.AsInit(ini,asini) -> initialiser ini; print_string "@";
       initialiser asini
@@ -581,8 +608,8 @@ and parameterTypeDef p =
     Ast.VoidParam(ty) -> fullType ty
   | Ast.Param(ty,Some id) -> print_named_type ty id
   | Ast.Param(ty,None) -> fullType ty
-  | Ast.MetaParam(name,_,_) -> mcode print_meta name
-  | Ast.MetaParamList(name,_,_,_) -> mcode print_meta name
+  | Ast.MetaParam(name,_,_,_) -> mcode print_meta name
+  | Ast.MetaParamList(name,_,_,_,_) -> mcode print_meta name
   | Ast.PComma(cm) -> mcode print_string cm; print_space()
   | Ast.Pdots(dots) -> mcode print_string dots
   | Ast.OptParam(param) -> print_string "?"; parameterTypeDef param
@@ -666,11 +693,11 @@ and rule_elem arity re =
       mcode print_string lang; print_string " ";
       dots (function _ -> print_string " ") exec_code code;
       mcode print_string sem
-  | Ast.MetaRuleElem(name,_,_) ->
+  | Ast.MetaRuleElem(name,_,_,_) ->
       print_string arity; mcode print_meta name
-  | Ast.MetaStmt(name,_,_,_) ->
+  | Ast.MetaStmt(name,_,_,_,_) ->
       print_string arity; mcode print_meta name
-  | Ast.MetaStmtList(name,_,_,_) ->
+  | Ast.MetaStmtList(name,_,_,_,_) ->
       print_string arity;  mcode print_meta name
   | Ast.Exp(exp) -> print_string arity; expression exp
   | Ast.TopExp(exp) -> print_string arity; expression exp
@@ -727,7 +754,7 @@ and print_define_parameters params =
 and print_define_param param =
   match Ast.unwrap param with
     Ast.DParam(id) -> ident id
-  | Ast.MetaDParamList(name,_,_,_) -> mcode print_meta name
+  | Ast.MetaDParamList(name,_,_,_,_) -> mcode print_meta name
   | Ast.DPComma(comma) -> mcode print_string comma
   | Ast.DPdots(dots) -> mcode print_string dots
   | Ast.OptDParam(dp) -> print_string "?"; print_define_param dp
@@ -871,7 +898,7 @@ let print_name rule r n =
   else print_string (Printf.sprintf "%s.%s" r n)
 
 let print_listlen rule = function
-    Ast.MetaLen(r,n) ->
+    Ast.MetaLen((r,n),_) ->
       print_string "["; print_name rule r n; print_string "] "
   | Ast.CstLen(n) -> print_string "["; print_string (string_of_int n);
       print_string "] "
@@ -937,9 +964,9 @@ let unparse_cocci_mv rule = function
       print_name rule r n; print_string ";"
   | Ast.MetaErrDecl(_,(r,n)) ->
       print_string "error "; print_name rule r n; print_string ";"
-  | Ast.MetaExpDecl(_,(r,n),None) ->
+  | Ast.MetaExpDecl(_,(r,n),None,_bitfield) ->
       print_string "expression "; print_name rule r n; print_string ";"
-  | Ast.MetaExpDecl(_,(r,n),ty) ->
+  | Ast.MetaExpDecl(_,(r,n),ty,_bitfield) ->
       (match ty with
 	None -> ()
       | Some ty -> (* unknown only possible when there is only one type? *)
@@ -1030,6 +1057,7 @@ let _ =
     | Ast.LogicalOpTag(x) -> logicalOp x
     | Ast.InitTag(x) -> initialiser x
     | Ast.DeclarationTag(x) -> declaration x
+    | Ast.FieldTag(x) -> field x
     | Ast.StorageTag(x) -> storage x
     | Ast.IncFileTag(x) -> inc_file x
     | Ast.Rule_elemTag(x) -> rule_elem "" x
@@ -1049,6 +1077,7 @@ let _ =
     | Ast.ParamDotsTag(x) -> parameter_list x
     | Ast.StmtDotsTag(x) -> dots (function _ -> ()) (statement "") x
     | Ast.AnnDeclDotsTag(x) -> dots (function _ -> ()) (annotated_decl "") x
+    | Ast.AnnFieldDotsTag(x) -> dots (function _ -> ()) (annotated_field "") x
     | Ast.DefParDotsTag(x) -> dots (function _ -> ()) print_define_param x
     | Ast.TypeCTag(x) -> typeC x
     | Ast.ParamTag(x) -> parameterTypeDef x
@@ -1061,25 +1090,31 @@ let rec dep in_and = function
   | Ast.EverDep(s) -> print_string "ever "; print_string s
   | Ast.NeverDep(s) -> print_string "never "; print_string s
   | Ast.AndDep(s1,s2) ->
-      let print_and _ = dep true s1; print_string " && "; dep true s2 in
+      let print_and _ =
+	dep true s1; print_string " && "; dep true s2 in
       if in_and
       then print_and ()
       else (print_string "("; print_and(); print_string ")")
   | Ast.OrDep(s1,s2) ->
-      let print_or _ = dep false s1; print_string " || "; dep false s2 in
+      let print_or _ =
+	dep false s1; print_string " || "; dep false s2 in
       if not in_and
       then print_or ()
       else (print_string "("; print_or(); print_string ")")
   | Ast.FileIn s -> print_string "file in "; print_string s
   | Ast.NotFileIn s -> print_string "not file in "; print_string s
-  | Ast.NoDep   -> print_string "no_dep"
+
+let dependency = function
+    Ast.NoDep   -> print_string "no_dep"
   | Ast.FailDep -> print_string "fail_dep"
+  | Ast.ExistsDep d -> dep true d
+  | Ast.ForallDep d -> print_string "forall "; dep true d
 
 let script_header str lang deps mv code =
   print_string (Printf.sprintf "@%s:%s" str lang);
   (match deps with
     Ast.NoDep -> ()
-  | _ -> print_string " depends on "; dep true deps);
+  | _ -> print_string " depends on "; dependency deps);
   print_string "@";
   force_newline();
   List.iter
@@ -1111,18 +1146,18 @@ let script_header str lang deps mv code =
 
 let unparse mvs z =
   match z with
-    Ast.InitialScriptRule (name,lang,deps,mv,code) ->
+    Ast.InitialScriptRule (name,lang,deps,mv,_pos,code) ->
       script_header "initialize" lang deps mv code
-  | Ast.FinalScriptRule (name,lang,deps,mv,code) ->
+  | Ast.FinalScriptRule (name,lang,deps,mv,_pos,code) ->
       script_header "finalize" lang deps mv code
-  | Ast.ScriptRule (name,lang,deps,bindings,script_vars,code) ->
+  | Ast.ScriptRule (name,lang,deps,bindings,script_vars,_pos,code) ->
       script_header "script" lang deps bindings code
   | Ast.CocciRule (nm, (deps, drops, exists), x, _, _) ->
       print_string "@";
       print_string nm;
       (match deps with
 	Ast.NoDep -> ()
-      | _ -> print_string " depends on "; dep true deps);
+      | _ -> print_string " depends on "; dependency deps);
       (match drops with
 	[] -> ()
       |	_ -> print_string " disable "; print_string (String.concat "," drops));

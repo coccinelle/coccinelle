@@ -338,7 +338,7 @@ let elim_opt =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode mcode mcode mcode
     donothing donothing stmtdotsfn donothing donothing donothing donothing
-    donothing donothing
+    donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
 
@@ -390,9 +390,9 @@ let fresh_metavar _ = "_S"
 (* fvinfo is going to end up being from the whole associated statement.
    it would be better if it were just the free variables in d, but free_vars.ml
    doesn't keep track of free variables on + code *)
-let make_meta_rule_elem n d fvinfo =
+let make_meta_rule_elem n d cstr fvinfo =
   let nm = fresh_metavar() in
-  Ast.make_meta_rule_elem (nm^n) d fvinfo
+  Ast.make_meta_rule_elem (nm^n) d cstr fvinfo
 
 let get_unquantified quantified vars =
   List.filter (function x -> not (List.mem x quantified)) vars
@@ -433,8 +433,7 @@ let contains_modif =
   let do_nothing r k e = k e in
   let annotated_decl decl =
     match Ast.unwrap decl with
-      Ast.DElem(bef,_,_) -> bef
-    | _ -> failwith "not possible" in
+      Ast.DElem(bef,_,_) -> bef in
   let rule_elem r k re =
     let res = k re in
     match Ast.unwrap re with
@@ -454,9 +453,9 @@ let contains_modif =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode mcode mcode mcode
       do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing do_nothing do_nothing do_nothing
+      do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing init do_nothing do_nothing
-      do_nothing
+      do_nothing do_nothing do_nothing
       do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_rule_elem
 
@@ -467,8 +466,7 @@ let contains_pos =
   let do_nothing r k e = k e in
   let annotated_decl decl =
     match Ast.unwrap decl with
-      Ast.DElem(bef,_,_) -> bef
-    | _ -> failwith "not possible" in
+      Ast.DElem(bef,_,_) -> bef in
   let rule_elem r k re =
     let res = k re in
     match Ast.unwrap re with
@@ -482,9 +480,10 @@ let contains_pos =
     V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode mcode mcode mcode
-      do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+      do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+      do_nothing do_nothing
       do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_rule_elem
 
@@ -555,8 +554,8 @@ let count_nested_braces s =
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing stmt_count donothing donothing donothing in
   let res = string_of_int (recursor.V.combiner_statement s) in
@@ -655,7 +654,7 @@ and get_before_e s a =
       (Ast.rewrap s (Ast.Conj(dsl)),List.fold_left Common.union_set [] dsla)
   | Ast.Atomic(ast) ->
       (match Ast.unwrap ast with
-	Ast.MetaStmt(_,_,_,_) -> (s,[])
+	Ast.MetaStmt(_,_,_,_,_) -> (s,[])
       |	_ -> (s,[Ast.Other s]))
   | Ast.Seq(lbrace,body,rbrace) ->
       let index = count_nested_braces s in
@@ -767,7 +766,7 @@ and get_after_e s a =
       (Ast.rewrap s (Ast.Conj(dsl)),List.fold_left Common.union_set [] dsla)
   | Ast.Atomic(ast) ->
       (match Ast.unwrap ast with
-	Ast.MetaStmt(nm,keep,Ast.SequencibleAfterDots _,i) ->
+	Ast.MetaStmt(nm,cstr,keep,Ast.SequencibleAfterDots _,i) ->
 	  (* check "after" information for metavar optimization *)
 	  (* if the error is not desired, could just return [], then
 	     the optimization (check for EF) won't take place *)
@@ -794,8 +793,9 @@ and get_after_e s a =
 	  (Ast.rewrap s
 	     (Ast.Atomic
 		(Ast.rewrap s
-		   (Ast.MetaStmt(nm,keep,Ast.SequencibleAfterDots a,i)))),[])
-      |	Ast.MetaStmt(_,_,_,_) -> (s,[])
+		   (Ast.MetaStmt
+		      (nm,cstr,keep,Ast.SequencibleAfterDots a,i)))),[])
+      |	Ast.MetaStmt(_,_,_,_,_) -> (s,[])
       |	_ -> (s,[Ast.Other s]))
   | Ast.Seq(lbrace,body,rbrace) ->
       let index = count_nested_braces s in
@@ -981,7 +981,7 @@ let end_control_structure fvs header body after_pred
     | _ ->
 	let match_endif =
 	  make_match label guard
-	    (make_meta_rule_elem "1" aft (afvs,afresh,ainh)) in
+	    (make_meta_rule_elem "1" aft Ast.CstrTrue (afvs,afresh,ainh)) in
 	(true,
 	 make_seq_after guard after_pred
 	   (After(make_seq_after guard match_endif after))) in
@@ -1172,7 +1172,7 @@ let forwhile header body ((afvs,_,_,_) as aft) after
     (Ast.Atomic(re),(_,_,_,Ast.CONTEXT(_,Ast.NOTHING))) ->
       (match Ast.unwrap re with
 	Ast.MetaStmt((_,_,Ast.CONTEXT(_,Ast.NOTHING),_),
-	             Ast.Unitary,_,false)
+		     Ast.CstrTrue, Ast.Unitary,_,false)
 	when after = Tail || after = End || after = VeryEnd ->
 	  let (efvs) =
 	    match seq_fvs quantified [Ast.get_fvs header] with
@@ -1214,7 +1214,8 @@ let svar_context_with_add_after stmt s label quantified d ast
     CTL.Pred (Lib_engine.Label(label_var),CTL.Control) in
   (*let prelabel_pred =
     CTL.Pred (Lib_engine.PrefixLabel(label_var),CTL.Control) in*)
-  let matcher d = make_match None guard (make_meta_rule_elem "2" d fvinfo) in
+  let matcher d =
+    make_match None guard (make_meta_rule_elem "2" d Ast.CstrTrue fvinfo) in
   let full_metamatch = matcher d in
   let first_metamatch =
     matcher
@@ -1285,7 +1286,8 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
     CTL.Pred (Lib_engine.Label(label_var),CTL.Control) in
   let prelabel_pred =
     CTL.Pred (Lib_engine.PrefixLabel(label_var),CTL.Control) in
-  let matcher d = make_match None guard (make_meta_rule_elem "3" d fvinfo) in
+  let matcher d =
+    make_match None guard (make_meta_rule_elem "3" d Ast.CstrTrue fvinfo) in
   let ender =
     match (d,after) with
       (Ast.PLUS _, _) -> failwith "not possible"
@@ -1719,9 +1721,9 @@ and statement stmt top after quantified minus_quantified
 	   this makes more matching for things like when (...) S, but perhaps
 	   that matching is not so costly anyway *)
         (*Ast.MetaStmt(_,Ast.Unitary,_,false) when guard -> CTL.True*)
-      |	Ast.MetaStmt((s,_,(Ast.CONTEXT(_,Ast.BEFOREAFTER(_,_,_)) as d),_),
+      |	Ast.MetaStmt((s,_,(Ast.CONTEXT(_,Ast.BEFOREAFTER(_,_,_)) as d),_),cstr,
 		     keep,seqible,_)
-      | Ast.MetaStmt((s,_,(Ast.CONTEXT(_,Ast.AFTER(_,_)) as d),_),
+      | Ast.MetaStmt((s,_,(Ast.CONTEXT(_,Ast.AFTER(_,_)) as d),_),cstr,
 		     keep,seqible,_)->
 	  svar_context_with_add_after stmt s label quantified d ast seqible
 	    after
@@ -1730,7 +1732,7 @@ and statement stmt top after quantified minus_quantified
 	    guard
 	    (Ast.get_fvs stmt, Ast.get_fresh stmt, Ast.get_inherited stmt)
 
-      |	Ast.MetaStmt((s,_,d,_),keep,seqible,_) ->
+      |	Ast.MetaStmt((s,_,d,_),cstr,keep,seqible,_) ->
 	  svar_minus_or_no_add_after stmt s label quantified d ast seqible
 	    after
 	    (process_bef_aft quantified minus_quantified
@@ -2032,7 +2034,8 @@ and statement stmt top after quantified minus_quantified
             (* no need for the fresh metavar, but ... is a bit weird as a
 	       variable name *)
 	    (* drops minuses on pattern, because d will have the minus effect*)
-	    (Some(make_match (make_meta_rule_elem "4" d ([],[],[]))),
+	    (Some
+	       (make_match (make_meta_rule_elem "4" d Ast.CstrTrue ([],[],[]))),
 	     drop_minuses stmt_dots)
 	| _ -> (None,stmt_dots) in
 
@@ -2062,7 +2065,7 @@ and statement stmt top after quantified minus_quantified
 	  Ast.MINUS(_,_,_,_) ->
             (* no need for the fresh metavar, but ... is a bit weird as a
 	       variable name *)
-	    Some(make_match (make_meta_rule_elem "5" d ([],[],[])))
+	    Some(make_match (make_meta_rule_elem "5" d Ast.CstrTrue ([],[],[])))
 	| _ -> None in
       dots_and_nests false None whencodes bef aft dot_code after label
 	(process_bef_aft quantified minus_quantified None llabel slabel true)
@@ -2427,7 +2430,8 @@ and statement stmt top after quantified minus_quantified
 			      (CTL.AndAny
 				 (CTL.FORWARD,guard_to_strict guard,CTL.True,
 				  make_match
-				    (make_meta_rule_elem "6" d ([],[],[]))))))
+				    (make_meta_rule_elem "6" d Ast.CstrTrue
+				       ([],[],[]))))))
 		  | _ -> None)
 	    | _ -> None)
 	| _ -> None in
@@ -2452,7 +2456,8 @@ and statement stmt top after quantified minus_quantified
 		(ctl_and (endpred label)
 		   (ctl_back_ex
 		      (make_match
-			 (make_meta_rule_elem "7" aft (afvs,afresh,ainh))))) in
+			 (make_meta_rule_elem "7" aft Ast.CstrTrue
+			    (afvs,afresh,ainh))))) in
 	    CTL.AndAny(CTL.FORWARD,CTL.NONSTRICT,function_header,
 		       ctl_or (ctl_not (endpred label)) match_ender) in
       quantify guard ahfvs
@@ -2591,8 +2596,8 @@ and drop_minuses stmt_dots =
     V.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing in
   v.V.rebuilder_statement_dots stmt_dots

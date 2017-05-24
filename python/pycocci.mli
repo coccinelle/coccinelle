@@ -10,6 +10,7 @@ val construct_variables :
   -> Ast_c.metavars_binding (*virts*) -> unit
 val construct_script_variables : Ast_cocci.meta_name list -> unit
 val pyrun_simplestring : string -> unit
+val run : Ast_cocci.script_position -> string -> unit
 val inc_match : bool ref
 val exited : bool ref
 val retrieve_script_variables :
@@ -21,11 +22,19 @@ val initialised : bool ref
 val py_isinitialized : unit -> bool
 val py_finalize : unit -> unit
 
+val pickle_variable : string -> string
+
+val unpickle_variable : string -> string list -> unit
+
 val run_constraint :
     Ast_c.metavars_binding ->
+    Ast_cocci.script_position ->
     string ->
     bool
 (** [run_constraint args body] runs the constraint with
     @param args the arguments
     @param body the constraint code,
     @return whether the constraint is satisfied or not. *)
+
+val flush_stdout_and_stderr : unit -> unit
+(** [flush_stdout_and_stderr ()] flushes Python stdout and stderr. *)

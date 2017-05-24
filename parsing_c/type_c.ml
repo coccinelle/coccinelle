@@ -136,6 +136,9 @@ let rec is_completed_and_simplified ty =
           is_completed_and_simplified t
       )
 
+  | FieldType (t, _, _) ->
+      is_completed_and_simplified t
+
   (* should have removed paren, for better matching with typed metavar.
    * kind of iso again *)
   | ParenType t ->
@@ -441,10 +444,17 @@ let (type_field:
       | DeclarationField (FieldDeclList (onefield_multivars, iiptvirg)) ->
           onefield_multivars +> List.iter (fun (fieldkind, iicomma) ->
             match fieldkind with
-            | Simple (Some name, t) | BitField (Some name, t, _, _) ->
+            | Simple (Some name, t) ->
                 let s = Ast_c.str_of_name name in
                 if s = fld
                 then Common.push2 t res
+
+            | BitField (Some name, t, _, align) ->
+                let s = Ast_c.str_of_name name in
+                if s = fld
+                then
+		  Common.push2
+		    (rewrap_typeC t (FieldType (t, name, Some align))) res
                 else ()
 
             | Simple (None, t) ->

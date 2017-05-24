@@ -1,8 +1,8 @@
 type ty =
     PyObject of bool
   | PyCompilerFlags | String | WideString | Int | Int64 | Long | Size | IntPtr
-  | Compare | Input | Unit | File | Double | StringOption | NeverReturn
-  | UCS2 | UCS4 | UCS2Option | UCS4Option of bool
+  | Compare | Input | Unit | FileIn of bool | FileOut of bool | Double
+  | StringOption | NeverReturn | UCS2 | UCS4 | UCS2Option | UCS4Option of bool
 
 type arguments =
     Value
@@ -41,7 +41,7 @@ let wrappers =
      arguments = Fun [];
      result = String; };
    { symbol = "Py_FdIsInteractive";
-     arguments = Fun [File; String];
+     arguments = Fun [FileIn true; String];
      result = Int; };
    { symbol = "Py_Initialize";
      arguments = Fun [];
@@ -365,6 +365,21 @@ let wrappers =
    { symbol = "PyMapping_Size";
      arguments = Fun [PyObject false];
      result = Int; };
+   { symbol = "PyMarshal_ReadObjectFromFile";
+     arguments = Fun [FileIn true];
+     result = PyObject true; };
+   { symbol = "PyMarshal_ReadLastObjectFromFile";
+     arguments = Fun [FileIn true];
+     result = PyObject true; };
+   { symbol = "PyMarshal_ReadObjectFromString";
+     arguments = Fun [String; Size];
+     result = PyObject true; };
+   { symbol = "PyMarshal_WriteObjectToFile";
+     arguments = Fun [PyObject false; FileOut true; Int];
+     result = Int; };
+   { symbol = "PyMarshal_WriteObjectToString";
+     arguments = Fun [PyObject false; Int];
+     result = PyObject true; };
    { symbol = "PyMethod_Function";
      arguments = Fun [PyObject false];
      result = PyObject false; };
@@ -522,7 +537,7 @@ let wrappers =
      arguments = Fun [PyObject false];
      result = Int; };
    { symbol = "PyObject_Print";
-     arguments = Fun [PyObject false; File; Int];
+     arguments = Fun [PyObject false; FileOut true; Int];
      result = Int; };
    { symbol = "PyObject_Repr";
      arguments = Fun [PyObject false];
@@ -553,22 +568,22 @@ let wrappers =
      result = PyObject true; };
    { symbol = "PyRun_AnyFileExFlags";
      arguments = Fun
-       [File; String; Int; PyCompilerFlags];
+       [FileIn false; String; Int; PyCompilerFlags];
      result = Int; };
    { symbol = "PyRun_FileExFlags";
      arguments = Fun
-       [File; String; Input; PyObject false; PyObject false; Int;
+       [FileIn false; String; Input; PyObject false; PyObject false; Int;
         PyCompilerFlags];
      result = PyObject true; };
    { symbol = "PyRun_InteractiveOneFlags";
-     arguments = Fun [File; String; PyCompilerFlags];
+     arguments = Fun [FileIn true; String; PyCompilerFlags];
      result = Int; };
    { symbol = "PyRun_InteractiveLoopFlags";
-     arguments = Fun [File; String; PyCompilerFlags];
+     arguments = Fun [FileIn true; String; PyCompilerFlags];
      result = Int; };
    { symbol = "PyRun_SimpleFileExFlags";
      arguments = Fun
-       [File; String; Int; PyCompilerFlags];
+       [FileIn false; String; Int; PyCompilerFlags];
      result = Int; };
    { symbol = "PyRun_StringFlags";
      arguments = Fun
@@ -926,7 +941,8 @@ let string_of_type_ml ty =
     PyObject _ -> "Pytypes.pyobject"
   | PyCompilerFlags -> "int ref option"
   | String | WideString -> "string"
-  | Int | Long | Size | File -> "int"
+  | Int | Long | Size -> "int"
+  | FileIn _ | FileOut _ -> "Unix.file_descr Pytypes.file"
   | Int64 -> "int64"
   | IntPtr -> "int ref"
   | Compare -> "Pytypes.compare"
@@ -1001,6 +1017,9 @@ let print_pycaml indent prefix channel wrapper =
     let arg = Printf.sprintf "arg%d" i in
     match ty with
       Compare -> Printf.sprintf "(Pytypes.compare_of_int %s)" arg
+    | Input -> Printf.sprintf "(Pytypes.input_of_int %s)" arg
+    | FileIn _ | FileOut _ ->
+        Printf.sprintf "(Pytypes.Channel (Pyml_arch.fd_of_int %s))" arg
     | _ -> arg in
   let converted_arguments_list =
     match arguments with
@@ -1099,7 +1118,7 @@ let string_of_type_c ty =
   | Compare -> "int"
   | Unit | NeverReturn -> "void"
   | Input -> "int"
-  | File -> "FILE *"
+  | FileIn _ | FileOut _ -> "FILE *"
   | Double -> "double"
   | UCS2 | UCS2Option -> "int16_t *"
   | UCS4 | UCS4Option _ -> "int32_t *"
@@ -1151,7 +1170,8 @@ let coercion_of_caml ty v =
   | Compare -> Printf.sprintf "Int_val(%s)" v
   | Unit | NeverReturn | UCS2Option | UCS4Option _ -> assert false
   | Input -> Printf.sprintf "256 + Int_val(%s)" v
-  | File -> Printf.sprintf "fdopen(dup(Int_val(%s)), \"r\")" v
+  | FileIn _ -> Printf.sprintf "open_file(%s, \"r\")" v
+  | FileOut _ -> Printf.sprintf "open_file(%s, \"w\")" v
   | Double -> Printf.sprintf "Double_val(%s)" v
   | StringOption ->
       Printf.sprintf "Is_block(%s) ? String_val(Field(%s, 0)) : NULL" v v
@@ -1177,7 +1197,7 @@ let coercion_of_c ty =
   | PyCompilerFlags ->
       Printf.sprintf "    CAMLreturn(pywrap_compilerflags(result));"
   | Unit | NeverReturn -> Printf.sprintf "    CAMLreturn(Val_unit);"
-  | Input | File | UCS2 | UCS4 -> assert false
+  | Input | FileIn _ | FileOut _ | UCS2 | UCS4 -> assert false
   | Double -> Printf.sprintf "    CAMLreturn(caml_copy_double(result));"
   | UCS2Option -> Printf.sprintf "    CAMLreturn(pywrap_ucs2_option(result));"
   | UCS4Option free ->
@@ -1271,7 +1291,8 @@ let print_stub prefix assert_initialized channel wrapper =
   let free_argument i ty =
     match ty with
       PyCompilerFlags | UCS2 | UCS4 -> Printf.sprintf "\n    free(arg%d);" i
-    | File -> Printf.sprintf "\n    fclose(arg%d);" i
+    | FileIn true | FileOut true ->
+        Printf.sprintf "\n    close_file(arg%d_ocaml, arg%d);" i i
     | _ -> "" in
   let free =
     match arguments with

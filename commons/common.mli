@@ -811,6 +811,10 @@ val size_ko : int -> string
 
 val edit_distance: string -> string -> int
 
+val trim_left: string -> string
+val trim_right: string -> string
+val trim: string -> string
+
 val md5sum_of_string : string -> string
 
 (*****************************************************************************)
@@ -1106,6 +1110,7 @@ val remove_file : string -> unit
  *)
 val _temp_files_created : string list ref
 (* see flag: val save_tmp_files : bool ref *)
+val temp_files : string ref
 val new_temp_file : string (* prefix *) -> string (* suffix *) -> filename
 val erase_temp_files : unit -> unit
 val erase_this_temp_file : filename -> unit

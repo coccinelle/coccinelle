@@ -53,7 +53,8 @@ type pretty_printers = {
   fragment        : Ast_c.string_fragment printer;
   fragment_list   : (Ast_c.string_fragment list) printer;
   format          : Ast_c.string_format printer;
-  flow            : Control_flow_c.node printer
+  flow            : Control_flow_c.node printer;
+  name            : Ast_c.name printer
 }
 
 
@@ -630,6 +631,9 @@ and pp_string_format (e,ii) =
             pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "*}");
           end;
 
+      | (FieldType (t, _, _), iis) ->
+	  pp_base_type t sto
+
       | (TypeOfExpr (e), iis) ->
           print_sto_qu (sto, qu);
           (match iis with
@@ -776,6 +780,7 @@ and pp_string_format (e,ii) =
       | (EnumName  s, iis)                      -> print_ident ident
       | (Decimal _, iis)                        -> print_ident ident
       | (TypeName (_name,_typ), iis)            -> print_ident ident
+      | (FieldType (_typ,_,_), iis)             -> print_ident ident
       | (TypeOfExpr (e), iis)                   -> print_ident ident
       | (TypeOfType (e), iis)                   -> print_ident ident
 
@@ -882,7 +887,7 @@ and pp_string_format (e,ii) =
       | (EnumName  s, iis) -> ()
       | (Decimal(l,p), iis) -> ()
       | (TypeName (_name,_typ), iis) -> ()
-
+      | FieldType (_, _, _), _ -> ()
       | TypeOfType _, _ -> ()
       | TypeOfExpr _, _ -> ()
 
@@ -939,6 +944,7 @@ and pp_string_format (e,ii) =
     | (EnumName  s, iis) -> ()
     | (Decimal(l,p), iis) -> ()
     | (TypeName (name,_typ), iis) -> ()
+    | (FieldType (_, _, _), _) -> ()
 
     | TypeOfType _, _ -> ()
     | TypeOfExpr _, _ -> ()
@@ -1498,6 +1504,7 @@ and pp_init (init, iinit) =
     fragment_list = pp_string_fragment_list;
     format     = pp_string_format;
     flow       = pp_flow;
+    name       = pp_name;
   }
 
 (*****************************************************************************)
@@ -1554,6 +1561,7 @@ let pp_toplevel_simple   = ppc.toplevel
 let pp_string_fragment_simple = ppc.fragment
 let pp_string_format_simple = ppc.format
 let pp_flow_simple       = ppc.flow
+let pp_name              = ppc.name
 
 
 let pp_elem_sp ~pr_elem ~pr_space =
@@ -1637,6 +1645,16 @@ let string_of_ifdef_guard = function
 let string_of_toplevel top =
   Common.format_to_string (fun () ->
     pp_toplevel_simple top
+  )
+
+let string_of_fullType t =
+  Common.format_to_string (fun () ->
+    pp_type_simple t
+  )
+
+let string_of_name name =
+  Common.format_to_string (fun () ->
+    pp_name name
   )
 
 let (debug_info_of_node:

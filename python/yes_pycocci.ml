@@ -166,12 +166,23 @@ let _pycocci_setargs argv0 =
   let sys_mod = load_module "sys" in
   Py.Module.set sys_mod "argv" argv
 
+let initialize_python_path () =
+  let sep = ":" in
+  let python_libdir = Filename.concat Config.path "python" in
+  match Common.optionise (fun () -> Sys.getenv "PYTHONPATH") with
+    None -> Unix.putenv "PYTHONPATH" python_libdir
+  | Some paths ->
+      let path_list = Common.split sep paths in
+      if not (List.mem python_libdir path_list) then
+	Unix.putenv "PYTHONPATH"
+	  (Printf.sprintf "%s%s%s" paths sep python_libdir)
+
 let pycocci_init () =
   (* initialize *)
   if not !initialised then (
-  initialised := true;
-  let _ = if not (Py.is_initialized ()) then
-  	(if !Flag.show_misc then Common.pr2 "Initializing python\n%!";
+    initialize_python_path ();
+    let _ = if not (Py.is_initialized ()) then
+      (if !Flag.show_misc then Common.pr2 "Initializing python\n%!";
 	Py.initialize ~interpreter:!Config.python_interpreter ()) in
 
   (* set argv *)
@@ -207,6 +218,7 @@ let pycocci_init () =
   let (wrap_ast, unwrap_ast) = Py.Capsule.make "metavar_binding_kind" in
   pywrap_ast := wrap_ast;
   pyunwrap_ast := unwrap_ast;
+  initialised := true;
   ()) else
   ()
 
@@ -366,30 +378,53 @@ let set_coccifile cocci_file =
 	cocci_file_name := cocci_file;
 	()
 
+let pickle_variable var =
+  Py.Marshal.dumps (get_variable var)
+
+let unpickle_variable var value =
+  let py_list = Py.List.of_list (List.map Py.Marshal.loads value) in
+  Py.Module.set !coccinelle_module var py_list
+
 let pyrun_simplestring s =
   catch_python_error begin fun () ->
     if not (Py.Run.simple_string s) then
       failwith "Python failure"
   end
 
+let run (file, line) s =
+  try
+    pyrun_simplestring s
+  with Failure msg ->
+    failwith (
+    Printf.sprintf "Error in Python script, line %d, file \"%s\": %s"
+      line file msg)
+
 let py_isinitialized () =
   Py.is_initialized ()
-
 
 let py_finalize () =
   Py.finalize ()
 
-let run_constraint args body =
+let run_constraint args pos body =
   catch_python_error begin fun () ->
     build_classes [];
     let make_arg (name, value) =
       (snd name, name, value, Ast_cocci.NoMVInit) in
     let mv = List.map make_arg args in
     construct_variables mv args;
-    pyrun_simplestring (Printf.sprintf "
+    run pos (Printf.sprintf "
 from coccinelle import *
 from coccilib.iteration import Iteration
 
 coccinelle.result = (%s)" body);
     Py.Bool.to_bool (get_variable "result")
   end
+
+let flush_stdout_and_stderr () =
+  if py_isinitialized () then
+    let _ = pyrun_simplestring "\
+import sys
+sys.stdout.flush()
+sys.stderr.flush()
+" in
+    ()

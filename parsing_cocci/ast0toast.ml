@@ -178,7 +178,7 @@ let inline_mcodes =
     do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing do_nothing
+    do_nothing do_nothing do_nothing do_nothing
 
 (* --------------------------------------------------------------------- *)
 (* For function declarations.  Can't use the mcode at the root, because that
@@ -213,9 +213,17 @@ let check_allminus =
 
   let declaration r k e =
     match Ast0.unwrap e with
-      Ast0.DisjDecl(starter,decls,mids,ender) ->
+      Ast0.DisjDecl(starter,decls,mids,ender)
+    | Ast0.ConjDecl(starter,decls,mids,ender) ->
 	List.for_all r.VT0.combiner_rec_declaration decls
     | Ast0.AsDecl(decl,asdecl) -> k decl
+    | _ -> k e in
+
+  let field r k e =
+    match Ast0.unwrap e with
+      Ast0.DisjField(starter,decls,mids,ender)
+    | Ast0.ConjField(starter,decls,mids,ender) ->
+	List.for_all r.VT0.combiner_rec_field decls
     | _ -> k e in
 
   let typeC r k e =
@@ -248,8 +256,8 @@ let check_allminus =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
-    ident expression donothing donothing typeC initialiser donothing
-    declaration statement donothing case_line donothing donothing
+    donothing ident expression donothing donothing typeC initialiser donothing
+    declaration field statement donothing case_line donothing donothing
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -305,13 +313,18 @@ let pos_mcode(term,_,info,mcodekind,pos,adj) =
   (* avoids a recursion problem *)
   (term,convert_info info,convert_mcodekind adj mcodekind,[])
 
+(* Postponed transformer declaration for constraints *)
+let constraints' = ref (fun _ -> failwith "unbound constraints")
+let constraints c = !constraints' c
+
 let mcode (term,_,info,mcodekind,pos,adj) =
   let pos =
     List.fold_left
       (function prev ->
 	function
-	    Ast0.MetaPosTag(Ast0.MetaPos(pos,constraints,per)) ->
-	      (Ast.MetaPos(pos_mcode pos,constraints,per,unitary,false))::prev
+	    Ast0.MetaPosTag(Ast0.MetaPos(pos,cstr,per)) ->
+	      let cstr' = constraints cstr in
+	      (Ast.MetaPos(pos_mcode pos,cstr',per,unitary,false))::prev
 	  | _ -> prev)
       [] !pos in
   (term,convert_info info,convert_mcodekind adj mcodekind,List.rev pos)
@@ -344,12 +357,15 @@ and ident i =
       Ast0.Id(name) -> Ast.Id(mcode name)
     | Ast0.DisjId(_,id_list,_,_) ->
 	Ast.DisjId(List.map ident id_list)
-    | Ast0.MetaId(name,constraints,_,_) ->
-	Ast.MetaId(mcode name,constraints,unitary,false)
-    | Ast0.MetaFunc(name,constraints,_) ->
-	Ast.MetaFunc(mcode name,constraints,unitary,false)
-    | Ast0.MetaLocalFunc(name,constraints,_) ->
-	Ast.MetaLocalFunc(mcode name,constraints,unitary,false)
+    | Ast0.MetaId(name,cstr,_,_) ->
+	let cstr' = constraints cstr in
+	Ast.MetaId(mcode name,cstr',unitary,false)
+    | Ast0.MetaFunc(name,cstr,_) ->
+	let cstr' = constraints cstr in
+	Ast.MetaFunc(mcode name,cstr',unitary,false)
+    | Ast0.MetaLocalFunc(name,cstr,_) ->
+	let cstr' = constraints cstr in
+	Ast.MetaLocalFunc(mcode name,cstr',unitary,false)
     | Ast0.AsIdent(id,asid) ->
 	Ast.AsIdent(ident id,ident asid)
     | Ast0.OptIdent(id) -> Ast.OptIdent(ident id))
@@ -417,11 +433,14 @@ and expression e =
 	Ast.Constructor(mcode lp,typeC allminus ty,mcode rp,initialiser init)
     | Ast0.MetaErr(name,cstrts,_)  ->
 	Ast.MetaErr(mcode name,constraints cstrts,unitary,false)
-    | Ast0.MetaExpr(name,cstrts,ty,form,_)  ->
+    | Ast0.MetaExpr(name,cstrts,ty,form,_,bitfield)  ->
         let ty' = Common.map_option (List.map (typeC false)) ty in
-        Ast.MetaExpr (mcode name, constraints cstrts, unitary, ty', form, false)
-    | Ast0.MetaExprList(name,lenname,_) ->
-	Ast.MetaExprList(mcode name,do_lenname lenname,unitary,false)
+	let bitfield' = Common.map_option do_lenname bitfield in
+        Ast.MetaExpr
+	  (mcode name, constraints cstrts, unitary, ty', form, false, bitfield')
+    | Ast0.MetaExprList(name,lenname,cstr,_) ->
+	let cstr' = constraints cstr in
+	Ast.MetaExprList (mcode name,do_lenname lenname,cstr',unitary,false)
     | Ast0.AsExpr(expr,asexpr) ->
 	Ast.AsExpr(expression expr,expression asexpr)
     | Ast0.AsSExpr(expr,asstm) ->
@@ -452,16 +471,18 @@ and assignOp op =
     (match Ast0.unwrap op with
       Ast0.SimpleAssign op' -> Ast.SimpleAssign (mcode op')
     | Ast0.OpAssign op' -> Ast.OpAssign (mcode op')
-    | Ast0.MetaAssign(mv, c, _) ->
-      Ast.MetaAssign(mcode mv, c, unitary, false))
+    | Ast0.MetaAssign(mv, cstr, _) ->
+	let cstr' = constraints cstr in
+	Ast.MetaAssign(mcode mv, cstr', unitary, false))
 
 and binaryOp op =
   rewrap op no_isos
     (match Ast0.unwrap op with
       Ast0.Arith op' -> Ast.Arith (mcode op')
     | Ast0.Logical op' -> Ast.Logical (mcode op')
-    | Ast0.MetaBinary(mv, c, _) ->
-      Ast.MetaBinary(mcode mv, c, unitary, false))
+    | Ast0.MetaBinary(mv, cstr, _) ->
+	let cstr' = constraints cstr in
+	Ast.MetaBinary(mcode mv, cstr', unitary, false))
 
 and expression_dots ed = dots expression ed
 
@@ -472,26 +493,21 @@ and string_fragment e =
     | Ast0.FormatFragment(pct,fmt) ->
 	Ast.FormatFragment(mcode pct, string_format fmt)
     | Ast0.Strdots dots -> Ast.Strdots (mcode dots)
-    | Ast0.MetaFormatList(pct,name,lenname) ->
+    | Ast0.MetaFormatList(pct,name,cstr,lenname) ->
 	Ast.MetaFormatList(mcode pct, mcode name, do_lenname lenname,
-			   unitary,false))
+			   constraints cstr,unitary,false))
 
 and string_format e =
   rewrap e no_isos
     (match Ast0.unwrap e with
       Ast0.ConstantFormat(str) -> Ast.ConstantFormat(mcode str)
-    | Ast0.MetaFormat(name,constraints) ->
-	Ast.MetaFormat(mcode name,constraints,unitary,false))
-
-and constraints c =
-  match c with
-      Ast0.NoConstraint        -> Ast.NoConstraint
-    | Ast0.NotIdCstrt   idctrt -> Ast.NotIdCstrt idctrt
-    | Ast0.NotExpCstrt  exps   -> Ast.NotExpCstrt (List.map expression exps)
-    | Ast0.SubExpCstrt  ids    -> Ast.SubExpCstrt ids
+    | Ast0.MetaFormat(name,cstr) ->
+	let cstr' = constraints cstr in
+	Ast.MetaFormat(mcode name,cstr',unitary,false))
 
 and do_lenname = function
-    Ast0.MetaListLen(nm) -> Ast.MetaListLen(mcode nm,unitary,false)
+    Ast0.MetaListLen(nm,cstr) ->
+      Ast.MetaListLen(mcode nm,constraints cstr,unitary,false)
   | Ast0.CstListLen n -> Ast.CstListLen n
   | Ast0.AnyListLen -> Ast.AnyListLen
 
@@ -529,7 +545,7 @@ and typeC allminus t =
     | Ast0.Array(_,_,_,_) | Ast0.Decimal(_,_,_,_,_,_)
     | Ast0.EnumName(_,_) | Ast0.StructUnionName(_,_)
     | Ast0.StructUnionDef(_,_,_,_) | Ast0.EnumDef(_,_,_,_)
-    | Ast0.TypeName(_) | Ast0.MetaType(_,_) ->
+    | Ast0.TypeName(_) | Ast0.MetaType(_,_,_) ->
 	Ast.Type(allminus,None,rewrap t no_isos (base_typeC allminus t))
     | Ast0.DisjType(_,types,_,_) ->
 	Ast.DisjType(List.map (typeC allminus) types)
@@ -564,10 +580,11 @@ and base_typeC allminus t =
       Ast.StructUnionName(mcode kind,get_option ident name)
   | Ast0.StructUnionDef(ty,lb,decls,rb) ->
       Ast.StructUnionDef(typeC allminus ty,mcode lb,
-			 declaration_dots decls, mcode rb)
+			 field_dots decls, mcode rb)
   | Ast0.TypeName(name) -> Ast.TypeName(mcode name)
-  | Ast0.MetaType(name,_) ->
-      Ast.MetaType(mcode name,unitary,false)
+  | Ast0.MetaType(name,cstr,_) ->
+      let cstr' = constraints cstr in
+      Ast.MetaType(mcode name,cstr',unitary,false)
   | _ -> failwith "ast0toast: unexpected type"
 
 (* --------------------------------------------------------------------- *)
@@ -578,10 +595,8 @@ and base_typeC allminus t =
 and declaration d =
   rewrap d (do_isos (Ast0.get_iso d))
     (match Ast0.unwrap d with
-      Ast0.MetaDecl(name,_) -> Ast.MetaDecl(mcode name,unitary,false)
-    | Ast0.MetaField(name,_) -> Ast.MetaField(mcode name,unitary,false)
-    | Ast0.MetaFieldList(name,lenname,_) ->
-	Ast.MetaFieldList(mcode name,do_lenname lenname,unitary,false)
+      Ast0.MetaDecl(name,cstr,_) ->
+	Ast.MetaDecl(mcode name,constraints cstr,unitary,false)
     | Ast0.AsDecl(decl,asdecl) ->
 	Ast.AsDecl(declaration decl,declaration asdecl)
     | Ast0.Init(stg,ty,id,eq,ini,sem) ->
@@ -638,19 +653,14 @@ and declaration d =
 	  Ast.Type(_,None,id) -> (* only MetaType or Id *)
 	    Ast.Typedef(mcode stg,typeC allminus ty,id,mcode sem)
 	| _ -> failwith "bad typedef")
-    | Ast0.Ddots(dots,whencode) -> failwith "should not be possible"
     | Ast0.DisjDecl(_,decls,_,_) -> Ast.DisjDecl(List.map declaration decls)
+    | Ast0.ConjDecl(_,decls,_,_) -> Ast.ConjDecl(List.map declaration decls)
     | Ast0.OptDecl(decl) -> Ast.OptDecl(declaration decl))
 
 and annotated_decl bef d =
   rewrap d (do_isos (Ast0.get_iso d))
     (match Ast0.unwrap d with
-      Ast0.Ddots(dots,whencode) ->
-	(* structure definitions only *)
-	let dots = mcode dots in
-	let whencode = get_option (fun (_,_,b) -> declaration b) whencode in
-	Ast.Ddots(dots,whencode)
-    | _ -> (* for decls where there is no bef information needed *)
+      _ -> (* for decls where there is no bef information needed *)
 	let bef =
 	  match bef with
 	    None -> (* fake, no change here *)
@@ -662,6 +672,48 @@ and annotated_decl bef d =
 		  declaration d))
 
 and declaration_dots l = dots (annotated_decl None) l
+
+(* --------------------------------------------------------------------- *)
+(* Field declaration *)
+
+and field d =
+  rewrap d (do_isos (Ast0.get_iso d))
+    (match Ast0.unwrap d with
+      Ast0.MetaField(name,cstr,_) ->
+	Ast.MetaField(mcode name,constraints cstr,unitary,false)
+    | Ast0.MetaFieldList(name,lenname,cstr,_) ->
+	let cstr' = constraints cstr in
+	Ast.MetaFieldList(mcode name,do_lenname lenname,cstr',unitary,false)
+    | Ast0.Field(ty,id,bf,sem) ->
+	let allminus = check_allminus.VT0.combiner_rec_field d in
+	let bitfield (c, e) = (mcode c, expression e) in
+	let bf = Common.map_option bitfield bf in
+	Ast.Field(typeC allminus ty,Common.map_option ident id, bf, mcode sem)
+    | Ast0.Fdots(dots,whencode) -> failwith "should not be possible"
+    | Ast0.DisjField(_,decls,_,_) -> Ast.DisjField(List.map field decls)
+    | Ast0.ConjField(_,decls,_,_) -> Ast.ConjField(List.map field decls)
+    | Ast0.OptField(decl) -> Ast.OptField(field decl))
+
+and annotated_field bef d =
+  rewrap d (do_isos (Ast0.get_iso d))
+    (match Ast0.unwrap d with
+      Ast0.Fdots(dots,whencode) ->
+	(* structure definitions only *)
+	let dots = mcode dots in
+	let whencode = get_option (fun (_,_,b) -> field b) whencode in
+	Ast.Fdots(dots,whencode)
+    | _ -> (* for decls where there is no bef information needed *)
+	let bef =
+	  match bef with
+	    None -> (* fake, no change here *)
+	      let bot = Ast0.default_token_info in
+	      Ast0.CONTEXT (ref(Ast.NOTHING,bot,bot))
+	  | Some bef -> bef in
+	let allminus = check_allminus.VT0.combiner_rec_field d in
+	Ast.FElem(convert_allminus_mcodekind allminus bef,allminus,
+		  field d))
+
+and field_dots l = dots (annotated_field None) l
 
 (* --------------------------------------------------------------------- *)
 (* Initialiser *)
@@ -709,9 +761,11 @@ and strip_idots initlist =
 and initialiser i =
   rewrap i no_isos
     (match Ast0.unwrap i with
-      Ast0.MetaInit(name,_) -> Ast.MetaInit(mcode name,unitary,false)
-    | Ast0.MetaInitList(name,lenname,_) ->
-	Ast.MetaInitList(mcode name,do_lenname lenname,unitary,false)
+      Ast0.MetaInit(name,cstr,_) ->
+	Ast.MetaInit(mcode name,constraints cstr,unitary,false)
+    | Ast0.MetaInitList(name,lenname,cstr,_) ->
+	let cstr' = constraints cstr in
+	Ast.MetaInitList(mcode name,do_lenname lenname,cstr',unitary,false)
     | Ast0.AsInit(init,asinit) ->
 	Ast.AsInit(initialiser init,initialiser asinit)
     | Ast0.InitExpr(exp) -> Ast.InitExpr(expression exp)
@@ -752,10 +806,11 @@ and parameterTypeDef p =
     | Ast0.Param(ty,id) ->
 	let allminus = check_allminus.VT0.combiner_rec_parameter p in
 	Ast.Param(typeC allminus ty,get_option ident id)
-    | Ast0.MetaParam(name,_) ->
-	Ast.MetaParam(mcode name,unitary,false)
-    | Ast0.MetaParamList(name,lenname,_) ->
-	Ast.MetaParamList(mcode name,do_lenname lenname,unitary,false)
+    | Ast0.MetaParam(name,cstr,_) ->
+	Ast.MetaParam(mcode name,constraints cstr,unitary,false)
+    | Ast0.MetaParamList(name,lenname,cstr,_) ->
+	let cstr' = constraints cstr in
+	Ast.MetaParamList(mcode name,do_lenname lenname,cstr',unitary,false)
     | Ast0.AsParam(p,asexpr) ->
 	Ast.AsParam(parameterTypeDef p,expression asexpr)
     | Ast0.PComma(cm) -> Ast.PComma(mcode cm)
@@ -877,13 +932,15 @@ and statement s =
 	  Ast.Atomic
 	    (rewrap_rule_elem s
 	       (Ast.Exec(mcode exec,mcode lang,dots exec_code code,mcode sem)))
-      | Ast0.MetaStmt(name,_) ->
+      | Ast0.MetaStmt(name,cstr,_) ->
+	  let cstr' = constraints cstr in
 	  Ast.Atomic(rewrap_rule_elem s
-		       (Ast.MetaStmt(mcode name,unitary,seqible,false)))
-      | Ast0.MetaStmtList(name,lenname,_) ->
+		       (Ast.MetaStmt(mcode name,cstr',unitary,seqible,false)))
+      | Ast0.MetaStmtList(name,lenname,cstr,_) ->
+	  let cstr' = constraints cstr in
 	  Ast.Atomic(rewrap_rule_elem s
 		       (Ast.MetaStmtList(mcode name,do_lenname lenname,
-					 unitary,false)))
+					 cstr',unitary,false)))
       | Ast0.AsStmt(stmt,asstmt) ->
 	  Ast.AsStmt(statement seqible stmt,statement seqible asstmt)
       | Ast0.TopExp(exp) ->
@@ -1060,8 +1117,9 @@ and define_param p =
   rewrap p no_isos
     (match Ast0.unwrap p with
       Ast0.DParam(id) -> Ast.DParam(ident id)
-    | Ast0.MetaDParamList(name,lenname,_) ->
-	Ast.MetaDParamList(mcode name,do_lenname lenname,unitary,false)
+    | Ast0.MetaDParamList(name,lenname,cstr,_) ->
+	let cstr' = constraints cstr in
+	Ast.MetaDParamList(mcode name,do_lenname lenname,cstr',unitary,false)
     | Ast0.DPComma(comma) -> Ast.DPComma(mcode comma)
     | Ast0.DPdots(d) -> Ast.DPdots(mcode d)
     | Ast0.OptDParam(dp) -> Ast.OptDParam(define_param dp))
@@ -1124,6 +1182,7 @@ and anything = function
   | Ast0.DotsInitTag(d) -> failwith "not possible"
   | Ast0.DotsStmtTag(d) -> Ast.StmtDotsTag(statement_dots d)
   | Ast0.DotsDeclTag(d) -> Ast.AnnDeclDotsTag(declaration_dots d)
+  | Ast0.DotsFieldTag(d) -> Ast.AnnFieldDotsTag(field_dots d)
   | Ast0.DotsCaseTag(d) -> failwith "not possible"
   | Ast0.DotsDefParamTag(d) -> Ast.DefParDotsTag(define_param_dots d)
   | Ast0.IdentTag(d) -> Ast.IdentTag(ident d)
@@ -1136,6 +1195,7 @@ and anything = function
   | Ast0.ParamTag(d) -> Ast.ParamTag(parameterTypeDef d)
   | Ast0.InitTag(d) -> Ast.InitTag(initialiser d)
   | Ast0.DeclTag(d) -> Ast.DeclarationTag(declaration d)
+  | Ast0.FieldTag(d) -> Ast.FieldTag(field d)
   | Ast0.StmtTag(d) -> Ast.StatementTag(statement d)
   | Ast0.ForInfoTag(d) -> Ast.ForInfoTag(forinfo d)
   | Ast0.CaseLineTag(d) -> Ast.CaseLineTag(case_line d)
@@ -1161,6 +1221,12 @@ and top_level t =
     | Ast0.CODE(rule_elem_dots) -> Ast.CODE(statement_dots rule_elem_dots)
     | Ast0.ERRORWORDS(exps) -> Ast.ERRORWORDS(List.map expression exps)
     | Ast0.OTHER(_) | Ast0.TOPCODE(_) -> failwith "eliminated by top_level")
+
+let constraints c =
+  let cstr_expr = Some (fun e -> Ast.CstrExpr (expression e)) in
+  Ast.cstr_map { Ast.empty_cstr_transformer with Ast.cstr_expr } c
+
+let () = constraints' := constraints
 
 (* --------------------------------------------------------------------- *)
 (* Entry point for minus code *)

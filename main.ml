@@ -31,6 +31,7 @@ let ignore_unknown_opt = ref false
 let profile_per_file = ref false
 
 let dir = ref false
+let ignore = ref []
 let file_groups = ref false
 let kbuild_info = ref ""
 
@@ -331,6 +332,8 @@ let short_options = [
 
   "--dir", Arg.Set dir,
   "    <dir> process all files in directory recursively";
+  "--ignore", Arg.String (fun s -> ignore := s :: !ignore),
+  "    <dir> process all files in directory recursively";
   "--file-groups", Arg.Set file_groups,
   "    <file> process the file groups listed in the file";
 
@@ -627,6 +630,8 @@ let other_options = [
     "  spacing of + code follows the semantic patch";
     "--indent", Arg.Set_int Flag_parsing_c.indent,
     "  default indent, in spaces (no tabs)";
+    "--max-width", Arg.Set_int Flag_parsing_c.max_width,
+    "  column limit for generated code";
     "-D", Arg.String Flag.set_defined_virtual_rules,
     "  indicate that a virtual rule should be considered to be matched";
     "--c++", Arg.Set Flag.c_plus_plus,
@@ -667,6 +672,8 @@ let other_options = [
     "   the size of work chunks for parallelism";
     "--tmp-dir", Arg.Set_string tmp_dir,
     "   prefix of temporary directories for parallelism";
+    "--temp-files", Arg.Set_string Common.temp_files,
+    "   prefix of temporary directory for cocci files";
   ];
 
   "pad options",
@@ -960,8 +967,6 @@ let rec main_action xs =
        * as some elements in xs may also be directories, or individual
        * files.
        *)
-	  dir := (Common.is_directory x);
-
           if !cocci_file = ""
           then failwith "I need a cocci file,  use --sp-file <file>";
 
@@ -1042,7 +1047,32 @@ let rec main_action xs =
 		Some (Printf.sprintf "%s/d%d" str index)
 	  | _ -> ());
 
-	  let infiles =
+	let ncores =
+	  match !parmap_cores with
+	  | Some x when x <= 0 -> succ (Parmap.get_default_ncores ())
+	  | Some x -> x
+	  | None -> 0 in
+	let chunksize =
+	  match !parmap_chunk_size with
+	  | Some x when x > 0 -> x
+	  | Some _ | None -> 1 in
+	let infiles =
+	  if !ignore = []
+	  then infiles
+	  else
+	    let regexps = List.map Str.regexp !ignore in
+	    let inacceptable x =
+	      List.for_all (* all files in a group must fail *)
+		(fun x ->
+		  List.exists (fun re -> Str.string_match re x 0) regexps)
+		x in
+	    if ncores = 0
+	    then List.filter (function x -> not (inacceptable x)) infiles
+	    else
+	      Parmap.parfold ~ncores
+		(fun x rest -> if inacceptable x then rest else x :: rest)
+		(Parmap.L infiles) [] (@) in
+	let infiles =
 	    match (!distrib_index,!distrib_max) with
 	      (None,None) -> infiles
 	    | (Some index,Some max) ->
@@ -1074,15 +1104,6 @@ let rec main_action xs =
 		  end
 	    | _ -> failwith "inconsistent distribution information" in
 
-	  let ncores =
-	    match !parmap_cores with
-	    | Some x when x <= 0 -> succ (Parmap.get_default_ncores ())
-	    | Some x -> x
-	    | None -> 0 in
-	  let chunksize =
-	    match !parmap_chunk_size with
-	    | Some x when x > 0 -> x
-	    | Some _ | None -> 1 in
 	  let seq_fold merge op z l =
 	    List.fold_left op z l in
 	  let par_fold merge op z l =
@@ -1118,10 +1139,12 @@ let rec main_action xs =
 	      (res, !Common._temp_files_created) in
 	    let merge (x, temp_files) (y, temp_files') =
 	      (merge x y, List.rev_append temp_files temp_files') in
+	    Pycocci.flush_stdout_and_stderr ();
 	    let (res, tmps) =
 	      try
 		Parmap.parfold
 		  ~init:(fun id -> Parmap.redirect ~path:prefix ~id)
+		  ~finalize:(fun () -> Pycocci.flush_stdout_and_stderr ())
 		  ~ncores
 		  ~chunksize
 		  op (Parmap.L l) (z, !Common._temp_files_created) merge
@@ -1132,27 +1155,33 @@ let rec main_action xs =
 	    clean();
 	    res
 	  in
-	  let (actual_fold, run_in_parallel) =
+	  let actual_fold =
 	    if ncores <= 1
-	    then (seq_fold, false)
-	    else if Cocci.has_finalize cocci_infos
-	    then
-	      begin
-		pr2 "warning: parallel mode is disabled due to a finalize";
-		(seq_fold, false)
-	      end
-	    else (par_fold, true) in
+	    then seq_fold
+	    else par_fold in
 
-          let outfiles =
+          let (outfiles, merges) =
             Common.profile_code "Main.outfiles computation" (fun () ->
 	      let res =
 		match infiles with
 		  [] ->
 		    (* parmap case does a lot of work that is not needed
 		       if there is nothing to do *)
-		    []
+		    [], []
 		| _ ->
-		    infiles +> actual_fold (@) (fun prev cfiles ->
+(* merge_vars associates one merge variable assignment to each core.
+The following code relies on the fact that parfold never
+passes the accumulator from one core to another before merging the
+results. Therefore, the fold operator may just keep the last value in a
+singleton list (forgetting the former accumulator value) and these
+singleton lists are then just appended to each other during the merge. *)
+		    let merge (outfiles, merge_vars) (outfiles', merge_vars') =
+		      let all_outfiles = List.rev_append outfiles outfiles' in
+		      let all_merge_vars =
+			List.rev_append merge_vars merge_vars' in
+		      all_outfiles, all_merge_vars in
+		    infiles +> actual_fold merge
+		      (fun (prev_files, _prev_merges as prev) cfiles ->
 		      if (not !Flag.worth_trying_opt) ||
 		      Cocci.worth_trying cfiles constants
 		      then
@@ -1171,14 +1200,16 @@ let rec main_action xs =
 					if !output_file <> "" && !compat_mode
 					then Some !output_file
 					else None in
-				      List.rev
-					(adjust_stdin cfiles (fun () ->
+				      let files, merges =
+					adjust_stdin cfiles (fun () ->
 					  Common.redirect_stdout_opt optfile
 					    (fun () ->
 					      (* this is the main call *)
 					      Cocci.full_engine cocci_infos
 						cfiles
-					 ))) @ prev
+					 )) in
+				      List.rev_append files prev_files,
+				      [merges]
 				    with
 				    | Common.UnixExit x ->
 					raise (Common.UnixExit x)
@@ -1187,7 +1218,10 @@ let rec main_action xs =
 				    | e ->
 					if !dir
 					then begin
-					  pr2 ("EXN:" ^ Printexc.to_string e);
+					  (* not hidden by --very-quiet *)
+					  Printf.eprintf "EXN: %s"
+					    (Printexc.to_string e);
+					  flush stderr;
 					  prev (* *)
 					end
 					else raise e) in
@@ -1196,9 +1230,16 @@ let rec main_action xs =
 			      res)
 			end
 		      else prev)
-		      [] in res) in
+		      ([], []) in res) in
 	  let outfiles = List.rev outfiles in
-	  (match Iteration.get_pending_instance() with
+	  let merges = List.fold_left Cocci.union_merge_vars ([], []) merges in
+	  let pending_instance =
+	    match Iteration.get_pending_instance() with
+	      None ->
+		Cocci.post_engine cocci_infos merges;
+		Iteration.get_pending_instance()
+	    | pending_instance -> pending_instance in
+	  (match pending_instance with
 	    None ->
 	      (x,xs,cocci_infos,outfiles)
 	  | Some (files,virt_rules,virt_ids) ->
@@ -1223,8 +1264,6 @@ let rec main_action xs =
 		  (x,xs,cocci_infos,outfiles)
 		end) in
       let (x,xs,cocci_infos,outfiles) = toploop xs in
-
-      Cocci.post_engine cocci_infos;
       Common.profile_code "Main.result analysis" (fun () ->
 	Ctlcocci_integration.print_bench();
 	generate_outfiles outfiles x xs;
@@ -1373,6 +1412,10 @@ let main () =
 
     (* julia hack so that one can override directories specified on
      * the command line. *)
+    dir :=
+      (if !args = [] || !test_mode
+      then false
+      else Common.is_directory (List.hd !args));
     (if !dir
     then
       let chosen_dir =

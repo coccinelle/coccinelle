@@ -10,7 +10,6 @@ module D = Data
 module Ast = Ast_cocci
 exception Lexical of string
 let tok = Lexing.lexeme
-let file = ref ""
 let language = ref ""
 let inc_line _ = Lexer_cocci.line := !Lexer_cocci.line + 1
 }
@@ -33,7 +32,7 @@ rule token = parse
 	  if !language = "ocaml"
 	  then
 	    Printf.sprintf "%s# %d \"%s\"%s"
-	      text !Lexer_cocci.line !file text
+	      text !Lexer_cocci.line !Lexer_cocci.file text
 	  else text in
 	TScriptData text }
   | "@@" { TArobArob }

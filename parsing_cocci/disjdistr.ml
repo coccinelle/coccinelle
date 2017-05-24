@@ -91,10 +91,10 @@ and disjtypeC bty =
 	(function ty -> function ids ->
 	  Ast.rewrap bty (Ast.EnumDef(ty,lb,ids,rb)))
   | Ast.StructUnionDef(ty,lb,decls,rb) ->
-      disjmult2 (disjty ty) (disjdots anndisjdecl decls)
+      disjmult2 (disjty ty) (disjdots anndisjfield decls)
 	(function ty -> function decls ->
 	  Ast.rewrap bty (Ast.StructUnionDef(ty,lb,decls,rb)))
-  | Ast.TypeName(_) | Ast.MetaType(_,_,_) -> [bty]
+  | Ast.TypeName(_) | Ast.MetaType(_,_,_,_) -> [bty]
 
 and anndisjdecl d =
   match Ast.unwrap d with
@@ -102,7 +102,14 @@ and anndisjdecl d =
       List.map
 	(function decl -> Ast.rewrap d (Ast.DElem(bef,allminus,decl)))
 	(disjdecl decls)
-  | Ast.Ddots(_,_) -> [d]
+
+and anndisjfield d =
+  match Ast.unwrap d with
+    Ast.FElem(bef,allminus,decls) ->
+      List.map
+	(function decl -> Ast.rewrap d (Ast.FElem(bef,allminus,decl)))
+	(disjfield decls)
+  | Ast.Fdots(_,_) -> [d]
 
 and disjident e =
   match Ast.unwrap e with
@@ -187,8 +194,8 @@ and disjexp e =
       disjmult2 (disjty ty) (disjini init)
 	(function ty ->
 	  function exp -> Ast.rewrap e (Ast.Constructor(lp,ty,rp,init)))
-  | Ast.MetaErr(_,_,_,_) | Ast.MetaExpr(_,_,_,_,_,_)
-  | Ast.MetaExprList(_,_,_,_) | Ast.EComma(_) -> [e]
+  | Ast.MetaErr(_,_,_,_) | Ast.MetaExpr(_,_,_,_,_,_,_)
+  | Ast.MetaExprList(_,_,_,_,_) | Ast.EComma(_) -> [e]
   | Ast.AsExpr(exp,asexp) -> (* as exp doesn't contain disj *)
       let exp = disjexp exp in
       List.map (function exp -> Ast.rewrap e (Ast.AsExpr(exp,asexp))) exp
@@ -217,7 +224,7 @@ and disjparam p =
   | Ast.AsParam(pm,asexp) -> (* as exp doesn't contain disj *)
       let pm = disjparam pm in
       List.map (function pm -> Ast.rewrap p (Ast.AsParam(pm,asexp))) pm
-  | Ast.MetaParam(_,_,_) | Ast.MetaParamList(_,_,_,_) | Ast.PComma(_) -> [p]
+  | Ast.MetaParam(_,_,_,_) | Ast.MetaParamList(_,_,_,_,_) | Ast.PComma(_) -> [p]
   | Ast.Pdots(dots) -> [p]
   | Ast.OptParam(param) ->
       let param = disjparam param in
@@ -225,7 +232,7 @@ and disjparam p =
 
 and disjini i =
   match Ast.unwrap i with
-    Ast.MetaInit(_,_,_) | Ast.MetaInitList(_,_,_,_) -> [i]
+    Ast.MetaInit(_,_,_,_) | Ast.MetaInitList(_,_,_,_,_) -> [i]
   | Ast.AsInit(ini,asini) ->
       let ini = disjini ini in
       List.map (function ini -> Ast.rewrap i (Ast.AsInit(ini,asini))) ini
@@ -277,32 +284,29 @@ and disjfninfo = function
 
 and disjdecl d =
   match Ast.unwrap d with
-    Ast.MetaDecl(_,_,_) | Ast.MetaField(_,_,_)
-  | Ast.MetaFieldList(_,_,_,_) -> [d]
+    Ast.MetaDecl(_,_,_,_) -> [d]
   | Ast.AsDecl(decl,asdecl) ->
       let decl = disjdecl decl in
       List.map (function decl -> Ast.rewrap d (Ast.AsDecl(decl,asdecl))) decl
   | Ast.Init(stg,ty,id,eq,ini,sem) ->
-      disjmult2 (disjty ty) (disjini ini)
-	(function ty -> function ini ->
+      disjmult3 (disjty ty) (disjident id) (disjini ini)
+	(fun ty id ini ->
 	  Ast.rewrap d (Ast.Init(stg,ty,id,eq,ini,sem)))
   | Ast.UnInit(stg,ty,id,sem) ->
-      let ty = disjty ty in
-      List.map (function ty -> Ast.rewrap d (Ast.UnInit(stg,ty,id,sem))) ty
+      disjmult2 (disjty ty) (disjident id)
+	(fun ty id ->
+	  Ast.rewrap d (Ast.UnInit(stg,ty,id,sem)))
   | Ast.FunProto(fninfo,name,lp1,params,va,rp1,sem) ->
-      let fninfo = disjmult disjfninfo fninfo in
-      List.map
-	(function fninfo ->
+      disjmult2 (disjmult disjfninfo fninfo) (disjident name)
+	(fun fninfo name ->
 	  Ast.rewrap d (Ast.FunProto(fninfo,name,lp1,params,va,rp1,sem)))
-	fninfo
   | Ast.MacroDecl(stg,name,lp,args,rp,sem) ->
-      List.map
-	(function args ->
+      disjmult2 (disjident name) (disjdots disjexp args)
+	(fun name args ->
 	  Ast.rewrap d (Ast.MacroDecl(stg,name,lp,args,rp,sem)))
-	(disjdots disjexp args)
   | Ast.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
-      disjmult2 (disjdots disjexp args) (disjini ini)
-	(function args -> function ini ->
+      disjmult3 (disjident name) (disjdots disjexp args) (disjini ini)
+	(fun name args ini ->
 	  Ast.rewrap d (Ast.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem)))
   | Ast.TyDecl(ty,sem) ->
       let ty = disjty ty in
@@ -311,9 +315,31 @@ and disjdecl d =
       let ty = disjty ty in (* disj not allowed in id *)
       List.map (function ty -> Ast.rewrap d (Ast.Typedef(stg,ty,id,sem))) ty
   | Ast.DisjDecl(decls) -> List.concat (List.map disjdecl decls)
+  | Ast.ConjDecl(decl_list) ->
+      let decl_list = disjmult disjdecl decl_list in
+      List.map (function decl_list -> Ast.rewrap d (Ast.ConjDecl(decl_list)))
+	decl_list
   | Ast.OptDecl(decl) ->
       let decl = disjdecl decl in
       List.map (function decl -> Ast.rewrap d (Ast.OptDecl(decl))) decl
+
+and disjfield d =
+  match Ast.unwrap d with
+    Ast.MetaField(_,_,_,_)
+  | Ast.MetaFieldList(_,_,_,_,_) -> [d]
+  | Ast.Field(ty,id,bf,sem) ->
+      let disjbf (c, e) = List.map (fun e -> (c, e)) (disjexp e) in
+      disjmult3 (disjty ty) (disjoption disjident id) (disjoption disjbf bf)
+	(fun ty id bf ->
+	  Ast.rewrap d (Ast.Field(ty,id,bf,sem)))
+  | Ast.DisjField(decls) -> List.concat (List.map disjfield decls)
+  | Ast.ConjField(decl_list) ->
+      let decl_list = disjmult disjfield decl_list in
+      List.map (function decl_list -> Ast.rewrap d (Ast.ConjField(decl_list)))
+	decl_list
+  | Ast.OptField(decl) ->
+      let decl = disjfield decl in
+      List.map (function decl -> Ast.rewrap d (Ast.OptField(decl))) decl
 
 let generic_orify_rule_elem f re exp rebuild =
   match f exp with
@@ -384,8 +410,8 @@ let rec disj_rule_elem r k re =
       orify_rule_elem re exp
 	(function exp -> Ast.rewrap re (Ast.ReturnExpr(ret,exp,sem)))
   | Ast.Exec _ -> re (* no ors possible *)
-  | Ast.MetaRuleElem(_,_,_) | Ast.MetaStmt(_,_,_,_)
-  | Ast.MetaStmtList(_,_,_,_) -> re
+  | Ast.MetaRuleElem(_,_,_,_) | Ast.MetaStmt(_,_,_,_,_)
+  | Ast.MetaStmtList(_,_,_,_,_) -> re
   | Ast.Exp(exp) ->
       orify_rule_elem re exp (function exp -> Ast.rewrap exp (Ast.Exp(exp)))
   | Ast.TopExp(exp) ->
@@ -431,7 +457,7 @@ let disj_all =
     mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
     donothing disj_rule_elem donothing donothing donothing donothing
 
 (* ----------------------------------------------------------------------- *)
@@ -448,8 +474,9 @@ let collect_all_isos =
     mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing
-    doanything donothing donothing donothing donothing doanything
+    donothing donothing donothing donothing
+    doanything donothing doanything donothing donothing donothing donothing
+    doanything
 
 let collect_iso_info =
   let mcode x = x in
@@ -464,7 +491,7 @@ let collect_iso_info =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing
+    donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
     donothing donothing donothing donothing rule_elem donothing donothing
     donothing donothing

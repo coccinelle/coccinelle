@@ -84,6 +84,7 @@ let token2c (tok,_) =
   | PC.TRuleName str -> "rule_name-"^str
   | PC.TUsing -> "using"
   | PC.TVirtual -> "virtual"
+  | PC.TMerge -> "merge"
   | PC.TPathIsoFile str -> "path_iso_file-"^str
   | PC.TDisable -> "disable"
   | PC.TExtends -> "extends"
@@ -208,28 +209,28 @@ let token2c (tok,_) =
 	clt
   | PC.TTilde (clt) -> add_clt "~" clt
 
-  | PC.TMeta(_,_,clt) -> add_clt "meta" clt
+  | PC.TMeta(_,_,_,clt) -> add_clt "meta" clt
   | PC.TMetaAssignOp(_,_,_,clt) -> add_clt "metaassignop" clt
   | PC.TMetaBinaryOp(_,_,_,clt) -> add_clt "metabinaryop" clt
-  | PC.TMetaParam(_,_,clt) -> add_clt "parammeta" clt
-  | PC.TMetaParamList(_,_,_,clt) -> add_clt "paramlistmeta" clt
+  | PC.TMetaParam(_,_,_,clt) -> add_clt "parammeta" clt
+  | PC.TMetaParamList(_,_,_,_,clt) -> add_clt "paramlistmeta" clt
   | PC.TMetaConst(_,_,_,_,clt) -> add_clt "constmeta" clt
   | PC.TMetaErr(_,_,_,clt) -> add_clt "errmeta" clt
-  | PC.TMetaExp(_,_,_,_,clt) -> add_clt "expmeta" clt
+  | PC.TMetaExp(_,_,_,_,clt,_) -> add_clt "expmeta" clt
   | PC.TMetaIdExp(_,_,_,_,clt) -> add_clt "idexpmeta" clt
   | PC.TMetaLocalIdExp(_,_,_,_,clt) -> add_clt "localidexpmeta" clt
   | PC.TMetaGlobalIdExp(_,_,_,_,clt) -> add_clt "globalidexpmeta" clt
-  | PC.TMetaExpList(_,_,_,clt) -> add_clt "explistmeta" clt
+  | PC.TMetaExpList(_,_,_,_,clt) -> add_clt "explistmeta" clt
   | PC.TMetaId(nm,_,_,_,clt)    -> "idmeta-"^add_clt (Dumper.dump nm) clt
-  | PC.TMetaType(_,_,clt)    -> add_clt "typemeta" clt
-  | PC.TMetaInit(_,_,clt)    -> add_clt "initmeta" clt
-  | PC.TMetaInitList(_,_,_,clt)    -> add_clt "initlistmeta" clt
-  | PC.TMetaDecl(_,_,clt)    -> add_clt "declmeta" clt
-  | PC.TMetaField(_,_,clt)   -> add_clt "fieldmeta" clt
-  | PC.TMetaFieldList(_,_,_,clt)   -> add_clt "fieldlistmeta" clt
-  | PC.TMetaStm(_,_,clt)     -> add_clt "stmmeta" clt
-  | PC.TMetaStmList(_,_,_,clt) -> add_clt "stmlistmeta" clt
-  | PC.TMetaDParamList(_,_,_,clt) -> add_clt "dparamlistmeta" clt
+  | PC.TMetaType(_,_,_,clt)    -> add_clt "typemeta" clt
+  | PC.TMetaInit(_,_,_,clt)    -> add_clt "initmeta" clt
+  | PC.TMetaInitList(_,_,_,_,clt)    -> add_clt "initlistmeta" clt
+  | PC.TMetaDecl(_,_,_,clt)    -> add_clt "declmeta" clt
+  | PC.TMetaField(_,_,_,clt)   -> add_clt "fieldmeta" clt
+  | PC.TMetaFieldList(_,_,_,_,clt)   -> add_clt "fieldlistmeta" clt
+  | PC.TMetaStm(_,_,_,clt)     -> add_clt "stmmeta" clt
+  | PC.TMetaStmList(_,_,_,_,clt) -> add_clt "stmlistmeta" clt
+  | PC.TMetaDParamList(_,_,_,_,clt) -> add_clt "dparamlistmeta" clt
   | PC.TMetaFunc(_,_,_,clt)  -> add_clt "funcmeta" clt
   | PC.TMetaLocalFunc(_,_,_,clt) -> add_clt "funcmeta" clt
   | PC.TMetaPos(_,_,_,clt)   -> "posmeta"
@@ -237,7 +238,7 @@ let token2c (tok,_) =
   | PC.TArobArob -> "@@"
   | PC.TArob -> "@"
   | PC.TPArob clt -> "P@"
-  | PC.TScript -> "script"
+  | PC.TScript _ -> "script"
   | PC.TInitialize -> "initialize"
   | PC.TFinalize -> "finalize"
 
@@ -346,18 +347,20 @@ let plus_attachable only_plus (tok,_) =
   | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
   | PC.TDmOp(_,clt) | PC.TTilde (clt)
 
-  | PC.TMeta(_,_,clt) | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
+  | PC.TMeta(_,_,_,clt) | PC.TMetaParam(_,_,_,clt)
+  | PC.TMetaParamList(_,_,_,_,clt)
   | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaErr(_,_,_,clt)
-  | PC.TMetaExp(_,_,_,_,clt) | PC.TMetaIdExp(_,_,_,_,clt)
+  | PC.TMetaExp(_,_,_,_,clt,_) | PC.TMetaIdExp(_,_,_,_,clt)
   | PC.TMetaLocalIdExp(_,_,_,_,clt) | PC.TMetaGlobalIdExp(_,_,_,_,clt)
   | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt)
-  | PC.TMetaExpList(_,_,_,clt)
+  | PC.TMetaExpList(_,_,_,_,clt)
   | PC.TMetaId(_,_,_,_,clt)
-  | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt) | PC.TMetaInitList(_,_,_,clt)
-  | PC.TMetaStm(_,_,clt) | PC.TMetaStmList(_,_,_,clt)
-  | PC.TMetaDParamList(_,_,_,clt)
-  | PC.TMetaDecl(_,_,clt) | PC.TMetaField(_,_,clt)
-  | PC.TMetaFieldList(_,_,_,clt)
+  | PC.TMetaType(_,_,_,clt) | PC.TMetaInit(_,_,_,clt)
+  | PC.TMetaInitList(_,_,_,_,clt)
+  | PC.TMetaStm(_,_,_,clt) | PC.TMetaStmList(_,_,_,_,clt)
+  | PC.TMetaDParamList(_,_,_,_,clt)
+  | PC.TMetaDecl(_,_,_,clt) | PC.TMetaField(_,_,_,clt)
+  | PC.TMetaFieldList(_,_,_,_,clt)
   | PC.TMetaFunc(_,_,_,clt) | PC.TMetaLocalFunc(_,_,_,clt)
 
 (* it would seem that this should all be skips
@@ -428,18 +431,20 @@ let get_clt (tok,_) =
   | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
   | PC.TDmOp(_,clt) | PC.TTilde (clt) | PC.TTildeExclEq(clt)
 
-  | PC.TMeta(_,_,clt) | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
+  | PC.TMeta(_,_,_,clt) | PC.TMetaParam(_,_,_,clt)
+  | PC.TMetaParamList(_,_,_,_,clt)
   | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaErr(_,_,_,clt)
-  | PC.TMetaExp(_,_,_,_,clt) | PC.TMetaIdExp(_,_,_,_,clt)
+  | PC.TMetaExp(_,_,_,_,clt,_) | PC.TMetaIdExp(_,_,_,_,clt)
   | PC.TMetaLocalIdExp(_,_,_,_,clt) | PC.TMetaGlobalIdExp(_,_,_,_,clt)
   | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt)
-  | PC.TMetaExpList(_,_,_,clt)
+  | PC.TMetaExpList(_,_,_,_,clt)
   | PC.TMetaId(_,_,_,_,clt)
-  | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt) | PC.TMetaInitList(_,_,_,clt)
-  | PC.TMetaStm(_,_,clt) | PC.TMetaStmList(_,_,_,clt)
-  | PC.TMetaDParamList(_,_,_,clt)
-  | PC.TMetaDecl(_,_,clt) | PC.TMetaField(_,_,clt)
-  | PC.TMetaFieldList(_,_,_,clt)
+  | PC.TMetaType(_,_,_,clt) | PC.TMetaInit(_,_,_,clt)
+  | PC.TMetaInitList(_,_,_,_,clt)
+  | PC.TMetaStm(_,_,_,clt) | PC.TMetaStmList(_,_,_,_,clt)
+  | PC.TMetaDParamList(_,_,_,_,clt)
+  | PC.TMetaDecl(_,_,_,clt) | PC.TMetaField(_,_,_,clt)
+  | PC.TMetaFieldList(_,_,_,_,clt)
   | PC.TMetaFunc(_,_,_,clt) | PC.TMetaLocalFunc(_,_,_,clt)
   | PC.TMetaPos(_,_,_,clt)
   | PC.TMetaDeclarer(_,_,_,clt) | PC.TMetaIterator(_,_,_,clt)
@@ -469,6 +474,7 @@ let get_clt (tok,_) =
   | PC.TWhy0 -> failwith "No clt attached to token TWhy0"
   | PC.TWhitespace _ -> failwith "No clt attached to token TWhitespace"
   | PC.TVirtual -> failwith "No clt attached to token TVirtual"
+  | PC.TMerge -> failwith "No clt attached to token TMerge"
   | PC.TUsing -> failwith "No clt attached to token TUsing"
   | PC.TUnderscore -> failwith "No clt attached to token TUnderscore"
   | PC.TTypedef -> failwith "No clt attached to token TTypedef"
@@ -476,7 +482,7 @@ let get_clt (tok,_) =
   | PC.TSymbol -> failwith "No clt attached to token TSymbol"
   | PC.TStatement -> failwith "No clt attached to token TStatement"
   | PC.TScriptData _ -> failwith "No clt attached to token TScriptData"
-  | PC.TScript -> failwith "No clt attached to token TScript"
+  | PC.TScript _ -> failwith "No clt attached to token TScript"
   | PC.TRuleName _ -> failwith "No clt attached to token TRuleName"
   | PC.TRightIso -> failwith "No clt attached to token TRightIso"
   | PC.TPure -> failwith "No clt attached to token TPure"
@@ -625,28 +631,28 @@ let update_clt (tok,x) clt =
   | PC.TDmOp(op,_) -> (PC.TDmOp(op,clt),x)
   | PC.TTilde (_) -> (PC.TTilde (clt),x)
 
-  | PC.TMeta(a,b,_)      -> (PC.TMeta(a,b,clt),x)
-  | PC.TMetaParam(a,b,_) -> (PC.TMetaParam(a,b,clt),x)
-  | PC.TMetaParamList(a,b,c,_) -> (PC.TMetaParamList(a,b,c,clt),x)
+  | PC.TMeta(a,b,c,_)      -> (PC.TMeta(a,b,c,clt),x)
+  | PC.TMetaParam(a,b,c,_) -> (PC.TMetaParam(a,b,c,clt),x)
+  | PC.TMetaParamList(a,b,c,d,_) -> (PC.TMetaParamList(a,b,c,d,clt),x)
   | PC.TMetaConst(a,b,c,d,_) -> (PC.TMetaConst(a,b,c,d,clt),x)
   | PC.TMetaErr(a,b,c,_) -> (PC.TMetaErr(a,b,c,clt),x)
-  | PC.TMetaExp(a,b,c,d,_) -> (PC.TMetaExp(a,b,c,d,clt),x)
+  | PC.TMetaExp(a,b,c,d,_,e) -> (PC.TMetaExp(a,b,c,d,clt,e),x)
   | PC.TMetaIdExp(a,b,c,d,_) -> (PC.TMetaIdExp(a,b,c,d,clt),x)
   | PC.TMetaLocalIdExp(a,b,c,d,_) -> (PC.TMetaLocalIdExp(a,b,c,d,clt),x)
   | PC.TMetaGlobalIdExp(a,b,c,d,_) -> (PC.TMetaGlobalIdExp(a,b,c,d,clt),x)
-  | PC.TMetaExpList(a,b,c,_) -> (PC.TMetaExpList(a,b,c,clt),x)
+  | PC.TMetaExpList(a,b,c,d,_) -> (PC.TMetaExpList(a,b,c,d,clt),x)
   | PC.TMetaId(a,b,c,d,_)    -> (PC.TMetaId(a,b,c,d,clt),x)
   | PC.TMetaAssignOp(a,b,c,_)    -> (PC.TMetaAssignOp(a,b,c,clt),x)
   | PC.TMetaBinaryOp(a,b,c,_)    -> (PC.TMetaBinaryOp(a,b,c,clt),x)
-  | PC.TMetaType(a,b,_)    -> (PC.TMetaType(a,b,clt),x)
-  | PC.TMetaInit(a,b,_)    -> (PC.TMetaInit(a,b,clt),x)
-  | PC.TMetaInitList(a,b,c,_) -> (PC.TMetaInitList(a,b,c,clt),x)
-  | PC.TMetaDecl(a,b,_)    -> (PC.TMetaDecl(a,b,clt),x)
-  | PC.TMetaField(a,b,_)   -> (PC.TMetaField(a,b,clt),x)
-  | PC.TMetaFieldList(a,b,c,_)   -> (PC.TMetaFieldList(a,b,c,clt),x)
-  | PC.TMetaStm(a,b,_)     -> (PC.TMetaStm(a,b,clt),x)
-  | PC.TMetaStmList(a,b,c,_) -> (PC.TMetaStmList(a,b,c,clt),x)
-  | PC.TMetaDParamList(a,b,c,_) -> (PC.TMetaDParamList(a,b,c,clt),x)
+  | PC.TMetaType(a,b,c,_)    -> (PC.TMetaType(a,b,c,clt),x)
+  | PC.TMetaInit(a,b,c,_)    -> (PC.TMetaInit(a,b,c,clt),x)
+  | PC.TMetaInitList(a,b,c,d,_) -> (PC.TMetaInitList(a,b,c,d,clt),x)
+  | PC.TMetaDecl(a,b,c,_)    -> (PC.TMetaDecl(a,b,c,clt),x)
+  | PC.TMetaField(a,b,c,_)   -> (PC.TMetaField(a,b,c,clt),x)
+  | PC.TMetaFieldList(a,b,c,d,_)   -> (PC.TMetaFieldList(a,b,c,d,clt),x)
+  | PC.TMetaStm(a,b,c,_)     -> (PC.TMetaStm(a,b,c,clt),x)
+  | PC.TMetaStmList(a,b,c,d,_) -> (PC.TMetaStmList(a,b,c,d,clt),x)
+  | PC.TMetaDParamList(a,b,c,d,_) -> (PC.TMetaDParamList(a,b,c,d,clt),x)
   | PC.TMetaFunc(a,b,c,_)  -> (PC.TMetaFunc(a,b,c,clt),x)
   | PC.TMetaLocalFunc(a,b,c,_) -> (PC.TMetaLocalFunc(a,b,c,clt),x)
 
@@ -701,6 +707,7 @@ let update_clt (tok,x) clt =
   | PC.TWhy0 -> assert false
   | PC.TWhitespace _ -> assert false
   | PC.TVirtual -> assert false
+  | PC.TMerge -> assert false
   | PC.TUsing -> assert false
   | PC.TUnderscore -> assert false
   | PC.TTypedef -> assert false
@@ -708,7 +715,7 @@ let update_clt (tok,x) clt =
   | PC.TSymbol -> assert false
   | PC.TStatement -> assert false
   | PC.TScriptData _ -> assert false
-  | PC.TScript -> assert false
+  | PC.TScript _ -> assert false
   | PC.TRuleName _ -> assert false
   | PC.TRightIso -> assert false
   | PC.TPure -> assert false
@@ -843,7 +850,8 @@ let split_token ((tok,_) as t) =
   | PC.TAttribute
   | PC.TType | PC.TParameter | PC.TLocal | PC.TGlobal | PC.Tlist | PC.TFresh
   | PC.TCppConcatOp | PC.TPure
-  | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TVirtual | PC.TDisable
+  | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TVirtual | PC.TMerge
+  | PC.TDisable
   | PC.TExtends | PC.TPathIsoFile(_)
   | PC.TDepends | PC.TOn | PC.TFile | PC.TIn
   | PC.TEver | PC.TNever | PC.TExists | PC.TForall
@@ -874,21 +882,22 @@ let split_token ((tok,_) as t) =
   | PC.TIdent(_,clt)
   | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
   | PC.TSymId(_,clt)
-  | PC.TMeta(_,_,clt) | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaExp(_,_,_,_,clt)
+  | PC.TMeta(_,_,_,clt) | PC.TMetaConst(_,_,_,_,clt)
+  | PC.TMetaExp(_,_,_,_,clt,_)
   | PC.TMetaIdExp(_,_,_,_,clt)
   | PC.TMetaLocalIdExp(_,_,_,_,clt) | PC.TMetaGlobalIdExp(_,_,_,_,clt)
   | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt)
-  | PC.TMetaExpList(_,_,_,clt)
-  | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
-  | PC.TMetaId(_,_,_,_,clt) | PC.TMetaType(_,_,clt)
-  | PC.TMetaInit(_,_,clt) | PC.TMetaInitList(_,_,_,clt)
-  | PC.TMetaDecl(_,_,clt) | PC.TMetaField(_,_,clt)
-  | PC.TMetaFieldList(_,_,_,clt)
-  | PC.TMetaStm(_,_,clt) | PC.TMetaStmList(_,_,_,clt)
-  | PC.TMetaDParamList(_,_,_,clt) | PC.TMetaErr(_,_,_,clt)
+  | PC.TMetaExpList(_,_,_,_,clt)
+  | PC.TMetaParam(_,_,_,clt) | PC.TMetaParamList(_,_,_,_,clt)
+  | PC.TMetaId(_,_,_,_,clt) | PC.TMetaType(_,_,_,clt)
+  | PC.TMetaInit(_,_,_,clt) | PC.TMetaInitList(_,_,_,_,clt)
+  | PC.TMetaDecl(_,_,_,clt) | PC.TMetaField(_,_,_,clt)
+  | PC.TMetaFieldList(_,_,_,_,clt)
+  | PC.TMetaStm(_,_,_,clt) | PC.TMetaStmList(_,_,_,_,clt)
+  | PC.TMetaDParamList(_,_,_,_,clt) | PC.TMetaErr(_,_,_,clt)
   | PC.TMetaFunc(_,_,_,clt) | PC.TMetaLocalFunc(_,_,_,clt)
   | PC.TMetaDeclarer(_,_,_,clt) | PC.TMetaIterator(_,_,_,clt) -> split t clt
-  | PC.TMPtVirg | PC.TArob | PC.TArobArob | PC.TScript
+  | PC.TMPtVirg | PC.TArob | PC.TArobArob | PC.TScript _
   | PC.TInitialize | PC.TFinalize -> ([t],[t])
   | PC.TPArob clt | PC.TMetaPos(_,_,_,clt) -> split t clt
 
@@ -960,7 +969,7 @@ exception Irrelevant
 let find_function_names l =
   let is_ident = function
       (PC.TIdent(_,clt),info)
-    | (PC.TMeta(_,_,clt),info)
+    | (PC.TMeta(_,_,_,clt),info)
     | (PC.TMetaId(_,_,_,_,clt),info)
     | (PC.TMetaFunc(_,_,_,clt),info)
     | (PC.TMetaLocalFunc(_,_,_,clt),info) -> true
@@ -1049,7 +1058,7 @@ let detect_attr l =
 	  begin
 	    Flag.add_cocci_attribute_names nm;
 	    (if not (Hashtbl.mem Lexer_cocci.attr_names nm)
-	    then !Data.add_attribute nm);
+	    then !D.add_attribute nm);
 	    (PC.Tattr(nm,clt),info)::(loop (id::rest))
 	  end
 	else t1::(loop (id::rest))
@@ -1082,26 +1091,26 @@ let detect_types in_meta_decls l =
       (PC.TIdent(_,_),_) | (PC.TMetaId(_,_,_,_,_),_)
     | (PC.TMetaFunc(_,_,_,_),_)
     | (PC.TMetaLocalFunc(_,_,_,_),_) -> true
-    | (PC.TMetaParam(_,_,_),_)
-    | (PC.TMetaParamList(_,_,_,_),_)
+    | (PC.TMetaParam(_,_,_,_),_)
+    | (PC.TMetaParamList(_,_,_,_,_),_)
     | (PC.TMetaConst(_,_,_,_,_),_)
     | (PC.TMetaErr(_,_,_,_),_)
-    | (PC.TMetaExp(_,_,_,_,_),_)
+    | (PC.TMetaExp(_,_,_,_,_,_),_)
     | (PC.TMetaIdExp(_,_,_,_,_),_)
     | (PC.TMetaLocalIdExp(_,_,_,_,_),_)
     | (PC.TMetaAssignOp(_,_,_,_),_)
     | (PC.TMetaBinaryOp(_,_,_,_),_)
     | (PC.TMetaGlobalIdExp(_,_,_,_,_),_)
-    | (PC.TMetaExpList(_,_,_,_),_)
-    | (PC.TMetaType(_,_,_),_)
-    | (PC.TMetaInit(_,_,_),_)
-    | (PC.TMetaInitList(_,_,_,_),_)
-    | (PC.TMetaDecl(_,_,_),_)
-    | (PC.TMetaField(_,_,_),_)
-    | (PC.TMetaFieldList(_,_,_,_),_)
-    | (PC.TMetaStm(_,_,_),_)
-    | (PC.TMetaStmList(_,_,_,_),_)
-    | (PC.TMetaDParamList(_,_,_,_),_)
+    | (PC.TMetaExpList(_,_,_,_,_),_)
+    | (PC.TMetaType(_,_,_,_),_)
+    | (PC.TMetaInit(_,_,_,_),_)
+    | (PC.TMetaInitList(_,_,_,_,_),_)
+    | (PC.TMetaDecl(_,_,_,_),_)
+    | (PC.TMetaField(_,_,_,_),_)
+    | (PC.TMetaFieldList(_,_,_,_,_),_)
+    | (PC.TMetaStm(_,_,_,_),_)
+    | (PC.TMetaStmList(_,_,_,_,_),_)
+    | (PC.TMetaDParamList(_,_,_,_,_),_)
     | (PC.TMetaPos(_,_,_,_),_) -> in_meta_decls
     | _ -> false in
   let is_tyleft = function (* things that can start a var decl *)
@@ -1109,7 +1118,7 @@ let detect_types in_meta_decls l =
     | (PC.TOPar(_),_) -> true
     | _ -> false in
   let redo_id ident clt v =
-    !Data.add_type_name ident;
+    !D.add_type_name ident;
     (PC.TTypeId(ident,clt),v) in
   let rec loop start infn type_names = function
       (* infn: 0 means not in a function header
@@ -1195,18 +1204,19 @@ let token2line (tok,_) =
   | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
   | PC.TDmOp(_,clt) | PC.TTilde (clt)
 
-  | PC.TMeta(_,_,clt) | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
-  | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaExp(_,_,_,_,clt)
+  | PC.TMeta(_,_,_,clt) | PC.TMetaParam(_,_,_,clt)
+  | PC.TMetaParamList(_,_,_,_,clt)
+  | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaExp(_,_,_,_,clt,_)
   | PC.TMetaIdExp(_,_,_,_,clt)
   | PC.TMetaLocalIdExp(_,_,_,_,clt) | PC.TMetaGlobalIdExp(_,_,_,_,clt)
   | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt)
-  | PC.TMetaExpList(_,_,_,clt)
-  | PC.TMetaId(_,_,_,_,clt) | PC.TMetaType(_,_,clt)
-  | PC.TMetaInit(_,_,clt) | PC.TMetaInitList(_,_,_,clt)
-  | PC.TMetaDecl(_,_,clt) | PC.TMetaField(_,_,clt)
-  | PC.TMetaFieldList(_,_,_,clt)
-  | PC.TMetaStm(_,_,clt) | PC.TMetaStmList(_,_,_,clt)
-  | PC.TMetaDParamList(_,_,_,clt) | PC.TMetaFunc(_,_,_,clt)
+  | PC.TMetaExpList(_,_,_,_,clt)
+  | PC.TMetaId(_,_,_,_,clt) | PC.TMetaType(_,_,_,clt)
+  | PC.TMetaInit(_,_,_,clt) | PC.TMetaInitList(_,_,_,_,clt)
+  | PC.TMetaDecl(_,_,_,clt) | PC.TMetaField(_,_,_,clt)
+  | PC.TMetaFieldList(_,_,_,_,clt)
+  | PC.TMetaStm(_,_,_,clt) | PC.TMetaStmList(_,_,_,_,clt)
+  | PC.TMetaDParamList(_,_,_,_,clt) | PC.TMetaFunc(_,_,_,clt)
   | PC.TMetaLocalFunc(_,_,_,clt) | PC.TMetaPos(_,_,_,clt)
 
   | PC.TFunDecl(clt)
@@ -1587,17 +1597,17 @@ let strip_for_fix l =
       |	(PC.TMetaLocalFunc(nm,_,pure,clt),info) ->
 	  (PC.TMetaLocalFunc(nm,Ast.CstrTrue,pure,clt),info)
       |	(PC.TMetaErr(nm,_,pure,clt),info) ->
-	  (PC.TMetaErr(nm,Ast0.NoConstraint,pure,clt),info)
-      |	(PC.TMetaExp(nm,_,pure,ty,clt),info) ->
-	  (PC.TMetaExp(nm,Ast0.NoConstraint,pure,ty,clt),info)
+	  (PC.TMetaErr(nm,Ast.CstrTrue,pure,clt),info)
+      |	(PC.TMetaExp(nm,_,pure,ty,clt,bitfield),info) ->
+	  (PC.TMetaExp(nm,Ast.CstrTrue,pure,ty,clt,bitfield),info)
       |	(PC.TMetaIdExp(nm,_,pure,ty,clt),info) ->
-	  (PC.TMetaIdExp(nm,Ast0.NoConstraint,pure,ty,clt),info)
+	  (PC.TMetaIdExp(nm,Ast.CstrTrue,pure,ty,clt),info)
       |	(PC.TMetaLocalIdExp(nm,_,pure,ty,clt),info) ->
-	  (PC.TMetaLocalIdExp(nm,Ast0.NoConstraint,pure,ty,clt),info)
+	  (PC.TMetaLocalIdExp(nm,Ast.CstrTrue,pure,ty,clt),info)
       |	(PC.TMetaGlobalIdExp(nm,_,pure,ty,clt),info) ->
-	  (PC.TMetaGlobalIdExp(nm,Ast0.NoConstraint,pure,ty,clt),info)
+	  (PC.TMetaGlobalIdExp(nm,Ast.CstrTrue,pure,ty,clt),info)
       |	(PC.TMetaConst(nm,_,pure,ty,clt),info) ->
-	  (PC.TMetaConst(nm,Ast0.NoConstraint,pure,ty,clt),info)
+	  (PC.TMetaConst(nm,Ast.CstrTrue,pure,ty,clt),info)
       |	t -> t)
     l
 
@@ -1733,51 +1743,49 @@ let consume_minus_positions toks =
 		(Ast0.wrap
 		   (Ast0.MetaId(name,constraints,seed,pure)))) in
 	(loop_other (x::xs))
-    | x::(PC.TPArob _,_)::(PC.TMetaExp(name,constraints,pure,ty,clt),_)::xs ->
+    | x::(PC.TPArob _,_)
+      ::(PC.TMetaExp(name,constraints,pure,ty,clt,bitfield),_)::xs ->
 	let x =
 	  process_minus_positions x name clt
 	    (function name ->
 	      Ast0.ExprTag
 		(Ast0.wrap
-		   (Ast0.MetaExpr(name,constraints,ty,Ast.ANY,pure)))) in
+		   (Ast0.MetaExpr
+		      (name,constraints,ty,Ast.ANY,pure,
+		       Common.map_option (Parse_aux.dolen clt) bitfield)))) in
 	(loop_other (x::xs))
-    | x::(PC.TPArob _,_)::(PC.TMetaExpList(name,len,pure,clt),_)::xs ->
+    | x::(PC.TPArob _,_)::(PC.TMetaExpList(name,len,cstr,pure,clt),_)::xs ->
 	let x =
 	  process_minus_positions x name clt
 	    (function name ->
-	      let len =
-		match len with
-		  Ast.AnyLen -> Ast0.AnyListLen
-		| Ast.MetaLen nm ->
-		    Ast0.MetaListLen(Parse_aux.clt2mcode nm clt)
-		| Ast.CstLen n -> Ast0.CstListLen n in
+	      let len = Parse_aux.dolen clt len in
 	      Ast0.ExprTag
 		(Ast0.wrap
-		   (Ast0.MetaExprList(name,len,pure)))) in
+		   (Ast0.MetaExprList(name,len,cstr,pure)))) in
 	(loop_other (x::xs))
-    | x::(PC.TPArob _,_)::(PC.TMetaInit(name,pure,clt),_)::xs ->
+    | x::(PC.TPArob _,_)::(PC.TMetaInit(name,cstr,pure,clt),_)::xs ->
 	let x =
 	  process_minus_positions x name clt
 	    (function name ->
-	      Ast0.InitTag(Ast0.wrap(Ast0.MetaInit(name,pure)))) in
+	      Ast0.InitTag(Ast0.wrap(Ast0.MetaInit(name,cstr,pure)))) in
 	(loop_other (x::xs))
-    | x::(PC.TPArob _,_)::(PC.TMetaType(name,pure,clt),_)::xs ->
+    | x::(PC.TPArob _,_)::(PC.TMetaType(name,cstr,pure,clt),_)::xs ->
 	let x =
 	  process_minus_positions x name clt
 	    (function name ->
-	      Ast0.TypeCTag(Ast0.wrap(Ast0.MetaType(name,pure)))) in
+	      Ast0.TypeCTag(Ast0.wrap(Ast0.MetaType(name,cstr,pure)))) in
 	(loop_other (x::xs))
-    | x::(PC.TPArob _,_)::(PC.TMetaDecl(name,pure,clt),_)::xs ->
+    | x::(PC.TPArob _,_)::(PC.TMetaDecl(name,cstr,pure,clt),_)::xs ->
 	let x =
 	  process_minus_positions x name clt
 	    (function name ->
-	      Ast0.DeclTag(Ast0.wrap(Ast0.MetaDecl(name,pure)))) in
+	      Ast0.DeclTag(Ast0.wrap(Ast0.MetaDecl(name,cstr,pure)))) in
 	(loop_other (x::xs))
-    | x::(PC.TPArob _,_)::(PC.TMetaStm(name,pure,clt),_)::xs ->
+    | x::(PC.TPArob _,_)::(PC.TMetaStm(name,cstr,pure,clt),_)::xs ->
 	let x =
 	  process_minus_positions x name clt
 	    (function name ->
-	      Ast0.StmtTag(Ast0.wrap(Ast0.MetaStmt(name,pure)))) in
+	      Ast0.StmtTag(Ast0.wrap(Ast0.MetaStmt(name,cstr,pure)))) in
 	(loop_other (x::xs))
     | x::(PC.TPArob _,_)::(PC.TMetaIdExp(name,constraints,pure,ty,clt),_)::xs ->
 	let x =
@@ -1785,7 +1793,7 @@ let consume_minus_positions toks =
 	    (function name ->
 	      Ast0.ExprTag
 		(Ast0.wrap
-		   (Ast0.MetaExpr(name,constraints,ty,Ast.ANY,pure)))) in
+		   (Ast0.MetaExpr(name,constraints,ty,Ast.ANY,pure,None)))) in
 	(loop_other (x::xs))
 
     | x::((PC.TPArob _,_) as x')::x''::xs ->
@@ -1813,7 +1821,8 @@ let any_modif rule =
       mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing in
+      donothing donothing donothing donothing donothing donothing donothing
+      donothing in
   List.exists fn.VT0.combiner_rec_top_level rule
 
 let eval_virt virt =
@@ -1851,7 +1860,7 @@ let get_metavars parse_fn table file lexbuf =
   Lexer_cocci.reinit(); (* string metavariable initializations *)
   let rec meta_loop acc (* read one decl at a time *) =
     let (_,tokens) =
-      Data.call_in_meta
+      D.call_in_meta
 	(function _ ->
 	  metavariable_decl_tokens_all table file true lexbuf
 	    (in_list [PC.TArobArob;PC.TMPtVirg;PC.TAnalysis])) in
@@ -1859,7 +1868,6 @@ let get_metavars parse_fn table file lexbuf =
     match tokens with
       [(PC.TArobArob,_)] -> List.rev acc
     | (PC.TAnalysis, _) :: tl ->
-	Lexer_script.file := file;
 	Lexer_script.language := "ocaml";
         let get_tokens = tokens_script_all table file false lexbuf in
 	let rec loop n toks =
@@ -1882,7 +1890,7 @@ let get_metavars parse_fn table file lexbuf =
 	  | (_, ([(s, _)] as toks)) ->
 	      let data = collect_script_tokens (loop 1 toks) in
 	      let (_,tokens) =
-		Data.call_in_meta
+		D.call_in_meta
 		  (function _ ->
 		    metavariable_decl_tokens_all table file true lexbuf
 		      (in_list [PC.TArobArob;PC.TMPtVirg])) in
@@ -1921,7 +1929,7 @@ let get_script_metavars parse_fn table file lexbuf =
   meta_loop []
 
 let get_rule_name parse_fn starts_with_name get_tokens file prefix =
-  Data.in_rule_name := true;
+  D.in_rule_name := true;
   let mknm _ = make_name prefix (!Lexer_cocci.line) in
   let name_res =
     if starts_with_name
@@ -1947,12 +1955,13 @@ let get_rule_name parse_fn starts_with_name get_tokens file prefix =
     else
       Ast.CocciRulename(Some(mknm()),Ast.NoDep,[],[],Ast.Undetermined,
 			Ast.AnyP) in
-  Data.in_rule_name := false;
+  D.in_rule_name := false;
   name_res
 
 let parse_iso file =
   let table = Common.full_charpos_to_pos file in
   Common.with_open_infile file (fun channel ->
+    Lexer_cocci.file := file;
     let lexbuf = Lexing.from_channel channel in
     let get_tokens = tokens_all table file false lexbuf in
     let res =
@@ -1964,7 +1973,7 @@ let parse_iso file =
 	    (arob = PC.TArob,List.rev(List.tl rev)) in
 	  let (starts_with_name,start) = parse_start start in
 	  let rec loop starts_with_name start =
-	    (!Data.init_rule)();
+	    (!D.init_rule)();
 	    (* get metavariable declarations - have to be read before the
 	       rest *)
 	    let (rule_name,_,_,_,_,_) =
@@ -2014,7 +2023,7 @@ let parse_iso file =
 let parse_iso_files existing_isos iso_files extra_path =
   let get_names = List.map (function (_,_,nm) -> nm) in
   let old_names = get_names existing_isos in
-  Data.in_iso := true;
+  D.in_iso := true;
   let (res,_) =
     List.fold_left
       (function (prev,names) ->
@@ -2030,7 +2039,7 @@ let parse_iso_files existing_isos iso_files extra_path =
 	  then failwith (Printf.sprintf "repeated iso name found in %s" file);
 	  (current::prev,new_names @ names))
       ([],old_names) iso_files in
-  Data.in_iso := false;
+  D.in_iso := false;
   existing_isos@(List.concat (List.rev res))
 
 (* None = dependency not satisfied
@@ -2043,56 +2052,69 @@ let eval_depend nofiles dep virt =
 	if List.mem req virt
 	then
 	  if List.mem req !Flag.defined_virtual_rules
-	  then Ast.NoDep
-	  else Ast.FailDep
-	else dep
+	  then Common.Left (Ast.NoDep)
+	  else Common.Left (Ast.FailDep)
+	else Common.Right dep
     | Ast.AntiDep antireq | Ast.NeverDep antireq ->
 	if List.mem antireq virt
 	then
 	  if not(List.mem antireq !Flag.defined_virtual_rules)
-	  then Ast.NoDep
-	  else Ast.FailDep
-	else dep
+	  then Common.Left (Ast.NoDep)
+	  else Common.Left (Ast.FailDep)
+	else Common.Right dep
     | Ast.AndDep(d1,d2) ->
 	(match (loop d1, loop d2) with
-	  (Ast.NoDep,x) | (x,Ast.NoDep) -> x
-	| (Ast.FailDep,x) | (x,Ast.FailDep) -> Ast.FailDep
-	| (x,y) -> Ast.AndDep(x,y))
+	  (Common.Left Ast.NoDep,x) | (x,Common.Left Ast.NoDep) -> x
+	| (Common.Left Ast.FailDep,x) | (x,Common.Left Ast.FailDep) ->
+	    Common.Left Ast.FailDep
+	| (Common.Right x,Common.Right y) -> Common.Right (Ast.AndDep(x,y))
+	| _ -> failwith "not possible")
     | Ast.OrDep(d1,d2) ->
 	(match (loop d1, loop d2) with
-	  (Ast.NoDep,x) | (x,Ast.NoDep) -> Ast.NoDep
-	| (Ast.FailDep,x) | (x,Ast.FailDep) -> x
-	| (x,y) -> Ast.OrDep(x,y))
+	  (Common.Left Ast.NoDep,x) | (x,Common.Left Ast.NoDep) ->
+	    Common.Left Ast.NoDep
+	| (Common.Left Ast.FailDep,x) | (x,Common.Left Ast.FailDep) -> x
+	| (Common.Right x,Common.Right y) -> Common.Right (Ast.OrDep(x,y))
+	| _ -> failwith "not possible")
     | Ast.FileIn s | Ast.NotFileIn s ->
 	if nofiles
 	then failwith "file dependencies not allowed in script rules"
-	else dep
-    | Ast.NoDep | Ast.FailDep -> dep
-    in
-  loop dep
+	else Common.Right dep in
+  match dep with
+    Ast.NoDep | Ast.FailDep -> dep
+  | Ast.ExistsDep d ->
+      (match loop d with
+	Common.Left d -> d
+      | Common.Right d -> Ast.ExistsDep d)
+  | Ast.ForallDep d ->
+      (match loop d with
+	Common.Left d -> d
+      | Common.Right d -> Ast.ForallDep d)
 
 let print_dep_image name deps virt depimage =
   Printf.fprintf stderr "Rule: %s\n" name;
   Printf.fprintf stderr "Dependencies: %s\n"
     (Common.format_to_string
-       (function _ -> Pretty_print_cocci.dep true deps));
+       (function _ -> Pretty_print_cocci.dependency deps));
   Format.print_newline();
   Printf.fprintf stderr "Virtual rules: %s\n" (String.concat " " virt);
   Printf.fprintf stderr "Res: %s\n\n"
     (Common.format_to_string
-       (function _ -> Pretty_print_cocci.dep true depimage))
+       (function _ -> Pretty_print_cocci.dependency depimage))
 
 let parse file =
+  D.constraint_scripts := [];
   Lexer_cocci.init ();
   let rec parse_loop file =
   Lexer_cocci.include_init ();
   let table = Common.full_charpos_to_pos file in
   Common.with_open_infile file (fun channel ->
+  Lexer_cocci.file := file;
   let lexbuf = Lexing.from_channel channel in
   let get_tokens = tokens_all table file false lexbuf in
-  Data.in_prolog := true;
+  D.in_prolog := true;
   let initial_tokens = get_tokens (in_list [PC.TArobArob;PC.TArob]) in
-  Data.in_prolog := false;
+  D.in_prolog := false;
   let res =
     match initial_tokens with
     (true,data) ->
@@ -2105,9 +2127,9 @@ let parse file =
 	    List.fold_left
 	      (function (include_files,iso_files,virt) ->
 		function
-		    Data.Include s -> (s::include_files,iso_files,virt)
-		  | Data.Iso s -> (include_files,s::iso_files,virt)
-		  | Data.Virt l -> (include_files,iso_files,l@virt))
+		    D.Include s -> (s::include_files,iso_files,virt)
+		  | D.Iso s -> (include_files,s::iso_files,virt)
+		  | D.Virt l -> (include_files,iso_files,l@virt))
 	      ([],[],[]) include_and_iso_files in
 
 	  List.iter (function x -> Hashtbl.add Lexer_cocci.rule_names x ())
@@ -2125,13 +2147,13 @@ let parse file =
 	      (rule_name, dependencies, iso, dropiso, exists, is_expression) =
 	    let dropiso = !Flag_parsing_cocci.disabled_isos @ dropiso in
             Ast0.rule_name := rule_name;
-            Data.inheritable_positions :=
-		rule_name :: !Data.inheritable_positions;
+            D.inheritable_positions :=
+		rule_name :: !D.inheritable_positions;
 
             (* get metavariable declarations *)
             let (metavars, inherited_metavars) =
 	      get_metavars PC.meta_main table file lexbuf in
-	    Hashtbl.add Data.all_metadecls rule_name metavars;
+	    Hashtbl.add D.all_metadecls rule_name metavars;
 	    Hashtbl.add Lexer_cocci.rule_names rule_name ();
 	    Hashtbl.add Lexer_cocci.all_metavariables rule_name
 	      (Hashtbl.fold
@@ -2224,7 +2246,7 @@ let parse file =
 	    (if not !Flag.sgrep_mode2 &&
 	      (any_modif minus_res || any_modif plus_res) &&
 	      not(dependencies = Ast.FailDep)
-	    then Data.inheritable_positions := []);
+	    then D.inheritable_positions := []);
 
 	    if not(dependencies = Ast.FailDep)
 	    then
@@ -2239,13 +2261,13 @@ let parse file =
 
           let parse_any_script_rule meta_parser builder
 	      name language old_metas deps =
-	    Lexer_script.file := file;
 	    Lexer_script.language := language;
+	    let pos = (!Lexer_cocci.file, !Lexer_cocci.line) in
             let get_tokens = tokens_script_all table file false lexbuf in
 
               (* meta-variables *)
             let metavars =
-	      Data.call_in_meta
+	      D.call_in_meta
 		(function _ ->
 		  get_script_metavars meta_parser table file lexbuf) in
 	    let (metavars,script_metavars) =
@@ -2264,10 +2286,10 @@ let parse file =
 	    (* No idea whether any vars are position vars, but if there are
 	       any, they can be inherited. Probably provides a way of
 	       laundering positions over changes. *)
-            Data.inheritable_positions :=
-		name :: !Data.inheritable_positions;
+            D.inheritable_positions :=
+		name :: !D.inheritable_positions;
 
-	    Hashtbl.add Data.all_metadecls name
+	    Hashtbl.add D.all_metadecls name
 	      (List.map (function x -> Ast.MetaScriptDecl(ref None,x))
 		 script_metavars);
 	    Hashtbl.add Lexer_cocci.rule_names name ();
@@ -2296,29 +2318,30 @@ let parse file =
 	      get_tokens (in_list [PC.TArobArob; PC.TArob]) in
             let data = collect_script_tokens tokens in
             (more,
-	     builder(name, language, deps, metavars, script_metavars, data),
+	     builder
+	       (name, language, deps, metavars, script_metavars, pos, data),
 	     [],tokens) in
 
 	  let parse_script_rule =
 	    parse_any_script_rule PC.script_meta_main
-	      (function (name, language, deps, mvs, script_mvs, data) ->
-		Ast0.ScriptRule(name,language,deps,mvs,script_mvs,data)) in
+	      (function (name, language, deps, mvs, script_mvs, pos, data) ->
+		Ast0.ScriptRule(name,language,deps,mvs,script_mvs,pos,data)) in
 
 	  let parse_iscript_rule =
 	    parse_any_script_rule PC.script_meta_virt_nofresh_main
-	      (function (name, language, deps, mvs, script_mvs, data) ->
+	      (function (name, language, deps, mvs, script_mvs, pos, data) ->
 		match script_mvs with
 		  [] ->
-		    Ast0.InitialScriptRule(name,language,deps,mvs,data)
+		    Ast0.InitialScriptRule(name,language,deps,mvs,pos,data)
 		| _ ->
 		    failwith "new metavariables not allowed in initalize") in
 
 	  let parse_fscript_rule =
 	    parse_any_script_rule PC.script_meta_virt_nofresh_main
-	      (function (name, language, deps, mvs, script_mvs, data) ->
+	      (function (name, language, deps, mvs, script_mvs, pos, data) ->
 		match script_mvs with
 		  [] ->
-		    Ast0.FinalScriptRule(name,language,deps,mvs,data)
+		    Ast0.FinalScriptRule(name,language,deps,mvs,pos,data)
 		| _ -> failwith "new metavariables not allowed in finalize") in
 
 	  let do_parse_script_rule fn name l old_metas deps =
@@ -2358,19 +2381,19 @@ let parse file =
 		(match eval_depend true dep virt with
 		  Ast.FailDep ->
 		    D.ignore_patch_or_match := true;
-		    Data.in_generating := true;
+		    D.in_generating := true;
                     let res =
 		      parse_cocci_rule Ast.Generated old_metas
 			(s, Ast.FailDep, b, c, d, e) in
 		    D.ignore_patch_or_match := false;
-		    Data.in_generating := false;
+		    D.in_generating := false;
 		    res
 		| dep ->
-		    Data.in_generating := true;
+		    D.in_generating := true;
 		    let res =
 		      parse_cocci_rule Ast.Generated old_metas
 			(s,dep,b,c,d,e) in
-		    Data.in_generating := false;
+		    D.in_generating := false;
 		    res)
             | Ast.ScriptRulename(Some s,l,deps) ->
 		do_parse_script_rule parse_script_rule s l old_metas deps
@@ -2381,7 +2404,7 @@ let parse file =
             | _ -> failwith "Malformed rule name" in
 
 	  let rec loop old_metas starts_with_name =
-	    (!Data.init_rule)();
+	    (!D.init_rule)();
 
             let gen_starts_with_name more tokens =
               more &&
@@ -2422,6 +2445,29 @@ let parse file =
   res) in
   parse_loop file
 
+let contains_modifs ast =
+  let donothing r k e = k e in
+  let bind x y = x || y in
+  let option_default = false in
+  let mcode r mc =
+    match Ast.get_mcodekind mc with
+      Ast.CONTEXT _ -> false
+    | Ast.MINUS _ | Ast.PLUS _ -> true in
+  let recursor = Visitor_ast.combiner bind option_default
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode
+      donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing
+      donothing donothing in
+  List.exists
+    (function
+	Ast.CocciRule(nm,infos,ast,_,_) ->
+	  List.exists recursor.Visitor_ast.combiner_top_level ast
+      | _ -> false)
+    ast
+
 (* parse to ast0 and then convert to ast *)
 let process file isofile verbose =
   Parse_aux.contains_string_constant := false;
@@ -2437,12 +2483,12 @@ let process file isofile verbose =
   let parsed =
     List.map
       (function
-          Ast0.ScriptRule (a,b,c,d,fv,e) ->
-	    [([],Ast.ScriptRule (a,b,c,d,fv,e))]
-	| Ast0.InitialScriptRule(a,b,c,d,e) ->
-	    [([],Ast.InitialScriptRule (a,b,c,d,e))]
-	| Ast0.FinalScriptRule (a,b,c,d,e) ->
-	    [([],Ast.FinalScriptRule (a,b,c,d,e))]
+          Ast0.ScriptRule (a,b,c,d,fv,e,f) ->
+	    [([],Ast.ScriptRule (a,b,c,d,fv,e,f))]
+	| Ast0.InitialScriptRule(a,b,c,d,e,f) ->
+	    [([],Ast.InitialScriptRule (a,b,c,d,e,f))]
+	| Ast0.FinalScriptRule (a,b,c,d,e,f) ->
+	    [([],Ast.FinalScriptRule (a,b,c,d,e,f))]
 	| Ast0.CocciRule
 	    ((minus, metavarsm,
 	      (iso, dropiso, dependencies, rule_name, exists)),
@@ -2550,64 +2596,4 @@ let process file isofile verbose =
   let search_tokens = Get_constants2.get_constants code neg_pos virt in
 
   (metavars,code,fvs,neg_pos,ua,pos,search_tokens,
-   !Parse_aux.contains_string_constant)
-
-let enumerate_constraint_scripts =
-  let bind = List.rev_append in
-  let option_default = [] in
-  let script_constraint kind name (script_name, lang, params, body) =
-    [(kind, name, script_name, lang, params, body)] in
-  let mcode r mc =
-    List.fold_left
-      (function prev ->
-	function Ast_cocci.MetaPos(name,constraints,_,_,_) ->
-	  Ast.cstr_fold
-	    { Ast.empty_cstr_transformer with
-	      Ast.cstr_script = Some (fun c prev ->
-		let kind =
-		  Ast_cocci.MetaPosDecl
-		    (Ast_cocci.NONE, Ast_cocci.unwrap_mcode name) in
-		bind (script_constraint kind name c) prev) } constraints prev)
-      option_default (Ast_cocci.get_pos_var mc) in
-  let general_constraint name c =
-    let kind =
-      Ast_cocci.MetaIdDecl (Ast_cocci.NONE, Ast_cocci.unwrap_mcode name) in
-    Ast.cstr_fold
-      { Ast.empty_cstr_transformer with
-	Ast.cstr_script = Some (fun c accu ->
-	  bind (script_constraint kind name c) accu) } c [] in
-  let constraints name c =
-    match c with
-      Ast.NotIdCstrt c' -> general_constraint name c'
-    | _ -> [] in
-  let idconstraint name c = general_constraint name c in
-  let expression r k e =
-    let result =
-      match Ast.unwrap e with
-	Ast.MetaErr (name, c, _, _) -> constraints name c
-      | Ast.MetaExpr (name, c, _, _, _, _) -> constraints name c
-      | _ -> [] in
-    bind result (k e) in
-  let ident r k e =
-    let result =
-      match Ast.unwrap e with
-	Ast.MetaId (name, c, _, _)
-      | Ast.MetaFunc (name, c, _, _)
-      | Ast.MetaLocalFunc (name, c, _, _) -> idconstraint name c
-      | _ -> [] in
-    bind result (k e) in
-  let string_format r k e =
-    let result =
-      match Ast.unwrap e with
-	Ast.MetaFormat (name, c, _, _) -> idconstraint name c
-      | _ -> [] in
-    bind result (k e) in
-  let donothing r k e = k e in
-  let recursor = Visitor_ast.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode mcode mcode
-      donothing donothing donothing donothing donothing ident
-      expression donothing string_format donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing in
-  recursor.Visitor_ast.combiner_top_level
+   !Parse_aux.contains_string_constant,contains_modifs code)

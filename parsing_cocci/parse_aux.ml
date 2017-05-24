@@ -13,23 +13,21 @@ let contains_string_constant = ref false
 (* types for metavariable tokens *)
 type info = Ast.meta_name * Ast0.pure * Data.clt
 type midinfo =
-    Ast.meta_name * Data.iconstraints * Ast.seed * Ast0.pure * Data.clt
-type idinfo = Ast.meta_name * Data.iconstraints * Ast0.pure * Data.clt
-type assignOpinfo =
-    Ast.meta_name * Ast_cocci.general_constraint * Ast0.pure * Data.clt
-type binaryOpinfo =
-    Ast.meta_name * Ast_cocci.general_constraint * Ast0.pure * Data.clt
-type expinfo = Ast.meta_name * Data.econstraints * Ast0.pure * Data.clt
+    Ast.meta_name * Ast0.constraints * Ast.seed * Ast0.pure * Data.clt
+type cstrinfo = Ast.meta_name * Ast0.constraints * Ast0.pure * Data.clt
+type assignOpinfo = Ast.meta_name * Ast0.constraints * Ast0.pure * Data.clt
+type binaryOpinfo = Ast.meta_name * Ast0.constraints * Ast0.pure * Data.clt
+type expinfo = Ast.meta_name * Ast0.constraints * Ast0.pure * Data.clt
 type tyinfo = Ast.meta_name * Ast0.typeC list * Ast0.pure * Data.clt
-type list_info = Ast.meta_name * Ast.list_len * Ast0.pure * Data.clt
+type list_info = Ast.meta_name * Ast.list_len * Ast0.constraints * Ast0.pure *
+      Data.clt
 type typed_expinfo =
-    Ast.meta_name * Data.econstraints * Ast0.pure *
+    Ast.meta_name * Ast0.constraints * Ast0.pure *
       Ast0.typeC list option * Data.clt
-type pos_info = Ast.meta_name * Data.pconstraints * Ast.meta_collect * Data.clt
-
-let get_option fn = function
-    None -> None
-  | Some x -> Some (fn x)
+type typed_expinfo_bitfield =
+    Ast.meta_name * Ast0.constraints * Ast0.pure *
+      Ast0.typeC list option * Data.clt * Ast.list_len option
+type pos_info = Ast.meta_name * Ast0.constraints * Ast.meta_collect * Data.clt
 
 let make_info line logical_line logical_line_end offset col strbef straft 
     isSymbol ws =
@@ -120,15 +118,15 @@ let mkidots str (dot,whencode) =
     "..." -> Ast0.wrap(Ast0.Idots(clt2mcode str dot, whencode))
   | _ -> failwith "cannot happen"
 
-let mkddots str (dot,whencode) =
+let mkfdots str (dot,whencode) =
   match (str,whencode) with
-    ("...",None) -> Ast0.wrap(Ast0.Ddots(clt2mcode str dot, None))
-  | ("...",Some [w]) -> Ast0.wrap(Ast0.Ddots(clt2mcode str dot, Some w))
+    ("...",None) -> Ast0.wrap(Ast0.Fdots(clt2mcode str dot, None))
+  | ("...",Some [w]) -> Ast0.wrap(Ast0.Fdots(clt2mcode str dot, Some w))
   | _ -> failwith "cannot happen"
 
-let mkddots_one str (dot,whencode) =
+let mkfdots_one str (dot,whencode) =
   match str with
-    "..." -> Ast0.wrap(Ast0.Ddots(clt2mcode str dot, whencode))
+    "..." -> Ast0.wrap(Ast0.Fdots(clt2mcode str dot, whencode))
   | _ -> failwith "cannot happen"
 
 let mkpdots str dot =
@@ -221,7 +219,7 @@ let check_meta_tyopt type_irrelevant v =
   | Ast.MetaIdDecl(Ast.NONE,(rule,name)) ->
       (match meta_lookup rule name v with
 	Ast.MetaIdDecl(_,_) | Ast.MetaFreshIdDecl(_,_) -> ()
-      | _ -> fail name)
+      | x -> fail name)
   | Ast.MetaFreshIdDecl((rule,name),seed) ->
       raise
 	(Semantic_cocci.Semantic
@@ -266,9 +264,9 @@ let check_meta_tyopt type_irrelevant v =
       (match meta_lookup rule name v with
 	Ast.MetaErrDecl(_,_) -> ()
       | _ -> fail name)
-  | Ast.MetaExpDecl(Ast.NONE,(rule,name),ty) ->
+  | Ast.MetaExpDecl(Ast.NONE,(rule,name),ty,_) ->
       (match meta_lookup rule name v with
-	Ast.MetaExpDecl(_,_,ty1) when type_equal ty ty1 -> ()
+	Ast.MetaExpDecl(_,_,ty1,_) when type_equal ty ty1 -> ()
       | _ -> fail name)
   | Ast.MetaIdExpDecl(Ast.NONE,(rule,name),ty) ->
       (match meta_lookup rule name v with
@@ -354,6 +352,11 @@ let check_meta_tyopt type_irrelevant v =
 
 let check_meta m = check_meta_tyopt false m
 
+let check_inherited_constraint_without_type meta_name =
+  match meta_name with
+    None, _ -> failwith "constraint must be an inherited variable"
+  | Some rule, name -> rule, name
+
 let check_inherited_constraint meta_name fn =
   match meta_name with
     (None,_) -> failwith "constraint must be an inherited variable"
@@ -426,19 +429,21 @@ let create_metadec_ty ar ispure kindfn ids current_rule =
 let create_len_metadec ar ispure kindfn lenid ids current_rule =
   let (lendec,lenname) =
     match lenid with
-      Common.Left lenid ->
+      Common.Left (lenid,cstr) ->
 	let lendec =
 	  create_metadec Ast.NONE Ast0.Impure
 	    (fun _ name _ check_meta -> check_meta(Ast.MetaListlenDecl(name)))
 	    [lenid] current_rule in
+	let cstr = Ast0toast.constraints cstr in
 	let lenname =
 	  match lendec with
-	    [Common.Left (Ast.MetaListlenDecl(x))] -> Ast.MetaLen x
-	  | [Common.Right (Ast.MetaListlenDecl(x))] -> Ast.MetaLen x
+	    [Common.Left (Ast.MetaListlenDecl(x))] -> Ast.MetaLen (x,cstr)
+	  | [Common.Right (Ast.MetaListlenDecl(x))] -> Ast.MetaLen (x,cstr)
 	  | _ -> failwith "unexpected length declaration" in
 	(lendec,lenname)
     | Common.Right n -> ([],Ast.CstLen n) in
-  lendec@(create_metadec ar ispure (kindfn lenname) ids current_rule)
+  lendec@
+  create_metadec_with_constraints ar ispure (kindfn lenname) ids current_rule
 
 (* ---------------------------------------------------------------------- *)
 
@@ -450,33 +455,37 @@ let str2inc s =
 (* declarations and statements *)
 
 let meta_decl name =
-  let (nm,pure,clt) = name in
-  Ast0.wrap(Ast0.MetaDecl(clt2mcode nm clt,pure))
+  let (nm,cstr,pure,clt) = name in
+  Ast0.wrap(Ast0.MetaDecl(clt2mcode nm clt,cstr,pure))
 
 let meta_field name =
-  let (nm,pure,clt) = name in
-  Ast0.wrap(Ast0.MetaField(clt2mcode nm clt,pure))
+  let (nm,cstr,pure,clt) = name in
+  Ast0.wrap(Ast0.MetaField(clt2mcode nm clt,cstr,pure))
 
 let dolen clt = function
     Ast.AnyLen -> Ast0.AnyListLen
-  | Ast.MetaLen nm -> Ast0.MetaListLen(clt2mcode nm clt)
+  | Ast.MetaLen (nm,cstr) ->
+      let cstr' =
+	(* Discard expression! (from Ast to Ast0) *)
+	Ast.cstr_map Ast.empty_cstr_transformer cstr in
+      Ast0.MetaListLen(clt2mcode nm clt,cstr')
   | Ast.CstLen n -> Ast0.CstListLen n
 
 let meta_field_list name =
-  let (nm,lenname,pure,clt) = name in
-  Ast0.wrap(Ast0.MetaFieldList(clt2mcode nm clt,dolen clt lenname,pure))
+  let (nm,lenname,cstr,pure,clt) = name in
+  Ast0.wrap(Ast0.MetaFieldList(clt2mcode nm clt,dolen clt lenname,cstr,pure))
 
 let meta_stm name =
-  let (nm,pure,clt) = name in
-  Ast0.wrap(Ast0.MetaStmt(clt2mcode nm clt,pure))
+  let (nm,cstr,pure,clt) = name in
+  Ast0.wrap(Ast0.MetaStmt(clt2mcode nm clt,cstr,pure))
 
 let meta_stm_list name =
-  let (nm,lenname,pure,clt) = name in
-  Ast0.wrap(Ast0.MetaStmtList(clt2mcode nm clt,dolen clt lenname,pure))
+  let (nm,lenname,cstr,pure,clt) = name in
+  Ast0.wrap(Ast0.MetaStmtList(clt2mcode nm clt,dolen clt lenname,cstr,pure))
 
 let meta_dparam_list name =
-  let (nm,lenname,pure,clt) = name in
-  Ast0.wrap(Ast0.MetaDParamList(clt2mcode nm clt,dolen clt lenname,pure))
+  let (nm,lenname,cstr,pure,clt) = name in
+  Ast0.wrap(Ast0.MetaDParamList(clt2mcode nm clt,dolen clt lenname,cstr,pure))
 
 let exp_stm exp pv =
   Ast0.wrap(Ast0.ExprStatement (exp, clt2mcode ";" pv))
@@ -584,10 +593,12 @@ let fix_dependencies d =
     | Ast0.OrDep(d1,d2) ->
 	Ast.OrDep(loop inverted d1,loop inverted d2)
     | Ast0.FileIn s when inverted -> Ast.NotFileIn s
-    | Ast0.FileIn s -> Ast.FileIn s
-    | Ast0.NoDep -> Ast.NoDep
-    | Ast0.FailDep -> Ast.FailDep in
-  loop false d
+    | Ast0.FileIn s -> Ast.FileIn s in
+  match d with
+    Ast0.NoDep -> Ast.NoDep
+  | Ast0.FailDep -> Ast.FailDep
+  | Ast0.ExistsDep d -> Ast.ExistsDep (loop false d)
+  | Ast0.ForallDep d -> Ast.ForallDep (loop false d)
 
 let make_cocci_rule_name_result nm d i a e ee =
   Ast.CocciRulename (check_rule_name nm,fix_dependencies d,i,a,e,ee)
@@ -644,11 +655,16 @@ let string_metavariables str clt =
     MFmt(Ast0.wrap(Ast0.MetaFormat(clt2mcode name clt,constraints)))
   with Not_found ->
     try
-      let (name,lenname) = List.assoc str !Data.format_list_metavariables in
+      let (name,lenname,constraints) =
+	List.assoc str !Data.format_list_metavariables in
       let lenname =
 	match lenname with
 	  Ast.AnyLen -> Ast0.AnyListLen
-	| Ast.MetaLen nm -> Ast0.MetaListLen(clt2mcode nm clt)
+	| Ast.MetaLen (nm,cstr) ->
+	    let cstr' =
+	      (* Discard expression! (from Ast to Ast0) *)
+	      Ast.cstr_map Ast.empty_cstr_transformer cstr in
+	    Ast0.MetaListLen(clt2mcode nm clt,cstr')
 	| Ast.CstLen n ->
 	    if n < 1
 	    then
@@ -658,7 +674,8 @@ let string_metavariables str clt =
 	    else Ast0.CstListLen n in
       MFrag
 	(fun pct ->
-	  Ast0.wrap(Ast0.MetaFormatList(pct,clt2mcode name clt,lenname)))
+	  Ast0.wrap(
+	  Ast0.MetaFormatList(pct,clt2mcode name clt,constraints,lenname)))
     with Not_found -> failwith "bad metavariable in string"
 
 let pct_split str =

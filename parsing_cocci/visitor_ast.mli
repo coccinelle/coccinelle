@@ -14,6 +14,7 @@ type 'a combiner =
      combiner_fullType : Ast_cocci.fullType -> 'a;
      combiner_typeC : Ast_cocci.typeC -> 'a;
      combiner_declaration : Ast_cocci.declaration -> 'a;
+     combiner_field : Ast_cocci.field -> 'a;
      combiner_initialiser : Ast_cocci.initialiser -> 'a;
      combiner_parameter : Ast_cocci.parameterTypeDef -> 'a;
      combiner_parameter_list : Ast_cocci.parameter_list -> 'a;
@@ -25,6 +26,7 @@ type 'a combiner =
      combiner_expression_dots : Ast_cocci.expression Ast_cocci.dots -> 'a;
      combiner_statement_dots : Ast_cocci.statement Ast_cocci.dots -> 'a;
      combiner_anndecl_dots : Ast_cocci.annotated_decl Ast_cocci.dots -> 'a;
+     combiner_annfield_dots : Ast_cocci.annotated_field Ast_cocci.dots -> 'a;
      combiner_initialiser_dots : Ast_cocci.initialiser Ast_cocci.dots -> 'a}
 
 type ('mc,'a) cmcode = 'a combiner -> 'mc Ast_cocci.mcode -> 'a
@@ -50,6 +52,7 @@ val combiner :
       ((Ast_cocci.parameterTypeDef Ast_cocci.dots,'a) ccode) ->
       ((Ast_cocci.statement Ast_cocci.dots,'a) ccode) ->
       ((Ast_cocci.annotated_decl Ast_cocci.dots,'a) ccode) ->
+      ((Ast_cocci.annotated_field Ast_cocci.dots,'a) ccode) ->
       ((Ast_cocci.initialiser Ast_cocci.dots,'a) ccode) ->
       ((Ast_cocci.ident,'a) ccode) ->
       ((Ast_cocci.expression,'a) ccode) ->
@@ -64,6 +67,8 @@ val combiner :
       ((Ast_cocci.define_param,'a) ccode) ->
       ((Ast_cocci.declaration,'a) ccode) ->
       ((Ast_cocci.annotated_decl,'a) ccode) ->
+      ((Ast_cocci.field,'a) ccode) ->
+      ((Ast_cocci.annotated_field,'a) ccode) ->
       ((Ast_cocci.rule_elem,'a) ccode) ->
       ((Ast_cocci.statement,'a) ccode) ->
       ((Ast_cocci.case_line,'a) ccode) ->
@@ -83,6 +88,7 @@ type rebuilder =
       rebuilder_fullType : Ast_cocci.fullType inout;
       rebuilder_typeC : Ast_cocci.typeC inout;
       rebuilder_declaration : Ast_cocci.declaration inout;
+      rebuilder_field : Ast_cocci.field inout;
       rebuilder_initialiser : Ast_cocci.initialiser inout;
       rebuilder_parameter : Ast_cocci.parameterTypeDef inout;
       rebuilder_parameter_list : Ast_cocci.parameter_list inout;
@@ -93,6 +99,7 @@ type rebuilder =
       rebuilder_expression_dots : Ast_cocci.expression Ast_cocci.dots inout;
       rebuilder_statement_dots : Ast_cocci.statement Ast_cocci.dots inout;
       rebuilder_anndecl_dots : Ast_cocci.annotated_decl Ast_cocci.dots inout;
+      rebuilder_annfield_dots : Ast_cocci.annotated_field Ast_cocci.dots inout;
       rebuilder_initialiser_dots : Ast_cocci.initialiser Ast_cocci.dots inout;
       rebuilder_define_param_dots: Ast_cocci.define_param Ast_cocci.dots inout;
       rebuilder_define_param : Ast_cocci.define_param inout;
@@ -121,6 +128,7 @@ val rebuilder :
     (Ast_cocci.parameterTypeDef Ast_cocci.dots rcode) ->
     (Ast_cocci.statement Ast_cocci.dots rcode) ->
     (Ast_cocci.annotated_decl Ast_cocci.dots rcode) ->
+    (Ast_cocci.annotated_field Ast_cocci.dots rcode) ->
     (Ast_cocci.initialiser Ast_cocci.dots rcode) ->
     (Ast_cocci.ident rcode) ->
     (Ast_cocci.expression rcode) ->
@@ -135,6 +143,8 @@ val rebuilder :
     (Ast_cocci.define_param rcode) ->
     (Ast_cocci.declaration rcode) ->
     (Ast_cocci.annotated_decl rcode) ->
+    (Ast_cocci.field rcode) ->
+    (Ast_cocci.annotated_field rcode) ->
     (Ast_cocci.rule_elem rcode) ->
     (Ast_cocci.statement rcode) ->
     (Ast_cocci.case_line rcode) ->

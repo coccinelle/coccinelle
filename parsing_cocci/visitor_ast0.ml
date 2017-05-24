@@ -21,10 +21,10 @@ let visitor mode bind option_default
     meta_mcode string_mcode const_mcode simpleAssign_mcode opAssign_mcode
     fix_mcode unary_mcode arithOp_mcode logicalOp_mcode cv_mcode sign_mcode
     struct_mcode storage_mcode inc_mcode
-    dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotscasefn
-    dotsdefparfn
-    identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn declfn stmtfn
-    forinfofn casefn string_fragmentfn topfn =
+    dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotsfieldfn
+    dotscasefn dotsdefparfn
+    identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn declfn fieldfn
+    stmtfn forinfofn casefn string_fragmentfn topfn =
   let multibind l =
     let rec loop = function
 	[] -> option_default
@@ -64,6 +64,7 @@ let visitor mode bind option_default
   and parameter_dots d = dotsfn dotsparamfn parameterTypeDef all_functions d
   and statement_dots d = dotsfn dotsstmtfn statement all_functions d
   and declaration_dots d = dotsfn dotsdeclfn declaration all_functions d
+  and field_dots d = dotsfn dotsfieldfn field all_functions d
   and case_line_dots d = dotsfn dotscasefn case_line all_functions d
   and string_fragment_dots d = dotsfn strdotsfn string_fragment all_functions d
   and exec_code_dots d = dotsfn ecdotsfn exec_code all_functions d
@@ -207,12 +208,12 @@ let visitor mode bind option_default
 	| Ast0.MetaErr(name,constraints,pure) ->
 	    let (name_n,name) = meta_mcode name in
 	    (name_n,Ast0.MetaErr(name,constraints,pure))
-	| Ast0.MetaExpr(name,constraints,ty,form,pure) ->
+	| Ast0.MetaExpr(name,constraints,ty,form,pure,bitfield) ->
 	    let (name_n,name) = meta_mcode name in
-	    (name_n,Ast0.MetaExpr(name,constraints,ty,form,pure))
-	| Ast0.MetaExprList(name,lenname,pure) ->
+	    (name_n,Ast0.MetaExpr(name,constraints,ty,form,pure,bitfield))
+	| Ast0.MetaExprList(name,lenname,constraints,pure) ->
 	    let (name_n,name) = meta_mcode name in
-	    (name_n,Ast0.MetaExprList(name,lenname,pure))
+	    (name_n,Ast0.MetaExprList(name,lenname,constraints,pure))
 	| Ast0.EComma(cm) ->
 	    let (cm_n,cm) = string_mcode cm in (cm_n,Ast0.EComma(cm))
 	| Ast0.DisjExpr(starter,expr_list,mids,ender) ->
@@ -261,10 +262,10 @@ let visitor mode bind option_default
 	| Ast0.Strdots dots ->
 	    let (dots_n,dots) = string_mcode dots in
 	    (dots_n,Ast0.Strdots dots)
-	| Ast0.MetaFormatList(pct,name,lenname) ->
+	| Ast0.MetaFormatList(pct,name,cstr,lenname) ->
 	    let (pct_n,pct) = string_mcode pct in
 	    let (name_n,name) = meta_mcode name in
-	    (bind pct_n name_n,Ast0.MetaFormatList(pct,name,lenname))) in
+	    (bind pct_n name_n,Ast0.MetaFormatList(pct,name,cstr,lenname))) in
     string_fragmentfn all_functions k e
 
   and string_format e =
@@ -365,16 +366,16 @@ let visitor mode bind option_default
 	| Ast0.StructUnionDef(ty,lb,decls,rb) ->
 	    let (ty_n,ty) = typeC ty in
 	    let (lb_n,lb) = string_mcode lb in
-	    let (decls_n,decls) = declaration_dots decls in
+	    let (decls_n,decls) = field_dots decls in
 	    let (rb_n,rb) = string_mcode rb in
 	    (multibind [ty_n;lb_n;decls_n;rb_n],
 	     Ast0.StructUnionDef(ty,lb,decls,rb))
 	| Ast0.TypeName(name) ->
 	    let (name_n,name) = string_mcode name in
 	    (name_n,Ast0.TypeName(name))
-	| Ast0.MetaType(name,pure) ->
+	| Ast0.MetaType(name,cstr,pure) ->
 	    let (name_n,name) = meta_mcode name in
-	    (name_n,Ast0.MetaType(name,pure))
+	    (name_n,Ast0.MetaType(name,cstr,pure))
 	| Ast0.DisjType(starter,types,mids,ender) ->
 	    do_disj starter types mids ender typeC
 	      (fun starter types mids ender ->
@@ -435,15 +436,9 @@ let visitor mode bind option_default
     let k d =
       rewrap d
 	(match Ast0.unwrap d with
-	  Ast0.MetaDecl(name,pure) ->
+	  Ast0.MetaDecl(name,constraints,pure) ->
 	    let (n,name) = meta_mcode name in
-	    (n,Ast0.MetaDecl(name,pure))
-	| Ast0.MetaField(name,pure) ->
-	    let (n,name) = meta_mcode name in
-	    (n,Ast0.MetaField(name,pure))
-	| Ast0.MetaFieldList(name,lenname,pure) ->
-	    let (n,name) = meta_mcode name in
-	    (n,Ast0.MetaFieldList(name,lenname,pure))
+	    (n,Ast0.MetaDecl(name,constraints,pure))
 	| Ast0.Init(stg,ty,id,eq,ini,sem) ->
 	    let (stg_n,stg) = get_option storage_mcode stg in
 	    let ((ty_id_n,ty),id) = named_type ty id in
@@ -506,15 +501,10 @@ let visitor mode bind option_default
 	    do_disj starter decls mids ender declaration
 	      (fun starter decls mids ender ->
 		Ast0.DisjDecl(starter,decls,mids,ender))
-	| Ast0.Ddots(dots,whencode) ->
-	    let (dots_n,dots) = string_mcode dots in
-	    let (whencode_n, whencode) = match whencode with
-              | Some (a,b,c) ->
-                  let (_,a2) = string_mcode a in
-                  let (_,b2) = string_mcode b in
-                  let (c1,c2) = declaration c in (c1, Some (a2,b2,c2))
-              | None -> (option_default, None) in
-	    (bind dots_n whencode_n, Ast0.Ddots(dots,whencode))
+	| Ast0.ConjDecl(starter,decls,mids,ender) ->
+	    do_disj starter decls mids ender declaration
+	      (fun starter decls mids ender ->
+		Ast0.ConjDecl(starter,decls,mids,ender))
 	| Ast0.OptDecl(decl) ->
 	    let (n,decl) = declaration decl in (n,Ast0.OptDecl(decl))
 	| Ast0.AsDecl(decl,asdecl) ->
@@ -523,16 +513,61 @@ let visitor mode bind option_default
 	    (bind decl_n asdecl_n, Ast0.AsDecl(decl,asdecl))) in
     declfn all_functions k d
 
+  and field d =
+    let k d =
+      rewrap d
+	(match Ast0.unwrap d with
+	  Ast0.MetaField(name,constraints,pure) ->
+	    let (n,name) = meta_mcode name in
+	    (n,Ast0.MetaField(name,constraints,pure))
+	| Ast0.MetaFieldList(name,lenname,constraints,pure) ->
+	    let (n,name) = meta_mcode name in
+	    (n,Ast0.MetaFieldList(name,lenname,constraints,pure))
+	| Ast0.Field(ty,id,bf,sem) ->
+	    let ((ty_id_n,ty),id) =
+	      match id with
+		None -> (typeC ty, None)
+	      | Some id ->
+		  let (ty, id) = named_type ty id in
+		  (ty, Some id) in
+	    let bitfield (c, e) =
+	      let (c_n, c) = string_mcode c in
+	      let (e_n, e) = expression e in
+	      ([c_n; e_n], Some (c, e)) in
+	    let (bf_n,bf) = Common.default ([], None) bitfield bf in
+	    let (sem_n,sem) = string_mcode sem in
+	    (multibind ([ty_id_n] @ bf_n @ [sem_n]), Ast0.Field(ty,id,bf,sem))
+	| Ast0.DisjField(starter,decls,mids,ender) ->
+	    do_disj starter decls mids ender field
+	      (fun starter decls mids ender ->
+		Ast0.DisjField(starter,decls,mids,ender))
+	| Ast0.ConjField(starter,decls,mids,ender) ->
+	    do_disj starter decls mids ender field
+	      (fun starter decls mids ender ->
+		Ast0.ConjField(starter,decls,mids,ender))
+	| Ast0.Fdots(dots,whencode) ->
+	    let (dots_n,dots) = string_mcode dots in
+	    let (whencode_n, whencode) = match whencode with
+              | Some (a,b,c) ->
+                  let (_,a2) = string_mcode a in
+                  let (_,b2) = string_mcode b in
+                  let (c1,c2) = field c in (c1, Some (a2,b2,c2))
+              | None -> (option_default, None) in
+	    (bind dots_n whencode_n, Ast0.Fdots(dots,whencode))
+	| Ast0.OptField(decl) ->
+	    let (n,decl) = field decl in (n,Ast0.OptField(decl))) in
+    fieldfn all_functions k d
+
   and initialiser i =
     let k i =
       rewrap i
 	(match Ast0.unwrap i with
-	  Ast0.MetaInit(name,pure) ->
+	  Ast0.MetaInit(name,constraints,pure) ->
 	    let (name_n,name) = meta_mcode name in
-	    (name_n,Ast0.MetaInit(name,pure))
-	| Ast0.MetaInitList(name,lenname,pure) ->
+	    (name_n,Ast0.MetaInit(name,constraints,pure))
+	| Ast0.MetaInitList(name,lenname,constraints,pure) ->
 	    let (name_n,name) = meta_mcode name in
-	    (name_n,Ast0.MetaInitList(name,lenname,pure))
+	    (name_n,Ast0.MetaInitList(name,lenname,constraints,pure))
 	| Ast0.InitExpr(exp) ->
 	    let (exp_n,exp) = expression exp in
 	    (exp_n,Ast0.InitExpr(exp))
@@ -602,12 +637,12 @@ let visitor mode bind option_default
 	| Ast0.Param(ty,None) ->
 	    let (ty_n,ty) = typeC ty in
 	    (ty_n, Ast0.Param(ty,None))
-	| Ast0.MetaParam(name,pure) ->
+	| Ast0.MetaParam(name,constraints,pure) ->
 	    let (n,name) = meta_mcode name in
-	    (n,Ast0.MetaParam(name,pure))
-	| Ast0.MetaParamList(name,lenname,pure) ->
+	    (n,Ast0.MetaParam(name,constraints,pure))
+	| Ast0.MetaParamList(name,lenname,constraints,pure) ->
 	    let (n,name) = meta_mcode name in
-	    (n,Ast0.MetaParamList(name,lenname,pure))
+	    (n,Ast0.MetaParamList(name,lenname,constraints,pure))
 	| Ast0.AsParam(p,asexp) ->
 	    let (p_n,p) = parameterTypeDef p in
 	    let (asexp_n,asexp) = expression asexp in
@@ -769,12 +804,12 @@ let visitor mode bind option_default
 	    let (sem_n,sem) = string_mcode sem in
 	    (multibind [exec_n;lang_n;code_n;sem_n],
 	     Ast0.Exec(exec,lang,code,sem))
-	| Ast0.MetaStmt(name,pure) ->
+	| Ast0.MetaStmt(name,constraints,pure) ->
 	    let (name_n,name) = meta_mcode name in
-	    (name_n,Ast0.MetaStmt(name,pure))
-	| Ast0.MetaStmtList(name,lenname,pure) ->
+	    (name_n,Ast0.MetaStmt(name,constraints,pure))
+	| Ast0.MetaStmtList(name,lenname,constraints,pure) ->
 	    let (name_n,name) = meta_mcode name in
-	    (name_n,Ast0.MetaStmtList(name,lenname,pure))
+	    (name_n,Ast0.MetaStmtList(name,lenname,constraints,pure))
 	| Ast0.Disj(starter,statement_dots_list,mids,ender) ->
 	    do_disj starter statement_dots_list mids ender statement_dots
 	      (fun starter statement_dots_list mids ender ->
@@ -889,9 +924,9 @@ let visitor mode bind option_default
       rewrap p
 	(match Ast0.unwrap p with
 	  Ast0.DParam(id) -> let (n,id) = ident id in (n,Ast0.DParam(id))
-	| Ast0.MetaDParamList(name,lenname,pure) ->
+	| Ast0.MetaDParamList(name,lenname,constraints,pure) ->
 	    let (n,name) = meta_mcode name in
-	    (n,Ast0.MetaDParamList(name,lenname,pure))
+	    (n,Ast0.MetaDParamList(name,lenname,constraints,pure))
 	| Ast0.DPComma(comma) ->
 	    let (n,comma) = string_mcode comma in (n,Ast0.DPComma(comma))
 	| Ast0.DPdots(d) ->
@@ -1020,6 +1055,9 @@ let visitor mode bind option_default
       | Ast0.DotsDeclTag(decls) ->
 	  let (decls_n,decls) = declaration_dots decls in
 	  (decls_n,Ast0.DotsDeclTag(decls))
+      | Ast0.DotsFieldTag(decls) ->
+	  let (decls_n,decls) = field_dots decls in
+	  (decls_n,Ast0.DotsFieldTag(decls))
       | Ast0.DotsCaseTag(cases) ->
 	  let (cases_n,cases) = case_line_dots cases in
 	  (cases_n,Ast0.DotsCaseTag(cases))
@@ -1056,6 +1094,9 @@ let visitor mode bind option_default
       | Ast0.DeclTag(decl) ->
 	  let (decl_n,decl) = declaration decl in
 	  (decl_n,Ast0.DeclTag(decl))
+      | Ast0.FieldTag(decl) ->
+	  let (decl_n,decl) = field decl in
+	  (decl_n,Ast0.FieldTag(decl))
       | Ast0.StmtTag(stmt) ->
 	  let (stmt_n,stmt) = statement stmt in
 	  (stmt_n,Ast0.StmtTag(stmt))
@@ -1096,6 +1137,7 @@ let visitor mode bind option_default
       VT0.binaryOp = binaryOp;
       VT0.typeC = typeC;
       VT0.declaration = declaration;
+      VT0.field = field;
       VT0.initialiser = initialiser;
       VT0.initialiser_list = initialiser_dots;
       VT0.parameter = parameterTypeDef;
@@ -1109,6 +1151,7 @@ let visitor mode bind option_default
       VT0.expression_dots = expression_dots;
       VT0.statement_dots = statement_dots;
       VT0.declaration_dots = declaration_dots;
+      VT0.field_dots = field_dots;
       VT0.case_line_dots = case_line_dots;
       VT0.define_param_dots = define_param_dots;
       VT0.anything = anything} in
@@ -1134,6 +1177,7 @@ let combiner_functions =
    VT0.combiner_dotsparamfn = (fun r k e -> k e);
    VT0.combiner_dotsstmtfn = (fun r k e -> k e);
    VT0.combiner_dotsdeclfn = (fun r k e -> k e);
+   VT0.combiner_dotsfieldfn = (fun r k e -> k e);
    VT0.combiner_dotscasefn = (fun r k e -> k e);
    VT0.combiner_dotsdefparfn = (fun r k e -> k e);
    VT0.combiner_identfn = (fun r k e -> k e);
@@ -1144,6 +1188,7 @@ let combiner_functions =
    VT0.combiner_initfn = (fun r k e -> k e);
    VT0.combiner_paramfn = (fun r k e -> k e);
    VT0.combiner_declfn = (fun r k e -> k e);
+   VT0.combiner_fieldfn = (fun r k e -> k e);
    VT0.combiner_stmtfn = (fun r k e -> k e);
    VT0.combiner_forinfofn = (fun r k e -> k e);
    VT0.combiner_casefn = (fun r k e -> k e);
@@ -1165,6 +1210,8 @@ let combiner_dz r =
       (function e -> let (n,_) = r.VT0.typeC e in n);
       VT0.combiner_rec_declaration =
       (function e -> let (n,_) = r.VT0.declaration e in n);
+      VT0.combiner_rec_field =
+      (function e -> let (n,_) = r.VT0.field e in n);
       VT0.combiner_rec_initialiser =
       (function e -> let (n,_) = r.VT0.initialiser e in n);
       VT0.combiner_rec_initialiser_list =
@@ -1191,6 +1238,8 @@ let combiner_dz r =
       (function e -> let (n,_) = r.VT0.statement_dots e in n);
       VT0.combiner_rec_declaration_dots =
       (function e -> let (n,_) = r.VT0.declaration_dots e in n);
+      VT0.combiner_rec_field_dots =
+      (function e -> let (n,_) = r.VT0.field_dots e in n);
       VT0.combiner_rec_case_line_dots =
       (function e -> let (n,_) = r.VT0.case_line_dots e in n);
       VT0.combiner_rec_define_param_dots =
@@ -1227,6 +1276,7 @@ let combiner bind option_default functions =
     (fun r k e -> (functions.VT0.combiner_dotsparamfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_dotsstmtfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_dotsdeclfn (dz r) (xk k) e, e))
+    (fun r k e -> (functions.VT0.combiner_dotsfieldfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_dotscasefn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_dotsdefparfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_identfn (dz r) (xk k) e, e))
@@ -1237,6 +1287,7 @@ let combiner bind option_default functions =
     (fun r k e -> (functions.VT0.combiner_initfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_paramfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_declfn (dz r) (xk k) e, e))
+    (fun r k e -> (functions.VT0.combiner_fieldfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_stmtfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_forinfofn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_casefn (dz r) (xk k) e, e))
@@ -1247,10 +1298,10 @@ let flat_combiner bind option_default
     meta_mcode string_mcode const_mcode simpleAssign_mcode opAssign_mcode
     fix_mcode unary_mcode arithOp_mcode logicalOp_mcode cv_mcode sign_mcode
     struct_mcode storage_mcode inc_mcode
-    dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotscasefn
-    dotsdefparfn
-    identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn declfn stmtfn
-    forinfofn casefn string_fragmentfn topfn =
+    dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotsfieldfn
+    dotscasefn dotsdefparfn
+    identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn declfn fieldfn
+    stmtfn forinfofn casefn string_fragmentfn topfn =
   let dz = combiner_dz in
   let xk k e = let (n,_) = k e in n in
   combiner_dz (visitor COMBINER bind option_default
@@ -1273,6 +1324,7 @@ let flat_combiner bind option_default
     (fun r k e -> (dotsparamfn (dz r) (xk k) e, e))
     (fun r k e -> (dotsstmtfn (dz r) (xk k) e, e))
     (fun r k e -> (dotsdeclfn (dz r) (xk k) e, e))
+    (fun r k e -> (dotsfieldfn (dz r) (xk k) e, e))
     (fun r k e -> (dotscasefn (dz r) (xk k) e, e))
     (fun r k e -> (dotsdefparfn (dz r) (xk k) e, e))
     (fun r k e -> (identfn (dz r) (xk k) e, e))
@@ -1283,6 +1335,7 @@ let flat_combiner bind option_default
     (fun r k e -> (initfn (dz r) (xk k) e, e))
     (fun r k e -> (paramfn (dz r) (xk k) e, e))
     (fun r k e -> (declfn (dz r) (xk k) e, e))
+    (fun r k e -> (fieldfn (dz r) (xk k) e, e))
     (fun r k e -> (stmtfn (dz r) (xk k) e, e))
     (fun r k e -> (forinfofn (dz r) (xk k) e, e))
     (fun r k e -> (casefn (dz r) (xk k) e, e))
@@ -1309,6 +1362,7 @@ let rebuilder_functions =
    VT0.rebuilder_dotsparamfn = (fun r k e -> k e);
    VT0.rebuilder_dotsstmtfn = (fun r k e -> k e);
    VT0.rebuilder_dotsdeclfn = (fun r k e -> k e);
+   VT0.rebuilder_dotsfieldfn = (fun r k e -> k e);
    VT0.rebuilder_dotscasefn = (fun r k e -> k e);
    VT0.rebuilder_dotsdefparfn = (fun r k e -> k e);
    VT0.rebuilder_identfn = (fun r k e -> k e);
@@ -1319,6 +1373,7 @@ let rebuilder_functions =
    VT0.rebuilder_initfn = (fun r k e -> k e);
    VT0.rebuilder_paramfn = (fun r k e -> k e);
    VT0.rebuilder_declfn = (fun r k e -> k e);
+   VT0.rebuilder_fieldfn = (fun r k e -> k e);
    VT0.rebuilder_stmtfn = (fun r k e -> k e);
    VT0.rebuilder_forinfofn = (fun r k e -> k e);
    VT0.rebuilder_casefn = (fun r k e -> k e);
@@ -1340,6 +1395,8 @@ let rebuilder_dz r =
       (function e -> let (_,e) = r.VT0.typeC e in e);
       VT0.rebuilder_rec_declaration =
       (function e -> let (_,e) = r.VT0.declaration e in e);
+      VT0.rebuilder_rec_field =
+      (function e -> let (_,e) = r.VT0.field e in e);
       VT0.rebuilder_rec_initialiser =
       (function e -> let (_,e) = r.VT0.initialiser e in e);
       VT0.rebuilder_rec_initialiser_list =
@@ -1364,6 +1421,8 @@ let rebuilder_dz r =
       (function e -> let (_,e) = r.VT0.statement_dots e in e);
       VT0.rebuilder_rec_declaration_dots =
       (function e -> let (_,e) = r.VT0.declaration_dots e in e);
+      VT0.rebuilder_rec_field_dots =
+      (function e -> let (_,e) = r.VT0.field_dots e in e);
       VT0.rebuilder_rec_case_line_dots =
       (function e -> let (_,e) = r.VT0.case_line_dots e in e);
       VT0.rebuilder_rec_define_param_dots =
@@ -1395,6 +1454,7 @@ let rebuilder functions =
     (fun r k e -> ((),functions.VT0.rebuilder_dotsparamfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_dotsstmtfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_dotsdeclfn (dz r) (xk k) e))
+    (fun r k e -> ((),functions.VT0.rebuilder_dotsfieldfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_dotscasefn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_dotsdefparfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_identfn (dz r) (xk k) e))
@@ -1405,6 +1465,7 @@ let rebuilder functions =
     (fun r k e -> ((),functions.VT0.rebuilder_initfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_paramfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_declfn (dz r) (xk k) e))
+    (fun r k e -> ((),functions.VT0.rebuilder_fieldfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_stmtfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_forinfofn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_casefn (dz r) (xk k) e))
@@ -1417,10 +1478,10 @@ let flat_rebuilder
     fix_mcode unary_mcode
     arithOp_mcode logicalOp_mcode cv_mcode sign_mcode struct_mcode
     storage_mcode inc_mcode
-    dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotscasefn
-    dotsdefparfn
-    identfn exprfn assignOpfn arithOpfn tyfn initfn paramfn declfn stmtfn
-    forinfofn casefn string_fragmentfn topfn =
+    dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotsfieldfn
+    dotscasefn dotsdefparfn
+    identfn exprfn assignOpfn arithOpfn tyfn initfn paramfn declfn fieldfn
+    stmtfn forinfofn casefn string_fragmentfn topfn =
   let dz = rebuilder_dz in
   let xk k e = let (_,e) = k e in e in
   rebuilder_dz
@@ -1444,6 +1505,7 @@ let flat_rebuilder
     (fun r k e -> ((),dotsparamfn (dz r) (xk k) e))
     (fun r k e -> ((),dotsstmtfn (dz r) (xk k) e))
     (fun r k e -> ((),dotsdeclfn (dz r) (xk k) e))
+    (fun r k e -> ((),dotsfieldfn (dz r) (xk k) e))
     (fun r k e -> ((),dotscasefn (dz r) (xk k) e))
     (fun r k e -> ((),dotsdefparfn (dz r) (xk k) e))
     (fun r k e -> ((),identfn (dz r) (xk k) e))
@@ -1454,6 +1516,7 @@ let flat_rebuilder
     (fun r k e -> ((),initfn (dz r) (xk k) e))
     (fun r k e -> ((),paramfn (dz r) (xk k) e))
     (fun r k e -> ((),declfn (dz r) (xk k) e))
+    (fun r k e -> ((),fieldfn (dz r) (xk k) e))
     (fun r k e -> ((),stmtfn (dz r) (xk k) e))
     (fun r k e -> ((),forinfofn (dz r) (xk k) e))
     (fun r k e -> ((),casefn (dz r) (xk k) e))
@@ -1494,6 +1557,7 @@ let combiner_rebuilder_functions =
    VT0.combiner_rebuilder_dotsparamfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_dotsstmtfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_dotsdeclfn = (fun r k e -> k e);
+   VT0.combiner_rebuilder_dotsfieldfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_dotscasefn = (fun r k e -> k e);
    VT0.combiner_rebuilder_dotsdefparfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_identfn = (fun r k e -> k e);
@@ -1504,6 +1568,7 @@ let combiner_rebuilder_functions =
    VT0.combiner_rebuilder_initfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_paramfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_declfn = (fun r k e -> k e);
+   VT0.combiner_rebuilder_fieldfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_stmtfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_forinfofn = (fun r k e -> k e);
    VT0.combiner_rebuilder_casefn = (fun r k e -> k e);
@@ -1531,6 +1596,7 @@ let combiner_rebuilder bind option_default functions =
     functions.VT0.combiner_rebuilder_dotsparamfn
     functions.VT0.combiner_rebuilder_dotsstmtfn
     functions.VT0.combiner_rebuilder_dotsdeclfn
+    functions.VT0.combiner_rebuilder_dotsfieldfn
     functions.VT0.combiner_rebuilder_dotscasefn
     functions.VT0.combiner_rebuilder_dotsdefparfn
     functions.VT0.combiner_rebuilder_identfn
@@ -1541,6 +1607,7 @@ let combiner_rebuilder bind option_default functions =
     functions.VT0.combiner_rebuilder_initfn
     functions.VT0.combiner_rebuilder_paramfn
     functions.VT0.combiner_rebuilder_declfn
+    functions.VT0.combiner_rebuilder_fieldfn
     functions.VT0.combiner_rebuilder_stmtfn
     functions.VT0.combiner_rebuilder_forinfofn
     functions.VT0.combiner_rebuilder_casefn

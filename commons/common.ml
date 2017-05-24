@@ -2316,6 +2316,32 @@ let _ = assert (edit_distance "winter" "winter" = 0)
 let _ = assert (edit_distance "vintner" "writers" = 5)
 
 
+let is_blank char = char = ' '
+
+let trim_left s =
+  let length = String.length s in
+  let rec skip_blank index =
+    if index < length && is_blank (String.unsafe_get s index) then
+      skip_blank (succ index)
+    else
+      index in
+  let left_index = skip_blank 0 in
+  String.sub s left_index (length - left_index)
+
+let trim_right s =
+  let length = String.length s in
+  let rec skip_blank index =
+    if index >= 0 && is_blank (String.unsafe_get s index) then
+      skip_blank (pred index)
+    else
+      index in
+  let right_index = skip_blank (pred length) in
+  String.sub s 0 (succ right_index)
+
+let trim s =
+  trim_left (trim_right s)
+
+
 (*****************************************************************************)
 (* Filenames *)
 (*****************************************************************************)
@@ -3471,10 +3497,14 @@ let remove_file path =
 
 let _temp_files_created = ref ([] : filename list)
 
+let temp_files = ref "/tmp"
+
 (* ex: new_temp_file "cocci" ".c" will give "/tmp/cocci-3252-434465.c" *)
 let new_temp_file prefix suffix =
   let processid = string_of_int (Unix.getpid ()) in
-  let tmp_file = Filename.temp_file (prefix ^ "-" ^ processid ^ "-") suffix in
+  let tmp_file =
+    Filename.temp_file ~temp_dir:(!temp_files)
+      (prefix ^ "-" ^ processid ^ "-") suffix in
   push2 tmp_file _temp_files_created;
   tmp_file
 
@@ -5987,7 +6017,7 @@ let format_to_string f =
     loop() in
   (try loop() with End_of_file -> ());
   close_in i;
-  command2 ("rm -f " ^ nm);
+  Sys.remove nm;
   String.concat "\n" (List.rev !lines)
 
 

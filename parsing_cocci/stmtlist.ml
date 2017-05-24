@@ -17,19 +17,19 @@ let adjust_brace_and_body lbrace body =
 	(match Ast.unwrap x with
 	  Ast.Atomic(y) ->
 	    (match Ast.unwrap y with
-	      Ast.MetaStmtList(name,lenname,keep,inherited) ->
-		Some(name,lenname,keep,inherited,body,x,y)
+	      Ast.MetaStmtList(name,lenname,cstr,keep,inherited) ->
+		Some(name,lenname,cstr,keep,inherited,body,x,y)
 	    | _ -> None)
 	| _ -> None)
     | _ -> None in
   match body_element with
-    Some(name,lenname,keep,inherited,body,x,y) ->
+    Some(name,lenname,cstr,keep,inherited,body,x,y) ->
       let newbody =
 	(* dropping x *)
 	Ast.rewrap y (Ast.Dots(Ast.rewrap_mcode name "...",[],[],[])) in
       let name = Ast.make_mcode(Ast.unwrap_mcode(name)) in
       let meta =
-	Ast.make_term (Ast.MetaStmtList(name,lenname,keep,inherited)) in
+	Ast.make_term (Ast.MetaStmtList(name,lenname,cstr,keep,inherited)) in
       let body = Ast.rewrap body [newbody] in
       (Ast.make_term(Ast.AsRe(lbrace,meta)),body)
   | None -> (lbrace,body)
@@ -55,7 +55,8 @@ let stmtlist_rebuilder =
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing
-    donothing statement donothing donothing donothing
+    donothing donothing donothing donothing statement donothing donothing
+    donothing
 
 let stmtlist rule =
   match rule with

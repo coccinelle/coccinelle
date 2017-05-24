@@ -268,14 +268,15 @@ let rec top_expression opt_allowed tgt expr =
       let arity = exp_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
       make_exp expr tgt arity (Ast0.MetaErr(name,constraints,pure))
-  | Ast0.MetaExpr(name,constraints,ty,form,pure)  ->
+  | Ast0.MetaExpr(name,constraints,ty,form,pure,bitfield)  ->
       let arity = exp_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      make_exp expr tgt arity (Ast0.MetaExpr(name,constraints,ty,form,pure))
-  | Ast0.MetaExprList(name,lenname,pure) ->
+      make_exp expr tgt arity
+	(Ast0.MetaExpr(name,constraints,ty,form,pure,bitfield))
+  | Ast0.MetaExprList(name,lenname,cstr,pure) ->
       let arity = exp_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      make_exp expr tgt arity (Ast0.MetaExprList(name,lenname,pure))
+      make_exp expr tgt arity (Ast0.MetaExprList(name,lenname,cstr,pure))
   | Ast0.EComma(cm)         ->
       let arity = exp_same (mcode2line cm) [mcode2arity cm] in
       let cm = mcode cm in
@@ -343,13 +344,13 @@ and string_fragment tgt e =
       let arity = all_same false tgt (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in
       make_fragment e tgt arity (Ast0.Strdots(dots))
-  | Ast0.MetaFormatList(pct,name,lenname) ->
+  | Ast0.MetaFormatList(pct,name,cstr,lenname) ->
       let arity =
 	all_same false tgt (mcode2line pct)
 	  [mcode2arity pct; mcode2arity name] in
       let pct = mcode pct in
       let name = mcode name in
-      make_fragment e tgt arity (Ast0.MetaFormatList(pct,name,lenname))
+      make_fragment e tgt arity (Ast0.MetaFormatList(pct,name,cstr,lenname))
 
 and make_format =
   make_opt
@@ -456,7 +457,7 @@ and top_typeC tgt opt_allowed typ =
 	  (List.map mcode2arity [lb;rb]) in
       let ty = typeC arity ty in
       let lb = mcode lb in
-      let decls = dots (declaration tgt) decls in
+      let decls = dots (field tgt) decls in
       let rb = mcode rb in
       make_typeC typ tgt arity (Ast0.StructUnionDef(ty,lb,decls,rb))
   | Ast0.TypeName(name) ->
@@ -464,11 +465,11 @@ and top_typeC tgt opt_allowed typ =
 	all_same opt_allowed tgt (mcode2line name) [mcode2arity name] in
       let name = mcode name in
       make_typeC typ tgt arity (Ast0.TypeName(name))
-  | Ast0.MetaType(name,pure) ->
+  | Ast0.MetaType(name,cstr,pure) ->
       let arity =
 	all_same opt_allowed tgt (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      make_typeC typ tgt arity (Ast0.MetaType(name,pure))
+      make_typeC typ tgt arity (Ast0.MetaType(name,cstr,pure))
   | Ast0.DisjType(starter,types,mids,ender) ->
       let types = List.map (typeC tgt) types in
       (match List.rev types with
@@ -494,18 +495,10 @@ and make_decl =
 
 and declaration tgt decl =
   match Ast0.unwrap decl with
-    Ast0.MetaDecl(name,pure) ->
+    Ast0.MetaDecl(name,cstr,pure) ->
       let arity = all_same true tgt (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      make_decl decl tgt arity (Ast0.MetaDecl(name,pure))
-  | Ast0.MetaField(name,pure) ->
-      let arity = all_same true tgt (mcode2line name) [mcode2arity name] in
-      let name = mcode name in
-      make_decl decl tgt arity (Ast0.MetaField(name,pure))
-  | Ast0.MetaFieldList(name,lenname,pure) ->
-      let arity = all_same true tgt (mcode2line name) [mcode2arity name] in
-      let name = mcode name in
-      make_decl decl tgt arity (Ast0.MetaFieldList(name,lenname,pure))
+      make_decl decl tgt arity (Ast0.MetaDecl(name,cstr,pure))
   | Ast0.Init(stg,ty,id,eq,exp,sem) ->
       let arity =
 	all_same true tgt (mcode2line eq)
@@ -595,13 +588,62 @@ and declaration tgt decl =
       |	_ -> ());
       let res = Ast0.DisjDecl(starter,decls,mids,ender) in
       Ast0.rewrap decl res
-  | Ast0.Ddots(dots,whencode) ->
+  | Ast0.ConjDecl(starter,decls,mids,ender) ->
+      let decls = List.map (declaration tgt) decls in
+      (if anyopt decls (function Ast0.OptDecl(_) -> true | _ -> false)
+      then failwith "unexpected code");
+      let res = Ast0.ConjDecl(starter,decls,mids,ender) in
+      Ast0.rewrap decl res
+  | Ast0.OptDecl(_) | Ast0.AsDecl _ ->
+      failwith "unexpected code"
+
+(* --------------------------------------------------------------------- *)
+(* Field declaration *)
+
+and make_field =
+  make_opt
+    (function x -> Ast0.OptField x)
+
+and field tgt decl =
+  match Ast0.unwrap decl with
+    Ast0.MetaField(name,cstr,pure) ->
+      let arity = all_same true tgt (mcode2line name) [mcode2arity name] in
+      let name = mcode name in
+      make_field decl tgt arity (Ast0.MetaField(name,cstr,pure))
+  | Ast0.MetaFieldList(name,lenname,cstr,pure) ->
+      let arity = all_same true tgt (mcode2line name) [mcode2arity name] in
+      let name = mcode name in
+      make_field decl tgt arity (Ast0.MetaFieldList(name,lenname,cstr,pure))
+  | Ast0.Field(ty,id,bf,sem) ->
+      let arity = all_same true tgt (mcode2line sem) [mcode2arity sem] in
+      let ty = typeC arity ty in
+      let id = Common.map_option (ident false arity) id in
+      let bitfield (c, e) = (mcode c, expression arity e) in
+      let bf = Common.map_option bitfield bf in
+      let sem = mcode sem in
+      make_field decl tgt arity (Ast0.Field(ty,id,bf,sem))
+  | Ast0.DisjField(starter,decls,mids,ender) ->
+      let decls = List.map (field tgt) decls in
+      (match List.rev decls with
+	_::xs ->
+	  if anyopt xs (function Ast0.OptField(_) -> true | _ -> false)
+	  then fail decl "opt only allowed in the last disjunct"
+      |	_ -> ());
+      let res = Ast0.DisjField(starter,decls,mids,ender) in
+      Ast0.rewrap decl res
+  | Ast0.ConjField(starter,decls,mids,ender) ->
+      let decls = List.map (field tgt) decls in
+      (if anyopt decls (function Ast0.OptField(_) -> true | _ -> false)
+      then failwith "unexpected code");
+      let res = Ast0.ConjField(starter,decls,mids,ender) in
+      Ast0.rewrap decl res
+  | Ast0.Fdots(dots,whencode) ->
       let arity = all_same true tgt (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in
       let whencode =
-        get_option (fun (a,e,b) -> (a,e,declaration Ast0.NONE b)) whencode in
-      make_decl decl tgt arity (Ast0.Ddots(dots,whencode))
-  | Ast0.OptDecl(_) | Ast0.AsDecl _ ->
+        get_option (fun (a,e,b) -> (a,e,field Ast0.NONE b)) whencode in
+      make_field decl tgt arity (Ast0.Fdots(dots,whencode))
+  | Ast0.OptField(_) ->
       failwith "unexpected code"
 
 (* --------------------------------------------------------------------- *)
@@ -614,14 +656,14 @@ and make_init =
 and initialiser tgt i =
   let init_same = all_same true tgt in
   match Ast0.unwrap i with
-    Ast0.MetaInit(name,pure) ->
+    Ast0.MetaInit(name,cstr,pure) ->
       let arity = init_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      make_init i tgt arity (Ast0.MetaInit(name,pure))
-  | Ast0.MetaInitList(name,lenname,pure) ->
+      make_init i tgt arity (Ast0.MetaInit(name,cstr,pure))
+  | Ast0.MetaInitList(name,lenname,cstr,pure) ->
       let arity = init_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      make_init i tgt arity (Ast0.MetaInitList(name,lenname,pure))
+      make_init i tgt arity (Ast0.MetaInitList(name,lenname,cstr,pure))
   | Ast0.InitExpr(exp) ->
       Ast0.rewrap i (Ast0.InitExpr(expression tgt exp))
   | Ast0.InitList(lb,initlist,rb,ordered) ->
@@ -710,14 +752,14 @@ and parameterTypeDef tgt param =
 	  Ast0.OptType(ty) ->
 	    Ast0.OptParam(Ast0.rewrap param (Ast0.Param(ty,None)))
 	| _ -> Ast0.Param(ty,None))
-  | Ast0.MetaParam(name,pure) ->
+  | Ast0.MetaParam(name,cstr,pure) ->
       let arity = param_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      make_param param tgt arity (Ast0.MetaParam(name,pure))
-  | Ast0.MetaParamList(name,lenname,pure) ->
+      make_param param tgt arity (Ast0.MetaParam(name,cstr,pure))
+  | Ast0.MetaParamList(name,lenname,cstr,pure) ->
       let arity = param_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      make_param param tgt arity (Ast0.MetaParamList(name,lenname,pure))
+      make_param param tgt arity (Ast0.MetaParamList(name,lenname,cstr,pure))
   | Ast0.PComma(cm) ->
       let arity = param_same (mcode2line cm) [mcode2arity cm] in
       let cm = mcode cm in
@@ -894,14 +936,14 @@ and statement tgt stm =
       let code = dots (exec_code arity) code in
       let sem = mcode sem in
       make_rule_elem stm tgt arity (Ast0.Exec(exec,lang,code,sem))
-  | Ast0.MetaStmt(name,pure) ->
+  | Ast0.MetaStmt(name,cstr,pure) ->
       let arity = stm_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      make_rule_elem stm tgt arity (Ast0.MetaStmt(name,pure))
-  | Ast0.MetaStmtList(name,lenname,pure) ->
+      make_rule_elem stm tgt arity (Ast0.MetaStmt(name,cstr,pure))
+  | Ast0.MetaStmtList(name,lenname,cstr,pure) ->
       let arity = stm_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      make_rule_elem stm tgt arity (Ast0.MetaStmtList(name,lenname,pure))
+      make_rule_elem stm tgt arity (Ast0.MetaStmtList(name,lenname,cstr,pure))
   | Ast0.Exp(exp) ->
       let new_exp = top_expression true tgt exp in
       Ast0.rewrap stm
@@ -1111,11 +1153,11 @@ and define_param tgt param =
 	  Ast0.OptIdent(id) ->
 	    Ast0.OptDParam(Ast0.rewrap param (Ast0.DParam(id)))
 	| _ -> Ast0.DParam(new_id))
-  | Ast0.MetaDParamList(name,lenname,pure) ->
+  | Ast0.MetaDParamList(name,lenname,cstr,pure) ->
       let arity = all_same true tgt (mcode2line name) [mcode2arity name] in
       let name = mcode name in
       make_define_param param tgt arity
-	(Ast0.MetaDParamList(name,lenname,pure))
+	(Ast0.MetaDParamList(name,lenname,cstr,pure))
   | Ast0.DPComma(cm) ->
       let arity =
 	all_same true tgt (mcode2line cm) [mcode2arity cm] in

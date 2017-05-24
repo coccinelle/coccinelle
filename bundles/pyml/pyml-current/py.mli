@@ -40,6 +40,13 @@ val version_minor: unit -> int
 
 type compare = Pytypes.compare = LT | LE | EQ | NE | GT | GE
 
+(** Either a filename or a channel.
+    Channels suppose that the same C runtime has been used to compile both the
+    Python library and the OCaml runtime.
+    Warning: using channels is unsafe if runtimes differ (can lead to
+    segmentation fault).*)
+type 'a file = 'a Pytypes.file = Filename of string | Channel of 'a
+
 (** General functions to handle Python values *)
 module Object: sig
   type t = Pytypes.pyobject
@@ -113,7 +120,7 @@ module Object: sig
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/object.html#c.PyObject_Not} PyObject_Not} *)
 
-  val print: t -> out_channel -> unit
+  val print: t -> out_channel file -> unit
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/object.html#c.PyObject_Print} PyObject_Print} *)
 
@@ -174,6 +181,18 @@ module Object: sig
   val reference_count: t -> int
   (** [reference_count o] returns the number of references to the Python
       object [o]. *)
+
+  val format: Format.formatter -> t -> unit
+  (** [Py.Object.format fmt v] is equivalent to
+      [Format.pp_print_string fmt (Py.Object.to_string v)].
+      Can be used as printer for the top-level:
+      [#install_printer Py.Object.format]. *)
+
+  val format_repr: Format.formatter -> t -> unit
+  (** [Py.Object.format_repr fmt v] is equivalent to
+      [Format.pp_print_string fmt (Py.Object.string_of_repr v)].
+      Can be used as printer for the top-level:
+      [#install_printer Py.Object.format_repr]. *)
 end
 
 exception E of Object.t * Object.t
@@ -532,6 +551,18 @@ module Err: sig
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/exceptions.html#c.PyErr_Restore} PyErr_Restore} *)
 
+  val restore_tuple: Object.t * Object.t * Object.t -> unit
+  (** [restore_tuple (ptype, pvalue, ptraceback)] is equivalent to
+      [Py.Err.restore ptype pvalue ptraceback]. *)
+
+  val restore_fetch: unit -> unit
+  (** Restore the exception returned by [Py.Err.fetch ()] and raise
+      [Failure] if [None]. *)
+
+  val restore_fetched: unit -> unit
+  (** Restore the exception returned by [Py.Err.fetched ()] and raise
+      [Failure] if [None]. *)
+
   val set_error: t -> string -> unit
   (** [set_error e msg] calls [Py.Err.set_string e msg] with a predefined error type.
       In a closure/method/callback, it is recommended to raise a [Py.Err _] exception
@@ -702,7 +733,8 @@ module List: sig
   (** Equivalent to {!get_item}. *)
 
   val set_item: Object.t -> int -> Object.t -> unit
-  (** Equivalent to {!Sequence.set_item}. *)
+  (** Wrapper for
+      {{:https://docs.python.org/3/c-api/list.html#c.PyList_SetItem} PyList_SetItem} *)
 
   val set: Object.t -> int -> Object.t -> unit
   (** Equivalent to {!set_item}. *)
@@ -710,6 +742,9 @@ module List: sig
   val size: Object.t -> int
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/list.html#c.PyList_Size} PyList_Size} *)
+
+  val length: Object.t -> int
+  (** Equivalent to {!size}. *)
 
   val init: int -> (int -> Object.t) -> Object.t
   (** [init n f] returns the Python list [[f 0, f 1, ..., f (n - 1)]]. *)
@@ -1001,15 +1036,16 @@ module Run: sig
   (** [eval ~start ~globals ~locals e]
       evaluates the Python expression [e] and returns the computed value.
       We have
-[Py.Run.eval ~start ~globals ~locals e = Py.Run.String e start globals locals].
+[Py.Run.eval ~start ~globals ~locals e = Py.Run.string e start globals locals].
       @param start is the initial input mode (default: [Eval]).
       @param globals is the global symbol directory
-      (default: Module.get_dict (Module.main ())).
-      @param locals is the local symbol directory (default: [Dict.create ()]).
+      (default: [Py.Module.get_dict (Py.Module.main ())]).
+      @param locals is the local symbol directory
+      (default: [Py.Module.get_dict (Py.Module.main ())]).
    *)
 
   val load: ?start:input -> ?globals:Object.t -> ?locals:Object.t ->
-    in_channel -> string -> Object.t
+    in_channel file -> string -> Object.t
   (** [load ~start ~globals ~locals chan filename] loads the contents of the file
       opened in [chan].
       We have
@@ -1027,23 +1063,34 @@ module Run: sig
   val ipython: unit -> unit
   (** Runs the IPython interactive loop. *)
 
-  val any_file: in_channel -> string -> unit
+  val any_file: in_channel file -> string -> unit
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/veryhigh.html#c.PyRun_AnyFile} PyRun_AnyFile} *)
 
-  val file: in_channel -> string -> input -> Object.t -> Object.t -> Object.t
+  val file: in_channel file -> string -> input -> Object.t -> Object.t
+    -> Object.t
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/veryhigh.html#c.PyRun_File} PyRun_File} *)
 
   val interactive_one: in_channel -> string -> unit
-  (** Wrapper for
+  (**
+     Channels suppose that the same C runtime has been used to compile both the
+     Python library and the OCaml runtime.
+     Warning: using channels is unsafe if runtimes differ (can lead to
+     segmentation fault).
+      Wrapper for
       {{:https://docs.python.org/3/c-api/veryhigh.html#c.PyRun_InteractiveOne} PyRun_InteractiveOne} *)
 
   val interactive_loop: in_channel -> string -> unit
-  (** Wrapper for
+  (**
+     Channels suppose that the same C runtime has been used to compile both the
+     Python library and the OCaml runtime.
+     Warning: using channels is unsafe if runtimes differ (can lead to
+     segmentation fault).
+     Wrapper for
       {{:https://docs.python.org/3/c-api/veryhigh.html#c.PyRun_InteractiveLoop} PyRun_InteractiveLoop} *)
 
-  val simple_file: in_channel -> string -> unit
+  val simple_file: in_channel file -> string -> unit
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/veryhigh.html#c.PyRun_SimpleFile} PyRun_SimpleFile} *)
 
@@ -1419,6 +1466,62 @@ module Type: sig
       an object of type [ty] was expected, but [obj] was found. *)
 end
 
+module Marshal: sig
+  val read_object_from_file: in_channel file -> Object.t
+  (** [read_object_from_file f] reads one value from [f] and returns it.
+      Wrapper for
+      {{:https://docs.python.org/3/c-api/marshal.html#c.PyMarshal_ReadObjectFromFile} PyMarshal_ReadObjectFromFile} *)
+
+  val load: in_channel file -> Object.t
+  (** Equivalent to {!read_object_from_file}. *)
+
+  val read_last_object_from_file: in_channel file -> Object.t
+  (** [read_last_object_from_file f] reads a value from [f] and returns it.
+      That value should be the only value remaining to be read from [f] before
+      EOF.
+      Wrapper for
+      {{:https://docs.python.org/3/c-api/marshal.html#c.PyMarshal_ReadLastObjectFromFile} PyMarshal_ReadLastObjectFromFile} *)
+
+  val read_object_from_string: string -> int -> Object.t
+  (** [read_object_from_string s len] reads a value from the [len] first
+      bytes of [s].
+      Wrapper for
+      {{:https://docs.python.org/3/c-api/marshal.html#c.PyMarshal_ReadObjectFromString} PyMarshal_ReadObjectFromString} *)
+
+  val loads: string -> Object.t
+  (** [Py.Marshal.loads s] is equivalent to
+      [Py.Marshal.read_object_from_string s (String.length s)]. *)
+
+  val write_object_to_file: Object.t -> out_channel file -> int -> unit
+  (** [write_object_to_file value file version] writes the object [value] to
+      [file].
+      [version] indicates the file format
+      (use {!version} to get the current version).
+      Wrapper for
+      {{:https://docs.python.org/3/c-api/marshal.html#c.PyMarshal_WriteObjectToFile} PyMarshal_WriteObjectToFile} *)
+
+  val dump: ?version:int -> Object.t -> out_channel file -> unit
+  (** [Py.Marshal.dump ?version value file] is equivalent to
+      [Py.Marshal.write_object_to_file value file version].
+      By default, the version returned by {!version} is used. *)
+
+  val write_object_to_string: Object.t -> int -> Object.t
+  (** [write_object_to_file value file version] returns the Python string
+      representing the object [value].
+      [version] indicates the format
+      (use {!version} to get the current version).
+      Wrapper for
+      {{:https://docs.python.org/3/c-api/marshal.html#c.PyMarshal_WriteObjectToString} PyMarshal_WriteObjectToString} *)
+
+  val dumps: ?version:int -> Object.t -> string
+  (** [Py.Marshal.dumps ?version value] is equivalent to
+      [Py.String.to_string (Py.Marshal.write_object_to_string value version)].
+      By default, the version returned by {!version} is used. *)
+
+  val version: unit -> int
+  (** Returns the current file format version number. *)
+end
+
 val set_argv: string array -> unit
 (** [set_argv argv] set Python's [sys.argv]. *)
 
@@ -1427,27 +1530,54 @@ val last_value: unit -> Object.t
     toplevel.
     We have [Py.last_value = Py.Module.find (Py.Module.builtins ()) "_"]. *)
 
+val exception_printer: exn -> string option
+(** This printer pretty-prints [E (ty, value)] exceptions.
+    It is automatically registered to [Printexc.register_printer]. *)
+
 module Utils: sig
-    (** This module declares utility functions that does not require Python to
-        be initialized. *)
+  (** This module declares utility functions that does not require Python to
+      be initialized. *)
 
-val try_finally: ('a -> 'b) -> 'a -> ('c -> unit) -> 'c -> 'b
-(** [try_finally f arg finally finally_arg] calls [f arg], and returns the
-    result of [f].
-    [finally finally_arg] is always closed after [f] has been called, even if
-    [f] raises an exception. *)
+  val try_finally: ('a -> 'b) -> 'a -> ('c -> unit) -> 'c -> 'b
+  (** [try_finally f arg finally finally_arg] calls [f arg], and returns the
+      result of [f].
+      [finally finally_arg] is always closed after [f] has been called, even if
+      [f] raises an exception. *)
 
-val read_and_close: in_channel -> ('a -> 'b) -> 'a -> 'b
-(** [read_and_close channel f arg] calls [f arg], and returns the result of [f].
-    [channel] is always closed after [f] has been called, even if [f] raises an
-    exception.
-    This is an utility function that does not require Python to be
-    initialized. *)
+  val read_and_close: in_channel -> ('a -> 'b) -> 'a -> 'b
+  (** [read_and_close channel f arg] calls [f arg], and returns the result of
+      [f].
+      [channel] is always closed after [f] has been called, even if [f] raises
+      an exception.
+      This is an utility function that does not require Python to be
+      initialized. *)
 
-val write_and_close: out_channel -> ('a -> 'b) -> 'a -> 'b
-(** [write_and_close channel f arg] calls [f arg], and returns the result of
-    [f].
-    [channel] is always closed after [f] has been called, even if [f] raises an
-    exception.
- *)
+  val write_and_close: out_channel -> ('a -> 'b) -> 'a -> 'b
+  (** [write_and_close channel f arg] calls [f arg], and returns the result of
+      [f].
+      [channel] is always closed after [f] has been called, even if [f] raises
+      an exception. *)
+
+  val with_temp_file: string -> (string -> in_channel -> 'a) -> 'a
+  (** [with_temp_file s f] creates a temporary file with [s] as contents and
+      calls [f filename in_channel] where [filename] is the name of the
+      temporary file and [in_channel] is an input channel opened to read the
+      file. The file is deleted after the execution of [f] (even if [f]
+      raised an exception. *)
+
+  val with_pipe: (in_channel -> out_channel -> 'a) -> 'a
+  (** [with_pipe f] creates a pipe and calls [f] with the two ends of the
+      pipe. *)
+
+  val with_stdin_from: in_channel -> ('a -> 'b) -> 'a -> 'b
+  (** [with_stdin_from chan f arg] calls [f arg] with the standard input
+      redirected for reading from [chan]. *)
+
+  val with_channel_from_string: string -> (in_channel -> 'a) -> 'a
+  (** [with_channel_from_string s f] calls [f in_channel] where [in_channel]
+      is an input channel returning the contents of s. *)
+
+  val with_stdin_from_string: string -> ('a -> 'b) -> 'a -> 'b
+  (** [with_stdin_from_string s f arg] calls [f arg] with the standard input
+      redirected for reading from the contents of s. *)
 end

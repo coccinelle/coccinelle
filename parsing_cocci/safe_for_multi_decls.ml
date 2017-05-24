@@ -19,7 +19,7 @@ module V = Visitor_ast
 (* ------------------------------------------------------------------------- *)
 (* check if everything is removed, with no additions allowed *)
 
-let all_removed =
+let all_removed_recursor =
   let bind x y = x && y in
   let option_default = true in
   let do_nothing r k e = k e in
@@ -29,15 +29,20 @@ let all_removed =
     | Ast.MINUS(_,_,_,_) -> false
     | Ast.PLUS _ -> failwith "not possible"
     | Ast.CONTEXT(_,info) -> false in
-  let recursor =
-    V.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode mcode mcode mcode mcode
-      do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing in
-  recursor.V.combiner_declaration
+  V.combiner bind option_default
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode
+    do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+    do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+    do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+    do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+    do_nothing do_nothing
+
+let all_removed_decl =
+  all_removed_recursor.V.combiner_declaration
+
+let all_removed_field =
+  all_removed_recursor.V.combiner_field
 
 (* ------------------------------------------------------------------------- *)
 
@@ -53,8 +58,7 @@ let contains_modif =
   let do_nothing r k e = k e in
   let annotated_decl decl =
     match Ast.unwrap decl with
-      Ast.DElem(bef,_,_) -> bef
-    | _ -> failwith "not possible" in
+      Ast.DElem(bef,_,_) -> bef in
   let rule_elem r k re =
     (* Very obscure how this could arise.  Array type contains an expression
        and the expression could contain a statement. *)
@@ -76,16 +80,16 @@ let contains_modif =
     V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode mcode mcode mcode
-      do_nothing do_nothing do_nothing do_nothing do_nothing
+      do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+      do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+      do_nothing do_nothing init do_nothing
       do_nothing do_nothing do_nothing do_nothing
-      do_nothing do_nothing do_nothing do_nothing init do_nothing
-      do_nothing do_nothing
       do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_fullType
 
 let decl r k e =
   let e = k e in
-  if all_removed e
+  if all_removed_decl e
   then {e with Ast.safe_for_multi_decls = true}
   else
     match Ast.unwrap e with
@@ -101,6 +105,21 @@ let decl r k e =
 	then {e with Ast.safe_for_multi_decls = true}
 	else e
     | _ -> e
+
+let field r k e =
+  let e = k e in
+  if all_removed_field e
+  then {e with Ast.safe_for_multi_decls = true}
+  else
+    match Ast.unwrap e with
+      Ast.Field(ty,_,_bf,sem) ->
+	let ft_modif = contains_modif ty in
+	let sem_modif = mcode () sem in
+	if not(ft_modif || sem_modif)
+	then {e with Ast.safe_for_multi_decls = true}
+	else e
+    | _ -> e
+
 let mcode e = e
 let donothing r k e = k e
 
@@ -109,9 +128,9 @@ let process =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing decl donothing donothing
-      donothing donothing donothing donothing in
+      donothing donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing decl donothing field donothing
+      donothing donothing donothing donothing donothing in
   List.map fn.V.rebuilder_top_level
 
 let safe_for_multi_decls rules =

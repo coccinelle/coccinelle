@@ -154,9 +154,9 @@ let skip_rule_dec name outch inch =
  * rule_name is the new name which overrules the one in the Ast0 rule.
  *)
 let print_patch_decl outch rule_name = function
-  | Ast0.InitialScriptRule (nm,_,_,_,_)
-  | Ast0.FinalScriptRule (nm,_,_,_,_)
-  | Ast0.ScriptRule (nm,_,_,_,_,_) ->
+  | Ast0.InitialScriptRule (nm,_,_,_,_,_)
+  | Ast0.FinalScriptRule (nm,_,_,_,_,_)
+  | Ast0.ScriptRule (nm,_,_,_,_,_,_) ->
       failwith ("Error: The rule " ^ nm ^ " is a script rule ...!")
   | Ast0.CocciRule ((_,_,(isos,drop_isos,deps,_,exists)),_,_,_) ->
       let deps = Globals.add_patch_dependency deps in

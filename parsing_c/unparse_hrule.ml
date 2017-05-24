@@ -113,7 +113,7 @@ let get_function_name rule env =
 	(match Ast.unwrap args with
 	  [e] ->
 	    (match Ast.unwrap e with
-	      Ast.MetaExprList(nm,_,_,_) ->
+	      Ast.MetaExprList(nm,_,_,_,_) ->
 		(match (Ast.unwrap_mcode nm,Ast.get_mcodekind nm) with
 		  ((_,"ARGS"), Ast.PLUS _) ->
 		    (match Ast.unwrap fn with
@@ -133,9 +133,10 @@ let get_function_name rule env =
     (V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing donothing
-      donothing expression donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing
+      donothing expression donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing donothing
+      donothing
       donothing donothing donothing donothing donothing).V.combiner_top_level
       rule in
   match names with
@@ -324,7 +325,7 @@ let rename argids env =
 
 let print_one_type pr env ty =
   match Common.map_option Ast.unwrap (Ast.typeC_of_fullType_opt ty) with
-    Some (Ast_cocci.MetaType(name,keep,inherited)) ->
+    Some (Ast_cocci.MetaType(name,cstr,keep,inherited)) ->
       (try
 	match List.assoc name env with
 	  Ast_c.MetaTypeVal ty ->
@@ -349,7 +350,7 @@ let pp_len pr len =
   let pp_name (_,n) = pr n in
   match len with
     Ast.AnyLen -> ()
-  | Ast.MetaLen len -> pr "["; pp_name len; pr "]"
+  | Ast.MetaLen (len,_) -> pr "["; pp_name len; pr "]"
   | Ast.CstLen len -> pr "["; pr (string_of_int len); pr "]"
 
 let pp_meta_decl pr env decl =
@@ -391,9 +392,9 @@ let pp_meta_decl pr env decl =
       pp_name name; pr ";\n"
   | Ast.MetaErrDecl(ar, name) ->
       no_arity ar; pr "error "; pp_name name; pr ";\n"
-  | Ast.MetaExpDecl(ar, name, None) ->
+  | Ast.MetaExpDecl(ar, name, None, _bitfield) ->
       no_arity ar; pr "expression "; pp_name name; pr ";\n"
-  | Ast.MetaExpDecl(ar, name, types) ->
+  | Ast.MetaExpDecl(ar, name, types, _bitfield) ->
       no_arity ar; print_types pr env types; pp_name name; pr ";\n"
   | Ast.MetaIdExpDecl(ar, name, types) ->
       no_arity ar; pr "idexpression ";

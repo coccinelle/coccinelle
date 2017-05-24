@@ -75,10 +75,10 @@ and 'a dots = 'a list wrap
 
 and base_ident =
     Id            of string mcode
-  | MetaId        of Ast_cocci.meta_name mcode * Ast_cocci.general_constraint *
+  | MetaId        of Ast_cocci.meta_name mcode * constraints *
 	Ast_cocci.seed * pure
-  | MetaFunc      of Ast_cocci.meta_name mcode * Ast_cocci.general_constraint * pure
-  | MetaLocalFunc of Ast_cocci.meta_name mcode * Ast_cocci.general_constraint * pure
+  | MetaFunc      of Ast_cocci.meta_name mcode * constraints * pure
+  | MetaLocalFunc of Ast_cocci.meta_name mcode * constraints * pure
   | AsIdent       of ident * ident (* as ident, always metavar *)
   | DisjId        of string mcode * ident list *
                      string mcode list (* the |s *) * string mcode
@@ -122,9 +122,10 @@ and base_expression =
  	              initialiser
   | MetaErr        of Ast_cocci.meta_name mcode * constraints * pure
   | MetaExpr       of Ast_cocci.meta_name mcode * constraints *
-	              typeC list option * Ast_cocci.form * pure
+	typeC list option * Ast_cocci.form * pure *
+	listlen option (* bitfield *)
   | MetaExprList   of Ast_cocci.meta_name mcode (* only in arglists *) *
-	              listlen * pure
+	              listlen * constraints * pure
   | AsExpr         of expression * expression (* as expr, always metavar *)
   | AsSExpr        of expression * statement (* as expr, always metavar *)
   | EComma         of string mcode (* only in arglists *)
@@ -141,14 +142,10 @@ and base_expression =
 
 and expression = base_expression wrap
 
-and constraints =
-    NoConstraint
-  | NotIdCstrt     of Ast_cocci.general_constraint
-  | NotExpCstrt    of expression list
-  | SubExpCstrt    of Ast_cocci.meta_name list
+and constraints = expression Ast_cocci.generic_constraints
 
 and listlen =
-    MetaListLen of Ast_cocci.meta_name mcode
+    MetaListLen of Ast_cocci.meta_name mcode * constraints
   | CstListLen of int
   | AnyListLen
 
@@ -156,13 +153,14 @@ and base_string_fragment =
     ConstantFragment of string mcode
   | FormatFragment of string mcode (*%*) * string_format (* format *)
   | Strdots of string mcode
-  | MetaFormatList of string mcode (*%*) * Ast_cocci.meta_name mcode * listlen
+  | MetaFormatList of string mcode (*%*) * Ast_cocci.meta_name mcode *
+	constraints * listlen
 
 and string_fragment = base_string_fragment wrap
 
 and base_string_format =
     ConstantFormat of string mcode
-  | MetaFormat of Ast_cocci.meta_name mcode * Ast_cocci.general_constraint
+  | MetaFormat of Ast_cocci.meta_name mcode * constraints
 
 and string_format = base_string_format wrap
 
@@ -172,7 +170,7 @@ and base_assignOp =
     SimpleAssign of simpleAssignOp mcode
   | OpAssign of Ast_cocci.arithOp mcode
   | MetaAssign of
-      Ast_cocci.meta_name mcode * Ast_cocci.general_constraint * pure
+      Ast_cocci.meta_name mcode * constraints * pure
 and simpleAssignOp = string
 and assignOp = base_assignOp wrap
 
@@ -180,7 +178,7 @@ and base_binaryOp =
     Arith of Ast_cocci.arithOp mcode
   | Logical of Ast_cocci.logicalOp mcode
   | MetaBinary of
-      Ast_cocci.meta_name mcode * Ast_cocci.general_constraint * pure
+      Ast_cocci.meta_name mcode * constraints * pure
 and binaryOp = base_binaryOp wrap
 
 (* --------------------------------------------------------------------- *)
@@ -205,9 +203,10 @@ and base_typeC =
 	string mcode (* { *) * expression dots * string mcode (* } *)
   | StructUnionName of Ast_cocci.structUnion mcode * ident option (* name *)
   | StructUnionDef  of typeC (* either StructUnionName or metavar *) *
-	string mcode (* { *) * declaration dots * string mcode (* } *)
+	string mcode (* { *) * field dots * string mcode (* } *)
   | TypeName        of string mcode
-  | MetaType        of Ast_cocci.meta_name mcode * pure
+  | MetaType        of Ast_cocci.meta_name mcode * constraints
+	* pure
   | AsType          of typeC * typeC (* as type, always metavar *)
   | DisjType        of string mcode * typeC list * (* only after iso *)
                        string mcode list (* the |s *)  * string mcode
@@ -221,9 +220,7 @@ and typeC = base_typeC wrap
    split out into multiple declarations of a single variable each. *)
 
 and base_declaration =
-    MetaDecl   of Ast_cocci.meta_name mcode * pure (* variables *)
-  | MetaField  of Ast_cocci.meta_name mcode * pure (* structure fields *)
-  | MetaFieldList of Ast_cocci.meta_name mcode * listlen * pure
+    MetaDecl   of Ast_cocci.meta_name mcode * constraints * pure (* variables *)
   | AsDecl        of declaration * declaration
   | Init       of Ast_cocci.storage mcode option * typeC * ident *
 	string mcode (*=*) * initialiser * string mcode (*;*)
@@ -245,18 +242,38 @@ and base_declaration =
   | Typedef of string mcode (* typedef *) * typeC * typeC * string mcode (*;*)
   | DisjDecl   of string mcode * declaration list * string mcode list *
 	          string mcode
-  | Ddots      of string mcode (* ... *) * (string mcode * string mcode *
-                  declaration) option (* whencode *)
+  | ConjDecl   of string mcode * declaration list * string mcode list *
+	          string mcode
   | OptDecl    of declaration
 
 and declaration = base_declaration wrap
 
 (* --------------------------------------------------------------------- *)
+(* Field declaration *)
+
+and base_field =
+  | MetaField  of Ast_cocci.meta_name mcode * constraints *
+	pure (* structure fields *)
+  | MetaFieldList of Ast_cocci.meta_name mcode * listlen * constraints * pure
+  | Field     of typeC * ident option * bitfield option * string mcode (* ; *)
+  | DisjField   of string mcode * field list * string mcode list *
+	          string mcode
+  | ConjField   of string mcode * field list * string mcode list *
+	          string mcode
+  | Fdots      of string mcode (* ... *) * (string mcode * string mcode *
+                  field) option (* whencode *)
+  | OptField    of field
+
+and bitfield = string mcode (* : *) * expression
+
+and field = base_field wrap
+
+(* --------------------------------------------------------------------- *)
 (* Initializers *)
 
 and base_initialiser =
-    MetaInit of Ast_cocci.meta_name mcode * pure
-  | MetaInitList of Ast_cocci.meta_name mcode * listlen * pure
+    MetaInit of Ast_cocci.meta_name mcode * constraints * pure
+  | MetaInitList of Ast_cocci.meta_name mcode * listlen * constraints * pure
   | AsInit of initialiser * initialiser (* as init, always metavar *)
   | InitExpr of expression
   | InitList of string mcode (*{*) * initialiser_list * string mcode (*}*) *
@@ -288,8 +305,8 @@ and initialiser_list = initialiser dots
 and base_parameterTypeDef =
     VoidParam     of typeC
   | Param         of typeC * ident option
-  | MetaParam     of Ast_cocci.meta_name mcode * pure
-  | MetaParamList of Ast_cocci.meta_name mcode * listlen * pure
+  | MetaParam     of Ast_cocci.meta_name mcode * constraints * pure
+  | MetaParamList of Ast_cocci.meta_name mcode * listlen * constraints * pure
   | AsParam       of parameterTypeDef * expression (* expr, always metavar *)
   | PComma        of string mcode
   | Pdots         of string mcode (* ... *)
@@ -304,7 +321,7 @@ and parameter_list = parameterTypeDef dots
 
 and base_define_param =
     DParam        of ident
-  | MetaDParamList of Ast_cocci.meta_name mcode * listlen * pure
+  | MetaDParamList of Ast_cocci.meta_name mcode * listlen * constraints * pure
   | DPComma       of string mcode
   | DPdots        of string mcode (* ... *)
   | OptDParam     of define_param
@@ -359,9 +376,9 @@ and base_statement =
 	             string mcode (* ; *)
   | Exec          of string mcode (* EXEC *) * string mcode (* language *) *
 	             exec_code dots * string mcode (* ; *)
-  | MetaStmt      of Ast_cocci.meta_name mcode * pure
+  | MetaStmt      of Ast_cocci.meta_name mcode * constraints * pure
   | MetaStmtList  of Ast_cocci.meta_name mcode (*only in statement lists*) *
-	             listlen * pure
+	             listlen * constraints * pure
   | AsStmt        of statement * statement (* as statement, always metavar *)
   | Exp           of expression  (* only in dotted statement lists *)
   | TopExp        of expression (* for macros body *)
@@ -441,7 +458,7 @@ and exec_code = base_exec_code wrap
 (* Positions *)
 
 and meta_pos =
-    MetaPos of Ast_cocci.meta_name mcode * Ast_cocci.general_constraint *
+    MetaPos of Ast_cocci.meta_name mcode * constraints *
 	Ast_cocci.meta_collect
 
 (* --------------------------------------------------------------------- *)
@@ -470,30 +487,32 @@ and parsed_rule =
 	(Ast_cocci.script_meta_name *
 	   Ast_cocci.meta_name * Ast_cocci.metavar * Ast_cocci.mvinit)
 	    list (*inherited vars*) *
-	Ast_cocci.meta_name list (*script vars*) *
+	Ast_cocci.meta_name list (*script vars*) * Ast_cocci.script_position *
 	string
   | InitialScriptRule of string (* name *) * string * Ast_cocci.dependency *
 	(Ast_cocci.script_meta_name *
 	   Ast_cocci.meta_name * Ast_cocci.metavar * Ast_cocci.mvinit)
-	     list (*virtual vars*) *
+	     list (*virtual vars*) * Ast_cocci.script_position *
 	string
   | FinalScriptRule of string (* name *) * string * Ast_cocci.dependency *
 	(Ast_cocci.script_meta_name *
 	   Ast_cocci.meta_name * Ast_cocci.metavar * Ast_cocci.mvinit)
-	     list (*virtual vars*) *
+	     list (*virtual vars*) * Ast_cocci.script_position *
 	string
 
 (* --------------------------------------------------------------------- *)
 
-and dependency =
+and dep =
     Dep of string (* rule applies for the current binding *)
-  | AntiDep of dependency (* rule doesn't apply for the current binding *)
+  | AntiDep of dep (* rule doesn't apply for the current binding *)
   | EverDep of string (* rule applies for some binding *)
   | NeverDep of string (* rule never applies for any binding *)
-  | AndDep of dependency * dependency
-  | OrDep of dependency * dependency
+  | AndDep of dep * dep
+  | OrDep of dep * dep
   | FileIn of string
-  | NoDep | FailDep
+
+and dependency =
+    NoDep | FailDep | ExistsDep of dep | ForallDep of dep
 
 (* --------------------------------------------------------------------- *)
 
@@ -503,6 +522,7 @@ and anything =
   | DotsParamTag of parameterTypeDef dots
   | DotsStmtTag of statement dots
   | DotsDeclTag of declaration dots
+  | DotsFieldTag of field dots
   | DotsCaseTag of case_line dots
   | DotsDefParamTag of define_param dots
   | IdentTag of ident
@@ -515,6 +535,7 @@ and anything =
   | ParamTag of parameterTypeDef
   | InitTag of initialiser
   | DeclTag of declaration
+  | FieldTag of field
   | StmtTag of statement
   | ForInfoTag of forinfo
   | CaseLineTag of case_line
@@ -533,6 +554,7 @@ val dotsInit : initialiser dots -> anything
 val dotsParam : parameterTypeDef dots -> anything
 val dotsStmt : statement dots -> anything
 val dotsDecl : declaration dots -> anything
+val dotsField : field dots -> anything
 val dotsCase : case_line dots -> anything
 val dotsDefParam : define_param dots -> anything
 val ident : ident -> anything
@@ -543,6 +565,7 @@ val typeC : typeC -> anything
 val param : parameterTypeDef -> anything
 val ini : initialiser -> anything
 val decl : declaration -> anything
+val field : field -> anything
 val stmt : statement -> anything
 val forinfo : forinfo -> anything
 val case_line : case_line -> anything

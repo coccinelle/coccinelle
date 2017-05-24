@@ -505,7 +505,7 @@ let rec expression e =
   | Ast.MetaErr(name,_,_,_) ->
       failwith "metaErr not handled"
 
-  | Ast.MetaExpr (name,_,_,_typedontcare,_formdontcare,_) ->
+  | Ast.MetaExpr (name,_,_,_typedontcare,_formdontcare,_,_bitfield) ->
       handle_metavar name (function
         | Ast_c.MetaExprVal ((((e, _), _) as exp),_,_) ->
 	    if prec_of_c e < prec then
@@ -519,7 +519,7 @@ let rec expression e =
         | _ -> raise (Impossible 145)
       )
 
-  | Ast.MetaExprList (name,_,_,_) ->
+  | Ast.MetaExprList (name,_,_,_,_) ->
       handle_metavar name (function
         | Ast_c.MetaExprListVal args ->
             pretty_print_c.Pretty_print_c.arg_list args
@@ -580,7 +580,7 @@ and string_fragment e =
       mcode print_string pct;
       string_format fmt
   | Ast.Strdots dots -> mcode print_string dots
-  | Ast.MetaFormatList(pct,name,lenname,_,_) ->
+  | Ast.MetaFormatList(pct,name,lenname,_,_,_) ->
       (*mcode print_string pct;*)
       handle_metavar name (function
 	  Ast_c.MetaFragListVal(frags) ->
@@ -722,10 +722,10 @@ and typeC ty =
   | Ast.StructUnionDef(ty,lb,decls,rb) ->
       fullType ty; ft_space ty;
       mcode print_string lb;
-      dots_before_and_after force_newline annotated_decl decls;
+      dots_before_and_after force_newline annotated_field decls;
       mcode print_string rb
   | Ast.TypeName(name)-> mcode print_string name
-  | Ast.MetaType(name,_,_) ->
+  | Ast.MetaType(name,_,_,_) ->
       handle_metavar name  (function
           Ast_c.MetaTypeVal exp ->
             pretty_print_c.Pretty_print_c.ty exp
@@ -798,7 +798,7 @@ and print_named_type ty id =
 		| _ -> failwith "complex array types not supported")
 	    | _ -> typeC ty; ty_space ty; ident id; k () in
 	  loop ty1 (function _ -> ())
-      | Ast.MetaType(name,_,_) ->
+      | Ast.MetaType(name,_,_,_) ->
 	  handle_metavar name  (function
               Ast_c.MetaTypeVal ty ->
 		pretty_print_c.Pretty_print_c.type_with_ident ty
@@ -821,7 +821,7 @@ and ft_space ty =
       let isptr =
 	match Ast.unwrap ty with
 	  Ast.Pointer(_,_) -> true
-	| Ast.MetaType(name,_,_) ->
+	| Ast.MetaType(name,_,_,_) ->
 	    let (res,name_string,line,lcol,rcol) = lookup_metavar name in
 	    (match res with
 	      None ->
@@ -839,25 +839,12 @@ and ft_space ty =
 
 and declaration d =
   match Ast.unwrap d with
-    Ast.MetaDecl(name,_,_) ->
+    Ast.MetaDecl(name,_,_,_) ->
       handle_metavar name
 	(function
 	    Ast_c.MetaDeclVal d ->
               pretty_print_c.Pretty_print_c.decl d
           | _ -> raise (Impossible 148))
-  | Ast.MetaField(name,_,_) ->
-      handle_metavar name
-	(function
-	    Ast_c.MetaFieldVal f ->
-              pretty_print_c.Pretty_print_c.field f
-          | _ -> raise (Impossible 149))
-
-  | Ast.MetaFieldList(name,_,_,_) ->
-      handle_metavar name
-	(function
-	    Ast_c.MetaFieldListVal f ->
-	      print_between force_newline pretty_print_c.Pretty_print_c.field f
-          | _ -> raise (Impossible 150))
 
   | Ast.AsDecl(decl,asdecl) -> declaration decl
 
@@ -903,25 +890,61 @@ and declaration d =
       mcode print_string stg;
       fullType ty; pr_space(); typeC id;
       mcode print_string sem
-  | Ast.DisjDecl(_) -> raise CantBeInPlus
+  | Ast.DisjDecl(_) | Ast.ConjDecl(_) -> raise CantBeInPlus
   | Ast.OptDecl(decl) -> raise CantBeInPlus
 
 and annotated_decl d =
   match Ast.unwrap d with
     Ast.DElem(_,_,decl) -> declaration decl
-  | Ast.Ddots(_,_) -> raise CantBeInPlus
+
+(* --------------------------------------------------------------------- *)
+(* Field declaration *)
+
+and field d =
+  match Ast.unwrap d with
+    Ast.MetaField(name,_,_,_) ->
+      handle_metavar name
+	(function
+	    Ast_c.MetaFieldVal f ->
+	      pretty_print_c.Pretty_print_c.field f
+	  | _ -> raise (Impossible 149))
+
+  | Ast.MetaFieldList(name,_,_,_,_) ->
+      handle_metavar name
+	(function
+	    Ast_c.MetaFieldListVal f ->
+	      print_between force_newline pretty_print_c.Pretty_print_c.field f
+	  | _ -> raise (Impossible 150))
+  | Ast.Field(ty,id,bf,sem) ->
+      begin
+	match id with
+	  None -> fullType ty
+	| Some id -> print_named_type ty id
+      end;
+      let bitfield (c, e) =
+	mcode print_string c;
+	expression e in
+      Common.do_option bitfield bf;
+      mcode print_string sem
+  | Ast.DisjField(_) | Ast.ConjField(_) -> raise CantBeInPlus
+  | Ast.OptField(decl) -> raise CantBeInPlus
+
+and annotated_field d =
+  match Ast.unwrap d with
+    Ast.FElem(_,_,decl) -> field decl
+  | Ast.Fdots(_,_) -> raise CantBeInPlus
 
 (* --------------------------------------------------------------------- *)
 (* Initialiser *)
 
 and initialiser nlcomma i =
   match Ast.unwrap i with
-    Ast.MetaInit(name,_,_) ->
+    Ast.MetaInit(name,_,_,_) ->
       handle_metavar name  (function
           Ast_c.MetaInitVal ini ->
             pretty_print_c.Pretty_print_c.init ini
         | _ -> raise (Impossible 151))
-  | Ast.MetaInitList(name,_,_,_) ->
+  | Ast.MetaInitList(name,_,_,_,_) ->
       handle_metavar name  (function
           Ast_c.MetaInitListVal ini ->
 	    pretty_print_c.Pretty_print_c.init_list ini
@@ -987,13 +1010,13 @@ and parameterTypeDef p =
   | Ast.Param(ty,Some id) -> print_named_type ty id
   | Ast.Param(ty,None) -> fullType ty
 
-  | Ast.MetaParam(name,_,_) ->
+  | Ast.MetaParam(name,_,_,_) ->
       handle_metavar name
 	(function
 	    Ast_c.MetaParamVal p ->
               pretty_print_c.Pretty_print_c.param p
           | _ -> raise (Impossible 153))
-  | Ast.MetaParamList(name,_,_,_) ->
+  | Ast.MetaParamList(name,_,_,_,_) ->
       handle_metavar name
 	(function
 	    Ast_c.MetaParamListVal p ->
@@ -1136,16 +1159,16 @@ and rule_elem arity re =
 	 print_text "\n)")
       else raise CantBeInPlus
 
-  | Ast.MetaRuleElem(name,_,_) ->
+  | Ast.MetaRuleElem(name,_,_,_) ->
       raise (Impossible 155)
 
-  | Ast.MetaStmt(name,_,_,_) ->
+  | Ast.MetaStmt(name,_,_,_,_) ->
       handle_metavar name (function
         | Ast_c.MetaStmtVal(stm,_) ->
             pretty_print_c.Pretty_print_c.statement stm
         | _ -> raise (Impossible 156))
 
-  | Ast.MetaStmtList(name,_,_,_) ->
+  | Ast.MetaStmtList(name,_,_,_,_) ->
       handle_metavar name (function
         | Ast_c.MetaStmtListVal(statxs,_) ->
             pretty_print_c.Pretty_print_c.statement_seq_list statxs
@@ -1176,7 +1199,7 @@ and print_define_parameters params =
 and print_define_param param =
   match Ast.unwrap param with
     Ast.DParam(id) -> ident id
-  | Ast.MetaDParamList(name,_,_,_) ->
+  | Ast.MetaDParamList(name,_,_,_,_) ->
       handle_metavar name
 	(function
 	    Ast_c.MetaDParamListVal p ->
@@ -1198,7 +1221,7 @@ let indent_if_needed s f =
       Ast.Seq(lbrace,body,rbrace) -> true
     | Ast.Atomic s ->
 	(match Ast.unwrap s with
-	| Ast.MetaStmt(name,_,_,_) ->
+	| Ast.MetaStmt(name,_,_,_,_) ->
 	    let (res,name_string,line,lcol,rcol) = lookup_metavar name in
 	    (match res with
 	      None ->
@@ -1380,6 +1403,7 @@ let pp_any = function
 
   | Ast.InitTag(x) -> initialiser false x; false
   | Ast.DeclarationTag(x) -> declaration x; false
+  | Ast.FieldTag(x) -> field x; false
 
   | Ast.StorageTag(x) -> storage x unknown unknown; false
   | Ast.IncFileTag(x) -> inc_file x unknown unknown; false
@@ -1432,6 +1456,7 @@ let pp_any = function
   | Ast.ParamDotsTag(x) -> parameter_list x; false
   | Ast.StmtDotsTag(x) -> dots force_newline (statement "") x; false
   | Ast.AnnDeclDotsTag(x) -> dots force_newline annotated_decl x; false
+  | Ast.AnnFieldDotsTag(x) -> dots force_newline annotated_field x; false
   | Ast.DefParDotsTag(x) -> dots (fun _ -> ()) print_define_param x; false
 
   | Ast.TypeCTag(x) -> typeC x; false

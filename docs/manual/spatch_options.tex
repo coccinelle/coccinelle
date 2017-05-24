@@ -240,6 +240,11 @@ path name, beginning with /, it is used as is.
   one.  Spatch collects the files in the directory using {\tt find} and
   does not follow symbolic links.}
 
+\normal{-{}-ignore $\langle$string$\rangle$}{Specify a file name prefix to
+  ignore.  This argument can be used multiple times.  When file groups are
+  used, the group is only rejected if the ignore specifications cause all
+  files in the group to be ignored.}
+
 \rare{-{}-file-groups}{Specify a file that contains the list of files to
   process.  Files should be listed one per line.  Blank lines should be
   used to separate the files into \textit{groups}.  All files within a
@@ -605,6 +610,9 @@ stars are used in column 0 rather than {\tt -} and {\tt +}, then the {\tt
   information is available.  If this information is not provided, then the
   default indentation is a tab.  This option is thus particularly relevant
   to projects that don't use tabs.}
+
+\normal{-{}-max-width}{The maximum line width for generated code.  78 by
+  default.}
 
 \rare{-o $\langle$file$\rangle$}{ This causes the transformed code to be
   placed in the file {\tt file}.  The difference between the original code

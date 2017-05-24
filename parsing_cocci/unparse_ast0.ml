@@ -234,7 +234,7 @@ let rec expression e =
 	  mcode print_string_box lp; typeC ty; close_box();
 	  mcode print_string rp; initialiser init
       | Ast0.MetaErr(name,_,_) -> mcode print_meta name
-      | Ast0.MetaExpr(name,_,ty,_,_pure) ->
+      | Ast0.MetaExpr(name,_,ty,_,_pure,_bitfield) ->
 	  mcode print_meta name; print_types ty(*;
 	  print_string "^";
 	  (match pure with
@@ -242,7 +242,7 @@ let rec expression e =
 	  | Ast0.Impure -> print_string "impure"
 	  | Ast0.Context -> print_string "context"
 	  | Ast0.PureContext -> print_string "pure_context")*)
-      | Ast0.MetaExprList(name,_,_) -> mcode print_meta name
+      | Ast0.MetaExprList(name,_,_,_) -> mcode print_meta name
       | Ast0.EComma(cm) -> mcode print_string cm; print_space()
       | Ast0.DisjExpr(_,exp_list,_,_) -> do_disj exp_list expression "|"
       | Ast0.ConjExpr(_,exp_list,_,_) -> do_disj exp_list expression "&"
@@ -274,7 +274,7 @@ and string_fragment e =
       mcode print_string pct;
       string_format fmt
   | Ast0.Strdots dots -> mcode print_string dots
-  | Ast0.MetaFormatList(pct,name,lenname) ->
+  | Ast0.MetaFormatList(pct,name,_,lenname) ->
       mcode print_string pct;
       mcode print_meta name
 
@@ -327,10 +327,10 @@ and typeC t =
 	  print_option (function x -> ident x; print_string " ") name
       | Ast0.StructUnionDef(ty,lb,decls,rb) ->
 	  typeC ty; mcode print_string lb;
-	  dots force_newline declaration decls;
+	  dots force_newline field decls;
 	  mcode print_string rb
       | Ast0.TypeName(name)-> mcode print_string name; print_string " "
-      | Ast0.MetaType(name,_)-> mcode print_meta name; print_string " "
+      | Ast0.MetaType(name,_,_)-> mcode print_meta name; print_string " "
       | Ast0.DisjType(_,types,_,_) -> do_disj types typeC "|"
       | Ast0.OptType(ty) -> print_string "?"; typeC ty
       | Ast0.AsType(ty,asty) -> typeC ty; print_string "@"; typeC asty)
@@ -363,8 +363,7 @@ and declaration d =
   print_context d
     (function _ ->
       match Ast0.unwrap d with
-	Ast0.MetaDecl(name,_) | Ast0.MetaField(name,_)
-      | Ast0.MetaFieldList(name,_,_) ->
+	Ast0.MetaDecl(name,_,_) ->
 	  mcode print_meta name
       |	Ast0.Init(stg,ty,id,eq,ini,sem) ->
 	  print_option (mcode U.storage) stg;
@@ -400,15 +399,46 @@ and declaration d =
 	  mcode print_string sem
       | Ast0.DisjDecl(_,decls,_,_) ->
 	  do_disj decls declaration "|"
-      | Ast0.Ddots(dots,Some (_,_,whencode)) ->
-	  mcode print_string dots; print_string "   when != ";
-	  declaration whencode
-      | Ast0.Ddots(dots,None) -> mcode print_string dots
+      | Ast0.ConjDecl(_,decls,_,_) ->
+	  do_disj decls declaration "&"
       | Ast0.OptDecl(decl) -> print_string "?"; declaration decl
       | Ast0.AsDecl(decl,asdecl) ->
 	  declaration decl; print_string "@"; declaration asdecl)
 
 and declaration_dots l = dots (function _ -> ()) declaration l
+
+(* --------------------------------------------------------------------- *)
+(* Field declaration *)
+
+and field d =
+  print_context d
+    (function _ ->
+      match Ast0.unwrap d with
+	Ast0.MetaField(name,_,_)
+      | Ast0.MetaFieldList(name,_,_,_) ->
+	  mcode print_meta name
+      | Ast0.Field(ty,id,bf,sem) ->
+	  begin
+	    match id with
+	      None -> typeC ty
+	    | Some id -> print_named_type ty id
+	  end;
+	  let bitfield (c, e) =
+	    mcode print_string c;
+	    expression e in
+	  Common.do_option bitfield bf;
+	  mcode print_string sem
+      | Ast0.DisjField(_,fields,_,_) ->
+	  do_disj fields field "|"
+      | Ast0.ConjField(_,fields,_,_) ->
+	  do_disj fields field "&"
+      | Ast0.OptField(decl) -> print_string "?"; field decl
+      | Ast0.Fdots(dots,Some (_,_,whencode)) ->
+	  mcode print_string dots; print_string "   when != ";
+	  field whencode
+      | Ast0.Fdots(dots,None) -> mcode print_string dots)
+
+and field_dots l = dots (function _ -> ()) field l
 
 (* --------------------------------------------------------------------- *)
 (* Initialiser *)
@@ -417,8 +447,8 @@ and initialiser i =
   print_context i
     (function _ ->
       match Ast0.unwrap i with
-	Ast0.MetaInit(name,_)-> mcode print_meta name; print_string " "
-      |	Ast0.MetaInitList(name,_,_)-> mcode print_meta name; print_string " "
+	Ast0.MetaInit(name,_,_)-> mcode print_meta name; print_string " "
+      |	Ast0.MetaInitList(name,_,_,_)-> mcode print_meta name; print_string " "
       |	Ast0.InitExpr(exp) -> expression exp
       | Ast0.InitList(lb,initlist,rb,ordered) ->
           (*doesn't show commas dropped in unordered case*)
@@ -459,8 +489,8 @@ and parameterTypeDef p =
 	Ast0.VoidParam(ty) -> typeC ty
       | Ast0.Param(ty,Some id) -> print_named_type ty id
       |	Ast0.Param(ty,None) -> typeC ty
-      | Ast0.MetaParam(name,_) -> mcode print_meta name
-      | Ast0.MetaParamList(name,_,_) -> mcode print_meta name
+      | Ast0.MetaParam(name,_,_) -> mcode print_meta name
+      | Ast0.MetaParamList(name,_,_,_) -> mcode print_meta name
       | Ast0.PComma(cm) -> mcode print_string cm; print_space()
       | Ast0.Pdots(dots) -> mcode print_string dots
       | Ast0.OptParam(param) -> print_string "?"; parameterTypeDef param
@@ -567,7 +597,7 @@ and statement arity s =
 	  mcode print_string lang; print_string " ";
 	  dots (function _ -> print_string " ") exec_code code;
 	  mcode print_string sem
-      | Ast0.MetaStmt(name,pure) ->
+      | Ast0.MetaStmt(name,_,pure) ->
 	  print_string arity; mcode print_meta name;(*
 	  print_string "^";
 	  (match pure with
@@ -575,7 +605,7 @@ and statement arity s =
 	  | Ast0.Impure -> print_string "impure"
 	  | Ast0.Context -> print_string "context"
 	  | Ast0.PureContext -> print_string "pure_context")*)
-      | Ast0.MetaStmtList(name,_,_) ->
+      | Ast0.MetaStmtList(name,_,_,_) ->
 	  print_string arity;  mcode print_meta name
       | Ast0.Disj(starter,statement_dots_list,_,ender) ->
 	  print_string arity;
@@ -650,7 +680,7 @@ and print_define_parameters params =
 and print_define_param param =
   match Ast0.unwrap param with
     Ast0.DParam(id) -> ident id
-  | Ast0.MetaDParamList(name,_,_) -> mcode print_meta name
+  | Ast0.MetaDParamList(name,_,_,_) -> mcode print_meta name
   | Ast0.DPComma(comma) -> mcode print_string comma
   | Ast0.DPdots(dots) -> mcode print_string dots
   | Ast0.OptDParam(dp) -> print_string "?"; print_define_param dp
@@ -738,6 +768,7 @@ let rec unparse_anything x =
       print_string "StmDots:"; force_newline();
       statement_dots d
   | Ast0.DotsDeclTag(d) -> declaration_dots d
+  | Ast0.DotsFieldTag(d) -> field_dots d
   | Ast0.DotsCaseTag(d) -> case_dots d
   | Ast0.DotsDefParamTag(d) -> define_param_dots d
   | Ast0.IdentTag(d)    -> ident d
@@ -752,6 +783,7 @@ let rec unparse_anything x =
   | Ast0.ParamTag(d) -> parameterTypeDef d
   | Ast0.InitTag(d)  -> initialiser d
   | Ast0.DeclTag(d)  -> declaration d
+  | Ast0.FieldTag(d)  -> field d
   | Ast0.StmtTag(d)  ->
       print_string "Stm:"; force_newline();
       statement "" d

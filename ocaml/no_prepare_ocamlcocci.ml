@@ -7,11 +7,11 @@ let prepare coccifile code =
     List.fold_left
       (function prev ->
 	function
-	    Ast_cocci.ScriptRule (name,"ocaml",deps,mv,script_vars,code) ->
+	    Ast_cocci.ScriptRule (name,"ocaml",deps,mv,script_vars,_pos,code) ->
 	      code :: prev
-	  | Ast_cocci.InitialScriptRule (name,"ocaml",deps,mvs,code) ->
+	  | Ast_cocci.InitialScriptRule (name,"ocaml",deps,mvs,_pos,code) ->
 	      code :: prev
-	  | Ast_cocci.FinalScriptRule (name,"ocaml",deps,mvs,code) ->
+	  | Ast_cocci.FinalScriptRule (name,"ocaml",deps,mvs,_pos,code) ->
 	      code :: prev
 	  | _ -> prev)
       [] code in

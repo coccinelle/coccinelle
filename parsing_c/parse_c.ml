@@ -148,8 +148,6 @@ let commentized xs = xs +> Common.tail_map_filter (function
 	      [Token_c.CppAttr;Token_c.CppPassingNormal;Token_c.CppMacro]
             ||
             (s =~ "__.*")
-
-
         | 5 ->
 	    (match cppkind with
 	      Token_c.CppAttr | Token_c.CppPassingNormal
@@ -158,10 +156,6 @@ let commentized xs = xs +> Common.tail_map_filter (function
 	    | _ -> false)
             ||
             (s =~ "__.*")
-
-
-
-
         | _ -> failwith "not valid level passing number"
       in
       if legal_passing then None else Some (ii.Ast_c.pinfo)
@@ -175,7 +169,6 @@ let commentized xs = xs +> Common.tail_map_filter (function
                 Some (ii.Ast_c.pinfo)
             )
         *)
-
 
   | Parser_c.TCommentMisc ii
   | Parser_c.TAction ii
@@ -203,8 +196,6 @@ let count_lines_commentized xs =
     !count
   end
 
-
-
 let print_commentized xs =
   let line = ref (-1) in
   begin
@@ -230,9 +221,6 @@ let print_commentized xs =
 	| _ -> ());
     if ys<>[] then pr2 "";
   end
-
-
-
 
 (*****************************************************************************)
 (* Lexing only *)
@@ -970,7 +958,7 @@ module StringSet : Set.S with type elt = string = Set.Make(String)
 
 module StringMap : Map.S with type key = string = Map.Make(String)
 
-let header_cache = Hashtbl.create 101
+let header_cache = ("header_cache", ref 0, Hashtbl.create(101))
 
 let tree_stack = ref []
 let seen_files = ref []
@@ -984,8 +972,8 @@ let rec _parse_print_error_heuristic2 saved_typedefs saved_macros
     let cached_result =
       if use_header_cache
       then
-	try Some (Hashtbl.find header_cache file) with
-	  Not_found -> None
+	try Some (Includes.cache_find header_cache file)
+	with Not_found -> None
       else None in
     match cached_result with
       | None ->
@@ -993,7 +981,7 @@ let rec _parse_print_error_heuristic2 saved_typedefs saved_macros
           _parse_print_error_heuristic2bis saved_typedefs saved_macros
             parse_strings file use_header_cache in
         (if use_header_cache && cache
-	then Hashtbl.add header_cache file result);
+	then Includes.cache_add header_cache file result);
         tree_stack := result :: !tree_stack;
         Some result
       | Some result ->
@@ -1300,9 +1288,21 @@ let parse_c_and_cpp_keep_typedefs td macs parse_strings cache a =
 (*****************************************************************************)
 (* Same but faster cos memoize stuff *)
 (*****************************************************************************)
-let parse_cache typedefs parse_strings cache file =
+let parse_cache typedefs parse_strings cache file has_changes =
+  (* Normally, if there are no changes to headers, we should not have to parse
+     then again.  The problem is that headers have effects, eg on inferred
+     typedefs, and we aren't storing and then reapplying those effects.
+     So we have to reparse the header files again, at great runtime cost, to
+     get those effects.  It also seems that when a header file is retrieved
+     from the cache, then there is no runtime processing, eg matching, of at
+     least the header files that it includes.  That is, for recursive includes,
+     need not only the AST of the header file itself, but also of what it
+     includes, and at least the latter is not coming in the cached case. *)
+  let has_changes = true in
   if not !Flag_parsing_c.use_cache
-  then parse_print_error_heuristic typedefs None parse_strings cache file false
+  then
+    parse_print_error_heuristic typedefs None parse_strings cache file
+      (not has_changes || !Includes.include_headers_for_types)
   else
   let _ = pr2_once "TOFIX: use_cache is not sensitive to changes in the considered macros, include files, etc" in
   let need_no_changed_files =

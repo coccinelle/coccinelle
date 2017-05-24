@@ -33,8 +33,9 @@ let cprogram_of_file saved_typedefs saved_macros parse_strings cache file =
       (Some saved_macros) parse_strings cache file in
   parse_info.Parse_c.parse_trees
 
-let cprogram_of_file_cached saved_typedefs parse_strings cache file =
-  Parse_c.parse_cache saved_typedefs parse_strings cache file
+let cprogram_of_file_cached saved_typedefs parse_strings cache file
+    has_changes =
+  Parse_c.parse_cache saved_typedefs parse_strings cache file has_changes
 
 let cfile_of_program program2_with_ppmethod outf =
   Unparse_c.pp_program program2_with_ppmethod outf
@@ -52,7 +53,7 @@ virtual rules and virtual_env *)
 let sp_of_file2 file iso =
   let redo _ =
     let new_code =
-      let (_,xs,_,_,_,_,_,_) as res = Parse_cocci.process file iso false in
+      let (_,xs,_,_,_,_,_,_,_) as res = Parse_cocci.process file iso false in
       (* if there is already a compiled ML code, do nothing and use that *)
       try let _ = Hashtbl.find _h_ocaml_init (file,iso) in res
       with Not_found ->
@@ -368,7 +369,7 @@ let show_or_not_rule_name ast rulenb =
       let name =
 	match ast with
 	  Ast_cocci.CocciRule (nm, (deps, drops, exists), x, _, _) -> nm
-	| Ast_cocci.ScriptRule (nm, _, _, _, _, _) -> nm
+	| Ast_cocci.ScriptRule (nm, _, _, _, _, _,_) -> nm
 	| _ -> string_of_int rulenb in
       Common.pr_xxxxxxxxxxxxxxxxx ();
       pr (name ^ " = ");
@@ -539,7 +540,7 @@ let worth_trying2 cfiles (tokens,_,query,_) =
   (match (res,tokens) with
     (false,Some tokens) ->
       pr2_once ("Expected tokens " ^ (String.concat " " tokens));
-      pr2 ("Skipping:" ^ (String.concat " " cfiles))
+      pr2 ("Skipping: " ^ (String.concat " " cfiles))
   | _ -> ());
   res
 
@@ -584,8 +585,8 @@ let sp_contain_typed_metavar_z toplevel_list_list =
 
   let expression r k e =
     match Ast_cocci.unwrap e with
-    | Ast_cocci.MetaExpr (_,_,_,Some t,_,_) -> true
-    | Ast_cocci.MetaExpr (_,_,_,_,Ast_cocci.LocalID,_) -> true
+    | Ast_cocci.MetaExpr (_,_,_,Some t,_,_,_bitfield) -> true
+    | Ast_cocci.MetaExpr (_,_,_,_,Ast_cocci.LocalID,_,_bitfield) -> true
     | _ -> k e
   in
 
@@ -593,10 +594,11 @@ let sp_contain_typed_metavar_z toplevel_list_list =
     Visitor_ast.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing
       donothing expression donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing
+      donothing
   in
   toplevel_list_list +>
     List.exists
@@ -617,40 +619,49 @@ let sp_contain_typed_metavar rules =
 	 | _ -> false)
        rules))
 
-let rec interpret_dependencies local global = function
-    Ast_cocci.Dep s      -> List.mem s local
-  | Ast_cocci.AntiDep s  ->
-      (if !Flag_ctl.steps != None
-      then failwith "steps and ! dependency incompatible");
-      not (List.mem s local)
-  | Ast_cocci.EverDep s  -> List.mem s global
-  | Ast_cocci.NeverDep s ->
-      (if !Flag_ctl.steps != None
-      then failwith "steps and ! dependency incompatible");
-      not (List.mem s global)
-  | Ast_cocci.AndDep(s1,s2) ->
-      (interpret_dependencies local global s1) &&
-      (interpret_dependencies local global s2)
-  | Ast_cocci.OrDep(s1,s2)  ->
-      (interpret_dependencies local global s1) ||
-      (interpret_dependencies local global s2)
-  | Ast_cocci.FileIn _ | Ast_cocci.NotFileIn _ -> true
-  | Ast_cocci.NoDep -> true
+let rec interpret_dependencies local global d =
+  let rec loop local = function
+      Ast_cocci.Dep s      -> List.mem s local
+    | Ast_cocci.AntiDep s  ->
+	(if !Flag_ctl.steps != None
+	then failwith "steps and ! dependency incompatible");
+	not (List.mem s local)
+    | Ast_cocci.EverDep s  -> List.mem s global
+    | Ast_cocci.NeverDep s ->
+	(if !Flag_ctl.steps != None
+	then failwith "steps and ! dependency incompatible");
+	not (List.mem s global)
+    | Ast_cocci.AndDep(s1,s2) -> (loop local s1) && (loop local s2)
+    | Ast_cocci.OrDep(s1,s2)  -> (loop local s1) || (loop local s2)
+      | Ast_cocci.FileIn _ | Ast_cocci.NotFileIn _ -> true in
+  match d with
+    Ast_cocci.NoDep -> true
   | Ast_cocci.FailDep -> false
+  | Ast_cocci.ExistsDep d ->
+      if local = []
+      then loop [] d (* rely on globals *)
+      else List.exists (fun l -> loop l d) local
+  | Ast_cocci.ForallDep d ->
+      if local = []
+      then loop [] d (* rely on globals *)
+      else List.for_all (fun l -> loop l d) local
 
-let rec interpret_file file = function
-    Ast_cocci.Dep _ | Ast_cocci.AntiDep _
-  | Ast_cocci.EverDep _ | Ast_cocci.NeverDep _ -> true
-  | Ast_cocci.AndDep(s1,s2) ->
-      (interpret_file file s1) && (interpret_file file s2)
-  | Ast_cocci.OrDep(s1,s2)  ->
-      (interpret_file file s1) || (interpret_file file s2)
-  | Ast_cocci.FileIn s ->
-      s = file || Str.string_match (Str.regexp (s^"/")) file 0
-  | Ast_cocci.NotFileIn s ->
-      not (s = file || Str.string_match (Str.regexp (s^"/")) file 0)
-  | Ast_cocci.NoDep -> true
+let rec interpret_file file d =
+  let rec loop = function
+      Ast_cocci.Dep _ | Ast_cocci.AntiDep _
+    | Ast_cocci.EverDep _ | Ast_cocci.NeverDep _ -> true
+    | Ast_cocci.AndDep(s1,s2) ->
+	(loop s1) && (loop s2)
+    | Ast_cocci.OrDep(s1,s2)  -> (loop s1) || (loop s2)
+    | Ast_cocci.FileIn s ->
+	(s = file || Str.string_match (Str.regexp (s^"/")) file 0)
+    | Ast_cocci.NotFileIn s ->
+	not (s = file || Str.string_match (Str.regexp (s^"/")) file 0) in
+  match d with
+    Ast_cocci.NoDep -> true
   | Ast_cocci.FailDep -> failwith "not possible"
+  | Ast_cocci.ExistsDep d -> loop d
+  | Ast_cocci.ForallDep d -> loop d
 
 let print_dependencies str local global dep =
   if !Flag_cocci.show_dependencies
@@ -658,7 +669,7 @@ let print_dependencies str local global dep =
     begin
       pr2 str;
       let seen = ref [] in
-      let rec loop = function
+      let rec loop local = function
 	  Ast_cocci.Dep s | Ast_cocci.AntiDep s ->
 	      if not (List.mem s !seen)
 	      then
@@ -678,14 +689,19 @@ let print_dependencies str local global dep =
 		  seen := s :: !seen
 		end
 	| Ast_cocci.AndDep(s1,s2) ->
-	    loop s1;
-	    loop s2
+	    loop local s1;
+	    loop local s2
 	| Ast_cocci.OrDep(s1,s2)  ->
-	    loop s1;
-	    loop s2
-	| Ast_cocci.FileIn _ | Ast_cocci.NotFileIn _ | Ast_cocci.NoDep -> ()
-	| Ast_cocci.FailDep -> pr2 "False not satisfied" in
-      loop dep
+	    loop local s1;
+	    loop local s2
+	| Ast_cocci.FileIn _ | Ast_cocci.NotFileIn _ -> () in
+      match dep with
+	Ast_cocci.NoDep -> ()
+      | Ast_cocci.FailDep -> pr2 "False not satisfied"
+      | Ast_cocci.ExistsDep d | Ast_cocci.ForallDep d ->
+	  if local = []
+	  then loop [] d
+	  else List.iter (fun l -> loop l d) local
     end
 
 (* --------------------------------------------------------------------- *)
@@ -807,9 +823,10 @@ type toplevel_cocci_info_script_rule = {
       string *
       (Ast_cocci.script_meta_name * Ast_cocci.meta_name *
 	 Ast_cocci.metavar * Ast_cocci.mvinit) list *
-      Ast_cocci.meta_name list (*fresh vars*) *
+      Ast_cocci.meta_name list (*fresh vars*) * Ast_cocci.script_position *
       string;
   language: string;
+  scr_pos: Ast_cocci.script_position;
   script_code: string;
   scr_rule_info: rule_info;
 }
@@ -843,8 +860,17 @@ type toplevel_cocci_info =
   | FinalScriptRuleCocciInfo of toplevel_cocci_info_script_rule
   | CocciRuleCocciInfo of toplevel_cocci_info_cocci_rule
 
-type cocci_info = toplevel_cocci_info list *
-      bool (* parsing of format strings needed *)
+type merge_vars = string array list * string array list
+
+let union_merge_vars (ocaml_merges, python_merges)
+    (ocaml_merges', python_merges') =
+  let all_ocaml_merges = List.rev_append ocaml_merges ocaml_merges' in
+  let all_python_merges = List.rev_append python_merges python_merges' in
+  (all_ocaml_merges, all_python_merges)
+
+type cocci_info = toplevel_cocci_info list * bool (* true if no changes *)
+      * bool (* parsing of format strings needed *)
+      * (string array * string array) (* merge/local variables for Python *)
 
 type constant_info =
     (string list option (*grep tokens*) *
@@ -932,10 +958,11 @@ let python_code =
     local_python_code ^
     "cocci = Cocci()\n"
 
-let make_init lang code rule_info mv =
+let make_init lang pos code rule_info mv =
   {
-  scr_ast_rule = (lang, mv, [], code);
+  scr_ast_rule = (lang, mv, [], pos, code);
   language = lang;
+  scr_pos = pos;
   script_code = (if lang = "python" then python_code else "") ^code;
   scr_rule_info = rule_info;
 }
@@ -970,23 +997,25 @@ let prepare_cocci ctls free_var_lists negated_pos_lists
       then failwith "not handling multiple minirules";
 
       match ast with
-        Ast_cocci.ScriptRule (name,lang,deps,mv,script_vars,code) ->
+        Ast_cocci.ScriptRule (name,lang,deps,mv,script_vars,pos,code) ->
           let r =
             {
-	      scr_ast_rule = (lang, mv, script_vars, code);
+	      scr_ast_rule = (lang, mv, script_vars, pos, code);
               language = lang;
+	      scr_pos = pos;
               script_code = code;
               scr_rule_info = build_rule_info name deps;
 	    }
           in ScriptRuleCocciInfo r
-      | Ast_cocci.InitialScriptRule (name,lang,deps,mv,code) ->
-	  let r = make_init lang code (build_rule_info name deps) mv in
+      | Ast_cocci.InitialScriptRule (name,lang,deps,mv,pos,code) ->
+	  let r = make_init lang pos code (build_rule_info name deps) mv in
 	  InitialScriptRuleCocciInfo r
-      | Ast_cocci.FinalScriptRule (name,lang,deps,mv,code) ->
+      | Ast_cocci.FinalScriptRule (name,lang,deps,mv,pos,code) ->
           let r =
             {
-              scr_ast_rule = (lang, mv, [], code);
+              scr_ast_rule = (lang, mv, [], pos,code);
               language = lang;
+	      scr_pos = pos;
               script_code = code;
               scr_rule_info = build_rule_info name deps;
             }
@@ -994,13 +1023,13 @@ let prepare_cocci ctls free_var_lists negated_pos_lists
       | Ast_cocci.CocciRule
 	  (rulename,(dependencies,dropped_isos,z),restast,isexp,ruletype) ->
 	    let add_constraint_language languages rule =
-	      let (_, name, script_name, lang, params, body) = rule in
+	      let (_, _, (script_name, lang, params, _pos, body)) = rule in
 	      Common.StringSet.add lang languages in
 	    let constraint_languages =
 	      List.fold_left
 	        (fun accu toplevel ->
 		  List.fold_left add_constraint_language accu
-		    (Parse_cocci.enumerate_constraint_scripts toplevel))
+		    !Data.constraint_scripts)
 		Common.StringSet.empty restast in
             CocciRuleCocciInfo (
             {
@@ -1148,15 +1177,16 @@ let same_file parse_info_1 parse_info_2 =
   parse_info_1.Parse_c.filename = parse_info_2.Parse_c.filename
 
 let parse_info_of_files choose_includes parse_strings cache kind files
-    current_typedefs =
+    current_typedefs has_changes =
   let parse_info_of_file file current_typedefs =
     let result =
       try
         Some
           (cprogram_of_file_cached current_typedefs parse_strings
-            cache file)
+            cache file has_changes)
       with Flag.UnreadableFile file ->
-        pr2_once ((string_of_kind_file kind) ^ " file " ^ file ^ " not readable");
+        pr2_once
+	  ((string_of_kind_file kind) ^ " file " ^ file ^ " not readable");
         None in
     match result with
       | None -> (None,None)
@@ -1177,17 +1207,18 @@ let parse_info_of_files choose_includes parse_strings cache kind files
       ([],current_typedefs) files in
   (List.rev res,current_typedefs)
 
-let prepare_c files choose_includes parse_strings : file_info list =
+let prepare_c files choose_includes parse_strings has_changes
+    : file_info list =
   Includes.set_parsing_style Includes.Parse_no_includes;
   let (extra_includes_parse_infos, current_typedefs) =
     let (res,current_typedefs) =
       parse_info_of_files choose_includes parse_strings true Header
-        !Includes.extra_includes None in
+        !Includes.extra_includes None has_changes in
     (List.map fst res, current_typedefs) in
   Includes.set_parsing_style choose_includes;
   let (source_parse_infos,_) =
     parse_info_of_files choose_includes parse_strings false Source files
-      current_typedefs in
+      current_typedefs false in
   let f (sourceacc, headeracc) (source, headers) =
     (source::sourceacc, appendf same_file headers headeracc) in
   let (sources, headers) = List.fold_left f
@@ -1246,29 +1277,37 @@ let env_tbl = MyHashtbl.create !max_tbl
 let init_env _ = MyHashtbl.clear env_tbl; env_tbl
 let init_env_list _ = []
 
-let update_env env v i =
-(*  let v = (List.map Hashtbl.hash (List.map snd v), v) in*)
-  MyHashtbl.replace env v i; env
-let update_env_list env v i = (v,i)::env
+let update_env (env : string list list ref MyHashtbl.t) v i =
+  let cell =
+    try MyHashtbl.find env v
+    with Not_found ->
+      let cell = ref [] in
+      MyHashtbl.add env v cell;
+      cell in
+  (if not(List.mem i !cell) then cell := i :: !cell);
+  env
+
+let update_env_all (env : string list list ref MyHashtbl.t) v i =
+  let cell =
+    try MyHashtbl.find env v
+    with Not_found ->
+      let cell = ref [] in
+      MyHashtbl.add env v cell;
+      cell in
+  cell := Common.union_set i !cell;
+  env
 
 (* know that there are no conflicts *)
-let safe_update_env env v i =
+let safe_update_env_all env v i =
   (*let v = (List.map Hashtbl.hash (List.map snd v), v) in*)
-  MyHashtbl.add env v i; env
+  MyHashtbl.add env v (ref i); env
 
 let end_env env =
   let res =
     List.sort compare
-      (MyHashtbl.fold (fun k v rest -> (k,v) :: rest) env []) in
+      (MyHashtbl.fold (fun k v rest -> (k,!v) :: rest) env []) in
   MyHashtbl.clear env;
   res
-
-let end_env_list env =
-  let env = List.sort compare env in
-  let rec loop = function
-      x::((y::_) as xs) -> if x = y then loop xs else x :: loop xs
-    | l -> l in
-  loop env
 
 (*****************************************************************************)
 (* Processing the ctls and toplevel C elements *)
@@ -1324,7 +1363,7 @@ let end_env_list env =
 let merge_env new_e old_e =
   List.iter
     (function (e,rules) ->
-      let _ = update_env old_e e rules in ()) new_e;
+      let _ = update_env_all old_e e rules in ()) new_e;
   old_e
 
 let merge_env_list new_e old_e = new_e@old_e
@@ -1353,7 +1392,7 @@ let python_application mv ve script_vars r =
     Pycocci.build_classes (List.map (function (x,y) -> x) ve);
     Pycocci.construct_variables mv ve;
     Pycocci.construct_script_variables script_vars;
-    let _ = Pycocci.pyrun_simplestring (local_python_code ^r.script_code) in
+    let _ = Pycocci.run r.scr_pos (local_python_code ^r.script_code) in
     if !Pycocci.exited
     then raise Exited
     else if !Pycocci.inc_match
@@ -1375,6 +1414,8 @@ let ocaml_application mv ve script_vars r =
     else None
   with e -> (pr2 ("Failure in " ^ r.scr_rule_info.rulename); raise e)
 
+let map0 f = function [] -> [f []] | l -> List.map f l
+
 (* returns Left in case of dependency failure, Right otherwise *)
 let apply_script_rule r cache newes e rules_that_have_matched
     rules_that_have_ever_matched script_application =
@@ -1388,11 +1429,14 @@ let apply_script_rule r cache newes e rules_that_have_matched
 	rules_that_have_matched
 	!rules_that_have_ever_matched r.scr_rule_info.dependencies;
       show_or_not_binding "in environment" e;
-      (cache, safe_update_env newes e rules_that_have_matched)
+      (cache, safe_update_env_all newes e rules_that_have_matched)
     end
   else
     begin
-      let (_, mv, script_vars, _) = r.scr_ast_rule in
+      let (_, mv, script_vars, _, _) = r.scr_ast_rule in
+      let mv =
+	List.filter
+	  (function (_, ("merge", _), _, _) -> false | _ -> true) mv in
       let ve =
 	(List.map (function (n,v) -> (("virtual",n),Ast_c.MetaIdVal (v)))
 	   !Flag.defined_virtual_env) @ e in
@@ -1421,7 +1465,7 @@ let apply_script_rule r cache newes e rules_that_have_matched
 		  new_e +>
 		  List.filter
 		    (fun (s,v) -> List.mem s r.scr_rule_info.used_after) in
-		(cache,update_env newes new_e rules_that_have_matched)
+		(cache,update_env_all newes new_e rules_that_have_matched)
 	  with Not_found ->
 	    begin
 	      print_dependencies "dependencies for script satisfied:"
@@ -1445,8 +1489,9 @@ let apply_script_rule r cache newes e rules_that_have_matched
 		      (fun (s,v) -> List.mem s r.scr_rule_info.used_after) in
 		  r.scr_rule_info.was_matched := true;
 		  (((relevant_bindings,Some script_vals) :: cache),
-		   update_env newes new_e
-		     (r.scr_rule_info.rulename :: rules_that_have_matched))
+		   update_env_all newes new_e
+		     (map0 (fun rthm -> r.scr_rule_info.rulename :: rthm)
+			rules_that_have_matched))
 	    end)
       |	unbound ->
 	  (if !Flag_cocci.show_dependencies
@@ -1457,7 +1502,7 @@ let apply_script_rule r cache newes e rules_that_have_matched
 	  let e =
 	    e +>
 	    List.filter (fun (s,v) -> List.mem s r.scr_rule_info.used_after) in
-	  (cache, update_env newes e rules_that_have_matched))
+	  (cache, update_env_all newes e rules_that_have_matched))
     end)
 
 exception Missing_position
@@ -1535,7 +1580,7 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
 	    if not consistent
 	    then
 	      (cache,
-	       update_env newes
+	       update_env_all newes
 		 (e +>
 		  List.filter
 		    (fun (s,v) -> List.mem s r.rule_info.used_after))
@@ -1552,7 +1597,7 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
 		  !rules_that_have_ever_matched r.rule_info.dependencies;
 		show_or_not_binding "in environment" e;
 		(cache,
-		 update_env newes
+		 update_env_all newes
 		   (e +>
 		    List.filter
 		      (fun (s,v) -> List.mem s r.rule_info.used_after))
@@ -1655,7 +1700,9 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
 			  (List.sort compare
 			     (Common.union_set
 				old_bindings_to_keep new_binding_to_add),
-			   r.rule_info.rulename::rules_that_have_matched))
+			   map0
+			     (function rthm -> r.rule_info.rulename::rthm)
+			     rules_that_have_matched))
 			new_bindings_to_add] in
 		  if relevant_bindings = [] && not (old_bindings_to_keep = [])
 		  then (* keep an unextended copy *)
@@ -1873,11 +1920,11 @@ let bigloop2 rs (ccs: file_info list) parse_strings =
 
           adjust_pp_with_indent (fun () ->
             Format.force_newline();
-            let (l,mv,script_vars,code) = r.scr_ast_rule in
+            let (l,mv,script_vars,pos,code) = r.scr_ast_rule in
 	    let nm = r.scr_rule_info.rulename in
 	    let deps = r.scr_rule_info.dependencies in
             Pretty_print_cocci.unparse []
-	      (Ast_cocci.ScriptRule (nm,l,deps,mv,script_vars,code)));
+	      (Ast_cocci.ScriptRule (nm,l,deps,mv,script_vars,pos,code)));
 	end;
 
       (*pr2 (List.hd(cmd_to_list "free -m | grep Mem"));*)
@@ -1975,6 +2022,30 @@ let initial_final_bigloop a b c =
   Common.profile_code "initial_final_bigloop"
     (fun () -> initial_final_bigloop2 a b c)
 
+let find_python_merge_variables cocci_infos =
+  try
+    Common.find_some (function FinalScriptRuleCocciInfo r
+	when r.language = "python" ->
+	  let (_, mvs, _, _, _) = r.scr_ast_rule in
+	  let merge_vars = Ast_cocci.filter_merge_variables mvs in
+	  let merge_names = Array.of_list (List.map fst merge_vars) in
+	  let local_names = Array.of_list (List.map snd merge_vars) in
+	  Some (merge_names, local_names)
+      | _ -> None) cocci_infos
+  with Not_found -> ([| |], [| |])
+
+let variables_to_merge python_local_names =
+  let ocaml_merges = !Coccilib.variables_to_merge () in
+  let python_merges = Array.map (Pycocci.pickle_variable) python_local_names in
+  (ocaml_merges, python_merges)
+
+let list_array_of_array_list merges =
+  match merges with
+    [] -> [| |]
+  | hd :: _ ->
+      Array.init (Array.length hd)
+	(fun index -> List.map (fun array -> array.(index)) merges)
+
 (*****************************************************************************)
 (* The main functions *)
 (*****************************************************************************)
@@ -1994,7 +2065,8 @@ let pre_engine2 (coccifile, isofile) =
   (* useful opti when use -dir *)
   let (metavars,astcocci,
        free_var_lists,negated_pos_lists,used_after_lists,
-       positions_lists,((toks,_,_,_) as constants),parse_strings) =
+       positions_lists,((toks,_,_,_) as constants),parse_strings,
+       contains_modifs) =
     sp_of_file coccifile isofile in
 
   let ctls = ctls_of_ast astcocci used_after_lists positions_lists in
@@ -2013,7 +2085,8 @@ let pre_engine2 (coccifile, isofile) =
     List.fold_left
       (function languages ->
 	 function
-	     ScriptRuleCocciInfo r ->
+	     ScriptRuleCocciInfo r
+	   | FinalScriptRuleCocciInfo r ->
 	       Common.StringSet.add r.language languages
 	   | CocciRuleCocciInfo r ->
 	       Common.StringSet.union r.constraint_languages languages
@@ -2033,8 +2106,8 @@ let pre_engine2 (coccifile, isofile) =
 	   (!Flag.defined_virtual_rules,!Flag.defined_virtual_env)) ::
 	  !Iteration.initialization_stack;
 	initial_final_bigloop Initial
-	  (fun (x,mvs,_,y) -> fun deps ->
-	    Ast_cocci.InitialScriptRule(rname,x,deps,mvs,y))
+	  (fun (x,mvs,_,pos,y) -> fun deps ->
+	    Ast_cocci.InitialScriptRule(rname,x,deps,mvs,pos,y))
 	  r
       end in
 
@@ -2047,8 +2120,6 @@ let pre_engine2 (coccifile, isofile) =
 	      if interpret_dependencies [] [] r.scr_rule_info.dependencies
 	      then
 		begin
-		  (if Common.StringSet.mem rlang languages
-		  then failwith ("double initializer found for "^rlang));
 		  runrule r;
 		  Common.StringSet.add rlang languages
 		end
@@ -2067,15 +2138,21 @@ let pre_engine2 (coccifile, isofile) =
 	  used_after = [];
 	  ruleid = (-1);
 	  was_matched = ref false;} in
-      runrule (make_init lgg "" rule_info []))
+      runrule (make_init lgg ("", 0) "" rule_info []))
     uninitialized_languages;
 
-  ((cocci_infos,parse_strings),constants)
+  let (python_merge_names, python_local_names) =
+    find_python_merge_variables cocci_infos in
+
+  ((cocci_infos,contains_modifs,parse_strings,
+    (python_merge_names, python_local_names)),
+   constants)
 
 let pre_engine a =
   Common.profile_code "pre_engine" (fun () -> pre_engine2 a)
 
-let full_engine2 (cocci_infos,parse_strings) cfiles =
+let full_engine2
+    (cocci_infos, has_changes, parse_strings, (_, python_local_names)) cfiles =
 
   show_or_not_cfiles cfiles;
 
@@ -2083,7 +2160,7 @@ let full_engine2 (cocci_infos,parse_strings) cfiles =
   then
     begin
       pr2 ("selected " ^ (String.concat " " cfiles));
-      cfiles +> List.map (fun s -> s, None)
+      (cfiles +> List.map (fun s -> s, None), ([], []))
     end
   else
     begin
@@ -2120,7 +2197,8 @@ let full_engine2 (cocci_infos,parse_strings) cfiles =
 	end in
 
       Flag.currentfiles := cfiles;
-      let c_infos  = prepare_c cfiles choose_includes parse_strings in
+      let c_infos =
+	prepare_c cfiles choose_includes parse_strings has_changes in
 
       (* ! the big loop ! *)
       let c_infos' = bigloop cocci_infos c_infos parse_strings in
@@ -2134,65 +2212,71 @@ let full_engine2 (cocci_infos,parse_strings) cfiles =
         end;
       if !Flag_ctl.graphical_trace then gen_pdf_graph ();
 
-      c_infos' +> List.map (fun c_or_h ->
-	if !(c_or_h.was_modified_once)
-	then
-	  begin
-            let outfile =
-	      Common.new_temp_file "cocci-output" ("-" ^ c_or_h.fname) in
+      let files =
+	c_infos' +> List.map (fun c_or_h ->
+	  if !(c_or_h.was_modified_once)
+	  then
+	    begin
+	      let outfile =
+		Common.new_temp_file "cocci-output" ("-" ^ c_or_h.fname) in
 
-            if c_or_h.fkind = Header
-            then pr2 ("a header file was modified: " ^ c_or_h.fname);
+	      if c_or_h.fkind = Header
+	      then pr2 ("a header file was modified: " ^ c_or_h.fname);
 
-            (* and now unparse everything *)
-            cfile_of_program (for_unparser c_or_h.asts) outfile;
+	      (* and now unparse everything *)
+	      cfile_of_program (for_unparser c_or_h.asts) outfile;
 
-            show_or_not_diff c_or_h.fpath outfile;
+	      show_or_not_diff c_or_h.fpath outfile;
 
-            (c_or_h.fpath,
-             if !Flag.sgrep_mode2 then None else Some outfile)
-	  end
-	else (c_or_h.fpath, None))
+	      (c_or_h.fpath,
+	       if !Flag.sgrep_mode2 then None else Some outfile)
+	    end
+	  else (c_or_h.fpath, None)) in
+      let (ocaml_merges, python_merges) =
+	variables_to_merge python_local_names in
+      (files, ([ocaml_merges], [python_merges]))
     end
 
 let full_engine a b =
   Common.profile_code "full_engine"
     (fun () -> let res = full_engine2 a b in (*Gc.print_stat stderr; *)res)
 
-let post_engine2 (cocci_infos,_) =
-  List.iter
-    (function ((language,_),(virt_rules,virt_env)) ->
-      Flag.defined_virtual_rules := virt_rules;
-      Flag.defined_virtual_env := virt_env;
-      let _ =
+let post_engine2 (cocci_infos, _, _, (python_merge_names, _)) merges =
+  let (ocaml_merges, python_merges) = merges in
+  Coccilib.merged_variables := list_array_of_array_list ocaml_merges;
+  Array.iteri (fun index variable ->
+    let list = List.map (fun array -> array.(index)) python_merges in
+    Pycocci.unpickle_variable variable list) python_merge_names;
+  let _ =
+    List.fold_left
+      (fun executed_rules ((language,_),(virt_rules,virt_env)) ->
+	Flag.defined_virtual_rules := virt_rules;
+	Flag.defined_virtual_env := virt_env;
 	List.fold_left
-	  (function languages ->
-	    function
-		FinalScriptRuleCocciInfo(r) ->
-		  (if r.language = language && List.mem r.language languages
-		  then failwith ("double finalizer found for "^r.language));
-		  initial_final_bigloop Final
-		    (fun (x,mvs,_,y) -> fun deps ->
-		      Ast_cocci.FinalScriptRule(r.scr_rule_info.rulename,
-						x,deps,mvs,y))
-		    r;
-		  r.language::languages
-	      | _ -> languages)
-	  [] cocci_infos in
-      ())
-    !Iteration.initialization_stack
+	  (function executed_rules -> function
+	      FinalScriptRuleCocciInfo(r) ->
+		let rlang = r.language in
+		let rname = r.scr_rule_info.rulename in
+		if List.mem (rlang, rname) executed_rules then
+		  executed_rules
+		else
+		  begin
+		    initial_final_bigloop Final
+		      (fun (x,mvs,_,pos,y) -> fun deps ->
+			Ast_cocci.FinalScriptRule(r.scr_rule_info.rulename,
+						  x,deps,mvs,pos,y))
+		      r;
+		    (rlang, rname) :: executed_rules
+		  end
+	    | _ -> executed_rules)
+	  executed_rules cocci_infos)
+      []
+      !Iteration.initialization_stack in
+  Pycocci.flush_stdout_and_stderr ();
+  ()
 
-let post_engine a =
-  Common.profile_code "post_engine" (fun () -> post_engine2 a)
-
-let has_finalize (cocci_infos,_) =
-  List.exists
-    (function
-      | FinalScriptRuleCocciInfo _ -> true
-      | ScriptRuleCocciInfo _
-      | InitialScriptRuleCocciInfo _
-      | CocciRuleCocciInfo _ -> false)
-    cocci_infos
+let post_engine a b =
+  Common.profile_code "post_engine" (fun () -> post_engine2 a b)
 
 (*****************************************************************************)
 (* check duplicate from result of full_engine *)

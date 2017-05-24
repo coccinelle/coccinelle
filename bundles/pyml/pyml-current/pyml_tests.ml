@@ -1,7 +1,8 @@
 let tests = Queue.create ()
 
-let add_test ~title f =
-  Queue.add (title, f) tests
+let add_test ~title ?(enabled = true) f =
+  if enabled then
+    Queue.add (title, f) tests
 
 let failed = ref false
 
@@ -173,45 +174,28 @@ except Exception as err:
         ()
     )
 
-let with_temp_file contents f =
-  let (file, channel) = Filename.open_temp_file "test" ".py" in
-  Py.Utils.try_finally begin fun () ->
-    Py.Utils.write_and_close channel (output_string channel) contents;
-    let channel = open_in file in
-    Py.Utils.read_and_close channel f (file, channel)
-  end ()
-    Sys.remove file
-
-let with_pipe f =
-  let (read, write) = Unix.pipe () in
-  let in_channel = Unix.in_channel_of_descr read
-  and out_channel = Unix.out_channel_of_descr write in
-  Py.Utils.try_finally (f in_channel) out_channel
+let () =
+  add_test
+    ~title:"run file with filename"
     (fun () ->
-      close_in in_channel;
-      close_out out_channel) ()
-
-let with_stdin_from channel f arg =
-  let stdin_backup = Unix.dup Unix.stdin in
-  Unix.dup2 (Unix.descr_of_in_channel channel) Unix.stdin;
-  Py.Utils.try_finally
-    f arg
-    (Unix.dup2 stdin_backup) Unix.stdin
-
-let with_stdin_from_string s f arg =
-  with_pipe begin fun in_channel out_channel ->
-    output_string out_channel s;
-    close_out out_channel;
-    with_stdin_from in_channel f arg
-  end
+      let result = Py.Utils.with_temp_file "print(\"Hello, world!\")"
+        begin fun file channel ->
+         Py.Run.load (Py.Filename file) "test.py"
+        end in
+      if result <> Py.none then
+        let result_str = Py.Object.to_string result in
+        let msg = Printf.sprintf "Result None expected but got %s" result_str in
+        failwith msg
+    )
 
 let () =
   add_test
-    ~title:"run file"
+    ~title:"run file with channel"
+    ~enabled:(Sys.os_type = "Unix")
     (fun () ->
-      let result = with_temp_file "print(\"Hello, world!\")"
-        begin fun (file, channel) ->
-         Py.Run.load channel "test.py"
+      let result = Py.Utils.with_temp_file "print(\"Hello, world!\")"
+        begin fun file channel ->
+         Py.Run.load (Py.Channel channel) "test.py"
         end in
       if result <> Py.none then
         let result_str = Py.Object.to_string result in
@@ -322,17 +306,36 @@ let () =
 let () =
   add_test
     ~title:"interactive loop"
+    ~enabled:(Sys.os_type = "Unix")
     (fun () ->
-      with_stdin_from_string "42"
+      Py.Utils.with_stdin_from_string "42"
         Py.Run.interactive ();
       assert (Py.Long.to_int (Py.last_value ()) = 42))
 
 let () =
   add_test
     ~title:"IPython"
+    ~enabled:(Sys.os_type = "Unix")
     (fun () ->
-      with_stdin_from_string "exit"
+      Py.Utils.with_stdin_from_string "exit"
         Py.Run.ipython ())
+
+let () =
+  add_test
+    ~title:"Marshal"
+    (fun () ->
+      let v = Py.Long.of_int 42 in
+      let m = Py.Marshal.dumps v in
+      let v' = Py.Marshal.loads m in
+      assert (Py.Long.to_int v' = 42))
+
+let () =
+  add_test
+    ~title:"Py.List.of_list"
+    (fun () ->
+      let v = Py.List.of_list [Py.Long.of_int 42] in
+      assert (Py.List.length v = 1);
+      assert (Py.Long.to_int (Py.List.get v 0) = 42))
 
 let () =
   prerr_endline "Initializing library...";

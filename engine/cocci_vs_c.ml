@@ -122,7 +122,7 @@ let generalize_mcode ia =
 let equal_c_int s1 s2 =
   try
     int_of_string s1 = int_of_string s2
-  with Failure("int_of_string") ->
+  with Failure _ ->
     s1 = s2
 
 
@@ -288,14 +288,16 @@ let equal_metavarval valu valu' =
     ), _
       -> raise (Impossible 16)
 
+let equal_unwrap a b = B.unwrap a = B.unwrap b
+
 (* probably only one argument needs to be stripped, because inherited
 metavariables containing expressions are stripped in advance. But don't
 know which one is which... *)
 let equal_inh_metavarval valu valu'=
   match valu, valu' with
   | Ast_c.MetaIdVal a, Ast_c.MetaIdVal b -> a = b
-  | Ast_c.MetaAssignOpVal a, Ast_c.MetaAssignOpVal b -> a = b
-  | Ast_c.MetaBinaryOpVal a, Ast_c.MetaBinaryOpVal b -> a = b
+  | Ast_c.MetaAssignOpVal a, Ast_c.MetaAssignOpVal b -> equal_unwrap a b
+  | Ast_c.MetaBinaryOpVal a, Ast_c.MetaBinaryOpVal b -> equal_unwrap a b
   | Ast_c.MetaFuncVal a, Ast_c.MetaFuncVal b -> a = b
   | Ast_c.MetaLocalFuncVal a, Ast_c.MetaLocalFuncVal b ->
       (* do something more ? *)
@@ -582,6 +584,8 @@ let initialisation_to_affectation decl =
 	Some x -> F.DefineExpr x
       |	None -> F.Decl decl
 
+let lin_col_by_pos ii = Some(Lib_parsing_c.lin_col_by_pos ii)
+
 (*****************************************************************************)
 (* Functor parameter combinators *)
 (*****************************************************************************)
@@ -607,6 +611,11 @@ module type PARAM =
 
     type ('a, 'b) matcher = 'a -> 'b  -> tin -> ('a * 'b) tout
 
+    val constraint_checker:
+	(A.meta_name -> B.metavar_binding_kind ->
+	  (A.meta_name -> B.metavar_binding_kind) -> A.constraints -> tin ->
+	    (unit * unit) tout) ref
+
     val mode : mode
 
     val (>>=):
@@ -628,6 +637,8 @@ module type PARAM =
       (tin -> 'x tout)
 
     val (>&&>) : (tin -> bool) -> (tin -> 'x tout) -> (tin -> 'x tout)
+
+    val mnot : (tin -> 'a tout) -> 'a -> tin -> 'a tout
 
     val tokenf : ('a A.mcode, B.info) matcher
     val tokenf_mck : (A.mcodekind, B.info) matcher
@@ -706,13 +717,13 @@ module type PARAM =
     val envf :
       A.keep_binding -> A.inherited ->
       A.meta_name A.mcode * Ast_c.metavar_binding_kind *
-	  (unit -> Common.filename * string * Ast_c.posl * Ast_c.posl) ->
+	  (unit ->
+	    (Common.filename * string * Ast_c.posl * Ast_c.posl) option) ->
       (unit -> tin -> 'x tout) -> (tin -> 'x tout)
 
     val check_constraints :
-      ('a -> 'b -> (A.meta_name -> B.metavar_binding_kind) -> bool) ->
-	'a -> 'b ->
-	(unit -> tin -> 'x tout) -> (tin -> 'x tout)
+	A.meta_name -> B.metavar_binding_kind -> A.constraints ->
+	  (unit -> tin -> 'x tout) -> tin -> 'x tout
 
     val check_constraints_ne :
       ('a, 'b) matcher -> 'a list -> 'b ->
@@ -730,7 +741,7 @@ module type PARAM =
 
   end
 
-let satisfies_script_constraint (name, lang, params, body) ida idb env =
+let satisfies_script_constraint (name, lang, params, pos, body) ida idb env =
   let values =
     try Some ((ida, idb) :: List.map (fun (p,_) -> (p, env p)) params)
     with Not_found -> None in
@@ -740,29 +751,47 @@ let satisfies_script_constraint (name, lang, params, body) ida idb env =
       begin
 	match lang with
 	  "ocaml" -> Run_ocamlcocci.run_constraint name (List.map snd args)
-	| "python" -> Pycocci.run_constraint args body
+	| "python" -> Pycocci.run_constraint args pos body
 	| _ -> failwith "languages other than ocaml or python not supported"
       end
 
-let satisfies_constraint c (ida, idb) env =
-  let match_string f =
-    match idb with
-      B.MetaIdVal s -> f s
-    | _ -> false in
-  A.cstr_eval
-    { A.cstr_string = Some (fun s' -> match_string (( = ) s'));
-      A.cstr_regexp = Some begin fun _s regexp ->
-	match_string (Regexp.string_match regexp);
-      end;
-      A.cstr_meta_name = Some begin fun mn ->
-	match Common.optionise (fun () -> env mn) with
-	  Some mv -> equal_inh_metavarval mv idb
-	| _ -> false
-      end;
-      A.cstr_script = Some begin fun script_constraint ->
-	satisfies_script_constraint script_constraint ida idb env
-      end;
-    } c
+let rec extract_sub_constraints = function
+    A.CstrAnd l ->
+      let f (sub_acc, l_acc) c =
+	let (sub, l') = extract_sub_constraints c in
+	List.rev_append sub sub_acc, l' :: l_acc in
+      let (sub, l') = List.fold_left f ([], []) l in
+      sub, A.CstrAnd l'
+  | A.CstrSub l -> l, A.CstrTrue
+  | c -> [], c
+
+let string_of_expression exp =
+  let warning s = pr2_once ("WARNING: "^s); "" in
+  match Ast_c.unwrap_expr exp with
+    Ast_c.Ident (name) ->
+      (match name with
+	Ast_c.RegularName     rname -> Ast_c.unwrap_st rname
+      | Ast_c.CppConcatenatedName _ ->
+	  warning
+	    "Unable to apply a constraint on a CppConcatenatedName identifier!"
+      | Ast_c.CppVariadicName     _ ->
+	  warning
+	    "Unable to apply a constraint on a CppVariadicName identifier!"
+      | Ast_c.CppIdentBuilder     _ ->
+	  warning
+	    "Unable to apply a constraint on a CppIdentBuilder identifier!")
+  | Ast_c.Constant cst ->
+      (match cst with
+	Ast_c.String (str, _) -> str
+      | Ast_c.MultiString strlist ->
+	  warning "Unable to apply a constraint on a multistring constant!"
+      | Ast_c.Char  (char , _) -> char
+      | Ast_c.Int   (int  , _) -> int
+      | Ast_c.Float (float, _) -> float
+      | Ast_c.DecimalConst (d, n, p) ->
+	  warning "Unable to apply a constraint on a decimal constant!")
+  | Ast_c.StringConstant (cst,orig,w) -> orig
+  | _ -> warning "Unable to apply a constraint on an expression!"
 
 (*****************************************************************************)
 (* Functor code, "Cocci vs C" *)
@@ -809,74 +838,28 @@ let dots2metavar (_,info,mcodekind,pos) =
 let metavar2dots (_,info,mcodekind,pos) = ("...",info,mcodekind,pos)
 let metavar2ndots (_,info,mcodekind,pos) = ("<+...",info,mcodekind,pos)
 
-let satisfies_generalconstraint c (ida, idb) env : bool =
-  satisfies_constraint c (ida, B.MetaIdVal idb) env
-
-let satisfies_iconstraint (strs,metas) id env : bool =
-  List.mem id strs ||
-  (List.exists
-     (function meta ->
-       match Common.optionise (fun () -> env meta) with
-	 Some (Ast_c.MetaIdVal(valu)) -> id = valu
-       | _ -> false)
-     metas)
-
-let satisfies_niconstraint (strs,metas) id env : bool =
-  not (List.mem id strs) &&
-  (List.for_all
-     (function meta ->
-       match Common.optionise (fun () -> env meta) with
-	 Some (Ast_c.MetaIdVal(valu)) -> not(id = valu)
-       | _ -> true)
-     metas)
-
-let satisfies_econstraint c (ida, exp) env : bool =
-  let warning s = pr2_once ("WARNING: "^s); false in
-  match Ast_c.unwrap_expr exp with
-    Ast_c.Ident (name) ->
-      (match name with
-	Ast_c.RegularName     rname ->
-	  satisfies_generalconstraint c (ida, Ast_c.unwrap_st rname) env
-      | Ast_c.CppConcatenatedName _ ->
-	  warning
-	    "Unable to apply a constraint on a CppConcatenatedName identifier!"
-      | Ast_c.CppVariadicName     _ ->
-	  warning
-	    "Unable to apply a constraint on a CppVariadicName identifier!"
-      | Ast_c.CppIdentBuilder     _ ->
-	  warning
-	    "Unable to apply a constraint on a CppIdentBuilder identifier!")
-  | Ast_c.Constant cst ->
-      (match cst with
-	Ast_c.String (str, _) -> satisfies_generalconstraint c (ida, str) env
-      | Ast_c.MultiString strlist ->
-	  warning "Unable to apply a constraint on a multistring constant!"
-      | Ast_c.Char  (char , _) -> satisfies_generalconstraint c (ida, char) env
-      | Ast_c.Int   (int  , _) -> satisfies_generalconstraint c (ida, int) env
-      | Ast_c.Float (float, _) -> satisfies_generalconstraint c (ida, float) env
-      | Ast_c.DecimalConst (d, n, p) ->
-	  warning "Unable to apply a constraint on a decimal constant!")
-  | Ast_c.StringConstant (cst,orig,w) ->
-      satisfies_generalconstraint c (ida, orig) env
-  | _ -> warning "Unable to apply a constraint on an expression!"
-
 
 (* ------------------------------------------------------------------------- *)
 (* This has to be up here to allow adequate polymorphism *)
 
-let match_len infos leninfo =
-  let len = List.length infos in
-
+let match_len_value len leninfo =
   (match leninfo with
-  | A.MetaListLen (lenname,lenkeep,leninherited) ->
+  | A.MetaListLen (lenname,constraints,lenkeep,leninherited) ->
       let max_min _ = failwith "no pos" in
-      X.envf lenkeep leninherited
-	(lenname, Ast_c.MetaListlenVal (len), max_min)
+      let mn = Ast_c.MetaListlenVal len in
+      (fun k ->
+	X.check_constraints (A.unwrap_mcode lenname) mn constraints
+	  (fun () ->
+	    X.envf lenkeep leninherited (lenname, mn, max_min) k))
   | A.CstListLen n ->
       if len = n
       then (function f -> f())
       else (function f -> fail)
   | A.AnyListLen -> function f -> f())
+
+let match_len infos leninfo =
+  let len = List.length infos in
+  match_len_value len leninfo
 
 let list_matcher match_dots rebuild_dots match_comma rebuild_comma
     match_metalist rebuild_metalist mktermval special_cases
@@ -962,7 +945,7 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 	    | None,_ -> None)
 	    +++
 	    (match match_metalist ea, ebs with
-	      Some (ida,leninfo,keep,inherited,extra), ys ->
+	      Some (ida,leninfo,constraints,keep,inherited,extra), ys ->
 		let startendxs =
 		  Common.zip (Common.inits ys) (Common.tails ys) in
 		Some
@@ -989,7 +972,9 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 		      | Some infos -> match_len infos leninfo)
 		      (fun () ->
 			let max_min _ =
-			  Lib_parsing_c.lin_col_by_pos (get_iis startxs) in
+			  match startxs with
+			    [] -> None
+			  | _ -> lin_col_by_pos(get_iis startxs) in
 			(match extra with
 			  Some extra ->
 			    extra startxs' max_min
@@ -1007,7 +992,7 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 			      loop (eas, endxs) >>= (fun eas endxs ->
 				return (
 				(rebuild_metalist ea
-				   (ida,leninfo,keep,inherited))
+				   (ida,leninfo,constraints,keep,inherited))
 				  +> A.rewrap ea::eas,
 				startxs @ endxs
 				  )))
@@ -1078,24 +1063,17 @@ let assignOp_eq op1 op2 = match (op1, op2) with
   | A.OpAssign o1, A.OpAssign o2 -> (A.unwrap_mcode o1) = (A.unwrap_mcode o2)
   | _ -> false
 
-let check_assignOp_constraint c (opA, (opb',ii)) env =
-  let opb'' = assignOpA_of_assignOpB opb' in
-  satisfies_constraint c
-    (opA, B.MetaIdVal (A.string_of_assignOp (A.make_term opb''))) env
-
 let binaryOp_eq op1 op2 = match (op1, op2) with
   | A.Arith o1, A.Arith o2 -> (A.unwrap_mcode o1) = (A.unwrap_mcode o2)
   | A.Logical o1, A.Logical o2 -> (A.unwrap_mcode o1) = (A.unwrap_mcode o2)
   | _ -> false
 
-let check_binaryOp_constraint c (opA, (opb',ii)) env =
-  let opb'' = binaryOpA_of_binaryOpB opb' in
-  satisfies_constraint c
-    (opA, B.MetaIdVal (A.string_of_binaryOp (A.make_term opb''))) env
-
 (*---------------------------------------------------------------------------*)
 let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
  fun re node ->
+
+   let check_constraints cstr mida idb =
+     X.check_constraints (A.unwrap_mcode mida) idb cstr in
 
 let rec (expression: (A.expression, Ast_c.expression) matcher) =
  fun ea eb ->
@@ -1107,7 +1085,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
   match A.unwrap ea, eb with
 
   (* general case: a MetaExpr can match everything *)
-  | A.MetaExpr (ida,constraints,keep,opttypa,form,inherited),
+  | A.MetaExpr (ida,constraints,keep,opttypa,form,inherited,bitfield),
     (((expr, opttypb), ii) as expb) ->
 
       (* old: before have a MetaConst. Now we factorize and use 'form' to
@@ -1161,30 +1139,43 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
             tas +> List.fold_left (fun acc ta ->
               acc >|+|> compatible_type ta tb) fail
 	) >>=
+	(fun () () -> match bitfield, fst !opttypb with
+	  None, _ -> return ((), ())
+	| Some _, None -> assert false
+	| Some bitfield', Some tb ->
+	    begin
+	      match fst tb with
+		(_, (Ast_c.FieldType (_, _, Some be), _)) ->
+		  begin
+		    match fst (fst be) with
+		      Ast_c.Constant (Ast_c.Int (value, _)) ->
+			match_len_value (int_of_string value) bitfield'
+			  (fun () -> return ((), ()))
+		    | _ ->
+			pr2_once "Unable to evaluate bitfield expression";
+			return ((), ())
+		  end
+	      | _ -> fail
+	    end
+	  ) >>=
 	(fun () () ->
 	  (* wraps on C code, so has types *)
 	  let meta_expr_val l x = Ast_c.MetaExprVal(x,l,Ast_c.WITH_TYPES) in
-	  match constraints with
-	    Ast_cocci.NoConstraint -> return (meta_expr_val [],())
-	  | Ast_cocci.NotIdCstrt cstrt ->
-	      X.check_constraints satisfies_econstraint cstrt
-		(A.unwrap_mcode ida, eb)
-		(fun () -> return (meta_expr_val [],()))
-	  | Ast_cocci.NotExpCstrt cstrts ->
-	      X.check_constraints_ne expression cstrts eb
-		(fun () -> return (meta_expr_val [],()))
-	  | Ast_cocci.SubExpCstrt cstrts ->
-	      return (meta_expr_val cstrts,()))
+	  begin
+	    let l, constraints' = extract_sub_constraints constraints in
+	    check_constraints constraints' ida
+	      (B.MetaExprVal (eb, [], B.WITH_TYPES))
+	      (fun () -> return (meta_expr_val l,()))
+	  end)
 	  >>=
 	(fun wrapper () ->
-	  let max_min _ =
-	    Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_expr expb) in
+	  let max_min _ = lin_col_by_pos (Lib_parsing_c.ii_of_expr expb) in
 	  X.envf keep inherited (ida, wrapper expb, max_min)
 	    (fun () ->
 	      X.distrf_e ida expb >>=
 	      (fun ida expb ->
 		return (
-		A.MetaExpr (ida,constraints,keep,opttypa,form,inherited)+>
+		A.MetaExpr (ida,constraints,keep,opttypa,form,inherited,None)+>
 		A.rewrap ea,
 		expb
 		  ))
@@ -1659,11 +1650,11 @@ and assignOp opa opb =
           (A.rewrap opa (A.OpAssign oa), (B.OpAssign ob,[opbi])))
     else fail
   | A.MetaAssign (mv, c, keep, inherited), _ ->
-      X.check_constraints check_assignOp_constraint c (A.unwrap_mcode mv, opb)
+      let mv' = B.MetaAssignOpVal opb in
+      check_constraints c mv mv'
 	(fun () ->
-	  let max_min _ =
-	    Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_assignOp opb) in
-	  X.envf keep inherited (mv,Ast_c.MetaAssignOpVal opb,max_min)
+	  let max_min _ = lin_col_by_pos (Lib_parsing_c.ii_of_assignOp opb) in
+	  X.envf keep inherited (mv,mv',max_min)
 	    (fun () -> X.distrf_assignOp mv opb
 		>>=
 	      (fun mv opb ->
@@ -1689,11 +1680,11 @@ and binaryOp opa opb =
             (A.rewrap opa (A.Logical oa), (B.Logical ob,[opbi])))
       else fail
   | A.MetaBinary (mv, c, keep, inherited), _ ->
-      X.check_constraints check_binaryOp_constraint c (A.unwrap_mcode mv, opb)
+      let mv' = B.MetaBinaryOpVal opb in
+      check_constraints c mv mv'
 	(fun () ->
-	  let max_min _ =
-            Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_binaryOp opb) in
-	  X.envf keep inherited (mv,Ast_c.MetaBinaryOpVal opb,max_min)
+	  let max_min _ = lin_col_by_pos (Lib_parsing_c.ii_of_binaryOp opb) in
+	  X.envf keep inherited (mv,mv',max_min)
             (fun () -> X.distrf_binaryOp mv opb
 		>>=
 	      (fun mv opb ->
@@ -1710,13 +1701,13 @@ and string_fragments eas ebs =
   let build_comma _ = failwith "no commas" in
   let match_metalist ea =
     match A.unwrap ea with
-      A.MetaFormatList(pct,ida,leninfo,keep,inherited) ->
-        Some(ida,leninfo,keep,inherited,None)
+      A.MetaFormatList(pct,ida,leninfo,constraints,keep,inherited) ->
+        Some(ida,leninfo,constraints,keep,inherited,None)
     |  _ -> None in
-  let build_metalist ea (ida,leninfo,keep,inherited) =
+  let build_metalist ea (ida,leninfo,constraints,keep,inherited) =
     match A.unwrap ea with
-      A.MetaFormatList(pct,_,_,_,_) ->
-	A.MetaFormatList(pct,ida,leninfo,keep,inherited)
+      A.MetaFormatList(pct,_,_,_,_,_) ->
+	A.MetaFormatList(pct,ida,leninfo,constraints,keep,inherited)
     | _ -> failwith "not possible" in
   let mktermval v = Ast_c.MetaFragListVal v in
   let list_filter_function l =
@@ -1752,13 +1743,10 @@ and string_fragment ea (eb,ii) =
 	  (A.FormatFragment(pct1,fmt1) +> wa,
 	   (B.FormatFragment(fmt2), [ib1]))))
   | A.Strdots dots, eb -> failwith "not possible"
-  | A.MetaFormatList(pct1,name1,lenname1,_,_), eb -> failwith "not possible"
+  | A.MetaFormatList(pct1,name1,lenname1,_,_,_), eb -> failwith "not possible"
   | _,_ -> fail
 
 and string_format ea eb =
-   let check_constraints constraints ida idb =
-     X.check_constraints satisfies_generalconstraint constraints (ida, idb)
-       (fun () -> return ((),())) in
   X.all_bound (A.get_inherited ea) >&&>
   let wa x = A.rewrap ea x in
   match A.unwrap ea,eb with
@@ -1772,10 +1760,9 @@ and string_format ea eb =
 	     (B.ConstantFormat(str2),[ib1])))
       else fail
   | A.MetaFormat(ida,constraints,keep,inherited),(B.ConstantFormat(str2),ii) ->
-      check_constraints constraints (A.unwrap_mcode ida) str2 >>=
-      (fun () () ->
-	let max_min _ =
-	  Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_format eb) in
+      check_constraints constraints ida (B.MetaIdVal str2)
+      (fun () ->
+	let max_min _ = lin_col_by_pos (Lib_parsing_c.ii_of_format eb) in
 	X.envf keep inherited (ida,Ast_c.MetaFmtVal eb,max_min) (fun () ->
           X.distrf_format ida eb
             ) >>= (fun ida eb ->
@@ -1792,7 +1779,7 @@ and exec_code_list eas ebs =
   let match_comma ea = None in
   let build_comma _ = failwith "no commas" in
   let match_metalist ea = None in
-  let build_metalist ea (ida,leninfo,keep,inherited) =
+  let build_metalist ea (ida,leninfo,constraints,keep,inherited) =
     failwith "no metalist" in
   let mktermval v = failwith "no metavariables" in
   let special_cases ea eas ebs = None in
@@ -1842,9 +1829,6 @@ and (ident_cpp: info_ident -> (A.ident, B.name) matcher) =
 
 and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
  fun infoidb ida ((idb, iib) as ib) -> (* (idb, iib) as ib *)
-   let check_constraints constraints mida idb =
-     X.check_constraints satisfies_generalconstraint constraints
-       (A.unwrap_mcode mida, idb) (fun () -> return ((),())) in
   X.all_bound (A.get_inherited ida) >&&>
   match A.unwrap ida with
   | A.Id sa ->
@@ -1857,9 +1841,9 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
       else fail
 
   | A.MetaId(mida,constraints,keep,inherited) ->
-      check_constraints constraints mida idb >>=
-      (fun () () ->
-      let max_min _ = Lib_parsing_c.lin_col_by_pos [iib] in
+      check_constraints constraints mida (B.MetaIdVal idb)
+      (fun () ->
+      let max_min _ = lin_col_by_pos [iib] in
       (* use drop_pos for ids so that the pos is not added a second time in
 	 the call to tokenf *)
       X.envf keep inherited (A.drop_pos mida, Ast_c.MetaIdVal idb, max_min)
@@ -1873,9 +1857,9 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
 
   | A.MetaFunc(mida,constraints,keep,inherited) ->
       let is_function _ =
-	check_constraints constraints mida idb >>=
-	(fun wrapper () ->
-          let max_min _ = Lib_parsing_c.lin_col_by_pos [iib] in
+	check_constraints constraints mida (B.MetaIdVal idb)
+	(fun () ->
+          let max_min _ = lin_col_by_pos [iib] in
           X.envf keep inherited (A.drop_pos mida,Ast_c.MetaFuncVal idb,max_min)
 	    (fun () ->
             tokenf mida iib >>= (fun mida iib ->
@@ -1897,9 +1881,9 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
   | A.MetaLocalFunc(mida,constraints,keep,inherited) ->
       (match infoidb with
       | LocalFunction ->
-	  check_constraints constraints mida idb >>=
-	  (fun wrapper () ->
-          let max_min _ = Lib_parsing_c.lin_col_by_pos [iib] in
+	  check_constraints constraints mida (B.MetaIdVal idb)
+	  (fun () ->
+          let max_min _ = lin_col_by_pos [iib] in
           X.envf keep inherited
 	    (A.drop_pos mida,Ast_c.MetaLocalFuncVal idb, max_min)
 	    (fun () ->
@@ -1966,11 +1950,11 @@ and arguments_bis = fun eas ebs ->
   let build_comma ia1 = A.EComma ia1 in
   let match_metalist ea =
     match A.unwrap ea with
-      A.MetaExprList(ida,leninfo,keep,inherited) ->
-	Some(ida,leninfo,keep,inherited,None)
+      A.MetaExprList(ida,leninfo,constraints,keep,inherited) ->
+	Some(ida,leninfo,constraints,keep,inherited,None)
     | _ -> None in
-  let build_metalist _ (ida,leninfo,keep,inherited) =
-    A.MetaExprList(ida,leninfo,keep,inherited) in
+  let build_metalist _ (ida,leninfo,constraints,keep,inherited) =
+    A.MetaExprList(ida,leninfo,constraints,keep,inherited) in
   let mktermval v = Ast_c.MetaExprListVal v in
   let special_cases ea eas ebs = None in
   list_matcher match_dots build_dots match_comma build_comma
@@ -2018,7 +2002,7 @@ and ident_list_bis = fun eas ebs ->
   let match_comma ea = None in
   let build_comma ia1 = failwith "no comma in ident list" in
   let match_metalist ea = None in
-  let build_metalist _ (ida,leninfo,keep,inherited) =
+  let build_metalist _ (ida,leninfo,constraints,keep,inherited) =
     failwith "no metalist in ident list" in
   let mktermval v = failwith "no metalist in ident list" in
   let special_cases ea eas ebs = None in
@@ -2057,13 +2041,13 @@ and parameters_bis eas ebs =
     let rec loop acc p =
       match A.unwrap p with
 	A.AsParam(p,e) -> loop (e :: acc) p
-      | A.MetaParamList(ida,leninfo,keep,inherited) ->
-	  Some ((ida,leninfo,keep,inherited),acc)
+      | A.MetaParamList(ida,leninfo,constraints,keep,inherited) ->
+	  Some ((ida,leninfo,constraints,keep,inherited),acc)
       | _ -> None in
     match loop [] ea with
-      Some ((ida,leninfo,keep,inherited),ids) ->
+      Some ((ida,leninfo,constraints,keep,inherited),ids) ->
 	(match ids with
-	  [] -> Some(ida,leninfo,keep,inherited,None)
+	  [] -> Some(ida,leninfo,constraints,keep,inherited,None)
 	| _ ->
 	    let extra vl max_min k =
 	      let vl =
@@ -2079,22 +2063,26 @@ and parameters_bis eas ebs =
 		  [] -> k ()
 		| x::xs ->
 		    (match A.unwrap x with
-		      A.MetaExprList(ida,A.AnyListLen,keep,inherited) ->
-			X.envf keep inherited
-			  (ida, vl, max_min)
-			  (fun () -> loop xs)
+		      A.MetaExprList
+			(ida,A.AnyListLen,constraints,keep, inherited) ->
+			  check_constraints constraints ida vl
+			    (fun ()->
+			      X.envf keep inherited
+				(ida, vl, max_min)
+				(fun () -> loop xs))
 		    | A.MetaExprList _ ->
 			failwith "length not supported"
 		    | _ -> failwith "unexpected expression") in
 	      loop ids in
-	    Some(ida,leninfo,keep,inherited,Some extra))
+	    Some(ida,leninfo,constraints,keep,inherited,Some extra))
     | None -> None in
-  let rec build_metalist ea (ida,leninfo,keep,inherited) =
+  let rec build_metalist ea (ida,leninfo,constraints,keep,inherited) =
     match A.unwrap ea with
       A.MetaParamList _ ->
-	A.MetaParamList(ida,leninfo,keep,inherited)
+	A.MetaParamList(ida,leninfo,constraints,keep,inherited)
     | A.AsParam(p,e) ->
-	A.AsParam(A.rewrap p (build_metalist p (ida,leninfo,keep,inherited)),
+	A.AsParam(A.rewrap p
+		    (build_metalist p (ida,leninfo,constraints,keep,inherited)),
 		  e)
     | _ -> failwith "not possible" in
   let mktermval v = Ast_c.MetaParamListVal v in
@@ -2142,14 +2130,18 @@ and parameters_bis eas ebs =
 
 and parameter = fun parama paramb ->
   match A.unwrap parama, paramb with
-    A.MetaParam (ida,keep,inherited), eb ->
+    A.MetaParam (ida,constraints,keep,inherited), eb ->
       (* todo: use quaopt, hasreg ? *)
-      let max_min _ =
-	Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_param eb) in
-      X.envf keep inherited (ida,Ast_c.MetaParamVal eb,max_min) (fun () ->
-        X.distrf_param ida eb
-          ) >>= (fun ida eb ->
-            return (A.MetaParam(ida,keep,inherited)+> A.rewrap parama,eb))
+      let max_min _ = lin_col_by_pos (Lib_parsing_c.ii_of_param eb) in
+      let mn = Ast_c.MetaParamVal eb in
+      check_constraints constraints ida mn
+	(fun () ->
+	  X.envf keep inherited (ida,mn,max_min) (fun () ->
+            X.distrf_param ida eb)
+	    >>= (fun ida eb ->
+	      return
+		(A.MetaParam(ida,constraints,keep,inherited)+>
+		 A.rewrap parama,eb)))
   | A.Param (typa, idaopt), eb ->
       let {B.p_register = (hasreg,iihasreg);
 	    p_namei = nameidbopt;
@@ -2209,15 +2201,19 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
    * be no transform of MetaDecl, just matching are allowed.
    *)
 
-  | A.MetaDecl (ida,keep,inherited), _ ->
-      let max_min _ =
-	Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_decl declb) in
-      X.envf keep inherited (ida, Ast_c.MetaDeclVal declb, max_min) (fun () ->
-        X.distrf_decl ida declb
-          ) >>= (fun ida declb ->
-	    return ((mckstart, allminus,
-		     (A.MetaDecl (ida, keep, inherited))+> A.rewrap decla),
-		    declb))
+  | A.MetaDecl (ida,constraints,keep,inherited), _ ->
+      let max_min _ = lin_col_by_pos (Lib_parsing_c.ii_of_decl declb) in
+      let mv = Ast_c.MetaDeclVal declb in
+      check_constraints constraints ida mv
+	(fun () ->
+	  X.envf keep inherited (ida, mv, max_min)
+	    (fun () ->
+              X.distrf_decl ida declb)
+	    >>= (fun ida declb ->
+	      return ((mckstart, allminus,
+		       (A.MetaDecl (ida, constraints,keep, inherited))+>
+		       A.rewrap decla),
+		      declb)))
 
   | A.AsDecl(dec,asdec), decb ->
       declaration (mckstart, allminus, dec) decb >>=
@@ -2289,7 +2285,8 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 		donothing donothing donothing donothing donothing donothing
 		donothing donothing donothing donothing donothing donothing
 		donothing donothing donothing donothing donothing donothing
-		donothing donothing donothing donothing donothing in
+		donothing donothing donothing donothing donothing donothing
+	        donothing donothing in
 	    v.Visitor_ast.rebuilder_declaration decla in
 
 	  xs +> List.fold_left (fun acc var ->
@@ -2398,8 +2395,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 
 and annotated_decl decla declb =
   match A.unwrap decla with
-    A.Ddots _ -> failwith "not possible"
-  | A.DElem(mckstart, allminus, decl) ->
+    A.DElem(mckstart, allminus, decl) ->
       declaration (mckstart, allminus, decl) declb >>=
       fun (mckstart, allminus, decl) declb ->
 	return
@@ -2463,7 +2459,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
          (match A.unwrap tya2 with
          | A.Type(allminus, cv3, tya3) -> (* again allminus not used *)
            (match A.unwrap tya3 with
-           | A.MetaType(ida,keep, inherited) ->
+           | A.MetaType(ida, cstr, keep, inherited) ->
 
                fullType tya2 fake_typeb >>= (fun tya2 fake_typeb ->
 		 let tya1 =
@@ -2476,19 +2472,25 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 		 let typb0 = ((qu, il), typb1) in
 
 		 match fake_typeb with
-		 | _nQ, ((B.TypeName (nameidb, _typ)),[]) ->
-
-                     return (
-                     (A.TyDecl (tya0, ptvirga)) +> A.rewrap decla,
-                     (({B.v_namei = Some (nameidb, B.NoInit);
-                        B.v_type = typb0;
-                        B.v_storage = (B.StoTypedef, inl);
-                        B.v_local = local;
-                        B.v_attr = attrs;
-                        B.v_type_bis = typb0bis;
-                     },
-                       iivirg),iiptvirgb,iistob)
-                     )
+		 | _nQ, ((B.TypeName (nameidb, typ)),[]) ->
+		     begin
+		       match typ with
+			 Some typ' ->
+			   check_constraints cstr ida (B.MetaTypeVal typ')
+			     (fun () ->
+			       return (
+			       (A.TyDecl (tya0, ptvirga)) +> A.rewrap decla,
+			       (({B.v_namei = Some (nameidb, B.NoInit);
+				  B.v_type = typb0;
+				  B.v_storage = (B.StoTypedef, inl);
+				  B.v_local = local;
+				  B.v_attr = attrs;
+				  B.v_type_bis = typb0bis;
+				},
+				 iivirg),iiptvirgb,iistob)
+			      ))
+		       | None -> fail
+		     end
 		 | _ -> raise (Impossible 29)
              )
 
@@ -2698,7 +2700,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        | _ -> error iistob "weird, have both typedef and inline or nothing";
        ) >>= (fun stoa iistob ->
        (match A.unwrap ida with
-       | A.MetaType(_,_,_) ->
+       | A.MetaType(_,_,_,_) ->
 
            let fake_typeb =
              Ast_c.nQ, ((B.TypeName (nameidb, Ast_c.noTypedefDef())), [])
@@ -2761,10 +2763,68 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
       ) fail
 *)
 
+  | A.ConjDecl declas, declb ->
+      let rec loop acc_decl db = function
+	  [] -> return (A.ConjDecl (List.rev acc_decl) +> A.rewrap decla, db)
+	| d::ds ->
+	    onedecl allminus d db >>= (fun decl db ->
+	      loop (decl::acc_decl) db ds) in
+      loop [] (declb, iiptvirgb, iistob) declas
+
    | A.OptDecl _,    _ ->
        failwith "not handling Opt Decl"
 
    | _, ({B.v_namei=Some _}, _) ->
+       fail
+
+and onefield = fun allminus decla (declb, iiptvirgb) ->
+  let match_option f a b =
+    match a, b with
+      None, None -> return (None, None)
+    | Some a, Some b -> f a b >>= (fun a b -> return (Some a, Some b))
+    | None, Some _ | Some _, None -> fail in
+ X.all_bound (A.get_inherited decla) >&&>
+ match A.unwrap decla, declb with
+   A.Field (typa, ida, None, ptvirga),
+   (B.Simple (nameidb, typb), iivirg) ->
+     tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
+     fullType typa typb >>= (fun typa typb ->
+     match_option (ident_cpp DontKnow) ida nameidb >>= (fun ida nameidb ->
+       return (
+       (A.Field (typa, ida, None, ptvirga) +>  A.rewrap decla),
+       ((B.Simple (nameidb, typb),iivirg), iiptvirgb)))))
+ | A.Field (typa, ida, Some (ca, ea), ptvirga),
+     (B.BitField (nameidb, typb, info, eb), iivirg) ->
+     tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
+     fullType typa typb >>= (fun typa typb ->
+     match_option (ident_cpp DontKnow) ida nameidb >>= (fun ida nameidb ->
+     tokenf ca info >>= (fun ca info ->
+     expression ea eb >>= (fun ea eb ->
+       return (
+       (A.Field (typa, ida, Some (ca, ea), ptvirga) +>  A.rewrap decla),
+       ((B.BitField (nameidb, typb, info, eb),iivirg), iiptvirgb)))))))
+
+   | A.DisjField declas, declb -> failwith "DisjField should not arise"
+(*
+      declas +> List.fold_left (fun acc decla ->
+        acc >|+|>
+            (* (declaration (mckstart, allminus, decla) declb) *)
+            (onedecl allminus decla (declb,iiptvirgb, iistob))
+      ) fail
+*)
+
+  | A.ConjField declas, declb ->
+      let rec loop acc_decl db = function
+	  [] -> return (A.ConjField (List.rev acc_decl) +> A.rewrap decla, db)
+	| d::ds ->
+	    onefield allminus d db >>= (fun decl db ->
+	      loop (decl::acc_decl) db ds) in
+      loop [] (declb, iiptvirgb) declas
+
+   | A.OptField _,    _ ->
+       failwith "not handling Opt Field"
+
+   | _, _ ->
        fail
 
 and get_fninfo fninfoa =
@@ -2808,17 +2868,19 @@ and (initialiser: (A.initialiser, Ast_c.initialiser) matcher) =  fun ia ib ->
     X.all_bound (A.get_inherited ia) >&&>
     match (A.unwrap ia,ib) with
 
-    | (A.MetaInit(ida,keep,inherited), ib) ->
-	let max_min _ =
-	  Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_ini ib) in
-	X.envf keep inherited (ida, Ast_c.MetaInitVal ib, max_min)
+    | (A.MetaInit(ida,constraints,keep,inherited), ib) ->
+	let max_min _ = lin_col_by_pos (Lib_parsing_c.ii_of_ini ib) in
+	let mv = Ast_c.MetaInitVal ib in
+	check_constraints constraints ida mv
 	  (fun () ->
-	    X.distrf_ini ida ib >>= (fun ida ib ->
-	      return (
-	        A.MetaInit (ida,keep,inherited) +> A.rewrap ia,
-	        ib
-	     ))
-	  )
+	    X.envf keep inherited (ida, mv, max_min)
+	      (fun () ->
+		X.distrf_ini ida ib >>= (fun ida ib ->
+		  return (
+	          A.MetaInit (ida,constraints,keep,inherited) +> A.rewrap ia,
+	          ib
+		 ))
+	      ))
 
     | A.AsInit(ini,asini), inib ->
 	initialiser ini inib >>= (fun ini inib ->
@@ -2983,7 +3045,7 @@ and str_initialisers = fun allminus ias (ibs, iicomma) ->
 
   (* need unordered is to check if an expensive computation is useful, but if
      ias is null, then the computation is not expensive *)
-  if ias = [] || need_unordered_initialisers ibs
+  if (ias = [] && ibs = []) || need_unordered_initialisers ibs
   then
     initialisers_unordered2 allminus ias_unsplit ibs_split >>=
     (fun ias_unsplit ibs_split ->
@@ -3021,11 +3083,11 @@ and initialisers_ordered2 = fun ias ibs ->
   let build_comma ia1 = A.IComma ia1 in
   let match_metalist ea =
     match A.unwrap ea with
-      A.MetaInitList(ida,leninfo,keep,inherited) ->
-	Some(ida,leninfo,keep,inherited,None)
+      A.MetaInitList(ida,leninfo,cstr,keep,inherited) ->
+	Some(ida,leninfo,cstr,keep,inherited,None)
     | _ -> None in
-  let build_metalist _ (ida,leninfo,keep,inherited) =
-    A.MetaInitList(ida,leninfo,keep,inherited) in
+  let build_metalist _ (ida,leninfo,cstr,keep,inherited) =
+    A.MetaInitList(ida,leninfo,cstr,keep,inherited) in
   let mktermval v = Ast_c.MetaInitListVal v in
   let special_cases ea eas ebs = None in
   let no_ii x = failwith "not possible" in
@@ -3074,28 +3136,29 @@ and initialiser_comma (x,xcomma) (y, commay) =
   | _ -> raise (Impossible 38) (* unsplit_iicomma wrong *)
 
 (* ------------------------------------------------------------------------- *)
-and (struct_fields: (A.annotated_decl list, B.field list) matcher) =
+and (struct_fields: (A.annotated_field list, B.field list) matcher) =
  fun eas ebs ->
   let match_dots ea =
     match A.unwrap ea with
-      A.Ddots(mcode, optexpr) -> Some (mcode, optexpr)
+      A.Fdots(mcode, optexpr) -> Some (mcode, optexpr)
     | _ -> None in
-  let build_dots (mcode, optexpr) = A.Ddots(mcode, optexpr) in
+  let build_dots (mcode, optexpr) = A.Fdots(mcode, optexpr) in
   let match_comma ea = None in
   let build_comma ia1 = failwith "not possible" in
   let match_metalist ea =
     match A.unwrap ea with
-      A.DElem(mckstart,allminus,d) ->
+      A.FElem(mckstart,allminus,d) ->
 	(match A.unwrap d with
-	  A.MetaFieldList(ida,leninfo,keep,inherited) ->
-	    Some(ida,leninfo,keep,inherited,None)
+	  A.MetaFieldList(ida,leninfo,cstr,keep,inherited) ->
+	    Some(ida,leninfo,cstr,keep,inherited,None)
 	| _ -> None)
     | _ -> None in
-  let build_metalist ea (ida,leninfo,keep,inherited) =
+  let build_metalist ea (ida,leninfo,cstr,keep,inherited) =
     match A.unwrap ea with
-      A.DElem(mckstart,allminus,d) ->
-	A.DElem(mckstart,allminus,
-		(A.rewrap ea (A.MetaFieldList(ida,leninfo,keep,inherited))))
+      A.FElem(mckstart,allminus,d) ->
+	A.FElem(mckstart,allminus,
+		(A.rewrap ea
+		   (A.MetaFieldList(ida,leninfo,cstr,keep,inherited))))
     | _ -> failwith "not possible" in
   let mktermval v =
     (* drop empty ii information, because nothing between elements *)
@@ -3128,26 +3191,29 @@ and (struct_fields: (A.annotated_decl list, B.field list) matcher) =
     filter_fields eas (make_ebs ebs) >>=
   (fun eas ebs -> return (eas,unmake_ebs ebs))
 
-and (struct_field: (A.annotated_decl, B.field) matcher) =
+and (struct_field: (A.annotated_field, B.field) matcher) =
   fun fa fb ->
     match A.unwrap fa with
-      A.Ddots _ -> failwith "dots should be treated otherwise"
-    | A.DElem(mckstart,allminus,ifa) ->
+      A.Fdots _ -> failwith "dots should be treated otherwise"
+    | A.FElem(mckstart,allminus,ifa) ->
 
 	(match A.unwrap ifa,fb with
-	| A.MetaField (ida,keep,inherited), _ ->
-	    let max_min _ =
-	      Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_field fb) in
-	    X.envf keep inherited (ida, Ast_c.MetaFieldVal fb, max_min)
+	| A.MetaField (ida,cstr,keep,inherited), _ ->
+	    let max_min _ = lin_col_by_pos (Lib_parsing_c.ii_of_field fb) in
+	    let mv = Ast_c.MetaFieldVal fb in
+	    check_constraints cstr ida mv
 	      (fun () ->
-		X.distrf_field ida fb
+		X.envf keep inherited (ida, mv, max_min)
+		  (fun () ->
+		    X.distrf_field ida fb
 		  ) >>= (fun ida fb ->
 		    return
-		      (A.DElem
+		      (A.FElem
 			 (mckstart,allminus,
-			  (A.MetaField (ida, keep, inherited))+> A.rewrap ifa)
+			  (A.MetaField (ida, cstr, keep, inherited))
+			    +> A.rewrap ifa)
 			 +> A.rewrap fa,
-		       fb))
+		       fb)))
 	| _,B.DeclarationField (B.FieldDeclList ([onevar,iivirg],iiptvirg)) ->
 
         (* no modif possible on iistartb; included for parallelism with
@@ -3155,28 +3221,16 @@ and (struct_field: (A.annotated_decl, B.field) matcher) =
 	    let (iiptvirgb,iifakestart) = tuple_of_list2 iiptvirg in
 
 	    assert (iivirg = []);
-	    (match onevar with
-	    | B.BitField (sopt, typb, _, expr) ->
-		pr2_once "warning: bitfield not handled by ast_cocci";
-		fail
-	    | B.Simple (None, typb) ->
-		pr2_once
-		  "warning: unnamed struct field not handled by ast_cocci";
-		fail
-	    | B.Simple (Some nameidb, typb) ->
-		X.tokenf_mck mckstart iifakestart >>=
-		(fun mckstart iifakestart ->
-		  (* build a declaration from a struct field *)
-		  let (fake_var,iisto) = build_decl nameidb typb iivirg in
-		  onedecl allminus ifa (fake_var,iiptvirgb,iisto) >>=
-		  (fun ifa (fake_var,iiptvirgb,iisto) ->
-		    let (onevar,iivirg) = unbuild_decl fake_var in
-
+	    X.tokenf_mck mckstart iifakestart >>=
+	    (fun mckstart iifakestart ->
+	      (* build a declaration from a struct field *)
+	      onefield allminus ifa ((onevar, iivirg),iiptvirgb) >>=
+		  (fun ifa (onevar,iiptvirgb) ->
 		    return (
-		    (A.DElem(mckstart,allminus,ifa) +> A.rewrap fa),
+		    (A.FElem(mckstart,allminus,ifa) +> A.rewrap fa),
 		    ((B.DeclarationField
-			(B.FieldDeclList([onevar, iivirg],
-					 [iiptvirgb;iifakestart]))))))))
+			(B.FieldDeclList([onevar],
+					 [iiptvirgb;iifakestart])))))))
 
 	| _,B.DeclarationField (B.FieldDeclList (xs,iiptvirg)) ->
 
@@ -3197,28 +3251,14 @@ and (struct_field: (A.annotated_decl, B.field) matcher) =
 		acc >||>
 		(X.tokenf_mck mckstart iifakestart >>=
 		 (fun mckstart iifakestart ->
-		   (match onevar with
-		   | B.BitField (sopt, typb, _, expr) ->
-		       pr2_once "warning: bitfield not handled by ast_cocci";
-		       fail
-		   | B.Simple (None, typb) ->
-		       pr2_once
-			 "warning: unnamed struct field not handled by ast_cocci";
-		       fail
-		   | B.Simple (Some nameidb, typb) ->
-
-		       (* build a declaration from a struct field *)
-		       let (fake_var,iisto) = build_decl nameidb typb iivirg in
-		       onedecl allminus ifa (fake_var,iiptvirgb,iisto) >>=
-		       (fun ifa (fake_var,iiptvirgb,iisto) ->
-			 let (onevar,iivirg) = unbuild_decl fake_var in
-
-			 return (
-			 (A.DElem(mckstart,allminus,ifa) +> A.rewrap fa),
-			 ((B.DeclarationField
-			     (B.FieldDeclList
-				(repln n (onevar,iivirg) 0 xs,
-				 [iiptvirgb;iifakestart]))))))))))
+		   onefield allminus ifa ((onevar,iivirg), iiptvirgb) >>=
+		     (fun ifa (one_var,iiptvirgb) ->
+		       return (
+		       (A.FElem(mckstart,allminus,ifa) +> A.rewrap fa),
+		       ((B.DeclarationField
+			   (B.FieldDeclList
+			      (repln n (onevar,iivirg) 0 xs,
+			       [iiptvirgb;iifakestart])))))))))
 		fail in
 	    if !Flag.sgrep_mode2(*X.mode = PatternMode *) ||
   	       A.get_safe_decl ifa
@@ -3233,39 +3273,10 @@ and (struct_field: (A.annotated_decl, B.field) matcher) =
 	| _,B.EmptyField _iifield ->
 	    fail
 
-	| A.MacroDecl (stoa,bsa,lpa,eas,rpa,enda),
-	    B.MacroDeclField ((sb,ebs),ii) ->
-	    raise Todo
 	| _,B.MacroDeclField ((sb,ebs),ii) -> fail
 
 	| _,B.CppDirectiveStruct directive -> fail
 	| _,B.IfdefStruct directive -> fail)
-
-and build_decl nameidb typb iivirg =
-  let iisto = [] in
-  let stob = B.NoSto, false in
-  let fake_var =
-    ({B.v_namei = Some (nameidb, B.NoInit);
-       B.v_type = typb;
-       B.v_storage = stob;
-       B.v_local = Ast_c.NotLocalDecl;
-       B.v_attr = Ast_c.noattr;
-       B.v_type_bis = ref None;
-              (* the struct field should also get expanded ? no it's not
-               * important here, we will rematch very soon *)
-     },
-     iivirg) in
-  (fake_var,iisto)
-
-and unbuild_decl = function
-    ({B.v_namei = Some (nameidb, B.NoInit);
-       B.v_type = typb;
-       B.v_storage = stob;
-     }, iivirg) ->
-
-       let onevar = B.Simple (Some nameidb, typb) in
-       (onevar,iivirg)
-  | _ -> raise (Impossible 40)
 
 (* ---------------------------------------------------------------------- *)
 
@@ -3281,7 +3292,7 @@ and enum_fields = fun eas ebs ->
     | _ -> None in
   let build_comma ia1 = A.EComma ia1 in
   let match_metalist ea = None in
-  let build_metalist _ (ida,leninfo,keep,inherited) =
+  let build_metalist _ (ida,leninfo,cstr,keep,inherited) =
     failwith "not possible" in
   let mktermval v = failwith "not possible" in
   let special_cases ea eas ebs = None in
@@ -3419,7 +3430,7 @@ and (fullTypebis: (A.typeC, Ast_c.fullType) matcher) =
   match A.unwrap ta, tb with
 
   (* cas general *)
-  | A.MetaType(ida,keep, inherited),  typb ->
+  | A.MetaType(ida,cstr,keep, inherited),  typb ->
       let type_present =
 	let (tyq, (ty, tyii)) = typb in
 	match ty with
@@ -3440,13 +3451,15 @@ and (fullTypebis: (A.typeC, Ast_c.fullType) matcher) =
 	    List.for_all Ast_c.is_fake tyii in
       if type_present && not position_required_but_unavailable
       then
-	let max_min _ =
-	  Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_type typb) in
-	X.envf keep inherited (ida, B.MetaTypeVal typb, max_min) (fun () ->
-          X.distrf_type ida typb >>= (fun ida typb ->
-          return (
-            A.MetaType(ida,keep, inherited) +> A.rewrap ta,
-            typb)))
+	let max_min _ = lin_col_by_pos (Lib_parsing_c.ii_of_type typb) in
+	check_constraints cstr ida (B.MetaTypeVal typb)
+	  (fun () ->
+	    X.envf keep inherited (ida, B.MetaTypeVal typb, max_min) (fun () ->
+	      X.distrf_type ida typb >>= (fun ida typb ->
+		return (
+		A.MetaType(ida, cstr, keep, inherited) +> A.rewrap ta,
+		typb)))
+	      )
       else fail (* K&R, or macro, or C++? *)
   | unwrap, (qub, typb) ->
       typeC ta typb >>= (fun ta typb ->
@@ -3630,11 +3643,14 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 		  (signaopt,
 		   Some (A.rewrap basea (A.BaseType (basea1,strings1))))
 		| _ -> failwith "not possible")
-	| A.MetaType(ida,keep,inherited) ->
-	    simulate_signed_meta ta basea (Some signaopt) tb baseb ii
-	      (function (basea, Some signaopt) ->
-		A.SignedT(signaopt,Some basea)
-		| _ -> failwith "not possible")
+	| A.MetaType(ida, cstr, keep, inherited) ->
+	    check_constraints cstr ida (B.MetaTypeVal (Ast_c.nQ, tb))
+	      (fun () ->
+		simulate_signed_meta ta basea (Some signaopt) tb baseb ii
+		  (function (basea, Some signaopt) ->
+		    A.SignedT(signaopt,Some basea)
+		    | _ -> failwith "not possible")
+		  )
 	| _ -> failwith "not possible")
     | A.SignedT (signa,None),   (B.BaseType baseb, ii) ->
         let signbopt, iibaseb = split_signb_baseb_ii (baseb, ii) in
@@ -3865,7 +3881,8 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
            | B.CppConcatenatedName _ | B.CppVariadicName _ |B.CppIdentBuilder _
                -> raise Todo
         )
-
+    | _, (B.FieldType (tyb, _, _), _) ->
+	typeC ta (snd tyb)
 
     | _, (B.NoType, ii) -> fail
     | _, (B.TypeOfExpr e, ii) -> fail
@@ -4189,17 +4206,25 @@ and compatible_base_type a signa b =
         |B.SizeType|B.SSizeType|B.PtrDiffType) -> fail
 
 and compatible_base_type_meta a signa qua b ii local =
+  let fullType_of_baseType b = Ast_c.mk_ty (Ast_c.BaseType b) [] in
   match A.unwrap a, b with
-    A.MetaType(ida,keep,inherited),
+    A.MetaType(ida, cstr, keep, inherited),
     B.IntType (B.Si (signb, B.CChar2)) ->
-      compatible_sign signa signb >>= fun _ _ ->
-	let newb = ((qua, (B.BaseType (B.IntType B.CChar),ii)),local) in
-	compatible_typeC a newb
-  | A.MetaType(ida,keep,inherited), B.IntType (B.Si (signb, ty)) ->
-      compatible_sign signa signb >>= fun _ _ ->
-	let newb =
-	  ((qua, (B.BaseType (B.IntType (B.Si (B.Signed, ty))),ii)),local) in
-	compatible_typeC a newb
+      check_constraints cstr ida (B.MetaTypeVal (fullType_of_baseType b))
+	(fun () ->
+	  compatible_sign signa signb >>= fun _ _ ->
+	    let newb = ((qua, (B.BaseType (B.IntType B.CChar),ii)),local) in
+	    compatible_typeC a newb
+	    )
+  | A.MetaType(ida, cstr, keep, inherited), B.IntType (B.Si (signb, ty)) ->
+      check_constraints cstr ida (B.MetaTypeVal (fullType_of_baseType b))
+	(fun () ->
+	  compatible_sign signa signb >>= fun _ _ ->
+	    let newb =
+	      ((qua, (B.BaseType (B.IntType (B.Si (B.Signed, ty))),ii)),
+	       local) in
+	    compatible_typeC a newb
+	    )
   | _, B.FloatType B.CLongDouble ->
       pr2_once "no longdouble in cocci";
       fail
@@ -4248,8 +4273,11 @@ and compatible_typeC a (b,local) =
         (match A.unwrap ty with
           A.BaseType (ty, _) ->
 	    compatible_base_type ty (Some signa) b
-        | A.MetaType(ida,keep,inherited) ->
-	    compatible_base_type_meta ty (Some signa) qua b ii local
+        | A.MetaType(ida, cstr, keep, inherited) ->
+	    check_constraints cstr ida (B.MetaTypeVal tyb)
+	      (fun () ->
+		compatible_base_type_meta ty (Some signa) qua b ii local
+		  )
 	| _ -> failwith "not possible")
 
     | A.Pointer (a, _), (qub, (B.Pointer b, ii)) ->
@@ -4289,13 +4317,17 @@ and compatible_typeC a (b,local) =
 	then ok
 	else fail
 
-    | A.MetaType (ida,keep,inherited),     typb ->
-	let max_min _ =
-	  Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_type typb) in
+    | A.MetaType (ida, cstr, keep, inherited), typb ->
+	let max_min _ = lin_col_by_pos (Lib_parsing_c.ii_of_type typb) in
         let ida' = A.make_mcode (A.unwrap_mcode ida) in
-        X.envf keep inherited (ida', B.MetaTypeVal typb, max_min)
-	  (fun () -> ok
-        )
+      check_constraints cstr ida (B.MetaTypeVal typb)
+	(fun () ->
+          X.envf keep inherited (ida', B.MetaTypeVal typb, max_min)
+	    (fun () -> ok
+            )
+	    )
+    | _, (_, (B.FieldType (typb, _, _), _)) ->
+	loop tya typb
 
   (* subtil: must be after the MetaType case *)
     | a, (qub, (B.TypeName (_namesb, Some b), noii)) ->
@@ -4333,7 +4365,7 @@ and decimal_type_exp nm sb ii =
     | A.MV(ida,keep,inherited) ->
 	(* degenerate version of MetaId, no transformation possible *)
         let (ib1, ib2) = tuple_of_list2 ii in
-	let max_min _ = Lib_parsing_c.lin_col_by_pos [ib2] in
+	let max_min _ = lin_col_by_pos [ib2] in
 	let mida = A.make_mcode ida in
 	X.envf keep inherited (mida, B.MetaIdVal sb, max_min)
 	  (fun () -> ok)
@@ -4350,7 +4382,7 @@ and structure_type_name nm sb ii =
         | A.MetaId (ida, _, keep, inherited) ->
             (* degenerate version of MetaId, no transformation possible *)
             let (ib1, ib2) = tuple_of_list2 ii in
-            let max_min _ = Lib_parsing_c.lin_col_by_pos [ib2] in
+            let max_min _ = lin_col_by_pos [ib2] in
             X.envf keep inherited (ida, B.MetaIdVal sb, max_min) (fun () -> ok)
         | _ -> failwith "Cocci_vs_c.structure_type_name: unimplemented"
   in
@@ -4437,13 +4469,13 @@ and define_paramsbis = fun eas ebs ->
   let build_comma ia1 = A.DPComma ia1 in
   let match_metalist ea =
     match A.unwrap ea with
-      A.MetaDParamList(ida,leninfo,keep,inherited) ->
-        Some(ida,leninfo,keep,inherited,None)
+      A.MetaDParamList(ida,leninfo,cstr,keep,inherited) ->
+        Some(ida,leninfo,cstr,keep,inherited,None)
     |  _ -> None in
-  let build_metalist ea (ida,leninfo,keep,inherited) =
+  let build_metalist ea (ida,leninfo,cstr,keep,inherited) =
     match A.unwrap ea with
-      A.MetaDParamList(_,_,_,_) ->
-	A.MetaDParamList(ida,leninfo,keep,inherited)
+      A.MetaDParamList(_,_,_,_,_) ->
+	A.MetaDParamList(ida,leninfo,cstr,keep,inherited)
     | _ -> failwith "not possible" in
   let mktermval v = Ast_c.MetaDParamListVal v in
   let special_cases ea eas ebs = None in
@@ -4462,6 +4494,106 @@ and define_parameter = fun parama paramb ->
         return ((A.DParam ida)+> A.rewrap parama,(idb, [ib1])))
   | A.OptDParam _, _ -> failwith "handling Opt for define parameters"
   | _ -> fail in
+
+  let rec check_constraints ida idb env c =
+    let get_assignOp op = assignOpA_of_assignOpB (fst op) in
+    let get_binaryOp op = binaryOpA_of_binaryOpB (fst op) in
+    let check_string f =
+      let s =
+	match idb with
+	  B.MetaIdVal s -> Some s
+	| B.MetaExprVal (e, _, _) -> Some (string_of_expression e)
+	| B.MetaTypeVal t -> Some (Pretty_print_c.string_of_fullType t)
+	| B.MetaAssignOpVal op ->
+	    Some (A.string_of_assignOp (A.make_term (get_assignOp op)))
+	| B.MetaBinaryOpVal op ->
+	    Some (A.string_of_binaryOp (A.make_term (get_binaryOp op)))
+	| _ -> None in
+      match s with
+	Some s -> f s
+      | None -> fail in
+    let check_int f =
+      let i =
+	match idb with
+	  B.MetaExprVal (e, _, _) ->
+	    begin
+	      match B.unwrap_expr e with
+		B.Constant (B.Int (i, _)) -> Some (int_of_string i)
+	      | _ -> None
+	    end
+	| B.MetaListlenVal i -> Some i
+	| _ -> None in
+      match i with
+	Some i -> f i
+      | None -> fail in
+    let check_operator c =
+      match c, idb with
+	A.CstrAssignOp op, B.MetaAssignOpVal op' ->
+	  assignOp_eq (A.unwrap op) (get_assignOp op')
+      | A.CstrBinaryOp op, B.MetaBinaryOpVal op' ->
+	  binaryOp_eq (A.unwrap op) (get_binaryOp op')
+      | _ -> false in
+    let bool b =
+      if b then return ((), ())
+      else fail in
+    match c with
+      A.CstrFalse -> fail
+    | A.CstrTrue -> return ((), ())
+    | A.CstrAnd list ->
+	let rec loop list =
+	  match list with
+	    [] -> return ((), ())
+	  | hd :: tl ->
+	      check_constraints ida idb env hd >>=
+	      (fun () () -> loop tl) in
+	loop list
+    | A.CstrOr list ->
+	let rec loop list =
+	  match list with
+	    [] -> fail
+	  | hd :: tl ->
+	      check_constraints ida idb env hd >||>
+	      loop tl in
+	loop list
+    | A.CstrNot c ->
+	X.mnot (check_constraints ida idb env c) ((), ())
+    | A.CstrConstant (A.CstrString s) ->
+	check_string (fun s' -> bool (s = s'))
+    | A.CstrConstant (A.CstrInt c') ->
+	check_int (fun i' -> bool (match c' with
+	  A.CstrIntEq i -> i' = i
+	| A.CstrIntLeq i -> i' <= i
+	| A.CstrIntGeq i -> i' >= i))
+    | A.CstrOperator c -> bool (check_operator c)
+    | A.CstrMeta_name mn ->
+	begin
+	  match Common.optionise (fun () -> env mn) with
+	    Some mv when equal_inh_metavarval mv idb -> return ((), ())
+	  | _ -> fail
+	end
+    | A.CstrRegexp (s, re) ->
+	check_string (fun s' -> bool (Regexp.string_match re s'))
+    | A.CstrScript script_constraint ->
+	bool (satisfies_script_constraint script_constraint ida idb env)
+    | A.CstrExpr e ->
+	begin
+	  match idb with
+	    B.MetaExprVal (e', _, _) ->
+	      expression e e' >>= (fun _ _ -> return ((), ()))
+	  | _ ->
+	      match A.string_of_expression e with
+		Some s -> check_string (fun s' -> bool (s = s'))
+	      | _ -> fail
+	end
+    | A.CstrSub _ -> failwith "Sub-expression constraint unallowed here"
+    | A.CstrType ty ->
+	begin
+	  match idb with
+	    B.MetaTypeVal ty' ->
+	      fullType ty ty' >>= (fun _ _ -> return ((), ()))
+	  | _ -> fail
+	end in
+  X.constraint_checker := check_constraints;
 
 (*****************************************************************************)
 (* Entry points *)
@@ -4493,8 +4625,8 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
    * Can match TrueNode/FalseNode/... so must be placed before those cases.
    *)
 
-  | A.MetaRuleElem(mcode,keep,inherited), unwrap_node ->
-      let default = A.MetaRuleElem(mcode,keep,inherited), unwrap_node in
+  | A.MetaRuleElem(mcode,cstr,keep,inherited), unwrap_node ->
+      let default = A.MetaRuleElem(mcode,cstr,keep,inherited), unwrap_node in
       (match unwrap_node with
       | F.CaseNode _
       | F.TrueNode _ | F.FalseNode | F.AfterNode _
@@ -4524,7 +4656,7 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
       | F.EndStatement (Some i1) ->
           tokenf mcode i1 >>= (fun mcode i1 ->
             return (
-              A.MetaRuleElem (mcode,keep, inherited),
+              A.MetaRuleElem (mcode,cstr,keep, inherited),
               F.EndStatement (Some i1)
             ))
 
@@ -4536,7 +4668,7 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
           else
           X.distrf_node (generalize_mcode mcode) node >>= (fun mcode node ->
             return (
-              A.MetaRuleElem(mcode,keep, inherited),
+              A.MetaRuleElem(mcode,cstr,keep, inherited),
               F.unwrap node
             ))
       )
@@ -4559,28 +4691,30 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
    * "header"-statement. We transform only MetaRuleElem, not MetaStmt.
    * So can't have been called in transform.
    *)
-  | A.MetaStmt (ida,keep,metainfoMaybeTodo,inherited),  F.Decl(_) -> fail
+  | A.MetaStmt (ida,cstr,keep,metainfoMaybeTodo,inherited),  F.Decl(_) -> fail
 
-  | A.MetaStmt (ida,keep,metainfoMaybeTodo,inherited),  unwrap_node ->
+  | A.MetaStmt (ida,cstr,keep,metainfoMaybeTodo,inherited),  unwrap_node ->
       (* todo: should not happen in transform mode *)
 
       (match F.extract_fullstatement node with
       | Some stb ->
-	    let max_min _ =
-	      Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_stmt stb) in
-            X.envf keep inherited
-	      (ida, Ast_c.MetaStmtVal(stb,Ast_c.WITH_TYPES), max_min)
-	      (fun () ->
-              (* no need tag ida, we can't be called in transform-mode *)
-		return (
-		A.MetaStmt (ida, keep, metainfoMaybeTodo, inherited),
-		unwrap_node
-	      )
+	    let max_min _ = lin_col_by_pos (Lib_parsing_c.ii_of_stmt stb) in
+	    let mv = Ast_c.MetaStmtVal(stb,Ast_c.WITH_TYPES) in
+	    X.check_constraints (A.unwrap_mcode ida) mv cstr
+              (fun () ->
+		X.envf keep inherited
+		  (ida, mv, max_min)
+		  (fun () ->
+		    (* no need tag ida, we can't be called in transform-mode *)
+		    return (
+		    A.MetaStmt (ida, cstr, keep, metainfoMaybeTodo, inherited),
+		    unwrap_node
+		   ))
 	    )
       | None -> fail
       )
 
-  | A.MetaStmtList (ida,leninfo,keep,inherited),  unwrap_node ->
+  | A.MetaStmtList (ida,leninfo,cstr,keep,inherited),  unwrap_node ->
       (* todo: should not happen in transform mode *)
 
       (match F.extract_fullstatement node with
@@ -4588,16 +4722,18 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
 	  match_len stb leninfo
 	    (fun _ ->
 	      let max_min _ =
-		Lib_parsing_c.lin_col_by_pos
-		  (Lib_parsing_c.ii_of_stmtseqlist stb) in
-              X.envf keep inherited
-		(ida, Ast_c.MetaStmtListVal(stb,Ast_c.WITH_TYPES), max_min)
+		lin_col_by_pos(Lib_parsing_c.ii_of_stmtseqlist stb) in
+	      let mv = Ast_c.MetaStmtListVal(stb,Ast_c.WITH_TYPES) in
+	      X.check_constraints (A.unwrap_mcode ida) mv cstr
 		(fun () ->
-              (* no need tag ida, we can't be called in transform-mode *)
-		  return (
-		  A.MetaStmtList (ida, leninfo, keep, inherited),
-		  unwrap_node
-	    )))
+		  X.envf keep inherited
+		    (ida, mv, max_min)
+		    (fun () ->
+		    (* no need tag ida, we can't be called in transform-mode *)
+		      return (
+		      A.MetaStmtList (ida, leninfo, cstr, keep, inherited),
+		      unwrap_node
+		     ))))
       | _ -> fail
       )
 
@@ -5167,4 +5303,5 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
 
 
   )
+
 end

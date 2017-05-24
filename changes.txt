@@ -26,12 +26,50 @@
 
 * 1.0.7
 ** Language:
+- Allow constraints on any metavariables. Constraints can be specified
+  by comprehension (= { ... } or != { ... }, with each item referring
+  to a constant identifier or an inherited meta-variable, and
+  curly-brackets can be omitted for a single item), regular expression
+  (=~ "..." or !~ "..."), integer comparison (<=, <, >=, >) or scripts
+  (:script:...). Constraints can be used in conjunctions (&&),
+  disjunctions (||) and can be negated (!)  and parenthesed.
+  Sub-expression constraints (<=) are still dealt separately and can
+  only be used individually or in conjunction with other constraints
+  (not under a disjunction or a negation). See tests/constraints.cocci
+  and tests/type_constraints.cocci
+- Allow script finalizers for parallel computation.  See
+  tests/countcalls.cocci and tests/countcalls_python.cocci
+- Allow disjunctions on a wider range of syntactic constructions (function
+  definitions, variable declarations, ...). See tests/disj.cocci.
+- Finalizers now occur before iteration loop and can register new
+  iterations.
+- Multiple initializers and finalizers are allowed for the same language.
+- Support function pointer types in casts.
+- Allow something identified as a MacroDecl as a structure field.
+- Conjunctions, ie ( & ), for declarations.
+- Optional bitfield annotation on expression meta-variables. Requested by
+  Kumar Gala. See tests/bitfield_matching.cocci
+- Bit-field matching, see tests/bitfield.cocci
+- Anonymous field matching, see tests/anonfield.cocci
 ** Features:
 - Better error reporting for unparsable terms when using make_expr etc in
   script code.  Problem reported by Markus Elfring.
+- --ignore command line argument to specify a prefix of the names of files
+  that should be ignored.
+- added --max-width to adjust the line width for generated code.  Requested
+  by Kumar Gala.
+- forall and exists for quantifying over the success of matching depends on
+  constraints.
 ** Bugfix:
 - Improved detection of metavariables in strings.  Problem reported by
   Wolfram Sang.
+- Don't require all metavars in type exp meta constraint to be bound,
+  unless only one type is specified.  Problem reported by Michael Stefaniuc.
+- Finalization scripts are executed even in case there is no other script rules.
+- spatch should find standard.iso and Python modules even if COCCINELLE_HOME
+  and PYTHONPATH are not set (either in the directory where the executable is
+  if it contains standard.iso, or in ../lib/coccinelle relatively to where the
+  executable is).
 * 1.0.6
 ** Language:
 - Allow \ in #define in semantic patch rules, to allow body with multiple

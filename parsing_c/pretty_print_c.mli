@@ -24,7 +24,8 @@ type pretty_printers = {
   fragment        : Ast_c.string_fragment printer;
   fragment_list   : (Ast_c.string_fragment list) printer;
   format          : Ast_c.string_format printer;
-  flow            : Control_flow_c.node printer
+  flow            : Control_flow_c.node printer;
+  name            : Ast_c.name printer
 }
 
 val mk_pretty_printers :
@@ -108,3 +109,5 @@ val string_of_expression: Ast_c.expression -> string
  *)
 val string_of_ifdef_guard: Ast_c.ifdef_guard -> string
 val string_of_toplevel: Ast_c.toplevel -> string
+val string_of_fullType: Ast_c.fullType -> string
+val string_of_name: Ast_c.name -> string

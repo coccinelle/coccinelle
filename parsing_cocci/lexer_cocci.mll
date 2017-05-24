@@ -15,6 +15,7 @@ exception Lexical of string
 let tok = Lexing.lexeme
 
 let line = ref 1
+let file = ref ""
 let logical_line = ref 0
 
 (* ---------------------------------------------------------------------- *)
@@ -250,6 +251,8 @@ let id_tokens lexbuf =
   | "virtual" when in_prolog || in_rule_name || in_meta ->
       (* don't want to allow virtual as a rule name *)
       check_context_linetype s; TVirtual
+  | "merge" when in_prolog || in_rule_name || in_meta ->
+      check_context_linetype s; TMerge
   | "disable" when in_rule_name ->  check_context_linetype s; TDisable
   | "extends" when in_rule_name -> check_context_linetype s; TExtends
   | "depends" when in_rule_name -> check_context_linetype s; TDepends
@@ -262,7 +265,7 @@ let id_tokens lexbuf =
   | "exists" when in_rule_name  -> check_context_linetype s; TExists
   | "forall" when in_rule_name  -> check_context_linetype s; TForall
   | "script" when (in_rule_name || in_meta) ->
-      check_context_linetype s; TScript
+      check_context_linetype s; TScript (!file, !line)
   | "initialize" when in_rule_name -> check_context_linetype s; TInitialize
   | "finalize" when in_rule_name   -> check_context_linetype s; TFinalize
 
@@ -351,8 +354,8 @@ let init _ =
   Hashtbl.clear symbol_names;
   let get_name (_,x) = x in
   Data.add_meta_meta :=
-    (fun name pure ->
-      let fn clt = TMeta(name,pure,clt) in
+    (fun name cstr pure ->
+      let fn clt = TMeta(name,cstr,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_id_meta :=
     (fun name constraints pure ->
@@ -371,24 +374,24 @@ let init _ =
       let fn clt = TMetaId(name,Ast.CstrTrue,seed,Ast0.Impure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_type_meta :=
-    (fun name pure ->
-      let fn clt = TMetaType(name,pure,clt) in
+    (fun name cstr pure ->
+      let fn clt = TMetaType(name,cstr,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_init_meta :=
-    (fun name pure ->
-      let fn clt = TMetaInit(name,pure,clt) in
+    (fun name cstr pure ->
+      let fn clt = TMetaInit(name,cstr,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_initlist_meta :=
-    (function name -> function lenname -> function pure ->
-      let fn clt = TMetaInitList(name,lenname,pure,clt) in
+    (fun name lenname cstr pure ->
+      let fn clt = TMetaInitList(name,lenname,cstr,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_param_meta :=
-    (function name -> function pure ->
-      let fn clt = TMetaParam(name,pure,clt) in
+    (fun name cstr pure ->
+      let fn clt = TMetaParam(name,cstr,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_paramlist_meta :=
-    (function name -> function lenname -> function pure ->
-      let fn clt = TMetaParamList(name,lenname,pure,clt) in
+    (fun name lenname cstr pure ->
+      let fn clt = TMetaParamList(name,lenname,cstr,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_const_meta :=
     (fun tyopt name constraints pure ->
@@ -399,8 +402,8 @@ let init _ =
       let fn clt = TMetaErr(name,constraints,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_exp_meta :=
-    (fun tyopt name constraints pure ->
-      let fn clt = TMetaExp(name,constraints,pure,tyopt,clt) in
+    (fun tyopt name constraints pure bitfield ->
+      let fn clt = TMetaExp(name,constraints,pure,tyopt,clt,bitfield) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_idexp_meta :=
     (fun tyopt name constraints pure ->
@@ -415,20 +418,20 @@ let init _ =
       let fn clt = TMetaGlobalIdExp(name,constraints,pure,tyopt,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_explist_meta :=
-    (function name -> function lenname -> function pure ->
-      let fn clt = TMetaExpList(name,lenname,pure,clt) in
+    (fun name lenname cstr pure ->
+      let fn clt = TMetaExpList(name,lenname,cstr,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_decl_meta :=
-    (function name -> function pure ->
-      let fn clt = TMetaDecl(name,pure,clt) in
+    (fun name cstr pure ->
+      let fn clt = TMetaDecl(name,cstr,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_field_meta :=
-    (function name -> function pure ->
-      let fn clt = TMetaField(name,pure,clt) in
+    (fun name cstr pure ->
+      let fn clt = TMetaField(name,cstr,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_field_list_meta :=
-    (function name -> function lenname -> function pure ->
-      let fn clt = TMetaFieldList(name,lenname,pure,clt) in
+    (fun name lenname cstr pure ->
+      let fn clt = TMetaFieldList(name,lenname,cstr,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_fmt_meta :=
     (function name -> function iconstraints ->
@@ -437,23 +440,24 @@ let init _ =
 	(get_name name,(name,iconstraints)) :: !Data.format_metavariables;
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_fmtlist_meta :=
-    (function name -> function lenname ->
+    (fun name constraints lenname ->
       let fn clt =
 	failwith "format list metavariable only allowed in a string" in
       Data.format_list_metavariables :=
-	(get_name name,(name,lenname)) :: !Data.format_list_metavariables;
+	(get_name name,(name,lenname,constraints))
+	:: !Data.format_list_metavariables;
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_stm_meta :=
-    (function name -> function pure ->
-      let fn clt = TMetaStm(name,pure,clt) in
+    (fun name cstr pure ->
+      let fn clt = TMetaStm(name,cstr,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_stmlist_meta :=
-    (function name -> function lenname -> function pure ->
-      let fn clt = TMetaStmList(name,lenname,pure,clt) in
+    (fun name lenname cstr pure ->
+      let fn clt = TMetaStmList(name,lenname,cstr,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_dparamlist_meta :=
-    (function name -> function lenname -> function pure ->
-      let fn clt = TMetaDParamList(name,lenname,pure,clt) in
+    (fun name lenname cstr pure ->
+      let fn clt = TMetaDParamList(name,lenname,cstr,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_func_meta :=
     (fun name constraints pure ->

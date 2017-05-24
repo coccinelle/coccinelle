@@ -21,12 +21,7 @@ let out_suffix = ".stdout"
 
 let flush_scripts_output () =
   flush stdout;
-  if Pycocci.py_isinitialized () then
-    let _ = Pycocci.pyrun_simplestring "\
-import sys
-sys.stdout.flush()
-" in
-    ()
+  Pycocci.flush_stdout_and_stderr ()
 
 let begin_redirect_output expected_out =
   let has_expected_out = Sys.file_exists expected_out in
@@ -53,7 +48,8 @@ let end_redirect_output = Common.map_option (
 
 let rec test_loop cocci_file cfiles =
   let (cocci_infos,_) = Cocci.pre_engine (cocci_file, !Config.std_iso) in
-  let res = Cocci.full_engine cocci_infos cfiles in
+  let (res, merges) = Cocci.full_engine cocci_infos cfiles in
+  Cocci.post_engine cocci_infos merges;
   match Iteration.get_pending_instance () with
     None -> (cocci_infos, res)
   | Some (cfiles', virt_rules, virt_ids) ->
@@ -64,6 +60,7 @@ let rec test_loop cocci_file cfiles =
 
 let test_with_output_redirected cocci_file cfiles expected_out =
   Iteration.initialization_stack := [];
+  Postprocess_transinfo.reset_fresh_counter ();
   let redirected_output = begin_redirect_output expected_out in
   let (cocci_infos, res) =
     try test_loop cocci_file cfiles
@@ -71,7 +68,6 @@ let test_with_output_redirected cocci_file cfiles expected_out =
       ignore (end_redirect_output redirected_output);
       raise e in
   let current_out = end_redirect_output redirected_output in
-  Cocci.post_engine cocci_infos;
   (res, current_out)
 
 (* There can be multiple .c for the same cocci file. The convention
@@ -558,7 +554,7 @@ let test_parse_cocci file =
   if not (file =~ ".*\\.cocci")
   then pr2 "warning: seems not a .cocci file";
 
-  let (mvs,xs,_,_,_,_,(grep_tokens,query,_,_),_) =
+  let (mvs,xs,_,_,_,_,(grep_tokens,query,_,_),_,_) =
     Parse_cocci.process file (Some !Config.std_iso) false in
   xs +> List.iter2 Pretty_print_cocci.unparse mvs;
   Format.print_newline();
@@ -596,33 +592,37 @@ let print_dotted_link dst = function
     "" -> ()
   | src -> Printf.printf "  \"%s\" -> \"%s\" [style = dotted];\n" src dst
 
-let rec depto t from = function
-    Ast_cocci.Dep x | Ast_cocci.EverDep x | Ast_cocci.NeverDep x ->
-      print_link t from x
-  | Ast_cocci.AndDep(x,y) | Ast_cocci.OrDep(x,y) ->
-      depto t from x; depto t from y
-  | _ -> ()
+let depto t from d =
+  let rec loop = function
+      Ast_cocci.Dep x | Ast_cocci.EverDep x | Ast_cocci.NeverDep x ->
+	print_link t from x
+    | Ast_cocci.AndDep(x,y) | Ast_cocci.OrDep(x,y) ->
+	loop x; loop y
+    | _ -> () in
+  match d with
+    Ast_cocci.NoDep | Ast_cocci.FailDep -> ()
+  | Ast_cocci.ExistsDep d | Ast_cocci.ForallDep d -> loop d
 
 let test_rule_dependencies file =
   let t = Hashtbl.create 101 in
   if not (file =~ ".*\\.cocci")
   then pr2 "warning: seems not a .cocci file";
   Iso_pattern.verbose_iso := false;
-  let (_,xs,fvs,_,_,_,_,_) =
+  let (_,xs,fvs,_,_,_,_,_,_) =
     Parse_cocci.process file (Some !Config.std_iso) false in
   Printf.printf "digraph {\n";
   let prevrule = ref "" in
   List.iter2
     (fun def fvs ->
       match def with
-	Ast_cocci.ScriptRule (nm,_,dep,script_vars,_,_) ->
+	Ast_cocci.ScriptRule (nm,_,dep,script_vars,_,_,_) ->
 	  print_dotted_link nm !prevrule;
 	  prevrule := nm;
 	  depto t nm dep;
 	  List.iter (function (_,(parent,_),_,_) -> print_link t nm parent)
 	    script_vars
-      | Ast_cocci.InitialScriptRule (_,_,_,_,_)
-      | Ast_cocci.FinalScriptRule (_,_,_,_,_) -> ()
+      | Ast_cocci.InitialScriptRule (_,_,_,_,_,_)
+      | Ast_cocci.FinalScriptRule (_,_,_,_,_,_) -> ()
       | Ast_cocci.CocciRule (nm,(dep,_,_),_,_,_) ->
 	  print_dotted_link nm !prevrule;
 	  prevrule := nm;

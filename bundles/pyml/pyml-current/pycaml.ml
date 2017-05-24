@@ -255,51 +255,43 @@ let pyimport_execcodemodule (obj, s) =
 let pyimport_importmoduleex (name, globals, locals, fromlist) =
   Pywrappers.pyimport_importmodulelevel name globals locals fromlist (-1)
 
-let input_of_int input =
-  match input with
-    256 -> Py.Single
-  | 257 -> Py.File
-  | 258 -> Py.Eval
-  | _ -> failwith "input_of_int"
+let py_compilestringflags (str, filename, start, flags) =
+  if Py.version_major () <= 2 then
+    py_compilestringflags (str, filename, start, flags)
+  else
+    py_compilestringexflags (str, filename, start, flags, -1)
 
 let py_compilestring (str, filename, start) =
-  if Py.version_major () <= 2 then
-    Pywrappers.Python2.py_compilestringflags str filename (input_of_int start)
-      None
-  else
-    Pywrappers.Python3.py_compilestringexflags str filename (input_of_int start)
-      None (-1)
+  py_compilestringflags (str, filename, start, None)
 
 let pyrun_anyfile (fd, filename) =
-  Pywrappers.pyrun_anyfileexflags fd filename 0 None
+  pyrun_anyfileexflags (fd, filename, 0, None)
 
 let pyrun_anyfileex (fd, filename, closeit) =
-  Pywrappers.pyrun_anyfileexflags fd filename closeit None
+  pyrun_anyfileexflags (fd, filename, closeit, None)
 
 let pyrun_file (fd, filename, start, globals, locals) =
-  Pywrappers.pyrun_fileexflags fd filename (input_of_int start) globals locals 0
-    None
+  pyrun_fileexflags (fd, filename, start, globals, locals, 0, None)
 
 let pyrun_fileex (fd, filename, start, globals, locals, closeit) =
-  Pywrappers.pyrun_fileexflags fd filename (input_of_int start) globals locals
-    closeit None
+  pyrun_fileexflags (fd, filename, start, globals, locals, closeit, None)
 
 let pyrun_interactiveone (fd, filename) =
-  Pywrappers.pyrun_interactiveoneflags fd filename None
+  pyrun_interactiveoneflags (fd, filename, None)
 
 let pyrun_interactiveloop (fd, filename) =
-  Pywrappers.pyrun_interactiveloopflags fd filename None
+  pyrun_interactiveloopflags (fd, filename, None)
 
 let pyrun_simplefile (fd, filename) =
-  Pywrappers.pyrun_simplefileexflags fd filename 0 None
+  pyrun_simplefileexflags (fd, filename, 0, None)
 
 let pyrun_simplefileex (fd, filename, closeit) =
-  Pywrappers.pyrun_simplefileexflags fd filename closeit None
+  pyrun_simplefileexflags (fd, filename, closeit, None)
 
-let pyrun_simplestring s = Pywrappers.pyrun_simplestringflags s None
+let pyrun_simplestring s = pyrun_simplestringflags (s, None)
 
 let pyrun_string (s, start, globals, locals) =
-  Pywrappers.pyrun_stringflags s (input_of_int start) globals locals None
+  pyrun_stringflags (s, start, globals, locals, None)
 
 let pywrap_closure f = Py.Callable.of_function f
 
@@ -342,8 +334,7 @@ let ocamlpill_hard_unwrap v = snd (Py.Capsule.unsafe_unwrap_value v)
 let python_eval = pyrun_simplestring
 
 let python_load filename =
-  let channel = open_in filename in
-  ignore (Py.Utils.read_and_close channel (Py.Run.load channel) filename)
+  ignore (Py.Run.load (Py.Filename filename) filename)
 
 let pybytes_asstringandsize = Py.String.to_string
 

@@ -44,7 +44,8 @@ let strip_info =
     mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
+    donothing
 
 let anything_equal = function
     (Ast0.DotsExprTag(d1),Ast0.DotsExprTag(d2)) ->
@@ -358,13 +359,15 @@ let match_maker checks_needed context_required whencode_allowed =
       (Ast0.unwrap d1) (Ast0.unwrap d2) in
 
   let is_elist_matcher el =
-    match Ast0.unwrap el with Ast0.MetaExprList(_,_,_) -> true | _ -> false in
+    match Ast0.unwrap el with Ast0.MetaExprList(_,_,_,_) -> true | _ -> false in
 
   let is_plist_matcher pl =
-    match Ast0.unwrap pl with Ast0.MetaParamList(_,_,_) -> true | _ -> false in
+    match Ast0.unwrap pl with
+      Ast0.MetaParamList(_,_,_,_) -> true
+    | _ -> false in
 
   let is_slist_matcher pl =
-    match Ast0.unwrap pl with Ast0.MetaStmtList(_,_,_) -> true | _ -> false in
+    match Ast0.unwrap pl with Ast0.MetaStmtList(_,_,_,_) -> true | _ -> false in
 
   let is_strlist_matcher sl = false in
 
@@ -411,7 +414,7 @@ let match_maker checks_needed context_required whencode_allowed =
       bind (bind (pure_mcodekind (Ast0.get_mcodekind e)) (k e))
 	(match Ast0.unwrap e with
 	  Ast0.MetaErr(name,_,pure)
-	| Ast0.MetaExpr(name,_,_,_,pure) | Ast0.MetaExprList(name,_,pure) ->
+	| Ast0.MetaExpr(name,_,_,_,pure,_) | Ast0.MetaExprList(name,_,_,pure) ->
 	    pure
 	| _ -> Ast0.Impure) in
 
@@ -430,41 +433,50 @@ let match_maker checks_needed context_required whencode_allowed =
     let typeC r k t =
       bind (bind (pure_mcodekind (Ast0.get_mcodekind t)) (k t))
 	(match Ast0.unwrap t with
-	  Ast0.MetaType(name,pure) -> pure
+	  Ast0.MetaType(name,_cstr,pure) -> pure
 	| _ -> Ast0.Impure) in
 
     let init r k t =
       bind (bind (pure_mcodekind (Ast0.get_mcodekind t)) (k t))
 	(match Ast0.unwrap t with
-	  Ast0.MetaInit(name,pure) | Ast0.MetaInitList(name,_,pure) -> pure
+	  Ast0.MetaInit(name,_,pure) | Ast0.MetaInitList(name,_,_,pure) -> pure
 	| _ -> Ast0.Impure) in
 
     let param r k p =
       bind (bind (pure_mcodekind (Ast0.get_mcodekind p)) (k p))
 	(match Ast0.unwrap p with
-	  Ast0.MetaParam(name,pure) | Ast0.MetaParamList(name,_,pure) -> pure
+	  Ast0.MetaParam(name,_,pure) | Ast0.MetaParamList(name,_,_,pure) ->
+	    pure
 	| _ -> Ast0.Impure) in
 
     let decl r k d =
       bind (bind (pure_mcodekind (Ast0.get_mcodekind d)) (k d))
 	(match Ast0.unwrap d with
-	  Ast0.MetaDecl(name,pure) | Ast0.MetaField(name,pure)
-	| Ast0.MetaFieldList(name,_,pure) ->
+	  Ast0.MetaDecl(name,_,pure) ->
+	    pure
+	| _ -> Ast0.Impure) in
+
+    let field r k d =
+      bind (bind (pure_mcodekind (Ast0.get_mcodekind d)) (k d))
+	(match Ast0.unwrap d with
+	  Ast0.MetaField(name,_,pure)
+	| Ast0.MetaFieldList(name,_,_,pure) ->
 	    pure
 	| _ -> Ast0.Impure) in
 
     let stmt r k s =
       bind (bind (pure_mcodekind (Ast0.get_mcodekind s)) (k s))
 	(match Ast0.unwrap s with
-	  Ast0.MetaStmt(name,pure) | Ast0.MetaStmtList(name,_,pure) -> pure
+	  Ast0.MetaStmt(name,_,pure) | Ast0.MetaStmtList(name,_,_,pure) -> pure
 	| _ -> Ast0.Impure) in
 
     V0.flat_combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
-      ident expression assignOp binaryOp typeC init param decl stmt donothing
-      donothing donothing donothing in
+      donothing
+      ident expression assignOp binaryOp typeC init param decl field stmt
+      donothing donothing donothing donothing in
 
   let add_pure_list_binding name pure is_pure builder1 builder2 lst =
     match (checks_needed,pure) with
@@ -487,7 +499,7 @@ let match_maker checks_needed context_required whencode_allowed =
 
   let do_elist_match builder el lst =
     match Ast0.unwrap el with
-      Ast0.MetaExprList(name,lenname,pure) ->
+      Ast0.MetaExprList(name,lenname,_,pure) ->
         (*how to handle lenname? should it be an option type and always None?*)
 	failwith "expr list pattern not supported in iso"
 	(*add_pure_list_binding name pure
@@ -499,7 +511,7 @@ let match_maker checks_needed context_required whencode_allowed =
 
   let do_plist_match builder pl lst =
     match Ast0.unwrap pl with
-      Ast0.MetaParamList(name,lename,pure) ->
+      Ast0.MetaParamList(name,lename,_,pure) ->
 	failwith "param list pattern not supported in iso"
 	(*add_pure_list_binding name pure
 	  pure_sp_code.V0.combiner_parameter
@@ -510,7 +522,7 @@ let match_maker checks_needed context_required whencode_allowed =
 
   let do_slist_match builder sl lst =
     match Ast0.unwrap sl with
-      Ast0.MetaStmtList(name,lenname,pure) ->
+      Ast0.MetaStmtList(name,lenname,_,pure) ->
 	add_pure_list_binding name pure
 	  pure_sp_code.VT0.combiner_rec_statement
 	  (function lst -> Ast0.StmtTag(List.hd lst))
@@ -546,7 +558,7 @@ let match_maker checks_needed context_required whencode_allowed =
   (* should we do something about matching metavars against ...? *)
   let rec match_expr pattern expr =
     match Ast0.unwrap pattern with
-      Ast0.MetaExpr(name,_,ty,form,pure) ->
+      Ast0.MetaExpr(name,_,ty,form,pure,_bitfield) ->
 	let form_ok =
 	  match (form,expr) with
 	    (Ast.ANY,_) -> true
@@ -564,7 +576,7 @@ let match_maker checks_needed context_required whencode_allowed =
 		| Ast0.Cast(lp,ty,rp,e) -> matches e
 		| Ast0.SizeOfExpr(se,exp) -> true
 		| Ast0.SizeOfType(se,lp,ty,rp) -> true
-		| Ast0.MetaExpr(nm,_,_,Ast.CONST,p) ->
+		| Ast0.MetaExpr(nm,_,_,Ast.CONST,p,_bitfield) ->
 		    (Ast0.lub_pure p pure) = pure
 		| _ -> false in
 	      matches e
@@ -573,7 +585,7 @@ let match_maker checks_needed context_required whencode_allowed =
 		match Ast0.unwrap e with
 		  Ast0.Ident(c) -> true
 		| Ast0.Cast(lp,ty,rp,e) -> matches e
-		| Ast0.MetaExpr(nm,_,_,Ast.ID,p) ->
+		| Ast0.MetaExpr(nm,_,_,Ast.ID,p,_bitfield) ->
 		    (Ast0.lub_pure p pure) = pure
 		| _ -> false in
 	      matches e in
@@ -583,17 +595,18 @@ let match_maker checks_needed context_required whencode_allowed =
 	    Some ts ->
               let has_metatype ty =
                 match Ast0.unwrap ty with
-                  Ast0.MetaType (_, _) -> true
+                  Ast0.MetaType (_, _, _) -> true
                 | _ -> false in
               if List.exists has_metatype ts
 	      then
 		(match List.map Ast0.unwrap ts with
-                  [Ast0.MetaType (tyname, _)] ->
+                  [Ast0.MetaType (tyname, _, _)] ->
 		    let expty =
 		      match (Ast0.unwrap expr,Ast0.get_type expr) with
 		  (* easier than updating type inferencer to manage multiple
 		     types *)
-			(Ast0.MetaExpr(_,_,Some tts,_,_),_) -> Some tts
+			(Ast0.MetaExpr(_,_,Some tts,_,_,_bitfield),_) ->
+			  Some tts
 		      | (_,Some ty) -> Some [ty]
 		      | _ -> None in
 		    (match expty with
@@ -658,7 +671,7 @@ let match_maker checks_needed context_required whencode_allowed =
 		expr
 	else return false
     | Ast0.MetaErr(namea,_,pure) -> failwith "metaerr not supported"
-    | Ast0.MetaExprList(_,_,_) -> failwith "metaexprlist not supported"
+    | Ast0.MetaExprList(_,_,_,_) -> failwith "metaexprlist not supported"
     | up ->
 	if not(checks_needed) || not(context_required) || is_context expr
 	then
@@ -793,7 +806,7 @@ let match_maker checks_needed context_required whencode_allowed =
        Ast0.FormatFragment(pct2,fmt2)) ->
 	 conjunct_many_bindings [check_mcode pct1 pct2; match_format fmt1 fmt2]
     | (Ast0.Strdots(d1),Ast0.Strdots(d2)) -> check_mcode d1 d2
-    | (Ast0.MetaFormatList(pct,name,lenname),_) ->
+    | (Ast0.MetaFormatList(pct,name,_,lenname),_) ->
 	failwith "not allowed in iso"
     | _ -> return false
 
@@ -817,7 +830,7 @@ let match_maker checks_needed context_required whencode_allowed =
     in return (c1="," && e1="......" && c2=c1 && e2=e1)
   and match_typeC pattern t =
     match Ast0.unwrap pattern with
-      Ast0.MetaType(name,pure) ->
+      Ast0.MetaType(name,_,pure) ->
 	add_pure_binding name pure pure_sp_code.VT0.combiner_rec_typeC
 	  (function ty -> Ast0.TypeCTag ty)
 	  t
@@ -887,7 +900,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	       conjunct_many_bindings
 		 [check_mcode lb1 lb; check_mcode rb1 rb;
 		   match_typeC tya tyb;
-		   match_dots match_decl no_list do_nolist_match declsa declsb]
+		   match_dots match_field no_list do_nolist_match declsa declsb]
 	  | (Ast0.TypeName(namea),Ast0.TypeName(nameb)) ->
 	      if mcode_equal namea nameb
 	      then check_mcode namea nameb
@@ -901,15 +914,10 @@ let match_maker checks_needed context_required whencode_allowed =
 
   and match_decl pattern d =
     match Ast0.unwrap pattern with
-      Ast0.MetaDecl(name,pure) ->
+      Ast0.MetaDecl(name,_,pure) ->
 	add_pure_binding name pure pure_sp_code.VT0.combiner_rec_declaration
 	  (function d -> Ast0.DeclTag d)
 	  d
-    | Ast0.MetaField(name,pure) ->
-	add_pure_binding name pure pure_sp_code.VT0.combiner_rec_declaration
-	  (function d -> Ast0.DeclTag d)
-	  d
-    | Ast0.MetaFieldList(name,_,pure) -> failwith "metafieldlist not supporte"
     | up ->
 	if not(checks_needed) || not(context_required) || is_context d
 	then
@@ -969,22 +977,9 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (Ast0.Typedef(stga,tya,ida,sc1),Ast0.Typedef(stgb,tyb,idb,sc)) ->
 	      conjunct_bindings (check_mcode sc1 sc)
 		(conjunct_bindings (match_typeC tya tyb) (match_typeC ida idb))
-	  | (Ast0.DisjDecl(_,declsa,_,_),_) ->
+	  | (Ast0.DisjDecl(_,declsa,_,_),_)
+	  | (Ast0.ConjDecl(_,declsa,_,_),_) ->
 	      failwith "not allowed in the pattern of an isomorphism"
-	  | (Ast0.Ddots(d1,None),Ast0.Ddots(d,None)) -> check_mcode d1 d
-	  |	(Ast0.Ddots(dd,None),Ast0.Ddots(d,Some (wh,ee,wc))) ->
-	      conjunct_bindings (check_mcode dd d)
-	    (* hope that mcode of ddots is unique somehow *)
-		(let (ddots_whencode_allowed,_,_) = whencode_allowed in
-		if ddots_whencode_allowed
-		then add_dot_binding dd
-		  (Ast0.WhenTag (wh,Some ee,Ast0.DeclTag wc))
-		else
-		  (Printf.eprintf "warning: not applying iso because of whencode";
-		   return false))
-	  | (Ast0.Ddots(_,Some _),_) ->
-	      failwith "whencode not allowed in a pattern1"
-
 	  | (Ast0.OptDecl(decla),Ast0.OptDecl(declb)) ->
 	      match_decl decla declb
 	  | (_,Ast0.OptDecl(declb)) ->
@@ -992,9 +987,61 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | _ -> return false
 	else return_false (ContextRequired (Ast0.DeclTag d))
 
+  and match_field pattern d =
+    match Ast0.unwrap pattern with
+      Ast0.MetaField(name,_,pure) ->
+	add_pure_binding name pure pure_sp_code.VT0.combiner_rec_field
+	  (function d -> Ast0.FieldTag d)
+	  d
+    | Ast0.MetaFieldList(name,_,_,pure) ->
+	failwith "metafieldlist not supported"
+    | up ->
+	if not(checks_needed) || not(context_required) || is_context d
+	then
+	  match (up,Ast0.unwrap d) with
+	    (Ast0.Field(tya,ida,bfa,sc1),Ast0.Field(tyb,idb,bfb,sc)) ->
+	      let match_option_ident ida idb =
+		match ida, idb with
+		  Some ida, Some idb -> [match_ident ida idb]
+		| Some _, None | None, Some _ -> [return false]
+		| None, None -> [] in
+	      let match_bitfield bfa bfb =
+		match bfa, bfb with
+		  Some (ca, ea), Some (cb, eb) ->
+		    [check_mcode ca cb; match_expr ea eb]
+		| Some _, None | None, Some _ -> [return false]
+		| None, None -> [] in
+	      conjunct_many_bindings
+		([check_mcode sc1 sc;
+		  match_typeC tya tyb]
+		 @ match_option_ident ida idb
+		 @ match_bitfield bfa bfb)
+	  | (Ast0.DisjField(_,declsa,_,_),_)
+	  | (Ast0.ConjField(_,declsa,_,_),_) ->
+	      failwith "not allowed in the pattern of an isomorphism"
+	  | (Ast0.Fdots(d1,None),Ast0.Fdots(d,None)) -> check_mcode d1 d
+	  |	(Ast0.Fdots(dd,None),Ast0.Fdots(d,Some (wh,ee,wc))) ->
+	      conjunct_bindings (check_mcode dd d)
+	    (* hope that mcode of ddots is unique somehow *)
+		(let (ddots_whencode_allowed,_,_) = whencode_allowed in
+		if ddots_whencode_allowed
+		then add_dot_binding dd
+		  (Ast0.WhenTag (wh,Some ee,Ast0.FieldTag wc))
+		else
+		  (Printf.eprintf "warning: not applying iso because of whencode";
+		   return false))
+	  | (Ast0.Fdots(_,Some _),_) ->
+	      failwith "whencode not allowed in a pattern1"
+	  | (Ast0.OptField(decla),Ast0.OptField(declb)) ->
+	      match_field decla declb
+	  | (_,Ast0.OptField(declb)) ->
+	      match_field pattern declb
+	  | _ -> return false
+	else return_false (ContextRequired (Ast0.FieldTag d))
+
   and match_init pattern i =
     match Ast0.unwrap pattern with
-      Ast0.MetaInit(name,pure) ->
+      Ast0.MetaInit(name,_,pure) ->
 	add_pure_binding name pure pure_sp_code.VT0.combiner_rec_initialiser
 	  (function ini -> Ast0.InitTag ini)
 	  i
@@ -1062,11 +1109,12 @@ let match_maker checks_needed context_required whencode_allowed =
 
   and match_param pattern p =
     match Ast0.unwrap pattern with
-      Ast0.MetaParam(name,pure) ->
+      Ast0.MetaParam(name,_,pure) ->
 	add_pure_binding name pure pure_sp_code.VT0.combiner_rec_parameter
 	  (function p -> Ast0.ParamTag p)
 	  p
-    | Ast0.MetaParamList(name,_,pure) -> failwith "metaparamlist not supported"
+    | Ast0.MetaParamList(name,_,_,pure) ->
+	failwith "metaparamlist not supported"
     | up ->
 	if not(checks_needed) || not(context_required) || is_context p
 	then
@@ -1085,17 +1133,17 @@ let match_maker checks_needed context_required whencode_allowed =
 
   and match_statement pattern s =
     match Ast0.unwrap pattern with
-      Ast0.MetaStmt(name,pure) ->
+      Ast0.MetaStmt(name,_,pure) ->
 	(match Ast0.unwrap s with
 	  Ast0.Dots(_,_) ->
 	    return false (* ... is not a single statement *)
-	| Ast0.MetaStmtList(_,_,_) ->
+	| Ast0.MetaStmtList(_,_,_,_) ->
 	    return false (* ... is not a single statement, needs {} *)
 	| _ ->
 	    add_pure_binding name pure pure_sp_code.VT0.combiner_rec_statement
 	      (function ty -> Ast0.StmtTag ty)
 	      s)
-    | Ast0.MetaStmtList(name,_,pure) -> failwith "metastmtlist not supported"
+    | Ast0.MetaStmtList(name,_,_,pure) -> failwith "metastmtlist not supported"
     | up ->
 	if not(checks_needed) || not(context_required) || is_context s
 	then
@@ -1415,11 +1463,15 @@ let make_minus =
     | _ -> donothing r k e in
 
   let declaration r k e =
+    match Ast0.unwrap e with
+      _ -> donothing r k e in
+
+  let field r k e =
     let mcodekind = Ast0.get_mcodekind_ref e in
     match Ast0.unwrap e with
-      Ast0.Ddots(d,whencode) ->
+      Ast0.Fdots(d,whencode) ->
        (*don't recurse because whencode hasn't been processed by context_neg*)
-	update_mc mcodekind e; Ast0.rewrap e (Ast0.Ddots(mcode d,whencode))
+	update_mc mcodekind e; Ast0.rewrap e (Ast0.Fdots(mcode d,whencode))
     | _ -> donothing r k e in
 
   let statement r k e =
@@ -1474,9 +1526,9 @@ let make_minus =
   V0.flat_rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
-    dots dots dots dots dots dots dots
+    dots dots dots dots dots dots dots dots
     donothing expression donothing donothing donothing initialiser donothing
-    declaration statement donothing donothing donothing donothing
+    declaration field statement donothing donothing donothing donothing
 
 (* --------------------------------------------------------------------- *)
 (* rebuild mcode cells in an instantiated alt *)
@@ -1567,7 +1619,8 @@ let rebuild_mcode start_line =
     mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing statement donothing donothing donothing donothing
+    donothing donothing donothing statement donothing donothing donothing
+    donothing
 
 (* --------------------------------------------------------------------- *)
 (* The problem of whencode.  If an isomorphism contains dots in multiple
@@ -1661,7 +1714,7 @@ let instantiate bindings mv_bindings model =
       [] -> []
     | [x] ->
 	(match Ast0.unwrap x with
-	  Ast0.MetaExprList(name,lenname,pure) ->
+	  Ast0.MetaExprList(name,lenname,_,pure) ->
 	    failwith "meta_expr_list in iso not supported"
 	    (*match lookup name bindings mv_bindings with
 	      Common.Left(Ast0.DotsExprTag(exp)) -> Ast0.unwrap exp
@@ -1676,7 +1729,7 @@ let instantiate bindings mv_bindings model =
       [] -> []
     | [x] ->
 	(match Ast0.unwrap x with
-	  Ast0.MetaParamList(name,lenname,pure) ->
+	  Ast0.MetaParamList(name,lenname,_,pure) ->
 	    failwith "meta_param_list in iso not supported"
 	    (*match lookup name bindings mv_bindings with
 		Common.Left(Ast0.DotsParamTag(param)) -> Ast0.unwrap param
@@ -1691,7 +1744,7 @@ let instantiate bindings mv_bindings model =
       [] -> []
     | [x] ->
 	(match Ast0.unwrap x with
-	  Ast0.MetaStmtList(name,lenname,pure) ->
+	  Ast0.MetaStmtList(name,lenname,_,pure) ->
 	    (match lookup name bindings mv_bindings with
 	      Common.Left(Ast0.DotsStmtTag(stm)) -> Ast0.unwrap stm
 	    | Common.Left(Ast0.StmtTag(stm)) -> [stm]
@@ -1707,7 +1760,7 @@ let instantiate bindings mv_bindings model =
     let e = k old_e in
     let e1 =
     match Ast0.unwrap e with
-      Ast0.MetaExpr(name,constraints,x,form,pure) ->
+      Ast0.MetaExpr(name,constraints,x,form,pure,bitfield) ->
 	(rebuild_mcode None).VT0.rebuilder_rec_expression
 	  (match lookup name bindings mv_bindings with
 	    Common.Left(Ast0.ExprTag(exp)) ->
@@ -1720,7 +1773,7 @@ let instantiate bindings mv_bindings model =
 		| Some types ->
 		    let rec renamer ty =
                       match Ast0.unwrap ty with
-                        Ast0.MetaType(name, pure) ->
+                        Ast0.MetaType(name, cstr, pure) ->
                           (match
                             lookup (Ast0.unwrap_mcode name,(),(),(),None,-1)
                               bindings mv_bindings
@@ -1732,7 +1785,7 @@ let instantiate bindings mv_bindings model =
                               let new_mv_wrapped =
                                 Ast0.rewrap_mcode name new_mv in
                               Ast0.rewrap ty (
-                                Ast0.MetaType(new_mv_wrapped,pure)))
+                                Ast0.MetaType(new_mv_wrapped,cstr,pure)))
                       | Ast0.ConstVol(cv,ty') ->
                           Ast0.rewrap ty (Ast0.ConstVol(cv,renamer ty'))
                       | Ast0.Pointer(ty', s) ->
@@ -1769,9 +1822,9 @@ let instantiate bindings mv_bindings model =
 		(Ast0.rewrap e
 		   (Ast0.MetaExpr
 		      (Ast0.set_mcode_data new_mv name,constraints,
-		       new_types,form,pure))))
+		       new_types,form,pure,bitfield))))
     | Ast0.MetaErr(namea,_,pure) -> failwith "metaerr not supported"
-    | Ast0.MetaExprList(namea,lenname,pure) ->
+    | Ast0.MetaExprList(namea,lenname,_,pure) ->
 	failwith "metaexprlist not supported"
     | Ast0.Unary(exp,unop) ->
 	(match Ast0.unwrap_mcode unop with
@@ -1787,7 +1840,8 @@ let instantiate bindings mv_bindings model =
 	      match Ast0.unwrap old_e with
 		Ast0.Unary(exp,_) ->
 		  (match Ast0.unwrap exp with
-		    Ast0.MetaExpr(name,constraints,x,form,pure) -> true
+		    Ast0.MetaExpr(name,constraints,x,form,pure,_bitfield) ->
+		      true
 		  | _ -> false)
 	      |	_ -> failwith "not possible" in
 	    let nomodif = function
@@ -1917,55 +1971,60 @@ let instantiate bindings mv_bindings model =
   let tyfn r k e =
     let e = k e in
     match Ast0.unwrap e with
-      Ast0.MetaType(name,pure) ->
+      Ast0.MetaType(name,cstr,pure) ->
 	(rebuild_mcode None).VT0.rebuilder_rec_typeC
 	  (match lookup name bindings mv_bindings with
 	    Common.Left(Ast0.TypeCTag(ty)) -> ty
 	  | Common.Left(_) -> failwith "not possible 1"
 	  | Common.Right(new_mv) ->
 	      Ast0.rewrap e
-		(Ast0.MetaType(Ast0.set_mcode_data new_mv name,pure)))
+		(Ast0.MetaType(Ast0.set_mcode_data new_mv name,cstr,pure)))
     | _ -> e in
 
   let initfn r k e =
     let e = k e in
     match Ast0.unwrap e with
-      Ast0.MetaInit(name,pure) ->
+      Ast0.MetaInit(name,cstr,pure) ->
 	(rebuild_mcode None).VT0.rebuilder_rec_initialiser
 	  (match lookup name bindings mv_bindings with
 	    Common.Left(Ast0.InitTag(ty)) -> ty
 	  | Common.Left(_) -> failwith "not possible 1"
 	  | Common.Right(new_mv) ->
 	      Ast0.rewrap e
-		(Ast0.MetaInit(Ast0.set_mcode_data new_mv name,pure)))
+		(Ast0.MetaInit(Ast0.set_mcode_data new_mv name, cstr, pure)))
     | _ -> e in
 
   let declfn r k e =
     let e = k e in
     match Ast0.unwrap e with
-      Ast0.MetaDecl(name,pure) ->
+      Ast0.MetaDecl(name,cstr,pure) ->
 	(rebuild_mcode None).VT0.rebuilder_rec_declaration
 	  (match lookup name bindings mv_bindings with
 	    Common.Left(Ast0.DeclTag(d)) -> d
 	  | Common.Left(_) -> failwith "not possible 1"
 	  | Common.Right(new_mv) ->
 	      Ast0.rewrap e
-		(Ast0.MetaDecl(Ast0.set_mcode_data new_mv name, pure)))
-    | Ast0.MetaField(name,pure) ->
-	(rebuild_mcode None).VT0.rebuilder_rec_declaration
+		(Ast0.MetaDecl(Ast0.set_mcode_data new_mv name, cstr, pure)))
+    | _ -> e in
+
+  let fieldfn r k e =
+    let e = k e in
+    match Ast0.unwrap e with
+      Ast0.MetaField(name,cstr,pure) ->
+	(rebuild_mcode None).VT0.rebuilder_rec_field
 	  (match lookup name bindings mv_bindings with
-	    Common.Left(Ast0.DeclTag(d)) -> d
+	    Common.Left(Ast0.FieldTag(d)) -> d
 	  | Common.Left(_) -> failwith "not possible 1"
 	  | Common.Right(new_mv) ->
 	      Ast0.rewrap e
-		(Ast0.MetaField(Ast0.set_mcode_data new_mv name, pure)))
-    | Ast0.MetaFieldList(name,lenname,pure) ->
+		(Ast0.MetaField(Ast0.set_mcode_data new_mv name, cstr, pure)))
+    | Ast0.MetaFieldList(name,lenname,_,pure) ->
 	failwith "metafieldlist not supported"
-    | Ast0.Ddots(d,_) ->
+    | Ast0.Fdots(d,_) ->
 	(try
 	  (match List.assoc (dot_term d) bindings with
-	    Ast0.WhenTag(wh,Some ee,Ast0.DeclTag(exp)) ->
-              Ast0.rewrap e (Ast0.Ddots(d,Some (wh,ee,exp)))
+	    Ast0.WhenTag(wh,Some ee,Ast0.FieldTag(exp)) ->
+              Ast0.rewrap e (Ast0.Fdots(d,Some (wh,ee,exp)))
 	  | _ -> failwith "unexpected binding")
 	with Not_found -> e)
     | _ -> e in
@@ -1973,15 +2032,15 @@ let instantiate bindings mv_bindings model =
   let paramfn r k e =
     let e = k e in
     match Ast0.unwrap e with
-      Ast0.MetaParam(name,pure) ->
+      Ast0.MetaParam(name,cstr,pure) ->
 	(rebuild_mcode None).VT0.rebuilder_rec_parameter
 	  (match lookup name bindings mv_bindings with
 	    Common.Left(Ast0.ParamTag(param)) -> param
 	  | Common.Left(_) -> failwith "not possible 1"
 	  | Common.Right(new_mv) ->
 	      Ast0.rewrap e
-		(Ast0.MetaParam(Ast0.set_mcode_data new_mv name, pure)))
-    | Ast0.MetaParamList(name,lenname,pure) ->
+		(Ast0.MetaParam(Ast0.set_mcode_data new_mv name, cstr, pure)))
+    | Ast0.MetaParamList(name,lenname,_,pure) ->
 	failwith "metaparamlist not supported"
     | _ -> e in
 
@@ -2001,15 +2060,15 @@ let instantiate bindings mv_bindings model =
   let stmtfn r k e =
     let e = k e in
     match Ast0.unwrap e with
-      Ast0.MetaStmt(name,pure) ->
+      Ast0.MetaStmt(name,cstr,pure) ->
 	(rebuild_mcode None).VT0.rebuilder_rec_statement
 	  (match lookup name bindings mv_bindings with
 	    Common.Left(Ast0.StmtTag(stm)) -> stm
 	  | Common.Left(_) -> failwith "not possible 1"
 	  | Common.Right(new_mv) ->
 	      Ast0.rewrap e
-		(Ast0.MetaStmt(Ast0.set_mcode_data new_mv name,pure)))
-    | Ast0.MetaStmtList(name,_,pure) -> failwith "metastmtlist not supported"
+		(Ast0.MetaStmt(Ast0.set_mcode_data new_mv name,cstr,pure)))
+    | Ast0.MetaStmtList(name,_,_,pure) -> failwith "metastmtlist not supported"
     | Ast0.Dots(d,_) ->
 	Ast0.rewrap e
 	  (Ast0.Dots
@@ -2022,8 +2081,8 @@ let instantiate bindings mv_bindings model =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
     (dots elist) donothing (dots plist) (dots slist) donothing donothing
-    donothing
-    identfn exprfn donothing donothing tyfn initfn paramfn declfn stmtfn
+    donothing donothing
+    identfn exprfn donothing donothing tyfn initfn paramfn declfn fieldfn stmtfn
     donothing donothing donothing donothing
 
 (* --------------------------------------------------------------------- *)
@@ -2245,7 +2304,7 @@ let get_name bindings = function
       (nm,function nm -> Ast.MetaConstDecl(ar,nm,ty))
   | Ast.MetaErrDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaErrDecl(ar,nm))
-  | Ast.MetaExpDecl(ar,nm,ty) ->
+  | Ast.MetaExpDecl(ar,nm,ty,bitfield) ->
       let newty =
 	match ty with
 	  Some types ->
@@ -2256,7 +2315,7 @@ let get_name bindings = function
 		     match Ast.unwrap ty with
 		       Ast.Type (m,cv,t) ->
 			 (match Ast.unwrap t with
-			   Ast.MetaType(nm,keep,inh) ->
+			   Ast.MetaType(nm,cstr,keep,inh) ->
 			     (try
 			       let term (nm,_,_,_) = nm in (* for Ast *)
 			       let newname = List.assoc (term nm) bindings in
@@ -2274,7 +2333,7 @@ let get_name bindings = function
 		   loop ty)
 		 types)
 	| _-> ty in
-      (nm,function nm -> Ast.MetaExpDecl(ar,nm,newty))
+      (nm,function nm -> Ast.MetaExpDecl(ar,nm,newty,bitfield))
   | Ast.MetaIdExpDecl(ar,nm,ty) ->
       (nm,function nm -> Ast.MetaIdExpDecl(ar,nm,ty))
   | Ast.MetaLocalIdExpDecl(ar,nm,ty) ->
@@ -2751,7 +2810,8 @@ let rewrap =
     mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
+    donothing
 
 let rec rewrap_anything = function
     Ast0.DotsExprTag(d) ->
@@ -2764,6 +2824,8 @@ let rec rewrap_anything = function
       Ast0.DotsStmtTag(rewrap.VT0.rebuilder_rec_statement_dots d)
   | Ast0.DotsDeclTag(d) ->
       Ast0.DotsDeclTag(rewrap.VT0.rebuilder_rec_declaration_dots d)
+  | Ast0.DotsFieldTag(d) ->
+      Ast0.DotsFieldTag(rewrap.VT0.rebuilder_rec_field_dots d)
   | Ast0.DotsCaseTag(d) ->
       Ast0.DotsCaseTag(rewrap.VT0.rebuilder_rec_case_line_dots d)
   | Ast0.DotsDefParamTag(d) ->
@@ -2782,6 +2844,7 @@ let rec rewrap_anything = function
   | Ast0.InitTag(d) -> Ast0.InitTag(rewrap.VT0.rebuilder_rec_initialiser d)
   | Ast0.ParamTag(d) -> Ast0.ParamTag(rewrap.VT0.rebuilder_rec_parameter d)
   | Ast0.DeclTag(d) -> Ast0.DeclTag(rewrap.VT0.rebuilder_rec_declaration d)
+  | Ast0.FieldTag(d) -> Ast0.FieldTag(rewrap.VT0.rebuilder_rec_field d)
   | Ast0.StmtTag(d) -> Ast0.StmtTag(rewrap.VT0.rebuilder_rec_statement d)
   | Ast0.ForInfoTag(d) -> Ast0.ForInfoTag(rewrap.VT0.rebuilder_rec_forinfo d)
   | Ast0.CaseLineTag(d) ->
