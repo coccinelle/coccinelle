@@ -358,7 +358,7 @@ metavariable.  {\tt S} matches the closest enclosing statement, which may
 be more than what is matches by the semantic match pattern itself.
 
 Matching of various kinds of format strings within strings is supported.
-With the {\tt --ibm} option, matching of decimal format declarations is
+With the {\tt -{}-ibm} option, matching of decimal format declarations is
 supported, but the length and precision arguments are not interpreted.
 Thus it is not possible to match metavariables in these fields.  Instead,
 the entire format is matched as a single string.
@@ -791,8 +791,8 @@ using Coccinelle you use:
 
 \begin{center}
 \begin{tabular}{c}
-spatch --control-flow-to-file flow1.c
-spatch --control-flow-to-file flow2.c
+spatch -{}-control-flow-to-file flow1.c \\
+spatch -{}-control-flow-to-file flow2.c
 \end{tabular}
 \end{center}
 
@@ -817,7 +817,7 @@ can use the following:
 
 \begin{center}
 \begin{tabular}{c}
-spatch --control-flow-to-file flow2.c
+spatch -{}-control-flow-to-file flow2.c \\
 dot -Tpdf flow1:main.dot > flow1.pdf
 \end{tabular}
 \end{center}
@@ -1816,7 +1816,7 @@ the collected information to trigger a new iteration at some time in the
 future.
 
 Modification is not allowed when using iteration.  Thus, it is required to
-use the {\tt --no-show-diff}, unless the semantic patch contains {\tt *}s
+use the {\tt -{}-no-show-diff}, unless the semantic patch contains {\tt *}s
 (a semantic match rather than a semantic patch).
 
 When using Python scripting a tuple may be used
@@ -1835,7 +1835,7 @@ the following directories, later lines extend and may override earlier ones:
 \begin{itemize}
 	\item Your current user's home directory is processed first
 	\item Your directory from which spatch is called is processed next
-	\item The directory provided with the --dir option is processed last, if used
+	\item The directory provided with the -{}-dir option is processed last, if used
 \end{itemize}
 
 Newlines, even with \, are not tolerated in attribute values. An example
