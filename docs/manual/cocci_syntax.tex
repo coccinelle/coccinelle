@@ -64,7 +64,7 @@ the \texttt{-D} option on the command line.
 % analogous to the filename specifications in the standard patch syntax.
 % (see Figure \ref{scsiglue_patch}).
 
-\section{Metavariables for transformations}
+\section{Metavariables for Transformations}
 
 The \NT{rulename} portion of the metavariable declaration can specify
 properties of a rule such as its name, the names of the rules that it
@@ -525,7 +525,7 @@ declared as an identifier metavariable in advance.  The syntax does not
 permit {\tt r.n} as the name of a structure or union type in such a
 declaration.
 
-\section{Metavariables for scripts}
+\section{Metavariables for Scripts}
 
 Metavariables for scripts can only be inherited from transformation rules.
 In the spirit of scripting languages such as Python that use dynamic
@@ -732,7 +732,7 @@ foo() to not be present.
 
 One way to describe code control flow is in terms of McCabe cyclomatic
 complexity.
-The program flow1.1 has a linear control flow, it has no branches. The main
+The program flow1.1 has a linear control flow, i.e., it has no branches. The main
 routine has a McCabe cyclomatic complexity of 1. The McCabe cyclomatic
 complexity can be computed using
 {\tt pmccabe} (https://www.gnu.org/\-software/\-complexity/\-manual/\-html\_node/\-pmccabe-parsing.html).
@@ -1297,7 +1297,7 @@ explained in this section.
 
 $^\dag$ The optional \texttt{when} construct ends at the end of the line.
 
-\section{Function declarations}
+\section{Function Declarations}
 
 \begin{grammar}
 
@@ -1676,7 +1676,7 @@ in a concise way.
   \CASE{"\any{[\^{}"]}"}
 \end{grammar}
 
-\section{Comments and preprocessor directives}
+\section{Comments and Preprocessor Directives}
 
 A \verb+//+ or \verb+/* */+ comment that is annotated with + in the
 leftmost column is considered to be added code.  A \verb+//+ or
@@ -1698,7 +1698,7 @@ be matched against.  The entire line is added, but it is not parsed.
 \item \verb+line+
 \end{itemize}
 
-\section{Command-line semantic match}
+\section{Command-Line Semantic Match}
 
 It is possible to specify a semantic match on the spatch command line,
 using the argument {\tt -sp}.  In such a semantic match, any token
@@ -1826,7 +1826,7 @@ Coccinelle itself provides no support for obtaining information about what
 work has been queued and as such addressing
 this with scripting is necessary.
 
-\section{.cocciconfig support}
+\section{{\tt .cocciconfig} Support}
 
 Coccinelle supports enabling custom options to be preferred when running
 spatch.  This is supported through the search of .cocciconfig files in each of
