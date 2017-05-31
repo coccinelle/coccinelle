@@ -47,6 +47,8 @@ type compare = Pytypes.compare = LT | LE | EQ | NE | GT | GE
     segmentation fault).*)
 type 'a file = 'a Pytypes.file = Filename of string | Channel of 'a
 
+val check_error: unit -> unit
+
 (** General functions to handle Python values *)
 module Object: sig
   type t = Pytypes.pyobject
@@ -193,6 +195,22 @@ module Object: sig
       [Format.pp_print_string fmt (Py.Object.string_of_repr v)].
       Can be used as printer for the top-level:
       [#install_printer Py.Object.format_repr]. *)
+
+  val call_function_obj_args: t -> t array -> t
+  (** Wrapper for
+      {{:https://docs.python.org/3/c-api/object.html#c.PyObject_CallFunctionObjArgs} PyObject_CallFunctionObjArgs} *)
+
+  val call_method_obj_args: t -> t -> t array -> t
+  (** Wrapper for
+      {{:https://docs.python.org/3/c-api/object.html#c.PyObject_CallMethodObjArgs} PyObject_CallMethodObjArgs} *)  
+
+  val call_method: t -> string -> t array -> t
+  (** [Py.Object.call_method o m args] is equivalent to
+      [Py.Object.call_method_obj_args o (Py.String.of_string m) args]. *)
+
+  val call: t -> t -> t -> t
+  (** Wrapper for
+      {{:https://docs.python.org/3/c-api/object.html#c.PyObject_Call} PyObject_Call} *)
 end
 
 exception E of Object.t * Object.t
@@ -363,7 +381,7 @@ end
 (** Interface for Python values of type [Long]. *)
 module Long: sig
   val check: Object.t -> bool
-  (** [check o] returns [true] if [o] is a Python integer/long. *)
+  (** [check o] returns [true] if [o] is a Python long. *)
 
   val of_int64: int64 -> Object.t
   (** [of_int i] returns the Python long with the value [i].
@@ -383,6 +401,34 @@ module Long: sig
 
   val to_int: Object.t -> int
   (** [to_int o] takes a Python long [o] as arguments
+      and returns the corresponding integer value.
+      A Python exception ([Py.E _]) is raised if [o] is not a long.
+      We have [to_int o = Int64.to_int (to_int 64 o)]. *)
+end
+
+(** Interface for Python values of type [Int] if Python 2, [Long] if Python 3. *)
+module Int: sig
+  val check: Object.t -> bool
+  (** [check o] returns [true] if [o] is a Python int. *)
+
+  val of_int64: int64 -> Object.t
+  (** [of_int i] returns the Python int with the value [i].
+      Wrapper for
+      {{: https://docs.python.org/2/c-api/int.html#c.PyInt_FromLong} PyInt_FromLong}. *)
+
+  val to_int64: Object.t -> int64
+  (** [to_int o] takes a Python int [o] as arguments
+      and returns the corresponding 64-bit integer value.
+      A Python exception ([Py.E _]) is raised if [o] is not a long.
+      Wrapper for
+      {{: https://docs.python.org/2/c-api/int.html#c.PyInt_AsLong} PyInt_AsLong}. *)
+
+  val of_int: int -> Object.t
+  (** [of_int i] returns the Python int with the value [i].
+      We have [of_int i = of_int64 (Int64.of_int i)]. *)
+
+  val to_int: Object.t -> int
+  (** [to_int o] takes a Python int [o] as arguments
       and returns the corresponding integer value.
       A Python exception ([Py.E _]) is raised if [o] is not a long.
       We have [to_int o = Int64.to_int (to_int 64 o)]. *)
@@ -477,6 +523,28 @@ module Dict: sig
   (** [bindings o] returns all the pairs [(key, value)] in the Python dictionary
       [o]. *)
 
+  val bindings_map: (Object.t -> 'a) -> (Object.t -> 'b) -> Object.t ->
+    ('a * 'b) list
+  (** [bindings_map fkey fvalue o] returns all the pairs
+      [(fkey key, fvalue value)] in the Python dictionary [o]. *)
+
+  val bindings_string: Object.t -> (string * Object.t) list
+  (** [bindings_string o] returns all the pairs [(key, value)] in the Python
+      dictionary [o]. *)
+
+  val of_bindings: (Object.t * Object.t) list -> Object.t
+  (** [of_bindings b] returns then Python dictionary mapping all the pairs
+      [(key, value)] in [b]. *)
+
+  val of_bindings_map: ('a -> Object.t) -> ('b -> Object.t) -> ('a * 'b) list
+    -> Object.t
+  (** [of_bindings_map fkey fvalue b] returns then Python dictionary mapping
+      all the pairs [(fkey key, fvalue value)] in [b]. *)
+
+  val of_bindings_string: (string * Object.t) list -> Object.t
+  (** [of_bindings_string b] returns then Python dictionary mapping all the
+      pairs [(key, value)] in [b]. *)
+
   val singleton: Object.t -> Object.t -> Object.t
   (** [singleton key value] returns the one-element Python dictionary that maps
       [key] to [value] *)
@@ -514,6 +582,7 @@ module Err: sig
     | TypeError
     | ValueError
     | ZeroDivisionError
+    | StopIteration
 
   val clear: unit -> unit
   (** Wrapper for
@@ -592,6 +661,14 @@ module Eval: sig
 
   val call_object_with_keywords: Object.t -> Object.t -> Object.t -> Object.t
  (** See {{:https://docs.python.org/3.0/extending/extending.html} Extending Python with C or C++} *)
+
+  val call: Object.t -> Object.t array -> Object.t
+  (* [Py.Eval.call f args] is equivalent to
+     [Py.Eval.call_object f (Py.Tuple.of_array args]. *)
+
+  val call_with_keywords: Object.t -> Object.t array -> (string * Object.t) list -> Object.t
+  (* [Py.Eval.call_with_keywords f args kw] is equivalent to
+     [Py.Eval.call_object_with_keywords f (Py.Tuple.of_array args) (Py.Tuple.of_bindings_string kw)]. *)
 
   val get_builtins: unit -> Object.t
   (** Wrapper for
@@ -715,6 +792,9 @@ module Iter: sig
   val exists: (Object.t -> bool) -> Object.t -> bool
   (** [exists p i] checks if [p] holds for at least one of the remaining values
       from the iteration [i]. *)
+
+  val create: (unit -> Object.t option) -> Object.t
+  (** [create next] returns an iterator that calls [next]. *)
 end
 
 (** Interface for Python values of type [List]. *)
@@ -1041,7 +1121,7 @@ module Run: sig
       @param globals is the global symbol directory
       (default: [Py.Module.get_dict (Py.Module.main ())]).
       @param locals is the local symbol directory
-      (default: [Py.Module.get_dict (Py.Module.main ())]).
+      (default: [globals]).
    *)
 
   val load: ?start:input -> ?globals:Object.t -> ?locals:Object.t ->
@@ -1435,6 +1515,7 @@ module Type: sig
     | Dict
     | Float
     | List
+    | Int
     | Long
     | Module
     | None
@@ -1522,6 +1603,27 @@ module Marshal: sig
   (** Returns the current file format version number. *)
 end
 
+module Array: sig
+  val of_indexed_structure:
+      (int -> Object.t) -> (int -> Object.t -> unit) -> int -> Object.t
+  (** [Py.Array.of_indexed_structure getter setter length] returns a Python
+      array-like structure [a] of length [length], such that reading [a[i]]
+      returns [getter i] and [a[i] = v] calls [setter i v].
+      To make the array-like structure read-only,
+      raise an exception in [setter]. *)
+
+  val of_array: ('a -> Object.t) -> (Object.t -> 'a) -> 'a array -> Object.t
+  (** [Py.Array.of_indexed_structure getter setter array] returns a Python
+      array-like structure accessing the elements of [array] via [getter]
+      and [setter].
+      To make the array-like structure read-only,
+      raise an exception in [setter]. *)
+
+  val numpy: float array -> Object.t
+
+  val numpy_get_array: Object.t -> float array
+end
+
 val set_argv: string array -> unit
 (** [set_argv argv] set Python's [sys.argv]. *)
 
@@ -1541,16 +1643,14 @@ module Utils: sig
   val try_finally: ('a -> 'b) -> 'a -> ('c -> unit) -> 'c -> 'b
   (** [try_finally f arg finally finally_arg] calls [f arg], and returns the
       result of [f].
-      [finally finally_arg] is always closed after [f] has been called, even if
+      [finally finally_arg] is always called after [f] has been called, even if
       [f] raises an exception. *)
 
   val read_and_close: in_channel -> ('a -> 'b) -> 'a -> 'b
   (** [read_and_close channel f arg] calls [f arg], and returns the result of
       [f].
       [channel] is always closed after [f] has been called, even if [f] raises
-      an exception.
-      This is an utility function that does not require Python to be
-      initialized. *)
+      an exception. *)
 
   val write_and_close: out_channel -> ('a -> 'b) -> 'a -> 'b
   (** [write_and_close channel f arg] calls [f arg], and returns the result of
@@ -1575,9 +1675,9 @@ module Utils: sig
 
   val with_channel_from_string: string -> (in_channel -> 'a) -> 'a
   (** [with_channel_from_string s f] calls [f in_channel] where [in_channel]
-      is an input channel returning the contents of s. *)
+      is an input channel returning the contents of [s]. *)
 
   val with_stdin_from_string: string -> ('a -> 'b) -> 'a -> 'b
   (** [with_stdin_from_string s f arg] calls [f arg] with the standard input
-      redirected for reading from the contents of s. *)
+      redirected for reading from the contents of [s]. *)
 end

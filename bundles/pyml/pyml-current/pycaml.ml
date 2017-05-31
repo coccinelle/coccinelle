@@ -76,6 +76,7 @@ let pyobject_type_of_py_type t =
   | Py.Type.Dict -> DictType
   | Py.Type.Float -> FloatType
   | Py.Type.List -> ListType
+  | Py.Type.Int
   | Py.Type.Long -> IntType
   | Py.Type.Module -> ModuleType
   | Py.Type.None -> NoneType
@@ -225,24 +226,7 @@ let pytuple_fromsingle = Py.Tuple.singleton
 
 let pytuple_toarray = Py.Tuple.to_array
 
-let pytype v =
-  match Py.Type.get v with
-    Py.Type.Unknown | Py.Type.Iter -> OtherType
-  | Py.Type.Bool -> BoolType
-  | Py.Type.Bytes -> BytesType
-  | Py.Type.Callable -> CallableType
-  | Py.Type.Capsule -> CamlpillType
-  | Py.Type.Closure -> CallableType
-  | Py.Type.Dict -> DictType
-  | Py.Type.Float -> FloatType
-  | Py.Type.List -> ListType
-  | Py.Type.Long -> IntType
-  | Py.Type.Module -> ModuleType
-  | Py.Type.None -> NoneType
-  | Py.Type.Null -> NullType
-  | Py.Type.Tuple -> TupleType
-  | Py.Type.Type -> TypeType
-  | Py.Type.Unicode -> UnicodeType
+let pytype v = pyobject_type_of_py_type (Py.Type.get v)
 
 let register_ocamlpill_types array = ()
 

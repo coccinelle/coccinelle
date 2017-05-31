@@ -338,6 +338,57 @@ let () =
       assert (Py.Long.to_int (Py.List.get v 0) = 42))
 
 let () =
+  add_test ~title:"array"
+    (fun () ->
+      let array = [| 1; 2 |] in
+      let a = Py.Array.of_array Py.Long.of_int Py.Long.to_int array in
+      let m = Py.Import.add_module "test" in
+      Py.Module.set m "array" a;
+      assert (Py.Run.simple_string "
+from test import array
+assert len(array) == 2
+assert array[0] == 1
+assert array[1] == 2
+array[0] = 42
+array[1] = 43
+copy = []
+for x in array:
+  copy.append(x)
+assert copy == [42, 43]
+");
+      assert (array.(0) = 42);
+      assert (array.(1) = 43))
+
+let () =
+  add_test ~title:"numpy"
+    (fun () ->
+      let array = [| 1.; 2. |] in
+      let a = Py.Array.numpy array in
+      let m = Py.Import.add_module "test" in
+      Py.Module.set m "array" a;
+      assert (Py.Run.simple_string "
+from test import array
+assert len(array) == 2
+assert array[0] == 1.
+assert array[1] == 2.
+array[0] = 42.
+array[1] = 43.
+");
+      assert (array.(0) = 42.);
+      assert (array.(1) = 43.))
+
+let show_environment_variable envvar =
+  try
+    Printf.eprintf "%s=%s\n" envvar (Sys.getenv envvar)
+  with Not_found ->
+    Printf.eprintf "%s not set\n" envvar
+
+let () =
+  prerr_endline "Environment variables:";
+  show_environment_variable "PATH";
+  show_environment_variable "PYTHONHOME";
+  show_environment_variable "DYLD_LIBRARY_PATH";
+  show_environment_variable "DYLD_FALLBACK_LIBRARY_PATH";
   prerr_endline "Initializing library...";
   Py.initialize ();
   prerr_endline "Starting tests...";
