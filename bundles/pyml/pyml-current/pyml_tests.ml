@@ -390,7 +390,12 @@ let () =
   show_environment_variable "DYLD_LIBRARY_PATH";
   show_environment_variable "DYLD_FALLBACK_LIBRARY_PATH";
   prerr_endline "Initializing library...";
-  Py.initialize ();
+  Py.initialize ~verbose:true ();
+  begin
+    match Py.get_library_filename () with
+      None -> prerr_endline "No library has been loaded.\n"
+    | Some filename -> Printf.eprintf "Library \"%s\" has been loaded.\n" filename
+  end;
   prerr_endline "Starting tests...";
   launch_tests ();
   if !failed then

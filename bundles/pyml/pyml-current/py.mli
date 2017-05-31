@@ -2,8 +2,10 @@
 
 (** Call [initialize ()] first. *)
 
-val initialize: ?interpreter:string -> ?version:(int * int) -> unit -> unit
-(** [initialize ~interpreter ~version ()] finds and loads the Python library.
+val initialize: ?interpreter:string -> ?version:(int * int) -> ?verbose:bool ->
+  unit -> unit
+(** [initialize ~interpreter ~version ~verbose ()] finds and loads the Python
+    library.
     This function should be called before any other functions, except
     if explicitely mentioned.
     [version] should be a pair specifying the major and the minor version
@@ -16,7 +18,9 @@ val initialize: ?interpreter:string -> ?version:(int * int) -> unit -> unit
     using [pkg-config] if available, by considering system paths, and
     in the directory [../lib] relatively to the directory where the
     [python] executable is. If the library has been statically linked
-    with the executable, it will be used. *)
+    with the executable, it will be used.
+    When [verbose] is true (default: false), library filenames that are
+    tried to be loaded are printed on standard error. *)
 
 val finalize: unit -> unit
 (** [finalize ()] unloads the library. No other functions except
@@ -26,6 +30,12 @@ val is_initialized: unit -> bool
 (** [is_initialized ()] returns [true] if the library is initialized
     ([initialize ()] has been called and [finalize ()] has not been
     called afterwards). *)
+
+val get_library_filename: unit -> string option
+(** [get_library_filename ()] returns [Some filename] where [filename] is the
+    path to the Python library that has been loaded, or [None] if no Python
+    library has been loaded (for example, if the library has been statically
+    linked with the executable). *)
 
 val version: unit -> string
 (** [version ()] returns the version of the Python library. E.g. ["3.5.1"]. *)

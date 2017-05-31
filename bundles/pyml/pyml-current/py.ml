@@ -221,7 +221,15 @@ let initialize_version_value interpreter =
   version_major_value := version_major;
   version_minor_value := version_minor
 
-let find_library () =
+let library_filename = ref None
+
+let load_library filename =
+  library_filename := filename;
+  load_library filename
+
+let get_library_filename () = !library_filename
+
+let find_library verbose =
   try
     load_library None
   with Failure _ ->
@@ -243,22 +251,26 @@ let find_library () =
       | filename :: others ->
           begin
             try
+              if verbose then
+                Printf.eprintf "Trying to load \"%s\".\n" filename;
               load_library (Some filename);
               if not (Filename.is_implicit filename) then
                 init_pythonhome (parent_dir filename)
             with Failure msg ->
+              if verbose then
+                Printf.eprintf "Failed: \"%s\".\n" msg;
               Printf.bprintf errors " [%s returned %s]" filename msg;
               try_load_library others
           end in
     try_load_library library_filenames
 
-let initialize_library python_full_path =
+let initialize_library verbose python_full_path =
   begin
     match !python_home with
       None -> ()
     | Some s -> init_pythonhome s
   end;
-  find_library ();
+  find_library verbose;
   begin
     match python_full_path with
       None -> ()
@@ -280,7 +292,7 @@ let initialize_library python_full_path =
 
 let get_version = Pywrappers.py_getversion
 
-let initialize ?(interpreter = "python") ?version () =
+let initialize ?(interpreter = "python") ?version ?(verbose = false) () =
   if !initialized then
     failwith "Py.initialize: already initialized";
   let python_full_path =
@@ -302,7 +314,7 @@ let initialize ?(interpreter = "python") ?version () =
             failwith "No Python version given and no Python interpreter found"
         | Some python_full_path' -> initialize_version_value python_full_path'
   end;
-  initialize_library python_full_path;
+  initialize_library verbose python_full_path;
   let version = get_version () in
   let (version_major, version_minor) = extract_version_major_minor version in
   if version_major != !version_major_value ||

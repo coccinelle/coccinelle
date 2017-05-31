@@ -83,7 +83,7 @@ typedef void *library_t;
 static library_t
 open_library(const char *filename)
 {
-    return dlopen(filename, RTLD_LAZY);
+    return dlopen(filename, RTLD_LAZY | RTLD_GLOBAL);
 }
 
 void
