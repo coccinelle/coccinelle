@@ -76,7 +76,7 @@ let valid_positions binding = function
 		match b with
 		  Ast_c.MetaPosValList l ->
 		    List.exists
-		      (function (_,elem,_,_) -> !Flag.current_element = elem)
+		      (function (_,elem,_,_,_) -> !Flag.current_element = elem)
 		      l
 		| _ ->
 		    failwith "position variable should have a position binding"

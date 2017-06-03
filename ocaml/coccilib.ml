@@ -15,6 +15,18 @@ type pos = {
   current_element : string;
   (** {b current_element} is the name of the function containing the
       matched position *)
+  current_element_line : int;
+  (** {b line} is the number of the line containing the first
+      character of the matched position *)
+  current_element_col : int;
+  (** {b col} is the column containing the first character of the
+      matched position *)
+  current_element_line_end : int;
+  (** {b line_end} is the number of the line containing the last
+      character of the matched position *)
+  current_element_col_end : int;
+  (** {b col_end} is the column containing the last character of the
+       matched position. *)
   file :string ;
   (** {b file} is the name of the file containing the matched
       position *)
@@ -161,8 +173,13 @@ let make_type s =
     (function s ->
       Ast_c.MetaTypeVal(Lib_parsing_c.al_type(Parse_c.type_of_string s)))
 let make_listlen i = Ast_c.MetaListlenVal i
+let make_full_position fl fn ce_startl ce_startc ce_endl ce_endc
+    startl startc endl endc =
+  Ast_c.MetaPosValList
+    [(fl, fn, Some ((ce_startl,ce_startc),(ce_endl,ce_endc)),
+      (startl, startc), (endl,endc))]
 let make_position fl fn startl startc endl endc =
-  Ast_c.MetaPosValList [(fl, fn, (startl, startc), (endl,endc))]
+  Ast_c.MetaPosValList [(fl, fn, None, (startl, startc), (endl,endc))]
 
 (* ---------------------------------------------------------------------- *)
 (* Match management *)

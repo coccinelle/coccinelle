@@ -425,6 +425,10 @@ setting Flag.current_element, whether or not one wants to print tracing
 information!  This is probably not smart... *)
 
 let show_or_not_celem2 prelude celem =
+  let (_,_,_,(start_line,start_offset),(end_line,end_offset)) =
+    Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_toplevel celem) in
+  Flag.current_element_pos :=
+    ((start_line,start_offset),(end_line,end_offset));
   let (tag,trying) =
   (match celem with
   |  Ast_c.Definition ({Ast_c.f_name = namefuncs},_) ->
@@ -1536,7 +1540,7 @@ let consistent_positions binding reqopts =
     | l::ls ->
 	let desired_functions =
 	  List.fold_left
-            (fun prev (_,elem,_,_) ->
+            (fun prev (_,elem,_,_,_) ->
               if not (List.mem elem prev) then elem::prev else prev)
             [] l in
 	let inter =
@@ -1544,7 +1548,7 @@ let consistent_positions binding reqopts =
 	    (fun prev l ->
 	      Common.inter_set prev
 		(List.fold_left
-		   (fun prev (_,elem,_,_) ->
+		   (fun prev (_,elem,_,_,_) ->
 		     if not (List.mem elem prev) then elem::prev else prev)
 		   [] l))
 	    desired_functions ls in

@@ -331,7 +331,8 @@ let construct_variables mv e =
     | Some (_, Ast_c.MetaPosValList l) ->
        let locs =
 	 List.map
-	   (function (fname,current_element,(line,col),(line_end,col_end)) ->
+	   (function (fname,current_element,current_element_pos,
+		      (line,col),(line_end,col_end)) ->
 		pycocci_instantiate_class "coccilib.elems.Location"
 	       (Py.Tuple.of_list_map Py.String.of_string
 		  [fname;

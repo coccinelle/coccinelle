@@ -56,9 +56,16 @@ let rec pp_binding_kind = function
       pp (Printf.sprintf ("poss[%s]")
 	    (String.concat ", "
 	       (List.map
-		  (function (fl,ce,(minl,minc),(maxl,maxc)) ->
-		    Printf.sprintf "(%s,%s,(%d,%d),(%d,%d))"
-		      fl ce minl minc maxl maxc)
+		  (function
+		      (fl,ce,None,(minl,minc),(maxl,maxc)) ->
+			Printf.sprintf "(%s,%s,unknown,(%d,%d),(%d,%d))"
+			  fl ce minl minc maxl maxc
+		    | (fl,ce,Some((ceminl,ceminc),(cemaxl,cemaxc)),
+		       (minl,minc),(maxl,maxc)) ->
+			Printf.sprintf
+			   "(%s,%s,((%d,%d),(%d,%d)),(%d,%d),(%d,%d))"
+			   fl ce ceminl ceminc cemaxl cemaxc
+			   minl minc maxl maxc)
 		  l)))
   | Ast_c.MetaNoVal -> pp "no value"
 

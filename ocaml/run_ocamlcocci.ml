@@ -5,8 +5,22 @@ let string_value = function
       let locs =
 	List.map
 	  (function
-	      (fname,current_element,(line,col),(line_end,col_end)) ->
+	      (fname,current_element,current_element_pos,
+	       (line,col),(line_end,col_end)) ->
+		 let (current_element_line,current_element_col,
+		      current_element_line_end,current_element_col_end) =
+		   match current_element_pos with
+		     Some
+		       ((current_element_line,current_element_col),
+			(current_element_line_end,current_element_col_end)) ->
+			  (current_element_line,current_element_col,
+			   current_element_line_end,current_element_col_end)
+		   | None -> (-1,-1,-1,-1) in
 		{ Coccilib.current_element = current_element;
+		  Coccilib.current_element_line = current_element_line;
+		  Coccilib.current_element_col = current_element_col;
+		  Coccilib.current_element_line_end = current_element_line_end;
+		  Coccilib.current_element_col_end = current_element_col_end;
 		  Coccilib.file = fname;
 		  Coccilib.line = line;
 		  Coccilib.col = col;

@@ -827,8 +827,9 @@ and metavars_binding = (Ast_cocci.meta_name, metavar_binding_kind) assoc
    * variables accessible via SmPL whereas the position can be one day
    * so I think it's better to put MetaPosVal here *)
   | MetaPosVal       of (Ast_cocci.fixpos * Ast_cocci.fixpos) (* max, min *)
-  | MetaPosValList   of
-      (Common.filename * string (*element*) * posl * posl) list (* min, max *)
+  | MetaPosValList   of (* current elem, min, max *)
+      (Common.filename * string (*element*) * (posl * posl) option *
+	 posl * posl) list
   | MetaListlenVal   of int
   | MetaNoVal
 
