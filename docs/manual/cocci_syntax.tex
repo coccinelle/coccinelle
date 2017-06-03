@@ -659,12 +659,27 @@ foo()
 \end{center}
 
 \subsection{Dot variants}
-There are two possible modifiers to the control flow for ellipses, one
-(<... ...>) indicates that matching the pattern in between the ellipses is
-optional, and another (<+... ...+>) indicates that the pattern in between
-the ellipses must be matched at least once, on some control-flow path.  In
-the latter, the \texttt{+} is intended to be reminiscent of the \texttt{+}
-used in regular expressions.  For instance, the following SmPL patch tells
+There are two possible modifiers to the control flow for ellipses
+in the semantic patch language.
+
+\begin{enumerate}
+\item <... ...> indicates that matching the pattern between the ellipses is
+optional.
+\begin{itemize}
+\item This construct supports code in the way that it may occur several times.
+\item If you would like to specify that a specific source code should appear at most once,
+use of the SmPL question mark operator (see also a corresponding description in the subsection \ref{singleton})
+can be considered instead in this case.
+\item If you would like to specify that a pattern should appear only once,
+SmPL ellipses can be used without angle brackets.
+\end{itemize}
+\item <+... ...+> indicates that the pattern between
+the ellipses must be matched at least once on some control-flow path.
+In the latter, these plus characters are intended to be reminiscent of the \texttt{+}
+used in regular expressions.
+\end{enumerate}
+
+For instance, the following SmPL patch tells
 Coccinelle to remove all calls to c() if foo() is present at least
 once since the beginning of the function.
 
@@ -1069,7 +1084,7 @@ The grammar for the minus or plus slice of a transformation is as follows:
 
 \noindent
 Lines may be annotated with an element of the set $\{\mtt{-}, \mtt{+},
-\mtt{*}\}$ or the singleton $\mtt{?}$, or one of each set. \mtt{?}
+\mtt{*}\}$ or the singleton $\mtt{?}$\label{singleton}, or one of each set. \mtt{?}
 represents at most one match of the given pattern, ie a match of the
 pattern is optional. \mtt{*} is used for
 semantic match, \emph{i.e.}, a pattern that highlights the fragments
