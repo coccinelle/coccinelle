@@ -4790,8 +4790,8 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
         | None -> expression
         | Some pos ->
             (fun ea eb ->
-              let (min,max) =
-                lin_col_by_pos (Lib_parsing_c.ii_of_expr eb) in
+              let (max,min) =
+                Lib_parsing_c.max_min_by_pos (Lib_parsing_c.ii_of_expr eb) in
               let keep = A.Unitary in
               let inherited = false in
 	      let max_min _ = failwith "no pos" in
