@@ -333,10 +333,23 @@ let construct_variables mv e =
 	 List.map
 	   (function (fname,current_element,current_element_pos,
 		      (line,col),(line_end,col_end)) ->
-		pycocci_instantiate_class "coccilib.elems.Location"
+	     let (current_element_line,current_element_col,
+		  current_element_line_end,current_element_col_end) =
+	       match current_element_pos with
+		 Some
+		   ((current_element_line,current_element_col),
+		    (current_element_line_end,current_element_col_end)) ->
+		      (current_element_line,current_element_col,
+		       current_element_line_end,current_element_col_end)
+	       | None -> (-1,-1,-1,-1) in
+	     pycocci_instantiate_class "coccilib.elems.Location"
 	       (Py.Tuple.of_list_map Py.String.of_string
 		  [fname;
 		   current_element;
+		   string_of_int current_element_line;
+		   string_of_int current_element_col;
+		   string_of_int current_element_line_end;
+		   string_of_int current_element_col_end;
 		   string_of_int line;
 		   string_of_int col;
 		   string_of_int line_end;
