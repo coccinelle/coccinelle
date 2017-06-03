@@ -3497,10 +3497,14 @@ let remove_file path =
 
 let _temp_files_created = ref ([] : filename list)
 
+let temp_files = ref "/tmp"
+
 (* ex: new_temp_file "cocci" ".c" will give "/tmp/cocci-3252-434465.c" *)
 let new_temp_file prefix suffix =
   let processid = string_of_int (Unix.getpid ()) in
-  let tmp_file = Filename.temp_file (prefix ^ "-" ^ processid ^ "-") suffix in
+  let tmp_file =
+    Filename.temp_file ~temp_dir:(!temp_files)
+      (prefix ^ "-" ^ processid ^ "-") suffix in
   push2 tmp_file _temp_files_created;
   tmp_file
 

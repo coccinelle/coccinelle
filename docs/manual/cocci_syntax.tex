@@ -50,7 +50,7 @@ An HTML version of this documentation is available online at
 \T{script\_code} is any code in the chosen scripting language.  Parsing of
 the semantic patch does not check the validity of this code; any errors are
 first detected when the code is executed.  Furthermore, \texttt{@} should
-not be use in this code.  Spatch scans the script code for the next
+not be used in this code.  Spatch scans the script code for the next
 \texttt{@} and considers that to be the beginning of the next rule, even if
 \texttt{@} occurs within e.g., a comment.
 
@@ -64,7 +64,7 @@ the \texttt{-D} option on the command line.
 % analogous to the filename specifications in the standard patch syntax.
 % (see Figure \ref{scsiglue_patch}).
 
-\section{Metavariables for transformations}
+\section{Metavariables for Transformations}
 
 The \NT{rulename} portion of the metavariable declaration can specify
 properties of a rule such as its name, the names of the rules that it
@@ -133,8 +133,8 @@ behavior.  Using \NT{disable-iso} with the given name disables this behavior.
 \item \KW{optional\_qualifier}: This is similar to \KW{optional\_storage},
   except that here it is the qualifier (i.e., const or volatile) that does
   not have to be specified in the SmPL code, but may be present in the C code.
-\item \KW{optional\_attributes}: This is similar to
-  \KW{optional\_attributes}, except that here is it an attribute (e.g.,
+\item \KW{optional\_attributes}: This is also similar to
+  \KW{optional\_storage}, except that here is it an attribute (e.g.,
   \_\_init) that does not have to be specified in the SmPL code, but may be
   present in the C code.  \textbf{Note that this isomorphism is currently
     useless, because matching of attributes is not supported, due to the
@@ -358,7 +358,7 @@ metavariable.  {\tt S} matches the closest enclosing statement, which may
 be more than what is matches by the semantic match pattern itself.
 
 Matching of various kinds of format strings within strings is supported.
-With the {\tt --ibm} option, matching of decimal format declarations is
+With the {\tt -{}-ibm} option, matching of decimal format declarations is
 supported, but the length and precision arguments are not interpreted.
 Thus it is not possible to match metavariables in these fields.  Instead,
 the entire format is matched as a single string.
@@ -525,7 +525,7 @@ declared as an identifier metavariable in advance.  The syntax does not
 permit {\tt r.n} as the name of a structure or union type in such a
 declaration.
 
-\section{Metavariables for scripts}
+\section{Metavariables for Scripts}
 
 Metavariables for scripts can only be inherited from transformation rules.
 In the spirit of scripting languages such as Python that use dynamic
@@ -661,11 +661,12 @@ foo()
 \subsection{Dot variants}
 There are two possible modifiers to the control flow for ellipses, one
 (<... ...>) indicates that matching the pattern in between the ellipses is
+to be matched 0 or more times, i.e., it is
 optional, and another (<+... ...+>) indicates that the pattern in between
 the ellipses must be matched at least once, on some control-flow path.  In
 the latter, the \texttt{+} is intended to be reminiscent of the \texttt{+}
 used in regular expressions.  For instance, the following SmPL patch tells
-Coccinelle to remove all calls to c(). if foo() is present at least
+Coccinelle to remove all calls to c() if foo() is present at least
 once since the beginning of the function.
 
 \begin{center}
@@ -732,7 +733,8 @@ foo() to not be present.
 
 One way to describe code control flow is in terms of McCabe cyclomatic
 complexity.
-The program flow1.c has a linear control flow, it has no branches. The main
+The program flow1.c has a linear control flow, i.e., it has no
+branches. The main
 routine has a McCabe cyclomatic complexity of 1. The McCabe cyclomatic
 complexity can be computed using
 {\tt pmccabe} (https://www.gnu.org/\-software/\-complexity/\-manual/\-html\_node/\-pmccabe-parsing.html).
@@ -791,8 +793,8 @@ using Coccinelle you use:
 
 \begin{center}
 \begin{tabular}{c}
-spatch --control-flow-to-file flow1.c
-spatch --control-flow-to-file flow2.c
+spatch -{}-control-flow-to-file flow1.c \\
+spatch -{}-control-flow-to-file flow2.c
 \end{tabular}
 \end{center}
 
@@ -817,7 +819,7 @@ can use the following:
 
 \begin{center}
 \begin{tabular}{c}
-spatch --control-flow-to-file flow2.c
+spatch -{}-control-flow-to-file flow2.c \\
 dot -Tpdf flow1:main.dot > flow1.pdf
 \end{tabular}
 \end{center}
@@ -894,7 +896,11 @@ matches the pattern before the dots (or the beginning of the function, if
 there is nothing before the dots) and something that matches the pattern
 after the dots (or the end of the function, if there is nothing after the
 dots).  Dots may be modified with a {\tt when} clause, indicating a pattern
-that should not occur anywhere within the matched sequence.  {\tt when any}
+that should not occur anywhere within the matched sequence.  The shortest
+path constraint is implemented by requiring that the pattern (if any)
+appearing immediately before the dots and the pattern (if any) appearing
+immediately after the dots are not matched by the code matched by the dots.
+{\tt when any}
 removes the aforementioned constraint that ``\verb-...-'' matches the
 shortest path.  Finally, a transformation can specify a disjunction of
 patterns, of the form \mtt{( \mth{\mita{pat}_1} | \mita{\ldots} |
@@ -1293,7 +1299,7 @@ explained in this section.
 
 $^\dag$ The optional \texttt{when} construct ends at the end of the line.
 
-\section{Function declarations}
+\section{Function Declarations}
 
 \begin{grammar}
 
@@ -1672,7 +1678,7 @@ in a concise way.
   \CASE{"\any{[\^{}"]}"}
 \end{grammar}
 
-\section{Comments and preprocessor directives}
+\section{Comments and Preprocessor Directives}
 
 A \verb+//+ or \verb+/* */+ comment that is annotated with + in the
 leftmost column is considered to be added code.  A \verb+//+ or
@@ -1694,7 +1700,7 @@ be matched against.  The entire line is added, but it is not parsed.
 \item \verb+line+
 \end{itemize}
 
-\section{Command-line semantic match}
+\section{Command-Line Semantic Match}
 
 It is possible to specify a semantic match on the spatch command line,
 using the argument {\tt -sp}.  In such a semantic match, any token
@@ -1812,7 +1818,7 @@ the collected information to trigger a new iteration at some time in the
 future.
 
 Modification is not allowed when using iteration.  Thus, it is required to
-use the {\tt --no-show-diff}, unless the semantic patch contains {\tt *}s
+use the {\tt -{}-no-show-diff}, unless the semantic patch contains {\tt *}s
 (a semantic match rather than a semantic patch).
 
 When using Python scripting a tuple may be used
@@ -1822,16 +1828,16 @@ Coccinelle itself provides no support for obtaining information about what
 work has been queued and as such addressing
 this with scripting is necessary.
 
-\section{.cocciconfig support}
+\section{{\tt .cocciconfig} Support}
 
 Coccinelle supports enabling custom options to be preferred when running
 spatch.  This is supported through the search of .cocciconfig files in each of
 the following directories, later lines extend and may override earlier ones:
 
 \begin{itemize}
-	\item Your current user's home directory is processed first
-	\item Your directory from which spatch is called is processed next
-	\item The directory provided with the --dir option is processed last, if used
+	\item Your current user's home directory is processed first.
+	\item Your directory from which spatch is called is processed next.
+	\item The directory provided with the -{}-dir option is processed last, if used.
 \end{itemize}
 
 Newlines, even with \, are not tolerated in attribute values. An example

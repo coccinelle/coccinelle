@@ -18,8 +18,10 @@ external pynone: unit -> pyobject = "PyNone_wrapper"
 external pytrue: unit -> pyobject = "PyTrue_wrapper"
 external pyfalse: unit -> pyobject = "PyFalse_wrapper"
 external pytuple_empty: unit -> pyobject = "PyTuple_Empty_wrapper"
-external pyobject_callfunctionobjargs: pyobject -> (pyobject array) -> pyobject
+external pyobject_callfunctionobjargs: pyobject -> pyobject array -> pyobject
     = "PyObject_CallFunctionObjArgs_wrapper"
+external pyobject_callmethodobjargs: pyobject -> pyobject -> pyobject array
+  -> pyobject = "PyObject_CallMethodObjArgs_wrapper"
 external pyerr_fetch_internal: unit -> pyobject * pyobject * pyobject
     = "PyErr_Fetch_wrapper"
 external pystring_asstringandsize: pyobject -> string option
@@ -219,7 +221,15 @@ let initialize_version_value interpreter =
   version_major_value := version_major;
   version_minor_value := version_minor
 
-let find_library () =
+let library_filename = ref None
+
+let load_library filename =
+  library_filename := filename;
+  load_library filename
+
+let get_library_filename () = !library_filename
+
+let find_library verbose =
   try
     load_library None
   with Failure _ ->
@@ -230,25 +240,37 @@ let find_library () =
       List.map (fun path -> Filename.concat path filename) library_paths in
     let library_filenames =
       List.concat (List.map expand_filepaths library_filenames) in
+    let errors = Buffer.create 17 in
     let rec try_load_library library_filenames =
       match library_filenames with
-        [] -> failwith "Py.find_library: unable to find the Python library"
+        [] ->
+          let msg =
+            Printf.sprintf "Py.find_library: unable to find the Python library%s"
+              (Buffer.contents errors) in
+          failwith msg
       | filename :: others ->
           begin
             try
+              if verbose then
+                Printf.eprintf "Trying to load \"%s\".\n" filename;
               load_library (Some filename);
-              init_pythonhome (parent_dir filename)
-            with Failure _ -> try_load_library others
+              if not (Filename.is_implicit filename) then
+                init_pythonhome (parent_dir filename)
+            with Failure msg ->
+              if verbose then
+                Printf.eprintf "Failed: \"%s\".\n" msg;
+              Printf.bprintf errors " [%s returned %s]" filename msg;
+              try_load_library others
           end in
     try_load_library library_filenames
 
-let initialize_library python_full_path =
+let initialize_library verbose python_full_path =
   begin
     match !python_home with
       None -> ()
     | Some s -> init_pythonhome s
   end;
-  find_library ();
+  find_library verbose;
   begin
     match python_full_path with
       None -> ()
@@ -270,7 +292,7 @@ let initialize_library python_full_path =
 
 let get_version = Pywrappers.py_getversion
 
-let initialize ?(interpreter = "python") ?version () =
+let initialize ?(interpreter = "python") ?version ?(verbose = false) () =
   if !initialized then
     failwith "Py.initialize: already initialized";
   let python_full_path =
@@ -292,7 +314,7 @@ let initialize ?(interpreter = "python") ?version () =
             failwith "No Python version given and no Python interpreter found"
         | Some python_full_path' -> initialize_version_value python_full_path'
   end;
-  initialize_library python_full_path;
+  initialize_library verbose python_full_path;
   let version = get_version () in
   let (version_major, version_minor) = extract_version_major_minor version in
   if version_major != !version_major_value ||
@@ -303,8 +325,13 @@ let initialize ?(interpreter = "python") ?version () =
     end;
   initialized := true
 
+let on_finalize_list = ref []
+
+let on_finalize f = on_finalize_list := f :: !on_finalize_list
+
 let finalize () =
   assert_initialized ();
+  List.iter (fun f -> f ()) !on_finalize_list;
   finalize_library ();
   if !has_putenv then
     begin
@@ -440,6 +467,8 @@ module Capsule = struct
 
   let table = Hashtbl.create 17
 
+  let () = on_finalize (fun () -> Hashtbl.clear table)
+
   external unsafe_wrap_value: 'a -> pyobject = "pywrap_value"
 
   external unsafe_unwrap_value: pyobject -> 'a = "pyunwrap_value"
@@ -466,7 +495,7 @@ module Capsule = struct
   let type_of x = fst (unsafe_unwrap_value x)
 end
 
-module Eval = struct
+module Eval_ = struct
   let call_object_with_keywords func arg keyword =
     check_not_null (Pywrappers.pyeval_callobjectwithkeywords func arg keyword)
 
@@ -515,17 +544,19 @@ end
 
 let object_repr obj = check_not_null (Pywrappers.pyobject_repr obj)
 
-let as_UTF8_string s =
-  let f =
-    match ucs () with
-      UCS2 -> Pywrappers.UCS2.pyunicodeucs2_asutf8string
-    | UCS4 -> Pywrappers.UCS4.pyunicodeucs4_asutf8string
-    | UCSNone ->
-        if !version_major_value >= 3 then
-          Pywrappers.Python3.pyunicode_asutf8string
-        else
-          failwith "Py.as_UTF8_string: unavailable" in
-  check_not_null (f s)
+module String_ = struct
+  let as_UTF8_string s =
+    let f =
+      match ucs () with
+        UCS2 -> Pywrappers.UCS2.pyunicodeucs2_asutf8string
+      | UCS4 -> Pywrappers.UCS4.pyunicodeucs4_asutf8string
+      | UCSNone ->
+          if !version_major_value >= 3 then
+            Pywrappers.Python3.pyunicode_asutf8string
+          else
+            failwith "String.as_UTF8_string: unavailable" in
+    check_not_null (f s)
+end
 
 module Type = struct
   let none = None
@@ -540,6 +571,7 @@ module Type = struct
     | Dict
     | Float
     | List
+    | Int
     | Long
     | Module
     | None
@@ -565,6 +597,7 @@ module Type = struct
     | Dict -> "Dict"
     | Float -> "Float"
     | List -> "List"
+    | Int -> "Int"
     | Long -> "Long"
     | Module -> "Module"
     | None -> "None"
@@ -577,7 +610,7 @@ module Type = struct
   let to_string s =
     match get s with
       Bytes -> Some (pystring_asstringandsize s)
-    | Unicode -> Some (pystring_asstringandsize (as_UTF8_string s))
+    | Unicode -> Some (pystring_asstringandsize (String_.as_UTF8_string s))
     | _ -> none
 
   let string_of_repr item =
@@ -589,44 +622,6 @@ module Type = struct
     failwith
       (Printf.sprintf "Type mismatch: %s expected. Got: %s (%s)"
          t (name (get o)) (string_of_repr o))
-end
-
-module Iter = struct
-  let check o = Type.get o = Type.Iter
-
-  let next i = option (Pywrappers.pyiter_next i)
-
-  let rec iter f i =
-    match next i with
-      None -> ()
-    | Some item ->
-        f item;
-        iter f i
-
-  let rec fold_left f v i =
-    match next i with
-      None -> v
-    | Some item -> fold_left f (f v item) i
-
-  let rec fold_right f i v =
-    match next i with
-      None -> v
-    | Some item -> f item (fold_right f i v)
-
-  let to_list i = List.rev (fold_left (fun list item -> item :: list) [] i)
-
-  let to_list_map f i =
-    List.rev (fold_left (fun list item -> f item :: list) [] i)
-
-  let rec for_all p i =
-    match next i with
-      None -> true
-    | Some item -> p item && for_all p i
-
-  let rec exists p i =
-    match next i with
-      None -> false
-    | Some item -> p item || exists p i
 end
 
 let find_exception option =
@@ -701,6 +696,28 @@ module Long = struct
     let result = Pywrappers.pylong_aslong v in
     check_error ();
     result
+
+  let of_int v = of_int64 (Int64.of_int v)
+
+  let to_int v = Int64.to_int (to_int64 v)
+end
+
+module Int = struct
+  let check o = Type.get o = Type.Long
+
+  let of_int64 v =
+    if version_major () >= 3 then
+      Long.of_int64 v
+    else
+      check_not_null (Pywrappers.Python2.pyint_fromlong v)
+
+  let to_int64 v =
+    if version_major () >= 3 then
+      Long.to_int64 v
+    else
+      let result = Pywrappers.Python2.pyint_aslong v in
+      check_error ();
+      result
 
   let of_int v = of_int64 (Int64.of_int v)
 
@@ -813,6 +830,8 @@ type byteorder =
 let string_length = String.length
 
 module String = struct
+  include String_
+
   let check_bytes s =
     Type.get s = Type.Bytes
 
@@ -823,8 +842,6 @@ module String = struct
     match Type.get s with
       Type.Bytes | Type.Unicode -> true
     | _ -> false
-
-  let as_UTF8_string = as_UTF8_string
 
   let decode_UTF8 ?errors ?size s =
     let size' =
@@ -992,6 +1009,7 @@ module Err = struct
   | TypeError
   | ValueError
   | ZeroDivisionError
+  | StopIteration
 
   let clear () =
     Pywrappers.pyerr_clear ();
@@ -1072,7 +1090,8 @@ module Err = struct
       | SystemExit -> Pywrappers.pyexc_systemerror ()
       | TypeError -> Pywrappers.pyexc_typeerror ()
       | ValueError -> Pywrappers.pyexc_valueerror ()
-      | ZeroDivisionError -> Pywrappers.pyexc_zerodivisionerror () in
+      | ZeroDivisionError -> Pywrappers.pyexc_zerodivisionerror ()
+      | StopIteration -> Pywrappers.pyexc_stopiteration () in
     set_object exc (String.of_string msg)
 end
 
@@ -1162,9 +1181,39 @@ module Object = struct
 
   external reference_count: pyobject -> int = "pyrefcount"
 
-  let format fmt v = Format.pp_print_string fmt (to_string v)
+  let repr_or_string repr v =
+    if repr then string_of_repr v
+    else to_string v
 
-  let format_repr fmt v = Format.pp_print_string fmt (string_of_repr v)
+  let robust_to_string repr v =
+    if !initialized then
+      try
+        try
+          repr_or_string repr v
+        with E (ty, value) ->
+          repr_or_string (Pervasives.not repr) v
+      with E (ty, value) ->
+        Printf.sprintf "[ERROR] %s: %s" (to_string ty) (to_string value)
+    else
+      "<python value: run 'Py.initialize ()' to print it>"
+
+  let format fmt v =
+    Format.pp_print_string fmt (robust_to_string false v)
+
+  let format_repr fmt v =
+    Format.pp_print_string fmt (robust_to_string true v)
+
+  let call_function_obj_args callable args =
+    check_not_null (pyobject_callfunctionobjargs callable args)
+
+  let call_method_obj_args obj name args =
+    check_not_null (pyobject_callmethodobjargs obj name args)
+
+  let call_method obj name args =
+    call_method_obj_args obj (String.of_string name) args
+
+  let call callable args kw =
+    check_not_null (Pywrappers.pyobject_call callable args kw)
 end
 
 let exception_printer exn =
@@ -1176,6 +1225,44 @@ let exception_printer exn =
   | _ -> None
 
 let () = Printexc.register_printer exception_printer
+
+module Iter_ = struct
+  let check o = Type.get o = Type.Iter
+
+  let next i = option (Pywrappers.pyiter_next i)
+
+  let rec iter f i =
+    match next i with
+      None -> ()
+    | Some item ->
+        f item;
+        iter f i
+
+  let rec fold_left f v i =
+    match next i with
+      None -> v
+    | Some item -> fold_left f (f v item) i
+
+  let rec fold_right f i v =
+    match next i with
+      None -> v
+    | Some item -> f item (fold_right f i v)
+
+  let to_list i = List.rev (fold_left (fun list item -> item :: list) [] i)
+
+  let to_list_map f i =
+    List.rev (fold_left (fun list item -> f item :: list) [] i)
+
+  let rec for_all p i =
+    match next i with
+      None -> true
+    | Some item -> p item && for_all p i
+
+  let rec exists p i =
+    match next i with
+      None -> false
+    | Some item -> p item || exists p i
+end
 
 module Sequence = struct
   let check obj = bool_of_int (Pywrappers.pysequence_check obj)
@@ -1208,7 +1295,8 @@ module Sequence = struct
 
   let length s = check_int (Pywrappers.pysequence_length s)
 
-  let list sequence = check_not_null (Pywrappers.pysequence_list sequence)
+  let list sequence =
+    check_not_null (Pywrappers.pysequence_list sequence)
 
   let repeat s count = check_not_null (Pywrappers.pysequence_repeat s count)
 
@@ -1246,13 +1334,13 @@ module Sequence = struct
     fold_right (fun item list -> f item :: list) sequence []
 
   let fold_left f v sequence =
-    Iter.fold_left f v (Object.get_iter sequence)
+    Iter_.fold_left f v (Object.get_iter sequence)
 
   let for_all p sequence =
-    Iter.for_all p (Object.get_iter sequence)
+    Iter_.for_all p (Object.get_iter sequence)
 
   let exists p sequence =
-    Iter.exists p (Object.get_iter sequence)
+    Iter_.exists p (Object.get_iter sequence)
 end
 
 module Tuple = struct
@@ -1346,7 +1434,7 @@ module Callable = struct
     if not (check c) then
       Type.mismatch "Callable" c;
     function args ->
-      Eval.call_object c args
+      Eval_.call_object c args
 
   let to_function_array c =
     let f = to_function c in
@@ -1398,41 +1486,65 @@ module Dict = struct
     check_not_null (Pywrappers.pydict_values dict)
 
   let iter f dict =
-    Iter.iter begin fun pair ->
+    Iter_.iter begin fun pair ->
       let (key, value) = Tuple.to_pair pair in
       f key value
     end (Object.get_iter (items dict))
 
   let fold f dict v =
-    Iter.fold_left begin fun v pair ->
+    Iter_.fold_left begin fun v pair ->
       let (key, value) = Tuple.to_pair pair in
       f key value v
     end v (Object.get_iter (items dict))
 
   let for_all p dict =
-    Iter.for_all begin fun pair ->
+    Iter_.for_all begin fun pair ->
       let (key, value) = Tuple.to_pair pair in
       p key value
     end (Object.get_iter (items dict))
 
   let exists p dict =
-    Iter.exists begin fun pair ->
+    Iter_.exists begin fun pair ->
       let (key, value) = Tuple.to_pair pair in
       p key value
     end (Object.get_iter (items dict))
 
-  let bindings dict =
-    Iter.to_list_map Tuple.to_pair (Object.get_iter (items dict))
+  let bindings_map fkey fvalue dict =
+    Iter_.to_list_map begin fun pair ->
+      let (key, value) = Tuple.to_pair pair in
+      (fkey key, fvalue value)
+    end (Object.get_iter (items dict))
 
-  let singleton key value =
+  let id x = x
+
+  let bindings = bindings_map id id
+
+  let bindings_string = bindings_map String.to_string id
+
+  let of_bindings_map fkey fvalue list =
     let result = create () in
-    set_item result key value;
+    List.iter begin fun (key, value) ->
+      set_item result (fkey key) (fvalue value);
+    end list;
     result
 
-  let singleton_string key value =
-    let result = create () in
-    set_item_string result key value;
-    result
+  let of_bindings = of_bindings_map id id
+
+  let of_bindings_string = of_bindings_map String.of_string id
+
+  let singleton key value = of_bindings [(key, value)]
+
+  let singleton_string key value = of_bindings_string [(key, value)]
+end
+
+module Eval = struct
+  include Eval_
+
+  let call_with_keywords func arg keywords =
+    call_object_with_keywords func (Tuple.of_array arg)
+      (Dict.of_bindings_string keywords)
+
+  let call func arg = call_object func (Tuple.of_array arg)
 end
 
 module Module = struct
@@ -1558,11 +1670,11 @@ module Run = struct
       (Pywrappers.pyrun_stringflags s start globals locals None)
 
   let eval ?(start = Eval) ?(globals = Module.get_dict (Module.main ()))
-      ?(locals = Module.get_dict (Module.main ())) s =
+      ?(locals = globals) s =
     string s start globals locals
 
   let load ?(start = File) ?(globals = Module.get_dict (Module.main ()))
-      ?(locals = Module.get_dict (Module.main ())) chan filename =
+      ?(locals = globals) chan filename =
     file chan filename start globals locals
 
   let interactive () = interactive_loop stdin "<stdin>"
@@ -1581,6 +1693,10 @@ except ImportError:
 end
 
 module Class = struct
+  let type_ classname parents dict =
+    let ty = Pywrappers.pytype_type () in
+    Object.call_function_obj_args ty [| classname; parents; dict |]
+
   let init ?(parents = Tuple.empty) ?(fields = []) ?(methods = []) classname =
     let dict = Dict.create () in
     let add_field (name, value) = Dict.set_item_string dict name value in
@@ -1592,9 +1708,7 @@ module Class = struct
           check_not_null (Pywrappers.Python3.pyinstancemethod_new closure') in
         Dict.set_item_string dict name m in
       List.iter add_method methods;
-      let ty = Pywrappers.pytype_type () in
-      check_not_null
-        (pyobject_callfunctionobjargs ty [| classname; parents; dict |])
+      type_ classname parents dict
     else
       let c =
         check_not_null
@@ -1605,6 +1719,22 @@ module Class = struct
         Dict.set_item_string dict name m in
       List.iter add_method methods;
       c
+end
+
+module Iter = struct
+  include Iter_
+
+  let create next =
+    let next_name =
+      if version_major () >= 3 then "__next__"
+      else "next" in
+    let next' tuple =
+      match next () with
+        None -> raise (Err (Err.StopIteration, ""))
+      | Some item -> item in
+    let methods = [next_name, next'] in
+    Object.call_function_obj_args
+      (Class.init ~methods (String.of_string "iterator")) [| |]
 end
 
 module List = struct
@@ -1676,6 +1806,89 @@ module Marshal = struct
 
   let dumps ?(version = version ()) v =
     String.to_string (write_object_to_string v version)
+end
+
+module Array = struct
+  let of_indexed_structure getter setter length =
+    let methods =
+      ["__len__", (fun _tuple -> Int.of_int length);
+       "__getitem__", (fun tuple ->
+         let (self, key) = Tuple.to_tuple2 tuple in
+         getter (Long.to_int key));
+       "__setitem__", (fun tuple ->
+         let (self, key, value) = Tuple.to_tuple3 tuple in
+         setter (Long.to_int key) value;
+         none);
+       "__iter__", (fun tuple ->
+         let cursor = ref 0 in
+         let next () =
+           let index = !cursor in
+           if index < length then
+             begin
+               cursor := succ index;
+               Some (getter index)
+             end
+           else
+             None in
+         Iter.create next);
+       "__repr__", (fun tuple ->
+         let (self) = Tuple.to_tuple1 tuple in
+         Object.repr (Sequence.list self))] in
+    Object.call_function_obj_args
+      (Class.init ~methods (String.of_string "array")) [| |]
+
+  let of_array getter setter a =
+    of_indexed_structure (fun i -> getter a.(i)) (fun i v -> a.(i) <- setter v)
+      (Array.length a)
+
+  type numpy_info = {
+      numpy_api: Object.t;
+      array_pickle: float array -> Object.t;
+      array_unpickle: Object.t -> float array;
+      pyarray_subtype: Object.t;
+    }
+
+  let numpy_info = ref None
+
+  let () = on_finalize (fun () -> numpy_info := None)
+
+  external get_pyarray_type: Object.t -> Object.t = "get_pyarray_type"
+
+  external pyarray_of_float_array: Object.t -> Object.t -> float array
+    -> Object.t = "pyarray_of_float_array_wrapper"
+
+  let get_numpy_info () =
+    match !numpy_info with
+      Some info -> info
+    | None ->
+        let numpy_api =
+          let numpy = Import.import_module "numpy.core.multiarray" in
+          Object.get_attr_string numpy "_ARRAY_API" in
+        let array_pickle, array_unpickle = Capsule.make "float array" in
+        let pyarray_subtype =
+          let pyarray_type = get_pyarray_type numpy_api in
+          let classname = String.of_string "ocamlarray" in
+          let parents = Tuple.of_tuple1 (pyarray_type) in
+          let dict = Dict.create () in
+          Dict.set_item_string dict "ocamlarray" none;
+          Class.type_ classname parents dict in
+        let info =
+          { numpy_api; array_pickle; array_unpickle;
+            pyarray_subtype } in
+        numpy_info := Some info;
+        info
+
+  let numpy a =
+    let info = get_numpy_info () in
+    let result =
+      check_not_null
+        (pyarray_of_float_array info.numpy_api info.pyarray_subtype a) in
+    Object.set_attr_string result "ocamlarray" (info.array_pickle a);
+    result
+
+  let numpy_get_array a =
+    let info = get_numpy_info () in
+    info.array_unpickle (Object.get_attr_string a "ocamlarray")
 end
 
 let set_argv argv =

@@ -672,6 +672,8 @@ let other_options = [
     "   the size of work chunks for parallelism";
     "--tmp-dir", Arg.Set_string tmp_dir,
     "   prefix of temporary directories for parallelism";
+    "--temp-files", Arg.Set_string Common.temp_files,
+    "   prefix of temporary directory for cocci files";
   ];
 
   "pad options",
