@@ -51,6 +51,7 @@
   Kumar Gala. See tests/bitfield_matching.cocci
 - Bit-field matching, see tests/bitfield.cocci
 - Anonymous field matching, see tests/anonfield.cocci
+- current_element position information in position structure (ocaml & python)
 ** Features:
 - Better error reporting for unparsable terms when using make_expr etc in
   script code.  Problem reported by Markus Elfring.
