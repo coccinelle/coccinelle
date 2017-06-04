@@ -1120,13 +1120,19 @@ and _parse_print_error_heuristic2bis saved_typedefs saved_macros
                           ~defs:macros passed
                       in
 
-                      let toks = List.rev passed @ tr.rest in
-                      let toks' =
-                      find_optional_macro_to_expand ~defs:candidates toks in
-                      let new_tr = mk_tokens_state toks' in
-                      copy_tokens_state ~src:new_tr ~dst:tr;
-                      let passx = get_one_elem ~pass:4 tr in
-                      passx
+                      if candidates=[]
+                      then passx
+                      else
+			begin
+			  let toks = List.rev passed @ tr.rest in
+			  let toks' =
+			    find_optional_macro_to_expand ~defs:candidates
+			      toks in
+			  let new_tr = mk_tokens_state toks' in
+			  copy_tokens_state ~src:new_tr ~dst:tr;
+			  let passx = get_one_elem ~pass:4 tr in
+			  passx
+			end
                   )
                  end
             )
