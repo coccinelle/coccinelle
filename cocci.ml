@@ -147,7 +147,7 @@ let show_or_not_cfile2 cfile =
     cat cfile;
   end
 let show_or_not_cfile a =
-  Common.profile_code "show_xxx1" (fun () -> show_or_not_cfile2 a)
+  Common.profile_code "show_xxx" (fun () -> show_or_not_cfile2 a)
 
 let show_or_not_cfiles cfiles = List.iter show_or_not_cfile cfiles
 
@@ -162,7 +162,7 @@ let show_or_not_cocci2 coccifile isofile =
     pr2 "";
   end
 let show_or_not_cocci a b =
-  Common.profile_code "show_xxx2" (fun () -> show_or_not_cocci2 a b)
+  Common.profile_code "show_xxx" (fun () -> show_or_not_cocci2 a b)
 
 (* ---------------------------------------------------------------------- *)
 (* the output *)
@@ -340,7 +340,7 @@ let show_or_not_diff2 cfile outfile =
 	    end)
     end
 let show_or_not_diff a b =
-  Common.profile_code "show_xxx3" (fun () -> show_or_not_diff2 a b)
+  Common.profile_code "show_xxx" (fun () -> show_or_not_diff2 a b)
 
 (* the derived input *)
 
@@ -358,7 +358,7 @@ let show_or_not_ctl_tex2 astcocci ctls =
 		     "gv __cocci_ctl.ps &");
   end
 let show_or_not_ctl_tex a b  =
-  Common.profile_code "show_xxx4" (fun () -> show_or_not_ctl_tex2 a b)
+  Common.profile_code "show_xxx" (fun () -> show_or_not_ctl_tex2 a b)
 
 
 let show_or_not_rule_name ast rulenb =
@@ -406,7 +406,7 @@ let show_or_not_ctl_text2 ctl mvs ast rulenb =
     pr "";
   end
 let show_or_not_ctl_text a b c d =
-      Common.profile_code "show_xxx5" (fun () -> show_or_not_ctl_text2 a b c d)
+      Common.profile_code "show_xxx" (fun () -> show_or_not_ctl_text2 a b c d)
 
 
 
@@ -455,7 +455,7 @@ let show_or_not_celem2 prelude celem =
     | None -> pr2 (Printf.sprintf "%s%s something else" prelude tag)
 
 let show_or_not_celem a b  =
-  Common.profile_code "show_xxx6" (fun () -> show_or_not_celem2 a b)
+  Common.profile_code "show_xxx" (fun () -> show_or_not_celem2 a b)
 
 
 let show_or_not_trans_info2 trans_info =
@@ -488,7 +488,7 @@ let show_or_not_trans_info2 trans_info =
     end
   end
 let show_or_not_trans_info a  =
-  Common.profile_code "show_xxx7" (fun () -> show_or_not_trans_info2 a)
+  Common.profile_code "show_xxx" (fun () -> show_or_not_trans_info2 a)
 
 
 
@@ -499,7 +499,7 @@ let show_or_not_binding2 s binding =
     )
   end
 let show_or_not_binding a b  =
-  Common.profile_code "show_xxx8" (fun () -> show_or_not_binding2 a b)
+  Common.profile_code "show_xxx" (fun () -> show_or_not_binding2 a b)
 
 
 
