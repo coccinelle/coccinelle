@@ -26,6 +26,8 @@ On Debian/Ubuntu, install the following packages
  - libpcre-ocaml-dev (optional, bundled)
  - texlive-fonts-extra (for the documentation)
 
+ ($ apt-get build-dep coccinelle)
+
 On Fedora, install the following packages
  - pkgconfig (optional, but strongly recommended)
  - chrpath
