@@ -1489,7 +1489,7 @@ let rec find_macro_lineparen xs =
     ::(Line
           (PToken ({col = col2 } as other)::restline2
           ) as line2)
-    ::xs ->
+    ::xs when ctx = InFunction -> (* MacroStmt doesn't make sense otherwise *)
     (* when s ==~ regexp_macro *)
 
       let condition =
