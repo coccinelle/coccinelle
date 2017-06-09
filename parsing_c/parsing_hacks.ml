@@ -169,7 +169,7 @@ let msg_macro_higher_order s =
       | _ -> false
       )
     )
-    (fun s -> pr2_cpp ("MACRO: found higher ordre macro : " ^ s))
+    (fun s -> pr2_cpp ("MACRO: found higher order macro : " ^ s))
     s
 
 
