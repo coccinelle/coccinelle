@@ -1427,6 +1427,11 @@ let rec find_macro_lineparen xs =
           (PToken ({col = col2 } as other)::restline2
           ) as line2)
     ::xs
+    when
+      ((*Printf.eprintf "checking on %s: %b %b %b %b\n" s
+	 (ctx = InFunction) (ctx = InStruct) (ctx = NoContext)
+	 (ctx = InInitializer);*)
+      List.mem ctx [InFunction;InStruct;NoContext])
     (* when s ==~ regexp_macro *)
     ->
       (* This can give a false positive for K&R functions if the function
@@ -1468,7 +1473,12 @@ let rec find_macro_lineparen xs =
         if col1 = 0 then ()
         else begin
           msg_macro_noptvirg s;
-          macro.tok <- TMacroStmt (s, TH.info_of_tok macro.tok);
+	  (match ctx with
+	    InStruct ->
+              macro.tok <- TMacroDecl (s, TH.info_of_tok macro.tok)
+	  | InFunction | NoContext ->
+              macro.tok <- TMacroStmt (s, TH.info_of_tok macro.tok)
+	  | _ -> failwith "not possible");
           [Parenthised (xxs, info_parens)] +>
             iter_token_paren (TV.set_as_comment Token_c.CppMacro);
         end;
@@ -1489,7 +1499,9 @@ let rec find_macro_lineparen xs =
     ::(Line
           (PToken ({col = col2 } as other)::restline2
           ) as line2)
-    ::xs when ctx = InFunction -> (* MacroStmt doesn't make sense otherwise *)
+    ::xs when
+      (* MacroStmt doesn't make sense otherwise *)
+      List.mem ctx [InFunction;NoContext] ->
     (* when s ==~ regexp_macro *)
 
       let condition =
