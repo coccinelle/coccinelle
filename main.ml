@@ -566,7 +566,7 @@ let other_options = [
 
     "--hrule", Arg.String
     (function s ->
-      Flag.make_hrule := Some s; Inc..include_options := Inc.Parse_no_includes),
+      Flag.make_hrule := Some s; Inc.include_options := Inc.Parse_no_includes),
     "    semantic patch generation";
 *)
     "--keep-comments", Arg.Set Flag_parsing_c.keep_comments,
