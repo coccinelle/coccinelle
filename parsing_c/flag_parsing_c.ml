@@ -58,6 +58,7 @@ let verbose_annotater = ref true
 let verbose_unparsing = ref true
 let verbose_visit = ref true
 let verbose_cpp_ast = ref true
+let verbose_includes = ref true
 
 let filter_msg = ref false
 let filter_msg_define_error = ref false

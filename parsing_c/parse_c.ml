@@ -1042,10 +1042,12 @@ and _parse_print_error_heuristic2bis saved_typedefs saved_macros
     if Includes.should_parse parsing_style file incl
     then begin match Includes.resolve file parsing_style incl with
       | Some header_filename when Common.lfile_exists header_filename ->
-        ignore
-          (_parse_print_error_heuristic2
-            saved_typedefs saved_macros parse_strings
-            true header_filename use_header_cache)
+	  (if !Flag_parsing_c.verbose_includes
+	  then pr2 ("including "^header_filename));
+          ignore
+            (_parse_print_error_heuristic2
+               saved_typedefs saved_macros parse_strings
+               true header_filename use_header_cache)
       | _ -> ()
     end in
 
