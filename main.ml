@@ -317,6 +317,8 @@ let short_options = [
   "--local-includes",
   Arg.Unit (function _ -> Inc.set_parsing_style Inc.Parse_local_includes),
   "  causes local include files to be used";
+  "--project-home", Arg.Set_string Inc.project_home,
+  "  project home from which to search for header files";
   "--include-headers-for-types", Arg.Set Inc.include_headers_for_types,
   "    use only type information from header files";
   "--ignore-unknown-options", Arg.Set ignore_unknown_opt,
@@ -1434,9 +1436,18 @@ let main () =
             args := [chosen];
             chosen
           end
-        else List.hd !args
-      in if !Inc.include_path = []
-      then Inc.include_path := [Filename.concat chosen_dir "include"]);
+        else List.hd !args in
+      begin
+	(if !Inc.include_path = []
+	then
+	  let i = Filename.concat chosen_dir "include" in
+	  try
+	    if Sys.is_directory i
+	    then Inc.include_path := [i]
+	  with Sys_error _ -> ());
+	(if !Inc.project_home = ""
+	then Inc.project_home := chosen_dir)
+      end);
     (* The same thing for file groups *)
     (if !file_groups
     then

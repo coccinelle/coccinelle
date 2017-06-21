@@ -10,6 +10,8 @@ let elem_threshold = 10
 
 let include_headers_for_types = ref false
 
+let project_home = ref ""
+
 let is_header filename =
   Filename.check_suffix filename ".h" ||
   Filename.check_suffix filename ".h.res" (* for okfailed testing *)
@@ -86,8 +88,7 @@ let cache_add (nm,ct,cache) k v =
 let interpret_include_path relpath =
   let maxdepth = List.length relpath in
   let unique_file_exists dir f =
-    let cmd =
-      Printf.sprintf "find %s -mindepth %d -path \"*/%s\"" dir maxdepth f in
+    let cmd = Printf.sprintf "find %s -path \"*/%s\"" dir f in
     try cache_find find_table cmd
     with Not_found ->
       let res =
@@ -110,9 +111,21 @@ let interpret_include_path relpath =
 	| None -> search_include_path exists tail relpath) in
   let rec search_path exists searchlist = function
       [] ->
-	let res = String.concat "/" relpath in
-	cache_add include_table (searchlist,relpath) res;
-	Some res
+	let fail _ =
+	  let res = String.concat "/" relpath in
+	  cache_add include_table (searchlist,relpath) res;
+	  Some res in
+	if not(!project_home = "")
+	then
+	  let res =
+	    search_include_path unique_file_exists [!project_home]
+	      (List.hd(List.rev relpath)) in
+	  match res with
+	    None -> fail()
+	  | Some res ->
+	      cache_add include_table (searchlist,relpath) res;
+	      Some res
+	else fail()
     | (hd::tail) as relpath1 ->
 	let relpath1 = String.concat "/" relpath1 in
 	(match search_include_path exists searchlist relpath1 with
