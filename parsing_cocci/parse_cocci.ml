@@ -44,10 +44,13 @@ let line_type2c tok =
 let real_line (_,d,_,_,_,_,_,_,_,_) = d
 let log_line  (_,_,d,_,_,_,_,_,_,_) = d
 
-let token2c (tok,_) =
+let token2c (tok,_) add_clt =
   let add_clt str clt =
-    Printf.sprintf "%s:%s:%d:%d" str (line_type2c clt)
-      (real_line clt) (log_line clt) in
+    if add_clt
+    then
+      Printf.sprintf "%s:%s:%d:%d" str (line_type2c clt)
+	(real_line clt) (log_line clt)
+    else str in
  match tok with
     PC.TMetavariable -> "metavariable"
   | PC.TIdentifier -> "identifier"
@@ -132,6 +135,7 @@ let token2c (tok,_) =
   | PC.TDirective(Ast.Noindent s,_) -> s
   | PC.TDirective(Ast.Indent s,_)   -> s
   | PC.TDirective(Ast.Space s,_)   -> s
+  | PC.TAttr_(clt) -> add_clt "__attribute__" clt
   | PC.TIncludeL(s,clt) -> add_clt (pr "#include \"%s\"" s) clt
   | PC.TIncludeNL(s,clt) -> add_clt (pr "#include <%s>" s) clt
   | PC.TIncludeAny(s,clt) -> add_clt (pr "#include %s" s) clt
@@ -302,7 +306,7 @@ let token2c (tok,_) =
 
 let print_tokens s tokens =
   Printf.printf "%s\n" s;
-  List.iter (function x -> Printf.printf "|%s| " (token2c x)) tokens;
+  List.iter (function x -> Printf.printf "|%s| " (token2c x true)) tokens;
   Printf.printf "\n\n";
   flush stdout
 
@@ -390,6 +394,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.TMetaPos(nm,_,_,_) -> NOTPLUS
   | PC.TSub(clt) -> NOTPLUS
   | PC.TDirective(_,clt) -> NOTPLUS
+  | PC.TAttr_(clt) -> NOTPLUS
 
   | _ -> SKIP
 
@@ -466,7 +471,8 @@ let get_clt (tok,_) =
   | PC.TOPar0(_,clt) | PC.TMid0(_,clt) | PC.TAnd0(_,clt) | PC.TCPar0(_,clt)
   | PC.TOEllipsis(clt) | PC.TCEllipsis(clt)
   | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt)
-  | PC.TFunDecl(clt) | PC.TDirective(_,clt) | PC.TLineEnd(clt) -> clt
+  | PC.TFunDecl(clt) | PC.TDirective(_,clt) | PC.TAttr_(clt)
+  | PC.TLineEnd(clt) -> clt
   | PC.TVAEllipsis(clt) -> clt
 
   | PC.Tlist -> failwith "No clt attached to token Tlist"
@@ -700,6 +706,7 @@ let update_clt (tok,x) clt =
   | PC.TFunDecl(_) -> (PC.TFunDecl(clt),x)
   | PC.TTildeExclEq(_) -> (PC.TTildeExclEq(clt),x)
   | PC.TDirective(a,_) -> (PC.TDirective(a,clt),x)
+  | PC.TAttr_(_) -> (PC.TAttr_(clt),x)
   | PC.TVAEllipsis(_) -> (PC.TVAEllipsis(clt),x)
 
   | PC.Tlist -> assert false
@@ -867,7 +874,7 @@ let split_token ((tok,_) as t) =
   | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt)
   | PC.TVAEllipsis(clt) | PC.Tconst(clt) | PC.Tvolatile(clt) -> split t clt
 
-  | PC.TDirective(s,_) -> ([],[t]) (* only allowed in + *)
+  | PC.TDirective(_,_) | PC.TAttr_(_) -> ([],[t]) (* only allowed in + *)
   | PC.TPlusFile(s,clt) | PC.TMinusFile(s,clt)
   | PC.TIncludeL(s,clt) | PC.TIncludeNL(s,clt) | PC.TIncludeAny(s,clt) ->
       split t clt
@@ -1310,7 +1317,7 @@ let check_nests tokens =
 	    | _ ->
 		failwith
 		  (Printf.sprintf "minus expected, on %s, line %d"
-		     (token2c t) l))
+		     (token2c t true) l))
 	| None -> t in
   let rec outside = function
       [] -> []
@@ -1426,6 +1433,29 @@ let rec collect_pass = function
 	  (x::pass,rest)
       |	_ -> ([],x::xs)
 
+let collect_attr toks =
+  let rec loop n ok = function
+      [] ->
+	if n > 0 || not ok
+	then failwith "missing )) on __attribute__"
+	else ("",[])
+    | (PC.TOPar(clt),_)::xs ->
+	let ok = if n+1 = 2 then true else ok in
+	let (attr,rest) = loop (n+1) ok xs in
+	("("^attr,rest)
+    | (PC.TCPar(clt),_)::xs when n > 1 ->
+	let (attr,rest) = loop (n-1) ok xs in
+	(")"^attr,rest)
+    | (PC.TCPar(clt),_)::xs when n = 1 ->
+	(")",xs)
+    | x::xs ->
+	if n >=2
+	then
+	  let (attr,rest) = loop n ok xs in
+	  ((token2c x false)^attr,rest)
+	else failwith "attribute code must be in double parens" in
+  loop 0 false toks
+
 let plus_attach strict = function
     None -> NOTPLUS
   | Some x -> plus_attachable strict x
@@ -1445,6 +1475,10 @@ let rec process_pragmas (bef : 'a option) (skips : 'a list) = function
       (* This is a ..., in an argument list, field initializer list etc,
 	 which might go away, so nothing should be attached to the , *)
       process_pragmas bef (b::a::skips) xs
+  | (PC.TAttr_(i),x)::xs ->
+      let (attr,rest) = collect_attr xs in
+      process_pragmas bef skips
+	((PC.TDirective(Ast.Space("__attribute__"^attr),i),x)::rest)
   | ((PC.TDirective(s,i),_)::_) as l ->
       let (pragmas,rest) = collect_all_pragmas [] l in
       let (pass,rest0) = collect_pass rest in
@@ -1852,7 +1886,7 @@ let rec collect_script_tokens = function
   | toks ->
       List.iter
 	(function x ->
-	  Printf.printf "%s\n" (token2c x))
+	  Printf.printf "%s\n" (token2c x true))
 	toks;
       failwith "Malformed script rule"
 

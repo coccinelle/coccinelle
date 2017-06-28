@@ -228,6 +228,7 @@ let check_constraint_allowed () =
 %token <Data.clt> TBreak TContinue TGoto TSizeof TFunDecl Tdecimal Texec
 %token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId TSymId
 %token <Ast_cocci.added_string * Data.clt> TDirective
+%token <Data.clt> TAttr_
 
 %token <Parse_aux.midinfo>       TMetaId
 %token <Parse_aux.cstrinfo>        TMetaFunc TMetaLocalFunc
@@ -2978,6 +2979,7 @@ iso(term):
 *****************************************************************************/
 
 never_used: TDirective { () }
+  | TAttr_             { () }
   | TPArob TMetaPos    { () }
   | TScriptData        { () }
   | TAnalysis          { () }

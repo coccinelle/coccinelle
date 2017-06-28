@@ -95,6 +95,7 @@ let very_quiet_profile = (
     Flag_parsing_c.verbose_unparsing;
     Flag_parsing_c.verbose_visit;
     Flag_parsing_c.verbose_cpp_ast;
+    Flag_parsing_c.verbose_includes;
 
     Flag_matcher.verbose_matcher;
     Flag_matcher.debug_engine;
@@ -140,6 +141,7 @@ let quiet_profile = (
     Flag_parsing_c.verbose_unparsing;
     Flag_parsing_c.verbose_visit;
     Flag_parsing_c.verbose_cpp_ast;
+    Flag_parsing_c.verbose_includes;
 
     Flag_matcher.verbose_matcher;
     Flag_matcher.debug_engine;
@@ -198,6 +200,7 @@ let debug_profile = (
     Flag_parsing_c.debug_unparsing;
     Flag_parsing_c.verbose_type;
     Flag_parsing_c.verbose_parsing;
+    Flag_parsing_c.verbose_includes;
   ])
 
 let pad_profile = (
@@ -226,6 +229,7 @@ let pad_profile = (
     Flag_parsing_c.debug_unparsing;
     Flag_parsing_c.verbose_type;
     Flag_parsing_c.verbose_parsing;
+    Flag_parsing_c.verbose_includes;
   ])
 
 let run_profile p =
@@ -460,6 +464,8 @@ let other_options = [
     "--verbose-parsing",
        Arg.Unit (fun _ -> Flag_parsing_c.verbose_parsing := true;
 	 Flag_parsing_c.show_parsing_error := true), " ";
+    "--verbose-includes", Arg.Set Flag_parsing_c.verbose_includes,
+    "  show on stderr which files are chosen for inclusion";
     "--type-error-msg",  Arg.Set Flag_parsing_c.verbose_type, " ";
     (* could also use Flag_parsing_c.options_verbose *)
   ];
@@ -566,7 +572,7 @@ let other_options = [
 
     "--hrule", Arg.String
     (function s ->
-      Flag.make_hrule := Some s; Inc..include_options := Inc.Parse_no_includes),
+      Flag.make_hrule := Some s; Inc.include_options := Inc.Parse_no_includes),
     "    semantic patch generation";
 *)
     "--keep-comments", Arg.Set Flag_parsing_c.keep_comments,

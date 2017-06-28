@@ -122,7 +122,9 @@ let interpret_include_path relpath =
 	    Some f) in
   let searchlist =
     match !include_path with
-      [] -> ["include"]
+      [] ->
+	(try if Sys.is_directory "include" then ["include"] else []
+	with Sys_error _ -> [])
     | x -> List.rev x in
   try Some(cache_find include_table (searchlist,relpath))
   with Not_found -> search_path native_file_exists searchlist relpath
