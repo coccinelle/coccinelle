@@ -2,7 +2,7 @@
 # See copyright.txt in the Coccinelle source code for more information.
 # The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
 
-#note: if you add a file (a .mli or .ml), dont forget to do a   make depend
+#note: if you add a file (a .mli or .ml), don't forget to do a make depend
 
 ifneq ($(MAKECMDGOALS),distclean)
 include ../Makefile.config
@@ -20,15 +20,15 @@ pretty_print_popl.ml popltoctl.ml popl.ml flag_popl.ml
 SYSLIBS=str.cma unix.cma
 LIBS=../commons/commons.cma ../globals/globals.cma
 
-INCLUDE_PATH = -I ../commons -I ../globals \
-	       -I ../ctl -I ../parsing_c -I ../parsing_cocci -I ../engine
+INCLUDES::= -I ../commons -I ../globals \
+            -I ../ctl -I ../parsing_c -I ../parsing_cocci -I ../engine
 
 #The Caml compilers.
 #for warning:  -w A
 #for profiling:  -p -inline 0   with OCAMLOPT
-OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS)
-OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS)
-OCAMLDEP_CMD=$(OCAMLDEP)
+OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES)
+OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES)
+OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDES)
 OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom
 
 LIB=$(TARGET).cma
@@ -62,15 +62,24 @@ clean::
 .SUFFIXES:
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
-.ml.cmo:
-	$(OCAMLC_CMD) $(INCLUDE_PATH) -c $<
+ifneq ($(strip $(abs_top_srcdir)),)
+include $(abs_top_srcdir)/common_rules.make
 
-.mli.cmi:
-	$(OCAMLC_CMD) $(INCLUDE_PATH) -c $<
+modules_with_mli::=\
+asttopopl \
+insert_befaft \
+insert_quantifiers \
+popl \
+popltoctl \
+pretty_print_popl
+include $(abs_top_srcdir)/rule_pair2.make
 
-.ml.cmx:
-	$(OCAMLOPT_CMD) $(INCLUDE_PATH) -c $<
+ast_popl.cmo: ast_popl.ml ../parsing_cocci/ast_cocci.cmi
+	$(OCAMLC_CMD) -c $<
 
+ast_popl.cmx: ast_popl.ml ../parsing_cocci/ast_cocci.cmi
+	$(OCAMLOPT_CMD) -c $<
+endif
 
 # clean rule for others files
 clean::
@@ -82,7 +91,7 @@ distclean: clean
 
 .PHONY: depend
 .depend depend:
-	$(OCAMLDEP_CMD) $(INCLUDE_PATH) *.mli *.ml > .depend
+	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)

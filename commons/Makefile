@@ -17,8 +17,6 @@ MYSRC=	commands.ml                              \
 
 MLI_FILES=\
   common.mli \
-  objet.mli \
-  ocollection.mli \
   ograph_extended.mli \
   ograph_simple.mli
 
@@ -208,12 +206,12 @@ dependencygraph2:
 .SUFFIXES:
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
-.ml.cmo:
-	$(OCAMLC_CMD)  -c $<
-.mli.cmi:
-	$(OCAMLC_CMD)  -c $<
-.ml.cmx:
-	$(OCAMLOPT_CMD)  -c $<
+ifneq ($(strip $(abs_top_srcdir)),)
+include $(abs_top_srcdir)/common_rules.make
+
+modules_with_mli::=$(basename $(MLI_FILES))
+include $(abs_top_srcdir)/rule_pair2.make
+endif
 
 clean::
 	rm -f *.cm[iox] *.o *.a *.cma *.cmxa *.annot

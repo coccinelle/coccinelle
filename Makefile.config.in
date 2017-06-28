@@ -51,6 +51,12 @@ includedir=@includedir@
 libdir=@libdir@
 sysconfdir=@sysconfdir@
 mandir=@mandir@
+abs_top_srcdir::=@abs_top_srcdir@
+
+ifneq ($(use_separate_build_directory),)
+abs_top_builddir::=@abs_top_builddir@
+VPATH::=$(abs_top_builddir)
+endif
 
 # C compiler
 export CC=@CC@
