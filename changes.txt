@@ -73,6 +73,8 @@
   and PYTHONPATH are not set (either in the directory where the executable is
   if it contains standard.iso, or in ../lib/coccinelle relatively to where the
   executable is).
+- Improve SmPL parsing of added __attribute__.  Problem repported by
+  Eduardo Habkost.
 * 1.0.6
 ** Language:
 - Allow \ in #define in semantic patch rules, to allow body with multiple
