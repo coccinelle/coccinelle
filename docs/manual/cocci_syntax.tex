@@ -294,7 +294,8 @@ An identifier list is only used for the parameter list of a macro.  It is
 possible to specify its length.
 
 It is possible to specify some information about the definition of a fresh
-identifier.  See the wiki.
+identifier.  Examples are found in demos/plusplus1.cocci and
+demos/plusplus2.cocci %See the wiki.
 
 A symbol declaration specifies that the provided identifiers should be
 considered C identifiers when encountered in the body of the rule.
@@ -732,7 +733,7 @@ foo() to not be present.
 
 One way to describe code control flow is in terms of McCabe cyclomatic
 complexity.
-The program flow1.1 has a linear control flow, it has no branches. The main
+The program flow1.c has a linear control flow, it has no branches. The main
 routine has a McCabe cyclomatic complexity of 1. The McCabe cyclomatic
 complexity can be computed using
 {\tt pmccabe} (https://www.gnu.org/\-software/\-complexity/\-manual/\-html\_node/\-pmccabe-parsing.html).
