@@ -11,8 +11,6 @@ val is_header : string -> bool
  * [is_header filename] returns (true] if filename ends with ".h"
  *)
 
-val project_home : string ref
-
 type parsing_style =
   | Parse_no_includes
   | Parse_local_includes

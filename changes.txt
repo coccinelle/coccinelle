@@ -62,7 +62,6 @@
 - forall and exists for quantifying over the success of matching depends on
   constraints.
 - --verbose-includes option to show what files are actually included
-- --project-home option provides last resort for finding .h files
 ** Bugfix:
 - Improved detection of metavariables in strings.  Problem reported by
   Wolfram Sang.
