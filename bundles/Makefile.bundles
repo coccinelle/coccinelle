@@ -51,6 +51,7 @@ clean:
 		$(INTERFACES:=.cmx) $(LIBRARY:=.a) $(CLEANOTHERS) \
 		$(patsubst %,$(SRC_DIR)/%.ml,$(PRODUCTS)) $(OTHERS) \
 		$(patsubst %,dll%_stubs.so,$(LIBRARY)) \
+		$(patsubst %,$(SRC_DIR)/%.o,$(MODULES)) \
 		$(patsubst %,$(SRC_DIR)/%.cmi,$(MODULES)) \
 		$(patsubst %,$(SRC_DIR)/%.cmx,$(MODULES)) \
 		$(patsubst %,$(SRC_DIR)/%.cmo,$(MODULES)) \
@@ -90,7 +91,7 @@ $(SRC_DIR)/lib$(LIBRARY)_stubs.a: \
 $(SRC_DIR)/$(LIBRARY).a \
 $(SRC_DIR)/dll$(LIBRARY)_stubs.so: $(SRC_DIR)/lib$(LIBRARY)_stubs.a
 
-%.ml: %.mll .prepare
+%.ml: %.mll
 	$(OCAMLLEX) $< -o $@
 
 %.ml: %.mly
@@ -117,17 +118,17 @@ endif
 endef
 
 $(foreach SOURCE,$(MODULES),$(eval $(bundle_without_mli)))
-$(foreach SOURCE,$(MENHIRLIB_MODULES),$(eval $(bundle_without_mli)))
-
 
 %.o: %.c
 	$(OCAMLC_CMD) $(OCAMLCCFLAGS) $< -o $@
 # Workaround for what looks like a bug with object compilation...
 	- mv $(notdir $@) $@
 
+ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
 include ../../Makefile.config
 -include ../../Makefile.local
+endif
 endif
 
 ifeq ($(MAKECMDGOALS),all-build)
