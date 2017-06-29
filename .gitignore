@@ -12,6 +12,8 @@ scripts/spatch.byte
 *.[ao]
 *.annot
 *.pyc
+*.d
+*.d.opt
 
 *~
 .depend
