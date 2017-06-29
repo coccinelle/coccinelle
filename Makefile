@@ -22,7 +22,13 @@ else
 NATIVE=no
 endif
 
-BUNDLES=menhirLib parmap pcre pyml
+CORE_BUNDLES=menhirLib pcre
+
+ALL_BUNDLES=$(CORE_BUNDLES) parmap pyml
+
+BUNDLES_spatch=$(ALL_BUNDLES)
+
+BUNDLES_spgen=$(CORE_BUNDLES)
 
 OCAMLOPT_WITH_FLAGS=$(OCAMLOPT) $(EXTRA_OCAML_FLAGS) $(SEARCH_PATH_FLAGS)
 OCAMLC_WITH_FLAGS=$(OCAMLC) $(EXTRA_OCAML_FLAGS) $(SEARCH_PATH_FLAGS)
@@ -44,7 +50,11 @@ MENHIR_D=$(MENHIR) --ocamldep "$(OCAMLDEP_D)" --depend
 MENHIR_D_OPT=$(MENHIR) --ocamlc "$(OCAMLOPT_WITH_FLAGS)" \
 	--ocamldep "$(OCAMLDEP_D_OPT)" --depend
 
-LIBS=unix str bigarray nums dynlink $(PCREDIR:%=pcre) parmap pyml
+CORE_LIBS=unix str bigarray nums dynlink $(PCREDIR:%=pcre)
+
+LIBS_spatch=$(CORE_LIBS) parmap pyml
+
+LIBS_spgen=$(CORE_LIBS)
 
 CORE_MODULES=\
 	commons globals parsing_cocci parsing_c
@@ -207,16 +217,16 @@ distclean: clean distclean-bundles
 # clean-bundles run all of them.
 
 .PHONY: bundles
-bundles: $(BUNDLES:%=bundles-%)
+bundles: $(ALL_BUNDLES:%=bundles-%)
 
 .PHONY: bundles.opt
-bundles.opt: $(BUNDLES:%=bundles-%.opt)
+bundles.opt: $(ALL_BUNDLES:%=bundles-%.opt)
 
 .PHONY: clean-bundles
-clean-bundles: $(BUNDLES:%=clean-%)
+clean-bundles: $(ALL_BUNDLES:%=clean-%)
 
 .PHONY: distclean-bundles
-distclean-bundles: $(BUNDLES:%=clean-%)
+distclean-bundles: $(ALL_BUNDLES:%=clean-%)
 
 define foreach_bundle
 .PHONY: bundles-$(bundle)
@@ -239,7 +249,7 @@ clean-$(bundle):
 distclean-$(bundle):
 	$(MAKE) -C bundles/$(bundle) distclean
 endef
-$(foreach bundle,$(BUNDLES),$(eval $(foreach_bundle)))
+$(foreach bundle,$(ALL_BUNDLES),$(eval $(foreach_bundle)))
 
 main.cmo: bundles-parmap
 main.cmx: bundles-parmap.opt
@@ -327,12 +337,12 @@ clean-$(tool):
 $(PREFIX_$(tool))$(tool): \
 		$(foreach module,$(MODULES_$(tool)),$(module)/$(module).cma) \
 		$(SOURCES_$(tool):%.ml=$(PREFIX_$(tool))%.cmo)
-	$(OCAMLC_LINK) $(LIBS:=.cma) $$^ -o $$@
+	$(OCAMLC_LINK) $(LIBS_$(tool):=.cma) $$^ -o $$@
 
 $(PREFIX_$(tool))$(tool).opt: \
 		$(foreach module,$(MODULES_$(tool)),$(module)/$(module).cmxa) \
 		$(SOURCES_$(tool):%.ml=$(PREFIX_$(tool))%.cmx)
-	$(OCAMLOPT_LINK) $(LIBS:=.cmxa) $$^ -o $$@
+	$(OCAMLOPT_LINK) $(LIBS_$(tool):=.cmxa) $$^ -o $$@
 endef
 $(foreach tool,$(TOOLS),$(eval $(foreach_tool)))
 
