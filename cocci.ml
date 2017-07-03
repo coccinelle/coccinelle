@@ -874,7 +874,8 @@ let union_merge_vars (ocaml_merges, python_merges)
 
 type cocci_info = toplevel_cocci_info list * bool (* true if no changes *)
       * bool (* parsing of format strings needed *)
-      * (string array * string array) (* merge/local variables for Python *)
+      * ((string * (int * string array)) list *
+	   string array) (* merge/local variables for Python *)
 
 type constant_info =
     (string list option (*grep tokens*) *
@@ -2027,16 +2028,12 @@ let initial_final_bigloop a b c =
     (fun () -> initial_final_bigloop2 a b c)
 
 let find_python_merge_variables cocci_infos =
-  try
-    Common.find_some (function FinalScriptRuleCocciInfo r
-	when r.language = "python" ->
-	  let (_, mvs, _, _, _) = r.scr_ast_rule in
-	  let merge_vars = Ast_cocci.filter_merge_variables mvs in
-	  let merge_names = Array.of_list (List.map fst merge_vars) in
-	  let local_names = Array.of_list (List.map snd merge_vars) in
-	  Some (merge_names, local_names)
-      | _ -> None) cocci_infos
-  with Not_found -> ([| |], [| |])
+  Ast_cocci.prepare_merge_variables
+    (function FinalScriptRuleCocciInfo r when r.language = "python" ->
+      let (_, mvs, _, _, _) = r.scr_ast_rule in
+      Some (r.scr_rule_info.rulename, mvs)
+      | _ -> None)
+    cocci_infos
 
 let variables_to_merge python_local_names =
   let ocaml_merges = !Coccilib.variables_to_merge () in
@@ -2245,12 +2242,21 @@ let full_engine a b =
   Common.profile_code "full_engine"
     (fun () -> let res = full_engine2 a b in (*Gc.print_stat stderr; *)res)
 
+let assign_python_merge_variables rulename merge_names merges =
+  match
+    try Some (List.assoc rulename merge_names)
+    with Not_found -> None
+  with
+    None -> ()
+  | Some (from_index, merge_names) ->
+      Array.iteri (fun index variable ->
+	let list =
+	  List.map (fun array -> array.(from_index + index)) merges in
+	Pycocci.unpickle_variable variable list) merge_names
+
 let post_engine2 (cocci_infos, _, _, (python_merge_names, _)) merges =
   let (ocaml_merges, python_merges) = merges in
   Coccilib.merged_variables := list_array_of_array_list ocaml_merges;
-  Array.iteri (fun index variable ->
-    let list = List.map (fun array -> array.(index)) python_merges in
-    Pycocci.unpickle_variable variable list) python_merge_names;
   let _ =
     List.fold_left
       (fun executed_rules ((language,_),(virt_rules,virt_env)) ->
@@ -2261,6 +2267,8 @@ let post_engine2 (cocci_infos, _, _, (python_merge_names, _)) merges =
 	      FinalScriptRuleCocciInfo(r) ->
 		let rlang = r.language in
 		let rname = r.scr_rule_info.rulename in
+		assign_python_merge_variables rname python_merge_names
+		  python_merges;
 		if List.mem (rlang, rname) executed_rules then
 		  executed_rules
 		else

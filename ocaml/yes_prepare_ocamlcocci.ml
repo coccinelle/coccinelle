@@ -203,18 +203,6 @@ let prepare_mvs o str = function
 	true
       with Not_found -> false
 
-let prepare_merges o metavariables =
-  let merge_vars = Ast_cocci.filter_merge_variables metavariables in
-  let marshal_local_var (merge_name, local_name) =
-    Printf.sprintf "Marshal.to_string %s []" local_name in
-  let marshaled_local_vars = List.map marshal_local_var merge_vars in
-  let local_var_names = String.concat "; " marshaled_local_vars in
-  Printf.fprintf o "
-let () =
-    Coccilib.variables_to_merge := (fun () -> [| %s |])
-" local_var_names;
-  merge_vars
-
 let prepare_generic_rule (name, metavars, script_vars, code) scriptargs fcts =
   let fname = String.concat "_" (Str.split (Str.regexp " ") name) in
   (* function header *)
@@ -343,25 +331,34 @@ let prepare coccifile code =
       (* finalizer *)
       (if generate_final
       then
-	let merge_vars = prepare_merges o all_final_mvs in
-       let add_merge_vars (name, mvs, code) =
-	 let add_var set (var, _) = Common.StringSet.add var set in
-	 let local_merge_vars =
-	   List.fold_left add_var Common.StringSet.empty
-	     (Ast_cocci.filter_merge_variables mvs) in
-	 let let_merge_var (merge_name, local_name) index =
-	   if Common.StringSet.mem merge_name local_merge_vars then
-	     Printf.sprintf "\
+	let merge_vars, local_vars =
+	  Ast_cocci.prepare_merge_variables
+	    (fun (name, mvs, code) -> Some ((name, code), mvs))
+	    final_rules in
+	let print_local_vars o =
+	  for i = 0 to Array.length local_vars - 1 do
+	    if i > 0 then
+	      Printf.fprintf o "; ";
+	    Printf.fprintf o "Marshal.to_string %s []" local_vars.(i)
+	  done in
+	Printf.fprintf o "
+let () =
+    Coccilib.variables_to_merge := (fun () -> [| %t |])
+" print_local_vars;
+	let add_merge_vars ((name, code), (from_index, merge_names)) =
+	  let let_merge_vars = Buffer.create 17 in
+	  let let_merge_var index merge_name =
+	    let global_index = from_index + index in
+	    Printf.bprintf let_merge_vars "\
       let (%s : 'a%d list), (_ : 'a%d) =
 	(List.map (fun s -> Marshal.from_string s 0)
 	   !(Coccilib.merged_variables).(%d),
 	 %s) in\n"
-	       merge_name index index index local_name
-	   else "" in
-	 let let_merge_vars = Common.map_index let_merge_var merge_vars in
-	 let preambule = String.concat "" let_merge_vars in
-	 (name, [], [], preambule ^ code) in
-       let final_rules = List.map add_merge_vars final_rules in
+	      merge_name index index global_index local_vars.(global_index) in
+	  Array.iteri let_merge_var merge_names;
+	  let preambule = Buffer.contents let_merge_vars in
+	  (name, [], [], preambule ^ code) in
+	let final_rules = List.map add_merge_vars merge_vars in
 	let rule_code = List.map prepare_rule final_rules in
 	Printf.fprintf o "%s" (String.concat "\n\n" rule_code));
       close_out o;
