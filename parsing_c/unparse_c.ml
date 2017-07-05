@@ -583,6 +583,9 @@ let is_fake2 = function Fake2 _ -> true | _ -> false
 let is_whitespace x =
   is_space x || is_newline_or_comment x
 
+let is_noncomment_whitespace x =
+  is_space x || is_newline x
+
 let is_whitespace_or_fake x =
   is_space x || is_newline_or_comment x || is_fake2 x
 
@@ -756,6 +759,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
 	      let (pre_minus_list,_) = span not_context_newline rest in
 	      List.exists is_plus pre_minus_list
 	    else cp in
+
         if common_adj adj1 adj2
         || ((not cp || not newcp) &&
 	    List.for_all is_whitespace_or_fake not_minus_list)
@@ -854,7 +858,8 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
     | ((T2(_,Ctx,_,_)) as x)::((T2(_,Min adj,_,_)::_) as xs)
       when str_of_token2 x = "{" ->
       let (between_minus,rest) = span minus_or_comment_nonl xs in
-      let (newlines,rest) = span is_whitespace rest in
+      let (newlines,rest) = span is_noncomment_whitespace rest in
+
       let (drop_newlines,last_newline) =
         let rec loop = function
           | [] -> ([],[])
