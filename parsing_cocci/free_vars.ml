@@ -1135,13 +1135,12 @@ let get_neg_pos_list (_,rule) used_after_list =
 	    Ast.MetaPos(name,constraints,collect,_,_) ->
 	      let name' = metaid name in
 	      let pos_vars', neg_vars' =
-		get_neg_pos_constraints constraints
-		  ((name' :: pos_vars), neg_vars) in
-	      let all_vars' =
+		get_neg_pos_constraints constraints (pos_vars, neg_vars) in
+	      let (pos_vars'', all_vars') =
 		match collect with
-		  Ast.PER -> all_vars
-		| Ast.ALL -> name' :: all_vars in
-	      (pos_vars', neg_vars',all_vars')))
+		  Ast.PER -> (name' :: pos_vars', all_vars)
+		| Ast.ALL -> (pos_vars', name' :: all_vars) in
+	      (pos_vars'', neg_vars',all_vars')))
       option_default (Ast.get_pos_var mc) in
   let v =
     V.combiner bind option_default
