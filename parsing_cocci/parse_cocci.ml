@@ -45,6 +45,7 @@ let real_line (_,d,_,_,_,_,_,_,_,_) = d
 let log_line  (_,_,d,_,_,_,_,_,_,_) = d
 
 let token2c (tok,_) add_clt =
+  let prkey s1 s2 = if add_clt then s1^s2 else s2 in
   let add_clt str clt =
     if add_clt
     then
@@ -162,11 +163,11 @@ let token2c (tok,_) add_clt =
   | PC.TBreak(clt) -> add_clt "break" clt
   | PC.TContinue(clt) -> add_clt "continue" clt
   | PC.TGoto(clt) -> add_clt "goto" clt
-  | PC.TIdent(s,clt) -> add_clt (pr "ident-%s" s) clt
-  | PC.TTypeId(s,clt) -> add_clt (pr "typename-%s" s) clt
-  | PC.TDeclarerId(s,clt) -> add_clt (pr "declarername-%s" s) clt
-  | PC.TIteratorId(s,clt) -> add_clt (pr "iteratorname-%s" s) clt
-  | PC.TSymId(s,clt)      -> add_clt (pr "symbol-%s" s) clt
+  | PC.TIdent(s,clt) -> add_clt (prkey "ident-" s) clt
+  | PC.TTypeId(s,clt) -> add_clt (prkey "typename-" s) clt
+  | PC.TDeclarerId(s,clt) -> add_clt (prkey "declarername-" s) clt
+  | PC.TIteratorId(s,clt) -> add_clt (prkey "iteratorname-" s) clt
+  | PC.TSymId(s,clt)      -> add_clt (prkey "symbol-" s) clt
   | PC.TMetaDeclarer(_,_,_,clt) -> add_clt "declmeta" clt
   | PC.TMetaIterator(_,_,_,clt) -> add_clt "itermeta" clt
 
