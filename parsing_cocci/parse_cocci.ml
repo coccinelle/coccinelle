@@ -1446,8 +1446,7 @@ let collect_attr toks =
     | (PC.TCPar(clt),_)::xs when n > 1 ->
 	let (attr,rest) = loop (n-1) ok xs in
 	(")"^attr,rest)
-    | (PC.TCPar(clt),_)::xs when n = 1 ->
-	(")",xs)
+    | (PC.TCPar(clt),_)::xs when n = 1 -> (")",xs)
     | x::xs ->
 	if n >=2
 	then
