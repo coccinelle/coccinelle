@@ -1152,15 +1152,22 @@ let get_neg_pos_list (_,rule) used_after_list =
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing in
   match rule with
-    Ast.CocciRule(_,_,minirules,_,_) ->
+    Ast.CocciRule(rule_name,_,minirules,_,_) ->
       List.map
 	(function toplevel ->
 	  let (positions,neg_positions,all_positions) =
 	    v.V.combiner_top_level toplevel in
-	  (if List.exists (function p -> List.mem p neg_positions) positions
-	  then
+	  (try
+	    let (badr,badnm) =
+	      List.find (function p -> List.mem p neg_positions) positions in
 	    failwith
-	      "a variable cannot be used both as a position and a constraint");
+	      (Printf.sprintf
+		 "Variable %s in %s cannot be used as both a position and a constraint"
+		 (if badr = rule_name
+		 then badnm
+		 else Printf.sprintf "%s.%s" badr badnm)
+		 rule_name)
+	      with Not_found -> ());
 	  (neg_positions, all_positions))
 	minirules
   | Ast.ScriptRule _ | Ast.InitialScriptRule _ | Ast.FinalScriptRule _ ->
