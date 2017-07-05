@@ -1401,3 +1401,20 @@ let filter_merge_variables metavars =
 	(merge_name, local_name) :: accu
     | _ -> accu in
   List.fold_left filter_var [] metavars
+
+let prepare_merge_variables final rules =
+  let (merge_names, local_names, _length) =
+    List.fold_left
+      (fun (merge_names, local_names, index) r ->
+	match final r with
+	  Some (rulename, mvs) ->
+	    let merge_vars = filter_merge_variables mvs in
+	    let merge_names' = Array.of_list (List.map fst merge_vars) in
+	    let local_names' = List.map snd merge_vars in
+	    let merge_names =
+	      (rulename, (index, merge_names')) :: merge_names in
+	    let local_names = List.rev_append local_names' local_names in
+	    (merge_names, local_names, index + Array.length merge_names')
+	| _ -> (merge_names, local_names, index))
+      ([], [], 0) rules in
+  (merge_names, Array.of_list (List.rev local_names))

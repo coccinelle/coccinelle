@@ -36,3 +36,7 @@ distclean: clean
 	  cp $(SRC_DIR)/pcre_compat402.ml $(SRC_DIR)/pcre_compat.ml; \
 	fi
 	touch $@
+
+# Seems to be needed, but why? Should be deduced from .depend!
+$(SRC_DIR)/pcre.cmo: $(SRC_DIR)/pcre_compat.cmo
+$(SRC_DIR)/pcre.cmx: $(SRC_DIR)/pcre_compat.cmx

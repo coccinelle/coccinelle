@@ -928,3 +928,7 @@ val cstr_pos_meta_names: 'expression generic_constraints -> meta_name list
 val filter_merge_variables:
     (script_meta_name * meta_name * metavar * mvinit) list ->
       (string * string) list
+
+val prepare_merge_variables:
+    ('a -> ('b * (script_meta_name * meta_name * metavar * mvinit) list) option)
+    -> 'a list -> ('b * (int * string array)) list * string array

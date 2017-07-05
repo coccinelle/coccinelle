@@ -5,7 +5,7 @@ MENHIR_VERSION=20140422
 
 PACKAGE_DIR=menhir-$(MENHIR_VERSION)
 TARBALL=menhir-$(MENHIR_VERSION).tar.gz
-MODULES= \
+MENHIR_MODULES= \
 	Fix IO installation keyword lineCount positions stringSet version \
 	settings printer action mark stringMap misc breadth codeBits gSet \
 	compressedBitSet option dot error parameters parserAux parser lexer \
@@ -29,6 +29,7 @@ OCAMLLDFLAGS=unix.cmxa
 MENHIRLIB_MODULES= \
 	infiniteArray packedIntArray rowDisplacement engineTypes engine \
 	tableFormat tableInterpreter convert
+MODULES=$(MENHIR_MODULES) $(MENHIRLIB_MODULES)
 
 OCAML_BUNDLES_FLAGS=$(shell \
   if echo $(MENHIRLIB_MODULES) | grep -w $(notdir $(basename $<)) >/dev/null; then \
@@ -57,10 +58,10 @@ $(SRC_DIR)/sentenceParser.mly \
 $(SRC_DIR)/yacc-parser.mly: $(MARKER)
 
 ifeq ($(OCAMLOPT_CMD),)
-$(SRC_DIR)/menhir: $(patsubst %,$(SRC_DIR)/%.cmo,$(MODULES))
+$(SRC_DIR)/menhir: $(patsubst %,$(SRC_DIR)/%.cmo,$(MENHIR_MODULES))
 	$(OCAMLC_CMD) $(OCAMLLDFLAGS) $^ -o $@
 else
-$(SRC_DIR)/menhir: $(patsubst %,$(SRC_DIR)/%.cmx,$(MODULES))
+$(SRC_DIR)/menhir: $(patsubst %,$(SRC_DIR)/%.cmx,$(MENHIR_MODULES))
 	$(OCAMLOPT_CMD) $(OCAMLLDFLAGS) $^ -o $@
 endif
 
@@ -69,19 +70,17 @@ standard.mly: $(SRC_DIR)/standard.mly
 
 $(SRC_DIR)/menhirLib.cmo: \
 	$(patsubst %,$(SRC_DIR)/%.cmo,$(MENHIRLIB_MODULES))
-	$(OCAMLC_CMD) -pack $^ -o $(SRC_DIR)/menhirLib.cmo
+	$(OCAMLC_CMD) -pack \
+		$(patsubst %,$(SRC_DIR)/%.cmo,$(MENHIRLIB_MODULES)) \
+		-o $(SRC_DIR)/menhirLib.cmo
 $(SRC_DIR)/menhirLib.cmi: $(SRC_DIR)/menhirLib.cmo
 
 $(SRC_DIR)/menhirLib.cmx: \
-	$(patsubst %,$(SRC_DIR)/%.cmx,$(MENHIRLIB_MODULES)) \
-	$(SRC_DIR)/menhirLib.cmo
+	$(patsubst %,$(SRC_DIR)/%.cmx,$(MENHIRLIB_MODULES))
 	$(OCAMLOPT_CMD) -pack \
 		$(patsubst %,$(SRC_DIR)/%.cmx,$(MENHIRLIB_MODULES)) \
 		-o $(SRC_DIR)/menhirLib.cmx
 $(SRC_DIR)/menhirLib.o: $(SRC_DIR)/menhirLib.cmx
-
-$(SRC_DIR)/gSet.cmi $(SRC_DIR)/gSet.cmx: $(SRC_DIR)/gSet.ml
-	$(OCAMLOPT_CMD) -c $<
 
 $(SRC_DIR)/parser.mly: $(SRC_DIR)/yacc-parser.mly
 	cp $< $@
