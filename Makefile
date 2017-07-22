@@ -192,7 +192,7 @@ $(foreach sourcefile,$(ml_files_but_parsers),\
 	$(OCAMLDEP_CMD) $< >$@ || (rm $@; false)
 
 %.ml: %.mll
-	$(OCAMLLEX) -c $<
+	$(OCAMLLEX) $<
 
 ml_files:=$(ml_files_but_parsers) parsing_c/parser_c.ml
 ml_and_mli_files:=$(ml_files) $(ml_files:.ml=.mli)
@@ -327,6 +327,9 @@ clean: clean-$(library)
 clean-$(library):
 	rm -f $(library)/$(library).cma $(library)/$(library).cmxa \
 		$(foreach sourcefile,$(SOURCEFILES_$(library)),$(clean_sourcefile)) \
+		$(patsubst %.mll,%.ml,$(filter %.mll,$(SOURCEFILES_$(library)))) \
+		$(patsubst %.mly,%.ml,$(filter %.mly,$(SOURCEFILES_$(library)))) \
+		$(patsubst %.mly,%.mli,$(filter %.mly,$(SOURCEFILES_$(library)))) \
 		$(foreach sourcefile,$(CLEANFILES_$(library)),$(clean_sourcefile))
 
 $(library)/$(library).cmxa: $(addsuffix .cmx,$(basename $(SOURCEFILES_$(library))))
