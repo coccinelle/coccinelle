@@ -75,7 +75,7 @@ let parse_file file =
     | _ -> failwith
 	  "only spatch supported as a header in a .cocciconfig file" in
   try loop (input_line i)
-  with End_of_file -> List.concat (List.rev !options)
+  with End_of_file -> close_in i; List.concat (List.rev !options)
 
 (* ------------------------------------------------------------------------ *)
 
