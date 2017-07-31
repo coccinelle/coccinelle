@@ -1686,7 +1686,6 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
 		(* combine the new bindings with the old ones, and
 		   specialize to the used_after_list *)
 		  begin
-		  let old_variables = List.map fst old_bindings_to_keep in
 		  (* have to explicitly discard the inherited variables
 		     because we want the inherited value of the positions
 		     variables not the extended one created by
@@ -1698,7 +1697,8 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
 		       List.map
 			 (List.filter
 			    (function (s,v) ->
-			      not (List.mem s old_variables)))) in
+			      (* keep only locals *)
+			      fst s = r.rule_info.rulename))) in
 		  let local_res =
 		    [List.map
 			(function new_binding_to_add ->
