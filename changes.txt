@@ -62,6 +62,8 @@
 - forall and exists for quantifying over the success of matching depends on
   constraints.
 - --verbose-includes option to show what files are actually included
+- allow casts to unknown typedefs on more kinds of constants (reported by
+  Yann Droneaud)
 ** Bugfix:
 - Improved detection of metavariables in strings.  Problem reported by
   Wolfram Sang.

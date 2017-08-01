@@ -2406,7 +2406,8 @@ let lookahead2 ~pass next before =
    *)
 
   (*  (xx) yy *)
-  | (TIdent (s, i1)::TCPar i2::(TIdent (_,i3)|TInt (_,i3))::_ ,
+  | (TIdent (s, i1)::TCPar i2::
+     (TIdent (_,i3)|TInt (_,i3)|TChar (_,i3)|TString (_,i3)|TFloat (_,i3))::_ ,
     (TOPar info)::x::_)
     when not (TH.is_stuff_taking_parenthized x) (* &&
       Ast_c.line_of_info i2 = Ast_c.line_of_info i3 - why useful?
