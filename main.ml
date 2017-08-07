@@ -1436,7 +1436,12 @@ let main () =
           end
         else List.hd !args
       in if !Inc.include_path = []
-      then Inc.include_path := [Filename.concat chosen_dir "include"]);
+      then
+	let i = Filename.concat chosen_dir "include" in
+	try
+	  if Sys.is_directory i
+	  then Inc.include_path := [i]
+	with Sys_error _ -> ());
     (* The same thing for file groups *)
     (if !file_groups
     then
