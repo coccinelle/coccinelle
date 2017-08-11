@@ -84,10 +84,8 @@ let cache_add (nm,ct,cache) k v =
   Hashtbl.add cache k (ref 1, v)
 
 let interpret_include_path relpath =
-  let maxdepth = List.length relpath in
   let unique_file_exists dir f =
-    let cmd =
-      Printf.sprintf "find %s -mindepth %d -path \"*/%s\"" dir maxdepth f in
+    let cmd = Printf.sprintf "find %s -path \"*/%s\"" dir f in
     try cache_find find_table cmd
     with Not_found ->
       let res =
@@ -103,31 +101,36 @@ let interpret_include_path relpath =
     else None in
   let rec search_include_path exists searchlist relpath =
     match searchlist with
-      []       -> None
+      [] -> None
     | hd::tail ->
 	(match exists hd relpath with
 	  Some x -> Some x
 	| None -> search_include_path exists tail relpath) in
   let rec search_path exists searchlist = function
-      [] ->
-	let res = String.concat "/" relpath in
-	cache_add include_table (searchlist,relpath) res;
-	Some res
+      [] -> None
     | (hd::tail) as relpath1 ->
 	let relpath1 = String.concat "/" relpath1 in
 	(match search_include_path exists searchlist relpath1 with
-	  None -> search_path unique_file_exists searchlist tail
-	| Some f ->
-	    cache_add include_table (searchlist,relpath) f;
-	    Some f) in
+	  None -> search_path exists searchlist tail
+	| (Some _) as res -> res) in
   let searchlist =
     match !include_path with
       [] ->
 	(try if Sys.is_directory "include" then ["include"] else []
 	with Sys_error _ -> [])
     | x -> List.rev x in
-  try Some(cache_find include_table (searchlist,relpath))
-  with Not_found -> search_path native_file_exists searchlist relpath
+  try cache_find include_table (searchlist,relpath)
+  with Not_found ->
+    (match search_path native_file_exists searchlist relpath with
+      None ->
+	let res = search_path unique_file_exists searchlist relpath in
+	cache_add include_table (searchlist,relpath) res;
+	(if res = None
+	then Printf.eprintf "failed on %s\n" (String.concat "/" relpath));
+	res
+    | (Some _) as res ->
+	cache_add include_table (searchlist,relpath) res;
+	res)
 
 let should_parse parsing_style filename incl = match parsing_style with
   | Parse_no_includes -> false

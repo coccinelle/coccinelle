@@ -64,6 +64,8 @@
 - --verbose-includes option to show what files are actually included
 - allow casts to unknown typedefs on more kinds of constants (reported by
   Yann Droneaud)
+- Pick up header files that have the same name as the desired one if they
+  are unique in the provided include paths.
 ** Bugfix:
 - Improved detection of metavariables in strings.  Problem reported by
   Wolfram Sang.
