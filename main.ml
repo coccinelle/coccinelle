@@ -1357,7 +1357,7 @@ let rec fix_idutils = function
 	let s = String.sub x 3 (len-3) in
 	if c1 = 'j'
 	then
-	  try let _ = int_of_string s in "--j"::s::(fix_idutils rest)
+	  try let _ = int_of_string s in "-j"::s::(fix_idutils rest)
 	  with _ -> fail()
 	else if c1 = 'I'
 	then "--I"::s::(fix_idutils rest)
