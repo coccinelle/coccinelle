@@ -319,6 +319,10 @@ let around parens (err_line,err_col) =
       else failwith "unexpected paren order"
   | _ -> false
 
+(* This applies the macro in the current definition and all subsequent ones.
+This is unfortunate when the macro itself introduces a parse error, but it
+seems that we don't know where the current function ends. *)
+
 let apply_macro_defs
  ~msg_apply_known_macro
  ~msg_apply_known_macro_hint
