@@ -709,6 +709,7 @@ let get_one_elem ~pass tr =
 
       (* must keep here, before the code that adjusts the tr fields *)
       let line_error = TH.line_of_tok tr.current in
+      let col_error = TH.col_of_tok tr.current in
 
       let passed_before_error = tr.passed in
       let current = tr.current in
@@ -725,7 +726,7 @@ let get_one_elem ~pass tr =
 
 
       let info_of_bads = Common.map_eff_rev TH.info_of_tok tr.passed in
-      Right (info_of_bads,  line_error,
+      Right (info_of_bads, line_error, col_error,
             tr.passed, passed_before_error,
             current, e, pass)
   )
@@ -775,7 +776,7 @@ let candidate_macros_in_passed ~defs b =
 
 
 
-let find_optional_macro_to_expand2 ~defs toks =
+let find_optional_macro_to_expand2 ~defs pos toks =
 
   let defs = Common.hash_of_list defs in
 
@@ -796,7 +797,7 @@ let find_optional_macro_to_expand2 ~defs toks =
   ) in
 
   let tokens = toks in
-  Parsing_hacks.fix_tokens_cpp ~macro_defs:defs tokens
+  Parsing_hacks.fix_tokens_cpp ~macro_defs:defs pos tokens
 
   (* just calling apply_macro_defs and having a specialized version
    * of the code in fix_tokens_cpp is not enough as some work such
@@ -811,15 +812,15 @@ let find_optional_macro_to_expand2 ~defs toks =
   Cpp_token_c.apply_macro_defs
     ~msg_apply_known_macro:(fun s -> pr2 (spf "APPLYING: %s" s))
     ~msg_apply_known_macro_hint:(fun s -> pr2 "hint")
-    defs paren_grouped;
+    defs pos paren_grouped;
   (* because the before field is used by apply_macro_defs *)
   tokens2 := TV.rebuild_tokens_extented !tokens2;
   Parsing_hacks.insert_virtual_positions
     (!tokens2 +> Common.acc_map (fun x -> x.TV.tok))
   *)
-let find_optional_macro_to_expand ~defs a =
+let find_optional_macro_to_expand ~defs pos a =
     Common.profile_code "MACRO managment" (fun () ->
-      find_optional_macro_to_expand2 ~defs a)
+      find_optional_macro_to_expand2 ~defs pos a)
 
 (*****************************************************************************)
 (* Parsing #if guards *)
@@ -1027,7 +1028,8 @@ and _parse_print_error_heuristic2bis saved_typedefs saved_macros
                 then Parsing_hacks.fix_tokens_ifdef toks
                 else toks
     in
-  let toks = Parsing_hacks.fix_tokens_cpp ~macro_defs:!_defs_builtins toks in
+  let toks =
+    Parsing_hacks.fix_tokens_cpp ~macro_defs:!_defs_builtins [] toks in
   let toks =
     if parse_strings
     then Parsing_hacks.fix_tokens_strings toks
@@ -1079,7 +1081,7 @@ and _parse_print_error_heuristic2bis saved_typedefs saved_macros
             | Ast_c.CppTop(Ast_c.Include incl) -> handle_include incl
             | _ -> ()
         end; Left e
-      | Right (info,line_err, passed, passed_before_error, cur, exn, _) ->
+      | Right (info,line_err, _, passed, passed_before_error, cur, exn, _) ->
           if !Flag_parsing_c.disable_multi_pass
           then pass1
           else begin
@@ -1093,13 +1095,12 @@ and _parse_print_error_heuristic2bis saved_typedefs saved_macros
 
             (match passx with
             | Left e -> passx
-            | Right (info,line_err,passed,passed_before_error,cur,exn,_) ->
+            | Right (info,line_err,col_err,passed,_,cur,exn,_) ->
                 let candidates =
                   candidate_macros_in_passed ~defs:macros passed
                 in
 
-
-                if is_define_passed passed || candidates=[]
+                if is_define_passed passed
                 then passx
                 else begin
                   (* todo factorize code *)
@@ -1107,28 +1108,36 @@ and _parse_print_error_heuristic2bis saved_typedefs saved_macros
                   pr2_err "parsing pass3: try again";
                   let toks = List.rev passed @ tr.rest in
                   let toks' =
-                    find_optional_macro_to_expand ~defs:candidates toks in
+                    find_optional_macro_to_expand ~defs:candidates
+		      [(line_err,col_err)] toks in
                   let new_tr = mk_tokens_state toks' in
                   copy_tokens_state ~src:new_tr ~dst:tr;
                   let passx = get_one_elem ~pass:3 tr in
 
                   (match passx with
                   | Left e -> passx
-                  | Right (info,line_err,passed,passed_before_error,cur,exn,_) ->
-                      pr2_err "parsing pass4: try again";
+                  | Right(info,le1,ce1,passed,passed_before_error,cur,exn,_) ->
+		      if candidates = [] && line_err = le1 && col_err = ce1
+		      then passx (* nothing changed, so don't try again *)
+		      else
+			begin
+			  pr2_err "parsing pass4: try again";
 
-                      let candidates =
-                        candidate_macros_in_passed
-                          ~defs:macros passed
-                      in
+			  let candidates =
+                            candidate_macros_in_passed
+                              ~defs:macros passed
+			  in
 
-		      let toks = List.rev passed @ tr.rest in
-		      let toks' =
-			find_optional_macro_to_expand ~defs:candidates toks in
-		      let new_tr = mk_tokens_state toks' in
-		      copy_tokens_state ~src:new_tr ~dst:tr;
-		      let passx = get_one_elem ~pass:4 tr in
-		      passx
+			  let toks = List.rev passed @ tr.rest in
+			  let toks' =
+			    find_optional_macro_to_expand ~defs:candidates
+			      (Common.nub [(line_err,col_err);(le1,ce1)])
+			      toks in
+			  let new_tr = mk_tokens_state toks' in
+			  copy_tokens_state ~src:new_tr ~dst:tr;
+			  let passx = get_one_elem ~pass:4 tr in
+			  passx
+			end
                   )
                  end
             )
@@ -1163,7 +1172,7 @@ and _parse_print_error_heuristic2bis saved_typedefs saved_macros
       | Left e ->
           stat.Stat.correct <- stat.Stat.correct + diffline;
           e
-      | Right (info_of_bads, line_error, toks_of_bads,
+      | Right (info_of_bads, line_error, col_error, toks_of_bads,
               passed_before_error, cur, exn, pass) ->
 
           let was_define = is_define_passed tr.passed in

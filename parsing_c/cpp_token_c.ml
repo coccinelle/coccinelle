@@ -304,14 +304,29 @@ let (cpp_engine:
  * after fix_token_define a TDefineIdent, no more a TIdent.
  *)
 
+let around parens (err_line,err_col) =
+  match parens with (* can contain only one element, if open with no close *)
+    lp::_ -> (* parens also contains commas *)
+      let rp = List.hd (List.rev parens) in
+      let lp_line = lp.Token_views_c.line in
+      let lp_col = lp.Token_views_c.col in
+      let rp_line = rp.Token_views_c.line in
+      let rp_col = rp.Token_views_c.col in
+      if (lp_line = rp_line && lp_col <= rp_col) || lp_line < rp_line
+      then
+	(lp_line < err_line || (lp_line = err_line && lp_col < err_col)) &&
+	(rp_line > err_line || (rp_line = err_line && rp_col > err_col))
+      else failwith "unexpected paren order"
+  | _ -> false
+
 let apply_macro_defs
  ~msg_apply_known_macro
  ~msg_apply_known_macro_hint
  ?evaluate_concatop
  ?(inplace_when_single=true)
- defs xs =
+ defs pos xs =
 
- let rec apply_macro_defs xs =
+ let rec apply_macro_defs dynamic_macs xs =
   match xs with
   | [] -> ()
 
@@ -442,12 +457,30 @@ let apply_macro_defs
                 id.tok <- token_from_parsinghack_hint (s,i1) hint;
             )
       );
-      apply_macro_defs xs
+      apply_macro_defs dynamic_macs xs
+
+  | PToken {tok = TIdent (s,i1)}::Parenthised (xxs,info_parens)::xs
+    when List.mem s dynamic_macs ||
+         not(Hashtbl.mem defs s) && List.exists (around info_parens) pos ->
+      (* drop out the argument list if it contains a parse error *)
+      let commas =
+	match info_parens with
+	  _::rest ->
+	    (match List.rev rest with
+	      _::commas -> commas
+	    | [] -> [])
+	| [] -> [] in
+      msg_apply_known_macro s;
+      [Parenthised (xxs, commas)]
+	+> iter_token_paren (set_as_comment Token_c.CppMacro);
+      let dynamic_macs =
+	if List.mem s dynamic_macs then dynamic_macs else s::dynamic_macs in
+      apply_macro_defs dynamic_macs xs
 
   | PToken ({tok = TIdent (s,i1)} as id)::xs
       when List.mem s !Flag.cocci_attribute_names ->
 	id.tok <- TMacroAttr (s, i1);
-	apply_macro_defs xs
+	apply_macro_defs dynamic_macs xs
 
   | PToken ({tok = TIdent (s,i1)} as id)::xs
       when Hashtbl.mem defs s ->
@@ -477,18 +510,15 @@ let apply_macro_defs
                 id.tok <- token_from_parsinghack_hint (s,i1) hint;
           )
       );
-      apply_macro_defs xs
-
-
-
+      apply_macro_defs dynamic_macs xs
 
   (* recurse *)
-  | (PToken x)::xs -> apply_macro_defs xs
+  | (PToken x)::xs -> apply_macro_defs dynamic_macs xs
   | (Parenthised (xxs, info_parens))::xs ->
-      xxs +> List.iter apply_macro_defs;
-      apply_macro_defs xs
+      xxs +> List.iter (apply_macro_defs dynamic_macs);
+      apply_macro_defs dynamic_macs xs
  in
- apply_macro_defs xs
+ apply_macro_defs [] xs
 
 
 
