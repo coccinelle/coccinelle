@@ -1201,7 +1201,7 @@ let rec find_macro_paren xs =
 
 
 (* don't forget to recurse in each case *)
-let rec find_macro_lineparen xs =
+let rec find_macro_lineparen prev_line_end xs =
   match xs with
   | [] -> ()
 
@@ -1221,7 +1221,7 @@ let rec find_macro_lineparen xs =
       let info = TH.info_of_tok macro.tok in
       macro.tok <- TMacroDecl (Ast_c.str_of_info info, info);
 
-      find_macro_lineparen (xs)
+      find_macro_lineparen true (xs)
 
   (* the static const case *)
   | (Line
@@ -1250,7 +1250,7 @@ let rec find_macro_lineparen xs =
       *)
       const.tok <- TMacroDeclConst (TH.info_of_tok const.tok);
 
-      find_macro_lineparen (xs)
+      find_macro_lineparen true (xs)
 
 
   (* same but without trailing ';'
@@ -1271,7 +1271,7 @@ let rec find_macro_lineparen xs =
       let info = TH.info_of_tok macro.tok in
       macro.tok <- TMacroDecl (Ast_c.str_of_info info, info);
 
-      find_macro_lineparen (xs)
+      find_macro_lineparen true (xs)
 
 
   (* on multiple lines *)
@@ -1294,7 +1294,7 @@ let rec find_macro_lineparen xs =
       let info = TH.info_of_tok macro.tok in
       macro.tok <- TMacroDecl (Ast_c.str_of_info info, info);
 
-      find_macro_lineparen (xs)
+      find_macro_lineparen true (xs)
 
 
   | (Line (* initializer case *)
@@ -1312,7 +1312,7 @@ let rec find_macro_lineparen xs =
       macro.tok <- TMacroDecl (Ast_c.str_of_info info, info);
 
       (* continue with the rest of the line *)
-      find_macro_lineparen ((Line(rest))::xs)
+      find_macro_lineparen false ((Line(rest))::xs)
 
 
   | (Line (* multi-line initializer case *)
@@ -1334,7 +1334,7 @@ let rec find_macro_lineparen xs =
       macro.tok <- TMacroDecl (Ast_c.str_of_info info, info);
 
       (* continue with the rest of the line *)
-      find_macro_lineparen ((Line(rest))::xs)
+      find_macro_lineparen false ((Line(rest))::xs)
 
 
   (* linuxext: ex: DECLARE_BITMAP();
@@ -1362,7 +1362,7 @@ let rec find_macro_lineparen xs =
       let info = TH.info_of_tok macro.tok in
       macro.tok <- TMacroDecl (Ast_c.str_of_info info, info);
 
-      find_macro_lineparen (xs)
+      find_macro_lineparen true (xs)
 
 
   (* toplevel macros.
@@ -1410,7 +1410,7 @@ let rec find_macro_lineparen xs =
 
         end;
 
-       find_macro_lineparen (xs)
+       find_macro_lineparen true (xs)
 
 
 
@@ -1483,7 +1483,7 @@ let rec find_macro_lineparen xs =
             iter_token_paren (TV.set_as_comment Token_c.CppMacro);
         end;
 
-      find_macro_lineparen (line2::xs)
+      find_macro_lineparen true (line2::xs)
 
   (* linuxext:? single macro
    * ex: LOCK
@@ -1501,7 +1501,7 @@ let rec find_macro_lineparen xs =
           ) as line2)
     ::xs when
       (* MacroStmt doesn't make sense otherwise *)
-      List.mem ctx [InFunction;NoContext] ->
+      List.mem ctx [InFunction;NoContext] && prev_line_end ->
     (* when s ==~ regexp_macro *)
 
       let condition =
@@ -1530,10 +1530,16 @@ let rec find_macro_lineparen xs =
         msg_macro_noptvirg_single s;
         macro.tok <- TMacroStmt (s, TH.info_of_tok macro.tok);
       end;
-      find_macro_lineparen (line2::xs)
+      find_macro_lineparen true (line2::xs)
 
-  | x::xs ->
-      find_macro_lineparen xs
+  | (Line line)::xs ->
+      let prev_line_end =
+	match List.rev line with
+	  (PToken {tok = TPtVirg _} | PToken {tok = TOBrace _}
+	| PToken {tok = TCBrace _} | PToken {tok = TDotDot _}) :: _ ->
+	    true
+	| _ -> false in
+      find_macro_lineparen prev_line_end xs
 
 
 
@@ -1781,7 +1787,7 @@ let fix_tokens_cpp2 ~macro_defs err_pos tokens =
     let line_paren_grouped = TV.mk_line_parenthised paren_grouped in
     find_define_init_brace_paren paren_grouped;
     find_string_macro_paren paren_grouped;
-    find_macro_lineparen    line_paren_grouped;
+    find_macro_lineparen    true line_paren_grouped;
     find_macro_paren        paren_grouped;
 
 
