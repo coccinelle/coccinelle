@@ -73,7 +73,7 @@ let rec find_next_synchro ~next ~already_passed =
       | _ -> true
     )
   in
-  find_next_synchro_orig (after @ next)  (List.rev before)
+  find_next_synchro_orig (after @ next) (List.rev before)
 
 
 
