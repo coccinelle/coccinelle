@@ -273,6 +273,10 @@ let show_or_not_diff2 cfile outfile =
 		  if String.get prefix (lp-1) = '/'
 		  then String.sub prefix 0 (lp-1)
 		  else prefix in
+		let fail file =
+		  pr2 (Printf.sprintf "prefix %s doesn't match file %s"
+			 prefix file);
+		  file in
 		let drop_prefix file =
 		  let file = normalize_path file in
 		  if Str.string_match (Str.regexp prefix) file 0
@@ -281,14 +285,8 @@ let show_or_not_diff2 cfile outfile =
 		    let lf = String.length file in
 		    if lp < lf
 		    then String.sub file lp (lf - lp)
-		    else
-		      failwith
-			(Printf.sprintf "prefix %s doesn't match file %s"
-			   prefix file)
-		  else
-		    failwith
-		      (Printf.sprintf "prefix %s doesn't match file %s"
-			 prefix file) in
+		    else fail file
+		  else fail file in
 		let diff_line =
 		  match List.rev(Str.split (Str.regexp " ") line) with
 		    new_file::old_file::cmdrev ->
