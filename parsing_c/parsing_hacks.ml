@@ -1088,20 +1088,22 @@ let rec find_macro_paren xs =
   | [] -> ()
 
   (* attribute *)
-  | PToken ({tok = Tattribute _} as id)
+  | PToken ({tok = Tattribute ii} as id)
     ::Parenthised (xxs,info_parens)
     ::xs
      ->
-      pr2_cpp ("MACRO: __attribute detected ");
+      pr2_cpp (Printf.sprintf "MACRO: attribute %s detected "
+		 (Ast_c.str_of_info ii));
       [Parenthised (xxs, info_parens)] +>
         iter_token_paren (TV.set_as_comment Token_c.CppAttr);
       TV.set_as_comment Token_c.CppAttr id;
       find_macro_paren xs
 
-  | PToken ({tok = TattributeNoarg _} as id)
+  | PToken ({tok = TattributeNoarg ii} as id)
     ::xs
      ->
-      pr2_cpp ("MACRO: __attributenoarg detected ");
+      pr2_cpp (Printf.sprintf "MACRO: attributenoarg %s detected "
+		 (Ast_c.str_of_info ii));
       TV.set_as_comment Token_c.CppAttr id;
       find_macro_paren xs
 
