@@ -70,7 +70,7 @@ let addStorageD  = function
   | ((x,ii), ({storageD = (NoSto,[])} as v)) -> { v with storageD = (x, [ii]) }
   | ((x,ii), ({storageD = (y, ii2)} as v)) ->
       if x = y then warning "duplicate storage classes" v
-      else raise (Semantic ("multiple storage classes", fake_pi))
+      else warning "multiple storage classes, keeping the second" v
 
 let addInlineD  = function
   | ((true,ii), ({inlineD = (false,[])} as v)) -> { v with inlineD=(true,[ii])}
@@ -104,8 +104,14 @@ let addTypeD     = function
   | ((Middle3 x,ii),      ({typeD = ((a,None,c),ii2)} as v))  ->
       {v with typeD = (a, Some x,c),ii @ ii2}
 
-  | ((Right3 t,ii),       ({typeD = ((a,b,Some x),ii2)} as _v)) ->
-      raise (Semantic ((Printf.sprintf "two or more data types: t %s ii %s\ntypeD %s ii2 %s\n" (Dumper.dump t) (Dumper.dump ii) (Dumper.dump x) (Dumper.dump ii2)), fake_pi))
+  | ((Right3 t,ii),       ({typeD = ((a,b,Some x),ii2)} as v)) ->
+      let mktype t ii = (({const=false;volatile=false;},[]),(t,ii)) in
+      warning
+	(Printf.sprintf
+	   "two or more data types: dropping %s\nkeeping typeD %s\n"
+	   (Pretty_print_c.string_of_fullType (mktype t ii))
+	   (Pretty_print_c.string_of_fullType (mktype x ii2)))
+	v
   | ((Right3 t,ii),       ({typeD = ((a,b,None),ii2)} as v))   ->
       {v with typeD = (a,b, Some t),ii @ ii2}
 
