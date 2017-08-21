@@ -1338,7 +1338,6 @@ let parse_cache typedefs parse_strings cache file has_changes =
      least the header files that it includes.  That is, for recursive includes,
      need not only the AST of the header file itself, but also of what it
      includes, and at least the latter is not coming in the cached case. *)
-  let has_changes = true in
   if not !Flag_parsing_c.use_cache
   then
     parse_print_error_heuristic typedefs None parse_strings cache file
