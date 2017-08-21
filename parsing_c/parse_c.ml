@@ -973,7 +973,18 @@ let rec _parse_print_error_heuristic2 saved_typedefs saved_macros
     let cached_result =
       if use_header_cache
       then
-	try Some (Includes.cache_find header_cache file)
+	try
+	  let (cached,cached_includes) =
+	    Includes.cache_find header_cache file in
+	  List.iter
+	    (function incl ->
+	      handle_include file incl
+		(function header_filename ->
+		  _parse_print_error_heuristic2
+		    saved_typedefs saved_macros parse_strings
+		    true header_filename use_header_cache))
+	    cached_includes;
+	  Some cached
 	with Not_found -> None
       else None in
     match cached_result with
@@ -982,13 +993,41 @@ let rec _parse_print_error_heuristic2 saved_typedefs saved_macros
           _parse_print_error_heuristic2bis saved_typedefs saved_macros
             parse_strings file use_header_cache in
         (if use_header_cache && cache
-	then Includes.cache_add header_cache file result);
+	then
+	  let my_includes =
+	    let my_includes = ref [] in
+	    let cpp (k,bigf) directive =
+	      match directive with
+		Ast_c.Include incl ->
+		  my_includes := incl :: !my_includes
+	      | _ -> () in
+	    let bigf =
+	      { Visitor_c.default_visitor_c with
+		Visitor_c.kcppdirective = cpp } in
+	    let (pgm,ty,defs) = result.parse_trees in
+	    Visitor_c.vk_program bigf (List.map fst pgm);
+	    !my_includes in
+	  Includes.cache_add header_cache file (result,my_includes));
         tree_stack := result :: !tree_stack;
         Some result
       | Some result ->
         tree_stack := result :: !tree_stack;
         Some result
   end
+
+
+and handle_include file wrapped_incl k =
+    let incl = Ast_c.unwrap wrapped_incl.Ast_c.i_include in
+    let parsing_style = Includes.get_parsing_style () in
+    if Includes.should_parse parsing_style file incl
+    then begin match Includes.resolve file parsing_style incl with
+      | Some header_filename when Common.lfile_exists header_filename ->
+	  (if !Flag_parsing_c.verbose_includes
+	  then pr2 ("including "^header_filename));
+          ignore (k header_filename)
+      | _ -> ()
+    end
+
 
 and _parse_print_error_heuristic2bis saved_typedefs saved_macros
   parse_strings file use_header_cache =
@@ -1038,21 +1077,6 @@ and _parse_print_error_heuristic2bis saved_typedefs saved_macros
 
   let tr = mk_tokens_state toks in
 
-  let handle_include wrapped_incl =
-    let incl = Ast_c.unwrap wrapped_incl.Ast_c.i_include in
-    let parsing_style = Includes.get_parsing_style () in
-    if Includes.should_parse parsing_style file incl
-    then begin match Includes.resolve file parsing_style incl with
-      | Some header_filename when Common.lfile_exists header_filename ->
-	  (if !Flag_parsing_c.verbose_includes
-	  then pr2 ("including "^header_filename));
-          ignore
-            (_parse_print_error_heuristic2
-               saved_typedefs saved_macros parse_strings
-               true header_filename use_header_cache)
-      | _ -> ()
-    end in
-
   let rec loop tr =
 
     (* todo?: I am not sure that it represents current_line, cos maybe
@@ -1078,7 +1102,12 @@ and _parse_print_error_heuristic2bis saved_typedefs saved_macros
       | Left e ->
         begin
           match e with
-            | Ast_c.CppTop(Ast_c.Include incl) -> handle_include incl
+            | Ast_c.CppTop(Ast_c.Include incl) ->
+		handle_include file incl
+		  (function header_filename ->
+		    _parse_print_error_heuristic2
+		      saved_typedefs saved_macros parse_strings
+		      true header_filename use_header_cache)
             | _ -> ()
         end; Left e
       | Right (info,line_err, _, passed, passed_before_error, cur, exn, _) ->
