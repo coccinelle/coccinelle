@@ -2600,6 +2600,25 @@ let lookahead2 ~pass next before =
       end
       else TIdent (s, i1)
 
+  | (TIdent(s1,i1)::(TPtVirg(ii2)|TEq(ii2))::rest,
+     TIdent(s2,i2)::TIdent(s3,i3)::_)
+      when LP.current_context () = LP.InTopLevel &&
+	s1 ==~ regexp_annot ->
+	  msg_attribute s1;
+	  TMacroEndAttr (s1, i1)
+
+  | (TIdent(s1,i1)::(TPtVirg(ii2)|TEq(ii2))::rest,TCCro(i2)::_)
+      when LP.current_context () = LP.InTopLevel &&
+	s1 ==~ regexp_annot ->
+	  msg_attribute s1;
+	  TMacroEndAttr (s1, i1)
+
+  | (TIdent(s1,i1)::TOBrace(ii2)::rest,TCPar(i2)::_)
+      when LP.current_context () = LP.InTopLevel &&
+	s1 ==~ regexp_annot ->
+	  msg_attribute s1;
+	  TMacroAttr (s1, i1)
+
 (*  (* christia: here insert support for macros on top level *)
   | TIdent (s, ii) :: tl :: _, _ when
     can_be_on_top_level tl && LP.current_context () = InTopLevel ->

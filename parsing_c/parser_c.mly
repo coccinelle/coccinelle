@@ -566,6 +566,7 @@ let args_to_params l pb =
 /*(* appear  after fix_tokens_cpp, cf also parsing_hacks#hint *)*/
 
 %token <(string * Ast_c.info)>            TMacroAttr
+%token <(string * Ast_c.info)>            TMacroEndAttr
 %token <(string * Ast_c.info)>            TMacroStmt
 %token <(string * Ast_c.info)> TMacroIdentBuilder
 /*(* no need value for the moment *)*/
@@ -2301,6 +2302,7 @@ attribute_list:
 attributes: attribute_list { $1 }
 
 end_attributes: TTODO { $1 }
+ | TMacroEndAttr { snd $1 }
 
 comma_opt:
  | TComma {  [$1] }
