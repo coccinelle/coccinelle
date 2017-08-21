@@ -1856,6 +1856,8 @@ open Lexer_parser (* for the fields of lexer_hint type *)
 
 let not_struct_enum = function
   | (Parser_c.Tstruct _ | Parser_c.Tunion _ | Parser_c.Tenum _)::_ -> false
+  | (Parser_c.TIdent _)::
+    (Parser_c.Tstruct _ | Parser_c.Tunion _ | Parser_c.Tenum _)::_ -> false
   | _ -> true
 
 let pointer ?(followed_by=fun _ -> true)
