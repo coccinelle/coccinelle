@@ -2152,6 +2152,7 @@ let pre_engine a =
 
 let full_engine2
     (cocci_infos, has_changes, parse_strings, (_, python_local_names)) cfiles =
+  let has_changes = has_changes && !Flag_cocci.inplace_modif in
 
   show_or_not_cfiles cfiles;
 
