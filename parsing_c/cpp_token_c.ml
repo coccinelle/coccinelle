@@ -192,13 +192,13 @@ let rec remap_keyword_tokens xs =
 let rec get_ident_in_concat_op xs =
   match xs with
   | [] ->
-      pr2 "weird: ident after ## operator not found";
+      pr2_once "weird: ident after ## operator not found";
       "", []
   | [x] ->
       (match x with
       | Parser_c.TIdent (s, i1) -> s, []
       | _ ->
-          pr2 "weird: ident after ## operator not found";
+          pr2_once "weird: ident after ## operator not found";
           "", [x]
       )
   | x::y::xs ->
@@ -209,7 +209,7 @@ let rec get_ident_in_concat_op xs =
       | Parser_c.TIdent (s, i1), _ ->
           s, (y::xs)
       | _ ->
-          pr2 "weird: ident after ## operator not found";
+          pr2_once "weird: ident after ## operator not found";
           "", x::y::xs
       )
 
@@ -234,7 +234,7 @@ let rec agglomerate_concat_op_ident xs =
           let i1' = Ast_c.rewrap_str new_s i1 in
           Parser_c.TIdent (new_s, i1')::agglomerate_concat_op_ident rest_toks
       | Parser_c.TCppConcatOp _, _ ->
-          pr2 "weird, ## alone";
+          pr2_once "weird, ## alone";
           x::agglomerate_concat_op_ident (y::xs)
       | _ ->
           x::agglomerate_concat_op_ident (y::xs)
