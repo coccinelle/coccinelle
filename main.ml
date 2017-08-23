@@ -318,6 +318,8 @@ let short_options = [
   "  causes local include files to be used";
   "--include-headers-for-types", Arg.Set Inc.include_headers_for_types,
   "    use only type information from header files";
+  "--no-include-cache", Arg.Set Flag.no_include_cache,
+  "  don't cache parsed include files";
   "--ignore-unknown-options", Arg.Set ignore_unknown_opt,
   ("    For integration in a toolchain (must be set before the first unknown"^
    " option)");

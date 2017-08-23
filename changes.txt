@@ -66,6 +66,7 @@
   Yann Droneaud)
 - Pick up header files that have the same name as the desired one if they
   are unique in the provided include paths.
+- Caching of parsed header files, --no-include-cache to disable.
 ** Bugfix:
 - Improved detection of metavariables in strings.  Problem reported by
   Wolfram Sang.

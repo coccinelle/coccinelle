@@ -429,6 +429,10 @@ other \#ifdef.}
   default is {\bf -{}-local-includes}.  Otherwise the default is {\bf
     -{}-no-includes}.  At most one of these options can be specified.}
 
+\rare{-{}-no-include-cache}{Disable caching of parsed header files. If {\bf
+    -{}-recursive-includes} is used, using this option will incur a large
+  performance overhead.}
+
 \normal{-I $\langle$path$\rangle$}{ This option specifies a directory
   in which to find non-local include files.  This option can be used
   several times to specify multipls include paths.}

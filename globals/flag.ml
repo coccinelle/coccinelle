@@ -55,6 +55,7 @@ let ibm = ref false
 
 (* was in main *)
 let include_headers = ref false
+let no_include_cache = ref false
 
 exception UnreadableFile of string
 
