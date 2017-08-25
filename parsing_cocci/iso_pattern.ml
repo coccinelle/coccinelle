@@ -922,9 +922,12 @@ let match_maker checks_needed context_required whencode_allowed =
 	if not(checks_needed) || not(context_required) || is_context d
 	then
 	  match (up,Ast0.unwrap d) with
-	    (Ast0.Init(stga,tya,ida,eq1,inia,sc1),
-	     Ast0.Init(stgb,tyb,idb,eq,inib,sc)) ->
-	       if bool_match_option mcode_equal stga stgb
+	    (Ast0.Init(stga,tya,ida,attra,eq1,inia,sc1),
+	     Ast0.Init(stgb,tyb,idb,attrb,eq,inib,sc)) ->
+	       if bool_match_option mcode_equal stga stgb &&
+                 (List.length attra = List.length attrb &&
+                  List.fold_left2 (fun p a b -> p && mcode_equal a b) true
+                    attra attrb) (* no metavars *)
 	       then
 		 conjunct_many_bindings
 		   [check_mcode eq1 eq; check_mcode sc1 sc;
@@ -932,8 +935,12 @@ let match_maker checks_needed context_required whencode_allowed =
 		     match_typeC tya tyb; match_ident ida idb;
 		     match_init inia inib]
 	       else return false
-	  | (Ast0.UnInit(stga,tya,ida,sc1),Ast0.UnInit(stgb,tyb,idb,sc)) ->
-	      if bool_match_option mcode_equal stga stgb
+	  | (Ast0.UnInit(stga,tya,ida,attra,sc1),
+	     Ast0.UnInit(stgb,tyb,idb,attrb,sc)) ->
+	      if bool_match_option mcode_equal stga stgb &&
+                (List.length attra = List.length attrb &&
+                 List.fold_left2 (fun p a b -> p && mcode_equal a b) true
+                   attra attrb) (* no metavars *)
 	      then
 		conjunct_many_bindings
 		  [check_mcode sc1 sc; match_option check_mcode stga stgb;

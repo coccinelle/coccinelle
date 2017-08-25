@@ -390,13 +390,13 @@ let rec declaration_pos decl snp
   | Ast0.MetaDecl _
   | Ast0.AsDecl _ ->
       None
-  | Ast0.Init(st, ty, id, eq, ini, sem) ->
+  | Ast0.Init(st, ty, id, attr, eq, ini, sem) ->
       let _ = type_pos ty snp in (* sanity check *)
-      let constructor ~id = Ast0.Init(st, ty, id, eq, ini, sem) in
+      let constructor ~id = Ast0.Init(st, ty, id, attr, eq, ini, sem) in
       id_wrap ~id ~constructor snp
-  | Ast0.UnInit(st, ty, id, sem) ->
+  | Ast0.UnInit(st, ty, id, attr, sem) ->
       let _ = type_pos ty snp in (* sanity check *)
-      let constructor ~id = Ast0.UnInit(st, ty, id, sem) in
+      let constructor ~id = Ast0.UnInit(st, ty, id, attr, sem) in
       id_wrap ~id ~constructor snp
   | Ast0.TyDecl (t, sem) ->
       let c ~item ~mc = Ast0.TyDecl(item, mc) in

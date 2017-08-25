@@ -186,10 +186,10 @@ and left_declaration d =
   modif_before d ||
   match Ast0.unwrap d with
     Ast0.MetaDecl(name,_,_) -> modif_before_mcode name
-  | Ast0.Init(Some stg,ty,id,eq,ini,sem) -> modif_before_mcode stg
-  | Ast0.Init(None,ty,id,eq,ini,sem) -> left_typeC ty
-  | Ast0.UnInit(Some stg,ty,id,sem) -> modif_before_mcode stg
-  | Ast0.UnInit(None,ty,id,sem) -> left_typeC ty
+  | Ast0.Init(Some stg,ty,id,attr,eq,ini,sem) -> modif_before_mcode stg
+  | Ast0.Init(None,ty,id,attr,eq,ini,sem) -> left_typeC ty
+  | Ast0.UnInit(Some stg,ty,id,attr,sem) -> modif_before_mcode stg
+  | Ast0.UnInit(None,ty,id,attr,sem) -> left_typeC ty
   | Ast0.FunProto(fninfo,name,lp1,params,va,rp1,sem) ->
       (* should not be nested in anything anyway *)
       false
@@ -209,8 +209,8 @@ and right_declaration d =
   modif_before d ||
   match Ast0.unwrap d with
     Ast0.MetaDecl(name,_,_) -> modif_before_mcode name
-  | Ast0.Init(_,ty,id,eq,ini,sem) -> modif_after_mcode sem
-  | Ast0.UnInit(_,ty,id,sem) -> modif_after_mcode sem
+  | Ast0.Init(_,ty,id,eq,ini,attr,sem) -> modif_after_mcode sem
+  | Ast0.UnInit(_,ty,id,attr,sem) -> modif_after_mcode sem
   | Ast0.FunProto(fninfo,name,lp1,params,va,rp1,sem) -> modif_after_mcode sem
   | Ast0.MacroDecl(_,name,lp,args,rp,sem) -> modif_after_mcode sem
   | Ast0.MacroDeclInit(_,name,lp,args,rp,eq,ini,sem) -> modif_after_mcode sem

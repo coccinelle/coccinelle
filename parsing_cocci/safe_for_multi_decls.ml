@@ -93,15 +93,16 @@ let decl r k e =
   then {e with Ast.safe_for_multi_decls = true}
   else
     match Ast.unwrap e with
-      Ast.Init(stg,ty,_,_,_,sem)
-    | Ast.UnInit(stg,ty,_,sem) ->
+      Ast.Init(stg,ty,_,attr,_,_,sem)
+    | Ast.UnInit(stg,ty,_,attr,sem) ->
 	let stg_modif =
 	  match stg with
 	    Some stg -> mcode () stg
 	  | None -> false in
+	let attr_modif = List.exists (mcode ()) attr in
 	let ft_modif = contains_modif ty in
 	let sem_modif = mcode () sem in
-	if not(stg_modif || ft_modif || sem_modif)
+	if not(stg_modif || attr_modif || ft_modif || sem_modif)
 	then {e with Ast.safe_for_multi_decls = true}
 	else e
     | _ -> e

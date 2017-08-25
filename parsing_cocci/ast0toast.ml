@@ -599,18 +599,20 @@ and declaration d =
 	Ast.MetaDecl(mcode name,constraints cstr,unitary,false)
     | Ast0.AsDecl(decl,asdecl) ->
 	Ast.AsDecl(declaration decl,declaration asdecl)
-    | Ast0.Init(stg,ty,id,eq,ini,sem) ->
+    | Ast0.Init(stg,ty,id,attr,eq,ini,sem) ->
 	let allminus = check_allminus.VT0.combiner_rec_declaration d in
 	let stg = get_option mcode stg in
 	let ty = typeC allminus ty in
 	let id = ident id in
+	let attr = List.map mcode attr in
 	let eq = mcode eq in
 	let ini = initialiser ini in
 	let sem = mcode sem in
-	Ast.Init(stg,ty,id,eq,ini,sem)
-    | Ast0.UnInit(stg,ty,id,sem) ->
+	Ast.Init(stg,ty,id,attr,eq,ini,sem)
+    | Ast0.UnInit(stg,ty,id,attr,sem) ->
 	let allminus = check_allminus.VT0.combiner_rec_declaration d in
-	Ast.UnInit(get_option mcode stg,typeC allminus ty,ident id,
+	let attr = List.map mcode attr in
+	Ast.UnInit(get_option mcode stg,typeC allminus ty,ident id,attr,
 		   mcode sem)
     | Ast0.FunProto(fi,name,lp,params,va,rp,sem) ->
 	  let fi = List.map fninfo fi in

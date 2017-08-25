@@ -365,14 +365,18 @@ and declaration d =
       match Ast0.unwrap d with
 	Ast0.MetaDecl(name,_,_) ->
 	  mcode print_meta name
-      |	Ast0.Init(stg,ty,id,eq,ini,sem) ->
+      |	Ast0.Init(stg,ty,id,attr,eq,ini,sem) ->
 	  print_option (mcode U.storage) stg;
 	  print_named_type ty id;
+	  (if not (attr = []) then print_string " ");
+	  print_between (fun _ -> print_string " ") (mcode print_string) attr;
 	  print_string " ";
 	  mcode print_string eq; print_string " "; initialiser ini;
 	  mcode print_string sem
-      | Ast0.UnInit(stg,ty,id,sem) ->
+      | Ast0.UnInit(stg,ty,id,attr,sem) ->
 	  print_option (mcode U.storage) stg; print_named_type ty id;
+	  (if not (attr = []) then print_string " ");
+	  print_between (fun _ -> print_string " ") (mcode print_string) attr;
 	  mcode print_string sem
       | Ast0.FunProto(fninfo,name,lp1,params,va,rp1,sem) ->
 	  List.iter print_fninfo fninfo;

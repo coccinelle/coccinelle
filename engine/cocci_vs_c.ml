@@ -2532,18 +2532,18 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
    | _ -> fail
    )
 
-   | A.UnInit (stoa, typa, ida, ptvirga),
+   | A.UnInit (stoa, typa, ida, attra, ptvirga),
      ({B.v_namei= Some (nameidb, _);B.v_storage= (B.StoTypedef,_);}, iivirg)
      -> fail
 
-   | A.Init (stoa, typa, ida, eqa, inia, ptvirga),
+   | A.Init (stoa, typa, ida, attra, eqa, inia, ptvirga),
      ({B.v_namei=Some(nameidb, _);B.v_storage=(B.StoTypedef,_);}, iivirg)
        -> fail
 
 
 
     (* could handle iso here but handled in standard.iso *)
-   | A.UnInit (stoa, typa, ida, ptvirga),
+   | A.UnInit (stoa, typa, ida, attrsa, ptvirga),
      ({B.v_namei = Some (nameidb, B.NoInit);
        B.v_type = typb;
        B.v_storage = stob;
@@ -2554,10 +2554,11 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
        fullType typa typb >>= (fun typa typb ->
        ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
+       attribute_list attrsa attrs >>= (fun attrsa attrs ->
        storage_optional_allminus allminus stoa (stob, iistob) >>=
         (fun stoa (stob, iistob) ->
          return (
-           (A.UnInit (stoa, typa, ida, ptvirga)) +>  A.rewrap decla,
+           (A.UnInit (stoa, typa, ida, attrsa, ptvirga)) +>  A.rewrap decla,
            (({B.v_namei = Some (nameidb, B.NoInit);
               B.v_type = typb;
               B.v_storage = stob;
@@ -2566,9 +2567,9 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
               B.v_type_bis = typbbis;
            },iivirg),
 	    iiptvirgb,iistob)
-         )))))
+         ))))))
 
-   | A.Init (stoa, typa, ida, eqa, inia, ptvirga),
+   | A.Init (stoa, typa, ida, attrsa, eqa, inia, ptvirga),
      ({B.v_namei = Some(nameidb, B.ValInit (iieqb, inib));
        B.v_type = typb;
        B.v_storage = stob;
@@ -2581,11 +2582,12 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        tokenf eqa iieqb >>= (fun eqa iieqb ->
        fullType typa typb >>= (fun typa typb ->
        ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
+       attribute_list attrsa attrs >>= (fun attras attrs ->
        storage_optional_allminus allminus stoa (stob, iistob) >>=
        (fun stoa (stob, iistob) ->
        initialiser inia inib >>= (fun inia inib ->
          return (
-           (A.Init (stoa, typa, ida, eqa, inia, ptvirga)) +> A.rewrap decla,
+           (A.Init (stoa,typa,ida,attrsa,eqa,inia,ptvirga)) +> A.rewrap decla,
            (({B.v_namei = Some(nameidb, B.ValInit (iieqb, inib));
               B.v_type = typb;
               B.v_storage = stob;
@@ -2594,9 +2596,9 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
               B.v_type_bis = typbbis;
            },iivirg),
            iiptvirgb,iistob)
-         )))))))
+         ))))))))
 
-   | A.Init (stoa, typa, ida, eqa, inia, ptvirga),
+   | A.Init (stoa, typa, ida, attra, eqa, inia, ptvirga),
      ({B.v_namei = Some(nameidb, B.ConstrInit _);
        B.v_type = typb;
        B.v_storage = stob;
@@ -2847,12 +2849,12 @@ and get_fninfo fninfoa =
   let attras =
     match List.filter (function A.FAttr(a) -> true | _ -> false) fninfoa
     with
-      [] -> None |(* _ -> failwith "matching of attributes not supported"*)
+      [] -> [] |(* _ -> failwith "matching of attributes not supported"*)
 	(* The following provides matching of one attribute against one
 	   attribute.  But the problem is that in the C ast there are no
 	   attributes in the attr field.  The attributes are all comments.
 	   So there is nothing to match against. *)
-	(**)  [A.FAttr(a)] -> Some [A.FAttr(a)]
+	(**)  [A.FAttr(a)] -> [a]
 	(*| [] -> None*)
 	| _ -> failwith "only one attr match allowed" (**) in
   (stoa,tya,inla,attras)
@@ -2861,7 +2863,7 @@ and put_fninfo stoa tya inla attras =
   (match stoa  with Some st -> [A.FStorage st] | None -> []) @
     (match inla   with Some i -> [A.FInline i] | None -> []) @
     (match tya    with Some t -> [A.FType t] | None -> []) @
-    (match attras with Some a -> a | None -> [])
+    (List.map (fun x -> A.FAttr x) attras)
 
 (* ------------------------------------------------------------------------- *)
 
@@ -4146,24 +4148,24 @@ and attribute_list attras attrbs =
 and attribute_list attras attrbs =
   X.optional_attributes_flag (fun optional_attributes ->
   match attras,attrbs with
-    None, _ when optional_attributes || attrbs = [] ->
-      return (None, attrbs)
-  | None, _ -> fail
-  | Some [attra], [attrb] ->
+    [], _ when optional_attributes || attrbs = [] ->
+      return ([], attrbs)
+  | [], _ -> fail
+  | [attra], [attrb] ->
     attribute attra attrb >>= (fun attra attrb ->
-      return (Some [attra], [attrb])
+      return ([attra], [attrb])
     )
-  | Some [attra], attrb -> fail
+  | [attra], attrb -> fail
   | _ -> failwith "only one attribute allowed in SmPL")
 
 and attribute = fun ea eb ->
   match ea, eb with
-    (A.FAttr attra), (B.Attribute attrb, ii)
+    attra, (B.Attribute attrb, ii)
       when (A.unwrap_mcode attra) = attrb ->
       let ib1 = tuple_of_list1 ii in
       tokenf attra ib1 >>= (fun attra ib1 ->
 	return (
-	  A.FAttr attra,
+	  attra,
 	  (B.Attribute attrb, [ib1])
         ))
   | _ -> fail

@@ -288,14 +288,14 @@ and disjdecl d =
   | Ast.AsDecl(decl,asdecl) ->
       let decl = disjdecl decl in
       List.map (function decl -> Ast.rewrap d (Ast.AsDecl(decl,asdecl))) decl
-  | Ast.Init(stg,ty,id,eq,ini,sem) ->
+  | Ast.Init(stg,ty,id,attr,eq,ini,sem) ->
       disjmult3 (disjty ty) (disjident id) (disjini ini)
 	(fun ty id ini ->
-	  Ast.rewrap d (Ast.Init(stg,ty,id,eq,ini,sem)))
-  | Ast.UnInit(stg,ty,id,sem) ->
+	  Ast.rewrap d (Ast.Init(stg,ty,id,attr,eq,ini,sem)))
+  | Ast.UnInit(stg,ty,id,attr,sem) ->
       disjmult2 (disjty ty) (disjident id)
 	(fun ty id ->
-	  Ast.rewrap d (Ast.UnInit(stg,ty,id,sem)))
+	  Ast.rewrap d (Ast.UnInit(stg,ty,id,attr,sem)))
   | Ast.FunProto(fninfo,name,lp1,params,va,rp1,sem) ->
       disjmult2 (disjmult disjfninfo fninfo) (disjident name)
 	(fun fninfo name ->

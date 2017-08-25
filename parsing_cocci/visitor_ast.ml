@@ -387,18 +387,20 @@ let combiner bind option_default
 	  let ldecl = declaration decl in
 	  let lasdecl = declaration asdecl in
 	  bind ldecl lasdecl
-      |	Ast.Init(stg,ty,id,eq,ini,sem) ->
+      |	Ast.Init(stg,ty,id,attr,eq,ini,sem) ->
 	  let lstg = get_option storage_mcode stg in
 	  let lid = named_type ty id in
+	  let lattr = multibind (List.map string_mcode attr) in
 	  let leq = string_mcode eq in
 	  let lini = initialiser ini in
 	  let lsem = string_mcode sem in
-	  multibind [lstg; lid; leq; lini; lsem]
-      | Ast.UnInit(stg,ty,id,sem) ->
+	  multibind [lstg; lid; lattr; leq; lini; lsem]
+      | Ast.UnInit(stg,ty,id,attr,sem) ->
 	  let lstg = get_option storage_mcode stg in
 	  let lid = named_type ty id in
+	  let lattr = multibind (List.map string_mcode attr) in
 	  let lsem = string_mcode sem in
-	  multibind [lstg; lid; lsem]
+	  multibind [lstg; lid; lattr; lsem]
       | Ast.FunProto(fi,name,lp1,params,va,rp1,sem) ->
 	  let lfi = List.map fninfo fi in
 	  let lname = ident name in
@@ -1285,20 +1287,22 @@ let rebuilder
 	    let ldecl = declaration decl in
 	    let lasdecl = declaration asdecl in
 	    Ast.AsDecl(ldecl, lasdecl)
-	| Ast.Init(stg,ty,id,eq,ini,sem) ->
+	| Ast.Init(stg,ty,id,attr,eq,ini,sem) ->
 	    let lstg = get_option storage_mcode stg in
 	    let lty = fullType ty in
 	    let lid = ident id in
+	    let lattr = List.map string_mcode attr in
 	    let leq = string_mcode eq in
 	    let lini = initialiser ini in
 	    let lsem = string_mcode sem in
-	    Ast.Init(lstg, lty, lid, leq, lini, lsem)
-	| Ast.UnInit(stg,ty,id,sem) ->
+	    Ast.Init(lstg, lty, lid, lattr, leq, lini, lsem)
+	| Ast.UnInit(stg,ty,id,attr,sem) ->
 	    let lstg = get_option storage_mcode stg in
 	    let lty = fullType ty in
 	    let lid = ident id in
+	    let lattr = List.map string_mcode attr in
 	    let lsem = string_mcode sem in
-	    Ast.UnInit(lstg, lty, lid, lsem)
+	    Ast.UnInit(lstg, lty, lid, lattr, lsem)
 	| Ast.FunProto(fi,name,lp,params,va,rp,sem) ->
 	    let lfi = List.map fninfo fi in
 	    let lname = ident name in
