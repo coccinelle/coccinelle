@@ -136,9 +136,7 @@ behavior.  Using \NT{disable-iso} with the given name disables this behavior.
 \item \KW{optional\_attributes}: This is also similar to
   \KW{optional\_storage}, except that here is it an attribute (e.g.,
   \_\_init) that does not have to be specified in the SmPL code, but may be
-  present in the C code.  \textbf{Note that this isomorphism is currently
-    useless, because matching of attributes is not supported, due to the
-    difficulty of parsing attributes in C code.}
+  present in the C code.
 \item \KW{value\_format}: Integers in various formats, e.g., 1 and 0x1, are
   considered to be equivalent in the matching process.
 \item \KW{optional\_declarer\_semicolon}: Some declarers (top-level terms
@@ -223,7 +221,7 @@ i.e., including as an element of another statement list.
   \CASE{declaration \NT{ids} ;}
   \CASE{field \opt{list} \NT{ids} ;}
   \CASE{typedef \NT{ids} ;}
-  \CASE{attribute \NT{ids} ;}
+  \CASE{attribute name \NT{ids} ;}
   \CASE{declarer name \NT{ids} ;}
 %  \CASE{\opt{local} function \NT{pmid\_with\_not\_eq\_list} ;}
   \CASE{declarer \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_regexp}\mth{)} ;}
@@ -1438,7 +1436,7 @@ the return type is obligatory.
 
   \RULE{\rt{one\_decl}}
   \CASE{\NT{common\_decl}}
-  \CASE{\opt{\NT{storage}} \NT{ctype} \NT{id};}
+  \CASE{\opt{\NT{storage}} \NT{ctype} \NT{id} \opt{\NT{attribute}};}
   \CASE{\NT{OR}\mth{(}\NT{one\_decl}\mth{)}}
   \CASE{\NT{AND}\mth{(}\NT{one\_decl}\mth{)}}
 %  \CASE{\NT{storage} \NT{ctype} \NT{id} \opt{[\opt{\NT{dot\\_expr}}]} = \NT{nest\\_expr};}
@@ -1447,8 +1445,8 @@ the return type is obligatory.
   \RULE{\rt{common\_decl}}
   \CASE{\NT{ctype};}
   \CASE{\NT{funproto}}
-  \CASE{\opt{\NT{storage}} \NT{ctype} \NT{d\_ident} = \NT{initialize} ;}
-  \CASE{\opt{\NT{storage}} \opt{\NT{const\_vol}} \T{id} \NT{d\_ident} = \NT{initialize} ;}
+  \CASE{\opt{\NT{storage}} \NT{ctype} \NT{d\_ident} \opt{\NT{attribute}} = \NT{initialize} ;}
+  \CASE{\opt{\NT{storage}} \opt{\NT{const\_vol}} \T{id} \NT{d\_ident} \opt{\NT{attribute}} = \NT{initialize} ;}
   \CASE{\opt{\NT{storage}} \NT{fn\_ctype} ( * \NT{d\_ident} ) ( \NT{PARAMSEQ}\mth{(}\NT{name\_opt\_decl}, \mth{\varepsilon)} ) ;}
   \CASE{\NT{decl\_ident} ( \OPT{\NT{COMMA\_LIST}\mth{(}\NT{expr}\mth{)}} ) ;}
 
@@ -1483,6 +1481,10 @@ this case, the variable implicitly has type int, and SmPL code
 that declares an int variable will match such a declaration.  On the other
 hand, the implicit int type has no position.  If the SmPL code tries to
 record the position of the type, the match will fail.
+
+An attribute begins with {\tt \_\_} or is declared as an {\tt attribute
+  name} in the semantic patch.  In practice, only one attribute is
+currently allowed after the variable name in a variable declaration.
 
 \section{Statements}
 
