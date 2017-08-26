@@ -821,7 +821,7 @@ delimited_list_len:
       if arity = Ast.NONE && pure = Ast0.Impure
       then (!Data.add_type_name name; [])
       else raise (Semantic_cocci.Semantic "bad typedef")) }
-| TAttribute ids=comma_list(pure_ident_or_meta_ident_nosym)
+| TAttribute TName ids=comma_list(pure_ident_or_meta_ident_nosym)
     { (ids,fun arity (_,name) pure check_meta ->
       if arity = Ast.NONE && pure = Ast0.Impure
       then
