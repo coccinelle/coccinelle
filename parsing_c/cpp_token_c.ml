@@ -481,6 +481,12 @@ let apply_macro_defs
 	if List.mem s dynamic_macs then dynamic_macs else s::dynamic_macs in
       apply_macro_defs dynamic_macs xs
 
+  | PToken ({tok = TIdent (s,i1)} as id)::
+    PToken ({tok = TPtVirg _} | {tok = TEq _})::xs
+      when List.mem s !Flag.cocci_attribute_names ->
+	id.tok <- TMacroEndAttr (s, i1);
+	apply_macro_defs dynamic_macs xs
+
   | PToken ({tok = TIdent (s,i1)} as id)::xs
       when List.mem s !Flag.cocci_attribute_names ->
 	id.tok <- TMacroAttr (s, i1);
