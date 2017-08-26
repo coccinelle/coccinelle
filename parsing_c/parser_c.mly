@@ -1489,7 +1489,7 @@ decl2:
        let iistart = Ast_c.fakeInfo () in
        DeclList ([{v_namei = None; v_type = returnType;
                    v_storage = unwrap storage; v_local = local;
-                   v_attr = fst $1;
+                   v_attr = fst $1; v_endattr = Ast_c.noattr;
                    v_type_bis = ref None;
                 },[]],
                 ($2::iistart::snd storage))
@@ -1499,7 +1499,7 @@ decl2:
        let (returnType,storage) = fixDeclSpecForDecl (snd $1) in
        let iistart = Ast_c.fakeInfo () in
        DeclList (
-         ($2 +> List.map (fun ((((name,f),attrs), ini), iivirg) ->
+         ($2 +> List.map (fun ((((name,f),attrs,endattrs), ini), iivirg) ->
            let s = str_of_name name in
 	   if fst (unwrap storage) = StoTypedef
 	   then LP.add_typedef s;
@@ -1508,6 +1508,7 @@ decl2:
             v_storage = unwrap storage;
             v_local = local;
             v_attr = (fst $1)@attrs;
+            v_endattr = endattrs;
             v_type_bis = ref None;
            },
            iivirg
@@ -1605,15 +1606,15 @@ init_declarator: init_declarator2  { dt "init" (); $1 }
 declaratori:
  | declarator
      { let (attr,dec) = $1 in
-       LP.add_ident (str_of_name (fst dec)); dec, attr }
+       LP.add_ident (str_of_name (fst dec)); dec, attr, [] }
  /*(* gccext: *)*/
  | declarator gcc_asm_decl
      { let (attr,dec) = $1 in
-       LP.add_ident (str_of_name (fst dec)); dec, attr }
+       LP.add_ident (str_of_name (fst dec)); dec, attr, [] }
  /*(* gccext: *)*/
  | declarator end_attributes
      { let (attr,dec) = $1 in
-       LP.add_ident (str_of_name (fst dec)); dec, attr (* TODO *) }
+       LP.add_ident (str_of_name (fst dec)); dec, attr, $2 (* TODO *) }
 
 
 gcc_asm_decl:
@@ -2081,7 +2082,8 @@ cpp_other:
 	 Declaration(
 	 DeclList ([{v_namei = Some (id,NoInit); v_type = ty;
                       v_storage = unwrap sto; v_local = NotLocalDecl;
-                      v_attr = attrs; v_type_bis = ref None;
+                      v_attr = attrs; v_endattr = Ast_c.noattr;
+		      v_type_bis = ref None;
                     },[]],
                    ($5::iistart::snd sto)))
        else
@@ -2307,8 +2309,8 @@ attribute_list:
 
 attributes: attribute_list { $1 }
 
-end_attributes: TTODO { $1 }
- | TMacroEndAttr { snd $1 }
+end_attributes:
+ | TMacroEndAttr { [Attribute (fst $1), [snd $1]] }
 
 comma_opt:
  | TComma {  [$1] }

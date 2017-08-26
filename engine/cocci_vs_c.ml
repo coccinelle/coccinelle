@@ -2417,6 +2417,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
      B.v_storage = (B.StoTypedef, inl);
      B.v_local = local;
      B.v_attr = attrs;
+     B.v_endattr = endattrs;
      B.v_type_bis = typb0bis;
    }, iivirg) ->
 
@@ -2486,6 +2487,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 				  B.v_storage = (B.StoTypedef, inl);
 				  B.v_local = local;
 				  B.v_attr = attrs;
+				  B.v_endattr = endattrs;
 				  B.v_type_bis = typb0bis;
 				},
 				 iivirg),iiptvirgb,iistob)
@@ -2517,6 +2519,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
                         B.v_storage = (B.StoTypedef, inl);
                         B.v_local = local;
                         B.v_attr = attrs;
+                        B.v_endattr = endattrs;
                         B.v_type_bis = typb0bis;
                      },
                       iivirg),iiptvirgb,iistob)
@@ -2549,12 +2552,13 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_storage = stob;
        B.v_local = local;
        B.v_attr = attrs;
+       B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
      }, iivirg) ->
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
        fullType typa typb >>= (fun typa typb ->
        ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
-       attribute_list attrsa attrs >>= (fun attrsa attrs ->
+       attribute_list attrsa endattrs >>= (fun attrsa endattrs ->
        storage_optional_allminus allminus stoa (stob, iistob) >>=
         (fun stoa (stob, iistob) ->
          return (
@@ -2564,6 +2568,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
               B.v_storage = stob;
               B.v_local = local;
               B.v_attr = attrs;
+              B.v_endattr = endattrs;
               B.v_type_bis = typbbis;
            },iivirg),
 	    iiptvirgb,iistob)
@@ -2575,14 +2580,14 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_storage = stob;
        B.v_local = local;
        B.v_attr = attrs;
+       B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
-     },iivirg)
-       ->
+     },iivirg) ->
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
        tokenf eqa iieqb >>= (fun eqa iieqb ->
        fullType typa typb >>= (fun typa typb ->
        ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
-       attribute_list attrsa attrs >>= (fun attras attrs ->
+       attribute_list attrsa endattrs >>= (fun attrsa endattrs ->
        storage_optional_allminus allminus stoa (stob, iistob) >>=
        (fun stoa (stob, iistob) ->
        initialiser inia inib >>= (fun inia inib ->
@@ -2593,6 +2598,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
               B.v_storage = stob;
               B.v_local = local;
               B.v_attr = attrs;
+              B.v_endattr = endattrs;
               B.v_type_bis = typbbis;
            },iivirg),
            iiptvirgb,iistob)
@@ -2604,6 +2610,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_storage = stob;
        B.v_local = local;
        B.v_attr = attrs;
+       B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
      },iivirg)
        -> fail (* C++ constructor declaration not supported in SmPL *)
@@ -2616,6 +2623,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_storage = stob;
        B.v_local = local;
        B.v_attr = attrs;
+       B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
      }, iivirg) ->
        (match (va,isvaargs) with
@@ -2654,6 +2662,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 		  B.v_storage = stob;
 		  B.v_local = local;
 		  B.v_attr = attrs;
+		  B.v_endattr = endattrs;
 		  B.v_type_bis = typbbis;
 		}, iivirg), iiptvirgb, iistob))))
 	      )))))))))
@@ -2664,6 +2673,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_storage = stob;
        B.v_local = local;
        B.v_attr = attrs;
+       B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
      }, iivirg)  ->
 
@@ -2678,6 +2688,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
                 B.v_storage = stob;
                 B.v_local = local;
                 B.v_attr = attrs;
+                B.v_endattr = endattrs;
                 B.v_type_bis = typbbis;
              }, iivirg), iiptvirgb, iistob)
            )))
@@ -2690,6 +2701,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_storage = (B.StoTypedef,inline);
        B.v_local = local;
        B.v_attr = attrs;
+       B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
      },iivirg) ->
 
@@ -2743,6 +2755,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
               B.v_storage = (B.StoTypedef,inline);
               B.v_local = local;
               B.v_attr = attrs;
+              B.v_endattr = endattrs;
               B.v_type_bis = typbbis;
            },
 	     iivirg),

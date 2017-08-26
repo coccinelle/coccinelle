@@ -572,6 +572,7 @@ and declaration =
          v_storage: storage;
          v_local: local_decl; (* cocci: *)
          v_attr: attribute list; (* gccext: *)
+         v_endattr: attribute list; (* gccext: *)
        }
      and v_init =
        NoInit | ValInit of info * initialiser
