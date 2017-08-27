@@ -964,8 +964,21 @@ let header_cache = ("header_cache", ref 0, Hashtbl.create(101))
 let tree_stack = ref []
 let seen_files = ref []
 
+let normalize file =
+  let pieces = Str.split_delim (Str.regexp "/") file in
+  let rec loop prev = function
+      [] -> String.concat "/" (List.rev prev)
+    | ".."::rest ->
+	(match prev with
+	  ".."::xs -> loop (".."::prev) rest
+	| x::xs -> loop xs rest
+	| _ -> loop (".."::prev) rest)
+    | x::rest -> loop (x::prev) rest in
+  loop [] pieces
+
 let rec _parse_print_error_heuristic2 saved_typedefs saved_macros
   parse_strings cache file use_header_cache =
+  let file = normalize file in
   if List.mem file !seen_files
   then None (* Inclusion loop, not re-parsing *)
   else begin
