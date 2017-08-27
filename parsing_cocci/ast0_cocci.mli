@@ -210,6 +210,8 @@ and base_typeC =
   | AsType          of typeC * typeC (* as type, always metavar *)
   | DisjType        of string mcode * typeC list * (* only after iso *)
                        string mcode list (* the |s *)  * string mcode
+  | ConjType        of string mcode * typeC list * (* only after iso *)
+                       string mcode list (* the |s *)  * string mcode
   | OptType         of typeC
 
 and typeC = base_typeC wrap

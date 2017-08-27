@@ -479,6 +479,18 @@ and top_typeC tgt opt_allowed typ =
       |	_ -> ());
       let res = Ast0.DisjType(starter,types,mids,ender) in
       Ast0.rewrap typ res
+  | Ast0.ConjType(starter,types,mids,ender) ->
+      (match types with
+	t::ts ->
+	  let t = typeC tgt t in
+	  let arity =
+	    match Ast0.unwrap t with
+	      Ast0.OptType _ -> Ast0.OPT
+	    | _ -> Ast0.NONE in
+	  let ts = List.map (typeC arity) ts in
+	  let res = Ast0.ConjType(starter,t::ts,mids,ender) in
+	  Ast0.rewrap typ res
+      |	_ -> typ)
   | Ast0.OptType(_) | Ast0.AsType _ ->
       failwith "unexpected code"
 

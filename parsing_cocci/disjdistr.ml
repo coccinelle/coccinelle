@@ -54,6 +54,9 @@ let rec disjty ft =
       let ty = disjty ty in
       List.map (function ty -> Ast.rewrap ft (Ast.AsType(ty,asty))) ty
   | Ast.DisjType(types) -> List.concat (List.map disjty types)
+  | Ast.ConjType(types) ->
+      let types = disjmult disjty types in
+      List.map (function types -> Ast.rewrap ft (Ast.ConjType(types))) types
   | Ast.OptType(ty) ->
       let ty = disjty ty in
       List.map (function ty -> Ast.rewrap ft (Ast.OptType(ty))) ty

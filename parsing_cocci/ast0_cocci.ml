@@ -216,7 +216,9 @@ and base_typeC =
   | TypeName        of string mcode
   | MetaType        of Ast.meta_name mcode * constraints * pure
   | AsType          of typeC * typeC (* as type, always metavar *)
-  | DisjType        of string mcode * typeC list * (* only after iso *)
+  | DisjType        of string mcode * typeC list *
+                       string mcode list (* the |s *)  * string mcode
+  | ConjType        of string mcode * typeC list *
                        string mcode list (* the |s *)  * string mcode
   | OptType         of typeC
 

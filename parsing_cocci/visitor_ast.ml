@@ -292,7 +292,8 @@ let combiner bind option_default
 	  let lty = fullType ty in
 	  let lasty = fullType asty in
 	  bind lty lasty
-      | Ast.DisjType(types) -> multibind (List.map fullType types)
+      | Ast.DisjType(types) | Ast.ConjType(types) ->
+	  multibind (List.map fullType types)
       | Ast.OptType(ty) -> fullType ty in
     ftfn all_functions k ft
 
@@ -1210,6 +1211,7 @@ let rebuilder
 	    let lasty = fullType asty in
 	    Ast.AsType(lty, lasty)
 	| Ast.DisjType(types) -> Ast.DisjType(List.map fullType types)
+	| Ast.ConjType(types) -> Ast.ConjType(List.map fullType types)
 	| Ast.OptType(ty) -> Ast.OptType(fullType ty)) in
     ftfn all_functions k ft
 

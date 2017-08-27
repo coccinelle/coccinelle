@@ -382,8 +382,8 @@ let classify is_minus all_marked table code =
 	  disj_cases e starter expr_list r.VT0.combiner_rec_expression ender
       |	_ -> k e) in
 
-  (* not clear why we have the next two cases, since DisjDecl and
-  DisjType shouldn't have been constructed yet, as they only come from isos *)
+  (* not clear why we have the next cases, since DisjDecl and
+  as it only comes from isos *)
   (* actually, DisjDecl now allowed in source struct decls *)
   let declaration r k e =
     compute_result Ast0.decl e
@@ -438,7 +438,8 @@ let classify is_minus all_marked table code =
   let typeC r k e =
     compute_result Ast0.typeC e
       (match Ast0.unwrap e with
-	Ast0.DisjType(starter,types,_,ender) ->
+	Ast0.DisjType(starter,types,_,ender)
+      | Ast0.ConjType(starter,types,_,ender) ->
 	  disj_cases e starter types r.VT0.combiner_rec_typeC ender
       |	_ -> k e) in
 
@@ -664,6 +665,11 @@ let equal_typeC t1 t2 =
       equal_mcode name1 name2
   | (Ast0.DisjType(starter1,_,mids1,ender1),
      Ast0.DisjType(starter2,_,mids2,ender2)) ->
+       equal_mcode starter1 starter2 &&
+       List.for_all2 equal_mcode mids1 mids2 &&
+       equal_mcode ender1 ender2
+  | (Ast0.ConjType(starter1,_,mids1,ender1),
+     Ast0.ConjType(starter2,_,mids2,ender2)) ->
        equal_mcode starter1 starter2 &&
        List.for_all2 equal_mcode mids1 mids2 &&
        equal_mcode ender1 ender2

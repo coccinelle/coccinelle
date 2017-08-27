@@ -135,6 +135,7 @@ let dumb_astcocci_fulltype = function
     A.Type(_,cv,ty) -> ()
   | A.AsType(_,_) -> ()
   | A.DisjType(types) -> ()
+  | A.ConjType(types) -> ()
   | A.OptType(ty) -> ()
 
 let dumb_astcocci_type = function

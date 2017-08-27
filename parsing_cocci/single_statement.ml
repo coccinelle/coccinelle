@@ -174,6 +174,7 @@ and left_typeC t =
   | Ast0.TypeName(name) -> modif_before_mcode name
   | Ast0.MetaType(name,_,_) -> modif_before_mcode name
   | Ast0.DisjType(lp,types,mids,rp) -> List.exists left_typeC types
+  | Ast0.ConjType(lp,types,mids,rp) -> List.exists left_typeC types
   | Ast0.OptType(ty) -> left_typeC ty
   | Ast0.AsType _ -> failwith "not possible"
 
@@ -426,6 +427,8 @@ and contains_only_minus =
     match Ast0.unwrap e with
       Ast0.DisjType(starter,types,mids,ender) ->
 	List.for_all r.VT0.combiner_rec_typeC types
+    | Ast0.ConjType(starter,types,mids,ender) ->
+	List.exists r.VT0.combiner_rec_typeC types
     | _ -> k e in
 
   let statement r k e =

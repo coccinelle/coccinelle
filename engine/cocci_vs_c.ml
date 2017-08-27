@@ -3414,6 +3414,14 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
       typas +>
       List.fold_left (fun acc typa -> acc >|+|> (fullType typa typb)) fail
 
+  | A.ConjType typas, typb ->
+      let rec loop acc_ty typb = function
+	  [] -> return (A.ConjType (List.rev acc_ty) +> A.rewrap typa, typb)
+	| t::ts ->
+	    fullType t typb >>= (fun t typb ->
+	      loop (t::acc_ty) typb ts) in
+      loop [] typb typas
+
    | A.OptType(_), _ -> failwith "not handling Opt on type"
    )
 
@@ -3827,7 +3835,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 			       +> A.rewrap s in
 			   return (ty,[iisub])))
 		   | _ -> fail)
-	       | A.DisjType(disjs) ->
+	       | A.DisjType(disjs) -> (* do we need a conj type case here? *)
 		   disjs +>
 		   List.fold_left (fun acc disj -> acc >|+|> (loop disj)) fail
 	       | _ -> fail in
@@ -3927,7 +3935,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 			     +> A.rewrap s in
 			 return (ty,[iisub]))
 		   | _ -> fail)
-	       | A.DisjType(disjs) ->
+	       | A.DisjType(disjs) -> (* do we need a conj type case here? *)
 		   disjs +>
 		   List.fold_left (fun acc disj -> acc >|+|> (loop disj)) fail
 	       | _ -> fail in

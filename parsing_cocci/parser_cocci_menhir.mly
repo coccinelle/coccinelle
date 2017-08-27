@@ -1019,6 +1019,10 @@ ctype:
     { let (mids,code) = t in
       Ast0.wrap
 	(Ast0.DisjType(P.id2mcode lp,code,mids, P.id2mcode rp)) }
+| lp=TOPar0 t=andzero_list(ctype,ctype) rp=TCPar0
+    { let (mids,code) = t in
+      Ast0.wrap
+	(Ast0.ConjType(P.id2mcode lp,code,mids, P.id2mcode rp)) }
 
 mul: a=TMul b=ioption(const_vol) { (a,b) }
 

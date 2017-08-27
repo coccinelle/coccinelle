@@ -182,6 +182,7 @@ let rec type_pos t snp
         "pos_gen: Mixed match/patch type disjunctions not supported " ^
         "in position generator."
       )
+  | Ast0.ConjType(lp,tlist,pipelist,rp) -> None (* not sure *)
   | Ast0.ConstVol(const,t) ->
       let constructor ~item = Ast0.ConstVol(const,item) in
       item_wrap ~item:t ~item_posfn:type_pos ~constructor snp

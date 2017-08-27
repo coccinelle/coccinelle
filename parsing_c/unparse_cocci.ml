@@ -675,7 +675,7 @@ and fullType ft =
       |	_ -> print_option_space (mcode const_vol) cv; typeC ty)
 
   | Ast.AsType(ty, asty) -> fullType ty
-  | Ast.DisjType _ -> failwith "can't be in plus"
+  | Ast.DisjType _ | Ast.ConjType _ -> raise CantBeInPlus
   | Ast.OptType(_) -> raise CantBeInPlus
 
 and print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2) fn =

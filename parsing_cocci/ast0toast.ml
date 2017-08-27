@@ -228,8 +228,10 @@ let check_allminus =
 
   let typeC r k e =
     match Ast0.unwrap e with
-      Ast0.DisjType(starter,decls,mids,ender) ->
-	List.for_all r.VT0.combiner_rec_typeC decls
+      Ast0.DisjType(starter,type_list,mids,ender) ->
+	List.for_all r.VT0.combiner_rec_typeC type_list
+    | Ast0.ConjType(starter,type_list,mids,ender) ->
+	List.for_all r.VT0.combiner_rec_typeC type_list
     | Ast0.AsType(ty,asty) -> k ty
     | _ -> k e in
 
@@ -549,6 +551,8 @@ and typeC allminus t =
 	Ast.Type(allminus,None,rewrap t no_isos (base_typeC allminus t))
     | Ast0.DisjType(_,types,_,_) ->
 	Ast.DisjType(List.map (typeC allminus) types)
+    | Ast0.ConjType(_,types,_,_) ->
+	Ast.ConjType(List.map (typeC allminus) types)
     | Ast0.AsType(ty,asty) ->
 	Ast.AsType(typeC allminus ty,typeC allminus asty)
     | Ast0.OptType(ty) -> Ast.OptType(typeC allminus ty))

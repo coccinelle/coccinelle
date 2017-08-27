@@ -300,6 +300,10 @@ and unify_fullType ft1 ft2 =
       disjunct_all_bindings (List.map (function x -> unify_fullType x ft2) ft1)
   | (_,Ast.DisjType(ft2)) ->
       disjunct_all_bindings (List.map (function x -> unify_fullType ft1 x) ft2)
+  | (Ast.ConjType(ft1),_) ->
+      conjunct_all_bindings (List.map (function x -> unify_fullType x ft2) ft1)
+  | (_,Ast.ConjType(ft2)) ->
+      conjunct_all_bindings (List.map (function x -> unify_fullType ft1 x) ft2)
 
   | (Ast.OptType(_),_)
   | (_,Ast.OptType(_)) -> failwith "unsupported type"

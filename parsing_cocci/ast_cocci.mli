@@ -301,7 +301,8 @@ and base_fullType =
     Type            of bool (* true if all minus *) *
                        const_vol mcode option * typeC
   | AsType          of fullType * fullType (* as type, always metavar *)
-  | DisjType        of fullType list (* only after iso *)
+  | DisjType        of fullType list
+  | ConjType        of fullType list
   | OptType         of fullType
 
 and base_typeC =

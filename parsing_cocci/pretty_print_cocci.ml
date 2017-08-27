@@ -381,6 +381,7 @@ and fullType ft =
 	  typeC ty)
   | Ast.AsType(ty,asty) -> fullType ty; print_string "@"; fullType asty
   | Ast.DisjType(decls) -> print_disj_list fullType decls "|"
+  | Ast.ConjType(decls) -> print_disj_list fullType decls "&"
   | Ast.OptType(ty) -> print_string "?"; fullType ty
 
 and print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2) fn =

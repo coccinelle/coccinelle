@@ -380,6 +380,10 @@ let visitor mode bind option_default
 	    do_disj starter types mids ender typeC
 	      (fun starter types mids ender ->
 		Ast0.DisjType(starter,types,mids,ender))
+	| Ast0.ConjType(starter,types,mids,ender) ->
+	    do_disj starter types mids ender typeC
+	      (fun starter types mids ender ->
+		Ast0.ConjType(starter,types,mids,ender))
 	| Ast0.OptType(ty) ->
 	    let (ty_n,ty) = typeC ty in (ty_n, Ast0.OptType(ty))
 	| Ast0.AsType(ty,asty) ->

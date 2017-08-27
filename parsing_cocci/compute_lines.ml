@@ -624,6 +624,10 @@ and typeC t =
       do_disj t starter types mids ender typeC
 	(fun starter types mids ender ->
 	  Ast0.DisjType(starter,types,mids,ender))
+  | Ast0.ConjType(starter,types,mids,ender) ->
+      do_disj t starter types mids ender typeC
+	(fun starter types mids ender ->
+	  Ast0.ConjType(starter,types,mids,ender))
   | Ast0.OptType(ty) ->
       let ty = typeC ty in mkres t (Ast0.OptType(ty)) ty ty
   | Ast0.AsType _ -> failwith "not possible"

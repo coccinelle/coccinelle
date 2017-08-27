@@ -229,7 +229,8 @@ and typeC old_metas table minus t =
   | Ast0.MetaType(name,_,_) ->
       check_table table minus name
   | Ast0.AsType(ty,asty) -> failwith "not generated yet"
-  | Ast0.DisjType(_,types,_,_) ->
+  | Ast0.DisjType(_,types,_,_)
+  | Ast0.ConjType(_,types,_,_) ->
       List.iter (typeC old_metas table minus) types
   | Ast0.EnumName(en,Some id) -> ident GLOBAL old_metas table minus id
   | Ast0.EnumDef(ty,lb,ids,rb) ->
@@ -607,7 +608,8 @@ let dup_positions rules =
 
   let typeC r k e = (* not sure relevant because "only after iso" *)
     match Ast0.unwrap e with
-      Ast0.DisjType(_,types,_,_) ->
+      Ast0.DisjType(_,types,_,_)
+    | Ast0.ConjType(_,types,_,_) ->
 	List.fold_left Common.union_set option_default
 	  (List.map r.VT0.combiner_rec_typeC types)
     | _ -> k e in

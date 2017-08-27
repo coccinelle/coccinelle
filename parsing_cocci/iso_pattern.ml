@@ -905,7 +905,8 @@ let match_maker checks_needed context_required whencode_allowed =
 	      if mcode_equal namea nameb
 	      then check_mcode namea nameb
 	      else return false
-	  | (Ast0.DisjType(_,typesa,_,_),_) ->
+	  | (Ast0.DisjType(_,typesa,_,_),_)
+	  | (Ast0.ConjType(_,typesa,_,_),_) ->
 	      failwith "not allowed in the pattern of an isomorphism"
 	  | (Ast0.OptType(tya),Ast0.OptType(tyb)) -> match_typeC tya tyb
 	  | (_,Ast0.OptType(tyb)) -> match_typeC pattern tyb
@@ -1810,6 +1811,9 @@ let instantiate bindings mv_bindings model =
                       | Ast0.DisjType (s0, ty', s1, s2) ->
                           let ty'' = List.map renamer ty' in
                           Ast0.rewrap ty (Ast0.DisjType (s0, ty'', s1, s2))
+                      | Ast0.ConjType (s0, ty', s1, s2) ->
+                          let ty'' = List.map renamer ty' in
+                          Ast0.rewrap ty (Ast0.ConjType (s0, ty'', s1, s2))
                       | Ast0.OptType ty' ->
                           Ast0.rewrap ty (Ast0.OptType (renamer ty'))
                       | Ast0.BaseType(_, _)

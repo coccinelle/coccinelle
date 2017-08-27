@@ -190,7 +190,8 @@ let rec left_ty t =
   | Ast0.MetaType(name,cstr,x) ->
       call_right left_mcode name t (function name -> Ast0.MetaType(name,cstr,x))
   | Ast0.AsType(ty,asty) -> failwith "not possible"
-  | Ast0.DisjType(starter,types,mids,ender) -> None
+  | Ast0.DisjType(starter,types,mids,ender)
+  | Ast0.ConjType(starter,types,mids,ender) -> None
   | Ast0.OptType(ty) ->
       call_right left_ty ty t (function ty -> Ast0.OptType(ty))
 

@@ -319,7 +319,8 @@ and base_fullType =
     Type            of bool (* true if all minus *) *
 	               const_vol mcode option * typeC
   | AsType          of fullType * fullType (* as type, always metavar *)
-  | DisjType        of fullType list (* only after iso *)
+  | DisjType        of fullType list
+  | ConjType        of fullType list
   | OptType         of fullType
 
 and base_typeC =
@@ -1092,6 +1093,7 @@ and string_of_fullType ty =
       string_of_const_vol (unwrap_mcode const_vol) ^ " " ^ string_of_typeC ty'
   | AsType (ty', _) -> string_of_fullType ty'
   | DisjType l -> String.concat "|" (List.map string_of_fullType l)
+  | ConjType l -> String.concat "&" (List.map string_of_fullType l)
   | OptType ty -> string_of_fullType ty ^ "?"
 
 let typeC_of_fullType_opt ty =
@@ -1131,6 +1133,7 @@ let rec fullType_map tr ty =
     | AsType (ty0, ty1) ->
         AsType (fullType_map tr ty0, fullType_map tr ty1)
     | DisjType l -> DisjType (List.map (fullType_map tr) l)
+    | ConjType l -> ConjType (List.map (fullType_map tr) l)
     | OptType ty' -> OptType (fullType_map tr ty')
   end
 and typeC_map tr ty =
@@ -1191,6 +1194,7 @@ let rec fullType_fold tr ty v =
       let v' = fullType_fold tr ty0 v in
       fullType_fold tr ty1 v'
   | DisjType l -> List.fold_left (fun v' ty' -> fullType_fold tr ty' v') v l
+  | ConjType l -> List.fold_left (fun v' ty' -> fullType_fold tr ty' v') v l
   | OptType ty' -> fullType_fold tr ty' v
 and typeC_fold tr ty v =
   match unwrap ty with
