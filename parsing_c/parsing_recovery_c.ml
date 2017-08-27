@@ -73,7 +73,7 @@ let rec find_next_synchro ~next ~already_passed =
       | _ -> true
     )
   in
-  find_next_synchro_orig (after @ next)  (List.rev before)
+  find_next_synchro_orig (after @ next) (List.rev before)
 
 
 
@@ -97,7 +97,8 @@ and find_next_synchro_orig next already_passed =
       pr2_err "ERROR-RECOV: end of file while in recovery mode";
       already_passed, []
 
-  | (Parser_c.TCBrace i as v)::xs when TH.col_of_tok v = 0 ->
+  | (Parser_c.TCBrace i as v)::xs
+    when TH.col_of_tok v = 0 && Ast_c.is_origintok i (*skip } in macro*) ->
       pr2_err ("ERROR-RECOV: found sync '}' at line "^string_of_int (TH.line_of_tok v));
 
       (match xs with

@@ -400,16 +400,24 @@ let classify is_minus all_marked table code =
 	   term structure.  In (all?) other such cases, we visit the terms
 	   using rebuilder, which just visits the subterms, rather than
 	   reordering their components. *)
-      |	Ast0.Init(stg,ty,id,eq,ini,sem) ->
+      |	Ast0.Init(stg,ty,id,attr,eq,ini,sem) ->
 	  bind (match stg with Some stg -> mcode stg | _ -> option_default)
 	    (bind (r.VT0.combiner_rec_typeC ty)
 	       (bind (r.VT0.combiner_rec_ident id)
-		  (bind (mcode eq)
-		     (bind (r.VT0.combiner_rec_initialiser ini) (mcode sem)))))
-      | Ast0.UnInit(stg,ty,id,sem) ->
+                  (bind
+                     (List.fold_right bind (List.map mcode attr)
+			option_default)
+		     (bind (mcode eq)
+			(bind (r.VT0.combiner_rec_initialiser ini)
+			   (mcode sem))))))
+      | Ast0.UnInit(stg,ty,id,attr,sem) ->
 	  bind (match stg with Some stg -> mcode stg | _ -> option_default)
 	    (bind (r.VT0.combiner_rec_typeC ty)
-	       (bind (r.VT0.combiner_rec_ident id) (mcode sem)))
+	       (bind (r.VT0.combiner_rec_ident id)
+                  (bind
+                     (List.fold_right bind (List.map mcode attr)
+			option_default)
+		     (mcode sem))))
       |	_ -> k e) in
 
   let field r k e =
@@ -688,10 +696,13 @@ let equal_declaration d1 d2 =
   match (Ast0.unwrap d1,Ast0.unwrap d2) with
     (Ast0.MetaDecl(name1,_,_),Ast0.MetaDecl(name2,_,_)) ->
       equal_mcode name1 name2
-  | (Ast0.Init(stg1,_,_,eq1,_,sem1),Ast0.Init(stg2,_,_,eq2,_,sem2)) ->
-      equal_option stg1 stg2 && equal_mcode eq1 eq2 && equal_mcode sem1 sem2
-  | (Ast0.UnInit(stg1,_,_,sem1),Ast0.UnInit(stg2,_,_,sem2)) ->
-      equal_option stg1 stg2 && equal_mcode sem1 sem2
+  | (Ast0.Init(stg1,_,_,attr1,eq1,_,sem1),
+     Ast0.Init(stg2,_,_,attr2,eq2,_,sem2)) ->
+      equal_option stg1 stg2 && List.for_all2 equal_mcode attr1 attr2 &&
+      equal_mcode eq1 eq2 && equal_mcode sem1 sem2
+  | (Ast0.UnInit(stg1,_,_,attr1,sem1),Ast0.UnInit(stg2,_,_,attr2,sem2)) ->
+      equal_option stg1 stg2 && List.for_all2 equal_mcode attr1 attr2 &&
+      equal_mcode sem1 sem2
   | (Ast0.FunProto(fninfo1,name1,lp1,p1,va1,rp1,sem1),
      Ast0.FunProto(fninfo2,name2,lp2,p2,va2,rp2,sem2)) ->
        let equal_varargs va1 va2 = match (va1,va2) with

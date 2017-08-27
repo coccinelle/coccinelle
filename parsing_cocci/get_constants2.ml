@@ -501,6 +501,10 @@ let do_get_constants constants keywords env (neg_pos,_) =
     | Ast.DisjDecl(decls) ->
 	disj_union_all (List.map r.V.combiner_declaration decls)
     | Ast.OptDecl(decl) -> option_default
+    (* need things with explicit names too *)
+    | Ast.Init(_,_,_,attr,_,_,_) | Ast.UnInit(_,_,_,attr,_) ->
+	List.fold_left bind (k d)
+	  (List.map (fun attr -> constants (Ast.unwrap_mcode attr)) attr)
     | _ -> k d in
 
   let field r k d =

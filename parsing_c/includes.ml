@@ -126,7 +126,9 @@ let interpret_include_path relpath =
 	let res = search_path unique_file_exists searchlist relpath in
 	cache_add include_table (searchlist,relpath) res;
 	(if res = None
-	then Printf.eprintf "failed on %s\n" (String.concat "/" relpath));
+	then
+	  Common.pr2
+	    (Printf.sprintf "failed on %s\n" (String.concat "/" relpath)));
 	res
     | (Some _) as res ->
 	cache_add include_table (searchlist,relpath) res;

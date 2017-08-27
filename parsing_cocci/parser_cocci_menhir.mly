@@ -821,7 +821,7 @@ delimited_list_len:
       if arity = Ast.NONE && pure = Ast0.Impure
       then (!Data.add_type_name name; [])
       else raise (Semantic_cocci.Semantic "bad typedef")) }
-| TAttribute ids=comma_list(pure_ident_or_meta_ident_nosym)
+| TAttribute TName ids=comma_list(pure_ident_or_meta_ident_nosym)
     { (ids,fun arity (_,name) pure check_meta ->
       if arity = Ast.NONE && pure = Ast0.Impure
       then
@@ -1640,12 +1640,14 @@ decl_var:
   | s=ioption(storage) t=ctype d=comma_list(d_ident) pv=TPtVirg
       { List.map
 	  (function (id,fn) ->
-	    Ast0.wrap(Ast0.UnInit(s,fn t,id,P.clt2mcode ";" pv)))
+	    Ast0.wrap(Ast0.UnInit(s,fn t,id,[],P.clt2mcode ";" pv)))
 	  d }
   | f=funproto { [f] }
-  | s=ioption(storage) t=ctype d=d_ident q=TEq e=initialize pv=TPtVirg
+  | s=ioption(storage) t=ctype d=d_ident a=attr_list q=TEq e=initialize
+      pv=TPtVirg
       {let (id,fn) = d in
-      [Ast0.wrap(Ast0.Init(s,fn t,id,P.clt2mcode "=" q,e,P.clt2mcode ";" pv))]}
+      [Ast0.wrap
+	  (Ast0.Init(s,fn t,id,a,P.clt2mcode "=" q,e,P.clt2mcode ";" pv))]}
   /* type is a typedef name */
   | s=ioption(storage) cv=ioption(const_vol) i=pure_ident_or_symbol
       d=comma_list(d_ident) pv=TPtVirg
@@ -1653,14 +1655,14 @@ decl_var:
 	  (function (id,fn) ->
 	    let idtype =
 	      P.make_cv cv (Ast0.wrap (Ast0.TypeName(P.id2mcode i))) in
-	    Ast0.wrap(Ast0.UnInit(s,fn idtype,id,P.clt2mcode ";" pv)))
+	    Ast0.wrap(Ast0.UnInit(s,fn idtype,id,[],P.clt2mcode ";" pv)))
 	  d }
   | s=ioption(storage) cv=ioption(const_vol) i=pure_ident_or_symbol
-      d=d_ident q=TEq e=initialize pv=TPtVirg
+      d=d_ident a=attr_list q=TEq e=initialize pv=TPtVirg
       { let (id,fn) = d in
       !Data.add_type_name (P.id2name i);
       let idtype = P.make_cv cv (Ast0.wrap (Ast0.TypeName(P.id2mcode i))) in
-      [Ast0.wrap(Ast0.Init(s,fn idtype,id,P.clt2mcode "=" q,e,
+      [Ast0.wrap(Ast0.Init(s,fn idtype,id,a,P.clt2mcode "=" q,e,
 			   P.clt2mcode ";" pv))] }
   /* function pointer type */
   | s=ioption(storage)
@@ -1673,7 +1675,7 @@ decl_var:
 	    (Ast0.FunctionPointer
 	       (t,P.clt2mcode "(" lp1,P.clt2mcode "*" st,P.clt2mcode ")" rp1,
 		P.clt2mcode "(" lp2,p,P.clt2mcode ")" rp2)) in
-        [Ast0.wrap(Ast0.UnInit(s,fn t,id,P.clt2mcode ";" pv))] }
+        [Ast0.wrap(Ast0.UnInit(s,fn t,id,[],P.clt2mcode ";" pv))] }
   | s=ioption(storage) d=decl_ident o=TOPar e=eexpr_list_option c=TCPar
       p=TPtVirg
       { [Ast0.wrap(Ast0.MacroDecl(s,d,P.clt2mcode "(" o,e,
@@ -1696,7 +1698,8 @@ decl_var:
 	    (Ast0.FunctionPointer
 	       (t,P.clt2mcode "(" lp1,P.clt2mcode "*" st,P.clt2mcode ")" rp1,
 		P.clt2mcode "(" lp2,p,P.clt2mcode ")" rp2)) in
-      [Ast0.wrap(Ast0.Init(s,fn t,id,P.clt2mcode "=" q,e,P.clt2mcode ";" pv))]}
+      [Ast0.wrap
+	  (Ast0.Init(s,fn t,id,[],P.clt2mcode "=" q,e,P.clt2mcode ";" pv))]}
   | s=Ttypedef t=typedef_ctype id=comma_list(typedef_ident) pv=TPtVirg
       { let s = P.clt2mcode "typedef" s in
         List.map
@@ -1708,25 +1711,27 @@ one_decl_var:
     t=ctype pv=TPtVirg
       { Ast0.wrap(Ast0.TyDecl(t,P.clt2mcode ";" pv)) }
   | TMetaDecl { P.meta_decl $1 }
-  | s=ioption(storage) t=ctype d=d_ident pv=TPtVirg
+  | s=ioption(storage) t=ctype d=d_ident a=attr_list pv=TPtVirg
       { let (id,fn) = d in
-        Ast0.wrap(Ast0.UnInit(s,fn t,id,P.clt2mcode ";" pv)) }
+        Ast0.wrap(Ast0.UnInit(s,fn t,id,a,P.clt2mcode ";" pv)) }
   | f=funproto { f }
-  | s=ioption(storage) t=ctype d=d_ident q=TEq e=initialize pv=TPtVirg
+  | s=ioption(storage) t=ctype d=d_ident a=attr_list q=TEq e=initialize
+      pv=TPtVirg
       { let (id,fn) = d in
-      Ast0.wrap(Ast0.Init(s,fn t,id,P.clt2mcode "=" q,e,P.clt2mcode ";" pv)) }
+      Ast0.wrap
+	(Ast0.Init(s,fn t,id,a,P.clt2mcode "=" q,e,P.clt2mcode ";" pv)) }
   /* type is a typedef name */
   | s=ioption(storage) cv=ioption(const_vol) i=pure_ident_or_symbol
-      d=d_ident pv=TPtVirg
+      d=d_ident a=attr_list pv=TPtVirg
       { let (id,fn) = d in
         let idtype = P.make_cv cv (Ast0.wrap (Ast0.TypeName(P.id2mcode i))) in
-	Ast0.wrap(Ast0.UnInit(s,fn idtype,id,P.clt2mcode ";" pv)) }
+	Ast0.wrap(Ast0.UnInit(s,fn idtype,id,a,P.clt2mcode ";" pv)) }
   | s=ioption(storage) cv=ioption(const_vol) i=pure_ident_or_symbol
-      d=d_ident q=TEq e=initialize pv=TPtVirg
+      d=d_ident a=attr_list q=TEq e=initialize pv=TPtVirg
       { let (id,fn) = d in
       !Data.add_type_name (P.id2name i);
       let idtype = P.make_cv cv (Ast0.wrap (Ast0.TypeName(P.id2mcode i))) in
-      Ast0.wrap(Ast0.Init(s,fn idtype,id,P.clt2mcode "=" q,e,
+      Ast0.wrap(Ast0.Init(s,fn idtype,id,a,P.clt2mcode "=" q,e,
 			   P.clt2mcode ";" pv)) }
   /* function pointer type */
   | s=ioption(storage)
@@ -1739,7 +1744,7 @@ one_decl_var:
 	    (Ast0.FunctionPointer
 	       (t,P.clt2mcode "(" lp1,P.clt2mcode "*" st,P.clt2mcode ")" rp1,
 		P.clt2mcode "(" lp2,p,P.clt2mcode ")" rp2)) in
-        Ast0.wrap(Ast0.UnInit(s,fn t,id,P.clt2mcode ";" pv)) }
+        Ast0.wrap(Ast0.UnInit(s,fn t,id,[],P.clt2mcode ";" pv)) }
   | s=ioption(storage) d=decl_ident o=TOPar e=eexpr_list_option c=TCPar
       p=TPtVirg
       { Ast0.wrap(Ast0.MacroDecl(s,d,P.clt2mcode "(" o,e,
@@ -1754,7 +1759,7 @@ one_decl_var:
                 P.clt2mcode ";" p)) }
   | s=ioption(storage)
     t=ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
-    lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar
+    lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar a=attr_list
     q=TEq e=initialize pv=TPtVirg
       { let (id,fn) = d in
         let t =
@@ -1762,7 +1767,7 @@ one_decl_var:
 	    (Ast0.FunctionPointer
 	       (t,P.clt2mcode "(" lp1,P.clt2mcode "*" st,P.clt2mcode ")" rp1,
 		P.clt2mcode "(" lp2,p,P.clt2mcode ")" rp2)) in
-      Ast0.wrap(Ast0.Init(s,fn t,id,P.clt2mcode "=" q,e,P.clt2mcode ";" pv))}
+      Ast0.wrap(Ast0.Init(s,fn t,id,a,P.clt2mcode "=" q,e,P.clt2mcode ";" pv))}
 
 
 d_ident:
@@ -3064,3 +3069,12 @@ script_virt_name_decl:
         let name = ("merge", nm) in
         let mv = Ast.MetaIdDecl(Ast.NONE,name) in
         (name,mv) }
+
+%inline
+attr_list:
+                        { [] }
+ | a=Tattr f=full_attr_list {P.id2mcode a::f}
+
+full_attr_list:
+                        { [] }
+ | Tattr full_attr_list {P.id2mcode $1::$2}

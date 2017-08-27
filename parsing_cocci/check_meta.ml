@@ -254,7 +254,7 @@ and declaration context old_metas table minus d =
     Ast0.MetaDecl(name,_,_) ->
       check_table table minus name
   | Ast0.AsDecl(decl,asdecl) -> failwith "not generated yet"
-  | Ast0.Init(stg,ty,id,eq,ini,sem) ->
+  | Ast0.Init(stg,ty,id,attr,eq,ini,sem) ->
       typeC old_metas table minus ty;
       ident context old_metas table minus id;
       (match Ast0.unwrap ini with
@@ -267,7 +267,7 @@ and declaration context old_metas table minus d =
 	    failwith "complex initializer specification not allowed in - code"
 	  else*)
 	    initialiser old_metas table minus ini)
-  | Ast0.UnInit(stg,ty,id,sem) ->
+  | Ast0.UnInit(stg,ty,id,attr,sem) ->
       typeC old_metas table minus ty; ident context old_metas table minus id
   | Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) ->
       ident FN old_metas table minus name;

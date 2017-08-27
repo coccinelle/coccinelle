@@ -58,6 +58,7 @@ val fix_tokens_strings : Parser_c.token list -> Parser_c.token list
  * expand some macros *)
 val fix_tokens_cpp :
   macro_defs:(string, Cpp_token_c.define_def) Hashtbl.t ->
+  (int (*line*) * int (*col*)) list ->
   Parser_c.token list -> Parser_c.token list
 
 (* next stream tokens -> passed stream tokens -> final next token *)

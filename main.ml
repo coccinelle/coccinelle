@@ -21,7 +21,6 @@ let cocci_file = ref ""
 
 let output_file = ref "" (* resulting code *)
 let tmp_dir = ref "" (* temporary files for parallelism *)
-let inplace_modif = ref false  (* but keeps nothing *)
 let backup_suffix =
   ref (None : string option) (* suffix for backup if one is desired *)
 let outplace_modif = ref false (* generates a .cocci_res  *)
@@ -283,7 +282,7 @@ let short_options = [
 
   "-o", Arg.Set_string output_file,
   "   <file> the output file";
-  "--in-place", Arg.Set inplace_modif,
+  "--in-place", Arg.Set Flag_cocci.inplace_modif,
   "   do the modification on the file directly";
   "--backup-suffix", Arg.String (function s -> backup_suffix := Some s),
   "   suffix to use when making a backup for inplace";
@@ -319,6 +318,8 @@ let short_options = [
   "  causes local include files to be used";
   "--include-headers-for-types", Arg.Set Inc.include_headers_for_types,
   "    use only type information from header files";
+  "--no-include-cache", Arg.Set Flag.no_include_cache,
+  "  don't cache parsed include files";
   "--ignore-unknown-options", Arg.Set ignore_unknown_opt,
   ("    For integration in a toolchain (must be set before the first unknown"^
    " option)");
@@ -1250,10 +1251,11 @@ singleton lists are then just appended to each other during the merge. *)
 	      (x,xs,cocci_infos,outfiles)
 	  | Some (files,virt_rules,virt_ids) ->
 	      if outfiles = [] || outfiles = [] || not !FC.show_diff
-		  || !inplace_modif
+		  || !Flag_cocci.inplace_modif
 	      then
 		begin
-		  (if !inplace_modif then generate_outfiles outfiles x xs);
+		  (if !Flag_cocci.inplace_modif
+		  then generate_outfiles outfiles x xs);
 		  debug_restart virt_rules virt_ids;
 		  Flag.defined_virtual_rules := virt_rules;
 		  Flag.defined_virtual_env := virt_ids;
@@ -1295,7 +1297,7 @@ and generate_outfiles outfiles x (* front file *) xs (* other files *) =
   let outfiles = Cocci.check_duplicate_modif outfiles in
   outfiles +> List.iter (fun (infile, outopt) ->
     outopt +> Common.do_option (fun outfile ->
-      if !inplace_modif
+      if !Flag_cocci.inplace_modif
       then begin
 	(match !backup_suffix with
 	  Some backup_suffix ->

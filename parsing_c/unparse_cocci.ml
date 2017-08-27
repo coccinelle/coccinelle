@@ -848,16 +848,20 @@ and declaration d =
 
   | Ast.AsDecl(decl,asdecl) -> declaration decl
 
-  | Ast.Init(stg,ty,id,eq,ini,sem) ->
+  | Ast.Init(stg,ty,id,attr,eq,ini,sem) ->
       print_option (mcode storage) stg;
       print_option (function _ -> pr_space()) stg;
       print_named_type ty id;
+      (if not (attr = []) then pr_space());
+      print_between pr_space (mcode print_string) attr;
       pr_space(); mcode print_string eq;
       pr_space(); initialiser true ini; mcode print_string sem
-  | Ast.UnInit(stg,ty,id,sem) ->
+  | Ast.UnInit(stg,ty,id,attr,sem) ->
       print_option (mcode storage) stg;
       print_option (function _ -> pr_space()) stg;
       print_named_type ty id;
+      (if not (attr = []) then pr_space());
+      print_between pr_space (mcode print_string) attr;
       mcode print_string sem
   | Ast.FunProto (fninfo,name,lp1,params,va,rp1,sem) ->
       List.iter print_fninfo fninfo;

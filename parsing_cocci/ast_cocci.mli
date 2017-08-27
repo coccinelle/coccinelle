@@ -350,9 +350,10 @@ and const_vol = Const | Volatile
    split out into multiple declarations of a single variable each. *)
 
 and base_declaration =
-    Init of storage mcode option * fullType * ident * string mcode (*=*) *
-	initialiser * string mcode (*;*)
-  | UnInit of storage mcode option * fullType * ident * string mcode (* ; *)
+    Init of storage mcode option * fullType * ident * attr list *
+	string mcode (*=*) * initialiser * string mcode (*;*)
+  | UnInit of storage mcode option * fullType * ident * attr list *
+	string mcode (* ; *)
   | FunProto of
 	fninfo list * ident (* name *) *
 	string mcode (* ( *) * parameter_list *
@@ -572,7 +573,9 @@ and fninfo =
     FStorage of storage mcode
   | FType of fullType
   | FInline of string mcode
-  | FAttr of string mcode
+  | FAttr of attr
+
+and attr = string mcode
 
 and metaStmtInfo =
     NotSequencible | SequencibleAfterDots of dots_whencode list | Sequencible

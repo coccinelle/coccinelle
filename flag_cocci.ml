@@ -26,6 +26,8 @@ let show_mcodekind_in_ctl = ref false
 let show_binding_in_out = ref false
 let show_dependencies =   ref false
 
+let inplace_modif = ref false
+
 let verbose_cocci = ref true
 
 let windows = ref false

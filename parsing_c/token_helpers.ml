@@ -215,6 +215,7 @@ let is_ident_like = function
   | TUnknown _
 
   | TMacroAttr _
+  | TMacroEndAttr _
   | TMacroStmt _
   | TMacroString _
   | TMacroDecl _
@@ -331,6 +332,7 @@ let info_of_tok = function
 
   | TMacroIdentBuilder             (s, i) -> i
   | TMacroAttr             (s, i) -> i
+  | TMacroEndAttr             (s, i) -> i
   | TMacroStmt             (s, i) -> i
   | TMacroString             (s, i) -> i
   | TMacroDecl             (s, i) -> i
@@ -504,6 +506,7 @@ let visitor_info_of_tok f = function
 
   | TMacroIdentBuilder             (s, i) -> TMacroIdentBuilder (s, f i)
   | TMacroAttr           (s, i)   -> TMacroAttr            (s, f i)
+  | TMacroEndAttr        (s, i)   -> TMacroEndAttr         (s, f i)
   | TMacroStmt           (s, i)   -> TMacroStmt            (s, f i)
   | TMacroString         (s, i)   -> TMacroString          (s, f i)
   | TMacroDecl           (s, i) -> TMacroDecl            (s, f i)
@@ -770,6 +773,7 @@ let string_of_token = function
   | TPragma _ -> "TPragma"
   | TCppDirectiveOther _ -> "TCppDirectiveOther"
   | TMacroAttr _ -> "TMacroAttr"
+  | TMacroEndAttr _ -> "TMacroEndAttr"
   | TMacroStmt _ -> "TMacroStmt"
   | TMacroIdentBuilder _ -> "TMacroIdentBuilder"
   | TMacroString _ -> "TMacroString"

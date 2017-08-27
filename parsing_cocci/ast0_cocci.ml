@@ -235,9 +235,10 @@ and base_declaration =
        they don't match the same thing at all.  Consider whether there
        should be a separate type for fields, as in the C AST *)
   | AsDecl        of declaration * declaration
-  | Init of Ast.storage mcode option * typeC * ident * string mcode (*=*) *
-	initialiser * string mcode (*;*)
-  | UnInit of Ast.storage mcode option * typeC * ident * string mcode (* ; *)
+  | Init of Ast.storage mcode option * typeC * ident * attr list *
+	string mcode (*=*) * initialiser * string mcode (*;*)
+  | UnInit of Ast.storage mcode option * typeC * ident * attr list *
+	string mcode (* ; *)
   | FunProto of
 	fninfo list * ident (* name *) *
 	string mcode (* ( *) * parameter_list *
@@ -440,7 +441,9 @@ and fninfo =
     FStorage of Ast.storage mcode
   | FType of typeC
   | FInline of string mcode
-  | FAttr of string mcode
+  | FAttr of attr
+
+and attr = string mcode
 
 and ('a,'b) whencode =
     WhenNot of string mcode (* when *) * string mcode (* != *) * 'a

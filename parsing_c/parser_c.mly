@@ -70,7 +70,7 @@ let addStorageD  = function
   | ((x,ii), ({storageD = (NoSto,[])} as v)) -> { v with storageD = (x, [ii]) }
   | ((x,ii), ({storageD = (y, ii2)} as v)) ->
       if x = y then warning "duplicate storage classes" v
-      else raise (Semantic ("multiple storage classes", fake_pi))
+      else warning "multiple storage classes, keeping the second" v
 
 let addInlineD  = function
   | ((true,ii), ({inlineD = (false,[])} as v)) -> { v with inlineD=(true,[ii])}
@@ -104,8 +104,14 @@ let addTypeD     = function
   | ((Middle3 x,ii),      ({typeD = ((a,None,c),ii2)} as v))  ->
       {v with typeD = (a, Some x,c),ii @ ii2}
 
-  | ((Right3 t,ii),       ({typeD = ((a,b,Some x),ii2)} as _v)) ->
-      raise (Semantic ((Printf.sprintf "two or more data types: t %s ii %s\ntypeD %s ii2 %s\n" (Dumper.dump t) (Dumper.dump ii) (Dumper.dump x) (Dumper.dump ii2)), fake_pi))
+  | ((Right3 t,ii),       ({typeD = ((a,b,Some x),ii2)} as v)) ->
+      let mktype t ii = (({const=false;volatile=false;},[]),(t,ii)) in
+      warning
+	(Printf.sprintf
+	   "two or more data types: dropping %s\nkeeping typeD %s\n"
+	   (Pretty_print_c.string_of_fullType (mktype t ii))
+	   (Pretty_print_c.string_of_fullType (mktype x ii2)))
+	v
   | ((Right3 t,ii),       ({typeD = ((a,b,None),ii2)} as v))   ->
       {v with typeD = (a,b, Some t),ii @ ii2}
 
@@ -566,6 +572,7 @@ let args_to_params l pb =
 /*(* appear  after fix_tokens_cpp, cf also parsing_hacks#hint *)*/
 
 %token <(string * Ast_c.info)>            TMacroAttr
+%token <(string * Ast_c.info)>            TMacroEndAttr
 %token <(string * Ast_c.info)>            TMacroStmt
 %token <(string * Ast_c.info)> TMacroIdentBuilder
 /*(* no need value for the moment *)*/
@@ -1482,7 +1489,7 @@ decl2:
        let iistart = Ast_c.fakeInfo () in
        DeclList ([{v_namei = None; v_type = returnType;
                    v_storage = unwrap storage; v_local = local;
-                   v_attr = fst $1;
+                   v_attr = fst $1; v_endattr = Ast_c.noattr;
                    v_type_bis = ref None;
                 },[]],
                 ($2::iistart::snd storage))
@@ -1492,7 +1499,7 @@ decl2:
        let (returnType,storage) = fixDeclSpecForDecl (snd $1) in
        let iistart = Ast_c.fakeInfo () in
        DeclList (
-         ($2 +> List.map (fun ((((name,f),attrs), ini), iivirg) ->
+         ($2 +> List.map (fun ((((name,f),attrs,endattrs), ini), iivirg) ->
            let s = str_of_name name in
 	   if fst (unwrap storage) = StoTypedef
 	   then LP.add_typedef s;
@@ -1501,6 +1508,7 @@ decl2:
             v_storage = unwrap storage;
             v_local = local;
             v_attr = (fst $1)@attrs;
+            v_endattr = endattrs;
             v_type_bis = ref None;
            },
            iivirg
@@ -1598,15 +1606,15 @@ init_declarator: init_declarator2  { dt "init" (); $1 }
 declaratori:
  | declarator
      { let (attr,dec) = $1 in
-       LP.add_ident (str_of_name (fst dec)); dec, attr }
+       LP.add_ident (str_of_name (fst dec)); dec, attr, [] }
  /*(* gccext: *)*/
  | declarator gcc_asm_decl
      { let (attr,dec) = $1 in
-       LP.add_ident (str_of_name (fst dec)); dec, attr }
+       LP.add_ident (str_of_name (fst dec)); dec, attr, [] }
  /*(* gccext: *)*/
  | declarator end_attributes
      { let (attr,dec) = $1 in
-       LP.add_ident (str_of_name (fst dec)); dec, attr (* TODO *) }
+       LP.add_ident (str_of_name (fst dec)); dec, attr, $2 (* TODO *) }
 
 
 gcc_asm_decl:
@@ -2074,7 +2082,8 @@ cpp_other:
 	 Declaration(
 	 DeclList ([{v_namei = Some (id,NoInit); v_type = ty;
                       v_storage = unwrap sto; v_local = NotLocalDecl;
-                      v_attr = attrs; v_type_bis = ref None;
+                      v_attr = attrs; v_endattr = Ast_c.noattr;
+		      v_type_bis = ref None;
                     },[]],
                    ($5::iistart::snd sto)))
        else
@@ -2300,7 +2309,8 @@ attribute_list:
 
 attributes: attribute_list { $1 }
 
-end_attributes: TTODO { $1 }
+end_attributes:
+ | TMacroEndAttr { [Attribute (fst $1), [snd $1]] }
 
 comma_opt:
  | TComma {  [$1] }
