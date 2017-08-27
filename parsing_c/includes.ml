@@ -128,7 +128,7 @@ let interpret_include_path relpath =
 	(if res = None
 	then
 	  Common.pr2
-	    (Printf.sprintf "failed on %s\n" (String.concat "/" relpath)));
+	    (Printf.sprintf "failed on %s" (String.concat "/" relpath)));
 	res
     | (Some _) as res ->
 	cache_add include_table (searchlist,relpath) res;
