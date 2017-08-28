@@ -1398,7 +1398,8 @@ parameter_decl2:
      }
    }
  | decl_spec declaratorp
-     { let ((returnType,hasreg),iihasreg) = fixDeclSpecForParam (snd $1) in
+     { LP.kr_impossible();
+       let ((returnType,hasreg),iihasreg) = fixDeclSpecForParam (snd $1) in
        let (name, ftyp) = $2 in
        { p_namei = Some (name);
          p_type = ftyp returnType;
@@ -1406,14 +1407,16 @@ parameter_decl2:
        }
      }
  | decl_spec abstract_declaratorp
-     { let ((returnType,hasreg), iihasreg) = fixDeclSpecForParam (snd $1) in
+     { LP.kr_impossible();
+       let ((returnType,hasreg), iihasreg) = fixDeclSpecForParam (snd $1) in
        { p_namei = None;
          p_type = $2 returnType;
          p_register = hasreg, iihasreg;
        }
      }
  | decl_spec
-     { let ((returnType,hasreg), iihasreg) = fixDeclSpecForParam (snd $1) in
+     { LP.kr_impossible();
+       let ((returnType,hasreg), iihasreg) = fixDeclSpecForParam (snd $1) in
        { p_namei = None;
          p_type = returnType;
          p_register = hasreg, iihasreg;

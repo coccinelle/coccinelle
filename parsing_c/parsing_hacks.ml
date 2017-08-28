@@ -2101,6 +2101,7 @@ let lookahead2 ~pass next before =
   | (TIdent (s, i1)::(((TComma _|TCPar _)::_) as rest) ,
      ((TComma _ |TOPar _)::_ as bef))
     when not_struct_enum before && (LP.current_context() = LP.InParameter)
+      && not (!Flag_parsing_c.prevent_kr) && LP.is_kr_possible()
       && k_and_r rest
       && not_has_type_before is_cparen rest
       && not_has_type_before is_oparen bef

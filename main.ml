@@ -645,6 +645,10 @@ let other_options = [
     "  make a small attempt to parse C++ files";
     "--ibm", Arg.Set Flag.ibm,
     "  make a small attempt to parse IBM C files";
+    "--force-kr", Arg.Set Flag_parsing_c.force_kr,
+    "  despite the presence of non-K&R code, keep looking for K&R code";
+    "--prevent-kr", Arg.Set Flag_parsing_c.prevent_kr,
+    "  never make an identifier parameter alone into a K&R parameter";
   ];
 
   "misc options",

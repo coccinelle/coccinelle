@@ -463,6 +463,14 @@ other \#ifdef.}
 \rare{-{}-ibm}{Make a effort to parse IBM C code.  Currently decimal
   declarations are supported.}
 
+\rare{-{}-force-kr, -{}-prevent-kr}{These options affect whether an
+  identifier alone in a parameter list can be considered to be a possible
+  K&R parameter or a typedef.  The default is that as soon as a non-K&R
+  parameter is detected, ie a type alone or a type and an identifier,
+  then no identifier is promoted to a K&R parameter.  If {\bf -{}-force-kr}
+  is used, such promotion is still allowed to happen.  If {\bf
+    -{}-prevent-kr} is used, such promotion neer happens.}
+
 \section{Application of the semantic patch to the C code}
 
 \subsection{Feedback at the rule level during the application of the
