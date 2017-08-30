@@ -86,7 +86,7 @@ let bool_fcts :
 
 let variables_to_merge: (unit -> string array) ref = ref (fun () -> [| |])
 
-let merged_variables: string list array ref = ref [| |]
+let merged_variables: string list array option ref = ref None
 (**/**)
 
 (* This code needs to be here because we need to call the type annotater *)

@@ -2040,10 +2040,10 @@ let variables_to_merge python_local_names =
 
 let list_array_of_array_list merges =
   match merges with
-    [] -> [| |]
+    [] -> None
   | hd :: _ ->
-      Array.init (Array.length hd)
-	(fun index -> List.map (fun array -> array.(index)) merges)
+      Some (Array.init (Array.length hd)
+	(fun index -> List.map (fun array -> array.(index)) merges))
 
 (*****************************************************************************)
 (* The main functions *)
