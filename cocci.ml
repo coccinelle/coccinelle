@@ -2286,6 +2286,7 @@ let post_engine2 (cocci_infos, _, _, (python_merge_names, _)) merges =
       []
       !Iteration.initialization_stack in
   Pycocci.flush_stdout_and_stderr ();
+  flush_all ();
   ()
 
 let post_engine a b =
