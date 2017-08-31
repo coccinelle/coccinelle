@@ -107,6 +107,18 @@ let decl r k e =
 	else e
     | _ -> e
 
+let anndecl r k e =
+  let e = k e in
+  match Ast.unwrap e with
+    Ast.DElem(bef,allminus,decl) ->
+      let bef_modif = mcode () ((),(),bef,[]) in
+      if bef_modif && decl.Ast.safe_for_multi_decls
+      then (* not actually safe *)
+	Ast.rewrap ex
+	  (Ast.DElem(bef,allminus,
+		     {decl with Ast.safe_for_multi_decls = false}))
+      else e
+
 let field r k e =
   let e = k e in
   if all_removed_field e
@@ -121,6 +133,18 @@ let field r k e =
 	else e
     | _ -> e
 
+let annfield r k e =
+  let e = k e in
+  match Ast.unwrap e with
+    Ast.FElem(bef,allminus,fld) ->
+      let bef_modif = mcode () ((),(),bef,[]) in
+      if bef_modif && fld.Ast.safe_for_multi_decls
+      then (* not actually safe *)
+	Ast.rewrap e
+	  (Ast.FElem(bef,allminus,{fld with Ast.safe_for_multi_decls = false}))
+      else e
+  | _ -> e
+
 let mcode e = e
 let donothing r k e = k e
 
@@ -130,7 +154,7 @@ let process =
       mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing decl donothing field donothing
+      donothing donothing donothing decl anndecl field annfield
       donothing donothing donothing donothing donothing in
   List.map fn.V.rebuilder_top_level
 
