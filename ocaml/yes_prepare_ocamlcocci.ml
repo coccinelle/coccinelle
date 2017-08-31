@@ -351,10 +351,15 @@ let () =
 	    let global_index = from_index + index in
 	    Printf.bprintf let_merge_vars "\
       let (%s : 'a%d list), (_ : 'a%d) =
-	(List.map (fun s -> Marshal.from_string s 0)
-	   !(Coccilib.merged_variables).(%d),
-	 %s) in\n"
-	      merge_name index index global_index local_vars.(global_index) in
+	  (
+	    match !(Coccilib.merged_variables) with
+	    | None -> []
+	    | Some merged_variables ->
+		List.map (fun s -> Marshal.from_string s 0)
+		  merged_variables.(%d)
+	  ), %s in\n"
+	      merge_name index global_index global_index
+	      local_vars.(global_index) in
 	  Array.iteri let_merge_var merge_names;
 	  let preambule = Buffer.contents let_merge_vars in
 	  (name, [], [], preambule ^ code) in
