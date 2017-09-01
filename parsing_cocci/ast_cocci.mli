@@ -215,7 +215,7 @@ and 'expression generic_constraints =
   | CstrOperator of operator_constraint
   | CstrMeta_name of meta_name
   | CstrRegexp of string * Regexp.regexp
-  | CstrScript of script_constraint
+  | CstrScript of bool (*true if immediately evaluable*) * script_constraint
   | CstrExpr of 'expression
   | CstrSub of meta_name list
   | CstrType of fullType
@@ -900,7 +900,7 @@ type ('expression, 'a) cstr_transformer = {
     cstr_operator: (operator_constraint -> 'a) option;
     cstr_meta_name: (meta_name -> 'a) option;
     cstr_regexp: (string -> Regexp.regexp -> 'a) option;
-    cstr_script: (script_constraint -> 'a) option;
+    cstr_script: (bool*script_constraint -> 'a) option;
     cstr_expr: ('expression -> 'a) option;
     cstr_sub: (meta_name list -> 'a) option;
     cstr_type: (fullType -> 'a) option;

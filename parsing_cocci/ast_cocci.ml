@@ -231,7 +231,7 @@ and 'expression generic_constraints =
   | CstrOperator of operator_constraint
   | CstrMeta_name of meta_name
   | CstrRegexp of string * Regexp.regexp
-  | CstrScript of script_constraint
+  | CstrScript of bool (*true if immediately evaluable*) * script_constraint
   | CstrExpr of 'expression
   | CstrSub of meta_name list
   | CstrType of fullType
@@ -1279,7 +1279,7 @@ type ('expression, 'a) cstr_transformer = {
     cstr_operator: (operator_constraint -> 'a) option;
     cstr_meta_name: (meta_name -> 'a) option;
     cstr_regexp: (string -> Regexp.regexp -> 'a) option;
-    cstr_script: (script_constraint -> 'a) option;
+    cstr_script: (bool * script_constraint -> 'a) option;
     cstr_expr: ('expression -> 'a) option;
     cstr_sub: (meta_name list -> 'a) option;
     cstr_type: (fullType -> 'a) option;
@@ -1311,7 +1311,7 @@ let rec cstr_fold_sign pos neg c accu =
       Common.default accu (fun f -> f mn accu) pos.cstr_meta_name
   | CstrRegexp (s, re) ->
       Common.default accu (fun f -> f s re accu) pos.cstr_regexp
-  | CstrScript ((_name, _lang, params, _pos, _code) as script_constraint) ->
+  | CstrScript(local,((_name,_lang,params,_pos,_code) as script_constraint)) ->
       begin
 	match pos.cstr_script with
 	  None ->
@@ -1319,7 +1319,7 @@ let rec cstr_fold_sign pos neg c accu =
 	      (fun f ->
 		List.fold_left (fun accu' (mv, _) -> f mv accu') accu params)
 	      pos.cstr_meta_name
-	| Some f -> f script_constraint accu
+	| Some f -> f (local,script_constraint) accu
       end
   | CstrExpr e ->
       Common.default accu (fun f -> f e accu) pos.cstr_expr
@@ -1374,9 +1374,9 @@ let rec cstr_map transformer c =
   | CstrRegexp (s, re) ->
       Common.default (CstrRegexp (s, re)) (fun f -> f s re)
 	transformer.cstr_regexp
-  | CstrScript script_constraint ->
-      Common.default (CstrScript script_constraint)
-	(fun f -> f script_constraint)
+  | CstrScript (local,script_constraint) ->
+      Common.default (CstrScript (local,script_constraint))
+	(fun f -> f (local,script_constraint))
 	transformer.cstr_script
   | CstrExpr e ->
       (* Untransformed expressions are discarded! *)

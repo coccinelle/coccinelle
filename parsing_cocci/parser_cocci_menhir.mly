@@ -2382,7 +2382,7 @@ nonempty_constraints:
       Data.constraint_scripts :=
 	(posvar, nm', (key, lang', params, pos, code'))
 	:: !Data.constraint_scripts;
-      Ast.CstrScript (key, lang', params, pos, code') }
+      Ast.CstrScript (true,(key, lang', params, pos, code')) }
 | TBang c = nonempty_constraints { fun posvar nm -> Ast.CstrNot (c posvar nm) }
 | l=nonempty_constraints TAndLog r=nonempty_constraints
     { fun posvar nm -> Ast.CstrAnd [l posvar nm; r posvar nm] }

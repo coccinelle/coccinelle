@@ -86,7 +86,7 @@ let get_free checker t =
 	    Ast.cstr_fold
 	      { Ast.empty_cstr_transformer with
 		Ast.cstr_script =
-		Some (fun (name,lang,params,_pos,body) accu ->
+		Some (fun (_,(name,lang,params,_pos,body)) accu ->
 		  (* It seems that position variables are not relevant
 		     for unitaryness, so drop them *)
 		  bind (List.map fst

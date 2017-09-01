@@ -4597,8 +4597,10 @@ and define_parameter = fun parama paramb ->
 	end
     | A.CstrRegexp (s, re) ->
 	check_string (fun s' -> bool (Regexp.string_match re s'))
-    | A.CstrScript script_constraint ->
-	bool (satisfies_script_constraint script_constraint ida idb env)
+    | A.CstrScript(local,script_constraint) ->
+	if local
+	then bool (satisfies_script_constraint script_constraint ida idb env)
+	else bool true
     | A.CstrExpr e ->
 	begin
 	  match idb with

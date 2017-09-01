@@ -114,7 +114,7 @@ let anndecl r k e =
       let bef_modif = mcode () ((),(),bef,[]) in
       if bef_modif && decl.Ast.safe_for_multi_decls
       then (* not actually safe *)
-	Ast.rewrap ex
+	Ast.rewrap e
 	  (Ast.DElem(bef,allminus,
 		     {decl with Ast.safe_for_multi_decls = false}))
       else e
