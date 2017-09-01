@@ -4690,6 +4690,15 @@ let hash_of_list xs =
     h
   end
 
+let hashadd tbl k v =
+  let cell =
+    try Hashtbl.find tbl k
+    with Not_found ->
+      let cell = ref [] in
+      Hashtbl.add tbl k cell;
+      cell in
+  if not (List.mem v !cell) then cell := v :: !cell
+
 let _  =
   let h = Hashtbl.create 101 in
   Hashtbl.add h "toto" 1;
