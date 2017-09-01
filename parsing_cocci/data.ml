@@ -50,7 +50,7 @@ let call_in_meta f =
   res
 
 let all_metadecls =
-  (Hashtbl.create(100) : (string, Ast.metavar list) Hashtbl.t)
+  (Hashtbl.create(100) : (string, Ast.metavar list ref) Hashtbl.t)
 
 let uninitialized_add_meta = fun _ -> failwith "uninitialized add_meta"
 

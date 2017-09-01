@@ -477,7 +477,7 @@ incl:
 	Common.union_set names !Iteration.parsed_virtual_rules;
       (* ensure that the names of virtual and real rules don't overlap *)
       List.iter
-      (function name -> Hashtbl.add Data.all_metadecls name [])
+      (function name -> Hashtbl.add Data.all_metadecls name (ref []))
       names;
       Data.Virt(names) }
 
@@ -2293,6 +2293,40 @@ pure_ident_or_meta_ident_nosym2(extra):
        pure_ident_or_meta_ident_nosym { $1 }
      | extra                          { (None,P.id2name $1) }
 
+local_meta:
+       TMetaId { let (nm,_,_,_,_) = $1 in nm }
+     | TMetaFunc { let (nm,_,_,_) = $1 in nm }
+     | TMetaLocalFunc { let (nm,_,_,_) = $1 in nm }
+     | TMetaIterator { let (nm,_,_,_) = $1 in nm }
+     | TMetaDeclarer { let (nm,_,_,_) = $1 in nm }
+     | TMetaAssignOp { let (nm,_,_,_) = $1 in nm }
+     | TMetaType { let (nm,_,_,_) = $1 in nm }
+     | TMetaBinaryOp { let (nm,_,_,_) = $1 in nm }
+     | TMetaErr { let (nm,_,_,_) = $1 in nm }
+     | TMetaParam { let (nm,_,_,_) = $1 in nm }
+     | TMetaStm { let (nm,_,_,_) = $1 in nm }
+     | TMetaInit { let (nm,_,_,_) = $1 in nm }
+     | TMetaDecl { let (nm,_,_,_) = $1 in nm }
+     | TMetaField { let (nm,_,_,_) = $1 in nm }
+     | TMeta { let (nm,_,_,_) = $1 in nm }
+     | TMetaParamList { let (nm,_,_,_,_) = $1 in nm }
+     | TMetaExpList { let (nm,_,_,_,_) = $1 in nm }
+     | TMetaInitList { let (nm,_,_,_,_) = $1 in nm }
+     | TMetaFieldList { let (nm,_,_,_,_) = $1 in nm }
+     | TMetaStmList { let (nm,_,_,_,_) = $1 in nm }
+     | TMetaDParamList { let (nm,_,_,_,_) = $1 in nm }
+     | TMetaExp { let (nm,_,_,_,_,_) = $1 in nm }
+     | TMetaIdExp { let (nm,_,_,_,_) = $1 in nm }
+     | TMetaLocalIdExp { let (nm,_,_,_,_) = $1 in nm }
+     | TMetaGlobalIdExp { let (nm,_,_,_,_) = $1 in nm }
+     | TMetaConst { let (nm,_,_,_,_) = $1 in nm }
+     | TMetaPos { let (nm,_,_,_) = $1 in nm }
+
+inherited_or_local_meta:
+       local_meta                    { $1 }
+     | TRuleName TDot pure_ident     { ($1,P.id2name $3) }
+     | TRuleName TDot pure_ident_kwd { ($1,$3) }
+
 wrapped_sym_ident:
   TSymId { Ast0.wrap(Ast0.Id(P.sym2mcode $1)) }
 
@@ -2362,13 +2396,13 @@ nonempty_constraints:
   | _ -> raise (Semantic_cocci.Semantic "unknown constraint operator") }
 | TSub l=item_or_brace_list(sub_meta_ident) { fun _ _ -> Ast.CstrSub l }
 | TDotDot pos=TScript TDotDot lang=pure_ident
-    TOPar params=loption(comma_list(checked_meta_name)) TCPar
-    TOBrace c=expr TCBrace
+    TOPar params=loption(comma_list(inherited_or_local_meta)) TCPar
+    TOBrace c=list(anything) TCBrace
     { fun posvar nm ->
       let rule =
 	String.concat "_" (Str.split (Str.regexp " ") !Ast0.rule_name) in
       let key = Printf.sprintf "constraint_code_%s_0_%s" rule (snd nm) in
-      let code = U.unparse_x_to_string U.expression c in
+      let code = String.concat " " c in
       let lang' = P.id2name lang in
       let code' =
 	if lang' = "ocaml" then
@@ -2379,10 +2413,21 @@ nonempty_constraints:
 	match nm with
 	  None, n -> "", n
 	| Some r, n -> r, n in
+      let local =
+	List.for_all (fun (rl,_) -> not (rl = !Ast0.rule_name)) params in
+      Printf.eprintf "params: %d\n" (List.length params);
+      let params =
+	List.map
+	  (fun (rl,nm) ->
+	    Printf.eprintf "call 1\n";
+            let mv = Parse_aux.lookup rl nm in
+	    Printf.eprintf "returned from call 1\n";
+	    ((rl,nm),mv))
+	  (List.rev params) in
       Data.constraint_scripts :=
 	(posvar, nm', (key, lang', params, pos, code'))
 	:: !Data.constraint_scripts;
-      Ast.CstrScript (true,(key, lang', params, pos, code')) }
+      Ast.CstrScript (local,(key, lang', params, pos, code')) }
 | TBang c = nonempty_constraints { fun posvar nm -> Ast.CstrNot (c posvar nm) }
 | l=nonempty_constraints TAndLog r=nonempty_constraints
     { fun posvar nm -> Ast.CstrAnd [l posvar nm; r posvar nm] }
@@ -3078,3 +3123,170 @@ attr_list:
 full_attr_list:
                         { [] }
  | Tattr full_attr_list {P.id2mcode $1::$2}
+
+anything: /* used for script code */
+   TIdentifier { "identifier" }
+ | TExpression { "expression" }
+ | TStatement { "statement" }
+ | TFunction { "function" }
+ | TType { "type" }
+ | TParameter { "parameter" }
+ | TIdExpression { "idexpression" }
+ | TInitialiser { "initialiser" }
+ | TDeclaration { "declaration" }
+ | TField { "field" }
+ | TMetavariable { "metavariable" }
+ | TSymbol { "symbol" }
+ | TOperator { "operator" }
+ | TBinary { "binary" }
+ | TAssignment { "assignment" }
+ | Tlist { "list" }
+ | TFresh { "fresh" }
+ | TConstant { "constant" }
+ | TError { "error" }
+ | TWords { "words" }
+ | TGenerated { "generated" }
+ | TFormat { "format" }
+ | TLocal { "local" }
+ | TGlobal { "global" }
+ | TTypedef { "typedef" }
+ | TAttribute { "attribute" }
+ | TDeclarer { "declarer" }
+ | TIterator { "iterator" }
+ | TName { "name" }
+ | TPosition { "position" }
+ | TAnalysis { "analysis" }
+ | TPosAny { "any" }
+ | TUsing { "using" }
+ | TDisable { "disable" }
+ | TExtends { "extends" }
+ | TDepends { "depends" }
+ | TOn { "on" }
+ | TFile { "file" }
+ | TIn { "in" }
+ | TInitialize { "initialize" }
+ | TFinalize { "finalize" }
+ | TVirtual { "virtual" }
+ | TMerge { "merge" }
+ | TRuleName { $1 }
+ | TScript { "script" }
+
+ | Tchar { "char" }
+ | Tshort { "short" }
+ | Tint { "int" }
+ | Tdouble { "double" }
+ | Tfloat { "float" }
+ | Tlong { "long" }
+ | Tsize_t { "size_t" }
+ | Tssize_t { "ssize_t" }
+ | Tptrdiff_t { "ptrdiff_t" }
+ | Tvoid { "void" }
+ | Tstruct { "struct" }
+ | Tunion { "union" }
+ | Tenum { "enum" }
+ | Tunsigned { "unsigned" }
+ | Tsigned { "signed" }
+
+ | Tstatic { "static" }
+ | Tauto { "auto" }
+ | Tregister { "register" }
+ | Textern { "extern" }
+ | Tinline { "inline" }
+ | Ttypedef { "typedef" }
+ | Tconst { "const" }
+ | Tvolatile { "volatile" }
+ | Tattr { fst $1 }
+
+ | TVAEllipsis { "......" }
+ | TIf { "if" }
+ | TElse { "else" }
+ | TWhile { "while" }
+ | TFor { "for" }
+ | TDo { "do" }
+ | TSwitch { "switch" }
+ | TCase { "case" }
+ | TDefault { "default" }
+ | TReturn { "return" }
+ | TBreak { "break" }
+ | TContinue { "continue" }
+ | TGoto { "goto" }
+ | TSizeof { "sizeof" }
+ | Tdecimal { "decimal" }
+ | Texec { "EXEC" }
+ | TIdent { fst $1 }
+ | TTypeId { fst $1 }
+ | TDeclarerId { fst $1 }
+ | TIteratorId { fst $1 }
+ | TSymId { fst $1 }
+
+ | local_meta { snd $1 }
+
+ | TEllipsis { "..." }
+ | TOEllipsis { "<..." }
+ | TCEllipsis { "...>" }
+ | TPOEllipsis { "<+..." }
+ | TPCEllipsis { "...+>" }
+ | TWhen { "when" }
+
+ | TWhy { "?" }
+ | TDotDot { ":" }
+ | TBang { "!" }
+ | TOPar { "(" }
+ | TCPar { ")" }
+
+ | TInc { "++" }
+ | TDec { "--" }
+
+ | TString { fst $1 }
+ | TChar { fst $1 }
+ | TFloat { fst $1 }
+ | TInt { fst $1 }
+ | TDecimalCst { let (x,_,_,_) = $1 in x }
+
+ | TOrLog { "||" }
+ | TAndLog { "&&" }
+ | TOr { "|" }
+ | TXor { "^" }
+ | TAnd { "&" }
+ | TEqEq { "==" }
+ | TNotEq { "!=" }
+ | TTildeEq { "=~" }
+ | TTildeExclEq { "!~" }
+ | TSub { "<=" }
+ | TLogOp
+     { match fst $1 with
+       Ast.SupEq -> ">=" | Ast.InfEq -> "<="
+     | Ast.Inf -> "<" | Ast.Sup -> ">"
+     | _ -> failwith "bad log op" }
+ | TShLOp { "<<" }
+ | TShROp { ">>" }
+ | TDmOp
+     { match fst $1 with
+       Ast.Div -> "/" | Ast.Mod -> "%" | _ -> failwith "bad op" }
+ | TPlus { "+" }
+ | TMinus { "-" }
+ | TMul { "*" }
+ | TTilde { "~" }
+
+ | TOCro {"[" }
+ | TCCro { "]" }
+
+ | TPtrOp { "->" }
+
+ | TMPtVirg { ";" }
+ | TCppConcatOp { "##" }
+ | TEq { "=" }
+ | TDot { "." }
+ | TComma { "," }
+ | TPtVirg { ";" }
+ | TOpAssign
+     { match fst $1 with
+       Ast.Minus -> "-=" | Ast.Plus -> "+=" | Ast.Mul -> "*=" | Ast.Div -> "/="
+     | Ast.Mod -> "%" | Ast.And -> "&=" | Ast.Or -> "|=" | Ast.Xor -> "^="
+     | Ast.Max -> ">?=" | Ast.Min -> "<?=" | Ast.DecLeft -> "<<="
+     | Ast.DecRight -> ">>=" }
+
+ | TIso { "<=>" }
+ | TRightIso { "=>" }
+
+ | TUnderscore { "_" }

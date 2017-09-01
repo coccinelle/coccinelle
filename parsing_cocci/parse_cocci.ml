@@ -1890,7 +1890,7 @@ let rec collect_script_tokens = function
 	toks;
       failwith "Malformed script rule"
 
-let get_metavars parse_fn table file lexbuf =
+let get_metavars parse_fn table file lexbuf rule_name add_to_alldecls =
   Lexer_cocci.reinit(); (* string metavariable initializations *)
   let rec meta_loop acc (* read one decl at a time *) =
     let (_,tokens) =
@@ -1931,20 +1931,29 @@ let get_metavars parse_fn table file lexbuf =
 	      begin
 		match tokens with
 		| [(PC.TIdent (id, _), _); (PC.TMPtVirg, _)] ->
-		    let metavar =
-		      Common.Left
-			(Ast.MetaAnalysisDecl (data, (!Ast0.rule_name, id))) in
+		    let mv =
+		      Ast.MetaAnalysisDecl (data, (!Ast0.rule_name, id)) in
+		    let metavar = Common.Left mv in
+		    (if add_to_alldecls
+		    then Common.hashadd D.all_metadecls rule_name mv);
 		    meta_loop (metavar :: acc)
 		| _ -> failwith "'analysis' can only have one variable"
 	      end
 	  | (_, toks) ->
 	      failwith
-		("'analysis' should be followed by '(', but was followed by:\n"^
-		 (collect_script_tokens toks))
+		("'analysis' should be followed by '(', but was followed by:\n"
+		 ^ (collect_script_tokens toks))
 	end
 
     | _ ->
 	let metavars = parse_one "meta" parse_fn file tokens in
+	(if add_to_alldecls
+	then
+	  List.iter
+	    (function
+		Common.Left mv -> Common.hashadd D.all_metadecls rule_name mv
+	      | Common.Right _ -> ())
+	    metavars);
 	meta_loop (metavars@acc) in
   partition_either (meta_loop [])
 
@@ -2018,15 +2027,19 @@ let parse_iso file =
               in
 	    Ast0.rule_name := rule_name;
 	    let iso_metavars =
-	      match get_metavars PC.iso_meta_main table file lexbuf with
+	      let res =
+		get_metavars PC.iso_meta_main table file lexbuf rule_name
+		  false in
+	      match res with
 		(iso_metavars,[]) -> iso_metavars
 	      | _ -> failwith "unexpected inheritance in iso" in
 	    (* get the rule *)
 	    let (more,tokens) =
 	      get_tokens
-		(in_list [PC.TIsoStatement;PC.TIsoExpression;PC.TIsoArgExpression;
-		  PC.TIsoTestExpression; PC.TIsoToTestExpression;
-		  PC.TIsoDeclaration;PC.TIsoType;PC.TIsoTopLevel]) in
+		(in_list
+		   [PC.TIsoStatement;PC.TIsoExpression;PC.TIsoArgExpression;
+		     PC.TIsoTestExpression; PC.TIsoToTestExpression;
+		     PC.TIsoDeclaration;PC.TIsoType;PC.TIsoTopLevel]) in
 	    let next_start = List.hd(List.rev tokens) in
 	    let dummy_info = ("",(-1,-1),(-1,-1)) in
 	    let tokens = drop_last [(PC.EOF,dummy_info)] tokens in
@@ -2186,8 +2199,7 @@ let parse file =
 
             (* get metavariable declarations *)
             let (metavars, inherited_metavars) =
-	      get_metavars PC.meta_main table file lexbuf in
-	    Hashtbl.add D.all_metadecls rule_name metavars;
+	      get_metavars PC.meta_main table file lexbuf rule_name true in
 	    Hashtbl.add Lexer_cocci.rule_names rule_name ();
 	    Hashtbl.add Lexer_cocci.all_metavariables rule_name
 	      (Hashtbl.fold
@@ -2324,8 +2336,9 @@ let parse file =
 		name :: !D.inheritable_positions;
 
 	    Hashtbl.add D.all_metadecls name
-	      (List.map (function x -> Ast.MetaScriptDecl(ref None,x))
-		 script_metavars);
+	      (ref
+		 (List.map (function x -> Ast.MetaScriptDecl(ref None,x))
+		    script_metavars));
 	    Hashtbl.add Lexer_cocci.rule_names name ();
 	    (*TODOHashtbl.add Lexer_cocci.all_metavariables name script_metavars;*)
 

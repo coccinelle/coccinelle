@@ -38,7 +38,7 @@ val inheritable_positions : string list ref
 
 val call_in_meta : (unit -> 'a) -> 'a
 
-val all_metadecls : (string, Ast_cocci.metavar list) Hashtbl.t
+val all_metadecls : (string, Ast_cocci.metavar list ref) Hashtbl.t
 
 val clear_meta: (unit -> unit) ref
 
