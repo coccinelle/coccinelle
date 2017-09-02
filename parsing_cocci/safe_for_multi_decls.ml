@@ -52,6 +52,14 @@ let mcode _ (_,_,kind,_) =
   | Ast.PLUS _ -> failwith "not possible"
   | Ast.CONTEXT(_,info) -> not (info = Ast.NOTHING)
 
+(* The mcode is a fake one before a decl or field.  Only need to check
+for additions here.  Replacement will affect decl or field instead. *)
+let add_on_mcode _ (_,_,kind,_) =
+  match kind with
+    Ast.MINUS(_,_,_,_) -> false
+  | Ast.PLUS _ -> failwith "not possible"
+  | Ast.CONTEXT(_,info) -> not (info = Ast.NOTHING)
+
 let contains_modif =
   let bind x y = x || y in
   let option_default = false in
@@ -111,7 +119,7 @@ let anndecl r k e =
   let e = k e in
   match Ast.unwrap e with
     Ast.DElem(bef,allminus,decl) ->
-      let bef_modif = mcode () ((),(),bef,[]) in
+      let bef_modif = add_on_mcode () ((),(),bef,[]) in
       if bef_modif && decl.Ast.safe_for_multi_decls
       then (* not actually safe *)
 	Ast.rewrap e
@@ -137,7 +145,7 @@ let annfield r k e =
   let e = k e in
   match Ast.unwrap e with
     Ast.FElem(bef,allminus,fld) ->
-      let bef_modif = mcode () ((),(),bef,[]) in
+      let bef_modif = add_on_mcode () ((),(),bef,[]) in
       if bef_modif && fld.Ast.safe_for_multi_decls
       then (* not actually safe *)
 	Ast.rewrap e
