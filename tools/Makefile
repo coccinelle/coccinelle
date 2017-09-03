@@ -70,12 +70,9 @@ isoprof: process_isoprofile
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
-.ml.cmo:
-	$(OCAMLC_CMD) -c $<
-.mli.cmi:
-	$(OCAMLC_CMD) -c $<
-.ml.cmx:
-	$(OCAMLOPT_CMD) -c $<
+ifneq ($(strip $(abs_top_srcdir)),)
+include $(abs_top_srcdir)/common_rules.make
+endif
 
 clean::
 	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot

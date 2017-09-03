@@ -40,7 +40,7 @@ TARGET=spatch
 PRJNAME=coccinelle
 ML_FILES=flag_cocci.ml cocci.ml testing.ml $(LEXER_SOURCES:.mll=.ml) \
 read_options.ml main.ml
-MLI_FILES=cocci.mli testing.mli
+MLI_FILES=cocci.mli read_options.mli testing.mli
 
 ifeq ($(FEATURE_PYTHON),1)
 	PYTHON_INSTALL_TARGET=install-python
@@ -515,15 +515,12 @@ tags:
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
-.ml.cmo:
-	$(OCAMLC_CMD) -c $<
-.mli.cmi:
-	$(OCAMLC_CMD) -c $<
-.ml.cmx:
-	$(OCAMLOPT_CMD) -c $<
+ifneq ($(strip $(abs_top_srcdir)),)
+include $(abs_top_srcdir)/common_rules.make
 
-.ml.mldepend:
-	$(OCAMLC_CMD) -i $<
+modules_with_mli::=$(basename $(MLI_FILES))
+include $(abs_top_srcdir)/rule_pair2.make
+endif
 
 clean distclean::
 	rm -f .depend

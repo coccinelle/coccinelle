@@ -7,7 +7,8 @@ include ../Makefile.config
 -include ../Makefile.local
 endif
 
-TARGET=cocci_parser
+TARGET::=parsing_cocci
+TARGET_ALIAS::=cocci_parser
 
 OCAMLCFLAGS ?= -g
 OPTFLAGS ?= -g
@@ -16,7 +17,7 @@ LEXER_SOURCES = lexer_cocci.mll
 CLI_LEXER_SOURCES = lexer_cli.mll
 SCRIPT_LEXER_SOURCES = lexer_script.mll
 PARSER_SOURCES = parser_cocci_menhir.mly
-SOURCES = flag_parsing_cocci.ml ast_cocci.ml ast0_cocci.ml \
+SRC::=flag_parsing_cocci.ml ast_cocci.ml ast0_cocci.ml \
 pretty_print_cocci.ml visitor_ast0_types.ml \
 visitor_ast.ml visitor_ast0.ml ast0toast.ml unparse_ast0.ml unify_ast.ml \
 compute_lines.ml iso_pattern.ml comm_assoc.ml \
@@ -44,17 +45,18 @@ MENHIROMOD=menhirLib.cmx
 
 # The Caml compilers.
 OCAMLCFLAGS ?= -g -dtypes
-EXEC=$(TARGET).byte
-EXEC=$(TARGET)
-LIB=$(TARGET).cma
+EXEC::=$(TARGET_ALIAS).byte
+EXEC::=$(TARGET_ALIAS)
+LIB::=$(TARGET_ALIAS).cma
 OPTLIB=$(LIB:.cma=.cmxa)
 
 GENERATED= $(LEXER_SOURCES:.mll=.ml) \
 	   $(CLI_LEXER_SOURCES:.mll=.ml) $(SCRIPT_LEXER_SOURCES:.mll=.ml) \
 	   $(PARSER_SOURCES:.mly=.ml) $(PARSER_SOURCES:.mly=.mli)
-OBJS = $(SOURCES:.ml=.cmo)
+OBJS::=$(SRC:.ml=.cmo)
 OPTOBJS = $(OBJS:.cmo=.cmx)
-
+OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES)
+OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES)
 
 all: $(LIB)
 local: $(EXEC)
@@ -63,33 +65,28 @@ all.opt:
 	@$(MAKE) $(OPTLIB) BUILD_OPT=yes
 
 $(LIB): $(GENERATED) $(OBJS)
-	$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES) -I $(MENHIRDIR) -a -o $(LIB) $(MENHIRMOD) $(OBJS)
+	$(OCAMLC_CMD) -I $(MENHIRDIR) -a -o $(LIB) $(MENHIRMOD) $(OBJS)
 
 
 $(OPTLIB): $(GENERATED) $(OPTOBJS)
-	$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES) -I $(MENHIRDIR) -a -o $(OPTLIB) $(MENHIROMOD) $(OPTOBJS)
+	$(OCAMLOPT_CMD) -I $(MENHIRDIR) -a -o $(OPTLIB) $(MENHIROMOD) $(OPTOBJS)
 
 
 $(EXEC): $(OBJS) main.cmo $(LIBS)
-	$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES) -o $(EXEC) $(SYSLIBS) $(LIBS) $(OBJS) main.cmo
+	$(OCAMLC_CMD) -o $(EXEC) $(SYSLIBS) $(LIBS) $(OBJS) main.cmo
 
 clean::
 	rm -f $(LIB)
 	rm -f $(OPTLIB) $(LIB:.cma=.a)
-	rm -f $(TARGET)
+	rm -f $(TARGET_ALIAS)
 
 
 .SUFFIXES:
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
-.ml.cmo:
-	$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES) -c $<
-
-.mli.cmi:
-	$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES) -c $<
-
-.ml.cmx:
-	$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES) -c $<
+ifneq ($(strip $(abs_top_srcdir)),)
+include $(abs_top_srcdir)/modules_with_mli.make
+endif
 
 $(LEXER_SOURCES:.mll=.ml) :	$(LEXER_SOURCES)
 	$(OCAMLLEX) $(LEXER_SOURCES)

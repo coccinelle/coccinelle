@@ -2,7 +2,7 @@
 # See copyright.txt in the Coccinelle source code for more information.
 # The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
 
-#note: if you add a file (a .mli or .ml), dont forget to do a   make depend
+#note: if you add a file (a .mli or .ml), don't forget to do a make depend
 
 ifneq ($(MAKECMDGOALS),distclean)
 include ../Makefile.config
@@ -61,15 +61,17 @@ clean::
 .SUFFIXES:
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
-.ml.cmo:
-	$(OCAMLC_CMD) -c $<
+ifneq ($(strip $(abs_top_srcdir)),)
+include $(abs_top_srcdir)/common_rules.make
 
-.mli.cmi:
-	$(OCAMLC_CMD) -c $<
-
-.ml.cmx:
-	$(OCAMLOPT_CMD) -c $<
-
+modules_with_mli::=\
+asttopopl \
+insert_quantifiers \
+popl \
+popltoctl \
+pretty_print_popl
+include $(abs_top_srcdir)/rule_pair2.make
+endif
 
 # clean rule for others files
 clean::

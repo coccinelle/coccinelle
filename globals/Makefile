@@ -15,7 +15,8 @@ TARGET=globals
 OCAMLCFLAGS ?= -g
 OPTFLAGS ?= -g
 
-SRC=config.ml flag.ml iteration.ml $(REGEXP_FILE) regexp.ml
+SRC_without_mli::=config.ml flag.ml $(REGEXP_FILE) regexp.ml
+SRC_with_mli::=iteration.ml
 
 LIBS=
 INCLUDEDIRS= ../commons $(PCREDIR)
@@ -30,8 +31,8 @@ OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES)
 OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDES)
 OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDES)
 
-OBJS= $(SRC:.ml=.cmo)
-OPTOBJS= $(SRC:.ml=.cmx)
+OBJS::=$(SRC_without_mli:.ml=.cmo) $(SRC_with_mli:.ml=.cmo)
+OPTOBJS::=$(SRC_without_mli:.ml=.cmx) $(SRC_with_mli:.ml=.cmx)
 
 ##############################################################################
 # Top rules
@@ -52,15 +53,16 @@ $(TARGET).cmxa: $(LIBS:.cma=.cmxa) $(OPTOBJS)
 ##############################################################################
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
-.ml.cmo:
-	$(OCAMLC_CMD) -c $<
-.mli.cmi:
-	$(OCAMLC_CMD) -c $<
-.ml.cmx:
-	$(OCAMLOPT_CMD) -c $<
+ifneq ($(strip $(abs_top_srcdir)),)
+include $(abs_top_srcdir)/common_rules.make
+include $(abs_top_srcdir)/rule_pair.make
 
-.ml.mldepend:
-	$(OCAMLC_CMD) -i $<
+iteration.cmo: iteration.ml iteration.cmi
+	$(OCAMLC_CMD) -c $<
+
+iteration.cmx: iteration.ml iteration.cmi
+	$(OCAMLOPT_CMD) -c $<
+endif
 
 clean:
 	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot

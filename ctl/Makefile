@@ -9,7 +9,8 @@ endif
 
 TARGET=ctl
 
-SRC=flag_ctl.ml ast_ctl.ml pretty_print_ctl.ml ctl_engine.ml wrapper_ctl.ml
+SRC_without_mli::=ast_ctl.ml flag_ctl.ml
+SRC_with_mli::=ctl_engine.ml pretty_print_ctl.ml wrapper_ctl.ml
 
 SYSLIBS=str.cma unix.cma
 LIBS=../commons/commons.cma ../globals/globals.cma
@@ -30,9 +31,9 @@ OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDES)
 LIB=$(TARGET).cma
 OPTLIB=$(LIB:.cma=.cmxa)
 
-OBJS = $(SRC:.ml=.cmo)
-OPTOBJS = $(SRC:.ml=.cmx)
-
+working_order::=flag_ctl ast_ctl pretty_print_ctl ctl_engine wrapper_ctl
+OBJS::=$(addsuffix .cmo,$(working_order))
+OPTOBJS::=$(addsuffix .cmx,$(working_order))
 
 all: $(LIB)
 all.opt:
@@ -54,15 +55,18 @@ clean::
 .SUFFIXES:
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
-.ml.cmo:
+ifneq ($(strip $(abs_top_srcdir)),)
+include $(abs_top_srcdir)/common_rules.make
+include $(abs_top_srcdir)/rule_pair.make
+
+pretty_print_ctl.cmo: pretty_print_ctl.ml pretty_print_ctl.cmi \
+../commons/common.cmi
 	$(OCAMLC_CMD) -c $<
 
-.mli.cmi:
-	$(OCAMLC_CMD) -c $<
-
-.ml.cmx:
+pretty_print_ctl.cmx: pretty_print_ctl.ml pretty_print_ctl.cmi \
+../commons/common.cmi
 	$(OCAMLOPT_CMD) -c $<
-
+endif
 
 # clean rule for other files
 clean::

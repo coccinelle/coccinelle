@@ -51,15 +51,15 @@ clean::
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
-.ml.cmo:
-	$(OCAMLC_CMD) -c $<
-.mli.cmi:
-	$(OCAMLC_CMD) -c $<
-.ml.cmx:
-	$(OCAMLOPT_CMD) -c $<
+ifneq ($(strip $(abs_top_srcdir)),)
+include $(abs_top_srcdir)/common_rules.make
 
-.ml.mldepend:
-	$(OCAMLC_CMD) -i $<
+$(OBJS): %.cmo: %.ml %.cmi
+	$(OCAMLC_CMD) -c $<
+
+$(OPTOBJS): %.cmx: %.ml %.cmi
+	$(OCAMLOPT_CMD) -c $<
+endif
 
 clean::
 	rm -f .depend

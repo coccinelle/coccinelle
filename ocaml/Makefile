@@ -7,7 +7,8 @@ include ../Makefile.config
 -include ../Makefile.local
 endif
 
-TARGET=cocciocaml
+TARGET::=ocaml
+TARGET_ALIAS::=cocciocaml
 
 SRC=externalanalysis.ml \
 	exposed_modules.ml coccilib.ml ocamlcocci_aux.ml $(OCAMLCOCCI_FILE) \
@@ -43,24 +44,24 @@ OPTOBJS = $(SRC:.ml=.cmx)
 ##############################################################################
 # Top rules
 ##############################################################################
-all: $(TARGET).cma
+all: $(TARGET_ALIAS).cma
 all.opt:
-	@$(MAKE) $(TARGET).cmxa BUILD_OPT=yes
+	@$(MAKE) $(TARGET_ALIAS).cmxa BUILD_OPT=yes
 
-$(TARGET).cma: $(OBJS)
-	$(OCAMLC_CMD) -a -o $(TARGET).cma $(OBJS)
+$(TARGET_ALIAS).cma: $(OBJS)
+	$(OCAMLC_CMD) -a -o $(TARGET_ALIAS).cma $(OBJS)
 	for i in `grep " (\*" exposed_modules.ml | sed "s/^.*(\* //" | sed "s/\..* \*)$$//"`; do cp ../$$i.cmi .; done
 
-$(TARGET).cmxa: $(OPTOBJS) $(LIBS:.cma=.cmxa)
-	$(OCAMLOPT_CMD) -a -o $(TARGET).cmxa $(OPTOBJS)
+$(TARGET_ALIAS).cmxa: $(OPTOBJS) $(LIBS:.cma=.cmxa)
+	$(OCAMLOPT_CMD) -a -o $(TARGET_ALIAS).cmxa $(OPTOBJS)
 	for i in `grep " (\*" exposed_modules.ml | sed "s/^.*(\* //" | sed "s/\..* \*)$$//"`; do cp ../$$i.cmi .; done
 	for i in `grep " (\*" exposed_modules.ml | sed "s/^.*(\* //" | sed "s/\..* \*)$$//"`; do cp ../$$i.cmx .; done
 
-$(TARGET).top: $(OBJS) $(LIBS)
-	$(OCAMLMKTOP_CMD) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS)
+$(TARGET_ALIAS).top: $(OBJS) $(LIBS)
+	$(OCAMLMKTOP_CMD) -o $(TARGET_ALIAS).top $(SYSLIBS) $(LIBS) $(OBJS)
 
 clean::
-	rm -f $(TARGET).top
+	rm -f $(TARGET_ALIAS).top
 
 include Makefile.doc
 
@@ -75,15 +76,9 @@ include Makefile.doc
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
-.ml.cmo:
-	$(OCAMLC_CMD) -c $<
-.mli.cmi:
-	$(OCAMLC_CMD) -c $<
-.ml.cmx:
-	$(OCAMLOPT_CMD) -c $<
-
-.ml.mldepend:
-	$(OCAMLC_CMD) -i $<
+ifneq ($(strip $(abs_top_srcdir)),)
+include $(abs_top_srcdir)/modules_with_mli.make
+endif
 
 clean::
 	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot
