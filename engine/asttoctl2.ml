@@ -18,6 +18,8 @@ module CTL = Ast_ctl
 
 let warning s = Printf.fprintf stderr "warning: %s\n" s
 
+let this_rule = ref ""
+
 type cocci_predicate = Lib_engine.predicate * Ast.meta_name Ast_ctl.modif
 type formula = Lib_engine.ctlcocci
 type top_formula = NONDECL of Lib_engine.ctlcocci | CODE of Lib_engine.ctlcocci
@@ -521,14 +523,40 @@ let rec seq_fvs quantified = function
       let new_quantified = Common.union_set bothfvs quantified in
       (t1onlyfvs,bothfvs)::(seq_fvs new_quantified fvs)
 
-let quantify guard =
+let get_constraints fvs code =
+  let fv_constraints =
+    List.fold_left
+      (fun prev cur ->
+	try
+	  !(Hashtbl.find Data.non_local_script_constraints (!this_rule,cur)) @
+	  prev
+	with Not_found -> prev)
+      [] fvs in
+  match fv_constraints with
+    [] -> code
+  | ((rl,nm),cstr)::_ ->
+      failwith
+	(Printf.sprintf "constraint on %s.%s floats out beyond a rule elem"
+	   rl nm)
+      (* We would like to have a constructor Constraints, as follows, that
+      would be like Exists, but would drop out environments that don't
+      satisfy the constraints.  Unfortunately, the abstractness of the CTL
+      engine and all the wrapping makes it hard to figure out how to add a
+      new function eval_constraint, analogous to label.  So for the moment,
+      we allow only constraints that can be evaluated at rule elems. *)
+      (*CTL.Constraints(fv_constraints,code)*)
+
+let quantify guard fvs rest =
   List.fold_right
     (function cur ->
-      function code -> CTL.Exists (not guard && List.mem cur !saved,cur,code))
+      function code ->
+	CTL.Exists (not guard && List.mem cur !saved,cur,code))
+    fvs (get_constraints fvs rest)
 
-let non_saved_quantify =
+let non_saved_quantify fvs rest =
   List.fold_right
     (function cur -> function code -> CTL.Exists (false,cur,code))
+    fvs (get_constraints fvs rest)
 
 let intersectll lst nested_list =
   List.filter (function x -> List.exists (List.mem x) nested_list) lst
@@ -2679,6 +2707,7 @@ let rec cleanup c =
 (* ua = used_after, fua = fresh_used_after, fuas = fresh_used_after_seeds *)
 
 let top_level name ((ua,pos),fua) (fuas,t) =
+  this_rule := name;
   let ua = List.filter (function (nm,_) -> nm = name) ua in
   used_after := ua;
   saved := Ast.get_saved t;
@@ -2733,8 +2762,8 @@ let asttoctlz (name,(_,_,exists_flag),l)
 let asttoctl r used_after positions =
   match r with
     Ast.ScriptRule _ | Ast.InitialScriptRule _ | Ast.FinalScriptRule _ -> []
-  | Ast.CocciRule (a,b,c,_,Ast_cocci.Normal) ->
-      asttoctlz (a,b,c) used_after positions
+  | Ast.CocciRule (rule_name,b,c,_,Ast_cocci.Normal) ->
+      asttoctlz (rule_name,b,c) used_after positions
   | Ast.CocciRule (a,b,c,_,Ast_cocci.Generated) -> [CODE CTL.True]
 
 let pp_cocci_predicate (pred,modif) =

@@ -338,13 +338,28 @@ module XMATCH = struct
 
   let check_constraints ida idb constraints f =
     (fun tin ->
-      !constraint_checker ida idb (function id -> tin.binding0 +> List.assoc id)
+      !constraint_checker ida idb
+	(function id -> tin.binding0 +> List.assoc id)
 	constraints tin)
+      >>= (fun _ _ -> f ())
+
+  let check_re_constraints pname constraints f =
+    (fun tin ->
+      let myrule = fst pname in
+      try
+	let pvalu = List.assoc pname tin.binding in
+	!constraint_checker pname pvalu
+	  (fun ((rl,_) as name) ->
+	    let env = if rl = myrule then tin.binding else tin.binding0 in
+	    List.assoc name env)
+	  constraints tin
+      with Not_found -> return ((),()) tin)
       >>= (fun _ _ -> f ())
 
   let check_pos_constraints pname pvalu constraints f =
     (fun tin ->
-      !constraint_checker pname pvalu (fun name -> List.assoc name tin.binding0)
+      !constraint_checker pname pvalu
+	(fun name -> List.assoc name tin.binding0)
 	constraints tin)
       >>= (fun _ _ -> f)
 

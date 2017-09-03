@@ -73,6 +73,11 @@
 - Caching of parsed header files, --no-include-cache to disable.
 - --force-kr and --prevent-kr options to control whether K&R parsing is
   considered.
+- Generalization of script constraints to allow reference to metavariables
+  defined in the same rule, only when the constrained metavariable always
+  occurs in rule_elems that also mention any othe local metavariables
+  mentioned in the script constraint.  Referenced local variables must be
+  declared before the constrained one.
 ** Bugfix:
 - Improved detection of metavariables in strings.  Problem reported by
   Wolfram Sang.

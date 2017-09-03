@@ -982,6 +982,7 @@ let astfvs metavars bound =
     {(k re) with
       Ast.free_vars = matched;
       Ast.minus_free_vars = munbound;
+      Ast.minus_nc_free_vars = minus_nc_free;
       Ast.fresh_vars = fresh;
       Ast.inherited = inherited;
       Ast.positive_inherited_positions = inherited_pos;

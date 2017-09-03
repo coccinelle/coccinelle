@@ -126,3 +126,7 @@ val format_list_metavariables :
 val constraint_scripts:
     (bool * Ast_cocci.meta_name * Ast_cocci.script_constraint) list ref
 (** The list of all constraint scripts. *)
+
+val non_local_script_constraints:
+    ((string (* rule name *) * Ast_cocci.meta_name),
+     (Ast_cocci.meta_name * Ast_cocci.script_constraint) list ref) Hashtbl.t

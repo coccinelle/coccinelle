@@ -21,9 +21,11 @@ type 'a wrap =
       node_line : line;
       free_vars : meta_name list; (*free vars*)
       minus_free_vars : meta_name list; (*minus free vars*)
+      minus_nc_free_vars : meta_name list; (*minus free vars, excluding cstrs*)
       fresh_vars : (meta_name * seed) list; (*fresh vars*)
       inherited : meta_name list; (*inherited vars*)
       positive_inherited_positions : meta_name list;
+      constraints : (meta_name * constraints) list;
       saved_witness : meta_name list; (*witness vars*)
       bef_aft : dots_bef_aft;
       pos_info : meta_name mcode option; (* pos info, try not to duplicate *)
@@ -780,9 +782,12 @@ val get_wcfvs : ('a wrap,'b wrap) whencode list -> meta_name list
 val set_fvs : meta_name list -> 'a wrap -> 'a wrap
 val get_mfvs : 'a wrap -> meta_name list
 val set_mfvs : meta_name list -> 'a wrap -> 'a wrap
+val get_minus_nc_fvs : 'a wrap -> meta_name list
 val get_fresh : 'a wrap -> (meta_name * seed) list
 val get_inherited : 'a wrap -> meta_name list
 val get_inherited_pos : 'a wrap -> meta_name list
+val get_constraints : 'a wrap -> (meta_name * constraints) list
+val add_constraint : 'a wrap -> meta_name * constraints -> 'a wrap
 val get_saved : 'a wrap -> meta_name list
 val get_dots_bef_aft : statement -> dots_bef_aft
 val set_dots_bef_aft : dots_bef_aft -> statement -> statement

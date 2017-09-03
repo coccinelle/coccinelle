@@ -2415,19 +2415,24 @@ nonempty_constraints:
 	| Some r, n -> r, n in
       let local =
 	List.for_all (fun (rl,_) -> not (rl = !Ast0.rule_name)) params in
-      Printf.eprintf "params: %d\n" (List.length params);
       let params =
 	List.map
 	  (fun (rl,nm) ->
-	    Printf.eprintf "call 1\n";
             let mv = Parse_aux.lookup rl nm in
-	    Printf.eprintf "returned from call 1\n";
 	    ((rl,nm),mv))
 	  (List.rev params) in
+      let script = (key, lang', params, pos, code') in
       Data.constraint_scripts :=
-	(posvar, nm', (key, lang', params, pos, code'))
-	:: !Data.constraint_scripts;
-      Ast.CstrScript (local,(key, lang', params, pos, code')) }
+	(posvar, nm', script) :: !Data.constraint_scripts;
+      (if not local
+      then
+	(let mv =
+	  match nm with
+	    (None,nm) -> (!Ast0.rule_name,nm)
+	  | (Some rule,nm) -> (rule,nm) in
+	Common.hashadd Data.non_local_script_constraints
+	  (!Ast0.rule_name,mv) (mv,script)));
+      Ast.CstrScript (local,script) }
 | TBang c = nonempty_constraints { fun posvar nm -> Ast.CstrNot (c posvar nm) }
 | l=nonempty_constraints TAndLog r=nonempty_constraints
     { fun posvar nm -> Ast.CstrAnd [l posvar nm; r posvar nm] }

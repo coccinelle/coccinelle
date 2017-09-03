@@ -147,3 +147,8 @@ let format_list_metavariables =
 
 let constraint_scripts:
     (bool * Ast_cocci.meta_name * Ast_cocci.script_constraint) list ref = ref []
+
+let non_local_script_constraints =
+  ((Hashtbl.create 101) :
+     (((string (* rule name *) * Ast_cocci.meta_name),
+      (Ast_cocci.meta_name * Ast_cocci.script_constraint) list ref) Hashtbl.t))

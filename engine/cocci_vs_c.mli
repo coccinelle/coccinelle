@@ -210,6 +210,10 @@ module type PARAM =
 	Ast_cocci.meta_name -> Ast_c.metavar_binding_kind ->
 	  Ast_cocci.constraints -> (unit -> tin -> 'x tout) -> tin -> 'x tout
 
+    val check_re_constraints :
+	Ast_cocci.meta_name -> Ast_cocci.constraints ->
+	  (unit -> tin -> 'x tout) -> tin -> 'x tout
+
     val check_constraints_ne :
       ('a, 'b) matcher -> 'a list -> 'b ->
 	(unit -> tin -> 'x tout) -> (tin -> 'x tout)

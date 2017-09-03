@@ -2519,6 +2519,7 @@ let contains_modifs ast =
 let process file isofile verbose =
   Parse_aux.contains_string_constant := false;
   let extra_path = Filename.dirname file in
+  Lexer_cocci.spinit();
   let (iso_files, rules, virt, _metas) = parse file in
   eval_virt virt;
   let std_isos =
@@ -2637,6 +2638,7 @@ let process file isofile verbose =
   let disjd = Disjdistr.disj parsed in
 
   let (metavars,code,fvs,neg_pos,ua,pos) = Free_vars.free_vars disjd in
+  let code = Re_constraints.re_constraints code in
   if !Flag_parsing_cocci.show_SP
   then List.iter2 Pretty_print_cocci.unparse metavars code;
 

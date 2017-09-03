@@ -726,6 +726,10 @@ module type PARAM =
 	A.meta_name -> B.metavar_binding_kind -> A.constraints ->
 	  (unit -> tin -> 'x tout) -> tin -> 'x tout
 
+    val check_re_constraints :
+	A.meta_name -> A.constraints ->
+	  (unit -> tin -> 'x tout) -> tin -> 'x tout
+
     val check_constraints_ne :
       ('a, 'b) matcher -> 'a list -> 'b ->
 	(unit -> tin -> 'x tout) -> (tin -> 'x tout)
@@ -4637,7 +4641,7 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
   in
   X.all_bound (A.get_inherited re) >&&>
 
-  rewrap (
+  (rewrap (
   match A.unwrap re, F.unwrap node with
 
   (* note: the order of the clauses is important. *)
@@ -5328,6 +5332,12 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
       -> fail
 
 
-  )
+  )) >>=
+  (fun a b ->
+  let rec loop = function
+      [] -> return(a,b)
+    | (nm,cstr)::rest ->
+	X.check_re_constraints nm cstr (fun () -> loop rest) in
+  loop (A.get_constraints re))
 
 end

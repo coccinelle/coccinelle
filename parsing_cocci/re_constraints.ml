@@ -4,6 +4,9 @@
  * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
+module Ast = Ast_cocci
+module V = Visitor_ast
+
 (* if a variable affected by a script constraint is always referenced only
 with all the other local variables that are mentioned bt that script
 constraint, then we can push the script constraint down to the rule_element
@@ -17,29 +20,29 @@ let disj_free_table = Hashtbl.create 101
 let disj_free re =
   let bind = (&&) in
   let option_default = true in
-  let mcode = true in
+  let mcode _ _ = true in
   let donothing r k e = k e in
   (* case for anything with a disj *)
   let ident r k e =
-    match Ast.unwrap e with Ast.DisjId -> false | _ -> k e in
+    match Ast.unwrap e with Ast.DisjId _ -> false | _ -> k e in
   let expr r k e =
-    match Ast.unwrap e with Ast.DisjExpr -> false | _ -> k e in
+    match Ast.unwrap e with Ast.DisjExpr _ -> false | _ -> k e in
   let ty r k e =
-    match Ast.unwrap e with Ast.DisjType -> false | _ -> k e in
+    match Ast.unwrap e with Ast.DisjType _ -> false | _ -> k e in
   let decl r k e =
-    match Ast.unwrap e with Ast.DisjDecl -> false | _ -> k e in
+    match Ast.unwrap e with Ast.DisjDecl _ -> false | _ -> k e in
   let field r k e =
-    match Ast.unwrap e with Ast.DisjField -> false | _ -> k e in
+    match Ast.unwrap e with Ast.DisjField _ -> false | _ -> k e in
   let rule_elem r k e =
-    match Ast.unwrap e with Ast.DisjRuleElem -> false | _ -> k e in
+    match Ast.unwrap e with Ast.DisjRuleElem _ -> false | _ -> k e in
   let statement r k e =
-    match Ast.unwrap e with Ast.Disj -> false | _ -> k e in
+    match Ast.unwrap e with Ast.Disj _ -> false | _ -> k e in
   let v =
     V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
     donothing donothing donothing donothing donothing donothing ident
-    expr donothing donothing donothing donothing donothing ty
+    expr donothing donothing donothing donothing ty donothing
     donothing donothing donothing decl donothing field donothing
     rule_elem statement donothing donothing donothing in
   try Hashtbl.find disj_free_table re
@@ -48,41 +51,49 @@ let disj_free re =
     Hashtbl.add disj_free_table re res;
     res
 
-let ok_for_all_rule_elems constraint minirules =
+let ok_for_all_rule_elems cstr minirules =
   let bind = (&&) in
   let option_default = true in
-  let mcode = true in
+  let mcode _ _ = true in
   let donothing r k e = k e in
 
-  let (self,(_key,_lang,params,_pos,_code)) = constraint in
+  let (self,(_key,_lang,params,_pos,_code)) = cstr in
   let rule_elem r k re =
-    let available = Ast.minus_free_vars re in
+    let available = Ast.get_minus_nc_fvs re in
     if List.mem self available
     then
-      (List.for_all (fun x -> List.mem x available) (List.map fst params)) &&
-      (disj_free re)
+      let res =
+	(List.for_all (fun x -> List.mem x available) (List.map fst params)) &&
+	(disj_free re) in
+      if res
+      then res
+      else
+	failwith
+	  (Printf.sprintf
+	     "%s: constraint on variable %s cannot be evaluated in line %d"
+	     (fst self) (snd self) (Ast.get_line re))
     else true (* not relevant to this rule_elem *) in
 
   let v =
     V.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode mcode
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    rule_elem donothing donothing donothing donothing in
-  List.for_all (v.V.combiner_top_level) minirules
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode
+      donothing donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing donothing
+      rule_elem donothing donothing donothing donothing in
+  List.for_all v.V.combiner_top_level minirules
 
-let update_for_all_rule_elems constraint rule =
+let update_for_all_rule_elems cstr minirules =
   let mcode mc = mc in
   let donothing r k e = k e in
 
-  let (self,(_key,_lang,params,_pos,_code)) = constraint in
+  let (self,((_key,_lang,params,_pos,_code) as sc)) = cstr in
   let rule_elem r k re =
     let re = k re in
-    let available = Ast.minus_free_vars re in
+    let available = Ast.get_minus_nc_fvs re in
     if List.mem self available
-    then Ast.add_constraint constraint re
+    then Ast.add_constraint re (self,Ast.CstrScript(true,sc))
     else re in
     
   let v =
@@ -92,17 +103,13 @@ let update_for_all_rule_elems constraint rule =
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing
-      donothing donothing donothing rule_elem
-      donothing donothing donothing donothing in
-  match rule with
-    Ast.CocciRule(rule_name,_,minirules,_,_) ->
-      List.map (v.V.combiner_top_level) minirules
-  | Ast.ScriptRule _ | Ast.InitialScriptRule _ | Ast.FinalScriptRule _ ->
-      rule
+      donothing donothing donothing donothing
+      donothing rule_elem donothing donothing donothing donothing in
+  List.map v.V.rebuilder_top_level minirules
 
-let remove ((nm,x) as cstr) =
-  let cell = Hashtbl.find Data.non_local_script_constraints nm in
-  let rest = List.filter (function y -> not(x = snd y)) !cell in
+let remove rule_name ((nm,_) as x) =
+  let cell = Hashtbl.find Data.non_local_script_constraints (rule_name,nm) in
+  let rest = List.filter (function y -> not(x = y)) !cell in
   cell := rest
 
 let re_constraints rules =
@@ -121,13 +128,12 @@ let re_constraints rules =
 	      with Not_found -> [] in
 	    let minirules =
 	      List.fold_left
-		(fun minirules constraint ->
-		  let v = v constraint in
-		  if ok_for_all_rule_elems constraint minirules
+		(fun minirules cstr ->
+		  if ok_for_all_rule_elems cstr minirules
 		  then
 		    begin
-		      remove constraint;
-		      update_for_all_rule_elems constraint minirules
+		      remove rule_name cstr;
+		      update_for_all_rule_elems cstr minirules
 		    end
 		  else minirules)
 		minirules constraints in

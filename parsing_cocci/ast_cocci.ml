@@ -24,9 +24,11 @@ type 'a wrap =
       node_line : line;
       free_vars : meta_name list; (*free vars*)
       minus_free_vars : meta_name list; (*minus free vars*)
+      minus_nc_free_vars : meta_name list; (*minus free vars, excluding cstrs*)
       fresh_vars : (meta_name * seed) list; (*fresh vars*)
       inherited : meta_name list; (*inherited vars*)
       positive_inherited_positions : meta_name list;
+      constraints : (meta_name * constraints) list;
       saved_witness : meta_name list; (*witness vars*)
       bef_aft : dots_bef_aft;
       (* the following is for or expressions *)
@@ -817,9 +819,12 @@ let get_fvs x              = x.free_vars
 let set_fvs fvs x          = {x with free_vars = fvs}
 let get_mfvs x             = x.minus_free_vars
 let set_mfvs mfvs x        = {x with minus_free_vars = mfvs}
+let get_minus_nc_fvs x     = x.minus_nc_free_vars
 let get_fresh x            = x.fresh_vars
 let get_inherited x        = x.inherited
 let get_inherited_pos x    = x.positive_inherited_positions
+let get_constraints x      = x.constraints
+let add_constraint x c     = {x with constraints = c::x.constraints}
 let get_saved x            = x.saved_witness
 let get_dots_bef_aft x     = x.bef_aft
 let set_dots_bef_aft d x   = {x with bef_aft = d}
@@ -935,9 +940,11 @@ let make_term x =
     node_line = 0;
     free_vars = [];
     minus_free_vars = [];
+    minus_nc_free_vars = [];
     fresh_vars = [];
     inherited = [];
     positive_inherited_positions = [];
+    constraints = [];
     saved_witness = [];
     bef_aft = NoDots;
     pos_info = None;
@@ -950,9 +957,11 @@ let make_inherited_term x inherited inh_pos =
     node_line = 0;
     free_vars = [];
     minus_free_vars = [];
+    minus_nc_free_vars = [];
     fresh_vars = [];
     inherited = inherited;
     positive_inherited_positions = inh_pos;
+    constraints = [];
     saved_witness = [];
     bef_aft = NoDots;
     pos_info = None;

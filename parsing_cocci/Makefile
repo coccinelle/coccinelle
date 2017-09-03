@@ -24,8 +24,8 @@ iso_compile.ml single_statement.ml simple_assignments.ml \
 get_metas.ml stmtlist.ml check_meta.ml top_level.ml \
 type_infer.ml test_exps.ml unitary_ast0.ml arity.ml index.ml context_neg.ml \
 adjust_pragmas.ml insert_plus.ml function_prototypes.ml \
-semantic_cocci.ml data.ml free_vars.ml safe_for_multi_decls.ml \
-parse_printf.ml parse_aux.ml disjdistr.ml \
+semantic_cocci.ml data.ml free_vars.ml re_constraints.ml \
+safe_for_multi_decls.ml parse_printf.ml parse_aux.ml disjdistr.ml \
 $(LEXER_SOURCES:.mll=.ml) $(PARSER_SOURCES:.mly=.ml) \
 $(CLI_LEXER_SOURCES:.mll=.ml) $(SCRIPT_LEXER_SOURCES:.mll=.ml) \
 cocci_grep.ml dpll.ml get_constants2.ml id_utils.ml git_grep.ml adjacency.ml \
