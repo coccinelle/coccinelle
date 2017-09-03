@@ -990,7 +990,7 @@ let triples_witness x unchecked not_keep trips =
 (* Not yet supported, due to the complexity of adding a new component,
 analogous to label, to the interaction between Coccinelle and the CTL
 engine *)
-let interpret_constraints eval_constraint constraints trips =
+(*let interpret_constraints eval_constraint constraints trips =
   List.filter (function (s,th,wit) -> List.for_all eval_constraint th)
     trips
 *)
