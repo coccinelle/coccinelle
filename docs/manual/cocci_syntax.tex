@@ -270,33 +270,35 @@ i.e., including as an element of another statement list.
   \CASE{\NT{bin\_op}}
 \end{grammar}
 
-A metavariable declaration local idexpression v means that v is restricted
-to be a local variable.  If it should just be a variable, but not
-necessarily a local one, then drop local.  A more complex description of a
-location, such as a->b is considered to be an expression, not an
+A metavariable declaration {\bf local idexpression} v means that v is
+restricted to be a local variable.  If it should just be a variable, but
+not necessarily a local one, then drop local.  A more complex description
+of a location, such as a->b is considered to be an expression, not an
 idexpression.
 
-Constant is for constants, such as 27.  But it also considers an identifier
-that is all capital letters (possibly containing numbers) as a constant as
-well, because the names given to macros in Linux usually have this form.
+{\bf Constant} is for constants, such as 27.  But it also considers an
+identifier that is all capital letters (possibly containing numbers) as a
+constant as well, because the names given to macros in Linux usually have
+this form.
 
-An identifier is the name of a structure field, a macro, a function, or a
-variable.  It is the name of something rather than an expression that has a
-value.  But an identifier can be used in the position of an expression as
-well, where it represents a variable.
+An {\bf identifier} is the name of a structure field, a macro, a function,
+or a variable.  It is the name of something rather than an expression that
+has a value.  But an identifier can be used in the position of an
+expression as well, where it represents a variable.
 
-It is possible to specify that an expression list or a parameter list
-metavariable should match a specific number of expressions or parameters.
+It is possible to specify that an {\bf expression list} or a {\bf parameter
+  list} metavariable should match a specific number of expressions or
+parameters.
 
-An identifier list is only used for the parameter list of a macro.  It is
-possible to specify its length.
+An {\bf identifier list} is only used for the parameter list of a macro.
+It is possible to specify its length.
 
-It is possible to specify some information about the definition of a fresh
-identifier.  Examples are found in demos/plusplus1.cocci and
+It is possible to specify some information about the definition of a {\bf
+  fresh identifier}.  Examples are found in demos/plusplus1.cocci and
 demos/plusplus2.cocci %See the wiki.
 
-A symbol declaration specifies that the provided identifiers should be
-considered C identifiers when encountered in the body of the rule.
+A {\bf symbol} declaration specifies that the provided identifiers should
+be considered C identifiers when encountered in the body of the rule.
 Identifiers in the body of the rule that are not declared explicitly are by
 default considered symbols, thus symbol declarations are optional.  It is
 not required, but it will not cause a parse error, to redeclare a name as a
@@ -305,43 +307,49 @@ metavariable.  It will be considered to be a metavariable in such rules,
 and will revert to being a symbol in subsequent rules.  These conditions
 also apply to iterator names and declarer names.
 
-An attribute name declaration indicates a name that should be considered to
-be an attribute.
+An {\bf attribute name} declaration indicates a name that should be
+considered to be an attribute.
 
-A position metavariable is used by attaching it using \texttt{@} to any
-token, including another metavariable.  Its value is the position (file,
-line number, etc.) of the code matched by the token.  It is also possible
-to attach expression, declaration, type, initialiser, and statement
-metavariables in this manner.  In that case, the metavariable is bound to
-the closest enclosing expression, declaration, etc.  If such a metavariable
-is itself followed by a position metavariable, the position metavariable
-applies to the metavariable that it follows, and not to the attached token.
-This makes it possible to get eg the starting and ending position of {\tt
-  f(...)}, by writing {\tt f(...)@E@p}, for expression metavariable {\tt E}
-and position metavariable {\tt p}. This attachment notation for
-metavariables of type other than position can also be expressed with a
-conjunction, but the @ notation may be more concise.
+A {\bf position} metavariable is used by attaching it using \texttt{@} to
+any token, including another metavariable.  Its value is the position
+(file, line number, etc.) of the code matched by the token.  It is also
+possible to attach expression, declaration, type, initialiser, and
+statement metavariables in this manner.  In that case, the metavariable is
+bound to the closest enclosing expression, declaration, etc.  If such a
+metavariable is itself followed by a position metavariable, the position
+metavariable applies to the metavariable that it follows, and not to the
+attached token.  This makes it possible to get eg the starting and ending
+position of {\tt f(...)}, by writing {\tt f(...)@E@p}, for expression
+metavariable {\tt E} and position metavariable {\tt p}. This attachment
+notation for metavariables of type other than position can also be
+expressed with a conjunction, but the @ notation may be more concise.
 
-When used, a format or format list metavariable must be enclosed by a pair
-of \texttt{@}s.  A format metavariable matches the format descriptor part,
-i.e., \texttt{2x} in \texttt{\%2x}.  A format list metavariable matches a
-sequence of format descriptors as well as the text between them.  Any text
-around them is matched as well, if it is not matched by the surrounding
-text in the semantic patch.  Such text is not partially matched.  If the
-length of the format list is specified, that indicates the number of
-matched format descriptors.  It is also possible to use \texttt{\ldots} in
-a format string, to match a sequence of text fragments and format
-descriptors.  This only takes effect if the format string contains format
-descriptors.  Note that this makes it impossible to require \texttt{\ldots}
-to match exactly in a string, if the semantic patch string contains format
-descriptors.  If that is needed, some processing with a scripting language
-would be required.  And example for the use of string format metavariables
-is found in demos/format.cocci.
+When used, a {\bf format} or {\bf format list} metavariable must be
+enclosed by a pair of \texttt{@}s.  A format metavariable matches the
+format descriptor part, i.e., \texttt{2x} in \texttt{\%2x}.  A format list
+metavariable matches a sequence of format descriptors as well as the text
+between them.  Any text around them is matched as well, if it is not
+matched by the surrounding text in the semantic patch.  Such text is not
+partially matched.  If the length of the format list is specified, that
+indicates the number of matched format descriptors.  It is also possible to
+use \texttt{\ldots} in a format string, to match a sequence of text
+fragments and format descriptors.  This only takes effect if the format
+string contains format descriptors.  Note that this makes it impossible to
+require \texttt{\ldots} to match exactly in a string, if the semantic patch
+string contains format descriptors.  If that is needed, some processing
+with a scripting language would be required.  And example for the use of
+string format metavariables is found in demos/format.cocci.
 
-Assignment (resp. binary) operator metavariables match any assignment
-(resp. binary) operator. The list of operators that can be matched can
-be restricted by adding an operator constraint, i.e. a list of accepted
-operators.
+Matching of various kinds of format strings within strings is supported.
+With the {\tt -{}-ibm} option, matching of decimal format declarations is
+supported, but the length and precision arguments are not interpreted.
+Thus it is not possible to match metavariables in these fields.  Instead,
+the entire format is matched as a single string.
+
+{\bf Assignment} (resp.~binary) {|bf operator} metavariables match any
+assignment (resp. binary) operator. The list of operators that can be
+matched can be restricted by adding an operator constraint, i.e. a list of
+accepted operators.
 
 Other kinds of metavariables can also be attached using \texttt{@} to any
 token.  In this case, the metavariable floats up to the enclosing
@@ -354,12 +362,6 @@ represented by the names of the parameters.  Another particular case is
 {\tt E@S}, where {\tt E} is any expression and {\tt S} is a statement
 metavariable.  {\tt S} matches the closest enclosing statement, which may
 be more than what is matches by the semantic match pattern itself.
-
-Matching of various kinds of format strings within strings is supported.
-With the {\tt -{}-ibm} option, matching of decimal format declarations is
-supported, but the length and precision arguments are not interpreted.
-Thus it is not possible to match metavariables in these fields.  Instead,
-the entire format is matched as a single string.
 
 \begin{grammar}
   \RULE{\rt{ids}}
@@ -460,16 +462,32 @@ the proposed value is different from the one in the current environment,
 but perhaps the same as the one in some other environment, the match will
 still succeed.
 
-Position metavariables can be associated with constraints implemented as
-OCaml or python script code.  The code must have the form of a single C
-expression, typically a function call with a tuple of arguments.  This
-expression must have type bool.  The script code can be parameterized by
-any inherited metavariables.  It is implicitly parameterized by the
-metavariable being declared.  In the script, the inherited variable
-parameters are referred to by their variable names, without the associated
-rule name.  The variable being declared is also referenced by its name.
-All parameters, except position variables, have their string
-representation.  An example is in demos/poscon.cocci.
+Metavariables can be associated with constraints implemented as OCaml or
+python script code.  The form of the code is somewhat restricted, due to
+the fact that it passes through the Coccinelle semantic patch lexer, before
+being converted back to a string to be passed to the scripting language
+interpreter.  It is thus best to avoid complicated code in the constraint
+itself, and instead to define relevant functions in and {\tt initialize}
+rule.  The code must represent an expression must have type bool in the
+scripting language.  The script code can be parameterized by any inherited
+metavariables.  It is implicitly parameterized by the metavariable being
+declared.  In the script, the inherited metavariable parameters are
+referred to by their variable names, without the associated rule name.  The
+script code can also be parameterized by metavariables defined previously
+in the same rule.  Such metavariables must always all be mentioned in the
+same ``rule elem'' as the metavariable to which the constraint applies.
+Such a rule elem must also not contain disjunctions, after disjunction
+lifting.  The result of disjunction lifting can be observed using {\tt
+  -{}-parse-cocci}.  A rule elem is eg an atomic statement, such as a
+return or an assignment, or a loop header, if header, etc.  The variable
+being declared can also be referenced in the script code by its name.  All
+parameters, except position variables, have their string representation.
+An example is in demos/poscon.cocci.
+
+Script constraints may be executed more than once for a given metavariable
+binding.  Executing the script constraint does not guarantee that the
+complete match will work out; the constraints are executed within the
+matching process.
 
 A declaration of a name as a typedef extends through the rest of the
 semantic patch.  It is not required, but it will not cause a parse error,
