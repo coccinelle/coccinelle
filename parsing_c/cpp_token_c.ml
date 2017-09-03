@@ -319,6 +319,11 @@ let around parens (err_line,err_col) =
       else failwith "unexpected paren order"
   | _ -> false
 
+let at tok (err_line,err_col) =
+  let tok_line = tok.Token_views_c.line in
+  let tok_col = tok.Token_views_c.col in
+  tok_line = err_line && tok_col = err_col
+
 (* This applies the macro in the current definition and all subsequent ones.
 This is unfortunate when the macro itself introduces a parse error, but it
 seems that we don't know where the current function ends. *)
@@ -330,7 +335,7 @@ let apply_macro_defs
  ?(inplace_when_single=true)
  defs pos xs =
 
- let rec apply_macro_defs dynamic_macs xs =
+ let rec apply_macro_defs dynamic_macs pos xs =
   match xs with
   | [] -> ()
 
@@ -461,7 +466,7 @@ let apply_macro_defs
                 id.tok <- token_from_parsinghack_hint (s,i1) hint;
             )
       );
-      apply_macro_defs dynamic_macs xs
+      apply_macro_defs dynamic_macs pos xs
 
   | PToken {tok = TIdent (s,i1)}::Parenthised (xxs,info_parens)::xs
     when List.mem s dynamic_macs ||
@@ -479,18 +484,37 @@ let apply_macro_defs
 	+> iter_token_paren (set_as_comment Token_c.CppMacro);
       let dynamic_macs =
 	if List.mem s dynamic_macs then dynamic_macs else s::dynamic_macs in
-      apply_macro_defs dynamic_macs xs
+      apply_macro_defs dynamic_macs pos xs
+
+  | ((PToken ({tok = TDefine i} as t1)) as start)::xs
+    when List.exists (at t1) pos ->
+      let (in_def,end_and_after) =
+	Common.span (function PToken {tok = TDefEOL _} -> false | _ -> true)
+	  xs in
+      (match end_and_after with
+	((PToken {tok = TDefEOL _}) as t2)::xs ->
+	  (* not reusable, like macros, so only comments out one #define
+	     per round *)
+	  [start] +> iter_token_paren (set_as_comment Token_c.CppMacro);
+	  in_def +> iter_token_paren (set_as_comment Token_c.CppMacro);
+	  [t2] +> iter_token_paren (set_as_comment Token_c.CppMacro);
+	  msg_apply_known_macro "#define";
+	  let pos =
+	    let mypos = (t1.Token_views_c.line,t1.Token_views_c.col) in
+	    List.filter (function x -> not (x = mypos)) pos in
+	  apply_macro_defs dynamic_macs pos xs
+      | _ -> failwith "#define with no end")
 
   | PToken ({tok = TIdent (s,i1)} as id)::
     PToken ({tok = TPtVirg _} | {tok = TEq _})::xs
       when List.mem s !Flag.cocci_attribute_names ->
 	id.tok <- TMacroEndAttr (s, i1);
-	apply_macro_defs dynamic_macs xs
+	apply_macro_defs dynamic_macs pos xs
 
   | PToken ({tok = TIdent (s,i1)} as id)::xs
       when List.mem s !Flag.cocci_attribute_names ->
 	id.tok <- TMacroAttr (s, i1);
-	apply_macro_defs dynamic_macs xs
+	apply_macro_defs dynamic_macs pos xs
 
   | PToken ({tok = TIdent (s,i1)} as id)::xs
       when Hashtbl.mem defs s ->
@@ -520,15 +544,15 @@ let apply_macro_defs
                 id.tok <- token_from_parsinghack_hint (s,i1) hint;
           )
       );
-      apply_macro_defs dynamic_macs xs
+      apply_macro_defs dynamic_macs pos xs
 
   (* recurse *)
-  | (PToken x)::xs -> apply_macro_defs dynamic_macs xs
+  | (PToken x)::xs -> apply_macro_defs dynamic_macs pos xs
   | (Parenthised (xxs, info_parens))::xs ->
-      xxs +> List.iter (apply_macro_defs dynamic_macs);
-      apply_macro_defs dynamic_macs xs
+      xxs +> List.iter (apply_macro_defs dynamic_macs pos);
+      apply_macro_defs dynamic_macs pos xs
  in
- apply_macro_defs [] xs
+ apply_macro_defs [] pos xs
 
 
 
