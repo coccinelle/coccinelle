@@ -17,11 +17,6 @@ val prepare_mvs :
   string ->
   ((string option * 'a option) * (string * string) * 'b * Ast.mvinit) list ->
   bool
-val prepare_merges :
-  out_channel ->
-  (Ast_cocci.script_meta_name * Ast_cocci.meta_name * Ast_cocci.metavar *
-   Ast_cocci.mvinit)
-  list -> (string * string) list
 val prepare_generic_rule :
   string * ((string option * string option) * 'a * Ast.metavar * 'b) list *
   ('c * string) list * string -> string -> string -> string

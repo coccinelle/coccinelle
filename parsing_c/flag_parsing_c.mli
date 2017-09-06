@@ -70,3 +70,5 @@ val no_loops : bool ref
 val no_gotos : bool ref
 val keep_comments : bool ref
 val parsing_header_for_types : bool ref
+val force_kr : bool ref
+val prevent_kr : bool ref

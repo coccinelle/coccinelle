@@ -30,7 +30,7 @@ SOURCES_commons := \
 	ograph_extended.ml
 SOURCES_globals := \
 	config.ml flag.ml iteration.ml $(REGEXP_FILE) regexp.ml
-CLEAN_globals := regexp_pcre regexp_str
+CLEAN_globals := regexp_pcre.ml regexp_str.ml
 SOURCES_ctl := \
 	flag_ctl.ml ast_ctl.ml pretty_print_ctl.ml ctl_engine.ml wrapper_ctl.ml
 SOURCES_parsing_cocci := \
@@ -96,6 +96,12 @@ PREFIX_spatch :=
 
 PREFIX_spgen := tools/spgen/source/
 
+CORE_LIBS := unix bigarray nums dynlink str pcre
+
+LIBS_spatch := $(CORE_LIBS) pyml parmap
+
+LIBS_spgen := $(CORE_LIBS)
+
 LIBRARIES_spatch := $(LIBRARIES)
 
 LIBRARIES_spgen := $(CORE_LIBRARIES)
@@ -118,7 +124,7 @@ endef
 $(foreach library,$(LIBRARIES),$(eval $(foreach_library)))
 
 define foreach_tool
-SOURCEFILES_$(tools) := $(addprefix $(PREFIX_$(tool)), $(SOURCES_$(tools)))
+SOURCEFILES_$(tool) := $(addprefix $(PREFIX_$(tool)), $(SOURCES_$(tool)))
 SOURCEFILES+=$$(SOURCEFILES_$(tool))
 endef
 $(foreach tool,$(TOOLS),$(eval $(foreach_tool)))
@@ -160,7 +166,11 @@ MENHIR_DEP_CMD := $(MENHIR) --ocamldep "$(OCAMLDEP_CMD)" --depend
 
 MENHIR_CMD := $(MENHIR) --ocamlc "$(OCAMLC_CMD)" --explain --infer
 
-.PHONY : .all
+PARMAP_LIB := $(addsuffix parmap.cmi,$(filter %/parmap/,$(MAKELIBS)))
+PYML_LIB := $(addsuffix py.cmi,$(filter %/pyml/,$(MAKELIBS)))
+PCRE_LIB := $(addsuffix pcre.cmi,$(filter %/pcre/,$(MAKELIBS)))
+
+.PHONY : all
 all : \
 	$(foreach tool,$(TOOLS),$(PREFIX_$(tool))$(tool)$(TOOLS_SUFFIX)) \
 	$(COMPILED_EXPOSED_MODULES)
@@ -168,6 +178,31 @@ all : \
 .PHONY : clean
 clean :
 	rm -f .depend
+
+.PHONY : distclean
+distclean : clean
+	rm -f configure Makefile.config
+
+install: install-spatch install-spgen
+
+
+.PHONY: install-spatch
+install-spatch : spatch$(TOOLS_SUFFIX)
+	mkdir -p $(DESTDIR)$(LIBDIR)
+	if test -f bundles/pyml/dllpyml_stubs.so; then \
+		$(INSTALL_PROGRAM) bundles/pyml/dllpyml_stubs.so \
+			$(DESTDIR)$(LIBDIR); \
+	fi
+	if test -f bundles/pcre/dllpcre_stubs.so; then \
+		$(INSTALL_PROGRAM) bundles/pcre/dllpcre_stubs.so \
+			$(DESTDIR)$(LIBDIR); \
+	fi
+	$(INSTALL_PROGRAM) spatch$(TOOLS_SUFFIX) $(DESTDIR)$(BINDIR)/spatch
+
+.PHONY: install-spgen
+install-spgen: tools/spgen/source/spgen$(TOOLS_SUFFIX)
+	$(INSTALL_PROGRAM) tools/spgen/source/spgen$(TOOLS_SUFFIX) \
+		 $(DESTDIR)$(BINDIR)/spgen
 
 ml_files_but_parsers := \
 	$(filter %.ml,$(SOURCEFILES)) \
@@ -200,7 +235,7 @@ ml_and_mli_files := $(ml_files) $(ml_files:.ml=.mli)
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
 ifeq ($(DEPEND_METHOD),onefile)
-.depend : $(ml_and_mli_files) parsing_cocci/parser_cocci_menhir.mly
+.depend : $(ml_and_mli_files) parsing_cocci/parser_cocci_menhir.mly $(MENHIR)
 	$(OCAMLDEP_CMD) $(ml_and_mli_files) >$@ || (rm $@; false)
 	$(MENHIR_DEP_CMD) parsing_cocci/parser_cocci_menhir.mly >>$@ || (rm $@; false)
 
@@ -243,35 +278,78 @@ parsing_c/parser_c.mli : parsing_c/parser_c.ml
 
 ## Parser_cocci_menhir
 
-parsing_cocci/parser_cocci_menhir.mly.d : parsing_cocci/parser_cocci_menhir.mly
+parsing_cocci/parser_cocci_menhir.mly.d : parsing_cocci/parser_cocci_menhir.mly $(MENHIR)
 	$(MENHIR_DEP_CMD) $< >$@ || (rm $@; false)
 
 ifeq ($(DEPEND_METHOD),onefile)
 parsing_cocci/parser_cocci_menhir.ml : \
 		parsing_cocci/parser_cocci_menhir.mly \
-		bundles-menhirLib$(TOOLS_SUFFIX) \
-		.depend
+		.depend \
+		$(MENHIR)
+#		bundles-menhirLib$(TOOLS_SUFFIX)-if-needed
 	$(MENHIR_CMD) $<
 else
 parsing_cocci/parser_cocci_menhir.ml : \
 		parsing_cocci/parser_cocci_menhir.mly \
-		bundles-menhirLib$(TOOLS_SUFFIX) \
 		parsing_cocci/parser_cocci_menhir.mly.d
+#		bundles-menhirLib$(TOOLS_SUFFIX)-if-needed
 	$(MENHIR_CMD) $<
 endif
 parsing_cocci/parser_cocci_menhir.mli : parsing_cocci/parser_cocci_menhir.ml
 
 ## Bundles
 
+ifeq ($(NATIVE),yes)
+$(MENHIR):
+	$(MAKE) -C bundles/menhirLib all
+	$(MAKE) -C bundles/menhirLib all.opt
+else
+$(MENHIR):
+	$(MAKE) -C bundles/menhirLib all
+endif
+
+ifneq ($(PARMAP_LIB),)
+ifeq ($(NATIVE),yes)
+$(PARMAP_LIB):
+	$(MAKE) -C bundles/parmap all
+	$(MAKE) -C bundles/parmap all.opt
+else
+$(PARMAP_LIB):
+	$(MAKE) -C bundles/parmap all
+endif
+endif
+
+ifneq ($(PYML_LIB),)
+ifeq ($(NATIVE),yes)
+$(PYML_LIB):
+	$(MAKE) -C bundles/pyml all
+	$(MAKE) -C bundles/pyml all.opt
+else
+$(PYML_LIB):
+	$(MAKE) -C bundles/pyml all
+endif
+endif
+
+ifneq ($(PCRE_LIB),)
+ifeq ($(NATIVE),yes)
+$(PCRE_LIB):
+	$(MAKE) -C bundles/pcre all
+	$(MAKE) -C bundles/pcre all.opt
+else
+$(PCRE_LIB):
+	$(MAKE) -C bundles/pcre all
+endif
+endif
+
 # For each $(bundle), targets bundles-$(bundle), bundles-$(bundle).opt,
 # and clean-$(bundle) are defined. The targets bundles, bundles.opt and
 # clean-bundles run all of them.
 
 .PHONY : bundles
-bundles : $(ALL_BUNDLES:%=bundles-%)
+bundles : $(ALL_BUNDLES:%=bundles-%-if-needed)
 
 .PHONY : bundles.opt
-bundles.opt : $(ALL_BUNDLES:%=bundles-%.opt)
+bundles.opt : $(ALL_BUNDLES:%=bundles-%.opt-if-needed)
 
 .PHONY : clean-bundles
 clean-bundles : $(ALL_BUNDLES:%=clean-%)
@@ -282,15 +360,19 @@ distclean-bundles : $(ALL_BUNDLES:%=clean-%)
 define foreach_bundle
 .PHONY : bundles-$(bundle)
 bundles-$(bundle) :
-	if echo $(MAKELIBS) | grep -q "/$(bundle)[ /]"; then \
-		$(MAKE) -C bundles/$(bundle) all; \
-	fi
+	$(MAKE) -C bundles/$(bundle) all
 
 .PHONY : bundles-$(bundle).opt
 bundles-$(bundle).opt :
-	if echo $(MAKELIBS) | grep -q "/$(bundle)[ /]"; then \
-		$(MAKE) -C bundles/$(bundle) all.opt; \
-	fi
+	$(MAKE) -C bundles/$(bundle) all.opt;
+
+.PHONY : bundles-$(bundle)-if-needed
+bundles-$(bundle)-if-needed : \
+	$(patsubst %,bundles-$(bundle),$(filter %/$(bundle)/,$(MAKELIBS)))
+
+.PHONY : bundles-$(bundle).opt-if-needed
+bundles-$(bundle).opt-if-needed : \
+	$(patsubst %,bundles-$(bundle).opt,$(filter %/$(bundle)/,$(MAKELIBS)))
 
 .PHONY : clean-$(bundle)
 clean-$(bundle) :
@@ -304,16 +386,16 @@ clean : clean-$(bundle)
 endef
 $(foreach bundle,$(ALL_BUNDLES),$(eval $(foreach_bundle)))
 
-main.cmo : bundles-parmap
-main.cmx : bundles-parmap.opt
+main.cmo : $(PARMAP_LIB)
+main.cmx : $(PARMAP_LIB)
 
-python/yes_pycocci.cmi : bundles-pyml$(TOOLS_SUFFIX)
-python/yes_pycocci.cmo : bundles-pyml
-python/yes_pycocci.cmx : bundles-pyml.opt
+python/yes_pycocci.cmi : $(PYML_LIB)
+python/yes_pycocci.cmo : $(PYML_LIB)
+python/yes_pycocci.cmx : $(PYML_LIB)
 
-globals/regexp_pcre.cmi : bundles-pcre$(TOOLS_SUFFIX)
-globals/regexp_pcre.cmo : bundles-pcre
-globals/regexp_pcre.cmx : bundles-pcre.opt
+globals/regexp_pcre.cmi : $(PCRE_LIB)
+globals/regexp_pcre.cmo : $(PCRE_LIB)
+globals/regexp_pcre.cmx : $(PCRE_LIB)
 
 ## Libraries
 

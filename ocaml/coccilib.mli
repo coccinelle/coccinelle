@@ -53,7 +53,7 @@ val fcts :
   Hashtbl.t
 val bool_fcts : (string, param_type list -> bool) Hashtbl.t
 val variables_to_merge : (unit -> string array) ref
-val merged_variables : string list array ref
+val merged_variables : string list array option ref
 val no_format : string -> bool
 val cstatement_of_string : string -> string -> Ast_c.statement
 val cexpression_of_string : string -> string -> Ast_c.expression
