@@ -1,4 +1,3 @@
-module Ast = Ast_cocci
 exception CompileFailure of string
 exception LinkFailure of string
 val ext : string

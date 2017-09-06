@@ -1,5 +1,3 @@
-module D = Data
-module Ast = Ast_cocci
 exception Lexical of string
 val tok : Lexing.lexbuf -> string
 val language : string ref

@@ -1,19 +1,15 @@
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
-	ifeq ($(wildcard Makefile.config),)
-		ifeq ($(wildcard configure),)
-			$(error \
-				To make coccinelle,\
-				please run ./autogen and ./configure first)
-		else
-			$(error \
-				To make coccinelle,\
-				please run ./configure first)
-		endif
-	else
-		include Makefile.libs
-		include Makefile.config
-	endif
+ifeq ($(wildcard Makefile.config),)
+ifeq ($(wildcard configure),)
+$(error To make coccinelle, please run ./autogen and ./configure first)
+else
+$(error To make coccinelle, please run ./configure first)
+endif
+else
+include Makefile.libs
+include Makefile.config
+endif
 endif
 endif
 
@@ -66,7 +62,8 @@ SOURCES_ocaml := \
 	externalanalysis.ml \
 	exposed_modules.ml coccilib.ml ocamlcocci_aux.ml $(OCAMLCOCCI_FILE) \
 	prepare_ocamlcocci.ml run_ocamlcocci.ml
-CLEAN_ocaml := yes_prepare_ocamlcocci.ml no_prepare_ocamlcocci.ml
+CLEAN_ocaml := yes_prepare_ocamlcocci.ml no_prepare_ocamlcocci.ml \
+	exposed_modules.mli coccilib.mli
 SOURCES_python := \
 	pycocci_aux.ml $(PYCOCCI_FILE) pycocci.ml
 CLEAN_python := yes_pycocci.ml no_pycocci.ml
@@ -146,12 +143,13 @@ else
 	TOOLS_SUFFIX :=
 endif
 
-EXPOSED_MODULES := $(basename \
-	$(shell sed -n 's/^.*(\* \(.*\) \*).*$$/\1/p' ocaml/exposed_modules.ml))
+EXPOSED_MODULES := \
+	$(shell sed -n 's/^.*(\* \(.*\) \*).*$$/\1/p' ocaml/exposed_modules.ml)
 
 COMPILED_EXPOSED_MODULES := \
 	$(foreach EXT,cmi $(ALL_OBJECTS),\
-		$(patsubst %,ocaml/%.$(EXT),$(notdir $(EXPOSED_MODULES))))
+		$(patsubst %,ocaml/%.$(EXT), \
+			$(notdir $(basename $(EXPOSED_MODULES)))))
 
 SEARCH_PATHS := \
 	commons/ocamlextra $(LIBRARIES) $(PREFIX_spgen) $(PCREDIR) $(PYMLDIR) \
@@ -222,8 +220,8 @@ $(sourcefile:.ml=.mli) : $(sourcefile)
 	$(OCAMLC_CMD) -i $$< >$$@ || (rm $$@; false)
 endif
 endef
-$(foreach sourcefile,$(ml_files_but_parsers),\
-	$(eval $(foreach_ml_files_but_parsers)))
+#$(foreach sourcefile,$(ml_files_but_parsers),\
+#	$(eval $(foreach_ml_files_but_parsers)))
 
 %.ml.d : %.ml
 	$(OCAMLDEP_CMD) $< >$@ || (rm $@; false)
@@ -388,6 +386,7 @@ distclean-$(bundle) :
 	$(MAKE) -C bundles/$(bundle) distclean
 
 clean : clean-$(bundle)
+distclean : distclean-$(bundle)
 endef
 $(foreach bundle,$(ALL_BUNDLES),$(eval $(foreach_bundle)))
 
@@ -452,5 +451,14 @@ ocaml/$(notdir $(basename $(module))).$(EXT) : $(basename $(module)).$(EXT)
 	cp $$< $$@
 endef
 
-$(foreach module,$(EXPOSED_MODULES),\
+$(foreach module,$(basename $(EXPOSED_MODULES)),\
 	$(foreach EXT,cmi $(ALL_OBJECTS),$(eval $(copy_exposed_module))))
+
+exposed_modules_cmi=$(addsuffix .cmi, $(basename $(EXPOSED_MODULES)))
+
+ocaml/exposed_modules.mli: ocaml/exposed_modules.ml $(exposed_modules_cmi)
+	$(OCAMLC_CMD) -i $< >$@ || rm -f $@
+
+ocaml/coccilib.mli: ocaml/coccilib.ml ocaml/exposed_modules.cmi \
+	parsing_c/type_annoter_c.cmi ocaml/externalanalysis.cmi
+	$(OCAMLC_CMD) -i $< >$@ || rm -f $@

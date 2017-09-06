@@ -20,4 +20,4 @@ module Common     = Common     (* commons/common.ml *)
 module Ast_cocci  = Ast_cocci  (* parsing_cocci/ast_cocci.ml *)
 module Ast0_cocci = Ast0_cocci (* parsing_cocci/ast0_cocci.ml *)
 
-module Dumper = Dumper
+module Dumper = Dumper (* commons/ocamlextra/dumper.ml *)
