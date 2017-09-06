@@ -1,0 +1,19 @@
+val show_c : bool ref
+val show_cocci : bool ref
+val show_diff : bool ref
+val force_diff : bool ref
+val show_flow : bool ref
+val show_before_fixed_flow : bool ref
+val show_ctl_tex : bool ref
+val show_ctl_text : bool ref
+val inline_let_ctl : bool ref
+val show_mcodekind_in_ctl : bool ref
+val show_binding_in_out : bool ref
+val show_dependencies : bool ref
+val inplace_modif : bool ref
+val verbose_cocci : bool ref
+val windows : bool ref
+val popl : bool ref
+val timeout : int option ref
+val selected_only : bool ref
+val use_saved_typedefs : bool ref
