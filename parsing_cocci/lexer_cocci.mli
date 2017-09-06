@@ -51,20 +51,12 @@ val mkassign :
   Ast_cocci.arithOp -> Lexing.lexbuf -> Parser_cocci_menhir.token
 val init : 'a -> unit
 val reinit : 'a -> unit
+val spinit: unit -> unit
 val include_init : 'a -> unit
 val drop_spaces : string -> string
-val __ocaml_lex_tables : Lexing.lex_tables
 val token : Lexing.lexbuf -> Parser_cocci_menhir.token
-val __ocaml_lex_token_rec : Lexing.lexbuf -> int -> Parser_cocci_menhir.token
 val metavariable_decl_token : Lexing.lexbuf -> Parser_cocci_menhir.token
-val __ocaml_lex_metavariable_decl_token_rec :
-  Lexing.lexbuf -> int -> Parser_cocci_menhir.token
 val char : Lexing.lexbuf -> string
-val __ocaml_lex_char_rec : Lexing.lexbuf -> int -> string
 val restchars : Lexing.lexbuf -> string
-val __ocaml_lex_restchars_rec : Lexing.lexbuf -> int -> string
 val string : Lexing.lexbuf -> string
-val __ocaml_lex_string_rec : Lexing.lexbuf -> int -> string
 val comment : (string -> unit) -> Lexing.lexbuf -> string
-val __ocaml_lex_comment_rec :
-  (string -> unit) -> Lexing.lexbuf -> int -> string
