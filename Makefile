@@ -11,6 +11,7 @@ ifneq ($(MAKECMDGOALS),distclean)
 				please run ./configure first)
 		endif
 	else
+		include Makefile.libs
 		include Makefile.config
 	endif
 endif
@@ -97,9 +98,12 @@ PREFIX_spatch :=
 
 PREFIX_spgen := tools/spgen/source/
 
-CORE_LIBS := unix bigarray nums dynlink str pcre
+CORE_LIBS := unix bigarray nums dynlink str \
+	$(patsubst %,pcre,$(filter %/pcre.cma,$(LNKLIBS)))
 
-LIBS_spatch := $(CORE_LIBS) pyml parmap
+LIBS_spatch := $(CORE_LIBS) \
+	$(patsubst %,pyml,$(filter %/pyml.cma,$(LNKLIBS)))\
+	$(patsubst %,parmap,$(filter %/parmap.cma,$(LNKLIBS)))
 
 LIBS_spgen := $(CORE_LIBS)
 
