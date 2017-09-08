@@ -7,23 +7,23 @@ val to_opt : string -> string
 val check_runtime : unit -> unit
 val init_ocamlcocci : 'a -> string
 val print_match : int ref -> string -> string -> string
-val string_rep_binding : int ref -> string option * Ast.metavar -> string
-val ast_rep_binding : int ref -> string option * Ast.metavar -> string
+val string_rep_binding : int ref -> string option * Ast_cocci.metavar -> string
+val ast_rep_binding : int ref -> string option * Ast_cocci.metavar -> string
 val manage_script_vars : ('a * string) list -> string
 val print_iteration_code : out_channel -> unit
 val prepare_mvs :
   out_channel ->
   string ->
-  ((string option * 'a option) * (string * string) * 'b * Ast.mvinit) list ->
+  ((string option * 'a option) * (string * string) * 'b * Ast_cocci.mvinit) list ->
   bool
 val prepare_generic_rule :
-  string * ((string option * string option) * 'a * Ast.metavar * 'b) list *
+  string * ((string option * string option) * 'a * Ast_cocci.metavar * 'b) list *
   ('c * string) list * string -> string -> string -> string
 val prepare_rule :
-  string * ((string option * string option) * 'a * Ast.metavar * 'b) list *
+  string * ((string option * string option) * 'a * Ast_cocci.metavar * 'b) list *
   ('c * string) list * string -> string
 val prepare_constraint :
-  string * (('a * string) * Ast.metavar) list * string -> string
+  string * (('a * string) * Ast_cocci.metavar) list * string -> string
 val prepare : 'a -> Ast_cocci.rule list -> string option
 val prepare_simple : string -> string
 val find_cmifile : string -> string
