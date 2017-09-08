@@ -1,3 +1,3 @@
-MODULE=python
+LIBRARY=python
 
-include ../Makefile.module
+include ../Makefile.library

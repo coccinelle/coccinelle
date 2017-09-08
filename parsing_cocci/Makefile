@@ -1,3 +1,3 @@
-MODULE=parsing_cocci
+LIBRARY=parsing_cocci
 
-include ../Makefile.module
+include ../Makefile.library

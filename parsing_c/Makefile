@@ -1,3 +1,3 @@
-MODULE=parsing_c
+LIBRARY=parsing_c
 
-include ../Makefile.module
+include ../Makefile.library

@@ -1,3 +1,3 @@
-MODULE=popl09
+LIBRARY=popl09
 
-include ../Makefile.module
+include ../Makefile.library

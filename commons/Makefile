@@ -1,3 +1,3 @@
-MODULE=commons
+LIBRARY=commons
 
-include ../Makefile.module
+include ../Makefile.library

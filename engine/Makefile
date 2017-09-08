@@ -1,3 +1,3 @@
-MODULE=engine
+LIBRARY=engine
 
-include ../Makefile.module
+include ../Makefile.library

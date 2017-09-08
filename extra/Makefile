@@ -1,3 +1,3 @@
-MODULE=extra
+LIBRARY=extra
 
-include ../Makefile.module
+include ../Makefile.library

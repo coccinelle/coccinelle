@@ -1,3 +1,3 @@
-MODULE=ctl
+LIBRARY=ctl
 
-include ../Makefile.module
+include ../Makefile.library

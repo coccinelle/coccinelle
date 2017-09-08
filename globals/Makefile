@@ -1,3 +1,3 @@
-MODULE=globals
+LIBRARY=globals
 
-include ../Makefile.module
+include ../Makefile.library

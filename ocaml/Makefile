@@ -1,3 +1,3 @@
-MODULE=ocaml
+LIBRARY=ocaml
 
-include ../Makefile.module
+include ../Makefile.library

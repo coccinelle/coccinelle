@@ -423,6 +423,13 @@ $(library)/$(library).cmxa : $(addsuffix .cmx,$(basename $(SOURCEFILES_$(library
 
 $(library)/$(library).cma : $(addsuffix .cmo,$(basename $(SOURCEFILES_$(library))))
 	$(OCAMLC_CMD) -a $$^ -o $$@
+
+.PHONY: $(library)
+ifeq ($(NATIVE),yes)
+$(library): $(library)/$(library).cmxa
+else
+$(library): $(library)/$(library).cma
+endif
 endef
 $(foreach library,$(LIBRARIES),$(eval $(foreach_library)))
 
