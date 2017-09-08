@@ -62,8 +62,7 @@ SOURCES_ocaml := \
 	externalanalysis.ml \
 	exposed_modules.ml coccilib.ml ocamlcocci_aux.ml $(OCAMLCOCCI_FILE) \
 	prepare_ocamlcocci.ml run_ocamlcocci.ml
-CLEAN_ocaml := yes_prepare_ocamlcocci.ml no_prepare_ocamlcocci.ml \
-	exposed_modules.mli coccilib.mli
+CLEAN_ocaml := yes_prepare_ocamlcocci.ml no_prepare_ocamlcocci.ml
 SOURCES_python := \
 	pycocci_aux.ml $(PYCOCCI_FILE) pycocci.ml
 CLEAN_python := yes_pycocci.ml no_pycocci.ml
@@ -95,8 +94,12 @@ PREFIX_spatch :=
 
 PREFIX_spgen := tools/spgen/source/
 
-CORE_LIBS := unix bigarray nums dynlink str \
+CORE_LIBS := unix bigarray nums str \
 	$(patsubst %,pcre,$(filter %/pcre.cma,$(LNKLIBS)))
+
+ifeq ($(FEATURE_OCAML),1)
+CORE_LIBS += dynlink
+endif
 
 LIBS_spatch := $(CORE_LIBS) \
 	$(patsubst %,pyml,$(filter %/pyml.cma,$(LNKLIBS)))\
@@ -145,6 +148,8 @@ endif
 
 EXPOSED_MODULES := \
 	$(shell sed -n 's/^.*(\* \(.*\) \*).*$$/\1/p' ocaml/exposed_modules.ml)
+
+ALL_OBJECTS=cmo cmx
 
 COMPILED_EXPOSED_MODULES := \
 	$(foreach EXT,cmi $(ALL_OBJECTS),\
@@ -461,11 +466,9 @@ endef
 $(foreach module,$(basename $(EXPOSED_MODULES)),\
 	$(foreach EXT,cmi $(ALL_OBJECTS),$(eval $(copy_exposed_module))))
 
-exposed_modules_cmi=$(addsuffix .cmi, $(basename $(EXPOSED_MODULES)))
+clean : clean-exposed-module
 
-ocaml/exposed_modules.mli: ocaml/exposed_modules.ml $(exposed_modules_cmi)
-	$(OCAMLC_CMD) -i $< >$@ || rm -f $@
-
-ocaml/coccilib.mli: ocaml/coccilib.ml ocaml/exposed_modules.cmi \
-	parsing_c/type_annoter_c.cmi ocaml/externalanalysis.cmi
-	$(OCAMLC_CMD) -i $< >$@ || rm -f $@
+.PHONY : clean-exposed-module
+clean-exposed-module :
+	rm -f $(foreach module,$(basename $(EXPOSED_MODULES)),\
+	$(foreach EXT,cmi $(ALL_OBJECTS),ocaml/$(notdir $(basename $(module))).$(EXT)))
