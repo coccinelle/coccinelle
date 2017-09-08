@@ -56,3 +56,5 @@ aclocal.m4
 description-pak
 *.current
 /bundles/pyml/pyml-current/pyml_arch.ml
+/ocaml/coccilib.mli
+/ocaml/exposed_modules.mli
