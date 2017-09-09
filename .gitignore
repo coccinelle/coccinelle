@@ -12,6 +12,8 @@ scripts/spatch.byte
 *.[ao]
 *.annot
 *.pyc
+*.d
+*.d.opt
 
 *~
 .depend
@@ -53,3 +55,4 @@ aclocal.m4
 .mascotrc
 description-pak
 *.current
+/bundles/pyml/pyml-current/pyml_arch.ml
