@@ -676,9 +676,9 @@ let other_options = [
     "--mod-distrib", Arg.Set mod_distrib,
     "   use mod to distribute files among the processors";
     "--jobs",  Arg.Int (function x -> parmap_cores := Some x),
-    "   the number of cores to be used by parmap";
+    "   the number of processes to be used";
     "-j",  Arg.Int (function x -> parmap_cores := Some x),
-    "   the number of cores to be used";
+    "   the number of processes to be used";
     "--chunksize", Arg.Int (function x -> parmap_chunk_size := Some x),
     "   the size of work chunks for parallelism";
     "--tmp-dir", Arg.Set_string tmp_dir,
