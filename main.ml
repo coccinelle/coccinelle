@@ -338,7 +338,7 @@ let short_options = [
   "--dir", Arg.Set dir,
   "    <dir> process all files in directory recursively";
   "--ignore", Arg.String (fun s -> ignore := s :: !ignore),
-  "    <dir> process all files in directory recursively";
+  "    <string> specify a file name prefix to ignore";
   "--file-groups", Arg.Set file_groups,
   "    <file> process the file groups listed in the file";
 
