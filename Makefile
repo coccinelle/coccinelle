@@ -88,7 +88,7 @@ SOURCES_spgen := \
 	snapshot.ml user_input.ml position_generator.ml disj_generator.ml \
 	rule_body.ml rule_header.ml context_rule.ml script_rule.ml \
 	file_transform.ml spgen_interactive.ml spgen_lexer.mll spgen_config.ml \
-	spgen.ml spgen_test.ml
+	spgen.ml spgen_test.ml main.ml
 
 PREFIX_spatch :=
 
