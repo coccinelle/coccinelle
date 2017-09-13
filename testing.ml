@@ -46,24 +46,32 @@ let end_redirect_output = Common.map_option (
     Flag_cocci.show_diff := show_diff_backup;
     out_file)
 
-let rec test_loop cocci_file cfiles =
+let rec test_loop previous_merges cocci_file cfiles =
   let (cocci_infos,_) = Cocci.pre_engine (cocci_file, !Config.std_iso) in
   let (res, merges) = Cocci.full_engine cocci_infos cfiles in
-  Cocci.post_engine cocci_infos merges;
-  match Iteration.get_pending_instance () with
+  let merges = Cocci.union_merge_vars previous_merges merges in
+  let next_merges, pending_instance =
+    match Iteration.get_pending_instance () with
+      None ->
+      begin
+        Cocci.post_engine cocci_infos merges;
+        ([], []), Iteration.get_pending_instance ()
+      end
+    | Some instances -> merges, Some instances in
+  match pending_instance with
     None -> (cocci_infos, res)
   | Some (cfiles', virt_rules, virt_ids) ->
       Flag.defined_virtual_rules := virt_rules;
       Flag.defined_virtual_env := virt_ids;
       Common.clear_pr2_once ();
-      test_loop cocci_file cfiles'
+      test_loop next_merges cocci_file cfiles'
 
 let test_with_output_redirected cocci_file cfiles expected_out =
   Iteration.initialization_stack := [];
   Postprocess_transinfo.reset_fresh_counter ();
   let redirected_output = begin_redirect_output expected_out in
   let (cocci_infos, res) =
-    try test_loop cocci_file cfiles
+    try test_loop ([], []) cocci_file cfiles
     with e ->
       ignore (end_redirect_output redirected_output);
       raise e in
