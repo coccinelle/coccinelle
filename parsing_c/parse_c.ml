@@ -307,26 +307,6 @@ let parse file =
   let result = Parser_c.main Lexer_c.token lexbuf in
   result
 
-
-let parse_print_error file =
-  let chan = (open_in file) in
-  let lexbuf = Lexing.from_channel chan in
-
-  let error_msg () = Common.error_message file (lexbuf_to_strpos lexbuf) in
-  try
-    Parser_c.main Lexer_c.token lexbuf
-  with
-  | Lexer_c.Lexical s ->
-      failwith ("lexical error " ^s^ "\n =" ^  error_msg ())
-  | Parsing.Parse_error ->
-      failwith ("parse error \n = " ^ error_msg ())
-  | Semantic_c.Semantic (s, i) ->
-      failwith ("semantic error " ^ s ^ "\n =" ^ error_msg ())
-  | e -> raise e
-
-
-
-
 (*****************************************************************************)
 (* Parsing subelements, useful to debug parser *)
 (*****************************************************************************)
