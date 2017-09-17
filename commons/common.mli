@@ -1988,3 +1988,21 @@ class ['a] olist :
 val typing_sux_test : unit -> unit
 
 module StringSet: Set.S with type elt = string
+
+(*****************************************************************************)
+(* cache *)
+(*****************************************************************************)
+
+type 'a dll = DElem of 'a dll option ref * 'a * 'a dll option ref
+
+val create_bounded_cache :
+    int -> ('a * 'b) ->
+      (int * int ref * ('a,('a * 'b) dll) Hashtbl.t * ('a * 'b) dll)
+
+val find_bounded_cache :
+    (int * int ref * ('a,('a * 'b) dll) Hashtbl.t * ('a * 'b) dll) ->
+      'a -> 'b
+
+val extend_bounded_cache :
+    (int * int ref * ('a,('a * 'b) dll) Hashtbl.t * ('a * 'b) dll) ->
+      'a -> 'b -> unit
