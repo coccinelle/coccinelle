@@ -130,8 +130,7 @@ val info_to_fixpos : Ast_c.info -> Ast_cocci.fixpos
 val max_min_by_pos : Ast_c.info list -> Ast_cocci.fixpos * Ast_cocci.fixpos
 val lin_col_by_pos :
   Ast_c.info list ->
-  Common.filename * string * ((int * int) * (int * int)) option *
-  (int * int) * (int * int)
+  Common.filename * string * Ast_c.posl * Ast_c.posl
 val min_pinfo_of_node : Control_flow_c.node -> Common.parse_info
 val range_of_origin_ii : Ast_c.info list -> (int * int) option
 val names_of_parameters_in_def : Ast_c.definitionbis -> string list

@@ -1848,7 +1848,7 @@ and process_a_generated_a_env_a_toplevel rule env ccs =
 (* does side effects on C ast and on Cocci info rule *)
 and process_a_ctl_a_env_a_toplevel2 r e c f =
  indent_do (fun () ->
-   show_or_not_celem "trying" c.ast_c;
+   show_or_not_celem "trying" c.ast_c c.start_end;
    Flag.currentfile := Some (f ^ ":" ^get_celem c.ast_c);
    match (r.ctl,c.ast_c) with
      ((Asttoctl2.NONDECL ctl,t),Ast_c.Declaration _) -> None
@@ -1872,7 +1872,7 @@ and process_a_ctl_a_env_a_toplevel2 r e c f =
        then None
        else
 	 begin
-	   show_or_not_celem "found match in" c.ast_c;
+	   show_or_not_celem "found match in" c.ast_c c.start_end;
 	   show_or_not_trans_info trans_info;
 	   List.iter (show_or_not_binding "out") newbindings;
 

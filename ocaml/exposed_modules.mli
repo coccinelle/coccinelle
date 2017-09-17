@@ -582,7 +582,6 @@ module Parse_c :
     val tokens : ?profile:bool -> Common.filename -> Parser_c.token list
     val tokens_of_string : string -> Parser_c.token list
     val parse : Common.filename -> Ast_c.program
-    val parse_print_error : Common.filename -> Ast_c.program
     val parse_gen :
       cpp:bool ->
       tos:bool ->
@@ -1061,8 +1060,7 @@ module Lib_parsing_c :
       Ast_c.info list -> Ast_cocci.fixpos * Ast_cocci.fixpos
     val lin_col_by_pos :
       Ast_c.info list ->
-      Common.filename * string * ((int * int) * (int * int)) option *
-      (int * int) * (int * int)
+      Common.filename * string * Ast_c.posl * Ast_c.posl
     val min_pinfo_of_node : Control_flow_c.node -> Common.parse_info
     val range_of_origin_ii : Ast_c.info list -> (int * int) option
     val names_of_parameters_in_def : Ast_c.definitionbis -> string list
@@ -1357,7 +1355,7 @@ module Flag :
     val currentfile : string option ref
     val currentfiles : string list ref
     val current_element : string ref
-    val current_element_pos : ((int * int) * (int * int)) ref
+    val current_element_pos : (Ast_c.posl * Ast_c.posl) Lazy.t ref
     val dir : string ref
     val defined_virtual_rules : string list ref
     val defined_virtual_env : (string * string) list ref
