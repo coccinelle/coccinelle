@@ -42,7 +42,7 @@ LIBS=../commons/commons.cma ../globals/globals.cma \
 INCLUDESDEP= -I ../commons -I ../commons/ocamlextra \
   -I ../globals -I  ../parsing_cocci
 
-INCLUDES=$(INCLUDESDEP) $(TARZANINCLUDE)
+INCLUDES=$(INCLUDESDEP) $(TARZANINCLUDE) -I $(PARMAPDIR)
 
 SYSLIBS= str.cma unix.cma num.cma
 
