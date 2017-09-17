@@ -6072,3 +6072,57 @@ let typing_sux_test () =
 (* let _ = test (new osetb (Setb.empty)) *)
 
 module StringSet = Set.Make (String)
+
+(* --------------------------------------------------------------------- *)
+
+type 'a dll = DElem of 'a dll option ref * 'a * 'a dll option ref
+
+let get_dll cell =
+  match !cell with
+    None -> failwith "bad cell"
+  | Some x -> x
+
+let add_first_dll hd x =
+  let (DElem(bprev,_,bnext)) as bef = hd in
+  let (DElem(aprev,_,anext)) as aft = get_dll bnext in
+  let self = DElem(ref (Some bef),x,ref (Some aft)) in
+  bnext := Some self; aprev := Some self;
+  self
+
+let remove_last_dll hd =
+  let (DElem(aprev,_,anext)) as aft = hd in
+  let (DElem(dprev,_,dnext)) as drop = get_dll aprev in
+  let (DElem(bprev,_,bnext)) as bef = get_dll dprev in
+  aprev := Some bef; bnext := Some aft;
+  drop
+
+let create_bounded_cache n hval =
+  let tbl = Hashtbl.create 101 in
+  let prev = ref None in
+  let next = ref None in
+  let lst = DElem (prev,hval,next) in
+  prev := Some lst; next := Some lst;
+  (n,ref 0,tbl,lst)
+
+let find_bounded_cache (n,cur,tbl,lst) x =
+  try
+    let (DElem(prev,hval,next)) as info = Hashtbl.find tbl x in
+    let _ = remove_last_dll (get_dll next) in
+    let _ = add_first_dll lst hval in
+    profile_code ("ok"^(string_of_int n)) (fun _ -> snd hval)
+  with x ->
+    (profile_code ("miss"^(string_of_int n)) (fun _ -> ());
+    raise x)
+
+let extend_bounded_cache (n,cur,tbl,lst) x v =
+  cur := !cur + 1;
+  (if !cur > n
+  then
+    for i = 1 to (n/2) do
+      let (DElem(prev,hval,next)) as dropped = remove_last_dll lst in
+      Hashtbl.remove tbl (fst hval);
+      cur := !cur - 1
+    done);
+  let elem = add_first_dll lst (x,v) in
+  profile_code ("add"^(string_of_int n)) (fun _ -> ());
+  Hashtbl.add tbl x elem
