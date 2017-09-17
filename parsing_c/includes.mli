@@ -33,8 +33,6 @@ val for_tests : bool ref
 
 val extra_includes : string list ref
 
-val interpret_include_path : string list -> string option
-
 val should_parse : parsing_style -> string -> Ast_c.inc_file -> bool
 (**
  * [should_parse ps fn incl] returns [true] if the header reerred to
@@ -48,6 +46,4 @@ val resolve : string -> parsing_style -> Ast_c.inc_file -> string option
  * If so, returns its name. Returns [None] otherwise.
  *)
 
-val cache_find : (string * int ref * ('a,(int ref * 'b)) Hashtbl.t) -> 'a -> 'b
-val cache_add : (string * int ref * ('a,(int ref * 'b)) Hashtbl.t) -> 'a -> 'b
-  -> unit
+val setup_unique_search : int option -> string list -> unit

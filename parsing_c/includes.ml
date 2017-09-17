@@ -4,10 +4,6 @@
  * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
-let cache_threshold = 500 (** caching of header file information *)
-
-let elem_threshold = 10
-
 let include_headers_for_types = ref false
 
 let is_header filename =
@@ -57,44 +53,19 @@ let extra_includes = ref ([] : string list)
  * For the moment we base in part our heuristic on the name of the file, e.g.
  * serio.c is related we think to #include <linux/serio.h>
  *)
-let include_table = ("include_table", ref 0, Hashtbl.create(101))
-let find_table = ("find_table", ref 0, Hashtbl.create(101))
 
-let cache_find (nm,_,cache) k =
-  let (ct,res) = Hashtbl.find cache k in
-  ct := !ct + 1;
-  res
+let unique_file_table = ref []
 
-let cache_add (nm,ct,cache) k v =
-  ct := !ct + 1;
-  (if !ct > cache_threshold
-  then
-    begin
-      Hashtbl.iter
-	(fun k (vct,v) ->
-	  if !vct < elem_threshold
-	  then
-	    begin
-	      Hashtbl.remove cache k;
-	      ct := !ct - 1
-	    end
-	  else vct := 0)
-	cache
-    end);
-  Hashtbl.add cache k (ref 1, v)
+let include_table = Common.create_bounded_cache 500 (([],[]),None)
 
 let interpret_include_path relpath =
   let unique_file_exists dir f =
-    let cmd = Printf.sprintf "find %s -path \"*/%s\"" dir f in
-    try cache_find find_table cmd
-    with Not_found ->
-      let res =
-	match Common.cmd_to_list cmd with
-	  [x] -> Some x
-	| _ -> None in
-      cache_add find_table cmd res;
-      res in
-  let native_file_exists dir f =
+    try
+      let info = List.assoc dir !unique_file_table in
+      try Some (Hashtbl.find info f)
+      with Not_found -> None
+    with Not_found -> None in
+  let rec native_file_exists dir f =
     let f = Filename.concat dir f in
     if Sys.file_exists f
     then Some f
@@ -119,19 +90,19 @@ let interpret_include_path relpath =
 	(try if Sys.is_directory "include" then ["include"] else []
 	with Sys_error _ -> [])
     | x -> List.rev x in
-  try cache_find include_table (searchlist,relpath)
+  try Common.find_bounded_cache include_table (searchlist,relpath)
   with Not_found ->
     (match search_path native_file_exists searchlist relpath with
       None ->
 	let res = search_path unique_file_exists searchlist relpath in
-	cache_add include_table (searchlist,relpath) res;
+	Common.extend_bounded_cache include_table (searchlist,relpath) res;
 	(if res = None
 	then
 	  Common.pr2
 	    (Printf.sprintf "failed on %s" (String.concat "/" relpath)));
 	res
     | (Some _) as res ->
-	cache_add include_table (searchlist,relpath) res;
+	Common.extend_bounded_cache include_table (searchlist,relpath) res;
 	res)
 
 let should_parse parsing_style filename incl = match parsing_style with
