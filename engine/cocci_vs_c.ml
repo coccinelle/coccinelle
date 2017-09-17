@@ -718,8 +718,7 @@ module type PARAM =
       A.keep_binding -> A.inherited ->
       A.meta_name A.mcode * Ast_c.metavar_binding_kind *
 	  (unit ->
-	    (Common.filename * string * (Ast_c.posl * Ast_c.posl) option *
-	       Ast_c.posl * Ast_c.posl) option) ->
+	    (Common.filename * string * Ast_c.posl * Ast_c.posl) option) ->
       (unit -> tin -> 'x tout) -> (tin -> 'x tout)
 
     val check_constraints :

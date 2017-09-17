@@ -36,7 +36,7 @@ let currentfile = ref (None : string option) (* file of current code *)
 let currentfiles = ref ([] : string list) (* starting files of this run *)
 
 let current_element = ref ""
-let current_element_pos = ref ((0,0),(0,0))
+let current_element_pos = ref(lazy((0,0),(0,0)))
 let dir = ref ""
 
 let defined_virtual_rules = ref ([] : string list)
