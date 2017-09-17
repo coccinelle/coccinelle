@@ -174,3 +174,49 @@ let resolve filename parsingstyle x =
       then interpret_include_path include_path
       else None
     | Ast_c.Weird _ -> None
+
+(* ------------------------------------------------------------------------ *)
+
+let setup_unique_search cores searchlist =
+  let cores =
+    match cores with
+      None -> 1
+    | Some x -> x in
+  let looper f l =
+    if cores > 1
+    then Parmap.parmap ~ncores:cores f (Parmap.L l)
+    else List.map f l in
+  let process dir =
+    let lines =
+      let cmd = Printf.sprintf "find %s -name \"*h\"" dir in
+      Common.cmd_to_list cmd in
+    let lines =
+      List.fold_left
+	(fun prev cur ->
+	  let last = Filename.basename cur in
+	  let two_last =
+	    Filename.concat (Filename.basename (Filename.dirname cur)) last in
+	  (last,cur) :: (two_last,cur) :: prev)
+	[] lines in
+    let lines = List.sort compare lines in
+    let rec loop good bad = function
+	[] -> good
+      | [(x,xp)] ->
+	  if List.mem x bad
+	  then good
+	  else  ((x,xp)::good)
+      | (x,xp)::(((y,yp)::rest) as arest) ->
+	  if List.mem x bad
+	  then loop good bad arest
+	  else if x = y
+	  then loop good (x::bad) rest
+	  else loop ((x,xp)::good) bad arest in
+    (dir,loop [] [] lines) in
+  let res = looper process searchlist in
+  unique_file_table :=
+    List.map
+      (function (dir,lst) ->
+	let tbl = Hashtbl.create 101 in
+	List.iter (function (fl,src) -> Hashtbl.add tbl fl src) lst;
+	(dir,tbl))
+      res
