@@ -12,10 +12,12 @@ module Visitor_c      = Visitor_c      (* parsing_c/visitor_c.ml *)
 module Regexp     = Regexp     (* globals/regexp.ml *)
 module Config     = Config     (* globals/config.ml *)
 module Flag       = Flag       (* globals/flag.ml *)
+module Flag_parsing_c = Flag_parsing_c       (* parsing_c/flag_parsing_c.ml *)
 module Iteration  = Iteration  (* globals/iteration.ml *)
+module Commands   = Commands   (* commons/commands.ml *)
 module Common     = Common     (* commons/common.ml *)
 
 module Ast_cocci  = Ast_cocci  (* parsing_cocci/ast_cocci.ml *)
 module Ast0_cocci = Ast0_cocci (* parsing_cocci/ast0_cocci.ml *)
 
-module Dumper = Dumper
+module Dumper = Dumper (* commons/ocamlextra/dumper.ml *)

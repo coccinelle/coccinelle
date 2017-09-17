@@ -1,0 +1,9 @@
+val debug_engine : bool ref
+val verbose_matcher : bool ref
+val useEU : bool ref
+val disallow_nested_exps : bool ref
+val only_return_is_error_exit : bool ref
+val allow_inconsistent_paths : bool ref
+val no_safe_expressions : bool ref
+val show_misc : bool ref
+val show_transinfo : bool ref
