@@ -36,6 +36,11 @@ let warning s v =
   then Common.warning ("PARSING: " ^ s) v
   else v
 
+let computed_warning s v = (*do not construct string unless it will be shown*)
+  if !Flag_parsing_c.verbose_parsing
+  then Common.warning ("PARSING: " ^ (s())) v
+  else v
+
 let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_parsing
 
 (*****************************************************************************)
@@ -106,11 +111,12 @@ let addTypeD     = function
 
   | ((Right3 t,ii),       ({typeD = ((a,b,Some x),ii2)} as v)) ->
       let mktype t ii = (({const=false;volatile=false;},[]),(t,ii)) in
-      warning
-	(Printf.sprintf
-	   "two or more data types: dropping %s\nkeeping typeD %s\n"
-	   (Pretty_print_c.string_of_fullType (mktype t ii))
-	   (Pretty_print_c.string_of_fullType (mktype x ii2)))
+      computed_warning
+	(fun _ ->
+	  Printf.sprintf
+	    "two or more data types: dropping %s\nkeeping typeD %s\n"
+	    (Pretty_print_c.string_of_fullType (mktype t ii))
+	    (Pretty_print_c.string_of_fullType (mktype x ii2)))
 	v
   | ((Right3 t,ii),       ({typeD = ((a,b,None),ii2)} as v))   ->
       {v with typeD = (a,b, Some t),ii @ ii2}
