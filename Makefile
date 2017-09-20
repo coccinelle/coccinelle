@@ -12,6 +12,7 @@ include Makefile.config
 endif
 endif
 endif
+-include Makefile.local
 
 CORE_LIBRARIES := \
 	commons globals parsing_cocci parsing_c
@@ -142,14 +143,14 @@ endif
 
 ifeq ($(NATIVE),yes)
 	TOOLS_SUFFIX := .opt
+	ALL_OBJECTS := cmo cmx
 else
 	TOOLS_SUFFIX :=
+	ALL_OBJECTS := cmo
 endif
 
 EXPOSED_MODULES := \
 	$(shell sed -n 's/^.*(\* \(.*\) \*).*$$/\1/p' ocaml/exposed_modules.ml)
-
-ALL_OBJECTS=cmo cmx
 
 COMPILED_EXPOSED_MODULES := \
 	$(foreach EXT,cmi $(ALL_OBJECTS),\
@@ -162,9 +163,9 @@ SEARCH_PATHS := \
 
 SEARCH_PATH_FLAGS := $(addprefix -I ,$(SEARCH_PATHS))
 
-OCAMLC_CMD := $(OCAMLC) $(SEARCH_PATH_FLAGS)
+OCAMLC_CMD := $(OCAMLC) $(SEARCH_PATH_FLAGS) $(EXTRA_OCAML_FLAGS)
 
-OCAMLOPT_CMD := $(OCAMLOPT) $(SEARCH_PATH_FLAGS)
+OCAMLOPT_CMD := $(OCAMLOPT) $(SEARCH_PATH_FLAGS) $(EXTRA_OCAML_FLAGS)
 
 OCAMLDEP_CMD := $(OCAMLDEP) $(SEARCH_PATH_FLAGS) \
 	$(addprefix -ml-synonym ,.mll .mly) \
@@ -411,6 +412,9 @@ $(foreach bundle,$(ALL_BUNDLES),$(eval $(foreach_bundle)))
 
 main.cmo : $(PARMAP_LIB)
 main.cmx : $(PARMAP_LIB)
+
+parsing_c/includes.cmo : $(PARMAP_LIB)
+parsing_c/includes.cmx : $(PARMAP_LIB)
 
 python/yes_pycocci.cmi : $(PYML_LIB)
 python/yes_pycocci.cmo : $(PYML_LIB)
