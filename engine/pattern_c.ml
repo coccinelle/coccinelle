@@ -535,6 +535,12 @@ module XMATCH = struct
 	match get_pvalu() with
 	  None -> finish tin
 	| Some pvalu ->
+	    let pvalu =
+	      List.map
+		(function (fname,current_element,st,ed) ->
+		  (fname,current_element,
+		   Some(Lazy.force (!Flag.current_element_pos)),st,ed))
+		pvalu in
 	    let pvalu = Ast_c.MetaPosValList(pvalu) in
 	    let rec loop tin = function
 		[] -> finish tin

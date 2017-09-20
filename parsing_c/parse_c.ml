@@ -307,26 +307,6 @@ let parse file =
   let result = Parser_c.main Lexer_c.token lexbuf in
   result
 
-
-let parse_print_error file =
-  let chan = (open_in file) in
-  let lexbuf = Lexing.from_channel chan in
-
-  let error_msg () = Common.error_message file (lexbuf_to_strpos lexbuf) in
-  try
-    Parser_c.main Lexer_c.token lexbuf
-  with
-  | Lexer_c.Lexical s ->
-      failwith ("lexical error " ^s^ "\n =" ^  error_msg ())
-  | Parsing.Parse_error ->
-      failwith ("parse error \n = " ^ error_msg ())
-  | Semantic_c.Semantic (s, i) ->
-      failwith ("semantic error " ^ s ^ "\n =" ^ error_msg ())
-  | e -> raise e
-
-
-
-
 (*****************************************************************************)
 (* Parsing subelements, useful to debug parser *)
 (*****************************************************************************)
@@ -959,7 +939,7 @@ module StringSet : Set.S with type elt = string = Set.Make(String)
 
 module StringMap : Map.S with type key = string = Map.Make(String)
 
-let header_cache = ("header_cache", ref 0, Hashtbl.create(101))
+let header_cache = Common.create_bounded_cache 0(*disabled 300*) ("",None)
 
 let tree_stack = ref []
 let seen_files = ref []
@@ -984,20 +964,21 @@ let rec _parse_print_error_heuristic2 saved_typedefs saved_macros
   else begin
     seen_files := file :: !seen_files;
     let cached_result =
-      if use_header_cache
+      if false && use_header_cache
       then
 	try
-	  let (cached,cached_includes) =
-	    Includes.cache_find header_cache file in
-	  List.iter
-	    (function incl ->
-	      handle_include file incl
-		(function header_filename ->
-		  _parse_print_error_heuristic2
-		    saved_typedefs saved_macros parse_strings
-		    true header_filename use_header_cache))
-	    cached_includes;
-	  Some cached
+	  (match Common.find_bounded_cache header_cache file with
+	    None -> failwith "Not possible"
+	  | Some (cached,cached_includes) ->
+	      List.iter
+		(function incl ->
+		  handle_include file incl
+		    (fun nonlocal header_filename ->
+		      _parse_print_error_heuristic2
+			saved_typedefs saved_macros parse_strings
+			nonlocal header_filename use_header_cache))
+		cached_includes;
+	      Some cached)
 	with Not_found -> None
       else None in
     match cached_result with
@@ -1005,14 +986,13 @@ let rec _parse_print_error_heuristic2 saved_typedefs saved_macros
         let result =
           _parse_print_error_heuristic2bis saved_typedefs saved_macros
             parse_strings file use_header_cache in
-        (if use_header_cache && cache
+        (if false && use_header_cache && cache
 	then
 	  let my_includes =
 	    let my_includes = ref [] in
 	    let cpp (k,bigf) directive =
 	      match directive with
-		Ast_c.Include incl ->
-		  my_includes := incl :: !my_includes
+		Ast_c.Include incl -> my_includes := incl :: !my_includes
 	      | _ -> () in
 	    let bigf =
 	      { Visitor_c.default_visitor_c with
@@ -1020,7 +1000,8 @@ let rec _parse_print_error_heuristic2 saved_typedefs saved_macros
 	    let (pgm,ty,defs) = result.parse_trees in
 	    Visitor_c.vk_program bigf (List.map fst pgm);
 	    !my_includes in
-	  Includes.cache_add header_cache file (result,my_includes));
+	  Common.extend_bounded_cache header_cache file
+	    (Some (result,my_includes)));
         tree_stack := result :: !tree_stack;
         Some result
       | Some result ->
@@ -1037,7 +1018,9 @@ and handle_include file wrapped_incl k =
       | Some header_filename when Common.lfile_exists header_filename ->
 	  (if !Flag_parsing_c.verbose_includes
 	  then pr2 ("including "^header_filename));
-          ignore (k header_filename)
+	  let nonlocal =
+	    match incl with Ast_c.NonLocal _ -> true | _ -> false in
+          ignore (k nonlocal header_filename)
       | _ -> ()
     end
 
@@ -1117,10 +1100,10 @@ and _parse_print_error_heuristic2bis saved_typedefs saved_macros
           match e with
             | Ast_c.CppTop(Ast_c.Include incl) ->
 		handle_include file incl
-		  (function header_filename ->
+		  (fun nonlocal header_filename ->
 		    _parse_print_error_heuristic2
 		      saved_typedefs saved_macros parse_strings
-		      true header_filename use_header_cache)
+		      nonlocal header_filename use_header_cache)
             | _ -> ()
         end; Left e
       | Right (info,line_err, _, passed, passed_before_error, cur, exn, _) ->

@@ -2605,7 +2605,7 @@ let lookahead2 ~pass next before =
 
   | (TIdent(s1,i1)::(TPtVirg(ii2)|TEq(ii2))::rest,
      TIdent(s2,i2)::TIdent(s3,i3)::_)
-      when (Printf.eprintf "trying for %s\n" s1; LP.current_context () = LP.InTopLevel &&
+      when (LP.current_context () = LP.InTopLevel &&
 	s1 ==~ regexp_annot) ->
 	  msg_attribute s1;
 	  TMacroEndAttr (s1, i1)

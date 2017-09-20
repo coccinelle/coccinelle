@@ -1636,32 +1636,34 @@ let check_control_flow (g : cflow) : unit =
 (*****************************************************************************)
 
 let report_error error =
-  let error_from_info info =
-    Common.error_message_short info.file ("", info.charpos)
-  in
-  match error with
-  | DeadCode          infoopt ->
-      (match infoopt with
-      | None ->   pr2 "FLOW: deadcode detected, but cant trace back the place"
-      | Some info -> pr2 ("FLOW: deadcode detected: " ^ error_from_info info)
-      )
-  | CaseNoSwitch      info ->
-      pr2 ("FLOW: case without corresponding switch: " ^ error_from_info info)
-  | OnlyBreakInSwitch info ->
-      pr2 ("FLOW: only break are allowed in switch: " ^ error_from_info info)
-  | WeirdSwitch info ->
-      pr2 ("FLOW: weird switch: " ^ error_from_info info)
-  | NoEnclosingLoop   (info) ->
-      pr2 ("FLOW: can't find enclosing loop: " ^ error_from_info info)
-  | GotoCantFindLabel (s, info) ->
-      pr2 ("FLOW: cant jump to " ^ s ^ ": because we can't find this label")
-  | NoExit info ->
-      pr2 ("FLOW: can't find exit or error exit: " ^ error_from_info info)
-  | DuplicatedLabel s ->
-      pr2 ("FLOW: duplicate label " ^ s)
-  | NestedFunc  ->
-      pr2 ("FLOW: not handling yet nested function")
-  | ComputedGoto ->
-      pr2 ("FLOW: not handling computed goto yet")
-  | Define info ->
-      pr2 ("Unsupported form of #define: " ^ error_from_info info)
+  if !Flag_parsing_c.verbose_cfg
+  then
+    let error_from_info info =
+      Common.error_message_short info.file ("", info.charpos) in
+    match error with
+    | DeadCode          infoopt ->
+	(match infoopt with
+	| None -> pr2 "FLOW: deadcode detected, but cant trace back the place"
+	| Some info ->
+	    pr2 ("FLOW: deadcode detected: " ^ error_from_info info))
+    | CaseNoSwitch      info ->
+	pr2
+	  ("FLOW: case without corresponding switch: " ^ error_from_info info)
+    | OnlyBreakInSwitch info ->
+	pr2 ("FLOW: only break are allowed in switch: " ^ error_from_info info)
+    | WeirdSwitch info ->
+	pr2 ("FLOW: weird switch: " ^ error_from_info info)
+    | NoEnclosingLoop   (info) ->
+	pr2 ("FLOW: can't find enclosing loop: " ^ error_from_info info)
+    | GotoCantFindLabel (s, info) ->
+	pr2 ("FLOW: cant jump to " ^ s ^ ": because we can't find this label")
+    | NoExit info ->
+	pr2 ("FLOW: can't find exit or error exit: " ^ error_from_info info)
+    | DuplicatedLabel s ->
+	pr2 ("FLOW: duplicate label " ^ s)
+    | NestedFunc  ->
+	pr2 ("FLOW: not handling yet nested function")
+    | ComputedGoto ->
+	pr2 ("FLOW: not handling computed goto yet")
+    | Define info ->
+	pr2 ("Unsupported form of #define: " ^ error_from_info info)

@@ -88,7 +88,7 @@ SOURCES_spgen := \
 	snapshot.ml user_input.ml position_generator.ml disj_generator.ml \
 	rule_body.ml rule_header.ml context_rule.ml script_rule.ml \
 	file_transform.ml spgen_interactive.ml spgen_lexer.mll spgen_config.ml \
-	spgen.ml spgen_test.ml
+	spgen.ml spgen_test.ml main.ml
 
 PREFIX_spatch :=
 
@@ -178,6 +178,17 @@ PARMAP_LIB := $(addsuffix parmap.cmi,$(filter %/parmap/,$(MAKELIBS)))
 PYML_LIB := $(addsuffix py.cmi,$(filter %/pyml/,$(MAKELIBS)))
 PCRE_LIB := $(addsuffix pcre.cmi,$(filter %/pcre/,$(MAKELIBS)))
 
+SHOW_CLEAN := @echo "CLEAN    "
+SHOW_OCAMLC := @echo "OCAMLC   "
+SHOW_OCAMLOPT := @echo "OCAMLOPT "
+
+RUN_OCAMLDEP = @echo "OCAMLDEP  $<"; $(OCAMLDEP_CMD)
+RUN_OCAMLC = $(SHOW_OCAMLC) "$<"; $(OCAMLC_CMD)
+RUN_OCAMLOPT = $(SHOW_OCAMLOPT) "$<"; $(OCAMLOPT_CMD)
+RUN_MENHIR = @echo "MENHIR    $<"; $(MENHIR_CMD)
+RUN_OCAMLLEX = @echo "OCAMLLEX  $<"; $(OCAMLLEX)
+RUN_OCAMLYACC = @echo "OCAMLYACC $<"; $(OCAMLYACC)
+
 .PHONY : all
 all : \
 	$(foreach tool,$(TOOLS),$(PREFIX_$(tool))$(tool)$(TOOLS_SUFFIX)) \
@@ -185,11 +196,13 @@ all : \
 
 .PHONY : clean
 clean :
-	rm -f .depend
+	$(SHOW_CLEAN) ".depend"
+	@rm -f .depend
 
 .PHONY : distclean
 distclean : clean
-	rm -f configure Makefile.config
+	$(SHOW_CLEAN) "configure"
+	@rm -f configure Makefile.config
 
 install: install-spatch install-spgen
 
@@ -229,13 +242,13 @@ endef
 #	$(eval $(foreach_ml_files_but_parsers)))
 
 %.ml.d : %.ml
-	$(OCAMLDEP_CMD) $< >$@ || (rm $@; false)
+	$(RUN_OCAMLDEP) $< >$@ || (rm $@; false)
 
 %.mli.d : %.mli
-	$(OCAMLDEP_CMD) $< >$@ || (rm $@; false)
+	$(RUN_OCAMLDEP) $< >$@ || (rm $@; false)
 
 %.ml : %.mll
-	$(OCAMLLEX) $<
+	$(RUN_OCAMLLEX) $<
 
 ml_files := $(ml_files_but_parsers) parsing_c/parser_c.ml
 ml_and_mli_files := $(ml_files) $(ml_files:.ml=.mli)
@@ -244,8 +257,9 @@ ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
 ifeq ($(DEPEND_METHOD),onefile)
 .depend : $(ml_and_mli_files) parsing_cocci/parser_cocci_menhir.mly $(MENHIR)
-	$(OCAMLDEP_CMD) $(ml_and_mli_files) >$@ || (rm $@; false)
-	$(MENHIR_DEP_CMD) parsing_cocci/parser_cocci_menhir.mly >>$@ || (rm $@; false)
+        @echo OCAMLDEP .depend
+	@$(OCAMLDEP_CMD) $(ml_and_mli_files) >$@ || (rm $@; false)
+	@$(MENHIR_DEP_CMD) parsing_cocci/parser_cocci_menhir.mly >>$@ || (rm $@; false)
 
 -include .depend
 else ifeq ($(DEPEND_METHOD),multifile)
@@ -260,28 +274,28 @@ endif
 
 ifeq ($(DEPEND_METHOD),onefile)
 %.cmi : %.mli .depend
-	$(OCAMLC_CMD) -c $<
+	$(RUN_OCAMLC) -c $<
 
 %.cmo : %.ml .depend
-	$(OCAMLC_CMD) -c $<
+	$(RUN_OCAMLC) -c $<
 
 %.cmx : %.ml .depend
-	$(OCAMLOPT_CMD) -c $<
+	$(RUN_OCAMLOPT) -c $<
 else
 %.cmi : %.mli %.mli.d
-	$(OCAMLC_CMD) -c $<
+	$(RUN_OCAMLC) -c $<
 
 %.cmo : %.ml %.ml.d
-	$(OCAMLC_CMD) -c $<
+	$(RUN_OCAMLC) -c $<
 
 %.cmx : %.ml %.ml.d
-	$(OCAMLOPT_CMD) -c $<
+	$(RUN_OCAMLOPT) -c $<
 endif
 
 ## Parser_c
 
 parsing_c/parser_c.ml : parsing_c/parser_c.mly
-	$(OCAMLYACC) $<
+	$(RUN_OCAMLYACC) $<
 parsing_c/parser_c.mli : parsing_c/parser_c.ml
 
 ## Parser_cocci_menhir
@@ -295,13 +309,13 @@ parsing_cocci/parser_cocci_menhir.ml : \
 		.depend \
 		$(MENHIR)
 #		bundles-menhirLib$(TOOLS_SUFFIX)-if-needed
-	$(MENHIR_CMD) $<
+	$(RUN_MENHIR) $<
 else
 parsing_cocci/parser_cocci_menhir.ml : \
 		parsing_cocci/parser_cocci_menhir.mly \
 		parsing_cocci/parser_cocci_menhir.mly.d
 #		bundles-menhirLib$(TOOLS_SUFFIX)-if-needed
-	$(MENHIR_CMD) $<
+	$(RUN_MENHIR) $<
 endif
 parsing_cocci/parser_cocci_menhir.mli : parsing_cocci/parser_cocci_menhir.ml
 
@@ -416,7 +430,8 @@ clean : clean-$(library)
 
 .PHONY : clean-$(library)
 clean-$(library) :
-	rm -f $(library)/$(library).cma $(library)/$(library).cmxa \
+	$(SHOW_CLEAN) "$(library)"
+	@rm -f $(library)/$(library).cma $(library)/$(library).cmxa \
 		$(foreach sourcefile,$(SOURCEFILES_$(library)),$(clean_sourcefile)) \
 		$(patsubst %.mll,%.ml,$(filter %.mll,$(SOURCEFILES_$(library)))) \
 		$(patsubst %.mly,%.ml,$(filter %.mly,$(SOURCEFILES_$(library)))) \
@@ -424,10 +439,10 @@ clean-$(library) :
 		$(foreach sourcefile,$(CLEANFILES_$(library)),$(clean_sourcefile))
 
 $(library)/$(library).cmxa : $(addsuffix .cmx,$(basename $(SOURCEFILES_$(library))))
-	$(OCAMLOPT_CMD) -a $$^ -o $$@
+	$(SHOW_OCAMLOPT) "-o $$@"; $(OCAMLOPT_CMD) -a $$^ -o $$@
 
 $(library)/$(library).cma : $(addsuffix .cmo,$(basename $(SOURCEFILES_$(library))))
-	$(OCAMLC_CMD) -a $$^ -o $$@
+	$(SHOW_OCAMLC) "-o $$@"; $(OCAMLC_CMD) -a $$^ -o $$@
 
 .PHONY: $(library)
 ifeq ($(NATIVE),yes)
@@ -443,18 +458,19 @@ clean : clean-$(tool)
 
 .PHONY : clean-$(tool)
 clean-$(tool) :
-	rm -f $(PREFIX_$(tool))$(tool) $(PREFIX_$(tool))$(tool).opt \
+	$(SHOW_CLEAN) "$(tool)"
+	@rm -f $(PREFIX_$(tool))$(tool) $(PREFIX_$(tool))$(tool).opt \
 		$(foreach sourcefile,$(SOURCEFILES_$(tool)),$(clean_sourcefile))
 
 $(PREFIX_$(tool))$(tool) : \
 		$(foreach library,$(LIBRARIES_$(tool)),$(library)/$(library).cma) \
 		$(addsuffix .cmo,$(basename $(SOURCEFILES_$(tool))))
-	$(OCAMLC_CMD) $(LIBS_$(tool):=.cma) $$^ -o $$@
+	$(SHOW_OCAMLC) "-o $$@"; $(OCAMLC_CMD) $(LIBS_$(tool):=.cma) $$^ -o $$@
 
 $(PREFIX_$(tool))$(tool).opt : \
 		$(foreach library,$(LIBRARIES_$(tool)),$(library)/$(library).cmxa) \
 		$(addsuffix .cmx,$(basename $(SOURCEFILES_$(tool))))
-	$(OCAMLOPT_CMD) $(LIBS_$(tool):=.cmxa) $$^ -o $$@
+	$(SHOW_OCAMLOPT) "-o $$@"; $(OCAMLOPT_CMD) $(LIBS_$(tool):=.cmxa) $$^ -o $$@
 endef
 $(foreach tool,$(TOOLS),$(eval $(foreach_tool)))
 
@@ -470,5 +486,6 @@ clean : clean-exposed-module
 
 .PHONY : clean-exposed-module
 clean-exposed-module :
-	rm -f $(foreach module,$(basename $(EXPOSED_MODULES)),\
+	$(SHOW_CLEAN) "exposed-module"
+	@rm -f $(foreach module,$(basename $(EXPOSED_MODULES)),\
 	$(foreach EXT,cmi $(ALL_OBJECTS),ocaml/$(notdir $(basename $(module))).$(EXT)))

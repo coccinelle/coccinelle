@@ -56,6 +56,8 @@ let distrib_index = ref (None : int option)
 let distrib_max   = ref (None : int option)
 let mod_distrib   = ref false
 
+let previous_merges = ref (([], []) : Cocci.merge_vars)
+
 let parmap_cores      = ref (None : int option)
 let parmap_chunk_size = ref (None : int option)
 
@@ -338,7 +340,7 @@ let short_options = [
   "--dir", Arg.Set dir,
   "    <dir> process all files in directory recursively";
   "--ignore", Arg.String (fun s -> ignore := s :: !ignore),
-  "    <dir> process all files in directory recursively";
+  "    <string> specify a file name prefix to ignore";
   "--file-groups", Arg.Set file_groups,
   "    <file> process the file groups listed in the file";
 
@@ -676,9 +678,9 @@ let other_options = [
     "--mod-distrib", Arg.Set mod_distrib,
     "   use mod to distribute files among the processors";
     "--jobs",  Arg.Int (function x -> parmap_cores := Some x),
-    "   the number of cores to be used by parmap";
+    "   the number of processes to be used";
     "-j",  Arg.Int (function x -> parmap_cores := Some x),
-    "   the number of cores to be used";
+    "   the number of processes to be used";
     "--chunksize", Arg.Int (function x -> parmap_chunk_size := Some x),
     "   the size of work chunks for parallelism";
     "--tmp-dir", Arg.Set_string tmp_dir,
@@ -970,6 +972,7 @@ let rec main_action xs =
   | _,[] -> ()
   | _ -> failwith "only one .cocci file allowed");
   Iteration.base_file_list := xs;
+  previous_merges := ([], []);
   let rec toploop = function
       [] -> failwith "no C files provided"
     | x::xs ->
@@ -993,6 +996,9 @@ let rec main_action xs =
 		    );
 	      Flag.dir := x
 	    end;
+
+	Common.profile_code "setup_unique_search" (fun _ ->
+	Includes.setup_unique_search !parmap_cores !Inc.include_path);
 
 	let (cocci_infos,constants) =
 	  Cocci.pre_engine (!cocci_file, !Config.std_iso) in
@@ -1243,13 +1249,17 @@ singleton lists are then just appended to each other during the merge. *)
 		      else prev)
 		      ([], []) in res) in
 	  let outfiles = List.rev outfiles in
-	  let merges = List.fold_left Cocci.union_merge_vars ([], []) merges in
+	  let merges =
+            List.fold_left Cocci.union_merge_vars !previous_merges merges in
 	  let pending_instance =
 	    match Iteration.get_pending_instance() with
 	      None ->
+		previous_merges := ([], []);
 		Cocci.post_engine cocci_infos merges;
 		Iteration.get_pending_instance()
-	    | pending_instance -> pending_instance in
+	    | pending_instance ->
+               previous_merges := merges;
+               pending_instance in
 	  (match pending_instance with
 	    None ->
 	      (x,xs,cocci_infos,outfiles)

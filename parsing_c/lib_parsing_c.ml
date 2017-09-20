@@ -298,6 +298,23 @@ let max_min_ii_by_pos xs =
         maxii', minii'
       ) (x,x)
 
+(* avoid memory costs of prefiltering the list *)
+let max_min_ii_by_pos_filtered f xs =
+  let xs = Common.drop_until f xs in
+  match xs with
+  | [] -> failwith "empty list, max_min_ii_by_pos"
+  | [x] -> (x, x)
+  | x::xs ->
+      let pos_leq p1 p2 = (Ast_c.compare_pos p1 p2) = (-1) in
+      xs +> List.fold_left (fun ((maxii,minii) as acc) e ->
+	if f e
+	then
+          let maxii' = if pos_leq maxii e then e else maxii in
+          let minii' = if pos_leq e minii then e else minii in
+          maxii', minii'
+	else acc
+      ) (x,x)
+
 let info_to_fixpos ii =
   match Ast_c.pinfo_of_info ii with
     Ast_c.OriginTok pi -> Ast_cocci.Real pi.Common.charpos
@@ -314,12 +331,11 @@ let max_min_by_pos xs =
 
 let lin_col_by_pos xs =
   (* put min before max; no idea why they are backwards above *)
-  let non_fake = List.filter (function ii -> not (Ast_c.is_fake ii)) xs in
-  let (i2, i1) = max_min_ii_by_pos non_fake in
+  let (i2, i1) =
+    max_min_ii_by_pos_filtered (function ii -> not (Ast_c.is_fake ii)) xs in
   let posf x = Ast_c.col_of_info x in
   let mposf x = Ast_c.col_of_info x + String.length (Ast_c.str_of_info x) in
   (Ast_c.file_of_info i1,!Flag.current_element,
-   Some !Flag.current_element_pos,
    (Ast_c.line_of_info i1, posf i1), (Ast_c.line_of_info i2, mposf i2))
 
 
@@ -334,9 +350,8 @@ let min_pinfo_of_node node =
 
 let (range_of_origin_ii: Ast_c.info list -> (int * int) option) =
  fun ii ->
-  let ii = List.filter Ast_c.is_origintok ii in
   try
-    let (max, min) = max_min_ii_by_pos ii in
+    let (max, min) = max_min_ii_by_pos_filtered Ast_c.is_origintok ii in
     assert(Ast_c.is_origintok max);
     assert(Ast_c.is_origintok min);
     let strmax = Ast_c.str_of_info max in

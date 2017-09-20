@@ -422,11 +422,8 @@ let get_celem celem : string =
 setting Flag.current_element, whether or not one wants to print tracing
 information!  This is probably not smart... *)
 
-let show_or_not_celem2 prelude celem =
-  let (_,_,_,(start_line,start_offset),(end_line,end_offset)) =
-    Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_toplevel celem) in
-  Flag.current_element_pos :=
-    ((start_line,start_offset),(end_line,end_offset));
+let show_or_not_celem2 prelude celem start_end =
+  Flag.current_element_pos := start_end;
   let (tag,trying) =
   (match celem with
   |  Ast_c.Definition ({Ast_c.f_name = namefuncs},_) ->
@@ -458,9 +455,9 @@ let show_or_not_celem a b  =
 
 let show_or_not_trans_info2 trans_info =
   (* drop witness tree indices for printing *)
-  let trans_info =
-    List.map (function (index,trans_info) -> trans_info) trans_info in
   if !Flag.show_transinfo then begin
+    let trans_info =
+      List.map (function (index,trans_info) -> trans_info) trans_info in
     if trans_info = [] then pr2 "transformation info is empty"
     else begin
       pr2 "transformation info returned:";
@@ -795,6 +792,7 @@ and update_rel_pos_bis choose_ref xs =
 
 type toplevel_c_info = {
   ast_c: Ast_c.toplevel; (* contain refs so can be modified *)
+  start_end: (Ast_c.posl * Ast_c.posl) Lazy.t;
   tokens_c: Parser_c.token list;
   fullstring: string;
 
@@ -1100,6 +1098,11 @@ let build_info_program env (cprogram,typedefs,macros) =
     in
     {
       ast_c = c; (* contain refs so can be modified *)
+      start_end =
+        lazy
+          (let (_,_,(start_line,start_offset),(end_line,end_offset)) =
+	    Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_toplevel c) in
+	  ((start_line,start_offset),(end_line,end_offset)));
       tokens_c = tokens;
       fullstring = fullstr;
 
@@ -1845,7 +1848,7 @@ and process_a_generated_a_env_a_toplevel rule env ccs =
 (* does side effects on C ast and on Cocci info rule *)
 and process_a_ctl_a_env_a_toplevel2 r e c f =
  indent_do (fun () ->
-   show_or_not_celem "trying" c.ast_c;
+   show_or_not_celem "trying" c.ast_c c.start_end;
    Flag.currentfile := Some (f ^ ":" ^get_celem c.ast_c);
    match (r.ctl,c.ast_c) with
      ((Asttoctl2.NONDECL ctl,t),Ast_c.Declaration _) -> None
@@ -1869,7 +1872,7 @@ and process_a_ctl_a_env_a_toplevel2 r e c f =
        then None
        else
 	 begin
-	   show_or_not_celem "found match in" c.ast_c;
+	   show_or_not_celem "found match in" c.ast_c c.start_end;
 	   show_or_not_trans_info trans_info;
 	   List.iter (show_or_not_binding "out") newbindings;
 

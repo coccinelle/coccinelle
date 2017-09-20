@@ -17,7 +17,7 @@ val hrule_per_file : bool ref
 val currentfile : string option ref
 val currentfiles : string list ref
 val current_element : string ref
-val current_element_pos : ((int * int) * (int * int)) ref
+val current_element_pos : ((int * int) * (int * int)) Lazy.t ref
 val dir : string ref
 val defined_virtual_rules : string list ref
 val defined_virtual_env : (string * string) list ref
