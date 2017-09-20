@@ -2267,16 +2267,22 @@ struct_decl_list:
 
 struct_declarator_list:
  | struct_declarator                               { [$1,           []] }
+ | struct_declarator_list TComma cpp_directive_list struct_declarator
+     { $1 @ [$4, [$2]] }
  | struct_declarator_list TComma struct_declarator { $1 @ [$3,     [$2]] }
 
 
 enumerator_list:
  | enumerator                        { [$1,          []]   }
+ | enumerator_list TComma cpp_directive_list enumerator
+     { $1 @ [$4, [$2]] }
  | enumerator_list TComma enumerator { $1 @ [$3,    [$2]] }
 
 
 init_declarator_list:
  | init_declarator                             { [$1,   []] }
+ | init_declarator_list TComma cpp_directive_list init_declarator
+     { $1 @ [$4, [$2]] }
  | init_declarator_list TComma init_declarator { $1 @ [$3,     [$2]] }
 
 
