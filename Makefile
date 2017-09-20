@@ -413,6 +413,9 @@ $(foreach bundle,$(ALL_BUNDLES),$(eval $(foreach_bundle)))
 main.cmo : $(PARMAP_LIB)
 main.cmx : $(PARMAP_LIB)
 
+parsing_c/includes.cmo : $(PARMAP_LIB)
+parsing_c/includes.cmx : $(PARMAP_LIB)
+
 python/yes_pycocci.cmi : $(PYML_LIB)
 python/yes_pycocci.cmo : $(PYML_LIB)
 python/yes_pycocci.cmx : $(PYML_LIB)
