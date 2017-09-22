@@ -136,10 +136,20 @@ SOURCEFILES+=$$(SOURCEFILES_$(tool))
 endef
 $(foreach tool,$(TOOLS),$(eval $(foreach_tool)))
 
+ifeq ($(MAKECMDGOALS),opt)
+NATIVE := yes
+else
 ifeq ($(TARGET_SPATCH),opt-only)
 NATIVE := yes
 else
 NATIVE := no
+endif
+endif
+
+ifeq ($(NATIVE),yes)
+LIBSUFFIX := .cmxa
+else
+LIBSUFFIX := .cma
 endif
 
 ifeq ($(NATIVE),yes)
@@ -178,9 +188,9 @@ MENHIR_DEP_CMD := $(MENHIR) --ocamldep "$(OCAMLDEP_CMD)" --depend
 
 MENHIR_CMD := $(MENHIR) --ocamlc "$(OCAMLC_CMD)" --explain --infer
 
-PARMAP_LIB := $(addsuffix parmap.cmi,$(filter %/parmap/,$(MAKELIBS)))
-PYML_LIB := $(addsuffix py.cmi,$(filter %/pyml/,$(MAKELIBS)))
-PCRE_LIB := $(addsuffix pcre.cmi,$(filter %/pcre/,$(MAKELIBS)))
+PARMAP_LIB := $(addsuffix parmap$(LIBSUFFIX),$(filter %/parmap/,$(MAKELIBS)))
+PYML_LIB := $(addsuffix py$(LIBSUFFIX),$(filter %/pyml/,$(MAKELIBS)))
+PCRE_LIB := $(addsuffix pcre$(LIBSUFFIX),$(filter %/pcre/,$(MAKELIBS)))
 
 SHOW_CLEAN := @echo "CLEAN    "
 SHOW_OCAMLC := @echo "OCAMLC   "
