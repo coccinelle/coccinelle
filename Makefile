@@ -469,7 +469,7 @@ clean-$(tool) :
 $(PREFIX_$(tool))$(tool) : \
 		$(foreach library,$(LIBRARIES_$(tool)),$(library)/$(library).cma) \
 		$(addsuffix .cmo,$(basename $(SOURCEFILES_$(tool))))
-	$(SHOW_OCAMLC) "-o $$@"; $(OCAMLC_CMD) $(LIBS_$(tool):=.cma) $$^ -o $$@
+	$(SHOW_OCAMLC) "-o $$@"; $(OCAMLC_CMD) -custom $(LIBS_$(tool):=.cma) $$^ -o $$@
 
 $(PREFIX_$(tool))$(tool).opt : \
 		$(foreach library,$(LIBRARIES_$(tool)),$(library)/$(library).cmxa) \
