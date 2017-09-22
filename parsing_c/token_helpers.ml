@@ -358,7 +358,7 @@ let info_of_tok = function
   | TEndif               (_, i) -> i
   | TIfdefBool           (b, _, i) -> i
   | TIfdefMisc           (b, _, i) -> i
-  | TIfdefVersion           (b, _, i) -> i
+  | TIfdefVersion        (b, _, i) -> i
 
   | TUifdef              (i) -> i
   | TUelseif             (i) -> i
