@@ -96,6 +96,7 @@ PREFIX_spatch :=
 PREFIX_spgen := tools/spgen/source/
 
 CORE_LIBS := unix bigarray nums str \
+	$(patsubst %,bytes,$(BYTESDIR)) \
 	$(patsubst %,pcre,$(filter %/pcre.cma,$(LNKLIBS)))
 
 ifeq ($(FEATURE_OCAML),1)
@@ -159,7 +160,7 @@ COMPILED_EXPOSED_MODULES := \
 
 SEARCH_PATHS := \
 	commons/ocamlextra $(LIBRARIES) $(PREFIX_spgen) $(PCREDIR) $(PYMLDIR) \
-	$(PARMAPDIR)
+	$(PARMAPDIR) $(BYTESDIR)
 
 SEARCH_PATH_FLAGS := $(addprefix -I ,$(SEARCH_PATHS))
 
