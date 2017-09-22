@@ -208,6 +208,10 @@ distclean : clean
 	$(SHOW_CLEAN) "configure"
 	@rm -f configure Makefile.config
 
+.PHONY : opt
+opt : $(foreach tool,$(TOOLS),$(PREFIX_$(tool))$(tool).opt)
+
+.PHONY: install
 install: install-spatch install-spgen
 
 
