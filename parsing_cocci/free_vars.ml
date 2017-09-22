@@ -393,6 +393,8 @@ let collect_saved =
 	  let lensaved =
 	    match ls with Ast.Saved -> [metaid lenname] | _ -> [] in
 	  lensaved @ namesaved
+      | Ast.MetaInitList(name,len,_,ns,_) ->
+	  (match ns with Ast.Saved -> [metaid name] | _ -> [])
       | _ -> option_default) in
 
   let astfvparam recursor k p =

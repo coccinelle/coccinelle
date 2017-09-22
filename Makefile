@@ -12,6 +12,7 @@ include Makefile.config
 endif
 endif
 endif
+-include Makefile.local
 
 CORE_LIBRARIES := \
 	commons globals parsing_cocci parsing_c
@@ -95,6 +96,7 @@ PREFIX_spatch :=
 PREFIX_spgen := tools/spgen/source/
 
 CORE_LIBS := unix bigarray nums str \
+	$(patsubst %,bytes,$(BYTESDIR)) \
 	$(patsubst %,pcre,$(filter %/pcre.cma,$(LNKLIBS)))
 
 ifeq ($(FEATURE_OCAML),1)
@@ -142,14 +144,14 @@ endif
 
 ifeq ($(NATIVE),yes)
 	TOOLS_SUFFIX := .opt
+	ALL_OBJECTS := cmo cmx
 else
 	TOOLS_SUFFIX :=
+	ALL_OBJECTS := cmo
 endif
 
 EXPOSED_MODULES := \
 	$(shell sed -n 's/^.*(\* \(.*\) \*).*$$/\1/p' ocaml/exposed_modules.ml)
-
-ALL_OBJECTS=cmo cmx
 
 COMPILED_EXPOSED_MODULES := \
 	$(foreach EXT,cmi $(ALL_OBJECTS),\
@@ -158,13 +160,13 @@ COMPILED_EXPOSED_MODULES := \
 
 SEARCH_PATHS := \
 	commons/ocamlextra $(LIBRARIES) $(PREFIX_spgen) $(PCREDIR) $(PYMLDIR) \
-	$(PARMAPDIR)
+	$(PARMAPDIR) $(BYTESDIR)
 
 SEARCH_PATH_FLAGS := $(addprefix -I ,$(SEARCH_PATHS))
 
-OCAMLC_CMD := $(OCAMLC) $(SEARCH_PATH_FLAGS)
+OCAMLC_CMD := $(OCAMLC) $(SEARCH_PATH_FLAGS) $(EXTRA_OCAML_FLAGS)
 
-OCAMLOPT_CMD := $(OCAMLOPT) $(SEARCH_PATH_FLAGS)
+OCAMLOPT_CMD := $(OCAMLOPT) $(SEARCH_PATH_FLAGS) $(EXTRA_OCAML_FLAGS)
 
 OCAMLDEP_CMD := $(OCAMLDEP) $(SEARCH_PATH_FLAGS) \
 	$(addprefix -ml-synonym ,.mll .mly) \
@@ -412,6 +414,9 @@ $(foreach bundle,$(ALL_BUNDLES),$(eval $(foreach_bundle)))
 main.cmo : $(PARMAP_LIB)
 main.cmx : $(PARMAP_LIB)
 
+parsing_c/includes.cmo : $(PARMAP_LIB)
+parsing_c/includes.cmx : $(PARMAP_LIB)
+
 python/yes_pycocci.cmi : $(PYML_LIB)
 python/yes_pycocci.cmo : $(PYML_LIB)
 python/yes_pycocci.cmx : $(PYML_LIB)
@@ -465,7 +470,7 @@ clean-$(tool) :
 $(PREFIX_$(tool))$(tool) : \
 		$(foreach library,$(LIBRARIES_$(tool)),$(library)/$(library).cma) \
 		$(addsuffix .cmo,$(basename $(SOURCEFILES_$(tool))))
-	$(SHOW_OCAMLC) "-o $$@"; $(OCAMLC_CMD) $(LIBS_$(tool):=.cma) $$^ -o $$@
+	$(SHOW_OCAMLC) "-o $$@"; $(OCAMLC_CMD) -custom $(LIBS_$(tool):=.cma) $$^ -o $$@
 
 $(PREFIX_$(tool))$(tool).opt : \
 		$(foreach library,$(LIBRARIES_$(tool)),$(library)/$(library).cmxa) \
