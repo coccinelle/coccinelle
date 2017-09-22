@@ -444,7 +444,7 @@ let info_of_tok = function
   | Tsizeof              (i) -> i
   | Tasm                 (i) -> i
   | Tattribute           (i) -> i
-  | TattributeNoarg           (i) -> i
+  | TattributeNoarg      (i) -> i
   | Tinline              (i) -> i
   | Ttypeof              (i) -> i
   | Tnew                 (i) -> i
