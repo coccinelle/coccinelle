@@ -149,6 +149,7 @@ let resolve filename parsingstyle x =
 (* ------------------------------------------------------------------------ *)
 
 let setup_unique_search cores searchlist =
+  let searchlist = List.filter (function f -> Sys.file_exists f) searchlist in
   let cores =
     match cores with
       None -> 1
