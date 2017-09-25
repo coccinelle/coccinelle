@@ -997,10 +997,11 @@ let rec main_action xs =
 	      Flag.dir := x
 	    end;
 
-	(if not(Inc.get_parsing_style() = Inc.Parse_no_includes)
+	(if List.mem (Inc.get_parsing_style())
+	    [Inc.Parse_all_includes;Inc.Parse_really_all_includes]
 	then
 	  Common.profile_code "setup_unique_search" (fun _ ->
-	    Includes.setup_unique_search !parmap_cores !Inc.include_path));
+	    Inc.setup_unique_search !parmap_cores !Inc.include_path));
 
 	let (cocci_infos,constants) =
 	  Cocci.pre_engine (!cocci_file, !Config.std_iso) in
