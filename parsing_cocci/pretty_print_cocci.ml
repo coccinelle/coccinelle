@@ -381,6 +381,7 @@ and fullType ft =
 	  typeC ty)
   | Ast.AsType(ty,asty) -> fullType ty; print_string "@"; fullType asty
   | Ast.DisjType(decls) -> print_disj_list fullType decls "|"
+  | Ast.ConjType(decls) -> print_disj_list fullType decls "&"
   | Ast.OptType(ty) -> print_string "?"; fullType ty
 
 and print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2) fn =
@@ -484,12 +485,16 @@ and declaration d =
       mcode print_meta name
   | Ast.AsDecl(decl,asdecl) -> declaration decl; print_string "@";
       declaration asdecl
-  | Ast.Init(stg,ty,id,eq,ini,sem) ->
+  | Ast.Init(stg,ty,id,attr,eq,ini,sem) ->
       print_option (mcode storage) stg; print_named_type ty id;
+      (if not (attr = []) then print_string " ");
+      print_between print_space (mcode print_string) attr;
       print_string " "; mcode print_string eq;
       print_string " "; initialiser ini; mcode print_string sem
-  | Ast.UnInit(stg,ty,id,sem) ->
+  | Ast.UnInit(stg,ty,id,attr,sem) ->
       print_option (mcode storage) stg; print_named_type ty id;
+      (if not (attr = []) then print_string " ");
+      print_between print_space (mcode print_string) attr;
       mcode print_string sem
   | Ast.FunProto (fninfo,name,lp1,params,va,rp1,sem) ->
       List.iter print_fninfo fninfo;

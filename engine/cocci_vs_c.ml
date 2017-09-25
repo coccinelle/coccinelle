@@ -1,5 +1,5 @@
 (*
- * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * This file is part of Coccinelle, licensed under the terms of the GPL v2.
  * See copyright.txt in the Coccinelle source code for more information.
  * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
@@ -266,9 +266,9 @@ let equal_metavarval valu valu' =
 
   | Ast_c.MetaPosValList l1, Ast_c.MetaPosValList l2 ->
       List.exists
-	(function (fla,cea,posa1,posa2) ->
+	(function (fla,cea,_cepa,posa1,posa2) ->
 	  List.exists
-	    (function (flb,ceb,posb1,posb2) ->
+	    (function (flb,ceb,_cepb,posb1,posb2) ->
 	      fla = flb && cea = ceb &&
 	      Ast_c.equal_posl posa1 posb1 && Ast_c.equal_posl posa2 posb2)
             l2)
@@ -364,9 +364,9 @@ let equal_inh_metavarval valu valu'=
 
   | Ast_c.MetaPosValList l1, Ast_c.MetaPosValList l2 ->
       List.exists
-	(function (fla,cea,posa1,posa2) ->
+	(function (fla,cea,_cepa,posa1,posa2) ->
 	  List.exists
-	    (function (flb,ceb,posb1,posb2) ->
+	    (function (flb,ceb,_cepb,posb1,posb2) ->
 	      fla = flb && cea = ceb &&
 	      Ast_c.equal_posl posa1 posb1 && Ast_c.equal_posl posa2 posb2)
             l2)
@@ -723,6 +723,10 @@ module type PARAM =
 
     val check_constraints :
 	A.meta_name -> B.metavar_binding_kind -> A.constraints ->
+	  (unit -> tin -> 'x tout) -> tin -> 'x tout
+
+    val check_re_constraints :
+	A.meta_name -> A.constraints ->
 	  (unit -> tin -> 'x tout) -> tin -> 'x tout
 
     val check_constraints_ne :
@@ -2416,6 +2420,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
      B.v_storage = (B.StoTypedef, inl);
      B.v_local = local;
      B.v_attr = attrs;
+     B.v_endattr = endattrs;
      B.v_type_bis = typb0bis;
    }, iivirg) ->
 
@@ -2485,6 +2490,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 				  B.v_storage = (B.StoTypedef, inl);
 				  B.v_local = local;
 				  B.v_attr = attrs;
+				  B.v_endattr = endattrs;
 				  B.v_type_bis = typb0bis;
 				},
 				 iivirg),iiptvirgb,iistob)
@@ -2516,6 +2522,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
                         B.v_storage = (B.StoTypedef, inl);
                         B.v_local = local;
                         B.v_attr = attrs;
+                        B.v_endattr = endattrs;
                         B.v_type_bis = typb0bis;
                      },
                       iivirg),iiptvirgb,iistob)
@@ -2531,76 +2538,82 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
    | _ -> fail
    )
 
-   | A.UnInit (stoa, typa, ida, ptvirga),
+   | A.UnInit (stoa, typa, ida, attra, ptvirga),
      ({B.v_namei= Some (nameidb, _);B.v_storage= (B.StoTypedef,_);}, iivirg)
      -> fail
 
-   | A.Init (stoa, typa, ida, eqa, inia, ptvirga),
+   | A.Init (stoa, typa, ida, attra, eqa, inia, ptvirga),
      ({B.v_namei=Some(nameidb, _);B.v_storage=(B.StoTypedef,_);}, iivirg)
        -> fail
 
 
 
     (* could handle iso here but handled in standard.iso *)
-   | A.UnInit (stoa, typa, ida, ptvirga),
+   | A.UnInit (stoa, typa, ida, attrsa, ptvirga),
      ({B.v_namei = Some (nameidb, B.NoInit);
        B.v_type = typb;
        B.v_storage = stob;
        B.v_local = local;
        B.v_attr = attrs;
+       B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
      }, iivirg) ->
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
        fullType typa typb >>= (fun typa typb ->
        ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
+       attribute_list attrsa endattrs >>= (fun attrsa endattrs ->
        storage_optional_allminus allminus stoa (stob, iistob) >>=
         (fun stoa (stob, iistob) ->
          return (
-           (A.UnInit (stoa, typa, ida, ptvirga)) +>  A.rewrap decla,
+           (A.UnInit (stoa, typa, ida, attrsa, ptvirga)) +>  A.rewrap decla,
            (({B.v_namei = Some (nameidb, B.NoInit);
               B.v_type = typb;
               B.v_storage = stob;
               B.v_local = local;
               B.v_attr = attrs;
+              B.v_endattr = endattrs;
               B.v_type_bis = typbbis;
            },iivirg),
 	    iiptvirgb,iistob)
-         )))))
+         ))))))
 
-   | A.Init (stoa, typa, ida, eqa, inia, ptvirga),
+   | A.Init (stoa, typa, ida, attrsa, eqa, inia, ptvirga),
      ({B.v_namei = Some(nameidb, B.ValInit (iieqb, inib));
        B.v_type = typb;
        B.v_storage = stob;
        B.v_local = local;
        B.v_attr = attrs;
+       B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
-     },iivirg)
-       ->
+     },iivirg) ->
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
        tokenf eqa iieqb >>= (fun eqa iieqb ->
        fullType typa typb >>= (fun typa typb ->
        ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
+       attribute_list attrsa endattrs >>= (fun attrsa endattrs ->
        storage_optional_allminus allminus stoa (stob, iistob) >>=
        (fun stoa (stob, iistob) ->
        initialiser inia inib >>= (fun inia inib ->
          return (
-           (A.Init (stoa, typa, ida, eqa, inia, ptvirga)) +> A.rewrap decla,
+           (A.Init (stoa,typa,ida,attrsa,eqa,inia,ptvirga)) +> A.rewrap decla,
            (({B.v_namei = Some(nameidb, B.ValInit (iieqb, inib));
               B.v_type = typb;
               B.v_storage = stob;
               B.v_local = local;
               B.v_attr = attrs;
+              B.v_endattr = endattrs;
               B.v_type_bis = typbbis;
            },iivirg),
            iiptvirgb,iistob)
-         )))))))
+         ))))))))
 
-   | A.Init (stoa, typa, ida, eqa, inia, ptvirga),
+   | A.Init (stoa, typa, ida, attra, eqa, inia, ptvirga),
      ({B.v_namei = Some(nameidb, B.ConstrInit _);
        B.v_type = typb;
        B.v_storage = stob;
        B.v_local = local;
        B.v_attr = attrs;
+       B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
      },iivirg)
        -> fail (* C++ constructor declaration not supported in SmPL *)
@@ -2613,6 +2626,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_storage = stob;
        B.v_local = local;
        B.v_attr = attrs;
+       B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
      }, iivirg) ->
        (match (va,isvaargs) with
@@ -2651,6 +2665,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 		  B.v_storage = stob;
 		  B.v_local = local;
 		  B.v_attr = attrs;
+		  B.v_endattr = endattrs;
 		  B.v_type_bis = typbbis;
 		}, iivirg), iiptvirgb, iistob))))
 	      )))))))))
@@ -2661,6 +2676,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_storage = stob;
        B.v_local = local;
        B.v_attr = attrs;
+       B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
      }, iivirg)  ->
 
@@ -2675,6 +2691,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
                 B.v_storage = stob;
                 B.v_local = local;
                 B.v_attr = attrs;
+                B.v_endattr = endattrs;
                 B.v_type_bis = typbbis;
              }, iivirg), iiptvirgb, iistob)
            )))
@@ -2687,6 +2704,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_storage = (B.StoTypedef,inline);
        B.v_local = local;
        B.v_attr = attrs;
+       B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
      },iivirg) ->
 
@@ -2740,6 +2758,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
               B.v_storage = (B.StoTypedef,inline);
               B.v_local = local;
               B.v_attr = attrs;
+              B.v_endattr = endattrs;
               B.v_type_bis = typbbis;
            },
 	     iivirg),
@@ -2846,12 +2865,12 @@ and get_fninfo fninfoa =
   let attras =
     match List.filter (function A.FAttr(a) -> true | _ -> false) fninfoa
     with
-      [] -> None |(* _ -> failwith "matching of attributes not supported"*)
+      [] -> [] |(* _ -> failwith "matching of attributes not supported"*)
 	(* The following provides matching of one attribute against one
 	   attribute.  But the problem is that in the C ast there are no
 	   attributes in the attr field.  The attributes are all comments.
 	   So there is nothing to match against. *)
-	(**)  [A.FAttr(a)] -> Some [A.FAttr(a)]
+	(**)  [A.FAttr(a)] -> [a]
 	(*| [] -> None*)
 	| _ -> failwith "only one attr match allowed" (**) in
   (stoa,tya,inla,attras)
@@ -2860,7 +2879,7 @@ and put_fninfo stoa tya inla attras =
   (match stoa  with Some st -> [A.FStorage st] | None -> []) @
     (match inla   with Some i -> [A.FInline i] | None -> []) @
     (match tya    with Some t -> [A.FType t] | None -> []) @
-    (match attras with Some a -> a | None -> [])
+    (List.map (fun x -> A.FAttr x) attras)
 
 (* ------------------------------------------------------------------------- *)
 
@@ -3413,6 +3432,14 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
       typas +>
       List.fold_left (fun acc typa -> acc >|+|> (fullType typa typb)) fail
 
+  | A.ConjType typas, typb ->
+      let rec loop acc_ty typb = function
+	  [] -> return (A.ConjType (List.rev acc_ty) +> A.rewrap typa, typb)
+	| t::ts ->
+	    fullType t typb >>= (fun t typb ->
+	      loop (t::acc_ty) typb ts) in
+      loop [] typb typas
+
    | A.OptType(_), _ -> failwith "not handling Opt on type"
    )
 
@@ -3826,7 +3853,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 			       +> A.rewrap s in
 			   return (ty,[iisub])))
 		   | _ -> fail)
-	       | A.DisjType(disjs) ->
+	       | A.DisjType(disjs) -> (* do we need a conj type case here? *)
 		   disjs +>
 		   List.fold_left (fun acc disj -> acc >|+|> (loop disj)) fail
 	       | _ -> fail in
@@ -3926,7 +3953,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 			     +> A.rewrap s in
 			 return (ty,[iisub]))
 		   | _ -> fail)
-	       | A.DisjType(disjs) ->
+	       | A.DisjType(disjs) -> (* do we need a conj type case here? *)
 		   disjs +>
 		   List.fold_left (fun acc disj -> acc >|+|> (loop disj)) fail
 	       | _ -> fail in
@@ -4145,24 +4172,24 @@ and attribute_list attras attrbs =
 and attribute_list attras attrbs =
   X.optional_attributes_flag (fun optional_attributes ->
   match attras,attrbs with
-    None, _ when optional_attributes || attrbs = [] ->
-      return (None, attrbs)
-  | None, _ -> fail
-  | Some [attra], [attrb] ->
+    [], _ when optional_attributes || attrbs = [] ->
+      return ([], attrbs)
+  | [], _ -> fail
+  | [attra], [attrb] ->
     attribute attra attrb >>= (fun attra attrb ->
-      return (Some [attra], [attrb])
+      return ([attra], [attrb])
     )
-  | Some [attra], attrb -> fail
+  | [attra], attrb -> fail
   | _ -> failwith "only one attribute allowed in SmPL")
 
 and attribute = fun ea eb ->
   match ea, eb with
-    (A.FAttr attra), (B.Attribute attrb, ii)
+    attra, (B.Attribute attrb, ii)
       when (A.unwrap_mcode attra) = attrb ->
       let ib1 = tuple_of_list1 ii in
       tokenf attra ib1 >>= (fun attra ib1 ->
 	return (
-	  A.FAttr attra,
+	  attra,
 	  (B.Attribute attrb, [ib1])
         ))
   | _ -> fail
@@ -4573,8 +4600,10 @@ and define_parameter = fun parama paramb ->
 	end
     | A.CstrRegexp (s, re) ->
 	check_string (fun s' -> bool (Regexp.string_match re s'))
-    | A.CstrScript script_constraint ->
-	bool (satisfies_script_constraint script_constraint ida idb env)
+    | A.CstrScript(local,script_constraint) ->
+	if local
+	then bool (satisfies_script_constraint script_constraint ida idb env)
+	else bool true
     | A.CstrExpr e ->
 	begin
 	  match idb with
@@ -4611,7 +4640,7 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
   in
   X.all_bound (A.get_inherited re) >&&>
 
-  rewrap (
+  (rewrap (
   match A.unwrap re, F.unwrap node with
 
   (* note: the order of the clauses is important. *)
@@ -5302,6 +5331,12 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
       -> fail
 
 
-  )
+  )) >>=
+  (fun a b ->
+  let rec loop = function
+      [] -> return(a,b)
+    | (nm,cstr)::rest ->
+	X.check_re_constraints nm cstr (fun () -> loop rest) in
+  loop (A.get_constraints re))
 
 end

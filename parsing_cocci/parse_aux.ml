@@ -187,7 +187,7 @@ let iso_adjust first_fn fn first rest =
 
 let lookup rule name =
   try
-    let info = Hashtbl.find Data.all_metadecls rule in
+    let info = !(Hashtbl.find Data.all_metadecls rule) in
     List.find (function mv -> Ast.get_meta_name mv = (rule,name)) info
   with
     Not_found ->
@@ -563,15 +563,14 @@ let seq lb s rb =
 let check_rule_name = function
     Some nm ->
       let n = id2name nm in
-      (try let _ =  Hashtbl.find Data.all_metadecls n in
-      raise (Semantic_cocci.Semantic ("repeated rule name"))
-      with Not_found -> Some n)
+      if Hashtbl.mem Data.all_metadecls n
+      then raise (Semantic_cocci.Semantic ("repeated rule name"))
+      else Some n
   | None -> None
 
 let make_iso_rule_name_result n =
-  (try let _ =  Hashtbl.find Data.all_metadecls n in
-  raise (Semantic_cocci.Semantic ("repeated rule name"))
-  with Not_found -> ());
+  (if Hashtbl.mem Data.all_metadecls n
+  then raise (Semantic_cocci.Semantic ("repeated rule name")));
   Ast.CocciRulename
     (Some n,Ast.NoDep,[],[],Ast.Undetermined,Ast.AnyP (*discarded*))
 

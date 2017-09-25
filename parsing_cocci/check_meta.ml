@@ -229,7 +229,8 @@ and typeC old_metas table minus t =
   | Ast0.MetaType(name,_,_) ->
       check_table table minus name
   | Ast0.AsType(ty,asty) -> failwith "not generated yet"
-  | Ast0.DisjType(_,types,_,_) ->
+  | Ast0.DisjType(_,types,_,_)
+  | Ast0.ConjType(_,types,_,_) ->
       List.iter (typeC old_metas table minus) types
   | Ast0.EnumName(en,Some id) -> ident GLOBAL old_metas table minus id
   | Ast0.EnumDef(ty,lb,ids,rb) ->
@@ -253,7 +254,7 @@ and declaration context old_metas table minus d =
     Ast0.MetaDecl(name,_,_) ->
       check_table table minus name
   | Ast0.AsDecl(decl,asdecl) -> failwith "not generated yet"
-  | Ast0.Init(stg,ty,id,eq,ini,sem) ->
+  | Ast0.Init(stg,ty,id,attr,eq,ini,sem) ->
       typeC old_metas table minus ty;
       ident context old_metas table minus id;
       (match Ast0.unwrap ini with
@@ -266,7 +267,7 @@ and declaration context old_metas table minus d =
 	    failwith "complex initializer specification not allowed in - code"
 	  else*)
 	    initialiser old_metas table minus ini)
-  | Ast0.UnInit(stg,ty,id,sem) ->
+  | Ast0.UnInit(stg,ty,id,attr,sem) ->
       typeC old_metas table minus ty; ident context old_metas table minus id
   | Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) ->
       ident FN old_metas table minus name;
@@ -607,7 +608,8 @@ let dup_positions rules =
 
   let typeC r k e = (* not sure relevant because "only after iso" *)
     match Ast0.unwrap e with
-      Ast0.DisjType(_,types,_,_) ->
+      Ast0.DisjType(_,types,_,_)
+    | Ast0.ConjType(_,types,_,_) ->
 	List.fold_left Common.union_set option_default
 	  (List.map r.VT0.combiner_rec_typeC types)
     | _ -> k e in

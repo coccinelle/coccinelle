@@ -50,7 +50,7 @@ An HTML version of this documentation is available online at
 \T{script\_code} is any code in the chosen scripting language.  Parsing of
 the semantic patch does not check the validity of this code; any errors are
 first detected when the code is executed.  Furthermore, \texttt{@} should
-not be use in this code.  Spatch scans the script code for the next
+not be used in this code.  Spatch scans the script code for the next
 \texttt{@} and considers that to be the beginning of the next rule, even if
 \texttt{@} occurs within e.g., a comment.
 
@@ -64,7 +64,7 @@ the \texttt{-D} option on the command line.
 % analogous to the filename specifications in the standard patch syntax.
 % (see Figure \ref{scsiglue_patch}).
 
-\section{Metavariables for transformations}
+\section{Metavariables for Transformations}
 
 The \NT{rulename} portion of the metavariable declaration can specify
 properties of a rule such as its name, the names of the rules that it
@@ -133,12 +133,10 @@ behavior.  Using \NT{disable-iso} with the given name disables this behavior.
 \item \KW{optional\_qualifier}: This is similar to \KW{optional\_storage},
   except that here it is the qualifier (i.e., const or volatile) that does
   not have to be specified in the SmPL code, but may be present in the C code.
-\item \KW{optional\_attributes}: This is similar to
-  \KW{optional\_attributes}, except that here is it an attribute (e.g.,
+\item \KW{optional\_attributes}: This is also similar to
+  \KW{optional\_storage}, except that here is it an attribute (e.g.,
   \_\_init) that does not have to be specified in the SmPL code, but may be
-  present in the C code.  \textbf{Note that this isomorphism is currently
-    useless, because matching of attributes is not supported, due to the
-    difficulty of parsing attributes in C code.}
+  present in the C code.
 \item \KW{value\_format}: Integers in various formats, e.g., 1 and 0x1, are
   considered to be equivalent in the matching process.
 \item \KW{optional\_declarer\_semicolon}: Some declarers (top-level terms
@@ -170,7 +168,7 @@ code-matching rules.  Script rules are not applied to any code in
 particular, and thus it doesn't make sense to check on the file being
 considered.
 
-As metavariables are bound an inherited across rules, a tree of
+As metavariables are bound and inherited across rules, a tree of
 environments is built up.  A rule is processed only once for all of the
 branches that have the same metavariable bindings for the set of variables
 that the rule depends on.  Different branches, however, may be derived from
@@ -223,7 +221,7 @@ i.e., including as an element of another statement list.
   \CASE{declaration \NT{ids} ;}
   \CASE{field \opt{list} \NT{ids} ;}
   \CASE{typedef \NT{ids} ;}
-  \CASE{attribute \NT{ids} ;}
+  \CASE{attribute name \NT{ids} ;}
   \CASE{declarer name \NT{ids} ;}
 %  \CASE{\opt{local} function \NT{pmid\_with\_not\_eq\_list} ;}
   \CASE{declarer \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_regexp}\mth{)} ;}
@@ -272,33 +270,35 @@ i.e., including as an element of another statement list.
   \CASE{\NT{bin\_op}}
 \end{grammar}
 
-A metavariable declaration local idexpression v means that v is restricted
-to be a local variable.  If it should just be a variable, but not
-necessarily a local one, then drop local.  A more complex description of a
-location, such as a->b is considered to be an expression, not an
+A metavariable declaration {\bf local idexpression} v means that v is
+restricted to be a local variable.  If it should just be a variable, but
+not necessarily a local one, then drop local.  A more complex description
+of a location, such as a->b is considered to be an expression, not an
 idexpression.
 
-Constant is for constants, such as 27.  But it also considers an identifier
-that is all capital letters (possibly containing numbers) as a constant as
-well, because the names given to macros in Linux usually have this form.
+{\bf Constant} is for constants, such as 27.  But it also considers an
+identifier that is all capital letters (possibly containing numbers) as a
+constant as well, because the names given to macros in Linux usually have
+this form.
 
-An identifier is the name of a structure field, a macro, a function, or a
-variable.  It is the name of something rather than an expression that has a
-value.  But an identifier can be used in the position of an expression as
-well, where it represents a variable.
+An {\bf identifier} is the name of a structure field, a macro, a function,
+or a variable.  It is the name of something rather than an expression that
+has a value.  But an identifier can be used in the position of an
+expression as well, where it represents a variable.
 
-It is possible to specify that an expression list or a parameter list
-metavariable should match a specific number of expressions or parameters.
+It is possible to specify that an {\bf expression list} or a {\bf parameter
+  list} metavariable should match a specific number of expressions or
+parameters.
 
-An identifier list is only used for the parameter list of a macro.  It is
-possible to specify its length.
+An {\bf identifier list} is only used for the parameter list of a macro.
+It is possible to specify its length.
 
-It is possible to specify some information about the definition of a fresh
-identifier.  Examples are found in demos/plusplus1.cocci and
+It is possible to specify some information about the definition of a {\bf
+  fresh identifier}.  Examples are found in demos/plusplus1.cocci and
 demos/plusplus2.cocci %See the wiki.
 
-A symbol declaration specifies that the provided identifiers should be
-considered C identifiers when encountered in the body of the rule.
+A {\bf symbol} declaration specifies that the provided identifiers should
+be considered C identifiers when encountered in the body of the rule.
 Identifiers in the body of the rule that are not declared explicitly are by
 default considered symbols, thus symbol declarations are optional.  It is
 not required, but it will not cause a parse error, to redeclare a name as a
@@ -307,44 +307,49 @@ metavariable.  It will be considered to be a metavariable in such rules,
 and will revert to being a symbol in subsequent rules.  These conditions
 also apply to iterator names and declarer names.
 
-An attribute declaration indicates a name that should be considered to be
-an attribute.  It is not possible to match or remove an attribute, only to
-add one.
+An {\bf attribute name} declaration indicates a name that should be
+considered to be an attribute.
 
-A position metavariable is used by attaching it using \texttt{@} to any
-token, including another metavariable.  Its value is the position (file,
-line number, etc.) of the code matched by the token.  It is also possible
-to attach expression, declaration, type, initialiser, and statement
-metavariables in this manner.  In that case, the metavariable is bound to
-the closest enclosing expression, declaration, etc.  If such a metavariable
-is itself followed by a position metavariable, the position metavariable
-applies to the metavariable that it follows, and not to the attached token.
-This makes it possible to get eg the starting and ending position of {\tt
-  f(...)}, by writing {\tt f(...)@E@p}, for expression metavariable {\tt E}
-and position metavariable {\tt p}. This attachment notation for
-metavariables of type other than position can also be expressed with a
-conjunction, but the @ notation may be more concise.
+A {\bf position} metavariable is used by attaching it using \texttt{@} to
+any token, including another metavariable.  Its value is the position
+(file, line number, etc.) of the code matched by the token.  It is also
+possible to attach expression, declaration, type, initialiser, and
+statement metavariables in this manner.  In that case, the metavariable is
+bound to the closest enclosing expression, declaration, etc.  If such a
+metavariable is itself followed by a position metavariable, the position
+metavariable applies to the metavariable that it follows, and not to the
+attached token.  This makes it possible to get eg the starting and ending
+position of {\tt f(...)}, by writing {\tt f(...)@E@p}, for expression
+metavariable {\tt E} and position metavariable {\tt p}. This attachment
+notation for metavariables of type other than position can also be
+expressed with a conjunction, but the @ notation may be more concise.
 
-When used, a format or format list metavariable must be enclosed by a pair
-of \texttt{@}s.  A format metavariable matches the format descriptor part,
-i.e., \texttt{2x} in \texttt{\%2x}.  A format list metavariable matches a
-sequence of format descriptors as well as the text between them.  Any text
-around them is matched as well, if it is not matched by the surrounding
-text in the semantic patch.  Such text is not partially matched.  If the
-length of the format list is specified, that indicates the number of
-matched format descriptors.  It is also possible to use \texttt{\ldots} in
-a format string, to match a sequence of text fragments and format
-descriptors.  This only takes effect if the format string contains format
-descriptors.  Note that this makes it impossible to require \texttt{\ldots}
-to match exactly in a string, if the semantic patch string contains format
-descriptors.  If that is needed, some processing with a scripting language
-would be required.  And example for the use of string format metavariables
-is found in demos/format.cocci.
+When used, a {\bf format} or {\bf format list} metavariable must be
+enclosed by a pair of \texttt{@}s.  A format metavariable matches the
+format descriptor part, i.e., \texttt{2x} in \texttt{\%2x}.  A format list
+metavariable matches a sequence of format descriptors as well as the text
+between them.  Any text around them is matched as well, if it is not
+matched by the surrounding text in the semantic patch.  Such text is not
+partially matched.  If the length of the format list is specified, that
+indicates the number of matched format descriptors.  It is also possible to
+use \texttt{\ldots} in a format string, to match a sequence of text
+fragments and format descriptors.  This only takes effect if the format
+string contains format descriptors.  Note that this makes it impossible to
+require \texttt{\ldots} to match exactly in a string, if the semantic patch
+string contains format descriptors.  If that is needed, some processing
+with a scripting language would be required.  And example for the use of
+string format metavariables is found in demos/format.cocci.
 
-Assignment (resp. binary) operator metavariables match any assignment
-(resp. binary) operator. The list of operators that can be matched can
-be restricted by adding an operator constraint, i.e. a list of accepted
-operators.
+Matching of various kinds of format strings within strings is supported.
+With the {\tt -{}-ibm} option, matching of decimal format declarations is
+supported, but the length and precision arguments are not interpreted.
+Thus it is not possible to match metavariables in these fields.  Instead,
+the entire format is matched as a single string.
+
+{\bf Assignment} (resp.~binary) {|bf operator} metavariables match any
+assignment (resp. binary) operator. The list of operators that can be
+matched can be restricted by adding an operator constraint, i.e. a list of
+accepted operators.
 
 Other kinds of metavariables can also be attached using \texttt{@} to any
 token.  In this case, the metavariable floats up to the enclosing
@@ -357,12 +362,6 @@ represented by the names of the parameters.  Another particular case is
 {\tt E@S}, where {\tt E} is any expression and {\tt S} is a statement
 metavariable.  {\tt S} matches the closest enclosing statement, which may
 be more than what is matches by the semantic match pattern itself.
-
-Matching of various kinds of format strings within strings is supported.
-With the {\tt --ibm} option, matching of decimal format declarations is
-supported, but the length and precision arguments are not interpreted.
-Thus it is not possible to match metavariables in these fields.  Instead,
-the entire format is matched as a single string.
 
 \begin{grammar}
   \RULE{\rt{ids}}
@@ -403,12 +402,15 @@ the entire format is matched as a single string.
   \CASE{\T{rulename\_id}.\T{id}}
 
   \RULE{\rt{pmid\_with\_not\_eq\_mid}}
-  \CASE{\NT{pmid} \OPT{\NT{ANDAND\_LIST}\mth{(}\NT{pos\_constraint}\mth{)}}}
+  \CASE{\NT{pmid} \OPT{\NT{ANDAND\_LIST}\mth{(}\NT{script\_constraint}\mth{)}}}
 
-  \RULE{\rt{pos\_constraint}}
+  \RULE{\rt{script\_constraint}}
   \CASE{!= \NT{mid}}
   \CASE{!= \ttlb~\NT{COMMA\_LIST}\mth{(}\NT{mid}\mth{)} \ttrb}
   \CASE{: script:ocaml
+        (\NT{COMMA\_LIST}\mth{(} \NT{mid} \mth{)})
+        \ttlb \NT{expr} \ttrb}
+  \CASE{: script:python
         (\NT{COMMA\_LIST}\mth{(} \NT{mid} \mth{)})
         \ttlb \NT{expr} \ttrb}
 
@@ -460,16 +462,32 @@ the proposed value is different from the one in the current environment,
 but perhaps the same as the one in some other environment, the match will
 still succeed.
 
-Position metavariables can be associated with constraints implemented as
-OCaml script code.  The code must have the form of a single C expression,
-typically a function call with a tuple of arguments.  This expression must
-have type bool.  The script code can be parameterized by any inherited
+Metavariables can be associated with constraints implemented as OCaml or
+python script code.  The form of the code is somewhat restricted, due to
+the fact that it passes through the Coccinelle semantic patch lexer, before
+being converted back to a string to be passed to the scripting language
+interpreter.  It is thus best to avoid complicated code in the constraint
+itself, and instead to define relevant functions in and {\tt initialize}
+rule.  The code must represent an expression that has type bool in the
+scripting language.  The script code can be parameterized by any inherited
 metavariables.  It is implicitly parameterized by the metavariable being
-declared.  In the script, the inherited variable parameters are referred to
-by their variable names, without the associated rule name.  The variable
-being declared is also referenced by its name.  All parameters, except
-position variables, have their string representation.  An example is in
-demos/poscon.cocci.
+declared.  In the script, the inherited metavariable parameters are
+referred to by their variable names, without the associated rule name.  The
+script code can also be parameterized by metavariables defined previously
+in the same rule.  Such metavariables must always all be mentioned in the
+same ``rule elem'' as the metavariable to which the constraint applies.
+Such a rule elem must also not contain disjunctions, after disjunction
+lifting.  The result of disjunction lifting can be observed using {\tt
+  -{}-parse-cocci}.  A rule elem is eg an atomic statement, such as a
+return or an assignment, or a loop header, if header, etc.  The variable
+being declared can also be referenced in the script code by its name.  All
+parameters, except position variables, have their string representation.
+An example is in demos/poscon.cocci.
+
+Script constraints may be executed more than once for a given metavariable
+binding.  Executing the script constraint does not guarantee that the
+complete match will work out; the constraints are executed within the
+matching process.
 
 A declaration of a name as a typedef extends through the rest of the
 semantic patch.  It is not required, but it will not cause a parse error,
@@ -526,7 +544,7 @@ declared as an identifier metavariable in advance.  The syntax does not
 permit {\tt r.n} as the name of a structure or union type in such a
 declaration.
 
-\section{Metavariables for scripts}
+\section{Metavariables for Scripts}
 
 Metavariables for scripts can only be inherited from transformation rules.
 In the spirit of scripting languages such as Python that use dynamic
@@ -659,14 +677,17 @@ foo()
 \end{tabular}
 \end{center}
 
+Note that the region matched by ``...'' can be empty.
+
 \subsection{Dot variants}
 There are two possible modifiers to the control flow for ellipses, one
 (<... ...>) indicates that matching the pattern in between the ellipses is
+to be matched 0 or more times, i.e., it is
 optional, and another (<+... ...+>) indicates that the pattern in between
 the ellipses must be matched at least once, on some control-flow path.  In
 the latter, the \texttt{+} is intended to be reminiscent of the \texttt{+}
 used in regular expressions.  For instance, the following SmPL patch tells
-Coccinelle to remove all calls to c(). if foo() is present at least
+Coccinelle to remove all calls to c() if foo() is present at least
 once since the beginning of the function.
 
 \begin{center}
@@ -733,7 +754,8 @@ foo() to not be present.
 
 One way to describe code control flow is in terms of McCabe cyclomatic
 complexity.
-The program flow1.c has a linear control flow, it has no branches. The main
+The program flow1.c has a linear control flow, i.e., it has no
+branches. The main
 routine has a McCabe cyclomatic complexity of 1. The McCabe cyclomatic
 complexity can be computed using
 {\tt pmccabe} (https://www.gnu.org/\-software/\-complexity/\-manual/\-html\_node/\-pmccabe-parsing.html).
@@ -792,8 +814,8 @@ using Coccinelle you use:
 
 \begin{center}
 \begin{tabular}{c}
-spatch --control-flow-to-file flow1.c
-spatch --control-flow-to-file flow2.c
+spatch -{}-control-flow-to-file flow1.c \\
+spatch -{}-control-flow-to-file flow2.c
 \end{tabular}
 \end{center}
 
@@ -818,7 +840,7 @@ can use the following:
 
 \begin{center}
 \begin{tabular}{c}
-spatch --control-flow-to-file flow2.c
+spatch -{}-control-flow-to-file flow2.c \\
 dot -Tpdf flow1:main.dot > flow1.pdf
 \end{tabular}
 \end{center}
@@ -1298,7 +1320,7 @@ explained in this section.
 
 $^\dag$ The optional \texttt{when} construct ends at the end of the line.
 
-\section{Function declarations}
+\section{Function Declarations}
 
 \begin{grammar}
 
@@ -1433,7 +1455,7 @@ the return type is obligatory.
 
   \RULE{\rt{one\_decl}}
   \CASE{\NT{common\_decl}}
-  \CASE{\opt{\NT{storage}} \NT{ctype} \NT{id};}
+  \CASE{\opt{\NT{storage}} \NT{ctype} \NT{id} \opt{\NT{attribute}};}
   \CASE{\NT{OR}\mth{(}\NT{one\_decl}\mth{)}}
   \CASE{\NT{AND}\mth{(}\NT{one\_decl}\mth{)}}
 %  \CASE{\NT{storage} \NT{ctype} \NT{id} \opt{[\opt{\NT{dot\\_expr}}]} = \NT{nest\\_expr};}
@@ -1442,8 +1464,8 @@ the return type is obligatory.
   \RULE{\rt{common\_decl}}
   \CASE{\NT{ctype};}
   \CASE{\NT{funproto}}
-  \CASE{\opt{\NT{storage}} \NT{ctype} \NT{d\_ident} = \NT{initialize} ;}
-  \CASE{\opt{\NT{storage}} \opt{\NT{const\_vol}} \T{id} \NT{d\_ident} = \NT{initialize} ;}
+  \CASE{\opt{\NT{storage}} \NT{ctype} \NT{d\_ident} \opt{\NT{attribute}} = \NT{initialize} ;}
+  \CASE{\opt{\NT{storage}} \opt{\NT{const\_vol}} \T{id} \NT{d\_ident} \opt{\NT{attribute}} = \NT{initialize} ;}
   \CASE{\opt{\NT{storage}} \NT{fn\_ctype} ( * \NT{d\_ident} ) ( \NT{PARAMSEQ}\mth{(}\NT{name\_opt\_decl}, \mth{\varepsilon)} ) ;}
   \CASE{\NT{decl\_ident} ( \OPT{\NT{COMMA\_LIST}\mth{(}\NT{expr}\mth{)}} ) ;}
 
@@ -1478,6 +1500,10 @@ this case, the variable implicitly has type int, and SmPL code
 that declares an int variable will match such a declaration.  On the other
 hand, the implicit int type has no position.  If the SmPL code tries to
 record the position of the type, the match will fail.
+
+An attribute begins with {\tt \_\_} or is declared as an {\tt attribute
+  name} in the semantic patch.  In practice, only one attribute is
+currently allowed after the variable name in a variable declaration.
 
 \section{Statements}
 
@@ -1677,7 +1703,7 @@ in a concise way.
   \CASE{"\any{[\^{}"]}"}
 \end{grammar}
 
-\section{Comments and preprocessor directives}
+\section{Comments and Preprocessor Directives}
 
 A \verb+//+ or \verb+/* */+ comment that is annotated with + in the
 leftmost column is considered to be added code.  A \verb+//+ or
@@ -1699,7 +1725,7 @@ be matched against.  The entire line is added, but it is not parsed.
 \item \verb+line+
 \end{itemize}
 
-\section{Command-line semantic match}
+\section{Command-Line Semantic Match}
 
 It is possible to specify a semantic match on the spatch command line,
 using the argument {\tt -sp}.  In such a semantic match, any token
@@ -1817,7 +1843,7 @@ the collected information to trigger a new iteration at some time in the
 future.
 
 Modification is not allowed when using iteration.  Thus, it is required to
-use the {\tt --no-show-diff}, unless the semantic patch contains {\tt *}s
+use the {\tt -{}-no-show-diff}, unless the semantic patch contains {\tt *}s
 (a semantic match rather than a semantic patch).
 
 When using Python scripting a tuple may be used
@@ -1827,16 +1853,16 @@ Coccinelle itself provides no support for obtaining information about what
 work has been queued and as such addressing
 this with scripting is necessary.
 
-\section{.cocciconfig support}
+\section{{\tt .cocciconfig} Support}
 
 Coccinelle supports enabling custom options to be preferred when running
 spatch.  This is supported through the search of .cocciconfig files in each of
 the following directories, later lines extend and may override earlier ones:
 
 \begin{itemize}
-	\item Your current user's home directory is processed first
-	\item Your directory from which spatch is called is processed next
-	\item The directory provided with the --dir option is processed last, if used
+	\item Your current user's home directory is processed first.
+	\item Your directory from which spatch is called is processed next.
+	\item The directory provided with the -{}-dir option is processed last, if used.
 \end{itemize}
 
 Newlines, even with \, are not tolerated in attribute values. An example

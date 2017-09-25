@@ -1,7 +1,20 @@
 OCAMLFIND=ocamlfind
+INSTALL=install
+INSTALL_PROGRAM=$(INSTALL)
+bindir=$(PREFIX)/bin
 
 HAVE_OCAMLFIND:=$(shell \
 	if $(OCAMLFIND) query -help &>/dev/null; then \
+		echo yes; \
+	else \
+		echo no; \
+	fi \
+)
+
+HAVE_UTOP:=$(shell \
+	if [ "$(HAVE_OCAMLFIND)" = no ]; then \
+		echo no; \
+	elif $(OCAMLFIND) query utop &>/dev/null; then \
 		echo yes; \
 	else \
 		echo no; \
@@ -14,6 +27,7 @@ ifneq ($(HAVE_OCAMLFIND),no)
 		OCAMLOPTEXE=$(OCAMLFIND) ocamlopt
 	endif
 	OCAMLMKLIB=$(OCAMLFIND) ocamlmklib
+	OCAMLMKTOP=$(OCAMLFIND) ocamlmktop
 	OCAMLDEP=$(OCAMLFIND) ocamldep
 	OCAMLDOC=$(OCAMLFIND) ocamldoc
 else
@@ -37,8 +51,15 @@ else
 		)
 	endif
 	OCAMLMKLIB=ocamlmklib
+	OCAMLMKTOP=ocamlmktop
 	OCAMLDEP=ocamldep
 	OCAMLDOC=ocamldoc
+endif
+
+ifeq ($(HAVE_UTOP),yes)
+	PYMLUTOP=pymlutop
+else
+	PYMLUTOP=
 endif
 
 ifeq ($(OCAMLOPTEXE),)
@@ -90,6 +111,12 @@ else
 	$(error Unsupported OS $(ARCH)
 endif
 
+INSTALL_FILES=\
+	py.mli $(MODULES:=.cmi) $(MODULES:=.cmx) \
+	pyml.cma pyml.cmxa pyml.cmxs pyml.a \
+	libpyml_stubs.a dllpyml_stubs.so \
+	META
+
 .PHONY: all
 all: all.bytecode $(ALLOPT)
 	@echo The py.ml library is compiled.
@@ -99,6 +126,9 @@ ifneq ($(HAVE_OCAMLFIND),no)
 	@echo Run \`make install\' to install the library via ocamlfind.
 endif
 	@echo Run \`make pymltop\' to build the toplevel.
+ifneq ($(HAVE_UTOP),no)
+	@echo Run \`make pymlutop\' to build the utop toplevel.
+endif
 
 .PHONY: help
 help:
@@ -114,9 +144,13 @@ endif
 	@echo make tests.bytecode : run only the bytecode version of the tests
 	@echo make tests.native : run only the native version of the tests
 	@echo make pymltop: build the toplevel
+ifneq ($(HAVE_UTOP),no)
+	@echo make pymlutop: build the utop toplevel.
+endif
 	@echo make HAVE_OCAMLFIND=no : disable ocamlfind
 	@echo make HAVE_OCAMLOPT=no : disable ocamlopt
-	@echo "make OCAMLC|OCAMLOPT|OCAMLMKLIB|OCAMLDEP|OCAMLDOC=... :"
+	@echo \
+"make OCAMLC|OCAMLOPT|OCAMLMKLIB|OCAMLMKTOP|OCAMLDEP|OCAMLDOC=... :"
 	@echo "  set paths to OCaml tools"
 	@echo make OCAMLCFLAGS=... : set flags to OCaml compiler for compiling
 	@echo make OCAMLLDFLAGS=... : set flags to OCaml compiler for linking
@@ -141,16 +175,20 @@ tests.native: pyml_tests.native
 	./pyml_tests.native
 
 .PHONY: install
-install:
+install: $(INSTALL_FILES) pymltop $(PYMLUTOP)
 ifeq ($(HAVE_OCAMLFIND),no)
 	$(error ocamlfind is needed for 'make install')
 endif
-	$(OCAMLFIND) install pyml \
-		py.mli \
-		$(MODULES:=.cmi) $(MODULES:=.cmx) \
-		pyml.cma pyml.cmxa pyml.cmxs pyml.a \
-		libpyml_stubs.a dllpyml_stubs.so \
-		META
+	$(OCAMLFIND) install pyml $(INSTALL_FILES)
+	$(INSTALL_PROGRAM) pymltop $(bindir)/pymltop
+ifneq ($(HAVE_UTOP),no)
+	$(INSTALL_PROGRAM) pymlutop $(bindir)/pymlutop
+endif
+
+.PHONY: uninstall
+uninstall:
+	$(OCAMLFIND) remove pyml
+	- rm $(bindir)/pymltop
 
 .PHONY: clean
 clean:
@@ -166,6 +204,8 @@ clean:
 	rm -f generate pyml_tests pyml_tests.bytecode
 	rm -f .depend
 	rm -rf doc
+	rm -f pymltop pytop.cmo pymlutop pyutop.cmo
+	rm -f pymltop_libdir.ml pymltop_libdir.cmo
 
 .PHONY: tarball
 tarball:
@@ -242,5 +282,27 @@ pyml.cmxs: $(MODULES:=.cmx) libpyml_stubs.a
 libpyml_stubs.a: pyml_stubs.o
 	$(OCAMLMKLIB) -o pyml_stubs $<
 
-pymltop: pyml.cma
-	ocamlmktop -o $@ unix.cma $<
+pytop.cmo: pytop.ml pymltop_libdir.cmi
+	$(OCAMLC) -I +compiler-libs -c $<
+
+pymltop_libdir.ml:
+	if [ -z "$(PREFIX)" ]; then \
+	  echo "let libdir=\"$(PWD)\""; \
+	else \
+	  echo "let libdir=\"$(PREFIX)/lib/pyml/\""; \
+	fi >$@
+
+pymltop: pyml.cma pymltop_libdir.cmo pytop.cmo
+	$(OCAMLMKTOP) -o $@ unix.cma $^
+
+pyutop.cmo: pyutop.ml
+ifeq ($(HAVE_OCAMLFIND),no)
+	$(error ocamlfind is needed for utop)
+endif
+	$(OCAMLC) $(OCAMLCFLAGS) -package utop -c $< -o $@
+
+pymlutop: pyml.cma pymltop_libdir.cmo pytop.cmo pyutop.cmo
+ifeq ($(HAVE_OCAMLFIND),no)
+	$(error ocamlfind is needed for utop)
+endif
+	$(OCAMLMKTOP) -o $@ -thread -linkpkg -package utop,compiler-libs $^

@@ -307,26 +307,6 @@ let parse file =
   let result = Parser_c.main Lexer_c.token lexbuf in
   result
 
-
-let parse_print_error file =
-  let chan = (open_in file) in
-  let lexbuf = Lexing.from_channel chan in
-
-  let error_msg () = Common.error_message file (lexbuf_to_strpos lexbuf) in
-  try
-    Parser_c.main Lexer_c.token lexbuf
-  with
-  | Lexer_c.Lexical s ->
-      failwith ("lexical error " ^s^ "\n =" ^  error_msg ())
-  | Parsing.Parse_error ->
-      failwith ("parse error \n = " ^ error_msg ())
-  | Semantic_c.Semantic (s, i) ->
-      failwith ("semantic error " ^ s ^ "\n =" ^ error_msg ())
-  | e -> raise e
-
-
-
-
 (*****************************************************************************)
 (* Parsing subelements, useful to debug parser *)
 (*****************************************************************************)
@@ -709,12 +689,13 @@ let get_one_elem ~pass tr =
 
       (* must keep here, before the code that adjusts the tr fields *)
       let line_error = TH.line_of_tok tr.current in
+      let col_error = TH.col_of_tok tr.current in
 
       let passed_before_error = tr.passed in
       let current = tr.current in
       (*  error recovery, go to next synchro point *)
       let (passed', rest') =
-        Parsing_recovery_c.find_next_synchro tr.rest tr.passed in
+	Parsing_recovery_c.find_next_synchro tr.rest tr.passed in
       tr.rest <- rest';
       tr.passed <- passed';
 
@@ -725,7 +706,7 @@ let get_one_elem ~pass tr =
 
 
       let info_of_bads = Common.map_eff_rev TH.info_of_tok tr.passed in
-      Right (info_of_bads,  line_error,
+      Right (info_of_bads, line_error, col_error,
             tr.passed, passed_before_error,
             current, e, pass)
   )
@@ -775,7 +756,7 @@ let candidate_macros_in_passed ~defs b =
 
 
 
-let find_optional_macro_to_expand2 ~defs toks =
+let find_optional_macro_to_expand2 ~defs pos toks =
 
   let defs = Common.hash_of_list defs in
 
@@ -796,7 +777,7 @@ let find_optional_macro_to_expand2 ~defs toks =
   ) in
 
   let tokens = toks in
-  Parsing_hacks.fix_tokens_cpp ~macro_defs:defs tokens
+  Parsing_hacks.fix_tokens_cpp ~macro_defs:defs pos tokens
 
   (* just calling apply_macro_defs and having a specialized version
    * of the code in fix_tokens_cpp is not enough as some work such
@@ -811,15 +792,15 @@ let find_optional_macro_to_expand2 ~defs toks =
   Cpp_token_c.apply_macro_defs
     ~msg_apply_known_macro:(fun s -> pr2 (spf "APPLYING: %s" s))
     ~msg_apply_known_macro_hint:(fun s -> pr2 "hint")
-    defs paren_grouped;
+    defs pos paren_grouped;
   (* because the before field is used by apply_macro_defs *)
   tokens2 := TV.rebuild_tokens_extented !tokens2;
   Parsing_hacks.insert_virtual_positions
     (!tokens2 +> Common.acc_map (fun x -> x.TV.tok))
   *)
-let find_optional_macro_to_expand ~defs a =
+let find_optional_macro_to_expand ~defs pos a =
     Common.profile_code "MACRO managment" (fun () ->
-      find_optional_macro_to_expand2 ~defs a)
+      find_optional_macro_to_expand2 ~defs pos a)
 
 (*****************************************************************************)
 (* Parsing #if guards *)
@@ -958,21 +939,46 @@ module StringSet : Set.S with type elt = string = Set.Make(String)
 
 module StringMap : Map.S with type key = string = Map.Make(String)
 
-let header_cache = ("header_cache", ref 0, Hashtbl.create(101))
+let header_cache = Common.create_bounded_cache 0(*disabled 300*) ("",None)
 
 let tree_stack = ref []
 let seen_files = ref []
 
+let normalize file =
+  let pieces = Str.split_delim (Str.regexp "/") file in
+  let rec loop prev = function
+      [] -> String.concat "/" (List.rev prev)
+    | ".."::rest ->
+	(match prev with
+	  ".."::xs -> loop (".."::prev) rest
+	| x::xs -> loop xs rest
+	| _ -> loop (".."::prev) rest)
+    | x::rest -> loop (x::prev) rest in
+  loop [] pieces
+
 let rec _parse_print_error_heuristic2 saved_typedefs saved_macros
   parse_strings cache file use_header_cache =
+  let file = normalize file in
   if List.mem file !seen_files
   then None (* Inclusion loop, not re-parsing *)
   else begin
     seen_files := file :: !seen_files;
     let cached_result =
-      if use_header_cache
+      if false && use_header_cache
       then
-	try Some (Includes.cache_find header_cache file)
+	try
+	  (match Common.find_bounded_cache header_cache file with
+	    None -> failwith "Not possible"
+	  | Some (cached,cached_includes) ->
+	      List.iter
+		(function incl ->
+		  handle_include file incl
+		    (fun nonlocal header_filename ->
+		      _parse_print_error_heuristic2
+			saved_typedefs saved_macros parse_strings
+			nonlocal header_filename use_header_cache))
+		cached_includes;
+	      Some cached)
 	with Not_found -> None
       else None in
     match cached_result with
@@ -980,14 +986,44 @@ let rec _parse_print_error_heuristic2 saved_typedefs saved_macros
         let result =
           _parse_print_error_heuristic2bis saved_typedefs saved_macros
             parse_strings file use_header_cache in
-        (if use_header_cache && cache
-	then Includes.cache_add header_cache file result);
+        (if false && use_header_cache && cache
+	then
+	  let my_includes =
+	    let my_includes = ref [] in
+	    let cpp (k,bigf) directive =
+	      match directive with
+		Ast_c.Include incl -> my_includes := incl :: !my_includes
+	      | _ -> () in
+	    let bigf =
+	      { Visitor_c.default_visitor_c with
+		Visitor_c.kcppdirective = cpp } in
+	    let (pgm,ty,defs) = result.parse_trees in
+	    Visitor_c.vk_program bigf (List.map fst pgm);
+	    !my_includes in
+	  Common.extend_bounded_cache header_cache file
+	    (Some (result,my_includes)));
         tree_stack := result :: !tree_stack;
         Some result
       | Some result ->
         tree_stack := result :: !tree_stack;
         Some result
   end
+
+
+and handle_include file wrapped_incl k =
+    let incl = Ast_c.unwrap wrapped_incl.Ast_c.i_include in
+    let parsing_style = Includes.get_parsing_style () in
+    if Includes.should_parse parsing_style file incl
+    then begin match Includes.resolve file parsing_style incl with
+      | Some header_filename when Common.lfile_exists header_filename ->
+	  (if !Flag_parsing_c.verbose_includes
+	  then pr2 ("including "^header_filename));
+	  let nonlocal =
+	    match incl with Ast_c.NonLocal _ -> true | _ -> false in
+          ignore (k nonlocal header_filename)
+      | _ -> ()
+    end
+
 
 and _parse_print_error_heuristic2bis saved_typedefs saved_macros
   parse_strings file use_header_cache =
@@ -1027,7 +1063,8 @@ and _parse_print_error_heuristic2bis saved_typedefs saved_macros
                 then Parsing_hacks.fix_tokens_ifdef toks
                 else toks
     in
-  let toks = Parsing_hacks.fix_tokens_cpp ~macro_defs:!_defs_builtins toks in
+  let toks =
+    Parsing_hacks.fix_tokens_cpp ~macro_defs:!_defs_builtins [] toks in
   let toks =
     if parse_strings
     then Parsing_hacks.fix_tokens_strings toks
@@ -1035,19 +1072,6 @@ and _parse_print_error_heuristic2bis saved_typedefs saved_macros
 
 
   let tr = mk_tokens_state toks in
-
-  let handle_include wrapped_incl =
-    let incl = Ast_c.unwrap wrapped_incl.Ast_c.i_include in
-    let parsing_style = Includes.get_parsing_style () in
-    if Includes.should_parse parsing_style file incl
-    then begin match Includes.resolve file parsing_style incl with
-      | Some header_filename when Common.lfile_exists header_filename ->
-        ignore
-          (_parse_print_error_heuristic2
-            saved_typedefs saved_macros parse_strings
-            true header_filename use_header_cache)
-      | _ -> ()
-    end in
 
   let rec loop tr =
 
@@ -1074,10 +1098,15 @@ and _parse_print_error_heuristic2bis saved_typedefs saved_macros
       | Left e ->
         begin
           match e with
-            | Ast_c.CppTop(Ast_c.Include incl) -> handle_include incl
+            | Ast_c.CppTop(Ast_c.Include incl) ->
+		handle_include file incl
+		  (fun nonlocal header_filename ->
+		    _parse_print_error_heuristic2
+		      saved_typedefs saved_macros parse_strings
+		      nonlocal header_filename use_header_cache)
             | _ -> ()
         end; Left e
-      | Right (info,line_err, passed, passed_before_error, cur, exn, _) ->
+      | Right (info,line_err, _, passed, passed_before_error, cur, exn, _) ->
           if !Flag_parsing_c.disable_multi_pass
           then pass1
           else begin
@@ -1091,13 +1120,12 @@ and _parse_print_error_heuristic2bis saved_typedefs saved_macros
 
             (match passx with
             | Left e -> passx
-            | Right (info,line_err,passed,passed_before_error,cur,exn,_) ->
+            | Right (info,line_err,col_err,passed,_,cur,exn,_) ->
                 let candidates =
                   candidate_macros_in_passed ~defs:macros passed
                 in
 
-
-                if is_define_passed passed || candidates=[]
+                if is_define_passed passed
                 then passx
                 else begin
                   (* todo factorize code *)
@@ -1105,28 +1133,36 @@ and _parse_print_error_heuristic2bis saved_typedefs saved_macros
                   pr2_err "parsing pass3: try again";
                   let toks = List.rev passed @ tr.rest in
                   let toks' =
-                    find_optional_macro_to_expand ~defs:candidates toks in
+                    find_optional_macro_to_expand ~defs:candidates
+		      [(line_err,col_err)] toks in
                   let new_tr = mk_tokens_state toks' in
                   copy_tokens_state ~src:new_tr ~dst:tr;
                   let passx = get_one_elem ~pass:3 tr in
 
                   (match passx with
                   | Left e -> passx
-                  | Right (info,line_err,passed,passed_before_error,cur,exn,_) ->
-                      pr2_err "parsing pass4: try again";
+                  | Right(info,le1,ce1,passed,passed_before_error,cur,exn,_) ->
+		      if candidates = [] && line_err = le1 && col_err = ce1
+		      then passx (* nothing changed, so don't try again *)
+		      else
+			begin
+			  pr2_err "parsing pass4: try again";
 
-                      let candidates =
-                        candidate_macros_in_passed
-                          ~defs:macros passed
-                      in
+			  let candidates =
+                            candidate_macros_in_passed
+                              ~defs:macros passed
+			  in
 
-                      let toks = List.rev passed @ tr.rest in
-                      let toks' =
-                      find_optional_macro_to_expand ~defs:candidates toks in
-                      let new_tr = mk_tokens_state toks' in
-                      copy_tokens_state ~src:new_tr ~dst:tr;
-                      let passx = get_one_elem ~pass:4 tr in
-                      passx
+			  let toks = List.rev passed @ tr.rest in
+			  let toks' =
+			    find_optional_macro_to_expand ~defs:candidates
+			      (Common.nub [(line_err,col_err);(le1,ce1)])
+			      toks in
+			  let new_tr = mk_tokens_state toks' in
+			  copy_tokens_state ~src:new_tr ~dst:tr;
+			  let passx = get_one_elem ~pass:4 tr in
+			  passx
+			end
                   )
                  end
             )
@@ -1161,7 +1197,7 @@ and _parse_print_error_heuristic2bis saved_typedefs saved_macros
       | Left e ->
           stat.Stat.correct <- stat.Stat.correct + diffline;
           e
-      | Right (info_of_bads, line_error, toks_of_bads,
+      | Right (info_of_bads, line_error, col_error, toks_of_bads,
               passed_before_error, cur, exn, pass) ->
 
           let was_define = is_define_passed tr.passed in
@@ -1298,7 +1334,6 @@ let parse_cache typedefs parse_strings cache file has_changes =
      least the header files that it includes.  That is, for recursive includes,
      need not only the AST of the header file itself, but also of what it
      includes, and at least the latter is not coming in the cached case. *)
-  let has_changes = true in
   if not !Flag_parsing_c.use_cache
   then
     parse_print_error_heuristic typedefs None parse_strings cache file

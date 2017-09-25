@@ -1,5 +1,5 @@
 (*
- * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * This file is part of Coccinelle, licensed under the terms of the GPL v2.
  * See copyright.txt in the Coccinelle source code for more information.
  * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
@@ -75,7 +75,7 @@ let parse_file file =
     | _ -> failwith
 	  "only spatch supported as a header in a .cocciconfig file" in
   try loop (input_line i)
-  with End_of_file -> List.concat (List.rev !options)
+  with End_of_file -> close_in i; List.concat (List.rev !options)
 
 (* ------------------------------------------------------------------------ *)
 

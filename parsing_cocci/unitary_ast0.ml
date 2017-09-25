@@ -86,7 +86,7 @@ let get_free checker t =
 	    Ast.cstr_fold
 	      { Ast.empty_cstr_transformer with
 		Ast.cstr_script =
-		Some (fun (name,lang,params,_pos,body) accu ->
+		Some (fun (_,(name,lang,params,_pos,body)) accu ->
 		  (* It seems that position variables are not relevant
 		     for unitaryness, so drop them *)
 		  bind (List.map fst
@@ -135,6 +135,10 @@ let get_free checker t =
       Ast0.MetaType(name,_,_) -> checker name
     | Ast0.DisjType(starter,types,mids,ender) ->
 	detect_unitary_frees(List.map r.VT0.combiner_rec_typeC types)
+    | Ast0.ConjType(starter,types,mids,ender) ->
+	List.fold_left
+	  (fun prev cur -> bind (r.VT0.combiner_rec_typeC cur) prev)
+	  option_default types
     | _ -> k t in
 
   let parameter r k p =

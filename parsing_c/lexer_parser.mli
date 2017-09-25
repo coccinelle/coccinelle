@@ -3,7 +3,8 @@ val enable_typedef  : unit -> unit
 val disable_typedef : unit -> unit
 val is_enabled_typedef : unit -> bool
 
-
+val is_kr_possible : unit -> bool
+val kr_impossible : unit -> unit
 
 (* private *)
 type identkind = TypeDefI | IdentI

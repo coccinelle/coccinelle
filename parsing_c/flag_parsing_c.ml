@@ -58,6 +58,7 @@ let verbose_annotater = ref true
 let verbose_unparsing = ref true
 let verbose_visit = ref true
 let verbose_cpp_ast = ref true
+let verbose_includes = ref true
 
 let filter_msg = ref false
 let filter_msg_define_error = ref false
@@ -260,3 +261,6 @@ let no_gotos = ref false
 let keep_comments = ref false (* unparsing *)
 
 let parsing_header_for_types = ref false
+
+let force_kr = ref false
+let prevent_kr = ref false

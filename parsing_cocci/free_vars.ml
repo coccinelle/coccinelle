@@ -393,6 +393,8 @@ let collect_saved =
 	  let lensaved =
 	    match ls with Ast.Saved -> [metaid lenname] | _ -> [] in
 	  lensaved @ namesaved
+      | Ast.MetaInitList(name,len,_,ns,_) ->
+	  (match ns with Ast.Saved -> [metaid name] | _ -> [])
       | _ -> option_default) in
 
   let astfvparam recursor k p =
@@ -982,6 +984,7 @@ let astfvs metavars bound =
     {(k re) with
       Ast.free_vars = matched;
       Ast.minus_free_vars = munbound;
+      Ast.minus_nc_free_vars = minus_nc_free;
       Ast.fresh_vars = fresh;
       Ast.inherited = inherited;
       Ast.positive_inherited_positions = inherited_pos;
@@ -1135,13 +1138,12 @@ let get_neg_pos_list (_,rule) used_after_list =
 	    Ast.MetaPos(name,constraints,collect,_,_) ->
 	      let name' = metaid name in
 	      let pos_vars', neg_vars' =
-		get_neg_pos_constraints constraints
-		  ((name' :: pos_vars), neg_vars) in
-	      let all_vars' =
+		get_neg_pos_constraints constraints (pos_vars, neg_vars) in
+	      let (pos_vars'', all_vars') =
 		match collect with
-		  Ast.PER -> all_vars
-		| Ast.ALL -> name' :: all_vars in
-	      (pos_vars', neg_vars',all_vars')))
+		  Ast.PER -> (name' :: pos_vars', all_vars)
+		| Ast.ALL -> (pos_vars', name' :: all_vars) in
+	      (pos_vars'', neg_vars',all_vars')))
       option_default (Ast.get_pos_var mc) in
   let v =
     V.combiner bind option_default
@@ -1152,15 +1154,22 @@ let get_neg_pos_list (_,rule) used_after_list =
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing in
   match rule with
-    Ast.CocciRule(_,_,minirules,_,_) ->
+    Ast.CocciRule(rule_name,_,minirules,_,_) ->
       List.map
 	(function toplevel ->
 	  let (positions,neg_positions,all_positions) =
 	    v.V.combiner_top_level toplevel in
-	  (if List.exists (function p -> List.mem p neg_positions) positions
-	  then
+	  (try
+	    let (badr,badnm) =
+	      List.find (function p -> List.mem p neg_positions) positions in
 	    failwith
-	      "a variable cannot be used both as a position and a constraint");
+	      (Printf.sprintf
+		 "Variable %s in %s cannot be used as both a position and a constraint"
+		 (if badr = rule_name
+		 then badnm
+		 else Printf.sprintf "%s.%s" badr badnm)
+		 rule_name)
+	      with Not_found -> ());
 	  (neg_positions, all_positions))
 	minirules
   | Ast.ScriptRule _ | Ast.InitialScriptRule _ | Ast.FinalScriptRule _ ->

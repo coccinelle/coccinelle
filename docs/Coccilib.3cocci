@@ -42,6 +42,18 @@ Module
  current_element :
 .B string
 ;
+ current_element_line :
+.B int
+;
+ current_element_col :
+.B int
+;
+ current_element_line_end :
+.B int
+;
+ current_element_col_end :
+.B int
+;
  file :
 .B string
 ;
@@ -65,6 +77,16 @@ A value of type
 describes a position in a source file\&.
 .B current_element
 is the name of the function containing the matched position;
+.B current_element_line
+is the number of the line containing the first character of the function containing the matched
+position;
+.B current_element_col
+is the (0-based) column containing the first character of the function containing the matched position;
+.B current_element_line_end
+is the number of the line containing the last character of the function containing the matched
+position;
+.B current_element_col_end
+is the (0-based) column containing the last character of the function containing the matched position
 .B file
 is the name of the file containing the matched position;
 .B line
@@ -182,6 +204,25 @@ Make a type
 Make a list length, for parameter lists, expression lists, etc.
 .sp
 
+.I val make_full_position
+:
+.B string -> string -> int -> int -> int -> int -> int -> int -> int -> int -> Ast_c.metavar_binding_kind
+.sp
+Make a position.  The arguments are the file name, the function or other
+toplevel element containing the position, the starting line of the
+containing element, the starting column of the containing element, the
+ending line of the containing element, the ending column of the containing
+element, the starting line of the created position, the starting column of
+the created position, the ending line of the created position, and the
+ending column of the created position.
+
+
+.  Lines start at 1.  Columns
+start at 0.  The ending line is the one that contains the last character of
+what is to be matched.  The ending character is one past the last character
+of the thing to be matched.  The containing element position will be a
+default value.
+
 .I val make_position
 :
 .B string -> string -> int -> int -> int -> int -> Ast_c.metavar_binding_kind
@@ -191,7 +232,8 @@ toplevel element containing the position, the starting line, the starting
 column, the ending line, and the ending column.  Lines start at 1.  Columns
 start at 0.  The ending line is the one that contains the last character of
 what is to be matched.  The ending character is one past the last character
-of the thing to be matched.
+of the thing to be matched.  The containing element position will be a
+default value.
 .sp
 
 .B ===

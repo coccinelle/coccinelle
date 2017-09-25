@@ -479,6 +479,18 @@ and top_typeC tgt opt_allowed typ =
       |	_ -> ());
       let res = Ast0.DisjType(starter,types,mids,ender) in
       Ast0.rewrap typ res
+  | Ast0.ConjType(starter,types,mids,ender) ->
+      (match types with
+	t::ts ->
+	  let t = typeC tgt t in
+	  let arity =
+	    match Ast0.unwrap t with
+	      Ast0.OptType _ -> Ast0.OPT
+	    | _ -> Ast0.NONE in
+	  let ts = List.map (typeC arity) ts in
+	  let res = Ast0.ConjType(starter,t::ts,mids,ender) in
+	  Ast0.rewrap typ res
+      |	_ -> typ)
   | Ast0.OptType(_) | Ast0.AsType _ ->
       failwith "unexpected code"
 
@@ -499,7 +511,7 @@ and declaration tgt decl =
       let arity = all_same true tgt (mcode2line name) [mcode2arity name] in
       let name = mcode name in
       make_decl decl tgt arity (Ast0.MetaDecl(name,cstr,pure))
-  | Ast0.Init(stg,ty,id,eq,exp,sem) ->
+  | Ast0.Init(stg,ty,id,attr,eq,exp,sem) ->
       let arity =
 	all_same true tgt (mcode2line eq)
 	  ((match stg with None -> [] | Some x -> [mcode2arity x]) @
@@ -507,11 +519,12 @@ and declaration tgt decl =
       let stg = get_option mcode stg in
       let ty = typeC arity ty in
       let id = ident false arity id in
+      let attr = List.map mcode attr in
       let eq = mcode eq in
       let exp = initialiser arity exp in
       let sem = mcode sem in
-      make_decl decl tgt arity (Ast0.Init(stg,ty,id,eq,exp,sem))
-  | Ast0.UnInit(stg,ty,id,sem) ->
+      make_decl decl tgt arity (Ast0.Init(stg,ty,id,attr,eq,exp,sem))
+  | Ast0.UnInit(stg,ty,id,attr,sem) ->
       let arity =
 	all_same true tgt (mcode2line sem)
 	  ((match stg with None -> [] | Some x -> [mcode2arity x]) @
@@ -519,8 +532,9 @@ and declaration tgt decl =
       let stg = get_option mcode stg in
       let ty = typeC arity ty in
       let id = ident false arity id in
+      let attr = List.map mcode attr in
       let sem = mcode sem in
-      make_decl decl tgt arity (Ast0.UnInit(stg,ty,id,sem))
+      make_decl decl tgt arity (Ast0.UnInit(stg,ty,id,attr,sem))
   | Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) ->
     let tokens = match va with
       | None -> [lp1;rp1;sem]

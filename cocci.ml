@@ -261,8 +261,8 @@ let show_or_not_diff2 cfile outfile =
 	      (function l ->
 		match Str.split (Str.regexp "[ \t]+") l with
 		  "---"::file::date -> "--- "^file
-		|	"+++"::file::date -> "+++ "^file
-		|	_ -> l)
+		| "+++"::file::date -> "+++ "^file
+		| _ -> l)
 	      res in
 	  let xs =
 	    match (!Flag.patch,res) with
@@ -273,6 +273,10 @@ let show_or_not_diff2 cfile outfile =
 		  if String.get prefix (lp-1) = '/'
 		  then String.sub prefix 0 (lp-1)
 		  else prefix in
+		let fail file =
+		  pr2 (Printf.sprintf "prefix %s doesn't match file %s"
+			 prefix file);
+		  file in
 		let drop_prefix file =
 		  let file = normalize_path file in
 		  if Str.string_match (Str.regexp prefix) file 0
@@ -281,14 +285,8 @@ let show_or_not_diff2 cfile outfile =
 		    let lf = String.length file in
 		    if lp < lf
 		    then String.sub file lp (lf - lp)
-		    else
-		      failwith
-			(Printf.sprintf "prefix %s doesn't match file %s"
-			   prefix file)
-		  else
-		    failwith
-		      (Printf.sprintf "prefix %s doesn't match file %s"
-			 prefix file) in
+		    else fail file
+		  else fail file in
 		let diff_line =
 		  match List.rev(Str.split (Str.regexp " ") line) with
 		    new_file::old_file::cmdrev ->
@@ -424,7 +422,8 @@ let get_celem celem : string =
 setting Flag.current_element, whether or not one wants to print tracing
 information!  This is probably not smart... *)
 
-let show_or_not_celem2 prelude celem =
+let show_or_not_celem2 prelude celem start_end =
+  Flag.current_element_pos := start_end;
   let (tag,trying) =
   (match celem with
   |  Ast_c.Definition ({Ast_c.f_name = namefuncs},_) ->
@@ -456,9 +455,9 @@ let show_or_not_celem a b  =
 
 let show_or_not_trans_info2 trans_info =
   (* drop witness tree indices for printing *)
-  let trans_info =
-    List.map (function (index,trans_info) -> trans_info) trans_info in
   if !Flag.show_transinfo then begin
+    let trans_info =
+      List.map (function (index,trans_info) -> trans_info) trans_info in
     if trans_info = [] then pr2 "transformation info is empty"
     else begin
       pr2 "transformation info returned:";
@@ -793,6 +792,7 @@ and update_rel_pos_bis choose_ref xs =
 
 type toplevel_c_info = {
   ast_c: Ast_c.toplevel; (* contain refs so can be modified *)
+  start_end: (Ast_c.posl * Ast_c.posl) Lazy.t;
   tokens_c: Parser_c.token list;
   fullstring: string;
 
@@ -870,7 +870,8 @@ let union_merge_vars (ocaml_merges, python_merges)
 
 type cocci_info = toplevel_cocci_info list * bool (* true if no changes *)
       * bool (* parsing of format strings needed *)
-      * (string array * string array) (* merge/local variables for Python *)
+      * ((string * (int * string array)) list *
+	   string array) (* merge/local variables for Python *)
 
 type constant_info =
     (string list option (*grep tokens*) *
@@ -1097,6 +1098,11 @@ let build_info_program env (cprogram,typedefs,macros) =
     in
     {
       ast_c = c; (* contain refs so can be modified *)
+      start_end =
+        lazy
+          (let (_,_,(start_line,start_offset),(end_line,end_offset)) =
+	    Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_toplevel c) in
+	  ((start_line,start_offset),(end_line,end_offset)));
       tokens_c = tokens;
       fullstring = fullstr;
 
@@ -1536,7 +1542,7 @@ let consistent_positions binding reqopts =
     | l::ls ->
 	let desired_functions =
 	  List.fold_left
-            (fun prev (_,elem,_,_) ->
+            (fun prev (_,elem,_,_,_) ->
               if not (List.mem elem prev) then elem::prev else prev)
             [] l in
 	let inter =
@@ -1544,7 +1550,7 @@ let consistent_positions binding reqopts =
 	    (fun prev l ->
 	      Common.inter_set prev
 		(List.fold_left
-		   (fun prev (_,elem,_,_) ->
+		   (fun prev (_,elem,_,_,_) ->
 		     if not (List.mem elem prev) then elem::prev else prev)
 		   [] l))
 	    desired_functions ls in
@@ -1681,7 +1687,6 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
 		(* combine the new bindings with the old ones, and
 		   specialize to the used_after_list *)
 		  begin
-		  let old_variables = List.map fst old_bindings_to_keep in
 		  (* have to explicitly discard the inherited variables
 		     because we want the inherited value of the positions
 		     variables not the extended one created by
@@ -1693,7 +1698,8 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
 		       List.map
 			 (List.filter
 			    (function (s,v) ->
-			      not (List.mem s old_variables)))) in
+			      (* keep only locals *)
+			      fst s = r.rule_info.rulename))) in
 		  let local_res =
 		    [List.map
 			(function new_binding_to_add ->
@@ -1842,7 +1848,7 @@ and process_a_generated_a_env_a_toplevel rule env ccs =
 (* does side effects on C ast and on Cocci info rule *)
 and process_a_ctl_a_env_a_toplevel2 r e c f =
  indent_do (fun () ->
-   show_or_not_celem "trying" c.ast_c;
+   show_or_not_celem "trying" c.ast_c c.start_end;
    Flag.currentfile := Some (f ^ ":" ^get_celem c.ast_c);
    match (r.ctl,c.ast_c) with
      ((Asttoctl2.NONDECL ctl,t),Ast_c.Declaration _) -> None
@@ -1866,7 +1872,7 @@ and process_a_ctl_a_env_a_toplevel2 r e c f =
        then None
        else
 	 begin
-	   show_or_not_celem "found match in" c.ast_c;
+	   show_or_not_celem "found match in" c.ast_c c.start_end;
 	   show_or_not_trans_info trans_info;
 	   List.iter (show_or_not_binding "out") newbindings;
 
@@ -2023,16 +2029,12 @@ let initial_final_bigloop a b c =
     (fun () -> initial_final_bigloop2 a b c)
 
 let find_python_merge_variables cocci_infos =
-  try
-    Common.find_some (function FinalScriptRuleCocciInfo r
-	when r.language = "python" ->
-	  let (_, mvs, _, _, _) = r.scr_ast_rule in
-	  let merge_vars = Ast_cocci.filter_merge_variables mvs in
-	  let merge_names = Array.of_list (List.map fst merge_vars) in
-	  let local_names = Array.of_list (List.map snd merge_vars) in
-	  Some (merge_names, local_names)
-      | _ -> None) cocci_infos
-  with Not_found -> ([| |], [| |])
+  Ast_cocci.prepare_merge_variables
+    (function FinalScriptRuleCocciInfo r when r.language = "python" ->
+      let (_, mvs, _, _, _) = r.scr_ast_rule in
+      Some (r.scr_rule_info.rulename, mvs)
+      | _ -> None)
+    cocci_infos
 
 let variables_to_merge python_local_names =
   let ocaml_merges = !Coccilib.variables_to_merge () in
@@ -2041,10 +2043,10 @@ let variables_to_merge python_local_names =
 
 let list_array_of_array_list merges =
   match merges with
-    [] -> [| |]
+    [] -> None
   | hd :: _ ->
-      Array.init (Array.length hd)
-	(fun index -> List.map (fun array -> array.(index)) merges)
+      Some (Array.init (Array.length hd)
+	(fun index -> List.map (fun array -> array.(index)) merges))
 
 (*****************************************************************************)
 (* The main functions *)
@@ -2153,6 +2155,9 @@ let pre_engine a =
 
 let full_engine2
     (cocci_infos, has_changes, parse_strings, (_, python_local_names)) cfiles =
+  let has_changes =
+    !Flag.no_include_cache ||
+    (has_changes && !Flag_cocci.inplace_modif) in
 
   show_or_not_cfiles cfiles;
 
@@ -2241,12 +2246,21 @@ let full_engine a b =
   Common.profile_code "full_engine"
     (fun () -> let res = full_engine2 a b in (*Gc.print_stat stderr; *)res)
 
+let assign_python_merge_variables rulename merge_names merges =
+  match
+    try Some (List.assoc rulename merge_names)
+    with Not_found -> None
+  with
+    None -> ()
+  | Some (from_index, merge_names) ->
+      Array.iteri (fun index variable ->
+	let list =
+	  List.map (fun array -> array.(from_index + index)) merges in
+	Pycocci.unpickle_variable variable list) merge_names
+
 let post_engine2 (cocci_infos, _, _, (python_merge_names, _)) merges =
   let (ocaml_merges, python_merges) = merges in
   Coccilib.merged_variables := list_array_of_array_list ocaml_merges;
-  Array.iteri (fun index variable ->
-    let list = List.map (fun array -> array.(index)) python_merges in
-    Pycocci.unpickle_variable variable list) python_merge_names;
   let _ =
     List.fold_left
       (fun executed_rules ((language,_),(virt_rules,virt_env)) ->
@@ -2257,6 +2271,8 @@ let post_engine2 (cocci_infos, _, _, (python_merge_names, _)) merges =
 	      FinalScriptRuleCocciInfo(r) ->
 		let rlang = r.language in
 		let rname = r.scr_rule_info.rulename in
+		assign_python_merge_variables rname python_merge_names
+		  python_merges;
 		if List.mem (rlang, rname) executed_rules then
 		  executed_rules
 		else
@@ -2273,6 +2289,7 @@ let post_engine2 (cocci_infos, _, _, (python_merge_names, _)) merges =
       []
       !Iteration.initialization_stack in
   Pycocci.flush_stdout_and_stderr ();
+  flush_all ();
   ()
 
 let post_engine a b =

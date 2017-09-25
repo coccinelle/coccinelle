@@ -330,7 +330,10 @@ let id_tokens lexbuf =
 let mkassign op lexbuf =
   TOpAssign (op, (get_current_line_type lexbuf))
 
-let init _ =
+let spinit _ = (* per semantic patch *)
+  Hashtbl.clear Data.non_local_script_constraints
+
+let init _ = (* per file, first .cocci then iso *)
   line := 1;
   logical_line := 0;
   prev_plus := false;
@@ -602,11 +605,11 @@ rule token = parse
      check_context_linetype after;
      start_line false; token lexbuf }
 
-  | "__attribute__" [' ' '\t']* "((" _* "))"
+  | "__attribute__"
    { match !current_line_type with
       (D.PLUS,_,_) | (D.PLUSPLUS,_,_) ->
 	start_line true;
-	TDirective (Ast.Space (tok lexbuf), get_current_line_type lexbuf)
+	TAttr_ (get_current_line_type lexbuf)
     | _ -> failwith "attributes only allowed in + code" }
 
   | "@@" { start_line true; TArobArob }

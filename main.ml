@@ -21,7 +21,6 @@ let cocci_file = ref ""
 
 let output_file = ref "" (* resulting code *)
 let tmp_dir = ref "" (* temporary files for parallelism *)
-let inplace_modif = ref false  (* but keeps nothing *)
 let backup_suffix =
   ref (None : string option) (* suffix for backup if one is desired *)
 let outplace_modif = ref false (* generates a .cocci_res  *)
@@ -56,6 +55,8 @@ let compare_with_expected = ref false
 let distrib_index = ref (None : int option)
 let distrib_max   = ref (None : int option)
 let mod_distrib   = ref false
+
+let previous_merges = ref (([], []) : Cocci.merge_vars)
 
 let parmap_cores      = ref (None : int option)
 let parmap_chunk_size = ref (None : int option)
@@ -95,6 +96,7 @@ let very_quiet_profile = (
     Flag_parsing_c.verbose_unparsing;
     Flag_parsing_c.verbose_visit;
     Flag_parsing_c.verbose_cpp_ast;
+    Flag_parsing_c.verbose_includes;
 
     Flag_matcher.verbose_matcher;
     Flag_matcher.debug_engine;
@@ -140,6 +142,7 @@ let quiet_profile = (
     Flag_parsing_c.verbose_unparsing;
     Flag_parsing_c.verbose_visit;
     Flag_parsing_c.verbose_cpp_ast;
+    Flag_parsing_c.verbose_includes;
 
     Flag_matcher.verbose_matcher;
     Flag_matcher.debug_engine;
@@ -198,6 +201,7 @@ let debug_profile = (
     Flag_parsing_c.debug_unparsing;
     Flag_parsing_c.verbose_type;
     Flag_parsing_c.verbose_parsing;
+    Flag_parsing_c.verbose_includes;
   ])
 
 let pad_profile = (
@@ -226,6 +230,7 @@ let pad_profile = (
     Flag_parsing_c.debug_unparsing;
     Flag_parsing_c.verbose_type;
     Flag_parsing_c.verbose_parsing;
+    Flag_parsing_c.verbose_includes;
   ])
 
 let run_profile p =
@@ -279,7 +284,7 @@ let short_options = [
 
   "-o", Arg.Set_string output_file,
   "   <file> the output file";
-  "--in-place", Arg.Set inplace_modif,
+  "--in-place", Arg.Set Flag_cocci.inplace_modif,
   "   do the modification on the file directly";
   "--backup-suffix", Arg.String (function s -> backup_suffix := Some s),
   "   suffix to use when making a backup for inplace";
@@ -315,6 +320,8 @@ let short_options = [
   "  causes local include files to be used";
   "--include-headers-for-types", Arg.Set Inc.include_headers_for_types,
   "    use only type information from header files";
+  "--no-include-cache", Arg.Set Flag.no_include_cache,
+  "  don't cache parsed include files";
   "--ignore-unknown-options", Arg.Set ignore_unknown_opt,
   ("    For integration in a toolchain (must be set before the first unknown"^
    " option)");
@@ -333,7 +340,7 @@ let short_options = [
   "--dir", Arg.Set dir,
   "    <dir> process all files in directory recursively";
   "--ignore", Arg.String (fun s -> ignore := s :: !ignore),
-  "    <dir> process all files in directory recursively";
+  "    <string> specify a file name prefix to ignore";
   "--file-groups", Arg.Set file_groups,
   "    <file> process the file groups listed in the file";
 
@@ -460,6 +467,8 @@ let other_options = [
     "--verbose-parsing",
        Arg.Unit (fun _ -> Flag_parsing_c.verbose_parsing := true;
 	 Flag_parsing_c.show_parsing_error := true), " ";
+    "--verbose-includes", Arg.Set Flag_parsing_c.verbose_includes,
+    "  show on stderr which files are chosen for inclusion";
     "--type-error-msg",  Arg.Set Flag_parsing_c.verbose_type, " ";
     (* could also use Flag_parsing_c.options_verbose *)
   ];
@@ -566,7 +575,7 @@ let other_options = [
 
     "--hrule", Arg.String
     (function s ->
-      Flag.make_hrule := Some s; Inc..include_options := Inc.Parse_no_includes),
+      Flag.make_hrule := Some s; Inc.include_options := Inc.Parse_no_includes),
     "    semantic patch generation";
 *)
     "--keep-comments", Arg.Set Flag_parsing_c.keep_comments,
@@ -638,6 +647,10 @@ let other_options = [
     "  make a small attempt to parse C++ files";
     "--ibm", Arg.Set Flag.ibm,
     "  make a small attempt to parse IBM C files";
+    "--force-kr", Arg.Set Flag_parsing_c.force_kr,
+    "  despite the presence of non-K&R code, keep looking for K&R code";
+    "--prevent-kr", Arg.Set Flag_parsing_c.prevent_kr,
+    "  never make an identifier parameter alone into a K&R parameter";
   ];
 
   "misc options",
@@ -665,9 +678,9 @@ let other_options = [
     "--mod-distrib", Arg.Set mod_distrib,
     "   use mod to distribute files among the processors";
     "--jobs",  Arg.Int (function x -> parmap_cores := Some x),
-    "   the number of cores to be used by parmap";
+    "   the number of processes to be used";
     "-j",  Arg.Int (function x -> parmap_cores := Some x),
-    "   the number of cores to be used";
+    "   the number of processes to be used";
     "--chunksize", Arg.Int (function x -> parmap_chunk_size := Some x),
     "   the size of work chunks for parallelism";
     "--tmp-dir", Arg.Set_string tmp_dir,
@@ -959,6 +972,7 @@ let rec main_action xs =
   | _,[] -> ()
   | _ -> failwith "only one .cocci file allowed");
   Iteration.base_file_list := xs;
+  previous_merges := ([], []);
   let rec toploop = function
       [] -> failwith "no C files provided"
     | x::xs ->
@@ -982,6 +996,12 @@ let rec main_action xs =
 		    );
 	      Flag.dir := x
 	    end;
+
+	(if List.mem (Inc.get_parsing_style())
+	    [Inc.Parse_all_includes;Inc.Parse_really_all_includes]
+	then
+	  Common.profile_code "setup_unique_search" (fun _ ->
+	    Inc.setup_unique_search !parmap_cores !Inc.include_path));
 
 	let (cocci_infos,constants) =
 	  Cocci.pre_engine (!cocci_file, !Config.std_iso) in
@@ -1232,22 +1252,27 @@ singleton lists are then just appended to each other during the merge. *)
 		      else prev)
 		      ([], []) in res) in
 	  let outfiles = List.rev outfiles in
-	  let merges = List.fold_left Cocci.union_merge_vars ([], []) merges in
+	  let merges =
+            List.fold_left Cocci.union_merge_vars !previous_merges merges in
 	  let pending_instance =
 	    match Iteration.get_pending_instance() with
 	      None ->
+		previous_merges := ([], []);
 		Cocci.post_engine cocci_infos merges;
 		Iteration.get_pending_instance()
-	    | pending_instance -> pending_instance in
+	    | pending_instance ->
+               previous_merges := merges;
+               pending_instance in
 	  (match pending_instance with
 	    None ->
 	      (x,xs,cocci_infos,outfiles)
 	  | Some (files,virt_rules,virt_ids) ->
 	      if outfiles = [] || outfiles = [] || not !FC.show_diff
-		  || !inplace_modif
+		  || !Flag_cocci.inplace_modif
 	      then
 		begin
-		  (if !inplace_modif then generate_outfiles outfiles x xs);
+		  (if !Flag_cocci.inplace_modif
+		  then generate_outfiles outfiles x xs);
 		  debug_restart virt_rules virt_ids;
 		  Flag.defined_virtual_rules := virt_rules;
 		  Flag.defined_virtual_env := virt_ids;
@@ -1289,7 +1314,7 @@ and generate_outfiles outfiles x (* front file *) xs (* other files *) =
   let outfiles = Cocci.check_duplicate_modif outfiles in
   outfiles +> List.iter (fun (infile, outopt) ->
     outopt +> Common.do_option (fun outfile ->
-      if !inplace_modif
+      if !Flag_cocci.inplace_modif
       then begin
 	(match !backup_suffix with
 	  Some backup_suffix ->
@@ -1351,7 +1376,7 @@ let rec fix_idutils = function
 	let s = String.sub x 3 (len-3) in
 	if c1 = 'j'
 	then
-	  try let _ = int_of_string s in "--j"::s::(fix_idutils rest)
+	  try let _ = int_of_string s in "-j"::s::(fix_idutils rest)
 	  with _ -> fail()
 	else if c1 = 'I'
 	then "--I"::s::(fix_idutils rest)
@@ -1430,7 +1455,12 @@ let main () =
           end
         else List.hd !args
       in if !Inc.include_path = []
-      then Inc.include_path := [Filename.concat chosen_dir "include"]);
+      then
+	let i = Filename.concat chosen_dir "include" in
+	try
+	  if Sys.is_directory i
+	  then Inc.include_path := [i]
+	with Sys_error _ -> ());
     (* The same thing for file groups *)
     (if !file_groups
     then

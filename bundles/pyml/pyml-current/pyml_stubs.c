@@ -15,6 +15,15 @@
 
 static FILE *(*Python__Py_fopen)(const char *pathname, const char *mode);
 
+static void *xmalloc(size_t size)
+{
+    void *p = malloc(size);
+    if (!p) {
+        failwith("Virtual memory exhausted\n");
+    }
+    return p;
+}
+
 #ifdef _WIN32
 #include <windows.h>
 
@@ -74,7 +83,7 @@ typedef void *library_t;
 static library_t
 open_library(const char *filename)
 {
-    return dlopen(filename, RTLD_LAZY);
+    return dlopen(filename, RTLD_LAZY | RTLD_GLOBAL);
 }
 
 void
@@ -153,12 +162,41 @@ typedef struct _typeobject {
     Py_ssize_t tp_weaklistoffset;
     void *tp_iter;
     void *tp_iternext;
+    void *tp_methods;
+    void *tp_members;
+    void *tp_getset;
+    void *tp_base;
+    PyObject *tp_dict;
+    void *tp_descr_get;
+    void *tp_descr_set;
+    Py_ssize_t tp_dictoffset;
+    void *tp_init;
+    void *tp_alloc;
+    void *tp_new;
+    void *tp_free;
+    void *tp_is_gc;
+    PyObject *tp_bases;
+    PyObject *tp_mro;
+    PyObject *tp_cache;
+    PyObject *tp_subclasses;
+    PyObject *tp_weaklist;
+    void *tp_del;
+    unsigned int tp_version_tag;
+    void *tp_finalize;
+/* #ifdef COUNT_ALLOCS */
+    Py_ssize_t tp_allocs;
+    Py_ssize_t tp_frees;
+    Py_ssize_t tp_maxalloc;
+    struct _typeobject *tp_prev;
+    struct _typeobject *tp_next;
+/* #endif */
 } PyTypeObject;
 
 typedef struct {
     int cf_flags;
 } PyCompilerFlags;
 
+#define Py_TPFLAGS_INT_SUBCLASS         (1L<<23)
 #define Py_TPFLAGS_LONG_SUBCLASS        (1UL << 24)
 #define Py_TPFLAGS_LIST_SUBCLASS        (1UL << 25)
 #define Py_TPFLAGS_TUPLE_SUBCLASS       (1UL << 26)
@@ -218,13 +256,16 @@ static library_t library;
 static PyObject *(*Python_PyCFunction_NewEx)
 (PyMethodDef *, PyObject *, PyObject *);
 
-/* Wrapped by closure and capsuble */
+/* Wrapped by closure and capsule */
 static void *(*Python_PyCapsule_New)
-(void *, const char *, PyCapsule_Destructor);
+    (void *, const char *, PyCapsule_Destructor);
 static void *(*Python_PyCapsule_GetPointer)(PyObject *, const char *);
+static void *(*Python2_PyCObject_AsVoidPtr)(PyObject *);
 
 /* Hack for multi-arguments */
 static PyObject *(*Python_PyObject_CallFunctionObjArgs)(PyObject *, ...);
+static PyObject *(*Python_PyObject_CallMethodObjArgs)(
+  PyObject *, PyObject *, ...);
 
 /* Wrapped by PyErr_Fetch_wrapper */
 static void (*Python_PyErr_Fetch)(PyObject **, PyObject **, PyObject **);
@@ -249,6 +290,9 @@ static void (*Python_PyMem_Free)(void *);
 
 static enum UCS { UCS_NONE, UCS2, UCS4 } ucs;
 
+/* Single instance of () */
+static PyObject *tuple_empty;
+
 #include "pyml.h"
 
 static void *getcustom( value v )
@@ -263,7 +307,20 @@ static void pydecref( value v )
     }
 }
 
-static int pycompare(value v1, value v2)
+static int
+rich_compare_bool_nofail
+(PyObject *o1, PyObject *o2, int opid)
+{
+    int result = Python_PyObject_RichCompareBool(o1, o2, opid);
+    if (result == -1) {
+        Python_PyErr_Clear();
+        result = 0;
+    }
+    return result;
+}
+
+static int
+pycompare(value v1, value v2)
 {
     int result;
     PyObject *o1 = getcustom(v1);
@@ -277,11 +334,11 @@ static int pycompare(value v1, value v2)
         result = 0;
     else if (version_major < 3)
         Python2_PyObject_Cmp(o1, o2, &result);
-    else if (1 == Python_PyObject_RichCompareBool(o1, o2, Py_EQ))
+    else if (rich_compare_bool_nofail(o1, o2, Py_EQ))
         result = 0;
-    else if (1 == Python_PyObject_RichCompareBool(o1, o2, Py_LT))
+    else if (rich_compare_bool_nofail(o1, o2, Py_LT))
         result = -1;
-    else if (1 == Python_PyObject_RichCompareBool(o1, o2, Py_GT))
+    else if (rich_compare_bool_nofail(o1, o2, Py_GT))
         result = 1;
     else
         result = -1;
@@ -289,12 +346,19 @@ static int pycompare(value v1, value v2)
     return result;
 }
 
-static intnat pyhash( value v )
+static intnat
+pyhash( value v )
 {
-    if (getcustom(v))
-        return Python_PyObject_Hash((PyObject *)getcustom(v));
-    else
-        return 0L;
+    if (getcustom(v)) {
+        intnat result = Python_PyObject_Hash((PyObject *)getcustom(v));
+        if (result == -1) {
+            Python_PyErr_Clear();
+        }
+        return result;
+    }
+    else {
+        return 0;
+    }
 }
 
 static uintnat
@@ -326,8 +390,11 @@ resolve(const char *symbol)
 {
     void *result = find_symbol(library, symbol);
     if (!result) {
-        fprintf(stderr, "Cannot resolve %s.\n", symbol);
-        exit(EXIT_FAILURE);
+        char *fmt = "Cannot resolve %s.\n";
+        ssize_t size = snprintf(NULL, 0, fmt, symbol);
+        char *msg = xmalloc(size + 1);
+        snprintf(msg, size + 1, fmt, symbol);
+        failwith(msg);
     }
     return result;
 }
@@ -376,7 +443,7 @@ pyunwrap(value v)
         case CODE_FALSE:
             return Python__Py_FalseStruct;
         case CODE_TUPLE_EMPTY:
-            return Python_PyTuple_New(0);
+            return tuple_empty;
         }
 
     return *((PyObject **)Data_custom_val(v));
@@ -582,6 +649,8 @@ py_load_library(value filename_ocaml)
     Python_PyCapsule_GetPointer = resolve("PyCapsule_GetPointer");
     Python_PyObject_CallFunctionObjArgs =
         resolve("PyObject_CallFunctionObjArgs");
+    Python_PyObject_CallMethodObjArgs =
+        resolve("PyObject_CallMethodObjArgs");
     Python_PyErr_Fetch = resolve("PyErr_Fetch");
     Python_PyErr_NormalizeException = resolve("PyErr_NormalizeException");
     Python__PyObject_NextNotImplemented =
@@ -601,6 +670,9 @@ py_load_library(value filename_ocaml)
     if (version_major >= 3) {
         Python__Py_fopen = resolve("_Py_fopen");
     }
+    else {
+        Python2_PyCObject_AsVoidPtr = resolve("PyCObject_AsVoidPtr");
+    }
     if (find_symbol(library, "PyUnicodeUCS2_AsEncodedString")) {
         ucs = UCS2;
     }
@@ -612,6 +684,7 @@ py_load_library(value filename_ocaml)
     }
 #include "pyml_dlsyms.inc"
     Python_Py_Initialize();
+    tuple_empty = Python_PyTuple_New(0);
     CAMLreturn(Val_unit);
 }
 
@@ -620,6 +693,7 @@ py_finalize_library(value unit)
 {
     CAMLparam1(unit);
     assert_initialized();
+    Py_DECREF(tuple_empty);
     if (library != get_default_library()) {
         close_library(library);
     }
@@ -692,6 +766,7 @@ enum pytype_labels {
     Dict,
     Float,
     List,
+    Int,
     Long,
     Module,
     NoneType,
@@ -740,6 +815,9 @@ pytype(value object_ocaml)
     else if (flags & Py_TPFLAGS_LIST_SUBCLASS) {
         result = List;
     }
+    else if (flags & Py_TPFLAGS_INT_SUBCLASS) {
+        result = Int;
+    }
     else if (flags & Py_TPFLAGS_LONG_SUBCLASS) {
         result = Long;
     }
@@ -782,7 +860,7 @@ PyObject_CallFunctionObjArgs_wrapper(
     mlsize_t argument_count = Wosize_val(arguments_ocaml);
     switch (argument_count) {
     case 0:
-        result = Python_PyObject_CallFunctionObjArgs(callable);
+        result = Python_PyObject_CallFunctionObjArgs(callable, NULL);
         break;
     case 1:
         result = Python_PyObject_CallFunctionObjArgs
@@ -827,6 +905,70 @@ PyObject_CallFunctionObjArgs_wrapper(
     default:
         fprintf(stderr,
                 "PyObject_CallFunctionObjArgs_wrapper not implemented for more "
+                "than 5 arguments\n");
+        exit(EXIT_FAILURE);
+    }
+
+    CAMLreturn(pywrap(result, true));
+}
+
+CAMLprim value
+PyObject_CallMethodObjArgs_wrapper(
+    value object_ocaml, value name_ocaml, value arguments_ocaml)
+{
+    CAMLparam3(object_ocaml, name_ocaml, arguments_ocaml);
+    assert_initialized();
+    PyObject *object = pyunwrap(object_ocaml);
+    PyObject *name = pyunwrap(name_ocaml);
+    PyObject *result;
+    mlsize_t argument_count = Wosize_val(arguments_ocaml);
+    switch (argument_count) {
+    case 0:
+        result = Python_PyObject_CallMethodObjArgs(object, name);
+        break;
+    case 1:
+        result = Python_PyObject_CallMethodObjArgs
+            (object, name,
+             pyunwrap(Field(arguments_ocaml, 0)),
+             NULL);
+        break;
+    case 2:
+        result = Python_PyObject_CallMethodObjArgs
+            (object, name,
+             pyunwrap(Field(arguments_ocaml, 0)),
+             pyunwrap(Field(arguments_ocaml, 1)),
+             NULL);
+        break;
+    case 3:
+        result = Python_PyObject_CallMethodObjArgs
+            (object, name,
+             pyunwrap(Field(arguments_ocaml, 0)),
+             pyunwrap(Field(arguments_ocaml, 1)),
+             pyunwrap(Field(arguments_ocaml, 2)),
+             NULL);
+        break;
+    case 4:
+        result = Python_PyObject_CallMethodObjArgs
+            (object, name,
+             pyunwrap(Field(arguments_ocaml, 0)),
+             pyunwrap(Field(arguments_ocaml, 1)),
+             pyunwrap(Field(arguments_ocaml, 2)),
+             pyunwrap(Field(arguments_ocaml, 3)),
+             NULL);
+        break;
+    case 5:
+        result = Python_PyObject_CallMethodObjArgs
+            (object, name,
+             pyunwrap(Field(arguments_ocaml, 0)),
+             pyunwrap(Field(arguments_ocaml, 1)),
+             pyunwrap(Field(arguments_ocaml, 2)),
+             pyunwrap(Field(arguments_ocaml, 3)),
+             pyunwrap(Field(arguments_ocaml, 4)),
+             NULL);
+        break;
+    default:
+        fprintf(stderr,
+                "PyObject_CallMethodObjArgs_wrapper not implemented for more "
                 "than 5 arguments\n");
         exit(EXIT_FAILURE);
     }
@@ -894,16 +1036,6 @@ pyrefcount(value pyobj)
     CAMLparam1(pyobj);
     PyObject *obj = pyunwrap(pyobj);
     CAMLreturn(Val_int(obj->ob_refcnt));
-}
-
-static void *xmalloc(size_t size)
-{
-    void *p = malloc(size);
-    if (!p) {
-        fprintf(stderr, "Virtual memory exhausted\n");
-        exit(1);
-    }
-    return p;
 }
 
 static value
@@ -1075,6 +1207,91 @@ close_file(value file, FILE *file_struct)
         fclose(file_struct);
     }
     CAMLreturn0;
+}
+
+/* Numpy */
+
+/* from ndarraytypes.h */
+
+enum NPY_TYPES {
+    NPY_BOOL=0,
+                    NPY_BYTE, NPY_UBYTE,
+                    NPY_SHORT, NPY_USHORT,
+                    NPY_INT, NPY_UINT,
+                    NPY_LONG, NPY_ULONG,
+                    NPY_LONGLONG, NPY_ULONGLONG,
+                    NPY_FLOAT, NPY_DOUBLE, NPY_LONGDOUBLE,
+                    NPY_CFLOAT, NPY_CDOUBLE, NPY_CLONGDOUBLE,
+                    NPY_OBJECT=17,
+                    NPY_STRING, NPY_UNICODE,
+                    NPY_VOID,
+                    /*
+                     * New 1.6 types appended, may be integrated
+                     * into the above in 2.0.
+                     */
+                    NPY_DATETIME, NPY_TIMEDELTA, NPY_HALF,
+
+                    NPY_NTYPES,
+                    NPY_NOTYPE,
+                    NPY_CHAR,      /* special flag */
+                    NPY_USERDEF=256,  /* leave room for characters */
+
+                    /* The number of types not including the new 1.6 types */
+                    NPY_NTYPES_ABI_COMPATIBLE=21
+};
+
+#define NPY_ARRAY_C_CONTIGUOUS    0x0001
+#define NPY_ARRAY_ALIGNED         0x0100
+#define NPY_ARRAY_WRITEABLE       0x0400
+
+#define NPY_ARRAY_BEHAVED      (NPY_ARRAY_ALIGNED | \
+                                NPY_ARRAY_WRITEABLE)
+#define NPY_ARRAY_CARRAY       (NPY_ARRAY_C_CONTIGUOUS | \
+                                NPY_ARRAY_BEHAVED)
+
+#define npy_intp int
+
+static void **
+get_pyarray_api(PyObject *c_api)
+{
+    if (version_major >= 3) {
+        return (void **)Python_PyCapsule_GetPointer(c_api, NULL);
+    }
+    else {
+        return (void **)Python2_PyCObject_AsVoidPtr(c_api);
+    }
+}
+
+CAMLprim value
+get_pyarray_type(value numpy_api_ocaml)
+{
+    CAMLparam1(numpy_api_ocaml);
+    PyObject *c_api = pyunwrap(numpy_api_ocaml);
+    void **PyArray_API = get_pyarray_api(c_api);
+    PyObject *result = PyArray_API[2];
+    CAMLreturn(pywrap(result, true));
+}
+
+CAMLprim value
+pyarray_of_float_array_wrapper(
+    value numpy_api_ocaml, value array_type_ocaml, value array_ocaml)
+{
+    CAMLparam3(numpy_api_ocaml, array_type_ocaml, array_ocaml);
+    assert_initialized();
+    PyObject *(*PyArray_New)
+        (PyTypeObject *, int, npy_intp *, int, npy_intp *, void *, int, int,
+         PyObject *);
+    PyObject *c_api = pyunwrap(numpy_api_ocaml);
+    void **PyArray_API = get_pyarray_api(c_api);
+    PyArray_New = PyArray_API[93];
+    npy_intp length = Wosize_val(array_ocaml);
+    void *data = (double *) array_ocaml;
+    PyTypeObject (*PyArray_SubType) =
+        (PyTypeObject *) pyunwrap(array_type_ocaml);
+    PyObject *result = PyArray_New(
+        PyArray_SubType, 1, &length, NPY_DOUBLE, NULL, data, 0,
+        NPY_ARRAY_CARRAY, NULL);
+    CAMLreturn(pywrap(result, true));
 }
 
 #include "pyml_wrappers.inc"

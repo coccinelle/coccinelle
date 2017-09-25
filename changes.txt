@@ -51,6 +51,11 @@
   Kumar Gala. See tests/bitfield_matching.cocci
 - Bit-field matching, see tests/bitfield.cocci
 - Anonymous field matching, see tests/anonfield.cocci
+- current_element position information in position structure (ocaml &
+  python)
+- matching and transformation of a single attribute after a variable name
+  in a variable declaration.
+- add conjunctions on types.
 ** Features:
 - Better error reporting for unparsable terms when using make_expr etc in
   script code.  Problem reported by Markus Elfring.
@@ -60,6 +65,19 @@
   by Kumar Gala.
 - forall and exists for quantifying over the success of matching depends on
   constraints.
+- --verbose-includes option to show what files are actually included
+- allow casts to unknown typedefs on more kinds of constants (reported by
+  Yann Droneaud)
+- Pick up header files that have the same name as the desired one if they
+  are unique in the provided include paths.
+- Caching of parsed header files, --no-include-cache to disable.
+- --force-kr and --prevent-kr options to control whether K&R parsing is
+  considered.
+- Generalization of script constraints to allow reference to metavariables
+  defined in the same rule, only when the constrained metavariable always
+  occurs in rule_elems that also mention any othe local metavariables
+  mentioned in the script constraint.  Referenced local variables must be
+  declared before the constrained one.
 ** Bugfix:
 - Improved detection of metavariables in strings.  Problem reported by
   Wolfram Sang.
@@ -70,6 +88,8 @@
   and PYTHONPATH are not set (either in the directory where the executable is
   if it contains standard.iso, or in ../lib/coccinelle relatively to where the
   executable is).
+- Improve SmPL parsing of added __attribute__.  Problem repported by
+  Eduardo Habkost.
 * 1.0.6
 ** Language:
 - Allow \ in #define in semantic patch rules, to allow body with multiple

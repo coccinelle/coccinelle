@@ -38,7 +38,7 @@ val inheritable_positions : string list ref
 
 val call_in_meta : (unit -> 'a) -> 'a
 
-val all_metadecls : (string, Ast_cocci.metavar list) Hashtbl.t
+val all_metadecls : (string, Ast_cocci.metavar list ref) Hashtbl.t
 
 val clear_meta: (unit -> unit) ref
 
@@ -126,3 +126,7 @@ val format_list_metavariables :
 val constraint_scripts:
     (bool * Ast_cocci.meta_name * Ast_cocci.script_constraint) list ref
 (** The list of all constraint scripts. *)
+
+val non_local_script_constraints:
+    ((string (* rule name *) * Ast_cocci.meta_name),
+     (Ast_cocci.meta_name * Ast_cocci.script_constraint) list ref) Hashtbl.t

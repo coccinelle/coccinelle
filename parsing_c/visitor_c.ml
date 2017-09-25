@@ -562,7 +562,8 @@ and vk_onedecl = fun bigf onedecl ->
       v_type = t;
       v_type_bis = tbis;
       v_storage = _sto;
-      v_attr = attrs})  ->
+      v_attr = attrs;
+      v_endattr = endattrs})  ->
 
     vk_type bigf t;
     (* don't go in tbis *)
@@ -573,7 +574,8 @@ and vk_onedecl = fun bigf onedecl ->
 	Ast_c.NoInit -> ()
       |	Ast_c.ValInit(iini,init) -> iif [iini]; vk_ini bigf init
       |	Ast_c.ConstrInit((init,ii)) -> iif ii; vk_argument_list bigf init)
-    )
+    );
+    endattrs +> List.iter (vk_attribute bigf)
   in f (k, bigf) onedecl
 
 and vk_ini = fun bigf ini ->
@@ -1473,7 +1475,8 @@ and vk_decl_s = fun bigf d ->
             v_type_bis = tbis;
             v_storage = sto;
             v_local= local;
-            v_attr = attrs}, iicomma) =
+            v_attr = attrs;
+            v_endattr = endattrs}, iicomma) =
     {v_namei =
       (var +> map_option (fun (name, iniopt) ->
         vk_name_s bigf name,
@@ -1492,6 +1495,7 @@ and vk_decl_s = fun bigf d ->
      v_storage = sto;
      v_local = local;
      v_attr = attrs +> List.map (vk_attribute_s bigf);
+     v_endattr = endattrs +> List.map (vk_attribute_s bigf);
     },
     iif iicomma
 

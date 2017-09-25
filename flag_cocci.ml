@@ -1,5 +1,5 @@
 (*
- * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * This file is part of Coccinelle, licensed under the terms of the GPL v2.
  * See copyright.txt in the Coccinelle source code for more information.
  * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
@@ -25,6 +25,8 @@ let show_mcodekind_in_ctl = ref false
 (* the "underived" outputs *)
 let show_binding_in_out = ref false
 let show_dependencies =   ref false
+
+let inplace_modif = ref false
 
 let verbose_cocci = ref true
 

@@ -24,9 +24,11 @@ type 'a wrap =
       node_line : line;
       free_vars : meta_name list; (*free vars*)
       minus_free_vars : meta_name list; (*minus free vars*)
+      minus_nc_free_vars : meta_name list; (*minus free vars, excluding cstrs*)
       fresh_vars : (meta_name * seed) list; (*fresh vars*)
       inherited : meta_name list; (*inherited vars*)
       positive_inherited_positions : meta_name list;
+      constraints : (meta_name * constraints) list;
       saved_witness : meta_name list; (*witness vars*)
       bef_aft : dots_bef_aft;
       (* the following is for or expressions *)
@@ -231,7 +233,7 @@ and 'expression generic_constraints =
   | CstrOperator of operator_constraint
   | CstrMeta_name of meta_name
   | CstrRegexp of string * Regexp.regexp
-  | CstrScript of script_constraint
+  | CstrScript of bool (*true if immediately evaluable*) * script_constraint
   | CstrExpr of 'expression
   | CstrSub of meta_name list
   | CstrType of fullType
@@ -319,7 +321,8 @@ and base_fullType =
     Type            of bool (* true if all minus *) *
 	               const_vol mcode option * typeC
   | AsType          of fullType * fullType (* as type, always metavar *)
-  | DisjType        of fullType list (* only after iso *)
+  | DisjType        of fullType list
+  | ConjType        of fullType list
   | OptType         of fullType
 
 and base_typeC =
@@ -367,9 +370,10 @@ and const_vol = Const | Volatile
    split out into multiple declarations of a single variable each. *)
 
 and base_declaration =
-    Init of storage mcode option * fullType * ident * string mcode (*=*) *
-	initialiser * string mcode (*;*)
-  | UnInit of storage mcode option * fullType * ident * string mcode (* ; *)
+    Init of storage mcode option * fullType * ident * attr list *
+	string mcode (*=*) * initialiser * string mcode (*;*)
+  | UnInit of storage mcode option * fullType * ident * attr list *
+	string mcode (* ; *)
   | FunProto of
 	fninfo list * ident (* name *) *
 	string mcode (* ( *) * parameter_list *
@@ -592,7 +596,9 @@ and fninfo =
     FStorage of storage mcode
   | FType of fullType
   | FInline of string mcode
-  | FAttr of string mcode
+  | FAttr of attr
+
+and attr = string mcode
 
 and metaStmtInfo =
     NotSequencible | SequencibleAfterDots of dots_whencode list | Sequencible
@@ -813,9 +819,12 @@ let get_fvs x              = x.free_vars
 let set_fvs fvs x          = {x with free_vars = fvs}
 let get_mfvs x             = x.minus_free_vars
 let set_mfvs mfvs x        = {x with minus_free_vars = mfvs}
+let get_minus_nc_fvs x     = x.minus_nc_free_vars
 let get_fresh x            = x.fresh_vars
 let get_inherited x        = x.inherited
 let get_inherited_pos x    = x.positive_inherited_positions
+let get_constraints x      = x.constraints
+let add_constraint x c     = {x with constraints = c::x.constraints}
 let get_saved x            = x.saved_witness
 let get_dots_bef_aft x     = x.bef_aft
 let set_dots_bef_aft d x   = {x with bef_aft = d}
@@ -931,9 +940,11 @@ let make_term x =
     node_line = 0;
     free_vars = [];
     minus_free_vars = [];
+    minus_nc_free_vars = [];
     fresh_vars = [];
     inherited = [];
     positive_inherited_positions = [];
+    constraints = [];
     saved_witness = [];
     bef_aft = NoDots;
     pos_info = None;
@@ -946,9 +957,11 @@ let make_inherited_term x inherited inh_pos =
     node_line = 0;
     free_vars = [];
     minus_free_vars = [];
+    minus_nc_free_vars = [];
     fresh_vars = [];
     inherited = inherited;
     positive_inherited_positions = inh_pos;
+    constraints = [];
     saved_witness = [];
     bef_aft = NoDots;
     pos_info = None;
@@ -1092,6 +1105,7 @@ and string_of_fullType ty =
       string_of_const_vol (unwrap_mcode const_vol) ^ " " ^ string_of_typeC ty'
   | AsType (ty', _) -> string_of_fullType ty'
   | DisjType l -> String.concat "|" (List.map string_of_fullType l)
+  | ConjType l -> String.concat "&" (List.map string_of_fullType l)
   | OptType ty -> string_of_fullType ty ^ "?"
 
 let typeC_of_fullType_opt ty =
@@ -1131,6 +1145,7 @@ let rec fullType_map tr ty =
     | AsType (ty0, ty1) ->
         AsType (fullType_map tr ty0, fullType_map tr ty1)
     | DisjType l -> DisjType (List.map (fullType_map tr) l)
+    | ConjType l -> ConjType (List.map (fullType_map tr) l)
     | OptType ty' -> OptType (fullType_map tr ty')
   end
 and typeC_map tr ty =
@@ -1191,6 +1206,7 @@ let rec fullType_fold tr ty v =
       let v' = fullType_fold tr ty0 v in
       fullType_fold tr ty1 v'
   | DisjType l -> List.fold_left (fun v' ty' -> fullType_fold tr ty' v') v l
+  | ConjType l -> List.fold_left (fun v' ty' -> fullType_fold tr ty' v') v l
   | OptType ty' -> fullType_fold tr ty' v
 and typeC_fold tr ty v =
   match unwrap ty with
@@ -1272,7 +1288,7 @@ type ('expression, 'a) cstr_transformer = {
     cstr_operator: (operator_constraint -> 'a) option;
     cstr_meta_name: (meta_name -> 'a) option;
     cstr_regexp: (string -> Regexp.regexp -> 'a) option;
-    cstr_script: (script_constraint -> 'a) option;
+    cstr_script: (bool * script_constraint -> 'a) option;
     cstr_expr: ('expression -> 'a) option;
     cstr_sub: (meta_name list -> 'a) option;
     cstr_type: (fullType -> 'a) option;
@@ -1304,7 +1320,7 @@ let rec cstr_fold_sign pos neg c accu =
       Common.default accu (fun f -> f mn accu) pos.cstr_meta_name
   | CstrRegexp (s, re) ->
       Common.default accu (fun f -> f s re accu) pos.cstr_regexp
-  | CstrScript ((_name, _lang, params, _pos, _code) as script_constraint) ->
+  | CstrScript(local,((_name,_lang,params,_pos,_code) as script_constraint)) ->
       begin
 	match pos.cstr_script with
 	  None ->
@@ -1312,7 +1328,7 @@ let rec cstr_fold_sign pos neg c accu =
 	      (fun f ->
 		List.fold_left (fun accu' (mv, _) -> f mv accu') accu params)
 	      pos.cstr_meta_name
-	| Some f -> f script_constraint accu
+	| Some f -> f (local,script_constraint) accu
       end
   | CstrExpr e ->
       Common.default accu (fun f -> f e accu) pos.cstr_expr
@@ -1367,9 +1383,9 @@ let rec cstr_map transformer c =
   | CstrRegexp (s, re) ->
       Common.default (CstrRegexp (s, re)) (fun f -> f s re)
 	transformer.cstr_regexp
-  | CstrScript script_constraint ->
-      Common.default (CstrScript script_constraint)
-	(fun f -> f script_constraint)
+  | CstrScript (local,script_constraint) ->
+      Common.default (CstrScript (local,script_constraint))
+	(fun f -> f (local,script_constraint))
 	transformer.cstr_script
   | CstrExpr e ->
       (* Untransformed expressions are discarded! *)
@@ -1401,3 +1417,20 @@ let filter_merge_variables metavars =
 	(merge_name, local_name) :: accu
     | _ -> accu in
   List.fold_left filter_var [] metavars
+
+let prepare_merge_variables final rules =
+  let (merge_names, local_names, _length) =
+    List.fold_left
+      (fun (merge_names, local_names, index) r ->
+	match final r with
+	  Some (rulename, mvs) ->
+	    let merge_vars = filter_merge_variables mvs in
+	    let merge_names' = Array.of_list (List.map fst merge_vars) in
+	    let local_names' = List.map snd merge_vars in
+	    let merge_names =
+	      (rulename, (index, merge_names')) :: merge_names in
+	    let local_names = List.rev_append local_names' local_names in
+	    (merge_names, local_names, index + Array.length merge_names')
+	| _ -> (merge_names, local_names, index))
+      ([], [], 0) rules in
+  (merge_names, Array.of_list (List.rev local_names))

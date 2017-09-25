@@ -248,7 +248,7 @@ let (macro_expand:
             pr2 "hint")
           ~evaluate_concatop:false
           ~inplace_when_single:false
-          current_def paren_grouped;
+          current_def [] paren_grouped;
         (* because the before field is used by apply_macro_defs *)
         tokens2 := TV.rebuild_tokens_extented !tokens2;
 

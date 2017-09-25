@@ -43,6 +43,10 @@ let disable_typedef () = _handle_typedef := false
 
 let is_enabled_typedef () = !_handle_typedef
 
+let _kr_possible = ref true
+let is_kr_possible _ = !_kr_possible
+let kr_impossible _ =
+  if not !Flag_parsing_c.force_kr then _kr_possible := false
 
 
 
@@ -132,6 +136,7 @@ let pop_context () =
 let lexer_reset_typedef saved_typedefs =
   begin
     _handle_typedef := true;
+    _kr_possible := true;
     (match saved_typedefs with
       None -> _typedef := Common.empty_scoped_h_env ()
     | Some t -> _typedef := t);

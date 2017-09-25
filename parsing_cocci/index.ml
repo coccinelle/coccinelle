@@ -6,7 +6,7 @@
 
 (* create an index for each constructor *)
 (* current max is 188, also unused: 8-9, 15, 39, 40, 42, 46, 57, 65, 67, 85-86,
- 111, 113-115, 134-136, 138-140 *)
+ 111, 113-115, 135-136, 138-140 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -101,14 +101,15 @@ let typeC t =
   | Ast0.TypeName(name) -> [52]
   | Ast0.MetaType(name,_,_) -> [53]
   | Ast0.DisjType(_,type_list,_,_) -> [130]
+  | Ast0.ConjType(_,type_list,_,_) -> [134]
   | Ast0.OptType(ty) -> [45]
   | Ast0.AsType _ -> failwith "not possible"
 
 let declaration d =
   match Ast0.unwrap d with
     Ast0.MetaDecl(name,_,_) -> [148]
-  | Ast0.Init(stg,ty,id,eq,exp,sem) -> [54]
-  | Ast0.UnInit(stg,ty,id,sem) -> [55]
+  | Ast0.Init(stg,ty,id,attr,eq,exp,sem) -> [54]
+  | Ast0.UnInit(stg,ty,id,attr,sem) -> [55]
   | Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) -> [132]
   | Ast0.MacroDecl(stg,name,lp,args,rp,sem) -> [137]
   | Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) -> [157]

@@ -1,12 +1,8 @@
 (*
- * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * This file is part of Coccinelle, licensed under the terms of the GPL v2.
  * See copyright.txt in the Coccinelle source code for more information.
  * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
-
-let cache_threshold = 500 (** caching of header file information *)
-
-let elem_threshold = 10
 
 let include_headers_for_types = ref false
 
@@ -57,75 +53,57 @@ let extra_includes = ref ([] : string list)
  * For the moment we base in part our heuristic on the name of the file, e.g.
  * serio.c is related we think to #include <linux/serio.h>
  *)
-let include_table = ("include_table", ref 0, Hashtbl.create(101))
-let find_table = ("find_table", ref 0, Hashtbl.create(101))
 
-let cache_find (nm,_,cache) k =
-  let (ct,res) = Hashtbl.find cache k in
-  ct := !ct + 1;
-  res
+let unique_file_table = ref []
 
-let cache_add (nm,ct,cache) k v =
-  ct := !ct + 1;
-  (if !ct > cache_threshold
-  then
-    begin
-      Hashtbl.iter
-	(fun k (vct,v) ->
-	  if !vct < elem_threshold
-	  then
-	    begin
-	      Hashtbl.remove cache k;
-	      ct := !ct - 1
-	    end
-	  else vct := 0)
-	cache
-    end);
-  Hashtbl.add cache k (ref 1, v)
+let include_table = Common.create_bounded_cache 500 (([],[]),None)
 
 let interpret_include_path relpath =
-  let maxdepth = List.length relpath in
   let unique_file_exists dir f =
-    let cmd =
-      Printf.sprintf "find %s -mindepth %d -path \"*/%s\"" dir maxdepth f in
-    try cache_find find_table cmd
-    with Not_found ->
-      let res =
-	match Common.cmd_to_list cmd with
-	  [x] -> Some x
-	| _ -> None in
-      cache_add find_table cmd res;
-      res in
-  let native_file_exists dir f =
+    try
+      let info = List.assoc dir !unique_file_table in
+      try Some (Hashtbl.find info f)
+      with Not_found -> None
+    with Not_found -> None in
+  let rec native_file_exists dir f =
     let f = Filename.concat dir f in
     if Sys.file_exists f
     then Some f
     else None in
   let rec search_include_path exists searchlist relpath =
     match searchlist with
-      []       -> None
+      [] -> None
     | hd::tail ->
 	(match exists hd relpath with
 	  Some x -> Some x
 	| None -> search_include_path exists tail relpath) in
   let rec search_path exists searchlist = function
-      [] ->
-	let res = String.concat "/" relpath in
-	cache_add include_table (searchlist,relpath) res;
-	Some res
+      [] -> None
     | (hd::tail) as relpath1 ->
 	let relpath1 = String.concat "/" relpath1 in
 	(match search_include_path exists searchlist relpath1 with
-	  None -> search_path unique_file_exists searchlist tail
-	| Some f ->
-	    cache_add include_table (searchlist,relpath) f;
-	    Some f) in
+	  None -> search_path exists searchlist tail
+	| (Some _) as res -> res) in
   let searchlist =
     match !include_path with
-      [] -> ["include"]
+      [] ->
+	(try if Sys.is_directory "include" then ["include"] else []
+	with Sys_error _ -> [])
     | x -> List.rev x in
-  try Some(cache_find include_table (searchlist,relpath))
-  with Not_found -> search_path native_file_exists searchlist relpath
+  try Common.find_bounded_cache include_table (searchlist,relpath)
+  with Not_found ->
+    (match search_path native_file_exists searchlist relpath with
+      None ->
+	let res = search_path unique_file_exists searchlist relpath in
+	Common.extend_bounded_cache include_table (searchlist,relpath) res;
+	(if res = None
+	then
+	  Common.pr2
+	    (Printf.sprintf "failed on %s" (String.concat "/" relpath)));
+	res
+    | (Some _) as res ->
+	Common.extend_bounded_cache include_table (searchlist,relpath) res;
+	res)
 
 let should_parse parsing_style filename incl = match parsing_style with
   | Parse_no_includes -> false
@@ -167,3 +145,50 @@ let resolve filename parsingstyle x =
       then interpret_include_path include_path
       else None
     | Ast_c.Weird _ -> None
+
+(* ------------------------------------------------------------------------ *)
+
+let setup_unique_search cores searchlist =
+  let searchlist = List.filter (function f -> Sys.file_exists f) searchlist in
+  let cores =
+    match cores with
+      None -> 1
+    | Some x -> x in
+  let looper f l =
+    if cores > 1
+    then Parmap.parmap ~ncores:cores f (Parmap.L l)
+    else List.map f l in
+  let process dir =
+    let lines =
+      let cmd = Printf.sprintf "find %s -name \"*h\"" dir in
+      Common.cmd_to_list cmd in
+    let lines =
+      List.fold_left
+	(fun prev cur ->
+	  let last = Filename.basename cur in
+	  let two_last =
+	    Filename.concat (Filename.basename (Filename.dirname cur)) last in
+	  (last,cur) :: (two_last,cur) :: prev)
+	[] lines in
+    let lines = List.sort compare lines in
+    let rec loop good bad = function
+	[] -> good
+      | [(x,xp)] ->
+	  if List.mem x bad
+	  then good
+	  else  ((x,xp)::good)
+      | (x,xp)::(((y,yp)::rest) as arest) ->
+	  if List.mem x bad
+	  then loop good bad arest
+	  else if x = y
+	  then loop good (x::bad) rest
+	  else loop ((x,xp)::good) bad arest in
+    (dir,loop [] [] lines) in
+  let res = looper process searchlist in
+  unique_file_table :=
+    List.map
+      (function (dir,lst) ->
+	let tbl = Hashtbl.create 101 in
+	List.iter (function (fl,src) -> Hashtbl.add tbl fl src) lst;
+	(dir,tbl))
+      res

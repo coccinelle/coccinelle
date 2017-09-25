@@ -1503,71 +1503,11 @@ val sortgen_by_key_highfirst: ('a,'b) assoc -> ('a * 'b) list
 (* Assoc, specialized. *)
 (*****************************************************************************)
 
-module IntMap :
-  sig
-    type key = int
-    type +'a t
-    val empty : 'a t
-    val is_empty : 'a t -> bool
-    val mem : key -> 'a t -> bool
-    val add : key -> 'a -> 'a t -> 'a t
-    val singleton : key -> 'a -> 'a t
-    val find : key -> 'a t -> 'a
-    val remove : key -> 'a t -> 'a t
-    val merge : (key -> 'a option -> 'b option -> 'c option) ->
-      'a t -> 'b t -> 'c t
-    val compare : ('a -> 'a -> int) -> 'a t -> 'a t -> int
-    val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
-    val iter : (key -> 'a -> unit) -> 'a t -> unit
-    val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
-    val for_all : (key -> 'a -> bool) -> 'a t -> bool
-    val exists : (key -> 'a -> bool) -> 'a t -> bool
-    val filter : (key -> 'a -> bool) -> 'a t -> 'a t
-    val partition: (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
-    val cardinal : 'a t -> int
-    val bindings : 'a t -> (key * 'a) list
-    val min_binding : 'a t -> key * 'a
-    val max_binding : 'a t -> key * 'a
-    val choose : 'a t -> key * 'a
-    val split : key -> 'a t -> 'a t * 'a option * 'a t
-    val find : key -> 'a t -> 'a
-    val map : ('a -> 'b) -> 'a t -> 'b t
-    val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
-  end
+module IntMap : Map.S with type key = int
 val intmap_to_list : 'a IntMap.t -> (IntMap.key * 'a) list
 val intmap_string_of_t : 'a -> 'b -> string
 
-module IntIntMap :
-  sig
-    type key = int * int
-    type +'a t
-    val empty : 'a t
-    val is_empty : 'a t -> bool
-    val mem : key -> 'a t -> bool
-    val add : key -> 'a -> 'a t -> 'a t
-    val singleton : key -> 'a -> 'a t
-    val find : key -> 'a t -> 'a
-    val remove : key -> 'a t -> 'a t
-    val merge : (key -> 'a option -> 'b option -> 'c option) ->
-      'a t -> 'b t -> 'c t
-    val compare : ('a -> 'a -> int) -> 'a t -> 'a t -> int
-    val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
-    val iter : (key -> 'a -> unit) -> 'a t -> unit
-    val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
-    val for_all : (key -> 'a -> bool) -> 'a t -> bool
-    val exists : (key -> 'a -> bool) -> 'a t -> bool
-    val filter : (key -> 'a -> bool) -> 'a t -> 'a t
-    val partition: (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
-    val cardinal : 'a t -> int
-    val bindings : 'a t -> (key * 'a) list
-    val min_binding : 'a t -> key * 'a
-    val max_binding : 'a t -> key * 'a
-    val choose : 'a t -> key * 'a
-    val split : key -> 'a t -> 'a t * 'a option * 'a t
-    val find : key -> 'a t -> 'a
-    val map : ('a -> 'b) -> 'a t -> 'b t
-    val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
-  end
+module IntIntMap : Map.S with type key = int * int
 val intintmap_to_list : 'a IntIntMap.t -> (IntIntMap.key * 'a) list
 val intintmap_string_of_t : 'a -> 'b -> string
 
@@ -1603,6 +1543,8 @@ val hupdate_default :
 val hash_to_list : ('a, 'b) Hashtbl.t -> ('a * 'b) list
 val hash_to_list_unsorted : ('a, 'b) Hashtbl.t -> ('a * 'b) list
 val hash_of_list : ('a * 'b) list -> ('a, 'b) Hashtbl.t
+
+val hashadd : ('a, 'b list ref) Hashtbl.t -> 'a -> 'b -> unit
 
 
 val hkeys : ('a, 'b) Hashtbl.t -> 'a list
@@ -1986,3 +1928,21 @@ class ['a] olist :
 val typing_sux_test : unit -> unit
 
 module StringSet: Set.S with type elt = string
+
+(*****************************************************************************)
+(* cache *)
+(*****************************************************************************)
+
+type 'a dll = DElem of 'a dll option ref * 'a * 'a dll option ref
+
+val create_bounded_cache :
+    int -> ('a * 'b) ->
+      (int * int ref * ('a,('a * 'b) dll) Hashtbl.t * ('a * 'b) dll)
+
+val find_bounded_cache :
+    (int * int ref * ('a,('a * 'b) dll) Hashtbl.t * ('a * 'b) dll) ->
+      'a -> 'b
+
+val extend_bounded_cache :
+    (int * int ref * ('a,('a * 'b) dll) Hashtbl.t * ('a * 'b) dll) ->
+      'a -> 'b -> unit

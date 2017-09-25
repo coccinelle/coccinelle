@@ -1,0 +1,3 @@
+.PHONY: library
+library:
+	$(MAKE) -C .. $(LIBRARY)

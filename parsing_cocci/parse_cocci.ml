@@ -44,10 +44,14 @@ let line_type2c tok =
 let real_line (_,d,_,_,_,_,_,_,_,_) = d
 let log_line  (_,_,d,_,_,_,_,_,_,_) = d
 
-let token2c (tok,_) =
+let token2c (tok,_) add_clt =
+  let prkey s1 s2 = if add_clt then s1^s2 else s2 in
   let add_clt str clt =
-    Printf.sprintf "%s:%s:%d:%d" str (line_type2c clt)
-      (real_line clt) (log_line clt) in
+    if add_clt
+    then
+      Printf.sprintf "%s:%s:%d:%d" str (line_type2c clt)
+	(real_line clt) (log_line clt)
+    else str in
  match tok with
     PC.TMetavariable -> "metavariable"
   | PC.TIdentifier -> "identifier"
@@ -132,6 +136,7 @@ let token2c (tok,_) =
   | PC.TDirective(Ast.Noindent s,_) -> s
   | PC.TDirective(Ast.Indent s,_)   -> s
   | PC.TDirective(Ast.Space s,_)   -> s
+  | PC.TAttr_(clt) -> add_clt "__attribute__" clt
   | PC.TIncludeL(s,clt) -> add_clt (pr "#include \"%s\"" s) clt
   | PC.TIncludeNL(s,clt) -> add_clt (pr "#include <%s>" s) clt
   | PC.TIncludeAny(s,clt) -> add_clt (pr "#include %s" s) clt
@@ -158,11 +163,11 @@ let token2c (tok,_) =
   | PC.TBreak(clt) -> add_clt "break" clt
   | PC.TContinue(clt) -> add_clt "continue" clt
   | PC.TGoto(clt) -> add_clt "goto" clt
-  | PC.TIdent(s,clt) -> add_clt (pr "ident-%s" s) clt
-  | PC.TTypeId(s,clt) -> add_clt (pr "typename-%s" s) clt
-  | PC.TDeclarerId(s,clt) -> add_clt (pr "declarername-%s" s) clt
-  | PC.TIteratorId(s,clt) -> add_clt (pr "iteratorname-%s" s) clt
-  | PC.TSymId(s,clt)      -> add_clt (pr "symbol-%s" s) clt
+  | PC.TIdent(s,clt) -> add_clt (prkey "ident-" s) clt
+  | PC.TTypeId(s,clt) -> add_clt (prkey "typename-" s) clt
+  | PC.TDeclarerId(s,clt) -> add_clt (prkey "declarername-" s) clt
+  | PC.TIteratorId(s,clt) -> add_clt (prkey "iteratorname-" s) clt
+  | PC.TSymId(s,clt)      -> add_clt (prkey "symbol-" s) clt
   | PC.TMetaDeclarer(_,_,_,clt) -> add_clt "declmeta" clt
   | PC.TMetaIterator(_,_,_,clt) -> add_clt "itermeta" clt
 
@@ -302,7 +307,7 @@ let token2c (tok,_) =
 
 let print_tokens s tokens =
   Printf.printf "%s\n" s;
-  List.iter (function x -> Printf.printf "|%s| " (token2c x)) tokens;
+  List.iter (function x -> Printf.printf "|%s| " (token2c x true)) tokens;
   Printf.printf "\n\n";
   flush stdout
 
@@ -390,6 +395,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.TMetaPos(nm,_,_,_) -> NOTPLUS
   | PC.TSub(clt) -> NOTPLUS
   | PC.TDirective(_,clt) -> NOTPLUS
+  | PC.TAttr_(clt) -> NOTPLUS
 
   | _ -> SKIP
 
@@ -466,7 +472,8 @@ let get_clt (tok,_) =
   | PC.TOPar0(_,clt) | PC.TMid0(_,clt) | PC.TAnd0(_,clt) | PC.TCPar0(_,clt)
   | PC.TOEllipsis(clt) | PC.TCEllipsis(clt)
   | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt)
-  | PC.TFunDecl(clt) | PC.TDirective(_,clt) | PC.TLineEnd(clt) -> clt
+  | PC.TFunDecl(clt) | PC.TDirective(_,clt) | PC.TAttr_(clt)
+  | PC.TLineEnd(clt) -> clt
   | PC.TVAEllipsis(clt) -> clt
 
   | PC.Tlist -> failwith "No clt attached to token Tlist"
@@ -700,6 +707,7 @@ let update_clt (tok,x) clt =
   | PC.TFunDecl(_) -> (PC.TFunDecl(clt),x)
   | PC.TTildeExclEq(_) -> (PC.TTildeExclEq(clt),x)
   | PC.TDirective(a,_) -> (PC.TDirective(a,clt),x)
+  | PC.TAttr_(_) -> (PC.TAttr_(clt),x)
   | PC.TVAEllipsis(_) -> (PC.TVAEllipsis(clt),x)
 
   | PC.Tlist -> assert false
@@ -867,7 +875,7 @@ let split_token ((tok,_) as t) =
   | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt)
   | PC.TVAEllipsis(clt) | PC.Tconst(clt) | PC.Tvolatile(clt) -> split t clt
 
-  | PC.TDirective(s,_) -> ([],[t]) (* only allowed in + *)
+  | PC.TDirective(_,_) | PC.TAttr_(_) -> ([],[t]) (* only allowed in + *)
   | PC.TPlusFile(s,clt) | PC.TMinusFile(s,clt)
   | PC.TIncludeL(s,clt) | PC.TIncludeNL(s,clt) | PC.TIncludeAny(s,clt) ->
       split t clt
@@ -1310,7 +1318,7 @@ let check_nests tokens =
 	    | _ ->
 		failwith
 		  (Printf.sprintf "minus expected, on %s, line %d"
-		     (token2c t) l))
+		     (token2c t true) l))
 	| None -> t in
   let rec outside = function
       [] -> []
@@ -1426,6 +1434,28 @@ let rec collect_pass = function
 	  (x::pass,rest)
       |	_ -> ([],x::xs)
 
+let collect_attr toks =
+  let rec loop n ok = function
+      [] ->
+	if n > 0 || not ok
+	then failwith "missing )) on __attribute__"
+	else ("",[])
+    | (PC.TOPar(clt),_)::xs ->
+	let ok = if n+1 = 2 then true else ok in
+	let (attr,rest) = loop (n+1) ok xs in
+	("("^attr,rest)
+    | (PC.TCPar(clt),_)::xs when n > 1 ->
+	let (attr,rest) = loop (n-1) ok xs in
+	(")"^attr,rest)
+    | (PC.TCPar(clt),_)::xs when n = 1 -> (")",xs)
+    | x::xs ->
+	if n >=2
+	then
+	  let (attr,rest) = loop n ok xs in
+	  ((token2c x false)^attr,rest)
+	else failwith "attribute code must be in double parens" in
+  loop 0 false toks
+
 let plus_attach strict = function
     None -> NOTPLUS
   | Some x -> plus_attachable strict x
@@ -1445,6 +1475,10 @@ let rec process_pragmas (bef : 'a option) (skips : 'a list) = function
       (* This is a ..., in an argument list, field initializer list etc,
 	 which might go away, so nothing should be attached to the , *)
       process_pragmas bef (b::a::skips) xs
+  | (PC.TAttr_(i),x)::xs ->
+      let (attr,rest) = collect_attr xs in
+      process_pragmas bef skips
+	((PC.TDirective(Ast.Space("__attribute__"^attr),i),x)::rest)
   | ((PC.TDirective(s,i),_)::_) as l ->
       let (pragmas,rest) = collect_all_pragmas [] l in
       let (pass,rest0) = collect_pass rest in
@@ -1852,11 +1886,11 @@ let rec collect_script_tokens = function
   | toks ->
       List.iter
 	(function x ->
-	  Printf.printf "%s\n" (token2c x))
+	  Printf.printf "%s\n" (token2c x true))
 	toks;
       failwith "Malformed script rule"
 
-let get_metavars parse_fn table file lexbuf =
+let get_metavars parse_fn table file lexbuf rule_name add_to_alldecls =
   Lexer_cocci.reinit(); (* string metavariable initializations *)
   let rec meta_loop acc (* read one decl at a time *) =
     let (_,tokens) =
@@ -1897,20 +1931,29 @@ let get_metavars parse_fn table file lexbuf =
 	      begin
 		match tokens with
 		| [(PC.TIdent (id, _), _); (PC.TMPtVirg, _)] ->
-		    let metavar =
-		      Common.Left
-			(Ast.MetaAnalysisDecl (data, (!Ast0.rule_name, id))) in
+		    let mv =
+		      Ast.MetaAnalysisDecl (data, (!Ast0.rule_name, id)) in
+		    let metavar = Common.Left mv in
+		    (if add_to_alldecls
+		    then Common.hashadd D.all_metadecls rule_name mv);
 		    meta_loop (metavar :: acc)
 		| _ -> failwith "'analysis' can only have one variable"
 	      end
 	  | (_, toks) ->
 	      failwith
-		("'analysis' should be followed by '(', but was followed by:\n"^
-		 (collect_script_tokens toks))
+		("'analysis' should be followed by '(', but was followed by:\n"
+		 ^ (collect_script_tokens toks))
 	end
 
     | _ ->
 	let metavars = parse_one "meta" parse_fn file tokens in
+	(if add_to_alldecls
+	then
+	  List.iter
+	    (function
+		Common.Left mv -> Common.hashadd D.all_metadecls rule_name mv
+	      | Common.Right _ -> ())
+	    metavars);
 	meta_loop (metavars@acc) in
   partition_either (meta_loop [])
 
@@ -1984,15 +2027,19 @@ let parse_iso file =
               in
 	    Ast0.rule_name := rule_name;
 	    let iso_metavars =
-	      match get_metavars PC.iso_meta_main table file lexbuf with
+	      let res =
+		get_metavars PC.iso_meta_main table file lexbuf rule_name
+		  false in
+	      match res with
 		(iso_metavars,[]) -> iso_metavars
 	      | _ -> failwith "unexpected inheritance in iso" in
 	    (* get the rule *)
 	    let (more,tokens) =
 	      get_tokens
-		(in_list [PC.TIsoStatement;PC.TIsoExpression;PC.TIsoArgExpression;
-		  PC.TIsoTestExpression; PC.TIsoToTestExpression;
-		  PC.TIsoDeclaration;PC.TIsoType;PC.TIsoTopLevel]) in
+		(in_list
+		   [PC.TIsoStatement;PC.TIsoExpression;PC.TIsoArgExpression;
+		     PC.TIsoTestExpression; PC.TIsoToTestExpression;
+		     PC.TIsoDeclaration;PC.TIsoType;PC.TIsoTopLevel]) in
 	    let next_start = List.hd(List.rev tokens) in
 	    let dummy_info = ("",(-1,-1),(-1,-1)) in
 	    let tokens = drop_last [(PC.EOF,dummy_info)] tokens in
@@ -2152,8 +2199,7 @@ let parse file =
 
             (* get metavariable declarations *)
             let (metavars, inherited_metavars) =
-	      get_metavars PC.meta_main table file lexbuf in
-	    Hashtbl.add D.all_metadecls rule_name metavars;
+	      get_metavars PC.meta_main table file lexbuf rule_name true in
 	    Hashtbl.add Lexer_cocci.rule_names rule_name ();
 	    Hashtbl.add Lexer_cocci.all_metavariables rule_name
 	      (Hashtbl.fold
@@ -2290,8 +2336,9 @@ let parse file =
 		name :: !D.inheritable_positions;
 
 	    Hashtbl.add D.all_metadecls name
-	      (List.map (function x -> Ast.MetaScriptDecl(ref None,x))
-		 script_metavars);
+	      (ref
+		 (List.map (function x -> Ast.MetaScriptDecl(ref None,x))
+		    script_metavars));
 	    Hashtbl.add Lexer_cocci.rule_names name ();
 	    (*TODOHashtbl.add Lexer_cocci.all_metavariables name script_metavars;*)
 
@@ -2472,6 +2519,7 @@ let contains_modifs ast =
 let process file isofile verbose =
   Parse_aux.contains_string_constant := false;
   let extra_path = Filename.dirname file in
+  Lexer_cocci.spinit();
   let (iso_files, rules, virt, _metas) = parse file in
   eval_virt virt;
   let std_isos =
@@ -2590,6 +2638,7 @@ let process file isofile verbose =
   let disjd = Disjdistr.disj parsed in
 
   let (metavars,code,fvs,neg_pos,ua,pos) = Free_vars.free_vars disjd in
+  let code = Re_constraints.re_constraints code in
   if !Flag_parsing_cocci.show_SP
   then List.iter2 Pretty_print_cocci.unparse metavars code;
 

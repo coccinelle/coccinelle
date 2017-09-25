@@ -624,6 +624,10 @@ and typeC t =
       do_disj t starter types mids ender typeC
 	(fun starter types mids ender ->
 	  Ast0.DisjType(starter,types,mids,ender))
+  | Ast0.ConjType(starter,types,mids,ender) ->
+      do_disj t starter types mids ender typeC
+	(fun starter types mids ender ->
+	  Ast0.ConjType(starter,types,mids,ender))
   | Ast0.OptType(ty) ->
       let ty = typeC ty in mkres t (Ast0.OptType(ty)) ty ty
   | Ast0.AsType _ -> failwith "not possible"
@@ -639,29 +643,31 @@ and declaration d =
       let name = normal_mcode name in
       let ln = promote_mcode name in
       mkres d (Ast0.MetaDecl(name,a,b)) ln ln
-  | Ast0.Init(stg,ty,id,eq,exp,sem) ->
+  | Ast0.Init(stg,ty,id,attr,eq,exp,sem) ->
       let ty = typeC ty in
       let id = ident id in
+      let attr = List.map normal_mcode attr in
       let eq = normal_mcode eq in
       let exp = initialiser exp in
       let sem = normal_mcode sem in
       (match stg with
 	None ->
-	  mkres d (Ast0.Init(stg,ty,id,eq,exp,sem)) ty (promote_mcode sem)
+	  mkres d (Ast0.Init(stg,ty,id,attr,eq,exp,sem)) ty (promote_mcode sem)
       | Some x ->
 	  let stg = Some (normal_mcode x) in
-	  mkres d (Ast0.Init(stg,ty,id,eq,exp,sem))
+	  mkres d (Ast0.Init(stg,ty,id,attr,eq,exp,sem))
 	    (promote_mcode x) (promote_mcode sem))
-  | Ast0.UnInit(stg,ty,id,sem) ->
+  | Ast0.UnInit(stg,ty,id,attr,sem) ->
       let ty = typeC ty in
       let id = ident id in
+      let attr = List.map normal_mcode attr in
       let sem = normal_mcode sem in
       (match stg with
 	None ->
-	  mkres d (Ast0.UnInit(stg,ty,id,sem)) ty (promote_mcode sem)
+	  mkres d (Ast0.UnInit(stg,ty,id,attr,sem)) ty (promote_mcode sem)
       | Some x ->
 	  let stg = Some (normal_mcode x) in
-	  mkres d (Ast0.UnInit(stg,ty,id,sem))
+	  mkres d (Ast0.UnInit(stg,ty,id,attr,sem))
 	    (promote_mcode x) (promote_mcode sem))
   | Ast0.FunProto(fninfo,name,lp1,params,va1,rp1,sem) ->
       let fninfo =

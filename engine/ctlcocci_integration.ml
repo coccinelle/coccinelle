@@ -1,5 +1,5 @@
 (*
- * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * This file is part of Coccinelle, licensed under the terms of the GPL v2.
  * See copyright.txt in the Coccinelle source code for more information.
  * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
@@ -76,7 +76,7 @@ let valid_positions binding = function
 		match b with
 		  Ast_c.MetaPosValList l ->
 		    List.exists
-		      (function (_,elem,_,_) -> !Flag.current_element = elem)
+		      (function (_,elem,_,_,_) -> !Flag.current_element = elem)
 		      l
 		| _ ->
 		    failwith "position variable should have a position binding"

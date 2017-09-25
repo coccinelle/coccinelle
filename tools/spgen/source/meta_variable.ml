@@ -1,5 +1,5 @@
 (*
- * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * This file is part of Coccinelle, licensed under the terms of the GPL v2.
  * See copyright.txt in the Coccinelle source code for more information.
  * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
@@ -196,7 +196,7 @@ let rec constraints_to_buffer ~rn buffer cstr =
       Printf.bprintf buffer "= %s" (string_of_operator_constraint item)
   | Ast.CstrMeta_name mn -> Printf.bprintf buffer "= %s" (name_str ~rn mn)
   | Ast.CstrRegexp (s, _) -> Printf.bprintf buffer "=~ \"%s\"" s
-  | Ast.CstrScript (_, lang, params, _pos, code) ->
+  | Ast.CstrScript (_,(_, lang, params, _pos, code)) ->
       Printf.bprintf buffer ": script:%s (%s) {%s}" lang
 	(String.concat "," (List.map (fun (nm,_) -> name_str ~rn nm) params))
 	code

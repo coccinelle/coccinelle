@@ -427,12 +427,13 @@ let test_attributes file =
           xs +> List.iter (fun (onedecl, iicomma) ->
 
             let sattr  = Ast_c.s_of_attr onedecl.v_attr in
+            let sendattr  = Ast_c.s_of_attr onedecl.v_endattr in
             let idname =
               match onedecl.v_namei with
               | Some (name, ini) -> Ast_c.str_of_name name
               | None -> "novar"
             in
-            pr2 (spf "%-30s: %s" idname sattr);
+            pr2 (spf "%-30s: %s %s" idname sattr sendattr);
           );
       | _ -> ()
 

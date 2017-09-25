@@ -21,9 +21,11 @@ type 'a wrap =
       node_line : line;
       free_vars : meta_name list; (*free vars*)
       minus_free_vars : meta_name list; (*minus free vars*)
+      minus_nc_free_vars : meta_name list; (*minus free vars, excluding cstrs*)
       fresh_vars : (meta_name * seed) list; (*fresh vars*)
       inherited : meta_name list; (*inherited vars*)
       positive_inherited_positions : meta_name list;
+      constraints : (meta_name * constraints) list;
       saved_witness : meta_name list; (*witness vars*)
       bef_aft : dots_bef_aft;
       pos_info : meta_name mcode option; (* pos info, try not to duplicate *)
@@ -215,7 +217,7 @@ and 'expression generic_constraints =
   | CstrOperator of operator_constraint
   | CstrMeta_name of meta_name
   | CstrRegexp of string * Regexp.regexp
-  | CstrScript of script_constraint
+  | CstrScript of bool (*true if immediately evaluable*) * script_constraint
   | CstrExpr of 'expression
   | CstrSub of meta_name list
   | CstrType of fullType
@@ -301,7 +303,8 @@ and base_fullType =
     Type            of bool (* true if all minus *) *
                        const_vol mcode option * typeC
   | AsType          of fullType * fullType (* as type, always metavar *)
-  | DisjType        of fullType list (* only after iso *)
+  | DisjType        of fullType list
+  | ConjType        of fullType list
   | OptType         of fullType
 
 and base_typeC =
@@ -349,9 +352,10 @@ and const_vol = Const | Volatile
    split out into multiple declarations of a single variable each. *)
 
 and base_declaration =
-    Init of storage mcode option * fullType * ident * string mcode (*=*) *
-	initialiser * string mcode (*;*)
-  | UnInit of storage mcode option * fullType * ident * string mcode (* ; *)
+    Init of storage mcode option * fullType * ident * attr list *
+	string mcode (*=*) * initialiser * string mcode (*;*)
+  | UnInit of storage mcode option * fullType * ident * attr list *
+	string mcode (* ; *)
   | FunProto of
 	fninfo list * ident (* name *) *
 	string mcode (* ( *) * parameter_list *
@@ -571,7 +575,9 @@ and fninfo =
     FStorage of storage mcode
   | FType of fullType
   | FInline of string mcode
-  | FAttr of string mcode
+  | FAttr of attr
+
+and attr = string mcode
 
 and metaStmtInfo =
     NotSequencible | SequencibleAfterDots of dots_whencode list | Sequencible
@@ -776,9 +782,12 @@ val get_wcfvs : ('a wrap,'b wrap) whencode list -> meta_name list
 val set_fvs : meta_name list -> 'a wrap -> 'a wrap
 val get_mfvs : 'a wrap -> meta_name list
 val set_mfvs : meta_name list -> 'a wrap -> 'a wrap
+val get_minus_nc_fvs : 'a wrap -> meta_name list
 val get_fresh : 'a wrap -> (meta_name * seed) list
 val get_inherited : 'a wrap -> meta_name list
 val get_inherited_pos : 'a wrap -> meta_name list
+val get_constraints : 'a wrap -> (meta_name * constraints) list
+val add_constraint : 'a wrap -> meta_name * constraints -> 'a wrap
 val get_saved : 'a wrap -> meta_name list
 val get_dots_bef_aft : statement -> dots_bef_aft
 val set_dots_bef_aft : dots_bef_aft -> statement -> statement
@@ -896,7 +905,7 @@ type ('expression, 'a) cstr_transformer = {
     cstr_operator: (operator_constraint -> 'a) option;
     cstr_meta_name: (meta_name -> 'a) option;
     cstr_regexp: (string -> Regexp.regexp -> 'a) option;
-    cstr_script: (script_constraint -> 'a) option;
+    cstr_script: (bool*script_constraint -> 'a) option;
     cstr_expr: ('expression -> 'a) option;
     cstr_sub: (meta_name list -> 'a) option;
     cstr_type: (fullType -> 'a) option;
@@ -928,3 +937,7 @@ val cstr_pos_meta_names: 'expression generic_constraints -> meta_name list
 val filter_merge_variables:
     (script_meta_name * meta_name * metavar * mvinit) list ->
       (string * string) list
+
+val prepare_merge_variables:
+    ('a -> ('b * (script_meta_name * meta_name * metavar * mvinit) list) option)
+    -> 'a list -> ('b * (int * string array)) list * string array

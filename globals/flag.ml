@@ -1,5 +1,5 @@
 (*
- * This file is part of Coccinelle, lincensed under the terms of the GPL v2.
+ * This file is part of Coccinelle, licensed under the terms of the GPL v2.
  * See copyright.txt in the Coccinelle source code for more information.
  * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
@@ -36,6 +36,7 @@ let currentfile = ref (None : string option) (* file of current code *)
 let currentfiles = ref ([] : string list) (* starting files of this run *)
 
 let current_element = ref ""
+let current_element_pos = ref(lazy((0,0),(0,0)))
 let dir = ref ""
 
 let defined_virtual_rules = ref ([] : string list)
@@ -54,6 +55,7 @@ let ibm = ref false
 
 (* was in main *)
 let include_headers = ref false
+let no_include_cache = ref false
 
 exception UnreadableFile of string
 

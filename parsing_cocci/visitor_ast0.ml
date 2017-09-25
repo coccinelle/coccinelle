@@ -380,6 +380,10 @@ let visitor mode bind option_default
 	    do_disj starter types mids ender typeC
 	      (fun starter types mids ender ->
 		Ast0.DisjType(starter,types,mids,ender))
+	| Ast0.ConjType(starter,types,mids,ender) ->
+	    do_disj starter types mids ender typeC
+	      (fun starter types mids ender ->
+		Ast0.ConjType(starter,types,mids,ender))
 	| Ast0.OptType(ty) ->
 	    let (ty_n,ty) = typeC ty in (ty_n, Ast0.OptType(ty))
 	| Ast0.AsType(ty,asty) ->
@@ -439,19 +443,22 @@ let visitor mode bind option_default
 	  Ast0.MetaDecl(name,constraints,pure) ->
 	    let (n,name) = meta_mcode name in
 	    (n,Ast0.MetaDecl(name,constraints,pure))
-	| Ast0.Init(stg,ty,id,eq,ini,sem) ->
+	| Ast0.Init(stg,ty,id,attr,eq,ini,sem) ->
 	    let (stg_n,stg) = get_option storage_mcode stg in
 	    let ((ty_id_n,ty),id) = named_type ty id in
+	    let (attr_n,attr) = map_split_bind string_mcode attr in
 	    let (eq_n,eq) = string_mcode eq in
 	    let (ini_n,ini) = initialiser ini in
 	    let (sem_n,sem) = string_mcode sem in
-	    (multibind [stg_n;ty_id_n;eq_n;ini_n;sem_n],
-	     Ast0.Init(stg,ty,id,eq,ini,sem))
-	| Ast0.UnInit(stg,ty,id,sem) ->
+	    (multibind [stg_n;ty_id_n;attr_n;eq_n;ini_n;sem_n],
+	     Ast0.Init(stg,ty,id,attr,eq,ini,sem))
+	| Ast0.UnInit(stg,ty,id,attr,sem) ->
 	    let (stg_n,stg) = get_option storage_mcode stg in
 	    let ((ty_id_n,ty),id) = named_type ty id in
+	    let (attr_n,attr) = map_split_bind string_mcode attr in
 	    let (sem_n,sem) = string_mcode sem in
-	    (multibind [stg_n;ty_id_n;sem_n], Ast0.UnInit(stg,ty,id,sem))
+	    (multibind [stg_n;ty_id_n;attr_n;sem_n],
+	     Ast0.UnInit(stg,ty,id,attr,sem))
 	| Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) ->
 	    let (fi_n,fi) = map_split_bind fninfo fi in
 	    let (name_n,name) = ident name in

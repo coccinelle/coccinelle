@@ -210,6 +210,8 @@ and base_typeC =
   | AsType          of typeC * typeC (* as type, always metavar *)
   | DisjType        of string mcode * typeC list * (* only after iso *)
                        string mcode list (* the |s *)  * string mcode
+  | ConjType        of string mcode * typeC list * (* only after iso *)
+                       string mcode list (* the |s *)  * string mcode
   | OptType         of typeC
 
 and typeC = base_typeC wrap
@@ -222,9 +224,9 @@ and typeC = base_typeC wrap
 and base_declaration =
     MetaDecl   of Ast_cocci.meta_name mcode * constraints * pure (* variables *)
   | AsDecl        of declaration * declaration
-  | Init       of Ast_cocci.storage mcode option * typeC * ident *
+  | Init       of Ast_cocci.storage mcode option * typeC * ident * attr list *
 	string mcode (*=*) * initialiser * string mcode (*;*)
-  | UnInit     of Ast_cocci.storage mcode option * typeC * ident *
+  | UnInit     of Ast_cocci.storage mcode option * typeC * ident * attr list *
 	string mcode (* ; *)
   | FunProto of
 	fninfo list * ident (* name *) *
@@ -425,7 +427,9 @@ and fninfo =
     FStorage of Ast_cocci.storage mcode
   | FType of typeC
   | FInline of string mcode
-  | FAttr of string mcode
+  | FAttr of attr
+
+and attr = string mcode
 
 and ('a,'b) whencode =
     WhenNot of string mcode (* when *) * string mcode (* != *) * 'a

@@ -216,7 +216,9 @@ let rec mk_braceised xs =
             let body, endbrace, xs = mk_braceised_aux [] xs in
             loop (Braceised (body, x, endbrace)::acc) xs
 	| TCBrace _ ->
-            pr2 "PB: found closing brace alone in fuzzy parsing";
+            pr2 (Printf.sprintf
+		   "PB: found closing brace alone at line %d in fuzzy parsing"
+		   x.line);
             loop (BToken x::acc) xs
 	| _ ->
             loop (BToken x::acc) xs) in

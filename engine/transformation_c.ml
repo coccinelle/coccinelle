@@ -56,7 +56,12 @@ module XTRANS = struct
 
   type ('a, 'b) matcher = 'a -> 'b  -> tin -> ('a * 'b) tout
 
-  let constraint_checker = ref (fun _ -> failwith "unbound constraint_checker")
+  let constraint_checker =
+    ref ((fun _ -> failwith "unbound constraint_checker") :
+	   (Ast_cocci.meta_name ->
+            Ast_c.metavar_binding_kind ->
+            (Ast_cocci.meta_name -> Ast_c.metavar_binding_kind) ->
+            Ast_cocci.constraints -> tin -> (unit * unit) tout))
 
   let (>>=) m f = fun tin ->
      match m tin with
@@ -779,7 +784,8 @@ module XTRANS = struct
         else fail tin
 
 
-  let check_constraints matcher c id = fun f tin -> f () tin
+  let check_constraints ida idb constraints = fun f tin -> f () tin
+  let check_re_constraints ida constraints = fun f tin -> f () tin
   let check_constraints_ne matcher constraints exp = fun f tin -> f () tin
 
   (* ------------------------------------------------------------------------*)

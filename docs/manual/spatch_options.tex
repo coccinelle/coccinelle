@@ -273,14 +273,14 @@ is a concern, then do not use this option.
 \developer{-{}-testall}{A shortcut for running Coccinelle on all files in a
   subdirectory {\tt tests} such that there are all of a {\tt .cocci} file,
   a {\tt .c} file, and a {\tt .res} file, where the {\tt .res} contains the
-  expected result.  If the argument -()-expected-score-file is provided,
+  expected result.  If the argument -{}-expected-score-file is provided,
   then that file is used for the result.  Otherwise, the result goes in
   ``tests/SCORE\_expected.sexp''. {\bf Warning:} It is intended that not all
   of the test cases provided with Coccinelle actually pass.}
 
 \rare{-{}-test-spacing}{Like -{}-testall, but ensures that the spacing is
   the same as in the .res file.  If the argument
-  -()-expected-spacing-score-file is provided, then that file is used for
+  -{}-expected-spacing-score-file is provided, then that file is used for
   the result.  Otherwise, the result goes in
   ``tests/SCORE\_spacing\_expected.sexp''.}
 
@@ -303,6 +303,9 @@ which score file to compare with in the testall run}
 \rare{-{}-verbose-parsing}{Show parsing errors in the C file, as well as
   information about attempts to accommodate such errors.  This implicitly
   sets {\bf -{}-parse-error-msg.}}
+
+\rare{-{}-verbose-includes}{Show on standard error which files are actually
+included.}
 
 \rare{-{}-parse-handler $\langle$file$\rangle$}{Loads the file containing
   the OCaml code in charge of parse error reporting.  This function should
@@ -426,6 +429,10 @@ other \#ifdef.}
   default is {\bf -{}-local-includes}.  Otherwise the default is {\bf
     -{}-no-includes}.  At most one of these options can be specified.}
 
+\rare{-{}-no-include-cache}{Disable caching of parsed header files. If {\bf
+    -{}-recursive-includes} is used, using this option will incur a large
+  performance overhead.}
+
 \normal{-I $\langle$path$\rangle$}{ This option specifies a directory
   in which to find non-local include files.  This option can be used
   several times to specify multipls include paths.}
@@ -455,6 +462,14 @@ other \#ifdef.}
 
 \rare{-{}-ibm}{Make a effort to parse IBM C code.  Currently decimal
   declarations are supported.}
+
+\rare{-{}-force-kr, -{}-prevent-kr}{These options affect whether an
+  identifier alone in a parameter list can be considered to be a possible
+  K\&R parameter or a typedef.  The default is that as soon as a non-K\&R
+  parameter is detected, ie a type alone or a type and an identifier,
+  then no identifier is promoted to a K\&R parameter.  If {\bf -{}-force-kr}
+  is used, such promotion is still allowed to happen.  If {\bf
+    -{}-prevent-kr} is used, such promotion never happens.}
 
 \section{Application of the semantic patch to the C code}
 

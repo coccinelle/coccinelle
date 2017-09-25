@@ -497,14 +497,14 @@ and pp_string_format (e,ii) =
 *)
   and (pp_type_with_ident:
 	 (unit -> unit) option -> (storage * il) option ->
-	   fullType -> attribute list ->
+	   fullType -> attribute list -> attribute list ->
 	     unit) =
-    fun ident sto ft attrs ->
+    fun ident sto ft attrs endattrs ->
       pp_base_type ft  sto;
       (match (ident, Ast_c.unwrap_typeC ft) with
 	(Some _,_) | (_,Pointer _) -> pr_space()
       |	_ -> ());
-      pp_type_with_ident_rest ident ft attrs
+      pp_type_with_ident_rest ident ft attrs endattrs
 
 
   and (pp_base_type: fullType -> (storage * il) option -> unit) =
@@ -679,7 +679,8 @@ and pp_string_format (e,ii) =
 		  | None -> None
                   | Some name -> Some (function _ -> pp_name name)
                 in
-		pp_type_with_ident identinfo None typ Ast_c.noattr;
+		pp_type_with_ident identinfo None typ Ast_c.noattr
+		  Ast_c.noattr;
 
 	    | (BitField (nameopt, typ, iidot, expr)), iivirg ->
                       (* first var cannot have a preceding ',' *)
@@ -689,7 +690,7 @@ and pp_string_format (e,ii) =
 		    pp_type typ;
 		| Some name ->
 		    pp_type_with_ident (Some (function _ -> pp_name name))
-		      None typ Ast_c.noattr;
+		      None typ Ast_c.noattr Ast_c.noattr;
 		    );
                 pr_elem iidot;
 		pp_expression expr
@@ -705,7 +706,8 @@ and pp_string_format (e,ii) =
 		    | None -> None
 		    | Some name -> Some (function _ -> pp_name name)
 		  in
-		  pp_type_with_ident_rest identinfo typ Ast_c.noattr
+		  pp_type_with_ident_rest identinfo typ
+		    Ast_c.noattr Ast_c.noattr
 
 	      | (BitField (nameopt, typ, iidot, expr)), iivirg ->
 		  iivirg +> List.iter pr_elem;
@@ -713,7 +715,7 @@ and pp_string_format (e,ii) =
 		  | Some name ->
 		      pp_type_with_ident_rest
 			(Some (function _ -> pp_name name))
-			typ Ast_c.noattr;
+			typ Ast_c.noattr Ast_c.noattr;
 		      pr_elem iidot;
 		      pp_expression expr
 		  | None ->
@@ -760,13 +762,15 @@ and pp_string_format (e,ii) =
 (* used because of DeclList, in    int i,*j[23];  we don't print anymore the
    int before *j *)
   and (pp_type_with_ident_rest: (unit -> unit) option ->
-    fullType -> attribute list -> unit) =
+    fullType -> attribute list -> attribute list -> unit) =
 
-    fun ident (((qu, iiqu), (ty, iity)) as fullt) attrs ->
+    fun ident (((qu, iiqu), (ty, iity)) as fullt) attrs endattrs ->
 
       let print_ident ident = Common.do_option (fun f ->
         (* XXX attrs +> pp_attributes pr_elem pr_space; *)
-        f()
+        f();
+	(if not(endattrs = []) then pr_space());
+        endattrs +> pp_attributes pr_elem pr_space
 	) ident
       in
 
@@ -793,7 +797,7 @@ and pp_string_format (e,ii) =
           (* bug: pp_type_with_ident_rest None t;      print_ident ident *)
           pr_elem i;
           iiqu +> List.iter pr_elem; (* le const est forcement apres le '*' *)
-          pp_type_with_ident_rest ident t attrs;
+          pp_type_with_ident_rest ident t attrs Ast_c.noattr;
 
       (* ugly special case ... todo? maybe sufficient in practice *)
       | (ParenType ttop, [i1;i2]) ->
@@ -810,7 +814,7 @@ and pp_string_format (e,ii) =
 		  pp_type_right (q2, mk_tybis (FunctionType t) ii3);
               | _ ->
                   pr2 "PB PARENTYPE ZARB, I forget about the ()";
-                  pp_type_with_ident_rest ident ttop attrs;
+                  pp_type_with_ident_rest ident ttop attrs Ast_c.noattr;
               )
           (* another ugly special case *)
           | _q1, (Array (eopt,t2 ), [iarray1;iarray2]) ->
@@ -830,16 +834,16 @@ and pp_string_format (e,ii) =
 		      pp_type_right (q3, mk_tybis (FunctionType t) iifunc)
                   | _ ->
                       pr2 "PB PARENTYPE ZARB, I forget about the ()";
-                      pp_type_with_ident_rest ident ttop attrs;
+                      pp_type_with_ident_rest ident ttop attrs Ast_c.noattr;
                   )
               | _ ->
                   pr2 "PB PARENTYPE ZARB, I forget about the ()";
-                  pp_type_with_ident_rest ident ttop attrs;
+                  pp_type_with_ident_rest ident ttop attrs Ast_c.noattr;
               )
           | _t ->
 
               pr2 "PB PARENTYPE ZARB, I forget about the ()";
-              pp_type_with_ident_rest ident ttop attrs;
+              pp_type_with_ident_rest ident ttop attrs Ast_c.noattr;
           )
 
 
@@ -906,7 +910,7 @@ and pp_string_format (e,ii) =
         pp_type t
     | Some name ->
 	pp_type_with_ident (Some (function _ -> pp_name name))
-	  None t Ast_c.noattr
+	  None t Ast_c.noattr Ast_c.noattr
 
 
 
@@ -952,9 +956,9 @@ and pp_string_format (e,ii) =
     | (FunctionType _ | Array _ | Pointer _), _ -> raise (Impossible 111)
 
   and pp_type t =
-    pp_type_with_ident None None t Ast_c.noattr
+    pp_type_with_ident None None t Ast_c.noattr Ast_c.noattr
   and pp_type_ident t i =
-    pp_type_with_ident (Some i) None t Ast_c.noattr
+    pp_type_with_ident (Some i) None t Ast_c.noattr Ast_c.noattr
 
 (* ---------------------- *)
   and pp_decl = function
@@ -962,6 +966,7 @@ and pp_string_format (e,ii) =
                    v_type = returnType;
                    v_storage = storage;
                    v_attr = attrs;
+                   v_endattr = endattrs;
                   },[])::xs),
 	       iivirg::ifakestart::iisto) ->
 
@@ -975,7 +980,7 @@ and pp_string_format (e,ii) =
 	| Some (name, iniopt) ->
 	    pp_type_with_ident
 	      (Some (function _ -> pp_name name)) (Some (storage, iisto))
-	      returnType attrs;
+	      returnType attrs endattrs;
 	    (match iniopt with
 	      Ast_c.NoInit -> ()
 	    | Ast_c.ValInit(iini,init) ->
@@ -992,12 +997,13 @@ and pp_string_format (e,ii) =
 	    v_type = returnType;
 	    v_storage = storage2;
 	    v_attr = attrs;
+	    v_endattr = endattrs;
 	  }, iivirg) ->
 
 	    assert (storage2 = storage);
 	    iivirg +> List.iter pr_elem;
 	    pp_type_with_ident_rest (Some (function _ -> pp_name name))
-	      returnType attrs;
+	      returnType attrs endattrs;
 	    (match iniopt with
 	      Ast_c.NoInit -> ()
 	    | Ast_c.ValInit(iini,init) -> pr_elem iini; pp_init init
@@ -1126,7 +1132,7 @@ and pp_init (init, iinit) =
         pr_elem ifakestart;
 
         pp_type_with_ident None (Some (sto, isto))
-          returnt Ast_c.noattr;
+          returnt Ast_c.noattr Ast_c.noattr;
 
         pp_attributes pr_elem pr_space attrs;
 	pr_space();
