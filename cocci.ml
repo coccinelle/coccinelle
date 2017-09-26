@@ -585,7 +585,6 @@ let sp_contain_typed_metavar_z toplevel_list_list =
   let expression r k e =
     match Ast_cocci.unwrap e with
     | Ast_cocci.MetaExpr (_,_,_,Some t,_,_,_bitfield) -> true
-    | Ast_cocci.MetaExpr (_,_,_,_,Ast_cocci.LocalID,_,_bitfield) -> true
     | _ -> k e
   in
 
