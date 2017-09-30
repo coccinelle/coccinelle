@@ -2361,24 +2361,6 @@ let start_mark = function
   | KExpanded -> "!E!"
   | KOrigin -> ""
 
-(*
-  Provides subsidiary implementations for init (introduced in 4.02.0) and
-  map (introduced in 4.00.0).
-*)
-module String = struct
-  let init n f =
-    let s = String.make n ' ' in
-    for i = 0 to n - 1 do
-      s.[i] <- f i
-    done;
-    s
-
-  let map f s =
-    init (String.length s) (fun i -> f s.[i])
-
-  include String
-end
-
 let print_all_tokens2 pr xs =
   if !Flag_parsing_c.debug_unparsing
   then
@@ -2397,10 +2379,20 @@ let print_all_tokens2 pr xs =
     );
   else
     let to_whitespace s =
-      let translate = function
-        | ' ' | '\t' | '\r' | '\n' as c -> c
-        | _ -> ' ' in
-      String.map translate s in
+      let len = String.length s in
+      let rec translate n =
+	if n = len
+	then ()
+	else
+	  begin
+	    (match String.get s n with
+            | '\t' -> pr "\t"
+	    | '\r' -> pr "\r"
+	    | '\n' -> pr "\n"
+            | _ -> pr " ");
+	    translate (n+1)
+	  end in
+      translate 0 in
     let hiding_level = ref 0 in
     let handle_token t =
       let s = str_of_token2 t in
@@ -2419,8 +2411,8 @@ let print_all_tokens2 pr xs =
           );
           hide_current
         | _ -> !hiding_level > 0 in
-      if hide_current then to_whitespace s else s in
-    xs +> List.iter (fun x -> pr (handle_token x))
+      if hide_current then to_whitespace s else pr s in
+    xs +> List.iter handle_token
 
 
 
