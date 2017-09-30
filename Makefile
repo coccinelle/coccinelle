@@ -139,10 +139,18 @@ $(foreach tool,$(TOOLS),$(eval $(foreach_tool)))
 ifeq ($(MAKECMDGOALS),opt)
 NATIVE := yes
 else
+ifeq ($(MAKECMDGOALS),opt-only)
+NATIVE := yes
+else
+ifeq ($(MAKECMDGOALS),all.opt)
+NATIVE := yes
+else
 ifeq ($(TARGET_SPATCH),opt-only)
 NATIVE := yes
 else
 NATIVE := no
+endif
+endif
 endif
 endif
 
@@ -203,10 +211,25 @@ RUN_MENHIR = @echo "MENHIR    $<"; $(MENHIR_CMD)
 RUN_OCAMLLEX = @echo "OCAMLLEX  $<"; $(OCAMLLEX)
 RUN_OCAMLYACC = @echo "OCAMLYACC $<"; $(OCAMLYACC)
 
+MKDIR_P := mkdir -p
+
 .PHONY : all
 all : \
 	$(foreach tool,$(TOOLS),$(PREFIX_$(tool))$(tool)$(TOOLS_SUFFIX)) \
 	$(COMPILED_EXPOSED_MODULES)
+
+.PHONY : all-dev
+all-dev : byte-only $(COMPILED_EXPOSED_MODULES)
+
+.PHONY : all.opt
+all.opt : opt-only $(COMPILED_EXPOSED_MODULES)
+
+.PHONY : all-release world
+all-release world : all
+
+.PHONY : check
+check : spatch$(TOOLS_SUFFIX)
+	./spatch$(TOOLS_SUFFIX) --testall
 
 .PHONY : clean
 clean :
@@ -218,16 +241,25 @@ distclean : clean
 	$(SHOW_CLEAN) "configure"
 	@rm -f configure Makefile.config
 
-.PHONY : opt
-opt : $(foreach tool,$(TOOLS),$(PREFIX_$(tool))$(tool).opt)
+.PHONY : opt-only opt
+opt-only opt : $(foreach tool,$(TOOLS),$(PREFIX_$(tool))$(tool).opt)
+
+.PHONY : byt-only byte-only byte
+byt-only byte-only byte : $(foreach tool,$(TOOLS),$(PREFIX_$(tool))$(tool))
 
 .PHONY: install
-install: install-spatch install-spgen
+install: install-spatch install-spgen install-bash
+
+.PHONY: install-bash
+install-bash:
+	$(MKDIR_P) $(DESTDIR)$(BASH_COMPLETION_DIR)
+	$(INSTALL_DATA) scripts/spatch.bash_completion \
+		$(DESTDIR)$(BASH_COMPLETION_DIR)/spatch
 
 
 .PHONY: install-spatch
 install-spatch : spatch$(TOOLS_SUFFIX)
-	mkdir -p $(DESTDIR)$(LIBDIR)
+	$(MKDIR_P) $(DESTDIR)$(LIBDIR)
 	if test -f bundles/pyml/dllpyml_stubs.so; then \
 		$(INSTALL_PROGRAM) bundles/pyml/dllpyml_stubs.so \
 			$(DESTDIR)$(LIBDIR); \
@@ -238,10 +270,22 @@ install-spatch : spatch$(TOOLS_SUFFIX)
 	fi
 	$(INSTALL_PROGRAM) spatch$(TOOLS_SUFFIX) $(DESTDIR)$(BINDIR)/spatch
 
-.PHONY: install-spgen
-install-spgen: tools/spgen/source/spgen$(TOOLS_SUFFIX)
+.PHONY : install-spgen
+install-spgen : tools/spgen/source/spgen$(TOOLS_SUFFIX)
 	$(INSTALL_PROGRAM) tools/spgen/source/spgen$(TOOLS_SUFFIX) \
 		 $(DESTDIR)$(BINDIR)/spgen
+
+.PHONY : uninstall
+uninstall : uninstall-bash
+	rm -f $(DESTDIR)$(BINDIR)/spatch
+	rm -f $(DESTDIR)$(BINDIR)/spatch.opt
+	rm -f $(DESTDIR)$(BINDIR)/spatch.byte
+
+.PHONY : uninstall-bash
+uninstall-bash :
+	rm -f $(DESTDIR)$(BASH_COMPLETION_DIR)/spatch
+	rmdir --ignore-fail-on-non-empty -p \
+		$(DESTDIR)$(BASH_COMPLETION_DIR)
 
 ml_files_but_parsers := \
 	$(filter %.ml,$(SOURCEFILES)) \
