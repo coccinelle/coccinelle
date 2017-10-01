@@ -1255,7 +1255,12 @@ let rec drop_space_at_endline = function
   | [] -> []
   | [x] -> [x]
   | (C2 (" ",_)) ::
-    ((((T2(Parser_c.TCommentSpace _,Ctx,_,_)) | Cocci2("\n",_,_,_,_) |
+    ((Cocci2(str,_,_,_,_) :: _) as rest)
+    when not (str = "") && String.get str 0 = '\n' ->
+    (* when unparse_cocci doesn't know whether space is needed *)
+    drop_space_at_endline rest
+  | (C2 (" ",_)) ::
+    ((((T2(Parser_c.TCommentSpace _,Ctx,_,_)) |
     (T2(Parser_c.TCommentNewline _,Ctx,_,_))) :: _) as rest) ->
     (* when unparse_cocci doesn't know whether space is needed *)
     drop_space_at_endline rest
