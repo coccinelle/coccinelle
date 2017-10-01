@@ -698,6 +698,15 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
     (* non-empty intersection of witness trees *)
     not ((inter_set index1 index2) = []) in
 
+  let exists_before_end fn lst =
+    let rec loop = function
+	[] -> false
+      | x::xs ->
+	  if fn x
+	  then List.exists (function x -> not (fn x)) xs
+	  else loop xs in
+    loop lst in
+
   (* new idea: collects regions not containing non-space context code
   if two adjacent minus tokens satisfy common_adj then delete
   all spaces, comments etc between them
@@ -715,7 +724,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
       let (minus_list,rest) = span_not_context (t1::xs) in
       let (minus_list,rest) = drop_trailing_plus minus_list rest in
       let (pre_minus_list,_) = span not_context_newline minus_list in
-      let contains_plus = List.exists is_plus pre_minus_list in
+      let contains_plus = exists_before_end is_plus pre_minus_list in
       let x =
         match List.rev minus_list with
         | (T2(Parser_c.TCommentNewline c,_b,_i,_h))::rest
@@ -729,7 +738,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
       ((T2(_,Min adj1,_,_)) as t1)::xs ->
       let (minus_list,rest) = span_not_context (t1::xs) in
       let (pre_minus_list,_) = span not_context_newline minus_list in
-      let contains_plus = List.exists is_plus pre_minus_list in
+      let contains_plus = exists_before_end is_plus pre_minus_list in
       let x =
         match List.rev minus_list with
         | (T2(Parser_c.TCommentNewline c,_b,_i,_h))::rest
@@ -741,7 +750,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
     | ((Fake2(_,Min adj1) | T2(_,Min adj1,_,_)) as t1)::xs ->
       let (minus_list,rest) = span_not_context (t1::xs) in
       let (pre_minus_list,_) = span not_context_newline minus_list in
-      let contains_plus = List.exists is_plus pre_minus_list in
+      let contains_plus = exists_before_end is_plus pre_minus_list in
       adjust_within_minus contains_plus minus_list
       @ adjust_around_minus rest
     | x::xs ->
