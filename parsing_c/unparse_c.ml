@@ -1557,7 +1557,8 @@ let add_newlines toks tabbing_unit =
 	  | t1 -> t1 in
 	(* 0 for second arg of string_length - because of nl, value doesn't
 	   matter *)
-	let (newcount,newseencocci) = string_length (str_of_token2 t2) 0 in
+	let (newcount,sawnl) = string_length (str_of_token2 t2) 0 in
+	let newseencocci = seen_cocci && (not sawnl) in
 	t1::t2::loop stack None newcount newseencocci false rest
     | ((Cocci2(s,line,lcol,rcol,Some(Unparse_cocci.SpaceOrNewline sp))) as a)::
       xs ->
