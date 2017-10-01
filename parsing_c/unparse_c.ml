@@ -698,6 +698,15 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
     (* non-empty intersection of witness trees *)
     not ((inter_set index1 index2) = []) in
 
+  let exists_before_end fn lst =
+    let rec loop = function
+	[] -> false
+      | x::xs ->
+	  if fn x
+	  then List.exists (function x -> not (fn x)) xs
+	  else loop xs in
+    loop lst in
+
   (* new idea: collects regions not containing non-space context code
   if two adjacent minus tokens satisfy common_adj then delete
   all spaces, comments etc between them
@@ -715,7 +724,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
       let (minus_list,rest) = span_not_context (t1::xs) in
       let (minus_list,rest) = drop_trailing_plus minus_list rest in
       let (pre_minus_list,_) = span not_context_newline minus_list in
-      let contains_plus = List.exists is_plus pre_minus_list in
+      let contains_plus = exists_before_end is_plus pre_minus_list in
       let x =
         match List.rev minus_list with
         | (T2(Parser_c.TCommentNewline c,_b,_i,_h))::rest
@@ -729,7 +738,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
       ((T2(_,Min adj1,_,_)) as t1)::xs ->
       let (minus_list,rest) = span_not_context (t1::xs) in
       let (pre_minus_list,_) = span not_context_newline minus_list in
-      let contains_plus = List.exists is_plus pre_minus_list in
+      let contains_plus = exists_before_end is_plus pre_minus_list in
       let x =
         match List.rev minus_list with
         | (T2(Parser_c.TCommentNewline c,_b,_i,_h))::rest
@@ -741,7 +750,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
     | ((Fake2(_,Min adj1) | T2(_,Min adj1,_,_)) as t1)::xs ->
       let (minus_list,rest) = span_not_context (t1::xs) in
       let (pre_minus_list,_) = span not_context_newline minus_list in
-      let contains_plus = List.exists is_plus pre_minus_list in
+      let contains_plus = exists_before_end is_plus pre_minus_list in
       adjust_within_minus contains_plus minus_list
       @ adjust_around_minus rest
     | x::xs ->
@@ -1255,7 +1264,12 @@ let rec drop_space_at_endline = function
   | [] -> []
   | [x] -> [x]
   | (C2 (" ",_)) ::
-    ((((T2(Parser_c.TCommentSpace _,Ctx,_,_)) | Cocci2("\n",_,_,_,_) |
+    ((Cocci2(str,_,_,_,_) :: _) as rest)
+    when not (str = "") && String.get str 0 = '\n' ->
+    (* when unparse_cocci doesn't know whether space is needed *)
+    drop_space_at_endline rest
+  | (C2 (" ",_)) ::
+    ((((T2(Parser_c.TCommentSpace _,Ctx,_,_)) |
     (T2(Parser_c.TCommentNewline _,Ctx,_,_))) :: _) as rest) ->
     (* when unparse_cocci doesn't know whether space is needed *)
     drop_space_at_endline rest
@@ -1557,7 +1571,8 @@ let add_newlines toks tabbing_unit =
 	  | t1 -> t1 in
 	(* 0 for second arg of string_length - because of nl, value doesn't
 	   matter *)
-	let (newcount,newseencocci) = string_length (str_of_token2 t2) 0 in
+	let (newcount,sawnl) = string_length (str_of_token2 t2) 0 in
+	let newseencocci = seen_cocci && (not sawnl) in
 	t1::t2::loop stack None newcount newseencocci false rest
     | ((Cocci2(s,line,lcol,rcol,Some(Unparse_cocci.SpaceOrNewline sp))) as a)::
       xs ->
