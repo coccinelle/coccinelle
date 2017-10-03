@@ -2336,10 +2336,6 @@ module Common :
     val diff :
       (int -> int -> diff -> unit) -> string list * string list -> unit
     val diff2 : (int -> int -> diff -> unit) -> string * string -> unit
-    val parserCommon :
-      Lexing.lexbuf -> ('a -> Lexing.lexbuf -> 'b) -> 'a -> 'b
-    val getDoubleParser :
-      ('a -> Lexing.lexbuf -> 'b) -> 'a -> (string -> 'b) * (string -> 'b)
     type parse_info =
       Common.parse_info = {
       str : string;
