@@ -540,7 +540,7 @@ let rec is_simple_expr expr =
 
 
 (* memoise unnanoted var, to avoid too much warning messages *)
-let _notyped_var = ref (Hashtbl.create 101)
+let _notyped_var = Hashtbl.create 101
 
 let new_scope() =
   match !_scoped_env with
@@ -608,7 +608,7 @@ let add_binding2 namedef warning =
   if !Flag_parsing_c.check_annotater then begin
     (match namedef with
     | VarOrFunc (s, typ) ->
-        if Hashtbl.mem !_notyped_var s
+        if Hashtbl.mem _notyped_var s
         then pr2 ("warning: found typing information for a variable that was" ^
                      "previously unknown:" ^ s);
     | _ -> ()
@@ -847,10 +847,10 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
                     if not (s =~ "[A-Z_]+") (* if macro then no warning *)
                     then
                       if !Flag_parsing_c.check_annotater then
-                        if not (Hashtbl.mem !_notyped_var s)
+                        if not (Hashtbl.mem _notyped_var s)
                         then begin
                           pr2 ("Type_annoter: no type found for: " ^ s);
-                          Hashtbl.add !_notyped_var s true;
+                          Hashtbl.add _notyped_var s true;
                         end
                         else ()
                       else
@@ -1265,7 +1265,6 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
 
     (* ------------------------------------------------------------ *)
     Visitor_c.ktoplevel = (fun (k, bigf) elem ->
-      _notyped_var := Hashtbl.create 100;
       match elem with
       | Definition def ->
           let {f_name = name;
@@ -1353,7 +1352,7 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
     );
   }
   in
-  if just_add_in_env
+  (if just_add_in_env
   then
     if depth > 1
     then Visitor_c.vk_toplevel bigf elem
@@ -1361,7 +1360,9 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
       Common.profile_code "TAC.annotate_only_included" (fun () ->
         Visitor_c.vk_toplevel bigf elem
       )
-  else Visitor_c.vk_toplevel bigf elem
+  else Visitor_c.vk_toplevel bigf elem);
+  Hashtbl.reset _notyped_var
+
 
 (*****************************************************************************)
 (* Entry point *)
@@ -1375,15 +1376,15 @@ let (annotate_program2 :
 
   (* globals (re)initialialisation *)
   _scoped_env := env;
-  _notyped_var := (Hashtbl.create 100);
 
-  prog +> List.map (fun elem ->
-    let beforeenv = !_scoped_env in
-    visit_toplevel ~just_add_in_env:false ~depth:0 elem;
-    let afterenv = !_scoped_env in
-    (elem, (beforeenv, afterenv))
-  )
-
+   let res =
+     prog +> List.map (fun elem ->
+       let beforeenv = !_scoped_env in
+       visit_toplevel ~just_add_in_env:false ~depth:0 elem;
+       let afterenv = !_scoped_env in
+       (elem, (beforeenv, afterenv))) in
+  Hashtbl.reset _notyped_var;
+   res
 
 
 

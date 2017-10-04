@@ -86,7 +86,7 @@ let cleanup_arglist l =
 
 let print_meta (r,n) = r^"."^n
 
-let meta_metatable = Hashtbl.create(101)
+let meta_metatable = Hashtbl.create(51)
 
 let coerce_tmeta newty name builder matcher =
   try

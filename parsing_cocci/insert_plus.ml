@@ -100,7 +100,7 @@ declaration *)
 type minus_join_point = Favored | Unfavored | Toplevel | Decl
 
 (* Maps the index of a node to the indices of the mcodes it contains *)
-let root_token_table = (Hashtbl.create(50) : (int, int list) Hashtbl.t)
+let root_token_table = (Hashtbl.create(51) : (int, int list) Hashtbl.t)
 
 let create_root_token_table minus =
   Hashtbl.iter
@@ -464,15 +464,18 @@ let verify l =
     l
 
 let process_minus minus =
-  Hashtbl.clear root_token_table;
   create_root_token_table minus;
-  List.concat
-    (List.map
-       (function x ->
-	 let res = call_collect_minus (collect_context x) in
-	 verify res;
-	 res)
-       minus)
+  let res =
+    List.concat
+      (List.map
+	 (function x ->
+	   let res = call_collect_minus (collect_context x) in
+	   verify res;
+	   res)
+	 minus) in
+  Hashtbl.reset root_token_table;
+  res
+
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
 (* collect the plus tokens *)

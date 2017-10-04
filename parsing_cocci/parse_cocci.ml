@@ -2490,7 +2490,9 @@ let parse file =
 	(Printf.sprintf "unexpected code before the first rule: %s\n"
 	   (Dumper.dump initial_tokens)) in
   res) in
-  parse_loop file
+  let res = parse_loop file in
+  Lexer_cocci.post_init ();
+  res
 
 let contains_modifs ast =
   let donothing r k e = k e in

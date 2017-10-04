@@ -186,7 +186,7 @@ let matched7 = fun s -> (matched 1 s, matched 2 s, matched 3 s, matched 4 s, mat
 
 let (with_open_stringbuf: (((string -> unit) * Buffer.t) -> unit) -> string) =
  fun f ->
-  let buf = Buffer.create 1000 in
+  let buf = Buffer.create 100 in
   let pr s = Buffer.add_string buf (s ^ "\n") in
   f (pr, buf);
   Buffer.contents buf
@@ -573,7 +573,7 @@ let check_profile category =
   | PNONE -> false
   | PSOME l -> List.mem category l
 
-let _profile_table = ref (Hashtbl.create 100)
+let _profile_table = ref (Hashtbl.create 101)
 
 let adjust_profile_entry category difftime =
   let (xtime, xcount) =
