@@ -1796,14 +1796,6 @@ val diff : (int -> int -> diff -> unit) -> string list * string list -> unit
 val diff2 : (int -> int -> diff -> unit) -> string * string -> unit
 
 (*****************************************************************************)
-(* Parsers (aop-colcombet)                                                 *)
-(*****************************************************************************)
-
-val parserCommon : Lexing.lexbuf -> ('a -> Lexing.lexbuf -> 'b) -> 'a -> 'b
-val getDoubleParser :
-  ('a -> Lexing.lexbuf -> 'b) -> 'a -> (string -> 'b) * (string -> 'b)
-
-(*****************************************************************************)
 (* Parsers (cocci) *)
 (*****************************************************************************)
 

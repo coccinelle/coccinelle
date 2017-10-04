@@ -5339,44 +5339,6 @@ let (diff2: (int -> int -> diff -> unit) -> (string * string) -> unit) =
 
 
 (*****************************************************************************)
-(* Parsers (aop-colcombet) *)
-(*****************************************************************************)
-
-let parserCommon lexbuf parserer lexer =
-  try
-    let result = parserer lexer lexbuf in
-    result
-  with Parsing.Parse_error ->
-    print_string "buf: "; print_string lexbuf.Lexing.lex_buffer;
-    print_string "\n";
-    print_string "current: "; print_int lexbuf.Lexing.lex_curr_pos;
-    print_string "\n";
-    raise Parsing.Parse_error
-
-
-(* marche pas ca neuneu *)
-(*
-let getDoubleParser parserer lexer string =
-  let lexbuf1 = Lexing.from_string string in
-  let chan = open_in string in
-  let lexbuf2 = Lexing.from_channel chan in
-  (parserCommon lexbuf1 parserer lexer  , parserCommon lexbuf2 parserer lexer )
-*)
-
-let getDoubleParser parserer lexer =
-  (
-   (function string ->
-     let lexbuf1 = Lexing.from_string string in
-     parserCommon lexbuf1 parserer lexer
-   ),
-   (function string ->
-     let chan = open_in string in
-     let lexbuf2 = Lexing.from_channel chan in
-     parserCommon lexbuf2 parserer lexer
-   ))
-
-
-(*****************************************************************************)
 (* parser combinators *)
 (*****************************************************************************)
 
