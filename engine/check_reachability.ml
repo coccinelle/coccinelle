@@ -186,9 +186,9 @@ type ('a,'b,'c,'d,'e) triples =
      CTL.generic_witnesstree list) list
 
 let check_reachability rulename triples cfg =
-  Hashtbl.clear modified;
   List.iter build_modified triples;
   let formulas = create_formulas() in
+  Hashtbl.clear modified;
   List.iter
     (function (node,af_formula,ef_formula) ->
       if test_formula node af_formula cfg

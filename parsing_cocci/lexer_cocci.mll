@@ -521,6 +521,16 @@ let init _ = (* per file, first .cocci then iso *)
       List.iter (function (name,fn) -> Hashtbl.add metavariables name fn)
 	(Hashtbl.find all_metavariables parent))
 
+let post_init _ =
+  Hashtbl.reset all_metavariables;
+  Hashtbl.reset Data.all_metadecls;
+  Hashtbl.reset metavariables;
+  Hashtbl.reset type_names;
+  Hashtbl.reset rule_names;
+  Hashtbl.reset iterator_names;
+  Hashtbl.reset declarer_names;
+  Hashtbl.reset symbol_names
+
 (* initialization for each cocci rule *)
 let reinit _ =
   Data.format_metavariables := [];

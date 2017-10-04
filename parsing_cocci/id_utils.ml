@@ -8,7 +8,7 @@
 
 module GC = Get_constants2
 
-let evaluated = Hashtbl.create(100)
+let evaluated = Hashtbl.create(101)
 
 exception Out
 
@@ -63,14 +63,17 @@ let rec interpret dir query =
       else
 	Printf.sprintf "%s/%s" dir !Flag_parsing_cocci.id_utils_index
     with Invalid_argument _ -> failwith "empty idutils index name" in
-  if not (Sys.file_exists index)
-  then
-    (Common.pr2
-       (Printf.sprintf
-	  "index %s unavailable, run scripts/idutils_index.sh from %s"
-	  !Flag_parsing_cocci.id_utils_index dir);
-     None)
-  else
-    match query with
-      None -> Common.pr2 "no inferred idutils keywords"; None
-    | Some exp -> Some (interpret_query index exp)
+  let res =
+    if not (Sys.file_exists index)
+    then
+      (Common.pr2
+	 (Printf.sprintf
+	    "index %s unavailable, run scripts/idutils_index.sh from %s"
+	    !Flag_parsing_cocci.id_utils_index dir);
+       None)
+    else
+      match query with
+	None -> Common.pr2 "no inferred idutils keywords"; None
+      | Some exp -> Some (interpret_query index exp) in
+  Hashtbl.reset evaluated;
+  res

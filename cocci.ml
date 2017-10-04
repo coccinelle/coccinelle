@@ -1280,7 +1280,7 @@ module MyHashtbl = Hashtbl.Make(MyHashedType)
 
 let max_tbl = ref 1001
 let env_tbl = MyHashtbl.create !max_tbl
-let init_env _ = MyHashtbl.clear env_tbl; env_tbl
+let init_env _ = MyHashtbl.reset env_tbl; env_tbl
 let init_env_list _ = []
 
 let update_env (env : string list list ref MyHashtbl.t) v i =

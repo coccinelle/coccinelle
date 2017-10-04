@@ -15,7 +15,7 @@ module V0 = Visitor_ast0
 module VT0 = Visitor_ast0_types
 
 (* all fresh identifiers *)
-let fresh_table = (Hashtbl.create(50) : (Ast.meta_name, unit) Hashtbl.t)
+let fresh_table = (Hashtbl.create(51) : (Ast.meta_name, unit) Hashtbl.t)
 
 let warning s = Printf.fprintf stderr "warning: %s\n" s
 
@@ -699,7 +699,7 @@ let check_meta rname old_metas inherited_metavars metavars minus plus =
   let (ierr,iother) =
     List.partition (function Ast.MetaErrDecl(_,_) -> true | _ -> false)
       inherited_metavars in
-  let fresh_table = make_table fresh in
+  let frsh_table = make_table fresh in
   let err_table = make_table (err@ierr) in
   let other_table = make_table other in
   let iother_table = make_table iother in
@@ -709,8 +709,9 @@ let check_meta rname old_metas inherited_metavars metavars minus plus =
   positions rname [iother_table;other_table] minus;
   dup_positions minus;
   check_all_marked rname "metavariable" other_table "in the - or context code";
-  rule old_metas [iother_table;fresh_table;err_table] false plus;
+  rule old_metas [iother_table;frsh_table;err_table] false plus;
   check_all_marked rname "inherited metavariable" iother_table
     "in the -, +, or context code";
-  check_all_marked rname "metavariable" fresh_table "in the + code";
-  check_all_marked rname "error metavariable" err_table ""
+  check_all_marked rname "metavariable" frsh_table "in the + code";
+  check_all_marked rname "error metavariable" err_table "";
+  Hashtbl.reset fresh_table

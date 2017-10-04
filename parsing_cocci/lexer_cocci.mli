@@ -45,6 +45,7 @@ val id_tokens : Lexing.lexbuf -> Parser_cocci_menhir.token
 val mkassign :
   Ast_cocci.arithOp -> Lexing.lexbuf -> Parser_cocci_menhir.token
 val init : 'a -> unit
+val post_init : 'a -> unit
 val reinit : 'a -> unit
 val spinit: unit -> unit
 val include_init : 'a -> unit
