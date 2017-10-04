@@ -3242,7 +3242,7 @@ anything: /* used for script code */
  | TInc { "++" }
  | TDec { "--" }
 
- | TString { fst $1 }
+ | TString { Printf.sprintf "\"%s\"" (fst $1) }
  | TChar { fst $1 }
  | TFloat { fst $1 }
  | TInt { fst $1 }
