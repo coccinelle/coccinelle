@@ -145,10 +145,10 @@ else
 ifeq ($(MAKECMDGOALS),all.opt)
 NATIVE := yes
 else
-ifeq ($(TARGET_SPATCH),opt-only)
-NATIVE := yes
-else
+ifeq ($(TARGET_SPATCH),byte-only)
 NATIVE := no
+else
+NATIVE := yes
 endif
 endif
 endif
@@ -197,7 +197,7 @@ MENHIR_DEP_CMD := $(MENHIR) --ocamldep "$(OCAMLDEP_CMD)" --depend
 MENHIR_CMD := $(MENHIR) --ocamlc "$(OCAMLC_CMD)" --explain --infer
 
 PARMAP_LIB := $(addsuffix parmap$(LIBSUFFIX),$(filter %/parmap/,$(MAKELIBS)))
-PYML_LIB := $(addsuffix py$(LIBSUFFIX),$(filter %/pyml/,$(MAKELIBS)))
+PYML_LIB := $(addsuffix pyml$(LIBSUFFIX),$(filter %/pyml/,$(MAKELIBS)))
 PCRE_LIB := $(addsuffix pcre$(LIBSUFFIX),$(filter %/pcre/,$(MAKELIBS)))
 
 SHOW_CLEAN := @echo "CLEAN    "
@@ -216,13 +216,13 @@ MKDIR_P := mkdir -p
 .PHONY : all
 all : \
 	$(foreach tool,$(TOOLS),$(PREFIX_$(tool))$(tool)$(TOOLS_SUFFIX)) \
-	$(COMPILED_EXPOSED_MODULES)
+	$(COMPILED_EXPOSED_MODULES) docs
 
 .PHONY : all-dev
-all-dev : byte-only $(COMPILED_EXPOSED_MODULES)
+all-dev : byte-only $(COMPILED_EXPOSED_MODULES) docs
 
 .PHONY : all.opt
-all.opt : opt-only $(COMPILED_EXPOSED_MODULES)
+all.opt : opt-only $(COMPILED_EXPOSED_MODULES) docs
 
 .PHONY : all-release world
 all-release world : all
@@ -248,7 +248,7 @@ opt-only opt : $(foreach tool,$(TOOLS),$(PREFIX_$(tool))$(tool).opt)
 byt-only byte-only byte : $(foreach tool,$(TOOLS),$(PREFIX_$(tool))$(tool))
 
 .PHONY: install
-install: install-spatch install-spgen install-bash
+install: install-spatch install-spgen install-python install-bash install-man
 
 .PHONY: install-bash
 install-bash:
@@ -256,10 +256,10 @@ install-bash:
 	$(INSTALL_DATA) scripts/spatch.bash_completion \
 		$(DESTDIR)$(BASH_COMPLETION_DIR)/spatch
 
-
 .PHONY: install-spatch
 install-spatch : spatch$(TOOLS_SUFFIX)
-	$(MKDIR_P) $(DESTDIR)$(LIBDIR)
+	$(MKDIR_P) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR)
+	$(MKDIR_P) $(DESTDIR)$(LIBDIR)/ocaml
 	if test -f bundles/pyml/dllpyml_stubs.so; then \
 		$(INSTALL_PROGRAM) bundles/pyml/dllpyml_stubs.so \
 			$(DESTDIR)$(LIBDIR); \
@@ -269,11 +269,35 @@ install-spatch : spatch$(TOOLS_SUFFIX)
 			$(DESTDIR)$(LIBDIR); \
 	fi
 	$(INSTALL_PROGRAM) spatch$(TOOLS_SUFFIX) $(DESTDIR)$(BINDIR)/spatch
+	$(INSTALL_DATA) standard.h $(DESTDIR)$(LIBDIR)
+	$(INSTALL_DATA) standard.iso $(DESTDIR)$(LIBDIR)
+	$(INSTALL_DATA) ocaml/*.cmi $(DESTDIR)$(LIBDIR)/ocaml/
+
+.PHONY : install-man
+install-man :
+	$(MKDIR_P) $(DESTDIR)$(MANDIR)/man1
+	$(MKDIR_P) $(DESTDIR)$(MANDIR)/man3
+	$(INSTALL_DATA) docs/spatch.1 $(DESTDIR)$(MANDIR)/man1/
+	$(INSTALL_DATA) docs/pycocci.1 $(DESTDIR)$(MANDIR)/man1/
+	$(INSTALL_DATA) docs/spgen.1 $(DESTDIR)$(MANDIR)/man1/
+	$(INSTALL_DATA) docs/Coccilib.3cocci $(DESTDIR)$(MANDIR)/man3/
 
 .PHONY : install-spgen
 install-spgen : tools/spgen/source/spgen$(TOOLS_SUFFIX)
 	$(INSTALL_PROGRAM) tools/spgen/source/spgen$(TOOLS_SUFFIX) \
 		 $(DESTDIR)$(BINDIR)/spgen
+
+.PHONY : install-python
+install-python:
+	$(MKDIR_P) $(DESTDIR)$(LIBDIR)/python/coccilib/coccigui
+	$(INSTALL_DATA) python/coccilib/*.py \
+		$(DESTDIR)$(LIBDIR)/python/coccilib
+	$(INSTALL_DATA) python/coccilib/coccigui/*.py \
+		$(DESTDIR)$(LIBDIR)/python/coccilib/coccigui
+	$(INSTALL_DATA) python/coccilib/coccigui/pygui.glade \
+		$(DESTDIR)$(LIBDIR)/python/coccilib/coccigui
+	$(INSTALL_DATA) python/coccilib/coccigui/pygui.gladep \
+		$(DESTDIR)$(LIBDIR)/python/coccilib/coccigui
 
 .PHONY : uninstall
 uninstall : uninstall-bash
@@ -290,6 +314,11 @@ uninstall-bash :
 ml_files_but_parsers := \
 	$(filter %.ml,$(SOURCEFILES)) \
 	$(patsubst %.mll,%.ml,$(filter %.mll,$(SOURCEFILES)))
+
+.PHONY : docs
+docs :
+	-$(MAKE) -C docs
+	-$(MAKE) docs -C tools/spgen/documentation
 
 .PHONY : mlis
 mlis : $(patsubst %.ml,%.mli,$(ml_files_but_parsers))
