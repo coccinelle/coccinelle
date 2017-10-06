@@ -216,16 +216,22 @@ MKDIR_P := mkdir -p
 .PHONY : all
 all : \
 	$(foreach tool,$(TOOLS),$(PREFIX_$(tool))$(tool)$(TOOLS_SUFFIX)) \
-	$(COMPILED_EXPOSED_MODULES)
+	exposed-modules
 
 .PHONY : all-dev
-all-dev : byte-only $(COMPILED_EXPOSED_MODULES)
+all-dev : byte-only exposed-modules
 
 .PHONY : all.opt
-all.opt : opt-only $(COMPILED_EXPOSED_MODULES)
+all.opt : opt-only exposed-modules
 
-.PHONY : all-release world
-all-release world : all docs
+.PHONY : all-release
+all-release : all.opt docs
+
+.PHONY : world
+world :  byte-only opt-only exposed-modules docs
+
+.PHONY : exposed-modules
+exposed-modules : $(COMPILED_EXPOSED_MODULES)
 
 .PHONY : check
 check : spatch$(TOOLS_SUFFIX)

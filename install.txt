@@ -74,7 +74,7 @@ byt-only, byte          compiles just the bytecode version
 world                   compiles both + frontends + docs
 all-release             compiles the optimized version + frontends + docs
 all-dev                 compiles the bytecode version + frontends
-all                     default target: alias for either all-dev or all-release
+all                     default target: alias for either byte or opt
 all.opt                 compiles the optimized version + frontends
 check                   run tests (note: not all tests are expected to succeed)
 
