@@ -25,7 +25,7 @@ DEPEND_METHOD := multifile
 
 SOURCES_commons := \
 	ocamlextra/dumper.ml commands.ml common.ml ograph_simple.ml \
-	ograph_extended.ml
+	ograph_extended.ml proc_pidpath.ml
 SOURCES_globals := \
 	config.ml flag.ml iteration.ml $(REGEXP_FILE) regexp.ml
 CLEAN_globals := regexp_pcre.ml regexp_str.ml
@@ -182,7 +182,8 @@ SEARCH_PATHS := \
 
 SEARCH_PATH_FLAGS := $(addprefix -I ,$(SEARCH_PATHS))
 
-CCLIB := $(patsubst %,-cclib -lparmap_stubs,$(filter %/parmap.cma,$(LNKLIBS)))
+CCLIB := $(patsubst %,-cclib -lparmap_stubs,$(filter %/parmap.cma,$(LNKLIBS))) \
+	-cclib -L. -cclib -lproc_pidpath_stubs
 
 OCAMLC_CMD := $(OCAMLC) $(SEARCH_PATH_FLAGS) $(CCLIB) $(EXTRA_OCAML_FLAGS)
 
@@ -562,12 +563,12 @@ clean-$(tool) :
 	@rm -f $(PREFIX_$(tool))$(tool) $(PREFIX_$(tool))$(tool).opt \
 		$(foreach sourcefile,$(SOURCEFILES_$(tool)),$(clean_sourcefile))
 
-$(PREFIX_$(tool))$(tool) : \
+$(PREFIX_$(tool))$(tool) : libproc_pidpath_stubs.a \
 		$(foreach library,$(LIBRARIES_$(tool)),$(library)/$(library).cma) \
 		$(addsuffix .cmo,$(basename $(SOURCEFILES_$(tool))))
 	$(SHOW_OCAMLC) "-o $$@"; $(OCAMLC_CMD) -custom $(LIBS_$(tool):=.cma) $$^ -o $$@
 
-$(PREFIX_$(tool))$(tool).opt : \
+$(PREFIX_$(tool))$(tool).opt : libproc_pidpath_stubs.a \
 		$(foreach library,$(LIBRARIES_$(tool)),$(library)/$(library).cmxa) \
 		$(addsuffix .cmx,$(basename $(SOURCEFILES_$(tool))))
 	$(SHOW_OCAMLOPT) "-o $$@"; $(OCAMLOPT_CMD) $(LIBS_$(tool):=.cmxa) $$^ -o $$@
@@ -589,3 +590,10 @@ clean-exposed-module :
 	$(SHOW_CLEAN) "exposed-module"
 	@rm -f $(foreach module,$(basename $(EXPOSED_MODULES)),\
 	$(foreach EXT,cmi $(ALL_OBJECTS),ocaml/$(notdir $(basename $(module))).$(EXT)))
+
+commons/proc_pidpath_stubs.o: commons/proc_pidpath_stubs.c
+	$(OCAMLC) -c $<
+	mv proc_pidpath_stubs.o commons/proc_pidpath_stubs.o
+
+libproc_pidpath_stubs.a: commons/proc_pidpath_stubs.o
+	$(OCAMLMKLIB) -o proc_pidpath_stubs $<

@@ -2480,6 +2480,42 @@ let filename_without_leading_path prj_path s =
     failwith
       (spf "cant find filename_without_project_path: %s  %s" prj_path s)
 
+let rec join_path dir path =
+  match path with
+    [] -> assert false
+  | hd :: tl ->
+     if hd = Filename.current_dir_name then
+       join_path dir tl
+     else if hd = Filename.parent_dir_name then
+       join_path (Filename.dirname dir) tl
+     else
+       List.fold_left Filename.concat dir path
+
+let rec path_of_filename accu filename =
+  let accu = Filename.basename filename :: accu in
+  let dirname = Filename.dirname filename in
+  if dirname = filename then
+    accu
+  else
+    path_of_filename accu dirname
+
+let path_of_filename filename = path_of_filename [] filename
+
+let join_filename dir filename =
+  if Filename.is_relative filename then
+    join_path dir (path_of_filename filename)
+  else
+    filename
+
+let rec resolve_symlink filename =
+  match
+    try Some (Unix.readlink filename)
+    with _ -> None
+  with
+    Some realpath ->
+    let dirname = Filename.dirname filename in
+    resolve_symlink (join_filename dirname realpath)
+  | None -> filename
 
 (*****************************************************************************)
 (* i18n *)
