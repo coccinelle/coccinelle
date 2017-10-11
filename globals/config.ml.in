@@ -6,7 +6,9 @@ let path =
     (* was "@libdir@/coccinelle": incorrect, since "@libdir@" expands into
        "${exec_prefix}/lib" (litteraly, without further expansion, that is
        unlikely to be a valid path! *)
-    let exec_dir = Filename.dirname (Proc_pidpath.get_executable_path ()) in
+    let exec_path = Proc_pidpath.get_executable_path () in
+    let exec_realpath = Proc_pidpath.realpath exec_path in
+    let exec_dir = Filename.dirname exec_realpath in
     if Sys.file_exists (Filename.concat exec_dir "standard.iso") then
       exec_dir
     else
