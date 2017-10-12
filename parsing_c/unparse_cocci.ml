@@ -737,7 +737,7 @@ and typeC ty =
       handle_metavar name  (function
           Ast_c.MetaTypeVal exp ->
             pretty_print_c.Pretty_print_c.ty exp
-        | _ -> raise (Impossible 147))
+        | _ -> error name ty "type value expected")
 
 and baseType ty = print_string (Ast.string_of_baseType ty ^ " ")
 
@@ -811,7 +811,7 @@ and print_named_type ty id =
               Ast_c.MetaTypeVal ty ->
 		pretty_print_c.Pretty_print_c.type_with_ident ty
 		  (function _ -> ident id)
-            | _ -> raise (Impossible 147))
+            | _ -> error name ty "type value expected")
     (*| should have a case here for pointer to array or function type
         that would put ( * ) around the variable.  This makes one wonder
         why we really need a special case for function pointer *)
@@ -852,7 +852,7 @@ and declaration d =
 	(function
 	    Ast_c.MetaDeclVal d ->
               pretty_print_c.Pretty_print_c.decl d
-          | _ -> raise (Impossible 148))
+          | _ -> error name d "declaration value expected")
 
   | Ast.AsDecl(decl,asdecl) -> declaration decl
 
@@ -919,14 +919,14 @@ and field d =
 	(function
 	    Ast_c.MetaFieldVal f ->
 	      pretty_print_c.Pretty_print_c.field f
-	  | _ -> raise (Impossible 149))
+	  | _ -> error name d "field value expected")
 
   | Ast.MetaFieldList(name,_,_,_,_) ->
       handle_metavar name
 	(function
 	    Ast_c.MetaFieldListVal f ->
 	      print_between force_newline pretty_print_c.Pretty_print_c.field f
-	  | _ -> raise (Impossible 150))
+	  | _ -> error name d "field list value expected")
   | Ast.Field(ty,id,bf,sem) ->
       begin
 	match id with
@@ -955,12 +955,12 @@ and initialiser nlcomma i =
       handle_metavar name  (function
           Ast_c.MetaInitVal ini ->
             pretty_print_c.Pretty_print_c.init ini
-        | _ -> raise (Impossible 151))
+        | _ -> error name i "initialiser value expected")
   | Ast.MetaInitList(name,_,_,_,_) ->
       handle_metavar name  (function
           Ast_c.MetaInitListVal ini ->
 	    pretty_print_c.Pretty_print_c.init_list ini
-        | _ -> raise (Impossible 152))
+        | _ -> error name i "initialiser list value expected")
   | Ast.AsInit(init,asinit) -> initialiser nlcomma init
   | Ast.InitExpr(exp) -> expression exp
   | Ast.ArInitList(lb,initlist,rb) ->
@@ -1027,13 +1027,13 @@ and parameterTypeDef p =
 	(function
 	    Ast_c.MetaParamVal p ->
               pretty_print_c.Pretty_print_c.param p
-          | _ -> raise (Impossible 153))
+          | _ -> error name p "parameter value expected")
   | Ast.MetaParamList(name,_,_,_,_) ->
       handle_metavar name
 	(function
 	    Ast_c.MetaParamListVal p ->
               pretty_print_c.Pretty_print_c.paramlist p
-          | _ -> raise (Impossible 154))
+          | _ -> error name p "parameter list value expected")
 
   | Ast.AsParam(p,e) -> raise CantBeInPlus
 
@@ -1178,13 +1178,13 @@ and rule_elem arity re =
       handle_metavar name (function
         | Ast_c.MetaStmtVal(stm,_) ->
             pretty_print_c.Pretty_print_c.statement stm
-        | _ -> raise (Impossible 156))
+        | _ -> error name re "statement value expected")
 
   | Ast.MetaStmtList(name,_,_,_,_) ->
       handle_metavar name (function
         | Ast_c.MetaStmtListVal(statxs,_) ->
             pretty_print_c.Pretty_print_c.statement_seq_list statxs
-        | _ -> raise (Impossible 161))
+        | _ -> error name re "statement list value expected")
   | Ast.AsRe(re,asre) -> rule_elem arity re
 
 and pragmainfo pi =
@@ -1216,7 +1216,7 @@ and print_define_param param =
 	(function
 	    Ast_c.MetaDParamListVal p ->
               pretty_print_c.Pretty_print_c.dparamlist p
-          | _ -> raise (Impossible 162))
+          | _ -> error name param "#define parameter value expected")
   | Ast.DPComma(comma) -> mcode print_string comma
   | Ast.DPdots(dots) -> mcode print_string dots
   | Ast.OptDParam(dp) -> print_text "?"; print_define_param dp
