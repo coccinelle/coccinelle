@@ -593,7 +593,7 @@ and string_fragment e =
       handle_metavar name (function
 	  Ast_c.MetaFragListVal(frags) ->
 	    frags +> (List.iter pretty_print_c.Pretty_print_c.fragment)
-	| _ -> raise (Impossible 158))
+	| _ -> error name e "format list value expected")
 
 and string_format e =
   match Ast.unwrap e with
@@ -602,7 +602,7 @@ and string_format e =
       handle_metavar name (function
 	  Ast_c.MetaFmtVal fmt ->
 	    pretty_print_c.Pretty_print_c.format fmt
-	| _ -> raise (Impossible 157))
+	| _ -> error name e "format value expected")
 
 and unaryOp = function
     Ast.GetRef -> print_string "&"
@@ -621,7 +621,7 @@ and assignOp op =
       handle_metavar name (function
 	  Ast_c.MetaAssignOpVal aop ->
 	    pretty_print_c.Pretty_print_c.assignOp aop
-	| _ -> raise (Impossible 159))
+	| _ -> error name op "assignment operator value expected")
 
 and fixOp = function
     Ast.Dec -> print_string "--"
@@ -635,7 +635,7 @@ and binaryOp op =
       handle_metavar name (function
 	  Ast_c.MetaBinaryOpVal bop ->
 	    pretty_print_c.Pretty_print_c.binaryOp bop
-	| _ -> raise (Impossible 160))
+	| _ -> error name op "binary operator value expected")
 
 and arithOp eq op =
   let print_string s = if eq then print_string (s^"=") else print_string s in
