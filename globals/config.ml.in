@@ -1,55 +1,14 @@
 let version = "@COCCI_VERSION@"
 
-let rec join_path dir path =
-  match path with
-    [] -> assert false
-  | hd :: tl ->
-     if hd = Filename.current_dir_name then
-       join_path dir tl
-     else if hd = Filename.parent_dir_name then
-       join_path (Filename.dirname dir) tl
-     else
-       List.fold_left Filename.concat dir path
-
-let rec path_of_filename accu filename =
-  let accu = Filename.basename filename :: accu in
-  let dirname = Filename.dirname filename in
-  if dirname = filename then
-    accu
-  else
-    path_of_filename accu dirname
-
-let path_of_filename filename = path_of_filename [] filename
-
-let join_filename dir filename =
-  if Filename.is_relative filename then
-    join_path dir (path_of_filename filename)
-  else
-    filename
-
 let path =
   try (Sys.getenv "COCCINELLE_HOME")
   with Not_found->
     (* was "@libdir@/coccinelle": incorrect, since "@libdir@" expands into
        "${exec_prefix}/lib" (litteraly, without further expansion, that is
        unlikely to be a valid path! *)
-    let exec_dir =
-      match
-        try Some (Sys.getenv "_")
-        with Not_found -> None
-      with
-        Some executable ->
-        let rec follow_symlink executable =
-          let executable_dir = Filename.dirname executable in
-          match
-            try Some (Unix.readlink executable)
-            with _ -> None
-          with
-            Some realpath ->
-             follow_symlink (join_filename executable_dir realpath)
-          | None -> executable_dir in
-        follow_symlink executable
-     | _ -> Filename.dirname Sys.argv.(0) in
+    let exec_path = Proc_pidpath.get_executable_path () in
+    let exec_realpath = Proc_pidpath.realpath exec_path in
+    let exec_dir = Filename.dirname exec_realpath in
     if Sys.file_exists (Filename.concat exec_dir "standard.iso") then
       exec_dir
     else

@@ -894,6 +894,15 @@ val is_absolute: filename -> bool
 
 val filename_without_leading_path : string -> filename -> filename
 
+val join_filename : filename -> filename -> filename
+(** like Filename.concat, but simplify . and .. that occur in the second
+    argument *)
+
+val resolve_symlink : filename -> filename
+(** if the argument is a symbolic link, follow it recursively and
+    return the target. Otherwise, return the argument unchanged.
+    Symbolic links on the parent directories are not resolved. *)
+
 (*****************************************************************************)
 (* i18n *)
 (*****************************************************************************)
