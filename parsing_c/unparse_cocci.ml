@@ -36,6 +36,11 @@ exception CantBeInPlus
 type pos = Before | After | InPlace
 type nlhint = StartBox | EndBox | SpaceOrNewline of string ref
 
+let error name e str =
+  failwith
+    (Printf.sprintf "%s: line %d %s\n" (snd (Ast.unwrap_mcode name))
+       (Ast.get_line e) str)
+
 let get_string_info = function
     Ast.Noindent s | Ast.Indent s | Ast.Space s -> s
 
@@ -266,17 +271,20 @@ let rec ident i =
     | Ast.MetaId(name,_,_,_) ->
 	handle_metavar name (function
 			       | (Ast_c.MetaIdVal id) -> print_text id
-			       | _ -> raise (Impossible 142)
+			       | _ -> error name i "identifier value expected"
 			    )
     | Ast.MetaFunc(name,_,_,_) ->
 	handle_metavar name (function
 			       | (Ast_c.MetaFuncVal id) -> print_text id
-			       | _ -> raise (Impossible 143)
+			       | _ ->
+				   error name i "function name value expected"
 			    )
     | Ast.MetaLocalFunc(name,_,_,_) ->
 	handle_metavar name (function
 			       | (Ast_c.MetaLocalFuncVal id) -> print_text id
-			       | _ -> raise (Impossible 144)
+			       | _ ->
+				   error name i
+				     "local function name value expected"
 			    )
 
     | Ast.AsIdent(id,asid) -> ident id
@@ -516,7 +524,7 @@ let rec expression e =
 	      end
 	    else
               pretty_print_c.Pretty_print_c.expression exp
-        | _ -> raise (Impossible 145)
+        | _ -> error name e "expression value expected"
       )
 
   | Ast.MetaExprList (name,_,_,_,_) ->
@@ -525,7 +533,7 @@ let rec expression e =
             pretty_print_c.Pretty_print_c.arg_list args
 	| Ast_c.MetaParamListVal _ ->
 	    failwith "have meta param list matching meta exp list\n";
-        | _ -> raise (Impossible 146)
+        | _ -> error name e "expression list value expected"
       )
 
   | Ast.AsExpr(expr,asexpr) -> loop expr prec
