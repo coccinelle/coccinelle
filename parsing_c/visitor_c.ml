@@ -1800,6 +1800,10 @@ and vk_ii_s = fun bigf ii ->
   List.map (vk_info_s bigf) ii
 
 (* ------------------------------------------------------------------------ *)
+
+(* Note that pointers to the complete statement are not processed.  This is
+not needed by Coccinelle, because there is no "node" metavariable type in
+SmPL, so nodes are never compared. *)
 and vk_node_s = fun bigf node ->
   let iif ii = vk_ii_s bigf ii in
   let infof info = vk_info_s bigf info  in
