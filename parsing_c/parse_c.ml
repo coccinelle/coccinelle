@@ -1281,7 +1281,7 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros
       parse_strings cache file use_header_cache);
   match !tree_stack with
     | [] -> assert false
-    | tree::trees -> (tree, List.rev trees)
+    | tree::trees -> tree_stack := []; (tree, List.rev trees)
 
 let time_total_parsing a b c d e =
   Common.profile_code "TOTAL"
