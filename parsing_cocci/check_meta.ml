@@ -687,6 +687,19 @@ let check_all_marked rname err table after_err =
 	    (Printf.sprintf "%s: %s %s not used %s" rname err name after_err))
     table
 
+let check_both_marked rname required optional =
+  Hashtbl.iter
+    (fun name ocell ->
+      if !ocell
+      then
+	let rcell = Hashtbl.find required name in
+	if not !rcell
+	then
+	  failwith
+	    (Printf.sprintf "error: %s: %s appears only in + code" rname
+	       (snd name)))
+    optional
+
 let check_meta rname old_metas inherited_metavars metavars minus plus =
   let old_metas =
     List.map (function (_,x) -> x) (List.map Ast.get_meta_name old_metas) in
@@ -702,6 +715,7 @@ let check_meta rname old_metas inherited_metavars metavars minus plus =
   let frsh_table = make_table fresh in
   let err_table = make_table (err@ierr) in
   let other_table = make_table other in
+  let plus_table = make_table other in
   let iother_table = make_table iother in
 
   add_to_fresh_table fresh;
@@ -709,9 +723,10 @@ let check_meta rname old_metas inherited_metavars metavars minus plus =
   positions rname [iother_table;other_table] minus;
   dup_positions minus;
   check_all_marked rname "metavariable" other_table "in the - or context code";
-  rule old_metas [iother_table;frsh_table;err_table] false plus;
+  rule old_metas [iother_table;plus_table;frsh_table;err_table] false plus;
   check_all_marked rname "inherited metavariable" iother_table
     "in the -, +, or context code";
   check_all_marked rname "metavariable" frsh_table "in the + code";
   check_all_marked rname "error metavariable" err_table "";
+  check_both_marked rname other_table plus_table;
   Hashtbl.reset fresh_table
