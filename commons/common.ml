@@ -4802,8 +4802,7 @@ let group_assoc_bykey_eff2 xs =
   keys +> List.map (fun k -> k, Hashtbl.find_all h k)
 
 let group_assoc_bykey_eff xs =
-  profile_code2 "Common.group_assoc_bykey_eff" (fun () ->
-    group_assoc_bykey_eff2 xs)
+    group_assoc_bykey_eff2 xs
 
 
 let test_group_assoc () =

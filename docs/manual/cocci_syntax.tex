@@ -1600,6 +1600,11 @@ when they are used in an other column.  These tokens are furthermore
 different from (, \(\mid\), and ), which are part of the grammar
 metalanguage.
 
+All matching done by a SmPL rule is done intraprocedurally.  Thus
+``\ldots'' does not extend from one function to the next one in the same
+file and it does not extend from one function over a function call into the
+called function.
+
 \section{Expressions}
 
 A nest or a single ellipsis is allowed in some expression contexts, and
