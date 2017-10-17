@@ -6009,14 +6009,14 @@ let with_pr2_to_string f =
 (* julia: convert something printed using format to print into a string *)
 let format_to_string f =
   let acc = ref [] in
-  let fns = Format.get_formatter_output_functions() in
+  let (pr,flush) = Format.get_formatter_output_functions() in
   Format.set_formatter_output_functions
     (fun s p n -> acc := String.sub s p n :: !acc)
     (fun _ -> ());
   let _ = f() in
   Format.print_newline();
   Format.print_flush();
-  Format.set_formatter_output_functions fns;
+  Format.set_formatter_output_functions pr flush;
   String.concat "" (List.rev !acc)
 
 (*****************************************************************************)
