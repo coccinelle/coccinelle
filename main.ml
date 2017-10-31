@@ -1280,6 +1280,7 @@ singleton lists are then just appended to each other during the merge. *)
 		  Common.clear_pr2_once();
 		  distrib_index := None;
 		  distrib_max := None;
+		  dir := List.exists Sys.is_directory files;
 		  toploop files
 		end
 	      else
