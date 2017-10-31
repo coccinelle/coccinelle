@@ -1424,7 +1424,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 		binaryOp opa opb >>= (fun opa opb ->
 		expression ea2 eb2 >>= (fun ea2 eb2 ->
 		  return (
-		  ((A.Nested (ea1, opa, ea2))) +> wa,
+		  ((A.Binary (ea1, opa, ea2))) +> wa,
 		  ((B.Binary (eb1, opb, eb2), typ),[]
 		     ))))) in
 	      let right_to_left =
@@ -1432,7 +1432,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
                 binaryOp opa opb >>= (fun opa opb ->
 		expression ea1 eb2 >>= (fun ea1 eb2 ->
 		  return (
-		  ((A.Nested (ea1, opa, ea2))) +> wa,
+		  ((A.Binary (ea2, opa, ea1))) +> wa,
 		  ((B.Binary (eb1, opb, eb2), typ),[]
 		     ))))) in
 	      let in_left =
@@ -1441,7 +1441,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 		(* be last, to be sure the rest is marked *)
 		loop eb1 >>= (fun ea1 eb1 ->
 		  return (
-		    ((A.Nested (ea1, opa, ea2))) +> wa,
+		    ((A.Binary (ea1, opa, ea2))) +> wa,
 		    ((B.Binary (eb1, opb, eb2), typ),[]
 		       ))))) in
 	      let in_right =
@@ -1450,7 +1450,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 		(* be last, to be sure the rest is marked *)
 		loop eb2 >>= (fun ea1 eb2 ->
 		  return (
-		  ((A.Nested (ea1, opa, ea2))) +> wa,
+		  ((A.Binary (ea2, opa, ea1))) +> wa,
 		  ((B.Binary (eb1, opb, eb2), typ),[]
 		     ))))) in
 	      left_to_right >|+|> right_to_left >|+|> in_left >|+|> in_right
