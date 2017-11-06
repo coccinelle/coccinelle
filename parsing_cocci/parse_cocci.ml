@@ -1037,6 +1037,13 @@ let find_function_names l =
 		      let (_,info) as h = List.hd bef in
 		      let clt = get_clt h in
 		      (((PC.TFunDecl(clt),info) :: bef), aft)
+		  | (PC.TAttr_(_),_)::rest ->
+		      (match balanced_args 0 rest with
+			[] ->
+			  let (_,info) as h = List.hd bef in
+			  let clt = get_clt h in
+			  (((PC.TFunDecl(clt),info) :: bef), aft)
+		      | _ -> raise Irrelevant)
 		  | _ -> raise Irrelevant)
 	      | _ -> raise Irrelevant)
 	    with Irrelevant -> ([t],rest) in
