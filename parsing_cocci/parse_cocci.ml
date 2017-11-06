@@ -173,7 +173,7 @@ let token2c (tok,_) add_clt =
 
   | PC.TSizeof(clt) -> add_clt "sizeof" clt
 
-  | PC.TString(x,clt) -> add_clt x clt
+  | PC.TString(x,clt) -> add_clt (Printf.sprintf "\"%s\"" x) clt
   | PC.TChar(x,clt) -> add_clt x clt
   | PC.TFloat(x,clt) -> add_clt x clt
   | PC.TInt(x,clt) -> add_clt x clt
