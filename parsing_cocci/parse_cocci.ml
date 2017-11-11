@@ -173,7 +173,7 @@ let token2c (tok,_) add_clt =
 
   | PC.TSizeof(clt) -> add_clt "sizeof" clt
 
-  | PC.TString(x,clt) -> add_clt x clt
+  | PC.TString(x,clt) -> add_clt (Printf.sprintf "\"%s\"" x) clt
   | PC.TChar(x,clt) -> add_clt x clt
   | PC.TFloat(x,clt) -> add_clt x clt
   | PC.TInt(x,clt) -> add_clt x clt
@@ -1037,6 +1037,13 @@ let find_function_names l =
 		      let (_,info) as h = List.hd bef in
 		      let clt = get_clt h in
 		      (((PC.TFunDecl(clt),info) :: bef), aft)
+		  | (PC.TAttr_(_),_)::rest ->
+		      (match balanced_args 0 rest with
+			[] ->
+			  let (_,info) as h = List.hd bef in
+			  let clt = get_clt h in
+			  (((PC.TFunDecl(clt),info) :: bef), aft)
+		      | _ -> raise Irrelevant)
 		  | _ -> raise Irrelevant)
 	      | _ -> raise Irrelevant)
 	    with Irrelevant -> ([t],rest) in
