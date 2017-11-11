@@ -299,6 +299,8 @@ let construct_variables mv e =
 	(Py.Tuple.of_pair (str, elements)) in
     let _ = build_variable py repr in () in
 
+  let locals = List.map (function (py,(r,m),_,init) -> py) mv in
+
   List.iter (function (py,(r,m),_,init) ->
     match find_binding (r,m) with
       None ->
@@ -364,7 +366,9 @@ let construct_variables mv e =
        ()
     ) mv;
 
-  let add_string_literal s = build_variable s (Py.String.of_string s) in
+  let add_string_literal s =
+    if not (List.mem s locals)
+    then build_variable s (Py.String.of_string s) in
   List.iter add_string_literal !Iteration.parsed_virtual_rules;
   List.iter add_string_literal !Iteration.parsed_virtual_identifiers
 
