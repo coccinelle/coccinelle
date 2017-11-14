@@ -1128,8 +1128,13 @@ let rec main_action xs =
 	    List.fold_left op z l in
 	  let par_fold merge op z l =
             let prefix =
-	      let prefix =
-		Filename.chop_extension (Filename.basename !cocci_file) in
+              let prefix =
+		let tm = Unix.localtime(Unix.time()) in
+		Printf.sprintf "%s_%d_%d_%d:%d:%d:%d_%d"
+		  (Filename.chop_extension (Filename.basename !cocci_file))
+		  tm.Unix.tm_mday tm.Unix.tm_mon (tm.Unix.tm_year + 1900)
+		  tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec
+		  (Unix.getpid()) in
 	      if !tmp_dir = ""
 	      then prefix
 	      else Printf.sprintf "%s_%s" !tmp_dir prefix in
