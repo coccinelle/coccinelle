@@ -1,7 +1,7 @@
 val ocaml_support : bool
 
 exception CompileFailure of string
-exception LinkFailure of string
+exception LinkFailure of string * string
 val ext : string
 val sysdir : unit -> string
 val check_cmd : string -> bool
