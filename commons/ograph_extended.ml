@@ -301,7 +301,10 @@ struct
 	        None -> Printf.sprintf ", style=\"setlinewidth(3),filled\", fillcolor = %s" x
 	      | Some x' -> Printf.sprintf ", style=\"setlinewidth(3),filled\", fillcolor = %s, color = %s" x x') in
        (* so can see if nodes without arcs were created *)
-        pr (Printf.sprintf "%d [label=\"%s   [%d]\"%s];\n" k str k color) in
+        pr ( Printf.sprintf "%d [label=\"%s   [%d]\"%s];\n"
+          k (String.escaped str) k color
+        )
+      in
       let nodes = g#nodes in
       KeyMap.iter print_node nodes;
 
@@ -321,7 +324,10 @@ struct
 
       let print_node k (node, s) =
         (* so can see if nodes without arcs were created *)
-        pr (Printf.sprintf "%d [label=\"%s   [%d]\"];\n" k s k) in
+        pr ( Printf.sprintf "%d [label=\"%s   [%d]\"];\n"
+          k (String.escaped s) k
+        )
+      in
       let nodes = g#nodes in
       KeyMap.iter print_node nodes;
 
