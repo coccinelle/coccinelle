@@ -1,6 +1,7 @@
+let ocaml_support = false
 
 exception CompileFailure of string
-exception LinkFailure of string
+exception LinkFailure of string * string
 
 let prepare coccifile code =
   let ocamls_rules =

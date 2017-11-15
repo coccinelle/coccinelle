@@ -1,3 +1,5 @@
+let ocaml_support = true
+
 (* Note: this module passes paths to other commands, but does not take
  * quoting into account. Thus, if these paths contain spaces, it's likely
  * that things go wrong.
@@ -6,7 +8,7 @@
 module Ast = Ast_cocci
 
 exception CompileFailure of string
-exception LinkFailure of string
+exception LinkFailure of string * string
 
 let ext = if Config.dynlink_is_native then ".cmxs" else ".cma"
 
@@ -548,8 +550,9 @@ let load_obj obj =
   Dynlink.allow_unsafe_modules true;
   try Dynlink.loadfile obj
   with Dynlink.Error e ->
-    Common.pr2 (Dynlink.error_message e);
-    raise (LinkFailure obj)
+    let msg = Dynlink.error_message e in
+    Common.pr2 msg;
+    raise (LinkFailure (obj, msg))
 
 let load_lib (dir, name) =
   let obj = dir ^ "/" ^name ^ ext in

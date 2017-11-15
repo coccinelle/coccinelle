@@ -263,7 +263,9 @@ let long_usage_func  = ref (fun () -> ())
  *)
 
 let print_version () =
-  let withpython = if Pycocci.python_support then "yes" else "no" in
+  let yes_or_no_of_bool b = if b then "yes" else "no" in
+  let withocaml = yes_or_no_of_bool Prepare_ocamlcocci.ocaml_support in
+  let withpython = yes_or_no_of_bool Pycocci.python_support in
   let whichregexp =
     if !Regexp.pcre_support then "PCRE"
     else "Str" in
@@ -274,6 +276,7 @@ let print_version () =
   Printf.printf "spatch version %s compiled with OCaml version %s\n"
     (* mode *) Config.version Config.ocaml_version;
   Printf.printf "Flags passed to the configure script: %s\n" flags;
+  Printf.printf "OCaml scripting support: %s\n" withocaml;
   Printf.printf "Python scripting support: %s\n" withpython;
   Printf.printf "Syntax of regular expresssions: %s\n" whichregexp;
   exit 0
@@ -1128,8 +1131,13 @@ let rec main_action xs =
 	    List.fold_left op z l in
 	  let par_fold merge op z l =
             let prefix =
-	      let prefix =
-		Filename.chop_extension (Filename.basename !cocci_file) in
+              let prefix =
+		let tm = Unix.localtime(Unix.time()) in
+		Printf.sprintf "%s_%d_%d_%d:%d:%d:%d_%d"
+		  (Filename.chop_extension (Filename.basename !cocci_file))
+		  tm.Unix.tm_mday tm.Unix.tm_mon (tm.Unix.tm_year + 1900)
+		  tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec
+		  (Unix.getpid()) in
 	      if !tmp_dir = ""
 	      then prefix
 	      else Printf.sprintf "%s_%s" !tmp_dir prefix in
