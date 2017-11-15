@@ -1,3 +1,5 @@
+let ocaml_support = true
+
 (* Note: this module passes paths to other commands, but does not take
  * quoting into account. Thus, if these paths contain spaces, it's likely
  * that things go wrong.

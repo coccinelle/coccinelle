@@ -1,3 +1,4 @@
+let ocaml_support = false
 
 exception CompileFailure of string
 exception LinkFailure of string

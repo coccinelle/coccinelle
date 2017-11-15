@@ -1,3 +1,5 @@
+val ocaml_support : bool
+
 exception CompileFailure of string
 exception LinkFailure of string
 val ext : string
