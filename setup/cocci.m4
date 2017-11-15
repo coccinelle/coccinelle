@@ -222,11 +222,11 @@ AC_DEFUN([AC_COCCI_CONFVERSION],
   ])
 
   AS_IF([test -z "$CONFVERSION"],
-  [dnl  otherwise, take the current date
+  [dnl  otherwise, take the changelog date
     AC_PATH_TOOL([DATE],[date])
     AS_IF([test -n "$DATE"],
     [dnl
-      CONFVERSION=`$DATE "+%a, %d %b %Y %H:%M:%S %z"`
+      CONFVERSION=`$DATE -u -r changes.txt "+%a, %d %b %Y %H:%M:%S %z"`
     ])
   ])
 
