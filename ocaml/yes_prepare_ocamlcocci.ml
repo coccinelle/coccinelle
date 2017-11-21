@@ -569,7 +569,7 @@ let load_file mlfile =
   let flags =
     Printf.sprintf
       "-g -I %s %s -I %s"
-      (sysdir ()) inc (Filename.dirname cmifile) in
+      (Filename.dirname cmifile) inc (sysdir ()) in
   let (obj, cmd) =
     if Config.dynlink_is_native
     then compile_native_cmd flags mlfile
