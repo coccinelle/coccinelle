@@ -1,0 +1,1522 @@
+#if OCAMLVERSION < 405
+let option_find f x =
+  try Some (f x)
+  with Not_found -> None
+
+let option_fail f x =
+  try Some (f x)
+  with Failure _ -> None
+
+let option_invalid f x =
+  try Some (f x)
+  with Invalid_argument _ -> None
+#endif
+
+#if OCAMLVERSION < 400
+let hypot x y =
+  sqrt (x *. x +. y *. y)
+
+let copysign x y =
+  if (x >= 0.) = (y >= 0.) then
+    x
+  else
+    -. x
+#else
+let hypot = hypot
+
+let copysign = copysign
+#endif
+
+#if OCAMLVERSION < 401
+let ( |> ) x f = f x
+
+let ( @@ ) f x = f x
+#else
+let ( |> ) = ( |> )
+
+let ( @@ ) = ( @@ )
+#endif
+
+#if OCAMLVERSION < 402
+let raise_notrace = raise
+
+type bytes = string
+
+let print_bytes = print_string
+
+let prerr_bytes = prerr_string
+
+let output_subbytes = output
+
+let output_substring = output
+
+let really_input_string channel len =
+  let s = String.create len in
+  really_input channel s 0 len;
+  s
+#else
+let raise_notrace = raise_notrace
+
+type bytes_ = bytes
+type bytes = bytes_
+
+let print_bytes = print_bytes
+
+let prerr_bytes = prerr_bytes
+
+let output_subbytes = output
+
+let output_substring = output_substring
+
+let really_input_string = really_input_string
+#endif
+
+type ('a, 'b) result
+#if OCAMLVERSION >= 403
+   = ('a, 'b) Pervasives.result
+#endif
+   = Ok of 'a | Error of 'b
+
+#if OCAMLVERSION < 405
+let bool_of_string_opt s =
+  option_invalid bool_of_string s
+
+let int_of_string_opt s =
+  option_fail int_of_string s
+
+let float_of_string_opt s =
+  option_fail float_of_string s
+
+let read_int_opt () =
+  option_fail read_int ()
+
+let read_float_opt () =
+  option_fail read_float ()
+#else
+let bool_of_string_opt = bool_of_string_opt
+
+let int_of_string_opt = int_of_string_opt
+
+let float_of_string_opt = float_of_string_opt
+
+let read_int_opt = read_int_opt
+
+let read_float_opt = read_float_opt
+#endif
+
+#if OCAMLVERSION < 406
+type floatarray = float array
+#else
+type floatarray_ = floatarray
+type floatarray = floatarray_
+#endif
+
+module Arg = struct
+  include Arg
+
+#if OCAMLVERSION < 405
+  let read_aux trim sep file =
+    let channel = open_in_bin file in
+    try
+      let buffer = Buffer.create 20 in
+      let accu = ref [] in
+      let push () =
+        let s = Buffer.contents buffer in
+        let s =
+          if trim && s <> "" && s.[String.length s - 1] = '\r' then
+            String.sub s 0 (String.length s - 1)
+          else
+            s in
+        accu := s :: !accu in
+      try
+        while true do
+          let c = input_char channel in
+          if c = sep then
+            begin
+              push ();
+              Buffer.clear buffer
+            end
+          else
+            Buffer.add_char buffer c
+        done;
+        assert false
+      with End_of_file ->
+        if Buffer.length buffer > 0 then
+          push ();
+        close_in channel;
+        Array.of_list (List.rev !accu)
+    with e ->
+      close_in_noerr channel;
+      raise e
+
+  let read_arg =
+    read_aux true '\n'
+
+  let read_arg0 =
+    read_aux false '\x00'
+
+  let write_aux sep file args =
+    let channel = open_out_bin file in
+    try
+      Array.iter (fun s -> Printf.fprintf channel "%s%c" s sep) args
+    with e ->
+      close_out_noerr channel;
+      raise e
+
+  let write_arg =
+    write_aux '\n'
+
+  let write_arg0 =
+    write_aux '\x00'
+#endif
+end
+
+module Lazy = struct
+  include Lazy
+
+#if OCAMLVERSION < 400
+  let from_fun = lazy_from_fun
+
+  let from_val v =
+    lazy v
+#endif
+end
+
+module Char = struct
+  include Char
+
+#if OCAMLVERSION < 403
+  let lowercase_ascii = Char.lowercase
+
+  let uppercase_ascii = Char.uppercase
+
+  let equal : t -> t -> bool = ( = )
+#endif
+end
+
+module String = struct
+  include String
+
+#if OCAMLVERSION < 402
+  let init n f =
+    let s = create n in
+    for i = 0 to n - 1 do
+      s.[i] <- f i
+    done;
+    s
+
+  let mapi f s =
+    init (length s) (fun i -> f i (unsafe_get s i))
+#endif
+
+#if OCAMLVERSION < 400
+  let iteri f s =
+    for i = 0 to length s - 1 do
+      f i (unsafe_get s i)
+    done
+
+  let map f s =
+    init (length s) (fun i -> f (unsafe_get s i))
+
+  let is_space = function
+    | ' ' | '\012' | '\n' | '\r' | '\t' -> true
+    | _ -> false
+
+  let rec rindex_no_space_from i s =
+    if i >= 0 && is_space (unsafe_get s i) then
+      rindex_no_space_from (pred i) s
+    else
+      i
+
+  let rec index_no_space_between i j s =
+    if i <= j && is_space (unsafe_get s i) then
+      index_no_space_between (succ i) j s
+    else
+      i
+
+  let trim s =
+    let off_end = rindex_no_space_from (length s - 1) s in
+    let off_start = index_no_space_between 0 off_end s in
+    if off_start > off_end then
+      ""
+    else if off_start = 0 && off_end = length s - 1 then
+      s
+    else
+      sub s off_start (off_end - off_start + 1)
+#endif
+
+#if OCAMLVERSION < 403
+  let lowercase_ascii = lowercase
+
+  let uppercase_ascii = uppercase
+
+  let capitalize_ascii = capitalize
+
+  let uncapitalize_ascii = uncapitalize
+
+  let equal : t -> t -> bool = ( = )
+#endif
+
+#if OCAMLVERSION < 404
+  let split_on_char c s =
+    let previous_index = ref (length s) in
+    let accu = ref [] in
+    for i = length s - 1 downto 0 do
+      if unsafe_get s i = c then
+        begin
+          accu := sub s (i + 1) (!previous_index - i - 1) :: !accu;
+          previous_index := i
+        end
+    done;
+    sub s 0 !previous_index :: !accu
+#endif
+
+#if OCAMLVERSION < 405
+  let index_opt s c =
+    option_find (index s) c
+
+  let rindex_opt s c =
+    option_find (rindex s) c
+
+  let index_from_opt s i c =
+    option_find (index_from s i) c
+
+  let rindex_from_opt s i c =
+    option_find (rindex_from s i) c
+#endif
+end
+
+module StringLabels = struct
+  include StringLabels
+
+#if OCAMLVERSION < 402
+  let init n ~f =
+    let s = create n in
+    for i = 0 to n - 1 do
+      s.[i] <- f i
+    done;
+    s
+
+  let mapi ~f s =
+    init (length s) (fun i -> f i (unsafe_get s i))
+#endif
+
+#if OCAMLVERSION < 400
+  let iteri ~f s =
+    for i = 0 to length s - 1 do
+      f i (unsafe_get s i)
+    done
+
+  let map ~f s =
+    init (length s) (fun i -> f (unsafe_get s i))
+
+  let trim s =
+    String.trim s
+#endif
+
+#if OCAMLVERSION < 405
+  let lowercase_ascii = lowercase
+
+  let uppercase_ascii = uppercase
+
+  let capitalize_ascii = capitalize
+
+  let uncapitalize_ascii = uncapitalize
+
+  let equal : t -> t -> bool = ( = )
+
+  let split_on_char ~sep s =
+    let previous_index = ref (length s) in
+    let accu = ref [] in
+    for i = length s - 1 downto 0 do
+      if unsafe_get s i = sep then
+        begin
+          accu := sub s (i + 1) (!previous_index - i - 1) :: !accu;
+          previous_index := i
+        end
+    done;
+    sub s 0 !previous_index :: !accu
+
+  let index_opt s c =
+    option_find (index s) c
+
+  let rindex_opt s c =
+    option_find (rindex s) c
+
+  let index_from_opt s i c =
+    option_find (index_from s i) c
+
+  let rindex_from_opt s i c =
+    option_find (rindex_from s i) c
+#endif
+end
+
+module Stack = struct
+  include Stack
+
+#if OCAMLVERSION < 403
+  let fold f v s =
+    let r = ref v in
+    iter (fun item -> r := f !r item) s;
+    !r
+#endif
+end
+
+module Hashtbl = struct
+  type ('a, 'b) t = ('a, 'b) Hashtbl.t
+
+  let clear = Hashtbl.clear
+
+  let copy = Hashtbl.copy
+
+  let add = Hashtbl.add
+
+  let find = Hashtbl.find
+
+  let find_all = Hashtbl.find_all
+
+  let mem = Hashtbl.mem
+
+  let remove = Hashtbl.remove
+
+  let replace = Hashtbl.replace
+
+  let iter = Hashtbl.iter
+
+  let fold = Hashtbl.fold
+
+  let length = Hashtbl.length
+
+  module type HashedType = Hashtbl.HashedType
+
+  let hash = Hashtbl.hash
+
+  let hash_param = Hashtbl.hash_param
+
+  type statistics
+#if OCAMLVERSION >= 400
+    = Hashtbl.statistics
+#endif
+    = {
+      num_bindings : int;
+      num_buckets : int;
+      max_bucket_length : int;
+      bucket_histogram : int array;
+    }
+
+#if OCAMLVERSION < 400
+  let create ?random n = Hashtbl.create n
+
+  let reset = clear
+
+  let randomize () = ()
+
+  let stats tbl = {
+      num_bindings = length tbl;
+      num_buckets = 0;
+      max_bucket_length = 0;
+      bucket_histogram = [| |];
+    }
+#else
+  let create = Hashtbl.create
+
+  let reset = Hashtbl.clear
+
+  let randomize = Hashtbl.randomize
+
+  let stats = Hashtbl.stats
+#endif
+
+#define FILTER_MAP_INPLACE                                                     \
+  let filter_map_inplace filter hashtbl =                                      \
+    let filter key value                                                      \
+        (last_key, to_replace, to_add, to_remove, rebuild, changed) =          \
+      match filter key value with                                              \
+      | None ->                                                                \
+          if rebuild || last_key = Some key then                               \
+            (Some key, to_replace, to_add, to_remove, true, true)              \
+          else                                                                 \
+            (None, to_replace, to_add, key :: to_remove, false, true)      \
+      | Some value0 ->                                                         \
+          if value == value0 then                                              \
+            (Some key, to_replace, (key, value0) :: to_add, to_remove, rebuild,\
+             changed)                                                          \
+          else if rebuild || last_key = Some key then                          \
+            (Some key, to_replace, (key, value0) :: to_add, to_remove, true,   \
+             true)                                                             \
+          else                                                                 \
+            (Some key, (key, value0) :: to_replace, to_add, to_remove, false,  \
+             true) in                                                          \
+    let _last_key, to_replace, to_add, to_remove, rebuild, changed =           \
+      fold filter hashtbl (None, [], [], [], false, false) in                 \
+    if rebuild then                                                            \
+      begin                                                                    \
+        clear hashtbl;                                                         \
+        List.iter (fun (key, value) -> add hashtbl key value) to_add;          \
+        List.iter (fun (key, value) -> add hashtbl key value) to_replace       \
+      end                                                                      \
+    else if changed then                                                       \
+      begin                                                                    \
+        List.iter (fun key -> remove hashtbl key) to_remove;                   \
+        List.iter (fun (key, value) -> replace hashtbl key value) to_replace   \
+      end
+
+#if OCAMLVERSION <  403
+  let is_randomized () = false
+
+  FILTER_MAP_INPLACE
+#else
+  let is_randomized = Hashtbl.is_randomized
+
+  let filter_map_inplace = Hashtbl.filter_map_inplace
+#endif
+
+#if OCAMLVERSION < 405
+  let find_opt tbl key =
+    option_find (find tbl) key
+#else
+  let find_opt = Hashtbl.find_opt
+#endif
+
+#if OCAMLVERSION < 400
+  let seeded_hash seed x = Hashtbl.hash (seed, x)
+
+  let seeded_hash_param meaningful total seed x =
+    Hashtbl.hash_param meaningful total (seed, x)
+#else
+  let seeded_hash = Hashtbl.seeded_hash
+
+  let seeded_hash_param = Hashtbl.seeded_hash_param
+#endif
+
+  module type S = sig
+    type 'a t
+
+    type key
+
+    val clear : 'a t -> unit
+
+    val copy : 'a t -> 'a t
+
+    val add : 'a t -> key -> 'a -> unit
+
+    val find : 'a t -> key -> 'a
+
+    val find_all : 'a t -> key -> 'a list
+
+    val mem : 'a t -> key -> bool
+
+    val remove : 'a t -> key -> unit
+
+    val replace : 'a t -> key -> 'a -> unit
+
+    val iter : (key -> 'a -> unit) -> 'a t -> unit
+
+    val fold : (key -> 'a -> 'c -> 'c) -> 'a t -> 'c -> 'c
+
+    val length : 'a t -> int
+
+    val create : int -> 'a t
+
+    val reset : 'a t -> unit
+
+    val filter_map_inplace : (key -> 'a -> 'a option) -> 'a t -> unit
+
+    val find_opt : 'a t -> key -> 'a option
+
+    val stats : 'a t -> statistics
+  end
+
+  module Make (H : HashedType) = struct
+    include Hashtbl.Make (H)
+
+#if OCAMLVERSION < 400
+    let create capacity = create capacity
+
+    let reset = clear
+
+    let stats tbl = {
+        num_bindings = length tbl;
+        num_buckets = 0;
+        max_bucket_length = 0;
+        bucket_histogram = [| |];
+      }
+#endif
+
+#if OCAMLVERSION < 403
+    FILTER_MAP_INPLACE
+#endif
+
+#if OCAMLVERSION < 405
+    let find_opt tbl key =
+      option_find (find tbl) key
+#endif
+  end
+
+  module type SeededHashedType = sig
+    type t
+
+    val equal : t -> t -> bool
+
+    val hash : int -> t -> int
+  end
+
+  module type SeededS = sig
+    include S
+
+    val create : ?random:bool -> int -> 'a t
+  end
+
+  module MakeSeeded (H : SeededHashedType) = struct
+#if OCAMLVERSION < 400
+    include Hashtbl.Make (struct
+      type t = H.t
+
+      let equal = H.equal
+
+      let hash x = H.hash 0 x
+    end)
+#else
+    include Hashtbl.MakeSeeded (H)
+#endif
+
+#if OCAMLVERSION < 400
+    let create ?random capacity = create capacity
+
+    let reset = clear
+
+    let stats tbl = {
+        num_bindings = length tbl;
+        num_buckets = 0;
+        max_bucket_length = 0;
+        bucket_histogram = [| |];
+      }
+#endif
+
+#if OCAMLVERSION < 403
+    FILTER_MAP_INPLACE
+#endif
+
+#if OCAMLVERSION < 405
+    let find_opt tbl key =
+      option_find (find tbl) key
+#endif
+  end
+end
+
+module Set = struct
+  module type OrderedType = Set.OrderedType
+
+  module type S = sig
+    include Set.S
+
+    val find : elt -> t -> elt
+
+    val of_list : elt list -> t
+
+    val map : (elt -> elt) -> t -> t
+
+    val min_elt_opt : t -> elt option
+
+    val max_elt_opt : t -> elt option
+
+    val choose_opt : t -> elt option
+
+    val find_opt : elt -> t -> elt option
+
+    val find_first : (elt -> bool) -> t -> elt
+
+    val find_first_opt : (elt -> bool) -> t -> elt option
+
+    val find_last : (elt -> bool) -> t -> elt
+
+    val find_last_opt : (elt -> bool) -> t -> elt option
+  end
+
+  module Make (Ord : OrderedType) = struct
+    include Set.Make (Ord)
+
+#if OCAMLVERSION < 401
+    exception Find of elt
+
+    let find x s =
+      try
+        iter (fun y ->
+          if Ord.compare x y = 0 then
+            raise (Find y)) s;
+        raise Not_found
+      with Find y -> y
+#endif
+
+#if OCAMLVERSION < 402
+    let of_list l = List.fold_left (fun s item -> add item s) empty l
+#endif
+
+#if OCAMLVERSION < 404
+    type map_changed =
+      | Changed of t
+      | Unchanged of elt list
+
+    let map f s =
+      match
+        fold (fun item accu ->
+          let item' = f item in
+          match accu with
+          | Changed set -> Changed (add item' set)
+          | Unchanged list ->
+             if item == item' then Unchanged (item :: list)
+             else Changed (add item' (of_list list)))
+        s (Unchanged [])
+      with
+      | Changed s -> s
+      | Unchanged _ -> s
+#endif
+
+#if OCAMLVERSION < 405
+    let min_elt_opt s =
+      option_find min_elt s
+
+    let max_elt_opt s =
+      option_find max_elt s
+
+    let choose_opt s =
+      option_find choose s
+
+    let find_opt x s =
+      option_find (find x) s
+
+    exception Find of elt
+
+    let find_first p s =
+      try
+        iter (fun x ->
+          if p x then
+            raise (Find x)) s;
+        raise Not_found
+      with Find x -> x
+
+    let find_first_opt x s =
+      option_find (find_first x) s
+
+    let find_last_opt p s =
+      let last = ref None in
+      try
+        iter (fun x ->
+          if p x then
+            last := Some x
+          else
+            match !last with
+            | None -> raise Not_found
+            | Some x -> raise (Find x)) s;
+        !last
+      with
+      | Not_found -> None
+      | Find x -> !last
+
+    let find_last p s =
+      match find_last_opt p s with
+      | None -> raise Not_found
+      | Some x -> x
+#endif
+  end
+end
+
+module Map = struct
+  module type OrderedType = Map.OrderedType
+
+  module type S = sig
+    include Map.S
+
+    val union : (key -> 'a -> 'a -> 'a option) -> 'a t -> 'a t -> 'a t
+
+    val find_opt : key -> 'a t -> 'a option
+
+    val min_binding_opt : 'a t -> (key * 'a) option
+
+    val max_binding_opt : 'a t -> (key * 'a) option
+
+    val choose_opt : 'a t -> (key * 'a) option
+
+    val update : key -> ('a option -> 'a option) -> 'a t -> 'a t
+  end
+
+  module Make (Ord : OrderedType) = struct
+    include Map.Make (Ord)
+
+#if OCAMLVERSION < 403
+    let union f map map' =
+      let f' key v v' =
+        match v, v' with
+        | None, None ->
+            None
+        | Some v, None | None, Some v ->
+            Some v
+        | Some v, Some v' ->
+            f key v v' in
+      merge f' map map'
+#endif
+
+#if OCAMLVERSION < 405
+    let find_opt key m =
+      option_find (find key) m
+
+    let min_binding_opt m =
+      option_find min_binding m
+
+    let max_binding_opt m =
+      option_find max_binding m
+
+    let choose_opt m =
+      option_find choose m
+#endif
+
+#if OCAMLVERSION < 406
+    let update key f map =
+      let o = find_opt key map in
+      match o, f o with
+      | None, None -> map
+      | None, Some fv -> add key fv map
+      | Some _, None -> remove key map
+      | Some v, Some fv ->
+          if v == fv then map
+          else add key fv map
+#endif
+  end
+end
+
+module Weak = struct
+  type 'a t = 'a Weak.t
+
+  let create = Weak.create
+
+  let length = Weak.length
+
+  let set = Weak.set
+
+  let get = Weak.get
+
+  let get_copy = Weak.get_copy
+
+  let check = Weak.check
+
+  let fill = Weak.fill
+
+  let blit = Weak.blit
+
+  module type S = sig
+    include Weak.S
+
+    val find_opt: t -> data -> data option
+  end
+
+  module Make (H : Hashtbl.HashedType) = struct
+    include Weak.Make (H)
+
+#if OCAMLVERSION < 405
+    let find_opt t d =
+      option_find (find t) d
+#endif
+  end
+end
+
+module Sys = struct
+  include Sys
+
+#if OCAMLVERSION < 401
+  let unix = os_type = "Unix"
+
+  let win32 = os_type = "Win32"
+
+  let cygwin = os_type = "Cygwin"
+#endif
+
+#if OCAMLVERSION < 403
+  let sigbus = -22
+
+  let sigpoll = -23
+
+  let sigsys = -24
+
+  let sigtrap = -25
+
+  let sigurg = -26
+
+  let sigxcpu = -27
+
+  let sigxfsz = -28
+
+  let int_size =
+     if 1 lsl word_size = 0 then
+       word_size
+     else if 1 lsl (word_size - 1) = 0 then
+       word_size - 1
+     else
+       assert false
+
+  let big_endian =
+#ifdef BIGENDIAN
+    true
+#else
+    false
+#endif
+
+  let runtime_variant () = ""
+
+  let runtime_parameters () = ""
+
+  let enable_runtime_warnings _ = ()
+
+  let runtime_warnings_enabled () = false
+#endif
+
+#if OCAMLVERSION < 404
+  type backend_type =
+    | Native
+    | Bytecode
+    | Other of string
+
+#ifdef OCAMLNATIVE
+  let backend_type = Native
+#else
+  let backend_type = Bytecode
+#endif
+#endif
+
+#if OCAMLVERSION < 405
+  let getenv_opt var =
+    option_find getenv var
+#endif
+end
+
+module Uchar = struct
+#if OCAMLVERSION < 403
+  type t = int
+
+  let min = 0
+
+  let max = 0x10FFFF
+
+  let lo_bound = 0xD7FF
+
+  let hi_bound = 0xE000
+
+  let succ u =
+    if u = lo_bound then
+      hi_bound
+    else if u = max then
+      invalid_arg "Uchar.succ"
+    else
+      succ u
+
+  let pred u =
+    if u = hi_bound then
+      lo_bound
+    else if u = min then
+      invalid_arg "Uchar.pred"
+    else
+    pred u
+
+  let is_valid i =
+    min <= i && i <= lo_bound || hi_bound <= i && i <= max
+
+  let of_int i =
+    if is_valid i then
+      i
+    else
+      invalid_arg "Uchar.of_int"
+
+  let unsafe_of_int i =
+    i
+
+  let to_int i =
+    i
+
+  let is_char u =
+    u < 0x100
+
+  let of_char c =
+    Char.code c
+
+  let to_char u =
+    if is_char u then
+      Char.unsafe_chr u
+    else
+      invalid_arg "Uchar.to_char"
+
+  let unsafe_to_char u =
+    Char.unsafe_chr u
+
+  let equal : t -> t -> bool = ( = )
+
+  let compare : t -> t -> int = compare
+
+  let hash = to_int
+#else
+  include Uchar
+#endif
+
+#if OCAMLVERSION < 406
+  let bom = unsafe_of_int 0xFEFF
+
+  let rep = unsafe_of_int 0xFFFD
+#endif
+end
+
+module Bytes = struct
+#if OCAMLVERSION < 402
+  include String
+
+  let empty = ""
+
+  let of_string = copy
+
+  let to_string = copy
+
+  let sub_string = sub
+
+  let extend s left right =
+    let len = left + length s + right in
+    let result = create len in
+    let trim_left = max (- left) 0 in
+    unsafe_blit s trim_left result (max left 0)
+      (length s - trim_left - max (- right) 0);
+    result
+
+  let blit_string = blit
+
+  let cat = ( ^ )
+
+  let unsafe_of_string s = s
+
+  let unsafe_to_string s = s
+#else
+  include Bytes
+#endif
+
+#if OCAMLVERSION < 403
+  let uppercase_ascii = uppercase
+
+  let lowercase_ascii = lowercase
+
+  let capitalize_ascii = capitalize
+
+  let uncapitalize_ascii = uncapitalize
+
+  let equal : t -> t -> bool = ( = )
+#endif
+end
+
+module BytesLabels = struct
+#if OCAMLVERSION < 402
+  include StringLabels
+
+  let empty = ""
+
+  let of_string = copy
+
+  let to_string = copy
+
+  let sub_string = sub
+
+  let unsafe_of_string s = s
+
+  let unsafe_to_string s = s
+#else
+  include BytesLabels
+
+#if OCAMLVERSION < 406
+  let sub_string b ~pos ~len =
+    sub_string b pos len
+#endif
+#endif
+
+#if OCAMLVERSION < 405
+  let extend s ~left ~right =
+    Bytes.extend s left right
+
+  let blit_string = blit
+
+  let cat = ( ^ )
+
+  let uppercase_ascii = uppercase
+
+  let lowercase_ascii = lowercase
+
+  let capitalize_ascii = capitalize
+
+  let uncapitalize_ascii = uncapitalize
+
+  let equal : t -> t -> bool = ( = )
+#endif
+end
+
+module Buffer = struct
+  include Buffer
+
+#if OCAMLVERSION < 402
+  let to_bytes = contents
+
+  let add_bytes = add_string
+
+  let add_subbytes = add_substring
+#endif
+
+#if OCAMLVERSION < 405
+  let truncate b len =
+    let s = sub b 0 len in
+    clear b;
+    add_string b s
+#endif
+
+#if OCAMLVERSION < 406
+  let add_utf_8_uchar b u =
+    if Uchar.is_char u then
+      add_char b (Uchar.unsafe_to_char u)
+    else
+      let i = Uchar.to_int u in
+      if i <= 0x07FF then
+        begin
+          add_char b (Char.unsafe_chr (0xC0 lor (i lsr 6)));
+          add_char b (Char.unsafe_chr (0x80 lor i land 0x3F));
+        end
+      else if i <= 0xFFFF then
+        begin
+          add_char b (Char.unsafe_chr (0xE0 lor (i lsr 12)));
+          add_char b (Char.unsafe_chr (0x80 lor (i lsr 6) land 0x3F));
+          add_char b (Char.unsafe_chr (0x80 lor i land 0x3F));
+        end
+      else
+        begin
+          add_char b (Char.unsafe_chr (0xF0 lor (i lsr 18)));
+          add_char b (Char.unsafe_chr (0x80 lor (i lsr 12) land 0x3F));
+          add_char b (Char.unsafe_chr (0x80 lor (i lsr 6) land 0x3F));
+          add_char b (Char.unsafe_chr (0x80 lor i land 0x3F));
+        end
+
+  let add_utf_16be_uchar b u =
+    let i = Uchar.to_int u in
+    if i <= 0xFFFF then
+      begin
+        add_char b (Char.unsafe_chr (i lsr 8));
+        add_char b (Char.unsafe_chr (i land 0xFF));
+      end
+    else
+      let i = i - 0x10000 in
+      let hi = 0xD800 lor i lsr 10 in
+      let lo = 0xDC00 lor i land 0x3FF in
+      add_char b (Char.unsafe_chr (hi lsr 8));
+      add_char b (Char.unsafe_chr (hi land 0xFF));
+      add_char b (Char.unsafe_chr (lo lsr 8));
+      add_char b (Char.unsafe_chr (lo land 0xFF))
+
+  let add_utf_16le_uchar b u =
+    let i = Uchar.to_int u in
+    if i <= 0xFFFF then
+      begin
+        add_char b (Char.unsafe_chr (i land 0xFF));
+        add_char b (Char.unsafe_chr (i lsr 8));
+      end
+    else
+      let i = i - 0x10000 in
+      let hi = 0xD800 lor i lsr 10 in
+      let lo = 0xDC00 lor i land 0x3FF in
+      add_char b (Char.unsafe_chr (hi land 0xFF));
+      add_char b (Char.unsafe_chr (hi lsr 8));
+      add_char b (Char.unsafe_chr (lo land 0xFF));
+      add_char b (Char.unsafe_chr (lo lsr 8))
+#endif
+end
+
+module Stream = struct
+  include Stream
+
+#if OCAMLVERSION < 403
+  let of_bytes = of_string
+#endif
+end
+
+module Digest = struct
+  include Digest
+
+#if OCAMLVERSION < 403
+  let equal : t -> t -> bool = ( = )
+#endif
+end
+
+module Nativeint = struct
+  include Nativeint
+
+#if OCAMLVERSION < 403
+  let equal : t -> t -> bool = ( = )
+#endif
+
+#if OCAMLVERSION < 405
+  let of_string_opt s =
+    option_fail of_string s
+#endif
+end
+
+module Int32 = struct
+  include Int32
+
+#if OCAMLVERSION < 403
+  let equal : t -> t -> bool = ( = )
+#endif
+
+#if OCAMLVERSION < 405
+  let of_string_opt s =
+    option_fail of_string s
+#endif
+end
+
+module Int64 = struct
+  include Int64
+
+#if OCAMLVERSION < 403
+  let equal : t -> t -> bool = ( = )
+#endif
+
+#if OCAMLVERSION < 405
+  let of_string_opt s =
+    option_fail of_string s
+#endif
+end
+
+module List = struct
+  include List
+
+#if OCAMLVERSION < 400
+  let rec iteri_aux i f l =
+    match l with
+    | [] -> ()
+    | hd :: tl ->
+        f i hd;
+        iteri_aux (succ i) f tl
+
+  let iteri f l =
+    iteri_aux 0 f l
+
+  let rec mapi_aux i f l =
+    match l with
+    | [] -> []
+    | hd :: tl ->
+        let hd = f i hd in
+        hd :: mapi_aux (succ i) f tl
+
+  let mapi f l =
+    mapi_aux 0 f l
+#endif
+
+#if OCAMLVERSION < 402
+  let rec uniq_rev_append cmp l accu =
+    match l with
+    | [] -> accu
+    | [item] -> item :: accu
+    | hd :: (hd' :: _ as tl) ->
+        if cmp hd hd' = 0 then uniq_rev_append cmp tl accu
+        else uniq_rev_append cmp tl (hd :: accu)
+
+  let sort_uniq cmp l =
+    let cmp' a b = - (cmp a b) in
+    let rev_l = sort cmp' l in
+    uniq_rev_append cmp rev_l []
+#endif
+
+#if OCAMLVERSION < 403
+  let cons x xs =
+    x :: xs
+#endif
+
+#if OCAMLVERSION < 405
+  let rec compare_lengths l l' =
+    match l, l' with
+    | [], [] -> 0
+    | [], _ -> -1
+    | _, [] -> 1
+    | _ :: tl, _ :: tl' ->
+        compare_lengths tl tl'
+
+  let rec compare_length_with l n =
+    if n < 0 then 1
+    else if n = 0 then
+      if l = [] then 0
+      else 1
+    else
+      match l with
+      | [] -> -1
+      | _ :: tl -> compare_length_with tl (pred n)
+
+  let nth_opt l n =
+    option_fail (nth l) n
+
+  let find_opt p l =
+    option_find (find p) l
+
+  let assoc_opt key l =
+    option_find (assoc key) l
+
+  let assq_opt key l=
+    option_find (assq key) l
+#endif
+
+#if OCAMLVERSION < 406
+  let rec init_aux i len f accu =
+    if i >= len then
+      accu
+    else
+      init_aux (succ i) len f (f i :: accu)
+
+  let rec init len f =
+    if len < 0 then
+      invalid_arg "List.init"
+    else if len = 0 then
+      []
+    else
+      rev (init_aux 0 len f [])
+#endif
+end
+
+module ListLabels = struct
+  include ListLabels
+
+#if OCAMLVERSION < 400
+  let iteri ~f l =
+    List.iteri_aux 0 f l
+
+  let mapi ~f l =
+    List.mapi_aux 0 f l
+#endif
+
+#if OCAMLVERSION < 403
+  let rec uniq_rev_append cmp l accu =
+    match l with
+    | [] -> accu
+    | [item] -> item :: accu
+    | hd :: (hd' :: _ as tl) ->
+        if cmp hd hd' = 0 then uniq_rev_append cmp tl accu
+        else uniq_rev_append cmp tl (hd :: accu)
+
+  let sort_uniq ~cmp l =
+    let cmp' a b = - (cmp a b) in
+    let rev_l = sort cmp' l in
+    uniq_rev_append cmp rev_l []
+#endif
+
+#if OCAMLVERSION < 405
+  let cons x xs =
+    x :: xs
+
+  let rec compare_lengths l l' =
+    match l, l' with
+    | [], [] -> 0
+    | [], _ -> -1
+    | _, [] -> 1
+    | _ :: tl, _ :: tl' ->
+        compare_lengths tl tl'
+
+  let rec compare_length_with l ~len =
+    if len < 0 then 1
+    else if len = 0 then
+      if l = [] then 0
+      else 1
+    else
+      match l with
+      | [] -> -1
+      | _ :: tl -> compare_length_with tl ~len:(pred len)
+
+  let nth_opt l n =
+    option_find (nth l) n
+
+  let find_opt ~f l =
+    option_find (find ~f) l
+
+  let assoc_opt key l =
+    option_find (assoc key) l
+
+  let assq_opt key l=
+    option_find (assq key) l
+#endif
+
+#if OCAMLVERSION < 406
+  let rec init_aux i len f accu =
+    if i >= len then
+      accu
+    else
+      init_aux (succ i) len f (f i :: accu)
+
+  let rec init len f =
+    if len < 0 then
+      invalid_arg "List.init"
+    else if len = 0 then
+      []
+    else
+      rev (init_aux 0 len f [])
+#endif
+end
+
+module Filename = struct
+  include Filename
+
+#if OCAMLVERSION < 400
+  let current_temp_dir_name = ref temp_dir_name
+
+  let get_temp_dir_name () =
+    !current_temp_dir_name
+
+  let set_temp_dir_name dir =
+    current_temp_dir_name := dir
+
+  let temp_file ?(temp_dir = !current_temp_dir_name) prefix suffix =
+    temp_file ~temp_dir prefix suffix
+#endif
+
+#if OCAMLVERSION < 403
+  let prng = lazy (Random.State.make_self_init ())
+
+  let open_temp_file ?(mode = [Open_text]) ?(perms = 0o600)
+      ?(temp_dir = get_temp_dir_name ()) prefix suffix =
+    let rec try_name counter =
+      let name =
+        let rnd = Random.State.bits (Lazy.force prng) land 0xFFFFFF in
+        concat temp_dir (Printf.sprintf "%s%06x%s" prefix rnd suffix) in
+      try
+        name,
+        open_out_gen (Open_wronly :: Open_creat :: Open_excl :: mode) perms name
+      with Sys_error _ as e ->
+        if counter >= 1000 then
+          raise e
+        else
+          try_name (succ counter) in
+    try_name 0
+#endif
+
+#if OCAMLVERSION < 404
+  let is_dir_sep c s i =
+    if dir_sep.[0] <> c then
+      false
+    else
+      let l = String.length dir_sep in
+      if l = 1 then
+        true
+      else if i + l <= String.length s then
+        String.sub s i l = dir_sep
+      else
+        false
+
+  let rec extension_start_from i s =
+    if i < 0 then
+      String.length s
+    else
+      let c = String.unsafe_get s i in
+      if c = '.' then
+        i
+      else if is_dir_sep c s i then
+        String.length s
+      else
+        extension_start_from (pred i) s
+
+  let extension_start s =
+    extension_start_from (String.length s - 1) s
+
+  let extension s =
+    let i = extension_start s in
+    String.sub s i (String.length s - i)
+
+  let remove_extension s =
+    let i = extension_start s in
+    String.sub s 0 i
+#endif
+end
+
+module Array = struct
+  include Array
+
+#if OCAMLVERSION < 402
+  let create_float l = Array.make l 0.
+#elif OCAMLVERSION < 403
+  let create_float = Array.make_float
+#endif
+
+#if OCAMLVERSION < 403
+  let iter2 f array1 array2 =
+    if length array1 <> length array2 then
+      invalid_arg "Array.iter2";
+    for i = 0 to length array1 - 1 do
+      f (unsafe_get array1 i) (unsafe_get array2 i)
+    done
+
+  let map2 f array1 array2 =
+    if length array1 <> length array2 then
+      invalid_arg "array_map2";
+    init (length array1)
+      (fun i -> f (unsafe_get array1 i) (unsafe_get array2 i))
+
+  exception Iter
+
+  let for_all f array =
+    try
+      for i = 0 to length array - 1 do
+        if not (f (unsafe_get array i)) then
+          raise Iter
+      done;
+      true
+    with Iter -> false
+
+  let exists f array =
+    try
+      for i = 0 to length array - 1 do
+        if f (unsafe_get array i) then
+          raise Iter
+      done;
+      false
+    with Iter -> true
+
+  let mem item =
+    exists (( = ) item)
+
+  let memq item =
+    exists (( == ) item)
+#endif
+
+#if OCAMLVERSION < 406
+  module Floatarray = struct
+    let create = create_float
+
+    let length : floatarray -> int = length
+
+    let get : floatarray -> int -> float = get
+
+    let set : floatarray -> int -> float -> unit = set
+
+    let unsafe_get : floatarray -> int -> float = unsafe_get
+
+    let unsafe_set : floatarray -> int -> float -> unit = unsafe_set
+  end
+#endif
+end
+
+module ArrayLabels = struct
+  include ArrayLabels
+
+#if OCAMLVERSION < 403
+  let create_float = Array.create_float
+
+  let exists ~f a = Array.exists f a
+
+  let for_all ~f a = Array.for_all f a
+
+  let mem item ~set = Array.mem item set
+
+  let memq item ~set = Array.memq item set
+#endif
+
+#if OCAMLVERSION < 405
+  let iter2 ~f a b = Array.iter2 f a b
+
+  let map2 ~f a b = Array.map2 f a b
+#endif
+
+#if OCAMLVERSION < 406
+  module Floatarray = Array.Floatarray
+#endif
+end

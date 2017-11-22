@@ -59,7 +59,7 @@ type context = ID | FIELD | FN | GLOBAL
 
 (* heuristic for distinguishing ifdef variables from undeclared metavariables*)
 let is_ifdef name =
-  String.length name > 2 && String.uppercase name = name
+  String.length name > 2 && Stdcompat.String.uppercase_ascii name = name
 
 let rec ident context old_metas table minus i =
   match Ast0.unwrap i with
@@ -729,4 +729,4 @@ let check_meta rname old_metas inherited_metavars metavars minus plus =
   check_all_marked rname "metavariable" frsh_table "in the + code";
   check_all_marked rname "error metavariable" err_table "";
   check_both_marked rname other_table plus_table;
-  Hashtbl.reset fresh_table
+  Stdcompat.Hashtbl.reset fresh_table

@@ -852,7 +852,7 @@ let adjust_stdin cfiles k =
           if ext = "c" && Common.lfile_exists varfile
           then Some varfile
           else None
-	with Invalid_argument("Filename.chop_extension") -> None in
+	with Invalid_argument _ -> None in
       Common.redirect_stdin_opt newin k
 
 let glimpse_filter2 (_,query,_,_) dir =

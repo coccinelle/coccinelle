@@ -1361,7 +1361,7 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
         Visitor_c.vk_toplevel bigf elem
       )
   else Visitor_c.vk_toplevel bigf elem);
-  Hashtbl.reset _notyped_var
+  Stdcompat.Hashtbl.reset _notyped_var
 
 
 (*****************************************************************************)
@@ -1383,7 +1383,7 @@ let (annotate_program2 :
        visit_toplevel ~just_add_in_env:false ~depth:0 elem;
        let afterenv = !_scoped_env in
        (elem, (beforeenv, afterenv))) in
-  Hashtbl.reset _notyped_var;
+  Stdcompat.Hashtbl.reset _notyped_var;
    res
 
 

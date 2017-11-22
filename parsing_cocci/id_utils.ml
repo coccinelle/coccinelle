@@ -75,5 +75,5 @@ let rec interpret dir query =
       match query with
 	None -> Common.pr2 "no inferred idutils keywords"; None
       | Some exp -> Some (interpret_query index exp) in
-  Hashtbl.reset evaluated;
+  Stdcompat.Hashtbl.reset evaluated;
   res

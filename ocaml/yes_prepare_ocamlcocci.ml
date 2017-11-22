@@ -136,7 +136,7 @@ let print_iteration_code o =
     String.concat "\n              | "
       (List.map
 	 (function x -> Printf.sprintf "%s -> \"%s\""
-	     (String.capitalize x) x)
+	     (Stdcompat.String.capitalize_ascii x) x)
 	 l) in
   let add_virt_rules_method =
     match !Iteration.parsed_virtual_rules with
@@ -307,14 +307,15 @@ let prepare coccifile code =
       then
 	Printf.fprintf o "type __virtual_rules__ = %s\n\n"
 	  (String.concat " | "
-	     (List.map String.capitalize !Iteration.parsed_virtual_rules)));
+	     (List.map Stdcompat.String.capitalize_ascii
+                !Iteration.parsed_virtual_rules)));
       (if !Iteration.parsed_virtual_identifiers != []
       then
 	Printf.fprintf o "type __virtual_identifiers__ = %s\n\n"
 	  (String.concat " | "
 	     (List.map
 		(function x -> Printf.sprintf "%s" x)
-		(List.map String.capitalize
+		(List.map Stdcompat.String.capitalize_ascii
 		   !Iteration.parsed_virtual_identifiers))));
       print_iteration_code o;
       (* Virtual metavariables for initialize and finalize rules *)
@@ -471,7 +472,7 @@ let filter_dep existing_deps (accld, accinc) dep =
     | "Tk"       -> ("tk"::accld, accinc)
 
     | _ ->
-        let dep = String.uncapitalize dep in
+        let dep = Stdcompat.String.uncapitalize_ascii dep in
 	  (accld, dep::accinc)
 
 let get_dir p =

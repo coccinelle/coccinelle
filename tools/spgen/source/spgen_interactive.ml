@@ -48,7 +48,7 @@ let save t =
     "  Type n(o) to not save.\n"^
     "  Write another filename to save to.\n") in
 
-  match String.lowercase (read_line()) with
+  match Stdcompat.String.lowercase_ascii (read_line()) with
   | "" | "y" | "yes" -> save' t name
   | "n" | "no" -> ()
   | file -> save' t file

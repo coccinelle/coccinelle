@@ -87,7 +87,7 @@ module Confidence = struct
     function Low -> "Low" | Moderate -> "Moderate" | High -> "High"
 
   let from_string s =
-    match String.lowercase s with
+    match Stdcompat.String.lowercase_ascii s with
     | "low" | "l" -> Low
     | "moderate" | "m" -> Moderate
     | "high" | "h" -> High

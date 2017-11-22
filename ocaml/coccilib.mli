@@ -1832,8 +1832,6 @@ module Common :
     val ( <!> ) : string -> int -> char
     val take_string : int -> string -> string
     val take_string_safe : int -> string -> string
-    val split_on_char : char -> string -> string list
-    val lowercase : string -> string
     val quote : string -> string
     val is_blank_string : string -> bool
     val is_string_prefix : string -> string -> bool
@@ -1842,9 +1840,6 @@ module Common :
     val size_mo_ko : int -> string
     val size_ko : int -> string
     val edit_distance : string -> string -> int
-    val trim_left : string -> string
-    val trim_right : string -> string
-    val trim : string -> string
     val md5sum_of_string : string -> string
     val regexp_alpha : Str.regexp
     val regexp_int : Str.regexp
