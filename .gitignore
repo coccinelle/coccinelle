@@ -56,3 +56,5 @@ aclocal.m4
 description-pak
 *.current
 /bundles/pyml/pyml-current/pyml_arch.ml
+/bundles/stdcompat/stdcompat.ml
+/bundles/stdcompat/stdcompat.mli
