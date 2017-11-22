@@ -495,13 +495,21 @@ bundles-$(bundle) :
 	$(MAKE) -C bundles/$(bundle) all
 
 ifeq ($(bundle),stdcompat)
-.PHONY : bundles-$(bundle).opt
-bundles-$(bundle).opt :
-	$(MAKE) -C bundles/$(bundle) all
+.PHONY : bundles-stdcompat.opt
+bundles-stdcompat.opt :
+	$(MAKE) -C bundles/stdcompat all
+
+.PHONY : distclean-stdcompat
+distclean-stdcompat :
+	$(MAKE) -C bundles/stdcompat clean
 else
 .PHONY : bundles-$(bundle).opt
 bundles-$(bundle).opt :
 	$(MAKE) -C bundles/$(bundle) all.opt
+
+.PHONY : distclean-$(bundle)
+distclean-$(bundle) :
+	$(MAKE) -C bundles/$(bundle) distclean
 endif
 
 .PHONY : bundles-$(bundle)-if-needed
@@ -515,10 +523,6 @@ bundles-$(bundle).opt-if-needed : \
 .PHONY : clean-$(bundle)
 clean-$(bundle) :
 	$(MAKE) -C bundles/$(bundle) clean
-
-.PHONY : distclean-$(bundle)
-distclean-$(bundle) :
-	$(MAKE) -C bundles/$(bundle) distclean
 
 clean : clean-$(bundle)
 distclean : distclean-$(bundle)
