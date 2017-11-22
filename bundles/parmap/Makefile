@@ -1,10 +1,10 @@
 # This Makefile serves as a wrapper to bundle the
 # parmap package without modifications.
 
-PARMAP_VERSION=1.0-rc7.1
+PARMAP_VERSION=master-699ed2a
 
-PACKAGE_DIR=parmap.$(PARMAP_VERSION)
-TARBALL=parmap.1.0-rc7.1+opam.tar.gz
+PACKAGE_DIR=parmap
+TARBALL=parmap-master-699ed2a.tar.gz
 MODULES=bytearray parmap_utils setcore parmap
 OBJS=$(MODULES)
 INTERFACES=$(OBJS)
