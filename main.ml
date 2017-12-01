@@ -1247,7 +1247,7 @@ singleton lists are then just appended to each other during the merge. *)
 					if !dir
 					then begin
 					  (* not hidden by --very-quiet *)
-					  Printf.eprintf "EXN: %s "
+					  Printf.eprintf "EXN: %s\n"
 					    (Printexc.to_string e);
 					  flush stderr;
 					  prev (* *)
