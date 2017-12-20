@@ -407,7 +407,8 @@ parsing_c/parser_c.mli : parsing_c/parser_c.ml
 
 ## Parser_cocci_menhir
 
-parsing_cocci/parser_cocci_menhir.mly.d : parsing_cocci/parser_cocci_menhir.mly $(MENHIR)
+parsing_cocci/parser_cocci_menhir.mly.d : \
+		parsing_cocci/parser_cocci_menhir.mly $(MENHIR)
 	$(MENHIR_DEP_CMD) $< >$@ || (rm $@; false)
 
 ifeq ($(DEPEND_METHOD),onefile)
@@ -429,11 +430,11 @@ parsing_cocci/parser_cocci_menhir.mli : parsing_cocci/parser_cocci_menhir.ml
 ## Bundles
 
 ifeq ($(NATIVE),yes)
-$(MENHIR):
+$(MENHIR): $(STDCOMPAT_LIB)
 	$(MAKE) -C bundles/menhirLib all
 	$(MAKE) -C bundles/menhirLib all.opt
 else
-$(MENHIR):
+$(MENHIR): $(STDCOMPAT_LIB)
 	$(MAKE) -C bundles/menhirLib all
 endif
 
