@@ -244,6 +244,7 @@ let string_of_power_of_two n =
 let int_thresholds =
   ref (None :
 	 (int (*int_sz*) * int (*long_sz*) *
+	    string (*int threshold*) *
 	    string (*uint threshold*) *
 	    string (*long threshold*) *
 	    string (*ulong threshold*)) option)
@@ -252,26 +253,38 @@ let set_int_bits n =
   match !int_thresholds with
     None ->
       (*assume long is 2*int; this can be corrected by a subsequent long_bits*)
-      let uint_threshold  = string_of_power_of_two (n-1) in
-      let long_threshold  = string_of_power_of_two n in
-      let ulong_threshold = string_of_power_of_two ((2*n)-1) in
+      let int_threshold  = string_of_power_of_two (n - 1) in
+      let uint_threshold  = string_of_power_of_two n in
+      let long_threshold  = string_of_power_of_two (2 * n - 1) in
+      let ulong_threshold = string_of_power_of_two (2 * n) in
       int_thresholds :=
-	Some (n,2*n,uint_threshold,long_threshold,ulong_threshold)
-  | Some(int_sz,long_sz,uint_threshold,long_threshold,ulong_threshold) ->
-      let uint_threshold = string_of_power_of_two (n-1) in
-      let long_threshold = string_of_power_of_two n in
+	Some
+	  (n, 2 * n, int_threshold, uint_threshold, long_threshold,
+	   ulong_threshold)
+  | Some
+      (int_sz, long_sz, int_threshold, uint_threshold, long_threshold,
+       ulong_threshold) ->
+      let int_threshold = string_of_power_of_two (n - 1) in
+      let uint_threshold = string_of_power_of_two n in
       int_thresholds :=
-	Some (n,long_sz,uint_threshold,long_threshold,ulong_threshold)
+	Some
+	  (n, long_sz, int_threshold, uint_threshold, long_threshold,
+	   ulong_threshold)
 
 let set_long_bits n =
   match !int_thresholds with
     None ->
       (*assume int is 1/2*int; this can be corrected by a subsequent int_bits*)
       set_int_bits (n/2)
-  | Some(int_sz,long_sz,uint_threshold,long_threshold,ulong_threshold) ->
-      let ulong_threshold = string_of_power_of_two (n-1) in
+  | Some
+      (int_sz, long_sz, int_threshold, uint_threshold, long_threshold,
+       ulong_threshold) ->
+      let long_threshold  = string_of_power_of_two (n - 1) in
+      let ulong_threshold = string_of_power_of_two n in
       int_thresholds :=
-	Some (int_sz,n,uint_threshold,long_threshold,ulong_threshold)
+	Some
+	  (n, long_sz, int_threshold, uint_threshold, long_threshold,
+	   ulong_threshold)
 
 (*****************************************************************************)
 (* unparsing strategy *)

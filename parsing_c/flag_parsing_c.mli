@@ -55,7 +55,7 @@ val use_cache : bool ref
 val cache_prefix : string option ref
 val cache_limit : int option ref
 val cmdline_flags_other : unit -> (string * Arg.spec * string) list
-val int_thresholds : (int * int * string * string * string) option ref
+val int_thresholds : (int * int * string * string * string * string) option ref
 val set_int_bits : int -> unit
 val set_long_bits : int -> unit
 type spacing = LINUX | SMPL
