@@ -8,14 +8,20 @@ TARBALL=menhir-$(MENHIR_VERSION).tar.gz
 MENHIR_MODULES= \
 	Fix IO installation keyword lineCount positions stringSet version \
 	settings printer action mark stringMap menhirLib misc codeBits gSet \
-	compressedBitSet option dot error parameters InputFile parserAux parser lexer \
+	compressedBitSet option dot error parameters InputFile parserAux \
+	parser lexer \
 	tarjan unionFind parameterizedGrammar partialGrammar time \
-	unparameterizedSyntax tokenType nonterminalType interface lexdep lexmli infer listMonad \
+	unparameterizedSyntax tokenType nonterminalType interface lexdep \
+	lexmli infer listMonad \
 	nonTerminalDefinitionInlining reachability unparameterizedPrinter \
-	FixSolver Boolean Maps patricia grammarFunctor keywordExpansion anonymous Driver front gMap grammar codePieces item derivation \
-	lr0 slr lr1 lr1partial DependencyGraph conflict invariant default codeBackend coqBackend \
+	FixSolver Boolean Maps patricia grammarFunctor keywordExpansion \
+	anonymous Driver front gMap grammar codePieces item derivation \
+	lr0 slr lr1 lr1partial DependencyGraph conflict invariant default \
+	codeBackend coqBackend \
 	pprint cst traverse inliner referenceInterpreter sentenceParser \
-	sentenceLexer segment sentenceParserAux interpret tableBackend MySet resizableArray LowIntegerPriorityQueue astar LRijkstra cmly_write back menhir
+	sentenceLexer segment sentenceParserAux interpret tableBackend MySet \
+	resizableArray LowIntegerPriorityQueue astar LRijkstra cmly_api \
+	cmly_format cmly_read cmly_write back menhir
 PRODUCTS=lexer lexdep lexmli parser sentenceLexer sentenceParser
 SIDEPRODUCTS=menhir menhirLib.cmi
 SIDEPRODUCTS_BYTECODE=menhirLib.cmo
@@ -33,9 +39,10 @@ MENHIRLIB_MODULES= \
 MODULES=$(MENHIR_MODULES) $(MENHIRLIB_MODULES)
 
 OCAML_BUNDLES_FLAGS=$(shell \
-  if echo $(MENHIRLIB_MODULES) | grep -w $(notdir $(basename $<)) >/dev/null; then \
-    echo -for-pack MenhirLib; \
-  fi)
+	if echo $(MENHIRLIB_MODULES) \
+		| grep -w $(notdir $(basename $<)) >/dev/null; then \
+		echo -for-pack MenhirLib; \
+	fi)
 
 include ../Makefile.bundles
 
