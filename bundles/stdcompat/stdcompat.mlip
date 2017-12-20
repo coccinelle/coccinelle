@@ -1,58 +1,57 @@
-val hypot : float -> float -> float
+module Pervasives : sig
+  include module type of struct
+    include Pervasives
+  end
 
-val copysign : float -> float -> float
+  val hypot : float -> float -> float
 
-val ( |> ) : 'a -> ('a -> 'b) -> 'b
+  val copysign : float -> float -> float
 
-val ( @@ ) : ('a -> 'b) -> 'a -> 'b
+  val ( |> ) : 'a -> ('a -> 'b) -> 'b
 
-val raise_notrace : exn -> 'a
-(** @before 4.02.0 equivalent to [raise]. *)
+  val ( @@ ) : ('a -> 'b) -> 'a -> 'b
 
-#if OCAMLVERSION < 402
-type bytes = string
-#else
-type bytes_ = bytes
-type bytes = bytes_
+  val raise_notrace : exn -> 'a
+  (** @before 4.02.0 equivalent to [raise]. *)
+
+  #if OCAMLVERSION < 402
+  type bytes = string
+  #endif
+  (** @before 4.02.0 alias to [string]. *)
+
+  val print_bytes : bytes -> unit
+
+  val prerr_bytes : bytes -> unit
+
+  val output_subbytes : out_channel -> bytes -> int -> int -> unit
+
+  val output_substring : out_channel -> string -> int -> int -> unit
+
+  val really_input_string : in_channel -> int -> string
+
+#if OCAMLVERSION < 403
+  type ('a, 'b) result = Ok of 'a | Error of 'b
 #endif
-(** @since 4.02.0 alias to [bytes].
-    @before 4.02.0 alias to [string]. *)
 
-val print_bytes : bytes -> unit
+  val bool_of_string_opt : string -> bool option
 
-val prerr_bytes : bytes -> unit
+  val int_of_string_opt : string -> int option
 
-val output_subbytes : out_channel -> bytes -> int -> int -> unit
+  val float_of_string_opt : string -> float option
 
-val output_substring : out_channel -> string -> int -> int -> unit
+  val read_int_opt : unit -> int option
 
-val really_input_string : in_channel -> int -> string
+  val read_float_opt : unit -> float option
 
-type ('a, 'b) result
-#if OCAMLVERSION >= 403
-   = ('a, 'b) Pervasives.result
-#endif
-   = Ok of 'a | Error of 'b
-(** @since 4.03.0 alias to [Pervasives.result]. *)
+  #if OCAMLVERSION < 406
+  type floatarray = float array
+  #endif
+  (** @before 4.06.0 alias to [float array]. *)
+end
 
-val bool_of_string_opt : string -> bool option
-
-val int_of_string_opt : string -> int option
-
-val float_of_string_opt : string -> float option
-
-val read_int_opt : unit -> int option
-
-val read_float_opt : unit -> float option
-
-#if OCAMLVERSION < 406
-type floatarray = float array
-#else
-type floatarray_ = floatarray
-type floatarray = floatarray_
-#endif
-(** @since 4.06.0 alias to [floatarray].
-    @before 4.06.0 alias to [float array]. *)
+include module type of struct
+  include Pervasives
+end
 
 module Arg : sig
   include module type of Arg
