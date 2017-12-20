@@ -6,7 +6,7 @@ scripts/spatch.byte
 
 *.so
 *.cm[aiox]
-*.cmxa
+*.cmx[as]
 *.cmt
 *.cmti
 *.[ao]
