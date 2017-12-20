@@ -97,7 +97,7 @@ PREFIX_spgen := tools/spgen/source/
 
 STDCOMPATDIR := bundles/stdcompat
 
-CORE_LIBS := unix bigarray nums str \
+CORE_LIBS := unix bigarray str \
 	$(patsubst %,bytes,$(BYTESDIR)) \
 	$(patsubst %,pcre,$(filter %/pcre.cma,$(LNKLIBS))) \
 	$(STDCOMPATDIR)/stdcompat

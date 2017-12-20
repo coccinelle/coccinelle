@@ -240,14 +240,13 @@ let is_long_dec s int uint long ulong =
   match !Flag_parsing_c.int_thresholds with
     None -> int
   | Some (_,_,uint_threshold,long_threshold,ulong_threshold) ->
-      let bn = Big_int.big_int_of_string s in
-      if Big_int.ge_big_int bn ulong_threshold
+      if s >= ulong_threshold
       then ulong
       else
-	if Big_int.ge_big_int bn long_threshold
+	if s >= long_threshold
 	then long
 	else
-	  if Big_int.ge_big_int bn uint_threshold
+	  if s >= uint_threshold
 	  then long
 	  else int
 
