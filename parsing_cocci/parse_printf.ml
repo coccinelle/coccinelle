@@ -20,7 +20,7 @@ let check_parameter s =
       (try
 	let _ = int_of_string a in
 	(Some a, String.concat "$" rest)
-      with Failure "int_of_string" -> (None, s))
+      with Failure _(*"int_of_string"*) -> (None, s))
   | _ -> (None, s)
 
 let check_flags s =
