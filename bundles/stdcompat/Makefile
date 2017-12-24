@@ -51,7 +51,7 @@ endif
 OCAMLVERSION := $(shell $(OCAMLC) -version | cut -c 1,3-4)
 
 CPPO := cppo
-CPP := cpp
+CPP := cpp 2>/dev/null
 
 CPPO_AVAILABLE := $(shell \
 	if $(CPPO) -version >/dev/null 2>&1; then \
@@ -84,7 +84,7 @@ PP_BYTECODE := $(PP)
 PP_NATIVE := $(PP) $(PP_NATIVE_ARGS)
 
 .PHONY : all
-all : bytecode $(patsubst %,native,$(filter true,$(OCAMLOPT_AVAILABLE))) doc
+all : bytecode $(patsubst %,native,$(filter true,$(OCAMLOPT_AVAILABLE)))
 
 .PHONY : bytecode
 bytecode : stdcompat.cma

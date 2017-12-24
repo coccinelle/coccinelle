@@ -501,7 +501,11 @@ let init _ = (* per file, first .cocci then iso *)
       Hashtbl.replace type_names name fn);
   Data.add_attribute :=
     (function name ->
-      let fn clt = Tattr (name, clt) in
+      let fn clt =
+	match clt with
+	  ((Data.PLUS | Data.PLUSPLUS),_,_,_,_,_,_,_,_,_) ->
+	    TDirective (Ast.Space name, clt)
+	| _ -> Tattr (name, clt) in
       Hashtbl.replace attr_names name fn);
   Data.add_declarer_name :=
     (function name ->

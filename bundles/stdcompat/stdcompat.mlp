@@ -1,115 +1,114 @@
-#if OCAMLVERSION < 405
-let option_find f x =
-  try Some (f x)
-  with Not_found -> None
+module Pervasives = struct
+  include Pervasives
 
-let option_fail f x =
-  try Some (f x)
-  with Failure _ -> None
+  #if OCAMLVERSION < 405
+  let option_find f x =
+    try Some (f x)
+    with Not_found -> None
 
-let option_invalid f x =
-  try Some (f x)
-  with Invalid_argument _ -> None
-#endif
+  let option_fail f x =
+    try Some (f x)
+    with Failure _ -> None
 
-#if OCAMLVERSION < 400
-let hypot x y =
-  sqrt (x *. x +. y *. y)
+  let option_invalid f x =
+    try Some (f x)
+    with Invalid_argument _ -> None
+  #endif
 
-let copysign x y =
-  if (x >= 0.) = (y >= 0.) then
-    x
-  else
-    -. x
-#else
-let hypot = hypot
+  #if OCAMLVERSION < 400
+  let hypot x y =
+    sqrt (x *. x +. y *. y)
 
-let copysign = copysign
-#endif
+  let copysign x y =
+    if (x >= 0.) = (y >= 0.) then
+      x
+    else
+      -. x
+  #else
+  let hypot = hypot
 
-#if OCAMLVERSION < 401
-let ( |> ) x f = f x
+  let copysign = copysign
+  #endif
 
-let ( @@ ) f x = f x
-#else
-let ( |> ) = ( |> )
+  #if OCAMLVERSION < 401
+  let ( |> ) x f = f x
 
-let ( @@ ) = ( @@ )
-#endif
+  let ( @@ ) f x = f x
+  #else
+  let ( |> ) = ( |> )
 
-#if OCAMLVERSION < 402
-let raise_notrace = raise
+  let ( @@ ) = ( @@ )
+  #endif
 
-type bytes = string
+  #if OCAMLVERSION < 402
+  let raise_notrace = raise
 
-let print_bytes = print_string
+  type bytes = string
 
-let prerr_bytes = prerr_string
+  let print_bytes = print_string
 
-let output_subbytes = output
+  let prerr_bytes = prerr_string
 
-let output_substring = output
+  let output_subbytes = output
 
-let really_input_string channel len =
-  let s = String.create len in
-  really_input channel s 0 len;
-  s
-#else
-let raise_notrace = raise_notrace
+  let output_substring = output
 
-type bytes_ = bytes
-type bytes = bytes_
+  let really_input_string channel len =
+    let s = String.create len in
+    really_input channel s 0 len;
+    s
+  #else
+  let raise_notrace = raise_notrace
 
-let print_bytes = print_bytes
+  let print_bytes = print_bytes
 
-let prerr_bytes = prerr_bytes
+  let prerr_bytes = prerr_bytes
 
-let output_subbytes = output
+  let output_subbytes = output
 
-let output_substring = output_substring
+  let output_substring = output_substring
 
-let really_input_string = really_input_string
-#endif
+  let really_input_string = really_input_string
+  #endif
 
-type ('a, 'b) result
-#if OCAMLVERSION >= 403
-   = ('a, 'b) Pervasives.result
-#endif
-   = Ok of 'a | Error of 'b
+  #if OCAMLVERSION < 403
+  type ('a, 'b) result
+     = Ok of 'a | Error of 'b
+  #endif
 
-#if OCAMLVERSION < 405
-let bool_of_string_opt s =
-  option_invalid bool_of_string s
+  #if OCAMLVERSION < 405
+  let bool_of_string_opt s =
+    option_invalid bool_of_string s
 
-let int_of_string_opt s =
-  option_fail int_of_string s
+  let int_of_string_opt s =
+    option_fail int_of_string s
 
-let float_of_string_opt s =
-  option_fail float_of_string s
+  let float_of_string_opt s =
+    option_fail float_of_string s
 
-let read_int_opt () =
-  option_fail read_int ()
+  let read_int_opt () =
+    option_fail read_int ()
 
-let read_float_opt () =
-  option_fail read_float ()
-#else
-let bool_of_string_opt = bool_of_string_opt
+  let read_float_opt () =
+    option_fail read_float ()
+  #else
+  let bool_of_string_opt = bool_of_string_opt
 
-let int_of_string_opt = int_of_string_opt
+  let int_of_string_opt = int_of_string_opt
 
-let float_of_string_opt = float_of_string_opt
+  let float_of_string_opt = float_of_string_opt
 
-let read_int_opt = read_int_opt
+  let read_int_opt = read_int_opt
 
-let read_float_opt = read_float_opt
-#endif
+  let read_float_opt = read_float_opt
+  #endif
 
-#if OCAMLVERSION < 406
-type floatarray = float array
-#else
-type floatarray_ = floatarray
-type floatarray = floatarray_
-#endif
+  #if OCAMLVERSION < 406
+  type floatarray = float array
+  #endif
+end
+
+include Pervasives
 
 module Arg = struct
   include Arg
