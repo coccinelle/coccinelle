@@ -234,9 +234,16 @@ let rec multiply_digit_list_by_two_n n digit_list =
     let digit_list = multiply_digit_list_by_two digit_list in
     multiply_digit_list_by_two_n (pred n) digit_list
 
+let string_init n f =
+  let s = String.create n in
+  for i = 0 to n - 1 do
+    String.set s i (f i)
+  done;
+  s
+
 let string_of_digit_list digit_list =
   let a = Array.of_list digit_list in
-  String.init (Array.length a) (fun i -> a.(i))
+  string_init (Array.length a) (fun i -> a.(i))
 
 let string_of_power_of_two n =
   string_of_digit_list (multiply_digit_list_by_two_n n ['1'])
