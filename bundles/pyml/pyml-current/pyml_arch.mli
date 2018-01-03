@@ -7,3 +7,5 @@ val ensure_executable_suffix: string -> string
 val which: string
 
 val fd_of_int: int -> Unix.file_descr
+
+val path_separator: string

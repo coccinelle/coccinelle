@@ -12,3 +12,5 @@ let ensure_executable_suffix executable =
 let which = "where"
 
 external fd_of_int: int -> Unix.file_descr = "win_handle_fd"
+
+let path_separator = ";"

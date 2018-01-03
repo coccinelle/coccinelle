@@ -452,11 +452,11 @@ endif
 
 ifneq ($(PYML_LIB),)
 ifeq ($(NATIVE),yes)
-$(PYML_LIB):
+$(PYML_LIB): $(STDCOMPAT_LIB)
 	$(MAKE) -C bundles/pyml all
 	$(MAKE) -C bundles/pyml all.opt
 else
-$(PYML_LIB):
+$(PYML_LIB): $(STDCOMPAT_LIB)
 	$(MAKE) -C bundles/pyml all
 endif
 endif
