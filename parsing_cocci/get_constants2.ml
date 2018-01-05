@@ -714,7 +714,7 @@ let debug_deps nm deps res =
   then
     begin
       Printf.fprintf stderr "Rule: %s\n" nm;
-      Printf.fprintf stderr "Dependecies: %s\n"
+      Printf.fprintf stderr "Dependencies: %s\n"
 	(Common.format_to_string
 	   (function _ -> Pretty_print_cocci.dependency deps));
       Printf.fprintf stderr "Result: %s\n\n" (dep2c res)
