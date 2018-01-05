@@ -709,7 +709,7 @@ let rule_fn nm tls env neg_pos =
 	| x -> build_or x rest_info)
     False (List.combine tls neg_pos)
 
-let debug_deps nm deps res =
+let debug_deps nm deps res from_code =
   if !Flag_parsing_cocci.debug_parse_cocci
   then
     begin
@@ -717,7 +717,12 @@ let debug_deps nm deps res =
       Printf.fprintf stderr "Dependencies: %s\n"
 	(Common.format_to_string
 	   (function _ -> Pretty_print_cocci.dependency deps));
-      Printf.fprintf stderr "Result: %s\n\n" (dep2c res)
+      Printf.fprintf stderr "Result: %s\n" (dep2c res);
+      (match from_code with
+	Some deps ->
+	  Printf.fprintf stderr "Result_from_code: %s\n" (dep2c deps)
+      | None -> ());
+      Printf.fprintf stderr "\n";
     end
 
 let run rules neg_pos_vars =
@@ -750,7 +755,7 @@ let run rules neg_pos_vars =
 		    | Ast.ForallDep d ->
 			Ast.ForallDep(Ast.AndDep(d,extra_deps)) in
 	      let dependencies = dependencies env extra_deps in
-	      debug_deps nm extra_deps dependencies;
+	      debug_deps nm extra_deps dependencies None;
 	      (match dependencies with
 		False ->
 		  (rest_info, (nm,True)::env, nm::locals)
@@ -764,13 +769,13 @@ let run rules neg_pos_vars =
 	      (rest_info, env, locals)
           | (Ast.CocciRule (nm,(dep,_,_),cur,_,_),neg_pos_vars) ->
 	      let dependencies = dependencies env dep in
-	      debug_deps nm dep dependencies;
 	      (match dependencies with
 		False -> (rest_info,env,locals)
 	      | dependencies ->
 		  let cur_info =
 		    rule_fn nm cur ((nm,True)::env) neg_pos_vars in
 		  let re_cur_info = build_and dependencies cur_info in
+		  debug_deps nm dep dependencies (Some cur_info);
 		  if List.for_all all_context.V.combiner_top_level cur
 		  then (rest_info,(nm,re_cur_info)::env,nm::locals)
 		  else
