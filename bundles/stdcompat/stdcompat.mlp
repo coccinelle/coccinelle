@@ -1,7 +1,21 @@
+#if OCAMLVERSION < 402
+  type bytes = string
+#else
+  type bytes_ = bytes
+  type bytes = bytes_
+#endif
+
+#if OCAMLVERSION < 406
+  type floatarray = float array
+#else
+  type floatarray_ = floatarray
+  type floatarray = floatarray_
+#endif
+
 module Pervasives = struct
   include Pervasives
 
-  #if OCAMLVERSION < 405
+#if OCAMLVERSION < 405
   let option_find f x =
     try Some (f x)
     with Not_found -> None
@@ -13,9 +27,9 @@ module Pervasives = struct
   let option_invalid f x =
     try Some (f x)
     with Invalid_argument _ -> None
-  #endif
+#endif
 
-  #if OCAMLVERSION < 400
+#if OCAMLVERSION < 400
   let hypot x y =
     sqrt (x *. x +. y *. y)
 
@@ -24,32 +38,20 @@ module Pervasives = struct
       x
     else
       -. x
-  #else
-  let hypot = hypot
+#endif
 
-  let copysign = copysign
-  #endif
-
-  #if OCAMLVERSION < 401
+#if OCAMLVERSION < 401
   let ( |> ) x f = f x
 
   let ( @@ ) f x = f x
-  #else
-  let ( |> ) = ( |> )
+#endif
 
-  let ( @@ ) = ( @@ )
-  #endif
-
-  #if OCAMLVERSION < 402
-  let raise_notrace = raise
-
-  type bytes = string
+#if OCAMLVERSION < 402
+  external raise_notrace : exn -> 'a = "%raise"
 
   let print_bytes = print_string
 
   let prerr_bytes = prerr_string
-
-  let output_subbytes = output
 
   let output_substring = output
 
@@ -57,26 +59,13 @@ module Pervasives = struct
     let s = String.create len in
     really_input channel s 0 len;
     s
-  #else
-  let raise_notrace = raise_notrace
+#endif
 
-  let print_bytes = print_bytes
+#if OCAMLVERSION < 403
+  type ('a, 'b) result = Ok of 'a | Error of 'b
+#endif
 
-  let prerr_bytes = prerr_bytes
-
-  let output_subbytes = output
-
-  let output_substring = output_substring
-
-  let really_input_string = really_input_string
-  #endif
-
-  #if OCAMLVERSION < 403
-  type ('a, 'b) result
-     = Ok of 'a | Error of 'b
-  #endif
-
-  #if OCAMLVERSION < 405
+#if OCAMLVERSION < 405
   let bool_of_string_opt s =
     option_invalid bool_of_string s
 
@@ -91,21 +80,7 @@ module Pervasives = struct
 
   let read_float_opt () =
     option_fail read_float ()
-  #else
-  let bool_of_string_opt = bool_of_string_opt
-
-  let int_of_string_opt = int_of_string_opt
-
-  let float_of_string_opt = float_of_string_opt
-
-  let read_int_opt = read_int_opt
-
-  let read_float_opt = read_float_opt
-  #endif
-
-  #if OCAMLVERSION < 406
-  type floatarray = float array
-  #endif
+#endif
 end
 
 include Pervasives

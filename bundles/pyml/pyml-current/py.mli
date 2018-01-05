@@ -2,14 +2,14 @@
 
 (** Call [initialize ()] first. *)
 
-val initialize: ?interpreter:string -> ?version:(int * int) -> ?verbose:bool ->
-  unit -> unit
-(** [initialize ~interpreter ~version ~verbose ()] finds and loads the Python
-    library.
+val initialize: ?interpreter:string -> ?version:int -> ?minor:int ->
+  ?verbose:bool -> unit -> unit
+(** [initialize ~interpreter ~version ~minor ~verbose ()] finds and loads the
+    Python library.
     This function should be called before any other functions, except
     if explicitely mentioned.
-    [version] should be a pair specifying the major and the minor version
-    number.
+    [version] should specify the major version number of Python (2 or 3).
+    [minor] should specify the minor version number.
     If no version number is given, the version of Python is determined by the
     output of the shell command [python --version].
     If an [interpreter] executable name is given, this executable is
@@ -25,6 +25,10 @@ val initialize: ?interpreter:string -> ?version:(int * int) -> ?verbose:bool ->
 val finalize: unit -> unit
 (** [finalize ()] unloads the library. No other functions except
     [initialize ()] should be called afterwards. *)
+
+val on_finalize: (unit -> unit) -> unit
+(** [on_finalize f] registers [f ()] to be executed when [finalize] is
+    executed. *)
 
 val is_initialized: unit -> bool
 (** [is_initialized ()] returns [true] if the library is initialized
@@ -212,7 +216,7 @@ module Object: sig
 
   val call_method_obj_args: t -> t -> t array -> t
   (** Wrapper for
-      {{:https://docs.python.org/3/c-api/object.html#c.PyObject_CallMethodObjArgs} PyObject_CallMethodObjArgs} *)  
+      {{:https://docs.python.org/3/c-api/object.html#c.PyObject_CallMethodObjArgs} PyObject_CallMethodObjArgs} *)
 
   val call_method: t -> string -> t array -> t
   (** [Py.Object.call_method o m args] is equivalent to
@@ -236,6 +240,10 @@ val null: Object.t
 val none: Object.t
 (** The value [None] of Python. *)
 
+val check_not_null: Object.t -> Object.t
+(** [check_not_null v] checks that [v] is not [null] and returns [v].
+    Raises the current Python error as exception otherwise. *)
+
 val set_program_name: string -> unit
 (** Sets the program name (by default, [Sys.argv.(0)]).
     The function can be called before [initialize ()] and the value is preserved
@@ -243,6 +251,11 @@ val set_program_name: string -> unit
 
 val set_python_home: string -> unit
 (** Sets the path of the Python home.
+    The function can be called before [initialize ()] and the value is preserved
+    from one initialization to the other. *)
+
+val add_python_path: string -> unit
+(** Adds a path to Python search path.
     The function can be called before [initialize ()] and the value is preserved
     from one initialization to the other. *)
 
@@ -316,9 +329,10 @@ module Callable: sig
       Wrapper for
       {{: https://docs.python.org/3/c-api/object.html#c.PyCallable_Check} PyCallable_Check}. *)
 
-  val of_function: ?docstring:string -> (Object.t -> Object.t) -> Object.t
-  (** [of_function f] returns a Python callable object that calls the function
-      [f].
+  val of_function_as_tuple: ?docstring:string -> (Object.t -> Object.t) ->
+    Object.t
+  (** [of_function_as_tuple f] returns a Python callable object that calls the
+      function [f].
       Arguments are passed as a tuple.
       If [f] raises a Python exception
       ([Py.E (errtype, errvalue)] or [Py.Err (errtype, msg)]),
@@ -327,18 +341,44 @@ module Callable: sig
       If [f] raises any other exception, this exception bypasses the Python
       interpreter. *)
 
-  val of_function_array: ?docstring:string -> (Object.t array -> Object.t)
-    -> Object.t
-  (** Equivalent to {!of_function} but with an array of Python objects
+  val of_function_as_tuple_and_dict: ?docstring:string ->
+    (Object.t -> Object.t -> Object.t) -> Object.t
+  (** [of_function_as_tuple_and_dict f] returns a Python callable object that
+      calls the function [f].
+      Arguments are passed as a tuple and a dictionary of keywords. *)
+
+  val of_function: ?docstring:string -> (Object.t array -> Object.t) -> Object.t
+  (** Equivalent to {!of_function_as_tuple} but with an array of Python objects
       instead of a tuple for passing arguments. *)
 
-  val to_function: Object.t -> Object.t -> Object.t
-  (** [to_function c] returns a function [f] such that [f args] calls the
-      Python callable [c] with the Python tuple [args] as arguments. *)
+  val of_function_with_keywords: ?docstring:string ->
+    (Object.t array -> Object.t -> Object.t) -> Object.t
+  (** Equivalent to {!of_function_as_tuple_and_dict} but with an array of
+      Python objects instead of a tuple for passing arguments.
+      The dictionary of keywords is passed as such as it is more efficient
+      to access arguments with ``Py.Dict.find_string``, rather than using
+      ``List.assoc`` with an associative list. *)
 
-  val to_function_array: Object.t -> Object.t array -> Object.t
-  (** Equivalent to {!to_function} but with an array of Python objects
-      instead of a tuple for passing arguments. *)
+  val to_function_as_tuple: Object.t -> Object.t -> Object.t
+  (** [to_function_as_tuple c] returns a function [f] such that
+      [f args] calls the Python callable [c] with the Python tuple [args]
+      as arguments. *)
+
+  val to_function_as_tuple_and_dict: Object.t -> Object.t -> Object.t ->
+    Object.t
+  (** [to_function_as_tuple_and_dict c] returns a function [f] such that
+      [f args dict] calls the Python callable [c] with the Python tuple [args]
+      and the dictionary of keywords [dict] as arguments. *)
+
+  val to_function: Object.t -> Object.t array -> Object.t
+  (** Equivalent to {!to_function_as_tuple} but with an array of
+      Python objects instead of a tuple for passing arguments. *)
+
+  val to_function_with_keywords: Object.t -> Object.t array ->
+    (string * Object.t) list -> Object.t
+  (** Equivalent to {!to_function_as_tuple_and_dict} but with an array of
+      Python objects instead of a tuple and an associative list instead of a
+      dictionary for passing arguments. *)
 end
 
 (** Embedding of OCaml values in Python. *)
@@ -377,14 +417,13 @@ end
 
 (** Defining a new class type *)
 module Class: sig
-  val init: ?parents:Object.t -> ?fields:((string * Object.t) list) ->
-      ?methods:((string * (Object.t -> Object.t)) list) ->
-        Object.t -> Object.t
+  val init: ?parents:(Object.t list) -> ?fields:((string * Object.t) list) ->
+      ?methods:((string * Object.t) list) ->
+        string -> Object.t
   (** [init ~parents ~fields ~methods classname] Returns a new class type.
-      @param classname is a Python string.
-      @param parents is a Python tuple for bases (default: [()]).
-      @param fields is an associative list for field values (default : [[]]).
-      @param methods is an associative list for method closures
+      @param parents list of base classes (default: [[]]).
+      @param fields associative list for field values (default : [[]]).
+      @param methods associative list for method closures
       (default : [[]]). *)
 end
 
@@ -414,6 +453,21 @@ module Long: sig
       and returns the corresponding integer value.
       A Python exception ([Py.E _]) is raised if [o] is not a long.
       We have [to_int o = Int64.to_int (to_int 64 o)]. *)
+
+  val from_string: string -> int -> Object.t * int
+  (** [from_string s base] parses [s] as a number written in [base] and
+      returns [(o, l)] where [o] is the Python long which has been read,
+      and [l] is the number of characters that has been parsed.
+      Wrapper for
+      {{: https://docs.python.org/3/c-api/long.html#c.PyLong_FromString} PyLong_FromString}. *)
+
+  val of_string: ?base:int -> string -> Object.t
+  (** [of_string ?base s] parses [s] and returns the Python long that has
+      been read. By default, [base] is [0]: the radix is determined based
+      on the leading characters of [s]. *)
+
+  val to_string: Object.t -> string
+  (** Synonym for [Py.Object.to_string]. *)
 end
 
 (** Interface for Python values of type [Int] if Python 2, [Long] if Python 3. *)
@@ -442,6 +496,12 @@ module Int: sig
       and returns the corresponding integer value.
       A Python exception ([Py.E _]) is raised if [o] is not a long.
       We have [to_int o = Int64.to_int (to_int 64 o)]. *)
+
+  val of_string: ?base:int -> string -> Object.t
+  (** Synonym for [Py.Long.of_string]. *)
+
+  val to_string: Object.t -> string
+  (** Synonym for [Py.Long.to_string]. *)
 end
 
 (** Interface for Python values of type [Dict]. *)
@@ -529,17 +589,17 @@ module Dict: sig
       among those of the Python dictionary [dict] that satisfies the predicate
       [p key value]. *)
 
-  val bindings: Object.t -> (Object.t * Object.t) list
-  (** [bindings o] returns all the pairs [(key, value)] in the Python dictionary
+  val to_bindings: Object.t -> (Object.t * Object.t) list
+  (** [to_bindings o] returns all the pairs [(key, value)] in the Python dictionary
       [o]. *)
 
-  val bindings_map: (Object.t -> 'a) -> (Object.t -> 'b) -> Object.t ->
+  val to_bindings_map: (Object.t -> 'a) -> (Object.t -> 'b) -> Object.t ->
     ('a * 'b) list
-  (** [bindings_map fkey fvalue o] returns all the pairs
+  (** [to_bindings_map fkey fvalue o] returns all the pairs
       [(fkey key, fvalue value)] in the Python dictionary [o]. *)
 
-  val bindings_string: Object.t -> (string * Object.t) list
-  (** [bindings_string o] returns all the pairs [(key, value)] in the Python
+  val to_bindings_string: Object.t -> (string * Object.t) list
+  (** [to_bindings_string o] returns all the pairs [(key, value)] in the Python
       dictionary [o]. *)
 
   val of_bindings: (Object.t * Object.t) list -> Object.t
@@ -672,14 +732,6 @@ module Eval: sig
   val call_object_with_keywords: Object.t -> Object.t -> Object.t -> Object.t
  (** See {{:https://docs.python.org/3.0/extending/extending.html} Extending Python with C or C++} *)
 
-  val call: Object.t -> Object.t array -> Object.t
-  (* [Py.Eval.call f args] is equivalent to
-     [Py.Eval.call_object f (Py.Tuple.of_array args]. *)
-
-  val call_with_keywords: Object.t -> Object.t array -> (string * Object.t) list -> Object.t
-  (* [Py.Eval.call_with_keywords f args kw] is equivalent to
-     [Py.Eval.call_object_with_keywords f (Py.Tuple.of_array args) (Py.Tuple.of_bindings_string kw)]. *)
-
   val get_builtins: unit -> Object.t
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/reflection.html#c.PyEval_GetBuiltins} PyEval_GetBuiltins} *)
@@ -744,6 +796,12 @@ module Import: sig
   val import_module: string -> Object.t
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/import.html#c.PyImport_ImportModule} PyImport_ImportModule} *)
+
+  val try_import_module: string -> Object.t option
+  (** [try_import_module m] imports the module [m] and returns the module object if the import succeeds:.
+      in this case, it is equivalent to [Some (import_module m)].
+      If the module is not found, i.e. if [import_module] raises a Python exception of class
+      [ModuleNotFoundError], then [try_import_module] returns [None]. *)
 
   val import_module_ex:
       string -> Object.t -> Object.t -> Object.t -> Object.t
@@ -961,8 +1019,26 @@ module Module: sig
   val get: Object.t -> string -> Object.t
   (** Equivalent to {!Object.get_attr_string}. *)
 
+  val get_function: Object.t -> string -> Object.t array -> Object.t
+  (** [Py.Module.get_function m name] is equivalent to
+      [Py.Callable.to_function (Py.Module.get m name)]. *)
+
+  val get_function_with_keywords: Object.t -> string -> Object.t array ->
+    (string * Object.t) list -> Object.t
+  (** [Py.Module.get_function_with_keywords m name] is equivalent to
+      [Py.Callable.to_function_with_keywords (Py.Module.get m name)]. *)
+
   val set: Object.t -> string -> Object.t -> unit
   (** Equivalent to {!Object.set_attr_string}. *)
+
+  val set_function: Object.t -> string -> (Object.t array -> Object.t) -> unit
+  (** [Py.Module.set_function m name f] is equivalent to
+      [Py.Module.set m name (Py.Callable.of_function f)]. *)
+
+  val set_function_with_keywords: Object.t -> string ->
+    (Object.t array -> Object.t -> Object.t) -> unit
+  (** [Py.Module.set_function_with_keywords m name f] is equivalent to
+      [Py.Module.set m name (Py.Callable.of_function_with_keywords f)]. *)
 
   val remove: Object.t -> string -> unit
   (** Equivalent to {!Object.del_attr_string}. *)
@@ -1035,7 +1111,7 @@ module Number: sig
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/number.html#c.PyNumber_InPlaceOr} PyNumber_InPlaceOr} *)
 
-  val in_place_power: Object.t -> Object.t -> Object.t -> Object.t
+  val in_place_power: ?modulo:Object.t -> Object.t -> Object.t -> Object.t
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/number.html#c.PyNumber_InPlacePower} PyNumber_InPlacePower} *)
 
@@ -1083,7 +1159,7 @@ module Number: sig
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/number.html#c.PyNumber_Positive} PyNumber_Positive} *)
 
-  val power: Object.t -> Object.t -> Object.t -> Object.t
+  val power: ?modulo:Object.t -> Object.t -> Object.t -> Object.t
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/number.html#c.PyNumber_Power} PyNumber_Power} *)
 
@@ -1115,6 +1191,48 @@ module Number: sig
   (** [to_float v] returns the floating-point value equal to the Python integer
       or Python float [v]. Raises a failure ([Failure _]) if [v] is neither a
       float nor an integer. *)
+
+  val of_int: int -> Object.t
+  (** Synonym of {!Py.Int.of_int} *)
+
+  val of_int64: int64 -> Object.t
+  (** Synonym of {!Py.Int.of_int64} *)
+
+  val of_float: float -> Object.t
+  (** Synonym of {!Py.Float.of_float} *)
+
+  val ( + ): Object.t -> Object.t -> Object.t
+  (** Synomym of {!add} *)
+
+  val ( - ): Object.t -> Object.t -> Object.t
+  (** Synomym of {!subtract} *)
+
+  val ( * ): Object.t -> Object.t -> Object.t
+  (** Synomym of {!multiply} *)
+
+  val ( / ): Object.t -> Object.t -> Object.t
+  (** Synomym of {!true_divide} *)
+
+  val ( ** ): Object.t -> Object.t -> Object.t
+  (** Synomym of {!power} *)
+
+  val ( ~- ): Object.t -> Object.t
+  (** Synomym of {!negative} *)
+
+  val ( land ): Object.t -> Object.t -> Object.t
+  (** Synomym of {!number_and} *)
+
+  val ( lor ): Object.t -> Object.t -> Object.t
+  (** Synomym of {!number_or} *)
+
+  val ( lxor ): Object.t -> Object.t -> Object.t
+  (** Synomym of {!number_xor} *)
+
+  val ( lsl ): Object.t -> Object.t -> Object.t
+  (** Synomym of {!lshift} *)
+
+  val ( lsr ): Object.t -> Object.t -> Object.t
+  (** Synomym of {!rshift} *)
 end
 
 type input = Pytypes.input = Single | File | Eval
@@ -1150,7 +1268,7 @@ module Run: sig
       We have [Py.Run.interactive () = Py.Run.interactive_loop stdin "<stdin>"].
    *)
 
-  val ipython: unit -> unit
+  val ipython: ?frame:bool -> unit -> unit
   (** Runs the IPython interactive loop. *)
 
   val any_file: in_channel file -> string -> unit
@@ -1191,6 +1309,8 @@ module Run: sig
   val string: string -> input -> Object.t -> Object.t -> Object.t
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/veryhigh.html#c.PyRun_String} PyRun_String} *)
+
+  val frame: ('a -> 'b) -> 'a -> 'b
 end
 
 (** Interface for Python values with a [Sequence] interface. *)
@@ -1555,6 +1675,11 @@ module Type: sig
   val mismatch: string -> Object.t -> 'a
   (** [mismatch ty obj] raises a type mismatch [Failure _] that indicates that
       an object of type [ty] was expected, but [obj] was found. *)
+
+  val create: string -> Object.t list -> (string * Object.t) list -> Object.t
+  (** [create classname parents dict] calls Python [type()] function to create
+      a new type [classname] deriving from [parents] with the dictionary
+      [dict]. *)
 end
 
 module Marshal: sig
@@ -1629,9 +1754,27 @@ module Array: sig
       To make the array-like structure read-only,
       raise an exception in [setter]. *)
 
-  val numpy: float array -> Object.t
+  val numpy_api: unit -> Object.t
+  (** Returns the object which contains the entry points to the Numpy API.
+      It is used internally by the following functions and by the {!Numpy}
+      module. *)
 
-  val numpy_get_array: Object.t -> float array
+  val pyarray_type: unit -> Object.t
+  (** Returns the type of Numpy arrays. *)
+
+  val numpy: Stdcompat.floatarray -> Object.t
+  (** [numpy a] returns a Numpy array that shares the same contents than
+      the OCaml array [a].
+      The array is passed in place (without copy): Python programs can
+      change the contents of the array and the changes are visible in
+      the OCaml array. *)
+
+  val numpy_get_array: Object.t -> Stdcompat.floatarray
+  (** [numpy_get_array a] returns the OCaml array from which the Numpy
+      array [a] has been converted from. Note that this function fails
+      if [a] has not been obtained by calling the {!numpy} function
+      above. If you need to convert an arbitrary Numpy array to OCaml,
+      you should use bigarrays and the {!Numpy} module. *)
 end
 
 val set_argv: string array -> unit
@@ -1645,49 +1788,3 @@ val last_value: unit -> Object.t
 val exception_printer: exn -> string option
 (** This printer pretty-prints [E (ty, value)] exceptions.
     It is automatically registered to [Printexc.register_printer]. *)
-
-module Utils: sig
-  (** This module declares utility functions that does not require Python to
-      be initialized. *)
-
-  val try_finally: ('a -> 'b) -> 'a -> ('c -> unit) -> 'c -> 'b
-  (** [try_finally f arg finally finally_arg] calls [f arg], and returns the
-      result of [f].
-      [finally finally_arg] is always called after [f] has been called, even if
-      [f] raises an exception. *)
-
-  val read_and_close: in_channel -> ('a -> 'b) -> 'a -> 'b
-  (** [read_and_close channel f arg] calls [f arg], and returns the result of
-      [f].
-      [channel] is always closed after [f] has been called, even if [f] raises
-      an exception. *)
-
-  val write_and_close: out_channel -> ('a -> 'b) -> 'a -> 'b
-  (** [write_and_close channel f arg] calls [f arg], and returns the result of
-      [f].
-      [channel] is always closed after [f] has been called, even if [f] raises
-      an exception. *)
-
-  val with_temp_file: string -> (string -> in_channel -> 'a) -> 'a
-  (** [with_temp_file s f] creates a temporary file with [s] as contents and
-      calls [f filename in_channel] where [filename] is the name of the
-      temporary file and [in_channel] is an input channel opened to read the
-      file. The file is deleted after the execution of [f] (even if [f]
-      raised an exception. *)
-
-  val with_pipe: (in_channel -> out_channel -> 'a) -> 'a
-  (** [with_pipe f] creates a pipe and calls [f] with the two ends of the
-      pipe. *)
-
-  val with_stdin_from: in_channel -> ('a -> 'b) -> 'a -> 'b
-  (** [with_stdin_from chan f arg] calls [f arg] with the standard input
-      redirected for reading from [chan]. *)
-
-  val with_channel_from_string: string -> (in_channel -> 'a) -> 'a
-  (** [with_channel_from_string s f] calls [f in_channel] where [in_channel]
-      is an input channel returning the contents of [s]. *)
-
-  val with_stdin_from_string: string -> ('a -> 'b) -> 'a -> 'b
-  (** [with_stdin_from_string s f arg] calls [f arg] with the standard input
-      redirected for reading from the contents of [s]. *)
-end
