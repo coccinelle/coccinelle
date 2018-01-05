@@ -384,22 +384,32 @@ let do_get_constants constants keywords env (neg_pos,_) =
     | Ast.DisjId(ids) -> disj_union_all (List.map r.V.combiner_ident ids)
     | _ -> k i in
 
-  let type_collect res ty =
-    let add x res = build_or res x in
+  let type_collect ty =
+    let add x res = build_and res x in
     let add_ident ident =
       match Ast.unwrap ident with
         Ast.Id name -> add (constants (Ast.unwrap_mcode name))
+      | Ast.MetaId(name,_,_,_) -> add (minherited name)
       | _ -> Common.id in
     let enumOrStructUnionName _ ident res =
       Common.default res (fun ident' -> add_ident ident' res) ident in
-    Ast.fullType_fold { Ast.empty_transformer with
-      Ast.decimal = Some (fun _ _ _ _ _ _ -> add (keywords "decimal"));
-      metaType =
-	Some (fun tyname _ _ _ -> add (inherited (Ast.unwrap_mcode tyname)));
-      typeName = Some(fun tyname -> add (constants (Ast.unwrap_mcode tyname)));
-      enumName = Some enumOrStructUnionName;
-      structUnionName = Some enumOrStructUnionName
-    } ty res in
+    let pieces ty res =
+      Ast.fullType_fold
+	{ Ast.empty_transformer with
+	  Ast.decimal = Some (fun _ _ _ _ _ _ -> add (keywords "decimal"));
+	  metaType =
+	  Some (fun tyname _ _ _ -> add (inherited (Ast.unwrap_mcode tyname)));
+	  typeName =
+	  Some(fun tyname -> add (constants (Ast.unwrap_mcode tyname)));
+	  enumName = Some enumOrStructUnionName;
+	  structUnionName = Some enumOrStructUnionName
+	} ty res in
+    let rec loop ty =
+      match Ast.unwrap ty with
+	Ast.DisjType l ->
+	  List.fold_left (fun prev ty -> build_or prev (loop ty)) False l
+      | _ -> pieces ty option_default in
+    loop ty in
 
   (* no point to do anything special for records because glimpse is
      word-oriented *)
@@ -447,7 +457,12 @@ let do_get_constants constants keywords env (neg_pos,_) =
 	  | None ->  option_default)
 	*)
     | Ast.MetaExpr(name,_,_,Some type_list,_,_,_) ->
-	let types = List.fold_left type_collect option_default type_list in
+	let types =
+	  match type_list with
+	    [] -> True (* no constraint *)
+	  | _ -> (* at least one constraint must be satisfied *)
+	      List.fold_left (fun prev ty -> build_or (type_collect ty) prev)
+		(type_collect(List.hd type_list)) (List.tl type_list) in
 	bind (k e) (bind (minherited name) types)
     | Ast.MetaErr(name,_,_,_) | Ast.MetaExpr(name,_,_,_,_,_,_) ->
 	bind (k e) (minherited name)
