@@ -39,6 +39,7 @@ $ dnf builddep coccinelle
 $ yum builddep coccinelle
 
 Then simply type
+ ./autogen
  ./configure
  make
  make install
