@@ -69,9 +69,12 @@ let sp_exit _ =
   Py.none
 
 let build_class cname parent fields methods pymodule =
+  let methods =
+    List.map (fun (name, f) -> (name, Py.Callable.of_function_as_tuple f))
+      methods in
   let cx =
-    Py.Class.init (Py.String.of_string cname)
-      ~parents:(Py.Tuple.singleton (pycocci_get_class_type parent))
+    Py.Class.init cname
+      ~parents:[pycocci_get_class_type parent]
       ~fields ~methods in
   Py.Module.set pymodule cname cx;
   cx

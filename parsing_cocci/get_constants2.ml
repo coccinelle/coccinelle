@@ -384,22 +384,32 @@ let do_get_constants constants keywords env (neg_pos,_) =
     | Ast.DisjId(ids) -> disj_union_all (List.map r.V.combiner_ident ids)
     | _ -> k i in
 
-  let type_collect res ty =
-    let add x res = build_or res x in
+  let type_collect ty =
+    let add x res = build_and res x in
     let add_ident ident =
       match Ast.unwrap ident with
         Ast.Id name -> add (constants (Ast.unwrap_mcode name))
+      | Ast.MetaId(name,_,_,_) -> add (minherited name)
       | _ -> Common.id in
     let enumOrStructUnionName _ ident res =
       Common.default res (fun ident' -> add_ident ident' res) ident in
-    Ast.fullType_fold { Ast.empty_transformer with
-      Ast.decimal = Some (fun _ _ _ _ _ _ -> add (keywords "decimal"));
-      metaType =
-	Some (fun tyname _ _ _ -> add (inherited (Ast.unwrap_mcode tyname)));
-      typeName = Some (fun tyname -> add (constants (Ast.unwrap_mcode tyname)));
-      enumName = Some enumOrStructUnionName;
-      structUnionName = Some enumOrStructUnionName
-    } ty res in
+    let pieces ty res =
+      Ast.fullType_fold
+	{ Ast.empty_transformer with
+	  Ast.decimal = Some (fun _ _ _ _ _ _ -> add (keywords "decimal"));
+	  metaType =
+	  Some (fun tyname _ _ _ -> add (inherited (Ast.unwrap_mcode tyname)));
+	  typeName =
+	  Some(fun tyname -> add (constants (Ast.unwrap_mcode tyname)));
+	  enumName = Some enumOrStructUnionName;
+	  structUnionName = Some enumOrStructUnionName
+	} ty res in
+    let rec loop ty =
+      match Ast.unwrap ty with
+	Ast.DisjType l ->
+	  List.fold_left (fun prev ty -> build_or prev (loop ty)) False l
+      | _ -> pieces ty option_default in
+    loop ty in
 
   (* no point to do anything special for records because glimpse is
      word-oriented *)
@@ -447,7 +457,12 @@ let do_get_constants constants keywords env (neg_pos,_) =
 	  | None ->  option_default)
 	*)
     | Ast.MetaExpr(name,_,_,Some type_list,_,_,_) ->
-	let types = List.fold_left type_collect option_default type_list in
+	let types =
+	  match type_list with
+	    [] -> True (* no constraint *)
+	  | _ -> (* at least one constraint must be satisfied *)
+	      List.fold_left (fun prev ty -> build_or (type_collect ty) prev)
+		(type_collect(List.hd type_list)) (List.tl type_list) in
 	bind (k e) (bind (minherited name) types)
     | Ast.MetaErr(name,_,_,_) | Ast.MetaExpr(name,_,_,_,_,_,_) ->
 	bind (k e) (minherited name)
@@ -709,15 +724,20 @@ let rule_fn nm tls env neg_pos =
 	| x -> build_or x rest_info)
     False (List.combine tls neg_pos)
 
-let debug_deps nm deps res =
+let debug_deps nm deps res from_code =
   if !Flag_parsing_cocci.debug_parse_cocci
   then
     begin
       Printf.fprintf stderr "Rule: %s\n" nm;
-      Printf.fprintf stderr "Dependecies: %s\n"
+      Printf.fprintf stderr "Dependencies: %s\n"
 	(Common.format_to_string
 	   (function _ -> Pretty_print_cocci.dependency deps));
-      Printf.fprintf stderr "Result: %s\n\n" (dep2c res)
+      Printf.fprintf stderr "Result: %s\n" (dep2c res);
+      (match from_code with
+	Some deps ->
+	  Printf.fprintf stderr "Result_from_code: %s\n" (dep2c deps)
+      | None -> ());
+      Printf.fprintf stderr "\n";
     end
 
 let run rules neg_pos_vars =
@@ -750,7 +770,7 @@ let run rules neg_pos_vars =
 		    | Ast.ForallDep d ->
 			Ast.ForallDep(Ast.AndDep(d,extra_deps)) in
 	      let dependencies = dependencies env extra_deps in
-	      debug_deps nm extra_deps dependencies;
+	      debug_deps nm extra_deps dependencies None;
 	      (match dependencies with
 		False ->
 		  (rest_info, (nm,True)::env, nm::locals)
@@ -764,13 +784,13 @@ let run rules neg_pos_vars =
 	      (rest_info, env, locals)
           | (Ast.CocciRule (nm,(dep,_,_),cur,_,_),neg_pos_vars) ->
 	      let dependencies = dependencies env dep in
-	      debug_deps nm dep dependencies;
 	      (match dependencies with
 		False -> (rest_info,env,locals)
 	      | dependencies ->
 		  let cur_info =
 		    rule_fn nm cur ((nm,True)::env) neg_pos_vars in
 		  let re_cur_info = build_and dependencies cur_info in
+		  debug_deps nm dep dependencies (Some cur_info);
 		  if List.for_all all_context.V.combiner_top_level cur
 		  then (rest_info,(nm,re_cur_info)::env,nm::locals)
 		  else

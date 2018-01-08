@@ -208,7 +208,8 @@ STDCOMPAT_LIB := $(STDCOMPATDIR)/stdcompat$(LIBSUFFIX)
 STDCOMPAT_USERS := parsing_c/type_annoter_c cocci parsing_cocci/check_meta \
 	parsing_cocci/id_utils parsing_cocci/insert_plus \
 	parsing_cocci/lexer_cocci ocaml/yes_prepare_ocamlcocci \
-	tools/spgen/source/user_input tools/spgen/source/spgen_interactive
+	tools/spgen/source/user_input tools/spgen/source/spgen_interactive \
+	parsing_c/flag_parsing_c
 
 SHOW_CLEAN := @echo "CLEAN    "
 SHOW_OCAMLC := @echo "OCAMLC   "
@@ -451,11 +452,11 @@ endif
 
 ifneq ($(PYML_LIB),)
 ifeq ($(NATIVE),yes)
-$(PYML_LIB):
+$(PYML_LIB): $(STDCOMPAT_LIB)
 	$(MAKE) -C bundles/pyml all
 	$(MAKE) -C bundles/pyml all.opt
 else
-$(PYML_LIB):
+$(PYML_LIB): $(STDCOMPAT_LIB)
 	$(MAKE) -C bundles/pyml all
 endif
 endif

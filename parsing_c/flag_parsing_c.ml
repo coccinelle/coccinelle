@@ -236,7 +236,7 @@ let rec multiply_digit_list_by_two_n n digit_list =
 
 let string_of_digit_list digit_list =
   let a = Array.of_list digit_list in
-  String.init (Array.length a) (fun i -> a.(i))
+  Stdcompat.String.init (Array.length a) (fun i -> a.(i))
 
 let string_of_power_of_two n =
   string_of_digit_list (multiply_digit_list_by_two_n n ['1'])
