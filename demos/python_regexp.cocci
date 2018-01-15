@@ -16,7 +16,7 @@ id << r_init.id;
 @@
 
 print "COCCI: Analyzing %s" % id
-if m.search(id.ident) != None:
+if m.search(id) != None:
 	print "COCCI: %s matchs '_new$'" % id
 else:
 	print "COCCI: %s discarded" % id
