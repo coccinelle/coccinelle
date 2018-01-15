@@ -473,7 +473,7 @@ let process_minus minus =
 	   verify res;
 	   res)
 	 minus) in
-  Hashtbl.reset root_token_table;
+  Stdcompat.Hashtbl.reset root_token_table;
   res
 
 (* --------------------------------------------------------------------- *)

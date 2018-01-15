@@ -206,37 +206,85 @@ let cmdline_flags_other () =
 (* for lexing of integer constants *)
 (*****************************************************************************)
 
+(* "by hand" calculation of power of two to get rid of Big_int dependency *)
+
+let int_of_digit digit =
+  int_of_char digit - int_of_char '0'
+
+let digit_of_int i =
+  char_of_int (i + int_of_char '0')
+
+let multiply_digit_by_two (carry, accu) digit =
+  let sum = carry + int_of_digit digit * 2 in
+  let carry = sum / 10 in
+  let accu = digit_of_int (sum mod 10) :: accu in
+  (carry, accu)
+
+let multiply_digit_list_by_two digit_list =
+  let carry, accu =
+    List.fold_left multiply_digit_by_two (0, []) (List.rev digit_list) in
+  if carry = 0 then
+    accu
+  else
+    digit_of_int carry :: accu
+
+let rec multiply_digit_list_by_two_n n digit_list =
+  if n = 0 then digit_list
+  else
+    let digit_list = multiply_digit_list_by_two digit_list in
+    multiply_digit_list_by_two_n (pred n) digit_list
+
+let string_of_digit_list digit_list =
+  let a = Array.of_list digit_list in
+  Stdcompat.String.init (Array.length a) (fun i -> a.(i))
+
+let string_of_power_of_two n =
+  string_of_digit_list (multiply_digit_list_by_two_n n ['1'])
+
 let int_thresholds =
   ref (None :
 	 (int (*int_sz*) * int (*long_sz*) *
-	    Big_int.big_int (*uint threshold*) *
-	    Big_int.big_int (*long threshold*) *
-	    Big_int.big_int (*ulong threshold*)) option)
+	    string (*int threshold*) *
+	    string (*uint threshold*) *
+	    string (*long threshold*) *
+	    string (*ulong threshold*)) option)
 
 let set_int_bits n =
   match !int_thresholds with
     None ->
       (*assume long is 2*int; this can be corrected by a subsequent long_bits*)
-      let uint_threshold  = Big_int.power_int_positive_int 2 (n-1) in
-      let long_threshold  = Big_int.power_int_positive_int 2 n in
-      let ulong_threshold = Big_int.power_int_positive_int 2 ((2*n)-1) in
+      let int_threshold  = string_of_power_of_two (n - 1) in
+      let uint_threshold  = string_of_power_of_two n in
+      let long_threshold  = string_of_power_of_two (2 * n - 1) in
+      let ulong_threshold = string_of_power_of_two (2 * n) in
       int_thresholds :=
-	Some (n,2*n,uint_threshold,long_threshold,ulong_threshold)
-  | Some(int_sz,long_sz,uint_threshold,long_threshold,ulong_threshold) ->
-      let uint_threshold = Big_int.power_int_positive_int 2 (n-1) in
-      let long_threshold = Big_int.power_int_positive_int 2 n in
+	Some
+	  (n, 2 * n, int_threshold, uint_threshold, long_threshold,
+	   ulong_threshold)
+  | Some
+      (int_sz, long_sz, int_threshold, uint_threshold, long_threshold,
+       ulong_threshold) ->
+      let int_threshold = string_of_power_of_two (n - 1) in
+      let uint_threshold = string_of_power_of_two n in
       int_thresholds :=
-	Some (n,long_sz,uint_threshold,long_threshold,ulong_threshold)
+	Some
+	  (n, long_sz, int_threshold, uint_threshold, long_threshold,
+	   ulong_threshold)
 
 let set_long_bits n =
   match !int_thresholds with
     None ->
       (*assume int is 1/2*int; this can be corrected by a subsequent int_bits*)
       set_int_bits (n/2)
-  | Some(int_sz,long_sz,uint_threshold,long_threshold,ulong_threshold) ->
-      let ulong_threshold = Big_int.power_int_positive_int 2 (n-1) in
+  | Some
+      (int_sz, long_sz, int_threshold, uint_threshold, long_threshold,
+       ulong_threshold) ->
+      let long_threshold  = string_of_power_of_two (n - 1) in
+      let ulong_threshold = string_of_power_of_two n in
       int_thresholds :=
-	Some (int_sz,n,uint_threshold,long_threshold,ulong_threshold)
+	Some
+	  (n, long_sz, int_threshold, uint_threshold, long_threshold,
+	   ulong_threshold)
 
 (*****************************************************************************)
 (* unparsing strategy *)

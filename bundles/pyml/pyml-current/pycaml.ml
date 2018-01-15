@@ -277,7 +277,7 @@ let pyrun_simplestring s = pyrun_simplestringflags (s, None)
 let pyrun_string (s, start, globals, locals) =
   pyrun_stringflags (s, start, globals, locals, None)
 
-let pywrap_closure f = Py.Callable.of_function f
+let pywrap_closure f = Py.Callable.of_function_as_tuple f
 
 let pytuple_empty = Py.Tuple.empty
 
@@ -299,7 +299,7 @@ let py_optionally unwrapper py_value =
   | 1 -> Some (unwrapper (Py.List.get_item py_value 0))
   | _ -> Py.Type.mismatch "List of size 0 or 1" py_value
 
-let pycallable_asfun = Py.Callable.to_function_array
+let pycallable_asfun = Py.Callable.to_function
 
 let guarded_pytuple_toarray = Py.Tuple.to_array
 
@@ -465,7 +465,7 @@ let unpythonizing_function ?name ?(catch_weird_exceptions = true) ?extra_guards
 
 let py_profiling_active = ref false
 
-let py_profile_hash = Pyml_compat.lazy_from_fun (fun () -> Hashtbl.create 100)
+let py_profile_hash = Stdcompat.Lazy.from_fun (fun () -> Hashtbl.create 100)
 
 let py_activate_profiling () =
   let old_value = !py_profiling_active in
@@ -575,7 +575,7 @@ let python_interfaced_function ?name ?(catch_weird_exceptions = true) ?doc
             raise e in
         closure''
     | _ -> closure' in
-  Py.Callable.of_function ?docstring:doc closure''
+  Py.Callable.of_function_as_tuple ?docstring:doc closure''
 
 let python_pre_interfaced_function ?catch_weird_exceptions ?doc ?extra_guards
     wanted_types function_body name =
@@ -713,7 +713,7 @@ let register_pre_functions_for_python stuff =
 let python_last_value = Py.last_value
 
 let pywrap_closure_docstring docstring f =
-  Py.Callable.of_function ~docstring f
+  Py.Callable.of_function_as_tuple ~docstring f
 
 let pyrefcount = Py.Object.reference_count
 

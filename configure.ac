@@ -451,7 +451,10 @@ AS_IF([test "x$OPTIMIZED_dynlink" = xno -a "x$enable_ocaml" = xyes],
 ])
 
 dnl  set the default enable-opt setting
-AC_SUBST([enable_opt], ["yes"])
+AS_IF([test -z "$enable_opt"],
+[dnl
+  AC_SUBST([enable_opt], ["yes"])
+])
 
 dnl  variables depending on whether we build the optimized spatch
 AS_IF([test "x$enable_opt" = xyes],

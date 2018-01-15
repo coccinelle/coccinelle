@@ -501,7 +501,11 @@ let init _ = (* per file, first .cocci then iso *)
       Hashtbl.replace type_names name fn);
   Data.add_attribute :=
     (function name ->
-      let fn clt = Tattr (name, clt) in
+      let fn clt =
+	match clt with
+	  ((Data.PLUS | Data.PLUSPLUS),_,_,_,_,_,_,_,_,_) ->
+	    TDirective (Ast.Space name, clt)
+	| _ -> Tattr (name, clt) in
       Hashtbl.replace attr_names name fn);
   Data.add_declarer_name :=
     (function name ->
@@ -522,14 +526,14 @@ let init _ = (* per file, first .cocci then iso *)
 	(Hashtbl.find all_metavariables parent))
 
 let post_init _ =
-  Hashtbl.reset all_metavariables;
-  Hashtbl.reset Data.all_metadecls;
-  Hashtbl.reset metavariables;
-  Hashtbl.reset type_names;
-  Hashtbl.reset rule_names;
-  Hashtbl.reset iterator_names;
-  Hashtbl.reset declarer_names;
-  Hashtbl.reset symbol_names
+  Stdcompat.Hashtbl.reset all_metavariables;
+  Stdcompat.Hashtbl.reset Data.all_metadecls;
+  Stdcompat.Hashtbl.reset metavariables;
+  Stdcompat.Hashtbl.reset type_names;
+  Stdcompat.Hashtbl.reset rule_names;
+  Stdcompat.Hashtbl.reset iterator_names;
+  Stdcompat.Hashtbl.reset declarer_names;
+  Stdcompat.Hashtbl.reset symbol_names
 
 (* initialization for each cocci rule *)
 let reinit _ =

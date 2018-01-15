@@ -2200,15 +2200,6 @@ let (<!!>) s (i,j) =
 let (<!>) s i = String.get s i
 
 (* pixel *)
-let rec split_on_char c s =
-  try
-    let sp = String.index s c in
-    String.sub s 0 sp ::
-    split_on_char c (String.sub s (sp+1) (String.length s - sp - 1))
-  with Not_found -> [s]
-
-
-let lowercase = String.lowercase
 
 let quote s = "\"" ^ s ^ "\""
 
@@ -2314,32 +2305,6 @@ let edit_distance s1 s2 =
 let test = edit_distance "vintner" "writers"
 let _ = assert (edit_distance "winter" "winter" = 0)
 let _ = assert (edit_distance "vintner" "writers" = 5)
-
-
-let is_blank char = char = ' '
-
-let trim_left s =
-  let length = String.length s in
-  let rec skip_blank index =
-    if index < length && is_blank (String.unsafe_get s index) then
-      skip_blank (succ index)
-    else
-      index in
-  let left_index = skip_blank 0 in
-  String.sub s left_index (length - left_index)
-
-let trim_right s =
-  let length = String.length s in
-  let rec skip_blank index =
-    if index >= 0 && is_blank (String.unsafe_get s index) then
-      skip_blank (pred index)
-    else
-      index in
-  let right_index = skip_blank (pred length) in
-  String.sub s 0 (succ right_index)
-
-let trim s =
-  trim_left (trim_right s)
 
 
 (*****************************************************************************)
@@ -6094,7 +6059,7 @@ let create_bounded_cache n hval =
 
 let find_bounded_cache (n,cur,tbl,lst) x =
   try
-    let (DElem(prev,hval,next)) as info = Hashtbl.find tbl x in
+    let DElem(prev,hval,next) = Hashtbl.find tbl x in
     let _ = remove_last_dll (get_dll next) in
     let _ = add_first_dll lst hval in
     profile_code ("ok"^(string_of_int n)) (fun _ -> snd hval)
@@ -6107,7 +6072,7 @@ let extend_bounded_cache (n,cur,tbl,lst) x v =
   (if !cur > n
   then
     for i = 1 to (n/2) do
-      let (DElem(prev,hval,next)) as dropped = remove_last_dll lst in
+      let DElem(prev,hval,next) = remove_last_dll lst in
       Hashtbl.remove tbl (fst hval);
       cur := !cur - 1
     done);

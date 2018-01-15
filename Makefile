@@ -95,9 +95,12 @@ PREFIX_spatch :=
 
 PREFIX_spgen := tools/spgen/source/
 
-CORE_LIBS := unix bigarray nums str \
+STDCOMPATDIR := bundles/stdcompat
+
+CORE_LIBS := unix bigarray str \
 	$(patsubst %,bytes,$(BYTESDIR)) \
-	$(patsubst %,pcre,$(filter %/pcre.cma,$(LNKLIBS)))
+	$(patsubst %,pcre,$(filter %/pcre.cma,$(LNKLIBS))) \
+	$(STDCOMPATDIR)/stdcompat
 
 ifeq ($(FEATURE_OCAML),1)
 CORE_LIBS += dynlink
@@ -113,7 +116,7 @@ LIBRARIES_spatch := $(LIBRARIES)
 
 LIBRARIES_spgen := $(CORE_LIBRARIES)
 
-CORE_BUNDLES=menhirLib pcre
+CORE_BUNDLES=menhirLib pcre stdcompat
 
 ALL_BUNDLES=$(CORE_BUNDLES) parmap pyml
 
@@ -178,7 +181,7 @@ COMPILED_EXPOSED_MODULES := \
 
 SEARCH_PATHS := \
 	commons/ocamlextra $(LIBRARIES) $(PREFIX_spgen) $(PCREDIR) $(PYMLDIR) \
-	$(PARMAPDIR) $(BYTESDIR)
+	$(PARMAPDIR) $(BYTESDIR) $(STDCOMPATDIR)
 
 SEARCH_PATH_FLAGS := $(addprefix -I ,$(SEARCH_PATHS))
 
@@ -200,6 +203,13 @@ MENHIR_CMD := $(MENHIR) --ocamlc "$(OCAMLC_CMD)" --explain --infer
 PARMAP_LIB := $(addsuffix parmap$(LIBSUFFIX),$(filter %/parmap/,$(MAKELIBS)))
 PYML_LIB := $(addsuffix pyml$(LIBSUFFIX),$(filter %/pyml/,$(MAKELIBS)))
 PCRE_LIB := $(addsuffix pcre$(LIBSUFFIX),$(filter %/pcre/,$(MAKELIBS)))
+STDCOMPAT_LIB := $(STDCOMPATDIR)/stdcompat$(LIBSUFFIX)
+
+STDCOMPAT_USERS := parsing_c/type_annoter_c cocci parsing_cocci/check_meta \
+	parsing_cocci/id_utils parsing_cocci/insert_plus \
+	parsing_cocci/lexer_cocci ocaml/yes_prepare_ocamlcocci \
+	tools/spgen/source/user_input tools/spgen/source/spgen_interactive \
+	parsing_c/flag_parsing_c
 
 SHOW_CLEAN := @echo "CLEAN    "
 SHOW_OCAMLC := @echo "OCAMLC   "
@@ -398,7 +408,8 @@ parsing_c/parser_c.mli : parsing_c/parser_c.ml
 
 ## Parser_cocci_menhir
 
-parsing_cocci/parser_cocci_menhir.mly.d : parsing_cocci/parser_cocci_menhir.mly $(MENHIR)
+parsing_cocci/parser_cocci_menhir.mly.d : \
+		parsing_cocci/parser_cocci_menhir.mly $(MENHIR)
 	$(MENHIR_DEP_CMD) $< >$@ || (rm $@; false)
 
 ifeq ($(DEPEND_METHOD),onefile)
@@ -420,11 +431,11 @@ parsing_cocci/parser_cocci_menhir.mli : parsing_cocci/parser_cocci_menhir.ml
 ## Bundles
 
 ifeq ($(NATIVE),yes)
-$(MENHIR):
+$(MENHIR): $(STDCOMPAT_LIB)
 	$(MAKE) -C bundles/menhirLib all
 	$(MAKE) -C bundles/menhirLib all.opt
 else
-$(MENHIR):
+$(MENHIR): $(STDCOMPAT_LIB)
 	$(MAKE) -C bundles/menhirLib all
 endif
 
@@ -441,11 +452,11 @@ endif
 
 ifneq ($(PYML_LIB),)
 ifeq ($(NATIVE),yes)
-$(PYML_LIB):
+$(PYML_LIB): $(STDCOMPAT_LIB)
 	$(MAKE) -C bundles/pyml all
 	$(MAKE) -C bundles/pyml all.opt
 else
-$(PYML_LIB):
+$(PYML_LIB): $(STDCOMPAT_LIB)
 	$(MAKE) -C bundles/pyml all
 endif
 endif
@@ -460,6 +471,9 @@ $(PCRE_LIB):
 	$(MAKE) -C bundles/pcre all
 endif
 endif
+
+$(STDCOMPAT_LIB):
+	$(MAKE) -C bundles/stdcompat all
 
 # For each $(bundle), targets bundles-$(bundle), bundles-$(bundle).opt,
 # and clean-$(bundle) are defined. The targets bundles, bundles.opt and
@@ -482,9 +496,23 @@ define foreach_bundle
 bundles-$(bundle) :
 	$(MAKE) -C bundles/$(bundle) all
 
+ifeq ($(bundle),stdcompat)
+.PHONY : bundles-stdcompat.opt
+bundles-stdcompat.opt :
+	$(MAKE) -C bundles/stdcompat all
+
+.PHONY : distclean-stdcompat
+distclean-stdcompat :
+	$(MAKE) -C bundles/stdcompat clean
+else
 .PHONY : bundles-$(bundle).opt
 bundles-$(bundle).opt :
-	$(MAKE) -C bundles/$(bundle) all.opt;
+	$(MAKE) -C bundles/$(bundle) all.opt
+
+.PHONY : distclean-$(bundle)
+distclean-$(bundle) :
+	$(MAKE) -C bundles/$(bundle) distclean
+endif
 
 .PHONY : bundles-$(bundle)-if-needed
 bundles-$(bundle)-if-needed : \
@@ -498,14 +526,12 @@ bundles-$(bundle).opt-if-needed : \
 clean-$(bundle) :
 	$(MAKE) -C bundles/$(bundle) clean
 
-.PHONY : distclean-$(bundle)
-distclean-$(bundle) :
-	$(MAKE) -C bundles/$(bundle) distclean
-
 clean : clean-$(bundle)
 distclean : distclean-$(bundle)
 endef
 $(foreach bundle,$(ALL_BUNDLES),$(eval $(foreach_bundle)))
+
+$(STDCOMPAT_USERS:=.cmo) $(STDCOMPAT_USERS:=.cmx) : $(STDCOMPAT_LIB)
 
 main.cmo : $(PARMAP_LIB)
 main.cmx : $(PARMAP_LIB)

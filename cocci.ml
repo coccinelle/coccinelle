@@ -1275,7 +1275,7 @@ module MyHashedType :
     let hash = Hashtbl.hash_param my_n my_m
   end
 
-module MyHashtbl = Hashtbl.Make(MyHashedType)
+module MyHashtbl = Stdcompat.Hashtbl.Make(MyHashedType)
 
 let max_tbl = ref 1001
 let env_tbl = MyHashtbl.create !max_tbl

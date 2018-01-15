@@ -236,25 +236,27 @@ let error_radix s =
 
 (* julia: functions for figuring out the type of integers *)
 
-let is_long_dec s int uint long ulong =
+let is_long_dec s int uint long ulong longlong ulonglong =
   match !Flag_parsing_c.int_thresholds with
     None -> int
-  | Some (_,_,uint_threshold,long_threshold,ulong_threshold) ->
-      let bn = Big_int.big_int_of_string s in
-      if Big_int.ge_big_int bn ulong_threshold
-      then ulong
+  | Some (_,_,int_threshold, uint_threshold,long_threshold,ulong_threshold) ->
+      if s >= ulong_threshold
+      then longlong
       else
-	if Big_int.ge_big_int bn long_threshold
-	then long
+	if s >= long_threshold
+	then ulong
 	else
-	  if Big_int.ge_big_int bn uint_threshold
+	  if s >= uint_threshold
 	  then long
-	  else int
+	  else
+	    if s >= int_threshold
+	    then uint
+	    else int
 
-let is_long_ho s int uint long ulong drop bpd count =
+let is_long_ho s int uint long ulong longlong ulonglong drop bpd count =
   match !Flag_parsing_c.int_thresholds with
     None -> int
-  | Some (uint_sz,ulong_sz,_,_,_) ->
+  | Some (uint_sz,ulong_sz,_,_,_,_) ->
       let len = String.length s in
       (* this assumes that all of the hex/oct digits are significant *)
       (* drop is 2 for hex (0x) and 1 for oct (0) *)
@@ -270,14 +272,17 @@ let is_long_ho s int uint long ulong drop bpd count =
 	else
 	  if len < ulong_sz
 	  then long
-	  else ulong
+	  else
+	    if len = ulong_sz
+	    then ulong
+	    else longlong
 
-let is_long_oct s int uint long ulong =
-  is_long_ho s int uint long ulong 1 3
+let is_long_oct s int uint long ulong longlong ulonglong =
+  is_long_ho s int uint long ulong longlong ulonglong 1 3
     (* stupid, but probably more efficient than taking logs *)
     (function 0 -> 3 | 1 -> 2 | n when n < 4 -> 1 | _ -> 0)
-let is_long_hex s int uint long ulong =
-  is_long_ho s int uint long ulong 2 4
+let is_long_hex s int uint long ulong longlong ulonglong =
+  is_long_ho s int uint long ulong longlong ulonglong 2 4
     (* stupid, but probably more efficient than taking logs *)
     (function 0 -> 4 | 1 -> 3 | n when n < 4 -> 2 | n when n < 8 -> 1
       | _ -> 0)
@@ -286,6 +291,8 @@ let sint = (Signed,CInt)
 let uint = (UnSigned,CInt)
 let slong = (Signed,CLong)
 let ulong = (UnSigned,CLong)
+let slonglong = (Signed,CLongLong)
+let ulonglong = (UnSigned,CLongLong)
 
 }
 
@@ -947,23 +954,32 @@ rule token = parse
    *)
 
   | decimal as x
-      { TInt ((x, is_long_dec x sint slong slong ulong), tokinfo lexbuf) }
+      { TInt ((x, is_long_dec x sint slong slong ulong slonglong ulonglong),
+	      tokinfo lexbuf) }
   | hexa as x
-      { TInt ((x, is_long_hex x sint uint slong ulong), tokinfo lexbuf) }
+      { TInt ((x, is_long_hex x sint uint slong ulong slonglong ulonglong),
+	      tokinfo lexbuf) }
   | octal as x
-      { TInt ((x, is_long_oct x sint uint slong ulong), tokinfo lexbuf) }
+      { TInt ((x, is_long_oct x sint uint slong ulong slonglong ulonglong),
+	      tokinfo lexbuf) }
   | ((decimal as s) ['u' 'U']) as x
-      { TInt ((x, is_long_dec s uint uint ulong ulong), tokinfo lexbuf) }
+      { TInt ((x, is_long_dec s uint uint ulong ulong ulonglong ulonglong),
+	      tokinfo lexbuf) }
   | ((hexa as s) ['u' 'U']) as x
-      { TInt ((x, is_long_hex s uint uint ulong ulong), tokinfo lexbuf) }
+      { TInt ((x, is_long_hex s uint uint ulong ulong ulonglong ulonglong),
+	      tokinfo lexbuf) }
   | ((octal as s) ['u' 'U']) as x
-      { TInt ((x, is_long_oct s uint uint ulong ulong), tokinfo lexbuf) }
+      { TInt ((x, is_long_oct s uint uint ulong ulong ulonglong ulonglong),
+	      tokinfo lexbuf) }
   | (( decimal as s) ['l' 'L']) as x
-      { TInt ((x, is_long_dec s slong slong slong ulong), tokinfo lexbuf) }
+      { TInt ((x, is_long_dec s slong slong slong ulong slonglong ulonglong),
+	      tokinfo lexbuf) }
   | ((hexa as s) ['l' 'L']) as x
-      { TInt ((x, is_long_hex s slong slong slong ulong), tokinfo lexbuf) }
+      { TInt ((x, is_long_hex s slong slong slong ulong slonglong ulonglong),
+	      tokinfo lexbuf) }
   | ((octal as s) ['l' 'L']) as x
-      { TInt ((x, is_long_oct s slong slong slong ulong), tokinfo lexbuf) }
+      { TInt ((x, is_long_oct s slong slong slong ulong slonglong ulonglong),
+	      tokinfo lexbuf) }
   | ((( decimal | hexa | octal) ['l' 'L'] ['u' 'U'])
   | (( decimal | hexa | octal) ['u' 'U'] ['l' 'L'])) as x
       { TInt ((x, (UnSigned,CLong)), tokinfo lexbuf) }

@@ -852,7 +852,7 @@ let adjust_stdin cfiles k =
           if ext = "c" && Common.lfile_exists varfile
           then Some varfile
           else None
-	with Invalid_argument("Filename.chop_extension") -> None in
+	with Invalid_argument _ -> None in
       Common.redirect_stdin_opt newin k
 
 let glimpse_filter2 (_,query,_,_) dir =
@@ -1172,7 +1172,9 @@ let rec main_action xs =
 	      try
 		Parmap.parfold
 		  ~init:(fun id -> Parmap.redirect ~path:prefix ~id)
-		  ~finalize:(fun () -> Pycocci.flush_stdout_and_stderr ())
+		  ~finalize:(fun () ->
+                    Pycocci.flush_stdout_and_stderr ();
+                    flush_all ())
 		  ~ncores
 		  ~chunksize
 		  op (Parmap.L l) (z, !Common._temp_files_created) merge
@@ -1247,7 +1249,7 @@ singleton lists are then just appended to each other during the merge. *)
 					if !dir
 					then begin
 					  (* not hidden by --very-quiet *)
-					  Printf.eprintf "EXN: %s"
+					  Printf.eprintf "EXN: %s\n"
 					    (Printexc.to_string e);
 					  flush stderr;
 					  prev (* *)

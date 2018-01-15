@@ -776,33 +776,14 @@ module Lexer_c :
     val cpp_keyword_table : (string, Ast_c.info -> Parser_c.token) Hashtbl.t
     val ibm_keyword_table : (string, Ast_c.info -> Parser_c.token) Hashtbl.t
     val error_radix : string -> string
-    val is_long_dec : string -> 'a -> 'b -> 'a -> 'a -> 'a
-    val is_long_ho :
-      string -> 'a -> 'a -> 'a -> 'a -> int -> int -> (int -> int) -> 'a
-    val is_long_oct : string -> 'a -> 'a -> 'a -> 'a -> 'a
-    val is_long_hex : string -> 'a -> 'a -> 'a -> 'a -> 'a
-    val sint : Ast_c.sign * Ast_c.base
-    val uint : Ast_c.sign * Ast_c.base
-    val slong : Ast_c.sign * Ast_c.base
-    val ulong : Ast_c.sign * Ast_c.base
-    val __ocaml_lex_tables : Lexing.lex_tables
     val token : Lexing.lexbuf -> Parser_c.token
-    val __ocaml_lex_token_rec : Lexing.lexbuf -> int -> Parser_c.token
     val char : Lexing.lexbuf -> string
-    val __ocaml_lex_char_rec : Lexing.lexbuf -> int -> string
     val restchars : Lexing.lexbuf -> string
-    val __ocaml_lex_restchars_rec : Lexing.lexbuf -> int -> string
     val string : Lexing.lexbuf -> string
-    val __ocaml_lex_string_rec : Lexing.lexbuf -> int -> string
     val comment : Lexing.lexbuf -> string
-    val __ocaml_lex_comment_rec : Lexing.lexbuf -> int -> string
     val parse_newline : Lexing.lexbuf -> string
-    val __ocaml_lex_parse_newline_rec : Lexing.lexbuf -> int -> string
     val cpp_in_comment_eat_until_nl : Lexing.lexbuf -> string
-    val __ocaml_lex_cpp_in_comment_eat_until_nl_rec :
-      Lexing.lexbuf -> int -> string
     val cpp_eat_until_nl : Lexing.lexbuf -> string
-    val __ocaml_lex_cpp_eat_until_nl_rec : Lexing.lexbuf -> int -> string
   end
 module Pretty_print_c :
   sig
@@ -1429,8 +1410,7 @@ module Flag_parsing_c :
     val cache_limit : int option ref
     val cmdline_flags_other : unit -> (string * Arg.spec * string) list
     val int_thresholds :
-      (int * int * Big_int.big_int * Big_int.big_int * Big_int.big_int)
-      option ref
+        (int * int * string * string * string * string) option ref
     val set_int_bits : int -> unit
     val set_long_bits : int -> unit
     type spacing = Flag_parsing_c.spacing = LINUX | SMPL
@@ -1832,8 +1812,6 @@ module Common :
     val ( <!> ) : string -> int -> char
     val take_string : int -> string -> string
     val take_string_safe : int -> string -> string
-    val split_on_char : char -> string -> string list
-    val lowercase : string -> string
     val quote : string -> string
     val is_blank_string : string -> bool
     val is_string_prefix : string -> string -> bool
@@ -1842,9 +1820,6 @@ module Common :
     val size_mo_ko : int -> string
     val size_ko : int -> string
     val edit_distance : string -> string -> int
-    val trim_left : string -> string
-    val trim_right : string -> string
-    val trim : string -> string
     val md5sum_of_string : string -> string
     val regexp_alpha : Str.regexp
     val regexp_int : Str.regexp
