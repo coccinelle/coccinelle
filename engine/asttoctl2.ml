@@ -1023,7 +1023,13 @@ let end_control_structure fvs header body after_pred
 	    (After _,_) (* pattern doesn't end here *)
 	  | (_,true) (* + code added after *) -> after_checks
 	  | _ -> no_after_checks)
-	  (ctl_ax_absolute s body)))
+	  (match body with
+	    Common.Left body ->
+	      (* fixes set of choices, as for if *)
+	      (List.fold_left (ctl_and s) CTL.True (List.map ctl_ex body))
+	  | Common.Right body ->
+	      (* unknown set of choices, as for switch *)
+	      ctl_ax_absolute s body)))
 
 let ifthen ifheader branch ((afvs,_,_,_) as aft) after
     quantified minus_quantified label llabel slabel recurse make_match guard =
@@ -1060,7 +1066,7 @@ let ifthen ifheader branch ((afvs,_,_,_) as aft) after
 	  (Some (lv,used)) llabel slabel guard] in
   let after_pred = aftpred None in
   let or_cases after_branch =
-    ctl_or true_branch (ctl_or (fallpred None) after_branch) in
+    Common.Left [true_branch; fallpred None; after_branch] in
   let (if_header,wrapper) =
     if !used
     then
@@ -1143,7 +1149,7 @@ let ifthenelse ifheader branch1 els branch2 ((afvs,_,_,_) as aft) after
 	  (Some (lv,used)) llabel slabel guard] in
   let after_pred = aftpred None in
   let or_cases after_branch =
-    ctl_or true_branch (ctl_or false_branch after_branch) in
+    Common.Left [true_branch; false_branch; after_branch] in
   let s = guard_to_strict guard in
   let (if_header,wrapper) =
     if !used
@@ -1185,7 +1191,8 @@ let forwhile header body ((afvs,_,_,_) as aft) after
 	  recurse body NotTop Tail new_quantified new_mquantified
 	    (Some (lv,used)) (Some (lv,used)) None guard] in
     let after_pred = loopfallpred None in
-    let or_cases after_branch = ctl_or body after_branch in
+    let or_cases after_branch =
+      Common.Left [body; after_branch] in
     let (header,wrapper) =
       if !used
       then
@@ -2264,17 +2271,18 @@ and statement stmt top after quantified minus_quantified
 	else function x -> ctl_or (fallpred label) x in
       let after_pred = aftpred label in
       let body after_branch =
-	ctl_or
-	  (default_required
-	     (quantify guard b2fvs
-		(make_seq
-		   [ctl_and lb
-		       (List.fold_left ctl_and CTL.True
-			  (List.map ctl_ex
-			     (decls_exists_code :: case_headers)));
-		     List.fold_left ctl_or_fl no_header
-		       (decls_all_code :: case_code)])))
-	  after_branch in
+	Common.Right
+	  (ctl_or
+	     (default_required
+		(quantify guard b2fvs
+		   (make_seq
+		      [ctl_and lb
+			  (List.fold_left ctl_and CTL.True
+			     (List.map ctl_ex
+				(decls_exists_code :: case_headers)));
+			List.fold_left ctl_or_fl no_header
+			  (decls_all_code :: case_code)])))
+	     after_branch) in
       let aft =
 	(rb_fvs,Ast.get_fresh rb,Ast.get_inherited rb,
 	match Ast.unwrap rb with
