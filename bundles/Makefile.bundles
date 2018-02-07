@@ -22,27 +22,37 @@ all: depend
 	@$(MAKE) all-build
 all-build: all-build-targets $(OTHERS)
 all-build-targets: \
-	$(patsubst %,$(SRC_DIR)/%.cma,$(ARCHIVE)) \
-	$(patsubst %,$(SRC_DIR)/%,$(SIDEPRODUCTS)) \
-	$(patsubst %,$(SRC_DIR)/%,$(SIDEPRODUCTS_BYTECODE))
-	cp $^ .
-	- if [ -n "$(LIBRARY)" ]; then \
-	  cp $(patsubst %,$(SRC_DIR)/dll%_stubs.so,$(LIBRARY)) .; \
-	fi
+	$(addsuffix .cma,$(ARCHIVE)) \
+	$(SIDEPRODUCTS) \
+	$(SIDEPRODUCTS_BYTECODE) \
+	$(patsubst %,dll%_stubs.so,$(LIBRARY))
+
+define foreach_file_to_copy_from_src
+$(file) : $(SRC_DIR)/$(file)
+	cp $$< $$@
+endef
+
+$(foreach file, \
+	$(addsuffix .cma, $(ARCHIVE)) \
+	$(addsuffix .cmxa, $(ARCHIVE)) \
+	$(addsuffix .cmx, $(INTERFACES)) \
+	$(addsuffix .a, $(LIBRARY)) \
+	$(SIDEPRODUCTS) \
+	$(SIDEPRODUCTS_NATIVE) \
+	$(SIDEPRODUCTS_BYTECODE) \
+	$(patsubst %,dll%_stubs.so,$(LIBRARY)), \
+	$(eval $(foreach_file_to_copy_from_src)))
 
 all.opt: depend
 	@$(MAKE) all-opt-build
 all-opt-build: all-opt-build-targets $(OTHERS)
 all-opt-build-targets: \
-	$(patsubst %,$(SRC_DIR)/%.cmxa,$(ARCHIVE)) \
-	$(patsubst %,$(SRC_DIR)/%.cmx,$(INTERFACES)) \
-	$(patsubst %,$(SRC_DIR)/%.a,$(LIBRARY)) \
-	$(patsubst %,$(SRC_DIR)/%,$(SIDEPRODUCTS)) \
-	$(patsubst %,$(SRC_DIR)/%,$(SIDEPRODUCTS_NATIVE))
-	cp $^ .
-	- if [ -n "$(LIBRARY)" ]; then \
-	  cp $(patsubst %,$(SRC_DIR)/dll%_stubs.so,$(LIBRARY)) .; \
-	fi
+	$(addsuffix .cmxa,$(ARCHIVE)) \
+	$(addsuffix .cmx,$(INTERFACES)) \
+	$(addsuffix .a,$(LIBRARY)) \
+	$(SIDEPRODUCTS) \
+	$(SIDEPRODUCTS_NATIVE) \
+	$(patsubst %,dll%_stubs.so,$(LIBRARY))
 
 clean:
 	rm -f .depend $(ARCHIVE:=.cma) $(ARCHIVE:=.cmxa) \
