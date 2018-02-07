@@ -8,7 +8,7 @@ module Ast = Ast_cocci
 module V = Visitor_ast
 
 (* if a variable affected by a script constraint is always referenced only
-with all the other local variables that are mentioned bt that script
+with all the other local variables that are mentioned by that script
 constraint, then we can push the script constraint down to the rule_element
 level *)
 

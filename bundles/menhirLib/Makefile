@@ -104,6 +104,3 @@ $(SRC_DIR)/parser.mly: $(SRC_DIR)/yacc-parser.mly
 $(SRC_DIR)/Driver.cmo $(SRC_DIR)/Driver.cmx: $(SRC_DIR)/Driver.cmi
 
 $(SRC_DIR)/astar.cmo $(SRC_DIR)/astar.cmx: $(SRC_DIR)/menhirLib.cmi
-
-menhir: $(SRC_DIR)/menhir
-	cp $< $@
