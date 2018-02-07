@@ -211,7 +211,7 @@ let labels_for_ctl (dropped_isos : string list)
     | Lib_engine.Exit ->
 	loop_nodes p
 	  (function node ->
-	    match F.unwrap node with F.Exit -> true | _ -> false)
+	    match F.unwrap node with F.Exit | F.EndNode -> true | _ -> false)
 
     | Lib_engine.ErrorExit ->
 	loop_nodes p

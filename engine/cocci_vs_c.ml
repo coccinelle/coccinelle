@@ -4658,7 +4658,7 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
       let default = A.MetaRuleElem(mcode,cstr,keep,inherited), unwrap_node in
       (match unwrap_node with
       | F.CaseNode _
-      | F.TrueNode _ | F.FalseNode | F.AfterNode _
+      | F.TrueNode _ | F.FalseNode | F.AfterNode _ | F.EndNode
       | F.LoopFallThroughNode  | F.FallThroughNode
       | F.InLoopNode ->
           if X.mode = PatternMode
