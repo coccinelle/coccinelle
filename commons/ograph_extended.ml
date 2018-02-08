@@ -229,16 +229,25 @@ struct
     method add_arc ((a,b),(v: Edge.t)) =
       let a_successors = KeyMap.find a succ in
       let new_a_successors = KeyEdgeSet.add (b, v) a_successors in
+      let old_succ = succ in
       succ <- KeyMap.add a new_a_successors succ;
-      let b_predecessors = KeyMap.find b pred in
+      let b_predecessors =
+        (* In case of failure we rollback to the last state for successors *)
+        try KeyMap.find b pred
+        with Not_found -> succ <- old_succ; raise Not_found
+      in
       let new_b_predecessors = KeyEdgeSet.add (a, v) b_predecessors in
       pred <- KeyMap.add b new_b_predecessors pred;
 
     method del_arc ((a,b),v) =
       let a_successors = KeyMap.find a succ in
       let new_a_successors = KeyEdgeSet.remove (b, v) a_successors in
+      let old_succ = succ in
       succ <- KeyMap.add a new_a_successors succ;
-      let b_predecessors = KeyMap.find b pred in
+      let b_predecessors =
+        try KeyMap.find b pred
+        with Not_found -> succ <- old_succ; raise Not_found
+      in
       let new_b_predecessors = KeyEdgeSet.remove (a, v) b_predecessors in
       pred <- KeyMap.add b new_b_predecessors pred;
 
