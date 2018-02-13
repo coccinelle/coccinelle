@@ -49,6 +49,8 @@ type pretty_printers = {
   dparamlist      : ((string Ast_c.wrap) Ast_c.wrap2 list) printer;
   ty              : Ast_c.fullType printer;
   type_with_ident : type_with_ident;
+  base_type       : Ast_c.fullType printer;
+  type_with_ident_rest : type_with_ident;
   toplevel        : Ast_c.toplevel printer;
   fragment        : Ast_c.string_fragment printer;
   fragment_list   : (Ast_c.string_fragment list) printer;
@@ -959,6 +961,10 @@ and pp_string_format (e,ii) =
     pp_type_with_ident None None t Ast_c.noattr Ast_c.noattr
   and pp_type_ident t i =
     pp_type_with_ident (Some i) None t Ast_c.noattr Ast_c.noattr
+  and pp_type_ident_rest t i =
+    pp_type_with_ident_rest (Some i) t Ast_c.noattr Ast_c.noattr
+  and pp_base_type2 t =
+    pp_base_type t None
 
 (* ---------------------- *)
   and pp_decl = function
@@ -1505,6 +1511,8 @@ and pp_init (init, iinit) =
     dparamlist = pp_define_param_list;
     ty         = pp_type;
     type_with_ident = pp_type_ident;
+    type_with_ident_rest = pp_type_ident_rest;
+    base_type  = pp_base_type2;
     toplevel   = pp_toplevel;
     fragment   = pp_string_fragment;
     fragment_list = pp_string_fragment_list;
