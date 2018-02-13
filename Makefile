@@ -82,7 +82,8 @@ SOURCES_extra := \
 	classic_patch.ml kbuild.ml maintainers.ml
 
 SOURCES_spatch := \
-	flag_cocci.ml cocci.ml testing.ml read_options.ml main.ml
+	flag_cocci.ml cocci.ml testing.ml read_options.ml enter.ml \
+	coccinelle.ml main.ml
 
 SOURCES_spgen := \
 	globals.ml ast_tostring.ml detect_patch.ml meta_variable.ml \
