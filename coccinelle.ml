@@ -92,10 +92,10 @@ let __init_initialization_stack = !Iteration.initialization_stack
 let __init_base_file_list = !Iteration.base_file_list
 let __init_parsed_virtual_rules = !Iteration.parsed_virtual_rules
 let __init_parsed_virtual_identifiers = !Iteration.parsed_virtual_identifiers
-let __init_pcre_support1 = !Regexp.pcre_support
-let __init_pcre_support2 = !Regexp_pcre.pcre_support
 (* not sure what todo with the following - config dependent *)
-(*let __init_pcre_support3 = !Regexp_str.pcre_support*)
+(*let __init_pcre_support1 = !Regexp.pcre_support
+let __init_pcre_support2 = !Regexp_pcre.pcre_support
+let __init_pcre_support3 = !Regexp_str.pcre_support*)
 let __init_path = !Flag_parsing_c.path
 let __init_std_h = !Flag_parsing_c.std_h
 let __init_common_h = !Flag_parsing_c.common_h
@@ -404,10 +404,10 @@ let coccinelle arglist =
   Iteration.base_file_list := __init_base_file_list;
   Iteration.parsed_virtual_rules := __init_parsed_virtual_rules;
   Iteration.parsed_virtual_identifiers := __init_parsed_virtual_identifiers;
-  Regexp.pcre_support := __init_pcre_support1;
-  Regexp_pcre.pcre_support := __init_pcre_support2;
 (* not sure what todo with the following - config dependent *)
-(*  Regexp_str.pcre_support := __init_pcre_support3;*)
+(*  Regexp.pcre_support := __init_pcre_support1;
+  Regexp_pcre.pcre_support := __init_pcre_support2;
+  Regexp_str.pcre_support := __init_pcre_support3;*)
   Flag_parsing_c.path := __init_path;
   Flag_parsing_c.std_h := __init_std_h;
   Flag_parsing_c.common_h := __init_common_h;
