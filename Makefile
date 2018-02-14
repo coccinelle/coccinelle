@@ -81,9 +81,11 @@ SOURCES_popl09 := \
 SOURCES_extra := \
 	classic_patch.ml kbuild.ml maintainers.ml
 
+SOURCES_library := \
+	flag_cocci.ml cocci.ml testing.ml read_options.ml enter.ml
+
 SOURCES_spatch := \
-	flag_cocci.ml cocci.ml testing.ml read_options.ml enter.ml \
-	coccinelle.ml main.ml
+	$(SOURCES_library) main.ml
 
 SOURCES_spgen := \
 	globals.ml ast_tostring.ml detect_patch.ml meta_variable.ml \
@@ -388,19 +390,19 @@ ifeq ($(DEPEND_METHOD),onefile)
 	$(RUN_OCAMLC) -c $<
 
 %.cmo : %.ml .depend
-	$(RUN_OCAMLC) -c $<
+	$(RUN_OCAMLC) -for-pack Coccinelle_modules -c $<
 
 %.cmx : %.ml .depend
-	$(RUN_OCAMLOPT) -c $<
+	$(RUN_OCAMLOPT) -for-pack Coccinelle_modules -c $<
 else
 %.cmi : %.mli %.mli.d
 	$(RUN_OCAMLC) -c $<
 
 %.cmo : %.ml %.ml.d
-	$(RUN_OCAMLC) -c $<
+	$(RUN_OCAMLC) -for-pack Coccinelle_modules -c $<
 
 %.cmx : %.ml %.ml.d
-	$(RUN_OCAMLOPT) -c $<
+	$(RUN_OCAMLOPT) -for-pack Coccinelle_modules -c $<
 endif
 
 ## Parser_c
@@ -628,3 +630,36 @@ commons/proc_pidpath_stubs.o: commons/proc_pidpath_stubs.c
 
 libproc_pidpath_stubs.a: commons/proc_pidpath_stubs.o
 	$(OCAMLMKLIB) -o proc_pidpath_stubs $<
+
+# Coccinelle as library
+
+library_all_sources := \
+	$(foreach library,$(LIBRARIES_spatch),$(SOURCEFILES_$(library))) \
+	$(SOURCEFILES_spatch)
+
+coccinelle_modules.cmo : $(addsuffix .cmo,$(basename $(library_all_sources)))
+	$(SHOW_OCAMLC) "-o $@"; $(OCAMLC_CMD) -pack $^ -o $@
+
+coccinelle_modules.cmx : $(addsuffix .cmx,$(basename $(library_all_sources)))
+	$(SHOW_OCAMLOPT) "-o $@"; $(OCAMLOPT_CMD) -pack $^ -o $@
+
+coccinelle.cmo coccinelle.cmx : coccinelle.cmi
+
+coccinelle.cmo : coccinelle_modules.cmo
+
+coccinelle.cmx : coccinelle_modules.cmx
+
+coccinelle.cma : coccinelle_modules.cmo coccinelle.cmo
+	$(SHOW_OCAMLC) "-o $@"; $(OCAMLC_CMD) -a $^ -o $@
+
+coccinelle.cmxa : coccinelle_modules.cmx coccinelle.cmx
+	$(SHOW_OCAMLOPT) "-o $@"; $(OCAMLOPT_CMD) -a $^ -o $@
+
+clean : clean-library
+
+.PHONY : clean-library
+clean-library :
+	rm -f coccinelle.cma coccinelle.cmxa coccinelle.a \
+		coccinelle.cmo coccinelle.cmx coccinelle.o \
+		coccinelle_modules.cmi coccinelle_modules.cmo \
+		coccinelle_modules.o coccinelle_modules.cmx
