@@ -465,7 +465,9 @@ let filter_dep existing_deps (accld, accinc) dep =
     | "Queue" | "Random" | "Scanf" | "Set" | "Sort" | "Stack" | "StdLabels"
     | "Str" | "Stream"
     | "String" | "StringLabels" | "Sys" | "ThreadUnix" | "Unix" | "UnixLabels"
-    | "Weak"     -> (accld, accinc)
+    | "Weak"
+        (* Filter out Parmap as Parmap is linked with Coccinelle *)
+    | "Parmap" -> (accld, accinc)
     | "Dbm"      -> ("dbm"::accld, accinc)
     | "Graphics" -> ("graphics"::accld, accinc)
     | "Thread"   -> ("thread"::accld, accinc)

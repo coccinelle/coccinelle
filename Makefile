@@ -247,7 +247,7 @@ all-release : all.opt docs
 world :  byte-only opt-only exposed-modules docs
 
 .PHONY : exposed-modules
-exposed-modules : $(COMPILED_EXPOSED_MODULES)
+exposed-modules : $(COMPILED_EXPOSED_MODULES) ocaml/parmap.cmi
 
 .PHONY : check
 check : spatch$(TOOLS_SUFFIX)
@@ -616,6 +616,10 @@ endef
 $(foreach module,$(basename $(EXPOSED_MODULES)),\
 	$(foreach EXT,cmi $(ALL_OBJECTS),$(eval $(copy_exposed_module))))
 
+ocaml/parmap.cmi : $(PARMAPDIR)/parmap.cmi
+	cp $< $@
+	- cp $(PARMAPDIR)/parmap.cmx ocaml/parmap.cmx
+
 clean : clean-exposed-module
 
 .PHONY : clean-exposed-module
@@ -623,6 +627,7 @@ clean-exposed-module :
 	$(SHOW_CLEAN) "exposed-module"
 	@rm -f $(foreach module,$(basename $(EXPOSED_MODULES)),\
 	$(foreach EXT,cmi $(ALL_OBJECTS),ocaml/$(notdir $(basename $(module))).$(EXT)))
+	@rm -f ocaml/parmap.cmi ocaml/parmap.cmx
 
 commons/proc_pidpath_stubs.o: commons/proc_pidpath_stubs.c
 	$(OCAMLC) -c $<
