@@ -808,6 +808,8 @@ module Pretty_print_c :
       dparamlist : string Ast_c.wrap Ast_c.wrap2 list printer;
       ty : Ast_c.fullType printer;
       type_with_ident : type_with_ident;
+      base_type       : Ast_c.fullType printer;
+      type_with_ident_rest : type_with_ident;
       toplevel : Ast_c.toplevel printer;
       fragment : Ast_c.string_fragment printer;
       fragment_list : Ast_c.string_fragment list printer;
