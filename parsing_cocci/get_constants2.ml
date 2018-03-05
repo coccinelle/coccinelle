@@ -370,8 +370,7 @@ let do_get_constants constants keywords env (neg_pos,_) =
 	List.fold_left (fun accu c -> build_and accu (cstr r k c)) True list
     | Ast.CstrOr list ->
 	List.fold_left (fun accu c -> build_or accu (cstr r k c)) False list
-    | Ast.CstrNot c -> Not (cstr r k c)
-    | Ast.CstrConstant (Ast.CstrString s) -> constants s
+    | Ast.CstrConstant (Ast.CstrString s) -> True
     | Ast.CstrMeta_name mv -> inherited mv
     | Ast.CstrScript (_, (_name, _lang, params, _pos, _code)) ->
 	List.fold_left (fun accu (mv, _) -> build_and accu (inherited mv)) True
@@ -380,6 +379,7 @@ let do_get_constants constants keywords env (neg_pos,_) =
 	List.fold_left (fun accu mv -> build_or accu (inherited mv)) False list
     | Ast.CstrExpr e -> r.V.combiner_expression e
     | Ast.CstrType ty -> r.V.combiner_fullType ty
+    | Ast.CstrNot _
     | Ast.CstrConstant (Ast.CstrInt _)
     | Ast.CstrRegexp _ | Ast.CstrOperator _ -> True in
 
@@ -393,7 +393,7 @@ let do_get_constants constants keywords env (neg_pos,_) =
     | Ast.MetaId(name,c,_,_)
     | Ast.MetaFunc(name,c,_,_)
     | Ast.MetaLocalFunc(name,c,_,_) ->
-	bind (cstr r k c) (bind (k i) (minherited name))
+	bind (cstr r k (Ast.cstr_push_not c)) (bind (k i) (minherited name))
     | Ast.DisjId(ids) -> disj_union_all (List.map r.V.combiner_ident ids)
     | _ -> k i in
 
