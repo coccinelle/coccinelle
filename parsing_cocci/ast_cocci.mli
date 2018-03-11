@@ -930,6 +930,9 @@ val cstr_map:
 	'expression' generic_constraints
 (* Untransformed expressions are discarded! *)
 
+val cstr_push_not:
+    'expression generic_constraints -> 'expression generic_constraints
+
 val cstr_meta_names: 'expression generic_constraints -> meta_name list
 
 val cstr_pos_meta_names: 'expression generic_constraints -> meta_name list

@@ -1398,6 +1398,21 @@ let rec cstr_map transformer c =
       Common.default (CstrType ty) (fun f -> f ty)
 	transformer.cstr_type
 
+let rec cstr_push_not c =
+  match c with
+    CstrAnd list -> CstrAnd (List.map cstr_push_not list)
+  | CstrOr list -> CstrOr (List.map cstr_push_not list)
+  | CstrNot c' -> cstr_push_not_neg c'
+  | _ -> c
+and cstr_push_not_neg c =
+  match c with
+    CstrFalse -> CstrTrue
+  | CstrTrue -> CstrFalse
+  | CstrAnd list -> CstrOr (List.map cstr_push_not_neg list)
+  | CstrOr list -> CstrAnd (List.map cstr_push_not_neg list)
+  | CstrNot c' -> cstr_push_not c'
+  | _ -> CstrNot c
+
 let cstr_meta_names c =
   cstr_fold
     { empty_cstr_transformer with

@@ -562,7 +562,7 @@ let test_parse_cocci file =
   if not (file =~ ".*\\.cocci")
   then pr2 "warning: seems not a .cocci file";
 
-  let (mvs,xs,_,_,_,_,(grep_tokens,query,_,_),_,_) =
+  let (mvs,xs,_,_,_,_,query,_,_) =
     Parse_cocci.process file (Some !Config.std_iso) false in
   xs +> List.iter2 Pretty_print_cocci.unparse mvs;
   Format.print_newline();
@@ -577,16 +577,26 @@ let test_parse_cocci file =
       then Prepare_ocamlcocci.clean_file ocaml_script_file);
       (* Print the list of registered functions *)
       Prepare_ocamlcocci.test ());
-  Printf.printf "grep tokens\n";
-  (match grep_tokens with
-    None -> pr "No query"
-  | Some x -> pr (String.concat " || " x));
-  (* could update to accomodate WTCocciGrep *)
-  (match query with
-    None -> pr "No query"
-  | Some x ->
-      Printf.printf "glimpse tokens\n";
-      pr (String.concat "\nor on glimpse failure\n" x))
+  flush stdout; flush stderr;
+  match (!Flag.scanner,query) with
+    ((Flag.CocciGrep|Flag.NoScanner|Flag.GitGrep),(query,_,_,_)) ->
+      (match query with
+	None -> pr "No grep query"
+      | Some x ->
+	  Printf.printf "Grep query\n";
+	  pr (String.concat " || " x))
+  | (Flag.Glimpse,(_,query,_,_)) ->
+      (match query with
+	None -> pr "No glimpse query"
+      | Some x ->
+	  Printf.printf "Glimpse query\n";
+	  pr (String.concat "\nor on glimpse failure\n" x))
+  | (Flag.IdUtils,(_,_,_,query)) ->
+      (match query with
+	None -> pr "No idutils query"
+      | Some x ->
+	  Printf.printf "Idutils query\n";
+	  pr (Get_constants2.dep2c x))
 
 let print_link t a b =
   if not (a = b)
