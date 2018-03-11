@@ -533,6 +533,10 @@ let is_space = function
   | T2(Parser_c.TCommentSpace _,_b,_i,_h) -> true (* only whitespace *)
   | _ -> false
 
+let is_comment = function
+  | T2(Parser_c.TComment _,_b,_i,_h) -> true (* only whitespace *)
+  | _ -> false
+
 let is_comment_or_space = function
   | T2(Parser_c.TCommentSpace _,_b,_i,_h) -> true (* only whitespace *)
   | T2(Parser_c.TComment _,_b,_i,_h) -> true (* only whitespace *)
@@ -1419,6 +1423,7 @@ let add_newlines toks tabbing_unit =
   let iscomma tok = str_of_token2 tok = "," in
   let isspace tok = str_of_token2 tok = " " in
   let isnewline tok =
+    not(is_comment tok) &&
     let s = str_of_token2 tok in
     try let _ = Str.search_forward (Str.regexp "\n") s 0 in true
     with Not_found -> false in
