@@ -2090,17 +2090,23 @@ let times_before after n tabbing_unit ctr =
 (* drops from the front *)
 let untimes_before cur n tabbing_unit ctr =
   (if n < 0 then failwith (Printf.sprintf "n is %d\n" n));
-  let tabbing_unit =
+  let tu =
     match tabbing_unit with None -> !default_indent | Some tu -> tu in
-  let len = String.length tabbing_unit in
-  let tabbing_unit = Str.regexp_string tabbing_unit in
+  let len = String.length tu in
+  let tabbing_unit = Str.regexp_string tu in
   let rec loop cur = function
       0 -> cur
     | n ->
-	if Str.string_match tabbing_unit cur 0
-	then loop (String.sub cur len (String.length cur - len)) (n-1)
-	else (* no idea what to do, just drop the first character... *)
-	  loop (String.sub cur 1 (String.length cur - 1)) (n-1) in
+	if cur = ""
+	then cur (* not much we can do, better than crashing *)
+	else
+	  if Str.string_match tabbing_unit cur 0
+	  then loop (String.sub cur len (String.length cur - len)) (n-1)
+	  else
+	    if String.get cur 0 = '\t' && String.get tu 1 = ' '
+	    then loop ("        "^(String.sub cur 1 (String.length cur - 1))) n
+	    else (* no idea what to do, just drop the first character... *)
+	      loop (String.sub cur 1 (String.length cur - 1)) (n-1) in
   loop cur n
 
 (* Probably doesn't do a good job of parens.  Code in parens may be aligned
