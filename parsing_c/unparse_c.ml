@@ -2090,24 +2090,24 @@ let times_before after n tabbing_unit ctr =
 (* drops from the front *)
 let untimes_before cur n tabbing_unit ctr =
   (if n < 0 then failwith (Printf.sprintf "n is %d\n" n));
-  let tu =
+  let tabbing_unit =
     match tabbing_unit with None -> !default_indent | Some tu -> tu in
-  let len = String.length tu in
-  let tabbing_unit = Str.regexp_string tu in
-  let rec loop cur = function
-      0 -> cur
-    | n ->
-	if cur = ""
-	then cur (* not much we can do, better than crashing *)
-	else
-	  if Str.string_match tabbing_unit cur 0
-	  then loop (String.sub cur len (String.length cur - len)) (n-1)
-	  else
-	    if String.get cur 0 = '\t' && String.get tu 1 = ' '
-	    then loop ("        "^(String.sub cur 1 (String.length cur - 1))) n
-	    else (* no idea what to do, just drop the first character... *)
-	      loop (String.sub cur 1 (String.length cur - 1)) (n-1) in
-  loop cur n
+  let cur = List.rev(Common.list_of_string cur) in
+  let tu = Common.list_of_string tabbing_unit in
+  let rec loop cur tu =
+    match (cur,tu) with
+      (x,[]) -> Common.string_of_chars (List.rev x)
+    | ([],_) -> ""
+    | (x::xs,y::ys) ->
+	if x = y
+	then loop xs ys
+	else if x = ' ' && y = '\t'
+	then loop (x::xs) (' '::' '::' '::' '::' '::' '::' '::' '::ys)
+	else if x = '\t' && y = ' '
+	then loop (' '::' '::' '::' '::' '::' '::' '::' '::xs) (y::ys)
+	else (* give up, no idea what to do *)
+	  Common.string_of_chars (List.rev cur) in
+  loop cur tu
 
 (* Probably doesn't do a good job of parens.  Code in parens may be aligned
 by tabbing unit or may have extra space specific to the position of the
