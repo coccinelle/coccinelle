@@ -225,7 +225,7 @@ let check_constraint_allowed () =
 
 %token <Data.clt> TVAEllipsis
 %token <Data.clt> TIf TElse TWhile TFor TDo TSwitch TCase TDefault TReturn
-%token <Data.clt> TBreak TContinue TGoto TSizeof TFunDecl Tdecimal Texec
+%token <Data.clt> TBreak TContinue TGoto TSizeof TTypeof TFunDecl Tdecimal Texec
 %token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId TSymId
 %token <Ast_cocci.added_string * Data.clt> TDirective
 %token <Data.clt> TAttr_
@@ -978,6 +978,14 @@ non_signable_types_no_ident:
     { Ast0.wrap(Ast0.Decimal(P.clt2mcode "decimal" $1,
 			     P.clt2mcode "(" $2,$3,None,None,
 			     P.clt2mcode ")" $4)) }
+| TTypeof TOPar eexpr TCPar
+    { Ast0.wrap(Ast0.TypeOfExpr(P.clt2mcode "typeof" $1,
+                                   P.clt2mcode "(" $2,$3,
+                                   P.clt2mcode ")" $4)) }
+| TTypeof TOPar ctype TCPar
+    { Ast0.wrap(Ast0.TypeOfType(P.clt2mcode "typeof" $1,
+                                   P.clt2mcode "(" $2,$3,
+                                   P.clt2mcode ")" $4)) }
 
 non_signable_types:
   ty=non_signable_types_no_ident { ty }

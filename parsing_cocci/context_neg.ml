@@ -668,6 +668,10 @@ let equal_typeC t1 t2 =
   | (Ast0.StructUnionDef(_,lb1,_,rb1),
      Ast0.StructUnionDef(_,lb2,_,rb2)) ->
        equal_mcode lb1 lb2 && equal_mcode rb1 rb2
+  | (Ast0.TypeOfExpr(tf1,lp1,_,rp1),Ast0.TypeOfExpr(tf2,lp2,_,rp2)) ->
+      equal_mcode tf1 tf2 && equal_mcode lp1 lp2 && equal_mcode rp1 rp2
+  | (Ast0.TypeOfType(tf1,lp1,_,rp1),Ast0.TypeOfType(tf2,lp2,_,rp2)) ->
+      equal_mcode tf1 tf2 && equal_mcode lp1 lp2 && equal_mcode rp1 rp2
   | (Ast0.TypeName(name1),Ast0.TypeName(name2)) -> equal_mcode name1 name2
   | (Ast0.MetaType(name1,_,_),Ast0.MetaType(name2,_,_)) ->
       equal_mcode name1 name2

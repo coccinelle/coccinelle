@@ -244,6 +244,10 @@ let rec attach_right strings ty =
 	Ast0.StructUnionName(su,Some (right_attach_ident strings id))
     | Ast0.StructUnionDef(ty,lb,decls,rb) ->
 	Ast0.StructUnionDef(ty,lb,decls,right_attach_mcode strings rb)
+    | Ast0.TypeOfExpr(tf,lp,exp,rp) ->
+	Ast0.TypeOfExpr(tf,lp,exp,right_attach_mcode strings rp)
+    | Ast0.TypeOfType(tf,lp,ty,rp) ->
+	Ast0.TypeOfType(tf,lp,ty,right_attach_mcode strings rp)
     | Ast0.TypeName(nm) -> Ast0.TypeName(right_attach_mcode strings nm)
     | Ast0.MetaType(nm,cstr,pure) ->
 	Ast0.MetaType(right_attach_mcode strings nm,cstr,pure)

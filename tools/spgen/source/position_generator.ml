@@ -221,6 +221,13 @@ let rec type_pos t snp
       let c ~item ~mc = Ast0.StructUnionDef(item,lcb,decldots,mc) in
       let alt() = mcode_wrap ~mc:rcb ~constructor:(c ~item:t) snp in
       item_wrap ~item:t ~item_posfn:type_pos ~constructor:(c ~mc:rcb) ~alt snp
+  | Ast0.TypeOfExpr(sizeofmc, lp, exp, rp) ->
+      let constructor ~mc = Ast0.TypeOfExpr(mc, lp, exp, rp) in
+      mcode_wrap ~mc:rp ~constructor snp
+  | Ast0.TypeOfType(sizeofmc, lp, typec, rp) ->
+      let _ = type_pos typec snp in (* sanity check for disj *)
+      let constructor ~mc = Ast0.TypeOfType(mc, lp, typec, rp) in
+      mcode_wrap ~mc:sizeofmc ~constructor snp
   | Ast0.TypeName(nm) ->
       let constructor ~mc = Ast0.TypeName(mc) in
       mcode_wrap ~mc:nm ~constructor snp

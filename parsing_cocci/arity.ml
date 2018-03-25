@@ -460,6 +460,24 @@ and top_typeC tgt opt_allowed typ =
       let decls = dots (field tgt) decls in
       let rb = mcode rb in
       make_typeC typ tgt arity (Ast0.StructUnionDef(ty,lb,decls,rb))
+  | Ast0.TypeOfExpr(tf,lp,exp,rp) ->
+      let arity =
+	all_same opt_allowed tgt (mcode2line tf)
+	  (List.map mcode2arity [tf;lp;rp]) in
+      let tf = mcode tf in
+      let lp = mcode lp in
+      let exp = expression arity exp in
+      let rp = mcode rp in
+      make_typeC typ tgt arity (Ast0.TypeOfExpr(tf,lp,exp,rp))
+  | Ast0.TypeOfType(tf,lp,ty,rp) ->
+      let arity =
+	all_same opt_allowed tgt (mcode2line tf)
+	  (List.map mcode2arity [tf;lp;rp]) in
+      let tf = mcode tf in
+      let lp = mcode lp in
+      let ty = typeC arity ty in
+      let rp = mcode rp in
+      make_typeC typ tgt arity (Ast0.TypeOfType(tf,lp,ty,rp))
   | Ast0.TypeName(name) ->
       let arity =
 	all_same opt_allowed tgt (mcode2line name) [mcode2arity name] in

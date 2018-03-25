@@ -361,6 +361,18 @@ let combiner bind option_default
 	  let ldecls = annotated_field_dots decls in
 	  let lrb = string_mcode rb in
 	  multibind [lty; llb; ldecls; lrb]
+      | Ast.TypeOfExpr(tf,lp,e,rp) ->
+	  let ltf = string_mcode tf in
+	  let llp = string_mcode lp in
+	  let le = expression e in
+	  let lrp = string_mcode rp in
+	  multibind [ltf; llp; le; lrp]
+      | Ast.TypeOfType(tf,lp,ty,rp) ->
+	  let ltf = string_mcode tf in
+	  let llp = string_mcode lp in
+	  let lty = fullType ty in
+	  let lrp = string_mcode rp in
+	  multibind [ltf; llp; lty; lrp]
       | Ast.TypeName(name) -> string_mcode name
       | Ast.MetaType(name,_,_,_) -> meta_mcode name in
     tyfn all_functions k ty
@@ -1274,6 +1286,18 @@ let rebuilder
 	    let ldecls = annotated_field_dots decls in
 	    let lrb = string_mcode rb in
 	    Ast.StructUnionDef (lty, llb, ldecls, lrb)
+	| Ast.TypeOfExpr(tf,lp,e,rp) ->
+	    let ltf = string_mcode tf in
+	    let llp = string_mcode lp in
+	    let le = expression e in
+	    let lrp = string_mcode rp in
+	    Ast.TypeOfExpr(ltf, llp, le, lrp)
+	| Ast.TypeOfType(tf,lp,ty,rp) ->
+	    let ltf = string_mcode tf in
+	    let llp = string_mcode lp in
+	    let lty = fullType ty in
+	    let lrp = string_mcode rp in
+	    Ast.TypeOfType(ltf, llp, lty, lrp)
 	| Ast.TypeName(name) -> Ast.TypeName(string_mcode name)
 	| Ast.MetaType(name,cstr,keep,inherited) ->
 	    Ast.MetaType(meta_mcode name,cstr,keep,inherited)) in

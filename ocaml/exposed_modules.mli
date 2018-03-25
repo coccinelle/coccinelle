@@ -2673,6 +2673,8 @@ module Ast_cocci :
       | StructUnionName of structUnion mcode * ident option
       | StructUnionDef of fullType * string mcode * annotated_field dots *
           string mcode
+      | TypeOfExpr of string mcode * string mcode * expression * string mcode
+      | TypeOfType of string mcode * string mcode * fullType * string mcode
       | TypeName of string mcode
       | MetaType of meta_name mcode * constraints * keep_binding * inherited
     and fullType = base_fullType wrap
@@ -3307,6 +3309,8 @@ module Ast0_cocci :
       | EnumDef of typeC * string mcode * expression dots * string mcode
       | StructUnionName of Ast_cocci.structUnion mcode * ident option
       | StructUnionDef of typeC * string mcode * field dots * string mcode
+      | TypeOfExpr of string mcode * string mcode * expression * string mcode
+      | TypeOfType of string mcode * string mcode * typeC * string mcode
       | TypeName of string mcode
       | MetaType of Ast_cocci.meta_name mcode * constraints * pure
       | AsType of typeC * typeC

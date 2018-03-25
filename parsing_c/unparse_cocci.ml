@@ -732,6 +732,14 @@ and typeC ty =
       mcode print_string lb;
       dots_before_and_after force_newline annotated_field decls;
       mcode print_string rb
+  | Ast.TypeOfExpr(typeof,lp,exp,rp) ->
+      mcode print_string typeof;
+      mcode print_string_box lp;  expression exp; close_box();
+      mcode print_string rp
+  | Ast.TypeOfType(typeof,lp,ty,rp) ->
+      mcode print_string typeof;
+      mcode print_string_box lp; fullType ty; close_box();
+      mcode print_string rp
   | Ast.TypeName(name)-> mcode print_string name
   | Ast.MetaType(name,_,_,_) ->
       handle_metavar name  (function

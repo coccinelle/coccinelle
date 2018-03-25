@@ -326,6 +326,10 @@ and base_typeC =
   | StructUnionName of structUnion mcode * ident option (* name *)
   | StructUnionDef  of fullType (* either StructUnionName or metavar *) *
 	string mcode (* { *) * annotated_field dots * string mcode (* } *)
+  | TypeOfExpr      of string mcode (* typeof *) * string mcode (* ( *) *
+                       expression * string mcode (* ) *)
+  | TypeOfType      of string mcode (* typeof *) * string mcode (* ( *) *
+                       fullType * string mcode (* ) *)
   | TypeName        of string mcode
 
   | MetaType        of meta_name mcode * constraints * keep_binding *

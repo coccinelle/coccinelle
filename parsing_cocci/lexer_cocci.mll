@@ -313,6 +313,7 @@ let id_tokens lexbuf =
   | "goto" ->       TGoto     linetype
 
   | "sizeof" ->     TSizeof   linetype
+  | "typeof" ->     TTypeof   linetype
 
   | "Expression"       when !Data.in_iso -> TIsoExpression
   | "ArgExpression"    when !Data.in_iso -> TIsoArgExpression

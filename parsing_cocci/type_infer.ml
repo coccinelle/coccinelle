@@ -94,10 +94,11 @@ let rec is_int_type_unwrap = function
   | Ast0.BaseType (Ast.ShortType, _)
   | Ast0.BaseType (Ast.SizeType, _)
   | Ast0.MetaType(_,_,_)
+  | Ast0.TypeOfExpr _
   | Ast0.TypeName _
   | Ast0.EnumName _
   | Ast0.Signed(_,None) -> true
-  | Ast0.Signed(_,Some ty) -> is_int_type ty
+  | Ast0.Signed(_,Some ty) | Ast0.TypeOfType(_,_,ty,_) -> is_int_type ty
   | _ -> false
 and is_int_type ty = is_int_type_unwrap (Ast0.unwrap ty)
 

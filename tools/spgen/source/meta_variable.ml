@@ -270,6 +270,8 @@ let types ~rn = function
         | Ast.Pointer (t, _)
         | Ast.FunctionPointer (t, _, _, _, _, _, _)
         | Ast.Array (t, _, _, _) -> get_meta_type_full acc t
+	| Ast.TypeOfExpr(_,_,exp,_) -> acc (* not sure *)
+	| Ast.TypeOfType(_,_,ty,_) -> get_meta_type_full acc ty
         | _ -> acc
       and get_meta_type_full acc ty =
         get_meta_type acc (Common.just (Ast_cocci.typeC_of_fullType_opt ty)) in
