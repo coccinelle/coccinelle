@@ -80,6 +80,7 @@
   occurs in rule_elems that also mention any othe local metavariables
   mentioned in the script constraint.  Referenced local variables must be
   declared before the constrained one.
+- Allow more variety in #pragmas
 ** Bugfix:
 - Improved detection of metavariables in strings.  Problem reported by
   Wolfram Sang.
