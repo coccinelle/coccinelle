@@ -442,28 +442,19 @@ and define_line_2 acc line lastinfo = function
       (* should not happened, should meet EOF before *)
       pr2 "PB: WEIRD";
       List.rev ((mark_end_define lastinfo)::acc)
-  | token::tokens as all_tokens ->
+  | token::tokens ->
       let line' = TH.line_of_tok token in
       let info = TH.info_of_tok token in
       (match token with
-      | EOF ii ->
-          define_line_1 (token::(mark_end_define lastinfo)::acc) tokens
+      | EOF ii -> define_line_1 (token::(mark_end_define lastinfo)::acc) tokens
       | TCppEscapedNewline ii ->
           if (line' <> line) then pr2 "PB: WEIRD: not same line number";
           define_line_2 ((TCommentSpace ii)::acc) (line+1) info tokens
+      | TCommentNewline ii ->
+	  define_line_1 (token::(mark_end_define lastinfo)::acc) tokens
       | _ ->
-          if line' = line
-          then
-            define_line_2
-              (token::acc) (end_line_of_tok line' token) info tokens
-          else
-	    (* Put end of line token before the newline.  A newline at least
-	       must be there because the line changed and because we saw a
-	       #define previously to get to this function at all *)
-	    define_line_1
-	      ((List.hd acc)::(mark_end_define lastinfo::(List.tl acc)))
-	      all_tokens
-      )
+          define_line_2
+            (token::acc) (end_line_of_tok line' token) info tokens)
 
 (* for a comment, the end line is not the same as line_of_tok *)
 and end_line_of_tok default = function
@@ -535,12 +526,23 @@ let rec define_ident acc = function
           define_ident acc xs
       )
     | TPragma ii ->
-      let rec loop acc = function
-	  ((TDefEOL i1) as x) :: xs -> define_ident (x::acc) xs
-	| TCommentSpace i1::TIdent (s,i2)::xs ->
-	    let acc = (TCommentSpace i1) :: acc in
-	    let acc = (TIdentDefine (s,i2)) :: acc in
-            loop acc xs
+	let safe =
+	  let rec loop = function
+	      (TCommentSpace _|TIdent _|TOPar _|TCPar _)::xs ->
+		loop xs
+	    | t::xs when TH.str_of_tok t ==~ Common.regexp_alpha ->
+		loop xs
+	    | (TDefEOL i1)::_ -> true
+	    | _ -> false in
+	  loop tokens in
+	if safe
+	then
+	  let rec loop acc = function
+	      ((TDefEOL i1) as x) :: xs -> define_ident (x::acc) xs
+	    | TCommentSpace i1::TIdent (s,i2)::xs ->
+		let acc = (TCommentSpace i1) :: acc in
+		let acc = (TIdentDefine (s,i2)) :: acc in
+		loop acc xs
 
       (* bugfix: ident of macro (as well as params, cf below) can be tricky
        * note, do we need to subst in the body of the define ? no cos
@@ -549,20 +551,36 @@ let rec define_ident acc = function
        * body (it would be a recursive macro, which is forbidden).
        *)
 
-	| TCommentSpace i1::t::xs
-	  when TH.str_of_tok t ==~ Common.regexp_alpha
-	  ->
-            let s = TH.str_of_tok t in
-            let ii = TH.info_of_tok t in
-	    pr2 (spf "remapping: %s to an ident in pragma" s);
-            let acc = (TCommentSpace i1) :: acc in
-	    let acc = (TIdentDefine (s,ii)) :: acc in
-            define_ident acc xs
+	    | TCommentSpace i1::t::xs
+	      when TH.str_of_tok t ==~ Common.regexp_alpha
+	      ->
+		let s = TH.str_of_tok t in
+		let ii = TH.info_of_tok t in
+		pr2 (spf "remapping: %s to an ident in pragma" s);
+		let acc = (TCommentSpace i1) :: acc in
+		let acc = (TIdentDefine (s,ii)) :: acc in
+		define_ident acc xs
 
-	| xs ->
-            pr2 "WEIRD: weird #pragma";
-            define_ident acc xs in
-      loop acc tokens
+	    | xs ->
+		pr2 "WEIRD: weird #pragma";
+		define_ident acc xs in
+	  loop acc tokens
+	else
+	    (* just turn all tokens into identifiers and move on *)
+	  let rec loop acc = function
+              ((TDefEOL i1) as x) :: xs -> define_ident (x::acc) xs
+	    | ((TCommentSpace _) as t)::xs -> loop (t::acc) xs
+	    | TIdent (s,i2)::xs ->
+		let acc = (TIdentDefine (s,i2)) :: acc in
+		loop acc xs
+	    | t::xs ->
+		let s = TH.str_of_tok t in
+		let ii = TH.info_of_tok t in
+		pr2 (spf "remapping: %s to an ident in pragma" s);
+		let acc = (TIdentDefine (s,ii)) :: acc in
+		loop acc xs
+	    | _ -> failwith "bad pragma line" in
+	  loop acc tokens
     | _ -> define_ident acc tokens
     )
 
