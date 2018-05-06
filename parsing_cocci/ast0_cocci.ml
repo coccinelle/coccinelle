@@ -213,6 +213,10 @@ and base_typeC =
   | StructUnionName of Ast.structUnion mcode * ident option (* name *)
   | StructUnionDef  of typeC (* either StructUnionName or metavar *) *
 	string mcode (* { *) * field dots * string mcode (* } *)
+  | TypeOfExpr      of string mcode (* sizeof *) * string mcode (* ( *) *
+                       expression * string mcode (* ) *)
+  | TypeOfType      of string mcode (* sizeof *) * string mcode (* ( *) *
+                       typeC * string mcode (* ) *)
   | TypeName        of string mcode
   | MetaType        of Ast.meta_name mcode * constraints * pure
   | AsType          of typeC * typeC (* as type, always metavar *)

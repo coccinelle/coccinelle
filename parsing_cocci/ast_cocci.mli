@@ -326,6 +326,10 @@ and base_typeC =
   | StructUnionName of structUnion mcode * ident option (* name *)
   | StructUnionDef  of fullType (* either StructUnionName or metavar *) *
 	string mcode (* { *) * annotated_field dots * string mcode (* } *)
+  | TypeOfExpr      of string mcode (* typeof *) * string mcode (* ( *) *
+                       expression * string mcode (* ) *)
+  | TypeOfType      of string mcode (* typeof *) * string mcode (* ( *) *
+                       fullType * string mcode (* ) *)
   | TypeName        of string mcode
 
   | MetaType        of meta_name mcode * constraints * keep_binding *
@@ -929,6 +933,9 @@ val cstr_map:
       'expression generic_constraints ->
 	'expression' generic_constraints
 (* Untransformed expressions are discarded! *)
+
+val cstr_push_not:
+    'expression generic_constraints -> 'expression generic_constraints
 
 val cstr_meta_names: 'expression generic_constraints -> meta_name list
 

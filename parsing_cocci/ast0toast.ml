@@ -547,6 +547,7 @@ and typeC allminus t =
     | Ast0.Array(_,_,_,_) | Ast0.Decimal(_,_,_,_,_,_)
     | Ast0.EnumName(_,_) | Ast0.StructUnionName(_,_)
     | Ast0.StructUnionDef(_,_,_,_) | Ast0.EnumDef(_,_,_,_)
+    | Ast0.TypeOfExpr(_,_,_,_) | Ast0.TypeOfType(_,_,_,_)
     | Ast0.TypeName(_) | Ast0.MetaType(_,_,_) ->
 	Ast.Type(allminus,None,rewrap t no_isos (base_typeC allminus t))
     | Ast0.DisjType(_,types,_,_) ->
@@ -585,6 +586,11 @@ and base_typeC allminus t =
   | Ast0.StructUnionDef(ty,lb,decls,rb) ->
       Ast.StructUnionDef(typeC allminus ty,mcode lb,
 			 field_dots decls, mcode rb)
+  | Ast0.TypeOfExpr(tf,lp,exp,rp) ->
+      Ast.TypeOfExpr(mcode tf,mcode lp,expression exp,mcode rp)
+  | Ast0.TypeOfType(tf,lp,ty,rp) ->
+      let allminus = check_allminus.VT0.combiner_rec_typeC t in
+      Ast.TypeOfType(mcode tf, mcode lp,typeC allminus ty,mcode rp)
   | Ast0.TypeName(name) -> Ast.TypeName(mcode name)
   | Ast0.MetaType(name,cstr,_) ->
       let cstr' = constraints cstr in

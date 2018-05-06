@@ -97,6 +97,14 @@ and disjtypeC bty =
       disjmult2 (disjty ty) (disjdots anndisjfield decls)
 	(function ty -> function decls ->
 	  Ast.rewrap bty (Ast.StructUnionDef(ty,lb,decls,rb)))
+  | Ast.TypeOfExpr(tf,lp,exp,rp) ->
+      let exp = disjexp exp in
+      List.map
+	(function exp -> Ast.rewrap bty (Ast.TypeOfExpr(tf,lp,exp,rp))) exp
+  | Ast.TypeOfType(tf,lp,ty,rp) ->
+      let ty = disjty ty in
+      List.map
+	(function ty -> Ast.rewrap bty (Ast.TypeOfType(tf,lp,ty,rp))) ty
   | Ast.TypeName(_) | Ast.MetaType(_,_,_,_) -> [bty]
 
 and anndisjdecl d =

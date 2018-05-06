@@ -612,6 +612,19 @@ and typeC t =
 	dots is_field_dots (Some(promote_mcode lb)) field decls in
       let rb = normal_mcode rb in
       mkres t (Ast0.StructUnionDef(ty,lb,decls,rb)) ty (promote_mcode rb)
+  | Ast0.TypeOfExpr(tf,lp,exp,rp) ->
+      let tf = normal_mcode tf in
+      let lp = normal_mcode lp in
+      let exp = expression exp in
+      let rp = normal_mcode rp in
+      mkres t (Ast0.TypeOfExpr(tf,lp,exp,rp))
+	(promote_mcode tf) (promote_mcode rp)
+  | Ast0.TypeOfType(tf,lp,ty,rp) ->
+      let tf = normal_mcode tf in
+      let lp = normal_mcode lp in
+      let rp = normal_mcode rp in
+      mkres t (Ast0.TypeOfType(tf,lp,typeC ty,rp))
+        (promote_mcode tf) (promote_mcode rp)
   | Ast0.TypeName(name) ->
       let name = normal_mcode name in
       let ln = promote_mcode name in

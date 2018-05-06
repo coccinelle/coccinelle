@@ -370,6 +370,18 @@ let visitor mode bind option_default
 	    let (rb_n,rb) = string_mcode rb in
 	    (multibind [ty_n;lb_n;decls_n;rb_n],
 	     Ast0.StructUnionDef(ty,lb,decls,rb))
+	| Ast0.TypeOfExpr(tf,lp,exp,rp) ->
+	    let (tf_n,tf) = string_mcode tf in
+	    let (lp_n,lp) = string_mcode lp in
+	    let (exp_n,exp) = expression exp in
+            let (rp_n,rp) = string_mcode rp in
+	    (multibind [tf_n;lp_n;exp_n;rp_n], Ast0.TypeOfExpr(tf,lp,exp,rp))
+	| Ast0.TypeOfType(tf,lp,ty,rp) ->
+	    let (tf_n,tf) = string_mcode tf in
+	    let (lp_n,lp) = string_mcode lp in
+	    let (ty_n,ty) = typeC ty in
+            let (rp_n,rp) = string_mcode rp in
+	    (multibind [tf_n;lp_n;ty_n;rp_n], Ast0.TypeOfType(tf,lp,ty,rp))
 	| Ast0.TypeName(name) ->
 	    let (name_n,name) = string_mcode name in
 	    (name_n,Ast0.TypeName(name))

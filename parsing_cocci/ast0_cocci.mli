@@ -204,6 +204,10 @@ and base_typeC =
   | StructUnionName of Ast_cocci.structUnion mcode * ident option (* name *)
   | StructUnionDef  of typeC (* either StructUnionName or metavar *) *
 	string mcode (* { *) * field dots * string mcode (* } *)
+  | TypeOfExpr      of string mcode (* typeof *) * string mcode (* ( *) *
+                       expression * string mcode (* ) *)
+  | TypeOfType      of string mcode (* typeof *) * string mcode (* ( *) *
+                       typeC * string mcode (* ) *)
   | TypeName        of string mcode
   | MetaType        of Ast_cocci.meta_name mcode * constraints
 	* pure

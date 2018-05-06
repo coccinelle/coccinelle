@@ -63,7 +63,9 @@ let get_minus_constants bind orbind =
 
   let typeC r k e =
     match Ast.unwrap e with
-      Ast.TypeName(ty) ->
+     Ast.TypeOfExpr(tf,_,_,_) | Ast.TypeOfType(tf,_,_,_) ->
+	bind (k e) [Ast.unwrap_mcode tf]
+    | Ast.TypeName(ty) ->
 	if !Flag.sgrep_mode2
 	then
 	  match ty with

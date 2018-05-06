@@ -3885,6 +3885,29 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
               )))))
 
 
+  | A.TypeOfExpr (ia1, ia2, ea, ia3), (B.TypeOfExpr eb,ii) ->
+      let (ib1,ib2,ib3) = tuple_of_list3 ii in
+      expression ea eb >>= (fun ea eb ->
+      tokenf ia1 ib1 >>= (fun ia1 ib1 ->
+      tokenf ia2 ib2 >>= (fun ia2 ib2 ->
+      tokenf ia3 ib3 >>= (fun ia3 ib3 ->
+        return (
+          ((A.TypeOfExpr (ia1, ia2, ea, ia3))) +> A.rewrap ta,
+          (B.TypeOfExpr (eb),[ib1;ib2;ib3])
+      )))))
+
+  | A.TypeOfType (ia1, ia2, typa, ia3), (B.TypeOfType typb,ii) ->
+      let (ib1,ib2,ib3) = tuple_of_list3 ii in
+      fullType typa typb >>= (fun typa typb ->
+      tokenf ia1 ib1 >>= (fun ia1 ib1 ->
+      tokenf ia2 ib2 >>= (fun ia2 ib2 ->
+      tokenf ia3 ib3 >>= (fun ia3 ib3 ->
+        return (
+          ((A.TypeOfType (ia1, ia2, typa, ia3))) +> A.rewrap ta,
+          (B.TypeOfType (typb),[ib1;ib2;ib3])
+      )))))
+
+
    (* todo? handle isomorphisms ? because Unsigned Int can be match on a
     * uint in the C code. But some CEs consists in renaming some types,
     * so we don't want apply isomorphisms every time.

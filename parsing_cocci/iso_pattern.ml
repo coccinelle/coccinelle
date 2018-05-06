@@ -901,6 +901,16 @@ let match_maker checks_needed context_required whencode_allowed =
 		 [check_mcode lb1 lb; check_mcode rb1 rb;
 		   match_typeC tya tyb;
 		   match_dots match_field no_list do_nolist_match declsa declsb]
+	  | (Ast0.TypeOfExpr(tf1,lp1,expa,rp1),
+	     Ast0.TypeOfExpr(tf,lp,expb,rp)) ->
+	       conjunct_many_bindings
+		 [check_mcode lp1 lp; check_mcode rp1 rp;
+		   check_mcode tf1 tf; match_expr expa expb]
+	  | (Ast0.TypeOfType(tf1,lp1,tya,rp1),
+	     Ast0.TypeOfType(tf,lp,tyb,rp)) ->
+	       conjunct_many_bindings
+		 [check_mcode lp1 lp; check_mcode rp1 rp;
+		   check_mcode tf1 tf; match_typeC tya tyb]
 	  | (Ast0.TypeName(namea),Ast0.TypeName(nameb)) ->
 	      if mcode_equal namea nameb
 	      then check_mcode namea nameb
@@ -1812,6 +1822,8 @@ let instantiate bindings mv_bindings model =
                       | Ast0.StructUnionDef(ty', s0, d, s1) ->
                           let ty'' = renamer ty' in
                           Ast0.rewrap ty (Ast0.StructUnionDef (ty'', s0, d, s1))
+                      | Ast0.TypeOfType(tf,lp,ty',rp) ->
+                          Ast0.rewrap ty (Ast0.TypeOfType(tf,lp,renamer ty',rp))
                       | Ast0.AsType (ty0, ty1) ->
                           let ty0' = renamer ty0 and ty1' = renamer ty1 in
                           Ast0.rewrap ty (Ast0.AsType (ty0', ty1'))
@@ -1827,6 +1839,7 @@ let instantiate bindings mv_bindings model =
                       | Ast0.Decimal(_, _, _, _, _, _)
                       | Ast0.EnumName(_, _)
                       | Ast0.StructUnionName (_, _)
+                      | Ast0.TypeOfExpr(_, _, _, _)
                       | Ast0.TypeName _ -> ty in
 		    Some(List.map renamer types) in
 	      Ast0.clear_test_exp

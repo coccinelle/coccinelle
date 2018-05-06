@@ -344,6 +344,10 @@ and base_typeC =
   | StructUnionName of structUnion mcode * ident option (* name *)
   | StructUnionDef  of fullType (* either StructUnionName or metavar *) *
 	string mcode (* { *) * annotated_field dots * string mcode (* } *)
+  | TypeOfExpr      of string mcode (* sizeof *) * string mcode (* ( *) *
+                       expression * string mcode (* ) *)
+  | TypeOfType      of string mcode (* sizeof *) * string mcode (* ( *) *
+                       fullType * string mcode (* ) *)
   | TypeName        of string mcode (* pad: should be 'of ident' ? *)
 
   | MetaType        of meta_name mcode * constraints * keep_binding *
@@ -988,6 +992,8 @@ let make_mcode x = (x,no_info,CONTEXT(NoPos,NOTHING),[])
 let equal_pos x y = x = y
 
 (* --------------------------------------------------------------------- *)
+(* used for error messages in type_infer and for printing type constraints in
+   pretty_print_cocci.ml *)
 
 let string_of_arithOp = function
   | Plus -> "+"
@@ -1096,6 +1102,8 @@ let rec string_of_typeC ty =
 	(Common.default "?" string_of_ident name)
   | EnumDef (ty', _, _, _)
   | StructUnionDef (ty', _, _, _) -> string_of_fullType ty'
+  | TypeOfExpr(_,_,e,_) -> "typeof("^string_of_expression e^")"
+  | TypeOfType(_,_,t,_) -> "typeof("^string_of_fullType t^")"
   | TypeName (name) -> unwrap_mcode name ^ " "
   | MetaType (m, _, _, _) -> string_of_meta_name (unwrap_mcode m) ^ " "
 and string_of_fullType ty =
@@ -1173,6 +1181,9 @@ and typeC_map tr ty =
           None -> ty
         | Some f -> rewrap ty (f su ident)
       end
+  | TypeOfExpr(_,_,_,_) -> ty
+  | TypeOfType(tf,lp,t,rp) ->
+      rewrap ty (TypeOfType(tf,lp,fullType_map tr t,rp))
   | TypeName name ->
       begin
         match tr.typeName with
@@ -1223,6 +1234,8 @@ and typeC_fold tr ty v =
   | EnumName (s0, ident) -> Common.default v (fun f -> f s0 ident v) tr.enumName
   | StructUnionName (su, ident) ->
       Common.default v (fun f -> f su ident v) tr.structUnionName
+  | TypeOfExpr(_,_,e,_) -> v
+  | TypeOfType(_,_,t,_) -> fullType_fold tr t v
   | TypeName name -> Common.default v (fun f -> f name v) tr.typeName
   | MetaType (name, cstr, keep, inherited) ->
       Common.default v (fun f -> f name cstr keep inherited v) tr.metaType
@@ -1397,6 +1410,21 @@ let rec cstr_map transformer c =
   | CstrType ty ->
       Common.default (CstrType ty) (fun f -> f ty)
 	transformer.cstr_type
+
+let rec cstr_push_not c =
+  match c with
+    CstrAnd list -> CstrAnd (List.map cstr_push_not list)
+  | CstrOr list -> CstrOr (List.map cstr_push_not list)
+  | CstrNot c' -> cstr_push_not_neg c'
+  | _ -> c
+and cstr_push_not_neg c =
+  match c with
+    CstrFalse -> CstrTrue
+  | CstrTrue -> CstrFalse
+  | CstrAnd list -> CstrOr (List.map cstr_push_not_neg list)
+  | CstrOr list -> CstrAnd (List.map cstr_push_not_neg list)
+  | CstrNot c' -> cstr_push_not c'
+  | _ -> CstrNot c
 
 let cstr_meta_names c =
   cstr_fold

@@ -362,6 +362,27 @@ let do_get_constants constants keywords env (neg_pos,_) =
 		    prev l)
 	  option_default fresh in
 
+  let rec cstr r k c =
+    match c with
+      Ast.CstrFalse -> False
+    | Ast.CstrTrue -> True
+    | Ast.CstrAnd list ->
+	List.fold_left (fun accu c -> build_and accu (cstr r k c)) True list
+    | Ast.CstrOr list ->
+	List.fold_left (fun accu c -> build_or accu (cstr r k c)) False list
+    | Ast.CstrConstant (Ast.CstrString s) -> True
+    | Ast.CstrMeta_name mv -> inherited mv
+    | Ast.CstrScript (_, (_name, _lang, params, _pos, _code)) ->
+	List.fold_left (fun accu (mv, _) -> build_and accu (inherited mv)) True
+	  params
+    | Ast.CstrSub list ->
+	List.fold_left (fun accu mv -> build_or accu (inherited mv)) False list
+    | Ast.CstrExpr e -> r.V.combiner_expression e
+    | Ast.CstrType ty -> r.V.combiner_fullType ty
+    | Ast.CstrNot _
+    | Ast.CstrConstant (Ast.CstrInt _)
+    | Ast.CstrRegexp _ | Ast.CstrOperator _ -> True in
+
   let ident r k i =
     match Ast.unwrap i with
       Ast.Id(name) ->
@@ -372,15 +393,7 @@ let do_get_constants constants keywords env (neg_pos,_) =
     | Ast.MetaId(name,c,_,_)
     | Ast.MetaFunc(name,c,_,_)
     | Ast.MetaLocalFunc(name,c,_,_) ->
-	Ast.cstr_fold_sign
-	  { Ast.empty_cstr_transformer with
-	    Ast.cstr_constant = Some (fun c' accu ->
-	      match c' with
-		Ast.CstrString s -> bind (constants s) accu
-	      | Ast.CstrInt _ -> accu);
-	    cstr_meta_name = Some (fun mv accu -> bind (inherited mv) accu) }
-	  Ast.empty_cstr_transformer
-	  c (bind (k i) (minherited name))
+	bind (cstr r k (Ast.cstr_push_not c)) (bind (k i) (minherited name))
     | Ast.DisjId(ids) -> disj_union_all (List.map r.V.combiner_ident ids)
     | _ -> k i in
 
@@ -505,6 +518,8 @@ let do_get_constants constants keywords env (neg_pos,_) =
   let typeC r k ty =
     match Ast.unwrap ty with
       Ast.BaseType(ty1,strings) -> bind (k ty) (baseType ty1)
+    | Ast.TypeOfExpr(sizeof,lp,e,rp) -> bind (keywords "typeof") (k ty)
+    | Ast.TypeOfType(sizeof,lp,t,rp) -> bind (keywords "typeof") (k ty)
     | Ast.TypeName(name) -> bind (k ty) (constants (Ast.unwrap_mcode name))
     | Ast.MetaType(name,_,_,_) -> bind (minherited name) (k ty)
     | _ -> k ty in

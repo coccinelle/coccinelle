@@ -434,6 +434,14 @@ and typeC ty =
       fullType ty; mcode print_string lb;
       dots force_newline (annotated_field "") decls;
       mcode print_string rb
+  | Ast.TypeOfExpr(typeof,lp,exp,rp) ->
+      mcode print_string typeof;
+      mcode print_string_box lp;  expression exp; close_box();
+      mcode print_string rp
+  | Ast.TypeOfType(typeof,lp,ty,rp) ->
+      mcode print_string typeof;
+      mcode print_string_box lp; fullType ty; close_box();
+      mcode print_string rp
   | Ast.TypeName(name) -> mcode print_string name; print_string " "
   | Ast.MetaType(name,_,_,_) ->
       mcode print_meta name; print_string " "
@@ -909,6 +917,7 @@ let print_listlen rule = function
       print_string "] "
   | Ast.AnyLen -> print_string " "
 
+(* why does this not use typeC? *)
 let print_types = function
     None -> ()
   | Some [ty] -> print_string (Ast.string_of_fullType ty); print_string " "

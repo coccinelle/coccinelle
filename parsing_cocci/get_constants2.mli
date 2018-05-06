@@ -10,6 +10,8 @@ type combine =
     And of combine list | Or of combine list | Not of combine
   | Elem of string | False | True
 
+val dep2c : combine -> string
+
 val get_constants :
     Ast_cocci.rule list ->
       (((Ast_cocci.meta_name list * Ast_cocci.meta_name list)
