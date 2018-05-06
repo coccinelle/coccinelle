@@ -1192,14 +1192,14 @@ let satAU dir ((cfg,_,states) as m) s1 s2 reqst print_graph =
 		  then first
 		  else setdiff res y in
 		f res new_info in
-	  try
-	    (if !Flag_ctl.loop_in_src_code
-	    then
-	      let _ =
-		satEU_forAW dir m (strip s1) (strip s2) reqst print_graph in
-	      ());
-	    f s2 s2
-	  with AW -> AUfailed s2
+      try
+	(if !Flag_ctl.loop_in_src_code
+	then
+	  let _ =
+	    satEU_forAW dir m (strip s1) (strip s2) reqst print_graph in
+	  ());
+	f s2 s2
+      with AW -> AUfailed s2
     else
       if !Flag_ctl.loop_in_src_code
       then AUfailed s2
