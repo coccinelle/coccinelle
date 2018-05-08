@@ -414,16 +414,16 @@ static const struct machine_desc __mach_desc_##_type	\
 // include/asm-i386/pci.h
 // the DECLARE are detected by parsing_hack but not when they are
 // inside a struct def.
-#define DECLARE_PCI_UNMAP_ADDR(ADDR_NAME)
-#define DECLARE_PCI_UNMAP_LEN(LEN_NAME)
+//#define DECLARE_PCI_UNMAP_ADDR(ADDR_NAME)
+//#define DECLARE_PCI_UNMAP_LEN(LEN_NAME)
 
 // defined in drivers/infiniband/hw/mthca/mthca_doorbell.h
-#define MTHCA_DECLARE_DOORBELL_LOCK(doorbell_lock)
+//#define MTHCA_DECLARE_DOORBELL_LOCK(doorbell_lock)
 
 // include/linux/types.h
 //#define BITS_TO_LONGS(bits) \
 //	(((bits)+BITS_PER_LONG-1)/BITS_PER_LONG)
-#define DECLARE_BITMAP(name,bits)
+//#define DECLARE_BITMAP(name,bits)
 //	/*unsigned*/ long name[BITS_TO_LONGS(bits)]
 
 

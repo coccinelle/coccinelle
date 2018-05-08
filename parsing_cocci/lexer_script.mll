@@ -12,6 +12,8 @@ exception Lexical of string
 let tok = Lexing.lexeme
 let language = ref ""
 let inc_line _ = Lexer_cocci.line := !Lexer_cocci.line + 1
+
+let in_comment = ref false
 }
 (* ---------------------------------------------------------------------- *)
 (* tokens *)
@@ -40,8 +42,13 @@ rule token = parse
   | "/"  { TScriptData (tok lexbuf) }
   | "//" [^ '\n']* { token lexbuf } (* skip SmPL comments *)
   | "#"  [^ '\n']* { token lexbuf } (* skip python comments *)
+  (* detect ocaml comments *)
+  | "(*" { in_comment := true; TScriptData (tok lexbuf) }
+  | "*)" { in_comment := false; TScriptData (tok lexbuf) }
   | '"'  { TScriptData (Printf.sprintf "\"%s\"" (string lexbuf)) }
-  | "'"  { TScriptData (Printf.sprintf "'%s'" (cstring lexbuf)) }
+  | "'"  { if !in_comment
+           then TScriptData (tok lexbuf)
+           else TScriptData (Printf.sprintf "'%s'" (cstring lexbuf)) }
   | eof  { EOF }
   | _ { raise (Lexical ("unrecognised symbol, in token rule:"^tok lexbuf)) }
 
