@@ -1709,10 +1709,10 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
 			     (function rthm -> r.rule_info.rulename::rthm)
 			     rules_that_have_matched))
 			new_bindings_to_add] in
-		  if relevant_bindings = [] && not (old_bindings_to_keep = [])
+		  (*if relevant_bindings = [] && not (old_bindings_to_keep = [])
 		  then (* keep an unextended copy *)
 		    [(old_bindings_to_keep,rules_that_have_matched)]::local_res
-		  else local_res
+		  else*) local_res
 		  end in
 	      ((relevant_bindings,(new_bindings,new_bindings_ua))::cache,
 	       List.fold_left (fun newes new_e -> merge_env new_e newes)
