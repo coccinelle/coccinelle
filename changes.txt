@@ -58,6 +58,7 @@
 - add conjunctions on types.
 - make addition of __attribute__((...)) on function definitions work
 - add typeof to the semantic patch language
+- require "name" when declaring attribute names.
 ** Features:
 - Better error reporting for unparsable terms when using make_expr etc in
   script code.  Problem reported by Markus Elfring.
@@ -80,6 +81,7 @@
   occurs in rule_elems that also mention any othe local metavariables
   mentioned in the script constraint.  Referenced local variables must be
   declared before the constrained one.
+- Allow more variety in #pragmas
 ** Bugfix:
 - Improved detection of metavariables in strings.  Problem reported by
   Wolfram Sang.
