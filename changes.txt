@@ -82,6 +82,7 @@
   mentioned in the script constraint.  Referenced local variables must be
   declared before the constrained one.
 - Allow more variety in #pragmas
+- Add macro names to Coccilib.current_element
 ** Bugfix:
 - Improved detection of metavariables in strings.  Problem reported by
   Wolfram Sang.
