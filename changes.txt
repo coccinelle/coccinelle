@@ -58,6 +58,7 @@
 - add conjunctions on types.
 - make addition of __attribute__((...)) on function definitions work
 - add typeof to the semantic patch language
+- require "name" when declaring sttribute names.
 ** Features:
 - Better error reporting for unparsable terms when using make_expr etc in
   script code.  Problem reported by Markus Elfring.
