@@ -1953,6 +1953,12 @@ let paren_before_comma l =
 let lookahead2 ~pass next before =
   match (next, before) with
 
+  | t::_, (TOPar il)::TIdent(s,i2)::(Tstatic _|Tconst _|Textern _)::_
+    when is_macro s && (LP.current_context() = LP.InParameter) ->
+      (* swap context, not really in a parameter list *)
+      LP.pop_context(); LP.push_context (LP.current_context());
+      t
+
   (* c++ hacks *)
   (* yy xx(   and in function *)
   | TOPar i1::_,              TIdent(s,i2)::TypedefIdent _::_
