@@ -26,6 +26,8 @@ val c_plus_plus : bool ref
 val ibm : bool ref
 val include_headers : bool ref
 val no_include_cache : bool ref
+val parmap_cores      : int option ref
+val parmap_chunk_size : int option ref
 exception UnreadableFile of string
 val cocci_attribute_names : string list ref
 val add_cocci_attribute_names : string -> unit
