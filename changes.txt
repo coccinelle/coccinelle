@@ -59,6 +59,8 @@
 - make addition of __attribute__((...)) on function definitions work
 - add typeof to the semantic patch language
 - require "name" when declaring attribute names.
+- allow a coccinelle ocaml script to detect whether parallelism is used,
+  via Flag.parmap_core (None for no pararallelism, and Some x for x cores)
 ** Features:
 - Better error reporting for unparsable terms when using make_expr etc in
   script code.  Problem reported by Markus Elfring.
