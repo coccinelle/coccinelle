@@ -435,6 +435,9 @@ let show_or_not_celem2 prelude celem start_end =
       let s = Ast_c.str_of_name name in
       Flag.current_element := s;
       (" variable ",Some(s,name));
+  | Ast_c.MacroTop(nm,_,_) ->
+      Flag.current_element := nm;
+      (" macro ",None);
   |  _ ->
       Flag.current_element := "something_else";
       (" ",None);
