@@ -385,7 +385,8 @@ and fullType ft =
   | Ast.OptType(ty) -> print_string "?"; fullType ty
 
 and print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2) fn =
-  fullType ty; mcode print_string lp1; mcode print_string star; fn();
+  fullType ty; print_string " ";
+  mcode print_string lp1; mcode print_string star; fn();
   mcode print_string rp1; mcode print_string lp1;
   parameter_list params; mcode print_string rp2
 
@@ -465,7 +466,7 @@ and print_named_type ty id =
       (match Ast.unwrap ty1 with
 	Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	  print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
-	    (function _ -> print_string " "; ident id)
+	    (function _ -> id())
       | Ast.Array(ty,lb,size,rb) ->
 	  let rec loop ty k =
 	    match Ast.unwrap ty with
@@ -482,10 +483,10 @@ and print_named_type ty id =
 			print_option expression size;
 			mcode print_string rb)
 		| _ -> failwith "complex array types not supported")
-	    | _ -> typeC ty; ident id; k () in
+	    | _ -> typeC ty; id(); k () in
 	  loop ty1 (function _ -> ())
-      | _ -> fullType ty; ident id)
-  | _ -> fullType ty; ident id
+      | _ -> fullType ty; id())
+  | _ -> fullType ty; id()
 
 and declaration d =
   match Ast.unwrap d with
@@ -494,13 +495,15 @@ and declaration d =
   | Ast.AsDecl(decl,asdecl) -> declaration decl; print_string "@";
       declaration asdecl
   | Ast.Init(stg,ty,id,attr,eq,ini,sem) ->
-      print_option (mcode storage) stg; print_named_type ty id;
+      print_option (mcode storage) stg;
+      print_named_type ty (fun _ -> ident id);
       (if not (attr = []) then print_string " ");
       print_between print_space (mcode print_string) attr;
       print_string " "; mcode print_string eq;
       print_string " "; initialiser ini; mcode print_string sem
   | Ast.UnInit(stg,ty,id,attr,sem) ->
-      print_option (mcode storage) stg; print_named_type ty id;
+      print_option (mcode storage) stg;
+      print_named_type ty (fun _ -> ident id);
       (if not (attr = []) then print_string " ");
       print_between print_space (mcode print_string) attr;
       mcode print_string sem
@@ -522,7 +525,8 @@ and declaration d =
       print_string " "; initialiser ini; mcode print_string sem
   | Ast.TyDecl(ty,sem) -> fullType ty; mcode print_string sem
   | Ast.Typedef(stg,ty,id,sem) ->
-      mcode print_string stg; print_string " "; fullType ty; typeC id;
+      mcode print_string stg; print_string " ";
+      print_named_type ty (fun _ -> typeC id);
       mcode print_string sem
   | Ast.DisjDecl(decls) -> print_disj_list declaration decls "|"
   | Ast.ConjDecl(decls) -> print_disj_list declaration decls "&"
@@ -547,7 +551,7 @@ and field d =
       begin
 	match id with
 	  None -> fullType ty
-	| Some id -> print_named_type ty id
+	| Some id -> print_named_type ty (fun _ -> ident id);
       end;
       let bitfield (c, e) =
 	mcode print_string c;
@@ -619,7 +623,7 @@ and designator = function
 and parameterTypeDef p =
   match Ast.unwrap p with
     Ast.VoidParam(ty) -> fullType ty
-  | Ast.Param(ty,Some id) -> print_named_type ty id
+  | Ast.Param(ty,Some id) -> print_named_type ty (fun _ -> ident id);
   | Ast.Param(ty,None) -> fullType ty
   | Ast.MetaParam(name,_,_,_) -> mcode print_meta name
   | Ast.MetaParamList(name,_,_,_,_) -> mcode print_meta name

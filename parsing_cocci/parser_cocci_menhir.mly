@@ -1714,6 +1714,16 @@ decl_var:
 	  (function id ->
 	    Ast0.wrap(Ast0.Typedef(s,t,id,P.clt2mcode ";" pv)))
 	  id }
+  | s=Ttypedef
+    t=typedef_ctype lp1=TOPar st=TMul id=typedef_ident rp1=TCPar
+    lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar pv=TPtVirg
+      { let s = P.clt2mcode "typedef" s in
+        let t =
+	  Ast0.wrap
+	    (Ast0.FunctionPointer
+	       (t,P.clt2mcode "(" lp1,P.clt2mcode "*" st,P.clt2mcode ")" rp1,
+		P.clt2mcode "(" lp2,p,P.clt2mcode ")" rp2)) in
+	[Ast0.wrap(Ast0.Typedef(s,t,id,P.clt2mcode ";" pv))]}
 
 one_decl_var:
     t=ctype pv=TPtVirg

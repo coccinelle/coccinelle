@@ -687,7 +687,8 @@ and fullType ft =
   | Ast.OptType(_) -> raise CantBeInPlus
 
 and print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2) fn =
-  fullType ty; mcode print_string lp1; mcode print_string star; fn();
+  fullType ty; pr_space();
+  mcode print_string lp1; mcode print_string star; fn();
   mcode print_string rp1; mcode print_string lp1;
   parameter_list params; mcode print_string rp2
 
@@ -797,7 +798,7 @@ and print_named_type ty id =
       (match Ast.unwrap ty1 with
 	Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	  print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
-	    (function _ -> pr_space(); ident id)
+	    (function _ -> id())
       | Ast.Array(_,_,_,_) ->
 	  let rec loop ty k =
 	    match Ast.unwrap ty with
@@ -812,19 +813,19 @@ and print_named_type ty id =
 			print_option expression size;
 			mcode print_string rb)
 		| _ -> failwith "complex array types not supported")
-	    | _ -> typeC ty; ty_space ty; ident id; k () in
+	    | _ -> typeC ty; ty_space ty; id(); k () in
 	  loop ty1 (function _ -> ())
       | Ast.MetaType(name,_,_,_) ->
 	  handle_metavar name  (function
               Ast_c.MetaTypeVal ty ->
 		pretty_print_c.Pretty_print_c.type_with_ident ty
-		  (function _ -> ident id)
+		  (function _ -> id())
             | _ -> error name ty "type value expected")
     (*| should have a case here for pointer to array or function type
         that would put ( * ) around the variable.  This makes one wonder
         why we really need a special case for function pointer *)
-      | _ -> fullType ty; ft_space ty; ident id)
-  | _ -> fullType ty; ft_space ty; ident id
+      | _ -> fullType ty; ft_space ty; id())
+  | _ -> fullType ty; ft_space ty; id()
 
 and ty_space ty =
   match Ast.unwrap ty with
@@ -867,7 +868,7 @@ and declaration d =
   | Ast.Init(stg,ty,id,attr,eq,ini,sem) ->
       print_option (mcode storage) stg;
       print_option (function _ -> pr_space()) stg;
-      print_named_type ty id;
+      print_named_type ty (fun _ -> ident id);
       (if not (attr = []) then pr_space());
       print_between pr_space (mcode print_string) attr;
       pr_space(); mcode print_string eq;
@@ -875,7 +876,7 @@ and declaration d =
   | Ast.UnInit(stg,ty,id,attr,sem) ->
       print_option (mcode storage) stg;
       print_option (function _ -> pr_space()) stg;
-      print_named_type ty id;
+      print_named_type ty (fun _ -> ident id);
       (if not (attr = []) then pr_space());
       print_between pr_space (mcode print_string) attr;
       mcode print_string sem
@@ -907,8 +908,8 @@ and declaration d =
       pr_space(); initialiser true ini; mcode print_string sem
   | Ast.TyDecl(ty,sem) -> fullType ty; mcode print_string sem
   | Ast.Typedef(stg,ty,id,sem) ->
-      mcode print_string stg;
-      fullType ty; pr_space(); typeC id;
+      mcode print_string stg; pr_space();
+      print_named_type ty (fun _ -> typeC id);
       mcode print_string sem
   | Ast.DisjDecl(_) | Ast.ConjDecl(_) -> raise CantBeInPlus
   | Ast.OptDecl(decl) -> raise CantBeInPlus
@@ -939,7 +940,7 @@ and field d =
       begin
 	match id with
 	  None -> fullType ty
-	| Some id -> print_named_type ty id
+	| Some id -> print_named_type ty (fun _ -> ident id)
       end;
       let bitfield (c, e) =
 	mcode print_string c;
@@ -1027,7 +1028,7 @@ and designator = function
 and parameterTypeDef p =
   match Ast.unwrap p with
     Ast.VoidParam(ty) -> fullType ty
-  | Ast.Param(ty,Some id) -> print_named_type ty id
+  | Ast.Param(ty,Some id) -> print_named_type ty (fun _ -> ident id)
   | Ast.Param(ty,None) -> fullType ty
 
   | Ast.MetaParam(name,_,_,_) ->
