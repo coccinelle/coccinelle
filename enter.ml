@@ -58,9 +58,6 @@ let mod_distrib   = ref false
 
 let previous_merges = ref (([], []) : Cocci.merge_vars)
 
-let parmap_cores      = ref (None : int option)
-let parmap_chunk_size = ref (None : int option)
-
 (*****************************************************************************)
 (* Profiles *)
 (*****************************************************************************)
@@ -680,11 +677,11 @@ let other_options = [
     "   the number of processors available";
     "--mod-distrib", Arg.Set mod_distrib,
     "   use mod to distribute files among the processors";
-    "--jobs",  Arg.Int (function x -> parmap_cores := Some x),
+    "--jobs",  Arg.Int (function x -> Flag.parmap_cores := Some x),
     "   the number of processes to be used";
-    "-j",  Arg.Int (function x -> parmap_cores := Some x),
+    "-j",  Arg.Int (function x -> Flag.parmap_cores := Some x),
     "   the number of processes to be used";
-    "--chunksize", Arg.Int (function x -> parmap_chunk_size := Some x),
+    "--chunksize", Arg.Int (function x -> Flag.parmap_chunk_size := Some x),
     "   the size of work chunks for parallelism";
     "--tmp-dir", Arg.Set_string tmp_dir,
     "   prefix of temporary directories for parallelism";
@@ -1004,7 +1001,7 @@ let rec main_action xs =
 	    [Inc.Parse_all_includes;Inc.Parse_really_all_includes]
 	then
 	  Common.profile_code "setup_unique_search" (fun _ ->
-	    Inc.setup_unique_search !parmap_cores !Inc.include_path));
+	    Inc.setup_unique_search !Flag.parmap_cores !Inc.include_path));
 
 	let (cocci_infos,constants) =
 	  Cocci.pre_engine (!cocci_file, !Config.std_iso) in
@@ -1071,12 +1068,12 @@ let rec main_action xs =
 	  | _ -> ());
 
 	let ncores =
-	  match !parmap_cores with
+	  match !Flag.parmap_cores with
 	  | Some x when x <= 0 -> succ (Parmap.get_default_ncores ())
 	  | Some x -> x
 	  | None -> 0 in
 	let chunksize =
-	  match !parmap_chunk_size with
+	  match !Flag.parmap_chunk_size with
 	  | Some x when x > 0 -> x
 	  | Some _ | None -> 1 in
 	let infiles =
@@ -1501,7 +1498,7 @@ let main arglist =
     let uses_distribution =
       (!distrib_index <> None) || (!distrib_max <> None) || !mod_distrib in
     let uses_parmap =
-      (!parmap_cores <> None) || (!parmap_chunk_size <> None) in
+      (!Flag.parmap_cores <> None) || (!Flag.parmap_chunk_size <> None) in
     if uses_distribution && uses_parmap then begin
       pr2 "error: distribution and parallelism are not compatible";
       exit 1
@@ -1655,8 +1652,8 @@ let __init_distrib_index = !distrib_index
 let __init_distrib_max = !distrib_max
 let __init_mod_distrib = !mod_distrib
 let __init_previous_merges = !previous_merges
-let __init_parmap_cores = !parmap_cores
-let __init_parmap_chunk_size = !parmap_chunk_size
+let __init_parmap_cores = !Flag.parmap_cores
+let __init_parmap_chunk_size = !Flag.parmap_chunk_size
 let __init_short_usage_func = !short_usage_func
 let __init_long_usage_func = !long_usage_func
 
@@ -1689,8 +1686,8 @@ let reinitialize _ = (* clean start for invocation from OCaml *)
   distrib_max := __init_distrib_max;
   mod_distrib := __init_mod_distrib;
   previous_merges := __init_previous_merges;
-  parmap_cores := __init_parmap_cores;
-  parmap_chunk_size := __init_parmap_chunk_size;
+  Flag.parmap_cores := __init_parmap_cores;
+  Flag.parmap_chunk_size := __init_parmap_chunk_size;
   short_usage_func := __init_short_usage_func;
   long_usage_func := __init_long_usage_func
 

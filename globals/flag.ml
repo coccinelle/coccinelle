@@ -57,6 +57,9 @@ let ibm = ref false
 let include_headers = ref false
 let no_include_cache = ref false
 
+let parmap_cores      = ref (None : int option)
+let parmap_chunk_size = ref (None : int option)
+
 exception UnreadableFile of string
 
 let cocci_attribute_names = ref ([] : string list)
