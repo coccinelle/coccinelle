@@ -41,7 +41,7 @@ SOURCES_parsing_cocci := \
 	type_infer.ml test_exps.ml unitary_ast0.ml arity.ml index.ml \
 	context_neg.ml adjust_pragmas.ml insert_plus.ml function_prototypes.ml \
 	semantic_cocci.ml data.ml free_vars.ml safe_for_multi_decls.ml \
-	parse_printf.ml parse_aux.ml disjdistr.ml \
+	parse_printf.ml parse_aux.ml cleanup_rules.ml disjdistr.ml \
 	parser_cocci_menhir.mly lexer_cocci.mll \
 	lexer_cli.mll lexer_script.mll \
 	cocci_grep.ml dpll.ml get_constants2.ml id_utils.ml git_grep.ml \

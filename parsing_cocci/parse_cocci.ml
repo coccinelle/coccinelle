@@ -2541,7 +2541,7 @@ let process file isofile verbose =
     | Some iso_file -> parse_iso_files [] [Common.Left iso_file] "" in
   let global_isos = parse_iso_files std_isos iso_files extra_path in
   let rules = Unitary_ast0.do_unitary rules in
-  let (_,parsed) =
+  let (dropped,parsed) =
     List.fold_left
       (function (dropped,prev) ->
 	function
@@ -2667,10 +2667,11 @@ let process file isofile verbose =
       ([],[]) rules in
 
   let parsed = List.concat (List.rev parsed) in
+  let (parsed,dropped) = Cleanup_rules.cleanup_rules parsed dropped in
   let parsed = Safe_for_multi_decls.safe_for_multi_decls parsed in
   let disjd = Disjdistr.disj parsed in
 
-  let (metavars,code,fvs,neg_pos,ua,pos) = Free_vars.free_vars disjd in
+  let (metavars,code,fvs,neg_pos,ua,pos) = Free_vars.free_vars disjd dropped in
   let code = Re_constraints.re_constraints code in
   if !Flag_parsing_cocci.show_SP
   then List.iter2 Pretty_print_cocci.unparse metavars code;

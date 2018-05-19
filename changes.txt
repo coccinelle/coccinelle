@@ -86,6 +86,7 @@
   declared before the constrained one.
 - Allow more variety in #pragmas
 - Add macro names to Coccilib.current_element
+- Get rid of code that depends on unbound virtual rules
 ** Bugfix:
 - Improved detection of metavariables in strings.  Problem reported by
   Wolfram Sang.
