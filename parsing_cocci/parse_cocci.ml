@@ -2541,18 +2541,28 @@ let process file isofile verbose =
     | Some iso_file -> parse_iso_files [] [Common.Left iso_file] "" in
   let global_isos = parse_iso_files std_isos iso_files extra_path in
   let rules = Unitary_ast0.do_unitary rules in
-  let parsed =
+  let (_,parsed) =
     List.fold_left
-      (function prev ->
+      (function (dropped,prev) ->
 	function
-            Ast0.ScriptRule (a,b,dep,d,fv,e,f) ->
+            Ast0.ScriptRule (a,b,dep,params,fv,e,f) ->
 	      if dep = Ast.FailDep
-	      then prev
-	      else [([],Ast.ScriptRule (a,b,dep,d,fv,e,f))]::prev
+	      then (a::dropped,prev)
+	      else
+		let undefined =
+		  List.exists
+		    (function
+			(_,(nm,_),_,Ast.NoMVInit) -> List.mem nm dropped
+		      | _ -> false)
+		    params in
+		if undefined
+		then (a::dropped,prev)
+		else
+		  (dropped,[([],Ast.ScriptRule (a,b,dep,params,fv,e,f))]::prev)
 	  | Ast0.InitialScriptRule(a,b,c,d,e,f) ->
-	      [([],Ast.InitialScriptRule (a,b,c,d,e,f))]::prev
+	      (dropped,[([],Ast.InitialScriptRule (a,b,c,d,e,f))]::prev)
 	  | Ast0.FinalScriptRule (a,b,c,d,e,f) ->
-	      [([],Ast.FinalScriptRule (a,b,c,d,e,f))]::prev
+	      (dropped,[([],Ast.FinalScriptRule (a,b,c,d,e,f))]::prev)
 	  | Ast0.CocciRule
 	      ((minus, metavarsm,
 		(iso, dropiso, dependencies, rule_name, exists)),
@@ -2645,14 +2655,16 @@ let process file isofile verbose =
 		 let minus_ast = Stmtlist.stmtlist minus_ast in
 
 		 if dependencies = Ast.FailDep
-		 then prev
+		 then (rule_name::dropped,prev)
 		 else
 		   match function_prototypes with
-		     None -> [(extra_meta @ metavars, minus_ast)]::prev
+		     None ->
+		       (dropped,[(extra_meta @ metavars, minus_ast)]::prev)
 		   | Some mv_fp ->
-		       [(extra_meta @ metavars, minus_ast); mv_fp]::prev)
+		       (dropped,
+			[(extra_meta @ metavars, minus_ast); mv_fp]::prev))
 (*          Ast0.CocciRule ((minus, metavarsm, (iso, dropiso, dependencies, rule_name, exists)), (plus, metavars))*)
-      [] rules in
+      ([],[]) rules in
 
   let parsed = List.concat (List.rev parsed) in
   let parsed = Safe_for_multi_decls.safe_for_multi_decls parsed in
