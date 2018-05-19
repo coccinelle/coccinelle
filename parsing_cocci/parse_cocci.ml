@@ -2545,8 +2545,10 @@ let process file isofile verbose =
     List.fold_left
       (function prev ->
 	function
-            Ast0.ScriptRule (a,b,c,d,fv,e,f) ->
-	      [([],Ast.ScriptRule (a,b,c,d,fv,e,f))]::prev
+            Ast0.ScriptRule (a,b,dep,d,fv,e,f) ->
+	      if dep = Ast.FailDep
+	      then prev
+	      else [([],Ast.ScriptRule (a,b,dep,d,fv,e,f))]::prev
 	  | Ast0.InitialScriptRule(a,b,c,d,e,f) ->
 	      [([],Ast.InitialScriptRule (a,b,c,d,e,f))]::prev
 	  | Ast0.FinalScriptRule (a,b,c,d,e,f) ->
