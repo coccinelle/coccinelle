@@ -2542,111 +2542,117 @@ let process file isofile verbose =
   let global_isos = parse_iso_files std_isos iso_files extra_path in
   let rules = Unitary_ast0.do_unitary rules in
   let parsed =
-    List.map
-      (function
-          Ast0.ScriptRule (a,b,c,d,fv,e,f) ->
-	    [([],Ast.ScriptRule (a,b,c,d,fv,e,f))]
-	| Ast0.InitialScriptRule(a,b,c,d,e,f) ->
-	    [([],Ast.InitialScriptRule (a,b,c,d,e,f))]
-	| Ast0.FinalScriptRule (a,b,c,d,e,f) ->
-	    [([],Ast.FinalScriptRule (a,b,c,d,e,f))]
-	| Ast0.CocciRule
-	    ((minus, metavarsm,
-	      (iso, dropiso, dependencies, rule_name, exists)),
-	     (plus, metavars),_inh,ruletype) ->
-	       let chosen_isos =
-		 parse_iso_files global_isos
-		   (List.map (function x -> Common.Left x) iso)
-		   extra_path in
-	       let chosen_isos =
+    List.fold_left
+      (function prev ->
+	function
+            Ast0.ScriptRule (a,b,c,d,fv,e,f) ->
+	      [([],Ast.ScriptRule (a,b,c,d,fv,e,f))]::prev
+	  | Ast0.InitialScriptRule(a,b,c,d,e,f) ->
+	      [([],Ast.InitialScriptRule (a,b,c,d,e,f))]::prev
+	  | Ast0.FinalScriptRule (a,b,c,d,e,f) ->
+	      [([],Ast.FinalScriptRule (a,b,c,d,e,f))]::prev
+	  | Ast0.CocciRule
+	      ((minus, metavarsm,
+		(iso, dropiso, dependencies, rule_name, exists)),
+	       (plus, metavars),_inh,ruletype) ->
+		 let chosen_isos =
+		   parse_iso_files global_isos
+		     (List.map (function x -> Common.Left x) iso)
+		     extra_path in
+		 let chosen_isos =
             (* check that dropped isos are actually available *)
-		 (try
-		   let iso_names =
-		     List.map (function (_,_,nm) -> nm) chosen_isos in
-		   let local_iso_names = reserved_names @ iso_names in
-		   let bad_dropped =
-		     List.find
-		       (function dropped ->
-			 not (List.mem dropped local_iso_names))
-		       dropiso in
-		   failwith
-		     ("invalid iso name " ^ bad_dropped ^ " in " ^ rule_name)
-		 with Not_found -> ());
-		 if List.mem "all" dropiso
-		 then
-		   if List.length dropiso = 1
-		   then []
-		   else failwith "disable all should only be by itself"
-		 else (* drop those isos *)
-		   List.filter
-		     (function (_,_,nm) -> not (List.mem nm dropiso))
-		     chosen_isos in
-	       let dropped_isos =
-		 match reserved_names with
-		   "all"::others ->
-		     (match dropiso with
-		       ["all"] -> others
-		     | _ ->
-			 List.filter (function x -> List.mem x dropiso) others)
-		 | _ ->
+		   (try
+		     let iso_names =
+		       List.map (function (_,_,nm) -> nm) chosen_isos in
+		     let local_iso_names = reserved_names @ iso_names in
+		     let bad_dropped =
+		       List.find
+			 (function dropped ->
+			   not (List.mem dropped local_iso_names))
+			 dropiso in
 		     failwith
-		       "bad list of reserved names - all must be at start" in
-	       let minus = Test_exps.process minus in
-	       let minus = Compute_lines.compute_lines false minus in
-	       let plus = Compute_lines.compute_lines false plus in
-	       let is_exp =
+		       ("invalid iso name " ^ bad_dropped ^ " in " ^ rule_name)
+		   with Not_found -> ());
+		   if List.mem "all" dropiso
+		   then
+		     if List.length dropiso = 1
+		     then []
+		     else failwith "disable all should only be by itself"
+		   else (* drop those isos *)
+		     List.filter
+		       (function (_,_,nm) -> not (List.mem nm dropiso))
+		       chosen_isos in
+		 let dropped_isos =
+		   match reserved_names with
+		     "all"::others ->
+		       (match dropiso with
+			 ["all"] -> others
+		       | _ ->
+			   List.filter (function x -> List.mem x dropiso)
+			     others)
+		   | _ ->
+		       failwith
+			 "bad list of reserved names - all must be at start" in
+		 let minus = Test_exps.process minus in
+		 let minus = Compute_lines.compute_lines false minus in
+		 let plus = Compute_lines.compute_lines false plus in
+		 let is_exp =
 		 (* only relevant to Flag.make_hrule *)
 		 (* doesn't handle multiple minirules properly, but since
 		    we don't really handle them in lots of other ways, it
 		    doesn't seem very important *)
-		 match plus with
-		   [] -> [false]
-		 | p::_ ->
-		     [match Ast0.unwrap p with
-		       Ast0.CODE c ->
-			 (match List.map Ast0.unwrap (Ast0.unwrap c) with
-			   [Ast0.Exp e] -> true | _ -> false)
-		     | _ -> false] in
-	       let minus = Arity.minus_arity minus in
-	       let plus = Adjust_pragmas.process plus in
-	       let ((metavars,minus),function_prototypes) =
-		 Function_prototypes.process
-		   rule_name metavars dropped_isos minus plus ruletype in
+		   match plus with
+		     [] -> [false]
+		   | p::_ ->
+		       [match Ast0.unwrap p with
+			 Ast0.CODE c ->
+			   (match List.map Ast0.unwrap (Ast0.unwrap c) with
+			     [Ast0.Exp e] -> true | _ -> false)
+		       | _ -> false] in
+		 let minus = Arity.minus_arity minus in
+		 let plus = Adjust_pragmas.process plus in
+		 let ((metavars,minus),function_prototypes) =
+		   Function_prototypes.process
+		     rule_name metavars dropped_isos minus plus ruletype in
           (* warning! context_neg side-effects its arguments *)
-	       let (m,p) = List.split (Context_neg.context_neg minus plus) in
-	       Type_infer.type_infer p;
-	       (if not (!Flag.sgrep_mode2 || dependencies = Ast.FailDep)
-	       then Insert_plus.insert_plus m p (chosen_isos = []));
-	       Type_infer.type_infer minus;
-	       let (extra_meta, minus) =
-		 match (chosen_isos,ruletype) with
+		 let (m,p) = List.split (Context_neg.context_neg minus plus) in
+		 Type_infer.type_infer p;
+		 (if not (!Flag.sgrep_mode2 || dependencies = Ast.FailDep)
+		 then Insert_plus.insert_plus m p (chosen_isos = []));
+		 Type_infer.type_infer minus;
+		 let (extra_meta, minus) =
+		   match (chosen_isos,ruletype) with
 		   (* separate case for [] because applying isos puts
 		      some restrictions on the -+ code *)
-		   ([],_) | (_,Ast.Generated) -> ([],minus)
-		 | _ -> Iso_pattern.apply_isos chosen_isos minus rule_name in
+		     ([],_) | (_,Ast.Generated) -> ([],minus)
+		   | _ -> Iso_pattern.apply_isos chosen_isos minus rule_name in
 	       (* must be before adj *)
-	       let minus = Commas_on_lists.process minus in
+		 let minus = Commas_on_lists.process minus in
 	       (* after iso, because iso can intro ... *)
-	       let minus = Adjacency.compute_adjacency minus in
-	       let minus = Comm_assoc.comm_assoc minus rule_name dropiso in
-	       let minus =
-		 if !Flag.sgrep_mode2 then minus
-		 else Single_statement.single_statement minus in
-	       let minus = Simple_assignments.simple_assignments minus in
+		 let minus = Adjacency.compute_adjacency minus in
+		 let minus = Comm_assoc.comm_assoc minus rule_name dropiso in
+		 let minus =
+		   if !Flag.sgrep_mode2 then minus
+		   else Single_statement.single_statement minus in
+		 let minus = Simple_assignments.simple_assignments minus in
 	       (* has to be last, introduced AsExpr, etc *)
-	       let minus = Get_metas.process minus in
-	       let minus_ast =
-		 Ast0toast.ast0toast rule_name dependencies dropped_isos
-		   exists minus is_exp ruletype in
-	       let minus_ast = Stmtlist.stmtlist minus_ast in
+		 let minus = Get_metas.process minus in
+		 let minus_ast =
+		   Ast0toast.ast0toast rule_name dependencies dropped_isos
+		     exists minus is_exp ruletype in
+		 let minus_ast = Stmtlist.stmtlist minus_ast in
 
-	       match function_prototypes with
-		 None -> [(extra_meta @ metavars, minus_ast)]
-	       | Some mv_fp -> [(extra_meta @ metavars, minus_ast); mv_fp])
+		 if dependencies = Ast.FailDep
+		 then prev
+		 else
+		   match function_prototypes with
+		     None -> [(extra_meta @ metavars, minus_ast)]::prev
+		   | Some mv_fp ->
+		       [(extra_meta @ metavars, minus_ast); mv_fp]::prev)
 (*          Ast0.CocciRule ((minus, metavarsm, (iso, dropiso, dependencies, rule_name, exists)), (plus, metavars))*)
-      rules in
+      [] rules in
 
-  let parsed = List.concat parsed in
+  let parsed = List.concat (List.rev parsed) in
   let parsed = Safe_for_multi_decls.safe_for_multi_decls parsed in
   let disjd = Disjdistr.disj parsed in
 
