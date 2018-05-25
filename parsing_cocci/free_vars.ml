@@ -1187,7 +1187,7 @@ are inherited, ie used but not defined.  These are accumulated back to
 their point of definition. *)
 
 
-let collect_top_level_used_after metavar_rule_list =
+let collect_top_level_used_after metavar_rule_list dropped_rules =
   let drop_virt = List.filter (function ("virtual",_) -> false | _ -> true) in
   let (used_after,used_after_lists) =
     List.fold_right
@@ -1218,6 +1218,10 @@ let collect_top_level_used_after metavar_rule_list =
 	  (Common.union_set inherited continue_propagation,
 	   used_after::used_after_lists))
       metavar_rule_list ([],[]) in
+  let used_after =
+    List.filter
+      (function (rule,_) -> not(List.mem rule dropped_rules))
+      used_after in
   match used_after with
     [] -> used_after_lists
   | _ ->
@@ -1308,8 +1312,9 @@ let collect_local_used_after metavars minirules used_after =
 
 
 
-let collect_used_after metavar_rule_list =
-  let used_after_lists = collect_top_level_used_after metavar_rule_list in
+let collect_used_after metavar_rule_list dropped_rules =
+  let used_after_lists =
+    collect_top_level_used_after metavar_rule_list dropped_rules in
   List.map2
     (function (metavars,r) ->
       function used_after ->
@@ -1330,11 +1335,11 @@ let rec split4 = function
 (* ---------------------------------------------------------------- *)
 (* entry point *)
 
-let free_vars rules =
+let free_vars rules dropped_rules =
   let metavars = List.map (function (mv,rule) -> mv) rules in
   let (fvs_lists,used_after_matched_lists,
        fresh_used_after_lists,fresh_used_after_lists_seeds) =
-    split4 (collect_used_after rules) in
+    split4 (collect_used_after rules dropped_rules) in
   let neg_pos_lists =
     List.map2 get_neg_pos_list rules used_after_matched_lists in
   let positions_list = (* for all rules, assume all positions are used after *)
