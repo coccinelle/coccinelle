@@ -559,7 +559,7 @@ let rec define_ident acc = function
 		pr2 (spf "remapping: %s to an ident in pragma" s);
 		let acc = (TCommentSpace i1) :: acc in
 		let acc = (TIdentDefine (s,ii)) :: acc in
-		define_ident acc xs
+		loop acc xs
 
 	    | xs ->
 		pr2 "WEIRD: weird #pragma";
