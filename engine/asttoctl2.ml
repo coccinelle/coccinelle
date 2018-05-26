@@ -167,6 +167,7 @@ let esctruepred = predmaker false (Lib_engine.EscTrueBranch,  CTL.Control)
 let falsepred   = predmaker false (Lib_engine.FalseBranch, CTL.Control)
 let fallpred    = predmaker false (Lib_engine.FallThrough, CTL.Control)
 let loopfallpred = predmaker false (Lib_engine.LoopFallThrough, CTL.Control)
+let gotoaftpred = predmaker false (Lib_engine.GotoAfter,   CTL.Control)
 
 (*let aftret label_var =
   ctl_or (aftpred label_var)
@@ -329,7 +330,7 @@ let elim_opt =
 		   with Ast.node_line = l}])]
 
     | (_::urest,stm::rest) -> stm :: (dots_list urest rest)
-    | _ -> failwith "not possible" in
+    | _ -> failwith "asttoctl2: not possible 1" in
 
   let stmtdotsfn r k d =
     let d = k d in
@@ -403,15 +404,24 @@ let make_seq guard l =
   let s = guard_to_strict guard in
   foldr1 (function rest -> function cur -> ctl_and s cur (ctl_ax s rest)) l
 
+let make_seq_ex guard l =
+  let s = guard_to_strict guard in
+  foldr1 (function rest -> function cur -> ctl_and s cur (ctl_ex rest)) l
+
 let make_seq_after2 guard first rest =
   let s = guard_to_strict guard in
   match rest with
-    After rest -> ctl_and s first (ctl_ax s (ctl_ax s rest))
+    After rest -> ctl_and s first (ctl_ex (ctl_ax s rest))
   | _ -> first
 
 let make_seq_after guard first rest =
   match rest with
     After rest -> make_seq guard [first;rest]
+  | _ -> first
+
+let make_seq_after_ex guard first rest =
+  match rest with
+    After rest -> make_seq_ex guard [first;rest]
   | _ -> first
 
 let opt_and guard first rest =
@@ -430,7 +440,7 @@ let contains_modif =
   let mcode r (_,_,kind,metapos) =
     match kind with
       Ast.MINUS(_,_,_,_) -> true
-    | Ast.PLUS _ -> failwith "not possible"
+    | Ast.PLUS _ -> failwith "asttoctl2: not possible 2"
     | Ast.CONTEXT(_,info) -> not (info = Ast.NOTHING) in
   let do_nothing r k e = k e in
   let annotated_decl decl =
@@ -1011,7 +1021,7 @@ let end_control_structure fvs header body after_pred
 	  make_match label guard
 	    (make_meta_rule_elem "1" aft Ast.CstrTrue (afvs,afresh,ainh)) in
 	(true,
-	 make_seq_after guard after_pred
+	 make_seq_after_ex guard after_pred
 	   (After(make_seq_after guard match_endif after))) in
   let body = body after_branch in
   let s = guard_to_strict guard in
@@ -1045,13 +1055,13 @@ let ifthen ifheader branch ((afvs,_,_,_) as aft) after
     match seq_fvs quantified
 	[Ast.get_fvs ifheader;Ast.get_fvs branch;afvs] with
       [(efvs,b1fvs);(_,b2fvs);_] -> (efvs,Common.union_set b1fvs b2fvs)
-    | _ -> failwith "not possible" in
+    | _ -> failwith "asttoctl2: not possible 3" in
   let new_quantified = Common.union_set bfvs quantified in
   let (mefvs,mbfvs) =
     match seq_fvs minus_quantified
 	[Ast.get_mfvs ifheader;Ast.get_mfvs branch;[]] with
       [(efvs,b1fvs);(_,b2fvs);_] -> (efvs,Common.union_set b1fvs b2fvs)
-    | _ -> failwith "not possible" in
+    | _ -> failwith "asttoctl2: not possible 4" in
   let new_mquantified = Common.union_set mbfvs minus_quantified in
   (* if header *)
   let if_header = quantify guard efvs (make_match ifheader) in
@@ -1098,7 +1108,7 @@ let ifthenelse ifheader branch1 els branch2 ((afvs,_,_,_) as aft) after
 	[Ast.get_fvs ifheader;Ast.get_fvs branch1;afvs] with
       [(e1fvs,b1fvs);(s1fvs,b1afvs);_] ->
 	(e1fvs,Common.union_set b1fvs b1afvs,s1fvs)
-    | _ -> failwith "not possible" in
+    | _ -> failwith "asttoctl2: not possible 5" in
   let (e2fvs,b2fvs,s2fvs) =
     (* fvs on else? *)
     (* just combine with the else branch.  no point to have separate
@@ -1107,7 +1117,7 @@ let ifthenelse ifheader branch1 els branch2 ((afvs,_,_,_) as aft) after
     match seq_fvs quantified [Ast.get_fvs ifheader;else_fvs;afvs] with
       [(e2fvs,b2fvs);(s2fvs,b2afvs);_] ->
         (e2fvs,Common.union_set b2fvs b2afvs,s2fvs)
-    | _ -> failwith "not possible" in
+    | _ -> failwith "asttoctl2: not possible 6" in
   let bothfvs        = union (union b1fvs b2fvs) (intersect s1fvs s2fvs) in
   let exponlyfvs     = intersect e1fvs e2fvs in
   let new_quantified = union bothfvs quantified in
@@ -1117,7 +1127,7 @@ let ifthenelse ifheader branch1 els branch2 ((afvs,_,_,_) as aft) after
 	[Ast.get_mfvs ifheader;Ast.get_mfvs branch1;[]] with
       [(e1fvs,b1fvs);(s1fvs,b1afvs);_] ->
 	(e1fvs,Common.union_set b1fvs b1afvs,s1fvs)
-    | _ -> failwith "not possible" in
+    | _ -> failwith "asttoctl2: not possible 7" in
   let (me2fvs,mb2fvs,ms2fvs) =
     (* fvs on else? *)
     (* just combine with the else branch.  no point to have separate
@@ -1127,7 +1137,7 @@ let ifthenelse ifheader branch1 els branch2 ((afvs,_,_,_) as aft) after
     match seq_fvs minus_quantified [Ast.get_mfvs ifheader;else_mfvs;[]] with
       [(e2fvs,b2fvs);(s2fvs,b2afvs);_] ->
 	(e2fvs,Common.union_set b2fvs b2afvs,s2fvs)
-    | _ -> failwith "not possible" in
+    | _ -> failwith "asttoctl2: not possible 8" in
   let mbothfvs       = union (union mb1fvs mb2fvs) (intersect ms1fvs ms2fvs) in
   let new_mquantified = union mbothfvs minus_quantified in
   (* if header *)
@@ -1172,14 +1182,14 @@ let forwhile header body ((afvs,_,_,_) as aft) after
     let (efvs,bfvs) =
       match seq_fvs quantified [Ast.get_fvs header;Ast.get_fvs body;afvs] with
 	[(efvs,b1fvs);(_,b2fvs);_] -> (efvs,Common.union_set b1fvs b2fvs)
-      | _ -> failwith "not possible" in
+      | _ -> failwith "asttoctl2: not possible 9" in
     let new_quantified = Common.union_set bfvs quantified in
     (* minus free variables *)
     let (mefvs,mbfvs) =
       match seq_fvs minus_quantified
 	  [Ast.get_mfvs header;Ast.get_mfvs body;[]] with
 	[(efvs,b1fvs);(_,b2fvs);_] -> (efvs,Common.union_set b1fvs b2fvs)
-      | _ -> failwith "not possible" in
+      | _ -> failwith "asttoctl2: not possible 10" in
     let new_mquantified = Common.union_set mbfvs minus_quantified in
     (* loop header *)
     let header = quantify guard efvs (make_match header) in
@@ -1212,7 +1222,7 @@ let forwhile header body ((afvs,_,_,_) as aft) after
 	  let (efvs) =
 	    match seq_fvs quantified [Ast.get_fvs header] with
 	      [(efvs,_)] -> efvs
-	    | _ -> failwith "not possible" in
+	    | _ -> failwith "asttoctl2: not possible 11" in
 	  quantify guard efvs (make_match header)
       | _ -> process())
   | _ -> process()
@@ -1258,13 +1268,15 @@ let svar_context_with_add_after stmt s label quantified d ast
 	Ast.CONTEXT(pos,Ast.BEFOREAFTER(bef,_,c)) ->
 	  Ast.CONTEXT(pos,Ast.BEFORE(bef,c))
       |	Ast.CONTEXT(pos,_) -> Ast.CONTEXT(pos,Ast.NOTHING)
-      | Ast.MINUS(_,_,_,_) | Ast.PLUS _ -> failwith "not possible") in
+      | Ast.MINUS(_,_,_,_)
+      | Ast.PLUS _ -> failwith "asttoctl2: not possible 12") in
 (*
   let middle_metamatch =
     matcher
       (match d with
 	Ast.CONTEXT(pos,_) -> Ast.CONTEXT(pos,Ast.NOTHING)
-      | Ast.MINUS(_,_,_,_) | Ast.PLUS _ -> failwith "not possible") in
+      | Ast.MINUS(_,_,_,_)
+      | Ast.PLUS _ -> failwith "asttoctl2: not possible 13") in
 *)
   let last_metamatch =
     matcher
@@ -1272,7 +1284,8 @@ let svar_context_with_add_after stmt s label quantified d ast
 	Ast.CONTEXT(pos,Ast.BEFOREAFTER(_,aft,c)) ->
 	  Ast.CONTEXT(pos,Ast.AFTER(aft,c))
       |	Ast.CONTEXT(_,_) -> d
-      | Ast.MINUS(_,_,_,_) | Ast.PLUS _ -> failwith "not possible") in
+      | Ast.MINUS(_,_,_,_)
+      | Ast.PLUS _ -> failwith "asttoctl2: not possible 14") in
 
 (*
   let rest_nodes =
@@ -1286,7 +1299,7 @@ let svar_context_with_add_after stmt s label quantified d ast
   let right_or = (* the statement covers multiple nodes *)
     ctl_and CTL.NONSTRICT
       (ctl_ex
-	 (make_seq guard
+	 (make_seq_ex guard
 	    [to_end; make_seq_after guard last_metamatch after]))
       first_metamatch in
 
@@ -1325,7 +1338,7 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
     make_match None guard (make_meta_rule_elem "3" d Ast.CstrTrue fvinfo) in
   let ender =
     match (d,after) with
-      (Ast.PLUS _, _) -> failwith "not possible"
+      (Ast.PLUS _, _) -> failwith "asttoctl2: not possible 15"
     | (Ast.CONTEXT(pos,Ast.NOTHING),(Tail|End|VeryEnd)) ->
 	(* just match the root. don't care about label; always ok *)
 	make_raw_match None false ast
@@ -1343,7 +1356,7 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
 	let to_end = ctl_or (aftpred None) (loopfallpred None) in
 	let is_compound =
 	  ctl_ex
-	    (make_seq guard
+	    (make_seq_ex guard
 	       [to_end; make_seq_after guard CTL.True after]) in
 	let not_compound =
 	  make_seq_after guard (ctl_not (ctl_ex to_end)) after in
@@ -1351,7 +1364,7 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
 	  (ctl_and CTL.NONSTRICT
 	     first_metamatch (ctl_or is_compound not_compound))
     | (Ast.CONTEXT(pos,(Ast.AFTER _|Ast.BEFOREAFTER _)),_) ->
-	failwith "not possible"
+	failwith "asttoctl2: not possible 16"
     | (Ast.MINUS(pos,inst,adj,l),after) ->
 	let (first_metamatch,last_metamatch,rest_metamatch) =
 	  match l with
@@ -1366,7 +1379,7 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
 	let to_end = ctl_or (aftpred None) (loopfallpred None) in
 	let is_compound =
 	  ctl_ex
-	    (make_seq guard
+	    (make_seq_ex guard
 	       [to_end; make_seq_after guard last_metamatch after]) in
 	let not_compound =
 	  make_seq_after guard (ctl_not (ctl_ex to_end)) after in
@@ -1631,7 +1644,7 @@ and get_whencond_exps e =
     Ast.Exp e -> [e]
   | Ast.DisjRuleElem(res) ->
       List.fold_left Common.union_set [] (List.map get_whencond_exps res)
-  | _ -> failwith "not possible"
+  | _ -> failwith "asttoctl2: not possible 17"
 
 and make_whencond_headers e e1 label guard quantified =
   let fvs = Ast.get_fvs e in
@@ -1728,7 +1741,7 @@ let rec statement_list stmt_list top after quantified minus_quantified
 		    (sl,fvs,mfvs)))
 	       new_quantified new_mquantified
 	       (compute_label label e dots_before) llabel slabel guard)
-      | _ -> failwith "not possible" in
+      | _ -> failwith "asttoctl2: not possible 18" in
   loop top quantified minus_quantified dots_before
     label llabel slabel
     (x,List.map Ast.get_fvs x,List.map Ast.get_mfvs x)
@@ -1886,7 +1899,7 @@ and statement stmt top after quantified minus_quantified
 	    [Ast.get_fvs lbrace;Ast.get_fvs body;Ast.get_fvs rbrace]
 	with
 	  [(lbfvs,b1fvs);(_,b2fvs);(rbfvs,_)] -> (lbfvs,b1fvs,b2fvs,rbfvs)
-	| _ -> failwith "not possible" in
+	| _ -> failwith "asttoctl2: not possible 19" in
       let (mlbfvs,mb1fvs,mb2fvs,mrbfvs) =
 	match
 	  seq_fvs minus_quantified
@@ -1894,7 +1907,7 @@ and statement stmt top after quantified minus_quantified
 	with
 	  [(lbfvs,b1fvs);(_,b2fvs);(rbfvs,_)] ->
 	    (lbfvs,b1fvs,b2fvs,rbfvs)
-	| _ -> failwith "not possible" in
+	| _ -> failwith "asttoctl2: not possible 20" in
       let pv = count_nested_braces stmt in
       let lv = get_label_ctr() in
       let paren_pred = CTL.Pred(Lib_engine.Paren pv,CTL.Control) in
@@ -1978,27 +1991,44 @@ and statement stmt top after quantified minus_quantified
 		  new_quantified2 new_mquantified2
 		  None(*no label because past the goto*)
 		  llabel slabel false guard)) in
-	  let switch_needed =
-	    (* if real code starts with ... with eg when forall, will need
-	       to switch the quantifier chosen by make_seq *)
-	    match find_xx real_code with
-	      Some _ -> fun phi -> CTL.XX phi
-	    | None -> fun phi -> phi in
-	  quantify true [pv;lv]
-	    (quantify guard b1fvs
-	       (make_seq
-		  [start_brace;
-		    switch_needed
-		      (ctl_and
-			 (CTL.AU (* want AF even for sgrep *)
-			    (CTL.FORWARD,CTL.STRICT,
-			     CTL.Pred(Lib_engine.PrefixLabel(lv),CTL.Control),
-			     ctl_or (aftpred None) (* jll new! *)
-			       (ctl_and(*brace must be eventually after goto*)
-				  (gotopred (Some (lv,ref true)))
-				  (* want AF even for sgrep *)
-				  (CTL.AF(CTL.FORWARD,CTL.STRICT,end_brace)))))
-			 real_code)])) in
+	  if contains_modif rbrace
+	  then (* have to match it *)
+            let switch_needed =
+            (* if real code starts with ... with eg when forall, will need
+		       to switch the quantifier chosen by make_seq *)
+              match find_xx real_code with
+		Some _ -> fun phi -> CTL.XX phi
+              | None -> fun phi -> phi in
+	    quantify true [pv;lv]
+              (quantify guard b1fvs
+		 (make_seq
+                    [start_brace;
+                      switch_needed
+			(ctl_and
+                           (CTL.AU (* want AF even for sgrep *)
+                              (CTL.FORWARD,CTL.STRICT,
+                               CTL.Pred
+				 (Lib_engine.PrefixLabel(lv),CTL.Control),
+                               ctl_or (aftpred None) (* jll new! *)
+				 (ctl_and(*brace must be after goto*)
+                                    (gotopred (Some (lv,ref true)))
+                                  (* want AF even for sgrep *)
+                                    (CTL.AF
+				       (CTL.FORWARD,CTL.STRICT,end_brace)))))
+                           real_code)]))
+	  else (* no change to }, so don't bother matching it *)
+	    quantify true [pv]
+	      (quantify guard b1fvs
+		 (make_seq
+		    [ctl_and start_brace
+		      (* check that we always escape with a goto *)
+		      (* must use EX because we want to follow control edges *)
+			(ctl_and (ctl_ex (gotoaftpred None))
+			   (ctl_not
+			      (ctl_ex
+				 (ctl_and (aftpred None)
+				    (ctl_not (gotoaftpred None))))));
+		      real_code])) in
 	ctl_or pattern_as_given (ctl_or pattern2 pattern3)
       else pattern_as_given
   | Ast.IfThen(ifheader,branch,aft) ->
@@ -2058,7 +2088,7 @@ and statement stmt top after quantified minus_quantified
 	match seq_fvs quantified [Ast.get_wcfvs whencode;Ast.get_fvs stmt_dots]
 	with
 	  [(wcfvs,bothfvs);(bdfvs,_)] -> bothfvs
-	| _ -> failwith "not possible" in
+	| _ -> failwith "asttoctl2: not possible 21" in
 
       (* no minus version because when code doesn't contain any minus code *)
       let new_quantified = Common.union_set bfvs quantified in
@@ -2144,7 +2174,7 @@ and statement stmt top after quantified minus_quantified
 		  (efvs::all_efvs,b1fvs::all_b1fvs,lbfvs::all_lbfvs,
 		   b2fvs::all_b2fvs,casefvs::all_casefvs,b3fvs::all_b3fvs,
 		   rbfvs::all_rbfvs)
-	      |	_ -> failwith "not possible")
+	      |	_ -> failwith "asttoctl2: not possible 22")
 	  ([],[],[],[],[],[],[]) (decl_fvs :: case_fvs) in
       let (all_efvs,all_b1fvs,all_lbfvs,all_b2fvs,
 	   all_casefvs,all_b3fvs,all_rbfvs) =
@@ -2180,7 +2210,7 @@ and statement stmt top after quantified minus_quantified
 		  (efvs::all_efvs,b1fvs::all_b1fvs,lbfvs::all_lbfvs,
 		   b2fvs::all_b2fvs,casefvs::all_casefvs,b3fvs::all_b3fvs,
 		   rbfvs::all_rbfvs)
-	      |	_ -> failwith "not possible")
+	      |	_ -> failwith "asttoctl2: not possible 23")
 	  ([],[],[],[],[],[],[]) (decl_mfvs::case_mfvs) in
       let (all_mefvs,all_mb1fvs,all_mlbfvs,all_mb2fvs,
 	   all_mcasefvs,all_mb3fvs,all_mrbfvs) =
@@ -2210,7 +2240,7 @@ and statement stmt top after quantified minus_quantified
 		let e1fvs =
 		  match seq_fvs new2_quantified [Ast.get_fvs header] with
 		    [(e1fvs,_)] -> e1fvs
-		  | _ -> failwith "not possible" in
+		  | _ -> failwith "asttoctl2: not possible 24" in
 		quantify guard e1fvs (real_make_match label true header)
 	    | Ast.OptCase(case_line) -> failwith "not supported")
 	  cases in
@@ -2240,12 +2270,12 @@ and statement stmt top after quantified minus_quantified
 		    let fvs = [Ast.get_fvs header;Ast.get_fvs body] in
 		    match seq_fvs new2_quantified fvs with
 		      [(e1fvs,b1fvs);(s1fvs,_)] -> (e1fvs,b1fvs,s1fvs)
-		    | _ -> failwith "not possible" in
+		    | _ -> failwith "asttoctl2: not possible 25" in
 		  let (me1fvs,mb1fvs,ms1fvs) =
 		    let fvs = [Ast.get_mfvs header;Ast.get_mfvs body] in
 		    match seq_fvs new2_mquantified fvs with
 		      [(e1fvs,b1fvs);(s1fvs,_)] -> (e1fvs,b1fvs,s1fvs)
-		    | _ -> failwith "not possible" in
+		    | _ -> failwith "asttoctl2: not possible 26" in
 		  let case_header =
 		    quantify guard e1fvs (make_match header) in
 		  let new3_quantified = union b1fvs new2_quantified in
@@ -2287,7 +2317,7 @@ and statement stmt top after quantified minus_quantified
 	(rb_fvs,Ast.get_fresh rb,Ast.get_inherited rb,
 	match Ast.unwrap rb with
 	  Ast.SeqEnd(rb) -> Ast.get_mcodekind rb
-	| _ -> failwith "not possible") in
+	| _ -> failwith "asttoctl2: not possible 27") in
       let (switch_header,wrapper) =
 	if !used
 	then
@@ -2308,7 +2338,7 @@ and statement stmt top after quantified minus_quantified
 	with
 	  [(afvs,ahfvs);(hfvs,b1fvs);(lbfvs,b2fvs);(_,b3fvs);(rbfvs,_)] ->
 	    (afvs,ahfvs,hfvs,b1fvs,lbfvs,b2fvs,b3fvs,rbfvs)
-	| _ -> failwith "not possible" in
+	| _ -> failwith "asttoctl2: not possible 28" in
       let (mhfvs,mb1fvs,mlbfvs,mb2fvs,mb3fvs,mrbfvs) =
 	match
 	  seq_fvs quantified
@@ -2317,7 +2347,7 @@ and statement stmt top after quantified minus_quantified
 	with
 	  [(hfvs,b1fvs);(lbfvs,b2fvs);(_,b3fvs);(rbfvs,_)] ->
 	    (hfvs,b1fvs,lbfvs,b2fvs,b3fvs,rbfvs)
-	| _ -> failwith "not possible" in
+	| _ -> failwith "asttoctl2: not possible 29" in
       let function_header = quantify guard hfvs (make_match header) in
       let start_brace = quantify guard lbfvs (make_match lbrace) in
       let stripped_rbrace =
@@ -2504,12 +2534,12 @@ and statement stmt top after quantified minus_quantified
 	match seq_fvs quantified [Ast.get_fvs header;Ast.get_fvs body]
 	with
 	  [(hfvs,b1fvs);(bodyfvs,_)] -> (hfvs,b1fvs,bodyfvs)
-	| _ -> failwith "not possible" in
+	| _ -> failwith "asttoctl2: not possible 30" in
       let (mhfvs,mbfvs,mbodyfvs) =
 	match seq_fvs minus_quantified [Ast.get_mfvs header;Ast.get_mfvs body]
 	with
 	  [(hfvs,b1fvs);(bodyfvs,_)] -> (hfvs,b1fvs,bodyfvs)
-	| _ -> failwith "not possible" in
+	| _ -> failwith "asttoctl2: not possible 31" in
       let define_header = quantify guard hfvs (make_match header) in
       let body_code =
 	statement_list body NotTop after
@@ -2694,7 +2724,7 @@ let rec cleanup c =
 	    CTL.AU(_,s,_,_) -> CTL.AX(dir,s,k phi)
 	  | CTL.AF(_,s,_) -> CTL.AX(dir,s,k phi)
 	  | CTL.And(s,_,_) -> CTL.AX(dir,s,k phi) (* branches must be AU/AF *)
-	  | _ -> failwith "not possible")
+	  | _ -> failwith "asttoctl2: not possible 32")
       | None -> CTL.EX(dir,cleanup phi))
   | CTL.XX(phi)               -> failwith "bad XX"
   | CTL.AG(dir,s,phi1) -> CTL.AG(dir,s,cleanup phi1)

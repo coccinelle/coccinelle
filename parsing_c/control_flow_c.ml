@@ -283,7 +283,7 @@ and after_type =
   | SWBreakAfterNode (* after for a block ending in break from switch *)
   | NormalAfterNode
 
-type edge = Direct (* Normal | Shadow *)
+type edge = Direct | Control (* Normal | Shadow *)
 
 module Key : Set.OrderedType with type t = int = struct
   type t = int
@@ -351,19 +351,19 @@ let remove_one_node nodei g =
   let succs = g#successors nodei in
   assert (not (KeyEdgeSet.is_empty preds));
 
-  KeyEdgeSet.iter (fun (predi, Direct) ->
-    g#del_arc ((predi, nodei), Direct);
+  KeyEdgeSet.iter (fun (predi, c) ->
+    g#del_arc ((predi, nodei), c);
   ) preds;
-  KeyEdgeSet.iter (fun (succi, Direct) ->
-    g#del_arc ((nodei, succi), Direct);
+  KeyEdgeSet.iter (fun (succi, c) ->
+    g#del_arc ((nodei, succi), c);
   ) succs;
 
   g#del_node nodei;
 
   (* connect in-nodes to out-nodes *)
-  KeyEdgeSet.iter (fun (pred, Direct) ->
-    KeyEdgeSet.iter (fun (succ, Direct) ->
-      g#add_arc ((pred, succ), Direct);
+  KeyEdgeSet.iter (fun (pred, c) ->
+    KeyEdgeSet.iter (fun (succ, c) ->
+      g#add_arc ((pred, succ), c);
     ) succs;
   ) preds
 

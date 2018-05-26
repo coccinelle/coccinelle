@@ -186,6 +186,10 @@ let labels_for_ctl (dropped_isos : string list)
 	  (function node ->
 	    match F.unwrap node with F.AfterNode _ -> true | _ -> false)
 
+    | Lib_engine.GotoAfter ->
+	loop_nodes p
+	  (function node -> F.unwrap node = F.AfterNode F.GotoAfterNode)
+
     | Lib_engine.FallThrough ->
 	loop_nodes p
 	  (function node ->
@@ -463,8 +467,18 @@ module CFG =
   struct
     type node = F.G.key
     type cfg = F.node F.G.ograph_mutable
-    let predecessors cfg n = List.map fst (F.KeyEdgeSet.elements (cfg#predecessors n))
-    let successors   cfg n = List.map fst (F.KeyEdgeSet.elements (cfg#successors n))
+    let predecessors cfg n =
+      List.map fst (F.KeyEdgeSet.elements (cfg#predecessors n))
+    let successors   cfg n =
+      List.map fst (F.KeyEdgeSet.elements (cfg#successors n))
+    let direct_predecessors cfg n =
+      List.map fst
+	(List.filter (fun (a,c) -> c = F.Direct)
+	   (F.KeyEdgeSet.elements (cfg#predecessors n)))
+    let direct_successors   cfg n =
+      List.map fst
+	(List.filter (fun (a,c) -> c = F.Direct)
+	   (F.KeyEdgeSet.elements (cfg#successors n)))
     let extract_is_loop cfg n =
       Control_flow_c.extract_is_loop (F.KeyMap.find n cfg#nodes)
     let print_node i = Format.print_string (string_of_int i)

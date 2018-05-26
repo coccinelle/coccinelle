@@ -5,6 +5,7 @@ type predicate =
   | EscTrueBranch
   | FalseBranch
   | After
+  | GotoAfter
   | FallThrough
   | LoopFallThrough
   | Return

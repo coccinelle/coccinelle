@@ -107,6 +107,7 @@ let pp_predicate = function
   | EscTrueBranch -> pp "EscTrueBranch"
   | FalseBranch -> pp "FalseBranch"
   | After -> pp "After"
+  | GotoAfter -> pp "GotoAfter"
   | FallThrough -> pp "FallThrough"
   | LoopFallThrough -> pp "LoopFallThrough"
   | Return -> pp "Return"

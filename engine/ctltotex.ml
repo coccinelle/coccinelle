@@ -248,6 +248,7 @@ let pred2c = function
   | Lib_engine.EscTrueBranch -> ("\\msf{EscTrueBranch}",13)
   | Lib_engine.FalseBranch -> ("\\msf{FalseBranch}",11)
   | Lib_engine.After -> ("\\msf{After}",5)
+  | Lib_engine.GotoAfter -> ("\\msf{GotoAfter}",9)
   | Lib_engine.FallThrough -> ("\\msf{FallThrough}",11)
   | Lib_engine.LoopFallThrough -> ("\\msf{LoopFallThrough}",15)
   | Lib_engine.Return -> ("\\msf{Return}",6)

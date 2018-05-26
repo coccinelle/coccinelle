@@ -104,7 +104,7 @@ and after_type =
   | SWBreakAfterNode (* after for a block ending in break from switch *)
   | NormalAfterNode
 
-type edge = Direct
+type edge = Direct | Control
 
 module Key : Set.OrderedType with type t = int
 module KeySet : Set.S with type elt = Key.t

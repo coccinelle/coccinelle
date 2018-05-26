@@ -343,9 +343,9 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
 	if xi.compound_caller = Statement
 	then
 	  (let afteri = !g +> add_node (AfterNode ty) lbl str in
-	  let a1 = ((newi, afteri), Direct) in
+	  let a1 = ((newi, afteri), Control) in
 	  !g#add_arc a1;
-	  let a2 = ((afteri, endi), Direct) in
+	  let a2 = ((afteri, endi), Control) in
 	  !g#add_arc a2;
 	  ret_afters := (afteri,a1,a2) :: !ret_afters) in
 
@@ -566,8 +566,8 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
 
              let afteri =
 	       !g +> add_node (AfterNode NormalAfterNode) lbl "[after]" in
-             !g#add_arc ((newswitchi, afteri),  Direct);
-             !g#add_arc ((afteri, newendswitch), Direct);
+             !g#add_arc ((newswitchi, afteri),  Control);
+             !g#add_arc ((afteri, newendswitch), Control);
 
 
              !g#add_arc ((finalthen, newendswitch), Direct);
@@ -583,8 +583,8 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
 
                let afteri =
 		 !g +> add_node (AfterNode NormalAfterNode) lbl "[after]" in
-               !g#add_arc ((newswitchi, afteri),  Direct);
-               !g#add_arc ((afteri, newendswitch), Direct);
+               !g#add_arc ((newswitchi, afteri),  Control);
+               !g#add_arc ((afteri, newendswitch), Control);
 
 
                Some newendswitch
@@ -724,8 +724,8 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
         !g +> add_node (EndStatement (Some iifakeend)) lbl "[enddowhile]" in
 
       let afteri = !g +> add_node (AfterNode NormalAfterNode) lbl "[after]" in
-      !g#add_arc ((doi,afteri), Direct);
-      !g#add_arc ((afteri,newfakeelse), Direct);
+      !g#add_arc ((doi,afteri), Control);
+      !g#add_arc ((afteri,newfakeelse), Control);
 
       let newxi = { xi_lbl with
          ctx = LoopInfo (taili, newfakeelse, xi_lbl.braces, lbl);
@@ -1013,8 +1013,8 @@ and mk_If (starti :nodei option) (labels :int list) (xi_lbl :xinfo)
       (* if -> [after] -> [endif] *)
       let afteri = !g +>
             add_node (AfterNode NormalAfterNode) labels "[after]" in
-      !g#add_arc ((newi, afteri), Direct);
-      !g#add_arc ((afteri, lasti), Direct);
+      !g#add_arc ((newi, afteri), Control);
+      !g#add_arc ((afteri, lasti), Control);
 
       (* for ErrorExit heuristic *)
       let newxi = { xi_lbl with  under_ifthen = true; } in
@@ -1061,9 +1061,9 @@ and mk_If (starti :nodei option) (labels :int list) (xi_lbl :xinfo)
       let mkafter ty str lasti = begin
             (* if -> [after] -> [endif] *)
             let afteri = !g +> add_node (AfterNode ty) labels str in
-            let a1 = ((newi, afteri), Direct) in
+            let a1 = ((newi, afteri), Control) in
             !g#add_arc a1;
-            let a2 = ((afteri, lasti), Direct) in
+            let a2 = ((afteri, lasti), Control) in
             !g#add_arc a2;
             ret_afters := (afteri,a1,a2) :: !ret_afters
         end in
@@ -1264,8 +1264,8 @@ and aux_statement_list starti (xi, newxi) statxs =
 	because then no statement might be there.
 	let afteri =
           !g +> add_node (AfterNode NormalAfterNode) newxi'.labels "[after]" in
-	!g#add_arc ((newi, afteri), Direct);
-	!g#add_arc ((afteri, taili), Direct);
+	!g#add_arc ((newi, afteri), Control);
+	!g#add_arc ((afteri, taili), Control);
 *)
 
         Some taili

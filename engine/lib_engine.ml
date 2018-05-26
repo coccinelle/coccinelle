@@ -14,6 +14,7 @@ type mvar = Ast_cocci.meta_name
 type predicate =
     InLoop | TrueBranch | EscTrueBranch | FalseBranch
   | After (* pointer to the code after a block, if, or while *)
+  | GotoAfter (* control node for escaping branches *)
   | FallThrough | LoopFallThrough
   | Return (* any exit from the current function *)
   | FunHeader | UnsafeBrace | Top | Exit | ErrorExit | Goto

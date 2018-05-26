@@ -110,6 +110,8 @@ module type GRAPH =
     type cfg
     val predecessors:     cfg -> node -> node list
     val successors:       cfg -> node -> node list
+    val direct_predecessors:     cfg -> node -> node list
+    val direct_successors:       cfg -> node -> node list
     val extract_is_loop : cfg -> node -> bool
     val print_node :      node -> unit
     val size :            cfg -> int
@@ -526,7 +528,7 @@ let conj_subst theta theta' =
 		  if dom_sub x = nm
 		  then (nm,x::y)::ys
 		  else (dom_sub x,[x])::res
-	      |	_ -> failwith "not possible") in
+	      |	_ -> failwith "ctl_engine: not possible 1") in
 	let merge_all theta theta' =
 	  foldl
 	    (function rest ->
@@ -549,7 +551,7 @@ let conj_subst theta theta' =
 		0 -> (merge_all ths ths') @ loop (xs,ys)
 	      |	-1 -> ths @ loop (xs,((y,ths')::ys))
 	      |	1 -> ths' @ loop (((x,ths)::xs),ys)
-	      |	_ -> failwith "not possible") in
+	      |	_ -> failwith "ctl_engine: not possible 2") in
 	try Some (clean_subst(loop (classify theta, classify theta')))
 	with SUBST_MISMATCH -> None
 ;;
@@ -569,7 +571,7 @@ let conj_subst_none theta theta' =
 		  if dom_sub x = nm
 		  then (nm,x::y)::ys
 		  else (dom_sub x,[x])::res
-	      |	_ -> failwith "not possible") in
+	      |	_ -> failwith "ctl_engine: not possible 3") in
 	let merge_all theta theta' =
 	  foldl
 	    (function rest ->
@@ -591,7 +593,7 @@ let conj_subst_none theta theta' =
 		0 -> (merge_all ths ths') @ loop (xs,ys)
 	      |	-1 -> ths @ loop (xs,((y,ths')::ys))
 	      |	1 -> raise SUBST_MISMATCH
-	      |	_ -> failwith "not possible") in
+	      |	_ -> failwith "ctl_engine: not possible 4") in
 	try Some (clean_subst(loop (classify theta, classify theta')))
 	with SUBST_MISMATCH -> None
 ;;
@@ -1017,6 +1019,17 @@ let pre_exist dir (grp,_,_) y reqst =
     in setify (concatmap exp y)
 ;;
 
+let pre_exist_direct dir (grp,_,_) y reqst =
+  let check s =
+    match reqst with None -> true | Some reqst -> List.mem s reqst in
+  let exp (s,th,wit) =
+    let ss' = match dir with
+                A.FORWARD  -> G.direct_predecessors grp s
+              | A.BACKWARD -> G.direct_successors grp s
+      in concatmap (fun s' -> if check s' then [(s',th,wit)] else []) ss'
+    in setify (concatmap exp y)
+;;
+
 exception Empty
 
 let pre_forall dir (grp,_,states) y all reqst =
@@ -1025,10 +1038,10 @@ let pre_forall dir (grp,_,states) y all reqst =
       None -> true | Some reqst -> List.mem s reqst in
   let pred =
     match dir with
-      A.FORWARD -> G.predecessors | A.BACKWARD -> G.successors in
+      A.FORWARD -> G.direct_predecessors | A.BACKWARD -> G.direct_successors in
   let succ =
     match dir with
-      A.FORWARD -> G.successors | A.BACKWARD -> G.predecessors in
+      A.FORWARD -> G.direct_successors | A.BACKWARD -> G.direct_predecessors in
   let neighbors =
     List.map
       (function p -> (p,succ grp p))
@@ -1118,14 +1131,15 @@ let satEU_forAW dir ((cfg,_,states) as m) s1 s2 reqst print_graph =
 	  match new_info with
 	    [] -> y
 	  | new_info ->
-	      let first = triples_conj s1 (pre_exist dir m new_info reqst) in
+	      let first =
+		triples_conj s1 (pre_exist_direct dir m new_info reqst) in
 	      let res = triples_union first y in
 	      let new_info = setdiff res y in
 	      f res new_info in
       f s2 s2
     else
       let f y =
-	let pre = pre_exist dir m y reqst in
+	let pre = pre_exist_direct dir m y reqst in
 	triples_union s2 (triples_conj s1 pre) in
       setfix f s2
 ;;
@@ -1166,7 +1180,6 @@ type ('pred,'anno) auok =
 
 (* A[phi1 U phi2] == phi2 \/ (phi1 /\ AXA[phi1 U phi2]) *)
 let satAU dir ((cfg,_,states) as m) s1 s2 reqst print_graph =
-  let strip s = List.map (function s -> (s,[],[])) (get_states s) in
   let ctr = ref 0 in
   inc satAU_calls;
   if s1 = []
@@ -1195,8 +1208,7 @@ let satAU dir ((cfg,_,states) as m) s1 s2 reqst print_graph =
       try
 	(if !Flag_ctl.loop_in_src_code
 	then
-	  let _ =
-	    satEU_forAW dir m (strip s1) (strip s2) reqst print_graph in
+	  let _ = satEU_forAW dir m s1 s2 reqst print_graph in
 	  ());
 	f s2 s2
       with AW -> AUfailed s2
@@ -1565,11 +1577,13 @@ let reachsatEF dir (grp,_,_) s2 =
 	  List.fold_left
 	    (function rest ->
 	      function Common.Left x -> union x rest
-		| _ -> failwith "not possible")
+		| _ -> failwith "ctl_engine: not possible 5")
 	    y pre_collected in
 	let new_info =
 	  List.map
-	    (function Common.Right x -> x | _ -> failwith "not possible")
+	    (function
+		Common.Right x -> x
+	      | _ -> failwith "ctl_engine: not possible 6")
 	    new_info in
 	let first = inner_setify (concatmap (dirop grp) new_info) in
 	let new_info = setdiff first y in
@@ -1806,6 +1820,7 @@ let rec satloop unchecked required required_states
 		       (* no graph, for the moment *)
 		       (fun y str -> ()))
 		    s1 in
+		(*Printf.printf "got s1\n"; flush stdout;*)
 		strict_A2 strict satAW satEF dir m s1 s2 new_required_states
 		)
     | A.Implies(phi1,phi2) ->
@@ -2091,7 +2106,7 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 		   A[E[phi1 U phi2] & phi1 W phi2]
 		   the and is nonstrict *)
 		(* tmp_res is bigger than s2, so perhaps closer to s1 *)
-	      output "AW";
+	      output "AW"; ignore (anno [] [child1; child2]);
 	      let s1 =
 		triples_conj
 		  (satEU dir m s1 tmp_res new_required_states

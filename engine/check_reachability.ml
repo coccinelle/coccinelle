@@ -130,6 +130,14 @@ module CFG =
       List.map fst (Control_flow_c.KeyEdgeSet.elements (cfg#predecessors n))
     let successors   cfg n =
       List.map fst (Control_flow_c.KeyEdgeSet.elements (cfg#successors n))
+    let direct_predecessors cfg n =
+      List.map fst
+	(List.filter (fun (a,c) -> c = Control_flow_c.Direct)
+	   (Control_flow_c.KeyEdgeSet.elements (cfg#predecessors n)))
+    let direct_successors   cfg n =
+      List.map fst
+	(List.filter (fun (a,c) -> c = Control_flow_c.Direct)
+	   (Control_flow_c.KeyEdgeSet.elements (cfg#successors n)))
     let extract_is_loop cfg n =
       Control_flow_c.extract_is_loop (Control_flow_c.KeyMap.find n cfg#nodes)
     let print_node i = Format.print_string (string_of_int i)

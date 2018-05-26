@@ -23,6 +23,8 @@ module type GRAPH =
     type cfg
     val predecessors:     cfg -> node -> node list
     val successors:       cfg -> node -> node list
+    val direct_predecessors:     cfg -> node -> node list
+    val direct_successors:       cfg -> node -> node list
     val extract_is_loop : cfg -> node -> bool
     val print_node :      node -> unit
     val size :            cfg -> int
