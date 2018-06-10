@@ -340,7 +340,7 @@ let rec vk_expr = fun bigf expr ->
     | New  (Some ts, t)   ->
         vk_argument_list bigf ts;
 	vk_argument bigf t
-    | Delete e -> vk_expr bigf e
+    | Delete (_,e) -> vk_expr bigf e
     | Defined name -> vk_name bigf name
 
 
@@ -1201,7 +1201,7 @@ let rec vk_expr_s = fun bigf expr ->
       | New (Some ts, t) ->
 	  New (Some (ts +> List.map (fun (e,ii) ->
 	    vk_argument_s bigf e, iif ii)), vk_argument_s bigf t)
-      | Delete e      -> Delete (vk_expr_s bigf e)
+      | Delete (box,e) -> Delete (box,vk_expr_s bigf e)
       | Defined name  -> Defined (vk_name_s bigf name)
 
     in

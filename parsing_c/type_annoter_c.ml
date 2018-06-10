@@ -1028,7 +1028,7 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
 	pr2_once "Type annotater:not handling New";
 	Type_c.noTypeHere (* TODO *)
 
-    | Delete e ->
+    | Delete (box,e) ->
 	k expr;
 	pr2_once "Type annotater:not handling Delete";
 	Type_c.noTypeHere (* TODO *)
