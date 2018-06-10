@@ -114,7 +114,7 @@ let addTypeD     = function
       computed_warning
 	(fun _ ->
 	  Printf.sprintf
-	    "two or more data types: dropping %s\nkeeping typeD %s\n"
+	    "two or more data types: dropping %s, keeping typeD %s\n"
 	    (Pretty_print_c.string_of_fullType (mktype t ii))
 	    (Pretty_print_c.string_of_fullType (mktype x ii2)))
 	v
