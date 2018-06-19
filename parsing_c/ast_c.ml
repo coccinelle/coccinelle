@@ -351,7 +351,7 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
 
   (* for C++: *)
   | New of (argument wrap2 (* , *) list) option * argument
-  | Delete of expression
+  | Delete of bool (* true if [] *) * expression
 
   (* CPP [defined] operator, e.g. #if defined(A) *)
   | Defined of name

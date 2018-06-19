@@ -106,7 +106,7 @@ and expressionbis =
   | Constructor of fullType * initialiser
   | ParenExpr of expression
   | New of argument wrap2 list option * argument
-  | Delete of expression
+  | Delete of bool (* true if [] *) * expression
   | Defined of name
 and argument = (expression, weird_argument) Common.either
 and weird_argument = ArgType of parameterType | ArgAction of action_macro

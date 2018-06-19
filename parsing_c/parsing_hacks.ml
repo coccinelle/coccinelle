@@ -271,7 +271,11 @@ let is_macro s =
 let not_macro s =
   not (is_macro s)
 
-
+let is_macro_paren s rest = (* likely macro call *)
+  is_macro s &&
+    match rest with
+      TOPar _::TOPar _::_ -> true
+    | _ -> false
 
 
 (*****************************************************************************)
@@ -527,11 +531,28 @@ let rec define_ident acc = function
       )
     | TPragma ii ->
 	let safe =
+	  let rec loop2 = function
+	      (TCPar _)::(TDefEOL _)::_ -> true
+	    | (TCPar _)::_ -> false
+	    | _::xs -> loop2 xs
+	    | _ -> false in
+	  let rec loop1a = function
+	      (TCommentSpace _)::xs -> loop1a xs
+	    | (TIdent _)::xs -> loop1a xs
+	    | t::xs when TH.str_of_tok t ==~ Common.regexp_alpha -> loop1a xs
+	    | (TDefEOL i1)::_ -> true
+	    | _ -> false in
+	  let rec loop1 = function
+	      (TCommentSpace _)::xs -> loop1 xs
+	    | (TOPar _)::xs -> loop2 xs
+	    | (TIdent _)::xs -> loop1a xs
+	    | t::xs when TH.str_of_tok t ==~ Common.regexp_alpha -> loop1a xs
+	    | (TDefEOL i1)::_ -> true
+	    | _ -> false in
 	  let rec loop = function
-	      (TCommentSpace _|TIdent _|TOPar _|TCPar _)::xs ->
-		loop xs
-	    | t::xs when TH.str_of_tok t ==~ Common.regexp_alpha ->
-		loop xs
+	      (TCommentSpace _)::xs -> loop xs
+	    | (TIdent _)::xs -> loop1 xs
+	    | t::xs when TH.str_of_tok t ==~ Common.regexp_alpha -> loop1 xs
 	    | (TDefEOL i1)::_ -> true
 	    | _ -> false in
 	  loop tokens in
@@ -2104,8 +2125,8 @@ let lookahead2 ~pass next before =
         ->
 	  TIdent (s, i1)
   (* xx yy *)
-  | (TIdent (s, i1)::TIdent (s2, i2)::_  , _) when not_struct_enum before
-      && ok_typedef s
+  | (TIdent (s, i1)::TIdent (s2, i2)::rest  , _) when not_struct_enum before
+      && ok_typedef s && not (is_macro_paren s2 rest)
         ->
          (* && not_annot s2 BUT lead to false positive*)
       msg_typedef s i1 2; LP.add_typedef_root s;

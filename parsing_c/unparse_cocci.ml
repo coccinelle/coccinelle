@@ -453,7 +453,7 @@ let rec expression e =
     | Ast_c.Constructor (t, init) -> unary
     | Ast_c.ParenExpr (e) -> primary
     | Ast_c.New (_, t) -> unary
-    | Ast_c.Delete(t) -> unary
+    | Ast_c.Delete(_,t) -> unary
     | Ast_c.Defined _ -> primary
   in
 

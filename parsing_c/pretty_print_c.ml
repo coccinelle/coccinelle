@@ -166,7 +166,10 @@ let mk_pretty_printers
     | New   (None, t),     [i1] -> pr_elem i1; pp_argument t
     | New   (Some ts, t),     [i1; i2; i3] ->
 	pr_elem i1; pr_elem i2; pp_arg_list ts; pr_elem i3; pp_argument t
-    | Delete(t),     [i1] -> pr_elem i1; pr_space(); pp_expression t
+    | Delete(false,t), [i1] -> pr_elem i1; pr_space(); pp_expression t
+    | Delete(true,t), [i1;i2;i3] ->
+	pr_elem i1; pr_space(); pr_elem i2; pr_elem i3; pr_space();
+	pp_expression t
 
     | Defined name, [i1] ->
         pr_elem i1; (* defined *) pr_space();
@@ -183,7 +186,7 @@ let mk_pretty_printers
     | ArrayAccess (_,_) | RecordAccess (_,_) | RecordPtAccess (_,_)
     | SizeOfExpr (_) | SizeOfType (_) | Cast (_,_)
     | StatementExpr (_) | Constructor _
-    | ParenExpr (_) | New (_) | Delete (_)
+    | ParenExpr (_) | New (_) | Delete (_,_)
     | Defined (_)),_ -> raise (Impossible 95)
     );
 

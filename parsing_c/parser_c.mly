@@ -114,7 +114,7 @@ let addTypeD     = function
       computed_warning
 	(fun _ ->
 	  Printf.sprintf
-	    "two or more data types: dropping %s\nkeeping typeD %s\n"
+	    "two or more data types: dropping %s, keeping typeD %s\n"
 	    (Pretty_print_c.string_of_fullType (mktype t ii))
 	    (Pretty_print_c.string_of_fullType (mktype x ii2)))
 	v
@@ -810,7 +810,8 @@ unary_expr:
  | Tsizeof topar2 type_name tcpar2 { mk_e(SizeOfType ($3))    [$1;$2;$4] }
  | Tnew new_argument               { mk_e(New (None, $2))     [$1] }
  | Tnew TOPar argument_list_ne TCPar new_argument { mk_e(New (Some $3, $5))             [$1; $2; $4] }
- | Tdelete cast_expr               { mk_e(Delete $2)          [$1] }
+ | Tdelete cast_expr               { mk_e(Delete(false, $2))  [$1] }
+ | Tdelete TOCro TCCro cast_expr   { mk_e(Delete(true, $4))   [$1;$2;$3] }
  | Tdefined identifier_cpp         { mk_e(Defined $2)         [$1] }
  | Tdefined TOPar identifier_cpp TCPar
  { mk_e(Defined $3) [$1;$2;$4] }
