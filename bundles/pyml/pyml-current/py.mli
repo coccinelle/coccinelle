@@ -84,13 +84,27 @@ module Object: sig
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/object.html#c.PyObject_DelItemString} PyObject_DelItemString} *)
 
-  val get_attr: t -> t -> t
+  val get_attr: t -> t -> t option
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/object.html#c.PyObject_GetAttr} PyObject_GetAttr} *)
 
-  val get_attr_string: t -> string -> t
+  val find_attr: t -> t -> t
+  (** Equivalent to {!get_attr} but raises a [Not_found] exception in
+      case of failure. *)
+
+  val find_attr_opt: t -> t -> t option
+  (** Alias for {!get_attr}. *)
+
+  val get_attr_string: t -> string -> t option
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/object.html#c.PyObject_GetAttrString} PyObject_GetAttrString} *)
+
+  val find_attr_string: t -> string -> t
+  (** Equivalent to {!get_attr_string} but raises a [Not_found] exception in
+      case of failure. *)
+
+  val find_attr_string_opt: t -> string -> t option
+  (** Alias for {!get_attr_string}. *)
 
   val get_item: t -> t -> t option
   (** Wrapper for
@@ -100,6 +114,9 @@ module Object: sig
   (** Equivalent to {!get_item} but raises a [Not_found] exception in
       case of failure. *)
 
+  val find_opt: t -> t -> t option
+  (** Alias for {!get_item}. *)
+
   val get_item_string: t -> string -> t option
   (** [get_item_string o key] returns the element corresponding to the object
       [key] or [None] on failure. *)
@@ -107,6 +124,9 @@ module Object: sig
   val find_string: t -> string -> t
   (** Equivalent to {!get_item_string} but raises a [Not_found] exception in
       case of failure. *)
+
+  val find_string_opt: t -> string -> t option
+  (** Alias for {!get_item_string}. *)
 
   val get_iter: t -> t
   (** Wrapper for
@@ -538,6 +558,9 @@ module Dict: sig
       [key]. Equivalent to {!get_item} but [find] raises [Not_found] if the
       key [key] is not present. *)
 
+  val find_opt: Object.t -> Object.t -> Object.t option
+  (** Alias for {!get_item}. *)
+
   val get_item_string: Object.t -> string -> Object.t option
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/dict.html#c.PyDict_GetItemString} PyDict_GetItemString} *)
@@ -546,6 +569,9 @@ module Dict: sig
   (** [find_string p key] returns the object from Python dictionary [p]
       which has a key [key]. Equivalent to {!get_item_string} but [find_string]
       raises [Not_found] if the key [key] is not present. *)
+
+  val find_string_opt: Object.t -> string -> Object.t option
+  (** Alias for {!get_item_string}. *)
 
   val keys: Object.t -> Object.t
   (** Wrapper for
@@ -795,13 +821,25 @@ module Import: sig
 
   val import_module: string -> Object.t
   (** Wrapper for
-      {{:https://docs.python.org/3/c-api/import.html#c.PyImport_ImportModule} PyImport_ImportModule} *)
+      {{:https://docs.python.org/3/c-api/import.html#c.PyImport_ImportModule} PyImport_ImportModule}
+      Note that Python memoizes imported module, so that you will get the same
+      object if you import the same module twice.
+      ({{:https://github.com/thierry-martinez/pyml/issues/16}GitHub issue #16})
+
+{[let m = Py.Import.import_module "json"
+and m' = Py.Import.import_module "json" in
+assert (m = m')]} *)
+
+  val import_module_opt: string -> Object.t option
+  (** [import_module_opt m] imports the module [m] and
+      returns the module object if the import succeeds:.
+      in this case, it is equivalent to [Some (import_module m)].
+      If the module is not found,
+      i.e. if [import_module] raises a Python exception of class
+      [ModuleNotFoundError], then [try_import_module] returns [None]. *)
 
   val try_import_module: string -> Object.t option
-  (** [try_import_module m] imports the module [m] and returns the module object if the import succeeds:.
-      in this case, it is equivalent to [Some (import_module m)].
-      If the module is not found, i.e. if [import_module] raises a Python exception of class
-      [ModuleNotFoundError], then [try_import_module] returns [None]. *)
+  (** Alias for {!import_module_opt}. *)
 
   val import_module_ex:
       string -> Object.t -> Object.t -> Object.t -> Object.t
@@ -817,6 +855,12 @@ module Import: sig
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/import.html#c.PyImport_ReloadModule} PyImport_ReloadModule} *)
 end
+
+val import: string -> Object.t
+(** Equivalent to {!Import.import_module}. *)
+
+val import_opt: string -> Object.t option
+(** Equivalent to {!Import.import_module_opt}. *)
 
 (** Interface for Python values of type [Iter]. *)
 module Iter: sig
@@ -843,6 +887,22 @@ module Iter: sig
       [to_list_map f s] is equivalent to [List.map f (to_list s)] but is
       tail-recursive and [f] is applied to the elements of [s] in the reverse
       order. *)
+
+  val of_seq: Object.t Stdcompat.Seq.t -> Object.t
+  (** [of_seq s] returns an interator that iterates over the values of the
+      sequence s. *)
+
+  val to_seq: Object.t -> Object.t Stdcompat.Seq.t
+  (** [to_seq i] returns the sequence of the values from the iteration [i].
+      The Python iteration is consumed while the sequence is browsed.
+      Values are memoized, so that the sequence can be browsed many times. *)
+
+  val unsafe_to_seq: Object.t -> Object.t Stdcompat.Seq.t
+  (** [unsafe_to_seq i] returns the sequence of the values from the iteration
+      [i].
+      The Python iteration is consumed while the sequence is browsed.
+      Warning: values are not memoized, so that the sequence can be browsed
+      only once. *)
 
   val fold_left: ('a -> Object.t -> 'a) -> 'a -> Object.t -> 'a
   (** [fold_left f v i] returns [(f (...(f v i1)...) in)] where [i1], ..., [in]
@@ -941,6 +1001,15 @@ module List: sig
   val of_sequence: Object.t -> Object.t
   (** Equivalent to {!Sequence.list}. *)
 
+  val of_seq: Object.t Stdcompat.Seq.t -> Object.t
+  (** [of_seq s] returns the Python list with the same elements as [s]. *)
+
+  val to_seq: Object.t -> Object.t Stdcompat.Seq.t
+  (** Equivalent to {!Sequence.to_seq}. *)
+
+  val to_seqi: Object.t -> (int * Object.t) Stdcompat.Seq.t
+  (** Equivalent to {!Sequence.to_seqi}. *)
+
   val singleton: Object.t -> Object.t
   (** [singleton o] returns the Python list [[o]]. *)
 end
@@ -958,6 +1027,9 @@ module Mapping: sig
   val find_string: Object.t -> string -> Object.t
   (** Equivalent to {!get_item_string} but raises a [Not_found] exception in
       case of failure. *)
+
+  val find_string_opt: Object.t -> string -> Object.t option
+  (** Alias for {!get_item_string}. *)
 
   val has_key: Object.t -> Object.t -> bool
   (** Wrapper for
@@ -1017,16 +1089,30 @@ module Module: sig
       {{:https://docs.python.org/3/c-api/module.html#c.PyModule_GetName} PyModule_GetName} *)
 
   val get: Object.t -> string -> Object.t
-  (** Equivalent to {!Object.get_attr_string}. *)
+  (** Equivalent to {!Object.find_attr_string}. *)
+
+  val get_opt: Object.t -> string -> Object.t option
+  (** Equivalent to {!Object.find_attr_string_opt}. *)
 
   val get_function: Object.t -> string -> Object.t array -> Object.t
   (** [Py.Module.get_function m name] is equivalent to
       [Py.Callable.to_function (Py.Module.get m name)]. *)
 
+  val get_function_opt: Object.t -> string ->
+    (Object.t array -> Object.t) option
+  (** [Py.Module.get_function_opt] is equivalent to
+      [Py.Module.get_function] but returns [None] in case of failure. *)
+
   val get_function_with_keywords: Object.t -> string -> Object.t array ->
     (string * Object.t) list -> Object.t
   (** [Py.Module.get_function_with_keywords m name] is equivalent to
       [Py.Callable.to_function_with_keywords (Py.Module.get m name)]. *)
+
+  val get_function_with_keywords_opt: Object.t -> string ->
+    (Object.t array -> (string * Object.t) list -> Object.t) option
+  (** [Py.Module.get_function_with_keywords_opt] is equivalent to
+      [Py.Module.get_function_with_keywords]
+      but returns [None] in case of failure. *)
 
   val set: Object.t -> string -> Object.t -> unit
   (** Equivalent to {!Object.set_attr_string}. *)
@@ -1412,6 +1498,14 @@ module Sequence: sig
       tail-recursive and [f] is applied to the elements of [s] in the reverse
       order. *)
 
+  val to_seq: Object.t -> Object.t Stdcompat.Seq.t
+  (** [to_seq s] returns the OCaml sequence of the values from the Python
+      sequence [s]. *)
+
+  val to_seqi: Object.t -> (int * Object.t) Stdcompat.Seq.t
+  (** [to_seqi s] returns the OCaml indexed sequence of the values from the
+      Python sequence [s]. *)
+
   val fold_left: ('a -> Object.t -> 'a) -> 'a -> Object.t -> 'a
   (** [fold_left f v s] returns [(f (...(f v s1)...) sn)] where [s1], ..., [sn]
       are the elements of the Python sequence [s]. *)
@@ -1486,12 +1580,19 @@ module String: sig
       {{:https://docs.python.org/2/c-api/unicode.html#c.PyUnicode_GetLength} PyUnicode_GetLength}. *)
 
   val of_string: string -> Object.t
-  (** [of_string s] returns the Python string with the value [s]. *)
+  (** [of_string s] returns the Python string with the value [s].
+      [s] should be a valid UTF-8 string. *)
+
+  val of_bytes: Stdcompat.bytes -> Object.t
+  (** Same as [of_string] but with an argument of type [bytes]. *)
 
   val to_string: Object.t -> string
   (** [to_string o] returns the string contained in the Python value [o].
       A failure ([Failure _]) is raised if [o] is neither a
       [String]/[Bytes] value nor a [Unicode] value. *)
+
+  val to_bytes: Object.t -> Stdcompat.bytes
+  (** Same as [to_string] but with an a result of type [bytes]. *)
 
   val of_unicode: ?size:int -> int array -> Object.t
   (** [of_unicode codepoints] returns the Python Unicode string with the
@@ -1500,6 +1601,26 @@ module String: sig
   val to_unicode: Object.t -> int array
   (** [to_unicode s] returns the codepoints of the Python Unicode string
       [s]. *)
+end
+
+(** Interface for Python values of type [Bytes].
+    With Python 2, aliases for [String]. *)
+module Bytes: sig
+  val of_string: string -> Object.t
+  (** [of_string s] returns the Python byte sequence with the contents of
+      [s]. *)
+
+  val of_bytes: Stdcompat.bytes -> Object.t
+  (** Same as [of_string] but with an argument of type [bytes]. *)
+
+  val to_string: Object.t -> string
+  (** [to_string o] returns the string contained in the Python value [o]. *)
+
+  val to_bytes: Object.t -> Stdcompat.bytes
+  (** Same as [to_string] but with an a result of type [bytes]. *)
+
+  val length: Object.t -> int
+  (** [length s] returns the length of the Python byte sequence [s]. *)
 end
 
 (** Interface for Python values of type [Tuple]. *)
@@ -1565,6 +1686,15 @@ module Tuple: sig
 
   val to_list_map: (Object.t -> 'a) -> Object.t -> 'a list
   (** Equivalent to {!Sequence.to_list_map}. *)
+
+  val of_seq: Object.t Stdcompat.Seq.t -> Object.t
+  (** [of_seq s] returns the Python tuple with the values of the sequence s. *)
+
+  val to_seq: Object.t -> Object.t Stdcompat.Seq.t
+  (** Equivalent to {!Sequence.to_seq}. *)
+
+  val to_seqi: Object.t -> (int * Object.t) Stdcompat.Seq.t
+  (** Equivalent to {!Sequence.to_seqi}. *)
 
   val fold_left: ('a -> Object.t -> 'a) -> 'a -> Object.t -> 'a
   (** Equivalent to {!Sequence.fold_left}. *)
@@ -1765,9 +1895,12 @@ module Array: sig
   val numpy: Stdcompat.floatarray -> Object.t
   (** [numpy a] returns a Numpy array that shares the same contents than
       the OCaml array [a].
-      The array is passed in place (without copy): Python programs can
+      The array is passed in place (without copy) which relies on the
+      unboxed representation of [floatarray] : Python programs can
       change the contents of the array and the changes are visible in
-      the OCaml array. *)
+      the OCaml array.
+      Note that the {!Numpy} module provides a more general interface
+      between Numpy arrays and OCaml bigarrays. *)
 
   val numpy_get_array: Object.t -> Stdcompat.floatarray
   (** [numpy_get_array a] returns the OCaml array from which the Numpy

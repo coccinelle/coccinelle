@@ -20,8 +20,10 @@ actively maintained.
 
 The Python library is linked at runtime and the same executable can be
 run in a Python 2 or a Python 3 environment. ``py.ml`` does not
-require any Python library at compile time, nor any other
-dependency.
+require any Python library at compile time.
+The only compile time dependency is
+[https://github.com/thierry-martinez/stdcompat/](``Stdcompat``) to ensure compatibility
+with all OCaml compiler versions from 3.12.
 
 Bindings are split in three modules:
 
@@ -109,6 +111,32 @@ assert (Py.List.to_list_map Py.Float.to_float result = [2.0; 3.0])
 It can be run after some OCaml values have been made accessible through a module
 as above. If IPython is available, the top-loop can be run with
 ``Py.Run.ipython ()``.
+
+
+With OCaml 4.06 and greater, the module ``Pyops`` declares indexing operators.
+
+| Indexing operator | Getter | Setter |
+|-------------------|--------|--------|
+| ``x.@(v)`` | ``Py.Object.find_attr`` | ``Py.Object.set_attr`` |
+| ``x.@$(v)`` | ``Py.Object.find_attr_string`` / ``Py.Module.get`` | ``Py.Object.set_attr_string`` / ``Py.Module.set `` |
+| ``x.![v]`` | ``Py.Object.find`` | ``Py.Object.set_item`` |
+| ``x.!$[v]`` | ``Py.Object.find_string`` | ``Py.Object.set_item_string`` |
+| ``x.%[v]`` | ``Py.Dict.find`` | ``Py.Dict.set_item`` |
+| ``x.%$[v]`` | ``Py.Dict.find_string`` | ``Py.Dict.set_item_string`` |
+| ``x.&(v)`` | ``Py.Module.get_function`` | ``Py.Module.set_function`` |
+
+The "hello world" example above can be written:
+
+``` ocaml
+let m = Py.Import.add_module "ocaml" in
+let open Pyops in
+m.&("hello") <- (fun args ->
+  Printf.printf "Hello, %s!\n" (Py.String.to_string args.(0));
+  Py.none);
+Py.Run.eval ~start:Py.File "
+from ocaml import hello
+hello('World')"
+```
 
 Error handling
 --------------
@@ -220,9 +248,11 @@ Modules
 -------
 
 New modules can be defined with ``Py.Import.add_module``
-and existing modules can be imported with ``Py.Import.import_module``.
+and existing modules can be imported with ``Py.Import.import_module``
+(or the shorter ``Py.import`` alias).
 Trying to import a module that does not exist leads to a Python exception:
-use ``Py.Import.try_import_module`` to get an option result instead.
+use ``Py.Import.import_module_opt`` to get an option result instead
+(or the shorter ``Py.import_opt`` alias).
 
 ``Module.get`` and ``Module.set`` allow to retrieve and define module
 members.
@@ -247,13 +277,25 @@ plt.show()
 The code can be written directly in OCaml as such:
 
 ```ocaml
-let np = Py.Import.import_module "numpy" in
-let plt = Py.Import.import_module "matplotlib.pyplot" in
+let np = Py.import "numpy" in
+let plt = Py.import "matplotlib.pyplot" in
 let x = Py.Module.get_function np "arange"
   (Array.map Py.Float.of_float [| 0.; 5.; 0.1 |]) in
 let y = Py.Module.get_function np "sin" [| x |] in
 ignore (Py.Module.get_function plt "plot" [| x; y |]);
 assert (Py.Module.get_function plt "show" [| |] = Py.none)
+```
+
+or, using indexing operators (OCaml 4.06):
+
+```ocaml
+let np = Py.import "numpy" in
+let plt = Py.import "matplotlib.pyplot" in
+let open Pyops in
+let x = np.&("arange")(Array.map Py.Float.of_float [| 0.; 5.; 0.1 |]) in
+let y = np.&("sin")[| x |] in
+ignore (plt.&("plot")[| x; y |]);
+assert (plt.&("show")[| |] = Py.none)
 ```
 
 NumPy

@@ -524,7 +524,7 @@ let version_mismatch interpreter found expected =
 
 let build_version_string major minor =
   Printf.sprintf "%d.%d" major minor
-  
+
 let initialize ?interpreter ?version ?minor ?(verbose = false) () =
   if !initialized then
     failwith "Py.initialize: already initialized";
@@ -798,6 +798,9 @@ module String_ = struct
       check_not_null (Pywrappers.Python3.pyunicode_fromstringandsize s len)
     else
       check_not_null (Pywrappers.Python2.pystring_fromstringandsize s len)
+
+  let of_bytes s =
+    of_string (Stdcompat.Bytes.unsafe_to_string s)
 end
 
 module Tuple_ = struct
@@ -926,7 +929,10 @@ module Mapping = struct
   let get_item_string mapping key =
     option (Pywrappers.pymapping_getitemstring mapping key)
 
-  let find_string mapping key = Pyutils.option_unwrap (get_item_string mapping key)
+  let find_string mapping key =
+    Pyutils.option_unwrap (get_item_string mapping key)
+
+  let find_string_opt = get_item_string
 
   let has_key mapping key = Pywrappers.pymapping_haskey mapping key <> 0
 
@@ -983,7 +989,7 @@ type byteorder =
 
 let string_length = String.length
 
-module String = struct
+module String__ = struct
   include String_
 
   let check_bytes s =
@@ -1126,7 +1132,26 @@ module String = struct
     match Type.to_string s with
       None -> string_type_mismatch s
     | Some s -> check_some s
+
+  let to_bytes s =
+    Stdcompat.Bytes.unsafe_of_string (to_string s)
 end
+
+module Bytes = struct
+  include String__
+
+  let of_string s =
+    let len = String.length s in
+    if !version_major_value >= 3 then
+      check_not_null (Pywrappers.Python3.pybytes_fromstringandsize s len)
+    else
+      check_not_null (Pywrappers.Python2.pystring_fromstringandsize s len)
+
+  let of_bytes s =
+    of_string (Stdcompat.Bytes.unsafe_to_string s)
+end
+
+module String = String__
 
 module Err = struct
   type t =
@@ -1256,19 +1281,32 @@ module Object = struct
     assert_int_success (Pywrappers.pyobject_delitemstring obj item)
 
   let get_attr obj attr =
-    check_not_null (Pywrappers.pyobject_getattr obj attr)
+    option (Pywrappers.pyobject_getattr obj attr)
 
   let get_attr_string obj attr =
-    check_not_null (Pywrappers.pyobject_getattrstring obj attr)
+    option (Pywrappers.pyobject_getattrstring obj attr)
+
+  let find_attr obj attr = Pyutils.option_unwrap (get_attr obj attr)
+
+  let find_attr_opt = get_attr
+
+  let find_attr_string obj attr =
+    Pyutils.option_unwrap (get_attr_string obj attr)
+
+  let find_attr_string_opt = get_attr_string
 
   let get_item obj key =
     option (Pywrappers.pyobject_getitem obj key)
 
   let find obj attr = Pyutils.option_unwrap (get_item obj attr)
 
+  let find_opt = get_item
+
   let get_item_string obj key = get_item obj (String.of_string key)
 
   let find_string obj attr = Pyutils.option_unwrap (get_item_string obj attr)
+
+  let find_string_opt = get_item_string
 
   let get_iter obj =
     check_not_null (Pywrappers.pyobject_getiter obj)
@@ -1594,6 +1632,25 @@ module Iter_ = struct
     | Some item -> p item || exists p i
 end
 
+(* From stdcompat *)
+let vec_to_seq length get v =
+  let length = length v in
+  let rec aux i () =
+    if i = length then Stdcompat.Seq.Nil
+    else
+      let x = get v i in
+      Stdcompat.Seq.Cons (x, aux (i + 1)) in
+  aux 0
+
+let vec_to_seqi length get v =
+  let length = length v in
+  let rec aux i () =
+    if i = length then Stdcompat.Seq.Nil
+    else
+      let x = get v i in
+      Stdcompat.Seq.Cons ((i, x), aux (i + 1)) in
+  aux 0
+
 module Sequence = struct
   let check obj = bool_of_int (Pywrappers.pysequence_check obj)
 
@@ -1671,6 +1728,10 @@ module Sequence = struct
 
   let exists p sequence =
     Iter_.exists p (Object.get_iter sequence)
+
+  let to_seq = vec_to_seq size get
+
+  let to_seqi = vec_to_seqi size get
 end
 
 module Tuple = struct
@@ -1693,6 +1754,8 @@ module Tuple = struct
   let of_list_map f list = of_array_map f (Array.of_list list)
 
   let of_sequence = Sequence.tuple
+
+  let of_seq s = of_array (Stdcompat.Array.of_seq s)
 
   let of_tuple1 v0 = init 1 (function _ -> v0)
 
@@ -1746,10 +1809,14 @@ module Dict = struct
 
   let find dict key = Pyutils.option_unwrap (get_item dict key)
 
+  let find_opt = get_item
+
   let get_item_string dict name =
     option (Pywrappers.pydict_getitemstring dict name)
 
   let find_string dict key = Pyutils.option_unwrap (get_item_string dict key)
+
+  let find_string_opt = get_item_string
 
   let keys dict = check_not_null (Pywrappers.pydict_keys dict)
 
@@ -1876,7 +1943,7 @@ module Import = struct
   let import_module name =
     check_not_null (Pywrappers.pyimport_importmodule name)
 
-  let try_import_module name =
+  let import_module_opt name =
     try
       Some (check_not_null (Pywrappers.pyimport_importmodule name))
     with E (e, msg)
@@ -1884,7 +1951,9 @@ module Import = struct
           let ty = Object.to_string e in
           ty = "<class 'ModuleNotFoundError'>" ||
             ty = "<type 'exceptions.ImportError'>" ->
-      None 
+      None
+
+  let try_import_module = import_module_opt
 
   let import_module_level name globals locals fromlist level =
     check_not_null
@@ -1896,6 +1965,15 @@ module Import = struct
   let reload_module obj =
     check_not_null (Pywrappers.pyimport_reloadmodule obj)
 end
+
+let import = Import.import_module
+
+let import_opt = Import.import_module_opt
+
+let option_map f o =
+  match o with
+  | None -> None
+  | Some x -> Some (f x)
 
 module Module = struct
   let check o = Type.get o = Type.Module
@@ -1912,14 +1990,21 @@ module Module = struct
   let get_name m =
     check_some (Pywrappers.pymodule_getname m)
 
-  let get = Object.get_attr_string
+  let get = Object.find_attr_string
+
+  let get_opt = Object.find_attr_string_opt
 
   let set = Object.set_attr_string
 
   let get_function m name = Callable.to_function (get m name)
 
+  let get_function_opt m name = option_map Callable.to_function (get_opt m name)
+
   let get_function_with_keywords m name =
     Callable.to_function_with_keywords (get m name)
+
+  let get_function_with_keywords_opt m name =
+    option_map Callable.to_function_with_keywords (get_opt m name)
 
   let set_function m name f = set m name (Callable.of_function f)
 
@@ -1968,6 +2053,32 @@ module Iter = struct
     let methods = [next_name, Callable.of_function next'] in
     Object.call_function_obj_args
       (Class.init ~methods "iterator") [| |]
+
+  let of_seq s =
+    let s = ref s in
+    let next () =
+      match !s () with
+      | Stdcompat.Seq.Nil -> None
+      | Stdcompat.Seq.Cons (head, tail) ->
+          s := tail;
+          Some head in
+    create next
+
+  let to_seq i =
+    let rec seq lazy_next () =
+      match Lazy.force lazy_next with
+      | None -> Stdcompat.Seq.Nil
+      | Some item ->
+          Stdcompat.Seq.Cons (item, seq (lazy (next i))) in
+    seq (lazy (next i))
+
+  let unsafe_to_seq i =
+    let rec seq () =
+      match next i with
+      | None -> Stdcompat.Seq.Nil
+      | Some item ->
+          Stdcompat.Seq.Cons (item, seq) in
+    seq
 end
 
 module List = struct
@@ -2005,6 +2116,8 @@ module List = struct
   let of_sequence = Sequence.list
 
   let singleton v = init 1 (fun _ -> v)
+
+  let of_seq s = of_array (Stdcompat.Array.of_seq s)
 end
 
 module Marshal = struct
@@ -2097,7 +2210,7 @@ module Array = struct
     | None ->
         let numpy_api =
           let numpy = Import.import_module "numpy.core.multiarray" in
-          Object.get_attr_string numpy "_ARRAY_API" in
+          Object.find_attr_string numpy "_ARRAY_API" in
         let array_pickle, array_unpickle = Capsule.make "floatarray" in
         let pyarray_subtype =
           let pyarray_type = get_pyarray_type numpy_api in
@@ -2123,7 +2236,7 @@ module Array = struct
 
   let numpy_get_array a =
     let info = get_numpy_info () in
-    info.array_unpickle (Object.get_attr_string a "ocamlarray")
+    info.array_unpickle (Object.find_attr_string a "ocamlarray")
 end
 
 module Run = struct
