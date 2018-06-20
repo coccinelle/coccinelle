@@ -29,6 +29,16 @@ endif
 
 include ../Makefile.bundles
 
+ifeq ($(OCAMLOPT_CMD),)
+	OCAMLCOPT := $(OCAMLC_CMD)
+	CMOX := cmo
+	CMAX := cma
+else
+	OCAMLCOPT := $(OCAMLOPT_CMD)
+	CMOX := cmx
+	CMAX := cmxa
+endif
+
 distclean: clean
 	rm -f .prepare
 
@@ -59,11 +69,16 @@ $(SRC_DIR)/pyml_arch.cmx: $(SRC_DIR)/pyml_arch.ml $(SRC_DIR)/pyml_arch.cmi
 $(SRC_DIR)/pyml_arch.cmo: $(SRC_DIR)/pyml_arch.ml $(SRC_DIR)/pyml_arch.cmi
 	$(OCAMLC_CMD) -c $< -o $@
 
-$(SRC_DIR)/generate: $(SRC_DIR)/generate.cmx
-	$(OCAMLOPT) $(OCAMLFLAGS) stdcompat.cmx $^ -o $@
+$(SRC_DIR)/pyutils.cmo $(SRC_DIR)/pyutils.cmx : $(SRC_DIR)/pyutils.cmi
+
+$(SRC_DIR)/generate : $(SRC_DIR)/pyutils.$(CMOX) $(SRC_DIR)/generate.$(CMOX)
+	$(OCAMLCOPT) $(OCAMLLDFLAGS) stdcompat.$(CMAX) unix.$(CMAX) $^ -o $@
 
 $(SRC_DIR)/generate.cmx: $(SRC_DIR)/generate.ml
 	$(OCAMLOPT_CMD) -c $< -o $@
+
+$(SRC_DIR)/generate.cmo: $(SRC_DIR)/generate.ml
+	$(OCAMLC_CMD) -c $< -o $@
 
 $(SRC_DIR)/pyml_arch.ml: $(SRC_DIR)/$(PYML_ARCH)
 	cp $< $@
