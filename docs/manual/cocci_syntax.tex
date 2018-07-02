@@ -434,7 +434,7 @@ expression, such as the left-hand side of an assignment, or the type in a
 variable declaration.  These restrictions may seem somewhat arbitrary from
 the user's point of view.  Thus, it is better to use metavariables with
 metavariable types.  If Coccinelle is given the argument {\tt
-  -parse\_cocci}, it will print information about the type that is inferred
+  -{}-parse-cocci}, it will print information about the type that is inferred
 for each metavariable.
 
 The \NT{ctype} and \NT{ctypes} nonterminals are used by both the grammar of
@@ -1737,7 +1737,7 @@ be matched against.  The entire line is added, but it is not parsed.
 \section{Command-Line Semantic Match}
 
 It is possible to specify a semantic match on the spatch command line,
-using the argument {\tt --sp}.  In such a semantic match, any token
+using the argument {\tt -{}-sp}.  In such a semantic match, any token
 beginning with a capital letter is assumed to be a metavariable of type
 {\tt metavariable}.  In this case, the parser must be able to figure out what
 kind of metavariable it is.  It is also possible to specify the type of a
@@ -1745,7 +1745,7 @@ metavariable by enclosing the type in :'s, concatenated directly to the
 metavariable name.
 
 Some examples of semantic matches that can be given as an argument to {\tt
-  --sp} are as follows:
+  -{}-sp} are as follows:
 
 \begin{itemize}
 \item \texttt{f(e)}: This only matches the expression \texttt{f(e)}.
