@@ -89,7 +89,13 @@ else
 	TESTSOPT := tests.native
 endif
 
-MODULES := pyml_arch pyutils pytypes pywrappers py pycaml
+ifeq (4.06.0,$(word 1,$(sort 4.06.0 $(OCAMLVERSION))))
+	PYOPS=pyops
+else
+	PYOPS=
+endif
+
+MODULES := pyml_arch pyutils pytypes pywrappers py pycaml $(PYOPS)
 
 VERSION := $(shell date "+%Y%m%d")
 

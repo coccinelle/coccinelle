@@ -145,7 +145,6 @@ dnl  required ocaml packages
 AC_MSG_NOTICE([the following OCaml packages should be provided by your ocaml installation])
 AC_REQ_COCCI_STDPKG([unix])
 AC_REQ_COCCI_STDPKG([bigarray])
-AC_REQ_COCCI_STDPKG([num])
 AC_REQ_COCCI_STDPKG([str])
 
 dnl  required modules (Some are available locally too)

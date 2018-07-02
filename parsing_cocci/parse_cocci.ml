@@ -2546,9 +2546,9 @@ let process file isofile verbose =
       (function (dropped,prev) ->
 	function
             Ast0.ScriptRule (a,b,dep,params,fv,e,f) ->
-	      if dep = Ast.FailDep
+	      (*if dep = Ast.FailDep
 	      then (a::dropped,prev)
-	      else
+	      else*)
 		let undefined =
 		  List.exists
 		    (function

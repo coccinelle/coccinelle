@@ -361,7 +361,7 @@ let () =
 		List.map (fun s -> Marshal.from_string s 0)
 		  merged_variables.(%d)
 	  ), %s in\n"
-	      merge_name index global_index global_index
+	      merge_name index index global_index
 	      local_vars.(global_index) in
 	  Array.iteri let_merge_var merge_names;
 	  let preambule = Buffer.contents let_merge_vars in

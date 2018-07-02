@@ -531,11 +531,28 @@ let rec define_ident acc = function
       )
     | TPragma ii ->
 	let safe =
+	  let rec loop2 = function
+	      (TCPar _)::(TDefEOL _)::_ -> true
+	    | (TCPar _)::_ -> false
+	    | _::xs -> loop2 xs
+	    | _ -> false in
+	  let rec loop1a = function
+	      (TCommentSpace _)::xs -> loop1a xs
+	    | (TIdent _)::xs -> loop1a xs
+	    | t::xs when TH.str_of_tok t ==~ Common.regexp_alpha -> loop1a xs
+	    | (TDefEOL i1)::_ -> true
+	    | _ -> false in
+	  let rec loop1 = function
+	      (TCommentSpace _)::xs -> loop1 xs
+	    | (TOPar _)::xs -> loop2 xs
+	    | (TIdent _)::xs -> loop1a xs
+	    | t::xs when TH.str_of_tok t ==~ Common.regexp_alpha -> loop1a xs
+	    | (TDefEOL i1)::_ -> true
+	    | _ -> false in
 	  let rec loop = function
-	      (TCommentSpace _|TIdent _|TOPar _|TCPar _)::xs ->
-		loop xs
-	    | t::xs when TH.str_of_tok t ==~ Common.regexp_alpha ->
-		loop xs
+	      (TCommentSpace _)::xs -> loop xs
+	    | (TIdent _)::xs -> loop1 xs
+	    | t::xs when TH.str_of_tok t ==~ Common.regexp_alpha -> loop1 xs
 	    | (TDefEOL i1)::_ -> true
 	    | _ -> false in
 	  loop tokens in
