@@ -1,13 +1,37 @@
 let version = "@COCCI_VERSION@"
 
+let rec realpath path =
+  if path = "/" || path = "." then
+    path
+  else
+    begin
+      let dirname = Filename.dirname path in
+      let new_dirname = realpath dirname in
+      let new_path =
+        if dirname == new_dirname then path
+        else Filename.concat new_dirname (Filename.basename path) in
+      let rec follow new_path =
+        match
+          try Some (Unix.readlink new_path) with Unix.Unix_error _ -> None
+        with
+        | None -> new_path
+        | Some target ->
+            let new_path =
+              if Filename.is_relative target then
+                Filename.concat (Filename.dirname new_path) target
+              else
+                target in
+            follow new_path in
+      follow new_path
+    end
+
 let path =
   try (Sys.getenv "COCCINELLE_HOME")
   with Not_found->
     (* was "@libdir@/coccinelle": incorrect, since "@libdir@" expands into
        "${exec_prefix}/lib" (litteraly, without further expansion, that is
        unlikely to be a valid path! *)
-    let exec_path = Proc_pidpath.get_executable_path () in
-    let exec_realpath = Proc_pidpath.realpath exec_path in
+    let exec_realpath = realpath Sys.executable_name in
     let exec_dir = Filename.dirname exec_realpath in
     if Sys.file_exists (Filename.concat exec_dir "standard.iso") then
       exec_dir
