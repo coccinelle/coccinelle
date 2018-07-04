@@ -45,6 +45,7 @@ val check_duplicate_modif :
 val sp_of_file :
   filename (* coccifile *)  -> filename option (* isofile *) ->
   Ast_cocci.metavar list list * Ast_cocci.rule list *
+      Ast_cocci.rule list (*scripts to compile*) *
       Ast_cocci.meta_name list list list *
       (Ast_cocci.meta_name list * Ast_cocci.meta_name list) list list * (*pos*)
       (Ast_cocci.meta_name list list list (*used after list*) *

@@ -53,7 +53,7 @@ virtual rules and virtual_env *)
 let sp_of_file2 file iso =
   let redo _ =
     let new_code =
-      let (_,xs,_,_,_,_,_,_,_) as res = Parse_cocci.process file iso false in
+      let (_,_,xs,_,_,_,_,_,_,_) as res = Parse_cocci.process file iso false in
       (* if there is already a compiled ML code, do nothing and use that *)
       try let _ = Hashtbl.find _h_ocaml_init (file,iso) in res
       with Not_found ->
@@ -2067,7 +2067,7 @@ let pre_engine2 (coccifile, isofile) =
     else Some isofile in
 
   (* useful opti when use -dir *)
-  let (metavars,astcocci,
+  let (metavars,astcocci,scripts,
        free_var_lists,negated_pos_lists,used_after_lists,
        positions_lists,((toks,_,_,_) as constants),parse_strings,
        contains_modifs) =
