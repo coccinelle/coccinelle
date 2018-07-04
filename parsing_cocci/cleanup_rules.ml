@@ -4,6 +4,8 @@
  * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
  *)
 
+(* remove things that can't happen due to false dependencies *)
+
 module Ast = Ast_cocci
 module V = Visitor_ast
 

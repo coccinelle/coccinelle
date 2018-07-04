@@ -2541,14 +2541,15 @@ let process file isofile verbose =
     | Some iso_file -> parse_iso_files [] [Common.Left iso_file] "" in
   let global_isos = parse_iso_files std_isos iso_files extra_path in
   let rules = Unitary_ast0.do_unitary rules in
-  let (dropped,parsed) =
+  let (dropped,parsed,scripts) =
     List.fold_left
-      (function (dropped,prev) ->
+      (function (dropped,prev,scripts) ->
 	function
             Ast0.ScriptRule (a,b,dep,params,fv,e,f) ->
-	      (*if dep = Ast.FailDep
-	      then (a::dropped,prev)
-	      else*)
+	      let rule = Ast.ScriptRule (a,b,dep,params,fv,e,f) in
+	      if dep = Ast.FailDep
+	      then (a::dropped,prev,rule::scripts)
+	      else
 		let undefined =
 		  List.exists
 		    (function
@@ -2556,13 +2557,14 @@ let process file isofile verbose =
 		      | _ -> false)
 		    params in
 		if undefined
-		then (a::dropped,prev)
-		else
-		  (dropped,[([],Ast.ScriptRule (a,b,dep,params,fv,e,f))]::prev)
+		then (a::dropped,prev,rule::scripts)
+		else (dropped,[([],rule)]::prev,rule::scripts)
 	  | Ast0.InitialScriptRule(a,b,c,d,e,f) ->
-	      (dropped,[([],Ast.InitialScriptRule (a,b,c,d,e,f))]::prev)
+	      let rule = Ast.InitialScriptRule (a,b,c,d,e,f) in
+	      (dropped,[([],rule)]::prev,rule::scripts)
 	  | Ast0.FinalScriptRule (a,b,c,d,e,f) ->
-	      (dropped,[([],Ast.FinalScriptRule (a,b,c,d,e,f))]::prev)
+	      let rule = Ast.FinalScriptRule (a,b,c,d,e,f) in
+	      (dropped,[([],rule)]::prev,rule::scripts)
 	  | Ast0.CocciRule
 	      ((minus, metavarsm,
 		(iso, dropiso, dependencies, rule_name, exists)),
@@ -2655,18 +2657,21 @@ let process file isofile verbose =
 		 let minus_ast = Stmtlist.stmtlist minus_ast in
 
 		 if dependencies = Ast.FailDep
-		 then (rule_name::dropped,prev)
+		 then (rule_name::dropped,prev,scripts)
 		 else
 		   match function_prototypes with
 		     None ->
-		       (dropped,[(extra_meta @ metavars, minus_ast)]::prev)
+		       (dropped,[(extra_meta @ metavars, minus_ast)]::prev,
+			scripts)
 		   | Some mv_fp ->
 		       (dropped,
-			[(extra_meta @ metavars, minus_ast); mv_fp]::prev))
+			[(extra_meta @ metavars, minus_ast); mv_fp]::prev,
+			scripts))
 (*          Ast0.CocciRule ((minus, metavarsm, (iso, dropiso, dependencies, rule_name, exists)), (plus, metavars))*)
-      ([],[]) rules in
+      ([],[],[]) rules in
 
   let parsed = List.concat (List.rev parsed) in
+  let scripts = List.rev scripts in
   let (parsed,dropped) = Cleanup_rules.cleanup_rules parsed dropped in
   let parsed = Safe_for_multi_decls.safe_for_multi_decls parsed in
   let disjd = Disjdistr.disj parsed in
@@ -2678,5 +2683,5 @@ let process file isofile verbose =
 
   let search_tokens = Get_constants2.get_constants code neg_pos virt in
 
-  (metavars,code,fvs,neg_pos,ua,pos,search_tokens,
+  (metavars,code,scripts,fvs,neg_pos,ua,pos,search_tokens,
    !Parse_aux.contains_string_constant,contains_modifs code)
