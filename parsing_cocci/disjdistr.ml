@@ -434,7 +434,7 @@ let rec disj_rule_elem r k re =
   | Ast.TopInit(init) ->
       orify_rule_elem_ini re init
 	(function init -> Ast.rewrap init (Ast.TopInit(init)))
-  | Ast.Include(inc,s) -> re
+  | Ast.Include(inc,_) | Ast.MetaInclude(inc,_) -> re
   | Ast.Undef(def,id) -> re
   | Ast.DefineHeader(def,id,params) -> re
   | Ast.Pragma(prg,id,body) ->

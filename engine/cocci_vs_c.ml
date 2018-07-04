@@ -5178,6 +5178,29 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
           )))
       else fail
 
+  | A.MetaInclude(incla,filea),
+    F.Include {B.i_include = (fileb, ii);
+               B.i_rel_pos = h_rel_pos;
+               B.i_overall_rel_pos = o_rel_pos;
+               B.i_is_in_ifdef = inifdef;
+               B.i_content = copt;
+              } ->
+      let (inclb, iifileb) = tuple_of_list2 ii in
+      tokenf incla inclb >>= (fun incla inclb ->
+      expression filea
+	  (Ast_c.mk_e (B.Constant(B.String(B.str_of_info(iifileb),B.IsChar)))
+	     [iifileb]) >>=
+	(fun filea _ (* no change allowed *) ->
+	  return (
+	    A.MetaInclude(incla,filea),
+	    F.Include {B.i_include = (fileb, ii);
+               B.i_rel_pos = h_rel_pos;
+               B.i_overall_rel_pos = o_rel_pos;
+               B.i_is_in_ifdef = inifdef;
+               B.i_content = copt;
+              }
+	)))
+
   | A.Undef(undefa,ida), F.DefineHeader ((idb, ii), B.Undef) ->
       let (defineb, iidb, ieol) = tuple_of_list3 ii in
       ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) ->

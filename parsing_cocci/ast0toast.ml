@@ -1013,6 +1013,9 @@ and statement s =
                       ([],[],[],convert_allminus_mcodekind allminus aft))
       |	Ast0.Include(inc,str) ->
 	  Ast.Atomic(rewrap_rule_elem s (Ast.Include(mcode inc,mcode str)))
+      |	Ast0.MetaInclude(inc,str) ->
+	  Ast.Atomic
+	    (rewrap_rule_elem s (Ast.MetaInclude(mcode inc,expression str)))
       |	Ast0.Undef(def,id) ->
 	  Ast.Atomic(rewrap_rule_elem s (Ast.Undef(mcode def,ident id)))
       | Ast0.Define(def,id,params,body) ->

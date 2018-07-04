@@ -723,6 +723,8 @@ and rule_elem arity re =
   | Ast.TopInit(init) -> initialiser init
   | Ast.Include(inc,s) ->
       mcode print_string inc; print_string " "; mcode inc_file s
+  | Ast.MetaInclude(inc,s) ->
+      mcode print_string inc; print_string " "; expression s
   | Ast.Undef(def,id) ->
       mcode print_string def; print_string " "; ident id
   | Ast.DefineHeader(def,id,params) ->

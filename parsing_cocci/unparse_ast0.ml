@@ -660,6 +660,8 @@ and statement arity s =
 	    whn
       | Ast0.Include(inc,s) ->
 	  mcode print_string inc; print_string " "; mcode U.inc_file s
+      | Ast0.MetaInclude(inc,s) ->
+	  mcode print_string inc; print_string " "; expression s
       | Ast0.Undef(def,id) ->
 	  mcode print_string def; print_string " "; ident id
       | Ast0.Define(def,id,params,body) ->

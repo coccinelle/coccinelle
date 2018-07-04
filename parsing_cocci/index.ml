@@ -6,7 +6,7 @@
 
 (* create an index for each constructor *)
 (* current max is 188, also unused: 8-9, 15, 39, 40, 42, 46, 57, 65, 67, 85-86,
- 111, 113-115, 138-140 *)
+ 113-115, 138-140 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -188,6 +188,7 @@ let statement s =
   | Ast0.TopInit(init) -> [146]
   | Ast0.Dots(d,whencode) -> [84]
   | Ast0.Include(inc,name) -> [118]
+  | Ast0.MetaInclude(inc,name) -> [111]
   | Ast0.Undef(def,id) -> [151]
   | Ast0.Define(def,id,params,body) -> [119]
   | Ast0.Pragma(prg,id,body) -> [161]

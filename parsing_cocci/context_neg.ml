@@ -877,6 +877,8 @@ let equal_statement s1 s2 =
   | (Ast0.Dots(d1,_),Ast0.Dots(d2,_)) -> equal_mcode d1 d2
   | (Ast0.Include(inc1,name1),Ast0.Include(inc2,name2)) ->
       equal_mcode inc1 inc2 && equal_mcode name1 name2
+  | (Ast0.MetaInclude(inc1,name1),Ast0.MetaInclude(inc2,name2)) ->
+      equal_mcode inc1 inc2
   | (Ast0.Undef(def1,_),Ast0.Undef(def2,_)) ->
       equal_mcode def1 def2
   | (Ast0.Define(def1,_,_,_),Ast0.Define(def2,_,_,_)) ->

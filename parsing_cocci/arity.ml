@@ -1118,6 +1118,11 @@ and statement tgt stm =
       let inc = mcode inc in
       let s = mcode s in
       make_rule_elem stm tgt arity (Ast0.Include(inc,s))
+  | Ast0.MetaInclude(inc,s) ->
+      let arity = all_same true tgt (mcode2line inc) [mcode2arity inc] in
+      let inc = mcode inc in
+      let s = expression arity s in
+      make_rule_elem stm tgt arity (Ast0.MetaInclude(inc,s))
   | Ast0.Undef(def,id) ->
       let arity = all_same true tgt (mcode2line def) [mcode2arity def] in
       let def = mcode def in

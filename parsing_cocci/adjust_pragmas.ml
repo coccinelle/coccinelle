@@ -135,6 +135,8 @@ let rec right_statement s =
   | Ast0.Include(inc,name) ->
       call_right right_mcode name s
 	(function name -> Ast0.Include(inc,name))
+  | Ast0.MetaInclude(inc,name) ->
+      None (* likely not correct, wait for pb in practice *)
   | Ast0.Undef(def,id) ->
       (* nothing available for ident, and not sure code can appear
 	 here anyway *)

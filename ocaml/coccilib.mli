@@ -2841,6 +2841,7 @@ module Ast_cocci :
       | TopId of ident
       | TopInit of initialiser
       | Include of string mcode * inc_file mcode
+      | MetaInclude of string mcode * expression
       | Undef of string mcode * ident
       | DefineHeader of string mcode * ident * define_parameters
       | Pragma of string mcode * ident * pragmainfo
@@ -3457,6 +3458,7 @@ module Ast0_cocci :
           string mcode * string mcode * statement dots * string mcode *
           (info * mcodekind)
       | Include of string mcode * Ast_cocci.inc_file mcode
+      | MetaInclude of string mcode * expression
       | Undef of string mcode * ident
       | Define of string mcode * ident * define_parameters * statement dots
       | Pragma of string mcode * ident * pragmainfo

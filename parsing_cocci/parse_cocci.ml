@@ -140,6 +140,7 @@ let token2c (tok,_) add_clt =
   | PC.TIncludeL(s,clt) -> add_clt (pr "#include \"%s\"" s) clt
   | PC.TIncludeNL(s,clt) -> add_clt (pr "#include <%s>" s) clt
   | PC.TIncludeAny(s,clt) -> add_clt (pr "#include %s" s) clt
+  | PC.TInclude(clt) -> add_clt "#include" clt
   | PC.TUndef(clt,_) -> add_clt "#undef" clt
   | PC.TDefine(clt,_) -> add_clt "#define" clt
   | PC.TDefineParam(clt,_,_,_) -> add_clt "#define_param" clt
@@ -330,6 +331,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.Textern(clt) | PC.Tconst(clt) | PC.Tvolatile(clt)
 
   | PC.TIncludeL(_,clt) | PC.TIncludeNL(_,clt) | PC.TIncludeAny(_,clt)
+  | PC.TInclude(clt)
   | PC.TUndef(clt,_) | PC.TDefine(clt,_) | PC.TPragma(clt)
   | PC.TDefineParam(clt,_,_,_) | PC.TCppEscapedNewline(clt)
   | PC.TMinusFile(_,clt) | PC.TPlusFile(_,clt)
@@ -415,6 +417,7 @@ let get_clt (tok,_) =
   | PC.Textern(clt) | PC.Tconst(clt) | PC.Tvolatile(clt)
 
   | PC.TIncludeL(_,clt) | PC.TIncludeNL(_,clt) | PC.TIncludeAny(_,clt)
+  | PC.TInclude(clt)
   | PC.TUndef(clt,_) | PC.TDefine(clt,_) | PC.TPragma(clt)
   | PC.TDefineParam(clt,_,_,_) | PC.TCppEscapedNewline(clt)
   | PC.TMinusFile(_,clt) | PC.TPlusFile(_,clt)
@@ -585,6 +588,7 @@ let update_clt (tok,x) clt =
   | PC.TIncludeL(s,_) -> (PC.TIncludeL(s,clt),x)
   | PC.TIncludeNL(s,_) -> (PC.TIncludeNL(s,clt),x)
   | PC.TIncludeAny(s,_) -> (PC.TIncludeAny(s,clt),x)
+  | PC.TInclude(_) -> (PC.TInclude(clt),x)
   | PC.TUndef(_,a) -> (PC.TUndef(clt,a),x)
   | PC.TDefine(_,a) -> (PC.TDefine(clt,a),x)
   | PC.TDefineParam(_,a,b,c) -> (PC.TDefineParam(clt,a,b,c),x)
@@ -882,6 +886,7 @@ let split_token ((tok,_) as t) =
   | PC.TPlusFile(s,clt) | PC.TMinusFile(s,clt)
   | PC.TIncludeL(s,clt) | PC.TIncludeNL(s,clt) | PC.TIncludeAny(s,clt) ->
       split t clt
+  | PC.TInclude(clt) -> split t clt
   | PC.TUndef(clt,_) | PC.TDefine(clt,_) | PC.TDefineParam(clt,_,_,_)
   | PC.TCppEscapedNewline(clt) | PC.TPragma(clt) ->
       split t clt
@@ -1257,6 +1262,7 @@ let token2line (tok,_) =
   | PC.TUndef(clt,_) | PC.TDefine(clt,_) | PC.TDefineParam(clt,_,_,_)
   | PC.TPragma(clt) | PC.TCppEscapedNewline(clt)
   | PC.TIncludeL(_,clt) | PC.TIncludeNL(_,clt) | PC.TIncludeAny(_,clt)
+  | PC.TInclude(clt)
 
   | PC.TEq(clt) | PC.TOpAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
   | PC.TPArob(clt) | PC.TPtVirg(clt) ->

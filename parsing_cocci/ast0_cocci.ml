@@ -422,6 +422,7 @@ and base_statement =
 	string mcode (* } *) *
 	(info * mcodekind) (* after the function decl *)
   | Include of string mcode (* #include *) * Ast.inc_file mcode (* file *)
+  | MetaInclude of string mcode (* #include *) * expression (* file *)
   | Undef of string mcode (* #define *) * ident (* name *)
   | Define of string mcode (* #define *) * ident (* name *) *
 	define_parameters (*params*) * statement dots

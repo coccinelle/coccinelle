@@ -677,6 +677,10 @@ let combiner bind option_default
 	  let linc = string_mcode inc in
 	  let lname = inc_file_mcode name in
 	  bind linc lname
+      | Ast.MetaInclude(inc,name) ->
+	  let linc = string_mcode inc in
+	  let lname = expression name in
+	  bind linc lname
       |	Ast.Undef(def,id) ->
 	  let ldef = string_mcode def in
 	  let lid = ident id in
@@ -1610,6 +1614,10 @@ let rebuilder
 	    let linc = string_mcode inc in
 	    let lname = inc_file_mcode name in
 	    Ast.Include(linc, lname)
+	| Ast.MetaInclude(inc,name) ->
+	    let linc = string_mcode inc in
+	    let lname = expression name in
+	    Ast.MetaInclude(linc, lname)
 	| Ast.Undef(def,id) ->
 	    let ldef = string_mcode def in
 	    let lid = ident id in

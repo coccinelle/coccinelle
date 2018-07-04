@@ -869,6 +869,10 @@ let visitor mode bind option_default
 	    let (inc_n,inc) = string_mcode inc in
 	    let (name_n,name) = inc_mcode name in
 	    (bind inc_n name_n, Ast0.Include(inc,name))
+	| Ast0.MetaInclude(inc,name) ->
+	    let (inc_n,inc) = string_mcode inc in
+	    let (name_n,name) = expression name in
+	    (bind inc_n name_n, Ast0.MetaInclude(inc,name))
 	| Ast0.Undef(def,id) ->
 	    let (def_n,def) = string_mcode def in
 	    let (id_n,id) = ident id in

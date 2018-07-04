@@ -461,6 +461,7 @@ and statement old_metas table minus s =
       parameter_list old_metas table minus params;
       dots (statement old_metas table minus) body
   | Ast0.Include(inc,s) -> () (* no metavariables possible *)
+  | Ast0.MetaInclude(inc,s) -> expression ID old_metas table minus s
   | Ast0.Undef(def,id) ->
       ident GLOBAL old_metas table minus id
   | Ast0.Define(def,id,params,body) ->

@@ -293,6 +293,7 @@ and left_statement s =
   | Ast0.TopInit(init) -> false (* can only be replaced by an init *)
   | Ast0.Dots(d,whn) -> false
   | Ast0.Include(inc,s) -> modif_before_mcode inc
+  | Ast0.MetaInclude(inc,s) -> modif_before_mcode inc
   | Ast0.Undef(def,id) -> modif_before_mcode def
   | Ast0.Define(def,id,params,body) -> modif_before_mcode def
   | Ast0.Pragma(prg,id,body) -> modif_before_mcode prg
@@ -337,6 +338,7 @@ and right_statement s =
   | Ast0.TopInit(init) -> false (* can only be replaced by an init *)
   | Ast0.Dots(d,whn) -> false
   | Ast0.Include(inc,s) -> modif_after_mcode s
+  | Ast0.MetaInclude(inc,s) -> false (* irrelevant, not a substatement *)
   | Ast0.Undef(def,id) -> right_ident id
   | Ast0.Define(def,id,params,body) -> right_dots right_statement body
   | Ast0.Pragma(prg,id,body) -> right_pragma body -- not defined, b/c not used
@@ -669,6 +671,7 @@ let rec statement dots_before dots_after s =
   | Ast0.TopInit(init) -> s
   | Ast0.Dots(d,whn) -> s
   | Ast0.Include(inc,string) -> s (* doesn't affect the need for braces *)
+  | Ast0.MetaInclude(inc,name) -> s (* doesn't affect the need for braces *)
   | Ast0.Undef(def,id) -> s (* same as include *)
   | Ast0.Define(def,id,params,body) -> s (* same as include *)
   | Ast0.Pragma(prg,id,body) -> s (* same as include *)

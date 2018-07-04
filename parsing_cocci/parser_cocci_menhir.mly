@@ -258,7 +258,7 @@ let check_constraint_allowed () =
 %token <string>  TPathIsoFile
 %token <string * Data.clt> TIncludeL TIncludeNL TIncludeAny
 %token <Data.clt * token> TDefine TUndef
-%token <Data.clt> TPragma TCppEscapedNewline
+%token <Data.clt> TPragma TCppEscapedNewline TInclude
 %token <Data.clt * token * int * int> TDefineParam
 %token <string * Data.clt> TMinusFile TPlusFile
 
@@ -1253,6 +1253,17 @@ includes:
 		      let clt = (* default to one space whitespace *)
 			(arity,ln,lln,llne,offset,0,strbef,straft,pos," ") in
 		      P.clt2mcode Ast.AnyInc (P.drop_bef clt))) }
+| TInclude TMetaExp
+     { Ast0.wrap
+	 (Ast0.MetaInclude
+	    (P.clt2mcode "#include" $1,
+	     match $2 with
+	       (nm,constraints,pure,ty,clt,None) ->
+		 Ast0.wrap
+		   (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.CONST,
+				  pure,None))
+	     | _ -> failwith "length not allowed for include arugment")) }
+
 | TUndef TLineEnd
     { let (clt,ident) = $1 in
       let aft = P.get_aft clt in (* move stuff after the define to the ident *)

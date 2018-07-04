@@ -480,6 +480,9 @@ let rec statement_pos s snp
   | Ast0.Include (incmc,filemc) ->
       let constructor ~mc = Ast0.Include(incmc, mc) in
       mcode_wrap ~mc:filemc ~constructor snp
+  | Ast0.MetaInclude (incmc,filemc) ->
+      let constructor ~mc = Ast0.MetaInclude(mc, filemc) in
+      mcode_wrap ~mc:incmc ~constructor snp
   | Ast0.Undef (defmc, id) ->
       let constructor ~id = Ast0.Undef(defmc, id) in
       id_wrap ~id ~constructor snp
