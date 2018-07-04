@@ -4700,6 +4700,15 @@ let hashadd tbl k v =
       cell in
   if not (List.mem v !cell) then cell := v :: !cell
 
+let hashinc tbl k v =
+  let cell =
+    try Hashtbl.find tbl k
+    with Not_found ->
+      let cell = ref 0 in
+      Hashtbl.add tbl k cell;
+      cell in
+  cell := v + !cell
+
 let _  =
   let h = Hashtbl.create 101 in
   Hashtbl.add h "toto" 1;

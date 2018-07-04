@@ -1546,6 +1546,7 @@ val hash_to_list_unsorted : ('a, 'b) Hashtbl.t -> ('a * 'b) list
 val hash_of_list : ('a * 'b) list -> ('a, 'b) Hashtbl.t
 
 val hashadd : ('a, 'b list ref) Hashtbl.t -> 'a -> 'b -> unit
+val hashinc : ('a, int ref) Hashtbl.t -> 'a -> int -> unit
 
 
 val hkeys : ('a, 'b) Hashtbl.t -> 'a list
