@@ -258,7 +258,17 @@ let option_default = (*Bind(Neutral,[],[],[],[],[])*)
   Recursor(Neutral,[],[],[])
 
 let contains_added_strings info =
-  not (info.Ast0.strings_before = []) || not (info.Ast0.strings_after = [])
+  let unsafe l =
+    List.exists
+      (fun (str,_) ->
+	match str with
+	  (Ast.Noindent s | Ast.Indent s) -> not (String.trim s = "")
+	| Ast.Space _ -> true (* adds a thing with space around it *))
+      l in
+  (* If this is true, eg if (x) return 0; will be broken up into
+     two rule elems.  Not sure why that is needed, but surely it is not needed
+     when it is just whitespace that is added. *)
+  unsafe info.Ast0.strings_before || unsafe info.Ast0.strings_after
 
 let mcode (_,_,info,mcodekind,pos,_) =
   let offset = info.Ast0.pos_info.Ast0.offset in
