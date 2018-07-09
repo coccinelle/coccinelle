@@ -24,6 +24,8 @@ let rec process_exp e =
   match Ast0.unwrap e with
     Ast0.Paren(lp,e1,rp) ->
       Ast0.rewrap e (Ast0.Paren(lp,process_exp e1,rp))
+  | Ast0.DisjExpr(lp,es,bars,rp) ->
+      Ast0.rewrap e (Ast0.DisjExpr(lp,List.map process_exp es,bars,rp))
   | _ -> e
 
 let set_test_poss =
