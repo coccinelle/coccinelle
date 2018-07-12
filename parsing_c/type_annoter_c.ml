@@ -1409,7 +1409,7 @@ let annotate_test_expressions prog =
 	    let nm = str_of_name i in
 	    if List.mem nm ["likely";"unlikely"]
 	    then propagate_test a
-		else ()
+	    else ()
 	| _ -> ())
     | _ -> () in
 
