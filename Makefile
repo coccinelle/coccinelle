@@ -204,10 +204,10 @@ MENHIR_DEP_CMD := $(MENHIR) --ocamldep "$(OCAMLDEP_CMD)" --depend
 MENHIR_CMD := $(MENHIR) --ocamlc "$(OCAMLC_CMD)" --explain --infer
 
 MENHIR_LIB := \
-	$(addsuffix menhirLib$(LIBSUFFIX),$(filter %/menhirLib,$(MAKELIBS)))
-PARMAP_LIB := $(addsuffix parmap$(LIBSUFFIX),$(filter %/parmap/,$(MAKELIBS)))
-PYML_LIB := $(addsuffix pyml$(LIBSUFFIX),$(filter %/pyml/,$(MAKELIBS)))
-PCRE_LIB := $(addsuffix pcre$(LIBSUFFIX),$(filter %/pcre/,$(MAKELIBS)))
+	$(addsuffix /menhirLib$(LIBSUFFIX),$(filter %/menhirLib,$(MAKELIBS)))
+PARMAP_LIB := $(addsuffix /parmap$(LIBSUFFIX),$(filter %/parmap,$(MAKELIBS)))
+PYML_LIB := $(addsuffix /pyml$(LIBSUFFIX),$(filter %/pyml,$(MAKELIBS)))
+PCRE_LIB := $(addsuffix /pcre$(LIBSUFFIX),$(filter %/pcre,$(MAKELIBS)))
 STDCOMPAT_LIB := $(STDCOMPATDIR)/stdcompat$(LIBSUFFIX)
 
 STDCOMPAT_USERS := parsing_c/type_annoter_c cocci parsing_cocci/check_meta \
@@ -371,9 +371,10 @@ ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
 ifeq ($(DEPEND_METHOD),onefile)
 .depend : $(ml_and_mli_files) parsing_cocci/parser_cocci_menhir.mly $(MENHIR)
-        @echo OCAMLDEP .depend
+	@echo OCAMLDEP .depend
 	@$(OCAMLDEP_CMD) $(ml_and_mli_files) >$@ || (rm $@; false)
-	@$(MENHIR_DEP_CMD) parsing_cocci/parser_cocci_menhir.mly >>$@ || (rm $@; false)
+	@$(MENHIR_DEP_CMD) parsing_cocci/parser_cocci_menhir.mly >>$@ \
+		|| (rm $@; false)
 
 -include .depend
 else ifeq ($(DEPEND_METHOD),multifile)
@@ -567,16 +568,23 @@ clean : clean-$(library)
 clean-$(library) :
 	$(SHOW_CLEAN) "$(library)"
 	@rm -f $(library)/$(library).cma $(library)/$(library).cmxa \
-		$(foreach sourcefile,$(SOURCEFILES_$(library)),$(clean_sourcefile)) \
-		$(patsubst %.mll,%.ml,$(filter %.mll,$(SOURCEFILES_$(library)))) \
-		$(patsubst %.mly,%.ml,$(filter %.mly,$(SOURCEFILES_$(library)))) \
-		$(patsubst %.mly,%.mli,$(filter %.mly,$(SOURCEFILES_$(library)))) \
-		$(foreach sourcefile,$(CLEANFILES_$(library)),$(clean_sourcefile))
+		$(foreach sourcefile,$(SOURCEFILES_$(library)),\
+			$(clean_sourcefile)) \
+		$(patsubst %.mll,%.ml,$(filter %.mll,\
+			$(SOURCEFILES_$(library)))) \
+		$(patsubst %.mly,%.ml,$(filter %.mly,\
+			$(SOURCEFILES_$(library)))) \
+		$(patsubst %.mly,%.mli,$(filter %.mly,\
+			$(SOURCEFILES_$(library)))) \
+		$(foreach sourcefile,$(CLEANFILES_$(library)),\
+			$(clean_sourcefile))
 
-$(library)/$(library).cmxa : $(addsuffix .cmx,$(basename $(SOURCEFILES_$(library))))
+$(library)/$(library).cmxa : \
+		$(addsuffix .cmx,$(basename $(SOURCEFILES_$(library))))
 	$(SHOW_OCAMLOPT) "-o $$@"; $(OCAMLOPT_CMD) -a $$^ -o $$@
 
-$(library)/$(library).cma : $(addsuffix .cmo,$(basename $(SOURCEFILES_$(library))))
+$(library)/$(library).cma : \
+		$(addsuffix .cmo,$(basename $(SOURCEFILES_$(library))))
 	$(SHOW_OCAMLC) "-o $$@"; $(OCAMLC_CMD) -a $$^ -o $$@
 
 .PHONY: $(library)
@@ -598,14 +606,18 @@ clean-$(tool) :
 		$(foreach sourcefile,$(SOURCEFILES_$(tool)),$(clean_sourcefile))
 
 $(PREFIX_$(tool))$(tool) : \
-		$(foreach library,$(LIBRARIES_$(tool)),$(library)/$(library).cma) \
+		$(foreach library,$(LIBRARIES_$(tool)),\
+			$(library)/$(library).cma) \
 		$(addsuffix .cmo,$(basename $(SOURCEFILES_$(tool))))
-	$(SHOW_OCAMLC) "-o $$@"; $(OCAMLC_CMD) -custom $(LIBS_$(tool):=.cma) $$^ -o $$@
+	$(SHOW_OCAMLC) "-o $$@"; \
+	  $(OCAMLC_CMD) -custom $(LIBS_$(tool):=.cma) $$^ -o $$@
 
 $(PREFIX_$(tool))$(tool).opt : \
-		$(foreach library,$(LIBRARIES_$(tool)),$(library)/$(library).cmxa) \
+		$(foreach library,$(LIBRARIES_$(tool)),\
+			$(library)/$(library).cmxa) \
 		$(addsuffix .cmx,$(basename $(SOURCEFILES_$(tool))))
-	$(SHOW_OCAMLOPT) "-o $$@"; $(OCAMLOPT_CMD) $(LIBS_$(tool):=.cmxa) $$^ -o $$@
+	$(SHOW_OCAMLOPT) "-o $$@"; \
+		$(OCAMLOPT_CMD) $(LIBS_$(tool):=.cmxa) $$^ -o $$@
 endef
 $(foreach tool,$(TOOLS),$(eval $(foreach_tool)))
 
@@ -617,8 +629,8 @@ endef
 $(foreach module,$(basename $(EXPOSED_MODULES)),\
 	$(foreach EXT,cmi $(ALL_OBJECTS),$(eval $(copy_exposed_module))))
 
-ocaml/parmap.cmi : $(PARMAPDIR)/parmap.cmi
-	cp $< $@
+ocaml/parmap.cmi : $(PARMAP_LIB)
+	cp $(PARMAPDIR)/parmap.cmi $@
 	- cp $(PARMAPDIR)/parmap.cmx ocaml/parmap.cmx
 
 clean : clean-exposed-module
@@ -627,7 +639,8 @@ clean : clean-exposed-module
 clean-exposed-module :
 	$(SHOW_CLEAN) "exposed-module"
 	@rm -f $(foreach module,$(basename $(EXPOSED_MODULES)),\
-	$(foreach EXT,cmi $(ALL_OBJECTS),ocaml/$(notdir $(basename $(module))).$(EXT)))
+	$(foreach EXT,cmi $(ALL_OBJECTS),\
+		ocaml/$(notdir $(basename $(module))).$(EXT)))
 	@rm -f ocaml/parmap.cmi ocaml/parmap.cmx
 
 # Coccinelle as library

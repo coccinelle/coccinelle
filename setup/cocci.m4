@@ -94,7 +94,7 @@ AC_DEFUN([AC_CHECK_COCCI_EXTPKG],
   AS_IF([test "x$AS_TR_SH([enable_$1])" = xno],
   [dnl
     AS_UNSET([pkgdir])
-    pkgdir="$COCCI_OCAML_EXTERNAL/$1/"
+    pkgdir="$COCCI_OCAML_EXTERNAL/$1"
     AC_MSG_CHECKING([for a bundled substitute of $1])
     AS_IF([test -d "$pkgdir"],
     [dnl

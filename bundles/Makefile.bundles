@@ -3,14 +3,15 @@ MARKER=$(PACKAGE_DIR)/.marker
 OCAMLFLAGS+=-I $(SRC_DIR)
 OCAMLC_CMD= \
 	$(OCAMLC) $(OCAMLCFLAGS) $(OCAMLFLAGS) \
-	$(patsubst %,-custom -cclib -l%_stubs,$(LIBRARY)) \
 	$(EXTRACFLAGS)
 OCAMLOPT_CMD= \
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) $(OCAMLFLAGS) \
-	$(patsubst %,-cclib -l%_stubs,$(LIBRARY)) \
 	$(EXTRACFLAGS)
 OCAMLMKLIB_CMD=$(OCAMLMKLIB) -linkall $(EXTRALNKFLAGS)
 OCAMLDEP_CMD=$(OCAMLDEP) $(OCAMLDEPFLAGS) $(OCAMLFLAGS)
+
+OCAMLC_LDFLAGS = $(patsubst %,-custom -cclib -l%_stubs,$(LIBRARY))
+OCAMLOPT_LDFLAGS = $(patsubst %,-cclib -l%_stubs,$(LIBRARY))
 
 OCAMLCCFLAGS+=-ccopt -fPIC
 
@@ -86,19 +87,22 @@ $(TARBALL):
 "$@ not found. Please download it and drop it in this directory ($(pwd))."
 	@false
 
-$(SRC_DIR)/$(ARCHIVE).cma: $(patsubst %,$(SRC_DIR)/%.cmo,$(OBJS))
-	$(OCAMLC_CMD) -a $^ -o $@
+$(SRC_DIR)/$(ARCHIVE).cma: \
+		$(add_suffix ($add_prefix $(LIBRARY),$(SRC_DIR)/dll),_stubs.so)\
+		$(patsubst %,$(SRC_DIR)/%.cmo,$(OBJS))
+	$(OCAMLC_CMD) $(OCAMLC_LDFLAGS) -a $^ -o $@
 
-$(SRC_DIR)/$(ARCHIVE).cmxa: $(patsubst %,$(SRC_DIR)/%.cmx,$(OBJS))
-	$(OCAMLOPT_CMD) -a $^ -o $@
+$(SRC_DIR)/$(ARCHIVE).cmxa: \
+		$(add_suffix ($add_prefix $(LIBRARY),$(SRC_DIR)/dll),_stubs.so)\
+		$(patsubst %,$(SRC_DIR)/%.cmx,$(OBJS))
+	$(OCAMLOPT_CMD) $(OCAMLOPT_LDFLAGS) -a $^ -o $@
 
-$(SRC_DIR)/$(LIBRARY).a \
-$(SRC_DIR)/dll$(LIBRARY)_stubs.so \
-$(SRC_DIR)/lib$(LIBRARY)_stubs.a: \
+$(SRC_DIR)/$(ARCHIVE).a : $(SRC_DIR)/$(ARCHIVE).cmxa
+
+$(SRC_DIR)/lib$(LIBRARY)_stubs.a : \
 	$(patsubst %,$(SRC_DIR)/%_stubs.o,$(C_OBJS))
 	$(OCAMLMKLIB_CMD) -o $(SRC_DIR)/$(LIBRARY)_stubs $^
 
-$(SRC_DIR)/$(LIBRARY).a \
 $(SRC_DIR)/dll$(LIBRARY)_stubs.so: $(SRC_DIR)/lib$(LIBRARY)_stubs.a
 
 %.ml: %.mll
