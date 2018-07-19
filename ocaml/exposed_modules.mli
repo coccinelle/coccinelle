@@ -1,3 +1,5 @@
+module Token_c : module type of struct include Token_c end
+
 module Ast_c :
   sig
     type posl = int * int

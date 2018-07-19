@@ -1,6 +1,7 @@
 (* Modules accessible by the ocaml scripts.
  *)
 
+module Token_c  = Token_c    (* parsing_c/token_c.ml *)
 module Ast_c    = Ast_c      (* parsing_c/ast_c.ml *)
 module Parse_c  = Parse_c    (* parsing_c/parse_c.ml *)
 module Parser_c = Parser_c   (* parsing_c/parser_c.mly *)
