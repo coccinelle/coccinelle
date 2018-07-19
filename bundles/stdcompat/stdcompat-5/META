@@ -1,5 +1,0 @@
-description = "Stdcompat: compatibility module for OCaml standard library"
-requires = " result "
-version = "5"
-archive(byte) = "stdcompat.cma"
-archive(native) = "stdcompat.cmxa"
