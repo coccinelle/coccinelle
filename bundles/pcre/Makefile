@@ -17,6 +17,7 @@ INTERFACES=pcre
 C_OBJS=pcre
 ARCHIVE=pcre
 LIBRARY=pcre
+C_LIBS=pcre
 SRC_DIR=$(PACKAGE_DIR)/lib
 
 EXTRACFLAGS=$(PCRE_CFLAGS:%=-ccopt %) $(PCRE_LIBS:%=-cclib %)
