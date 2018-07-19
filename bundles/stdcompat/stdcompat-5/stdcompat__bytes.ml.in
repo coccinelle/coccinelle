@@ -1,0 +1,65 @@
+@BEGIN_BEFORE_4_02_0@
+include Stdcompat__string
+
+let empty = ""
+
+let of_string = copy
+
+let to_string = copy
+
+let sub_string = sub
+
+let extend s left right =
+  let len = left + length s + right in
+  let result = create len in
+  let trim_left = max (- left) 0 in
+  unsafe_blit s trim_left result (max left 0)
+    (length s - trim_left - max (- right) 0);
+  result
+
+let blit_string = blit
+
+let cat = ( ^ )
+
+let unsafe_of_string s = s
+
+let unsafe_to_string s = s
+@END_BEFORE_4_02_0@
+@BEGIN_FROM_4_02_0@
+include Bytes
+
+@BEGIN_BEFORE_4_05_0@
+let index_opt s c =
+  Stdcompat__tools.option_find (index s) c
+
+let rindex_opt s c =
+  Stdcompat__tools.option_find (rindex s) c
+
+let index_from_opt s i c =
+  Stdcompat__tools.option_find (index_from s i) c
+
+let rindex_from_opt s i c =
+  Stdcompat__tools.option_find (rindex_from s i) c
+@END_BEFORE_4_05_0@
+@END_FROM_4_02_0@
+
+@BEGIN_BEFORE_4_03_0@
+let uppercase_ascii = uppercase
+
+let lowercase_ascii = lowercase
+
+let capitalize_ascii = capitalize
+
+let uncapitalize_ascii = uncapitalize
+
+let equal : t -> t -> bool = ( = )
+@END_BEFORE_4_03_0@
+
+@BEGIN_BEFORE_4_07_0@
+let of_seq g =
+  Stdcompat__buffer.to_bytes (Stdcompat__buffer.of_seq g)
+
+let to_seq s = Stdcompat__tools.vec_to_seq length unsafe_get s
+
+let to_seqi s = Stdcompat__tools.vec_to_seqi length unsafe_get s
+@END_BEFORE_4_07_0@

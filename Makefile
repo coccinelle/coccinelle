@@ -220,12 +220,25 @@ SHOW_CLEAN := @echo "CLEAN    "
 SHOW_OCAMLC := @echo "OCAMLC   "
 SHOW_OCAMLOPT := @echo "OCAMLOPT "
 
+ifeq ($(VERBOSE),yes)
+RUN_OCAMLDEP = $(OCAMLDEP_CMD)
+RUN_OCAMLC = $(OCAMLC_CMD)
+RUN_OCAMLC_O = $(OCAMLC_CMD)
+RUN_OCAMLOPT = $(OCAMLOPT_CMD)
+RUN_OCAMLOPT_O = $(OCAMLOPT_CMD)
+RUN_MENHIR = $(MENHIR_CMD)
+RUN_OCAMLLEX = $(OCAMLLEX)
+RUN_OCAMLYACC = $(OCAMLYACC)
+else
 RUN_OCAMLDEP = @echo "OCAMLDEP  $<"; $(OCAMLDEP_CMD)
 RUN_OCAMLC = $(SHOW_OCAMLC) "$<"; $(OCAMLC_CMD)
+RUN_OCAMLC_O = $(SHOW_OCAMLC) "-o $@"; $(OCAMLC_CMD)
 RUN_OCAMLOPT = $(SHOW_OCAMLOPT) "$<"; $(OCAMLOPT_CMD)
+RUN_OCAMLOPT_O = $(SHOW_OCAMLOPT) "-o $@"; $(OCAMLOPT_CMD)
 RUN_MENHIR = @echo "MENHIR    $<"; $(MENHIR_CMD)
 RUN_OCAMLLEX = @echo "OCAMLLEX  $<"; $(OCAMLLEX)
 RUN_OCAMLYACC = @echo "OCAMLYACC $<"; $(OCAMLYACC)
+endif
 
 MKDIR_P := mkdir -p
 
@@ -581,11 +594,11 @@ clean-$(library) :
 
 $(library)/$(library).cmxa : \
 		$(addsuffix .cmx,$(basename $(SOURCEFILES_$(library))))
-	$(SHOW_OCAMLOPT) "-o $$@"; $(OCAMLOPT_CMD) -a $$^ -o $$@
+	$$(RUN_OCAMLOPT_O) -a $$^ -o $$@
 
 $(library)/$(library).cma : \
 		$(addsuffix .cmo,$(basename $(SOURCEFILES_$(library))))
-	$(SHOW_OCAMLC) "-o $$@"; $(OCAMLC_CMD) -a $$^ -o $$@
+	$$(RUN_OCAMLC_O) -a $$^ -o $$@
 
 .PHONY: $(library)
 ifeq ($(NATIVE),yes)
@@ -609,15 +622,13 @@ $(PREFIX_$(tool))$(tool) : \
 		$(foreach library,$(LIBRARIES_$(tool)),\
 			$(library)/$(library).cma) \
 		$(addsuffix .cmo,$(basename $(SOURCEFILES_$(tool))))
-	$(SHOW_OCAMLC) "-o $$@"; \
-	  $(OCAMLC_CMD) -custom $(LIBS_$(tool):=.cma) $$^ -o $$@
+	$$(RUN_OCAMLC_O) -custom $(LIBS_$(tool):=.cma) $$^ -o $$@
 
 $(PREFIX_$(tool))$(tool).opt : \
 		$(foreach library,$(LIBRARIES_$(tool)),\
 			$(library)/$(library).cmxa) \
 		$(addsuffix .cmx,$(basename $(SOURCEFILES_$(tool))))
-	$(SHOW_OCAMLOPT) "-o $$@"; \
-		$(OCAMLOPT_CMD) $(LIBS_$(tool):=.cmxa) $$^ -o $$@
+	$$(RUN_OCAMLOPT_O) $(LIBS_$(tool):=.cmxa) $$^ -o $$@
 endef
 $(foreach tool,$(TOOLS),$(eval $(foreach_tool)))
 
@@ -650,10 +661,10 @@ library_all_sources := \
 	$(SOURCEFILES_spatch)
 
 coccinelle_modules.cmo : $(addsuffix .cmo,$(basename $(library_all_sources)))
-	$(SHOW_OCAMLC) "-o $@"; $(OCAMLC_CMD) -pack $^ -o $@
+	$(RUN_OCAMLC_O) -pack $^ -o $@
 
 coccinelle_modules.cmx : $(addsuffix .cmx,$(basename $(library_all_sources)))
-	$(SHOW_OCAMLOPT) "-o $@"; $(OCAMLOPT_CMD) -pack $^ -o $@
+	$(RUN_OCAMLOPT_O) -pack $^ -o $@
 
 coccinelle.cmo coccinelle.cmx : coccinelle.cmi
 
@@ -662,10 +673,10 @@ coccinelle.cmo : coccinelle_modules.cmo
 coccinelle.cmx : coccinelle_modules.cmx
 
 coccinelle.cma : coccinelle_modules.cmo coccinelle.cmo
-	$(SHOW_OCAMLC) "-o $@"; $(OCAMLC_CMD) -a $^ -o $@
+	$(RUN_OCAMLC_O) -a $^ -o $@
 
 coccinelle.cmxa : coccinelle_modules.cmx coccinelle.cmx
-	$(SHOW_OCAMLOPT) "-o $@"; $(OCAMLOPT_CMD) -a $^ -o $@
+	$(RUN_OCAMLOPT_O) -a $^ -o $@
 
 clean : clean-library
 
