@@ -15,8 +15,6 @@ OCAMLC_LDFLAGS = $(patsubst %,-custom -cclib -l%_stubs,$(LIBRARY)) \
 OCAMLOPT_LDFLAGS = $(patsubst %,-cclib -l%_stubs,$(LIBRARY)) \
 	$(addprefix -cclib -l,$(C_LIBS))
 
-$(info $(OCAMLC_LDFLAGS))
-
 OCAMLCCFLAGS+=-ccopt -fPIC
 
 SIDEPRODUCTS+= \
