@@ -644,7 +644,9 @@ $(foreach module,$(basename $(EXPOSED_MODULES)),\
 
 ocaml/parmap.cmi : $(PARMAP_LIB)
 	cp $(PARMAPDIR)/parmap.cmi $@
-	- cp $(PARMAPDIR)/parmap.cmx ocaml/parmap.cmx
+	if test -f $(PARMAPDIR)/parmap.cmx; then \
+		cp $(PARMAPDIR)/parmap.cmx ocaml/parmap.cmx; \
+	fi
 
 clean : clean-exposed-module
 
