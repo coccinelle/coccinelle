@@ -466,6 +466,30 @@ AS_IF([test "x$enable_opt" = xyes],
   AC_SUBST([MAKETARGET_SPATCH], [byte-only])
 ])
 
+dnl bash-completion directory
+dnl (reported by Himanshu Jha,
+dnl  solution inspired from https://www.swansontec.com/bash-completion.html )
+dnl --with-bash-completion enables bash-completion (this is the default),
+dnl   and allows the user to give a path. By default, path is given by
+dnl   pkg-config if available, or $datarootdir/bash-completion/completions
+dnl   otherwise
+dnl --without-bash-completion disables bash-completion
+
+AC_ARG_WITH([bash-completion],
+    AS_HELP_STRING([--with-bash-completion[=PATH]],
+        [Install the bash auto-completion script in this directory.\
+         @<:@default=yes@:>@]),
+    [],
+    [AC_SUBST([with_bash_completion], [yes])])
+
+AS_IF([test "x$with_bash_completion" = "xyes"],
+    [PKG_CHECK_MODULES([BASH_COMPLETION], [bash-completion >= 2.0],
+        [AC_SUBST([BASH_COMPLETION_DIR],
+                [[`pkg-config --variable=completionsdir bash-completion`]])],
+        [AC_SUBST([BASH_COMPLETION_DIR],
+                [$datarootdir/bash-completion/completions])])],
+    [AC_SUBST([BASH_COMPLETION_DIR], [$with_bash_completion])])
+
 dnl
 dnl  generating configuration
 dnl
@@ -492,7 +516,9 @@ Summary
 
 configure flags:  $CONFIGURE_FLAGS
 findlib:          $OCAMLFIND	(an actual version is strongly recommended)
-menhir:           $MENHIR	(for local package use --without-menhir, install the menhir package otherwise)
+menhir:           $MENHIR
+                  (for local package use --without-menhir,
+                   install the menhir package otherwise)
 
 ocaml scripting:  $enable_ocaml	(overridable with --enable-ocaml)
 python scripting: $enable_python	(overridable with --enable-python)
@@ -502,6 +528,9 @@ pcre module:      $enable_pcre	(for local package use --disable-pcre)
 pcre library:     $HAVE_PCRE	(requires the libpcre-ocaml-dev package)
 
 optimized spatch: $enable_opt	(overridable with --disable-opt)
+
+bash-completion:  $BASH_COMPLETION_DIR
+                  (overridable with -with-bash-completion)
 
 ------------------------------------------------------------------------------
 Coccinelle can now be compiled and installed.

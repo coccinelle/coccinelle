@@ -287,9 +287,11 @@ install: install-spatch install-spgen install-python install-bash install-man
 
 .PHONY: install-bash
 install-bash:
-	$(MKDIR_P) $(DESTDIR)$(BASH_COMPLETION_DIR)
-	$(INSTALL_DATA) scripts/spatch.bash_completion \
-		$(DESTDIR)$(BASH_COMPLETION_DIR)/spatch
+	if test "x$(BASH_COMPLETION_DIR)" != "xno"; then \
+		$(MKDIR_P) $(DESTDIR)$(BASH_COMPLETION_DIR); \
+		$(INSTALL_DATA) scripts/spatch.bash_completion \
+			$(DESTDIR)$(BASH_COMPLETION_DIR)/spatch; \
+	fi
 
 .PHONY: install-spatch
 install-spatch : spatch$(TOOLS_SUFFIX)

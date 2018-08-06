@@ -101,7 +101,7 @@ MANDIR=${mandir}
 # Where to install the lib
 LIBDIR=@LIBDIR@
 
-BASH_COMPLETION_DIR=${sysconfdir}/bash_completion.d
+BASH_COMPLETION_DIR=@BASH_COMPLETION_DIR@
 
 # selected libraries
 FEATURE_menhirLib=@FEATURE_menhirLib@
