@@ -1,0 +1,73 @@
+include ListLabels
+
+@BEGIN_BEFORE_4_00_0@
+let iteri ~f l =
+  Stdcompat__list.iteri f l
+
+let mapi ~f l =
+  Stdcompat__list.mapi f l
+@END_BEFORE_4_00_0@
+
+@BEGIN_BEFORE_4_03_0@
+let rec uniq_rev_append cmp l accu =
+  match l with
+  | [] -> accu
+  | [item] -> item :: accu
+  | hd :: (hd' :: _ as tl) ->
+      if cmp hd hd' = 0 then uniq_rev_append cmp tl accu
+      else uniq_rev_append cmp tl (hd :: accu)
+
+let sort_uniq ~cmp l =
+  let cmp' a b = - (cmp a b) in
+  let rev_l = sort cmp' l in
+  uniq_rev_append cmp rev_l []
+@END_BEFORE_4_03_0@
+
+@BEGIN_BEFORE_4_05_0@
+let cons x xs =
+  x :: xs
+
+let rec compare_lengths l l' =
+  match l, l' with
+  | [], [] -> 0
+  | [], _ -> -1
+  | _, [] -> 1
+  | _ :: tl, _ :: tl' ->
+      compare_lengths tl tl'
+
+let rec compare_length_with l ~len =
+  if len < 0 then 1
+  else if len = 0 then
+    if l = [] then 0
+    else 1
+  else
+    match l with
+    | [] -> -1
+    | _ :: tl -> compare_length_with tl ~len:(pred len)
+
+let nth_opt l n =
+  Stdcompat__tools.option_find (nth l) n
+
+let find_opt ~f l =
+  try
+    Stdcompat__tools.option_find
+      (find ~f:(Stdcompat__tools.pickle_predicate_not_found f)) l
+  with Stdcompat__tools.Predicate_not_found ->
+    raise Not_found
+
+let assoc_opt key l =
+  Stdcompat__tools.option_find (assoc key) l
+
+let assq_opt key l =
+  Stdcompat__tools.option_find (assq key) l
+@END_BEFORE_4_05_0@
+
+@BEGIN_BEFORE_4_06_0@
+let init ~len ~f = Stdcompat__list.init len f
+@END_BEFORE_4_06_0@
+
+@BEGIN_BEFORE_4_07_0@
+let to_seq = Stdcompat__list.to_seq
+
+let of_seq = Stdcompat__list.of_seq
+@END_BEFORE_4_07_0@

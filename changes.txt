@@ -87,6 +87,9 @@
 - Allow more variety in #pragmas
 - Add macro names to Coccilib.current_element
 - Get rid of code that depends on unbound virtual rules
+- Bash-completion scripts are now installed in share/bash-completion/completions
+  (overridable with the new with-bash-completion option,
+   reported by Himanshu Jha)
 ** Bugfix:
 - Improved detection of metavariables in strings.  Problem reported by
   Wolfram Sang.

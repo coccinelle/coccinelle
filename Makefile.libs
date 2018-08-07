@@ -63,7 +63,6 @@ FLAGS_type_conv     =
 OPTFLAGS_type_conv  =
 
 # parmap library
-PARMAPDIR        = bundles/parmap/parmap-1.0-rc7/_build
 LOCAL_parmap     = $(PARMAPDIR)/parmap.cma
 LOCALOPT_parmap  = $(PARMAPDIR)/parmap.cmxa
 GLOBAL_parmap    = $(PARMAPDIR)/parmap.cma

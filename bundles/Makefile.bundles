@@ -10,8 +10,10 @@ OCAMLOPT_CMD= \
 OCAMLMKLIB_CMD=$(OCAMLMKLIB) -linkall $(EXTRALNKFLAGS)
 OCAMLDEP_CMD=$(OCAMLDEP) $(OCAMLDEPFLAGS) $(OCAMLFLAGS)
 
-OCAMLC_LDFLAGS = $(patsubst %,-custom -cclib -l%_stubs,$(LIBRARY))
-OCAMLOPT_LDFLAGS = $(patsubst %,-cclib -l%_stubs,$(LIBRARY))
+OCAMLC_LDFLAGS = $(patsubst %,-custom -cclib -l%_stubs,$(LIBRARY)) \
+	$(addprefix -cclib -l,$(C_LIBS))
+OCAMLOPT_LDFLAGS = $(patsubst %,-cclib -l%_stubs,$(LIBRARY)) \
+	$(addprefix -cclib -l,$(C_LIBS))
 
 OCAMLCCFLAGS+=-ccopt -fPIC
 

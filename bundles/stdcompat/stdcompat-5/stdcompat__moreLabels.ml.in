@@ -1,0 +1,301 @@
+@BEGIN_FROM_4_07_0@
+module Set = MoreLabels.Set
+module Map = MoreLabels.Map
+module Hashtbl = MoreLabels.Hashtbl
+@END_FROM_4_07_0@
+@BEGIN_BEFORE_4_07_0@
+module Set = struct
+  module type OrderedType  = Set.OrderedType
+  module type S  =
+    sig
+      type elt
+      and t
+      val empty : t
+      val is_empty : t -> bool
+      val mem : elt -> t -> bool
+      val add : elt -> t -> t
+      val singleton : elt -> t
+      val remove : elt -> t -> t
+      val union : t -> t -> t
+      val inter : t -> t -> t
+      val diff : t -> t -> t
+      val compare : t -> t -> int
+      val equal : t -> t -> bool
+      val subset : t -> t -> bool
+      val iter : f:(elt -> unit) -> t -> unit
+      val map : f:(elt -> elt) -> t -> t
+      val fold : f:(elt -> 'a -> 'a) -> t -> init:'a -> 'a
+      val for_all : f:(elt -> bool) -> t -> bool
+      val exists : f:(elt -> bool) -> t -> bool
+      val filter : f:(elt -> bool) -> t -> t
+      val partition : f:(elt -> bool) -> t -> (t * t)
+      val cardinal : t -> int
+      val elements : t -> elt list
+      val min_elt : t -> elt
+      val min_elt_opt : t -> elt option
+      val max_elt : t -> elt
+      val max_elt_opt : t -> elt option
+      val choose : t -> elt
+      val choose_opt : t -> elt option
+      val split : elt -> t -> (t * bool * t)
+      val find : elt -> t -> elt
+      val find_opt : elt -> t -> elt option
+      val find_first : f:(elt -> bool) -> t -> elt
+      val find_first_opt : f:(elt -> bool) -> t -> elt option
+      val find_last : f:(elt -> bool) -> t -> elt
+      val find_last_opt : f:(elt -> bool) -> t -> elt option
+      val of_list : elt list -> t
+      val to_seq_from : elt -> t -> elt Stdcompat__seq.t
+      val to_seq : t -> elt Stdcompat__seq.t
+      val add_seq : elt Stdcompat__seq.t -> t -> t
+      val of_seq : elt Stdcompat__seq.t -> t
+    end
+  module Make (Ord : OrderedType) = struct
+    include Stdcompat__set.Make (Ord)
+
+    let iter ~f s = iter f s
+
+    let map ~f s = map f s
+
+    let fold ~f s ~init = fold f s init
+
+    let for_all ~f s = for_all f s
+
+    let exists ~f s = exists f s
+
+    let filter ~f s = filter f s
+
+    let partition ~f s = partition f s
+
+    let find_first ~f s = find_first f s
+
+    let find_first_opt ~f s = find_first_opt f s
+
+    let find_last ~f s = find_last f s
+
+    let find_last_opt ~f s = find_last_opt f s
+  end
+end
+
+module Map = struct
+  module type OrderedType  = Map.OrderedType
+  module type S  =
+    sig
+      type key
+      and +'a t
+      val empty : 'a t
+      val is_empty : 'a t -> bool
+      val mem : key -> 'a t -> bool
+      val add : key:key -> data:'a -> 'a t -> 'a t
+      val update : key:key -> f:('a option -> 'a option) -> 'a t -> 'a t
+      val singleton : key -> 'a -> 'a t
+      val remove : key -> 'a t -> 'a t
+      val merge :
+        f:(key -> 'a option -> 'b option -> 'c option) ->
+          'a t -> 'b t -> 'c t
+      val union : f:(key -> 'a -> 'a -> 'a option) -> 'a t -> 'a t -> 'a t
+      val compare : cmp:('a -> 'a -> int) -> 'a t -> 'a t -> int
+      val equal : cmp:('a -> 'a -> bool) -> 'a t -> 'a t -> bool
+      val iter : f:(key:key -> data:'a -> unit) -> 'a t -> unit
+      val fold : f:(key:key -> data:'a -> 'b -> 'b) -> 'a t -> init:'b -> 'b
+      val for_all : f:(key -> 'a -> bool) -> 'a t -> bool
+      val exists : f:(key -> 'a -> bool) -> 'a t -> bool
+      val filter : f:(key -> 'a -> bool) -> 'a t -> 'a t
+      val partition : f:(key -> 'a -> bool) -> 'a t -> ('a t * 'a t)
+      val cardinal : 'a t -> int
+      val bindings : 'a t -> (key * 'a) list
+      val min_binding : 'a t -> (key * 'a)
+      val min_binding_opt : 'a t -> (key * 'a) option
+      val max_binding : 'a t -> (key * 'a)
+      val max_binding_opt : 'a t -> (key * 'a) option
+      val choose : 'a t -> (key * 'a)
+      val choose_opt : 'a t -> (key * 'a) option
+      val split : key -> 'a t -> ('a t * 'a option * 'a t)
+      val find : key -> 'a t -> 'a
+      val find_opt : key -> 'a t -> 'a option
+      val find_first : f:(key -> bool) -> 'a t -> (key * 'a)
+      val find_first_opt : f:(key -> bool) -> 'a t -> (key * 'a) option
+      val find_last : f:(key -> bool) -> 'a t -> (key * 'a)
+      val find_last_opt : f:(key -> bool) -> 'a t -> (key * 'a) option
+      val map : f:('a -> 'b) -> 'a t -> 'b t
+      val mapi : f:(key -> 'a -> 'b) -> 'a t -> 'b t
+      val to_seq : 'a t -> (key * 'a) Stdcompat__seq.t
+      val to_seq_from : key -> 'a t -> (key * 'a) Stdcompat__seq.t
+      val add_seq : (key * 'a) Stdcompat__seq.t -> 'a t -> 'a t
+      val of_seq : (key * 'a) Stdcompat__seq.t -> 'a t
+    end
+  module Make (Ord : OrderedType) = struct
+    include Stdcompat__map.Make (Ord)
+
+    let add ~key ~data map = add key data map
+
+    let update ~key ~f map = update key f map
+
+    let merge ~f map map' = merge f map map'
+
+    let union ~f map map' = union f map map'
+
+    let compare ~cmp map map' = compare cmp map map'
+
+    let equal ~cmp map map' = equal cmp map map'
+
+    let iter ~f map = iter (fun key data -> f ~key ~data) map
+
+    let fold ~f map ~init =
+      fold (fun key data accu -> f ~key ~data accu) map init
+
+    let for_all ~f map = for_all f map
+
+    let exists ~f map = exists f map
+
+    let filter ~f map = filter f map
+
+    let partition ~f map = partition f map
+
+    let find_first ~f map = find_first f map
+
+    let find_first_opt ~f map = find_first_opt f map
+
+    let find_last ~f map = find_last f map
+
+    let find_last_opt ~f map = find_last_opt f map
+
+    let map ~f m = map f m
+
+    let mapi ~f m = mapi f m
+  end
+end
+
+module Hashtbl = struct
+  type ('a, 'b) t = ('a, 'b) Hashtbl.t
+
+  let add t ~key ~data = Stdcompat__hashtbl.add t key data
+
+  let replace t ~key ~data = Stdcompat__hashtbl.replace t key data
+
+  let iter ~f t = Stdcompat__hashtbl.iter (fun key data -> f ~key ~data) t
+
+  let filter_map_inplace ~f t =
+    Stdcompat__hashtbl.filter_map_inplace (fun key data -> f ~key ~data) t
+
+  let fold ~f t ~init =
+    Stdcompat__hashtbl.fold (fun key data accu -> f ~key ~data accu) t init
+
+  let create = Stdcompat__hashtbl.create
+  let clear = Stdcompat__hashtbl.clear
+  let reset = Stdcompat__hashtbl.reset
+  let copy = Stdcompat__hashtbl.copy
+  let find = Stdcompat__hashtbl.find
+  let find_opt = Stdcompat__hashtbl.find_opt
+  let find_all = Stdcompat__hashtbl.find_all
+  let mem = Stdcompat__hashtbl.mem
+  let remove = Stdcompat__hashtbl.remove
+  let length = Stdcompat__hashtbl.length
+  let randomize = Stdcompat__hashtbl.randomize
+  let is_randomized = Stdcompat__hashtbl.is_randomized
+  type statistics = Stdcompat__hashtbl_ext.statistics
+  let stats = Stdcompat__hashtbl.stats
+  let to_seq = Stdcompat__hashtbl.to_seq
+  let to_seq_keys = Stdcompat__hashtbl.to_seq_keys
+  let to_seq_values = Stdcompat__hashtbl.to_seq_values
+  let add_seq = Stdcompat__hashtbl.add_seq
+  let replace_seq = Stdcompat__hashtbl.replace_seq
+  let of_seq = Stdcompat__hashtbl.of_seq
+  let hash = Stdcompat__hashtbl.hash
+  let seeded_hash = Stdcompat__hashtbl.seeded_hash
+  let hash_param = Stdcompat__hashtbl.hash_param
+  let seeded_hash_param = Stdcompat__hashtbl.seeded_hash_param
+
+  module type HashedType  = Hashtbl.HashedType
+  module type SeededHashedType  = Stdcompat__hashtbl.SeededHashedType
+  module type S  =
+    sig
+      type key
+      and 'a t
+      val create : int -> 'a t
+      val clear : 'a t -> unit
+      val reset : 'a t -> unit
+      val copy : 'a t -> 'a t
+      val add : 'a t -> key:key -> data:'a -> unit
+      val remove : 'a t -> key -> unit
+      val find : 'a t -> key -> 'a
+      val find_opt : 'a t -> key -> 'a option
+      val find_all : 'a t -> key -> 'a list
+      val replace : 'a t -> key:key -> data:'a -> unit
+      val mem : 'a t -> key -> bool
+      val iter : f:(key:key -> data:'a -> unit) -> 'a t -> unit
+      val filter_map_inplace :
+        f:(key:key -> data:'a -> 'a option) -> 'a t -> unit
+      val fold : f:(key:key -> data:'a -> 'b -> 'b) -> 'a t -> init:'b -> 'b
+      val length : 'a t -> int
+      val stats : 'a t -> statistics
+      val to_seq : 'a t -> (key * 'a) Stdcompat__seq.t
+      val to_seq_keys : 'a t -> key Stdcompat__seq.t
+      val to_seq_values : 'a t -> 'a Stdcompat__seq.t
+      val add_seq : 'a t -> (key * 'a) Stdcompat__seq.t -> unit
+      val replace_seq : 'a t -> (key * 'a) Stdcompat__seq.t -> unit
+      val of_seq : (key * 'a) Stdcompat__seq.t -> 'a t
+    end
+
+  module type SeededS  =
+    sig
+      type key
+      and 'a t
+      val create : ?random:bool -> int -> 'a t
+      val clear : 'a t -> unit
+      val reset : 'a t -> unit
+      val copy : 'a t -> 'a t
+      val add : 'a t -> key:key -> data:'a -> unit
+      val remove : 'a t -> key -> unit
+      val find : 'a t -> key -> 'a
+      val find_opt : 'a t -> key -> 'a option
+      val find_all : 'a t -> key -> 'a list
+      val replace : 'a t -> key:key -> data:'a -> unit
+      val mem : 'a t -> key -> bool
+      val iter : f:(key:key -> data:'a -> unit) -> 'a t -> unit
+      val filter_map_inplace :
+        f:(key:key -> data:'a -> 'a option) -> 'a t -> unit
+      val fold : f:(key:key -> data:'a -> 'b -> 'b) -> 'a t -> init:'b -> 'b
+      val length : 'a t -> int
+      val stats : 'a t -> statistics
+      val to_seq : 'a t -> (key * 'a) Stdcompat__seq.t
+      val to_seq_keys : 'a t -> key Stdcompat__seq.t
+      val to_seq_values : 'a t -> 'a Stdcompat__seq.t
+      val add_seq : 'a t -> (key * 'a) Stdcompat__seq.t -> unit
+      val replace_seq : 'a t -> (key * 'a) Stdcompat__seq.t -> unit
+      val of_seq : (key * 'a) Stdcompat__seq.t -> 'a t
+    end
+
+  module Make (H : HashedType) = struct
+    include Stdcompat__hashtbl.Make (H)
+
+    let add t ~key ~data = add t key data
+
+    let replace t ~key ~data = replace t key data
+
+    let iter ~f t = iter (fun key data -> f ~key ~data) t
+
+    let filter_map_inplace ~f t =
+      filter_map_inplace (fun key data -> f ~key ~data) t
+
+    let fold ~f t ~init =
+      fold (fun key data accu -> f ~key ~data accu) t init
+  end
+
+  module MakeSeeded (H : SeededHashedType) = struct
+    include Stdcompat__hashtbl.MakeSeeded (H)
+
+    let add t ~key ~data = add t key data
+
+    let replace t ~key ~data = replace t key data
+
+    let iter ~f t = iter (fun key data -> f ~key ~data) t
+
+    let filter_map_inplace ~f t =
+      filter_map_inplace (fun key data -> f ~key ~data) t
+
+    let fold ~f t ~init =
+      fold (fun key data accu -> f ~key ~data accu) t init
+  end
+end
+@END_BEFORE_4_07_0@

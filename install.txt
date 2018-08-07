@@ -94,7 +94,12 @@ needed for the compilation of ocaml scripts.
     make install-bash
 
  It will install the shell script 'scripts/spatch.bash_completion'
- in /etc/bash_completion.d/spatch
+ by default in the directory pointed by
+   pkg-config --variable=completionsdir bash-completion
+ if available, or $datarootdir/bash-completion/completions otherwise.
+ The directory can be overriden by passing --with-bash-completion=$DIR
+ to ./configure.
+ The option --without-bash-completion disables the script installation.
 
  You can manually copy that file elsewhere if you have a different
  bash_completion directory.

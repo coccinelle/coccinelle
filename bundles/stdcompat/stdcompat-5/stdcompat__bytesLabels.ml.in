@@ -1,0 +1,61 @@
+@BEGIN_FROM_4_02_0@
+include BytesLabels
+
+@BEGIN_BEFORE_4_07_0@
+let of_seq g =
+  Stdcompat__buffer.to_bytes (Stdcompat__buffer.of_seq g)
+
+let to_seq s = Stdcompat__tools.vec_to_seq length unsafe_get s
+
+let to_seqi s = Stdcompat__tools.vec_to_seqi length unsafe_get s
+@END_BEFORE_4_07_0@
+
+@BEGIN_BEFORE_4_06_0@
+let sub_string b ~pos ~len =
+  sub_string b pos len
+@END_BEFORE_4_06_0@
+
+@BEGIN_BEFORE_4_05_0@
+let uppercase_ascii = uppercase
+
+let lowercase_ascii = lowercase
+
+let capitalize_ascii = capitalize
+
+let uncapitalize_ascii = uncapitalize
+
+let equal : t -> t -> bool = ( = )
+
+let rindex_from_opt = Stdcompat__bytes.rindex_from_opt
+
+let index_from_opt = Stdcompat__bytes.index_from_opt
+
+let rindex_opt = Stdcompat__bytes.rindex_opt
+
+let index_opt = Stdcompat__bytes.index_opt
+@END_BEFORE_4_05_0@
+@END_FROM_4_02_0@
+@BEGIN_BEFORE_4_02_0@
+include Stdcompat__stringLabels
+
+let empty = ""
+
+let of_string = copy
+
+let to_string = copy
+
+let sub_string = sub
+
+let unsafe_of_string s = s
+
+let unsafe_to_string s = s
+@END_BEFORE_4_02_0@
+
+@BEGIN_BEFORE_4_05_0@
+let extend s ~left ~right =
+  Stdcompat__bytes.extend s left right
+
+let blit_string = blit
+
+let cat = ( ^ )
+@END_BEFORE_4_05_0@

@@ -1,0 +1,15 @@
+opam-version: "1.2"
+maintainer: "Thierry Martinez <martinez@nsup.org>"
+authors: "Thierry Martinez <martinez@nsup.org>"
+homepage: "https://github.com/thierry-martinez/stdcompat"
+bug-reports: "https://github.com/thierry-martinez/stdcompat/issues"
+license: "BSD"
+dev-repo: "https://github.com/thierry-martinez/stdcompat.git"
+build: [
+  ["./configure" "--prefix=%{prefix}%"]
+  [make]
+]
+install: [make "install"]
+remove: [make "uninstall"]
+depopts : [ "result" "seq" "uchar" ]
+available: [ocaml-version >= "3.07" & ocaml-version < "4.08.0"]

@@ -1,0 +1,60 @@
+type 'a t = 'a Stack.t
+(** Alias for {!Stack.t} *)
+
+@BEGIN_FROM_4_07_0@
+val to_seq : 'a t -> 'a Seq.t
+@END_FROM_4_07_0@
+@BEGIN_BEFORE_4_07_0@
+val to_seq : 'a t -> 'a Stdcompat__seq.t
+@END_BEFORE_4_07_0@
+(** @since 4.07.0: val to_seq : 'a t -> 'a Seq.t
+ *)
+
+@BEGIN_FROM_4_07_0@
+val add_seq : 'a t -> 'a Seq.t -> unit
+@END_FROM_4_07_0@
+@BEGIN_BEFORE_4_07_0@
+val add_seq : 'a t -> 'a Stdcompat__seq.t -> unit
+@END_BEFORE_4_07_0@
+(** @since 4.07.0: val add_seq : 'a t -> 'a Seq.t -> unit
+ *)
+
+@BEGIN_FROM_4_07_0@
+val of_seq : 'a Seq.t -> 'a t
+@END_FROM_4_07_0@
+@BEGIN_BEFORE_4_07_0@
+val of_seq : 'a Stdcompat__seq.t -> 'a t
+@END_BEFORE_4_07_0@
+(** @since 4.07.0: val of_seq : 'a Seq.t -> 'a t
+ *)
+
+val fold : ('b -> 'a -> 'b) -> 'b -> 'a t -> 'b
+(** @since 4.03.0: val fold : ('b -> 'a -> 'b) -> 'b -> 'a t -> 'b *)
+
+val create : unit -> 'a t
+(** Alias for {!Stack.create} *)
+
+val push : 'a -> 'a t -> unit
+(** Alias for {!Stack.push} *)
+
+val pop : 'a t -> 'a
+(** Alias for {!Stack.pop} *)
+
+val top : 'a t -> 'a
+(** Alias for {!Stack.top} *)
+
+val clear : 'a t -> unit
+(** Alias for {!Stack.clear} *)
+
+val copy : 'a t -> 'a t
+(** Alias for {!Stack.copy} *)
+
+val is_empty : 'a t -> bool
+(** Alias for {!Stack.is_empty} *)
+
+val length : 'a t -> int
+(** Alias for {!Stack.length} *)
+
+val iter : ('a -> unit) -> 'a t -> unit
+(** Alias for {!Stack.iter} *)
+
