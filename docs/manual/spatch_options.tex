@@ -639,19 +639,22 @@ stars are used in column 0 rather than {\tt -} and {\tt +}, then the {\tt
   The difference between the original code and the transformed code is
   still printed to the standard output using {\tt diff} with the unified
   format option.  By default, the input file is overwritten when using this
-  option, with no backup.  This option only makes sense when {\tt -} and
-  {\tt +} are used.}
+  option, with no backup. The name of a backup can be controlled using the
+  {-{}-suffix} command-line argument.  This option only makes sense when
+  {\tt -} and {\tt +} are used.}
 
-\rare{-{}-backup-suffix $s$}{The suffix $s$ of the file to use in making a
-  backup of the original file(s).  This suffix should include the leading
+\rare{-{}-suffix $s$}{The suffix $s$ of the file to use in making a
+  backup of the original file(s) with {\bf -{}-in-place} or in making a new
+  file with {\bf -{}-out-place}.  This suffix should include the leading
   ``.'', if one is desired.  This option only has an effect when the option
-  {\bf -{}-in-place} is also used.}
+  {\bf -{}-in-place} or {\bf -{}-out-place} is also used.}
 
-\rare{-{}-out-place}{ Store the result of modifying the code in a .cocci-res
-  file.  The difference between the original code
-  and the transformed code is still printed to the standard output using
-  {\tt diff} with the unified format option.  This option only
-  makes sense when {\tt -} and {\tt +} are used.}
+\rare{-{}-out-place}{ Store the result of modifying the code in a
+  .cocci-res file.  The suffix can be changed using the {-{}-suffix}
+  command-line argument. The difference between the original code and the
+  transformed code is still printed to the standard output using {\tt diff}
+  with the unified format option.  This option only makes sense when {\tt
+    -} and {\tt +} are used.}
 
 \rare{-{}-no-show-diff}{ Normally, the difference between the original and
   transformed code is printed on the standard output.  This option causes

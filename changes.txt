@@ -64,6 +64,7 @@
   via Flag.parmap_core (None for no pararallelism, and Some x for x cores)
 - Make it possible to match or add an empty struct type declaration.
   Suggestion of Michele Martone.
+- --backup-suffix replaced by --suffix and made applicable to --out-place
 ** Features:
 - Better error reporting for unparsable terms when using make_expr etc in
   script code.  Problem reported by Markus Elfring.
@@ -91,7 +92,9 @@
 - Get rid of code that depends on unbound virtual rules
 - Bash-completion scripts are now installed in share/bash-completion/completions
   (overridable with the new with-bash-completion option,
-   reported by Himanshu Jha)
+  reported by Himanshu Jha)
+- Allow using -o when only the main file changes, even if headers have been
+  matched.
 ** Bugfix:
 - Improved detection of metavariables in strings.  Problem reported by
   Wolfram Sang.

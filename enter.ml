@@ -21,7 +21,7 @@ let cocci_file = ref ""
 
 let output_file = ref "" (* resulting code *)
 let tmp_dir = ref "" (* temporary files for parallelism *)
-let backup_suffix =
+let aux_file_suffix =
   ref (None : string option) (* suffix for backup if one is desired *)
 let outplace_modif = ref false (* generates a .cocci_res  *)
 let preprocess = ref false     (* run the C preprocessor before cocci *)
@@ -285,11 +285,11 @@ let short_options = [
   "-o", Arg.Set_string output_file,
   "   <file> the output file";
   "--in-place", Arg.Set Flag_cocci.inplace_modif,
-  "   do the modification on the file directly";
-  "--backup-suffix", Arg.String (function s -> backup_suffix := Some s),
-  "   suffix to use when making a backup for inplace";
+  "   do the modification on the file directly (backup file name specified with --suffix)";
+  "--suffix", Arg.String (function s -> aux_file_suffix := Some s),
+  "   suffix to use when making a backup for inplace or for result of --out-place";
   "--out-place", Arg.Set outplace_modif,
-  "   store modifications in a .cocci_res file";
+  "   store modifications in a .cocci_res file (renamable via --suffix)";
   "--reverse", Arg.Set Flag_parsing_cocci.interpret_inverted,
   "  invert the semantic patch before applying it";
 
@@ -1324,7 +1324,7 @@ and generate_outfiles outfiles x (* front file *) xs (* other files *) =
     outopt +> Common.do_option (fun outfile ->
       if !Flag_cocci.inplace_modif
       then begin
-	(match !backup_suffix with
+	(match !aux_file_suffix with
 	  Some backup_suffix ->
 	    Common.command2 ("cp "^infile^" "^infile^backup_suffix)
 	| None -> ());
@@ -1332,7 +1332,12 @@ and generate_outfiles outfiles x (* front file *) xs (* other files *) =
       end;
 
       if !outplace_modif
-      then Common.command2 ("cp "^outfile^" "^infile^".cocci_res")
+      then
+	let suffix =
+	  match !aux_file_suffix with
+	    Some suffix -> suffix
+	  | None -> ".cocci_res" in
+	Common.command2 ("cp "^outfile^" "^infile^suffix)
 
 	      (* potential source of security pb if the /tmp/ file is
 		 * a symlink, so simpler to not produce any regular file
@@ -1348,8 +1353,13 @@ and generate_outfiles outfiles x (* front file *) xs (* other files *) =
 	         end
               *)
 	    ));
-  if !output_file <> "" && not !compat_mode then
-    (match outfiles with
+  if !output_file <> "" && not !compat_mode
+  then
+    let relevant_files =
+      List.filter
+	(function (fl,modif) -> fl = x || not(modif = None))
+	outfiles in
+    (match relevant_files with
     | [infile, Some outfile] when infile = x && xs=[] ->
         Common.command2 ("cp " ^outfile^ " " ^ !output_file)
     | [infile, None] when infile = x && xs=[] ->
@@ -1627,7 +1637,7 @@ let main_with_better_error_report arglist =
 let __init_cocci_file = !cocci_file
 let __init_output_file = !output_file
 let __init_tmp_dir = !tmp_dir
-let __init_backup_suffix = !backup_suffix
+let __init_aux_file_suffix = !aux_file_suffix
 let __init_outplace_modif = !outplace_modif
 let __init_preprocess = !preprocess
 let __init_compat_mode = !compat_mode
@@ -1661,7 +1671,7 @@ let reinitialize _ = (* clean start for invocation from OCaml *)
   cocci_file := __init_cocci_file;
   output_file := __init_output_file;
   tmp_dir := __init_tmp_dir;
-  backup_suffix := __init_backup_suffix;
+  aux_file_suffix := __init_aux_file_suffix;
   outplace_modif := __init_outplace_modif;
   preprocess := __init_preprocess;
   compat_mode := __init_compat_mode;
