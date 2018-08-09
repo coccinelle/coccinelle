@@ -1104,16 +1104,12 @@ struct_decl_list:
    struct_decl_list_start { Ast0.wrap $1 }
 
 struct_decl_list_start:
-  struct_decl                        { $1 }
-| struct_decl struct_decl_list_start { $1@$2 }
-| d=edots_when(TEllipsis,struct_decl_one) r=continue_struct_decl_list
-    { (P.mkfdots_one "..." d)::r }
-
-continue_struct_decl_list:
   /* empty */                        { [] }
 | struct_decl struct_decl_list_start { $1@$2 }
-| struct_decl                        { $1 }
-
+| d=edots_when(TEllipsis,struct_decl_one)
+    { [(P.mkfdots_one "..." d)] }
+| d=edots_when(TEllipsis,struct_decl_one) s=struct_decl r=struct_decl_list_start
+    { (P.mkfdots_one "..." d)::s@r }
 
 /* ---------------------------------------------------------------------- */
 /* very restricted what kinds of expressions can appear in an enum decl */

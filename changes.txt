@@ -62,6 +62,8 @@
 - Support some changes on function pointer typedefs.
 - allow a coccinelle ocaml script to detect whether parallelism is used,
   via Flag.parmap_core (None for no pararallelism, and Some x for x cores)
+- Make it possible to match or add an empty struct type declaration.
+  Suggestion of Michele Martone.
 ** Features:
 - Better error reporting for unparsable terms when using make_expr etc in
   script code.  Problem reported by Markus Elfring.
