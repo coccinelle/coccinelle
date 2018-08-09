@@ -1006,7 +1006,7 @@ all_basic_types:
 all_basic_types_no_ident:
   ty=signed_basic_types { ty }
 | ty=signable_types_no_ident { ty }
-| ty=non_signable_types_no_ident { ty }
+| ty=non_signable_types { ty }
 
 signed_or_unsigned:
 | r=Tsigned { Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Signed r,None)) }
@@ -2511,7 +2511,7 @@ ctype_or_ident:
 
 all_basic_types_or_ident:
   ty=all_basic_types_no_ident { Common.Left ty }
-| i=pure_ident_or_meta_ident { Common.Right i }
+| i=pure_ident_or_meta_ident_nosym { Common.Right i }
 
 operator_constraint:
   op=binary_operator { Ast.CstrBinaryOp (Ast0toast.binaryOp op) }
