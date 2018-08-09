@@ -2511,7 +2511,7 @@ ctype_or_ident:
 
 all_basic_types_or_ident:
   ty=all_basic_types_no_ident { Common.Left ty }
-| i=pure_ident_or_meta_ident_nosym { Common.Right i }
+| i=pure_ident_or_meta_ident_nosym2(TSymId) { Common.Right i }
 
 operator_constraint:
   op=binary_operator { Ast.CstrBinaryOp (Ast0toast.binaryOp op) }

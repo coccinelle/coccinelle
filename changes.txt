@@ -106,6 +106,8 @@
   Eduardo Habkost.
 - In python scripts, virtuals should not overwrite locals with the same
   name.  Problem reported by Bhumika Goyal.
+- Identify typedefs in type metavariable constraints, problem identified by
+  Michele Martone.
 * 1.0.6
 ** Language:
 - Allow \ in #define in semantic patch rules, to allow body with multiple
