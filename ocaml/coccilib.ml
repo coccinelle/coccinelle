@@ -161,13 +161,13 @@ let make_expr_with_env env s =
 let make_stmt s =
   parse_failure "statement" s
     (function s ->
-      Ast_c.MetaStmtVal(Lib_parsing_c.al_statement(cstatement_of_string "" s),
-			Ast_c.WITHOUT_TYPES))
+      let s = Lib_parsing_c.al_statement(cstatement_of_string "" s) in
+      Ast_c.MetaStmtVal(s,s,Ast_c.WITHOUT_TYPES))
 let make_stmt_with_env env s =
   parse_failure "statement" s
     (function s ->
-      Ast_c.MetaStmtVal(Lib_parsing_c.al_statement(cstatement_of_string env s),
-			Ast_c.WITH_TYPES))
+      let s = Lib_parsing_c.al_statement(cstatement_of_string env s) in
+      Ast_c.MetaStmtVal(s,s,Ast_c.WITH_TYPES))
 let make_type s =
   parse_failure "type" s
     (function s ->

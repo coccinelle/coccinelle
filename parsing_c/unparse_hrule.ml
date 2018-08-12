@@ -245,14 +245,14 @@ let print_extra_typedefs pr env =
       | Ast_c.MetaTypeVal(ty) -> Visitor_c.vk_type bigf ty
       | Ast_c.MetaInitVal(ty) -> Visitor_c.vk_ini bigf ty
       | Ast_c.MetaInitListVal(ty) -> Visitor_c.vk_ini_list bigf ty
-      | Ast_c.MetaDeclVal(decl) -> Visitor_c.vk_decl bigf decl
+      | Ast_c.MetaDeclVal(decl,_) -> Visitor_c.vk_decl bigf decl
       | Ast_c.MetaFieldVal(field) -> Visitor_c.vk_struct_field bigf field
       | Ast_c.MetaFieldListVal(fields) ->
 	  Visitor_c.vk_struct_fields bigf fields
       | Ast_c.MetaFmtVal(fmt) -> Visitor_c.vk_string_format bigf fmt
       | Ast_c.MetaFragListVal(frags) ->
 	  Visitor_c.vk_string_fragments bigf frags
-      | Ast_c.MetaStmtVal(stm,_) -> Visitor_c.vk_statement bigf stm
+      | Ast_c.MetaStmtVal(stm,_,_) -> Visitor_c.vk_statement bigf stm
       | Ast_c.MetaStmtListVal(stms,_) ->
 	  Visitor_c.vk_statement_sequencable_list bigf stms
       | Ast_c.MetaPosVal _ | Ast_c.MetaPosValList _
@@ -303,8 +303,9 @@ let rename argids env =
 	   Ast_c.MetaInitVal(Visitor_c.vk_ini_s bigf ini)
        | Ast_c.MetaInitListVal(ini) ->
 	   Ast_c.MetaInitListVal(Visitor_c.vk_inis_s bigf ini)
-       | Ast_c.MetaDeclVal(stm) ->
-	   Ast_c.MetaDeclVal(Visitor_c.vk_decl_s bigf stm)
+       | Ast_c.MetaDeclVal(stm,original) ->
+	   Ast_c.MetaDeclVal(Visitor_c.vk_decl_s bigf stm,
+			     Visitor_c.vk_decl_s bigf original)
        | Ast_c.MetaFieldVal(stm) ->
 	   Ast_c.MetaFieldVal(Visitor_c.vk_struct_field_s bigf stm)
        | Ast_c.MetaFieldListVal(stm) ->
@@ -313,8 +314,9 @@ let rename argids env =
 	   Ast_c.MetaFmtVal(Visitor_c.vk_string_format_s bigf fmt)
        | Ast_c.MetaFragListVal(frags) ->
 	   Ast_c.MetaFragListVal(Visitor_c.vk_string_fragments_s bigf frags)
-       | Ast_c.MetaStmtVal(stm,ty) ->
-	   Ast_c.MetaStmtVal(Visitor_c.vk_statement_s bigf stm,ty)
+       | Ast_c.MetaStmtVal(stm,original,ty) ->
+	   Ast_c.MetaStmtVal(Visitor_c.vk_statement_s bigf stm,
+			     Visitor_c.vk_statement_s bigf original,ty)
        | Ast_c.MetaStmtListVal(stm,ty) ->
 	   Ast_c.MetaStmtListVal
 	     (Visitor_c.vk_statement_sequencable_list_s bigf stm,ty)

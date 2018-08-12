@@ -95,6 +95,8 @@
   reported by Himanshu Jha)
 - Allow using -o when only the main file changes, even if headers have been
   matched.
+- Preserve spacing for comments in statement and declaration metavariables,
+  when they are used in + code.
 ** Bugfix:
 - Improved detection of metavariables in strings.  Problem reported by
   Wolfram Sang.

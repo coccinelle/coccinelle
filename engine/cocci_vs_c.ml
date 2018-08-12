@@ -233,13 +233,13 @@ let equal_metavarval valu valu' =
       Lib_parsing_c.al_string_fragments a =
       Lib_parsing_c.al_string_fragments b
 
-  | Ast_c.MetaDeclVal a, Ast_c.MetaDeclVal b ->
+  | Ast_c.MetaDeclVal(a,_), Ast_c.MetaDeclVal(b,_) ->
       Lib_parsing_c.al_declaration a = Lib_parsing_c.al_declaration b
   | Ast_c.MetaFieldVal a, Ast_c.MetaFieldVal b ->
       Lib_parsing_c.al_field a = Lib_parsing_c.al_field b
   | Ast_c.MetaFieldListVal a, Ast_c.MetaFieldListVal b ->
       Lib_parsing_c.al_fields a = Lib_parsing_c.al_fields b
-  | Ast_c.MetaStmtVal(a,_), Ast_c.MetaStmtVal(b,_) ->
+  | Ast_c.MetaStmtVal(a,_,_), Ast_c.MetaStmtVal(b,_,_) ->
       Lib_parsing_c.al_statement a = Lib_parsing_c.al_statement b
   | Ast_c.MetaStmtListVal(a,_), Ast_c.MetaStmtListVal(b,_) ->
       Lib_parsing_c.al_statement_seq_list a =
@@ -323,13 +323,13 @@ let equal_inh_metavarval valu valu'=
       Lib_parsing_c.al_inh_string_fragments a =
       Lib_parsing_c.al_inh_string_fragments b
 
-  | Ast_c.MetaDeclVal a, Ast_c.MetaDeclVal b ->
+  | Ast_c.MetaDeclVal(a,_), Ast_c.MetaDeclVal(b,_) ->
       Lib_parsing_c.al_inh_declaration a = Lib_parsing_c.al_inh_declaration b
   | Ast_c.MetaFieldVal a, Ast_c.MetaFieldVal b ->
       Lib_parsing_c.al_inh_field a = Lib_parsing_c.al_inh_field b
   | Ast_c.MetaFieldListVal a, Ast_c.MetaFieldListVal b ->
       Lib_parsing_c.al_inh_field_list a = Lib_parsing_c.al_inh_field_list b
-  | Ast_c.MetaStmtVal(a,ty1), Ast_c.MetaStmtVal(b,ty2) ->
+  | Ast_c.MetaStmtVal(a,orig_a,ty1), Ast_c.MetaStmtVal(b,orig_b,ty2) ->
       if ty1 = Ast_c.WITHOUT_TYPES || ty2 = Ast_c.WITHOUT_TYPES
       then
 	Lib_parsing_c.real_al_statement a = Lib_parsing_c.real_al_statement b
@@ -2207,7 +2207,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 
   | A.MetaDecl (ida,constraints,keep,inherited), _ ->
       let max_min _ = lin_col_by_pos (Lib_parsing_c.ii_of_decl declb) in
-      let mv = Ast_c.MetaDeclVal declb in
+      let mv = Ast_c.MetaDeclVal(declb,declb) in
       check_constraints constraints ida mv
 	(fun () ->
 	  X.envf keep inherited (ida, mv, max_min)
@@ -4751,7 +4751,7 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
       (match F.extract_fullstatement node with
       | Some stb ->
 	    let max_min _ = lin_col_by_pos (Lib_parsing_c.ii_of_stmt stb) in
-	    let mv = Ast_c.MetaStmtVal(stb,Ast_c.WITH_TYPES) in
+	    let mv = Ast_c.MetaStmtVal(stb,stb,Ast_c.WITH_TYPES) in
 	    X.check_constraints (A.unwrap_mcode ida) mv cstr
               (fun () ->
 		X.envf keep inherited

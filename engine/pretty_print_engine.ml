@@ -30,13 +30,13 @@ let rec pp_binding_kind = function
   | Ast_c.MetaInitListVal      ini -> pp "<<initlist>>"
   | Ast_c.MetaTypeVal      typ ->
       Pretty_print_c.pp_type_simple typ
-  | Ast_c.MetaDeclVal      decl ->
+  | Ast_c.MetaDeclVal      (decl,_) ->
       Pretty_print_c.pp_decl_simple decl
   | Ast_c.MetaFieldVal      decl ->
       Pretty_print_c.pp_field_simple decl
   | Ast_c.MetaFieldListVal      decls ->
       List.iter Pretty_print_c.pp_field_simple decls
-  | Ast_c.MetaStmtVal      (statement,_) ->
+  | Ast_c.MetaStmtVal      (statement,_,_) ->
       Pretty_print_c.pp_statement_simple statement
   | Ast_c.MetaStmtListVal      (statxs,_) ->
       Pretty_print_c.pp_statement_seq_list_simple statxs

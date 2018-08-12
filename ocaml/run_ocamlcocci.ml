@@ -52,10 +52,10 @@ let ast_binding vl = function
       | Ast_c.MetaTypeVal ty -> Coccilib.Type ty
       | Ast_c.MetaInitVal init -> Coccilib.Init init
       | Ast_c.MetaInitListVal init -> Coccilib.InitList init
-      | Ast_c.MetaDeclVal decl -> Coccilib.Decl decl
+      | Ast_c.MetaDeclVal(decl,_) -> Coccilib.Decl decl
       | Ast_c.MetaFieldVal field -> Coccilib.Field field
       | Ast_c.MetaFieldListVal field -> Coccilib.FieldList field
-      | Ast_c.MetaStmtVal(stm,_) -> Coccilib.Stmt stm
+      | Ast_c.MetaStmtVal(stm,_,_) -> Coccilib.Stmt stm
       | Ast_c.MetaStmtListVal(stm,_) -> Coccilib.StmtList stm
       | Ast_c.MetaFragListVal frags -> Coccilib.FragList frags
       | Ast_c.MetaFmtVal fmt -> Coccilib.Fmt fmt

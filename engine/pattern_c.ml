@@ -437,12 +437,12 @@ module XMATCH = struct
 		   then Lib_parsing_c.al_arguments a
 		   else Lib_parsing_c.semi_al_arguments a))
 
-          | Ast_c.MetaDeclVal a ->
-	      success
-		(Ast_c.MetaDeclVal
-		   (if strip
-		   then Lib_parsing_c.al_declaration a
-		   else Lib_parsing_c.semi_al_declaration a))
+          | Ast_c.MetaDeclVal(a,original) ->
+	      let stripped =
+		if strip
+		then Lib_parsing_c.al_declaration a
+		else Lib_parsing_c.semi_al_declaration a in
+	      success(Ast_c.MetaDeclVal(stripped,original))
           | Ast_c.MetaFieldVal a ->
 	      success
 		(Ast_c.MetaFieldVal
@@ -455,12 +455,12 @@ module XMATCH = struct
 		   (if strip
 		   then Lib_parsing_c.al_fields a
 		   else Lib_parsing_c.semi_al_fields a))
-          | Ast_c.MetaStmtVal(a,ty) ->
+          | Ast_c.MetaStmtVal(a,original,ty) ->
 	      let stripped =
 		if strip
 		then Lib_parsing_c.al_statement a
 		else Lib_parsing_c.semi_al_statement a in
-	      success(Ast_c.MetaStmtVal(stripped,ty))
+	      success(Ast_c.MetaStmtVal(stripped,original,ty))
           | Ast_c.MetaStmtListVal(a,ty) ->
 	      let stripped =
 		if strip

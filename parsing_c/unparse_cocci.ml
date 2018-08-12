@@ -859,7 +859,7 @@ and declaration d =
     Ast.MetaDecl(name,_,_,_) ->
       handle_metavar name
 	(function
-	    Ast_c.MetaDeclVal d ->
+	    Ast_c.MetaDeclVal (_,d) ->
               pretty_print_c.Pretty_print_c.decl d
           | _ -> error name d "declaration value expected")
 
@@ -1187,7 +1187,7 @@ and rule_elem arity re =
 
   | Ast.MetaStmt(name,_,_,_,_) ->
       handle_metavar name (function
-        | Ast_c.MetaStmtVal(stm,_) ->
+        | Ast_c.MetaStmtVal(_,stm,_) ->
             pretty_print_c.Pretty_print_c.statement stm
         | _ -> error name re "statement value expected")
 
@@ -1251,7 +1251,7 @@ let indent_if_needed s f =
 		failwith
 		  (Printf.sprintf "variable %s not known on SP line %d\n"
 		     name_string line)
-	    | Some (Ast_c.MetaStmtVal(stm,_)) ->
+	    | Some (Ast_c.MetaStmtVal(_,stm,_)) ->
 		(match Ast_c.unwrap stm with
 		  Ast_c.Compound _ -> true
 		| _ -> false)

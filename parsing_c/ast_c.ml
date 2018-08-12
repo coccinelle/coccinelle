@@ -812,10 +812,10 @@ and metavars_binding = (Ast_cocci.meta_name, metavar_binding_kind) assoc
   | MetaTypeVal      of fullType
   | MetaInitVal      of initialiser
   | MetaInitListVal  of initialiser wrap2 list
-  | MetaDeclVal      of declaration
+  | MetaDeclVal      of declaration * declaration
   | MetaFieldVal     of field
   | MetaFieldListVal of field list
-  | MetaStmtVal      of statement * stripped
+  | MetaStmtVal      of statement * statement * stripped
   | MetaStmtListVal  of statement_sequencable list * stripped
   | MetaDParamListVal of (string wrap) wrap2 list
   | MetaFmtVal       of string_format
@@ -1167,9 +1167,12 @@ let real_al_info x =
     danger = ref NoDanger;
   }
 
-let al_comments x =
+let al_comments keep_comments x =
   let keep_cpp l =
-    List.filter (function (Token_c.TCommentCpp _,_) -> true | _ -> false) l in
+    if keep_comments
+    then l
+    else
+      List.filter (function (Token_c.TCommentCpp _,_) -> true | _ -> false) l in
   let al_com (x,i) =
     (x,{i with Common.charpos = magic_real_number;
 	 Common.line = magic_real_number;
@@ -1191,7 +1194,7 @@ let al_info_cpp tokenindex x =
 	 str = str_of_info x});
     cocci_tag = ref emptyAnnot;
     annots_tag = Token_annot.empty;
-    comments_tag = ref (al_comments !(x.comments_tag));
+    comments_tag = ref (al_comments false !(x.comments_tag));
     danger = ref NoDanger;
   }
 
@@ -1199,11 +1202,11 @@ let semi_al_info_cpp x =
   { x with
     cocci_tag = ref emptyAnnot;
     annots_tag = Token_annot.empty;
-    comments_tag = ref (al_comments !(x.comments_tag));
+    comments_tag = ref (al_comments false !(x.comments_tag));
     danger = ref NoDanger;
   }
 
-let real_al_info_cpp x =
+let real_al_info_cpp keep_comments x =
   { pinfo =
     (AbstractLineTok
        {charpos = magic_real_number;
@@ -1213,7 +1216,7 @@ let real_al_info_cpp x =
 	 str = str_of_info x});
     cocci_tag = ref emptyAnnot;
     annots_tag = Token_annot.empty;
-    comments_tag =  ref (al_comments !(x.comments_tag));
+    comments_tag =  ref (al_comments keep_comments !(x.comments_tag));
     danger = ref NoDanger;
   }
 

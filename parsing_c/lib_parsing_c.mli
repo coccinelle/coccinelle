@@ -84,6 +84,10 @@ val real_al_statement : Ast_c.statement -> Ast_c.statement
 val real_al_statement_seq_list :
   Ast_c.statement_sequencable list -> Ast_c.statement_sequencable list
 val real_al_def : Ast_c.toplevel -> Ast_c.toplevel
+
+val real_al_decl_with_comments : Ast_c.declaration -> Ast_c.declaration
+val real_al_statement_with_comments : Ast_c.statement -> Ast_c.statement
+
 val extract_info_visitor :
   (Visitor_c.visitor_c -> 'a -> 'b) -> 'a -> Ast_c.info list
 val ii_of_def : Ast_c.definition -> Ast_c.info list

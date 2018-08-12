@@ -438,6 +438,10 @@ module ENV =
       |	(Lib_engine.NormalMetaVal(Ast_c.MetaTypeVal a),
 	 Lib_engine.NormalMetaVal(Ast_c.MetaTypeVal b)) ->
           C_vs_c.eq_type a b
+      | (Lib_engine.NormalMetaVal(Ast_c.MetaStmtVal(a,_,_)),
+	 Lib_engine.NormalMetaVal(Ast_c.MetaStmtVal(b,_,_))) -> a = b
+      | (Lib_engine.NormalMetaVal(Ast_c.MetaDeclVal(a,_)),
+	 Lib_engine.NormalMetaVal(Ast_c.MetaDeclVal(b,_))) -> a = b
       |	(Lib_engine.LabelVal(l1),Lib_engine.LabelVal(l2)) ->
 	  compatible_labels l1 l2
       |	_ -> v = v'
@@ -571,8 +575,8 @@ let strip env =
 	    Ast_c.MetaExprVal(Lib_parsing_c.al_inh_expr a,c,ty)
 	| Ast_c.MetaExprListVal a ->
 	    Ast_c.MetaExprListVal(Lib_parsing_c.al_inh_arguments a)
-	| Ast_c.MetaStmtVal(a,ty) ->
-	    Ast_c.MetaStmtVal(Lib_parsing_c.al_inh_statement a,ty)
+	| Ast_c.MetaStmtVal(a,orig,ty) ->
+	    Ast_c.MetaStmtVal(Lib_parsing_c.al_inh_statement a,orig,ty)
 	| Ast_c.MetaInitVal a ->
 	    Ast_c.MetaInitVal(Lib_parsing_c.al_inh_init a)
 	| Ast_c.MetaInitListVal a ->

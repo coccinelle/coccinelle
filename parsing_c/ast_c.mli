@@ -316,10 +316,10 @@ and metavar_binding_kind =
   | MetaTypeVal of fullType
   | MetaInitVal of initialiser
   | MetaInitListVal of initialiser wrap2 list
-  | MetaDeclVal of declaration
+  | MetaDeclVal of declaration * declaration
   | MetaFieldVal of field
   | MetaFieldListVal of field list
-  | MetaStmtVal of statement * stripped
+  | MetaStmtVal of statement * statement * stripped
   | MetaStmtListVal of statement_sequencable list * stripped
   | MetaDParamListVal of string wrap wrap2 list
   | MetaFmtVal of string_format
@@ -413,10 +413,10 @@ val al_info : int -> info -> info
 val semi_al_info : info -> info
 val magic_real_number : int
 val real_al_info : info -> info
-val al_comments : comments_around -> comments_around
+val al_comments : bool -> comments_around -> comments_around
 val al_info_cpp : int -> info -> info
 val semi_al_info_cpp : info -> info
-val real_al_info_cpp : info -> info
+val real_al_info_cpp : bool -> info -> info
 val split_comma : 'a wrap2 list -> ('a, il) Common.either list
 val unsplit_comma : ('a, il) Common.either list -> 'a wrap2 list
 val split_nocomma : 'a list -> ('a, il) Common.either list
