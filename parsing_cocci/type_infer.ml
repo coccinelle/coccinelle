@@ -224,15 +224,15 @@ let rec propagate_types env =
 	      | _ ->
 		  let ty = lub_type t1 t2 in
 		    Ast0.set_type exp1 ty; Ast0.set_type exp2 ty; ty in
-	      (match Ast0.unwrap op with
-                 Ast0.Arith _ -> same_type ty1 ty2
-               | Ast0.MetaBinary _ -> same_type ty1 ty2
-		 | Ast0.Logical(op') when (let op''=Ast0.unwrap_mcode op' in op''=Ast.AndLog || op''=Ast.OrLog) ->
-                     Some (Ast0.wrap bool_type)
-		 | Ast0.Logical(op) ->
-		     let ty = lub_type ty1 ty2 in
-		     Ast0.set_type exp1 ty; Ast0.set_type exp2 ty;
-                     Some (Ast0.wrap bool_type))
+	    (match Ast0.unwrap op with
+	      Ast0.Arith _ -> same_type ty1 ty2
+	    | Ast0.MetaBinary _ -> same_type ty1 ty2
+	    | Ast0.Logical(op') when (let op''=Ast0.unwrap_mcode op' in op''=Ast.AndLog || op''=Ast.OrLog) ->
+		Some (Ast0.wrap bool_type)
+	    | Ast0.Logical(op) ->
+		let ty = lub_type ty1 ty2 in
+		Ast0.set_type exp1 ty; Ast0.set_type exp2 ty;
+		Some (Ast0.wrap bool_type))
 	| Ast0.Paren(lp,exp,rp) -> Ast0.get_type exp
 	| Ast0.ArrayAccess(exp1,lb,exp2,rb) ->
 	    (match strip_cv (Ast0.get_type exp2) with
