@@ -34,14 +34,21 @@ endif
 
 include ../Makefile.bundles
 
-ifeq ($(OCAMLOPT_CMD),)
-	OCAMLCOPT := $(OCAMLC_CMD)
-	CMOX := cmo
-	CMAX := cma
+ifeq ($(MAKECMDGOALS),all.opt)
+	NATIVE := yes
 else
+	NATIVE := no
+endif
+
+
+ifeq ($(NATIVE),yes)
 	OCAMLCOPT := $(OCAMLOPT_CMD)
 	CMOX := cmx
 	CMAX := cmxa
+else
+	OCAMLCOPT := $(OCAMLC_CMD)
+	CMOX := cmo
+	CMAX := cma
 endif
 
 distclean: clean
