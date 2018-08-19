@@ -3217,6 +3217,9 @@ and (struct_field: (A.annotated_field, B.field) matcher) =
     | A.FElem(mckstart,allminus,ifa) ->
 
 	(match A.unwrap ifa,fb with
+	| A.MetaField (ida,cstr,keep,inherited), B.CppDirectiveStruct _
+	| A.MetaField (ida,cstr,keep,inherited), B.IfdefStruct _ ->
+	    (* not really fields *) fail
 	| A.MetaField (ida,cstr,keep,inherited), _ ->
 	    let max_min _ = lin_col_by_pos (Lib_parsing_c.ii_of_field fb) in
 	    let mv = Ast_c.MetaFieldVal fb in
