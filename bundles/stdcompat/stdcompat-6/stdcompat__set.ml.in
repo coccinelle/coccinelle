@@ -1,0 +1,356 @@
+module type OrderedType = Set.OrderedType
+
+module type S  =
+  sig
+    type elt
+    type t
+    val empty : t
+    val is_empty : t -> bool
+    val mem : elt -> t -> bool
+    val add : elt -> t -> t
+    val singleton : elt -> t
+    val remove : elt -> t -> t
+    val union : t -> t -> t
+    val inter : t -> t -> t
+    val disjoint : t -> t -> bool
+    val diff : t -> t -> t
+    val compare : t -> t -> int
+    val equal : t -> t -> bool
+    val subset : t -> t -> bool
+    val iter : (elt -> unit) -> t -> unit
+    val map : (elt -> elt) -> t -> t
+    val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
+    val for_all : (elt -> bool) -> t -> bool
+    val exists : (elt -> bool) -> t -> bool
+    val filter : (elt -> bool) -> t -> t
+    val partition : (elt -> bool) -> t -> (t * t)
+    val cardinal : t -> int
+    val elements : t -> elt list
+    val min_elt : t -> elt
+    val min_elt_opt : t -> elt option
+    val max_elt : t -> elt
+    val max_elt_opt : t -> elt option
+    val choose : t -> elt
+    val choose_opt : t -> elt option
+    val split : elt -> t -> (t * bool * t)
+    val find : elt -> t -> elt
+    val find_opt : elt -> t -> elt option
+    val find_first : (elt -> bool) -> t -> elt
+    val find_first_opt : (elt -> bool) -> t -> elt option
+    val find_last : (elt -> bool) -> t -> elt
+    val find_last_opt : (elt -> bool) -> t -> elt option
+    val of_list : elt list -> t
+    val to_seq_from : elt -> t -> elt Stdcompat__seq.t
+    val to_seq : t -> elt Stdcompat__seq.t
+    val add_seq : elt Stdcompat__seq.t -> t -> t
+    val of_seq : elt Stdcompat__seq.t -> t
+  end
+
+@BEGIN_FROM_4_08_0@
+module Make = Set.Make
+@END_FROM_4_08_0@
+@BEGIN_BEFORE_4_08_0@
+module Make (Ord : OrderedType) = struct
+  include Set.Make (Ord)
+
+  let disjoint s s' =
+    is_empty (inter s s')
+
+@BEGIN_BEFORE_4_07_0@
+  let add_seq i m =
+    Stdcompat__seq.fold_left (fun s x -> add x s) m i
+
+  let of_seq i = add_seq i empty
+
+@BEGIN_WITH_MAGIC@
+  type internal = Empty | Node of internal * elt * internal * int
+
+  type enumeration = End | More of elt * internal * enumeration
+
+  let rec cons_enum s e =
+    match s with
+      Empty -> e
+    | Node (l, v, r, _h) -> cons_enum l (More(v, r, e))
+
+  let rec seq_of_enum_ c () = match c with
+    | End -> Stdcompat__seq.Nil
+    | More (x, t, rest) ->
+        Stdcompat__seq.Cons (x, seq_of_enum_ (cons_enum t rest))
+
+  let to_seq (s : t) =
+    let s : internal = Obj.magic s in
+    seq_of_enum_ (cons_enum s End)
+
+  let to_seq_from low s =
+    let s : internal = Obj.magic s in
+    let rec aux low s c = match s with
+      | Empty -> c
+      | Node (l, v, r, _h) ->
+          begin match Ord.compare v low with
+            | 0 -> More (v, r, c)
+            | n when n<0 -> aux low r c
+            | _ -> aux low l (More (v, r, c))
+          end
+    in
+    seq_of_enum_ (aux low s End)
+@END_WITH_MAGIC@
+@BEGIN_WITHOUT_MAGIC@
+  let to_seq s =
+    Stdcompat__list.to_seq (elements s)
+
+  let elements_from low s =
+    let rec cut l =
+      match l with
+      | [] -> []
+      | hd :: tl ->
+        if Ord.compare low hd < 0 then
+          cut tl
+        else
+          l in
+     cut (elements s)
+
+  let to_seq_from low s =
+    Stdcompat__list.to_seq (elements_from low s)
+@END_WITHOUT_MAGIC@
+@END_BEFORE_4_07_0@
+
+@BEGIN_BEFORE_4_01_0@
+  exception Find of elt
+
+@BEGIN_WITH_MAGIC@
+  let rec find_internal x = function
+      Empty -> raise Not_found
+    | Node (l, v, r, _h) ->
+        let c = Ord.compare x v in
+        if c = 0 then v
+        else find_internal x (if c < 0 then l else r)
+
+  let find x (s : t) =
+    let s : internal = Obj.magic s in
+    find_internal x s
+@END_WITH_MAGIC@
+@BEGIN_WITHOUT_MAGIC@
+  let find x s =
+    try
+      iter (fun y ->
+        if Ord.compare x y = 0 then
+          raise (Find y)) s;
+      raise Not_found
+    with Find y -> y
+@END_WITHOUT_MAGIC@
+@END_BEFORE_4_01_0@
+
+@BEGIN_BEFORE_4_05_0@
+  let min_elt_opt s =
+    Stdcompat__tools.option_find min_elt s
+
+  let max_elt_opt s =
+    Stdcompat__tools.option_find max_elt s
+
+  let choose_opt s =
+    Stdcompat__tools.option_find choose s
+
+@BEGIN_WITH_MAGIC@
+  let rec find_first_aux v0 f = function
+      Empty ->
+        v0
+    | Node (l, v, r, _h) ->
+        if f v then
+          find_first_aux v f l
+        else
+          find_first_aux v0 f r
+
+  let rec find_first_internal f = function
+      Empty ->
+        raise Not_found
+    | Node (l, v, r, _h) ->
+        if f v then
+          find_first_aux v f l
+        else
+          find_first_internal f r
+
+  let find_first f (s : t) =
+    let s : internal = Obj.magic s in
+    find_first_internal f s
+
+  let rec find_first_opt_aux v0 f = function
+      Empty ->
+        Some v0
+    | Node (l, v, r, _h) ->
+        if f v then
+          find_first_opt_aux v f l
+        else
+          find_first_opt_aux v0 f r
+
+  let rec find_first_opt_internal f = function
+      Empty ->
+        None
+    | Node (l, v, r, _h) ->
+        if f v then
+          find_first_opt_aux v f l
+        else
+          find_first_opt_internal f r
+
+  let find_first_opt f (s : t) =
+    let s : internal = Obj.magic s in
+    find_first_opt_internal f s
+
+  let rec find_last_aux v0 f = function
+      Empty ->
+        v0
+    | Node (l, v, r, _h) ->
+        if f v then
+          find_last_aux v f r
+        else
+          find_last_aux v0 f l
+
+  let rec find_last_internal f = function
+      Empty ->
+        raise Not_found
+    | Node (l, v, r, _h) ->
+        if f v then
+          find_last_aux v f r
+        else
+          find_last_internal f l
+
+  let find_last f (s : t) =
+    let s : internal = Obj.magic s in
+    find_last_internal f s
+
+  let rec find_last_opt_aux v0 f = function
+      Empty ->
+        Some v0
+    | Node (l, v, r, _h) ->
+        if f v then
+          find_last_opt_aux v f r
+        else
+          find_last_opt_aux v0 f l
+
+  let rec find_last_opt_internal f = function
+      Empty ->
+        None
+    | Node (l, v, r, _h) ->
+        if f v then
+          find_last_opt_aux v f r
+        else
+          find_last_opt_internal f l
+
+  let find_last_opt f (s : t) =
+    let s : internal = Obj.magic s in
+    find_last_opt_internal f s
+
+  let rec find_opt_internal x = function
+      Empty -> None
+    | Node (l, v, r, _h) ->
+        let c = Ord.compare x v in
+        if c = 0 then Some v
+        else find_opt_internal x (if c < 0 then l else r)
+
+  let find_opt f (s : t) =
+    let s : internal = Obj.magic s in
+    find_opt_internal f s
+@END_WITH_MAGIC@
+@BEGIN_WITHOUT_MAGIC@
+  let find_opt x s =
+    Stdcompat__tools.option_find (find x) s
+
+  exception Find of elt
+
+  let find_first_opt p s =
+    try
+      iter (fun x ->
+        if p x then
+          raise (Find x)) s;
+      None
+    with Find x -> Some x
+
+  let find_first p s =
+    try
+      iter (fun x ->
+        if p x then
+          raise (Find x)) s;
+      raise Not_found
+    with Find x -> x
+
+  exception Local_not_found
+
+  let find_last_opt p s =
+    let last = ref None in
+    try
+      iter (fun x ->
+        if p x then
+          last := Some x
+        else
+          match !last with
+          | None -> raise Local_not_found
+          | Some x -> raise (Find x)) s;
+      !last
+    with
+    | Local_not_found -> None
+    | Find x -> !last
+
+  let find_last p s =
+    match find_last_opt p s with
+    | None -> raise Not_found
+    | Some x -> x
+@END_WITHOUT_MAGIC@
+@END_BEFORE_4_05_0@
+
+@BEGIN_BEFORE_4_02_0@
+  let of_list l = List.fold_left (fun s item -> add item s) empty l
+@END_BEFORE_4_02_0@
+
+@BEGIN_BEFORE_4_04_0@
+@BEGIN_WITH_MAGIC@
+  let rec map_internal f = function
+    | Empty -> Empty
+    | Node (l, v, r, _h) as t ->
+       let l' = map_internal f l in
+       let v' = f v in
+       let r' = map_internal f r in
+       if l == l' && v == v' && r == r' then t
+       else
+         (* This is less efficient than the standard library implementation:
+            the latter relies on the internal function try_join that would
+            require to backport too much of code. *)
+         Obj.magic (union (Obj.magic l') (add v' (Obj.magic r')))
+
+  let map f s =
+    let s : internal = Obj.magic s in
+    (Obj.magic (map_internal f s) : t)
+@END_WITH_MAGIC@
+@BEGIN_WITHOUT_MAGIC@
+  type map_changed =
+    | Changed of t
+    | Unchanged of elt list
+
+  let map f s =
+    match
+      fold (fun item accu ->
+        let item' = f item in
+        match accu with
+        | Changed set -> Changed (add item' set)
+        | Unchanged list ->
+           if item == item' then Unchanged (item :: list)
+           else Changed (add item' (of_list list)))
+      s (Unchanged [])
+    with
+    | Changed s -> s
+    | Unchanged _ -> s
+@END_WITHOUT_MAGIC@
+@END_BEFORE_4_04_0@
+
+@BEGIN_BEFORE_3_08_0@
+   let split x s =
+     let add item (passed, (l, present, r)) =
+       if passed then
+         (passed, (l, present, add item r))
+       else
+         let o = Ord.compare item x in
+         if o < 0 then (passed, (add item l, present, add item r))
+         else if o > 0 then (true, (l, false, add item r))
+         else (true, (l, true, r)) in
+     snd (fold add s (false, (empty, false, empty)))
+@END_BEFORE_3_08_0@
+end
+@END_BEFORE_4_08_0@

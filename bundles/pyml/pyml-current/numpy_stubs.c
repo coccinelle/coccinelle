@@ -151,7 +151,8 @@ bigarray_of_pyarray_wrapper(
     CAMLlocal2(bigarray, result);
     pyml_assert_initialized();
     PyObject *array = pyml_unwrap(pyarray_ocaml);
-    PyArrayObject_fields *fields = (PyArrayObject_fields *) array;
+    PyArrayObject_fields *fields =
+      (PyArrayObject_fields *) pyobjectdescr(array);
     int nd = fields->nd;
     npy_intp *shape = fields->dimensions;
     long *dims = malloc(nd * sizeof(long));

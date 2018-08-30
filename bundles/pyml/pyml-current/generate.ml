@@ -1567,7 +1567,7 @@ let print_stub prefix pyml_assert_initialized channel wrapper =
   let pyml_assert_initialized =
     if wrapper.optional then
       pyml_assert_initialized ^ Printf.sprintf "
-    pyml_check_symbol_available(%s);" symbol_decapitalized
+    pyml_check_symbol_available(%s, \"%s\");" symbol_decapitalized symbol
     else pyml_assert_initialized in
   let destruct_argument i ty =
     let ty_c = string_of_type_c_argument ty in
