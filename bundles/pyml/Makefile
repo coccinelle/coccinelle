@@ -40,16 +40,20 @@ else
 	NATIVE := no
 endif
 
+include ../../Makefile.package
 
 ifeq ($(NATIVE),yes)
 	OCAMLCOPT := $(OCAMLOPT_CMD)
 	CMOX := cmx
 	CMAX := cmxa
+	LINK_BEST := $(LINK_NATIVE)
 else
 	OCAMLCOPT := $(OCAMLC_CMD)
 	CMOX := cmo
 	CMAX := cma
+	LINK_BEST := $(LINK_BYTECODE)
 endif
+
 
 distclean: clean
 	rm -f .prepare
@@ -84,7 +88,7 @@ $(SRC_DIR)/pyml_arch.cmo: $(SRC_DIR)/pyml_arch.ml $(SRC_DIR)/pyml_arch.cmi
 $(SRC_DIR)/pyutils.cmo $(SRC_DIR)/pyutils.cmx : $(SRC_DIR)/pyutils.cmi
 
 $(SRC_DIR)/generate : $(SRC_DIR)/pyutils.$(CMOX) $(SRC_DIR)/generate.$(CMOX)
-	$(OCAMLCOPT) $(OCAMLLDFLAGS) stdcompat.$(CMAX) unix.$(CMAX) $^ -o $@
+	$(OCAMLCOPT) $(OCAMLLDFLAGS) $(LINK_BEST) stdcompat.$(CMAX) unix.$(CMAX) $^ -o $@
 
 $(SRC_DIR)/generate.cmx: $(SRC_DIR)/generate.ml
 	$(OCAMLOPT_CMD) -c $< -o $@
