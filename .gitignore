@@ -19,7 +19,7 @@ scripts/spatch.byte
 .depend
 version.ml
 
-configure
+/configure
 Makefile.config
 Makefile.override
 Makefile.local
