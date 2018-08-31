@@ -75,7 +75,7 @@ depend: .depend
 
 source_files := \
 	$(wildcard \
-		$(patsubst %,$(SRC_DIR)/%.mli,$(MODULES) $(INTERFACES)) \
+		$(patsubst %,$(SRC_DIR)/%.mli,$(MODULES) $(MERE_INTERFACES)) \
 	        $(patsubst %,$(SRC_DIR)/%.ml,$(MODULES))) \
 	$(patsubst %.mly,%.ml, \
 	        $(wildcard $(patsubst %,$(SRC_DIR)/%.mly,$(MODULES)))) \
