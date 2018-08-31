@@ -16,6 +16,7 @@ SRC_DIR=$(PACKAGE_DIR)
 OCAMLFLAGS+=-I ../stdcompat
 CLEANOTHERS=pyml-current/generate pyml-current/generate.cmi \
 	pyml-current/generate.cmx pyml-current/generate.cmo \
+	pyml-current/generate.cmt pyml-current/generate.cmti \
 	pyml-current/generate.o pyml-current/pyml.a \
 	pyml-current/pyml.cma pyml-current/pyml.cmxa \
 	pyml-current/dllpyml_stubs.so

@@ -496,9 +496,9 @@ OCAMLCFLAGS = $(OCAMLFLAGS)
 OCAMLLDFLAGS = $(OCAMLFLAGS)
 SUFFIXES = .ml .mli .cmi .cmo .cmx .cmxa .cmxs
 .DEFAULT_GOAL = all
-CLEANFILES = *.cmi *.cmo *.cmx *.o *.a stdcompat.cma stdcompat.cmxa \
-	stdcompat__native.ml \
-	stdcompat.cmxs stdcompat_tests $(bin_SCRIPTS) *~
+CLEANFILES = *.cmi *.cmo *.cmx *.cmt *.cmti *.o *.a stdcompat.cma \
+	stdcompat.cmxa stdcompat__native.ml \
+	stdcompat.cmxs stdcompat_tests $(bin_SCRIPTS)
 
 all: all-am
 
