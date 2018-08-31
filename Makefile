@@ -585,6 +585,7 @@ clean : clean-$(library)
 clean-$(library) :
 	$(SHOW_CLEAN) "$(library)"
 	@rm -f $(library)/$(library).cma $(library)/$(library).cmxa \
+	       $(library)/$(library).a \
 		$(foreach sourcefile,$(SOURCEFILES_$(library)),\
 			$(clean_sourcefile)) \
 		$(patsubst %.mll,%.ml,$(filter %.mll,\
