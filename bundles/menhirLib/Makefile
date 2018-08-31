@@ -46,6 +46,8 @@ OCAML_BUNDLES_FLAGS=$(shell \
 
 include ../Makefile.bundles
 
+include ../../Makefile.package
+
 depend: .depend
 	@$(MAKE) all-build
 
@@ -71,10 +73,10 @@ $(SRC_DIR)/Driver.ml: $(SRC_DIR)/yaccDriver.ml
 
 ifeq ($(OCAMLOPT_CMD),)
 $(SRC_DIR)/menhir: $(patsubst %,$(SRC_DIR)/%.cmo,$(MENHIR_MODULES))
-	$(OCAMLC_CMD) $(OCAMLLDFLAGS) stdcompat.cma $^ -o $@
+	$(OCAMLC_CMD) $(OCAMLLDFLAGS) $(LINK_BYTECODE) stdcompat.cma $^ -o $@
 else
 $(SRC_DIR)/menhir: $(patsubst %,$(SRC_DIR)/%.cmx,$(MENHIR_MODULES))
-	$(OCAMLOPT_CMD) $(OCAMLLDFLAGS) stdcompat.cmxa $^ -o $@
+	$(OCAMLOPT_CMD) $(OCAMLLDFLAGS) $(LINK_NATIVE) stdcompat.cmxa $^ -o $@
 endif
 
 standard.mly: $(SRC_DIR)/standard.mly
