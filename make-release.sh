@@ -48,7 +48,7 @@ echo $VERSION > version
 if ! git rev-parse $VERSION &>/dev/null; then
     git add version
     git add setup/Makefile.in
-    git commit -m "Release $VERSION"
+    git commit -m "Release $VERSION" || true
     git tag -a -m "Release $VERSION" $VERSION
 fi
 
