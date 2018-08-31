@@ -79,6 +79,8 @@ source_files = \
 	        $(patsubst %,$(SRC_DIR)/%.ml,$(MODULES))) \
 	$(patsubst %.mly,%.ml, \
 	        $(wildcard $(patsubst %,$(SRC_DIR)/%.mly,$(MODULES)))) \
+	$(patsubst %.mly,%.mli, \
+	        $(wildcard $(patsubst %,$(SRC_DIR)/%.mly,$(MODULES)))) \
 	$(patsubst %.mll,%.ml, \
 	        $(wildcard $(patsubst %,$(SRC_DIR)/%.mll,$(MODULES))))
 
@@ -119,7 +121,7 @@ $(SRC_DIR)/dll$(LIBRARY)_stubs.so: $(SRC_DIR)/lib$(LIBRARY)_stubs.a
 %.ml: %.mll
 	$(OCAMLLEX) $< -o $@
 
-%.ml: %.mly
+%.ml %.mli: %.mly
 	$(OCAMLYACC) $<
 
 %.cmi: %.mli
