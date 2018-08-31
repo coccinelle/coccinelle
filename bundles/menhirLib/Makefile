@@ -50,7 +50,6 @@ include ../Makefile.bundles
 include ../../Makefile.package
 
 depend: .depend
-	@$(MAKE) all-build
 
 distclean: clean
 	rm -rf $(PACKAGE_DIR)
@@ -68,6 +67,8 @@ $(SRC_DIR)/lexer.mll \
 $(SRC_DIR)/sentenceLexer.mll \
 $(SRC_DIR)/sentenceParser.mly \
 $(SRC_DIR)/yacc-parser.mly: $(MARKER)
+
+.depend: $(SRC_DIR)/parser.mly
 
 $(SRC_DIR)/Driver.ml: $(SRC_DIR)/yaccDriver.ml
 	cp $< $@
