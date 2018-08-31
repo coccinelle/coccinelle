@@ -22,6 +22,7 @@ MENHIR_MODULES= \
 	sentenceLexer segment sentenceParserAux interpret tableBackend MySet \
 	resizableArray LowIntegerPriorityQueue astar LRijkstra cmly_api \
 	cmly_format cmly_read cmly_write back menhir
+INTERFACES=syntax
 PRODUCTS=lexer lexdep lexmli parser sentenceLexer sentenceParser
 SIDEPRODUCTS=menhir menhirLib.cmi
 SIDEPRODUCTS_BYTECODE=menhirLib.cmo

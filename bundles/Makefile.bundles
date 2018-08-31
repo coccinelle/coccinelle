@@ -73,8 +73,17 @@ clean:
 
 depend: .depend
 
-.depend: .prepare $(patsubst %,$(SRC_DIR)/%.ml,$(PRODUCTS))
-	$(OCAMLDEP_CMD) $(SRC_DIR)/*.ml $(SRC_DIR)/*.mli >.depend
+source_files := \
+	$(wildcard \
+		$(patsubst %,$(SRC_DIR)/%.mli,$(MODULES) $(INTERFACES)) \
+	        $(patsubst %,$(SRC_DIR)/%.ml,$(MODULES))) \
+	$(patsubst %.mly,%.ml, \
+	        $(wildcard $(patsubst %,$(SRC_DIR)/%.mly,$(MODULES)))) \
+	$(patsubst %.mll,%.ml, \
+	        $(wildcard $(patsubst %,$(SRC_DIR)/%.mll,$(MODULES))))
+
+.depend: .prepare $(source_files)
+	$(OCAMLDEP_CMD) $(source_files) >.depend
 
 .PHONY: \
 	all all-build all-build-targets all.opt all-opt-build \
