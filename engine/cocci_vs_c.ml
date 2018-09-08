@@ -4181,10 +4181,11 @@ and attribute_list attras attrbs =
       let build_dots (mcode, optexpr) =
         failwith "attribute: build dots: not possible" in
       let match_comma ea = None in
-      let build_comma ia1 = failwith "not posible" in
+      let build_comma ia1 =
+        failwith "attribute list: build comma: not posible" in
       let match_metalist ea = None in
       let build_metalist _ (ida,leninfo,keep,inherited) =
-	failwith "not possible" in
+	failwith "attribute list: build meta list: not possible" in
       let mktermval v = failwith "attribute: mk term val: not possible" in
       let special_cases ea eas ebs = None in
       let no_ii x = failwith "attribute: no ii: not possible" in
@@ -4333,7 +4334,7 @@ and compatible_typeC a (b,local) =
 	      (fun () ->
 		compatible_base_type_meta ty (Some signa) qua b ii local
 		  )
-	| _ -> failwith "not possible")
+	| _ -> failwith "compatible_typeC: not possible")
 
     | A.Pointer (a, _), (qub, (B.Pointer b, ii)) ->
 	compatible_type a (b, local)
@@ -4531,10 +4532,10 @@ and define_paramsbis = fun eas ebs ->
     match A.unwrap ea with
       A.MetaDParamList(_,_,_,_,_) ->
 	A.MetaDParamList(ida,leninfo,cstr,keep,inherited)
-    | _ -> failwith "not possible" in
+    | _ -> failwith "define_param: build meta list: not possible" in
   let mktermval v = Ast_c.MetaDParamListVal v in
   let special_cases ea eas ebs = None in
-  let no_ii x = failwith "not possible" in
+  let no_ii x = failwith "define_param: no ii: not possible" in
   list_matcher match_dots build_dots match_comma build_comma
     match_metalist build_metalist mktermval
     special_cases define_parameter X.distrf_define_params

@@ -1519,7 +1519,7 @@ let rec find_macro_lineparen prev_line_end xs =
               macro.tok <- TMacroDecl (s, TH.info_of_tok macro.tok)
 	  | InFunction | NoContext ->
               macro.tok <- TMacroStmt (s, TH.info_of_tok macro.tok)
-	  | _ -> failwith "not possible");
+	  | _ -> failwith "macro: not possible");
           [Parenthised (xxs, info_parens)] +>
             iter_token_paren (TV.set_as_comment Token_c.CppMacro);
         end;
