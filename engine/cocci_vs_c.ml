@@ -1712,7 +1712,7 @@ and string_fragments eas ebs =
     match A.unwrap ea with
       A.MetaFormatList(pct,_,_,_,_,_) ->
 	A.MetaFormatList(pct,ida,leninfo,constraints,keep,inherited)
-    | _ -> failwith "not possible" in
+    | _ -> failwith "build metalist: not possible" in
   let mktermval v = Ast_c.MetaFragListVal v in
   let list_filter_function l =
     Some
@@ -1746,8 +1746,9 @@ and string_fragment ea (eb,ii) =
 	return
 	  (A.FormatFragment(pct1,fmt1) +> wa,
 	   (B.FormatFragment(fmt2), [ib1]))))
-  | A.Strdots dots, eb -> failwith "not possible"
-  | A.MetaFormatList(pct1,name1,lenname1,_,_,_), eb -> failwith "not possible"
+  | A.Strdots dots, eb -> failwith "string_fragment: strdots: not possible"
+  | A.MetaFormatList(pct1,name1,lenname1,_,_,_), eb ->
+      failwith "string_fragment: meta format list: not possible"
   | _,_ -> fail
 
 and string_format ea eb =
@@ -1810,7 +1811,7 @@ and exec_code ea (eb,ii) =
 	return(
 	  A.ExecToken(tok1) +> wa,
 	  (B.ExecToken,[tok2])))
-  | A.ExecDots(dots), eb -> failwith "not possible"
+  | A.ExecDots(dots), eb -> failwith "exec_code: exec dots: not possible"
   | _,_ -> fail
 
 (* ------------------------------------------------------------------------- *)
@@ -2088,7 +2089,7 @@ and parameters_bis eas ebs =
 	A.AsParam(A.rewrap p
 		    (build_metalist p (ida,leninfo,constraints,keep,inherited)),
 		  e)
-    | _ -> failwith "not possible" in
+    | _ -> failwith "parameters: build metalist: not possible" in
   let mktermval v = Ast_c.MetaParamListVal v in
   let special_cases ea eas ebs =
     (* a case where one smpl parameter matches a list of C parameters *)
@@ -3109,7 +3110,7 @@ and initialisers_ordered2 = fun ias ibs ->
     A.MetaInitList(ida,leninfo,cstr,keep,inherited) in
   let mktermval v = Ast_c.MetaInitListVal v in
   let special_cases ea eas ebs = None in
-  let no_ii x = failwith "not possible" in
+  let no_ii x = failwith "initialisers: no ii: not possible" in
   list_matcher match_dots build_dots match_comma build_comma
     match_metalist build_metalist mktermval
     special_cases initialiser X.distrf_inis
@@ -3163,7 +3164,7 @@ and (struct_fields: (A.annotated_field list, B.field list) matcher) =
     | _ -> None in
   let build_dots (mcode, optexpr) = A.Fdots(mcode, optexpr) in
   let match_comma ea = None in
-  let build_comma ia1 = failwith "not possible" in
+  let build_comma ia1 = failwith "struct_fields: build comma: not possible" in
   let match_metalist ea =
     match A.unwrap ea with
       A.FElem(mckstart,allminus,d) ->
@@ -3178,13 +3179,13 @@ and (struct_fields: (A.annotated_field list, B.field list) matcher) =
 	A.FElem(mckstart,allminus,
 		(A.rewrap ea
 		   (A.MetaFieldList(ida,leninfo,cstr,keep,inherited))))
-    | _ -> failwith "not possible" in
+    | _ -> failwith "struct_fields: build meta list: not possible" in
   let mktermval v =
     (* drop empty ii information, because nothing between elements *)
     let v = List.map Ast_c.unwrap v in
     Ast_c.MetaFieldListVal v in
   let special_cases ea eas ebs = None in
-  let no_ii x = failwith "not possible" in
+  let no_ii x = failwith "struct_fields: no ii: not possible" in
   let make_ebs ebs = List.map (function x -> Left x) ebs in
   let unmake_ebs ebs =
     List.map (function Left x -> x | Right x -> failwith "no right") ebs in
@@ -3315,8 +3316,8 @@ and enum_fields = fun eas ebs ->
   let build_comma ia1 = A.EComma ia1 in
   let match_metalist ea = None in
   let build_metalist _ (ida,leninfo,cstr,keep,inherited) =
-    failwith "not possible" in
-  let mktermval v = failwith "not possible" in
+    failwith "enum: build meta list: not possible" in
+  let mktermval v = failwith "enum: mk term val: not possible" in
   let special_cases ea eas ebs = None in
   list_matcher match_dots build_dots match_comma build_comma
     match_metalist build_metalist mktermval
@@ -3348,7 +3349,7 @@ and enum_field ida idb =
 	    (A.Assignment((A.Ident(id)) +> A.rewrap ea1,opa,ea2,init)) +>
 	    A.rewrap ida,
 	    (nameidb,Some(opbi,eb2))))))
-      |	_ -> failwith "not possible")
+      |	_ -> failwith "enum: assignment: not possible")
   | A.Assignment(ea1,opa,ea2,init),(nameidb,None) -> fail
   | _ -> failwith ("not possible: "^(Dumper.dump (A.unwrap ida)))
 
@@ -3639,7 +3640,7 @@ and simulate_signed_meta ta basea signaopt tb baseb ii rebuilda =
 	      (rebuilda (basea, signaopt)) +> A.rewrap ta,
 	      (B.BaseType (baseb), iisignbopt @ ii)
 		)
-	  | _ -> failwith "not possible"))) in
+	  | _ -> failwith "simulate signed: not possible"))) in
 
       (* handle some iso on type ? (cf complex C rule for possible implicit
 	 casting) *)
@@ -3672,16 +3673,16 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 		A.SignedT
 		  (signaopt,
 		   Some (A.rewrap basea (A.BaseType (basea1,strings1))))
-		| _ -> failwith "not possible")
+		| _ -> failwith "typeC: signed: base: not possible")
 	| A.MetaType(ida, cstr, keep, inherited) ->
 	    check_constraints cstr ida (B.MetaTypeVal (Ast_c.nQ, tb))
 	      (fun () ->
 		simulate_signed_meta ta basea (Some signaopt) tb baseb ii
 		  (function (basea, Some signaopt) ->
 		    A.SignedT(signaopt,Some basea)
-		    | _ -> failwith "not possible")
+		    | _ -> failwith "typeC: signed: meta: not possible")
 		  )
-	| _ -> failwith "not possible")
+	| _ -> failwith "typeC: signed: not possible")
     | A.SignedT (signa,None),   (B.BaseType baseb, ii) ->
         let signbopt, iibaseb = split_signb_baseb_ii (baseb, ii) in
         (match iibaseb, baseb with
@@ -4177,15 +4178,16 @@ and attribute_list attras attrbs =
     None -> return (None, attrbs)
   | Some attras ->
       let match_dots ea = None in
-      let build_dots (mcode, optexpr) = failwith "not possible" in
+      let build_dots (mcode, optexpr) =
+        failwith "attribute: build dots: not possible" in
       let match_comma ea = None in
       let build_comma ia1 = failwith "not posible" in
       let match_metalist ea = None in
       let build_metalist _ (ida,leninfo,keep,inherited) =
 	failwith "not possible" in
-      let mktermval v = failwith "not possible" in
+      let mktermval v = failwith "attribute: mk term val: not possible" in
       let special_cases ea eas ebs = None in
-      let no_ii x = failwith "not possible" in
+      let no_ii x = failwith "attribute: no ii: not possible" in
       list_matcher match_dots build_dots match_comma build_comma
 	match_metalist build_metalist mktermval
 	special_cases attribute X.distrf_attrs

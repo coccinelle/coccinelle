@@ -14,7 +14,7 @@ module CTL = Ast_ctl
 let mcode r (_,_,kind,_) =
   match kind with
     Ast.MINUS(_,_,_,_) -> true
-  | Ast.PLUS _ -> failwith "not possible"
+  | Ast.PLUS _ -> failwith "mcode: PLUS not possible"
   | Ast.CONTEXT(_,info) -> not (info = Ast.NOTHING)
 
 let no_mcode _ _ = false
