@@ -976,8 +976,23 @@ let rec find_ifdef_funheaders = function
 
 (* ?? *)
 let adjust_inifdef_include xs =
+  let is_ifndef_nop xxs = function
+      x::xs ->
+	(match x.tok with
+	  Parser_c.TIfdef (Ast_c.Gifndef vr,_,_) ->
+	    (match xxs with
+	      ((NotIfdefLine (def::nm::_))::_)::_ ->
+		(match (def.tok,nm.tok) with
+		  (Parser_c.TDefine _,TIdentDefine(dnm,_)) -> vr = dnm
+		| _ -> false)
+	    | _ -> false)
+	| _ -> false)
+    | _ -> false in
   xs +> List.iter (function
   | NotIfdefLine _ -> ()
+  | Ifdef (xxs, info_ifdef_stmt) | Ifdefbool (_, xxs, info_ifdef_stmt)
+      when is_ifndef_nop xxs info_ifdef_stmt
+    -> () (* ifndef followed by define of same variable, often in .h *)
   | Ifdef (xxs, info_ifdef_stmt) | Ifdefbool (_, xxs, info_ifdef_stmt) ->
       xxs +> List.iter (iter_token_ifdef (fun tokext ->
         match tokext.tok with
