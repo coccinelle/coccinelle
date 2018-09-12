@@ -71,7 +71,7 @@ make spatch tools/spgen/source/spgen >/dev/null
 cp spatch $WORKING_DIRECTORY/$PACKAGE
 cp tools/spgen/source/spgen $WORKING_DIRECTORY/$PACKAGE/tools/spgen/source
 cp ocaml/*.cmi ocaml/*.cmo $WORKING_DIRECTORY/$PACKAGE/ocaml
-tar -czf $PACKAGE-bytecode-`ocamlc -vnum`.tar.gz -C $WORKING_DIRECTORY $PACKAGE
+tar -czf $PACKAGE-bin-bytecode-`ocamlc -vnum`.tar.gz -C $WORKING_DIRECTORY $PACKAGE
 rm -rf $WORKING_DIRECTORY/$PACKAGE
 make clean >/dev/null
 mkdir $WORKING_DIRECTORY/$PACKAGE
