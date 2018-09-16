@@ -341,7 +341,9 @@ pyml_wrap(PyObject *object, bool steal)
     if (object == Python__Py_FalseStruct) {
         CAMLreturn(Val_int(CODE_FALSE));
     }
-    unsigned long flags = object->ob_type->tp_flags;
+    unsigned long flags =
+        ((struct _typeobject *) pyobjectdescr(pyobjectdescr(object)->ob_type))
+        ->tp_flags;
     if (flags & Py_TPFLAGS_TUPLE_SUBCLASS
         && Python_PySequence_Length(object) == 0) {
         CAMLreturn(Val_int(CODE_TUPLE_EMPTY));
@@ -580,13 +582,21 @@ pyml_assert_python3()
 }
 
 void
-pyml_check_symbol_available(void *symbol)
+pyml_check_symbol_available(void *symbol, char *symbol_name)
 {
     if (!symbol) {
         char *fmt = "Symbol unavailable with this version of Python: %s.\n";
-        ssize_t size = snprintf(NULL, 0, fmt, symbol);
+        ssize_t size = snprintf(NULL, 0, fmt, symbol_name);
+        if (size < 0) {
+          failwith("Symbol unavailable with this version of Python.\n");
+          return;
+        }
         char *msg = xmalloc(size + 1);
-        snprintf(msg, size + 1, fmt, symbol);
+        size = snprintf(msg, size + 1, fmt, symbol_name);
+        if (size < 0) {
+          failwith("Symbol unavailable with this version of Python.\n");
+          return;
+        }
         failwith(msg);
     }
 }
@@ -626,10 +636,12 @@ pyml_wrap_closure(value docstring, value closure)
     CAMLreturn(pyml_wrap(f, true));
 }
 
+int debug_build;
+
 CAMLprim value
-py_load_library(value filename_ocaml)
+py_load_library(value filename_ocaml, value debug_build_ocaml)
 {
-    CAMLparam1(filename_ocaml);
+    CAMLparam2(filename_ocaml, debug_build_ocaml);
     if (Is_block(filename_ocaml)) {
         char *filename = String_val(Field(filename_ocaml, 0));
         library = open_library(filename);
@@ -692,8 +704,72 @@ py_load_library(value filename_ocaml)
     }
 #include "pyml_dlsyms.inc"
     Python_Py_Initialize();
+    if (Is_block(debug_build_ocaml)) {
+        debug_build = Int_val(Field(debug_build_ocaml, 0));
+    }
+    else {
+        PyObject *sysconfig = Python_PyImport_ImportModule("sysconfig");
+        PyObject *get_config_var =
+            Python_PyObject_GetAttrString(sysconfig, "get_config_var");
+        PyObject *args;
+        PyObject *py_debug;
+        PyObject *debug_build_py;
+        char *py_debug_str = "Py_DEBUG";
+        if (version_major >= 3) {
+            py_debug = Python3_PyUnicode_FromStringAndSize(py_debug_str, 8);
+        }
+        else {
+            py_debug = Python2_PyString_FromStringAndSize(py_debug_str, 8);
+        }
+        if (!py_debug) {
+            failwith("py_debug");
+        }
+        args = Python_PyTuple_New(1);
+        if (!args) {
+            failwith("PyTuple_New");
+        }
+        if (Python_PyTuple_SetItem(args, 0, py_debug)) {
+            failwith("PyTuple_SetItem");
+        }
+        debug_build_py =
+            Python_PyEval_CallObjectWithKeywords(get_config_var, args, NULL);
+        if (!debug_build_py) {
+            failwith("PyEval_CallObjectWithKeywords");
+        }
+        if (version_major >= 3) {
+            debug_build = Python_PyLong_AsLong(debug_build_py);
+        }
+        else {
+            debug_build = Python2_PyInt_AsLong(debug_build_py);
+        }
+        if (debug_build == -1) {
+            failwith("AsLong");
+        }
+    }
     tuple_empty = Python_PyTuple_New(0);
     CAMLreturn(Val_unit);
+}
+
+struct PyObjectDebug {
+    PyObject *_ob_next;           \
+    PyObject *_ob_prev;
+    PyObjectDescr descr;
+};
+
+PyObjectDescr *pyobjectdescr(PyObject *obj) {
+    if (debug_build) {
+        return &((struct PyObjectDebug *) obj)->descr;
+    }
+    else {
+        return (PyObjectDescr *) obj;
+    }
+}
+
+CAMLprim value
+py_is_debug_build()
+{
+    CAMLparam0();
+    CAMLreturn(Val_int(debug_build));
 }
 
 CAMLprim value
@@ -794,9 +870,11 @@ pytype(value object_ocaml)
     if (!object) {
         CAMLreturn(Val_int(Null));
     }
-    unsigned long flags = object->ob_type->tp_flags;
+    PyObject *ob_type = pyobjectdescr(object)->ob_type;
+    struct _typeobject *typeobj = (struct _typeobject *) pyobjectdescr(ob_type);
+    unsigned long flags = typeobj->tp_flags;
     int result;
-    if ((PyObject *) object->ob_type == Python_PyBool_Type) {
+    if (ob_type == Python_PyBool_Type) {
         result = Bool;
     }
     else if (flags & Py_TPFLAGS_BYTES_SUBCLASS) {
@@ -816,10 +894,8 @@ pytype(value object_ocaml)
     else if (flags & Py_TPFLAGS_DICT_SUBCLASS) {
         result = Dict;
     }
-    else if (
-        (PyObject *) object->ob_type == Python_PyFloat_Type ||
-        Python_PyType_IsSubtype(
-            (PyObject *) object->ob_type, Python_PyFloat_Type)) {
+    else if (ob_type == Python_PyFloat_Type ||
+        Python_PyType_IsSubtype(ob_type, Python_PyFloat_Type)) {
         result = Float;
     }
     else if (flags & Py_TPFLAGS_LIST_SUBCLASS) {
@@ -831,10 +907,8 @@ pytype(value object_ocaml)
     else if (flags & Py_TPFLAGS_LONG_SUBCLASS) {
         result = Long;
     }
-    else if (
-        (PyObject *) object->ob_type == Python_PyModule_Type ||
-        Python_PyType_IsSubtype(
-            (PyObject *) object->ob_type, Python_PyModule_Type)) {
+    else if (ob_type == Python_PyModule_Type ||
+        Python_PyType_IsSubtype(ob_type, Python_PyModule_Type)) {
         result = Module;
     }
     else if (object == Python__Py_NoneStruct) {
@@ -849,8 +923,8 @@ pytype(value object_ocaml)
     else if (flags & Py_TPFLAGS_UNICODE_SUBCLASS) {
         result = Unicode;
     }
-    else if (object->ob_type->tp_iternext != NULL &&
-        object->ob_type->tp_iternext != &Python27__PyObject_NextNotImplemented) {
+    else if (typeobj->tp_iternext != NULL &&
+        typeobj->tp_iternext != &Python27__PyObject_NextNotImplemented) {
         result = Iter;
     }
     else {
@@ -1045,7 +1119,7 @@ pyrefcount(value pyobj)
 {
     CAMLparam1(pyobj);
     PyObject *obj = pyml_unwrap(pyobj);
-    CAMLreturn(Val_int(obj->ob_refcnt));
+    CAMLreturn(Val_int(pyobjectdescr(obj)->ob_refcnt));
 }
 
 static value

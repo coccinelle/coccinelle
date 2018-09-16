@@ -48,26 +48,37 @@ echo $VERSION > version
 if ! git rev-parse $VERSION &>/dev/null; then
     git add version
     git add setup/Makefile.in
-    git commit -m "Release $VERSION"
+    git commit -m "Release $VERSION" || true
     git tag -a -m "Release $VERSION" $VERSION
 fi
 
 ./configure >/dev/null
 make docs >/dev/null
-make spatch spatch.opt tools/spgen/source/spgen tools/spgen/source/spgen.opt \
-  >/dev/null
 mkdir $WORKING_DIRECTORY/$PACKAGE
-cp spatch spatch.opt $WORKING_DIRECTORY/$PACKAGE
-mkdir -p $WORKING_DIRECTORY/$PACKAGE/tools/spgen/source
-cp tools/spgen/source/spgen tools/spgen/source/spgen.opt \
-   $WORKING_DIRECTORY/$PACKAGE/tools/spgen/source
-mkdir $WORKING_DIRECTORY/$PACKAGE/ocaml
-cp ocaml/*.cmi ocaml/*.cmx $WORKING_DIRECTORY/$PACKAGE/ocaml
-make distclean >/dev/null KEEP_GENERATED=1 KEEP_CONFIG=1
 cp -r * $WORKING_DIRECTORY/$PACKAGE
+rm -f $WORKING_DIRECTORY/$PACKAGE/*.tar.gz
+make spatch.opt tools/spgen/source/spgen.opt >/dev/null
+cp spatch.opt $WORKING_DIRECTORY/$PACKAGE
+cp tools/spgen/source/spgen.opt $WORKING_DIRECTORY/$PACKAGE/tools/spgen/source
+cp ocaml/*.cmi ocaml/*.cmx $WORKING_DIRECTORY/$PACKAGE/ocaml
 tar -czf $PACKAGE-bin-x86.tar.gz -C $WORKING_DIRECTORY $PACKAGE
-rm $WORKING_DIRECTORY/$PACKAGE/{spatch,spatch.opt,tools/spgen/source/spgen,tools/spgen/source/spgen.opt,ocaml/*.cmi,ocaml/*.cmx}
+rm -rf $WORKING_DIRECTORY/$PACKAGE
+make clean >/dev/null
+mkdir $WORKING_DIRECTORY/$PACKAGE
+cp -r * $WORKING_DIRECTORY/$PACKAGE
+rm -f $WORKING_DIRECTORY/$PACKAGE/*.tar.gz
+make spatch tools/spgen/source/spgen >/dev/null
+cp spatch $WORKING_DIRECTORY/$PACKAGE
+cp tools/spgen/source/spgen $WORKING_DIRECTORY/$PACKAGE/tools/spgen/source
+cp ocaml/*.cmi ocaml/*.cmo $WORKING_DIRECTORY/$PACKAGE/ocaml
+tar -czf $PACKAGE-bin-bytecode-`ocamlc -vnum`.tar.gz -C $WORKING_DIRECTORY $PACKAGE
+rm -rf $WORKING_DIRECTORY/$PACKAGE
+make clean >/dev/null
+mkdir $WORKING_DIRECTORY/$PACKAGE
+cp -r * $WORKING_DIRECTORY/$PACKAGE
+rm -f $WORKING_DIRECTORY/$PACKAGE/*.tar.gz
 tar -czf $PACKAGE.tar.gz -C $WORKING_DIRECTORY $PACKAGE
+rm -rf $WORKING_DIRECTORY/$PACKAGE
 if [ -d "$WEBSITE" ]; then
    cp $PACKAGE.tar.gz $WEBSITE
    cp $PACKAGE-bin-x86.tar.gz $WEBSITE

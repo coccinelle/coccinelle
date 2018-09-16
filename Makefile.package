@@ -1,0 +1,21 @@
+
+LINK_BYTECODE :=
+LINK_NATIVE :=
+
+define find_package
+$(package)_PATH := $$(shell ocamlfind query $(package) 2>/dev/null)
+BYTECODE_MODULE := \
+	$$(wildcard $$(addsuffix /$(package).cma,$$($(package)_PATH)))
+LINK_BYTECODE += \
+	$$(patsubst %,$$(patsubst %,-I % $(package).cma,$$($(package)_PATH)), \
+		$$(BYTECODE_MODULE))
+NATIVE_MODULE := \
+	$$(wildcard $$(addsuffix /$(package).cmxa,$$($(package)_PATH)))
+LINK_NATIVE += \
+	$$(patsubst %,$$(patsubst %,-I % $(package).cmxa,$$($(package)_PATH)), \
+		$$(NATIVE_MODULE))
+endef
+
+ifneq ($(OCAMLFIND),)
+$(foreach package,result seq uchar,$(eval $(find_package)))
+endif

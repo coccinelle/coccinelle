@@ -1,26 +1,13 @@
-let option_bind option f =
-  match option with
-    None -> None
-  | Some x -> f x
+open Stdcompat
 
 let option_find f x =
   try Some (f x)
   with Not_found -> None
 
-let option_or option f =
-  match option with
-    Some _ -> option
-  | None -> f ()
-
 let option_unwrap option =
   match option with
     None -> raise Not_found
   | Some result -> result
-
-let option_unwrap_default default option =
-  match option with
-    None -> default
-  | Some x -> x
 
 let substring_between string before after =
   String.sub string before (after - before)
@@ -66,15 +53,6 @@ let input_lines channel =
   with End_of_file ->
     List.rev !accu
 
-let try_finally f arg finally finally_arg =
-  try
-    let result = f arg in
-    finally finally_arg;
-    result
-  with e ->
-    finally finally_arg;
-    raise e
-
 let read_and_close channel f arg =
   try
     let result = f arg in
@@ -95,28 +73,34 @@ let write_and_close channel f arg =
 
 let with_temp_file contents f =
   let (file, channel) = Filename.open_temp_file "pyml_tests" ".py" in
-  try_finally begin fun () ->
+  protect begin fun () ->
     write_and_close channel (output_string channel) contents;
     let channel = open_in file in
     read_and_close channel (f file) channel
-  end ()
-    Sys.remove file
+  end
+  ~finally:(fun () -> Sys.remove file)
 
 let with_pipe f =
   let (read, write) = Unix.pipe () in
   let in_channel = Unix.in_channel_of_descr read
   and out_channel = Unix.out_channel_of_descr write in
-  try_finally (f in_channel) out_channel
-    (fun () ->
-      close_in_noerr in_channel;
-      close_out_noerr out_channel) ()
+  protect begin fun () ->
+    f in_channel out_channel
+  end
+  ~finally:begin fun () ->
+    close_in_noerr in_channel;
+    close_out_noerr out_channel
+  end
 
 let with_stdin_from channel f arg =
   let stdin_backup = Unix.dup Unix.stdin in
   Unix.dup2 (Unix.descr_of_in_channel channel) Unix.stdin;
-  try_finally
+  protect begin fun () ->
     f arg
-    (Unix.dup2 stdin_backup) Unix.stdin
+  end
+  ~finally:begin fun () ->
+    Unix.dup2 stdin_backup Unix.stdin
+  end
 
 let with_channel_from_string s f =
   with_pipe begin fun in_channel out_channel ->

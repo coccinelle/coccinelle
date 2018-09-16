@@ -1,6 +1,33 @@
-diff -ruN menhir-20171013/src/Engine.ml menhir-20171013-b/src/Engine.ml
---- menhir-20171013/src/Engine.ml	2017-10-13 18:14:06.000000000 +0200
-+++ menhir-20171013-b/src/Engine.ml	2017-11-29 13:33:12.000000000 +0100
+diff -Naur menhir-20171013/src/cmly_read.ml menhir-20171013-b/src/cmly_read.ml
+--- menhir-20171013/src/cmly_read.ml	2018-08-31 14:44:19.958046470 +0200
++++ menhir-20171013-b/src/cmly_read.ml	2018-08-31 14:45:36.174860715 +0200
+@@ -11,6 +11,8 @@
+ (*                                                                            *)
+ (******************************************************************************)
+ 
++open Stdcompat
++
+ open Cmly_format
+ open Cmly_api
+ 
+@@ -37,11 +39,11 @@
+ 
+ let read (filename : string) : grammar =
+   let ic = open_in_bin filename in
+-  match read ic with
+-  | x ->
++  match try Ok (read ic) with exn -> Pervasives.Error exn with
++  | Ok x ->
+       close_in_noerr ic;
+       x
+-  | exception exn ->
++  | Pervasives.Error exn ->
+       close_in_noerr ic;
+       raise exn
+ 
+diff -Naur menhir-20171013/src/Engine.ml menhir-20171013-b/src/Engine.ml
+--- menhir-20171013/src/Engine.ml	2018-08-31 14:44:19.958046470 +0200
++++ menhir-20171013-b/src/Engine.ml	2018-08-31 14:45:36.174860715 +0200
 @@ -252,8 +252,8 @@
  
      (* This [match/with/exception] construct requires OCaml 4.02. *)
@@ -64,21 +91,45 @@ diff -ruN menhir-20171013/src/Engine.ml menhir-20171013-b/src/Engine.ml
  
    (* [equal] compares the stacks for physical equality, and compares the
       current states via their numbers (this seems cleaner than using OCaml's
-diff -ruN menhir-20171013/src/IO.ml menhir-20171013-b/src/IO.ml
---- menhir-20171013/src/IO.ml	2017-10-13 18:14:06.000000000 +0200
-+++ menhir-20171013-b/src/IO.ml	2017-11-29 12:58:11.000000000 +0100
-@@ -13,6 +13,8 @@
- 
- (* Input-output utilities. *)
+diff -Naur menhir-20171013/src/grammarFunctor.ml menhir-20171013-b/src/grammarFunctor.ml
+--- menhir-20171013/src/grammarFunctor.ml	2018-08-31 14:44:19.958046470 +0200
++++ menhir-20171013-b/src/grammarFunctor.ml	2018-08-31 14:45:36.174860715 +0200
+@@ -11,6 +11,8 @@
+ (*                                                                            *)
+ (******************************************************************************)
  
 +open Stdcompat
 +
- (* ------------------------------------------------------------------------- *)
- (* [try/finally] has the same semantics as in Java. *)
+ open UnparameterizedSyntax
+ open Syntax
+ open Positions
+diff -Naur menhir-20171013/src/grammarFunctor.mli menhir-20171013-b/src/grammarFunctor.mli
+--- menhir-20171013/src/grammarFunctor.mli	2018-08-31 14:44:19.958046470 +0200
++++ menhir-20171013-b/src/grammarFunctor.mli	2018-08-31 14:45:36.174860715 +0200
+@@ -127,7 +127,11 @@
  
-diff -ruN menhir-20171013/src/IncrementalEngine.ml menhir-20171013-b/src/IncrementalEngine.ml
---- menhir-20171013/src/IncrementalEngine.ml	2017-10-13 18:14:06.000000000 +0200
-+++ menhir-20171013-b/src/IncrementalEngine.ml	2017-11-29 13:10:55.000000000 +0100
+ module NonterminalMap : GMap.S with type key = Nonterminal.t
+ 
+-module NonterminalSet = NonterminalMap.Domain
++module NonterminalSet : sig
++  include module type of struct
++    include NonterminalMap.Domain
++  end
++end
+ 
+ (* ------------------------------------------------------------------------ *)
+ (* Terminals. *)
+@@ -319,6 +323,6 @@
+ 
+   (* All of the operations documented in [Map] are available. *)
+ 
+-  include Map.S with type key = Symbol.t
++  include Stdcompat.Map.S with type key = Symbol.t
+ 
+   val domain: 'a t -> key list
+diff -Naur menhir-20171013/src/IncrementalEngine.ml menhir-20171013-b/src/IncrementalEngine.ml
+--- menhir-20171013/src/IncrementalEngine.ml	2018-08-31 14:44:19.958046470 +0200
++++ menhir-20171013-b/src/IncrementalEngine.ml	2018-08-31 14:45:36.174860715 +0200
 @@ -210,8 +210,13 @@
       for some type ['a], the state [s] has type ['a lr1state] and the value [v]
       has type ['a]. In other words, the type [element] is an existential type. *)
@@ -120,9 +171,9 @@ diff -ruN menhir-20171013/src/IncrementalEngine.ml menhir-20171013-b/src/Increme
  
  end
  
-diff -ruN menhir-20171013/src/InspectionTableInterpreter.ml menhir-20171013-b/src/InspectionTableInterpreter.ml
---- menhir-20171013/src/InspectionTableInterpreter.ml	2017-10-13 18:14:06.000000000 +0200
-+++ menhir-20171013-b/src/InspectionTableInterpreter.ml	2017-11-29 13:11:59.000000000 +0100
+diff -Naur menhir-20171013/src/InspectionTableInterpreter.ml menhir-20171013-b/src/InspectionTableInterpreter.ml
+--- menhir-20171013/src/InspectionTableInterpreter.ml	2018-08-31 14:44:19.958046470 +0200
++++ menhir-20171013-b/src/InspectionTableInterpreter.ml	2018-08-31 14:45:36.174860715 +0200
 @@ -28,11 +28,16 @@
       where these types are defined. *)
  
@@ -144,9 +195,129 @@ diff -ruN menhir-20171013/src/InspectionTableInterpreter.ml menhir-20171013-b/sr
  
  end
  
-diff -ruN menhir-20171013/src/LRijkstra.ml menhir-20171013-b/src/LRijkstra.ml
---- menhir-20171013/src/LRijkstra.ml	2017-10-13 18:14:06.000000000 +0200
-+++ menhir-20171013-b/src/LRijkstra.ml	2017-11-29 13:16:41.000000000 +0100
+diff -Naur menhir-20171013/src/interpret.ml menhir-20171013-b/src/interpret.ml
+--- menhir-20171013/src/interpret.ml	2018-08-31 14:44:19.958046470 +0200
++++ menhir-20171013-b/src/interpret.ml	2018-08-31 14:45:36.178860759 +0200
+@@ -11,6 +11,8 @@
+ (*                                                                            *)
+ (******************************************************************************)
+ 
++open Stdcompat
++
+ module I = Invariant (* artificial dependency *)
+ module D = Default   (* artificial dependency *)
+ 
+@@ -508,12 +510,15 @@
+          loop (Comment comments :: accu) segments
+     | (Segment, _, lexbuf) :: segments ->
+         (* Read a series of located sentences. *)
+-        match SentenceParser.entry SentenceLexer.lex lexbuf with
+-        | exception Parsing.Parse_error ->
++        match
++          try Some (SentenceParser.entry SentenceLexer.lex lexbuf)
++          with Parsing.Parse_error -> None
++        with
++        | None ->
+             Error.error
+               [Positions.cpos lexbuf]
+               "ill-formed sentence."
+-        | sentences ->
++        | Some sentences ->
+             (* In principle, we should now find a segment of whitespace
+                followed with a segment of text. By construction, the two
+                kinds of segments alternate. *)
+@@ -549,14 +554,14 @@
+     List.fold_left (fun table (sentences_and_states, message) ->
+       List.fold_left (fun table (sentence2, target) ->
+         let s = target2state target in
+-        match Lr1.NodeMap.find s table with
+-        | sentence1, _ ->
++        match Lr1.NodeMap.find_opt s table with
++        | Some (sentence1, _) ->
+             if detect_redundancy then
+               Error.signal (fst sentence1 @ fst sentence2)
+                    "these sentences both cause an error in state %d."
+                    (Lr1.number s);
+             table
+-        | exception Not_found ->
++        | None ->
+             Lr1.NodeMap.add s (sentence2, message) table
+       ) table sentences_and_states
+     ) Lr1.NodeMap.empty runs
+diff -Naur menhir-20171013/src/IO.ml menhir-20171013-b/src/IO.ml
+--- menhir-20171013/src/IO.ml	2018-08-31 14:44:19.958046470 +0200
++++ menhir-20171013-b/src/IO.ml	2018-08-31 14:45:36.174860715 +0200
+@@ -13,6 +13,8 @@
+ 
+ (* Input-output utilities. *)
+ 
++open Stdcompat
++
+ (* ------------------------------------------------------------------------- *)
+ (* [try/finally] has the same semantics as in Java. *)
+ 
+diff -Naur menhir-20171013/src/keyword.ml menhir-20171013-b/src/keyword.ml
+--- menhir-20171013/src/keyword.ml	2018-08-31 14:44:19.958046470 +0200
++++ menhir-20171013-b/src/keyword.ml	2018-08-31 14:45:36.178860759 +0200
+@@ -15,6 +15,8 @@
+    that help deal with the keywords that we recognize within
+    semantic actions. *)
+ 
++open Stdcompat
++
+ (* ------------------------------------------------------------------------- *)
+ (* Types. *)
+ 
+diff -Naur menhir-20171013/src/keyword.mli menhir-20171013-b/src/keyword.mli
+--- menhir-20171013/src/keyword.mli	2018-08-31 14:44:19.958046470 +0200
++++ menhir-20171013-b/src/keyword.mli	2018-08-31 14:45:36.178860759 +0200
+@@ -61,6 +61,6 @@
+ (* Sets of keywords. *)
+ 
+ module KeywordSet : sig
+-  include Set.S with type elt = keyword
++  include Stdcompat.Set.S with type elt = keyword
+   val map: (keyword -> keyword) -> t -> t
+ end
+diff -Naur menhir-20171013/src/lexer.mll menhir-20171013-b/src/lexer.mll
+--- menhir-20171013/src/lexer.mll	2018-08-31 14:44:19.958046470 +0200
++++ menhir-20171013-b/src/lexer.mll	2018-08-31 14:45:36.178860759 +0200
+@@ -13,6 +13,8 @@
+ 
+ {
+ 
++open Stdcompat
++
+ open Lexing
+ open Parser
+ open Positions
+diff -Naur menhir-20171013/src/lr1.ml menhir-20171013-b/src/lr1.ml
+--- menhir-20171013/src/lr1.ml	2018-08-31 14:44:19.958046470 +0200
++++ menhir-20171013-b/src/lr1.ml	2018-08-31 14:45:36.178860759 +0200
+@@ -11,6 +11,8 @@
+ (*                                                                            *)
+ (******************************************************************************)
+ 
++open Stdcompat
++
+ open Grammar
+ module S = Slr (* artificial dependency; ensures that [Slr] runs first *)
+ 
+diff -Naur menhir-20171013/src/lr1.mli menhir-20171013-b/src/lr1.mli
+--- menhir-20171013/src/lr1.mli	2018-08-31 14:44:19.958046470 +0200
++++ menhir-20171013-b/src/lr1.mli	2018-08-31 14:45:36.178860759 +0200
+@@ -36,7 +36,7 @@
+ 
+ module NodeSet : Set.S with type elt = node
+ 
+-module NodeMap : Map.S with type key = node
++module NodeMap : Stdcompat.Map.S with type key = node
+ 
+ (* These are the automaton's entry states, indexed by the start productions. *)
+ 
+diff -Naur menhir-20171013/src/LRijkstra.ml menhir-20171013-b/src/LRijkstra.ml
+--- menhir-20171013/src/LRijkstra.ml	2018-08-31 14:44:19.958046470 +0200
++++ menhir-20171013-b/src/LRijkstra.ml	2018-08-31 14:45:36.174860715 +0200
 @@ -11,6 +11,8 @@
  (*                                                                            *)
  (******************************************************************************)
@@ -245,193 +416,9 @@ diff -ruN menhir-20171013/src/LRijkstra.ml menhir-20171013-b/src/LRijkstra.ml
  
          (* 1b. The transition exists in the trie, and [sym] is in fact a
             nonterminal symbol [nt]. *)
-diff -ruN menhir-20171013/src/PackedIntArray.ml menhir-20171013-b/src/PackedIntArray.ml
---- menhir-20171013/src/PackedIntArray.ml	2017-10-13 18:14:06.000000000 +0200
-+++ menhir-20171013-b/src/PackedIntArray.ml	2017-11-29 13:28:39.000000000 +0100
-@@ -11,6 +11,8 @@
- (*                                                                            *)
- (******************************************************************************)
- 
-+open Stdcompat
-+
- (* A packed integer array is represented as a pair of an integer [k] and
-    a string [s]. The integer [k] is the number of bits per integer that we
-    use. The string [s] is just an array of bits, which is read in 8-bit
-diff -ruN menhir-20171013/src/cmly_read.ml menhir-20171013-b/src/cmly_read.ml
---- menhir-20171013/src/cmly_read.ml	2017-10-13 18:14:06.000000000 +0200
-+++ menhir-20171013-b/src/cmly_read.ml	2017-11-29 15:22:36.000000000 +0100
-@@ -11,6 +11,8 @@
- (*                                                                            *)
- (******************************************************************************)
- 
-+open Stdcompat
-+
- open Cmly_format
- open Cmly_api
- 
-@@ -37,11 +39,11 @@
- 
- let read (filename : string) : grammar =
-   let ic = open_in_bin filename in
--  match read ic with
--  | x ->
-+  match try Ok (read ic) with exn -> Pervasives.Error exn with
-+  | Ok x ->
-       close_in_noerr ic;
-       x
--  | exception exn ->
-+  | Pervasives.Error exn ->
-       close_in_noerr ic;
-       raise exn
- 
-diff -ruN menhir-20171013/src/grammarFunctor.ml menhir-20171013-b/src/grammarFunctor.ml
---- menhir-20171013/src/grammarFunctor.ml	2017-10-13 18:14:06.000000000 +0200
-+++ menhir-20171013-b/src/grammarFunctor.ml	2017-11-29 13:13:49.000000000 +0100
-@@ -11,6 +11,8 @@
- (*                                                                            *)
- (******************************************************************************)
- 
-+open Stdcompat
-+
- open UnparameterizedSyntax
- open Syntax
- open Positions
-diff -ruN menhir-20171013/src/grammarFunctor.mli menhir-20171013-b/src/grammarFunctor.mli
---- menhir-20171013/src/grammarFunctor.mli	2017-10-13 18:14:06.000000000 +0200
-+++ menhir-20171013-b/src/grammarFunctor.mli	2017-11-29 13:26:23.000000000 +0100
-@@ -127,7 +127,11 @@
- 
- module NonterminalMap : GMap.S with type key = Nonterminal.t
- 
--module NonterminalSet = NonterminalMap.Domain
-+module NonterminalSet : sig
-+  include module type of struct
-+    include NonterminalMap.Domain
-+  end
-+end
- 
- (* ------------------------------------------------------------------------ *)
- (* Terminals. *)
-@@ -319,6 +323,6 @@
- 
-   (* All of the operations documented in [Map] are available. *)
- 
--  include Map.S with type key = Symbol.t
-+  include Stdcompat.Map.S with type key = Symbol.t
- 
-   val domain: 'a t -> key list
-
-diff -ruN menhir-20171013/src/interpret.ml menhir-20171013-b/src/interpret.ml
---- menhir-20171013/src/interpret.ml	2017-10-13 18:14:06.000000000 +0200
-+++ menhir-20171013-b/src/interpret.ml	2017-11-29 15:20:35.000000000 +0100
-@@ -11,6 +11,8 @@
- (*                                                                            *)
- (******************************************************************************)
- 
-+open Stdcompat
-+
- module I = Invariant (* artificial dependency *)
- module D = Default   (* artificial dependency *)
- 
-@@ -508,12 +510,15 @@
-          loop (Comment comments :: accu) segments
-     | (Segment, _, lexbuf) :: segments ->
-         (* Read a series of located sentences. *)
--        match SentenceParser.entry SentenceLexer.lex lexbuf with
--        | exception Parsing.Parse_error ->
-+        match
-+          try Some (SentenceParser.entry SentenceLexer.lex lexbuf)
-+          with Parsing.Parse_error -> None
-+        with
-+        | None ->
-             Error.error
-               [Positions.cpos lexbuf]
-               "ill-formed sentence."
--        | sentences ->
-+        | Some sentences ->
-             (* In principle, we should now find a segment of whitespace
-                followed with a segment of text. By construction, the two
-                kinds of segments alternate. *)
-@@ -549,14 +554,14 @@
-     List.fold_left (fun table (sentences_and_states, message) ->
-       List.fold_left (fun table (sentence2, target) ->
-         let s = target2state target in
--        match Lr1.NodeMap.find s table with
--        | sentence1, _ ->
-+        match Lr1.NodeMap.find_opt s table with
-+        | Some (sentence1, _) ->
-             if detect_redundancy then
-               Error.signal (fst sentence1 @ fst sentence2)
-                    "these sentences both cause an error in state %d."
-                    (Lr1.number s);
-             table
--        | exception Not_found ->
-+        | None ->
-             Lr1.NodeMap.add s (sentence2, message) table
-       ) table sentences_and_states
-     ) Lr1.NodeMap.empty runs
-diff -ruN menhir-20171013/src/keyword.ml menhir-20171013-b/src/keyword.ml
---- menhir-20171013/src/keyword.ml	2017-10-13 18:14:06.000000000 +0200
-+++ menhir-20171013-b/src/keyword.ml	2017-11-29 12:58:56.000000000 +0100
-@@ -15,6 +15,8 @@
-    that help deal with the keywords that we recognize within
-    semantic actions. *)
- 
-+open Stdcompat
-+
- (* ------------------------------------------------------------------------- *)
- (* Types. *)
- 
-diff -ruN menhir-20171013/src/keyword.mli menhir-20171013-b/src/keyword.mli
---- menhir-20171013/src/keyword.mli	2017-10-13 18:14:06.000000000 +0200
-+++ menhir-20171013-b/src/keyword.mli	2017-11-29 12:59:25.000000000 +0100
-@@ -61,6 +61,6 @@
- (* Sets of keywords. *)
- 
- module KeywordSet : sig
--  include Set.S with type elt = keyword
-+  include Stdcompat.Set.S with type elt = keyword
-   val map: (keyword -> keyword) -> t -> t
- end
-diff -ruN menhir-20171013/src/lexer.mll menhir-20171013-b/src/lexer.mll
---- menhir-20171013/src/lexer.mll	2017-10-13 18:14:06.000000000 +0200
-+++ menhir-20171013-b/src/lexer.mll	2017-11-29 13:35:38.000000000 +0100
-@@ -13,6 +13,8 @@
- 
- {
- 
-+open Stdcompat
-+
- open Lexing
- open Parser
- open Positions
-diff -ruN menhir-20171013/src/lr1.ml menhir-20171013-b/src/lr1.ml
---- menhir-20171013/src/lr1.ml	2017-10-13 18:14:06.000000000 +0200
-+++ menhir-20171013-b/src/lr1.ml	2017-11-29 13:22:06.000000000 +0100
-@@ -11,6 +11,8 @@
- (*                                                                            *)
- (******************************************************************************)
- 
-+open Stdcompat
-+
- open Grammar
- module S = Slr (* artificial dependency; ensures that [Slr] runs first *)
- 
-diff -ruN menhir-20171013/src/lr1.mli menhir-20171013-b/src/lr1.mli
---- menhir-20171013/src/lr1.mli	2017-10-13 18:14:06.000000000 +0200
-+++ menhir-20171013-b/src/lr1.mli	2017-11-29 13:21:53.000000000 +0100
-@@ -36,7 +36,7 @@
- 
- module NodeSet : Set.S with type elt = node
- 
--module NodeMap : Map.S with type key = node
-+module NodeMap : Stdcompat.Map.S with type key = node
- 
- (* These are the automaton's entry states, indexed by the start productions. *)
- 
-diff -ruN menhir-20171013/src/misc.ml menhir-20171013-b/src/misc.ml
---- menhir-20171013/src/misc.ml	2017-10-13 18:14:06.000000000 +0200
-+++ menhir-20171013-b/src/misc.ml	2017-11-29 12:59:44.000000000 +0100
+diff -Naur menhir-20171013/src/misc.ml menhir-20171013-b/src/misc.ml
+--- menhir-20171013/src/misc.ml	2018-08-31 14:44:19.962046513 +0200
++++ menhir-20171013-b/src/misc.ml	2018-08-31 14:45:36.178860759 +0200
 @@ -11,6 +11,8 @@
  (*                                                                            *)
  (******************************************************************************)
@@ -441,9 +428,9 @@ diff -ruN menhir-20171013/src/misc.ml menhir-20171013-b/src/misc.ml
  let ( $$ ) x f = f x
  
  let unSome = function
-diff -ruN menhir-20171013/src/nonTerminalDefinitionInlining.ml menhir-20171013-b/src/nonTerminalDefinitionInlining.ml
---- menhir-20171013/src/nonTerminalDefinitionInlining.ml	2017-10-13 18:14:06.000000000 +0200
-+++ menhir-20171013-b/src/nonTerminalDefinitionInlining.ml	2017-11-29 13:37:09.000000000 +0100
+diff -Naur menhir-20171013/src/nonTerminalDefinitionInlining.ml menhir-20171013-b/src/nonTerminalDefinitionInlining.ml
+--- menhir-20171013/src/nonTerminalDefinitionInlining.ml	2018-08-31 14:44:19.962046513 +0200
++++ menhir-20171013-b/src/nonTerminalDefinitionInlining.ml	2018-08-31 14:45:36.178860759 +0200
 @@ -11,6 +11,8 @@
  (*                                                                            *)
  (******************************************************************************)
@@ -453,9 +440,21 @@ diff -ruN menhir-20171013/src/nonTerminalDefinitionInlining.ml menhir-20171013-b
  open Keyword
  open UnparameterizedSyntax
  open ListMonad
-diff -ruN menhir-20171013/src/parameterizedGrammar.ml menhir-20171013-b/src/parameterizedGrammar.ml
---- menhir-20171013/src/parameterizedGrammar.ml	2017-10-13 18:14:06.000000000 +0200
-+++ menhir-20171013-b/src/parameterizedGrammar.ml	2017-11-29 13:22:37.000000000 +0100
+diff -Naur menhir-20171013/src/PackedIntArray.ml menhir-20171013-b/src/PackedIntArray.ml
+--- menhir-20171013/src/PackedIntArray.ml	2018-08-31 14:44:19.962046513 +0200
++++ menhir-20171013-b/src/PackedIntArray.ml	2018-08-31 14:45:36.174860715 +0200
+@@ -11,6 +11,8 @@
+ (*                                                                            *)
+ (******************************************************************************)
+ 
++open Stdcompat
++
+ (* A packed integer array is represented as a pair of an integer [k] and
+    a string [s]. The integer [k] is the number of bits per integer that we
+    use. The string [s] is just an array of bits, which is read in 8-bit
+diff -Naur menhir-20171013/src/parameterizedGrammar.ml menhir-20171013-b/src/parameterizedGrammar.ml
+--- menhir-20171013/src/parameterizedGrammar.ml	2018-08-31 14:44:19.962046513 +0200
++++ menhir-20171013-b/src/parameterizedGrammar.ml	2018-08-31 14:45:36.178860759 +0200
 @@ -683,11 +683,11 @@
    (* Instantiate the branches of sym for a particular set of actual
       parameters. *)
@@ -471,21 +470,32 @@ diff -ruN menhir-20171013/src/parameterizedGrammar.ml menhir-20171013-b/src/para
          let nsym = name_of sym actual_parameters in
          (* Check up front if [nsym] is marked, so as to deal with it just once. *)
          if Hashtbl.mem expanded_rules nsym then
-diff -ruN menhir-20171013/src/parserAux.ml menhir-20171013-b/src/parserAux.ml
---- menhir-20171013/src/parserAux.ml	2017-10-13 18:14:06.000000000 +0200
-+++ menhir-20171013-b/src/parserAux.ml	2017-11-29 13:35:12.000000000 +0100
-@@ -11,6 +11,8 @@
+diff -Naur menhir-20171013/src/parserAux.ml menhir-20171013-b/src/parserAux.ml
+--- menhir-20171013/src/parserAux.ml	2018-08-31 14:44:19.962046513 +0200
++++ menhir-20171013-b/src/parserAux.ml	2018-08-31 14:49:08.960484509 +0200
+@@ -11,6 +11,10 @@
  (*                                                                            *)
  (******************************************************************************)
  
++module MenhirOption = Option
++
 +open Stdcompat
 +
  open Positions
  open Syntax
  
-diff -ruN menhir-20171013/src/partialGrammar.ml menhir-20171013-b/src/partialGrammar.ml
---- menhir-20171013/src/partialGrammar.ml	2017-10-13 18:14:06.000000000 +0200
-+++ menhir-20171013-b/src/partialGrammar.ml	2017-11-29 13:36:00.000000000 +0100
+@@ -56,7 +60,7 @@
+ end)
+ 
+ let defined_identifiers (_, ido, _, _) accu =
+-  Option.fold IdSet.add ido accu
++  MenhirOption.fold IdSet.add ido accu
+ 
+ let defined_identifiers (producers : early_producers) =
+   List.fold_right defined_identifiers producers IdSet.empty
+diff -Naur menhir-20171013/src/partialGrammar.ml menhir-20171013-b/src/partialGrammar.ml
+--- menhir-20171013/src/partialGrammar.ml	2018-08-31 14:44:19.962046513 +0200
++++ menhir-20171013-b/src/partialGrammar.ml	2018-08-31 14:45:36.178860759 +0200
 @@ -11,6 +11,8 @@
  (*                                                                            *)
  (******************************************************************************)
@@ -548,9 +558,9 @@ diff -ruN menhir-20171013/src/partialGrammar.ml menhir-20171013-b/src/partialGra
        replace_in_symbol_table symbols symbol kind
  
  let store_used_symbol position tokens symbols symbol =
-diff -ruN menhir-20171013/src/pprint.ml menhir-20171013-b/src/pprint.ml
---- menhir-20171013/src/pprint.ml	2017-10-13 18:14:06.000000000 +0200
-+++ menhir-20171013-b/src/pprint.ml	2017-11-29 13:39:42.000000000 +0100
+diff -Naur menhir-20171013/src/pprint.ml menhir-20171013-b/src/pprint.ml
+--- menhir-20171013/src/pprint.ml	2018-08-31 14:44:19.962046513 +0200
++++ menhir-20171013-b/src/pprint.ml	2018-08-31 14:45:36.178860759 +0200
 @@ -11,6 +11,8 @@
  (*                                                                            *)
  (******************************************************************************)
@@ -560,9 +570,9 @@ diff -ruN menhir-20171013/src/pprint.ml menhir-20171013-b/src/pprint.ml
  (* This is an adaptation of Daan Leijen's [PPrint] library, which itself is
     based on the ideas developed by Philip Wadler in ``A Prettier Printer''.
     For more information, see:
-diff -ruN menhir-20171013/src/printer.ml menhir-20171013-b/src/printer.ml
---- menhir-20171013/src/printer.ml	2017-10-13 18:14:06.000000000 +0200
-+++ menhir-20171013-b/src/printer.ml	2017-11-29 12:57:44.000000000 +0100
+diff -Naur menhir-20171013/src/printer.ml menhir-20171013-b/src/printer.ml
+--- menhir-20171013/src/printer.ml	2018-08-31 14:44:19.962046513 +0200
++++ menhir-20171013-b/src/printer.ml	2018-08-31 14:45:36.178860759 +0200
 @@ -13,6 +13,8 @@
  
  (* A pretty-printer for [IL]. *)
@@ -572,9 +582,9 @@ diff -ruN menhir-20171013/src/printer.ml menhir-20171013-b/src/printer.ml
  open IL
  
  module PreliminaryMake (X : sig
-diff -ruN menhir-20171013/src/referenceInterpreter.ml menhir-20171013-b/src/referenceInterpreter.ml
---- menhir-20171013/src/referenceInterpreter.ml	2017-10-13 18:14:06.000000000 +0200
-+++ menhir-20171013-b/src/referenceInterpreter.ml	2017-11-29 15:08:42.000000000 +0100
+diff -Naur menhir-20171013/src/referenceInterpreter.ml menhir-20171013-b/src/referenceInterpreter.ml
+--- menhir-20171013/src/referenceInterpreter.ml	2018-08-31 14:44:19.962046513 +0200
++++ menhir-20171013-b/src/referenceInterpreter.ml	2018-08-31 14:45:36.178860759 +0200
 @@ -316,8 +316,8 @@
      match E.top env with
      | None ->
@@ -586,9 +596,9 @@ diff -ruN menhir-20171013/src/referenceInterpreter.ml menhir-20171013-b/src/refe
    in
  
    (* Set up a function that delivers tokens one by one. *)
-diff -ruN menhir-20171013/src/stringMap.ml menhir-20171013-b/src/stringMap.ml
---- menhir-20171013/src/stringMap.ml	2017-10-13 18:14:06.000000000 +0200
-+++ menhir-20171013-b/src/stringMap.ml	2017-11-29 13:20:54.000000000 +0100
+diff -Naur menhir-20171013/src/stringMap.ml menhir-20171013-b/src/stringMap.ml
+--- menhir-20171013/src/stringMap.ml	2018-08-31 14:44:19.962046513 +0200
++++ menhir-20171013-b/src/stringMap.ml	2018-08-31 14:45:36.178860759 +0200
 @@ -11,7 +11,7 @@
  (*                                                                            *)
  (******************************************************************************)
@@ -598,9 +608,9 @@ diff -ruN menhir-20171013/src/stringMap.ml menhir-20171013-b/src/stringMap.ml
  
  let cardinal s =
    fold (fun _ _ x -> x + 1) s 0
-diff -ruN menhir-20171013/src/stringMap.mli menhir-20171013-b/src/stringMap.mli
---- menhir-20171013/src/stringMap.mli	2017-10-13 18:14:06.000000000 +0200
-+++ menhir-20171013-b/src/stringMap.mli	2017-11-29 13:20:40.000000000 +0100
+diff -Naur menhir-20171013/src/stringMap.mli menhir-20171013-b/src/stringMap.mli
+--- menhir-20171013/src/stringMap.mli	2018-08-31 14:44:19.962046513 +0200
++++ menhir-20171013-b/src/stringMap.mli	2018-08-31 14:45:36.178860759 +0200
 @@ -11,7 +11,7 @@
  (*                                                                            *)
  (******************************************************************************)
@@ -610,9 +620,9 @@ diff -ruN menhir-20171013/src/stringMap.mli menhir-20171013-b/src/stringMap.mli
  
  val cardinal : 'a t -> int
  
-diff -ruN menhir-20171013/src/unparameterizedPrinter.ml menhir-20171013-b/src/unparameterizedPrinter.ml
---- menhir-20171013/src/unparameterizedPrinter.ml	2017-10-13 18:14:06.000000000 +0200
-+++ menhir-20171013-b/src/unparameterizedPrinter.ml	2017-11-29 13:39:18.000000000 +0100
+diff -Naur menhir-20171013/src/unparameterizedPrinter.ml menhir-20171013-b/src/unparameterizedPrinter.ml
+--- menhir-20171013/src/unparameterizedPrinter.ml	2018-08-31 14:44:19.962046513 +0200
++++ menhir-20171013-b/src/unparameterizedPrinter.ml	2018-08-31 14:45:36.178860759 +0200
 @@ -11,6 +11,8 @@
  (*                                                                            *)
  (******************************************************************************)

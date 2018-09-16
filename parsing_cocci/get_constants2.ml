@@ -150,6 +150,7 @@ let interpret_grep strict x virt =
   | _ -> Some (loop [] x)
 
 let max_cnf = 5
+exception TooMany
 
 let interpret_cocci_git_grep strict x virt =
   (* convert to cnf *)
@@ -178,7 +179,7 @@ let interpret_cocci_git_grep strict x virt =
 	  List.length
 	    (List.filter (function [] | [_] -> false | _ -> true) l) in
 	if icount > max_cnf
-	then [] (* true *)
+	then raise TooMany (* true *)
 	else
 	  (match l with
 	    fst::rest ->
@@ -215,20 +216,18 @@ let interpret_cocci_git_grep strict x virt =
   | False when strict ->
       failwith (false_on_top_err virt)
   | _ ->
-      let orify l = Str.regexp (String.concat "\\|" (List.map wordify l)) in
-      let res1 = orify (atoms [] x) in (* all atoms *)
-      let res = cnf x in
-      let res = optimize res in
-      let res = Cocci_grep.split res in
-      let res2 = List.map orify res in (* atoms in conjunction *)
-      (*List.iter
-	(function clause ->
-	  Printf.printf "%s\n" (String.concat " " clause))
-	res;*)
-      let res3 =
-	List.map (function x -> "\\( -e "^(String.concat " -e " x)^" \\)")
-	  res in
-      Some (res1,res2,res3)
+      try
+	let orify l = Str.regexp (String.concat "\\|" (List.map wordify l)) in
+	let res1 = orify (atoms [] x) in (* all atoms *)
+	let res = cnf x in
+	let res = optimize res in
+	let res = Cocci_grep.split res in
+	let res2 = List.map orify res in (* atoms in conjunction *)
+	let res3 =
+	  List.map (function x -> "\\( -e "^(String.concat " -e " x)^" \\)")
+	    res in
+	Some (res1,res2,res3)
+      with TooMany -> None
 
 let interpret_idutils = function
     True -> None

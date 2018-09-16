@@ -242,6 +242,8 @@ endif
 
 MKDIR_P := mkdir -p
 
+include Makefile.package
+
 .PHONY : all
 all : \
 	$(foreach tool,$(TOOLS),$(PREFIX_$(tool))$(tool)$(TOOLS_SUFFIX)) \
@@ -583,6 +585,7 @@ clean : clean-$(library)
 clean-$(library) :
 	$(SHOW_CLEAN) "$(library)"
 	@rm -f $(library)/$(library).cma $(library)/$(library).cmxa \
+	       $(library)/$(library).a \
 		$(foreach sourcefile,$(SOURCEFILES_$(library)),\
 			$(clean_sourcefile)) \
 		$(patsubst %.mll,%.ml,$(filter %.mll,\
@@ -624,13 +627,13 @@ $(PREFIX_$(tool))$(tool) : \
 		$(foreach library,$(LIBRARIES_$(tool)),\
 			$(library)/$(library).cma) \
 		$(addsuffix .cmo,$(basename $(SOURCEFILES_$(tool))))
-	$$(RUN_OCAMLC_O) -custom $(LIBS_$(tool):=.cma) $$^ -o $$@
+	$$(RUN_OCAMLC_O) -custom $(LINK_BYTECODE) $(LIBS_$(tool):=.cma) $$^ -o $$@
 
 $(PREFIX_$(tool))$(tool).opt : \
 		$(foreach library,$(LIBRARIES_$(tool)),\
 			$(library)/$(library).cmxa) \
 		$(addsuffix .cmx,$(basename $(SOURCEFILES_$(tool))))
-	$$(RUN_OCAMLOPT_O) $(LIBS_$(tool):=.cmxa) $$^ -o $$@
+	$$(RUN_OCAMLOPT_O) $(LINK_NATIVE) $(LIBS_$(tool):=.cmxa) $$^ -o $$@
 endef
 $(foreach tool,$(TOOLS),$(eval $(foreach_tool)))
 

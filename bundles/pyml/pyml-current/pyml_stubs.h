@@ -14,15 +14,19 @@ typedef ssize_t Py_ssize_t;
 #define PyObject_HEAD                   \
     _PyObject_HEAD_EXTRA                \
     Py_ssize_t ob_refcnt;               \
-    struct _typeobject *ob_type;
+    PyObject *ob_type;
+
+typedef void PyObject;
 
 typedef struct {
     Py_ssize_t ob_refcnt;
-    struct _typeobject *ob_type;
-} PyObject;
+    PyObject *ob_type;
+} PyObjectDescr;
+
+PyObjectDescr *pyobjectdescr(PyObject *obj);
 
 typedef struct {
-    PyObject ob_base;
+    PyObjectDescr ob_base;
     Py_ssize_t ob_size;
 } PyVarObject;
 
@@ -159,20 +163,24 @@ void **
 pyml_get_pyarray_api(PyObject *c_api);
 
 #define Py_INCREF(op)                                            \
-    (((PyObject *)(op))->ob_refcnt++)
+    ((pyobjectdescr(op))->ob_refcnt++)
 
 #define Py_XINCREF(op)                                           \
     do {                                                         \
-        PyObject *_py_xincref_tmp = (PyObject *)(op);            \
+        PyObjectDescr *_py_xincref_tmp =                         \
+            pyobjectdescr((PyObject *)(op));                     \
         if (_py_xincref_tmp != NULL)                             \
             Py_INCREF(_py_xincref_tmp);                          \
     } while (0)
 
 #define Py_DECREF(op)                                            \
     do {                                                         \
-        PyObject *_py_decref_tmp = (PyObject *)(op);             \
+        PyObjectDescr *_py_decref_tmp =                          \
+            pyobjectdescr((PyObject *)(op));                     \
         if (--(_py_decref_tmp)->ob_refcnt == 0)                  \
-            _py_decref_tmp->ob_type->tp_dealloc(_py_decref_tmp); \
+            ((struct _typeobject *)                              \
+             pyobjectdescr(_py_decref_tmp->ob_type))             \
+                ->tp_dealloc(op);                                \
     } while (0)
 
 #endif /* _PYML_STUBS_H_ */

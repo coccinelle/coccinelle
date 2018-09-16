@@ -2,12 +2,16 @@
 
 (** Call [initialize ()] first. *)
 
-val initialize: ?interpreter:string -> ?version:int -> ?minor:int ->
-  ?verbose:bool -> unit -> unit
-(** [initialize ~interpreter ~version ~minor ~verbose ()] finds and loads the
-    Python library.
+val initialize: ?library_name:string -> ?interpreter:string -> ?version:int ->
+  ?minor:int -> ?verbose:bool -> ?debug_build:bool -> unit -> unit
+(** [initialize ~interpreter ~version ~minor ~verbose ~debug_build ()] finds
+    and loads the Python library.
     This function should be called before any other functions, except
     if explicitely mentioned.
+    If [library_name] is given, it is used as the path for the library to
+    be loaded: in this case, version parameters are ignored.
+    If [library_name] is not given, the library is searched as described
+    below.
     [version] should specify the major version number of Python (2 or 3).
     [minor] should specify the minor version number.
     If no version number is given, the version of Python is determined by the
@@ -20,7 +24,10 @@ val initialize: ?interpreter:string -> ?version:int -> ?minor:int ->
     [python] executable is. If the library has been statically linked
     with the executable, it will be used.
     When [verbose] is true (default: false), library filenames that are
-    tried to be loaded are printed on standard error. *)
+    tried to be loaded are printed on standard error.
+    [debug_build] specifies whether the Python library is a debug build:
+    if the argument is left unspecified, debug build is detected
+    automatically. *)
 
 val finalize: unit -> unit
 (** [finalize ()] unloads the library. No other functions except
@@ -34,6 +41,9 @@ val is_initialized: unit -> bool
 (** [is_initialized ()] returns [true] if the library is initialized
     ([initialize ()] has been called and [finalize ()] has not been
     called afterwards). *)
+
+val is_debug_build: unit -> bool
+(** [is_debug_build ()] returns [true] if the library is a debug build. *)
 
 val get_library_filename: unit -> string option
 (** [get_library_filename ()] returns [Some filename] where [filename] is the

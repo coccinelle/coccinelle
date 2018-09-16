@@ -73,8 +73,23 @@ clean:
 
 depend: .depend
 
-.depend: .prepare $(patsubst %,$(SRC_DIR)/%.ml,$(PRODUCTS))
-	$(OCAMLDEP_CMD) $(SRC_DIR)/*.ml $(SRC_DIR)/*.mli >.depend
+source_files = \
+	$(wildcard \
+		$(patsubst %,$(SRC_DIR)/%.mli,$(MODULES) $(MERE_INTERFACES)) \
+	        $(patsubst %,$(SRC_DIR)/%.ml,$(MODULES))) \
+	$(patsubst %.mly,%.ml, \
+	        $(wildcard $(patsubst %,$(SRC_DIR)/%.mly,$(MODULES)))) \
+	$(patsubst %.mly,%.mli, \
+	        $(wildcard $(patsubst %,$(SRC_DIR)/%.mly,$(MODULES)))) \
+	$(patsubst %.mll,%.ml, \
+	        $(wildcard $(patsubst %,$(SRC_DIR)/%.mll,$(MODULES))))
+
+.PHONY: depend-rec
+depend-rec:
+	$(OCAMLDEP_CMD) $(source_files) >.depend
+
+.depend: .prepare $(source_files)
+	$(MAKE) depend-rec
 
 .PHONY: \
 	all all-build all-build-targets all.opt all-opt-build \
@@ -110,7 +125,7 @@ $(SRC_DIR)/dll$(LIBRARY)_stubs.so: $(SRC_DIR)/lib$(LIBRARY)_stubs.a
 %.ml: %.mll
 	$(OCAMLLEX) $< -o $@
 
-%.ml: %.mly
+%.ml %.mli: %.mly
 	$(OCAMLYACC) $<
 
 %.cmi: %.mli

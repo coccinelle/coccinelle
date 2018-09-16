@@ -840,7 +840,7 @@ let _ = long_usage_func := long_usage
 (* for fresh identifier information *)
 let adjust_stdin cfiles k =
   match cfiles with
-    [] -> failwith "not possible"
+    [] -> failwith "no files: not possible"
   | cfile::_ ->
       let newin =
 	try

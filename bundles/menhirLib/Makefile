@@ -22,12 +22,13 @@ MENHIR_MODULES= \
 	sentenceLexer segment sentenceParserAux interpret tableBackend MySet \
 	resizableArray LowIntegerPriorityQueue astar LRijkstra cmly_api \
 	cmly_format cmly_read cmly_write back menhir
+MERE_INTERFACES=syntax
 PRODUCTS=lexer lexdep lexmli parser sentenceLexer sentenceParser
 SIDEPRODUCTS=menhir menhirLib.cmi
 SIDEPRODUCTS_BYTECODE=menhirLib.cmo
 SIDEPRODUCTS_NATIVE=menhirLib.cmx menhirLib.o
 OTHERS=standard.mly
-CLEANOTHERS=menhirLib.ml menhirLib.mli
+CLEANOTHERS=menhirLib.ml menhirLib.mli syntax.cmi
 SRC_DIR=$(PACKAGE_DIR)/src
 
 OCAMLLDFLAGS=unix.cmxa
@@ -46,8 +47,9 @@ OCAML_BUNDLES_FLAGS=$(shell \
 
 include ../Makefile.bundles
 
+include ../../Makefile.package
+
 depend: .depend
-	@$(MAKE) all-build
 
 distclean: clean
 	rm -rf $(PACKAGE_DIR)
@@ -66,15 +68,17 @@ $(SRC_DIR)/sentenceLexer.mll \
 $(SRC_DIR)/sentenceParser.mly \
 $(SRC_DIR)/yacc-parser.mly: $(MARKER)
 
+.depend: $(SRC_DIR)/parser.mly
+
 $(SRC_DIR)/Driver.ml: $(SRC_DIR)/yaccDriver.ml
 	cp $< $@
 
 ifeq ($(OCAMLOPT_CMD),)
 $(SRC_DIR)/menhir: $(patsubst %,$(SRC_DIR)/%.cmo,$(MENHIR_MODULES))
-	$(OCAMLC_CMD) $(OCAMLLDFLAGS) stdcompat.cma $^ -o $@
+	$(OCAMLC_CMD) $(OCAMLLDFLAGS) $(LINK_BYTECODE) stdcompat.cma $^ -o $@
 else
 $(SRC_DIR)/menhir: $(patsubst %,$(SRC_DIR)/%.cmx,$(MENHIR_MODULES))
-	$(OCAMLOPT_CMD) $(OCAMLLDFLAGS) stdcompat.cmxa $^ -o $@
+	$(OCAMLOPT_CMD) $(OCAMLLDFLAGS) $(LINK_NATIVE) stdcompat.cmxa $^ -o $@
 endif
 
 standard.mly: $(SRC_DIR)/standard.mly

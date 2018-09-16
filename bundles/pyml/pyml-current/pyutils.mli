@@ -32,14 +32,6 @@ val input_lines: in_channel -> string list
 (** Reads and returns all the lines from an input channel to the end of file.
     Carriage return characters are removed from the end of lines if any. *)
 
-val option_bind: 'a option -> ('a -> 'b option) -> 'b option
-(** [option_bind x f] returns [Some (f x')] if [x] is [Some x'], and
-    [None] if [x] is [None]. *)
-
-val option_or: 'a option -> (unit -> 'a option) -> 'a option
-(** [option_or x f] returns [x] if [x] is [Some x'], and [f ()] if [x]
-    is [None]. *)
-
 val option_find: ('a -> 'b) -> 'a -> 'b option
 (** [option_find f x] returns [Some (f x)], or [None] if [f x] raises
     [Not_found]. *)
@@ -47,16 +39,6 @@ val option_find: ('a -> 'b) -> 'a -> 'b option
 val option_unwrap: 'a option -> 'a
 (** [option_unwrap x] returns [x'] if [x] is [Some x'], and raises
     [Not_found] if [x] is [None]. *)
-
-val option_unwrap_default: 'a -> 'a option -> 'a
-(** [option_unwrap d x] returns [x'] if [x] is [Some x'], and returns
-    [d] if [x] is [None]. *)
-
-val try_finally: ('a -> 'b) -> 'a -> ('c -> unit) -> 'c -> 'b
-(** [try_finally f arg finally finally_arg] calls [f arg], and returns the
-    result of [f].
-    [finally finally_arg] is always called after [f] has been called, even if
-    [f] raises an exception. *)
 
 val read_and_close: in_channel -> ('a -> 'b) -> 'a -> 'b
 (** [read_and_close channel f arg] calls [f arg], and returns the result of

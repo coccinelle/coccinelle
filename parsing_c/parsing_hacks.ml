@@ -976,8 +976,23 @@ let rec find_ifdef_funheaders = function
 
 (* ?? *)
 let adjust_inifdef_include xs =
+  let is_ifndef_nop xxs = function
+      x::xs ->
+	(match x.tok with
+	  Parser_c.TIfdef (Ast_c.Gifndef vr,_,_) ->
+	    (match xxs with
+	      ((NotIfdefLine (def::nm::_))::_)::_ ->
+		(match (def.tok,nm.tok) with
+		  (Parser_c.TDefine _,TIdentDefine(dnm,_)) -> vr = dnm
+		| _ -> false)
+	    | _ -> false)
+	| _ -> false)
+    | _ -> false in
   xs +> List.iter (function
   | NotIfdefLine _ -> ()
+  | Ifdef (xxs, info_ifdef_stmt) | Ifdefbool (_, xxs, info_ifdef_stmt)
+      when is_ifndef_nop xxs info_ifdef_stmt
+    -> () (* ifndef followed by define of same variable, often in .h *)
   | Ifdef (xxs, info_ifdef_stmt) | Ifdefbool (_, xxs, info_ifdef_stmt) ->
       xxs +> List.iter (iter_token_ifdef (fun tokext ->
         match tokext.tok with
@@ -1519,7 +1534,7 @@ let rec find_macro_lineparen prev_line_end xs =
               macro.tok <- TMacroDecl (s, TH.info_of_tok macro.tok)
 	  | InFunction | NoContext ->
               macro.tok <- TMacroStmt (s, TH.info_of_tok macro.tok)
-	  | _ -> failwith "not possible");
+	  | _ -> failwith "macro: not possible");
           [Parenthised (xxs, info_parens)] +>
             iter_token_paren (TV.set_as_comment Token_c.CppMacro);
         end;
