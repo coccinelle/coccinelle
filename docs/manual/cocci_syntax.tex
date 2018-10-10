@@ -85,7 +85,7 @@ section.
 
   \RULE{\rt{rulename}}
   \CASE{\T{id} \OPT{extends \T{id}} \OPT{depends on} \opt{\NT{scope}} \NT{dep} \opt{\NT{iso}}
-    \opt{\NT{disable-iso}} \opt{\NT{exists}} \opt{expression}}
+    \opt{\NT{disable-iso}} \opt{\NT{exists}} \opt{\NT{rulekind}}}
 
   \RULE{\rt{scope}}
   \CASE{\T{exists}}
@@ -112,6 +112,11 @@ section.
   \CASE{exists}
   \CASE{forall}
 %  \CASE{\opt{reverse} forall}
+
+  \RULE{\rt{rulekind}}
+  \CASE{expression}
+  \CASE{identifier}
+  \CASE{type}
 
   \RULE{\rt{COMMA\_LIST}\mth{(}\rt{elem}\mth{)}}
   \CASE{\NT{elem} \ANY{, \NT{elem}}}
