@@ -425,7 +425,7 @@ module XMATCH = struct
 			if C_vs_c.subexpression_of_expression inh_stripped v
 			then loop cs (* forget satisfied constraints *)
 			else None (* failure *)
-		    | Some _ -> failwith "not possible"
+		    | Some _ -> failwith "check add metavars: not possible"
 		      (* fail if this should be a subterm of something that
 			 doesn't exist *)
 		    | None -> None) in

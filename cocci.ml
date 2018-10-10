@@ -660,7 +660,7 @@ let rec interpret_file file d =
 	not (s = file || Str.string_match (Str.regexp (s^"/")) file 0) in
   match d with
     Ast_cocci.NoDep -> true
-  | Ast_cocci.FailDep -> failwith "not possible"
+  | Ast_cocci.FailDep -> failwith "FailDep not possible"
   | Ast_cocci.ExistsDep d -> loop d
   | Ast_cocci.ForallDep d -> loop d
 

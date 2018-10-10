@@ -84,8 +84,12 @@ source_files = \
 	$(patsubst %.mll,%.ml, \
 	        $(wildcard $(patsubst %,$(SRC_DIR)/%.mll,$(MODULES))))
 
-.depend: .prepare $(source_files)
+.PHONY: depend-rec
+depend-rec:
 	$(OCAMLDEP_CMD) $(source_files) >.depend
+
+.depend: .prepare $(source_files)
+	$(MAKE) depend-rec
 
 .PHONY: \
 	all all-build all-build-targets all.opt all-opt-build \

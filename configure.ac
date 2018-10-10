@@ -530,7 +530,7 @@ pcre library:     $HAVE_PCRE	(requires the libpcre-ocaml-dev package)
 optimized spatch: $enable_opt	(overridable with --disable-opt)
 
 bash-completion:  $BASH_COMPLETION_DIR
-                  (overridable with -with-bash-completion)
+                  (overridable with --with-bash-completion)
 
 ------------------------------------------------------------------------------
 Coccinelle can now be compiled and installed.

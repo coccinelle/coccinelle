@@ -1258,7 +1258,7 @@ let (split_nocomma: 'a list -> ('a, il) either list) = function l ->
 let (unsplit_nocomma: ('a, il) either list -> 'a list) = function l ->
   l +>
   List.map
-    (function Left x -> x | Right x -> failwith "not possible")
+    (function Left x -> x | Right x -> failwith "unsplit: not possible")
 
 (*****************************************************************************)
 (* Helpers, could also be put in lib_parsing_c.ml instead *)
