@@ -1554,6 +1554,7 @@ let ppc =
     ~pr_elem ~pr_space ~pr_nl ~pr_outdent ~pr_indent ~pr_unindent
 
 let pp_expression_simple = ppc.expression
+let pp_arg_list_simple   = ppc.arg_list
 let pp_assignOp_simple   = ppc.assignOp
 let pp_binaryOp_simple   = ppc.binaryOp
 let pp_decl_simple       = ppc.decl
