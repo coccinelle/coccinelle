@@ -1313,96 +1313,97 @@ and pp_init (init, iinit) =
 
   let pp_flow n =
     match F.unwrap n  with
-    | F.FunHeader ({f_name =idb;
-                     f_type = (rett, (paramst,(isvaargs,iidotsb)));
-                     f_storage = stob;
-                     f_body = body;
-                     f_attr = attrs},ii) ->
+    | F.FunHeader (({f_name =idb;
+                      f_type = (rett, (paramst,(isvaargs,iidotsb)));
+                      f_storage = stob;
+                      f_body = body;
+                      f_attr = attrs},ii) as def) ->
 
-		       assert (body = []);
-      (*
-	 iif ii;
-	 iif iidotsb;
-	 attrs +> List.iter (vk_attribute bigf);
-	 vk_type bigf rett;
-	 paramst +> List.iter (fun (param, iicomma) ->
-         vk_param bigf param;
-         iif iicomma;
-	 );
-      *)
-		       pr2 "FunHeader";
+			assert (body = []);
+			pp_def def
 
 
-    | F.Decl decl ->
-        (* vk_decl bigf decl *)
-	pr2 "Decl"
+    | F.Decl decl -> pp_decl decl
 
     | F.ExprStatement (st, (eopt, ii)) ->
 	pp_statement (Ast_c.mk_st (ExprStatement eopt) ii)
 
-    | F.IfHeader (_, (e,ii)) -> pr2 "IfHeader"
-    | F.SwitchHeader (_, (e,ii)) -> pr2 "SwitchHeader"
-    | F.WhileHeader (_, (e,ii)) -> pr2 "WhileHeader"
+    | F.IfHeader (_, (e,ii)) ->
+	let (i1,i2,i3) = tuple_of_list3 ii in
+	pr_elem i1; pr_space(); pr_elem i2; pp_expression e; pr_elem i3
+    | F.SwitchHeader (_, (e,ii)) ->
+	let (i1,i2,i3) = tuple_of_list3 ii in
+	pr_elem i1; pr_space(); pr_elem i2; pp_expression e; pr_elem i3
+    | F.WhileHeader (_, (e,ii)) ->
+	let (i1,i2,i3) = tuple_of_list3 ii in
+	pr_elem i1; pr_space(); pr_elem i2; pp_expression e; pr_elem i3
     | F.DoWhileTail (e,ii) ->
-        (*
-           iif ii;
-           vk_expr bigf e
-        *)
-	pr2 "DoWhileTail"
+	let (i1,i2,i3,i4) = tuple_of_list4 ii in
+	pr_elem i1; pr_elem i2; pp_expression e;
+	pr_elem i3; pr_elem i4
 
 
-    | F.ForHeader (_st, ((first, (e2opt,i2), (e3opt,i3)), ii)) ->
-        (*
-           iif i1; iif i2; iif i3;
-           iif ii;
-           e1opt +> do_option (vk_expr bigf);
-           e2opt +> do_option (vk_expr bigf);
-           e3opt +> do_option (vk_expr bigf);
-        *)
-	pr2 "ForHeader"
+    | F.ForHeader (_st, ((first, (e2opt,il2), (e3opt,il3)), ii)) ->
+	let (i1,i2,i3) = tuple_of_list3 ii in
+	pr_elem i1; pr_space();
+	pr_elem i2;
+	(match first with
+	  ForExp (e1opt,il1) ->
+	    pp_statement (Ast_c.mk_st (ExprStatement e1opt) il1)
+	| ForDecl decl -> pp_decl decl);
+	pr_space();
+	pp_statement (Ast_c.mk_st (ExprStatement e2opt) il2);
+	assert (il3 = []);
+	pr_space();
+	pp_statement (Ast_c.mk_st (ExprStatement e3opt) il3);
+	pr_elem i3
 
     | F.MacroIterHeader (_s, ((s,es), ii)) ->
-        (*
-           iif ii;
-           vk_argument_list bigf es;
-        *)
-	pr2 "MacroIterHeader"
+	let (i1,i2,i3) = tuple_of_list3 ii in
+	pr_elem i1; pr_space();
+	pr_elem i2;
 
+	es +> List.iter (fun (e, opt) ->
+	  assert (List.length opt <= 1);
+	  opt +> List.iter pr_elem;
+	  pp_argument e;
+	  );
+
+	pr_elem i3
 
     | F.ReturnExpr (_st, (e,ii)) ->
-        (* iif ii; vk_expr bigf e*)
-	pr2 "ReturnExpr"
+	let (i1,i2) = tuple_of_list2 ii in
+	pr_elem i1; pr_space(); pp_expression e; pr_elem i2
 
-
-    | F.Case  (_st, (e,ii)) ->
-      (* iif ii; vk_expr bigf e *)
-	pr2 "Case"
+    | F.Case (_st, (e,ii)) ->
+	let (i1,i2) = tuple_of_list2 ii in
+	pr_elem i1; pr_space(); pp_expression e; pr_elem i2
 
     | F.CaseRange (_st, ((e1, e2),ii)) ->
-        (* iif ii; vk_expr bigf e1; vk_expr bigf e2 *)
-	pr2 "CaseRange"
-
-
+	let (i1,i2,i3) = tuple_of_list3 ii in
+	pr_elem i1; pr_space(); pp_expression e1; pr_elem i2;
+	pp_expression e2; pr_elem i3
 
     | F.CaseNode i -> ()
 
-    | F.DefineExpr e  ->
-        (* vk_expr bigf e *)
-	pr2 "DefineExpr"
+    | F.DefineExpr e  -> pp_expression e
 
-    | F.DefineType ft  ->
-        (* vk_type bigf ft *)
-	pr2 "DefineType"
+    | F.DefineType ft  -> pp_type ft
 
     | F.DefineHeader ((s,ii), (defkind))  ->
-        (*
-           iif ii;
-           vk_define_kind bigf defkind;
-        *)
-	pr2 "DefineHeader"
-
+        let (idefine,iident,ieol) = Common.tuple_of_list3 ii in
+	pr_elem idefine; pr_space();
+	pr_elem iident; pr_space();
+	(match defkind with
+	| DefineVar | Undef -> ()
+	| DefineFunc (params, ii) ->
+	    let (i1,i2) = tuple_of_list2 ii in
+	    pr_elem i1;
+	    pp_define_param_list params;
+	    pr_elem i2)
 
     | F.DefineDoWhileZeroHeader (((),ii)) ->
+	(* not sure what it is, ignore *)
         (* iif ii *)
 	pr2 "DefineDoWhileZeroHeader"
 
@@ -1412,62 +1413,49 @@ and pp_init (init, iinit) =
 	pr_elem iident;
 	pp_pragmainfo pragmainfo
 
-    | F.Include {i_include = (s, ii);} ->
-        (* iif ii; *)
-	pr2 "Include"
-
+    | F.Include ({i_include = (s, ii);} as a) ->
+	pp_directive (Include a)
 
     | F.MacroTop (s, args, ii) ->
-        (* iif ii;
-           vk_argument_list bigf args *)
-	pr2 "MacroTop"
-
+	pp_toplevel(MacroTop (s, args, ii))
 
     | F.Break    (st,((),ii),fromswitch) ->
-        (* iif ii *)
-	pr2 "Break"
+	let (i1,i2) = tuple_of_list2 ii in
+	pr_elem i1; pr_elem i2
     | F.Continue (st,((),ii)) ->
-        (* iif ii *)
-	pr2 "Continue"
+	let (i1,i2) = tuple_of_list2 ii in
+	pr_elem i1; pr_elem i2
     | F.Default  (st,((),ii)) ->
-        (* iif ii *)
-	pr2 "Default"
+	let (i1,i2) = tuple_of_list2 ii in
+	pr_elem i1; pr_elem i2
     | F.Return   (st,((),ii)) ->
-        (* iif ii *)
-	pr2 "Return"
+	let (i1,i2) = tuple_of_list2 ii in
+	pr_elem i1; pr_elem i2
     | F.Goto  (st, name, ((),ii)) ->
-        (* iif ii *)
-	pr2 "Goto"
+	let (i1, i3) = Common.tuple_of_list2 ii in
+	pr_elem i1; pr_space(); pp_name name; pr_elem i3
     | F.Label (st, name, ((),ii)) ->
-        (* iif ii *)
-	pr2 "Label"
+	let (i2) = Common.tuple_of_list1 ii in
+	pp_name name; pr_elem i2
     | F.EndStatement iopt ->
         (* do_option infof iopt *)
 	pr2 "EndStatement"
     | F.DoHeader (st, info) ->
-        (* infof info *)
-	pr2 "DoHeader"
+	pr_elem info
     | F.Else info ->
-        (* infof info *)
-	pr2 "Else"
+	pr_elem info
     | F.SeqEnd (i, info) ->
-        (* infof info *)
-	pr2 "SeqEnd"
+	pr_elem info
     | F.SeqStart (st, i, info) ->
-        (* infof info *)
-	pr2 "SeqStart"
+	pr_elem info
 
     | F.MacroStmt (st, ((),ii)) ->
-        (* iif ii *)
-	pr2 "MacroStmt"
+	pp_statement (MacroStmt,ii)
     | F.Asm (st, (asmbody,ii)) ->
-        (*
-           iif ii;
-           vk_asmbody bigf asmbody
-        *)
-	pr2 "Asm"
+	pp_statement (Asm asmbody, ii)
 
-    | F.Exec(st,(code,ii)) -> pr2 "Exec"
+    | F.Exec(st,(code,ii)) ->
+	pp_statement (Exec code, ii)
 
     | F.IfdefHeader (info) ->
 	pp_ifdef info

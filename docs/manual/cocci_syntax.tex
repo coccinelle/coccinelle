@@ -85,7 +85,7 @@ section.
 
   \RULE{\rt{rulename}}
   \CASE{\T{id} \OPT{extends \T{id}} \OPT{depends on} \opt{\NT{scope}} \NT{dep} \opt{\NT{iso}}
-    \opt{\NT{disable-iso}} \opt{\NT{exists}} \opt{expression}}
+    \opt{\NT{disable-iso}} \opt{\NT{exists}} \opt{\NT{rulekind}}}
 
   \RULE{\rt{scope}}
   \CASE{\T{exists}}
@@ -112,6 +112,11 @@ section.
   \CASE{exists}
   \CASE{forall}
 %  \CASE{\opt{reverse} forall}
+
+  \RULE{\rt{rulekind}}
+  \CASE{expression}
+  \CASE{identifier}
+  \CASE{type}
 
   \RULE{\rt{COMMA\_LIST}\mth{(}\rt{elem}\mth{)}}
   \CASE{\NT{elem} \ANY{, \NT{elem}}}
@@ -270,11 +275,11 @@ i.e., including as an element of another statement list.
   \CASE{\NT{bin\_op}}
 \end{grammar}
 
-A metavariable declaration {\bf local idexpression} v means that v is
-restricted to be a local variable.  If it should just be a variable, but
-not necessarily a local one, then drop local.  A more complex description
-of a location, such as a->b is considered to be an expression, not an
-idexpression.
+A metavariable declaration {\bf local idexpression} v means that v is an
+expression that is restricted to be a local variable.  If it should just be
+a variable, but not necessarily a local one, then drop local.  A more
+complex description of a location, such as a->b is considered to be an
+expression, not an idexpression.
 
 {\bf Constant} is for constants, such as 27.  But it also considers an
 identifier that is all capital letters (possibly containing numbers) as a
@@ -1656,6 +1661,7 @@ in a concise way.
 %   \CASE{\mth{\T{metaid}^{\ssf{Func}}}}
 %   \CASE{\mth{\T{metaid}^{\ssf{LocalFunc}}}}
   \CASE{\mth{\T{metaid}^{\ssf{Exp}}}}
+  \CASE{\mth{\T{metaid}^{\ssf{IdExp}}}}
 %   \CASE{\mth{\T{metaid}^{\ssf{Err}}}}
   \CASE{\mth{\T{metaid}^{\ssf{Const}}}}
   \CASE{\NT{const}}
