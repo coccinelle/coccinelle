@@ -65,9 +65,12 @@ let add_danger xs =
 	Visitor_c.vk_decl (update_danger danger) decl;
 	xs +> List.iter undanger_onedecl;
 	let (max,min) =
+	  Lib_parsing_c.max_min_ii_by_pos(Lib_parsing_c.ii_of_decl decl) in
+	(* put danger start on the first non-fake node; want all other nodes to be non dangerous for removal
 	  Lib_parsing_c.max_min_ii_by_pos_filtered
 	    (fun x -> not(Ast_c.is_fake x))
 	    (Lib_parsing_c.ii_of_decl decl) in
+	*)
 	danger_start min;
 	danger_end max
     | _ -> k decl in
