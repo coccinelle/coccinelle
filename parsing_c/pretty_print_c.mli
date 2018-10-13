@@ -86,6 +86,7 @@ val pp_program_gen : pr_elem:Ast_c.info printer -> pr_space:unit printer ->
 
 (* used in pretty_print_engine.ml mostly *)
 val pp_expression_simple: Ast_c.expression printer
+val pp_arg_list_simple: Ast_c.argument Ast_c.wrap2 list printer
 val pp_assignOp_simple: Ast_c.assignOp printer
 val pp_binaryOp_simple: Ast_c.binaryOp printer
 val pp_init_simple:       Ast_c.initialiser printer
