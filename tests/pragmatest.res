@@ -7,4 +7,3 @@ int one () { return 12; }
 int three () { return 12; }
 
 #pragma abc ddd def
-
