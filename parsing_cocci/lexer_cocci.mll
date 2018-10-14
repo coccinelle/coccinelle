@@ -1122,8 +1122,7 @@ and metavariable_decl_token = parse
 	  TChar(char lexbuf,get_current_line_type lexbuf) }
   | '\"' { start_line true;
 	  TString(string lexbuf,(get_current_line_type lexbuf)) }
-  | (real as x)    { Printf.printf "36\n"; start_line true;
-		     TFloat(x,(get_current_line_type lexbuf)) }
+  | (real as x)    { TFloat(x,(get_current_line_type lexbuf)) }
   | ((( decimal | hexa | octal)
       ( ['u' 'U']
       | ['l' 'L']
