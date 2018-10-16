@@ -841,3 +841,13 @@ let parse_string str ((mc,b,c,d,e,f,g,h,i,_) as clt) =
 	   end
 	 with Parse_printf.Not_format_string -> not_format_string str clt
        else not_format_string str clt
+
+let unfloatl s =
+  match Str.split_delim (Str.regexp_string ".") s with
+    [thing;""] -> thing
+  | _ -> failwith (Printf.sprintf "unexpected float in length range: %s\n" s)
+
+let unfloatr s =
+  match Str.split_delim (Str.regexp_string ".") s with
+    ["";thing] -> thing
+  | _ -> failwith (Printf.sprintf "unexpected float in length range: %s\n" s)
