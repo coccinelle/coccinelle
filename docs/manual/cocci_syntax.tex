@@ -1564,6 +1564,7 @@ allowed.
   \CASE{\mth{\T{metaid}^{\ssf{StmtList}}}}
   \CASE{\NT{decl\_var}}
   \CASE{\NT{stmt}}
+  \CASE{\NT{expr}}
   \CASE{\NT{OR}\mth{(}\NT{stmt\_seq}\mth{)}}
   \CASE{\NT{AND}\mth{(}\NT{stmt\_seq}\mth{)}}
 
@@ -1608,6 +1609,12 @@ column). These token may also be preceded by \texttt{\bs}
 when they are used in an other column.  These tokens are furthermore
 different from (, \(\mid\), and ), which are part of the grammar
 metalanguage.
+
+\NT{OR}\mth{(}\NT{stmt\_seq}\mth{)} and
+\NT{AND}\mth{(}\NT{stmt\_seq}\mth{)} must have something other than an
+expression in the first branch.  If an expression appears there, they are
+parsed as their \NT{expr} counterparts, {\em i.e.}, all branches must be
+expressions.
 
 All matching done by a SmPL rule is done intraprocedurally.  Thus
 ``\ldots'' does not extend from one function to the next one in the same
@@ -1672,7 +1679,9 @@ in a concise way.
   \RULE{\rt{arg}}
   \CASE{\NT{nest\_expr}}
   \CASE{\mth{\T{metaid}^{\ssf{ExpList}}}}
+\end{grammar}
 
+\begin{grammar}
   \RULE{\rt{exp\_whencode}}
   \CASE{when != \NT{expr}}
 
