@@ -252,7 +252,14 @@ path name, beginning with /, it is used as is.
   one wants to process a complete driver, that consists of more than one
   file, and it is necessary to consider the interaction between code
   fragments that are present in the different files.  Single-line comments
-  beginning with \texttt{//} can be used freely and are ignored.}
+  beginning with \texttt{//} can be used freely and are ignored.
+
+  It is also possible to specify range constraints in the file groups
+  file.  The syntax is file: range1, range2, ...  A range is either a
+  single line number n, a range of line numbers n-m, or a negated line
+  number -n  or range of line numbers -n-m.  A function is transformed if
+  it overlaps with a specified range and it does not overlap with a negated
+  range.  An example is in demos/fg.cocci and demos/file_groups.}
 
 \developer{-{}-kbuild-info $\langle$file$\rangle$}{ The specified file
   contains information about which sets of files should be considered in
