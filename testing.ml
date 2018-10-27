@@ -61,6 +61,8 @@ let rec test_loop previous_merges cocci_file cfiles =
   match pending_instance with
     None -> (cocci_infos, res)
   | Some (cfiles', virt_rules, virt_ids) ->
+      (* don't support line ranges for iteration for now *)
+      let cfiles' = List.map (fun x -> (x,None)) cfiles' in
       Flag.defined_virtual_rules := virt_rules;
       Flag.defined_virtual_env := virt_ids;
       Common.clear_pr2_once ();
@@ -96,7 +98,7 @@ let testone prefix x compare_with_expected_flag =
   let expected_res   = prefix ^ x ^ ".res" in
   begin
     let (res, current_out) =
-      test_with_output_redirected cocci_file [cfile] expected_out in
+      test_with_output_redirected cocci_file [(cfile,None)] expected_out in
     let generated =
       match Common.optionise (fun () -> List.assoc cfile res) with
       | Some (Some outfile) ->
@@ -206,7 +208,8 @@ let testall_bis extra_test expected_score_file update_score_file =
 	  pr2 res;
 
 	  let (xs, current_out) =
-	    test_with_output_redirected cocci_file [cfile] expected_out in
+	    test_with_output_redirected cocci_file [(cfile,None)]
+	      expected_out in
 
           let generated =
             match List.assoc cfile xs with
@@ -387,6 +390,7 @@ let test_okfailed cocci_file cfiles =
     try (
       Common.timeout_function_opt "testing" !Flag_cocci.timeout (fun () ->
 
+	let cfiles = List.map (fun x -> (x,None)) cfiles in (* no range *)
 	let (outfiles, current_out) =
 	  test_with_output_redirected cocci_file cfiles expected_out in
 

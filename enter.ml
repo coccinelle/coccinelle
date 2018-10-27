@@ -844,7 +844,7 @@ let adjust_stdin cfiles k =
   | cfile::_ ->
       let newin =
 	try
-          let (dir, base, ext) = Common.dbe_of_filename cfile in
+          let (dir, base, ext) = Common.dbe_of_filename (fst cfile) in
           let varfile = Common.filename_of_dbe (dir, base, "var") in
           if ext = "c" && Common.lfile_exists varfile
           then Some varfile
@@ -944,20 +944,46 @@ let read_file_groups x =
     res := [] in
   let empty_line = Str.regexp " *$" in
   let com = Str.regexp " *//" in
+  let parse_line s =
+    match Str.bounded_split (Str.regexp ":") s 2 with
+      [fl;lns] ->
+	let pieces = Str.split (Str.regexp ",") lns in
+	let lines =
+	  List.map
+	    (function piece ->
+	      match Str.split_delim (Str.regexp_string "-") piece with
+		["";from;upto] ->
+		  let from = int_of_string(String.trim from) in
+		  let upto = int_of_string(String.trim upto) in
+		  Parse_c.Excluded(from,upto)
+	      | ["";from] ->
+		  let from = int_of_string(String.trim from) in
+		  Parse_c.Excluded(from,from)
+	      | [from;upto] ->
+		  let from = int_of_string(String.trim from) in
+		  let upto = int_of_string(String.trim upto) in
+		  Parse_c.Included(from,upto)
+	      | [from] ->
+		  let from = int_of_string(String.trim from) in
+		  Parse_c.Included(from,from)
+	      | _ -> failwith (Printf.sprintf "bad spec in %s" x))
+	    pieces in
+	(fl,Some lines)
+    | _ -> (s,None) in
   let rec in_files _ =
     let l = input_line i in
     if Str.string_match empty_line l 0
     then begin dump(); in_space() end
     else if Str.string_match com l 0
     then in_files()
-    else begin res := l :: !res; in_files() end
+    else begin res := parse_line l :: !res; in_files() end
   and in_space _ =
     let l = input_line i in
     if Str.string_match empty_line l 0
     then in_space()
     else if Str.string_match com l 0
     then in_space()
-    else begin res := l :: !res; in_files() end in
+    else begin res := parse_line l :: !res; in_files() end in
   try in_files() with End_of_file -> begin dump(); List.rev !file_groups end
 
 (*****************************************************************************)
@@ -1019,7 +1045,7 @@ let rec main_action xs =
 		      List.filter
 			(function files ->
 			  List.exists
-			    (function fl ->
+			    (function (fl,_) ->
 			      match interpreter constants fl with
 				Some [] -> false (* no file matches *)
 			      | _ -> true)
@@ -1029,7 +1055,7 @@ let rec main_action xs =
 		  failwith
 		    ("file groups not compatible with --dir, --kbuild-info,"^
 		     " or multiple files")
-              | _, false, _, _, _ -> [x::xs]
+              | _, false, _, _, _ -> [List.map (fun x -> (x,None)) (x::xs)]
 	      |	_, true, "",
 		  (Flag.Glimpse|Flag.IdUtils|Flag.CocciGrep|Flag.GitGrep),
 		  [] ->
@@ -1038,15 +1064,15 @@ let rec main_action xs =
 		      match interpreter constants x with
 			None -> Test_parsing_c.get_files x
 		      | Some files -> files in
-                    files +> List.map (fun x -> [x])
+                    files +> List.map (fun x -> [(x,None)])
               | _, true, s,
 		  (Flag.Glimpse|Flag.IdUtils|Flag.CocciGrep|Flag.GitGrep), _
 		when s <> "" ->
                   failwith "--use-xxx filters do not work with --kbuild"
                   (* normal *)
 	      | _, true, "", _, _ ->
-		  Test_parsing_c.get_files
-		    (String.concat " " (x::xs)) +> List.map (fun x -> [x])
+		  Test_parsing_c.get_files (String.concat " " (x::xs)) +>
+		  List.map (fun x -> [(x,None)])
 
             (* kbuild *)
 	      | _, true, kbuild_info_file,_,_ ->
@@ -1056,7 +1082,10 @@ let rec main_action xs =
 		  let info = Kbuild.parse_kbuild_info kbuild_info_file in
 		  let groups = Kbuild.files_in_dirs dirs info in
 
-		  groups +> List.map (function Kbuild.Group xs -> xs)
+		  groups +>
+		  List.map
+		    (function Kbuild.Group xs ->
+		      List.map (fun x -> (x,None)) xs)
 		    )
           in
 
@@ -1083,7 +1112,7 @@ let rec main_action xs =
 	    let regexps = List.map Str.regexp !ignore in
 	    let inacceptable x =
 	      List.for_all (* all files in a group must fail *)
-		(fun x ->
+		(fun (x,_) ->
 		  List.exists (fun re -> Str.string_match re x 0) regexps)
 		x in
 	    if ncores = 0
@@ -1213,10 +1242,11 @@ singleton lists are then just appended to each other during the merge. *)
 		      Cocci.worth_trying cfiles constants
 		      then
 			begin
-			  pr2 ("HANDLING: " ^ (String.concat " " cfiles));
+			  let all_cfiles =
+			    String.concat " " (List.map fst cfiles) in
+			  pr2 ("HANDLING: " ^ all_cfiles);
 			  flush stderr;
 
-			  let all_cfiles = String.concat " " cfiles in
 			  Common.timeout_function_opt all_cfiles !FC.timeout
 			    (fun () ->
 			      let res =
@@ -1568,7 +1598,7 @@ let main arglist =
     | ((x::xs) as cfiles) when !test_okfailed ->
         (* do its own timeout on FC.timeout internally *)
         Inc.for_tests := true;
-        adjust_stdin cfiles (fun () ->
+        adjust_stdin (List.map (fun x -> (x,None)) cfiles) (fun () ->
           Testing.test_okfailed !cocci_file cfiles
           )
 
