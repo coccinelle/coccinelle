@@ -130,6 +130,8 @@ val ii_of_attrs :
   (Ast_c.attribute, Ast_c.il) Common.either list -> Ast_c.info list
 val ii_of_toplevel : Ast_c.toplevel -> Ast_c.info list
 val max_min_ii_by_pos : Ast_c.info list -> Ast_c.info * Ast_c.info
+val max_min_ii_by_pos_filtered :
+    (Ast_c.info -> bool) -> Ast_c.info list -> Ast_c.info * Ast_c.info
 val info_to_fixpos : Ast_c.info -> Ast_cocci.fixpos
 val max_min_by_pos : Ast_c.info list -> Ast_cocci.fixpos * Ast_cocci.fixpos
 val lin_col_by_pos :

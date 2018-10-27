@@ -24,7 +24,8 @@ let rec pp_binding_kind = function
   | Ast_c.MetaBinaryOpVal op        ->
       pp "meta binary op ";
       Pretty_print_c.pp_binaryOp_simple op
-  | Ast_c.MetaExprListVal  expr_list -> pp "<<exprlist>>"
+  | Ast_c.MetaExprListVal  expr_list ->
+      Pretty_print_c.pp_arg_list_simple expr_list
   | Ast_c.MetaInitVal      ini ->
       Pretty_print_c.pp_init_simple ini
   | Ast_c.MetaInitListVal      ini -> pp "<<initlist>>"

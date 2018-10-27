@@ -2487,6 +2487,22 @@ cstr_ident:
   Ast.CstrAnd [
   Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntGeq i));
   Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntLeq j))] }
+| i=TFloat TDot TDot j=TInt { (* compensate for bad lexing *)
+  let i = int_of_string (P.unfloatl(fst i)) and j = int_of_string (fst j) in
+  Ast.CstrAnd [
+  Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntGeq i));
+  Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntLeq j))] }
+| i=TInt TDot TDot j=TFloat {
+  let i = int_of_string (fst i) and j = int_of_string (P.unfloatr(fst j)) in
+  Ast.CstrAnd [
+  Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntGeq i));
+  Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntLeq j))] }
+| i=TFloat TDot j=TFloat {
+  let i = int_of_string (P.unfloatl(fst i))
+  and j = int_of_string (P.unfloatr(fst j)) in
+  Ast.CstrAnd [
+  Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntGeq i));
+  Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntLeq j))] }
 | op=operator_constraint { Ast.CstrOperator op }
 
 ctype_or_ident:

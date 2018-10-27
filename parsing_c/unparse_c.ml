@@ -1425,8 +1425,11 @@ let add_newlines toks tabbing_unit =
   let isnewline tok =
     not(is_comment tok) &&
     let s = str_of_token2 tok in
-    try let _ = Str.search_forward (Str.regexp "\n") s 0 in true
-    with Not_found -> false in
+    (* backslash newline, not a real newline *)
+    try let _ = Str.search_forward (Str.regexp "\\\\[ \t]*\n") s 0 in false
+    with Not_found ->
+      try let _ = Str.search_forward (Str.regexp "\n") s 0 in true
+      with Not_found -> false in
   let iscocci = function Cocci2 _ | C2 _ -> true | _ -> false in
   let nonempty = function [] -> false | _ -> true in
   (* the following is for strings that may contain newline or tabs *)

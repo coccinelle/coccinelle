@@ -39,7 +39,8 @@ let safe_chop_extension s = try Filename.chop_extension s with _ -> s
 
 let safe_get_extension s =
   match List.rev (Str.split (Str.regexp_string ".") s) with
-    ext::_::rest -> Some (String.concat "." (List.rev rest))
+    [_] -> None
+  | ext::_ -> Some ext
   | _ -> None
 
 let intersect l1 l2 =
@@ -56,11 +57,15 @@ let union l1 l2 =
 (* ------------------------------------------------------------------------ *)
 (* set configuration variables *)
 
-let from_from_template template =
+let from_from_template prefile template =
+  let template =
+    if Sys.file_exists template
+    then template
+    else prefile in
   let signed_offs =
     cmd_to_list (Printf.sprintf "grep Signed-off-by: %s" template) in
   match signed_offs with
-    x::xs -> String.concat " " (Str.split (Str.regexp "[ \t]+") x)
+    x::xs -> String.concat " " (List.tl(Str.split (Str.regexp "[ \t]+") x))
   | _ -> failwith "No Signed-off-by in template file"
 
 let from_from_gitconfig path =
@@ -84,13 +89,13 @@ let from_from_gitconfig path =
     (try outer_loop() with Not_found -> ());
     close_in i
 
-let read_configs template =
+let read_configs prefile template =
   let temporary_git_tree = ref None in
   git_options := "";
   prefix_before := None;
   prefix_after := None;
   (* get information in message template, lowest priority *)
-  from := from_from_template template;
+  from := from_from_template prefile template;
   (* get information in git config *)
   let rec loop = function
       "/" -> ()
@@ -172,22 +177,38 @@ let read_up_to_dashes i =
     ""::lines -> lines (* drop first line if blank *)
   | _ -> lines
 
-let get_template_information file =
-  let i = open_in file in
-  (* subject *)
-  let subject = read_up_to_dashes i in
-  match subject with
-    [subject] ->
-      let cover = read_up_to_dashes i in
-      let message = read_up_to_dashes i in
-      let nonmessage = read_up_to_dashes i in
-      if message = []
-      then (subject,None,cover,[])
-      else (subject,Some cover,message,nonmessage)
-  | _ ->
-      failwith
-	("Subject must be exactly one line "^
-	 (string_of_int (List.length subject)))
+let get_template_information prefile file =
+  if Sys.file_exists file
+  then
+    let i = open_in file in
+    (* subject *)
+    let subject = read_up_to_dashes i in
+    match subject with
+      [subject] ->
+	let cover = read_up_to_dashes i in
+	let message = read_up_to_dashes i in
+	let nonmessage = read_up_to_dashes i in
+	if message = []
+	then (subject,None,cover,[])
+	else (subject,Some cover,message,nonmessage)
+    | _ ->
+	failwith
+	  ("Subject must be exactly one line "^
+	   (string_of_int (List.length subject)))
+  else
+    let i = open_in prefile in
+    let rec loop _ =
+      let l = input_line i in
+      if Str.string_match (Str.regexp "Subject:.*[]] ") l 0
+      then l
+      else loop() in
+    let l = loop() in
+    let subject_len = String.length (Str.matched_string l) in
+    let subject = String.sub l subject_len (String.length l - subject_len) in
+    let message = read_up_to_dashes i in
+    (* use provided message as the message in each patch and as the
+       cover letter *)
+    (subject,Some message,message,[])
 
 (* ------------------------------------------------------------------------ *)
 (* ------------------------------------------------------------------------ *)
@@ -732,8 +753,8 @@ let make_cover_file n file subject cover front date maintainer_tables =
       close_out o;
       ()
 
-let mail_sender = "git send-email" (* use this when it works *)
 let mail_sender = "cocci-send-email.perl"
+let mail_sender = "git send-email" (* use this when it works *)
 
 let generate_command front cover generated =
   let output_file = front^".cmd" in
@@ -741,12 +762,12 @@ let generate_command front cover generated =
   (match cover with
     None ->
       Printf.fprintf o
-	"%s --auto-to --no-thread --from=\"%s\" %s $* %s\n"
+	"%s --to-cmd=true --no-thread --from=\"%s\" %s $* %s\n"
 	mail_sender !from !git_options
 	(String.concat " " generated)
   | Some cover ->
       Printf.fprintf o
-	"%s --auto-to --thread --from=\"%s\" %s $* %s\n"
+	"%s --to-cmd=true --thread --from=\"%s\" %s $* %s\n"
 	mail_sender !from !git_options
 	(String.concat " " ((front^".cover") :: generated)));
   close_out o
@@ -777,14 +798,17 @@ let parse_args l =
     List.partition (function a -> String.length a > 1 && String.get a 0 = '-')
       l in
   let (nomergep,other_args) =
-    List.partition (function a -> a = "-nomerge") other_args in
+    List.partition (function a -> List.mem a ["--nomerge";"-nomerge"])
+      other_args in
   (if not(nomergep = []) then nomerge := true);
   let (dirmergep,other_args) =
-    List.partition (function a -> a = "-dirmerge") other_args in
+    List.partition (function a -> List.mem a ["--dirmerge";"-dirmerge"])
+      other_args in
   (* lazy solution: one directory up from the file level *)
   (if not(dirmergep = []) then dirmerge := true);
   let (mergep,other_args) =
-    List.partition (function a -> a = "-merge") other_args in
+    List.partition (function a -> List.mem a ["--merge";"-merge"])
+      other_args in
   (* lazy solution: one directory up from the file level *)
   (if not(mergep = []) then merge := true);
   match files with
@@ -796,10 +820,10 @@ let _ =
   let message_file = (safe_chop_extension file)^".msg" in
   let info_file = (safe_chop_extension file)^".info" in
   (* set up environment *)
-  read_configs message_file;
+  read_configs file message_file;
   (* get message information *)
   let (subject,cover,message,nonmessage) =
-    get_template_information message_file in
+    get_template_information file message_file in
   (* get file-specific information, if any *)
   let info_tbl = get_info info_file in
   (* split patch *)

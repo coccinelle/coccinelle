@@ -85,7 +85,7 @@ section.
 
   \RULE{\rt{rulename}}
   \CASE{\T{id} \OPT{extends \T{id}} \OPT{depends on} \opt{\NT{scope}} \NT{dep} \opt{\NT{iso}}
-    \opt{\NT{disable-iso}} \opt{\NT{exists}} \opt{expression}}
+    \opt{\NT{disable-iso}} \opt{\NT{exists}} \opt{\NT{rulekind}}}
 
   \RULE{\rt{scope}}
   \CASE{\T{exists}}
@@ -112,6 +112,11 @@ section.
   \CASE{exists}
   \CASE{forall}
 %  \CASE{\opt{reverse} forall}
+
+  \RULE{\rt{rulekind}}
+  \CASE{expression}
+  \CASE{identifier}
+  \CASE{type}
 
   \RULE{\rt{COMMA\_LIST}\mth{(}\rt{elem}\mth{)}}
   \CASE{\NT{elem} \ANY{, \NT{elem}}}
@@ -270,11 +275,11 @@ i.e., including as an element of another statement list.
   \CASE{\NT{bin\_op}}
 \end{grammar}
 
-A metavariable declaration {\bf local idexpression} v means that v is
-restricted to be a local variable.  If it should just be a variable, but
-not necessarily a local one, then drop local.  A more complex description
-of a location, such as a->b is considered to be an expression, not an
-idexpression.
+A metavariable declaration {\bf local idexpression} v means that v is an
+expression that is restricted to be a local variable.  If it should just be
+a variable, but not necessarily a local one, then drop local.  A more
+complex description of a location, such as a->b is considered to be an
+expression, not an idexpression.
 
 {\bf Constant} is for constants, such as 27.  But it also considers an
 identifier that is all capital letters (possibly containing numbers) as a
@@ -1559,6 +1564,7 @@ allowed.
   \CASE{\mth{\T{metaid}^{\ssf{StmtList}}}}
   \CASE{\NT{decl\_var}}
   \CASE{\NT{stmt}}
+  \CASE{\NT{expr}}
   \CASE{\NT{OR}\mth{(}\NT{stmt\_seq}\mth{)}}
   \CASE{\NT{AND}\mth{(}\NT{stmt\_seq}\mth{)}}
 
@@ -1603,6 +1609,12 @@ column). These token may also be preceded by \texttt{\bs}
 when they are used in an other column.  These tokens are furthermore
 different from (, \(\mid\), and ), which are part of the grammar
 metalanguage.
+
+\NT{OR}\mth{(}\NT{stmt\_seq}\mth{)} and
+\NT{AND}\mth{(}\NT{stmt\_seq}\mth{)} must have something other than an
+expression in the first branch.  If an expression appears there, they are
+parsed as their \NT{expr} counterparts, {\em i.e.}, all branches must be
+expressions.
 
 All matching done by a SmPL rule is done intraprocedurally.  Thus
 ``\ldots'' does not extend from one function to the next one in the same
@@ -1656,6 +1668,7 @@ in a concise way.
 %   \CASE{\mth{\T{metaid}^{\ssf{Func}}}}
 %   \CASE{\mth{\T{metaid}^{\ssf{LocalFunc}}}}
   \CASE{\mth{\T{metaid}^{\ssf{Exp}}}}
+  \CASE{\mth{\T{metaid}^{\ssf{IdExp}}}}
 %   \CASE{\mth{\T{metaid}^{\ssf{Err}}}}
   \CASE{\mth{\T{metaid}^{\ssf{Const}}}}
   \CASE{\NT{const}}
@@ -1666,7 +1679,9 @@ in a concise way.
   \RULE{\rt{arg}}
   \CASE{\NT{nest\_expr}}
   \CASE{\mth{\T{metaid}^{\ssf{ExpList}}}}
+\end{grammar}
 
+\begin{grammar}
   \RULE{\rt{exp\_whencode}}
   \CASE{when != \NT{expr}}
 
@@ -1697,7 +1712,7 @@ in a concise way.
 
   \RULE{\rt{id}}
   \CASE{\T{id} \OR \mth{\T{metaid}^{\ssf{Id}}}
-        \OR {\NT{OR}\mth{(}\NT{stmt}\mth{)}}}
+        \OR {\NT{OR}\mth{(}\NT{id}\mth{)}}}
 
   \RULE{\rt{typedef\_ident}}
   \CASE{\T{id} \OR \mth{\T{metaid}^{\ssf{Type}}}}
@@ -1711,6 +1726,9 @@ in a concise way.
   \RULE{\rt{regexp}}
   \CASE{"\any{[\^{}"]}"}
 \end{grammar}
+
+Conjunctions for identifiers are, as indicated by the BNF, not currently
+supported.
 
 \section{Comments and Preprocessor Directives}
 

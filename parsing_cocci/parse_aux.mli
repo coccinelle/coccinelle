@@ -550,3 +550,5 @@ val parse_string :
   (Ast_cocci.added_string * Ast0_cocci.position_info) list *
   (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
   string -> Ast0_cocci.base_expression Ast0_cocci.wrap
+val unfloatl : string -> string
+val unfloatr : string -> string
