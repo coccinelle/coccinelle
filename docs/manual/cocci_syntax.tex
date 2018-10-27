@@ -1712,7 +1712,7 @@ in a concise way.
 
   \RULE{\rt{id}}
   \CASE{\T{id} \OR \mth{\T{metaid}^{\ssf{Id}}}
-        \OR {\NT{OR}\mth{(}\NT{stmt}\mth{)}}}
+        \OR {\NT{OR}\mth{(}\NT{id}\mth{)}}}
 
   \RULE{\rt{typedef\_ident}}
   \CASE{\T{id} \OR \mth{\T{metaid}^{\ssf{Type}}}}
@@ -1726,6 +1726,9 @@ in a concise way.
   \RULE{\rt{regexp}}
   \CASE{"\any{[\^{}"]}"}
 \end{grammar}
+
+Conjunctions for identifiers are, as indicated by the BNF, not currently
+supported.
 
 \section{Comments and Preprocessor Directives}
 
