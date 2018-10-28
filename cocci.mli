@@ -27,9 +27,12 @@ type constant_info =
 type merge_vars = string array list * string array list
 val union_merge_vars : merge_vars -> merge_vars -> merge_vars
 val pre_engine : (filename * filename) -> cocci_info * constant_info
-val worth_trying : filename list -> constant_info -> bool
+val worth_trying :
+    (filename * Parse_c.line_restriction list option) list ->
+      constant_info -> bool
 val full_engine :
-  cocci_info -> filename list -> (filename * filename option) list * merge_vars
+    cocci_info -> (filename * Parse_c.line_restriction list option) list ->
+      (filename * filename option) list * merge_vars
 val post_engine : cocci_info -> merge_vars -> unit
 
 (* because of the #include "toto.c" and also because we may associate the

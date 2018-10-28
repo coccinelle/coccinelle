@@ -89,6 +89,8 @@ let error_msg_tok tok =
   then Common.error_message file (token_to_strpos tok)
   else ("error in " ^ file  ^ "; set verbose_parsing for more info")
 
+type line_restriction = Included of int * int | Excluded of int * int
+
 type parse_error_function = int -> Parser_c.token list -> (int * int) ->
     string array -> int -> unit
 
@@ -881,6 +883,7 @@ type program2 = toplevel2 list
 
 type 'a generic_parse_info = {
   filename : string;
+  ranges : line_restriction list option;
   parse_trees : 'a; (* program2 or extended_program2 *)
   statistics : Parsing_stat.parsing_stat;
 }
@@ -1270,7 +1273,7 @@ and _parse_print_error_heuristic2bis saved_typedefs saved_macros
     let new_td = ref (Common.clone_scoped_h_env !LP._typedef) in
     Common.clean_scope_h new_td;
     (v, !new_td, macros) in
-  { filename = file; parse_trees = v; statistics = stat }
+  { filename = file; ranges = None; parse_trees = v; statistics = stat }
 
 let parse_print_error_heuristic2 saved_typedefs saved_macros
   parse_strings cache file use_header_cache =

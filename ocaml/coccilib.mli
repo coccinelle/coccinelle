@@ -552,8 +552,9 @@ module Parse_c :
     and toplevel2 = Ast_c.toplevel * info_item
     and info_item = string * Parser_c.token list
     type 'a generic_parse_info =
-      'a Parse_c.generic_parse_info = {
+	'a Parse_c.generic_parse_info = {
       filename : string;
+      ranges : Parse_c.line_restriction list option;
       parse_trees : 'a;
       statistics : Parsing_stat.parsing_stat;
     }
