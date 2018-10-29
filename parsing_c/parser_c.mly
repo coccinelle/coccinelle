@@ -168,14 +168,18 @@ let (fixDeclSpecForDecl: decl -> (fullType * (storage wrap)))  = function
      BaseType(IntType (Si (sign, CChar2))), iit
  | (None, Some Long,(Some(BaseType(FloatType CDouble))))    ->
      BaseType (FloatType (CLongDouble)), iit
+ | (None, Some Long,(Some(BaseType(FloatType CDoubleComplex))))    ->
+     BaseType (FloatType (CLongDoubleComplex)), iit
 
  | (Some _,_, Some _) ->
      (*mine*)
      raise (Semantic ("signed, unsigned valid only for char and int", fake_pi))
- | (_,Some _,(Some(BaseType(FloatType (CFloat|CLongDouble))))) ->
+ | (_,Some _,(Some(BaseType(FloatType (CFloat))))) ->
      raise (Semantic ("long or short specified with floating type", fake_pi))
  | (_,Some Short,(Some(BaseType(FloatType CDouble)))) ->
      raise (Semantic ("the only valid combination is long double", fake_pi))
+ | (_,Some Short,(Some(BaseType(FloatType CDoubleComplex)))) ->
+     raise (Semantic ("the only valid combination is long double complex", fake_pi))
 
  | (_, Some _, Some _) ->
      (* mine *)

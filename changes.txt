@@ -26,7 +26,8 @@
 
 * 1.0.8
 ** Language:
-- Support for double complex and float complex at the C and SmPL level.
+- Support for long double complex, double complex and float complex at the
+  C and SmPL level.
 ** Features:
 ** Bugfix:
 * 1.0.7

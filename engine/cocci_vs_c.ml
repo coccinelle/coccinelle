@@ -400,6 +400,8 @@ let split_signb_baseb_ii (baseb, ii) =
   | B.FloatType (B.CFloatComplex),["float",i1;"complex",i2] -> None, [i1;i2]
   | B.FloatType (B.CDoubleComplex),["double",i1;"complex",i2] -> None, [i1;i2]
   | B.FloatType (B.CLongDouble),["long",i1;"double",i2] -> None,[i1;i2]
+  | B.FloatType (B.CLongDoubleComplex),["long",i1;"double",i2;"complex",i3] ->
+      None,[i1;i2;i3]
 
   | B.IntType (B.CChar), ["char",i1] -> None, [i1]
 
@@ -3528,6 +3530,7 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
 	    (B.BaseType baseb, [ibaseb])
           ))
 
+      | A.LongDoubleType, B.FloatType B.CLongDouble
       | A.FloatComplexType,  B.FloatType (B.CFloatComplex)
       | A.DoubleComplexType, B.FloatType (B.CDoubleComplex) ->
            assert (signaopt = None);
@@ -3539,6 +3542,18 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
                (rebuilda ([stringa1;stringa2], signaopt)) +> A.rewrap ta,
                (B.BaseType baseb, [ibaseb1;ibaseb2])
              )))
+
+      | A.LongDoubleComplexType, B.FloatType (B.CLongDoubleComplex) ->
+           assert (signaopt = None);
+	   let (stringa1,stringa2,stringa3) = tuple_of_list3 stringsa in
+           let (ibaseb1,ibaseb2,ibaseb3) = tuple_of_list3 ii in
+           tokenf stringa1 ibaseb1 >>= (fun stringa1 ibaseb1 ->
+           tokenf stringa2 ibaseb2 >>= (fun stringa2 ibaseb2 ->
+           tokenf stringa3 ibaseb3 >>= (fun stringa3 ibaseb3 ->
+             return (
+               (rebuilda ([stringa1;stringa2;stringa3], signaopt)) +> A.rewrap ta,
+               (B.BaseType baseb, [ibaseb1;ibaseb2;ibaseb3])
+             ))))
 
       | A.CharType,  B.IntType B.CChar when signaopt = None ->
 	  let stringa = tuple_of_list1 stringsa in
@@ -3613,8 +3628,7 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
 
       | A.LongLongType, B.IntType (B.Si (_, B.CLongLong))
       | A.LongIntType,  B.IntType (B.Si (_, B.CLong))
-      | A.ShortIntType, B.IntType (B.Si (_, B.CShort))
-      | A.LongDoubleType, B.FloatType B.CLongDouble ->
+      | A.ShortIntType, B.IntType (B.Si (_, B.CShort)) ->
 	  let (string1a,string2a) = tuple_of_list2 stringsa in
           (match iibaseb with
             [ibase1b;ibase2b] ->
