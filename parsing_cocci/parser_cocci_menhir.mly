@@ -3232,6 +3232,7 @@ anything: /* used for script code */
  | Tint { "int" }
  | Tdouble { "double" }
  | Tfloat { "float" }
+ | Tcomplex { "complex" }
  | Tlong { "long" }
  | Tsize_t { "size_t" }
  | Tssize_t { "ssize_t" }

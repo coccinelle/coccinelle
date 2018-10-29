@@ -3516,8 +3516,6 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
       | A.VoidType,   B.Void
       | A.FloatType,  B.FloatType (B.CFloat)
       | A.DoubleType, B.FloatType (B.CDouble)
-      | A.FloatComplexType,  B.FloatType (B.CFloatComplex)
-      | A.DoubleComplexType, B.FloatType (B.CDoubleComplex)
       |	A.SizeType,   B.SizeType
       |	A.SSizeType,  B.SSizeType
       |	A.PtrDiffType,B.PtrDiffType ->
@@ -3529,6 +3527,18 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
                (rebuilda ([stringa], signaopt)) +> A.rewrap ta,
                (B.BaseType baseb, [ibaseb])
              ))
+
+      | A.FloatComplexType,  B.FloatType (B.CFloatComplex)
+      | A.DoubleComplexType, B.FloatType (B.CDoubleComplex) ->
+           assert (signaopt = None);
+	   let (stringa1,stringa2) = tuple_of_list2 stringsa in
+           let (ibaseb1,ibaseb2) = tuple_of_list2 ii in
+           tokenf stringa1 ibaseb1 >>= (fun stringa1 ibaseb1 ->
+           tokenf stringa2 ibaseb2 >>= (fun stringa2 ibaseb2 ->
+             return (
+               (rebuilda ([stringa1;stringa2], signaopt)) +> A.rewrap ta,
+               (B.BaseType baseb, [ibaseb1;ibaseb2])
+             )))
 
       | A.CharType,  B.IntType B.CChar when signaopt = None ->
 	  let stringa = tuple_of_list1 stringsa in
