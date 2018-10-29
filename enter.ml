@@ -1273,7 +1273,7 @@ singleton lists are then just appended to each other during the merge. *)
 				    | Pycocci.Pycocciexception ->
 					raise Pycocci.Pycocciexception
 				    | e ->
-					if !dir
+					if !dir || !file_groups
 					then begin
 					  (* not hidden by --very-quiet *)
 					  Printf.eprintf "EXN: %s\n"
