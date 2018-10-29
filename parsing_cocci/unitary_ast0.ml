@@ -126,7 +126,7 @@ let get_free checker t =
 	detect_unitary_frees(List.map r.VT0.combiner_rec_expression expr_list)
     | Ast0.ConjExpr(starter,expr_list,mids,ender) ->
 	List.fold_left
-	  (fun prev cur -> bind (r.VT0.combiner_rec_expression  cur) prev)
+	  (fun prev cur -> bind (r.VT0.combiner_rec_expression cur) prev)
 	  option_default expr_list
     | _ -> k e in
 
