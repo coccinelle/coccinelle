@@ -750,23 +750,6 @@ and typeC ty =
 
 and baseType ty = print_string (Ast.string_of_baseType ty ^ " ")
 
-(* function
-    Ast.VoidType -> print_string "void"
-  | Ast.CharType -> print_string "char"
-  | Ast.ShortType -> print_string "short"
-  | Ast.ShortIntType -> print_string "short int"
-  | Ast.IntType -> print_string "int"
-  | Ast.DoubleType -> print_string "double"
-  | Ast.LongDoubleType -> print_string "long double"
-  | Ast.FloatType -> print_string "float"
-  | Ast.LongType -> print_string "long"
-  | Ast.LongIntType -> print_string "long int"
-  | Ast.LongLongType -> print_string "long long"
-  | Ast.LongLongIntType -> print_string "long long int"
-  | Ast.SizeType -> print_string "size_t "
-  | Ast.SSizeType -> print_string "ssize_t "
-  | Ast.PtrDiffType -> print_string "ptrdiff_t "
-*)
 and structUnion = function
     Ast.Struct -> print_string "struct"
   | Ast.Union -> print_string "union"
