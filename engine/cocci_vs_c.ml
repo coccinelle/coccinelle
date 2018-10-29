@@ -397,7 +397,7 @@ let split_signb_baseb_ii (baseb, ii) =
 
   | B.FloatType (B.CFloat),["float",i1] -> None, [i1]
   | B.FloatType (B.CDouble),["double",i1] -> None, [i1]
-  | B.FloatType (B.CFloatComplex),["double",i1;"complex",i2] -> None, [i1;i2]
+  | B.FloatType (B.CFloatComplex),["float",i1;"complex",i2] -> None, [i1;i2]
   | B.FloatType (B.CDoubleComplex),["double",i1;"complex",i2] -> None, [i1;i2]
   | B.FloatType (B.CLongDouble),["long",i1;"double",i2] -> None,[i1;i2]
 
@@ -3516,6 +3516,8 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
       | A.VoidType,   B.Void
       | A.FloatType,  B.FloatType (B.CFloat)
       | A.DoubleType, B.FloatType (B.CDouble)
+      | A.FloatComplexType,  B.FloatType (B.CFloatComplex)
+      | A.DoubleComplexType, B.FloatType (B.CDoubleComplex)
       |	A.SizeType,   B.SizeType
       |	A.SSizeType,  B.SSizeType
       |	A.PtrDiffType,B.PtrDiffType ->
@@ -4249,15 +4251,13 @@ and compatible_base_type a signa b =
       compatible_sign signa signb
   | A.LongLongType, B.IntType (B.Si (signb, B.CLongLong)) ->
       compatible_sign signa signb
-  | A.FloatType, B.FloatType B.CFloat ->
+  | A.FloatType, B.FloatType B.CFloat
+  | A.DoubleType, B.FloatType B.CDouble
+  | A.FloatComplexType, B.FloatType B.CFloatComplex
+  | A.DoubleComplexType, B.FloatType B.CDoubleComplex
+  | A.LongDoubleType, B.FloatType B.CLongDouble ->
       assert (signa = None);
       ok
-  | A.DoubleType, B.FloatType B.CDouble ->
-      assert (signa = None);
-      ok
-  | _, B.FloatType B.CLongDouble ->
-      pr2_once "no longdouble in cocci";
-      fail
   | A.BoolType, _ -> failwith "no booltype in C"
 
   | _, (B.Void|B.FloatType _|B.IntType _

@@ -2696,6 +2696,8 @@ module Ast_cocci :
       | DoubleType
       | LongDoubleType
       | FloatType
+      | DoubleComplexType
+      | FloatComplexType
       | LongType
       | LongIntType
       | LongLongType

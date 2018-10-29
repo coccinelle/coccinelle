@@ -214,7 +214,7 @@ let check_constraint_allowed () =
 %token<string> TRuleName
 %token<string * int> TScript
 
-%token<Data.clt> Tchar Tshort Tint Tdouble Tfloat Tlong
+%token<Data.clt> Tchar Tshort Tint Tdouble Tfloat Tcomplex Tlong
 %token<Data.clt> Tsize_t Tssize_t Tptrdiff_t
 %token<Data.clt> Tvoid Tstruct Tunion Tenum
 %token<Data.clt> Tunsigned Tsigned
@@ -943,6 +943,16 @@ non_signable_types_no_ident:
     { Ast0.wrap(Ast0.BaseType(Ast.DoubleType,[P.clt2mcode "double" ty])) }
 | ty=Tfloat
     { Ast0.wrap(Ast0.BaseType(Ast.FloatType,[P.clt2mcode "float" ty])) }
+| ty=Tdouble c=Tcomplex
+    { Ast0.wrap
+	(Ast0.BaseType
+	   (Ast.DoubleComplexType,
+	    [P.clt2mcode "double" ty;P.clt2mcode "complex" c])) }
+| ty=Tfloat c=Tcomplex
+    { Ast0.wrap
+	(Ast0.BaseType
+	   (Ast.FloatComplexType,
+	    [P.clt2mcode "float" ty;P.clt2mcode "complex" c])) }
 | ty=Tsize_t
     { Ast0.wrap(Ast0.BaseType(Ast.SizeType,[P.clt2mcode "size_t" ty])) }
 | ty=Tssize_t

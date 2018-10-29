@@ -33,7 +33,7 @@ and name =
 and tagged_string = string
 
 and baseType = VoidType | CharType | ShortType | ShortIntType | IntType
-| DoubleType | LongDoubleType | FloatType
+| DoubleType | LongDoubleType | FloatType | DoubleComplexType | FloatComplexType
 | LongType | LongIntType | LongLongType | LongLongIntType
 | SizeType | SSizeType | PtrDiffType | BoolType
 

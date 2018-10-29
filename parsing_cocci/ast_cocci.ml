@@ -358,6 +358,7 @@ and typeC = base_typeC wrap
 
 and baseType = VoidType | CharType | ShortType | ShortIntType | IntType
 | DoubleType | LongDoubleType | FloatType
+| DoubleComplexType | FloatComplexType
 | LongType | LongIntType | LongLongType | LongLongIntType
 | SizeType | SSizeType | PtrDiffType
 | BoolType | Unknown
@@ -1045,6 +1046,8 @@ let string_of_baseType = function
   | DoubleType -> "double"
   | LongDoubleType -> "long double"
   | FloatType -> "float"
+  | DoubleComplexType -> "double complex"
+  | FloatComplexType -> "float complex"
   | LongType -> "long"
   | LongIntType -> "long int"
   | LongLongType -> "long long"
