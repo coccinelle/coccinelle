@@ -397,6 +397,8 @@ let split_signb_baseb_ii (baseb, ii) =
 
   | B.FloatType (B.CFloat),["float",i1] -> None, [i1]
   | B.FloatType (B.CDouble),["double",i1] -> None, [i1]
+  | B.FloatType (B.CFloatComplex),["double",i1;"complex",i2] -> None, [i1;i2]
+  | B.FloatType (B.CDoubleComplex),["double",i1;"complex",i2] -> None, [i1;i2]
   | B.FloatType (B.CLongDouble),["long",i1;"double",i2] -> None,[i1;i2]
 
   | B.IntType (B.CChar), ["char",i1] -> None, [i1]

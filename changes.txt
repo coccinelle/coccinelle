@@ -24,6 +24,11 @@
 - typedefs from C code should not be used before their point of inference
   (saved_typedefs in cprogram_of_file)
 
+* 1.0.8
+** Language:
+- Support for double complex and float complex at the C level.
+** Features:
+** Bugfix:
 * 1.0.7
 ** Language:
 - Allow constraints on any metavariables. Constraints can be specified

@@ -58,7 +58,9 @@ module Ast_c :
     and signed = sign * base
     and base = Ast_c.base = CChar2 | CShort | CInt | CLong | CLongLong
     and sign = Ast_c.sign = Signed | UnSigned
-    and floatType = Ast_c.floatType = CFloat | CDouble | CLongDouble
+    and floatType =
+	Ast_c.floatType =
+	CFloat | CDouble | CLongDouble | CFloatComplex | CDoubleComplex
     and structUnion = Ast_c.structUnion = Struct | Union
     and structType = field list
     and field =
@@ -666,6 +668,7 @@ module Parser_c :
       | Tint of Ast_c.info
       | Tdouble of Ast_c.info
       | Tfloat of Ast_c.info
+      | Tcomplex of Ast_c.info
       | Tlong of Ast_c.info
       | Tunsigned of Ast_c.info
       | Tsigned of Ast_c.info

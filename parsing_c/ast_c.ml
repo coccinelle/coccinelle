@@ -237,7 +237,8 @@ and fullType = typeQualifier * typeC
             and base = CChar2 | CShort | CInt | CLong | CLongLong (* gccext: *)
             and sign = Signed | UnSigned
 
-          and floatType = CFloat | CDouble | CLongDouble
+          and floatType = CFloat | CDouble | CLongDouble |
+	                  CFloatComplex | CDoubleComplex
 
 
      (* -------------------------------------- *)
