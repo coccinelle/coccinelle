@@ -3516,17 +3516,17 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
       | A.VoidType,   B.Void
       | A.FloatType,  B.FloatType (B.CFloat)
       | A.DoubleType, B.FloatType (B.CDouble)
-      |	A.SizeType,   B.SizeType
-      |	A.SSizeType,  B.SSizeType
-      |	A.PtrDiffType,B.PtrDiffType ->
-           assert (signaopt = None);
-	   let stringa = tuple_of_list1 stringsa in
-           let (ibaseb) = tuple_of_list1 ii in
-           tokenf stringa ibaseb >>= (fun stringa ibaseb ->
-             return (
-               (rebuilda ([stringa], signaopt)) +> A.rewrap ta,
-               (B.BaseType baseb, [ibaseb])
-             ))
+      | A.SizeType,   B.SizeType
+      | A.SSizeType,  B.SSizeType
+      | A.PtrDiffType,B.PtrDiffType ->
+	  assert (signaopt = None);
+	  let stringa = tuple_of_list1 stringsa in
+	  let (ibaseb) = tuple_of_list1 ii in
+	  tokenf stringa ibaseb >>= (fun stringa ibaseb ->
+	    return (
+	    (rebuilda ([stringa], signaopt)) +> A.rewrap ta,
+	    (B.BaseType baseb, [ibaseb])
+          ))
 
       | A.FloatComplexType,  B.FloatType (B.CFloatComplex)
       | A.DoubleComplexType, B.FloatType (B.CDoubleComplex) ->
