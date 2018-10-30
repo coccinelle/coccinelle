@@ -238,7 +238,7 @@ and fullType = typeQualifier * typeC
             and sign = Signed | UnSigned
 
           and floatType = CFloat | CDouble | CLongDouble |
-	                  CFloatComplex | CDoubleComplex
+	                  CFloatComplex | CDoubleComplex | CLongDoubleComplex
 
 
      (* -------------------------------------- *)

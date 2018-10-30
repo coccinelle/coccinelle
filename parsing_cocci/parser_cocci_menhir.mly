@@ -943,6 +943,12 @@ non_signable_types_no_ident:
     { Ast0.wrap(Ast0.BaseType(Ast.DoubleType,[P.clt2mcode "double" ty])) }
 | ty=Tfloat
     { Ast0.wrap(Ast0.BaseType(Ast.FloatType,[P.clt2mcode "float" ty])) }
+| ty1=Tlong ty=Tdouble c=Tcomplex
+    { Ast0.wrap
+	(Ast0.BaseType
+	   (Ast.LongDoubleComplexType,
+	    [P.clt2mcode "long" ty1;P.clt2mcode "double" ty;
+	      P.clt2mcode "complex" c])) }
 | ty=Tdouble c=Tcomplex
     { Ast0.wrap
 	(Ast0.BaseType

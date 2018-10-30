@@ -61,6 +61,7 @@ module Ast_c :
     and floatType =
 	Ast_c.floatType =
 	CFloat | CDouble | CLongDouble | CFloatComplex | CDoubleComplex
+      | CLongDoubleComplex
     and structUnion = Ast_c.structUnion = Struct | Union
     and structType = field list
     and field =
@@ -2697,6 +2698,7 @@ module Ast_cocci :
       | DoubleType
       | LongDoubleType
       | FloatType
+      | LongDoubleComplexType
       | DoubleComplexType
       | FloatComplexType
       | LongType
