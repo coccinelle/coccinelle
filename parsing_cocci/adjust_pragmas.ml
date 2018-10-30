@@ -212,7 +212,8 @@ let rec left_ident i =
   | Ast0.MetaLocalFunc(name,a,b) ->
       call_right left_mcode name i
 	(function name -> Ast0.MetaLocalFunc(name,a,b))
-  | Ast0.DisjId(starter,ids,mids,ender) -> None
+  | Ast0.DisjId(starter,ids,mids,ender)
+  | Ast0.ConjId(starter,ids,mids,ender) -> None
   | Ast0.OptIdent(id) ->
       call_right left_ident id i (function id -> Ast0.OptIdent(id))
   | Ast0.AsIdent(id,asid) -> failwith "not possible"

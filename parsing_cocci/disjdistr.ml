@@ -125,6 +125,10 @@ and anndisjfield d =
 and disjident e =
   match Ast.unwrap e with
     Ast.DisjId(id_list) -> List.concat (List.map disjident id_list)
+  | Ast.ConjId(id_list) ->
+      let id_list = disjmult disjident id_list in
+      List.map (function id_list -> Ast.rewrap e (Ast.ConjId(id_list)))
+	id_list
   | Ast.OptIdent(id) ->
       let id = disjident id in
       List.map (function id -> Ast.rewrap e (Ast.OptIdent(id))) id

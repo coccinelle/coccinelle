@@ -141,6 +141,7 @@ and base_ident =
   | AsIdent       of ident * ident (* as ident, always metavar *)
 
   | DisjId        of ident list
+  | ConjId        of ident list
   | OptIdent      of ident
 
 and ident = base_ident wrap

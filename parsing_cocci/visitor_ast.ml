@@ -113,7 +113,8 @@ let combiner bind option_default
 	  let lid = ident id in
 	  let lasid = ident asid in
 	  bind lid lasid
-      | Ast.DisjId(id_list) -> multibind (List.map ident id_list)
+      | Ast.DisjId(id_list) | Ast.ConjId(id_list) ->
+	  multibind (List.map ident id_list)
       | Ast.OptIdent(id) -> ident id in
     identfn all_functions k i
 
@@ -1035,6 +1036,7 @@ let rebuilder
 	    Ast.MetaLocalFunc(meta_mcode name,constraints,keep,inherited)
 	| Ast.AsIdent(id,asid) -> Ast.AsIdent(ident id,ident asid)
 	| Ast.DisjId(id_list) -> Ast.DisjId(List.map ident id_list)
+	| Ast.ConjId(id_list) -> Ast.ConjId(List.map ident id_list)
 	| Ast.OptIdent(id) -> Ast.OptIdent(ident id)) in
     identfn all_functions k i
 

@@ -293,6 +293,10 @@ let rec ident i =
 	if generating
 	then print_disj_list ident id_list "|"
 	else raise CantBeInPlus
+    | Ast.ConjId(id_list) ->
+	if generating
+	then print_disj_list ident id_list "&"
+	else raise CantBeInPlus
     | Ast.OptIdent(_) -> raise CantBeInPlus in
 
 

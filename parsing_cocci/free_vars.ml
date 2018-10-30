@@ -680,6 +680,7 @@ let classify_variables metavar_decls minirules used_after =
       | Ast.AsIdent (ident0, ident1) ->
           Ast.AsIdent (classify_ident ident0, classify_ident ident1)
       | Ast.DisjId list -> Ast.DisjId (List.map classify_ident list)
+      | Ast.ConjId list -> Ast.ConjId (List.map classify_ident list)
       | Ast.OptIdent ident' -> Ast.OptIdent (classify_ident ident') in
     Ast.rewrap ident new_ident in
 

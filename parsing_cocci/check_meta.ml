@@ -92,7 +92,7 @@ let rec ident context old_metas table minus i =
   | Ast0.MetaFunc(name,_,_) -> check_table table minus name
   | Ast0.MetaLocalFunc(name,_,_) -> check_table table minus name
   | Ast0.AsIdent(id,asid) -> failwith "not generated yet"
-  | Ast0.DisjId(_,id_list,_,_) ->
+  | Ast0.DisjId(_,id_list,_,_) | Ast0.ConjId(_,id_list,_,_) ->
       List.iter (ident context old_metas table minus) id_list
   | Ast0.OptIdent(_) ->
       failwith "unexpected code"

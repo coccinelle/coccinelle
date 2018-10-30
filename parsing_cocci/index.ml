@@ -5,7 +5,7 @@
  *)
 
 (* create an index for each constructor *)
-(* current max is 188, also unused: 8-9, 15, 39, 40, 42, 46, 57, 65, 67, 85-86,
+(* current max is 188, also unused: 8-9, 15, 39, 40, 42, 46, 57, 65, 85-86,
  113-115, 138-140 *)
 
 (* doesn't really work - requires that identical terms with no token
@@ -38,6 +38,7 @@ let ident i =
     | Ast0.MetaFunc(name,_,_) -> [12]
     | Ast0.MetaLocalFunc(name,_,_) -> [13]
     | Ast0.DisjId(_,id_list,_,_) -> [152]
+    | Ast0.ConjId(_,id_list,_,_) -> [67]
     | Ast0.OptIdent(id) -> [14]
     | Ast0.AsIdent _ -> failwith "not possible"
 
