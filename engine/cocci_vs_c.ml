@@ -1914,12 +1914,16 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
 	  ((A.AsIdent(id,asid)) +> A.rewrap ida,
 	   ib))))
 
-  (* not clear why disj things are needed, after disjdistr? *)
+  (* needed with identifier rule header *)
   | A.DisjId ias ->
-      failwith "DisjId should not arise"
-(*
       ias +> List.fold_left (fun acc ia -> acc >|+|> (ident infoidb ia ib)) fail
-*)
+  | A.ConjId ias ->
+      let rec loop acc_id ib = function
+	  [] -> return (A.ConjId (List.rev acc_id) +> A.rewrap ida, ib)
+	| ia::ias ->
+	    ident infoidb ia ib >>= (fun ia ib ->
+	      loop (ia::acc_id) ib ias) in
+      loop [] ib ias
 
   | A.OptIdent _ -> failwith "not handling Opt for ident"
 

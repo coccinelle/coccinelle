@@ -197,7 +197,8 @@ let check_allminus =
   (* special case for disj and asExpr etc *)
   let ident r k e =
     match Ast0.unwrap e with
-      Ast0.DisjId(starter,id_list,mids,ender) ->
+      Ast0.DisjId(starter,id_list,mids,ender)
+    | Ast0.ConjId(starter,id_list,mids,ender) ->
 	List.for_all r.VT0.combiner_rec_ident id_list
     | Ast0.AsIdent(id,asid) -> k id
     | _ -> k e in
@@ -359,6 +360,8 @@ and ident i =
       Ast0.Id(name) -> Ast.Id(mcode name)
     | Ast0.DisjId(_,id_list,_,_) ->
 	Ast.DisjId(List.map ident id_list)
+    | Ast0.ConjId(_,id_list,_,_) ->
+	Ast.ConjId(List.map ident id_list)
     | Ast0.MetaId(name,cstr,_,_) ->
 	let cstr' = constraints cstr in
 	Ast.MetaId(mcode name,cstr',unitary,false)

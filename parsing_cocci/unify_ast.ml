@@ -168,6 +168,10 @@ let rec unify_ident i1 i2 =
       disjunct_all_bindings (List.map (function x -> unify_ident x i2) i1)
   | (_,Ast.DisjId(i2)) ->
       disjunct_all_bindings (List.map (function x -> unify_ident i1 x) i2)
+  | (Ast.ConjId(i1),_) ->
+      conjunct_all_bindings (List.map (function x -> unify_ident x i2) i1)
+  | (_,Ast.ConjId(i2)) ->
+      conjunct_all_bindings (List.map (function x -> unify_ident i1 x) i2)
 
   | (Ast.OptIdent(_),_)
   | (_,Ast.OptIdent(_)) -> failwith "unsupported ident"

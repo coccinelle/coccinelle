@@ -28,6 +28,7 @@
 ** Language:
 - Support for long double complex, double complex and float complex at the
   C and SmPL level.
+- Add conjunction for identifiers.
 ** Features:
 ** Bugfix:
 * 1.0.7

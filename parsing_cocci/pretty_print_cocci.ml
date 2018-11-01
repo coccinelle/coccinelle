@@ -194,6 +194,7 @@ let rec ident i =
   | Ast.MetaLocalFunc(name,_,_,_) -> mcode print_meta name
   | Ast.AsIdent(id,asid) -> ident id; print_string "@"; ident asid
   | Ast.DisjId(id_list) -> print_disj_list ident id_list "|"
+  | Ast.ConjId(id_list) -> print_disj_list ident id_list "&"
   | Ast.OptIdent(id) -> print_string "?"; ident id
 
 and print_unitary = function

@@ -2509,6 +2509,7 @@ module Ast_cocci :
           inherited
       | AsIdent of ident * ident
       | DisjId of ident list
+      | ConjId of ident list
       | OptIdent of ident
     and ident = base_ident wrap
     and base_expression =
@@ -3229,6 +3230,8 @@ module Ast0_cocci :
       | MetaLocalFunc of Ast_cocci.meta_name mcode * constraints * pure
       | AsIdent of ident * ident
       | DisjId of string mcode * ident list * string mcode list *
+          string mcode
+      | ConjId of string mcode * ident list * string mcode list *
           string mcode
       | OptIdent of ident
     and ident = base_ident wrap

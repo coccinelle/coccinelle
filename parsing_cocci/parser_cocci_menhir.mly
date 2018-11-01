@@ -2636,6 +2636,10 @@ close_disj_ident(sub_ident):
 	 { let (mids,code) = t in
 	 Ast0.wrap
 	   (Ast0.DisjId(P.id2mcode lp,code,mids, P.id2mcode rp)) }
+     | lp=TOPar0 t=andzero_list(sub_ident,sub_ident) rp=TCPar0
+	 { let (mids,code) = t in
+	 Ast0.wrap
+	   (Ast0.ConjId(P.id2mcode lp,code,mids, P.id2mcode rp)) }
 
 top_ident:
   disj_ident { Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.TopId($1)))) }

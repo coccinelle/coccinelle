@@ -547,7 +547,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	      if mcode_equal namea nameb
 	      then check_mcode namea nameb
 	      else return false
-	  | (Ast0.DisjId(_,ids,_,_),_) ->
+	  | (Ast0.DisjId(_,ids,_,_),_) | (Ast0.ConjId(_,ids,_,_),_) ->
 	      failwith "not allowed in the pattern of an isomorphism"
 	  | (Ast0.OptIdent(ida),Ast0.OptIdent(idb)) ->
 	      match_ident ida idb
