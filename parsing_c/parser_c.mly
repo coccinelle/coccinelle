@@ -417,6 +417,21 @@ let args_to_params l pb =
 		    pi)))
 	l
 
+(* For fake info added at the end of a conditional or iteration, to have the
+correct position information *)
+let postfakeInfo pii  =
+  let (max,min) =  Lib_parsing_c.max_min_ii_by_pos pii in
+  let max_pi = Ast_c.get_info (fun x -> x) max in
+  let vp = ({str="";charpos=max_pi.Common.charpos;line=max_pi.Common.line;
+	      column=max_pi.Common.column;file=max_pi.Common.file},
+	    String.length max_pi.Common.str) in
+  { pinfo = FakeTok ("",vp);
+    cocci_tag = ref Ast_c.emptyAnnot;
+    annots_tag = Token_annot.empty;
+    comments_tag = ref Ast_c.emptyComments;
+    danger = ref Ast_c.NoDanger;
+  }
+
 %}
 
 /*(*****************************************************************************)*/
@@ -974,8 +989,8 @@ statement2:
  | labeled         { Labeled      (fst $1), snd $1 }
  | compound        { Compound     (fst $1), snd $1 }
  | expr_statement  { ExprStatement(fst $1), snd $1 }
- | selection       { Selection    (fst $1), snd $1 @ [fakeInfo()] }
- | iteration       { Iteration    (fst $1), snd $1 @ [fakeInfo()] }
+ | selection       { Selection    (fst $1), snd $1 @ [postfakeInfo(snd $1)] }
+ | iteration       { Iteration    (fst $1), snd $1 @ [postfakeInfo(snd $1)] }
  | jump TPtVirg    { Jump         (fst $1), snd $1 @ [$2] }
 
  /*(* gccext: *)*/
