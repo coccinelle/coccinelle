@@ -4465,11 +4465,14 @@ and structure_type_name nm sb ii =
             if A.unwrap_mcode id = sb
             then ok
             else fail
-        | A.MetaId (ida, _, keep, inherited) ->
-            (* degenerate version of MetaId, no transformation possible *)
-            let (ib1, ib2) = tuple_of_list2 ii in
-            let max_min _ = lin_col_by_pos [ib2] in
-            X.envf keep inherited (ida, B.MetaIdVal sb, max_min) (fun () -> ok)
+        | A.MetaId (ida, constraints, keep, inherited) ->
+	    check_constraints constraints ida (B.MetaIdVal sb)
+	      (fun () ->
+		(* degenerate version of MetaId, no transformation possible *)
+		let (ib1, ib2) = tuple_of_list2 ii in
+		let max_min _ = lin_col_by_pos [ib2] in
+		X.envf keep inherited (ida, B.MetaIdVal sb, max_min)
+		  (fun () -> ok))
         | _ -> failwith "Cocci_vs_c.structure_type_name: unimplemented"
   in
   loop a b
