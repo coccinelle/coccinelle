@@ -687,11 +687,11 @@ let classify_variables metavar_decls minirules used_after =
   let type_infos ty =
     Ast.fullType_map { Ast.empty_transformer with
       Ast.decimal = Some (fun s0 s1 e1 s2 e2 s3 ->
-          let e2mv e =
-            match Ast.unwrap e with
-              Ast.Ident ident -> Ast.rewrap e (Ast.Ident (classify_ident ident))
-            | _ -> e in
-          Ast.Decimal (s0, s1, e2mv e1, s2, Common.map_option e2mv e2, s3));
+        let e2mv e =
+          match Ast.unwrap e with
+            Ast.Ident ident -> Ast.rewrap e (Ast.Ident (classify_ident ident))
+          | _ -> e in
+        Ast.Decimal (s0, s1, e2mv e1, s2, Common.map_option e2mv e2, s3));
       enumName = Some (fun s0 ident ->
         let ident' = Common.map_option classify_ident ident in
         Ast.EnumName (s0, ident'));
