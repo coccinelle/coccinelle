@@ -665,18 +665,18 @@ let classify_variables metavar_decls minirules used_after =
     let new_ident =
       match Ast.unwrap ident with
         Ast.Id id -> Ast.Id id
-      | Ast.MetaId (name, _, _, _) ->
+      | Ast.MetaId (name, constraints, _, _) ->
           let (unitary, inherited) =
             classify (Ast.unwrap_mcode name, (), (), []) in
-          Ast.MetaId (name, Ast.CstrTrue, unitary, inherited)
-      | Ast.MetaFunc (name, _, _, _) ->
+          Ast.MetaId (name, constraints, unitary, inherited)
+      | Ast.MetaFunc (name, constraints, _, _) ->
           let (unitary, inherited) =
             classify (Ast.unwrap_mcode name, (), (), []) in
-          Ast.MetaFunc (name, Ast.CstrTrue, unitary, inherited)
-      | Ast.MetaLocalFunc (name, _, _, _) ->
+          Ast.MetaFunc (name, constraints, unitary, inherited)
+      | Ast.MetaLocalFunc (name, constraints, _, _) ->
           let (unitary, inherited) =
             classify (Ast.unwrap_mcode name, (), (), []) in
-          Ast.MetaLocalFunc (name, Ast.CstrTrue, unitary, inherited)
+          Ast.MetaLocalFunc (name, constraints, unitary, inherited)
       | Ast.AsIdent (ident0, ident1) ->
           Ast.AsIdent (classify_ident ident0, classify_ident ident1)
       | Ast.DisjId list -> Ast.DisjId (List.map classify_ident list)
