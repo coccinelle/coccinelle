@@ -118,7 +118,8 @@ let rec propagate_types env =
     | Ast0.MetaId(id,_,_,_) ->
 	(try Some(List.assoc (Meta(Ast0.unwrap_mcode id)) env)
 	with Not_found -> None)
-    | Ast0.DisjId(_,id_list,_,_) ->
+    | Ast0.DisjId(_,id_list,_,_)
+    | Ast0.ConjId(_,id_list,_,_) ->
 	let types = List.map Ast0.get_type id_list in
 	let combined = List.fold_left lub_type None types in
 	(match combined with
@@ -326,7 +327,8 @@ let rec propagate_types env =
     | Ast0.MetaId(name,_,_,_)      -> [Meta(Ast0.unwrap_mcode name)]
     | Ast0.MetaFunc(name,_,_)      -> [Meta(Ast0.unwrap_mcode name)]
     | Ast0.MetaLocalFunc(name,_,_) -> [Meta(Ast0.unwrap_mcode name)]
-    | Ast0.DisjId(_,id_list,_,_)   -> List.concat (List.map strip id_list)
+    | Ast0.DisjId(_,id_list,_,_) | Ast0.ConjId(_,id_list,_,_) ->
+	List.concat (List.map strip id_list)
     | Ast0.OptIdent(id)            -> strip id
     | Ast0.AsIdent _ -> failwith "not possible" in
 

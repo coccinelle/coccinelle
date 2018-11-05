@@ -237,7 +237,8 @@ and fullType = typeQualifier * typeC
             and base = CChar2 | CShort | CInt | CLong | CLongLong (* gccext: *)
             and sign = Signed | UnSigned
 
-          and floatType = CFloat | CDouble | CLongDouble
+          and floatType = CFloat | CDouble | CLongDouble |
+	                  CFloatComplex | CDoubleComplex | CLongDoubleComplex
 
 
      (* -------------------------------------- *)
@@ -1081,10 +1082,14 @@ let compare_pos ii1 ii2 =
   match (pos1,pos2) with
     (Real p1, Real p2) ->
       compare p1.Common.charpos p2.Common.charpos
-  | (Virt (p1,_), Real p2) ->
-      if (compare p1.Common.charpos p2.Common.charpos) = (-1) then (-1) else 1
-  | (Real p1, Virt (p2,_)) ->
-      if (compare p1.Common.charpos p2.Common.charpos) = 1 then 1 else (-1)
+  | (Virt (p1,offset), Real p2) ->
+      if p1.Common.charpos = p2.Common.charpos
+      then if offset < 0 then -1 else 1
+      else compare p1.Common.charpos p2.Common.charpos
+  | (Real p1, Virt (p2,offset)) ->
+      if p1.Common.charpos = p2.Common.charpos
+      then if offset < 0 then 1 else -1
+      else compare p1.Common.charpos p2.Common.charpos
   | (Virt (p1,o1), Virt (p2,o2)) ->
       let poi1 = p1.Common.charpos in
       let poi2 = p2.Common.charpos in

@@ -168,14 +168,18 @@ let (fixDeclSpecForDecl: decl -> (fullType * (storage wrap)))  = function
      BaseType(IntType (Si (sign, CChar2))), iit
  | (None, Some Long,(Some(BaseType(FloatType CDouble))))    ->
      BaseType (FloatType (CLongDouble)), iit
+ | (None, Some Long,(Some(BaseType(FloatType CDoubleComplex))))    ->
+     BaseType (FloatType (CLongDoubleComplex)), iit
 
  | (Some _,_, Some _) ->
      (*mine*)
      raise (Semantic ("signed, unsigned valid only for char and int", fake_pi))
- | (_,Some _,(Some(BaseType(FloatType (CFloat|CLongDouble))))) ->
+ | (_,Some _,(Some(BaseType(FloatType (CFloat))))) ->
      raise (Semantic ("long or short specified with floating type", fake_pi))
  | (_,Some Short,(Some(BaseType(FloatType CDouble)))) ->
      raise (Semantic ("the only valid combination is long double", fake_pi))
+ | (_,Some Short,(Some(BaseType(FloatType CDoubleComplex)))) ->
+     raise (Semantic ("the only valid combination is long double complex", fake_pi))
 
  | (_, Some _, Some _) ->
      (* mine *)
@@ -413,6 +417,21 @@ let args_to_params l pb =
 		    pi)))
 	l
 
+(* For fake info added at the end of a conditional or iteration, to have the
+correct position information *)
+let postfakeInfo pii  =
+  let (max,min) =  Lib_parsing_c.max_min_ii_by_pos pii in
+  let max_pi = Ast_c.get_info (fun x -> x) max in
+  let vp = ({str="";charpos=max_pi.Common.charpos;line=max_pi.Common.line;
+	      column=max_pi.Common.column;file=max_pi.Common.file},
+	    String.length max_pi.Common.str) in
+  { pinfo = FakeTok ("",vp);
+    cocci_tag = ref Ast_c.emptyAnnot;
+    annots_tag = Token_annot.empty;
+    comments_tag = ref Ast_c.emptyComments;
+    danger = ref Ast_c.NoDanger;
+  }
+
 %}
 
 /*(*****************************************************************************)*/
@@ -475,8 +494,8 @@ let args_to_params l pb =
        TPlus TMinus TMul TDiv TMod  TMax TMin
 
 %token <Ast_c.info>
-       Tchar Tshort Tint Tdouble Tfloat Tlong Tunsigned Tsigned Tvoid
-       Tsize_t Tssize_t Tptrdiff_t
+       Tchar Tshort Tint Tdouble Tfloat Tcomplex Tlong Tunsigned Tsigned
+       Tvoid Tsize_t Tssize_t Tptrdiff_t
        Tauto Tregister Textern Tstatic
        Ttypedef
        Tconst Tvolatile
@@ -970,8 +989,8 @@ statement2:
  | labeled         { Labeled      (fst $1), snd $1 }
  | compound        { Compound     (fst $1), snd $1 }
  | expr_statement  { ExprStatement(fst $1), snd $1 }
- | selection       { Selection    (fst $1), snd $1 @ [fakeInfo()] }
- | iteration       { Iteration    (fst $1), snd $1 @ [fakeInfo()] }
+ | selection       { Selection    (fst $1), snd $1 @ [postfakeInfo(snd $1)] }
+ | iteration       { Iteration    (fst $1), snd $1 @ [postfakeInfo(snd $1)] }
  | jump TPtVirg    { Jump         (fst $1), snd $1 @ [$2] }
 
  /*(* gccext: *)*/
@@ -1222,6 +1241,8 @@ type_spec2:
  | Tint                 { Right3 (BaseType (IntType (Si (Signed,CInt)))), [$1]}
  | Tfloat               { Right3 (BaseType (FloatType CFloat)),  [$1]}
  | Tdouble              { Right3 (BaseType (FloatType CDouble)), [$1] }
+ | Tfloat Tcomplex      { Right3 (BaseType (FloatType CFloatComplex)),  [$1;$2]}
+ | Tdouble Tcomplex     { Right3 (BaseType (FloatType CDoubleComplex)), [$1;$2] }
  | Tsize_t              { Right3 (BaseType SizeType),            [$1] }
  | Tssize_t             { Right3 (BaseType SSizeType),           [$1] }
  | Tptrdiff_t           { Right3 (BaseType PtrDiffType),         [$1] }

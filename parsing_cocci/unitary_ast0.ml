@@ -74,6 +74,10 @@ let get_free checker t =
     | Ast0.MetaLocalFunc(name,_,_) -> checker name
     | Ast0.DisjId(starter,id_list,mids,ender) ->
 	detect_unitary_frees(List.map r.VT0.combiner_rec_ident id_list)
+    | Ast0.ConjId(starter,id_list,mids,ender) ->
+	List.fold_left
+	  (fun prev cur -> bind (r.VT0.combiner_rec_ident cur) prev)
+	  option_default id_list
     | _ -> k i in
 
   let type_collect res ty = bind res (Ast0.meta_names_of_typeC ty) in
@@ -126,7 +130,7 @@ let get_free checker t =
 	detect_unitary_frees(List.map r.VT0.combiner_rec_expression expr_list)
     | Ast0.ConjExpr(starter,expr_list,mids,ender) ->
 	List.fold_left
-	  (fun prev cur -> bind (r.VT0.combiner_rec_expression  cur) prev)
+	  (fun prev cur -> bind (r.VT0.combiner_rec_expression cur) prev)
 	  option_default expr_list
     | _ -> k e in
 

@@ -51,7 +51,8 @@ and intType = CChar | Si of signed
 and signed = sign * base
 and base = CChar2 | CShort | CInt | CLong | CLongLong
 and sign = Signed | UnSigned
-and floatType = CFloat | CDouble | CLongDouble
+and floatType =
+    CFloat | CDouble | CLongDouble | CFloatComplex | CDoubleComplex | CLongDoubleComplex
 and structUnion = Struct | Union
 and structType = field list
 and field =

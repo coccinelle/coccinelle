@@ -376,7 +376,8 @@ let classify is_minus all_marked table code =
   let ident r k e =
     compute_result Ast0.ident e
       (match Ast0.unwrap e with
-	Ast0.DisjId(starter,id_list,_,ender) ->
+	Ast0.DisjId(starter,id_list,_,ender)
+      | Ast0.ConjId(starter,id_list,_,ender) ->
 	  disj_cases e starter id_list r.VT0.combiner_rec_ident ender
       |	_ -> k e) in
 
@@ -575,7 +576,9 @@ let equal_ident i1 i2 =
   | (Ast0.MetaLocalFunc(name1,_,_),Ast0.MetaLocalFunc(name2,_,_)) ->
       equal_mcode name1 name2
   | (Ast0.DisjId(starter1,_,mids1,ender1),
-     Ast0.DisjId(starter2,_,mids2,ender2)) ->
+     Ast0.DisjId(starter2,_,mids2,ender2))
+  | (Ast0.ConjId(starter1,_,mids1,ender1),
+     Ast0.ConjId(starter2,_,mids2,ender2)) ->
       equal_mcode starter1 starter2 &&
       List.for_all2 equal_mcode mids1 mids2 &&
       equal_mcode ender1 ender2
@@ -623,10 +626,7 @@ let rec equal_expression e1 e2 =
       equal_mcode name1 name2
   | (Ast0.EComma(cm1),Ast0.EComma(cm2)) -> equal_mcode cm1 cm2
   | (Ast0.DisjExpr(starter1,_,mids1,ender1),
-     Ast0.DisjExpr(starter2,_,mids2,ender2)) ->
-       equal_mcode starter1 starter2 &&
-       List.for_all2 equal_mcode mids1 mids2 &&
-       equal_mcode ender1 ender2
+     Ast0.DisjExpr(starter2,_,mids2,ender2))
   | (Ast0.ConjExpr(starter1,_,mids1,ender1),
      Ast0.ConjExpr(starter2,_,mids2,ender2)) ->
        equal_mcode starter1 starter2 &&

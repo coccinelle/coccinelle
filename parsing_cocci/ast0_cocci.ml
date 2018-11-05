@@ -91,6 +91,8 @@ and base_ident =
   | AsIdent       of ident * ident (* as ident, always metavar *)
   | DisjId        of string mcode * ident list *
                      string mcode list (* the |s *) * string mcode
+  | ConjId        of string mcode * ident list *
+                     string mcode list (* the &s *) * string mcode
   | OptIdent      of ident
 
 and ident = base_ident wrap
@@ -717,7 +719,8 @@ let rec meta_names_of_ident ident =
   | MetaLocalFunc (tyname, _, _) -> [unwrap_mcode tyname]
   | AsIdent (ident0, ident1) ->
       meta_names_of_ident ident0 @ meta_names_of_ident ident1
-  | DisjId (_, l, _, _) -> List.flatten (List.map meta_names_of_ident l)
+  | DisjId (_, l, _, _) | ConjId (_, l, _, _) ->
+      List.flatten (List.map meta_names_of_ident l)
   | OptIdent ident' -> meta_names_of_ident ident'
 
 let meta_names_of_expression expression =

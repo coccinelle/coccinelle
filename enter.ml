@@ -1273,7 +1273,7 @@ singleton lists are then just appended to each other during the merge. *)
 				    | Pycocci.Pycocciexception ->
 					raise Pycocci.Pycocciexception
 				    | e ->
-					if !dir
+					if !dir || !file_groups
 					then begin
 					  (* not hidden by --very-quiet *)
 					  Printf.eprintf "EXN: %s\n"
@@ -1660,7 +1660,8 @@ let main_with_better_error_report arglist =
     | Parse_cocci.SMPLParseError error_message
     | Failure error_message ->
 	Printf.fprintf stderr "%s\n" error_message;
-        raise (UnixExit (-1))
+	Printexc.print_backtrace stderr;
+	raise (UnixExit (-1))
 
 (*****************************************************************************)
 

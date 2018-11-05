@@ -141,6 +141,7 @@ let rec ident i =
       | Ast0.MetaFunc(name,_,_) -> mcode print_meta name
       | Ast0.MetaLocalFunc(name,_,_) -> mcode print_meta name
       | Ast0.DisjId(_,id_list,_,_) -> do_disj id_list ident "|"
+      | Ast0.ConjId(_,id_list,_,_) -> do_disj id_list ident "&"
       | Ast0.OptIdent(id) -> print_string "?"; ident id
       | Ast0.AsIdent(id,asid) -> ident id; print_string "@"; ident asid)
 

@@ -111,6 +111,7 @@ let token2c (tok,_) add_clt =
   | PC.Tint(clt) -> add_clt "int" clt
   | PC.Tdouble(clt) -> add_clt "double" clt
   | PC.Tfloat(clt) -> add_clt "float" clt
+  | PC.Tcomplex(clt) -> add_clt "complex" clt
   | PC.Tlong(clt) -> add_clt "long" clt
   | PC.Tvoid(clt) -> add_clt "void" clt
   | PC.Tsize_t(clt) -> add_clt "size_t" clt
@@ -321,7 +322,7 @@ attach to it, plus means that it is possible to attach to the token *)
 let plus_attachable only_plus (tok,_) =
   match tok with
     PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
-  | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt)
+  | PC.Tfloat(clt) | PC.Tcomplex(clt) | PC.Tlong(clt) | PC.Tvoid(clt)
   | PC.Tsize_t(clt) | PC.Tssize_t(clt) | PC.Tptrdiff_t(clt)
   | PC.Tstruct(clt)
   | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
@@ -408,7 +409,7 @@ exception NoClt of string
 let get_clt (tok,_) =
   match tok with
     PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
-  | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt)
+  | PC.Tfloat(clt) | PC.Tcomplex(clt) | PC.Tlong(clt) | PC.Tvoid(clt)
   | PC.Tsize_t(clt) | PC.Tssize_t(clt) | PC.Tptrdiff_t(clt)
   | PC.Tstruct(clt)
   | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
@@ -563,6 +564,7 @@ let update_clt (tok,x) clt =
   | PC.Tint(_) -> (PC.Tint(clt),x)
   | PC.Tdouble(_) -> (PC.Tdouble(clt),x)
   | PC.Tfloat(_) -> (PC.Tfloat(clt),x)
+  | PC.Tcomplex(_) -> (PC.Tcomplex(clt),x)
   | PC.Tlong(_) -> (PC.Tlong(clt),x)
   | PC.Tvoid(_) -> (PC.Tvoid(clt),x)
   | PC.Tsize_t(_) -> (PC.Tsize_t(clt),x)
@@ -873,7 +875,7 @@ let split_token ((tok,_) as t) =
   | PC.TError | PC.TWords | PC.TGenerated | PC.TNothing -> ([t],[t])
 
   | PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
-  | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt)
+  | PC.Tfloat(clt) | PC.Tcomplex(clt) | PC.Tlong(clt) | PC.Tvoid(clt)
   | PC.Tsize_t(clt) | PC.Tssize_t(clt) | PC.Tptrdiff_t(clt)
   | PC.Tstruct(clt)
   | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tdecimal(clt) | PC.Texec(clt)
@@ -1198,7 +1200,7 @@ let detect_types in_meta_decls l =
 let token2line (tok,_) =
   match tok with
     PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
-  | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt)
+  | PC.Tfloat(clt) | PC.Tcomplex(clt) | PC.Tlong(clt) | PC.Tvoid(clt)
   | PC.Tsize_t(clt) | PC.Tssize_t(clt) | PC.Tptrdiff_t(clt)
   | PC.Tstruct(clt)
   | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tdecimal(clt) | PC.Texec(clt)

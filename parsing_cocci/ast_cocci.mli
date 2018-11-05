@@ -141,6 +141,7 @@ and base_ident =
   | AsIdent       of ident * ident (* as ident, always metavar *)
 
   | DisjId        of ident list
+  | ConjId        of ident list
   | OptIdent      of ident
 
 and ident = base_ident wrap
@@ -340,6 +341,7 @@ and typeC = base_typeC wrap
 
 and baseType = VoidType | CharType | ShortType | ShortIntType | IntType
 | DoubleType | LongDoubleType | FloatType
+| LongDoubleComplexType | DoubleComplexType | FloatComplexType
 | LongType | LongIntType | LongLongType | LongLongIntType
 | SizeType | SSizeType | PtrDiffType
 | BoolType | Unknown

@@ -285,6 +285,12 @@ let rec full_ident i =
 	  (fun starter ids mids ender ->
 	    Ast0.DisjId(starter,ids,mids,ender)) in
       (res,None)
+  | Ast0.ConjId(starter,ids,mids,ender) ->
+      let res =
+	do_disj i starter ids mids ender ident
+	  (fun starter ids mids ender ->
+	    Ast0.ConjId(starter,ids,mids,ender)) in
+      (res,None)
   | Ast0.OptIdent(id) ->
       let (id,r) = full_ident id in mkidres i (Ast0.OptIdent(id)) id id r
   | Ast0.AsIdent(id,asid) ->

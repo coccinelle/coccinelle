@@ -136,6 +136,17 @@ let rec ident opt_allowed tgt i =
 	  then fail i "opt only allowed in the last disjunct"
       |	_ -> ());
       Ast0.rewrap i (Ast0.DisjId(starter,id_list,mids,ender))
+  | Ast0.ConjId(starter,ids,mids,ender) ->
+      (match ids with
+	id::id_list ->
+	  let id = ident opt_allowed tgt id in
+	  let arity =
+	    match Ast0.unwrap id with
+	      Ast0.OptIdent _ -> Ast0.OPT
+	    | _ -> Ast0.NONE in
+	  let id_list = List.map (ident opt_allowed arity) id_list in
+	  Ast0.rewrap i (Ast0.ConjId(starter,id::id_list,mids,ender))
+      | _ -> i)
   | Ast0.OptIdent(_) | Ast0.AsIdent _ ->
       failwith "unexpected code"
 

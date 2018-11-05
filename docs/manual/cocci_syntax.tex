@@ -1285,6 +1285,9 @@ explained in this section.
   \CASE{double}
   \CASE{long double}
   \CASE{float}
+  \CASE{long double complex}
+  \CASE{double complex}
+  \CASE{float complex}
   \CASE{size\_t} \CASE{ssize\_t} \CASE{ptrdiff\_t}
   \CASE{enum \NT{id} \{ \NT{PARAMSEQ}\mth{(}\NT{dot\_expr}, \NT{exp\_whencode}\mth{)} \OPT{,} \}}
   \CASE{\OPT{struct\OR union} \T{id} \OPT{\{ \any{\NT{struct\_decl\_list}} \}}}
@@ -1514,6 +1517,16 @@ An attribute begins with {\tt \_\_} or is declared as an {\tt attribute
   name} in the semantic patch.  In practice, only one attribute is
 currently allowed after the variable name in a variable declaration.
 
+Coccinelle supports declaring multiple variables or structure fields in the
+C code, but not in the SmPL code.  It is possible to remove a variable from
+within a declaration of multiple variables with a pattern that removes a
+complete single-variable declaration, e.g., {\tt - int x;}.  The type and
+the semicolon are only removed if all of the variables are removed.  On the
+other hand, it is not possible to write a single rule that removes a
+variable from within a declaration of multiple variables and replaces the
+declaration by something else.  There is no crash, simply a match failure.
+A message is given for this with the {\tt -{}-debug option}.
+
 \section{Statements}
 
 The first rule {\em statement} describes the various forms of a statement.
@@ -1712,7 +1725,7 @@ in a concise way.
 
   \RULE{\rt{id}}
   \CASE{\T{id} \OR \mth{\T{metaid}^{\ssf{Id}}}
-        \OR {\NT{OR}\mth{(}\NT{id}\mth{)}}}
+        \OR {\NT{OR}\mth{(}\NT{id}\mth{)}} \OR {\NT{AND}\mth{(}\NT{id}\mth{)}}}
 
   \RULE{\rt{typedef\_ident}}
   \CASE{\T{id} \OR \mth{\T{metaid}^{\ssf{Type}}}}

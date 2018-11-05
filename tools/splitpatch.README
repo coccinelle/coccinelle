@@ -104,4 +104,5 @@ finding examples from which to construct the subject line.  It does not
 need to be the git tree from which the patch was generated.
 
 prefix_before and prefix_after are only useful when using changes generated
-directly by Coccinelle.
+directly by Coccinelle, which includes full path names.  In that case, the
+provided path is removed, if it is present.

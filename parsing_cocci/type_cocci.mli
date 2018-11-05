@@ -34,6 +34,7 @@ and tagged_string = string
 
 and baseType = VoidType | CharType | ShortType | ShortIntType | IntType
 | DoubleType | LongDoubleType | FloatType
+| LongDoubleComplexType | DoubleComplexType | FloatComplexType
 | LongType | LongIntType | LongLongType | LongLongIntType
 | SizeType | SSizeType | PtrDiffType | BoolType
 

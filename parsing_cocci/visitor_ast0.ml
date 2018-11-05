@@ -89,6 +89,10 @@ let visitor mode bind option_default
 	    do_disj starter id_list mids ender ident
 	      (fun starter id_list mids ender ->
 		Ast0.DisjId(starter,id_list,mids,ender))
+	| Ast0.ConjId(starter,id_list,mids,ender) ->
+	    do_disj starter id_list mids ender ident
+	      (fun starter id_list mids ender ->
+		Ast0.ConjId(starter,id_list,mids,ender))
 	| Ast0.OptIdent(id) ->
 	    let (n,id) = ident id in (n,Ast0.OptIdent(id))
 	| Ast0.AsIdent(id,asid) ->

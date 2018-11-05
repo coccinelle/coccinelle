@@ -204,7 +204,8 @@ let id_tokens lexbuf =
     "metavariable" when in_meta -> check_arity_context_linetype s; TMetavariable
   | "identifier" when in_meta || in_rule_name ->
       check_arity_context_linetype s; TIdentifier
-  | "type" when in_meta ->       check_arity_context_linetype s; TType
+  | "type" when in_meta || in_rule_name ->
+      check_arity_context_linetype s; TType
   | "parameter" when in_meta ->  check_arity_context_linetype s; TParameter
   | "operator" when in_meta ->   check_arity_context_linetype s; TOperator
   | "binary" when in_meta ->   check_arity_context_linetype s; TBinary
@@ -274,6 +275,7 @@ let id_tokens lexbuf =
   | "int" ->        Tint      linetype
   | "double" ->     Tdouble   linetype
   | "float" ->      Tfloat    linetype
+  | "complex" ->    Tcomplex  linetype
   | "long" ->       Tlong     linetype
   | "void" ->       Tvoid     linetype
   | "size_t" ->     Tsize_t   linetype

@@ -82,6 +82,8 @@ and base_ident =
   | AsIdent       of ident * ident (* as ident, always metavar *)
   | DisjId        of string mcode * ident list *
                      string mcode list (* the |s *) * string mcode
+  | ConjId        of string mcode * ident list *
+                     string mcode list (* the &s *) * string mcode
   | OptIdent      of ident
 
 and ident = base_ident wrap

@@ -156,6 +156,7 @@ and base_ident =
   | AsIdent       of ident * ident (* as ident, always metavar *)
 
   | DisjId        of ident list
+  | ConjId        of ident list
   | OptIdent      of ident
 
 and ident = base_ident wrap
@@ -358,6 +359,7 @@ and typeC = base_typeC wrap
 
 and baseType = VoidType | CharType | ShortType | ShortIntType | IntType
 | DoubleType | LongDoubleType | FloatType
+| LongDoubleComplexType | DoubleComplexType | FloatComplexType
 | LongType | LongIntType | LongLongType | LongLongIntType
 | SizeType | SSizeType | PtrDiffType
 | BoolType | Unknown
@@ -1045,6 +1047,9 @@ let string_of_baseType = function
   | DoubleType -> "double"
   | LongDoubleType -> "long double"
   | FloatType -> "float"
+  | LongDoubleComplexType -> "long double complex"
+  | DoubleComplexType -> "double complex"
+  | FloatComplexType -> "float complex"
   | LongType -> "long"
   | LongIntType -> "long int"
   | LongLongType -> "long long"
@@ -1070,6 +1075,7 @@ let rec string_of_ident id =
   | AsIdent (id, _) -> string_of_ident id
   | OptIdent id -> string_of_ident id ^ "?"
   | DisjId l -> String.concat "|" (List.map string_of_ident l)
+  | ConjId l -> String.concat "&" (List.map string_of_ident l)
 
 let string_of_expression e =
   match unwrap e with
@@ -1264,7 +1270,7 @@ let rec ident_fold_meta_names f ident v =
   | AsIdent (ident0, ident1) ->
       let v' = ident_fold_meta_names f ident0 v in
       ident_fold_meta_names f ident1 v'
-  | DisjId l ->
+  | DisjId l | ConjId l ->
       List.fold_left (fun v' ident' -> ident_fold_meta_names f ident' v') v l
   | OptIdent ident' -> ident_fold_meta_names f ident' v
 

@@ -407,6 +407,7 @@ let info_of_tok = function
   | Tint                 (i) -> i
   | Tdouble              (i) -> i
   | Tfloat               (i) -> i
+  | Tcomplex             (i) -> i
   | Tlong                (i) -> i
   | Tunsigned            (i) -> i
   | Tsigned              (i) -> i
@@ -582,6 +583,7 @@ let visitor_info_of_tok f = function
   | Tint                 (i) -> Tint                 (f i)
   | Tdouble              (i) -> Tdouble              (f i)
   | Tfloat               (i) -> Tfloat               (f i)
+  | Tcomplex             (i) -> Tcomplex             (f i)
   | Tlong                (i) -> Tlong                (f i)
   | Tunsigned            (i) -> Tunsigned            (f i)
   | Tsigned              (i) -> Tsigned              (f i)
@@ -705,6 +707,7 @@ let string_of_token = function
   | Tint _ -> "Tint"
   | Tdouble _ -> "Tdouble"
   | Tfloat _ -> "Tfloat"
+  | Tcomplex _ -> "Tcomplex"
   | Tlong _ -> "Tlong"
   | Tunsigned _ -> "Tunsigned"
   | Tsigned _ -> "Tsigned"

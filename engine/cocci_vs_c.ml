@@ -397,7 +397,11 @@ let split_signb_baseb_ii (baseb, ii) =
 
   | B.FloatType (B.CFloat),["float",i1] -> None, [i1]
   | B.FloatType (B.CDouble),["double",i1] -> None, [i1]
+  | B.FloatType (B.CFloatComplex),["float",i1;"complex",i2] -> None, [i1;i2]
+  | B.FloatType (B.CDoubleComplex),["double",i1;"complex",i2] -> None, [i1;i2]
   | B.FloatType (B.CLongDouble),["long",i1;"double",i2] -> None,[i1;i2]
+  | B.FloatType (B.CLongDoubleComplex),["long",i1;"double",i2;"complex",i3] ->
+      None,[i1;i2;i3]
 
   | B.IntType (B.CChar), ["char",i1] -> None, [i1]
 
@@ -1910,12 +1914,16 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
 	  ((A.AsIdent(id,asid)) +> A.rewrap ida,
 	   ib))))
 
-  (* not clear why disj things are needed, after disjdistr? *)
+  (* needed with identifier rule header *)
   | A.DisjId ias ->
-      failwith "DisjId should not arise"
-(*
       ias +> List.fold_left (fun acc ia -> acc >|+|> (ident infoidb ia ib)) fail
-*)
+  | A.ConjId ias ->
+      let rec loop acc_id ib = function
+	  [] -> return (A.ConjId (List.rev acc_id) +> A.rewrap ida, ib)
+	| ia::ias ->
+	    ident infoidb ia ib >>= (fun ia ib ->
+	      loop (ia::acc_id) ib ias) in
+      loop [] ib ias
 
   | A.OptIdent _ -> failwith "not handling Opt for ident"
 
@@ -3514,17 +3522,42 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
       | A.VoidType,   B.Void
       | A.FloatType,  B.FloatType (B.CFloat)
       | A.DoubleType, B.FloatType (B.CDouble)
-      |	A.SizeType,   B.SizeType
-      |	A.SSizeType,  B.SSizeType
-      |	A.PtrDiffType,B.PtrDiffType ->
+      | A.SizeType,   B.SizeType
+      | A.SSizeType,  B.SSizeType
+      | A.PtrDiffType,B.PtrDiffType ->
+	  assert (signaopt = None);
+	  let stringa = tuple_of_list1 stringsa in
+	  let (ibaseb) = tuple_of_list1 ii in
+	  tokenf stringa ibaseb >>= (fun stringa ibaseb ->
+	    return (
+	    (rebuilda ([stringa], signaopt)) +> A.rewrap ta,
+	    (B.BaseType baseb, [ibaseb])
+          ))
+
+      | A.LongDoubleType, B.FloatType B.CLongDouble
+      | A.FloatComplexType,  B.FloatType (B.CFloatComplex)
+      | A.DoubleComplexType, B.FloatType (B.CDoubleComplex) ->
            assert (signaopt = None);
-	   let stringa = tuple_of_list1 stringsa in
-           let (ibaseb) = tuple_of_list1 ii in
-           tokenf stringa ibaseb >>= (fun stringa ibaseb ->
+	   let (stringa1,stringa2) = tuple_of_list2 stringsa in
+           let (ibaseb1,ibaseb2) = tuple_of_list2 ii in
+           tokenf stringa1 ibaseb1 >>= (fun stringa1 ibaseb1 ->
+           tokenf stringa2 ibaseb2 >>= (fun stringa2 ibaseb2 ->
              return (
-               (rebuilda ([stringa], signaopt)) +> A.rewrap ta,
-               (B.BaseType baseb, [ibaseb])
-             ))
+               (rebuilda ([stringa1;stringa2], signaopt)) +> A.rewrap ta,
+               (B.BaseType baseb, [ibaseb1;ibaseb2])
+             )))
+
+      | A.LongDoubleComplexType, B.FloatType (B.CLongDoubleComplex) ->
+           assert (signaopt = None);
+	   let (stringa1,stringa2,stringa3) = tuple_of_list3 stringsa in
+           let (ibaseb1,ibaseb2,ibaseb3) = tuple_of_list3 ii in
+           tokenf stringa1 ibaseb1 >>= (fun stringa1 ibaseb1 ->
+           tokenf stringa2 ibaseb2 >>= (fun stringa2 ibaseb2 ->
+           tokenf stringa3 ibaseb3 >>= (fun stringa3 ibaseb3 ->
+             return (
+               (rebuilda ([stringa1;stringa2;stringa3], signaopt)) +> A.rewrap ta,
+               (B.BaseType baseb, [ibaseb1;ibaseb2;ibaseb3])
+             ))))
 
       | A.CharType,  B.IntType B.CChar when signaopt = None ->
 	  let stringa = tuple_of_list1 stringsa in
@@ -3599,8 +3632,7 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
 
       | A.LongLongType, B.IntType (B.Si (_, B.CLongLong))
       | A.LongIntType,  B.IntType (B.Si (_, B.CLong))
-      | A.ShortIntType, B.IntType (B.Si (_, B.CShort))
-      | A.LongDoubleType, B.FloatType B.CLongDouble ->
+      | A.ShortIntType, B.IntType (B.Si (_, B.CShort)) ->
 	  let (string1a,string2a) = tuple_of_list2 stringsa in
           (match iibaseb with
             [ibase1b;ibase2b] ->
@@ -4247,15 +4279,13 @@ and compatible_base_type a signa b =
       compatible_sign signa signb
   | A.LongLongType, B.IntType (B.Si (signb, B.CLongLong)) ->
       compatible_sign signa signb
-  | A.FloatType, B.FloatType B.CFloat ->
+  | A.FloatType, B.FloatType B.CFloat
+  | A.DoubleType, B.FloatType B.CDouble
+  | A.FloatComplexType, B.FloatType B.CFloatComplex
+  | A.DoubleComplexType, B.FloatType B.CDoubleComplex
+  | A.LongDoubleType, B.FloatType B.CLongDouble ->
       assert (signa = None);
       ok
-  | A.DoubleType, B.FloatType B.CDouble ->
-      assert (signa = None);
-      ok
-  | _, B.FloatType B.CLongDouble ->
-      pr2_once "no longdouble in cocci";
-      fail
   | A.BoolType, _ -> failwith "no booltype in C"
 
   | _, (B.Void|B.FloatType _|B.IntType _
