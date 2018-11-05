@@ -1149,11 +1149,11 @@ let build_info_program env ranges (cprogram,typedefs,macros) =
 
 
 (* Optimization. Try not unparse/reparse the whole file when have modifs  *)
-let rebuild_info_program cs file isexp parse_strings =
+let rebuild_info_program cs file short_file isexp parse_strings =
   cs +> List.map (fun c ->
     if !(c.was_modified)
     then
-      let file = Common.new_temp_file "cocci_small_output" ".c" in
+      let file = Common.new_temp_file "cocci_small_output" ("-" ^ short_file) in
       cfile_of_program
         [(c.ast_c, (c.fullstring, c.tokens_c)), Unparse_c.PPnormal]
         file;
@@ -1181,7 +1181,8 @@ let rebuild_info_c_and_headers ccs isexp parse_strings =
   ccs +> List.map (fun c_or_h ->
     { c_or_h with
       asts =
-      rebuild_info_program c_or_h.asts c_or_h.full_fname isexp parse_strings }
+      rebuild_info_program c_or_h.asts c_or_h.full_fname c_or_h.fname
+	isexp parse_strings }
   )
 
 (* remove ../ in the middle of an include path *)
