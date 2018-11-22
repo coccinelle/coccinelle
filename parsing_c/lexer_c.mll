@@ -456,9 +456,6 @@ rule token = parse
    *)
   | "#" [' ' '\t']* "undef" { TUndef (tokinfo lexbuf) }
 
-  (* note: in some cases can have stuff after the ident as in #undef XXX 50,
-   * but I currently don't handle it cos I think it's bad code.
-   *)
   | ("#" [' ' '\t']* "pragma") { TPragma (tokinfo lexbuf) }
 
   (* ---------------------- *)
