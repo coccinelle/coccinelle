@@ -1789,7 +1789,7 @@ and statement stmt top after quantified minus_quantified
 	    (Ast.get_fvs stmt, Ast.get_fresh stmt, Ast.get_inherited stmt)
 
       |	_ ->
-	  let term =
+	  let term ast =
 	    match Ast.unwrap ast with
 	      Ast.DisjRuleElem(res) ->
 		do_re_matches label guard res quantified minus_quantified
@@ -1803,14 +1803,15 @@ and statement stmt top after quantified minus_quantified
 		quantify guard fvs (make_match ast) in
 	  match Ast.unwrap ast with
 	    Ast.Break(brk,semi) ->
+	      let term = term ast in
 	      (match (llabel,slabel) with
 		(_,Some(lv,used)) -> (* use switch label if there is one *)
 		  ctl_and term (bclabel_pred_maker slabel)
 	      | _ -> ctl_and term (bclabel_pred_maker llabel))
-	  | Ast.Continue(brk,semi) -> ctl_and term (bclabel_pred_maker llabel)
-          | Ast.Return((_,info,retmc,pos),(_,_,semmc,_)) ->
+	  | Ast.Continue(brk,semi) -> ctl_and (term ast) (bclabel_pred_maker llabel)
+	  | Ast.Return((_,info,retmc,pos),(_,_,semmc,spos)) ->
 	      (* discard pattern that comes after return *)
-	      let normal_res = make_seq_after term after in
+	      let normal_res = make_seq_after (term ast) after in
 	      (* the following code tries to propagate the modifications on
 		 return; to a close brace, in the case where the final return
 		 is absent *)
@@ -1861,11 +1862,11 @@ and statement stmt top after quantified minus_quantified
 		Some new_mc ->
 		  let exit = endpred None in
 		  let mod_rbrace =
-		    Ast.rewrap ast (Ast.SeqEnd (("}",info,new_mc,pos))) in
+		    Ast.rewrap ast (Ast.SeqEnd (("}",info,new_mc,pos@spos))) in
 		  let stripped_rbrace =
 		    Ast.rewrap ast (Ast.SeqEnd(Ast.make_mcode "}")) in
 		  ctl_or normal_res
-		    (ctl_and (make_match mod_rbrace)
+		    (ctl_and (term mod_rbrace)
 		       (ctl_and
 			  (ctl_au
 			     (make_match stripped_rbrace)
@@ -1884,6 +1885,7 @@ and statement stmt top after quantified minus_quantified
           | _ ->
 	      (* should try to deal with the dots_bef_aft problem elsewhere,
 		 but don't have the courage... *)
+	      let term = term ast in
 	      let term =
 		if guard
 		then term

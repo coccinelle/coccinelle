@@ -31,6 +31,8 @@
 - Add conjunction for identifiers.
 ** Features:
 ** Bugfix:
+- check identifier constraints when an identifier metavariable appears in a
+  struct-typed metavariable.
 * 1.0.7
 ** Language:
 - Allow constraints on any metavariables. Constraints can be specified
