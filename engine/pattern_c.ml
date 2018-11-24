@@ -317,7 +317,6 @@ module XMATCH = struct
   let distrf_struct_fields  = distrf Lib_parsing_c.ii_of_struct_fields
   let distrf_cst            = distrf Lib_parsing_c.ii_of_cst
   let distrf_define_params  = distrf Lib_parsing_c.ii_of_define_params
-  let distrf_pragmainfo     = distrf Lib_parsing_c.ii_of_pragmainfo
   let distrf_ident_list     = distrf Lib_parsing_c.ii_of_ident_list
   let distrf_exec_code_list = distrf Lib_parsing_c.ii_of_exec_code_list
   let distrf_attrs          = distrf Lib_parsing_c.ii_of_attrs

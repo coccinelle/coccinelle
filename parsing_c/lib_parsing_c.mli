@@ -121,7 +121,6 @@ val ii_of_fragments :
 val ii_of_format : Ast_c.string_format -> Ast_c.info list
 val ii_of_define_params :
   (string Ast_c.wrap, Ast_c.il) Common.either list -> Ast_c.info list
-val ii_of_pragmainfo : Ast_c.pragmainfo -> Ast_c.info list
 val ii_of_ident_list :
   (Ast_c.name, Ast_c.il) Common.either list -> Ast_c.info list
 val ii_of_exec_code_list :

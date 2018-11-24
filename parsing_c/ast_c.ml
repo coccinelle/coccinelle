@@ -633,7 +633,7 @@ and definition = definitionbis wrap (* ( ) { } fakestart sto *)
 and cpp_directive =
   | Define of define
   | Include of includ
-  | Pragma of string wrap * pragmainfo
+  | Pragma of (name * string) wrap
   | OtherDirective of il
 (*| Ifdef ? no, ifdefs are handled differently, cf ifdef_directive below *)
 
@@ -689,10 +689,6 @@ and include_rel_pos = {
    first_of : string list list;
    last_of :  string list list;
  }
-
-and pragmainfo =
-    PragmaTuple of argument wrap2 (* , *) list wrap
-  | PragmaIdList of name wrap2 list (* no commas, wrap2 is always empty *)
 
 (* todo? to specialize if someone need more info *)
 and ifdef_directive = (* or and 'a ifdefed = 'a list wrap *)
@@ -1002,6 +998,23 @@ let rewrap_str s ii =
     | ExpandedTok (pi,vpi) -> ExpandedTok ({ pi with Common.str = s;},vpi)
     | FakeTok (_,vpi) -> FakeTok (s,vpi)
     | AbstractLineTok pi -> OriginTok { pi with Common.str = s;})}
+
+let rewrap_charpos charpos ii =
+  {ii with pinfo =
+    (match ii.pinfo with
+      OriginTok pi -> OriginTok { pi with Common.charpos = charpos;}
+    | ExpandedTok (pi,vpi) ->
+	ExpandedTok ({ pi with Common.charpos = charpos;},vpi)
+    | FakeTok (s,vpi) -> FakeTok (s,vpi)
+    | AbstractLineTok pi -> OriginTok { pi with Common.charpos = charpos;})}
+
+let rewrap_col col ii =
+  {ii with pinfo =
+    (match ii.pinfo with
+      OriginTok pi -> OriginTok { pi with Common.column = col;}
+    | ExpandedTok (pi,vpi) -> ExpandedTok ({ pi with Common.column = col;},vpi)
+    | FakeTok (s,vpi) -> FakeTok (s,vpi)
+    | AbstractLineTok pi -> OriginTok { pi with Common.column = col;})}
 
 let rewrap_pinfo pi ii =
   {ii with pinfo = pi}

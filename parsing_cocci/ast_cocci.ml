@@ -589,8 +589,7 @@ and base_rule_elem =
   | DisjRuleElem  of rule_elem list
 
 and base_pragmainfo =
-    PragmaTuple of string mcode(* ( *) * expression dots * string mcode(* ) *)
-  | PragmaIdList of ident dots
+    PragmaString of string mcode
   | PragmaDots of string mcode
 
 and pragmainfo = base_pragmainfo wrap

@@ -317,7 +317,7 @@ module Ast_c :
       Ast_c.cpp_directive =
         Define of define
       | Include of includ
-      | Pragma of string wrap * pragmainfo
+      | Pragma of (name * string) wrap
       | OtherDirective of il
     and define = string wrap * (define_kind * define_val)
     and define_kind =
@@ -356,10 +356,6 @@ module Ast_c :
       first_of : string list list;
       last_of : string list list;
     }
-    and pragmainfo =
-      Ast_c.pragmainfo =
-        PragmaTuple of argument wrap2 list wrap
-      | PragmaIdList of name wrap2 list
     and ifdef_directive =
       Ast_c.ifdef_directive =
         IfdefDirective of (ifdefkind * matching_tag) wrap
@@ -481,6 +477,8 @@ module Ast_c :
     val get_onlylocal_expr :
       ('a * (('b * 'c) option * 'd) ref) * 'e -> 'c option
     val rewrap_str : string -> info -> info
+    val rewrap_charpos : int -> info -> info
+    val rewrap_col : int -> info -> info
     val rewrap_pinfo : parse_info -> info -> info
     val get_pi : parse_info -> Common.parse_info
     val get_opi : parse_info -> Common.parse_info
@@ -736,7 +734,9 @@ module Parser_c :
       | TUelseif of Ast_c.info
       | TUendif of Ast_c.info
       | TUndef of Ast_c.info
-      | TPragma of Ast_c.info
+      | TPrePragma of (Ast_c.info*Ast_c.info*string*Ast_c.info*Ast_c.info*string*Ast_c.info)
+      | TPragma of (Ast_c.info)
+      | TPragmaString of (string*Ast_c.info)
       | TCppDirectiveOther of Ast_c.info
       | TMacroAttr of (string * Ast_c.info)
       | TMacroEndAttr of (string * Ast_c.info)
@@ -1034,7 +1034,6 @@ module Lib_parsing_c :
     val ii_of_format : Ast_c.string_format -> Ast_c.info list
     val ii_of_define_params :
       (string Ast_c.wrap, Ast_c.il) Common.either list -> Ast_c.info list
-    val ii_of_pragmainfo : Ast_c.pragmainfo -> Ast_c.info list
     val ii_of_ident_list :
       (Ast_c.name, Ast_c.il) Common.either list -> Ast_c.info list
     val ii_of_exec_code_list :
@@ -1157,7 +1156,6 @@ module Visitor_c :
       visitor_c -> string Ast_c.wrap Ast_c.wrap2 list -> unit
     val vk_define_params_splitted :
       visitor_c -> (string Ast_c.wrap, Ast_c.il) Common.either list -> unit
-    val vk_pragmainfo : visitor_c -> Ast_c.pragmainfo -> unit
     val vk_ident_list_splitted :
       visitor_c -> (Ast_c.name, Ast_c.il) Common.either list -> unit
     val vk_exec_code_list_splitted :
@@ -1273,7 +1271,6 @@ module Visitor_c :
       visitor_c_s ->
       (string Ast_c.wrap, Ast_c.il) Common.either list ->
       (string Ast_c.wrap, Ast_c.il) Common.either list
-    val vk_pragmainfo_s : visitor_c_s -> Ast_c.pragmainfo -> Ast_c.pragmainfo
     val vk_ident_list_splitted_s :
       visitor_c_s ->
       (Ast_c.name, Ast_c.il) Common.either list ->
@@ -2860,8 +2857,7 @@ module Ast_cocci :
       | DisjRuleElem of rule_elem list
     and base_pragmainfo =
       Ast_cocci.base_pragmainfo =
-        PragmaTuple of string mcode * expression dots * string mcode
-      | PragmaIdList of ident dots
+        PragmaString of string mcode
       | PragmaDots of string mcode
     and pragmainfo = base_pragmainfo wrap
     and forinfo =
@@ -3476,8 +3472,7 @@ module Ast0_cocci :
       | OptStm of statement
     and base_pragmainfo =
       Ast0_cocci.base_pragmainfo =
-        PragmaTuple of string mcode * expression dots * string mcode
-      | PragmaIdList of ident dots
+        PragmaString of string mcode
       | PragmaDots of string mcode
     and pragmainfo = base_pragmainfo wrap
     and base_forinfo =

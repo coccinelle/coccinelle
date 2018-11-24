@@ -680,8 +680,6 @@ module type PARAM =
 
     val distrf_define_params :
       (A.meta_name A.mcode, (string Ast_c.wrap, Ast_c.il) either list) matcher
-    val distrf_pragmainfo :
-      (A.meta_name A.mcode, Ast_c.pragmainfo) matcher
 
     val distrf_enum_fields :
       (A.meta_name A.mcode, (B.oneEnumType, B.il) either list) matcher
@@ -2001,30 +1999,6 @@ and argument arga argb =
         return (arga, Left argb)
       )
   | _, Right (B.ArgAction y) -> fail
-
-and (ident_list :
-  (A.ident list, Ast_c.name Ast_c.wrap2 list) matcher) =
-  fun eas ebs ->
-    ident_list_bis eas (Ast_c.split_comma ebs) >>= (fun eas ebs_splitted ->
-          return (eas, (Ast_c.unsplit_comma ebs_splitted))
-	    )
-
-and ident_list_bis = fun eas ebs ->
-  let match_dots ea = None in
-  let build_dots (mcode, optexpr) = failwith "no dots in ident list" in
-  let match_comma ea = None in
-  let build_comma ia1 = failwith "no comma in ident list" in
-  let match_metalist ea = None in
-  let build_metalist _ (ida,leninfo,constraints,keep,inherited) =
-    failwith "no metalist in ident list" in
-  let mktermval v = failwith "no metalist in ident list" in
-  let special_cases ea eas ebs = None in
-  list_matcher match_dots build_dots match_comma build_comma
-    match_metalist build_metalist mktermval
-    special_cases (ident_cpp DontKnow) X.distrf_ident_list
-    B.split_comma B.unsplit_comma
-    Lib_parsing_c.ii_of_ident_list (function x -> Some x) eas ebs
-
 
 (* ------------------------------------------------------------------------- *)
 (* todo? facto code with argument ? *)
@@ -5279,41 +5253,28 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
         ))
       ))
 
-  | A.Pragma(prga,ida,pragmainfoa), F.PragmaHeader ((idb, ii), pragmainfob) ->
-      let (prgb, iidb, ieol) = tuple_of_list3 ii in
-      ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) ->
+  | A.Pragma(prga,ida,pragmainfoa), F.PragmaHeader ((idb, restb), ii) ->
+      let (prgb, rest_iidb) = tuple_of_list2 ii in
+      ident_cpp DontKnow ida idb >>= (fun ida idb ->
       tokenf prga prgb >>= (fun prga prgb ->
       let wp x = A.rewrap pragmainfoa x  in
-      (match A.unwrap pragmainfoa, pragmainfob with
-	A.PragmaTuple(lp,eas,rp), B.PragmaTuple(ebs,iib) ->
-	  let (ib1, ib2) = tuple_of_list2 iib in
-	  tokenf lp ib1 >>= (fun lp ib1 ->
-	  tokenf rp ib2 >>= (fun rp ib2 ->
-	  arguments (seqstyle eas) (A.unwrap eas) ebs >>= (fun easunwrap ebs ->
-          let eas = A.rewrap eas easunwrap in
-	  return (
-	    A.PragmaTuple(lp,eas,rp) +> wp,
-	    B.PragmaTuple(ebs,[ib1; ib2])
-	  ))))
-      | A.PragmaIdList(idsa), B.PragmaIdList(idsb) ->
-	  ident_list (A.unwrap idsa) idsb >>= (fun idsaunwrap idsb ->
-          let idsa = A.rewrap idsa idsaunwrap in
+      (match A.unwrap pragmainfoa with
+	A.PragmaString(sa) ->
+	  tokenf sa rest_iidb >>= (fun sa rest_iidb ->
 	  return(
-	    A.PragmaIdList(idsa) +> wp,
-	    B.PragmaIdList(idsb)
+	    A.PragmaString(sa) +> wp,
+	    rest_iidb
 	  ))
-      | A.PragmaDots(mcode), _ ->
-	  X.distrf_pragmainfo (dots2metavar mcode) pragmainfob >>=
-	  (fun mcode pragmainfob ->
-            return (
-            A.PragmaDots(metavar2dots mcode) +> wp,
-            pragmainfob
-          ))
-      |	_ -> fail
-      ) >>= (fun pragmainfoa pragmainfob ->
+      | A.PragmaDots(mcode) ->
+	  tokenf mcode rest_iidb >>= (fun mcode rest_iidb ->
+	  return(
+	    A.PragmaDots(mcode) +> wp,
+	    rest_iidb
+	  ))
+      ) >>= (fun pragmainfoa rest_iidb ->
         return (
 	  A.Pragma(prga,ida,pragmainfoa),
-	  F.PragmaHeader ((idb, [prgb; iidb; ieol]), pragmainfob)
+	  F.PragmaHeader ((idb, restb), [prgb;rest_iidb])
         ))
       ))
 

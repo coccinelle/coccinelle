@@ -1249,28 +1249,14 @@ and pp_init (init, iinit) =
 	define_val defval;
 	pr_elem ieol
 
-    | Pragma ((s,ii), pragmainfo) ->
-	let (ipragma,iident,ieol) = Common.tuple_of_list3 ii in
+    | Pragma((name,rest), ii) ->
+	let (ipragma,irest) = Common.tuple_of_list2 ii in
 	pr_elem ipragma; pr_space();
-	pr_elem iident; pr_space();
-	pp_pragmainfo pragmainfo;
-	pr_elem ieol
+	pp_name name; pr_space();
+	pr_elem irest
 
     | OtherDirective (ii) ->
 	List.iter pr_elem ii
-
-  and pp_pragmainfo = function
-      PragmaTuple(args,ii) ->
-	let (ilp,irp) = Common.tuple_of_list2 ii in
-	pr_elem ilp;
-	pp_arg_list args;
-        pr_elem irp
-    | PragmaIdList(ids) ->
-	let loop = function
-	    [] -> ()
-	  | [id,_] -> pp_name id
-	  | (id,_)::rest -> pp_name id; pr_space() in
-	loop ids
 
   and pp_define_param_list dparams =
     pp_list (fun (s,iis) -> iis +> List.iter pr_elem) dparams in
@@ -1407,11 +1393,11 @@ and pp_init (init, iinit) =
         (* iif ii *)
 	pr2 "DefineDoWhileZeroHeader"
 
-    | F.PragmaHeader((s,ii), pragmainfo) ->
-	let (ipragma,iident,ieol) = Common.tuple_of_list3 ii in
-	pr_elem ipragma;
-	pr_elem iident;
-	pp_pragmainfo pragmainfo
+    | F.PragmaHeader((name,rest), ii) ->
+	let (ipragma,irest,ieol) = Common.tuple_of_list3 ii in
+	pr_elem ipragma; pr_space();
+	pp_name name; pr_space();
+	pr_elem irest; pr_elem ieol
 
     | F.Include ({i_include = (s, ii);} as a) ->
 	pp_directive (Include a)

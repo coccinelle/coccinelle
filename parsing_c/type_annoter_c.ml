@@ -1131,11 +1131,7 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
 
           add_binding (Macro (s, (defkind, defval) )) true;
 
-      |	Pragma((s,ii), pragmainfo) ->
-	  (match pragmainfo with
-	    PragmaTuple(args,ii) ->
-              args +> List.iter (fun (e,ii) -> Visitor_c.vk_argument bigf e)
-	  | PragmaIdList _ -> ())
+      |	Pragma((name,rest), ii) -> ()
 
       | OtherDirective _ -> ()
     );

@@ -477,9 +477,7 @@ and statement old_metas table minus s =
 
 and pragmainfo old_metas table minus pi =
   match Ast0.unwrap pi with
-      Ast0.PragmaTuple(lp,args,rp) ->
-	dots (expression ID old_metas table minus) args
-    | Ast0.PragmaIdList(ids) -> dots (ident GLOBAL old_metas table minus) ids
+      Ast0.PragmaString(s) -> ()
     | Ast0.PragmaDots (dots) -> ()
 
 and define_param old_metas table minus p =

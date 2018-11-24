@@ -586,7 +586,9 @@ let postfakeInfo pii  =
 /*(*---------------*)*/
 
 %token <Ast_c.info> TUndef
+%token <Ast_c.info*Ast_c.info*string*Ast_c.info*Ast_c.info*string*Ast_c.info> TPrePragma
 %token <Ast_c.info> TPragma
+%token <string * Ast_c.info> TPragmaString
 
 %token <Ast_c.info> TCppDirectiveOther
 
@@ -1970,15 +1972,10 @@ cpp_directive:
  | TUndef TIdentDefine TDefEOL
      { Define((fst $2, [$1; snd $2; $3]), (Undef,DefineEmpty)) }
 
- | TPragma TIdentDefine pragmainfo TDefEOL
-     { Pragma((fst $2, [$1; snd $2; $4]), $3) }
+ | TPragma TIdent TPragmaString
+     { Pragma((RegularName (mk_string_wrap $2),fst $3),[$1;snd $3]) }
 
  | TCppDirectiveOther { OtherDirective ([$1]) }
-
-pragmainfo:
-   TOPar argument_list_ne TCPar { (PragmaTuple ($2, [$1;$3])) }
- | TOPar TCPar { PragmaTuple ([], [$1;$2]) }
- | ident_define_list_ne { PragmaIdList $1 }
 
 /*(* perhaps better to use assign_expr ? but in that case need
    * do a assign_expr_of_string in parse_c
@@ -2280,12 +2277,6 @@ expression_list:
  | assign_expr { [$1, []] }
  | expression_list TComma assign_expr { $1 @ [$3,   [$2]] }
 *)*/
-
-
-ident_define_list_ne:
- | TIdentDefine              { [RegularName (mk_string_wrap $1), []] }
- | ident_define_list_ne TIdentDefine
-     { $1 @ [RegularName (mk_string_wrap $2), []] }
 
 
 struct_decl_list:

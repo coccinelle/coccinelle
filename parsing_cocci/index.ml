@@ -6,7 +6,7 @@
 
 (* create an index for each constructor *)
 (* current max is 188, also unused: 8-9, 15, 39, 40, 42, 46, 57, 65, 85-86,
- 113-115, 138-140 *)
+ 113-115, 138-140, 162 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -203,8 +203,7 @@ let forinfo fi =
 
 and pragmainfo pi =
   match Ast0.unwrap pi with
-    Ast0.PragmaTuple(lp,args,rp) -> [162]
-  | Ast0.PragmaIdList(ids) -> [163]
+    Ast0.PragmaString(s) -> [163]
   | Ast0.PragmaDots (dots) -> [164]
 
 let case_line c =

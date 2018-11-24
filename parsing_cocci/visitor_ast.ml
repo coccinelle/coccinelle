@@ -83,13 +83,11 @@ let combiner bind option_default
   and storage_mcode x = storage_mcodefn all_functions x
   and inc_file_mcode x = inc_file_mcodefn all_functions x
 
-  and iddotsfn all_functions k arg = k arg
   and strdotsfn all_functions k arg = k arg
   and ecdotsfn all_functions k arg = k arg
   and defpardotsfn all_functions k arg = k arg
 
   and expression_dots d = dotsfn expdotsfn expression all_functions d
-  and identifier_dots d = dotsfn iddotsfn ident all_functions d
   and parameter_dots d = dotsfn paramdotsfn parameterTypeDef all_functions d
   and statement_dots d = dotsfn stmtdotsfn statement all_functions d
   and annotated_decl_dots d =
@@ -727,12 +725,7 @@ let combiner bind option_default
   and pragmainfo pi =
     let k pi =
       match Ast.unwrap pi with
-	Ast.PragmaTuple(lp,args,rp) ->
-	  let llp = string_mcode lp in
-	  let largs = expression_dots args in
-	  let lrp = string_mcode rp in
-	  multibind [llp; largs; lrp]
-      | Ast.PragmaIdList(ids) -> identifier_dots ids
+	Ast.PragmaString(s) -> string_mcode s
       | Ast.PragmaDots (dots) -> string_mcode dots in
     k pi
 
@@ -1007,12 +1000,10 @@ let rebuilder
     let k d = Ast.rewrap d (List.map default (Ast.unwrap d)) in
     param all_functions k arg in
 
-  let iddotsfn all_functions k arg = k arg in
   let strdotsfn all_functions k arg = k arg in
   let ecdotsfn all_functions k arg = k arg in
 
   let rec expression_dots d = dotsfn expdotsfn expression all_functions d
-  and identifier_dots d = dotsfn iddotsfn ident all_functions d
   and parameter_dots d = dotsfn paramdotsfn parameterTypeDef all_functions d
   and statement_dots d = dotsfn stmtdotsfn statement all_functions d
   and annotated_decl_dots d =
@@ -1665,12 +1656,7 @@ let rebuilder
     let k pi =
       Ast.rewrap pi
 	(match Ast.unwrap pi with
-	  Ast.PragmaTuple(lp,args,rp) ->
-	    let llp = string_mcode lp in
-	    let largs = expression_dots args in
-	    let lrp = string_mcode rp in
-	    Ast.PragmaTuple(llp, largs, lrp)
-	| Ast.PragmaIdList(ids) -> Ast.PragmaIdList(identifier_dots ids)
+	  Ast.PragmaString(s) -> Ast.PragmaString(string_mcode s)
 	| Ast.PragmaDots (dots) -> Ast.PragmaDots(string_mcode dots)) in
     k pi
 

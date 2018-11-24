@@ -81,7 +81,7 @@ let is_known_typdef =
  * because it would compute msg_typedef at compile time when
  * the flag debug_typedef is always false
  *)
-let msg_typedef s ii n =
+let msg_typedef s ii n = pr2 (Printf.sprintf "making a typedef: %d" n);
   incr Stat.nTypedefInfer;
   msg_gen (!Flag_parsing_c.debug_typedef)
     is_known_typdef
@@ -431,7 +431,7 @@ let rec define_line_1 acc = function
   | [] -> List.rev acc
   | token::tokens ->
     begin match token with
-      | TDefine ii | TUndef ii | TPragma ii ->
+      | TDefine ii | TUndef ii ->
         let line = Ast_c.line_of_info ii in
         define_line_2 (token::acc) line ii tokens
       | TCppEscapedNewline ii ->
@@ -475,19 +475,20 @@ and end_line_of_tok default = function
 let rec define_ident acc = function
   | [] -> List.rev acc
   | token::tokens ->
-    let acc = token::acc in
     (match token with
     | TUndef ii ->
-      (match tokens with
-	TCommentSpace i1::TIdent (s,i2)::xs ->
-          define_ident ((TIdentDefine (s,i2))::(TCommentSpace i1)::acc) xs
-      | _ ->
-          pr2 "WEIRD: weird #undef body";
-          define_ident acc tokens
+	let acc = token::acc in
+	(match tokens with
+	  TCommentSpace i1::TIdent (s,i2)::xs ->
+            define_ident ((TIdentDefine (s,i2))::(TCommentSpace i1)::acc) xs
+	| _ ->
+            pr2 "WEIRD: weird #undef body";
+            define_ident acc tokens
       )
     | TDefine ii ->
-      (match tokens with
-      | TCommentSpace i1::TIdent (s,i2)::TOPar (i3)::xs ->
+	let acc = token::acc in
+	(match tokens with
+	| TCommentSpace i1::TIdent (s,i2)::TOPar (i3)::xs ->
           (* Change also the kind of TIdent to avoid bad interaction
            * with other parsing_hack tricks. For instant if keep TIdent then
            * the stringication algo can believe the TIdent is a string-macro.
@@ -497,15 +498,15 @@ let rec define_ident acc = function
            * it's a macro-function. Change token to avoid ambiguity
            * between #define foo(x)  and   #define foo   (x)
            *)
-	  let acc = (TCommentSpace i1) :: acc in
-	  let acc = (TIdentDefine (s,i2)) :: acc in
-	  let acc = (TOParDefine i3) :: acc in
-          define_ident acc xs
+	    let acc = (TCommentSpace i1) :: acc in
+	    let acc = (TIdentDefine (s,i2)) :: acc in
+	    let acc = (TOParDefine i3) :: acc in
+            define_ident acc xs
 
-      | TCommentSpace i1::TIdent (s,i2)::xs ->
-	  let acc = (TCommentSpace i1) :: acc in
-	  let acc = (TIdentDefine (s,i2)) :: acc in
-          define_ident acc xs
+	| TCommentSpace i1::TIdent (s,i2)::xs ->
+	    let acc = (TCommentSpace i1) :: acc in
+	    let acc = (TIdentDefine (s,i2)) :: acc in
+            define_ident acc xs
 
       (* bugfix: ident of macro (as well as params, cf below) can be tricky
        * note, do we need to subst in the body of the define ? no cos
@@ -514,95 +515,34 @@ let rec define_ident acc = function
        * body (it would be a recursive macro, which is forbidden).
        *)
 
-      | TCommentSpace i1::t::xs
-	when TH.str_of_tok t ==~ Common.regexp_alpha
-	->
-          let s = TH.str_of_tok t in
-          let ii = TH.info_of_tok t in
-	  pr2 (spf "remapping: %s to an ident in macro name" s);
-          let acc = (TCommentSpace i1) :: acc in
-	  let acc = (TIdentDefine (s,ii)) :: acc in
-          define_ident acc xs
+	| TCommentSpace i1::t::xs
+	  when TH.str_of_tok t ==~ Common.regexp_alpha
+	  ->
+            let s = TH.str_of_tok t in
+            let ii = TH.info_of_tok t in
+	    pr2 (spf "remapping: %s to an ident in macro name" s);
+            let acc = (TCommentSpace i1) :: acc in
+	    let acc = (TIdentDefine (s,ii)) :: acc in
+            define_ident acc xs
 
-      | TCommentSpace _::_::xs
-      | xs ->
-          pr2 "WEIRD: weird #define body";
-          define_ident acc xs
+	| TCommentSpace _::_::xs
+	| xs ->
+            pr2 "WEIRD: weird #define body";
+            define_ident acc xs
       )
-    | TPragma ii ->
-	let safe =
-	  let rec loop2 = function
-	      (TCPar _)::(TDefEOL _)::_ -> true
-	    | (TCPar _)::_ -> false
-	    | _::xs -> loop2 xs
-	    | _ -> false in
-	  let rec loop1a = function
-	      (TCommentSpace _)::xs -> loop1a xs
-	    | (TIdent _)::xs -> loop1a xs
-	    | t::xs when TH.str_of_tok t ==~ Common.regexp_alpha -> loop1a xs
-	    | (TDefEOL i1)::_ -> true
-	    | _ -> false in
-	  let rec loop1 = function
-	      (TCommentSpace _)::xs -> loop1 xs
-	    | (TOPar _)::xs -> loop2 xs
-	    | (TIdent _)::xs -> loop1a xs
-	    | t::xs when TH.str_of_tok t ==~ Common.regexp_alpha -> loop1a xs
-	    | (TDefEOL i1)::_ -> true
-	    | _ -> false in
-	  let rec loop = function
-	      (TCommentSpace _)::xs -> loop xs
-	    | (TIdent _)::xs -> loop1 xs
-	    | t::xs when TH.str_of_tok t ==~ Common.regexp_alpha -> loop1 xs
-	    | (TDefEOL i1)::_ -> true
-	    | _ -> false in
-	  loop tokens in
-	if safe
-	then
-	  let rec loop acc = function
-	      ((TDefEOL i1) as x) :: xs -> define_ident (x::acc) xs
-	    | TCommentSpace i1::TIdent (s,i2)::xs ->
-		let acc = (TCommentSpace i1) :: acc in
-		let acc = (TIdentDefine (s,i2)) :: acc in
-		loop acc xs
-
-      (* bugfix: ident of macro (as well as params, cf below) can be tricky
-       * note, do we need to subst in the body of the define ? no cos
-       * here the issue is the name of the macro, as in #define inline,
-       * so obviously the name of this macro will not be used in its
-       * body (it would be a recursive macro, which is forbidden).
-       *)
-
-	    | TCommentSpace i1::t::xs
-	      when TH.str_of_tok t ==~ Common.regexp_alpha
-	      ->
-		let s = TH.str_of_tok t in
-		let ii = TH.info_of_tok t in
-		pr2 (spf "remapping: %s to an ident in pragma" s);
-		let acc = (TCommentSpace i1) :: acc in
-		let acc = (TIdentDefine (s,ii)) :: acc in
-		loop acc xs
-
-	    | xs ->
-		pr2 "WEIRD: weird #pragma";
-		define_ident acc xs in
-	  loop acc tokens
-	else
-	    (* just turn all tokens into identifiers and move on *)
-	  let rec loop acc = function
-              ((TDefEOL i1) as x) :: xs -> define_ident (x::acc) xs
-	    | ((TCommentSpace _) as t)::xs -> loop (t::acc) xs
-	    | TIdent (s,i2)::xs ->
-		let acc = (TIdentDefine (s,i2)) :: acc in
-		loop acc xs
-	    | t::xs ->
-		let s = TH.str_of_tok t in
-		let ii = TH.info_of_tok t in
-		pr2 (spf "remapping: %s to an ident in pragma" s);
-		let acc = (TIdentDefine (s,ii)) :: acc in
-		loop acc xs
-	    | _ -> failwith "bad pragma line" in
-	  loop acc tokens
-    | _ -> define_ident acc tokens
+    | TPrePragma(prag,wss1,ident,iinfo,wss2,rest,rinfo) ->
+	let acc = (TPragma prag) :: acc in
+	let acc = (TCommentSpace wss1) :: acc in
+	let acc = (TIdent(ident,iinfo)) :: acc in
+	let acc =
+	  if Ast_c.str_of_info wss2 = ""
+	  then acc
+	  else (TCommentSpace wss2) :: acc in
+	let acc = (TPragmaString(rest,rinfo)) :: acc in
+	define_ident acc tokens
+    | _ ->
+	let acc = token::acc in
+	define_ident acc tokens
     )
 
 
@@ -1914,6 +1854,10 @@ let not_struct_enum = function
     (Parser_c.Tstruct _ | Parser_c.Tunion _ | Parser_c.Tenum _)::_ -> false
   | _ -> true
 
+let not_pragma = function
+    (Parser_c.TPragma _)::_ -> false
+  | _ -> true
+
 let pointer ?(followed_by=fun _ -> true)
     ?(followed_by_more=fun _ -> true) ts =
   let rec loop ts =
@@ -2141,7 +2085,7 @@ let lookahead2 ~pass next before =
 	  TIdent (s, i1)
   (* xx yy *)
   | (TIdent (s, i1)::TIdent (s2, i2)::rest  , _) when not_struct_enum before
-      && ok_typedef s && not (is_macro_paren s2 rest)
+	&& ok_typedef s && not (is_macro_paren s2 rest)
         ->
          (* && not_annot s2 BUT lead to false positive*)
       msg_typedef s i1 2; LP.add_typedef_root s;

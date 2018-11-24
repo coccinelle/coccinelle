@@ -781,9 +781,8 @@ and vk_cpp_directive bigf directive =
         iif ii;
         vk_define_kind bigf defkind;
         vk_define_val bigf defval
-    | Pragma ((s,ii), pragmainfo) ->
-        iif ii;
-        vk_pragmainfo bigf pragmainfo
+    | Pragma ((id,rest),ii) ->
+        vk_name bigf id; iif ii
     | OtherDirective (ii) ->
         iif ii
   in f (k, bigf) directive
@@ -826,14 +825,6 @@ and vk_define_val bigf defval =
       pr2_once "DefineTodo";
       ()
   in f (k, bigf) defval
-
-and vk_pragmainfo bigf pragmainfo =
-  match pragmainfo with
-    PragmaTuple(args,ii) ->
-      vk_ii bigf ii;
-      vk_argument_list bigf args
-  | PragmaIdList ids ->
-      ids +> List.iter (function (id, _) -> vk_name bigf id)
 
 and vk_string_fragment = fun bigf x ->
   let rec fragf x = bigf.kfragment (k, bigf) x
@@ -932,9 +923,8 @@ and vk_node = fun bigf node ->
         pr2_once "DefineTodo";
         ()
 
-    | F.PragmaHeader((s,ii), pragmainfo) ->
-        iif ii;
-        vk_pragmainfo bigf pragmainfo
+    | F.PragmaHeader ((id,rest),ii) ->
+        vk_name bigf id; iif ii
 
     | F.Include {i_include = (s, ii);} -> iif ii;
 
@@ -1681,8 +1671,8 @@ and vk_cpp_directive_s = fun bigf top ->
     | Define ((s,ii), (defkind, defval)) ->
         Define ((s, iif ii),
                (vk_define_kind_s bigf defkind, vk_define_val_s bigf defval))
-    | Pragma((s,ii), pragmainfo) ->
-	Pragma((s,iif ii), vk_pragmainfo_s bigf pragmainfo)
+    | Pragma((id,rest),ii) ->
+	Pragma((vk_name_s bigf id,rest),iif ii)
     | OtherDirective (ii) -> OtherDirective (iif ii)
 
   in f (k, bigf) top
@@ -1746,21 +1736,6 @@ and vk_define_val_s = fun bigf x ->
         DefineTodo
   in
   f (k, bigf) x
-
-and vk_pragmainfo_s bigf pragmainfo =
-  match pragmainfo with
-    PragmaTuple(args,ii) ->
-      PragmaTuple(
-      args +> List.map (fun (e,ii) -> vk_argument_s bigf e, vk_ii_s bigf ii),
-      vk_ii_s bigf ii)
-  | PragmaIdList ids ->
-      PragmaIdList
-	(ids +>
-	 List.map
-	   (function
-	       id, [] -> vk_name_s bigf id, []
-	     | _ -> failwith "bad ident_list"))
-
 
 and vk_string_fragment_s = fun bigf x ->
   let rec fragf x = bigf.kfragment_s (k, bigf) x
@@ -1867,8 +1842,8 @@ and vk_node_s = fun bigf node ->
         F.DefineDoWhileZeroHeader ((),iif ii)
     | F.DefineTodo -> F.DefineTodo
 
-    | F.PragmaHeader ((s,ii),pragmainfo) ->
-        F.PragmaHeader((s,iif ii), vk_pragmainfo_s bigf pragmainfo)
+    | F.PragmaHeader ((id,rest),ii) ->
+        F.PragmaHeader((vk_name_s bigf id,rest),iif ii)
 
     | F.Include {i_include = (s, ii);
                  i_rel_pos = h_rel_pos;

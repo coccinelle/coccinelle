@@ -1116,12 +1116,7 @@ and statement s =
 and pragmainfo pi =
   rewrap pi no_isos
     (match Ast0.unwrap pi with
-      Ast0.PragmaTuple(lp,args,rp) ->
-	let lp = mcode lp in
-	let args = dots expression args in
-	let rp = mcode rp in
-	Ast.PragmaTuple(lp,args,rp)
-    | Ast0.PragmaIdList(ids) -> Ast.PragmaIdList(dots ident ids)
+      Ast0.PragmaString(s) -> Ast.PragmaString(mcode s)
     | Ast0.PragmaDots (dots) -> Ast.PragmaDots (mcode dots))
 
 and define_parameters p =

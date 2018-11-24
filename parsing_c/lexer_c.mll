@@ -456,7 +456,35 @@ rule token = parse
    *)
   | "#" [' ' '\t']* "undef" { TUndef (tokinfo lexbuf) }
 
-  | ("#" [' ' '\t']* "pragma") { TPragma (tokinfo lexbuf) }
+  | (("#" [' ' '\t']*  "pragma") as prag) ([' ' '\t']+ as wss1)
+    ( (letter (letter | digit)*) as ident) ([' ' '\t']* as wss2)
+    ([^ '\n']* as rest)
+    { let pinfo = Ast_c.rewrap_str prag (tokinfo lexbuf) in
+      let s1info =
+	let offset = String.length prag in
+	Ast_c.rewrap_charpos (Ast_c.opos_of_info pinfo + offset)
+	  (Ast_c.rewrap_col (Ast_c.col_of_info pinfo + offset)
+	     (Ast_c.rewrap_str wss1 (tokinfo lexbuf))) in
+      let iinfo =
+	let offset = String.length prag + String.length wss1 in
+	Ast_c.rewrap_charpos (Ast_c.opos_of_info pinfo + offset)
+	  (Ast_c.rewrap_col (Ast_c.col_of_info pinfo + offset)
+	     (Ast_c.rewrap_str ident (tokinfo lexbuf))) in
+      let s2info =
+	let offset =
+	  String.length prag + String.length wss1 +
+	    String.length ident in
+	Ast_c.rewrap_charpos (Ast_c.opos_of_info pinfo + offset)
+	  (Ast_c.rewrap_col (Ast_c.col_of_info pinfo + offset)
+	     (Ast_c.rewrap_str wss2 (tokinfo lexbuf))) in
+      let rinfo =
+	let offset =
+	  String.length prag + String.length wss1 +
+	    String.length ident + String.length wss2 in
+	Ast_c.rewrap_charpos (Ast_c.opos_of_info pinfo + offset)
+	  (Ast_c.rewrap_col (Ast_c.col_of_info pinfo + offset)
+	     (Ast_c.rewrap_str rest (tokinfo lexbuf))) in
+      TPrePragma(pinfo,s1info,ident,iinfo,s2info,rest,rinfo) }
 
   (* ---------------------- *)
   (* #include *)

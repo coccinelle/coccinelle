@@ -54,12 +54,10 @@ let visitor mode bind option_default
   let dotsfn param default all_functions arg =
     let k d = rewrap d (map_split_bind default (Ast0.unwrap d)) in
     param all_functions k arg in
-  let iddotsfn all_functions k arg = k arg in
   let strdotsfn all_functions k arg = k arg in
   let ecdotsfn all_functions k arg = k arg in
 
   let rec expression_dots d = dotsfn dotsexprfn expression all_functions d
-  and identifier_dots d = dotsfn iddotsfn ident all_functions d
   and initialiser_dots d = dotsfn dotsinitfn initialiser all_functions d
   and parameter_dots d = dotsfn dotsparamfn parameterTypeDef all_functions d
   and statement_dots d = dotsfn dotsstmtfn statement all_functions d
@@ -920,14 +918,9 @@ let visitor mode bind option_default
     let k pi =
       rewrap pi
 	(match Ast0.unwrap pi with
-	  Ast0.PragmaTuple(lp,args,rp) ->
-	    let (lp_n,lp) = string_mcode lp in
-	    let (args_n,args) = expression_dots args in
-	    let (rp_n,rp) = string_mcode rp in
-	    (multibind [lp_n;args_n;rp_n], Ast0.PragmaTuple(lp,args,rp))
-	| Ast0.PragmaIdList(ids) ->
-	    let (ids_n,ids) = identifier_dots ids in
-	    (ids_n, Ast0.PragmaIdList(ids))
+	  Ast0.PragmaString(s) ->
+	    let (s_n,s) = string_mcode s in
+	    (s_n, Ast0.PragmaString(s))
 	| Ast0.PragmaDots (dots) ->
 	    let (dots_n,dots) = string_mcode dots in
 	    (dots_n,Ast0.PragmaDots dots)) in

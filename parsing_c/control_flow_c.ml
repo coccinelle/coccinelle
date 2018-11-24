@@ -221,7 +221,7 @@ type node = node1 * string
 
   | Include of includ
 
-  | PragmaHeader of string wrap * pragmainfo
+  | PragmaHeader of (name * string) wrap
 
   (* obsolete? *)
   | MacroTop of string * argument wrap2 list * il
