@@ -29,6 +29,7 @@
 - Support for long double complex, double complex and float complex at the
   C and SmPL level.
 - Add conjunction for identifiers.
+- Simplify pragma matching.
 ** Features:
 ** Bugfix:
 - check identifier constraints when an identifier metavariable appears in a
