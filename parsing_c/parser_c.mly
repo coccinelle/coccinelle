@@ -1972,8 +1972,8 @@ cpp_directive:
  | TUndef TIdentDefine TDefEOL
      { Define((fst $2, [$1; snd $2; $3]), (Undef,DefineEmpty)) }
 
- | TPragma TIdent TPragmaString
-     { Pragma((RegularName (mk_string_wrap $2),fst $3),[$1;snd $3]) }
+ | TPragma TIdent TPragmaString TDefEOL
+     { Pragma((RegularName (mk_string_wrap $2),fst $3),[$1;snd $3;$4]) }
 
  | TCppDirectiveOther { OtherDirective ([$1]) }
 

@@ -431,7 +431,8 @@ let rec define_line_1 acc = function
   | [] -> List.rev acc
   | token::tokens ->
     begin match token with
-      | TDefine ii | TUndef ii ->
+      (* need final ii for PrePragma, to match end of line *)
+      | TDefine ii | TUndef ii | TPrePragma(_,_,_,_,_,_,ii) ->
         let line = Ast_c.line_of_info ii in
         define_line_2 (token::acc) line ii tokens
       | TCppEscapedNewline ii ->
