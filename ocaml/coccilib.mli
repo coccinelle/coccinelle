@@ -734,7 +734,8 @@ module Parser_c :
       | TUelseif of Ast_c.info
       | TUendif of Ast_c.info
       | TUndef of Ast_c.info
-      | TPrePragma of (Ast_c.info*Ast_c.info*string*Ast_c.info*Ast_c.info*string*Ast_c.info)
+      | TPrePragma of (Ast_c.info*Ast_c.info*string*Ast_c.info*Ast_c.info*
+			 string*Ast_c.info)
       | TPragma of (Ast_c.info)
       | TPragmaString of (string*Ast_c.info)
       | TCppDirectiveOther of Ast_c.info
