@@ -81,7 +81,7 @@ let is_known_typdef =
  * because it would compute msg_typedef at compile time when
  * the flag debug_typedef is always false
  *)
-let msg_typedef s ii n = pr2 (Printf.sprintf "making a typedef: %d" n);
+let msg_typedef s ii n =
   incr Stat.nTypedefInfer;
   msg_gen (!Flag_parsing_c.debug_typedef)
     is_known_typdef
