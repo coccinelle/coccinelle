@@ -721,10 +721,12 @@ translation_unit:
 ident:
  | TIdent       { $1 }
  | TypedefIdent { $1 }
+ | Tcomplex     { ("complex", $1) }
 
 
 identifier:
  | TIdent       { $1 }
+ | Tcomplex     { ("complex", $1) }
 
 /*
 (* cppext: string concatenation of idents
@@ -742,6 +744,7 @@ ident_cpp:
  | TypedefIdent
      { RegularName (mk_string_wrap $1) }
  | ident_extra_cpp { $1 }
+ | Tcomplex     { RegularName (mk_string_wrap ("complex", $1)) }
 
 ident_extra_cpp:
  | TIdent TCppConcatOp identifier_cpp_list
