@@ -77,8 +77,12 @@ let add_typedef  s =
   Common.add_in_scope_h _typedef (s, TypeDefI)
 let add_ident s    = Common.add_in_scope_h _typedef (s, IdentI)
 
-let add_typedef_root s =
-  if !Flag_parsing_c.add_typedef_root
+let add_typedef_root s i =
+  let expanded i =
+    match i.Ast_c.pinfo with
+      Ast_c.ExpandedTok _ -> true
+    | _ -> false in
+  if !Flag_parsing_c.add_typedef_root && not(expanded i)
   then
     Hashtbl.add !_typedef.scoped_h s TypeDefI
   else add_typedef s (* have far more .failed without this *)
