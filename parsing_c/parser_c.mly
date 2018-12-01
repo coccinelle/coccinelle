@@ -1083,9 +1083,9 @@ expr_statement:
  | expr TPtVirg { Some $1, [$2] }
 
 selection:
- | Tif TOPar expr TCPar statement              %prec SHIFTHERE
+ | Tif TOPar expr TCPar cpp_ifdef_statement              %prec SHIFTHERE
      { If ($3, $5, (mk_st (ExprStatement None) Ast_c.noii)),   [$1;$2;$4] }
- | Tif TOPar expr TCPar statement Telse statement
+ | Tif TOPar expr TCPar cpp_ifdef_statement Telse cpp_ifdef_statement
      { If ($3, $5, $7),  [$1;$2;$4;$6] }
  | Tswitch TOPar expr TCPar statement
      { Switch ($3,$5),   [$1;$2;$4]  }
@@ -1097,23 +1097,23 @@ selection:
      { Ifdef_Ite2 ($4,$6,$9,$11), [$1;$2;$3;$5;$7;$8;$10] }
 
 iteration:
- | Twhile TOPar expr TCPar statement
+ | Twhile TOPar expr TCPar cpp_ifdef_statement
      { While ($3,$5),                [$1;$2;$4] }
  | Tdo statement Twhile TOPar expr TCPar TPtVirg
      { DoWhile ($2,$5),              [$1;$3;$4;$6;$7] }
- | Tfor TOPar expr_statement expr_statement TCPar statement
+ | Tfor TOPar expr_statement expr_statement TCPar cpp_ifdef_statement
      { For (ForExp $3,$4,(None, []),$6),    [$1;$2;$5]}
- | Tfor TOPar expr_statement expr_statement expr TCPar statement
+ | Tfor TOPar expr_statement expr_statement expr TCPar cpp_ifdef_statement
      { For (ForExp $3,$4,(Some $5, []),$7), [$1;$2;$6] }
  /*(* C++ext: for(int i = 0; i < n; i++)*)*/
- | Tfor TOPar decl expr_statement TCPar statement
+ | Tfor TOPar decl expr_statement TCPar cpp_ifdef_statement
      { For (ForDecl ($3 Ast_c.LocalDecl),$4,(None, []),$6),    [$1;$2;$5]}
- | Tfor TOPar decl expr_statement expr TCPar statement
+ | Tfor TOPar decl expr_statement expr TCPar cpp_ifdef_statement
      { For (ForDecl ($3 Ast_c.LocalDecl),$4,(Some $5, []),$7), [$1;$2;$6] }
  /*(* cppext: *)*/
- | TMacroIterator TOPar argument_list_ne TCPar statement
+ | TMacroIterator TOPar argument_list_ne TCPar cpp_ifdef_statement
      { MacroIteration (fst $1, $3, $5), [snd $1;$2;$4] }
- | TMacroIterator TOPar TCPar statement
+ | TMacroIterator TOPar TCPar cpp_ifdef_statement
      { MacroIteration (fst $1, [], $4), [snd $1;$2;$3] }
 
 /*(* the ';' in the caller grammar rule will be appended to the infos *)*/
@@ -2062,19 +2062,41 @@ param_define:
 
 
 
-cpp_ifdef_directive:
- | TIfdef
+cpp_ifdef_statement:
+   ifdef cpp_ifdef_statement cpp_ifdef_statement_tail
+     { IfdefStmt1 (($1::fst $3), ($2::snd $3)), [] }
+ | statement {$1}
+
+cpp_ifdef_statement_tail:
+   ifdefelse cpp_ifdef_statement endif { [$1;$3], [$2] }
+ | ifdefelif cpp_ifdef_statement cpp_ifdef_statement_tail
+   { ($1::fst $3), ($2::snd $3) }
+
+ifdef:
+   TIfdef
      { let (cond,tag,ii) = $1 in
        IfdefDirective ((Ifdef cond, IfdefTag (Common.some !tag)),  [ii]) }
- | TIfdefelse
+
+ifdefelse:
+   TIfdefelse
      { let (tag,ii) = $1 in
        IfdefDirective ((IfdefElse, IfdefTag (Common.some !tag)), [ii]) }
- | TIfdefelif
+
+ifdefelif:
+   TIfdefelif
      { let (cond,tag,ii) = $1 in
        IfdefDirective ((IfdefElseif cond, IfdefTag (Common.some !tag)), [ii]) }
- | TEndif
+
+endif:
+   TEndif
      { let (tag,ii) = $1 in
        IfdefDirective ((IfdefEndif, IfdefTag (Common.some !tag)), [ii]) }
+
+cpp_ifdef_directive:
+ | ifdef { $1 }
+ | ifdefelse { $1 }
+ | ifdefelif { $1 }
+ | endif { $1 }
 
  | TIfdefBool
      { let (_b, tag,ii) = $1 in

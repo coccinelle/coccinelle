@@ -962,6 +962,9 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
       !g +> add_arc_opt (starti, newi);
       Some newi
 
+  | Ast_c.IfdefStmt1 (ifdefs, xs) ->
+      aux_statement_list starti (xi,xi_lbl)
+	[Ast_c.IfdefStmt2 (ifdefs, List.map (fun x -> [StmtElem x]) xs)]
 
   (* ------------------------- *)
   | Ast_c.NestedFunc def ->

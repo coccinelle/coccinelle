@@ -209,6 +209,7 @@ module Ast_c :
       | NestedFunc of definition
       | MacroStmt
       | Exec of exec_code list
+      | IfdefStmt1 of ifdef_directive list * statement list
     and labeled =
       Ast_c.labeled =
         Label of name * statement

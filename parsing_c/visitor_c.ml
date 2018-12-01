@@ -440,6 +440,10 @@ and vk_statement = fun bigf (st: Ast_c.statement) ->
 
     | Exec (code) -> List.iter (vk_exec_code bigf) code
 
+    | IfdefStmt1 (ifdef, xs) ->
+        ifdef +> List.iter (vk_ifdef_directive bigf);
+        xs +> List.iter (vk_statement bigf)
+
   in statf st
 
 and vk_statement_sequencable_list = fun bigf stms ->
@@ -1323,6 +1327,11 @@ and vk_statement_s = fun bigf st ->
       | NestedFunc def -> NestedFunc (vk_def_s bigf def)
       | MacroStmt -> MacroStmt
       |	Exec(code) -> Exec(List.map (vk_exec_code_s bigf) code)
+      | IfdefStmt1 (ifdef, xs) ->
+          let ifdef' = List.map (vk_ifdef_directive_s bigf) ifdef in
+          let xs' = xs +> List.map (vk_statement_s bigf) in
+          IfdefStmt1(ifdef', xs')
+
     in
     st', vk_ii_s bigf ii
   in statf st

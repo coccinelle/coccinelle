@@ -394,6 +394,10 @@ and pp_string_format (e,ii) =
 	pr_elem exec; pr_space(); pr_elem lang; pr_space();
 	pp_list2 pp_exec_code code; pr_elem sem
 
+    | IfdefStmt1 (ifdefs, xs), [] ->
+	pp_statement_seq
+	  (IfdefStmt2 (ifdefs,List.map (fun x -> [StmtElem x]) xs))
+
     | (Labeled (Case  (_,_))
     | Labeled (CaseRange  (_,_,_)) | Labeled (Default _)
     | Compound _ | ExprStatement _
@@ -404,7 +408,7 @@ and pp_string_format (e,ii) =
     | Iteration  (MacroIteration (_,_,_))
     | Jump ((Continue|Break|Return)) | Jump (ReturnExpr _)
     | Jump (GotoComputed _)
-    | Decl _ | Exec _
+    | Decl _ | Exec _ | IfdefStmt1 _
 	), _ -> raise (Impossible 98)
 
   and pp_statement_seq = function

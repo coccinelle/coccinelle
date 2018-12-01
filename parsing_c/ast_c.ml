@@ -450,6 +450,7 @@ and statement = statementbis wrap3
   (* cppext: *)
   | MacroStmt
   | Exec of exec_code list
+  | IfdefStmt1 of ifdef_directive list * statement list
 
   and labeled = Label   of name * statement
               | Case    of expression * statement
