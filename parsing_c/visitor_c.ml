@@ -1326,7 +1326,7 @@ and vk_statement_s = fun bigf st ->
       | Asm asmbody -> Asm (vk_asmbody_s bigf asmbody)
       | NestedFunc def -> NestedFunc (vk_def_s bigf def)
       | MacroStmt -> MacroStmt
-      |	Exec(code) -> Exec(List.map (vk_exec_code_s bigf) code)
+      | Exec(code) -> Exec(List.map (vk_exec_code_s bigf) code)
       | IfdefStmt1 (ifdef, xs) ->
           let ifdef' = List.map (vk_ifdef_directive_s bigf) ifdef in
           let xs' = xs +> List.map (vk_statement_s bigf) in
