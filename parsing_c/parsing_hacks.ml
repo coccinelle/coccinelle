@@ -303,6 +303,30 @@ let count_open_close_stuff_ifdef_clause :TV.ifdef_grouped list -> (int * int) =
    );
    !cnt_paren, !cnt_brace
 
+let sequencible xs =
+  let last = ref None in
+  let cpp = ref false in
+  xs +> List.iter
+    (TV.iter_token_ifdef
+       (fun x ->
+	 (match x.tok with
+	   TDefine _ | TUndef _ | TOParDefine _ | TIdentDefine _ | TPrePragma _
+	 | TPragma _ | TInclude _ | TIncludeStart _ | TIncludeFilename _
+	 | TCppDirectiveOther _ (*occurs?*) -> cpp := true
+	 | _ -> ());
+	 last := Some x));
+  !cpp ||
+  (match !last with
+    Some t ->
+      (match t.tok with
+	TCBrace _ | TOBrace _ | TPtVirg _ -> true
+      | TCPar i ->
+	  (match i.pinfo with
+	    (* for macrostatements, not sure if it works *)
+	    ExpandedTok _ -> true
+	  | _ -> false)
+      | _ -> false)
+  | None -> true)
 
 (* ------------------------------------------------------------------------- *)
 let forLOOKAHEAD = 30
@@ -810,8 +834,9 @@ let rec find_ifdef_mid xs =
           then
             let counts = xxs +> List.map count_open_close_stuff_ifdef_clause in
             let cnt1, cnt2 = List.hd counts in
-            if cnt1 <> 0 || cnt2 <> 0 &&
-               counts +> List.for_all (fun x -> x = (cnt1, cnt2))
+            if (not (sequencible xxs)) || (* require end with ; or } *)
+	        (cnt1 <> 0 || cnt2 <> 0 &&
+		counts +> List.for_all (fun x -> x = (cnt1, cnt2)))
               (*
                 if counts +> List.exists (fun (cnt1, cnt2) ->
                 cnt1 <> 0 || cnt2 <> 0
