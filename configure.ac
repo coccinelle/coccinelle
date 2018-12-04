@@ -490,6 +490,11 @@ AS_IF([test "x$with_bash_completion" = "xyes"],
                 [$datarootdir/bash-completion/completions])])],
     [AC_SUBST([BASH_COMPLETION_DIR], [$with_bash_completion])])
 
+AC_MSG_NOTICE([configuring stdcompat bundle...])
+AS_IF([( cd bundles/stdcompat/stdcompat-6; ./configure )],
+  AC_MSG_NOTICE([stdcompat is configured.]),
+  AC_MSG_ERROR([stdcompat configuration failed.]))
+
 dnl
 dnl  generating configuration
 dnl
