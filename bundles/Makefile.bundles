@@ -73,22 +73,22 @@ clean:
 
 depend: .depend
 
-source_files = \
+yacc_files := $(wildcard $(patsubst %,$(SRC_DIR)/%.mly,$(MODULES)))
+lex_files := $(wildcard $(patsubst %,$(SRC_DIR)/%.mll,$(MODULES)))
+
+source_files := \
 	$(wildcard \
 		$(patsubst %,$(SRC_DIR)/%.mli,$(MODULES) $(MERE_INTERFACES)) \
 	        $(patsubst %,$(SRC_DIR)/%.ml,$(MODULES))) \
-	$(patsubst %.mly,%.ml, \
-	        $(wildcard $(patsubst %,$(SRC_DIR)/%.mly,$(MODULES)))) \
-	$(patsubst %.mly,%.mli, \
-	        $(wildcard $(patsubst %,$(SRC_DIR)/%.mly,$(MODULES)))) \
-	$(patsubst %.mll,%.ml, \
-	        $(wildcard $(patsubst %,$(SRC_DIR)/%.mll,$(MODULES))))
+	$(patsubst %.mly,%.ml,$(yacc_files)) \
+	$(patsubst %.mly,%.mli,$(yacc_files)) \
+	$(patsubst %.mll,%.ml,$(lex_files))
 
 .PHONY: depend-rec
-depend-rec:
+depend-rec: $(source_files)
 	$(OCAMLDEP_CMD) $(source_files) >.depend
 
-.depend: .prepare $(source_files)
+.depend: .prepare
 	$(MAKE) depend-rec
 
 .PHONY: \
