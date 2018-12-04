@@ -2,9 +2,7 @@ include Pervasives
 
 @BEGIN_BEFORE_4_03_0@
 type ('a, 'b) result
-@BEGIN_WITH_RESULT_PKG@
-  = ('a, 'b) Result.result
-@END_WITH_RESULT_PKG@
+  = ('a, 'b) Stdcompat__init.result
   = Ok of 'a | Error of 'b
 @END_BEFORE_4_03_0@
 
