@@ -1,8 +1,8 @@
 .PHONY : all
 all :
 # Hack to make these files fresh
-	touch stdcompat-6/Makefile.in
-	touch stdcompat-6/aclocal.m4
+#	touch stdcompat-6/Makefile.in
+#	touch stdcompat-6/aclocal.m4
 	cd stdcompat-6; OCAMLFIND= ./configure && make && \
 		cp *.mli *.cmi *.cmx *.cma *.cmxa *.a ..
 
