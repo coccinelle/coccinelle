@@ -44,3 +44,18 @@ type ('a, 'b) result =
   | Ok of 'a 
   | Error of 'b
 
+@BEGIN_FROM_4_07_0@
+type 'a seq = unit -> 'a seq_node
+and 'a seq_node = 'a Seq.node =
+  | Nil 
+  | Cons of 'a * 'a seq
+@END_FROM_4_07_0@
+@BEGIN_BEFORE_4_07_0@
+type 'a seq = unit -> 'a seq_node
+and 'a seq_node =
+@BEGIN_WITH_SEQ_PKG@
+  'a Seq.node =
+@END_WITH_SEQ_PKG@
+  | Nil
+  | Cons of 'a * 'a seq
+@END_BEFORE_4_07_0@
