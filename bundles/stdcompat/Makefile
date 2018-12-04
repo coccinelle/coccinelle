@@ -1,6 +1,6 @@
 .PHONY : all
 all :
-	cd stdcompat-6; make && cp *.mli *.cmi *.cmx *.cma *.cmxa *.a ..
+	cd stdcompat-7; make && cp *.mli *.cmi *.cmx *.cma *.cmxa *.a ..
 
 .PHONY : clean
 clean :

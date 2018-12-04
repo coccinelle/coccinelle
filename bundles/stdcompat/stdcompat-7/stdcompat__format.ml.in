@@ -1,0 +1,136 @@
+include Format
+
+@BEGIN_BEFORE_4_01_0@
+type formatter_out_functions =
+  {
+  out_string: string -> int -> int -> unit ;
+  out_flush: unit -> unit ;
+  out_newline: unit -> unit ;
+  out_spaces: int -> unit ;
+  out_indent: int -> unit }
+@END_BEFORE_4_01_0@
+
+@BEGIN_BEFORE_4_06_0@
+type symbolic_output_item =
+  | Output_flush 
+  | Output_newline 
+  | Output_string of string 
+  | Output_spaces of int 
+  | Output_indent of int 
+@END_BEFORE_4_06_0@
+
+@BEGIN_BEFORE_4_06_0@
+type symbolic_output_buffer
+@END_BEFORE_4_06_0@
+
+@BEGIN_BEFORE_4_08_0@
+let pp_print_option ?none some formatter value =
+  match value with
+  | None ->
+      begin
+        match none with
+        | None -> ()
+        | Some none -> none formatter ()
+      end
+  | Some value -> some formatter value
+
+let pp_print_result ~ok ~error formatter value =
+  match value with
+  | Stdcompat__result.Ok v -> ok formatter v
+  | Stdcompat__result.Error e -> error formatter e
+
+let dprintf _ =
+  failwith "Not implemented."
+
+let kdprintf _ =
+  failwith "Not implemented."
+@END_BEFORE_4_08_0@
+
+@BEGIN_BEFORE_4_06_0@
+let formatter_of_out_functions _ =
+  failwith "Not implemented."
+
+let make_symbolic_output_buffer _ =
+  failwith "Not implemented."
+
+let clear_symbolic_output_buffer _ =
+  failwith "Not implemented."
+
+let get_symbolic_output_buffer _ =
+  failwith "Not implemented."
+
+let flush_symbolic_output_buffer _ =
+  failwith "Not implemented."
+
+let add_symbolic_output_item _ =
+  failwith "Not implemented."
+
+let formatter_of_symbolic_output_buffer _ =
+  failwith "Not implemented."
+@END_BEFORE_4_06_0@
+
+@BEGIN_BEFORE_4_03_0@
+let kasprintf _ =
+  failwith "Not implemented."
+@END_BEFORE_4_03_0@
+
+@BEGIN_BEFORE_4_02_0@
+let pp_print_list ?pp_sep pp_item formatter list =
+  match list with
+  | [] -> ()
+  | hd :: tl ->
+      pp_item formatter hd;
+      match tl with
+      | [] -> ()
+      | _ ->
+          List.iter (fun item ->
+            begin
+              match pp_sep with
+              | None -> ()
+              | Some pp_sep -> pp_sep formatter ()
+            end;
+            pp_item formatter item) tl
+
+let pp_print_text formatter s =
+  Stdcompat__string.iter (fun c ->
+    match c with
+    | ' ' -> pp_print_space formatter ()
+    | '\n' -> pp_force_newline formatter ()
+    | _ -> pp_print_char formatter c) s
+@END_BEFORE_4_02_0@
+
+@BEGIN_BEFORE_4_01_0@
+let pp_set_formatter_out_functions _ =
+  failwith "Not implemented."
+
+let set_formatter_out_functions _ =
+  failwith "Not implemented."
+
+let pp_get_formatter_out_functions _ =
+  failwith "Not implemented."
+
+let get_formatter_out_functions _ =
+  failwith "Not implemented."
+
+let asprintf _ =
+  failwith "Not implemented."
+@END_BEFORE_4_01_0@
+
+@BEGIN_BEFORE_3_12_0@
+let ikfprintf _ =
+  failwith "Not implemented."
+@END_BEFORE_3_12_0@
+
+@BEGIN_BEFORE_3_10_0@
+let ifprintf _ =
+  failwith "Not implemented."
+@END_BEFORE_3_10_0@
+
+@BEGIN_BEFORE_3_08_0@
+let kfprintf _ =
+  failwith "Not implemented."
+
+let ksprintf _ =
+  failwith "Not implemented."
+@END_BEFORE_3_08_0@
+

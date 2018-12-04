@@ -1,0 +1,9 @@
+include Char
+
+@BEGIN_BEFORE_4_03_0@
+let lowercase_ascii = Char.lowercase
+
+let uppercase_ascii = Char.uppercase
+
+let equal : t -> t -> bool = ( = )
+@END_BEFORE_4_03_0@
