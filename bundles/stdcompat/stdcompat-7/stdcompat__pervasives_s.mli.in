@@ -41,14 +41,7 @@ module type S = sig
     mutable contents: 'a }
   
   type ('a, 'b) result =
-  @BEGIN_FROM_4_06_0@
-    ('a, 'b) Pervasives.result =
-  @END_FROM_4_06_0@
-  @BEGIN_BEFORE_4_06_0@
-  @BEGIN_WITH_RESULT_PKG@
-    ('a, 'b) Result.result =
-  @END_WITH_RESULT_PKG@
-  @END_BEFORE_4_06_0@
+    ('a, 'b) Stdcompat__init.result =
     | Ok of 'a 
     | Error of 'b
   
