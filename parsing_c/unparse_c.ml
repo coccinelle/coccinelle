@@ -1083,6 +1083,10 @@ let check_danger toks =
     | Fake2(info,_) ->
 	Some !(info.Ast_c.danger)
     | _ -> None in
+  let is_danger tok =
+    match get_danger tok with
+      Some Ast_c.Danger -> true
+    | _ -> false in
   let isnt_danger_end tok =
     match get_danger tok with
       Some Ast_c.DangerEnd -> false
@@ -1099,7 +1103,9 @@ let check_danger toks =
        one context token. combined with safe for multi constraints, that
        means that the rule can only have changed the type *)
     let ctx =
-      function (T2(_,Ctx,_,_) as t) -> not (is_whitespace t) | _ -> false in
+      function
+	  (T2(_,Ctx,_,_) as t) when not(is_danger t) -> not (is_whitespace t)
+	| _ -> false in
     let safe = function [] -> true | toks -> List.exists ctx toks in
     let res =
       try Some (Common.split_when is_comma toks)
