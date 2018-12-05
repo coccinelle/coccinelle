@@ -21,7 +21,8 @@ EXTRA_DIST=stdcompat.opam dune stdcompat.ml stdcompat__native.ml_byte \
 	stdcompat__fun.mli stdcompat__format.mli stdcompat__printf.mli stdcompat__stdlib.mli \
 	stdcompat__seq.mli
 
-MODULES = stdcompat__init.ml stdcompat__root.ml stdcompat__seq.ml \
+MODULES = stdcompat__init.ml stdcompat__root.ml stdcompat__seq_s.ml \
+	stdcompat__seq.ml \
 	stdcompat__tools.ml \
 	stdcompat__pervasives_s.ml stdcompat__arg_s.ml stdcompat__lazy_s.ml \
 	stdcompat__char_s.ml stdcompat__uchar_s.ml stdcompat__buffer_s.ml \

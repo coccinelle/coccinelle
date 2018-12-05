@@ -6,10 +6,11 @@ include Seq
 include Seq
 @END_WITH_SEQ_PKG@
 @BEGIN_WITHOUT_SEQ_PKG@
-type +'a node =
+type 'a t = unit -> 'a node
+and 'a node =
+  'a Stdcompat__init.seq_node =
   | Nil
   | Cons of 'a * 'a t
-and 'a t = unit -> 'a node
 
 let empty () = Nil
 
