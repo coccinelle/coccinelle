@@ -2438,10 +2438,10 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
            (Lib_parsing_c.al_type structnameb))), [])
        in
 
-       tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
-       tokenf lba lbb >>= (fun lba lbb ->
-       tokenf rba rbb >>= (fun rba rbb ->
        struct_fields (A.unwrap declsa) declsb >>= (fun undeclsa declsb ->
+         tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
+         tokenf lba lbb >>= (fun lba lbb ->
+         tokenf rba rbb >>= (fun rba rbb ->
          let declsa = A.rewrap declsa undeclsa in
 
          (match A.unwrap tya2 with
@@ -2541,9 +2541,9 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
      }, iivirg) ->
+       ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
        fullType typa typb >>= (fun typa typb ->
-       ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
        attribute_list attrsa endattrs >>= (fun attrsa endattrs ->
        storage_optional_allminus allminus stoa (stob, iistob) >>=
         (fun stoa (stob, iistob) ->
@@ -2569,10 +2569,10 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
      },iivirg) ->
+       ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
        tokenf eqa iieqb >>= (fun eqa iieqb ->
        fullType typa typb >>= (fun typa typb ->
-       ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
        attribute_list attrsa endattrs >>= (fun attrsa endattrs ->
        storage_optional_allminus allminus stoa (stob, iistob) >>=
        (fun stoa (stob, iistob) ->
@@ -2623,10 +2623,10 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
         | _ -> fail
        ) >>=
         (fun va (isvaargs, iidotsb) -> let (lpb, rpb) = tuple_of_list2 ii in
+        ident_cpp DontKnow ida idb >>= (fun ida idb ->
         tokenf lpa lpb >>= (fun lpa lpb ->
         tokenf rpa rpb >>= (fun rpa rpb ->
         tokenf sema iiptvirgb >>= (fun sema iiptvirgb ->
-        ident_cpp DontKnow ida idb >>= (fun ida idb ->
 	let (stoa,tya,inla,attras) = get_fninfo fninfoa in
         inline_optional_allminus allminus
           inla (stob, iistob) >>= (fun inla (stob, iistob) ->
@@ -2665,8 +2665,8 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 
        if stob = (B.NoSto, false)
        then
-         tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
          fullType typa typb >>= (fun typa typb ->
+         tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
            return (
              (A.TyDecl (typa, ptvirga)) +> A.rewrap decla,
              (({B.v_namei = None;
@@ -2691,8 +2691,8 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_type_bis = typbbis;
      },iivirg) ->
 
-       tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
        fullType typa typb >>= (fun typa typb ->
+       tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
        (match iistob with
        | [iitypedef] ->
            tokenf stoa iitypedef >>= (fun stoa iitypedef ->
@@ -2789,17 +2789,17 @@ and onefield = fun allminus decla (declb, iiptvirgb) ->
  match A.unwrap decla, declb with
    A.Field (typa, ida, None, ptvirga),
    (B.Simple (nameidb, typb), iivirg) ->
+     match_option (ident_cpp DontKnow) ida nameidb >>= (fun ida nameidb ->
      tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
      fullType typa typb >>= (fun typa typb ->
-     match_option (ident_cpp DontKnow) ida nameidb >>= (fun ida nameidb ->
        return (
        (A.Field (typa, ida, None, ptvirga) +>  A.rewrap decla),
        ((B.Simple (nameidb, typb),iivirg), iiptvirgb)))))
  | A.Field (typa, ida, Some (ca, ea), ptvirga),
      (B.BitField (nameidb, typb, info, eb), iivirg) ->
+     match_option (ident_cpp DontKnow) ida nameidb >>= (fun ida nameidb ->
      tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
      fullType typa typb >>= (fun typa typb ->
-     match_option (ident_cpp DontKnow) ida nameidb >>= (fun ida nameidb ->
      tokenf ca info >>= (fun ca info ->
      expression ea eb >>= (fun ea eb ->
        return (
