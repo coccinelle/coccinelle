@@ -127,9 +127,9 @@ let print_token2 = function
       let info = TH.info_of_tok t in
       match !(info.Ast_c.danger) with
 	Ast_c.DangerStart -> ":DS:"
-      |	Ast_c.DangerEnd -> ":DE:"
-      |	Ast_c.Danger -> ":D:"
-      |	Ast_c.NoDanger -> ":ND:" in*)
+      | Ast_c.DangerEnd -> ":DE:"
+      | Ast_c.Danger -> ":D:"
+      | Ast_c.NoDanger -> ":ND:" in*)
     "T2:"^b_str^t_str(*^d_str*)^TH.str_of_tok t
   | Fake2 (info,b) ->
     let b_str =
@@ -142,9 +142,9 @@ let print_token2 = function
     (*let d_str =
       match !(info.Ast_c.danger) with
 	Ast_c.DangerStart -> ":DS:"
-      |	Ast_c.DangerEnd -> ":DE:"
-      |	Ast_c.Danger -> ":D:"
-      |	Ast_c.NoDanger -> ":ND:" in*)
+      | Ast_c.DangerEnd -> ":DE:"
+      | Ast_c.Danger -> ":D:"
+      | Ast_c.NoDanger -> ":ND:" in*)
     b_str(*^d_str*)^"fake"
   | Cocci2 (s,_,lc,rc,_) -> Printf.sprintf "Cocci2:%d:%d%s" lc rc s
   | C2 (s,_) -> "C2:"^s
