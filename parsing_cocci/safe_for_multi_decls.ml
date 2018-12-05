@@ -25,8 +25,7 @@ let all_removed_recursor =
   let do_nothing r k e = k e in
   let mcode _ (_,_,kind,_) =
     match kind with
-      Ast.MINUS(_,_,_,Ast.NOREPLACEMENT) -> true
-    | Ast.MINUS(_,_,_,_) -> false
+      Ast.MINUS(_,_,_,_) -> true
     | Ast.PLUS _ -> failwith "not possible"
     | Ast.CONTEXT(_,info) -> false in
   V.combiner bind option_default
