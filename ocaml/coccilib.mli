@@ -2410,7 +2410,7 @@ module Ast_cocci :
       bef_aft : dots_bef_aft;
       pos_info : meta_name mcode option;
       true_if_test_exp : bool;
-      safe_for_multi_decls : bool;
+      safe_for_multi_decls : Ast_cocci.safety;
       iso_info : (string * anything) list;
     }
     and 'a befaft =
@@ -2447,6 +2447,7 @@ module Ast_cocci :
     and multi = bool
     and end_info =
         meta_name list * (meta_name * seed) list * meta_name list * mcodekind
+    and safety = Safe | Unsafe | NoStorage
     and arity = Ast_cocci.arity = UNIQUE | OPT | MULTI | NONE
     and metavar =
       Ast_cocci.metavar =
@@ -3064,7 +3065,7 @@ module Ast_cocci :
     val set_pos : 'a wrap -> meta_name mcode option -> 'a wrap
     val get_test_exp : 'a wrap -> bool
     val set_test_exp : expression -> expression
-    val get_safe_decl : 'a wrap -> bool
+    val get_safe_decl : 'a wrap -> Ast_cocci.safety
     val get_isos : 'a wrap -> (string * anything) list
     val set_isos : 'a wrap -> (string * anything) list -> 'a wrap
     val get_pos_var : 'a mcode -> meta_pos list

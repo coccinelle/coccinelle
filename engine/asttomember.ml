@@ -109,9 +109,7 @@ let strip x =
   let mcode m = Ast.make_mcode(Ast.unwrap_mcode m) in
   let decl_or_field r k d =
     let res = do_nothing r k d in
-    if Ast.get_safe_decl d
-    then {res with Ast.safe_for_multi_decls = true}
-    else res in
+    {res with Ast.safe_for_multi_decls = Ast.get_safe_decl d} in
   let annotated_decl no_mcode decl =
     match Ast.unwrap decl with
       Ast.DElem(bef,allminus,d) ->

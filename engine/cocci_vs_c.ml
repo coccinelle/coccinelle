@@ -2249,7 +2249,8 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 			     iiptvirgb::iifakestart::iisto))
                   )))) tin))
           fail in
-      if !Flag.sgrep_mode2(*X.mode = PatternMode *) || A.get_safe_decl decla
+      if !Flag.sgrep_mode2(*X.mode = PatternMode *) ||
+         not(A.get_safe_decl decla = A.Unsafe)
       then doit()
       else
 	begin
@@ -3266,7 +3267,7 @@ and (struct_field: (A.annotated_field, B.field) matcher) =
 			       [iiptvirgb;iifakestart])))))))))
 		fail in
 	    if !Flag.sgrep_mode2(*X.mode = PatternMode *) ||
-  	       A.get_safe_decl ifa
+	       not(A.get_safe_decl ifa = A.Unsafe)
 	    then doit()
 	    else
 	      begin

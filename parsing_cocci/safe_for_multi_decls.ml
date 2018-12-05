@@ -19,15 +19,22 @@ module V = Visitor_ast
 (* ------------------------------------------------------------------------- *)
 (* check if everything is removed, with no additions allowed *)
 
+let lub x y =
+  match (x,y) with
+    (Ast.Unsafe,_) | (_,Ast.Unsafe) -> Ast.Unsafe
+  | (Ast.NoStorage,_) | (_,Ast.NoStorage) -> Ast.NoStorage
+  | _ -> Ast.Safe
+
 let all_removed_recursor =
-  let bind x y = x && y in
-  let option_default = true in
+  let bind x y = lub x y in
+  let option_default = Ast.Safe in
   let do_nothing r k e = k e in
   let mcode _ (_,_,kind,_) =
     match kind with
-      Ast.MINUS(_,_,_,_) -> true
+      Ast.MINUS(_,_,_,Ast.NOREPLACEMENT) -> Ast.Safe
+    | Ast.MINUS(_,_,_,_) -> Ast.NoStorage
     | Ast.PLUS _ -> failwith "not possible"
-    | Ast.CONTEXT(_,info) -> false in
+    | Ast.CONTEXT(_,info) -> Ast.Unsafe in
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode mcode mcode mcode
@@ -96,47 +103,49 @@ let contains_modif =
 
 let decl r k e =
   let e = k e in
-  if all_removed_decl e
-  then {e with Ast.safe_for_multi_decls = true}
-  else
-    match Ast.unwrap e with
-      Ast.Init(stg,ty,_,attr,_,_,sem)
-    | Ast.UnInit(stg,ty,_,attr,sem) ->
-	let stg_modif =
-	  match stg with
-	    Some stg -> mcode () stg
-	  | None -> false in
-	let attr_modif = List.exists (mcode ()) attr in
-	let ft_modif = contains_modif ty in
-	let sem_modif = mcode () sem in
-	if not(stg_modif || attr_modif || ft_modif || sem_modif)
-	then {e with Ast.safe_for_multi_decls = true}
-	else e
-    | _ -> e
+  match all_removed_decl e with
+    Ast.Safe -> {e with Ast.safe_for_multi_decls = Ast.Safe}
+  | Ast.NoStorage -> {e with Ast.safe_for_multi_decls = Ast.NoStorage}
+  | Ast.Unsafe ->
+      match Ast.unwrap e with
+	Ast.Init(stg,ty,_,attr,_,_,sem)
+      | Ast.UnInit(stg,ty,_,attr,sem) ->
+	  let stg_modif =
+	    match stg with
+	      Some stg -> mcode () stg
+	    | None -> false in
+	  let attr_modif = List.exists (mcode ()) attr in
+	  let ft_modif = contains_modif ty in
+	  let sem_modif = mcode () sem in
+	  if not(stg_modif || attr_modif || ft_modif || sem_modif)
+	  then {e with Ast.safe_for_multi_decls = Ast.Safe}
+	  else e
+      | _ -> e
 
 let anndecl r k e =
   let e = k e in
   match Ast.unwrap e with
     Ast.DElem(bef,allminus,decl) ->
       let bef_modif = add_on_mcode () ((),(),bef,[]) in
-      if bef_modif && decl.Ast.safe_for_multi_decls
+      if bef_modif && not(decl.Ast.safe_for_multi_decls = Ast.Unsafe)
       then (* not actually safe *)
 	Ast.rewrap e
 	  (Ast.DElem(bef,allminus,
-		     {decl with Ast.safe_for_multi_decls = false}))
+		     {decl with Ast.safe_for_multi_decls = Ast.Unsafe}))
       else e
 
 let field r k e =
   let e = k e in
-  if all_removed_field e
-  then {e with Ast.safe_for_multi_decls = true}
-  else
+  match all_removed_field e with
+    Ast.Safe -> {e with Ast.safe_for_multi_decls = Ast.Safe}
+  | Ast.NoStorage -> {e with Ast.safe_for_multi_decls = Ast.NoStorage}
+  | Ast.Unsafe ->
     match Ast.unwrap e with
       Ast.Field(ty,_,_bf,sem) ->
 	let ft_modif = contains_modif ty in
 	let sem_modif = mcode () sem in
 	if not(ft_modif || sem_modif)
-	then {e with Ast.safe_for_multi_decls = true}
+	then {e with Ast.safe_for_multi_decls = Ast.Safe}
 	else e
     | _ -> e
 
@@ -145,10 +154,11 @@ let annfield r k e =
   match Ast.unwrap e with
     Ast.FElem(bef,allminus,fld) ->
       let bef_modif = add_on_mcode () ((),(),bef,[]) in
-      if bef_modif && fld.Ast.safe_for_multi_decls
+      if bef_modif && not(fld.Ast.safe_for_multi_decls = Ast.Unsafe)
       then (* not actually safe *)
 	Ast.rewrap e
-	  (Ast.FElem(bef,allminus,{fld with Ast.safe_for_multi_decls = false}))
+	  (Ast.FElem(bef,allminus,
+		     {fld with Ast.safe_for_multi_decls = Ast.Unsafe}))
       else e
   | _ -> e
 
