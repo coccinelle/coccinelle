@@ -241,6 +241,7 @@ type visitor_c =
 
    kdecl:      (declaration -> unit) * visitor_c -> declaration -> unit;
    konedecl:   (onedecl -> unit)      * visitor_c -> onedecl -> unit;
+   konedecl_opt: bool -> (onedecl -> unit) * visitor_c -> onedecl -> unit;
    kparam:  (parameterType -> unit)      * visitor_c -> parameterType -> unit;
    kdef:       (definition  -> unit) * visitor_c -> definition  -> unit;
    kname     : (name -> unit)        * visitor_c -> name       -> unit;
@@ -272,6 +273,7 @@ let default_visitor_c =
     ktype           = (fun (k,_) t  -> k t);
     kdecl           = (fun (k,_) d  -> k d);
     konedecl        = (fun (k,_) d  -> k d);
+    konedecl_opt    = (fun _ (k,_) d  -> k d);
     kparam          = (fun (k,_) d  -> k d);
     kdef            = (fun (k,_) d  -> k d);
     kini            = (fun (k,_) ie  -> k ie);
@@ -557,9 +559,10 @@ and vk_decl = fun bigf d ->
 and vk_decl_list = fun bigf ts ->
   ts +> List.iter (vk_decl bigf)
 
-and vk_onedecl = fun bigf onedecl ->
+(* The following is needed to avoid multiple processing of types in multidecls *)
+and vk_onedecl_opt process_type = fun bigf onedecl ->
   let iif ii = vk_ii bigf ii in
-  let f = bigf.konedecl in
+  let f = bigf.konedecl_opt process_type in
   let k onedecl =
   match onedecl with
   | ({v_namei = var;
@@ -569,7 +572,7 @@ and vk_onedecl = fun bigf onedecl ->
       v_attr = attrs;
       v_endattr = endattrs})  ->
 
-    vk_type bigf t;
+    (if process_type then vk_type bigf t);
     (* don't go in tbis *)
     attrs +> List.iter (vk_attribute bigf);
     var +> Common.do_option (fun (name, iniopt) ->
@@ -581,6 +584,8 @@ and vk_onedecl = fun bigf onedecl ->
     );
     endattrs +> List.iter (vk_attribute bigf)
   in f (k, bigf) onedecl
+
+and vk_onedecl bigf onedecl = vk_onedecl_opt true bigf onedecl
 
 and vk_ini = fun bigf ini ->
   let iif ii = vk_ii bigf ii in
@@ -1454,7 +1459,8 @@ and vk_decl_s = fun bigf d ->
   let rec k decl =
     match decl with
     | DeclList (xs, ii) ->
-        DeclList (List.map aux xs,   iif ii)
+        DeclList (List.map (fun (x,ii) -> (vk_onedecl_s bigf x, iif ii)) xs,
+		  iif ii)
     | MacroDecl ((stob, s, args, ptvg),ii) ->
         MacroDecl
           ((stob, s,
@@ -1468,14 +1474,16 @@ and vk_decl_s = fun bigf d ->
 	   vk_ini_s bigf ini),
           iif ii)
 
+  in f (k, bigf) d
 
-  and aux ({v_namei = var;
+and vk_onedecl_opt_s process_type bigf {v_namei = var;
             v_type = t;
             v_type_bis = tbis;
             v_storage = sto;
             v_local= local;
             v_attr = attrs;
-            v_endattr = endattrs}, iicomma) =
+            v_endattr = endattrs} =
+  let iif ii = vk_ii_s bigf ii in
     {v_namei =
       (var +> map_option (fun (name, iniopt) ->
         vk_name_s bigf name,
@@ -1488,17 +1496,16 @@ and vk_decl_s = fun bigf d ->
 	    init +> List.map (fun (e,ii) -> vk_argument_s bigf e, iif ii) in
 	  Ast_c.ConstrInit((init, List.map (vk_info_s bigf) ii)))
         ));
-     v_type = vk_type_s bigf t;
+     v_type = if process_type then vk_type_s bigf t else t;
     (* !!! dont go in semantic related stuff !!! *)
      v_type_bis = tbis;
      v_storage = sto;
      v_local = local;
      v_attr = attrs +> List.map (vk_attribute_s bigf);
      v_endattr = endattrs +> List.map (vk_attribute_s bigf);
-    },
-    iif iicomma
+    }
 
-  in f (k, bigf) d
+and vk_onedecl_s bigf d = vk_onedecl_opt_s true bigf d
 
 and vk_decl_list_s = fun bigf decls ->
   decls +> List.map (vk_decl_s bigf)
