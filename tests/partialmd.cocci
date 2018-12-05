@@ -1,5 +1,5 @@
 @@
-identifier x;
+symbol a;
 @@
 
 - int a;
