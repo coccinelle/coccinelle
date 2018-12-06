@@ -1011,7 +1011,8 @@ rule token = parse
       { TInt ((x, (UnSigned,CLong)), tokinfo lexbuf) }
   | (( decimal | hexa | octal) ['l' 'L'] ['l' 'L']) as x
       { TInt ((x, (Signed,CLongLong)), tokinfo lexbuf) }
-  | (( decimal | hexa | octal) ['u' 'U'] ['l' 'L'] ['l' 'L']) as x
+  | (( decimal | hexa | octal) ['u' 'U'] ['l' 'L'] ['l' 'L'])
+  | (( decimal | hexa | octal) ['l' 'L'] ['l' 'L'] ['u' 'U']) as x
       { TInt ((x, (UnSigned,CLongLong)), tokinfo lexbuf) }
   | (decimal ['d' 'D']) as x
       { if !Flag.ibm
