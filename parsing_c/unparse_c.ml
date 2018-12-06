@@ -1096,7 +1096,7 @@ let check_danger toks =
       T2(_,Min _,_,_) -> true
     | (T2(tok,Ctx,_,_)) as x ->
 	TH.str_of_tok tok = "," || is_whitespace x
-    | Fake2(info,Min _) -> true
+    | Fake2(info,_) -> true
     | x -> false in
   let rec undanger_untouched toks =
     (* check that each entry before or after a comma contains at least
@@ -1196,6 +1196,11 @@ let check_danger toks =
   let unminus_danger_end = function
       T2(tok,Min _,a,b) -> T2(tok,Ctx,a,b)
     | x -> x in
+  let reminus_danger_end = function
+      (* remove space inside a danger that can be removed, but is not
+	 allminus, because some code is attached to the outside of the ; *)
+      T2(Parser_c.TCommentSpace _,Ctx,a,b) -> false (* should only be spaces *)
+    | x -> true in
   let rec search_danger = function
       [] -> []
     | x::xs ->
@@ -1208,7 +1213,11 @@ let check_danger toks =
 		  Some Ast_c.DangerEnd ->
 		    if List.for_all removed_or_comma (de::danger)
 			(* everything removed *)
-			|| undanger_untouched (danger@[de])
+		    then
+		      (* drop spaces *)
+		      (List.filter reminus_danger_end danger)
+		      @ de :: (search_danger rest)
+		    else if undanger_untouched (danger@[de])
 			(* nothing removed, type changed *)
 		    then danger @ de :: (search_danger rest)
 		    else

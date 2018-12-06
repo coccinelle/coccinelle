@@ -3,4 +3,4 @@ symbol c;
 @@
 
 - int c;
-+ int q;
+++ int q;

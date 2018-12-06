@@ -32,7 +32,8 @@ let all_removed_recursor =
   let mcode _ (_,_,kind,_) =
     match kind with
       Ast.MINUS(_,_,_,Ast.NOREPLACEMENT) -> Ast.Safe
-    | Ast.MINUS(_,_,_,_) -> Ast.NoStorage
+    | Ast.MINUS(_,_,_,Ast.REPLACEMENT(_,Ast.MANY)) -> Ast.NoStorage
+    | Ast.MINUS(_,_,_,Ast.REPLACEMENT(_,_)) -> Ast.Unsafe
     | Ast.PLUS _ -> failwith "not possible"
     | Ast.CONTEXT(_,info) -> Ast.Unsafe in
   V.combiner bind option_default
