@@ -30,6 +30,7 @@
   C and SmPL level.
 - Add conjunction for identifiers.
 - Simplify pragma matching.
+- Support llu in C code.  Suggested by Timur Tabi.
 ** Features:
 ** Bugfix:
 - check identifier constraints when an identifier metavariable appears in a
