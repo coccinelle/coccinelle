@@ -21,7 +21,7 @@ MAKE_TGT = all
 endif
 
 build clean binary binary-arch binary-indep install:
-	dh --with ocaml $@
+	dh --with ocaml,python2 $@
 
 
 override_dh_auto_configure:
@@ -41,12 +41,6 @@ override_dh_auto_test:
 override_dh_auto_install:
 	$(MAKE) DESTDIR=$(CURDIR)/debian/coccinelle $(COCCI_FLAGS) install
 	$(MAKE) DESTDIR=$(CURDIR)/debian/coccinelle                install-bash
-	# install the wrapper script, i dont like upstreams one
-	rm $(CURDIR)/debian/coccinelle/usr/bin/spatch*
-	install $(CURDIR)/debian/spatch $(CURDIR)/debian/coccinelle/usr/bin/
-	# move binary into /usr/lib/coccinelle
-	mv $(CURDIR)/debian/coccinelle/usr/share/coccinelle/spatch* \
-		$(CURDIR)/debian/coccinelle/usr/lib/coccinelle/spatch
 
 	# Vim files
 	install -d $(VIM_ADIR)/ftdetect $(VIM_ADIR)/syntax

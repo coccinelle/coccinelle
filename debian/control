@@ -7,13 +7,13 @@ Uploaders: Євгеній Мещеряков <eugen@debian.org>
 Build-Depends:
  debhelper (>= 7.0.50~),
  dh-ocaml,
+ dh-python,
  pkg-config (>= 0.9.0),
  ocaml-nox (>= 3.11.0),
  ocaml-best-compilers,
  ocaml-findlib,
  pycaml (>= 0.82-10) | libpycaml-ocaml-dev (>= 0.82-13),
  python-dev,
- python-support (>= 0.6),
  menhir (>= 20090204.dfsg),
  libmenhir-ocaml-dev (>= 20090204.dfsg),
  libsexplib-camlp4-dev,
@@ -23,7 +23,7 @@ Build-Depends:
  texlive-latex-extra,
  texlive-fonts-recommended,
  texlive-fonts-extra
-Standards-Version: 3.9.2
+Standards-Version: 3.9.6
 Homepage: http://coccinelle.lip6.fr
 Vcs-Git: git://git.debian.org/git/pkg-ocaml-maint/packages/coccinelle.git
 Vcs-Browser: http://git.debian.org/?p=pkg-ocaml-maint/packages/coccinelle.git

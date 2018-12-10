@@ -39,6 +39,8 @@ website:
 # precise - 12.04
 # saucy - 13.10
 # trusty - 14.04
+# utopic / vivid / warty
+# xenial - 16.04
 BRANCH=$(shell git symbolic-ref --short -q HEAD | sed 's|ubuntu/||')
 RELEASE=$(shell echo $(BRANCH) | cut -f1 -d'-')
 CODENAME=$(shell echo $(BRANCH) | cut -f2 -d'-')
@@ -47,6 +49,8 @@ IDX?=1
 .PHONY:: ubuntu
 
 ubuntu:
+	./autogen
+	./configure
 	@echo "Preparing package for Ubuntu $(CODENAME) - $(RELEASE)"
 	if [ ! -f debian/changelog ] ; then \
 		debchange --create -c debian/changelog -D $(CODENAME) --package $(PRJNAME) \
