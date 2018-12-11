@@ -13,8 +13,6 @@ endif
 endif
 endif
 -include Makefile.local
--include Makefile.dev
--include Makefile.release
 
 CORE_LIBRARIES := \
 	commons globals parsing_cocci parsing_c
