@@ -277,6 +277,8 @@ EXCL_SYNC=--exclude ".git"          \
 	--exclude ".gitignore"      \
 	--exclude "tests"           \
 	--exclude "TODO"            \
+	--exclude "config.log"      \
+	--exclude "config.status"   \
 	--cvs-exclude
 
 packsrc: prepack

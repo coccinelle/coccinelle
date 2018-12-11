@@ -21,10 +21,11 @@ MAKE_TGT = all
 endif
 
 build clean binary binary-arch binary-indep install:
-	dh --with ocaml,python2 $@
+	dh $@ --with ocaml,python2
 
 
 override_dh_auto_configure:
+	./autogen
 	./configure $(CONFIG_FLAGS)
 
 override_dh_auto_build:

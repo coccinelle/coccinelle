@@ -1,7 +1,7 @@
 Source: coccinelle
 Section: devel
 Priority: optional
-Maintainer: Nicolas Palix <npalix.work@gmail.com>
+Maintainer: Nicolas Palix <nicolas.palix@imag.fr>
 XSBC-Original-Maintainer: Debian OCaml Maintainers <debian-ocaml-maint@lists.debian.org>
 Uploaders: Євгеній Мещеряков <eugen@debian.org>
 Build-Depends:
@@ -16,14 +16,14 @@ Build-Depends:
  python-dev,
  menhir (>= 20090204.dfsg),
  libmenhir-ocaml-dev (>= 20090204.dfsg),
- libsexplib-camlp4-dev,
+ libsexplib-ocaml-dev,
  libpcre-ocaml-dev,
  texlive-latex-base,
  texlive-latex-recommended,
  texlive-latex-extra,
  texlive-fonts-recommended,
  texlive-fonts-extra
-Standards-Version: 3.9.6
+Standards-Version: 4.2.1
 Homepage: http://coccinelle.lip6.fr
 Vcs-Git: git://git.debian.org/git/pkg-ocaml-maint/packages/coccinelle.git
 Vcs-Browser: http://git.debian.org/?p=pkg-ocaml-maint/packages/coccinelle.git
