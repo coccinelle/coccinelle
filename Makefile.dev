@@ -50,6 +50,9 @@ IDX?=1
 
 .PHONY:: ubuntu
 
+#
+# This requires the "devscripts" package.
+#
 ubuntu:
 	./autogen
 	./configure
