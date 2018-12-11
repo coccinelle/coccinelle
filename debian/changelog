@@ -1,3 +1,9 @@
+coccinelle (1.0.7-00041-g65f04860~18.10npalix1) cosmic; urgency=medium
+
+  * New release 1.0.7-00041-g65f04860
+
+ -- Nicolas Palix (LIG) <nicolas.palix@imag.fr>  Tue, 11 Dec 2018 15:16:20 +0100
+
 coccinelle (1.0.7-00041-g65f04860~18.04npalix1) bionic; urgency=medium
 
   * New release 1.0.7-00041-g65f04860
