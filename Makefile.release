@@ -6,6 +6,7 @@
 # Release rules to generate website archives
 ##############################################################################
 
+PRJNAME=coccinelle
 PACKAGE=$(PRJNAME)-$(VERSION)
 CCPACKAGE=coccicheck-$(CCVERSION)
 
