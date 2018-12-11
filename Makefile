@@ -13,6 +13,7 @@ endif
 endif
 endif
 -include Makefile.local
+-include Makefile.dev
 
 CORE_LIBRARIES := \
 	commons globals parsing_cocci parsing_c
