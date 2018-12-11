@@ -41,6 +41,8 @@ website:
 # trusty - 14.04
 # utopic / vivid / warty
 # xenial - 16.04
+# bionic - 18.04
+# cosmic - 18.10
 BRANCH=$(shell git symbolic-ref --short -q HEAD | sed 's|ubuntu/||')
 RELEASE=$(shell echo $(BRANCH) | cut -f1 -d'-')
 CODENAME=$(shell echo $(BRANCH) | cut -f2 -d'-')
