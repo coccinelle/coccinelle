@@ -28,7 +28,6 @@ override_dh_auto_configure:
 	./configure $(CONFIG_FLAGS)
 
 override_dh_auto_build:
-	$(MAKE) $(COCCI_FLAGS) depend
 	$(MAKE) $(COCCI_FLAGS) $(MAKE_TGT)
 	# make all.opt does not build documentation
 	mkdir texmf-var
