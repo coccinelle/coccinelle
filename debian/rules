@@ -2,6 +2,7 @@
 
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
+export MAKE_COCCI_RELEASE=y
 
 include /usr/share/ocaml/ocamlvars.mk
 
