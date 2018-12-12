@@ -64,3 +64,5 @@ description-pak
 /bundles/stdcompat/stdcompat-*/*.mli
 /bundles/stdcompat/doc/
 /bundles/menhirLib/menhir-20171013/
+bundles/stdcompat/stdcompat-6/Makefile.in
+bundles/stdcompat/stdcompat-6/configure

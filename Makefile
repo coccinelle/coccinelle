@@ -119,9 +119,9 @@ LIBRARIES_spatch := $(LIBRARIES)
 
 LIBRARIES_spgen := $(CORE_LIBRARIES)
 
-CORE_BUNDLES=menhirLib pcre stdcompat
+CORE_BUNDLES=stdcompat
 
-ALL_BUNDLES=$(CORE_BUNDLES) parmap pyml
+ALL_BUNDLES=$(CORE_BUNDLES) pyml
 
 BUNDLES_spatch=$(ALL_BUNDLES)
 

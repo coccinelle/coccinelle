@@ -1,6 +1,7 @@
 .PHONY : all
 all :
-	cd stdcompat-6; OCAMLFIND= ./configure && make && \
+	cd stdcompat-6; OCAMLFIND= aclocal && autoconf && automake && \
+		./configure && make && \
 		cp *.mli *.cmi *.cmx *.cma *.cmxa *.a ..
 
 .PHONY : clean
