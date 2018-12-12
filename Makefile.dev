@@ -6,6 +6,8 @@
 # Website targets
 ##############################################################################
 
+include Makefile.config
+
 WEBBASE=~/website
 WEBSITE=$(WEBBASE)/distrib
 
