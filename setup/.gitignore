@@ -1,1 +1,5 @@
 Makefile
+Makefile.in
+compile
+install-sh
+missing
