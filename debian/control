@@ -18,6 +18,7 @@ Build-Depends:
  libmenhir-ocaml-dev (>= 20090204.dfsg),
  libsexplib-ocaml-dev,
  libpcre-ocaml-dev,
+ libparmap-ocaml-dev,
  texlive-latex-base,
  texlive-latex-recommended,
  texlive-latex-extra,
