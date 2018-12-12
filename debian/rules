@@ -25,6 +25,7 @@ build clean binary binary-arch binary-indep install:
 
 
 override_dh_auto_configure:
+	./autogen --ignore_localversion
 	./configure $(CONFIG_FLAGS)
 
 override_dh_auto_build:
