@@ -262,7 +262,7 @@ all-release : all.opt docs
 world :  byte-only opt-only exposed-modules docs
 
 .PHONY : exposed-modules
-exposed-modules : $(COMPILED_EXPOSED_MODULES) ocaml/parmap.cmi
+exposed-modules : $(COMPILED_EXPOSED_MODULES)
 
 .PHONY : check
 check : spatch$(TOOLS_SUFFIX)
