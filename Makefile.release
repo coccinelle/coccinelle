@@ -272,6 +272,8 @@ ocamlversion:
 # The 'packbin' target is to build a deb package
 # locally. It is only for testing purpose.
 #
+PRJNAME=coccinelle
+include Makefile.config
 
 EXCL_SYNC=--exclude ".git"          \
 	--exclude ".gitignore"      \
