@@ -32,6 +32,9 @@
 - Simplify pragma matching.
 - Support llu in C code and SmPL code.  Suggested by Timur Tabi.
 ** Features:
+- Some changes to the kinds of transformation allowed on declarations or
+  fields with multiple variables.  See the last paragrph of the
+  declarations section in the manual.
 ** Bugfix:
 - check identifier constraints when an identifier metavariable appears in a
   struct-typed metavariable.

@@ -17,6 +17,7 @@ On Debian/Ubuntu, install the following packages
  - ocaml-findlib
  - menhir and libmenhir-ocaml-dev (optional, bundled)
  - libpcre-ocaml-dev (optional, bundled)
+ - libparmap-ocaml-dev (optional, bundled)
  - texlive-fonts-extra (for the documentation)
 
 On Fedora, install the following packages

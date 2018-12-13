@@ -2250,7 +2250,8 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
                   )))) tin))
           fail in
       if !Flag.sgrep_mode2(*X.mode = PatternMode *) ||
-         not(A.get_safe_decl decla = A.Unsafe)
+         A.get_safe_decl decla = A.Safe ||
+	 (A.get_safe_decl decla = A.NoStorage && iisto = [])
       then doit()
       else
 	begin
@@ -2285,7 +2286,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 		pr2_once
 		  (Printf.sprintf "%s: %d: %s"
 		     (Ast_c.file_of_info firstii) (Ast_c.line_of_info firstii)
-		     "More than one variable in the declaration, and so it cannot be transformed.  Check that there is no transformation on the type or the ;");
+		     "More than one variable in the declaration, and so it cannot be transformed.  Check that there is no transformation on the type or the ;.  Consider using ++ for an addition.");
 		fail)) tin))
 	      fail
 	end
