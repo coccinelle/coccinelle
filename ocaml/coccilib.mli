@@ -318,7 +318,7 @@ module Ast_c :
       Ast_c.cpp_directive =
         Define of define
       | Include of includ
-      | Pragma of (name * string) wrap
+      | Pragma of (name * string wrap list) wrap
       | OtherDirective of il
     and define = string wrap * (define_kind * define_val)
     and define_kind =
@@ -735,8 +735,8 @@ module Parser_c :
       | TUelseif of Ast_c.info
       | TUendif of Ast_c.info
       | TUndef of Ast_c.info
-      | TPrePragma of (Ast_c.info*Ast_c.info*string*Ast_c.info*Ast_c.info*
-			 string*Ast_c.info)
+      | TPrePragma of (Ast_c.info*Ast_c.info*string*Ast_c.info*
+			 Ast_c.info*(string*Ast_c.info)list)
       | TPragma of (Ast_c.info)
       | TPragmaString of (string*Ast_c.info)
       | TCppDirectiveOther of Ast_c.info

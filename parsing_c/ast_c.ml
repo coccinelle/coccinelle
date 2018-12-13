@@ -634,7 +634,7 @@ and definition = definitionbis wrap (* ( ) { } fakestart sto *)
 and cpp_directive =
   | Define of define
   | Include of includ
-  | Pragma of (name * string) wrap
+  | Pragma of (name * string wrap list) wrap
   | OtherDirective of il
 (*| Ifdef ? no, ifdefs are handled differently, cf ifdef_directive below *)
 
