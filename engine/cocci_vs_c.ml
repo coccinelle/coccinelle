@@ -5258,8 +5258,9 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
         ))
       ))
 
-  | A.Pragma(prga,ida,pragmainfoa), F.PragmaHeader ((idb, restb), ii) ->
-      let (prgb, rest_iidb, ieol) = tuple_of_list3 ii in
+  | A.Pragma(prga,ida,pragmainfoa),
+    F.PragmaHeader ((idb, [(restb,[rest_iidb])]), ii) ->
+      let (prgb, ieol) = tuple_of_list2 ii in
       ident_cpp DontKnow ida idb >>= (fun ida idb ->
       tokenf prga prgb >>= (fun prga prgb ->
       let wp x = A.rewrap pragmainfoa x  in
@@ -5279,9 +5280,14 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
       ) >>= (fun pragmainfoa rest_iidb ->
         return (
 	  A.Pragma(prga,ida,pragmainfoa),
-	  F.PragmaHeader ((idb, restb), [prgb;rest_iidb;ieol])
+	  F.PragmaHeader ((idb, [(restb,[rest_iidb])]), [prgb;ieol])
         ))
       ))
+
+  | A.Pragma(prga,ida,pragmainfoa),
+    F.PragmaHeader ((idb, [(restb,rest_iib)]), ii) ->
+      (* matches against multiline pragmas not supported *)
+      fail
 
   | A.Default(def,colon), F.Default (st, ((),ii)) ->
       let (ib1, ib2) = tuple_of_list2 ii in

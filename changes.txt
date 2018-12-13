@@ -35,6 +35,8 @@
 - Some changes to the kinds of transformation allowed on declarations or
   fields with multiple variables.  See the last paragrph of the
   declarations section in the manual.
+- Minimal support for multi-line pragmas.  C parsing is supported, but
+  matching is not.
 ** Bugfix:
 - check identifier constraints when an identifier metavariable appears in a
   struct-typed metavariable.
