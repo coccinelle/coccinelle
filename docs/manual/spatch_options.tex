@@ -35,6 +35,9 @@ directory {\tt foodir}:
   {\tt diff}.  {\tt -{}-sp-file} is optional in this and the following cases.
 \item {\tt spatch -{}-sp-file foo.cocci foo.c -{}-debug}:  The same as the
   previous case, but print out some information about the matching process.
+  {\tt -{}-debug} is an abbreviation for a whole set of debug settings.  If
+  some specific features are wanted, they need to come after {\tt
+    -{}-debug}, to override the {\tt -{}-debug} defaults.
 \item {\tt spatch -{}-sp-file foo.cocci -{}-dir foodir}:  Apply the semantic
   patch {\tt foo.cocci} to all of the C files in the directory {\tt foodir}.
 \item {\tt spatch -{}-sp-file foo.cocci -{}-dir foodir -{}-include-headers}:  Apply
