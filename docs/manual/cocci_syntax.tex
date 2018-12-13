@@ -1637,6 +1637,10 @@ All matching done by a SmPL rule is done intraprocedurally.  Thus
 file and it does not extend from one function over a function call into the
 called function.
 
+{\tt \#pragma} C code can only be matched against when the entire pragma is
+on one line in the C code.  The use of Continuation lines, via a backslash,
+will cause the matching to fail.
+
 \section{Expressions}
 
 A nest or a single ellipsis is allowed in some expression contexts, and
