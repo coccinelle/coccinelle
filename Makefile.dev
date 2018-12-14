@@ -56,7 +56,7 @@ IDX?=1
 # This requires the "devscripts" package.
 #
 ubuntu:
-	./autogen
+	./autogen --ignore-localversion
 	./configure
 	@echo "Preparing package for Ubuntu $(CODENAME) - $(RELEASE)"
 	if [ ! -f debian/changelog ] ; then \
