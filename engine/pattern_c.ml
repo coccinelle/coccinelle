@@ -210,9 +210,25 @@ module XMATCH = struct
     let bigf = {
       Visitor_c.default_visitor_c with
         Visitor_c.ktype = (fun (k, bigf) expb ->
-	match expf expa expb tin with
-	| [] -> (* failed *) k expb
-	| xs -> globals := xs @ !globals);
+	  match expf expa expb tin with
+	  | [] -> (* failed *) k expb
+	  | xs -> globals := xs @ !globals);
+	Visitor_c.kdecl = (fun (k, bigf) expb ->
+	  let iif ii = List.iter (Visitor_c.vk_info bigf) ii in
+	  match expb with
+	    Ast_c.DeclList(xs,iis) ->
+	      iif iis;
+	      (match xs with
+		(x,ii)::xs ->
+		  iif ii;
+		  Visitor_c.vk_onedecl bigf x;
+		  List.iter
+		    (fun (x,ii) ->
+		      iif ii;
+		      Visitor_c.vk_onedecl_opt false bigf x)
+		    xs
+	      | _ -> failwith "no decls")
+	  | _ -> k expb)
 
     }
     in

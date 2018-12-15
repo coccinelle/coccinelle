@@ -1522,11 +1522,14 @@ Coccinelle supports declaring multiple variables or structure fields in the
 C code, but not in the SmPL code.  It is possible to remove a variable from
 within a declaration of multiple variables with a pattern that removes a
 complete single-variable declaration, e.g., {\tt - int x;}.  The type and
-the semicolon are only removed if all of the variables are removed.  On the
-other hand, it is not possible to write a single rule that removes a
-variable from within a declaration of multiple variables and replaces the
-declaration by something else.  There is no crash, simply a match failure.
-A message is given for this with the {\tt -{}-debug option}.
+the semicolon are only removed if all of the variables are removed.  It is
+also possible to specify to entirely remove such a declaration and replace
+it with something else.  The replacement of a declaration only matches if
+the addition is done with {\tt ++}, allowing multiple additions.  This is
+also only allowed if there is no implicitly matched information on the
+type, such as {\tt extern} or {\tt static}.  When the transformation cannot
+be made, there is no crash, simply a match failure.  A message is given for
+this with the {\tt -{}-debug option}.
 
 \section{Statements}
 
@@ -1633,6 +1636,10 @@ All matching done by a SmPL rule is done intraprocedurally.  Thus
 ``\ldots'' does not extend from one function to the next one in the same
 file and it does not extend from one function over a function call into the
 called function.
+
+{\tt \#pragma} C code can only be matched against when the entire pragma is
+on one line in the C code.  The use of Continuation lines, via a backslash,
+will cause the matching to fail.
 
 \section{Expressions}
 

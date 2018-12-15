@@ -455,10 +455,14 @@ let rec define_line_1 acc = function
   | [] -> List.rev acc
   | token::tokens ->
     begin match token with
-      (* need final ii for PrePragma, to match end of line *)
-      | TDefine ii | TUndef ii | TPrePragma(_,_,_,_,_,_,ii) ->
+      | TDefine ii | TUndef ii ->
         let line = Ast_c.line_of_info ii in
         define_line_2 (token::acc) line ii tokens
+      | TPrePragma(_,_,_,_,_,ii) ->
+          (* need final ii for PrePragma, to match end of line *)
+	  let (str,ii) = List.hd(List.rev ii) in
+          let line = Ast_c.line_of_info ii in
+          define_line_2 (token::acc) line ii tokens
       | TCppEscapedNewline ii ->
         pr2 ("SUSPICIOUS: a \\ character appears outside of a #define at");
         pr2 (Ast_c.strloc_of_info ii);
@@ -555,7 +559,7 @@ let rec define_ident acc = function
             pr2 "WEIRD: weird #define body";
             define_ident acc xs
       )
-    | TPrePragma(prag,wss1,ident,iinfo,wss2,rest,rinfo) ->
+    | TPrePragma(prag,wss1,ident,iinfo,wss2,rest) ->
 	let acc = (TPragma prag) :: acc in
 	let acc = (TCommentSpace wss1) :: acc in
 	let acc = (TIdent(ident,iinfo)) :: acc in
@@ -563,7 +567,11 @@ let rec define_ident acc = function
 	  if Ast_c.str_of_info wss2 = ""
 	  then acc
 	  else (TCommentSpace wss2) :: acc in
-	let acc = (TPragmaString(rest,rinfo)) :: acc in
+	let acc =
+	  List.fold_left
+	    (fun acc (rest,rinfo) ->
+	      (TPragmaString(rest,rinfo)) :: acc)
+	    acc rest in
 	define_ident acc tokens
     | _ ->
 	let acc = token::acc in

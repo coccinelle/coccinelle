@@ -127,9 +127,9 @@ let print_token2 = function
       let info = TH.info_of_tok t in
       match !(info.Ast_c.danger) with
 	Ast_c.DangerStart -> ":DS:"
-      |	Ast_c.DangerEnd -> ":DE:"
-      |	Ast_c.Danger -> ":D:"
-      |	Ast_c.NoDanger -> ":ND:" in*)
+      | Ast_c.DangerEnd -> ":DE:"
+      | Ast_c.Danger -> ":D:"
+      | Ast_c.NoDanger -> ":ND:" in*)
     "T2:"^b_str^t_str(*^d_str*)^TH.str_of_tok t
   | Fake2 (info,b) ->
     let b_str =
@@ -142,9 +142,9 @@ let print_token2 = function
     (*let d_str =
       match !(info.Ast_c.danger) with
 	Ast_c.DangerStart -> ":DS:"
-      |	Ast_c.DangerEnd -> ":DE:"
-      |	Ast_c.Danger -> ":D:"
-      |	Ast_c.NoDanger -> ":ND:" in*)
+      | Ast_c.DangerEnd -> ":DE:"
+      | Ast_c.Danger -> ":D:"
+      | Ast_c.NoDanger -> ":ND:" in*)
     b_str(*^d_str*)^"fake"
   | Cocci2 (s,_,lc,rc,_) -> Printf.sprintf "Cocci2:%d:%d%s" lc rc s
   | C2 (s,_) -> "C2:"^s
@@ -1083,6 +1083,10 @@ let check_danger toks =
     | Fake2(info,_) ->
 	Some !(info.Ast_c.danger)
     | _ -> None in
+  let is_danger tok =
+    match get_danger tok with
+      Some Ast_c.Danger -> true
+    | _ -> false in
   let isnt_danger_end tok =
     match get_danger tok with
       Some Ast_c.DangerEnd -> false
@@ -1092,14 +1096,16 @@ let check_danger toks =
       T2(_,Min _,_,_) -> true
     | (T2(tok,Ctx,_,_)) as x ->
 	TH.str_of_tok tok = "," || is_whitespace x
-    | Fake2(info,Min _) -> true
+    | Fake2(info,_) -> true
     | x -> false in
   let rec undanger_untouched toks =
     (* check that each entry before or after a comma contains at least
        one context token. combined with safe for multi constraints, that
        means that the rule can only have changed the type *)
     let ctx =
-      function (T2(_,Ctx,_,_) as t) -> not (is_whitespace t) | _ -> false in
+      function
+	  (T2(_,Ctx,_,_) as t) when not(is_danger t) -> not (is_whitespace t)
+	| _ -> false in
     let safe = function [] -> true | toks -> List.exists ctx toks in
     let res =
       try Some (Common.split_when is_comma toks)
@@ -1190,6 +1196,11 @@ let check_danger toks =
   let unminus_danger_end = function
       T2(tok,Min _,a,b) -> T2(tok,Ctx,a,b)
     | x -> x in
+  let reminus_danger_end = function
+      (* remove space inside a danger that can be removed, but is not
+	 allminus, because some code is attached to the outside of the ; *)
+      T2(Parser_c.TCommentSpace _,Ctx,a,b) -> false (* should only be spaces *)
+    | x -> true in
   let rec search_danger = function
       [] -> []
     | x::xs ->
@@ -1202,7 +1213,11 @@ let check_danger toks =
 		  Some Ast_c.DangerEnd ->
 		    if List.for_all removed_or_comma (de::danger)
 			(* everything removed *)
-			|| undanger_untouched (danger@[de])
+		    then
+		      (* drop spaces *)
+		      (List.filter reminus_danger_end danger)
+		      @ de :: (search_danger rest)
+		    else if undanger_untouched (danger@[de])
 			(* nothing removed, type changed *)
 		    then danger @ de :: (search_danger rest)
 		    else

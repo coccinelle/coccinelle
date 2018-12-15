@@ -970,6 +970,7 @@ rule token = parse
       | (['l' 'L'] ['u' 'U'])
       | (['u' 'U'] ['l' 'L'])
       | (['u' 'U'] ['l' 'L'] ['l' 'L'])
+      | (['l' 'L'] ['l' 'L'] ['u' 'U'])
       | (['l' 'L'] ['l' 'L'])
       )?
     ) as x) { start_line true; TInt(x,(get_current_line_type lexbuf)) }

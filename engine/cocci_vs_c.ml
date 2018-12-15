@@ -2249,7 +2249,9 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 			     iiptvirgb::iifakestart::iisto))
                   )))) tin))
           fail in
-      if !Flag.sgrep_mode2(*X.mode = PatternMode *) || A.get_safe_decl decla
+      if !Flag.sgrep_mode2(*X.mode = PatternMode *) ||
+         A.get_safe_decl decla = A.Safe ||
+	 (A.get_safe_decl decla = A.NoStorage && iisto = [])
       then doit()
       else
 	begin
@@ -2284,7 +2286,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 		pr2_once
 		  (Printf.sprintf "%s: %d: %s"
 		     (Ast_c.file_of_info firstii) (Ast_c.line_of_info firstii)
-		     "More than one variable in the declaration, and so it cannot be transformed.  Check that there is no transformation on the type or the ;");
+		     "More than one variable in the declaration, and so it cannot be transformed.  Check that there is no transformation on the type or the ;.  Consider using ++ for an addition.");
 		fail)) tin))
 	      fail
 	end
@@ -2438,10 +2440,10 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
            (Lib_parsing_c.al_type structnameb))), [])
        in
 
-       tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
-       tokenf lba lbb >>= (fun lba lbb ->
-       tokenf rba rbb >>= (fun rba rbb ->
        struct_fields (A.unwrap declsa) declsb >>= (fun undeclsa declsb ->
+         tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
+         tokenf lba lbb >>= (fun lba lbb ->
+         tokenf rba rbb >>= (fun rba rbb ->
          let declsa = A.rewrap declsa undeclsa in
 
          (match A.unwrap tya2 with
@@ -2541,9 +2543,9 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
      }, iivirg) ->
+       ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
        fullType typa typb >>= (fun typa typb ->
-       ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
        attribute_list attrsa endattrs >>= (fun attrsa endattrs ->
        storage_optional_allminus allminus stoa (stob, iistob) >>=
         (fun stoa (stob, iistob) ->
@@ -2569,10 +2571,10 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
      },iivirg) ->
+       ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
        tokenf eqa iieqb >>= (fun eqa iieqb ->
        fullType typa typb >>= (fun typa typb ->
-       ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
        attribute_list attrsa endattrs >>= (fun attrsa endattrs ->
        storage_optional_allminus allminus stoa (stob, iistob) >>=
        (fun stoa (stob, iistob) ->
@@ -2623,10 +2625,10 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
         | _ -> fail
        ) >>=
         (fun va (isvaargs, iidotsb) -> let (lpb, rpb) = tuple_of_list2 ii in
+        ident_cpp DontKnow ida idb >>= (fun ida idb ->
         tokenf lpa lpb >>= (fun lpa lpb ->
         tokenf rpa rpb >>= (fun rpa rpb ->
         tokenf sema iiptvirgb >>= (fun sema iiptvirgb ->
-        ident_cpp DontKnow ida idb >>= (fun ida idb ->
 	let (stoa,tya,inla,attras) = get_fninfo fninfoa in
         inline_optional_allminus allminus
           inla (stob, iistob) >>= (fun inla (stob, iistob) ->
@@ -2665,8 +2667,8 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 
        if stob = (B.NoSto, false)
        then
-         tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
          fullType typa typb >>= (fun typa typb ->
+         tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
            return (
              (A.TyDecl (typa, ptvirga)) +> A.rewrap decla,
              (({B.v_namei = None;
@@ -2691,8 +2693,8 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_type_bis = typbbis;
      },iivirg) ->
 
-       tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
        fullType typa typb >>= (fun typa typb ->
+       tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
        (match iistob with
        | [iitypedef] ->
            tokenf stoa iitypedef >>= (fun stoa iitypedef ->
@@ -2789,17 +2791,17 @@ and onefield = fun allminus decla (declb, iiptvirgb) ->
  match A.unwrap decla, declb with
    A.Field (typa, ida, None, ptvirga),
    (B.Simple (nameidb, typb), iivirg) ->
+     match_option (ident_cpp DontKnow) ida nameidb >>= (fun ida nameidb ->
      tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
      fullType typa typb >>= (fun typa typb ->
-     match_option (ident_cpp DontKnow) ida nameidb >>= (fun ida nameidb ->
        return (
        (A.Field (typa, ida, None, ptvirga) +>  A.rewrap decla),
        ((B.Simple (nameidb, typb),iivirg), iiptvirgb)))))
  | A.Field (typa, ida, Some (ca, ea), ptvirga),
      (B.BitField (nameidb, typb, info, eb), iivirg) ->
+     match_option (ident_cpp DontKnow) ida nameidb >>= (fun ida nameidb ->
      tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
      fullType typa typb >>= (fun typa typb ->
-     match_option (ident_cpp DontKnow) ida nameidb >>= (fun ida nameidb ->
      tokenf ca info >>= (fun ca info ->
      expression ea eb >>= (fun ea eb ->
        return (
@@ -3266,7 +3268,7 @@ and (struct_field: (A.annotated_field, B.field) matcher) =
 			       [iiptvirgb;iifakestart])))))))))
 		fail in
 	    if !Flag.sgrep_mode2(*X.mode = PatternMode *) ||
-  	       A.get_safe_decl ifa
+	       not(A.get_safe_decl ifa = A.Unsafe)
 	    then doit()
 	    else
 	      begin
@@ -5256,8 +5258,9 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
         ))
       ))
 
-  | A.Pragma(prga,ida,pragmainfoa), F.PragmaHeader ((idb, restb), ii) ->
-      let (prgb, rest_iidb, ieol) = tuple_of_list3 ii in
+  | A.Pragma(prga,ida,pragmainfoa),
+    F.PragmaHeader ((idb, [(restb,[rest_iidb])]), ii) ->
+      let (prgb, ieol) = tuple_of_list2 ii in
       ident_cpp DontKnow ida idb >>= (fun ida idb ->
       tokenf prga prgb >>= (fun prga prgb ->
       let wp x = A.rewrap pragmainfoa x  in
@@ -5277,9 +5280,14 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
       ) >>= (fun pragmainfoa rest_iidb ->
         return (
 	  A.Pragma(prga,ida,pragmainfoa),
-	  F.PragmaHeader ((idb, restb), [prgb;rest_iidb;ieol])
+	  F.PragmaHeader ((idb, [(restb,[rest_iidb])]), [prgb;ieol])
         ))
       ))
+
+  | A.Pragma(prga,ida,pragmainfoa),
+    F.PragmaHeader ((idb, [(restb,rest_iib)]), ii) ->
+      (* matches against multiline pragmas not supported *)
+      fail
 
   | A.Default(def,colon), F.Default (st, ((),ii)) ->
       let (ib1, ib2) = tuple_of_list2 ii in

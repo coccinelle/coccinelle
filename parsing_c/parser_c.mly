@@ -586,7 +586,7 @@ let postfakeInfo pii  =
 /*(*---------------*)*/
 
 %token <Ast_c.info> TUndef
-%token <Ast_c.info*Ast_c.info*string*Ast_c.info*Ast_c.info*string*Ast_c.info> TPrePragma
+%token <Ast_c.info*Ast_c.info*string*Ast_c.info*Ast_c.info*(string*Ast_c.info)list> TPrePragma
 %token <Ast_c.info> TPragma
 %token <string * Ast_c.info> TPragmaString
 
@@ -1975,10 +1975,14 @@ cpp_directive:
  | TUndef TIdentDefine TDefEOL
      { Define((fst $2, [$1; snd $2; $3]), (Undef,DefineEmpty)) }
 
- | TPragma TIdent TPragmaString TDefEOL
-     { Pragma((RegularName (mk_string_wrap $2),fst $3),[$1;snd $3;$4]) }
+ | TPragma TIdent pragma_strings TDefEOL
+     { Pragma((RegularName (mk_string_wrap $2),$3),[$1;$4]) }
 
  | TCppDirectiveOther { OtherDirective ([$1]) }
+
+pragma_strings:
+   TPragmaString { [(fst $1, [snd $1])] }
+ | TPragmaString pragma_strings { (fst $1, [snd $1])::$2 }
 
 /*(* perhaps better to use assign_expr ? but in that case need
    * do a assign_expr_of_string in parse_c

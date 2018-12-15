@@ -243,7 +243,7 @@ and definitionbis = {
 and cpp_directive =
     Define of define
   | Include of includ
-  | Pragma of (name * string) wrap
+  | Pragma of (name * string wrap list) wrap
   | OtherDirective of il
 and define = string wrap * (define_kind * define_val)
 and define_kind =

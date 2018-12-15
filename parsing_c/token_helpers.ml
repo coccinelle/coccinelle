@@ -312,7 +312,7 @@ let info_of_tok = function
   | TInclude (includes, filename, inifdef, i1) ->     i1
 
   | TUndef (ii) -> ii
-  | TPrePragma (ii,_,_,_,_,_,_) -> ii
+  | TPrePragma (ii,_,_,_,_,_) -> ii
   | TPragmaString (s,ii) -> ii
   | TPragma (ii) -> ii
   | TCppDirectiveOther (ii) -> ii
@@ -484,8 +484,9 @@ let visitor_info_of_tok f = function
 
   | TUndef (i1) -> TUndef(f i1)
   | TPragma (i1) -> TPragma(f i1)
-  | TPrePragma (i1,wss1,a,b,wss2,c,d) ->
-      TPrePragma(f i1,f wss1,a,f b,f wss2,c,f d)
+  | TPrePragma (i1,wss1,a,b,wss2,c) ->
+      TPrePragma(f i1,f wss1,a,f b,f wss2,
+		 List.map (fun (c,d) -> (c,f d)) c)
   | TPragmaString (s,ii) -> TPragmaString(s,f ii)
   | TCppDirectiveOther (i1) -> TCppDirectiveOther(f i1)
 

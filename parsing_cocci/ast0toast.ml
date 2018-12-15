@@ -30,7 +30,7 @@ let inline_mcodes =
   let bind x y = () in
   let option_default = () in
   let mcode _ = () in
-  let do_nothing r k e =
+  let do_nothing_dir favor_start r k e =
     k e;
     let einfo = Ast0.get_info e in
     match (Ast0.get_mcodekind e) with
@@ -54,11 +54,21 @@ let inline_mcodes =
 		     true)
 		  else false
 	      | _ -> false in
-	    if not (minus_try(einfo.Ast0.attachable_start,
-			      einfo.Ast0.mcode_start)
-		      ||
-    		    minus_try(einfo.Ast0.attachable_end,
-			      einfo.Ast0.mcode_end))
+	    let (attachable_favored,mcode_favored,
+		 attachable_unfavored,mcode_unfavored) =
+	      if favor_start
+	      then
+		(einfo.Ast0.attachable_start,
+		 einfo.Ast0.mcode_start,
+		 einfo.Ast0.attachable_end,
+		 einfo.Ast0.mcode_end)
+	      else
+		(einfo.Ast0.attachable_end,
+		 einfo.Ast0.mcode_end,
+		 einfo.Ast0.attachable_start,
+		 einfo.Ast0.mcode_start) in
+	    if not (minus_try(attachable_favored,mcode_favored) ||
+    	            minus_try(attachable_unfavored,mcode_unfavored))
 	    then
 	      failwith "minus tree should not have bad code on both sides")
     | Ast0.CONTEXT(befaft)
@@ -171,13 +181,15 @@ let inline_mcodes =
 	      (einfo.Ast0.attachable_end,einfo.Ast0.mcode_end)
 	| (Ast.NOTHING,_,_) -> ())
     | Ast0.PLUS _ -> () in
+  let do_nothing r k e = do_nothing_dir true r k e in
+  let do_nothing_end r k e = do_nothing_dir false r k e in
   V0.flat_combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing do_nothing do_nothing do_nothing do_nothing
+    do_nothing do_nothing do_nothing_end do_nothing_end do_nothing
     do_nothing do_nothing do_nothing do_nothing
 
 (* --------------------------------------------------------------------- *)

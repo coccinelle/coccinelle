@@ -318,7 +318,7 @@ module Ast_c :
       Ast_c.cpp_directive =
         Define of define
       | Include of includ
-      | Pragma of (name * string) wrap
+      | Pragma of (name * string wrap list) wrap
       | OtherDirective of il
     and define = string wrap * (define_kind * define_val)
     and define_kind =
@@ -735,8 +735,8 @@ module Parser_c :
       | TUelseif of Ast_c.info
       | TUendif of Ast_c.info
       | TUndef of Ast_c.info
-      | TPrePragma of (Ast_c.info*Ast_c.info*string*Ast_c.info*Ast_c.info*
-			 string*Ast_c.info)
+      | TPrePragma of (Ast_c.info*Ast_c.info*string*Ast_c.info*
+			 Ast_c.info*(string*Ast_c.info)list)
       | TPragma of (Ast_c.info)
       | TPragmaString of (string*Ast_c.info)
       | TCppDirectiveOther of Ast_c.info
@@ -1073,6 +1073,8 @@ module Visitor_c :
       kdecl :
         (Ast_c.declaration -> unit) * visitor_c -> Ast_c.declaration -> unit;
       konedecl : (Ast_c.onedecl -> unit) * visitor_c -> Ast_c.onedecl -> unit;
+      konedecl_opt : bool -> (Ast_c.onedecl -> unit) * visitor_c ->
+	Ast_c.onedecl -> unit;
       kparam :
         (Ast_c.parameterType -> unit) * visitor_c ->
         Ast_c.parameterType -> unit;
@@ -1118,6 +1120,7 @@ module Visitor_c :
     val vk_type : visitor_c -> Ast_c.fullType -> unit
     val vk_decl : visitor_c -> Ast_c.declaration -> unit
     val vk_decl_list : visitor_c -> Ast_c.declaration list -> unit
+    val vk_onedecl_opt : bool -> visitor_c -> Ast_c.onedecl -> unit
     val vk_onedecl : visitor_c -> Ast_c.onedecl -> unit
     val vk_ini : visitor_c -> Ast_c.initialiser -> unit
     val vk_ini_list : visitor_c -> Ast_c.initialiser Ast_c.wrap2 list -> unit
@@ -1220,6 +1223,8 @@ module Visitor_c :
       Ast_c.statement_sequencable list -> Ast_c.statement_sequencable list
     val vk_type_s : visitor_c_s -> Ast_c.fullType -> Ast_c.fullType
     val vk_decl_s : visitor_c_s -> Ast_c.declaration -> Ast_c.declaration
+    val vk_onedecl_opt_s : bool -> visitor_c_s -> Ast_c.onedecl -> Ast_c.onedecl
+    val vk_onedecl_s : visitor_c_s -> Ast_c.onedecl -> Ast_c.onedecl
     val vk_decl_list_s :
       visitor_c_s -> Ast_c.declaration list -> Ast_c.declaration list
     val vk_ini_s : visitor_c_s -> Ast_c.initialiser -> Ast_c.initialiser
@@ -2410,7 +2415,7 @@ module Ast_cocci :
       bef_aft : dots_bef_aft;
       pos_info : meta_name mcode option;
       true_if_test_exp : bool;
-      safe_for_multi_decls : bool;
+      safe_for_multi_decls : Ast_cocci.safety;
       iso_info : (string * anything) list;
     }
     and 'a befaft =
@@ -2447,6 +2452,7 @@ module Ast_cocci :
     and multi = bool
     and end_info =
         meta_name list * (meta_name * seed) list * meta_name list * mcodekind
+    and safety = Safe | Unsafe | NoStorage
     and arity = Ast_cocci.arity = UNIQUE | OPT | MULTI | NONE
     and metavar =
       Ast_cocci.metavar =
@@ -3064,7 +3070,7 @@ module Ast_cocci :
     val set_pos : 'a wrap -> meta_name mcode option -> 'a wrap
     val get_test_exp : 'a wrap -> bool
     val set_test_exp : expression -> expression
-    val get_safe_decl : 'a wrap -> bool
+    val get_safe_decl : 'a wrap -> Ast_cocci.safety
     val get_isos : 'a wrap -> (string * anything) list
     val set_isos : 'a wrap -> (string * anything) list -> 'a wrap
     val get_pos_var : 'a mcode -> meta_pos list

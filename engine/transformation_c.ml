@@ -190,6 +190,21 @@ module XTRANS = struct
 	match expf expa expb tin with
 	| None -> (* failed *) k expb
 	| Some (x, expb) -> expb);
+      Visitor_c.kdecl_s = (fun (k, bigf) expb ->
+	let iif ii = List.map (Visitor_c.vk_info_s bigf) ii in
+	match expb with
+	  Ast_c.DeclList(xs,iis) ->
+	    (match xs with
+	      (x,ii)::xs ->
+		Ast_c.DeclList
+		  ((Visitor_c.vk_onedecl_s bigf x,iif ii) ::
+		   (List.map
+		      (fun (x,ii) ->
+			(Visitor_c.vk_onedecl_opt_s false bigf x,iif ii))
+		      xs),
+		   iif iis)
+	    | _ -> failwith "no decls")
+	| _ -> k expb);
     }
     in
     Some (expa, Visitor_c.vk_node_s bigf node)
