@@ -42,7 +42,7 @@ directory {\tt foodir}:
   patch {\tt foo.cocci} to all of the C files in the directory {\tt foodir}.
 \item {\tt spatch -{}-sp-file foo.cocci -{}-dir foodir -{}-include-headers}:  Apply
   the semantic patch {\tt foo.cocci} to all of the C files and header files
-  in the directory {\tt foodir}.
+  one by one in the directory {\tt foodir}.
 \end{itemize}
 
 The last four commands above produce a patch describing any changes.  This
