@@ -1578,9 +1578,18 @@ in
 let pp_list_list_any (envs, pr, pr_celem, pr_cspace, pr_space, pr_arity,
 			  pr_barrier, indent, unindent, eatspace)
     generating xxs before =
-  List.iter
-    (function env ->
-      do_all (env, pr, pr_celem, pr_cspace, pr_space, pr_arity, pr_barrier,
+  match envs with
+    [] -> ()
+  | _ ->
+      let rev = List.rev envs in
+      let last = List.hd rev in
+      let previous = List.rev(List.tl rev) in
+      List.iter
+	(function env ->
+	  do_all (env, pr, pr_celem, pr_cspace, pr_space, pr_arity, pr_barrier,
+		  indent, unindent, eatspace)
+	    generating xxs Before)
+	previous;
+      do_all (last, pr, pr_celem, pr_cspace, pr_space, pr_arity, pr_barrier,
 	      indent, unindent, eatspace)
-	generating xxs before)
-    envs
+	generating xxs before
