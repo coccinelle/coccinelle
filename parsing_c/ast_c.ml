@@ -1191,7 +1191,22 @@ let al_comments keep_comments x =
     if keep_comments
     then l
     else
-      List.filter (function (Token_c.TCommentCpp _,_) -> true | _ -> false) l in
+      (* This is a hack.  If we keep something, we need to keep the newlines
+	 involved.  But keeping this
+	 information may mean that metavariables don't match what they are
+	 supposed to, if this information is taken into account.  Actually,
+	 we only want this information for + code.  If we just put l here,
+	 then lots of tests fail, so it seems that metavariables are being
+	 matched agains, and not just used for + *)
+      let rec loop = function
+	  [] -> []
+	| ((Token_c.TCommentNewline,_) as x)::
+	  (((Token_c.TCommentCpp _,_)::_) as xs) -> x :: loop xs
+	| ((Token_c.TCommentCpp _,_) as x)::
+	  ((Token_c.TCommentNewline,_) as y)::xs -> x :: y :: loop xs
+	| ((Token_c.TCommentCpp _,_) as x)::xs -> x :: loop xs
+	| x::xs -> loop xs in
+      loop l in
   let al_com (x,i) =
     (x,{i with Common.charpos = magic_real_number;
 	 Common.line = magic_real_number;
