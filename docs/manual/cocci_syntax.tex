@@ -168,10 +168,13 @@ named rule has succeeded in matching in any environment.  Analogously,
 in no environment.  The boolean and, or and negation operators combine
 these declarations in the usual way.  The declaration {\tt file in} checks
 that the code being processed comes from the mentioned file, or from a
-subdirectory.  The declaration {\tt file in} is only allowed on SmPL
-code-matching rules.  Script rules are not applied to any code in
-particular, and thus it doesn't make sense to check on the file being
-considered.
+subdirectory of the directory to which Coccinelle was applied.  In the
+latter case, the string is matched against the complete pathname.  A
+trailing {\tt /} is added to the specified subdirectory name, to ensure
+that a complete subdirectory name is matched.  The
+declaration {\tt file in} is only allowed on SmPL code-matching rules.
+Script rules are not applied to any code in particular, and thus it doesn't
+make sense to check on the file being considered.
 
 As metavariables are bound and inherited across rules, a tree of
 environments is built up.  A rule is processed only once for all of the
