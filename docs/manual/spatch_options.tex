@@ -301,6 +301,11 @@ keeping track of tests that have succeeded and failed.}
   Coccinelle to file{\tt{.c}} to the file file{\tt{.res}} representing the
   expected result.}
 
+\developer{-{}-expected-extension}{Set the extension to be use on the file
+  containing the expected result when testing with {\tt
+    -{}-compare-with-expected}.  The leading dot is optional. This
+  implicitly sets the {\tt -{}-compare-with-expected} flag.}
+
 \developer{-{}-expected-score-file $\langle$file$\rangle$}{
 which score file to compare with in the testall run}
 
