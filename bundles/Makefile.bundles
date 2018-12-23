@@ -90,7 +90,7 @@ source_files := \
 depend-rec: $(source_files)
 	$(OCAMLDEP_CMD) $(source_files) >.depend
 
-.depend: .prepare
+.depend:
 	$(MAKE) depend-rec
 
 .PHONY: \

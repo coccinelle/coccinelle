@@ -53,12 +53,10 @@ depend: .depend
 
 distclean: clean
 	rm -rf $(PACKAGE_DIR)
-	rm -f .prepare
 
-.prepare:
+$(SRC_DIR)/installation.ml:
 	echo "let libdir = \"$(shell pwd\)\"" > $(SRC_DIR)/installation.ml
 	echo "let ocamlfind = false" >> $(SRC_DIR)/installation.ml
-	touch $@
 
 .depend: $(SRC_DIR)/parser.mly
 
