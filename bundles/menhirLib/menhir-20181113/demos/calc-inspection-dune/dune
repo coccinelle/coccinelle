@@ -1,0 +1,13 @@
+(ocamllex
+  (modules lexer)
+)
+
+(menhir
+  (modules parser)
+  (flags ("--table" "--inspection" "-v" "-la" "2"))
+)
+
+(executable
+   (name calc)
+   (libraries menhirLib)
+)

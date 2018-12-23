@@ -1,0 +1,82 @@
+VERSION=@PACKAGE_VERSION@
+NAME=@PACKAGE_NAME@
+
+CFLAGS=@CFLAGS@ -fPIC -Wall -pedantic -Werror -Wno-long-long
+CPPFLAGS=@CPPFLAGS@
+LDFLAGS=@LDFLAGS@
+
+OBJS = bytearray parmap_utils $(NAME)
+INTF = $(foreach obj, $(OBJS),$(obj).cmi) setcore.cmi
+C_OBJS = bytearray_stubs.o setcore_stubs.o
+OBJECTS  = $(foreach obj, $(OBJS),$(obj).cmo)
+XOBJECTS = $(foreach obj, $(OBJS),$(obj).cmx)
+LIBS = $(NAME).cma $(NAME).cmxa $(NAME).cmxs
+OCAMLC   = ocamlfind ocamlc
+OCAMLOPT = ocamlfind ocamlopt
+OCAMLMKLIB = ocamlmklib
+OCAMLDEP = ocamldep
+COMPOPTS = -linkpkg -package bigarray -package parmap -package unix 
+
+ARCHIVE  = $(NAME).cma
+XARCHIVE = $(NAME).cmxa
+SARCHIVE = $(NAME).cmxs
+
+REQUIRES = unix bigarray 
+
+all: $(ARCHIVE) $(XARCHIVE)
+
+.PHONY: reinstall
+
+reinstall: uninstall install
+
+.PHONY: install
+install: $(LIBS) META
+	ocamlfind remove $(NAME)
+	ocamlfind install $(NAME) META $(INTF) $(LIBS) *.a *.mli $(C_OBJS) *.so
+
+.PHONY: uninstall
+uninstall:
+	ocamlfind remove $(NAME)
+
+$(ARCHIVE): $(INTF) $(OBJECTS) $(C_OBJS) 
+	$(OCAMLMKLIB) -o $(NAME) $(OBJECTS) $(C_OBJS)
+
+$(XARCHIVE): $(INTF) $(XOBJECTS) $(C_OBJS)
+	$(OCAMLMKLIB) -o $(NAME) $(XOBJECTS) $(C_OBJS)
+
+$(SARCHIVE): $(INTF) $(XOBJECTS) $(C_OBJS)
+	$(OCAMLOPT) -shared -o $(SARCHIVE) $(C_OBJS) $(XOBJECTS)
+
+bytearray_stubs.o: bytearray_stubs.c
+	ocamlc -c bytearray_stubs.c
+
+setcore_stubs.o: setcore_stubs.c
+	ocamlc -c -cc "gcc -D_GNU_SOURCE -o setcore_stubs.o -fPIC" setcore_stubs.c
+
+tests:
+	cd tests; $(OCAMLOPT) $(COMPOPTS) utils.ml simplescale.ml -o simplescale.native
+	cd tests; $(OCAMLOPT) $(COMPOPTS) utils.ml floatscale.ml -o floatscale.native
+	cd tests; $(OCAMLOPT) $(COMPOPTS) utils.ml simplescalefold.ml -o simplescalefold.native
+	cd tests; $(OCAMLOPT) $(COMPOPTS) utils.ml simplescalemapfold.ml -o simplescalemapfold.native
+	cd tests; $(OCAMLOPT) $(COMPOPTS) utils.ml simplescale_array.ml -o simplescale_array.native
+
+examples:
+	$(OCAMLOPT) $(COMPOPTS) graphics.cmxa example/mandels.ml -o example/mandels.native
+
+.SUFFIXES: .cmo .cmi .cmx .ml .mli
+
+.ml.cmo:
+	$(OCAMLC) -package "$(REQUIRES)" -c $<
+.mli.cmi:
+	$(OCAMLC) -package "$(REQUIRES)" -c $<
+.ml.cmx:
+	$(OCAMLOPT) -package "$(REQUIRES)" -c $<
+
+depend: *.ml *.mli
+	$(OCAMLDEP) *.ml *.mli >.depend
+
+include .depend
+
+.PHONY: clean examples tests
+clean:
+	rm -f *.cmi *.cmo *.cmx *.cma *.cmxa *.cmxs *.a *.o *.so *.annot

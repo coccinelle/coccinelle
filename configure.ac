@@ -4,6 +4,7 @@ dnl  run 'automake -acf' to update setup/{install-sh,missing}
 dnl  standard initialization (we only use autoconf not automake)
 AC_PREREQ([2.68])
 AC_INIT([coccinelle], m4_esyscmd([./version.sh]), [cocci@systeme.lip6.fr], [], [http://coccinelle.lip6.fr/])
+
 AC_CONFIG_MACRO_DIR([setup])
 AC_CONFIG_AUX_DIR([setup])
 AC_SUBST([CONFIGURE_FLAGS], ["$*"])
@@ -84,6 +85,7 @@ AC_PROG_OCAML
 AC_CHECK_OCAMLVERSION([OCAMLATLEAST312],[3.12])
 AS_IF([test "x$OCAMLATLEAST312" = xno],[AC_MSG_ERROR([OCaml >= 3.12 is required to compile Coccinelle])])
 AC_CHECK_OCAMLVERSION([OCAMLATLEAST4020],[4.02])
+AC_CHECK_OCAMLVERSION([OCAMLATLEAST4030],[4.03])
 AC_SUBST([OCAMLCORIG],["$OCAMLC"])
 
 AS_IF([test "x$OCAMLC" = xno -o "x$OCAMLDEP" = xno -o "x$OCAMLDOC" = xno -o "x$OCAMLMKLIB" = xno],
@@ -490,10 +492,44 @@ AS_IF([test "x$with_bash_completion" = "xyes"],
                 [$datarootdir/bash-completion/completions])])],
     [AC_SUBST([BASH_COMPLETION_DIR], [$with_bash_completion])])
 
-AC_MSG_NOTICE([configuring stdcompat bundle...])
-AS_IF([( cd bundles/stdcompat/stdcompat-7; touch configure Makefile.in aclocal.m4; ./configure )],
-  AC_MSG_NOTICE([stdcompat is configured.]),
-  AC_MSG_ERROR([stdcompat configuration failed.]))
+
+AC_CONFIG_SUBDIRS(bundles/stdcompat/stdcompat-8)
+
+AS_IF([test "$MAKE_parmap"],
+  AC_CONFIG_SUBDIRS(bundles/parmap))
+
+AS_IF([test "$MAKE_pcre"],
+  [AS_IF([test "x$OCAMLATLEAST4030" = xno  ],
+    [AC_SUBST([CAMLnoreturn_start], [])
+     AC_SUBST([CAMLnoreturn_end], [])],
+    [AC_SUBST([CAMLnoreturn_start], [CAMLnoreturn_start])
+     AC_SUBST([CAMLnoreturn_end], [CAMLnoreturn_end])])
+   AS_IF([test "x$OCAMLATLEAST4020" = xno  ],
+    [AC_SUBST([intnat], [value])
+     AC_SUBST([Val_int], [Val_int])
+     AC_SUBST([Val_Val_int], [])
+     AC_SUBST([Int_val], [Int_val])
+     AC_SUBST([Int_val_val], [])
+     AC_SUBST([noalloc], [])
+     AC_SUBST([untagged], [])
+     AC_SUBST([CAMLnoreturn_start], [])
+     AC_SUBST([CAMLnoreturn_end], [])],
+    [AC_SUBST([intnat], [intnat])
+     AC_SUBST([Val_int], [])
+     AC_SUBST([Val_Val_int], [Val_int])
+     AC_SUBST([Int_val], [])
+     AC_SUBST([Int_val_val], [Int_val])
+     AC_SUBST([noalloc], [[[@@noalloc]]])
+     AC_SUBST([untagged], [[[@untagged]]])])
+  AC_CONFIG_FILES([
+    bundles/pcre/pcre-ocaml/src/pcre.ml
+    bundles/pcre/pcre-ocaml/src/pcre_stubs.c
+  ])])
+
+dnl AC_MSG_NOTICE([configuring stdcompat bundle...])
+dnl AS_IF([( cd bundles/stdcompat/stdcompat-7; touch configure Makefile.in aclocal.m4; ./configure )],
+dnl   AC_MSG_NOTICE([stdcompat is configured.]),
+dnl   AC_MSG_ERROR([stdcompat configuration failed.]))
 
 dnl
 dnl  generating configuration

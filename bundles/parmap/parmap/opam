@@ -1,0 +1,29 @@
+opam-version: "1.2"
+maintainer: "Roberto Di Cosmo <roberto@dicosmo.org>"
+authors: "Roberto Di Cosmo <roberto@dicosmo.org>"
+homepage: "https://github.com/rdicosmo/parmap"
+dev-repo: "https://github.com/rdicosmo/parmap.git"
+bug-reports: "https://github.com/rdicosmo/parmap/issues"
+build: [
+  ["aclocal" "-I" "m4"]
+  ["autoconf"]
+  ["autoheader"]
+  ["./configure"] 
+  [make "DESTDIR=%{prefix}%" "OCAMLLIBDIR=lib" ]
+]
+install: [
+  [make "install" "DESTDIR=%{prefix}%" "OCAMLLIBDIR=lib"]
+]
+remove: [
+  ["aclocal" "-I" "m4"]
+  ["autoconf"]
+  ["autoheader"]
+  ["./configure"] 
+  [make "uninstall" "DESTDIR=%{prefix}%" "OCAMLLIBDIR=lib"]
+]
+depends: [
+  "ocamlfind"
+  "ocamlbuild" {build}
+  "conf-autoconf"
+  "conf-aclocal"
+]

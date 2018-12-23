@@ -1,0 +1,7 @@
+name = "parmap"
+version = "1.0-rc1"
+description = "Parallel map primitive for multicores"
+requires = "bigarray unix"
+archive(byte) = "parmap.cma"
+archive(native) = "parmap.cmxa"
+linkopts(byte) = "-cclib -lparmap_stubs"

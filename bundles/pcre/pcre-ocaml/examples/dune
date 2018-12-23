@@ -1,0 +1,4 @@
+(executables
+  (names cloc count_hash pcregrep subst)
+  (libraries pcre)
+)

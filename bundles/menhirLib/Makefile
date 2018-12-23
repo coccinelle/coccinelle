@@ -1,41 +1,41 @@
 # Bundles the original menhirLib package without modifications.
 # This Makefile integrates its build process with coccinelle.
 
-MENHIR_VERSION=20171013
+MENHIR_VERSION=20181113
 
 PACKAGE_DIR=menhir-$(MENHIR_VERSION)
-TARBALL=menhir-$(MENHIR_VERSION).tar.gz
 MENHIR_MODULES= \
 	Fix IO installation keyword lineCount positions stringSet version \
-	settings printer action mark stringMap menhirLib misc codeBits gSet \
-	compressedBitSet option dot error parameters InputFile parserAux \
+	settings printer codeBits action mark stringMap menhirLib error misc codeBits gSet \
+	compressedBitSet option dot InputFile parameters InputFile lexpointfree parserAux \
 	parser lexer \
-	tarjan unionFind parameterizedGrammar partialGrammar time \
+	tarjan unionFind expandTokenAliases partialGrammar time \
 	unparameterizedSyntax tokenType nonterminalType interface lexdep \
-	lexmli infer listMonad \
+	lexmli infer listMonad chopInlined sequence CompletedNatWitness \
+	Unifier Memoize SortUnification SortInference GroundSort SelectiveExpansion syntax Drop CheckSafeParameterizedGrammar \
 	nonTerminalDefinitionInlining reachability unparameterizedPrinter \
 	FixSolver Boolean Maps patricia grammarFunctor keywordExpansion \
 	anonymous Driver front gMap grammar codePieces item derivation \
-	lr0 slr lr1 lr1partial DependencyGraph conflict invariant default \
+	lr0 slr lr1 DependencyGraph lr1partial conflict invariant default Trie MySet resizableArray LowIntegerPriorityQueue LRijkstraCore \
 	codeBackend coqBackend \
 	pprint cst traverse inliner referenceInterpreter sentenceParser \
-	sentenceLexer segment sentenceParserAux interpret tableBackend MySet \
-	resizableArray LowIntegerPriorityQueue astar LRijkstra cmly_api \
+	sentenceLexer segment sentenceParserAux interpret tableBackend \
+	astar LRijkstra cmly_api \
 	cmly_format cmly_read cmly_write back menhir
-MERE_INTERFACES=syntax
-PRODUCTS=lexer lexdep lexmli parser sentenceLexer sentenceParser
+MERE_INTERFACES=stretch IL lookahead
+PRODUCTS=chopInlined lexer lexdep lexmli parser sentenceLexer sentenceParser lexpointfree lineCount segment
 SIDEPRODUCTS=menhir menhirLib.cmi
 SIDEPRODUCTS_BYTECODE=menhirLib.cmo
 SIDEPRODUCTS_NATIVE=menhirLib.cmx menhirLib.o
 OTHERS=standard.mly
-CLEANOTHERS=menhirLib.ml menhirLib.mli syntax.cmi
-SRC_DIR=$(PACKAGE_DIR)/src
+SRC_DIR := $(PACKAGE_DIR)/src
+CLEANOTHERS := menhirLib.ml menhirLib.mli syntax.cmi $(SRC_DIR)/parser.mly $(SRC_DIR)/menhir $(SRC_DIR)/installation.ml
 
 OCAMLLDFLAGS=unix.cmxa
 OCAMLFLAGS+=-I ../stdcompat
 
 MENHIRLIB_MODULES= \
-	General InfiniteArray PackedIntArray LinearizedArray RowDisplacement \
+	General IncrementalEngine InfiniteArray PackedIntArray LinearizedArray RowDisplacement \
 	EngineTypes Engine TableFormat TableInterpreter Convert
 MODULES=$(MENHIR_MODULES) $(MENHIRLIB_MODULES)
 
@@ -55,18 +55,10 @@ distclean: clean
 	rm -rf $(PACKAGE_DIR)
 	rm -f .prepare
 
-.prepare: $(MARKER)
+.prepare:
 	echo "let libdir = \"$(shell pwd\)\"" > $(SRC_DIR)/installation.ml
 	echo "let ocamlfind = false" >> $(SRC_DIR)/installation.ml
-	patch -p0 <menhir-for-ocaml-3.12.patch
 	touch $@
-
-$(SRC_DIR)/lexdep.mll \
-$(SRC_DIR)/lexmli.mll \
-$(SRC_DIR)/lexer.mll \
-$(SRC_DIR)/sentenceLexer.mll \
-$(SRC_DIR)/sentenceParser.mly \
-$(SRC_DIR)/yacc-parser.mly: $(MARKER)
 
 .depend: $(SRC_DIR)/parser.mly
 

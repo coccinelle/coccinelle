@@ -1,5 +1,0 @@
-include Stream
-
-@BEGIN_BEFORE_4_03_0@
-let of_bytes = of_string
-@END_BEFORE_4_03_0@

@@ -262,7 +262,7 @@ let contains_added_strings info =
     List.exists
       (fun (str,_) ->
 	match str with
-	  (Ast.Noindent s | Ast.Indent s) -> not (String.trim s = "")
+	  (Ast.Noindent s | Ast.Indent s) -> not (Stdcompat.String.trim s = "")
 	| Ast.Space _ -> true (* adds a thing with space around it *))
       l in
   (* If this is true, eg if (x) return 0; will be broken up into

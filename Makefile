@@ -101,9 +101,9 @@ PREFIX_spgen := tools/spgen/source/
 STDCOMPATDIR := bundles/stdcompat
 
 CORE_LIBS := unix bigarray str \
+	$(STDCOMPATDIR)/stdcompat \
 	$(patsubst %,bytes,$(BYTESDIR)) \
-	$(patsubst %,pcre,$(filter %/pcre.cma,$(LNKLIBS))) \
-	$(STDCOMPATDIR)/stdcompat
+	$(patsubst %,pcre,$(filter %/pcre.cma,$(LNKLIBS)))
 
 ifeq ($(FEATURE_OCAML),1)
 CORE_LIBS += dynlink
@@ -119,7 +119,7 @@ LIBRARIES_spatch := $(LIBRARIES)
 
 LIBRARIES_spgen := $(CORE_LIBRARIES)
 
-CORE_BUNDLES=menhirLib pcre stdcompat
+CORE_BUNDLES=stdcompat menhirLib pcre
 
 ALL_BUNDLES=$(CORE_BUNDLES) parmap pyml
 

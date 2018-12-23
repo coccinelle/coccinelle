@@ -1,0 +1,7 @@
+log*
+*~
+_build
+Makefile
+config.h
+config.log
+config.status

@@ -957,18 +957,18 @@ let read_file_groups x =
 	    (function piece ->
 	      match Str.split_delim (Str.regexp_string "-") piece with
 		["";from;upto] ->
-		  let from = int_of_string(String.trim from) in
-		  let upto = int_of_string(String.trim upto) in
+		  let from = int_of_string(Stdcompat.String.trim from) in
+		  let upto = int_of_string(Stdcompat.String.trim upto) in
 		  Parse_c.Excluded(from,upto)
 	      | ["";from] ->
-		  let from = int_of_string(String.trim from) in
+		  let from = int_of_string(Stdcompat.String.trim from) in
 		  Parse_c.Excluded(from,from)
 	      | [from;upto] ->
-		  let from = int_of_string(String.trim from) in
-		  let upto = int_of_string(String.trim upto) in
+		  let from = int_of_string(Stdcompat.String.trim from) in
+		  let upto = int_of_string(Stdcompat.String.trim upto) in
 		  Parse_c.Included(from,upto)
 	      | [from] ->
-		  let from = int_of_string(String.trim from) in
+		  let from = int_of_string(Stdcompat.String.trim from) in
 		  Parse_c.Included(from,from)
 	      | _ -> failwith (Printf.sprintf "bad spec in %s" x))
 	    pieces in

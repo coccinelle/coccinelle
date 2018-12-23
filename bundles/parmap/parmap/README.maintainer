@@ -1,0 +1,11 @@
+Notice to maintainers and contributors.
+
+Dependencies
+------------
+
+The list of modules that are packed into parmap.cm{,x}a is declared in parmap.mllib
+
+The list of modules that are packed into parmap.cmxs is stated in parmap.mldylib
+
+These informations are used by ocamlbuild to create the libraries, please keep
+them up to date even in case an alternative build system is used.

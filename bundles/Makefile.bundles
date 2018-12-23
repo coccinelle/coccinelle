@@ -1,5 +1,3 @@
-MARKER=$(PACKAGE_DIR)/.marker
-
 OCAMLFLAGS+=-I $(SRC_DIR)
 OCAMLC_CMD= \
 	$(OCAMLC) $(OCAMLCFLAGS) $(OCAMLFLAGS) \
@@ -62,14 +60,18 @@ clean:
 		$(SIDEPRODUCTS) $(SIDEPRODUCTS_NATIVE) \
 		$(SIDEPRODUCTS_BYTECODE) \
 		$(INTERFACES:=.cmx) $(LIBRARY:=.a) $(CLEANOTHERS) \
+		$(patsubst %,$(SRC_DIR)/%.mli,$(PRODUCTS)) \
 		$(patsubst %,$(SRC_DIR)/%.ml,$(PRODUCTS)) $(OTHERS) \
 		$(patsubst %,dll%_stubs.so,$(LIBRARY)) \
+		$(patsubst %,$(SRC_DIR)/dll%_stubs.so,$(LIBRARY)) \
 		$(patsubst %,$(SRC_DIR)/%.o,$(MODULES)) \
 		$(patsubst %,$(SRC_DIR)/%.cmi,$(MODULES)) \
 		$(patsubst %,$(SRC_DIR)/%.cmx,$(MODULES)) \
 		$(patsubst %,$(SRC_DIR)/%.cmo,$(MODULES)) \
 		$(patsubst %,$(SRC_DIR)/%.cmt,$(MODULES)) \
-		$(patsubst %,$(SRC_DIR)/%.cmti,$(MODULES))
+		$(patsubst %,$(SRC_DIR)/%.cmti,$(MODULES)) \
+		$(patsubst %,$(SRC_DIR)/%.cmi,$(MERE_INTERFACES)) \
+		$(patsubst %,$(SRC_DIR)/%.cmti,$(MERE_INTERFACES))
 
 depend: .depend
 
@@ -94,15 +96,6 @@ depend-rec: $(source_files)
 .PHONY: \
 	all all-build all-build-targets all.opt all-opt-build \
 	all-opt-build-targets clean distclean depend
-
-$(MARKER): $(TARBALL)
-	$(TAR) xfz $<
-	touch $@
-
-$(TARBALL):
-	@echo \
-"$@ not found. Please download it and drop it in this directory ($(pwd))."
-	@false
 
 $(SRC_DIR)/$(ARCHIVE).cma: \
 		$(add_suffix ($add_prefix $(LIBRARY),$(SRC_DIR)/dll),_stubs.so)\
