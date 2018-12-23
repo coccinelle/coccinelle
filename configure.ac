@@ -496,7 +496,7 @@ AS_IF([test "x$with_bash_completion" = "xyes"],
 AC_CONFIG_SUBDIRS(bundles/stdcompat/stdcompat-8)
 
 AS_IF([test "$MAKE_parmap"],
-  AC_CONFIG_SUBDIRS(bundles/parmap))
+  AC_CONFIG_SUBDIRS(bundles/parmap/parmap))
 
 AS_IF([test "$MAKE_pcre"],
   [AS_IF([test "x$OCAMLATLEAST4030" = xno  ],
