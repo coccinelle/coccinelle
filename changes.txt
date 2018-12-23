@@ -37,8 +37,8 @@
   declarations section in the manual.
 - Minimal support for multi-line pragmas.  C parsing is supported, but
   matching is not.
-- Allow changing the extension on --compare-with-expected, using the
-  --expected-extension flag.
+- Allow changing the extension of the file name checked by
+  --compare-with-expected, using the --expected-extension flag.
 ** Bugfix:
 - check identifier constraints when an identifier metavariable appears in a
   struct-typed metavariable.
