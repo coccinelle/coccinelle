@@ -18,6 +18,5 @@ include ../Makefile.bundles
 	cd $(SRC_DIR) && ./configure
 	touch $@
 
+.PHONY: distclean
 distclean: clean
-	rm -rf $(PACKAGE_DIR)
-	rm -f .prepare

@@ -51,8 +51,8 @@ include ../../Makefile.package
 
 depend: .depend
 
+.PHONY: distclean
 distclean: clean
-	rm -rf $(PACKAGE_DIR)
 
 $(SRC_DIR)/installation.ml:
 	echo "let libdir = \"$(shell pwd\)\"" > $(SRC_DIR)/installation.ml
