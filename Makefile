@@ -489,11 +489,11 @@ endif
 
 ifneq ($(PCRE_LIB),)
 ifeq ($(NATIVE),yes)
-$(PCRE_LIB):
+$(PCRE_LIB): $(STDCOMPAT_LIB)
 	$(MAKE) -C bundles/pcre all
 	$(MAKE) -C bundles/pcre all.opt
 else
-$(PCRE_LIB):
+$(PCRE_LIB): $(STDCOMPAT_LIB)
 	$(MAKE) -C bundles/pcre all
 endif
 endif
