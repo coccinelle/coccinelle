@@ -29,6 +29,7 @@ SIDEPRODUCTS_BYTECODE=menhirLib.cmo
 SIDEPRODUCTS_NATIVE=menhirLib.cmx menhirLib.o
 OTHERS=standard.mly
 SRC_DIR := $(PACKAGE_DIR)/src
+GENERATED_SOURCE_FILES := $(SRC_DIR)/installation.ml
 CLEANOTHERS := menhirLib.ml menhirLib.mli syntax.cmi $(SRC_DIR)/parser.mly $(SRC_DIR)/menhir $(SRC_DIR)/installation.ml
 
 OCAMLLDFLAGS=unix.cmxa

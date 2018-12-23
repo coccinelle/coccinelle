@@ -79,12 +79,13 @@ yacc_files := $(wildcard $(patsubst %,$(SRC_DIR)/%.mly,$(MODULES)))
 lex_files := $(wildcard $(patsubst %,$(SRC_DIR)/%.mll,$(MODULES)))
 
 source_files := \
-	$(wildcard \
-		$(patsubst %,$(SRC_DIR)/%.mli,$(MODULES) $(MERE_INTERFACES)) \
-	        $(patsubst %,$(SRC_DIR)/%.ml,$(MODULES))) \
+	$(wildcard $(patsubst %,$(SRC_DIR)/%.mli,$(MODULES))) \
+	$(patsubst %,$(SRC_DIR)/%.mli,$(MERE_INTERFACES)) \
+	$(wildcard $(patsubst %,$(SRC_DIR)/%.ml,$(MODULES))) \
 	$(patsubst %.mly,%.ml,$(yacc_files)) \
 	$(patsubst %.mly,%.mli,$(yacc_files)) \
-	$(patsubst %.mll,%.ml,$(lex_files))
+	$(patsubst %.mll,%.ml,$(lex_files)) \
+        $(GENERATED_SOURCE_FILES)
 
 .PHONY: depend-rec
 depend-rec: $(source_files)
