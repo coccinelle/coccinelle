@@ -1,6 +1,7 @@
 AC_INIT([[stdcompat]], [8], [[Thierry.Martinez@inria.fr]], [[stdcompat]],
   [[https://github.com/thierry.martinez/stdcompat/]])
 AM_INIT_AUTOMAKE
+AM_MAINTAINER_MODE([disable])
 
 AC_DEFUN([AC_OCAMLFIND_PKG],
   [AC_MSG_CHECKING([for ocamlfind package $2])
