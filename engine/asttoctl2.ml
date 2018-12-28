@@ -1808,7 +1808,8 @@ and statement stmt top after quantified minus_quantified
 		(_,Some(lv,used)) -> (* use switch label if there is one *)
 		  ctl_and term (bclabel_pred_maker slabel)
 	      | _ -> ctl_and term (bclabel_pred_maker llabel))
-	  | Ast.Continue(brk,semi) -> ctl_and (term ast) (bclabel_pred_maker llabel)
+	  | Ast.Continue(brk,semi) ->
+	      ctl_and (term ast) (bclabel_pred_maker llabel)
 	  | Ast.Return((_,info,retmc,pos),(_,_,semmc,spos)) ->
 	      (* discard pattern that comes after return *)
 	      let normal_res = make_seq_after (term ast) after in
