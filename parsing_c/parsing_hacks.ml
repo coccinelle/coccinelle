@@ -1888,6 +1888,10 @@ let not_struct_enum = function
     (Parser_c.Tstruct _ | Parser_c.Tunion _ | Parser_c.Tenum _)::_ -> false
   | _ -> true
 
+let not_opar = function
+    TOPar _ -> false
+  | _ -> true
+
 let not_pragma = function
     (Parser_c.TPragma _)::_ -> false
   | _ -> true
@@ -2147,7 +2151,16 @@ let lookahead2 ~pass next before =
 
 	TKRParam(s,i1)
 
-  | (TIdent (s, i1)::((TComma _|TCPar _)::_) , (TComma _ |TOPar _)::_ )
+  (* for function prototypes *)
+  | (TIdent (s, i1)::((TCPar _)::x::_) , (TComma _ |TOPar _)::_ )
+    when not_struct_enum before && (LP.current_context() = LP.InParameter)
+      && ok_typedef s && not_opar x (* ensure it is not the name of a fnptr *)
+      ->
+
+	msg_typedef s i1 4; LP.add_typedef_root s i1;
+	TypedefIdent (s, i1)
+
+  | (TIdent (s, i1)::((TComma _)::_) , (TComma _ |TOPar _)::_ )
     when not_struct_enum before && (LP.current_context() = LP.InParameter)
       && ok_typedef s
       ->
