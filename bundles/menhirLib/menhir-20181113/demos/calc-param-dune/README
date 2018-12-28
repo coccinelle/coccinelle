@@ -1,0 +1,3 @@
+This demo is identical to the "calc-param" demo,
+but uses dune (a.k.a. jbuilder)
+instead of ocamlbuild.

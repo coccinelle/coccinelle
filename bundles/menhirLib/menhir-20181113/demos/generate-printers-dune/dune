@@ -1,0 +1,8 @@
+(executable
+  (name generate)
+  (flags (
+    "-safe-string"
+    "-w" "A"
+  ))
+  (libraries menhirSdk)
+)

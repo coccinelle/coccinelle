@@ -1,0 +1,6 @@
+# This is the list of modules that must go into MenhirSdk.
+Keyword
+Version
+Cmly_format
+Cmly_api
+Cmly_read

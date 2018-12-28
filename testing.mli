@@ -9,7 +9,8 @@ open Common
 (*****************************************************************************)
 (* work with tests/ *)
 (*****************************************************************************)
-val testone : string (*prefix*) -> string (*test*) -> bool (*compare_expected*) -> unit
+val testone : string (*prefix*) -> string (*test*) ->
+  string option (*compare_expected*) -> unit
 val testall : string -> bool -> unit
 val test_spacing : string -> bool -> unit
 
@@ -24,7 +25,7 @@ val test_regression_okfailed : unit -> unit
 (*****************************************************************************)
 (* the parameter is the result of Cocci.full_engine *)
 (*****************************************************************************)
-val compare_with_expected : (filename * filename option) list -> unit
+val compare_with_expected : (filename * filename option) list -> string -> unit
 
 
 (*****************************************************************************)
