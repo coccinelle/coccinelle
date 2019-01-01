@@ -1131,27 +1131,23 @@ and pp_init (init, iinit) =
     );
 
 (* ---------------------- *)
-  and pp_def def =
-    let defbis, ii = def in
-    match ii with
-    | iifunc1::iifunc2::i1::i2::ifakestart::isto ->
-	let {f_name = name;
-             f_type = (returnt, (paramst, (b, iib)));
-             f_storage = sto;
-             f_body = statxs;
-             f_attr = attrs;
-	} = defbis
-	in
-        pr_elem ifakestart;
+  and pp_def_start defbis iifunc1 iifunc2 ifakestart isto =
+    let {f_name = name;
+          f_type = (returnt, (paramst, (b, iib)));
+          f_storage = sto;
+          f_body = statxs;
+          f_attr = attrs;
+	} = defbis in
+    pr_elem ifakestart;
 
-        pp_type_with_ident None (Some (sto, isto))
-          returnt Ast_c.noattr Ast_c.noattr;
+    pp_type_with_ident None (Some (sto, isto))
+      returnt Ast_c.noattr Ast_c.noattr;
 
-        pp_attributes pr_elem pr_space attrs;
-	pr_space();
-        pp_name name;
+    pp_attributes pr_elem pr_space attrs;
+    pr_space();
+    pp_name name;
 
-        pr_elem iifunc1;
+    pr_elem iifunc1;
 
         (* not anymore, cf tests/optional_name_parameter and
            macro_parameter_shortcut.c
@@ -1190,15 +1186,29 @@ and pp_init (init, iinit) =
            iib +> List.iter pr_elem;
 
         *)
-	pp_param_list paramst;
-        iib +> List.iter pr_elem;
+    pp_param_list paramst;
+    iib +> List.iter pr_elem;
 
 
-        pr_elem iifunc2; pr_space();
+    pr_elem iifunc2
+
+  and pp_def def =
+    let defbis, ii = def in
+    match ii with
+    | iifunc1::iifunc2::i1::i2::ifakestart::isto ->
+	pp_def_start defbis iifunc1 iifunc2 ifakestart isto;
+	pr_space();
         pr_elem i1;
-	pp_statement_seq_list statxs;
-        pr_elem i2;
+	pp_statement_seq_list defbis.f_body;
+        pr_elem i2
     | _ -> raise (Impossible 118)
+
+  and pp_fun_header def =
+    let defbis, ii = def in
+    match ii with
+    | iifunc1::iifunc2::ifakestart::isto ->
+	pp_def_start defbis iifunc1 iifunc2 ifakestart isto
+    | _ -> raise (Impossible 1180)
 
   and pp_param_list paramst = pp_list pp_param paramst
 
@@ -1310,7 +1320,7 @@ and pp_init (init, iinit) =
                       f_attr = attrs},ii) as def) ->
 
 			assert (body = []);
-			pp_def def
+			pp_fun_header def
 
 
     | F.Decl decl -> pp_decl decl
