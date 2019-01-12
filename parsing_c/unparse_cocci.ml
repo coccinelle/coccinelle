@@ -1491,13 +1491,13 @@ in
 	    (Ast.Directive l::_)
 	      when List.for_all (function Ast.Space x -> true | _ -> false) l ->
 		()
-          | (Ast.StatementTag s::_) when isfn s ->
+	  | (Ast.StatementTag s::_) when isfn s ->
 	      force_newline(); force_newline()
 	  | (Ast.Directive _::_)
-          | (Ast.Rule_elemTag _::_) | (Ast.StatementTag _::_)
-	  | (Ast.InitTag _::_)
+	  | (Ast.Rule_elemTag _::_) | (Ast.StatementTag _::_)
+	  | (Ast.FieldTag _::_) | (Ast.InitTag _::_)
 	  | (Ast.DeclarationTag _::_) | (Ast.Token ("}",_)::_) -> prnl hd
-          | _ -> () in
+	  | _ -> () in
       let newline_after _ =
 	if before = Before
 	then
@@ -1506,10 +1506,10 @@ in
 	      (if isfn s then force_newline());
 	      force_newline()
 	  | (Ast.Directive _::_) | (Ast.StmtDotsTag _::_)
-          | (Ast.Rule_elemTag _::_) | (Ast.InitTag _::_)
+	  | (Ast.Rule_elemTag _::_) | (Ast.FieldTag _::_) | (Ast.InitTag _::_)
 	  | (Ast.DeclarationTag _::_) | (Ast.Token ("{",_)::_) ->
-	       force_newline()
-          | _ -> () in
+	      force_newline()
+	  | _ -> () in
       (* print a newline at the beginning, if needed *)
       newline_before();
       (* print a newline before each of the rest *)
