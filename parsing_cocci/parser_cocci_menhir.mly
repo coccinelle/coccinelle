@@ -1741,6 +1741,13 @@ decl_var:
       { let s = P.clt2mcode "typedef" s in
         let t = P.arrayify t [(l,Some i,r)] in
 	[Ast0.wrap(Ast0.Typedef(s,t,id,P.clt2mcode ";" pv))] }
+  | s=Ttypedef t=typedef_ctype id=typedef_ident
+      l=TOCro i=eexpr r=TCCro
+      l2=TOCro i2=eexpr r2=TCCro pv=TPtVirg
+      { let s = P.clt2mcode "typedef" s in
+        let t = P.arrayify t [(l,Some i,r)] in
+        let t = P.arrayify t [(l2,Some i2,r2)] in
+	[Ast0.wrap(Ast0.Typedef(s,t,id,P.clt2mcode ";" pv))] }
   | s=Ttypedef
     t=typedef_ctype lp1=TOPar st=TMul id=typedef_ident rp1=TCPar
     lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar pv=TPtVirg
