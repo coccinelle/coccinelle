@@ -76,7 +76,7 @@ and 'a dots = 'a list wrap
 and base_ident =
     Id            of string mcode
   | MetaId        of Ast_cocci.meta_name mcode * constraints *
-	Ast_cocci.seed * pure
+		     Ast_cocci.seed * pure
   | MetaFunc      of Ast_cocci.meta_name mcode * constraints * pure
   | MetaLocalFunc of Ast_cocci.meta_name mcode * constraints * pure
   | AsIdent       of ident * ident (* as ident, always metavar *)
