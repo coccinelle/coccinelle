@@ -1539,6 +1539,7 @@ in
 	      |	Ast.Token(t,_) when List.mem t ["if";"for";"while";"do"] ->
 		  (* space always needed *)
 		  pr_space(); false
+	      |	Ast.UnaryOpTag(x) -> false
 	      |	Ast.ParamTag(x) ->
 		  (match Ast.unwrap x with
 		    Ast.PComma _ -> false (* due to hint *)
