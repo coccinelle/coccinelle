@@ -1529,9 +1529,8 @@ let rec find_macro_lineparen prev_line_end xs =
     ::(Line
           (PToken ({col = col2 } as other)::restline2
           ) as line2)
-    ::xs when
-      (* MacroStmt doesn't make sense otherwise *)
-      List.mem ctx [InFunction;NoContext] && prev_line_end ->
+    ::xs when ctx = InFunction (* MacroStmt doesn't make sense otherwise *)
+	      && prev_line_end ->
     (* when s ==~ regexp_macro *)
 
       let condition =
