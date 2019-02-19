@@ -4,8 +4,9 @@ all :
 
 .PHONY : clean
 clean :
-	rm -f *.mli *.cmi *.cmx *.cma *.cmxa *.a
-	- make -C stdcompat-8 clean
+	rm -f *.mli *.cmi *.cmo *.cmt *.cmti *.cmx *.cma *.cmxa *.a
+	cd stdcompat-8 && \
+		rm -f *.cmi *.cmo *.cmx *.cmt *.cmti *.cma *.cmxa *.a *.cmxs
 
 .PHONY : distclean
 distclean : clean
