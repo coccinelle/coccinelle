@@ -53,6 +53,7 @@ type node = node1 * string (* For debugging. Used by print_graph *)
   | DefineExpr of expression
   | DefineType of fullType
   | DefineDoWhileZeroHeader of unit wrap
+  | DefineInit of initialiser
 
   | DefineTodo
 

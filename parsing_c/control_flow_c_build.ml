@@ -1472,8 +1472,11 @@ let rec ast_to_control_flow e =
       | Ast_c.DefineEmpty ->
           let endi = !g +> add_node EndNode lbl_0 "[end]" in
           !g#add_arc ((headeri, endi),Direct);
-      | Ast_c.DefineInit _ ->
-          raise (Error(Define(pinfo_of_ii ii)))
+      | Ast_c.DefineInit i ->
+          let ei   = !g +> add_node (DefineInit i) lbl_0 "definit" in
+          let endi = !g +> add_node EndNode        lbl_0 "[end]" in
+          !g#add_arc ((headeri, ei) ,Direct);
+          !g#add_arc ((ei, endi) ,Direct);
       | Ast_c.DefineMulti sts -> (* christia: todo *)
           raise (Error(Define(pinfo_of_ii ii)))
       | Ast_c.DefineTodo ->

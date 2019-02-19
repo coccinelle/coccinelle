@@ -1407,6 +1407,8 @@ and pp_init (init, iinit) =
         (* iif ii *)
 	pr2 "DefineDoWhileZeroHeader"
 
+    | F.DefineInit ini -> pp_init ini
+
     | F.PragmaHeader((name,rest), ii) ->
 	let (ipragma,irest,ieol) = Common.tuple_of_list3 ii in
 	pr_elem ipragma; pr_space();

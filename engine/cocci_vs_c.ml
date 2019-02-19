@@ -4820,7 +4820,12 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
               F.DefineType eb
             ))
       |	_ -> fail)
-
+  | A.TopInit ea, F.DefineInit eb  ->
+      initialiser ea eb >>= (fun ea eb ->
+        return (
+          A.TopInit ea,
+          F.DefineInit eb
+        ))
 
 
   (* It is important to put this case before the one that fails because
@@ -5374,7 +5379,7 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
   | _,
     (F.Label (_, _, _)|F.Break (_, _, _)|F.Continue (_, _)|F.Default (_, _)|
     F.Case (_, _)|F.Include _|F.Goto _|F.ExprStatement _|F.Exec _|
-    F.DefineType _|F.DefineExpr _|F.DefineTodo|
+    F.DefineType _|F.DefineExpr _|F.DefineInit _|F.DefineTodo|
     F.DefineHeader (_, _)|F.PragmaHeader (_, _)|
     F.ReturnExpr (_, _)|F.Return (_, _)|
     F.MacroIterHeader (_, _)|
