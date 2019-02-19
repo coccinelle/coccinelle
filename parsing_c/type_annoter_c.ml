@@ -880,6 +880,24 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
     | Unary (e, GetRef) ->
         k expr; (* recurse to set the types-ref of sub expressions *)
 
+	let inherited_fn tq1 ((tq2,ii),ty) =
+	  let cst = tq1.Ast_c.const || tq2.Ast_c.const in
+	  let vol = tq1.Ast_c.volatile || tq2.Ast_c.volatile in
+	  (({Ast_c.const=cst;Ast_c.volatile=vol},ii),ty) in
+	let rec inherited e =
+	  match Ast_c.unwrap_expr e with
+	    RecordAccess (e, _) ->
+	      (match Ast_c.get_onlytype_expr e with
+		Some ((tq1,_),_) -> inherited_fn tq1
+	      | None -> (fun x -> x))
+	  | RecordPtAccess (e, _) ->
+	      (match Ast_c.get_onlytype_expr e with
+		Some(_,(Ast_c.Pointer ((tq1,_),_),_)) -> inherited_fn tq1
+	      | Some t -> (fun x -> x)
+	      | None -> (fun x -> x))
+	  | ArrayAccess (e, _) -> inherited e
+	  | _ -> fun x -> x in
+
         (Ast_c.get_type_expr e) +> Type_c.do_with_type (fun t ->
           (* must generate an element so that '=' can be used
            * to compare type ?
@@ -887,7 +905,7 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
           let fake = Ast_c.fakeInfo Common.fake_parse_info in
           let fake = Ast_c.rewrap_str "*" fake in
 
-          let ft = Ast_c.mk_ty (Pointer t) [fake] in
+          let ft = Ast_c.mk_ty (Pointer ((inherited e) t)) [fake] in
           make_info_def_fix ft
         )
 

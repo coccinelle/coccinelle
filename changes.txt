@@ -44,6 +44,7 @@
 ** Bugfix:
 - check identifier constraints when an identifier metavariable appears in a
   struct-typed metavariable.
+- type for eg &a->b should be const when a is const
 * 1.0.7
 ** Language:
 - Allow constraints on any metavariables. Constraints can be specified
