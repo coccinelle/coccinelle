@@ -450,6 +450,50 @@ let visitor mode bind option_default
            let (id_n,id) = ident id in
              ((bind ty_n id_n, ty), id)
 
+  (* returns ((bind value,original value),id) since id may have been updated*)
+  (* the next three functions are needed due to a lack of polymorphism :( *)
+  and function_pointer_typedef (ty,lp1,star,id,rp1,lp2,params,rp2) =
+    let (ty_n,ty) = typeC ty in
+    let (lp1_n,lp1) = string_mcode lp1 in
+    let (star_n,star) = string_mcode star in
+    let (idl,idu) = (match id with
+      | Some a -> let (b,c) = typeC a in ([b],Some c)
+      | None -> ([],None)) in
+    let (rp1_n,rp1) = string_mcode rp1 in
+    let (lp2_n,lp2) = string_mcode lp2 in
+    let (params_n,params) = parameter_dots params in
+    let (rp2_n,rp2) = string_mcode rp2 in
+    (* have to put the treatment of the identifier into the right position *)
+    ((multibind ([ty_n;lp1_n;star_n] @ idl @ [rp1_n;lp2_n;params_n;rp2_n]),
+     Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2)), idu)
+
+  (* returns ((bind value,original value),id) since id may have been updated*)
+  and array_type_typedef (ty,id,lb,size,rb) =
+    let (ty_n,ty) = typeC ty in
+    let (idl,idu) = (match id with
+      | Some a -> let (b,c) = typeC a in ([b],Some c)
+      | None -> ([],None)) in
+    let (lb_n,lb) = string_mcode lb in
+    let (size_n,size) = get_option expression size in
+    let (rb_n,rb) = string_mcode rb in
+    ((multibind ([ty_n] @ idl @ [lb_n;size_n;rb_n]),
+     Ast0.Array(ty,lb,size,rb)), idu)
+
+  and named_type_typedef ty id =
+    match Ast0.unwrap ty with
+      Ast0.FunctionPointer(rty,lp1,star,rp1,lp2,params,rp2) ->
+	let (tyres, idn) =
+          function_pointer_typedef (rty,lp1,star,Some id,rp1,lp2,params,rp2) in
+        let idn = match idn with Some i -> i | None -> failwith "Impossible" in
+	(rewrap ty tyres, idn)
+    | Ast0.Array(rty,lb,size,rb) ->
+	let (tyres, idn) = array_type_typedef (rty,Some id,lb,size,rb) in
+        let idn = match idn with Some i -> i | None -> failwith "Impossible" in
+	(rewrap ty tyres, idn)
+    | _ -> let (ty_n,ty) = typeC ty in
+           let (id_n,id) = typeC id in
+             ((bind ty_n id_n, ty), id)
+
   and declaration d =
     let k d =
       rewrap d
@@ -514,10 +558,9 @@ let visitor mode bind option_default
 	    (bind ty_n sem_n, Ast0.TyDecl(ty,sem))
 	| Ast0.Typedef(stg,ty,id,sem) ->
 	    let (stg_n,stg) = string_mcode stg in
-	    let (ty_n,ty) = typeC ty in
-	    let (id_n,id) = typeC id in
+	    let ((ty_id_n,ty),id) = named_type_typedef ty id in
 	    let (sem_n,sem) = string_mcode sem in
-	    (multibind [stg_n;ty_n;id_n;sem_n], Ast0.Typedef(stg,ty,id,sem))
+	    (multibind [stg_n;ty_id_n;sem_n], Ast0.Typedef(stg,ty,id,sem))
 	| Ast0.DisjDecl(starter,decls,mids,ender) ->
 	    do_disj starter decls mids ender declaration
 	      (fun starter decls mids ender ->
