@@ -1,0 +1,9 @@
+_sdk
+_stage1
+_stage2
+_stage3
+installation.ml
+*.ml.html
+*.mli.html
+*.old
+*.new

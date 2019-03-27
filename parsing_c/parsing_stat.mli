@@ -31,6 +31,7 @@ val nIfdefInitializer : int ref
 val nIfdefFunheader : int ref
 val nIfdefExprPassing : int ref
 val nIfdefPassing : int ref
+val nPragmaPassing : int ref
 val nIncludePassing : int ref
 val nUndefPassing : int ref
 val nDefinePassing : int ref

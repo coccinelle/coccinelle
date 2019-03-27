@@ -50,7 +50,7 @@ let process_binops rule_name =
       when is_comm_assoc op ->
 	(match Ast0.unwrap right with
 	  Ast0.Edots(d,None) ->
-	    if (is_minus e || (is_context e && is_context right))
+	    if (is_minus e || (is_context op && is_context right))
 		&& nopos_op op && nopos d
 	    (* keep dots to record required modif *)
 	    then Ast0.rewrap e (Ast0.Nested(left,op,right))

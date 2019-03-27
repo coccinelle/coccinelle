@@ -1,0 +1,126 @@
+include Filename
+
+@BEGIN_BEFORE_4_08_0@
+let chop_suffix_opt ~suffix filename =
+  let len_suffix = String.length suffix in
+  let len_filename = String.length filename in
+  if len_suffix <= len_filename then
+    let len_base = len_filename - len_suffix in
+    let filename_suffix = String.sub filename len_base len_suffix in
+    let filename_suffix, suffix =
+      if Stdcompat__sys.unix then
+        filename_suffix, suffix
+      else
+        Stdcompat__string.lowercase_ascii filename_suffix,
+        Stdcompat__string.lowercase_ascii suffix in
+    if filename_suffix = suffix then
+      Some (String.sub filename 0 len_base)
+    else
+      None
+  else
+    None
+@END_BEFORE_4_08_0@
+
+@BEGIN_BEFORE_3_09_0@
+let temp_dir_name =
+  match Sys.os_type with
+  | "Win32" ->
+      begin
+        try Sys.getenv "TEMP"
+        with Not_found -> "."
+      end
+  | _ (* "Unix" | "Cygwin" *) ->
+      begin
+        try Sys.getenv "TMPDIR"
+        with Not_found -> "/tmp"
+      end
+@END_BEFORE_3_09_0@
+
+@BEGIN_BEFORE_4_00_0@
+let current_temp_dir_name = ref temp_dir_name
+
+let get_temp_dir_name () =
+  !current_temp_dir_name
+
+let set_temp_dir_name dir =
+  current_temp_dir_name := dir
+@END_BEFORE_4_00_0@
+
+@BEGIN_BEFORE_4_03_0@
+let prng = lazy (Random.State.make_self_init ())
+
+let temp_file_name temp_dir prefix suffix =
+  let rnd = Random.State.bits (Lazy.force prng) land 0xFFFFFF in
+  concat temp_dir (Printf.sprintf "%s%06x%s" prefix rnd suffix)
+
+let open_temp_file ?(mode = [Open_text]) ?(perms = 0o600)
+    ?(temp_dir = get_temp_dir_name ()) prefix suffix =
+  let rec try_name counter =
+    let name = temp_file_name temp_dir prefix suffix in
+    try
+      name,
+      open_out_gen (Open_wronly :: Open_creat :: Open_excl :: mode) perms name
+    with Sys_error _ as e ->
+      if counter >= 1000 then
+        raise e
+      else
+        try_name (succ counter) in
+  try_name 0
+@END_BEFORE_4_03_0@
+
+@BEGIN_BEFORE_4_00_0@
+let temp_file ?(temp_dir = !current_temp_dir_name) prefix suffix =
+@BEGIN_FROM_3_11_0@
+  temp_file ~temp_dir prefix suffix
+@END_FROM_3_11_0@
+@BEGIN_BEFORE_3_11_0@
+  let name, out_channel = open_temp_file ~mode:[] ~temp_dir prefix suffix in
+  close_out out_channel;
+  name
+@END_BEFORE_3_11_0@
+@END_BEFORE_4_00_0@
+
+@BEGIN_BEFORE_3_11_0@
+let dir_sep =
+  match Sys.os_type with
+  | "Win32" -> "\\"
+  | _ (* "Unix" | "Cygwin" *) -> "/"
+@END_BEFORE_3_11_0@
+
+@BEGIN_BEFORE_4_04_0@
+let is_dir_sep c s i =
+  if dir_sep.[0] <> c then
+    false
+  else
+    let l = String.length dir_sep in
+    if l = 1 then
+      true
+    else if i + l <= String.length s then
+      String.sub s i l = dir_sep
+    else
+      false
+
+let rec extension_start_from i s =
+  if i < 0 then
+    String.length s
+  else
+    let c = String.unsafe_get s i in
+    if c = '.' then
+      i
+    else if is_dir_sep c s i then
+      String.length s
+    else
+      extension_start_from (pred i) s
+
+let extension_start s =
+  extension_start_from (String.length s - 1) s
+
+let extension s =
+  let i = extension_start s in
+  String.sub s i (String.length s - i)
+
+let remove_extension s =
+  let i = extension_start s in
+  String.sub s 0 i
+@END_BEFORE_4_04_0@
+

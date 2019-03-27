@@ -1,0 +1,120 @@
+VERSION=@PACKAGE_VERSION@
+NAME=@PACKAGE_NAME@
+
+CFLAGS=@CFLAGS@ -fPIC -Wall -pedantic -Werror -Wno-long-long
+CPPFLAGS=@CPPFLAGS@
+LDFLAGS=@LDFLAGS@
+
+OCAMLFIND=@OCAMLFIND@
+OCAMLBUILD=@OCAMLBUILD@
+
+datarootdir = @datarootdir@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+
+ifeq ($(DESTDIR),)
+LIBDIR=$(shell ocamlfind printconf destdir)
+BINDIR=@bindir@
+MANDIR=@mandir@/man3
+INSTALL = $(OCAMLFIND) install
+UNINSTALL = $(OCAMLFIND) remove
+else
+export OCAMLLIBDIR := lib/ocaml
+LIBDIR=$(DESTDIR)/$(OCAMLLIBDIR)
+BINDIR=$(DESTDIR)/bin
+MANDIR=$(DESTDIR)/man/man3
+INSTALL = $(OCAMLFIND) install -destdir $(LIBDIR)
+UNINSTALL = $(OCAMLFIND) remove -destdir $(LIBDIR)
+endif
+
+
+ifeq ("@OCAMLBEST@","opt")
+  OCAMLBEST=native
+else
+  OCAMLBEST=byte
+endif
+
+DIST_DIR = $(NAME)-$(VERSION)
+DIST_TARBALL = $(DIST_DIR).tar.gz
+
+OBFLAGS = -j 10 -use-ocamlfind #-classic-display
+#OBFLAGS += $(OBFLAGS) -tag debug -tag profile
+
+BYTELIBS = parmap.cma
+OPTLIBS=
+CMXSLIBS=
+ALIBS=
+
+ifeq ("@OCAMLBEST@","opt")
+  ALIBS = $(BYTELIBS:%.cma=%.a)
+  OPTLIBS += $(BYTELIBS:%.cma=%.cmxa)
+endif
+
+ifeq ("@OCAMLNATDYNLINK@", "yes")
+  CMXSLIBS += $(BYTELIBS:%.cma=%.cmxs)
+endif
+
+all:
+	$(OCAMLBUILD) $(OBFLAGS) $(BYTELIBS) $(OPTLIBS) $(CMXSLIBS) $(ALIBS)
+
+fast: 
+	$(OCAMLBUILD) $(OBFLAGS) $(OPTLIBS)
+
+TESTS = \
+  tests/simplescale.$(OCAMLBEST) \
+  tests/floatscale.$(OCAMLBEST) \
+  tests/simplescale_array.$(OCAMLBEST) \
+  tests/simplescalefold.$(OCAMLBEST) \
+  tests/simplescalemapfold.$(OCAMLBEST)
+
+tests:
+	$(OCAMLBUILD) $(OBFLAGS) $(TESTS)
+
+EXAMPLES = \
+  example/mandels.$(OCAMLBEST)
+
+examples:
+	$(OCAMLBUILD) $(OBFLAGS) $(EXAMPLES)
+
+
+INSTALL_STUFF = META 
+INSTALL_STUFF += $(wildcard _build/*.cma _build/*.cmx _build/*.cmxa _build/*.cmxs)
+INSTALL_STUFF += $(filter-out $(wildcard _build/myocamlbuild.*),$(wildcard _build/*.mli _build/*.cmi))
+INSTALL_STUFF += $(wildcard _build/*.so _build/*.a)
+
+install: $(LIBS) META
+	test -d $(LIBDIR) || mkdir -p $(LIBDIR)
+	test -d $(LIBDIR)/stublibs || mkdir -p $(LIBDIR)/stublibs
+	$(INSTALL) -patch-version $(VERSION) $(NAME) $(INSTALL_STUFF)
+	(cd _build; ocamldoc -man -man-mini parmap.ml parmap.mli)
+	test -d $(MANDIR) || mkdir -p $(MANDIR)
+	cp -p _build/Parmap.3o $(MANDIR)
+
+uninstall:
+	$(UNINSTALL) $(NAME)
+	rm -f $(MANDIR)/Parmap.3o
+
+doc:
+	$(OCAMLBUILD) $(OBFLAGS) $(NAME).docdir/index.html $(NAME).docdir/index.dot
+	dot -Grotate=0 -Tsvg -o $(NAME).docdir/index.svg $(NAME).docdir/index.dot
+
+clean:
+	$(OCAMLBUILD) -clean
+
+dist: ./$(DIST_TARBALL)
+./$(DIST_TARBALL):
+	if [ -d ./$(DIST_DIR)/ ] ; then rm -rf ./$(DIST_DIR)/ ; fi
+	if [ -d ./$(DIST_TARBALL) ] ; then rm -f ./$(DIST_TARBALL) ; fi
+	if [ -d .svn ]; then \
+          svn export . ./$(DIST_DIR) ; \
+        else \
+          mkdir ./$(DIST_DIR)/ ;\
+	  git archive --format=tar HEAD | \
+	  tar -x -C ./$(DIST_DIR)/ ; \
+        fi
+	for f in $(DIST_EXCLUDE) ; do rm -rf ./$(DIST_DIR)/$$f; done
+	tar cvzf ./$(DIST_TARBALL) ./$(DIST_DIR)
+	rm -rf ./$(DIST_DIR)
+	@echo "Distribution tarball: ./$(DIST_TARBALL)"
+
+.PHONY: all fast install clean dist examples tests

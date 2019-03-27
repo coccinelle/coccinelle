@@ -197,6 +197,20 @@ let check_constraint_allowed () =
     failwith "constraints not allowed in iso file";
   if !Data.in_generating then
     failwith "constraints not allowed in a generated rule file"
+
+let inline_id aft = function
+    TMetaId((nm,constraints,seed,pure,clt)) ->
+      let clt = P.set_aft aft clt in
+      Ast0.wrap
+	(Ast0.MetaId(P.clt2mcode nm clt,constraints,seed,pure))
+  | TIdent((nm,clt)) ->
+      let clt = P.set_aft aft clt in
+      Ast0.wrap(Ast0.Id(P.clt2mcode nm clt))
+  | TSymId(nm,clt) ->
+      let clt = P.set_aft aft clt in
+      Ast0.wrap(Ast0.Id(P.clt2mcode nm clt))
+  | _ ->
+      raise (Semantic_cocci.Semantic "unexpected name for a #define")
 %}
 
 %token EOF
@@ -258,7 +272,8 @@ let check_constraint_allowed () =
 %token <string>  TPathIsoFile
 %token <string * Data.clt> TIncludeL TIncludeNL TIncludeAny
 %token <Data.clt * token> TDefine TUndef
-%token <Data.clt> TPragma TCppEscapedNewline TInclude
+%token <Data.clt * token * string * Data.clt> TPragma
+%token <Data.clt> TCppEscapedNewline TInclude
 %token <Data.clt * token * int * int> TDefineParam
 %token <string * Data.clt> TMinusFile TPlusFile
 
@@ -1311,15 +1326,15 @@ includes:
 	    | _ -> b)
 	| _ -> b in
       $1 (Ast0.wrap body) }
-| TPragma ident_or_kwd pragmabody TLineEnd
-    { Ast0.wrap(Ast0.Pragma(P.clt2mcode "#pragma" $1, $2, $3)) }
-
-pragmabody:
-    TOPar eexpr_list_option TCPar
-    { Ast0.wrap(Ast0.PragmaTuple(P.clt2mcode "(" $1,$2,P.clt2mcode ")" $3)) }
-| l=nonempty_list(ident)
-    { Ast0.wrap(Ast0.PragmaIdList(Ast0.wrap l)) }
-| TEllipsis { Ast0.wrap(Ast0.PragmaDots(P.clt2mcode "..." $1)) }
+| TPragma TLineEnd
+    { let (clt,ident,rest,rest_clt) = $1 in
+      let aft = P.get_aft clt in (* move stuff after the pragma to the ident *)
+      let body =
+      if rest = "..."
+      then Ast0.wrap(Ast0.PragmaDots(P.clt2mcode "..." rest_clt))
+      else Ast0.wrap(Ast0.PragmaString(P.clt2mcode rest rest_clt)) in
+      Ast0.wrap(Ast0.Pragma(P.clt2mcode "#pragma" clt, inline_id aft ident,
+			    body)) }
 
 defineop:
   TDefine
@@ -1328,24 +1343,8 @@ defineop:
       function body ->
 	Ast0.wrap
 	  (Ast0.Define
-	     (P.clt2mcode "#define" (P.drop_aft clt),
-	      (match ident with
-		TMetaId((nm,constraints,seed,pure,clt)) ->
-		  let clt = P.set_aft aft clt in
-		  Ast0.wrap
-		    (Ast0.MetaId(P.clt2mcode nm clt,constraints,seed,pure))
-	      | TIdent((nm,clt)) ->
-		  let clt = P.set_aft aft clt in
-		  Ast0.wrap(Ast0.Id(P.clt2mcode nm clt))
-	      | TSymId(nm,clt) ->
-		  let clt = P.set_aft aft clt in
-		  Ast0.wrap(Ast0.Id(P.clt2mcode nm clt))
-	      | _ ->
-		  raise
-		    (Semantic_cocci.Semantic
-		       "unexpected name for a #define")),
-	      Ast0.wrap Ast0.NoParams,
-	      body)) }
+	     (P.clt2mcode "#define" (P.drop_aft clt), inline_id aft ident,
+	      Ast0.wrap Ast0.NoParams,body)) }
 | TDefineParam define_param_list_option TCPar
     { let (clt,ident,parenoff,parencol) = $1 in
       let aft = P.get_aft clt in (* move stuff after the define to the ( *)
@@ -1737,6 +1736,18 @@ decl_var:
 	  (function id ->
 	    Ast0.wrap(Ast0.Typedef(s,t,id,P.clt2mcode ";" pv)))
 	  id }
+  | s=Ttypedef t=typedef_ctype id=typedef_ident
+      l=TOCro i=eexpr r=TCCro pv=TPtVirg
+      { let s = P.clt2mcode "typedef" s in
+        let t = P.arrayify t [(l,Some i,r)] in
+	[Ast0.wrap(Ast0.Typedef(s,t,id,P.clt2mcode ";" pv))] }
+  | s=Ttypedef t=typedef_ctype id=typedef_ident
+      l=TOCro i=eexpr r=TCCro
+      l2=TOCro i2=eexpr r2=TCCro pv=TPtVirg
+      { let s = P.clt2mcode "typedef" s in
+        let t = P.arrayify t [(l,Some i,r)] in
+        let t = P.arrayify t [(l2,Some i2,r2)] in
+	[Ast0.wrap(Ast0.Typedef(s,t,id,P.clt2mcode ";" pv))] }
   | s=Ttypedef
     t=typedef_ctype lp1=TOPar st=TMul id=typedef_ident rp1=TCPar
     lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar pv=TPtVirg
@@ -2609,15 +2620,6 @@ ident: pure_ident
      | TMetaId
          { let (nm,constraints,seed,pure,clt) = $1 in
          Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,seed,pure)) }
-
-ident_or_kwd: pure_ident
-         { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
-     | wrapped_sym_ident { $1 }
-     | TMeta { tmeta_to_ident $1 }
-     | TMetaId
-         { let (nm,constraints,seed,pure,clt) = $1 in
-         Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,seed,pure)) }
-     | Tinline { Ast0.wrap(Ast0.Id(P.clt2mcode "inline" $1)) }
 
 mident: pure_ident
          { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }

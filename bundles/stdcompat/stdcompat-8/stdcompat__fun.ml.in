@@ -1,0 +1,13 @@
+@BEGIN_FROM_4_08_0@
+include Fun
+@END_FROM_4_08_0@
+@BEGIN_BEFORE_4_08_0@
+external id : 'a -> 'a = "%identity"
+(** @since 4.08.0: external id : 'a -> 'a = "%identity" *)
+
+let const c _ = c
+
+let flip f x y = f y x
+
+let negate f x = not (f x)
+@END_BEFORE_4_08_0@

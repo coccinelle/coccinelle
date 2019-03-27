@@ -811,9 +811,21 @@ rule token = parse
 	   (arity,line,lline,llend,offset+off,col+off,strbef,straft,pos,wss),
 	 offset + off + (String.length ident),
 	 col + off + (String.length ident)) }
-  | ("#" [' ' '\t']*  "pragma")
-      { start_line true; TPragma(get_current_line_type lexbuf) }
-
+  | (("#" [' ' '\t']*  "pragma") as prag) ([' ' '\t']+ as wss1)
+    ( (letter (letter | digit)*) as ident) ([' ' '\t']+ as wss2) ([^ '\n']* as rest)
+      { start_line true;
+	let (arity,line,lline,llend,offset,col,strbef,straft,pos,ws) as lt =
+	  get_current_line_type lexbuf in
+	let off1 = String.length prag + String.length wss1 in
+	let off2 = off1 + String.length ident + String.length wss2 in
+	TPragma(lt,
+		check_var ident
+	        (* why pos here but not above? *)
+		  (arity,line,lline,llend,offset+off1,col+off1,strbef,straft,
+		   pos,wss1),
+		rest,
+		(arity,line,lline,llend,offset+off2,col+off2,strbef,straft,
+		 pos,wss2)) }
     (* For the unparser: in TIncludeL and TIncludeNL, the whitespace after
      * #include is not preserved, because we have nowhere to put it. *)
   | "#" [' ' '\t']* "include" [' ' '\t']* '\"' [^ '\"']+ '\"'
@@ -958,6 +970,7 @@ rule token = parse
       | (['l' 'L'] ['u' 'U'])
       | (['u' 'U'] ['l' 'L'])
       | (['u' 'U'] ['l' 'L'] ['l' 'L'])
+      | (['l' 'L'] ['l' 'L'] ['u' 'U'])
       | (['l' 'L'] ['l' 'L'])
       )?
     ) as x) { start_line true; TInt(x,(get_current_line_type lexbuf)) }

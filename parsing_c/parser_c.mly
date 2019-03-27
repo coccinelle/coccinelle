@@ -586,7 +586,9 @@ let postfakeInfo pii  =
 /*(*---------------*)*/
 
 %token <Ast_c.info> TUndef
+%token <Ast_c.info*Ast_c.info*string*Ast_c.info*Ast_c.info*(string*Ast_c.info)list> TPrePragma
 %token <Ast_c.info> TPragma
+%token <string * Ast_c.info> TPragmaString
 
 %token <Ast_c.info> TCppDirectiveOther
 
@@ -719,10 +721,12 @@ translation_unit:
 ident:
  | TIdent       { $1 }
  | TypedefIdent { $1 }
+ | Tcomplex     { ("complex", $1) }
 
 
 identifier:
  | TIdent       { $1 }
+ | Tcomplex     { ("complex", $1) }
 
 /*
 (* cppext: string concatenation of idents
@@ -740,6 +744,7 @@ ident_cpp:
  | TypedefIdent
      { RegularName (mk_string_wrap $1) }
  | ident_extra_cpp { $1 }
+ | Tcomplex     { RegularName (mk_string_wrap ("complex", $1)) }
 
 ident_extra_cpp:
  | TIdent TCppConcatOp identifier_cpp_list
@@ -1078,9 +1083,9 @@ expr_statement:
  | expr TPtVirg { Some $1, [$2] }
 
 selection:
- | Tif TOPar expr TCPar statement              %prec SHIFTHERE
+ | Tif TOPar expr TCPar cpp_ifdef_statement              %prec SHIFTHERE
      { If ($3, $5, (mk_st (ExprStatement None) Ast_c.noii)),   [$1;$2;$4] }
- | Tif TOPar expr TCPar statement Telse statement
+ | Tif TOPar expr TCPar cpp_ifdef_statement Telse cpp_ifdef_statement
      { If ($3, $5, $7),  [$1;$2;$4;$6] }
  | Tswitch TOPar expr TCPar statement
      { Switch ($3,$5),   [$1;$2;$4]  }
@@ -1092,23 +1097,23 @@ selection:
      { Ifdef_Ite2 ($4,$6,$9,$11), [$1;$2;$3;$5;$7;$8;$10] }
 
 iteration:
- | Twhile TOPar expr TCPar statement
+ | Twhile TOPar expr TCPar cpp_ifdef_statement
      { While ($3,$5),                [$1;$2;$4] }
  | Tdo statement Twhile TOPar expr TCPar TPtVirg
      { DoWhile ($2,$5),              [$1;$3;$4;$6;$7] }
- | Tfor TOPar expr_statement expr_statement TCPar statement
+ | Tfor TOPar expr_statement expr_statement TCPar cpp_ifdef_statement
      { For (ForExp $3,$4,(None, []),$6),    [$1;$2;$5]}
- | Tfor TOPar expr_statement expr_statement expr TCPar statement
+ | Tfor TOPar expr_statement expr_statement expr TCPar cpp_ifdef_statement
      { For (ForExp $3,$4,(Some $5, []),$7), [$1;$2;$6] }
  /*(* C++ext: for(int i = 0; i < n; i++)*)*/
- | Tfor TOPar decl expr_statement TCPar statement
+ | Tfor TOPar decl expr_statement TCPar cpp_ifdef_statement
      { For (ForDecl ($3 Ast_c.LocalDecl),$4,(None, []),$6),    [$1;$2;$5]}
- | Tfor TOPar decl expr_statement expr TCPar statement
+ | Tfor TOPar decl expr_statement expr TCPar cpp_ifdef_statement
      { For (ForDecl ($3 Ast_c.LocalDecl),$4,(Some $5, []),$7), [$1;$2;$6] }
  /*(* cppext: *)*/
- | TMacroIterator TOPar argument_list_ne TCPar statement
+ | TMacroIterator TOPar argument_list_ne TCPar cpp_ifdef_statement
      { MacroIteration (fst $1, $3, $5), [snd $1;$2;$4] }
- | TMacroIterator TOPar TCPar statement
+ | TMacroIterator TOPar TCPar cpp_ifdef_statement
      { MacroIteration (fst $1, [], $4), [snd $1;$2;$3] }
 
 /*(* the ';' in the caller grammar rule will be appended to the infos *)*/
@@ -1970,15 +1975,14 @@ cpp_directive:
  | TUndef TIdentDefine TDefEOL
      { Define((fst $2, [$1; snd $2; $3]), (Undef,DefineEmpty)) }
 
- | TPragma TIdentDefine pragmainfo TDefEOL
-     { Pragma((fst $2, [$1; snd $2; $4]), $3) }
+ | TPragma TIdent pragma_strings TDefEOL
+     { Pragma((RegularName (mk_string_wrap $2),$3),[$1;$4]) }
 
  | TCppDirectiveOther { OtherDirective ([$1]) }
 
-pragmainfo:
-   TOPar argument_list_ne TCPar { (PragmaTuple ($2, [$1;$3])) }
- | TOPar TCPar { PragmaTuple ([], [$1;$2]) }
- | ident_define_list_ne { PragmaIdList $1 }
+pragma_strings:
+   TPragmaString { [(fst $1, [snd $1])] }
+ | TPragmaString pragma_strings { (fst $1, [snd $1])::$2 }
 
 /*(* perhaps better to use assign_expr ? but in that case need
    * do a assign_expr_of_string in parse_c
@@ -2062,19 +2066,41 @@ param_define:
 
 
 
-cpp_ifdef_directive:
- | TIfdef
+cpp_ifdef_statement:
+   ifdef cpp_ifdef_statement cpp_ifdef_statement_tail
+     { IfdefStmt1 (($1::fst $3), ($2::snd $3)), [] }
+ | statement {$1}
+
+cpp_ifdef_statement_tail:
+   ifdefelse cpp_ifdef_statement endif { [$1;$3], [$2] }
+ | ifdefelif cpp_ifdef_statement cpp_ifdef_statement_tail
+   { ($1::fst $3), ($2::snd $3) }
+
+ifdef:
+   TIfdef
      { let (cond,tag,ii) = $1 in
        IfdefDirective ((Ifdef cond, IfdefTag (Common.some !tag)),  [ii]) }
- | TIfdefelse
+
+ifdefelse:
+   TIfdefelse
      { let (tag,ii) = $1 in
        IfdefDirective ((IfdefElse, IfdefTag (Common.some !tag)), [ii]) }
- | TIfdefelif
+
+ifdefelif:
+   TIfdefelif
      { let (cond,tag,ii) = $1 in
        IfdefDirective ((IfdefElseif cond, IfdefTag (Common.some !tag)), [ii]) }
- | TEndif
+
+endif:
+   TEndif
      { let (tag,ii) = $1 in
        IfdefDirective ((IfdefEndif, IfdefTag (Common.some !tag)), [ii]) }
+
+cpp_ifdef_directive:
+ | ifdef { $1 }
+ | ifdefelse { $1 }
+ | ifdefelif { $1 }
+ | endif { $1 }
 
  | TIfdefBool
      { let (_b, tag,ii) = $1 in
@@ -2280,12 +2306,6 @@ expression_list:
  | assign_expr { [$1, []] }
  | expression_list TComma assign_expr { $1 @ [$3,   [$2]] }
 *)*/
-
-
-ident_define_list_ne:
- | TIdentDefine              { [RegularName (mk_string_wrap $1), []] }
- | ident_define_list_ne TIdentDefine
-     { $1 @ [RegularName (mk_string_wrap $2), []] }
 
 
 struct_decl_list:

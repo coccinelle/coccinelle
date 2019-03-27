@@ -241,6 +241,7 @@ type visitor_c =
 
    kdecl:      (declaration -> unit) * visitor_c -> declaration -> unit;
    konedecl:   (onedecl -> unit)      * visitor_c -> onedecl -> unit;
+   konedecl_opt: bool -> (onedecl -> unit) * visitor_c -> onedecl -> unit;
    kparam:  (parameterType -> unit)      * visitor_c -> parameterType -> unit;
    kdef:       (definition  -> unit) * visitor_c -> definition  -> unit;
    kname     : (name -> unit)        * visitor_c -> name       -> unit;
@@ -272,6 +273,7 @@ let default_visitor_c =
     ktype           = (fun (k,_) t  -> k t);
     kdecl           = (fun (k,_) d  -> k d);
     konedecl        = (fun (k,_) d  -> k d);
+    konedecl_opt    = (fun _ (k,_) d  -> k d);
     kparam          = (fun (k,_) d  -> k d);
     kdef            = (fun (k,_) d  -> k d);
     kini            = (fun (k,_) ie  -> k ie);
@@ -440,6 +442,10 @@ and vk_statement = fun bigf (st: Ast_c.statement) ->
 
     | Exec (code) -> List.iter (vk_exec_code bigf) code
 
+    | IfdefStmt1 (ifdef, xs) ->
+        ifdef +> List.iter (vk_ifdef_directive bigf);
+        xs +> List.iter (vk_statement bigf)
+
   in statf st
 
 and vk_statement_sequencable_list = fun bigf stms ->
@@ -553,9 +559,10 @@ and vk_decl = fun bigf d ->
 and vk_decl_list = fun bigf ts ->
   ts +> List.iter (vk_decl bigf)
 
-and vk_onedecl = fun bigf onedecl ->
+(* The following is needed to avoid multiple processing of types in multidecls *)
+and vk_onedecl_opt process_type = fun bigf onedecl ->
   let iif ii = vk_ii bigf ii in
-  let f = bigf.konedecl in
+  let f = bigf.konedecl_opt process_type in
   let k onedecl =
   match onedecl with
   | ({v_namei = var;
@@ -565,7 +572,7 @@ and vk_onedecl = fun bigf onedecl ->
       v_attr = attrs;
       v_endattr = endattrs})  ->
 
-    vk_type bigf t;
+    (if process_type then vk_type bigf t);
     (* don't go in tbis *)
     attrs +> List.iter (vk_attribute bigf);
     var +> Common.do_option (fun (name, iniopt) ->
@@ -577,6 +584,8 @@ and vk_onedecl = fun bigf onedecl ->
     );
     endattrs +> List.iter (vk_attribute bigf)
   in f (k, bigf) onedecl
+
+and vk_onedecl bigf onedecl = vk_onedecl_opt true bigf onedecl
 
 and vk_ini = fun bigf ini ->
   let iif ii = vk_ii bigf ii in
@@ -781,9 +790,8 @@ and vk_cpp_directive bigf directive =
         iif ii;
         vk_define_kind bigf defkind;
         vk_define_val bigf defval
-    | Pragma ((s,ii), pragmainfo) ->
-        iif ii;
-        vk_pragmainfo bigf pragmainfo
+    | Pragma ((id,rest),ii) ->
+        vk_name bigf id; iif ii
     | OtherDirective (ii) ->
         iif ii
   in f (k, bigf) directive
@@ -826,14 +834,6 @@ and vk_define_val bigf defval =
       pr2_once "DefineTodo";
       ()
   in f (k, bigf) defval
-
-and vk_pragmainfo bigf pragmainfo =
-  match pragmainfo with
-    PragmaTuple(args,ii) ->
-      vk_ii bigf ii;
-      vk_argument_list bigf args
-  | PragmaIdList ids ->
-      ids +> List.iter (function (id, _) -> vk_name bigf id)
 
 and vk_string_fragment = fun bigf x ->
   let rec fragf x = bigf.kfragment (k, bigf) x
@@ -928,13 +928,13 @@ and vk_node = fun bigf node ->
         vk_define_kind bigf defkind;
 
     | F.DefineDoWhileZeroHeader (((),ii)) -> iif ii
+    | F.DefineInit i  -> vk_ini bigf i
     | F.DefineTodo ->
         pr2_once "DefineTodo";
         ()
 
-    | F.PragmaHeader((s,ii), pragmainfo) ->
-        iif ii;
-        vk_pragmainfo bigf pragmainfo
+    | F.PragmaHeader ((id,rest),ii) ->
+        vk_name bigf id; iif ii
 
     | F.Include {i_include = (s, ii);} -> iif ii;
 
@@ -1332,7 +1332,12 @@ and vk_statement_s = fun bigf st ->
       | Asm asmbody -> Asm (vk_asmbody_s bigf asmbody)
       | NestedFunc def -> NestedFunc (vk_def_s bigf def)
       | MacroStmt -> MacroStmt
-      |	Exec(code) -> Exec(List.map (vk_exec_code_s bigf) code)
+      | Exec(code) -> Exec(List.map (vk_exec_code_s bigf) code)
+      | IfdefStmt1 (ifdef, xs) ->
+          let ifdef' = List.map (vk_ifdef_directive_s bigf) ifdef in
+          let xs' = xs +> List.map (vk_statement_s bigf) in
+          IfdefStmt1(ifdef', xs')
+
     in
     st', vk_ii_s bigf ii
   in statf st
@@ -1455,7 +1460,8 @@ and vk_decl_s = fun bigf d ->
   let rec k decl =
     match decl with
     | DeclList (xs, ii) ->
-        DeclList (List.map aux xs,   iif ii)
+        DeclList (List.map (fun (x,ii) -> (vk_onedecl_s bigf x, iif ii)) xs,
+		  iif ii)
     | MacroDecl ((stob, s, args, ptvg),ii) ->
         MacroDecl
           ((stob, s,
@@ -1469,14 +1475,16 @@ and vk_decl_s = fun bigf d ->
 	   vk_ini_s bigf ini),
           iif ii)
 
+  in f (k, bigf) d
 
-  and aux ({v_namei = var;
+and vk_onedecl_opt_s process_type bigf {v_namei = var;
             v_type = t;
             v_type_bis = tbis;
             v_storage = sto;
             v_local= local;
             v_attr = attrs;
-            v_endattr = endattrs}, iicomma) =
+            v_endattr = endattrs} =
+  let iif ii = vk_ii_s bigf ii in
     {v_namei =
       (var +> map_option (fun (name, iniopt) ->
         vk_name_s bigf name,
@@ -1489,17 +1497,16 @@ and vk_decl_s = fun bigf d ->
 	    init +> List.map (fun (e,ii) -> vk_argument_s bigf e, iif ii) in
 	  Ast_c.ConstrInit((init, List.map (vk_info_s bigf) ii)))
         ));
-     v_type = vk_type_s bigf t;
+     v_type = if process_type then vk_type_s bigf t else t;
     (* !!! dont go in semantic related stuff !!! *)
      v_type_bis = tbis;
      v_storage = sto;
      v_local = local;
      v_attr = attrs +> List.map (vk_attribute_s bigf);
      v_endattr = endattrs +> List.map (vk_attribute_s bigf);
-    },
-    iif iicomma
+    }
 
-  in f (k, bigf) d
+and vk_onedecl_s bigf d = vk_onedecl_opt_s true bigf d
 
 and vk_decl_list_s = fun bigf decls ->
   decls +> List.map (vk_decl_s bigf)
@@ -1681,8 +1688,8 @@ and vk_cpp_directive_s = fun bigf top ->
     | Define ((s,ii), (defkind, defval)) ->
         Define ((s, iif ii),
                (vk_define_kind_s bigf defkind, vk_define_val_s bigf defval))
-    | Pragma((s,ii), pragmainfo) ->
-	Pragma((s,iif ii), vk_pragmainfo_s bigf pragmainfo)
+    | Pragma((id,rest),ii) ->
+	Pragma((vk_name_s bigf id,rest),iif ii)
     | OtherDirective (ii) -> OtherDirective (iif ii)
 
   in f (k, bigf) top
@@ -1746,21 +1753,6 @@ and vk_define_val_s = fun bigf x ->
         DefineTodo
   in
   f (k, bigf) x
-
-and vk_pragmainfo_s bigf pragmainfo =
-  match pragmainfo with
-    PragmaTuple(args,ii) ->
-      PragmaTuple(
-      args +> List.map (fun (e,ii) -> vk_argument_s bigf e, vk_ii_s bigf ii),
-      vk_ii_s bigf ii)
-  | PragmaIdList ids ->
-      PragmaIdList
-	(ids +>
-	 List.map
-	   (function
-	       id, [] -> vk_name_s bigf id, []
-	     | _ -> failwith "bad ident_list"))
-
 
 and vk_string_fragment_s = fun bigf x ->
   let rec fragf x = bigf.kfragment_s (k, bigf) x
@@ -1865,10 +1857,11 @@ and vk_node_s = fun bigf node ->
     | F.DefineType ft -> F.DefineType (vk_type_s bigf ft)
     | F.DefineDoWhileZeroHeader ((),ii) ->
         F.DefineDoWhileZeroHeader ((),iif ii)
+    | F.DefineInit i -> F.DefineInit (vk_ini_s bigf i)
     | F.DefineTodo -> F.DefineTodo
 
-    | F.PragmaHeader ((s,ii),pragmainfo) ->
-        F.PragmaHeader((s,iif ii), vk_pragmainfo_s bigf pragmainfo)
+    | F.PragmaHeader ((id,rest),ii) ->
+        F.PragmaHeader((vk_name_s bigf id,rest),iif ii)
 
     | F.Include {i_include = (s, ii);
                  i_rel_pos = h_rel_pos;

@@ -1,0 +1,119 @@
+@BEGIN_FROM_4_02_0@
+include BytesLabels
+
+@BEGIN_BEFORE_4_07_0@
+let of_seq g =
+  Stdcompat__buffer.to_bytes (Stdcompat__buffer.of_seq g)
+
+let to_seq s = Stdcompat__tools.vec_to_seq length unsafe_get s
+
+let to_seqi s = Stdcompat__tools.vec_to_seqi length unsafe_get s
+@END_BEFORE_4_07_0@
+
+@BEGIN_BEFORE_4_06_0@
+let sub_string b ~pos ~len =
+  sub_string b pos len
+@END_BEFORE_4_06_0@
+
+@BEGIN_BEFORE_4_05_0@
+let uppercase_ascii = uppercase
+
+let lowercase_ascii = lowercase
+
+let capitalize_ascii = capitalize
+
+let uncapitalize_ascii = uncapitalize
+
+let equal : t -> t -> bool = ( = )
+
+let rindex_from_opt = Stdcompat__bytes.rindex_from_opt
+
+let index_from_opt = Stdcompat__bytes.index_from_opt
+
+let rindex_opt = Stdcompat__bytes.rindex_opt
+
+let index_opt = Stdcompat__bytes.index_opt
+@END_BEFORE_4_05_0@
+@END_FROM_4_02_0@
+@BEGIN_BEFORE_4_02_0@
+include Stdcompat__stringLabels
+
+let empty = ""
+
+let of_string = copy
+
+let to_string = copy
+
+let sub_string = sub
+
+let unsafe_of_string s = s
+
+let unsafe_to_string s = s
+@END_BEFORE_4_02_0@
+
+@BEGIN_BEFORE_4_05_0@
+let extend s ~left ~right =
+  Stdcompat__bytes.extend s left right
+
+let blit_string = blit
+
+let cat = ( ^ )
+@END_BEFORE_4_05_0@
+
+@BEGIN_BEFORE_4_08_0@
+let get_int8 = Stdcompat__bytes.get_int8
+
+let get_uint8 = Stdcompat__bytes.get_uint8
+
+let get_int16_le = Stdcompat__bytes.get_int16_le
+
+let get_int16_be = Stdcompat__bytes.get_int16_be
+
+let get_int16_ne = Stdcompat__bytes.get_int16_ne
+
+let get_uint16_le = Stdcompat__bytes.get_uint16_le
+
+let get_uint16_be = Stdcompat__bytes.get_uint16_be
+
+let get_uint16_ne = Stdcompat__bytes.get_uint16_ne
+
+let get_int32_le = Stdcompat__bytes.get_int32_le
+
+let get_int32_be = Stdcompat__bytes.get_int32_be
+
+let get_int32_ne = Stdcompat__bytes.get_int32_ne
+
+let get_int64_le = Stdcompat__bytes.get_int64_le
+
+let get_int64_be = Stdcompat__bytes.get_int64_be
+
+let get_int64_ne = Stdcompat__bytes.get_int64_ne
+
+let set_int8 = Stdcompat__bytes.set_int8
+
+let set_uint8 = Stdcompat__bytes.set_uint8
+
+let set_int16_le = Stdcompat__bytes.set_int16_le
+
+let set_int16_be = Stdcompat__bytes.set_int16_be
+
+let set_int16_ne = Stdcompat__bytes.set_int16_ne
+
+let set_uint16_le = Stdcompat__bytes.set_uint16_le
+
+let set_uint16_be = Stdcompat__bytes.set_uint16_be
+
+let set_uint16_ne = Stdcompat__bytes.set_uint16_ne
+
+let set_int32_le = Stdcompat__bytes.set_int32_le
+
+let set_int32_be = Stdcompat__bytes.set_int32_be
+
+let set_int32_ne = Stdcompat__bytes.set_int32_ne
+
+let set_int64_le = Stdcompat__bytes.set_int64_le
+
+let set_int64_be = Stdcompat__bytes.set_int64_be
+
+let set_int64_ne = Stdcompat__bytes.set_int64_ne
+@END_BEFORE_4_08_0@

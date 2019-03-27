@@ -456,10 +456,28 @@ rule token = parse
    *)
   | "#" [' ' '\t']* "undef" { TUndef (tokinfo lexbuf) }
 
-  (* note: in some cases can have stuff after the ident as in #undef XXX 50,
-   * but I currently don't handle it cos I think it's bad code.
-   *)
-  | ("#" [' ' '\t']* "pragma") { TPragma (tokinfo lexbuf) }
+  | (("#" [' ' '\t']*  "pragma") as prag) ([' ' '\t']+ as wss1)
+    ( (letter (letter | digit)*) as ident) ([' ' '\t']* as wss2)
+    { let pinfo = Ast_c.rewrap_str prag (tokinfo lexbuf) in
+      let s1info =
+	let offset = String.length prag in
+	Ast_c.rewrap_charpos (Ast_c.opos_of_info pinfo + offset)
+	  (Ast_c.rewrap_col (Ast_c.col_of_info pinfo + offset)
+	     (Ast_c.rewrap_str wss1 (tokinfo lexbuf))) in
+      let iinfo =
+	let offset = String.length prag + String.length wss1 in
+	Ast_c.rewrap_charpos (Ast_c.opos_of_info pinfo + offset)
+	  (Ast_c.rewrap_col (Ast_c.col_of_info pinfo + offset)
+	     (Ast_c.rewrap_str ident (tokinfo lexbuf))) in
+      let s2info =
+	let offset =
+	  String.length prag + String.length wss1 +
+	    String.length ident in
+	Ast_c.rewrap_charpos (Ast_c.opos_of_info pinfo + offset)
+	  (Ast_c.rewrap_col (Ast_c.col_of_info pinfo + offset)
+	     (Ast_c.rewrap_str wss2 (tokinfo lexbuf))) in
+      let rest = pragmabody lexbuf in
+      TPrePragma(pinfo,s1info,ident,iinfo,s2info,rest) }
 
   (* ---------------------- *)
   (* #include *)
@@ -986,7 +1004,8 @@ rule token = parse
       { TInt ((x, (UnSigned,CLong)), tokinfo lexbuf) }
   | (( decimal | hexa | octal) ['l' 'L'] ['l' 'L']) as x
       { TInt ((x, (Signed,CLongLong)), tokinfo lexbuf) }
-  | (( decimal | hexa | octal) ['u' 'U'] ['l' 'L'] ['l' 'L']) as x
+  | (( decimal | hexa | octal) ['u' 'U'] ['l' 'L'] ['l' 'L'])
+  | (( decimal | hexa | octal) ['l' 'L'] ['l' 'L'] ['u' 'U']) as x
       { TInt ((x, (UnSigned,CLongLong)), tokinfo lexbuf) }
   | (decimal ['d' 'D']) as x
       { if !Flag.ibm
@@ -1161,7 +1180,22 @@ and comment = parse
         s ^ comment lexbuf
       }
 
-
+and pragmabody = parse
+  | [^ '*' '\r' '\n']* '\\' [' ' '\t']* ('\n' | "\r\n")
+      { let l = String.length (Lexing.lexeme lexbuf) in
+        let s = tok lexbuf in
+        let info = Ast_c.rewrap_str s (tokinfo lexbuf) in
+        (* Adjust the position manually *)
+        let lcp = lexbuf.Lexing.lex_curr_p in
+        lexbuf.Lexing.lex_curr_p <- { lcp with
+          Lexing.pos_lnum = lcp.Lexing.pos_lnum + 1;
+          Lexing.pos_bol = lcp.Lexing.pos_cnum - (l-1)
+        };
+        (s,info) :: pragmabody lexbuf }
+  | [^ '*' '\r' '\n']*
+      { let s = tok lexbuf in
+        let info = Ast_c.rewrap_str s (tokinfo lexbuf) in
+	[(s,info)] }
 
 (*****************************************************************************)
 

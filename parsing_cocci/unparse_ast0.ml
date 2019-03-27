@@ -679,11 +679,7 @@ and statement arity s =
 
 and pragmainfo pi =
   match Ast0.unwrap pi with
-      Ast0.PragmaTuple(lp,args,rp) ->
-	mcode print_string_box lp;
-	dots (function _ -> ()) expression args;
-	close_box(); mcode print_string rp
-    | Ast0.PragmaIdList(ids) -> dots (function _ -> ()) ident ids
+      Ast0.PragmaString(s) -> mcode print_string s
     | Ast0.PragmaDots(dots) -> mcode print_string dots
 
 and print_define_parameters params =

@@ -210,9 +210,25 @@ module XMATCH = struct
     let bigf = {
       Visitor_c.default_visitor_c with
         Visitor_c.ktype = (fun (k, bigf) expb ->
-	match expf expa expb tin with
-	| [] -> (* failed *) k expb
-	| xs -> globals := xs @ !globals);
+	  match expf expa expb tin with
+	  | [] -> (* failed *) k expb
+	  | xs -> globals := xs @ !globals);
+	Visitor_c.kdecl = (fun (k, bigf) expb ->
+	  let iif ii = List.iter (Visitor_c.vk_info bigf) ii in
+	  match expb with
+	    Ast_c.DeclList(xs,iis) ->
+	      iif iis;
+	      (match xs with
+		(x,ii)::xs ->
+		  iif ii;
+		  Visitor_c.vk_onedecl bigf x;
+		  List.iter
+		    (fun (x,ii) ->
+		      iif ii;
+		      Visitor_c.vk_onedecl_opt false bigf x)
+		    xs
+	      | _ -> failwith "no decls")
+	  | _ -> k expb)
 
     }
     in
@@ -317,7 +333,6 @@ module XMATCH = struct
   let distrf_struct_fields  = distrf Lib_parsing_c.ii_of_struct_fields
   let distrf_cst            = distrf Lib_parsing_c.ii_of_cst
   let distrf_define_params  = distrf Lib_parsing_c.ii_of_define_params
-  let distrf_pragmainfo     = distrf Lib_parsing_c.ii_of_pragmainfo
   let distrf_ident_list     = distrf Lib_parsing_c.ii_of_ident_list
   let distrf_exec_code_list = distrf Lib_parsing_c.ii_of_exec_code_list
   let distrf_attrs          = distrf Lib_parsing_c.ii_of_attrs

@@ -497,6 +497,12 @@ static T Z; => static T Z = ...;
 // could worry that this has to be a simple statement, but this should work
 // better as it allows + code on S
 Statement
+@ braces0 @
+statement S;
+@@
+{ ... } => S
+
+Statement
 @ braces1 @
 statement S;
 @@

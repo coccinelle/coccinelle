@@ -77,12 +77,19 @@ let add_typedef  s =
   Common.add_in_scope_h _typedef (s, TypeDefI)
 let add_ident s    = Common.add_in_scope_h _typedef (s, IdentI)
 
-let add_typedef_root s =
-  if !Flag_parsing_c.add_typedef_root
+let add_typedef_root s i =
+  let expanded i =
+    match i.Ast_c.pinfo with
+      Ast_c.ExpandedTok _ -> true
+    | _ -> false in
+  if not(expanded i)
   then
-    Hashtbl.add !_typedef.scoped_h s TypeDefI
-  else add_typedef s (* have far more .failed without this *)
-
+    begin
+      if !Flag_parsing_c.add_typedef_root
+      then
+	Hashtbl.add !_typedef.scoped_h s TypeDefI
+      else add_typedef s (* have far more .failed without this *)
+    end
 
 (* Used by parse_c when do some error recovery. The parse error may
  * have some bad side effects on typedef hash, so recover this.

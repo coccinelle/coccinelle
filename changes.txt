@@ -29,8 +29,24 @@
 - Support for long double complex, double complex and float complex at the
   C and SmPL level.
 - Add conjunction for identifiers.
+- Simplify pragma matching.
+- Support llu in C code and SmPL code.  Suggested by Timur Tabi.
+- Add support for macros with an initialiser as the body.  Requested by
+  Thomas Pedersen.
 ** Features:
+- Some changes to the kinds of transformation allowed on declarations or
+  fields with multiple variables.  See the last paragrph of the
+  declarations section in the manual.
+- Minimal support for multi-line pragmas.  C parsing is supported, but
+  matching is not.
+- Allow changing the extension of the name of the file checked by
+  --compare-with-expected, using the --expected-extension flag.
 ** Bugfix:
+- check identifier constraints when an identifier metavariable appears in a
+  struct-typed metavariable.
+- type for eg &a->b should be const when a is const
+- Allow modifications within a function pointer typedef - reported by
+  Jerome Glisse
 * 1.0.7
 ** Language:
 - Allow constraints on any metavariables. Constraints can be specified

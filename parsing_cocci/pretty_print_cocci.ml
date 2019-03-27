@@ -757,11 +757,7 @@ and forinfo = function
 
 and pragmainfo pi =
   match Ast.unwrap pi with
-      Ast.PragmaTuple(lp,args,rp) ->
-	mcode print_string_box lp;
-	dots (function _ -> ()) expression args;
-	close_box(); mcode print_string rp
-    | Ast.PragmaIdList(ids) -> dots (function _ -> ()) ident ids
+      Ast.PragmaString(s) -> mcode print_string s
     | Ast.PragmaDots (dots) -> mcode print_string dots
 
 and print_define_parameters params =

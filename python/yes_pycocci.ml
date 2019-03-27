@@ -158,6 +158,9 @@ let wrap_make_position args =
   let mv = Coccilib.make_position fl fn startl startc endl endc in
   !pywrap_ast mv
 
+let wrap_files args =
+  Py.List.of_list_map Py.String.of_string (Coccilib.files ())
+
 let pyoutputinstance = ref Py.none
 
 let get_cocci_file args = Py.String.of_string !cocci_file_name
@@ -214,6 +217,7 @@ let pycocci_init () =
 	("make_type", wrap_make Coccilib.make_type);
 	("make_listlen", wrap_make_listlen);
 	("make_position", wrap_make_position);
+        ("files", wrap_files);
      ] mx in
   pyoutputinstance := cx;
   Py.Dict.set_item_string module_dictionary "coccinelle" mx;

@@ -1161,16 +1161,10 @@ and make_pragma =
 
 and pragmainfo tgt pi =
   match Ast0.unwrap pi with
-    Ast0.PragmaTuple(lp,args,rp) ->
-      let arity =
-	all_same false tgt (mcode2line lp) [mcode2arity lp;mcode2arity rp] in
-      let lp = mcode lp in
-      let args = dots (expression arity) args in
-      let rp = mcode rp in
-      make_pragma pi tgt arity (Ast0.PragmaTuple(lp,args,rp))
-  | Ast0.PragmaIdList(ids) ->
-      let ids = dots (ident false tgt) ids in
-      make_pragma pi tgt tgt (Ast0.PragmaIdList(ids))
+    Ast0.PragmaString(s) ->
+      let arity = all_same false tgt (mcode2line s) [mcode2arity s] in
+      let s = mcode s in
+      make_pragma pi tgt arity (Ast0.PragmaString(s))
   | Ast0.PragmaDots (dots) ->
       let arity = all_same false tgt (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in

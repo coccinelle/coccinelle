@@ -262,7 +262,7 @@ let contains_added_strings info =
     List.exists
       (fun (str,_) ->
 	match str with
-	  (Ast.Noindent s | Ast.Indent s) -> not (String.trim s = "")
+	  (Ast.Noindent s | Ast.Indent s) -> not (Stdcompat.String.trim s = "")
 	| Ast.Space _ -> true (* adds a thing with space around it *))
       l in
   (* If this is true, eg if (x) return 0; will be broken up into
@@ -944,6 +944,8 @@ let root_equal e1 e2 =
       dots equal_define_param d1 d2
   | (Ast0.IdentTag(i1),Ast0.IdentTag(i2)) -> equal_ident i1 i2
   | (Ast0.ExprTag(e1),Ast0.ExprTag(e2)) -> equal_expression e1 e2
+  | (Ast0.AssignOpTag(e1),Ast0.AssignOpTag(e2)) -> assignOp_equal e1 e2
+  | (Ast0.BinaryOpTag(e1),Ast0.BinaryOpTag(e2)) -> binaryOp_equal e1 e2
   | (Ast0.ArgExprTag(d),_) -> failwith "not possible - iso only"
   | (Ast0.TypeCTag(t1),Ast0.TypeCTag(t2)) -> equal_typeC t1 t2
   | (Ast0.ParamTag(p1),Ast0.ParamTag(p2)) -> equal_parameterTypeDef p1 p2

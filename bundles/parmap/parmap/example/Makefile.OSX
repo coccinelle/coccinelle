@@ -1,0 +1,20 @@
+# to build the sdl version, you will need at least the command line tools from Xcode, 
+# also, sdl. brew install sdl sdl_gfx sdl_image should be (more than) enough
+
+OCAMLBUILD=ocamlbuild
+OBFLAGS := -j 10 -use-ocamlfind
+OCAMLBEST=native
+
+TARGETS = \
+  mandels.$(OCAMLBEST)
+
+all:
+	$(OCAMLBUILD) $(OBFLAGS) $(TARGETS)
+
+mandels_sdl.native: mandels_sdl.ml
+	ocamlfind ocamlopt -ccopt "-framework CoreFoundation -framework Cocoa" -linkpkg -package bigarray -package graphics -package parmap -package unix -package sdl mandels_sdl.ml -o mandels_sdl.native
+
+.PHONY: clean
+clean:
+	$(OCAMLBUILD) -clean
+

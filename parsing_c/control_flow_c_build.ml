@@ -962,6 +962,9 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
       !g +> add_arc_opt (starti, newi);
       Some newi
 
+  | Ast_c.IfdefStmt1 (ifdefs, xs) ->
+      aux_statement_list starti (xi,xi_lbl)
+	[Ast_c.IfdefStmt2 (ifdefs, List.map (fun x -> [StmtElem x]) xs)]
 
   (* ------------------------- *)
   | Ast_c.NestedFunc def ->
@@ -1469,8 +1472,11 @@ let rec ast_to_control_flow e =
       | Ast_c.DefineEmpty ->
           let endi = !g +> add_node EndNode lbl_0 "[end]" in
           !g#add_arc ((headeri, endi),Direct);
-      | Ast_c.DefineInit _ ->
-          raise (Error(Define(pinfo_of_ii ii)))
+      | Ast_c.DefineInit i ->
+          let ei   = !g +> add_node (DefineInit i) lbl_0 "definit" in
+          let endi = !g +> add_node EndNode        lbl_0 "[end]" in
+          !g#add_arc ((headeri, ei) ,Direct);
+          !g#add_arc ((ei, endi) ,Direct);
       | Ast_c.DefineMulti sts -> (* christia: todo *)
           raise (Error(Define(pinfo_of_ii ii)))
       | Ast_c.DefineTodo ->
@@ -1491,9 +1497,9 @@ let rec ast_to_control_flow e =
 
       Some !g
 
-  | Ast_c.CppTop (Ast_c.Pragma ((id,ii), pragmainfo))  ->
-      let elem = PragmaHeader ((id,ii), pragmainfo) in
-      let str = "#pragma " ^ id in
+  | Ast_c.CppTop (Ast_c.Pragma ((id,rest),ii))  ->
+      let elem = PragmaHeader ((id,rest),ii) in
+      let str = "#pragma" in
       let ei =   !g +> add_node elem    lbl_0 str in
       let endi = !g +> add_node EndNode lbl_0 "[end]" in
 

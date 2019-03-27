@@ -160,6 +160,7 @@ and statementbis =
   | NestedFunc of definition
   | MacroStmt
   | Exec of exec_code list
+  | IfdefStmt1 of ifdef_directive list * statement list
 and labeled =
     Label of name * statement
   | Case of expression * statement
@@ -242,7 +243,7 @@ and definitionbis = {
 and cpp_directive =
     Define of define
   | Include of includ
-  | Pragma of string wrap * pragmainfo
+  | Pragma of (name * string wrap list) wrap
   | OtherDirective of il
 and define = string wrap * (define_kind * define_val)
 and define_kind =
@@ -276,9 +277,6 @@ and include_rel_pos = {
   first_of : string list list;
   last_of : string list list;
 }
-and pragmainfo =
-    PragmaTuple of argument wrap2 list wrap
-  | PragmaIdList of name wrap2 list
 and ifdef_directive = IfdefDirective of (ifdefkind * matching_tag) wrap
 and ifdefkind =
     Ifdef of ifdef_guard
@@ -386,6 +384,8 @@ val set_type_expr : ('a * 'b ref) * 'c -> 'b -> unit
 val get_onlytype_expr : ('a * (('b * 'c) option * 'd) ref) * 'e -> 'b option
 val get_onlylocal_expr : ('a * (('b * 'c) option * 'd) ref) * 'e -> 'c option
 val rewrap_str : string -> info -> info
+val rewrap_charpos : int -> info -> info
+val rewrap_col : int -> info -> info
 val rewrap_pinfo : parse_info -> info -> info
 val get_pi : parse_info -> Common.parse_info
 val get_opi : parse_info -> Common.parse_info

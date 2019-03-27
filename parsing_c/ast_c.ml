@@ -450,6 +450,7 @@ and statement = statementbis wrap3
   (* cppext: *)
   | MacroStmt
   | Exec of exec_code list
+  | IfdefStmt1 of ifdef_directive list * statement list
 
   and labeled = Label   of name * statement
               | Case    of expression * statement
@@ -633,7 +634,7 @@ and definition = definitionbis wrap (* ( ) { } fakestart sto *)
 and cpp_directive =
   | Define of define
   | Include of includ
-  | Pragma of string wrap * pragmainfo
+  | Pragma of (name * string wrap list) wrap
   | OtherDirective of il
 (*| Ifdef ? no, ifdefs are handled differently, cf ifdef_directive below *)
 
@@ -689,10 +690,6 @@ and include_rel_pos = {
    first_of : string list list;
    last_of :  string list list;
  }
-
-and pragmainfo =
-    PragmaTuple of argument wrap2 (* , *) list wrap
-  | PragmaIdList of name wrap2 list (* no commas, wrap2 is always empty *)
 
 (* todo? to specialize if someone need more info *)
 and ifdef_directive = (* or and 'a ifdefed = 'a list wrap *)
@@ -1003,6 +1000,23 @@ let rewrap_str s ii =
     | FakeTok (_,vpi) -> FakeTok (s,vpi)
     | AbstractLineTok pi -> OriginTok { pi with Common.str = s;})}
 
+let rewrap_charpos charpos ii =
+  {ii with pinfo =
+    (match ii.pinfo with
+      OriginTok pi -> OriginTok { pi with Common.charpos = charpos;}
+    | ExpandedTok (pi,vpi) ->
+	ExpandedTok ({ pi with Common.charpos = charpos;},vpi)
+    | FakeTok (s,vpi) -> FakeTok (s,vpi)
+    | AbstractLineTok pi -> OriginTok { pi with Common.charpos = charpos;})}
+
+let rewrap_col col ii =
+  {ii with pinfo =
+    (match ii.pinfo with
+      OriginTok pi -> OriginTok { pi with Common.column = col;}
+    | ExpandedTok (pi,vpi) -> ExpandedTok ({ pi with Common.column = col;},vpi)
+    | FakeTok (s,vpi) -> FakeTok (s,vpi)
+    | AbstractLineTok pi -> OriginTok { pi with Common.column = col;})}
+
 let rewrap_pinfo pi ii =
   {ii with pinfo = pi}
 
@@ -1177,7 +1191,22 @@ let al_comments keep_comments x =
     if keep_comments
     then l
     else
-      List.filter (function (Token_c.TCommentCpp _,_) -> true | _ -> false) l in
+      (* This is a hack.  If we keep something, we need to keep the newlines
+	 involved.  But keeping this
+	 information may mean that metavariables don't match what they are
+	 supposed to, if this information is taken into account.  Actually,
+	 we only want this information for + code.  If we just put l here,
+	 then lots of tests fail, so it seems that metavariables are being
+	 matched agains, and not just used for + *)
+      let rec loop = function
+	  [] -> []
+	| ((Token_c.TCommentNewline,_) as x)::
+	  (((Token_c.TCommentCpp _,_)::_) as xs) -> x :: loop xs
+	| ((Token_c.TCommentCpp _,_) as x)::
+	  ((Token_c.TCommentNewline,_) as y)::xs -> x :: y :: loop xs
+	| ((Token_c.TCommentCpp _,_) as x)::xs -> x :: loop xs
+	| x::xs -> loop xs in
+      loop l in
   let al_com (x,i) =
     (x,{i with Common.charpos = magic_real_number;
 	 Common.line = magic_real_number;

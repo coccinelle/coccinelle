@@ -31,7 +31,7 @@ type 'a wrap =
       pos_info : meta_name mcode option; (* pos info, try not to duplicate *)
       true_if_test_exp : bool;(* true if "test_exp from iso", only for exprs *)
       (* the following is only for declarations *)
-      safe_for_multi_decls : bool;
+      safe_for_multi_decls : safety;
       (* isos relevant to the term; ultimately only used for rule_elems *)
       iso_info : (string*anything) list }
 
@@ -69,6 +69,8 @@ and multi = bool (*true if a nest is one or more, false if it is zero or more*)
 and end_info =
     meta_name list (*free vars*) * (meta_name * seed) list (*fresh*) *
       meta_name list (*inherited vars*) * mcodekind
+
+and safety = Safe | Unsafe | NoStorage (* the result of safe_for_multi_decls *)
 
 (* --------------------------------------------------------------------- *)
 (* Metavariables *)
@@ -568,8 +570,7 @@ and base_rule_elem =
   | DisjRuleElem  of rule_elem list
 
 and base_pragmainfo =
-    PragmaTuple of string mcode(* ( *) * expression dots * string mcode(* ) *)
-  | PragmaIdList of ident dots
+    PragmaString of string mcode
   | PragmaDots of string mcode
 
 and pragmainfo = base_pragmainfo wrap
@@ -802,7 +803,7 @@ val get_pos : 'a wrap -> meta_name mcode option
 val set_pos : 'a wrap -> meta_name mcode option -> 'a wrap
 val get_test_exp : 'a wrap -> bool
 val set_test_exp : expression -> expression
-val get_safe_decl : 'a wrap -> bool
+val get_safe_decl : 'a wrap -> safety
 val get_isos : 'a wrap -> (string*anything) list
 val set_isos : 'a wrap -> (string*anything) list -> 'a wrap
 val get_pos_var : 'a mcode -> meta_pos list

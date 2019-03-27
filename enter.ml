@@ -50,7 +50,7 @@ let allow_update_score_file = ref true
 let action = ref ""
 
 (* works with -test but also in "normal" spatch mode *)
-let compare_with_expected = ref false
+let compare_with_expected = ref (None : string option)
 
 let distrib_index = ref (None : int option)
 let distrib_max   = ref (None : int option)
@@ -723,8 +723,12 @@ let other_options = [
     "--test-regression-okfailed", Arg.Set test_regression_okfailed,
     "    process the .{ok,failed,spatch_ok} files in current dir";
 
-    "--compare-with-expected", Arg.Set compare_with_expected,
+    "--compare-with-expected",
+    Arg.Unit (fun _ -> compare_with_expected := Some ".res"),
     "   use also file.res";
+    "--expected-extension",
+    Arg.String (fun x -> compare_with_expected := Some x),
+    "   extension for --compare-with-expected; implicitly sets --compare-with-expected";
     "--expected-score-file", Arg.Set_string expected_score_file,
     "   which score file to compare with in --testall";
     "--expected-spacing-score-file",
@@ -953,18 +957,18 @@ let read_file_groups x =
 	    (function piece ->
 	      match Str.split_delim (Str.regexp_string "-") piece with
 		["";from;upto] ->
-		  let from = int_of_string(String.trim from) in
-		  let upto = int_of_string(String.trim upto) in
+		  let from = int_of_string(Stdcompat.String.trim from) in
+		  let upto = int_of_string(Stdcompat.String.trim upto) in
 		  Parse_c.Excluded(from,upto)
 	      | ["";from] ->
-		  let from = int_of_string(String.trim from) in
+		  let from = int_of_string(Stdcompat.String.trim from) in
 		  Parse_c.Excluded(from,from)
 	      | [from;upto] ->
-		  let from = int_of_string(String.trim from) in
-		  let upto = int_of_string(String.trim upto) in
+		  let from = int_of_string(Stdcompat.String.trim from) in
+		  let upto = int_of_string(Stdcompat.String.trim upto) in
 		  Parse_c.Included(from,upto)
 	      | [from] ->
-		  let from = int_of_string(String.trim from) in
+		  let from = int_of_string(Stdcompat.String.trim from) in
 		  Parse_c.Included(from,from)
 	      | _ -> failwith (Printf.sprintf "bad spec in %s" x))
 	    pieces in
@@ -1330,8 +1334,9 @@ singleton lists are then just appended to each other during the merge. *)
       Common.profile_code "Main.result analysis" (fun () ->
 	Ctlcocci_integration.print_bench();
 	generate_outfiles outfiles x xs;
-        if !compare_with_expected
-        then Testing.compare_with_expected outfiles)
+        match !compare_with_expected with
+	  None -> ()
+        | Some extension -> Testing.compare_with_expected outfiles extension)
 
 and debug_restart virt_rules virt_ids =
   if !Flag_parsing_cocci.debug_parse_cocci

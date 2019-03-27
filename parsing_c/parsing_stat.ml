@@ -215,6 +215,7 @@ let nIfdefFunheader = ref 0
 let nIfdefExprPassing = ref 0
 let nIfdefPassing = ref 0
 
+let nPragmaPassing = ref 0
 let nIncludePassing = ref 0
 let nUndefPassing = ref 0
 let nDefinePassing = ref 0

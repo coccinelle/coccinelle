@@ -1,0 +1,18 @@
+
+# Compile options.
+true: \
+  safe_string, \
+  bin_annot, \
+  debug
+
+# Menhir needs the Unix library.
+<menhir.{byte,native}>: use_unix
+
+# Turn off assertions in some modules, where they are useful when debugging, but costly.
+<LRijkstra*>: noassert
+
+# Declare that our temporary build directories should not be traversed.
+# This is required by ocamlbuild 4.03; it will otherwise complain that
+# these build directories violate its hygiene rules.
+<_sdk>: -traverse
+<_stage*>: -traverse

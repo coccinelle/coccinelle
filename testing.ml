@@ -80,13 +80,20 @@ let test_with_output_redirected cocci_file cfiles expected_out =
   let current_out = end_redirect_output redirected_output in
   (res, current_out)
 
+let adjust_extension extension =
+  if extension = ""
+  then extension
+  else if String.get extension 0 = '.'
+  then String.sub extension 1 (String.length extension - 1)
+  else extension
+
 (* There can be multiple .c for the same cocci file. The convention
  * is to have one base.cocci and a base.c and some optional
  * base_vernn.[c,res].
  *
  * If want to test without iso, use -iso_file empty.iso option.
  *)
-let testone prefix x compare_with_expected_flag =
+let testone prefix x compare_with_expected =
   let x    = if x =~ "\\(.*\\)_ver0$" then matched1 x else x in
   let base = if x =~ "\\(.*\\)_ver[0-9]+$" then matched1 x else x in
 
@@ -95,7 +102,6 @@ let testone prefix x compare_with_expected_flag =
 
   let expected_out = prefix ^ base ^ out_suffix in
 
-  let expected_res   = prefix ^ x ^ ".res" in
   begin
     let (res, current_out) =
       test_with_output_redirected cocci_file [(cfile,None)] expected_out in
@@ -115,9 +121,11 @@ let testone prefix x compare_with_expected_flag =
           cfile
       | None -> raise (Impossible 163)
     in
-    if compare_with_expected_flag
-    then
-      begin
+    match compare_with_expected with
+      None -> ()
+    | Some extension ->
+	let expected_res =
+	  prefix ^ x ^ "." ^ (adjust_extension extension) in
 	Compare_c.compare_default generated expected_res
 	  +> Compare_c.compare_result_to_string
 	  +> pr2;
@@ -127,7 +135,6 @@ let testone prefix x compare_with_expected_flag =
 	    Compare_c.exact_compare current_out' expected_out
 	      +> Compare_c.compare_result_to_string
 	      +> pr2
-      end
   end;
   Common.erase_temp_files ()
 
@@ -515,14 +522,15 @@ let test_regression_okfailed () =
 
 (* ------------------------------------------------------------------------ *)
 (* quite similar to test_ok_failed. Maybe could factorize code *)
-let compare_with_expected outfiles =
+let compare_with_expected outfiles extension =
+  let extension = adjust_extension extension in
   pr2 "";
   outfiles +> List.iter (fun (infile, outopt) ->
     let (dir, base, ext) = Common.dbe_of_filename infile in
     let expected_suffix   =
       match ext with
-      | "c" -> "res"
-      | "h" -> "h.res"
+      | "c" -> extension
+      | "h" -> "h."^extension
       | s -> failwith ("weird C file, not a .c or .h :" ^ s)
     in
     let expected_res =

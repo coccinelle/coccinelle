@@ -35,7 +35,7 @@ type 'a wrap =
       pos_info : meta_name mcode option; (* pos info, try not to duplicate *)
       true_if_test_exp : bool;(* true if "test_exp from iso", only for exprs *)
       (* the following is only for declarations *)
-      safe_for_multi_decls : bool;
+      safe_for_multi_decls : safety;
       (* isos relevant to the term; ultimately only used for rule_elems *)
       iso_info : (string*anything) list }
 
@@ -84,6 +84,8 @@ and multi = bool (*true if a nest is one or more, false if it is zero or more*)
 and end_info =
     meta_name list (*free vars*) * (meta_name * seed) list (*fresh*) *
       meta_name list (*inherited vars*) * mcodekind
+
+and safety = Safe | Unsafe | NoStorage (* the result of safe_for_multi_decls *)
 
 (* --------------------------------------------------------------------- *)
 (* Metavariables *)
@@ -589,8 +591,7 @@ and base_rule_elem =
   | DisjRuleElem  of rule_elem list
 
 and base_pragmainfo =
-    PragmaTuple of string mcode(* ( *) * expression dots * string mcode(* ) *)
-  | PragmaIdList of ident dots
+    PragmaString of string mcode
   | PragmaDots of string mcode
 
 and pragmainfo = base_pragmainfo wrap
@@ -956,7 +957,7 @@ let make_term x =
     bef_aft = NoDots;
     pos_info = None;
     true_if_test_exp = false;
-    safe_for_multi_decls = false;
+    safe_for_multi_decls = Unsafe;
     iso_info = [] }
 
 let make_inherited_term x inherited inh_pos =
@@ -973,7 +974,7 @@ let make_inherited_term x inherited inh_pos =
     bef_aft = NoDots;
     pos_info = None;
     true_if_test_exp = false;
-    safe_for_multi_decls = false;
+    safe_for_multi_decls = Unsafe;
     iso_info = [] }
 
 let make_meta_rule_elem s d c (fvs,fresh,inh) =

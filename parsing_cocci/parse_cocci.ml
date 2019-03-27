@@ -145,7 +145,7 @@ let token2c (tok,_) add_clt =
   | PC.TUndef(clt,_) -> add_clt "#undef" clt
   | PC.TDefine(clt,_) -> add_clt "#define" clt
   | PC.TDefineParam(clt,_,_,_) -> add_clt "#define_param" clt
-  | PC.TPragma(clt) -> add_clt "#pragma" clt
+  | PC.TPragma(clt,ident,rest,rest_clt) -> add_clt "#pragma" clt
   | PC.TCppEscapedNewline(clt) -> add_clt "\\" clt
   | PC.TMinusFile(s,clt) -> add_clt (pr "--- %s" s) clt
   | PC.TPlusFile(s,clt) -> add_clt (pr "+++ %s" s) clt
@@ -333,7 +333,7 @@ let plus_attachable only_plus (tok,_) =
 
   | PC.TIncludeL(_,clt) | PC.TIncludeNL(_,clt) | PC.TIncludeAny(_,clt)
   | PC.TInclude(clt)
-  | PC.TUndef(clt,_) | PC.TDefine(clt,_) | PC.TPragma(clt)
+  | PC.TUndef(clt,_) | PC.TDefine(clt,_) | PC.TPragma(clt,_,_,_)
   | PC.TDefineParam(clt,_,_,_) | PC.TCppEscapedNewline(clt)
   | PC.TMinusFile(_,clt) | PC.TPlusFile(_,clt)
 
@@ -419,7 +419,7 @@ let get_clt (tok,_) =
 
   | PC.TIncludeL(_,clt) | PC.TIncludeNL(_,clt) | PC.TIncludeAny(_,clt)
   | PC.TInclude(clt)
-  | PC.TUndef(clt,_) | PC.TDefine(clt,_) | PC.TPragma(clt)
+  | PC.TUndef(clt,_) | PC.TDefine(clt,_) | PC.TPragma(clt,_,_,_)
   | PC.TDefineParam(clt,_,_,_) | PC.TCppEscapedNewline(clt)
   | PC.TMinusFile(_,clt) | PC.TPlusFile(_,clt)
 
@@ -594,7 +594,7 @@ let update_clt (tok,x) clt =
   | PC.TUndef(_,a) -> (PC.TUndef(clt,a),x)
   | PC.TDefine(_,a) -> (PC.TDefine(clt,a),x)
   | PC.TDefineParam(_,a,b,c) -> (PC.TDefineParam(clt,a,b,c),x)
-  | PC.TPragma(_) -> (PC.TPragma(clt),x)
+  | PC.TPragma(_,a,b,c) -> (PC.TPragma(clt,a,b,c),x)
   | PC.TCppEscapedNewline(_) -> (PC.TCppEscapedNewline(clt),x)
   | PC.TMinusFile(s,_) -> (PC.TMinusFile(s,clt),x)
   | PC.TPlusFile(s,_) -> (PC.TPlusFile(s,clt),x)
@@ -890,7 +890,7 @@ let split_token ((tok,_) as t) =
       split t clt
   | PC.TInclude(clt) -> split t clt
   | PC.TUndef(clt,_) | PC.TDefine(clt,_) | PC.TDefineParam(clt,_,_,_)
-  | PC.TCppEscapedNewline(clt) | PC.TPragma(clt) ->
+  | PC.TCppEscapedNewline(clt) | PC.TPragma(clt,_,_,_) ->
       split t clt
 
   | PC.TIf(clt) | PC.TElse(clt)  | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt)
@@ -1262,7 +1262,7 @@ let token2line (tok,_) =
   | PC.TPtrOp(clt)
 
   | PC.TUndef(clt,_) | PC.TDefine(clt,_) | PC.TDefineParam(clt,_,_,_)
-  | PC.TPragma(clt) | PC.TCppEscapedNewline(clt)
+  | PC.TPragma(clt,_,_,_) | PC.TCppEscapedNewline(clt)
   | PC.TIncludeL(_,clt) | PC.TIncludeNL(_,clt) | PC.TIncludeAny(_,clt)
   | PC.TInclude(clt)
 
@@ -1279,7 +1279,7 @@ let rec insert_line_end = function
   | (((PC.TUndef(clt,_),q) as x)::xs)
   | (((PC.TDefine(clt,_),q) as x)::xs)
   | (((PC.TDefineParam(clt,_,_,_),q) as x)::xs)
-  | (((PC.TPragma(clt),q) as x)::xs) ->
+  | (((PC.TPragma(clt,_,_,_),q) as x)::xs) ->
       x::(find_line_end false (token2line x) clt q xs)
   | x::xs -> x::(insert_line_end xs)
 

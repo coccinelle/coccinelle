@@ -441,18 +441,7 @@ let rec disj_rule_elem r k re =
   | Ast.Include(inc,_) | Ast.MetaInclude(inc,_) -> re
   | Ast.Undef(def,id) -> re
   | Ast.DefineHeader(def,id,params) -> re
-  | Ast.Pragma(prg,id,body) ->
-      let pragmabody body =
-	match Ast.unwrap body with
-	  Ast.PragmaTuple(lp,args,rp) ->
-	    let args = disjdots disjexp args in
-	    List.map
-	      (function args -> Ast.rewrap body (Ast.PragmaTuple(lp,args,rp)))
-	      args
-	| Ast.PragmaIdList(ids) -> [body]
-	| Ast.PragmaDots(dots)  -> [body] in
-      generic_orify_rule_elem pragmabody re body
-	(function body -> Ast.rewrap re (Ast.Pragma(prg,id,body)))
+  | Ast.Pragma(prg,id,body) -> re
   | Ast.Default(def,colon) -> re
   | Ast.Case(case,exp,colon) ->
       orify_rule_elem re exp
