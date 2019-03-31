@@ -6,7 +6,8 @@ RUN apt-get update && apt-get install -y python-all git sudo make autoconf
 
 # Install extra deps for imaging
 RUN apt-get install -y  ocaml-native-compilers ocaml-findlib menhir \
-    libmenhir-ocaml-dev libpcre-ocaml-dev libparmap-ocaml-dev
+    libmenhir-ocaml-dev libpcre-ocaml-dev libparmap-ocaml-dev \
+    libpython-dev
 
 ENV COCCI_ROOT=/coccinelle
 RUN mkdir -p ${COCCI_ROOT}
