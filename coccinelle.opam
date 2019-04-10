@@ -28,6 +28,8 @@ depends: [
   "menhir"
   "ocamlfind"
   "pcre"
+  "stdcompat"
+  "pyml"
   "conf-pkg-config"
   "conf-python-3-dev"
   "conf-autoconf"

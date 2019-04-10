@@ -98,8 +98,6 @@ PREFIX_spatch :=
 
 PREFIX_spgen := tools/spgen/source/
 
-STDCOMPATDIR := bundles/stdcompat
-
 CORE_LIBS := unix bigarray str \
 	$(STDCOMPATDIR)/stdcompat \
 	$(patsubst %,bytes,$(BYTESDIR)) \
