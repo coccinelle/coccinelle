@@ -487,12 +487,18 @@ AC_ARG_WITH([bash-completion],
     [AC_SUBST([with_bash_completion], [yes])])
 
 AS_IF([test "x$with_bash_completion" = "xyes"],
-    [PKG_CHECK_MODULES([BASH_COMPLETION], [bash-completion >= 2.0],
+    [dnl
+      AS_IF([test "x$prefix" = "x/usr/local"],
+      [dnl
+       PKG_CHECK_MODULES([BASH_COMPLETION], [bash-completion >= 2.0],
         [AC_SUBST([BASH_COMPLETION_DIR],
                 [[`pkg-config --variable=completionsdir bash-completion`]])],
         [AC_SUBST([BASH_COMPLETION_DIR],
                 [$datarootdir/bash-completion/completions])])],
-    [AC_SUBST([BASH_COMPLETION_DIR], [$with_bash_completion])])
+      [AC_SUBST([BASH_COMPLETION_DIR],
+                [$datarootdir/bash-completion/completions])])],
+    [dnl
+     AC_SUBST([BASH_COMPLETION_DIR], [$with_bash_completion])])
 
 AS_IF([test "$MAKE_stdcompat"],
   AC_CONFIG_SUBDIRS(bundles/stdcompat/stdcompat-8))
