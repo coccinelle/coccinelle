@@ -64,12 +64,16 @@ clean:
 		$(patsubst %,$(SRC_DIR)/%.ml,$(PRODUCTS)) $(OTHERS) \
 		$(patsubst %,dll%_stubs.so,$(LIBRARY)) \
 		$(patsubst %,$(SRC_DIR)/dll%_stubs.so,$(LIBRARY)) \
+		$(patsubst %,$(SRC_DIR)/%.a,$(LIBRARY)) \
+		$(patsubst %,$(SRC_DIR)/lib%_stubs.a,$(LIBRARY)) \
 		$(patsubst %,$(SRC_DIR)/%.o,$(MODULES)) \
 		$(patsubst %,$(SRC_DIR)/%.cmi,$(MODULES)) \
 		$(patsubst %,$(SRC_DIR)/%.cmx,$(MODULES)) \
 		$(patsubst %,$(SRC_DIR)/%.cmo,$(MODULES)) \
 		$(patsubst %,$(SRC_DIR)/%.cmt,$(MODULES)) \
 		$(patsubst %,$(SRC_DIR)/%.cmti,$(MODULES)) \
+		$(patsubst %,$(SRC_DIR)/%.cma,$(ARCHIVE)) \
+		$(patsubst %,$(SRC_DIR)/%.cmxa,$(ARCHIVE)) \
 		$(patsubst %,$(SRC_DIR)/%.cmi,$(MERE_INTERFACES)) \
 		$(patsubst %,$(SRC_DIR)/%.cmti,$(MERE_INTERFACES))
 

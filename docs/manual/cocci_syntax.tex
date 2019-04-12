@@ -228,6 +228,8 @@ i.e., including as an element of another statement list.
   \CASE{statement \opt{list} \NT{ids} ;}
   \CASE{declaration \NT{ids} ;}
   \CASE{field \opt{list} \NT{ids} ;}
+  \CASE{initialiser \opt{list} \NT{ids} ;}
+  \CASE{initializer \opt{list} \NT{ids} ;}
   \CASE{typedef \NT{ids} ;}
   \CASE{attribute name \NT{ids} ;}
   \CASE{declarer name \NT{ids} ;}
@@ -370,6 +372,8 @@ represented by the names of the parameters.  Another particular case is
 {\tt E@S}, where {\tt E} is any expression and {\tt S} is a statement
 metavariable.  {\tt S} matches the closest enclosing statement, which may
 be more than what is matches by the semantic match pattern itself.
+
+{\bf Initialiser} can also be spelled {\bf initializer}.
 
 \begin{grammar}
   \RULE{\rt{ids}}

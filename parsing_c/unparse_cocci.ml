@@ -1074,7 +1074,7 @@ and rule_elem arity re =
           mcode print_string ellipsis
       end;
       close_box(); mcode print_string rp;
-      pr_space()
+      force_newline()
   | Ast.Decl decl -> pr_arity arity; annotated_decl decl
 
   | Ast.SeqStart(brace) ->
@@ -1539,6 +1539,7 @@ in
 	      |	Ast.Token(t,_) when List.mem t ["if";"for";"while";"do"] ->
 		  (* space always needed *)
 		  pr_space(); false
+	      |	Ast.UnaryOpTag(x) -> false
 	      |	Ast.ParamTag(x) ->
 		  (match Ast.unwrap x with
 		    Ast.PComma _ -> false (* due to hint *)

@@ -141,6 +141,7 @@ AC_COCCI_INIT_PKG_EMPTY([dynlink])
 AC_COCCI_INIT_PKG_EMPTY([pcre])
 AC_COCCI_INIT_PKG_EMPTY([bytes]) dnl for recent versions of pcre on old OCaml
 AC_COCCI_INIT_PKG_EMPTY([pyml])
+AC_COCCI_INIT_PKG_EMPTY([stdcompat])
 AC_COCCI_INIT_PKG_EMPTY([parmap])
 
 dnl  required ocaml packages
@@ -152,6 +153,7 @@ AC_REQ_COCCI_STDPKG([str])
 dnl  required modules (Some are available locally too)
 AC_REQ_COCCI_EXTPKG([dynlink])
 AC_REQ_COCCI_EXTPKG([parmap])
+AC_REQ_COCCI_EXTPKG([stdcompat])
 
 
 dnl  AC_CACHE_SAVE
@@ -485,15 +487,21 @@ AC_ARG_WITH([bash-completion],
     [AC_SUBST([with_bash_completion], [yes])])
 
 AS_IF([test "x$with_bash_completion" = "xyes"],
-    [PKG_CHECK_MODULES([BASH_COMPLETION], [bash-completion >= 2.0],
+    [dnl
+      AS_IF([test "x$prefix" = "x/usr/local"],
+      [dnl
+       PKG_CHECK_MODULES([BASH_COMPLETION], [bash-completion >= 2.0],
         [AC_SUBST([BASH_COMPLETION_DIR],
                 [[`pkg-config --variable=completionsdir bash-completion`]])],
         [AC_SUBST([BASH_COMPLETION_DIR],
                 [$datarootdir/bash-completion/completions])])],
-    [AC_SUBST([BASH_COMPLETION_DIR], [$with_bash_completion])])
+      [AC_SUBST([BASH_COMPLETION_DIR],
+                [$datarootdir/bash-completion/completions])])],
+    [dnl
+     AC_SUBST([BASH_COMPLETION_DIR], [$with_bash_completion])])
 
-
-AC_CONFIG_SUBDIRS(bundles/stdcompat/stdcompat-8)
+AS_IF([test "$MAKE_stdcompat"],
+  AC_CONFIG_SUBDIRS(bundles/stdcompat/stdcompat-8))
 
 AS_IF([test "$MAKE_parmap"],
   AC_CONFIG_SUBDIRS(bundles/parmap/parmap))
@@ -525,11 +533,6 @@ AS_IF([test "$MAKE_pcre"],
     bundles/pcre/pcre-ocaml/src/pcre.ml
     bundles/pcre/pcre-ocaml/src/pcre_stubs.c
   ])])
-
-dnl AC_MSG_NOTICE([configuring stdcompat bundle...])
-dnl AS_IF([( cd bundles/stdcompat/stdcompat-7; touch configure Makefile.in aclocal.m4; ./configure )],
-dnl   AC_MSG_NOTICE([stdcompat is configured.]),
-dnl   AC_MSG_ERROR([stdcompat configuration failed.]))
 
 dnl
 dnl  generating configuration

@@ -119,6 +119,7 @@ PYMLDIR=@PATH_pyml@
 MENHIRDIR=@PATH_menhirLib@
 DYNLINKDIR=@PATH_dynlink@
 BYTESDIR=@PATH_bytes@
+STDCOMPATDIR=@PATH_stdcompat@
 
 # selected ocaml modules
 PYCOCCI_FILE=@PYCOCCI_FILE@

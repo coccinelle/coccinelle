@@ -368,6 +368,9 @@
 #define __releases(x)
 #define __acquires(x)
 
+#define __must_hold(x)
+#define __printf(a,b)
+
 //now in lexer
 //#define __declspec(x)
 
