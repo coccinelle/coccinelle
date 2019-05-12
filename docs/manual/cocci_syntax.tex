@@ -1109,7 +1109,11 @@ represents at most one match of the given pattern, ie a match of the
 pattern is optional. \mtt{*} is used for
 semantic match, \emph{i.e.}, a pattern that highlights the fragments
 annotated with \mtt{*}, but does not perform any modification of the
-matched code. \mtt{*} cannot be mixed with \mtt{-} and \mtt{+}.  There are
+matched code. The code is presented with lines containing a match of a
+starred line preceded
+by \mtt{-}, but this is not intended as a removal and applying the output
+as a patch to the original code will likely not result in correct code.
+\mtt{*} cannot be mixed with \mtt{-} and \mtt{+}.  There are
 some constraints on the use of these annotations:
 \begin{itemize}
 \item Dots, {\em i.e.} \texttt{...}, cannot occur on a line marked
