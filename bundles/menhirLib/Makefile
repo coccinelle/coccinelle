@@ -33,7 +33,7 @@ GENERATED_SOURCE_FILES := $(SRC_DIR)/installation.ml
 CLEANOTHERS := menhirLib.ml menhirLib.mli syntax.cmi $(SRC_DIR)/parser.mly $(SRC_DIR)/menhir $(SRC_DIR)/installation.ml
 
 OCAMLLDFLAGS=unix.cmxa
-OCAMLFLAGS+=-I ../stdcompat
+OCAMLFLAGS+=-I $(STDCOMPATDIR)
 
 MENHIRLIB_MODULES= \
 	General IncrementalEngine InfiniteArray PackedIntArray LinearizedArray RowDisplacement \
