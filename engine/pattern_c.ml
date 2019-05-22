@@ -549,18 +549,31 @@ module XMATCH = struct
       [] -> finish tin
     | positions ->
 	match get_pvalu() with
-	  None -> finish tin
-	| Some pvalu ->
+	  [] -> finish tin
+	| infos ->
 	    let pvalu =
-	      List.map
-		(function (fname,current_element,st,ed) ->
-		  (fname,current_element,
-		   Some(Lazy.force (!Flag.current_element_pos)),st,ed))
-		pvalu in
-	    let pvalu = Ast_c.MetaPosValList(pvalu) in
+	      lazy
+		(let (fname,current_element,st,ed) =
+		  Lib_parsing_c.lin_col_by_pos infos in
+		[(fname,current_element,
+		  Some(Lazy.force (!Flag.current_element_pos)),st,ed)]) in
+	    let cvalu =
+	      lazy
+		(let infos = List.filter (function ii -> not (Ast_c.is_fake ii)) infos in
+		let infos = List.sort Ast_c.compare_pos infos in
+		match (infos,List.rev infos) with
+		  ([],_) | (_,[]) -> [([],[],[])]
+		| (fst::mid,last::_) ->
+		    let before = Ast_c.get_comments_before fst in
+		    let after = Ast_c.get_comments_before last in
+		    let mid =
+		      List.concat
+			(List.map Ast_c.get_comments_before mid) in
+		    [(before,mid,after)]) in
 	    let rec loop tin = function
 		[] -> finish tin
 	      | Ast_cocci.MetaPos(name,constraints,per,keep,inherited)::rest ->
+		  let pvalu = Ast_c.MetaPosValList (Lazy.force pvalu) in
 		  let name' = Ast_cocci.unwrap_mcode name in
 		  check_pos_constraints name' pvalu constraints
 		    (fun new_tin ->
@@ -574,7 +587,17 @@ module XMATCH = struct
 			Some binding ->
 			  loop {new_tin with binding = binding} rest
 		      | None -> fail tin))
-		    tin in
+		    tin
+	      | Ast_cocci.MetaCom(name,keep,inherited)::rest ->
+		  let cvalu = Ast_c.MetaComValList (Lazy.force cvalu) in
+		  let x = Ast_cocci.unwrap_mcode name in
+		  let new_binding =
+		    check_add_metavars_binding false keep inherited
+		      (x, cvalu) tin in
+		  (match  new_binding with
+		    Some binding ->
+		      loop {tin with binding = binding} rest
+		  | None -> fail tin) in
 	    loop tin positions
 
   let envf keep inherited = fun (k, valu, get_max_min) f tin ->
@@ -582,12 +605,7 @@ module XMATCH = struct
     match check_add_metavars_binding true keep inherited (x, valu) tin with
     | Some binding ->
 	let new_tin = {tin with binding = binding} in
-	pos_variables new_tin k
-	  (function _ ->
-	    match get_max_min() with
-	      Some pos -> Some [pos]
-	    | None -> None)
-	  (f ())
+	pos_variables new_tin k get_max_min (f ())
     | None -> fail tin
 
   (* ------------------------------------------------------------------------*)
@@ -639,8 +657,8 @@ module XMATCH = struct
       pos_variables tin ia
 	(function _ ->
 	  if is_fake ib
-	  then None
-	  else Some [Lib_parsing_c.lin_col_by_pos [ib]])
+	  then []
+	  else [ib])
 	finish
 
   let tokenf_mck mck ib = fun tin ->
