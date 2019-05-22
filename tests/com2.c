@@ -1,5 +1,5 @@
-/* before the function */
-static int main() /* after the header */ {
+/* before the function - if function were static this wouldn't get matched  */
+int main() /* after the header */ {
   foo();
   /* a comment1 */
   foo(/*in arglist*/);
