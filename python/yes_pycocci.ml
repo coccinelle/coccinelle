@@ -366,7 +366,7 @@ let construct_variables mv e =
        let pylocs = Py.Tuple.of_list locs in
        let _ = build_variable py pylocs in
        ()
-    | Some (_, Ast_c.MetaPosValList l) -> failwith "comments not yet supported"
+    | Some (_, Ast_c.MetaComValList l) -> failwith "comments not yet supported"
     | Some (_,binding) ->
        let _ =
 	 build_variable py
