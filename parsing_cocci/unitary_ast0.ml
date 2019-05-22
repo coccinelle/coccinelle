@@ -99,6 +99,7 @@ let get_free checker t =
 			    (_,Ast.MetaPosDecl _) -> false
 			  | _ -> true)
 			params)) accu) } constraints accu
+	| Ast0.MetaPosTag(Ast0.MetaCom(name)) -> checker name
 	| _ -> accu)
       option_default (Ast0.get_pos mc) in
 
@@ -231,6 +232,19 @@ let update_unitary unitary =
     | (false,true,_) | (false,_,Ast0.CONTEXT(_)) -> Ast0.Context
     | (false,_,_) -> Ast0.Impure in
 
+  let mcode mc =
+    List.iter
+      (function
+	  Ast0.MetaPosTag(Ast0.MetaCom(name)) ->
+	    if not (List.mem (Ast0.unwrap_mcode name) unitary)
+	    then
+	      failwith
+		(Printf.sprintf "line %d: comment variable %s must be used only once"
+		   (Ast0.get_mcode_line name) (snd (Ast0.unwrap_mcode name)))
+	| _ -> ())
+      (Ast0.get_pos mc);
+    mc in
+
   let ident r k i =
     match Ast0.unwrap i with
       Ast0.MetaId(name,constraints,seed,_) ->
@@ -276,6 +290,20 @@ let update_unitary unitary =
 
   let res = V0.rebuilder
       {V0.rebuilder_functions with
+	VT0.rebuilder_meta_mcode = mcode;
+	VT0.rebuilder_string_mcode = mcode;
+	VT0.rebuilder_const_mcode = mcode;
+	VT0.rebuilder_simpleAssign_mcode = mcode;
+	VT0.rebuilder_opAssign_mcode = mcode;
+	VT0.rebuilder_fix_mcode = mcode;
+	VT0.rebuilder_unary_mcode = mcode;
+	VT0.rebuilder_arithOp_mcode = mcode;
+	VT0.rebuilder_logicalOp_mcode = mcode;
+	VT0.rebuilder_cv_mcode = mcode;
+	VT0.rebuilder_sign_mcode = mcode;
+	VT0.rebuilder_struct_mcode = mcode;
+	VT0.rebuilder_storage_mcode = mcode;
+	VT0.rebuilder_inc_mcode = mcode;
 	VT0.rebuilder_identfn = ident;
 	VT0.rebuilder_exprfn = expression;
 	VT0.rebuilder_tyfn = typeC;

@@ -588,6 +588,8 @@ let dup_positions rules =
 	 (function
 	     Ast0.MetaPosTag(Ast0.MetaPos(name,constraints,_)) ->
 	       [Ast0.unwrap_mcode name]
+	   | Ast0.MetaPosTag(Ast0.MetaCom(name)) ->
+	       [Ast0.unwrap_mcode name]
 	   | _ -> [])
 	 (Ast0.get_pos x)) in
   let option_default = [] in

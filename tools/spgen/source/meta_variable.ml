@@ -309,6 +309,9 @@ let mcode ~rn ~mc:(_,_,_,_,pos,_) =
         let collect = (match colt with Ast.PER -> "" | Ast.ALL -> " any") in
         let pos = make_mv "position " (name_tup ~rn mn) (constr ^ collect) in
         MVSet.add pos set
+    | Ast0.MetaPosTag(Ast0.MetaCom((mn,_,_,_), mns, colt)) ->
+        let com = make_mv "comments " (name_tup ~rn mn) "" in
+        MVSet.add com set
     | _ -> failwith "should only have metavariables in here."
 
   and add_all_pos lst = List.fold_left add_one_pos MVSet.empty lst in

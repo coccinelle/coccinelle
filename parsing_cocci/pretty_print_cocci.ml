@@ -77,6 +77,9 @@ let print_pos l =
     (function
 	Ast.MetaPos(name,_,_,_,_) ->
 	  let name = Ast.unwrap_mcode name in
+	  print_string "@"; print_meta name; print_space()
+      | Ast.MetaCom(name,_,_) ->
+	  let name = Ast.unwrap_mcode name in
 	  print_string "@"; print_meta name; print_space())
     l
 
@@ -1022,6 +1025,8 @@ let unparse_cocci_mv rule = function
       print_string "local function "; print_name rule r n; print_string ";"
   | Ast.MetaPosDecl(_,(r,n)) -> (* constraints missing! *)
       print_string "position "; print_name rule r n; print_string ";"
+  | Ast.MetaComDecl(_,(r,n)) ->
+      print_string "comments "; print_name rule r n; print_string ";"
   | Ast.MetaFmtDecl(_,(r,n)) ->
       print_string "format "; print_name rule r n; print_string ";"
   | Ast.MetaFragListDecl(_,(r,n),len) ->

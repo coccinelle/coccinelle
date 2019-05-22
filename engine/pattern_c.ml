@@ -541,6 +541,7 @@ module XMATCH = struct
           | Ast_c.MetaPosVal (pos1,pos2) ->
 	      success(Ast_c.MetaPosVal (pos1,pos2))
           | Ast_c.MetaPosValList l -> success (Ast_c.MetaPosValList l)
+          | Ast_c.MetaComValList l -> success (Ast_c.MetaComValList l)
 	  | Ast_c.MetaNoVal -> None)
 
   let pos_variables tin ia get_pvalu finish =

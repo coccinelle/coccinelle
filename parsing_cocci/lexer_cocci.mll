@@ -237,6 +237,7 @@ let id_tokens lexbuf =
   | "iterator" when in_meta ->   check_arity_context_linetype s; TIterator
   | "name" when in_meta ->       check_arity_context_linetype s; TName
   | "position" when in_meta ->   check_arity_context_linetype s; TPosition
+  | "comments" when in_meta ->   check_arity_context_linetype s; TComments
   | "format" when in_meta ->     check_arity_context_linetype s; TFormat
   | "analysis" when in_meta ->   check_arity_context_linetype s; TAnalysis
   | "any" when in_meta ->        check_arity_context_linetype s; TPosAny
@@ -489,6 +490,15 @@ let init _ = (* per file, first .cocci then iso *)
 	  failwith
 	    (Printf.sprintf "%d: positions only allowed in minus code" ln));
 	TMetaPos(name,constraints,any,clt) in
+      Hashtbl.replace metavariables (get_name name) fn);
+  Data.add_com_meta :=
+    (fun name ->
+      let fn ((d,ln,_,_,_,_,_,_,_,_) as clt) =
+	(if d = Data.PLUS
+	then
+	  failwith
+	    (Printf.sprintf "%d: comment variables only allowed in minus code" ln));
+	TMetaCom(name,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_assignOp_meta :=
     (fun name constraints pure ->

@@ -93,6 +93,9 @@ val add_pos_meta:
     (Ast_cocci.meta_name -> Ast0_cocci.constraints -> Ast_cocci.meta_collect ->
       unit) ref
 
+val add_com_meta:
+    (Ast_cocci.meta_name -> unit) ref
+
 val add_fmt_meta: (Ast_cocci.meta_name -> Ast0_cocci.constraints -> unit) ref
 
 val add_fmtlist_meta:

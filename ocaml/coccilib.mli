@@ -415,6 +415,9 @@ module Ast_c :
       | MetaPosValList of
           (Common.filename * string * (posl * posl) option * posl * posl)
           list
+      | MetaComValList of (Token_c.comment_like_token list *
+			   Token_c.comment_like_token list *
+			   Token_c.comment_like_token list) list
       | MetaListlenVal of int
       | MetaNoVal
     and stripped = Ast_c.stripped = WITH_TYPES | WITHOUT_TYPES
@@ -2484,6 +2487,7 @@ module Ast_cocci :
       | MetaFuncDecl of arity * meta_name
       | MetaLocalFuncDecl of arity * meta_name
       | MetaPosDecl of arity * meta_name
+      | MetaComDecl of arity * meta_name
       | MetaFmtDecl of arity * meta_name
       | MetaFragListDecl of arity * meta_name * list_len
       | MetaAnalysisDecl of string * meta_name
@@ -2813,6 +2817,7 @@ module Ast_cocci :
       Ast_cocci.meta_pos =
         MetaPos of meta_name mcode * constraints * meta_collect *
           keep_binding * inherited
+      | MetaCom of meta_name mcode * keep_binding * inherited
     and storage = Ast_cocci.storage = Static | Auto | Register | Extern
     and base_rule_elem =
       Ast_cocci.base_rule_elem =
@@ -3521,6 +3526,7 @@ module Ast0_cocci :
       Ast0_cocci.meta_pos =
         MetaPos of Ast_cocci.meta_name mcode * constraints *
           Ast_cocci.meta_collect
+      | MetaCom of Ast_cocci.meta_name mcode
     and base_top_level =
       Ast0_cocci.base_top_level =
         NONDECL of statement

@@ -829,6 +829,9 @@ and metavars_binding = (Ast_cocci.meta_name, metavar_binding_kind) assoc
   | MetaPosValList   of (* current elem, min, max *)
       (Common.filename * string (*element*) * (posl * posl) option *
 	 posl * posl) list
+  | MetaComValList   of (Token_c.comment_like_token list *
+			   Token_c.comment_like_token list *
+			   Token_c.comment_like_token list) list
   | MetaListlenVal   of int
   | MetaNoVal
 

@@ -274,9 +274,12 @@ let equal_metavarval valu valu' =
             l2)
 	l1
 
+  | Ast_c.MetaComValList l1, Ast_c.MetaComValList l2 -> l1 = l2
+
   | (Ast_c.MetaNoVal, _) | (_, Ast_c.MetaNoVal) -> false
 
-  | (B.MetaPosValList _|B.MetaListlenVal _|B.MetaPosVal _|B.MetaStmtVal _
+  | (B.MetaPosValList _|B.MetaComValList _|B.MetaListlenVal _|B.MetaPosVal _
+      |B.MetaStmtVal _
       |B.MetaStmtListVal _
       |B.MetaDeclVal _ |B.MetaFieldVal _ |B.MetaFieldListVal _
       |B.MetaTypeVal _ |B.MetaInitVal _ |B.MetaInitListVal _
@@ -372,9 +375,12 @@ let equal_inh_metavarval valu valu'=
             l2)
 	l1
 
+  | Ast_c.MetaPosValList l1, Ast_c.MetaPosValList l2 -> l1 = l2
+
   | (Ast_c.MetaNoVal, _) | (_, Ast_c.MetaNoVal) -> false
 
-  | (B.MetaPosValList _|B.MetaListlenVal _|B.MetaPosVal _|B.MetaStmtVal _
+  | (B.MetaPosValList _|B.MetaComValList _|B.MetaListlenVal _|B.MetaPosVal _
+      |B.MetaStmtVal _
       |B.MetaStmtListVal _
       |B.MetaDeclVal _ |B.MetaFieldVal _ |B.MetaFieldListVal _
       |B.MetaTypeVal _ |B.MetaInitVal _ |B.MetaInitListVal _
