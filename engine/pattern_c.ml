@@ -566,7 +566,7 @@ module XMATCH = struct
 		  ([],_) | (_,[]) -> [([],[],[])]
 		| (fst::mid,last::_) ->
 		    let before = Ast_c.get_comments_before fst in
-		    let after = Ast_c.get_comments_before last in
+		    let after = Ast_c.get_comments_after last in
 		    let mid =
 		      List.concat
 			(List.map Ast_c.get_comments_before mid) in
