@@ -559,7 +559,8 @@ module XMATCH = struct
 		  Some(Lazy.force (!Flag.current_element_pos)),st,ed)]) in
 	    let cvalu =
 	      lazy
-		(let infos = List.filter (function ii -> not (Ast_c.is_fake ii)) infos in
+		(let infos =
+		  List.filter (function ii -> not (Ast_c.is_fake ii)) infos in
 		let infos = List.sort Ast_c.compare_pos infos in
 		match (infos,List.rev infos) with
 		  ([],_) | (_,[]) -> [([],[],[])]
