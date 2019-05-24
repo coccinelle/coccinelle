@@ -635,7 +635,7 @@ let rec interpret_dependencies local global d =
 	not (List.mem s global)
     | Ast_cocci.AndDep(s1,s2) -> (loop local s1) && (loop local s2)
     | Ast_cocci.OrDep(s1,s2)  -> (loop local s1) || (loop local s2)
-      | Ast_cocci.FileIn _ | Ast_cocci.NotFileIn _ -> true in
+    | Ast_cocci.FileIn _ | Ast_cocci.NotFileIn _ -> true in
   match d with
     Ast_cocci.NoDep -> true
   | Ast_cocci.FailDep -> false
