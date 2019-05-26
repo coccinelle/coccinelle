@@ -7,7 +7,7 @@
 // + static int __init func(void)
 //  { ... }
 
-// cant match on __init in cocci_vs_c
+// can't match on __init in cocci_vs_c
 //@@
 //identifier func;
 //@@
@@ -16,7 +16,7 @@
 //  { ... }
 
 
-// cant parse
+// can't parse
 //@@
 //identifier func;
 //@@

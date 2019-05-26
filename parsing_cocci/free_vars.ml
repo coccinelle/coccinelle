@@ -6,7 +6,7 @@
 
 (* For each rule return the list of variables that are used after it.
 Also augment various parts of each rule with unitary, inherited, and freshness
-informations *)
+information *)
 
 (* metavar decls should be better integrated into computations of free
 variables in plus code *)

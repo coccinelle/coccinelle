@@ -9,7 +9,7 @@ open Common
 (*****************************************************************************)
 (*  *)
 (*****************************************************************************)
-(* requirments:
+(* requirements:
  *  - extract from one git commit, or from a set of git commits
  *  - files from drivers/ and also from other directories now
  *  - .c and .h, local .h and also not local .h

@@ -8,7 +8,7 @@
 #
 # Template:
 # LOCAL_$lib     = modules to include when compiling $lib locally with bytecode ocaml
-# LOCALOPT_$lib  = moduels to include when compiling $lib locally with optimizing ocaml
+# LOCALOPT_$lib  = modules to include when compiling $lib locally with optimizing ocaml
 # GLOBAL_$lib    = modules to include when using $lib globally with bytecode ocaml
 # GLOBALOPT_$lib = modules to include when using $lib globally with optimizing ocaml
 # FLAGS_$lib     = extra flags to pass to optimizing ocaml when using $lib at link time

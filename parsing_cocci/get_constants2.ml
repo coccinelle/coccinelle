@@ -710,7 +710,7 @@ matched in a later one, we want to include files that originally contain
 the thing, so no point to keep track of what is added by earlier rules.
 The situation is something like a -> b v (b & c).  We don't actually need
 both b and c, but if we don't have b, then the only way that we can get it is
-fro the first rule matching, in which case the formula is already true. *)
+for the first rule matching, in which case the formula is already true. *)
 let rule_fn nm tls env neg_pos =
   (* tls seems like it is supposed to relate to multiple minirules.  If we
      were to actually allow that, then the following could be inefficient,

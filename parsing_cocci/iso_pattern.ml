@@ -2628,7 +2628,7 @@ let transform_expr (metavars,alts,name) e =
   in
   match alts with
     (Ast0.ExprTag(_)::r)::rs ->
-      (* hack to accomodate ToTestExpression case, where the first pattern is
+      (* hack to accommodate ToTestExpression case, where the first pattern is
 	 a normal expression, but the others are test expressions *)
       let others = r @ (List.concat rs) in
       let is_test = function Ast0.TestExprTag(_) -> true | _ -> false in

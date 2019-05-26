@@ -1200,7 +1200,7 @@ let al_comments keep_comments x =
 	 supposed to, if this information is taken into account.  Actually,
 	 we only want this information for + code.  If we just put l here,
 	 then lots of tests fail, so it seems that metavariables are being
-	 matched agains, and not just used for + *)
+	 matched again, and not just used for + *)
       let rec loop = function
 	  [] -> []
 	| ((Token_c.TCommentNewline,_) as x)::

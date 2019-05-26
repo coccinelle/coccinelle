@@ -186,7 +186,7 @@ let (fixDeclSpecForDecl: decl -> (fullType * (storage wrap)))  = function
      raise (Semantic ("long, short valid only for int or float", fake_pi))
 
      (* if do short uint i, then gcc say parse error, strange ? it is
-      * not a parse error, it is just that we dont allow with typedef
+      * not a parse error, it is just that we don't allow with typedef
       * either short/long or signed/unsigned. In fact, with
       * parse_typedef_fix2 (with et() and dt()) now I say too parse
       * error so this code is executed only when do short struct
@@ -234,9 +234,9 @@ let fixDeclSpecForFuncDef x =
  * in func DEFINITION not in funct DECLARATION) We must have a name.
  * This function ensure that we give only parameterTypeDecl with well
  * formed Classic constructor todo?: do we accept other declaration
- * in ? so I must add them to the compound of the deffunc. I dont
+ * in ? so I must add them to the compound of the deffunc. I don't
  * have to handle typedef pb here cos C forbid to do VF f { ... }
- * with VF a typedef of func cos here we dont see the name of the
+ * with VF a typedef of func cos here we don't see the name of the
  * argument (in the typedef)
  *)
 let (fixOldCDecl: fullType -> fullType) = fun ty ->
@@ -271,7 +271,7 @@ let (fixOldCDecl: fullType -> fullType) = fun ty ->
         (* todo? can we declare prototype in the decl or structdef,
            ... => length <> but good kan meme *)
   | _ ->
-      (* gcc say parse error but dont see why *)
+      (* gcc say parse error but don't see why *)
       raise (Semantic ("seems this is not a function", fake_pi))
 
 
@@ -294,14 +294,14 @@ let fixFunc (typ, compound, old_style_opt) =
           (match Ast_c.unwrap_typeC ty2 with
           | BaseType Void ->  ()
           | _ ->
-                (* failwith "internal errror: fixOldCDecl not good" *)
+                (* failwith "internal error: fixOldCDecl not good" *)
               ()
           )
       | params ->
           params +> List.iter (function
           | ({p_namei = Some s}, _) -> ()
 	  | _ -> ()
-                (* failwith "internal errror: fixOldCDecl not good" *)
+                (* failwith "internal error: fixOldCDecl not good" *)
           )
       );
       (* bugfix: cf tests_c/function_pointer4.c.
@@ -344,7 +344,7 @@ let fixFunc (typ, compound, old_style_opt) =
   | _ ->
       raise
         (Semantic
-            ("you are trying to do a function definition but you dont give " ^
+            ("you are trying to do a function definition but you don't give " ^
              "any parameter", fake_pi))
 
 
@@ -371,7 +371,7 @@ let fix_add_params_ident x =
           (match Ast_c.unwrap_typeC ty2 with
           | BaseType Void -> ()
           | _ ->
-              (* failwith "internal errror: fixOldCDecl not good" *)
+              (* failwith "internal error: fixOldCDecl not good" *)
               ()
           )
       | params ->
@@ -380,7 +380,7 @@ let fix_add_params_ident x =
               LP.add_ident (Ast_c.str_of_name s)
 	  | _ ->
               ()
-                (* failwith "internal errror: fixOldCDecl not good" *)
+                (* failwith "internal error: fixOldCDecl not good" *)
           )
       )
   | _ -> ()
@@ -548,7 +548,7 @@ let postfakeInfo pii  =
 /*(*---------------*)*/
 
 
-/*(* used only in lexer_c, then transformed in comment or splitted in tokens *)*/
+/*(* used only in lexer_c, then transformed in comment or split in tokens *)*/
 %token <(string * string * bool ref * Ast_c.info)> TInclude
 
 /*(* tokens coming from above, generated in parse_c from TInclude, etc *)*/
@@ -1263,7 +1263,7 @@ type_spec2:
      { Right3 (Decimal($3,None)), [$1;$2;$4] }
 
  /*
- (* parse_typedef_fix1: cant put: TIdent {} cos it make the grammar
+ (* parse_typedef_fix1: can't put: TIdent {} cos it make the grammar
   * ambiguous, generates lots of conflicts => we must
   * use some tricks: we make the lexer and parser cooperate, cf lexerParser.ml.
   *
@@ -1480,7 +1480,7 @@ abstract_declaratorp:
 /*(*-----------------------------------------------------------------------*)*/
 
 /*(* for struct and also typename *)*/
-/*(* cant put decl_spec cos no storage is allowed for field struct *)*/
+/*(* can't put decl_spec cos no storage is allowed for field struct *)*/
 spec_qualif_list2:
  | type_spec                    { addTypeD ($1, nullDecl) }
  | type_qualif                  { {nullDecl with qualifD = (fst $1,[snd $1])}}
@@ -1774,14 +1774,14 @@ field_declaration:
      {
        let (returnType,storage) = fixDeclSpecForDecl $1 in
        if fst (unwrap storage) <> NoSto
-       then internal_error "parsing dont allow this";
+       then internal_error "parsing don't allow this";
 
        let iistart = Ast_c.fakeInfo () in (* for parallelism with DeclList *)
        FieldDeclList ($2 +> (List.map (fun (f, iivirg) ->
          f returnType, iivirg))
                          ,[$3;iistart])
-         (* dont need to check if typedef or func initialised cos
-          * grammar dont allow typedef nor initialiser in struct
+         (* don't need to check if typedef or func initialised cos
+          * grammar don't allow typedef nor initialiser in struct
           *)
      }
 
@@ -1790,7 +1790,7 @@ field_declaration:
        (* gccext: allow empty elements if it is a structdef or enumdef *)
        let (returnType,storage) = fixDeclSpecForDecl $1 in
        if fst (unwrap storage) <> NoSto
-       then internal_error "parsing dont allow this";
+       then internal_error "parsing don't allow this";
 
        let iistart = Ast_c.fakeInfo () in (* for parallelism with DeclList *)
        FieldDeclList ([(Simple (None, returnType)) , []], [$2;iistart])
@@ -2116,7 +2116,7 @@ cpp_ifdef_directive:
 /*(* cppext: *)*/
 cpp_other:
  /*(* no conflict ? no need for a TMacroTop ? apparently not as at toplevel
-    * the rule are slightly different, they cant be statement and so expr
+    * the rule are slightly different, they can't be statement and so expr
     * at the top, only decl or function definition.
     *)*/
  | identifier TOPar argument_list TCPar TPtVirg

@@ -621,7 +621,7 @@ static int nsp_reselected(Scsi_Cmnd *SCpnt, nsp_hw_data *data)
 }
 
 /*
- * count how many data transferd
+ * count how many data transferred
  */
 static int nsp_fifo_count(Scsi_Cmnd *SCpnt)
 {

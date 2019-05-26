@@ -1295,7 +1295,7 @@ and vk_statement_s = fun bigf st ->
 		  ExprStatement x1 -> ForExp (x1,i1')
 		| _ ->
 		    failwith
-		      "cant be here if iterator keep ExprStatement as is")
+		      "can't be here if iterator keep ExprStatement as is")
 	    | ForDecl decl -> ForDecl (vk_decl_s bigf decl) in
           let e2opt' = statf (mk_st (ExprStatement (e2opt)) i2) in
           let e3opt' = statf (mk_st (ExprStatement (e3opt)) i3) in
@@ -1309,7 +1309,7 @@ and vk_statement_s = fun bigf st ->
           | ((ExprStatement x2), ((ExprStatement x3))) ->
               Iteration (For (first, (x2,i2'), (x3,i3'), statf st))
 
-          | x -> failwith "cant be here if iterator keep ExprStatement as is"
+          | x -> failwith "can't be here if iterator keep ExprStatement as is"
          )
 
       | Iteration  (MacroIteration (s, es, st)) ->
@@ -1498,7 +1498,7 @@ and vk_onedecl_opt_s process_type bigf {v_namei = var;
 	  Ast_c.ConstrInit((init, List.map (vk_info_s bigf) ii)))
         ));
      v_type = if process_type then vk_type_s bigf t else t;
-    (* !!! dont go in semantic related stuff !!! *)
+    (* !!! don't go in semantic related stuff !!! *)
      v_type_bis = tbis;
      v_storage = sto;
      v_local = local;

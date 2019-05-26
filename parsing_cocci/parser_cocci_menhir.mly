@@ -1300,7 +1300,7 @@ includes:
 		 Ast0.wrap
 		   (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.CONST,
 				  pure,None))
-	     | _ -> failwith "length not allowed for include arugment")) }
+	     | _ -> failwith "length not allowed for include argument")) }
 
 | TUndef TLineEnd
     { let (clt,ident) = $1 in

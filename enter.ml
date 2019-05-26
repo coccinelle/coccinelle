@@ -275,7 +275,7 @@ let print_version () =
   Printf.printf "Flags passed to the configure script: %s\n" flags;
   Printf.printf "OCaml scripting support: %s\n" withocaml;
   Printf.printf "Python scripting support: %s\n" withpython;
-  Printf.printf "Syntax of regular expresssions: %s\n" whichregexp;
+  Printf.printf "Syntax of regular expressions: %s\n" whichregexp;
   exit 0
 
 let short_options = [
@@ -613,7 +613,7 @@ let other_options = [
 
 
     "--disallow-nested-exps", Arg.Set Flag_matcher.disallow_nested_exps,
-       " disallow an expresion pattern from matching a term and its subterm";
+       " disallow an expression pattern from matching a term and its subterm";
     "--disable-worth-trying-opt", Arg.Clear Flag.worth_trying_opt,
     "   run the semantic patch even if the C file contains no relevant tokens";
     "--selected-only", Arg.Set FC.selected_only, "  only show selected files";

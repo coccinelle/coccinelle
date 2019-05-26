@@ -2,7 +2,7 @@
 # See copyright.txt in the Coccinelle source code for more information.
 # The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
 
-#note: if you add a file (a .mli or .ml), dont forget to do a   make depend
+#note: if you add a file (a .mli or .ml), don't forget to do a   make depend
 
 ifneq ($(MAKECMDGOALS),distclean)
 include ../Makefile.config

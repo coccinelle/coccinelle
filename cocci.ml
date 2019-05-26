@@ -722,7 +722,7 @@ let print_dependencies str local global dep =
  *   "a/b/c/x"
  *
  * update: if the include is inside a ifdef a put nothing. cf -test incl.
- * this is because we dont want code added inside ifdef.
+ * this is because we don't want code added inside ifdef.
  *)
 
 let compute_new_prefixes xs =
