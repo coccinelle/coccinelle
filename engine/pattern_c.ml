@@ -55,7 +55,7 @@ module XMATCH = struct
    * Then by defining the correct combinators, can have quite pretty code (that
    * looks like the clean code of version0).
    *
-   * opti: return a lazy list of possible matchs ?
+   * opti: return a lazy list of possible matches ?
    *
    * version4: type tin = Lib_engine.metavars_binding
    *)

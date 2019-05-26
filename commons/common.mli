@@ -13,7 +13,7 @@
  * The variables that are called _init_xxx show the internal init
  * side effect of the module (like static var trick used in C/C++)
  *
- * Why not split the functionnalities of this file in different files ?
+ * Why not split the functionalities of this file in different files ?
  * Because when I write ocaml script I want simply to load one
  * file, common.ml, and that's it. Cf common_extra.ml for more on this.
  *)
@@ -323,7 +323,7 @@ val format_to_string : (unit -> unit) (* printer *) -> string
 
 (* works with _tab_level_print enabling to mix some calls to pp, pr2
  * and indent_do to sometimes use advanced indentation pretty printing
- * (with the pp* functions) and sometimes explicit and simple indendation
+ * (with the pp* functions) and sometimes explicit and simple indentation
  * printing (with pr* and indent_do) *)
 val adjust_pp_with_indent : (unit -> unit) -> unit
 val adjust_pp_with_indent_and_header : string -> (unit -> unit) -> unit
@@ -439,7 +439,7 @@ val acquire_file_lock : filename -> unit
 val release_file_lock : filename -> unit
 
 (*****************************************************************************)
-(* Error managment *)
+(* Error management *)
 (*****************************************************************************)
 exception Todo
 exception Impossible of int

@@ -230,7 +230,7 @@ let (macro_expand:
     | Cpp_token_c.DefineHint _ ->
         body
     | Cpp_token_c.DefineBody xs ->
-        (* bugfix: we dont want to evalute the x ## b at this moment.
+        (* bugfix: we don't want to evaluate the x ## b at this moment.
          * so can not use fix_tokens_cpp in the same we use it
          * to parse C code.
         let xs' =

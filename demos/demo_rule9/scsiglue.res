@@ -472,7 +472,7 @@ int usb_stor_scsiSense10to6( Scsi_Cmnd* the10 )
   outputBufferSize = *the10Locations.hdr.dataLengthLSB;
   outputBufferSize += USB_STOR_SCSI_SENSE_HDRSZ;
 
-  /* Check to see if we need to trucate the output */
+  /* Check to see if we need to truncate the output */
   if ( outputBufferSize > length )
     {
       printk( KERN_WARNING USB_STORAGE 
@@ -656,7 +656,7 @@ int usb_stor_scsiSense6to10( Scsi_Cmnd* the6 )
   outputBufferSize = *the6Locations.hdr.dataLength;
   outputBufferSize += USB_STOR_SCSI_SENSE_10_HDRSZ;
 
-  /* Check to see if we need to trucate the output */
+  /* Check to see if we need to truncate the output */
   if ( outputBufferSize > length )
     {
       printk( KERN_WARNING USB_STORAGE 

@@ -38,7 +38,7 @@ f@p(...) {
 ...when any
 }
 
-/* match all acceptable complex assignement */
+/* match all acceptable complex assignment */
 @valid_assign exists@
 identifier eligible_var.f, boolean_function.fbool;
 local idexpression {int, u8, u1, u2, u4, u16, u32, char} eligible_var.x;

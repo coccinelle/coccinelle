@@ -107,12 +107,12 @@ checkpcre() {
   test -f /usr/include/pcre.h
 }
 
-# interate through pattern-response pairs
+# iterate through pattern-response pairs
 found=
 response=
 while read pattern
 do
-  # empty lines preceeding pattern
+  # empty lines preceding pattern
   if test -z "${pattern}"; then
     continue
   fi

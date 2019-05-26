@@ -1607,7 +1607,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
         (Printf.sprintf "not handling Opt/Multi on expr on line %d"
            (A.get_line e))
 
- (* Because of Exp cant put a raise Impossible; have to put a fail *)
+ (* Because of Exp can't put a raise Impossible; have to put a fail *)
 
  (* have not a counter part in coccinelle, for the moment *)
   | _, ((B.Sequence _,_),_)
@@ -4193,7 +4193,7 @@ and attribute_list attras attrbs =
         failwith "attribute: build dots: not possible" in
       let match_comma ea = None in
       let build_comma ia1 =
-        failwith "attribute list: build comma: not posible" in
+        failwith "attribute list: build comma: not possible" in
       let match_metalist ea = None in
       let build_metalist _ (ida,leninfo,keep,inherited) =
 	failwith "attribute list: build meta list: not possible" in

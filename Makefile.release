@@ -40,7 +40,7 @@ ifndef OCAMLVERSION
 OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 endif
 
-# can be overriden in the environment
+# can be overridden in the environment
 ifndef GIT
 GIT=git
 endif

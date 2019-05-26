@@ -3,7 +3,7 @@
  *  -  node: index -> nodevalue
  *  -  arc: (index * index) * edgevalue
  *
- * invariant: key in pred is also in succ (completness) and value in
+ * invariant: key in pred is also in succ (completeness) and value in
  * either assoc is a key also.
  *
  * How ? matrix ? but no growing array :(

@@ -251,8 +251,8 @@ let insert_all_braces xs starti nodety str =
  * ce label. De meme, meme le cas simple ou la derniere instruction
  * c'est un return, alors ca va generer un DeadCode :(
  *
- * So make a first pass where dont launch exn at all. Create nodes,
- * if starti is None then dont add arc. Then make a second pass that
+ * So make a first pass where don't launch exn at all. Create nodes,
+ * if starti is None then don't add arc. Then make a second pass that
  * just checks that all nodes (except enter) have predecessors.
  * So make starti an option too. So type is now
  *
@@ -549,7 +549,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
               *   cf tests-bis/switch_no_body.c
               * but I don't think it's worthwhile to handle
               * such pathological and rare case. Not worth
-              * the complexity. Safe to assume a coumpound.
+              * the complexity. Safe to assume a compound.
               *)
              raise (Error (WeirdSwitch (pinfo_of_ii [i1])))
        in
@@ -1649,7 +1649,7 @@ let report_error error =
     match error with
     | DeadCode          infoopt ->
 	(match infoopt with
-	| None -> pr2 "FLOW: deadcode detected, but cant trace back the place"
+	| None -> pr2 "FLOW: deadcode detected, but can't trace back the place"
 	| Some info ->
 	    pr2 ("FLOW: deadcode detected: " ^ error_from_info info))
     | CaseNoSwitch      info ->
@@ -1662,7 +1662,7 @@ let report_error error =
     | NoEnclosingLoop   (info) ->
 	pr2 ("FLOW: can't find enclosing loop: " ^ error_from_info info)
     | GotoCantFindLabel (s, info) ->
-	pr2 ("FLOW: cant jump to " ^ s ^ ": because we can't find this label")
+	pr2 ("FLOW: can't jump to " ^ s ^ ": because we can't find this label")
     | NoExit info ->
 	pr2 ("FLOW: can't find exit or error exit: " ^ error_from_info info)
     | DuplicatedLabel s ->

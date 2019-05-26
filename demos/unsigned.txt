@@ -53,7 +53,7 @@ W="$V\(\[$s$V$s\]\|\[$s$D$s\]\|\.$V\|->$V\)*"
 # catches it at once (less strict)
 w="\($V\|${V}\[$s$an_*${s}\]\|$V\.\|$V->\)\+"
 
-# seperators:
+# separators:
 s="[[:space:]]*";
 S="[[:space:]]\+"
 

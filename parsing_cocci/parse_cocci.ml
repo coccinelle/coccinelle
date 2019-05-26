@@ -2412,7 +2412,7 @@ let parse file =
 		  [] ->
 		    Ast0.InitialScriptRule(name,language,deps,mvs,pos,data)
 		| _ ->
-		    failwith "new metavariables not allowed in initalize") in
+		    failwith "new metavariables not allowed in initialize") in
 
 	  let parse_fscript_rule =
 	    parse_any_script_rule PC.script_meta_virt_nofresh_main

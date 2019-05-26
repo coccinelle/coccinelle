@@ -1,7 +1,7 @@
 
 This directory builds a common.cma library and also optionally
 multiple commons_xxx.cma small libraries. The reason not to just build
-a single one is that some functionnalities require external libraries
+a single one is that some functionalities require external libraries
 (like Berkeley DB, MPI, etc) or special version of OCaml (like for the
 backtrace support) and I don't want to penalize the user by forcing
 him to install all those libs before being able to use some of my
@@ -22,7 +22,7 @@ the header and linker dependencies in Makefiles. A solution is
 to use cpp and pre-process many files that have such configuration
 issue. Another solution is to centralize all the cpp issue in one
 file, features.ml.cpp, that acts as a generic wrapper for other
-librairies and depending on the configuration actually call
+libraries and depending on the configuration actually call
 the external library or provide a fake empty services indicating
 that the service is not present.
 So you should have a ../configure that call cpp on features.ml.cpp

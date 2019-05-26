@@ -752,7 +752,7 @@ let parse_middle middle clt =
 	    rres @ (loop (chars + (String.length r) + 1) rs) in
       first @ (loop chars rest)
 
-(* This doen't allow a newline in the middle of a string except at a %,
+(* This doesn't allow a newline in the middle of a string except at a %,
 perhaps not ideal *)
 let check_no_duplicates l =
   let rec loop = function

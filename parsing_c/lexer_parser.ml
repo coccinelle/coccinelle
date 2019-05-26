@@ -29,7 +29,7 @@ open Common
  * Why parse_typedef_fix2 ? Cos when introduce new variable, for
  * instance when declare parameters for a function such as int var_t,
  * then the var_t must not be lexed as a typedef, so we must disable
- * temporaly the typedef mechanism to allow variable with same name as
+ * temporary the typedef mechanism to allow variable with same name as
  * a typedef. *)
 
 (* parse_typedef_fix *)

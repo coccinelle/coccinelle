@@ -46,7 +46,7 @@ let msg_gen cond is_known printer s =
       if not (is_known s)
       then printer s
 
-(* In the following, there are some harcoded names of types or macros
+(* In the following, there are some hardcoded names of types or macros
  * but they are not used by our heuristics! They are just here to
  * enable to detect false positive by printing only the typedef/macros
  * that we don't know yet. If we print everything, then we can easily
@@ -627,7 +627,7 @@ let rec comment_until_defeol xs =
   match xs with
   | [] ->
       (* job not done in Cpp_token_c.define_parse ? *)
-      failwith "cant find end of define token TDefEOL"
+      failwith "can't find end of define token TDefEOL"
   | x::xs ->
       (match x with
       | Parser_c.TDefEOL i ->

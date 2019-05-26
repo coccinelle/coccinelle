@@ -517,7 +517,7 @@ let metavar_combiner rn =
     | _ -> fn v in
 
 (*
-  Not used for now, visiter not parameterized by this...
+  Not used for now, visitor not parameterized by this...
   let define_paramfn c fn v =
     match Ast0.unwrap v with
     | Ast0.MetaDParamList(mc, listlen, pure) ->
