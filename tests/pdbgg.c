@@ -1,4 +1,4 @@
-/* regression if remove the definition of PDBGG in standard.h: 
+/* regression if remove the definition of PDBGG in standard.h:
 
 Great: a test file now works: /home/pad/linux/arch/mips/alchemy/common/au1xxx_irqmap.c
 PBBBBBBBB: a test file does not work anymore!!! : /home/pad/linux/arch/powerpc/boot/ps3.c
