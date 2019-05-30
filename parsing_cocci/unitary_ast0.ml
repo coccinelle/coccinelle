@@ -71,13 +71,9 @@ let get_free checker t =
   let ident r k i =
     match Ast0.unwrap i with
       Ast0.MetaId(name,_,_,_) | Ast0.MetaFunc(name,_,_)
-    | Ast0.MetaLocalFunc(name,_,_) -> checker name
+    | Ast0.MetaLocalFunc(name,_,_) -> bind (k i) (checker name)
     | Ast0.DisjId(starter,id_list,mids,ender) ->
 	detect_unitary_frees(List.map r.VT0.combiner_rec_ident id_list)
-    | Ast0.ConjId(starter,id_list,mids,ender) ->
-	List.fold_left
-	  (fun prev cur -> bind (r.VT0.combiner_rec_ident cur) prev)
-	  option_default id_list
     | _ -> k i in
 
   let type_collect res ty = bind res (Ast0.meta_names_of_typeC ty) in
@@ -116,7 +112,7 @@ let get_free checker t =
       Ast0.MetaErr(name,constraints,_) ->
 	let constraints =
 	  constraints_collect r option_default constraints in
-	bind (checker name) constraints
+	bind (k e) (bind (checker name) constraints)
     | Ast0.MetaExpr(name,constraints,type_list,_,_,_bitfield) ->
 	let types =
 	  match type_list with
@@ -125,53 +121,38 @@ let get_free checker t =
 	  | None -> option_default in
 	let constraints =
 	  constraints_collect r types constraints in
-	bind (checker name) constraints
-    | Ast0.MetaExprList(name,_,_,_) -> checker name
+	bind (k e) (bind (checker name) constraints)
+    | Ast0.MetaExprList(name,_,_,_) -> bind (k e) (checker name)
     | Ast0.DisjExpr(starter,expr_list,mids,ender) ->
 	detect_unitary_frees(List.map r.VT0.combiner_rec_expression expr_list)
-    | Ast0.ConjExpr(starter,expr_list,mids,ender) ->
-	List.fold_left
-	  (fun prev cur -> bind (r.VT0.combiner_rec_expression cur) prev)
-	  option_default expr_list
     | _ -> k e in
-
+  
   let typeC r k t =
     match Ast0.unwrap t with
-      Ast0.MetaType(name,_,_) -> checker name
+      Ast0.MetaType(name,_,_) -> bind (k t) (checker name)
     | Ast0.DisjType(starter,types,mids,ender) ->
 	detect_unitary_frees(List.map r.VT0.combiner_rec_typeC types)
-    | Ast0.ConjType(starter,types,mids,ender) ->
-	List.fold_left
-	  (fun prev cur -> bind (r.VT0.combiner_rec_typeC cur) prev)
-	  option_default types
     | _ -> k t in
 
   let parameter r k p =
     match Ast0.unwrap p with
-      Ast0.MetaParam(name,_,_) | Ast0.MetaParamList(name,_,_,_) -> checker name
-    | _ -> k p in
+      Ast0.MetaParam(name,_,_) | Ast0.MetaParamList(name,_,_,_) ->
+	bind (k p) (checker name)
+    | _ -> option_default in
 
   let declaration r k d =
     match Ast0.unwrap d with
-      Ast0.MetaDecl(name,_,_) -> checker name
+      Ast0.MetaDecl(name,_,_) -> bind (k d) (checker name)
     | Ast0.DisjDecl(starter,decls,mids,ender) ->
 	detect_unitary_frees(List.map r.VT0.combiner_rec_declaration decls)
-    | Ast0.ConjDecl(starter,decls,mids,ender) ->
-	List.fold_left
-	  (fun prev cur -> bind (r.VT0.combiner_rec_declaration cur) prev)
-	  option_default decls
     | _ -> k d in
 
   let field r k d =
     match Ast0.unwrap d with
       Ast0.MetaField(name,_,_)
-    | Ast0.MetaFieldList(name,_,_,_) -> checker name
+    | Ast0.MetaFieldList(name,_,_,_) -> bind (k d) (checker name)
     | Ast0.DisjField(starter,decls,mids,ender) ->
 	detect_unitary_frees(List.map r.VT0.combiner_rec_field decls)
-    | Ast0.ConjField(starter,decls,mids,ender) ->
-	List.fold_left
-	  (fun prev cur -> bind (r.VT0.combiner_rec_field cur) prev)
-	  option_default decls
     | _ -> k d in
 
   let case_line r k c =
@@ -181,32 +162,29 @@ let get_free checker t =
     | _ -> k c in
 
   let statement r k s =
-    match Ast0.unwrap s with
-      Ast0.MetaStmt(name,_,_) | Ast0.MetaStmtList(name,_,_,_) -> checker name
-    | Ast0.Disj(starter,stmt_list,mids,ender) ->
-	detect_unitary_frees
-	  (List.map r.VT0.combiner_rec_statement_dots stmt_list)
-    | Ast0.Conj(starter,stmt_list,mids,ender) ->
-	List.fold_left
-	  (fun prev cur -> bind (r.VT0.combiner_rec_statement_dots  cur) prev)
-	  option_default stmt_list
-    | Ast0.Nest(starter,stmt_dots,ender,whn,multi) ->
-	bind (r.VT0.combiner_rec_statement_dots stmt_dots)
-	  (detect_unitary_frees
-	     (List.map
-		(whencode
-		   r.VT0.combiner_rec_statement_dots
-		   r.VT0.combiner_rec_statement
-		    r.VT0.combiner_rec_expression)
-		whn))
-    | Ast0.Dots(d,whn) ->
-	detect_unitary_frees
-	  (List.map
-	     (whencode
-		r.VT0.combiner_rec_statement_dots r.VT0.combiner_rec_statement
-		r.VT0.combiner_rec_expression)
-	     whn)
-    | _ -> k s in
+   match Ast0.unwrap s with
+     Ast0.MetaStmt(name,_,_) | Ast0.MetaStmtList(name,_,_,_) ->
+       bind (k s) (checker name)
+   | Ast0.Disj(starter,stmt_list,mids,ender) ->
+	  detect_unitary_frees
+	    (List.map r.VT0.combiner_rec_statement_dots stmt_list)
+   | Ast0.Nest(starter,stmt_dots,ender,whn,multi) ->
+       bind (r.VT0.combiner_rec_statement_dots stmt_dots)
+	 (detect_unitary_frees
+	    (List.map
+	       (whencode
+		  r.VT0.combiner_rec_statement_dots
+		  r.VT0.combiner_rec_statement
+		  r.VT0.combiner_rec_expression)
+	       whn))
+   | Ast0.Dots(d,whn) ->
+       detect_unitary_frees
+	 (List.map
+	    (whencode
+	       r.VT0.combiner_rec_statement_dots r.VT0.combiner_rec_statement
+	       r.VT0.combiner_rec_expression)
+	    whn)
+   | _ -> k s in
 
   let res =
     V0.flat_combiner bind option_default
@@ -246,6 +224,7 @@ let update_unitary unitary =
     mc in
 
   let ident r k i =
+    let i = k i in
     match Ast0.unwrap i with
       Ast0.MetaId(name,constraints,seed,_) ->
 	Ast0.rewrap i (Ast0.MetaId(name,constraints,seed,is_unitary name))
@@ -253,9 +232,10 @@ let update_unitary unitary =
 	Ast0.rewrap i (Ast0.MetaFunc(name,constraints,is_unitary name))
     | Ast0.MetaLocalFunc(name,constraints,_) ->
 	Ast0.rewrap i (Ast0.MetaLocalFunc(name,constraints,is_unitary name))
-    | _ -> k i in
+    | _ -> i in
 
   let expression r k e =
+    let e = k e in
     match Ast0.unwrap e with
       Ast0.MetaErr(name,constraints,_) ->
 	Ast0.rewrap e (Ast0.MetaErr(name,constraints,is_unitary name))
@@ -264,29 +244,39 @@ let update_unitary unitary =
 	  (Ast0.MetaExpr(name,constraints,ty,form,is_unitary name,bitfield))
     | Ast0.MetaExprList(name,lenname,cstr,_) ->
 	Ast0.rewrap e (Ast0.MetaExprList(name,lenname,cstr,is_unitary name))
-    | _ -> k e in
+    | _ -> e in
 
   let typeC r k t =
+    let t = k t in
     match Ast0.unwrap t with
       Ast0.MetaType(name,cstr,_) ->
 	Ast0.rewrap t (Ast0.MetaType(name,cstr,is_unitary name))
-    | _ -> k t in
+    | _ -> t in
 
   let parameter r k p =
+    let p = k p in
     match Ast0.unwrap p with
       Ast0.MetaParam(name,cstr,_) ->
 	Ast0.rewrap p (Ast0.MetaParam(name,cstr,is_unitary name))
     | Ast0.MetaParamList(name,lenname,cstr,_) ->
 	Ast0.rewrap p (Ast0.MetaParamList(name,lenname,cstr,is_unitary name))
-    | _ -> k p in
+    | _ -> p in
+
+  let declaration r k d =
+    let d = k d in
+    match Ast0.unwrap d with
+      Ast0.MetaDecl(name,cstr,_) ->
+	Ast0.rewrap d (Ast0.MetaDecl(name,cstr,is_unitary name))
+    | _ -> d in
 
   let statement r k s =
+    let s = k s in
     match Ast0.unwrap s with
       Ast0.MetaStmt(name,cstr,_) ->
 	Ast0.rewrap s (Ast0.MetaStmt(name,cstr,is_unitary name))
     | Ast0.MetaStmtList(name,lenname,cstr,_) ->
 	Ast0.rewrap s (Ast0.MetaStmtList(name,lenname,cstr,is_unitary name))
-    | _ -> k s in
+    | _ -> s in
 
   let res = V0.rebuilder
       {V0.rebuilder_functions with
@@ -308,7 +298,8 @@ let update_unitary unitary =
 	VT0.rebuilder_exprfn = expression;
 	VT0.rebuilder_tyfn = typeC;
 	VT0.rebuilder_paramfn = parameter;
-	VT0.rebuilder_stmtfn = statement} in
+	VT0.rebuilder_stmtfn = statement;
+	VT0.rebuilder_declfn = declaration} in
 
   List.map res.VT0.rebuilder_rec_top_level
 
