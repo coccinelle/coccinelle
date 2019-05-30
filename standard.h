@@ -426,8 +426,8 @@ static const struct machine_desc __mach_desc_##_type	\
 // include/linux/types.h
 //#define BITS_TO_LONGS(bits) \
 //	(((bits)+BITS_PER_LONG-1)/BITS_PER_LONG)
-//#define DECLARE_BITMAP(name,bits)
-//	/*unsigned*/ long name[BITS_TO_LONGS(bits)]
+#define DECLARE_BITMAP(name,bits)
+	/*unsigned*/ long name[BITS_TO_LONGS(bits)]
 
 
 // include/asm-i386/percpu.h
