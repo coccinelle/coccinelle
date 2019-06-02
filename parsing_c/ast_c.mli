@@ -328,6 +328,9 @@ and metavar_binding_kind =
   | MetaPosVal of (Ast_cocci.fixpos * Ast_cocci.fixpos)
   | MetaPosValList of
       (Common.filename * string * (posl * posl) option * posl * posl) list
+  | MetaComValList   of (Token_c.comment_like_token list *
+			   Token_c.comment_like_token list *
+			   Token_c.comment_like_token list) list
   | MetaListlenVal of int
   | MetaNoVal
 and stripped = WITH_TYPES | WITHOUT_TYPES

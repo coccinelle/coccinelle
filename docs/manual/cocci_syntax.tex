@@ -228,6 +228,8 @@ i.e., including as an element of another statement list.
   \CASE{statement \opt{list} \NT{ids} ;}
   \CASE{declaration \NT{ids} ;}
   \CASE{field \opt{list} \NT{ids} ;}
+  \CASE{initialiser \opt{list} \NT{ids} ;}
+  \CASE{initializer \opt{list} \NT{ids} ;}
   \CASE{typedef \NT{ids} ;}
   \CASE{attribute name \NT{ids} ;}
   \CASE{declarer name \NT{ids} ;}
@@ -370,6 +372,8 @@ represented by the names of the parameters.  Another particular case is
 {\tt E@S}, where {\tt E} is any expression and {\tt S} is a statement
 metavariable.  {\tt S} matches the closest enclosing statement, which may
 be more than what is matches by the semantic match pattern itself.
+
+{\bf Initialiser} can also be spelled {\bf initializer}.
 
 \begin{grammar}
   \RULE{\rt{ids}}
@@ -1105,7 +1109,11 @@ represents at most one match of the given pattern, ie a match of the
 pattern is optional. \mtt{*} is used for
 semantic match, \emph{i.e.}, a pattern that highlights the fragments
 annotated with \mtt{*}, but does not perform any modification of the
-matched code. \mtt{*} cannot be mixed with \mtt{-} and \mtt{+}.  There are
+matched code. The code is presented with lines containing a match of a
+starred line preceded
+by \mtt{-}, but this is not intended as a removal and applying the output
+as a patch to the original code will likely not result in correct code.
+\mtt{*} cannot be mixed with \mtt{-} and \mtt{+}.  There are
 some constraints on the use of these annotations:
 \begin{itemize}
 \item Dots, {\em i.e.} \texttt{...}, cannot occur on a line marked
@@ -1820,7 +1828,7 @@ of every token.
 It is possible to iterate Coccinelle, giving the subsequent iterations a
 different set of virtual rules or virtual identifier bindings.  Coccinelle
 currently supports iteration with both OCaml and Python scripting. An
-example with OCaml is fond in {\tt demos/iteration.cocci}, a Python
+example with OCaml is found in {\tt demos/iteration.cocci}, a Python
 example is found in {\tt demos/python\_iteration.cocci}.
 
 The OCaml scripting iteration example starts as follows.

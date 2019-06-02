@@ -340,6 +340,8 @@ let mcode (term,_,info,mcodekind,pos,adj) =
 	    Ast0.MetaPosTag(Ast0.MetaPos(pos,cstr,per)) ->
 	      let cstr' = constraints cstr in
 	      (Ast.MetaPos(pos_mcode pos,cstr',per,unitary,false))::prev
+	  | Ast0.MetaPosTag(Ast0.MetaCom(pos)) ->
+	      (Ast.MetaCom(pos_mcode pos,unitary,false))::prev
 	  | _ -> prev)
       [] !pos in
   (term,convert_info info,convert_mcodekind adj mcodekind,List.rev pos)

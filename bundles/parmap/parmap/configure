@@ -634,6 +634,20 @@ LDFLAGS
 CFLAGS
 CC
 OCAMLFIND
+OCAMLBUILD
+OCAMLDOC
+OCAMLMKLIB
+OCAMLMKTOP
+OCAMLDEP
+OCAML
+OCAMLNATDYNLINK
+OCAMLOPTDOTOPT
+OCAMLCDOTOPT
+OCAMLBEST
+OCAMLOPT
+OCAMLLIB
+OCAMLVERSION
+OCAMLC
 target_alias
 host_alias
 build_alias
@@ -653,6 +667,7 @@ infodir
 docdir
 oldincludedir
 includedir
+runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -723,6 +738,7 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
+runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE_TARNAME}'
@@ -975,6 +991,15 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
+  -runstatedir | --runstatedir | --runstatedi | --runstated \
+  | --runstate | --runstat | --runsta | --runst | --runs \
+  | --run | --ru | --r)
+    ac_prev=runstatedir ;;
+  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
+  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
+  | --run=* | --ru=* | --r=*)
+    runstatedir=$ac_optarg ;;
+
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1112,7 +1137,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir
+		libdir localedir mandir runstatedir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1265,6 +1290,7 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
+  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -2017,12 +2043,1119 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
-AC_PROG_OCAML
+  # checking for ocamlc
+  if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}ocamlc", so it can be a program name with args.
+set dummy ${ac_tool_prefix}ocamlc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_OCAMLC+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$OCAMLC"; then
+  ac_cv_prog_OCAMLC="$OCAMLC" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_OCAMLC="${ac_tool_prefix}ocamlc"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+OCAMLC=$ac_cv_prog_OCAMLC
+if test -n "$OCAMLC"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $OCAMLC" >&5
+$as_echo "$OCAMLC" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_OCAMLC"; then
+  ac_ct_OCAMLC=$OCAMLC
+  # Extract the first word of "ocamlc", so it can be a program name with args.
+set dummy ocamlc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_OCAMLC+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_OCAMLC"; then
+  ac_cv_prog_ac_ct_OCAMLC="$ac_ct_OCAMLC" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_OCAMLC="ocamlc"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_OCAMLC=$ac_cv_prog_ac_ct_OCAMLC
+if test -n "$ac_ct_OCAMLC"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_OCAMLC" >&5
+$as_echo "$ac_ct_OCAMLC" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_OCAMLC" = x; then
+    OCAMLC="no"
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    OCAMLC=$ac_ct_OCAMLC
+  fi
+else
+  OCAMLC="$ac_cv_prog_OCAMLC"
+fi
+
+
+  if test "$OCAMLC" != "no"; then
+     OCAMLVERSION=`$OCAMLC -v | sed -n -e 's|.*version* *\(.*\)$|\1|p'`
+     { $as_echo "$as_me:${as_lineno-$LINENO}: result: OCaml version is $OCAMLVERSION" >&5
+$as_echo "OCaml version is $OCAMLVERSION" >&6; }
+     # If OCAMLLIB is set, use it
+     if test "$OCAMLLIB" = ""; then
+        OCAMLLIB=`$OCAMLC -where 2>/dev/null | tr -d '\015' || $OCAMLC -v|tail -1|cut -d ' ' -f 4`
+     else
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: OCAMLLIB previously set; preserving it." >&5
+$as_echo "OCAMLLIB previously set; preserving it." >&6; }
+     fi
+     { $as_echo "$as_me:${as_lineno-$LINENO}: result: OCaml library path is $OCAMLLIB" >&5
+$as_echo "OCaml library path is $OCAMLLIB" >&6; }
+
+
+
+
+     # checking for ocamlopt
+     if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}ocamlopt", so it can be a program name with args.
+set dummy ${ac_tool_prefix}ocamlopt; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_OCAMLOPT+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$OCAMLOPT"; then
+  ac_cv_prog_OCAMLOPT="$OCAMLOPT" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_OCAMLOPT="${ac_tool_prefix}ocamlopt"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+OCAMLOPT=$ac_cv_prog_OCAMLOPT
+if test -n "$OCAMLOPT"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $OCAMLOPT" >&5
+$as_echo "$OCAMLOPT" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_OCAMLOPT"; then
+  ac_ct_OCAMLOPT=$OCAMLOPT
+  # Extract the first word of "ocamlopt", so it can be a program name with args.
+set dummy ocamlopt; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_OCAMLOPT+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_OCAMLOPT"; then
+  ac_cv_prog_ac_ct_OCAMLOPT="$ac_ct_OCAMLOPT" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_OCAMLOPT="ocamlopt"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_OCAMLOPT=$ac_cv_prog_ac_ct_OCAMLOPT
+if test -n "$ac_ct_OCAMLOPT"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_OCAMLOPT" >&5
+$as_echo "$ac_ct_OCAMLOPT" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_OCAMLOPT" = x; then
+    OCAMLOPT="no"
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    OCAMLOPT=$ac_ct_OCAMLOPT
+  fi
+else
+  OCAMLOPT="$ac_cv_prog_OCAMLOPT"
+fi
+
+     OCAMLBEST=byte
+     if test "$OCAMLOPT" = "no"; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Cannot find ocamlopt; bytecode compilation only." >&5
+$as_echo "$as_me: WARNING: Cannot find ocamlopt; bytecode compilation only." >&2;}
+     else
+        TMPVERSION=`$OCAMLOPT -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
+        if test "$TMPVERSION" != "$OCAMLVERSION" ; then
+           { $as_echo "$as_me:${as_lineno-$LINENO}: result: versions differs from ocamlc; ocamlopt discarded." >&5
+$as_echo "versions differs from ocamlc; ocamlopt discarded." >&6; }
+           OCAMLOPT=no
+        else
+           OCAMLBEST=opt
+        fi
+     fi
+
+
+
+     # checking for ocamlc.opt
+     if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}ocamlc.opt", so it can be a program name with args.
+set dummy ${ac_tool_prefix}ocamlc.opt; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_OCAMLCDOTOPT+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$OCAMLCDOTOPT"; then
+  ac_cv_prog_OCAMLCDOTOPT="$OCAMLCDOTOPT" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_OCAMLCDOTOPT="${ac_tool_prefix}ocamlc.opt"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+OCAMLCDOTOPT=$ac_cv_prog_OCAMLCDOTOPT
+if test -n "$OCAMLCDOTOPT"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $OCAMLCDOTOPT" >&5
+$as_echo "$OCAMLCDOTOPT" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_OCAMLCDOTOPT"; then
+  ac_ct_OCAMLCDOTOPT=$OCAMLCDOTOPT
+  # Extract the first word of "ocamlc.opt", so it can be a program name with args.
+set dummy ocamlc.opt; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_OCAMLCDOTOPT+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_OCAMLCDOTOPT"; then
+  ac_cv_prog_ac_ct_OCAMLCDOTOPT="$ac_ct_OCAMLCDOTOPT" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_OCAMLCDOTOPT="ocamlc.opt"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_OCAMLCDOTOPT=$ac_cv_prog_ac_ct_OCAMLCDOTOPT
+if test -n "$ac_ct_OCAMLCDOTOPT"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_OCAMLCDOTOPT" >&5
+$as_echo "$ac_ct_OCAMLCDOTOPT" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_OCAMLCDOTOPT" = x; then
+    OCAMLCDOTOPT="no"
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    OCAMLCDOTOPT=$ac_ct_OCAMLCDOTOPT
+  fi
+else
+  OCAMLCDOTOPT="$ac_cv_prog_OCAMLCDOTOPT"
+fi
+
+     if test "$OCAMLCDOTOPT" != "no"; then
+        TMPVERSION=`$OCAMLCDOTOPT -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
+        if test "$TMPVERSION" != "$OCAMLVERSION" ; then
+           { $as_echo "$as_me:${as_lineno-$LINENO}: result: versions differs from ocamlc; ocamlc.opt discarded." >&5
+$as_echo "versions differs from ocamlc; ocamlc.opt discarded." >&6; }
+        else
+           OCAMLC=$OCAMLCDOTOPT
+        fi
+     fi
+
+     # checking for ocamlopt.opt
+     if test "$OCAMLOPT" != "no" ; then
+        if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}ocamlopt.opt", so it can be a program name with args.
+set dummy ${ac_tool_prefix}ocamlopt.opt; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_OCAMLOPTDOTOPT+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$OCAMLOPTDOTOPT"; then
+  ac_cv_prog_OCAMLOPTDOTOPT="$OCAMLOPTDOTOPT" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_OCAMLOPTDOTOPT="${ac_tool_prefix}ocamlopt.opt"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+OCAMLOPTDOTOPT=$ac_cv_prog_OCAMLOPTDOTOPT
+if test -n "$OCAMLOPTDOTOPT"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $OCAMLOPTDOTOPT" >&5
+$as_echo "$OCAMLOPTDOTOPT" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_OCAMLOPTDOTOPT"; then
+  ac_ct_OCAMLOPTDOTOPT=$OCAMLOPTDOTOPT
+  # Extract the first word of "ocamlopt.opt", so it can be a program name with args.
+set dummy ocamlopt.opt; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_OCAMLOPTDOTOPT+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_OCAMLOPTDOTOPT"; then
+  ac_cv_prog_ac_ct_OCAMLOPTDOTOPT="$ac_ct_OCAMLOPTDOTOPT" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_OCAMLOPTDOTOPT="ocamlopt.opt"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_OCAMLOPTDOTOPT=$ac_cv_prog_ac_ct_OCAMLOPTDOTOPT
+if test -n "$ac_ct_OCAMLOPTDOTOPT"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_OCAMLOPTDOTOPT" >&5
+$as_echo "$ac_ct_OCAMLOPTDOTOPT" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_OCAMLOPTDOTOPT" = x; then
+    OCAMLOPTDOTOPT="no"
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    OCAMLOPTDOTOPT=$ac_ct_OCAMLOPTDOTOPT
+  fi
+else
+  OCAMLOPTDOTOPT="$ac_cv_prog_OCAMLOPTDOTOPT"
+fi
+
+        if test "$OCAMLOPTDOTOPT" != "no"; then
+           TMPVERSION=`$OCAMLOPTDOTOPT -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
+           if test "$TMPVERSION" != "$OCAMLVERSION" ; then
+              { $as_echo "$as_me:${as_lineno-$LINENO}: result: version differs from ocamlc; ocamlopt.opt discarded." >&5
+$as_echo "version differs from ocamlc; ocamlopt.opt discarded." >&6; }
+           else
+              OCAMLOPT=$OCAMLOPTDOTOPT
+           fi
+       fi
+     fi
+
+
+  fi
+
+
+
+  # checking for native dynlink
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for dynlink.cmxa" >&5
+$as_echo_n "checking for dynlink.cmxa... " >&6; }
+  if test -f "$OCAMLLIB/dynlink.cmxa" ; then
+     OCAMLNATDYNLINK=yes
+     { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+  else
+     OCAMLNATDYNLINK=no
+     { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+  fi
+
+
+
+  # checking for ocaml toplevel
+  if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}ocaml", so it can be a program name with args.
+set dummy ${ac_tool_prefix}ocaml; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_OCAML+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$OCAML"; then
+  ac_cv_prog_OCAML="$OCAML" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_OCAML="${ac_tool_prefix}ocaml"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+OCAML=$ac_cv_prog_OCAML
+if test -n "$OCAML"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $OCAML" >&5
+$as_echo "$OCAML" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_OCAML"; then
+  ac_ct_OCAML=$OCAML
+  # Extract the first word of "ocaml", so it can be a program name with args.
+set dummy ocaml; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_OCAML+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_OCAML"; then
+  ac_cv_prog_ac_ct_OCAML="$ac_ct_OCAML" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_OCAML="ocaml"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_OCAML=$ac_cv_prog_ac_ct_OCAML
+if test -n "$ac_ct_OCAML"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_OCAML" >&5
+$as_echo "$ac_ct_OCAML" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_OCAML" = x; then
+    OCAML="no"
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    OCAML=$ac_ct_OCAML
+  fi
+else
+  OCAML="$ac_cv_prog_OCAML"
+fi
+
+
+  # checking for ocamldep
+  if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}ocamldep", so it can be a program name with args.
+set dummy ${ac_tool_prefix}ocamldep; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_OCAMLDEP+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$OCAMLDEP"; then
+  ac_cv_prog_OCAMLDEP="$OCAMLDEP" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_OCAMLDEP="${ac_tool_prefix}ocamldep"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+OCAMLDEP=$ac_cv_prog_OCAMLDEP
+if test -n "$OCAMLDEP"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $OCAMLDEP" >&5
+$as_echo "$OCAMLDEP" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_OCAMLDEP"; then
+  ac_ct_OCAMLDEP=$OCAMLDEP
+  # Extract the first word of "ocamldep", so it can be a program name with args.
+set dummy ocamldep; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_OCAMLDEP+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_OCAMLDEP"; then
+  ac_cv_prog_ac_ct_OCAMLDEP="$ac_ct_OCAMLDEP" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_OCAMLDEP="ocamldep"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_OCAMLDEP=$ac_cv_prog_ac_ct_OCAMLDEP
+if test -n "$ac_ct_OCAMLDEP"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_OCAMLDEP" >&5
+$as_echo "$ac_ct_OCAMLDEP" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_OCAMLDEP" = x; then
+    OCAMLDEP="no"
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    OCAMLDEP=$ac_ct_OCAMLDEP
+  fi
+else
+  OCAMLDEP="$ac_cv_prog_OCAMLDEP"
+fi
+
+
+  # checking for ocamlmktop
+  if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}ocamlmktop", so it can be a program name with args.
+set dummy ${ac_tool_prefix}ocamlmktop; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_OCAMLMKTOP+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$OCAMLMKTOP"; then
+  ac_cv_prog_OCAMLMKTOP="$OCAMLMKTOP" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_OCAMLMKTOP="${ac_tool_prefix}ocamlmktop"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+OCAMLMKTOP=$ac_cv_prog_OCAMLMKTOP
+if test -n "$OCAMLMKTOP"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $OCAMLMKTOP" >&5
+$as_echo "$OCAMLMKTOP" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_OCAMLMKTOP"; then
+  ac_ct_OCAMLMKTOP=$OCAMLMKTOP
+  # Extract the first word of "ocamlmktop", so it can be a program name with args.
+set dummy ocamlmktop; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_OCAMLMKTOP+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_OCAMLMKTOP"; then
+  ac_cv_prog_ac_ct_OCAMLMKTOP="$ac_ct_OCAMLMKTOP" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_OCAMLMKTOP="ocamlmktop"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_OCAMLMKTOP=$ac_cv_prog_ac_ct_OCAMLMKTOP
+if test -n "$ac_ct_OCAMLMKTOP"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_OCAMLMKTOP" >&5
+$as_echo "$ac_ct_OCAMLMKTOP" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_OCAMLMKTOP" = x; then
+    OCAMLMKTOP="no"
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    OCAMLMKTOP=$ac_ct_OCAMLMKTOP
+  fi
+else
+  OCAMLMKTOP="$ac_cv_prog_OCAMLMKTOP"
+fi
+
+
+  # checking for ocamlmklib
+  if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}ocamlmklib", so it can be a program name with args.
+set dummy ${ac_tool_prefix}ocamlmklib; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_OCAMLMKLIB+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$OCAMLMKLIB"; then
+  ac_cv_prog_OCAMLMKLIB="$OCAMLMKLIB" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_OCAMLMKLIB="${ac_tool_prefix}ocamlmklib"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+OCAMLMKLIB=$ac_cv_prog_OCAMLMKLIB
+if test -n "$OCAMLMKLIB"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $OCAMLMKLIB" >&5
+$as_echo "$OCAMLMKLIB" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_OCAMLMKLIB"; then
+  ac_ct_OCAMLMKLIB=$OCAMLMKLIB
+  # Extract the first word of "ocamlmklib", so it can be a program name with args.
+set dummy ocamlmklib; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_OCAMLMKLIB+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_OCAMLMKLIB"; then
+  ac_cv_prog_ac_ct_OCAMLMKLIB="$ac_ct_OCAMLMKLIB" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_OCAMLMKLIB="ocamlmklib"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_OCAMLMKLIB=$ac_cv_prog_ac_ct_OCAMLMKLIB
+if test -n "$ac_ct_OCAMLMKLIB"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_OCAMLMKLIB" >&5
+$as_echo "$ac_ct_OCAMLMKLIB" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_OCAMLMKLIB" = x; then
+    OCAMLMKLIB="no"
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    OCAMLMKLIB=$ac_ct_OCAMLMKLIB
+  fi
+else
+  OCAMLMKLIB="$ac_cv_prog_OCAMLMKLIB"
+fi
+
+
+  # checking for ocamldoc
+  if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}ocamldoc", so it can be a program name with args.
+set dummy ${ac_tool_prefix}ocamldoc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_OCAMLDOC+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$OCAMLDOC"; then
+  ac_cv_prog_OCAMLDOC="$OCAMLDOC" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_OCAMLDOC="${ac_tool_prefix}ocamldoc"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+OCAMLDOC=$ac_cv_prog_OCAMLDOC
+if test -n "$OCAMLDOC"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $OCAMLDOC" >&5
+$as_echo "$OCAMLDOC" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_OCAMLDOC"; then
+  ac_ct_OCAMLDOC=$OCAMLDOC
+  # Extract the first word of "ocamldoc", so it can be a program name with args.
+set dummy ocamldoc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_OCAMLDOC+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_OCAMLDOC"; then
+  ac_cv_prog_ac_ct_OCAMLDOC="$ac_ct_OCAMLDOC" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_OCAMLDOC="ocamldoc"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_OCAMLDOC=$ac_cv_prog_ac_ct_OCAMLDOC
+if test -n "$ac_ct_OCAMLDOC"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_OCAMLDOC" >&5
+$as_echo "$ac_ct_OCAMLDOC" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_OCAMLDOC" = x; then
+    OCAMLDOC="no"
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    OCAMLDOC=$ac_ct_OCAMLDOC
+  fi
+else
+  OCAMLDOC="$ac_cv_prog_OCAMLDOC"
+fi
+
+
+  # checking for ocamlbuild
+  if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}ocamlbuild", so it can be a program name with args.
+set dummy ${ac_tool_prefix}ocamlbuild; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_OCAMLBUILD+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$OCAMLBUILD"; then
+  ac_cv_prog_OCAMLBUILD="$OCAMLBUILD" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_OCAMLBUILD="${ac_tool_prefix}ocamlbuild"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+OCAMLBUILD=$ac_cv_prog_OCAMLBUILD
+if test -n "$OCAMLBUILD"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $OCAMLBUILD" >&5
+$as_echo "$OCAMLBUILD" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_OCAMLBUILD"; then
+  ac_ct_OCAMLBUILD=$OCAMLBUILD
+  # Extract the first word of "ocamlbuild", so it can be a program name with args.
+set dummy ocamlbuild; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_OCAMLBUILD+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_OCAMLBUILD"; then
+  ac_cv_prog_ac_ct_OCAMLBUILD="$ac_ct_OCAMLBUILD" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_OCAMLBUILD="ocamlbuild"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_OCAMLBUILD=$ac_cv_prog_ac_ct_OCAMLBUILD
+if test -n "$ac_ct_OCAMLBUILD"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_OCAMLBUILD" >&5
+$as_echo "$ac_ct_OCAMLBUILD" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_OCAMLBUILD" = x; then
+    OCAMLBUILD="no"
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    OCAMLBUILD=$ac_ct_OCAMLBUILD
+  fi
+else
+  OCAMLBUILD="$ac_cv_prog_OCAMLBUILD"
+fi
+
+
 if test "$OCAMLC" = "no"; then
  as_fn_error $? "You must install the OCaml compiler" "$LINENO" 5
 fi
 
-AC_PROG_FINDLIB
+
+  # checking for ocamlfind
+  if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}ocamlfind", so it can be a program name with args.
+set dummy ${ac_tool_prefix}ocamlfind; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_OCAMLFIND+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$OCAMLFIND"; then
+  ac_cv_prog_OCAMLFIND="$OCAMLFIND" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_OCAMLFIND="${ac_tool_prefix}ocamlfind"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+OCAMLFIND=$ac_cv_prog_OCAMLFIND
+if test -n "$OCAMLFIND"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $OCAMLFIND" >&5
+$as_echo "$OCAMLFIND" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_OCAMLFIND"; then
+  ac_ct_OCAMLFIND=$OCAMLFIND
+  # Extract the first word of "ocamlfind", so it can be a program name with args.
+set dummy ocamlfind; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_OCAMLFIND+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_OCAMLFIND"; then
+  ac_cv_prog_ac_ct_OCAMLFIND="$ac_ct_OCAMLFIND" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_OCAMLFIND="ocamlfind"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_OCAMLFIND=$ac_cv_prog_ac_ct_OCAMLFIND
+if test -n "$ac_ct_OCAMLFIND"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_OCAMLFIND" >&5
+$as_echo "$ac_ct_OCAMLFIND" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_OCAMLFIND" = x; then
+    OCAMLFIND="no"
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    OCAMLFIND=$ac_ct_OCAMLFIND
+  fi
+else
+  OCAMLFIND="$ac_cv_prog_OCAMLFIND"
+fi
+
+
+
 
 if test "$OCAMLFIND" = "no"; then
  as_fn_error $? "You must install OCaml findlib (the ocamlfind command)" "$LINENO" 5

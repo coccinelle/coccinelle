@@ -220,7 +220,7 @@ let inline_id aft = function
 %token TOperator TBinary TAssignment
 %token Tlist TFresh TConstant TError TWords TWhy0 TPlus0
 %token TPure TContext TGenerated TFormat TLocal TGlobal
-%token TTypedef TAttribute TDeclarer TIterator TName TPosition TAnalysis
+%token TTypedef TAttribute TDeclarer TIterator TName TPosition TComments TAnalysis
 %token TPosAny
 %token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall
 %token TFile TIn
@@ -258,6 +258,7 @@ let inline_id aft = function
 %token <Parse_aux.typed_expinfo> TMetaIdExp TMetaLocalIdExp
 %token <Parse_aux.typed_expinfo> TMetaGlobalIdExp TMetaConst
 %token <Parse_aux.pos_info>      TMetaPos
+%token <Parse_aux.com_info>      TMetaCom
 
 %token TArob TArobArob
 %token <Data.clt> TPArob
@@ -539,6 +540,16 @@ metadec:
 	let any = match a with None -> Ast.PER | Some _ -> Ast.ALL in
 	!Data.add_pos_meta name constraints any; tok in
     P.create_metadec_with_constraints ar false kindfn ids }
+| ar=arity TComments ids=comma_list(pure_ident_only) TMPtVirg
+    (* pb: position variables can't be inherited from normal rules, and then
+       there is no way to inherit from a generated rule, so there is no point
+       to have a position variable *)
+    { (if !Data.in_generating
+      then failwith "comment variables not allowed in a generated rule file");
+      let kindfn arity name pure check_meta =
+	let tok = check_meta(Ast.MetaComDecl(arity,name)) in
+	!Data.add_com_meta name; tok in
+    P.create_metadec ar false kindfn ids }
 | ar=arity ispure=pure
     TParameter Tlist TOCro len=list_len TCCro
     ids=comma_list(pure_ident_or_meta_ident_with_constraints) TMPtVirg
@@ -1289,7 +1300,7 @@ includes:
 		 Ast0.wrap
 		   (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.CONST,
 				  pure,None))
-	     | _ -> failwith "length not allowed for include arugment")) }
+	     | _ -> failwith "length not allowed for include argument")) }
 
 | TUndef TLineEnd
     { let (clt,ident) = $1 in
@@ -2341,6 +2352,10 @@ pure_ident_or_meta_ident_nosym:
      | pure_ident_kwd            { (None,$1) }
      | meta_ident                { $1 }
 
+pure_ident_only:
+       pure_ident                { (None,P.id2name $1) }
+     | pure_ident_kwd            { (None,$1) }
+
 pure_ident_or_meta_ident_nosym2(extra):
        pure_ident_or_meta_ident_nosym { $1 }
      | extra                          { (None,P.id2name $1) }
@@ -2373,6 +2388,7 @@ local_meta:
      | TMetaGlobalIdExp { let (nm,_,_,_,_) = $1 in nm }
      | TMetaConst { let (nm,_,_,_,_) = $1 in nm }
      | TMetaPos { let (nm,_,_,_) = $1 in nm }
+     | TMetaCom { let (nm,_) = $1 in nm }
 
 inherited_or_local_meta:
        local_meta                    { $1 }
@@ -3103,6 +3119,7 @@ iso(term):
 never_used: TDirective { () }
   | TAttr_             { () }
   | TPArob TMetaPos    { () }
+  | TPArob TMetaCom    { () }
   | TScriptData        { () }
   | TAnalysis          { () }
   | TWhitespace        { () }

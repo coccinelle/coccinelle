@@ -1,7 +1,7 @@
 void main(int foo) {
 
   f(1);
-  f(1); // if uncoment then problems
+  f(1); // if uncomment then problems
   g(2);
   if(1) {
     h(3);

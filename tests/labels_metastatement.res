@@ -8,7 +8,7 @@ int foo(int i) {
       foo();
   }
   foo();
-  } // we dont want that it add both foo on the } and on the endif
+  } // we don't want that it add both foo on the } and on the endif
     // (note: but need correct endif accrochage)
   foo();
 

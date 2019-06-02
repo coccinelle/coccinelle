@@ -41,7 +41,7 @@ val should_parse : parsing_style -> string -> Ast_c.inc_file -> bool
 
 val resolve : string -> parsing_style -> Ast_c.inc_file -> string option
 (**
- * [reslove f opt inc] determines whether [inc] included by [f]
+ * [resolve f opt inc] determines whether [inc] included by [f]
  * exists and should be parsed according to [opt].
  * If so, returns its name. Returns [None] otherwise.
  *)

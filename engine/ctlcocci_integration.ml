@@ -564,6 +564,17 @@ let rec coalesce_positions = function
 	  [] same in
       let new_ls = List.sort compare (l@ls) in
       (x,Ast_c.MetaPosValList new_ls) :: coalesce_positions others
+  | (x,Ast_c.MetaComValList l)::rest ->
+      let (same,others) = List.partition (function (x1,_) -> x = x1) rest in
+      let ls =
+	List.fold_left
+	  (function prev ->
+	    function
+		(_,Ast_c.MetaComValList l) -> l@prev
+	      | _ -> failwith "unexpected non-position")
+	  [] same in
+      let new_ls = List.sort compare (l@ls) in
+      (x,Ast_c.MetaComValList new_ls) :: coalesce_positions others
   | x::rest -> x :: coalesce_positions rest
 
 let strip env =

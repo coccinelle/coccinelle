@@ -290,7 +290,7 @@ class communication_window(gtk.Window):
 
         Note: Vim does not actually unregister itself with the root window on
         dying, so the presence of a server in the root window list is no
-        gurantee that it is alive.
+        guarantee that it is alive.
 
         @return: servers
         @rtype servers: dict of ("server", "window id") key, value
@@ -311,12 +311,12 @@ class communication_window(gtk.Window):
                     # Set the value in the results dict, remembering to convert
                     # the window id to a long int.
                     servers[name_id[1]] = long(int(name_id[0], 16))
-        # return the list of resuts
+        # return the list of results
         return servers
 
     def get_shell_serverlist(self):
         """
-        DEPRACATED: WE NEVER NEED A SERVERLIST
+        DEPRECATED: WE NEVER NEED A SERVERLIST
         (This is here for educative purposes)
 
         Get the server list by starting console Vim on a Pipe.
@@ -332,13 +332,13 @@ class communication_window(gtk.Window):
  
     def get_hidden_serverlist(self, callbackfunc):
         """
-        DEPRACATED: WE NEVER NEED A SERVERLIST
+        DEPRECATED: WE NEVER NEED A SERVERLIST
         (This is here for educative purposes)
 
         Get the serverlist from the hidden Vim instance and call the callback
         function with the results.
 
-        This method checks first whther the Vim instance is alive, and then
+        This method checks first whether the Vim instance is alive, and then
         evaluates the serverlist() function remotely in it, with a local call
         back function which parses the result and calls the user-provided
         callback function.
@@ -468,7 +468,7 @@ class communication_window(gtk.Window):
  
     def parse_message(self, message):
         """
-        Parse a received message and return the message atributes as a
+        Parse a received message and return the message attributes as a
         dictionary.
         """
         messageattrs = {}

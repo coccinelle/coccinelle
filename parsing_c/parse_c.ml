@@ -635,7 +635,7 @@ let max_pass = 4
 let get_one_elem ~pass tr =
 
   if not (LP.is_enabled_typedef()) && !Flag_parsing_c.debug_typedef
-  then pr2_err "TYPEDEF:_handle_typedef=false. Not normal if dont come from exn";
+  then pr2_err "TYPEDEF:_handle_typedef=false. Not normal if don't come from exn";
 
   (* normally have to do that only when come from an exception in which
    * case the dt() may not have been done
@@ -700,7 +700,7 @@ let candidate_macros_in_passed2 ~defs passed  =
 
   passed +> List.iter (function
   | Parser_c.TIdent (s,_)
-   (* bugfix: may have to undo some infered things *)
+   (* bugfix: may have to undo some inferred things *)
   | Parser_c.TMacroIterator (s,_)
   | Parser_c.TypedefIdent (s,_)
     ->
@@ -722,7 +722,7 @@ let candidate_macros_in_passed2 ~defs passed  =
   else !res
 
 let candidate_macros_in_passed ~defs b =
-  Common.profile_code "MACRO managment" (fun () ->
+  Common.profile_code "MACRO management" (fun () ->
     candidate_macros_in_passed2 ~defs b)
 
 
@@ -772,7 +772,7 @@ let find_optional_macro_to_expand2 ~defs pos toks =
     (!tokens2 +> Common.acc_map (fun x -> x.TV.tok))
   *)
 let find_optional_macro_to_expand ~defs pos a =
-    Common.profile_code "MACRO managment" (fun () ->
+    Common.profile_code "MACRO management" (fun () ->
       find_optional_macro_to_expand2 ~defs pos a)
 
 (*****************************************************************************)

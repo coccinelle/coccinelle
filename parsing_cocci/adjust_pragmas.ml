@@ -5,7 +5,7 @@
  *)
 
 (* Find a directive or comment at the end of a statement.  Things with aft
-given None, because they can accomodate their own directives or comments *)
+given None, because they can accommodate their own directives or comments *)
 
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci

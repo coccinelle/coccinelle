@@ -111,6 +111,7 @@ and metavar =
   | MetaFuncDecl of arity * meta_name (* name *)
   | MetaLocalFuncDecl of arity * meta_name (* name *)
   | MetaPosDecl of arity * meta_name (* name *)
+  | MetaComDecl of arity * meta_name (* name *)
   | MetaFmtDecl of arity * meta_name (* name *)
   | MetaFragListDecl of arity * meta_name (* name *) * list_len (*len*)
   | MetaAnalysisDecl of string * meta_name (* name *)
@@ -498,6 +499,7 @@ and meta_collect = PER | ALL
 and meta_pos =
     MetaPos of meta_name mcode * constraints *
 	meta_collect * keep_binding * inherited
+  | MetaCom of meta_name mcode * keep_binding * inherited
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)

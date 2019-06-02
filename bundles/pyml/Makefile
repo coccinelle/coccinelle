@@ -13,7 +13,7 @@ ARCHIVE=pyml
 LIBRARY=pyml
 SRC_DIR := $(PACKAGE_DIR)
 OTHERS := $(SRC_DIR)/pyml_arch.ml
-OCAMLFLAGS+=-I ../stdcompat
+OCAMLFLAGS+=-I $(STDCOMPATDIR)
 CLEANOTHERS=pyml-current/generate pyml-current/generate.cmi \
 	pyml-current/generate.cmx pyml-current/generate.cmo \
 	pyml-current/generate.cmt pyml-current/generate.cmti \

@@ -98,7 +98,7 @@ needed for the compilation of ocaml scripts.
  by default in the directory pointed by
    pkg-config --variable=completionsdir bash-completion
  if available, or $datarootdir/bash-completion/completions otherwise.
- The directory can be overriden by passing --with-bash-completion=$DIR
+ The directory can be overridden by passing --with-bash-completion=$DIR
  to ./configure.
  The option --without-bash-completion disables the script installation.
 
@@ -111,7 +111,7 @@ needed for the compilation of ocaml scripts.
 
  - Basic shell commands:
    - ls, cat, cp, mv, rm, grep, mkdir, find
- - Developper tool: diff
+ - Developer tool: diff
 
 
  ** Optional runtime dependencies **

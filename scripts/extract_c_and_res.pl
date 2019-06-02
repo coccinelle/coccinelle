@@ -223,7 +223,7 @@ foreach my $line (@headers) {
 foreach my $h (keys %{$hfiles}) {
   my ($base) = `basename $h`;
   chomp $base;
-  pr2 "processing additionnal header file: $h $base";
+  pr2 "processing additional header file: $h $base";
 
   if(-e "$target_dir/$base") {
     pr2 "-------------------------------------";

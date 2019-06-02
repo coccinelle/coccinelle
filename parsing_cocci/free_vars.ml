@@ -6,7 +6,7 @@
 
 (* For each rule return the list of variables that are used after it.
 Also augment various parts of each rule with unitary, inherited, and freshness
-informations *)
+information *)
 
 (* metavar decls should be better integrated into computations of free
 variables in plus code *)
@@ -234,13 +234,15 @@ let collect_refs include_constraints =
     then *)
       List.fold_left bind option_default
 	(List.map
-	   (function Ast.MetaPos(name,constraints,_,_,_) ->
-	     bind [metaid name]
-	       (List.fold_left bind option_default
-		  (if include_constraints
-		  then
-		    [Ast.cstr_meta_names constraints]
-		  else [])))
+	   (function
+	       Ast.MetaPos(name,constraints,_,_,_) ->
+		 bind [metaid name]
+		   (List.fold_left bind option_default
+		      (if include_constraints
+		      then
+			[Ast.cstr_meta_names constraints]
+		      else []))
+	     | Ast.MetaCom(name,_,_) -> [metaid name])
 	   (Ast.get_pos_var mc))
     (* else option_default *) in
 
@@ -272,7 +274,9 @@ let collect_pos_positions =
   let mcode r mc =
       List.concat
 	(List.map
-	   (function Ast.MetaPos(name,constraints,_,_,_) -> [metaid name])
+	   (function
+	       Ast.MetaPos(name,constraints,_,_,_) -> [metaid name]
+	     | Ast.MetaCom(name,_,_) -> [metaid name])
 	   (Ast.get_pos_var mc)) in
 
   let cprule_elem recursor k re =
@@ -464,6 +468,7 @@ let collect_saved =
       (function acc ->
 	function
 	    Ast.MetaPos(name,_,_,Ast.Saved,_) -> (metaid name) :: acc
+	  | Ast.MetaCom(name,Ast.Saved,_) -> (metaid name) :: acc
 	  | _ -> acc)
       option_default (Ast.get_pos_var e) in
 
@@ -640,9 +645,13 @@ let classify_variables metavar_decls minirules used_after =
   let mcode mc =
     let p =
       List.map
-	(function Ast.MetaPos(name,constraints,per,unitary,inherited) ->
-	  let (unitary,inherited) = classify name in
-	  Ast.MetaPos(name,constraints,per,unitary,inherited))
+	(function
+	    Ast.MetaPos(name,constraints,per,unitary,inherited) ->
+	      let (unitary,inherited) = classify name in
+	      Ast.MetaPos(name,constraints,per,unitary,inherited)
+	  | Ast.MetaCom(name,unitary,inherited) ->
+	      let (unitary,inherited) = classify name in
+	      Ast.MetaCom(name,unitary,inherited))
 	(Ast.get_pos_var mc) in
     Ast.set_pos_var p mc in
 
@@ -1145,7 +1154,8 @@ let get_neg_pos_list (_,rule) used_after_list =
 		match collect with
 		  Ast.PER -> (name' :: pos_vars', all_vars)
 		| Ast.ALL -> (pos_vars', name' :: all_vars) in
-	      (pos_vars'', neg_vars',all_vars')))
+	      (pos_vars'', neg_vars',all_vars')
+	  | _ -> (pos_vars,neg_vars,all_vars)))
       option_default (Ast.get_pos_var mc) in
   let v =
     V.combiner bind option_default
@@ -1354,7 +1364,9 @@ let free_vars rules dropped_rules =
            let positions =
              List.fold_left
                (function prev ->
-                 function Ast.MetaPosDecl(_,nm) -> nm::prev | _ -> prev)
+                 function
+		     Ast.MetaPosDecl(_,nm) | Ast.MetaComDecl(_,nm) -> nm::prev
+		   | _ -> prev)
                [] mv in
            List.map (function _ -> positions) rule)
       rules in

@@ -69,6 +69,7 @@ let token2c (tok,_) add_clt =
   | PC.TField -> "field"
   | PC.TStatement -> "statement"
   | PC.TPosition -> "position"
+  | PC.TComments -> "comments"
   | PC.TFormat -> "format"
   | PC.TAnalysis -> "analysis"
   | PC.TPosAny -> "any"
@@ -242,6 +243,7 @@ let token2c (tok,_) add_clt =
   | PC.TMetaFunc(_,_,_,clt)  -> add_clt "funcmeta" clt
   | PC.TMetaLocalFunc(_,_,_,clt) -> add_clt "funcmeta" clt
   | PC.TMetaPos(_,_,_,clt)   -> "posmeta"
+  | PC.TMetaCom(_,clt)   -> "commeta"
   | PC.TMPtVirg -> ";"
   | PC.TArobArob -> "@@"
   | PC.TArob -> "@"
@@ -398,6 +400,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.TOPar0(s,clt) | PC.TMid0(s,clt) | PC.TAnd0(s,clt)
   | PC.TCPar0(s,clt) -> NOTPLUS
   | PC.TMetaPos(nm,_,_,_) -> NOTPLUS
+  | PC.TMetaCom(nm,_) -> NOTPLUS
   | PC.TSub(clt) -> NOTPLUS
   | PC.TDirective(_,clt) -> NOTPLUS
   | PC.TAttr_(clt) -> NOTPLUS
@@ -458,7 +461,7 @@ let get_clt (tok,_) =
   | PC.TMetaDecl(_,_,_,clt) | PC.TMetaField(_,_,_,clt)
   | PC.TMetaFieldList(_,_,_,_,clt)
   | PC.TMetaFunc(_,_,_,clt) | PC.TMetaLocalFunc(_,_,_,clt)
-  | PC.TMetaPos(_,_,_,clt)
+  | PC.TMetaPos(_,_,_,clt) | PC.TMetaCom(_,clt)
   | PC.TMetaDeclarer(_,_,_,clt) | PC.TMetaIterator(_,_,_,clt)
 
   | PC.TWhen(clt) | PC.TWhenTrue(clt) | PC.TWhenFalse(clt)
@@ -500,6 +503,7 @@ let get_clt (tok,_) =
   | PC.TRightIso -> failwith "No clt attached to token TRightIso"
   | PC.TPure -> failwith "No clt attached to token TPure"
   | PC.TPosition -> failwith "No clt attached to token TPosition"
+  | PC.TComments -> failwith "No clt attached to token TComments"
   | PC.TPosAny -> failwith "No clt attached to token TPosAny"
   | PC.TPlus0 -> failwith "No clt attached to token TPlus0"
   | PC.TPathIsoFile _ -> failwith "No clt attached to token TPathIsoFile"
@@ -737,6 +741,7 @@ let update_clt (tok,x) clt =
   | PC.TRightIso -> assert false
   | PC.TPure -> assert false
   | PC.TPosition -> assert false
+  | PC.TComments -> assert false
   | PC.TPosAny -> assert false
   | PC.TPlus0 -> assert false
   | PC.TPathIsoFile _ -> assert false
@@ -748,6 +753,7 @@ let update_clt (tok,x) clt =
   | PC.TName -> assert false
   | PC.TMetavariable -> assert false
   | PC.TMetaPos _ -> assert false
+  | PC.TMetaCom _ -> assert false
   | PC.TMPtVirg -> assert false
   | PC.TLocal -> assert false
   | PC.TIterator -> assert false
@@ -861,8 +867,8 @@ let split_token ((tok,_) as t) =
   | PC.TBinary | PC.TAssignment
   | PC.TConstant | PC.TExpression | PC.TIdExpression
   | PC.TDeclaration | PC.TField
-  | PC.TStatement | PC.TPosition | PC.TFormat | PC.TAnalysis | PC.TPosAny
-  | PC.TInitialiser | PC.TSymbol
+  | PC.TStatement | PC.TPosition | PC.TComments | PC.TFormat | PC.TAnalysis
+  | PC.TPosAny | PC.TInitialiser | PC.TSymbol
   | PC.TFunction | PC.TTypedef | PC.TDeclarer | PC.TIterator | PC.TName
   | PC.TAttribute
   | PC.TType | PC.TParameter | PC.TLocal | PC.TGlobal | PC.Tlist | PC.TFresh
@@ -917,7 +923,7 @@ let split_token ((tok,_) as t) =
   | PC.TMetaDeclarer(_,_,_,clt) | PC.TMetaIterator(_,_,_,clt) -> split t clt
   | PC.TMPtVirg | PC.TArob | PC.TArobArob | PC.TScript _
   | PC.TInitialize | PC.TFinalize -> ([t],[t])
-  | PC.TPArob clt | PC.TMetaPos(_,_,_,clt) -> split t clt
+  | PC.TPArob clt | PC.TMetaPos(_,_,_,clt) | PC.TMetaCom(_,clt) -> split t clt
 
   | PC.TFunDecl(clt)
   | PC.TWhen(clt) | PC.TWhenTrue(clt) | PC.TWhenFalse(clt)
@@ -1136,7 +1142,8 @@ let detect_types in_meta_decls l =
     | (PC.TMetaStm(_,_,_,_),_)
     | (PC.TMetaStmList(_,_,_,_,_),_)
     | (PC.TMetaDParamList(_,_,_,_,_),_)
-    | (PC.TMetaPos(_,_,_,_),_) -> in_meta_decls
+    | (PC.TMetaPos(_,_,_,_),_)
+    | (PC.TMetaCom(_,_),_) -> in_meta_decls
     | _ -> false in
   let is_tyleft = function (* things that can start a var decl *)
       (PC.TMul(_),_)
@@ -1243,7 +1250,7 @@ let token2line (tok,_) =
   | PC.TMetaFieldList(_,_,_,_,clt)
   | PC.TMetaStm(_,_,_,clt) | PC.TMetaStmList(_,_,_,_,clt)
   | PC.TMetaDParamList(_,_,_,_,clt) | PC.TMetaFunc(_,_,_,clt)
-  | PC.TMetaLocalFunc(_,_,_,clt) | PC.TMetaPos(_,_,_,clt)
+  | PC.TMetaLocalFunc(_,_,_,clt) | PC.TMetaPos(_,_,_,clt) | PC.TMetaCom(_,clt)
 
   | PC.TFunDecl(clt)
   | PC.TWhen(clt) | PC.TWhenTrue(clt) | PC.TWhenFalse(clt)
@@ -1782,6 +1789,11 @@ let consume_minus_positions toks =
 	  process_minus_positions x name clt
 	    (function name ->
 	      Ast0.MetaPosTag(Ast0.MetaPos(name,constraints,per))) in
+	(loop_pos (x::xs))
+    | x::(PC.TPArob _,_)::(PC.TMetaCom(name,clt),_)::xs ->
+	let x =
+	  process_minus_positions x name clt
+	    (function name -> Ast0.MetaPosTag(Ast0.MetaCom(name))) in
 	(loop_pos (x::xs))
     | x::xs -> x::loop_pos xs in
   let rec loop_other = function
@@ -2400,7 +2412,7 @@ let parse file =
 		  [] ->
 		    Ast0.InitialScriptRule(name,language,deps,mvs,pos,data)
 		| _ ->
-		    failwith "new metavariables not allowed in initalize") in
+		    failwith "new metavariables not allowed in initialize") in
 
 	  let parse_fscript_rule =
 	    parse_any_script_rule PC.script_meta_virt_nofresh_main
