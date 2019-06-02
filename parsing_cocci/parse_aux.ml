@@ -28,6 +28,7 @@ type typed_expinfo_bitfield =
     Ast.meta_name * Ast0.constraints * Ast0.pure *
       Ast0.typeC list option * Data.clt * Ast.list_len option
 type pos_info = Ast.meta_name * Ast0.constraints * Ast.meta_collect * Data.clt
+type com_info = Ast.meta_name * Data.clt
 
 let make_info line logical_line logical_line_end offset col strbef straft 
     isSymbol ws =
@@ -322,6 +323,10 @@ let check_meta_tyopt type_irrelevant v =
 	    raise
 	      (Semantic_cocci.Semantic
 		 ("position cannot be inherited over modifications: "^name))
+      | _ -> fail name)
+  | Ast.MetaComDecl(Ast.NONE,(rule,name)) ->
+      (match meta_lookup rule name v with
+	Ast.MetaComDecl(_,_) -> ()
       | _ -> fail name)
   | Ast.MetaFmtDecl(Ast.NONE,(rule,name)) ->
       (match meta_lookup rule name v with
@@ -747,7 +752,7 @@ let parse_middle middle clt =
 	    rres @ (loop (chars + (String.length r) + 1) rs) in
       first @ (loop chars rest)
 
-(* This doen't allow a newline in the middle of a string except at a %,
+(* This doesn't allow a newline in the middle of a string except at a %,
 perhaps not ideal *)
 let check_no_duplicates l =
   let rec loop = function

@@ -1185,6 +1185,9 @@ let visitor mode bind option_default
       | Ast0.MetaPosTag(Ast0.MetaPos(nm,constraints,ct)) ->
        	 let (n,nm) = meta_mcode nm in
 	   (n,Ast0.MetaPosTag(Ast0.MetaPos(nm,constraints,ct)))
+      | Ast0.MetaPosTag(Ast0.MetaCom(nm)) ->
+       	 let (n,nm) = meta_mcode nm in
+	   (n,Ast0.MetaPosTag(Ast0.MetaCom(nm)))
       |	Ast0.HiddenVarTag(var) -> failwith "not supported"
       |	Ast0.WhenTag(a,e,b) -> anything b in
     k a

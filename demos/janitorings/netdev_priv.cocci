@@ -65,7 +65,7 @@ expression E;
 // dev = alloc_netdev(sizeof(*x), ...)
 
 //>>> - alloc_irlandev
-// but dont pass the sizeof, so cant get the type T.
+// but don't pass the sizeof, so can't get the type T.
 
 //> alloc_orinocodev
 

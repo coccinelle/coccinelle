@@ -43,7 +43,7 @@
 # If you do that, consider also using another PGP subkey for annotating
 # releases as deprecated.
 #
-# Set to emtpy variable if you use properly signed tags. You should do this!
+# Set to empty variable if you use properly signed tags. You should do this!
 TAGS="--tags"
 
 srctree=.

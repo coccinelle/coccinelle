@@ -255,7 +255,7 @@ let print_extra_typedefs pr env =
       | Ast_c.MetaStmtVal(stm,_,_) -> Visitor_c.vk_statement bigf stm
       | Ast_c.MetaStmtListVal(stms,_) ->
 	  Visitor_c.vk_statement_sequencable_list bigf stms
-      | Ast_c.MetaPosVal _ | Ast_c.MetaPosValList _
+      | Ast_c.MetaPosVal _ | Ast_c.MetaPosValList _ | Ast_c.MetaComValList _
       | Ast_c.MetaListlenVal _ -> ()
       | Ast_c.MetaNoVal -> failwith "referencing a metavar with no value")
     env
@@ -320,7 +320,7 @@ let rename argids env =
        | Ast_c.MetaStmtListVal(stm,ty) ->
 	   Ast_c.MetaStmtListVal
 	     (Visitor_c.vk_statement_sequencable_list_s bigf stm,ty)
-       | Ast_c.MetaPosVal _ | Ast_c.MetaPosValList _
+       | Ast_c.MetaPosVal _ | Ast_c.MetaPosValList _ | Ast_c.MetaComValList _
        | Ast_c.MetaListlenVal _ -> vl
        | Ast_c.MetaNoVal -> failwith "referencing a metavar with no value"))
     env
@@ -425,6 +425,8 @@ let pp_meta_decl pr env decl =
       no_arity ar; pr "local function "; pp_name name; pr ";\n"
   | Ast.MetaPosDecl(ar, name) ->
       no_arity ar; pr "position "; pp_name name; pr ";\n"
+  | Ast.MetaComDecl(ar, name) ->
+      no_arity ar; pr "comments "; pp_name name; pr ";\n"
   | Ast.MetaFmtDecl(ar, name) ->
       no_arity ar; pr "format "; pp_name name; pr ";\n"
   | Ast.MetaFragListDecl(ar, name, len) ->

@@ -41,7 +41,7 @@ override_dh_auto_test:
 override_dh_auto_install:
 	$(MAKE) DESTDIR=$(CURDIR)/debian/coccinelle $(COCCI_FLAGS) install
 	$(MAKE) DESTDIR=$(CURDIR)/debian/coccinelle                install-bash
-	# install the wrapper script, i dont like upstreams one
+	# install the wrapper script, i don't like upstreams one
 	rm $(CURDIR)/debian/coccinelle/usr/bin/spatch*
 	install $(CURDIR)/debian/spatch $(CURDIR)/debian/coccinelle/usr/bin/
 	# move binary into /usr/lib/coccinelle

@@ -340,10 +340,10 @@ identifier i;
 @@
 i++; <=> ++i; <=> i+=1; <=> i=i+1;
 
-// I would like to avoid the following rule, but we cant transform a ++i
+// I would like to avoid the following rule, but we can't transform a ++i
 // in i++ everywhere. We can do it only when the instruction is alone,
 // such as when there is not stuff around it (not as in x = i++) That's why in
-// the previous iso, we have explicitely force the i++ do be alone with
+// the previous iso, we have explicitly force the i++ do be alone with
 // the ';'. But unfortunately in the last expression of the for there is
 // no ';' so the previous rule cannot be applied, hence this special
 // case.

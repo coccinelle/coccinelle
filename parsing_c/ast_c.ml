@@ -829,6 +829,9 @@ and metavars_binding = (Ast_cocci.meta_name, metavar_binding_kind) assoc
   | MetaPosValList   of (* current elem, min, max *)
       (Common.filename * string (*element*) * (posl * posl) option *
 	 posl * posl) list
+  | MetaComValList   of (Token_c.comment_like_token list *
+			   Token_c.comment_like_token list *
+			   Token_c.comment_like_token list) list
   | MetaListlenVal   of int
   | MetaNoVal
 
@@ -1197,7 +1200,7 @@ let al_comments keep_comments x =
 	 supposed to, if this information is taken into account.  Actually,
 	 we only want this information for + code.  If we just put l here,
 	 then lots of tests fail, so it seems that metavariables are being
-	 matched agains, and not just used for + *)
+	 matched again, and not just used for + *)
       let rec loop = function
 	  [] -> []
 	| ((Token_c.TCommentNewline,_) as x)::

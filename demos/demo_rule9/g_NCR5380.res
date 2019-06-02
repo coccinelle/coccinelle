@@ -541,7 +541,7 @@ int generic_NCR5380_biosparam(struct scsi_device *sdev,
  *	@dst: buffer to read into
  *	@len: buffer length
  *
- *	Perform a psuedo DMA mode read from an NCR53C400 or equivalent
+ *	Perform a pseudo DMA mode read from an NCR53C400 or equivalent
  *	controller
  */
  
@@ -625,7 +625,7 @@ static inline int NCR5380_pread(struct Scsi_Host *instance, unsigned char *dst, 
  *	@dst: buffer to read into
  *	@len: buffer length
  *
- *	Perform a psuedo DMA mode read from an NCR53C400 or equivalent
+ *	Perform a pseudo DMA mode read from an NCR53C400 or equivalent
  *	controller
  */
 

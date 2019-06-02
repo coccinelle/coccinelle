@@ -10,7 +10,7 @@ LIBRARY=pcre
 C_LIBS=pcre
 SRC_DIR=pcre-ocaml/src
 
-OCAMLFLAGS+=-I ../stdcompat
+OCAMLFLAGS+=-I $(STDCOMPATDIR)
 
 EXTRACFLAGS=$(PCRE_CFLAGS:%=-ccopt %) $(PCRE_LIBS:%=-cclib %)
 EXTRALNKFLAGS=$(PCRE_LIBS:%=-ldopt %)

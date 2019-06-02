@@ -251,10 +251,10 @@ module XTRANS = struct
 	   Some info ->
 	     failwith
 	       (Printf.sprintf
-		  "weird: dont have position info for the mcodekind in line %d column %d"
+		  "weird: don't have position info for the mcodekind in line %d column %d"
 		  info.Ast_cocci.line info.Ast_cocci.column)
 	 | None ->
-	     failwith "weird: dont have position info for the mcodekind"
+	     failwith "weird: don't have position info for the mcodekind"
 
     (* these remove constraints, at least those that contain pcre regexps,
        which cannot be compared (problem in the unparser) *)
@@ -693,7 +693,7 @@ module XTRANS = struct
      | Ast_cocci.CONTEXT (Ast_cocci.DontCarePos,_)
      | Ast_cocci.MINUS   (Ast_cocci.DontCarePos,_,_,_) ->
          Ast_cocci.DontCarePos
-     | _ -> failwith "weird: dont have position info for the mcodekind 2"
+     | _ -> failwith "weird: don't have position info for the mcodekind 2"
 
   let distrf (ii_of_x_f, distribute_mck_x_f) =
     fun ia x -> fun tin ->
@@ -704,7 +704,7 @@ module XTRANS = struct
       (* bug: check_pos mck max && check_pos mck min
        *
        * if do that then if have - f(...); and in C f(1,2); then we
-       * would get a "already tagged" because the '...' would sucess in
+       * would get a "already tagged" because the '...' would success in
        * transformaing both '1' and '1,2'. So being in the range is not
        * enough. We must be equal exactly to the range!
        *)
@@ -856,7 +856,7 @@ let (transform2: string (* rule name *) -> string list (* dropped_isos *) ->
       let node' = transform_re_node rule_elem node tin in
 
       (* assert that have done something. But with metaruleElem sometimes
-         dont modify fake nodes. So special case before on Fake nodes. *)
+         don't modify fake nodes. So special case before on Fake nodes. *)
       (match F.unwrap node with
       | F.Enter | F.Exit | F.ErrorExit
       | F.EndStatement _ | F.CaseNode _

@@ -111,6 +111,10 @@ let add_pos_meta:
     (Ast.meta_name -> Ast0.constraints -> Ast.meta_collect -> unit) ref =
   ref uninitialized_add_meta
 
+let add_com_meta:
+    (Ast.meta_name -> unit) ref =
+  ref uninitialized_add_meta
+
 let add_fmt_meta: (Ast.meta_name -> Ast0.constraints -> unit) ref =
   ref uninitialized_add_meta
 

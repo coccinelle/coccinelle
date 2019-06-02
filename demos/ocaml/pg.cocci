@@ -22,7 +22,7 @@ yy << r.a;
 @@
 
 if Str.string_match (Str.regexp "^foo") f 0
-then Printf.eprintf "Fct '%s' matchs \"^foo\"\n" f
+then Printf.eprintf "Fct '%s' matches \"^foo\"\n" f
 else Printf.eprintf "Fct '%s' does not match \"^foo\"\n" f
 
 @finalize:ocaml@

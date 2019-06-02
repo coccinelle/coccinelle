@@ -27,6 +27,21 @@ let string_value = function
 		  Coccilib.line_end = line_end;
 		  Coccilib.col_end = col_end }) l in
       Coccilib.Pos locs
+  | Ast_c.MetaComValList l ->
+      Coccilib.Com
+	(List.map
+	   (function (bef,mid,aft) ->
+	     let com_strings l =
+	       List.rev
+		 (List.fold_left
+		    (fun prev cur ->
+		      match cur with
+			(Token_c.TComment,_) -> (Token_c.str_of_token cur) :: prev
+		      | (Token_c.TCommentCpp _,_) -> (Token_c.str_of_token cur) :: prev
+		      | _ -> prev)
+		    [] l) in
+	     (com_strings bef,com_strings mid,com_strings aft))
+	   l)
   | Ast_c.MetaListlenVal n -> Coccilib.Int n
   | v -> Coccilib.Str (Ocamlcocci_aux.stringrep v)
 
@@ -61,7 +76,8 @@ let ast_binding vl = function
       | Ast_c.MetaFmtVal fmt -> Coccilib.Fmt fmt
       | Ast_c.MetaNoVal -> failwith "no value for script metavariable"
 
-      | Ast_c.MetaPosVal _ | Ast_c.MetaPosValList _ | Ast_c.MetaListlenVal _ ->
+      | Ast_c.MetaPosVal _ | Ast_c.MetaPosValList _ | Ast_c.MetaComValList _
+      | Ast_c.MetaListlenVal _ ->
 	  failwith "not associated with a declared metavariable"]
 
 let run mv ve script_vars name code =

@@ -144,6 +144,9 @@ let print_pos l =
     (function
 	Ast.MetaPos(name,_,_,_,_) ->
 	  let name = Ast.unwrap_mcode name in
+	  print_text "@"; print_meta name
+      | Ast.MetaCom(name,_,_) ->
+	  let name = Ast.unwrap_mcode name in
 	  print_text "@"; print_meta name)
     l in
 
@@ -1074,7 +1077,7 @@ and rule_elem arity re =
           mcode print_string ellipsis
       end;
       close_box(); mcode print_string rp;
-      pr_space()
+      force_newline()
   | Ast.Decl decl -> pr_arity arity; annotated_decl decl
 
   | Ast.SeqStart(brace) ->

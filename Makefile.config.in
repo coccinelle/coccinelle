@@ -62,7 +62,7 @@ export CPPFLAGS=@CPPFLAGS@
 MKDIR_P=@MKDIR_P@
 
 # the default Make target
-# Can be overriden e.g. in Makefile.local
+# Can be overridden e.g. in Makefile.local
 TARGET_ALL=all-release
 EXTRA_OCAML_FLAGS=-unsafe
 TARGET_SPATCH=@MAKETARGET_SPATCH@
@@ -119,6 +119,7 @@ PYMLDIR=@PATH_pyml@
 MENHIRDIR=@PATH_menhirLib@
 DYNLINKDIR=@PATH_dynlink@
 BYTESDIR=@PATH_bytes@
+STDCOMPATDIR=@PATH_stdcompat@
 
 # selected ocaml modules
 PYCOCCI_FILE=@PYCOCCI_FILE@

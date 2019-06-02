@@ -1427,7 +1427,7 @@ this point.  The cases are as follows:
 1. Comma then space.
 2. Comma then newline.
 3. Comma then something else.
-4. Newline wth no preceding comma.
+4. Newline with no preceding comma.
 5. Start or end token, ie = ( ) { }.
 6. Anything else.
 
@@ -1755,7 +1755,7 @@ type info =
   | PlusNL of int (* depthplus *) * int (* inparen *)
   | Other of int | Drop | Unindent | Unindent1
   | Label (* label is for a newline that should not be taken into account
-	     to compute indentation; it might be befor a label, a #, or
+	     to compute indentation; it might be before a label, a #, or
 	     just an empty line *)
 
 let print_info l =

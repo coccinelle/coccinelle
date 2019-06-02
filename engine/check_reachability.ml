@@ -31,7 +31,7 @@
   !(1v2) & EXE[!(1v2) U 47]
   The first !(1v2) is to discard immediately cases where the beginning and
   end of the path are the same.  Afterwards, it would only seem necessary to
-  serach up to the next occurrence of 47 (leaf), ensuring that there are not
+  search up to the next occurrence of 47 (leaf), ensuring that there are not
   1s or 2s (starting points) along the way.  Then the second 47 would be in
   the path, but possible not transformed.
  *)
