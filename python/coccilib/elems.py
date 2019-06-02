@@ -11,6 +11,12 @@ class Location:
                 self.line_end = line_end
                 self.column_end = column_end
 
+class Comment:
+ def __init__(self, comment_before, comment_middle, comment_after):
+                self.before = comment_before
+                self.middle = comment_middle
+                self.after = comment_after
+
 class ElemBase:
         def __init__(self):
                 pass
