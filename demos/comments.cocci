@@ -34,3 +34,29 @@ Printf.printf "c4b: %s\n" (String.concat " " c4b);
 Printf.printf "c4m: %s\n" (String.concat " " c4m);
 Printf.printf "c4a: %s\n\n" (String.concat " " c4a);
 Printf.printf "-------------------\n"
+
+@script:python@
+c1 << r.c1;
+c2 << r.c2;
+c3 << r.c3;
+c4 << r.c4;
+@@
+
+print("python test begin ...")
+print("c1b: ", c1[0].before)
+print("c1m: ", c1[0].middle)
+print("c1a: ", c1[0].after)
+
+print("c2b: ", c2[0].before)
+print("c2m: ", c2[0].middle)
+print("c2a: ", c2[0].after)
+
+print("c3b: ", c3[0].before)
+print("c3m: ", c3[0].middle)
+print("c3a: ", c3[0].after)
+
+print("c4b: ", c4[0].before)
+print("c4m: ", c4[0].middle)
+print("c4a: ", c4[0].after)
+
+print("python test end \n")
