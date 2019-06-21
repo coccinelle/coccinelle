@@ -4838,15 +4838,6 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
    *)
 
   | A.Exp exp, nodeb ->
-      (* kind of iso, initialisation vs affectation *)
-      let node =
-        match A.unwrap exp, nodeb with
-        | A.Assignment (ea, op, eb, true), F.Decl decl ->
-            initialisation_to_affectation decl +> F.rewrap node
-        | _ -> node
-      in
-
-
      (* Now keep fullstatement inside the control flow node,
       * so that can then get in a MetaStmtVar the fullstatement to later
       * pp back when the S is in a +. But that means that
@@ -4875,12 +4866,22 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
               )
             )
       in
-      X.cocciExp expfn exp node >>= (fun exp node ->
-        return (
-          A.Exp exp,
-          F.unwrap node
-        )
-      )
+
+      (* kind of iso, initialisation vs affectation *)
+      (match A.unwrap exp, nodeb with
+      | A.Assignment (ea, op, eb, true), F.Decl decl ->
+	  let n =
+            initialisation_to_affectation decl +> F.rewrap node in
+	  X.cocciExp expfn exp n >>= (fun exp n ->
+            return (
+            A.Exp exp,
+	    (* should be ok to keep node, because the changed part is inside *)
+            F.unwrap node))
+      | _ ->
+	  X.cocciExp expfn exp node >>= (fun exp node ->
+            return (
+            A.Exp exp,
+            F.unwrap node)))
 
   | A.Ty ty, nodeb ->
       X.cocciTy fullType ty node >>= (fun ty node ->
