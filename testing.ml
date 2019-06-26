@@ -97,7 +97,7 @@ let testone prefix x compare_with_expected =
   let x    = if x =~ "\\(.*\\)_ver0$" then matched1 x else x in
   let base = if x =~ "\\(.*\\)_ver[0-9]+$" then matched1 x else x in
 
-  let cfile      = prefix ^ x ^ ".c" in
+  let cfile      = if !Flag.c_plus_plus then prefix ^ x ^ ".cpp" else prefix ^ x ^ ".c" in
   let cocci_file = prefix ^ base ^ ".cocci" in
 
   let expected_out = prefix ^ base ^ out_suffix in
