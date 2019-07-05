@@ -1963,6 +1963,23 @@ and statement stmt top after quantified minus_quantified
 	  (* for just a match of an if branch of the form { ... }, just
 	     match the first brace *)
       then quantify guard lbfvs (make_match lbrace)
+      else
+      let empty_body2 =
+	(* match { and } but nothing else *)
+	match Ast.unwrap body with
+	  [body] ->
+	    (match Ast.unwrap body with
+	      Ast.Dots
+		((_,i,Ast.CONTEXT(_,Ast.NOTHING),_),[],_,_) -> true
+	    | _ -> false)
+	| _ -> false in
+      if empty_body2
+      then
+	quantify true [pv;lv]
+	  (quantify guard b1fvs
+	     (make_seq_ex guard
+		[start_brace;aftpred label;
+		  make_seq_after end_brace after]))
       else if ends_in_return body
       then
 	(* matching error handling code *)

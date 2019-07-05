@@ -41,6 +41,8 @@
   matching is not.
 - Allow changing the extension of the name of the file checked by
   --compare-with-expected, using the --expected-extension flag.
+- Optimize case of { ... } when the braces are removed to avoid going
+  through the body.
 ** Bugfix:
 - check identifier constraints when an identifier metavariable appears in a
   struct-typed metavariable.
