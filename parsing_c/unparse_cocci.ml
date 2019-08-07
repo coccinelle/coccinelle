@@ -145,7 +145,7 @@ let print_pos l =
 	Ast.MetaPos(name,_,_,_,_) ->
 	  let name = Ast.unwrap_mcode name in
 	  print_text "@"; print_meta name
-      | Ast.MetaCom(name,_,_) ->
+      | Ast.MetaCom(name,_,_,_) ->
 	  let name = Ast.unwrap_mcode name in
 	  print_text "@"; print_meta name)
     l in

@@ -33,6 +33,7 @@
 - Support llu in C code and SmPL code.  Suggested by Timur Tabi.
 - Add support for macros with an initialiser as the body.  Requested by
   Thomas Pedersen.
+- Allow scripts on comment metavariables.  Requested by Christoph Böhmwalder.
 ** Features:
 - Some changes to the kinds of transformation allowed on declarations or
   fields with multiple variables.  See the last paragrph of the

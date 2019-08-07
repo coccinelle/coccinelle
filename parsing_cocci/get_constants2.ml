@@ -333,7 +333,7 @@ let do_get_constants constants keywords env (neg_pos,_) =
       (List.map
 	 (function
 	     Ast.MetaPos(name,constraints,_,keep,inh) -> minherited name
-	   | Ast.MetaCom(name,keep,inh) -> minherited name)
+	   | Ast.MetaCom(name,constraints,keep,inh) -> minherited name)
 	 (Ast.get_pos_var x)) in
 
   (* if one branch gives no information, then we have to take anything *)

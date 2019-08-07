@@ -243,7 +243,7 @@ let token2c (tok,_) add_clt =
   | PC.TMetaFunc(_,_,_,clt)  -> add_clt "funcmeta" clt
   | PC.TMetaLocalFunc(_,_,_,clt) -> add_clt "funcmeta" clt
   | PC.TMetaPos(_,_,_,clt)   -> "posmeta"
-  | PC.TMetaCom(_,clt)   -> "commeta"
+  | PC.TMetaCom(_,_,clt)   -> "commeta"
   | PC.TMPtVirg -> ";"
   | PC.TArobArob -> "@@"
   | PC.TArob -> "@"
@@ -400,7 +400,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.TOPar0(s,clt) | PC.TMid0(s,clt) | PC.TAnd0(s,clt)
   | PC.TCPar0(s,clt) -> NOTPLUS
   | PC.TMetaPos(nm,_,_,_) -> NOTPLUS
-  | PC.TMetaCom(nm,_) -> NOTPLUS
+  | PC.TMetaCom(nm,_,_) -> NOTPLUS
   | PC.TSub(clt) -> NOTPLUS
   | PC.TDirective(_,clt) -> NOTPLUS
   | PC.TAttr_(clt) -> NOTPLUS
@@ -461,7 +461,7 @@ let get_clt (tok,_) =
   | PC.TMetaDecl(_,_,_,clt) | PC.TMetaField(_,_,_,clt)
   | PC.TMetaFieldList(_,_,_,_,clt)
   | PC.TMetaFunc(_,_,_,clt) | PC.TMetaLocalFunc(_,_,_,clt)
-  | PC.TMetaPos(_,_,_,clt) | PC.TMetaCom(_,clt)
+  | PC.TMetaPos(_,_,_,clt) | PC.TMetaCom(_,_,clt)
   | PC.TMetaDeclarer(_,_,_,clt) | PC.TMetaIterator(_,_,_,clt)
 
   | PC.TWhen(clt) | PC.TWhenTrue(clt) | PC.TWhenFalse(clt)
@@ -923,7 +923,7 @@ let split_token ((tok,_) as t) =
   | PC.TMetaDeclarer(_,_,_,clt) | PC.TMetaIterator(_,_,_,clt) -> split t clt
   | PC.TMPtVirg | PC.TArob | PC.TArobArob | PC.TScript _
   | PC.TInitialize | PC.TFinalize -> ([t],[t])
-  | PC.TPArob clt | PC.TMetaPos(_,_,_,clt) | PC.TMetaCom(_,clt) -> split t clt
+  | PC.TPArob clt | PC.TMetaPos(_,_,_,clt) | PC.TMetaCom(_,_,clt) -> split t clt
 
   | PC.TFunDecl(clt)
   | PC.TWhen(clt) | PC.TWhenTrue(clt) | PC.TWhenFalse(clt)
@@ -1143,7 +1143,7 @@ let detect_types in_meta_decls l =
     | (PC.TMetaStmList(_,_,_,_,_),_)
     | (PC.TMetaDParamList(_,_,_,_,_),_)
     | (PC.TMetaPos(_,_,_,_),_)
-    | (PC.TMetaCom(_,_),_) -> in_meta_decls
+    | (PC.TMetaCom(_,_,_),_) -> in_meta_decls
     | _ -> false in
   let is_tyleft = function (* things that can start a var decl *)
       (PC.TMul(_),_)
@@ -1250,7 +1250,7 @@ let token2line (tok,_) =
   | PC.TMetaFieldList(_,_,_,_,clt)
   | PC.TMetaStm(_,_,_,clt) | PC.TMetaStmList(_,_,_,_,clt)
   | PC.TMetaDParamList(_,_,_,_,clt) | PC.TMetaFunc(_,_,_,clt)
-  | PC.TMetaLocalFunc(_,_,_,clt) | PC.TMetaPos(_,_,_,clt) | PC.TMetaCom(_,clt)
+  | PC.TMetaLocalFunc(_,_,_,clt) | PC.TMetaPos(_,_,_,clt) | PC.TMetaCom(_,_,clt)
 
   | PC.TFunDecl(clt)
   | PC.TWhen(clt) | PC.TWhenTrue(clt) | PC.TWhenFalse(clt)
@@ -1790,10 +1790,10 @@ let consume_minus_positions toks =
 	    (function name ->
 	      Ast0.MetaPosTag(Ast0.MetaPos(name,constraints,per))) in
 	(loop_pos (x::xs))
-    | x::(PC.TPArob _,_)::(PC.TMetaCom(name,clt),_)::xs ->
+    | x::(PC.TPArob _,_)::(PC.TMetaCom(name,constraints,clt),_)::xs ->
 	let x =
 	  process_minus_positions x name clt
-	    (function name -> Ast0.MetaPosTag(Ast0.MetaCom(name))) in
+	    (function name -> Ast0.MetaPosTag(Ast0.MetaCom(name,constraints))) in
 	(loop_pos (x::xs))
     | x::xs -> x::loop_pos xs in
   let rec loop_other = function

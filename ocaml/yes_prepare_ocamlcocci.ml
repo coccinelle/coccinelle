@@ -290,8 +290,10 @@ let prepare coccifile code =
       (posvar, self, (script_name, lang, params, pos, body)) =
     if lang = "ocaml" then
       let kind =
-	if posvar then Ast_cocci.MetaPosDecl (Ast_cocci.NONE, self)
-	else Ast_cocci.MetaIdDecl (Ast_cocci.NONE, self) in
+	match posvar with
+	  Data.POS -> Ast_cocci.MetaPosDecl (Ast_cocci.NONE, self)
+	| Data.COM -> Ast_cocci.MetaComDecl (Ast_cocci.NONE, self)
+	| Data.OTHR -> Ast_cocci.MetaIdDecl (Ast_cocci.NONE, self) in
       let self = (self, kind) in
       (script_name, self::params, body) :: prev
     else

@@ -335,7 +335,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	  (match hidden_pattern with
 	    [Ast0.HiddenVarTag([Ast0.MetaPosTag(Ast0.MetaPos (name1,_,_))])] ->
 	      add_binding name1 (Ast0.HiddenVarTag(hidden_code)) binding
-	  | [Ast0.HiddenVarTag([Ast0.MetaPosTag(Ast0.MetaCom (name1))])] ->
+	  | [Ast0.HiddenVarTag([Ast0.MetaPosTag(Ast0.MetaCom (name1,_))])] ->
 	      add_binding name1 (Ast0.HiddenVarTag(hidden_code)) binding
 	  | [] -> Fail(Position(Ast0.unwrap_mcode(Ast0.meta_pos_name a)))
 	  | _ -> failwith "badly compiled iso - multiple hidden variable")
@@ -1699,7 +1699,7 @@ let instantiate bindings mv_bindings model =
     let new_names =
       match hidden with
 	[Ast0.HiddenVarTag
-	    ([Ast0.MetaPosTag(Ast0.MetaPos (name,_,_)|Ast0.MetaCom (name))])] ->
+	    ([Ast0.MetaPosTag(Ast0.MetaPos (name,_,_)|Ast0.MetaCom (name,_))])] ->
 	  (try
 	  (* not at all sure that this is good enough *)
 	    match lookup name bindings mv_bindings with

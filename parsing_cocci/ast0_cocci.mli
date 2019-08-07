@@ -470,7 +470,7 @@ and exec_code = base_exec_code wrap
 and meta_pos =
     MetaPos of Ast_cocci.meta_name mcode * constraints *
 	Ast_cocci.meta_collect
-  | MetaCom of Ast_cocci.meta_name mcode
+  | MetaCom of Ast_cocci.meta_name mcode * constraints
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)

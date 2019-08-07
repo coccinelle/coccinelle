@@ -499,7 +499,7 @@ and meta_collect = PER | ALL
 and meta_pos =
     MetaPos of meta_name mcode * constraints *
 	meta_collect * keep_binding * inherited
-  | MetaCom of meta_name mcode * keep_binding * inherited
+  | MetaCom of meta_name mcode * constraints * keep_binding * inherited
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)

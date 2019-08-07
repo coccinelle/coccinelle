@@ -2817,7 +2817,7 @@ module Ast_cocci :
       Ast_cocci.meta_pos =
         MetaPos of meta_name mcode * constraints * meta_collect *
           keep_binding * inherited
-      | MetaCom of meta_name mcode * keep_binding * inherited
+      | MetaCom of meta_name mcode * constraints * keep_binding * inherited
     and storage = Ast_cocci.storage = Static | Auto | Register | Extern
     and base_rule_elem =
       Ast_cocci.base_rule_elem =
@@ -3526,7 +3526,7 @@ module Ast0_cocci :
       Ast0_cocci.meta_pos =
         MetaPos of Ast_cocci.meta_name mcode * constraints *
           Ast_cocci.meta_collect
-      | MetaCom of Ast_cocci.meta_name mcode
+      | MetaCom of Ast_cocci.meta_name mcode * constraints
     and base_top_level =
       Ast0_cocci.base_top_level =
         NONDECL of statement

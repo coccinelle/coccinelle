@@ -580,25 +580,27 @@ module XMATCH = struct
 		    (fun new_tin ->
 		      (* constraints are satisfied, now see if we are
 			 compatible with existing bindings *)
-		      let x = Ast_cocci.unwrap_mcode name in
 		      let new_binding =
 			check_add_metavars_binding false keep inherited
-			  (x, pvalu) tin in
-		      (match  new_binding with
+			  (name', pvalu) tin in
+		      (match new_binding with
 			Some binding ->
 			  loop {new_tin with binding = binding} rest
 		      | None -> fail tin))
 		    tin
-	      | Ast_cocci.MetaCom(name,keep,inherited)::rest ->
+	      | Ast_cocci.MetaCom(name,constraints,keep,inherited)::rest ->
 		  let cvalu = Ast_c.MetaComValList (Lazy.force cvalu) in
-		  let x = Ast_cocci.unwrap_mcode name in
-		  let new_binding =
-		    check_add_metavars_binding false keep inherited
-		      (x, cvalu) tin in
-		  (match  new_binding with
-		    Some binding ->
-		      loop {tin with binding = binding} rest
-		  | None -> fail tin) in
+		  let name' = Ast_cocci.unwrap_mcode name in
+		  check_pos_constraints name' cvalu constraints
+		    (fun new_tin ->
+		      let new_binding =
+			check_add_metavars_binding false keep inherited
+			  (name', cvalu) tin in
+		      (match new_binding with
+			Some binding ->
+			  loop {new_tin with binding = binding} rest
+		      | None -> fail tin))
+		    tin in
 	    loop tin positions
 
   let envf keep inherited = fun (k, valu, get_max_min) f tin ->

@@ -17,7 +17,7 @@ type typed_expinfo_bitfield =
     Data.clt * Ast_cocci.list_len option
 type pos_info =
     Ast_cocci.meta_name * Ast0_cocci.constraints * Ast_cocci.meta_collect * Data.clt
-type com_info = Ast_cocci.meta_name * Data.clt
+type com_info = Ast_cocci.meta_name * Ast0_cocci.constraints * Data.clt
 val make_info :
   int ->
   int ->

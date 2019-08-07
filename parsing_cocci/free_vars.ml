@@ -235,14 +235,13 @@ let collect_refs include_constraints =
       List.fold_left bind option_default
 	(List.map
 	   (function
-	       Ast.MetaPos(name,constraints,_,_,_) ->
+	       Ast.MetaPos(name,constraints,_,_,_)
+	     | Ast.MetaCom(name,constraints,_,_) ->
 		 bind [metaid name]
 		   (List.fold_left bind option_default
 		      (if include_constraints
-		      then
-			[Ast.cstr_meta_names constraints]
-		      else []))
-	     | Ast.MetaCom(name,_,_) -> [metaid name])
+		      then [Ast.cstr_meta_names constraints]
+		      else [])))
 	   (Ast.get_pos_var mc))
     (* else option_default *) in
 
@@ -275,8 +274,8 @@ let collect_pos_positions =
       List.concat
 	(List.map
 	   (function
-	       Ast.MetaPos(name,constraints,_,_,_) -> [metaid name]
-	     | Ast.MetaCom(name,_,_) -> [metaid name])
+	       Ast.MetaPos(name,_,_,_,_)
+	     | Ast.MetaCom(name,_,_,_) -> [metaid name])
 	   (Ast.get_pos_var mc)) in
 
   let cprule_elem recursor k re =
@@ -468,7 +467,7 @@ let collect_saved =
       (function acc ->
 	function
 	    Ast.MetaPos(name,_,_,Ast.Saved,_) -> (metaid name) :: acc
-	  | Ast.MetaCom(name,Ast.Saved,_) -> (metaid name) :: acc
+	  | Ast.MetaCom(name,_,Ast.Saved,_) -> (metaid name) :: acc
 	  | _ -> acc)
       option_default (Ast.get_pos_var e) in
 
@@ -649,9 +648,9 @@ let classify_variables metavar_decls minirules used_after =
 	    Ast.MetaPos(name,constraints,per,unitary,inherited) ->
 	      let (unitary,inherited) = classify name in
 	      Ast.MetaPos(name,constraints,per,unitary,inherited)
-	  | Ast.MetaCom(name,unitary,inherited) ->
+	  | Ast.MetaCom(name,constraints,unitary,inherited) ->
 	      let (unitary,inherited) = classify name in
-	      Ast.MetaCom(name,unitary,inherited))
+	      Ast.MetaCom(name,constraints,unitary,inherited))
 	(Ast.get_pos_var mc) in
     Ast.set_pos_var p mc in
 

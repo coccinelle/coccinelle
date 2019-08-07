@@ -484,7 +484,7 @@ and exec_code = base_exec_code wrap
 and meta_pos =
     MetaPos of Ast.meta_name mcode * constraints *
 	Ast.meta_collect
-  | MetaCom of Ast.meta_name mcode
+  | MetaCom of Ast.meta_name mcode * constraints
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
@@ -684,7 +684,7 @@ let rec meta_pos_name = function
 	(* totally fake, just drop the rest, only for isos *)
       meta_pos_name (List.hd vars)
   | MetaPosTag(MetaPos(name,_constraints,_)) -> name
-  | MetaPosTag(MetaCom(name)) -> name
+  | MetaPosTag(MetaCom(name,_constraints)) -> name
   | IdentTag(i) ->
       (match unwrap i with
 	MetaId(name,_constraints,_seed,_pure) -> name

@@ -492,13 +492,13 @@ let init _ = (* per file, first .cocci then iso *)
 	TMetaPos(name,constraints,any,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_com_meta :=
-    (fun name ->
+    (fun name constraints ->
       let fn ((d,ln,_,_,_,_,_,_,_,_) as clt) =
 	(if d = Data.PLUS
 	then
 	  failwith
 	    (Printf.sprintf "%d: comment variables only allowed in minus code" ln));
-	TMetaCom(name,clt) in
+	TMetaCom(name,constraints,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_assignOp_meta :=
     (fun name constraints pure ->

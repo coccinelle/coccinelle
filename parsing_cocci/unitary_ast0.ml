@@ -95,7 +95,20 @@ let get_free checker t =
 			    (_,Ast.MetaPosDecl _) -> false
 			  | _ -> true)
 			params)) accu) } constraints accu
-	| Ast0.MetaPosTag(Ast0.MetaCom(name)) -> checker name
+	| Ast0.MetaPosTag(Ast0.MetaCom(name,constraints)) ->
+	    bind (checker name)
+	      (Ast.cstr_fold
+		 { Ast.empty_cstr_transformer with
+		   Ast.cstr_script =
+		   Some (fun (_,(name,lang,params,_pos,body)) accu ->
+		  (* It seems that position variables are not relevant
+		     for unitaryness, so drop them *)
+		     bind (List.map fst
+			     (List.filter
+				(function
+				    (_,Ast.MetaPosDecl _) -> false
+				  | _ -> true)
+				params)) accu) } constraints accu)
 	| _ -> accu)
       option_default (Ast0.get_pos mc) in
 
@@ -213,7 +226,7 @@ let update_unitary unitary =
   let mcode mc =
     List.iter
       (function
-	  Ast0.MetaPosTag(Ast0.MetaCom(name)) ->
+	  Ast0.MetaPosTag(Ast0.MetaCom(name,constraints)) ->
 	    if not (List.mem (Ast0.unwrap_mcode name) unitary)
 	    then
 	      failwith
