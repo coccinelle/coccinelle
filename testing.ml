@@ -551,7 +551,7 @@ let compare_with_expected outfiles extension =
           | Some outfile -> outfile
           | None -> infile
         in
-        let diff = Compare_c.compare_default expected_res outfile in
+        let diff = Compare_c.compare_default outfile expected_res in
         let s1 = (Compare_c.compare_result_to_string diff) in
         if fst diff = Compare_c.Correct
         then pr2_no_nl (infile ^ " " ^ s1)
