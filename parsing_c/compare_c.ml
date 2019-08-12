@@ -270,7 +270,17 @@ let do_compare_token adjust_cvs to_expected filename1 filename2 =
   *)
 
   let (c1, _stat) = Parse_c.parse_c_and_cpp false false filename1 in
+  let pth = !Includes.include_path in
+  let dir = Filename.dirname filename1 in
+  let ps = Includes.get_parsing_style() in
+  (match ps with
+    Includes.Parse_local_includes ->
+      Includes.set_parsing_style Parse_all_includes;
+      Includes.include_path := [dir]
+  | _ -> Includes.include_path := dir :: pth);
   let (c2, _stat) = Parse_c.parse_c_and_cpp false false filename2 in
+  Includes.set_parsing_style ps;
+  Includes.include_path := pth;
 
   let res =
     if List.length c1 <> List.length c2
