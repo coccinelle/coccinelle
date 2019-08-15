@@ -131,6 +131,13 @@ let normal_form_token adjust_cvs x =
   let x' =
     match x with
     | Parser_c.TString ((s, kind),i1) -> Parser_c.TString (("",kind), i1)
+    | Parser_c.TIfdef (_,_,i) -> Parser_c.TIfdef (Gnone,ref None,i)
+    | Parser_c.TIfdefelif (_,_,i) -> Parser_c.TIfdefelif (Gnone,ref None,i)
+    | Parser_c.TEndif (_,i) -> Parser_c.TEndif (ref None,i)
+    | Parser_c.TIfdefelse (_,i) -> Parser_c.TIfdefelse (ref None,i)
+    | Parser_c.TIfdefBool (b,_,i) -> Parser_c.TIfdefBool (b,ref None,i)
+    | Parser_c.TIfdefMisc (b,_,i) -> Parser_c.TIfdefMisc (b,ref None,i)
+    | Parser_c.TIfdefVersion (b,_,i) -> Parser_c.TIfdefVersion (b,ref None,i)
     | x -> x
   in
   x' +> Token_helpers.visitor_info_of_tok (fun info ->
