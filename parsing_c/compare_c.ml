@@ -324,11 +324,12 @@ let do_compare_token adjust_cvs to_expected filename1 filename2 =
 
   let xs = get_diff filename1 filename2 "-b -B" in
 
-  if xs=[] && (res <> Correct)
-  then failwith
-      (Printf.sprintf "%s %s"
+  (if xs=[] && (res <> Correct)
+  then Printf.eprintf "%s %s"
     "Impossible: How can diff be null and have not Correct in compare_c?"
-      (Dumper.dump res));
+      (Dumper.dump res))
+
+;
 
   res, xs
 
