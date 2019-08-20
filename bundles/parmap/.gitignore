@@ -1,7 +1,7 @@
 parmap.1.0-rc7.1
 *.a
 *.o
-*.ml*
+./*.ml*
 *.c
 *.h
 *.so

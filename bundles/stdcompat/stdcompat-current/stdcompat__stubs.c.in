@@ -1,0 +1,12 @@
+#include <caml/alloc.h>
+#include <string.h>
+
+@C_BEGIN_BEFORE_4_06_0@
+value
+caml_alloc_initialized_string(mlsize_t len, const char *p)
+{
+  value result = caml_alloc_string(len);
+  memcpy((char *)String_val(result), p, len);
+  return result;
+}
+@C_END_BEFORE_4_06_0@

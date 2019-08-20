@@ -1,0 +1,1137 @@
+module type S = sig
+  exception Exit
+
+  type fpclass = Pervasives.fpclass =
+    | FP_normal 
+    | FP_subnormal 
+    | FP_zero 
+    | FP_infinite 
+    | FP_nan 
+
+  type in_channel = Stdcompat__init.in_channel
+
+  type out_channel = Stdcompat__init.out_channel
+
+  type open_flag = Pervasives.open_flag =
+    | Open_rdonly 
+    | Open_wronly 
+    | Open_append 
+    | Open_creat 
+    | Open_trunc 
+    | Open_excl 
+    | Open_binary 
+    | Open_text
+    | Open_nonblock 
+
+  @BEGIN_FROM_4_02_0@
+  module LargeFile = Pervasives.LargeFile
+  @END_FROM_4_02_0@
+  @BEGIN_BEFORE_4_02_0@
+  module LargeFile : sig
+      val seek_out : out_channel -> int64 -> unit
+      val pos_out : out_channel -> int64
+      val out_channel_length : out_channel -> int64
+      val seek_in : in_channel -> int64 -> unit
+      val pos_in : in_channel -> int64
+      val in_channel_length : in_channel -> int64
+  end
+  @END_BEFORE_4_02_0@
+  
+  type 'a ref = 'a Pervasives.ref = {
+    mutable contents: 'a }
+  
+  type ('a, 'b) result =
+    ('a, 'b) Stdcompat__init.result =
+    | Ok of 'a 
+    | Error of 'b
+  
+  type ('a, 'b, 'c, 'd, 'e, 'f) format6 =
+    ('a, 'b, 'c, 'd, 'e, 'f) Stdcompat__init.format6
+  
+  type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6
+  
+  type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4
+
+  val stdin : in_channel
+  
+  val stdout : out_channel
+  
+  val stderr : out_channel
+  
+  val open_out : string -> out_channel
+  
+  val open_out_bin : string -> out_channel
+  
+  val open_out_gen : open_flag list -> int -> string -> out_channel
+  
+  val flush : out_channel -> unit
+  
+  val output_char : out_channel -> char -> unit
+  
+  val output_string : out_channel -> string -> unit
+  
+  val output_bytes : out_channel -> Stdcompat__init.bytes -> unit
+  
+  val output : out_channel -> Stdcompat__init.bytes -> int -> int -> unit
+  
+  val output_substring : out_channel -> string -> int -> int -> unit
+  
+  val output_byte : out_channel -> int -> unit
+  
+  val output_binary_int : out_channel -> int -> unit
+  
+  val output_value : out_channel -> 'a -> unit
+  
+  val seek_out : out_channel -> int -> unit
+  
+  val pos_out : out_channel -> int
+  
+  val out_channel_length : out_channel -> int
+  
+  val close_out : out_channel -> unit
+  
+  val close_out_noerr : out_channel -> unit
+  
+  val set_binary_mode_out : out_channel -> bool -> unit
+  
+  val open_in : string -> in_channel
+  
+  val open_in_bin : string -> in_channel
+  
+  val open_in_gen : open_flag list -> int -> string -> in_channel
+  
+  val input_char : in_channel -> char
+  
+  val input_line : in_channel -> string
+  
+  val input : in_channel -> Stdcompat__init.bytes -> int -> int -> int
+  
+  val really_input : in_channel -> Stdcompat__init.bytes -> int -> int -> unit
+  
+  val really_input_string : in_channel -> int -> string
+  
+  val input_byte : in_channel -> int
+  
+  val input_binary_int : in_channel -> int
+  
+  val input_value : in_channel -> 'a
+  
+  val seek_in : in_channel -> int -> unit
+  
+  val pos_in : in_channel -> int
+  
+  val in_channel_length : in_channel -> int
+  
+  val close_in : in_channel -> unit
+  
+  val close_in_noerr : in_channel -> unit
+  
+  val set_binary_mode_in : in_channel -> bool -> unit
+  
+  val string_of_format : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> string
+  
+  val (^^) :
+    ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
+      ('f, 'b, 'c, 'e, 'g, 'h) format6 ->
+        ('a, 'b, 'c, 'd, 'g, 'h) format6
+  
+  val bool_of_string_opt : string -> bool option
+  
+  val int_of_string_opt : string -> int option
+  
+  val float_of_string_opt : string -> float option
+  
+  val read_int_opt : unit -> int option
+  
+  val read_float_opt : unit -> float option
+  
+  @BEGIN_FROM_4_02_0@
+  external raise_notrace : exn -> 'a = "%raise_notrace"
+  @END_FROM_4_02_0@
+  @BEGIN_BEFORE_4_02_0@
+  external raise_notrace : exn -> 'a = "%raise"
+  @END_BEFORE_4_02_0@
+  (** @since 4.02.0: external raise_notrace : exn -> 'a = "%raise_notrace"
+   *)
+  
+  @BEGIN_FROM_4_02_0@
+  external __LOC__ : string = "%loc_LOC"
+  @END_FROM_4_02_0@
+  @BEGIN_BEFORE_4_02_0@
+  val __LOC__ : string
+  @END_BEFORE_4_02_0@
+  (** @since 4.02.0: external __LOC__ : string = "%loc_LOC"
+   *)
+  
+  @BEGIN_FROM_4_02_0@
+  external __FILE__ : string = "%loc_FILE"
+  @END_FROM_4_02_0@
+  @BEGIN_BEFORE_4_02_0@
+  val __FILE__ : string
+  @END_BEFORE_4_02_0@
+  (** @since 4.02.0: external __FILE__ : string = "%loc_FILE"
+   *)
+  
+  @BEGIN_FROM_4_02_0@
+  external __LINE__ : int = "%loc_LINE"
+  @END_FROM_4_02_0@
+  @BEGIN_BEFORE_4_02_0@
+  val __LINE__ : int
+  @END_BEFORE_4_02_0@
+  (** @since 4.02.0: external __LINE__ : int = "%loc_LINE"
+   *)
+  
+  @BEGIN_FROM_4_02_0@
+  external __MODULE__ : string = "%loc_MODULE"
+  @END_FROM_4_02_0@
+  @BEGIN_BEFORE_4_02_0@
+  val __MODULE__ : string
+  @END_BEFORE_4_02_0@
+  (** @since 4.02.0: external __MODULE__ : string = "%loc_MODULE"
+   *)
+  
+  @BEGIN_FROM_4_02_0@
+  external __POS__ : (string * int * int * int) = "%loc_POS"
+  @END_FROM_4_02_0@
+  @BEGIN_BEFORE_4_02_0@
+  val __POS__ : (string * int * int * int)
+  @END_BEFORE_4_02_0@
+  (** @since 4.02.0: external __POS__ : (string * int * int * int) = "%loc_POS"
+   *)
+  
+  @BEGIN_FROM_4_02_0@
+  external __LOC_OF__ : 'a -> (string * 'a) = "%loc_LOC"
+  @END_FROM_4_02_0@
+  @BEGIN_BEFORE_4_02_0@
+  val __LOC_OF__ : 'a -> (string * 'a)
+  @END_BEFORE_4_02_0@
+  (** @since 4.02.0: external __LOC_OF__ : 'a -> (string * 'a) = "%loc_LOC"
+   *)
+  
+  @BEGIN_FROM_4_02_0@
+  external __LINE_OF__ : 'a -> (int * 'a) = "%loc_LINE"
+  @END_FROM_4_02_0@
+  @BEGIN_BEFORE_4_02_0@
+  val __LINE_OF__ : 'a -> (int * 'a)
+  @END_BEFORE_4_02_0@
+  (** @since 4.02.0: external __LINE_OF__ : 'a -> (int * 'a) = "%loc_LINE"
+   *)
+  
+  @BEGIN_FROM_4_02_0@
+  external __POS_OF__ : 'a -> ((string * int * int * int) * 'a) = "%loc_POS"
+  @END_FROM_4_02_0@
+  @BEGIN_BEFORE_4_02_0@
+  val __POS_OF__ : 'a -> ((string * int * int * int) * 'a)
+  @END_BEFORE_4_02_0@
+  (** @since 4.02.0:
+      external __POS_OF__ :
+        'a -> ((string * int * int * int) * 'a) = "%loc_POS"
+   *)
+  
+  @BEGIN_FROM_4_02_0@
+  val print_bytes : bytes -> unit
+  @END_FROM_4_02_0@
+  @BEGIN_BEFORE_4_02_0@
+  val print_bytes : Stdcompat__init.bytes -> unit
+  @END_BEFORE_4_02_0@
+  (** @since 4.02.0: val print_bytes : bytes -> unit
+   *)
+  
+  @BEGIN_FROM_4_02_0@
+  val prerr_bytes : bytes -> unit
+  @END_FROM_4_02_0@
+  @BEGIN_BEFORE_4_02_0@
+  val prerr_bytes : Stdcompat__init.bytes -> unit
+  @END_BEFORE_4_02_0@
+  (** @since 4.02.0: val prerr_bytes : bytes -> unit
+   *)
+  
+  @BEGIN_FROM_4_01_0@
+  external (|>) : 'a -> ('a -> 'b) -> 'b = "%revapply"
+  @END_FROM_4_01_0@
+  @BEGIN_BEFORE_4_01_0@
+  val (|>) : 'a -> ('a -> 'b) -> 'b
+  @END_BEFORE_4_01_0@
+  (** @since 4.01.0: external (|>) : 'a -> ('a -> 'b) -> 'b = "%revapply"
+   *)
+  
+  @BEGIN_FROM_4_01_0@
+  external (@@) : ('a -> 'b) -> 'a -> 'b = "%apply"
+  @END_FROM_4_01_0@
+  @BEGIN_BEFORE_4_01_0@
+  val (@@) : ('a -> 'b) -> 'a -> 'b
+  @END_BEFORE_4_01_0@
+  (** @since 4.01.0: external (@@) : ('a -> 'b) -> 'a -> 'b = "%apply"
+   *)
+  
+  @BEGIN_FROM_4_03_0@
+  external hypot : float -> float -> float = "caml_hypot_float" "caml_hypot"
+  [@@unboxed ][@@noalloc ]
+  @END_FROM_4_03_0@
+  @BEGIN_BEFORE_4_03_0@
+  @BEGIN_FROM_4_00_0@
+  external hypot :
+    float -> float -> float = "caml_hypot_float" "caml_hypot" "float"
+  @END_FROM_4_00_0@
+  @BEGIN_BEFORE_4_00_0@
+  val hypot : float -> float -> float
+  @END_BEFORE_4_00_0@
+  
+  @END_BEFORE_4_03_0@
+  (** @since 4.03.0:
+      external hypot :
+        float -> float -> float = "caml_hypot_float" "caml_hypot"[@@unboxed ]
+      [@@noalloc ]
+  @since 4.00.0:
+  external hypot :
+    float -> float -> float = "caml_hypot_float" "caml_hypot" "float"
+   *)
+  
+  @BEGIN_FROM_4_03_0@
+  external copysign :
+    float -> float -> float = "caml_copysign_float" "caml_copysign"[@@unboxed ]
+  [@@noalloc ]
+  @END_FROM_4_03_0@
+  @BEGIN_BEFORE_4_03_0@
+  @BEGIN_FROM_4_00_0@
+  external copysign :
+    float -> float -> float = "caml_copysign_float" "caml_copysign" "float"
+  @END_FROM_4_00_0@
+  @BEGIN_BEFORE_4_00_0@
+  val copysign : float -> float -> float
+  @END_BEFORE_4_00_0@
+  
+  @END_BEFORE_4_03_0@
+  (** @since 4.03.0:
+      external copysign :
+        float -> float -> float = "caml_copysign_float" "caml_copysign"
+      [@@unboxed ][@@noalloc ]
+  @since 4.00.0:
+  external copysign :
+    float -> float -> float = "caml_copysign_float" "caml_copysign" "float"
+   *)
+  
+  external (~+) : int -> int = "%identity"
+  (** @since 3.12.0: external (~+) : int -> int = "%identity" *)
+  
+  external (~+.) : float -> float = "%identity"
+  (** @since 3.12.0: external (~+.) : float -> float = "%identity" *)
+  
+  @BEGIN_FROM_4_03_0@
+  external expm1 : float -> float = "caml_expm1_float" "caml_expm1"[@@unboxed ]
+  [@@noalloc ]
+  @END_FROM_4_03_0@
+  @BEGIN_BEFORE_4_03_0@
+  @BEGIN_FROM_3_12_0@
+  external expm1 : float -> float = "caml_expm1_float" "caml_expm1" "float"
+  @END_FROM_3_12_0@
+  @BEGIN_BEFORE_3_12_0@
+  val expm1 : float -> float
+  @END_BEFORE_3_12_0@
+  
+  @END_BEFORE_4_03_0@
+  (** @since 4.03.0:
+      external expm1 : float -> float = "caml_expm1_float" "caml_expm1"
+      [@@unboxed ][@@noalloc ]
+  @since 3.12.0:
+  external expm1 : float -> float = "caml_expm1_float" "caml_expm1" "float"
+   *)
+  
+  @BEGIN_FROM_4_03_0@
+  external log1p : float -> float = "caml_log1p_float" "caml_log1p"[@@unboxed ]
+  [@@noalloc ]
+  @END_FROM_4_03_0@
+  @BEGIN_BEFORE_4_03_0@
+  @BEGIN_FROM_3_12_0@
+  external log1p : float -> float = "caml_log1p_float" "caml_log1p" "float"
+  @END_FROM_3_12_0@
+  @BEGIN_BEFORE_3_12_0@
+  val log1p : float -> float
+  @END_BEFORE_3_12_0@
+  
+  @END_BEFORE_4_03_0@
+  (** @since 4.03.0:
+      external log1p : float -> float = "caml_log1p_float" "caml_log1p"
+      [@@unboxed ][@@noalloc ]
+  @since 3.12.0:
+  external log1p : float -> float = "caml_log1p_float" "caml_log1p" "float"
+   *)
+  
+  external raise : exn -> 'a = "%raise"
+  (** Alias for {!Pervasives.raise} *)
+  
+  val invalid_arg : string -> 'a
+  (** Alias for {!Pervasives.invalid_arg} *)
+  
+  val failwith : string -> 'a
+  (** Alias for {!Pervasives.failwith} *)
+  
+  external (=) : 'a -> 'a -> bool = "%equal"
+  (** Alias for {!Pervasives.=} *)
+  
+  external (<>) : 'a -> 'a -> bool = "%notequal"
+  (** Alias for {!Pervasives.<>} *)
+  
+  external (<) : 'a -> 'a -> bool = "%lessthan"
+  (** Alias for {!Pervasives.<} *)
+  
+  external (>) : 'a -> 'a -> bool = "%greaterthan"
+  (** Alias for {!Pervasives.>} *)
+  
+  external (<=) : 'a -> 'a -> bool = "%lessequal"
+  (** Alias for {!Pervasives.<=} *)
+  
+  external (>=) : 'a -> 'a -> bool = "%greaterequal"
+  (** Alias for {!Pervasives.>=} *)
+  
+  external compare : 'a -> 'a -> int = "%compare"
+  (** Alias for {!Pervasives.compare} *)
+  
+  val min : 'a -> 'a -> 'a
+  (** Alias for {!Pervasives.min} *)
+  
+  val max : 'a -> 'a -> 'a
+  (** Alias for {!Pervasives.max} *)
+  
+  external (==) : 'a -> 'a -> bool = "%eq"
+  (** Alias for {!Pervasives.==} *)
+  
+  external (!=) : 'a -> 'a -> bool = "%noteq"
+  (** Alias for {!Pervasives.!=} *)
+  
+  external not : bool -> bool = "%boolnot"
+  (** Alias for {!Pervasives.not} *)
+  
+  external (&&) : bool -> bool -> bool = "%sequand"
+  (** Alias for {!Pervasives.&&} *)
+  @BEGIN_FROM_4_02_0@
+  external (&) : bool -> bool -> bool = "%sequand"[@@ocaml.deprecated
+                                                    "Use (&&) instead."]
+  @END_FROM_4_02_0@
+  @BEGIN_BEFORE_4_02_0@
+  external (&) : bool -> bool -> bool = "%sequand"
+  @END_BEFORE_4_02_0@
+  
+  (** 
+  @since 4.02.0:
+  external (&) : bool -> bool -> bool = "%sequand"[@@ocaml.deprecated
+                                                    "Use (&&) instead."]
+  @since 3.07.0: external (&) : bool -> bool -> bool = "%sequand"
+   *)
+  
+  external (||) : bool -> bool -> bool = "%sequor"
+  (** Alias for {!Pervasives.||} *)
+  
+  @BEGIN_FROM_4_02_0@
+  external (or) : bool -> bool -> bool = "%sequor"[@@ocaml.deprecated
+                                                    "Use (||) instead."]
+  @END_FROM_4_02_0@
+  @BEGIN_BEFORE_4_02_0@
+  external (or) : bool -> bool -> bool = "%sequor"
+  @END_BEFORE_4_02_0@
+  
+  (**
+  @since 4.02.0:
+  external (or) : bool -> bool -> bool = "%sequor"[@@ocaml.deprecated
+                                                    "Use (||) instead."]
+  @since 3.07.0: external (or) : bool -> bool -> bool = "%sequor"
+   *)
+  
+  external (~-) : int -> int = "%negint"
+  (** Alias for {!Pervasives.~-} *)
+  
+  external succ : int -> int = "%succint"
+  (** Alias for {!Pervasives.succ} *)
+  
+  external pred : int -> int = "%predint"
+  (** Alias for {!Pervasives.pred} *)
+  
+  external (+) : int -> int -> int = "%addint"
+  (** Alias for {!Pervasives.+} *)
+  
+  external (-) : int -> int -> int = "%subint"
+  (** Alias for {!Pervasives.-} *)
+  
+  external ( * ) : int -> int -> int = "%mulint"
+  (** Alias for {!Pervasives.*} *)
+  
+  external (/) : int -> int -> int = "%divint"
+  (** Alias for {!Pervasives./} *)
+  
+  external (mod) : int -> int -> int = "%modint"
+  (** Alias for {!Pervasives.mod} *)
+  
+  val abs : int -> int
+  (** Alias for {!Pervasives.abs} *)
+  
+  val max_int : int
+  (** Alias for {!Pervasives.max_int} *)
+  
+  val min_int : int
+  (** Alias for {!Pervasives.min_int} *)
+  
+  external (land) : int -> int -> int = "%andint"
+  (** Alias for {!Pervasives.land} *)
+  
+  external (lor) : int -> int -> int = "%orint"
+  (** Alias for {!Pervasives.lor} *)
+  
+  external (lxor) : int -> int -> int = "%xorint"
+  (** Alias for {!Pervasives.lxor} *)
+  
+  val lnot : int -> int
+  (** Alias for {!Pervasives.lnot} *)
+  
+  external (lsl) : int -> int -> int = "%lslint"
+  (** Alias for {!Pervasives.lsl} *)
+  
+  external (lsr) : int -> int -> int = "%lsrint"
+  (** Alias for {!Pervasives.lsr} *)
+  
+  external (asr) : int -> int -> int = "%asrint"
+  (** Alias for {!Pervasives.asr} *)
+  
+  external (~-.) : float -> float = "%negfloat"
+  (** Alias for {!Pervasives.~-.} *)
+  
+  external (+.) : float -> float -> float = "%addfloat"
+  (** Alias for {!Pervasives.+.} *)
+  
+  external (-.) : float -> float -> float = "%subfloat"
+  (** Alias for {!Pervasives.-.} *)
+  
+  external ( *. ) : float -> float -> float = "%mulfloat"
+  (** Alias for {!Pervasives.*.} *)
+  
+  external (/.) : float -> float -> float = "%divfloat"
+  (** Alias for {!Pervasives./.} *)
+  
+  @BEGIN_FROM_4_03_0@
+  external ( ** ) : float -> float -> float = "caml_power_float" "pow"[@@unboxed
+                                                                      ]
+  [@@noalloc ]
+  @END_FROM_4_03_0@
+  @BEGIN_BEFORE_4_03_0@
+  @BEGIN_FROM_3_08_0@
+  external ( ** ) : float -> float -> float = "caml_power_float" "pow" "float"
+  @END_FROM_3_08_0@
+  @BEGIN_BEFORE_3_08_0@
+  external ( ** ) : float -> float -> float = "power_float" "pow" "float"
+  @END_BEFORE_3_08_0@
+  
+  @END_BEFORE_4_03_0@
+  (** @since 4.03.0:
+      external ( ** ) : float -> float -> float = "caml_power_float" "pow"
+      [@@unboxed ][@@noalloc ]
+  @since 3.08.0:
+  external ( ** ) : float -> float -> float = "caml_power_float" "pow" "float"
+  @since 3.07.0:
+  external ( ** ) : float -> float -> float = "power_float" "pow" "float"
+   *)
+  
+  @BEGIN_FROM_4_03_0@
+  external sqrt : float -> float = "caml_sqrt_float" "sqrt"[@@unboxed ]
+  [@@noalloc ]
+  @END_FROM_4_03_0@
+  @BEGIN_BEFORE_4_03_0@
+  @BEGIN_FROM_3_08_0@
+  external sqrt : float -> float = "caml_sqrt_float" "sqrt" "float"
+  @END_FROM_3_08_0@
+  @BEGIN_BEFORE_3_08_0@
+  external sqrt : float -> float = "sqrt_float" "sqrt" "float"
+  @END_BEFORE_3_08_0@
+  
+  @END_BEFORE_4_03_0@
+  (** @since 4.03.0:
+      external sqrt : float -> float = "caml_sqrt_float" "sqrt"[@@unboxed ]
+      [@@noalloc ]
+  @since 3.08.0:
+  external sqrt : float -> float = "caml_sqrt_float" "sqrt" "float"
+  @since 3.07.0: external sqrt : float -> float = "sqrt_float" "sqrt" "float"
+   *)
+  
+  @BEGIN_FROM_4_03_0@
+  external exp : float -> float = "caml_exp_float" "exp"[@@unboxed ][@@noalloc
+                                                                      ]
+  @END_FROM_4_03_0@
+  @BEGIN_BEFORE_4_03_0@
+  @BEGIN_FROM_3_08_0@
+  external exp : float -> float = "caml_exp_float" "exp" "float"
+  @END_FROM_3_08_0@
+  @BEGIN_BEFORE_3_08_0@
+  external exp : float -> float = "exp_float" "exp" "float"
+  @END_BEFORE_3_08_0@
+  
+  @END_BEFORE_4_03_0@
+  (** @since 4.03.0:
+      external exp : float -> float = "caml_exp_float" "exp"[@@unboxed ]
+      [@@noalloc ]
+  @since 3.08.0: external exp : float -> float = "caml_exp_float" "exp" "float"
+  @since 3.07.0: external exp : float -> float = "exp_float" "exp" "float"
+   *)
+  
+  @BEGIN_FROM_4_03_0@
+  external log : float -> float = "caml_log_float" "log"[@@unboxed ][@@noalloc
+                                                                      ]
+  @END_FROM_4_03_0@
+  @BEGIN_BEFORE_4_03_0@
+  @BEGIN_FROM_3_08_0@
+  external log : float -> float = "caml_log_float" "log" "float"
+  @END_FROM_3_08_0@
+  @BEGIN_BEFORE_3_08_0@
+  external log : float -> float = "log_float" "log" "float"
+  @END_BEFORE_3_08_0@
+  
+  @END_BEFORE_4_03_0@
+  (** @since 4.03.0:
+      external log : float -> float = "caml_log_float" "log"[@@unboxed ]
+      [@@noalloc ]
+  @since 3.08.0: external log : float -> float = "caml_log_float" "log" "float"
+  @since 3.07.0: external log : float -> float = "log_float" "log" "float"
+   *)
+  
+  @BEGIN_FROM_4_03_0@
+  external log10 : float -> float = "caml_log10_float" "log10"[@@unboxed ]
+  [@@noalloc ]
+  @END_FROM_4_03_0@
+  @BEGIN_BEFORE_4_03_0@
+  @BEGIN_FROM_3_08_0@
+  external log10 : float -> float = "caml_log10_float" "log10" "float"
+  @END_FROM_3_08_0@
+  @BEGIN_BEFORE_3_08_0@
+  external log10 : float -> float = "log10_float" "log10" "float"
+  @END_BEFORE_3_08_0@
+  
+  @END_BEFORE_4_03_0@
+  (** @since 4.03.0:
+      external log10 : float -> float = "caml_log10_float" "log10"[@@unboxed ]
+      [@@noalloc ]
+  @since 3.08.0:
+  external log10 : float -> float = "caml_log10_float" "log10" "float"
+  @since 3.07.0:
+  external log10 : float -> float = "log10_float" "log10" "float"
+   *)
+  
+  @BEGIN_FROM_4_03_0@
+  external cos : float -> float = "caml_cos_float" "cos"[@@unboxed ][@@noalloc
+                                                                      ]
+  @END_FROM_4_03_0@
+  @BEGIN_BEFORE_4_03_0@
+  @BEGIN_FROM_3_08_0@
+  external cos : float -> float = "caml_cos_float" "cos" "float"
+  @END_FROM_3_08_0@
+  @BEGIN_BEFORE_3_08_0@
+  external cos : float -> float = "cos_float" "cos" "float"
+  @END_BEFORE_3_08_0@
+  
+  @END_BEFORE_4_03_0@
+  (** @since 4.03.0:
+      external cos : float -> float = "caml_cos_float" "cos"[@@unboxed ]
+      [@@noalloc ]
+  @since 3.08.0: external cos : float -> float = "caml_cos_float" "cos" "float"
+  @since 3.07.0: external cos : float -> float = "cos_float" "cos" "float"
+   *)
+  
+  @BEGIN_FROM_4_03_0@
+  external sin : float -> float = "caml_sin_float" "sin"[@@unboxed ][@@noalloc
+                                                                      ]
+  @END_FROM_4_03_0@
+  @BEGIN_BEFORE_4_03_0@
+  @BEGIN_FROM_3_08_0@
+  external sin : float -> float = "caml_sin_float" "sin" "float"
+  @END_FROM_3_08_0@
+  @BEGIN_BEFORE_3_08_0@
+  external sin : float -> float = "sin_float" "sin" "float"
+  @END_BEFORE_3_08_0@
+  
+  @END_BEFORE_4_03_0@
+  (** @since 4.03.0:
+      external sin : float -> float = "caml_sin_float" "sin"[@@unboxed ]
+      [@@noalloc ]
+  @since 3.08.0: external sin : float -> float = "caml_sin_float" "sin" "float"
+  @since 3.07.0: external sin : float -> float = "sin_float" "sin" "float"
+   *)
+  
+  @BEGIN_FROM_4_03_0@
+  external tan : float -> float = "caml_tan_float" "tan"[@@unboxed ][@@noalloc
+                                                                      ]
+  @END_FROM_4_03_0@
+  @BEGIN_BEFORE_4_03_0@
+  @BEGIN_FROM_3_08_0@
+  external tan : float -> float = "caml_tan_float" "tan" "float"
+  @END_FROM_3_08_0@
+  @BEGIN_BEFORE_3_08_0@
+  external tan : float -> float = "tan_float" "tan" "float"
+  @END_BEFORE_3_08_0@
+  
+  @END_BEFORE_4_03_0@
+  (** @since 4.03.0:
+      external tan : float -> float = "caml_tan_float" "tan"[@@unboxed ]
+      [@@noalloc ]
+  @since 3.08.0: external tan : float -> float = "caml_tan_float" "tan" "float"
+  @since 3.07.0: external tan : float -> float = "tan_float" "tan" "float"
+   *)
+  
+  @BEGIN_FROM_4_03_0@
+  external acos : float -> float = "caml_acos_float" "acos"[@@unboxed ]
+  [@@noalloc ]
+  @END_FROM_4_03_0@
+  @BEGIN_BEFORE_4_03_0@
+  @BEGIN_FROM_3_08_0@
+  external acos : float -> float = "caml_acos_float" "acos" "float"
+  @END_FROM_3_08_0@
+  @BEGIN_BEFORE_3_08_0@
+  external acos : float -> float = "acos_float" "acos" "float"
+  @END_BEFORE_3_08_0@
+  
+  @END_BEFORE_4_03_0@
+  (** @since 4.03.0:
+      external acos : float -> float = "caml_acos_float" "acos"[@@unboxed ]
+      [@@noalloc ]
+  @since 3.08.0:
+  external acos : float -> float = "caml_acos_float" "acos" "float"
+  @since 3.07.0: external acos : float -> float = "acos_float" "acos" "float"
+   *)
+  
+  @BEGIN_FROM_4_03_0@
+  external asin : float -> float = "caml_asin_float" "asin"[@@unboxed ]
+  [@@noalloc ]
+  @END_FROM_4_03_0@
+  @BEGIN_BEFORE_4_03_0@
+  @BEGIN_FROM_3_08_0@
+  external asin : float -> float = "caml_asin_float" "asin" "float"
+  @END_FROM_3_08_0@
+  @BEGIN_BEFORE_3_08_0@
+  external asin : float -> float = "asin_float" "asin" "float"
+  @END_BEFORE_3_08_0@
+  
+  @END_BEFORE_4_03_0@
+  (** @since 4.03.0:
+      external asin : float -> float = "caml_asin_float" "asin"[@@unboxed ]
+      [@@noalloc ]
+  @since 3.08.0:
+  external asin : float -> float = "caml_asin_float" "asin" "float"
+  @since 3.07.0: external asin : float -> float = "asin_float" "asin" "float"
+   *)
+  
+  @BEGIN_FROM_4_03_0@
+  external atan : float -> float = "caml_atan_float" "atan"[@@unboxed ]
+  [@@noalloc ]
+  @END_FROM_4_03_0@
+  @BEGIN_BEFORE_4_03_0@
+  @BEGIN_FROM_3_08_0@
+  external atan : float -> float = "caml_atan_float" "atan" "float"
+  @END_FROM_3_08_0@
+  @BEGIN_BEFORE_3_08_0@
+  external atan : float -> float = "atan_float" "atan" "float"
+  @END_BEFORE_3_08_0@
+  
+  @END_BEFORE_4_03_0@
+  (** @since 4.03.0:
+      external atan : float -> float = "caml_atan_float" "atan"[@@unboxed ]
+      [@@noalloc ]
+  @since 3.08.0:
+  external atan : float -> float = "caml_atan_float" "atan" "float"
+  @since 3.07.0: external atan : float -> float = "atan_float" "atan" "float"
+   *)
+  
+  @BEGIN_FROM_4_03_0@
+  external atan2 : float -> float -> float = "caml_atan2_float" "atan2"
+  [@@unboxed ][@@noalloc ]
+  @END_FROM_4_03_0@
+  @BEGIN_BEFORE_4_03_0@
+  @BEGIN_FROM_3_08_0@
+  external atan2 : float -> float -> float = "caml_atan2_float" "atan2" "float"
+  @END_FROM_3_08_0@
+  @BEGIN_BEFORE_3_08_0@
+  external atan2 : float -> float -> float = "atan2_float" "atan2" "float"
+  @END_BEFORE_3_08_0@
+  
+  @END_BEFORE_4_03_0@
+  (** @since 4.03.0:
+      external atan2 : float -> float -> float = "caml_atan2_float" "atan2"
+      [@@unboxed ][@@noalloc ]
+  @since 3.08.0:
+  external atan2 : float -> float -> float = "caml_atan2_float" "atan2" "float"
+  @since 3.07.0:
+  external atan2 : float -> float -> float = "atan2_float" "atan2" "float"
+   *)
+  
+  @BEGIN_FROM_4_03_0@
+  external cosh : float -> float = "caml_cosh_float" "cosh"[@@unboxed ]
+  [@@noalloc ]
+  @END_FROM_4_03_0@
+  @BEGIN_BEFORE_4_03_0@
+  @BEGIN_FROM_3_08_0@
+  external cosh : float -> float = "caml_cosh_float" "cosh" "float"
+  @END_FROM_3_08_0@
+  @BEGIN_BEFORE_3_08_0@
+  external cosh : float -> float = "cosh_float" "cosh" "float"
+  @END_BEFORE_3_08_0@
+  
+  @END_BEFORE_4_03_0@
+  (** @since 4.03.0:
+      external cosh : float -> float = "caml_cosh_float" "cosh"[@@unboxed ]
+      [@@noalloc ]
+  @since 3.08.0:
+  external cosh : float -> float = "caml_cosh_float" "cosh" "float"
+  @since 3.07.0: external cosh : float -> float = "cosh_float" "cosh" "float"
+   *)
+  
+  @BEGIN_FROM_4_03_0@
+  external sinh : float -> float = "caml_sinh_float" "sinh"[@@unboxed ]
+  [@@noalloc ]
+  @END_FROM_4_03_0@
+  @BEGIN_BEFORE_4_03_0@
+  @BEGIN_FROM_3_08_0@
+  external sinh : float -> float = "caml_sinh_float" "sinh" "float"
+  @END_FROM_3_08_0@
+  @BEGIN_BEFORE_3_08_0@
+  external sinh : float -> float = "sinh_float" "sinh" "float"
+  @END_BEFORE_3_08_0@
+  
+  @END_BEFORE_4_03_0@
+  (** @since 4.03.0:
+      external sinh : float -> float = "caml_sinh_float" "sinh"[@@unboxed ]
+      [@@noalloc ]
+  @since 3.08.0:
+  external sinh : float -> float = "caml_sinh_float" "sinh" "float"
+  @since 3.07.0: external sinh : float -> float = "sinh_float" "sinh" "float"
+   *)
+  
+  @BEGIN_FROM_4_03_0@
+  external tanh : float -> float = "caml_tanh_float" "tanh"[@@unboxed ]
+  [@@noalloc ]
+  @END_FROM_4_03_0@
+  @BEGIN_BEFORE_4_03_0@
+  @BEGIN_FROM_3_08_0@
+  external tanh : float -> float = "caml_tanh_float" "tanh" "float"
+  @END_FROM_3_08_0@
+  @BEGIN_BEFORE_3_08_0@
+  external tanh : float -> float = "tanh_float" "tanh" "float"
+  @END_BEFORE_3_08_0@
+  
+  @END_BEFORE_4_03_0@
+  (** @since 4.03.0:
+      external tanh : float -> float = "caml_tanh_float" "tanh"[@@unboxed ]
+      [@@noalloc ]
+  @since 3.08.0:
+  external tanh : float -> float = "caml_tanh_float" "tanh" "float"
+  @since 3.07.0: external tanh : float -> float = "tanh_float" "tanh" "float"
+   *)
+  
+  @BEGIN_FROM_4_03_0@
+  external ceil : float -> float = "caml_ceil_float" "ceil"[@@unboxed ]
+  [@@noalloc ]
+  @END_FROM_4_03_0@
+  @BEGIN_BEFORE_4_03_0@
+  @BEGIN_FROM_3_08_0@
+  external ceil : float -> float = "caml_ceil_float" "ceil" "float"
+  @END_FROM_3_08_0@
+  @BEGIN_BEFORE_3_08_0@
+  external ceil : float -> float = "ceil_float" "ceil" "float"
+  @END_BEFORE_3_08_0@
+  
+  @END_BEFORE_4_03_0@
+  (** @since 4.03.0:
+      external ceil : float -> float = "caml_ceil_float" "ceil"[@@unboxed ]
+      [@@noalloc ]
+  @since 3.08.0:
+  external ceil : float -> float = "caml_ceil_float" "ceil" "float"
+  @since 3.07.0: external ceil : float -> float = "ceil_float" "ceil" "float"
+   *)
+  
+  @BEGIN_FROM_4_03_0@
+  external floor : float -> float = "caml_floor_float" "floor"[@@unboxed ]
+  [@@noalloc ]
+  @END_FROM_4_03_0@
+  @BEGIN_BEFORE_4_03_0@
+  @BEGIN_FROM_3_08_0@
+  external floor : float -> float = "caml_floor_float" "floor" "float"
+  @END_FROM_3_08_0@
+  @BEGIN_BEFORE_3_08_0@
+  external floor : float -> float = "floor_float" "floor" "float"
+  @END_BEFORE_3_08_0@
+  
+  @END_BEFORE_4_03_0@
+  (** @since 4.03.0:
+      external floor : float -> float = "caml_floor_float" "floor"[@@unboxed ]
+      [@@noalloc ]
+  @since 3.08.0:
+  external floor : float -> float = "caml_floor_float" "floor" "float"
+  @since 3.07.0:
+  external floor : float -> float = "floor_float" "floor" "float"
+   *)
+  
+  external abs_float : float -> float = "%absfloat"
+  (** Alias for {!Pervasives.abs_float} *)
+  
+  @BEGIN_FROM_4_03_0@
+  external mod_float : float -> float -> float = "caml_fmod_float" "fmod"
+  [@@unboxed ][@@noalloc ]
+  @END_FROM_4_03_0@
+  @BEGIN_BEFORE_4_03_0@
+  @BEGIN_FROM_3_08_0@
+  external mod_float :
+    float -> float -> float = "caml_fmod_float" "fmod" "float"
+  @END_FROM_3_08_0@
+  @BEGIN_BEFORE_3_08_0@
+  external mod_float : float -> float -> float = "fmod_float" "fmod" "float"
+  @END_BEFORE_3_08_0@
+  
+  @END_BEFORE_4_03_0@
+  (** @since 4.03.0:
+      external mod_float : float -> float -> float = "caml_fmod_float" "fmod"
+      [@@unboxed ][@@noalloc ]
+  @since 3.08.0:
+  external mod_float :
+    float -> float -> float = "caml_fmod_float" "fmod" "float"
+  @since 3.07.0:
+  external mod_float : float -> float -> float = "fmod_float" "fmod" "float"
+   *)
+  
+  @BEGIN_FROM_3_08_0@
+  external frexp : float -> (float * int) = "caml_frexp_float"
+  @END_FROM_3_08_0@
+  @BEGIN_BEFORE_3_08_0@
+  external frexp : float -> (float * int) = "frexp_float"
+  @END_BEFORE_3_08_0@
+  (** @since 3.08.0:
+      external frexp : float -> (float * int) = "caml_frexp_float"
+  @since 3.07.0: external frexp : float -> (float * int) = "frexp_float"
+   *)
+  
+  @BEGIN_FROM_4_03_0@
+  external ldexp :
+    ((float)[@unboxed ]) -> ((int)[@untagged ]) -> ((float)[@unboxed ]) =
+      "caml_ldexp_float" "caml_ldexp_float_unboxed"[@@noalloc ]
+  @END_FROM_4_03_0@
+  @BEGIN_BEFORE_4_03_0@
+  @BEGIN_FROM_3_08_0@
+  external ldexp : float -> int -> float = "caml_ldexp_float"
+  @END_FROM_3_08_0@
+  @BEGIN_BEFORE_3_08_0@
+  external ldexp : float -> int -> float = "ldexp_float"
+  @END_BEFORE_3_08_0@
+  
+  @END_BEFORE_4_03_0@
+  (** @since 4.03.0:
+      external ldexp :
+        ((float)[@unboxed ]) -> ((int)[@untagged ]) -> ((float)[@unboxed ]) =
+          "caml_ldexp_float" "caml_ldexp_float_unboxed"[@@noalloc ]
+  @since 3.08.0: external ldexp : float -> int -> float = "caml_ldexp_float"
+  @since 3.07.0: external ldexp : float -> int -> float = "ldexp_float"
+   *)
+  
+  @BEGIN_FROM_3_08_0@
+  external modf : float -> (float * float) = "caml_modf_float"
+  @END_FROM_3_08_0@
+  @BEGIN_BEFORE_3_08_0@
+  external modf : float -> (float * float) = "modf_float"
+  @END_BEFORE_3_08_0@
+  (** @since 3.08.0:
+      external modf : float -> (float * float) = "caml_modf_float"
+  @since 3.07.0: external modf : float -> (float * float) = "modf_float"
+   *)
+  
+  external float : int -> float = "%floatofint"
+  (** Alias for {!Pervasives.float} *)
+  
+  external float_of_int : int -> float = "%floatofint"
+  (** Alias for {!Pervasives.float_of_int} *)
+  
+  external truncate : float -> int = "%intoffloat"
+  (** Alias for {!Pervasives.truncate} *)
+  
+  external int_of_float : float -> int = "%intoffloat"
+  (** Alias for {!Pervasives.int_of_float} *)
+  
+  val infinity : float
+  (** Alias for {!Pervasives.infinity} *)
+  
+  val neg_infinity : float
+  (** Alias for {!Pervasives.neg_infinity} *)
+  
+  val nan : float
+  (** Alias for {!Pervasives.nan} *)
+  
+  val max_float : float
+  (** Alias for {!Pervasives.max_float} *)
+  
+  val min_float : float
+  (** Alias for {!Pervasives.min_float} *)
+  
+  val epsilon_float : float
+  (** Alias for {!Pervasives.epsilon_float} *)
+  
+  @BEGIN_FROM_4_03_0@
+  external classify_float :
+    ((float)[@unboxed ]) -> fpclass = "caml_classify_float"
+      "caml_classify_float_unboxed"[@@noalloc ]
+  @END_FROM_4_03_0@
+  @BEGIN_BEFORE_4_03_0@
+  @BEGIN_FROM_3_08_0@
+  external classify_float : float -> fpclass = "caml_classify_float"
+  @END_FROM_3_08_0@
+  @BEGIN_BEFORE_3_08_0@
+  external classify_float : float -> fpclass = "classify_float"
+  @END_BEFORE_3_08_0@
+  
+  @END_BEFORE_4_03_0@
+  (** @since 4.03.0:
+      external classify_float :
+        ((float)[@unboxed ]) -> fpclass = "caml_classify_float"
+          "caml_classify_float_unboxed"[@@noalloc ]
+  @since 3.08.0:
+  external classify_float : float -> fpclass = "caml_classify_float"
+  @since 3.07.0: external classify_float : float -> fpclass = "classify_float"
+   *)
+  
+  val (^) : string -> string -> string
+  (** Alias for {!Pervasives.^} *)
+  
+  external int_of_char : char -> int = "%identity"
+  (** Alias for {!Pervasives.int_of_char} *)
+  
+  val char_of_int : int -> char
+  (** Alias for {!Pervasives.char_of_int} *)
+  
+  external ignore : 'a -> unit = "%ignore"
+  (** Alias for {!Pervasives.ignore} *)
+  
+  val string_of_bool : bool -> string
+  (** Alias for {!Pervasives.string_of_bool} *)
+  
+  val bool_of_string : string -> bool
+  (** Alias for {!Pervasives.bool_of_string} *)
+  
+  val string_of_int : int -> string
+  (** Alias for {!Pervasives.string_of_int} *)
+  
+  @BEGIN_FROM_3_08_0@
+  external int_of_string : string -> int = "caml_int_of_string"
+  @END_FROM_3_08_0@
+  @BEGIN_BEFORE_3_08_0@
+  external int_of_string : string -> int = "int_of_string"
+  @END_BEFORE_3_08_0@
+  (** @since 3.08.0:
+      external int_of_string : string -> int = "caml_int_of_string"
+  @since 3.07.0: external int_of_string : string -> int = "int_of_string"
+   *)
+  
+  val string_of_float : float -> string
+  (** Alias for {!Pervasives.string_of_float} *)
+  
+  @BEGIN_FROM_3_08_0@
+  external float_of_string : string -> float = "caml_float_of_string"
+  @END_FROM_3_08_0@
+  @BEGIN_BEFORE_3_08_0@
+  external float_of_string : string -> float = "float_of_string"
+  @END_BEFORE_3_08_0@
+  (** @since 3.08.0:
+      external float_of_string : string -> float = "caml_float_of_string"
+  @since 3.07.0: external float_of_string : string -> float = "float_of_string"
+   *)
+  
+  external fst : ('a * 'b) -> 'a = "%field0"
+  (** Alias for {!Pervasives.fst} *)
+  
+  external snd : ('a * 'b) -> 'b = "%field1"
+  (** Alias for {!Pervasives.snd} *)
+  
+  val (@) : 'a list -> 'a list -> 'a list
+  (** Alias for {!Pervasives.@} *)
+  
+  val print_char : char -> unit
+  (** Alias for {!Pervasives.print_char} *)
+  
+  val print_string : string -> unit
+  (** Alias for {!Pervasives.print_string} *)
+  
+  val print_int : int -> unit
+  (** Alias for {!Pervasives.print_int} *)
+  
+  val print_float : float -> unit
+  (** Alias for {!Pervasives.print_float} *)
+  
+  val print_endline : string -> unit
+  (** Alias for {!Pervasives.print_endline} *)
+  
+  val print_newline : unit -> unit
+  (** Alias for {!Pervasives.print_newline} *)
+  
+  val prerr_char : char -> unit
+  (** Alias for {!Pervasives.prerr_char} *)
+  
+  val prerr_string : string -> unit
+  (** Alias for {!Pervasives.prerr_string} *)
+  
+  val prerr_int : int -> unit
+  (** Alias for {!Pervasives.prerr_int} *)
+  
+  val prerr_float : float -> unit
+  (** Alias for {!Pervasives.prerr_float} *)
+  
+  val prerr_endline : string -> unit
+  (** Alias for {!Pervasives.prerr_endline} *)
+  
+  val prerr_newline : unit -> unit
+  (** Alias for {!Pervasives.prerr_newline} *)
+  
+  val read_line : unit -> string
+  (** Alias for {!Pervasives.read_line} *)
+  
+  val read_int : unit -> int
+  (** Alias for {!Pervasives.read_int} *)
+  
+  val read_float : unit -> float
+  (** Alias for {!Pervasives.read_float} *)
+  
+  val flush_all : unit -> unit
+  (** Alias for {!Pervasives.flush_all} *)
+  
+  external ref : 'a -> 'a ref = "%makemutable"
+  (** Alias for {!Pervasives.ref} *)
+  
+  external (!) : 'a ref -> 'a = "%field0"
+  (** Alias for {!Pervasives.!} *)
+  
+  external (:=) : 'a ref -> 'a -> unit = "%setfield0"
+  (** Alias for {!Pervasives.:=} *)
+  
+  external incr : int ref -> unit = "%incr"
+  (** Alias for {!Pervasives.incr} *)
+  
+  external decr : int ref -> unit = "%decr"
+  (** Alias for {!Pervasives.decr} *)
+  
+  @BEGIN_FROM_3_10_0@
+  external format_of_string :
+    ('a, 'b, 'c, 'd, 'e, 'f) format6 -> ('a, 'b, 'c, 'd, 'e, 'f) format6 =
+      "%identity"
+  @END_FROM_3_10_0@
+  @BEGIN_BEFORE_3_10_0@
+  external format_of_string :
+    ('a, 'b, 'c, 'd) format4 -> ('a, 'b, 'c, 'd) format4 = "%identity"
+  @END_BEFORE_3_10_0@
+  (** @since 3.10.0:
+      external format_of_string :
+        ('a, 'b, 'c, 'd, 'e, 'f) format6 -> ('a, 'b, 'c, 'd, 'e, 'f) format6 =
+          "%identity"
+  @since 3.07.0:
+  external format_of_string :
+    ('a, 'b, 'c, 'd) format4 -> ('a, 'b, 'c, 'd) format4 = "%identity"
+   *)
+  
+  val exit : int -> 'a
+  (** Alias for {!Pervasives.exit} *)
+  
+  val at_exit : (unit -> unit) -> unit
+  (** Alias for {!Pervasives.at_exit} *)
+  
+  val valid_float_lexem : string -> string
+  (** Alias for {!Pervasives.valid_float_lexem} *)
+  
+  val do_at_exit : unit -> unit
+  (** Alias for {!Pervasives.do_at_exit} *)
+end

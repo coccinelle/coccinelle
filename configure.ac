@@ -501,7 +501,7 @@ AS_IF([test "x$with_bash_completion" = "xyes"],
      AC_SUBST([BASH_COMPLETION_DIR], [$with_bash_completion])])
 
 AS_IF([test "$MAKE_stdcompat"],
-  AC_CONFIG_SUBDIRS(bundles/stdcompat/stdcompat-8))
+  AC_CONFIG_SUBDIRS(bundles/stdcompat/stdcompat-current))
 
 AS_IF([test "$MAKE_parmap"],
   AC_CONFIG_SUBDIRS(bundles/parmap/parmap))
