@@ -109,7 +109,7 @@ let redirect ?(path = (Printf.sprintf "/tmp/.parmap.%d" (Unix.getpid ()))) ~id =
 (* unmarshal from a mmap seen as a bigarray *)
 let unmarshal fd =
  let a =
-   Bigarray.Array1.map_file fd Bigarray.char Bigarray.c_layout true (-1) in
+   Bytearray.array1_map_file fd Bigarray.char Bigarray.c_layout true (-1) in
  let res = Bytearray.unmarshal a 0 in
  Unix.close fd;
  res
@@ -624,7 +624,7 @@ let init_shared_buffer a =
   let size = Array.length a in
   let fd = Utils.tempfd() in
   let arr =
-    Bigarray.Array1.map_file fd Bigarray.float64 Bigarray.c_layout true size in
+    Bytearray.array1_map_file fd Bigarray.float64 Bigarray.c_layout true size in
 
   (* The mmap() function shall add an extra reference to the file associated
      with the file descriptor fildes which is not removed by a subsequent

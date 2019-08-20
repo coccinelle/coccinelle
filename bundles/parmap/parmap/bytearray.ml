@@ -59,9 +59,13 @@ let of_string s =
   unsafe_blit_from_string s 0 a 0 l;
   a
 
+let array1_map_file fd kind layout shared dim =
+  Bigarray.array1_of_genarray
+    (Unix.map_file fd kind layout shared [| dim |])
+
 let mmap_of_string fd s =
   let l = String.length s in
-  let ba = Bigarray.Array1.map_file fd Bigarray.char Bigarray.c_layout true l in
+  let ba = array1_map_file fd Bigarray.char Bigarray.c_layout true l in
   unsafe_blit_from_string s 0 ba 0 l;
   ba
 (*
