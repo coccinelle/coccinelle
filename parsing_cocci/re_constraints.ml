@@ -70,8 +70,8 @@ let ok_for_all_rule_elems cstr minirules =
       else
 	failwith
 	  (Printf.sprintf
-	     "%s: constraint on variable %s cannot be evaluated in line %d"
-	     (fst self) (snd self) (Ast.get_line re))
+	     "%s: constraint on variable %s cannot be evaluated in line %d. available: %s"
+	     (fst self) (snd self) (Ast.get_line re) (Dumper.dump available))
     else true (* not relevant to this rule_elem *) in
 
   let v =

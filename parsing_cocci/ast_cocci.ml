@@ -251,7 +251,7 @@ and constant_constraint =
   | CstrString of string
 
 and int_constraint =
-    CstrIntEq of int
+    CstrIntEq of string
   | CstrIntLeq of int
   | CstrIntGeq of int
 

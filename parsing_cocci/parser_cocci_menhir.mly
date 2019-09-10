@@ -2525,7 +2525,7 @@ cstr_ident:
 	    (Ast.CstrMeta_name i)
 	| (None,s) -> Ast.CstrConstant (Ast.CstrString s) }
 | i=TInt {
-  let i = int_of_string (fst i) in
+  let i = fst i in
   Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntEq i)) }
 | i=TInt TDot TDot TDot j=TInt {
   let i = int_of_string (fst i) and j = int_of_string (fst j) in
