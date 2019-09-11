@@ -131,6 +131,13 @@ let normal_form_token adjust_cvs x =
   let x' =
     match x with
     | Parser_c.TString ((s, kind),i1) -> Parser_c.TString (("",kind), i1)
+    | Parser_c.TIfdef (_,_,i) -> Parser_c.TIfdef (Gnone,ref None,i)
+    | Parser_c.TIfdefelif (_,_,i) -> Parser_c.TIfdefelif (Gnone,ref None,i)
+    | Parser_c.TEndif (_,i) -> Parser_c.TEndif (ref None,i)
+    | Parser_c.TIfdefelse (_,i) -> Parser_c.TIfdefelse (ref None,i)
+    | Parser_c.TIfdefBool (b,_,i) -> Parser_c.TIfdefBool (b,ref None,i)
+    | Parser_c.TIfdefMisc (b,_,i) -> Parser_c.TIfdefMisc (b,ref None,i)
+    | Parser_c.TIfdefVersion (b,_,i) -> Parser_c.TIfdefVersion (b,ref None,i)
     | x -> x
   in
   x' +> Token_helpers.visitor_info_of_tok (fun info ->
@@ -269,8 +276,26 @@ let do_compare_token adjust_cvs to_expected filename1 filename2 =
     loop toks1 toks2 in
   *)
 
-  let (c1, _stat) = Parse_c.parse_c_and_cpp false false filename1 in
-  let (c2, _stat) = Parse_c.parse_c_and_cpp false false filename2 in
+  let do_parse filename other =
+    if Filename.dirname filename = "/tmp"
+    then
+      (* hack to make include paths similar for generated and original files *)
+      let pth = !Includes.include_path in
+      let dir = Filename.dirname other in
+      let ps = Includes.get_parsing_style() in
+      (match ps with
+	Includes.Parse_local_includes ->
+	  Includes.set_parsing_style Parse_all_includes;
+	  Includes.include_path := [dir]
+      | _ -> Includes.include_path := dir :: pth);
+      let (c2, _stat) = Parse_c.parse_c_and_cpp false false filename in
+      Includes.set_parsing_style ps;
+      Includes.include_path := pth;
+      c2
+    else fst(Parse_c.parse_c_and_cpp false false filename) in
+
+  let c1 = do_parse filename1 filename2 in
+  let c2 = do_parse filename2 filename1 in
 
   let res =
     if List.length c1 <> List.length c2
@@ -299,11 +324,12 @@ let do_compare_token adjust_cvs to_expected filename1 filename2 =
 
   let xs = get_diff filename1 filename2 "-b -B" in
 
-  if xs=[] && (res <> Correct)
-  then failwith
-      (Printf.sprintf "%s %s"
+  (if xs=[] && (res <> Correct)
+  then Printf.eprintf "%s %s"
     "Impossible: How can diff be null and have not Correct in compare_c?"
-      (Dumper.dump res));
+      (Dumper.dump res))
+
+;
 
   res, xs
 

@@ -37,6 +37,10 @@ val blit_from_string : string -> int -> t -> int -> int -> unit
 (*
 val blit_to_bytes : t -> int -> bytes -> int -> int -> unit
  *)
+
+val array1_map_file : Unix.file_descr -> ('a, 'b) Bigarray.kind ->
+  'c Bigarray.layout -> bool -> int -> ('a, 'b, 'c) Bigarray.Array1.t
+
 val prefix : t -> t -> int -> bool
 
 val marshal : 'a -> Marshal.extern_flags list -> t

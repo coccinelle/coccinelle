@@ -96,7 +96,7 @@ let interpret_include_path relpath =
       None ->
 	let res = search_path unique_file_exists searchlist relpath in
 	Common.extend_bounded_cache include_table (searchlist,relpath) res;
-	(if res = None
+	(if res = None && !Flag_parsing_c.verbose_includes
 	then
 	  Common.pr2
 	    (Printf.sprintf "failed on %s" (String.concat "/" relpath)));

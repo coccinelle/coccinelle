@@ -623,6 +623,17 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+MAINT
+MAINTAINER_MODE_FALSE
+MAINTAINER_MODE_TRUE
+C_END_BEFORE_4_06_0
+C_BEGIN_BEFORE_4_06_0
+END_BEFORE_4_06_0
+BEGIN_BEFORE_4_06_0
+C_END_FROM_4_06_0
+C_BEGIN_FROM_4_06_0
+END_FROM_4_06_0
+BEGIN_FROM_4_06_0
 EGREP
 GREP
 CPP
@@ -690,6 +701,7 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
+enable_maintainer_mode
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1315,6 +1327,14 @@ if test -n "$ac_init_help"; then
      short | recursive ) echo "Configuration of parmap 1.0-rc7:";;
    esac
   cat <<\_ACEOF
+
+Optional Features:
+  --disable-option-checking  ignore unrecognized --enable/--with options
+  --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
+  --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+  --enable-maintainer-mode
+                          enable make rules and dependencies not useful (and
+                          sometimes confusing) to the casual installer
 
 Some influential environment variables:
   CC          C compiler command
@@ -4407,6 +4427,67 @@ _ACEOF
 ac_config_headers="$ac_config_headers config.h"
 
 
+
+
+
+
+
+
+if test `printf "$OCAMLVERSION\n4.06.0" | sort | head -n1` = 4.06.0; then :
+
+
+
+
+     BEGIN_BEFORE_4_06_0='(*'
+
+   END_BEFORE_4_06_0='*)'
+
+   C_BEGIN_BEFORE_4_06_0='/*'
+
+   C_END_BEFORE_4_06_0='*/'
+
+else
+  BEGIN_FROM_4_06_0='(*'
+
+   END_FROM_4_06_0='*)'
+
+   C_BEGIN_FROM_4_06_0='/*'
+
+   C_END_FROM_4_06_0='*/'
+
+
+
+
+
+fi
+
+ac_config_files="$ac_config_files bytearray.ml"
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable maintainer-specific portions of Makefiles" >&5
+$as_echo_n "checking whether to enable maintainer-specific portions of Makefiles... " >&6; }
+    # Check whether --enable-maintainer-mode was given.
+if test "${enable_maintainer_mode+set}" = set; then :
+  enableval=$enable_maintainer_mode; USE_MAINTAINER_MODE=$enableval
+else
+  USE_MAINTAINER_MODE=no
+fi
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $USE_MAINTAINER_MODE" >&5
+$as_echo "$USE_MAINTAINER_MODE" >&6; }
+   if test $USE_MAINTAINER_MODE = yes; then
+  MAINTAINER_MODE_TRUE=
+  MAINTAINER_MODE_FALSE='#'
+else
+  MAINTAINER_MODE_TRUE='#'
+  MAINTAINER_MODE_FALSE=
+fi
+
+  MAINT=$MAINTAINER_MODE_TRUE
+
+
+
 if $OCAMLBUILD -use-ocamlfind >/dev/null 2>&1 ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: ocaml version $OCAMLVERSION. Use standard Makefile" >&5
 $as_echo "ocaml version $OCAMLVERSION. Use standard Makefile" >&6; }
@@ -4521,6 +4602,10 @@ LIBOBJS=$ac_libobjs
 LTLIBOBJS=$ac_ltlibobjs
 
 
+if test -z "${MAINTAINER_MODE_TRUE}" && test -z "${MAINTAINER_MODE_FALSE}"; then
+  as_fn_error $? "conditional \"MAINTAINER_MODE\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 
 : "${CONFIG_STATUS=./config.status}"
 ac_write_fail=0
@@ -5102,6 +5187,7 @@ for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
     "config.h") CONFIG_HEADERS="$CONFIG_HEADERS config.h" ;;
+    "bytearray.ml") CONFIG_FILES="$CONFIG_FILES bytearray.ml" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
@@ -5798,6 +5884,10 @@ LIBOBJS=$ac_libobjs
 LTLIBOBJS=$ac_ltlibobjs
 
 
+if test -z "${MAINTAINER_MODE_TRUE}" && test -z "${MAINTAINER_MODE_FALSE}"; then
+  as_fn_error $? "conditional \"MAINTAINER_MODE\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 
 : "${CONFIG_STATUS=./config.status}"
 ac_write_fail=0
@@ -6379,6 +6469,7 @@ for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
     "config.h") CONFIG_HEADERS="$CONFIG_HEADERS config.h" ;;
+    "bytearray.ml") CONFIG_FILES="$CONFIG_FILES bytearray.ml" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "Makefile_3.11") CONFIG_FILES="$CONFIG_FILES Makefile_3.11" ;;
 

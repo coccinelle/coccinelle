@@ -2580,7 +2580,7 @@ module Ast_cocci :
       | CstrString of string
     and int_constraint =
       Ast_cocci.int_constraint =
-        CstrIntEq of int
+        CstrIntEq of string
       | CstrIntLeq of int
       | CstrIntGeq of int
     and operator_constraint =

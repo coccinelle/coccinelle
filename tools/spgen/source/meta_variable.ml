@@ -159,7 +159,7 @@ let rec constraints_to_buffer ~rn buffer cstr =
 	false in
   let simple_item item =
     match item with
-      Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntEq i)) ->  string_of_int i
+      Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntEq i)) ->  i
     | Ast.CstrConstant (Ast.CstrString s) -> s
     | Ast.CstrOperator item -> string_of_operator_constraint item
     | Ast.CstrMeta_name mn -> name_str ~rn mn
@@ -186,7 +186,7 @@ let rec constraints_to_buffer ~rn buffer cstr =
       constraints_to_buffer ~rn buffer item;
       Buffer.add_string buffer ")"
   | Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntEq i)) ->
-      Printf.bprintf buffer "= %d" i
+      Printf.bprintf buffer "= %s" i
   | Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntLeq i)) ->
       Printf.bprintf buffer "<= %d" i
   | Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntGeq i)) ->

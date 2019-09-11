@@ -14,6 +14,8 @@ OCAMLCCFLAGS+=-ccopt -D_GNU_SOURCE
 
 include ../Makefile.bundles
 
+parmap/bytearray.cmo : parmap/bytearray.cmi
+
 .prepare:
 	cd $(SRC_DIR) && ./configure
 	touch $@

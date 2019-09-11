@@ -4586,10 +4586,10 @@ and define_parameter = fun parama paramb ->
 	  B.MetaExprVal (e, _, _) ->
 	    begin
 	      match B.unwrap_expr e with
-		B.Constant (B.Int (i, _)) -> Some (int_of_string i)
+		B.Constant (B.Int (i, _)) -> Some i
 	      | _ -> None
 	    end
-	| B.MetaListlenVal i -> Some i
+	| B.MetaListlenVal i -> Some (string_of_int i)
 	| _ -> None in
       match i with
 	Some i -> f i
@@ -4628,10 +4628,12 @@ and define_parameter = fun parama paramb ->
     | A.CstrConstant (A.CstrString s) ->
 	check_string (fun s' -> bool (s = s'))
     | A.CstrConstant (A.CstrInt c') ->
+	let interp s =
+	  int_of_string(List.hd(Str.split (Str.regexp "[UL]") s)) in
 	check_int (fun i' -> bool (match c' with
 	  A.CstrIntEq i -> i' = i
-	| A.CstrIntLeq i -> i' <= i
-	| A.CstrIntGeq i -> i' >= i))
+	| A.CstrIntLeq i -> interp i' <= i
+	| A.CstrIntGeq i -> interp i' >= i))
     | A.CstrOperator c -> bool (check_operator c)
     | A.CstrMeta_name mn ->
 	begin
