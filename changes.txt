@@ -44,6 +44,7 @@
   --compare-with-expected, using the --expected-extension flag.
 - Optimize case of { ... } when the braces are removed to avoid going
   through the body.
+- Allow const on signed/unsigned in SmPL.
 ** Bugfix:
 - check identifier constraints when an identifier metavariable appears in a
   struct-typed metavariable.

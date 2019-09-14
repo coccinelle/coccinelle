@@ -1065,7 +1065,7 @@ ctype:
 	  function (star,cv) ->
 	    P.make_cv cv (P.pointerify prev [star]))
 	(P.make_cv cv ty) m }
-| ty=signed_or_unsigned { ty }
+| cv=ioption(const_vol) ty=signed_or_unsigned { P.make_cv cv ty }
 | lp=TOPar0 t=midzero_list(ctype,ctype) rp=TCPar0
     { let (mids,code) = t in
       Ast0.wrap
