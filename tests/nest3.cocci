@@ -1,6 +1,5 @@
 @@
 identifier i;
-identifier func;
 @@
 
 - int i;
