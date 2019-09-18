@@ -50,6 +50,7 @@ AS_IF([test "x$OCAMLOPT" = "x"],
 AS_IF([test "x$OCAMLDEP" = "x"],
   [AC_MSG_ERROR([[No ocamldep available]])])
 
+AC_CONFIG_HEADERS([config.h])
 AC_C_BIGENDIAN(
   [AC_SUBST([BIG_ENDIAN], [[true]])],
   [AC_SUBST([BIG_ENDIAN], [[false]])],
