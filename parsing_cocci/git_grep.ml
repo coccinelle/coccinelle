@@ -16,7 +16,7 @@ let interpret dir query suffixes =
     else raise Failed in
   try
     match List.map collect query with
-      [] -> failwith "not possible"
+      [] -> failwith "git grep: no files: not possible"
     | x::xs ->
 	let res = List.fold_left Common.inter_set x xs in
 	Some(List.map (function x -> dir^"/"^x) res)

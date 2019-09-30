@@ -93,6 +93,9 @@ val add_pos_meta:
     (Ast_cocci.meta_name -> Ast0_cocci.constraints -> Ast_cocci.meta_collect ->
       unit) ref
 
+val add_com_meta:
+    (Ast_cocci.meta_name -> Ast0_cocci.constraints -> unit) ref
+
 val add_fmt_meta: (Ast_cocci.meta_name -> Ast0_cocci.constraints -> unit) ref
 
 val add_fmtlist_meta:
@@ -123,8 +126,9 @@ val format_list_metavariables :
     (string * (Ast_cocci.meta_name * Ast_cocci.list_len *
 		 Ast0_cocci.constraints)) list ref
 
+type cs = POS | COM | OTHR
 val constraint_scripts:
-    (bool * Ast_cocci.meta_name * Ast_cocci.script_constraint) list ref
+    (cs * Ast_cocci.meta_name * Ast_cocci.script_constraint) list ref
 (** The list of all constraint scripts. *)
 
 val non_local_script_constraints:

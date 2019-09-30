@@ -15,13 +15,13 @@ let double_negate trips =
 	    if (s,wit) = (s',wit')
 	    then (x::x1)::rest
 	    else [x]::(x1::rest)
-	| _ -> failwith "not possible") in
+	| _ -> failwith "double negate: not possible") in
   let y =
     List.map
       (function
 	  (((s,_,wit)::_) as all) ->
 	    ((s,wit),List.map (function (_,th,_) -> th) all)
-	| _ -> failwith "not possible")
+	| _ -> failwith "double negate2: not possible")
     (classify y) in
   let cnf rest_th th =
     List.fold_left
@@ -57,7 +57,7 @@ let double_negate trips =
 	       ((s,wit),[th]) -> (s,th,wit)::rest
 	     | ((s,wit),ths) ->
 		 match ths with
-		   [] -> failwith "not possible"
+		   [] -> failwith "dnf: not possible"
 		 | (th::ths) ->
 		     let (cnf : substitution list) =
 		       List.fold_left cnf

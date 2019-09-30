@@ -103,7 +103,7 @@ let rec ident_pos i snp
   | Ast0.MetaLocalFunc(mc, i, p) ->
       let constructor ~mc = Ast0.MetaLocalFunc(mc,i,p) in
       mcode ~mc ~constructor snp
-  | Ast0.DisjId _ ->
+  | Ast0.DisjId _ | Ast0.ConjId _ ->
       (i, snp)
   | Ast0.OptIdent (id) ->
       let (id, snp) = ident_pos id snp in

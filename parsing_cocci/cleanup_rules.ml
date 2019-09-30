@@ -43,7 +43,9 @@ let get_rule mc = fst (Ast.unwrap_mcode mc)
 let check_pos l =
   let undefined =
     List.exists
-      (function Ast.MetaPos(name,_,_,_,_) -> List.mem (get_rule name) !dropped)
+      (function
+	  Ast.MetaPos(name,_,_,_,_) -> List.mem (get_rule name) !dropped
+	| _ -> false)
       l in
   if undefined
   then set_failed !drop_stack

@@ -1,5 +1,5 @@
 // Deprecated min/max http://gcc.gnu.org/onlinedocs/gcc-4.0.1/gcc/Deprecated-Features.html
-// Only works if "algorithm" is allready included
+// Only works if "algorithm" is already included
 // This spatch is on hold until coccinelle is extended to support >?,<?,>?=,<?=
 @@
 expression x,y;

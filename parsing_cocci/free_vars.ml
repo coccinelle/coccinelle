@@ -6,7 +6,7 @@
 
 (* For each rule return the list of variables that are used after it.
 Also augment various parts of each rule with unitary, inherited, and freshness
-informations *)
+information *)
 
 (* metavar decls should be better integrated into computations of free
 variables in plus code *)
@@ -234,13 +234,14 @@ let collect_refs include_constraints =
     then *)
       List.fold_left bind option_default
 	(List.map
-	   (function Ast.MetaPos(name,constraints,_,_,_) ->
-	     bind [metaid name]
-	       (List.fold_left bind option_default
-		  (if include_constraints
-		  then
-		    [Ast.cstr_meta_names constraints]
-		  else [])))
+	   (function
+	       Ast.MetaPos(name,constraints,_,_,_)
+	     | Ast.MetaCom(name,constraints,_,_) ->
+		 bind [metaid name]
+		   (List.fold_left bind option_default
+		      (if include_constraints
+		      then [Ast.cstr_meta_names constraints]
+		      else [])))
 	   (Ast.get_pos_var mc))
     (* else option_default *) in
 
@@ -272,7 +273,9 @@ let collect_pos_positions =
   let mcode r mc =
       List.concat
 	(List.map
-	   (function Ast.MetaPos(name,constraints,_,_,_) -> [metaid name])
+	   (function
+	       Ast.MetaPos(name,_,_,_,_)
+	     | Ast.MetaCom(name,_,_,_) -> [metaid name])
 	   (Ast.get_pos_var mc)) in
 
   let cprule_elem recursor k re =
@@ -464,6 +467,7 @@ let collect_saved =
       (function acc ->
 	function
 	    Ast.MetaPos(name,_,_,Ast.Saved,_) -> (metaid name) :: acc
+	  | Ast.MetaCom(name,_,Ast.Saved,_) -> (metaid name) :: acc
 	  | _ -> acc)
       option_default (Ast.get_pos_var e) in
 
@@ -640,9 +644,13 @@ let classify_variables metavar_decls minirules used_after =
   let mcode mc =
     let p =
       List.map
-	(function Ast.MetaPos(name,constraints,per,unitary,inherited) ->
-	  let (unitary,inherited) = classify name in
-	  Ast.MetaPos(name,constraints,per,unitary,inherited))
+	(function
+	    Ast.MetaPos(name,constraints,per,unitary,inherited) ->
+	      let (unitary,inherited) = classify name in
+	      Ast.MetaPos(name,constraints,per,unitary,inherited)
+	  | Ast.MetaCom(name,constraints,unitary,inherited) ->
+	      let (unitary,inherited) = classify name in
+	      Ast.MetaCom(name,constraints,unitary,inherited))
 	(Ast.get_pos_var mc) in
     Ast.set_pos_var p mc in
 
@@ -665,32 +673,33 @@ let classify_variables metavar_decls minirules used_after =
     let new_ident =
       match Ast.unwrap ident with
         Ast.Id id -> Ast.Id id
-      | Ast.MetaId (name, _, _, _) ->
+      | Ast.MetaId (name, constraints, _, _) ->
           let (unitary, inherited) =
             classify (Ast.unwrap_mcode name, (), (), []) in
-          Ast.MetaId (name, Ast.CstrTrue, unitary, inherited)
-      | Ast.MetaFunc (name, _, _, _) ->
+          Ast.MetaId (name, constraints, unitary, inherited)
+      | Ast.MetaFunc (name, constraints, _, _) ->
           let (unitary, inherited) =
             classify (Ast.unwrap_mcode name, (), (), []) in
-          Ast.MetaFunc (name, Ast.CstrTrue, unitary, inherited)
-      | Ast.MetaLocalFunc (name, _, _, _) ->
+          Ast.MetaFunc (name, constraints, unitary, inherited)
+      | Ast.MetaLocalFunc (name, constraints, _, _) ->
           let (unitary, inherited) =
             classify (Ast.unwrap_mcode name, (), (), []) in
-          Ast.MetaLocalFunc (name, Ast.CstrTrue, unitary, inherited)
+          Ast.MetaLocalFunc (name, constraints, unitary, inherited)
       | Ast.AsIdent (ident0, ident1) ->
           Ast.AsIdent (classify_ident ident0, classify_ident ident1)
       | Ast.DisjId list -> Ast.DisjId (List.map classify_ident list)
+      | Ast.ConjId list -> Ast.ConjId (List.map classify_ident list)
       | Ast.OptIdent ident' -> Ast.OptIdent (classify_ident ident') in
     Ast.rewrap ident new_ident in
 
   let type_infos ty =
     Ast.fullType_map { Ast.empty_transformer with
       Ast.decimal = Some (fun s0 s1 e1 s2 e2 s3 ->
-          let e2mv e =
-            match Ast.unwrap e with
-              Ast.Ident ident -> Ast.rewrap e (Ast.Ident (classify_ident ident))
-            | _ -> e in
-          Ast.Decimal (s0, s1, e2mv e1, s2, Common.map_option e2mv e2, s3));
+        let e2mv e =
+          match Ast.unwrap e with
+            Ast.Ident ident -> Ast.rewrap e (Ast.Ident (classify_ident ident))
+          | _ -> e in
+        Ast.Decimal (s0, s1, e2mv e1, s2, Common.map_option e2mv e2, s3));
       enumName = Some (fun s0 ident ->
         let ident' = Common.map_option classify_ident ident in
         Ast.EnumName (s0, ident'));
@@ -1144,7 +1153,8 @@ let get_neg_pos_list (_,rule) used_after_list =
 		match collect with
 		  Ast.PER -> (name' :: pos_vars', all_vars)
 		| Ast.ALL -> (pos_vars', name' :: all_vars) in
-	      (pos_vars'', neg_vars',all_vars')))
+	      (pos_vars'', neg_vars',all_vars')
+	  | _ -> (pos_vars,neg_vars,all_vars)))
       option_default (Ast.get_pos_var mc) in
   let v =
     V.combiner bind option_default
@@ -1353,7 +1363,9 @@ let free_vars rules dropped_rules =
            let positions =
              List.fold_left
                (function prev ->
-                 function Ast.MetaPosDecl(_,nm) -> nm::prev | _ -> prev)
+                 function
+		     Ast.MetaPosDecl(_,nm) | Ast.MetaComDecl(_,nm) -> nm::prev
+		   | _ -> prev)
                [] mv in
            List.map (function _ -> positions) rule)
       rules in

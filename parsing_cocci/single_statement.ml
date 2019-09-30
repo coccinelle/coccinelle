@@ -100,6 +100,7 @@ let rec left_ident i =
   | Ast0.MetaFunc(name,_,_) -> modif_before_mcode name
   | Ast0.MetaLocalFunc(name,_,_) -> modif_before_mcode name
   | Ast0.DisjId(_,id_list,_,_) -> List.exists left_ident id_list
+  | Ast0.ConjId(_,id_list,_,_) -> List.exists left_ident id_list
   | Ast0.OptIdent(id) -> left_ident id
   | Ast0.AsIdent _ -> failwith "not possible"
 
@@ -111,6 +112,7 @@ let rec right_ident i =
   | Ast0.MetaFunc(name,_,_) -> modif_after_mcode name
   | Ast0.MetaLocalFunc(name,_,_) -> modif_after_mcode name
   | Ast0.DisjId(_,id_list,_,_) -> List.exists right_ident id_list
+  | Ast0.ConjId(_,id_list,_,_) -> List.exists right_ident id_list
   | Ast0.OptIdent(id) -> right_ident id
   | Ast0.AsIdent _ -> failwith "not possible"
 
@@ -397,6 +399,8 @@ and contains_only_minus =
     match Ast0.unwrap e with
       Ast0.DisjId(starter,id_list,mids,ender) ->
 	List.for_all r.VT0.combiner_rec_ident id_list
+    | Ast0.ConjId(starter,id_list,mids,ender) ->
+	List.exists r.VT0.combiner_rec_ident id_list
     | _ -> k e in
 
   let expression r k e =

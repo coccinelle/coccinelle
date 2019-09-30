@@ -1,0 +1,400 @@
+let () =
+  assert (Stdcompat.hypot 3. 4. = 5.);
+  assert (Stdcompat.copysign 1. 2. = 1.);
+  assert (Stdcompat.copysign 1. (-. 2.) = -. 1.);
+  assert (Stdcompat.copysign (-. 1.) 2. = 1.);
+  assert (Stdcompat.copysign (-. 1.) (-. 2.) = -. 1.);
+  assert (
+    try
+      ignore (Stdcompat.raise_notrace Exit);
+      false
+    with Exit -> true);
+  assert (Stdcompat.bool_of_string_opt "true" = Some true);
+  assert (Stdcompat.bool_of_string_opt "false" = Some false);
+  assert (Stdcompat.bool_of_string_opt "foo" = None);
+  assert (Stdcompat.int_of_string_opt "42" = Some 42);
+  assert (Stdcompat.int_of_string_opt "foo" = None);
+  assert (Stdcompat.float_of_string_opt "42." = Some 42.);
+  assert (Stdcompat.float_of_string_opt "foo" = None);
+  assert (Lazy.force (Stdcompat.Lazy.from_fun (fun () -> 42)) = 42);
+  assert (Lazy.force (Stdcompat.Lazy.from_val 42) = 42);
+  assert (Stdcompat.Char.lowercase_ascii 'A' = 'a');
+  assert (Stdcompat.Char.uppercase_ascii 'a' = 'A');
+  assert (Stdcompat.Char.equal 'a' 'a');
+  assert (not (Stdcompat.Char.equal 'A' 'a'));
+  assert (Stdcompat.String.init 2 (fun i -> char_of_int i) = "\000\001");
+  assert
+    (Stdcompat.String.mapi
+       (fun i c -> char_of_int (i + int_of_char c)) "abc" = "ace");
+  assert (
+    let s = Stdcompat.Bytes.create 3 in
+    Stdcompat.String.iteri (fun i c -> Stdcompat.Bytes.set s i c) "abc";
+    s = Stdcompat.Bytes.of_string "abc");
+  assert (Stdcompat.String.map Stdcompat.Char.uppercase_ascii "abc" = "ABC");
+  assert (Stdcompat.String.trim " \t abc\n" = "abc");
+  assert (Stdcompat.String.lowercase_ascii "AbcD" = "abcd");
+  assert (Stdcompat.String.uppercase_ascii "AbcD" = "ABCD");
+  assert (Stdcompat.String.capitalize_ascii "abcD" = "AbcD");
+  assert (Stdcompat.String.uncapitalize_ascii "AbcD" = "abcD");
+  assert (Stdcompat.String.equal "abc" "abc");
+  assert (not (Stdcompat.String.equal "Abc" "abc"));
+  assert (Stdcompat.String.split_on_char ' ' " abc  d ef  "
+    = ["";"abc";"";"d";"ef";"";""]);
+  assert (Stdcompat.String.index_opt "abaababa" 'a' = Some 0);
+  assert (Stdcompat.String.index_opt "abaababa" 'c' = None);
+  assert (Stdcompat.String.rindex_opt "abaababa" 'a' = Some 7);
+  assert (Stdcompat.String.rindex_opt "abaababa" 'c' = None);
+  assert (Stdcompat.String.index_from_opt "abaababa" 1 'a' = Some 2);
+  assert (Stdcompat.String.index_from_opt "abaababa" 1 'c' = None);
+  assert (Stdcompat.String.rindex_from_opt "abaababa" 4 'a' = Some 3);
+  assert (Stdcompat.String.rindex_from_opt "abaababa" 4 'c' = None);
+  assert (
+    let s = Stack.create () in
+    Stack.push 1 s;
+    Stack.push 2 s;
+    Stack.push 3 s;
+    Stdcompat.Stack.fold ( + ) 0 s = 6 &&
+    Stack.length s = 3);
+  assert (
+    let t = Hashtbl.create 17 in
+    Hashtbl.add t 1 2;
+    Hashtbl.add t 3 4;
+    (Stdcompat.Hashtbl.stats t).Stdcompat.Hashtbl.num_bindings = 2);
+  assert (
+    let t = Hashtbl.create 17 in
+    Hashtbl.add t 1 1;
+    Hashtbl.add t 2 2;
+    Hashtbl.add t 2 3;
+    Hashtbl.add t 3 4;
+    Stdcompat.Hashtbl.filter_map_inplace
+        (fun k v -> if k = 3 then None else Some (pred v)) t;
+    Hashtbl.find_all t 1 = [0] &&
+    Hashtbl.find_all t 2 = [2; 1] &&
+    Hashtbl.find_all t 3 = []);
+  assert (
+    let t = Hashtbl.create 17 in
+    Hashtbl.add t 1 1;
+    Hashtbl.add t 2 2;
+    Stdcompat.Hashtbl.find_opt t 1 = Some 1 &&
+    Stdcompat.Hashtbl.find_opt t 3 = None);
+  assert (
+    let module H = struct
+      type t = int
+
+      let equal : int -> int -> bool = ( = )
+
+      let hash : int -> int = fun x -> x
+    end in
+    let module M = Hashtbl.Make (H) in
+    let module M' = Stdcompat.Hashtbl.Make (H) in
+    let t = M.create 17 in
+    M.add t 1 1;
+    M.add t 2 2;
+    M'.find_opt t 1 = Some 1 &&
+    M'.find_opt t 3 = None);
+  assert (
+    let module S = Set.Make (String) in
+    let module S' = Stdcompat.Set.Make (String) in
+    let s = S'.of_list ["a"; "b"; "c"] in
+    S.compare
+      (S'.map (fun s -> s ^ ".") s)
+      (S'.of_list ["a."; "b."; "c."]) = 0 &&
+    S'.find_opt "a" s = Some "a" &&
+    S'.find_opt "d" s = None &&
+    S'.find_first (fun s -> s >= "b") s = "b" &&
+    S'.find_last (fun s -> s <= "b") s = "b");
+  assert (
+    let module M = Map.Make (String) in
+    let module M' = Stdcompat.Map.Make (String) in
+    let m = M.add "1" 2 M.empty in
+    M'.compare compare (
+      M'.update "1" (function None -> Some 0 | Some i -> Some (i + 1))
+      (M'.update "2" (function None -> Some 0 | Some _ -> None)
+         (M'.update "3" (function None -> None | Some i -> Some i) m)))
+      (M.add "1" 3 (M.add "2" 0 M.empty)) = 0);
+  assert (
+    let b = Stdcompat.Bytes.of_string "hello" in
+    let b = Stdcompat.Bytes.extend b (-1) 2 in
+    Stdcompat.Bytes.sub_string b 0 4 = "ello" &&
+    Stdcompat.Bytes.length b = 6);
+  assert (
+    let l = ref [] in
+    let f a b =
+      l := (a, b) :: !l in
+    Stdcompat.List.iteri f [1; 2; 3];
+    !l = [2, 3; 1, 2; 0, 1]);
+  assert (
+    let f a b =
+      (a, b) in
+    Stdcompat.List.mapi f  [1; 2; 3] = [0, 1; 1, 2; 2, 3]);
+  assert (
+    Stdcompat.List.sort_uniq compare  [2; 1; 3; 2; 1; 3]
+    = [1; 2; 3]);
+  assert (Stdcompat.List.cons 1 [2; 3] = [1; 2; 3]);
+  assert (Stdcompat.List.compare_lengths [1] [2; 3] < 0);
+  assert (Stdcompat.List.compare_lengths [1; 2] [2; 3] = 0);
+  assert (Stdcompat.List.compare_lengths [1; 2; 3] [2; 3] > 0);
+  assert (Stdcompat.List.compare_length_with [1] 2 < 0);
+  assert (Stdcompat.List.compare_length_with [1; 2] 2 = 0);
+  assert (Stdcompat.List.compare_length_with [1; 2; 3] 2 > 0);;
+  assert (Stdcompat.List.nth_opt [1; 2; 3] 2 = Some 3);
+  assert (Stdcompat.List.nth_opt [1; 2; 3] 3 = None);
+  assert (
+    try
+      ignore (Stdcompat.List.nth_opt [1; 2; 3] (-1));
+      false
+    with Invalid_argument _ -> true);
+  assert (Stdcompat.List.find_opt (fun i -> i mod 2 = 0) [1; 2; 3] = Some 2);
+  assert (Stdcompat.List.find_opt (fun i -> i mod 4 = 0) [1; 2; 3] = None);
+  assert (Stdcompat.List.assoc_opt 2 [1, 0; 2, 1; 3, 2] = Some 1);
+  assert (Stdcompat.List.assoc_opt 4 [1, 0; 2, 1; 3, 2] = None);
+  assert (Stdcompat.List.assq_opt 2 [1, 0; 2, 1; 3, 2] = Some 1);
+  assert (Stdcompat.List.assq_opt "a" ["a", 1; "b", 2; "c", 3] = None);
+  assert (Stdcompat.Filename.extension "a.b/c.de" = ".de");
+  assert (Stdcompat.Filename.extension "a.b/cd" = "");
+  assert (Stdcompat.Filename.remove_extension "a.b/c.de" = "a.b/c");
+  assert (Stdcompat.Filename.remove_extension "a.b/cd" = "a.b/cd");
+  assert (
+    let array = Stdcompat.Array.Floatarray.create 2 in
+    Stdcompat.Array.Floatarray.set array 0 1.;
+    Stdcompat.Array.Floatarray.set array 1 2.;
+    Stdcompat.Array.Floatarray.get array 0 = 1. &&
+    Stdcompat.Array.Floatarray.get array 1 = 2.);
+  assert (
+    let l = ref [] in
+    let f a b =
+      l := (a, b) :: !l in
+    Stdcompat.Array.iter2 f [| 0; 1 |] [| 2; 3 |];
+    !l = [1, 3; 0, 2]);
+  assert (
+    let f a b =
+      (a, b) in
+    Stdcompat.Array.map2 f  [| 0; 1 |] [| 2; 3 |] = [| 0, 2; 1, 3 |]);
+  assert (Stdcompat.Array.for_all (fun x -> x > 0) [| 1; 2; 3 |]);
+  assert (not (Stdcompat.Array.for_all (fun x -> x > 0) [| 1; 2; 0; 3 |]));
+  assert (Stdcompat.Array.exists (fun x -> x > 2) [| 1; 2; 3 |]);
+  assert (not (Stdcompat.Array.exists (fun x -> x > 3) [| 1; 2; 3 |]));
+  assert (Stdcompat.Array.mem "a" [| "a"; "b"; "c" |]);
+  assert (not (Stdcompat.Array.mem "d" [| "a"; "b"; "c" |]));
+  assert (Stdcompat.Array.memq 2 [| 1; 2; 3 |]);
+  assert (not (Stdcompat.Array.memq "a" [| "a"; "b"; "c" |]));
+  assert (
+    let q = Stdcompat.Queue.create () in
+    Stdcompat.Array.of_seq (Stdcompat.Queue.to_seq q) = [| |]);
+  assert (
+    let q = Stdcompat.Queue.create () in
+    Stdcompat.Queue.add_seq q (Stdcompat.List.to_seq ["a"; "b"; "c"]);
+    Stdcompat.Array.of_seq (Stdcompat.Queue.to_seq q) = [| "a"; "b"; "c" |]);
+  assert (
+    let l = Stdcompat.List.to_seq ["a", 1; "b", 2; "c", 3] in
+    let module M = Stdcompat.Map.Make (String) in
+    let q = Stdcompat.Hashtbl.of_seq (M.to_seq (M.of_seq l)) in
+    let m = M.of_seq (Stdcompat.Hashtbl.to_seq q) in
+    M.cardinal m = 3 && M.find "a" m = 1 && M.find "b" m = 2
+      && M.find "c" m = 3);
+  assert (
+    Stdcompat.Filename.chop_suffix_opt ~suffix:".txt" "readme.txt"
+      = Some "readme");
+  assert (
+    Stdcompat.Filename.chop_suffix_opt ~suffix:".txt" "x"
+      = None);
+  assert (
+    Stdcompat.Filename.chop_suffix_opt ~suffix:".txt" "readme.md"
+      = None);
+  assert (not (Stdcompat.Float.sign_bit 1.));
+  assert (not (Stdcompat.Float.sign_bit 0.));
+  assert (not (Stdcompat.Float.is_nan 42.));
+  assert (Stdcompat.Float.is_nan (0. /. 0.));
+  assert (not (Stdcompat.Float.is_infinite 0.));
+  assert (Stdcompat.Float.is_infinite (1. /. 0.));
+  assert (not (Stdcompat.Float.is_infinite (0. /. 0.)));
+  assert (Stdcompat.Float.is_finite 0.);
+  assert (not (Stdcompat.Float.is_finite (1. /. 0.)));
+  assert (not (Stdcompat.Float.is_finite (0. /. 0.)));
+  assert (Stdcompat.Float.trunc 1.5 = 1.);
+  assert (Stdcompat.Float.trunc (-2.6) = -2.);
+  assert (Stdcompat.Float.is_infinite (Stdcompat.Float.trunc (1. /. 0.)));
+  assert (Stdcompat.Float.is_nan (Stdcompat.Float.trunc (0. /. 0.)));
+  assert (Stdcompat.Float.is_integer 1.);
+  assert (not (Stdcompat.Float.is_integer 1.5));
+  assert (Stdcompat.Float.is_infinite (Stdcompat.Float.trunc (1. /. 0.)));
+  assert (Stdcompat.Float.is_nan (Stdcompat.Float.trunc (0. /. 0.)));
+  assert (Stdcompat.Float.round 1.5 = 2.);
+  assert (Stdcompat.Float.round 1.4 = 1.);
+  assert (Stdcompat.Float.round (-2.6) = -3.);
+  assert (Stdcompat.Float.round (-3.5) = -4.);
+  assert (Stdcompat.Float.round (-4.4) = -4.);
+  assert (Stdcompat.Float.is_infinite (Stdcompat.Float.round (1. /. 0.)));
+  assert (Stdcompat.Float.is_nan (Stdcompat.Float.round (0. /. 0.)));
+  assert (Stdcompat.Float.sign_bit (-1.));
+  assert (Stdcompat.Float.min_num 1. (0. /. 0.) = 1.);
+  assert (Stdcompat.Float.min_num (0. /. 0.) 1. = 1.);
+  assert (Stdcompat.Float.min_num 1. (-1.) = (-1.));
+  assert (Stdcompat.Float.min_num (-1.) 1. = (-1.));
+  assert (Stdcompat.Float.sign_bit (Stdcompat.Float.min_num 0. (-0.)));
+  assert (Stdcompat.Float.sign_bit (Stdcompat.Float.min_num (-0.) 0.));
+  assert (Stdcompat.Float.is_nan (
+    Stdcompat.Float.min_num (0. /. 0.) (0. /. 0.)));
+  assert (Stdcompat.Float.max_num 1. (0. /. 0.) = 1.);
+  assert (Stdcompat.Float.max_num (0. /. 0.) 1. = 1.);
+  assert (Stdcompat.Float.max_num 1. (-1.) = 1.);
+  assert (Stdcompat.Float.max_num (-1.) 1. = 1.);
+  assert (not (Stdcompat.Float.sign_bit (Stdcompat.Float.max_num 0. (-0.))));
+  assert (not (Stdcompat.Float.sign_bit (Stdcompat.Float.max_num (-0.) 0.)));
+  assert (Stdcompat.Float.is_nan (
+    Stdcompat.Float.max_num (0. /. 0.) (0. /. 0.)));
+  assert (Stdcompat.Float.min_max_num 1. (0. /. 0.) = (1., 1.));
+  assert (Stdcompat.Float.min_max_num (0. /. 0.) 1. = (1., 1.));
+  assert (Stdcompat.Float.min_max_num 1. (-1.) = (-1., 1.));
+  assert (Stdcompat.Float.min_max_num (-1.) 1. = (-1., 1.));
+  assert (
+    let min, max = Stdcompat.Float.min_max_num 0. (-0.) in
+    Stdcompat.Float.sign_bit min &&
+    not (Stdcompat.Float.sign_bit max));
+  assert (
+    let min, max = Stdcompat.Float.min_max_num (-0.) 0. in
+    Stdcompat.Float.sign_bit min &&
+    not (Stdcompat.Float.sign_bit max));
+  assert (
+    let min, max = Stdcompat.Float.min_max_num (0. /. 0.) (0. /. 0.) in
+    Stdcompat.Float.is_nan min &&
+    Stdcompat.Float.is_nan max);
+  assert (Stdcompat.Float.is_nan (Stdcompat.Float.min 1. (0. /. 0.)));
+  assert (Stdcompat.Float.is_nan (Stdcompat.Float.min (0. /. 0.) 1.));
+  assert (Stdcompat.Float.min 1. (-1.) = (-1.));
+  assert (Stdcompat.Float.min (-1.) 1. = (-1.));
+  assert (Stdcompat.Float.sign_bit (Stdcompat.Float.min 0. (-0.)));
+  assert (Stdcompat.Float.sign_bit (Stdcompat.Float.min (-0.) 0.));
+  assert (Stdcompat.Float.is_nan (
+    Stdcompat.Float.min (0. /. 0.) (0. /. 0.)));
+  assert (Stdcompat.Float.is_nan (Stdcompat.Float.max 1. (0. /. 0.)));
+  assert (Stdcompat.Float.is_nan (Stdcompat.Float.max (0. /. 0.) 1.));
+  assert (Stdcompat.Float.max 1. (-1.) = 1.);
+  assert (Stdcompat.Float.max (-1.) 1. = 1.);
+  assert (not (Stdcompat.Float.sign_bit (Stdcompat.Float.max 0. (-0.))));
+  assert (not (Stdcompat.Float.sign_bit (Stdcompat.Float.max (-0.) 0.)));
+  assert (Stdcompat.Float.is_nan (
+    Stdcompat.Float.max (0. /. 0.) (0. /. 0.)));
+  assert (
+    let min, max = Stdcompat.Float.min_max 1. (0. /. 0.) in
+    Stdcompat.Float.is_nan min &&
+    Stdcompat.Float.is_nan max);
+  assert (
+    let min, max = Stdcompat.Float.min_max (0. /. 0.) 1. in
+    Stdcompat.Float.is_nan min &&
+    Stdcompat.Float.is_nan max);
+  assert (Stdcompat.Float.min_max 1. (-1.) = (-1., 1.));
+  assert (Stdcompat.Float.min_max (-1.) 1. = (-1., 1.));
+  assert (
+    let min, max = Stdcompat.Float.min_max 0. (-0.) in
+    Stdcompat.Float.sign_bit min &&
+    not (Stdcompat.Float.sign_bit max));
+  assert (
+    let min, max = Stdcompat.Float.min_max (-0.) 0. in
+    Stdcompat.Float.sign_bit min &&
+    not (Stdcompat.Float.sign_bit max));
+  assert (
+    let min, max = Stdcompat.Float.min_max (0. /. 0.) (0. /. 0.) in
+    Stdcompat.Float.is_nan min &&
+    Stdcompat.Float.is_nan max);
+  assert (Stdcompat.Float.next_after max_float infinity = infinity);
+  assert (Stdcompat.Float.next_after 0. infinity = Int64.float_of_bits Stdcompat.Int64.one);
+  assert (Stdcompat.Float.next_after (Int64.float_of_bits Stdcompat.Int64.one) 0. = 0.);
+  assert (Stdcompat.Float.next_after 1. 1. = 1.);
+  assert (Stdcompat.Float.is_nan (Stdcompat.Float.next_after (0. /. 0.) 1.));
+  assert (Stdcompat.Float.is_nan (Stdcompat.Float.next_after 1. (0. /. 0.)));
+  let b = Stdcompat.Bytes.of_string "\x20\x30\x40\x50\x60\x70\x80\x90" in
+  assert (Stdcompat.Bytes.get_uint8 b 1 = 0x30);
+  assert (Stdcompat.Bytes.get_int8 b 1 = 0x30);
+  assert (Stdcompat.Bytes.get_uint8 b 6 = 0x80);
+  assert (Stdcompat.Bytes.get_int8 b 6 = -0x80);
+  assert (Stdcompat.Bytes.get_uint16_le b 4 = 0x7060);
+  assert (Stdcompat.Bytes.get_uint16_be b 4 = 0x6070);
+  assert (Stdcompat.Bytes.get_int16_le b 4 = 0x7060);
+  assert (Stdcompat.Bytes.get_int16_be b 4 = 0x6070);
+  assert (Stdcompat.Bytes.get_uint16_le b 6 = 0x9080);
+  assert (Stdcompat.Bytes.get_uint16_be b 6 = 0x8090);
+  assert (Stdcompat.Bytes.get_int16_le b 6 = -0x6F80);
+  assert (Stdcompat.Bytes.get_int16_be b 6 = -0x7F70);
+  assert (Stdcompat.Bytes.get_int32_le b 0 = 0x50403020l);
+  assert (Stdcompat.Bytes.get_int32_be b 0 = 0x20304050l);
+  assert (Stdcompat.Bytes.get_int64_le b 0 = 0x9080706050403020L);
+  assert (Stdcompat.Bytes.get_int64_be b 0 = 0x2030405060708090L);
+  let check_invalid_arg f =
+    try
+      f ();
+      false
+    with Invalid_argument _ ->
+      true in
+  assert (check_invalid_arg (fun () -> Stdcompat.Bytes.get_uint8 b (-1)));
+  assert (check_invalid_arg (fun () -> Stdcompat.Bytes.get_uint8 b 8));
+  assert (check_invalid_arg (fun () -> Stdcompat.Bytes.get_uint16_le b (-1)));
+  assert (check_invalid_arg (fun () -> Stdcompat.Bytes.get_uint16_le b 7));
+  assert (check_invalid_arg (fun () -> Stdcompat.Bytes.get_int32_le b (-1)));
+  assert (check_invalid_arg (fun () -> Stdcompat.Bytes.get_int32_le b 5));
+  assert (check_invalid_arg (fun () -> Stdcompat.Bytes.get_int64_le b (-1)));
+  assert (check_invalid_arg (fun () -> Stdcompat.Bytes.get_int64_le b 1));
+  assert (
+    Stdcompat.Bytes.set_uint8 b 1 0x90;
+    Stdcompat.Bytes.get_uint8 b 1 = 0x90);
+  assert (
+    Stdcompat.Bytes.set_int8 b 1 (-0x20);
+    Stdcompat.Bytes.get_int8 b 1 = (-0x20));
+  assert (
+    Stdcompat.Bytes.set_uint16_le b 1 0x1234;
+    Stdcompat.Bytes.get_uint16_le b 1 = 0x1234);
+  assert (
+    Stdcompat.Bytes.set_uint16_be b 1 0x1234;
+    Stdcompat.Bytes.get_uint16_be b 1 = 0x1234);
+  assert (
+    Stdcompat.Bytes.set_int16_le b 1 (-0x1234);
+    Stdcompat.Bytes.get_int16_le b 1 = (-0x1234));
+  assert (
+    Stdcompat.Bytes.set_int16_be b 1 (-0x1234);
+    Stdcompat.Bytes.get_int16_be b 1 = (-0x1234));
+  assert (
+    Stdcompat.Bytes.set_int32_le b 1 0x12345678l;
+    Stdcompat.Bytes.get_int32_le b 1 = 0x12345678l);
+  assert (
+    Stdcompat.Bytes.set_int32_be b 1 0x12345678l;
+    Stdcompat.Bytes.get_int32_be b 1 = 0x12345678l);
+  assert (
+    Stdcompat.Bytes.set_int64_le b 0 0x123456789ABCDEF0L;
+    Stdcompat.Bytes.get_int64_le b 0 = 0x123456789ABCDEF0L);
+  assert (
+    Stdcompat.Bytes.set_int64_be b 0 0x123456789ABCDEF0L;
+    Stdcompat.Bytes.get_int64_be b 0 = 0x123456789ABCDEF0L);
+  assert (check_invalid_arg (fun () -> Stdcompat.Bytes.set_uint8 b (-1) 0));
+  assert (check_invalid_arg (fun () -> Stdcompat.Bytes.set_uint8 b 8 0));
+  assert (check_invalid_arg (fun () -> Stdcompat.Bytes.set_uint16_le b (-1) 0));
+  assert (check_invalid_arg (fun () -> Stdcompat.Bytes.set_uint16_le b 7 0));
+  assert (check_invalid_arg (fun () -> Stdcompat.Bytes.set_int32_le b (-1) 0l));
+  assert (check_invalid_arg (fun () -> Stdcompat.Bytes.set_int32_le b 5 0l));
+  assert (check_invalid_arg (fun () -> Stdcompat.Bytes.set_int64_le b (-1) 0L));
+  assert (check_invalid_arg (fun () -> Stdcompat.Bytes.set_int64_le b 1 0L));
+  assert (Stdcompat.Bytes.get_int64_be b 0 = 0x123456789ABCDEF0L);
+  assert (
+    let finalized = ref false in
+    Stdcompat.Fun.protect ~finally:(fun () -> finalized := true) (fun () -> true) &&
+    !finalized);
+  assert (
+    try
+      Stdcompat.Fun.protect ~finally:(fun () -> raise Exit) (fun () -> failwith "protect")
+    with Stdcompat.Fun.Finally_raised Exit -> true | _ -> false);
+  let (_ : 'a Stdcompat.Seq.t) = Stdcompat.Stdlib.Seq.empty in
+  let (_ : 'a Stdcompat.Stdlib.Seq.t) = Stdcompat.Seq.empty in
+  let (_ : (unit, 'a) Stdcompat.result) = Stdcompat.Ok () in
+  let (_ : (unit, 'a) Stdcompat.Result.t) = Stdcompat.Ok () in
+  let (_ : (unit, 'a) Stdcompat.Stdlib.Result.t) = Stdcompat.Ok () in
+  let (_ : (unit, 'a) Stdcompat.result) = Stdcompat.Result.Ok () in
+  let (_ : (unit, 'a) Stdcompat.Result.t) = Stdcompat.Result.Ok () in
+  let (_ : (unit, 'a) Stdcompat.Stdlib.Result.t) = Stdcompat.Result.Ok () in
+  let (_ : (unit, 'a) Stdcompat.result) = Stdcompat.Stdlib.Result.Ok () in
+  let (_ : (unit, 'a) Stdcompat.Result.t) = Stdcompat.Stdlib.Result.Ok () in
+  let (_ : (unit, 'a) Stdcompat.Stdlib.Result.t) = Stdcompat.Stdlib.Result.Ok () in
+  assert (Stdcompat.Fun.id true);
+  assert (Stdcompat.Fun.const true false);
+  assert (Stdcompat.Fun.flip ( - ) 1 2 = 1);
+  assert (Stdcompat.Fun.negate not true);
+  ()
+  

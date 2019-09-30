@@ -123,15 +123,15 @@ let print_token2 = function
           (match adj with Ast_cocci.ADJ n -> n | _ -> -1)
           (String.concat " " (List.map string_of_int index))
       | Ctx -> "" in
-(*    let d_str =
+    (*let d_str =
       let info = TH.info_of_tok t in
       match !(info.Ast_c.danger) with
 	Ast_c.DangerStart -> ":DS:"
-      |	Ast_c.DangerEnd -> ":DE:"
-      |	Ast_c.Danger -> ":D:"
-      |	Ast_c.NoDanger -> ":ND:" in *)
+      | Ast_c.DangerEnd -> ":DE:"
+      | Ast_c.Danger -> ":D:"
+      | Ast_c.NoDanger -> ":ND:" in*)
     "T2:"^b_str^t_str(*^d_str*)^TH.str_of_tok t
-  | Fake2 (_,b) ->
+  | Fake2 (info,b) ->
     let b_str =
       match b with
       | Min (index,adj) ->
@@ -139,7 +139,13 @@ let print_token2 = function
           (match adj with Ast_cocci.ADJ n -> n | _ -> -1)
           (String.concat " " (List.map string_of_int index))
       | Ctx -> "" in
-    b_str^"fake"
+    (*let d_str =
+      match !(info.Ast_c.danger) with
+	Ast_c.DangerStart -> ":DS:"
+      | Ast_c.DangerEnd -> ":DE:"
+      | Ast_c.Danger -> ":D:"
+      | Ast_c.NoDanger -> ":ND:" in*)
+    b_str(*^d_str*)^"fake"
   | Cocci2 (s,_,lc,rc,_) -> Printf.sprintf "Cocci2:%d:%d%s" lc rc s
   | C2 (s,_) -> "C2:"^s
   | Comma s -> "Comma:"^s
@@ -1077,6 +1083,10 @@ let check_danger toks =
     | Fake2(info,_) ->
 	Some !(info.Ast_c.danger)
     | _ -> None in
+  let is_danger tok =
+    match get_danger tok with
+      Some Ast_c.Danger -> true
+    | _ -> false in
   let isnt_danger_end tok =
     match get_danger tok with
       Some Ast_c.DangerEnd -> false
@@ -1086,14 +1096,16 @@ let check_danger toks =
       T2(_,Min _,_,_) -> true
     | (T2(tok,Ctx,_,_)) as x ->
 	TH.str_of_tok tok = "," || is_whitespace x
-    | Fake2(info,Min _) -> true
+    | Fake2(info,_) -> true
     | x -> false in
   let rec undanger_untouched toks =
     (* check that each entry before or after a comma contains at least
        one context token. combined with safe for multi constraints, that
        means that the rule can only have changed the type *)
     let ctx =
-      function (T2(_,Ctx,_,_) as t) -> not (is_whitespace t) | _ -> false in
+      function
+	  (T2(_,Ctx,_,_) as t) when not(is_danger t) -> not (is_whitespace t)
+	| _ -> false in
     let safe = function [] -> true | toks -> List.exists ctx toks in
     let res =
       try Some (Common.split_when is_comma toks)
@@ -1184,6 +1196,11 @@ let check_danger toks =
   let unminus_danger_end = function
       T2(tok,Min _,a,b) -> T2(tok,Ctx,a,b)
     | x -> x in
+  let reminus_danger_end = function
+      (* remove space inside a danger that can be removed, but is not
+	 allminus, because some code is attached to the outside of the ; *)
+      T2(Parser_c.TCommentSpace _,Ctx,a,b) -> false (* should only be spaces *)
+    | x -> true in
   let rec search_danger = function
       [] -> []
     | x::xs ->
@@ -1196,7 +1213,11 @@ let check_danger toks =
 		  Some Ast_c.DangerEnd ->
 		    if List.for_all removed_or_comma (de::danger)
 			(* everything removed *)
-			|| undanger_untouched (danger@[de])
+		    then
+		      (* drop spaces *)
+		      (List.filter reminus_danger_end danger)
+		      @ de :: (search_danger rest)
+		    else if undanger_untouched (danger@[de])
 			(* nothing removed, type changed *)
 		    then danger @ de :: (search_danger rest)
 		    else
@@ -1406,7 +1427,7 @@ this point.  The cases are as follows:
 1. Comma then space.
 2. Comma then newline.
 3. Comma then something else.
-4. Newline wth no preceding comma.
+4. Newline with no preceding comma.
 5. Start or end token, ie = ( ) { }.
 6. Anything else.
 
@@ -1425,8 +1446,11 @@ let add_newlines toks tabbing_unit =
   let isnewline tok =
     not(is_comment tok) &&
     let s = str_of_token2 tok in
-    try let _ = Str.search_forward (Str.regexp "\n") s 0 in true
-    with Not_found -> false in
+    (* backslash newline, not a real newline *)
+    try let _ = Str.search_forward (Str.regexp "\\\\[ \t]*\n") s 0 in false
+    with Not_found ->
+      try let _ = Str.search_forward (Str.regexp "\n") s 0 in true
+      with Not_found -> false in
   let iscocci = function Cocci2 _ | C2 _ -> true | _ -> false in
   let nonempty = function [] -> false | _ -> true in
   (* the following is for strings that may contain newline or tabs *)
@@ -1731,7 +1755,7 @@ type info =
   | PlusNL of int (* depthplus *) * int (* inparen *)
   | Other of int | Drop | Unindent | Unindent1
   | Label (* label is for a newline that should not be taken into account
-	     to compute indentation; it might be befor a label, a #, or
+	     to compute indentation; it might be before a label, a #, or
 	     just an empty line *)
 
 let print_info l =

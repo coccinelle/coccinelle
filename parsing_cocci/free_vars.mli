@@ -9,7 +9,7 @@ bindings.  These are combined in ctlcocciintegration, ie after the CTL
 generation. *)
 
 val free_vars : Ast_cocci.rule_with_metavars list ->
-  string list (* droped rules *) ->
+  string list (* dropped rules *) ->
   (Ast_cocci.metavar list list) * (Ast_cocci.rule list) *
     (((Ast_cocci.meta_name list) list) list) (*fvs of the rule*) *
     (((Ast_cocci.meta_name list * Ast_cocci.meta_name list)

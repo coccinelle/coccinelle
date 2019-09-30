@@ -1,0 +1,38 @@
+include ArrayLabels
+
+@BEGIN_BEFORE_4_03_0@
+let create_float = Stdcompat__array.create_float
+
+let make_float = create_float
+
+let exists ~f a = Stdcompat__array.exists f a
+
+let for_all ~f a = Stdcompat__array.for_all f a
+
+let mem item ~set = Stdcompat__array.mem item set
+
+let memq item ~set = Stdcompat__array.memq item set
+@END_BEFORE_4_03_0@
+
+@BEGIN_BEFORE_4_05_0@
+let iter2 ~f a b = Stdcompat__array.iter2 f a b
+
+let map2 ~f a b = Stdcompat__array.map2 f a b
+@END_BEFORE_4_05_0@
+
+@BEGIN_BEFORE_4_06_0@
+module Floatarray = Stdcompat__array.Floatarray
+@END_BEFORE_4_06_0@
+
+@BEGIN_BEFORE_4_07_0@
+let of_seq g =
+  of_list (Stdcompat__list.of_seq g)
+
+let to_seq s = Stdcompat__tools.vec_to_seq length unsafe_get s
+
+let to_seqi s = Stdcompat__tools.vec_to_seqi length unsafe_get s
+@END_BEFORE_4_07_0@
+
+@BEGIN_BEFORE_4_08_0@
+type 'a t = 'a array
+@END_BEFORE_4_08_0@

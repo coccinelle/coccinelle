@@ -168,6 +168,10 @@ let rec unify_ident i1 i2 =
       disjunct_all_bindings (List.map (function x -> unify_ident x i2) i1)
   | (_,Ast.DisjId(i2)) ->
       disjunct_all_bindings (List.map (function x -> unify_ident i1 x) i2)
+  | (Ast.ConjId(i1),_) ->
+      conjunct_all_bindings (List.map (function x -> unify_ident x i2) i1)
+  | (_,Ast.ConjId(i2)) ->
+      conjunct_all_bindings (List.map (function x -> unify_ident i1 x) i2)
 
   | (Ast.OptIdent(_),_)
   | (_,Ast.OptIdent(_)) -> failwith "unsupported ident"
@@ -654,12 +658,8 @@ and unify_rule_elem re1 re2 =
 
 and unify_pragmainfo pi1 pi2 =
   match (Ast.unwrap pi1,Ast.unwrap pi2) with
-      (Ast.PragmaTuple(lp1,args1,rp1),Ast.PragmaTuple(lp2,args2,rp2)) ->
-	unify_dots unify_expression edots args1 args2
-    | (Ast.PragmaIdList(ids1),Ast.PragmaIdList(ids2)) ->
-	unify_dots unify_ident (function _ -> false) ids1 ids2
+      (Ast.PragmaString(s1),Ast.PragmaString(s2)) -> unify_mcode s1 s2
     | (Ast.PragmaDots(_),_) | (_,Ast.PragmaDots(_)) -> true
-    | _ -> false
 
 and unify_fninfo patterninfo cinfo =
   let patterninfo = List.sort compare patterninfo in

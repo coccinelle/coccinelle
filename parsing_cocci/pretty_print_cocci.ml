@@ -77,6 +77,9 @@ let print_pos l =
     (function
 	Ast.MetaPos(name,_,_,_,_) ->
 	  let name = Ast.unwrap_mcode name in
+	  print_string "@"; print_meta name; print_space()
+      | Ast.MetaCom(name,_,_,_) ->
+	  let name = Ast.unwrap_mcode name in
 	  print_string "@"; print_meta name; print_space())
     l
 
@@ -194,6 +197,7 @@ let rec ident i =
   | Ast.MetaLocalFunc(name,_,_,_) -> mcode print_meta name
   | Ast.AsIdent(id,asid) -> ident id; print_string "@"; ident asid
   | Ast.DisjId(id_list) -> print_disj_list ident id_list "|"
+  | Ast.ConjId(id_list) -> print_disj_list ident id_list "&"
   | Ast.OptIdent(id) -> print_string "?"; ident id
 
 and print_unitary = function
@@ -756,11 +760,7 @@ and forinfo = function
 
 and pragmainfo pi =
   match Ast.unwrap pi with
-      Ast.PragmaTuple(lp,args,rp) ->
-	mcode print_string_box lp;
-	dots (function _ -> ()) expression args;
-	close_box(); mcode print_string rp
-    | Ast.PragmaIdList(ids) -> dots (function _ -> ()) ident ids
+      Ast.PragmaString(s) -> mcode print_string s
     | Ast.PragmaDots (dots) -> mcode print_string dots
 
 and print_define_parameters params =
@@ -1025,6 +1025,8 @@ let unparse_cocci_mv rule = function
       print_string "local function "; print_name rule r n; print_string ";"
   | Ast.MetaPosDecl(_,(r,n)) -> (* constraints missing! *)
       print_string "position "; print_name rule r n; print_string ";"
+  | Ast.MetaComDecl(_,(r,n)) ->
+      print_string "comments "; print_name rule r n; print_string ";"
   | Ast.MetaFmtDecl(_,(r,n)) ->
       print_string "format "; print_name rule r n; print_string ";"
   | Ast.MetaFragListDecl(_,(r,n),len) ->

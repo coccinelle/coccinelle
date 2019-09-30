@@ -30,7 +30,7 @@ let inline_mcodes =
   let bind x y = () in
   let option_default = () in
   let mcode _ = () in
-  let do_nothing r k e =
+  let do_nothing_dir favor_start r k e =
     k e;
     let einfo = Ast0.get_info e in
     match (Ast0.get_mcodekind e) with
@@ -54,11 +54,21 @@ let inline_mcodes =
 		     true)
 		  else false
 	      | _ -> false in
-	    if not (minus_try(einfo.Ast0.attachable_start,
-			      einfo.Ast0.mcode_start)
-		      ||
-    		    minus_try(einfo.Ast0.attachable_end,
-			      einfo.Ast0.mcode_end))
+	    let (attachable_favored,mcode_favored,
+		 attachable_unfavored,mcode_unfavored) =
+	      if favor_start
+	      then
+		(einfo.Ast0.attachable_start,
+		 einfo.Ast0.mcode_start,
+		 einfo.Ast0.attachable_end,
+		 einfo.Ast0.mcode_end)
+	      else
+		(einfo.Ast0.attachable_end,
+		 einfo.Ast0.mcode_end,
+		 einfo.Ast0.attachable_start,
+		 einfo.Ast0.mcode_start) in
+	    if not (minus_try(attachable_favored,mcode_favored) ||
+    	            minus_try(attachable_unfavored,mcode_unfavored))
 	    then
 	      failwith "minus tree should not have bad code on both sides")
     | Ast0.CONTEXT(befaft)
@@ -171,13 +181,15 @@ let inline_mcodes =
 	      (einfo.Ast0.attachable_end,einfo.Ast0.mcode_end)
 	| (Ast.NOTHING,_,_) -> ())
     | Ast0.PLUS _ -> () in
+  let do_nothing r k e = do_nothing_dir true r k e in
+  let do_nothing_end r k e = do_nothing_dir false r k e in
   V0.flat_combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing do_nothing do_nothing do_nothing do_nothing
+    do_nothing do_nothing do_nothing_end do_nothing_end do_nothing
     do_nothing do_nothing do_nothing do_nothing
 
 (* --------------------------------------------------------------------- *)
@@ -197,7 +209,8 @@ let check_allminus =
   (* special case for disj and asExpr etc *)
   let ident r k e =
     match Ast0.unwrap e with
-      Ast0.DisjId(starter,id_list,mids,ender) ->
+      Ast0.DisjId(starter,id_list,mids,ender)
+    | Ast0.ConjId(starter,id_list,mids,ender) ->
 	List.for_all r.VT0.combiner_rec_ident id_list
     | Ast0.AsIdent(id,asid) -> k id
     | _ -> k e in
@@ -327,6 +340,9 @@ let mcode (term,_,info,mcodekind,pos,adj) =
 	    Ast0.MetaPosTag(Ast0.MetaPos(pos,cstr,per)) ->
 	      let cstr' = constraints cstr in
 	      (Ast.MetaPos(pos_mcode pos,cstr',per,unitary,false))::prev
+	  | Ast0.MetaPosTag(Ast0.MetaCom(pos,cstr)) ->
+	      let cstr' = constraints cstr in
+	      (Ast.MetaCom(pos_mcode pos,cstr',unitary,false))::prev
 	  | _ -> prev)
       [] !pos in
   (term,convert_info info,convert_mcodekind adj mcodekind,List.rev pos)
@@ -359,6 +375,8 @@ and ident i =
       Ast0.Id(name) -> Ast.Id(mcode name)
     | Ast0.DisjId(_,id_list,_,_) ->
 	Ast.DisjId(List.map ident id_list)
+    | Ast0.ConjId(_,id_list,_,_) ->
+	Ast.ConjId(List.map ident id_list)
     | Ast0.MetaId(name,cstr,_,_) ->
 	let cstr' = constraints cstr in
 	Ast.MetaId(mcode name,cstr',unitary,false)
@@ -1113,12 +1131,7 @@ and statement s =
 and pragmainfo pi =
   rewrap pi no_isos
     (match Ast0.unwrap pi with
-      Ast0.PragmaTuple(lp,args,rp) ->
-	let lp = mcode lp in
-	let args = dots expression args in
-	let rp = mcode rp in
-	Ast.PragmaTuple(lp,args,rp)
-    | Ast0.PragmaIdList(ids) -> Ast.PragmaIdList(dots ident ids)
+      Ast0.PragmaString(s) -> Ast.PragmaString(mcode s)
     | Ast0.PragmaDots (dots) -> Ast.PragmaDots (mcode dots))
 
 and define_parameters p =

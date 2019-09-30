@@ -1,7 +1,9 @@
 (* The main function is parse_c_and_cpp. It uses globals in Lexer_Parser and
  * and also _defs below which often comes from a standard.h macro file.
  * cf also init_defs_xxx below.
- *)
+*)
+
+type line_restriction = Included of int * int | Excluded of int * int
 
 type program2 = toplevel2 list
    and extended_program2 = toplevel2 list *
@@ -14,6 +16,7 @@ type program2 = toplevel2 list
 
 type 'a generic_parse_info = {
   filename : string;
+  ranges : line_restriction list option;
   parse_trees : 'a; (* program2 or extended_program2 *)
   statistics : Parsing_stat.parsing_stat;
 }

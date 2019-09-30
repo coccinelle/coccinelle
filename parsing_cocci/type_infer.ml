@@ -118,7 +118,8 @@ let rec propagate_types env =
     | Ast0.MetaId(id,_,_,_) ->
 	(try Some(List.assoc (Meta(Ast0.unwrap_mcode id)) env)
 	with Not_found -> None)
-    | Ast0.DisjId(_,id_list,_,_) ->
+    | Ast0.DisjId(_,id_list,_,_)
+    | Ast0.ConjId(_,id_list,_,_) ->
 	let types = List.map Ast0.get_type id_list in
 	let combined = List.fold_left lub_type None types in
 	(match combined with
@@ -224,15 +225,15 @@ let rec propagate_types env =
 	      | _ ->
 		  let ty = lub_type t1 t2 in
 		    Ast0.set_type exp1 ty; Ast0.set_type exp2 ty; ty in
-	      (match Ast0.unwrap op with
-                 Ast0.Arith _ -> same_type ty1 ty2
-               | Ast0.MetaBinary _ -> same_type ty1 ty2
-		 | Ast0.Logical(op') when (let op''=Ast0.unwrap_mcode op' in op''=Ast.AndLog || op''=Ast.OrLog) ->
-                     Some (Ast0.wrap bool_type)
-		 | Ast0.Logical(op) ->
-		     let ty = lub_type ty1 ty2 in
-		     Ast0.set_type exp1 ty; Ast0.set_type exp2 ty;
-                     Some (Ast0.wrap bool_type))
+	    (match Ast0.unwrap op with
+	      Ast0.Arith _ -> same_type ty1 ty2
+	    | Ast0.MetaBinary _ -> same_type ty1 ty2
+	    | Ast0.Logical(op') when (let op''=Ast0.unwrap_mcode op' in op''=Ast.AndLog || op''=Ast.OrLog) ->
+		Some (Ast0.wrap bool_type)
+	    | Ast0.Logical(op) ->
+		let ty = lub_type ty1 ty2 in
+		Ast0.set_type exp1 ty; Ast0.set_type exp2 ty;
+		Some (Ast0.wrap bool_type))
 	| Ast0.Paren(lp,exp,rp) -> Ast0.get_type exp
 	| Ast0.ArrayAccess(exp1,lb,exp2,rb) ->
 	    (match strip_cv (Ast0.get_type exp2) with
@@ -326,7 +327,8 @@ let rec propagate_types env =
     | Ast0.MetaId(name,_,_,_)      -> [Meta(Ast0.unwrap_mcode name)]
     | Ast0.MetaFunc(name,_,_)      -> [Meta(Ast0.unwrap_mcode name)]
     | Ast0.MetaLocalFunc(name,_,_) -> [Meta(Ast0.unwrap_mcode name)]
-    | Ast0.DisjId(_,id_list,_,_)   -> List.concat (List.map strip id_list)
+    | Ast0.DisjId(_,id_list,_,_) | Ast0.ConjId(_,id_list,_,_) ->
+	List.concat (List.map strip id_list)
     | Ast0.OptIdent(id)            -> strip id
     | Ast0.AsIdent _ -> failwith "not possible" in
 

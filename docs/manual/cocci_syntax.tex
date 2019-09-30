@@ -85,7 +85,7 @@ section.
 
   \RULE{\rt{rulename}}
   \CASE{\T{id} \OPT{extends \T{id}} \OPT{depends on} \opt{\NT{scope}} \NT{dep} \opt{\NT{iso}}
-    \opt{\NT{disable-iso}} \opt{\NT{exists}} \opt{expression}}
+    \opt{\NT{disable-iso}} \opt{\NT{exists}} \opt{\NT{rulekind}}}
 
   \RULE{\rt{scope}}
   \CASE{\T{exists}}
@@ -112,6 +112,11 @@ section.
   \CASE{exists}
   \CASE{forall}
 %  \CASE{\opt{reverse} forall}
+
+  \RULE{\rt{rulekind}}
+  \CASE{expression}
+  \CASE{identifier}
+  \CASE{type}
 
   \RULE{\rt{COMMA\_LIST}\mth{(}\rt{elem}\mth{)}}
   \CASE{\NT{elem} \ANY{, \NT{elem}}}
@@ -163,10 +168,13 @@ named rule has succeeded in matching in any environment.  Analogously,
 in no environment.  The boolean and, or and negation operators combine
 these declarations in the usual way.  The declaration {\tt file in} checks
 that the code being processed comes from the mentioned file, or from a
-subdirectory.  The declaration {\tt file in} is only allowed on SmPL
-code-matching rules.  Script rules are not applied to any code in
-particular, and thus it doesn't make sense to check on the file being
-considered.
+subdirectory of the directory to which Coccinelle was applied.  In the
+latter case, the string is matched against the complete pathname.  A
+trailing {\tt /} is added to the specified subdirectory name, to ensure
+that a complete subdirectory name is matched.  The
+declaration {\tt file in} is only allowed on SmPL code-matching rules.
+Script rules are not applied to any code in particular, and thus it doesn't
+make sense to check on the file being considered.
 
 As metavariables are bound and inherited across rules, a tree of
 environments is built up.  A rule is processed only once for all of the
@@ -220,6 +228,8 @@ i.e., including as an element of another statement list.
   \CASE{statement \opt{list} \NT{ids} ;}
   \CASE{declaration \NT{ids} ;}
   \CASE{field \opt{list} \NT{ids} ;}
+  \CASE{initialiser \opt{list} \NT{ids} ;}
+  \CASE{initializer \opt{list} \NT{ids} ;}
   \CASE{typedef \NT{ids} ;}
   \CASE{attribute name \NT{ids} ;}
   \CASE{declarer name \NT{ids} ;}
@@ -270,11 +280,11 @@ i.e., including as an element of another statement list.
   \CASE{\NT{bin\_op}}
 \end{grammar}
 
-A metavariable declaration {\bf local idexpression} v means that v is
-restricted to be a local variable.  If it should just be a variable, but
-not necessarily a local one, then drop local.  A more complex description
-of a location, such as a->b is considered to be an expression, not an
-idexpression.
+A metavariable declaration {\bf local idexpression} v means that v is an
+expression that is restricted to be a local variable.  If it should just be
+a variable, but not necessarily a local one, then drop local.  A more
+complex description of a location, such as a->b is considered to be an
+expression, not an idexpression.
 
 {\bf Constant} is for constants, such as 27.  But it also considers an
 identifier that is all capital letters (possibly containing numbers) as a
@@ -362,6 +372,8 @@ represented by the names of the parameters.  Another particular case is
 {\tt E@S}, where {\tt E} is any expression and {\tt S} is a statement
 metavariable.  {\tt S} matches the closest enclosing statement, which may
 be more than what is matches by the semantic match pattern itself.
+
+{\bf Initialiser} can also be spelled {\bf initializer}.
 
 \begin{grammar}
   \RULE{\rt{ids}}
@@ -1097,7 +1109,11 @@ represents at most one match of the given pattern, ie a match of the
 pattern is optional. \mtt{*} is used for
 semantic match, \emph{i.e.}, a pattern that highlights the fragments
 annotated with \mtt{*}, but does not perform any modification of the
-matched code. \mtt{*} cannot be mixed with \mtt{-} and \mtt{+}.  There are
+matched code. The code is presented with lines containing a match of a
+starred line preceded
+by \mtt{-}, but this is not intended as a removal and applying the output
+as a patch to the original code will likely not result in correct code.
+\mtt{*} cannot be mixed with \mtt{-} and \mtt{+}.  There are
 some constraints on the use of these annotations:
 \begin{itemize}
 \item Dots, {\em i.e.} \texttt{...}, cannot occur on a line marked
@@ -1280,6 +1296,9 @@ explained in this section.
   \CASE{double}
   \CASE{long double}
   \CASE{float}
+  \CASE{long double complex}
+  \CASE{double complex}
+  \CASE{float complex}
   \CASE{size\_t} \CASE{ssize\_t} \CASE{ptrdiff\_t}
   \CASE{enum \NT{id} \{ \NT{PARAMSEQ}\mth{(}\NT{dot\_expr}, \NT{exp\_whencode}\mth{)} \OPT{,} \}}
   \CASE{\OPT{struct\OR union} \T{id} \OPT{\{ \any{\NT{struct\_decl\_list}} \}}}
@@ -1451,7 +1470,9 @@ the return type is obligatory.
   \CASE{\opt{\NT{storage}} \NT{ctype} \NT{COMMA\_LIST}\mth{(}\NT{d\_ident}\mth{)} ;}
   \CASE{\opt{\NT{storage}} \opt{\NT{const\_vol}} \T{id} \NT{COMMA\_LIST}\mth{(}\NT{d\_ident}\mth{)} ;}
   \CASE{\opt{\NT{storage}} \NT{fn\_ctype} ( * \NT{d\_ident} ) ( \NT{PARAMSEQ}\mth{(}\NT{name\_opt\_decl}, \mth{\varepsilon)} ) = \NT{initialize} ;}
-  \CASE{typedef \NT{ctype} \NT{typedef\_ident} ;}
+  \CASE{typedef \NT{ctype} \NT{COMMA\_LIST}\mth{(}\NT{typedef\_ident}\mth{)} ;}
+  \CASE{typedef \NT{ctype} \NT{typedef\_ident} [\NT{expr}];}
+  \CASE{typedef \NT{ctype} \NT{typedef\_ident} [\NT{expr}] [\NT{expr}];}
   \CASE{\NT{OR}\mth{(}\NT{decl\_var}\mth{)}}
   \CASE{\NT{AND}\mth{(}\NT{decl\_var}\mth{)}}
 %  \CASE{\NT{type} \opt{\NT{id} \opt{[\opt{\NT{dot\_expr}}]}
@@ -1509,6 +1530,19 @@ An attribute begins with {\tt \_\_} or is declared as an {\tt attribute
   name} in the semantic patch.  In practice, only one attribute is
 currently allowed after the variable name in a variable declaration.
 
+Coccinelle supports declaring multiple variables or structure fields in the
+C code, but not in the SmPL code.  It is possible to remove a variable from
+within a declaration of multiple variables with a pattern that removes a
+complete single-variable declaration, e.g., {\tt - int x;}.  The type and
+the semicolon are only removed if all of the variables are removed.  It is
+also possible to specify to entirely remove such a declaration and replace
+it with something else.  The replacement of a declaration only matches if
+the addition is done with {\tt ++}, allowing multiple additions.  This is
+also only allowed if there is no implicitly matched information on the
+type, such as {\tt extern} or {\tt static}.  When the transformation cannot
+be made, there is no crash, simply a match failure.  A message is given for
+this with the {\tt -{}-debug option}.
+
 \section{Statements}
 
 The first rule {\em statement} describes the various forms of a statement.
@@ -1547,7 +1581,6 @@ allowed.
         \opt{\NT{top}}}
   \CASE{\#undef \NT{id}}
   \CASE{\#pragma \NT{id} \some{\NT{id}}}
-  \CASE{\#pragma \NT{id} (\NT{PARAMSEQ}\mth{(}\NT{expr}, \mth{\varepsilon)})}
   \CASE{\#pragma \NT{id} ...}
 
   \RULE{\rt{single\_stmt}}
@@ -1559,6 +1592,7 @@ allowed.
   \CASE{\mth{\T{metaid}^{\ssf{StmtList}}}}
   \CASE{\NT{decl\_var}}
   \CASE{\NT{stmt}}
+  \CASE{\NT{expr}}
   \CASE{\NT{OR}\mth{(}\NT{stmt\_seq}\mth{)}}
   \CASE{\NT{AND}\mth{(}\NT{stmt\_seq}\mth{)}}
 
@@ -1604,10 +1638,20 @@ when they are used in an other column.  These tokens are furthermore
 different from (, \(\mid\), and ), which are part of the grammar
 metalanguage.
 
+\NT{OR}\mth{(}\NT{stmt\_seq}\mth{)} and
+\NT{AND}\mth{(}\NT{stmt\_seq}\mth{)} must have something other than an
+expression in the first branch.  If an expression appears there, they are
+parsed as their \NT{expr} counterparts, {\em i.e.}, all branches must be
+expressions.
+
 All matching done by a SmPL rule is done intraprocedurally.  Thus
 ``\ldots'' does not extend from one function to the next one in the same
 file and it does not extend from one function over a function call into the
 called function.
+
+{\tt \#pragma} C code can only be matched against when the entire pragma is
+on one line in the C code.  The use of continuation lines, via a backslash,
+will cause the matching to fail.
 
 \section{Expressions}
 
@@ -1656,6 +1700,7 @@ in a concise way.
 %   \CASE{\mth{\T{metaid}^{\ssf{Func}}}}
 %   \CASE{\mth{\T{metaid}^{\ssf{LocalFunc}}}}
   \CASE{\mth{\T{metaid}^{\ssf{Exp}}}}
+  \CASE{\mth{\T{metaid}^{\ssf{IdExp}}}}
 %   \CASE{\mth{\T{metaid}^{\ssf{Err}}}}
   \CASE{\mth{\T{metaid}^{\ssf{Const}}}}
   \CASE{\NT{const}}
@@ -1666,7 +1711,9 @@ in a concise way.
   \RULE{\rt{arg}}
   \CASE{\NT{nest\_expr}}
   \CASE{\mth{\T{metaid}^{\ssf{ExpList}}}}
+\end{grammar}
 
+\begin{grammar}
   \RULE{\rt{exp\_whencode}}
   \CASE{when != \NT{expr}}
 
@@ -1697,7 +1744,7 @@ in a concise way.
 
   \RULE{\rt{id}}
   \CASE{\T{id} \OR \mth{\T{metaid}^{\ssf{Id}}}
-        \OR {\NT{OR}\mth{(}\NT{stmt}\mth{)}}}
+        \OR {\NT{OR}\mth{(}\NT{id}\mth{)}} \OR {\NT{AND}\mth{(}\NT{id}\mth{)}}}
 
   \RULE{\rt{typedef\_ident}}
   \CASE{\T{id} \OR \mth{\T{metaid}^{\ssf{Type}}}}
@@ -1711,6 +1758,9 @@ in a concise way.
   \RULE{\rt{regexp}}
   \CASE{"\any{[\^{}"]}"}
 \end{grammar}
+
+Conjunctions for identifiers are, as indicated by the BNF, not currently
+supported.
 
 \section{Comments and Preprocessor Directives}
 
@@ -1778,7 +1828,7 @@ of every token.
 It is possible to iterate Coccinelle, giving the subsequent iterations a
 different set of virtual rules or virtual identifier bindings.  Coccinelle
 currently supports iteration with both OCaml and Python scripting. An
-example with OCaml is fond in {\tt demos/iteration.cocci}, a Python
+example with OCaml is found in {\tt demos/iteration.cocci}, a Python
 example is found in {\tt demos/python\_iteration.cocci}.
 
 The OCaml scripting iteration example starts as follows.
@@ -1874,7 +1924,7 @@ the following directories, later lines extend and may override earlier ones:
 	\item The directory provided with the -{}-dir option is processed last, if used.
 \end{itemize}
 
-Newlines, even with \, are not tolerated in attribute values. An example
+Newlines, even with \textbackslash, are not tolerated in attribute values. An example
 follows:
 
 \begin{quote}

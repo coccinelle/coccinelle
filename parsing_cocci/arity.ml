@@ -136,6 +136,17 @@ let rec ident opt_allowed tgt i =
 	  then fail i "opt only allowed in the last disjunct"
       |	_ -> ());
       Ast0.rewrap i (Ast0.DisjId(starter,id_list,mids,ender))
+  | Ast0.ConjId(starter,ids,mids,ender) ->
+      (match ids with
+	id::id_list ->
+	  let id = ident opt_allowed tgt id in
+	  let arity =
+	    match Ast0.unwrap id with
+	      Ast0.OptIdent _ -> Ast0.OPT
+	    | _ -> Ast0.NONE in
+	  let id_list = List.map (ident opt_allowed arity) id_list in
+	  Ast0.rewrap i (Ast0.ConjId(starter,id::id_list,mids,ender))
+      | _ -> i)
   | Ast0.OptIdent(_) | Ast0.AsIdent _ ->
       failwith "unexpected code"
 
@@ -1150,16 +1161,10 @@ and make_pragma =
 
 and pragmainfo tgt pi =
   match Ast0.unwrap pi with
-    Ast0.PragmaTuple(lp,args,rp) ->
-      let arity =
-	all_same false tgt (mcode2line lp) [mcode2arity lp;mcode2arity rp] in
-      let lp = mcode lp in
-      let args = dots (expression arity) args in
-      let rp = mcode rp in
-      make_pragma pi tgt arity (Ast0.PragmaTuple(lp,args,rp))
-  | Ast0.PragmaIdList(ids) ->
-      let ids = dots (ident false tgt) ids in
-      make_pragma pi tgt tgt (Ast0.PragmaIdList(ids))
+    Ast0.PragmaString(s) ->
+      let arity = all_same false tgt (mcode2line s) [mcode2arity s] in
+      let s = mcode s in
+      make_pragma pi tgt arity (Ast0.PragmaString(s))
   | Ast0.PragmaDots (dots) ->
       let arity = all_same false tgt (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in

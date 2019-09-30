@@ -1,0 +1,14 @@
+let not_implemented _ =
+  failwith "Stdcompat.Printf is not implemented yet. Please fill an issue: https://github.com/thierry-martinez/stdcompat/issues ."
+
+let ifprintf = not_implemented
+
+let ikfprintf = not_implemented
+
+let kbprintf = not_implemented
+
+let kfprintf = not_implemented
+
+let ksprintf = not_implemented
+
+include Printf

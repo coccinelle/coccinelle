@@ -5,7 +5,7 @@
  *)
 
 (* Find a directive or comment at the end of a statement.  Things with aft
-given None, because they can accomodate their own directives or comments *)
+given None, because they can accommodate their own directives or comments *)
 
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
@@ -212,7 +212,8 @@ let rec left_ident i =
   | Ast0.MetaLocalFunc(name,a,b) ->
       call_right left_mcode name i
 	(function name -> Ast0.MetaLocalFunc(name,a,b))
-  | Ast0.DisjId(starter,ids,mids,ender) -> None
+  | Ast0.DisjId(starter,ids,mids,ender)
+  | Ast0.ConjId(starter,ids,mids,ender) -> None
   | Ast0.OptIdent(id) ->
       call_right left_ident id i (function id -> Ast0.OptIdent(id))
   | Ast0.AsIdent(id,asid) -> failwith "not possible"

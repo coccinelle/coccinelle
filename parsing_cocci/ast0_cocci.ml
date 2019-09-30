@@ -91,6 +91,8 @@ and base_ident =
   | AsIdent       of ident * ident (* as ident, always metavar *)
   | DisjId        of string mcode * ident list *
                      string mcode list (* the |s *) * string mcode
+  | ConjId        of string mcode * ident list *
+                     string mcode list (* the &s *) * string mcode
   | OptIdent      of ident
 
 and ident = base_ident wrap
@@ -430,8 +432,7 @@ and base_statement =
   | OptStm   of statement
 
 and base_pragmainfo =
-    PragmaTuple of string mcode(* ( *) * expression dots * string mcode(* ) *)
-  | PragmaIdList of ident dots
+    PragmaString of string mcode
   | PragmaDots of string mcode
 
 and pragmainfo = base_pragmainfo wrap
@@ -483,6 +484,7 @@ and exec_code = base_exec_code wrap
 and meta_pos =
     MetaPos of Ast.meta_name mcode * constraints *
 	Ast.meta_collect
+  | MetaCom of Ast.meta_name mcode * constraints
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
@@ -682,6 +684,7 @@ let rec meta_pos_name = function
 	(* totally fake, just drop the rest, only for isos *)
       meta_pos_name (List.hd vars)
   | MetaPosTag(MetaPos(name,_constraints,_)) -> name
+  | MetaPosTag(MetaCom(name,_constraints)) -> name
   | IdentTag(i) ->
       (match unwrap i with
 	MetaId(name,_constraints,_seed,_pure) -> name
@@ -717,7 +720,8 @@ let rec meta_names_of_ident ident =
   | MetaLocalFunc (tyname, _, _) -> [unwrap_mcode tyname]
   | AsIdent (ident0, ident1) ->
       meta_names_of_ident ident0 @ meta_names_of_ident ident1
-  | DisjId (_, l, _, _) -> List.flatten (List.map meta_names_of_ident l)
+  | DisjId (_, l, _, _) | ConjId (_, l, _, _) ->
+      List.flatten (List.map meta_names_of_ident l)
   | OptIdent ident' -> meta_names_of_ident ident'
 
 let meta_names_of_expression expression =

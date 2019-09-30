@@ -121,7 +121,6 @@ val ii_of_fragments :
 val ii_of_format : Ast_c.string_format -> Ast_c.info list
 val ii_of_define_params :
   (string Ast_c.wrap, Ast_c.il) Common.either list -> Ast_c.info list
-val ii_of_pragmainfo : Ast_c.pragmainfo -> Ast_c.info list
 val ii_of_ident_list :
   (Ast_c.name, Ast_c.il) Common.either list -> Ast_c.info list
 val ii_of_exec_code_list :
@@ -130,6 +129,8 @@ val ii_of_attrs :
   (Ast_c.attribute, Ast_c.il) Common.either list -> Ast_c.info list
 val ii_of_toplevel : Ast_c.toplevel -> Ast_c.info list
 val max_min_ii_by_pos : Ast_c.info list -> Ast_c.info * Ast_c.info
+val max_min_ii_by_pos_filtered :
+    (Ast_c.info -> bool) -> Ast_c.info list -> Ast_c.info * Ast_c.info
 val info_to_fixpos : Ast_c.info -> Ast_cocci.fixpos
 val max_min_by_pos : Ast_c.info list -> Ast_cocci.fixpos * Ast_cocci.fixpos
 val lin_col_by_pos :

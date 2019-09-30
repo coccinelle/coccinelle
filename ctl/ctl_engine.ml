@@ -476,7 +476,7 @@ let merge_subBy eqx (===) (>+<) sub sub' =
 ;;
 
 (* NOTE: functor *)
-(* How could we accomadate subterm constraints here??? *)
+(* How could we accommodate subterm constraints here??? *)
 let merge_sub sub sub' =
   merge_subBy SUB.eq_mvar SUB.eq_val SUB.merge_val sub sub'
 

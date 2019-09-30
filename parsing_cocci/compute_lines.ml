@@ -285,6 +285,12 @@ let rec full_ident i =
 	  (fun starter ids mids ender ->
 	    Ast0.DisjId(starter,ids,mids,ender)) in
       (res,None)
+  | Ast0.ConjId(starter,ids,mids,ender) ->
+      let res =
+	do_disj i starter ids mids ender ident
+	  (fun starter ids mids ender ->
+	    Ast0.ConjId(starter,ids,mids,ender)) in
+      (res,None)
   | Ast0.OptIdent(id) ->
       let (id,r) = full_ident id in mkidres i (Ast0.OptIdent(id)) id id r
   | Ast0.AsIdent(id,asid) ->
@@ -1312,16 +1318,11 @@ and leftfninfo fninfo name bef = (* cases on what is leftmost *)
 
 and pragmainfo pi =
   match Ast0.unwrap pi with
-    Ast0.PragmaTuple(lp,args,rp) ->
-      let lp = normal_mcode lp in
-      let args = dots is_exp_dots (Some(promote_mcode lp)) expression args in
-      let rp = normal_mcode rp in
-      mkres pi
-	(Ast0.PragmaTuple(lp,args,rp)) (promote_mcode lp) (promote_mcode rp)
-    | Ast0.PragmaIdList(ids) -> (* ids can't be empty, so None is ok *)
-	let ids = dots (function _ -> false) None ident ids in
-	mkres pi (Ast0.PragmaIdList(ids)) ids ids
-    | Ast0.PragmaDots(dots) ->
+    Ast0.PragmaString(s) ->
+      let s = bad_mcode s in
+      let ln = promote_mcode s in
+      mkres pi (Ast0.PragmaString(s)) ln ln
+  | Ast0.PragmaDots(dots) ->
       let dots = bad_mcode dots in
       let ln = promote_mcode dots in
       mkres pi (Ast0.PragmaDots(dots)) ln ln

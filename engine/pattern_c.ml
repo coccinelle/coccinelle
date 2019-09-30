@@ -55,7 +55,7 @@ module XMATCH = struct
    * Then by defining the correct combinators, can have quite pretty code (that
    * looks like the clean code of version0).
    *
-   * opti: return a lazy list of possible matchs ?
+   * opti: return a lazy list of possible matches ?
    *
    * version4: type tin = Lib_engine.metavars_binding
    *)
@@ -210,9 +210,25 @@ module XMATCH = struct
     let bigf = {
       Visitor_c.default_visitor_c with
         Visitor_c.ktype = (fun (k, bigf) expb ->
-	match expf expa expb tin with
-	| [] -> (* failed *) k expb
-	| xs -> globals := xs @ !globals);
+	  match expf expa expb tin with
+	  | [] -> (* failed *) k expb
+	  | xs -> globals := xs @ !globals);
+	Visitor_c.kdecl = (fun (k, bigf) expb ->
+	  let iif ii = List.iter (Visitor_c.vk_info bigf) ii in
+	  match expb with
+	    Ast_c.DeclList(xs,iis) ->
+	      iif iis;
+	      (match xs with
+		(x,ii)::xs ->
+		  iif ii;
+		  Visitor_c.vk_onedecl bigf x;
+		  List.iter
+		    (fun (x,ii) ->
+		      iif ii;
+		      Visitor_c.vk_onedecl_opt false bigf x)
+		    xs
+	      | _ -> failwith "no decls")
+	  | _ -> k expb)
 
     }
     in
@@ -317,7 +333,6 @@ module XMATCH = struct
   let distrf_struct_fields  = distrf Lib_parsing_c.ii_of_struct_fields
   let distrf_cst            = distrf Lib_parsing_c.ii_of_cst
   let distrf_define_params  = distrf Lib_parsing_c.ii_of_define_params
-  let distrf_pragmainfo     = distrf Lib_parsing_c.ii_of_pragmainfo
   let distrf_ident_list     = distrf Lib_parsing_c.ii_of_ident_list
   let distrf_exec_code_list = distrf Lib_parsing_c.ii_of_exec_code_list
   let distrf_attrs          = distrf Lib_parsing_c.ii_of_attrs
@@ -425,7 +440,7 @@ module XMATCH = struct
 			if C_vs_c.subexpression_of_expression inh_stripped v
 			then loop cs (* forget satisfied constraints *)
 			else None (* failure *)
-		    | Some _ -> failwith "not possible"
+		    | Some _ -> failwith "check add metavars: not possible"
 		      (* fail if this should be a subterm of something that
 			 doesn't exist *)
 		    | None -> None) in
@@ -526,6 +541,7 @@ module XMATCH = struct
           | Ast_c.MetaPosVal (pos1,pos2) ->
 	      success(Ast_c.MetaPosVal (pos1,pos2))
           | Ast_c.MetaPosValList l -> success (Ast_c.MetaPosValList l)
+          | Ast_c.MetaComValList l -> success (Ast_c.MetaComValList l)
 	  | Ast_c.MetaNoVal -> None)
 
   let pos_variables tin ia get_pvalu finish =
@@ -533,28 +549,54 @@ module XMATCH = struct
       [] -> finish tin
     | positions ->
 	match get_pvalu() with
-	  None -> finish tin
-	| Some pvalu ->
+	  [] -> finish tin
+	| infos ->
 	    let pvalu =
-	      List.map
-		(function (fname,current_element,st,ed) ->
-		  (fname,current_element,
-		   Some(Lazy.force (!Flag.current_element_pos)),st,ed))
-		pvalu in
-	    let pvalu = Ast_c.MetaPosValList(pvalu) in
+	      lazy
+		(let (fname,current_element,st,ed) =
+		  Lib_parsing_c.lin_col_by_pos infos in
+		[(fname,current_element,
+		  Some(Lazy.force (!Flag.current_element_pos)),st,ed)]) in
+	    let cvalu =
+	      lazy
+		(let infos =
+		  List.filter (function ii -> not (Ast_c.is_fake ii)) infos in
+		let infos = List.sort Ast_c.compare_pos infos in
+		match (infos,List.rev infos) with
+		  ([],_) | (_,[]) -> [([],[],[])]
+		| (fst::mid,last::_) ->
+		    let before = Ast_c.get_comments_before fst in
+		    let after = Ast_c.get_comments_after last in
+		    let mid =
+		      List.concat
+			(List.map Ast_c.get_comments_before mid) in
+		    [(before,mid,after)]) in
 	    let rec loop tin = function
 		[] -> finish tin
 	      | Ast_cocci.MetaPos(name,constraints,per,keep,inherited)::rest ->
+		  let pvalu = Ast_c.MetaPosValList (Lazy.force pvalu) in
 		  let name' = Ast_cocci.unwrap_mcode name in
 		  check_pos_constraints name' pvalu constraints
 		    (fun new_tin ->
 		      (* constraints are satisfied, now see if we are
 			 compatible with existing bindings *)
-		      let x = Ast_cocci.unwrap_mcode name in
 		      let new_binding =
 			check_add_metavars_binding false keep inherited
-			  (x, pvalu) tin in
-		      (match  new_binding with
+			  (name', pvalu) tin in
+		      (match new_binding with
+			Some binding ->
+			  loop {new_tin with binding = binding} rest
+		      | None -> fail tin))
+		    tin
+	      | Ast_cocci.MetaCom(name,constraints,keep,inherited)::rest ->
+		  let cvalu = Ast_c.MetaComValList (Lazy.force cvalu) in
+		  let name' = Ast_cocci.unwrap_mcode name in
+		  check_pos_constraints name' cvalu constraints
+		    (fun new_tin ->
+		      let new_binding =
+			check_add_metavars_binding false keep inherited
+			  (name', cvalu) tin in
+		      (match new_binding with
 			Some binding ->
 			  loop {new_tin with binding = binding} rest
 		      | None -> fail tin))
@@ -566,12 +608,7 @@ module XMATCH = struct
     match check_add_metavars_binding true keep inherited (x, valu) tin with
     | Some binding ->
 	let new_tin = {tin with binding = binding} in
-	pos_variables new_tin k
-	  (function _ ->
-	    match get_max_min() with
-	      Some pos -> Some [pos]
-	    | None -> None)
-	  (f ())
+	pos_variables new_tin k get_max_min (f ())
     | None -> fail tin
 
   (* ------------------------------------------------------------------------*)
@@ -623,8 +660,8 @@ module XMATCH = struct
       pos_variables tin ia
 	(function _ ->
 	  if is_fake ib
-	  then None
-	  else Some [Lib_parsing_c.lin_col_by_pos [ib]])
+	  then []
+	  else [ib])
 	finish
 
   let tokenf_mck mck ib = fun tin ->

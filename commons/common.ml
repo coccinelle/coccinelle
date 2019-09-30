@@ -75,7 +75,7 @@
  *  - pcre
  *  - sdl
  *
- * Many functions in this file were inspired by Haskell or Lisp librairies.
+ * Many functions in this file were inspired by Haskell or Lisp libraries.
  *)
 
 (*****************************************************************************)
@@ -714,7 +714,7 @@ let (example3: string -> bool -> unit) = fun s b ->
  *   _list_bool := (s,func):: (!_list_bool)
  *
  * I would like to do as a func that take 2 terms, and make an = over it
- * avoid to add this ugly fun (), but pb of type, cant do that :(
+ * avoid to add this ugly fun (), but pb of type, can't do that :(
  *)
 
 
@@ -780,14 +780,14 @@ let test_exn x s =
 (* Quickcheck like (sfl) *)
 (*****************************************************************************)
 
-(* Better than quickcheck, cos cant do a test_all_prop in haskell cos
+(* Better than quickcheck, cos can't do a test_all_prop in haskell cos
  * prop were functions, whereas here we have not prop_Unix x = ... but
  * laws "unit" ...
  *
  * How to do without overloading ? objet ? can pass a generator as a
  * parameter, mais lourd, prefer automatic inferring of the
  * generator? But at the same time quickcheck does not do better cos
- * we must explictly type the property. So between a
+ * we must explicitly type the property. So between a
  *    prop_unit:: [Int] -> [Int] -> bool ...
  *    prop_unit x = reverse [x] == [x]
  * and
@@ -1102,7 +1102,7 @@ let (+!>) refo f = refo := f !refo
 
 let ($)     f g x = g (f x)
 let compose f g x = f (g x)
-(* dont work :( let ( \B0 ) f g x = f(g(x)) *)
+(* don't work :( let ( \B0 ) f g x = f(g(x)) *)
 
 (* trick to have something similar to the   1 `max` 4   haskell infix notation.
    by Keisuke Nakano on the caml mailing list.
@@ -1305,7 +1305,7 @@ exception WrongFormat of string
 (* old: let _TODO () = failwith "TODO",  now via fix_caml with raise Todo *)
 
 let internal_error s = failwith ("internal error: "^s)
-let error_cant_have x = internal_error ("cant have this case: " ^(Dumper.dump x))
+let error_cant_have x = internal_error ("can't have this case: " ^(Dumper.dump x))
 let myassert cond = if cond then () else failwith "assert error"
 
 
@@ -1562,7 +1562,7 @@ let arg_parse2 l msg short_usage_fun =
 
 
 (* ---------------------------------------------------------------------- *)
-(* kind of unit testing framework, or toplevel like functionnality
+(* kind of unit testing framework, or toplevel like functionality
  * at shell command line. I realize than in fact It follows a current trend
  * to have a main cmdline program where can then select different actions,
  * as in cvs/hg/git where do  hg <action> <arguments>, and the shell even
@@ -2443,7 +2443,7 @@ let filename_without_leading_path prj_path s =
   then matched1 s
   else
     failwith
-      (spf "cant find filename_without_project_path: %s  %s" prj_path s)
+      (spf "can't find filename_without_project_path: %s  %s" prj_path s)
 
 let rec join_path dir path =
   match path with
@@ -4599,7 +4599,7 @@ let apply_assoc key f xs =
 let big_union_assoc f xs = xs +> map_assoc f +> fold_assoc union_set empty_set
 
 (* todo: pb normally can suppr fun l -> .... l but if do that, then strange type _a
- => assoc_map is strange too => equal dont work
+ => assoc_map is strange too => equal don't work
 *)
 let (assoc_reverse: (('a * 'b) list) -> (('b * 'a) list)) = fun l ->
   List.map (fun(x,y) -> (y,x)) l
@@ -5065,8 +5065,8 @@ let find_multi_treeref_with_parents_some f tree =
 (*****************************************************************************)
 (* todo: generalise to put in common (need 'edge (and 'c ?),
  * and take in param a display func, cos caml sux, no overloading of show :(
- * Simple impelemntation. Can do also matrix, or adjacent list, or pointer(ref)
- * todo: do some check (dont exist already, ...)
+ * Simple implementation. Can do also matrix, or adjacent list, or pointer(ref)
+ * todo: do some check (don't exist already, ...)
  *)
 
 type 'node graph = ('node set) * (('node * 'node) set)
@@ -5442,7 +5442,7 @@ let full_charpos_to_pos2 = fun filename ->
        let s = (input_line chan) in
        incr line;
 
-       (* '... +1 do'  cos input_line dont return the trailing \n *)
+       (* '... +1 do'  cos input_line don't return the trailing \n *)
        let slength = String.length s in
        for i = 0 to (slength - 1) + 1 do
          arr.(!charpos + i) <- (!line, i);
@@ -5645,7 +5645,7 @@ let print_score score =
 
 
 (*****************************************************************************)
-(* Scope managment (cocci) *)
+(* Scope management (cocci) *)
 (*****************************************************************************)
 
 (* could also make a function Common.make_scope_functions that return

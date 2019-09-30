@@ -204,7 +204,8 @@ let id_tokens lexbuf =
     "metavariable" when in_meta -> check_arity_context_linetype s; TMetavariable
   | "identifier" when in_meta || in_rule_name ->
       check_arity_context_linetype s; TIdentifier
-  | "type" when in_meta ->       check_arity_context_linetype s; TType
+  | "type" when in_meta || in_rule_name ->
+      check_arity_context_linetype s; TType
   | "parameter" when in_meta ->  check_arity_context_linetype s; TParameter
   | "operator" when in_meta ->   check_arity_context_linetype s; TOperator
   | "binary" when in_meta ->   check_arity_context_linetype s; TBinary
@@ -236,6 +237,7 @@ let id_tokens lexbuf =
   | "iterator" when in_meta ->   check_arity_context_linetype s; TIterator
   | "name" when in_meta ->       check_arity_context_linetype s; TName
   | "position" when in_meta ->   check_arity_context_linetype s; TPosition
+  | "comments" when in_meta ->   check_arity_context_linetype s; TComments
   | "format" when in_meta ->     check_arity_context_linetype s; TFormat
   | "analysis" when in_meta ->   check_arity_context_linetype s; TAnalysis
   | "any" when in_meta ->        check_arity_context_linetype s; TPosAny
@@ -274,6 +276,7 @@ let id_tokens lexbuf =
   | "int" ->        Tint      linetype
   | "double" ->     Tdouble   linetype
   | "float" ->      Tfloat    linetype
+  | "complex" ->    Tcomplex  linetype
   | "long" ->       Tlong     linetype
   | "void" ->       Tvoid     linetype
   | "size_t" ->     Tsize_t   linetype
@@ -487,6 +490,15 @@ let init _ = (* per file, first .cocci then iso *)
 	  failwith
 	    (Printf.sprintf "%d: positions only allowed in minus code" ln));
 	TMetaPos(name,constraints,any,clt) in
+      Hashtbl.replace metavariables (get_name name) fn);
+  Data.add_com_meta :=
+    (fun name constraints ->
+      let fn ((d,ln,_,_,_,_,_,_,_,_) as clt) =
+	(if d = Data.PLUS
+	then
+	  failwith
+	    (Printf.sprintf "%d: comment variables only allowed in minus code" ln));
+	TMetaCom(name,constraints,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_assignOp_meta :=
     (fun name constraints pure ->
@@ -809,9 +821,21 @@ rule token = parse
 	   (arity,line,lline,llend,offset+off,col+off,strbef,straft,pos,wss),
 	 offset + off + (String.length ident),
 	 col + off + (String.length ident)) }
-  | ("#" [' ' '\t']*  "pragma")
-      { start_line true; TPragma(get_current_line_type lexbuf) }
-
+  | (("#" [' ' '\t']*  "pragma") as prag) ([' ' '\t']+ as wss1)
+    ( (letter (letter | digit)*) as ident) ([' ' '\t']+ as wss2) ([^ '\n']* as rest)
+      { start_line true;
+	let (arity,line,lline,llend,offset,col,strbef,straft,pos,ws) as lt =
+	  get_current_line_type lexbuf in
+	let off1 = String.length prag + String.length wss1 in
+	let off2 = off1 + String.length ident + String.length wss2 in
+	TPragma(lt,
+		check_var ident
+	        (* why pos here but not above? *)
+		  (arity,line,lline,llend,offset+off1,col+off1,strbef,straft,
+		   pos,wss1),
+		rest,
+		(arity,line,lline,llend,offset+off2,col+off2,strbef,straft,
+		 pos,wss2)) }
     (* For the unparser: in TIncludeL and TIncludeNL, the whitespace after
      * #include is not preserved, because we have nowhere to put it. *)
   | "#" [' ' '\t']* "include" [' ' '\t']* '\"' [^ '\"']+ '\"'
@@ -956,6 +980,7 @@ rule token = parse
       | (['l' 'L'] ['u' 'U'])
       | (['u' 'U'] ['l' 'L'])
       | (['u' 'U'] ['l' 'L'] ['l' 'L'])
+      | (['l' 'L'] ['l' 'L'] ['u' 'U'])
       | (['l' 'L'] ['l' 'L'])
       )?
     ) as x) { start_line true; TInt(x,(get_current_line_type lexbuf)) }
@@ -1122,8 +1147,7 @@ and metavariable_decl_token = parse
 	  TChar(char lexbuf,get_current_line_type lexbuf) }
   | '\"' { start_line true;
 	  TString(string lexbuf,(get_current_line_type lexbuf)) }
-  | (real as x)    { Printf.printf "36\n"; start_line true;
-		     TFloat(x,(get_current_line_type lexbuf)) }
+  | (real as x)    { TFloat(x,(get_current_line_type lexbuf)) }
   | ((( decimal | hexa | octal)
       ( ['u' 'U']
       | ['l' 'L']
